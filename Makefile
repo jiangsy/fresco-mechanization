@@ -25,11 +25,7 @@ endif
 %/def_ott.v : %/language.ott
 	ott -i $^ -o $@ ${OTT_FLAGS}
 	sed -e "/Ott.ott_list_core/d" ${SED_FLAG} $@
-	sed -e "s/dW/Ω/g" ${SED_FLAG} $@ 
-	sed -e "s/aW/Γ/g" ${SED_FLAG} $@ 
 	sed -e "s/dE/Ψ/g" ${SED_FLAG} $@
-	sed -e "s/aE/Σ/g" ${SED_FLAG} $@ 
-	sed -e "s/fE/Δ/g" ${SED_FLAG} $@ 
 
 ott : ${OTT_OUTS}
 
