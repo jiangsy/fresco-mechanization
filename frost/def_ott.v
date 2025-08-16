@@ -32,7 +32,7 @@ Inductive exp : Set :=
  | exp_anno (e:exp) (A:pattern)
  | exp_freeze (e:exp).
 
-Definition denv : Set := list (atom*dbind).
+Definition denv : Set := list (atom*bind).
 
 (* EXPERIMENTAL *)
 (** auxiliary functions on the new list types *)

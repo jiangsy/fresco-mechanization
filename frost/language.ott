@@ -49,7 +49,7 @@ freevars
  
 grammar
 
-denv, dE, dF, dG:: '' ::= {{ coq list (atom*dbind) }}
+denv, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
   | empty    ::   :: dempty {{ coq nil }}
   | dE , x b  ::   :: dcons1 {{ coq ([[x]]~[[b]] ++ [[dE]])  }}
   | dE , X b  ::   :: dcons2 {{ coq ([[X]]~[[b]] ++ [[dE]])  }}
