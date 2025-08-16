@@ -30,9 +30,8 @@ exp, e, f, g :: exp_ ::=
   | { A2 / X } e1                       :: M :: subst2 {{ coq (open_exp_wrt_typ [[X e1]] [[A2]]) }}
 
 pat_row , p :: pattern_row_ ::=
-  | nil              ::  :: nil
-  | P , p            ::  :: cons
-
+  | P , p                ::  :: cons
+  | P                    ::  :: one
 
 bind, b :: bind_ ::=
   | : □  ::   :: tvar_empty
@@ -139,77 +138,36 @@ defn
 -------------- :: freeze
 |- ⌈ x ⌉     
 
-% defns
-% J_d_wf_exp :: '' ::=
 
-% defn
-% dE |- e :: :: d_wf_exp :: 'd_wf_exp__' by
-
-% (x : A) in dE  
-% ----------------- :: var
-% dE |- x 
-
-% dE |- T
-% dE , x : T |- e
-% ----------------- :: abs
-% dE |- \ x . e
-
-% dE |- e1
-% dE |- e2
-% ----------------- :: app
-% dE |- e1 e2
-
-% % dE , X : □ |- e : A
-% % ----------------- :: tabs 
-% % dE |- \ X . ( e : A )
-
-% % dE |- A
-% % dE |- e
-% % ----------------- :: tapp 
-% % dE |- e @ A
-
-% dE |- A
-% dE |- e
-% ----------------- :: anno 
-% dE |- e : A
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% We have to add a wrapper to the results of pat_refine
+% because its results can have to different types:
+% (1) a single pattern, due to the forall case of the single case
+% (2) a pattern and a pattern row, due to the row cons case
+% these two types are incompatible as is
 
 % defns
-% J_d_wf_env :: '' ::=
-
+% single_pat_refine :: '' ::=
 % defn
-% |- dE :: :: d_wf_env :: 'd_wf_env__' by
+% P ▹ Q :: :: sin_pat_refining :: 'sin_pat_refining__' by
 
-% --------- :: empty
-% |- empty
+% ----------------- :: ghost
+% * ▹ * -> *
 
-% |- dE
-% X `notin` dom dE
-% ---------------- :: tvar
-% |- dE , X : □
+% ----------------- :: arrow
+% P -> Q ▹ P -> Q
 
-% |- dE
-% dE |- A
-% x `notin` dom dE
-% ---------------- :: typ
-% |- dE , x : A
+% P ▹ Q1 --> Q2
+% ----------------- :: forall
+% ∀ P ▹ ∀ Q1 --> Q2
 
+% defns
+% pat_refine :: '' ::=
+% defn
+% p1 [▹] p2 :: :: pat_refining :: 'pat_refining__' by
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% P ▹ P
+% ----------------- :: sing
+% P [▹] P 
 
-% defns 
-% J_d_mono_typ :: '' ::= 
-
-% defn 
-% dE |-m A :: :: d_mono_typ :: 'd_mono_typ__' by 
-
-% (X : □) in dE
-% --------------- :: tvar
-% dE |-m X
-
-% dE |-m A1
-% dE |-m A2
-% --------------- :: arrow
-% dE |-m A1 -> A2
+% ----------------- :: cons
+% P , p [▹] P ---> p 

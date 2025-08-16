@@ -103,8 +103,8 @@ Definition close_exp_wrt_exp x1 e1 := close_exp_wrt_exp_rec 0 x1 e1.
 
 Fixpoint close_pat_row_wrt_pattern_rec (n1 : nat) (X1 : typvar) (p1 : pat_row) {struct p1} : pat_row :=
   match p1 with
-    | pattern_row_nil => pattern_row_nil
     | pattern_row_cons P1 p2 => pattern_row_cons (close_pattern_wrt_pattern_rec n1 X1 P1) (close_pat_row_wrt_pattern_rec n1 X1 p2)
+    | pattern_row_one P1 => pattern_row_one (close_pattern_wrt_pattern_rec n1 X1 P1)
   end.
 
 Definition close_pat_row_wrt_pattern X1 p1 := close_pat_row_wrt_pattern_rec 0 X1 p1.
@@ -143,8 +143,8 @@ Fixpoint size_exp (e1 : exp) {struct e1} : nat :=
 
 Fixpoint size_pat_row (p1 : pat_row) {struct p1} : nat :=
   match p1 with
-    | pattern_row_nil => 1
     | pattern_row_cons P1 p2 => 1 + (size_pattern P1) + (size_pat_row p2)
+    | pattern_row_one P1 => 1 + (size_pattern P1)
   end.
 
 
@@ -259,12 +259,13 @@ Combined Scheme degree_exp_wrt_exp_mutind from degree_exp_wrt_exp_ind'.
 #[export] Hint Constructors degree_exp_wrt_exp : core lngen.
 
 Inductive degree_pat_row_wrt_pattern : nat -> pat_row -> Prop :=
-  | degree_wrt_pattern_pattern_row_nil : forall n1,
-    degree_pat_row_wrt_pattern n1 (pattern_row_nil)
   | degree_wrt_pattern_pattern_row_cons : forall n1 P1 p1,
     degree_pattern_wrt_pattern n1 P1 ->
     degree_pat_row_wrt_pattern n1 p1 ->
-    degree_pat_row_wrt_pattern n1 (pattern_row_cons P1 p1).
+    degree_pat_row_wrt_pattern n1 (pattern_row_cons P1 p1)
+  | degree_wrt_pattern_pattern_row_one : forall n1 P1,
+    degree_pattern_wrt_pattern n1 P1 ->
+    degree_pat_row_wrt_pattern n1 (pattern_row_one P1).
 
 Scheme degree_pat_row_wrt_pattern_ind' := Induction for degree_pat_row_wrt_pattern Sort Prop.
 
@@ -371,12 +372,13 @@ Combined Scheme lc_set_exp_mutrec from lc_set_exp_rec'.
 #[export] Hint Constructors lc_set_exp : core lngen.
 
 Inductive lc_set_pat_row : pat_row -> Set :=
-  | lc_set_pattern_row_nil :
-    lc_set_pat_row (pattern_row_nil)
   | lc_set_pattern_row_cons : forall P1 p1,
     lc_set_pattern P1 ->
     lc_set_pat_row p1 ->
-    lc_set_pat_row (pattern_row_cons P1 p1).
+    lc_set_pat_row (pattern_row_cons P1 p1)
+  | lc_set_pattern_row_one : forall P1,
+    lc_set_pattern P1 ->
+    lc_set_pat_row (pattern_row_one P1).
 Scheme lc_pat_row_ind' := Induction for lc_pat_row Sort Prop.
 
 Combined Scheme lc_pat_row_mutind from lc_pat_row_ind'.

@@ -19,8 +19,8 @@ Inductive bind : Set :=
  | bind_pattern (A:pattern).
 
 Inductive pat_row : Set := 
- | pattern_row_nil : pat_row
- | pattern_row_cons (P:pattern) (p:pat_row).
+ | pattern_row_cons (P:pattern) (p:pat_row)
+ | pattern_row_one (P:pattern).
 
 Inductive exp : Set := 
  | exp_var_b (_:nat)
@@ -63,8 +63,8 @@ end.
 
 Fixpoint open_pat_row_wrt_pattern_rec (k:nat) (P5:pattern) (p5:pat_row) {struct p5}: pat_row :=
   match p5 with
-  | pattern_row_nil => pattern_row_nil 
   | (pattern_row_cons P p) => pattern_row_cons (open_pattern_wrt_pattern_rec k P5 P) (open_pat_row_wrt_pattern_rec k P5 p)
+  | (pattern_row_one P) => pattern_row_one (open_pattern_wrt_pattern_rec k P5 P)
 end.
 
 Fixpoint open_exp_wrt_exp_rec (k:nat) (e_5:exp) (e__6:exp) {struct e__6}: exp :=
@@ -136,12 +136,13 @@ Inductive lc_bind : bind -> Prop :=    (* defn lc_bind *)
 
 (* defns LC_pat_row *)
 Inductive lc_pat_row : pat_row -> Prop :=    (* defn lc_pat_row *)
- | lc_pattern_row_nil : 
-     (lc_pat_row pattern_row_nil)
  | lc_pattern_row_cons : forall (P:pattern) (p:pat_row),
      (lc_pattern P) ->
      (lc_pat_row p) ->
-     (lc_pat_row (pattern_row_cons P p)).
+     (lc_pat_row (pattern_row_cons P p))
+ | lc_pattern_row_one : forall (P:pattern),
+     (lc_pattern P) ->
+     (lc_pat_row (pattern_row_one P)).
 
 (* defns LC_exp *)
 Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
@@ -200,8 +201,8 @@ end.
 
 Fixpoint ftvar_in_pat_row (p5:pat_row) : vars :=
   match p5 with
-  | pattern_row_nil => {}
   | (pattern_row_cons P p) => (ftvar_in_pattern P) \u (ftvar_in_pat_row p)
+  | (pattern_row_one P) => (ftvar_in_pattern P)
 end.
 
 Fixpoint ftvar_in_exp (e_5:exp) : vars :=
@@ -247,8 +248,8 @@ end.
 
 Fixpoint subst_pattern_in_pat_row (P5:pattern) (X5:typvar) (p5:pat_row) {struct p5} : pat_row :=
   match p5 with
-  | pattern_row_nil => pattern_row_nil 
   | (pattern_row_cons P p) => pattern_row_cons (subst_pattern_in_pattern P5 X5 P) (subst_pattern_in_pat_row P5 X5 p)
+  | (pattern_row_one P) => pattern_row_one (subst_pattern_in_pattern P5 X5 P)
 end.
 
 Fixpoint subst_pattern_in_exp (P5:pattern) (X5:typvar) (e_5:exp) {struct e_5} : exp :=
