@@ -3,24 +3,18 @@ metavar expvar, x, y, z     ::= {{ repr-locally-nameless }}
 
 grammar
 
-typ, A, B, C, T    :: typ_ ::=
-  | X              ::   :: var
-  | A1 -> A2       ::   :: arrow
-  | ∀ X . A        ::   :: all  (+ bind X in A +)
-  | ( A )          :: S :: paren {{ coq ([[A]]) }}
-  | { A2 / X } A1  :: M :: subst {{ coq (open_typ_wrt_typ [[X A1]] [[A2]]) }}
 
 % maybe we should just unify typ and pattern in syntax, and distinguish them 
 % by predicate : types cannot be constructed using ghost or topghost
-pattern, P , Q :: pattern_ ::=
+pattern, P , Q , A , B , C :: pattern_ ::=
   | X              ::   :: var
   | P -> Q         ::   :: arrow
   | ∀ X . P        ::   :: all  (+ bind X in P +)
   | *              ::   :: ghost
   | *. P           ::   :: topghost
-  | ( A )          :: S :: paren {{ coq ([[A]]) }}
-  | { A2 / X } A1  :: M :: subst {{ coq (open_typ_wrt_typ [[X A1]] [[A2]]) }}
-                
+  | ( P )          :: S :: paren {{ coq ([[P]]) }}
+  | { P2 / X } P1  :: M :: subst {{ coq (open_pattern_wrt_pattern [[X P2]] [[P1]]) }}
+
 exp, e, f, g :: exp_ ::=
   | x                                   ::   :: var
   | \ x . e                             ::   :: abs  (+ bind x in e +)
@@ -30,34 +24,41 @@ exp, e, f, g :: exp_ ::=
   % | \ X . e                             ::   :: tabs (+ bind X in e +) 
   % | e @ A                               ::   :: tapp
   | e : A                               ::   :: anno
+  | ⌈ e ⌉                               ::   :: freeze
   | ( e )                               :: S :: paren  {{ coq ([[e]]) }}
   | { e2 / x } e1                       :: M :: subst1 {{ coq (open_exp_wrt_exp [[x e1]] [[e2]]) }}
   | { A2 / X } e1                       :: M :: subst2 {{ coq (open_exp_wrt_typ [[X e1]] [[A2]]) }}
 
-dbind, db :: dbind_ ::=
+pat_row , p :: pattern_row_ ::=
+  | nil              ::  :: nil
+  | P , p            ::  :: cons
+
+
+bind, b :: bind_ ::=
   | : □  ::   :: tvar_empty
-  | : A  ::   :: typ
+  | : A  ::   :: pattern
 
 substitutions
-  single A X  :: subst_typ_in
+  single P X  :: subst_pattern_in
   single e x  :: subst_exp_in
 
 freevars
-  A X  :: ftvar_in
+  % A X  :: ftvar_in
+  P X  :: ftvar_in
   e x  :: fvar_in
  
 grammar
 
 denv, dE, dF, dG:: '' ::= {{ coq list (atom*dbind) }}
   | empty    ::   :: dempty {{ coq nil }}
-  | dE , x db  ::   :: dcons1 {{ coq ([[x]]~[[db]] ++ [[dE]])  }}
-  | dE , X db  ::   :: dcons2 {{ coq ([[X]]~[[db]] ++ [[dE]])  }}
+  | dE , x b  ::   :: dcons1 {{ coq ([[x]]~[[b]] ++ [[dE]])  }}
+  | dE , X b  ::   :: dcons2 {{ coq ([[X]]~[[b]] ++ [[dE]])  }}
 
 formula :: formula_ ::=
   | judgement             ::   :: judgement
   | formula \/ formula'       ::   :: judgement_or {{ coq  ([[formula]]) \/ ([[formula']]) }}
-  | ( x db )  in dE    ::   :: binds1 {{ coq binds ([[x]])  ([[db]]) ([[dE]]) }}
-  | ( X db )  in dE    ::   :: binds2 {{ coq binds ([[X]])  ([[db]]) ([[dE]]) }}
+  | ( x b )  in dE    ::   :: binds1 {{ coq binds ([[x]])  ([[b]]) ([[dE]]) }}
+  | ( X b )  in dE    ::   :: binds2 {{ coq binds ([[X]])  ([[b]]) ([[dE]]) }}
   | x  `notin` dom dE ::   :: fresh1 {{ coq ([[x]]  `notin` dom ([[dE]])) }}
   | X  `notin` dom dE ::   :: fresh2 {{ coq ([[X]]  `notin` dom ([[dE]])) }}
 
@@ -65,97 +66,150 @@ formula :: formula_ ::=
 
 
 defns
-J_d_wf_typ :: '' ::=
+is_typ :: '' ::=
 
 defn
-dE |- A :: :: d_wf_typ :: 'd_wf_typ__' by
+|- A :: :: is_typ :: 'is_typ__' by
 
-(X : □) in dE
 -------------- :: tvar
-dE |- X
+|- X
 
-dE |- A1
-dE |- A2
+|- A1
+|- A2
 -------------- :: arrow
-dE |- A1 -> A2
+|- A1 -> A2
 
-dE, X : □ |- A
+|- A
 -------------------- :: all
-dE |- ∀ X . A
+|- ∀ X . A
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 defns
-J_d_wf_exp :: '' ::=
+mono_typ :: '' ::=
 
 defn
-dE |- e :: :: d_wf_exp :: 'd_wf_exp__' by
+|-m A :: :: mono_typ :: 'mono_typ__' by
 
-(x : A) in dE  
------------------ :: var
-dE |- x 
+-------------- :: tvar
+|-m X
 
-dE |- T
-dE , x : T |- e
------------------ :: abs
-dE |- \ x . e
+|-m A1
+|-m A2
+-------------- :: arrow
+|-m A1 -> A2
 
-dE |- e1
-dE |- e2
------------------ :: app
-dE |- e1 e2
 
-% dE , X : □ |- e : A
-% ----------------- :: tabs 
-% dE |- \ X . ( e : A )
+defns
+is_exp :: '' ::=
+
+defn
+|- e :: :: is_exp :: 'is_exp__' by
+
+-------------- :: var
+|- x
+
+|- e
+-------------- :: abs
+|- \ x . e
+
+
+|- A
+|- e
+-------------- :: abs_anno
+|- \ x : A . e
+
+|- e1 
+|- e2
+-------------- :: app
+|- e1 e2
+
+
+|- e1 
+|- e2
+-------------- :: let
+|- let x = e1 in e2
+
+
+|- A 
+|- e 
+-------------- :: anno
+|- e : A 
+
+
+-------------- :: freeze
+|- ⌈ x ⌉     
+
+% defns
+% J_d_wf_exp :: '' ::=
+
+% defn
+% dE |- e :: :: d_wf_exp :: 'd_wf_exp__' by
+
+% (x : A) in dE  
+% ----------------- :: var
+% dE |- x 
+
+% dE |- T
+% dE , x : T |- e
+% ----------------- :: abs
+% dE |- \ x . e
+
+% dE |- e1
+% dE |- e2
+% ----------------- :: app
+% dE |- e1 e2
+
+% % dE , X : □ |- e : A
+% % ----------------- :: tabs 
+% % dE |- \ X . ( e : A )
+
+% % dE |- A
+% % dE |- e
+% % ----------------- :: tapp 
+% % dE |- e @ A
 
 % dE |- A
 % dE |- e
-% ----------------- :: tapp 
-% dE |- e @ A
-
-dE |- A
-dE |- e
------------------ :: anno 
-dE |- e : A
+% ----------------- :: anno 
+% dE |- e : A
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-defns
-J_d_wf_env :: '' ::=
+% defns
+% J_d_wf_env :: '' ::=
 
-defn
-|- dE :: :: d_wf_env :: 'd_wf_env__' by
+% defn
+% |- dE :: :: d_wf_env :: 'd_wf_env__' by
 
---------- :: empty
-|- empty
+% --------- :: empty
+% |- empty
 
-|- dE
-X `notin` dom dE
----------------- :: tvar
-|- dE , X : □
+% |- dE
+% X `notin` dom dE
+% ---------------- :: tvar
+% |- dE , X : □
 
-|- dE
-dE |- A
-x `notin` dom dE
----------------- :: typ
-|- dE , x : A
+% |- dE
+% dE |- A
+% x `notin` dom dE
+% ---------------- :: typ
+% |- dE , x : A
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-defns 
-J_d_mono_typ :: '' ::= 
+% defns 
+% J_d_mono_typ :: '' ::= 
 
-defn 
-dE |-m A :: :: d_mono_typ :: 'd_mono_typ__' by 
+% defn 
+% dE |-m A :: :: d_mono_typ :: 'd_mono_typ__' by 
 
-(X : □) in dE
---------------- :: tvar
-dE |-m X
+% (X : □) in dE
+% --------------- :: tvar
+% dE |-m X
 
-dE |-m A1
-dE |-m A2
---------------- :: arrow
-dE |-m A1 -> A2
+% dE |-m A1
+% dE |-m A2
+% --------------- :: arrow
+% dE |-m A1 -> A2
