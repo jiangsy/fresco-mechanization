@@ -10,7 +10,7 @@ Definition taglabel : Set := var.
 Inductive pre_typ : Set := 
  | pre_typ_var_b (_:nat)
  | pre_typ_var_f (X:typvar)
- | pre_typ_arrow (T1:pre_typ) (T2:pre_typ)
+ | pre_typ_arrow (T:pre_typ) (R:pre_typ)
  | pre_typ_all (T:pre_typ)
  | pre_typ_ghost : pre_typ
  | pre_typ_topghost (T:pre_typ)
@@ -41,7 +41,7 @@ Inductive exp : Set :=
 
 Definition denv : Set := list (atom*bind).
 
-Definition tenv : Set := vars.
+Definition tenv : Type := vars.
 
 (* EXPERIMENTAL *)
 (** auxiliary functions on the new list types *)
@@ -58,7 +58,7 @@ Fixpoint open_pre_typ_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (P_6:pre_typ) {struct
         | inright _ => pre_typ_var_b (nat - 1)
       end
   | (pre_typ_var_f X) => pre_typ_var_f X
-  | (pre_typ_arrow T1 T2) => pre_typ_arrow (open_pre_typ_wrt_pre_typ_rec k P5 T1) (open_pre_typ_wrt_pre_typ_rec k P5 T2)
+  | (pre_typ_arrow T R) => pre_typ_arrow (open_pre_typ_wrt_pre_typ_rec k P5 T) (open_pre_typ_wrt_pre_typ_rec k P5 R)
   | (pre_typ_all T) => pre_typ_all (open_pre_typ_wrt_pre_typ_rec (S k) P5 T)
   | pre_typ_ghost => pre_typ_ghost 
   | (pre_typ_topghost T) => pre_typ_topghost (open_pre_typ_wrt_pre_typ_rec k P5 T)
@@ -124,10 +124,10 @@ Definition open_pre_typ_wrt_pre_typ P5 P_6 := open_pre_typ_wrt_pre_typ_rec 0 P_6
 Inductive lc_pre_typ : pre_typ -> Prop :=    (* defn lc_pre_typ *)
  | lc_pre_typ_var_f : forall (X:typvar),
      (lc_pre_typ (pre_typ_var_f X))
- | lc_pre_typ_arrow : forall (T1 T2:pre_typ),
-     (lc_pre_typ T1) ->
-     (lc_pre_typ T2) ->
-     (lc_pre_typ (pre_typ_arrow T1 T2))
+ | lc_pre_typ_arrow : forall (T R:pre_typ),
+     (lc_pre_typ T) ->
+     (lc_pre_typ R) ->
+     (lc_pre_typ (pre_typ_arrow T R))
  | lc_pre_typ_all : forall (T:pre_typ),
       ( forall X , lc_pre_typ  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  )  ->
      (lc_pre_typ (pre_typ_all T))
@@ -192,7 +192,7 @@ Fixpoint ftvar_in_pre_typ (P5:pre_typ) : vars :=
   match P5 with
   | (pre_typ_var_b nat) => {}
   | (pre_typ_var_f X) => {{X}}
-  | (pre_typ_arrow T1 T2) => (ftvar_in_pre_typ T1) \u (ftvar_in_pre_typ T2)
+  | (pre_typ_arrow T R) => (ftvar_in_pre_typ T) \u (ftvar_in_pre_typ R)
   | (pre_typ_all T) => (ftvar_in_pre_typ T)
   | pre_typ_ghost => {}
   | (pre_typ_topghost T) => (ftvar_in_pre_typ T)
@@ -241,7 +241,7 @@ Fixpoint subst_pattern_in_pre_typ (P5:pre_typ) (X5:typvar) (P_6:pre_typ) {struct
   match P_6 with
   | (pre_typ_var_b nat) => pre_typ_var_b nat
   | (pre_typ_var_f X) => (if eq_var X X5 then P5 else (pre_typ_var_f X))
-  | (pre_typ_arrow T1 T2) => pre_typ_arrow (subst_pattern_in_pre_typ P5 X5 T1) (subst_pattern_in_pre_typ P5 X5 T2)
+  | (pre_typ_arrow T R) => pre_typ_arrow (subst_pattern_in_pre_typ P5 X5 T) (subst_pattern_in_pre_typ P5 X5 R)
   | (pre_typ_all T) => pre_typ_all (subst_pattern_in_pre_typ P5 X5 T)
   | pre_typ_ghost => pre_typ_ghost 
   | (pre_typ_topghost T) => pre_typ_topghost (subst_pattern_in_pre_typ P5 X5 T)
@@ -292,10 +292,10 @@ end.
 Inductive is_typ : pre_typ -> Prop :=    (* defn is_typ *)
  | is_typ__tvar : forall (X:typvar),
      is_typ (pre_typ_var_f X)
- | is_typ__arrow : forall (T1 T2:pre_typ),
-     is_typ T1 ->
-     is_typ T2 ->
-     is_typ (pre_typ_arrow T1 T2)
+ | is_typ__arrow : forall (T R:pre_typ),
+     is_typ T ->
+     is_typ R ->
+     is_typ (pre_typ_arrow T R)
  | is_typ__all : forall (L:vars) (T:pre_typ),
       ( forall X , X \notin  L  -> is_typ  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  )  ->
      is_typ (pre_typ_all T)
@@ -306,9 +306,9 @@ Inductive is_typ : pre_typ -> Prop :=    (* defn is_typ *)
      is_typ (pre_typ_topghost T)
  | is_typ__tagged_tvar : forall (X:typvar) (l:taglabel),
      is_typ (pre_typ_tag (pre_typ_var_f X) l)
- | is_typ__tagged_arrow : forall (T1 T2:pre_typ) (l:taglabel),
-     is_typ (pre_typ_arrow T1 T2) ->
-     is_typ (pre_typ_tag (pre_typ_arrow T1 T2) l)
+ | is_typ__tagged_arrow : forall (T R:pre_typ) (l:taglabel),
+     is_typ (pre_typ_arrow T R) ->
+     is_typ (pre_typ_tag (pre_typ_arrow T R) l)
  | is_typ__tagged_all : forall (T:pre_typ) (l:taglabel),
      is_typ (pre_typ_all T) ->
      is_typ (pre_typ_tag (pre_typ_all T) l)
@@ -393,8 +393,12 @@ Inductive comp_checking : tenv -> denv -> pre_typ -> pre_typ -> Prop :=    (* de
  | comp_checking__ghost_var : forall (Δ:tenv) (Ψ:denv) (X:typvar),
      comp_checking Δ Ψ (pre_typ_var_f X) (pre_typ_var_f X)
  | comp_checking__ghost_var' : forall (Δ:tenv) (Ψ:denv) (X:typvar) (l:taglabel),
-      ( l  `in`  Δ )  ->
+      (  (singleton  l )   [=]  Δ )  ->
      comp_checking Δ Ψ (pre_typ_var_f X) (pre_typ_tag (pre_typ_var_f X) l)
+ | comp_checking__forall : forall (L:vars) (Δ:tenv) (Ψ:denv) (T P:pre_typ) (l:taglabel) (Δ':tenv),
+      ( forall X , X \notin  L  -> comp_checking Δ'  ( X ~ bind_tvar_empty  ++  Ψ )   ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  )  ->
+      ( Δ  [=]   (add  l   Δ' )  )  ->
+     comp_checking Δ Ψ (pre_typ_all T) (pre_typ_tag (pre_typ_all P) l)
  | comp_checking__topghost_l1 : forall (Δ:tenv) (Ψ:denv) (P T:pre_typ),
      comp_checking Δ Ψ P T ->
      comp_checking Δ Ψ (pre_typ_topghost P) T
@@ -412,7 +416,17 @@ Inductive comp_checking : tenv -> denv -> pre_typ -> pre_typ -> Prop :=    (* de
      comp_checking Δ Ψ P (pre_typ_topghost T)
  | comp_checking__topghost_r2 : forall (L:vars) (Δ:tenv) (Ψ:denv) (P T:pre_typ),
       ( forall X , X \notin  L  -> comp_checking Δ  ( X ~ bind_tvar_empty  ++  Ψ )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  (pre_typ_topghost T) )  ->
-     comp_checking Δ Ψ (pre_typ_all P) (pre_typ_topghost T).
+     comp_checking Δ Ψ (pre_typ_all P) (pre_typ_topghost T)
+ | comp_checking__arrow : forall (Δ:tenv) (Ψ:denv) (P Q T R:pre_typ) (Δ1 Δ2:tenv),
+     comp_checking Δ1 Ψ P T ->
+     comp_checking Δ2 Ψ Q R ->
+      (  ( Δ1  `union`  Δ2 )   [=]  Δ )  ->
+     comp_checking Δ Ψ (pre_typ_arrow P Q) (pre_typ_arrow T R)
+ | comp_checking__arrow' : forall (Δ:tenv) (Ψ:denv) (P Q T R:pre_typ) (l:taglabel) (Δ1 Δ2:tenv),
+     comp_checking Δ1 Ψ P T ->
+     comp_checking Δ2 Ψ Q R ->
+      (  (add  l    (  ( Δ1  `union`  Δ2 )  )  )   [=]  Δ )  ->
+     comp_checking Δ Ψ (pre_typ_arrow P Q) (pre_typ_tag (pre_typ_arrow T R) l).
 
 
 (** infrastructure *)

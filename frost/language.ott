@@ -7,16 +7,16 @@ grammar
 
 % maybe we should just unify typ and pattern in syntax, and distinguish them 
 % by predicate : types cannot be constructed using ghost or topghost
-pre_typ, P , Q , A , B , C , T :: pre_typ_ ::=
+pre_typ, P , Q , A , B , C , R , T :: pre_typ_ ::=
   | X                ::   :: var
-  | T1 -> T2         ::   :: arrow
+  | T -> R         ::   :: arrow
   | ∀ X . T          ::   :: all  (+ bind X in T +)
   | *                ::   :: ghost
   | *. T             ::   :: topghost
   | [ T ] l          ::   :: tag
   | ^ T              ::   :: hat
   | ( T )            :: S :: paren {{ coq ([[T]]) }}
-  | { T1 / X } T2    :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X T1]] [[T2]]) }}
+  | { T / X } R    :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X T]] [[R]]) }}
 
 exp, e, f, g :: exp_ ::=
   | x                                   ::   :: var
@@ -29,8 +29,8 @@ exp, e, f, g :: exp_ ::=
   | e : A                               ::   :: anno
   | ⌈ e ⌉                               ::   :: freeze
   | ( e )                               :: S :: paren  {{ coq ([[e]]) }}
-  | { e2 / x } e1                       :: M :: subst1 {{ coq (open_exp_wrt_exp [[x e1]] [[e2]]) }}
-  | { A2 / X } e1                       :: M :: subst2 {{ coq (open_exp_wrt_typ [[X e1]] [[A2]]) }}
+  | { e2 / x } e1                       :: M :: subsT {{ coq (open_exp_wrt_exp [[x e1]] [[e2]]) }}
+  | { A2 / X } e1                       :: M :: subsR {{ coq (open_exp_wrt_typ [[X e1]] [[A2]]) }}
 
 pat_row , p :: pattern_row_ ::=
   | P , p                ::  :: cons
@@ -56,13 +56,17 @@ freevars
 grammar
 
 denv, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
-  | empty    ::   :: dempty {{ coq nil }}
+  | empty     ::   :: dempty {{ coq nil }}
   | dE , x b  ::   :: dcons1 {{ coq ([[x]]~[[b]] ++ [[dE]])  }}
   | dE , X b  ::   :: dcons2 {{ coq ([[X]]~[[b]] ++ [[dE]])  }}
 
 tenv, tE, tF, tG:: '' ::= {{ coq vars }}
-  | empty    ::   :: tempty {{ coq empty }}
-  | tE , l   ::   :: tadd {{ coq ([[tE]] `union` (singleton [[l]]))  }}
+  | empty         ::   :: tempty {{ coq empty }}
+  | tE , l        ::   :: tadd {{ coq (add [[l]] [[tE]])  }}
+  | ( tE )        :: M :: paren2 {{ coq ([[tE]]) }}
+  | sin l         :: M :: sin {{ coq (singleton [[l]]) }}
+  | tE1 \/ tE2    :: M :: union {{ coq ([[tE1]] `union` [[tE2]]) }}
+
 
 formula :: formula_ ::=
   | judgement             ::   :: judgement
@@ -85,10 +89,10 @@ defn
 -------------- :: tvar
 |-ᵗ X
 
-|-ᵗ T1
-|-ᵗ T2
+|-ᵗ T
+|-ᵗ R
 -------------- :: arrow
-|-ᵗ T1 -> T2
+|-ᵗ T -> R
 
 |-ᵗ T
 -------------------- :: all
@@ -104,9 +108,9 @@ defn
 -------------- :: tagged_tvar
 |-ᵗ [ X ] l
 
-|-ᵗ T1 -> T2
+|-ᵗ T -> R
 ------------------ :: tagged_arrow
-|-ᵗ [ T1 -> T2 ] l 
+|-ᵗ [ T -> R ] l 
 
 |-ᵗ ∀ X . T
 -------------------- :: tagged_all
@@ -259,7 +263,7 @@ defns
 comp_checking :: '' ::=
 
 defn
-tE | dE |- T1 ~ T2 :: :: comp_checking :: 'comp_checking__' by
+tE | dE |- T ~ R :: :: comp_checking :: 'comp_checking__' by
 
 
 ------------------- :: ghost_l
@@ -271,9 +275,14 @@ empty | dE |- P ~ *
 ------------------- :: ghost_var
 tE | dE |- X ~ X
 
-l `in` tE
+sin l [=] tE
 ------------------- :: ghost_var'
 tE | dE |- X ~ [ X ] l
+
+tE' | dE , X : □ |- T ~ P
+tE [=] tE' , l
+---------------------------------- :: forall
+tE | dE |- ∀ X . T ~ [ ∀ X . P ] l
 
 tE | dE |- P ~ T
 -------------------------- :: topghost_l1
@@ -299,3 +308,15 @@ tE | dE |- P ~ *. T
 tE | dE , X : □ |- P ~ *. T
 ---------------------------- :: topghost_r2
 tE | dE |- ∀ X . P ~ *. T
+
+tE1 | dE |- P ~ T
+tE2 | dE |- Q ~ R
+tE1 \/ tE2 [=] tE
+------------------------------------ :: arrow
+tE | dE |- P -> Q ~ T -> R
+
+tE1 | dE |- P ~ T
+tE2 | dE |- Q ~ R
+(tE1 \/ tE2) , l [=] tE
+------------------------------------ :: arrow'
+tE | dE |- P -> Q ~ [ T -> R ] l
