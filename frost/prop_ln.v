@@ -65,11 +65,12 @@ Fixpoint close_pre_typ_wrt_pre_typ_rec (n1 : nat) (X1 : typvar) (P1 : pre_typ) {
   match P1 with
     | pre_typ_var_f X2 => if (X1 == X2) then (pre_typ_var_b n1) else (pre_typ_var_f X2)
     | pre_typ_var_b n2 => if (lt_ge_dec n2 n1) then (pre_typ_var_b n2) else (pre_typ_var_b (S n2))
-    | pre_typ_arrow S1 T1 => pre_typ_arrow (close_pre_typ_wrt_pre_typ_rec n1 X1 S1) (close_pre_typ_wrt_pre_typ_rec n1 X1 T1)
-    | pre_typ_all S1 => pre_typ_all (close_pre_typ_wrt_pre_typ_rec (S n1) X1 S1)
+    | pre_typ_arrow T1 T2 => pre_typ_arrow (close_pre_typ_wrt_pre_typ_rec n1 X1 T1) (close_pre_typ_wrt_pre_typ_rec n1 X1 T2)
+    | pre_typ_all T1 => pre_typ_all (close_pre_typ_wrt_pre_typ_rec (S n1) X1 T1)
     | pre_typ_ghost => pre_typ_ghost
-    | pre_typ_topghost S1 => pre_typ_topghost (close_pre_typ_wrt_pre_typ_rec n1 X1 S1)
-    | pre_typ_tag T1 => pre_typ_tag (close_pre_typ_wrt_pre_typ_rec n1 X1 T1)
+    | pre_typ_topghost T1 => pre_typ_topghost (close_pre_typ_wrt_pre_typ_rec n1 X1 T1)
+    | pre_typ_tag T1 l1 => pre_typ_tag (close_pre_typ_wrt_pre_typ_rec n1 X1 T1) l1
+    | pre_typ_hat T1 => pre_typ_hat (close_pre_typ_wrt_pre_typ_rec n1 X1 T1)
   end.
 
 Definition close_pre_typ_wrt_pre_typ X1 P1 := close_pre_typ_wrt_pre_typ_rec 0 X1 P1.
@@ -126,11 +127,12 @@ Fixpoint size_pre_typ (P1 : pre_typ) {struct P1} : nat :=
   match P1 with
     | pre_typ_var_f X1 => 1
     | pre_typ_var_b n1 => 1
-    | pre_typ_arrow S1 T1 => 1 + (size_pre_typ S1) + (size_pre_typ T1)
-    | pre_typ_all S1 => 1 + (size_pre_typ S1)
+    | pre_typ_arrow T1 T2 => 1 + (size_pre_typ T1) + (size_pre_typ T2)
+    | pre_typ_all T1 => 1 + (size_pre_typ T1)
     | pre_typ_ghost => 1
-    | pre_typ_topghost S1 => 1 + (size_pre_typ S1)
-    | pre_typ_tag T1 => 1 + (size_pre_typ T1)
+    | pre_typ_topghost T1 => 1 + (size_pre_typ T1)
+    | pre_typ_tag T1 l1 => 1 + (size_pre_typ T1)
+    | pre_typ_hat T1 => 1 + (size_pre_typ T1)
   end.
 
 Fixpoint size_bind (b1 : bind) {struct b1} : nat :=
@@ -175,21 +177,24 @@ Inductive degree_pre_typ_wrt_pre_typ : nat -> pre_typ -> Prop :=
   | degree_wrt_pre_typ_pre_typ_var_b : forall n1 n2,
     lt n2 n1 ->
     degree_pre_typ_wrt_pre_typ n1 (pre_typ_var_b n2)
-  | degree_wrt_pre_typ_pre_typ_arrow : forall n1 S1 T1,
-    degree_pre_typ_wrt_pre_typ n1 S1 ->
+  | degree_wrt_pre_typ_pre_typ_arrow : forall n1 T1 T2,
     degree_pre_typ_wrt_pre_typ n1 T1 ->
-    degree_pre_typ_wrt_pre_typ n1 (pre_typ_arrow S1 T1)
-  | degree_wrt_pre_typ_pre_typ_all : forall n1 S1,
-    degree_pre_typ_wrt_pre_typ (S n1) S1 ->
-    degree_pre_typ_wrt_pre_typ n1 (pre_typ_all S1)
+    degree_pre_typ_wrt_pre_typ n1 T2 ->
+    degree_pre_typ_wrt_pre_typ n1 (pre_typ_arrow T1 T2)
+  | degree_wrt_pre_typ_pre_typ_all : forall n1 T1,
+    degree_pre_typ_wrt_pre_typ (S n1) T1 ->
+    degree_pre_typ_wrt_pre_typ n1 (pre_typ_all T1)
   | degree_wrt_pre_typ_pre_typ_ghost : forall n1,
     degree_pre_typ_wrt_pre_typ n1 (pre_typ_ghost)
-  | degree_wrt_pre_typ_pre_typ_topghost : forall n1 S1,
-    degree_pre_typ_wrt_pre_typ n1 S1 ->
-    degree_pre_typ_wrt_pre_typ n1 (pre_typ_topghost S1)
-  | degree_wrt_pre_typ_pre_typ_tag : forall n1 T1,
+  | degree_wrt_pre_typ_pre_typ_topghost : forall n1 T1,
     degree_pre_typ_wrt_pre_typ n1 T1 ->
-    degree_pre_typ_wrt_pre_typ n1 (pre_typ_tag T1).
+    degree_pre_typ_wrt_pre_typ n1 (pre_typ_topghost T1)
+  | degree_wrt_pre_typ_pre_typ_tag : forall n1 T1 l1,
+    degree_pre_typ_wrt_pre_typ n1 T1 ->
+    degree_pre_typ_wrt_pre_typ n1 (pre_typ_tag T1 l1)
+  | degree_wrt_pre_typ_pre_typ_hat : forall n1 T1,
+    degree_pre_typ_wrt_pre_typ n1 T1 ->
+    degree_pre_typ_wrt_pre_typ n1 (pre_typ_hat T1).
 
 Scheme degree_pre_typ_wrt_pre_typ_ind' := Induction for degree_pre_typ_wrt_pre_typ Sort Prop.
 
@@ -299,21 +304,24 @@ Combined Scheme degree_pat_row_wrt_pre_typ_mutind from degree_pat_row_wrt_pre_ty
 Inductive lc_set_pre_typ : pre_typ -> Set :=
   | lc_set_pre_typ_var_f : forall X1,
     lc_set_pre_typ (pre_typ_var_f X1)
-  | lc_set_pre_typ_arrow : forall S1 T1,
-    lc_set_pre_typ S1 ->
+  | lc_set_pre_typ_arrow : forall T1 T2,
     lc_set_pre_typ T1 ->
-    lc_set_pre_typ (pre_typ_arrow S1 T1)
-  | lc_set_pre_typ_all : forall S1,
-    (forall X1 : typvar, lc_set_pre_typ (open_pre_typ_wrt_pre_typ S1 (pre_typ_var_f X1))) ->
-    lc_set_pre_typ (pre_typ_all S1)
+    lc_set_pre_typ T2 ->
+    lc_set_pre_typ (pre_typ_arrow T1 T2)
+  | lc_set_pre_typ_all : forall T1,
+    (forall X1 : typvar, lc_set_pre_typ (open_pre_typ_wrt_pre_typ T1 (pre_typ_var_f X1))) ->
+    lc_set_pre_typ (pre_typ_all T1)
   | lc_set_pre_typ_ghost :
     lc_set_pre_typ (pre_typ_ghost)
-  | lc_set_pre_typ_topghost : forall S1,
-    lc_set_pre_typ S1 ->
-    lc_set_pre_typ (pre_typ_topghost S1)
-  | lc_set_pre_typ_tag : forall T1,
+  | lc_set_pre_typ_topghost : forall T1,
     lc_set_pre_typ T1 ->
-    lc_set_pre_typ (pre_typ_tag T1).
+    lc_set_pre_typ (pre_typ_topghost T1)
+  | lc_set_pre_typ_tag : forall T1 l1,
+    lc_set_pre_typ T1 ->
+    lc_set_pre_typ (pre_typ_tag T1 l1)
+  | lc_set_pre_typ_hat : forall T1,
+    lc_set_pre_typ T1 ->
+    lc_set_pre_typ (pre_typ_hat T1).
 Scheme lc_pre_typ_ind' := Induction for lc_pre_typ Sort Prop.
 
 Combined Scheme lc_pre_typ_mutind from lc_pre_typ_ind'.
@@ -3463,9 +3471,9 @@ Ltac tbind_lc_exists_tac :=
           end).
 
 Lemma lc_pre_typ_all_exists :
-forall X1 S1,
-  lc_pre_typ (open_pre_typ_wrt_pre_typ S1 (pre_typ_var_f X1)) ->
-  lc_pre_typ (pre_typ_all S1).
+forall X1 T1,
+  lc_pre_typ (open_pre_typ_wrt_pre_typ T1 (pre_typ_var_f X1)) ->
+  lc_pre_typ (pre_typ_all T1).
 Proof.
 intros; pre_typ_lc_exists_tac; eauto 6 with lngen.
 Qed.
@@ -3602,9 +3610,9 @@ Qed.
 #[export] Hint Resolve lc_body_pat_row_wrt_pre_typ : lngen.
 
 Lemma lc_body_pre_typ_all_1 :
-forall S1,
-  lc_pre_typ (pre_typ_all S1) ->
-  body_pre_typ_wrt_pre_typ S1.
+forall T1,
+  lc_pre_typ (pre_typ_all T1) ->
+  body_pre_typ_wrt_pre_typ T1.
 Proof.
 default_simp.
 Qed.
@@ -7559,10 +7567,10 @@ Qed.
 #[export] Hint Resolve subst_pattern_in_pat_row_close_pat_row_wrt_pre_typ_open_pat_row_wrt_pre_typ : lngen.
 
 Lemma subst_pattern_in_pre_typ_pre_typ_all :
-forall X2 S1 P1 X1,
+forall X2 T1 P1 X1,
   lc_pre_typ P1 ->
-  X2 `notin` ftvar_in_pre_typ P1 `union` ftvar_in_pre_typ S1 `union` singleton X1 ->
-  subst_pattern_in_pre_typ P1 X1 (pre_typ_all S1) = pre_typ_all (close_pre_typ_wrt_pre_typ X2 (subst_pattern_in_pre_typ P1 X1 (open_pre_typ_wrt_pre_typ S1 (pre_typ_var_f X2)))).
+  X2 `notin` ftvar_in_pre_typ P1 `union` ftvar_in_pre_typ T1 `union` singleton X1 ->
+  subst_pattern_in_pre_typ P1 X1 (pre_typ_all T1) = pre_typ_all (close_pre_typ_wrt_pre_typ X2 (subst_pattern_in_pre_typ P1 X1 (open_pre_typ_wrt_pre_typ T1 (pre_typ_var_f X2)))).
 Proof.
 default_simp.
 Qed.

@@ -1,20 +1,22 @@
 metavar typvar, X, Y, Z     ::= {{ repr-locally-nameless }}
 metavar expvar, x, y, z     ::= {{ repr-locally-nameless }}
+metavar taglabel, l         ::= {{ coq var }}
 
 grammar
 
 
 % maybe we should just unify typ and pattern in syntax, and distinguish them 
 % by predicate : types cannot be constructed using ghost or topghost
-pre_typ, P , Q , A , B , C , S , T :: pre_typ_ ::=
-  | X              ::   :: var
-  | S -> T         ::   :: arrow
-  | ∀ X . S        ::   :: all  (+ bind X in S +)
-  | *              ::   :: ghost
-  | *. S           ::   :: topghost
-  | [ T ]          ::   :: tag
-  | ( T )          :: S :: paren {{ coq ([[T]]) }}
-  | { S / X } T    :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X S]] [[T]]) }}
+pre_typ, P , Q , A , B , C , T :: pre_typ_ ::=
+  | X                ::   :: var
+  | T1 -> T2         ::   :: arrow
+  | ∀ X . T          ::   :: all  (+ bind X in T +)
+  | *                ::   :: ghost
+  | *. T             ::   :: topghost
+  | [ T ] l          ::   :: tag
+  | ^ T              ::   :: hat
+  | ( T )            :: S :: paren {{ coq ([[T]]) }}
+  | { T1 / X } T2    :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X T1]] [[T2]]) }}
 
 exp, e, f, g :: exp_ ::=
   | x                                   ::   :: var
@@ -58,9 +60,9 @@ denv, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
   | dE , x b  ::   :: dcons1 {{ coq ([[x]]~[[b]] ++ [[dE]])  }}
   | dE , X b  ::   :: dcons2 {{ coq ([[X]]~[[b]] ++ [[dE]])  }}
 
-tenv, tE, tF, tG:: '' ::= {{ coq list (tbind) }}
-  | empty    ::   :: tempty {{ coq nil }}
-  | tE , tb  ::   :: tcons {{ coq ([ [[tb]] :: [[tE]])  }}
+tenv, tE, tF, tG:: '' ::= {{ coq vars }}
+  | empty    ::   :: tempty {{ coq empty }}
+  | tE , l   ::   :: tadd {{ coq ([[tE]] `union` (singleton [[l]]))  }}
 
 formula :: formula_ ::=
   | judgement             ::   :: judgement
@@ -69,27 +71,73 @@ formula :: formula_ ::=
   | ( X b )  in dE    ::   :: binds2 {{ coq binds ([[X]])  ([[b]]) ([[dE]]) }}
   | x  `notin` dom dE ::   :: fresh1 {{ coq ([[x]]  `notin` dom ([[dE]])) }}
   | X  `notin` dom dE ::   :: fresh2 {{ coq ([[X]]  `notin` dom ([[dE]])) }}
+  | tE1 [=] tE2       ::   :: seteq  {{ coq ([[tE1]] [=] [[tE2]]) }}
+  | l `in` tE         ::   :: in1  {{ coq ([[l]] `in` [[tE]]) }}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
 defns
 is_typ :: '' ::=
 
 defn
-|-ᵗ A :: :: is_typ :: 'is_typ__' by
+|-ᵗ T :: :: is_typ :: 'is_typ__' by
 
 -------------- :: tvar
 |-ᵗ X
 
-|-ᵗ A
-|-ᵗ B
+|-ᵗ T1
+|-ᵗ T2
 -------------- :: arrow
-|-ᵗ A -> B
+|-ᵗ T1 -> T2
 
-|-ᵗ A
+|-ᵗ T
 -------------------- :: all
-|-ᵗ ∀ X . A
+|-ᵗ ∀ X . T
+
+-------------------- :: ghost
+|-ᵗ *
+
+|-ᵗ T
+-------------------- :: topghost
+|-ᵗ *. T
+
+-------------- :: tagged_tvar
+|-ᵗ [ X ] l
+
+|-ᵗ T1 -> T2
+------------------ :: tagged_arrow
+|-ᵗ [ T1 -> T2 ] l 
+
+|-ᵗ ∀ X . T
+-------------------- :: tagged_all
+|-ᵗ [ ∀ X . T ] l 
+
+-------------------- :: tagged_ghost
+|-ᵗ ^ * 
+
+|-ᵗ *. T
+-------------------- :: tagged_topghost
+|-ᵗ ^ (*. T)
+ 
+
+% Source typs syntax, no tags
+defns
+is_styp :: '' ::=
+
+defn
+|-ˢᵗ A :: :: is_styp :: 'is_styp__' by
+
+-------------- :: tvar
+|-ˢᵗ X
+
+|-ˢᵗ A
+|-ˢᵗ B
+-------------- :: arrow
+|-ˢᵗ A -> B
+
+|-ˢᵗ A
+-------------------- :: all
+|-ˢᵗ ∀ X . A
 
 
 defns
@@ -211,7 +259,7 @@ defns
 comp_checking :: '' ::=
 
 defn
-tE | dE |- S ~ T :: :: comp_checking :: 'comp_checking__' by
+tE | dE |- T1 ~ T2 :: :: comp_checking :: 'comp_checking__' by
 
 
 ------------------- :: ghost_l
@@ -220,20 +268,32 @@ empty | dE |- * ~ T
 ------------------- :: ghost_r
 empty | dE |- P ~ *
 
+------------------- :: ghost_var
+tE | dE |- X ~ X
+
+l `in` tE
+------------------- :: ghost_var'
+tE | dE |- X ~ [ X ] l
+
 tE | dE |- P ~ T
 -------------------------- :: topghost_l1
 tE | dE |- *. P ~ T
 
+% ForallGhostL2 is split into topghost_l2 and topghost_l2'
 tE | dE , X : □ |- P ~ T
 ---------------------------- :: topghost_l2
 tE | dE |- *. P ~ ∀ X . T
 
 tE | dE |- *. P ~ T
----------------------------- :: topghost_l3
-tE | dE |- *. P ~ [ *. T ]
+------------------------------- :: topghost_l2'
+tE | dE |- *. P ~ [ *. T ] l
+
+tE | dE |- *. P ~ T
+------------------------------- :: topghost_l3
+tE | dE |- *. P ~ ^ *. T
 
 tE | dE |- P ~ T
----------------------------- :: topghost_r1
+------------------------------ :: topghost_r1
 tE | dE |- P ~ *. T
 
 tE | dE , X : □ |- P ~ *. T
