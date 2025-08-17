@@ -14,7 +14,7 @@ pre_typ, P , Q , A , B , C , S , T :: pre_typ_ ::=
   | *. S           ::   :: topghost
   | [ T ]          ::   :: tag
   | ( T )          :: S :: paren {{ coq ([[T]]) }}
-  | { S / X } T  :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X S]] [[T]]) }}
+  | { S / X } T    :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X S]] [[T]]) }}
 
 exp, e, f, g :: exp_ ::=
   | x                                   ::   :: var
@@ -38,6 +38,10 @@ bind, b :: bind_ ::=
   | : □  ::   :: tvar_empty
   | : A  ::   :: pattern
 
+tbind, tb :: tbind_ ::=
+  | : ∘  ::   :: tag
+  | : ∙  ::   :: empty
+
 substitutions
   single P X  :: subst_pattern_in
   single e x  :: subst_exp_in
@@ -53,6 +57,10 @@ denv, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
   | empty    ::   :: dempty {{ coq nil }}
   | dE , x b  ::   :: dcons1 {{ coq ([[x]]~[[b]] ++ [[dE]])  }}
   | dE , X b  ::   :: dcons2 {{ coq ([[X]]~[[b]] ++ [[dE]])  }}
+
+tenv, tE, tF, tG:: '' ::= {{ coq list (tbind) }}
+  | empty    ::   :: tempty {{ coq nil }}
+  | tE , tb  ::   :: tcons {{ coq ([ [[tb]] :: [[tE]])  }}
 
 formula :: formula_ ::=
   | judgement             ::   :: judgement
@@ -198,3 +206,36 @@ defn
 
 % ----------------- :: cons
 % P , p [▹] P ---> p 
+
+defns
+comp_checking :: '' ::=
+
+defn
+tE | dE |- S ~ T :: :: comp_checking :: 'comp_checking__' by
+
+
+------------------- :: ghost_l
+empty | dE |- * ~ T
+
+------------------- :: ghost_r
+empty | dE |- P ~ *
+
+tE | dE |- P ~ T
+-------------------------- :: topghost_l1
+tE | dE |- *. P ~ T
+
+tE | dE , X : □ |- P ~ T
+---------------------------- :: topghost_l2
+tE | dE |- *. P ~ ∀ X . T
+
+tE | dE |- *. P ~ T
+---------------------------- :: topghost_l3
+tE | dE |- *. P ~ [ *. T ]
+
+tE | dE |- P ~ T
+---------------------------- :: topghost_r1
+tE | dE |- P ~ *. T
+
+tE | dE , X : □ |- P ~ *. T
+---------------------------- :: topghost_r2
+tE | dE |- ∀ X . P ~ *. T

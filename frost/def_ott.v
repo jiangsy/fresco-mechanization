@@ -19,6 +19,10 @@ Inductive bind : Set :=
  | bind_tvar_empty : bind
  | bind_pattern (A:pre_typ).
 
+Inductive tbind : Set := 
+ | tbind_tag : tbind
+ | tbind_empty : tbind.
+
 Inductive pat_row : Set := 
  | pattern_row_cons (P:pre_typ) (p:pat_row)
  | pattern_row_one (P:pre_typ).
@@ -34,6 +38,8 @@ Inductive exp : Set :=
  | exp_freeze (e:exp).
 
 Definition denv : Set := list (atom*bind).
+
+Definition tenv : Set := list (tbind).
 
 (* EXPERIMENTAL *)
 (** auxiliary functions on the new list types *)
@@ -338,8 +344,32 @@ Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
  | is_exp__freeze : forall (x:expvar),
      is_exp (exp_freeze (exp_var_f x)).
 
+(* defns comp_checking *)
+Inductive comp_checking : tenv -> denv -> pre_typ -> pre_typ -> Prop :=    (* defn comp_checking *)
+ | comp_checking__ghost_l : forall (Ψ:denv) (T:pre_typ),
+     lc_pre_typ T ->
+     comp_checking  nil  Ψ pre_typ_ghost T
+ | comp_checking__ghost_r : forall (Ψ:denv) (P:pre_typ),
+     lc_pre_typ P ->
+     comp_checking  nil  Ψ P pre_typ_ghost
+ | comp_checking__topghost_l1 : forall (tE:tenv) (Ψ:denv) (P T:pre_typ),
+     comp_checking tE Ψ P T ->
+     comp_checking tE Ψ (pre_typ_topghost P) T
+ | comp_checking__topghost_l2 : forall (L:vars) (tE:tenv) (Ψ:denv) (P T:pre_typ),
+      ( forall X , X \notin  L  -> comp_checking tE  ( X ~ bind_tvar_empty  ++  Ψ )  P  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  )  ->
+     comp_checking tE Ψ (pre_typ_topghost P) (pre_typ_all T)
+ | comp_checking__topghost_l3 : forall (tE:tenv) (Ψ:denv) (P T:pre_typ),
+     comp_checking tE Ψ (pre_typ_topghost P) T ->
+     comp_checking tE Ψ (pre_typ_topghost P) (pre_typ_tag (pre_typ_topghost T))
+ | comp_checking__topghost_r1 : forall (tE:tenv) (Ψ:denv) (P T:pre_typ),
+     comp_checking tE Ψ P T ->
+     comp_checking tE Ψ P (pre_typ_topghost T)
+ | comp_checking__topghost_r2 : forall (L:vars) (tE:tenv) (Ψ:denv) (P T:pre_typ),
+      ( forall X , X \notin  L  -> comp_checking tE  ( X ~ bind_tvar_empty  ++  Ψ )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  (pre_typ_topghost T) )  ->
+     comp_checking tE Ψ (pre_typ_all P) (pre_typ_topghost T).
+
 
 (** infrastructure *)
-#[export] Hint Constructors is_typ is_pattern mono_typ is_exp lc_pre_typ lc_bind lc_pat_row lc_exp : core.
+#[export] Hint Constructors is_typ is_pattern mono_typ is_exp comp_checking lc_pre_typ lc_bind lc_pat_row lc_exp : core.
 
 

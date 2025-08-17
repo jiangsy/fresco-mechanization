@@ -49,6 +49,14 @@ Scheme pat_row_rec' := Induction for pat_row Sort Set.
 
 Combined Scheme pat_row_mutrec from pat_row_rec'.
 
+Scheme tbind_ind' := Induction for tbind Sort Prop.
+
+Combined Scheme tbind_mutind from tbind_ind'.
+
+Scheme tbind_rec' := Induction for tbind Sort Set.
+
+Combined Scheme tbind_mutrec from tbind_rec'.
+
 
 (* *********************************************************************** *)
 (** * Close *)
@@ -147,6 +155,12 @@ Fixpoint size_pat_row (p1 : pat_row) {struct p1} : nat :=
   match p1 with
     | pattern_row_cons P1 p2 => 1 + (size_pre_typ P1) + (size_pat_row p2)
     | pattern_row_one P1 => 1 + (size_pre_typ P1)
+  end.
+
+Fixpoint size_tbind (tb1 : tbind) {struct tb1} : nat :=
+  match tb1 with
+    | tbind_tag => 1
+    | tbind_empty => 1
   end.
 
 
@@ -526,6 +540,25 @@ pose proof size_pat_row_min_mutual as H; intuition eauto.
 Qed.
 
 #[export] Hint Resolve size_pat_row_min : lngen.
+
+(* begin hide *)
+
+Lemma size_tbind_min_mutual :
+(forall tb1, 1 <= size_tbind tb1).
+Proof.
+apply_mutual_ind tbind_mutind;
+default_simp.
+Qed.
+
+(* end hide *)
+
+Lemma size_tbind_min :
+forall tb1, 1 <= size_tbind tb1.
+Proof.
+pose proof size_tbind_min_mutual as H; intuition eauto.
+Qed.
+
+#[export] Hint Resolve size_tbind_min : lngen.
 
 (* begin hide *)
 
@@ -3421,6 +3454,12 @@ Ltac pat_row_lc_exists_tac :=
   repeat (match goal with
             | H : _ |- _ =>
               let J1 := fresh in pose proof H as J1; apply degree_pat_row_wrt_pre_typ_of_lc_pat_row in J1; clear H
+          end).
+
+Ltac tbind_lc_exists_tac :=
+  repeat (match goal with
+            | H : _ |- _ =>
+              fail 1
           end).
 
 Lemma lc_pre_typ_all_exists :
