@@ -6,30 +6,31 @@ Require Import List.
 Definition typvar : Set := var.
 Definition expvar : Set := var.
 
-Inductive pattern : Set := 
- | pattern_var_b (_:nat)
- | pattern_var_f (X:typvar)
- | pattern_arrow (P:pattern) (Q:pattern)
- | pattern_all (P:pattern)
- | pattern_ghost : pattern
- | pattern_topghost (P:pattern).
+Inductive pre_typ : Set := 
+ | pre_typ_var_b (_:nat)
+ | pre_typ_var_f (X:typvar)
+ | pre_typ_arrow (S:pre_typ) (T:pre_typ)
+ | pre_typ_all (S:pre_typ)
+ | pre_typ_ghost : pre_typ
+ | pre_typ_topghost (S:pre_typ)
+ | pre_typ_tag (T:pre_typ).
 
 Inductive bind : Set := 
  | bind_tvar_empty : bind
- | bind_pattern (A:pattern).
+ | bind_pattern (A:pre_typ).
 
 Inductive pat_row : Set := 
- | pattern_row_cons (P:pattern) (p:pat_row)
- | pattern_row_one (P:pattern).
+ | pattern_row_cons (P:pre_typ) (p:pat_row)
+ | pattern_row_one (P:pre_typ).
 
 Inductive exp : Set := 
  | exp_var_b (_:nat)
  | exp_var_f (x:expvar)
  | exp_abs (e:exp)
- | exp_abs_anno (A:pattern) (e:exp)
+ | exp_abs_anno (A:pre_typ) (e:exp)
  | exp_app (e1:exp) (e2:exp)
  | exp_let (e1:exp) (e2:exp)
- | exp_anno (e:exp) (A:pattern)
+ | exp_anno (e:exp) (A:pre_typ)
  | exp_freeze (e:exp).
 
 Definition denv : Set := list (atom*bind).
@@ -40,31 +41,32 @@ Definition denv : Set := list (atom*bind).
 (** subrules *)
 (** arities *)
 (** opening up abstractions *)
-Fixpoint open_pattern_wrt_pattern_rec (k:nat) (P_5:pattern) (P__6:pattern) {struct P__6}: pattern :=
-  match P__6 with
-  | (pattern_var_b nat) => 
+Fixpoint open_pre_typ_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (P_6:pre_typ) {struct P_6}: pre_typ :=
+  match P_6 with
+  | (pre_typ_var_b nat) => 
       match lt_eq_lt_dec nat k with
-        | inleft (left _) => pattern_var_b nat
-        | inleft (right _) => P_5
-        | inright _ => pattern_var_b (nat - 1)
+        | inleft (left _) => pre_typ_var_b nat
+        | inleft (right _) => P5
+        | inright _ => pre_typ_var_b (nat - 1)
       end
-  | (pattern_var_f X) => pattern_var_f X
-  | (pattern_arrow P Q) => pattern_arrow (open_pattern_wrt_pattern_rec k P_5 P) (open_pattern_wrt_pattern_rec k P_5 Q)
-  | (pattern_all P) => pattern_all (open_pattern_wrt_pattern_rec (S k) P_5 P)
-  | pattern_ghost => pattern_ghost 
-  | (pattern_topghost P) => pattern_topghost (open_pattern_wrt_pattern_rec k P_5 P)
+  | (pre_typ_var_f X) => pre_typ_var_f X
+  | (pre_typ_arrow S T) => pre_typ_arrow (open_pre_typ_wrt_pre_typ_rec k P5 S) (open_pre_typ_wrt_pre_typ_rec k P5 T)
+  | (pre_typ_all S) => pre_typ_all (open_pre_typ_wrt_pre_typ_rec (S k) P5 S)
+  | pre_typ_ghost => pre_typ_ghost 
+  | (pre_typ_topghost S) => pre_typ_topghost (open_pre_typ_wrt_pre_typ_rec k P5 S)
+  | (pre_typ_tag T) => pre_typ_tag (open_pre_typ_wrt_pre_typ_rec k P5 T)
 end.
 
-Definition open_bind_wrt_pattern_rec (k:nat) (P5:pattern) (b5:bind) : bind :=
+Definition open_bind_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (b5:bind) : bind :=
   match b5 with
   | bind_tvar_empty => bind_tvar_empty 
-  | (bind_pattern A) => bind_pattern (open_pattern_wrt_pattern_rec k P5 A)
+  | (bind_pattern A) => bind_pattern (open_pre_typ_wrt_pre_typ_rec k P5 A)
 end.
 
-Fixpoint open_pat_row_wrt_pattern_rec (k:nat) (P5:pattern) (p5:pat_row) {struct p5}: pat_row :=
+Fixpoint open_pat_row_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (p5:pat_row) {struct p5}: pat_row :=
   match p5 with
-  | (pattern_row_cons P p) => pattern_row_cons (open_pattern_wrt_pattern_rec k P5 P) (open_pat_row_wrt_pattern_rec k P5 p)
-  | (pattern_row_one P) => pattern_row_one (open_pattern_wrt_pattern_rec k P5 P)
+  | (pattern_row_cons P p) => pattern_row_cons (open_pre_typ_wrt_pre_typ_rec k P5 P) (open_pat_row_wrt_pre_typ_rec k P5 p)
+  | (pattern_row_one P) => pattern_row_one (open_pre_typ_wrt_pre_typ_rec k P5 P)
 end.
 
 Fixpoint open_exp_wrt_exp_rec (k:nat) (e_5:exp) (e__6:exp) {struct e__6}: exp :=
@@ -84,64 +86,67 @@ Fixpoint open_exp_wrt_exp_rec (k:nat) (e_5:exp) (e__6:exp) {struct e__6}: exp :=
   | (exp_freeze e) => exp_freeze (open_exp_wrt_exp_rec k e_5 e)
 end.
 
-Fixpoint open_exp_wrt_pattern_rec (k:nat) (P5:pattern) (e_5:exp) {struct e_5}: exp :=
+Fixpoint open_exp_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (e_5:exp) {struct e_5}: exp :=
   match e_5 with
   | (exp_var_b nat) => exp_var_b nat
   | (exp_var_f x) => exp_var_f x
-  | (exp_abs e) => exp_abs (open_exp_wrt_pattern_rec k P5 e)
-  | (exp_abs_anno A e) => exp_abs_anno (open_pattern_wrt_pattern_rec k P5 A) (open_exp_wrt_pattern_rec k P5 e)
-  | (exp_app e1 e2) => exp_app (open_exp_wrt_pattern_rec k P5 e1) (open_exp_wrt_pattern_rec k P5 e2)
-  | (exp_let e1 e2) => exp_let (open_exp_wrt_pattern_rec k P5 e1) (open_exp_wrt_pattern_rec k P5 e2)
-  | (exp_anno e A) => exp_anno (open_exp_wrt_pattern_rec k P5 e) (open_pattern_wrt_pattern_rec k P5 A)
-  | (exp_freeze e) => exp_freeze (open_exp_wrt_pattern_rec k P5 e)
+  | (exp_abs e) => exp_abs (open_exp_wrt_pre_typ_rec k P5 e)
+  | (exp_abs_anno A e) => exp_abs_anno (open_pre_typ_wrt_pre_typ_rec k P5 A) (open_exp_wrt_pre_typ_rec k P5 e)
+  | (exp_app e1 e2) => exp_app (open_exp_wrt_pre_typ_rec k P5 e1) (open_exp_wrt_pre_typ_rec k P5 e2)
+  | (exp_let e1 e2) => exp_let (open_exp_wrt_pre_typ_rec k P5 e1) (open_exp_wrt_pre_typ_rec k P5 e2)
+  | (exp_anno e A) => exp_anno (open_exp_wrt_pre_typ_rec k P5 e) (open_pre_typ_wrt_pre_typ_rec k P5 A)
+  | (exp_freeze e) => exp_freeze (open_exp_wrt_pre_typ_rec k P5 e)
 end.
 
-Definition open_bind_wrt_pattern P5 b5 := open_bind_wrt_pattern_rec 0 b5 P5.
+Definition open_bind_wrt_pre_typ P5 b5 := open_bind_wrt_pre_typ_rec 0 b5 P5.
 
-Definition open_pat_row_wrt_pattern P5 p5 := open_pat_row_wrt_pattern_rec 0 p5 P5.
+Definition open_pat_row_wrt_pre_typ P5 p5 := open_pat_row_wrt_pre_typ_rec 0 p5 P5.
 
 Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
 
-Definition open_exp_wrt_pattern P5 e_5 := open_exp_wrt_pattern_rec 0 e_5 P5.
+Definition open_exp_wrt_pre_typ P5 e_5 := open_exp_wrt_pre_typ_rec 0 e_5 P5.
 
-Definition open_pattern_wrt_pattern P_5 P__6 := open_pattern_wrt_pattern_rec 0 P__6 P_5.
+Definition open_pre_typ_wrt_pre_typ P5 P_6 := open_pre_typ_wrt_pre_typ_rec 0 P_6 P5.
 
 (** terms are locally-closed pre-terms *)
 (* definitions *)
 
-(* defns LC_pattern *)
-Inductive lc_pattern : pattern -> Prop :=    (* defn lc_pattern *)
- | lc_pattern_var_f : forall (X:typvar),
-     (lc_pattern (pattern_var_f X))
- | lc_pattern_arrow : forall (P Q:pattern),
-     (lc_pattern P) ->
-     (lc_pattern Q) ->
-     (lc_pattern (pattern_arrow P Q))
- | lc_pattern_all : forall (P:pattern),
-      ( forall X , lc_pattern  ( open_pattern_wrt_pattern P (pattern_var_f X) )  )  ->
-     (lc_pattern (pattern_all P))
- | lc_pattern_ghost : 
-     (lc_pattern pattern_ghost)
- | lc_pattern_topghost : forall (P:pattern),
-     (lc_pattern P) ->
-     (lc_pattern (pattern_topghost P)).
+(* defns LC_pre_typ *)
+Inductive lc_pre_typ : pre_typ -> Prop :=    (* defn lc_pre_typ *)
+ | lc_pre_typ_var_f : forall (X:typvar),
+     (lc_pre_typ (pre_typ_var_f X))
+ | lc_pre_typ_arrow : forall (S T:pre_typ),
+     (lc_pre_typ S) ->
+     (lc_pre_typ T) ->
+     (lc_pre_typ (pre_typ_arrow S T))
+ | lc_pre_typ_all : forall (S:pre_typ),
+      ( forall X , lc_pre_typ  ( open_pre_typ_wrt_pre_typ S (pre_typ_var_f X) )  )  ->
+     (lc_pre_typ (pre_typ_all S))
+ | lc_pre_typ_ghost : 
+     (lc_pre_typ pre_typ_ghost)
+ | lc_pre_typ_topghost : forall (S:pre_typ),
+     (lc_pre_typ S) ->
+     (lc_pre_typ (pre_typ_topghost S))
+ | lc_pre_typ_tag : forall (T:pre_typ),
+     (lc_pre_typ T) ->
+     (lc_pre_typ (pre_typ_tag T)).
 
 (* defns LC_bind *)
 Inductive lc_bind : bind -> Prop :=    (* defn lc_bind *)
  | lc_bind_tvar_empty : 
      (lc_bind bind_tvar_empty)
- | lc_bind_pattern : forall (A:pattern),
-     (lc_pattern A) ->
+ | lc_bind_pattern : forall (A:pre_typ),
+     (lc_pre_typ A) ->
      (lc_bind (bind_pattern A)).
 
 (* defns LC_pat_row *)
 Inductive lc_pat_row : pat_row -> Prop :=    (* defn lc_pat_row *)
- | lc_pattern_row_cons : forall (P:pattern) (p:pat_row),
-     (lc_pattern P) ->
+ | lc_pattern_row_cons : forall (P:pre_typ) (p:pat_row),
+     (lc_pre_typ P) ->
      (lc_pat_row p) ->
      (lc_pat_row (pattern_row_cons P p))
- | lc_pattern_row_one : forall (P:pattern),
-     (lc_pattern P) ->
+ | lc_pattern_row_one : forall (P:pre_typ),
+     (lc_pre_typ P) ->
      (lc_pat_row (pattern_row_one P)).
 
 (* defns LC_exp *)
@@ -151,8 +156,8 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
  | lc_exp_abs : forall (e:exp),
       ( forall x , lc_exp  ( open_exp_wrt_exp e (exp_var_f x) )  )  ->
      (lc_exp (exp_abs e))
- | lc_exp_abs_anno : forall (A:pattern) (e:exp),
-     (lc_pattern A) ->
+ | lc_exp_abs_anno : forall (A:pre_typ) (e:exp),
+     (lc_pre_typ A) ->
       ( forall x , lc_exp  ( open_exp_wrt_exp e (exp_var_f x) )  )  ->
      (lc_exp (exp_abs_anno A e))
  | lc_exp_app : forall (e1 e2:exp),
@@ -163,22 +168,23 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
      (lc_exp e1) ->
       ( forall x , lc_exp  ( open_exp_wrt_exp e2 (exp_var_f x) )  )  ->
      (lc_exp (exp_let e1 e2))
- | lc_exp_anno : forall (e:exp) (A:pattern),
+ | lc_exp_anno : forall (e:exp) (A:pre_typ),
      (lc_exp e) ->
-     (lc_pattern A) ->
+     (lc_pre_typ A) ->
      (lc_exp (exp_anno e A))
  | lc_exp_freeze : forall (e:exp),
      (lc_exp e) ->
      (lc_exp (exp_freeze e)).
 (** free variables *)
-Fixpoint ftvar_in_pattern (P_5:pattern) : vars :=
-  match P_5 with
-  | (pattern_var_b nat) => {}
-  | (pattern_var_f X) => {{X}}
-  | (pattern_arrow P Q) => (ftvar_in_pattern P) \u (ftvar_in_pattern Q)
-  | (pattern_all P) => (ftvar_in_pattern P)
-  | pattern_ghost => {}
-  | (pattern_topghost P) => (ftvar_in_pattern P)
+Fixpoint ftvar_in_pre_typ (P5:pre_typ) : vars :=
+  match P5 with
+  | (pre_typ_var_b nat) => {}
+  | (pre_typ_var_f X) => {{X}}
+  | (pre_typ_arrow S T) => (ftvar_in_pre_typ S) \u (ftvar_in_pre_typ T)
+  | (pre_typ_all S) => (ftvar_in_pre_typ S)
+  | pre_typ_ghost => {}
+  | (pre_typ_topghost S) => (ftvar_in_pre_typ S)
+  | (pre_typ_tag T) => (ftvar_in_pre_typ T)
 end.
 
 Fixpoint fvar_in_exp (e_5:exp) : vars :=
@@ -196,13 +202,13 @@ end.
 Definition ftvar_in_bind (b5:bind) : vars :=
   match b5 with
   | bind_tvar_empty => {}
-  | (bind_pattern A) => (ftvar_in_pattern A)
+  | (bind_pattern A) => (ftvar_in_pre_typ A)
 end.
 
 Fixpoint ftvar_in_pat_row (p5:pat_row) : vars :=
   match p5 with
-  | (pattern_row_cons P p) => (ftvar_in_pattern P) \u (ftvar_in_pat_row p)
-  | (pattern_row_one P) => (ftvar_in_pattern P)
+  | (pattern_row_cons P p) => (ftvar_in_pre_typ P) \u (ftvar_in_pat_row p)
+  | (pattern_row_one P) => (ftvar_in_pre_typ P)
 end.
 
 Fixpoint ftvar_in_exp (e_5:exp) : vars :=
@@ -210,22 +216,23 @@ Fixpoint ftvar_in_exp (e_5:exp) : vars :=
   | (exp_var_b nat) => {}
   | (exp_var_f x) => {}
   | (exp_abs e) => (ftvar_in_exp e)
-  | (exp_abs_anno A e) => (ftvar_in_pattern A) \u (ftvar_in_exp e)
+  | (exp_abs_anno A e) => (ftvar_in_pre_typ A) \u (ftvar_in_exp e)
   | (exp_app e1 e2) => (ftvar_in_exp e1) \u (ftvar_in_exp e2)
   | (exp_let e1 e2) => (ftvar_in_exp e1) \u (ftvar_in_exp e2)
-  | (exp_anno e A) => (ftvar_in_exp e) \u (ftvar_in_pattern A)
+  | (exp_anno e A) => (ftvar_in_exp e) \u (ftvar_in_pre_typ A)
   | (exp_freeze e) => (ftvar_in_exp e)
 end.
 
 (** substitutions *)
-Fixpoint subst_pattern_in_pattern (P_5:pattern) (X5:typvar) (P__6:pattern) {struct P__6} : pattern :=
-  match P__6 with
-  | (pattern_var_b nat) => pattern_var_b nat
-  | (pattern_var_f X) => (if eq_var X X5 then P_5 else (pattern_var_f X))
-  | (pattern_arrow P Q) => pattern_arrow (subst_pattern_in_pattern P_5 X5 P) (subst_pattern_in_pattern P_5 X5 Q)
-  | (pattern_all P) => pattern_all (subst_pattern_in_pattern P_5 X5 P)
-  | pattern_ghost => pattern_ghost 
-  | (pattern_topghost P) => pattern_topghost (subst_pattern_in_pattern P_5 X5 P)
+Fixpoint subst_pattern_in_pre_typ (P5:pre_typ) (X5:typvar) (P_6:pre_typ) {struct P_6} : pre_typ :=
+  match P_6 with
+  | (pre_typ_var_b nat) => pre_typ_var_b nat
+  | (pre_typ_var_f X) => (if eq_var X X5 then P5 else (pre_typ_var_f X))
+  | (pre_typ_arrow S T) => pre_typ_arrow (subst_pattern_in_pre_typ P5 X5 S) (subst_pattern_in_pre_typ P5 X5 T)
+  | (pre_typ_all S) => pre_typ_all (subst_pattern_in_pre_typ P5 X5 S)
+  | pre_typ_ghost => pre_typ_ghost 
+  | (pre_typ_topghost S) => pre_typ_topghost (subst_pattern_in_pre_typ P5 X5 S)
+  | (pre_typ_tag T) => pre_typ_tag (subst_pattern_in_pre_typ P5 X5 T)
 end.
 
 Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :=
@@ -240,27 +247,27 @@ Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :
   | (exp_freeze e) => exp_freeze (subst_exp_in_exp e_5 x5 e)
 end.
 
-Definition subst_pattern_in_bind (P5:pattern) (X5:typvar) (b5:bind) : bind :=
+Definition subst_pattern_in_bind (P5:pre_typ) (X5:typvar) (b5:bind) : bind :=
   match b5 with
   | bind_tvar_empty => bind_tvar_empty 
-  | (bind_pattern A) => bind_pattern (subst_pattern_in_pattern P5 X5 A)
+  | (bind_pattern A) => bind_pattern (subst_pattern_in_pre_typ P5 X5 A)
 end.
 
-Fixpoint subst_pattern_in_pat_row (P5:pattern) (X5:typvar) (p5:pat_row) {struct p5} : pat_row :=
+Fixpoint subst_pattern_in_pat_row (P5:pre_typ) (X5:typvar) (p5:pat_row) {struct p5} : pat_row :=
   match p5 with
-  | (pattern_row_cons P p) => pattern_row_cons (subst_pattern_in_pattern P5 X5 P) (subst_pattern_in_pat_row P5 X5 p)
-  | (pattern_row_one P) => pattern_row_one (subst_pattern_in_pattern P5 X5 P)
+  | (pattern_row_cons P p) => pattern_row_cons (subst_pattern_in_pre_typ P5 X5 P) (subst_pattern_in_pat_row P5 X5 p)
+  | (pattern_row_one P) => pattern_row_one (subst_pattern_in_pre_typ P5 X5 P)
 end.
 
-Fixpoint subst_pattern_in_exp (P5:pattern) (X5:typvar) (e_5:exp) {struct e_5} : exp :=
+Fixpoint subst_pattern_in_exp (P5:pre_typ) (X5:typvar) (e_5:exp) {struct e_5} : exp :=
   match e_5 with
   | (exp_var_b nat) => exp_var_b nat
   | (exp_var_f x) => exp_var_f x
   | (exp_abs e) => exp_abs (subst_pattern_in_exp P5 X5 e)
-  | (exp_abs_anno A e) => exp_abs_anno (subst_pattern_in_pattern P5 X5 A) (subst_pattern_in_exp P5 X5 e)
+  | (exp_abs_anno A e) => exp_abs_anno (subst_pattern_in_pre_typ P5 X5 A) (subst_pattern_in_exp P5 X5 e)
   | (exp_app e1 e2) => exp_app (subst_pattern_in_exp P5 X5 e1) (subst_pattern_in_exp P5 X5 e2)
   | (exp_let e1 e2) => exp_let (subst_pattern_in_exp P5 X5 e1) (subst_pattern_in_exp P5 X5 e2)
-  | (exp_anno e A) => exp_anno (subst_pattern_in_exp P5 X5 e) (subst_pattern_in_pattern P5 X5 A)
+  | (exp_anno e A) => exp_anno (subst_pattern_in_exp P5 X5 e) (subst_pattern_in_pre_typ P5 X5 A)
   | (exp_freeze e) => exp_freeze (subst_pattern_in_exp P5 X5 e)
 end.
 
@@ -268,25 +275,42 @@ end.
 (* definitions *)
 
 (* defns is_typ *)
-Inductive is_typ : pattern -> Prop :=    (* defn is_typ *)
+Inductive is_typ : pre_typ -> Prop :=    (* defn is_typ *)
  | is_typ__tvar : forall (X:typvar),
-     is_typ (pattern_var_f X)
- | is_typ__arrow : forall (A1 A2:pattern),
-     is_typ A1 ->
-     is_typ A2 ->
-     is_typ (pattern_arrow A1 A2)
- | is_typ__all : forall (L:vars) (A:pattern),
-      ( forall X , X \notin  L  -> is_typ  ( open_pattern_wrt_pattern A (pattern_var_f X) )  )  ->
-     is_typ (pattern_all A).
+     is_typ (pre_typ_var_f X)
+ | is_typ__arrow : forall (A B:pre_typ),
+     is_typ A ->
+     is_typ B ->
+     is_typ (pre_typ_arrow A B)
+ | is_typ__all : forall (L:vars) (A:pre_typ),
+      ( forall X , X \notin  L  -> is_typ  ( open_pre_typ_wrt_pre_typ A (pre_typ_var_f X) )  )  ->
+     is_typ (pre_typ_all A).
+
+(* defns is_pattern *)
+Inductive is_pattern : pre_typ -> Prop :=    (* defn is_pattern *)
+ | is_pattern__tvar : forall (X:typvar),
+     is_pattern (pre_typ_var_f X)
+ | is_pattern__arrow : forall (P Q:pre_typ),
+     is_pattern P ->
+     is_pattern Q ->
+     is_pattern (pre_typ_arrow P Q)
+ | is_pattern__all : forall (L:vars) (P:pre_typ),
+      ( forall X , X \notin  L  -> is_pattern  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  )  ->
+     is_pattern (pre_typ_all P)
+ | is_pattern__ghost : 
+     is_pattern pre_typ_ghost
+ | is_pattern__topghost : forall (P:pre_typ),
+     is_pattern P ->
+     is_pattern (pre_typ_topghost P).
 
 (* defns mono_typ *)
-Inductive mono_typ : pattern -> Prop :=    (* defn mono_typ *)
+Inductive mono_typ : pre_typ -> Prop :=    (* defn mono_typ *)
  | mono_typ__tvar : forall (X:typvar),
-     mono_typ (pattern_var_f X)
- | mono_typ__arrow : forall (A1 A2:pattern),
+     mono_typ (pre_typ_var_f X)
+ | mono_typ__arrow : forall (A1 A2:pre_typ),
      mono_typ A1 ->
      mono_typ A2 ->
-     mono_typ (pattern_arrow A1 A2).
+     mono_typ (pre_typ_arrow A1 A2).
 
 (* defns is_exp *)
 Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
@@ -295,7 +319,7 @@ Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
  | is_exp__abs : forall (L:vars) (e:exp),
       ( forall x , x \notin  L  -> is_exp  ( open_exp_wrt_exp e (exp_var_f x) )  )  ->
      is_exp (exp_abs e)
- | is_exp__abs_anno : forall (L:vars) (A:pattern) (e:exp),
+ | is_exp__abs_anno : forall (L:vars) (A:pre_typ) (e:exp),
      is_typ A ->
       ( forall x , x \notin  L  -> is_exp  ( open_exp_wrt_exp e (exp_var_f x) )  )  ->
      is_exp (exp_abs_anno A e)
@@ -307,7 +331,7 @@ Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
      is_exp e1 ->
       ( forall x , x \notin  L  -> is_exp  ( open_exp_wrt_exp e2 (exp_var_f x) )  )  ->
      is_exp (exp_let e1 e2)
- | is_exp__anno : forall (e:exp) (A:pattern),
+ | is_exp__anno : forall (e:exp) (A:pre_typ),
      is_typ A ->
      is_exp e ->
      is_exp (exp_anno e A)
@@ -316,6 +340,6 @@ Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
 
 
 (** infrastructure *)
-#[export] Hint Constructors is_typ mono_typ is_exp lc_pattern lc_bind lc_pat_row lc_exp : core.
+#[export] Hint Constructors is_typ is_pattern mono_typ is_exp lc_pre_typ lc_bind lc_pat_row lc_exp : core.
 
 

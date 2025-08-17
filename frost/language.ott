@@ -6,14 +6,15 @@ grammar
 
 % maybe we should just unify typ and pattern in syntax, and distinguish them 
 % by predicate : types cannot be constructed using ghost or topghost
-pattern, P , Q , A , B , C :: pattern_ ::=
+pre_typ, P , Q , A , B , C , S , T :: pre_typ_ ::=
   | X              ::   :: var
-  | P -> Q         ::   :: arrow
-  | ∀ X . P        ::   :: all  (+ bind X in P +)
+  | S -> T         ::   :: arrow
+  | ∀ X . S        ::   :: all  (+ bind X in S +)
   | *              ::   :: ghost
-  | *. P           ::   :: topghost
-  | ( P )          :: S :: paren {{ coq ([[P]]) }}
-  | { P2 / X } P1  :: M :: subst {{ coq (open_pattern_wrt_pattern [[X P2]] [[P1]]) }}
+  | *. S           ::   :: topghost
+  | [ T ]          ::   :: tag
+  | ( T )          :: S :: paren {{ coq ([[T]]) }}
+  | { S / X } T  :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X S]] [[T]]) }}
 
 exp, e, f, g :: exp_ ::=
   | x                                   ::   :: var
@@ -68,19 +69,45 @@ defns
 is_typ :: '' ::=
 
 defn
-|- A :: :: is_typ :: 'is_typ__' by
+|-ᵗ A :: :: is_typ :: 'is_typ__' by
 
 -------------- :: tvar
-|- X
+|-ᵗ X
 
-|- A1
-|- A2
+|-ᵗ A
+|-ᵗ B
 -------------- :: arrow
-|- A1 -> A2
+|-ᵗ A -> B
 
-|- A
+|-ᵗ A
 -------------------- :: all
-|- ∀ X . A
+|-ᵗ ∀ X . A
+
+
+defns
+is_pattern :: '' ::=
+
+defn
+|-ᵖ P :: :: is_pattern :: 'is_pattern__' by
+
+-------------- :: tvar
+|-ᵖ X
+
+|-ᵖ P
+|-ᵖ Q
+-------------- :: arrow
+|-ᵖ P -> Q
+
+|-ᵖ P
+-------------------- :: all
+|-ᵖ ∀ X . P
+
+-------------------- :: ghost
+|-ᵖ *
+
+|-ᵖ P
+-------------------- :: topghost
+|-ᵖ *. P
 
 
 defns
@@ -112,7 +139,7 @@ defn
 |- \ x . e
 
 
-|- A
+|-ᵗ A
 |- e
 -------------- :: abs_anno
 |- \ x : A . e
@@ -129,7 +156,7 @@ defn
 |- let x = e1 in e2
 
 
-|- A 
+|-ᵗ A 
 |- e 
 -------------- :: anno
 |- e : A 
