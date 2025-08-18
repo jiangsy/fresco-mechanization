@@ -518,6 +518,56 @@ Inductive pattern_splitting : pat_row -> pat_row -> Prop :=    (* defn pattern_s
      lc_pat_row p ->
      pattern_splitting (pat_row_cons P p) (pat_row_cons P p).
 
+(* defns pattern_inference *)
+Inductive pat_inference : env -> pat_row -> exp -> pre_typ -> Prop :=    (* defn pat_inference *)
+ | pat_inference__freeze : forall (Ψ:env) (T:pre_typ) (x:expvar) (P A:pre_typ),
+     lc_pre_typ T ->
+     is_pattern A ->
+      binds ( x )  ( (bind_pattern P) ) ( Ψ )  ->
+     pat_inference Ψ (pat_row_one T) (exp_freeze (exp_var_f x)) P
+ | pat_inference__var : forall (Ψ:env) (p:pat_row) (x:expvar) (R P:pre_typ),
+      binds ( x )  ( (bind_pattern P) ) ( Ψ )  ->
+     is_pattern P ->
+     subtyping  empty  Ψ P p sub_mode_pi R ->
+     pat_inference Ψ p (exp_var_f x) R
+ | pat_inference__anno : forall (Ψ:env) (e:exp) (A P:pre_typ) (p:pat_row),
+     lc_exp e ->
+     subtyping  empty  Ψ A p sub_mode_pi P ->
+     pat_inference Ψ (pat_row_one pre_typ_ghost) (exp_anno e A) P
+ | pat_inference__abs : forall (L:vars) (Ψ:env) (p:pat_row) (e:exp) (Q P:pre_typ),
+     pattern_splitting p (pat_row_one (pre_typ_all P)) ->
+      ( forall X , X \notin  L  -> pat_inference  ( X ~ bind_tvar  ++  Ψ )  (pat_row_one  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) ) ) (exp_abs e)  ( open_pre_typ_wrt_pre_typ Q (pre_typ_var_f X) )  )  ->
+     pat_inference Ψ p (exp_abs e) (pre_typ_all Q)
+ | pat_inference__abs' : forall (L:vars) (Ψ:env) (e:exp) (P Q:pre_typ) (p p':pat_row),
+     pattern_splitting p (pat_row_cons P p') ->
+      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern P)  ++  Ψ )  p'  ( open_exp_wrt_exp e (exp_var_f x) )  Q )  ->
+     pat_inference Ψ (pat_row_one pre_typ_ghost) (exp_abs e) (pre_typ_arrow P Q)
+ | pat_inference__abs'' : forall (L:vars) (Ψ:env) (e:exp) (P1 Q:pre_typ) (p:pat_row) (P2:pre_typ),
+     pattern_splitting p (pat_row_one (pre_typ_arrow P1 P2)) ->
+      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern P1)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  Q )  ->
+     pat_inference Ψ (pat_row_one pre_typ_ghost) (exp_abs e) (pre_typ_arrow P1 Q)
+ | pat_inference__anno_abs : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (Q P:pre_typ),
+     lc_pre_typ A ->
+     pattern_splitting p (pat_row_one (pre_typ_all P)) ->
+      ( forall X , X \notin  L  -> pat_inference  ( X ~ bind_tvar  ++  Ψ )  (pat_row_one  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) ) ) (exp_abs e)  ( open_pre_typ_wrt_pre_typ Q (pre_typ_var_f X) )  )  ->
+     pat_inference Ψ p (exp_abs_anno A e) (pre_typ_all Q)
+ | pat_inference__anno_abs' : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (P:pre_typ) (p':pat_row),
+     pattern_splitting p (pat_row_cons P p') ->
+      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern A)  ++  Ψ )  p'  ( open_exp_wrt_exp e (exp_var_f x) )  P )  ->
+     pat_inference Ψ p (exp_abs_anno A e) P
+ | pat_inference__anno_abs'' : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (P1 Q P2:pre_typ),
+     pattern_splitting p (pat_row_one (pre_typ_arrow P1 P2)) ->
+      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern A)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  Q )  ->
+     pat_inference Ψ p (exp_abs_anno A e) (pre_typ_arrow P1 Q)
+ | pat_inference__app : forall (Ψ:env) (p:pat_row) (e1 e2:exp) (Q P P1:pre_typ),
+     pat_inference Ψ (pat_row_one pre_typ_ghost) e2 P ->
+     pat_inference Ψ (pat_row_cons P p) e1 (pre_typ_arrow P1 Q) ->
+     pat_inference Ψ p (exp_app e1 e2) Q
+ | pat_inference__let : forall (L:vars) (Ψ:env) (p:pat_row) (e1 e2:exp) (Q P:pre_typ),
+     pat_inference Ψ (pat_row_one pre_typ_ghost) e1 P ->
+      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern P)  ++  Ψ )  p  ( open_exp_wrt_exp e2 (exp_var_f x) )  Q )  ->
+     pat_inference Ψ p (exp_let e1 e2) Q.
+
 (* defns typing *)
 Inductive typing : env -> pat_row -> exp -> pre_typ -> Prop :=    (* defn typing *)
  | typing__freeze : forall (Ψ:env) (T:pre_typ) (x:expvar) (A:pre_typ),
@@ -562,6 +612,7 @@ Inductive typing : env -> pat_row -> exp -> pre_typ -> Prop :=    (* defn typing
       ( forall x , x \notin  L  -> typing  ( x ~ (bind_pattern A)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  B )  ->
      typing Ψ p (exp_abs_anno A e) B
  | typing__app : forall (Ψ:env) (p:pat_row) (e1 e2:exp) (B P A:pre_typ),
+     pat_inference Ψ (pat_row_one pre_typ_ghost) e2 P ->
      typing Ψ (pat_row_cons P p) e1 (pre_typ_arrow A B) ->
      typing Ψ (pat_row_one A) e2 A ->
      typing Ψ p (exp_app e1 e2) B
@@ -572,6 +623,6 @@ Inductive typing : env -> pat_row -> exp -> pre_typ -> Prop :=    (* defn typing
 
 
 (** infrastructure *)
-#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern mono_styp is_exp comp_checking subtyping pattern_splitting typing lc_pre_typ lc_bind lc_pat_row lc_exp : core.
+#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern mono_styp is_exp comp_checking subtyping pattern_splitting pat_inference typing lc_pre_typ lc_bind lc_pat_row lc_exp : core.
 
 

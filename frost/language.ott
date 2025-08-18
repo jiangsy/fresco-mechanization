@@ -453,6 +453,86 @@ A -> B ▹ A -> B
 ---------------------------------- :: all
 P , p ▹ P , p
 
+
+defns
+pattern_inference :: '' ::=
+
+defn
+
+dE | p |- e ==> P :: :: pat_inference :: 'pat_inference__' by
+
+|-ᵖ A
+( x : P ) in dE
+---------------------------------- :: freeze
+dE | T |- ⌈ x ⌉ ==> P
+
+
+( x : P ) in dE
+|-ᵖ P 
+empty | dE |- P -[ p > pi >> R
+---------------------------------- :: var
+dE | p |- x ==> R
+
+empty | dE |- A -[ p > pi >> P
+---------------------------------- :: anno
+dE | * |- e : A ==> P
+
+% TODO: 
+% add haunted
+p ▹ ∀ X . P
+dE , X : □ | P |- \ x . e ==> Q
+---------------------------------- :: abs
+dE | p |- \ x . e ==> ∀ X . Q
+
+% TODO: 
+% add haunted (?)
+p ▹ P , p'
+dE , x : P | p' |- e ==> Q
+---------------------------------- :: abs'
+dE | * |- \ x . e ==> P -> Q
+
+% TODO: 
+% add haunted (?)
+p ▹ P1 -> P2
+dE , x : P1 | P2 |- e ==> Q
+---------------------------------- :: abs''
+dE | * |- \ x . e ==> P1 -> Q
+
+% TODO: 
+% add haunted
+p ▹ ∀ X . P
+dE , X : □ | P |- \ x . e ==> Q
+---------------------------------- :: anno_abs
+dE | p |- \ x : A . e ==> ∀ X . Q
+
+% TODO: 
+% add haunted (?)
+p ▹ P , p'
+dE , x : A | p' |- e ==> P
+---------------------------------- :: anno_abs'
+dE | p |- \ x : A . e ==> P
+
+% TODO: 
+% add haunted (?)
+p ▹ P1 -> P2
+dE , x : A | P2 |- e ==> Q
+---------------------------------- :: anno_abs''
+dE | p |- \ x : A . e ==> P1 -> Q
+
+dE | * |- e2 ==> P
+dE | P , p |- e1 ==> P1 -> Q
+---------------------------------- :: app
+dE | p |- e1 e2 ==> Q
+
+% TODO : 
+% add a no-guessing inference
+% no guessing inference needs to be mutually defined with pattern inference (?)
+dE | * |- e1 ==> P
+dE , x : P | p |- e2 ==> Q
+---------------------------------- :: let
+dE | p |- let x = e1 in e2 ==> Q
+
+
 defns
 typing :: '' ::=
 
@@ -500,7 +580,6 @@ dE , x : P1 | P2 |- e => B
 ---------------------------------- :: abs''
 dE | * |- \ x . e => A -> B
 
-% TODO: 
 p ▹ ∀ X . P
 dE , X : □ | P |- \ x . e => B
 ---------------------------------- :: anno_abs
@@ -521,6 +600,7 @@ dE , x : A | P2 |- e => B
 dE | p |- \ x : A . e => B
 
 % TODO : add pattern inf
+dE | * |- e2 ==> P
 dE | P , p |- e1 => A -> B
 dE | A |- e2 => A
 ---------------------------------- :: app
