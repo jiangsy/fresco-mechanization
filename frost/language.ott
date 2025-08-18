@@ -9,14 +9,14 @@ grammar
 % by predicate : types cannot be constructed using ghost or topghost
 pre_typ, P , Q , A , B , C , R , T , G :: pre_typ_ ::=
   | X                ::   :: var
-  | T -> R         ::   :: arrow
+  | T -> R           ::   :: arrow
   | ∀ X . T          ::   :: all  (+ bind X in T +)
   | *                ::   :: ghost
   | *. T             ::   :: topghost
   | [ T ] l          ::   :: tag
   | ^ T              ::   :: hat
   | ( T )            :: S :: paren {{ coq ([[T]]) }}
-  | { T / X } R    :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X T]] [[R]]) }}
+  | { T / X } R      :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X T]] [[R]]) }}
 
 exp, e, f, g :: exp_ ::=
   | x                                   ::   :: var
@@ -381,35 +381,35 @@ defns
 subtyping :: '' ::=
 
 defn
-tE | dE |- T -[ p > m - R :: :: subtyping :: 'subtyping__' by
+tE | dE |- T -[ p > m >> R :: :: subtyping :: 'subtyping__' by
 
 % TODO : check mode
 ------------------------- :: tail_ghost
-empty | dE |- T -[ * > m - T
+empty | dE |- T -[ * > m >> T
 
 % TODO : add haunted()
 --------------------------------------- :: tail_ghost_pat
-empty | dE |- T -[ * > pi - T
+empty | dE |- T -[ * > pi >> T
 
-tE | dE , X : □ |- T -[ A > m - T
+tE | dE , X : □ |- T -[ A > m >> T
 --------------------------------------- :: tail_forallr
-tE | dE |- T -[ ∀ X . A > m - ∀ X . T
+tE | dE |- T -[ ∀ X . A > m >> ∀ X . T
 
 empty | dE |- T ~ A
 ------------------------- :: tail_typ 
-empty | dE |- T -[ A > m - A
+empty | dE |- T -[ A > m >> A
 
 % TODO : add pattern join
 tE1 | dE |- P ~ R
-tE2 | dE |- T -[ p > m - T'
+tE2 | dE |- T -[ p > m >> T'
 tE1 ∪ tE2 [=] tE
 ------------------------------------ :: arg_match
-tE | dE |- R -> T -[ P , p > m - P -> T'
+tE | dE |- R -> T -[ P , p > m >> P -> T'
 
 p <> *
-tE | dE |- R -[ p > m - T
+tE | dE |- R -[ p > m >> T
 ---------------------------------- :: inst_ghost 
-tE | dE |- *. R -[ p > m - T
+tE | dE |- *. R -[ p > m >> T
 
 % TODO : 
 % fix tE in type well-formedness
@@ -417,9 +417,9 @@ tE | dE |- *. R -[ p > m - T
 % add erase
 p <> *
 tE |-ᵗᵗ T
-tE | dE |- { G / X } R -[ p > m - T
+tE | dE |- { G / X } R -[ p > m >> T
 ---------------------------------- :: inst_real
-tE | dE |- ∀ X . R -[ p > m - T
+tE | dE |- ∀ X . R -[ p > m >> T
 
 % TODO : 
 % fix tE in type well-formedness
@@ -427,6 +427,6 @@ tE | dE |- ∀ X . R -[ p > m - T
 % add erase
 p <> *
 tE |-ᵗᵗ T
-tE | dE |- { G / X } R -[ p > m - T
+tE | dE |- { G / X } R -[ p > m >> T
 ---------------------------------- :: inst_real' 
-tE | dE |- [ ∀ X . R ] l -[ p > m - T
+tE | dE |- [ ∀ X . R ] l -[ p > m >> T
