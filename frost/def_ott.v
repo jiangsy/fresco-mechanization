@@ -44,7 +44,7 @@ Inductive exp : Set :=
  | exp_anno (e:exp) (A:pre_typ)
  | exp_freeze (e:exp).
 
-Definition denv : Set := list (atom*bind).
+Definition env : Set := list (atom*bind).
 
 Definition tenv : Type := vars.
 
@@ -69,12 +69,6 @@ Fixpoint open_pre_typ_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (P_6:pre_typ) {struct
   | (pre_typ_topghost T) => pre_typ_topghost (open_pre_typ_wrt_pre_typ_rec k P5 T)
   | (pre_typ_tag T l) => pre_typ_tag (open_pre_typ_wrt_pre_typ_rec k P5 T) l
   | (pre_typ_hat T) => pre_typ_hat (open_pre_typ_wrt_pre_typ_rec k P5 T)
-end.
-
-Definition open_bind_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (b5:bind) : bind :=
-  match b5 with
-  | bind_tvar_empty => bind_tvar_empty 
-  | (bind_pattern A) => bind_pattern (open_pre_typ_wrt_pre_typ_rec k P5 A)
 end.
 
 Fixpoint open_pat_row_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (p5:pat_row) {struct p5}: pat_row :=
@@ -112,7 +106,11 @@ Fixpoint open_exp_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (e_5:exp) {struct e_5}: e
   | (exp_freeze e) => exp_freeze (open_exp_wrt_pre_typ_rec k P5 e)
 end.
 
-Definition open_bind_wrt_pre_typ P5 b5 := open_bind_wrt_pre_typ_rec 0 b5 P5.
+Definition open_bind_wrt_pre_typ_rec (k:nat) (P5:pre_typ) (b5:bind) : bind :=
+  match b5 with
+  | bind_tvar_empty => bind_tvar_empty 
+  | (bind_pattern A) => bind_pattern (open_pre_typ_wrt_pre_typ_rec k P5 A)
+end.
 
 Definition open_pat_row_wrt_pre_typ P5 p5 := open_pat_row_wrt_pre_typ_rec 0 p5 P5.
 
@@ -121,6 +119,8 @@ Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
 Definition open_exp_wrt_pre_typ P5 e_5 := open_exp_wrt_pre_typ_rec 0 e_5 P5.
 
 Definition open_pre_typ_wrt_pre_typ P5 P_6 := open_pre_typ_wrt_pre_typ_rec 0 P_6 P5.
+
+Definition open_bind_wrt_pre_typ P5 b5 := open_bind_wrt_pre_typ_rec 0 b5 P5.
 
 (** terms are locally-closed pre-terms *)
 (* definitions *)
@@ -323,6 +323,41 @@ Inductive is_typ : pre_typ -> Prop :=    (* defn is_typ *)
      is_typ (pre_typ_topghost T) ->
      is_typ (pre_typ_hat  ( (pre_typ_topghost T) ) ).
 
+(* defns is_ttyp *)
+Inductive is_ttyp : pre_typ -> Prop :=    (* defn is_ttyp *)
+ | is_ttyp__tvar : forall (X:typvar) (l:taglabel),
+     is_ttyp (pre_typ_tag (pre_typ_var_f X) l)
+ | is_ttyp__arrow : forall (T R:pre_typ) (l:taglabel),
+     is_ttyp (pre_typ_arrow T R) ->
+     is_ttyp (pre_typ_tag (pre_typ_arrow T R) l)
+ | is_ttyp__all : forall (T:pre_typ) (l:taglabel),
+     is_ttyp (pre_typ_all T) ->
+     is_ttyp (pre_typ_tag (pre_typ_all T) l)
+ | is_ttyp__ghost : 
+     is_ttyp (pre_typ_hat pre_typ_ghost)
+ | is_ttyp__topghost : forall (T:pre_typ),
+     is_ttyp (pre_typ_topghost T) ->
+     is_ttyp (pre_typ_hat  ( (pre_typ_topghost T) ) ).
+
+(* defns wf_ttyp *)
+Inductive wf_ttyp : tenv -> pre_typ -> Prop :=    (* defn wf_ttyp *)
+ | wf_ttyp__tvar : forall (Δ:tenv) (X:typvar) (l:taglabel),
+      ( l  `in`  Δ )  ->
+     wf_ttyp Δ (pre_typ_tag (pre_typ_var_f X) l)
+ | wf_ttyp__arrow : forall (Δ:tenv) (T R:pre_typ) (l:taglabel),
+      ( l  `in`  Δ )  ->
+     wf_ttyp Δ (pre_typ_arrow T R) ->
+     wf_ttyp Δ (pre_typ_tag (pre_typ_arrow T R) l)
+ | wf_ttyp__all : forall (Δ:tenv) (T:pre_typ) (l:taglabel),
+      ( l  `in`  Δ )  ->
+     wf_ttyp Δ (pre_typ_all T) ->
+     wf_ttyp Δ (pre_typ_tag (pre_typ_all T) l)
+ | wf_ttyp__ghost : forall (Δ:tenv),
+     wf_ttyp Δ (pre_typ_hat pre_typ_ghost)
+ | wf_ttyp__topghost : forall (Δ:tenv) (T:pre_typ),
+     wf_ttyp Δ (pre_typ_topghost T) ->
+     wf_ttyp Δ (pre_typ_hat  ( (pre_typ_topghost T) ) ).
+
 (* defns is_styp *)
 Inductive is_styp : pre_typ -> Prop :=    (* defn is_styp *)
  | is_styp__tvar : forall (X:typvar),
@@ -352,14 +387,14 @@ Inductive is_pattern : pre_typ -> Prop :=    (* defn is_pattern *)
      is_pattern P ->
      is_pattern (pre_typ_topghost P).
 
-(* defns mono_typ *)
-Inductive mono_typ : pre_typ -> Prop :=    (* defn mono_typ *)
+(* defns mono_styp *)
+Inductive mono_styp : pre_typ -> Prop :=    (* defn mono_styp *)
  | mono_typ__tvar : forall (X:typvar),
-     mono_typ (pre_typ_var_f X)
+     mono_styp (pre_typ_var_f X)
  | mono_typ__arrow : forall (A1 A2:pre_typ),
-     mono_typ A1 ->
-     mono_typ A2 ->
-     mono_typ (pre_typ_arrow A1 A2).
+     mono_styp A1 ->
+     mono_styp A2 ->
+     mono_styp (pre_typ_arrow A1 A2).
 
 (* defns is_exp *)
 Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
@@ -388,82 +423,87 @@ Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
      is_exp (exp_freeze (exp_var_f x)).
 
 (* defns comp_checking *)
-Inductive comp_checking : tenv -> denv -> pre_typ -> pre_typ -> Prop :=    (* defn comp_checking *)
- | comp_checking__ghost_l : forall (Ψ:denv) (T:pre_typ),
+Inductive comp_checking : tenv -> env -> pre_typ -> pre_typ -> Prop :=    (* defn comp_checking *)
+ | comp_checking__ghost_l : forall (Ψ:env) (T:pre_typ),
      lc_pre_typ T ->
      comp_checking  empty  Ψ pre_typ_ghost T
- | comp_checking__ghost_r : forall (Ψ:denv) (P:pre_typ),
+ | comp_checking__ghost_r : forall (Ψ:env) (P:pre_typ),
      lc_pre_typ P ->
      comp_checking  empty  Ψ P pre_typ_ghost
- | comp_checking__ghost_var : forall (Δ:tenv) (Ψ:denv) (X:typvar),
+ | comp_checking__ghost_var : forall (Δ:tenv) (Ψ:env) (X:typvar),
      comp_checking Δ Ψ (pre_typ_var_f X) (pre_typ_var_f X)
- | comp_checking__ghost_var' : forall (Δ:tenv) (Ψ:denv) (X:typvar) (l:taglabel),
+ | comp_checking__ghost_var' : forall (Δ:tenv) (Ψ:env) (X:typvar) (l:taglabel),
       (  (singleton  l )   [=]  Δ )  ->
      comp_checking Δ Ψ (pre_typ_var_f X) (pre_typ_tag (pre_typ_var_f X) l)
- | comp_checking__forall : forall (L:vars) (Δ:tenv) (Ψ:denv) (T P:pre_typ) (l:taglabel) (Δ':tenv),
+ | comp_checking__forall : forall (L:vars) (Δ:tenv) (Ψ:env) (T P:pre_typ) (l:taglabel) (Δ':tenv),
       ( forall X , X \notin  L  -> comp_checking Δ'  ( X ~ bind_tvar_empty  ++  Ψ )   ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  )  ->
       ( Δ  [=]   (add  l   Δ' )  )  ->
      comp_checking Δ Ψ (pre_typ_all T) (pre_typ_tag (pre_typ_all P) l)
- | comp_checking__topghost_l1 : forall (Δ:tenv) (Ψ:denv) (P T:pre_typ),
+ | comp_checking__topghost_l1 : forall (Δ:tenv) (Ψ:env) (P T:pre_typ),
      comp_checking Δ Ψ P T ->
      comp_checking Δ Ψ (pre_typ_topghost P) T
- | comp_checking__topghost_l2 : forall (L:vars) (Δ:tenv) (Ψ:denv) (P T:pre_typ),
+ | comp_checking__topghost_l2 : forall (L:vars) (Δ:tenv) (Ψ:env) (P T:pre_typ),
       ( forall X , X \notin  L  -> comp_checking Δ  ( X ~ bind_tvar_empty  ++  Ψ )  P  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  )  ->
      comp_checking Δ Ψ (pre_typ_topghost P) (pre_typ_all T)
- | comp_checking__topghost_l2' : forall (Δ:tenv) (Ψ:denv) (P T:pre_typ) (l:taglabel),
+ | comp_checking__topghost_l2' : forall (Δ:tenv) (Ψ:env) (P T:pre_typ) (l:taglabel),
      comp_checking Δ Ψ (pre_typ_topghost P) T ->
      comp_checking Δ Ψ (pre_typ_topghost P) (pre_typ_tag (pre_typ_topghost T) l)
- | comp_checking__topghost_l3 : forall (Δ:tenv) (Ψ:denv) (P T:pre_typ),
+ | comp_checking__topghost_l3 : forall (Δ:tenv) (Ψ:env) (P T:pre_typ),
      comp_checking Δ Ψ (pre_typ_topghost P) T ->
      comp_checking Δ Ψ (pre_typ_topghost P) (pre_typ_hat (pre_typ_topghost T))
- | comp_checking__topghost_r1 : forall (Δ:tenv) (Ψ:denv) (P T:pre_typ),
+ | comp_checking__topghost_r1 : forall (Δ:tenv) (Ψ:env) (P T:pre_typ),
      comp_checking Δ Ψ P T ->
      comp_checking Δ Ψ P (pre_typ_topghost T)
- | comp_checking__topghost_r2 : forall (L:vars) (Δ:tenv) (Ψ:denv) (P T:pre_typ),
+ | comp_checking__topghost_r2 : forall (L:vars) (Δ:tenv) (Ψ:env) (P T:pre_typ),
       ( forall X , X \notin  L  -> comp_checking Δ  ( X ~ bind_tvar_empty  ++  Ψ )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  (pre_typ_topghost T) )  ->
      comp_checking Δ Ψ (pre_typ_all P) (pre_typ_topghost T)
- | comp_checking__arrow : forall (Δ:tenv) (Ψ:denv) (P Q T R:pre_typ) (Δ1 Δ2:tenv),
+ | comp_checking__arrow : forall (Δ:tenv) (Ψ:env) (P Q T R:pre_typ) (Δ1 Δ2:tenv),
      comp_checking Δ1 Ψ P T ->
      comp_checking Δ2 Ψ Q R ->
       (  ( Δ1  `union`  Δ2 )   [=]  Δ )  ->
      comp_checking Δ Ψ (pre_typ_arrow P Q) (pre_typ_arrow T R)
- | comp_checking__arrow' : forall (Δ:tenv) (Ψ:denv) (P Q T R:pre_typ) (l:taglabel) (Δ1 Δ2:tenv),
+ | comp_checking__arrow' : forall (Δ:tenv) (Ψ:env) (P Q T R:pre_typ) (l:taglabel) (Δ1 Δ2:tenv),
      comp_checking Δ1 Ψ P T ->
      comp_checking Δ2 Ψ Q R ->
       (  (add  l    (  ( Δ1  `union`  Δ2 )  )  )   [=]  Δ )  ->
      comp_checking Δ Ψ (pre_typ_arrow P Q) (pre_typ_tag (pre_typ_arrow T R) l).
 
 (* defns subtyping *)
-Inductive subtyping : tenv -> denv -> pre_typ -> pat_row -> subtyping_mode -> pre_typ -> Prop :=    (* defn subtyping *)
- | subtyping__tail_ghost : forall (Ψ:denv) (T:pre_typ) (m:subtyping_mode),
+Inductive subtyping : tenv -> env -> pre_typ -> pat_row -> subtyping_mode -> pre_typ -> Prop :=    (* defn subtyping *)
+ | subtyping__tail_ghost : forall (Ψ:env) (T:pre_typ) (m:subtyping_mode),
      lc_pre_typ T ->
      subtyping  empty  Ψ T (pattern_row_one pre_typ_ghost) m T
- | subtyping__tail_ghost_pat : forall (Ψ:denv) (T:pre_typ),
+ | subtyping__tail_ghost_pat : forall (Ψ:env) (T:pre_typ),
      lc_pre_typ T ->
      subtyping  empty  Ψ T (pattern_row_one pre_typ_ghost) sub_mode_pi T
- | subtyping__tail_forallr : forall (L:vars) (Δ:tenv) (Ψ:denv) (T A:pre_typ) (m:subtyping_mode),
+ | subtyping__tail_forallr : forall (L:vars) (Δ:tenv) (Ψ:env) (T A:pre_typ) (m:subtyping_mode),
       ( forall X , X \notin  L  -> subtyping Δ  ( X ~ bind_tvar_empty  ++  Ψ )   ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  (pattern_row_one  ( open_pre_typ_wrt_pre_typ A (pre_typ_var_f X) ) ) m  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  )  ->
       ( forall X , X \notin  L  -> subtyping Δ Ψ  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  (pattern_row_one (pre_typ_all A)) m (pre_typ_all T) ) 
- | subtyping__tail_typ : forall (Ψ:denv) (T A:pre_typ) (m:subtyping_mode),
+ | subtyping__tail_typ : forall (Ψ:env) (T A:pre_typ) (m:subtyping_mode),
      comp_checking  empty  Ψ T A ->
      subtyping  empty  Ψ T (pattern_row_one A) m A
- | subtyping__arg_match : forall (Δ:tenv) (Ψ:denv) (R T P:pre_typ) (p:pat_row) (m:subtyping_mode) (T':pre_typ) (Δ1 Δ2:tenv),
+ | subtyping__arg_match : forall (Δ:tenv) (Ψ:env) (R T P:pre_typ) (p:pat_row) (m:subtyping_mode) (T':pre_typ) (Δ1 Δ2:tenv),
      comp_checking Δ1 Ψ P R ->
      subtyping Δ2 Ψ T p m T' ->
       (  ( Δ1  `union`  Δ2 )   [=]  Δ )  ->
      subtyping Δ Ψ (pre_typ_arrow R T) (pattern_row_cons P p) m (pre_typ_arrow P T')
- | subtyping__inst_ghost : forall (Δ:tenv) (Ψ:denv) (R:pre_typ) (p:pat_row) (m:subtyping_mode) (T:pre_typ),
+ | subtyping__inst_ghost : forall (Δ:tenv) (Ψ:env) (R:pre_typ) (p:pat_row) (m:subtyping_mode) (T:pre_typ),
+      ( p  <> pattern_row_one pre_typ_ghost )  ->
      subtyping Δ Ψ R p m T ->
      subtyping Δ Ψ (pre_typ_topghost R) p m T
- | subtyping__inst_real : forall (L:vars) (Δ:tenv) (Ψ:denv) (R:pre_typ) (p:pat_row) (m:subtyping_mode) (T G:pre_typ),
+ | subtyping__inst_real : forall (L:vars) (Δ:tenv) (Ψ:env) (R:pre_typ) (p:pat_row) (m:subtyping_mode) (T G:pre_typ),
+      ( p  <> pattern_row_one pre_typ_ghost )  ->
+     wf_ttyp Δ T ->
       ( forall X , X \notin  L  -> subtyping Δ Ψ  (open_pre_typ_wrt_pre_typ  G    ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  p m T )  ->
      subtyping Δ Ψ (pre_typ_all R) p m T
- | subtyping__inst_real' : forall (L:vars) (Δ:tenv) (Ψ:denv) (R:pre_typ) (l:taglabel) (p:pat_row) (m:subtyping_mode) (T G:pre_typ),
+ | subtyping__inst_real' : forall (L:vars) (Δ:tenv) (Ψ:env) (R:pre_typ) (l:taglabel) (p:pat_row) (m:subtyping_mode) (T G:pre_typ),
+      ( p  <> pattern_row_one pre_typ_ghost )  ->
+     wf_ttyp Δ T ->
       ( forall X , X \notin  L  -> subtyping Δ Ψ  (open_pre_typ_wrt_pre_typ  G    ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  p m T )  ->
      subtyping Δ Ψ (pre_typ_tag (pre_typ_all R) l) p m T.
 
 
 (** infrastructure *)
-#[export] Hint Constructors is_typ is_styp is_pattern mono_typ is_exp comp_checking subtyping lc_pre_typ lc_bind lc_pat_row lc_exp : core.
+#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern mono_styp is_exp comp_checking subtyping lc_pre_typ lc_bind lc_pat_row lc_exp : core.
 
 

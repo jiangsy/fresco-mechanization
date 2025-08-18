@@ -60,7 +60,7 @@ freevars
  
 grammar
 
-denv, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
+env, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
   | empty     ::   :: dempty {{ coq nil }}
   | dE , x b  ::   :: dcons1 {{ coq ([[x]]~[[b]] ++ [[dE]])  }}
   | dE , X b  ::   :: dcons2 {{ coq ([[X]]~[[b]] ++ [[dE]])  }}
@@ -70,7 +70,7 @@ tenv, tE, tF, tG:: '' ::= {{ coq vars }}
   | tE , l        ::   :: tadd {{ coq (add [[l]] [[tE]])  }}
   | ( tE )        :: M :: paren2 {{ coq ([[tE]]) }}
   | sin l         :: M :: sin {{ coq (singleton [[l]]) }}
-  | tE1 \/ tE2    :: M :: union {{ coq ([[tE1]] `union` [[tE2]]) }}
+  | tE1 ∪ tE2     :: M :: union {{ coq ([[tE1]] `union` [[tE2]]) }}
 
 formula :: formula_ ::=
   | judgement             ::   :: judgement
@@ -81,6 +81,7 @@ formula :: formula_ ::=
   | X  `notin` dom dE ::   :: fresh2 {{ coq ([[X]]  `notin` dom ([[dE]])) }}
   | tE1 [=] tE2       ::   :: seteq  {{ coq ([[tE1]] [=] [[tE2]]) }}
   | l `in` tE         ::   :: in1  {{ coq ([[l]] `in` [[tE]]) }}
+  | p <> *            ::   :: not_ghost {{ coq ([[p]] <> pattern_row_one pre_typ_ghost ) }}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -126,6 +127,58 @@ defn
 |-ᵗ *. T
 -------------------- :: tagged_topghost
 |-ᵗ ^ (*. T)
+
+defns
+is_ttyp :: '' ::=
+
+defn
+|-ᵗᵗ T :: :: is_ttyp :: 'is_ttyp__' by
+
+-------------- :: tvar
+|-ᵗᵗ [ X ] l
+
+|-ᵗᵗ T -> R
+------------------ :: arrow
+|-ᵗᵗ [ T -> R ] l 
+
+|-ᵗᵗ ∀ X . T
+-------------------- :: all
+|-ᵗᵗ [ ∀ X . T ] l 
+
+-------------------- :: ghost
+|-ᵗᵗ ^ * 
+
+|-ᵗᵗ *. T
+-------------------- :: topghost
+|-ᵗᵗ ^ (*. T)
+ 
+
+defns
+wf_ttyp :: '' ::=
+
+defn
+tE |-ᵗᵗ T :: :: wf_ttyp :: 'wf_ttyp__' by
+
+l `in`  tE
+-------------- :: tvar
+tE |-ᵗᵗ [ X ] l
+
+l `in`  tE
+tE |-ᵗᵗ T -> R
+------------------ :: arrow
+tE |-ᵗᵗ [ T -> R ] l 
+
+l `in`  tE
+tE |-ᵗᵗ ∀ X . T
+-------------------- :: all
+tE |-ᵗᵗ [ ∀ X . T ] l 
+
+-------------------- :: ghost
+tE |-ᵗᵗ ^ * 
+
+tE |-ᵗᵗ *. T
+-------------------- :: topghost
+tE |-ᵗᵗ ^ (*. T)
  
 
 % Source typs syntax, no tags
@@ -175,10 +228,10 @@ defn
 
 
 defns
-mono_typ :: '' ::=
+mono_styp :: '' ::=
 
 defn
-|-m A :: :: mono_typ :: 'mono_typ__' by
+|-m A :: :: mono_styp :: 'mono_typ__' by
 
 -------------- :: tvar
 |-m X
@@ -314,13 +367,13 @@ tE | dE |- ∀ X . P ~ *. T
 
 tE1 | dE |- P ~ T
 tE2 | dE |- Q ~ R
-tE1 \/ tE2 [=] tE
+tE1 ∪ tE2 [=] tE
 ------------------------------------ :: arrow
 tE | dE |- P -> Q ~ T -> R
 
 tE1 | dE |- P ~ T
 tE2 | dE |- Q ~ R
-(tE1 \/ tE2) , l [=] tE
+(tE1 ∪ tE2) , l [=] tE
 ------------------------------------ :: arrow'
 tE | dE |- P -> Q ~ [ T -> R ] l
 
@@ -346,30 +399,34 @@ empty | dE |- T ~ A
 ------------------------- :: tail_typ 
 empty | dE |- T -[ A > m - A
 
+% TODO : add pattern join
 tE1 | dE |- P ~ R
 tE2 | dE |- T -[ p > m - T'
-tE1 \/ tE2 [=] tE
-% TODO : add the pattern join operation
+tE1 ∪ tE2 [=] tE
 ------------------------------------ :: arg_match
 tE | dE |- R -> T -[ P , p > m - P -> T'
 
-% check p is not *
+p <> *
 tE | dE |- R -[ p > m - T
 ---------------------------------- :: inst_ghost 
 tE | dE |- *. R -[ p > m - T
 
-% check p is not *
-% add G well-formedness
-% add G instantiation
+% TODO : 
+% fix tE in type well-formedness
+% add pattern (tagged type) refinement
 % add erase
+p <> *
+tE |-ᵗᵗ T
 tE | dE |- { G / X } R -[ p > m - T
 ---------------------------------- :: inst_real
 tE | dE |- ∀ X . R -[ p > m - T
 
-% check p is not *
-% add G well-formedness
-% add G instantiation
+% TODO : 
+% fix tE in type well-formedness
+% add pattern (tagged type) refinement
 % add erase
+p <> *
+tE |-ᵗᵗ T
 tE | dE |- { G / X } R -[ p > m - T
 ---------------------------------- :: inst_real' 
 tE | dE |- [ ∀ X . R ] l -[ p > m - T
