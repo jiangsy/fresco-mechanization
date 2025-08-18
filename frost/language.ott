@@ -478,9 +478,11 @@ empty | dE |- A -[ p > pi >> B
 dE | * |- e : A => B
 
 % we need abs and abs' to gradually peel off binders
+% and abs' and abs'' to distingusi whether pattern split 
+% returns two patterns or a pattern and a pattern row
+% similarly for anno_abs
 % TODO: 
 % add pattern refinement
-% add pattern split
 p ▹ ∀ X . P
 dE , X : □ | P |- \ x . e => A
 ---------------------------------- :: abs
