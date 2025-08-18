@@ -481,8 +481,6 @@ dE | * |- e : A => B
 % and abs' and abs'' to distingusi whether pattern split 
 % returns two patterns or a pattern and a pattern row
 % similarly for anno_abs
-% TODO: 
-% add pattern refinement
 p ▹ ∀ X . P
 dE , X : □ | P |- \ x . e => A
 ---------------------------------- :: abs
@@ -503,7 +501,6 @@ dE , x : P1 | P2 |- e => B
 dE | * |- \ x . e => A -> B
 
 % TODO: 
-% add pattern refinement
 p ▹ ∀ X . P
 dE , X : □ | P |- \ x . e => B
 ---------------------------------- :: anno_abs
