@@ -7,7 +7,7 @@ grammar
 
 % maybe we should just unify typ and pattern in syntax, and distinguish them 
 % by predicate : types cannot be constructed using ghost or topghost
-pre_typ, P , Q , A , B , C , R , T :: pre_typ_ ::=
+pre_typ, P , Q , A , B , C , R , T , G :: pre_typ_ ::=
   | X                ::   :: var
   | T -> R         ::   :: arrow
   | ∀ X . T          ::   :: all  (+ bind X in T +)
@@ -40,9 +40,14 @@ bind, b :: bind_ ::=
   | : □  ::   :: tvar_empty
   | : A  ::   :: pattern
 
-tbind, tb :: tbind_ ::=
-  | : ∘  ::   :: tag
-  | : ∙  ::   :: empty
+sort, s :: sort_ ::=
+  | ■m    ::   :: mono
+  | ■po   ::   :: poly
+  | ■pa   ::   :: pattern
+
+subtyping_mode, m :: sub_mode_ ::=
+  | s     ::  :: sort
+  | pi    ::  :: pi
 
 substitutions
   single P X  :: subst_pattern_in
@@ -66,7 +71,6 @@ tenv, tE, tF, tG:: '' ::= {{ coq vars }}
   | ( tE )        :: M :: paren2 {{ coq ([[tE]]) }}
   | sin l         :: M :: sin {{ coq (singleton [[l]]) }}
   | tE1 \/ tE2    :: M :: union {{ coq ([[tE1]] `union` [[tE2]]) }}
-
 
 formula :: formula_ ::=
   | judgement             ::   :: judgement
@@ -265,7 +269,6 @@ comp_checking :: '' ::=
 defn
 tE | dE |- T ~ R :: :: comp_checking :: 'comp_checking__' by
 
-
 ------------------- :: ghost_l
 empty | dE |- * ~ T
 
@@ -320,3 +323,53 @@ tE2 | dE |- Q ~ R
 (tE1 \/ tE2) , l [=] tE
 ------------------------------------ :: arrow'
 tE | dE |- P -> Q ~ [ T -> R ] l
+
+defns
+subtyping :: '' ::=
+
+defn
+tE | dE |- T -[ p > m - R :: :: subtyping :: 'subtyping__' by
+
+% TODO : check mode
+------------------------- :: tail_ghost
+empty | dE |- T -[ * > m - T
+
+% TODO : add haunted()
+--------------------------------------- :: tail_ghost_pat
+empty | dE |- T -[ * > pi - T
+
+tE | dE , X : □ |- T -[ A > m - T
+--------------------------------------- :: tail_forallr
+tE | dE |- T -[ ∀ X . A > m - ∀ X . T
+
+empty | dE |- T ~ A
+------------------------- :: tail_typ 
+empty | dE |- T -[ A > m - A
+
+tE1 | dE |- P ~ R
+tE2 | dE |- T -[ p > m - T'
+tE1 \/ tE2 [=] tE
+% TODO : add the pattern join operation
+------------------------------------ :: arg_match
+tE | dE |- R -> T -[ P , p > m - P -> T'
+
+% check p is not *
+tE | dE |- R -[ p > m - T
+---------------------------------- :: inst_ghost 
+tE | dE |- *. R -[ p > m - T
+
+% check p is not *
+% add G well-formedness
+% add G instantiation
+% add erase
+tE | dE |- { G / X } R -[ p > m - T
+---------------------------------- :: inst_real
+tE | dE |- ∀ X . R -[ p > m - T
+
+% check p is not *
+% add G well-formedness
+% add G instantiation
+% add erase
+tE | dE |- { G / X } R -[ p > m - T
+---------------------------------- :: inst_real' 
+tE | dE |- [ ∀ X . R ] l -[ p > m - T

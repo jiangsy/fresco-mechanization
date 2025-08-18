@@ -41,6 +41,16 @@ Scheme exp_rec' := Induction for exp Sort Set.
 
 Combined Scheme exp_mutrec from exp_rec'.
 
+Scheme subtyping_mode_ind' := Induction for subtyping_mode Sort Prop
+  with sort_ind' := Induction for sort Sort Prop.
+
+Combined Scheme subtyping_mode_sort_mutind from subtyping_mode_ind',sort_ind'.
+
+Scheme subtyping_mode_rec' := Induction for subtyping_mode Sort Set
+  with sort_rec' := Induction for sort Sort Set.
+
+Combined Scheme subtyping_mode_sort_mutrec from subtyping_mode_rec',sort_rec'.
+
 Scheme pat_row_ind' := Induction for pat_row Sort Prop.
 
 Combined Scheme pat_row_mutind from pat_row_ind'.
@@ -48,14 +58,6 @@ Combined Scheme pat_row_mutind from pat_row_ind'.
 Scheme pat_row_rec' := Induction for pat_row Sort Set.
 
 Combined Scheme pat_row_mutrec from pat_row_rec'.
-
-Scheme tbind_ind' := Induction for tbind Sort Prop.
-
-Combined Scheme tbind_mutind from tbind_ind'.
-
-Scheme tbind_rec' := Induction for tbind Sort Set.
-
-Combined Scheme tbind_mutrec from tbind_rec'.
 
 
 (* *********************************************************************** *)
@@ -153,16 +155,23 @@ Fixpoint size_exp (e1 : exp) {struct e1} : nat :=
     | exp_freeze e2 => 1 + (size_exp e2)
   end.
 
+Fixpoint size_subtyping_mode (m1 : subtyping_mode) {struct m1} : nat :=
+  match m1 with
+    | sub_mode_sort s1 => 1 + (size_sort s1)
+    | sub_mode_pi => 1
+  end
+
+with size_sort (s1 : sort) {struct s1} : nat :=
+  match s1 with
+    | sort_mono m1 => 1 + (size_subtyping_mode m1)
+    | sort_poly => 1
+    | sort_pattern => 1
+  end.
+
 Fixpoint size_pat_row (p1 : pat_row) {struct p1} : nat :=
   match p1 with
     | pattern_row_cons P1 p2 => 1 + (size_pre_typ P1) + (size_pat_row p2)
     | pattern_row_one P1 => 1 + (size_pre_typ P1)
-  end.
-
-Fixpoint size_tbind (tb1 : tbind) {struct tb1} : nat :=
-  match tb1 with
-    | tbind_tag => 1
-    | tbind_empty => 1
   end.
 
 
@@ -532,6 +541,34 @@ Qed.
 
 (* begin hide *)
 
+Lemma size_subtyping_mode_min_size_sort_min_mutual :
+(forall m1, 1 <= size_subtyping_mode m1) /\
+(forall s1, 1 <= size_sort s1).
+Proof.
+apply_mutual_ind subtyping_mode_sort_mutind;
+default_simp.
+Qed.
+
+(* end hide *)
+
+Lemma size_subtyping_mode_min :
+forall m1, 1 <= size_subtyping_mode m1.
+Proof.
+pose proof size_subtyping_mode_min_size_sort_min_mutual as H; intuition eauto.
+Qed.
+
+#[export] Hint Resolve size_subtyping_mode_min : lngen.
+
+Lemma size_sort_min :
+forall s1, 1 <= size_sort s1.
+Proof.
+pose proof size_subtyping_mode_min_size_sort_min_mutual as H; intuition eauto.
+Qed.
+
+#[export] Hint Resolve size_sort_min : lngen.
+
+(* begin hide *)
+
 Lemma size_pat_row_min_mutual :
 (forall p1, 1 <= size_pat_row p1).
 Proof.
@@ -548,25 +585,6 @@ pose proof size_pat_row_min_mutual as H; intuition eauto.
 Qed.
 
 #[export] Hint Resolve size_pat_row_min : lngen.
-
-(* begin hide *)
-
-Lemma size_tbind_min_mutual :
-(forall tb1, 1 <= size_tbind tb1).
-Proof.
-apply_mutual_ind tbind_mutind;
-default_simp.
-Qed.
-
-(* end hide *)
-
-Lemma size_tbind_min :
-forall tb1, 1 <= size_tbind tb1.
-Proof.
-pose proof size_tbind_min_mutual as H; intuition eauto.
-Qed.
-
-#[export] Hint Resolve size_tbind_min : lngen.
 
 (* begin hide *)
 
@@ -3458,16 +3476,18 @@ Ltac exp_lc_exists_tac :=
               let J2 := fresh in pose proof H as J2; apply degree_exp_wrt_exp_of_lc_exp in J2; clear H
           end).
 
+Ltac subtyping_mode_sort_lc_exists_tac :=
+  repeat (match goal with
+            | H : _ |- _ =>
+              fail 1
+            | H : _ |- _ =>
+              fail 1
+          end).
+
 Ltac pat_row_lc_exists_tac :=
   repeat (match goal with
             | H : _ |- _ =>
               let J1 := fresh in pose proof H as J1; apply degree_pat_row_wrt_pre_typ_of_lc_pat_row in J1; clear H
-          end).
-
-Ltac tbind_lc_exists_tac :=
-  repeat (match goal with
-            | H : _ |- _ =>
-              fail 1
           end).
 
 Lemma lc_pre_typ_all_exists :

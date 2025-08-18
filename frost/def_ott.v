@@ -17,13 +17,18 @@ Inductive pre_typ : Set :=
  | pre_typ_tag (T:pre_typ) (l:taglabel)
  | pre_typ_hat (T:pre_typ).
 
+Inductive sort : Set := 
+ | sort_mono : sort
+ | sort_poly : sort
+ | sort_pattern : sort.
+
 Inductive bind : Set := 
  | bind_tvar_empty : bind
  | bind_pattern (A:pre_typ).
 
-Inductive tbind : Set := 
- | tbind_tag : tbind
- | tbind_empty : tbind.
+Inductive subtyping_mode : Set := 
+ | sub_mode_sort (s:sort)
+ | sub_mode_pi : subtyping_mode.
 
 Inductive pat_row : Set := 
  | pattern_row_cons (P:pre_typ) (p:pat_row)
@@ -428,8 +433,37 @@ Inductive comp_checking : tenv -> denv -> pre_typ -> pre_typ -> Prop :=    (* de
       (  (add  l    (  ( Δ1  `union`  Δ2 )  )  )   [=]  Δ )  ->
      comp_checking Δ Ψ (pre_typ_arrow P Q) (pre_typ_tag (pre_typ_arrow T R) l).
 
+(* defns subtyping *)
+Inductive subtyping : tenv -> denv -> pre_typ -> pat_row -> subtyping_mode -> pre_typ -> Prop :=    (* defn subtyping *)
+ | subtyping__tail_ghost : forall (Ψ:denv) (T:pre_typ) (m:subtyping_mode),
+     lc_pre_typ T ->
+     subtyping  empty  Ψ T (pattern_row_one pre_typ_ghost) m T
+ | subtyping__tail_ghost_pat : forall (Ψ:denv) (T:pre_typ),
+     lc_pre_typ T ->
+     subtyping  empty  Ψ T (pattern_row_one pre_typ_ghost) sub_mode_pi T
+ | subtyping__tail_forallr : forall (L:vars) (Δ:tenv) (Ψ:denv) (T A:pre_typ) (m:subtyping_mode),
+      ( forall X , X \notin  L  -> subtyping Δ  ( X ~ bind_tvar_empty  ++  Ψ )   ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  (pattern_row_one  ( open_pre_typ_wrt_pre_typ A (pre_typ_var_f X) ) ) m  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  )  ->
+      ( forall X , X \notin  L  -> subtyping Δ Ψ  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  (pattern_row_one (pre_typ_all A)) m (pre_typ_all T) ) 
+ | subtyping__tail_typ : forall (Ψ:denv) (T A:pre_typ) (m:subtyping_mode),
+     comp_checking  empty  Ψ T A ->
+     subtyping  empty  Ψ T (pattern_row_one A) m A
+ | subtyping__arg_match : forall (Δ:tenv) (Ψ:denv) (R T P:pre_typ) (p:pat_row) (m:subtyping_mode) (T':pre_typ) (Δ1 Δ2:tenv),
+     comp_checking Δ1 Ψ P R ->
+     subtyping Δ2 Ψ T p m T' ->
+      (  ( Δ1  `union`  Δ2 )   [=]  Δ )  ->
+     subtyping Δ Ψ (pre_typ_arrow R T) (pattern_row_cons P p) m (pre_typ_arrow P T')
+ | subtyping__inst_ghost : forall (Δ:tenv) (Ψ:denv) (R:pre_typ) (p:pat_row) (m:subtyping_mode) (T:pre_typ),
+     subtyping Δ Ψ R p m T ->
+     subtyping Δ Ψ (pre_typ_topghost R) p m T
+ | subtyping__inst_real : forall (L:vars) (Δ:tenv) (Ψ:denv) (R:pre_typ) (p:pat_row) (m:subtyping_mode) (T G:pre_typ),
+      ( forall X , X \notin  L  -> subtyping Δ Ψ  (open_pre_typ_wrt_pre_typ  G    ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  p m T )  ->
+     subtyping Δ Ψ (pre_typ_all R) p m T
+ | subtyping__inst_real' : forall (L:vars) (Δ:tenv) (Ψ:denv) (R:pre_typ) (l:taglabel) (p:pat_row) (m:subtyping_mode) (T G:pre_typ),
+      ( forall X , X \notin  L  -> subtyping Δ Ψ  (open_pre_typ_wrt_pre_typ  G    ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  p m T )  ->
+     subtyping Δ Ψ (pre_typ_tag (pre_typ_all R) l) p m T.
+
 
 (** infrastructure *)
-#[export] Hint Constructors is_typ is_styp is_pattern mono_typ is_exp comp_checking lc_pre_typ lc_bind lc_pat_row lc_exp : core.
+#[export] Hint Constructors is_typ is_styp is_pattern mono_typ is_exp comp_checking subtyping lc_pre_typ lc_bind lc_pat_row lc_exp : core.
 
 
