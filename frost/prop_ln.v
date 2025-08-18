@@ -41,15 +41,15 @@ Scheme exp_rec' := Induction for exp Sort Set.
 
 Combined Scheme exp_mutrec from exp_rec'.
 
-Scheme subtyping_mode_ind' := Induction for subtyping_mode Sort Prop
+Scheme sub_mode_ind' := Induction for sub_mode Sort Prop
   with sort_ind' := Induction for sort Sort Prop.
 
-Combined Scheme subtyping_mode_sort_mutind from subtyping_mode_ind',sort_ind'.
+Combined Scheme sub_mode_sort_mutind from sub_mode_ind',sort_ind'.
 
-Scheme subtyping_mode_rec' := Induction for subtyping_mode Sort Set
+Scheme sub_mode_rec' := Induction for sub_mode Sort Set
   with sort_rec' := Induction for sort Sort Set.
 
-Combined Scheme subtyping_mode_sort_mutrec from subtyping_mode_rec',sort_rec'.
+Combined Scheme sub_mode_sort_mutrec from sub_mode_rec',sort_rec'.
 
 Scheme pat_row_ind' := Induction for pat_row Sort Prop.
 
@@ -79,7 +79,7 @@ Definition close_pre_typ_wrt_pre_typ X1 P1 := close_pre_typ_wrt_pre_typ_rec 0 X1
 
 Fixpoint close_bind_wrt_pre_typ_rec (n1 : nat) (X1 : typvar) (b1 : bind) {struct b1} : bind :=
   match b1 with
-    | bind_tvar_empty => bind_tvar_empty
+    | bind_tvar => bind_tvar
     | bind_pattern A1 => bind_pattern (close_pre_typ_wrt_pre_typ_rec n1 X1 A1)
   end.
 
@@ -115,8 +115,8 @@ Definition close_exp_wrt_exp x1 e1 := close_exp_wrt_exp_rec 0 x1 e1.
 
 Fixpoint close_pat_row_wrt_pre_typ_rec (n1 : nat) (X1 : typvar) (p1 : pat_row) {struct p1} : pat_row :=
   match p1 with
-    | pattern_row_cons P1 p2 => pattern_row_cons (close_pre_typ_wrt_pre_typ_rec n1 X1 P1) (close_pat_row_wrt_pre_typ_rec n1 X1 p2)
-    | pattern_row_one P1 => pattern_row_one (close_pre_typ_wrt_pre_typ_rec n1 X1 P1)
+    | pat_row_cons P1 p2 => pat_row_cons (close_pre_typ_wrt_pre_typ_rec n1 X1 P1) (close_pat_row_wrt_pre_typ_rec n1 X1 p2)
+    | pat_row_one P1 => pat_row_one (close_pre_typ_wrt_pre_typ_rec n1 X1 P1)
   end.
 
 Definition close_pat_row_wrt_pre_typ X1 p1 := close_pat_row_wrt_pre_typ_rec 0 X1 p1.
@@ -139,7 +139,7 @@ Fixpoint size_pre_typ (P1 : pre_typ) {struct P1} : nat :=
 
 Fixpoint size_bind (b1 : bind) {struct b1} : nat :=
   match b1 with
-    | bind_tvar_empty => 1
+    | bind_tvar => 1
     | bind_pattern A1 => 1 + (size_pre_typ A1)
   end.
 
@@ -155,7 +155,7 @@ Fixpoint size_exp (e1 : exp) {struct e1} : nat :=
     | exp_freeze e2 => 1 + (size_exp e2)
   end.
 
-Fixpoint size_subtyping_mode (m1 : subtyping_mode) {struct m1} : nat :=
+Fixpoint size_sub_mode (m1 : sub_mode) {struct m1} : nat :=
   match m1 with
     | sub_mode_sort s1 => 1 + (size_sort s1)
     | sub_mode_pi => 1
@@ -163,15 +163,15 @@ Fixpoint size_subtyping_mode (m1 : subtyping_mode) {struct m1} : nat :=
 
 with size_sort (s1 : sort) {struct s1} : nat :=
   match s1 with
-    | sort_mono m1 => 1 + (size_subtyping_mode m1)
+    | sort_mono m1 => 1 + (size_sub_mode m1)
     | sort_poly => 1
     | sort_pattern => 1
   end.
 
 Fixpoint size_pat_row (p1 : pat_row) {struct p1} : nat :=
   match p1 with
-    | pattern_row_cons P1 p2 => 1 + (size_pre_typ P1) + (size_pat_row p2)
-    | pattern_row_one P1 => 1 + (size_pre_typ P1)
+    | pat_row_cons P1 p2 => 1 + (size_pre_typ P1) + (size_pat_row p2)
+    | pat_row_one P1 => 1 + (size_pre_typ P1)
   end.
 
 
@@ -212,8 +212,8 @@ Combined Scheme degree_pre_typ_wrt_pre_typ_mutind from degree_pre_typ_wrt_pre_ty
 #[export] Hint Constructors degree_pre_typ_wrt_pre_typ : core lngen.
 
 Inductive degree_bind_wrt_pre_typ : nat -> bind -> Prop :=
-  | degree_wrt_pre_typ_bind_tvar_empty : forall n1,
-    degree_bind_wrt_pre_typ n1 (bind_tvar_empty)
+  | degree_wrt_pre_typ_bind_tvar : forall n1,
+    degree_bind_wrt_pre_typ n1 (bind_tvar)
   | degree_wrt_pre_typ_bind_pattern : forall n1 A1,
     degree_pre_typ_wrt_pre_typ n1 A1 ->
     degree_bind_wrt_pre_typ n1 (bind_pattern A1).
@@ -292,13 +292,13 @@ Combined Scheme degree_exp_wrt_exp_mutind from degree_exp_wrt_exp_ind'.
 #[export] Hint Constructors degree_exp_wrt_exp : core lngen.
 
 Inductive degree_pat_row_wrt_pre_typ : nat -> pat_row -> Prop :=
-  | degree_wrt_pre_typ_pattern_row_cons : forall n1 P1 p1,
+  | degree_wrt_pre_typ_pat_row_cons : forall n1 P1 p1,
     degree_pre_typ_wrt_pre_typ n1 P1 ->
     degree_pat_row_wrt_pre_typ n1 p1 ->
-    degree_pat_row_wrt_pre_typ n1 (pattern_row_cons P1 p1)
-  | degree_wrt_pre_typ_pattern_row_one : forall n1 P1,
+    degree_pat_row_wrt_pre_typ n1 (pat_row_cons P1 p1)
+  | degree_wrt_pre_typ_pat_row_one : forall n1 P1,
     degree_pre_typ_wrt_pre_typ n1 P1 ->
-    degree_pat_row_wrt_pre_typ n1 (pattern_row_one P1).
+    degree_pat_row_wrt_pre_typ n1 (pat_row_one P1).
 
 Scheme degree_pat_row_wrt_pre_typ_ind' := Induction for degree_pat_row_wrt_pre_typ Sort Prop.
 
@@ -348,8 +348,8 @@ Combined Scheme lc_set_pre_typ_mutrec from lc_set_pre_typ_rec'.
 #[export] Hint Constructors lc_set_pre_typ : core lngen.
 
 Inductive lc_set_bind : bind -> Set :=
-  | lc_set_bind_tvar_empty :
-    lc_set_bind (bind_tvar_empty)
+  | lc_set_bind_tvar :
+    lc_set_bind (bind_tvar)
   | lc_set_bind_pattern : forall A1,
     lc_set_pre_typ A1 ->
     lc_set_bind (bind_pattern A1).
@@ -411,13 +411,13 @@ Combined Scheme lc_set_exp_mutrec from lc_set_exp_rec'.
 #[export] Hint Constructors lc_set_exp : core lngen.
 
 Inductive lc_set_pat_row : pat_row -> Set :=
-  | lc_set_pattern_row_cons : forall P1 p1,
+  | lc_set_pat_row_cons : forall P1 p1,
     lc_set_pre_typ P1 ->
     lc_set_pat_row p1 ->
-    lc_set_pat_row (pattern_row_cons P1 p1)
-  | lc_set_pattern_row_one : forall P1,
+    lc_set_pat_row (pat_row_cons P1 p1)
+  | lc_set_pat_row_one : forall P1,
     lc_set_pre_typ P1 ->
-    lc_set_pat_row (pattern_row_one P1).
+    lc_set_pat_row (pat_row_one P1).
 Scheme lc_pat_row_ind' := Induction for lc_pat_row Sort Prop.
 
 Combined Scheme lc_pat_row_mutind from lc_pat_row_ind'.
@@ -541,28 +541,28 @@ Qed.
 
 (* begin hide *)
 
-Lemma size_subtyping_mode_min_size_sort_min_mutual :
-(forall m1, 1 <= size_subtyping_mode m1) /\
+Lemma size_sub_mode_min_size_sort_min_mutual :
+(forall m1, 1 <= size_sub_mode m1) /\
 (forall s1, 1 <= size_sort s1).
 Proof.
-apply_mutual_ind subtyping_mode_sort_mutind;
+apply_mutual_ind sub_mode_sort_mutind;
 default_simp.
 Qed.
 
 (* end hide *)
 
-Lemma size_subtyping_mode_min :
-forall m1, 1 <= size_subtyping_mode m1.
+Lemma size_sub_mode_min :
+forall m1, 1 <= size_sub_mode m1.
 Proof.
-pose proof size_subtyping_mode_min_size_sort_min_mutual as H; intuition eauto.
+pose proof size_sub_mode_min_size_sort_min_mutual as H; intuition eauto.
 Qed.
 
-#[export] Hint Resolve size_subtyping_mode_min : lngen.
+#[export] Hint Resolve size_sub_mode_min : lngen.
 
 Lemma size_sort_min :
 forall s1, 1 <= size_sort s1.
 Proof.
-pose proof size_subtyping_mode_min_size_sort_min_mutual as H; intuition eauto.
+pose proof size_sub_mode_min_size_sort_min_mutual as H; intuition eauto.
 Qed.
 
 #[export] Hint Resolve size_sort_min : lngen.
@@ -3476,7 +3476,7 @@ Ltac exp_lc_exists_tac :=
               let J2 := fresh in pose proof H as J2; apply degree_exp_wrt_exp_of_lc_exp in J2; clear H
           end).
 
-Ltac subtyping_mode_sort_lc_exists_tac :=
+Ltac sub_mode_sort_lc_exists_tac :=
   repeat (match goal with
             | H : _ |- _ =>
               fail 1

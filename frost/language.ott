@@ -32,12 +32,12 @@ exp, e, f, g :: exp_ ::=
   | { e2 / x } e1                       :: M :: subsT {{ coq (open_exp_wrt_exp [[x e1]] [[e2]]) }}
   | { A2 / X } e1                       :: M :: subsR {{ coq (open_exp_wrt_typ [[X e1]] [[A2]]) }}
 
-pat_row , p :: pattern_row_ ::=
+pat_row , p :: pat_row_ ::=
   | P , p                ::  :: cons
   | P                    ::  :: one
 
 bind, b :: bind_ ::=
-  | : □  ::   :: tvar_empty
+  | : □  ::   :: tvar
   | : A  ::   :: pattern
 
 sort, s :: sort_ ::=
@@ -45,7 +45,7 @@ sort, s :: sort_ ::=
   | ■po   ::   :: poly
   | ■pa   ::   :: pattern
 
-subtyping_mode, m :: sub_mode_ ::=
+sub_mode, m :: sub_mode_ ::=
   | s     ::  :: sort
   | pi    ::  :: pi
 
@@ -81,7 +81,7 @@ formula :: formula_ ::=
   | X  `notin` dom dE ::   :: fresh2 {{ coq ([[X]]  `notin` dom ([[dE]])) }}
   | tE1 [=] tE2       ::   :: seteq  {{ coq ([[tE1]] [=] [[tE2]]) }}
   | l `in` tE         ::   :: in1  {{ coq ([[l]] `in` [[tE]]) }}
-  | p <> *            ::   :: not_ghost {{ coq ([[p]] <> pattern_row_one pre_typ_ghost ) }}
+  | p <> *            ::   :: not_ghost {{ coq ([[p]] <> pat_row_one pre_typ_ghost ) }}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -430,3 +430,104 @@ tE |-ᵗᵗ T
 tE | dE |- { G / X } R -[ p > m >> T
 ---------------------------------- :: inst_real' 
 tE | dE |- [ ∀ X . R ] l -[ p > m >> T
+
+
+defns 
+pattern_splitting :: '' ::=
+
+defn
+
+p1 ▹ p2 :: :: pattern_splitting :: 'pat_splitting__' by
+
+
+---------------------------------- :: ghost
+* ▹ * , *
+
+A ▹ B
+---------------------------------- :: all
+∀ X . A ▹ ∀ X . B
+
+---------------------------------- :: all
+A -> B ▹ A -> B
+
+---------------------------------- :: all
+P , p ▹ P , p
+
+defns
+typing :: '' ::=
+
+defn
+
+dE | p |- e => T :: :: typing :: 'typing__' by
+
+|-ˢᵗ A
+( x : A ) in dE
+---------------------------------- :: freeze
+dE | T |- ⌈ x ⌉ => A
+
+
+( x : P ) in dE
+|-ᵖ P 
+empty | dE |- P -[ p > pi >> R
+---------------------------------- :: var
+dE | p |- x => R
+
+dE | A |- e => A
+empty | dE |- A -[ p > pi >> B
+---------------------------------- :: anno
+dE | * |- e : A => B
+
+% we need abs and abs' to gradually peel off binders
+% TODO: 
+% add pattern refinement
+% add pattern split
+p ▹ ∀ X . P
+dE , X : □ | P |- \ x . e => A
+---------------------------------- :: abs
+dE | p |- \ x . e => ∀ X . A
+
+% TODO: 
+% add pattern refinement
+p ▹ P , p'
+dE , x : P | p' |- e => B
+---------------------------------- :: abs'
+dE | * |- \ x . e => A -> B
+
+% TODO: 
+% add pattern refinement
+p ▹ P1 -> P2
+dE , x : P1 | P2 |- e => B
+---------------------------------- :: abs''
+dE | * |- \ x . e => A -> B
+
+% TODO: 
+% add pattern refinement
+p ▹ ∀ X . P
+dE , X : □ | P |- \ x . e => B
+---------------------------------- :: anno_abs
+dE | p |- \ x : A . e => ∀ X . B
+
+% TODO: 
+% add pattern refinement
+p ▹ P , p'
+dE , x : A | p' |- e => B
+---------------------------------- :: anno_abs'
+dE | p |- \ x : A . e => B
+
+% TODO: 
+% add pattern refinement
+p ▹ P1 -> P2
+dE , x : A | P2 |- e => B
+---------------------------------- :: anno_abs''
+dE | p |- \ x : A . e => B
+
+% TODO : add pattern inf
+dE | P , p |- e1 => A -> B
+dE | A |- e2 => A
+---------------------------------- :: app
+dE | p |- e1 e2 => B
+
+dE | * |- e1 => A
+dE , x : A | p |- e2 => B
+---------------------------------- :: let
+dE | p |- let x = e1 in e2 => B
