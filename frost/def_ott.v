@@ -17,18 +17,19 @@ Inductive pre_typ : Set :=
  | pre_typ_tag (T:pre_typ) (l:taglabel)
  | pre_typ_hat (T:pre_typ).
 
-Inductive sort : Set := 
- | sort_mono : sort
- | sort_poly : sort
- | sort_pattern : sort.
-
 Inductive bind : Set := 
  | bind_tvar : bind
  | bind_pattern (A:pre_typ).
 
 Inductive sub_mode : Set := 
- | sub_mode_sort (s:sort)
+ | sub_mode_ty : sub_mode
+ | sub_mode_ng : sub_mode
  | sub_mode_pi : sub_mode.
+
+Inductive sort : Set := 
+ | sort_mono : sort
+ | sort_poly : sort
+ | sort_pattern : sort.
 
 Inductive pat_row : Set := 
  | pat_row_cons (P:pre_typ) (p:pat_row)
@@ -387,6 +388,17 @@ Inductive is_pattern : pre_typ -> Prop :=    (* defn is_pattern *)
      is_pattern P ->
      is_pattern (pre_typ_topghost P).
 
+(* defns is_gpattern *)
+Inductive is_gpattern : pre_typ -> Prop :=    (* defn is_gpattern *)
+ | is_gpattern__tvar : forall (X:typvar),
+     is_gpattern (pre_typ_var_f X)
+ | is_gpattern__arrow : forall (P Q:pre_typ),
+     is_pattern P ->
+     is_pattern Q ->
+     is_gpattern (pre_typ_arrow P Q)
+ | is_gpattern__ghost : 
+     is_gpattern pre_typ_ghost.
+
 (* defns mono_styp *)
 Inductive mono_styp : pre_typ -> Prop :=    (* defn mono_styp *)
  | mono_typ__tvar : forall (X:typvar),
@@ -509,120 +521,72 @@ Inductive pattern_splitting : pat_row -> pat_row -> Prop :=    (* defn pattern_s
  | pat_splitting__all : forall (L:vars) (A B:pre_typ),
       ( forall X , X \notin  L  -> pattern_splitting (pat_row_one  ( open_pre_typ_wrt_pre_typ A (pre_typ_var_f X) ) ) (pat_row_one  ( open_pre_typ_wrt_pre_typ B (pre_typ_var_f X) ) ) )  ->
      pattern_splitting (pat_row_one (pre_typ_all A)) (pat_row_one (pre_typ_all B))
- | pat_splitting__all : forall (A B:pre_typ),
+ | pat_splitting__arrow : forall (A B:pre_typ),
      lc_pre_typ A ->
      lc_pre_typ B ->
      pattern_splitting (pat_row_one (pre_typ_arrow A B)) (pat_row_one (pre_typ_arrow A B))
- | pat_splitting__all : forall (P:pre_typ) (p:pat_row),
+ | pat_splitting__row : forall (P:pre_typ) (p:pat_row),
      lc_pre_typ P ->
      lc_pat_row p ->
      pattern_splitting (pat_row_cons P p) (pat_row_cons P p).
 
-(* defns pattern_inference *)
-Inductive pat_inference : env -> pat_row -> exp -> pre_typ -> Prop :=    (* defn pat_inference *)
- | pat_inference__freeze : forall (Ψ:env) (T:pre_typ) (x:expvar) (P A:pre_typ),
-     lc_pre_typ T ->
-     is_pattern A ->
+(* defns uni_typing *)
+Inductive uni_typing : env -> pat_row -> exp -> sub_mode -> pre_typ -> Prop :=    (* defn uni_typing *)
+ | uni_typing__freeze_chk : forall (Ψ:env) (P:pre_typ) (x:expvar),
       binds ( x )  ( (bind_pattern P) ) ( Ψ )  ->
-     pat_inference Ψ (pat_row_one T) (exp_freeze (exp_var_f x)) P
- | pat_inference__var : forall (Ψ:env) (p:pat_row) (x:expvar) (R P:pre_typ),
+     uni_typing Ψ (pat_row_one P) (exp_freeze (exp_var_f x)) sub_mode_pi P
+ | uni_typing__freeze_inf : forall (Ψ:env) (x:expvar) (P:pre_typ),
       binds ( x )  ( (bind_pattern P) ) ( Ψ )  ->
-     is_pattern P ->
-     subtyping  empty  Ψ P p sub_mode_pi R ->
-     pat_inference Ψ p (exp_var_f x) R
- | pat_inference__anno : forall (Ψ:env) (e:exp) (A P:pre_typ) (p:pat_row),
-     lc_exp e ->
-     subtyping  empty  Ψ A p sub_mode_pi P ->
-     pat_inference Ψ (pat_row_one pre_typ_ghost) (exp_anno e A) P
- | pat_inference__abs : forall (L:vars) (Ψ:env) (p:pat_row) (e:exp) (Q P:pre_typ),
-     pattern_splitting p (pat_row_one (pre_typ_all P)) ->
-      ( forall X , X \notin  L  -> pat_inference  ( X ~ bind_tvar  ++  Ψ )  (pat_row_one  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) ) ) (exp_abs e)  ( open_pre_typ_wrt_pre_typ Q (pre_typ_var_f X) )  )  ->
-     pat_inference Ψ p (exp_abs e) (pre_typ_all Q)
- | pat_inference__abs' : forall (L:vars) (Ψ:env) (e:exp) (P Q:pre_typ) (p p':pat_row),
-     pattern_splitting p (pat_row_cons P p') ->
-      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern P)  ++  Ψ )  p'  ( open_exp_wrt_exp e (exp_var_f x) )  Q )  ->
-     pat_inference Ψ (pat_row_one pre_typ_ghost) (exp_abs e) (pre_typ_arrow P Q)
- | pat_inference__abs'' : forall (L:vars) (Ψ:env) (e:exp) (P1 Q:pre_typ) (p:pat_row) (P2:pre_typ),
-     pattern_splitting p (pat_row_one (pre_typ_arrow P1 P2)) ->
-      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern P1)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  Q )  ->
-     pat_inference Ψ (pat_row_one pre_typ_ghost) (exp_abs e) (pre_typ_arrow P1 Q)
- | pat_inference__anno_abs : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (Q P:pre_typ),
-     lc_pre_typ A ->
-     pattern_splitting p (pat_row_one (pre_typ_all P)) ->
-      ( forall X , X \notin  L  -> pat_inference  ( X ~ bind_tvar  ++  Ψ )  (pat_row_one  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) ) ) (exp_abs e)  ( open_pre_typ_wrt_pre_typ Q (pre_typ_var_f X) )  )  ->
-     pat_inference Ψ p (exp_abs_anno A e) (pre_typ_all Q)
- | pat_inference__anno_abs' : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (P:pre_typ) (p':pat_row),
-     pattern_splitting p (pat_row_cons P p') ->
-      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern A)  ++  Ψ )  p'  ( open_exp_wrt_exp e (exp_var_f x) )  P )  ->
-     pat_inference Ψ p (exp_abs_anno A e) P
- | pat_inference__anno_abs'' : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (P1 Q P2:pre_typ),
-     pattern_splitting p (pat_row_one (pre_typ_arrow P1 P2)) ->
-      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern A)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  Q )  ->
-     pat_inference Ψ p (exp_abs_anno A e) (pre_typ_arrow P1 Q)
- | pat_inference__app : forall (Ψ:env) (p:pat_row) (e1 e2:exp) (Q P P1:pre_typ),
-     pat_inference Ψ (pat_row_one pre_typ_ghost) e2 P ->
-     pat_inference Ψ (pat_row_cons P p) e1 (pre_typ_arrow P1 Q) ->
-     pat_inference Ψ p (exp_app e1 e2) Q
- | pat_inference__let : forall (L:vars) (Ψ:env) (p:pat_row) (e1 e2:exp) (Q P:pre_typ),
-     pat_inference Ψ (pat_row_one pre_typ_ghost) e1 P ->
-      ( forall x , x \notin  L  -> pat_inference  ( x ~ (bind_pattern P)  ++  Ψ )  p  ( open_exp_wrt_exp e2 (exp_var_f x) )  Q )  ->
-     pat_inference Ψ p (exp_let e1 e2) Q.
-
-(* defns typing *)
-Inductive typing : env -> pat_row -> exp -> pre_typ -> Prop :=    (* defn typing *)
- | typing__freeze : forall (Ψ:env) (T:pre_typ) (x:expvar) (A:pre_typ),
-     lc_pre_typ T ->
-     is_styp A ->
-      binds ( x )  ( (bind_pattern A) ) ( Ψ )  ->
-     typing Ψ (pat_row_one T) (exp_freeze (exp_var_f x)) A
- | typing__var : forall (Ψ:env) (p:pat_row) (x:expvar) (R P:pre_typ),
+     uni_typing Ψ (pat_row_one pre_typ_ghost) (exp_freeze (exp_var_f x)) sub_mode_pi P
+ | uni_typing__var : forall (Ψ:env) (p:pat_row) (x:expvar) (m:sub_mode) (R P:pre_typ),
       binds ( x )  ( (bind_pattern P) ) ( Ψ )  ->
      is_pattern P ->
-     subtyping  empty  Ψ P p sub_mode_pi R ->
-     typing Ψ p (exp_var_f x) R
- | typing__anno : forall (Ψ:env) (e:exp) (A B:pre_typ) (p:pat_row),
-     typing Ψ (pat_row_one A) e A ->
-     subtyping  empty  Ψ A p sub_mode_pi B ->
-     typing Ψ (pat_row_one pre_typ_ghost) (exp_anno e A) B
- | typing__abs : forall (L:vars) (Ψ:env) (p:pat_row) (e:exp) (A P:pre_typ),
+     subtyping  empty  Ψ P p m R ->
+     uni_typing Ψ p (exp_var_f x) m R
+ | uni_typing__anno : forall (Ψ:env) (e:exp) (A:pre_typ) (m:sub_mode) (B:pre_typ) (p:pat_row),
+     uni_typing Ψ (pat_row_one A) e m A ->
+     subtyping  empty  Ψ A p m B ->
+     uni_typing Ψ (pat_row_one pre_typ_ghost) (exp_anno e A) m B
+ | uni_typing__abs : forall (L:vars) (Ψ:env) (p:pat_row) (e:exp) (m:sub_mode) (A P:pre_typ),
      pattern_splitting p (pat_row_one (pre_typ_all P)) ->
-      ( forall X , X \notin  L  -> typing  ( X ~ bind_tvar  ++  Ψ )  (pat_row_one  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) ) ) (exp_abs e)  ( open_pre_typ_wrt_pre_typ A (pre_typ_var_f X) )  )  ->
-     typing Ψ p (exp_abs e) (pre_typ_all A)
- | typing__abs' : forall (L:vars) (Ψ:env) (e:exp) (A B:pre_typ) (p:pat_row) (P:pre_typ) (p':pat_row),
+      ( forall X , X \notin  L  -> uni_typing  ( X ~ bind_tvar  ++  Ψ )  (pat_row_one  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) ) ) (exp_abs e) m  ( open_pre_typ_wrt_pre_typ A (pre_typ_var_f X) )  )  ->
+     uni_typing Ψ p (exp_abs e) m (pre_typ_all A)
+ | uni_typing__abs' : forall (L:vars) (Ψ:env) (e:exp) (m:sub_mode) (A B:pre_typ) (p:pat_row) (P:pre_typ) (p':pat_row),
      lc_pre_typ A ->
      pattern_splitting p (pat_row_cons P p') ->
-      ( forall x , x \notin  L  -> typing  ( x ~ (bind_pattern P)  ++  Ψ )  p'  ( open_exp_wrt_exp e (exp_var_f x) )  B )  ->
-     typing Ψ (pat_row_one pre_typ_ghost) (exp_abs e) (pre_typ_arrow A B)
- | typing__abs'' : forall (L:vars) (Ψ:env) (e:exp) (A B:pre_typ) (p:pat_row) (P1 P2:pre_typ),
+      ( forall x , x \notin  L  -> uni_typing  ( x ~ (bind_pattern P)  ++  Ψ )  p'  ( open_exp_wrt_exp e (exp_var_f x) )  m B )  ->
+     uni_typing Ψ (pat_row_one pre_typ_ghost) (exp_abs e) m (pre_typ_arrow A B)
+ | uni_typing__abs'' : forall (L:vars) (Ψ:env) (e:exp) (m:sub_mode) (A B:pre_typ) (p:pat_row) (P1 P2:pre_typ),
      lc_pre_typ A ->
      pattern_splitting p (pat_row_one (pre_typ_arrow P1 P2)) ->
-      ( forall x , x \notin  L  -> typing  ( x ~ (bind_pattern P1)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  B )  ->
-     typing Ψ (pat_row_one pre_typ_ghost) (exp_abs e) (pre_typ_arrow A B)
- | typing__anno_abs : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (B P:pre_typ),
+      ( forall x , x \notin  L  -> uni_typing  ( x ~ (bind_pattern P1)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  m B )  ->
+     uni_typing Ψ (pat_row_one pre_typ_ghost) (exp_abs e) m (pre_typ_arrow A B)
+ | uni_typing__anno_abs : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (m:sub_mode) (B P:pre_typ),
      lc_pre_typ A ->
      pattern_splitting p (pat_row_one (pre_typ_all P)) ->
-      ( forall X , X \notin  L  -> typing  ( X ~ bind_tvar  ++  Ψ )  (pat_row_one  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) ) ) (exp_abs e)  ( open_pre_typ_wrt_pre_typ B (pre_typ_var_f X) )  )  ->
-     typing Ψ p (exp_abs_anno A e) (pre_typ_all B)
- | typing__anno_abs' : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (B P:pre_typ) (p':pat_row),
+      ( forall X , X \notin  L  -> uni_typing  ( X ~ bind_tvar  ++  Ψ )  (pat_row_one  ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) ) ) (exp_abs e) m  ( open_pre_typ_wrt_pre_typ B (pre_typ_var_f X) )  )  ->
+     uni_typing Ψ p (exp_abs_anno A e) m (pre_typ_all B)
+ | uni_typing__anno_abs' : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (m:sub_mode) (B P:pre_typ) (p':pat_row),
      pattern_splitting p (pat_row_cons P p') ->
-      ( forall x , x \notin  L  -> typing  ( x ~ (bind_pattern A)  ++  Ψ )  p'  ( open_exp_wrt_exp e (exp_var_f x) )  B )  ->
-     typing Ψ p (exp_abs_anno A e) B
- | typing__anno_abs'' : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (B P1 P2:pre_typ),
+      ( forall x , x \notin  L  -> uni_typing  ( x ~ (bind_pattern A)  ++  Ψ )  p'  ( open_exp_wrt_exp e (exp_var_f x) )  m B )  ->
+     uni_typing Ψ p (exp_abs_anno A e) m B
+ | uni_typing__anno_abs'' : forall (L:vars) (Ψ:env) (p:pat_row) (A:pre_typ) (e:exp) (m:sub_mode) (B P1 P2:pre_typ),
      pattern_splitting p (pat_row_one (pre_typ_arrow P1 P2)) ->
-      ( forall x , x \notin  L  -> typing  ( x ~ (bind_pattern A)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  B )  ->
-     typing Ψ p (exp_abs_anno A e) B
- | typing__app : forall (Ψ:env) (p:pat_row) (e1 e2:exp) (B P A:pre_typ),
-     pat_inference Ψ (pat_row_one pre_typ_ghost) e2 P ->
-     typing Ψ (pat_row_cons P p) e1 (pre_typ_arrow A B) ->
-     typing Ψ (pat_row_one A) e2 A ->
-     typing Ψ p (exp_app e1 e2) B
- | typing__let : forall (L:vars) (Ψ:env) (p:pat_row) (e1 e2:exp) (B A:pre_typ),
-     typing Ψ (pat_row_one pre_typ_ghost) e1 A ->
-      ( forall x , x \notin  L  -> typing  ( x ~ (bind_pattern A)  ++  Ψ )  p  ( open_exp_wrt_exp e2 (exp_var_f x) )  B )  ->
-     typing Ψ p (exp_let e1 e2) B.
+      ( forall x , x \notin  L  -> uni_typing  ( x ~ (bind_pattern A)  ++  Ψ )  (pat_row_one P2)  ( open_exp_wrt_exp e (exp_var_f x) )  m B )  ->
+     uni_typing Ψ p (exp_abs_anno A e) m B
+ | uni_typing__app : forall (Ψ:env) (p:pat_row) (e1 e2:exp) (m:sub_mode) (B P P' Q:pre_typ),
+     lc_pre_typ B ->
+     uni_typing Ψ (pat_row_one pre_typ_ghost) e2 sub_mode_pi P ->
+     uni_typing Ψ (pat_row_cons P p) e1 m (pre_typ_arrow P' Q) ->
+     uni_typing Ψ (pat_row_one P') e2 m P' ->
+     uni_typing Ψ p (exp_app e1 e2) m B
+ | uni_typing__let : forall (L:vars) (Ψ:env) (p:pat_row) (e1 e2:exp) (m:sub_mode) (B A:pre_typ),
+     uni_typing Ψ (pat_row_one pre_typ_ghost) e1 m A ->
+      ( forall x , x \notin  L  -> uni_typing  ( x ~ (bind_pattern A)  ++  Ψ )  p  ( open_exp_wrt_exp e2 (exp_var_f x) )  m B )  ->
+     uni_typing Ψ p (exp_let e1 e2) m B.
 
 
 (** infrastructure *)
-#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern mono_styp is_exp comp_checking subtyping pattern_splitting pat_inference typing lc_pre_typ lc_bind lc_pat_row lc_exp : core.
+#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern is_gpattern mono_styp is_exp comp_checking subtyping pattern_splitting uni_typing lc_pre_typ lc_bind lc_pat_row lc_exp : core.
 
 

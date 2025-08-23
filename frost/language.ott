@@ -45,10 +45,6 @@ sort, s :: sort_ ::=
   | ■po   ::   :: poly
   | ■pa   ::   :: pattern
 
-sub_mode, m :: sub_mode_ ::=
-  | s     ::  :: sort
-  | pi    ::  :: pi
-
 substitutions
   single P X  :: subst_pattern_in
   single e x  :: subst_exp_in
@@ -59,6 +55,12 @@ freevars
   e x  :: fvar_in
  
 grammar
+
+
+sub_mode, m :: sub_mode_ ::=
+  | ty    ::  :: ty
+  | ng    ::  :: ng
+  | pi    ::  :: pi
 
 env, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
   | empty     ::   :: dempty {{ coq nil }}
@@ -225,6 +227,23 @@ defn
 |-ᵖ P
 -------------------- :: topghost
 |-ᵖ *. P
+
+defns
+is_gpattern :: '' ::=
+
+defn
+|-ᵖᵍ P :: :: is_gpattern :: 'is_gpattern__' by
+
+-------------- :: tvar
+|-ᵖᵍ X
+
+|-ᵖ P
+|-ᵖ Q
+-------------- :: arrow
+|-ᵖᵍ P -> Q
+
+-------------------- :: ghost
+|-ᵖᵍ *
 
 
 defns
@@ -447,166 +466,250 @@ A ▹ B
 ---------------------------------- :: all
 ∀ X . A ▹ ∀ X . B
 
----------------------------------- :: all
+---------------------------------- :: arrow
 A -> B ▹ A -> B
 
----------------------------------- :: all
+---------------------------------- :: row
 P , p ▹ P , p
 
 
+% defns
+% pattern_inference :: '' ::=
+
+% defn
+
+% dE | p |- e ==> P :: :: pat_inference :: 'pat_inference__' by
+
+% |-ᵖ A
+% ( x : P ) in dE
+% ---------------------------------- :: freeze
+% dE | T |- ⌈ x ⌉ ==> P
+
+
+% ( x : P ) in dE
+% |-ᵖ P 
+% empty | dE |- P -[ p > pi >> R
+% ---------------------------------- :: var
+% dE | p |- x ==> R
+
+% empty | dE |- A -[ p > pi >> P
+% ---------------------------------- :: anno
+% dE | * |- e : A ==> P
+
+% % TODO: 
+% % add haunted
+% p ▹ ∀ X . P
+% dE , X : □ | P |- \ x . e ==> Q
+% ---------------------------------- :: abs
+% dE | p |- \ x . e ==> ∀ X . Q
+
+% % TODO: 
+% % add haunted (?)
+% p ▹ P , p'
+% dE , x : P | p' |- e ==> Q
+% ---------------------------------- :: abs'
+% dE | * |- \ x . e ==> P -> Q
+
+% % TODO: 
+% % add haunted (?)
+% p ▹ P1 -> P2
+% dE , x : P1 | P2 |- e ==> Q
+% ---------------------------------- :: abs''
+% dE | * |- \ x . e ==> P1 -> Q
+
+% % TODO: 
+% % add haunted
+% p ▹ ∀ X . P
+% dE , X : □ | P |- \ x . e ==> Q
+% ---------------------------------- :: anno_abs
+% dE | p |- \ x : A . e ==> ∀ X . Q
+
+% % TODO: 
+% % add haunted (?)
+% p ▹ P , p'
+% dE , x : A | p' |- e ==> P
+% ---------------------------------- :: anno_abs'
+% dE | p |- \ x : A . e ==> P
+
+% % TODO: 
+% % add haunted (?)
+% p ▹ P1 -> P2
+% dE , x : A | P2 |- e ==> Q
+% ---------------------------------- :: anno_abs''
+% dE | p |- \ x : A . e ==> P1 -> Q
+
+% dE | * |- e2 ==> P
+% dE | P , p |- e1 ==> P1 -> Q
+% ---------------------------------- :: app
+% dE | p |- e1 e2 ==> Q
+
+% % TODO : 
+% % add a no-guessing inference
+% % no guessing inference needs to be mutually defined with pattern inference (?)
+% dE | * |- e1 ==> P
+% dE , x : P | p |- e2 ==> Q
+% ---------------------------------- :: let
+% dE | p |- let x = e1 in e2 ==> Q
+
+
+% defns
+% typing :: '' ::=
+
+% defn
+
+% dE | p |- e =>  T :: :: typing :: 'typing__' by
+
+% |-ˢᵗ A
+% ( x : A ) in dE
+% ---------------------------------- :: freeze
+% dE | T |- ⌈ x ⌉ => A
+
+
+% ( x : P ) in dE
+% |-ᵖ P 
+% empty | dE |- P -[ p > pi >> R
+% ---------------------------------- :: var
+% dE | p |- x => R
+
+% dE | A |- e => A
+% empty | dE |- A -[ p > pi >> B
+% ---------------------------------- :: anno
+% dE | * |- e : A => B
+
+% % we need abs and abs' to gradually peel off binders
+% % and abs' and abs'' to distingusi whether pattern split 
+% % returns two patterns or a pattern and a pattern row
+% % similarly for anno_abs
+% p ▹ ∀ X . P
+% dE , X : □ | P |- \ x . e => A
+% ---------------------------------- :: abs
+% dE | p |- \ x . e => ∀ X . A
+
+% % TODO: 
+% % add pattern refinement
+% p ▹ P , p'
+% dE , x : P | p' |- e => B
+% ---------------------------------- :: abs'
+% dE | * |- \ x . e => A -> B
+
+% % TODO: 
+% % add pattern refinement
+% p ▹ P1 -> P2
+% dE , x : P1 | P2 |- e => B
+% ---------------------------------- :: abs''
+% dE | * |- \ x . e => A -> B
+
+% p ▹ ∀ X . P
+% dE , X : □ | P |- \ x . e => B
+% ---------------------------------- :: anno_abs
+% dE | p |- \ x : A . e => ∀ X . B
+
+% % TODO: 
+% % add pattern refinement
+% p ▹ P , p'
+% dE , x : A | p' |- e => B
+% ---------------------------------- :: anno_abs'
+% dE | p |- \ x : A . e => B
+
+% % TODO: 
+% % add pattern refinement
+% p ▹ P1 -> P2
+% dE , x : A | P2 |- e => B
+% ---------------------------------- :: anno_abs''
+% dE | p |- \ x : A . e => B
+
+% % TODO : add pattern inf
+% dE | * |- e2 ==> P
+% dE | P , p |- e1 => A -> B
+% dE | A |- e2 => A
+% ---------------------------------- :: app
+% dE | p |- e1 e2 => B
+
+% dE | * |- e1 => A
+% dE , x : A | p |- e2 => B
+% ---------------------------------- :: let
+% dE | p |- let x = e1 in e2 => B
+
+
 defns
-pattern_inference :: '' ::=
+uni_typing :: '' ::=
 
 defn
 
-dE | p |- e ==> P :: :: pat_inference :: 'pat_inference__' by
+dE | p |- e =>[ m ] T :: :: uni_typing :: 'uni_typing__' by
 
-|-ᵖ A
+
+% |-ˢᵗ A
 ( x : P ) in dE
----------------------------------- :: freeze
-dE | T |- ⌈ x ⌉ ==> P
+---------------------------------- :: freeze_chk
+dE | P |- ⌈ x ⌉ =>[ pi ] P
+
+% |-ˢᵗ A
+( x : P ) in dE
+---------------------------------- :: freeze_inf
+dE | * |- ⌈ x ⌉ =>[ pi ] P
 
 
 ( x : P ) in dE
 |-ᵖ P 
-empty | dE |- P -[ p > pi >> R
+empty | dE |- P -[ p > m >> R
 ---------------------------------- :: var
-dE | p |- x ==> R
+dE | p |- x =>[ m ] R
 
-empty | dE |- A -[ p > pi >> P
+dE | A |- e =>[ m ] A
+empty | dE |- A -[ p > m >> B
 ---------------------------------- :: anno
-dE | * |- e : A ==> P
-
-% TODO: 
-% add haunted
-p ▹ ∀ X . P
-dE , X : □ | P |- \ x . e ==> Q
----------------------------------- :: abs
-dE | p |- \ x . e ==> ∀ X . Q
-
-% TODO: 
-% add haunted (?)
-p ▹ P , p'
-dE , x : P | p' |- e ==> Q
----------------------------------- :: abs'
-dE | * |- \ x . e ==> P -> Q
-
-% TODO: 
-% add haunted (?)
-p ▹ P1 -> P2
-dE , x : P1 | P2 |- e ==> Q
----------------------------------- :: abs''
-dE | * |- \ x . e ==> P1 -> Q
-
-% TODO: 
-% add haunted
-p ▹ ∀ X . P
-dE , X : □ | P |- \ x . e ==> Q
----------------------------------- :: anno_abs
-dE | p |- \ x : A . e ==> ∀ X . Q
-
-% TODO: 
-% add haunted (?)
-p ▹ P , p'
-dE , x : A | p' |- e ==> P
----------------------------------- :: anno_abs'
-dE | p |- \ x : A . e ==> P
-
-% TODO: 
-% add haunted (?)
-p ▹ P1 -> P2
-dE , x : A | P2 |- e ==> Q
----------------------------------- :: anno_abs''
-dE | p |- \ x : A . e ==> P1 -> Q
-
-dE | * |- e2 ==> P
-dE | P , p |- e1 ==> P1 -> Q
----------------------------------- :: app
-dE | p |- e1 e2 ==> Q
-
-% TODO : 
-% add a no-guessing inference
-% no guessing inference needs to be mutually defined with pattern inference (?)
-dE | * |- e1 ==> P
-dE , x : P | p |- e2 ==> Q
----------------------------------- :: let
-dE | p |- let x = e1 in e2 ==> Q
-
-
-defns
-typing :: '' ::=
-
-defn
-
-dE | p |- e => T :: :: typing :: 'typing__' by
-
-|-ˢᵗ A
-( x : A ) in dE
----------------------------------- :: freeze
-dE | T |- ⌈ x ⌉ => A
-
-
-( x : P ) in dE
-|-ᵖ P 
-empty | dE |- P -[ p > pi >> R
----------------------------------- :: var
-dE | p |- x => R
-
-dE | A |- e => A
-empty | dE |- A -[ p > pi >> B
----------------------------------- :: anno
-dE | * |- e : A => B
+dE | * |- e : A =>[ m ] B
 
 % we need abs and abs' to gradually peel off binders
 % and abs' and abs'' to distingusi whether pattern split 
 % returns two patterns or a pattern and a pattern row
 % similarly for anno_abs
 p ▹ ∀ X . P
-dE , X : □ | P |- \ x . e => A
+dE , X : □ | P |- \ x . e =>[ m ] A
 ---------------------------------- :: abs
-dE | p |- \ x . e => ∀ X . A
+dE | p |- \ x . e =>[ m ] ∀ X . A
 
 % TODO: 
 % add pattern refinement
 p ▹ P , p'
-dE , x : P | p' |- e => B
+dE , x : P | p' |- e =>[ m ] B
 ---------------------------------- :: abs'
-dE | * |- \ x . e => A -> B
+dE | * |- \ x . e =>[ m ] A -> B
 
 % TODO: 
 % add pattern refinement
 p ▹ P1 -> P2
-dE , x : P1 | P2 |- e => B
+dE , x : P1 | P2 |- e =>[ m ] B
 ---------------------------------- :: abs''
-dE | * |- \ x . e => A -> B
+dE | * |- \ x . e =>[ m ] A -> B
 
 p ▹ ∀ X . P
-dE , X : □ | P |- \ x . e => B
+dE , X : □ | P |- \ x . e =>[ m ] B
 ---------------------------------- :: anno_abs
-dE | p |- \ x : A . e => ∀ X . B
+dE | p |- \ x : A . e =>[ m ] ∀ X . B
 
 % TODO: 
 % add pattern refinement
 p ▹ P , p'
-dE , x : A | p' |- e => B
+dE , x : A | p' |- e =>[ m ] B
 ---------------------------------- :: anno_abs'
-dE | p |- \ x : A . e => B
+dE | p |- \ x : A . e =>[ m ] B
 
 % TODO: 
 % add pattern refinement
 p ▹ P1 -> P2
-dE , x : A | P2 |- e => B
+dE , x : A | P2 |- e =>[ m ] B
 ---------------------------------- :: anno_abs''
-dE | p |- \ x : A . e => B
+dE | p |- \ x : A . e =>[ m ] B
 
-% TODO : add pattern inf
-dE | * |- e2 ==> P
-dE | P , p |- e1 => A -> B
-dE | A |- e2 => A
+dE | * |- e2 =>[ pi ] P
+dE | P , p |- e1 =>[ m ] P' -> Q
+dE | P' |- e2 =>[ m ] P'
 ---------------------------------- :: app
-dE | p |- e1 e2 => B
+dE | p |- e1 e2 =>[ m ] B
 
-dE | * |- e1 => A
-dE , x : A | p |- e2 => B
+dE | * |- e1 =>[ m ] A
+dE , x : A | p |- e2 =>[ m ] B
 ---------------------------------- :: let
-dE | p |- let x = e1 in e2 => B
+dE | p |- let x = e1 in e2 =>[ m ] B

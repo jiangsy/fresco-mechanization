@@ -41,16 +41,6 @@ Scheme exp_rec' := Induction for exp Sort Set.
 
 Combined Scheme exp_mutrec from exp_rec'.
 
-Scheme sub_mode_ind' := Induction for sub_mode Sort Prop
-  with sort_ind' := Induction for sort Sort Prop.
-
-Combined Scheme sub_mode_sort_mutind from sub_mode_ind',sort_ind'.
-
-Scheme sub_mode_rec' := Induction for sub_mode Sort Set
-  with sort_rec' := Induction for sort Sort Set.
-
-Combined Scheme sub_mode_sort_mutrec from sub_mode_rec',sort_rec'.
-
 Scheme pat_row_ind' := Induction for pat_row Sort Prop.
 
 Combined Scheme pat_row_mutind from pat_row_ind'.
@@ -58,6 +48,14 @@ Combined Scheme pat_row_mutind from pat_row_ind'.
 Scheme pat_row_rec' := Induction for pat_row Sort Set.
 
 Combined Scheme pat_row_mutrec from pat_row_rec'.
+
+Scheme sort_ind' := Induction for sort Sort Prop.
+
+Combined Scheme sort_mutind from sort_ind'.
+
+Scheme sort_rec' := Induction for sort Sort Set.
+
+Combined Scheme sort_mutrec from sort_rec'.
 
 
 (* *********************************************************************** *)
@@ -155,23 +153,17 @@ Fixpoint size_exp (e1 : exp) {struct e1} : nat :=
     | exp_freeze e2 => 1 + (size_exp e2)
   end.
 
-Fixpoint size_sub_mode (m1 : sub_mode) {struct m1} : nat :=
-  match m1 with
-    | sub_mode_sort s1 => 1 + (size_sort s1)
-    | sub_mode_pi => 1
-  end
-
-with size_sort (s1 : sort) {struct s1} : nat :=
-  match s1 with
-    | sort_mono m1 => 1 + (size_sub_mode m1)
-    | sort_poly => 1
-    | sort_pattern => 1
-  end.
-
 Fixpoint size_pat_row (p1 : pat_row) {struct p1} : nat :=
   match p1 with
     | pat_row_cons P1 p2 => 1 + (size_pre_typ P1) + (size_pat_row p2)
     | pat_row_one P1 => 1 + (size_pre_typ P1)
+  end.
+
+Fixpoint size_sort (s1 : sort) {struct s1} : nat :=
+  match s1 with
+    | sort_mono => 1
+    | sort_poly => 1
+    | sort_pattern => 1
   end.
 
 
@@ -541,34 +533,6 @@ Qed.
 
 (* begin hide *)
 
-Lemma size_sub_mode_min_size_sort_min_mutual :
-(forall m1, 1 <= size_sub_mode m1) /\
-(forall s1, 1 <= size_sort s1).
-Proof.
-apply_mutual_ind sub_mode_sort_mutind;
-default_simp.
-Qed.
-
-(* end hide *)
-
-Lemma size_sub_mode_min :
-forall m1, 1 <= size_sub_mode m1.
-Proof.
-pose proof size_sub_mode_min_size_sort_min_mutual as H; intuition eauto.
-Qed.
-
-#[export] Hint Resolve size_sub_mode_min : lngen.
-
-Lemma size_sort_min :
-forall s1, 1 <= size_sort s1.
-Proof.
-pose proof size_sub_mode_min_size_sort_min_mutual as H; intuition eauto.
-Qed.
-
-#[export] Hint Resolve size_sort_min : lngen.
-
-(* begin hide *)
-
 Lemma size_pat_row_min_mutual :
 (forall p1, 1 <= size_pat_row p1).
 Proof.
@@ -585,6 +549,25 @@ pose proof size_pat_row_min_mutual as H; intuition eauto.
 Qed.
 
 #[export] Hint Resolve size_pat_row_min : lngen.
+
+(* begin hide *)
+
+Lemma size_sort_min_mutual :
+(forall s1, 1 <= size_sort s1).
+Proof.
+apply_mutual_ind sort_mutind;
+default_simp.
+Qed.
+
+(* end hide *)
+
+Lemma size_sort_min :
+forall s1, 1 <= size_sort s1.
+Proof.
+pose proof size_sort_min_mutual as H; intuition eauto.
+Qed.
+
+#[export] Hint Resolve size_sort_min : lngen.
 
 (* begin hide *)
 
@@ -3476,18 +3459,16 @@ Ltac exp_lc_exists_tac :=
               let J2 := fresh in pose proof H as J2; apply degree_exp_wrt_exp_of_lc_exp in J2; clear H
           end).
 
-Ltac sub_mode_sort_lc_exists_tac :=
-  repeat (match goal with
-            | H : _ |- _ =>
-              fail 1
-            | H : _ |- _ =>
-              fail 1
-          end).
-
 Ltac pat_row_lc_exists_tac :=
   repeat (match goal with
             | H : _ |- _ =>
               let J1 := fresh in pose proof H as J1; apply degree_pat_row_wrt_pre_typ_of_lc_pat_row in J1; clear H
+          end).
+
+Ltac sort_lc_exists_tac :=
+  repeat (match goal with
+            | H : _ |- _ =>
+              fail 1
           end).
 
 Lemma lc_pre_typ_all_exists :
