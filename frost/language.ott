@@ -41,9 +41,10 @@ bind, b :: bind_ ::=
   | : A  ::   :: pattern
 
 sort, s :: sort_ ::=
-  | ■m    ::   :: mono
-  | ■po   ::   :: poly
-  | ■pa   ::   :: pattern
+  | ■1   ::   :: star
+  | ■2   ::   :: circ
+  | ■3   ::   :: hcirc
+  | ■4   ::   :: ecirc
 
 substitutions
   single P X  :: subst_pattern_in
@@ -335,66 +336,128 @@ defn
 % ----------------- :: cons
 % P , p [▹] P ---> p 
 
+% defns
+% comp_checking :: '' ::=
+
+% defn
+% tE | dE |- T ~ R :: :: comp_checking :: 'comp_checking__' by
+
+% ------------------- :: ghost_l
+% empty | dE |- * ~ T
+
+% ------------------- :: ghost_r
+% empty | dE |- P ~ *
+
+% ------------------- :: ghost_var
+% tE | dE |- X ~ X
+
+% sin l [=] tE
+% ------------------- :: ghost_var'
+% tE | dE |- X ~ [ X ] l
+
+% tE' | dE , X : □ |- T ~ P
+% tE [=] tE' , l
+% ---------------------------------- :: forall
+% tE | dE |- ∀ X . T ~ [ ∀ X . P ] l
+
+% tE | dE |- P ~ T
+% -------------------------- :: topghost_l1
+% tE | dE |- *. P ~ T
+
+% % ForallGhostL2 is split into topghost_l2 and topghost_l2'
+% tE | dE , X : □ |- P ~ T
+% ---------------------------- :: topghost_l2
+% tE | dE |- *. P ~ ∀ X . T
+
+% tE | dE |- *. P ~ T
+% ------------------------------- :: topghost_l2'
+% tE | dE |- *. P ~ [ *. T ] l
+
+% tE | dE |- *. P ~ T
+% ------------------------------- :: topghost_l3
+% tE | dE |- *. P ~ ^ *. T
+
+% tE | dE |- P ~ T
+% ------------------------------ :: topghost_r1
+% tE | dE |- P ~ *. T
+
+% tE | dE , X : □ |- P ~ *. T
+% ---------------------------- :: topghost_r2
+% tE | dE |- ∀ X . P ~ *. T
+
+% tE1 | dE |- P ~ T
+% tE2 | dE |- Q ~ R
+% tE1 ∪ tE2 [=] tE
+% ------------------------------------ :: arrow
+% tE | dE |- P -> Q ~ T -> R
+
+% tE1 | dE |- P ~ T
+% tE2 | dE |- Q ~ R
+% (tE1 ∪ tE2) , l [=] tE
+% ------------------------------------ :: arrow'
+% tE | dE |- P -> Q ~ [ T -> R ] l
+
+
 defns
-comp_checking :: '' ::=
+pattern_joining :: '' ::=
 
 defn
-tE | dE |- T ~ R :: :: comp_checking :: 'comp_checking__' by
+tE | dE |- P /\ T ~ R :: :: pattern_joining :: 'pjoining__' by
 
-------------------- :: ghost_l
-empty | dE |- * ~ T
+--------------------------- :: ghost_l
+empty | dE |- * /\ T ~ T
 
-------------------- :: ghost_r
-empty | dE |- P ~ *
+---------------------------- :: ghost_r
+empty | dE |- P /\ * ~ P
 
 ------------------- :: ghost_var
-tE | dE |- X ~ X
+tE | dE |- X /\ X ~ X
 
 sin l [=] tE
 ------------------- :: ghost_var'
-tE | dE |- X ~ [ X ] l
+tE | dE |- X /\ [ X ] l ~ X
 
-tE' | dE , X : □ |- T ~ P
+tE' | dE , X : □ |- P /\ T ~ R
 tE [=] tE' , l
 ---------------------------------- :: forall
-tE | dE |- ∀ X . T ~ [ ∀ X . P ] l
+tE | dE |- ∀ X . P /\ [ ∀ X . T ] l ~ ∀ X . R
 
-tE | dE |- P ~ T
+tE | dE |- P /\ T ~ R
 -------------------------- :: topghost_l1
-tE | dE |- *. P ~ T
+tE | dE |- *. P /\ T ~ R
 
 % ForallGhostL2 is split into topghost_l2 and topghost_l2'
-tE | dE , X : □ |- P ~ T
+tE | dE , X : □ |- P /\ T ~ R
 ---------------------------- :: topghost_l2
-tE | dE |- *. P ~ ∀ X . T
+tE | dE |- *. P /\ ∀ X . T ~ ∀ X . R
 
-tE | dE |- *. P ~ T
+tE | dE , X : □ |- *. P /\ T ~ R 
 ------------------------------- :: topghost_l2'
-tE | dE |- *. P ~ [ *. T ] l
+tE | dE |- *. P /\ [ ∀ X . T ] l ~ ∀ X . R
 
-tE | dE |- *. P ~ T
+tE | dE |- *. P /\ T ~ R
 ------------------------------- :: topghost_l3
-tE | dE |- *. P ~ ^ *. T
+tE | dE |- *. P /\ ^ *. T ~ *. R
 
-tE | dE |- P ~ T
+tE | dE |- P /\ T ~ R
 ------------------------------ :: topghost_r1
-tE | dE |- P ~ *. T
+tE | dE |- P /\ *. T ~ R
 
-tE | dE , X : □ |- P ~ *. T
+tE | dE , X : □ |- P /\ *. T ~ R
 ---------------------------- :: topghost_r2
-tE | dE |- ∀ X . P ~ *. T
+tE | dE |- ∀ X . P /\ *. T ~ ∀ X . R
 
-tE1 | dE |- P ~ T
-tE2 | dE |- Q ~ R
+tE1 | dE |- P /\ T1 ~ R1 
+tE2 | dE |- Q /\ T2 ~ R2
 tE1 ∪ tE2 [=] tE
 ------------------------------------ :: arrow
-tE | dE |- P -> Q ~ T -> R
+tE | dE |- P -> Q /\ T1 -> T2 ~ R1 -> R2 
 
-tE1 | dE |- P ~ T
-tE2 | dE |- Q ~ R
+tE1 | dE |- P /\ T1 ~ R1
+tE2 | dE |- Q /\ T2 ~ R2
 (tE1 ∪ tE2) , l [=] tE
 ------------------------------------ :: arrow'
-tE | dE |- P -> Q ~ [ T -> R ] l
+tE | dE |- P -> Q /\ [ T1 -> T2 ] l ~ R1 -> R2
 
 defns
 subtyping :: '' ::=
@@ -414,16 +477,15 @@ tE | dE , X : □ |- T -[ A > m >> T
 --------------------------------------- :: tail_forallr
 tE | dE |- T -[ ∀ X . A > m >> ∀ X . T
 
-empty | dE |- T ~ A
+empty | dE |- A /\ T ~ R
 ------------------------- :: tail_typ 
-empty | dE |- T -[ A > m >> A
+empty | dE |- T -[ A > m >> R
 
-% TODO : add pattern join
-tE1 | dE |- P ~ R
+tE1 | dE |- P /\ R ~ R'
 tE2 | dE |- T -[ p > m >> T'
 tE1 ∪ tE2 [=] tE
 ------------------------------------ :: arg_match
-tE | dE |- R -> T -[ P , p > m >> P -> T'
+tE | dE |- R -> T -[ P , p > m >> R' -> T'
 
 p <> *
 tE | dE |- R -[ p > m >> T

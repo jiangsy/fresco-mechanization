@@ -27,9 +27,10 @@ Inductive sub_mode : Set :=
  | sub_mode_pi : sub_mode.
 
 Inductive sort : Set := 
- | sort_mono : sort
- | sort_poly : sort
- | sort_pattern : sort.
+ | sort_star : sort
+ | sort_circ : sort
+ | sort_hcirc : sort
+ | sort_ecirc : sort.
 
 Inductive pat_row : Set := 
  | pat_row_cons (P:pre_typ) (p:pat_row)
@@ -434,51 +435,51 @@ Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
  | is_exp__freeze : forall (x:expvar),
      is_exp (exp_freeze (exp_var_f x)).
 
-(* defns comp_checking *)
-Inductive comp_checking : tenv -> env -> pre_typ -> pre_typ -> Prop :=    (* defn comp_checking *)
- | comp_checking__ghost_l : forall (Ψ:env) (T:pre_typ),
+(* defns pattern_joining *)
+Inductive pattern_joining : tenv -> env -> pre_typ -> pre_typ -> pre_typ -> Prop :=    (* defn pattern_joining *)
+ | pjoining__ghost_l : forall (Ψ:env) (T:pre_typ),
      lc_pre_typ T ->
-     comp_checking  empty  Ψ pre_typ_ghost T
- | comp_checking__ghost_r : forall (Ψ:env) (P:pre_typ),
+     pattern_joining  empty  Ψ pre_typ_ghost T T
+ | pjoining__ghost_r : forall (Ψ:env) (P:pre_typ),
      lc_pre_typ P ->
-     comp_checking  empty  Ψ P pre_typ_ghost
- | comp_checking__ghost_var : forall (Δ:tenv) (Ψ:env) (X:typvar),
-     comp_checking Δ Ψ (pre_typ_var_f X) (pre_typ_var_f X)
- | comp_checking__ghost_var' : forall (Δ:tenv) (Ψ:env) (X:typvar) (l:taglabel),
+     pattern_joining  empty  Ψ P pre_typ_ghost P
+ | pjoining__ghost_var : forall (Δ:tenv) (Ψ:env) (X:typvar),
+     pattern_joining Δ Ψ (pre_typ_var_f X) (pre_typ_var_f X) (pre_typ_var_f X)
+ | pjoining__ghost_var' : forall (Δ:tenv) (Ψ:env) (X:typvar) (l:taglabel),
       (  (singleton  l )   [=]  Δ )  ->
-     comp_checking Δ Ψ (pre_typ_var_f X) (pre_typ_tag (pre_typ_var_f X) l)
- | comp_checking__forall : forall (L:vars) (Δ:tenv) (Ψ:env) (T P:pre_typ) (l:taglabel) (Δ':tenv),
-      ( forall X , X \notin  L  -> comp_checking Δ'  ( X ~ bind_tvar  ++  Ψ )   ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  )  ->
+     pattern_joining Δ Ψ (pre_typ_var_f X) (pre_typ_tag (pre_typ_var_f X) l) (pre_typ_var_f X)
+ | pjoining__forall : forall (L:vars) (Δ:tenv) (Ψ:env) (P T:pre_typ) (l:taglabel) (R:pre_typ) (Δ':tenv),
+      ( forall X , X \notin  L  -> pattern_joining Δ'  ( X ~ bind_tvar  ++  Ψ )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )   ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )   ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  ->
       ( Δ  [=]   (add  l   Δ' )  )  ->
-     comp_checking Δ Ψ (pre_typ_all T) (pre_typ_tag (pre_typ_all P) l)
- | comp_checking__topghost_l1 : forall (Δ:tenv) (Ψ:env) (P T:pre_typ),
-     comp_checking Δ Ψ P T ->
-     comp_checking Δ Ψ (pre_typ_topghost P) T
- | comp_checking__topghost_l2 : forall (L:vars) (Δ:tenv) (Ψ:env) (P T:pre_typ),
-      ( forall X , X \notin  L  -> comp_checking Δ  ( X ~ bind_tvar  ++  Ψ )  P  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  )  ->
-     comp_checking Δ Ψ (pre_typ_topghost P) (pre_typ_all T)
- | comp_checking__topghost_l2' : forall (Δ:tenv) (Ψ:env) (P T:pre_typ) (l:taglabel),
-     comp_checking Δ Ψ (pre_typ_topghost P) T ->
-     comp_checking Δ Ψ (pre_typ_topghost P) (pre_typ_tag (pre_typ_topghost T) l)
- | comp_checking__topghost_l3 : forall (Δ:tenv) (Ψ:env) (P T:pre_typ),
-     comp_checking Δ Ψ (pre_typ_topghost P) T ->
-     comp_checking Δ Ψ (pre_typ_topghost P) (pre_typ_hat (pre_typ_topghost T))
- | comp_checking__topghost_r1 : forall (Δ:tenv) (Ψ:env) (P T:pre_typ),
-     comp_checking Δ Ψ P T ->
-     comp_checking Δ Ψ P (pre_typ_topghost T)
- | comp_checking__topghost_r2 : forall (L:vars) (Δ:tenv) (Ψ:env) (P T:pre_typ),
-      ( forall X , X \notin  L  -> comp_checking Δ  ( X ~ bind_tvar  ++  Ψ )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  (pre_typ_topghost T) )  ->
-     comp_checking Δ Ψ (pre_typ_all P) (pre_typ_topghost T)
- | comp_checking__arrow : forall (Δ:tenv) (Ψ:env) (P Q T R:pre_typ) (Δ1 Δ2:tenv),
-     comp_checking Δ1 Ψ P T ->
-     comp_checking Δ2 Ψ Q R ->
+     pattern_joining Δ Ψ (pre_typ_all P) (pre_typ_tag (pre_typ_all T) l) (pre_typ_all R)
+ | pjoining__topghost_l1 : forall (Δ:tenv) (Ψ:env) (P T R:pre_typ),
+     pattern_joining Δ Ψ P T R ->
+     pattern_joining Δ Ψ (pre_typ_topghost P) T R
+ | pjoining__topghost_l2 : forall (L:vars) (Δ:tenv) (Ψ:env) (P T R:pre_typ),
+      ( forall X , X \notin  L  -> pattern_joining Δ  ( X ~ bind_tvar  ++  Ψ )  P  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )   ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  ->
+     pattern_joining Δ Ψ (pre_typ_topghost P) (pre_typ_all T) (pre_typ_all R)
+ | pjoining__topghost_l2' : forall (L:vars) (Δ:tenv) (Ψ:env) (P T:pre_typ) (l:taglabel) (R:pre_typ),
+      ( forall X , X \notin  L  -> pattern_joining Δ  ( X ~ bind_tvar  ++  Ψ )  (pre_typ_topghost P)  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )   ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  ->
+     pattern_joining Δ Ψ (pre_typ_topghost P) (pre_typ_tag (pre_typ_all T) l) (pre_typ_all R)
+ | pjoining__topghost_l3 : forall (Δ:tenv) (Ψ:env) (P T R:pre_typ),
+     pattern_joining Δ Ψ (pre_typ_topghost P) T R ->
+     pattern_joining Δ Ψ (pre_typ_topghost P) (pre_typ_hat (pre_typ_topghost T)) (pre_typ_topghost R)
+ | pjoining__topghost_r1 : forall (Δ:tenv) (Ψ:env) (P T R:pre_typ),
+     pattern_joining Δ Ψ P T R ->
+     pattern_joining Δ Ψ P (pre_typ_topghost T) R
+ | pjoining__topghost_r2 : forall (L:vars) (Δ:tenv) (Ψ:env) (P T R:pre_typ),
+      ( forall X , X \notin  L  -> pattern_joining Δ  ( X ~ bind_tvar  ++  Ψ )   ( open_pre_typ_wrt_pre_typ P (pre_typ_var_f X) )  (pre_typ_topghost T)  ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  ->
+     pattern_joining Δ Ψ (pre_typ_all P) (pre_typ_topghost T) (pre_typ_all R)
+ | pjoining__arrow : forall (Δ:tenv) (Ψ:env) (P Q T1 T2 R1 R2:pre_typ) (Δ1 Δ2:tenv),
+     pattern_joining Δ1 Ψ P T1 R1 ->
+     pattern_joining Δ2 Ψ Q T2 R2 ->
       (  ( Δ1  `union`  Δ2 )   [=]  Δ )  ->
-     comp_checking Δ Ψ (pre_typ_arrow P Q) (pre_typ_arrow T R)
- | comp_checking__arrow' : forall (Δ:tenv) (Ψ:env) (P Q T R:pre_typ) (l:taglabel) (Δ1 Δ2:tenv),
-     comp_checking Δ1 Ψ P T ->
-     comp_checking Δ2 Ψ Q R ->
+     pattern_joining Δ Ψ (pre_typ_arrow P Q) (pre_typ_arrow T1 T2) (pre_typ_arrow R1 R2)
+ | pjoining__arrow' : forall (Δ:tenv) (Ψ:env) (P Q T1 T2:pre_typ) (l:taglabel) (R1 R2:pre_typ) (Δ1 Δ2:tenv),
+     pattern_joining Δ1 Ψ P T1 R1 ->
+     pattern_joining Δ2 Ψ Q T2 R2 ->
       (  (add  l    (  ( Δ1  `union`  Δ2 )  )  )   [=]  Δ )  ->
-     comp_checking Δ Ψ (pre_typ_arrow P Q) (pre_typ_tag (pre_typ_arrow T R) l).
+     pattern_joining Δ Ψ (pre_typ_arrow P Q) (pre_typ_tag (pre_typ_arrow T1 T2) l) (pre_typ_arrow R1 R2).
 
 (* defns subtyping *)
 Inductive subtyping : tenv -> env -> pre_typ -> pat_row -> sub_mode -> pre_typ -> Prop :=    (* defn subtyping *)
@@ -491,14 +492,14 @@ Inductive subtyping : tenv -> env -> pre_typ -> pat_row -> sub_mode -> pre_typ -
  | subtyping__tail_forallr : forall (L:vars) (Δ:tenv) (Ψ:env) (T A:pre_typ) (m:sub_mode),
       ( forall X , X \notin  L  -> subtyping Δ  ( X ~ bind_tvar  ++  Ψ )   ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  (pat_row_one  ( open_pre_typ_wrt_pre_typ A (pre_typ_var_f X) ) ) m  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  )  ->
       ( forall X , X \notin  L  -> subtyping Δ Ψ  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  (pat_row_one (pre_typ_all A)) m (pre_typ_all T) ) 
- | subtyping__tail_typ : forall (Ψ:env) (T A:pre_typ) (m:sub_mode),
-     comp_checking  empty  Ψ T A ->
-     subtyping  empty  Ψ T (pat_row_one A) m A
- | subtyping__arg_match : forall (Δ:tenv) (Ψ:env) (R T P:pre_typ) (p:pat_row) (m:sub_mode) (T':pre_typ) (Δ1 Δ2:tenv),
-     comp_checking Δ1 Ψ P R ->
+ | subtyping__tail_typ : forall (Ψ:env) (T A:pre_typ) (m:sub_mode) (R:pre_typ),
+     pattern_joining  empty  Ψ A T R ->
+     subtyping  empty  Ψ T (pat_row_one A) m R
+ | subtyping__arg_match : forall (Δ:tenv) (Ψ:env) (R T P:pre_typ) (p:pat_row) (m:sub_mode) (R' T':pre_typ) (Δ1 Δ2:tenv),
+     pattern_joining Δ1 Ψ P R R' ->
      subtyping Δ2 Ψ T p m T' ->
       (  ( Δ1  `union`  Δ2 )   [=]  Δ )  ->
-     subtyping Δ Ψ (pre_typ_arrow R T) (pat_row_cons P p) m (pre_typ_arrow P T')
+     subtyping Δ Ψ (pre_typ_arrow R T) (pat_row_cons P p) m (pre_typ_arrow R' T')
  | subtyping__inst_ghost : forall (Δ:tenv) (Ψ:env) (R:pre_typ) (p:pat_row) (m:sub_mode) (T:pre_typ),
       ( p  <> pat_row_one pre_typ_ghost )  ->
      subtyping Δ Ψ R p m T ->
@@ -587,6 +588,6 @@ Inductive uni_typing : env -> pat_row -> exp -> sub_mode -> pre_typ -> Prop :=  
 
 
 (** infrastructure *)
-#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern is_gpattern mono_styp is_exp comp_checking subtyping pattern_splitting uni_typing lc_pre_typ lc_bind lc_pat_row lc_exp : core.
+#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern is_gpattern mono_styp is_exp pattern_joining subtyping pattern_splitting uni_typing lc_pre_typ lc_bind lc_pat_row lc_exp : core.
 
 

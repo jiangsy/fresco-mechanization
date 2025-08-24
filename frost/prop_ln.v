@@ -161,9 +161,10 @@ Fixpoint size_pat_row (p1 : pat_row) {struct p1} : nat :=
 
 Fixpoint size_sort (s1 : sort) {struct s1} : nat :=
   match s1 with
-    | sort_mono => 1
-    | sort_poly => 1
-    | sort_pattern => 1
+    | sort_star => 1
+    | sort_circ => 1
+    | sort_hcirc => 1
+    | sort_ecirc => 1
   end.
 
 
