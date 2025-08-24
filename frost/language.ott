@@ -58,10 +58,11 @@ freevars
 grammar
 
 
-sub_mode, m :: sub_mode_ ::=
-  | ty    ::  :: ty
-  | ng    ::  :: ng
-  | pi    ::  :: pi
+mode, m :: mode_ ::=
+  | ty            ::   :: ty
+  | ng            ::   :: ng
+  | pi            ::   :: pi
+  | ↓ m           :: M :: to_ty {{ coq (to_ty_mode [[ m ]]) }}
 
 env, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
   | empty     ::   :: dempty {{ coq nil }}
@@ -83,10 +84,23 @@ formula :: formula_ ::=
   | x  `notin` dom dE ::   :: fresh1 {{ coq ([[x]]  `notin` dom ([[dE]])) }}
   | X  `notin` dom dE ::   :: fresh2 {{ coq ([[X]]  `notin` dom ([[dE]])) }}
   | tE1 [=] tE2       ::   :: seteq  {{ coq ([[tE1]] [=] [[tE2]]) }}
+  | m1 == m2          ::   :: modeeq {{ coq [[m1]] = [[m2]] }}
   | l `in` tE         ::   :: in1  {{ coq ([[l]] `in` [[tE]]) }}
   | p <> *            ::   :: not_ghost {{ coq ([[p]] <> pat_row_one pre_typ_ghost ) }}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+embed {{ coq 
+
+Function to_ty_mode (m : mode) : mode :=
+  match m with 
+  | mode_ty => mode_ty
+  | mode_ng => mode_ng
+  | mode_pi => mode_ng
+  end.
+
+}}
+
 
 defns
 is_typ :: '' ::=
@@ -700,13 +714,13 @@ defn
 
 dE | p |- e =>[ m ] T :: :: uni_typing :: 'uni_typing__' by
 
-
 % |-ˢᵗ A
+m == ty
 ( x : P ) in dE
 ---------------------------------- :: freeze_chk
-dE | P |- ⌈ x ⌉ =>[ pi ] P
+dE | P |- ⌈ x ⌉ =>[ m ] P
 
-% |-ˢᵗ A
+m == pi \/ m == ng
 ( x : P ) in dE
 ---------------------------------- :: freeze_inf
 dE | * |- ⌈ x ⌉ =>[ pi ] P
@@ -727,6 +741,8 @@ dE | * |- e : A =>[ m ] B
 % and abs' and abs'' to distingusi whether pattern split 
 % returns two patterns or a pattern and a pattern row
 % similarly for anno_abs
+% TODO: 
+% add haunt
 p ▹ ∀ X . P
 dE , X : □ | P |- \ x . e =>[ m ] A
 ---------------------------------- :: abs
@@ -746,6 +762,8 @@ dE , x : P1 | P2 |- e =>[ m ] B
 ---------------------------------- :: abs''
 dE | * |- \ x . e =>[ m ] A -> B
 
+% TODO: 
+% add haunted
 p ▹ ∀ X . P
 dE , X : □ | P |- \ x . e =>[ m ] B
 ---------------------------------- :: anno_abs
@@ -771,7 +789,7 @@ dE | P' |- e2 =>[ m ] P'
 ---------------------------------- :: app
 dE | p |- e1 e2 =>[ m ] B
 
-dE | * |- e1 =>[ m ] A
+dE | * |- e1 =>[ ↓ m ] A
 dE , x : A | p |- e2 =>[ m ] B
 ---------------------------------- :: let
 dE | p |- let x = e1 in e2 =>[ m ] B
