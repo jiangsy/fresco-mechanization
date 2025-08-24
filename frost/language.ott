@@ -78,7 +78,8 @@ tenv, tE, tF, tG:: '' ::= {{ coq vars }}
 
 formula :: formula_ ::=
   | judgement             ::   :: judgement
-  | formula \/ formula'       ::   :: judgement_or {{ coq  ([[formula]]) \/ ([[formula']]) }}
+  | formula \/ formula'   ::   :: judgement_or {{ coq  ([[formula]]) \/ ([[formula']]) }}
+  | ! formula             :: :: judgement_not {{ coq  (~[[formula]]) }}
   | ( x b )  in dE    ::   :: binds1 {{ coq binds ([[x]])  ([[b]]) ([[dE]]) }}
   | ( X b )  in dE    ::   :: binds2 {{ coq binds ([[X]])  ([[b]]) ([[dE]]) }}
   | x  `notin` dom dE ::   :: fresh1 {{ coq ([[x]]  `notin` dom ([[dE]])) }}
@@ -413,6 +414,49 @@ defn
 
 
 defns
+tag_erasure :: '' ::=
+
+defn
+
+<| T |> tE ↘ R :: :: tag_erasure :: 'tag_erasure__' by
+
+-------------- :: tvar
+<| X |> tE ↘ X 
+
+<| T1 |> tE ↘ R1
+<| T2 |> tE ↘ R2
+-------------- :: arrow
+<| T1 -> T2 |> tE ↘ R1 -> R2
+
+<| T |> tE ↘ R
+-------------------- :: all
+<| ∀ X . T |> tE ↘ ∀ X . R
+
+-------------------- :: ghost
+<| * |> tE ↘ *
+
+<| T |> tE ↘ R
+-------------------- :: topghost
+<| *. T |> tE ↘ *. R
+
+l `in` tE
+<| T |> tE ↘ R
+----------------- :: tagged_typ
+<| [ T ] l |> tE ↘ R
+
+! l `in` tE
+<| T |> tE ↘ R
+----------------- :: tagged_tvar'
+<| [ T ] l |> tE ↘ [ R ] l
+
+-------------------- :: tagged_ghost
+<| ^ * |> tE ↘ * 
+
+<| T |> tE ↘ R 
+-------------------- :: tagged_topghost
+<| ^ *. T |> tE ↘ *. R 
+
+defns
 pattern_joining :: '' ::=
 
 defn
@@ -473,6 +517,8 @@ tE2 | dE |- Q /\ T2 ~ R2
 ------------------------------------ :: arrow'
 tE | dE |- P -> Q /\ [ T1 -> T2 ] l ~ R1 -> R2
 
+
+% TODO: fix the rule
 defns
 subtyping :: '' ::=
 
@@ -517,14 +563,13 @@ tE | dE |- { G / X } R -[ p > m >> T
 tE | dE |- ∀ X . R -[ p > m >> T
 
 % TODO : 
-% fix tE in type well-formedness
 % add pattern (tagged type) refinement
-% add erase
 p <> *
-tE |-ᵗᵗ T
-tE | dE |- { G / X } R -[ p > m >> T
+tE' |-ᵗᵗ T
+tE ∪ tE' | dE |- { G / X } R -[ p > m >> T
+<| T |> tE' ↘ T' 
 ---------------------------------- :: inst_real' 
-tE | dE |- [ ∀ X . R ] l -[ p > m >> T
+tE | dE |- [ ∀ X . R ] l -[ p > m >> T'
 
 
 defns 
@@ -723,8 +768,7 @@ dE | P |- ⌈ x ⌉ =>[ m ] P
 m == pi \/ m == ng
 ( x : P ) in dE
 ---------------------------------- :: freeze_inf
-dE | * |- ⌈ x ⌉ =>[ pi ] P
-
+dE | * |- ⌈ x ⌉ =>[ m ] P
 
 ( x : P ) in dE
 |-ᵖ P 

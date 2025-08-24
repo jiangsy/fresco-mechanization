@@ -445,6 +445,36 @@ Inductive is_exp : exp -> Prop :=    (* defn is_exp *)
  | is_exp__freeze : forall (x:expvar),
      is_exp (exp_freeze (exp_var_f x)).
 
+(* defns tag_erasure *)
+Inductive tag_erasure : pre_typ -> tenv -> pre_typ -> Prop :=    (* defn tag_erasure *)
+ | tag_erasure__tvar : forall (X:typvar) (Δ:tenv),
+     tag_erasure (pre_typ_var_f X) Δ (pre_typ_var_f X)
+ | tag_erasure__arrow : forall (T1 T2:pre_typ) (Δ:tenv) (R1 R2:pre_typ),
+     tag_erasure T1 Δ R1 ->
+     tag_erasure T2 Δ R2 ->
+     tag_erasure (pre_typ_arrow T1 T2) Δ (pre_typ_arrow R1 R2)
+ | tag_erasure__all : forall (L:vars) (T:pre_typ) (Δ:tenv) (R:pre_typ),
+      ( forall X , X \notin  L  -> tag_erasure  ( open_pre_typ_wrt_pre_typ T (pre_typ_var_f X) )  Δ  ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  ->
+     tag_erasure (pre_typ_all T) Δ (pre_typ_all R)
+ | tag_erasure__ghost : forall (Δ:tenv),
+     tag_erasure pre_typ_ghost Δ pre_typ_ghost
+ | tag_erasure__topghost : forall (T:pre_typ) (Δ:tenv) (R:pre_typ),
+     tag_erasure T Δ R ->
+     tag_erasure (pre_typ_topghost T) Δ (pre_typ_topghost R)
+ | tag_erasure__tagged_typ : forall (T:pre_typ) (l:taglabel) (Δ:tenv) (R:pre_typ),
+      ( l  `in`  Δ )  ->
+     tag_erasure T Δ R ->
+     tag_erasure (pre_typ_tag T l) Δ R
+ | tag_erasure__tagged_tvar' : forall (T:pre_typ) (l:taglabel) (Δ:tenv) (R:pre_typ),
+      (~  ( l  `in`  Δ )  )  ->
+     tag_erasure T Δ R ->
+     tag_erasure (pre_typ_tag T l) Δ (pre_typ_tag R l)
+ | tag_erasure__tagged_ghost : forall (Δ:tenv),
+     tag_erasure (pre_typ_hat pre_typ_ghost) Δ pre_typ_ghost
+ | tag_erasure__tagged_topghost : forall (T:pre_typ) (Δ:tenv) (R:pre_typ),
+     tag_erasure T Δ R ->
+     tag_erasure (pre_typ_hat (pre_typ_topghost T)) Δ (pre_typ_topghost R).
+
 (* defns pattern_joining *)
 Inductive pattern_joining : tenv -> env -> pre_typ -> pre_typ -> pre_typ -> Prop :=    (* defn pattern_joining *)
  | pjoining__ghost_l : forall (Ψ:env) (T:pre_typ),
@@ -519,11 +549,12 @@ Inductive subtyping : tenv -> env -> pre_typ -> pat_row -> mode -> pre_typ -> Pr
      wf_ttyp Δ T ->
       ( forall X , X \notin  L  -> subtyping Δ Ψ  (open_pre_typ_wrt_pre_typ  G    ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  p m T )  ->
      subtyping Δ Ψ (pre_typ_all R) p m T
- | subtyping__inst_real' : forall (L:vars) (Δ:tenv) (Ψ:env) (R:pre_typ) (l:taglabel) (p:pat_row) (m:mode) (T G:pre_typ),
+ | subtyping__inst_real' : forall (L:vars) (Δ:tenv) (Ψ:env) (R:pre_typ) (l:taglabel) (p:pat_row) (m:mode) (T':pre_typ) (Δ':tenv) (T G:pre_typ),
       ( p  <> pat_row_one pre_typ_ghost )  ->
-     wf_ttyp Δ T ->
-      ( forall X , X \notin  L  -> subtyping Δ Ψ  (open_pre_typ_wrt_pre_typ  G    ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  p m T )  ->
-     subtyping Δ Ψ (pre_typ_tag (pre_typ_all R) l) p m T.
+     wf_ttyp Δ' T ->
+      ( forall X , X \notin  L  -> subtyping  ( Δ  `union`  Δ' )  Ψ  (open_pre_typ_wrt_pre_typ  G    ( open_pre_typ_wrt_pre_typ R (pre_typ_var_f X) )  )  p m T )  ->
+     tag_erasure T Δ' T' ->
+     subtyping Δ Ψ (pre_typ_tag (pre_typ_all R) l) p m T'.
 
 (* defns pattern_splitting *)
 Inductive pattern_splitting : pat_row -> pat_row -> Prop :=    (* defn pattern_splitting *)
@@ -547,10 +578,10 @@ Inductive uni_typing : env -> pat_row -> exp -> mode -> pre_typ -> Prop :=    (*
       m  =  mode_ty  ->
       binds ( x )  ( (bind_pattern P) ) ( Ψ )  ->
      uni_typing Ψ (pat_row_one P) (exp_freeze (exp_var_f x)) m P
- | uni_typing__freeze_inf : forall (Ψ:env) (x:expvar) (P:pre_typ) (m:mode),
+ | uni_typing__freeze_inf : forall (Ψ:env) (x:expvar) (m:mode) (P:pre_typ),
       (  m  =  mode_pi  ) \/ (  m  =  mode_ng  )  ->
       binds ( x )  ( (bind_pattern P) ) ( Ψ )  ->
-     uni_typing Ψ (pat_row_one pre_typ_ghost) (exp_freeze (exp_var_f x)) mode_pi P
+     uni_typing Ψ (pat_row_one pre_typ_ghost) (exp_freeze (exp_var_f x)) m P
  | uni_typing__var : forall (Ψ:env) (p:pat_row) (x:expvar) (m:mode) (R P:pre_typ),
       binds ( x )  ( (bind_pattern P) ) ( Ψ )  ->
      is_pattern P ->
@@ -600,6 +631,5 @@ Inductive uni_typing : env -> pat_row -> exp -> mode -> pre_typ -> Prop :=    (*
 
 
 (** infrastructure *)
-#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern is_gpattern mono_styp is_exp pattern_joining subtyping pattern_splitting uni_typing lc_pre_typ lc_bind lc_pat_row lc_exp : core.
-
+#[export] Hint Constructors is_typ is_ttyp wf_ttyp is_styp is_pattern is_gpattern mono_styp is_exp tag_erasure pattern_joining subtyping pattern_splitting uni_typing lc_pre_typ lc_bind lc_pat_row lc_exp : core.
 
