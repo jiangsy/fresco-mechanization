@@ -26,8 +26,8 @@ endif
 	ott -i $^ -o $@ ${OTT_FLAGS}
 	sed -e "/Ott.ott_list_core/d" ${SED_FLAG} $@
 	sed -e "s/dE/Ψ/g" ${SED_FLAG} $@
-	sed -e "s/tE/Δ/g" ${SED_FLAG} $@
-	sed -e "s/Definition tenv : Set := vars./Definition tenv : Type := vars./" ${SED_FLAG} $@ 
+	sed -e "s/dD/Δ/g" ${SED_FLAG} $@
+	sed -e "s/dP/Ψskel/g" ${SED_FLAG} $@
 
 ott : ${OTT_OUTS}
 
