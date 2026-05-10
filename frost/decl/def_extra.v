@@ -240,3 +240,66 @@ Inductive d_shallow_sub :
     d_wf_typ dE A' ->
     d_shallow_sub dE (open_typ_wrt_typ A A') B ->
     d_shallow_sub dE (typ_all_col c A) B.
+
+(** ** Base terms O ::= unit | x | M:A — used in the Sub rule. *)
+Inductive is_base_term : exp -> Prop :=
+| is_base_term__unit : is_base_term exp_unit
+| is_base_term__var  : forall x, is_base_term (exp_var_f x)
+| is_base_term__anno : forall e A, is_base_term (exp_anno e A).
+
+(** ** Declarative typing Γ ⊢_M e : A.
+
+    Mutual with [d_pat] (pattern-matching judgement) and [d_refine_syn]
+    (refinement of synthesised skeletons). Those two are placeholders
+    here; Task 7 replaces them with their real definitions. *)
+Inductive d_typing :
+  mode -> list (atom * dbind) -> exp -> typ -> Prop :=
+| d_typing__unit : forall dE,
+    mode_typ_compat mode_ti typ_unit ->
+    d_typing mode_ti dE exp_unit typ_unit
+| d_typing__var : forall dE x A,
+    binds x (dbind_typ A) dE ->
+    d_typing mode_ti dE (exp_var_f x) A
+| d_typing__anno : forall dE e A,
+    is_inh_typ A ->
+    d_typing mode_tc dE e A ->
+    d_typing mode_ti dE (exp_anno e A) A
+| d_typing__sub : forall dE m e A B,
+    is_base_term e ->
+    d_typing mode_ti dE e A ->
+    d_sub m nil dE A B ->
+    d_typing m dE e B
+| d_typing__freeze : forall dE e A,
+    d_typing mode_ti dE e A ->
+    d_typing mode_tc dE (exp_freeze e) A
+| d_typing__forall : forall L dE e A,
+    is_value e ->
+    (forall X, X `notin` L ->
+       d_typing mode_tc ((X ~ dbind_tvar) ++ dE) e
+         (open_typ_wrt_typ A (typ_var_f X))) ->
+    d_typing mode_tc dE e (typ_all_col colour_inh A)
+| d_typing__abs : forall L dE m e A B,
+    is_inh_typ A ->
+    (forall x, x `notin` L ->
+       d_typing (decr_mode m) ((x ~ dbind_typ A) ++ dE)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_typing m dE (exp_abs e) (typ_arrow A B)
+| d_typing__abs_anno : forall L dE m e A B,
+    (forall x, x `notin` L ->
+       d_typing (decr_mode m) ((x ~ dbind_typ A) ++ dE)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_typing m dE (exp_abs_anno A e) (typ_arrow A B)
+| d_typing__app : forall dE m e1 e2 P P' A B,
+    d_pat mode_ti dE e2 P ->
+    d_refine_syn nil dE P P' ->
+    d_typing (mode_fn m) dE e1 (typ_arrow A B) ->
+    d_typing mode_tc dE e2 A ->
+    d_typing m dE (exp_app e1 e2) B
+
+with d_pat :
+  mode -> list (atom * dbind) -> exp -> typ -> Prop :=
+| d_pat__placeholder : forall m dE e P, False -> d_pat m dE e P
+
+with d_refine_syn :
+  list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
+| d_refine_syn__placeholder : forall dP dE P Q, False -> d_refine_syn dP dE P Q.
