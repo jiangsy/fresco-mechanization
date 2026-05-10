@@ -36,10 +36,14 @@ Inductive d_wf_skel :
     d_wf_skel Ψ Γ P ->
     d_wf_skel Ψ Γ Q ->
     d_wf_skel Ψ Γ (typ_arrow P Q)
-| d_wf_skel__all : forall L Ψ Γ c P,
+| d_wf_skel__all_col : forall L Ψ Γ c P,
     (forall X, X `notin` L ->
        d_wf_skel (X :: Ψ) Γ (open_typ_wrt_typ P (typ_var_f X))) ->
     d_wf_skel Ψ Γ (typ_all_col c P)
+| d_wf_skel__all_plain : forall L Ψ Γ P,
+    (forall X, X `notin` L ->
+       d_wf_skel (X :: Ψ) Γ (open_typ_wrt_typ P (typ_var_f X))) ->
+    d_wf_skel Ψ Γ (typ_all_plain P)
 | d_wf_skel__hole : forall Ψ Γ,
     d_wf_skel Ψ Γ typ_hole
 | d_wf_skel__tophole : forall Ψ Γ P,
@@ -185,7 +189,6 @@ Inductive d_consis :
 | d_consis__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,
     d_consis Δ1 Γ T1 A1 ->
     d_consis Δ2 Γ T2 A2 ->
-    list_disjoint Δ1 Δ2 ->
     d_consis (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
 
 (** ** Type subtyping Γ ⊢_M^Δ T ≤ A. *)
@@ -210,7 +213,6 @@ Inductive d_sub :
 | d_sub__arg : forall Δ1 Δ2 Γ m T1 T2 A1 A2,
     d_consis Δ1 Γ T1 A1 ->
     d_sub m Δ2 Γ T2 A2 ->
-    list_disjoint Δ1 Δ2 ->
     d_sub (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2)
 | d_sub__forall_l_tagged : forall Δ Δ' Γ m ε T ph A,
     m <> mode_ti ->
@@ -306,26 +308,26 @@ Inductive d_refine :
     d_refine Ψ Γ P1 Q1 ->
     d_refine Ψ Γ P2 Q2 ->
     d_refine Ψ Γ (typ_arrow P1 P2) (typ_arrow Q1 Q2)
-| d_refine__all : forall L Ψ Γ c P Q,
+| d_refine__all : forall L Ψ Γ P Q,
     (forall X, X `notin` L ->
        d_refine (X :: Ψ) Γ
          (open_typ_wrt_typ P (typ_var_f X))
          (open_typ_wrt_typ Q (typ_var_f X))) ->
-    d_refine Ψ Γ (typ_all_col c P) (typ_all_col c Q)
+    d_refine Ψ Γ (typ_all_plain P) (typ_all_plain Q)
 | d_refine__hole : forall Ψ Γ Q,
     d_wf_skel nil Γ Q ->
     d_refine Ψ Γ typ_hole Q
 | d_refine__tophole_no_top : forall L Ψ Γ P Q,
     (forall X, X `notin` L ->
        d_refine (X :: Ψ) Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
-    d_refine Ψ Γ (typ_tophole P) (typ_all_col colour_inh Q)
+    d_refine Ψ Γ (typ_tophole P) (typ_all_plain Q)
 | d_refine__tophole_with_top : forall L Ψ Γ P Q,
     guarded_skel Q ->
     d_wf_skel nil Γ P ->
     (forall X, X `notin` L ->
        d_refine nil Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
     d_refine Ψ Γ (typ_tophole P)
-      (typ_all_col colour_inh (typ_tophole Q)).
+      (typ_all_plain (typ_tophole Q)).
 
 (** ** Skeleton consistency Δ ⨟ Γ ⊨ S ~ P.
     Standalone — does not reference d_typing or d_pat. *)
@@ -365,7 +367,6 @@ Inductive d_pat_consis :
 | d_pat_consis__arrow : forall Δ1 Δ2 Γ SS1 SS2 P1 P2,
     d_pat_consis Δ1 Γ SS1 P1 ->
     d_pat_consis Δ2 Γ SS2 P2 ->
-    list_disjoint Δ1 Δ2 ->
     d_pat_consis (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
 | d_pat_consis__univ_ghost_arr : forall Δ Γ SS P,
     d_pat_consis Δ Γ SS P ->
@@ -405,7 +406,6 @@ Inductive d_pat_sub :
 | d_pat_sub__arg : forall Δ1 Δ2 Γ m SS1 SS2 P1 P2,
     d_pat_consis Δ1 Γ SS1 P1 ->
     d_pat_sub m Δ2 Γ SS2 P2 ->
-    list_disjoint Δ1 Δ2 ->
     d_pat_sub (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
 | d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε SS psi P,
     m <> mode_ti ->
@@ -464,7 +464,7 @@ Inductive d_typing :
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
     d_typing m Γ (exp_abs_anno A e) (typ_arrow A B)
 | d_typing__app : forall Γ m e1 e2 P P' A B,
-    d_pat mode_ti Γ e2 P ->
+    d_pat mode_tc Γ e2 P ->
     d_refine_syn nil Γ P P' ->
     d_typing (mode_fn m) Γ e1 (typ_arrow A B) ->
     d_typing mode_tc Γ e2 A ->
@@ -477,8 +477,8 @@ with d_pat :
 | d_pat__var : forall Γ x P,
     binds x (dbind_skel P) Γ ->
     d_pat mode_ti Γ (exp_var_f x) P
-| d_pat__anno : forall Γ m e A,
-    d_pat m Γ (exp_anno e A) A
+| d_pat__anno : forall Γ e A,
+    d_pat mode_ti Γ (exp_anno e A) A
 | d_pat__sub : forall Γ m e P Q,
     is_base_term e ->
     d_pat mode_ti Γ e P ->
@@ -496,7 +496,7 @@ with d_pat :
     d_pat m Γ (exp_abs e) (typ_arrow P Q)
 | d_pat__abs_check : forall L Γ e Q,
     (forall x, x `notin` L ->
-       d_pat mode_ti ((x ~ dbind_skel typ_hole) ++ Γ)
+       d_pat mode_tc ((x ~ dbind_skel typ_hole) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat mode_tc Γ (exp_abs e) (typ_arrow (typ_tophole typ_hole) Q)
 | d_pat__abs_anno : forall L Γ m e A Q,
@@ -507,11 +507,11 @@ with d_pat :
     d_pat m Γ (exp_abs_anno A e) (typ_arrow A Q)
 | d_pat__abs_anno_check : forall L Γ e A Q,
     (forall x, x `notin` L ->
-       d_pat mode_ti ((x ~ dbind_typ A) ++ Γ)
+       d_pat mode_tc ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat mode_tc Γ (exp_abs_anno A e) (typ_arrow (typ_tophole A) Q)
 | d_pat__app : forall Γ m e1 e2 P P' Q,
-    d_pat mode_ti Γ e2 P ->
+    d_pat mode_tc Γ e2 P ->
     d_refine_syn nil Γ P P' ->
     d_typing (mode_fn m) Γ e1 (typ_arrow P' Q) ->
     d_pat m Γ (exp_app e1 e2) Q
