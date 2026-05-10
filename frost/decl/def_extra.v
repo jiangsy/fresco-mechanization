@@ -258,12 +258,174 @@ Inductive no_forall_typ : typ -> Prop :=
 | no_forall_typ__tophole : forall A,
     no_forall_typ A -> no_forall_typ (typ_tophole A).
 
-(** ** Declarative typing Γ ⊢_M e : A.
+(** ** Skeleton refinement (uncoloured) Ψ ⨟ Γ ⊢ P ▸ Q.
+    Standalone — does not reference d_typing or d_pat. *)
+Inductive d_refine_syn :
+  list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
+| d_refine_syn__unit : forall Ψ Γ,
+    d_refine_syn Ψ Γ typ_unit typ_unit
+| d_refine_syn__var : forall Ψ Γ X,
+    List.In X Ψ \/ binds X dbind_tvar Γ ->
+    d_refine_syn Ψ Γ (typ_var_f X) (typ_var_f X)
+| d_refine_syn__arrow : forall Ψ Γ P1 P2 Q1 Q2,
+    d_refine_syn Ψ Γ P1 Q1 ->
+    d_refine_syn Ψ Γ P2 Q2 ->
+    d_refine_syn Ψ Γ (typ_arrow P1 P2) (typ_arrow Q1 Q2)
+| d_refine_syn__all_inh : forall L Ψ Γ P Q,
+    (forall X, X `notin` L ->
+       d_refine_syn (X :: Ψ) Γ
+         (open_typ_wrt_typ P (typ_var_f X))
+         (open_typ_wrt_typ Q (typ_var_f X))) ->
+    d_refine_syn Ψ Γ (typ_all_col colour_inh P) (typ_all_col colour_inh Q)
+| d_refine_syn__hole : forall Ψ Γ Q,
+    is_syn_skel Q ->
+    d_wf_skel Ψ Γ Q ->
+    d_refine_syn Ψ Γ typ_hole Q
+| d_refine_syn__tophole_no_top : forall L Ψ Γ P Q,
+    (forall X, X `notin` L ->
+       d_refine_syn (X :: Ψ) Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
+    d_refine_syn Ψ Γ (typ_tophole P) (typ_all_col colour_syn Q)
+| d_refine_syn__tophole_with_top : forall L Ψ Γ P Q,
+    guarded_skel Q ->
+    d_wf_skel nil Γ P ->
+    (forall X, X `notin` L ->
+       d_refine_syn nil Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
+    d_refine_syn Ψ Γ (typ_tophole P)
+      (typ_all_col colour_syn (typ_tophole Q)).
 
-    Mutual with [d_pat] (pattern-matching judgement), [d_refine_syn],
-    [d_refine], [d_pat_consis], and [d_pat_sub]. Only [d_typing] and
-    [d_pat] strictly require mutuality (App rule); the rest are bundled
-    here for uniformity. *)
+(** ** Skeleton refinement (colour-respecting) Ψ ⨟ Γ ⊢ P ⊳ Q.
+    Standalone — does not reference d_typing or d_pat. *)
+Inductive d_refine :
+  list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
+| d_refine__unit : forall Ψ Γ,
+    d_refine Ψ Γ typ_unit typ_unit
+| d_refine__var : forall Ψ Γ X,
+    List.In X Ψ \/ binds X dbind_tvar Γ ->
+    d_refine Ψ Γ (typ_var_f X) (typ_var_f X)
+| d_refine__arrow : forall Ψ Γ P1 P2 Q1 Q2,
+    d_refine Ψ Γ P1 Q1 ->
+    d_refine Ψ Γ P2 Q2 ->
+    d_refine Ψ Γ (typ_arrow P1 P2) (typ_arrow Q1 Q2)
+| d_refine__all : forall L Ψ Γ c P Q,
+    (forall X, X `notin` L ->
+       d_refine (X :: Ψ) Γ
+         (open_typ_wrt_typ P (typ_var_f X))
+         (open_typ_wrt_typ Q (typ_var_f X))) ->
+    d_refine Ψ Γ (typ_all_col c P) (typ_all_col c Q)
+| d_refine__hole : forall Ψ Γ Q,
+    d_wf_skel nil Γ Q ->
+    d_refine Ψ Γ typ_hole Q
+| d_refine__tophole_no_top : forall L Ψ Γ P Q,
+    (forall X, X `notin` L ->
+       d_refine (X :: Ψ) Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
+    d_refine Ψ Γ (typ_tophole P) (typ_all_col colour_inh Q)
+| d_refine__tophole_with_top : forall L Ψ Γ P Q,
+    guarded_skel Q ->
+    d_wf_skel nil Γ P ->
+    (forall X, X `notin` L ->
+       d_refine nil Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
+    d_refine Ψ Γ (typ_tophole P)
+      (typ_all_col colour_inh (typ_tophole Q)).
+
+(** ** Skeleton consistency Δ ⨟ Γ ⊨ S ~ P.
+    Standalone — does not reference d_typing or d_pat. *)
+Inductive d_pat_consis :
+  list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
+| d_pat_consis__unit : forall Γ,
+    d_pat_consis nil Γ typ_unit typ_unit
+| d_pat_consis__var : forall Γ X,
+    d_pat_consis nil Γ (typ_var_f X) (typ_var_f X)
+| d_pat_consis__forall_inh_tagged : forall L Δ Γ ε SS P,
+    (forall X, X `notin` L ->
+       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_typ_wrt_typ SS (typ_var_f X))
+         (open_typ_wrt_typ P (typ_var_f X))) ->
+    d_pat_consis (ε :: Δ) Γ (typ_all_etag ε SS) (typ_all_col colour_inh P)
+| d_pat_consis__forall_inh_untagged : forall L Δ Γ SS P,
+    (forall X, X `notin` L ->
+       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_typ_wrt_typ SS (typ_var_f X))
+         (open_typ_wrt_typ P (typ_var_f X))) ->
+    d_pat_consis Δ Γ (typ_all_plain SS) (typ_all_col colour_inh P)
+| d_pat_consis__forall_syn_tagged : forall L Δ Γ ε SS P,
+    (forall X, X `notin` L ->
+       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_typ_wrt_typ SS (typ_var_f X))
+         (open_typ_wrt_typ P (typ_var_f X))) ->
+    d_pat_consis Δ Γ (typ_all_etag ε SS) (typ_all_col colour_syn P)
+| d_pat_consis__forall_syn_untagged : forall L Δ Γ SS P,
+    (forall X, X `notin` L ->
+       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_typ_wrt_typ SS (typ_var_f X))
+         (open_typ_wrt_typ P (typ_var_f X))) ->
+    d_pat_consis Δ Γ (typ_all_plain SS) (typ_all_col colour_syn P)
+| d_pat_consis__ghost : forall Γ P,
+    no_forall_typ P ->
+    d_pat_consis nil Γ typ_hole P
+| d_pat_consis__arrow : forall Δ1 Δ2 Γ SS1 SS2 P1 P2,
+    d_pat_consis Δ1 Γ SS1 P1 ->
+    d_pat_consis Δ2 Γ SS2 P2 ->
+    list_disjoint Δ1 Δ2 ->
+    d_pat_consis (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
+| d_pat_consis__univ_ghost_arr : forall Δ Γ SS P,
+    d_pat_consis Δ Γ SS P ->
+    d_pat_consis Δ Γ (typ_tophole SS) (typ_tophole P)
+| d_pat_consis__univ_ghost_inh1 : forall L Δ Γ SS P,
+    (forall X, X `notin` L ->
+       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
+         (typ_tophole SS) (open_typ_wrt_typ P (typ_var_f X))) ->
+    d_pat_consis Δ Γ (typ_tophole SS) (typ_all_col colour_inh P)
+| d_pat_consis__univ_ghost_pass : forall Δ Γ SS P,
+    d_pat_consis Δ Γ SS P ->
+    d_pat_consis Δ Γ (typ_tophole SS) P.
+
+(** ** Skeleton subtyping Γ ⊢ₛ[ M ; Δ ] S ⊑ P.
+    Standalone — depends on d_pat_consis but not on d_typing/d_pat. *)
+Inductive d_pat_sub :
+  mode -> list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
+| d_pat_sub__infer : forall Γ SS P,
+    is_syn_skel P ->
+    d_pat_consis nil Γ SS P ->
+    d_pat_sub mode_ti nil Γ SS P
+| d_pat_sub__univ_ghost_r : forall Γ SS P,
+    (forall ε SS', SS <> typ_all_etag ε SS') ->
+    (forall SS', SS <> typ_all_plain SS') ->
+    (forall SS', SS <> typ_tophole SS') ->
+    SS <> typ_hole ->
+    is_syn_skel P ->
+    d_pat_consis nil Γ SS P ->
+    d_pat_sub mode_tc nil Γ SS (typ_tophole P)
+| d_pat_sub__ghost : forall Γ m P,
+    no_forall_typ P ->
+    d_pat_sub (mode_fn m) nil Γ typ_hole P
+| d_pat_sub__univ_ghost_l : forall Δ Γ m SS P,
+    m <> mode_ti ->
+    d_pat_sub m Δ Γ SS P ->
+    d_pat_sub m Δ Γ (typ_tophole SS) P
+| d_pat_sub__arg : forall Δ1 Δ2 Γ m SS1 SS2 P1 P2,
+    d_pat_consis Δ1 Γ SS1 P1 ->
+    d_pat_sub m Δ2 Γ SS2 P2 ->
+    list_disjoint Δ1 Δ2 ->
+    d_pat_sub (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
+| d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε SS psi P,
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    d_wf_tskel Δ' Γ psi ->
+    d_pat_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ SS psi) P ->
+    d_pat_sub m Δ Γ (typ_all_etag ε SS) P
+| d_pat_sub__forall_l_untagged : forall Δ Δ' Γ m SS psi P,
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    d_wf_tskel Δ' Γ psi ->
+    d_pat_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ SS psi) P ->
+    d_pat_sub m Δ Γ (typ_all_plain SS) P.
+
+(** ** Declarative typing Γ ⊢[ M ] e ⇒ A and skeleton inference Γ ⊢[ M ] e ⇨ P.
+    These two are genuinely mutual due to the App rule (d_typing__app reads
+    the argument's skeleton via d_pat, and d_pat__app reads the function's
+    type via d_typing). The four upstream judgments d_refine_syn / d_refine
+    / d_pat_consis / d_pat_sub are *not* mutual with these — see the
+    standalone Inductives above. *)
 Inductive d_typing :
   mode -> list (atom * dbind) -> exp -> typ -> Prop :=
 | d_typing__unit : forall Γ,
@@ -353,158 +515,4 @@ with d_pat :
     d_refine_syn nil Γ P P' ->
     d_typing (mode_fn m) Γ e1 (typ_arrow P' Q) ->
     d_pat m Γ (exp_app e1 e2) Q
-
-with d_refine_syn :
-  list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
-| d_refine_syn__unit : forall Ψ Γ,
-    d_refine_syn Ψ Γ typ_unit typ_unit
-| d_refine_syn__var : forall Ψ Γ X,
-    List.In X Ψ \/ binds X dbind_tvar Γ ->
-    d_refine_syn Ψ Γ (typ_var_f X) (typ_var_f X)
-| d_refine_syn__arrow : forall Ψ Γ P1 P2 Q1 Q2,
-    d_refine_syn Ψ Γ P1 Q1 ->
-    d_refine_syn Ψ Γ P2 Q2 ->
-    d_refine_syn Ψ Γ (typ_arrow P1 P2) (typ_arrow Q1 Q2)
-| d_refine_syn__all_inh : forall L Ψ Γ P Q,
-    (forall X, X `notin` L ->
-       d_refine_syn (X :: Ψ) Γ
-         (open_typ_wrt_typ P (typ_var_f X))
-         (open_typ_wrt_typ Q (typ_var_f X))) ->
-    d_refine_syn Ψ Γ (typ_all_col colour_inh P) (typ_all_col colour_inh Q)
-| d_refine_syn__hole : forall Ψ Γ Q,
-    is_syn_skel Q ->
-    d_wf_skel Ψ Γ Q ->
-    d_refine_syn Ψ Γ typ_hole Q
-| d_refine_syn__tophole_no_top : forall L Ψ Γ P Q,
-    (forall X, X `notin` L ->
-       d_refine_syn (X :: Ψ) Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
-    d_refine_syn Ψ Γ (typ_tophole P) (typ_all_col colour_syn Q)
-| d_refine_syn__tophole_with_top : forall L Ψ Γ P Q,
-    guarded_skel Q ->
-    d_wf_skel nil Γ P ->
-    (forall X, X `notin` L ->
-       d_refine_syn nil Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
-    d_refine_syn Ψ Γ (typ_tophole P)
-      (typ_all_col colour_syn (typ_tophole Q))
-
-with d_refine :
-  list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
-| d_refine__unit : forall Ψ Γ,
-    d_refine Ψ Γ typ_unit typ_unit
-| d_refine__var : forall Ψ Γ X,
-    List.In X Ψ \/ binds X dbind_tvar Γ ->
-    d_refine Ψ Γ (typ_var_f X) (typ_var_f X)
-| d_refine__arrow : forall Ψ Γ P1 P2 Q1 Q2,
-    d_refine Ψ Γ P1 Q1 ->
-    d_refine Ψ Γ P2 Q2 ->
-    d_refine Ψ Γ (typ_arrow P1 P2) (typ_arrow Q1 Q2)
-| d_refine__all : forall L Ψ Γ c P Q,
-    (forall X, X `notin` L ->
-       d_refine (X :: Ψ) Γ
-         (open_typ_wrt_typ P (typ_var_f X))
-         (open_typ_wrt_typ Q (typ_var_f X))) ->
-    d_refine Ψ Γ (typ_all_col c P) (typ_all_col c Q)
-| d_refine__hole : forall Ψ Γ Q,
-    d_wf_skel nil Γ Q ->
-    d_refine Ψ Γ typ_hole Q
-| d_refine__tophole_no_top : forall L Ψ Γ P Q,
-    (forall X, X `notin` L ->
-       d_refine (X :: Ψ) Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
-    d_refine Ψ Γ (typ_tophole P) (typ_all_col colour_inh Q)
-| d_refine__tophole_with_top : forall L Ψ Γ P Q,
-    guarded_skel Q ->
-    d_wf_skel nil Γ P ->
-    (forall X, X `notin` L ->
-       d_refine nil Γ P (open_typ_wrt_typ Q (typ_var_f X))) ->
-    d_refine Ψ Γ (typ_tophole P)
-      (typ_all_col colour_inh (typ_tophole Q))
-
-with d_pat_consis :
-  list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
-| d_pat_consis__unit : forall Γ,
-    d_pat_consis nil Γ typ_unit typ_unit
-| d_pat_consis__var : forall Γ X,
-    d_pat_consis nil Γ (typ_var_f X) (typ_var_f X)
-| d_pat_consis__forall_inh_tagged : forall L Δ Γ ε SS P,
-    (forall X, X `notin` L ->
-       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ SS (typ_var_f X))
-         (open_typ_wrt_typ P (typ_var_f X))) ->
-    d_pat_consis (ε :: Δ) Γ (typ_all_etag ε SS) (typ_all_col colour_inh P)
-| d_pat_consis__forall_inh_untagged : forall L Δ Γ SS P,
-    (forall X, X `notin` L ->
-       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ SS (typ_var_f X))
-         (open_typ_wrt_typ P (typ_var_f X))) ->
-    d_pat_consis Δ Γ (typ_all_plain SS) (typ_all_col colour_inh P)
-| d_pat_consis__forall_syn_tagged : forall L Δ Γ ε SS P,
-    (forall X, X `notin` L ->
-       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ SS (typ_var_f X))
-         (open_typ_wrt_typ P (typ_var_f X))) ->
-    d_pat_consis Δ Γ (typ_all_etag ε SS) (typ_all_col colour_syn P)
-| d_pat_consis__forall_syn_untagged : forall L Δ Γ SS P,
-    (forall X, X `notin` L ->
-       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ SS (typ_var_f X))
-         (open_typ_wrt_typ P (typ_var_f X))) ->
-    d_pat_consis Δ Γ (typ_all_plain SS) (typ_all_col colour_syn P)
-| d_pat_consis__ghost : forall Γ P,
-    no_forall_typ P ->
-    d_pat_consis nil Γ typ_hole P
-| d_pat_consis__arrow : forall Δ1 Δ2 Γ SS1 SS2 P1 P2,
-    d_pat_consis Δ1 Γ SS1 P1 ->
-    d_pat_consis Δ2 Γ SS2 P2 ->
-    list_disjoint Δ1 Δ2 ->
-    d_pat_consis (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
-| d_pat_consis__univ_ghost_arr : forall Δ Γ SS P,
-    d_pat_consis Δ Γ SS P ->
-    d_pat_consis Δ Γ (typ_tophole SS) (typ_tophole P)
-| d_pat_consis__univ_ghost_inh1 : forall L Δ Γ SS P,
-    (forall X, X `notin` L ->
-       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (typ_tophole SS) (open_typ_wrt_typ P (typ_var_f X))) ->
-    d_pat_consis Δ Γ (typ_tophole SS) (typ_all_col colour_inh P)
-| d_pat_consis__univ_ghost_pass : forall Δ Γ SS P,
-    d_pat_consis Δ Γ SS P ->
-    d_pat_consis Δ Γ (typ_tophole SS) P
-
-with d_pat_sub :
-  mode -> list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
-| d_pat_sub__infer : forall Γ SS P,
-    is_syn_skel P ->
-    d_pat_consis nil Γ SS P ->
-    d_pat_sub mode_ti nil Γ SS P
-| d_pat_sub__univ_ghost_r : forall Γ SS P,
-    (forall ε SS', SS <> typ_all_etag ε SS') ->
-    (forall SS', SS <> typ_all_plain SS') ->
-    (forall SS', SS <> typ_tophole SS') ->
-    SS <> typ_hole ->
-    is_syn_skel P ->
-    d_pat_consis nil Γ SS P ->
-    d_pat_sub mode_tc nil Γ SS (typ_tophole P)
-| d_pat_sub__ghost : forall Γ m P,
-    no_forall_typ P ->
-    d_pat_sub (mode_fn m) nil Γ typ_hole P
-| d_pat_sub__univ_ghost_l : forall Δ Γ m SS P,
-    m <> mode_ti ->
-    d_pat_sub m Δ Γ SS P ->
-    d_pat_sub m Δ Γ (typ_tophole SS) P
-| d_pat_sub__arg : forall Δ1 Δ2 Γ m SS1 SS2 P1 P2,
-    d_pat_consis Δ1 Γ SS1 P1 ->
-    d_pat_sub m Δ2 Γ SS2 P2 ->
-    list_disjoint Δ1 Δ2 ->
-    d_pat_sub (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
-| d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε SS psi P,
-    m <> mode_ti ->
-    list_disjoint Δ' Δ ->
-    d_wf_tskel Δ' Γ psi ->
-    d_pat_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ SS psi) P ->
-    d_pat_sub m Δ Γ (typ_all_etag ε SS) P
-| d_pat_sub__forall_l_untagged : forall Δ Δ' Γ m SS psi P,
-    m <> mode_ti ->
-    list_disjoint Δ' Δ ->
-    d_wf_tskel Δ' Γ psi ->
-    d_pat_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ SS psi) P ->
-    d_pat_sub m Δ Γ (typ_all_plain SS) P
 .
