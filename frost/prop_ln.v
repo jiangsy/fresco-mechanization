@@ -68,7 +68,7 @@ Fixpoint close_typ_wrt_typ_rec (n1 : nat) (X1 : typvar) (A1 : typ) {struct A1} :
     | typ_var_b n2 => if (lt_ge_dec n2 n1) then (typ_var_b n2) else (typ_var_b (S n2))
     | typ_arrow A2 A3 => typ_arrow (close_typ_wrt_typ_rec n1 X1 A2) (close_typ_wrt_typ_rec n1 X1 A3)
     | typ_all_col c1 A2 => typ_all_col c1 (close_typ_wrt_typ_rec (S n1) X1 A2)
-    | typ_all_eps ee1 A2 => typ_all_eps ee1 (close_typ_wrt_typ_rec (S n1) X1 A2)
+    | typ_all_etag ε1 A2 => typ_all_etag ε1 (close_typ_wrt_typ_rec (S n1) X1 A2)
     | typ_all_plain A2 => typ_all_plain (close_typ_wrt_typ_rec (S n1) X1 A2)
     | typ_hole => typ_hole
     | typ_tophole A2 => typ_tophole (close_typ_wrt_typ_rec n1 X1 A2)
@@ -130,7 +130,7 @@ Fixpoint size_typ (A1 : typ) {struct A1} : nat :=
     | typ_var_b n1 => 1
     | typ_arrow A2 A3 => 1 + (size_typ A2) + (size_typ A3)
     | typ_all_col c1 A2 => 1 + (size_colour c1) + (size_typ A2)
-    | typ_all_eps ee1 A2 => 1 + (size_typ A2)
+    | typ_all_etag ε1 A2 => 1 + (size_typ A2)
     | typ_all_plain A2 => 1 + (size_typ A2)
     | typ_hole => 1
     | typ_tophole A2 => 1 + (size_typ A2)
@@ -183,9 +183,9 @@ Inductive degree_typ_wrt_typ : nat -> typ -> Prop :=
   | degree_wrt_typ_typ_all_col : forall n1 c1 A1,
     degree_typ_wrt_typ (S n1) A1 ->
     degree_typ_wrt_typ n1 (typ_all_col c1 A1)
-  | degree_wrt_typ_typ_all_eps : forall n1 ee1 A1,
+  | degree_wrt_typ_typ_all_etag : forall n1 ε1 A1,
     degree_typ_wrt_typ (S n1) A1 ->
-    degree_typ_wrt_typ n1 (typ_all_eps ee1 A1)
+    degree_typ_wrt_typ n1 (typ_all_etag ε1 A1)
   | degree_wrt_typ_typ_all_plain : forall n1 A1,
     degree_typ_wrt_typ (S n1) A1 ->
     degree_typ_wrt_typ n1 (typ_all_plain A1)
@@ -296,9 +296,9 @@ Inductive lc_set_typ : typ -> Set :=
   | lc_set_typ_all_col : forall c1 A1,
     (forall X1 : typvar, lc_set_typ (open_typ_wrt_typ A1 (typ_var_f X1))) ->
     lc_set_typ (typ_all_col c1 A1)
-  | lc_set_typ_all_eps : forall ee1 A1,
+  | lc_set_typ_all_etag : forall ε1 A1,
     (forall X1 : typvar, lc_set_typ (open_typ_wrt_typ A1 (typ_var_f X1))) ->
-    lc_set_typ (typ_all_eps ee1 A1)
+    lc_set_typ (typ_all_etag ε1 A1)
   | lc_set_typ_all_plain : forall A1,
     (forall X1 : typvar, lc_set_typ (open_typ_wrt_typ A1 (typ_var_f X1))) ->
     lc_set_typ (typ_all_plain A1)
@@ -2919,10 +2919,10 @@ Proof.
 intros; typ_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
-Lemma lc_typ_all_eps_exists :
-forall X1 ee1 A1,
+Lemma lc_typ_all_etag_exists :
+forall X1 ε1 A1,
   lc_typ (open_typ_wrt_typ A1 (typ_var_f X1)) ->
-  lc_typ (typ_all_eps ee1 A1).
+  lc_typ (typ_all_etag ε1 A1).
 Proof.
 intros; typ_lc_exists_tac; eauto 6 with lngen.
 Qed.
@@ -2957,10 +2957,10 @@ Qed.
   pick_fresh X1;
   apply (lc_typ_all_col_exists X1) : core.
 
-#[export] Hint Extern 1 (lc_typ (typ_all_eps _ _)) =>
+#[export] Hint Extern 1 (lc_typ (typ_all_etag _ _)) =>
   let X1 := fresh in
   pick_fresh X1;
-  apply (lc_typ_all_eps_exists X1) : core.
+  apply (lc_typ_all_etag_exists X1) : core.
 
 #[export] Hint Extern 1 (lc_typ (typ_all_plain _)) =>
   let X1 := fresh in
@@ -3055,15 +3055,15 @@ Qed.
 
 #[export] Hint Resolve lc_body_typ_all_col_2 : lngen.
 
-Lemma lc_body_typ_all_eps_2 :
-forall ee1 A1,
-  lc_typ (typ_all_eps ee1 A1) ->
+Lemma lc_body_typ_all_etag_2 :
+forall ε1 A1,
+  lc_typ (typ_all_etag ε1 A1) ->
   body_typ_wrt_typ A1.
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve lc_body_typ_all_eps_2 : lngen.
+#[export] Hint Resolve lc_body_typ_all_etag_2 : lngen.
 
 Lemma lc_body_typ_all_plain_1 :
 forall A1,
@@ -6368,16 +6368,16 @@ Qed.
 
 #[export] Hint Resolve subst_typ_in_typ_typ_all_col : lngen.
 
-Lemma subst_typ_in_typ_typ_all_eps :
-forall X2 ee1 A2 A1 X1,
+Lemma subst_typ_in_typ_typ_all_etag :
+forall X2 ε1 A2 A1 X1,
   lc_typ A1 ->
   X2 `notin` ftvar_in_typ A1 `union` ftvar_in_typ A2 `union` singleton X1 ->
-  subst_typ_in_typ A1 X1 (typ_all_eps ee1 A2) = typ_all_eps (ee1) (close_typ_wrt_typ X2 (subst_typ_in_typ A1 X1 (open_typ_wrt_typ A2 (typ_var_f X2)))).
+  subst_typ_in_typ A1 X1 (typ_all_etag ε1 A2) = typ_all_etag (ε1) (close_typ_wrt_typ X2 (subst_typ_in_typ A1 X1 (open_typ_wrt_typ A2 (typ_var_f X2)))).
 Proof.
 default_simp.
 Qed.
 
-#[export] Hint Resolve subst_typ_in_typ_typ_all_eps : lngen.
+#[export] Hint Resolve subst_typ_in_typ_typ_all_etag : lngen.
 
 Lemma subst_typ_in_typ_typ_all_plain :
 forall X2 A2 A1 X1,

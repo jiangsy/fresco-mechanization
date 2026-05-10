@@ -4,10 +4,20 @@
 % (plain, tagged, unresolved, skel, tagged-skel, unresolved-skel). Categories
 % are predicates over `typ` defined in def_extra.v. No typing/subtyping/
 % consistency rules here — those live in def_extra.v files.
+%
+% Metavar naming:
+%   ott uses ASCII identifiers (Unicode in ott metavars is unreliable).
+%   The Makefile's sed pass rewrites context variable names to Greek in the
+%   generated def_ott.v / prop_ln.v:
+%      dE → Γ   (term context)
+%      dD → Δ   (tag context)
+%      dP → Ψ   (skeleton-scope context)
+%   ε tags use the metavar `eps` in ott; the constructor for ε-tagged ∀ is
+%   renamed to `typ_all_etag` so that sed `eps → ε` doesn't mangle it.
 
 metavar typvar, X, Y, Z ::= {{ repr-locally-nameless }}
 metavar expvar, x, y, z ::= {{ repr-locally-nameless }}
-metavar epsvar, ee, ff  ::= {{ coq var }}
+metavar epsvar, eps     ::= {{ coq var }}
 
 grammar
 
@@ -17,14 +27,22 @@ colour, c :: 'colour_' ::=
   | I    ::   :: inh
 
 % Unified type AST. Six paper categories carved out by predicates in
-% def_extra.v. The four ∀ flavours (col-S, col-I, eps, plain) are distinct
-% constructors so category predicates can discriminate cleanly.
-typ, A, B, C, T, ph, psi, P, Q, SS :: 'typ_' ::=
+% def_extra.v. The four ∀ flavours (col-S, col-I, eps-tagged, plain) are
+% distinct constructors so category predicates can discriminate cleanly.
+%
+% Metavar aliases follow the paper:
+%   A, B, C, T  — plain types / unresolved types
+%   ph          — tagged types (paper's φ)
+%   ps          — tagged skeletons (paper's ψ)
+%   P, Q        — skeletons
+%   SS          — unresolved skeletons (paper's S; doubled to avoid clash
+%                 with the colour constructor S)
+typ, A, B, C, T, ph, ps, P, Q, SS :: 'typ_' ::=
   | UNIT                ::   :: unit
   | X                   ::   :: var
   | A1 -> A2            ::   :: arrow
   | forall^ c X . A     ::   :: all_col   (+ bind X in A +)
-  | forall@ ee X . A    ::   :: all_eps   (+ bind X in A +)
+  | forall@ eps X . A   ::   :: all_etag  (+ bind X in A +)
   | forall X . A        ::   :: all_plain (+ bind X in A +)
   | HOLE                ::   :: hole
   | TOPHOLE . A         ::   :: tophole
@@ -69,24 +87,27 @@ freevars
 grammar
 
 % Term context Γ : list (atom * dbind) — already in Set.
-denv, dE, dF, dG :: '' ::= {{ coq list (atom*dbind) }}
+% Variable name `dE` is sed-renamed to `Γ` in def_ott.v / prop_ln.v.
+denv, dE :: '' ::= {{ coq list (atom*dbind) }}
   | empty       ::   :: dempty {{ coq nil }}
   | dE , x db   ::   :: dconsx  {{ coq ([[x]]~[[db]] ++ [[dE]])  }}
   | dE , X db   ::   :: dconsX  {{ coq ([[X]]~[[db]] ++ [[dE]])  }}
   | ( dE )      :: S :: paren   {{ coq ([[dE]]) }}
 
 % Skeleton-scope context Ψ : list atom (predicative; in Set).
-psienv, dP, dPF :: '' ::= {{ coq list atom }}
+% Variable name `dP` is sed-renamed to `Ψ`.
+psienv, dP :: '' ::= {{ coq list atom }}
   | empty        ::   :: pempty {{ coq nil }}
   | dP , X       ::   :: pcons  {{ coq ([[X]] :: [[dP]]) }}
   | sin X        :: M :: psin   {{ coq ([[X]] :: nil) }}
   | ( dP )       :: S :: pparen {{ coq ([[dP]]) }}
 
 % Tag context Δ : list atom (predicative; in Set).
-tagctx, dD, dDF :: '' ::= {{ coq list atom }}
+% Variable name `dD` is sed-renamed to `Δ`.
+tagctx, dD :: '' ::= {{ coq list atom }}
   | empty       ::   :: tempty {{ coq nil }}
-  | dD , ee     ::   :: tcons  {{ coq ([[ee]] :: [[dD]]) }}
-  | sin ee      :: M :: tsin   {{ coq ([[ee]] :: nil) }}
+  | dD , eps    ::   :: tcons  {{ coq ([[eps]] :: [[dD]]) }}
+  | sin eps     :: M :: tsin   {{ coq ([[eps]] :: nil) }}
   | dD1 ∪ dD2   :: M :: tunion {{ coq ([[dD1]] ++ [[dD2]]) }}
   | ( dD )      :: S :: tparen {{ coq ([[dD]]) }}
 
@@ -99,7 +120,7 @@ formula :: formula_ ::=
   | x  `notin` dom dE           ::   :: freshx  {{ coq ([[x]] `notin` dom ([[dE]])) }}
   | X  `notin` dom dE           ::   :: freshX  {{ coq ([[X]] `notin` dom ([[dE]])) }}
   | X  `in`  dP                 ::   :: pin     {{ coq (List.In ([[X]]) ([[dP]])) }}
-  | ee `in`  dD                 ::   :: tin     {{ coq (List.In ([[ee]]) ([[dD]])) }}
+  | eps `in`  dD                ::   :: tin     {{ coq (List.In ([[eps]]) ([[dD]])) }}
   | dD1 disjoint dD2            ::   :: tdisjoint {{ coq (list_disjoint ([[dD1]]) ([[dD2]])) }}
   | m1 == m2                    ::   :: modeeq  {{ coq [[m1]] = [[m2]] }}
   | c1 == c2                    ::   :: coleq   {{ coq [[c1]] = [[c2]] }}

@@ -32,7 +32,7 @@ Inductive mono_typ : typ -> Prop :=
 (*  Six category predicates                                               *)
 (* ===================================================================== *)
 
-(** Plain types: only forall^c (colour-tagged); no eps-tags, no plain-forall, no holes. *)
+(** Plain types: only forall^c (colour-tagged); no ε-tags, no plain-forall, no holes. *)
 Inductive is_typ : typ -> Prop :=
 | is_typ__unit  : is_typ typ_unit
 | is_typ__var   : forall X, is_typ (typ_var_f X)
@@ -43,27 +43,27 @@ Inductive is_typ : typ -> Prop :=
        is_typ (open_typ_wrt_typ A (typ_var_f X))) ->
     is_typ (typ_all_col c A).
 
-(** Tagged types: only forall@eps; no other quantifiers, no holes. *)
+(** Tagged types: only forall@ε; no other quantifiers, no holes. *)
 Inductive is_ttyp : typ -> Prop :=
 | is_ttyp__unit  : is_ttyp typ_unit
 | is_ttyp__var   : forall X, is_ttyp (typ_var_f X)
 | is_ttyp__arrow : forall A B,
     is_ttyp A -> is_ttyp B -> is_ttyp (typ_arrow A B)
-| is_ttyp__all   : forall L ee A,
+| is_ttyp__all   : forall L ε A,
     (forall X, X `notin` L ->
        is_ttyp (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_ttyp (typ_all_eps ee A).
+    is_ttyp (typ_all_etag ε A).
 
-(** Unresolved types: forall@eps or plain-forall; no other quantifiers, no holes. *)
+(** Unresolved types: forall@ε or plain-forall; no other quantifiers, no holes. *)
 Inductive is_utyp : typ -> Prop :=
 | is_utyp__unit  : is_utyp typ_unit
 | is_utyp__var   : forall X, is_utyp (typ_var_f X)
 | is_utyp__arrow : forall A B,
     is_utyp A -> is_utyp B -> is_utyp (typ_arrow A B)
-| is_utyp__tall  : forall L ee A,
+| is_utyp__tall  : forall L ε A,
     (forall X, X `notin` L ->
        is_utyp (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_utyp (typ_all_eps ee A)
+    is_utyp (typ_all_etag ε A)
 | is_utyp__pall  : forall L A,
     (forall X, X `notin` L ->
        is_utyp (open_typ_wrt_typ A (typ_var_f X))) ->
@@ -88,10 +88,10 @@ Inductive is_tskel : typ -> Prop :=
 | is_tskel__var     : forall X, is_tskel (typ_var_f X)
 | is_tskel__arrow   : forall A B,
     is_tskel A -> is_tskel B -> is_tskel (typ_arrow A B)
-| is_tskel__all     : forall L ee A,
+| is_tskel__all     : forall L ε A,
     (forall X, X `notin` L ->
        is_tskel (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_tskel (typ_all_eps ee A)
+    is_tskel (typ_all_etag ε A)
 | is_tskel__hole    : is_tskel typ_hole
 | is_tskel__tophole : forall A, is_tskel A -> is_tskel (typ_tophole A).
 
@@ -101,10 +101,10 @@ Inductive is_uskel : typ -> Prop :=
 | is_uskel__var     : forall X, is_uskel (typ_var_f X)
 | is_uskel__arrow   : forall A B,
     is_uskel A -> is_uskel B -> is_uskel (typ_arrow A B)
-| is_uskel__tall    : forall L ee A,
+| is_uskel__tall    : forall L ε A,
     (forall X, X `notin` L ->
        is_uskel (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_uskel (typ_all_eps ee A)
+    is_uskel (typ_all_etag ε A)
 | is_uskel__pall    : forall L A,
     (forall X, X `notin` L ->
        is_uskel (open_typ_wrt_typ A (typ_var_f X))) ->

@@ -37,7 +37,7 @@ Ltac discharge_category :=
   match goal with
   | H : is_typ typ_hole |- _ => inversion H
   | H : is_typ (typ_tophole _) |- _ => inversion H
-  | H : is_typ (typ_all_eps _ _) |- _ => inversion H
+  | H : is_typ (typ_all_etag _ _) |- _ => inversion H
   | H : is_typ (typ_all_plain _) |- _ => inversion H
   | H : is_ttyp typ_hole |- _ => inversion H
   | H : is_ttyp (typ_tophole _) |- _ => inversion H

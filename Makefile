@@ -25,15 +25,20 @@ endif
 %/def_ott.v : %/language.ott
 	ott -i $^ -o $@ ${OTT_FLAGS}
 	sed -e "/Ott.ott_list_core/d" ${SED_FLAG} $@
-	sed -e "s/dE/Ψ/g" ${SED_FLAG} $@
+	sed -e "s/dE/Γ/g" ${SED_FLAG} $@
 	sed -e "s/dD/Δ/g" ${SED_FLAG} $@
-	sed -e "s/dP/Ψskel/g" ${SED_FLAG} $@
+	sed -e "s/dP/Ψ/g" ${SED_FLAG} $@
+	sed -e "s/eps/ε/g" ${SED_FLAG} $@
 
 ott : ${OTT_OUTS}
 
 %/prop_ln.v : %/def_ott.v
 	lngen-new --coq $@ --coq-ott $*.ott $*/language.ott
-	sed -e "s/.ott./.def_ott./" ${SED_FLAG} $@ 
+	sed -e "s/.ott./.def_ott./" ${SED_FLAG} $@
+	sed -e "s/dE/Γ/g" ${SED_FLAG} $@
+	sed -e "s/dD/Δ/g" ${SED_FLAG} $@
+	sed -e "s/dP/Ψ/g" ${SED_FLAG} $@
+	sed -e "s/eps/ε/g" ${SED_FLAG} $@
 
 
 lngen : ${LNGEN_OUTS}

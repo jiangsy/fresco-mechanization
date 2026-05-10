@@ -5,7 +5,7 @@ Require Import List.
 (** syntax *)
 Definition typvar : Set := var.
 Definition expvar : Set := var.
-Definition epsvar : Set := var.
+Definition εvar : Set := var.
 
 Inductive colour : Set := 
  | colour_syn : colour
@@ -17,7 +17,7 @@ Inductive typ : Set :=
  | typ_var_f (X:typvar)
  | typ_arrow (A1:typ) (A2:typ)
  | typ_all_col (c:colour) (A:typ)
- | typ_all_eps (ee:epsvar) (A:typ)
+ | typ_all_etag (ε:εvar) (A:typ)
  | typ_all_plain (A:typ)
  | typ_hole : typ
  | typ_tophole (A:typ).
@@ -66,7 +66,7 @@ Fixpoint open_typ_wrt_typ_rec (k:nat) (A_5:typ) (A__6:typ) {struct A__6}: typ :=
   | (typ_var_f X) => typ_var_f X
   | (typ_arrow A1 A2) => typ_arrow (open_typ_wrt_typ_rec k A_5 A1) (open_typ_wrt_typ_rec k A_5 A2)
   | (typ_all_col c A) => typ_all_col c (open_typ_wrt_typ_rec (S k) A_5 A)
-  | (typ_all_eps ee A) => typ_all_eps ee (open_typ_wrt_typ_rec (S k) A_5 A)
+  | (typ_all_etag ε A) => typ_all_etag ε (open_typ_wrt_typ_rec (S k) A_5 A)
   | (typ_all_plain A) => typ_all_plain (open_typ_wrt_typ_rec (S k) A_5 A)
   | typ_hole => typ_hole 
   | (typ_tophole A) => typ_tophole (open_typ_wrt_typ_rec k A_5 A)
@@ -132,9 +132,9 @@ Inductive lc_typ : typ -> Prop :=    (* defn lc_typ *)
  | lc_typ_all_col : forall (c:colour) (A:typ),
       ( forall X , lc_typ  ( open_typ_wrt_typ A (typ_var_f X) )  )  ->
      (lc_typ (typ_all_col c A))
- | lc_typ_all_eps : forall (ee:epsvar) (A:typ),
+ | lc_typ_all_etag : forall (ε:εvar) (A:typ),
       ( forall X , lc_typ  ( open_typ_wrt_typ A (typ_var_f X) )  )  ->
-     (lc_typ (typ_all_eps ee A))
+     (lc_typ (typ_all_etag ε A))
  | lc_typ_all_plain : forall (A:typ),
       ( forall X , lc_typ  ( open_typ_wrt_typ A (typ_var_f X) )  )  ->
      (lc_typ (typ_all_plain A))
@@ -187,22 +187,10 @@ Fixpoint ftvar_in_typ (A_5:typ) : vars :=
   | (typ_var_f X) => {{X}}
   | (typ_arrow A1 A2) => (ftvar_in_typ A1) \u (ftvar_in_typ A2)
   | (typ_all_col c A) => (ftvar_in_typ A)
-  | (typ_all_eps ee A) => (ftvar_in_typ A)
+  | (typ_all_etag ε A) => (ftvar_in_typ A)
   | (typ_all_plain A) => (ftvar_in_typ A)
   | typ_hole => {}
   | (typ_tophole A) => (ftvar_in_typ A)
-end.
-
-Fixpoint ftvar_in_exp (e_5:exp) : vars :=
-  match e_5 with
-  | exp_unit => {}
-  | (exp_var_b nat) => {}
-  | (exp_var_f x) => {}
-  | (exp_abs e) => (ftvar_in_exp e)
-  | (exp_abs_anno A e) => (ftvar_in_typ A) \u (ftvar_in_exp e)
-  | (exp_app e1 e2) => (ftvar_in_exp e1) \u (ftvar_in_exp e2)
-  | (exp_anno e A) => (ftvar_in_exp e) \u (ftvar_in_typ A)
-  | (exp_freeze e) => (ftvar_in_exp e)
 end.
 
 Fixpoint fvar_in_exp (e_5:exp) : vars :=
@@ -224,6 +212,18 @@ Definition ftvar_in_dbind (db5:dbind) : vars :=
   | (dbind_skel P) => (ftvar_in_typ P)
 end.
 
+Fixpoint ftvar_in_exp (e_5:exp) : vars :=
+  match e_5 with
+  | exp_unit => {}
+  | (exp_var_b nat) => {}
+  | (exp_var_f x) => {}
+  | (exp_abs e) => (ftvar_in_exp e)
+  | (exp_abs_anno A e) => (ftvar_in_typ A) \u (ftvar_in_exp e)
+  | (exp_app e1 e2) => (ftvar_in_exp e1) \u (ftvar_in_exp e2)
+  | (exp_anno e A) => (ftvar_in_exp e) \u (ftvar_in_typ A)
+  | (exp_freeze e) => (ftvar_in_exp e)
+end.
+
 (** substitutions *)
 Fixpoint subst_typ_in_typ (A_5:typ) (X5:typvar) (A__6:typ) {struct A__6} : typ :=
   match A__6 with
@@ -232,10 +232,22 @@ Fixpoint subst_typ_in_typ (A_5:typ) (X5:typvar) (A__6:typ) {struct A__6} : typ :
   | (typ_var_f X) => (if eq_var X X5 then A_5 else (typ_var_f X))
   | (typ_arrow A1 A2) => typ_arrow (subst_typ_in_typ A_5 X5 A1) (subst_typ_in_typ A_5 X5 A2)
   | (typ_all_col c A) => typ_all_col c (subst_typ_in_typ A_5 X5 A)
-  | (typ_all_eps ee A) => typ_all_eps ee (subst_typ_in_typ A_5 X5 A)
+  | (typ_all_etag ε A) => typ_all_etag ε (subst_typ_in_typ A_5 X5 A)
   | (typ_all_plain A) => typ_all_plain (subst_typ_in_typ A_5 X5 A)
   | typ_hole => typ_hole 
   | (typ_tophole A) => typ_tophole (subst_typ_in_typ A_5 X5 A)
+end.
+
+Fixpoint subst_typ_in_exp (A5:typ) (X5:typvar) (e_5:exp) {struct e_5} : exp :=
+  match e_5 with
+  | exp_unit => exp_unit 
+  | (exp_var_b nat) => exp_var_b nat
+  | (exp_var_f x) => exp_var_f x
+  | (exp_abs e) => exp_abs (subst_typ_in_exp A5 X5 e)
+  | (exp_abs_anno A e) => exp_abs_anno (subst_typ_in_typ A5 X5 A) (subst_typ_in_exp A5 X5 e)
+  | (exp_app e1 e2) => exp_app (subst_typ_in_exp A5 X5 e1) (subst_typ_in_exp A5 X5 e2)
+  | (exp_anno e A) => exp_anno (subst_typ_in_exp A5 X5 e) (subst_typ_in_typ A5 X5 A)
+  | (exp_freeze e) => exp_freeze (subst_typ_in_exp A5 X5 e)
 end.
 
 Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :=
@@ -255,18 +267,6 @@ Definition subst_typ_in_dbind (A5:typ) (X5:typvar) (db5:dbind) : dbind :=
   | dbind_tvar => dbind_tvar 
   | (dbind_typ A) => dbind_typ (subst_typ_in_typ A5 X5 A)
   | (dbind_skel P) => dbind_skel (subst_typ_in_typ A5 X5 P)
-end.
-
-Fixpoint subst_typ_in_exp (A5:typ) (X5:typvar) (e_5:exp) {struct e_5} : exp :=
-  match e_5 with
-  | exp_unit => exp_unit 
-  | (exp_var_b nat) => exp_var_b nat
-  | (exp_var_f x) => exp_var_f x
-  | (exp_abs e) => exp_abs (subst_typ_in_exp A5 X5 e)
-  | (exp_abs_anno A e) => exp_abs_anno (subst_typ_in_typ A5 X5 A) (subst_typ_in_exp A5 X5 e)
-  | (exp_app e1 e2) => exp_app (subst_typ_in_exp A5 X5 e1) (subst_typ_in_exp A5 X5 e2)
-  | (exp_anno e A) => exp_anno (subst_typ_in_exp A5 X5 e) (subst_typ_in_typ A5 X5 A)
-  | (exp_freeze e) => exp_freeze (subst_typ_in_exp A5 X5 e)
 end.
 
 
