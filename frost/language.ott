@@ -1,839 +1,115 @@
-metavar typvar, X, Y, Z     ::= {{ repr-locally-nameless }}
-metavar expvar, x, y, z     ::= {{ repr-locally-nameless }}
-metavar taglabel, l         ::= {{ coq var }}
+% Frost — pure syntax (Phase 1 of the mechanization).
+% Companion of paper/sections/declarative.tex.
+% Encoding: ONE unified `typ` inductive that covers all six paper categories
+% (plain, tagged, unresolved, skel, tagged-skel, unresolved-skel). Categories
+% are predicates over `typ` defined in def_extra.v. No typing/subtyping/
+% consistency rules here — those live in def_extra.v files.
+
+metavar typvar, X, Y, Z ::= {{ repr-locally-nameless }}
+metavar expvar, x, y, z ::= {{ repr-locally-nameless }}
+metavar epsvar, ee, ff  ::= {{ coq var }}
 
 grammar
 
+% Bidirectional colour annotation on plain ∀'s.
+colour, c :: 'colour_' ::=
+  | S    ::   :: syn
+  | I    ::   :: inh
 
-% maybe we should just unify typ and pattern in syntax, and distinguish them 
-% by predicate : types cannot be constructed using ghost or topghost
-pre_typ, P , Q , A , B , C , R , T , G :: pre_typ_ ::=
-  | X                ::   :: var
-  | T -> R           ::   :: arrow
-  | ∀ X . T          ::   :: all  (+ bind X in T +)
-  | *                ::   :: ghost
-  | *. T             ::   :: topghost
-  | [ T ] l          ::   :: tag
-  | ^ T              ::   :: hat
-  | ( T )            :: S :: paren {{ coq ([[T]]) }}
-  | { T / X } R      :: M :: subst {{ coq (open_pre_typ_wrt_pre_typ [[X T]] [[R]]) }}
+% Unified type AST. Six paper categories carved out by predicates in
+% def_extra.v. The four ∀ flavours (col-S, col-I, eps, plain) are distinct
+% constructors so category predicates can discriminate cleanly.
+typ, A, B, C, T, ph, psi, P, Q, SS :: 'typ_' ::=
+  | UNIT                ::   :: unit
+  | X                   ::   :: var
+  | A1 -> A2            ::   :: arrow
+  | forall^ c X . A     ::   :: all_col   (+ bind X in A +)
+  | forall@ ee X . A    ::   :: all_eps   (+ bind X in A +)
+  | forall X . A        ::   :: all_plain (+ bind X in A +)
+  | HOLE                ::   :: hole
+  | TOPHOLE . A         ::   :: tophole
+  | ( A )               :: S :: paren {{ coq ([[A]]) }}
+  | { A2 / X } A1       :: M :: subst {{ coq (open_typ_wrt_typ [[X A1]] [[A2]]) }}
 
-exp, e, f, g :: exp_ ::=
-  | x                                   ::   :: var
-  | \ x . e                             ::   :: abs  (+ bind x in e +)
-  | \ x : A . e                         ::   :: abs_anno (+ bind x in e +)
-  | e1 e2                               ::   :: app
-  | let x = e1 in e2                    ::   :: let (+ bind x in e2 +)
-  % | \ X . e                             ::   :: tabs (+ bind X in e +) 
-  % | e @ A                               ::   :: tapp
-  | e : A                               ::   :: anno
-  | ⌈ e ⌉                               ::   :: freeze
-  | ( e )                               :: S :: paren  {{ coq ([[e]]) }}
-  | { e2 / x } e1                       :: M :: subsT {{ coq (open_exp_wrt_exp [[x e1]] [[e2]]) }}
-  | { A2 / X } e1                       :: M :: subsR {{ coq (open_exp_wrt_typ [[X e1]] [[A2]]) }}
+% Terms.
+exp, e, f :: 'exp_' ::=
+  | unit                    ::   :: unit
+  | x                       ::   :: var
+  | \ x . e                 ::   :: abs       (+ bind x in e +)
+  | \ x : A . e             ::   :: abs_anno  (+ bind x in e +)
+  | e1 e2                   ::   :: app
+  | e : A                   ::   :: anno
+  | freeze e                ::   :: freeze
+  | ( e )                   :: S :: paren {{ coq ([[e]]) }}
+  | { e2 / x } e1           :: M :: subste {{ coq (open_exp_wrt_exp [[x e1]] [[e2]]) }}
+  | { A / X } e             :: M :: substt {{ coq (open_exp_wrt_typ [[X e]] [[A]]) }}
 
-pat_row , p :: pat_row_ ::=
-  | P , p                ::  :: cons
-  | P                    ::  :: one
+% Modes M ::= TI | TC | FN M.
+mode, m :: 'mode_' ::=
+  | TI         ::   :: ti
+  | TC         ::   :: tc
+  | FN m       ::   :: fn
 
-bind, b :: bind_ ::=
-  | : □  ::   :: tvar
-  | : A  ::   :: pattern
-
-sort, s :: sort_ ::=
-  | ■1   ::   :: star
-  | ■2   ::   :: circ
-  | ■3   ::   :: hcirc
-  | ■4   ::   :: ecirc
+% Term-context bindings: dbind ::= : □ | : A | : P  (both A and P are typ).
+dbind, db :: 'dbind_' ::=
+  | : box   ::   :: tvar
+  | : A     ::   :: typ
+  | : P     ::   :: skel
 
 substitutions
-  single P X  :: subst_pattern_in
-  single e x  :: subst_exp_in
+  single A X :: subst_typ_in
+  single e x :: subst_exp_in
+  single e X :: subst_typ_in
 
 freevars
-  % A X  :: ftvar_in
-  P X  :: ftvar_in
-  e x  :: fvar_in
- 
+  A X :: ftvar_in
+  e X :: ftvar_in
+  e x :: fvar_in
+
 grammar
 
+% Term context Γ : list (atom * dbind) — already in Set.
+denv, dE, dF, dG :: '' ::= {{ coq list (atom*dbind) }}
+  | empty       ::   :: dempty {{ coq nil }}
+  | dE , x db   ::   :: dconsx  {{ coq ([[x]]~[[db]] ++ [[dE]])  }}
+  | dE , X db   ::   :: dconsX  {{ coq ([[X]]~[[db]] ++ [[dE]])  }}
+  | ( dE )      :: S :: paren   {{ coq ([[dE]]) }}
 
-mode, m :: mode_ ::=
-  | ty            ::   :: ty
-  | ng            ::   :: ng
-  | pi            ::   :: pi
-  | ↓ m           :: M :: to_ty {{ coq (to_ty_mode [[ m ]]) }}
+% Skeleton-scope context Ψ : list atom (predicative; in Set).
+psienv, dP, dPF :: '' ::= {{ coq list atom }}
+  | empty        ::   :: pempty {{ coq nil }}
+  | dP , X       ::   :: pcons  {{ coq ([[X]] :: [[dP]]) }}
+  | sin X        :: M :: psin   {{ coq ([[X]] :: nil) }}
+  | ( dP )       :: S :: pparen {{ coq ([[dP]]) }}
 
-env, dE, dF, dG:: '' ::= {{ coq list (atom*bind) }}
-  | empty     ::   :: dempty {{ coq nil }}
-  | dE , x b  ::   :: dcons1 {{ coq ([[x]]~[[b]] ++ [[dE]])  }}
-  | dE , X b  ::   :: dcons2 {{ coq ([[X]]~[[b]] ++ [[dE]])  }}
-
-tenv, tE, tF, tG:: '' ::= {{ coq vars }}
-  | empty         ::   :: tempty {{ coq empty }}
-  | tE , l        ::   :: tadd {{ coq (add [[l]] [[tE]])  }}
-  | ( tE )        :: M :: paren2 {{ coq ([[tE]]) }}
-  | sin l         :: M :: sin {{ coq (singleton [[l]]) }}
-  | tE1 ∪ tE2     :: M :: union {{ coq ([[tE1]] `union` [[tE2]]) }}
+% Tag context Δ : list atom (predicative; in Set).
+tagctx, dD, dDF :: '' ::= {{ coq list atom }}
+  | empty       ::   :: tempty {{ coq nil }}
+  | dD , ee     ::   :: tcons  {{ coq ([[ee]] :: [[dD]]) }}
+  | sin ee      :: M :: tsin   {{ coq ([[ee]] :: nil) }}
+  | dD1 ∪ dD2   :: M :: tunion {{ coq ([[dD1]] ++ [[dD2]]) }}
+  | ( dD )      :: S :: tparen {{ coq ([[dD]]) }}
 
 formula :: formula_ ::=
-  | judgement             ::   :: judgement
-  | formula \/ formula'   ::   :: judgement_or {{ coq  ([[formula]]) \/ ([[formula']]) }}
-  | ! formula             :: :: judgement_not {{ coq  (~[[formula]]) }}
-  | ( x b )  in dE    ::   :: binds1 {{ coq binds ([[x]])  ([[b]]) ([[dE]]) }}
-  | ( X b )  in dE    ::   :: binds2 {{ coq binds ([[X]])  ([[b]]) ([[dE]]) }}
-  | x  `notin` dom dE ::   :: fresh1 {{ coq ([[x]]  `notin` dom ([[dE]])) }}
-  | X  `notin` dom dE ::   :: fresh2 {{ coq ([[X]]  `notin` dom ([[dE]])) }}
-  | tE1 [=] tE2       ::   :: seteq  {{ coq ([[tE1]] [=] [[tE2]]) }}
-  | m1 == m2          ::   :: modeeq {{ coq [[m1]] = [[m2]] }}
-  | l `in` tE         ::   :: in1  {{ coq ([[l]] `in` [[tE]]) }}
-  | p <> *            ::   :: not_ghost {{ coq ([[p]] <> pat_row_one pre_typ_ghost ) }}
+  | judgement                   ::   :: judgement
+  | formula \/ formula'         ::   :: judgement_or  {{ coq (([[formula]]) \/ ([[formula']])) }}
+  | ! formula                   ::   :: judgement_not {{ coq (~ [[formula]]) }}
+  | ( x db )  in dE             ::   :: bindsx  {{ coq binds ([[x]]) ([[db]]) ([[dE]]) }}
+  | ( X db )  in dE             ::   :: bindsX  {{ coq binds ([[X]]) ([[db]]) ([[dE]]) }}
+  | x  `notin` dom dE           ::   :: freshx  {{ coq ([[x]] `notin` dom ([[dE]])) }}
+  | X  `notin` dom dE           ::   :: freshX  {{ coq ([[X]] `notin` dom ([[dE]])) }}
+  | X  `in`  dP                 ::   :: pin     {{ coq (List.In ([[X]]) ([[dP]])) }}
+  | ee `in`  dD                 ::   :: tin     {{ coq (List.In ([[ee]]) ([[dD]])) }}
+  | dD1 disjoint dD2            ::   :: tdisjoint {{ coq (list_disjoint ([[dD1]]) ([[dD2]])) }}
+  | m1 == m2                    ::   :: modeeq  {{ coq [[m1]] = [[m2]] }}
+  | c1 == c2                    ::   :: coleq   {{ coq [[c1]] = [[c2]] }}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+embed
+{{ coq
 
-embed {{ coq 
-
-Function to_ty_mode (m : mode) : mode :=
-  match m with 
-  | mode_ty => mode_ty
-  | mode_ng => mode_ng
-  | mode_pi => mode_ng
-  end.
+(* Forward declaration used in formulae; full definition lives in def_extra.v.
+   We pre-declare it here so def_ott.v compiles standalone. *)
+Definition list_disjoint (xs ys : list atom) : Prop :=
+  forall a, List.In a xs -> ~ List.In a ys.
 
 }}
-
-
-defns
-is_typ :: '' ::=
-
-defn
-|-ᵗ T :: :: is_typ :: 'is_typ__' by
-
--------------- :: tvar
-|-ᵗ X
-
-|-ᵗ T
-|-ᵗ R
--------------- :: arrow
-|-ᵗ T -> R
-
-|-ᵗ T
--------------------- :: all
-|-ᵗ ∀ X . T
-
--------------------- :: ghost
-|-ᵗ *
-
-|-ᵗ T
--------------------- :: topghost
-|-ᵗ *. T
-
--------------- :: tagged_tvar
-|-ᵗ [ X ] l
-
-|-ᵗ T -> R
------------------- :: tagged_arrow
-|-ᵗ [ T -> R ] l 
-
-|-ᵗ ∀ X . T
--------------------- :: tagged_all
-|-ᵗ [ ∀ X . T ] l 
-
--------------------- :: tagged_ghost
-|-ᵗ ^ * 
-
-|-ᵗ *. T
--------------------- :: tagged_topghost
-|-ᵗ ^ (*. T)
-
-defns
-is_ttyp :: '' ::=
-
-defn
-|-ᵗᵗ T :: :: is_ttyp :: 'is_ttyp__' by
-
--------------- :: tvar
-|-ᵗᵗ [ X ] l
-
-|-ᵗᵗ T -> R
------------------- :: arrow
-|-ᵗᵗ [ T -> R ] l 
-
-|-ᵗᵗ ∀ X . T
--------------------- :: all
-|-ᵗᵗ [ ∀ X . T ] l 
-
--------------------- :: ghost
-|-ᵗᵗ ^ * 
-
-|-ᵗᵗ *. T
--------------------- :: topghost
-|-ᵗᵗ ^ (*. T)
- 
-
-defns
-wf_ttyp :: '' ::=
-
-defn
-tE |-ᵗᵗ T :: :: wf_ttyp :: 'wf_ttyp__' by
-
-l `in`  tE
--------------- :: tvar
-tE |-ᵗᵗ [ X ] l
-
-l `in`  tE
-tE |-ᵗᵗ T -> R
------------------- :: arrow
-tE |-ᵗᵗ [ T -> R ] l 
-
-l `in`  tE
-tE |-ᵗᵗ ∀ X . T
--------------------- :: all
-tE |-ᵗᵗ [ ∀ X . T ] l 
-
--------------------- :: ghost
-tE |-ᵗᵗ ^ * 
-
-tE |-ᵗᵗ *. T
--------------------- :: topghost
-tE |-ᵗᵗ ^ (*. T)
- 
-
-% Source typs syntax, no tags
-defns
-is_styp :: '' ::=
-
-defn
-|-ˢᵗ A :: :: is_styp :: 'is_styp__' by
-
--------------- :: tvar
-|-ˢᵗ X
-
-|-ˢᵗ A
-|-ˢᵗ B
--------------- :: arrow
-|-ˢᵗ A -> B
-
-|-ˢᵗ A
--------------------- :: all
-|-ˢᵗ ∀ X . A
-
-
-defns
-is_pattern :: '' ::=
-
-defn
-|-ᵖ P :: :: is_pattern :: 'is_pattern__' by
-
--------------- :: tvar
-|-ᵖ X
-
-|-ᵖ P
-|-ᵖ Q
--------------- :: arrow
-|-ᵖ P -> Q
-
-|-ᵖ P
--------------------- :: all
-|-ᵖ ∀ X . P
-
--------------------- :: ghost
-|-ᵖ *
-
-|-ᵖ P
--------------------- :: topghost
-|-ᵖ *. P
-
-defns
-is_gpattern :: '' ::=
-
-defn
-|-ᵖᵍ P :: :: is_gpattern :: 'is_gpattern__' by
-
--------------- :: tvar
-|-ᵖᵍ X
-
-|-ᵖ P
-|-ᵖ Q
--------------- :: arrow
-|-ᵖᵍ P -> Q
-
--------------------- :: ghost
-|-ᵖᵍ *
-
-
-defns
-mono_styp :: '' ::=
-
-defn
-|-m A :: :: mono_styp :: 'mono_typ__' by
-
--------------- :: tvar
-|-m X
-
-|-m A1
-|-m A2
--------------- :: arrow
-|-m A1 -> A2
-
-
-defns
-is_exp :: '' ::=
-
-defn
-|- e :: :: is_exp :: 'is_exp__' by
-
--------------- :: var
-|- x
-
-|- e
--------------- :: abs
-|- \ x . e
-
-
-|-ᵗ A
-|- e
--------------- :: abs_anno
-|- \ x : A . e
-
-|- e1 
-|- e2
--------------- :: app
-|- e1 e2
-
-
-|- e1 
-|- e2
--------------- :: let
-|- let x = e1 in e2
-
-
-|-ᵗ A 
-|- e 
--------------- :: anno
-|- e : A 
-
-
--------------- :: freeze
-|- ⌈ x ⌉     
-
-
-% We have to add a wrapper to the results of pat_refine
-% because its results can have to different types:
-% (1) a single pattern, due to the forall case of the single case
-% (2) a pattern and a pattern row, due to the row cons case
-% these two types are incompatible as is
-
-% defns
-% single_pat_refine :: '' ::=
-% defn
-% P ▹ Q :: :: sin_pat_refining :: 'sin_pat_refining__' by
-
-% ----------------- :: ghost
-% * ▹ * -> *
-
-% ----------------- :: arrow
-% P -> Q ▹ P -> Q
-
-% P ▹ Q1 --> Q2
-% ----------------- :: forall
-% ∀ P ▹ ∀ Q1 --> Q2
-
-% defns
-% pat_refine :: '' ::=
-% defn
-% p1 [▹] p2 :: :: pat_refining :: 'pat_refining__' by
-
-% P ▹ P
-% ----------------- :: sing
-% P [▹] P 
-
-% ----------------- :: cons
-% P , p [▹] P ---> p 
-
-% defns
-% comp_checking :: '' ::=
-
-% defn
-% tE | dE |- T ~ R :: :: comp_checking :: 'comp_checking__' by
-
-% ------------------- :: ghost_l
-% empty | dE |- * ~ T
-
-% ------------------- :: ghost_r
-% empty | dE |- P ~ *
-
-% ------------------- :: ghost_var
-% tE | dE |- X ~ X
-
-% sin l [=] tE
-% ------------------- :: ghost_var'
-% tE | dE |- X ~ [ X ] l
-
-% tE' | dE , X : □ |- T ~ P
-% tE [=] tE' , l
-% ---------------------------------- :: forall
-% tE | dE |- ∀ X . T ~ [ ∀ X . P ] l
-
-% tE | dE |- P ~ T
-% -------------------------- :: topghost_l1
-% tE | dE |- *. P ~ T
-
-% % ForallGhostL2 is split into topghost_l2 and topghost_l2'
-% tE | dE , X : □ |- P ~ T
-% ---------------------------- :: topghost_l2
-% tE | dE |- *. P ~ ∀ X . T
-
-% tE | dE |- *. P ~ T
-% ------------------------------- :: topghost_l2'
-% tE | dE |- *. P ~ [ *. T ] l
-
-% tE | dE |- *. P ~ T
-% ------------------------------- :: topghost_l3
-% tE | dE |- *. P ~ ^ *. T
-
-% tE | dE |- P ~ T
-% ------------------------------ :: topghost_r1
-% tE | dE |- P ~ *. T
-
-% tE | dE , X : □ |- P ~ *. T
-% ---------------------------- :: topghost_r2
-% tE | dE |- ∀ X . P ~ *. T
-
-% tE1 | dE |- P ~ T
-% tE2 | dE |- Q ~ R
-% tE1 ∪ tE2 [=] tE
-% ------------------------------------ :: arrow
-% tE | dE |- P -> Q ~ T -> R
-
-% tE1 | dE |- P ~ T
-% tE2 | dE |- Q ~ R
-% (tE1 ∪ tE2) , l [=] tE
-% ------------------------------------ :: arrow'
-% tE | dE |- P -> Q ~ [ T -> R ] l
-
-
-defns
-tag_erasure :: '' ::=
-
-defn
-
-<| T |> tE ↘ R :: :: tag_erasure :: 'tag_erasure__' by
-
--------------- :: tvar
-<| X |> tE ↘ X 
-
-<| T1 |> tE ↘ R1
-<| T2 |> tE ↘ R2
--------------- :: arrow
-<| T1 -> T2 |> tE ↘ R1 -> R2
-
-<| T |> tE ↘ R
--------------------- :: all
-<| ∀ X . T |> tE ↘ ∀ X . R
-
--------------------- :: ghost
-<| * |> tE ↘ *
-
-<| T |> tE ↘ R
--------------------- :: topghost
-<| *. T |> tE ↘ *. R
-
-l `in` tE
-<| T |> tE ↘ R
------------------ :: tagged_typ
-<| [ T ] l |> tE ↘ R
-
-! l `in` tE
-<| T |> tE ↘ R
------------------ :: tagged_tvar'
-<| [ T ] l |> tE ↘ [ R ] l
-
--------------------- :: tagged_ghost
-<| ^ * |> tE ↘ * 
-
-<| T |> tE ↘ R 
--------------------- :: tagged_topghost
-<| ^ *. T |> tE ↘ *. R 
-
-defns
-pattern_joining :: '' ::=
-
-defn
-tE | dE |- P /\ T ~ R :: :: pattern_joining :: 'pjoining__' by
-
---------------------------- :: ghost_l
-empty | dE |- * /\ T ~ T
-
----------------------------- :: ghost_r
-empty | dE |- P /\ * ~ P
-
-------------------- :: ghost_var
-tE | dE |- X /\ X ~ X
-
-sin l [=] tE
-------------------- :: ghost_var'
-tE | dE |- X /\ [ X ] l ~ X
-
-tE' | dE , X : □ |- P /\ T ~ R
-tE [=] tE' , l
----------------------------------- :: forall
-tE | dE |- ∀ X . P /\ [ ∀ X . T ] l ~ ∀ X . R
-
-tE | dE |- P /\ T ~ R
--------------------------- :: topghost_l1
-tE | dE |- *. P /\ T ~ R
-
-% ForallGhostL2 is split into topghost_l2 and topghost_l2'
-tE | dE , X : □ |- P /\ T ~ R
----------------------------- :: topghost_l2
-tE | dE |- *. P /\ ∀ X . T ~ ∀ X . R
-
-tE | dE , X : □ |- *. P /\ T ~ R 
-------------------------------- :: topghost_l2'
-tE | dE |- *. P /\ [ ∀ X . T ] l ~ ∀ X . R
-
-tE | dE |- *. P /\ T ~ R
-------------------------------- :: topghost_l3
-tE | dE |- *. P /\ ^ *. T ~ *. R
-
-tE | dE |- P /\ T ~ R
------------------------------- :: topghost_r1
-tE | dE |- P /\ *. T ~ R
-
-tE | dE , X : □ |- P /\ *. T ~ R
----------------------------- :: topghost_r2
-tE | dE |- ∀ X . P /\ *. T ~ ∀ X . R
-
-tE1 | dE |- P /\ T1 ~ R1 
-tE2 | dE |- Q /\ T2 ~ R2
-tE1 ∪ tE2 [=] tE
------------------------------------- :: arrow
-tE | dE |- P -> Q /\ T1 -> T2 ~ R1 -> R2 
-
-tE1 | dE |- P /\ T1 ~ R1
-tE2 | dE |- Q /\ T2 ~ R2
-(tE1 ∪ tE2) , l [=] tE
------------------------------------- :: arrow'
-tE | dE |- P -> Q /\ [ T1 -> T2 ] l ~ R1 -> R2
-
-
-% TODO: fix the rule
-defns
-subtyping :: '' ::=
-
-defn
-tE | dE |- T -[ p > m >> R :: :: subtyping :: 'subtyping__' by
-
-% TODO : check mode
-------------------------- :: tail_ghost
-empty | dE |- T -[ * > m >> T
-
-% TODO : add haunted()
---------------------------------------- :: tail_ghost_pat
-empty | dE |- T -[ * > pi >> T
-
-tE | dE , X : □ |- T -[ A > m >> T
---------------------------------------- :: tail_forallr
-tE | dE |- T -[ ∀ X . A > m >> ∀ X . T
-
-empty | dE |- A /\ T ~ R
-------------------------- :: tail_typ 
-empty | dE |- T -[ A > m >> R
-
-tE1 | dE |- P /\ R ~ R'
-tE2 | dE |- T -[ p > m >> T'
-tE1 ∪ tE2 [=] tE
------------------------------------- :: arg_match
-tE | dE |- R -> T -[ P , p > m >> R' -> T'
-
-p <> *
-tE | dE |- R -[ p > m >> T
----------------------------------- :: inst_ghost 
-tE | dE |- *. R -[ p > m >> T
-
-% TODO : 
-% fix tE in type well-formedness
-% add pattern (tagged type) refinement
-% add erase
-p <> *
-tE |-ᵗᵗ T
-tE | dE |- { G / X } R -[ p > m >> T
----------------------------------- :: inst_real
-tE | dE |- ∀ X . R -[ p > m >> T
-
-% TODO : 
-% add pattern (tagged type) refinement
-p <> *
-tE' |-ᵗᵗ T
-tE ∪ tE' | dE |- { G / X } R -[ p > m >> T
-<| T |> tE' ↘ T' 
----------------------------------- :: inst_real' 
-tE | dE |- [ ∀ X . R ] l -[ p > m >> T'
-
-
-defns 
-pattern_splitting :: '' ::=
-
-defn
-
-p1 ▹ p2 :: :: pattern_splitting :: 'pat_splitting__' by
-
-
----------------------------------- :: ghost
-* ▹ * , *
-
-A ▹ B
----------------------------------- :: all
-∀ X . A ▹ ∀ X . B
-
----------------------------------- :: arrow
-A -> B ▹ A -> B
-
----------------------------------- :: row
-P , p ▹ P , p
-
-
-% defns
-% pattern_inference :: '' ::=
-
-% defn
-
-% dE | p |- e ==> P :: :: pat_inference :: 'pat_inference__' by
-
-% |-ᵖ A
-% ( x : P ) in dE
-% ---------------------------------- :: freeze
-% dE | T |- ⌈ x ⌉ ==> P
-
-
-% ( x : P ) in dE
-% |-ᵖ P 
-% empty | dE |- P -[ p > pi >> R
-% ---------------------------------- :: var
-% dE | p |- x ==> R
-
-% empty | dE |- A -[ p > pi >> P
-% ---------------------------------- :: anno
-% dE | * |- e : A ==> P
-
-% % TODO: 
-% % add haunted
-% p ▹ ∀ X . P
-% dE , X : □ | P |- \ x . e ==> Q
-% ---------------------------------- :: abs
-% dE | p |- \ x . e ==> ∀ X . Q
-
-% % TODO: 
-% % add haunted (?)
-% p ▹ P , p'
-% dE , x : P | p' |- e ==> Q
-% ---------------------------------- :: abs'
-% dE | * |- \ x . e ==> P -> Q
-
-% % TODO: 
-% % add haunted (?)
-% p ▹ P1 -> P2
-% dE , x : P1 | P2 |- e ==> Q
-% ---------------------------------- :: abs''
-% dE | * |- \ x . e ==> P1 -> Q
-
-% % TODO: 
-% % add haunted
-% p ▹ ∀ X . P
-% dE , X : □ | P |- \ x . e ==> Q
-% ---------------------------------- :: anno_abs
-% dE | p |- \ x : A . e ==> ∀ X . Q
-
-% % TODO: 
-% % add haunted (?)
-% p ▹ P , p'
-% dE , x : A | p' |- e ==> P
-% ---------------------------------- :: anno_abs'
-% dE | p |- \ x : A . e ==> P
-
-% % TODO: 
-% % add haunted (?)
-% p ▹ P1 -> P2
-% dE , x : A | P2 |- e ==> Q
-% ---------------------------------- :: anno_abs''
-% dE | p |- \ x : A . e ==> P1 -> Q
-
-% dE | * |- e2 ==> P
-% dE | P , p |- e1 ==> P1 -> Q
-% ---------------------------------- :: app
-% dE | p |- e1 e2 ==> Q
-
-% % TODO : 
-% % add a no-guessing inference
-% % no guessing inference needs to be mutually defined with pattern inference (?)
-% dE | * |- e1 ==> P
-% dE , x : P | p |- e2 ==> Q
-% ---------------------------------- :: let
-% dE | p |- let x = e1 in e2 ==> Q
-
-
-% defns
-% typing :: '' ::=
-
-% defn
-
-% dE | p |- e =>  T :: :: typing :: 'typing__' by
-
-% |-ˢᵗ A
-% ( x : A ) in dE
-% ---------------------------------- :: freeze
-% dE | T |- ⌈ x ⌉ => A
-
-
-% ( x : P ) in dE
-% |-ᵖ P 
-% empty | dE |- P -[ p > pi >> R
-% ---------------------------------- :: var
-% dE | p |- x => R
-
-% dE | A |- e => A
-% empty | dE |- A -[ p > pi >> B
-% ---------------------------------- :: anno
-% dE | * |- e : A => B
-
-% % we need abs and abs' to gradually peel off binders
-% % and abs' and abs'' to distingusi whether pattern split 
-% % returns two patterns or a pattern and a pattern row
-% % similarly for anno_abs
-% p ▹ ∀ X . P
-% dE , X : □ | P |- \ x . e => A
-% ---------------------------------- :: abs
-% dE | p |- \ x . e => ∀ X . A
-
-% % TODO: 
-% % add pattern refinement
-% p ▹ P , p'
-% dE , x : P | p' |- e => B
-% ---------------------------------- :: abs'
-% dE | * |- \ x . e => A -> B
-
-% % TODO: 
-% % add pattern refinement
-% p ▹ P1 -> P2
-% dE , x : P1 | P2 |- e => B
-% ---------------------------------- :: abs''
-% dE | * |- \ x . e => A -> B
-
-% p ▹ ∀ X . P
-% dE , X : □ | P |- \ x . e => B
-% ---------------------------------- :: anno_abs
-% dE | p |- \ x : A . e => ∀ X . B
-
-% % TODO: 
-% % add pattern refinement
-% p ▹ P , p'
-% dE , x : A | p' |- e => B
-% ---------------------------------- :: anno_abs'
-% dE | p |- \ x : A . e => B
-
-% % TODO: 
-% % add pattern refinement
-% p ▹ P1 -> P2
-% dE , x : A | P2 |- e => B
-% ---------------------------------- :: anno_abs''
-% dE | p |- \ x : A . e => B
-
-% % TODO : add pattern inf
-% dE | * |- e2 ==> P
-% dE | P , p |- e1 => A -> B
-% dE | A |- e2 => A
-% ---------------------------------- :: app
-% dE | p |- e1 e2 => B
-
-% dE | * |- e1 => A
-% dE , x : A | p |- e2 => B
-% ---------------------------------- :: let
-% dE | p |- let x = e1 in e2 => B
-
-
-defns
-uni_typing :: '' ::=
-
-defn
-
-dE | p |- e =>[ m ] T :: :: uni_typing :: 'uni_typing__' by
-
-% |-ˢᵗ A
-m == ty
-( x : P ) in dE
----------------------------------- :: freeze_chk
-dE | P |- ⌈ x ⌉ =>[ m ] P
-
-m == pi \/ m == ng
-( x : P ) in dE
----------------------------------- :: freeze_inf
-dE | * |- ⌈ x ⌉ =>[ m ] P
-
-( x : P ) in dE
-|-ᵖ P 
-empty | dE |- P -[ p > m >> R
----------------------------------- :: var
-dE | p |- x =>[ m ] R
-
-dE | A |- e =>[ m ] A
-empty | dE |- A -[ p > m >> B
----------------------------------- :: anno
-dE | * |- e : A =>[ m ] B
-
-% we need abs and abs' to gradually peel off binders
-% and abs' and abs'' to distingusi whether pattern split 
-% returns two patterns or a pattern and a pattern row
-% similarly for anno_abs
-% TODO: 
-% add haunt
-p ▹ ∀ X . P
-dE , X : □ | P |- \ x . e =>[ m ] A
----------------------------------- :: abs
-dE | p |- \ x . e =>[ m ] ∀ X . A
-
-% TODO: 
-% add pattern refinement
-p ▹ P , p'
-dE , x : P | p' |- e =>[ m ] B
----------------------------------- :: abs'
-dE | * |- \ x . e =>[ m ] A -> B
-
-% TODO: 
-% add pattern refinement
-p ▹ P1 -> P2
-dE , x : P1 | P2 |- e =>[ m ] B
----------------------------------- :: abs''
-dE | * |- \ x . e =>[ m ] A -> B
-
-% TODO: 
-% add haunted
-p ▹ ∀ X . P
-dE , X : □ | P |- \ x . e =>[ m ] B
----------------------------------- :: anno_abs
-dE | p |- \ x : A . e =>[ m ] ∀ X . B
-
-% TODO: 
-% add pattern refinement
-p ▹ P , p'
-dE , x : A | p' |- e =>[ m ] B
----------------------------------- :: anno_abs'
-dE | p |- \ x : A . e =>[ m ] B
-
-% TODO: 
-% add pattern refinement
-p ▹ P1 -> P2
-dE , x : A | P2 |- e =>[ m ] B
----------------------------------- :: anno_abs''
-dE | p |- \ x : A . e =>[ m ] B
-
-dE | * |- e2 =>[ pi ] P
-dE | P , p |- e1 =>[ m ] P' -> Q
-dE | P' |- e2 =>[ m ] P'
----------------------------------- :: app
-dE | p |- e1 e2 =>[ m ] B
-
-dE | * |- e1 =>[ ↓ m ] A
-dE , x : A | p |- e2 =>[ m ] B
----------------------------------- :: let
-dE | p |- let x = e1 in e2 =>[ m ] B
