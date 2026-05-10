@@ -1,6 +1,5 @@
 (** Frost — cross-system meta-functions and predicates. *)
 
-Require Import List.
 Require Import Metalib.Metatheory.
 
 Require Export src.frost.def_ott.
