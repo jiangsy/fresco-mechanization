@@ -539,3 +539,58 @@ Proof.
   - apply d_wf_uskel__hole.
   - apply d_wf_uskel__tophole; auto.
 Qed.
+
+(** Opening preserves [guarded_skel]: opening only acts on bound variables,
+    and [guarded_skel] only inspects the topmost constructor (unit, free
+    var, or arrow), which is preserved by [open_typ_wrt_typ_rec]. *)
+Lemma guarded_skel_open_preservation : forall Q X k,
+    guarded_skel Q ->
+    guarded_skel (open_typ_wrt_typ_rec k (typ_var_f X) Q).
+Proof.
+  intros Q X k H. inversion H; subst; simpl.
+  - apply guarded_skel__unit.
+  - apply guarded_skel__var.
+  - apply guarded_skel__arrow.
+Qed.
+
+Lemma guarded_skel_open : forall Q X,
+    guarded_skel Q ->
+    guarded_skel (open_typ_wrt_typ Q (typ_var_f X)).
+Proof.
+  intros Q X H. unfold open_typ_wrt_typ. apply guarded_skel_open_preservation; auto.
+Qed.
+
+(** * Refinement preserves wellformedness.
+
+    Paper Lemma at [declarative.tex:1380]. If [P ⊳ Q] (colour-respecting
+    refinement) and [P] is wellformed under [Ψ ⨟ Γ], then [Q] is too. *)
+
+Lemma d_refine_preserves_wf : forall Ψ Γ P Q,
+    d_wf_skel Ψ Γ P ->
+    d_refine Ψ Γ P Q ->
+    d_wf_skel Ψ Γ Q.
+Proof.
+  intros Ψ Γ P Q HwfP Href. induction Href.
+  - exact HwfP.
+  - exact HwfP.
+  - inversion HwfP; subst.
+    apply d_wf_skel__arrow; auto.
+  - inversion HwfP; subst.
+    apply d_wf_skel__all_plain with (L := L `union` L0).
+    intros X HX. apply H0; auto.
+  - (* hole: input typ_hole, output Q wf under nil; lift to Ψ. *)
+    rewrite_env (Ψ ++ (@nil atom)). apply d_wf_skel_psi_weakening. exact H.
+  - (* tophole_no_top: input P = typ_tophole P0; output Q = typ_all_plain Q0.
+       Inversion on [d_wf_skel Ψ Γ (typ_tophole P0)] gives [guarded_skel P0]
+       and [d_wf_skel nil Γ P0]. *)
+    inversion HwfP; subst.
+    apply d_wf_skel__all_plain with (L := L).
+    intros X HX. apply H0; auto.
+    apply d_wf_skel_psi_incl with (Ψ := nil); [exact H5 | intros y []].
+  - (* tophole_with_top: Q = typ_all_plain (typ_tophole Q0). *)
+    apply d_wf_skel__all_plain with (L := L).
+    intros X HX.
+    apply d_wf_skel__tophole.
+    + apply guarded_skel_open. exact H.
+    + apply H2; auto.
+Qed.
