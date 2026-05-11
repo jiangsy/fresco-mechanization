@@ -303,14 +303,60 @@ Qed.
     well-formed in the matching category (e.g., [d_wf_ttyp] for tagged
     substitution). *)
 
-(** Local tactic: rewrite [if X1 == X2 then U else V] to [U] (if [X1=X2])
-    or [V] (otherwise). Useful in subst_typ_in_typ var-cases where the
-    EqDec test does not reduce under [simpl]. *)
-Ltac eq_atom_if :=
-  match goal with
-  | |- context [if ?X1 == ?X2 then ?U else ?V] =>
-      destruct (X1 == X2); [subst | idtac]
-  end.
+(** [d_wf_skel] is monotone in Ψ: enlarging Ψ to any super-list preserves
+    wf. Stated as a "Ψ supersets Ψ'" inclusion via [incl]. *)
+Lemma d_wf_skel_psi_incl : forall Ψ Ψ' Γ P,
+    d_wf_skel Ψ Γ P -> incl Ψ Ψ' -> d_wf_skel Ψ' Γ P.
+Proof.
+  intros Ψ Ψ' Γ P H. revert Ψ'. induction H; intros Ψ' Hincl.
+  - apply d_wf_skel__unit.
+  - apply d_wf_skel__var. destruct H as [Hin | Hin].
+    + left. apply Hincl. exact Hin.
+    + right. exact Hin.
+  - apply d_wf_skel__arrow; auto.
+  - apply d_wf_skel__all_col with (L := L).
+    intros X HX. apply H0; auto.
+    intros y Hy. destruct Hy as [Heq | Htail]; [left; exact Heq | right; apply Hincl; exact Htail].
+  - apply d_wf_skel__all_plain with (L := L).
+    intros X HX. apply H0; auto.
+    intros y Hy. destruct Hy as [Heq | Htail]; [left; exact Heq | right; apply Hincl; exact Htail].
+  - apply d_wf_skel__hole.
+  - apply d_wf_skel__tophole; auto.
+Qed.
+
+(** Weaken Ψ on the left. *)
+Lemma d_wf_skel_psi_weakening : forall Ψ Ψ' Γ P,
+    d_wf_skel Ψ Γ P -> d_wf_skel (Ψ' ++ Ψ) Γ P.
+Proof.
+  intros Ψ Ψ' Γ P H.
+  apply d_wf_skel_psi_incl with (Ψ := Ψ); auto.
+  intros x Hx. apply in_or_app. right. exact Hx.
+Qed.
+
+(** Embed [d_wf_ttyp Δ Γ A] into [d_wf_utyp Δ Γ A]: the unresolved-type
+    wf is more permissive (extra [pall] constructor). *)
+Lemma d_wf_ttyp_is_utyp : forall Δ Γ A,
+    d_wf_ttyp Δ Γ A -> d_wf_utyp Δ Γ A.
+Proof.
+  intros Δ Γ A H. induction H.
+  - apply d_wf_utyp__unit.
+  - apply d_wf_utyp__var; auto.
+  - apply d_wf_utyp__arrow; auto.
+  - apply d_wf_utyp__tall with (L := L); auto.
+Qed.
+
+(** Embed [d_wf_tskel Δ Γ P] into [d_wf_uskel Δ Γ P]. *)
+Lemma d_wf_tskel_is_uskel : forall Δ Γ P,
+    d_wf_tskel Δ Γ P -> d_wf_uskel Δ Γ P.
+Proof.
+  intros Δ Γ P H. induction H.
+  - apply d_wf_uskel__unit.
+  - apply d_wf_uskel__var; auto.
+  - apply d_wf_uskel__arrow; auto.
+  - apply d_wf_uskel__tall with (L := L); auto.
+  - apply d_wf_uskel__hole.
+  - apply d_wf_uskel__tophole; auto.
+Qed.
 
 Lemma d_wf_typ_subst : forall Γ1 Γ2 X A B,
     d_wf_typ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) A ->
@@ -333,4 +379,163 @@ Proof.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HB)].
     rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
     apply H0; auto.
+Qed.
+
+(** [d_wf_skel] substitution requires the substituted-in [B] to be a
+    well-formed skeleton in [nil] Ψ-context AND [guarded_typ B] so the
+    [tophole] constructor's [guarded_skel] premise is preserved when the
+    [typ_var_f X] sat under a tophole. In practice, the only call site
+    (skeleton refinement / pattern subst) instantiates with a guarded type. *)
+Lemma d_wf_skel_subst : forall Γ1 Γ2 Ψ X P B,
+    d_wf_skel Ψ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) P ->
+    d_wf_skel nil Γ2 B ->
+    guarded_typ B ->
+    d_wf_skel Ψ (Γ1 ++ Γ2) (subst_typ_in_typ B X P).
+Proof.
+  intros Γ1 Γ2 Ψ X P B HP HB HGuard. dependent induction HP; simpl.
+  - apply d_wf_skel__unit.
+  - destruct (X0 == X); subst.
+    + replace (if X == X then B else typ_var_f X) with B
+        by (destruct (X == X); [reflexivity | contradiction]).
+      replace Ψ with (Ψ ++ (@nil atom)) by apply app_nil_r.
+      apply d_wf_skel_psi_weakening.
+      apply d_wf_skel_weakening_head. exact HB.
+    + replace (if X0 == X then B else typ_var_f X0) with (typ_var_f X0)
+        by (destruct (X0 == X); [contradiction | reflexivity]).
+      apply d_wf_skel__var. destruct H as [Hin | Hin].
+      * left. exact Hin.
+      * right. eapply binds_remove_mid in Hin; [| exact n].
+        apply binds_app_iff in Hin. destruct Hin as [Hin | Hin]; apply binds_app_iff; auto.
+  - apply d_wf_skel__arrow; auto.
+  - apply d_wf_skel__all_col with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_skel_lc HB)].
+    apply H0; auto.
+  - apply d_wf_skel__all_plain with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_skel_lc HB)].
+    apply H0; auto.
+  - apply d_wf_skel__hole.
+  - apply d_wf_skel__tophole.
+    + (* guarded_skel preserved by subst, given [guarded_typ B]. *)
+      inversion H; subst; simpl.
+      * apply guarded_skel__unit.
+      * destruct (X0 == X); subst.
+        -- replace (if X == X then B else typ_var_f X) with B
+             by (destruct (X == X); [reflexivity | contradiction]).
+           inversion HGuard; subst.
+           ++ apply guarded_skel__unit.
+           ++ apply guarded_skel__var.
+           ++ apply guarded_skel__arrow.
+        -- replace (if X0 == X then B else typ_var_f X0) with (typ_var_f X0)
+             by (destruct (X0 == X); [contradiction | reflexivity]).
+           apply guarded_skel__var.
+      * apply guarded_skel__arrow.
+    + apply IHHP; auto.
+Qed.
+
+Lemma d_wf_ttyp_subst : forall Γ1 Γ2 Δ X A B,
+    d_wf_ttyp Δ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) A ->
+    d_wf_ttyp nil Γ2 B ->
+    d_wf_ttyp Δ (Γ1 ++ Γ2) (subst_typ_in_typ B X A).
+Proof.
+  intros Γ1 Γ2 Δ X A B HA HB. dependent induction HA; simpl.
+  - apply d_wf_ttyp__unit.
+  - destruct (X0 == X); subst.
+    + replace (if X == X then B else typ_var_f X) with B
+        by (destruct (X == X); [reflexivity | contradiction]).
+      apply d_wf_ttyp_weakening_head. exact HB.
+    + replace (if X0 == X then B else typ_var_f X0) with (typ_var_f X0)
+        by (destruct (X0 == X); [contradiction | reflexivity]).
+      apply binds_remove_mid in H; auto.
+      apply d_wf_ttyp__var. apply binds_app_iff in H. destruct H; apply binds_app_iff; auto.
+  - apply d_wf_ttyp__arrow; auto.
+  - apply d_wf_ttyp__all with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)); auto.
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_ttyp_lc HB)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+Qed.
+
+Lemma d_wf_utyp_subst : forall Γ1 Γ2 Δ X A B,
+    d_wf_utyp Δ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) A ->
+    d_wf_ttyp nil Γ2 B ->
+    d_wf_utyp Δ (Γ1 ++ Γ2) (subst_typ_in_typ B X A).
+Proof.
+  intros Γ1 Γ2 Δ X A B HA HB. dependent induction HA; simpl.
+  - apply d_wf_utyp__unit.
+  - destruct (X0 == X); subst.
+    + replace (if X == X then B else typ_var_f X) with B
+        by (destruct (X == X); [reflexivity | contradiction]).
+      apply d_wf_utyp_weakening_head. apply d_wf_ttyp_is_utyp. exact HB.
+    + replace (if X0 == X then B else typ_var_f X0) with (typ_var_f X0)
+        by (destruct (X0 == X); [contradiction | reflexivity]).
+      apply binds_remove_mid in H; auto.
+      apply d_wf_utyp__var. apply binds_app_iff in H. destruct H; apply binds_app_iff; auto.
+  - apply d_wf_utyp__arrow; auto.
+  - apply d_wf_utyp__tall with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)); auto.
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_ttyp_lc HB)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - apply d_wf_utyp__pall with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_ttyp_lc HB)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+Qed.
+
+Lemma d_wf_tskel_subst : forall Γ1 Γ2 Δ X P B,
+    d_wf_tskel Δ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) P ->
+    d_wf_tskel nil Γ2 B ->
+    d_wf_tskel Δ (Γ1 ++ Γ2) (subst_typ_in_typ B X P).
+Proof.
+  intros Γ1 Γ2 Δ X P B HP HB. dependent induction HP; simpl.
+  - apply d_wf_tskel__unit.
+  - destruct (X0 == X); subst.
+    + replace (if X == X then B else typ_var_f X) with B
+        by (destruct (X == X); [reflexivity | contradiction]).
+      apply d_wf_tskel_weakening_head. exact HB.
+    + replace (if X0 == X then B else typ_var_f X0) with (typ_var_f X0)
+        by (destruct (X0 == X); [contradiction | reflexivity]).
+      apply binds_remove_mid in H; auto.
+      apply d_wf_tskel__var. apply binds_app_iff in H. destruct H; apply binds_app_iff; auto.
+  - apply d_wf_tskel__arrow; auto.
+  - apply d_wf_tskel__all with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)); auto.
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_tskel_lc HB)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - apply d_wf_tskel__hole.
+  - apply d_wf_tskel__tophole; auto.
+Qed.
+
+Lemma d_wf_uskel_subst : forall Γ1 Γ2 Δ X P B,
+    d_wf_uskel Δ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) P ->
+    d_wf_tskel nil Γ2 B ->
+    d_wf_uskel Δ (Γ1 ++ Γ2) (subst_typ_in_typ B X P).
+Proof.
+  intros Γ1 Γ2 Δ X P B HP HB. dependent induction HP; simpl.
+  - apply d_wf_uskel__unit.
+  - destruct (X0 == X); subst.
+    + replace (if X == X then B else typ_var_f X) with B
+        by (destruct (X == X); [reflexivity | contradiction]).
+      apply d_wf_uskel_weakening_head. apply d_wf_tskel_is_uskel. exact HB.
+    + replace (if X0 == X then B else typ_var_f X0) with (typ_var_f X0)
+        by (destruct (X0 == X); [contradiction | reflexivity]).
+      apply binds_remove_mid in H; auto.
+      apply d_wf_uskel__var. apply binds_app_iff in H. destruct H; apply binds_app_iff; auto.
+  - apply d_wf_uskel__arrow; auto.
+  - apply d_wf_uskel__tall with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)); auto.
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_tskel_lc HB)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - apply d_wf_uskel__pall with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_tskel_lc HB)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - apply d_wf_uskel__hole.
+  - apply d_wf_uskel__tophole; auto.
 Qed.
