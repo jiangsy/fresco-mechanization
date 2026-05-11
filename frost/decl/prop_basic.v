@@ -114,3 +114,17 @@ Qed.
     [lc_typ_all_etag_exists], [lc_typ_all_plain_exists], etc. are exported
     via the transitive [Require Export prop_ln] in [notations.v]. *)
 
+(** * Substitution composition aliases.
+
+    Paper-friendly names for the three most-used lngen lemmas. These are
+    not new theorems; the underlying proofs are lngen-generated. *)
+
+(** [α/X][β/Y] commutes when X ≠ Y and X ∉ FV(β). *)
+Definition subst_typ_typ_comm := subst_typ_in_typ_subst_typ_in_typ.
+
+(** Push subst into open. *)
+Definition subst_typ_open_typ := subst_typ_in_typ_open_typ_wrt_typ.
+
+(** Pull subst out of var-open (the "intro" direction). *)
+Definition subst_typ_intro := subst_typ_in_typ_intro.
+
