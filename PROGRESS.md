@@ -21,7 +21,7 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 
 | Track | File | Status | Worktree | Notes |
 |---|---|---|---|---|
-| 2.A Foundation | `frost/decl/prop_basic.v` | 🔴 pending | (mech) | sequential |
+| 2.A Foundation | `frost/decl/prop_basic.v` | 🟢 done | (mech) | Merged at mech@ddb7011. Exports: list_disjoint algebra (10 lemmas), lc_/subst preservation for 8 category predicates, ttyp→utyp / tskel→uskel embeddings, inversion lemmas for 8 categories, mutual induction principle d_typing_pat_mut, expanded discharge_category. |
 | 2.B Wellformedness | `frost/decl/prop_wellformed.v` | 🔴 pending | (mech) | sequential, after 2.A |
 | 2.C Subtyping | `frost/decl/prop_subtyping.v` | 🔴 pending | (worktree TBA) | parallel after 2.B |
 | 2.D Typing + stability | `frost/decl/prop_typing.v` | 🔴 pending | (worktree TBA) | parallel after 2.B |
