@@ -103,3 +103,14 @@ Lemma list_disjoint_singleton_r : forall (xs : list atom) (a : atom) ,
 Proof.
   intros xs a Hni. apply list_disjoint_sym, list_disjoint_singleton_l, Hni.
 Qed.
+
+(** * Locally-closed predicates.
+
+    lngen generates [lc_typ] and [lc_exp] in [prop_ln.v]. Verified to cover
+    all eight [typ] constructors (incl. four ∀ flavours: [typ_all_col],
+    [typ_all_etag], [typ_all_plain], plus [typ_hole] / [typ_tophole]) and
+    all seven [exp] constructors. No additions needed here; the lemmas
+    [lc_typ_unique], [lc_typ_of_lc_set_*], [lc_typ_all_col_exists],
+    [lc_typ_all_etag_exists], [lc_typ_all_plain_exists], etc. are exported
+    via the transitive [Require Export prop_ln] in [notations.v]. *)
+
