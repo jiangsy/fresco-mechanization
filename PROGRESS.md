@@ -22,7 +22,7 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 | Track | File | Status | Worktree | Notes |
 |---|---|---|---|---|
 | 2.A Foundation | `frost/decl/prop_basic.v` | 🟢 done | (mech) | Merged at mech@ddb7011. Exports: list_disjoint algebra (10 lemmas), lc_/subst preservation for 8 category predicates, ttyp→utyp / tskel→uskel embeddings, inversion lemmas for 8 categories, mutual induction principle d_typing_pat_mut, expanded discharge_category. |
-| 2.B Wellformedness | `frost/decl/prop_wellformed.v` | 🔴 pending | (mech) | sequential, after 2.A |
+| 2.B Wellformedness | `frost/decl/prop_wellformed.v` | 🟢 done (partial) | (mech) | Merged at mech@b990689. Exports: `d_wf_denv` + inversions, weakening (6 judgments), `d_wf_*_lc` helpers (6), substitution-preservation (6; `d_wf_skel_subst` needs `guarded_typ B`; `ttyp`/`utyp`/`tskel`/`uskel` per plan), `d_wf_skel_psi_weakening` / `_psi_incl` monotonicity, `d_wf_typ_strengthening` helpers, `ttyp→utyp` / `tskel→uskel` embeddings, `d_refine_preserves_wf` (paper:1380), `d_refine_syn_preserves_wf`, `d_wf_denv_binds_typ` / `_binds_skel`, `d_typing_pat_preserves_wf` (mutual; cross-track admits — see Open Admitted). |
 | 2.C Subtyping | `frost/decl/prop_subtyping.v` | 🔴 pending | (worktree TBA) | parallel after 2.B |
 | 2.D Typing + stability | `frost/decl/prop_typing.v` | 🔴 pending | (worktree TBA) | parallel after 2.B |
 | 2.E Skeleton | `frost/decl/prop_skeleton.v` | 🔴 pending | (worktree TBA) | parallel after 2.B |
