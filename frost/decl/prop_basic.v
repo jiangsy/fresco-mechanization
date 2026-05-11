@@ -617,3 +617,20 @@ Proof. intros A H. inversion H; subst. auto. Qed.
 Lemma is_uskel_inv_col : forall c A, is_uskel (typ_all_col c A) -> False.
 Proof. intros c A H. inversion H. Qed.
 
+(** * Mutual induction principle for d_typing ↔ d_pat. *)
+
+Scheme d_typing_mut := Induction for d_typing Sort Prop
+  with d_pat_mut    := Induction for d_pat    Sort Prop.
+
+Combined Scheme d_typing_pat_mut from d_typing_mut, d_pat_mut.
+
+(** Smoke test: any mutual induction goal can be opened with the scheme.
+    This trivial lemma is not used downstream; it just verifies the scheme
+    is syntactically usable. *)
+Lemma d_typing_pat_mut_smoke :
+    (forall m Γ e A, d_typing m Γ e A -> True) /\
+    (forall m Γ e P, d_pat m Γ e P -> True).
+Proof.
+  apply d_typing_pat_mut; intros; trivial.
+Qed.
+
