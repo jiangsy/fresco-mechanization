@@ -43,6 +43,13 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 - `d_typing__app` / `d_pat__app` — need refinement-side wf interaction (Phase 2.D / 2.E).
 - `d_typing__abs` / `d_typing__abs_anno` / `d_pat__anno` / `d_pat__abs` / `d_pat__abs_check` / `d_pat__abs_anno` / `d_pat__abs_anno_check` — regularity gap. The rules provide `is_inh_typ A` / `is_inh_skel P` but not `d_wf_typ Γ A` / `d_wf_skel nil Γ P`. Fix in Phase 2.D / 2.E by threading explicit wf premises through the rules, or by proving a regularity lemma deriving wf from `is_*` plus context wf.
 
+`prop_subtyping.v` — strictifications:
+
+| File:Line | Lemma | Status | Reason |
+|---|---|---|---|
+| prop_subtyping.v | `d_consis_refl_mono` | strictified | Original "d_consis_refl on is_typ" too strong: `d_consis` is asymmetric (utyp LHS, typ RHS). Narrowed to `mono_typ`, where LHS/RHS forms coincide. |
+| prop_subtyping.v | `d_sub_refl_mono` | strictified | Follows reflexivity of `d_consis` — restricted to monotypes for the same reason. |
+
 ## Discovered blockers / open questions
 
 (none yet)
