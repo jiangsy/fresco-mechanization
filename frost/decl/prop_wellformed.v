@@ -595,6 +595,85 @@ Proof.
     + apply H2; auto.
 Qed.
 
+(** [d_wf_typ] / [d_wf_skel] are insensitive to [dbind_typ] / [dbind_skel]
+    bindings: only [dbind_tvar] bindings matter for the var-lookup case.
+    Strengthening drops a single irrelevant term-binding. *)
+
+Lemma d_wf_typ_strengthening_typ : forall Γ1 Γ2 x A B,
+    d_wf_typ (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) B ->
+    d_wf_typ (Γ1 ++ Γ2) B.
+Proof.
+  intros Γ1 Γ2 x A B H. dependent induction H.
+  - apply d_wf_typ__unit.
+  - apply d_wf_typ__var. apply binds_app_iff in H.
+    destruct H as [Hin | Hin].
+    + apply binds_app_iff. auto.
+    + apply binds_app_iff. right. apply binds_app_iff in Hin.
+      destruct Hin as [Hin | Hin].
+      * apply binds_one_iff in Hin. destruct Hin as [_ Habs]. inversion Habs.
+      * exact Hin.
+  - apply d_wf_typ__arrow; eauto.
+  - apply d_wf_typ__all with (L := L `union` dom (Γ1 ++ Γ2)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply H0; eauto.
+Qed.
+
+Lemma d_wf_typ_strengthening_skel : forall Γ1 Γ2 x P B,
+    d_wf_typ (Γ1 ++ (x ~ dbind_skel P) ++ Γ2) B ->
+    d_wf_typ (Γ1 ++ Γ2) B.
+Proof.
+  intros Γ1 Γ2 x P B H. dependent induction H.
+  - apply d_wf_typ__unit.
+  - apply d_wf_typ__var. apply binds_app_iff in H.
+    destruct H as [Hin | Hin].
+    + apply binds_app_iff. auto.
+    + apply binds_app_iff. right. apply binds_app_iff in Hin.
+      destruct Hin as [Hin | Hin].
+      * apply binds_one_iff in Hin. destruct Hin as [_ Habs]. inversion Habs.
+      * exact Hin.
+  - apply d_wf_typ__arrow; eauto.
+  - apply d_wf_typ__all with (L := L `union` dom (Γ1 ++ Γ2)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply H0; eauto.
+Qed.
+
+(** * Context-lookup wellformedness.
+    Looking up a binding in a wellformed [denv] returns a wf payload. *)
+
+Lemma d_wf_denv_binds_typ : forall Γ x A,
+    d_wf_denv Γ -> binds x (dbind_typ A) Γ -> d_wf_typ Γ A.
+Proof.
+  induction Γ as [|[y db] Γ' IH]; intros x A Hwf Hbinds.
+  - inversion Hbinds.
+  - inversion Hbinds as [Heq | Hin].
+    + (* head match *)
+      inversion Heq; subst.
+      inversion Hwf; subst.
+      apply d_wf_typ_weakening_head with (Γ' := (x ~ dbind_typ A)). exact H4.
+    + (* tail binding *)
+      inversion Hwf; subst;
+        [ apply d_wf_typ_weakening_head with (Γ' := (y ~ dbind_tvar))
+        | apply d_wf_typ_weakening_head with (Γ' := (y ~ dbind_typ A0))
+        | apply d_wf_typ_weakening_head with (Γ' := (y ~ dbind_skel P)) ];
+        eapply IH; eauto.
+Qed.
+
+Lemma d_wf_denv_binds_skel : forall Γ x P,
+    d_wf_denv Γ -> binds x (dbind_skel P) Γ -> d_wf_skel nil Γ P.
+Proof.
+  induction Γ as [|[y db] Γ' IH]; intros x P Hwf Hbinds.
+  - inversion Hbinds.
+  - inversion Hbinds as [Heq | Hin].
+    + inversion Heq; subst.
+      inversion Hwf; subst.
+      apply d_wf_skel_weakening_head with (Γ' := (x ~ dbind_skel P)). exact H4.
+    + inversion Hwf; subst;
+        [ apply d_wf_skel_weakening_head with (Γ' := (y ~ dbind_tvar))
+        | apply d_wf_skel_weakening_head with (Γ' := (y ~ dbind_typ A))
+        | apply d_wf_skel_weakening_head with (Γ' := (y ~ dbind_skel P0)) ];
+        eapply IH; eauto.
+Qed.
+
 (** * Synthesised refinement preserves wellformedness.
 
     Analogue of [d_refine_preserves_wf] for the colour-aware synthesised
@@ -625,3 +704,77 @@ Proof.
     + apply guarded_skel_open. exact H.
     + apply H2; auto.
 Qed.
+
+(** * Skeleton wellformedness preservation under d_pat (paper:1970).
+
+    The mutual claim: well-typed terms yield wf result types, and
+    well-patterned terms yield wf result skeletons. Four cases are
+    blocked on cross-track lemmas:
+    - [d_typing__sub] / [d_pat__sub] need [d_sub_preserves_wf] /
+      [d_pat_sub_preserves_wf] (Phase 2.C, Phase 2.E).
+    - [d_typing__app] / [d_pat__app] need refinement-side wf as well as
+      the function's wf result for the [typ_arrow A B] projection.
+
+    All cases that admit are flagged with a paper-citation comment.
+*)
+
+Lemma d_typing_pat_preserves_wf :
+    (forall m Γ e A,
+        d_typing m Γ e A ->
+        d_wf_denv Γ ->
+        d_wf_typ Γ A) /\
+    (forall m Γ e P,
+        d_pat m Γ e P ->
+        d_wf_denv Γ ->
+        d_wf_skel nil Γ P).
+Proof.
+  apply d_typing_pat_mut; intros.
+  - (* d_typing__unit *) apply d_wf_typ__unit.
+  - (* d_typing__var: A is the dbind_typ payload of x in Γ. Use the
+       context-lookup wf lemma. *)
+    eapply d_wf_denv_binds_typ; eauto.
+  - (* d_typing__anno: IH gives d_wf_typ Γ A directly. *)
+    apply H; auto.
+  - (* d_typing__sub: needs d_sub_preserves_wf (Phase 2.C). *)
+    admit.
+  - (* d_typing__freeze: IH gives d_wf_typ Γ A directly. *)
+    apply H; auto.
+  - (* d_typing__forall: IH gives d_wf_typ ((X~_)++Γ) (open A X) for each
+       X. Goal: d_wf_typ Γ (typ_all_col colour_inh A). *)
+    apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. apply H; auto.
+    apply d_wf_denv__tvar; auto.
+  - (* d_typing__abs: IH gives d_wf_typ ((x~A)++Γ) B. Goal: d_wf_typ Γ
+       (typ_arrow A B). We have [is_inh_typ A] but not yet [d_wf_typ Γ A].
+       This is a regularity gap in the rule — patched in Phase 2.D. *)
+    admit.
+  - (* d_typing__abs_anno: similar regularity issue. *)
+    admit.
+  - (* d_typing__app: needs the function-type IH to give an arrow, then
+       project the result component. Closure relies on d_refine_syn's wf
+       interaction. Phase 2.D. *)
+    admit.
+  - (* d_pat__unit *) apply d_wf_skel__unit.
+  - (* d_pat__var: similar to d_typing__var, using d_wf_denv_binds_skel. *)
+    eapply d_wf_denv_binds_skel; eauto.
+  - (* d_pat__anno: the pat rule gives A as the inferred type, but A
+       isn't a wf'd skel premise; closure via Phase 2.D's anno regularity. *)
+    admit.
+  - (* d_pat__sub: needs d_pat_sub_preserves_wf (Phase 2.E). *)
+    admit.
+  - (* d_pat__freeze: IH gives directly. *)
+    apply H; auto.
+  - (* d_pat__abs: IH gives d_wf_skel nil ((x~skel)++Γ) Q. Goal:
+       d_wf_skel nil Γ (typ_arrow P Q). Need d_wf_skel nil Γ P, which
+       requires regularity on [is_inh_skel P]. Phase 2.E. *)
+    admit.
+  - (* d_pat__abs_check: Q = open output. P here is [typ_tophole typ_hole].
+       The IH gives d_wf_skel nil ((x~skel typ_hole)++Γ) Q; close it. *)
+    admit.
+  - (* d_pat__abs_anno: regularity on the annotation A. *)
+    admit.
+  - (* d_pat__abs_anno_check: tophole wraps A; need d_wf_typ on A. *)
+    admit.
+  - (* d_pat__app: cross-track (Phase 2.E). *)
+    admit.
+Admitted.

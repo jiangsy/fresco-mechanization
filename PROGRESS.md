@@ -37,7 +37,11 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 
 ## Open Admitted
 
-(none yet)
+`prop_wellformed.v` — `d_typing_pat_preserves_wf` (mutual): partial. Most cases proven. Pending cases:
+
+- `d_typing__sub` / `d_pat__sub` — blocked on `d_sub_preserves_wf` (Phase 2.C) / `d_pat_sub_preserves_wf` (Phase 2.E).
+- `d_typing__app` / `d_pat__app` — need refinement-side wf interaction (Phase 2.D / 2.E).
+- `d_typing__abs` / `d_typing__abs_anno` / `d_pat__anno` / `d_pat__abs` / `d_pat__abs_check` / `d_pat__abs_anno` / `d_pat__abs_anno_check` — regularity gap. The rules provide `is_inh_typ A` / `is_inh_skel P` but not `d_wf_typ Γ A` / `d_wf_skel nil Γ P`. Fix in Phase 2.D / 2.E by threading explicit wf premises through the rules, or by proving a regularity lemma deriving wf from `is_*` plus context wf.
 
 ## Discovered blockers / open questions
 
