@@ -415,3 +415,205 @@ Proof.
   - constructor; auto.
 Qed.
 
+(** * Category inversion lemmas. *)
+
+(** ** is_typ. *)
+
+Lemma is_typ_inv_arrow : forall A B,
+    is_typ (typ_arrow A B) -> is_typ A /\ is_typ B.
+Proof. intros A B H. inversion H; subst. split; auto. Qed.
+
+Lemma is_typ_inv_all : forall c A,
+    is_typ (typ_all_col c A) ->
+    exists L, forall X, X `notin` L ->
+       is_typ (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros c A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_typ_inv_hole : is_typ typ_hole -> False.
+Proof. intros H. inversion H. Qed.
+
+Lemma is_typ_inv_tophole : forall A, is_typ (typ_tophole A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+Lemma is_typ_inv_etag : forall ε A, is_typ (typ_all_etag ε A) -> False.
+Proof. intros ε A H. inversion H. Qed.
+
+Lemma is_typ_inv_plain : forall A, is_typ (typ_all_plain A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+(** ** is_syn_typ. *)
+
+Lemma is_syn_typ_inv_arrow : forall A B,
+    is_syn_typ (typ_arrow A B) -> is_syn_typ A /\ is_syn_typ B.
+Proof. intros A B H. inversion H; subst. split; auto. Qed.
+
+Lemma is_syn_typ_inv_all_syn : forall A,
+    is_syn_typ (typ_all_col colour_syn A) ->
+    exists L, forall X, X `notin` L ->
+       is_syn_typ (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_syn_typ_inv_all_inh : forall A,
+    is_syn_typ (typ_all_col colour_inh A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+Lemma is_syn_typ_inv_hole : is_syn_typ typ_hole -> False.
+Proof. intros H. inversion H. Qed.
+
+Lemma is_syn_typ_inv_tophole : forall A, is_syn_typ (typ_tophole A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+Lemma is_syn_typ_inv_etag : forall ε A, is_syn_typ (typ_all_etag ε A) -> False.
+Proof. intros ε A H. inversion H. Qed.
+
+Lemma is_syn_typ_inv_plain : forall A, is_syn_typ (typ_all_plain A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+(** ** is_inh_typ. *)
+
+Lemma is_inh_typ_inv_arrow : forall A B,
+    is_inh_typ (typ_arrow A B) -> is_inh_typ A /\ is_inh_typ B.
+Proof. intros A B H. inversion H; subst. split; auto. Qed.
+
+Lemma is_inh_typ_inv_all_inh : forall A,
+    is_inh_typ (typ_all_col colour_inh A) ->
+    exists L, forall X, X `notin` L ->
+       is_inh_typ (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_inh_typ_inv_all_syn : forall A,
+    is_inh_typ (typ_all_col colour_syn A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+Lemma is_inh_typ_inv_hole : is_inh_typ typ_hole -> False.
+Proof. intros H. inversion H. Qed.
+
+Lemma is_inh_typ_inv_tophole : forall A, is_inh_typ (typ_tophole A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+Lemma is_inh_typ_inv_etag : forall ε A, is_inh_typ (typ_all_etag ε A) -> False.
+Proof. intros ε A H. inversion H. Qed.
+
+Lemma is_inh_typ_inv_plain : forall A, is_inh_typ (typ_all_plain A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+(** ** is_ttyp. *)
+
+Lemma is_ttyp_inv_arrow : forall A B,
+    is_ttyp (typ_arrow A B) -> is_ttyp A /\ is_ttyp B.
+Proof. intros A B H. inversion H; subst. split; auto. Qed.
+
+Lemma is_ttyp_inv_etag : forall ε A,
+    is_ttyp (typ_all_etag ε A) ->
+    exists L, forall X, X `notin` L ->
+       is_ttyp (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_ttyp_inv_col : forall c A, is_ttyp (typ_all_col c A) -> False.
+Proof. intros c A H. inversion H. Qed.
+
+Lemma is_ttyp_inv_plain : forall A, is_ttyp (typ_all_plain A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+Lemma is_ttyp_inv_hole : is_ttyp typ_hole -> False.
+Proof. intros H. inversion H. Qed.
+
+Lemma is_ttyp_inv_tophole : forall A, is_ttyp (typ_tophole A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+(** ** is_utyp. *)
+
+Lemma is_utyp_inv_arrow : forall A B,
+    is_utyp (typ_arrow A B) -> is_utyp A /\ is_utyp B.
+Proof. intros A B H. inversion H; subst. split; auto. Qed.
+
+Lemma is_utyp_inv_etag : forall ε A,
+    is_utyp (typ_all_etag ε A) ->
+    exists L, forall X, X `notin` L ->
+       is_utyp (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_utyp_inv_plain : forall A,
+    is_utyp (typ_all_plain A) ->
+    exists L, forall X, X `notin` L ->
+       is_utyp (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_utyp_inv_col : forall c A, is_utyp (typ_all_col c A) -> False.
+Proof. intros c A H. inversion H. Qed.
+
+Lemma is_utyp_inv_hole : is_utyp typ_hole -> False.
+Proof. intros H. inversion H. Qed.
+
+Lemma is_utyp_inv_tophole : forall A, is_utyp (typ_tophole A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+(** ** is_skel. *)
+
+Lemma is_skel_inv_arrow : forall A B,
+    is_skel (typ_arrow A B) -> is_skel A /\ is_skel B.
+Proof. intros A B H. inversion H; subst. split; auto. Qed.
+
+Lemma is_skel_inv_all : forall c A,
+    is_skel (typ_all_col c A) ->
+    exists L, forall X, X `notin` L ->
+       is_skel (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros c A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_skel_inv_tophole : forall A,
+    is_skel (typ_tophole A) -> is_skel A.
+Proof. intros A H. inversion H; subst. auto. Qed.
+
+Lemma is_skel_inv_etag : forall ε A, is_skel (typ_all_etag ε A) -> False.
+Proof. intros ε A H. inversion H. Qed.
+
+Lemma is_skel_inv_plain : forall A, is_skel (typ_all_plain A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+(** ** is_tskel. *)
+
+Lemma is_tskel_inv_arrow : forall A B,
+    is_tskel (typ_arrow A B) -> is_tskel A /\ is_tskel B.
+Proof. intros A B H. inversion H; subst. split; auto. Qed.
+
+Lemma is_tskel_inv_etag : forall ε A,
+    is_tskel (typ_all_etag ε A) ->
+    exists L, forall X, X `notin` L ->
+       is_tskel (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_tskel_inv_tophole : forall A,
+    is_tskel (typ_tophole A) -> is_tskel A.
+Proof. intros A H. inversion H; subst. auto. Qed.
+
+Lemma is_tskel_inv_col : forall c A, is_tskel (typ_all_col c A) -> False.
+Proof. intros c A H. inversion H. Qed.
+
+Lemma is_tskel_inv_plain : forall A, is_tskel (typ_all_plain A) -> False.
+Proof. intros A H. inversion H. Qed.
+
+(** ** is_uskel. *)
+
+Lemma is_uskel_inv_arrow : forall A B,
+    is_uskel (typ_arrow A B) -> is_uskel A /\ is_uskel B.
+Proof. intros A B H. inversion H; subst. split; auto. Qed.
+
+Lemma is_uskel_inv_etag : forall ε A,
+    is_uskel (typ_all_etag ε A) ->
+    exists L, forall X, X `notin` L ->
+       is_uskel (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_uskel_inv_plain : forall A,
+    is_uskel (typ_all_plain A) ->
+    exists L, forall X, X `notin` L ->
+       is_uskel (open_typ_wrt_typ A (typ_var_f X)).
+Proof. intros A H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_uskel_inv_tophole : forall A,
+    is_uskel (typ_tophole A) -> is_uskel A.
+Proof. intros A H. inversion H; subst. auto. Qed.
+
+Lemma is_uskel_inv_col : forall c A, is_uskel (typ_all_col c A) -> False.
+Proof. intros c A H. inversion H. Qed.
+
