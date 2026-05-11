@@ -594,3 +594,34 @@ Proof.
     + apply guarded_skel_open. exact H.
     + apply H2; auto.
 Qed.
+
+(** * Synthesised refinement preserves wellformedness.
+
+    Analogue of [d_refine_preserves_wf] for the colour-aware synthesised
+    refinement [Ψ ⨟ Γ ⊢ P ▸ Q]: the ∀ outputs are [typ_all_col colour_*]
+    instead of [typ_all_plain], but the proof structure is identical. *)
+
+Lemma d_refine_syn_preserves_wf : forall Ψ Γ P Q,
+    d_wf_skel Ψ Γ P ->
+    d_refine_syn Ψ Γ P Q ->
+    d_wf_skel Ψ Γ Q.
+Proof.
+  intros Ψ Γ P Q HwfP Href. induction Href.
+  - exact HwfP.
+  - exact HwfP.
+  - inversion HwfP; subst.
+    apply d_wf_skel__arrow; auto.
+  - inversion HwfP; subst.
+    apply d_wf_skel__all_col with (L := L `union` L0).
+    intros X HX. apply H0; auto.
+  - exact H0.
+  - inversion HwfP; subst.
+    apply d_wf_skel__all_col with (L := L).
+    intros X HX. apply H0; auto.
+    apply d_wf_skel_psi_incl with (Ψ := nil); [exact H5 | intros y []].
+  - apply d_wf_skel__all_col with (L := L).
+    intros X HX.
+    apply d_wf_skel__tophole.
+    + apply guarded_skel_open. exact H.
+    + apply H2; auto.
+Qed.
