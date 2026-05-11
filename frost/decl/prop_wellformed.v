@@ -637,6 +637,54 @@ Proof.
     eapply H0; eauto.
 Qed.
 
+Lemma d_wf_skel_strengthening_skel : forall Γ1 Γ2 Ψ x P B,
+    d_wf_skel Ψ (Γ1 ++ (x ~ dbind_skel P) ++ Γ2) B ->
+    d_wf_skel Ψ (Γ1 ++ Γ2) B.
+Proof.
+  intros Γ1 Γ2 Ψ x P B H. dependent induction H.
+  - apply d_wf_skel__unit.
+  - apply d_wf_skel__var. destruct H.
+    + left. exact H.
+    + right. apply binds_app_iff in H.
+      destruct H as [Hin | Hin].
+      * apply binds_app_iff. auto.
+      * apply binds_app_iff. right. apply binds_app_iff in Hin.
+        destruct Hin as [Hin | Hin].
+        -- apply binds_one_iff in Hin. destruct Hin as [_ Habs]. inversion Habs.
+        -- exact Hin.
+  - apply d_wf_skel__arrow; eauto.
+  - apply d_wf_skel__all_col with (L := L `union` dom (Γ1 ++ Γ2)).
+    intros X HX. eapply H0; eauto.
+  - apply d_wf_skel__all_plain with (L := L `union` dom (Γ1 ++ Γ2)).
+    intros X HX. eapply H0; eauto.
+  - apply d_wf_skel__hole.
+  - apply d_wf_skel__tophole; eauto.
+Qed.
+
+Lemma d_wf_skel_strengthening_typ : forall Γ1 Γ2 Ψ x A B,
+    d_wf_skel Ψ (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) B ->
+    d_wf_skel Ψ (Γ1 ++ Γ2) B.
+Proof.
+  intros Γ1 Γ2 Ψ x A B H. dependent induction H.
+  - apply d_wf_skel__unit.
+  - apply d_wf_skel__var. destruct H.
+    + left. exact H.
+    + right. apply binds_app_iff in H.
+      destruct H as [Hin | Hin].
+      * apply binds_app_iff. auto.
+      * apply binds_app_iff. right. apply binds_app_iff in Hin.
+        destruct Hin as [Hin | Hin].
+        -- apply binds_one_iff in Hin. destruct Hin as [_ Habs]. inversion Habs.
+        -- exact Hin.
+  - apply d_wf_skel__arrow; eauto.
+  - apply d_wf_skel__all_col with (L := L `union` dom (Γ1 ++ Γ2)).
+    intros X HX. eapply H0; eauto.
+  - apply d_wf_skel__all_plain with (L := L `union` dom (Γ1 ++ Γ2)).
+    intros X HX. eapply H0; eauto.
+  - apply d_wf_skel__hole.
+  - apply d_wf_skel__tophole; eauto.
+Qed.
+
 (** * Context-lookup wellformedness.
     Looking up a binding in a wellformed [denv] returns a wf payload. *)
 
@@ -705,17 +753,31 @@ Proof.
     + apply H2; auto.
 Qed.
 
+(** * Bridge: every wf type is a wf skeleton (defer).
+
+    The direct bridge [d_wf_typ Γ A → d_wf_skel Ψ Γ A] is non-trivial:
+    [d_wf_typ] extends Γ for ∀-binders while [d_wf_skel] extends Ψ. The
+    recursive case for [typ_all_col c A] requires a "move from Γ to Ψ"
+    lemma that respects the Ψ-scoping rules. Deferred to Phase 2.E's
+    skeleton work, where the proof can sit alongside other Γ↔Ψ lemmas. *)
+
 (** * Skeleton wellformedness preservation under d_pat (paper:1970).
 
     The mutual claim: well-typed terms yield wf result types, and
-    well-patterned terms yield wf result skeletons. Four cases are
-    blocked on cross-track lemmas:
+    well-patterned terms yield wf result skeletons. After Phase 2.B's
+    rule strengthening (wf premises on the abs/abs_anno rules), most
+    cases close. Remaining admits:
     - [d_typing__sub] / [d_pat__sub] need [d_sub_preserves_wf] /
       [d_pat_sub_preserves_wf] (Phase 2.C, Phase 2.E).
-    - [d_typing__app] / [d_pat__app] need refinement-side wf as well as
-      the function's wf result for the [typ_arrow A B] projection.
-
-    All cases that admit are flagged with a paper-citation comment.
+    - [d_typing__app] / [d_pat__app] need refinement-side wf and the
+      function-type IH projection (Phase 2.D / 2.E).
+    - [d_pat__abs_check] / [d_pat__abs_anno_check] produce skeletons
+      containing [typ_tophole typ_hole] / [typ_tophole A], which are
+      NOT well-formed per the paper's own wf criteria (declarative.tex
+      line 1191 explicitly forbids them). This is a paper-level
+      tension — the rules produce shapes the wf predicate rejects.
+      Documented in PROGRESS.md as a finding; cases admit until the
+      paper-level resolution is settled.
 *)
 
 Lemma d_typing_pat_preserves_wf :
@@ -744,12 +806,18 @@ Proof.
     apply d_wf_typ__all with (L := L `union` dom Γ).
     intros X HX. apply H; auto.
     apply d_wf_denv__tvar; auto.
-  - (* d_typing__abs: IH gives d_wf_typ ((x~A)++Γ) B. Goal: d_wf_typ Γ
-       (typ_arrow A B). We have [is_inh_typ A] but not yet [d_wf_typ Γ A].
-       This is a regularity gap in the rule — patched in Phase 2.D. *)
-    admit.
-  - (* d_typing__abs_anno: similar regularity issue. *)
-    admit.
+  - (* d_typing__abs: rule now carries d_wf_typ Γ A as a premise (the
+       2026-05-11 rule-strengthening patch). Close: arrow wf from
+       new premise + IH strengthening on B. *)
+    apply d_wf_typ__arrow; auto.
+    pick fresh x for (L `union` dom Γ).
+    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
+    eauto using d_wf_denv__typ.
+  - (* d_typing__abs_anno: same pattern. *)
+    apply d_wf_typ__arrow; auto.
+    pick fresh x for (L `union` dom Γ).
+    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
+    eauto using d_wf_denv__typ.
   - (* d_typing__app: needs the function-type IH to give an arrow, then
        project the result component. Closure relies on d_refine_syn's wf
        interaction. Phase 2.D. *)
@@ -764,10 +832,13 @@ Proof.
     admit.
   - (* d_pat__freeze: IH gives directly. *)
     apply H; auto.
-  - (* d_pat__abs: IH gives d_wf_skel nil ((x~skel)++Γ) Q. Goal:
-       d_wf_skel nil Γ (typ_arrow P Q). Need d_wf_skel nil Γ P, which
-       requires regularity on [is_inh_skel P]. Phase 2.E. *)
-    admit.
+  - (* d_pat__abs: rule now carries d_wf_skel nil Γ P as a premise.
+       Goal: d_wf_skel nil Γ (typ_arrow P Q). Arrow from new premise +
+       IH strengthening on Q. *)
+    apply d_wf_skel__arrow; auto.
+    pick fresh x for (L `union` dom Γ).
+    eapply d_wf_skel_strengthening_skel with (Γ1 := nil) (x := x) (P := P).
+    eauto using d_wf_denv__skel.
   - (* d_pat__abs_check: Q = open output. P here is [typ_tophole typ_hole].
        The IH gives d_wf_skel nil ((x~skel typ_hole)++Γ) Q; close it. *)
     admit.

@@ -454,11 +454,13 @@ Inductive d_typing :
     d_typing mode_tc Γ e (typ_all_col colour_inh A)
 | d_typing__abs : forall L Γ m e A B,
     is_inh_typ A ->
+    d_wf_typ Γ A ->
     (forall x, x `notin` L ->
        d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
     d_typing m Γ (exp_abs e) (typ_arrow A B)
 | d_typing__abs_anno : forall L Γ m e A B,
+    d_wf_typ Γ A ->
     (forall x, x `notin` L ->
        d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
@@ -478,6 +480,7 @@ with d_pat :
     binds x (dbind_skel P) Γ ->
     d_pat mode_ti Γ (exp_var_f x) P
 | d_pat__anno : forall Γ e A,
+    d_wf_typ Γ A ->
     d_pat mode_ti Γ (exp_anno e A) A
 | d_pat__sub : forall Γ m e P Q,
     is_base_term e ->
@@ -490,6 +493,7 @@ with d_pat :
 | d_pat__abs : forall L Γ m e P Q,
     m <> mode_tc ->
     is_inh_skel P ->
+    d_wf_skel nil Γ P ->
     (forall x, x `notin` L ->
        d_pat (decr_mode m) ((x ~ dbind_skel P) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
@@ -501,11 +505,13 @@ with d_pat :
     d_pat mode_tc Γ (exp_abs e) (typ_arrow (typ_tophole typ_hole) Q)
 | d_pat__abs_anno : forall L Γ m e A Q,
     m <> mode_tc ->
+    d_wf_typ Γ A ->
     (forall x, x `notin` L ->
        d_pat (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat m Γ (exp_abs_anno A e) (typ_arrow A Q)
 | d_pat__abs_anno_check : forall L Γ e A Q,
+    d_wf_typ Γ A ->
     (forall x, x `notin` L ->
        d_pat mode_tc ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
