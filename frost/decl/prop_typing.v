@@ -199,71 +199,39 @@ Corollary d_pat_weakening : forall Γ1 Γ2 Γ3 m e P,
     d_pat m (Γ1 ++ Γ2 ++ Γ3) e P.
 Proof. intros. eapply (proj2 d_typing_pat_weakening); eauto. Qed.
 
-(** * Phase 2.D.2 — Term substitution (expvar) for d_typing.
+(** * Phase 2.D.2 — Term substitution (expvar) for d_typing / d_pat.
 
-    Strategy: induction on the typing derivation. Most cases are
-    syntactic and routine; the key observation is that substituting a
-    closed-typed value e2 for x in e1 preserves typing because:
-    1. Variables x in Γ1 stay; variable x at the substituted position
-       becomes e2 (typed in Γ1 ++ Γ2 by weakening).
-    2. Type information in Γ is unchanged.
-    3. Body of [exp_abs] / [exp_abs_anno] / [exp_forall_intro] cases
-       use the cofinite binder; subst commutes with open_var via the
-       lngen lemma [subst_exp_in_exp_open_exp_wrt_exp_var].
+    HONEST status (audit 2026-05-12):
+    - The paper does NOT state a term-substitution lemma anywhere
+      (paper appendix proofs.tex has metasubstitution lemmas only).
+    - Nothing else in our development currently calls this lemma; it
+      was added in Phase 2.D as a standalone target.
+    - Strategy is the standard 18-case mutual induction; closure
+      needs auxiliary lemmas (d_sub strengthening, lc_exp regularity,
+      is_base_term subst, possibly is_value preservation if we
+      handle d_typing__forall via direct value-restriction reasoning;
+      alternative: restructure that case via general subsumption).
+    - Marked with [Abort] (not [Admitted]) so it does not pollute
+      the development with an axiom. The statement is preserved in
+      this file as a target. *)
 
-    The mutual claim with d_pat is needed because d_typing__app uses
-    d_pat on the argument. We thread substitution through both.
-
-    For brevity, the d_pat side substitutes term-vars only into
-    d_pat-derived expressions. Critically, d_pat__var reads dbind_skel,
-    not dbind_typ — so substituting an x : A (dbind_typ) into a d_pat
-    derivation does NOT touch the dbind_skel slot. We only substitute
-    when the binding is dbind_typ.
-*)
-
-(* The paper does NOT explicitly state a term-substitution lemma. We
-   add [is_value e2] as a side condition because [d_typing__forall]
-   carries [is_value e] (paper's SML-style value restriction,
-   declarative.tex:295). For e = (x : A) — a value via [is_value__anno
-   + is_value__var] — substitution gives (e2 : A) which is a value only
-   if e2 is. This requirement is a direct consequence of the value
-   restriction on the forall rule, not a separate condition the paper
-   mandates. *)
 Lemma d_typing_pat_subst_exp_mut :
     (forall m Γ e1 B, d_typing m Γ e1 B ->
        forall Γ1 Γ2 x A e2,
          Γ = Γ1 ++ (x ~ dbind_typ A) ++ Γ2 ->
          d_typing mode_ti Γ2 e2 A ->
-         is_value e2 ->                    (* value restriction *)
          d_typing m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) B) /\
     (forall m Γ e1 P, d_pat m Γ e1 P ->
        forall Γ1 Γ2 x A e2,
          Γ = Γ1 ++ (x ~ dbind_typ A) ++ Γ2 ->
          d_typing mode_ti Γ2 e2 A ->
-         is_value e2 ->
          d_pat m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) P).
 Proof.
-  (* Full closure requires auxiliary lemmas not yet proved:
-     - d_sub_strengthening_typ: drop dbind_typ entry from Γ preserves d_sub.
-     - d_pat_consis_strengthening_typ / d_refine_syn_strengthening_typ.
-     - is_value_subst: is_value e2 → is_value e → is_value (subst e2 x e).
-     - lc_exp regularity for d_typing (for the open-subst commute).
-     Research-grade per design §3.D. *)
-Admitted.
+Abort.
 
-Corollary d_typing_subst_exp : forall Γ1 Γ2 x A e1 e2 m B,
-    d_typing m (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) e1 B ->
-    d_typing mode_ti Γ2 e2 A ->
-    is_value e2 ->
-    d_typing m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) B.
-Proof. intros. eapply (proj1 d_typing_pat_subst_exp_mut); eauto. Qed.
-
-Corollary d_pat_subst_exp : forall Γ1 Γ2 x A e1 e2 m P,
-    d_pat m (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) e1 P ->
-    d_typing mode_ti Γ2 e2 A ->
-    is_value e2 ->
-    d_pat m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) P.
-Proof. intros. eapply (proj2 d_typing_pat_subst_exp_mut); eauto. Qed.
+(* Corollaries removed; would not type-check after Abort.
+   d_typing_subst_exp and d_pat_subst_exp will be added once the
+   mutual lemma is proven. *)
 
 (** * Phase 2.D.3 — Type substitution (typvar) for d_typing + d_pat.
 
