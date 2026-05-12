@@ -25,7 +25,7 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 | 2.B Wellformedness | `frost/decl/prop_wellformed.v` | 🟢 done (partial) | (mech) | Merged at mech@b990689. Exports: `d_wf_denv` + inversions, weakening (6 judgments), `d_wf_*_lc` helpers (6), substitution-preservation (6; `d_wf_skel_subst` needs `guarded_typ B`; `ttyp`/`utyp`/`tskel`/`uskel` per plan), `d_wf_skel_psi_weakening` / `_psi_incl` monotonicity, `d_wf_typ_strengthening` helpers, `ttyp→utyp` / `tskel→uskel` embeddings, `d_refine_preserves_wf` (paper:1380), `d_refine_syn_preserves_wf`, `d_wf_denv_binds_typ` / `_binds_skel`, `d_typing_pat_preserves_wf` (mutual; cross-track admits — see Open Admitted). |
 | 2.C Subtyping | `frost/decl/prop_subtyping.v` | 🟢 done (partial) | (mech, direct) | Exports: `d_consis_refl_mono`, `d_sub_refl_mono`, `d_consis_weakening`/`_head`, `d_sub_weakening`, `d_consis_compose` (partial), `d_consis_extends_d_sub` (partial), `d_consis_empty_eq` (clean), `d_consis_empty_to_shallow_sub` (clean), `d_sub_sound` (clean, strictified to `is_typ A`), `d_shallow_sub_mono` (defined), `d_sub_complete_mono` (partial), `d_sub_no_guess_uniqueness` (admitted, paper-flagged). Closes Phase 2.B's `d_typing__sub` cross-track admit via new `d_consis_preserves_wf` (admitted var case) and `d_sub_preserves_wf` (clean) in `prop_wellformed.v`. |
 | 2.D Typing + stability | `frost/decl/prop_typing.v` | 🔴 pending | (worktree TBA) | parallel after 2.B |
-| 2.E Skeleton | `frost/decl/prop_skeleton.v` | 🔴 pending | (worktree TBA) | parallel after 2.B |
+| 2.E Skeleton | `frost/decl/prop_skeleton.v` | 🟢 done (partial) | (mech, direct) | Exports: `d_pat_consis_preserves_wf` (narrowed; side wf hypothesis), `d_pat_sub_preserves_wf` (narrowed), splitting/inversion family (`d_refine_*_split` ×4 and `d_refine_syn_*_split` ×4 — all clean), `d_pat_preserves_skel_wf` (projection of `d_typing_pat_preserves_wf`), `d_pat_validity` (paper:1981; admitted), `d_pat_safety` (paper:1986; admitted). Phase 2.B `d_pat__sub` admit STAYS OPEN — see Open Admitted. |
 
 ## Phase 3 — Algorithmic system
 
@@ -45,6 +45,20 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 - `d_typing__abs` / `d_typing__abs_anno` / `d_pat__anno` / `d_pat__abs` / `d_pat__abs_check` / `d_pat__abs_anno` / `d_pat__abs_anno_check` — regularity gap. The rules provide `is_inh_typ A` / `is_inh_skel P` but not `d_wf_typ Γ A` / `d_wf_skel nil Γ P`. Fix in Phase 2.D / 2.E by threading explicit wf premises through the rules, or by proving a regularity lemma deriving wf from `is_*` plus context wf.
 
 `prop_wellformed.v` — `d_consis_preserves_wf` (var case): admitted. `d_consis__var` lacks a `binds` premise so `d_wf_typ Γ (typ_var_f X)` cannot be derived. Close by either strengthening `d_consis__var` with a binds premise or by passing `d_wf_utyp Δ Γ T` as a precondition. Paper-flagged.
+
+`prop_skeleton.v` — Phase 2.E admits:
+
+- `d_pat_consis_preserves_wf` — NARROWED. The ghost rule [`d_pat_consis__ghost`] outputs a [`no_forall_typ P`] which does NOT imply [`d_wf_skel`] (free variables without binding). The forall-cases additionally need a Γ↔Ψ "move" lemma (same as the deferred typ→skel bridge). Narrowing: take [`d_wf_skel nil Γ P`] as a side hypothesis. Callers at the consumption sites have this in scope. Status: lemma exposed in narrowed form; proper structural version blocked by paper-level tensions.
+- `d_pat_sub_preserves_wf` — NARROWED (same shape as above). Additional structural concern: [`d_pat_sub`]'s forall-l rules operate on [`typ_all_etag`] inputs ([`d_wf_uskel`] kind), whereas the conclusion of [`d_pat__sub`] in [`d_typing_pat_preserves_wf`] is [`d_wf_skel`] ([`typ_all_col c`] kind). No mechanical bridge between the two for the etag case. **Phase 2.B's `d_pat__sub` admit therefore stays open.**
+- `d_pat_validity` (paper declarative.tex:1981) — admitted. Depends on Phase 3 refinement reflexivity on guarded skeletons, on inversion of [`d_pat_sub`] / [`d_pat_consis`] (the consis-side has the same paper-level issue as the ghost case), and on anti-symmetry interaction with [`d_typing__sub`].
+- `d_pat_safety` (paper declarative.tex:1986) — admitted. Stronger than validity. The universal "refines every type" claim depends on a principal-skeleton construction (join operation on skeletons under refinement) which sits at the same maturity as the deferred algorithmic-side lemmas.
+
+Paper-level tensions (do NOT attempt to fix mechanically; flag for paper revision):
+
+- `d_pat__abs_check` produces [`(typ_tophole typ_hole) → Q`]. [`d_wf_skel`] doesn't admit [`typ_tophole typ_hole`] (paper declarative.tex line 1191 explicitly forbids it). The rule produces shapes the wf predicate rejects. Phase 2.B `d_pat__abs_check` admit remains for this reason.
+- `d_pat__abs_anno_check` similarly produces [`typ_tophole A`] which may not be wf depending on [A]. Phase 2.B `d_pat__abs_anno_check` admit remains for this reason.
+
+**Did the typ→skel bridge work?** No. Phase 2.B left [`d_wf_typ → d_wf_skel`] deferred to 2.E pending a "move from Γ to Ψ" lemma [`d_wf_skel Ψ ((X~dbind_tvar)++Γ) A → d_wf_skel (X::Ψ) Γ A`]. That move-lemma is the same one needed by the ghost / forall cases of [`d_pat_consis_preserves_wf`]. Establishing it requires a richer notion of variable scope split between Γ and Ψ; not attempted in Phase 2.E. The 2.B `d_pat__anno` / `d_pat__abs_anno` admits relating to the bridge therefore stay open.
 
 `prop_subtyping.v` — strictifications:
 
