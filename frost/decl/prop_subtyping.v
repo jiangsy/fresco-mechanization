@@ -7,6 +7,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 
@@ -22,7 +23,7 @@ Set Implicit Arguments.
 
 Lemma d_consis_refl_mono : forall Γ A,
     mono_typ A ->
-    d_consis nil Γ A A.
+    nil ⨟ Γ ⊨ A ≈ A.
 Proof.
   intros Γ A H. induction H.
   - apply d_consis__unit.
@@ -47,7 +48,7 @@ Qed.
 
 Lemma d_sub_refl_mono : forall Γ A,
     mono_typ A ->
-    d_sub mode_ti nil Γ A A.
+    Γ ⊢[ mode_ti ; nil ] A ⊑ A.
 Proof.
   intros Γ A H.
   apply d_sub__infer.
@@ -58,8 +59,8 @@ Qed.
 (** * Weakening for [d_consis] and [d_sub] (used internally). *)
 
 Lemma d_consis_weakening : forall Γ1 Γ2 Γ3 Δ T A,
-    d_consis Δ (Γ1 ++ Γ3) T A ->
-    d_consis Δ (Γ1 ++ Γ2 ++ Γ3) T A.
+    Δ ⨟ (Γ1 ++ Γ3) ⊨ T ≈ A ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊨ T ≈ A.
 Proof.
   intros Γ1 Γ2 Γ3 Δ T A H.
   dependent induction H.
@@ -81,8 +82,8 @@ Proof.
 Qed.
 
 Lemma d_consis_weakening_head : forall Γ Γ' Δ T A,
-    d_consis Δ Γ T A ->
-    d_consis Δ (Γ' ++ Γ) T A.
+    Δ ⨟ Γ ⊨ T ≈ A ->
+    Δ ⨟ (Γ' ++ Γ) ⊨ T ≈ A.
 Proof.
   intros Γ Γ' Δ T A H.
   rewrite_env (nil ++ Γ' ++ Γ).
@@ -90,8 +91,8 @@ Proof.
 Qed.
 
 Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 M Δ T A,
-    d_sub M Δ (Γ1 ++ Γ3) T A ->
-    d_sub M Δ (Γ1 ++ Γ2 ++ Γ3) T A.
+    (Γ1 ++ Γ3) ⊢[ M ; Δ ] T ⊑ A ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢[ M ; Δ ] T ⊑ A.
 Proof.
   intros Γ1 Γ2 Γ3 M Δ T A H. dependent induction H.
   - apply d_sub__infer; auto. apply d_consis_weakening. exact H0.
@@ -136,9 +137,9 @@ Qed.
     [typ_all_etag] / [typ_all_plain] at the head), so they don't fire. *)
 
 Lemma d_consis_compose : forall Δa Δb Γ T A B,
-    d_consis Δa Γ T A ->
-    d_consis Δb Γ A B ->
-    d_consis (Δa ++ Δb) Γ T B.
+    Δa ⨟ Γ ⊨ T ≈ A ->
+    Δb ⨟ Γ ⊨ A ≈ B ->
+    (Δa ++ Δb) ⨟ Γ ⊨ T ≈ B.
 Proof.
   intros Δa Δb Γ T A B Hc1. generalize dependent B. generalize dependent Δb.
   induction Hc1; intros Δb B0 Hc2.
@@ -174,9 +175,9 @@ Admitted.
     cases anyway. *)
 
 Lemma d_consis_extends_d_sub : forall M Δ Δ' Γ T A B,
-    d_consis Δ Γ T A ->
-    d_sub M Δ' Γ A B ->
-    d_sub M (Δ ++ Δ') Γ T B.
+    Δ ⨟ Γ ⊨ T ≈ A ->
+    Γ ⊢[ M ; Δ' ] A ⊑ B ->
+    Γ ⊢[ M ; (Δ ++ Δ') ] T ⊑ B.
 Proof.
   intros M Δ Δ' Γ T A B Hc Hs.
   generalize dependent T. generalize dependent Δ.
@@ -249,7 +250,7 @@ Admitted.
     flavour), [d_consis] reduces to syntactic equality. *)
 Lemma d_consis_empty_eq : forall Γ T A,
     is_typ T ->
-    d_consis nil Γ T A ->
+    nil ⨟ Γ ⊨ T ≈ A ->
     T = A.
 Proof.
   intros Γ T A Hist Hc. dependent induction Hc; try (inversion Hist; fail).
@@ -265,8 +266,8 @@ Qed.
 
 Lemma d_consis_empty_to_shallow_sub : forall Γ A B,
     is_typ A ->
-    d_consis nil Γ A B ->
-    d_shallow_sub Γ A B.
+    nil ⨟ Γ ⊨ A ≈ B ->
+    Γ ⊢ A ≤ B.
 Proof.
   intros Γ A B Hist Hc. apply d_consis_empty_eq in Hc; auto. subst.
   apply d_shallow_sub__refl.
@@ -274,8 +275,8 @@ Qed.
 
 Theorem d_sub_sound : forall Γ A B,
     is_typ A ->
-    d_sub mode_tc nil Γ A B ->
-    d_shallow_sub Γ A B.
+    Γ ⊢[ mode_tc ; nil ] A ⊑ B ->
+    Γ ⊢ A ≤ B.
 Proof.
   intros Γ A B Hist H. dependent induction H.
   - (* d_sub__check: M = mode_tc, Δ = nil. Use the bridging lemma. *)
