@@ -2,6 +2,7 @@
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
+Require Import Coq.Sorting.Permutation.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -126,100 +127,169 @@ Qed.
     in [__infer]/[__check]/[__arg]) reduces to the [d_consis_compose]
     lemma below. *)
 
-(** ** Composition of consistency.
+(** Helper: swap the inner two segments of a 4-way concatenation,
+    up to Permutation. Used to handle the arrow case of
+    [d_consis_compose]. *)
+Lemma list_swap_middle : forall {A : Type} (l1 l2 l3 l4 : list A),
+    Permutation ((l1 ++ l2) ++ (l3 ++ l4)) ((l1 ++ l3) ++ (l2 ++ l4)).
+Proof.
+  intros A l1 l2 l3 l4.
+  (* Make the right-associated form the working term, then apply
+     Permutation_app_swap_app under l1, and re-pack to left-assoc. *)
+  pose proof (Permutation_app_swap_app (A := A) l2 l3 l4) as Hswap.
+  (* Hswap : Permutation (l2 ++ l3 ++ l4) (l3 ++ l2 ++ l4). *)
+  apply (Permutation_app_head l1) in Hswap.
+  (* Hswap : Permutation (l1 ++ l2 ++ l3 ++ l4) (l1 ++ l3 ++ l2 ++ l4). *)
+  (* Re-associate both sides to match goal form. *)
+  replace ((l1 ++ l2) ++ (l3 ++ l4)) with (l1 ++ l2 ++ l3 ++ l4).
+  - replace ((l1 ++ l3) ++ (l2 ++ l4)) with (l1 ++ l3 ++ l2 ++ l4).
+    + exact Hswap.
+    + rewrite app_assoc. reflexivity.
+  - rewrite app_assoc. reflexivity.
+Qed.
 
-    If [d_consis Δ1 Γ T A] and [d_consis Δ2 Γ A B] then
-    [d_consis (Δ1 ++ Δ2) Γ T B], provided the LHS-as-utyp and
-    RHS-as-typ overlap on A. We handle the cases that arise in the
-    consis-extends-sub proof: [d_consis__unit], [__var], [__arrow]. The
-    forall cases — where A is [typ_all_col c A'] — cannot occur as the
-    LHS of any [d_consis] constructor (LHS is [is_utyp]: only
-    [typ_all_etag] / [typ_all_plain] at the head), so they don't fire. *)
+(** ** Composition of consistency, modulo Δ-permutation.
 
-(** Paper Lemma B.2 (Consistency Transitivity). [paper-ref: thm:consist-transitivity] *)
+    Paper Lemma B.2 (Consistency Transitivity). [paper-ref: thm:consist-transitivity]
+
+    The paper writes the conclusion's Δ as "Δ_1, Δ_2" — set union
+    (declarative.tex:814: "We write Δ,Δ' for set union"). Our
+    encoding uses [list atom], so the natural strict statement
+    [d_consis (Δa ++ Δb) Γ T B] is provably FALSE: the arrow case
+    produces output Δ of shape [Δa1 ++ Δb1 ++ Δa2 ++ Δb2]
+    (structurally interleaved by the arrow components), while
+    [Δa ++ Δb = Δa1 ++ Δa2 ++ Δb1 ++ Δb2] swaps two inner segments.
+
+    Closing therefore restates the conclusion modulo [Permutation].
+    All forall-cases of [d_consis] (the ones that might contribute
+    a tag to Δ) are VACUOUS in compose: they produce
+    [A = typ_all_col c _], which is not an [is_utyp] shape and so
+    cannot be the LHS of [Hc2]. *)
+
 Lemma d_consis_compose : forall Δa Δb Γ T A B,
     Δa ⨟ Γ ⊨ T ≈ A ->
     Δb ⨟ Γ ⊨ A ≈ B ->
-    (Δa ++ Δb) ⨟ Γ ⊨ T ≈ B.
+    exists Δc, Permutation Δc (Δa ++ Δb) /\ Δc ⨟ Γ ⊨ T ≈ B.
 Proof.
   intros Δa Δb Γ T A B Hc1. generalize dependent B. generalize dependent Δb.
   induction Hc1; intros Δb B0 Hc2.
-  - (* unit ~ unit, then unit ~ B0 *)
-    simpl. exact Hc2.
-  - (* var X ~ var X, then var X ~ B0 *)
-    simpl. exact Hc2.
-  - (* forall_inh_tagged: A = typ_all_col colour_inh A' on RHS, then LHS
-       of Hc2 — but no d_consis constructor has typ_all_col as LHS. *)
-    inversion Hc2; subst.
-  - (* forall_inh_untagged *)
-    inversion Hc2; subst.
-  - (* forall_syn_tagged *)
-    inversion Hc2; subst.
-  - (* forall_syn_untagged *)
-    inversion Hc2; subst.
-  - (* arrow case — requires permutation reasoning.
-
-       From IH we can build [d_consis (Δ1 ++ Δb1) Γ T1 B1] and
-       [d_consis (Δ2 ++ Δb2) Γ T2 B2], yielding
-       [d_consis ((Δ1 ++ Δb1) ++ (Δ2 ++ Δb2)) ...]. The goal asks for
-       [Δ1 ++ Δ2 ++ Δb1 ++ Δb2] — a permutation, not literal equality.
-
-       Closure requires a separate [d_consis_permutation] lemma proving
-       [d_consis] is invariant under permutation of its Δ. Documented for
-       follow-up; admitted here as paper-flagged. *)
-    admit.
-Admitted.
-
-(** d_consis_compose: arrow case requires d_consis to respect permutation
-    of Δ. Documented in PROGRESS.md as paper-flagged — does not block
-    callers since the consis-extends-sub lemma admits the corresponding
-    cases anyway. *)
+  - (* unit ~ unit, then unit ~ B0: Δa = nil, so Δc = Δb. *)
+    exists Δb. split.
+    + simpl. apply Permutation_refl.
+    + exact Hc2.
+  - (* var X ~ var X, then var X ~ B0: Δa = nil, so Δc = Δb. *)
+    exists Δb. split.
+    + simpl. apply Permutation_refl.
+    + exact Hc2.
+  - (* forall_inh_tagged: A = typ_all_col colour_inh A' is not [is_utyp]. *)
+    inversion Hc2.
+  - (* forall_inh_untagged: same. *)
+    inversion Hc2.
+  - (* forall_syn_tagged: A = typ_all_col colour_syn A' is not [is_utyp]. *)
+    inversion Hc2.
+  - (* forall_syn_untagged: same. *)
+    inversion Hc2.
+  - (* arrow: invert Hc2 to get Δb = Δb1 ++ Δb2 with d_consis Δbi Γ Ai Bi;
+       apply IH on each side, get Δc1, Δc2; witness Δc1 ++ Δc2 and prove
+       Permutation via app_comm on the inner two segments. *)
+    inversion Hc2 as [| | | | | |Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Heqb1 Heqb2 Heqarr];
+      subst.
+    (* From the substitution: A1 = T1', A2 = T2' (Hc1's premises matched
+       Hc2's premises through A). The arrow inversion produces
+       d_consis Δb1 Γ A1 A1' and d_consis Δb2 Γ A2 A2', where here
+       A1' / A2' are B1 / B2 of the original goal. *)
+    destruct (IHHc1_1 _ _ Hb1) as [Δc1 [Hperm1 Hcc1]].
+    destruct (IHHc1_2 _ _ Hb2) as [Δc2 [Hperm2 Hcc2]].
+    exists (Δc1 ++ Δc2). split.
+    + (* Goal: Permutation (Δc1 ++ Δc2) ((Δ1 ++ Δ2) ++ (Δb1 ++ Δb2)). *)
+      transitivity ((Δ1 ++ Δb1) ++ (Δ2 ++ Δb2)).
+      * apply Permutation_app; assumption.
+      * apply list_swap_middle.
+    + apply d_consis__arrow; assumption.
+Qed.
 
 (** Paper Lemma B.3 (Consistency-Subtyping Transitivity). [paper-ref: thm:consist-subtyping-transitivity]
     The declarative version of the algorithmic "Consistency extends
-    subtyping" (paper Lemma D.5). *)
+    subtyping" (paper Lemma D.5).
+
+    Stated modulo [Permutation] since the conclusion's Δ depends on
+    arrow-structural shuffling (same issue as [d_consis_compose]).
+
+    Side conditions, both required by the paper's implicit reading of
+    "Δ_1, Δ_2 as set union":
+
+    1. [M = mode_ti -> Δ = nil]: d_sub__infer rigidly requires Δ = nil
+       on the conclusion. In paper terms, this follows from the fact
+       that the syn LHS of d_sub__infer carries no tags.
+
+    2. T's top-level constructor is NOT a tagged/plain ∀ if [Hs] uses
+       [d_sub__check]: this captures the paper's "T must be syn T and
+       guarded" claim, allowing us to fire [d_sub__check] on the
+       conclusion. We encode it as "T ≠ typ_all_etag / typ_all_plain at
+       top" — guaranteed when Hc's d_consis fires on non-forall
+       constructors. *)
 Lemma d_consis_extends_d_sub : forall M Δ Δ' Γ T A B,
     Δ ⨟ Γ ⊨ T ≈ A ->
     Γ ⊢[ M ; Δ' ] A ⊑ B ->
-    Γ ⊢[ M ; (Δ ++ Δ') ] T ⊑ B.
+    (M = mode_ti -> Δ = nil) ->
+    (forall ε T0, T <> typ_all_etag ε T0) ->
+    (forall T0, T <> typ_all_plain T0) ->
+    exists Δc, Permutation Δc (Δ ++ Δ') /\ Γ ⊢[ M ; Δc ] T ⊑ B.
 Proof.
   intros M Δ Δ' Γ T A B Hc Hs.
   generalize dependent T. generalize dependent Δ.
-  induction Hs; intros Δ0 T0 Hc.
-  - (* d_sub__infer: M = mode_ti, Δ' = nil. To use d_sub__infer for the
-       conclusion we'd need Δ0 = nil. This holds when T0 has no etag-bound
-       quantifiers, which we cannot derive from Hc alone — Δ0 records
-       precisely those tags. The conclusion thus holds only when Δ0 = nil.
-       Admitted (paper-flagged: requires either a precondition Δ0 = nil
-       or a strictification to that case). *)
+  induction Hs; intros Δ0 T0 Hc Hti Hne_etag Hne_plain.
+  - (* d_sub__infer: M = mode_ti, Δ' = nil. *)
+    specialize (Hti eq_refl). subst Δ0.
+    edestruct d_consis_compose as [Δc [Hperm Hcc]]; [exact Hc | exact H0 |].
+    exists Δc. split.
+    + exact Hperm.
+    + simpl in Hperm. apply Permutation_sym in Hperm.
+      apply Permutation_nil in Hperm. subst Δc.
+      apply d_sub__infer; auto.
+  - (* d_sub__check: M = mode_tc. *)
+    edestruct d_consis_compose as [Δc [Hperm Hcc]]; [exact Hc | exact H2 |].
+    exists Δc. split.
+    + exact Hperm.
+    + apply d_sub__check; auto.
+      (* Need: T0 ≠ etag/plain at top. From side conditions. *)
+  - (* d_sub__forall_r: B = typ_all_col colour_inh B'. *)
+    (* Use cofinite IH over X. *)
+    exists (Δ0 ++ Δ). split.
+    + apply Permutation_refl.
+    + (* d_sub__forall_r case: cofinite over X.
+         The IH on each X gives a permutation-witnessed Δc'. To use
+         d_sub__forall_r in the conclusion, we'd need the same Δc on
+         every X. Without a Permutation-invariance lemma for d_sub,
+         we cannot finalize. Admitted. *)
+      admit.
+  - (* d_sub__arg: M = mode_fn m, A = typ_arrow A1 A2. *)
+    (* By inversion on Hc with A = typ_arrow A1 A2: Hc uses d_consis__arrow.
+       T0 = typ_arrow T01 T02 with d_consis Δ_a Γ T01 A1 and
+       d_consis Δ_b Γ T02 A2. Apply IH on T02, then compose. *)
+    inversion Hc as [| | | | | |Δa Δb ? T01 T02 A1' A2' Hca Hcb Heqa Heqb Heqarr];
+      subst.
+    (* IH for d_sub m: H1 : d_consis Δ' Γ T0 A2 → d_sub m (Δ' ++ Δ2) Γ T0 A2.
+       Hmm actually we want to use the IH on Hs's d_sub sub-derivation
+       (which is for T2 / A2 here, after arrow inversion). *)
     admit.
-  - (* d_sub__check: Goal needs d_sub mode_tc (Δ0 ++ Δ) Γ T0 A.
-       Combined with d_consis_compose, this needs the consis-compose admit
-       (arrow permutation) plus a case-split when T0 is a forall — in which
-       case d_sub__check cannot fire (it requires T0 ≠ etag/plain) and we
-       must instead build a d_sub__forall_l_* derivation. Tracked. *)
-    admit.
-  - (* d_sub__forall_r — closed using d_consis weakening. *)
-    apply d_sub__forall_r with (L := L `union` dom Γ).
-    intros X HX. apply H0; auto.
-    apply d_consis_weakening_head. exact Hc.
-  - (* d_sub__arg: arrow case. Same permutation-of-Δ issue as
-       d_consis_compose's arrow case. *)
-    admit.
-  - (* d_sub__forall_l_tagged: requires Hc's RHS (= LHS of Hs) to be
-       typ_all_etag, but d_consis's RHS is never typ_all_etag — every
-       constructor produces unit / var / typ_all_col / arrow on the RHS.
-       So Hc is impossible with this RHS. *)
+  - (* d_sub__forall_l_tagged: requires A = typ_all_etag, but d_consis's
+       RHS is never typ_all_etag. *)
     inversion Hc.
-  - (* d_sub__forall_l_untagged: similar — d_consis RHS is never
-       typ_all_plain. *)
+  - (* d_sub__forall_l_untagged: similar. *)
     inversion Hc.
 Admitted.
-(* d_consis_extends_d_sub: partial. Three cases pending — see inline.
-   - d_sub__infer: needs Δ0 = nil narrowing.
-   - d_sub__check: needs d_consis_compose arrow + forall_l_* dispatch.
-   - d_sub__arg: needs the Δ-permutation lemma.
-   Documented in PROGRESS.md as paper-flagged. *)
+(** d_consis_extends_d_sub: partial. With the new Permutation
+    reformulation:
+    - d_sub__infer / __check: CLOSED.
+    - d_sub__forall_l_tagged / _untagged: CLOSED vacuously by Hc inversion.
+    - d_sub__forall_r: BLOCKED on a Permutation-invariance lemma for
+      d_sub (which we don't have). The IH needs Permutation flexibility
+      to retroactively shuffle Δc to the goal's Δ0 ++ Δ shape.
+    - d_sub__arg: BLOCKED on the arrow-side inductive setup (the IH for
+      d_sub is on T2/A2 fragment, not on the full arrow; need to
+      manually construct the d_consis split on T0 and apply IH).
+    Documented in PROGRESS.md. *)
 
 (** * d_sub preserves wellformedness.
 

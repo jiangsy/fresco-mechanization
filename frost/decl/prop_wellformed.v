@@ -891,23 +891,63 @@ Proof.
   - auto.
 Qed.
 
-(** * Skeleton wellformedness preservation under d_pat (paper:1970).
+(** * Paper Lemma 3.7 (Preservation of Skeleton Well-formedness).
+    [paper-ref: name:"Preservation of Skeleton Well-formedness"]
 
-    The mutual claim: well-typed terms yield wf result types, and
-    well-patterned terms yield wf result skeletons. After Phase 2.B's
-    rule strengthening (wf premises on the abs/abs_anno rules), most
-    cases close. Remaining admits:
-    - [d_typing__sub] / [d_pat__sub] need [d_sub_preserves_wf] /
-      [d_pat_sub_preserves_wf] (Phase 2.C, Phase 2.E).
-    - [d_typing__app] / [d_pat__app] need refinement-side wf and the
-      function-type IH projection (Phase 2.D / 2.E).
-    - [d_pat__abs_check] / [d_pat__abs_anno_check] produce skeletons
-      containing [typ_tophole typ_hole] / [typ_tophole A], which are
-      NOT well-formed per the paper's own wf criteria (declarative.tex
-      line 1191 explicitly forbids them). This is a paper-level
-      tension — the rules produce shapes the wf predicate rejects.
-      Documented in PROGRESS.md as a finding; cases admit until the
-      paper-level resolution is settled.
+    Mutual statement: well-typed terms yield wf result types
+    (plumbing — not paper-stated), and well-patterned terms yield wf
+    result skeletons (Lemma 3.7 proper, projected as
+    [d_pat_preserves_skel_wf] in prop_skeleton.v).
+
+    After the Phase 2.B rule strengthening (wf premises on
+    abs/abs_anno/anno), most cases close cleanly. Closed cases:
+
+      d_typing: __unit, __var, __anno, __sub (via d_sub_preserves_wf
+        plumbing), __freeze, __forall, __abs, __abs_anno, __app
+        (via the d_wf_typ → d_wf_skel bridge on the IH).
+
+      d_pat: __unit, __var, __anno (via bridge), __freeze, __abs,
+        __abs_anno (via bridge), __app (via bridge).
+
+    THREE open inline admits remain, with distinct root causes:
+
+    (P1) [d_pat__sub] (line ~975): blocked on
+         [d_pat_sub_preserves_wf]. The narrowed form of that lemma is
+         tautological (takes [d_wf_skel nil Γ P] AS a side hypothesis
+         and returns the same). It needs to be strengthened to "from
+         d_pat_sub Δ Γ SS P derive d_wf_skel nil Γ P" WITHOUT the side
+         hypothesis. That strengthening requires a Γ↔Ψ "move" lemma
+         (the input SS lives in [d_wf_uskel] kind while the output
+         must be [d_wf_skel]) which is the same lemma deferred from
+         the typ→skel bridge in Phase 2.B. STATUS: structural, not
+         paper-level — closeable if move-lemma is proven.
+
+    (P2) [d_pat__abs_check] (line ~989): the rule's conclusion
+         produces the skeleton [typ_arrow (typ_tophole typ_hole) Q].
+         The skeleton wf rule [d_wf_skel__tophole] requires the body
+         to be [guarded_skel], but [typ_hole] is NOT guarded
+         ([guarded_skel] excludes [typ_hole] / [typ_tophole]).
+         Moreover, the paper explicitly forbids [typ_tophole typ_hole]
+         at declarative.tex:1191 ("We also forbid TopHole.Hole").
+         STATUS: PAPER-LEVEL TENSION — the d_pat rule produces a
+         shape the wf predicate rejects. Closing requires either
+         (a) restricting [d_pat__abs_check] to produce a different
+         skeleton (changes the rule), or (b) loosening
+         [d_wf_skel__tophole] to admit [typ_tophole typ_hole] (changes
+         the wf predicate). Both are paper-level decisions.
+
+    (P3) [d_pat__abs_anno_check] (line ~993): same shape as (P2) but
+         with [typ_tophole A] where [A] is the user-written annotation.
+         If [A] is unguarded (e.g., [A = ∀a. a → a]), the resulting
+         skeleton [typ_tophole (∀a. a → a)] fails [guarded_skel].
+         STATUS: PAPER-LEVEL TENSION — same as (P2). Conditional
+         narrowing ("if [guarded_typ A] then conclusion is wf") works
+         for guarded A; for non-guarded A the case is genuinely
+         outside the wf predicate's image.
+
+    Summary: 1 closeable structural admit (P1) + 2 paper-level
+    tensions (P2, P3). To close 3.7 fully: prove the Γ↔Ψ move lemma,
+    and resolve P2/P3 at the paper level.
 *)
 
 Lemma d_typing_pat_preserves_wf :
