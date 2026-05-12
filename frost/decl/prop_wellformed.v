@@ -711,8 +711,8 @@ Proof.
 Qed.
 
 Lemma d_wf_skel_strengthening_skel : forall Γ1 Γ2 Ψ x P B,
-    d_wf_skel Ψ (Γ1 ++ (x ~ dbind_skel P) ++ Γ2) B ->
-    d_wf_skel Ψ (Γ1 ++ Γ2) B.
+    Ψ ⨟ (Γ1 ++ (x ~ dbind_skel P) ++ Γ2) ⊢ₛₖ B ->
+    Ψ ⨟ (Γ1 ++ Γ2) ⊢ₛₖ B.
 Proof.
   intros Γ1 Γ2 Ψ x P B H. dependent induction H.
   - apply d_wf_skel__unit.
@@ -735,8 +735,8 @@ Proof.
 Qed.
 
 Lemma d_wf_skel_strengthening_typ : forall Γ1 Γ2 Ψ x A B,
-    d_wf_skel Ψ (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) B ->
-    d_wf_skel Ψ (Γ1 ++ Γ2) B.
+    Ψ ⨟ (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) ⊢ₛₖ B ->
+    Ψ ⨟ (Γ1 ++ Γ2) ⊢ₛₖ B.
 Proof.
   intros Γ1 Γ2 Ψ x A B H. dependent induction H.
   - apply d_wf_skel__unit.
@@ -780,7 +780,7 @@ Proof.
 Qed.
 
 Lemma d_wf_denv_binds_skel : forall Γ x P,
-    d_wf_denv Γ -> binds x (dbind_skel P) Γ -> d_wf_skel nil Γ P.
+    d_wf_denv Γ -> binds x (dbind_skel P) Γ -> nil ⨟ Γ ⊢ₛₖ P.
 Proof.
   induction Γ as [|[y db] Γ' IH]; intros x P Hwf Hbinds.
   - inversion Hbinds.
