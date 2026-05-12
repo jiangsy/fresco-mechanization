@@ -289,3 +289,71 @@ Proof.
   - (* d_sub__forall_l_untagged: A = typ_all_plain T — rejected by is_typ. *)
     exfalso. eapply is_typ_inv_plain. exact Hist.
 Qed.
+
+(** * Completeness wrt monotype-only shallow subtyping.
+
+    Bruno's reviewer suggestion: restrict [d_shallow_sub__forall_l] to
+    instantiate the ∀ body with a [mono_typ] witness. This gives a
+    fragment that admits decidable inference and is more directly
+    comparable to algorithms.
+
+    The monotype-restricted variant: *)
+
+Inductive d_shallow_sub_mono : list (atom * dbind) -> typ -> typ -> Prop :=
+| d_shallow_sub_mono__refl : forall Γ A,
+    d_shallow_sub_mono Γ A A
+| d_shallow_sub_mono__forall_r : forall L Γ A B c,
+    (forall X, X `notin` L ->
+       d_shallow_sub_mono ((X ~ dbind_tvar) ++ Γ) A
+         (open_typ_wrt_typ B (typ_var_f X))) ->
+    d_shallow_sub_mono Γ A (typ_all_col c B)
+| d_shallow_sub_mono__forall_l : forall Γ A A' B c,
+    mono_typ A' ->
+    d_wf_typ Γ A' ->
+    d_shallow_sub_mono Γ (open_typ_wrt_typ A A') B ->
+    d_shallow_sub_mono Γ (typ_all_col c A) B.
+
+(** Completeness claim: every [d_shallow_sub_mono] derivation lifts to
+    [d_sub mode_tc nil] — i.e. our system handles at least the
+    monotype-only fragment.
+
+    This direction is the easier of the two: [d_shallow_sub_mono]'s LHS
+    pattern [typ_all_col c A] corresponds to [d_sub__forall_l_*] in our
+    system, but those rules expect LHS shapes [typ_all_etag] /
+    [typ_all_plain]. Bridging requires a translation between
+    [typ_all_col] (declarative) and [typ_all_etag / typ_all_plain]
+    (utyp). *)
+Theorem d_sub_complete_mono : forall Γ A B,
+    d_shallow_sub_mono Γ A B ->
+    d_sub mode_tc nil Γ A B.
+Proof.
+  intros Γ A B H. induction H.
+  - (* refl on A — d_sub mode_tc nil Γ A A. Use d_sub__check via
+       d_consis_refl_mono if A is monotype, else... we need refl in
+       general which doesn't exist for d_sub on polytypes. *)
+    (* Without further restriction, A could be polytype and d_sub refl
+       only holds at monotype. So this case CANNOT close without
+       narrowing the hypothesis to mono_typ. *)
+    admit.
+  - (* forall_r — d_sub__forall_r only produces colour_inh on RHS, but
+       d_shallow_sub_mono__forall_r is over any colour c. For c = inh
+       direct, c = syn we lack the corresponding rule.
+
+       Without splitting on c, the goal is [d_sub mode_tc nil Γ A
+       (typ_all_col c B)] for arbitrary c; d_sub__forall_r requires
+       c = colour_inh. Admitted: d_sub lacks a forall_r rule for
+       colour_syn. *)
+    admit.
+  - (* forall_l — but the LHS of d_shallow_sub_mono is typ_all_col c A,
+       not typ_all_etag/plain. d_sub__forall_l_* requires the etag/plain
+       shape. So this case needs a translation between flavours which we
+       don't have. *)
+    admit.
+Admitted.
+(* d_sub_complete_mono: two pending sub-cases.
+   - refl: needs A in mono_typ; without it we don't have polytype refl.
+   - forall_l: needs translation between typ_all_col (decl) and
+     typ_all_etag/plain (utyp). The two grammars are intentionally
+     separate; completeness here would require a "colour-to-tag" lifting
+     that's a research design question, not just mechanization.
+   Documented as paper-flagged. *)
