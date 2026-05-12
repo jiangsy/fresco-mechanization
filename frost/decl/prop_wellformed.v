@@ -180,6 +180,25 @@ Proof.
   apply d_wf_typ_weakening. rewrite_env Γ. exact H.
 Qed.
 
+(** [d_wf_typ] is preserved by any context morphism that preserves
+    tvar bindings. Only [dbind_tvar] entries matter for [d_wf_typ]. *)
+Lemma d_wf_typ_tvar_morph : forall Γ Γ' A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_wf_typ Γ A ->
+    d_wf_typ Γ' A.
+Proof.
+  intros Γ Γ' A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_wf_typ__unit.
+  - apply d_wf_typ__var. apply Hmorph; auto.
+  - apply d_wf_typ__arrow; auto.
+  - apply d_wf_typ__all with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb].
+    + apply binds_app_iff. left. auto.
+    + apply binds_app_iff. right. auto.
+Qed.
+
 Lemma d_wf_skel_weakening_head : forall Γ Γ' Ψ P,
     Ψ ⨟ Γ ⊢ₛₖ P ->
     Ψ ⨟ (Γ' ++ Γ) ⊢ₛₖ P.

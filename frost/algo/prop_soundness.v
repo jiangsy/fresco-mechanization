@@ -229,14 +229,35 @@ Proof.
     subst Γ1.
     inversion HΘ'; subst.
     eapply IHHext; eauto.
-  - (* var_typ: source ↦ (a, dbind_typ P) :: Γ0'; target ↦ same with
-       a suffix-erased prefix.  Need IH on the inner tail; the entry
-       [a ~ dbind_typ P] doesn't affect d_wf_typ which only inspects
-       [dbind_tvar] binds.  Mechanical but omitted: requires a
-       strengthening lemma on dbind_typ entries. *)
-    admit.
-  - (* tvar: rigid type variable; transfer keeps it.  IH on tail. *)
-    admit.
+  - (* var_typ: source ↦ (a, dbind_typ P) :: Γ0'; target ↦ Ξ-prefix +
+       (a, dbind_typ P) :: Γ1'.  The Ξ-prefix erases by suffix_inv. *)
+    inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1.
+    inversion HΘ'; subst.
+    rewrite_env (nil ++ (a ~ dbind_typ P) ++ Γ) in Hwf.
+    apply d_wf_typ_strengthening_typ in Hwf. simpl in Hwf.
+    apply d_wf_typ_weakening_head with (Γ := Γ0) (Γ' := a ~ dbind_typ P).
+    eapply IHHext; eauto.
+  - (* tvar: rigid type variable; transfer keeps it on both sides. *)
+    inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1.
+    inversion HΘ'; subst.
+    rewrite_env ((a ~ dbind_tvar) ++ Γ) in Hwf.
+    rewrite_env ((a ~ dbind_tvar) ++ Γ0).
+    eapply d_wf_typ_tvar_morph; [|exact Hwf].
+    intros Y HbY. apply binds_app_iff in HbY.
+    apply binds_app_iff. destruct HbY as [Hin | Hin].
+    + left. exact Hin.
+    + right.
+      assert (Hwf_var : d_wf_typ Γ (typ_var_f Y)) by (apply d_wf_typ__var; auto).
+      apply IHHext with (Γ1 := Γ0) in Hwf_var; auto.
+      inversion Hwf_var; subst; auto.
   - (* marker: erases on both sides. *)
     inversion Htr0; subst.
     apply a_transfers_app in Htr1.
@@ -245,7 +266,7 @@ Proof.
     subst Γ1.
     inversion HΘ'; subst.
     eapply IHHext; eauto.
-Admitted.
+Qed.
 
 Lemma stability_d_consis : forall Θ0 Θ1 Γ0 Γ1 Δ T A,
     aenv_extends Θ0 Θ1 ->
