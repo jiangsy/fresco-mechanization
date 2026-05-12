@@ -24,7 +24,7 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 | 2.A Foundation | `frost/decl/prop_basic.v` | 🟢 done | (mech) | Merged at mech@ddb7011. Exports: list_disjoint algebra (10 lemmas), lc_/subst preservation for 8 category predicates, ttyp→utyp / tskel→uskel embeddings, inversion lemmas for 8 categories, mutual induction principle d_typing_pat_mut, expanded discharge_category. |
 | 2.B Wellformedness | `frost/decl/prop_wellformed.v` | 🟢 done (partial) | (mech) | Merged at mech@b990689. Exports: `d_wf_denv` + inversions, weakening (6 judgments), `d_wf_*_lc` helpers (6), substitution-preservation (6; `d_wf_skel_subst` needs `guarded_typ B`; `ttyp`/`utyp`/`tskel`/`uskel` per plan), `d_wf_skel_psi_weakening` / `_psi_incl` monotonicity, `d_wf_typ_strengthening` helpers, `ttyp→utyp` / `tskel→uskel` embeddings, `d_refine_preserves_wf` (paper:1380), `d_refine_syn_preserves_wf`, `d_wf_denv_binds_typ` / `_binds_skel`, `d_typing_pat_preserves_wf` (mutual; cross-track admits — see Open Admitted). |
 | 2.C Subtyping | `frost/decl/prop_subtyping.v` | 🟢 done (partial) | (mech, direct) | Exports: `d_consis_refl_mono`, `d_sub_refl_mono`, `d_consis_weakening`/`_head`, `d_sub_weakening`, `d_consis_compose` (partial), `d_consis_extends_d_sub` (partial), `d_consis_empty_eq` (clean), `d_consis_empty_to_shallow_sub` (clean), `d_sub_sound` (clean, strictified to `is_typ A`), `d_shallow_sub_mono` (defined), `d_sub_complete_mono` (partial), `d_sub_no_guess_uniqueness` (admitted, paper-flagged). Closes Phase 2.B's `d_typing__sub` cross-track admit via new `d_consis_preserves_wf` (admitted var case) and `d_sub_preserves_wf` (clean) in `prop_wellformed.v`. |
-| 2.D Typing + stability | `frost/decl/prop_typing.v` | 🔴 pending | (worktree TBA) | parallel after 2.B |
+| 2.D Typing + stability | `frost/decl/prop_typing.v` | 🟡 done (partial) | (mech, direct) | Exports: `d_consis_weakening`, `d_sub_weakening`, `d_refine_syn_weakening`, `d_pat_consis_weakening`, `d_pat_sub_weakening` (all CLEAN); mutual `d_typing_pat_weakening` + corollaries `d_typing_weakening`, `d_pat_weakening` (CLEAN, full 18-case mutual proof). Term subst `d_typing_pat_subst_exp_mut` + corollaries (admitted, mechanical 18-case); type subst `d_typing_pat_subst_typ_mut` + corollaries (admitted); `d_typing_narrowing` (admitted, depends on subsumption); `d_typing_suffix_moving_singleton` (admitted; narrowed structural form); `d_typing_general_subsumption` (paper:574) — base-term cases CLOSED, non-base cases admitted with rationale; Stability `d_typing_swap_mono` (S1, narrowed; admitted research-grade); `d_typing_app_restructure` (S2, narrowed; admitted); Expressiveness E1 — `E1_intro` / `E1_elim` / `E1_roundtrip` (three theorems stated with concrete witness terms; all admitted, flagged research-grade per design §3.D). Closes `d_typing__app` cross-track admit in `prop_wellformed.v`. |
 | 2.E Skeleton | `frost/decl/prop_skeleton.v` | 🟢 done (partial) | (mech, direct) | Exports: `d_pat_consis_preserves_wf` (narrowed; side wf hypothesis), `d_pat_sub_preserves_wf` (narrowed), splitting/inversion family (`d_refine_*_split` ×4 and `d_refine_syn_*_split` ×4 — all clean), `d_pat_preserves_skel_wf` (projection of `d_typing_pat_preserves_wf`), `d_pat_validity` (paper:1981; admitted), `d_pat_safety` (paper:1986; admitted). Phase 2.B `d_pat__sub` admit STAYS OPEN — see Open Admitted. |
 
 ## Phase 3 — Algorithmic system
@@ -41,7 +41,8 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 
 - `d_typing__sub` — CLOSED via `d_sub_preserves_wf` (Phase 2.C, mech@9ba2cf9..).
 - `d_pat__sub` — blocked on `d_pat_sub_preserves_wf` (Phase 2.E).
-- `d_typing__app` / `d_pat__app` — need refinement-side wf interaction (Phase 2.D / 2.E).
+- `d_typing__app` — CLOSED in Phase 2.D via the IH's arrow inversion (the function-side IH produces `d_wf_typ Γ (typ_arrow A B)`, inversion gives `d_wf_typ Γ B`). No refinement-side wf interaction required.
+- `d_pat__app` — still open. Even with the function-side IH (which produces `d_wf_typ Γ (typ_arrow P' Q)`), the conclusion requires `d_wf_skel nil Γ Q`. Closure depends on the typ→skel bridge (the Phase 2.B deferred lemma).
 - `d_typing__abs` / `d_typing__abs_anno` / `d_pat__anno` / `d_pat__abs` / `d_pat__abs_check` / `d_pat__abs_anno` / `d_pat__abs_anno_check` — regularity gap. The rules provide `is_inh_typ A` / `is_inh_skel P` but not `d_wf_typ Γ A` / `d_wf_skel nil Γ P`. Fix in Phase 2.D / 2.E by threading explicit wf premises through the rules, or by proving a regularity lemma deriving wf from `is_*` plus context wf.
 
 `prop_wellformed.v` — `d_consis_preserves_wf` (var case): admitted. `d_consis__var` lacks a `binds` premise so `d_wf_typ Γ (typ_var_f X)` cannot be derived. Close by either strengthening `d_consis__var` with a binds premise or by passing `d_wf_utyp Δ Γ T` as a precondition. Paper-flagged.
@@ -75,7 +76,32 @@ Paper-level tensions (do NOT attempt to fix mechanically; flag for paper revisio
 
 ## Discovered blockers / open questions
 
-(none yet)
+### Phase 2.D admits (typing metatheory, stability, expressiveness)
+
+`prop_typing.v` admits — grouped by category:
+
+**Cross-track / paper-flagged:**
+
+- `d_typing_pat_subst_exp_mut` (Task 2) — mutual term-substitution. Routine 18-case proof using `subst_exp_in_exp_open_exp_wrt_exp_var`. Not closed in this pass due to time budget; no research issue. Dependent: Task 4 (narrowing), Task 7/8 (stability).
+- `d_typing_pat_subst_typ_mut` (Task 3) — mutual type-substitution. Same shape as above but threads `subst_typ_in_dbind` through Γ1. Requires `guarded_typ B` for the skel-side `d_wf_skel_subst` interaction (Phase 2.B caveat). Not closed; cleanly mechanical, just laborious. Dependent: Task 7/8/9.
+- `d_typing_general_subsumption` (Task 6, paper:574) — base-term cases (`d_typing__unit`, `d_typing__var`, `d_typing__anno`) CLEANLY CLOSED via `d_typing__sub` + `is_base_term__*` lemmas. Non-base-term cases admitted: `d_typing__forall` needs `d_sub` inversion on the forall_r/forall_l shapes; `d_typing__abs` / `d_typing__abs_anno` need an arrow inversion of `d_sub`; `d_typing__app` needs `d_sub` transitivity on the result type. Per design strictification policy, kept narrowed to base + admitted-with-rationale for the rest.
+
+**Research-grade (stability, expressiveness):**
+
+- `d_typing_narrowing` (Task 4) — Reduces to general subsumption (Task 6) for the var case; admitted while Task 6's non-base cases stay open.
+- `d_typing_suffix_moving_singleton` (Task 5) — Structural commutation. Strongest form (full SuffixMoving) avoided due to the free-vars-of-context apparatus required; narrowed to single-binding-move-past-suffix form. Even narrowed, requires induction over typing with care for binder freshness; not closed.
+- `d_typing_swap_mono` (Task 7, S1 — argument-permutation) — Strongest form (∀-arguments + non-mono): would need a `d_typing_app_inversion` lemma that does not exist. Narrowed to "swap two adjacent monotype arguments and produce a swapped function `λy. λx. f x y`". Even narrowed, the witness construction (the swapped function `f_swap`) needs to type at `A2 → A1 → C` via two `d_typing__abs_anno` applications, and the inner body `f x y` needs a `d_pat` derivation. Currently blocked at the `d_pat` derivation for the inner application — research-grade; admitted.
+- `d_typing_app_restructure` (Task 8, S2 — application-restructuring) — Same shape as S1, narrowed to the single-restructuring case `f e1 e2 ⇔ (λx. f x e2) e1`. Same blocker. Admitted.
+
+**Expressiveness E1 benchmark (Task 9):**
+
+- `E1_intro` (`mkPkg : Int → ∀β. (∀α. α → β) → β`) — admitted. Concrete witness term `λv. λk. k v` and concrete target type stated in Coq. Derivation requires `d_typing_pat_subst_typ_mut` (Task 3) to construct the body under fresh ∀-bindings. Documented as a Phase 2.D benchmark finding, NOT a strictification failure (per design §3.D).
+- `E1_elim` (`getInt : (∀β. (∀α. α → β) → β) → Int`) — admitted. Similar gating on Task 3.
+- `E1_roundtrip` (`getInt (mkPkg unit) : Int`) — admitted. Composition of `E1_intro` and `E1_elim` plus a single `d_typing__app`.
+
+Stability S1/S2 counter-example status (per design strictification policy): no algebraic counter-example produced; failure mode is purely "lemmas downstream (`d_pat`/`d_refine_syn` interaction) needed to construct the witness are not available in declarative form". This is consistent with the design doc's anticipation that S1/S2 may be true but unprovable without the algorithmic skeleton (Phase 3).
+
+E1 finding (per design strictification policy): theorems are stated with explicit witness terms and concrete target types in Coq. Whether they typecheck without annotations is gated on Task 3 (type substitution) — once Task 3 closes, the E1 derivations should follow mechanically by structural recursion. **Not a strictification failure** — flagged as a benchmark needing the antecedent lemmas.
 
 ## Track-specific notes
 
