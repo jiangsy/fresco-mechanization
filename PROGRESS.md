@@ -24,13 +24,13 @@ Current per-file `Admitted.` count (run `grep -c "^Admitted\." mechanization/fro
 | `frost/decl/prop_basic.v` | 0 |
 | `frost/decl/prop_wellformed.v` | 2 |
 | `frost/decl/prop_subtyping.v` | 3 |
-| `frost/decl/prop_typing.v` | 9 |
+| `frost/decl/prop_typing.v` | 8 |
 | `frost/decl/prop_skeleton.v` | 2 |
 | `frost/algo/def_extra.v` | 0 |
 | `frost/algo/notations.v` | 0 |
 | `frost/algo/prop_soundness.v` | 3 |
 | `frost/algo/prop_completeness.v` | 3 |
-| **Total** | **22** |
+| **Total** | **21** |
 
 ## Phase 1 (definitions only)
 
