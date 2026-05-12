@@ -103,6 +103,79 @@ Lemma a_transfers_nil_inv : forall Γ,
     a_transfers nil Γ -> Γ = nil.
 Proof. intros Γ H; inversion H; reflexivity. Qed.
 
+(** Transfer factors through list concatenation. *)
+Lemma a_transfers_app : forall Ξ Θ Γ,
+    a_transfers (Ξ ++ Θ) Γ ->
+    exists ΓΞ ΓΘ, Γ = ΓΞ ++ ΓΘ /\ a_transfers Ξ ΓΞ /\ a_transfers Θ ΓΘ.
+Proof.
+  intros Ξ. induction Ξ as [|[a b] Ξ' IH]; intros Θ Γ H.
+  - simpl in H. exists nil, Γ. simpl. split; auto.
+    split; [apply a_transfers__nil | exact H].
+  - simpl in H. inversion H; subst.
+    + (* abind_tvar *)
+      match goal with
+      | [Hrest : a_transfers (Ξ' ++ Θ) ?G |- _] =>
+          apply IH in Hrest; destruct Hrest as [ΓΞ [ΓΘ [Eq [HΞ HΘ]]]]
+      end.
+      exists ((a ~ dbind_tvar) ++ ΓΞ), ΓΘ.
+      split; [rewrite Eq; simpl; reflexivity|].
+      split; [apply a_transfers__tvar; exact HΞ | exact HΘ].
+    + (* abind_var_typ *)
+      match goal with
+      | [Hrest : a_transfers (Ξ' ++ Θ) ?G |- _] =>
+          apply IH in Hrest; destruct Hrest as [ΓΞ [ΓΘ [Eq [HΞ HΘ]]]]
+      end.
+      eexists ((a ~ dbind_typ _) ++ ΓΞ), ΓΘ.
+      split; [rewrite Eq; simpl; reflexivity|].
+      split; [apply a_transfers__var_typ; exact HΞ | exact HΘ].
+    + (* abind_flex_mono_def *)
+      match goal with
+      | [Hrest : a_transfers (Ξ' ++ Θ) ?G |- _] =>
+          apply IH in Hrest; destruct Hrest as [ΓΞ [ΓΘ [Eq [HΞ HΘ]]]]
+      end.
+      exists ΓΞ, ΓΘ.
+      split; [exact Eq|].
+      split; [apply a_transfers__flex_mono_def; exact HΞ | exact HΘ].
+    + (* abind_flex_poly_def *)
+      match goal with
+      | [Hrest : a_transfers (Ξ' ++ Θ) ?G |- _] =>
+          apply IH in Hrest; destruct Hrest as [ΓΞ [ΓΘ [Eq [HΞ HΘ]]]]
+      end.
+      exists ΓΞ, ΓΘ.
+      split; [exact Eq|].
+      split; [apply a_transfers__flex_poly_def; exact HΞ | exact HΘ].
+    + (* abind_marker *)
+      match goal with
+      | [Hrest : a_transfers (Ξ' ++ Θ) ?G |- _] =>
+          apply IH in Hrest; destruct Hrest as [ΓΞ [ΓΘ [Eq [HΞ HΘ]]]]
+      end.
+      exists ΓΞ, ΓΘ.
+      split; [exact Eq|].
+      split; [apply a_transfers__marker; exact HΞ | exact HΘ].
+Qed.
+
+(** A suffix Ξ all of whose flex-mono entries are *defined* transfers
+    to nil: every entry in [a_suffix_binding] is either erased
+    ([flex_mono_def] / [flex_poly_def] / [flex_mono] — but the latter
+    has no transfer rule, so we'd have to assume that case absent). *)
+Lemma a_transfers_suffix_inv : forall Ξ Γ,
+    a_suffix Ξ ->
+    a_transfers Ξ Γ ->
+    Γ = nil.
+Proof.
+  intros Ξ Γ Hsuf. revert Γ.
+  induction Hsuf; intros Γ Htr.
+  - inversion Htr; reflexivity.
+  - inversion H; subst.
+    + (* abind_flex_mono: no transfer rule for bare flex_mono.
+         Inversion of Htr on the consed entry yields no constructor. *)
+      inversion Htr.
+    + (* abind_flex_mono_def *)
+      inversion Htr; subst. eapply IHHsuf; eauto.
+    + (* abind_flex_poly_def *)
+      inversion Htr; subst. eapply IHHsuf; eauto.
+Qed.
+
 
 (* ===================================================================== *)
 (*  Stability of declarative judgments under information-increase.        *)
@@ -134,11 +207,44 @@ Lemma stability_d_wf_typ : forall Θ0 Θ1 Γ0 Γ1 A,
     d_wf_typ Γ0 A ->
     d_wf_typ Γ1 A.
 Proof.
-  (* Admitted: by induction on [Θ0 ⊑ Θ1]; uses [d_wf_typ_weakening]
-     from prop_wellformed.v.  Each [aenv_extends] constructor case
-     either preserves the entry verbatim (rigid/term/marker — pure
-     weakening) or extends with a fresh flex-mono/flex-poly that
-     transfer erases (no impact on Γ1).  Mechanical but laborious. *)
+  intros Θ0 Θ1 Γ0 Γ1 A Hext. revert Γ0 Γ1 A.
+  induction Hext; intros Γ0 Γ1 A Htr0 Htr1 Hwf.
+  - (* aenv_extends__empty: Θ0 = nil, Θ1 = Ξ. *)
+    apply a_transfers_nil_inv in Htr0. subst Γ0.
+    pose proof (a_transfers_suffix_inv H Htr1) as Eq. subst Γ1.
+    exact Hwf.
+  - (* flex_mono_keep: bare flex_mono has no transfer rule. *)
+    inversion Htr0.
+  - (* flex_mono_solve: source has bare flex_mono, no transfer rule. *)
+    inversion Htr0.
+  - (* flex_mono_def: both sides erase. *)
+    inversion Htr0; subst. inversion Htr1; subst.
+    eapply IHHext; eauto.
+  - (* flex_poly_def: source erases; target's prefix Ξ also erases,
+       then the flex_poly_def erases. *)
+    inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1.
+    inversion HΘ'; subst.
+    eapply IHHext; eauto.
+  - (* var_typ: source ↦ (a, dbind_typ P) :: Γ0'; target ↦ same with
+       a suffix-erased prefix.  Need IH on the inner tail; the entry
+       [a ~ dbind_typ P] doesn't affect d_wf_typ which only inspects
+       [dbind_tvar] binds.  Mechanical but omitted: requires a
+       strengthening lemma on dbind_typ entries. *)
+    admit.
+  - (* tvar: rigid type variable; transfer keeps it.  IH on tail. *)
+    admit.
+  - (* marker: erases on both sides. *)
+    inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1.
+    inversion HΘ'; subst.
+    eapply IHHext; eauto.
 Admitted.
 
 Lemma stability_d_consis : forall Θ0 Θ1 Γ0 Γ1 Δ T A,
