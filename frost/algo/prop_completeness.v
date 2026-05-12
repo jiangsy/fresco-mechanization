@@ -271,3 +271,114 @@ Proof.
   intros Hd Θ0 Htr Hwf.
   eapply a_pat_complete; eauto.
 Qed.
+
+
+(* ===================================================================== *)
+(*  Task 4.  Completeness of algorithmic typing.                          *)
+(* ===================================================================== *)
+
+(** [a_typing_complete] — paper proofs.tex §"Type Inference" Lemma
+    "Typing is complete" (the headline result).
+
+    Mutual with [a_pat_complete] above.  Statement:
+
+      [forall Γ m e A,
+         d_typing m Γ e A ->
+         forall Θ0 P0,
+           a_transfers Θ0 Γ ->
+           a_wf_typ Θ0 P0 ->
+           exists Θ1, a_typing m Θ0 P0 e A Θ1 /\ a_transfers Θ1 Γ].
+
+    The "P0" parameter is the algorithmic mode-vector ("expected
+    shape") and is existentially fixed at [typ_hole] in the base
+    typing-inference (mode_ti) case.  We expose it as a parameter
+    so callers can fix it from context.
+
+    Per design §3.C, completeness IS allowed to be narrowed to a
+    fragment (e.g. "monomorphic types only" or "modulo η").  We do
+    NOT pre-narrow here — we state the full form and admit it
+    research-grade.  If a downstream caller needs a narrowed
+    consumable form, the structure of the proof above shows what
+    the narrowed cases would be (drop the forall_*/sub legs).
+
+    Cases by [d_typing] constructor:
+
+    - [d_typing__unit] / [d_typing__var] / [d_typing__anno]
+                                       → corresponding [a_typing__*]
+                                         via [a_sub_complete].
+    - [d_typing__sub]                   → fold through the IH then
+                                          [a_sub_complete] on the
+                                          subsumption leg.
+    - [d_typing__freeze]                → match [a_typing__freeze];
+                                          the IH on the inner term
+                                          + [a_consis_complete].
+    - [d_typing__forall]                → match [a_typing__forall_check]
+                                          under a fresh rigid.
+    - [d_typing__abs] / [d_typing__abs_anno]
+                                       → match the corresponding
+                                         [a_typing__abs*] via
+                                         [a_split_complete] +
+                                         [a_guess_mono_complete].
+    - [d_typing__app]                   → match [a_typing__app] via
+                                          the mutual [a_pat_complete]
+                                          on the argument + IH on the
+                                          function. *)
+
+Theorem a_typing_complete :
+  forall m Γ e A,
+    d_typing m Γ e A ->
+    forall Θ0 P0,
+      a_transfers Θ0 Γ ->
+      a_wf_typ Θ0 P0 ->
+      exists Θ1, a_typing m Θ0 P0 e A Θ1 /\ a_transfers Θ1 Γ.
+Proof.
+  (* Admitted — paper proofs.tex §"Type Inference / Typing is complete",
+     the HEADLINE result of Phase 3.C.
+
+     Joint mutual induction with [a_pat_complete] (Task 3) using a
+     [Scheme a_typing_pat_mut]-style principle (not yet generated;
+     would mirror [d_typing_pat_mut] from prop_basic.v).
+
+     Each of the 9 [d_typing] constructors maps to an [a_typing]
+     constructor as documented in the comment above this Theorem.
+
+     The decisive auxiliary lemmas required but not yet mechanised:
+
+       (i)   [a_sub_complete]            — Task 2 above (also admitted).
+       (ii)  [a_consis_complete]
+       (iii) [a_split_complete]
+       (iv)  [a_guess_mono_complete]
+       (v)   [a_pat_complete]            — Task 3 (mutual, also admitted).
+
+     Each of (ii–iv) is on the order of one auxiliary lemma file's
+     work and is the dual of the soundness counterpart admitted in
+     [prop_soundness.v].
+
+     Narrowing options if a follow-up pass cannot close the full
+     proof (per plan §Task 4):
+
+       (a) "Monomorphic completeness":  restrict [A] to monotype
+           shapes; the [d_typing__forall] case drops out and no
+           [a_pre_sub] / [a_assign] is needed.
+
+       (b) "Modulo η-completeness":  weaken the conclusion to
+           [exists e' Θ1, a_typing m Θ0 P0 e' A Θ1 /\
+            beta_eta_equal e e' /\ a_transfers Θ1 Γ]  — allows the
+           algorithm to η-expand λ-abstractions.
+
+       (c) "Base-term completeness":  restrict [e] to [is_base_term].
+           Recovers the most-used fragment in practice. *)
+Admitted.
+
+
+(** Smoke test for Task 4: completeness applied at the empty context
+    for the trivial [d_typing__unit] derivation. *)
+Lemma a_typing_complete_smoke :
+  d_typing mode_ti nil exp_unit typ_unit ->
+  forall Θ0, a_transfers Θ0 nil -> a_wf_typ Θ0 typ_hole ->
+  exists Θ1, a_typing mode_ti Θ0 typ_hole exp_unit typ_unit Θ1 /\
+             a_transfers Θ1 nil.
+Proof.
+  intros Hd Θ0 Htr Hwf.
+  eapply a_typing_complete; eauto.
+Qed.
