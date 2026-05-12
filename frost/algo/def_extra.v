@@ -95,3 +95,77 @@ Inductive a_mono_aenv : aenv -> Prop :=
     a_mono_aenv Θ -> a_mono_aenv ((a ~ abind_flex_mono_def τ) ++ Θ)
 | a_mono_aenv__marker : forall a Θ,
     a_mono_aenv Θ -> a_mono_aenv ((a ~ abind_marker) ++ Θ).
+
+(* ===================================================================== *)
+(*  Information-increase relation Θ₀ ⊑ Θ₁.                                *)
+(* ===================================================================== *)
+
+(** Paper Fig. 4 ("Information increase").  We mechanise the
+    *identity* metasubstitution variant, which is what the algorithm
+    always produces (see paper page 9: "We sometimes directly write
+    [Θ ⊑ Θ′] for an identity metasubstitution.").
+
+    Under this variant every flex-mono variable in [Θ₀] is preserved
+    in [Θ₁], but its sort may strengthen (declaration ⇒ definition,
+    definition unchanged), and new flex-mono / flex-poly suffix entries
+    may be inserted before each rigid / term / marker entry.
+
+    Each constructor matches one rule of Fig. 4 (id-metasubst column).
+    Note that the [⊑]-judgement uses [a_wf_typ] / [d_refine] etc. for
+    its premises but does not require them to be cyclic: they are
+    well-formedness side conditions on the target context. *)
+
+Inductive aenv_extends : aenv -> aenv -> Prop :=
+
+(** Empty source: any suffix is a valid extension. *)
+| aenv_extends__empty : forall Ξ,
+    a_suffix Ξ ->
+    aenv_extends nil Ξ
+
+(** Flex-mono declaration: target may keep it declared (no new info)
+    OR may strengthen to a definition.  Both cases handled by a single
+    rule whose target entry [b'] is either [abind_flex_mono] or
+    [abind_flex_mono_def τ] for some τ. *)
+| aenv_extends__flex_mono_keep : forall a Θ Θ',
+    aenv_extends Θ Θ' ->
+    aenv_extends ((a ~ abind_flex_mono) ++ Θ)
+                 ((a ~ abind_flex_mono) ++ Θ')
+| aenv_extends__flex_mono_solve : forall a τ Θ Θ',
+    aenv_extends Θ Θ' ->
+    aenv_extends ((a ~ abind_flex_mono) ++ Θ)
+                 ((a ~ abind_flex_mono_def τ) ++ Θ')
+
+(** Flex-mono definition: preserved unchanged. *)
+| aenv_extends__flex_mono_def : forall a τ Θ Θ',
+    aenv_extends Θ Θ' ->
+    aenv_extends ((a ~ abind_flex_mono_def τ) ++ Θ)
+                 ((a ~ abind_flex_mono_def τ) ++ Θ')
+
+(** Flex-poly definition: the assigned skeleton P may be refined to Q;
+    additionally a fresh suffix Ξ may be inserted after this entry. *)
+| aenv_extends__flex_poly_def : forall a P Q Ξ Θ Θ',
+    aenv_extends Θ Θ' ->
+    a_suffix Ξ ->
+    aenv_extends ((a ~ abind_flex_poly_def P) ++ Θ)
+                 (Ξ ++ (a ~ abind_flex_poly_def Q) ++ Θ')
+
+(** Term binding x : P preserved; suffix Ξ may be inserted after it. *)
+| aenv_extends__var_typ : forall a P Ξ Θ Θ',
+    aenv_extends Θ Θ' ->
+    a_suffix Ξ ->
+    aenv_extends ((a ~ abind_var_typ P) ++ Θ)
+                 (Ξ ++ (a ~ abind_var_typ P) ++ Θ')
+
+(** Rigid type variable preserved; suffix Ξ may be inserted. *)
+| aenv_extends__tvar : forall a Ξ Θ Θ',
+    aenv_extends Θ Θ' ->
+    a_suffix Ξ ->
+    aenv_extends ((a ~ abind_tvar) ++ Θ)
+                 (Ξ ++ (a ~ abind_tvar) ++ Θ')
+
+(** Marker preserved; suffix Ξ may be inserted. *)
+| aenv_extends__marker : forall a Ξ Θ Θ',
+    aenv_extends Θ Θ' ->
+    a_suffix Ξ ->
+    aenv_extends ((a ~ abind_marker) ++ Θ)
+                 (Ξ ++ (a ~ abind_marker) ++ Θ').
