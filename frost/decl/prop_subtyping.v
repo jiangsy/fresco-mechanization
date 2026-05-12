@@ -222,3 +222,70 @@ Admitted.
     [prop_wellformed.v] (since they only depend on Phase 2.B definitions
     and are referenced by [d_typing_pat_preserves_wf] there). The
     [d_typing__sub] case of that mutual proof is now closed. *)
+
+(** * Soundness of subtyping (paper declarative.tex:1095).
+
+    Headline result: [d_sub mode_tc nil Γ A B → d_shallow_sub Γ A B].
+
+    Subtleties revealed during proof:
+    1. When [A] has shape [typ_all_etag ε T] or [typ_all_plain T], the
+       [d_sub] derivation uses [d_sub__forall_l_*] — but
+       [d_shallow_sub__forall_l] expects LHS [typ_all_col c A]. These are
+       different syntactic shapes, so a direct correspondence requires
+       either restricting [A] to [is_typ] (i.e. colour-tagged ∀-flavour
+       only) or providing a translation between flavours.
+    2. The [d_sub__check] case routes through [d_consis nil Γ A B]; for
+       the empty-tag case, we need a bridging lemma between [d_consis]
+       and [d_shallow_sub] (essentially an α-equivalence / structural
+       equality that respects colour differences).
+
+    We state the theorem under the natural precondition [is_typ A]
+    (LHS has the [typ_all_col c _] shape, matching [d_shallow_sub]'s
+    LHS shape) and admit the [d_sub__check] case behind a bridging
+    lemma. *)
+
+(** Structural equality when [Δ = nil] and LHS is [is_typ].
+    With no tags to discharge and LHS in [is_typ] (only [typ_all_col]
+    flavour), [d_consis] reduces to syntactic equality. *)
+Lemma d_consis_empty_eq : forall Γ T A,
+    is_typ T ->
+    d_consis nil Γ T A ->
+    T = A.
+Proof.
+  intros Γ T A Hist Hc. dependent induction Hc; try (inversion Hist; fail).
+  - reflexivity.
+  - reflexivity.
+  - (* arrow: Δ1 ++ Δ2 = nil → Δ1 = Δ2 = nil *)
+    apply app_eq_nil in x. destruct x as [HΔ1 HΔ2]. subst.
+    apply is_typ_inv_arrow in Hist. destruct Hist as [HT1 HT2].
+    f_equal.
+    + apply IHHc1; auto.
+    + apply IHHc2; auto.
+Qed.
+
+Lemma d_consis_empty_to_shallow_sub : forall Γ A B,
+    is_typ A ->
+    d_consis nil Γ A B ->
+    d_shallow_sub Γ A B.
+Proof.
+  intros Γ A B Hist Hc. apply d_consis_empty_eq in Hc; auto. subst.
+  apply d_shallow_sub__refl.
+Qed.
+
+Theorem d_sub_sound : forall Γ A B,
+    is_typ A ->
+    d_sub mode_tc nil Γ A B ->
+    d_shallow_sub Γ A B.
+Proof.
+  intros Γ A B Hist H. dependent induction H.
+  - (* d_sub__check: M = mode_tc, Δ = nil. Use the bridging lemma. *)
+    apply d_consis_empty_to_shallow_sub; auto.
+  - (* d_sub__forall_r: B = typ_all_col colour_inh B'. *)
+    apply d_shallow_sub__forall_r with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+  - (* d_sub__forall_l_tagged: A = typ_all_etag ε T — but Hist : is_typ A
+       rejects typ_all_etag. Contradiction. *)
+    exfalso. eapply is_typ_inv_etag. exact Hist.
+  - (* d_sub__forall_l_untagged: A = typ_all_plain T — rejected by is_typ. *)
+    exfalso. eapply is_typ_inv_plain. exact Hist.
+Qed.

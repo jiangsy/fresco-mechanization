@@ -54,6 +54,8 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 | prop_subtyping.v | `d_sub_refl_mono` | strictified | Follows reflexivity of `d_consis` — restricted to monotypes for the same reason. |
 | prop_subtyping.v | `d_consis_compose` | partial | Arrow case requires a `d_consis_permutation` lemma — `(Δ1++Δb1)++(Δ2++Δb2)` vs `Δ1++Δ2++Δb1++Δb2` differ only by permutation; `d_consis` lacks a permutation lemma. Paper-flagged. |
 | prop_subtyping.v | `d_consis_extends_d_sub` | partial | Three pending sub-cases: `d_sub__infer` (needs `Δ0 = nil` narrowing), `d_sub__check` (needs compose arrow + forall_l_* dispatch), `d_sub__arg` (same Δ-permutation issue as compose). |
+| prop_subtyping.v | `d_consis_empty_eq` | CLEAN | Empty-Δ consistency on `is_typ` reduces to syntactic equality. Closed. |
+| prop_subtyping.v | `d_sub_sound` | CLEAN (strictified) | Headline soundness result for [d_sub mode_tc nil Γ A B] → [d_shallow_sub Γ A B]. Strictified with `is_typ A` precondition (LHS in `typ_all_col` flavour matches `d_shallow_sub` LHS shape); without this, `d_sub__forall_l_*` cases produce LHS shapes outside `d_shallow_sub`'s grammar. |
 
 ## Discovered blockers / open questions
 
