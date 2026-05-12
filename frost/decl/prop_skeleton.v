@@ -157,3 +157,19 @@ Proof.
   - left. eauto.
   - right. eauto 8.
 Qed.
+
+(** * Task 4 — Skeleton wf preservation under d_pat (paper declarative.tex:1970).
+
+    Projection of the mutual lemma [d_typing_pat_preserves_wf] from
+    [prop_wellformed.v]. The mutual claim still carries cross-track admits
+    ([d_pat__sub], [d_pat__app], the paper-level [abs_check] /
+    [abs_anno_check] tensions); this projection inherits them. *)
+
+Lemma d_pat_preserves_skel_wf : forall m Γ e P,
+    d_pat m Γ e P ->
+    d_wf_denv Γ ->
+    d_wf_skel nil Γ P.
+Proof.
+  intros m Γ e P H Hwfd.
+  apply (proj2 d_typing_pat_preserves_wf) with (m := m) (e := e); auto.
+Qed.
