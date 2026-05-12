@@ -18,6 +18,12 @@
 metavar typvar, X, Y, Z ::= {{ repr-locally-nameless }}
 metavar expvar, x, y, z ::= {{ repr-locally-nameless }}
 metavar epsvar, eps     ::= {{ coq var }}
+% Flex-mono and flex-poly type variable names. These are NOT
+% locally-nameless: they are plain atoms because in the algorithmic
+% system they are top-level entries in the algorithmic context Θ, not
+% binders inside type structure.
+metavar monovar, monvar ::= {{ coq var }}
+metavar polyvar, polvar ::= {{ coq var }}
 
 grammar
 
@@ -46,6 +52,8 @@ typ, A, B, C, T, ph, ps, P, Q, SS :: 'typ_' ::=
   | forall X . A        ::   :: all_plain (+ bind X in A +)
   | HOLE                ::   :: hole
   | TOPHOLE . A         ::   :: tophole
+  | hat monvar          ::   :: var_flex_mono
+  | check polvar        ::   :: var_flex_poly
   | ( A )               :: S :: paren {{ coq ([[A]]) }}
   | { A2 / X } A1       :: M :: subst {{ coq (open_typ_wrt_typ [[X A1]] [[A2]]) }}
 
