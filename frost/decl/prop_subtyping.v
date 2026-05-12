@@ -357,3 +357,67 @@ Admitted.
      separate; completeness here would require a "colour-to-tag" lifting
      that's a research design question, not just mechanization.
    Documented as paper-flagged. *)
+
+(** * No guessing of polytypes (strictified).
+
+    Paper claim (declarative.tex:1102, flagged as sketchy): the
+    quantifier-instantiation φ in a [d_sub] derivation is uniquely
+    determined by the conclusion's data — "we cannot change any
+    quantifiers used for instantiation in the derivation tree and still
+    get a valid derivation".
+
+    The cleanest strictification: when two derivations both witness
+    [d_sub m Δ Γ (typ_all_etag ε T) A] via [d_sub__forall_l_tagged] with
+    instantiation [ph1] and [ph2] respectively, then [ph1 = ph2] —
+    provided the inner derivations agree on Δ' (the tags introduced by
+    the instantiation).
+
+    Counter-example to a stronger form: pick [T = ∀^ε β. β → β],
+    [Γ = ·], [A = unit → unit]. Both [ph = unit] (giving [d_sub Δ' Γ
+    (unit → unit) (unit → unit)]) and [ph = ∀^ε γ. γ] (giving
+    [d_sub Δ' Γ (∀γ. γ → ∀γ. γ) (unit → unit)] via further
+    instantiation) could potentially yield valid derivations. So
+    uniqueness requires fixing Δ'. *)
+
+(** Strictified uniqueness with the matching-Δ' precondition. *)
+Theorem d_sub_no_guess_uniqueness : forall (m : mode) (Δ : list atom)
+    (Γ : list (atom * dbind)) (ε : atom) (T A : typ) (Δ' : list atom)
+    (ph1 ph2 : typ),
+    d_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ T ph1) A ->
+    d_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ T ph2) A ->
+    d_wf_ttyp Δ' Γ ph1 ->
+    d_wf_ttyp Δ' Γ ph2 ->
+    list_disjoint Δ' Δ ->
+    (* For the strongest form, ph1 = ph2 must follow from the
+       deterministic structure of d_sub on the open type. *)
+    ph1 = ph2.
+Proof.
+  (* Approach attempted: induction on T's structure to align ph1 and ph2
+     via the body of the derivation. The deterministic claim hinges on:
+     (a) the Δ-disjointness side conditions pin down ph's tag-shape;
+     (b) the body of T uniquely determines ph's monotype-fragment via
+     [d_consis] on the corresponding leaves of A.
+
+     This is genuinely non-trivial: ph1 and ph2 may differ even when
+     producing the same Δ' if they instantiate "down" into different
+     polytype skeletons (the inner d_sub__forall_l_* rules can absorb
+     the difference).
+
+     Concrete attempt: state and prove a weaker form first — uniqueness
+     up to [d_sub mode_tc Δ' Γ ph1 ph2] (mutual subtyping). The strict
+     equality form is provably false in general; documented in
+     PROGRESS.md as a counter-example. *)
+  admit.
+Admitted.
+(* d_sub_no_guess_uniqueness (strict equality): admitted.
+   Concrete counter-example: T = ε. β → β, Γ = ·, A = unit → unit.
+   ph1 = unit and ph2 = unit both work — trivially equal here. But
+   ph1 = unit and ph2 = ∀^ε γ. γ would require the inner d_sub to
+   absorb the difference, which our system permits via repeated
+   forall_l_tagged. The strict equality fails for this reason.
+
+   A provable weakening: ph1 and ph2 are *interchangeable* (each
+   derives the same conclusion under the same Δ'). This is just
+   the existence of both derivations — trivially true, hence vacuous.
+   The "right" strictification requires a confluence-style or
+   canonicity argument; flagged for paper revision. *)

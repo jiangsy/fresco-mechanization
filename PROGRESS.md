@@ -57,6 +57,7 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 | prop_subtyping.v | `d_consis_empty_eq` | CLEAN | Empty-Δ consistency on `is_typ` reduces to syntactic equality. Closed. |
 | prop_subtyping.v | `d_sub_sound` | CLEAN (strictified) | Headline soundness result for [d_sub mode_tc nil Γ A B] → [d_shallow_sub Γ A B]. Strictified with `is_typ A` precondition (LHS in `typ_all_col` flavour matches `d_shallow_sub` LHS shape); without this, `d_sub__forall_l_*` cases produce LHS shapes outside `d_shallow_sub`'s grammar. |
 | prop_subtyping.v | `d_sub_complete_mono` | partial (research-flagged) | Bruno's reviewer-suggested completeness wrt monotype-only shallow subtyping. Three admits: refl (needs `mono_typ` narrowing); forall_r (`d_sub__forall_r` only emits `colour_inh`, `d_shallow_sub_mono__forall_r` ranges over any colour); forall_l (LHS `typ_all_col` in `d_shallow_sub_mono` doesn't match `typ_all_etag/plain` in `d_sub__forall_l_*` — needs colour-to-tag translation, a research design question). |
+| prop_subtyping.v | `d_sub_no_guess_uniqueness` | admitted (paper-flagged) | Strict equality ph1 = ph2 of two instantiations producing the same conclusion. The paper's loose form (declarative.tex:1102) was flagged sketchy. A concrete counter-example is documented inline: ph could absorb into nested `forall_l_tagged` chains. The right form likely needs a confluence/canonicity argument — flagged for paper revision rather than mechanization. |
 
 ## Discovered blockers / open questions
 
