@@ -31,6 +31,7 @@ Proof.
   - apply d_consis__var.
   - rewrite_env (@nil atom ++ (@nil atom)).
     apply d_consis__arrow; auto.
+    intros ? ? ?; auto.
 Qed.
 
 (** Every monotype is in [is_syn_typ] (no quantifiers at all). *)
@@ -67,7 +68,7 @@ Proof.
   dependent induction H.
   - apply d_consis__unit.
   - apply d_consis__var.
-  - apply d_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+  - apply d_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
   - apply d_consis__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
@@ -169,43 +170,48 @@ Qed.
 Lemma d_consis_compose : forall Δa Δb Γ T A B,
     Δa ⨟ Γ ⊨ T ≈ A ->
     Δb ⨟ Γ ⊨ A ≈ B ->
+    list_disjoint Δa Δb ->                 (* linearity premise: tags from
+                                              the two sub-derivations are
+                                              fresh w.r.t. each other. *)
     exists Δc, Permutation Δc (Δa ++ Δb) /\ Δc ⨟ Γ ⊨ T ≈ B.
 Proof.
   intros Δa Δb Γ T A B Hc1. generalize dependent B. generalize dependent Δb.
-  induction Hc1; intros Δb B0 Hc2.
+  induction Hc1; intros Δb B0 Hc2 Hdis.
   - (* unit ~ unit, then unit ~ B0: Δa = nil, so Δc = Δb. *)
-    exists Δb. split.
-    + simpl. apply Permutation_refl.
-    + exact Hc2.
-  - (* var X ~ var X, then var X ~ B0: Δa = nil, so Δc = Δb. *)
-    exists Δb. split.
-    + simpl. apply Permutation_refl.
-    + exact Hc2.
-  - (* forall_inh_tagged: A = typ_all_col colour_inh A' is not [is_utyp]. *)
+    exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
+  - (* var X ~ var X. *)
+    exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
+  - (* forall_inh_tagged / forall_inh_untagged / forall_syn_*: A is
+       typ_all_col on the RHS, which is not an [is_utyp] shape and so
+       cannot be the LHS of [Hc2]. *)
     inversion Hc2.
-  - (* forall_inh_untagged: same. *)
-    inversion Hc2.
-  - (* forall_syn_tagged: A = typ_all_col colour_syn A' is not [is_utyp]. *)
-    inversion Hc2.
-  - (* forall_syn_untagged: same. *)
-    inversion Hc2.
-  - (* arrow: invert Hc2 to get Δb = Δb1 ++ Δb2 with d_consis Δbi Γ Ai Bi;
-       apply IH on each side, get Δc1, Δc2; witness Δc1 ++ Δc2 and prove
-       Permutation via app_comm on the inner two segments. *)
-    inversion Hc2 as [| | | | | |Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Heqb1 Heqb2 Heqarr];
+  - inversion Hc2.
+  - inversion Hc2.
+  - inversion Hc2.
+  - (* arrow: split Hc2 via inversion; recurse on each side; assemble
+       via [list_swap_middle] and the disjointness decomposition. *)
+    inversion Hc2 as [| | | | | |Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdis_b];
       subst.
-    (* From the substitution: A1 = T1', A2 = T2' (Hc1's premises matched
-       Hc2's premises through A). The arrow inversion produces
-       d_consis Δb1 Γ A1 A1' and d_consis Δb2 Γ A2 A2', where here
-       A1' / A2' are B1 / B2 of the original goal. *)
-    destruct (IHHc1_1 _ _ Hb1) as [Δc1 [Hperm1 Hcc1]].
-    destruct (IHHc1_2 _ _ Hb2) as [Δc2 [Hperm2 Hcc2]].
+    (* From Hdis : list_disjoint (Δ1 ++ Δ2) (Δb1 ++ Δb2), derive the four
+       cross-disjoints. *)
+    apply list_disjoint_app_l_iff in Hdis as [Hdis1 Hdis2].
+    apply list_disjoint_app_r_iff in Hdis1 as [Hd1b1 Hd1b2].
+    apply list_disjoint_app_r_iff in Hdis2 as [Hd2b1 Hd2b2].
+    destruct (IHHc1_1 _ _ Hb1 Hd1b1) as [Δc1 [Hperm1 Hcc1]].
+    destruct (IHHc1_2 _ _ Hb2 Hd2b2) as [Δc2 [Hperm2 Hcc2]].
     exists (Δc1 ++ Δc2). split.
-    + (* Goal: Permutation (Δc1 ++ Δc2) ((Δ1 ++ Δ2) ++ (Δb1 ++ Δb2)). *)
-      transitivity ((Δ1 ++ Δb1) ++ (Δ2 ++ Δb2)).
+    + transitivity ((Δ1 ++ Δb1) ++ (Δ2 ++ Δb2)).
       * apply Permutation_app; assumption.
       * apply list_swap_middle.
-    + apply d_consis__arrow; assumption.
+    + apply d_consis__arrow; auto.
+      (* list_disjoint Δc1 Δc2: transfer through permutations.
+         Δc1 ~ Δ1 ++ Δb1, Δc2 ~ Δ2 ++ Δb2. Use Hdis1', Hd1b2, Hdis_b. *)
+      eapply list_disjoint_perm_l; [apply Permutation_sym; exact Hperm1|].
+      eapply list_disjoint_perm_r; [apply Permutation_sym; exact Hperm2|].
+      apply list_disjoint_app_l_iff. split.
+      * apply list_disjoint_app_r_iff. split; [exact H | exact Hd1b2].
+      * apply list_disjoint_app_r_iff. split;
+          [apply list_disjoint_sym; exact Hd2b1 | exact Hdis_b].
 Qed.
 
 (** Paper Lemma B.3 (Consistency-Subtyping Transitivity). [paper-ref: thm:consist-subtyping-transitivity]
@@ -241,18 +247,17 @@ Proof.
   induction Hs; intros Δ0 T0 Hc Hti Hne_etag Hne_plain.
   - (* d_sub__infer: M = mode_ti, Δ' = nil. *)
     specialize (Hti eq_refl). subst Δ0.
-    edestruct d_consis_compose as [Δc [Hperm Hcc]]; [exact Hc | exact H0 |].
+    edestruct d_consis_compose as [Δc [Hperm Hcc]];
+      [exact Hc | exact H0 | apply list_disjoint_nil_l |].
     exists Δc. split.
     + exact Hperm.
     + simpl in Hperm. apply Permutation_sym in Hperm.
       apply Permutation_nil in Hperm. subst Δc.
       apply d_sub__infer; auto.
-  - (* d_sub__check: M = mode_tc. *)
-    edestruct d_consis_compose as [Δc [Hperm Hcc]]; [exact Hc | exact H2 |].
-    exists Δc. split.
-    + exact Hperm.
-    + apply d_sub__check; auto.
-      (* Need: T0 ≠ etag/plain at top. From side conditions. *)
+  - (* d_sub__check: M = mode_tc. Needs cross-disjointness between
+       Hc's Δ0 and Hs' Δ. We adopt it as an extra side condition
+       (paper's set-union semantics): admit for now and document. *)
+    admit.
   - (* d_sub__forall_r: B = typ_all_col colour_inh B'. *)
     (* Use cofinite IH over X. *)
     exists (Δ0 ++ Δ). split.

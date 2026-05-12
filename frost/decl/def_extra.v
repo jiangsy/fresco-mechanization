@@ -159,12 +159,14 @@ Inductive d_consis :
     d_consis nil Γ typ_unit typ_unit
 | d_consis__var : forall Γ X,
     d_consis nil Γ (typ_var_f X) (typ_var_f X)
-(* ForallInh: tagged on left, ε added to Δ. *)
+(* ForallInh: tagged on left, ε added to Δ. Linearity: ε must be
+   fresh w.r.t. Δ (paper-faithful set semantics; matches d_wf_ttyp__all). *)
 | d_consis__forall_inh_tagged : forall L Δ Γ ε T A,
     (forall X, X `notin` L ->
        d_consis Δ ((X ~ dbind_tvar) ++ Γ)
          (open_typ_wrt_typ T (typ_var_f X))
          (open_typ_wrt_typ A (typ_var_f X))) ->
+    ~ List.In ε Δ ->
     d_consis (ε :: Δ) Γ (typ_all_etag ε T) (typ_all_col colour_inh A)
 (* ForallInh: untagged on left. *)
 | d_consis__forall_inh_untagged : forall L Δ Γ T A,
@@ -186,9 +188,12 @@ Inductive d_consis :
          (open_typ_wrt_typ T (typ_var_f X))
          (open_typ_wrt_typ A (typ_var_f X))) ->
     d_consis Δ Γ (typ_all_plain T) (typ_all_col colour_syn A)
+(* Arrow: linear-tag semantics (paper writes Δ_1, Δ_2 as set union;
+   d_wf_ttyp__arrow enforces disjointness analogously). *)
 | d_consis__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,
     d_consis Δ1 Γ T1 A1 ->
     d_consis Δ2 Γ T2 A2 ->
+    list_disjoint Δ1 Δ2 ->
     d_consis (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
 
 (** ** Type subtyping Γ ⊢_M^Δ T ≤ A. *)
@@ -342,6 +347,7 @@ Inductive d_pat_consis :
        d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
          (open_typ_wrt_typ SS (typ_var_f X))
          (open_typ_wrt_typ P (typ_var_f X))) ->
+    ~ List.In ε Δ ->
     d_pat_consis (ε :: Δ) Γ (typ_all_etag ε SS) (typ_all_col colour_inh P)
 | d_pat_consis__forall_inh_untagged : forall L Δ Γ SS P,
     (forall X, X `notin` L ->
@@ -367,6 +373,7 @@ Inductive d_pat_consis :
 | d_pat_consis__arrow : forall Δ1 Δ2 Γ SS1 SS2 P1 P2,
     d_pat_consis Δ1 Γ SS1 P1 ->
     d_pat_consis Δ2 Γ SS2 P2 ->
+    list_disjoint Δ1 Δ2 ->
     d_pat_consis (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
 | d_pat_consis__univ_ghost_arr : forall Δ Γ SS P,
     d_pat_consis Δ Γ SS P ->

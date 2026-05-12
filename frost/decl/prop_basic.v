@@ -2,6 +2,7 @@
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
+Require Import Coq.Sorting.Permutation.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -102,6 +103,30 @@ Lemma list_disjoint_singleton_r : forall (xs : list atom) (a : atom) ,
     list_disjoint xs (a :: nil).
 Proof.
   intros xs a Hni. apply list_disjoint_sym, list_disjoint_singleton_l, Hni.
+Qed.
+
+(** Permutation preserves [list_disjoint]: same elements ↔ same
+    disjointness. *)
+Lemma list_disjoint_perm_l : forall (xs xs' ys : list atom),
+    Permutation xs xs' ->
+    list_disjoint xs ys ->
+    list_disjoint xs' ys.
+Proof.
+  intros xs xs' ys Hperm Hdis a Hin Hy.
+  apply (Hdis a); auto.
+  apply Permutation_sym in Hperm.
+  eapply Permutation_in; eauto.
+Qed.
+
+Lemma list_disjoint_perm_r : forall (xs ys ys' : list atom),
+    Permutation ys ys' ->
+    list_disjoint xs ys ->
+    list_disjoint xs ys'.
+Proof.
+  intros xs ys ys' Hperm Hdis.
+  apply list_disjoint_sym.
+  eapply list_disjoint_perm_l; eauto.
+  apply list_disjoint_sym; auto.
 Qed.
 
 (** * Locally-closed predicates.
