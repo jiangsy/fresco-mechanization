@@ -31,7 +31,7 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 
 | Track | File | Status | Worktree | Notes |
 |---|---|---|---|---|
-| 3.A Algo defs | `frost/algo/def_extra.v` | 🔴 pending | (worktree TBA) | parallel with 2.C-E (no decl-prop dep) |
+| 3.A Algo defs | `frost/algo/def_extra.v` | 🟢 done | (mech, direct) | Exports: language.ott extended with `typ_var_flex_mono` / `typ_var_flex_poly`; `abind` (6 ctors), `aenv`, `a_suffix` / `a_suffix_binding`, `a_mono_aenv`; `aenv_extends` (8 ctors, identity-metasubst variant); `a_wf_typ` (11 ctors), `a_wf_aenv` (7 ctors), `a_guarded` (6 ctors); `a_ty_mode_compat` / `a_sk_mode_compat`; `a_non_flex` / `a_non_flex_poly`; `a_guess_mono` (8 ctors), `a_guess_mono_suffix`; `a_pre_sub` / `a_pre_join` (mutual, 11+11 ctors); `a_unify` / `a_unify_var` / `a_assign` (mutual, 14+10+11 ctors); `a_consis` (12 ctors); `a_ajoin` (7 ctors); `a_meta_subst` (4 ctors); `a_broom` / `a_sub_flex_poly` (mutual, 10+7 ctors); `a_sub` (2 ctors); `a_split` (3 ctors); `a_typing` / `a_pat` (mutual, 11+9 ctors). Total ~140 constructors across 16 inductives. Notations in `frost/algo/notations.v`. |
 | 3.B Algo soundness | `frost/algo/prop_soundness.v` | 🔴 pending | (worktree TBA) | sequential after 3.A + 2.{C,D,E} |
 | 3.C Algo completeness | `frost/algo/prop_completeness.v` | 🔴 pending | (worktree TBA) | parallel with 3.B, same deps |
 
