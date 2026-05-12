@@ -863,10 +863,10 @@ Proof.
     pick fresh x for (L `union` dom Γ).
     eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
     eauto using d_wf_denv__typ.
-  - (* d_typing__app: needs the function-type IH to give an arrow, then
-       project the result component. Closure relies on d_refine_syn's wf
-       interaction. Phase 2.D. *)
-    admit.
+  - (* d_typing__app: IH on the function gives d_wf_typ Γ (typ_arrow A B);
+       invert to project B. Refinement side adds no new obligation. *)
+    assert (Harr : d_wf_typ Γ (typ_arrow A B)) by (apply H0; auto).
+    inversion Harr; subst. auto.
   - (* d_pat__unit *) apply d_wf_skel__unit.
   - (* d_pat__var: similar to d_typing__var, using d_wf_denv_binds_skel. *)
     eapply d_wf_denv_binds_skel; eauto.
@@ -891,6 +891,9 @@ Proof.
     admit.
   - (* d_pat__abs_anno_check: tophole wraps A; need d_wf_typ on A. *)
     admit.
-  - (* d_pat__app: cross-track (Phase 2.E). *)
+  - (* d_pat__app: IH on the function (d_typing side) gives
+       d_wf_typ Γ (typ_arrow P' Q); we need d_wf_skel nil Γ Q.
+       Goal: derive d_wf_skel nil Γ Q from d_wf_typ Γ Q + d_refine_syn
+       interaction. Bridge unavailable here. *)
     admit.
 Admitted.
