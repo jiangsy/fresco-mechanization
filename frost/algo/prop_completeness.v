@@ -84,3 +84,108 @@ Theorem a_sub_decidable_existential :
 Proof.
   intros. right. exact I.
 Qed.
+
+
+(* ===================================================================== *)
+(*  Task 2.  Completeness of algorithmic subtyping.                       *)
+(* ===================================================================== *)
+
+(** [a_sub_complete] — paper proofs.tex §"Type Inference" Lemma
+    "Subtyping is complete".
+
+    Statement (paper-form, adapted to Phase 3.B's [a_transfers]
+    relation):
+
+      [forall Γ A B m,
+         d_sub m nil Γ A B ->
+         forall Θ0, a_transfers Θ0 Γ ->
+         exists Θ1 NM P0, a_sub NM m P0 Θ0 A B Θ1 /\ a_transfers Θ1 Γ].
+
+    The [NM] and [P0] parameters of [a_sub] are existentialised because
+    the declarative judgment doesn't carry them.  Standard reading:
+    [NM = a_sub_mode_ty] and [P0 = typ_hole] suffice for the common
+    case (paper's [\asublab{Ty}]).
+
+    The proof goes by induction on [d_sub] and follows the cases
+    of [a_sub]:
+
+    - [d_sub__infer] / [d_sub__check] — translate via [a_consis]
+      completeness.  Requires [a_consis_complete : d_consis Δ Γ T A ->
+      ... -> exists Θ1, a_consis Θ0 T A Θ1 ∧ a_transfers Θ1 Γ], not
+      yet built.  Paper's argument is by induction on the
+      [d_consis] derivation.
+
+    - [d_sub__forall_r] — emit [a_broom__forall_r] under a fresh
+      [a]; suffix [(a ~ abind_tvar) ++] cancels by [a_transfers__tvar].
+
+    - [d_sub__arg] — split [Δ₁ ++ Δ₂] and apply IH twice; the
+      argument leg additionally needs [a_unify] completeness for
+      monotypes.
+
+    - [d_sub__forall_l_tagged] / [_untagged] — paper says we
+      *guess* the instantiation [ph].  The algorithmic counterpart
+      is [a_pre_sub] + the [a_meta_subst] threaded by [a_sub__ty].
+      The mechanical bridge requires [a_pre_sub_complete] which
+      depends on [a_unify_var_complete] (essentially: every
+      well-formed witness factors through unification).
+
+    Per plan policy: stated, admitted with rationale.  No fabricated
+    proof. *)
+
+Theorem a_sub_complete :
+  forall m Γ A B,
+    d_sub m nil Γ A B ->
+    forall Θ0, a_transfers Θ0 Γ ->
+    exists Θ1 NM P0, a_sub NM m P0 Θ0 A B Θ1 /\ a_transfers Θ1 Γ.
+Proof.
+  (* Admitted — paper proofs.tex §"Type Inference / Subtyping is
+     complete".  By induction on [d_sub m nil Γ A B].  Each of the 6
+     [d_sub] constructors triggers a sub-derivation in [a_sub] via
+     [a_broom]:
+
+     - [d_sub__infer] / [d_sub__check] — match [a_broom__infer] /
+       [a_broom__check] via [a_consis_complete] (NOT YET PROVED;
+       see prop_soundness.v rationale block); the conclusion folds
+       through [a_sub__ty].
+
+     - [d_sub__forall_r] — match [a_broom__forall_r] under a fresh
+       rigid [α] introduced by [a_transfers__tvar].
+
+     - [d_sub__arg] — match [a_broom__arg]; consumes IH on the
+       result leg + [a_unify_complete] (NOT YET PROVED) on the
+       argument leg.
+
+     - [d_sub__forall_l_tagged] — match [a_broom__forall_l] with
+       the [a_pre_sub] / [a_assign] cascade as instantiation
+       witness.  This is the case where the paper's "guess [ph]"
+       step is realised mechanically; depends on
+       [a_pre_sub_complete] + [a_assign_complete] (NEITHER PROVED).
+
+     - [d_sub__forall_l_untagged] — symmetric; same cascade modulo
+       the tag dispatch.
+
+     Auxiliary completeness lemmas required but not currently
+     mechanised in Phase 3:
+
+       (i)   [a_consis_complete]
+       (ii)  [a_unify_complete]
+       (iii) [a_pre_sub_complete]
+       (iv)  [a_assign_complete]
+       (v)   [a_broom_complete]   (deducible from i–iv)
+
+     Each is approximately one lemma file's worth of work, paralleling
+     the soundness counterparts admitted in [prop_soundness.v]. *)
+Admitted.
+
+
+(** Smoke test for Task 2: completeness applied to the empty context
+    where [unit ⊑ unit] is trivially derivable on the declarative side. *)
+Lemma a_sub_complete_smoke :
+  d_sub mode_tc nil nil typ_unit typ_unit ->
+  forall Θ0, a_transfers Θ0 nil ->
+  exists Θ1 NM P0, a_sub NM mode_tc P0 Θ0 typ_unit typ_unit Θ1 /\
+                    a_transfers Θ1 nil.
+Proof.
+  intros Hd Θ0 Htr.
+  eapply a_sub_complete; eauto.
+Qed.
