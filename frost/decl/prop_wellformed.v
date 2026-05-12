@@ -333,6 +333,79 @@ Proof.
   intros x Hx. apply in_or_app. right. exact Hx.
 Qed.
 
+(** [d_wf_typ] only inhabits plain types (per the predicate hierarchy). *)
+Lemma d_wf_typ_is_typ : forall Γ A,
+    d_wf_typ Γ A -> is_typ A.
+Proof.
+  intros Γ A H. induction H.
+  - apply is_typ__unit.
+  - apply is_typ__var.
+  - apply is_typ__arrow; auto.
+  - apply is_typ__all with (L := L). auto.
+Qed.
+
+(** Drop a [(X ~ dbind_tvar)] entry from Γ when X is already in Ψ —
+    i.e., the X has been "moved" from Γ to Ψ. Restricted to [is_typ P]
+    so the [tophole]-case of [d_wf_skel] (which clears Ψ) never fires. *)
+Lemma d_wf_skel_drop_tvar_in_psi : forall P,
+    is_typ P ->
+    forall Γ1 Γ2 X Ψ,
+      List.In X Ψ ->
+      d_wf_skel Ψ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) P ->
+      d_wf_skel Ψ (Γ1 ++ Γ2) P.
+Proof.
+  intros P Hist. induction Hist; intros Γ1 Γ2 X1 Ψ HXin Hwf.
+  - apply d_wf_skel__unit.
+  - (* var *)
+    inversion Hwf as [|? ? ? Hor| | | | |]; subst.
+    apply d_wf_skel__var. destruct Hor as [Hin | Hbinds].
+    + left. exact Hin.
+    + apply binds_app_iff in Hbinds. destruct Hbinds as [Hb1 | Hb1].
+      * right. apply binds_app_iff. left. exact Hb1.
+      * apply binds_app_iff in Hb1. destruct Hb1 as [Hb1 | Hb1].
+        -- apply binds_one_iff in Hb1. destruct Hb1 as [Hxeq _]. subst.
+           left. exact HXin.
+        -- right. apply binds_app_iff. right. exact Hb1.
+  - (* arrow *)
+    inversion Hwf as [| |? ? ? ? HA HB| | | |]; subst.
+    apply d_wf_skel__arrow; eauto.
+  - (* all_col c A *)
+    inversion Hwf as [| | |L0 ? ? ? ? Hbody| | |]; subst.
+    apply d_wf_skel__all_col
+      with (L := L0 `union` L `union` dom (Γ1 ++ Γ2) `union` singleton X1).
+    intros Y HY. apply (H0 Y) with (X := X1) (Ψ := Y :: Ψ).
+    + auto.
+    + simpl. right. exact HXin.
+    + apply Hbody. auto.
+Qed.
+
+(** Bridge: a [d_wf_typ]-wellformed type is also a [d_wf_skel]-wellformed
+    skeleton (with empty Ψ). Uses [d_wf_skel_drop_tvar_in_psi] in the
+    all-case to convert the IH from "X in Γ" to "X in Ψ". *)
+Lemma d_wf_typ_d_wf_skel : forall Γ A,
+    d_wf_typ Γ A -> d_wf_skel nil Γ A.
+Proof.
+  intros Γ A H. induction H.
+  - apply d_wf_skel__unit.
+  - apply d_wf_skel__var. right. exact H.
+  - apply d_wf_skel__arrow; auto.
+  - apply d_wf_skel__all_col with (L := L `union` dom Γ).
+    intros X HX.
+    (* IH H1 X HX : d_wf_skel nil ((X~_)++Γ) (open A X) *)
+    (* Goal     : d_wf_skel (X::nil) Γ (open A X) *)
+    assert (Histyp : is_typ (open_typ_wrt_typ A (typ_var_f X)))
+      by (apply d_wf_typ_is_typ with (Γ := (X ~ dbind_tvar) ++ Γ); auto).
+    (* Step 1: psi-weaken nil → [X]. *)
+    assert (Hsk : d_wf_skel (X :: nil) ((X ~ dbind_tvar) ++ Γ)
+                            (open_typ_wrt_typ A (typ_var_f X))).
+    { change (X :: nil) with ((X :: nil) ++ nil).
+      apply d_wf_skel_psi_weakening. auto. }
+    (* Step 2: drop X from Γ since X ∈ Ψ. *)
+    rewrite_env (nil ++ Γ).
+    eapply d_wf_skel_drop_tvar_in_psi with (X := X); eauto.
+    simpl. left. reflexivity.
+Qed.
+
 (** Embed [d_wf_ttyp Δ Γ A] into [d_wf_utyp Δ Γ A]: the unresolved-type
     wf is more permissive (extra [pall] constructor). *)
 Lemma d_wf_ttyp_is_utyp : forall Δ Γ A,
@@ -870,9 +943,9 @@ Proof.
   - (* d_pat__unit *) apply d_wf_skel__unit.
   - (* d_pat__var: similar to d_typing__var, using d_wf_denv_binds_skel. *)
     eapply d_wf_denv_binds_skel; eauto.
-  - (* d_pat__anno: the pat rule gives A as the inferred type, but A
-       isn't a wf'd skel premise; closure via Phase 2.D's anno regularity. *)
-    admit.
+  - (* d_pat__anno: bridge d_wf_typ → d_wf_skel using
+       [d_wf_typ_d_wf_skel]. *)
+    apply d_wf_typ_d_wf_skel. auto.
   - (* d_pat__sub: needs d_pat_sub_preserves_wf (Phase 2.E). *)
     admit.
   - (* d_pat__freeze: IH gives directly. *)
@@ -887,13 +960,17 @@ Proof.
   - (* d_pat__abs_check: Q = open output. P here is [typ_tophole typ_hole].
        The IH gives d_wf_skel nil ((x~skel typ_hole)++Γ) Q; close it. *)
     admit.
-  - (* d_pat__abs_anno: regularity on the annotation A. *)
-    admit.
+  - (* d_pat__abs_anno: arrow wf via bridge for A and IH strengthening for Q. *)
+    apply d_wf_skel__arrow.
+    + apply d_wf_typ_d_wf_skel. auto.
+    + pick fresh x for (L `union` dom Γ).
+      eapply d_wf_skel_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
+      eauto using d_wf_denv__typ.
   - (* d_pat__abs_anno_check: tophole wraps A; need d_wf_typ on A. *)
     admit.
   - (* d_pat__app: IH on the function (d_typing side) gives
-       d_wf_typ Γ (typ_arrow P' Q); we need d_wf_skel nil Γ Q.
-       Goal: derive d_wf_skel nil Γ Q from d_wf_typ Γ Q + d_refine_syn
-       interaction. Bridge unavailable here. *)
-    admit.
+       d_wf_typ Γ (typ_arrow P' Q); invert and bridge Q to a wf skeleton. *)
+    assert (Harr : d_wf_typ Γ (typ_arrow P' Q)) by (apply H0; auto).
+    inversion Harr; subst.
+    apply d_wf_typ_d_wf_skel; auto.
 Admitted.
