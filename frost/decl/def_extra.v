@@ -509,7 +509,7 @@ with d_pat :
     (forall x, x `notin` L ->
        d_pat mode_tc ((x ~ dbind_skel typ_hole) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
-    d_pat mode_tc Γ (exp_abs e) (typ_arrow (typ_tophole typ_hole) Q)
+    d_pat mode_tc Γ (exp_abs e) (typ_tophole (typ_arrow typ_hole Q))
 | d_pat__abs_anno : forall L Γ m e A Q,
     m <> mode_tc ->
     d_wf_typ Γ A ->
@@ -522,7 +522,7 @@ with d_pat :
     (forall x, x `notin` L ->
        d_pat mode_tc ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
-    d_pat mode_tc Γ (exp_abs_anno A e) (typ_arrow (typ_tophole A) Q)
+    d_pat mode_tc Γ (exp_abs_anno A e) (typ_tophole (typ_arrow A Q))
 | d_pat__app : forall Γ m e1 e2 P P' Q,
     d_pat mode_tc Γ e2 P ->
     d_refine_syn nil Γ P P' ->

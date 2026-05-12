@@ -1017,17 +1017,36 @@ Proof.
     pick fresh x for (L `union` dom Γ).
     eapply d_wf_skel_strengthening_skel with (Γ1 := nil) (x := x) (P := P).
     eauto using d_wf_denv__skel.
-  - (* d_pat__abs_check: Q = open output. P here is [typ_tophole typ_hole].
-       The IH gives d_wf_skel nil ((x~skel typ_hole)++Γ) Q; close it. *)
-    admit.
+  - (* d_pat__abs_check: produces [typ_tophole (typ_arrow typ_hole Q)].
+       Goal: [d_wf_skel nil Γ (typ_tophole (typ_arrow typ_hole Q))].
+       Via [d_wf_skel__tophole]: need [guarded_skel (typ_arrow typ_hole Q)]
+       (arrow is guarded ✓) AND [d_wf_skel nil Γ (typ_arrow typ_hole Q)],
+       which decomposes to [d_wf_skel nil Γ typ_hole] (✓) AND
+       [d_wf_skel nil Γ Q] (from IH after strengthening). *)
+    apply d_wf_skel__tophole.
+    + apply guarded_skel__arrow.
+    + apply d_wf_skel__arrow.
+      * apply d_wf_skel__hole.
+      * pick fresh x for (L `union` dom Γ).
+        eapply d_wf_skel_strengthening_skel
+          with (Γ1 := nil) (x := x) (P := typ_hole).
+        eauto using d_wf_denv__skel, d_wf_skel__hole.
   - (* d_pat__abs_anno: arrow wf via bridge for A and IH strengthening for Q. *)
     apply d_wf_skel__arrow.
     + apply d_wf_typ_d_wf_skel. auto.
     + pick fresh x for (L `union` dom Γ).
       eapply d_wf_skel_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
       eauto using d_wf_denv__typ.
-  - (* d_pat__abs_anno_check: tophole wraps A; need d_wf_typ on A. *)
-    admit.
+  - (* d_pat__abs_anno_check: produces [typ_tophole (typ_arrow A Q)].
+       Body is [typ_arrow A Q] (guarded). Wf via bridge for A + IH for Q. *)
+    apply d_wf_skel__tophole.
+    + apply guarded_skel__arrow.
+    + apply d_wf_skel__arrow.
+      * apply d_wf_typ_d_wf_skel; auto.
+      * pick fresh x for (L `union` dom Γ).
+        eapply d_wf_skel_strengthening_typ
+          with (Γ1 := nil) (x := x) (A := A).
+        eauto using d_wf_denv__typ.
   - (* d_pat__app: IH on the function (d_typing side) gives
        d_wf_typ Γ (typ_arrow P' Q); invert and bridge Q to a wf skeleton. *)
     assert (Harr : d_wf_typ Γ (typ_arrow P' Q)) by (apply H0; auto).
