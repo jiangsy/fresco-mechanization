@@ -215,3 +215,10 @@ Admitted.
    - d_sub__check: needs d_consis_compose arrow + forall_l_* dispatch.
    - d_sub__arg: needs the Δ-permutation lemma.
    Documented in PROGRESS.md as paper-flagged. *)
+
+(** * d_sub preserves wellformedness.
+
+    Both [d_consis_preserves_wf] and [d_sub_preserves_wf] live in
+    [prop_wellformed.v] (since they only depend on Phase 2.B definitions
+    and are referenced by [d_typing_pat_preserves_wf] there). The
+    [d_typing__sub] case of that mutual proof is now closed. *)

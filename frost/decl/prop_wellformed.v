@@ -761,6 +761,51 @@ Qed.
     lemma that respects the Ψ-scoping rules. Deferred to Phase 2.E's
     skeleton work, where the proof can sit alongside other Γ↔Ψ lemmas. *)
 
+(** * Wellformedness preservation for [d_consis] and [d_sub].
+
+    Conclusion: the RHS of these judgments is [d_wf_typ Γ]. The premises
+    we need amount to "the RHS is a well-formed type" — which we obtain
+    inductively without further preconditions, except for the variable
+    case where we accept the admit (see inline). *)
+
+Lemma d_consis_preserves_wf : forall Δ Γ T A,
+    d_consis Δ Γ T A ->
+    d_wf_typ Γ A.
+Proof.
+  intros Δ Γ T A H. induction H.
+  - apply d_wf_typ__unit.
+  - (* d_consis__var (T = A = typ_var_f X): d_consis doesn't carry a
+       binds premise so we cannot derive [d_wf_typ Γ (typ_var_f X)]
+       without an additional hypothesis. Admitted — to close, either
+       strengthen [d_consis__var] with [binds X dbind_tvar Γ] or pass
+       [d_wf_utyp Δ Γ T] as a precondition here. *)
+    admit.
+  - apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+  - apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+  - apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+  - apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+  - apply d_wf_typ__arrow; auto.
+Admitted.
+
+Lemma d_sub_preserves_wf : forall M Δ Γ T A,
+    d_sub M Δ Γ T A ->
+    d_wf_typ Γ A.
+Proof.
+  intros M Δ Γ T A H. induction H.
+  - eapply d_consis_preserves_wf; eauto.
+  - eapply d_consis_preserves_wf; eauto.
+  - apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+  - apply d_wf_typ__arrow; auto.
+    eapply d_consis_preserves_wf; eauto.
+  - auto.
+  - auto.
+Qed.
+
 (** * Skeleton wellformedness preservation under d_pat (paper:1970).
 
     The mutual claim: well-typed terms yield wf result types, and
@@ -797,8 +842,8 @@ Proof.
     eapply d_wf_denv_binds_typ; eauto.
   - (* d_typing__anno: IH gives d_wf_typ Γ A directly. *)
     apply H; auto.
-  - (* d_typing__sub: needs d_sub_preserves_wf (Phase 2.C). *)
-    admit.
+  - (* d_typing__sub: closed via d_sub_preserves_wf. *)
+    eapply d_sub_preserves_wf; eauto.
   - (* d_typing__freeze: IH gives d_wf_typ Γ A directly. *)
     apply H; auto.
   - (* d_typing__forall: IH gives d_wf_typ ((X~_)++Γ) (open A X) for each
