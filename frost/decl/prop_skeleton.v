@@ -173,3 +173,26 @@ Proof.
   intros m Γ e P H Hwfd.
   apply (proj2 d_typing_pat_preserves_wf) with (m := m) (e := e); auto.
 Qed.
+
+(** * Task 5 — Validity of skeleton inference (paper declarative.tex:1981).
+
+    Paper restatable lemma: if [M] is well-typed AND skeleton-inferable,
+    the inferred skeleton [P] refines an actual type of [M].
+
+    Mechanically the proof would proceed by induction on [d_pat] using:
+    - Refinement reflexivity on guarded skeletons (deferred to Phase 3),
+    - Inversion of [d_pat_sub] / [d_pat_consis] (Task 3 splits help here
+      on the refinement side; the consis-side has the same paper-level
+      issue as Task 1's ghost case),
+    - Anti-symmetry interaction with [d_typing__sub] (Phase 2.C-adjacent).
+    Phase 2.E.5 admit; rationale in PROGRESS.md "Open Admitted". *)
+
+Theorem d_pat_validity : forall m Γ e P,
+    d_pat m Γ e P ->
+    d_wf_denv Γ ->
+    (exists A, d_typing m Γ e A) ->
+    (exists B, d_typing m Γ e B /\ d_refine nil Γ P B).
+Proof.
+  (* Admitted: see comment above. Depends on Phase 3 refinement reflexivity
+     and on resolving the d_pat_consis ghost-case narrowing. *)
+Admitted.
