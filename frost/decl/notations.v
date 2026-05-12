@@ -22,12 +22,20 @@ Notation "Δ ⨟ Γ ⊢ₜₜ φ" := (d_wf_ttyp Δ Γ φ)
 Notation "Δ ⨟ Γ ⊢ᵤₜ T" := (d_wf_utyp Δ Γ T)
   (at level 75, Γ at level 75, T at level 75, no associativity) : type_scope.
 
+Notation "Δ ⨟ Γ ⊢ₜₛ ψ" := (d_wf_tskel Δ Γ ψ)
+  (at level 75, Γ at level 75, ψ at level 75, no associativity) : type_scope.
+
+Notation "Δ ⨟ Γ ⊢ᵤₛ S" := (d_wf_uskel Δ Γ S)
+  (at level 75, Γ at level 75, S at level 75, no associativity) : type_scope.
+
 (** ** Subtyping, consistency, and shallow subtyping. *)
 
 Notation "Γ ⊢ A ≤ B" := (d_shallow_sub Γ A B)
   (at level 75, A at level 74, B at level 74, no associativity) : type_scope.
 
-Notation "Δ ⨟ Γ ⊨ T ~ A" := (d_consis Δ Γ T A)
+(** Paper uses [T ~ A]; we use [T ≈ A] in Coq to avoid the [~] / [not]
+    conflict. Equivalent meaning. *)
+Notation "Δ ⨟ Γ ⊨ T ≈ A" := (d_consis Δ Γ T A)
   (at level 75, Γ at level 75, T at level 74, A at level 74, no associativity)
   : type_scope.
 
@@ -45,19 +53,21 @@ Notation "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P)
   (at level 75, M at level 0, e at level 74, P at level 74, no associativity)
   : type_scope.
 
-(** ** Skeleton refinement. ▸ uncoloured, ⊳ filled with synthesised. *)
+(** ** Skeleton refinement. [⊢ᵣ] = uncoloured refinement (▸),
+    [⊢ᵣₛ] = filled with synthesised (⊳). Subscripted [⊢] disambiguates
+    from [d_shallow_sub]'s bare [Γ ⊢ A ≤ B]. *)
 
-Notation "Ψ ⨟ Γ ⊢ P ▸ Q" := (d_refine Ψ Γ P Q)
+Notation "Ψ ⨟ Γ ⊢ᵣ P ▸ Q" := (d_refine Ψ Γ P Q)
   (at level 75, Γ at level 75, P at level 74, Q at level 74, no associativity)
   : type_scope.
 
-Notation "Ψ ⨟ Γ ⊢ P ⊳ Q" := (d_refine_syn Ψ Γ P Q)
+Notation "Ψ ⨟ Γ ⊢ᵣ P ⊳ Q" := (d_refine_syn Ψ Γ P Q)
   (at level 75, Γ at level 75, P at level 74, Q at level 74, no associativity)
   : type_scope.
 
 (** ** Skeleton consistency and subtyping. *)
 
-Notation "Δ ⨟ Γ ⊨ₛ S ~ P" := (d_pat_consis Δ Γ S P)
+Notation "Δ ⨟ Γ ⊨ₛ S ≈ P" := (d_pat_consis Δ Γ S P)
   (at level 75, Γ at level 75, S at level 74, P at level 74, no associativity)
   : type_scope.
 

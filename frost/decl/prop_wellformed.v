@@ -71,8 +71,8 @@ Proof.
 Qed.
 
 Lemma d_wf_skel_weakening : forall Γ1 Γ2 Γ3 Ψ P,
-    d_wf_skel Ψ (Γ1 ++ Γ3) P ->
-    d_wf_skel Ψ (Γ1 ++ Γ2 ++ Γ3) P.
+    Ψ ⨟ (Γ1 ++ Γ3) ⊢ₛₖ P ->
+    Ψ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₛₖ P.
 Proof.
   intros Γ1 Γ2 Γ3 Ψ P H. dependent induction H.
   - apply d_wf_skel__unit.
@@ -91,8 +91,8 @@ Proof.
 Qed.
 
 Lemma d_wf_ttyp_weakening : forall Γ1 Γ2 Γ3 Δ A,
-    d_wf_ttyp Δ (Γ1 ++ Γ3) A ->
-    d_wf_ttyp Δ (Γ1 ++ Γ2 ++ Γ3) A.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢ₜₜ A ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₜₜ A.
 Proof.
   intros Γ1 Γ2 Γ3 Δ A H. dependent induction H.
   - apply d_wf_ttyp__unit.
@@ -108,8 +108,8 @@ Proof.
 Qed.
 
 Lemma d_wf_utyp_weakening : forall Γ1 Γ2 Γ3 Δ A,
-    d_wf_utyp Δ (Γ1 ++ Γ3) A ->
-    d_wf_utyp Δ (Γ1 ++ Γ2 ++ Γ3) A.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢ᵤₜ A ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤₜ A.
 Proof.
   intros Γ1 Γ2 Γ3 Δ A H. dependent induction H.
   - apply d_wf_utyp__unit.
@@ -129,8 +129,8 @@ Proof.
 Qed.
 
 Lemma d_wf_tskel_weakening : forall Γ1 Γ2 Γ3 Δ P,
-    d_wf_tskel Δ (Γ1 ++ Γ3) P ->
-    d_wf_tskel Δ (Γ1 ++ Γ2 ++ Γ3) P.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢ₜₛ P ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₜₛ P.
 Proof.
   intros Γ1 Γ2 Γ3 Δ P H. dependent induction H.
   - apply d_wf_tskel__unit.
@@ -148,8 +148,8 @@ Proof.
 Qed.
 
 Lemma d_wf_uskel_weakening : forall Γ1 Γ2 Γ3 Δ P,
-    d_wf_uskel Δ (Γ1 ++ Γ3) P ->
-    d_wf_uskel Δ (Γ1 ++ Γ2 ++ Γ3) P.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢ᵤₛ P ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤₛ P.
 Proof.
   intros Γ1 Γ2 Γ3 Δ P H. dependent induction H.
   - apply d_wf_uskel__unit.
@@ -181,40 +181,40 @@ Proof.
 Qed.
 
 Lemma d_wf_skel_weakening_head : forall Γ Γ' Ψ P,
-    d_wf_skel Ψ Γ P ->
-    d_wf_skel Ψ (Γ' ++ Γ) P.
+    Ψ ⨟ Γ ⊢ₛₖ P ->
+    Ψ ⨟ (Γ' ++ Γ) ⊢ₛₖ P.
 Proof.
   intros Γ Γ' Ψ P H. rewrite_env (nil ++ Γ' ++ Γ).
   apply d_wf_skel_weakening. rewrite_env Γ. exact H.
 Qed.
 
 Lemma d_wf_ttyp_weakening_head : forall Γ Γ' Δ A,
-    d_wf_ttyp Δ Γ A ->
-    d_wf_ttyp Δ (Γ' ++ Γ) A.
+    Δ ⨟ Γ ⊢ₜₜ A ->
+    Δ ⨟ (Γ' ++ Γ) ⊢ₜₜ A.
 Proof.
   intros Γ Γ' Δ A H. rewrite_env (nil ++ Γ' ++ Γ).
   apply d_wf_ttyp_weakening. rewrite_env Γ. exact H.
 Qed.
 
 Lemma d_wf_utyp_weakening_head : forall Γ Γ' Δ A,
-    d_wf_utyp Δ Γ A ->
-    d_wf_utyp Δ (Γ' ++ Γ) A.
+    Δ ⨟ Γ ⊢ᵤₜ A ->
+    Δ ⨟ (Γ' ++ Γ) ⊢ᵤₜ A.
 Proof.
   intros Γ Γ' Δ A H. rewrite_env (nil ++ Γ' ++ Γ).
   apply d_wf_utyp_weakening. rewrite_env Γ. exact H.
 Qed.
 
 Lemma d_wf_tskel_weakening_head : forall Γ Γ' Δ P,
-    d_wf_tskel Δ Γ P ->
-    d_wf_tskel Δ (Γ' ++ Γ) P.
+    Δ ⨟ Γ ⊢ₜₛ P ->
+    Δ ⨟ (Γ' ++ Γ) ⊢ₜₛ P.
 Proof.
   intros Γ Γ' Δ P H. rewrite_env (nil ++ Γ' ++ Γ).
   apply d_wf_tskel_weakening. rewrite_env Γ. exact H.
 Qed.
 
 Lemma d_wf_uskel_weakening_head : forall Γ Γ' Δ P,
-    d_wf_uskel Δ Γ P ->
-    d_wf_uskel Δ (Γ' ++ Γ) P.
+    Δ ⨟ Γ ⊢ᵤₛ P ->
+    Δ ⨟ (Γ' ++ Γ) ⊢ᵤₛ P.
 Proof.
   intros Γ Γ' Δ P H. rewrite_env (nil ++ Γ' ++ Γ).
   apply d_wf_uskel_weakening. rewrite_env Γ. exact H.
@@ -234,7 +234,7 @@ Proof.
     apply H0. auto.
 Qed.
 
-Lemma d_wf_skel_lc : forall Ψ Γ P, d_wf_skel Ψ Γ P -> lc_typ P.
+Lemma d_wf_skel_lc : forall Ψ Γ P, Ψ ⨟ Γ ⊢ₛₖ P -> lc_typ P.
 Proof.
   intros Ψ Γ P H. induction H.
   - constructor.
@@ -248,7 +248,7 @@ Proof.
   - constructor; auto.
 Qed.
 
-Lemma d_wf_ttyp_lc : forall Δ Γ A, d_wf_ttyp Δ Γ A -> lc_typ A.
+Lemma d_wf_ttyp_lc : forall Δ Γ A, Δ ⨟ Γ ⊢ₜₜ A -> lc_typ A.
 Proof.
   intros Δ Γ A H. induction H.
   - constructor.
@@ -258,7 +258,7 @@ Proof.
     apply H0. auto.
 Qed.
 
-Lemma d_wf_utyp_lc : forall Δ Γ A, d_wf_utyp Δ Γ A -> lc_typ A.
+Lemma d_wf_utyp_lc : forall Δ Γ A, Δ ⨟ Γ ⊢ᵤₜ A -> lc_typ A.
 Proof.
   intros Δ Γ A H. induction H.
   - constructor.
@@ -270,7 +270,7 @@ Proof.
     apply H0. auto.
 Qed.
 
-Lemma d_wf_tskel_lc : forall Δ Γ P, d_wf_tskel Δ Γ P -> lc_typ P.
+Lemma d_wf_tskel_lc : forall Δ Γ P, Δ ⨟ Γ ⊢ₜₛ P -> lc_typ P.
 Proof.
   intros Δ Γ P H. induction H.
   - constructor.
@@ -282,7 +282,7 @@ Proof.
   - constructor; auto.
 Qed.
 
-Lemma d_wf_uskel_lc : forall Δ Γ P, d_wf_uskel Δ Γ P -> lc_typ P.
+Lemma d_wf_uskel_lc : forall Δ Γ P, Δ ⨟ Γ ⊢ᵤₛ P -> lc_typ P.
 Proof.
   intros Δ Γ P H. induction H.
   - constructor.
@@ -351,8 +351,8 @@ Lemma d_wf_skel_drop_tvar_in_psi : forall P,
     is_typ P ->
     forall Γ1 Γ2 X Ψ,
       List.In X Ψ ->
-      d_wf_skel Ψ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) P ->
-      d_wf_skel Ψ (Γ1 ++ Γ2) P.
+      Ψ ⨟ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) ⊢ₛₖ P ->
+      Ψ ⨟ (Γ1 ++ Γ2) ⊢ₛₖ P.
 Proof.
   intros P Hist. induction Hist; intros Γ1 Γ2 X1 Ψ HXin Hwf.
   - apply d_wf_skel__unit.
@@ -383,7 +383,7 @@ Qed.
     skeleton (with empty Ψ). Uses [d_wf_skel_drop_tvar_in_psi] in the
     all-case to convert the IH from "X in Γ" to "X in Ψ". *)
 Lemma d_wf_typ_d_wf_skel : forall Γ A,
-    d_wf_typ Γ A -> d_wf_skel nil Γ A.
+    d_wf_typ Γ A -> nil ⨟ Γ ⊢ₛₖ A.
 Proof.
   intros Γ A H. induction H.
   - apply d_wf_skel__unit.
@@ -639,9 +639,9 @@ Qed.
     refinement) and [P] is wellformed under [Ψ ⨟ Γ], then [Q] is too. *)
 
 Lemma d_refine_preserves_wf : forall Ψ Γ P Q,
-    d_wf_skel Ψ Γ P ->
-    d_refine Ψ Γ P Q ->
-    d_wf_skel Ψ Γ Q.
+    Ψ ⨟ Γ ⊢ₛₖ P ->
+    Ψ ⨟ Γ ⊢ᵣ P ▸ Q ->
+    Ψ ⨟ Γ ⊢ₛₖ Q.
 Proof.
   intros Ψ Γ P Q HwfP Href. induction Href.
   - exact HwfP.
@@ -802,9 +802,9 @@ Qed.
     instead of [typ_all_plain], but the proof structure is identical. *)
 
 Lemma d_refine_syn_preserves_wf : forall Ψ Γ P Q,
-    d_wf_skel Ψ Γ P ->
-    d_refine_syn Ψ Γ P Q ->
-    d_wf_skel Ψ Γ Q.
+    Ψ ⨟ Γ ⊢ₛₖ P ->
+    Ψ ⨟ Γ ⊢ᵣ P ⊳ Q ->
+    Ψ ⨟ Γ ⊢ₛₖ Q.
 Proof.
   intros Ψ Γ P Q HwfP Href. induction Href.
   - exact HwfP.
@@ -842,7 +842,7 @@ Qed.
     case where we accept the admit (see inline). *)
 
 Lemma d_consis_preserves_wf : forall Δ Γ T A,
-    d_consis Δ Γ T A ->
+    Δ ⨟ Γ ⊨ T ≈ A ->
     d_wf_typ Γ A.
 Proof.
   intros Δ Γ T A H. induction H.
@@ -865,7 +865,7 @@ Proof.
 Admitted.
 
 Lemma d_sub_preserves_wf : forall M Δ Γ T A,
-    d_sub M Δ Γ T A ->
+    Γ ⊢[ M ; Δ ] T ⊑ A ->
     d_wf_typ Γ A.
 Proof.
   intros M Δ Γ T A H. induction H.
@@ -900,13 +900,13 @@ Qed.
 
 Lemma d_typing_pat_preserves_wf :
     (forall m Γ e A,
-        d_typing m Γ e A ->
+        Γ ⊢[ m ] e ⇒ A ->
         d_wf_denv Γ ->
         d_wf_typ Γ A) /\
     (forall m Γ e P,
-        d_pat m Γ e P ->
+        Γ ⊢[ m ] e ⇨ P ->
         d_wf_denv Γ ->
-        d_wf_skel nil Γ P).
+        nil ⨟ Γ ⊢ₛₖ P).
 Proof.
   apply d_typing_pat_mut; intros.
   - (* d_typing__unit *) apply d_wf_typ__unit.
