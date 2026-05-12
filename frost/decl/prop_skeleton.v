@@ -196,3 +196,27 @@ Proof.
   (* Admitted: see comment above. Depends on Phase 3 refinement reflexivity
      and on resolving the d_pat_consis ghost-case narrowing. *)
 Admitted.
+
+(** * Task 6 — Safety of skeleton inference (paper declarative.tex:1986).
+
+    Paper restatable lemma (stronger than validity): for ANY well-typed
+    [M], there EXISTS a skeleton inference whose result refines EVERY
+    type of [M].
+
+    The universal "refines every type" claim relies on a principal-
+    skeleton property: the inferred [P] must be a most-precise skeleton
+    among those that match any of [M]'s types. The paper's proof
+    constructs this principal skeleton by induction on the typing
+    derivation; mechanising it would require defining a join operation
+    on skeletons under refinement, which sits at the same maturity as
+    the deferred algorithmic-side lemmas.
+    Phase 2.E.6 admit; see PROGRESS.md. *)
+
+Theorem d_pat_safety : forall m Γ e,
+    (exists A, d_typing m Γ e A) ->
+    d_wf_denv Γ ->
+    exists P, d_pat m Γ e P /\
+              (forall B, d_typing m Γ e B -> d_refine nil Γ P B).
+Proof.
+  (* Admitted: depends on principal-skeleton construction. *)
+Admitted.
