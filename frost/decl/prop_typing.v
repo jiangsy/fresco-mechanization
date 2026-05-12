@@ -417,9 +417,110 @@ Lemma d_typing_pat_ctx_morph :
        forall Γ', (forall X bn, binds X bn Γ -> binds X bn Γ') ->
                   d_pat m Γ' e P).
 Proof.
-  (* Stuck on bullet-management / name resolution under
-     [apply d_typing_pat_mut; intros]; deferred. *)
-Abort.
+  apply d_typing_pat_mut.
+  - (* d_typing__unit *)
+    intros Γ Hcompat Γ' Hm. apply d_typing__unit; auto.
+  - (* d_typing__var *)
+    intros Γ x A Hbnd Γ' Hm. apply d_typing__var. apply Hm; auto.
+  - (* d_typing__anno *)
+    intros Γ e A Hinh Hty IH Γ' Hm. apply d_typing__anno; auto.
+  - (* d_typing__sub *)
+    intros Γ m e A B Hbase Hty IH Hsub Γ' Hm.
+    apply d_typing__sub with (A := A); auto.
+    eapply d_sub_tvar_morph; [|exact Hsub].
+    intros Y HbY. eapply Hm; eauto.
+  - (* d_typing__freeze *)
+    intros Γ e A Hty IH Γ' Hm. apply d_typing__freeze; auto.
+  - (* d_typing__forall *)
+    intros L Γ e A Hval Hbody IH Γ' Hm.
+    apply d_typing__forall with (L := L `union` dom Γ'); auto.
+    intros X HX. apply IH; auto.
+    intros Y bn HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hb | Hb]; apply binds_app_iff; [left; auto | right; auto].
+  - (* d_typing__abs: no m≠mode_tc premise *)
+    intros L Γ m e A B Hinh Hwf Hbody IH Γ' Hm.
+    apply d_typing__abs with (L := L `union` dom Γ'); auto.
+    + eapply d_wf_typ_tvar_morph; [|exact Hwf].
+      intros Y HbY. eapply Hm; eauto.
+    + intros x Hx. apply IH; auto.
+      intros Y bn HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb]; apply binds_app_iff; [left; auto | right; auto].
+  - (* d_typing__abs_anno *)
+    intros L Γ m e A B Hwf Hbody IH Γ' Hm.
+    apply d_typing__abs_anno with (L := L `union` dom Γ'); auto.
+    + eapply d_wf_typ_tvar_morph; [|exact Hwf].
+      intros Y HbY. eapply Hm; eauto.
+    + intros x Hx. apply IH; auto.
+      intros Y bn HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb]; apply binds_app_iff; [left; auto | right; auto].
+  - (* d_typing__app *)
+    intros Γ m e1 e2 P P' A B Hpat IHpat Href Hty1 IH1 Hty2 IH2 Γ' Hm.
+    apply d_typing__app with (P := P) (P' := P') (A := A); auto.
+    eapply d_refine_syn_tvar_morph; [|exact Href].
+    intros Y HbY. eapply Hm; eauto.
+  - (* d_pat__unit *)
+    intros Γ Γ' Hm. apply d_pat__unit.
+  - (* d_pat__var *)
+    intros Γ x P Hbnd Γ' Hm. apply d_pat__var. apply Hm; auto.
+  - (* d_pat__anno *)
+    intros Γ e A Hwf Γ' Hm. apply d_pat__anno.
+    eapply d_wf_typ_tvar_morph; [|exact Hwf].
+    intros Y HbY. eapply Hm; eauto.
+  - (* d_pat__sub *)
+    intros Γ m e P Q Hbase Hpat IH Hsub Γ' Hm.
+    apply d_pat__sub with (P := P); auto.
+    eapply d_pat_sub_tvar_morph; [|exact Hsub].
+    intros Y HbY. eapply Hm; eauto.
+  - (* d_pat__freeze *)
+    intros Γ e P Hpat IH Γ' Hm. apply d_pat__freeze; auto.
+  - (* d_pat__abs *)
+    intros L Γ m e P Q Hmne Hinh Hwf Hbody IH Γ' Hm.
+    apply d_pat__abs with (L := L `union` dom Γ'); auto.
+    + eapply d_wf_skel_tvar_morph; [|exact Hwf].
+      intros Y HbY. eapply Hm; eauto.
+    + intros x Hx. apply IH; auto.
+      intros Y bn HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb]; apply binds_app_iff; [left; auto | right; auto].
+  - (* d_pat__abs_check *)
+    intros L Γ e Q Hbody IH Γ' Hm.
+    apply d_pat__abs_check with (L := L `union` dom Γ').
+    intros x Hx. apply IH; auto.
+    intros Y bn HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hb | Hb]; apply binds_app_iff; [left; auto | right; auto].
+  - (* d_pat__abs_anno *)
+    intros L Γ m e A Q Hmne Hwf Hbody IH Γ' Hm.
+    apply d_pat__abs_anno with (L := L `union` dom Γ'); auto.
+    + eapply d_wf_typ_tvar_morph; [|exact Hwf].
+      intros Y HbY. eapply Hm; eauto.
+    + intros x Hx. apply IH; auto.
+      intros Y bn HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb]; apply binds_app_iff; [left; auto | right; auto].
+  - (* d_pat__abs_anno_check *)
+    intros L Γ e A Q Hwf Hbody IH Γ' Hm.
+    apply d_pat__abs_anno_check with (L := L `union` dom Γ'); auto.
+    + eapply d_wf_typ_tvar_morph; [|exact Hwf].
+      intros Y HbY. eapply Hm; eauto.
+    + intros x Hx. apply IH; auto.
+      intros Y bn HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb]; apply binds_app_iff; [left; auto | right; auto].
+  - (* d_pat__app *)
+    intros Γ m e1 e2 P P' Q Hpat2 IH2 Href Hty1 IH1 Γ' Hm.
+    apply d_pat__app with (P := P) (P' := P'); auto.
+    eapply d_refine_syn_tvar_morph; [|exact Href].
+    intros Y HbY. eapply Hm; eauto.
+Qed.
+
+Corollary d_typing_ctx_morph : forall Γ Γ' m e A,
+    (forall X bn, binds X bn Γ -> binds X bn Γ') ->
+    d_typing m Γ e A ->
+    d_typing m Γ' e A.
+Proof. intros. eapply (proj1 d_typing_pat_ctx_morph); eauto. Qed.
+
+Corollary d_pat_ctx_morph : forall Γ Γ' m e P,
+    (forall X bn, binds X bn Γ -> binds X bn Γ') ->
+    d_pat m Γ e P ->
+    d_pat m Γ' e P.
+Proof. intros. eapply (proj2 d_typing_pat_ctx_morph); eauto. Qed.
 
 (** * Phase 2.D.2 — Term substitution (expvar) for d_typing / d_pat.
 

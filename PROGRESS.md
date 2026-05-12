@@ -23,14 +23,14 @@ Current per-file `Admitted.` count (run `grep -c "^Admitted\." mechanization/fro
 |---|---|
 | `frost/decl/prop_basic.v` | 0 |
 | `frost/decl/prop_wellformed.v` | 2 |
-| `frost/decl/prop_subtyping.v` | 4 |
-| `frost/decl/prop_typing.v` | 10 |
+| `frost/decl/prop_subtyping.v` | 3 |
+| `frost/decl/prop_typing.v` | 9 |
 | `frost/decl/prop_skeleton.v` | 2 |
 | `frost/algo/def_extra.v` | 0 |
 | `frost/algo/notations.v` | 0 |
-| `frost/algo/prop_soundness.v` | 12 |
+| `frost/algo/prop_soundness.v` | 3 |
 | `frost/algo/prop_completeness.v` | 3 |
-| **Total** | **33** |
+| **Total** | **22** |
 
 ## Phase 1 (definitions only)
 
@@ -51,7 +51,7 @@ Current per-file `Admitted.` count (run `grep -c "^Admitted\." mechanization/fro
 | Track | File | Status | Worktree | Notes |
 |---|---|---|---|---|
 | 3.A Algo defs | `frost/algo/def_extra.v` | 🟢 done | (mech, direct) | Zero admits. Exports: language.ott extended with `typ_var_flex_mono` / `typ_var_flex_poly`; `abind` (6 ctors), `aenv`, `a_suffix` / `a_suffix_binding`, `a_mono_aenv`; `aenv_extends` (8 ctors, identity-metasubst variant); `a_wf_typ` (11 ctors), `a_wf_aenv` (7 ctors), `a_guarded` (6 ctors); `a_ty_mode_compat` / `a_sk_mode_compat`; `a_non_flex` / `a_non_flex_poly`; `a_guess_mono` (8 ctors), `a_guess_mono_suffix`; `a_pre_sub` / `a_pre_join` (mutual, 11+11 ctors); `a_unify` / `a_unify_var` / `a_assign` (mutual, 14+10+11 ctors); `a_consis` (12 ctors); `a_ajoin` (7 ctors); `a_meta_subst` (4 ctors); `a_broom` / `a_sub_flex_poly` (mutual, 10+7 ctors); `a_sub` (2 ctors); `a_split` (3 ctors); `a_typing` / `a_pat` (mutual, 11+9 ctors). Total ~140 constructors across 16 inductives. Notations in `frost/algo/notations.v`. |
-| 3.B Algo soundness | `frost/algo/prop_soundness.v` | 🟡 in progress (scaffolding only) | (mech, direct) | 12 admits remain. Qed lemmas: `a_transfers_deterministic`, `a_transfers_nil_inv`, `a_transfers_app`, `a_transfers_suffix_inv`. Admitted: nine stability lemmas (`stability_d_wf_typ`, `_d_consis`, `_d_sub`, `_d_pat_consis`, `_d_pat_sub`, `_d_refine`, `_d_refine_syn`, `_d_typing`, `_d_pat`) — `stability_d_wf_typ` has 5/7 cases closed in proof body; three headline soundness theorems (`a_sub_sound`, `a_pat_sound`, `a_typing_sound`) admitted research-grade (depend on auxiliary `a_consis_sound`, `a_unify_sound`, `a_assign_sound`, `a_pre_sub_sound`, `a_split_sound`, `a_guess_mono_sound`). |
+| 3.B Algo soundness | `frost/algo/prop_soundness.v` | 🟡 in progress (scaffolding only) | (mech, direct) | 3 admits remain. Qed lemmas: `a_transfers_deterministic`, `a_transfers_nil_inv`, `a_transfers_app`, `a_transfers_suffix_inv`, `aenv_extends_binds_preserves`, **all 9 stability lemmas** (`stability_d_wf_typ`, `_d_consis`, `_d_sub`, `_d_pat_consis`, `_d_pat_sub`, `_d_refine`, `_d_refine_syn`, `_d_typing`, `_d_pat`) — closed via tvar-morph / ctx-morph helpers added in `prop_wellformed.v` / `prop_subtyping.v` / `prop_typing.v` plus `aenv_extends_binds_preserves`. Admitted: three headline soundness theorems (`a_sub_sound`, `a_pat_sound`, `a_typing_sound`) admitted research-grade (depend on auxiliary `a_consis_sound`, `a_unify_sound`, `a_assign_sound`, `a_pre_sub_sound`, `a_split_sound`, `a_guess_mono_sound`). |
 | 3.C Algo completeness | `frost/algo/prop_completeness.v` | 🟡 in progress (scaffolding only) | (mech, direct) | 3 admits remain. Qed lemmas: `a_sub_decidable_existential` (vacuously-narrowed form), `a_sub_complete_smoke`, `a_pat_complete_smoke`, `a_typing_complete_smoke`. Admitted: `a_sub_complete`, `a_pat_complete`, `a_typing_complete` (all three in existential form using `a_transfers` relation from Phase 3.B; per-case rationale). Closure of the three completeness theorems is blocked on the same auxiliary lemma family as Phase 3.B soundness. |
 
 ## Open Admitted

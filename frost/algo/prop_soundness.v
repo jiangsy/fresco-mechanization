@@ -200,6 +200,52 @@ Qed.
     induction on [Θ₀ ⊑ Θ₁]; uses the Phase 2.X weakening lemma".
 *)
 
+(** Helper: bindings present in the source's transferred context are
+    preserved in the target's transferred context. Used as the
+    [d_*]_ctx_morph hypothesis for stability lemmas that need to
+    preserve [dbind_typ] / [dbind_skel] bindings (e.g.,
+    [stability_d_typing] / [stability_d_pat]). *)
+Lemma aenv_extends_binds_preserves : forall Θ0 Θ1 Γ0 Γ1,
+    aenv_extends Θ0 Θ1 ->
+    a_transfers Θ0 Γ0 ->
+    a_transfers Θ1 Γ1 ->
+    forall X b, binds X b Γ0 -> binds X b Γ1.
+Proof.
+  intros Θ0 Θ1 Γ0 Γ1 Hext. revert Γ0 Γ1.
+  induction Hext; intros Γ0 Γ1 Htr0 Htr1 X b Hbnd.
+  - apply a_transfers_nil_inv in Htr0. subst Γ0.
+    inversion Hbnd.
+  - inversion Htr0.
+  - inversion Htr0.
+  - inversion Htr0; subst. inversion Htr1; subst. eapply IHHext; eauto.
+  - inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1. inversion HΘ'; subst. eapply IHHext; eauto.
+  - inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1. inversion HΘ'; subst.
+    apply binds_app_iff in Hbnd. destruct Hbnd as [Hin | Hin].
+    + apply binds_app_iff. left. exact Hin.
+    + apply binds_app_iff. right. eapply IHHext; eauto.
+  - inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1. inversion HΘ'; subst.
+    apply binds_app_iff in Hbnd. destruct Hbnd as [Hin | Hin].
+    + apply binds_app_iff. left. exact Hin.
+    + apply binds_app_iff. right. eapply IHHext; eauto.
+  - inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1. inversion HΘ'; subst. eapply IHHext; eauto.
+Qed.
+
 Lemma stability_d_wf_typ : forall Θ0 Θ1 Γ0 Γ1 A,
     aenv_extends Θ0 Θ1 ->
     a_transfers Θ0 Γ0 ->
@@ -578,9 +624,10 @@ Lemma stability_d_typing : forall Θ0 Θ1 Γ0 Γ1 m e A,
     d_typing m Γ0 e A ->
     d_typing m Γ1 e A.
 Proof.
-  (* Admitted: by induction on [Θ0 ⊑ Θ1]; uses [d_typing_weakening]
-     from prop_typing.v.  Phase 2.D weakening covers this directly. *)
-Admitted.
+  intros Θ0 Θ1 Γ0 Γ1 m e A Hext Htr0 Htr1 Hwf.
+  eapply d_typing_ctx_morph; [|exact Hwf].
+  intros X bn HbY. eapply aenv_extends_binds_preserves; eauto.
+Qed.
 
 Lemma stability_d_pat : forall Θ0 Θ1 Γ0 Γ1 m e P,
     aenv_extends Θ0 Θ1 ->
@@ -589,9 +636,10 @@ Lemma stability_d_pat : forall Θ0 Θ1 Γ0 Γ1 m e P,
     d_pat m Γ0 e P ->
     d_pat m Γ1 e P.
 Proof.
-  (* Admitted: by induction on [Θ0 ⊑ Θ1]; uses [d_pat_weakening]
-     from prop_typing.v. *)
-Admitted.
+  intros Θ0 Θ1 Γ0 Γ1 m e P Hext Htr0 Htr1 Hwf.
+  eapply d_pat_ctx_morph; [|exact Hwf].
+  intros X bn HbY. eapply aenv_extends_binds_preserves; eauto.
+Qed.
 
 
 (* ===================================================================== *)
