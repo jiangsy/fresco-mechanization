@@ -644,20 +644,41 @@ Admitted.
 *)
 
 (** Paper Lemma D.3 (Structural rules). [paper-ref: lemma:structural]
-    Narrowed: a single-binding move past a fresh suffix. *)
+    Narrowed: a single-binding move past a fresh suffix.
+
+    The hypothesis [y notin dom Γ1] is not actually needed for the
+    morph-based proof (since [binds] is duplicate-tolerant), but we
+    keep it in the statement to track the paper's preconditions. *)
 Lemma d_typing_suffix_moving_singleton : forall Γ1 y b Γ2 m e A,
     d_typing m (Γ1 ++ (y ~ b) ++ Γ2) e A ->
     y `notin` dom Γ1 ->
-    (* Goal: equivalent derivation with (y ~ b) moved further down. *)
     d_typing m (Γ1 ++ Γ2 ++ (y ~ b)) e A.
 Proof.
-  (* Structural commutation: when (y ~ b) doesn't affect the prefix
-     Γ1 (no binding in Γ1 references y as a free type-var), moving
-     it past Γ2 preserves typing. The general lemma requires a
-     free-vars-of-binding hypothesis on Γ2 — narrowed here to the
-     case where Γ2 is the rest of the context and no rule reads
-     binders out of order. Research-grade; admits with rationale. *)
-Admitted.
+  intros Γ1 y b Γ2 m e A Hty Hnotin.
+  eapply d_typing_ctx_morph; [|exact Hty].
+  intros X bn HbY. apply binds_app_iff in HbY.
+  destruct HbY as [HbΓ1 | HbRest].
+  - apply binds_app_iff. left. exact HbΓ1.
+  - apply binds_app_iff in HbRest. destruct HbRest as [Hbyb | HbΓ2].
+    + apply binds_app_iff. right. apply binds_app_iff. right. exact Hbyb.
+    + apply binds_app_iff. right. apply binds_app_iff. left. exact HbΓ2.
+Qed.
+
+(** d_pat analogue. *)
+Lemma d_pat_suffix_moving_singleton : forall Γ1 y b Γ2 m e P,
+    d_pat m (Γ1 ++ (y ~ b) ++ Γ2) e P ->
+    y `notin` dom Γ1 ->
+    d_pat m (Γ1 ++ Γ2 ++ (y ~ b)) e P.
+Proof.
+  intros Γ1 y b Γ2 m e P Hpat Hnotin.
+  eapply d_pat_ctx_morph; [|exact Hpat].
+  intros X bn HbY. apply binds_app_iff in HbY.
+  destruct HbY as [HbΓ1 | HbRest].
+  - apply binds_app_iff. left. exact HbΓ1.
+  - apply binds_app_iff in HbRest. destruct HbRest as [Hbyb | HbΓ2].
+    + apply binds_app_iff. right. apply binds_app_iff. right. exact Hbyb.
+    + apply binds_app_iff. right. apply binds_app_iff. left. exact HbΓ2.
+Qed.
 
 (** * Phase 2.D.6 — General subsumption (paper declarative.tex:574).
 
