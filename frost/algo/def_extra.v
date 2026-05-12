@@ -917,3 +917,181 @@ Inductive a_sub : a_sub_mode -> mode -> typ -> aenv -> typ -> typ -> aenv -> Pro
               (Ξ ++ (a ~ abind_marker) ++ Θ')) ->
     a_meta_subst Ξ S Q ->
     a_sub a_sub_mode_sk m P0 Θ P Q Θ'.
+
+
+(* ===================================================================== *)
+(*  Skeleton splitting (paper Fig. "alg-type-inference", page 21).        *)
+(* ===================================================================== *)
+
+(** [a_split Θ_0 P_0 P Q Θ_1] — paper [\mov{Θ_0}{P_0 ▷ P→Q}{Θ_1}]
+    (page 21).  Splits the input skeleton P_0 into an arrow shape
+    P→Q, possibly introducing fresh flex-monos when P_0 is itself a
+    flex-mono.
+
+    The third paper rule unifies α̂ with β̂→γ̂ in an extended context
+    (β̂ and γ̂ fresh).  We expose the freshness here via the L-cofinite
+    encoding: the resulting P / Q are not the freshly-bound names but
+    rather the *output* of unification on a context with two extra
+    flex-monos.  Constructor takes both fresh names directly. *)
+Inductive a_split : aenv -> typ -> typ -> typ -> aenv -> Prop :=
+| a_split__arrow : forall Θ P Q,
+    a_split Θ (typ_arrow P Q) P Q Θ
+| a_split__hole : forall Θ,
+    a_split Θ typ_hole typ_hole typ_hole Θ
+| a_split__flex_mono : forall Θ Θ' α β γ,
+    binds α abind_flex_mono Θ ->
+    β <> γ ->
+    β `notin` dom Θ ->
+    γ `notin` dom Θ ->
+    β <> α ->
+    γ <> α ->
+    a_unify
+      ((β ~ abind_flex_mono) ++ (γ ~ abind_flex_mono) ++ Θ)
+      (typ_var_flex_mono α)
+      (typ_arrow (typ_var_flex_mono β) (typ_var_flex_mono γ))
+      (typ_var_flex_mono α)
+      Θ' ->
+    a_split Θ (typ_var_flex_mono α)
+              (typ_var_flex_mono β)
+              (typ_var_flex_mono γ)
+              Θ'.
+
+(* ===================================================================== *)
+(*  Algorithmic typing and skeleton inference.                            *)
+(* ===================================================================== *)
+
+(** Paper Fig. "alg-type-inference" (page 21) and Fig.
+    "alg-skeleton-inference" (page 22).  Mutually recursive due to App.
+
+    [a_typing m Θ_0 P_0 e A Θ_1] — paper [\atypp{Θ_0}{m}{P_0}{e}{A}{Θ_1}].
+    [a_pat m Θ_0 P_0 e Q Θ_1]    — paper [\apatp{Θ_0}{m}{P_0}{e}{Q}{Θ_1}]. *)
+
+Inductive a_typing : mode -> aenv -> typ -> exp -> typ -> aenv -> Prop :=
+| a_typing__unit : forall m Θ Θ' P0 A,
+    a_sub a_sub_mode_ty m P0 Θ typ_unit A Θ' ->
+    a_typing m Θ P0 exp_unit A Θ'
+| a_typing__var : forall m Θ Θ' P0 x A B,
+    binds x (abind_var_typ A) Θ ->
+    a_sub a_sub_mode_ty m P0 Θ A B Θ' ->
+    a_typing m Θ P0 (exp_var_f x) B Θ'
+| a_typing__anno : forall m Θ Θ1 Θ2 P0 e A B,
+    a_typing mode_tc Θ A e A Θ1 ->
+    a_sub a_sub_mode_ty m P0 Θ1 A B Θ2 ->
+    a_typing m Θ P0 (exp_anno e A) B Θ2
+| a_typing__freeze : forall Θ Θ1 Θ2 A B e,
+    a_typing mode_ti Θ typ_hole e B Θ1 ->
+    a_consis Θ1 B A Θ2 ->
+    a_typing mode_tc Θ A (exp_freeze e) A Θ2
+(** Paper's [\tilab{AbsCheck}] with a single ∀-prefix (n=1).  The
+    paper's n-ary version unrolls via repeated application of
+    [a_typing__forall_check] below. *)
+| a_typing__abs_check : forall L Θ Θ' Ξ A B e,
+    (forall x, x `notin` L ->
+      a_typing mode_tc Θ B
+        (open_exp_wrt_exp e (exp_var_f x)) B
+        ((x ~ abind_var_typ A) ++ Ξ ++ Θ')) ->
+    a_typing mode_tc Θ (typ_arrow A B) (exp_abs e) (typ_arrow A B) Θ'
+(** [\tilab{Forall}]: under inherited ∀, generalise the result.  The
+    n-ary [\tilab{AbsCheck}] is recovered by applying [a_typing__abs_check]
+    followed by repeated applications of this rule. *)
+| a_typing__forall_check : forall L Θ Θ' P0 A e,
+    (forall X, X `notin` L ->
+      a_typing mode_tc
+        ((X ~ abind_tvar) ++ Θ) P0 e
+        (open_typ_wrt_typ A (typ_var_f X))
+        ((X ~ abind_tvar) ++ Θ')) ->
+    a_typing mode_tc Θ P0 e (typ_all_col colour_inh A) Θ'
+| a_typing__abs : forall L Θ Θ1 Θ2 Ξ Ξ_decl m P0 P Q A B e,
+    m <> mode_tc ->
+    a_split Θ P0 P Q Θ1 ->
+    a_guess_mono P Ξ_decl A ->
+    (forall x, x `notin` L ->
+      a_typing (decr_mode m)
+               (Ξ_decl ++ Θ1) Q
+               (open_exp_wrt_exp e (exp_var_f x))
+               B
+               ((x ~ abind_var_typ A) ++ Ξ ++ Θ2)) ->
+    a_typing m Θ P0 (exp_abs e) (typ_arrow A B) (Ξ ++ Θ2)
+(** [\tilab{AbsAnnoCheck}] with single ∀-prefix; n-ary follows by
+    iterating [a_typing__forall_check]. *)
+| a_typing__abs_anno_check : forall L Θ Θ1 Θ' Ξ A A' B e,
+    a_consis Θ A' A Θ1 ->
+    (forall x, x `notin` L ->
+      a_typing mode_tc Θ1 B
+        (open_exp_wrt_exp e (exp_var_f x))
+        B
+        ((x ~ abind_var_typ A) ++ Ξ ++ Θ')) ->
+    a_typing mode_tc Θ (typ_arrow A' B) (exp_abs_anno A e)
+             (typ_arrow A' B) Θ'
+| a_typing__abs_anno : forall L Θ Θ1 Θ2 Ξ m P0 P Q A B e,
+    m <> mode_tc ->
+    a_split Θ P0 P Q Θ1 ->
+    (forall x, x `notin` L ->
+      a_typing (decr_mode m)
+               Θ1 Q
+               (open_exp_wrt_exp e (exp_var_f x))
+               B
+               ((x ~ abind_var_typ A) ++ Ξ ++ Θ2)) ->
+    a_typing m Θ P0 (exp_abs_anno A e) (typ_arrow A B) (Ξ ++ Θ2)
+| a_typing__app : forall m Θ Θ1 Θ2 Θ3 P0 e1 e2 A B P,
+    a_pat mode_tc Θ typ_hole e2 P Θ1 ->
+    a_typing (mode_fn m) Θ1 (typ_arrow P P0) e1 (typ_arrow A B) Θ2 ->
+    a_typing mode_tc Θ2 A e2 A Θ3 ->
+    a_typing m Θ P0 (exp_app e1 e2) B Θ3
+
+with a_pat : mode -> aenv -> typ -> exp -> typ -> aenv -> Prop :=
+| a_pat__unit : forall m Θ Θ' P0 Q,
+    a_sub a_sub_mode_sk m P0 Θ typ_unit Q Θ' ->
+    a_pat m Θ P0 exp_unit Q Θ'
+| a_pat__var : forall m Θ Θ' P0 x Q P',
+    binds x (abind_var_typ Q) Θ ->
+    a_sub a_sub_mode_sk m P0 Θ Q P' Θ' ->
+    a_pat m Θ P0 (exp_var_f x) P' Θ'
+| a_pat__anno : forall m Θ Θ' P0 e A Q,
+    a_sub a_sub_mode_sk m P0 Θ A Q Θ' ->
+    a_pat m Θ P0 (exp_anno e A) Q Θ'
+| a_pat__freeze : forall Θ Θ' e P,
+    a_pat mode_ti Θ typ_hole e P Θ' ->
+    a_pat mode_tc Θ typ_hole (exp_freeze e) P Θ'
+| a_pat__abs_check : forall L Θ Θ' Ξ e Q,
+    (forall x, x `notin` L ->
+      a_pat mode_tc
+        ((x ~ abind_var_typ typ_hole) ++ Θ) typ_hole
+        (open_exp_wrt_exp e (exp_var_f x))
+        Q
+        ((x ~ abind_var_typ typ_hole) ++ Ξ ++ Θ')) ->
+    a_pat mode_tc Θ typ_hole (exp_abs e)
+      (typ_arrow (typ_tophole typ_hole) Q) (Ξ ++ Θ')
+| a_pat__abs : forall L Θ Θ1 Θ2 Ξ m P0 P Q Q' e,
+    m <> mode_tc ->
+    a_split Θ P0 P Q Θ1 ->
+    (forall x, x `notin` L ->
+      a_pat (decr_mode m)
+            Θ1 Q
+            (open_exp_wrt_exp e (exp_var_f x))
+            Q'
+            ((x ~ abind_var_typ P) ++ Ξ ++ Θ2)) ->
+    a_pat m Θ P0 (exp_abs e) (typ_arrow P Q') (Ξ ++ Θ2)
+| a_pat__abs_anno_check : forall L Θ Θ' Ξ A e Q,
+    (forall x, x `notin` L ->
+      a_pat mode_tc
+        ((x ~ abind_var_typ A) ++ Θ) typ_hole
+        (open_exp_wrt_exp e (exp_var_f x))
+        Q
+        ((x ~ abind_var_typ A) ++ Ξ ++ Θ')) ->
+    a_pat mode_tc Θ typ_hole (exp_abs_anno A e)
+      (typ_arrow (typ_tophole A) Q) (Ξ ++ Θ')
+| a_pat__abs_anno : forall L Θ Θ1 Θ2 Ξ m P0 P Q A B e,
+    m <> mode_tc ->
+    a_split Θ P0 P Q Θ1 ->
+    (forall x, x `notin` L ->
+      a_pat (decr_mode m)
+            Θ1 Q
+            (open_exp_wrt_exp e (exp_var_f x))
+            B
+            ((x ~ abind_var_typ A) ++ Ξ ++ Θ2)) ->
+    a_pat m Θ P0 (exp_abs_anno A e) (typ_arrow A B) (Ξ ++ Θ2)
+| a_pat__app : forall m Θ Θ1 Θ2 P0 e1 e2 P P' Q',
+    a_pat mode_tc Θ typ_hole e2 P Θ1 ->
+    a_pat (mode_fn m) Θ1 (typ_arrow P P0) e1 (typ_arrow P' Q') Θ2 ->
+    a_pat m Θ P0 (exp_app e1 e2) Q' Θ2.
