@@ -157,7 +157,11 @@ Inductive d_consis :
   list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
 | d_consis__unit : forall Γ,
     d_consis nil Γ typ_unit typ_unit
+(* Paper d_consis__var has empty premise; we add binds (the paper's
+   implicit wf invariant) so d_consis_preserves_wf goes through
+   without a side hypothesis. *)
 | d_consis__var : forall Γ X,
+    binds X dbind_tvar Γ ->
     d_consis nil Γ (typ_var_f X) (typ_var_f X)
 (* ForallInh: tagged on left, ε added to Δ. Linearity: ε must be
    fresh w.r.t. Δ (paper-faithful set semantics; matches d_wf_ttyp__all). *)
@@ -341,6 +345,7 @@ Inductive d_pat_consis :
 | d_pat_consis__unit : forall Γ,
     d_pat_consis nil Γ typ_unit typ_unit
 | d_pat_consis__var : forall Γ X,
+    binds X dbind_tvar Γ ->
     d_pat_consis nil Γ (typ_var_f X) (typ_var_f X)
 | d_pat_consis__forall_inh_tagged : forall L Δ Γ ε SS P,
     (forall X, X `notin` L ->
@@ -367,8 +372,12 @@ Inductive d_pat_consis :
          (open_typ_wrt_typ SS (typ_var_f X))
          (open_typ_wrt_typ P (typ_var_f X))) ->
     d_pat_consis Δ Γ (typ_all_plain SS) (typ_all_col colour_syn P)
+(* Ghost: paper rule says "no synthesised ∀ in P" but assumes P is wf
+   via the meta-level invariant. We make the wf premise explicit so
+   that d_pat_consis_preserves_wf is provable. *)
 | d_pat_consis__ghost : forall Γ P,
     no_forall_typ P ->
+    d_wf_skel nil Γ P ->
     d_pat_consis nil Γ typ_hole P
 | d_pat_consis__arrow : forall Δ1 Δ2 Γ SS1 SS2 P1 P2,
     d_pat_consis Δ1 Γ SS1 P1 ->
@@ -395,7 +404,9 @@ Inductive d_pat_sub :
     is_syn_skel P ->
     d_pat_consis nil Γ SS P ->
     d_pat_sub mode_ti nil Γ SS P
+(* Paper sublab{UnivGhostR} requires "syn{S} guarded" — added now. *)
 | d_pat_sub__univ_ghost_r : forall Γ SS P,
+    guarded_skel SS ->
     (forall ε SS', SS <> typ_all_etag ε SS') ->
     (forall SS', SS <> typ_all_plain SS') ->
     (forall SS', SS <> typ_tophole SS') ->
@@ -403,8 +414,10 @@ Inductive d_pat_sub :
     is_syn_skel P ->
     d_pat_consis nil Γ SS P ->
     d_pat_sub mode_tc nil Γ SS (typ_tophole P)
+(* d_pat_sub__ghost: same wf strengthening as d_pat_consis__ghost. *)
 | d_pat_sub__ghost : forall Γ m P,
     no_forall_typ P ->
+    d_wf_skel nil Γ P ->
     d_pat_sub (mode_fn m) nil Γ typ_hole P
 | d_pat_sub__univ_ghost_l : forall Δ Γ m SS P,
     m <> mode_ti ->

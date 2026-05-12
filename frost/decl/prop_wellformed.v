@@ -852,50 +852,31 @@ Qed.
 
 Lemma d_consis_preserves_wf : forall Δ Γ T A,
     Δ ⨟ Γ ⊨ T ≈ A ->
-    d_wf_typ Γ T ->
     d_wf_typ Γ A.
 Proof.
-  intros Δ Γ T A H. induction H; intros Hwf_T.
+  intros Δ Γ T A H. induction H.
   - apply d_wf_typ__unit.
-  - (* d_consis__var: T = A = typ_var_f X. The side hypothesis
-       [d_wf_typ Γ (typ_var_f X)] yields [binds X dbind_tvar Γ]. *)
-    inversion Hwf_T; subst. apply d_wf_typ__var; auto.
-  - (* forall_inh_tagged: T = typ_all_etag ε T'. But [d_wf_typ] doesn't
-       admit [typ_all_etag] (only [typ_all_col c]). Hwf_T is vacuous. *)
-    inversion Hwf_T.
-  - (* forall_inh_untagged: T = typ_all_plain T'. [d_wf_typ] doesn't
-       admit [typ_all_plain]. Vacuous. *)
-    inversion Hwf_T.
-  - (* forall_syn_tagged: same vacuous. *)
-    inversion Hwf_T.
-  - (* forall_syn_untagged: same vacuous. *)
-    inversion Hwf_T.
-  - (* arrow: invert Hwf_T to get wf on T1, T2. *)
-    inversion Hwf_T; subst. apply d_wf_typ__arrow; auto.
+  - (* d_consis__var now carries binds via the strengthened rule. *)
+    apply d_wf_typ__var; auto.
+  - inst_cofinites_for d_wf_typ__all. eauto.
+  - inst_cofinites_for d_wf_typ__all. eauto.
+  - inst_cofinites_for d_wf_typ__all. eauto.
+  - inst_cofinites_for d_wf_typ__all. eauto.
+  - apply d_wf_typ__arrow; auto.
 Qed.
 
-(** Side hypothesis [d_wf_typ Γ T] threaded through to match
-    [d_consis_preserves_wf]'s strengthening. *)
 Lemma d_sub_preserves_wf : forall M Δ Γ T A,
     Γ ⊢[ M ; Δ ] T ⊑ A ->
-    d_wf_typ Γ T ->
     d_wf_typ Γ A.
 Proof.
-  intros M Δ Γ T A H. induction H; intros Hwf_T.
+  intros M Δ Γ T A H. induction H.
   - eapply d_consis_preserves_wf; eauto.
   - eapply d_consis_preserves_wf; eauto.
-  - inst_cofinites_for d_wf_typ__all.
-    intros X HX. apply H0; auto.
-    apply d_wf_typ_weakening_head with (Γ' := X ~ dbind_tvar); auto.
-  - inversion Hwf_T; subst.
-    apply d_wf_typ__arrow.
-    + eapply d_consis_preserves_wf; eauto.
-    + apply IHd_sub; auto.
-  - (* d_sub__forall_l_tagged: T = typ_all_etag ε T'. But d_wf_typ
-       doesn't admit typ_all_etag. Vacuous. *)
-    inversion Hwf_T.
-  - (* d_sub__forall_l_untagged: same. *)
-    inversion Hwf_T.
+  - inst_cofinites_for d_wf_typ__all. eauto.
+  - apply d_wf_typ__arrow; auto.
+    eapply d_consis_preserves_wf; eauto.
+  - assumption.
+  - assumption.
 Qed.
 
 (** * Paper Lemma 3.7 (Preservation of Skeleton Well-formedness).

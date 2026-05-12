@@ -23,6 +23,9 @@ Proof.
   dependent induction H.
   - apply d_consis__unit.
   - apply d_consis__var.
+    apply binds_app_iff in H. destruct H as [Hin|Hin].
+    + apply binds_app_iff. auto.
+    + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
@@ -85,6 +88,9 @@ Proof.
   intros Γ1 Γ2 Γ3 Δ SS P H. dependent induction H.
   - apply d_pat_consis__unit.
   - apply d_pat_consis__var.
+    apply binds_app_iff in H. destruct H as [Hin|Hin].
+    + apply binds_app_iff. auto.
+    + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_pat_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
@@ -98,6 +104,7 @@ Proof.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
   - apply d_pat_consis__ghost; auto.
+    apply d_wf_skel_weakening; auto.
   - apply d_pat_consis__arrow; eauto.
   - apply d_pat_consis__univ_ghost_arr; eauto.
   - apply d_pat_consis__univ_ghost_inh1 with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
@@ -114,6 +121,7 @@ Proof.
   - apply d_pat_sub__infer; auto. apply d_pat_consis_weakening; auto.
   - apply d_pat_sub__univ_ghost_r; auto. apply d_pat_consis_weakening; auto.
   - apply d_pat_sub__ghost; auto.
+    apply d_wf_skel_weakening; auto.
   - apply d_pat_sub__univ_ghost_l; auto.
   - apply d_pat_sub__arg; auto. apply d_pat_consis_weakening; auto.
   - eapply d_pat_sub__forall_l_tagged; eauto.

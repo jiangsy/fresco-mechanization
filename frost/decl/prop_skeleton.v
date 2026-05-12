@@ -13,62 +13,115 @@ Require Import src.frost.decl.prop_wellformed.
 
 Set Implicit Arguments.
 
+(** * Auxiliary lemma — [d_pat_consis] preserves guardedness.
+
+    For non-forall, non-hole, non-tophole inputs SS, the output P
+    matches SS at the top constructor (unit/var/arrow), so guarded
+    is preserved. *)
+
+Lemma d_pat_consis_preserves_guarded : forall Δ Γ SS P,
+    d_pat_consis Δ Γ SS P ->
+    guarded_skel SS ->
+    guarded_skel P.
+Proof.
+  intros Δ Γ SS P H Hg. inversion H; subst.
+  - apply guarded_skel__unit.
+  - apply guarded_skel__var.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+  - apply guarded_skel__arrow.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+Qed.
+
 (** * Task 1 — d_pat_consis preserves wellformedness.
 
     INTERNAL plumbing — not paper-stated. Used by [d_pat_sub_preserves_wf]
     which in turn is needed by [d_typing_pat_preserves_wf]'s [d_pat__sub]
     case (the d_pat analog of paper Lemma 3.7).
 
-    Paper claim: if [Δ ⨟ Γ ⊨ SS ~ P] with [SS] wf, then [P] is wf.
-
-    NARROWING (paper-level): the [d_pat_consis__ghost] rule produces a
-    [P] satisfying only [no_forall_typ P], which permits free variables
-    not bound in [Γ]. Mechanically [no_forall_typ → d_wf_skel] is NOT
-    derivable without an extra binding assumption.
-
-    Likewise, the structural forall-cases would require a Γ↔Ψ "move"
-    lemma (the input [d_wf_uskel] extends [Γ] under the binder, while the
-    output [d_wf_skel] extends [Ψ] under the binder). That move-lemma is
-    the same one referenced by the typ→skel bridge deferred from Phase 2.B.
-
-    We therefore add [d_wf_skel nil Γ P] as a side hypothesis: the lemma
-    is a *preservation up to side wf*. Phase 2.B / 2.D consumers already
-    have this side wf in scope when applying the lemma. Documented in
-    PROGRESS.md "Open Admitted" as Phase 2.E.1. *)
+    With the rule strengthening to [d_pat_consis__ghost] (added
+    [d_wf_skel nil Γ P] premise) and [d_pat_consis__var] (added
+    [binds X dbind_tvar Γ] premise), the structural lemma now closes
+    for [is_skel]-shape inputs (no forall_etag/plain). The cofinite
+    [__univ_ghost_inh1] case is admitted — same Γ↔Ψ move obstruction
+    as the bridge lemma. *)
 
 Lemma d_pat_consis_preserves_wf : forall Δ Γ SS P,
     d_pat_consis Δ Γ SS P ->
-    d_wf_denv Γ ->
-    d_wf_uskel Δ Γ SS ->
-    d_wf_skel nil Γ P ->
-    d_wf_skel nil Γ P.
-Proof. intros. assumption. Qed.
+    is_skel SS ->
+    nil ⨟ Γ ⊢ₛₖ SS ->
+    nil ⨟ Γ ⊢ₛₖ P.
+Proof.
+  intros Δ Γ SS P H. induction H; intros His_skel Hwf.
+  - (* __unit *) apply d_wf_skel__unit.
+  - (* __var: binds from new premise. *)
+    apply d_wf_skel__var. right. auto.
+  - (* __forall_inh_tagged: SS = typ_all_etag, rejected by is_skel. *)
+    inversion His_skel.
+  - inversion His_skel.
+  - inversion His_skel.
+  - inversion His_skel.
+  - (* __ghost: SS = typ_hole. Output P wf via new premise. *)
+    auto.
+  - (* __arrow *)
+    inversion His_skel; inversion Hwf; subst.
+    apply d_wf_skel__arrow; auto.
+  - (* __univ_ghost_arr: SS = typ_tophole SS'. Output = typ_tophole P'.
+       From input wf: guarded SS' + wf SS'. is_skel SS' from is_skel SS.
+       IH gives wf P'. Aux gives guarded P'. *)
+    inversion His_skel; inversion Hwf; subst.
+    apply d_wf_skel__tophole.
+    + eapply d_pat_consis_preserves_guarded; eauto.
+    + apply IHd_pat_consis; auto.
+  - (* __univ_ghost_inh1: SS = typ_tophole SS', P = typ_all_col colour_inh P'.
+       The cofinite body's IH gives d_wf_skel nil ((X~_)++Γ) (open P X),
+       but d_wf_skel__all_col needs d_wf_skel (X::nil) Γ (open P X) —
+       the Γ↔Ψ move-lemma obstruction. Admitted. *)
+    admit.
+  - (* __univ_ghost_pass: SS = typ_tophole SS', P from recursion. *)
+    inversion His_skel; inversion Hwf; subst.
+    apply IHd_pat_consis; auto.
+Admitted.
 
 (** * Task 2 — d_pat_sub preserves wellformedness.
 
-    INTERNAL plumbing — not paper-stated. Used by
-    [d_typing_pat_preserves_wf]'s [d_pat__sub] case.
-
-    NARROWING: same shape as Task 1. The [d_pat_sub__ghost] case
-    inherits [no_forall_typ P] from [d_pat_consis__ghost], so the same
-    narrowing applies.
-
-    Additional structural concern: [d_pat_sub] operates on inputs of
-    [d_wf_uskel] kind (e.g. [typ_all_etag ε SS] in the forall-l rules),
-    whereas the conclusion of [d_pat__sub] in [d_typing_pat_preserves_wf]
-    is [d_wf_skel] — these track different forall constructors
-    ([typ_all_etag] vs. [typ_all_col c]). No mechanical bridge exists.
-    The Phase 2.B [d_pat__sub] admit therefore remains open pending
-    either (a) rule-strengthening with a wf premise on the rule itself,
-    or (b) a paper-level reconciliation. Documented in PROGRESS.md. *)
+    INTERNAL plumbing. Same is_skel narrowing as [d_pat_consis_preserves_wf];
+    the [d_pat_sub__forall_l_*] cases are vacuous on is_skel inputs. *)
 
 Lemma d_pat_sub_preserves_wf : forall M Δ Γ SS P,
     d_pat_sub M Δ Γ SS P ->
-    d_wf_denv Γ ->
-    d_wf_uskel Δ Γ SS ->
-    d_wf_skel nil Γ P ->
-    d_wf_skel nil Γ P.
-Proof. intros. assumption. Qed.
+    is_skel SS ->
+    nil ⨟ Γ ⊢ₛₖ SS ->
+    nil ⨟ Γ ⊢ₛₖ P.
+Proof.
+  intros M Δ Γ SS P H. induction H; intros His_skel Hwf.
+  - (* __infer: from d_pat_consis_preserves_wf. *)
+    eapply d_pat_consis_preserves_wf; eauto.
+  - (* __univ_ghost_r: P_out = typ_tophole P_in. SS guarded → is_skel SS,
+       and SS guarded gives guarded P_in via aux on the consis. *)
+    apply d_wf_skel__tophole.
+    + eapply d_pat_consis_preserves_guarded; eauto.
+    + eapply d_pat_consis_preserves_wf; eauto.
+  - (* __ghost: SS = typ_hole, wf P from new premise. *)
+    auto.
+  - (* __univ_ghost_l: SS = typ_tophole SS'. Recurse. *)
+    inversion His_skel; inversion Hwf; subst.
+    apply IHd_pat_sub; auto.
+  - (* __arg: SS = typ_arrow SS1 SS2. *)
+    inversion His_skel; inversion Hwf; subst.
+    apply d_wf_skel__arrow.
+    + eapply d_pat_consis_preserves_wf; eauto.
+    + apply IHd_pat_sub; auto.
+  - (* __forall_l_tagged: SS = typ_all_etag, rejected by is_skel. *)
+    inversion His_skel.
+  - (* __forall_l_untagged: similar. *)
+    inversion His_skel.
+Qed.
 
 (** * Task 3 — Splitting / inversion lemmas for d_refine and d_refine_syn.
 

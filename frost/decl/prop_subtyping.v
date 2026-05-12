@@ -24,12 +24,14 @@ Set Implicit Arguments.
 
 Lemma d_consis_refl_mono : forall Γ A,
     mono_typ A ->
+    d_wf_typ Γ A ->
     nil ⨟ Γ ⊨ A ≈ A.
 Proof.
-  intros Γ A H. induction H.
+  intros Γ A H. induction H; intros Hwf.
   - apply d_consis__unit.
-  - apply d_consis__var.
-  - rewrite_env (@nil atom ++ (@nil atom)).
+  - inversion Hwf; subst. apply d_consis__var. auto.
+  - inversion Hwf; subst.
+    rewrite_env (@nil atom ++ (@nil atom)).
     apply d_consis__arrow; auto.
     intros ? ? ?; auto.
 Qed.
@@ -50,9 +52,10 @@ Qed.
 
 Lemma d_sub_refl_mono : forall Γ A,
     mono_typ A ->
+    d_wf_typ Γ A ->
     Γ ⊢[ mode_ti ; nil ] A ⊑ A.
 Proof.
-  intros Γ A H.
+  intros Γ A H Hwf.
   apply d_sub__infer.
   - apply mono_typ_is_syn_typ; auto.
   - apply d_consis_refl_mono; auto.
@@ -68,6 +71,9 @@ Proof.
   dependent induction H.
   - apply d_consis__unit.
   - apply d_consis__var.
+    apply binds_app_iff in H. destruct H as [Hin|Hin].
+    + apply binds_app_iff. auto.
+    + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
