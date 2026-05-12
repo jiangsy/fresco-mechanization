@@ -879,6 +879,77 @@ Proof.
   - assumption.
 Qed.
 
+(** * d_pat_consis / d_pat_sub preservation of wf and guardedness.
+    These were originally in prop_skeleton.v; moved here so that
+    d_typing_pat_preserves_wf's d_pat__sub case can use them. *)
+
+Lemma d_pat_consis_preserves_guarded : forall Δ Γ SS P,
+    d_pat_consis Δ Γ SS P ->
+    guarded_skel SS ->
+    guarded_skel P.
+Proof.
+  intros Δ Γ SS P H Hg. inversion H; subst.
+  - apply guarded_skel__unit.
+  - apply guarded_skel__var.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+  - apply guarded_skel__arrow.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion Hg.
+Qed.
+
+Lemma d_pat_consis_preserves_wf : forall Δ Γ SS P,
+    d_pat_consis Δ Γ SS P ->
+    is_skel SS ->
+    nil ⨟ Γ ⊢ₛₖ SS ->
+    nil ⨟ Γ ⊢ₛₖ P.
+Proof.
+  intros Δ Γ SS P H. induction H; intros His_skel Hwf.
+  - apply d_wf_skel__unit.
+  - apply d_wf_skel__var. right. auto.
+  - inversion His_skel.
+  - inversion His_skel.
+  - inversion His_skel.
+  - inversion His_skel.
+  - auto.
+  - inversion His_skel; inversion Hwf; subst.
+    apply d_wf_skel__arrow; auto.
+  - inversion His_skel; inversion Hwf; subst.
+    apply d_wf_skel__tophole.
+    + eapply d_pat_consis_preserves_guarded; eauto.
+    + apply IHd_pat_consis; auto.
+  - (* __univ_ghost_inh1: Γ↔Ψ move-lemma obstruction. *)
+    admit.
+  - inversion His_skel; inversion Hwf; subst.
+    apply IHd_pat_consis; auto.
+Admitted.
+
+Lemma d_pat_sub_preserves_wf : forall M Δ Γ SS P,
+    d_pat_sub M Δ Γ SS P ->
+    is_skel SS ->
+    nil ⨟ Γ ⊢ₛₖ SS ->
+    nil ⨟ Γ ⊢ₛₖ P.
+Proof.
+  intros M Δ Γ SS P H. induction H; intros His_skel Hwf.
+  - eapply d_pat_consis_preserves_wf; eauto.
+  - apply d_wf_skel__tophole.
+    + eapply d_pat_consis_preserves_guarded; eauto.
+    + eapply d_pat_consis_preserves_wf; eauto.
+  - auto.
+  - inversion His_skel; inversion Hwf; subst.
+    apply IHd_pat_sub; auto.
+  - inversion His_skel; inversion Hwf; subst.
+    apply d_wf_skel__arrow.
+    + eapply d_pat_consis_preserves_wf; eauto.
+    + apply IHd_pat_sub; auto.
+  - inversion His_skel.
+  - inversion His_skel.
+Qed.
+
 (** * Paper Lemma 3.7 (Preservation of Skeleton Well-formedness).
     [paper-ref: name:"Preservation of Skeleton Well-formedness"]
 
@@ -987,7 +1058,12 @@ Proof.
   - (* d_pat__anno: bridge d_wf_typ → d_wf_skel using
        [d_wf_typ_d_wf_skel]. *)
     apply d_wf_typ_d_wf_skel. auto.
-  - (* d_pat__sub: needs d_pat_sub_preserves_wf (Phase 2.E). *)
+  - (* d_pat__sub: d_pat_sub_preserves_wf is now available and proved
+       (modulo __univ_ghost_inh1's Γ↔Ψ move-lemma obstruction). It
+       takes [is_skel P] as a side condition. Deriving [is_skel P]
+       from this mutual IH requires a separate
+       [d_pat _ _ _ P → is_skel P] lemma (itself mutual with d_typing).
+       Admit until that lemma is written. *)
     admit.
   - (* d_pat__freeze: IH gives directly. *)
     apply H; auto.
