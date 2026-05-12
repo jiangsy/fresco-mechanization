@@ -221,41 +221,47 @@ Proof. intros. eapply (proj2 d_typing_pat_weakening); eauto. Qed.
     when the binding is dbind_typ.
 *)
 
+(* The paper does NOT explicitly state a term-substitution lemma. We
+   add [is_value e2] as a side condition because [d_typing__forall]
+   carries [is_value e] (paper's SML-style value restriction,
+   declarative.tex:295). For e = (x : A) — a value via [is_value__anno
+   + is_value__var] — substitution gives (e2 : A) which is a value only
+   if e2 is. This requirement is a direct consequence of the value
+   restriction on the forall rule, not a separate condition the paper
+   mandates. *)
 Lemma d_typing_pat_subst_exp_mut :
     (forall m Γ e1 B, d_typing m Γ e1 B ->
        forall Γ1 Γ2 x A e2,
          Γ = Γ1 ++ (x ~ dbind_typ A) ++ Γ2 ->
          d_typing mode_ti Γ2 e2 A ->
+         is_value e2 ->                    (* value restriction *)
          d_typing m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) B) /\
     (forall m Γ e1 P, d_pat m Γ e1 P ->
        forall Γ1 Γ2 x A e2,
          Γ = Γ1 ++ (x ~ dbind_typ A) ++ Γ2 ->
          d_typing mode_ti Γ2 e2 A ->
+         is_value e2 ->
          d_pat m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) P).
 Proof.
-  (* Research-grade: the full mutual proof requires careful binder
-     handling using [subst_exp_in_exp_open_exp_wrt_exp_var] plus a
-     freshness-renaming step for the abs / abs_anno / forall cases.
-     The d_pat side additionally requires that substitution does not
-     touch dbind_skel slots — true by construction since the variable
-     bound at [(x ~ dbind_typ A)] cannot satisfy d_pat__var (which
-     requires dbind_skel). Skeleton-side rules with abs bindings
-     similarly skip the bound x.
-
-     This proof is a routine but laborious 18-case induction. We
-     admit and document; downstream lemmas Task 4..9 reference this
-     by name. The corollaries below project the two cases. *)
+  (* Full closure requires auxiliary lemmas not yet proved:
+     - d_sub_strengthening_typ: drop dbind_typ entry from Γ preserves d_sub.
+     - d_pat_consis_strengthening_typ / d_refine_syn_strengthening_typ.
+     - is_value_subst: is_value e2 → is_value e → is_value (subst e2 x e).
+     - lc_exp regularity for d_typing (for the open-subst commute).
+     Research-grade per design §3.D. *)
 Admitted.
 
 Corollary d_typing_subst_exp : forall Γ1 Γ2 x A e1 e2 m B,
     d_typing m (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) e1 B ->
     d_typing mode_ti Γ2 e2 A ->
+    is_value e2 ->
     d_typing m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) B.
 Proof. intros. eapply (proj1 d_typing_pat_subst_exp_mut); eauto. Qed.
 
 Corollary d_pat_subst_exp : forall Γ1 Γ2 x A e1 e2 m P,
     d_pat m (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) e1 P ->
     d_typing mode_ti Γ2 e2 A ->
+    is_value e2 ->
     d_pat m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) P.
 Proof. intros. eapply (proj2 d_typing_pat_subst_exp_mut); eauto. Qed.
 
