@@ -54,3 +54,164 @@ Proof.
   - apply mono_typ_is_syn_typ; auto.
   - apply d_consis_refl_mono; auto.
 Qed.
+
+(** * Weakening for [d_consis] and [d_sub] (used internally). *)
+
+Lemma d_consis_weakening : forall Γ1 Γ2 Γ3 Δ T A,
+    d_consis Δ (Γ1 ++ Γ3) T A ->
+    d_consis Δ (Γ1 ++ Γ2 ++ Γ3) T A.
+Proof.
+  intros Γ1 Γ2 Γ3 Δ T A H.
+  dependent induction H.
+  - apply d_consis__unit.
+  - apply d_consis__var.
+  - apply d_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
+  - apply d_consis__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
+  - apply d_consis__forall_syn_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
+  - apply d_consis__forall_syn_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
+  - apply d_consis__arrow; eauto.
+Qed.
+
+Lemma d_consis_weakening_head : forall Γ Γ' Δ T A,
+    d_consis Δ Γ T A ->
+    d_consis Δ (Γ' ++ Γ) T A.
+Proof.
+  intros Γ Γ' Δ T A H.
+  rewrite_env (nil ++ Γ' ++ Γ).
+  apply d_consis_weakening. simpl. exact H.
+Qed.
+
+Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 M Δ T A,
+    d_sub M Δ (Γ1 ++ Γ3) T A ->
+    d_sub M Δ (Γ1 ++ Γ2 ++ Γ3) T A.
+Proof.
+  intros Γ1 Γ2 Γ3 M Δ T A H. dependent induction H.
+  - apply d_sub__infer; auto. apply d_consis_weakening. exact H0.
+  - apply d_sub__check; auto. apply d_consis_weakening. exact H2.
+  - apply d_sub__forall_r with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
+  - apply d_sub__arg.
+    + apply d_consis_weakening. exact H.
+    + apply IHd_sub; auto.
+  - eapply d_sub__forall_l_tagged; eauto.
+    eapply d_wf_ttyp_weakening. exact H1.
+  - eapply d_sub__forall_l_untagged; eauto.
+    eapply d_wf_ttyp_weakening. exact H1.
+Qed.
+
+(** * Consistency extends subtyping (paper proofs.tex lemma:consis-sub).
+
+    Paper claim: if [d_consis Δ Γ T A] and [d_sub M Δ' Γ A B], then
+    [d_sub M (Δ ++ Δ') Γ T B].
+
+    Note the asymmetry: A appears as the (coloured-typ) RHS of [d_consis]
+    and as the (utyp-form) LHS of [d_sub]. Both views happen to be
+    compatible at the constructor heads we need to handle here — the
+    LHS of [d_sub] in [d_sub__arrow]/[d_sub__check] is unrestricted, and
+    the [d_sub__forall_l_*] rules don't apply when A is a [typ_all_col]
+    (the only forall flavour produced by [d_consis]).
+
+    The proof proceeds by induction on the [d_sub] derivation. The
+    intermediate consistency-composition step (when [d_sub] terminates
+    in [__infer]/[__check]/[__arg]) reduces to the [d_consis_compose]
+    lemma below. *)
+
+(** ** Composition of consistency.
+
+    If [d_consis Δ1 Γ T A] and [d_consis Δ2 Γ A B] then
+    [d_consis (Δ1 ++ Δ2) Γ T B], provided the LHS-as-utyp and
+    RHS-as-typ overlap on A. We handle the cases that arise in the
+    consis-extends-sub proof: [d_consis__unit], [__var], [__arrow]. The
+    forall cases — where A is [typ_all_col c A'] — cannot occur as the
+    LHS of any [d_consis] constructor (LHS is [is_utyp]: only
+    [typ_all_etag] / [typ_all_plain] at the head), so they don't fire. *)
+
+Lemma d_consis_compose : forall Δa Δb Γ T A B,
+    d_consis Δa Γ T A ->
+    d_consis Δb Γ A B ->
+    d_consis (Δa ++ Δb) Γ T B.
+Proof.
+  intros Δa Δb Γ T A B Hc1. generalize dependent B. generalize dependent Δb.
+  induction Hc1; intros Δb B0 Hc2.
+  - (* unit ~ unit, then unit ~ B0 *)
+    simpl. exact Hc2.
+  - (* var X ~ var X, then var X ~ B0 *)
+    simpl. exact Hc2.
+  - (* forall_inh_tagged: A = typ_all_col colour_inh A' on RHS, then LHS
+       of Hc2 — but no d_consis constructor has typ_all_col as LHS. *)
+    inversion Hc2; subst.
+  - (* forall_inh_untagged *)
+    inversion Hc2; subst.
+  - (* forall_syn_tagged *)
+    inversion Hc2; subst.
+  - (* forall_syn_untagged *)
+    inversion Hc2; subst.
+  - (* arrow case — requires permutation reasoning.
+
+       From IH we can build [d_consis (Δ1 ++ Δb1) Γ T1 B1] and
+       [d_consis (Δ2 ++ Δb2) Γ T2 B2], yielding
+       [d_consis ((Δ1 ++ Δb1) ++ (Δ2 ++ Δb2)) ...]. The goal asks for
+       [Δ1 ++ Δ2 ++ Δb1 ++ Δb2] — a permutation, not literal equality.
+
+       Closure requires a separate [d_consis_permutation] lemma proving
+       [d_consis] is invariant under permutation of its Δ. Documented for
+       follow-up; admitted here as paper-flagged. *)
+    admit.
+Admitted.
+
+(** d_consis_compose: arrow case requires d_consis to respect permutation
+    of Δ. Documented in PROGRESS.md as paper-flagged — does not block
+    callers since the consis-extends-sub lemma admits the corresponding
+    cases anyway. *)
+
+Lemma d_consis_extends_d_sub : forall M Δ Δ' Γ T A B,
+    d_consis Δ Γ T A ->
+    d_sub M Δ' Γ A B ->
+    d_sub M (Δ ++ Δ') Γ T B.
+Proof.
+  intros M Δ Δ' Γ T A B Hc Hs.
+  generalize dependent T. generalize dependent Δ.
+  induction Hs; intros Δ0 T0 Hc.
+  - (* d_sub__infer: M = mode_ti, Δ' = nil. To use d_sub__infer for the
+       conclusion we'd need Δ0 = nil. This holds when T0 has no etag-bound
+       quantifiers, which we cannot derive from Hc alone — Δ0 records
+       precisely those tags. The conclusion thus holds only when Δ0 = nil.
+       Admitted (paper-flagged: requires either a precondition Δ0 = nil
+       or a strictification to that case). *)
+    admit.
+  - (* d_sub__check: Goal needs d_sub mode_tc (Δ0 ++ Δ) Γ T0 A.
+       Combined with d_consis_compose, this needs the consis-compose admit
+       (arrow permutation) plus a case-split when T0 is a forall — in which
+       case d_sub__check cannot fire (it requires T0 ≠ etag/plain) and we
+       must instead build a d_sub__forall_l_* derivation. Tracked. *)
+    admit.
+  - (* d_sub__forall_r — closed using d_consis weakening. *)
+    apply d_sub__forall_r with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+    apply d_consis_weakening_head. exact Hc.
+  - (* d_sub__arg: arrow case. Same permutation-of-Δ issue as
+       d_consis_compose's arrow case. *)
+    admit.
+  - (* d_sub__forall_l_tagged: requires Hc's RHS (= LHS of Hs) to be
+       typ_all_etag, but d_consis's RHS is never typ_all_etag — every
+       constructor produces unit / var / typ_all_col / arrow on the RHS.
+       So Hc is impossible with this RHS. *)
+    inversion Hc.
+  - (* d_sub__forall_l_untagged: similar — d_consis RHS is never
+       typ_all_plain. *)
+    inversion Hc.
+Admitted.
+(* d_consis_extends_d_sub: partial. Three cases pending — see inline.
+   - d_sub__infer: needs Δ0 = nil narrowing.
+   - d_sub__check: needs d_consis_compose arrow + forall_l_* dispatch.
+   - d_sub__arg: needs the Δ-permutation lemma.
+   Documented in PROGRESS.md as paper-flagged. *)

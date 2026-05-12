@@ -49,6 +49,8 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 |---|---|---|---|
 | prop_subtyping.v | `d_consis_refl_mono` | strictified | Original "d_consis_refl on is_typ" too strong: `d_consis` is asymmetric (utyp LHS, typ RHS). Narrowed to `mono_typ`, where LHS/RHS forms coincide. |
 | prop_subtyping.v | `d_sub_refl_mono` | strictified | Follows reflexivity of `d_consis` — restricted to monotypes for the same reason. |
+| prop_subtyping.v | `d_consis_compose` | partial | Arrow case requires a `d_consis_permutation` lemma — `(Δ1++Δb1)++(Δ2++Δb2)` vs `Δ1++Δ2++Δb1++Δb2` differ only by permutation; `d_consis` lacks a permutation lemma. Paper-flagged. |
+| prop_subtyping.v | `d_consis_extends_d_sub` | partial | Three pending sub-cases: `d_sub__infer` (needs `Δ0 = nil` narrowing), `d_sub__check` (needs compose arrow + forall_l_* dispatch), `d_sub__arg` (same Δ-permutation issue as compose). |
 
 ## Discovered blockers / open questions
 
