@@ -62,3 +62,35 @@ Ltac discharge_category :=
   | H : is_tskel (typ_all_plain _) |- _ => inversion H
   | H : is_uskel (typ_all_col _ _) |- _ => inversion H
   end.
+
+(** Override Metalib's [gather_atoms] to include every atom-bearing
+    source in our context: name-sets [atoms], single atoms, term
+    contexts ([list (atom * dbind)]), tag / Ψ-scope contexts
+    ([list atom]), and free-variable functions on [typ] / [exp].
+
+    Pairs with [pick fresh] (already metalib) and with
+    [inst_cofinites_for], defined below, which applies a cofinite
+    rule [R] using all gathered atoms as [L].
+
+    Conventions follow the public reference at
+      jiangsy/proof_worklist_remechnization/systemdk/ltac_utils.v.
+*)
+Ltac gather_atoms ::=
+  let A := gather_atoms_with (fun x : atoms => x) in
+  let B := gather_atoms_with (fun x : atom => singleton x) in
+  let C := gather_atoms_with (fun x : list (atom * dbind) => dom x) in
+  let D := gather_atoms_with (fun x : list atom => List.fold_right add empty x) in
+  let E := gather_atoms_with (fun x : exp => fvar_in_exp x) in
+  let F := gather_atoms_with (fun x : exp => ftvar_in_exp x) in
+  let G := gather_atoms_with (fun x : typ => ftvar_in_typ x) in
+  constr:(A `union` B `union` C `union` D `union` E `union` F `union` G).
+
+(** Apply a cofinite-quantified rule [R] using [gather_atoms] as the
+    freshness set. Replaces [apply R with (L := L `union` ... `union` dom Γ)]. *)
+Tactic Notation "inst_cofinites_for" constr(R) :=
+  let _L := gather_atoms in
+  apply R with (L := _L).
+
+Tactic Notation "inst_cofinites_for" constr(R) ident(name) ":=" constr(val) :=
+  let _L := gather_atoms in
+  apply R with (L := _L) (name := val).

@@ -64,7 +64,7 @@ Proof.
     + apply binds_app_iff. auto.
     + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_wf_typ__arrow; auto.
-  - apply d_wf_typ__all with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+  - inst_cofinites_for d_wf_typ__all.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
@@ -82,9 +82,9 @@ Proof.
       * apply binds_app_iff. auto.
       * apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_wf_skel__arrow; auto.
-  - apply d_wf_skel__all_col with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+  - inst_cofinites_for d_wf_skel__all_col.
     intros X HX. apply H0; auto.
-  - apply d_wf_skel__all_plain with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+  - inst_cofinites_for d_wf_skel__all_plain.
     intros X HX. apply H0; auto.
   - apply d_wf_skel__hole.
   - apply d_wf_skel__tophole; auto.
@@ -101,7 +101,7 @@ Proof.
     + apply binds_app_iff. auto.
     + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_wf_ttyp__arrow; auto.
-  - apply d_wf_ttyp__all with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
+  - inst_cofinites_for d_wf_ttyp__all; auto.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
@@ -118,11 +118,11 @@ Proof.
     + apply binds_app_iff. auto.
     + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_wf_utyp__arrow; auto.
-  - apply d_wf_utyp__tall with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
+  - inst_cofinites_for d_wf_utyp__tall; auto.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
-  - apply d_wf_utyp__pall with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+  - inst_cofinites_for d_wf_utyp__pall.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
@@ -139,7 +139,7 @@ Proof.
     + apply binds_app_iff. auto.
     + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_wf_tskel__arrow; auto.
-  - apply d_wf_tskel__all with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
+  - inst_cofinites_for d_wf_tskel__all; auto.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
@@ -158,11 +158,11 @@ Proof.
     + apply binds_app_iff. auto.
     + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_wf_uskel__arrow; auto.
-  - apply d_wf_uskel__tall with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
+  - inst_cofinites_for d_wf_uskel__tall; auto.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
-  - apply d_wf_uskel__pall with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+  - inst_cofinites_for d_wf_uskel__pall.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
@@ -447,7 +447,7 @@ Proof.
       apply binds_remove_mid in H; auto.
       apply d_wf_typ__var. apply binds_app_iff in H. destruct H; apply binds_app_iff; auto.
   - apply d_wf_typ__arrow; auto.
-  - apply d_wf_typ__all with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+  - inst_cofinites_for d_wf_typ__all.
     intros Y HY.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HB)].
     rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
@@ -480,11 +480,11 @@ Proof.
       * right. eapply binds_remove_mid in Hin; [| exact n].
         apply binds_app_iff in Hin. destruct Hin as [Hin | Hin]; apply binds_app_iff; auto.
   - apply d_wf_skel__arrow; auto.
-  - apply d_wf_skel__all_col with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+  - inst_cofinites_for d_wf_skel__all_col.
     intros Y HY.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_skel_lc HB)].
     apply H0; auto.
-  - apply d_wf_skel__all_plain with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+  - inst_cofinites_for d_wf_skel__all_plain.
     intros Y HY.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_skel_lc HB)].
     apply H0; auto.
@@ -849,9 +849,12 @@ Proof.
   - apply d_wf_typ__unit.
   - (* d_consis__var (T = A = typ_var_f X): d_consis doesn't carry a
        binds premise so we cannot derive [d_wf_typ Γ (typ_var_f X)]
-       without an additional hypothesis. Admitted — to close, either
-       strengthen [d_consis__var] with [binds X dbind_tvar Γ] or pass
-       [d_wf_utyp Δ Γ T] as a precondition here. *)
+       without an additional hypothesis. Also, threading a [d_wf_utyp Δ Γ T]
+       side hypothesis fails because d_consis__forall_syn_tagged drops
+       the ε tag from Δ at the conclusion (paper-level: "ForallSyn does
+       not solve the tag"; declarative.tex:1051) — so Δ in the lemma
+       doesn't necessarily contain all the ε's of T. Admitted —
+       paper-flagged. *)
     admit.
   - apply d_wf_typ__all with (L := L `union` dom Γ).
     intros X HX. apply H0; auto.
