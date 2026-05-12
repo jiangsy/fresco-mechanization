@@ -58,6 +58,62 @@ Proof.
     eapply d_wf_ttyp_weakening; eauto.
 Qed.
 
+(** Local copies of [d_consis_tvar_morph] / [d_sub_tvar_morph]
+    (see [prop_subtyping.v]); duplicated here to avoid a cyclic import. *)
+Lemma d_consis_tvar_morph : forall Γ Γ' Δ T A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_consis Δ Γ T A ->
+    d_consis Δ Γ' T A.
+Proof.
+  intros Γ Γ' Δ T A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_consis__unit.
+  - apply d_consis__var. apply Hmorph; auto.
+  - apply d_consis__forall_inh_tagged with (L := L `union` dom Γ'); auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__forall_inh_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__forall_syn_tagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__forall_syn_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__arrow; auto.
+Qed.
+
+Lemma d_sub_tvar_morph : forall Γ Γ' M Δ T A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_sub M Δ Γ T A ->
+    d_sub M Δ Γ' T A.
+Proof.
+  intros Γ Γ' M Δ T A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_sub__infer; auto. eapply d_consis_tvar_morph; eauto.
+  - apply d_sub__check; auto. eapply d_consis_tvar_morph; eauto.
+  - apply d_sub__forall_r with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hb | Hb]; apply binds_app_iff; [left | right]; auto.
+  - apply d_sub__arg.
+    + eapply d_consis_tvar_morph; eauto.
+    + apply IHd_sub; auto.
+  - eapply d_sub__forall_l_tagged; eauto.
+    eapply d_wf_ttyp_tvar_morph; eauto.
+  - eapply d_sub__forall_l_untagged; eauto.
+    eapply d_wf_ttyp_tvar_morph; eauto.
+Qed.
+
 Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Ψ P Q,
     d_refine_syn Ψ (Γ1 ++ Γ3) P Q ->
     d_refine_syn Ψ (Γ1 ++ Γ2 ++ Γ3) P Q.
@@ -79,6 +135,77 @@ Proof.
     + auto.
     + eapply d_wf_skel_weakening; eauto.
     + intros X HX. eapply H2; eauto.
+Qed.
+
+Lemma d_refine_weakening : forall Γ1 Γ2 Γ3 Ψ P Q,
+    d_refine Ψ (Γ1 ++ Γ3) P Q ->
+    d_refine Ψ (Γ1 ++ Γ2 ++ Γ3) P Q.
+Proof.
+  intros Γ1 Γ2 Γ3 Ψ P Q H. dependent induction H.
+  - apply d_refine__unit.
+  - apply d_refine__var. destruct H.
+    + left. auto.
+    + right. apply binds_app_iff in H. destruct H as [HX | HX].
+      * apply binds_app_iff. auto.
+      * apply binds_app_iff. right. apply binds_app_iff. auto.
+  - apply d_refine__arrow; eauto.
+  - apply d_refine__all with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. eapply H0; eauto.
+  - apply d_refine__hole; auto. eapply d_wf_skel_weakening; eauto.
+  - apply d_refine__tophole_no_top with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. eapply H0; eauto.
+  - apply d_refine__tophole_with_top with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
+    eapply d_wf_skel_weakening; eauto.
+Qed.
+
+Lemma d_refine_weakening_head : forall Γ Γ' Ψ P Q,
+    d_refine Ψ Γ P Q ->
+    d_refine Ψ (Γ' ++ Γ) P Q.
+Proof. intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_refine_weakening. simpl. auto. Qed.
+
+Lemma d_refine_syn_weakening_head : forall Γ Γ' Ψ P Q,
+    d_refine_syn Ψ Γ P Q ->
+    d_refine_syn Ψ (Γ' ++ Γ) P Q.
+Proof. intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_refine_syn_weakening. simpl. auto. Qed.
+
+(** Context tvar-morphism for [d_refine]. *)
+Lemma d_refine_tvar_morph : forall Γ Γ' Ψ P Q,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_refine Ψ Γ P Q ->
+    d_refine Ψ Γ' P Q.
+Proof.
+  intros Γ Γ' Ψ P Q Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_refine__unit.
+  - apply d_refine__var. destruct H as [Hin | Hb]; [left|right]; auto.
+  - apply d_refine__arrow; auto.
+  - apply d_refine__all with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+  - apply d_refine__hole. eapply d_wf_skel_tvar_morph; eauto.
+  - apply d_refine__tophole_no_top with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+  - apply d_refine__tophole_with_top with (L := L `union` dom Γ'); auto.
+    eapply d_wf_skel_tvar_morph; eauto.
+Qed.
+
+(** Context tvar-morphism for [d_refine_syn]. *)
+Lemma d_refine_syn_tvar_morph : forall Γ Γ' Ψ P Q,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_refine_syn Ψ Γ P Q ->
+    d_refine_syn Ψ Γ' P Q.
+Proof.
+  intros Γ Γ' Ψ P Q Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var. destruct H as [Hin | Hb]; [left|right]; auto.
+  - apply d_refine_syn__arrow; auto.
+  - apply d_refine_syn__all_inh with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+  - apply d_refine_syn__hole; auto. eapply d_wf_skel_tvar_morph; eauto.
+  - apply d_refine_syn__tophole_no_top with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+  - apply d_refine_syn__tophole_with_top with (L := L `union` dom Γ'); auto.
+    eapply d_wf_skel_tvar_morph; eauto.
 Qed.
 
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ SS P,
@@ -267,6 +394,32 @@ Corollary d_pat_weakening : forall Γ1 Γ2 Γ3 m e P,
     d_pat m (Γ1 ++ Γ3) e P ->
     d_pat m (Γ1 ++ Γ2 ++ Γ3) e P.
 Proof. intros. eapply (proj2 d_typing_pat_weakening); eauto. Qed.
+
+Corollary d_typing_weakening_head : forall Γ Γ' m e A,
+    d_typing m Γ e A ->
+    d_typing m (Γ' ++ Γ) e A.
+Proof. intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_typing_weakening. simpl. auto. Qed.
+
+Corollary d_pat_weakening_head : forall Γ Γ' m e P,
+    d_pat m Γ e P ->
+    d_pat m (Γ' ++ Γ) e P.
+Proof. intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_pat_weakening. simpl. auto. Qed.
+
+(** Mutual context morphism for [d_typing] / [d_pat]: preserve ALL
+    bindings (tvar, typ, skel). Stronger than [d_consis_tvar_morph]
+    since the [d_typing__var] / [d_pat__var] rules look up
+    [dbind_typ] / [dbind_skel] bindings. *)
+Lemma d_typing_pat_ctx_morph :
+    (forall m Γ e A, d_typing m Γ e A ->
+       forall Γ', (forall X bn, binds X bn Γ -> binds X bn Γ') ->
+                  d_typing m Γ' e A) /\
+    (forall m Γ e P, d_pat m Γ e P ->
+       forall Γ', (forall X bn, binds X bn Γ -> binds X bn Γ') ->
+                  d_pat m Γ' e P).
+Proof.
+  (* Stuck on bullet-management / name resolution under
+     [apply d_typing_pat_mut; intros]; deferred. *)
+Abort.
 
 (** * Phase 2.D.2 — Term substitution (expvar) for d_typing / d_pat.
 
