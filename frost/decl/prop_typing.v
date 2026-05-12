@@ -130,6 +130,75 @@ Proof.
     eapply d_wf_tskel_weakening; eauto.
 Qed.
 
+Lemma d_pat_consis_weakening_head : forall Γ Γ' Δ SS P,
+    d_pat_consis Δ Γ SS P ->
+    d_pat_consis Δ (Γ' ++ Γ) SS P.
+Proof.
+  intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_pat_consis_weakening. simpl. auto.
+Qed.
+
+Lemma d_pat_sub_weakening_head : forall Γ Γ' M Δ SS P,
+    d_pat_sub M Δ Γ SS P ->
+    d_pat_sub M Δ (Γ' ++ Γ) SS P.
+Proof.
+  intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_pat_sub_weakening. simpl. auto.
+Qed.
+
+(** Context tvar-morphism for [d_pat_consis]. *)
+Lemma d_pat_consis_tvar_morph : forall Γ Γ' Δ SS P,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_pat_consis Δ Γ SS P ->
+    d_pat_consis Δ Γ' SS P.
+Proof.
+  intros Γ Γ' Δ SS P Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_pat_consis__unit.
+  - apply d_pat_consis__var. apply Hmorph; auto.
+  - apply d_pat_consis__forall_inh_tagged with (L := L `union` dom Γ'); auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - apply d_pat_consis__forall_inh_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - apply d_pat_consis__forall_syn_tagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - apply d_pat_consis__forall_syn_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - apply d_pat_consis__ghost; auto. eapply d_wf_skel_tvar_morph; eauto.
+  - apply d_pat_consis__arrow; auto.
+  - apply d_pat_consis__univ_ghost_arr; auto.
+  - apply d_pat_consis__univ_ghost_inh1 with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - apply d_pat_consis__univ_ghost_pass; auto.
+Qed.
+
+(** Context tvar-morphism for [d_pat_sub]. *)
+Lemma d_pat_sub_tvar_morph : forall Γ Γ' M Δ SS P,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_pat_sub M Δ Γ SS P ->
+    d_pat_sub M Δ Γ' SS P.
+Proof.
+  intros Γ Γ' M Δ SS P Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_pat_sub__infer; auto. eapply d_pat_consis_tvar_morph; eauto.
+  - apply d_pat_sub__univ_ghost_r; auto. eapply d_pat_consis_tvar_morph; eauto.
+  - apply d_pat_sub__ghost; auto. eapply d_wf_skel_tvar_morph; eauto.
+  - apply d_pat_sub__univ_ghost_l; auto.
+  - apply d_pat_sub__arg; auto. eapply d_pat_consis_tvar_morph; eauto.
+  - eapply d_pat_sub__forall_l_tagged; eauto.
+    eapply d_wf_tskel_tvar_morph; eauto.
+  - eapply d_pat_sub__forall_l_untagged; eauto.
+    eapply d_wf_tskel_tvar_morph; eauto.
+Qed.
+
 (** * Weakening for the mutual d_typing / d_pat (Phase 2.D.1b). *)
 
 Lemma d_typing_pat_weakening :

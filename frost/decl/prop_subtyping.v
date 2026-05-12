@@ -151,6 +151,37 @@ Proof.
     eapply d_wf_ttyp_weakening. exact H1.
 Qed.
 
+Lemma d_sub_weakening_head : forall Γ Γ' M Δ T A,
+    Γ ⊢[ M ; Δ ] T ⊑ A ->
+    (Γ' ++ Γ) ⊢[ M ; Δ ] T ⊑ A.
+Proof.
+  intros Γ Γ' M Δ T A H. rewrite_env (nil ++ Γ' ++ Γ).
+  apply d_sub_weakening. simpl. exact H.
+Qed.
+
+(** Context tvar-morphism for [d_sub]. *)
+Lemma d_sub_tvar_morph : forall Γ Γ' M Δ T A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    Γ ⊢[ M ; Δ ] T ⊑ A ->
+    Γ' ⊢[ M ; Δ ] T ⊑ A.
+Proof.
+  intros Γ Γ' M Δ T A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_sub__infer; auto. eapply d_consis_tvar_morph; eauto.
+  - apply d_sub__check; auto. eapply d_consis_tvar_morph; eauto.
+  - apply d_sub__forall_r with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hb | Hb]; apply binds_app_iff; [left | right]; auto.
+  - apply d_sub__arg.
+    + eapply d_consis_tvar_morph; eauto.
+    + apply IHd_sub; auto.
+  - eapply d_sub__forall_l_tagged; eauto.
+    eapply d_wf_ttyp_tvar_morph; eauto.
+  - eapply d_sub__forall_l_untagged; eauto.
+    eapply d_wf_ttyp_tvar_morph; eauto.
+Qed.
+
 (** * Consistency extends subtyping (paper proofs.tex lemma:consis-sub).
 
     Paper claim: if [d_consis Δ Γ T A] and [d_sub M Δ' Γ A B], then

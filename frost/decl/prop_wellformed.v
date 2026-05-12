@@ -199,6 +199,104 @@ Proof.
     + apply binds_app_iff. right. auto.
 Qed.
 
+(** Same morphism property for [d_wf_ttyp]. *)
+Lemma d_wf_ttyp_tvar_morph : forall Γ Γ' Δ A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    Δ ⨟ Γ ⊢ₜₜ A ->
+    Δ ⨟ Γ' ⊢ₜₜ A.
+Proof.
+  intros Γ Γ' Δ A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_wf_ttyp__unit.
+  - apply d_wf_ttyp__var. apply Hmorph; auto.
+  - apply d_wf_ttyp__arrow; auto.
+  - inst_cofinites_for d_wf_ttyp__all; auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+Qed.
+
+(** Same morphism property for [d_wf_utyp]. *)
+Lemma d_wf_utyp_tvar_morph : forall Γ Γ' Δ A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    Δ ⨟ Γ ⊢ᵤₜ A ->
+    Δ ⨟ Γ' ⊢ᵤₜ A.
+Proof.
+  intros Γ Γ' Δ A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_wf_utyp__unit.
+  - apply d_wf_utyp__var. apply Hmorph; auto.
+  - apply d_wf_utyp__arrow; auto.
+  - inst_cofinites_for d_wf_utyp__tall; auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - inst_cofinites_for d_wf_utyp__pall.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+Qed.
+
+(** Same morphism property for [d_wf_skel]. Note Ψ stays the same; the
+    morphism only acts on Γ. *)
+Lemma d_wf_skel_tvar_morph : forall Γ Γ' Ψ P,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    Ψ ⨟ Γ ⊢ₛₖ P ->
+    Ψ ⨟ Γ' ⊢ₛₖ P.
+Proof.
+  intros Γ Γ' Ψ P Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_wf_skel__unit.
+  - apply d_wf_skel__var. destruct H as [Hin | Hb]; [left|right]; auto.
+  - apply d_wf_skel__arrow; auto.
+  - apply d_wf_skel__all_col with (L := L `union` dom Γ'). auto.
+  - apply d_wf_skel__all_plain with (L := L `union` dom Γ'). auto.
+  - apply d_wf_skel__hole.
+  - apply d_wf_skel__tophole; auto.
+Qed.
+
+(** Same morphism property for [d_wf_tskel]. *)
+Lemma d_wf_tskel_tvar_morph : forall Γ Γ' Δ A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_wf_tskel Δ Γ A ->
+    d_wf_tskel Δ Γ' A.
+Proof.
+  intros Γ Γ' Δ A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_wf_tskel__unit.
+  - apply d_wf_tskel__var. apply Hmorph; auto.
+  - apply d_wf_tskel__arrow; auto.
+  - apply d_wf_tskel__all with (L := L `union` dom Γ'); auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - apply d_wf_tskel__hole.
+  - apply d_wf_tskel__tophole; auto.
+Qed.
+
+(** Same morphism property for [d_wf_uskel]. *)
+Lemma d_wf_uskel_tvar_morph : forall Γ Γ' Δ A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_wf_uskel Δ Γ A ->
+    d_wf_uskel Δ Γ' A.
+Proof.
+  intros Γ Γ' Δ A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_wf_uskel__unit.
+  - apply d_wf_uskel__var. apply Hmorph; auto.
+  - apply d_wf_uskel__arrow; auto.
+  - apply d_wf_uskel__tall with (L := L `union` dom Γ'); auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - apply d_wf_uskel__pall with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - apply d_wf_uskel__hole.
+  - apply d_wf_uskel__tophole; auto.
+Qed.
+
 Lemma d_wf_skel_weakening_head : forall Γ Γ' Ψ P,
     Ψ ⨟ Γ ⊢ₛₖ P ->
     Ψ ⨟ (Γ' ++ Γ) ⊢ₛₖ P.
