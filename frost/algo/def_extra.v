@@ -169,3 +169,155 @@ Inductive aenv_extends : aenv -> aenv -> Prop :=
     a_suffix Ξ ->
     aenv_extends ((a ~ abind_marker) ++ Θ)
                  (Ξ ++ (a ~ abind_marker) ++ Θ').
+
+
+(* ===================================================================== *)
+(*  Algorithmic well-formedness for types in aenv.                        *)
+(* ===================================================================== *)
+
+(** [a_wf_typ Θ A] — analogue of [d_wf_typ] under an algorithmic
+    context.  Extends [d_wf_typ] with cases for the new flex-mono
+    and flex-poly constructors, looking up their entry in [Θ]. *)
+Inductive a_wf_typ : aenv -> typ -> Prop :=
+| a_wf_typ__unit : forall Θ,
+    a_wf_typ Θ typ_unit
+| a_wf_typ__var : forall Θ X,
+    binds X abind_tvar Θ ->
+    a_wf_typ Θ (typ_var_f X)
+| a_wf_typ__arrow : forall Θ A B,
+    a_wf_typ Θ A ->
+    a_wf_typ Θ B ->
+    a_wf_typ Θ (typ_arrow A B)
+| a_wf_typ__all_col : forall L Θ c A,
+    (forall X, X `notin` L ->
+       a_wf_typ ((X ~ abind_tvar) ++ Θ) (open_typ_wrt_typ A (typ_var_f X))) ->
+    a_wf_typ Θ (typ_all_col c A)
+| a_wf_typ__all_etag : forall L Θ ε A,
+    (forall X, X `notin` L ->
+       a_wf_typ ((X ~ abind_tvar) ++ Θ) (open_typ_wrt_typ A (typ_var_f X))) ->
+    a_wf_typ Θ (typ_all_etag ε A)
+| a_wf_typ__all_plain : forall L Θ A,
+    (forall X, X `notin` L ->
+       a_wf_typ ((X ~ abind_tvar) ++ Θ) (open_typ_wrt_typ A (typ_var_f X))) ->
+    a_wf_typ Θ (typ_all_plain A)
+| a_wf_typ__hole : forall Θ,
+    a_wf_typ Θ typ_hole
+| a_wf_typ__tophole : forall Θ A,
+    a_wf_typ Θ A ->
+    a_wf_typ Θ (typ_tophole A)
+| a_wf_typ__flex_mono_decl : forall Θ X,
+    binds X abind_flex_mono Θ ->
+    a_wf_typ Θ (typ_var_flex_mono X)
+| a_wf_typ__flex_mono_def : forall Θ X τ,
+    binds X (abind_flex_mono_def τ) Θ ->
+    a_wf_typ Θ (typ_var_flex_mono X)
+| a_wf_typ__flex_poly : forall Θ X P,
+    binds X (abind_flex_poly_def P) Θ ->
+    a_wf_typ Θ (typ_var_flex_poly X).
+
+(** [a_wf_aenv Θ] — algorithmic context well-formedness.  Paper §4.2,
+    "Θ ⊢ ctx".  Each entry's well-formedness is checked against the
+    *prefix* (entries on its right in the list, which represent the
+    earlier part of Θ in paper order; we adopt the metalib convention
+    of prepending new entries to the head). *)
+Inductive a_wf_aenv : aenv -> Prop :=
+| a_wf_aenv__nil : a_wf_aenv nil
+| a_wf_aenv__tvar : forall a Θ,
+    a_wf_aenv Θ ->
+    a `notin` dom Θ ->
+    a_wf_aenv ((a ~ abind_tvar) ++ Θ)
+| a_wf_aenv__var_typ : forall a P Θ,
+    a_wf_aenv Θ ->
+    a_wf_typ Θ P ->
+    a `notin` dom Θ ->
+    a_wf_aenv ((a ~ abind_var_typ P) ++ Θ)
+| a_wf_aenv__flex_mono : forall a Θ,
+    a_wf_aenv Θ ->
+    a `notin` dom Θ ->
+    a_wf_aenv ((a ~ abind_flex_mono) ++ Θ)
+| a_wf_aenv__flex_mono_def : forall a τ Θ,
+    a_wf_aenv Θ ->
+    a_wf_typ Θ τ ->
+    a `notin` dom Θ ->
+    a_wf_aenv ((a ~ abind_flex_mono_def τ) ++ Θ)
+| a_wf_aenv__flex_poly_def : forall a P Θ,
+    a_wf_aenv Θ ->
+    a_wf_typ Θ P ->
+    a `notin` dom Θ ->
+    a_wf_aenv ((a ~ abind_flex_poly_def P) ++ Θ)
+| a_wf_aenv__marker : forall a Θ,
+    a_wf_aenv Θ ->
+    a `notin` dom Θ ->
+    a_wf_aenv ((a ~ abind_marker) ++ Θ).
+
+(** [a_guarded Θ A] — extended "guarded" predicate of paper Fig.
+    "statements-in-context".  Adds two cases for flex-mono variables:
+    α̂ is guarded when its entry is [α̂ : ⬒] (undefined; vacuously
+    guarded) or when its definition τ is itself guarded. *)
+Inductive a_guarded : aenv -> typ -> Prop :=
+| a_guarded__unit : forall Θ,
+    a_guarded Θ typ_unit
+| a_guarded__var : forall Θ X,
+    a_guarded Θ (typ_var_f X)
+| a_guarded__arrow : forall Θ A B,
+    a_guarded Θ (typ_arrow A B)
+| a_guarded__flex_mono_decl : forall Θ X,
+    binds X abind_flex_mono Θ ->
+    a_guarded Θ (typ_var_flex_mono X)
+| a_guarded__flex_mono_def : forall Θ X τ,
+    binds X (abind_flex_mono_def τ) Θ ->
+    a_guarded Θ τ ->
+    a_guarded Θ (typ_var_flex_mono X)
+| a_guarded__flex_poly_def : forall Θ X P,
+    binds X (abind_flex_poly_def P) Θ ->
+    a_guarded Θ P ->
+    a_guarded Θ (typ_var_flex_poly X).
+
+(** Modes vs. type/skeleton inputs (paper page 17 and 20).  Extends
+    [mode_typ_compat] / [mode_skel_compat] to algorithmic syntax.  In
+    [SK]-mode, [Hole] is required at both [TI] and [TC] (paper page
+    20). *)
+Inductive a_ty_mode_compat : mode -> typ -> Prop :=
+| a_ty_mode_compat__ti : a_ty_mode_compat mode_ti typ_hole
+| a_ty_mode_compat__tc : forall A, a_ty_mode_compat mode_tc A
+| a_ty_mode_compat__fn : forall m P Q,
+    a_ty_mode_compat m Q ->
+    a_ty_mode_compat (mode_fn m) (typ_arrow P Q).
+
+Inductive a_sk_mode_compat : mode -> typ -> Prop :=
+| a_sk_mode_compat__ti : a_sk_mode_compat mode_ti typ_hole
+| a_sk_mode_compat__tc : a_sk_mode_compat mode_tc typ_hole
+| a_sk_mode_compat__fn : forall m P Q,
+    a_sk_mode_compat m Q ->
+    a_sk_mode_compat (mode_fn m) (typ_arrow P Q).
+
+(** A mode-annotation distinguishing typing ([TY]) from skeleton
+    inference ([SK]) judgement contexts.  Used by [a_sub] to choose
+    between [fillMono] (subst suffix with flex-monos) and identity
+    suffix substitution.  See paper page 24 Fig. 6. *)
+Inductive a_sub_mode : Set :=
+| a_sub_mode_ty : a_sub_mode
+| a_sub_mode_sk : a_sub_mode.
+
+(** "Non-flex-poly" side condition. *)
+Inductive a_non_flex_poly : typ -> Prop :=
+| a_non_flex_poly__unit  : a_non_flex_poly typ_unit
+| a_non_flex_poly__var   : forall X, a_non_flex_poly (typ_var_f X)
+| a_non_flex_poly__arrow : forall A B, a_non_flex_poly (typ_arrow A B)
+| a_non_flex_poly__all_col : forall c A, a_non_flex_poly (typ_all_col c A)
+| a_non_flex_poly__all_etag : forall ε A, a_non_flex_poly (typ_all_etag ε A)
+| a_non_flex_poly__all_plain : forall A, a_non_flex_poly (typ_all_plain A)
+| a_non_flex_poly__hole : a_non_flex_poly typ_hole
+| a_non_flex_poly__tophole : forall A, a_non_flex_poly (typ_tophole A)
+| a_non_flex_poly__flex_mono : forall X, a_non_flex_poly (typ_var_flex_mono X).
+
+(** "Non-flex" side condition (paper ulab{FlexL}/{FlexR}). *)
+Inductive a_non_flex : typ -> Prop :=
+| a_non_flex__unit  : a_non_flex typ_unit
+| a_non_flex__var   : forall X, a_non_flex (typ_var_f X)
+| a_non_flex__arrow : forall A B, a_non_flex (typ_arrow A B)
+| a_non_flex__all_col : forall c A, a_non_flex (typ_all_col c A)
+| a_non_flex__all_etag : forall ε A, a_non_flex (typ_all_etag ε A)
+| a_non_flex__all_plain : forall A, a_non_flex (typ_all_plain A)
+| a_non_flex__hole : a_non_flex typ_hole
+| a_non_flex__tophole : forall A, a_non_flex (typ_tophole A).
