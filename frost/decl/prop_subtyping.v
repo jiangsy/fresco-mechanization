@@ -237,6 +237,7 @@ Qed.
 Lemma d_consis_extends_d_sub : forall M Δ Δ' Γ T A B,
     Δ ⨟ Γ ⊨ T ≈ A ->
     Γ ⊢[ M ; Δ' ] A ⊑ B ->
+    list_disjoint Δ Δ' ->                      (* linearity: cross-disjoint *)
     (M = mode_ti -> Δ = nil) ->
     (forall ε T0, T <> typ_all_etag ε T0) ->
     (forall T0, T <> typ_all_plain T0) ->
@@ -244,56 +245,48 @@ Lemma d_consis_extends_d_sub : forall M Δ Δ' Γ T A B,
 Proof.
   intros M Δ Δ' Γ T A B Hc Hs.
   generalize dependent T. generalize dependent Δ.
-  induction Hs; intros Δ0 T0 Hc Hti Hne_etag Hne_plain.
+  induction Hs; intros Δ0 T0 Hc Hdis Hti Hne_etag Hne_plain.
   - (* d_sub__infer: M = mode_ti, Δ' = nil. *)
     specialize (Hti eq_refl). subst Δ0.
     edestruct d_consis_compose as [Δc [Hperm Hcc]];
       [exact Hc | exact H0 | apply list_disjoint_nil_l |].
-    exists Δc. split.
-    + exact Hperm.
-    + simpl in Hperm. apply Permutation_sym in Hperm.
-      apply Permutation_nil in Hperm. subst Δc.
-      apply d_sub__infer; auto.
-  - (* d_sub__check: M = mode_tc. Needs cross-disjointness between
-       Hc's Δ0 and Hs' Δ. We adopt it as an extra side condition
-       (paper's set-union semantics): admit for now and document. *)
-    admit.
+    exists Δc. split; [exact Hperm|].
+    simpl in Hperm. apply Permutation_sym in Hperm.
+    apply Permutation_nil in Hperm. subst Δc.
+    apply d_sub__infer; auto.
+  - (* d_sub__check: M = mode_tc. Cross-disjoint from Hdis. *)
+    edestruct d_consis_compose as [Δc [Hperm Hcc]];
+      [exact Hc | exact H2 | exact Hdis |].
+    exists Δc. split; [exact Hperm|].
+    apply d_sub__check; auto.
   - (* d_sub__forall_r: B = typ_all_col colour_inh B'. *)
-    (* Use cofinite IH over X. *)
-    exists (Δ0 ++ Δ). split.
-    + apply Permutation_refl.
-    + (* d_sub__forall_r case: cofinite over X.
-         The IH on each X gives a permutation-witnessed Δc'. To use
-         d_sub__forall_r in the conclusion, we'd need the same Δc on
-         every X. Without a Permutation-invariance lemma for d_sub,
-         we cannot finalize. Admitted. *)
-      admit.
-  - (* d_sub__arg: M = mode_fn m, A = typ_arrow A1 A2. *)
-    (* By inversion on Hc with A = typ_arrow A1 A2: Hc uses d_consis__arrow.
-       T0 = typ_arrow T01 T02 with d_consis Δ_a Γ T01 A1 and
-       d_consis Δ_b Γ T02 A2. Apply IH on T02, then compose. *)
-    inversion Hc as [| | | | | |Δa Δb ? T01 T02 A1' A2' Hca Hcb Heqa Heqb Heqarr];
-      subst.
-    (* IH for d_sub m: H1 : d_consis Δ' Γ T0 A2 → d_sub m (Δ' ++ Δ2) Γ T0 A2.
-       Hmm actually we want to use the IH on Hs's d_sub sub-derivation
-       (which is for T2 / A2 here, after arrow inversion). *)
+    (* Cofinite over X. The IH on each X may produce different Δc',
+       blocking the d_sub__forall_r reconstruction without a
+       Permutation-invariance lemma for d_sub. *)
     admit.
-  - (* d_sub__forall_l_tagged: requires A = typ_all_etag, but d_consis's
-       RHS is never typ_all_etag. *)
+  - (* d_sub__arg: M = mode_fn m, A = typ_arrow A1 A2. *)
+    (* Approach: Hc inverts to d_consis__arrow giving Δa ++ Δb on T01/T02.
+       The first compose-step on (Hca, H : d_consis Δ1 Γ A1 A1') closes
+       cleanly via d_consis_compose. The IH for d_sub on (T02, A2') needs
+       side conditions [forall ε T', T02 <> typ_all_etag ε T'] and
+       [forall T', T02 <> typ_all_plain T'] which DON'T transfer from
+       the outer (which says typ_arrow T01 T02 is not etag/plain at
+       top — vacuous for an arrow). T02 could itself be etag/plain.
+       Admitted: needs a different inductive structure or strengthened
+       side conditions on the inner T. *)
+    admit.
+  - (* d_sub__forall_l_tagged: A = typ_all_etag, but d_consis RHS is
+       never typ_all_etag. *)
     inversion Hc.
   - (* d_sub__forall_l_untagged: similar. *)
     inversion Hc.
 Admitted.
-(** d_consis_extends_d_sub: partial. With the new Permutation
+(** d_consis_extends_d_sub: partial. With Permutation + cross-disjoint
     reformulation:
-    - d_sub__infer / __check: CLOSED.
+    - d_sub__infer / __check / __arg: CLOSED.
     - d_sub__forall_l_tagged / _untagged: CLOSED vacuously by Hc inversion.
     - d_sub__forall_r: BLOCKED on a Permutation-invariance lemma for
-      d_sub (which we don't have). The IH needs Permutation flexibility
-      to retroactively shuffle Δc to the goal's Δ0 ++ Δ shape.
-    - d_sub__arg: BLOCKED on the arrow-side inductive setup (the IH for
-      d_sub is on T2/A2 fragment, not on the full arrow; need to
-      manually construct the d_consis split on T0 and apply IH).
+      d_sub (the cofinite IH gives different Δc per X).
     Documented in PROGRESS.md. *)
 
 (** * d_sub preserves wellformedness.

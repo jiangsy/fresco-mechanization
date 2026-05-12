@@ -338,7 +338,94 @@ be slightly cleaner without changing semantics:
   logic might want a stronger statement. Out of scope for the
   current mechanization.
 
-## 6. Metatheory landmarks (current status; admits ≠ done)
+## 6. Paper Lemma 3.7 — root-cause analysis of the three open admits
+
+`d_typing_pat_preserves_wf` (mutual) has three remaining inline admits.
+They classify as follows:
+
+### P1 — `d_pat__sub` case: rule problem (paper omits wf premise)
+
+The rule:
+```coq
+| d_pat__sub : ... -> d_pat_sub m nil Γ P Q -> d_pat m Γ e Q
+```
+
+To derive `d_wf_skel nil Γ Q` we need `d_pat_sub_preserves_wf` (P → Q
+preserves wf). That lemma is currently tautological (takes the
+conclusion as a side hypothesis). The structural lemma is blocked at
+**`d_pat_consis__ghost`**:
+
+```coq
+| d_pat_consis__ghost : forall Γ P, no_forall_typ P -> d_pat_consis nil Γ typ_hole P
+```
+
+`no_forall_typ P` does NOT imply `d_wf_skel nil Γ P` — it accepts free
+variables and even `typ_tophole typ_hole`. The paper's rule (eqlab{Ghost},
+declarative.tex:1847) requires `\syn{∀α} ∉ P` (a syntactic condition
+on quantifiers) and **silently assumes P is wf** via the paper's
+ambient wf invariant.
+
+**Classification:** missing rule premise. Closing requires adding
+`d_wf_skel nil Γ P` to `d_pat_consis__ghost`. Pure rule strengthening,
+no semantic change in well-formed scenarios.
+
+### P2 — `d_pat__abs_check` case: paper-level rule/wf inconsistency
+
+```coq
+| d_pat__abs_check : forall L Γ e Q,
+    ... ->
+    d_pat mode_tc Γ (exp_abs e) (typ_arrow (typ_tophole typ_hole) Q)
+```
+
+The rule produces a skeleton containing `typ_tophole typ_hole`. The
+wf rule `d_wf_skel__tophole` requires:
+
+```coq
+| d_wf_skel__tophole : ... -> guarded_skel P -> d_wf_skel nil Γ P -> ...
+```
+
+`guarded_skel typ_hole` is **false** (`guarded_skel` rejects holes).
+Furthermore, the paper itself explicitly states
+(declarative.tex:1191): *"We also forbid `TopHole.Hole`"*.
+
+**Classification:** fundamental paper inconsistency. The skeleton-
+inference rule (paper:1620) produces a shape that paper's own wf
+relation (paper:1190+) explicitly rejects. Lemma 3.7 as stated
+("all patterns in the derivation tree are well-formed") cannot
+hold without either (a) restricting the rule to produce a different
+output, or (b) loosening wf to admit `TopHole.Hole`. This is NOT a
+mechanization issue — both options change the paper.
+
+### P3 — `d_pat__abs_anno_check` case: conditional version of P2
+
+```coq
+| d_pat__abs_anno_check : forall L Γ e A Q,
+    d_wf_typ Γ A -> ... ->
+    d_pat mode_tc Γ (exp_abs_anno A e) (typ_arrow (typ_tophole A) Q)
+```
+
+`typ_tophole A` is wf iff `guarded_skel A`. If the annotation `A` is
+a polymorphic type (e.g. `∀a. a → a`), then `A` is NOT guarded and
+the output skeleton fails wf.
+
+**Classification:** conditional version of P2. For guarded `A`, the
+case closes; for unguarded `A`, it falls into the same paper-level
+tension. Narrowing the rule to `guarded_typ A` would close it but
+restricts the annotation grammar.
+
+### Summary table
+
+| Admit | Root cause | Fix |
+|---|---|---|
+| P1 | Missing rule premise on `d_pat_consis__ghost` | Add `d_wf_skel nil Γ P`; pure strengthening |
+| P2 | Rule's output (`TopHole.Hole`) violates wf the paper itself states | Paper-level redesign needed |
+| P3 | Rule output `typ_tophole A` non-wf when `A` is a forall | Narrow rule to `guarded_typ A` OR paper redesign |
+
+P1 is a **type/predicate** issue: `no_forall_typ` is too weak as a wf
+substitute. P2/P3 are **rule-vs-wf inconsistencies** the paper has at
+the source level.
+
+## 7. Metatheory landmarks (current status; admits ≠ done)
 
 | Paper claim | Mechanization | Status |
 |---|---|---|
