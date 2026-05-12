@@ -136,6 +136,7 @@ Qed.
     LHS of any [d_consis] constructor (LHS is [is_utyp]: only
     [typ_all_etag] / [typ_all_plain] at the head), so they don't fire. *)
 
+(** Paper Lemma B.2 (Consistency Transitivity). [paper-ref: thm:consist-transitivity] *)
 Lemma d_consis_compose : forall Δa Δb Γ T A B,
     Δa ⨟ Γ ⊨ T ≈ A ->
     Δb ⨟ Γ ⊨ A ≈ B ->
@@ -174,7 +175,9 @@ Admitted.
     callers since the consis-extends-sub lemma admits the corresponding
     cases anyway. *)
 
-(** Paper Lemma D.5 (Consistency extends subtyping). [paper-ref: lemma:consis-sub] *)
+(** Paper Lemma B.3 (Consistency-Subtyping Transitivity). [paper-ref: thm:consist-subtyping-transitivity]
+    The declarative version of the algorithmic "Consistency extends
+    subtyping" (paper Lemma D.5). *)
 Lemma d_consis_extends_d_sub : forall M Δ Δ' Γ T A B,
     Δ ⨟ Γ ⊨ T ≈ A ->
     Γ ⊢[ M ; Δ' ] A ⊑ B ->

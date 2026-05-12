@@ -15,6 +15,10 @@ Set Implicit Arguments.
 
 (** * Task 1 — d_pat_consis preserves wellformedness.
 
+    INTERNAL plumbing — not paper-stated. Used by [d_pat_sub_preserves_wf]
+    which in turn is needed by [d_typing_pat_preserves_wf]'s [d_pat__sub]
+    case (the d_pat analog of paper Lemma 3.7).
+
     Paper claim: if [Δ ⨟ Γ ⊨ SS ~ P] with [SS] wf, then [P] is wf.
 
     NARROWING (paper-level): the [d_pat_consis__ghost] rule produces a
@@ -41,6 +45,9 @@ Lemma d_pat_consis_preserves_wf : forall Δ Γ SS P,
 Proof. intros. assumption. Qed.
 
 (** * Task 2 — d_pat_sub preserves wellformedness.
+
+    INTERNAL plumbing — not paper-stated. Used by
+    [d_typing_pat_preserves_wf]'s [d_pat__sub] case.
 
     NARROWING: same shape as Task 1. The [d_pat_sub__ghost] case
     inherits [no_forall_typ P] from [d_pat_consis__ghost], so the same

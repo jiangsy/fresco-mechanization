@@ -839,10 +839,16 @@ Qed.
 
 (** * Wellformedness preservation for [d_consis] and [d_sub].
 
-    Conclusion: the RHS of these judgments is [d_wf_typ Γ]. The premises
-    we need amount to "the RHS is a well-formed type" — which we obtain
-    inductively without further preconditions, except for the variable
-    case where we accept the admit (see inline). *)
+    INTERNAL plumbing — these are not paper-stated lemmas. The paper
+    only states wf-preservation for [d_refine] (Lemma 3.4) and [d_pat]
+    (Lemma 3.7). We carry [d_consis_preserves_wf] / [d_sub_preserves_wf]
+    here purely as plumbing for the [d_typing__sub] case of
+    [d_typing_pat_preserves_wf] (which IS Lemma 3.7's d_typing analog
+    in the mutual).
+
+    Conclusion: the RHS of these judgments is [d_wf_typ Γ]. The
+    var-case admit propagates through to [d_sub_preserves_wf] and
+    onward to [d_typing_pat_preserves_wf]'s [d_typing__sub] case. *)
 
 Lemma d_consis_preserves_wf : forall Δ Γ T A,
     Δ ⨟ Γ ⊨ T ≈ A ->
