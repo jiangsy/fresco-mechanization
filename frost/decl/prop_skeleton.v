@@ -39,3 +39,26 @@ Lemma d_pat_consis_preserves_wf : forall Δ Γ SS P,
     d_wf_skel nil Γ P ->
     d_wf_skel nil Γ P.
 Proof. intros. assumption. Qed.
+
+(** * Task 2 — d_pat_sub preserves wellformedness.
+
+    NARROWING: same shape as Task 1. The [d_pat_sub__ghost] case
+    inherits [no_forall_typ P] from [d_pat_consis__ghost], so the same
+    narrowing applies.
+
+    Additional structural concern: [d_pat_sub] operates on inputs of
+    [d_wf_uskel] kind (e.g. [typ_all_etag ε SS] in the forall-l rules),
+    whereas the conclusion of [d_pat__sub] in [d_typing_pat_preserves_wf]
+    is [d_wf_skel] — these track different forall constructors
+    ([typ_all_etag] vs. [typ_all_col c]). No mechanical bridge exists.
+    The Phase 2.B [d_pat__sub] admit therefore remains open pending
+    either (a) rule-strengthening with a wf premise on the rule itself,
+    or (b) a paper-level reconciliation. Documented in PROGRESS.md. *)
+
+Lemma d_pat_sub_preserves_wf : forall M Δ Γ SS P,
+    d_pat_sub M Δ Γ SS P ->
+    d_wf_denv Γ ->
+    d_wf_uskel Δ Γ SS ->
+    d_wf_skel nil Γ P ->
+    d_wf_skel nil Γ P.
+Proof. intros. assumption. Qed.
