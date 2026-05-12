@@ -275,9 +275,56 @@ Lemma stability_d_consis : forall Θ0 Θ1 Γ0 Γ1 Δ T A,
     d_consis Δ Γ0 T A ->
     d_consis Δ Γ1 T A.
 Proof.
-  (* Admitted: by induction on [Θ0 ⊑ Θ1]; uses [d_consis_weakening]
-     from prop_subtyping.v.  Same shape as [stability_d_wf_typ]. *)
-Admitted.
+  intros Θ0 Θ1 Γ0 Γ1 Δ T A Hext. revert Γ0 Γ1 Δ T A.
+  induction Hext; intros Γ0 Γ1 Δ T A Htr0 Htr1 Hwf.
+  - apply a_transfers_nil_inv in Htr0. subst Γ0.
+    pose proof (a_transfers_suffix_inv H Htr1) as Eq. subst Γ1. exact Hwf.
+  - inversion Htr0.
+  - inversion Htr0.
+  - inversion Htr0; subst. inversion Htr1; subst.
+    eapply IHHext; eauto.
+  - inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1.
+    inversion HΘ'; subst.
+    eapply IHHext; eauto.
+  - (* var_typ: strip dbind_typ via tvar_morph, IH on tail, re-attach. *)
+    inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1.
+    inversion HΘ'; subst.
+    apply d_consis_weakening_head with (Γ' := a ~ dbind_typ P).
+    eapply IHHext; eauto.
+    eapply d_consis_tvar_morph; [|exact Hwf].
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hin | Hin].
+    + apply binds_one_iff in Hin. destruct Hin as [_ Habs]. inversion Habs.
+    + exact Hin.
+  - (* tvar: same head on both sides; use tvar_morph + IH on inner tail. *)
+    inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1.
+    inversion HΘ'; subst.
+    eapply d_consis_tvar_morph; [|exact Hwf].
+    intros Y HbY. apply binds_app_iff in HbY.
+    apply binds_app_iff. destruct HbY as [Hin | Hin]; [left; exact Hin | right].
+    assert (Hwf_var : d_consis nil Γ (typ_var_f Y) (typ_var_f Y))
+      by (apply d_consis__var; auto).
+    apply IHHext with (Γ1 := Γ0) in Hwf_var; auto.
+    inversion Hwf_var; subst; auto.
+  - inversion Htr0; subst.
+    apply a_transfers_app in Htr1.
+    destruct Htr1 as [ΓΞ [ΓΘ' [Eq [HΞ HΘ']]]].
+    pose proof (a_transfers_suffix_inv H HΞ) as EqΞ. subst ΓΞ. simpl in Eq.
+    subst Γ1.
+    inversion HΘ'; subst.
+    eapply IHHext; eauto.
+Qed.
 
 Lemma stability_d_sub : forall Θ0 Θ1 Γ0 Γ1 m Δ A B,
     aenv_extends Θ0 Θ1 ->

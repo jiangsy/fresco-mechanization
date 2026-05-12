@@ -98,6 +98,40 @@ Proof.
   apply d_consis_weakening. simpl. exact H.
 Qed.
 
+(** [d_consis] is preserved by any context morphism that preserves
+    tvar bindings (similar to [d_wf_typ_tvar_morph]). *)
+Lemma d_consis_tvar_morph : forall Γ Γ' Δ T A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    Δ ⨟ Γ ⊨ T ≈ A ->
+    Δ ⨟ Γ' ⊨ T ≈ A.
+Proof.
+  intros Γ Γ' Δ T A Hmorph H. generalize dependent Γ'.
+  induction H; intros Γ' Hmorph.
+  - apply d_consis__unit.
+  - apply d_consis__var. apply Hmorph; auto.
+  - apply d_consis__forall_inh_tagged with (L := L `union` dom Γ'); auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__forall_inh_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__forall_syn_tagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__forall_syn_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__arrow; auto.
+Qed.
+
 Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 M Δ T A,
     (Γ1 ++ Γ3) ⊢[ M ; Δ ] T ⊑ A ->
     (Γ1 ++ Γ2 ++ Γ3) ⊢[ M ; Δ ] T ⊑ A.
