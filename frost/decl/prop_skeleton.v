@@ -62,3 +62,98 @@ Lemma d_pat_sub_preserves_wf : forall M Δ Γ SS P,
     d_wf_skel nil Γ P ->
     d_wf_skel nil Γ P.
 Proof. intros. assumption. Qed.
+
+(** * Task 3 — Splitting / inversion lemmas for d_refine and d_refine_syn.
+
+    Paper proofs.tex [lemma:split-refine]. The declarative analogue is
+    inversion of the refinement relations on each top-level constructor. *)
+
+Lemma d_refine_arrow_split : forall Ψ Γ P1 P2 Q,
+    d_refine Ψ Γ (typ_arrow P1 P2) Q ->
+    exists Q1 Q2, Q = typ_arrow Q1 Q2 /\
+                  d_refine Ψ Γ P1 Q1 /\
+                  d_refine Ψ Γ P2 Q2.
+Proof.
+  intros Ψ Γ P1 P2 Q H. dependent destruction H. eauto.
+Qed.
+
+Lemma d_refine_all_plain_split : forall Ψ Γ P Q,
+    d_refine Ψ Γ (typ_all_plain P) Q ->
+    exists Q', Q = typ_all_plain Q' /\
+               exists L, forall X, X `notin` L ->
+                  d_refine (X :: Ψ) Γ
+                    (open_typ_wrt_typ P (typ_var_f X))
+                    (open_typ_wrt_typ Q' (typ_var_f X)).
+Proof.
+  intros Ψ Γ P Q H. dependent destruction H. eauto.
+Qed.
+
+Lemma d_refine_hole_split : forall Ψ Γ Q,
+    d_refine Ψ Γ typ_hole Q ->
+    d_wf_skel nil Γ Q.
+Proof.
+  intros Ψ Γ Q H. dependent destruction H. assumption.
+Qed.
+
+Lemma d_refine_tophole_split : forall Ψ Γ P Q,
+    d_refine Ψ Γ (typ_tophole P) Q ->
+    (exists L Q', Q = typ_all_plain Q' /\
+                  (forall X, X `notin` L ->
+                     d_refine (X :: Ψ) Γ P (open_typ_wrt_typ Q' (typ_var_f X))))
+    \/
+    (exists L Q', Q = typ_all_plain (typ_tophole Q') /\
+                  guarded_skel Q' /\
+                  d_wf_skel nil Γ P /\
+                  (forall X, X `notin` L ->
+                     d_refine nil Γ P (open_typ_wrt_typ Q' (typ_var_f X)))).
+Proof.
+  intros Ψ Γ P Q H. dependent destruction H.
+  - left. eauto.
+  - right. eauto 8.
+Qed.
+
+(** Inversion family for [d_refine_syn]. *)
+
+Lemma d_refine_syn_arrow_split : forall Ψ Γ P1 P2 Q,
+    d_refine_syn Ψ Γ (typ_arrow P1 P2) Q ->
+    exists Q1 Q2, Q = typ_arrow Q1 Q2 /\
+                  d_refine_syn Ψ Γ P1 Q1 /\
+                  d_refine_syn Ψ Γ P2 Q2.
+Proof.
+  intros Ψ Γ P1 P2 Q H. dependent destruction H. eauto.
+Qed.
+
+Lemma d_refine_syn_all_inh_split : forall Ψ Γ P Q,
+    d_refine_syn Ψ Γ (typ_all_col colour_inh P) Q ->
+    exists Q', Q = typ_all_col colour_inh Q' /\
+               exists L, forall X, X `notin` L ->
+                  d_refine_syn (X :: Ψ) Γ
+                    (open_typ_wrt_typ P (typ_var_f X))
+                    (open_typ_wrt_typ Q' (typ_var_f X)).
+Proof.
+  intros Ψ Γ P Q H. dependent destruction H. eauto.
+Qed.
+
+Lemma d_refine_syn_hole_split : forall Ψ Γ Q,
+    d_refine_syn Ψ Γ typ_hole Q ->
+    is_syn_skel Q /\ d_wf_skel Ψ Γ Q.
+Proof.
+  intros Ψ Γ Q H. dependent destruction H. auto.
+Qed.
+
+Lemma d_refine_syn_tophole_split : forall Ψ Γ P Q,
+    d_refine_syn Ψ Γ (typ_tophole P) Q ->
+    (exists L Q', Q = typ_all_col colour_syn Q' /\
+                  (forall X, X `notin` L ->
+                     d_refine_syn (X :: Ψ) Γ P (open_typ_wrt_typ Q' (typ_var_f X))))
+    \/
+    (exists L Q', Q = typ_all_col colour_syn (typ_tophole Q') /\
+                  guarded_skel Q' /\
+                  d_wf_skel nil Γ P /\
+                  (forall X, X `notin` L ->
+                     d_refine_syn nil Γ P (open_typ_wrt_typ Q' (typ_var_f X)))).
+Proof.
+  intros Ψ Γ P Q H. dependent destruction H.
+  - left. eauto.
+  - right. eauto 8.
+Qed.
