@@ -65,8 +65,9 @@ Proof. intros. assumption. Qed.
 
 (** * Task 3 — Splitting / inversion lemmas for d_refine and d_refine_syn.
 
-    Paper proofs.tex [lemma:split-refine]. The declarative analogue is
-    inversion of the refinement relations on each top-level constructor. *)
+    Paper Lemma D.4 (Splitting refines). [paper-ref: lemma:split-refine]
+    The declarative analogue is inversion of the refinement relations on
+    each top-level constructor. *)
 
 Lemma d_refine_arrow_split : forall Ψ Γ P1 P2 Q,
     d_refine Ψ Γ (typ_arrow P1 P2) Q ->
@@ -165,6 +166,8 @@ Qed.
     ([d_pat__sub], [d_pat__app], the paper-level [abs_check] /
     [abs_anno_check] tensions); this projection inherits them. *)
 
+(** Paper Lemma 3.7 (Preservation of Skeleton Well-formedness). [paper-ref: name:"Preservation of Skeleton Well-formedness"]
+    Projection of the mutual [d_typing_pat_preserves_wf]. *)
 Lemma d_pat_preserves_skel_wf : forall m Γ e P,
     d_pat m Γ e P ->
     d_wf_denv Γ ->
@@ -187,6 +190,7 @@ Qed.
     - Anti-symmetry interaction with [d_typing__sub] (Phase 2.C-adjacent).
     Phase 2.E.5 admit; rationale in PROGRESS.md "Open Admitted". *)
 
+(** Paper Lemma 3.8 (Validity of skeleton inference). [paper-ref: name:"Validity of skeleton inference"] *)
 Theorem d_pat_validity : forall m Γ e P,
     d_pat m Γ e P ->
     d_wf_denv Γ ->
@@ -212,6 +216,7 @@ Admitted.
     the deferred algorithmic-side lemmas.
     Phase 2.E.6 admit; see PROGRESS.md. *)
 
+(** Paper Lemma 3.9 (Safety of skeleton inference). [paper-ref: name:"Safety of skeleton inference"] *)
 Theorem d_pat_safety : forall m Γ e,
     (exists A, d_typing m Γ e A) ->
     d_wf_denv Γ ->

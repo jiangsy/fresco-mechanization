@@ -20,7 +20,9 @@ else
 	SED_FLAG := -i
 endif
 
-.PHONY: coq clean
+PAPER_AUX := ../paper/frost.aux
+
+.PHONY: coq clean sync-paper-refs
 
 %/def_ott.v : %/language.ott
 	ott -i $^ -o $@ ${OTT_FLAGS}
@@ -60,3 +62,9 @@ coq : ${COQ_MAKEFILE}
 clean :
 	${MAKE} -f ${COQ_MAKEFILE} clean
 	rm */prop_ln.v */def_ott.v ${COQ_MAKEFILE} ${COQ_MAKEFILE}.conf .FILE_LIST
+
+# Sync `[paper-ref: ...]`-marked comments in .v files with the latest
+# Lemma/Theorem numbers from the compiled paper. Requires paper to be
+# built first (`make -C ../paper` or similar).
+sync-paper-refs : ${PAPER_AUX}
+	python3 scripts/sync_paper_refs.py

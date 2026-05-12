@@ -638,6 +638,7 @@ Qed.
     Paper Lemma at [declarative.tex:1380]. If [P ⊳ Q] (colour-respecting
     refinement) and [P] is wellformed under [Ψ ⨟ Γ], then [Q] is too. *)
 
+(** Paper Lemma 3.4 (Refinement preserves well-formedness). [paper-ref: name:"Refinement preserves well-formedness"] *)
 Lemma d_refine_preserves_wf : forall Ψ Γ P Q,
     Ψ ⨟ Γ ⊢ₛₖ P ->
     Ψ ⨟ Γ ⊢ᵣ P ▸ Q ->
@@ -801,6 +802,8 @@ Qed.
     refinement [Ψ ⨟ Γ ⊢ P ▸ Q]: the ∀ outputs are [typ_all_col colour_*]
     instead of [typ_all_plain], but the proof structure is identical. *)
 
+(** Synthesised analogue of paper Lemma 3.4 (Refinement preserves
+    well-formedness). [paper-ref: name:"Refinement preserves well-formedness"] *)
 Lemma d_refine_syn_preserves_wf : forall Ψ Γ P Q,
     Ψ ⨟ Γ ⊢ₛₖ P ->
     Ψ ⨟ Γ ⊢ᵣ P ⊳ Q ->

@@ -338,6 +338,8 @@ Admitted.
     single binding past a fresh suffix.
 *)
 
+(** Paper Lemma D.3 (Structural rules). [paper-ref: lemma:structural]
+    Narrowed: a single-binding move past a fresh suffix. *)
 Lemma d_typing_suffix_moving_singleton : forall Γ1 y b Γ2 m e A,
     d_typing m (Γ1 ++ (y ~ b) ++ Γ2) e A ->
     y `notin` dom Γ1 ->
@@ -369,6 +371,7 @@ Admitted.
     policy: "narrow to base + abs + freeze if hard").
 *)
 
+(** Paper Lemma 3.1 (General subsumption). [paper-ref: lemma:general-subsumption] *)
 Theorem d_typing_general_subsumption : forall Γ e A B m,
     d_typing mode_ti Γ e A ->
     d_sub m nil Γ A B ->

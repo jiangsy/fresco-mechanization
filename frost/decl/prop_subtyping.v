@@ -174,6 +174,7 @@ Admitted.
     callers since the consis-extends-sub lemma admits the corresponding
     cases anyway. *)
 
+(** Paper Lemma D.5 (Consistency extends subtyping). [paper-ref: lemma:consis-sub] *)
 Lemma d_consis_extends_d_sub : forall M Δ Δ' Γ T A B,
     Δ ⨟ Γ ⊨ T ≈ A ->
     Γ ⊢[ M ; Δ' ] A ⊑ B ->
@@ -273,6 +274,7 @@ Proof.
   apply d_shallow_sub__refl.
 Qed.
 
+(** Paper Lemma 3.2 (Soundness of subtyping). [paper-ref: name:"Soundness of subtyping"] *)
 Theorem d_sub_sound : forall Γ A B,
     is_typ A ->
     Γ ⊢[ mode_tc ; nil ] A ⊑ B ->
@@ -380,7 +382,9 @@ Admitted.
     instantiation) could potentially yield valid derivations. So
     uniqueness requires fixing Δ'. *)
 
-(** Strictified uniqueness with the matching-Δ' precondition. *)
+(** Strictified uniqueness with the matching-Δ' precondition.
+    Paper Lemma 3.3 (No guessing of polytypes). [paper-ref: name:"No guessing of polytypes"]
+    The paper itself flags this lemma as "a bit sketchy". *)
 Theorem d_sub_no_guess_uniqueness : forall (m : mode) (Δ : list atom)
     (Γ : list (atom * dbind)) (ε : atom) (T A : typ) (Δ' : list atom)
     (ph1 ph2 : typ),
