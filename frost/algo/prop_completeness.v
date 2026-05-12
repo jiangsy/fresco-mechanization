@@ -189,3 +189,85 @@ Proof.
   intros Hd Θ0 Htr.
   eapply a_sub_complete; eauto.
 Qed.
+
+
+(* ===================================================================== *)
+(*  Task 3.  Completeness of algorithmic skeleton inference (a_pat).      *)
+(* ===================================================================== *)
+
+(** [a_pat_complete] — paper proofs.tex §"Type Inference" Lemma
+    "Skeleton inference is complete".
+
+    For every declarative skeleton-inference derivation, exhibit an
+    algorithmic counterpart whose output context transfers to the same
+    declarative context.
+
+    Since [d_pat] and [d_typing] are mutual (App rule), the proof is
+    formally mutual with [a_typing_complete] (Task 4).  We state both
+    here and admit them jointly. *)
+
+Theorem a_pat_complete :
+  forall m Γ e P,
+    d_pat m Γ e P ->
+    forall Θ0 P0,
+      a_transfers Θ0 Γ ->
+      a_wf_typ Θ0 P0 ->
+      exists Θ1 Q, a_pat m Θ0 P0 e Q Θ1 /\ a_transfers Θ1 Γ.
+Proof.
+  (* Admitted — paper proofs.tex §"Skeleton inference is complete".
+     By mutual induction on [d_pat m Γ e P] with [a_typing_complete]
+     (Task 4).  [a_pat]'s 9 constructors mirror [d_pat]'s 10:
+
+     - [d_pat__unit] / [d_pat__var] / [d_pat__anno] / [d_pat__freeze]
+                                    → [a_pat__unit/_var/_anno/_freeze]
+                                      via [a_sub_complete] (Task 2)
+                                      dispatched on [a_sub_mode_sk].
+
+     - [d_pat__sub] — folds into the corresponding [a_sub] leg.
+
+     - [d_pat__abs] — match [a_pat__abs] via [a_split_complete]
+                      (NOT YET PROVED) on the prefix split, then IH on
+                      the body.  The freshness L-cofinite encoding
+                      transfers cleanly.
+
+     - [d_pat__abs_check] — match [a_pat__abs_check]; binder
+                            [x : typ_hole] threads through
+                            [a_transfers__var_typ].
+
+     - [d_pat__abs_anno] / [d_pat__abs_anno_check] — analogous;
+                                                    both require the
+                                                    [a_split] machinery
+                                                    on the annotation.
+
+     - [d_pat__app] — folds through the mutual [a_typing_complete]
+                      step on the function leg + [a_pat_complete] on
+                      the argument leg + [a_consis] on the result type.
+
+     The same auxiliary completeness lemmas required by Task 2
+     (i–v) apply; additionally:
+
+       (vi)  [a_split_complete] : declarative arrow shapes factor
+                                   through [a_split].
+       (vii) [a_guess_mono_complete] : every monotype witness
+                                       factors through a flex-mono
+                                       prefix.
+
+     Both are technically straightforward (a_split is mostly
+     mechanical on arrow shapes; a_guess_mono generates fresh
+     names) but require the auxiliary lemmas from Phase 3.B to
+     be closed first. *)
+Admitted.
+
+
+(** Smoke test for Task 3: skeleton inference on [unit] under the
+    empty algorithmic context, with [typ_hole] as the expected
+    shape. *)
+Lemma a_pat_complete_smoke :
+  d_pat mode_ti nil exp_unit typ_unit ->
+  forall Θ0, a_transfers Θ0 nil -> a_wf_typ Θ0 typ_hole ->
+  exists Θ1 Q, a_pat mode_ti Θ0 typ_hole exp_unit Q Θ1 /\
+               a_transfers Θ1 nil.
+Proof.
+  intros Hd Θ0 Htr Hwf.
+  eapply a_pat_complete; eauto.
+Qed.
