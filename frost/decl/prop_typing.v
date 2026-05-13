@@ -1076,11 +1076,77 @@ Proof.
     + (* sub_gen__arg: needs gen→sub bridge (partial). *)
       admit.
   - (* === Hty = d_typing__sub =============================================
-       m_orig = m (the conclusion mode), inner at mode_ti.
-       The inner d_typing is at mode_ti, in is_fn_n_ti; IH fires.
-       Compose Hsub_gen with the inner sub via a transitivity-style
-       step (research-grade for the gen relation). *)
-    admit.
+       Case-split on Hfn to get m's shape. For m = mode_ti,
+       Hsub_orig = d_sub__infer (only mode_ti shape), giving a
+       d_consis we can compose via [d_consis_extends_d_sub_nil].
+       For m = mode_fn _, Hsub_orig = d_sub__arg (wf excludes
+       __forall_l_tagged / __forall_l_untagged); composition needs
+       mode-changing transitivity. *)
+    inversion Hfn; subst.
+    + (* m = mode_ti. mode_fn_n_subst mode_ti m_new = m_new. Apply IHHty
+         (the IH on Hty_inner at mode_ti) with the SAME outer sub —
+         the IH gives the result directly via d_sub_gen at the new
+         target, constructed by composing Hsub_orig and Hsub_gen. *)
+      simpl in Hsub_gen |- *.
+      (* Hsub_orig at mode_ti has d_consis embedded; extract it. *)
+      match goal with
+      | Hs_o : d_sub mode_ti nil Γ _ _ |- _ =>
+          inversion Hs_o; subst;
+          try (match goal with
+               | H_ne : mode_ti <> mode_ti |- _ =>
+                   exfalso; apply H_ne; reflexivity
+               end)
+      end.
+      (* Now we have d_consis nil Γ A0 B0_inner (renamed). Use IHHty
+         on the inner d_typing with the composed sub_gen, dispatching
+         on Hsub_gen for each constructor. *)
+      dependent destruction Hsub_gen.
+      * (* __embed: d_sub m_new nil Γ B0_inner B_tgt. Compose with
+           d_consis A0 B0_inner via [d_consis_extends_d_sub_nil] to get
+           d_sub m_new A0 B_tgt; embed into d_sub_gen; apply IHHty. *)
+        match goal with
+        | Hconsis : d_consis nil Γ ?A0 ?B0,
+          IHHty : is_fn_n_ti mode_ti -> d_wf_denv Γ -> _
+          |- d_typing _ Γ _ ?B_t =>
+            apply IHHty with (B := B_t);
+            [ apply is_fn_n_ti__ti
+            | assumption
+            | apply d_sub_gen__embed;
+              eapply d_consis_extends_d_sub_nil; eauto;
+              eapply (proj1 d_typing_pat_preserves_wf); eauto ]
+        end.
+      * (* __refl_any: B_tgt = B0_inner, mode_typ_compat m_new B0_inner.
+           Build d_sub_gen m_new nil Γ A0 B0_inner via __embed of a
+           d_sub at m_new, derived from d_consis A0 → B0_inner. *)
+        match goal with
+        | Hconsis : d_consis nil Γ ?A0 ?B0,
+          IHHty : is_fn_n_ti mode_ti -> d_wf_denv Γ -> _,
+          Hcompat : mode_typ_compat ?m_ ?B0
+          |- d_typing _ Γ _ ?B0 =>
+            apply IHHty with (B := B0);
+            [ apply is_fn_n_ti__ti
+            | assumption
+            | apply d_sub_gen__embed;
+              inversion Hcompat; subst;
+              [ apply d_sub__infer; auto
+              | apply d_sub__check; auto;
+                [ intros ε T' Heq; subst;
+                  let H_wf := fresh "H_wf" in
+                  assert (H_wf : d_wf_typ Γ (typ_all_etag ε T')) by
+                    (eapply (proj1 d_typing_pat_preserves_wf); eauto);
+                  inversion H_wf
+                | intros T' Heq; subst;
+                  let H_wf := fresh "H_wf" in
+                  assert (H_wf : d_wf_typ Γ (typ_all_plain T')) by
+                    (eapply (proj1 d_typing_pat_preserves_wf); eauto);
+                  inversion H_wf ]
+              | (* mode_fn _: B0 = typ_arrow ... ; need d_sub__arg.
+                   Research-grade. *) admit ] ]
+        end.
+      * (* __forall_r *) admit.
+      * (* __arg *) admit.
+    + (* m = mode_fn _ *)
+      admit.
   - (* === Hty = d_typing__freeze ==========================================
        m_orig = mode_tc — NOT in is_fn_n_ti. Vacuous via Hfn. *)
     inversion Hfn.
@@ -1088,18 +1154,43 @@ Proof.
        m_orig = mode_tc — NOT in is_fn_n_ti. Vacuous via Hfn. *)
     inversion Hfn.
   - (* === Hty = d_typing__abs =============================================
-       m_orig = m, e = exp_abs _, A = typ_arrow A B.
-       Body's typing is at decr_mode m, which is in is_fn_n_ti (by
-       [is_fn_n_ti_decr]). IH on body fires.
-       Dispatch on Hsub_gen:
-       - __embed: __sub doesn't apply (exp_abs not base); need either
-         absorption into __abs or a research-grade move.
-       - __refl_any: B = original. Reconstruct via d_typing__abs.
-       - __forall_r: target = mode_tc. Use d_typing__forall (exp_abs
-         is a value). Per-X premise needs nested recursion.
-       - __arg: target = mode_fn m'. Reconstruct via d_typing__abs at
-         m' with body lifted via IH on Hty's body. *)
-    admit.
+       Body's typing is at decr_mode m, which is in is_fn_n_ti
+       (by [is_fn_n_ti_decr]). *)
+    simpl in Hsub_gen |- *.
+    dependent destruction Hsub_gen.
+    + (* __embed: exp_abs not base, so __sub doesn't apply directly.
+         Research-grade absorption into __abs. *)
+      admit.
+    + (* __refl_any: B_tgt = typ_arrow A B. Reconstruct via
+         d_typing__abs at the lifted target. Case-split on m's shape
+         (Hfn). For m = mode_fn k, body's IH fires at m_new directly
+         and mode_typ_compat at body level follows from outer __fn. *)
+      inversion Hfn; subst.
+      * (* m = mode_ti: research-grade body-mode-shift case. *)
+        admit.
+      * (* m = mode_fn k: target = mode_fn (mode_fn_n_subst k m_new). *)
+        eapply d_typing__abs; try assumption.
+        instantiate (1 := L `union` dom Γ).
+        intros x Hx.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+          (apply d_wf_denv__typ; auto).
+        specialize (H2 x ltac:(auto) (is_fn_n_ti_decr Hfn) Hwfd_x m_new B);
+        simpl in H2; apply H2.
+        apply d_sub_gen__refl_any.
+        -- (* mode_typ_compat (mode_fn_n_subst k m_new) B *)
+          inversion H3; subst; assumption.
+        -- (* d_wf_typ ((x~A)::Γ) B *)
+          inversion H4; subst.
+          rewrite_env ((x ~ dbind_typ A) ++ Γ).
+          apply d_wf_typ_weakening_head; auto.
+    + (* __forall_r: target = mode_tc. Use d_typing__forall (exp_abs
+         is a value). Per-X premise needs nested recursion. *)
+      admit.
+    + (* __arg: target = mode_fn m'. Reconstruct via d_typing__abs at
+         m'; body's return type changes (B0 → A2) so need IHHty on
+         body with a constructed sub. Argument-type change requires
+         narrowing (d_typing_narrowing is admitted). *)
+      admit.
   - (* === Hty = d_typing__abs_anno ========================================
        Symmetric to __abs (annotation provides the argument type
        directly). *)
