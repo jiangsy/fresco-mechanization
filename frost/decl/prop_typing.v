@@ -941,7 +941,10 @@ Qed.
     Closure status (this commit):
     - Vacuous mode_tc cases (Hty = __freeze / __forall): CLOSED via
       [inversion Hfn] (mode_tc ∉ is_fn_n_ti).
-    - Hty = __unit / Hsub_gen = __embed: CLOSED via [d_typing__sub].
+    - Hty ∈ {__unit, __var, __anno} / Hsub_gen = __embed: CLOSED via
+      [d_typing__sub] at the corresponding [is_base_term].
+    - Hty = __unit / Hsub_gen = __arg: auto-discharged by
+      [dependent destruction] (typ_unit ≠ typ_arrow).
     - Remaining cases: admitted with per-case structural notes.
 
     Discovered gap: [d_sub_gen__refl_any] currently allows ANY mode
@@ -994,16 +997,52 @@ Proof.
           typ_unit ≠ typ_arrow.) *)
       admit.
   - (* === Hty = d_typing__var =============================================
-       m_orig = mode_ti, e = exp_var_f x, A = some bound type.
-       Same dispatch shape as __unit, but A may be non-mono (the
-       refl_any sub-case can't use [d_typing_lift_mono] directly). *)
-    admit.
+       m_orig = mode_ti, e = exp_var_f x, A = bound type for x.
+       binds x (dbind_typ A) Γ in scope.
+       Sub-case __embed: direct via d_typing__sub at is_base_term__var.
+       __refl_any: mode_typ_compat gap (same as __unit).
+       __forall_r: nested recursion needed.
+       __arg: A unifies to typ_arrow; conclusion needs converting
+       d_consis_gen / d_sub_gen pieces back to d_consis / d_sub —
+       only partial (gen __refl_any has no general inverse). *)
+    simpl in Hsub_gen |- *.
+    dependent destruction Hsub_gen.
+    + (* sub_gen__embed *)
+      match goal with
+      | Hb : binds _ (dbind_typ ?A0) Γ |- _ =>
+          apply d_typing__sub with (A := A0);
+            [ apply is_base_term__var
+            | apply d_typing__var; exact Hb
+            | assumption ]
+      end.
+    + (* sub_gen__refl_any: mode_typ_compat gap. *)
+      admit.
+    + (* sub_gen__forall_r: nested recursion. *)
+      admit.
+    + (* sub_gen__arg: needs gen→sub bridge (partial). *)
+      admit.
   - (* === Hty = d_typing__anno ============================================
        m_orig = mode_ti, e = exp_anno e' A, target mode = m_new.
        The inner d_typing is at mode_tc — IH on it has Hfn premise
-       which fails (mode_tc not in is_fn_n_ti). So IH doesn't help.
-       Dispatch on Hsub_gen as in __unit / __var. *)
-    admit.
+       which fails (mode_tc ∉ is_fn_n_ti), so IH doesn't help.
+       Dispatch on Hsub_gen as in __var. *)
+    simpl in Hsub_gen |- *.
+    dependent destruction Hsub_gen.
+    + (* sub_gen__embed *)
+      match goal with
+      | HinhA : is_inh_typ ?A0,
+        Hinner : d_typing mode_tc Γ _ ?A0 |- _ =>
+          apply d_typing__sub with (A := A0);
+            [ apply is_base_term__anno
+            | apply d_typing__anno; [ exact HinhA | exact Hinner ]
+            | assumption ]
+      end.
+    + (* sub_gen__refl_any: mode_typ_compat gap. *)
+      admit.
+    + (* sub_gen__forall_r: nested recursion. *)
+      admit.
+    + (* sub_gen__arg: needs gen→sub bridge (partial). *)
+      admit.
   - (* === Hty = d_typing__sub =============================================
        m_orig = m (the conclusion mode), inner at mode_ti.
        The inner d_typing is at mode_ti, in is_fn_n_ti; IH fires.
