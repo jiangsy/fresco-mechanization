@@ -829,38 +829,111 @@ Proof.
     inversion Hc.
 Qed.
 
-(** Lift [d_typing] across modes at the SAME mono type, given the
-    corresponding refl [d_sub]. Closure plan documented; full Qed
-    requires more careful Coq tactic work (IH naming, bullet structure,
-    fsetdec/freshness derivations) than fits this session. The
-    structural argument is sound — see the discussion below. *)
-Lemma d_typing_lift_mono : forall Γ e A m_orig m_target,
-    d_typing m_orig Γ e A ->
+(** Lift [d_typing] from [mode_ti] to any [m_target] at the SAME mono
+    type, given the corresponding refl [d_sub m_target nil Γ A A].
+
+    The signature is restricted to [m_orig = mode_ti] (sufficient for
+    D1's __abs / __abs_anno body-conversion uses, where the body
+    sits at [decr_mode mode_ti = mode_ti]).
+
+    Closure cases:
+    - __unit / __var / __anno: wrap via [d_typing__sub] at m_target.
+    - __sub: compose the inner mode_ti d_sub with [Hrefl] using
+      [d_consis_extends_d_sub_nil].
+    - __forall: produces mode_tc; contradicts m_orig = mode_ti.
+    - __abs / __abs_anno: re-apply at m_target. Body sits at
+      [decr_mode mode_ti = mode_ti] (preserved). Inner refl on the
+      body's result type derived via [d_sub_arrow_refl_inner] on
+      mono LHS.
+    - __app: requires the function's argument type to be mono, which
+      is NOT automatic from d_typing__app's premises. Admitted; same
+      research-grade gap as D1's __app case. *)
+Lemma d_typing_lift_mono_mut :
+    (forall m Γ e A,
+        d_typing m Γ e A ->
+        m = mode_ti ->
+        forall m_target,
+          mono_typ A ->
+          d_wf_denv Γ ->
+          d_sub m_target nil Γ A A ->
+          d_typing m_target Γ e A)
+ /\ (forall m Γ e P,
+        d_pat m Γ e P -> True).
+Proof.
+  apply d_typing_pat_mut; intros; try trivial.
+  - (* d_typing__unit *)
+    apply d_typing__sub with (A := typ_unit); auto using is_base_term__unit.
+    apply d_typing__unit; auto.
+  - (* d_typing__var *)
+    apply d_typing__sub with (A := A); auto using is_base_term__var.
+    apply d_typing__var; auto.
+  - (* d_typing__anno *)
+    apply d_typing__sub with (A := A); auto using is_base_term__anno.
+    apply d_typing__anno; auto.
+  - (* d_typing__sub: compose inner mode_ti sub with Hrefl. *)
+    subst.
+    apply d_typing__sub with (A := A); auto.
+    match goal with
+    | Hs : d_sub mode_ti nil _ _ _ |- _ =>
+        inversion Hs; subst;
+        try (match goal with H' : ?m0 <> ?m0 |- _ =>
+               exfalso; apply H'; reflexivity end)
+    end.
+    apply d_consis_extends_d_sub_nil with (A := B); auto.
+    eapply (proj1 d_typing_pat_preserves_wf); eauto.
+  - (* d_typing__freeze: rule produces mode_tc, contradicts m = mode_ti. *)
+    discriminate.
+  - (* d_typing__forall: rule produces mode_tc, contradicts m = mode_ti. *)
+    discriminate.
+  - (* d_typing__abs at outer m = mode_ti.
+       After subst the rule's m: A_outer = typ_arrow A B with A,B mono.
+       Body's IH (H) provides body's lift at decr_mode m_target. *)
+    subst.
+    match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+      inversion Hm; subst
+    end.
+    apply d_typing__abs with (L := L `union` dom Γ); auto.
+    intros x Hx. apply H; auto.
+    + apply d_wf_denv__typ; auto.
+    + (* d_sub (decr_mode m_target) nil ((x~A)++Γ) B B
+         derived from Hrefl via d_sub_arrow_refl_inner + weakening. *)
+      match goal with
+      | Href : d_sub _ nil Γ (typ_arrow ?A0 ?B0) (typ_arrow ?A0 ?B0) |- _ =>
+          rewrite_env ([(x, dbind_typ A0)] ++ Γ);
+          apply d_sub_weakening_head;
+          apply (d_sub_arrow_refl_inner Href); auto
+      end.
+  - (* d_typing__abs_anno: same shape. *)
+    subst.
+    match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+      inversion Hm; subst
+    end.
+    apply d_typing__abs_anno with (L := L `union` dom Γ); auto.
+    intros x Hx. apply H; auto.
+    + apply d_wf_denv__typ; auto.
+    + match goal with
+      | Href : d_sub _ nil Γ (typ_arrow ?A0 ?B0) (typ_arrow ?A0 ?B0) |- _ =>
+          rewrite_env ([(x, dbind_typ A0)] ++ Γ);
+          apply d_sub_weakening_head;
+          apply (d_sub_arrow_refl_inner Href); auto
+      end.
+  - (* d_typing__app: research-grade gap (function's argument type mono
+       not derivable from rule premises). Admit, same as D1's __app. *)
+    admit.
+Admitted.
+
+(** Headline lemma: lift d_typing from mode_ti → any m_target at a fixed
+    mono type. Derived from the mutual via [proj1]. *)
+Lemma d_typing_lift_mono : forall Γ e A m_target,
+    d_typing mode_ti Γ e A ->
     mono_typ A ->
     d_wf_denv Γ ->
     d_sub m_target nil Γ A A ->
     d_typing m_target Γ e A.
 Proof.
-  (* Closure structure (each case sketched):
-     - __unit/__var/__anno: apply [d_typing__sub] at m_target with the
-       given refl d_sub. Inner d_typing reconstructed via __unit/__var/__anno.
-     - __sub: apply [d_typing__sub] at m_target. The inner d_sub needs
-       composing with Hrefl — invert on Hsub_inner and use
-       [d_consis_extends_d_sub_nil] (when m_orig ∈ {mode_ti, mode_tc}) or
-       requires general d_sub transitivity (when m_orig = mode_fn _).
-     - __freeze: rule output is mode_tc. For m_target = mode_tc, apply
-       [d_typing__freeze]. For other m_target, the target is uninhabited
-       (no rule produces exp_freeze at non-mode_tc).
-     - __forall: A = typ_all_col, contradicts mono A.
-     - __abs / __abs_anno: apply [d_typing__abs] / [d_typing__abs_anno]
-       at m_target. Body conversion via IH on body with target mode
-       [decr_mode m_target]. Body's refl d_sub derived from outer refl
-       via [d_sub_arrow_refl_inner].
-     - __app: apply [d_typing__app] at m_target. Function-side lift
-       (mode_fn m_orig → mode_fn m_target) via IH on function. Refl on
-       typ_arrow needs mono on arg type (derivable via d_consis chain
-       on function's domain). *)
-Admitted.
+  intros Γ e A m_target Hty Hmono Hwfd Hrefl.
+  eapply (proj1 d_typing_lift_mono_mut); eauto.
+Qed.
 
 (** * d_sub preserves wellformedness.
 

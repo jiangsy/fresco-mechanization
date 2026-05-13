@@ -714,19 +714,33 @@ Qed.
     to extract [d_wf_typ Γ A0] for the intermediate type, which then
     discharges the [d_wf_typ] precondition of [d_consis_extends_d_sub_nil].
 
-    Closure status (Qed cases):
-    - __unit / __var / __anno (base terms): closed by wrapping in d_typing__sub.
-    - __sub: closed via [d_consis_extends_d_sub_nil] (NEW, this commit).
-    - __freeze / __forall: VACUOUS (those rules produce mode_tc, but the
-      lemma's hypothesis [Hty : d_typing mode_ti Γ e A] is at mode_ti).
+    Closure status — see the [D1 closure structure] comment below for the
+    detailed map across Hsub × Hty cases. *)
+(** D1 closure structure (this commit):
 
-    Closure status (admitted cases):
-    - __abs / __abs_anno / __app: research-grade. The paper's syntax-directed
-      detour handles these via [dstylab{AbsForall}] / [dstylab{App}] which
-      absorb [d_typing__forall] introductions; the direct closure requires
-      either (a) mechanizing the syntax-directed system + D13/D14, or
-      (b) [d_typing_narrowing] (currently admitted; reduces back here).
-*)
+    Approach — induct on Hsub primarily, then dispatch on Hty's shape
+    within each Hsub case. Key supporting facts that simplify the
+    proof globally:
+
+    - [d_typing_pat_preserves_wf] → [d_wf_typ Γ A] from Hty.
+    - [d_sub_LHS_mono_wf] on Hsub + [d_wf_typ Γ A] → [mono_typ A].
+    - For [Hsub = __infer / __check]: LHS is_typ (from mono) → by
+      [d_consis_empty_eq], B = A. So both reduce to a mode-lift at the
+      same mono type → discharged by [d_typing_lift_mono].
+    - For [Hsub = __forall_r]: dispatch on Hty.
+      * base terms (unit/var/anno/sub): use [d_typing__sub] with Hsub.
+      * values (abs/abs_anno): use [d_typing__forall] + Hsub-IH at each X.
+      * applications: NOT a value, NOT base — needs function-side lift
+        (research-grade; admitted).
+    - For [Hsub = __arg]: similar dispatch; the body-conversion path
+      requires recursive general subsumption on the body (research-grade
+      for the cases where the body's Hsub-inner is itself __arg /
+      __forall_r). The mode-lift sub-case (inner __infer / __check) is
+      closeable, but full closure needs an extended induction structure
+      (paper's "FN^n" generalisation). Admitted for non-mode-lift cases.
+    - For [Hsub = __forall_l_*]: A would be [typ_all_etag] /
+      [typ_all_plain] (from Hsub's LHS shape), violating [d_wf_typ Γ A].
+      Vacuous. *)
 Theorem d_typing_general_subsumption : forall Γ e A B m,
     d_wf_denv Γ ->
     d_typing mode_ti Γ e A ->
@@ -734,45 +748,122 @@ Theorem d_typing_general_subsumption : forall Γ e A B m,
     d_typing m Γ e B.
 Proof.
   intros Γ e A B m Hwfd Hty Hsub.
-  inversion Hty; subst.
-  - (* d_typing__unit *) apply d_typing__sub with (A := typ_unit); auto using is_base_term__unit.
-  - (* d_typing__var  *) apply d_typing__sub with (A := A); auto using is_base_term__var.
-  - (* d_typing__anno *) apply d_typing__sub with (A := A); auto using is_base_term__anno.
-  - (* d_typing__sub: closed via the narrowed transitivity. *)
-    apply d_typing__sub with (A := A0); auto.
-    (* Need: d_sub m nil Γ A0 B. From [d_sub__infer] inversion on
-       [d_sub mode_ti nil Γ A0 A] (the inner d_sub of d_typing__sub),
-       we get [d_consis nil Γ A0 A]. Then [d_consis_extends_d_sub_nil]
-       composes with [Hsub : d_sub m nil Γ A B] to yield the goal. *)
-    inversion H1; subst;
-      try (match goal with H : ?m <> ?m |- _ => exfalso; apply H; reflexivity end).
-    (* Only __infer case remains. *)
-    apply d_consis_extends_d_sub_nil with (A := A); auto.
-    eapply (proj1 d_typing_pat_preserves_wf); eauto.
-  - (* d_typing__abs case. Sub-cases on Hsub: 4 reachable (__infer / __check
-       / __forall_r / __arg); __forall_l_* vacuous via LHS arrow mismatch.
+  assert (HwfA : d_wf_typ Γ A) by
+    (eapply (proj1 d_typing_pat_preserves_wf); eauto).
+  assert (HmonoA : mono_typ A) by (eapply d_sub_LHS_mono_wf; eauto).
+  generalize dependent e.
+  dependent induction Hsub; intros e Hty.
+  - (* d_sub__infer: m = mode_ti, [d_consis nil Γ T A]. By
+       d_consis_empty_eq on mono T, A = T. Goal becomes Hty. *)
+    assert (Heq : T = A) by
+      (eapply d_consis_empty_eq; eauto using mono_typ_is_typ).
+    subst T. exact Hty.
+  - (* d_sub__check: m = mode_tc. By d_consis_empty_eq, A = T (lemma's T).
+       Need to lift Hty from mode_ti to mode_tc at the mono type T.
+       d_typing_lift_mono handles this. *)
+    rename T into A0.
+    assert (Heq : A0 = A) by
+      (eapply d_consis_empty_eq; eauto using mono_typ_is_typ).
+    subst A0.
+    apply d_typing_lift_mono with (m_target := mode_tc) in Hty; auto.
+    apply d_sub__check; auto.
+  - (* d_sub__forall_r: m = mode_tc, B = typ_all_col colour_inh A'.
+       Dispatch on Hty's shape. *)
+    rename T into A0. rename A into A'.
+    inversion Hty; subst.
+    + (* __unit *)
+      apply d_typing__sub with (A := typ_unit).
+      * apply is_base_term__unit.
+      * apply d_typing__unit; auto.
+      * apply d_sub__forall_r with (L := L); auto.
+    + (* __var *)
+      apply d_typing__sub with (A := A0).
+      * apply is_base_term__var.
+      * apply d_typing__var; auto.
+      * apply d_sub__forall_r with (L := L); auto.
+    + (* __anno *)
+      apply d_typing__sub with (A := A0).
+      * apply is_base_term__anno.
+      * exact Hty.
+      * apply d_sub__forall_r with (L := L); auto.
+    + (* __sub: e base, inner d_typing mode_ti Γ e A_inner, inner sub at
+         mode_ti. Compose inner d_consis (from inversion) with each Hsub_X
+         via d_consis_extends_d_sub_nil. *)
+      match goal with
+      | Hsub_inner : d_sub mode_ti nil Γ ?A_inner A0 |- _ =>
+          apply d_typing__sub with (A := A_inner); auto;
+          apply d_sub__forall_r with (L := L); intros X HX;
+          inversion Hsub_inner; subst;
+          try (match goal with H' : ?m0 <> ?m0 |- _ =>
+                 exfalso; apply H'; reflexivity end);
+          apply d_consis_extends_d_sub_nil with (A := A0); auto;
+          [ apply d_consis_weakening_head; auto
+          | apply d_wf_typ_weakening_head;
+            eapply (proj1 d_typing_pat_preserves_wf); eauto ]
+      end.
+    + (* __abs: e = exp_abs e0. Apply d_typing__forall + Hsub-IH at each X. *)
+      apply d_typing__forall with (L := L `union` dom Γ).
+      * apply is_value__abs.
+      * intros X HX.
+        apply H0; auto.
+        -- apply d_wf_denv__tvar; auto.
+        -- apply d_wf_typ_weakening_head; auto.
+        -- apply d_typing_weakening_head; auto.
+    + (* __abs_anno *)
+      apply d_typing__forall with (L := L `union` dom Γ).
+      * apply is_value__abs_anno.
+      * intros X HX.
+        apply H0; auto.
+        -- apply d_wf_denv__tvar; auto.
+        -- apply d_wf_typ_weakening_head; auto.
+        -- apply d_typing_weakening_head; auto.
+    + (* __app: NOT a value, NOT base — research-grade. *)
+      admit.
+  - (* d_sub__arg: m = mode_fn m_inner, B = typ_arrow A1 A2.
+       Dispatch on Hty's shape. Base-term Hty (unit/var/anno/sub) close
+       via [d_typing__sub] using the outer __arg Hsub directly. Non-base
+       Hty (abs/abs_anno/app) need body conversion — research-grade
+       (admitted) for non-mode-lift sub-Hsubs.
 
-       Key insight (new helpers [d_consis_LHS_mono_wf] /
-       [d_sub_LHS_mono_wf]): in all reachable cases, both A_arg and A_ret
-       are forced to be mono via d_consis-LHS-mono on wf types. The
-       paper's claim that this case is unprovable in the bidirectional
-       system was incorrect — mono A_ret makes refl derivable via
-       [d_sub_refl_mono].
-
-       Closure plan (~80 LoC, deferred to next session):
-       - __infer: A = B by [d_consis_empty_eq] on mono components.
-         Goal = Hty directly.
-       - __check: body conversion mode_ti → mode_tc needed. Use a
-         separate [d_typing_lift_mono] lemma + [d_sub_refl_mono] on mono A_ret.
-       - __forall_r: apply d_typing__forall with [is_value__abs]. Body
-         cofinite over X — recursive call via Hsub-IH (needs induction
-         restructure or separate lemma).
-       - __arg: similar to __check but at mode_fn level. *)
-    admit.
-  - (* d_typing__abs_anno: same shape as __abs. *)
-    admit.
-  - (* d_typing__app: needs function-side lift. *)
-    admit.
+       The outer Δ = nil destructures Δ1 ++ Δ2 = nil → both nil. *)
+    apply app_eq_nil in x as [HΔ1 HΔ2]. subst Δ1 Δ2.
+    inversion Hty; subst.
+    + (* __var: Hty = d_typing__var, e = exp_var x with A = typ_arrow ...
+         Wrap in d_typing__sub at (mode_fn m). *)
+      apply d_typing__sub with (A := typ_arrow T1 T2).
+      * apply is_base_term__var.
+      * apply d_typing__var; auto.
+      * rewrite_env (@nil atom ++ @nil atom).
+        apply d_sub__arg; auto.
+    + (* __anno: e = exp_anno e' A. Wrap. *)
+      apply d_typing__sub with (A := typ_arrow T1 T2).
+      * apply is_base_term__anno.
+      * exact Hty.
+      * rewrite_env (@nil atom ++ @nil atom).
+        apply d_sub__arg; auto.
+    + (* __sub: e base, compose inner sub with outer __arg via
+         d_consis_extends_d_sub_nil. *)
+      match goal with
+      | Hsub_inner : d_sub mode_ti nil Γ ?A_inner (typ_arrow T1 T2) |- _ =>
+          apply d_typing__sub with (A := A_inner); auto;
+          inversion Hsub_inner; subst;
+          try (match goal with H' : ?m0 <> ?m0 |- _ =>
+                 exfalso; apply H'; reflexivity end);
+          apply d_consis_extends_d_sub_nil with (A := typ_arrow T1 T2); auto;
+          [ rewrite_env (@nil atom ++ @nil atom);
+            apply d_sub__arg; auto
+          | eapply (proj1 d_typing_pat_preserves_wf); eauto ]
+      end.
+    + (* __abs: body conversion (m_inner sub-Hsub on A_ret). Research-grade
+         for non-mode-lift inner sub-Hsubs. *)
+      admit.
+    + (* __abs_anno: same. *) admit.
+    + (* __app: function-side conversion. *) admit.
+  - (* d_sub__forall_l_tagged: A = typ_all_etag _ _, but [d_wf_typ Γ A]
+       (from HwfA) doesn't admit typ_all_etag. Vacuous. *)
+    inversion HwfA.
+  - (* d_sub__forall_l_untagged: similar. *)
+    inversion HwfA.
 Admitted.
 
 (** * Phase 2.D.7 — Stability S1 (argument-permutation).
