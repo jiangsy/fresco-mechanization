@@ -854,8 +854,7 @@ Proof.
             apply d_sub__arg; auto
           | eapply (proj1 d_typing_pat_preserves_wf); eauto ]
       end.
-    + (* __abs: body conversion (m_inner sub-Hsub on A_ret). Research-grade
-         for non-mode-lift inner sub-Hsubs. *)
+    + (* __abs: research-grade body conversion (see __arg comment above). *)
       admit.
     + (* __abs_anno: same. *) admit.
     + (* __app: function-side conversion. *) admit.
