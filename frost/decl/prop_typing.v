@@ -854,7 +854,13 @@ Proof.
             apply d_sub__arg; auto
           | eapply (proj1 d_typing_pat_preserves_wf); eauto ]
       end.
-    + (* __abs: research-grade body conversion (see __arg comment above). *)
+    + (* __abs: research-grade body conversion. The inner sub-Hsub on
+         (T2, A2) determines whether body conversion is a mode lift
+         (inner __infer/__check, A2 = T2) or full general subsumption
+         (inner __forall_r/__arg, A2 ≠ T2). The mode-lift sub-case
+         CAN be closed via [d_typing_lift_mono]; the recursive cases
+         need full D1 on body which requires a parametric Γ-extension
+         in the IH (paper's "FN^n" generalisation). *)
       admit.
     + (* __abs_anno: same. *) admit.
     + (* __app: function-side conversion. *) admit.
