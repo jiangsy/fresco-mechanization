@@ -542,3 +542,92 @@ with d_pat :
     d_typing (mode_fn m) Γ e1 (typ_arrow P' Q) ->
     d_pat m Γ (exp_app e1 e2) Q
 .
+
+(** ** Syntax-directed declarative typing (paper syntax-directed.tex:454+).
+
+    Difference from [d_typing]:
+    - REMOVES [d_typing__forall] (the value-restriction rule that lifts a
+      value to a typ_all_col colour_inh).
+    - ADDS [ds_typing__abs_forall] and [ds_typing__abs_anno_forall]:
+      these absorb the forall introduction directly into the abstraction
+      rule, producing [typ_all_col colour_inh (typ_arrow A B)] in one step.
+
+    This is the system the paper uses to prove [General Subsumption] (D1)
+    without the body-conversion cycle that blocks the direct bidirectional
+    proof.
+
+    Single-forall encoding here. Multi-forall (paper's [∀ᾱ.A→B] with ᾱ a
+    sequence) is approximated by iterated application — sufficient for our
+    target uses (D1 closure). See [TODO: multi-forall list-binder version]
+    if a fuller treatment becomes necessary.
+
+    Note: [ds_typing] is mutual with the ORIGINAL [d_pat] (the d_pat
+    judgment doesn't change in the syntax-directed system). Mechanized
+    here as a standalone inductive that REUSES [d_pat], [d_sub], etc.
+    from the bidirectional development. *)
+Inductive ds_typing :
+  mode -> list (atom * dbind) -> exp -> typ -> Prop :=
+| ds_typing__unit : forall Γ,
+    ds_typing mode_ti Γ exp_unit typ_unit
+| ds_typing__var : forall Γ x A,
+    binds x (dbind_typ A) Γ ->
+    ds_typing mode_ti Γ (exp_var_f x) A
+| ds_typing__anno : forall Γ e A,
+    is_inh_typ A ->
+    ds_typing mode_tc Γ e A ->
+    ds_typing mode_ti Γ (exp_anno e A) A
+| ds_typing__sub : forall Γ m e A B,
+    is_base_term e ->
+    ds_typing mode_ti Γ e A ->
+    d_sub m nil Γ A B ->
+    ds_typing m Γ e B
+| ds_typing__freeze : forall Γ e A,
+    ds_typing mode_ti Γ e A ->
+    ds_typing mode_tc Γ (exp_freeze e) A
+(* NO __forall rule: absorbed into __abs_forall / __abs_anno_forall below *)
+| ds_typing__abs : forall L Γ m e A B,
+    is_inh_typ A ->
+    d_wf_typ Γ A ->
+    (forall x, x `notin` L ->
+       ds_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    ds_typing m Γ (exp_abs e) (typ_arrow A B)
+| ds_typing__abs_forall : forall L Γ e A B,
+    (* paper's AbsForall with single-α (multi-α via iteration if needed).
+       Note: A and B are in body form (may have typ_var_b 0 for α). *)
+    (forall α, α `notin` L ->
+       is_inh_typ (open_typ_wrt_typ A (typ_var_f α))) ->
+    (forall α, α `notin` L ->
+       d_wf_typ ((α ~ dbind_tvar) ++ Γ) (open_typ_wrt_typ A (typ_var_f α))) ->
+    (forall α x, α `notin` L -> x `notin` (L `union` singleton α) ->
+       ds_typing mode_tc
+         ((x ~ dbind_typ (open_typ_wrt_typ A (typ_var_f α)))
+          ++ (α ~ dbind_tvar) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x))
+         (open_typ_wrt_typ B (typ_var_f α))) ->
+    ds_typing mode_tc Γ (exp_abs e)
+              (typ_all_col colour_inh (typ_arrow A B))
+| ds_typing__abs_anno : forall L Γ m e A B,
+    d_wf_typ Γ A ->
+    (forall x, x `notin` L ->
+       ds_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    ds_typing m Γ (exp_abs_anno A e) (typ_arrow A B)
+| ds_typing__abs_anno_forall : forall L Γ e A B,
+    (forall α, α `notin` L ->
+       d_wf_typ ((α ~ dbind_tvar) ++ Γ) (open_typ_wrt_typ A (typ_var_f α))) ->
+    (forall α x, α `notin` L -> x `notin` (L `union` singleton α) ->
+       ds_typing mode_tc
+         ((x ~ dbind_typ (open_typ_wrt_typ A (typ_var_f α)))
+          ++ (α ~ dbind_tvar) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x))
+         (open_typ_wrt_typ B (typ_var_f α))) ->
+    ds_typing mode_tc Γ (exp_abs_anno A e)
+              (typ_all_col colour_inh (typ_arrow A B))
+| ds_typing__app : forall Γ m e1 e2 P P' A B,
+    d_pat mode_tc Γ e2 P ->
+    d_refine_syn nil Γ P P' ->
+    ds_typing (mode_fn m) Γ e1 (typ_arrow A B) ->
+    ds_typing mode_tc Γ e2 A ->
+    ds_typing m Γ (exp_app e1 e2) B
+.
