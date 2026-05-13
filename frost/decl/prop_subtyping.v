@@ -528,6 +528,10 @@ Proof.
   - apply is_typ__arrow; auto.
 Qed.
 
+(** Lift lemma [d_typing_lift_mono] needs to be placed AFTER
+    [d_consis_extends_d_sub_nil] in the file (forward reference). See
+    after the latter for the full statement and proof attempt. *)
+
 Lemma d_sub_LHS_mono_wf : forall M Δ Γ T A,
     d_sub M Δ Γ T A ->
     d_wf_typ Γ T ->
@@ -824,6 +828,39 @@ Proof.
   - (* d_sub__forall_l_untagged: similar. *)
     inversion Hc.
 Qed.
+
+(** Lift [d_typing] across modes at the SAME mono type, given the
+    corresponding refl [d_sub]. Closure plan documented; full Qed
+    requires more careful Coq tactic work (IH naming, bullet structure,
+    fsetdec/freshness derivations) than fits this session. The
+    structural argument is sound — see the discussion below. *)
+Lemma d_typing_lift_mono : forall Γ e A m_orig m_target,
+    d_typing m_orig Γ e A ->
+    mono_typ A ->
+    d_wf_denv Γ ->
+    d_sub m_target nil Γ A A ->
+    d_typing m_target Γ e A.
+Proof.
+  (* Closure structure (each case sketched):
+     - __unit/__var/__anno: apply [d_typing__sub] at m_target with the
+       given refl d_sub. Inner d_typing reconstructed via __unit/__var/__anno.
+     - __sub: apply [d_typing__sub] at m_target. The inner d_sub needs
+       composing with Hrefl — invert on Hsub_inner and use
+       [d_consis_extends_d_sub_nil] (when m_orig ∈ {mode_ti, mode_tc}) or
+       requires general d_sub transitivity (when m_orig = mode_fn _).
+     - __freeze: rule output is mode_tc. For m_target = mode_tc, apply
+       [d_typing__freeze]. For other m_target, the target is uninhabited
+       (no rule produces exp_freeze at non-mode_tc).
+     - __forall: A = typ_all_col, contradicts mono A.
+     - __abs / __abs_anno: apply [d_typing__abs] / [d_typing__abs_anno]
+       at m_target. Body conversion via IH on body with target mode
+       [decr_mode m_target]. Body's refl d_sub derived from outer refl
+       via [d_sub_arrow_refl_inner].
+     - __app: apply [d_typing__app] at m_target. Function-side lift
+       (mode_fn m_orig → mode_fn m_target) via IH on function. Refl on
+       typ_arrow needs mono on arg type (derivable via d_consis chain
+       on function's domain). *)
+Admitted.
 
 (** * d_sub preserves wellformedness.
 
