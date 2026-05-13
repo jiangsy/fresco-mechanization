@@ -444,6 +444,31 @@ Proof.
           [apply list_disjoint_sym; exact Hd2b1 | exact Hdis_b].
 Qed.
 
+(** If [d_consis Δ Γ T A] and [d_wf_typ Γ T], then [T] is mono.
+
+    Reason: d_consis's LHS-allowed shapes are {unit, var, typ_all_etag,
+    typ_all_plain, typ_arrow}, while d_wf_typ's allowed shapes are
+    {unit, var, typ_arrow, typ_all_col}. The intersection is
+    {unit, var, typ_arrow}, which is exactly the [mono_typ] grammar.
+    The forall-* cases of d_consis are vacuous because their LHS shapes
+    (etag/plain) are not in d_wf_typ. The arrow case recurses.
+
+    Used in [d_typing_general_subsumption] to derive that body types
+    in __abs cases are mono (and hence support d_sub_refl_mono), which
+    unblocks the body conversion. *)
+Lemma d_consis_LHS_mono_wf : forall Δ Γ T A,
+    d_consis Δ Γ T A ->
+    d_wf_typ Γ T ->
+    mono_typ T.
+Proof.
+  intros Δ Γ T A Hc Hwf. induction Hc; inversion Hwf; subst.
+  - apply mono_typ__unit.
+  - apply mono_typ__var.
+  - apply mono_typ__arrow.
+    + apply IHHc1; assumption.
+    + apply IHHc2; assumption.
+Qed.
+
 (** [d_sub] is UNINHABITED when the LHS is [typ_all_col c A]. The reason:
     - [d_sub__infer] / [d_sub__check] reduce to [d_consis] with LHS [typ_all_col],
       which has no defining rule (d_consis LHS is [is_utyp]-shape: unit / var /
