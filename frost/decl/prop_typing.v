@@ -1368,9 +1368,31 @@ Proof.
           apply mode_typ_compat__fn; assumption.
         -- (* d_wf_typ Γ (typ_arrow A B) *)
           assumption.
-    + (* __forall_r: target mode_tc; only reachable when m_orig = mode_ti
-         and m_new = mode_tc. Then exp_app types polymorphic — research-grade. *)
-      admit.
+    + (* __forall_r: target = mode_tc. Constraint mode_tc =
+         mode_fn_n_subst m m_new + Hfn ⟹ m = mode_ti, m_new = mode_tc. *)
+      inversion Hfn; subst; simpl in x.
+      * (* m = mode_ti, so m_new = mode_tc (from x : mode_tc = m_new). *)
+        symmetry in x; subst.
+        match goal with
+        | Hpat0 : d_pat mode_tc Γ ?e2 ?P0,
+          Href0 : d_refine_syn nil Γ ?P0 ?P'0,
+          Hty_fn0 : d_typing (mode_fn mode_ti) Γ ?e1 (typ_arrow ?A0 ?B0),
+          Hty_arg0 : d_typing mode_tc Γ ?e2 ?A0
+          |- d_typing _ Γ (exp_app ?e1 ?e2) (typ_all_col colour_inh ?A_t) =>
+            assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
+              (eapply (proj1 d_typing_pat_preserves_wf); eauto);
+            assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
+            eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
+        end.
+        eapply IHHty1.
+        -- apply is_fn_n_ti__fn; apply is_fn_n_ti__ti.
+        -- assumption.
+        -- simpl. rewrite_env (@nil atom ++ @nil atom).
+           apply d_sub_gen__arg.
+           ++ apply d_consis_gen__refl_any. assumption.
+           ++ eapply d_sub_gen__forall_r. intros X HX. apply H1; auto.
+      * (* m = mode_fn _: equation mode_tc = mode_fn (...) is False. *)
+        discriminate x.
     + (* __arg: target = mode_fn outer + the __app's mode_fn = mode_fn(mode_fn _).
          Research-grade. *)
       admit.
