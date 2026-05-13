@@ -473,6 +473,52 @@ Qed.
     Same intersection argument as [d_consis_LHS_mono_wf], extended through
     d_sub's __forall_r (no LHS change) and __arg (arrow inversion).
     __forall_l_* cases vacuous since LHS etag/plain are not wf. *)
+(** Refl d_sub at mode m on a mono arrow type implies refl d_sub at
+    [decr_mode m] on the result type. Used in body conversion lifts. *)
+Lemma d_sub_arrow_refl_inner : forall Γ A B m,
+    d_sub m nil Γ (typ_arrow A B) (typ_arrow A B) ->
+    mono_typ A ->
+    mono_typ B ->
+    d_sub (decr_mode m) nil Γ B B.
+Proof.
+  intros Γ A B m Hrefl Hmono_a Hmono_b.
+  inversion Hrefl; subst.
+  - (* __infer (m = mode_ti) *)
+    simpl.
+    match goal with H : d_consis _ _ _ _ |- _ => inversion H; subst end.
+    match goal with
+    | H : nil = _ ++ _ |- _ =>
+      symmetry in H; apply app_eq_nil in H as [? ?]; subst
+    | H : _ ++ _ = nil |- _ =>
+      apply app_eq_nil in H as [? ?]; subst
+    end.
+    apply d_sub__infer.
+    + apply mono_typ_is_syn_typ; assumption.
+    + assumption.
+  - (* __check (m = mode_tc) *)
+    simpl.
+    match goal with H : d_consis _ _ (typ_arrow _ _) _ |- _ => inversion H; subst end.
+    match goal with
+    | H : nil = _ ++ _ |- _ =>
+      symmetry in H; apply app_eq_nil in H as [? ?]; subst
+    | H : _ ++ _ = nil |- _ =>
+      apply app_eq_nil in H as [? ?]; subst
+    end.
+    apply d_sub__check.
+    + intros ε T' Heq. subst B. inversion Hmono_b.
+    + intros T' Heq. subst B. inversion Hmono_b.
+    + apply mono_typ_is_inh_typ; assumption.
+    + assumption.
+  - (* __arg (m = mode_fn _) *)
+    match goal with
+    | H : nil = _ ++ _ |- _ =>
+      symmetry in H; apply app_eq_nil in H as [? ?]; subst
+    | H : _ ++ _ = nil |- _ =>
+      apply app_eq_nil in H as [? ?]; subst
+    end.
+    simpl. assumption.
+Qed.
+
 (** Mono types are is_typ (since mono ⊆ is_typ grammar). *)
 Lemma mono_typ_is_typ : forall A, mono_typ A -> is_typ A.
 Proof.
