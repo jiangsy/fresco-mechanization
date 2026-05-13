@@ -1171,6 +1171,30 @@ Proof.
     apply is_inh_typ__arrow; auto.
 Qed.
 
+(** [d_consis_lhs_is_inh_for_typ]: when [d_consis nil Γ A B] fires and
+    A is [is_typ], A is is_inh_typ. d_consis LHS rules force A ∈
+    {typ_unit, typ_var, typ_arrow, typ_all_etag, typ_all_plain};
+    is_typ excludes etag/plain → so A ∈ {typ_unit, typ_var, typ_arrow},
+    which are all is_inh_typ. *)
+Lemma d_consis_lhs_is_inh_for_typ : forall Γ A B,
+    d_consis nil Γ A B ->
+    is_typ A ->
+    is_inh_typ A.
+Proof.
+  intros Γ A B Hc Hist.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hc; subst.
+  - apply is_inh_typ__unit.
+  - apply is_inh_typ__var.
+  - exfalso. inversion Hist.
+  - exfalso. inversion Hist.
+  - exfalso. inversion Hist.
+  - exfalso. inversion Hist.
+  - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hist; subst.
+    apply is_inh_typ__arrow; auto.
+Qed.
+
 (** [d_consis_gen_preserves_wf]: d_consis_gen preserves wf on RHS. *)
 Lemma d_consis_gen_preserves_wf : forall Δ Γ A B,
     d_consis_gen Δ Γ A B ->
@@ -1962,7 +1986,8 @@ Proof.
            rewrite_env ((x ~ dbind_typ A) ++ Γ).
            apply d_wf_typ_weakening_head; auto.
     + (* __forall_r: nested recursion. *) admit.
-    + (* __arg: argument-type change + body lift. Research-grade. *)
+    + (* __arg: target = mode_fn k. Mirror of __abs + __arg, but
+         is_inh_typ A not directly available — research-grade. *)
       admit.
   - (* === Hty = d_typing__app =============================================
        m_orig = m, function at mode_fn m. IH on function fires at
