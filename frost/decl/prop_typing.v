@@ -1047,8 +1047,18 @@ Proof.
             | apply d_typing__var; exact Hb
             | assumption ]
       end.
-    + (* sub_gen__refl_any: mode_typ_compat gap. *)
-      admit.
+    + (* sub_gen__refl_any: case-split on mode_typ_compat.
+         mode_ti: trivial (Hty itself). mode_tc/mode_fn: research-grade
+         (need d_consis_refl on possibly non-mono A). *)
+      match goal with
+      | Hcompat : mode_typ_compat ?m_ ?A0,
+        Hb : binds _ (dbind_typ ?A0) Γ
+        |- d_typing _ Γ (exp_var_f _) ?A0 =>
+          inversion Hcompat; subst;
+          [ apply d_typing__var; exact Hb
+          | admit (* mode_tc *)
+          | admit (* mode_fn *) ]
+      end.
     + (* sub_gen__forall_r: nested recursion. *)
       admit.
     + (* sub_gen__arg: needs gen→sub bridge (partial). *)
@@ -1069,8 +1079,18 @@ Proof.
             | apply d_typing__anno; [ exact HinhA | exact Hinner ]
             | assumption ]
       end.
-    + (* sub_gen__refl_any: mode_typ_compat gap. *)
-      admit.
+    + (* sub_gen__refl_any: case-split on mode_typ_compat.
+         mode_ti: Hty itself. mode_tc/mode_fn: research-grade. *)
+      match goal with
+      | Hcompat : mode_typ_compat ?m_ ?A0,
+        HinhA : is_inh_typ ?A0,
+        Hinner : d_typing mode_tc Γ ?e0 ?A0
+        |- d_typing _ Γ (exp_anno ?e0 ?A0) ?A0 =>
+          inversion Hcompat; subst;
+          [ apply d_typing__anno; assumption
+          | admit (* mode_tc *)
+          | admit (* mode_fn *) ]
+      end.
     + (* sub_gen__forall_r: nested recursion. *)
       admit.
     + (* sub_gen__arg: needs gen→sub bridge (partial). *)
@@ -1166,8 +1186,48 @@ Proof.
          (Hfn). For m = mode_fn k, body's IH fires at m_new directly
          and mode_typ_compat at body level follows from outer __fn. *)
       inversion Hfn; subst.
-      * (* m = mode_ti: research-grade body-mode-shift case. *)
-        admit.
+      * (* m = mode_ti: target = m_new (any mode). Case-split on m_new
+           via mode_typ_compat. For m_new ∈ {mode_ti, mode_tc}, body's
+           lifted mode = mode_ti = orig — use Hbody directly. For
+           m_new = mode_fn k, body's lifted mode = k — use IH with
+           a refl_any sub built from inverting compat. *)
+        inversion H3; subst.
+        -- (* mode_ti: target=mode_ti. Body lifted mode = decr_mode
+              mode_ti = mode_ti = orig. Use Hbody directly. *)
+          eapply d_typing__abs; try assumption.
+          instantiate (1 := L `union` dom Γ).
+          intros x Hx. simpl. apply H1; auto.
+        -- (* mode_tc: target=mode_tc. Body lifted mode = decr_mode
+              mode_tc = mode_tc (≠ orig mode_ti). Use IH (H2) at
+              m_new' := mode_tc with refl_any body sub. *)
+          eapply d_typing__abs; try assumption.
+          instantiate (1 := L `union` dom Γ).
+          intros x Hx.
+          assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+            (apply d_wf_denv__typ; auto).
+          specialize (H2 x ltac:(auto) is_fn_n_ti__ti Hwfd_x mode_tc B);
+          simpl in H2; apply H2.
+          apply d_sub_gen__refl_any.
+          ++ (* mode_typ_compat mode_tc B from __tc inversion *)
+            apply mode_typ_compat__tc.
+            inversion H4; subst. inversion H5; subst. assumption.
+          ++ inversion H4; subst.
+             rewrite_env ((x ~ dbind_typ A) ++ Γ).
+             apply d_wf_typ_weakening_head; auto.
+        -- (* mode_fn k: m_new = mode_fn k where k is renamed `m`.
+              Body lift via H2 at m_new' := m (decr of the lifted target). *)
+          eapply d_typing__abs; try assumption.
+          instantiate (1 := L `union` dom Γ).
+          intros x Hx.
+          assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+            (apply d_wf_denv__typ; auto).
+          specialize (H2 x ltac:(auto) is_fn_n_ti__ti Hwfd_x m B);
+          simpl in H2; apply H2.
+          apply d_sub_gen__refl_any.
+          ++ assumption. (* mode_typ_compat m B from inversion *)
+          ++ inversion H4; subst.
+             rewrite_env ((x ~ dbind_typ A) ++ Γ).
+             apply d_wf_typ_weakening_head; auto.
       * (* m = mode_fn k: target = mode_fn (mode_fn_n_subst k m_new). *)
         eapply d_typing__abs; try assumption.
         instantiate (1 := L `union` dom Γ).
@@ -1192,9 +1252,64 @@ Proof.
          narrowing (d_typing_narrowing is admitted). *)
       admit.
   - (* === Hty = d_typing__abs_anno ========================================
-       Symmetric to __abs (annotation provides the argument type
-       directly). *)
-    admit.
+       Symmetric to __abs but with explicit annotation (no is_inh_typ
+       premise). Same dispatch shape on Hsub_gen. *)
+    simpl in Hsub_gen |- *.
+    dependent destruction Hsub_gen.
+    + (* __embed: exp_abs_anno not base. *) admit.
+    + (* __refl_any: B_tgt = typ_arrow A B. Same as __abs + __refl_any
+         but with H1 = body cofinite. For m = mode_fn k, reconstruct
+         via d_typing__abs_anno + IH (named H1 for __abs_anno since
+         only 2 premises: HwfA, Hbody). *)
+      inversion Hfn; subst.
+      * (* m = mode_ti: case-split on m_new via outer mode_typ_compat. *)
+        inversion H2; subst.
+        -- (* m_new = mode_ti: body matches orig *)
+          eapply d_typing__abs_anno; try assumption.
+          instantiate (1 := L `union` dom Γ).
+          intros x Hx. simpl. apply H0; auto.
+        -- (* m_new = mode_tc: lift via H1 (IH for body) *)
+          eapply d_typing__abs_anno; try assumption.
+          instantiate (1 := L `union` dom Γ).
+          intros x Hx.
+          assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+            (apply d_wf_denv__typ; auto).
+          specialize (H1 x ltac:(auto) is_fn_n_ti__ti Hwfd_x mode_tc B);
+          simpl in H1; apply H1.
+          apply d_sub_gen__refl_any.
+          ++ apply mode_typ_compat__tc.
+             inversion H3; subst. inversion H4; subst. assumption.
+          ++ inversion H3; subst.
+             rewrite_env ((x ~ dbind_typ A) ++ Γ).
+             apply d_wf_typ_weakening_head; auto.
+        -- (* m_new = mode_fn k: lift via H1 *)
+          eapply d_typing__abs_anno; try assumption.
+          instantiate (1 := L `union` dom Γ).
+          intros x Hx.
+          assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+            (apply d_wf_denv__typ; auto).
+          specialize (H1 x ltac:(auto) is_fn_n_ti__ti Hwfd_x m B);
+          simpl in H1; apply H1.
+          apply d_sub_gen__refl_any.
+          ++ assumption.
+          ++ inversion H3; subst.
+             rewrite_env ((x ~ dbind_typ A) ++ Γ).
+             apply d_wf_typ_weakening_head; auto.
+      * eapply d_typing__abs_anno; try assumption.
+        instantiate (1 := L `union` dom Γ).
+        intros x Hx.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+          (apply d_wf_denv__typ; auto).
+        specialize (H1 x ltac:(auto) (is_fn_n_ti_decr Hfn) Hwfd_x m_new B);
+        simpl in H1; apply H1.
+        apply d_sub_gen__refl_any.
+        -- inversion H2; subst; assumption.
+        -- inversion H3; subst.
+           rewrite_env ((x ~ dbind_typ A) ++ Γ).
+           apply d_wf_typ_weakening_head; auto.
+    + (* __forall_r: nested recursion. *) admit.
+    + (* __arg: argument-type change + body lift. Research-grade. *)
+      admit.
   - (* === Hty = d_typing__app =============================================
        m_orig = m, function at mode_fn m. IH on function fires at
        mode_fn m ∈ is_fn_n_ti. The sub for the IH is
@@ -1230,9 +1345,29 @@ Proof.
               inversion Hw; assumption
           end
         | apply d_sub_gen__embed; assumption ] ].
-    + (* __refl_any: mode_typ_compat for app's result type B. Research-grade
-         (would need closing the "do nothing" case at lifted modes). *)
-      admit.
+    + (* __refl_any: B_tgt = B0. Use IHHty1 (function-side IH) at a
+         refl_any sub_gen for the lifted arrow. The arrow's compat
+         follows from outer mode_typ_compat via mode_typ_compat__fn
+         on the argument type. *)
+      match goal with
+      | Hpat0 : d_pat mode_tc Γ ?e2 ?P0,
+        Href0 : d_refine_syn nil Γ ?P0 ?P'0,
+        Hty_fn0 : d_typing (mode_fn ?m_) Γ ?e1 (typ_arrow ?A0 ?B0),
+        Hty_arg0 : d_typing mode_tc Γ ?e2 ?A0
+        |- d_typing _ Γ (exp_app ?e1 ?e2) ?B0 =>
+          assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
+            (eapply (proj1 d_typing_pat_preserves_wf); eauto);
+          eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
+      end.
+      eapply IHHty1.
+      * apply is_fn_n_ti__fn; assumption.
+      * assumption.
+      * simpl.
+        apply d_sub_gen__refl_any.
+        -- (* mode_typ_compat (mode_fn _) (typ_arrow A B) *)
+          apply mode_typ_compat__fn; assumption.
+        -- (* d_wf_typ Γ (typ_arrow A B) *)
+          assumption.
     + (* __forall_r: target mode_tc; only reachable when m_orig = mode_ti
          and m_new = mode_tc. Then exp_app types polymorphic — research-grade. *)
       admit.
