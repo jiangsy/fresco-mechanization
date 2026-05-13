@@ -908,6 +908,36 @@ Proof.
     (Γ1 := nil) (Aold := Aold); eauto.
 Qed.
 
+(** [d_consis_sym_inh]: d_consis symmetry restricted to is_inh_typ
+    on the LHS. Crucial for wiring narrowing into the main theorem's
+    __abs / __abs_anno + __arg cases — Hsub_gen __arg gives
+    [d_consis Aold Anew] but narrowing needs [d_consis Anew Aold].
+
+    For is_inh_typ A, A is one of typ_unit / typ_var / typ_arrow /
+    typ_all_col col_inh. The d_consis rules don't admit
+    typ_all_col on LHS, so [d_consis nil Γ A B] with is_inh_typ A
+    forces A ∈ {typ_unit, typ_var, typ_arrow} — for which d_consis
+    is structurally symmetric (RHS shape forced by LHS shape). *)
+Lemma d_consis_sym_inh : forall Γ A B,
+    d_consis nil Γ A B ->
+    is_inh_typ A ->
+    d_consis nil Γ B A.
+Proof.
+  intros Γ A B Hc Hinh.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hc; subst.
+  - apply d_consis__unit.
+  - apply d_consis__var. assumption.
+  - inversion Hinh. (* typ_all_etag — not inh, contradiction *)
+  - inversion Hinh. (* typ_all_plain *)
+  - inversion Hinh. (* typ_all_etag with syn *)
+  - inversion Hinh. (* typ_all_plain with syn *)
+  - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hinh; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_consis__arrow; auto.
+Qed.
+
 (** * Phase 2.D.5 — Structural rules (SuffixMoving).
 
     Paper proofs.tex lemma:structural: commuting independent context
@@ -1078,6 +1108,130 @@ Lemma d_sub_gen_refl : forall Γ A m,
 Proof.
   intros. apply d_sub_gen__refl_any; auto.
 Qed.
+
+(** [d_consis_lhs_is_syn_typ]: when [d_consis nil Γ A B] holds and
+    [is_inh_typ A], then A is also [is_syn_typ]. d_consis rules
+    don't admit typ_all_col on LHS, so A's shape is forced to be
+    typ_unit / typ_var / typ_arrow (where is_inh and is_syn coincide). *)
+Lemma d_consis_lhs_is_syn_typ : forall Γ A B,
+    d_consis nil Γ A B ->
+    is_inh_typ A ->
+    is_syn_typ A.
+Proof.
+  intros Γ A B Hc Hinh.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hc; subst.
+  - apply is_syn_typ__unit.
+  - apply is_syn_typ__var.
+  - inversion Hinh.
+  - inversion Hinh.
+  - inversion Hinh.
+  - inversion Hinh.
+  - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hinh; subst.
+    apply is_syn_typ__arrow; auto.
+Qed.
+
+(** [d_consis_rhs_is_inh_typ]: when [d_consis nil Γ A B] holds and
+    [is_inh_typ A], then B is also [is_inh_typ]. Used to propagate
+    is_inh-ness through d_consis (necessary to invoke
+    [d_consis_sym_inh] in the reverse direction). *)
+Lemma d_consis_rhs_is_inh_typ : forall Γ A B,
+    d_consis nil Γ A B ->
+    is_inh_typ A ->
+    is_inh_typ B.
+Proof.
+  intros Γ A B Hc Hinh.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hc; subst.
+  - apply is_inh_typ__unit.
+  - apply is_inh_typ__var.
+  - inversion Hinh.
+  - inversion Hinh.
+  - inversion Hinh.
+  - inversion Hinh.
+  - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hinh; subst.
+    apply is_inh_typ__arrow; auto.
+Qed.
+
+(** [d_consis_gen_rhs_is_inh_typ]: same as above but for d_consis_gen. *)
+Lemma d_consis_gen_rhs_is_inh_typ : forall Γ A B,
+    d_consis_gen nil Γ A B ->
+    is_inh_typ A ->
+    is_inh_typ B.
+Proof.
+  intros Γ A B Hcg Hinh.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hcg; subst.
+  - eapply d_consis_rhs_is_inh_typ; eauto.
+  - assumption.
+  - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hinh; subst.
+    apply is_inh_typ__arrow; auto.
+Qed.
+
+(** [d_consis_gen_preserves_wf]: d_consis_gen preserves wf on RHS. *)
+Lemma d_consis_gen_preserves_wf : forall Δ Γ A B,
+    d_consis_gen Δ Γ A B ->
+    d_wf_typ Γ B.
+Proof.
+  intros Δ Γ A B Hcg. induction Hcg.
+  - eapply d_consis_preserves_wf; eauto.
+  - assumption.
+  - apply d_wf_typ__arrow; auto.
+Qed.
+
+(** [d_consis_gen_sym_inh]: symmetry for d_consis_gen on is_inh types. *)
+Lemma d_consis_gen_sym_inh : forall Γ A B,
+    d_consis_gen nil Γ A B ->
+    is_inh_typ A ->
+    d_consis_gen nil Γ B A.
+Proof.
+  intros Γ A B Hcg Hinh.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hcg; subst.
+  - apply d_consis_gen__embed.
+    apply d_consis_sym_inh; auto.
+  - apply d_consis_gen__refl_any. assumption.
+  - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hinh; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_consis_gen__arrow; auto.
+Qed.
+
+(** [d_typing_narrow_consis_head_arg]: narrowing variant for the
+    __abs / __abs_anno + __arg use case in the main theorem.
+
+    Takes [d_consis_gen Aold Anew] (the direction we get from
+    Hsub_gen __arg's arg-side) and [is_inh_typ Aold] (from Hty's
+    HinhA premise), handling the asymmetry via [d_consis_sym_inh]
+    and [d_consis_lhs_is_syn_typ] internally.
+
+    The __refl_any case (Anew = Aold) is identity. The __embed case
+    closes via the sym + is_syn helpers. The __arrow case admits
+    pending recursive narrowing for arrow components — which would
+    extend the body of this lemma to handle arrow-typed bound vars
+    with structurally narrowed components. *)
+Lemma d_typing_narrow_consis_head_arg : forall x Aold Anew Γ m e B,
+    d_typing m ((x ~ dbind_typ Aold) ++ Γ) e B ->
+    d_consis_gen nil Γ Aold Anew ->
+    is_inh_typ Aold ->
+    d_wf_typ Γ Aold ->
+    d_wf_typ Γ Anew ->
+    d_typing m ((x ~ dbind_typ Anew) ++ Γ) e B.
+Proof.
+  intros x Aold Anew Γ m e B Hty Hcg Hinh Hwf_old Hwf_new.
+  inversion Hcg; subst.
+  - (* __embed: d_consis Aold Anew. *)
+    apply d_typing_narrow_consis_head with (Aold := Aold); auto.
+    + apply d_consis_sym_inh; auto.
+    + eapply d_consis_lhs_is_syn_typ; eauto.
+  - (* __refl_any: Aold = Anew. Identity. *)
+    assumption.
+  - (* __arrow: recursive narrowing on arrow components. *)
+    admit.
+Admitted.
 
 (** ** Structural lemmas for the generalised relations.
 
@@ -1701,11 +1855,56 @@ Proof.
     + (* __forall_r: target = mode_tc. Use d_typing__forall (exp_abs
          is a value). Per-X premise needs nested recursion. *)
       admit.
-    + (* __arg: target = mode_fn m'. Reconstruct via d_typing__abs at
-         m'; body's return type changes (B0 → A2) so need IHHty on
-         body with a constructed sub. Argument-type change requires
-         narrowing (d_typing_narrowing is admitted). *)
-      admit.
+    + (* __arg: target = mode_fn k. After destruction:
+         H3 : d_consis_gen Δ1 Γ A A1 (arg-side)
+         Hsub_gen : d_sub_gen k Δ2 Γ B A2 (ret-side)
+         B_tgt = typ_arrow A1 A2, with Δ1 ++ Δ2 = nil.
+         Reconstruct via d_typing__abs at mode_fn k. *)
+      match goal with
+      | x_eq : _ ++ _ = nil |- _ =>
+          apply app_eq_nil in x_eq; destruct x_eq as [HΔ1 HΔ2]; subst
+      end.
+      apply d_typing__abs with
+        (L := L `union` dom Γ).
+      * (* is_inh_typ A1 from d_consis_gen + is_inh_typ A. *)
+        eapply d_consis_gen_rhs_is_inh_typ; eauto.
+      * (* d_wf_typ Γ A1 from d_consis_gen preserves wf. *)
+        eapply d_consis_gen_preserves_wf; eauto.
+      * (* Body: lift via IH (H2) at m_new' such that the IH's mode
+           matches k, then narrow context (y:A) → (y:A1).
+           Case-split on m to find right m_new' for IH. *)
+        intros y Hy.
+        inversion Hfn; subst.
+        -- (* m = mode_ti: subst m_new := mode_fn k via the
+              constructor equation, then apply IH H2 at m_new' := k. *)
+          simpl in *.
+          match goal with
+          | x_eq : mode_fn _ = m_new |- _ =>
+              symmetry in x_eq; subst m_new
+          end.
+          assert (Hwfd_y : d_wf_denv ((y ~ dbind_typ A) ++ Γ)) by
+            (apply d_wf_denv__typ; auto).
+          assert (Hwf_A1 : d_wf_typ Γ A1) by
+            (eapply d_consis_gen_preserves_wf; eauto).
+          apply d_typing_narrow_consis_head_arg with (Aold := A); auto.
+          ++ (* d_typing k ((y:A)::Γ) (open e y) A2 via IH H2. *)
+            assert (Hsub_weak : d_sub_gen m0 nil ((y ~ dbind_typ A) ++ Γ) B A2)
+              by (apply d_sub_gen_weakening_head; assumption).
+            apply H2 with (B := A2); auto.
+        -- (* m = mode_fn m1: x0 : mode_fn k = mode_fn_n_subst (mode_fn m1) m_new.
+              After simpl: mode_fn k = mode_fn (mode_fn_n_subst m1 m_new).
+              Injection gives k = mode_fn_n_subst m1 m_new. *)
+          simpl in *.
+          injection x0 as Hkeq.
+          assert (Hwfd_y : d_wf_denv ((y ~ dbind_typ A) ++ Γ)) by
+            (apply d_wf_denv__typ; auto).
+          assert (Hwf_A1 : d_wf_typ Γ A1) by
+            (eapply d_consis_gen_preserves_wf; eauto).
+          apply d_typing_narrow_consis_head_arg with (Aold := A); auto.
+          ++ assert (Hsub_weak : d_sub_gen (mode_fn_n_subst m1 m_new)
+                                          nil ((y ~ dbind_typ A) ++ Γ) B A2)
+              by (rewrite <- Hkeq; apply d_sub_gen_weakening_head; assumption).
+            apply H2 with (B := A2); auto.
   - (* === Hty = d_typing__abs_anno ========================================
        Symmetric to __abs but with explicit annotation (no is_inh_typ
        premise). Same dispatch shape on Hsub_gen. *)
