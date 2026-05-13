@@ -958,70 +958,130 @@ Proof.
     + apply IHHcompat; auto.
 Qed.
 
-(** [d_consis_gen_extends_d_consis]: compose d_consis on LHS with
-    d_consis_gen via the embedded refl. *)
-Lemma d_consis_extends_d_consis_gen : forall Δ Γ T A B,
+(** [d_consis_extends_d_consis_gen_nil]: compose d_consis on LHS with
+    d_consis_gen at outer Δ = nil. The Δ = nil restriction avoids a
+    permutation issue in d_consis_compose. *)
+Lemma d_consis_extends_d_consis_gen : forall Γ T A B,
     d_consis nil Γ T A ->
-    d_consis_gen Δ Γ A B ->
+    d_consis_gen nil Γ A B ->
     d_wf_typ Γ T ->
-    d_consis_gen Δ Γ T B.
+    d_consis_gen nil Γ T B.
 Proof.
-  intros Δ Γ T0 A B Hc Hcg HwfT. generalize dependent T0.
+  intros Γ T0 A B Hc Hcg HwfT.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  generalize dependent T0.
   induction Hcg; intros T0 Hc HwfT.
-  - (* __embed: compose d_consis Γ T0 T with d_consis Γ T A.
-       d_consis_compose gives Δc compose with Permutation Δc Δ.
-       Need d_consis_gen Δ Γ T0 B, but compose returns Δc. Use
-       Permutation invariance — admit as we'd need a permutation
-       morph lemma on d_consis_gen. *)
-    admit.
-  - (* __refl_any: T (rhs) = A (refl). Just give Hc. *)
+  - (* __embed: compose Hc and H via d_consis_compose. *)
+    subst.
+    apply d_consis_gen__embed.
+    edestruct (d_consis_compose Hc H) as [Δc [Hperm Hcc]].
+    + apply list_disjoint_nil_l.
+    + simpl in Hperm.
+      apply Permutation_sym in Hperm.
+      apply Permutation_nil in Hperm. subst. exact Hcc.
+  - (* __refl_any: B = A, Hc gives the result via embed. *)
     apply d_consis_gen__embed. assumption.
-  - (* __arrow: T0 must be typ_arrow (from d_consis Γ T0 (typ_arrow T1 T2)). *)
+  - (* __arrow: Δ1 ++ Δ2 = nil forces both nil. *)
+    apply app_eq_nil in HeqΔ.
+    destruct HeqΔ as [HΔ1 HΔ2]. subst.
     inversion Hc; subst.
     match goal with
     | H : _ ++ _ = nil |- _ =>
         apply app_eq_nil in H; destruct H as [HΔ1a HΔ2a]; subst
     end.
     inversion HwfT; subst.
+    rewrite_env (@nil atom ++ @nil atom).
     apply d_consis_gen__arrow; auto.
-Admitted.
+Qed.
 
 (** [d_consis_extends_d_sub_gen_nil]: extend d_sub_gen on the LHS via
     a d_consis. Mirrors [d_consis_extends_d_sub_nil] for the gen
-    relation. Crucial for the __sub forall_r and similar composition
-    cases. *)
-Lemma d_consis_extends_d_sub_gen_nil : forall m Γ T A B,
-    d_consis nil Γ T A ->
+    relation. The signature has [T] after [d_sub_gen] so that
+    [induction Hs; intros T] gives a properly T-abstracted IH. *)
+Lemma d_consis_extends_d_sub_gen_nil : forall m Γ A B,
     d_sub_gen m nil Γ A B ->
-    d_wf_typ Γ T ->
-    d_sub_gen m nil Γ T B.
+    forall T,
+      d_consis nil Γ T A ->
+      d_wf_typ Γ T ->
+      d_sub_gen m nil Γ T B.
 Proof.
-  intros m Γ T A B Hc Hs HwfT. dependent induction Hs.
+  intros m Γ A B Hs.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hs; intros T0 Hc HwfT.
   - (* __embed: route through d_consis_extends_d_sub_nil. *)
+    subst.
     apply d_sub_gen__embed. eapply d_consis_extends_d_sub_nil; eauto.
   - (* __refl_any: A = B. Use d_consis_to_d_sub_gen. *)
+    subst.
     eapply d_consis_to_d_sub_gen; eauto.
   - (* __forall_r: B = typ_all_col colour_inh A0, m = mode_tc.
        Use d_sub_gen__forall_r reconstruction with per-X recursion. *)
+    subst.
     apply d_sub_gen__forall_r with (L := L `union` dom Γ).
     intros X HX.
     eapply H0; eauto.
     + apply d_consis_weakening_head; auto.
     + apply d_wf_typ_weakening_head; auto.
-  - (* __arg: A = typ_arrow A1 A2, B = typ_arrow B1 B2. d_consis Hc
-       forces T = typ_arrow T1 T2 with d_consis T1 A1 + d_consis T2 A2.
-       Reconstruct d_sub_gen__arg with composed pieces. *)
+  - (* __arg: A = typ_arrow A1 A2, B = typ_arrow B1 B2. Hc forces
+       T0 = typ_arrow T0_arg T0_ret. Reconstruct via d_sub_gen__arg. *)
+    apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
     inversion Hc; subst.
     match goal with
     | H : _ ++ _ = nil |- _ =>
-        apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst
+        apply app_eq_nil in H; destruct H as [HΔ1a HΔ2a]; subst
     end.
     inversion HwfT; subst.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_sub_gen__arg.
-    + admit.
-    + admit.
-Admitted.
+    + (* d_consis_gen nil Γ T0_arg A1: compose Hc's arg-side d_consis
+         with outer arg-side d_consis_gen via the helper. *)
+      eapply d_consis_extends_d_consis_gen; eauto.
+    + (* d_sub_gen m_inner nil Γ T0_ret A2: recursive call via IH. *)
+      eapply IHHs; eauto.
+Qed.
+
+(** Aux lemmas specialising the gen-subsumption theorem to specific
+    Hty constructors. Each is proven by induction on Hsub_gen so the
+    [__forall_r] case can recurse on the per-X premise — handling
+    the nested-induction obstacle that the outer Hty-induction
+    cannot. *)
+
+(** [d_typing_unit_gen_subsumption]: gen-subsumption at Hty = __unit. *)
+Lemma d_typing_unit_gen_subsumption : forall Γ A m,
+    d_wf_denv Γ ->
+    d_sub_gen m nil Γ typ_unit A ->
+    d_typing m Γ exp_unit A.
+Proof.
+  intros Γ A m Hwfd Hs. dependent induction Hs.
+  - (* __embed: d_sub m nil Γ typ_unit A. *)
+    apply d_typing__sub with (A := typ_unit);
+      [ apply is_base_term__unit
+      | apply d_typing__unit;
+          apply mode_typ_compat__ti; apply is_syn_typ__unit
+      | assumption ].
+  - (* __refl_any: A = typ_unit, mode_typ_compat m typ_unit. *)
+    inversion H; subst.
+    + apply d_typing__unit. apply mode_typ_compat__ti.
+      apply is_syn_typ__unit.
+    + apply d_typing__sub with (A := typ_unit);
+        [ apply is_base_term__unit
+        | apply d_typing__unit;
+            apply mode_typ_compat__ti; apply is_syn_typ__unit
+        | apply d_sub__check;
+            [ intros ε T' Heq; discriminate Heq
+            | intros T' Heq; discriminate Heq
+            | apply mono_typ_is_inh_typ; apply mono_typ__unit
+            | apply d_consis__unit ] ].
+  - (* __forall_r: m = mode_tc, A = typ_all_col col_inh A0.
+       Use d_typing__forall; the per-X IH (H0) fires on per-X
+       Hsub_gen at extended Γ. (sub_gen__arg auto-discharged:
+       typ_unit ≠ typ_arrow.) *)
+    apply d_typing__forall with (L := L `union` dom Γ).
+    + apply is_value__unit.
+    + intros X HX.
+      apply H0 with (X := X); auto.
+      apply d_wf_denv__tvar; auto.
+Qed.
 
 (** ** Generalised General Subsumption (paper Lemma B.5).
 
@@ -1085,8 +1145,15 @@ Admitted.
     - 2 gen→sub bridge (var/anno + arg) — partial conversion.
     - 1 mode-changing d_sub transitivity (sub mode_fn outer).
 
-    Plus 3 internal admits in helpers
-    [d_consis_extends_d_consis_gen, d_consis_extends_d_sub_gen_nil].
+    Helpers are now fully Qed:
+    - [d_consis_to_d_sub_gen]: lift d_consis to d_sub_gen at any
+      compatible mode by induction on mode_typ_compat.
+    - [d_consis_extends_d_consis_gen]: compose d_consis on LHS with
+      d_consis_gen at Δ = nil; uses [d_consis_compose] and resolves
+      the permutation via [Permutation Δc nil → Δc = nil].
+    - [d_consis_extends_d_sub_gen_nil]: gen-relation analogue of
+      [d_consis_extends_d_sub_nil]; statement has [T] after [Hs] so
+      the [induction Hs] IH abstracts over [T] properly.
 
     [d_sub_gen__refl_any] requires [mode_typ_compat m A] (def-level
     fix); without this the rule was too permissive (e.g. allowed
@@ -1116,37 +1183,10 @@ Proof.
        def-level fix. The [__forall_r] sub-case needs nested
        recursion on Hsub_gen (Hty is atomic at __unit). *)
     simpl in Hsub_gen |- *.
-    dependent destruction Hsub_gen.
-    + (* sub_gen__embed: d_sub m_new nil Γ typ_unit B. Direct via __sub. *)
-      apply d_typing__sub with (A := typ_unit); auto.
-      * apply is_base_term__unit.
-      * apply d_typing__unit; auto.
-    + (* sub_gen__refl_any: B = typ_unit, mode_typ_compat m_new typ_unit
-         in scope. Case-split on the compat to discharge mode_fn (impossible
-         on typ_unit) and handle mode_ti / mode_tc explicitly. *)
-      match goal with
-      | Hcompat : mode_typ_compat ?M typ_unit |- _ =>
-          inversion Hcompat; subst;
-          [ (* mode_ti: result is Hty itself. *)
-            apply d_typing__unit; auto
-          | (* mode_tc: lift via d_typing__sub with d_sub__check. *)
-            apply d_typing__sub with (A := typ_unit);
-            [ apply is_base_term__unit
-            | apply d_typing__unit; auto
-            | apply d_sub__check;
-              [ intros ε T' Heq; discriminate Heq
-              | intros T' Heq; discriminate Heq
-              | apply mono_typ_is_inh_typ; apply mono_typ__unit
-              | apply d_consis__unit ] ] ]
-      end.
-    + (* sub_gen__forall_r: m_new = mode_tc, B = typ_all_col colour_inh _.
-         Use [d_typing__forall] (exp_unit is a value). Each per-X premise
-         needs a recursive call to the gen-subsumption theorem at extended
-         Γ — NESTED RECURSION on Hsub_gen which the current outer
-         induction-on-Hty does not provide. Research-grade.
-         (sub_gen__arg auto-discharged by [dependent destruction]:
-          typ_unit ≠ typ_arrow.) *)
-      admit.
+    (* All __unit sub-cases close via the dedicated auxiliary
+       [d_typing_unit_gen_subsumption], which uses dependent induction
+       on Hsub_gen to handle __forall_r's nested recursion. *)
+    apply d_typing_unit_gen_subsumption; assumption.
   - (* === Hty = d_typing__var =============================================
        m_orig = mode_ti, e = exp_var_f x, A = bound type for x.
        binds x (dbind_typ A) Γ in scope.
@@ -1268,8 +1308,8 @@ Proof.
             [ apply is_fn_n_ti__ti
             | assumption
             | eapply d_consis_extends_d_sub_gen_nil;
-              [ exact Hconsis
-              | apply d_sub_gen__refl_any; assumption
+              [ apply d_sub_gen__refl_any; assumption
+              | exact Hconsis
               | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
         end.
       * (* __forall_r: B_tgt = typ_all_col colour_inh A_target.
@@ -1283,8 +1323,8 @@ Proof.
             [ apply is_fn_n_ti__ti
             | assumption
             | eapply d_consis_extends_d_sub_gen_nil;
-              [ exact Hconsis
-              | eapply d_sub_gen__forall_r; intros X HX; eauto
+              [ eapply d_sub_gen__forall_r; intros X HX; eauto
+              | exact Hconsis
               | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
         end.
       * (* __arg: H3 = d_consis, H1 = d_consis_gen arg, Hsub_gen = d_sub_gen ret.
@@ -1299,9 +1339,9 @@ Proof.
             [ apply is_fn_n_ti__ti
             | assumption
             | eapply d_consis_extends_d_sub_gen_nil;
-              [ exact H3
-              | rewrite_env (@nil atom ++ @nil atom);
+              [ rewrite_env (@nil atom ++ @nil atom);
                 apply d_sub_gen__arg; [exact H1 | exact Hsub_gen]
+              | exact H3
               | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
         end.
     + (* m = mode_fn _ *)
