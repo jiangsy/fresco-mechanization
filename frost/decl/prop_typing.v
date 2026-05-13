@@ -10,6 +10,7 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
+Require Import src.frost.decl.prop_subtyping.
 
 Set Implicit Arguments.
 
@@ -699,26 +700,57 @@ Qed.
 
 (** Paper Lemma 3.1 (General subsumption). [paper-ref: lemma:general-subsumption]
 
-    Closure status:
+    Strategy: paper proof factors through a syntax-directed restatement
+    of the type system, using [thm:typing-syn-soundness] / [_completeness]
+    + [Generalised General Subsumption] on the syntax-directed system.
+    The mech does not have a separate syntax-directed system, so we
+    close directly on the bidirectional system. The direct closure
+    requires [d_sub] transitivity (paper [thm:subtyping-transitivity] /
+    [thm:consist-subtyping-transitivity]); see [d_consis_extends_d_sub_nil]
+    in [prop_subtyping.v] which is the narrowed transitivity sufficient
+    for the [__sub] case.
+
+    Added precondition [d_wf_denv Γ]: needed for [d_typing_pat_preserves_wf]
+    to extract [d_wf_typ Γ A0] for the intermediate type, which then
+    discharges the [d_wf_typ] precondition of [d_consis_extends_d_sub_nil].
+
+    Closure status (Qed cases):
     - __unit / __var / __anno (base terms): closed by wrapping in d_typing__sub.
-    - __sub case: closable via d_consis_extends_d_sub but that lemma lives
-      in prop_subtyping.v (parallel file, no import path here). The same
-      lemma is moved to its proper home in [prop_subtyping.v] —
-      [d_typing_general_subsumption_via_extends] — as a follow-up.
-    - __abs / __abs_anno / __app: research-grade per paper (need narrowing
-      or d_sub transitivity on result types).
+    - __sub: closed via [d_consis_extends_d_sub_nil] (NEW, this commit).
+    - __freeze / __forall: VACUOUS (those rules produce mode_tc, but the
+      lemma's hypothesis [Hty : d_typing mode_ti Γ e A] is at mode_ti).
+
+    Closure status (admitted cases):
+    - __abs / __abs_anno / __app: research-grade. The paper's syntax-directed
+      detour handles these via [dstylab{AbsForall}] / [dstylab{App}] which
+      absorb [d_typing__forall] introductions; the direct closure requires
+      either (a) mechanizing the syntax-directed system + D13/D14, or
+      (b) [d_typing_narrowing] (currently admitted; reduces back here).
 *)
 Theorem d_typing_general_subsumption : forall Γ e A B m,
+    d_wf_denv Γ ->
     d_typing mode_ti Γ e A ->
     d_sub m nil Γ A B ->
     d_typing m Γ e B.
 Proof.
-  intros Γ e A B m Hty Hsub.
+  intros Γ e A B m Hwfd Hty Hsub.
   inversion Hty; subst.
   - (* d_typing__unit *) apply d_typing__sub with (A := typ_unit); auto using is_base_term__unit.
   - (* d_typing__var  *) apply d_typing__sub with (A := A); auto using is_base_term__var.
   - (* d_typing__anno *) apply d_typing__sub with (A := A); auto using is_base_term__anno.
-  (* Non-base cases admitted: see docstring. *)
+  - (* d_typing__sub: closed via the narrowed transitivity. *)
+    apply d_typing__sub with (A := A0); auto.
+    (* Need: d_sub m nil Γ A0 B. From [d_sub__infer] inversion on
+       [d_sub mode_ti nil Γ A0 A] (the inner d_sub of d_typing__sub),
+       we get [d_consis nil Γ A0 A]. Then [d_consis_extends_d_sub_nil]
+       composes with [Hsub : d_sub m nil Γ A B] to yield the goal. *)
+    inversion H1; subst.
+    (* H1 : d_sub mode_ti nil Γ A0 A → __infer case → d_consis nil Γ A0 A. *)
+    apply d_consis_extends_d_sub_nil with (A := A); auto.
+    (* d_wf_typ Γ A0 from d_typing_pat_preserves_wf on H0 (inner typing). *)
+    eapply (proj1 d_typing_pat_preserves_wf); eauto.
+  (* __freeze / __forall vacuous (mode_tc, but Hty is mode_ti).
+     __abs / __abs_anno / __app: research-grade per docstring. *)
 Admitted.
 
 (** * Phase 2.D.7 — Stability S1 (argument-permutation).

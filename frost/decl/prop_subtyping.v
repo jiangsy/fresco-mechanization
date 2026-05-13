@@ -213,28 +213,110 @@ Proof.
   - apply d_consis__arrow; eauto.
 Qed.
 
-(** [d_sub] respects monotype substitution. This lemma is the next
-    proper step toward closing [d_consis_extends_d_sub __forall_r]:
-    given the [__forall_r] case's IH at a fresh atom X0, substituting
-    X0 → typ_var_f X' (mono) lets us derive d_sub at X' uniformly,
-    enabling cofinite reconstruction.
+(** Monotypes that are well-formed in Γ inhabit [d_wf_ttyp nil Γ].
+    Mono types are arrow trees of unit/var leaves; no quantifiers, so the
+    tag-set Δ is uniformly nil. *)
+Lemma mono_typ_d_wf_ttyp : forall Γ B,
+    mono_typ B -> d_wf_typ Γ B -> d_wf_ttyp nil Γ B.
+Proof.
+  intros Γ B Hmono. induction Hmono; intros Hwf.
+  - apply d_wf_ttyp__unit.
+  - apply d_wf_ttyp__var. inversion Hwf; subst; auto.
+  - inversion Hwf; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_wf_ttyp__arrow; auto.
+    apply list_disjoint_nil_l.
+Qed.
 
-    Currently STATED only. The [d_sub__check] case needs an auxiliary
-    "subst preserves not-etag/not-plain at top" lemma which case-splits
-    on T's top constructor and uses [mono_typ B] to discharge the
-    typ_var_f-X-case. Mechanical but ~30 LoC; deferred.
+(** Helper: monotypes can't be typ_all_etag at top. *)
+Lemma mono_not_etag : forall B ε T, mono_typ B -> B <> typ_all_etag ε T.
+Proof. intros B ε T H; destruct H; discriminate. Qed.
 
-    Once d_sub_subst_mono is Qed, [d_consis_extends_d_sub __forall_r]
-    closes via:
-    {{{
-      pick fresh X0 for ...
-      edestruct (IH X0) as [Δc [Hperm Hsub_X0]]; ...
-      exists Δc. split; [exact Hperm|].
-      apply d_sub__forall_r with (L := ...). intros X' HX'.
-      rewrite <- (open_at_X0_subst_to_X' ...).
-      apply d_sub_subst_mono; auto.
-    }}}
-*)
+(** Helper: monotypes can't be typ_all_plain at top. *)
+Lemma mono_not_plain : forall B T, mono_typ B -> B <> typ_all_plain T.
+Proof. intros B T H; destruct H; discriminate. Qed.
+
+(** Mono-substituting B for X in T preserves "T not typ_all_etag at top".
+    Cases: T = unit/var/arrow → still not etag (constructor preserved).
+    T = typ_var_f X (the substituted one) → subst gives B (mono, not etag). *)
+Lemma subst_typ_not_etag : forall B X T,
+    mono_typ B ->
+    (forall ε T', T <> typ_all_etag ε T') ->
+    forall ε T', subst_typ_in_typ B X T <> typ_all_etag ε T'.
+Proof.
+  intros B X T HBmono Hne ε T' Heq.
+  destruct T; simpl in Heq; try discriminate.
+  - (* T = typ_var_f X0: subst either gives B or stays *)
+    destruct (X0 == X); simpl in Heq.
+    + (* X0 = X: result is B, which is mono → not etag *)
+      eapply mono_not_etag; eauto.
+    + discriminate.
+  - (* T = typ_all_etag: contradicts Hne *)
+    eapply (Hne ε0); reflexivity.
+Qed.
+
+Lemma subst_typ_not_plain : forall B X T,
+    mono_typ B ->
+    (forall T', T <> typ_all_plain T') ->
+    forall T', subst_typ_in_typ B X T <> typ_all_plain T'.
+Proof.
+  intros B X T HBmono Hne T' Heq.
+  destruct T; simpl in Heq; try discriminate.
+  - destruct (X0 == X); simpl in Heq.
+    + eapply mono_not_plain; eauto.
+    + discriminate.
+  - eapply Hne; reflexivity.
+Qed.
+
+(** [d_sub] respects monotype substitution. Closing this unblocks
+    [d_consis_extends_d_sub __forall_r] via alpha-renaming the cofinite
+    body's d_sub across X. *)
+Lemma d_sub_subst_mono : forall Γ1 Γ2 X M Δ T A B,
+    Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ⊢[ M ; Δ ] T ⊑ A ->
+    mono_typ B ->
+    d_wf_typ Γ2 B ->
+    Γ1 ++ Γ2 ⊢[ M ; Δ ] subst_typ_in_typ B X T ⊑ subst_typ_in_typ B X A.
+Proof.
+  intros Γ1 Γ2 X M Δ T A B Hsub HBmono HBwf.
+  dependent induction Hsub.
+  - (* __infer *)
+    apply d_sub__infer.
+    + apply is_syn_typ_subst; auto.
+      apply mono_typ_is_syn_typ; auto.
+    + apply d_consis_subst_mono; auto.
+  - (* __check *)
+    apply d_sub__check; auto.
+    + apply subst_typ_not_etag; auto.
+    + apply subst_typ_not_plain; auto.
+    + apply is_inh_typ_subst; auto.
+      apply mono_typ_is_inh_typ; auto.
+    + apply d_consis_subst_mono; auto.
+  - (* __forall_r *)
+    apply d_sub__forall_r with
+      (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [|fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - (* __arg *)
+    apply d_sub__arg.
+    + apply d_consis_subst_mono; auto.
+    + apply IHHsub; auto.
+  - (* __forall_l_tagged *)
+    simpl.
+    eapply d_sub__forall_l_tagged with (Δ' := Δ') (ph := subst_typ_in_typ B X ph); auto.
+    + eapply d_wf_ttyp_subst; eauto.
+      apply mono_typ_d_wf_ttyp; auto.
+    + rewrite <- subst_typ_in_typ_open_typ_wrt_typ; [| apply (d_wf_typ_lc HBwf)].
+      apply IHHsub; auto.
+  - (* __forall_l_untagged *)
+    simpl.
+    eapply d_sub__forall_l_untagged with (Δ' := Δ') (ph := subst_typ_in_typ B X ph); auto.
+    + eapply d_wf_ttyp_subst; eauto.
+      apply mono_typ_d_wf_ttyp; auto.
+    + rewrite <- subst_typ_in_typ_open_typ_wrt_typ; [| apply (d_wf_typ_lc HBwf)].
+      apply IHHsub; auto.
+Qed.
 
 (** Context tvar-morphism for [d_sub]. *)
 Lemma d_sub_tvar_morph : forall Γ Γ' M Δ T A,
@@ -362,6 +444,68 @@ Proof.
           [apply list_disjoint_sym; exact Hd2b1 | exact Hdis_b].
 Qed.
 
+(** [d_sub] is UNINHABITED when the LHS is [typ_all_col c A]. The reason:
+    - [d_sub__infer] / [d_sub__check] reduce to [d_consis] with LHS [typ_all_col],
+      which has no defining rule (d_consis LHS is [is_utyp]-shape: unit / var /
+      typ_all_etag / typ_all_plain / typ_arrow).
+    - [d_sub__arg] / [d_sub__forall_l_*] have rigid LHS shapes that mismatch.
+    - [d_sub__forall_r] recurses on the body's [d_sub] which has the same LHS;
+      closes via IH.
+
+    This is used in [d_consis_extends_d_sub] to discharge the [__arg]
+    sub-case's "T02 not etag/plain" obligation: if T02 = typ_all_etag/plain,
+    then A02 (the d_consis RHS at that branch) = typ_all_col c, and Hs's
+    body [d_sub m Δ Γ A02 B2] is uninhabited, ruling the case out. *)
+Lemma d_sub_not_lhs_typ_all_col : forall M Δ Γ T B,
+    d_sub M Δ Γ T B ->
+    forall c A, T <> typ_all_col c A.
+Proof.
+  intros M Δ Γ T B Hsub.
+  induction Hsub; intros c0 A0 HT; try discriminate.
+  - subst T. inversion H0.
+  - subst T. inversion H2.
+  - subst T. pick fresh X for L. eapply H0; eauto.
+Qed.
+
+(** If [d_consis Δ Γ T A] and [d_consis nil Γ A B] both hold, then [Δ = nil].
+
+    Reason: A must be in the intersection of d_consis RHS-allowed shapes
+    (unit / var / typ_all_col / typ_arrow) and d_consis LHS-allowed shapes
+    (unit / var / typ_all_etag / typ_all_plain / typ_arrow), so
+    A ∈ {unit, var, typ_arrow}. The forall-cases of the first d_consis
+    have A = typ_all_col, which makes the second d_consis vacuous by
+    inversion. The arrow case splits Δ recursively.
+
+    This is used in [d_consis_extends_d_sub]'s [__arg] sub-case to
+    discharge the recursive IH's [m = mode_ti → Δ = nil] obligation:
+    when the inner mode is [mode_ti], Hs's body inverts to [__infer]
+    with [d_consis nil Γ A02 B2], and this lemma gives [Δc02 = nil]
+    from Hc.right_branch [d_consis Δc02 Γ T02 A02]. *)
+Lemma d_consis_compose_nil_RHS : forall Δ Γ T A B,
+    d_consis Δ Γ T A ->
+    d_consis nil Γ A B ->
+    Δ = nil.
+Proof.
+  intros Δ Γ T A B H1. revert B.
+  induction H1; intros B0 H2.
+  - reflexivity.
+  - reflexivity.
+  - inversion H2.
+  - inversion H2.
+  - inversion H2.
+  - inversion H2.
+  - inversion H2 as
+      [| | | | | | Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdisb HΔeq];
+      subst.
+    assert (HΔb : Δb1 = nil /\ Δb2 = nil).
+    { destruct Δb1; destruct Δb2; simpl in HΔeq;
+        try discriminate; try (split; reflexivity). }
+    destruct HΔb as [HΔb1 HΔb2]. subst Δb1 Δb2.
+    erewrite IHd_consis1 by exact Hb1.
+    erewrite IHd_consis2 by exact Hb2.
+    reflexivity.
+Qed.
+
 (** Paper Lemma B.3 (Consistency-Subtyping Transitivity). [paper-ref: thm:consist-subtyping-transitivity]
     The declarative version of the algorithmic "Consistency extends
     subtyping" (paper Lemma D.5).
@@ -407,35 +551,172 @@ Proof.
       [exact Hc | exact H2 | exact Hdis |].
     exists Δc. split; [exact Hperm|].
     apply d_sub__check; auto.
-  - (* d_sub__forall_r: B = typ_all_col colour_inh B'. *)
-    (* Cofinite over X. The IH on each X may produce different Δc',
-       blocking the d_sub__forall_r reconstruction without a
-       Permutation-invariance lemma for d_sub. *)
-    admit.
-  - (* d_sub__arg: M = mode_fn m, A = typ_arrow A1 A2. *)
-    (* Approach: Hc inverts to d_consis__arrow giving Δa ++ Δb on T01/T02.
-       The first compose-step on (Hca, H : d_consis Δ1 Γ A1 A1') closes
-       cleanly via d_consis_compose. The IH for d_sub on (T02, A2') needs
-       side conditions [forall ε T', T02 <> typ_all_etag ε T'] and
-       [forall T', T02 <> typ_all_plain T'] which DON'T transfer from
-       the outer (which says typ_arrow T01 T02 is not etag/plain at
-       top — vacuous for an arrow). T02 could itself be etag/plain.
-       Admitted: needs a different inductive structure or strengthened
-       side conditions on the inner T. *)
-    admit.
+  - (* d_sub__forall_r: B = typ_all_col colour_inh A.
+       Closed via [d_sub_subst_mono]: pick fresh X0, get IH at X0 with
+       canonical Δc, then alpha-rename X0 → X' for arbitrary X'. *)
+    pick fresh X0 for
+      (L `union` dom Γ `union` ftvar_in_typ A `union` ftvar_in_typ T0).
+    assert (HX0 : X0 `notin` L) by fsetdec.
+    edestruct (H0 X0 HX0 Δ0 T0) as [Δc [Hperm Hsub_X0]].
+    + apply d_consis_weakening_head; exact Hc.
+    + exact Hdis.
+    + intros HM_ti. discriminate.
+    + exact Hne_etag.
+    + exact Hne_plain.
+    + exists Δc. split; [exact Hperm |].
+      apply d_sub__forall_r with
+        (L := L `union` dom Γ `union` ftvar_in_typ A `union` ftvar_in_typ T0
+              `union` singleton X0).
+      intros X' HX'.
+      (* Step 1: weaken Hsub_X0 to insert (X'~tvar). *)
+      assert (Hsub_weak : d_sub mode_tc Δc ((X0 ~ dbind_tvar)
+        ++ (X' ~ dbind_tvar) ++ Γ) T0 (open_typ_wrt_typ A (typ_var_f X0))).
+      { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+        apply d_sub_weakening; auto. }
+      (* Step 2: apply d_sub_subst_mono with B = typ_var_f X' to rename X0 → X'. *)
+      apply d_sub_subst_mono
+        with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+             (B := typ_var_f X') in Hsub_weak; auto.
+      * (* Simplify the substituted types:
+           - subst (typ_var_f X') X0 T0 = T0  (since X0 ∉ ftv T0)
+           - subst (typ_var_f X') X0 (open A X0) = open A X' (via _intro reverse)
+        *)
+        rewrite (subst_typ_in_typ_fresh_eq T0 (typ_var_f X') X0) in Hsub_weak
+          by fsetdec.
+        rewrite <- (subst_typ_in_typ_intro X0) in Hsub_weak by fsetdec.
+        exact Hsub_weak.
+      * apply mono_typ__var.
+      * apply d_wf_typ__var. left; reflexivity.
+  - (* d_sub__arg: M = mode_fn m, A = typ_arrow A1 A2.
+       CLOSED via the two structural helpers:
+       - T02 not etag/plain: by case split on T02; if etag/plain then
+         A02 = typ_all_col (Hc inversion) → Hs body uninhabited via
+         [d_sub_not_lhs_typ_all_col].
+       - m = mode_ti → Δc02 = nil: Hs body inverts to __infer with
+         [d_consis nil Γ A02 B2] → [d_consis_compose_nil_RHS] on Hcb. *)
+    inversion Hc as
+      [| | | | | | Δc01 Δc02 ? T01 T02 A01 A02 Hca Hcb Hcdisarr];
+      subst.
+    apply list_disjoint_app_l_iff in Hdis as [Hdisa Hdisb].
+    apply list_disjoint_app_r_iff in Hdisa as [Hd_a_1 Hd_a_2].
+    apply list_disjoint_app_r_iff in Hdisb as [Hd_b_1 Hd_b_2].
+    edestruct d_consis_compose as [Δd1 [Hperm1 Hccarg]];
+      [exact Hca | exact H | exact Hd_a_1 |].
+    (* Derive T02 not etag/plain from Hcb + Hs body uninhabited at typ_all_col. *)
+    assert (HT02_etag : forall ε T', T02 <> typ_all_etag ε T').
+    { intros ε T'_inner Heq_etag. subst T02.
+      inversion Hcb; subst.
+      - eapply (d_sub_not_lhs_typ_all_col Hs); reflexivity.
+      - eapply (d_sub_not_lhs_typ_all_col Hs); reflexivity. }
+    assert (HT02_plain : forall T', T02 <> typ_all_plain T').
+    { intros T'_inner Heq_plain. subst T02.
+      inversion Hcb; subst.
+      - eapply (d_sub_not_lhs_typ_all_col Hs); reflexivity.
+      - eapply (d_sub_not_lhs_typ_all_col Hs); reflexivity. }
+    (* Derive m = mode_ti → Δc02 = nil from Hs body at mode_ti = __infer. *)
+    assert (HΔc02_ti : m = mode_ti -> Δc02 = nil).
+    { intro Hm. subst m.
+      (* Hs : d_sub mode_ti Δ2 Γ A02 B2. Inversion produces 3 cases:
+         - __infer: the case we want, gives d_consis nil Γ A02 B2.
+         - __forall_l_tagged / _untagged: have premise [m <> mode_ti] which
+           becomes [mode_ti <> mode_ti] → contradiction. *)
+      inversion Hs; subst.
+      - (* __infer case *)
+        eapply d_consis_compose_nil_RHS; eauto.
+      - (* __forall_l_tagged: m <> mode_ti hypothesis is now mode_ti <> mode_ti *)
+        match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end.
+      - (* __forall_l_untagged: similar *)
+        match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end. }
+    (* Apply recursive IH on the function-result side. *)
+    edestruct IHHs as [Δd2 [Hperm2 Hsubres]];
+      [exact Hcb | exact Hd_b_2 | exact HΔc02_ti
+       | exact HT02_etag | exact HT02_plain |].
+    exists (Δd1 ++ Δd2). split.
+    + transitivity ((Δc01 ++ Δ1) ++ (Δc02 ++ Δ2)).
+      * apply Permutation_app; assumption.
+      * apply list_swap_middle.
+    + apply d_sub__arg; assumption.
   - (* d_sub__forall_l_tagged: A = typ_all_etag, but d_consis RHS is
        never typ_all_etag. *)
     inversion Hc.
   - (* d_sub__forall_l_untagged: similar. *)
     inversion Hc.
-Admitted.
-(** d_consis_extends_d_sub: partial. With Permutation + cross-disjoint
-    reformulation:
-    - d_sub__infer / __check / __arg: CLOSED.
-    - d_sub__forall_l_tagged / _untagged: CLOSED vacuously by Hc inversion.
-    - d_sub__forall_r: BLOCKED on a Permutation-invariance lemma for
-      d_sub (the cofinite IH gives different Δc per X).
-    Documented in PROGRESS.md. *)
+Qed.
+(** d_consis_extends_d_sub: FULLY CLOSED in original general form.
+    - __infer / __check / __forall_l_*: closed cleanly (the latter two
+      vacuously via Hc inversion).
+    - __arg: closed via the two structural helpers [d_sub_not_lhs_typ_all_col]
+      (rules out T02 etag/plain) and [d_consis_compose_nil_RHS] (derives
+      m_inner = mode_ti → Δc02 = nil).
+    - __forall_r: closed via [d_sub_subst_mono] alpha-renaming: pick fresh
+      X0, get IH at X0 giving canonical Δc, then for each X' in the
+      cofinite premise rename X0 → X' via mono substitution. *)
+
+(** Narrowed corollary: both Δ-sides nil, [d_wf_typ Γ T] precondition.
+    This is the form that D1 (general subsumption)'s [__sub] case needs.
+
+    Closure analysis with this narrowing:
+    - Outer [Δ = nil] forces all sub-Δs to be nil through arrow inversion
+      (the arrow case has [nil = Δc01 ++ Δc02] → [Δc01 = Δc02 = nil]).
+    - The [d_wf_typ Γ T] precondition discharges the "T not etag/plain"
+      conditions of [d_sub__check] via inversion (well-formed types have
+      no etag/plain constructors), and propagates through arrow inversion
+      to the recursive [__arg] call ([d_wf_typ Γ (typ_arrow T01 T02)]
+      inverts to [d_wf_typ Γ T02]).
+    - The [__forall_r] case's Δ-per-X issue VANISHES because both inputs
+      are nil, so the cofinite IH's Permutation [Δc_X (nil ++ nil)] forces
+      [Δc_X = nil] uniformly across all X. *)
+Lemma d_consis_extends_d_sub_nil : forall M Γ T A B,
+    nil ⨟ Γ ⊨ T ≈ A ->
+    Γ ⊢[ M ; nil ] A ⊑ B ->
+    d_wf_typ Γ T ->
+    Γ ⊢[ M ; nil ] T ⊑ B.
+Proof.
+  intros M Γ T A B Hc Hs HwfT.
+  generalize dependent T.
+  dependent induction Hs; intros T0 Hc HwfT.
+  - (* d_sub__infer: Δ_rule = nil already matches. *)
+    edestruct d_consis_compose as [Δd [Hperm Hcc]];
+      [exact Hc | exact H0 | apply list_disjoint_nil_l |].
+    apply Permutation_sym in Hperm. apply Permutation_nil in Hperm.
+    subst Δd. apply d_sub__infer; auto.
+  - (* d_sub__check: rule Δ = nil matches. *)
+    edestruct d_consis_compose as [Δd [Hperm Hcc]];
+      [exact Hc | exact H2 | apply list_disjoint_nil_l |].
+    apply Permutation_sym in Hperm. apply Permutation_nil in Hperm.
+    subst Δd. apply d_sub__check; auto.
+    + intros ε T1 Heq. subst T0. inversion HwfT.
+    + intros T1 Heq. subst T0. inversion HwfT.
+  - (* d_sub__forall_r: rule Δ = nil matches. *)
+    apply d_sub__forall_r with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+    + apply d_consis_weakening_head. exact Hc.
+    + apply d_wf_typ_weakening_head. exact HwfT.
+  - (* d_sub__arg: rule Δ = Δ1 ++ Δ2 = nil → Δ1 = Δ2 = nil
+       (dependent induction adds equality x : Δ1 ++ Δ2 = nil). *)
+    apply app_eq_nil in x as [HΔ1 HΔ2]. subst Δ1 Δ2.
+    inversion Hc as
+      [| | | | | | Δc01 Δc02 ? T01 T02 A01 A02 Hca Hcb _ Hdis_eq];
+      subst.
+    (* Hdis_eq : nil = Δc01 ++ Δc02 OR Δc01 ++ Δc02 = nil — handle both. *)
+    assert (HΔc01 : Δc01 = nil /\ Δc02 = nil).
+    { destruct Δc01; destruct Δc02; simpl in Hdis_eq;
+      try discriminate; try (split; reflexivity). }
+    destruct HΔc01 as [HΔc01 HΔc02]. subst Δc01 Δc02.
+    inversion HwfT as [| | ? T01' T02' HwfT01 HwfT02 |]; subst.
+    edestruct d_consis_compose as [Δd1 [Hperm1 Hccarg]];
+      [exact Hca | exact H | apply list_disjoint_nil_l |].
+    apply Permutation_sym in Hperm1. apply Permutation_nil in Hperm1.
+    subst Δd1.
+    assert (Hsubres : d_sub m nil Γ T02 A2)
+      by (apply IHHs; auto).
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_sub__arg; auto.
+  - (* d_sub__forall_l_tagged: A = typ_all_etag, Hc RHS never typ_all_etag. *)
+    inversion Hc.
+  - (* d_sub__forall_l_untagged: similar. *)
+    inversion Hc.
+Qed.
 
 (** * d_sub preserves wellformedness.
 
@@ -664,7 +945,8 @@ Proof.
   intros Γ e A_prev A B m Hbase Hty_inner Hsub_inner Hsub Hwfdenv.
   (* Inversion of d_sub mode_ti gives __infer with is_syn_typ A and
      d_consis nil Γ A_prev A. *)
-  inversion Hsub_inner as [? ? ? Hsyn Hconsis | | | | | ]; subst.
+  inversion Hsub_inner as [Γ_in T_in A_in Hsyn Hconsis | | | | | ]; subst;
+    try (match goal with H : ?m <> ?m |- _ => exfalso; apply H; reflexivity end).
   (* Derive A_prev's structural shape via d_typing → d_wf_typ → is_typ. *)
   assert (Hwf_aprev : d_wf_typ Γ A_prev) by
     (apply (proj1 d_typing_pat_preserves_wf) with (m := mode_ti) (e := e); auto).
@@ -678,11 +960,11 @@ Proof.
     | ].
   simpl in Hperm. apply Permutation_sym in Hperm.
   apply Permutation_nil in Hperm. subst Δc.
-  apply d_typing__sub with (A := A_prev); auto.
-Admitted.
-(** Note: the proof script above is complete locally. It propagates
-    the existing partial admits inside d_consis_extends_d_sub
-    (__forall_r at mode_tc, __arg at mode_fn) — closing them would
-    automatically close this lemma too. For m = mode_ti, the only
-    d_sub case is __infer which is already Qed inside
-    d_consis_extends_d_sub. *)
+  apply d_typing__sub with (A := A_prev).
+  - exact Hbase.
+  - exact Hty_inner.
+  - exact Hsub_composed.
+Qed.
+(** Now CLOSED: [d_consis_extends_d_sub] is fully Qed
+    (both [__forall_r] and [__arg] closed in 2026-05-13), so this
+    helper is also fully Qed. *)

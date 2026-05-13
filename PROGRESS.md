@@ -23,14 +23,168 @@ Current per-file `Admitted.` count (run `grep -c "^Admitted\." mechanization/fro
 |---|---|
 | `frost/decl/prop_basic.v` | 0 |
 | `frost/decl/prop_wellformed.v` | 0 |
-| `frost/decl/prop_subtyping.v` | 3 |
-| `frost/decl/prop_typing.v` | 8 |
+| `frost/decl/prop_subtyping.v` | 2 |
+| `frost/decl/prop_typing.v` | 9 |
 | `frost/decl/prop_skeleton.v` | 2 |
 | `frost/algo/def_extra.v` | 0 |
 | `frost/algo/notations.v` | 0 |
 | `frost/algo/prop_soundness.v` | 3 |
 | `frost/algo/prop_completeness.v` | 3 |
-| **Total** | **19** |
+| **Total** | **19** (was 21 — D10 and `d_typing_sub_compose` fully closed 2026-05-13) |
+
+## Paper → Coq Mapping
+
+Every paper-stated theorem/lemma with its corresponding Coq statement
+and proof status. Click any `file.v:LINE` to jump to the formal
+definition.
+
+**Status legend:** 🟢 Qed · 🟡 partial / narrowed (stated, some cases
+admitted or precondition strengthened) · 🟠 admitted (HEADLINE,
+paper-cited rationale) · ⚠️ paper-flagged (paper statement itself
+sketchy — counter-example noted) · 🔴 not mechanized (subsumed,
+deferred, or out of scope) · n/a (variant of another mechanized
+statement; the mech only has one declarative system, not the
+syntax-directed restatement).
+
+### Declarative metatheory (`paper/sections/declarative.tex`, `paper/sections/syntax-directed.tex`)
+
+| # | Paper lemma | Paper | Coq statement (file:line) | Status |
+|---|---|---|---|---|
+| D1 | General subsumption | [declarative.tex:574](../paper/sections/declarative.tex#L574) | `d_typing_general_subsumption` [`prop_typing.v:730`](frost/decl/prop_typing.v#L730):<br>`d_wf_denv Γ → d_typing mode_ti Γ e A → d_sub m nil Γ A B → d_typing m Γ e B`<br>(`d_wf_denv Γ` makes the paper's implicit wf-context assumption explicit) | 🟡 base cases (unit/var/anno) + recursive `__sub` Qed via [`d_typing_sub_compose`](frost/decl/prop_subtyping.v#L937) (now Qed) and [`d_consis_extends_d_sub_nil`](frost/decl/prop_subtyping.v#L667); `__freeze` / `__forall` vacuous (mode_tc rules, Hty is mode_ti); `__abs` / `__abs_anno` / `__app` admitted — these are paper-blocked: body conversion mode_ti → mode_tc with the same type requires `d_sub_refl` at mode_tc, which is uninhabited for `typ_all_col` LHS (by [`d_sub_not_lhs_typ_all_col`](frost/decl/prop_subtyping.v#L459)). The paper resolves this via the syntax-directed detour (D11/D12/D13/D14); without that system the body's typ_all_col-typed values can't be re-typed at mode_tc via the bidirectional rules alone. |
+| D2 | Soundness of subtyping | [declarative.tex:1095](../paper/sections/declarative.tex#L1095) | `d_sub_sound` [`prop_subtyping.v:497`](frost/decl/prop_subtyping.v#L497):<br>`is_typ A → d_sub mode_tc nil Γ A B → d_shallow_sub Γ A B` | 🟡 narrowed with `is_typ A` so LHS is `typ_all_col` flavour (matches `d_shallow_sub` shape) |
+| D3 | No guessing of polytypes | [declarative.tex:1102](../paper/sections/declarative.tex#L1102) | `d_sub_no_guess_uniqueness` [`prop_subtyping.v:607`](frost/decl/prop_subtyping.v#L607):<br>two instantiations `ph1`, `ph2` of same `d_sub` derivation imply `ph1 = ph2` (strict-equality form) | ⚠️ paper-flagged — counter-example inlined (`ph` can absorb into nested `forall_l_tagged` chains); paper revision suggested |
+| D4 | Refinement preserves wf | [declarative.tex:1380](../paper/sections/declarative.tex#L1380) | `d_refine_preserves_wf` [`prop_wellformed.v:766`](frost/decl/prop_wellformed.v#L766):<br>`Ψ ⨟ Γ ⊢ₛₖ P → Ψ ⨟ Γ ⊢ᵣ P ▸ Q → Ψ ⨟ Γ ⊢ₛₖ Q`<br>(coloured variant `d_refine_syn_preserves_wf` [`prop_wellformed.v:931`](frost/decl/prop_wellformed.v#L931) also Qed) | 🟢 |
+| D5 | Preservation of skeleton wf | [declarative.tex:1970](../paper/sections/declarative.tex#L1970) | `d_pat_preserves_skel_wf` [`prop_skeleton.v:128`](frost/decl/prop_skeleton.v#L128):<br>`d_pat mode_tc Γ e P → d_wf_denv Γ → d_wf_skel nil Γ P` | 🟢 (narrowed via `d_pat_consis_preserves_wf` + `d_pat_sub_preserves_wf` with `is_syn_skel P` side hypothesis) |
+| D6 | Validity of skeleton inference | [declarative.tex:1981](../paper/sections/declarative.tex#L1981) | `d_pat_validity` [`prop_skeleton.v:151`](frost/decl/prop_skeleton.v#L151):<br>`d_pat m Γ e P → d_wf_denv Γ → (∃ A, d_typing m Γ e A) → ∃ B, d_typing m Γ e B ∧ d_refine nil Γ P B` | 🟠 depends on refinement reflexivity (guarded skeletons) + anti-symmetry with `d_typing__sub` |
+| D7 | Safety of skeleton inference | [declarative.tex:1986](../paper/sections/declarative.tex#L1986) | `d_pat_safety` [`prop_skeleton.v:177`](frost/decl/prop_skeleton.v#L177):<br>`(∃ A, d_typing m Γ e A) → d_wf_denv Γ → ∃ P, d_pat m Γ e P ∧ (∀ B, d_typing m Γ e B → d_refine nil Γ P B)` | 🟠 universal "refines every type" — needs principal-skeleton construction (join under refinement) |
+| D8 | General Subsumption (syntax-directed) | [syntax-directed.tex:3](../paper/sections/syntax-directed.tex#L3) | (same as D1) | n/a — duplicate of D1; mech has one declarative system |
+| D9 | Consistency Transitivity | [syntax-directed.tex:146](../paper/sections/syntax-directed.tex#L146) (= paper Lemma B.2) | `d_consis_compose` [`prop_subtyping.v:318`](frost/decl/prop_subtyping.v#L318):<br>`d_consis Δa Γ T A → d_consis Δb Γ A B → list_disjoint Δa Δb → ∃ Δc, Permutation Δc (Δa ++ Δb) ∧ d_consis Δc Γ T B` | 🟢 mod Permutation — arrow case interleaves segments; paper writes "Δ1, Δ2" as set union |
+| D10 | Consistency-Subtyping Transitivity / Consistency extends subtyping | [syntax-directed.tex:161](../paper/sections/syntax-directed.tex#L161) = [proofs.tex:51](../paper/sections/proofs.tex#L51) | `d_consis_extends_d_sub` [`prop_subtyping.v:529`](frost/decl/prop_subtyping.v#L529):<br>`d_consis Δ Γ T A → d_sub M Δ' Γ A B → list_disjoint Δ Δ' → (M = mode_ti → Δ = nil) → (T not etag/plain) → ∃ Δc, Permutation Δc (Δ ++ Δ') ∧ d_sub M Δc Γ T B` | 🟢 **FULLY Qed in original general form** (no narrowing). All 6 d_sub cases closed: `__infer` / `__check` directly; `__forall_l_*` vacuously via Hc inversion; `__arg` via the two structural helpers [`d_sub_not_lhs_typ_all_col`](frost/decl/prop_subtyping.v#L459) and [`d_consis_compose_nil_RHS`](frost/decl/prop_subtyping.v#L484); `__forall_r` via [`d_sub_subst_mono`](frost/decl/prop_subtyping.v#L274) alpha-renaming (pick fresh X₀, get IH at X₀ giving canonical Δc, then rename X₀ → X' for the cofinite premise via mono substitution with B = typ_var_f X'). |
+| D11 | Subtyping Transitivity | [syntax-directed.tex:249](../paper/sections/syntax-directed.tex#L249) | — | 🔴 not separately mechanized; subsumed by D1 + D10 at use sites |
+| D12 | Generalised General Subsumption | [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343) | — | 🔴 extension of D1 to nested `FN[n]` modes; not attempted |
+| D13 | Soundness of Syntax-directed | [syntax-directed.tex:556](../paper/sections/syntax-directed.tex#L556) | — | n/a — mech only has the bidirectional declarative system |
+| D14 | Completeness of Syntax-directed | [syntax-directed.tex:573](../paper/sections/syntax-directed.tex#L573) | — | n/a |
+
+### Algorithmic metatheory (`paper/sections/algorithmic.tex`, `paper/sections/proofs.tex`)
+
+| # | Paper lemma | Paper | Coq statement (file:line) | Status |
+|---|---|---|---|---|
+| A1 | Stability (all judgments) | [proofs.tex:15](../paper/sections/proofs.tex#L15) | `stability_d_typing` [`prop_soundness.v:620`](frost/algo/prop_soundness.v#L620) + 8 siblings:<br>`aenv_extends Θ0 Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → d_typing m Γ0 e A → d_typing m Γ1 e A` (same shape for `_d_wf_typ`, `_d_consis`, `_d_sub`, `_d_pat_consis`, `_d_pat_sub`, `_d_refine`, `_d_refine_syn`, `_d_pat`) | 🟢 9 of 9 |
+| A2 | Structural rules (SuffixMoving) | [proofs.tex:20](../paper/sections/proofs.tex#L20) | `d_typing_suffix_moving_singleton` [`prop_typing.v:652`](frost/decl/prop_typing.v#L652) + `d_pat_suffix_moving_singleton`:<br>`d_typing m (Γ1 ++ y~b ++ Γ2) e A → y ∉ dom Γ1 → d_typing m (Γ1 ++ Γ2 ++ y~b) e A` | 🟢 narrowed to single-binding move; full n-binding form needs free-vars-of-context machinery |
+| A3 | Splitting refines | [proofs.tex:33](../paper/sections/proofs.tex#L33) | `d_refine_arrow_split` [`prop_skeleton.v:25`](frost/decl/prop_skeleton.v#L25) + 7 siblings (`_all_plain_split`, `_hole_split`, `_tophole_split`, and `_syn_*` versions):<br>e.g. `d_refine Ψ Γ (typ_arrow P1 P2) Q → ∃ Q1 Q2, Q = typ_arrow Q1 Q2 ∧ d_refine Ψ Γ P1 Q1 ∧ d_refine Ψ Γ P2 Q2` | 🟢 8 of 8 |
+| A4 | Consistency extends subtyping | [proofs.tex:51](../paper/sections/proofs.tex#L51) | (same as D10) | 🟡 (see D10) |
+| A5 | Substitution preserves safety | [proofs.tex:905](../paper/sections/proofs.tex#L905) | — | 🔴 paper proof is "obvious — θ monotype only"; corollary of typ-subst preservation (itself admitted) |
+| A6 | Substitution preserves informativeness | [proofs.tex:917](../paper/sections/proofs.tex#L917) | — | 🔴 same |
+| A7 | More information does not harm | [proofs.tex:931](../paper/sections/proofs.tex#L931) | — | 🔴 redundant with D1 (general subsumption) — not stated separately |
+| A8 | Soundness of type inference | [algorithmic.tex:686](../paper/sections/algorithmic.tex#L686) | `a_typing_sound` [`prop_soundness.v:748`](frost/algo/prop_soundness.v#L748):<br>`a_typing m Θ0 P0 e A Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → d_typing m Γ1 e A` | 🟠 HEADLINE — depends on `a_consis_sound`, `a_unify_sound`, `a_assign_sound`, `a_pre_sub_sound`, `a_split_sound`, `a_guess_mono_sound` (not yet stated) |
+| A9 | Completeness + minimality of type inference | [algorithmic.tex:692](../paper/sections/algorithmic.tex#L692) | `a_typing_complete` [`prop_completeness.v:327`](frost/algo/prop_completeness.v#L327):<br>`d_typing m Γ e A → ∀ Θ0 P0, a_transfers Θ0 Γ → a_wf_typ Θ0 P0 → ∃ Θ1, a_typing m Θ0 P0 e A Θ1 ∧ a_transfers Θ1 Γ` | 🟠 HEADLINE — dual to A8; same auxiliary family |
+| A10 | Connection of informativeness | [algorithmic.tex:976](../paper/sections/algorithmic.tex#L976) | — | 🔴 not attempted; depends on a precise `morepoly` definition |
+| A11 | Soundness of skeleton inference | [algorithmic.tex:1017](../paper/sections/algorithmic.tex#L1017) | `a_pat_sound` [`prop_soundness.v:716`](frost/algo/prop_soundness.v#L716):<br>`a_pat m Θ0 P0 e P Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → d_pat m Γ1 e P` | 🟠 HEADLINE — mutual with A8 |
+| A12 | Completeness of skeleton inference | [algorithmic.tex:1024](../paper/sections/algorithmic.tex#L1024) | `a_pat_complete` [`prop_completeness.v:209`](frost/algo/prop_completeness.v#L209):<br>`d_pat m Γ e P → ∀ Θ0 P0, a_transfers Θ0 Γ → a_wf_typ Θ0 P0 → ∃ Θ1 Q, a_pat m Θ0 P0 e Q Θ1 ∧ a_transfers Θ1 Γ` | 🟠 HEADLINE — mutual with A9 |
+| A13 | Soundness/Completeness/Minimality of subtyping | [algorithmic.tex:1086](../paper/sections/algorithmic.tex#L1086) | `a_sub_sound` [`prop_soundness.v:661`](frost/algo/prop_soundness.v#L661) (`d_sub m nil Γ1 T A`) + `a_sub_complete` [`prop_completeness.v:135`](frost/algo/prop_completeness.v#L135) | 🟠 HEADLINE — five auxiliary completeness/soundness lemmas blocked. The existential-form `a_sub_decidable_existential` [`prop_completeness.v:74`](frost/algo/prop_completeness.v#L74) is Qed in a vacuous-disjunct form (documents the obligation without fabricating a proof) |
+| A14 | Soundness/Completeness/Minimality of unification | [algorithmic.tex:1328](../paper/sections/algorithmic.tex#L1328) | — | 🔴 `a_unify` defined in `algo/def_extra.v`; no standalone soundness lemma stated (consumed via A13 / A8 chains) |
+
+### Score
+
+Counts against paper-stated signatures only. A "🟢 closed" entry means
+the mech statement matches the paper statement (a `d_wf_denv Γ`
+precondition that makes the paper's implicit wf-context assumption
+explicit is NOT counted as narrowing; substantive shape restrictions
+like requiring `is_typ A` ARE counted as narrowing). Mech-internal
+helper lemmas (e.g. `d_consis_extends_d_sub_nil`) are listed in the
+support-lemmas table and do NOT count toward closing a paper lemma.
+
+- Paper-stated lemmas (excluding "n/a" duplicates): **23**.
+- 🟢 fully closed: **6** (D4, D5, D9, **D10/A4 NEW 2026-05-13**, A1, A2/A3).
+- 🟡 partial / narrowed: **2** (D1 — base + `__sub` cases Qed via
+  `d_typing_sub_compose` (now Qed); `__abs` / `__abs_anno` / `__app`
+  paper-blocked. D2 — narrowed via `is_typ A`).
+- 🟠 admitted (HEADLINE, research-grade): **7** (D6, D7, A8, A9, A11, A12, A13).
+- ⚠️ paper-flagged: **1** (D3).
+- 🔴 not mechanized: **7** (D11, D12, A5, A6, A7, A10, A14).
+- n/a (variant of another mechanized statement): **3** (D8, D13, D14).
+
+**Why D1's remaining cases (`__abs`/`__abs_anno`/`__app`) are
+paper-blocked, not just unfinished:** For each, after inverting `d_sub`
+on the typ_arrow LHS, the `__check` case reduces to a body conversion
+`d_typing mode_ti Γ' e' A_ret → d_typing mode_tc Γ' e' A_ret` with the
+*same* `A_ret`. Via D1 itself this needs `d_sub mode_tc nil Γ' A_ret
+A_ret` (reflexivity at mode_tc). When `A_ret` is `typ_all_col c X`
+(reachable via `__var` binding lookups), `d_sub_refl` at mode_tc is
+**uninhabited**: `__check` fails because `d_consis` has no rule with
+LHS `typ_all_col`, and `__forall_r` recurses on a body whose LHS is
+again `typ_all_col` — by our new [`d_sub_not_lhs_typ_all_col`](frost/decl/prop_subtyping.v#L459)
+that body is uninhabited. The paper sidesteps this via the
+syntax-directed system where `\dstylab{AbsForall}` absorbs
+`typ_all_col` introductions into the abstraction rule directly.
+Closing D1 fully in the bidirectional system would require either
+mechanizing that syntax-directed system (D11/D12/D13/D14) or providing
+new substitution machinery for `d_typing`. Both are out of scope.
+
+### Why mech doesn't need D11–D14 (strategy note)
+
+The paper proves D1 (General Subsumption) by factoring through a
+*syntax-directed* restatement of the type system. Specifically:
+
+```
+D1 (bidir General Subsumption)
+  ⇐ D13 (bidir → syn-directed) + D12 (Generalised General Subsumption
+       on syn-directed) + D14 (syn-directed → bidir)
+       [+ D11 (Subtyping Transitivity) used inside D12's proof]
+```
+
+The mech only mechanizes the bidirectional system; the syntax-directed
+system is a proof technique that *absorbs* `d_typing__forall`
+introductions into abstraction rules (`dstylab{AbsForall}`,
+`dstylab{AbsAnnoForall}`), making the troublesome `d_typing__abs` /
+`d_typing__abs_anno` cases of D1 disappear. So:
+
+- **D13 / D14 are vacuous** — there is no second system to bridge to.
+- **D11 / D12 are NOT obsolete** — they become *direct* obligations on
+  the bidirectional system. The mech closes D1's base + `__sub` cases
+  directly using a nil/nil corollary of D10
+  (`d_consis_extends_d_sub_nil`, a support lemma — NOT a paper claim
+  and NOT a closure of D10 itself, since the paper's D10 is stated for
+  arbitrary Δ). To close D1's remaining `__abs` / `__abs_anno` / `__app`
+  cases without the syntax-directed detour, we'd need either:
+  (i) the full paper-stated D11 (Subtyping Transitivity) for arbitrary Δ
+  — itself blocked on the same `__forall_r` / `__arg` Δ-shape issues
+  as D10; or
+  (ii) `d_typing_narrowing`, which reduces back to D1 in the var case
+  (circular).
+- D12 (Generalised General Subsumption) is specific to the paper's
+  syntax-directed proof technique; not needed for the direct closure.
+
+The remaining D1 admits (`__abs` / `__abs_anno` / `__app`) are where
+the paper's syntax-directed detour shines. Direct mechanization without
+that detour would need a `d_typing_narrowing` lemma — which itself
+reduces back to D1 in the variable case, creating a circular dependency.
+The clean break would be to mechanize the syntax-directed system + D13/D14,
+which is a substantial extension out of the current Phase 2 scope.
+
+### Mechanization-only support lemmas
+
+These don't appear as separate paper lemmas but are load-bearing for the
+mech (the paper proof's narrative assumes the standard infrastructure
+without restating each fact). They're listed here so a reviewer can
+see what infrastructure the paper proofs depend on.
+
+| Mech lemma | Status | File:line | Purpose |
+|---|---|---|---|
+| `d_typing_pat_weakening` (mutual) | 🟢 | [`prop_typing.v:331`](frost/decl/prop_typing.v#L331) | full 18-case weakening of `d_typing` + `d_pat` |
+| `d_typing_pat_ctx_morph` (mutual) | 🟢 | [`prop_typing.v:412`](frost/decl/prop_typing.v#L412) | tvar/typ/skel context morphism — enables Stability |
+| `d_typing_pat_preserves_wf` (mutual) | 🟢 | [`prop_wellformed.v:1218`](frost/decl/prop_wellformed.v#L1218) | full 18-case preservation of well-formedness |
+| `d_consis_subst_mono` | 🟢 | [`prop_subtyping.v:165`](frost/decl/prop_subtyping.v#L165) | monotype substitution preserves `d_consis` |
+| `d_consis_extends_d_sub_nil` (NEW 2026-05-13) | 🟢 | [`prop_subtyping.v:454`](frost/decl/prop_subtyping.v#L454) | narrowed (nil/nil) form of D10 with `d_wf_typ Γ T`; closes D1's `__sub` case |
+| `d_typing_pat_subst_typ_mut` | 🟠 | [`prop_typing.v:584`](frost/decl/prop_typing.v#L584) | mutual type subst; blocked on `d_sub_subst` / `d_refine_syn_subst` / `d_pat_consis_subst` / `d_pat_sub_subst` family (not yet stated) |
+| `d_typing_pat_subst_exp_mut` | (Abort) | [`prop_typing.v:541`](frost/decl/prop_typing.v#L541) | mutual term subst; not currently used — `Abort` avoids polluting trust base |
+| `d_typing_narrowing` | 🟠 | [`prop_typing.v:620`](frost/decl/prop_typing.v#L620) | reduces to D1 (general subsumption) for the var case |
+| `d_typing_swap_mono` (Stability S1) | 🟠 | [`prop_typing.v:745`](frost/decl/prop_typing.v#L745) | monotype-argument swap; needs `d_pat`-from-`d_typing` lemma |
+| `d_typing_app_restructure` (Stability S2) | 🟠 | [`prop_typing.v:784`](frost/decl/prop_typing.v#L784) | `f e1 e2 ⇔ (λx. f x e2) e1`; same blocker as S1 |
+| `d_typing_order_irrel_adj` | 🟠 | [`prop_typing.v:823`](frost/decl/prop_typing.v#L823) | adjacent-argument swap when both function types in scope |
+| `E1_intro` / `E1_elim` / `E1_roundtrip` | 🟠 | [`prop_typing.v:899-943`](frost/decl/prop_typing.v#L899) | Expressiveness benchmark: Church-encoded existentials typecheck without annotations |
+| `d_sub_complete_mono` | 🟠 | [`prop_subtyping.v:548`](frost/decl/prop_subtyping.v#L548) | reviewer-suggested completeness wrt monotype-only `d_shallow_sub` |
+| `d_typing_sub_compose` | 🟠 | [`prop_subtyping.v:656`](frost/decl/prop_subtyping.v#L656) | helper for D1 `__sub` case via D10 |
 
 ## Phase 1 (definitions only)
 
@@ -41,9 +195,9 @@ Current per-file `Admitted.` count (run `grep -c "^Admitted\." mechanization/fro
 | Track | File | Status | Worktree | Notes |
 |---|---|---|---|---|
 | 2.A Foundation | `frost/decl/prop_basic.v` | 🟢 done | (mech) | Merged at mech@ddb7011. Zero admits. Exports: list_disjoint algebra (10 lemmas), lc_/subst preservation for 8 category predicates, ttyp→utyp / tskel→uskel embeddings, inversion lemmas for 8 categories, mutual induction principle d_typing_pat_mut, expanded discharge_category. |
-| 2.B Wellformedness | `frost/decl/prop_wellformed.v` | 🟡 in progress | (mech) | 2 admits remain. Merged at mech@b990689. Exports: `d_wf_denv` + inversions, weakening (6 judgments, all Qed), `d_wf_*_lc` helpers (6), substitution-preservation (6; `d_wf_skel_subst` needs `guarded_typ B`; `ttyp`/`utyp`/`tskel`/`uskel` per plan), `d_wf_skel_psi_weakening` / `_psi_incl` monotonicity, `d_wf_typ_strengthening` helpers, `ttyp→utyp` / `tskel→uskel` embeddings, `d_refine_preserves_wf` (paper:1380; **Qed**), `d_refine_syn_preserves_wf` (**Qed**), `d_wf_denv_binds_typ` / `_binds_skel`, `d_typing_pat_preserves_wf` (mutual; **admits** — see Open Admitted). |
-| 2.C Subtyping | `frost/decl/prop_subtyping.v` | 🟡 in progress | (mech, direct) | 4 admits remain. Qed lemmas: `d_consis_refl_mono`, `d_sub_refl_mono`, `d_consis_weakening`/`_head`, `d_sub_weakening`, `d_consis_empty_eq`, `d_consis_empty_to_shallow_sub`, `d_sub_sound` (strictified to `is_typ A`), `d_shallow_sub_mono`, `d_sub_preserves_wf`. Admitted: `d_consis_compose` (arrow case wants Δ-permutation), `d_consis_extends_d_sub` (3 sub-cases), `d_sub_complete_mono` (forall_r/forall_l mismatch), `d_sub_no_guess_uniqueness` (paper-flagged, counter-example documented). |
-| 2.D Typing + stability | `frost/decl/prop_typing.v` | 🟡 in progress | (mech, direct) | 10 admits remain. Qed lemmas: `d_consis_weakening`, `d_sub_weakening`, `d_refine_syn_weakening`, `d_pat_consis_weakening`, `d_pat_sub_weakening`; mutual `d_typing_pat_weakening` + corollaries (full 18-case mutual proof). Admitted: `d_typing_pat_subst_exp_mut` (mechanical 18-case), `d_typing_pat_subst_typ_mut` (mechanical 18-case), `d_typing_narrowing`, `d_typing_suffix_moving_singleton`, `d_typing_general_subsumption` non-base cases, `d_typing_swap_mono` (S1), `d_typing_app_restructure` (S2), `E1_intro` / `E1_elim` / `E1_roundtrip`. Closes `d_typing__app` cross-track admit in `prop_wellformed.v`. |
+| 2.B Wellformedness | `frost/decl/prop_wellformed.v` | 🟢 done | (mech) | **Zero admits.** Exports: `d_wf_denv` + inversions, weakening (6 judgments, all Qed), `d_wf_*_lc` helpers (6), substitution-preservation (6; `d_wf_skel_subst` needs `guarded_typ B`; `ttyp`/`utyp`/`tskel`/`uskel` per plan), `d_wf_skel_psi_weakening` / `_psi_incl` monotonicity, `d_wf_typ_strengthening` helpers, `ttyp→utyp` / `tskel→uskel` embeddings, `d_refine_preserves_wf` (paper:1380; **Qed**), `d_refine_syn_preserves_wf` (**Qed**), `d_consis_preserves_wf` / `d_sub_preserves_wf` (**Qed**), `d_pat_consis_preserves_wf` / `d_pat_sub_preserves_wf` (**Qed**, narrowed with `is_skel SS` + `is_syn_skel P`), `d_wf_denv_binds_typ` / `_binds_skel`, `d_typing_pat_preserves_wf` (full 18-case mutual; **Qed**). |
+| 2.C Subtyping | `frost/decl/prop_subtyping.v` | 🟡 in progress | (mech, direct) | 4 admits remain. Qed lemmas: `d_consis_refl_mono`, `d_sub_refl_mono`, `d_consis_weakening`/`_head`, `d_sub_weakening`, `d_consis_empty_eq`, `d_consis_empty_to_shallow_sub`, `d_sub_sound` (strictified to `is_typ A`), `d_shallow_sub_mono`, `d_sub_preserves_wf`, `d_consis_subst_mono`, **`d_consis_compose`** (mod Permutation; paper Lemma B.2). Admitted: `d_consis_extends_d_sub` (`__forall_r` + `__arg` sub-cases), `d_sub_complete_mono` (forall_r/forall_l flavour mismatch), `d_sub_no_guess_uniqueness` (paper-flagged, counter-example documented), `d_typing_sub_compose` (helper for general subsumption __sub case). |
+| 2.D Typing + stability | `frost/decl/prop_typing.v` | 🟡 in progress | (mech, direct) | 9 admits remain (+ one `Abort` target). Qed lemmas: `d_consis_weakening`, `d_sub_weakening`, `d_refine_syn_weakening`, `d_pat_consis_weakening`, `d_pat_sub_weakening`; mutual `d_typing_pat_weakening` + corollaries (full 18-case mutual proof); mutual `d_typing_pat_ctx_morph` (full 18-case); `d_typing_suffix_moving_singleton` (narrowed; via ctx-morph); `d_typing_general_subsumption` base-term cases. Admitted: `d_typing_pat_subst_typ_mut` (mechanical 18-case — needs `d_sub_subst` / `d_refine_syn_subst` / `d_pat_consis_subst` / `d_pat_sub_subst` family which does not yet exist), `d_typing_narrowing`, `d_typing_general_subsumption` non-base cases, `d_typing_swap_mono` (S1), `d_typing_app_restructure` (S2), `d_typing_order_irrel_adj`, `E1_intro` / `E1_elim` / `E1_roundtrip`. Aborted (target, not admitted): `d_typing_pat_subst_exp_mut`. |
 | 2.E Skeleton | `frost/decl/prop_skeleton.v` | 🟡 in progress | (mech, direct) | 2 admits remain. Qed lemmas: splitting/inversion family (`d_refine_*_split` ×4 and `d_refine_syn_*_split` ×4), `d_pat_preserves_skel_wf` (projection of `d_typing_pat_preserves_wf`), `d_pat_consis_preserves_wf` (narrowed; side wf hypothesis), `d_pat_sub_preserves_wf` (narrowed). Admitted: `d_pat_validity` (paper:1981), `d_pat_safety` (paper:1986). |
 
 ## Phase 3 — Algorithmic system
@@ -63,29 +217,24 @@ Current per-file `Admitted.` count (run `grep -c "^Admitted\." mechanization/fro
 - `a_pat_complete` — admitted; mutual with `a_typing_complete`. Same five auxiliaries as above plus `a_split_complete` and `a_guess_mono_complete`. Paper proofs.tex §Skeleton inference is complete.
 - `a_typing_complete` — admitted (HEADLINE Phase 3.C result). Same auxiliary dependencies as `a_pat_complete`. Three narrowing options documented inline if full proof remains intractable in a follow-up pass: (a) "Monomorphic completeness" (restrict `A` to monotypes; drops `d_typing__forall`); (b) "Modulo η-completeness" (allows the algorithm to η-expand λ-abstractions); (c) "Base-term completeness" (`is_base_term e` restriction).
 
-`prop_wellformed.v` — `d_typing_pat_preserves_wf` (mutual): partial. Most cases proven. Pending cases:
+`prop_wellformed.v` — **All preservation lemmas now Qed.** The historical "Pending cases" pieced together via the colour/mode discipline (see [frost-colour-mode-discipline] in user memory). Specifically:
 
-- `d_typing__sub` — CLOSED via `d_sub_preserves_wf` (Phase 2.C, mech@9ba2cf9..).
-- `d_pat__sub` — blocked on `d_pat_sub_preserves_wf` (Phase 2.E).
-- `d_typing__app` — CLOSED in Phase 2.D via the IH's arrow inversion (the function-side IH produces `d_wf_typ Γ (typ_arrow A B)`, inversion gives `d_wf_typ Γ B`). No refinement-side wf interaction required.
-- `d_pat__app` — still open. Even with the function-side IH (which produces `d_wf_typ Γ (typ_arrow P' Q)`), the conclusion requires `d_wf_skel nil Γ Q`. Closure depends on the typ→skel bridge (the Phase 2.B deferred lemma).
-- `d_typing__abs` / `d_typing__abs_anno` / `d_pat__anno` / `d_pat__abs` / `d_pat__abs_check` / `d_pat__abs_anno` / `d_pat__abs_anno_check` — regularity gap. The rules provide `is_inh_typ A` / `is_inh_skel P` but not `d_wf_typ Γ A` / `d_wf_skel nil Γ P`. Fix in Phase 2.D / 2.E by threading explicit wf premises through the rules, or by proving a regularity lemma deriving wf from `is_*` plus context wf.
+- `d_consis_preserves_wf` — CLOSED. Required strengthening `d_consis__var` with a `binds X dbind_tvar Γ` premise (paper-faithful: the paper assumes the wf invariant implicitly).
+- `d_pat_consis_preserves_wf` — CLOSED with `is_skel SS` + `nil ⨟ Γ ⊢ₛₖ SS` + `is_syn_skel P` side hypotheses. The `is_syn_skel P` rules out the `__univ_ghost_inh1` (`typ_all_col colour_inh`) shape at the wf boundary; callers (`d_pat_sub__infer`, `d_pat_sub__univ_ghost_r`) carry this premise.
+- `d_pat_sub_preserves_wf` — CLOSED with the same shape side hypotheses. Resolved the previously-flagged etag vs `typ_all_col` mismatch via the `is_syn_skel`-driven inversion.
+- `d_typing_pat_preserves_wf` (mutual) — CLOSED full 18-case. Used the strengthened `d_typing__abs` / `d_typing__abs_anno` / `d_pat__abs` / `d_pat__abs_anno` rules (which now carry explicit wf premises) plus the `d_pat_base_mode_ti_is_skel` and `d_pat_sub_implies_is_syn_skel` helpers for the `__sub` cases.
 
-`prop_wellformed.v` — `d_consis_preserves_wf` (var case): admitted. `d_consis__var` lacks a `binds` premise so `d_wf_typ Γ (typ_var_f X)` cannot be derived. Close by either strengthening `d_consis__var` with a binds premise or by passing `d_wf_utyp Δ Γ T` as a precondition. Paper-flagged.
+**Resolved paper-level tensions** (previously flagged as needing paper revision; closed via rule strengthening + helper restriction):
 
-`prop_skeleton.v` — Phase 2.E admits:
+- `d_pat__abs_check` produces `typ_tophole (typ_arrow typ_hole Q)`. CLOSED via `d_wf_skel__tophole` + `guarded_skel__arrow` + the recursive IH on Q (the rule's body types under `(x ~ dbind_skel typ_hole) ++ Γ`, and strengthening on Q closes the goal).
+- `d_pat__abs_anno_check` produces `typ_tophole (typ_arrow A Q)`. CLOSED by the same pattern.
 
-- `d_pat_consis_preserves_wf` — NARROWED. The ghost rule [`d_pat_consis__ghost`] outputs a [`no_forall_typ P`] which does NOT imply [`d_wf_skel`] (free variables without binding). The forall-cases additionally need a Γ↔Ψ "move" lemma (same as the deferred typ→skel bridge). Narrowing: take [`d_wf_skel nil Γ P`] as a side hypothesis. Callers at the consumption sites have this in scope. Status: lemma exposed in narrowed form; proper structural version blocked by paper-level tensions.
-- `d_pat_sub_preserves_wf` — NARROWED (same shape as above). Additional structural concern: [`d_pat_sub`]'s forall-l rules operate on [`typ_all_etag`] inputs ([`d_wf_uskel`] kind), whereas the conclusion of [`d_pat__sub`] in [`d_typing_pat_preserves_wf`] is [`d_wf_skel`] ([`typ_all_col c`] kind). No mechanical bridge between the two for the etag case. **Phase 2.B's `d_pat__sub` admit therefore stays open.**
-- `d_pat_validity` (paper declarative.tex:1981) — admitted. Depends on Phase 3 refinement reflexivity on guarded skeletons, on inversion of [`d_pat_sub`] / [`d_pat_consis`] (the consis-side has the same paper-level issue as the ghost case), and on anti-symmetry interaction with [`d_typing__sub`].
+`prop_skeleton.v` — 2 admits remain:
+
+- `d_pat_validity` (paper declarative.tex:1981) — admitted. Depends on Phase 3 refinement reflexivity on guarded skeletons, on inversion of `d_pat_sub` / `d_pat_consis`, and on anti-symmetry interaction with `d_typing__sub`.
 - `d_pat_safety` (paper declarative.tex:1986) — admitted. Stronger than validity. The universal "refines every type" claim depends on a principal-skeleton construction (join operation on skeletons under refinement) which sits at the same maturity as the deferred algorithmic-side lemmas.
 
-Paper-level tensions (do NOT attempt to fix mechanically; flag for paper revision):
-
-- `d_pat__abs_check` produces [`(typ_tophole typ_hole) → Q`]. [`d_wf_skel`] doesn't admit [`typ_tophole typ_hole`] (paper declarative.tex line 1191 explicitly forbids it). The rule produces shapes the wf predicate rejects. Phase 2.B `d_pat__abs_check` admit remains for this reason.
-- `d_pat__abs_anno_check` similarly produces [`typ_tophole A`] which may not be wf depending on [A]. Phase 2.B `d_pat__abs_anno_check` admit remains for this reason.
-
-**Did the typ→skel bridge work?** No. Phase 2.B left [`d_wf_typ → d_wf_skel`] deferred to 2.E pending a "move from Γ to Ψ" lemma [`d_wf_skel Ψ ((X~dbind_tvar)++Γ) A → d_wf_skel (X::Ψ) Γ A`]. That move-lemma is the same one needed by the ghost / forall cases of [`d_pat_consis_preserves_wf`]. Establishing it requires a richer notion of variable scope split between Γ and Ψ; not attempted in Phase 2.E. The 2.B `d_pat__anno` / `d_pat__abs_anno` admits relating to the bridge therefore stay open.
+**Did the typ→skel bridge work?** Closed via the colour/mode discipline. Phase 2.B originally deferred `d_wf_typ → d_wf_skel` to 2.E pending a "move from Γ to Ψ" lemma. The `d_typing_pat_preserves_wf` cases that nominally needed the move-lemma turned out to be reachable only at call sites carrying `is_syn_skel` / `is_inh_skel` premises — surfacing those preconditions on the helpers closed all cases without needing a structural Γ↔Ψ split. See [`frost-colour-mode-discipline`](https://...) memory note. The `d_pat__anno` / `d_pat__abs_anno` admits previously flagged here are now closed.
 
 `prop_subtyping.v` — strictifications:
 
@@ -93,8 +242,8 @@ Paper-level tensions (do NOT attempt to fix mechanically; flag for paper revisio
 |---|---|---|---|
 | prop_subtyping.v | `d_consis_refl_mono` | strictified | Original "d_consis_refl on is_typ" too strong: `d_consis` is asymmetric (utyp LHS, typ RHS). Narrowed to `mono_typ`, where LHS/RHS forms coincide. |
 | prop_subtyping.v | `d_sub_refl_mono` | strictified | Follows reflexivity of `d_consis` — restricted to monotypes for the same reason. |
-| prop_subtyping.v | `d_consis_compose` | partial | Arrow case requires a `d_consis_permutation` lemma — `(Δ1++Δb1)++(Δ2++Δb2)` vs `Δ1++Δ2++Δb1++Δb2` differ only by permutation; `d_consis` lacks a permutation lemma. Paper-flagged. |
-| prop_subtyping.v | `d_consis_extends_d_sub` | partial | Three pending sub-cases: `d_sub__infer` (needs `Δ0 = nil` narrowing), `d_sub__check` (needs compose arrow + forall_l_* dispatch), `d_sub__arg` (same Δ-permutation issue as compose). |
+| prop_subtyping.v | `d_consis_compose` | **Qed (mod Permutation)** | Arrow case produces output Δ shaped `(Δ1++Δb1)++(Δ2++Δb2)` vs the natural `Δa ++ Δb = Δ1++Δ2++Δb1++Δb2`. Closed by restating the conclusion modulo `Permutation` and proving the `list_swap_middle` helper. Paper writes "Δ_1, Δ_2" as set union (implicitly permutation-tolerant). |
+| prop_subtyping.v | `d_consis_extends_d_sub` | partial (2 pending sub-cases) | `__forall_r`: cofinite IH yields a different Δc per X — blocked on `d_sub` Permutation-invariance. `__arg`: inner `T02` may itself be `typ_all_etag/plain`, breaking the inherited not-etag/not-plain side conditions. Other sub-cases (`__infer`, `__check`, `__forall_l_tagged/untagged`) closed. |
 | prop_subtyping.v | `d_consis_empty_eq` | CLEAN | Empty-Δ consistency on `is_typ` reduces to syntactic equality. Closed. |
 | prop_subtyping.v | `d_sub_sound` | CLEAN (strictified) | Headline soundness result for [d_sub mode_tc nil Γ A B] → [d_shallow_sub Γ A B]. Strictified with `is_typ A` precondition (LHS in `typ_all_col` flavour matches `d_shallow_sub` LHS shape); without this, `d_sub__forall_l_*` cases produce LHS shapes outside `d_shallow_sub`'s grammar. |
 | prop_subtyping.v | `d_sub_complete_mono` | partial (research-flagged) | Bruno's reviewer-suggested completeness wrt monotype-only shallow subtyping. Three admits: refl (needs `mono_typ` narrowing); forall_r (`d_sub__forall_r` only emits `colour_inh`, `d_shallow_sub_mono__forall_r` ranges over any colour); forall_l (LHS `typ_all_col` in `d_shallow_sub_mono` doesn't match `typ_all_etag/plain` in `d_sub__forall_l_*` — needs colour-to-tag translation, a research design question). |
@@ -108,14 +257,15 @@ Paper-level tensions (do NOT attempt to fix mechanically; flag for paper revisio
 
 **Cross-track / paper-flagged:**
 
-- `d_typing_pat_subst_exp_mut` (Task 2) — mutual term-substitution. Routine 18-case proof using `subst_exp_in_exp_open_exp_wrt_exp_var`. Not closed in this pass due to time budget; no research issue. Dependent: Task 4 (narrowing), Task 7/8 (stability).
-- `d_typing_pat_subst_typ_mut` (Task 3) — mutual type-substitution. Same shape as above but threads `subst_typ_in_dbind` through Γ1. Requires `guarded_typ B` for the skel-side `d_wf_skel_subst` interaction (Phase 2.B caveat). Not closed; cleanly mechanical, just laborious. Dependent: Task 7/8/9.
-- `d_typing_general_subsumption` (Task 6, paper:574) — base-term cases (`d_typing__unit`, `d_typing__var`, `d_typing__anno`) CLEANLY CLOSED via `d_typing__sub` + `is_base_term__*` lemmas. Non-base-term cases admitted: `d_typing__forall` needs `d_sub` inversion on the forall_r/forall_l shapes; `d_typing__abs` / `d_typing__abs_anno` need an arrow inversion of `d_sub`; `d_typing__app` needs `d_sub` transitivity on the result type. Per design strictification policy, kept narrowed to base + admitted-with-rationale for the rest.
+- `d_typing_pat_subst_exp_mut` (Task 2) — mutual term-substitution. Marked `Abort` (not `Admitted`) so it does not pollute the trust base with an axiom. Statement preserved as a target. Routine 18-case proof in principle; needs `uniq Γ` + `is_base_term e2` + `lc_exp e2` side hypotheses to handle the `d_typing__var` / `d_typing__sub` interaction. Not currently called by any other lemma.
+- `d_typing_pat_subst_typ_mut` (Task 3) — mutual type-substitution. Same shape as weakening but threads `subst_typ_in_dbind` through Γ1. **Closure blocked on the auxiliary subst-lemma family**: `d_sub_subst` / `d_refine_syn_subst` / `d_pat_consis_subst` / `d_pat_sub_subst`. Of these only `d_consis_subst_mono` is currently Qed. Requires `guarded_typ B` for the skel-side `d_wf_skel_subst` interaction. Dependent: Task 7/8/9 (stability), E1 (expressiveness).
+- `d_typing_general_subsumption` (Task 6, paper:574) — base-term cases (`d_typing__unit`, `d_typing__var`, `d_typing__anno`) CLEANLY CLOSED via `d_typing__sub` + `is_base_term__*` lemmas. Non-base-term cases admitted: `d_typing__sub` (current rule, recursive) needs `d_sub` transitivity (paper Lemma B.4 / syntax-directed Subtyping Transitivity, not yet mechanized); `d_typing__abs` / `d_typing__abs_anno` need an arrow inversion of `d_sub`; `d_typing__app` needs `d_sub` transitivity on the result type. Per design strictification policy, kept narrowed to base + admitted-with-rationale for the rest. NOTE: `d_typing__freeze` and `d_typing__forall` cases are VACUOUS (those rules produce mode_tc; the lemma's antecedent is mode_ti).
 
 **Research-grade (stability, expressiveness):**
 
 - `d_typing_narrowing` (Task 4) — Reduces to general subsumption (Task 6) for the var case; admitted while Task 6's non-base cases stay open.
-- `d_typing_suffix_moving_singleton` (Task 5) — Structural commutation. Strongest form (full SuffixMoving) avoided due to the free-vars-of-context apparatus required; narrowed to single-binding-move-past-suffix form. Even narrowed, requires induction over typing with care for binder freshness; not closed.
+- `d_typing_suffix_moving_singleton` (Task 5) — Structural commutation. **CLOSED Qed** in single-binding-move-past-suffix form via `d_typing_ctx_morph` (mutual context morphism). Both `d_typing_suffix_moving_singleton` and the `d_pat_*` analogue are Qed; the full n-binding SuffixMoving form (paper Lemma D.3) would still need a free-vars-of-context apparatus and is not attempted.
+- `d_typing_order_irrel_adj` — colleague-inspired adjacent two-argument swap when both functions (with permuted argument-type prefixes) are simultaneously in scope. Same blocker as Stability S1 (needs a `d_typing` inversion through `d_pat` / `d_refine_syn` that does not exist declaratively).
 - `d_typing_swap_mono` (Task 7, S1 — argument-permutation) — Strongest form (∀-arguments + non-mono): would need a `d_typing_app_inversion` lemma that does not exist. Narrowed to "swap two adjacent monotype arguments and produce a swapped function `λy. λx. f x y`". Even narrowed, the witness construction (the swapped function `f_swap`) needs to type at `A2 → A1 → C` via two `d_typing__abs_anno` applications, and the inner body `f x y` needs a `d_pat` derivation. Currently blocked at the `d_pat` derivation for the inner application — research-grade; admitted.
 - `d_typing_app_restructure` (Task 8, S2 — application-restructuring) — Same shape as S1, narrowed to the single-restructuring case `f e1 e2 ⇔ (λx. f x e2) e1`. Same blocker. Admitted.
 
