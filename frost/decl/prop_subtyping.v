@@ -469,6 +469,42 @@ Proof.
     + apply IHHc2; assumption.
 Qed.
 
+(** Analogous lemma for [d_sub]: a wf type appearing as a d_sub LHS is mono.
+    Same intersection argument as [d_consis_LHS_mono_wf], extended through
+    d_sub's __forall_r (no LHS change) and __arg (arrow inversion).
+    __forall_l_* cases vacuous since LHS etag/plain are not wf. *)
+(** Mono types are is_typ (since mono ⊆ is_typ grammar). *)
+Lemma mono_typ_is_typ : forall A, mono_typ A -> is_typ A.
+Proof.
+  intros A H. induction H.
+  - apply is_typ__unit.
+  - apply is_typ__var.
+  - apply is_typ__arrow; auto.
+Qed.
+
+Lemma d_sub_LHS_mono_wf : forall M Δ Γ T A,
+    d_sub M Δ Γ T A ->
+    d_wf_typ Γ T ->
+    mono_typ T.
+Proof.
+  intros M Δ Γ T A Hs Hwf. induction Hs.
+  - (* __infer *) eapply d_consis_LHS_mono_wf; eauto.
+  - (* __check *) eapply d_consis_LHS_mono_wf; eauto.
+  - (* __forall_r: T unchanged. Pick fresh X, apply cofinite IH. *)
+    pick fresh X for (L `union` dom Γ).
+    apply (H0 X); [fsetdec |].
+    apply d_wf_typ_weakening_head. assumption.
+  - (* __arg: T = typ_arrow T1 T2. Both wf via Hwf inversion. *)
+    inversion Hwf; subst.
+    apply mono_typ__arrow.
+    + eapply d_consis_LHS_mono_wf; eauto.
+    + apply IHHs; assumption.
+  - (* __forall_l_tagged: LHS = typ_all_etag, not wf. *)
+    inversion Hwf.
+  - (* __forall_l_untagged: similar. *)
+    inversion Hwf.
+Qed.
+
 (** [d_sub] is UNINHABITED when the LHS is [typ_all_col c A]. The reason:
     - [d_sub__infer] / [d_sub__check] reduce to [d_consis] with LHS [typ_all_col],
       which has no defining rule (d_consis LHS is [is_utyp]-shape: unit / var /
