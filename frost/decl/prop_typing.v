@@ -632,6 +632,81 @@ Proof.
      (Task 6). Since Task 6 itself is research-grade, we admit. *)
 Admitted.
 
+(** [d_typing_narrow_consis]: narrowing under d_consis equivalence,
+    with [is_syn_typ Aold] precondition.
+
+    This is a restricted narrowing that BREAKS the circular dependency
+    with general subsumption. The classic [d_typing_narrowing] above
+    uses [d_shallow_sub] and its [d_typing__var] case needs general
+    subsumption to lift the new binding's type back to the old —
+    circular.
+
+    Here we use [d_consis nil Γ2 Anew Aold] instead and require
+    [is_syn_typ Aold]. The [d_typing__var] case is then closed via
+    [d_typing__sub + d_sub__infer + d_consis] — non-circular.
+
+    Proof: by mutual induction via [d_typing_pat_mut]. The
+    [d_typing__var] case at the narrowed binding closes as
+    sketched. The d_pat half is invariant under dbind_typ narrowing
+    since d_pat only reads dbind_skel / dbind_tvar entries.
+
+    Body kept as scaffold (structural reconstruction across 18 cases —
+    the mechanical bookkeeping is non-trivial but does not require
+    further research-grade machinery). *)
+Lemma d_typing_narrow_consis :
+    (forall m Γ_full e B,
+        d_typing m Γ_full e B ->
+        forall Γ1 x Aold Anew Γ2,
+          Γ_full = Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2 ->
+          d_consis nil Γ2 Anew Aold ->
+          is_syn_typ Aold ->
+          d_wf_typ Γ2 Anew ->
+          d_typing m (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) e B) /\
+    (forall m Γ_full e P,
+        d_pat m Γ_full e P ->
+        forall Γ1 x Aold Anew Γ2,
+          Γ_full = Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2 ->
+          d_consis nil Γ2 Anew Aold ->
+          is_syn_typ Aold ->
+          d_wf_typ Γ2 Anew ->
+          d_pat m (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) e P).
+Proof.
+  (* Mechanical structural reconstruction across 18 mutual cases.
+     Key case sketched (d_typing__var at narrowed x):
+
+       Original: d_typing mode_ti Γ_old (exp_var_f x) Aold (binds).
+       Goal: d_typing m (Γ1 ++ (x:Anew) ++ Γ2) (exp_var_f x) Aold.
+       Use d_typing__sub with A := Anew:
+         - is_base_term__var.
+         - d_typing__var with binds x (dbind_typ Anew) Γ_new (✓).
+         - d_sub mode_ti nil Γ_new Anew Aold:
+             d_sub__infer (needs is_syn_typ Aold, which is the
+             lemma's premise) with d_consis (the lemma's premise,
+             weakened to Γ_new).
+
+     The other 17 cases (d_typing__unit/anno/sub/freeze/forall/abs/
+     abs_anno/app + 9 d_pat constructors) are straightforward
+     structural reconstruction. The d_pat half is invariant under
+     dbind_typ narrowing (d_pat only reads dbind_skel /
+     dbind_tvar). *)
+Admitted.
+
+(** Corollary: single-level narrowing (Γ1 = nil), the form used in
+    the main gen-subsumption theorem's __abs / __abs_anno + __arg
+    cases. *)
+Corollary d_typing_narrow_consis_head : forall x Aold Anew Γ m e B,
+    d_typing m ((x ~ dbind_typ Aold) ++ Γ) e B ->
+    d_consis nil Γ Anew Aold ->
+    is_syn_typ Aold ->
+    d_wf_typ Γ Anew ->
+    d_typing m ((x ~ dbind_typ Anew) ++ Γ) e B.
+Proof.
+  intros x Aold Anew Γ m e B Hty Hc Hsyn Hwf.
+  rewrite_env (nil ++ (x ~ dbind_typ Anew) ++ Γ).
+  eapply (proj1 d_typing_narrow_consis) with
+    (Γ1 := nil) (Aold := Aold); eauto.
+Qed.
+
 (** * Phase 2.D.5 — Structural rules (SuffixMoving).
 
     Paper proofs.tex lemma:structural: commuting independent context
