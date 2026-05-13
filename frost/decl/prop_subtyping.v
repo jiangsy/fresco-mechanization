@@ -159,6 +159,83 @@ Proof.
   apply d_sub_weakening. simpl. exact H.
 Qed.
 
+(** [d_consis] respects monotype substitution. This is the key subst
+    lemma for closing [__forall_r] cases via atom renaming (set [B] to
+    [typ_var_f X'] for a fresh [X']). *)
+Lemma d_consis_subst_mono : forall Γ1 Γ2 Δ X T A B,
+    Δ ⨟ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) ⊨ T ≈ A ->
+    mono_typ B ->
+    d_wf_typ Γ2 B ->
+    Δ ⨟ (Γ1 ++ Γ2) ⊨ subst_typ_in_typ B X T ≈ subst_typ_in_typ B X A.
+Proof.
+  intros Γ1 Γ2 Δ X T A B Hc HBmono HBwf.
+  dependent induction Hc; simpl.
+  - apply d_consis__unit.
+  - (* __var *)
+    destruct (X0 == X); subst.
+    + (* Y = X: result reduces to d_consis nil Γ B B. *)
+      replace (if X == X then B else typ_var_f X) with B
+        by (destruct (X == X); [reflexivity|contradiction]).
+      apply d_consis_refl_mono; auto.
+      apply d_wf_typ_weakening_head; auto.
+    + replace (if X0 == X then B else typ_var_f X0) with (typ_var_f X0)
+        by (destruct (X0 == X); [contradiction|reflexivity]).
+      apply binds_remove_mid in H; auto.
+      apply d_consis__var. apply binds_app_iff in H. destruct H; apply binds_app_iff; auto.
+  - (* __forall_inh_tagged *)
+    apply d_consis__forall_inh_tagged with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)); auto.
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - (* __forall_inh_untagged *)
+    apply d_consis__forall_inh_untagged with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - (* __forall_syn_tagged *)
+    apply d_consis__forall_syn_tagged with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - (* __forall_syn_untagged *)
+    apply d_consis__forall_syn_untagged with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - apply d_consis__arrow; eauto.
+Qed.
+
+(** [d_sub] respects monotype substitution. This lemma is the next
+    proper step toward closing [d_consis_extends_d_sub __forall_r]:
+    given the [__forall_r] case's IH at a fresh atom X0, substituting
+    X0 → typ_var_f X' (mono) lets us derive d_sub at X' uniformly,
+    enabling cofinite reconstruction.
+
+    Currently STATED only. The [d_sub__check] case needs an auxiliary
+    "subst preserves not-etag/not-plain at top" lemma which case-splits
+    on T's top constructor and uses [mono_typ B] to discharge the
+    typ_var_f-X-case. Mechanical but ~30 LoC; deferred.
+
+    Once d_sub_subst_mono is Qed, [d_consis_extends_d_sub __forall_r]
+    closes via:
+    {{{
+      pick fresh X0 for ...
+      edestruct (IH X0) as [Δc [Hperm Hsub_X0]]; ...
+      exists Δc. split; [exact Hperm|].
+      apply d_sub__forall_r with (L := ...). intros X' HX'.
+      rewrite <- (open_at_X0_subst_to_X' ...).
+      apply d_sub_subst_mono; auto.
+    }}}
+*)
+
 (** Context tvar-morphism for [d_sub]. *)
 Lemma d_sub_tvar_morph : forall Γ Γ' M Δ T A,
     (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
