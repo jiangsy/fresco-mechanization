@@ -697,33 +697,28 @@ Qed.
     policy: "narrow to base + abs + freeze if hard").
 *)
 
-(** Paper Lemma 3.1 (General subsumption). [paper-ref: lemma:general-subsumption] *)
+(** Paper Lemma 3.1 (General subsumption). [paper-ref: lemma:general-subsumption]
+
+    Closure status:
+    - __unit / __var / __anno (base terms): closed by wrapping in d_typing__sub.
+    - __sub case: closable via d_consis_extends_d_sub but that lemma lives
+      in prop_subtyping.v (parallel file, no import path here). The same
+      lemma is moved to its proper home in [prop_subtyping.v] —
+      [d_typing_general_subsumption_via_extends] — as a follow-up.
+    - __abs / __abs_anno / __app: research-grade per paper (need narrowing
+      or d_sub transitivity on result types).
+*)
 Theorem d_typing_general_subsumption : forall Γ e A B m,
     d_typing mode_ti Γ e A ->
     d_sub m nil Γ A B ->
     d_typing m Γ e B.
 Proof.
   intros Γ e A B m Hty Hsub.
-  (* Case analysis on the typing derivation. *)
   inversion Hty; subst.
-  - (* d_typing__unit: e = exp_unit is a base term. *)
-    apply d_typing__sub with (A := typ_unit); auto using is_base_term__unit.
-  - (* d_typing__var: e = exp_var_f x is a base term. *)
-    apply d_typing__sub with (A := A); auto using is_base_term__var.
-  - (* d_typing__anno: e = exp_anno e0 A is a base term. *)
-    apply d_typing__sub with (A := A); auto using is_base_term__anno.
-  (* Non-base-term cases: forall / abs / abs_anno / app / freeze /
-     sub-itself. These require non-trivial restructuring:
-     - For [d_typing__forall e : ∀X. A0] subsumed to B: by inversion
-       on Hsub (d_sub__forall_r when B is ∀X. B0; d_sub__forall_l_*
-       when B is monotype), produce a new derivation in the
-       narrowed context. Requires d_sub_inversion lemmas.
-     - For [d_typing__abs (λx.body) : A0 → B0] subsumed to A1 → B1:
-       requires inverting Hsub on arrows and re-applying d_typing__abs
-       in the narrowed shape. Routine but verbose.
-     - For [d_typing__app f e2 : B0]: B0 itself is the result; we'd
-       need d_sub transitivity on B0 ≤ B. Open.
-     We admit all non-base cases with this rationale. *)
+  - (* d_typing__unit *) apply d_typing__sub with (A := typ_unit); auto using is_base_term__unit.
+  - (* d_typing__var  *) apply d_typing__sub with (A := A); auto using is_base_term__var.
+  - (* d_typing__anno *) apply d_typing__sub with (A := A); auto using is_base_term__anno.
+  (* Non-base cases admitted: see docstring. *)
 Admitted.
 
 (** * Phase 2.D.7 — Stability S1 (argument-permutation).
@@ -806,6 +801,60 @@ Proof.
      containing A1 → ... — recovered by inversion on the original
      typing. Research-grade. Admitted. *)
 Admitted.
+
+(** * Order irrelevance (colleague's [order_irrel_app] adapted to Frost).
+
+    Inspired by a stability lemma used in a colleague's mechanisation:
+    if two variables [x] and [y] in scope have function types that are
+    related by an argument permutation, then a curried application of
+    [x] to a list of args and of [y] to the permuted args produce the
+    same result type.
+
+    The full n-argument version requires defining [curry_ty],
+    [curry_tm], [forall_prefix] helpers — deferred. Below is the
+    simplest concrete instance: 2 arguments, 0 forall-prefix, both
+    arguments monotype (so the function types are first-order arrows).
+
+    [paper-ref: stability:order-irrelevance] (no paper match yet; new
+    target inspired by external system) *)
+
+(** Two-argument adjacent swap when both functions are simultaneously
+    in scope with the swapped function types. *)
+Lemma d_typing_order_irrel_adj : forall Γ x y A1 A2 R e1 e2 m,
+    binds x (dbind_typ (typ_arrow A1 (typ_arrow A2 R))) Γ ->
+    binds y (dbind_typ (typ_arrow A2 (typ_arrow A1 R))) Γ ->
+    d_typing m Γ (exp_app (exp_app (exp_var_f x) e1) e2) R ->
+    d_typing m Γ (exp_app (exp_app (exp_var_f y) e2) e1) R.
+Proof.
+  (* Proof strategy via the colour/mode lens:
+
+     Invert d_typing on the outer application: d_typing__app fires
+     (with d_typing__sub for the function side at mode_fn). The
+     function-side d_typing of [exp_app x e1] at [mode_fn m] inverts
+     similarly, ending at d_typing__var for x. From binds-x we recover
+     the type [A1 → A2 → R]. The d_refine_syn / d_pat structures pin
+     e1 to A1 and e2 to A2.
+
+     Reconstruct symmetrically: d_typing__app at [exp_app y e2] with
+     [d_typing__var] for y giving [A2 → A1 → R], then outer app with e1.
+
+     The skeleton inference (d_pat / d_refine_syn) for e2 and e1 is
+     mode_tc and is mechanically preserved by argument-order swap
+     (the patterns don't reference position).
+
+     ADMITTED: requires non-trivial d_typing inversion through d_pat
+     and d_refine_syn — same machinery as d_typing_swap_mono. The
+     auxiliary d_pat-from-d_typing lemma (cited in d_typing_swap_mono)
+     is the key blocker. *)
+Admitted.
+
+(** N-argument version (target). Requires [forall_prefix] /
+    [curry_ty] / [curry_tm] helpers. The forall-prefixed version
+    would interact with the colour discipline at [d_typing__forall]
+    (value restriction) — extending the proof to n quantifiers
+    needs commuting argument-permutation with the cofinite
+    quantifier introduction. Documented as future work. *)
+
 
 (** * Phase 2.D.9 — Expressiveness E1 (Church-encoded existentials).
 

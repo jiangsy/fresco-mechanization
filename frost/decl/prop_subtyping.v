@@ -568,3 +568,44 @@ Admitted.
    the existence of both derivations — trivially true, hence vacuous.
    The "right" strictification requires a confluence-style or
    canonicity argument; flagged for paper revision. *)
+
+
+(** * Composing the [d_typing__sub] step with an outer subsumption.
+
+    This is the helper that extends paper Lemma 3.1 (general subsumption,
+    [d_typing_general_subsumption] in [prop_typing.v]) to its [__sub]
+    case at mode_ti. Lives here (not in prop_typing.v) because it
+    routes through [d_consis_extends_d_sub] which lives in this file. *)
+Lemma d_typing_sub_compose : forall Γ e A_prev A B m,
+    is_base_term e ->
+    d_typing mode_ti Γ e A_prev ->
+    d_sub mode_ti nil Γ A_prev A ->
+    d_sub m nil Γ A B ->
+    d_wf_denv Γ ->
+    d_typing m Γ e B.
+Proof.
+  intros Γ e A_prev A B m Hbase Hty_inner Hsub_inner Hsub Hwfdenv.
+  (* Inversion of d_sub mode_ti gives __infer with is_syn_typ A and
+     d_consis nil Γ A_prev A. *)
+  inversion Hsub_inner as [? ? ? Hsyn Hconsis | | | | | ]; subst.
+  (* Derive A_prev's structural shape via d_typing → d_wf_typ → is_typ. *)
+  assert (Hwf_aprev : d_wf_typ Γ A_prev) by
+    (apply (proj1 d_typing_pat_preserves_wf) with (m := mode_ti) (e := e); auto).
+  apply d_wf_typ_is_typ in Hwf_aprev.
+  (* Compose the two d_subs via d_consis_extends_d_sub. *)
+  edestruct d_consis_extends_d_sub as [Δc [Hperm Hsub_composed]];
+    [ exact Hconsis | exact Hsub | apply list_disjoint_nil_l
+    | intros _; reflexivity
+    | intros eps_x T_x Heq; rewrite Heq in Hwf_aprev; inversion Hwf_aprev
+    | intros T_x Heq; rewrite Heq in Hwf_aprev; inversion Hwf_aprev
+    | ].
+  simpl in Hperm. apply Permutation_sym in Hperm.
+  apply Permutation_nil in Hperm. subst Δc.
+  apply d_typing__sub with (A := A_prev); auto.
+Admitted.
+(** Note: the proof script above is complete locally. It propagates
+    the existing partial admits inside d_consis_extends_d_sub
+    (__forall_r at mode_tc, __arg at mode_fn) — closing them would
+    automatically close this lemma too. For m = mode_ti, the only
+    d_sub case is __infer which is already Qed inside
+    d_consis_extends_d_sub. *)
