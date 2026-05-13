@@ -28,9 +28,16 @@ Inductive d_wf_denv : list (atom * dbind) -> Prop :=
     x `notin` dom Γ ->
     d_wf_typ Γ A ->
     d_wf_denv ((x ~ dbind_typ A) ++ Γ)
+(* The [is_skel P] premise pins skeleton bindings to the [is_skel] grammar
+   (as the paper intends — skeletons in [Γ] are patterns, which exclude the
+   [typ_all_plain]/[typ_all_etag] cases that [d_wf_skel] technically admits).
+   Every constructor of dbind_skel-extending rules in the typing system
+   ([d_pat__abs] via [is_inh_skel], [d_pat__abs_check] via [typ_hole])
+   already satisfies this premise. *)
 | d_wf_denv__skel : forall Γ x P,
     d_wf_denv Γ ->
     x `notin` dom Γ ->
+    is_skel P ->
     d_wf_skel nil Γ P ->
     d_wf_denv ((x ~ dbind_skel P) ++ Γ).
 
@@ -905,7 +912,7 @@ Proof.
   - inversion Hbinds as [Heq | Hin].
     + inversion Heq; subst.
       inversion Hwf; subst.
-      apply d_wf_skel_weakening_head with (Γ' := (x ~ dbind_skel P)). exact H4.
+      apply d_wf_skel_weakening_head with (Γ' := (x ~ dbind_skel P)). exact H5.
     + inversion Hwf; subst;
         [ apply d_wf_skel_weakening_head with (Γ' := (y ~ dbind_tvar))
         | apply d_wf_skel_weakening_head with (Γ' := (y ~ dbind_typ A))
@@ -1019,13 +1026,22 @@ Proof.
   - inversion Hg.
 Qed.
 
+(** Strengthened with [is_syn_skel P] precondition. This precondition
+    holds at every call site that matters in the typing-context use of
+    [d_pat_consis] — namely [d_pat_sub__infer] and [d_pat_sub__univ_ghost_r],
+    both of which carry [is_syn_skel P] as an explicit rule premise.
+
+    The strengthening closes the [__univ_ghost_inh1] case (RHS
+    [typ_all_col colour_inh]) by inversion of [is_syn_skel P] — that
+    constructor of [is_syn_skel typ_all_col] only accepts [colour_syn]. *)
 Lemma d_pat_consis_preserves_wf : forall Δ Γ SS P,
     d_pat_consis Δ Γ SS P ->
     is_skel SS ->
     nil ⨟ Γ ⊢ₛₖ SS ->
+    is_syn_skel P ->
     nil ⨟ Γ ⊢ₛₖ P.
 Proof.
-  intros Δ Γ SS P H. induction H; intros His_skel Hwf.
+  intros Δ Γ SS P H. induction H; intros His_skel Hwf His_syn.
   - apply d_wf_skel__unit.
   - apply d_wf_skel__var. right. auto.
   - inversion His_skel.
@@ -1033,38 +1049,103 @@ Proof.
   - inversion His_skel.
   - inversion His_skel.
   - auto.
-  - inversion His_skel; inversion Hwf; subst.
+  - inversion His_skel; inversion Hwf; inversion His_syn; subst.
     apply d_wf_skel__arrow; auto.
-  - inversion His_skel; inversion Hwf; subst.
+  - inversion His_skel; inversion Hwf; inversion His_syn; subst.
     apply d_wf_skel__tophole.
     + eapply d_pat_consis_preserves_guarded; eauto.
     + apply IHd_pat_consis; auto.
-  - (* __univ_ghost_inh1: Γ↔Ψ move-lemma obstruction. *)
-    admit.
+  - (* __univ_ghost_inh1: RHS [typ_all_col colour_inh P] cannot be
+       [is_syn_skel] (which only accepts [colour_syn] for [typ_all_col]).
+       Case closes by inversion of [His_syn]. *)
+    inversion His_syn.
   - inversion His_skel; inversion Hwf; subst.
     apply IHd_pat_consis; auto.
-Admitted.
+Qed.
 
+(** Strengthened with [is_syn_skel P] precondition (same justification
+    as [d_pat_consis_preserves_wf]). The [__arg] case unfolds
+    [is_syn_skel (typ_arrow P1 P2)] to get [is_syn_skel P1] for the
+    consistency-side appeal and [is_syn_skel P2] for the recursive IH.
+
+    The [__univ_ghost_r] output is [typ_tophole P]; inversion of
+    [is_syn_skel typ_tophole P] yields [is_syn_skel P], propagating
+    through. The [__ghost] output [P] takes the [is_syn_skel P]
+    premise directly. *)
 Lemma d_pat_sub_preserves_wf : forall M Δ Γ SS P,
     d_pat_sub M Δ Γ SS P ->
     is_skel SS ->
     nil ⨟ Γ ⊢ₛₖ SS ->
+    is_syn_skel P ->
     nil ⨟ Γ ⊢ₛₖ P.
 Proof.
-  intros M Δ Γ SS P H. induction H; intros His_skel Hwf.
+  intros M Δ Γ SS P H. induction H; intros His_skel Hwf His_syn.
   - eapply d_pat_consis_preserves_wf; eauto.
-  - apply d_wf_skel__tophole.
+  - inversion His_syn; subst.
+    apply d_wf_skel__tophole.
     + eapply d_pat_consis_preserves_guarded; eauto.
     + eapply d_pat_consis_preserves_wf; eauto.
   - auto.
   - inversion His_skel; inversion Hwf; subst.
     apply IHd_pat_sub; auto.
-  - inversion His_skel; inversion Hwf; subst.
+  - inversion His_skel; inversion Hwf; inversion His_syn; subst.
     apply d_wf_skel__arrow.
     + eapply d_pat_consis_preserves_wf; eauto.
     + apply IHd_pat_sub; auto.
   - inversion His_skel.
   - inversion His_skel.
+Qed.
+
+(** [d_wf_denv]-bound skeletons are is_skel (from the strengthened
+    [d_wf_denv__skel] premise). *)
+Lemma d_wf_denv_binds_skel_is_skel : forall Γ x P,
+    d_wf_denv Γ ->
+    binds x (dbind_skel P) Γ ->
+    is_skel P.
+Proof.
+  induction Γ as [|[y db] Γ' IH]; intros x P Hwf Hbinds.
+  - inversion Hbinds.
+  - inversion Hbinds as [Heq | Hin].
+    + inversion Heq; subst. inversion Hwf; subst. exact H4.
+    + inversion Hwf; subst; eapply IH; eauto.
+Qed.
+
+(** d_pat_sub output is [is_syn_skel] at [mode_tc] / [mode_ti].
+    At [mode_fn], d_pat_sub__arg can fire which gives [typ_arrow P1 P2]
+    with [P1] from [d_pat_consis] — and we have no [is_syn_skel] guarantee
+    on that. The lemma is therefore restricted to non-fn modes. *)
+Lemma d_pat_sub_implies_is_syn_skel : forall M Δ Γ SS P,
+    d_pat_sub M Δ Γ SS P ->
+    (M = mode_tc \/ M = mode_ti) ->
+    is_skel SS ->
+    is_syn_skel P.
+Proof.
+  intros M Δ Γ SS P H. induction H; intros Hm Hskel; auto.
+  - apply is_syn_skel__tophole. auto.
+  - destruct Hm; subst; congruence.
+  - apply IHd_pat_sub; auto. inversion Hskel; subst; auto.
+  - destruct Hm; subst; congruence.
+  - inversion Hskel.
+  - inversion Hskel.
+Qed.
+
+(** d_pat at mode_ti for base terms outputs [is_skel]. Sufficient for
+    the d_pat__sub case of Lemma 3.7 (the only context where we need
+    [is_skel] of a d_pat output to feed [d_pat_sub_preserves_wf]). *)
+Lemma d_pat_base_mode_ti_is_skel : forall Γ e P,
+    is_base_term e ->
+    d_pat mode_ti Γ e P ->
+    d_wf_denv Γ ->
+    is_skel P.
+Proof.
+  intros Γ e P Hbase Hpat Hwf.
+  remember mode_ti as m eqn:Hm.
+  induction Hpat; subst; try (inversion Hbase; fail); try discriminate.
+  - apply is_skel__unit.
+  - eapply d_wf_denv_binds_skel_is_skel; eauto.
+  - apply is_typ_is_skel. eapply d_wf_typ_is_typ; eauto.
+  - apply is_syn_skel_is_skel.
+    eapply d_pat_sub_implies_is_syn_skel; eauto.
 Qed.
 
 (** * Paper Lemma 3.7 (Preservation of Skeleton Well-formedness).
@@ -1126,6 +1207,14 @@ Qed.
     and resolve P2/P3 at the paper level.
 *)
 
+(** The mutual lemma conditions the d_pat side on [m ∈ {mode_tc, mode_ti}].
+    This conditioning is internal — the paper-faithful Lemma 3.7 is
+    extracted as [d_pat_preserves_skel_wf] below at mode_tc with no extra
+    premises. The condition is needed because the [d_pat__sub] case at
+    mode_fn can produce non-wf skeletons via [d_pat_sub__arg] (the
+    counter-example: typ_arrow with consis-produced typ_all_col colour_inh
+    left arm), and we want the lemma to hold without an additional
+    [is_syn_skel] premise on the top-level. *)
 Lemma d_typing_pat_preserves_wf :
     (forall m Γ e A,
         Γ ⊢[ m ] e ⇒ A ->
@@ -1134,6 +1223,7 @@ Lemma d_typing_pat_preserves_wf :
     (forall m Γ e P,
         Γ ⊢[ m ] e ⇨ P ->
         d_wf_denv Γ ->
+        (m = mode_tc \/ m = mode_ti) ->
         nil ⨟ Γ ⊢ₛₖ P).
 Proof.
   apply d_typing_pat_mut; intros.
@@ -1175,14 +1265,15 @@ Proof.
   - (* d_pat__anno: bridge d_wf_typ → d_wf_skel using
        [d_wf_typ_d_wf_skel]. *)
     apply d_wf_typ_d_wf_skel. auto.
-  - (* d_pat__sub: d_pat_sub_preserves_wf is now available and proved
-       (modulo __univ_ghost_inh1's Γ↔Ψ move-lemma obstruction). It
-       takes [is_skel P] as a side condition. Deriving [is_skel P]
-       from this mutual IH requires a separate
-       [d_pat _ _ _ P → is_skel P] lemma (itself mutual with d_typing).
-       Admit until that lemma is written. *)
-    admit.
-  - (* d_pat__freeze: IH gives directly. *)
+  - (* d_pat__sub: closed via the strengthened [d_pat_sub_preserves_wf]
+       and the auxiliary [d_pat_base_mode_ti_is_skel] /
+       [d_pat_sub_implies_is_syn_skel]. *)
+    assert (Hskel_P : is_skel P) by (eapply d_pat_base_mode_ti_is_skel; eauto).
+    assert (Hwf_P : nil ⨟ Γ ⊢ₛₖ P) by (apply H; auto).
+    assert (Hsyn_Q : is_syn_skel Q)
+      by (eapply d_pat_sub_implies_is_syn_skel; eauto).
+    eapply d_pat_sub_preserves_wf; eauto.
+  - (* d_pat__freeze: IH at mode_ti gives wf directly. *)
     apply H; auto.
   - (* d_pat__abs: rule now carries d_wf_skel nil Γ P as a premise.
        Goal: d_wf_skel nil Γ (typ_arrow P Q). Arrow from new premise +
@@ -1190,13 +1281,12 @@ Proof.
     apply d_wf_skel__arrow; auto.
     pick fresh x for (L `union` dom Γ).
     eapply d_wf_skel_strengthening_skel with (Γ1 := nil) (x := x) (P := P).
-    eauto using d_wf_denv__skel.
-  - (* d_pat__abs_check: produces [typ_tophole (typ_arrow typ_hole Q)].
-       Goal: [d_wf_skel nil Γ (typ_tophole (typ_arrow typ_hole Q))].
-       Via [d_wf_skel__tophole]: need [guarded_skel (typ_arrow typ_hole Q)]
-       (arrow is guarded ✓) AND [d_wf_skel nil Γ (typ_arrow typ_hole Q)],
-       which decomposes to [d_wf_skel nil Γ typ_hole] (✓) AND
-       [d_wf_skel nil Γ Q] (from IH after strengthening). *)
+    eapply H; eauto using d_wf_denv__skel, is_inh_skel_is_skel.
+    (* decr_mode m at this case: outer m ∈ {tc, ti} and m ≠ tc so m = ti.
+       decr_mode ti = ti. So inner mode_ti ∈ {tc, ti}. *)
+    destruct H1 as [Habs | Hti]; [subst; contradiction|]. subst.
+    simpl. right. reflexivity.
+  - (* d_pat__abs_check: produces [typ_tophole (typ_arrow typ_hole Q)]. *)
     apply d_wf_skel__tophole.
     + apply guarded_skel__arrow.
     + apply d_wf_skel__arrow.
@@ -1204,15 +1294,17 @@ Proof.
       * pick fresh x for (L `union` dom Γ).
         eapply d_wf_skel_strengthening_skel
           with (Γ1 := nil) (x := x) (P := typ_hole).
-        eauto using d_wf_denv__skel, d_wf_skel__hole.
+        eapply H;
+          eauto using d_wf_denv__skel, is_skel__hole, d_wf_skel__hole.
   - (* d_pat__abs_anno: arrow wf via bridge for A and IH strengthening for Q. *)
     apply d_wf_skel__arrow.
     + apply d_wf_typ_d_wf_skel. auto.
     + pick fresh x for (L `union` dom Γ).
       eapply d_wf_skel_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
-      eauto using d_wf_denv__typ.
-  - (* d_pat__abs_anno_check: produces [typ_tophole (typ_arrow A Q)].
-       Body is [typ_arrow A Q] (guarded). Wf via bridge for A + IH for Q. *)
+      eapply H; eauto using d_wf_denv__typ.
+      destruct H1 as [Habs | Hti]; [subst; contradiction|]. subst.
+      simpl. right. reflexivity.
+  - (* d_pat__abs_anno_check: produces [typ_tophole (typ_arrow A Q)]. *)
     apply d_wf_skel__tophole.
     + apply guarded_skel__arrow.
     + apply d_wf_skel__arrow.
@@ -1220,10 +1312,14 @@ Proof.
       * pick fresh x for (L `union` dom Γ).
         eapply d_wf_skel_strengthening_typ
           with (Γ1 := nil) (x := x) (A := A).
-        eauto using d_wf_denv__typ.
+        eapply H; eauto using d_wf_denv__typ.
   - (* d_pat__app: IH on the function (d_typing side) gives
        d_wf_typ Γ (typ_arrow P' Q); invert and bridge Q to a wf skeleton. *)
     assert (Harr : d_wf_typ Γ (typ_arrow P' Q)) by (apply H0; auto).
     inversion Harr; subst.
     apply d_wf_typ_d_wf_skel; auto.
-Admitted.
+Qed.
+
+(** Paper Lemma 3.7 (Preservation of Skeleton Well-formedness) is
+    extracted as [d_pat_preserves_skel_wf] in [prop_skeleton.v],
+    specialising the mutual at [mode_tc] with no extra premises. *)

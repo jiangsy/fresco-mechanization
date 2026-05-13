@@ -256,6 +256,37 @@ Proof.
   - constructor; auto.
 Qed.
 
+Lemma is_inh_skel_is_skel : forall A, is_inh_skel A -> is_skel A.
+Proof.
+  intros A H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - apply is_skel__all with (L := L). intros X Hni. apply H0; auto.
+  - constructor.
+  - constructor; auto.
+Qed.
+
+Lemma is_syn_skel_is_skel : forall A, is_syn_skel A -> is_skel A.
+Proof.
+  intros A H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - apply is_skel__all with (L := L). intros X Hni. apply H0; auto.
+  - constructor.
+  - constructor; auto.
+Qed.
+
+Lemma is_typ_is_skel : forall A, is_typ A -> is_skel A.
+Proof.
+  intros A H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - apply is_skel__all with (L := L). intros X Hni. apply H0; auto.
+Qed.
+
 Lemma is_skel_subst : forall A B X,
     is_skel A -> is_skel B -> is_skel (subst_typ_in_typ B X A).
 Proof.

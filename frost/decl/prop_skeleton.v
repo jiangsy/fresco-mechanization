@@ -120,14 +120,18 @@ Qed.
     [abs_anno_check] tensions); this projection inherits them. *)
 
 (** Paper Lemma 3.7 (Preservation of Skeleton Well-formedness). [paper-ref: name:"Preservation of Skeleton Well-formedness"]
-    Projection of the mutual [d_typing_pat_preserves_wf]. *)
-Lemma d_pat_preserves_skel_wf : forall m Γ e P,
-    d_pat m Γ e P ->
+    Projection of the mutual [d_typing_pat_preserves_wf] at the
+    paper-stated mode (mode_tc). The mutual lemma carries an internal
+    mode condition (m = mode_tc ∨ m = mode_ti) to handle sub-derivations;
+    this corollary specialises to mode_tc with NO extra premise,
+    matching the paper's statement exactly. *)
+Lemma d_pat_preserves_skel_wf : forall Γ e P,
+    d_pat mode_tc Γ e P ->
     d_wf_denv Γ ->
     d_wf_skel nil Γ P.
 Proof.
-  intros m Γ e P H Hwfd.
-  apply (proj2 d_typing_pat_preserves_wf) with (m := m) (e := e); auto.
+  intros Γ e P H Hwfd.
+  apply (proj2 d_typing_pat_preserves_wf) with (m := mode_tc) (e := e); auto.
 Qed.
 
 (** * Task 5 — Validity of skeleton inference (paper declarative.tex:1981).
