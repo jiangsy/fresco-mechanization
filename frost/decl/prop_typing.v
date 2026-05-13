@@ -882,7 +882,19 @@ Qed.
 
 (** Corollary: single-level narrowing (Γ1 = nil), the form used in
     the main gen-subsumption theorem's __abs / __abs_anno + __arg
-    cases. *)
+    cases.
+
+    Note on direction: the narrowing requires [d_consis nil Γ Anew Aold]
+    (Anew on LHS), which is the OPPOSITE direction from what we get
+    from Hsub_gen __arg's [d_consis_gen Aold Anew]. Since [d_consis]
+    is asymmetric (cf. [prop_subtyping.v:19-23] — LHS is "unresolved",
+    RHS is "bidirectional"), symmetry only holds for monotypes /
+    syn-typ shapes. For full Qed-wiring to the __abs + __arg case,
+    a [d_consis_sym_for_inh] helper is needed for the inh-but-non-mono
+    cases (typ_all_col col_inh components in arrow types). The
+    [is_syn_typ Aold] premise here matches the cases that are
+    actually reachable; the typ_all_col cases force Anew = Aold via
+    Hsub_gen's d_consis_gen__refl_any (no narrowing needed). *)
 Corollary d_typing_narrow_consis_head : forall x Aold Anew Γ m e B,
     d_typing m ((x ~ dbind_typ Aold) ++ Γ) e B ->
     d_consis nil Γ Anew Aold ->
