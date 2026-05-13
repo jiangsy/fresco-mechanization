@@ -741,16 +741,154 @@ Qed.
     - For [Hsub = __forall_l_*]: A would be [typ_all_etag] /
       [typ_all_plain] (from Hsub's LHS shape), violating [d_wf_typ Γ A].
       Vacuous. *)
-(** Strong form with [Γ_pre ++ Γ] split (following [d_sub_subst_mono]
-    pattern): Hsub and Hty live at [(Γ_pre ++ Γ)], with Γ as the "base"
-    context. After [dependent induction Hsub], the IH at a sub-Hsub
-    abstracts over both Γ_pre and Γ — so we can apply it at a different
-    Γ_pre'. This unlocks:
+(** * Generalised subtyping (paper's [bid{T}] extension).
 
-    - __arg + __abs body conversion: set Γ_pre' := (x ~ T1) ++ Γ_pre,
-      then body's general subsumption is the IH.
-    - __forall_r body via Hsub-IH at sub-Hsub_X (set Γ_pre' :=
-      (X ~ tvar) ++ Γ_pre). *)
+    The paper's appendix Lemma B.5 ("Generalised General Subsumption")
+    routes through an extended consistency / subtyping relation that
+    allows inherited quantifiers on the LHS. This is the missing piece
+    that makes the __app function-side lift go through: the lift needs
+    [d_consis Γ A0 A0] where A0 is the function's argument type, which
+    may be inh-forall — a shape the original [d_consis] doesn't admit
+    as LHS. The extended relation [d_consis_gen] adds refl for any wf
+    type, sidestepping the LHS-shape restriction. *)
+Inductive d_consis_gen :
+    list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
+| d_consis_gen__embed : forall Δ Γ T A,
+    d_consis Δ Γ T A ->
+    d_consis_gen Δ Γ T A
+| d_consis_gen__refl_any : forall Γ A,
+    d_wf_typ Γ A ->
+    d_consis_gen nil Γ A A
+| d_consis_gen__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,
+    d_consis_gen Δ1 Γ T1 A1 ->
+    d_consis_gen Δ2 Γ T2 A2 ->
+    list_disjoint Δ1 Δ2 ->
+    d_consis_gen (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
+
+(** Generalised subtyping using [d_consis_gen] for the consistency
+    premises. Adds an __infer / __check that uses [d_consis_gen],
+    plus the structural cases. *)
+Inductive d_sub_gen :
+    mode -> list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
+| d_sub_gen__embed : forall m Δ Γ T A,
+    d_sub m Δ Γ T A ->
+    d_sub_gen m Δ Γ T A
+| d_sub_gen__refl_any : forall m Γ A,
+    d_wf_typ Γ A ->
+    d_sub_gen m nil Γ A A
+| d_sub_gen__forall_r : forall L Δ Γ T A,
+    (forall X, X `notin` L ->
+       d_sub_gen mode_tc Δ ((X ~ dbind_tvar) ++ Γ) T (open_typ_wrt_typ A (typ_var_f X))) ->
+    d_sub_gen mode_tc Δ Γ T (typ_all_col colour_inh A)
+| d_sub_gen__arg : forall Δ1 Δ2 Γ m T1 T2 A1 A2,
+    d_consis_gen Δ1 Γ T1 A1 ->
+    d_sub_gen m Δ2 Γ T2 A2 ->
+    d_sub_gen (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
+
+(** [d_sub_gen] is reflexive on any wf type — the headline property
+    of the generalised relation that the original [d_sub] lacks. *)
+Lemma d_sub_gen_refl : forall Γ A m,
+    d_wf_typ Γ A ->
+    d_sub_gen m nil Γ A A.
+Proof.
+  intros. apply d_sub_gen__refl_any; auto.
+Qed.
+
+(** ** FN^n TI predicate (paper's mode-stack discipline).
+
+    A mode is in [is_fn_n_ti] form iff it's [mode_ti] or
+    [mode_fn m'] for some m' in [is_fn_n_ti] form — i.e.,
+    [FN^n TI = mode_fn^n mode_ti] for some n ≥ 0. *)
+Inductive is_fn_n_ti : mode -> Prop :=
+| is_fn_n_ti__ti : is_fn_n_ti mode_ti
+| is_fn_n_ti__fn : forall m,
+    is_fn_n_ti m ->
+    is_fn_n_ti (mode_fn m).
+
+(** Replace the innermost TI in m_orig (a FN^n TI mode) with m_new.
+    [mode_fn_n_subst (FN^n TI) m_new = FN^n m_new]. *)
+Fixpoint mode_fn_n_subst (m_orig m_new : mode) : mode :=
+  match m_orig with
+  | mode_ti => m_new
+  | mode_fn m' => mode_fn (mode_fn_n_subst m' m_new)
+  | mode_tc => mode_tc  (* unused; is_fn_n_ti excludes mode_tc *)
+  end.
+
+(** [decr_mode] preserves [is_fn_n_ti]. *)
+Lemma is_fn_n_ti_decr : forall m,
+    is_fn_n_ti m ->
+    is_fn_n_ti (decr_mode m).
+Proof.
+  intros m H. inversion H; subst; simpl.
+  - apply is_fn_n_ti__ti.
+  - assumption.
+Qed.
+
+(** [mode_fn_n_subst] respects [decr_mode] on FN^n TI: for n ≥ 1,
+    [decr (FN^n m_new) = FN^{n-1} m_new] = [mode_fn_n_subst (decr m_orig) m_new]. *)
+Lemma mode_fn_n_subst_decr : forall m_orig m_new,
+    is_fn_n_ti m_orig ->
+    m_orig <> mode_ti ->
+    decr_mode (mode_fn_n_subst m_orig m_new) =
+    mode_fn_n_subst (decr_mode m_orig) m_new.
+Proof.
+  intros m_orig m_new H Hne. inversion H; subst; simpl.
+  - exfalso. apply Hne. reflexivity.
+  - reflexivity.
+Qed.
+
+(** ** Generalised General Subsumption (paper Lemma B.5).
+
+    The statement: for [Hty : d_typing m_orig Γ e A] with [m_orig ∈ FN^n TI],
+    and [Hsub_gen : d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B]
+    (using the GENERALISED sub), we derive [d_typing (mode_fn_n_subst
+    m_orig m_new) Γ e B].
+
+    The use of [d_sub_gen] (rather than the original [d_sub]) is what
+    makes the __app function-side lift go through: that lift constructs
+    a sub via [d_sub_gen__arg] with [d_consis_gen__refl_any] on the
+    function's argument type A0 (no longer requiring A0 to be mono).
+
+    Proof outline (per paper appendix Lemma B.5):
+    - Induct on Hty via [d_typing_pat_mut].
+    - For each Hty case, dispatch on Hsub_gen's shape.
+    - __abs / __abs_anno: body IH from the mutual induction provides
+      body's generalised subsumption at (x ~ A_arg) ++ Γ.
+    - __app: function-side IH fires at [mode_fn m_orig] (which is also
+      in [is_fn_n_ti] form). The sub for the IH is [d_sub_gen__arg]
+      using [d_consis_gen__refl_any] on the argument type. *)
+Theorem d_typing_general_subsumption_gen : forall m_orig Γ e A,
+    d_typing m_orig Γ e A ->
+    is_fn_n_ti m_orig ->
+    d_wf_denv Γ ->
+    forall m_new B,
+      d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B ->
+      d_typing (mode_fn_n_subst m_orig m_new) Γ e B.
+Proof.
+  (* Proof skeleton — full closure requires:
+     - Bridge lemmas: d_sub → d_sub_gen, d_consis → d_consis_gen.
+     - For each Hty case, inversion / structural analysis of d_sub_gen.
+     - Body IH for __abs / __abs_anno via d_typing_pat_mut.
+     - Function-side IH for __app using d_sub_gen__refl_any.
+     - For d_sub_gen__refl_any cases at non-ti modes, use
+       [d_typing_lift_mono]-style mode lifts (extended to non-mono A
+       via the generalised relation).
+     The full proof is per paper appendix Lemma B.5; structural
+     adaptation pending. *)
+Admitted.
+
+(** Strong form V2 (kept for now; will be replaced by the bridged D1
+    once [d_typing_general_subsumption_via_gen] is closed).
+
+    [Γ_pre ++ Γ] split (following [d_sub_subst_mono] pattern): Hsub and
+    Hty live at [(Γ_pre ++ Γ)], with Γ as the "base" context. After
+    [dependent induction Hsub], the IH at a sub-Hsub abstracts over
+    both Γ_pre and Γ — but since [Γ_pre ++ Γ] is treated as a single
+    context unit by Coq's dependent induction, this generalisation is
+    DUMMY: the IH's context-equation locks
+    [Γ_pre' ++ Γ' = outer Γ_pre ++ outer Γ], so Γ_pre' is not actually
+    free for extension. The true generalisation routes through
+    [d_sub_gen] (paper's bid{T} extension); see notes below. *)
 Theorem d_typing_general_subsumption_split : forall m Γ_pre Γ e A B,
     d_wf_denv (Γ_pre ++ Γ) ->
     d_typing mode_ti (Γ_pre ++ Γ) e A ->
@@ -1009,6 +1147,28 @@ Theorem d_typing_general_subsumption : forall Γ e A B m,
 Proof.
   intros Γ e A B m Hwfd Hty Hsub.
   apply d_typing_general_subsumption_split with (Γ_pre := nil) (A := A); auto.
+Qed.
+
+(** ** D1 via the generalised bridge (paper's strategy).
+
+    An alternative derivation of D1 routing through the generalised
+    [d_typing_general_subsumption_gen] (Lemma B.5). Once the latter is
+    closed, this becomes the canonical D1.
+
+    Set [m_orig := mode_ti], so [mode_fn_n_subst mode_ti m_new = m_new]
+    and the conclusion matches the original D1. Embed the original
+    [d_sub] into [d_sub_gen] via [d_sub_gen__embed]. *)
+Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
+    d_wf_denv Γ ->
+    d_typing mode_ti Γ e A ->
+    d_sub m nil Γ A B ->
+    d_typing m Γ e B.
+Proof.
+  intros Γ e A B m Hwfd Hty Hsub.
+  change m with (mode_fn_n_subst mode_ti m).
+  apply d_typing_general_subsumption_gen with (A := A); auto.
+  - apply is_fn_n_ti__ti.
+  - simpl. apply d_sub_gen__embed. exact Hsub.
 Qed.
 
 (** * Phase 2.D.7 — Stability S1 (argument-permutation).
