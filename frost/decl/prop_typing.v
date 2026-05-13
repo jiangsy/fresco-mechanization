@@ -671,25 +671,214 @@ Lemma d_typing_narrow_consis :
           d_wf_typ Γ2 Anew ->
           d_pat m (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) e P).
 Proof.
-  (* Mechanical structural reconstruction across 18 mutual cases.
-     Key case sketched (d_typing__var at narrowed x):
-
-       Original: d_typing mode_ti Γ_old (exp_var_f x) Aold (binds).
-       Goal: d_typing m (Γ1 ++ (x:Anew) ++ Γ2) (exp_var_f x) Aold.
-       Use d_typing__sub with A := Anew:
-         - is_base_term__var.
-         - d_typing__var with binds x (dbind_typ Anew) Γ_new (✓).
-         - d_sub mode_ti nil Γ_new Anew Aold:
-             d_sub__infer (needs is_syn_typ Aold, which is the
-             lemma's premise) with d_consis (the lemma's premise,
-             weakened to Γ_new).
-
-     The other 17 cases (d_typing__unit/anno/sub/freeze/forall/abs/
-     abs_anno/app + 9 d_pat constructors) are straightforward
-     structural reconstruction. The d_pat half is invariant under
-     dbind_typ narrowing (d_pat only reads dbind_skel /
-     dbind_tvar). *)
-Admitted.
+  apply d_typing_pat_mut.
+  (* d_typing__unit *)
+  - intros Γ Hcompat Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_typing__unit. auto.
+  (* d_typing__var *)
+  - intros Γ x A Hb Γ1 x0 Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply binds_app_iff in Hb. destruct Hb as [Hb_pre | Hb_in].
+    + apply d_typing__var. apply binds_app_iff. left. exact Hb_pre.
+    + apply binds_app_iff in Hb_in. destruct Hb_in as [Hb_x | Hb_post].
+      * apply binds_one_iff in Hb_x. destruct Hb_x as [Heq Hbeq].
+        subst x. inversion Hbeq. subst A.
+        apply d_typing__sub with (A := Anew).
+        -- apply is_base_term__var.
+        -- apply d_typing__var. apply binds_app_iff. right.
+           apply binds_app_iff. left. apply binds_one_iff. auto.
+        -- apply d_sub__infer; auto.
+           rewrite_env (Γ1 ++ ((x0 ~ dbind_typ Anew) ++ Γ2)).
+           apply d_consis_weakening_head.
+           apply d_consis_weakening_head. auto.
+      * apply d_typing__var. apply binds_app_iff. right.
+        apply binds_app_iff. right. exact Hb_post.
+  (* d_typing__anno *)
+  - intros Γ e A Hinh Hty_inner IH
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_typing__anno; auto.
+    eapply IH; eauto.
+  (* d_typing__sub *)
+  - intros Γ m e A B Hbase Hty_inner IH Hsub
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_typing__sub with (A := A); auto.
+    + eapply IH; eauto.
+    + eapply d_sub_tvar_morph; [|exact Hsub].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+  (* d_typing__freeze *)
+  - intros Γ e A Hty_inner IH
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_typing__freeze. eapply IH; eauto.
+  (* d_typing__forall *)
+  - intros L Γ e A Hval Hbody IH
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_typing__forall with
+      (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
+    intros X HX.
+    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ (x ~ dbind_typ Anew) ++ Γ2).
+    eapply IH; eauto.
+  (* d_typing__abs *)
+  - intros L Γ m e A B Hinh HwfA Hbody IH
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_typing__abs with
+      (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
+    + eapply d_wf_typ_tvar_morph; [|exact HwfA].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+    + intros x0 Hx0.
+      rewrite_env (((x0 ~ dbind_typ A) ++ Γ1) ++ (x ~ dbind_typ Anew) ++ Γ2).
+      eapply IH; eauto.
+  (* d_typing__abs_anno *)
+  - intros L Γ m e A B HwfA Hbody IH
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_typing__abs_anno with
+      (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
+    + eapply d_wf_typ_tvar_morph; [|exact HwfA].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+    + intros x0 Hx0.
+      rewrite_env (((x0 ~ dbind_typ A) ++ Γ1) ++ (x ~ dbind_typ Anew) ++ Γ2).
+      eapply IH; eauto.
+  (* d_typing__app *)
+  - intros Γ m e1 e2 P P' A B Hpat IH_pat Href Hty_fn IH_fn Hty_arg IH_arg
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_typing__app with (P := P) (P' := P') (A := A).
+    + eapply IH_pat; eauto.
+    + eapply d_refine_syn_tvar_morph; [|exact Href].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+    + eapply IH_fn; eauto.
+    + eapply IH_arg; eauto.
+  (* d_pat__unit *)
+  - intros Γ Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__unit.
+  (* d_pat__var *)
+  - intros Γ X P Hb Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__var.
+    apply binds_app_iff in Hb. destruct Hb as [Hb_pre | Hb_in].
+    + apply binds_app_iff. left. exact Hb_pre.
+    + apply binds_app_iff. right.
+      apply binds_app_iff in Hb_in. destruct Hb_in as [Hb_x | Hb_post].
+      * apply binds_one_iff in Hb_x. destruct Hb_x as [_ Hbeq].
+        discriminate Hbeq.
+      * apply binds_app_iff. right. exact Hb_post.
+  (* d_pat__anno *)
+  - intros Γ e A HwfA Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__anno.
+    eapply d_wf_typ_tvar_morph; [|exact HwfA].
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hb | Hb].
+    + apply binds_app_iff. left. auto.
+    + apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+      * apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+        discriminate Hbeq.
+      * apply binds_app_iff. right. apply binds_app_iff. right. auto.
+  (* d_pat__sub *)
+  - intros Γ m e P Q Hbase Hpat_inner IH Hpsub
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__sub with (P := P); auto.
+    + eapply IH; eauto.
+    + eapply d_pat_sub_tvar_morph; [|exact Hpsub].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+  (* d_pat__freeze *)
+  - intros Γ e P Hpat_inner IH Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__freeze. eapply IH; eauto.
+  (* d_pat__abs *)
+  - intros L Γ m e P Q Hneq Hinh HwfS Hbody IH
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__abs with
+      (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
+    + eapply d_wf_skel_tvar_morph; [|exact HwfS].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+    + intros x0 Hx0.
+      rewrite_env (((x0 ~ dbind_skel P) ++ Γ1) ++ (x ~ dbind_typ Anew) ++ Γ2).
+      eapply IH; eauto.
+  (* d_pat__abs_check *)
+  - intros L Γ e Q Hbody IH Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__abs_check with
+      (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)).
+    intros x0 Hx0.
+    rewrite_env (((x0 ~ dbind_skel typ_hole) ++ Γ1) ++ (x ~ dbind_typ Anew) ++ Γ2).
+    eapply IH; eauto.
+  (* d_pat__abs_anno *)
+  - intros L Γ m e A Q Hneq HwfA Hbody IH
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__abs_anno with
+      (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
+    + eapply d_wf_typ_tvar_morph; [|exact HwfA].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+    + intros x0 Hx0.
+      rewrite_env (((x0 ~ dbind_typ A) ++ Γ1) ++ (x ~ dbind_typ Anew) ++ Γ2).
+      eapply IH; eauto.
+  (* d_pat__abs_anno_check *)
+  - intros L Γ e A Q HwfA Hbody IH
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__abs_anno_check with
+      (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
+    + eapply d_wf_typ_tvar_morph; [|exact HwfA].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+    + intros x0 Hx0.
+      rewrite_env (((x0 ~ dbind_typ A) ++ Γ1) ++ (x ~ dbind_typ Anew) ++ Γ2).
+      eapply IH; eauto.
+  (* d_pat__app *)
+  - intros Γ m e1 e2 P P' Q Hpat IH_pat Href Hty_fn IH_fn
+           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+    apply d_pat__app with (P := P) (P' := P').
+    + eapply IH_pat; eauto.
+    + eapply d_refine_syn_tvar_morph; [|exact Href].
+      intros Y HbY. apply binds_app_iff in HbY.
+      destruct HbY as [Hb | Hb].
+      * apply binds_app_iff. left. auto.
+      * apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+        -- apply binds_one_iff in Hb. destruct Hb as [_ Hbeq].
+           discriminate Hbeq.
+        -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
+    + eapply IH_fn; eauto.
+Qed.
 
 (** Corollary: single-level narrowing (Γ1 = nil), the form used in
     the main gen-subsumption theorem's __abs / __abs_anno + __arg
