@@ -744,13 +744,35 @@ Proof.
        [d_sub mode_ti nil Γ A0 A] (the inner d_sub of d_typing__sub),
        we get [d_consis nil Γ A0 A]. Then [d_consis_extends_d_sub_nil]
        composes with [Hsub : d_sub m nil Γ A B] to yield the goal. *)
-    inversion H1; subst.
-    (* H1 : d_sub mode_ti nil Γ A0 A → __infer case → d_consis nil Γ A0 A. *)
+    inversion H1; subst;
+      try (match goal with H : ?m <> ?m |- _ => exfalso; apply H; reflexivity end).
+    (* Only __infer case remains. *)
     apply d_consis_extends_d_sub_nil with (A := A); auto.
-    (* d_wf_typ Γ A0 from d_typing_pat_preserves_wf on H0 (inner typing). *)
     eapply (proj1 d_typing_pat_preserves_wf); eauto.
-  (* __freeze / __forall vacuous (mode_tc, but Hty is mode_ti).
-     __abs / __abs_anno / __app: research-grade per docstring. *)
+  - (* d_typing__abs case. Sub-cases on Hsub: 4 reachable (__infer / __check
+       / __forall_r / __arg); __forall_l_* vacuous via LHS arrow mismatch.
+
+       Key insight (new helpers [d_consis_LHS_mono_wf] /
+       [d_sub_LHS_mono_wf]): in all reachable cases, both A_arg and A_ret
+       are forced to be mono via d_consis-LHS-mono on wf types. The
+       paper's claim that this case is unprovable in the bidirectional
+       system was incorrect — mono A_ret makes refl derivable via
+       [d_sub_refl_mono].
+
+       Closure plan (~80 LoC, deferred to next session):
+       - __infer: A = B by [d_consis_empty_eq] on mono components.
+         Goal = Hty directly.
+       - __check: body conversion mode_ti → mode_tc needed. Use a
+         separate [d_typing_lift_mono] lemma + [d_sub_refl_mono] on mono A_ret.
+       - __forall_r: apply d_typing__forall with [is_value__abs]. Body
+         cofinite over X — recursive call via Hsub-IH (needs induction
+         restructure or separate lemma).
+       - __arg: similar to __check but at mode_fn level. *)
+    admit.
+  - (* d_typing__abs_anno: same shape as __abs. *)
+    admit.
+  - (* d_typing__app: needs function-side lift. *)
+    admit.
 Admitted.
 
 (** * Phase 2.D.7 — Stability S1 (argument-permutation).
