@@ -1077,7 +1077,17 @@ Proof.
        mode_fn m ∈ is_fn_n_ti. The sub for the IH is
        [d_sub_gen__arg] with [d_consis_gen__refl_any] on the
        argument type — the paper's bridge that removes the mono-A0
-       requirement. *)
+       requirement.
+
+       Closure plan (for Hsub_gen = __embed):
+         apply d_typing__app with (P:=...) (P':=...) (A:=A_fn_arg).
+         Lift function via IHHty_fn at
+         d_sub_gen__arg(d_consis_gen__refl_any on A_fn_arg)
+         (d_sub_gen__embed of outer Hsub_gen). Re-apply.
+       Pending due to hypothesis-naming complexity of [induction Hty]
+       at the __app constructor (4 premises + 2 IHs, all auto-named).
+       Need a robust naming strategy (e.g. revert/rename pre-induction
+       or use [d_typing_pat_mut] with explicit intros pattern). *)
     admit.
 Admitted.
 
