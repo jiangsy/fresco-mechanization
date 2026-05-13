@@ -794,6 +794,86 @@ Proof.
   intros. apply d_sub_gen__refl_any; auto.
 Qed.
 
+(** ** Structural lemmas for the generalised relations.
+
+    Weakening and tvar-morph for [d_consis_gen] / [d_sub_gen]. Mirror
+    the corresponding facts on [d_consis] / [d_sub] — composition
+    works case-by-case on the embedded / refl_any / arrow / forall_r /
+    arg constructors. Needed by [d_typing_general_subsumption_gen] to
+    weaken sub-derivations when reasoning under cofinitely-quantified
+    type-variable binders (paper Lemma B.5 proof, __forall_r case). *)
+
+Lemma d_consis_gen_weakening : forall Γ1 Γ2 Γ3 Δ T A,
+    d_consis_gen Δ (Γ1 ++ Γ3) T A ->
+    d_consis_gen Δ (Γ1 ++ Γ2 ++ Γ3) T A.
+Proof.
+  intros Γ1 Γ2 Γ3 Δ T A H. dependent induction H.
+  - apply d_consis_gen__embed. apply d_consis_weakening; auto.
+  - apply d_consis_gen__refl_any. eapply d_wf_typ_weakening; eauto.
+  - apply d_consis_gen__arrow; auto.
+Qed.
+
+Corollary d_consis_gen_weakening_head : forall Γ Γ' Δ T A,
+    d_consis_gen Δ Γ T A ->
+    d_consis_gen Δ (Γ' ++ Γ) T A.
+Proof.
+  intros. rewrite_env (nil ++ Γ' ++ Γ).
+  apply d_consis_gen_weakening. simpl. auto.
+Qed.
+
+Lemma d_sub_gen_weakening : forall Γ1 Γ2 Γ3 m Δ T A,
+    d_sub_gen m Δ (Γ1 ++ Γ3) T A ->
+    d_sub_gen m Δ (Γ1 ++ Γ2 ++ Γ3) T A.
+Proof.
+  intros Γ1 Γ2 Γ3 m Δ T A H. dependent induction H.
+  - apply d_sub_gen__embed. apply d_sub_weakening; auto.
+  - apply d_sub_gen__refl_any. eapply d_wf_typ_weakening; eauto.
+  - apply d_sub_gen__forall_r with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
+  - apply d_sub_gen__arg; eauto.
+    apply d_consis_gen_weakening; auto.
+Qed.
+
+Corollary d_sub_gen_weakening_head : forall Γ Γ' m Δ T A,
+    d_sub_gen m Δ Γ T A ->
+    d_sub_gen m Δ (Γ' ++ Γ) T A.
+Proof.
+  intros. rewrite_env (nil ++ Γ' ++ Γ).
+  apply d_sub_gen_weakening. simpl. auto.
+Qed.
+
+Lemma d_consis_gen_tvar_morph : forall Γ Γ' Δ T A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_consis_gen Δ Γ T A ->
+    d_consis_gen Δ Γ' T A.
+Proof.
+  intros Γ Γ' Δ T A Hmorph H.
+  generalize dependent Γ'. induction H; intros Γ' Hmorph.
+  - apply d_consis_gen__embed. eapply d_consis_tvar_morph; eauto.
+  - apply d_consis_gen__refl_any. eapply d_wf_typ_tvar_morph; eauto.
+  - apply d_consis_gen__arrow; auto.
+Qed.
+
+Lemma d_sub_gen_tvar_morph : forall Γ Γ' m Δ T A,
+    (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
+    d_sub_gen m Δ Γ T A ->
+    d_sub_gen m Δ Γ' T A.
+Proof.
+  intros Γ Γ' m Δ T A Hmorph H.
+  generalize dependent Γ'. induction H; intros Γ' Hmorph.
+  - apply d_sub_gen__embed. eapply d_sub_tvar_morph; eauto.
+  - apply d_sub_gen__refl_any. eapply d_wf_typ_tvar_morph; eauto.
+  - apply d_sub_gen__forall_r with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hb | Hb]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_sub_gen__arg.
+    + eapply d_consis_gen_tvar_morph; eauto.
+    + apply IHd_sub_gen; auto.
+Qed.
+
 (** ** FN^n TI predicate (paper's mode-stack discipline).
 
     A mode is in [is_fn_n_ti] form iff it's [mode_ti] or
@@ -856,7 +936,21 @@ Qed.
       body's generalised subsumption at (x ~ A_arg) ++ Γ.
     - __app: function-side IH fires at [mode_fn m_orig] (which is also
       in [is_fn_n_ti] form). The sub for the IH is [d_sub_gen__arg]
-      using [d_consis_gen__refl_any] on the argument type. *)
+      using [d_consis_gen__refl_any] on the argument type.
+
+    Closure status (this commit):
+    - Vacuous mode_tc cases (Hty = __freeze / __forall): CLOSED via
+      [inversion Hfn] (mode_tc ∉ is_fn_n_ti).
+    - Hty = __unit / Hsub_gen = __embed: CLOSED via [d_typing__sub].
+    - Remaining cases: admitted with per-case structural notes.
+
+    Discovered gap: [d_sub_gen__refl_any] currently allows ANY mode
+    [m]. For non-arrow types A, [d_sub_gen (mode_fn m') nil Γ A A] is
+    syntactically admissible but the corresponding [d_typing
+    (mode_fn m') Γ e A] is unreachable (the paper's [M ⊢ A]
+    compatibility, encoded here as [mode_typ_compat], implicitly
+    constrains this). Future def-level fix: add a [mode_typ_compat m A]
+    premise to [d_sub_gen__refl_any]. *)
 Theorem d_typing_general_subsumption_gen : forall m_orig Γ e A,
     d_typing m_orig Γ e A ->
     is_fn_n_ti m_orig ->
@@ -865,16 +959,87 @@ Theorem d_typing_general_subsumption_gen : forall m_orig Γ e A,
       d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B ->
       d_typing (mode_fn_n_subst m_orig m_new) Γ e B.
 Proof.
-  (* Proof skeleton — full closure requires:
-     - Bridge lemmas: d_sub → d_sub_gen, d_consis → d_consis_gen.
-     - For each Hty case, inversion / structural analysis of d_sub_gen.
-     - Body IH for __abs / __abs_anno via d_typing_pat_mut.
-     - Function-side IH for __app using d_sub_gen__refl_any.
-     - For d_sub_gen__refl_any cases at non-ti modes, use
-       [d_typing_lift_mono]-style mode lifts (extended to non-mono A
-       via the generalised relation).
-     The full proof is per paper appendix Lemma B.5; structural
-     adaptation pending. *)
+  intros m_orig Γ e A Hty.
+  induction Hty; intros Hfn Hwfd m_new B_tgt Hsub_gen.
+  - (* === Hty = d_typing__unit ============================================
+       m_orig = mode_ti, e = exp_unit, A = typ_unit.
+       Target mode = [mode_fn_n_subst mode_ti m_new] = m_new.
+       Hsub_gen : d_sub_gen m_new nil Γ typ_unit B.
+
+       Dispatch on Hsub_gen. The [__embed] and [__arg] sub-cases close
+       cleanly. The [__refl_any] sub-case is sound only if m_new admits
+       typ_unit (i.e. [mode_typ_compat m_new typ_unit]) — for
+       m_new = mode_fn _, the conclusion is unreachable.
+       This is a gap in the current [d_sub_gen__refl_any] rule, which
+       lacks a [mode_typ_compat] premise. Documented as future
+       def-level fix. The [__forall_r] sub-case needs nested
+       recursion on Hsub_gen (Hty is atomic at __unit). *)
+    simpl in Hsub_gen |- *.
+    dependent destruction Hsub_gen.
+    + (* sub_gen__embed: d_sub m_new nil Γ typ_unit B. Direct via __sub. *)
+      apply d_typing__sub with (A := typ_unit); auto.
+      * apply is_base_term__unit.
+      * apply d_typing__unit; auto.
+    + (* sub_gen__refl_any: B = typ_unit. Needs [mode_typ_compat m typ_unit]
+         to discharge the d_sub at m_new. Currently the rule allows ANY m,
+         so this is unreachable-via-refinement only after rule strengthening.
+         Research-grade pending def-level fix. *)
+      admit.
+    + (* sub_gen__forall_r: m_new = mode_tc, B = typ_all_col colour_inh _.
+         Use [d_typing__forall] (exp_unit is a value). Each per-X premise
+         needs a recursive call to the gen-subsumption theorem at extended
+         Γ — NESTED RECURSION on Hsub_gen which the current outer
+         induction-on-Hty does not provide. Research-grade.
+         (sub_gen__arg auto-discharged by [dependent destruction]:
+          typ_unit ≠ typ_arrow.) *)
+      admit.
+  - (* === Hty = d_typing__var =============================================
+       m_orig = mode_ti, e = exp_var_f x, A = some bound type.
+       Same dispatch shape as __unit, but A may be non-mono (the
+       refl_any sub-case can't use [d_typing_lift_mono] directly). *)
+    admit.
+  - (* === Hty = d_typing__anno ============================================
+       m_orig = mode_ti, e = exp_anno e' A, target mode = m_new.
+       The inner d_typing is at mode_tc — IH on it has Hfn premise
+       which fails (mode_tc not in is_fn_n_ti). So IH doesn't help.
+       Dispatch on Hsub_gen as in __unit / __var. *)
+    admit.
+  - (* === Hty = d_typing__sub =============================================
+       m_orig = m (the conclusion mode), inner at mode_ti.
+       The inner d_typing is at mode_ti, in is_fn_n_ti; IH fires.
+       Compose Hsub_gen with the inner sub via a transitivity-style
+       step (research-grade for the gen relation). *)
+    admit.
+  - (* === Hty = d_typing__freeze ==========================================
+       m_orig = mode_tc — NOT in is_fn_n_ti. Vacuous via Hfn. *)
+    inversion Hfn.
+  - (* === Hty = d_typing__forall ==========================================
+       m_orig = mode_tc — NOT in is_fn_n_ti. Vacuous via Hfn. *)
+    inversion Hfn.
+  - (* === Hty = d_typing__abs =============================================
+       m_orig = m, e = exp_abs _, A = typ_arrow A B.
+       Body's typing is at decr_mode m, which is in is_fn_n_ti (by
+       [is_fn_n_ti_decr]). IH on body fires.
+       Dispatch on Hsub_gen:
+       - __embed: __sub doesn't apply (exp_abs not base); need either
+         absorption into __abs or a research-grade move.
+       - __refl_any: B = original. Reconstruct via d_typing__abs.
+       - __forall_r: target = mode_tc. Use d_typing__forall (exp_abs
+         is a value). Per-X premise needs nested recursion.
+       - __arg: target = mode_fn m'. Reconstruct via d_typing__abs at
+         m' with body lifted via IH on Hty's body. *)
+    admit.
+  - (* === Hty = d_typing__abs_anno ========================================
+       Symmetric to __abs (annotation provides the argument type
+       directly). *)
+    admit.
+  - (* === Hty = d_typing__app =============================================
+       m_orig = m, function at mode_fn m. IH on function fires at
+       mode_fn m ∈ is_fn_n_ti. The sub for the IH is
+       [d_sub_gen__arg] with [d_consis_gen__refl_any] on the
+       argument type — the paper's bridge that removes the mono-A0
+       requirement. *)
+    admit.
 Admitted.
 
 (** Strong form V2 (kept for now; will be replaced by the bridged D1
