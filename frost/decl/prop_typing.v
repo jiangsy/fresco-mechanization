@@ -767,13 +767,21 @@ Inductive d_consis_gen :
 
 (** Generalised subtyping using [d_consis_gen] for the consistency
     premises. Adds an __infer / __check that uses [d_consis_gen],
-    plus the structural cases. *)
+    plus the structural cases.
+
+    [d_sub_gen__refl_any] requires [mode_typ_compat m A]: the paper's
+    [M ⊢ A] predicate. Without it, [d_sub_gen (mode_fn _) nil Γ A A]
+    would be admissible for non-arrow A (e.g. typ_unit), but the
+    corresponding [d_typing (mode_fn _) Γ e A] is unreachable — the
+    [mode_typ_compat] premise prevents that inconsistency at the
+    relation level. *)
 Inductive d_sub_gen :
     mode -> list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
 | d_sub_gen__embed : forall m Δ Γ T A,
     d_sub m Δ Γ T A ->
     d_sub_gen m Δ Γ T A
 | d_sub_gen__refl_any : forall m Γ A,
+    mode_typ_compat m A ->
     d_wf_typ Γ A ->
     d_sub_gen m nil Γ A A
 | d_sub_gen__forall_r : forall L Δ Γ T A,
@@ -785,9 +793,9 @@ Inductive d_sub_gen :
     d_sub_gen m Δ2 Γ T2 A2 ->
     d_sub_gen (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
 
-(** [d_sub_gen] is reflexive on any wf type — the headline property
-    of the generalised relation that the original [d_sub] lacks. *)
+(** [d_sub_gen] is reflexive on any wf type at compatible mode. *)
 Lemma d_sub_gen_refl : forall Γ A m,
+    mode_typ_compat m A ->
     d_wf_typ Γ A ->
     d_sub_gen m nil Γ A A.
 Proof.
@@ -827,7 +835,7 @@ Lemma d_sub_gen_weakening : forall Γ1 Γ2 Γ3 m Δ T A,
 Proof.
   intros Γ1 Γ2 Γ3 m Δ T A H. dependent induction H.
   - apply d_sub_gen__embed. apply d_sub_weakening; auto.
-  - apply d_sub_gen__refl_any. eapply d_wf_typ_weakening; eauto.
+  - apply d_sub_gen__refl_any; auto. eapply d_wf_typ_weakening; eauto.
   - apply d_sub_gen__forall_r with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
@@ -863,7 +871,7 @@ Proof.
   intros Γ Γ' m Δ T A Hmorph H.
   generalize dependent Γ'. induction H; intros Γ' Hmorph.
   - apply d_sub_gen__embed. eapply d_sub_tvar_morph; eauto.
-  - apply d_sub_gen__refl_any. eapply d_wf_typ_tvar_morph; eauto.
+  - apply d_sub_gen__refl_any; auto. eapply d_wf_typ_tvar_morph; eauto.
   - apply d_sub_gen__forall_r with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY.
@@ -943,17 +951,28 @@ Qed.
       [inversion Hfn] (mode_tc ∉ is_fn_n_ti).
     - Hty ∈ {__unit, __var, __anno} / Hsub_gen = __embed: CLOSED via
       [d_typing__sub] at the corresponding [is_base_term].
+    - Hty = __unit / Hsub_gen = __refl_any: CLOSED via case-split on
+      [mode_typ_compat m_new typ_unit] (mode_ti: trivial; mode_tc:
+      d_typing__sub + d_sub__check; mode_fn: auto-discharged via
+      [inversion]).
     - Hty = __unit / Hsub_gen = __arg: auto-discharged by
       [dependent destruction] (typ_unit ≠ typ_arrow).
+    - Hty = __app / Hsub_gen = __embed: CLOSED via the paper's
+      function-side lift: re-apply [d_typing__app] with the function
+      side discharged by [IHHty1] (the IH on Hty_fn) at the
+      constructed sub [d_sub_gen__arg(d_consis_gen__refl_any on the
+      argument type, d_sub_gen__embed of the outer Hsub_gen)]. This is
+      THE case the gen relation enables — the argument-side refl no
+      longer requires monotyping.
     - Remaining cases: admitted with per-case structural notes.
 
-    Discovered gap: [d_sub_gen__refl_any] currently allows ANY mode
-    [m]. For non-arrow types A, [d_sub_gen (mode_fn m') nil Γ A A] is
+    [d_sub_gen__refl_any] now requires [mode_typ_compat m A] (added
+    in this commit). Without it, the refl_any rule was too permissive:
+    e.g. [d_sub_gen (mode_fn _) nil Γ typ_unit typ_unit] was
     syntactically admissible but the corresponding [d_typing
-    (mode_fn m') Γ e A] is unreachable (the paper's [M ⊢ A]
-    compatibility, encoded here as [mode_typ_compat], implicitly
-    constrains this). Future def-level fix: add a [mode_typ_compat m A]
-    premise to [d_sub_gen__refl_any]. *)
+    (mode_fn _) Γ exp_unit typ_unit] is unreachable. The paper's
+    [M ⊢ A] predicate (encoded as [mode_typ_compat]) is the correct
+    constraint. *)
 Theorem d_typing_general_subsumption_gen : forall m_orig Γ e A,
     d_typing m_orig Γ e A ->
     is_fn_n_ti m_orig ->
@@ -983,11 +1002,24 @@ Proof.
       apply d_typing__sub with (A := typ_unit); auto.
       * apply is_base_term__unit.
       * apply d_typing__unit; auto.
-    + (* sub_gen__refl_any: B = typ_unit. Needs [mode_typ_compat m typ_unit]
-         to discharge the d_sub at m_new. Currently the rule allows ANY m,
-         so this is unreachable-via-refinement only after rule strengthening.
-         Research-grade pending def-level fix. *)
-      admit.
+    + (* sub_gen__refl_any: B = typ_unit, mode_typ_compat m_new typ_unit
+         in scope. Case-split on the compat to discharge mode_fn (impossible
+         on typ_unit) and handle mode_ti / mode_tc explicitly. *)
+      match goal with
+      | Hcompat : mode_typ_compat ?M typ_unit |- _ =>
+          inversion Hcompat; subst;
+          [ (* mode_ti: result is Hty itself. *)
+            apply d_typing__unit; auto
+          | (* mode_tc: lift via d_typing__sub with d_sub__check. *)
+            apply d_typing__sub with (A := typ_unit);
+            [ apply is_base_term__unit
+            | apply d_typing__unit; auto
+            | apply d_sub__check;
+              [ intros ε T' Heq; discriminate Heq
+              | intros T' Heq; discriminate Heq
+              | apply mono_typ_is_inh_typ; apply mono_typ__unit
+              | apply d_consis__unit ] ] ]
+      end.
     + (* sub_gen__forall_r: m_new = mode_tc, B = typ_all_col colour_inh _.
          Use [d_typing__forall] (exp_unit is a value). Each per-X premise
          needs a recursive call to the gen-subsumption theorem at extended
@@ -1077,18 +1109,45 @@ Proof.
        mode_fn m ∈ is_fn_n_ti. The sub for the IH is
        [d_sub_gen__arg] with [d_consis_gen__refl_any] on the
        argument type — the paper's bridge that removes the mono-A0
-       requirement.
-
-       Closure plan (for Hsub_gen = __embed):
-         apply d_typing__app with (P:=...) (P':=...) (A:=A_fn_arg).
-         Lift function via IHHty_fn at
-         d_sub_gen__arg(d_consis_gen__refl_any on A_fn_arg)
-         (d_sub_gen__embed of outer Hsub_gen). Re-apply.
-       Pending due to hypothesis-naming complexity of [induction Hty]
-       at the __app constructor (4 premises + 2 IHs, all auto-named).
-       Need a robust naming strategy (e.g. revert/rename pre-induction
-       or use [d_typing_pat_mut] with explicit intros pattern). *)
-    admit.
+       requirement. *)
+    simpl in Hsub_gen |- *.
+    dependent destruction Hsub_gen.
+    + (* __embed: lift function side via IHHty_fn at the constructed
+         d_sub_gen__arg(refl_any on arg, embed of outer sub). *)
+      match goal with
+      | H_pat : d_pat mode_tc Γ ?e2 ?P0,
+        H_ref : d_refine_syn nil Γ ?P0 ?P'0,
+        H_fn  : d_typing (mode_fn ?m_) Γ ?e1 (typ_arrow ?A0 ?B0),
+        H_arg : d_typing mode_tc Γ ?e2 ?A0
+        |- d_typing _ Γ (exp_app ?e1 ?e2) ?B_t =>
+          assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
+            (eapply (proj1 d_typing_pat_preserves_wf); eauto);
+          assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
+          eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
+      end.
+      (* Solve the function-side d_typing via IH. The IH's name is
+         auto-generated by [induction Hty]; we hunt for it by structure. *)
+      eapply IHHty1;
+      [ apply is_fn_n_ti__fn; assumption
+      | assumption
+      | simpl;
+        rewrite_env (@nil atom ++ @nil atom);
+        apply d_sub_gen__arg;
+        [ apply d_consis_gen__refl_any;
+          match goal with
+          | Hw : d_wf_typ Γ (typ_arrow ?A0 _) |- _ =>
+              inversion Hw; assumption
+          end
+        | apply d_sub_gen__embed; assumption ] ].
+    + (* __refl_any: mode_typ_compat for app's result type B. Research-grade
+         (would need closing the "do nothing" case at lifted modes). *)
+      admit.
+    + (* __forall_r: target mode_tc; only reachable when m_orig = mode_ti
+         and m_new = mode_tc. Then exp_app types polymorphic — research-grade. *)
+      admit.
+    + (* __arg: target = mode_fn outer + the __app's mode_fn = mode_fn(mode_fn _).
+         Research-grade. *)
+      admit.
 Admitted.
 
 (** Strong form V2 (kept for now; will be replaced by the bridged D1
