@@ -854,15 +854,122 @@ Proof.
             apply d_sub__arg; auto
           | eapply (proj1 d_typing_pat_preserves_wf); eauto ]
       end.
-    + (* __abs: research-grade body conversion. The inner sub-Hsub on
-         (T2, A2) determines whether body conversion is a mode lift
-         (inner __infer/__check, A2 = T2) or full general subsumption
-         (inner __forall_r/__arg, A2 ≠ T2). The mode-lift sub-case
-         CAN be closed via [d_typing_lift_mono]; the recursive cases
-         need full D1 on body which requires a parametric Γ-extension
-         in the IH (paper's "FN^n" generalisation). *)
-      admit.
-    + (* __abs_anno: same. *) admit.
+    + (* __abs: e = exp_abs e0, A = typ_arrow T1 T2. Apply d_typing__abs
+         at (mode_fn m). Body conversion depends on inner Hsub's shape.
+
+         Closure plan:
+         - inner __infer / __check: A2 = T2 via d_consis_empty_eq on mono
+           T2; body needs only mode lift via d_typing_lift_mono.
+         - inner __forall_r / __arg: A2 != T2; body needs full D1.
+           Requires parametric Γ_ext IH (paper's "FN^n"). Admitted. *)
+      assert (HmonoT1 : mono_typ T1) by (inversion HmonoA; auto).
+      assert (HmonoT2 : mono_typ T2) by (inversion HmonoA; auto).
+      assert (HwfT1 : d_wf_typ Γ T1) by (inversion HwfA; auto).
+      assert (HwfT2 : d_wf_typ Γ T2) by (inversion HwfA; auto).
+      (* A1 = T1 via d_consis_empty_eq on mono T1. *)
+      match goal with H : d_consis nil _ T1 ?A1 |- _ =>
+        assert (HeqA1 : T1 = A1)
+          by (apply d_consis_empty_eq with (Γ := Γ); auto using mono_typ_is_typ);
+        subst A1
+      end.
+      (* Save body forall by name. *)
+      match goal with Hbody : forall y : atom, _ |- _ =>
+        rename Hbody into Hty_body
+      end.
+      (* Pick L = (body's L) ∪ dom Γ so freshness derives both notins. *)
+      match type of Hty_body with
+      | forall y, y `notin` ?L_body -> _ =>
+          apply d_typing__abs with (L := L_body `union` dom Γ)
+      end.
+      * apply mono_typ_is_inh_typ. exact HmonoT1.
+      * exact HwfT1.
+      * intros x Hx.
+        simpl in Hty_body.   (* unfold decr_mode mode_ti = mode_ti *)
+        inversion Hsub; subst.
+        -- (* inner __infer (m = mode_ti, A2 = T2). *)
+          match goal with H_c : d_consis nil _ T2 ?A2_var |- _ =>
+            assert (HeqA2 : T2 = A2_var)
+              by (apply d_consis_empty_eq with (Γ := Γ);
+                  auto using mono_typ_is_typ);
+            subst A2_var
+          end.
+          apply Hty_body; fsetdec.
+        -- (* inner __check (m = mode_tc, A2 = T2). Body mode lift to tc. *)
+          match goal with H_c : d_consis nil _ T2 ?A2_var |- _ =>
+            assert (HeqA2 : T2 = A2_var)
+              by (apply d_consis_empty_eq with (Γ := Γ);
+                  auto using mono_typ_is_typ);
+            subst A2_var
+          end.
+          apply d_typing_lift_mono with (A := T2); auto.
+          ++ apply Hty_body; fsetdec.
+          ++ apply d_wf_denv__typ; auto.
+          ++ apply d_sub__check.
+             ** intros ε T0 Heq. rewrite Heq in HmonoT2. inversion HmonoT2.
+             ** intros T0 Heq. rewrite Heq in HmonoT2. inversion HmonoT2.
+             ** apply mono_typ_is_inh_typ. exact HmonoT2.
+             ** apply d_consis_refl_mono.
+                --- exact HmonoT2.
+                --- apply d_wf_typ_weakening_head. exact HwfT2.
+        -- (* inner __forall_r: recursive D1 on body — research-grade. *)
+          admit.
+        -- (* inner __arg: recursive D1 on body — research-grade. *)
+          admit.
+        -- (* inner __forall_l_tagged: T2 = typ_all_etag, contradicts mono. *)
+          inversion HmonoT2.
+        -- (* inner __forall_l_untagged: T2 = typ_all_plain, contradicts. *)
+          inversion HmonoT2.
+    + (* __abs_anno: e = exp_abs_anno T1 e0. Same proof as __abs but
+         without is_inh_typ premise. *)
+      assert (HmonoT1 : mono_typ T1) by (inversion HmonoA; auto).
+      assert (HmonoT2 : mono_typ T2) by (inversion HmonoA; auto).
+      assert (HwfT1 : d_wf_typ Γ T1) by (inversion HwfA; auto).
+      assert (HwfT2 : d_wf_typ Γ T2) by (inversion HwfA; auto).
+      match goal with H : d_consis nil _ T1 ?A1_var |- _ =>
+        assert (HeqA1 : T1 = A1_var)
+          by (apply d_consis_empty_eq with (Γ := Γ); auto using mono_typ_is_typ);
+        subst A1_var
+      end.
+      match goal with Hbody : forall y : atom, _ |- _ =>
+        rename Hbody into Hty_body
+      end.
+      match type of Hty_body with
+      | forall y, y `notin` ?L_body -> _ =>
+          apply d_typing__abs_anno with (L := L_body `union` dom Γ)
+      end.
+      * exact HwfT1.
+      * intros x Hx.
+        simpl in Hty_body.
+        inversion Hsub; subst.
+        -- (* inner __infer (m = mode_ti, A2 = T2). *)
+          match goal with H_c : d_consis nil _ T2 ?A2_var |- _ =>
+            assert (HeqA2 : T2 = A2_var)
+              by (apply d_consis_empty_eq with (Γ := Γ);
+                  auto using mono_typ_is_typ);
+            subst A2_var
+          end.
+          apply Hty_body; fsetdec.
+        -- (* inner __check (m = mode_tc, A2 = T2). *)
+          match goal with H_c : d_consis nil _ T2 ?A2_var |- _ =>
+            assert (HeqA2 : T2 = A2_var)
+              by (apply d_consis_empty_eq with (Γ := Γ);
+                  auto using mono_typ_is_typ);
+            subst A2_var
+          end.
+          apply d_typing_lift_mono with (A := T2); auto.
+          ++ apply Hty_body; fsetdec.
+          ++ apply d_wf_denv__typ; auto.
+          ++ apply d_sub__check.
+             ** intros ε T0 Heq. rewrite Heq in HmonoT2. inversion HmonoT2.
+             ** intros T0 Heq. rewrite Heq in HmonoT2. inversion HmonoT2.
+             ** apply mono_typ_is_inh_typ. exact HmonoT2.
+             ** apply d_consis_refl_mono.
+                --- exact HmonoT2.
+                --- apply d_wf_typ_weakening_head. exact HwfT2.
+        -- (* inner __forall_r: research-grade. *) admit.
+        -- (* inner __arg: research-grade. *) admit.
+        -- inversion HmonoT2.
+        -- inversion HmonoT2.
     + (* __app: function-side conversion. *) admit.
   - (* d_sub__forall_l_tagged: A = typ_all_etag _ _, but [d_wf_typ Γ A]
        (from HwfA) doesn't admit typ_all_etag. Vacuous. *)
