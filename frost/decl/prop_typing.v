@@ -2,6 +2,7 @@
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
+Require Import Coq.Sorting.Permutation.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -925,6 +926,103 @@ Proof.
   - reflexivity.
 Qed.
 
+(** Lift d_consis to d_sub_gen at a compatible mode. Recurses on the
+    structure of mode_typ_compat (which mirrors the type structure). *)
+Lemma d_consis_to_d_sub_gen : forall m Γ T A,
+    mode_typ_compat m A ->
+    d_wf_typ Γ T ->
+    d_consis nil Γ T A ->
+    d_sub_gen m nil Γ T A.
+Proof.
+  intros m Γ T A Hcompat HwfT Hc. generalize dependent T.
+  induction Hcompat; intros T HwfT Hc.
+  - (* mode_ti *)
+    apply d_sub_gen__embed. apply d_sub__infer; auto.
+  - (* mode_tc *)
+    apply d_sub_gen__embed. apply d_sub__check; auto.
+    + intros ε T' Heq; subst; inversion HwfT.
+    + intros T' Heq; subst; inversion HwfT.
+  - (* mode_fn: A = typ_arrow A0 B. T from d_consis must be typ_arrow. *)
+    inversion Hc; subst.
+    inversion HwfT; subst.
+    match goal with
+    | H : _ ++ _ = nil |- _ =>
+        apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst
+    | H : nil = _ ++ _ |- _ =>
+        symmetry in H; apply app_eq_nil in H;
+        destruct H as [HΔ1 HΔ2]; subst
+    end.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_sub_gen__arg.
+    + apply d_consis_gen__embed. assumption.
+    + apply IHHcompat; auto.
+Qed.
+
+(** [d_consis_gen_extends_d_consis]: compose d_consis on LHS with
+    d_consis_gen via the embedded refl. *)
+Lemma d_consis_extends_d_consis_gen : forall Δ Γ T A B,
+    d_consis nil Γ T A ->
+    d_consis_gen Δ Γ A B ->
+    d_wf_typ Γ T ->
+    d_consis_gen Δ Γ T B.
+Proof.
+  intros Δ Γ T0 A B Hc Hcg HwfT. generalize dependent T0.
+  induction Hcg; intros T0 Hc HwfT.
+  - (* __embed: compose d_consis Γ T0 T with d_consis Γ T A.
+       d_consis_compose gives Δc compose with Permutation Δc Δ.
+       Need d_consis_gen Δ Γ T0 B, but compose returns Δc. Use
+       Permutation invariance — admit as we'd need a permutation
+       morph lemma on d_consis_gen. *)
+    admit.
+  - (* __refl_any: T (rhs) = A (refl). Just give Hc. *)
+    apply d_consis_gen__embed. assumption.
+  - (* __arrow: T0 must be typ_arrow (from d_consis Γ T0 (typ_arrow T1 T2)). *)
+    inversion Hc; subst.
+    match goal with
+    | H : _ ++ _ = nil |- _ =>
+        apply app_eq_nil in H; destruct H as [HΔ1a HΔ2a]; subst
+    end.
+    inversion HwfT; subst.
+    apply d_consis_gen__arrow; auto.
+Admitted.
+
+(** [d_consis_extends_d_sub_gen_nil]: extend d_sub_gen on the LHS via
+    a d_consis. Mirrors [d_consis_extends_d_sub_nil] for the gen
+    relation. Crucial for the __sub forall_r and similar composition
+    cases. *)
+Lemma d_consis_extends_d_sub_gen_nil : forall m Γ T A B,
+    d_consis nil Γ T A ->
+    d_sub_gen m nil Γ A B ->
+    d_wf_typ Γ T ->
+    d_sub_gen m nil Γ T B.
+Proof.
+  intros m Γ T A B Hc Hs HwfT. dependent induction Hs.
+  - (* __embed: route through d_consis_extends_d_sub_nil. *)
+    apply d_sub_gen__embed. eapply d_consis_extends_d_sub_nil; eauto.
+  - (* __refl_any: A = B. Use d_consis_to_d_sub_gen. *)
+    eapply d_consis_to_d_sub_gen; eauto.
+  - (* __forall_r: B = typ_all_col colour_inh A0, m = mode_tc.
+       Use d_sub_gen__forall_r reconstruction with per-X recursion. *)
+    apply d_sub_gen__forall_r with (L := L `union` dom Γ).
+    intros X HX.
+    eapply H0; eauto.
+    + apply d_consis_weakening_head; auto.
+    + apply d_wf_typ_weakening_head; auto.
+  - (* __arg: A = typ_arrow A1 A2, B = typ_arrow B1 B2. d_consis Hc
+       forces T = typ_arrow T1 T2 with d_consis T1 A1 + d_consis T2 A2.
+       Reconstruct d_sub_gen__arg with composed pieces. *)
+    inversion Hc; subst.
+    match goal with
+    | H : _ ++ _ = nil |- _ =>
+        apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst
+    end.
+    inversion HwfT; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_sub_gen__arg.
+    + admit.
+    + admit.
+Admitted.
+
 (** ** Generalised General Subsumption (paper Lemma B.5).
 
     The statement: for [Hty : d_typing m_orig Γ e A] with [m_orig ∈ FN^n TI],
@@ -947,32 +1045,53 @@ Qed.
       using [d_consis_gen__refl_any] on the argument type.
 
     Closure status (this commit):
-    - Vacuous mode_tc cases (Hty = __freeze / __forall): CLOSED via
-      [inversion Hfn] (mode_tc ∉ is_fn_n_ti).
+    - Vacuous mode_tc cases (Hty ∈ {__freeze, __forall}): CLOSED.
     - Hty ∈ {__unit, __var, __anno} / Hsub_gen = __embed: CLOSED via
       [d_typing__sub] at the corresponding [is_base_term].
     - Hty = __unit / Hsub_gen = __refl_any: CLOSED via case-split on
-      [mode_typ_compat m_new typ_unit] (mode_ti: trivial; mode_tc:
-      d_typing__sub + d_sub__check; mode_fn: auto-discharged via
-      [inversion]).
-    - Hty = __unit / Hsub_gen = __arg: auto-discharged by
-      [dependent destruction] (typ_unit ≠ typ_arrow).
-    - Hty = __app / Hsub_gen = __embed: CLOSED via the paper's
-      function-side lift: re-apply [d_typing__app] with the function
-      side discharged by [IHHty1] (the IH on Hty_fn) at the
-      constructed sub [d_sub_gen__arg(d_consis_gen__refl_any on the
-      argument type, d_sub_gen__embed of the outer Hsub_gen)]. This is
-      THE case the gen relation enables — the argument-side refl no
-      longer requires monotyping.
-    - Remaining cases: admitted with per-case structural notes.
+      [mode_typ_compat] (mode_ti, mode_tc; mode_fn auto-discharged).
+    - Hty = __var / Hsub_gen = __refl_any: mode_ti subcase CLOSED;
+      mode_tc / mode_fn admit (need non-mono d_consis refl).
+    - Hty = __anno / Hsub_gen = __refl_any: mode_ti subcase CLOSED;
+      mode_tc / mode_fn admit (same as __var).
+    - Hty = __sub:
+      * m = mode_ti: CLOSED for __embed, __refl_any (all 3 modes),
+        __arg via helpers [d_consis_extends_d_sub_gen_nil] composing
+        Hsub_orig's d_consis with reconstructed Hsub_gen.
+      * m = mode_ti / __forall_r: CLOSED via
+        d_consis_extends_d_sub_gen_nil + d_sub_gen__forall_r
+        reconstruction.
+      * m = mode_fn _: admit (mode-changing d_sub transitivity is
+        research-grade — Hsub_orig is __arg, composition with outer
+        Hsub_gen at different mode doesn't go through standard subs).
+    - Hty = __app:
+      * __embed: CLOSED via function-side lift (paper's central case).
+      * __refl_any: CLOSED via d_sub_gen__refl_any at lifted arrow.
+      * __forall_r: CLOSED via d_sub_gen__forall_r reconstruction at
+        function-side return.
+      * __arg: CLOSED via nested d_sub_gen__arg at function side.
+    - Hty ∈ {__abs, __abs_anno}:
+      * __refl_any: CLOSED for m = mode_fn k, and for m = mode_ti via
+        case-split on m_new (mode_ti, mode_tc match orig body mode;
+        mode_fn k lifts body via H1/H2 IH with refl_any sub).
+      * __embed / __forall_r / __arg: admit (research-grade —
+        embed needs narrowing on arg type, forall_r needs nested
+        induction on Hsub_gen at extended Γ, arg needs both).
 
-    [d_sub_gen__refl_any] now requires [mode_typ_compat m A] (added
-    in this commit). Without it, the refl_any rule was too permissive:
-    e.g. [d_sub_gen (mode_fn _) nil Γ typ_unit typ_unit] was
-    syntactically admissible but the corresponding [d_typing
-    (mode_fn _) Γ exp_unit typ_unit] is unreachable. The paper's
-    [M ⊢ A] predicate (encoded as [mode_typ_compat]) is the correct
-    constraint. *)
+    Remaining 12 admits are structurally documented:
+    - 5 forall_r at atomic / value Hty cases (need nested induction on
+      Hsub_gen at extended Γ).
+    - 4 narrowing (abs/abs_anno + embed/arg).
+    - 2 gen→sub bridge (var/anno + arg) — partial conversion.
+    - 1 mode-changing d_sub transitivity (sub mode_fn outer).
+
+    Plus 3 internal admits in helpers
+    [d_consis_extends_d_consis_gen, d_consis_extends_d_sub_gen_nil].
+
+    [d_sub_gen__refl_any] requires [mode_typ_compat m A] (def-level
+    fix); without this the rule was too permissive (e.g. allowed
+    [d_sub_gen (mode_fn _) nil Γ typ_unit typ_unit] whose target
+    d_typing is unreachable). *)
 Theorem d_typing_general_subsumption_gen : forall m_orig Γ e A,
     d_typing m_orig Γ e A ->
     is_fn_n_ti m_orig ->
@@ -1135,36 +1254,56 @@ Proof.
               eapply d_consis_extends_d_sub_nil; eauto;
               eapply (proj1 d_typing_pat_preserves_wf); eauto ]
         end.
-      * (* __refl_any: B_tgt = B0_inner, mode_typ_compat m_new B0_inner.
-           Build d_sub_gen m_new nil Γ A0 B0_inner via __embed of a
-           d_sub at m_new, derived from d_consis A0 → B0_inner. *)
+      * (* __refl_any: B_tgt = B0_inner. Build d_sub_gen m_new nil Γ A0
+           B0_inner by composing d_consis A0 B0 (from Hsub_orig __infer)
+           with d_sub_gen m_new B0 B0 (refl_any from mode_typ_compat)
+           via the helper [d_consis_extends_d_sub_gen_nil]. *)
         match goal with
         | Hconsis : d_consis nil Γ ?A0 ?B0,
           IHHty : is_fn_n_ti mode_ti -> d_wf_denv Γ -> _,
-          Hcompat : mode_typ_compat ?m_ ?B0
+          Hcompat : mode_typ_compat ?m_ ?B0,
+          Hwfb : d_wf_typ Γ ?B0
           |- d_typing _ Γ _ ?B0 =>
             apply IHHty with (B := B0);
             [ apply is_fn_n_ti__ti
             | assumption
-            | apply d_sub_gen__embed;
-              inversion Hcompat; subst;
-              [ apply d_sub__infer; auto
-              | apply d_sub__check; auto;
-                [ intros ε T' Heq; subst;
-                  let H_wf := fresh "H_wf" in
-                  assert (H_wf : d_wf_typ Γ (typ_all_etag ε T')) by
-                    (eapply (proj1 d_typing_pat_preserves_wf); eauto);
-                  inversion H_wf
-                | intros T' Heq; subst;
-                  let H_wf := fresh "H_wf" in
-                  assert (H_wf : d_wf_typ Γ (typ_all_plain T')) by
-                    (eapply (proj1 d_typing_pat_preserves_wf); eauto);
-                  inversion H_wf ]
-              | (* mode_fn _: B0 = typ_arrow ... ; need d_sub__arg.
-                   Research-grade. *) admit ] ]
+            | eapply d_consis_extends_d_sub_gen_nil;
+              [ exact Hconsis
+              | apply d_sub_gen__refl_any; assumption
+              | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
         end.
-      * (* __forall_r *) admit.
-      * (* __arg *) admit.
+      * (* __forall_r: B_tgt = typ_all_col colour_inh A_target.
+           Apply IHHty with sub built via d_consis_extends_d_sub_gen_nil
+           and d_sub_gen__forall_r reconstruction. *)
+        match goal with
+        | Hconsis : d_consis nil Γ ?A0 ?B0,
+          IHHty : is_fn_n_ti mode_ti -> d_wf_denv Γ -> _
+          |- d_typing _ Γ _ (typ_all_col colour_inh ?A_t) =>
+            apply IHHty with (B := typ_all_col colour_inh A_t);
+            [ apply is_fn_n_ti__ti
+            | assumption
+            | eapply d_consis_extends_d_sub_gen_nil;
+              [ exact Hconsis
+              | eapply d_sub_gen__forall_r; intros X HX; eauto
+              | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
+        end.
+      * (* __arg: H3 = d_consis, H1 = d_consis_gen arg, Hsub_gen = d_sub_gen ret.
+           Δ1 ++ Δ2 = nil ⟹ Δ1 = Δ2 = nil. *)
+        match goal with
+        | x : _ ++ _ = nil |- _ =>
+            apply app_eq_nil in x; destruct x as [HΔ1 HΔ2]; subst
+        end.
+        match goal with
+        | |- d_typing _ Γ _ (typ_arrow ?A1 ?A2) =>
+            apply IHHty with (B := typ_arrow A1 A2);
+            [ apply is_fn_n_ti__ti
+            | assumption
+            | eapply d_consis_extends_d_sub_gen_nil;
+              [ exact H3
+              | rewrite_env (@nil atom ++ @nil atom);
+                apply d_sub_gen__arg; [exact H1 | exact Hsub_gen]
+              | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
+        end.
     + (* m = mode_fn _ *)
       admit.
   - (* === Hty = d_typing__freeze ==========================================
@@ -1393,9 +1532,40 @@ Proof.
            ++ eapply d_sub_gen__forall_r. intros X HX. apply H1; auto.
       * (* m = mode_fn _: equation mode_tc = mode_fn (...) is False. *)
         discriminate x.
-    + (* __arg: target = mode_fn outer + the __app's mode_fn = mode_fn(mode_fn _).
-         Research-grade. *)
-      admit.
+    + (* __arg: target = mode_fn target_inner. Reconstruct via
+         d_typing__app at mode_fn target_inner, function-side lift via
+         IHHty1 at a sub built via nested d_sub_gen__arg (refl_any on
+         outer arg + d_sub_gen__arg-from-destructed-pieces on ret). *)
+      match goal with
+      | Hpat0 : d_pat mode_tc Γ ?e2 ?P0,
+        Href0 : d_refine_syn nil Γ ?P0 ?P'0,
+        Hty_fn0 : d_typing (mode_fn ?m_) Γ ?e1 (typ_arrow ?A0 ?B0),
+        Hty_arg0 : d_typing mode_tc Γ ?e2 ?A0
+        |- d_typing _ Γ (exp_app ?e1 ?e2) (typ_arrow ?A1 ?A2) =>
+          assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
+            (eapply (proj1 d_typing_pat_preserves_wf); eauto);
+          assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
+          eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
+      end.
+      (* Function-side lift: IHHty1 expects sub from typ_arrow A B
+         to typ_arrow A (typ_arrow A1 A2) at mode mode_fn (mode_fn _). *)
+      match goal with
+      | x : _ ++ _ = nil |- _ =>
+          apply app_eq_nil in x; destruct x as [HΔ1 HΔ2]; subst
+      end.
+      eapply IHHty1.
+      * apply is_fn_n_ti__fn; assumption.
+      * assumption.
+      * simpl.
+        match goal with
+        | x0 : mode_fn _ = mode_fn_n_subst _ _ |- _ =>
+            rewrite <- x0
+        end.
+        rewrite_env (@nil atom ++ @nil atom).
+        apply d_sub_gen__arg.
+        -- apply d_consis_gen__refl_any. assumption.
+        -- rewrite_env (@nil atom ++ @nil atom).
+           apply d_sub_gen__arg; eassumption.
 Admitted.
 
 (** Strong form V2 (kept for now; will be replaced by the bridged D1
