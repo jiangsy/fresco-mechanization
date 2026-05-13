@@ -338,36 +338,67 @@ be slightly cleaner without changing semantics:
   logic might want a stronger statement. Out of scope for the
   current mechanization.
 
-## 6. Paper Lemma 3.7 — root-cause of the one remaining open admit
+## 6. Paper Lemma 3.7 — closed via the colour discipline (was open)
 
-Originally three admits, but two were due to a parsing mistake on my
-part — see §6.1.
+**Status: Qed-closed** at the paper-faithful signature
+([`d_pat_preserves_skel_wf`](frost/decl/prop_skeleton.v):
+`d_pat mode_tc Γ e P → d_wf_denv Γ → d_wf_skel nil Γ P` — no extra
+premises). Closure took several iterations and bottomed out at a
+*methodological* insight rather than a structural patch — see §8.
 
-### P1 — `d_pat__sub` case: type/predicate problem (paper omits wf premise)
+### What looked like the obstacle (it wasn't)
 
-The rule:
+The `d_pat_consis__univ_ghost_inh1` rule recurses on Γ-extension while
+`d_wf_skel__all_col` recurses on Ψ-extension. At a `typ_tophole`
+boundary, Ψ gets stripped while Γ survives. So a derivation that
+introduces α into Γ during d_pat_consis can produce an output ∀α.P
+where the wf-check (which rebinds α in Ψ) fails because α is under a
+tophole. A concrete counter-example exists at the standalone-rule
+level: input `TopHole.(Hole → Unit)`, output
+`∀α. TopHole.(α → Unit)` — d_pat_consis derives it, wf rejects it.
+
+I diagnosed this as a "paper-level Γ↔Ψ tension" needing rule changes.
+
+### What the actual obstacle was
+
+The d_pat_consis rule *can* derive the bad shape **in isolation**, but
+the *only* contexts in the typing system that invoke d_pat_consis are
+`d_pat_sub__infer` and `d_pat_sub__univ_ghost_r`, both of which carry
+`is_syn_skel P` as an explicit rule premise. `is_syn_skel` rejects
+`typ_all_col colour_inh` at the top — exactly the shape the
+counter-example produces. So the bad derivation can be *built*, but
+it **can never be plugged into a typing-context use of d_pat_consis.**
+
+The paper's informal proof of Lemma 3.7 implicitly relied on this
+contextual constraint. Mechanically, the fix is to surface it on the
+helper lemma:
+
 ```coq
-| d_pat__sub : ... -> d_pat_sub m nil Γ P Q -> d_pat m Γ e Q
+Lemma d_pat_consis_preserves_wf :
+    d_pat_consis Δ Γ SS P -> is_skel SS -> wf(SS) ->
+    is_syn_skel P ->                                    (* the call-site contract *)
+    wf(P).
 ```
 
-To derive `d_wf_skel nil Γ Q` we need `d_pat_sub_preserves_wf` (P → Q
-preserves wf). That lemma is currently tautological (takes the
-conclusion as a side hypothesis). The structural lemma is blocked at
-**`d_pat_consis__ghost`**:
+The previously-admitted `__univ_ghost_inh1` case is now closed by
+inversion of `is_syn_skel` on the output.
 
-```coq
-| d_pat_consis__ghost : forall Γ P, no_forall_typ P -> d_pat_consis nil Γ typ_hole P
-```
+### The shape of the fix
 
-`no_forall_typ P` does NOT imply `d_wf_skel nil Γ P` — it accepts free
-variables. The paper's rule (eqlab{Ghost}, declarative.tex:1847)
-requires `\syn{∀α} ∉ P` (a syntactic condition on quantifiers) and
-**silently assumes P is wf** via the paper's ambient wf invariant.
+1. `d_pat_consis_preserves_wf` and `d_pat_sub_preserves_wf` strengthened
+   with `is_syn_skel P` (call-site contract surfaced).
+2. `d_wf_denv__skel` strengthened with `is_skel P` (already true of every
+   constructor of dbind_skel-entries; we made it explicit).
+3. Auxiliary lemmas: `d_pat_sub_implies_is_syn_skel` (mode_tc / mode_ti),
+   `d_pat_base_mode_ti_is_skel` (d_pat output for base terms at mode_ti).
+4. Mutual `d_typing_pat_preserves_wf` conditions its d_pat side on
+   `(m = mode_tc ∨ m = mode_ti)` — implementation detail.
+5. **`d_pat_preserves_skel_wf` corollary at mode_tc, no extra premises** —
+   matches the paper's signature exactly.
 
-**Classification:** missing rule premise / type-predicate mismatch.
-`no_forall_typ` is the wrong predicate for the wf side. Closing
-requires adding `d_wf_skel nil Γ P` to `d_pat_consis__ghost`. Pure
-rule strengthening, no semantic change in well-formed scenarios.
+The top-level paper-facing lemma carries no new premises. The premises
+appear only on internal helpers, where they reflect the colour
+discipline the paper proof's narration was already using.
 
 ### 6.1 Originally-flagged "P2/P3 paper inconsistency" — RESOLVED (was a parsing bug)
 
@@ -407,3 +438,96 @@ that re-parses the rules. **No paper inconsistency.**
 
 Honest accounting: only fully Qed-ed lemmas count as done.
 PROGRESS.md tracks which lemmas are at which stage.
+
+## 8. Proof debugging methodology — read through the colour/mode lens
+
+A general lesson from the Lemma 3.7 closure (§6): **when a metatheory
+lemma in Frost looks "almost-but-not-quite true" structurally, the
+right question is rarely "how do I patch the wf rules" and almost
+always "which call-site predicate, induced by the calculus's
+colour/mode discipline, makes the bad case unreachable?"**
+
+### The discipline, restated
+
+Frost factors "what polymorphic type information can flow where" along
+two orthogonal axes:
+
+- **Mode** (TI / TC / Fn m) — *direction* of type-info flow. Standard
+  bidirectional skeleton, with `Fn m` being "we're at a function
+  position; the next thing is an arrow whose result mode is m".
+- **Colour** (inh / syn) — *provenance* of quantifiers. An `inh` ∀ was
+  introduced from a checking type flowing *down*; a `syn` ∀ was
+  introduced bottom-up by an inference step. Two ∀'s that look
+  identical at the AST mean very different things to the system:
+  `inh` is committed-against and can't be decomposed freely; `syn` is
+  still flexible.
+
+Together these encode the **decidability frontier** of impredicative
+polymorphism: checked-against quantifiers are fixed, synthesised ones
+are open. Bidirectional information flow is then not just "left ↔
+right" but tracks *which* polymorphic types are already-decided vs.
+still-open. Frost decides more programs than naive bidirectional
+systems because it has finer-grained info per ∀.
+
+### Concretely, how this shows up in proof script gaps
+
+Many rules in this system have *implicit* shape constraints baked
+into the colour discipline. A few patterns to watch for:
+
+| structural gap | look for this call-site predicate | example |
+|---|---|---|
+| consistency RHS appears non-wf | `is_syn_skel P` on the calling d_pat_sub rule | Lemma 3.7 (§6) |
+| d_typing__sub takes arbitrary B | `is_base_term e` (paper restricts to base terms) | general-subsumption (§7) |
+| forall-introduction in TI mode | `is_value e` (value restriction) | d_typing__forall |
+| arrow-position pattern coerces freely | `mode_fn m` (function-position mode) | d_pat_sub__arg |
+| skeleton input to a refinement rule | `is_inh_skel` / `is_syn_skel` matching colour expectation | d_refine_* family |
+
+A standalone helper lemma that drops one of these contextual
+predicates is almost always provably false on isolated derivations,
+but provably true when used from within the typing system — because
+the typing system's colour/mode discipline forecloses the bad path
+at the call site.
+
+### Proof recipe when a wf-style helper "doesn't seem to hold"
+
+1. **Build the smallest counter-example** at the rule level. Don't
+   trust narrative arguments — write down concrete SS, P, derivation
+   tree, and check whether the conclusion wf-judgement actually
+   accepts the output.
+2. **Trace upward.** Find every rule that *invokes* the lemma in the
+   metatheory. List their explicit and implicit premises. The
+   premise that rules out your counter-example is the missing
+   precondition.
+3. **Surface that premise on the helper**, leaving the top-level
+   paper-facing lemma's signature unchanged. The paper's informal
+   proof was relying on this premise implicitly.
+4. If the top-level lemma's signature itself doesn't admit the
+   restriction, the *mode discipline* might. Check whether the
+   problematic call site is reachable only at certain modes; an
+   internal `m ∈ {tc, ti}` conditioning is fair game (project it
+   out as a paper-faithful corollary at the paper's stated mode).
+
+### Concrete payoffs already realised
+
+- Lemma 3.7 (§6) — closed by reading the colour discipline at the
+  d_pat_consis call sites.
+- Lemma D.3 / suffix-moving — closed via `d_typing_pat_ctx_morph`
+  because the structural reordering preserves *all* bindings, which
+  the morph captures uniformly.
+- The 9 stability lemmas — closed via tvar-morph helpers + the
+  binding-preservation invariant of `aenv_extends`.
+
+### Where this lens is likely to pay off next
+
+- **General subsumption (paper Lemma 3.1)** non-base cases: the
+  `is_base_term e` premise on `d_typing__sub` is the analogue of
+  `is_syn_skel P` in §6. The non-base cases need either restructuring
+  through the rule that introduced the non-base term, or a paper-level
+  generalisation of `d_typing__sub`.
+- **Validity / Safety of skeleton inference (3.8 / 3.9)** — the
+  refinement reflexivity on *guarded* skeletons is exactly the kind
+  of side-condition that the colour discipline supplies; look at
+  the d_refine_syn rules' guardedness premises.
+- **Algorithmic stability lemma chain** — colours and modes survive
+  algorithmically; many "obvious" stability claims should reduce to
+  the same morph + discipline trick.
