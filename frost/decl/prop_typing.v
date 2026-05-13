@@ -741,14 +741,24 @@ Qed.
     - For [Hsub = __forall_l_*]: A would be [typ_all_etag] /
       [typ_all_plain] (from Hsub's LHS shape), violating [d_wf_typ Γ A].
       Vacuous. *)
-Theorem d_typing_general_subsumption : forall Γ e A B m,
-    d_wf_denv Γ ->
-    d_typing mode_ti Γ e A ->
-    d_sub m nil Γ A B ->
-    d_typing m Γ e B.
+(** Strong form with [Γ_pre ++ Γ] split (following [d_sub_subst_mono]
+    pattern): Hsub and Hty live at [(Γ_pre ++ Γ)], with Γ as the "base"
+    context. After [dependent induction Hsub], the IH at a sub-Hsub
+    abstracts over both Γ_pre and Γ — so we can apply it at a different
+    Γ_pre'. This unlocks:
+
+    - __arg + __abs body conversion: set Γ_pre' := (x ~ T1) ++ Γ_pre,
+      then body's general subsumption is the IH.
+    - __forall_r body via Hsub-IH at sub-Hsub_X (set Γ_pre' :=
+      (X ~ tvar) ++ Γ_pre). *)
+Theorem d_typing_general_subsumption_split : forall m Γ_pre Γ e A B,
+    d_wf_denv (Γ_pre ++ Γ) ->
+    d_typing mode_ti (Γ_pre ++ Γ) e A ->
+    d_sub m nil (Γ_pre ++ Γ) A B ->
+    d_typing m (Γ_pre ++ Γ) e B.
 Proof.
-  intros Γ e A B m Hwfd Hty Hsub.
-  assert (HwfA : d_wf_typ Γ A) by
+  intros m Γ_pre Γ e A B Hwfd Hty Hsub.
+  assert (HwfA : d_wf_typ (Γ_pre ++ Γ) A) by
     (eapply (proj1 d_typing_pat_preserves_wf); eauto).
   assert (HmonoA : mono_typ A) by (eapply d_sub_LHS_mono_wf; eauto).
   generalize dependent e.
@@ -790,7 +800,7 @@ Proof.
          mode_ti. Compose inner d_consis (from inversion) with each Hsub_X
          via d_consis_extends_d_sub_nil. *)
       match goal with
-      | Hsub_inner : d_sub mode_ti nil Γ ?A_inner A0 |- _ =>
+      | Hsub_inner : d_sub mode_ti nil _ ?A_inner A0 |- _ =>
           apply d_typing__sub with (A := A_inner); auto;
           apply d_sub__forall_r with (L := L); intros X HX;
           inversion Hsub_inner; subst;
@@ -801,22 +811,32 @@ Proof.
           | apply d_wf_typ_weakening_head;
             eapply (proj1 d_typing_pat_preserves_wf); eauto ]
       end.
-    + (* __abs: e = exp_abs e0. Apply d_typing__forall + Hsub-IH at each X. *)
-      apply d_typing__forall with (L := L `union` dom Γ).
+    + (* __abs: e = exp_abs e0. Apply d_typing__forall + Hsub-IH per X.
+         Re-shape ((X~tvar) ++ Γ_pre ++ Γ) into the IH's expected
+         (?Γ_pre' ++ ?Γ') pattern using rewrite_env. *)
+      apply d_typing__forall with (L := L `union` dom (Γ_pre ++ Γ)).
       * apply is_value__abs.
       * intros X HX.
-        apply H0; auto.
-        -- apply d_wf_denv__tvar; auto.
-        -- apply d_wf_typ_weakening_head; auto.
-        -- apply d_typing_weakening_head; auto.
+        rewrite_env (((X ~ dbind_tvar) ++ Γ_pre) ++ Γ).
+        apply H0 with (X := X); auto.
+        -- rewrite_env ((X ~ dbind_tvar) ++ (Γ_pre ++ Γ)).
+           apply d_wf_denv__tvar; auto.
+        -- rewrite_env ((X ~ dbind_tvar) ++ (Γ_pre ++ Γ)).
+           apply d_wf_typ_weakening_head; auto.
+        -- rewrite_env ((X ~ dbind_tvar) ++ (Γ_pre ++ Γ)).
+           apply d_typing_weakening_head; auto.
     + (* __abs_anno *)
-      apply d_typing__forall with (L := L `union` dom Γ).
+      apply d_typing__forall with (L := L `union` dom (Γ_pre ++ Γ)).
       * apply is_value__abs_anno.
       * intros X HX.
-        apply H0; auto.
-        -- apply d_wf_denv__tvar; auto.
-        -- apply d_wf_typ_weakening_head; auto.
-        -- apply d_typing_weakening_head; auto.
+        rewrite_env (((X ~ dbind_tvar) ++ Γ_pre) ++ Γ).
+        apply H0 with (X := X); auto.
+        -- rewrite_env ((X ~ dbind_tvar) ++ (Γ_pre ++ Γ)).
+           apply d_wf_denv__tvar; auto.
+        -- rewrite_env ((X ~ dbind_tvar) ++ (Γ_pre ++ Γ)).
+           apply d_wf_typ_weakening_head; auto.
+        -- rewrite_env ((X ~ dbind_tvar) ++ (Γ_pre ++ Γ)).
+           apply d_typing_weakening_head; auto.
     + (* __app: NOT a value, NOT base — research-grade. *)
       admit.
   - (* d_sub__arg: m = mode_fn m_inner, B = typ_arrow A1 A2.
@@ -844,7 +864,7 @@ Proof.
     + (* __sub: e base, compose inner sub with outer __arg via
          d_consis_extends_d_sub_nil. *)
       match goal with
-      | Hsub_inner : d_sub mode_ti nil Γ ?A_inner (typ_arrow T1 T2) |- _ =>
+      | Hsub_inner : d_sub mode_ti nil _ ?A_inner (typ_arrow T1 T2) |- _ =>
           apply d_typing__sub with (A := A_inner); auto;
           inversion Hsub_inner; subst;
           try (match goal with H' : ?m0 <> ?m0 |- _ =>
@@ -864,12 +884,12 @@ Proof.
            Requires parametric Γ_ext IH (paper's "FN^n"). Admitted. *)
       assert (HmonoT1 : mono_typ T1) by (inversion HmonoA; auto).
       assert (HmonoT2 : mono_typ T2) by (inversion HmonoA; auto).
-      assert (HwfT1 : d_wf_typ Γ T1) by (inversion HwfA; auto).
-      assert (HwfT2 : d_wf_typ Γ T2) by (inversion HwfA; auto).
+      assert (HwfT1 : d_wf_typ (Γ_pre ++ Γ) T1) by (inversion HwfA; auto).
+      assert (HwfT2 : d_wf_typ (Γ_pre ++ Γ) T2) by (inversion HwfA; auto).
       (* A1 = T1 via d_consis_empty_eq on mono T1. *)
       match goal with H : d_consis nil _ T1 ?A1 |- _ =>
         assert (HeqA1 : T1 = A1)
-          by (apply d_consis_empty_eq with (Γ := Γ); auto using mono_typ_is_typ);
+          by (apply d_consis_empty_eq with (Γ := (Γ_pre ++ Γ)); auto using mono_typ_is_typ);
         subst A1
       end.
       (* Save body forall by name. *)
@@ -879,7 +899,7 @@ Proof.
       (* Pick L = (body's L) ∪ dom Γ so freshness derives both notins. *)
       match type of Hty_body with
       | forall y, y `notin` ?L_body -> _ =>
-          apply d_typing__abs with (L := L_body `union` dom Γ)
+          apply d_typing__abs with (L := L_body `union` dom (Γ_pre ++ Γ))
       end.
       * apply mono_typ_is_inh_typ. exact HmonoT1.
       * exact HwfT1.
@@ -889,7 +909,7 @@ Proof.
         -- (* inner __infer (m = mode_ti, A2 = T2). *)
           match goal with H_c : d_consis nil _ T2 ?A2_var |- _ =>
             assert (HeqA2 : T2 = A2_var)
-              by (apply d_consis_empty_eq with (Γ := Γ);
+              by (apply d_consis_empty_eq with (Γ := (Γ_pre ++ Γ));
                   auto using mono_typ_is_typ);
             subst A2_var
           end.
@@ -897,7 +917,7 @@ Proof.
         -- (* inner __check (m = mode_tc, A2 = T2). Body mode lift to tc. *)
           match goal with H_c : d_consis nil _ T2 ?A2_var |- _ =>
             assert (HeqA2 : T2 = A2_var)
-              by (apply d_consis_empty_eq with (Γ := Γ);
+              by (apply d_consis_empty_eq with (Γ := (Γ_pre ++ Γ));
                   auto using mono_typ_is_typ);
             subst A2_var
           end.
@@ -911,10 +931,12 @@ Proof.
              ** apply d_consis_refl_mono.
                 --- exact HmonoT2.
                 --- apply d_wf_typ_weakening_head. exact HwfT2.
-        -- (* inner __forall_r: recursive D1 on body — research-grade. *)
+        -- (* inner __forall_r: body needs full D1 (recursive). The IHHsub
+             from `dependent induction Hsub` is fixed at outer Γ via a
+             context equation; cannot lift body to (x~T1)++Γ_pre++Γ.
+             Path: lex induction or Hty-induction. Admitted. *)
           admit.
-        -- (* inner __arg: recursive D1 on body — research-grade. *)
-          admit.
+        -- (* inner __arg: same. *) admit.
         -- (* inner __forall_l_tagged: T2 = typ_all_etag, contradicts mono. *)
           inversion HmonoT2.
         -- (* inner __forall_l_untagged: T2 = typ_all_plain, contradicts. *)
@@ -923,11 +945,11 @@ Proof.
          without is_inh_typ premise. *)
       assert (HmonoT1 : mono_typ T1) by (inversion HmonoA; auto).
       assert (HmonoT2 : mono_typ T2) by (inversion HmonoA; auto).
-      assert (HwfT1 : d_wf_typ Γ T1) by (inversion HwfA; auto).
-      assert (HwfT2 : d_wf_typ Γ T2) by (inversion HwfA; auto).
+      assert (HwfT1 : d_wf_typ (Γ_pre ++ Γ) T1) by (inversion HwfA; auto).
+      assert (HwfT2 : d_wf_typ (Γ_pre ++ Γ) T2) by (inversion HwfA; auto).
       match goal with H : d_consis nil _ T1 ?A1_var |- _ =>
         assert (HeqA1 : T1 = A1_var)
-          by (apply d_consis_empty_eq with (Γ := Γ); auto using mono_typ_is_typ);
+          by (apply d_consis_empty_eq with (Γ := (Γ_pre ++ Γ)); auto using mono_typ_is_typ);
         subst A1_var
       end.
       match goal with Hbody : forall y : atom, _ |- _ =>
@@ -935,7 +957,7 @@ Proof.
       end.
       match type of Hty_body with
       | forall y, y `notin` ?L_body -> _ =>
-          apply d_typing__abs_anno with (L := L_body `union` dom Γ)
+          apply d_typing__abs_anno with (L := L_body `union` dom (Γ_pre ++ Γ))
       end.
       * exact HwfT1.
       * intros x Hx.
@@ -944,7 +966,7 @@ Proof.
         -- (* inner __infer (m = mode_ti, A2 = T2). *)
           match goal with H_c : d_consis nil _ T2 ?A2_var |- _ =>
             assert (HeqA2 : T2 = A2_var)
-              by (apply d_consis_empty_eq with (Γ := Γ);
+              by (apply d_consis_empty_eq with (Γ := (Γ_pre ++ Γ));
                   auto using mono_typ_is_typ);
             subst A2_var
           end.
@@ -952,7 +974,7 @@ Proof.
         -- (* inner __check (m = mode_tc, A2 = T2). *)
           match goal with H_c : d_consis nil _ T2 ?A2_var |- _ =>
             assert (HeqA2 : T2 = A2_var)
-              by (apply d_consis_empty_eq with (Γ := Γ);
+              by (apply d_consis_empty_eq with (Γ := (Γ_pre ++ Γ));
                   auto using mono_typ_is_typ);
             subst A2_var
           end.
@@ -977,6 +999,17 @@ Proof.
   - (* d_sub__forall_l_untagged: similar. *)
     inversion HwfA.
 Admitted.
+
+(** D1 = the strong form at Γ_pre := nil. *)
+Theorem d_typing_general_subsumption : forall Γ e A B m,
+    d_wf_denv Γ ->
+    d_typing mode_ti Γ e A ->
+    d_sub m nil Γ A B ->
+    d_typing m Γ e B.
+Proof.
+  intros Γ e A B m Hwfd Hty Hsub.
+  apply d_typing_general_subsumption_split with (Γ_pre := nil) (A := A); auto.
+Qed.
 
 (** * Phase 2.D.7 — Stability S1 (argument-permutation).
 
