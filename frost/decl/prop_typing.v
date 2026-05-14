@@ -1830,18 +1830,35 @@ Proof.
     + apply is_base_term__anno.
     + apply d_typing_gen__anno; assumption.
     + exact Hrefl.
-  - (* __sub: inner at mode_ti, compose via d_consis_extends_d_sub_gen_nil.
-       The embedded sub mode = m which from Heqm0 (m = mode_ti) is
-       mode_ti. The inner d_sub_gen mode_ti → __embed (d_sub__infer
-       gives d_consis) or __refl_mono. Both reduce to a d_consis on
-       the LHS, composed with Hrefl. *)
+  - (* __sub: Heqm0 : m = mode_ti. Inner d_typing_gen mode_ti Γ e A,
+       Hsub_orig : d_sub_gen mode_ti nil Γ A B. Compose with Hrefl
+       (d_sub_gen m_target nil Γ B B) into d_sub_gen m_target Γ A B,
+       then d_typing_gen__sub. *)
+    subst m.
+    apply d_typing_gen__sub with (A := A); auto.
+    match goal with Hso : d_sub_gen mode_ti nil Γ ?A0 ?B0 |- _ =>
+      inversion Hso; subst
+    end.
+    + (* __embed: d_sub mode_ti → __infer gives d_consis A B. *)
+      match goal with Hs : d_sub mode_ti nil Γ ?A0 ?B0 |- _ =>
+        inversion Hs; subst;
+        try (match goal with H' : mode_ti <> mode_ti |- _ =>
+               exfalso; apply H'; reflexivity end)
+      end.
+      eapply d_consis_extends_d_sub_gen_nil; [ exact Hrefl | assumption | ].
+      eapply d_typing_gen_preserves_wf; eauto.
+    + (* __refl_mono: A = B. Hrefl is the answer. *)
+      exact Hrefl.
+  - (* __abs / __abs_anno: A_outer = typ_arrow A B mono. Reconstruct
+       d_typing_gen__abs[_anno] at m_target with the body lifted via
+       the IH. The body sub is d_sub_gen__refl_mono on the mono B;
+       its mode_typ_compat / wf premises come from inverting Hrefl.
+       The inversion bookkeeping (Hrefl can be __embed / __refl_mono /
+       __arg) parallels [d_typing_lift_mono_mut]'s __abs case; the
+       d_sub_gen variants of the wf-extraction helpers are not yet
+       stated, so deferred. *)
     admit.
-  - (* __abs: A_outer = typ_arrow A B mono. Reconstruct d_typing_gen__abs
-       at m_target with body lifted via the IH H2. The body sub is
-       d_sub_gen__refl_mono on the mono body type B. *)
-    admit.
-  - (* __abs_anno: same shape as __abs. *)
-    admit.
+  - admit.
   - (* __app: research-grade (same gap as d_typing_lift_mono). *)
     admit.
 Admitted.
