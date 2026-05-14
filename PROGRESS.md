@@ -165,10 +165,10 @@ D12 `d_typing_general_subsumption_gen` cases:
 | `__app` (all 4 `d_sub_gen` sub-cases) | ✅ CLOSED — function-side IH at `d_sub_gen__arg` with `d_consis_gen_refl` on the unchanged arg |
 | `__sub` (m = mode_ti) | ✅ CLOSED — compose inner mode_ti `d_sub_gen` with outer via `d_consis_extends_d_sub_gen_nil` |
 | `__sub` (m = mode_fn) | ✅ CLOSED — mode-changing `d_sub_gen` composition via `d_sub_gen_trans` |
+| `__app` (`__infer_gen` / `__check_gen`) | 🔴 admit — new `d_sub_gen` rules; function-side lift not yet wired |
 | `__abs` / `__abs_anno` + `__refl_mono` | ✅ CLOSED — body IH + `d_sub_gen__refl_mono` |
 | `__abs` / `__abs_anno` + `__forall_r` | ✅ CLOSED — via `d_typing_abs[_anno]_value_to_forall` |
-| `__abs` / `__abs_anno` + `__embed` | 🔴 admit — `exp_abs` not base, needs `d_sub` inversion |
-| `__abs` / `__abs_anno` + `__arg` | 🔴 admit — needs a `d_typing_gen` narrowing lemma on the arg type |
+| `__abs` / `__abs_anno` + `__embed` / `__infer_gen` / `__check_gen` / `__arg` | 🔴 admit — all need a `d_typing_gen` narrowing lemma on the arg type |
 | `__freeze` / `__forall` | ✅ vacuous (mode_tc ∉ `is_fn_n_ti`) |
 
 THE residual concentrated gap: **`d_typing_gen_collapse`** `__sub` case
@@ -186,15 +186,25 @@ not derivable from the rule, same gap as `d_typing_lift_mono`),
 `d_consis_extends_d_consis_gen` and `d_sub_gen_arrow_refl_inner` are
 fully Qed.
 
-Architectural note: `d_sub_gen` currently only has `__embed` (which
-takes the *non*-generalised `d_sub`), so it has no generalised
-`__infer`/`__check`. The paper's generalised `typsub` (syntax-
-directed.tex:43-53) DOES take the generalised `typconsis` at TI/TC.
-Adding `d_sub_gen__infer_gen`/`__check_gen` would (a) make `d_sub_gen`
-paper-faithful and (b) make `d_typing_gen` narrowing provable (the
-var case closes via the new rule + `d_consis_gen_sym_inh`). It would
-also concentrate the residual gap entirely in `d_consis_gen_to_
-d_consis` `__forall_inh`.
+`d_sub_gen` is now paper-faithful: `d_sub_gen__infer_gen` /
+`__check_gen` (the generalised TI/TC subtyping rules, syntax-
+directed.tex:43-53) were added, with all `d_sub_gen` structural
+lemmas re-fixed and two new Qed extension lemmas
+(`d_consis_gen_extends_d_sub_nil` / `_gen_nil`). `d_sub_gen_trans`
+stays Qed, so D12's `__sub` is still closed.
+
+Next step — `d_typing_gen` narrowing. The narrowing lemma's `__var`
+case (`x` bound to `Aold`, narrowed to `Anew`) needs to retype
+`var x` via `d_typing_gen__sub` + `d_sub_gen mode_ti Anew Aold`,
+which via `d_sub_gen__infer_gen` needs `is_syn_typ Anew`. When
+`Aold`/`Anew` are `typ_all_col colour_inh` polytypes that FAILS
+(`is_syn_typ` rejects `colour_inh`). The fix is the paper's
+syn-colouring at variable lookup — but it can be done on
+`d_typing_gen__var` ALONE (give `syn_color A`), which is contained
+to `prop_typing.v` (no cross-file fallout, unlike changing
+`d_typing__var`). Fallout: `d_typing_embed_gen` /
+`d_typing_gen_collapse` `__var` cases need a `syn_color`-subsumption
+step. THIS is the next chunk.
 
 `d_typing_gen_preserves_wf` and `d_sub_gen_preserves_wf` are now
 fully Qed (mirror `d_typing_pat_preserves_wf` / `d_sub_preserves_wf`
