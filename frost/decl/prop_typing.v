@@ -2705,14 +2705,45 @@ Proof.
   apply d_typing_general_subsumption_split with (Γ_pre := nil) (A := A); auto.
 Qed.
 
+(** [d_consis_gen_to_d_consis]: the gen→original bridge for
+    consistency. Total EXCEPT the [__forall_inh] case —
+    [d_consis_gen (typ_all_col colour_inh T) (typ_all_col colour_inh A)]
+    has no [d_consis] counterpart ([d_consis] admits no [typ_all_col]
+    on the LHS). THIS single admit is the entire residual gap of the
+    D1-via-D12 development. *)
+Lemma d_consis_gen_to_d_consis : forall Δ Γ T A,
+    d_consis_gen Δ Γ T A ->
+    d_consis Δ Γ T A.
+Proof.
+  intros Δ Γ T A H. induction H.
+  - (* __embed *) assumption.
+  - (* __forall_inh: d_consis has no typ_all_col LHS rule.
+       THE residual gap. *)
+    admit.
+  - (* __arrow *) apply d_consis__arrow; assumption.
+Admitted.
+
+(** [d_sub_gen_to_d_sub]: the gen→original bridge for subtyping.
+    Total modulo [d_consis_gen_to_d_consis] (used in the [__arg]
+    case). *)
+Lemma d_sub_gen_to_d_sub : forall m Δ Γ T A,
+    d_sub_gen m Δ Γ T A ->
+    d_sub m Δ Γ T A.
+Proof.
+  intros m Δ Γ T A H. induction H.
+  - (* __embed *) assumption.
+  - (* __refl_mono *) apply d_sub_refl_mono_mode; assumption.
+  - (* __forall_r *) apply d_sub__forall_r with (L := L); assumption.
+  - (* __arg *) apply d_sub__arg.
+    + apply d_consis_gen_to_d_consis; assumption.
+    + assumption.
+Qed.
+
 (** [d_typing_gen_collapse]: the generalised typing collapses back to
-    the original. Structural except the [__sub] case, which needs the
-    gen→sub bridge [d_sub_gen → d_sub] — total except for
-    [d_consis_gen__forall_inh] (no [typ_all_col] LHS rule in
-    [d_consis]). This is THE residual gap of the [d_typing_gen]
-    refactor: D12 now closes the var/anno cases cleanly *inside*
-    [d_typing_gen]; the single remaining obstacle is concentrated
-    here. *)
+    the original. Structural except [__sub], which routes through the
+    [d_sub_gen → d_sub] bridge. The whole D1-via-D12 development is
+    therefore closed *modulo the single admit* in
+    [d_consis_gen_to_d_consis]'s [__forall_inh] case. *)
 Lemma d_typing_gen_collapse : forall m Γ e A,
     d_typing_gen m Γ e A ->
     d_typing m Γ e A.
@@ -2721,9 +2752,9 @@ Proof.
   - apply d_typing__unit; assumption.
   - apply d_typing__var; assumption.
   - apply d_typing__anno; assumption.
-  - (* __sub: need d_sub_gen → d_sub. Total except __forall_inh
-       in d_consis_gen — the residual gap. *)
-    admit.
+  - (* __sub: bridge d_sub_gen → d_sub. *)
+    apply d_typing__sub with (A := A); auto.
+    apply d_sub_gen_to_d_sub; assumption.
   - apply d_typing__freeze; assumption.
   - apply d_typing__forall with (L := L); assumption.
   - apply d_typing__abs with (L := L); assumption.
