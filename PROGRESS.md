@@ -194,17 +194,27 @@ lemmas re-fixed and two new Qed extension lemmas
 stays Qed, so D12's `__sub` is still closed.
 
 Next step — `d_typing_gen` narrowing. The narrowing lemma's `__var`
-case (`x` bound to `Aold`, narrowed to `Anew`) needs to retype
-`var x` via `d_typing_gen__sub` + `d_sub_gen mode_ti Anew Aold`,
-which via `d_sub_gen__infer_gen` needs `is_syn_typ Anew`. When
-`Aold`/`Anew` are `typ_all_col colour_inh` polytypes that FAILS
-(`is_syn_typ` rejects `colour_inh`). The fix is the paper's
-syn-colouring at variable lookup — but it can be done on
-`d_typing_gen__var` ALONE (give `syn_color A`), which is contained
-to `prop_typing.v` (no cross-file fallout, unlike changing
-`d_typing__var`). Fallout: `d_typing_embed_gen` /
-`d_typing_gen_collapse` `__var` cases need a `syn_color`-subsumption
-step. THIS is the next chunk.
+case (`x` bound to `Aold`, narrowed to `Anew`) needs `var x` typed
+the same before and after; the paper's fix is syn-colouring at
+variable lookup (`typi Γ x (syn A)`).
+
+`syn_color : typ -> typ` is now defined + proven (Qed) in
+`prop_typing.v`: it erases the `forall`-colour/tag (every `forall`
+becomes `typ_all_col colour_syn`). Key facts: `syn_color_open_var`,
+`syn_color_ftvar`, `syn_color_is_syn_typ` (`d_wf_typ` ⟹ `is_syn_typ
+(syn_color _)`), and `d_consis_gen_syn_color_eq` (`d_consis_gen`-
+related types have EQUAL `syn_color` — so a `syn_color`-typed
+`var x` is *invariant* under narrowing, no `d_sub_gen` step needed).
+
+IMPORTANT scoping correction: syn-colouring `d_typing_gen__var`
+ALONE does NOT work — `d_typing_embed_gen` needs `d_typing__var`
+and `d_typing_gen__var` to AGREE on the var's type, and there is no
+`d_sub_gen` from `syn_color A` back to a polymorphic `A`. So BOTH
+must be syn-coloured: this is genuinely the full cross-file Part B
+(move `syn_color` to `def_extra.v`, change `d_typing__var` there,
+fix the `__var` case in every `d_typing` induction/inversion across
+the 7 files). User-approved but a large, multi-file change — the
+`syn_color` infrastructure (this commit) is the prerequisite.
 
 `d_typing_gen_preserves_wf` and `d_sub_gen_preserves_wf` are now
 fully Qed (mirror `d_typing_pat_preserves_wf` / `d_sub_preserves_wf`

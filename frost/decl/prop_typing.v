@@ -1132,6 +1132,127 @@ Proof.
   - apply d_consis_gen__arrow; assumption.
 Qed.
 
+(** ** [syn_color]: the paper's [syn] re-colouring at variable lookup.
+
+    [syn_color] erases the colour/tag distinction at every [forall]:
+    [typ_all_col _], [typ_all_etag _], [typ_all_plain _] all become
+    [typ_all_col colour_syn]. Two key facts:
+    - on a [d_wf_typ], the result is [is_syn_typ];
+    - [d_consis_gen]-related types have EQUAL [syn_color]
+      ([d_consis_gen_syn_color_eq]) — because [d_consis_gen] relates
+      types that differ only in [forall]-colour/tag, exactly what
+      [syn_color] erases.
+    Used to syn-colour [d_typing_gen__var] (paper [typi Γ x (syn A)]),
+    which is what makes [d_typing_gen] narrowing's [__var] case go
+    through. *)
+Fixpoint syn_color (A : typ) : typ :=
+  match A with
+  | typ_unit => typ_unit
+  | typ_var_b n => typ_var_b n
+  | typ_var_f X => typ_var_f X
+  | typ_arrow A1 A2 => typ_arrow (syn_color A1) (syn_color A2)
+  | typ_all_col _ A0 => typ_all_col colour_syn (syn_color A0)
+  | typ_all_etag _ A0 => typ_all_col colour_syn (syn_color A0)
+  | typ_all_plain A0 => typ_all_col colour_syn (syn_color A0)
+  | typ_hole => typ_hole
+  | typ_tophole A0 => typ_tophole (syn_color A0)
+  | typ_var_flex_mono mv => typ_var_flex_mono mv
+  | typ_var_flex_poly pv => typ_var_flex_poly pv
+  end.
+
+Lemma syn_color_open_rec : forall A B k,
+    syn_color (open_typ_wrt_typ_rec k B A) =
+    open_typ_wrt_typ_rec k (syn_color B) (syn_color A).
+Proof.
+  intros A. induction A; intros B k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+  - rewrite IHA1. rewrite IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
+Lemma syn_color_open_var : forall A X,
+    syn_color (open_typ_wrt_typ A (typ_var_f X)) =
+    open_typ_wrt_typ (syn_color A) (typ_var_f X).
+Proof.
+  intros A X. unfold open_typ_wrt_typ.
+  rewrite syn_color_open_rec. reflexivity.
+Qed.
+
+Lemma syn_color_ftvar : forall A,
+    ftvar_in_typ (syn_color A) = ftvar_in_typ A.
+Proof.
+  intros A. induction A; simpl; try reflexivity.
+  - rewrite IHA1. rewrite IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
+Lemma syn_color_is_syn_typ : forall Γ A,
+    d_wf_typ Γ A ->
+    is_syn_typ (syn_color A).
+Proof.
+  intros Γ A H. induction H; simpl.
+  - apply is_syn_typ__unit.
+  - apply is_syn_typ__var.
+  - apply is_syn_typ__arrow; assumption.
+  - apply is_syn_typ__all with (L := L).
+    intros X HX. rewrite <- syn_color_open_var. auto.
+Qed.
+
+Lemma d_consis_gen_syn_color_eq : forall Δ Γ A B,
+    d_consis_gen Δ Γ A B ->
+    syn_color A = syn_color B.
+Proof.
+  intros Δ Γ A B H. induction H; simpl; try reflexivity.
+  - (* __forall_inh_tagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __forall_inh_untagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __forall_syn_tagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __forall_syn_untagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __forall_inh *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __arrow *)
+    rewrite IHd_consis_gen1. rewrite IHd_consis_gen2. reflexivity.
+Qed.
+
 (** Generalised subtyping using [d_consis_gen] for the consistency
     premises. Adds an __infer / __check that uses [d_consis_gen],
     plus the structural cases.
