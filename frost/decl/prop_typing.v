@@ -1711,17 +1711,59 @@ Proof.
   apply d_typing_gen_weakening. simpl. auto.
 Qed.
 
+(** [d_sub_gen] preserves RHS well-formedness — the [d_sub_gen]
+    analogue of [d_sub_preserves_wf]. [__embed] routes through
+    [d_sub_preserves_wf], [__refl_mono] reads off its premise,
+    [__forall_r] / [__arg] are structural ([__arg]'s arg side uses
+    [d_consis_gen_preserves_wf]). *)
+Lemma d_sub_gen_preserves_wf : forall m Δ Γ T A,
+    d_sub_gen m Δ Γ T A ->
+    d_wf_typ Γ A.
+Proof.
+  intros m Δ Γ T A H. induction H.
+  - (* __embed *) eapply d_sub_preserves_wf; eauto.
+  - (* __refl_mono *) assumption.
+  - (* __forall_r *)
+    apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. apply H0; auto.
+  - (* __arg *)
+    apply d_wf_typ__arrow.
+    + eapply d_consis_gen_preserves_wf; eauto.
+    + assumption.
+Qed.
+
 (** [d_typing_gen] preserves type well-formedness — the [d_typing_gen]
-    analogue of [d_typing_pat_preserves_wf]'s typing half. Standard
-    structural lemma; admitted here (the [__sub] / [__app] cases would
-    need [d_sub_gen] / pattern wf-preservation lemmas threaded
-    through — straightforward but not yet stated). *)
+    analogue of [d_typing_pat_preserves_wf]'s typing half. Mirrors
+    that proof case-for-case; [__sub] routes through
+    [d_sub_gen_preserves_wf]. *)
 Lemma d_typing_gen_preserves_wf : forall m Γ e A,
     d_typing_gen m Γ e A ->
     d_wf_denv Γ ->
     d_wf_typ Γ A.
 Proof.
-Admitted.
+  intros m Γ e A H. induction H; intros Hwfd.
+  - (* __unit *) apply d_wf_typ__unit.
+  - (* __var *) eapply d_wf_denv_binds_typ; eauto.
+  - (* __anno *) apply IHd_typing_gen; auto.
+  - (* __sub *) eapply d_sub_gen_preserves_wf; eauto.
+  - (* __freeze *) apply IHd_typing_gen; auto.
+  - (* __forall *)
+    apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. apply H1; auto. apply d_wf_denv__tvar; auto.
+  - (* __abs *)
+    apply d_wf_typ__arrow; auto.
+    pick fresh x for (L `union` dom Γ).
+    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
+    eauto using d_wf_denv__typ.
+  - (* __abs_anno *)
+    apply d_wf_typ__arrow; auto.
+    pick fresh x for (L `union` dom Γ).
+    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
+    eauto using d_wf_denv__typ.
+  - (* __app *)
+    assert (Harr : d_wf_typ Γ (typ_arrow A B)) by (apply IHd_typing_gen1; auto).
+    inversion Harr; subst. auto.
+Qed.
 
 (** [d_typing_gen] analogue of [d_typing_check_is_inh] — a mode_tc
     [d_typing_gen] always has an [is_inh_typ] type. Same paper-level

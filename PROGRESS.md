@@ -196,10 +196,11 @@ var case closes via the new rule + `d_consis_gen_sym_inh`). It would
 also concentrate the residual gap entirely in `d_consis_gen_to_
 d_consis` `__forall_inh`.
 
-Plus paper-level colour invariants `d_typing_gen_preserves_wf`,
+`d_typing_gen_preserves_wf` and `d_sub_gen_preserves_wf` are now
+fully Qed (mirror `d_typing_pat_preserves_wf` / `d_sub_preserves_wf`
+case-for-case). Remaining paper-level colour invariants:
 `d_typing_gen_check_is_inh`, `d_typing_check_is_inh` (admitted —
-standard structural / the paper's `typc Γ N (inh A)` is inh by
-construction).
+the paper's `typc Γ N (inh A)` is inh by construction).
 
 **Why `d_typing_gen` instead of changing `d_typing__sub`.** The
 alternative (have `d_typing__sub` itself take `d_sub_gen`) has wide
