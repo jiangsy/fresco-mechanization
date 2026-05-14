@@ -3148,9 +3148,46 @@ Proof.
         eapply d_typing_abs_value_to_forall with
           (L := L) (m_orig := mode_ti) (A := A) (B := B); eauto.
       * discriminate.
-    + (* __arg: target = mode_fn k. Needs a d_typing_gen narrowing
-         lemma on the arg type. Deferred. *)
-      admit.
+    + (* __arg: B_tgt = typ_arrow A1 A2. Reconstruct
+         d_typing_gen__abs: narrow the body's arg type A → A1 via
+         [syn_color] invariance ([d_typing_gen_narrow_consis_head]),
+         and subsume its result B → A2 via the body IH H2 + the
+         ret-side d_sub_gen. *)
+      match goal with
+      | HΔeq : _ ++ _ = nil |- _ =>
+          apply app_eq_nil in HΔeq; destruct HΔeq as [HΔ1 HΔ2]; subst
+      end.
+      match goal with
+      | Hmeq : mode_fn _ = mode_fn_n_subst m m_new |- _ => rewrite <- Hmeq
+      end.
+      apply d_typing_gen__abs with (L := L `union` dom Γ).
+      * eapply d_consis_gen_rhs_is_inh_typ; eauto.
+      * eapply d_consis_gen_preserves_wf; eauto.
+      * intros x Hx. simpl.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+          (apply d_wf_denv__typ; auto).
+        eapply d_typing_gen_narrow_consis_head with (Aold := A).
+        -- inversion Hfn; subst; simpl in *.
+           ++ (* m = mode_ti: target inner mode is m0 directly. *)
+              specialize (H2 x ltac:(auto) is_fn_n_ti__ti Hwfd_x).
+              match goal with
+              | Hsg : d_sub_gen ?m0v nil Γ B A2 |- _ =>
+                  specialize (H2 m0v A2)
+              end.
+              simpl in H2. apply H2.
+              rewrite_env ((x ~ dbind_typ A) ++ Γ).
+              apply d_sub_gen_weakening_head. assumption.
+           ++ (* m = mode_fn m1: m0 = mode_fn_n_subst m1 m_new. *)
+              match goal with
+              | Hmeq2 : mode_fn _ = mode_fn (mode_fn_n_subst _ m_new) |- _ =>
+                  injection Hmeq2 as Hmeq2; subst
+              end.
+              specialize (H2 x ltac:(auto) (is_fn_n_ti_decr Hfn) Hwfd_x
+                             m_new A2).
+              simpl in H2. apply H2.
+              rewrite_env ((x ~ dbind_typ A) ++ Γ).
+              apply d_sub_gen_weakening_head. assumption.
+        -- symmetry. eapply d_consis_gen_syn_color_eq; eauto.
   - (* === Hty = d_typing_gen__abs_anno: as __abs. *)
     simpl in Hsub_gen |- *.
     dependent destruction Hsub_gen.

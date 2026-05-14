@@ -168,7 +168,7 @@ D12 `d_typing_general_subsumption_gen` cases:
 | `__app` (`__infer_gen` / `__check_gen`) | 🔴 admit — new `d_sub_gen` rules; function-side lift not yet wired |
 | `__abs` / `__abs_anno` + `__refl_mono` | ✅ CLOSED — body IH + `d_sub_gen__refl_mono` |
 | `__abs` / `__abs_anno` + `__forall_r` | ✅ CLOSED — via `d_typing_abs[_anno]_value_to_forall` |
-| `__abs` / `__abs_anno` + `__embed` / `__infer_gen` / `__check_gen` / `__arg` | 🔴 admit — all need a `d_typing_gen` narrowing lemma on the arg type |
+| `__abs` / `__abs_anno` + `__embed` / `__infer_gen` / `__check_gen` / `__arg` | 🔴 admit — narrowing lemma (`d_typing_gen_narrow_consis_head`) is now DONE; these just need to apply it + the body-IH subsumption (mechanical, ~8 mode-bookkeeping cases) |
 | `__freeze` / `__forall` | ✅ vacuous (mode_tc ∉ `is_fn_n_ti`) |
 
 THE residual concentrated gap: **`d_typing_gen_collapse`** `__sub` case
@@ -193,28 +193,35 @@ lemmas re-fixed and two new Qed extension lemmas
 (`d_consis_gen_extends_d_sub_nil` / `_gen_nil`). `d_sub_gen_trans`
 stays Qed, so D12's `__sub` is still closed.
 
-Next step — `d_typing_gen` narrowing. The narrowing lemma's `__var`
-case (`x` bound to `Aold`, narrowed to `Anew`) needs `var x` typed
-the same before and after; the paper's fix is syn-colouring at
-variable lookup (`typi Γ x (syn A)`).
+**Part B DONE — `syn_color` + syn-coloured variable rules.**
+`syn_color : typ -> typ` (in `def_extra.v`) erases the
+`forall`-colour/tag (every `forall` becomes `typ_all_col
+colour_syn`). Both `d_typing__var` and `d_typing_gen__var` now give
+`syn_color A` (paper's `typi Γ x (syn A)`). All 7 files build green;
+the `__var`-case fallout was contained (`prop_wellformed`,
+`prop_subtyping`, `prop_typing` — the other 4 files needed no
+change). Key facts (all Qed): `syn_color_open_var`,
+`syn_color_ftvar`, `syn_color_wf`, `syn_color_is_syn_typ`,
+`d_consis_syn_color_eq` / `d_consis_gen_syn_color_eq`
+(`d_consis`/`d_consis_gen`-related types have EQUAL `syn_color`).
 
-`syn_color : typ -> typ` is now defined + proven (Qed) in
-`prop_typing.v`: it erases the `forall`-colour/tag (every `forall`
-becomes `typ_all_col colour_syn`). Key facts: `syn_color_open_var`,
-`syn_color_ftvar`, `syn_color_is_syn_typ` (`d_wf_typ` ⟹ `is_syn_typ
-(syn_color _)`), and `d_consis_gen_syn_color_eq` (`d_consis_gen`-
-related types have EQUAL `syn_color` — so a `syn_color`-typed
-`var x` is *invariant* under narrowing, no `d_sub_gen` step needed).
+**`d_typing_gen` narrowing DONE.** `d_typing_narrow_consis` was
+restated to take `syn_color Anew = syn_color Aold` (instead of the
+`d_consis` + dead premises), making it callable from both `d_consis`
+and `d_consis_gen` sites. `d_typing_gen_narrow_consis` (+ `_head`)
+is Qed across all 9 cases — the `__var` case closes immediately by
+`syn_color` invariance, no `d_sub_gen` step. This is the lemma D12's
+`__abs`/`__abs_anno`/`__arg` cases need.
 
-IMPORTANT scoping correction: syn-colouring `d_typing_gen__var`
-ALONE does NOT work — `d_typing_embed_gen` needs `d_typing__var`
-and `d_typing_gen__var` to AGREE on the var's type, and there is no
-`d_sub_gen` from `syn_color A` back to a polymorphic `A`. So BOTH
-must be syn-coloured: this is genuinely the full cross-file Part B
-(move `syn_color` to `def_extra.v`, change `d_typing__var` there,
-fix the `__var` case in every `d_typing` induction/inversion across
-the 7 files). User-approved but a large, multi-file change — the
-`syn_color` infrastructure (this commit) is the prerequisite.
+Next step — apply `d_typing_gen_narrow_consis_head` to close D12's
+`__abs`/`__abs_anno` (`__embed`/`__infer_gen`/`__check_gen`/`__arg`)
+and `__app` (`__infer_gen`/`__check_gen`) sub-cases. Each reduces to:
+`B_tgt = typ_arrow B1 B2`; reconstruct `d_typing_gen__abs` at the
+right mode (case-split `m_orig` via `inversion Hfn` as in the
+closed `__refl_mono` case), narrow the body's arg type via
+`d_typing_gen_narrow_consis_head`, subsume its result via the body
+IH + the ret-side `d_sub_gen`. Mechanical but ~10 fiddly mode-
+bookkeeping cases.
 
 `d_typing_gen_preserves_wf` and `d_sub_gen_preserves_wf` are now
 fully Qed (mirror `d_typing_pat_preserves_wf` / `d_sub_preserves_wf`
