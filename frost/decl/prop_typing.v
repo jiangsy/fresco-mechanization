@@ -3096,10 +3096,88 @@ Proof.
     dependent destruction Hsub_gen.
     + (* __embed: exp_abs not base. Deferred. *)
       admit.
-    + (* __infer_gen: deferred (narrowing + subsumption). *)
-      admit.
-    + (* __check_gen: deferred (narrowing + subsumption). *)
-      admit.
+    + (* __infer_gen: mode_fn_n_subst m m_new = mode_ti forces
+         m = m_new = mode_ti; d_consis_gen decomposes the target
+         A0 = typ_arrow A1 A2; reconstruct d_typing_gen__abs at
+         mode_ti, narrowing the body's arg type A → A1. *)
+      inversion Hfn; subst; simpl in *.
+      * match goal with Heqm : mode_ti = _ |- _ => subst end.
+        match goal with
+        | Hcg : d_consis_gen nil Γ (typ_arrow A B) _ |- _ =>
+            inversion Hcg; subst
+        end.
+        match goal with
+        | HΔeq : _ ++ _ = nil |- _ =>
+            apply app_eq_nil in HΔeq; destruct HΔeq as [HΔ1 HΔ2]; subst
+        end.
+        apply d_typing_gen__abs with (L := L `union` dom Γ).
+        -- eapply d_consis_gen_rhs_is_inh_typ; eauto.
+        -- eapply d_consis_gen_preserves_wf; eauto.
+        -- intros x Hx. simpl.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+             (apply d_wf_denv__typ; auto).
+           eapply d_typing_gen_narrow_consis_head with (Aold := A).
+           ++ specialize (H2 x ltac:(auto) is_fn_n_ti__ti Hwfd_x).
+              match goal with
+              | Hcg2 : d_consis_gen nil Γ B ?B2v |- _ =>
+                  specialize (H2 mode_ti B2v)
+              end.
+              simpl in H2. apply H2.
+              apply d_sub_gen__infer_gen.
+              ** match goal with
+                 | Hsyn : is_syn_typ (typ_arrow _ _) |- _ =>
+                     inversion Hsyn; subst; assumption
+                 end.
+              ** rewrite_env ((x ~ dbind_typ A) ++ Γ).
+                 apply d_consis_gen_weakening_head. assumption.
+           ++ symmetry. eapply d_consis_gen_syn_color_eq; eauto.
+      * match goal with Heqm : mode_ti = mode_fn _ |- _ =>
+          discriminate Heqm
+        end.
+    + (* __check_gen: mode_fn_n_subst m m_new = mode_tc forces
+         m = mode_ti, m_new = mode_tc; reconstruct d_typing_gen__abs
+         at mode_tc, narrowing the body's arg type A → A1. The
+         body sub is d_sub_gen__check_gen — its guardedness side
+         conditions follow from d_wf_typ on the body type B. *)
+      inversion Hfn; subst; simpl in *.
+      * match goal with Heqm : mode_tc = _ |- _ => subst end.
+        match goal with
+        | Hcg : d_consis_gen nil Γ (typ_arrow A B) _ |- _ =>
+            inversion Hcg; subst
+        end.
+        match goal with
+        | HΔeq : _ ++ _ = nil |- _ =>
+            apply app_eq_nil in HΔeq; destruct HΔeq as [HΔ1 HΔ2]; subst
+        end.
+        apply d_typing_gen__abs with (L := L `union` dom Γ).
+        -- eapply d_consis_gen_rhs_is_inh_typ; eauto.
+        -- eapply d_consis_gen_preserves_wf; eauto.
+        -- intros x Hx. simpl.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+             (apply d_wf_denv__typ; auto).
+           assert (HwfB : d_wf_typ ((x ~ dbind_typ A) ++ Γ) B) by
+             (eapply d_typing_gen_preserves_wf;
+              [ apply H1; auto | exact Hwfd_x ]).
+           eapply d_typing_gen_narrow_consis_head with (Aold := A).
+           ++ specialize (H2 x ltac:(auto) is_fn_n_ti__ti Hwfd_x).
+              match goal with
+              | Hcg2 : d_consis_gen nil Γ B ?B2v |- _ =>
+                  specialize (H2 mode_tc B2v)
+              end.
+              simpl in H2. apply H2.
+              apply d_sub_gen__check_gen.
+              ** intros ε T' Heq; subst; inversion HwfB.
+              ** intros T' Heq; subst; inversion HwfB.
+              ** match goal with
+                 | Hinh : is_inh_typ (typ_arrow _ _) |- _ =>
+                     inversion Hinh; subst; assumption
+                 end.
+              ** rewrite_env ((x ~ dbind_typ A) ++ Γ).
+                 apply d_consis_gen_weakening_head. assumption.
+           ++ symmetry. eapply d_consis_gen_syn_color_eq; eauto.
+      * match goal with Heqm : mode_tc = mode_fn _ |- _ =>
+          discriminate Heqm
+        end.
     + (* __refl_mono: B_tgt = typ_arrow A B, forced MONO. Case-split
          on m via Hfn and lift the body via the IH H2 with a
          [d_sub_gen__refl_mono] body sub. *)
