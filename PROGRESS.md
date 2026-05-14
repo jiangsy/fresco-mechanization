@@ -164,7 +164,7 @@ D12 `d_typing_general_subsumption_gen` cases:
 | `__unit` / `__var` / `__anno` | ✅ CLOSED — one-liners via `d_typing_gen__sub` |
 | `__app` (all 4 `d_sub_gen` sub-cases) | ✅ CLOSED — function-side IH at `d_sub_gen__arg` with `d_consis_gen_refl` on the unchanged arg |
 | `__sub` (m = mode_ti) | ✅ CLOSED — compose inner mode_ti `d_sub_gen` with outer via `d_consis_extends_d_sub_gen_nil` |
-| `__sub` (m = mode_fn) | 🔴 admit — mode-changing `d_sub_gen` composition |
+| `__sub` (m = mode_fn) | ✅ CLOSED — mode-changing `d_sub_gen` composition via `d_sub_gen_trans` |
 | `__abs` / `__abs_anno` + `__refl_mono` | ✅ CLOSED — body IH + `d_sub_gen__refl_mono` |
 | `__abs` / `__abs_anno` + `__forall_r` | ✅ CLOSED — via `d_typing_abs[_anno]_value_to_forall` |
 | `__abs` / `__abs_anno` + `__embed` | 🔴 admit — `exp_abs` not base, needs `d_sub` inversion |
@@ -197,9 +197,11 @@ files. A separate `d_typing_gen` is a standalone inductive in
 
 - **D13 / D14 are vacuous** — the mech has one declarative system, so
   there is no bidir↔syn-directed bridge to prove.
-- **D11 (Subtyping Transitivity)** is used implicitly inside D12's
-  proof (the `__sub` mode-changing composition) but is not separately
-  mechanised; the relevant instances are handled inline.
+- **D11 (Subtyping Transitivity)** is now mechanised for the
+  generalised relations as `d_consis_gen_trans` (Qed) and
+  `d_sub_gen_trans` (Qed, mode-changing along the FN^n stack, via the
+  `d_*_mono_RHS_eq` rigidity helpers + `d_sub_gen_trans_arrow`). D12's
+  `__sub` mode-changing composition is closed by `d_sub_gen_trans`.
 
 ### Mechanization-only support lemmas
 
