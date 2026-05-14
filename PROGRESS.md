@@ -50,7 +50,7 @@ syntax-directed restatement).
 
 | # | Paper lemma | Paper | Coq statement (file:line) | Status |
 |---|---|---|---|---|
-| D1 | General subsumption | [declarative.tex:574](../paper/sections/declarative.tex#L574) | `d_typing_general_subsumption` [`prop_typing.v:730`](frost/decl/prop_typing.v#L730):<br>`d_wf_denv Γ → d_typing mode_ti Γ e A → d_sub m nil Γ A B → d_typing m Γ e B`<br>(`d_wf_denv Γ` makes the paper's implicit wf-context assumption explicit) | 🟡 base cases (unit/var/anno) + recursive `__sub` Qed via [`d_typing_sub_compose`](frost/decl/prop_subtyping.v#L937) (now Qed) and [`d_consis_extends_d_sub_nil`](frost/decl/prop_subtyping.v#L667); `__freeze` / `__forall` vacuous (mode_tc rules, Hty is mode_ti); `__abs` / `__abs_anno` / `__app` admitted — these are paper-blocked: body conversion mode_ti → mode_tc with the same type requires `d_sub_refl` at mode_tc, which is uninhabited for `typ_all_col` LHS (by [`d_sub_not_lhs_typ_all_col`](frost/decl/prop_subtyping.v#L459)). The paper resolves this via the syntax-directed detour (D11/D12/D13/D14); without that system the body's typ_all_col-typed values can't be re-typed at mode_tc via the bidirectional rules alone. |
+| D1 | General subsumption | [declarative.tex:574](../paper/sections/declarative.tex#L574) | `d_typing_general_subsumption_via_gen` [`prop_typing.v:2800`](frost/decl/prop_typing.v#L2800):<br>`d_wf_denv Γ → d_typing mode_ti Γ e A → d_sub m nil Γ A B → d_typing m Γ e B`<br>(routes through the paper's generalised bridge — see D12) | 🟡 closed *modulo* `d_typing_general_subsumption_gen` (D12). The old direct strong-form attempt (`d_typing_general_subsumption` via `_split`, `prop_typing.v:2781`/`:2531`) is kept but superseded. The bridged D1 is a one-line corollary: `change m with (mode_fn_n_subst mode_ti m)` + `d_sub_gen__embed`. So D1's status now tracks D12's. |
 | D2 | Soundness of subtyping | [declarative.tex:1095](../paper/sections/declarative.tex#L1095) | `d_sub_sound` [`prop_subtyping.v:497`](frost/decl/prop_subtyping.v#L497):<br>`is_typ A → d_sub mode_tc nil Γ A B → d_shallow_sub Γ A B` | 🟡 narrowed with `is_typ A` so LHS is `typ_all_col` flavour (matches `d_shallow_sub` shape) |
 | D3 | No guessing of polytypes | [declarative.tex:1102](../paper/sections/declarative.tex#L1102) | `d_sub_no_guess_uniqueness` [`prop_subtyping.v:607`](frost/decl/prop_subtyping.v#L607):<br>two instantiations `ph1`, `ph2` of same `d_sub` derivation imply `ph1 = ph2` (strict-equality form) | ⚠️ paper-flagged — counter-example inlined (`ph` can absorb into nested `forall_l_tagged` chains); paper revision suggested |
 | D4 | Refinement preserves wf | [declarative.tex:1380](../paper/sections/declarative.tex#L1380) | `d_refine_preserves_wf` [`prop_wellformed.v:766`](frost/decl/prop_wellformed.v#L766):<br>`Ψ ⨟ Γ ⊢ₛₖ P → Ψ ⨟ Γ ⊢ᵣ P ▸ Q → Ψ ⨟ Γ ⊢ₛₖ Q`<br>(coloured variant `d_refine_syn_preserves_wf` [`prop_wellformed.v:931`](frost/decl/prop_wellformed.v#L931) also Qed) | 🟢 |
@@ -61,7 +61,7 @@ syntax-directed restatement).
 | D9 | Consistency Transitivity | [syntax-directed.tex:146](../paper/sections/syntax-directed.tex#L146) (= paper Lemma B.2) | `d_consis_compose` [`prop_subtyping.v:318`](frost/decl/prop_subtyping.v#L318):<br>`d_consis Δa Γ T A → d_consis Δb Γ A B → list_disjoint Δa Δb → ∃ Δc, Permutation Δc (Δa ++ Δb) ∧ d_consis Δc Γ T B` | 🟢 mod Permutation — arrow case interleaves segments; paper writes "Δ1, Δ2" as set union |
 | D10 | Consistency-Subtyping Transitivity / Consistency extends subtyping | [syntax-directed.tex:161](../paper/sections/syntax-directed.tex#L161) = [proofs.tex:51](../paper/sections/proofs.tex#L51) | `d_consis_extends_d_sub` [`prop_subtyping.v:529`](frost/decl/prop_subtyping.v#L529):<br>`d_consis Δ Γ T A → d_sub M Δ' Γ A B → list_disjoint Δ Δ' → (M = mode_ti → Δ = nil) → (T not etag/plain) → ∃ Δc, Permutation Δc (Δ ++ Δ') ∧ d_sub M Δc Γ T B` | 🟢 **FULLY Qed in original general form** (no narrowing). All 6 d_sub cases closed: `__infer` / `__check` directly; `__forall_l_*` vacuously via Hc inversion; `__arg` via the two structural helpers [`d_sub_not_lhs_typ_all_col`](frost/decl/prop_subtyping.v#L459) and [`d_consis_compose_nil_RHS`](frost/decl/prop_subtyping.v#L484); `__forall_r` via [`d_sub_subst_mono`](frost/decl/prop_subtyping.v#L274) alpha-renaming (pick fresh X₀, get IH at X₀ giving canonical Δc, then rename X₀ → X' for the cofinite premise via mono substitution with B = typ_var_f X'). |
 | D11 | Subtyping Transitivity | [syntax-directed.tex:249](../paper/sections/syntax-directed.tex#L249) | — | 🔴 not separately mechanized; subsumed by D1 + D10 at use sites |
-| D12 | Generalised General Subsumption | [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343) | — | 🔴 extension of D1 to nested `FN[n]` modes; not attempted |
+| D12 | Generalised General Subsumption | [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343) | `d_typing_general_subsumption_gen` [`prop_typing.v:2007`](frost/decl/prop_typing.v#L2007):<br>`d_typing m_orig Γ e A → is_fn_n_ti m_orig → d_wf_denv Γ → d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B → d_typing (mode_fn_n_subst m_orig m_new) Γ e B` | 🟡 **IN PROGRESS** — the paper's bridge, now the canonical route to D1. Mechanised via the **generalised** consistency / subtyping relations `d_consis_gen` ([`:1061`](frost/decl/prop_typing.v#L1061)) and `d_sub_gen` ([`:1105`](frost/decl/prop_typing.v#L1105)), faithful to `fig:frost-subtyping-consistency-gen`. `d_consis_gen` has the structural `__forall_inh` rule (paper's `ForallInh`) making it reflexive on `inh{∀}` types via the proven `d_consis_gen_refl` ([`:1188`](frost/decl/prop_typing.v#L1188)). **~13 admits remain** in `_gen` + its helpers (see "D12 admit map" below). |
 | D13 | Soundness of Syntax-directed | [syntax-directed.tex:556](../paper/sections/syntax-directed.tex#L556) | — | n/a — mech only has the bidirectional declarative system |
 | D14 | Completeness of Syntax-directed | [syntax-directed.tex:573](../paper/sections/syntax-directed.tex#L573) | — | n/a |
 
@@ -96,71 +96,98 @@ support-lemmas table and do NOT count toward closing a paper lemma.
 
 - Paper-stated lemmas (excluding "n/a" duplicates): **23**.
 - 🟢 fully closed: **6** (D4, D5, D9, **D10/A4 NEW 2026-05-13**, A1, A2/A3).
-- 🟡 partial / narrowed: **2** (D1 — base + `__sub` cases Qed via
-  `d_typing_sub_compose` (now Qed); `__abs` / `__abs_anno` / `__app`
-  paper-blocked. D2 — narrowed via `is_typ A`).
+- 🟡 partial / narrowed: **3** (D1 — now routed through D12 (bridge),
+  status tracks D12; D2 — narrowed via `is_typ A`; **D12 — in
+  progress**, the paper's generalised bridge, ~13 admits remaining,
+  see "D12 admit map" below).
 - 🟠 admitted (HEADLINE, research-grade): **7** (D6, D7, A8, A9, A11, A12, A13).
 - ⚠️ paper-flagged: **1** (D3).
-- 🔴 not mechanized: **7** (D11, D12, A5, A6, A7, A10, A14).
+- 🔴 not mechanized: **6** (D11, A5, A6, A7, A10, A14).
 - n/a (variant of another mechanized statement): **3** (D8, D13, D14).
 
-**Why D1's remaining cases (`__abs`/`__abs_anno`/`__app`) are
-paper-blocked, not just unfinished:** For each, after inverting `d_sub`
-on the typ_arrow LHS, the `__check` case reduces to a body conversion
-`d_typing mode_ti Γ' e' A_ret → d_typing mode_tc Γ' e' A_ret` with the
-*same* `A_ret`. Via D1 itself this needs `d_sub mode_tc nil Γ' A_ret
-A_ret` (reflexivity at mode_tc). When `A_ret` is `typ_all_col c X`
-(reachable via `__var` binding lookups), `d_sub_refl` at mode_tc is
-**uninhabited**: `__check` fails because `d_consis` has no rule with
-LHS `typ_all_col`, and `__forall_r` recurses on a body whose LHS is
-again `typ_all_col` — by our new [`d_sub_not_lhs_typ_all_col`](frost/decl/prop_subtyping.v#L459)
-that body is uninhabited. The paper sidesteps this via the
-syntax-directed system where `\dstylab{AbsForall}` absorbs
-`typ_all_col` introductions into the abstraction rule directly.
-Closing D1 fully in the bidirectional system would require either
-mechanizing that syntax-directed system (D11/D12/D13/D14) or providing
-new substitution machinery for `d_typing`. Both are out of scope.
+### D1 via the generalised bridge (D12) — current strategy
 
-### Why mech doesn't need D11–D14 (strategy note)
+D1 is now mechanised the way the paper proves it: route through D12
+(Generalised General Subsumption). The paper's D12 generalises D1 to
+nested `FN[n]` modes and is stated over **generalised** subtyping /
+consistency relations (`fig:frost-subtyping-consistency-gen`,
+`syntax-directed.tex:36`). The mech mirrors this:
 
-The paper proves D1 (General Subsumption) by factoring through a
-*syntax-directed* restatement of the type system. Specifically:
+- `d_consis_gen` / `d_sub_gen` ([`prop_typing.v:1061`](frost/decl/prop_typing.v#L1061), [`:1105`](frost/decl/prop_typing.v#L1105)) —
+  the generalised relations. `d_consis_gen` has the structural
+  `__forall_inh` rule (paper's `ForallInh`), admitting `inh{∀}` types
+  on the LHS, making it structurally reflexive on inherited-forall
+  types (proven: `d_consis_gen_refl`, [`:1188`](frost/decl/prop_typing.v#L1188)).
+- `is_fn_n_ti` / `mode_fn_n_subst` — the paper's `FN[n] TI` mode-stack
+  discipline.
+- `d_typing_general_subsumption_gen` ([`:2007`](frost/decl/prop_typing.v#L2007)) — D12 proper, by
+  induction on the typing, dispatching on `d_sub_gen`.
+- `d_typing_general_subsumption_via_gen` ([`:2800`](frost/decl/prop_typing.v#L2800)) — D1 as a
+  one-line corollary at `m_orig := mode_ti`, embedding the original
+  `d_sub` via `d_sub_gen__embed`.
 
-```
-D1 (bidir General Subsumption)
-  ⇐ D13 (bidir → syn-directed) + D12 (Generalised General Subsumption
-       on syn-directed) + D14 (syn-directed → bidir)
-       [+ D11 (Subtyping Transitivity) used inside D12's proof]
-```
+#### Soundness note (resolved)
 
-The mech only mechanizes the bidirectional system; the syntax-directed
-system is a proof technique that *absorbs* `d_typing__forall`
-introductions into abstraction rules (`dstylab{AbsForall}`,
-`dstylab{AbsAnnoForall}`), making the troublesome `d_typing__abs` /
-`d_typing__abs_anno` cases of D1 disappear. So:
+An earlier version of `d_sub_gen` had a `__refl_any` rule (refl for
+any `mode_typ_compat` type). This was **UNSOUND** — counter-example:
+`e = exp_anno e0 A` with `e0` non-value and `A = typ_all_col
+colour_inh …`. Fixed by restricting to `d_sub_gen__refl_mono`
+(mono types — provably mode-liftable). See
+`memory/frost-d1-refl-soundness-bug.md`. The paper itself is fine:
+it uses the generalised relations with the structural `ForallInh`
+rule, which the mech now faithfully mirrors.
 
-- **D13 / D14 are vacuous** — there is no second system to bridge to.
-- **D11 / D12 are NOT obsolete** — they become *direct* obligations on
-  the bidirectional system. The mech closes D1's base + `__sub` cases
-  directly using a nil/nil corollary of D10
-  (`d_consis_extends_d_sub_nil`, a support lemma — NOT a paper claim
-  and NOT a closure of D10 itself, since the paper's D10 is stated for
-  arbitrary Δ). To close D1's remaining `__abs` / `__abs_anno` / `__app`
-  cases without the syntax-directed detour, we'd need either:
-  (i) the full paper-stated D11 (Subtyping Transitivity) for arbitrary Δ
-  — itself blocked on the same `__forall_r` / `__arg` Δ-shape issues
-  as D10; or
-  (ii) `d_typing_narrowing`, which reduces back to D1 in the var case
-  (circular).
-- D12 (Generalised General Subsumption) is specific to the paper's
-  syntax-directed proof technique; not needed for the direct closure.
+#### D12 admit map (~13 admits, as of this commit)
 
-The remaining D1 admits (`__abs` / `__abs_anno` / `__app`) are where
-the paper's syntax-directed detour shines. Direct mechanization without
-that detour would need a `d_typing_narrowing` lemma — which itself
-reduces back to D1 in the variable case, creating a circular dependency.
-The clean break would be to mechanize the syntax-directed system + D13/D14,
-which is a substantial extension out of the current Phase 2 scope.
+In `d_typing_general_subsumption_gen` + its helpers:
+
+| Admit | Location | Obstacle |
+| --- | --- | --- |
+| `__var` + `sub_gen__arg` | `:2076` | gen→sub bridge: `d_consis_gen → d_consis` fails for `__forall_inh` (no `typ_all_col` LHS rule in `d_consis`) |
+| `__anno` + `sub_gen__forall_r` | `:2109` | same gen→sub bridge |
+| `__anno` + `sub_gen__arg` | `:2111` | same gen→sub bridge |
+| `__sub` (m = mode_fn) | `:2204` | mode-changing `d_sub` transitivity |
+| `__abs` + `__embed` | `:2218` | body conversion mode_ti→mode_tc (= general subsumption, circular) |
+| `__abs_anno` + `__arg` | `:2391` | `d_typing__abs_anno`'s rule structure forces annotation = result-arg type; paper handwave (`syntax-directed.tex:431`) |
+| `d_typing_var_gen_subsumption` `__arg` | `:1724` | gen→sub bridge |
+| `d_typing_anno_gen_subsumption` `__arg` | `:1757` | gen→sub bridge |
+| `d_typing_abs_value_to_subsumption` `__embed` | `:1781` | body conversion + nested `__forall_r` |
+| `d_typing_abs_anno_value_to_subsumption` `__embed` | `:1864` | same |
+| `d_typing_narrow_consis_head_arg` `__forall_inh` | `:1396` | recursive narrowing on polytype binding |
+| `d_typing_narrow_consis_head_arg` `__arrow` | `:1398` | recursive narrowing on arrow binding |
+| `d_consis_extends_d_consis_gen` `__forall_inh` | `:1589` | compose `d_consis ∘ d_consis_gen` must stay `d_consis` for `__embed` but yields `d_consis_gen` |
+
+Plus `d_typing_check_is_inh` ([`:1224`](frost/decl/prop_typing.v#L1224)) admitted as a paper-level
+colour invariant (mode_tc typing → is_inh type; the paper's check
+judgement is `typc Γ N (inh A)` by construction, but the mechanised
+`d_typing mode_tc` rules don't all thread `is_inh_typ`).
+
+**Root cause of the cluster.** Most admits reduce to one of:
+1. **gen→sub bridge gap** — `d_consis_gen → d_consis` is not total:
+   `d_consis_gen__forall_inh` has no `d_consis` counterpart (`d_consis`
+   has no `typ_all_col` LHS rule). The paper sidesteps this because its
+   syntax-directed `Sub` rule uses the *generalised* subtyping directly
+   — equivalently, the mechanised `d_typing__sub` would need to take
+   `d_sub_gen` instead of `d_sub`. That is a `d_typing`-definition
+   change with wide blast radius (every inversion/induction on
+   `d_typing`), and `d_sub_gen` would have to move to `def_extra.v`.
+2. **body conversion = general subsumption** — `__abs`/`__abs_anno` +
+   `__embed` need to re-type the body at a different mode/type, which
+   is D12 itself (circular without a measure / mutual induction).
+3. **recursive narrowing** — narrowing a binding from one polytype to
+   a consistent one needs machinery the mech doesn't have.
+
+These are genuine structural obstacles, not unfinished tactics. The
+clean break is (1): move `d_consis_gen` / `d_sub_gen` to `def_extra.v`
+and have `d_typing__sub` use `d_sub_gen`. Deferred — large refactor.
+
+### Strategy note: D11 / D13 / D14
+
+- **D13 / D14 are vacuous** — the mech has one declarative system, so
+  there is no bidir↔syn-directed bridge to prove.
+- **D11 (Subtyping Transitivity)** is used implicitly inside D12's
+  proof (the `__sub` mode-changing composition) but is not separately
+  mechanised; the relevant instances are handled inline.
 
 ### Mechanization-only support lemmas
 
