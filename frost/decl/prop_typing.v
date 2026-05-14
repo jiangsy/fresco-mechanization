@@ -1890,12 +1890,22 @@ Proof.
   - (* __forall_syn_untagged: A = typ_all_plain — vacuous as above. *)
     inversion Hc.
   - (* __forall_inh: A = typ_all_col colour_inh T_inner,
-       B = typ_all_col colour_inh A_inner. Composing d_consis (with
-       RHS typ_all_col) on the LHS requires inverting Hc to
-       typ_all_plain shape and a per-X d_consis-vs-d_consis_gen
-       compose — the result needs to stay in d_consis (for __embed)
-       but composition yields d_consis_gen. Genuine gap; admitted. *)
-    admit.
+       B = typ_all_col colour_inh A_inner. Hc forces T0 =
+       typ_all_plain T0_inner (the only d_consis rule with RHS
+       typ_all_col colour_inh at Δ = nil). Compose per-X via
+       d_consis_gen_trans: embed Hc's per-X d_consis, then chain
+       with Hcg's per-X d_consis_gen. *)
+    subst.
+    inversion Hc; subst.
+    apply d_consis_gen__forall_inh_untagged with (L := L `union` L0).
+    intros X HX.
+    apply d_consis_gen_trans with (A := open_typ_wrt_typ T (typ_var_f X)).
+    + apply d_consis_gen__embed.
+      match goal with
+      | H' : forall X0, X0 `notin` _ -> d_consis _ _ _ _ |- _ =>
+          apply H'; auto
+      end.
+    + apply H; auto.
   - (* __arrow: Δ1 ++ Δ2 = nil forces both nil. *)
     apply app_eq_nil in HeqΔ.
     destruct HeqΔ as [HΔ1 HΔ2]. subst.
@@ -1907,7 +1917,7 @@ Proof.
     inversion HwfT; subst.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_consis_gen__arrow; auto.
-Admitted.
+Qed.
 
 (** [d_consis_extends_d_sub_gen_nil]: extend d_sub_gen on the LHS via
     a d_consis. Mirrors [d_consis_extends_d_sub_nil] for the gen

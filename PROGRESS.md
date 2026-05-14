@@ -178,10 +178,11 @@ rule in `d_consis`). The whole var/anno-cluster gen→sub-bridge problem,
 previously scattered across D12, is now ONE admit in this one lemma.
 
 Other admits (helpers, deferred — were similar pre-refactor):
-`d_typing_gen_lift_mono` (__sub/__abs/__abs_anno/__app),
+`d_typing_gen_lift_mono` (__abs/__abs_anno/__app — __sub closed),
 `d_typing_abs[_anno]_value_to_subsumption` __embed,
-`d_typing_narrow_consis_head_arg` __forall_inh/__arrow,
-`d_consis_extends_d_consis_gen` __forall_inh.
+`d_typing_narrow_consis_head_arg` __forall_inh/__arrow.
+`d_consis_extends_d_consis_gen` is now fully Qed (__forall_inh
+closed via `d_consis_gen_trans`).
 Plus paper-level colour invariants `d_typing_gen_preserves_wf`,
 `d_typing_gen_check_is_inh`, `d_typing_check_is_inh` (admitted —
 standard structural / the paper's `typc Γ N (inh A)` is inh by
