@@ -6,6 +6,58 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 
+(** [syn_color]: the paper's [syn] re-colouring at variable lookup
+    ([typi Γ x (syn A)]). Erases the colour/tag distinction at every
+    [forall]: [typ_all_col _], [typ_all_etag _], [typ_all_plain _]
+    all become [typ_all_col colour_syn]. Defined here (not in
+    prop_typing.v) because [d_typing__var] uses it. *)
+Fixpoint syn_color (A : typ) : typ :=
+  match A with
+  | typ_unit => typ_unit
+  | typ_var_b n => typ_var_b n
+  | typ_var_f X => typ_var_f X
+  | typ_arrow A1 A2 => typ_arrow (syn_color A1) (syn_color A2)
+  | typ_all_col _ A0 => typ_all_col colour_syn (syn_color A0)
+  | typ_all_etag _ A0 => typ_all_col colour_syn (syn_color A0)
+  | typ_all_plain A0 => typ_all_col colour_syn (syn_color A0)
+  | typ_hole => typ_hole
+  | typ_tophole A0 => typ_tophole (syn_color A0)
+  | typ_var_flex_mono mv => typ_var_flex_mono mv
+  | typ_var_flex_poly pv => typ_var_flex_poly pv
+  end.
+
+Lemma syn_color_open_rec : forall A B k,
+    syn_color (open_typ_wrt_typ_rec k B A) =
+    open_typ_wrt_typ_rec k (syn_color B) (syn_color A).
+Proof.
+  intros A. induction A; intros B k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+  - rewrite IHA1. rewrite IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
+Lemma syn_color_open_var : forall A X,
+    syn_color (open_typ_wrt_typ A (typ_var_f X)) =
+    open_typ_wrt_typ (syn_color A) (typ_var_f X).
+Proof.
+  intros A X. unfold open_typ_wrt_typ.
+  rewrite syn_color_open_rec. reflexivity.
+Qed.
+
+Lemma syn_color_ftvar : forall A,
+    ftvar_in_typ (syn_color A) = ftvar_in_typ A.
+Proof.
+  intros A. induction A; simpl; try reflexivity.
+  - rewrite IHA1. rewrite IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
 (** ** Plain types under a context. *)
 Inductive d_wf_typ : list (atom * dbind) -> typ -> Prop :=
 | d_wf_typ__unit : forall Γ,
@@ -21,6 +73,32 @@ Inductive d_wf_typ : list (atom * dbind) -> typ -> Prop :=
     (forall X, X `notin` L ->
        d_wf_typ ((X ~ dbind_tvar) ++ Γ) (open_typ_wrt_typ A (typ_var_f X))) ->
     d_wf_typ Γ (typ_all_col c A).
+
+(** [syn_color] preserves [d_wf_typ]. *)
+Lemma syn_color_wf : forall Γ A,
+    d_wf_typ Γ A ->
+    d_wf_typ Γ (syn_color A).
+Proof.
+  intros Γ A H. induction H; simpl.
+  - apply d_wf_typ__unit.
+  - apply d_wf_typ__var; assumption.
+  - apply d_wf_typ__arrow; assumption.
+  - apply d_wf_typ__all with (L := L).
+    intros X HX. rewrite <- syn_color_open_var. auto.
+Qed.
+
+(** A [d_wf_typ] becomes [is_syn_typ] under [syn_color]. *)
+Lemma syn_color_is_syn_typ : forall Γ A,
+    d_wf_typ Γ A ->
+    is_syn_typ (syn_color A).
+Proof.
+  intros Γ A H. induction H; simpl.
+  - apply is_syn_typ__unit.
+  - apply is_syn_typ__var.
+  - apply is_syn_typ__arrow; assumption.
+  - apply is_syn_typ__all with (L := L).
+    intros X HX. rewrite <- syn_color_open_var. auto.
+Qed.
 
 (** ** Well-formed skeletons. Ψ tracks type variables bound previously in
     this skeleton; cleared at □ and at *.P. We forbid TOPHOLE.HOLE and
@@ -453,7 +531,7 @@ Inductive d_typing :
     d_typing mode_ti Γ exp_unit typ_unit
 | d_typing__var : forall Γ x A,
     binds x (dbind_typ A) Γ ->
-    d_typing mode_ti Γ (exp_var_f x) A
+    d_typing mode_ti Γ (exp_var_f x) (syn_color A)
 | d_typing__anno : forall Γ e A,
     is_inh_typ A ->
     d_typing mode_tc Γ e A ->

@@ -43,6 +43,52 @@ Proof.
   - apply d_consis__arrow; eauto.
 Qed.
 
+(** [d_consis]-related types have EQUAL [syn_color] — [d_consis]
+    relates types differing only in [forall]-colour/tag, exactly what
+    [syn_color] erases. (The [d_consis_gen] analogue is
+    [d_consis_gen_syn_color_eq], proved later.) Used to show a
+    [syn_color]-typed variable is invariant under [d_consis]-narrowing. *)
+Lemma d_consis_syn_color_eq : forall Δ Γ A B,
+    d_consis Δ Γ A B ->
+    syn_color A = syn_color B.
+Proof.
+  intros Δ Γ A B H. induction H; simpl; try reflexivity.
+  - (* __forall_inh_tagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __forall_inh_untagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __forall_syn_tagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __forall_syn_untagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_ftvar; auto.
+  - (* __arrow *)
+    rewrite IHd_consis1. rewrite IHd_consis2. reflexivity.
+Qed.
+
 Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 M Δ T A,
     d_sub M Δ (Γ1 ++ Γ3) T A ->
     d_sub M Δ (Γ1 ++ Γ2 ++ Γ3) T A.
@@ -682,14 +728,15 @@ Proof.
     + apply binds_app_iff in Hb_in. destruct Hb_in as [Hb_x | Hb_post].
       * apply binds_one_iff in Hb_x. destruct Hb_x as [Heq Hbeq].
         subst x. inversion Hbeq. subst A.
-        apply d_typing__sub with (A := Anew).
-        -- apply is_base_term__var.
-        -- apply d_typing__var. apply binds_app_iff. right.
-           apply binds_app_iff. left. apply binds_one_iff. auto.
-        -- apply d_sub__infer; auto.
-           rewrite_env (Γ1 ++ ((x0 ~ dbind_typ Anew) ++ Γ2)).
-           apply d_consis_weakening_head.
-           apply d_consis_weakening_head. auto.
+        (* var typed [syn_color Aold]; the narrowed binding gives
+           [syn_color Anew], and [d_consis_syn_color_eq] on Hc shows
+           [syn_color Anew = syn_color Aold] — so [d_typing__var]
+           closes it directly, no subsumption needed. *)
+        assert (Hsc : syn_color Anew = syn_color Aold)
+          by (eapply d_consis_syn_color_eq; eauto).
+        rewrite <- Hsc.
+        apply d_typing__var. apply binds_app_iff. right.
+        apply binds_app_iff. left. apply binds_one_iff. auto.
       * apply d_typing__var. apply binds_app_iff. right.
         apply binds_app_iff. right. exact Hb_post.
   (* d_typing__anno *)
@@ -1132,78 +1179,14 @@ Proof.
   - apply d_consis_gen__arrow; assumption.
 Qed.
 
-(** ** [syn_color]: the paper's [syn] re-colouring at variable lookup.
+(** ** Property of [syn_color] specific to [d_consis_gen].
 
-    [syn_color] erases the colour/tag distinction at every [forall]:
-    [typ_all_col _], [typ_all_etag _], [typ_all_plain _] all become
-    [typ_all_col colour_syn]. Two key facts:
-    - on a [d_wf_typ], the result is [is_syn_typ];
-    - [d_consis_gen]-related types have EQUAL [syn_color]
-      ([d_consis_gen_syn_color_eq]) — because [d_consis_gen] relates
-      types that differ only in [forall]-colour/tag, exactly what
-      [syn_color] erases.
-    Used to syn-colour [d_typing_gen__var] (paper [typi Γ x (syn A)]),
-    which is what makes [d_typing_gen] narrowing's [__var] case go
-    through. *)
-Fixpoint syn_color (A : typ) : typ :=
-  match A with
-  | typ_unit => typ_unit
-  | typ_var_b n => typ_var_b n
-  | typ_var_f X => typ_var_f X
-  | typ_arrow A1 A2 => typ_arrow (syn_color A1) (syn_color A2)
-  | typ_all_col _ A0 => typ_all_col colour_syn (syn_color A0)
-  | typ_all_etag _ A0 => typ_all_col colour_syn (syn_color A0)
-  | typ_all_plain A0 => typ_all_col colour_syn (syn_color A0)
-  | typ_hole => typ_hole
-  | typ_tophole A0 => typ_tophole (syn_color A0)
-  | typ_var_flex_mono mv => typ_var_flex_mono mv
-  | typ_var_flex_poly pv => typ_var_flex_poly pv
-  end.
-
-Lemma syn_color_open_rec : forall A B k,
-    syn_color (open_typ_wrt_typ_rec k B A) =
-    open_typ_wrt_typ_rec k (syn_color B) (syn_color A).
-Proof.
-  intros A. induction A; intros B k; simpl; try reflexivity.
-  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-  - rewrite IHA1. rewrite IHA2. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-Qed.
-
-Lemma syn_color_open_var : forall A X,
-    syn_color (open_typ_wrt_typ A (typ_var_f X)) =
-    open_typ_wrt_typ (syn_color A) (typ_var_f X).
-Proof.
-  intros A X. unfold open_typ_wrt_typ.
-  rewrite syn_color_open_rec. reflexivity.
-Qed.
-
-Lemma syn_color_ftvar : forall A,
-    ftvar_in_typ (syn_color A) = ftvar_in_typ A.
-Proof.
-  intros A. induction A; simpl; try reflexivity.
-  - rewrite IHA1. rewrite IHA2. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-Qed.
-
-Lemma syn_color_is_syn_typ : forall Γ A,
-    d_wf_typ Γ A ->
-    is_syn_typ (syn_color A).
-Proof.
-  intros Γ A H. induction H; simpl.
-  - apply is_syn_typ__unit.
-  - apply is_syn_typ__var.
-  - apply is_syn_typ__arrow; assumption.
-  - apply is_syn_typ__all with (L := L).
-    intros X HX. rewrite <- syn_color_open_var. auto.
-Qed.
-
+    [syn_color] (and its structural lemmas) live in [def_extra.v];
+    here we prove the [d_consis_gen]-specific fact:
+    [d_consis_gen]-related types have EQUAL [syn_color] — because
+    [d_consis_gen] relates types that differ only in [forall]-colour/
+    tag, exactly what [syn_color] erases. This is what makes a
+    [syn_color]-typed variable invariant under narrowing. *)
 Lemma d_consis_gen_syn_color_eq : forall Δ Γ A B,
     d_consis_gen Δ Γ A B ->
     syn_color A = syn_color B.
@@ -1338,7 +1321,7 @@ Inductive d_typing_gen :
     d_typing_gen mode_ti Γ exp_unit typ_unit
 | d_typing_gen__var : forall Γ x A,
     binds x (dbind_typ A) Γ ->
-    d_typing_gen mode_ti Γ (exp_var_f x) A
+    d_typing_gen mode_ti Γ (exp_var_f x) (syn_color A)
 | d_typing_gen__anno : forall Γ e A,
     is_inh_typ A ->
     d_typing_gen mode_tc Γ e A ->
@@ -1885,7 +1868,7 @@ Lemma d_typing_gen_preserves_wf : forall m Γ e A,
 Proof.
   intros m Γ e A H. induction H; intros Hwfd.
   - (* __unit *) apply d_wf_typ__unit.
-  - (* __var *) eapply d_wf_denv_binds_typ; eauto.
+  - (* __var *) apply syn_color_wf. eapply d_wf_denv_binds_typ; eauto.
   - (* __anno *) apply IHd_typing_gen; auto.
   - (* __sub *) eapply d_sub_gen_preserves_wf; eauto.
   - (* __freeze *) apply IHd_typing_gen; auto.
@@ -2599,8 +2582,8 @@ Proof.
     + apply is_base_term__unit.
     + apply d_typing_gen__unit; assumption.
     + exact Hrefl.
-  - (* __var *)
-    apply d_typing_gen__sub with (A := A).
+  - (* __var: var's type is [syn_color A]. *)
+    apply d_typing_gen__sub with (A := syn_color A).
     + apply is_base_term__var.
     + apply d_typing_gen__var; assumption.
     + exact Hrefl.
@@ -2685,11 +2668,11 @@ Qed.
 Lemma d_typing_var_gen_subsumption : forall Γ xv Avar A m,
     d_wf_denv Γ ->
     binds xv (dbind_typ Avar) Γ ->
-    d_sub_gen m nil Γ Avar A ->
+    d_sub_gen m nil Γ (syn_color Avar) A ->
     d_typing_gen m Γ (exp_var_f xv) A.
 Proof.
   intros Γ xv Avar A m Hwfd Hb Hs.
-  apply d_typing_gen__sub with (A := Avar).
+  apply d_typing_gen__sub with (A := syn_color Avar).
   - apply is_base_term__var.
   - apply d_typing_gen__var; exact Hb.
   - exact Hs.
@@ -3330,8 +3313,10 @@ Proof.
       * apply is_base_term__unit.
       * apply d_typing__unit; auto.
       * apply d_sub__forall_r with (L := L); auto.
-    + (* __var *)
-      apply d_typing__sub with (A := A0).
+    + (* __var: var's type is now [syn_color <binding>]. *)
+      match goal with Hb : binds _ (dbind_typ ?Av) _ |- _ =>
+        apply d_typing__sub with (A := syn_color Av)
+      end.
       * apply is_base_term__var.
       * apply d_typing__var; auto.
       * apply d_sub__forall_r with (L := L); auto.
@@ -3392,11 +3377,14 @@ Proof.
        The outer Δ = nil destructures Δ1 ++ Δ2 = nil → both nil. *)
     apply app_eq_nil in x as [HΔ1 HΔ2]. subst Δ1 Δ2.
     inversion Hty; subst.
-    + (* __var: Hty = d_typing__var, e = exp_var x with A = typ_arrow ...
-         Wrap in d_typing__sub at (mode_fn m). *)
+    + (* __var: Hty = d_typing__var, var's type is [syn_color A] which
+         inverts to [typ_arrow T1 T2]. Wrap in d_typing__sub. *)
       apply d_typing__sub with (A := typ_arrow T1 T2).
       * apply is_base_term__var.
-      * apply d_typing__var; auto.
+      * match goal with Heq : syn_color _ = typ_arrow T1 T2 |- _ =>
+          rewrite <- Heq
+        end.
+        apply d_typing__var; auto.
       * rewrite_env (@nil atom ++ @nil atom).
         apply d_sub__arg; auto.
     + (* __anno: e = exp_anno e' A. Wrap. *)

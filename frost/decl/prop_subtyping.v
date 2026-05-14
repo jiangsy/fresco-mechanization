@@ -864,8 +864,8 @@ Proof.
   - (* d_typing__unit *)
     apply d_typing__sub with (A := typ_unit); auto using is_base_term__unit.
     apply d_typing__unit; auto.
-  - (* d_typing__var *)
-    apply d_typing__sub with (A := A); auto using is_base_term__var.
+  - (* d_typing__var: var's type is now [syn_color A]. *)
+    apply d_typing__sub with (A := syn_color A); auto using is_base_term__var.
     apply d_typing__var; auto.
   - (* d_typing__anno *)
     apply d_typing__sub with (A := A); auto using is_base_term__anno.

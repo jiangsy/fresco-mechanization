@@ -1228,9 +1228,9 @@ Lemma d_typing_pat_preserves_wf :
 Proof.
   apply d_typing_pat_mut; intros.
   - (* d_typing__unit *) apply d_wf_typ__unit.
-  - (* d_typing__var: A is the dbind_typ payload of x in Γ. Use the
-       context-lookup wf lemma. *)
-    eapply d_wf_denv_binds_typ; eauto.
+  - (* d_typing__var: type is [syn_color A]; [syn_color_wf] lifts the
+       context-lookup wf for [A]. *)
+    apply syn_color_wf. eapply d_wf_denv_binds_typ; eauto.
   - (* d_typing__anno: IH gives d_wf_typ Γ A directly. *)
     apply H; auto.
   - (* d_typing__sub: d_sub_preserves_wf takes [d_wf_typ Γ A] as
