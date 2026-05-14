@@ -2201,6 +2201,43 @@ Proof.
         | exact Hsg | exact IHHfn ].
 Qed.
 
+(** [d_sub_gen] analogue of [d_sub_arrow_refl_inner]: a reflexive
+    [d_sub_gen] on a mono arrow type yields a reflexive [d_sub_gen] on
+    the result type at [decr_mode]. The [__embed] case routes through
+    [d_sub_arrow_refl_inner]; [__refl_mono] rebuilds via
+    [d_sub_gen__refl_mono] (mode-compat / wf from inverting the arrow
+    premises); [__arg] hands back its ret-side directly. *)
+Lemma d_sub_gen_arrow_refl_inner : forall Γ A B m,
+    d_sub_gen m nil Γ (typ_arrow A B) (typ_arrow A B) ->
+    mono_typ A ->
+    mono_typ B ->
+    d_sub_gen (decr_mode m) nil Γ B B.
+Proof.
+  intros Γ A B m Hrefl Hmono_a Hmono_b.
+  inversion Hrefl; subst.
+  - (* __embed *)
+    apply d_sub_gen__embed.
+    eapply d_sub_arrow_refl_inner; eauto.
+  - (* __refl_mono *)
+    apply d_sub_gen__refl_mono; auto.
+    + match goal with
+      | Hc : mode_typ_compat m (typ_arrow A B) |- _ =>
+          inversion Hc; subst; simpl;
+          [ apply mode_typ_compat__ti; apply mono_typ_is_syn_typ; auto
+          | apply mode_typ_compat__tc; apply mono_typ_is_inh_typ; auto
+          | assumption ]
+      end.
+    + match goal with
+      | Hw : d_wf_typ Γ (typ_arrow A B) |- _ => inversion Hw; auto
+      end.
+  - (* __arg: Δ1 ++ Δ2 = nil; ret-side d_sub_gen is the answer. *)
+    match goal with
+    | H : _ ++ _ = nil |- _ =>
+        apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst
+    end.
+    simpl. assumption.
+Qed.
+
 (** Mono-type mode-lift for [d_typing_gen] — the [d_typing_gen]
     analogue of [d_typing_lift_mono]. By induction on the typing.
     Base terms close via [d_typing_gen__sub]; [__abs]/[__abs_anno]
@@ -2253,16 +2290,31 @@ Proof.
       eapply d_typing_gen_preserves_wf; eauto.
     + (* __refl_mono: A = B. Hrefl is the answer. *)
       exact Hrefl.
-  - (* __abs / __abs_anno: A_outer = typ_arrow A B mono. Reconstruct
-       d_typing_gen__abs[_anno] at m_target with the body lifted via
-       the IH. The body sub is d_sub_gen__refl_mono on the mono B;
-       its mode_typ_compat / wf premises come from inverting Hrefl.
-       The inversion bookkeeping (Hrefl can be __embed / __refl_mono /
-       __arg) parallels [d_typing_lift_mono_mut]'s __abs case; the
-       d_sub_gen variants of the wf-extraction helpers are not yet
-       stated, so deferred. *)
-    admit.
-  - admit.
+  - (* __abs: A_outer = typ_arrow A B mono. Reconstruct
+       d_typing_gen__abs at m_target with the body lifted via the IH
+       H2; the body's reflexive d_sub_gen comes from
+       d_sub_gen_arrow_refl_inner on Hrefl (weakened to (x~A)++Γ). *)
+    subst m.
+    match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+      inversion Hm; subst
+    end.
+    apply d_typing_gen__abs with (L := L `union` dom Γ); auto.
+    intros x Hx. apply H2; auto.
+    + apply d_wf_denv__typ; auto.
+    + rewrite_env ([(x, dbind_typ A)] ++ Γ).
+      apply d_sub_gen_weakening_head.
+      eapply d_sub_gen_arrow_refl_inner; eauto.
+  - (* __abs_anno: as __abs, body IH = H1. *)
+    subst m.
+    match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+      inversion Hm; subst
+    end.
+    apply d_typing_gen__abs_anno with (L := L `union` dom Γ); auto.
+    intros x Hx. apply H1; auto.
+    + apply d_wf_denv__typ; auto.
+    + rewrite_env ([(x, dbind_typ A)] ++ Γ).
+      apply d_sub_gen_weakening_head.
+      eapply d_sub_gen_arrow_refl_inner; eauto.
   - (* __app: research-grade (same gap as d_typing_lift_mono). *)
     admit.
 Admitted.

@@ -178,11 +178,24 @@ rule in `d_consis`). The whole var/anno-cluster gen→sub-bridge problem,
 previously scattered across D12, is now ONE admit in this one lemma.
 
 Other admits (helpers, deferred — were similar pre-refactor):
-`d_typing_gen_lift_mono` (__abs/__abs_anno/__app — __sub closed),
+`d_typing_gen_lift_mono` (only __app left — __sub/__abs/__abs_anno
+closed; __app is genuinely research-grade, function arg-type mono
+not derivable from the rule, same gap as `d_typing_lift_mono`),
 `d_typing_abs[_anno]_value_to_subsumption` __embed,
 `d_typing_narrow_consis_head_arg` __forall_inh/__arrow.
-`d_consis_extends_d_consis_gen` is now fully Qed (__forall_inh
-closed via `d_consis_gen_trans`).
+`d_consis_extends_d_consis_gen` and `d_sub_gen_arrow_refl_inner` are
+fully Qed.
+
+Architectural note: `d_sub_gen` currently only has `__embed` (which
+takes the *non*-generalised `d_sub`), so it has no generalised
+`__infer`/`__check`. The paper's generalised `typsub` (syntax-
+directed.tex:43-53) DOES take the generalised `typconsis` at TI/TC.
+Adding `d_sub_gen__infer_gen`/`__check_gen` would (a) make `d_sub_gen`
+paper-faithful and (b) make `d_typing_gen` narrowing provable (the
+var case closes via the new rule + `d_consis_gen_sym_inh`). It would
+also concentrate the residual gap entirely in `d_consis_gen_to_
+d_consis` `__forall_inh`.
+
 Plus paper-level colour invariants `d_typing_gen_preserves_wf`,
 `d_typing_gen_check_is_inh`, `d_typing_check_is_inh` (admitted —
 standard structural / the paper's `typc Γ N (inh A)` is inh by
