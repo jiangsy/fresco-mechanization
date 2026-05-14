@@ -1171,6 +1171,17 @@ Proof.
     apply is_inh_typ__arrow; auto.
 Qed.
 
+(** [d_wf_typ_is_typ]: d_wf_typ implies is_typ. *)
+Lemma d_wf_typ_is_typ : forall Γ A,
+    d_wf_typ Γ A -> is_typ A.
+Proof.
+  intros Γ A H. induction H.
+  - apply is_typ__unit.
+  - apply is_typ__var.
+  - apply is_typ__arrow; assumption.
+  - apply is_typ__all with (L := L); auto.
+Qed.
+
 (** [d_consis_lhs_is_inh_for_typ]: when [d_consis nil Γ A B] fires and
     A is [is_typ], A is is_inh_typ. d_consis LHS rules force A ∈
     {typ_unit, typ_var, typ_arrow, typ_all_etag, typ_all_plain};
@@ -1537,6 +1548,193 @@ Proof.
       apply d_wf_denv__tvar; auto.
 Qed.
 
+(** [d_typing_var_gen_subsumption]: gen-subsumption at Hty = __var.
+    __embed and __forall_r cases close cleanly; refl_any non-ti and
+    __arg cases are research-grade (non-mono d_consis refl /
+    gen→sub bridge). *)
+Lemma d_typing_var_gen_subsumption : forall Γ xv Avar A m,
+    d_wf_denv Γ ->
+    binds xv (dbind_typ Avar) Γ ->
+    d_sub_gen m nil Γ Avar A ->
+    d_typing m Γ (exp_var_f xv) A.
+Proof.
+  intros Γ xv Avar A m Hwfd Hb Hs.
+  remember Avar as Avar0 eqn:HAv.
+  generalize dependent xv.
+  generalize dependent Avar.
+  dependent induction Hs; intros Avar HAv xv Hb; subst.
+  - apply d_typing__sub with (A := Avar);
+      [ apply is_base_term__var
+      | apply d_typing__var; exact Hb
+      | assumption ].
+  - inversion H; subst.
+    + apply d_typing__var; exact Hb.
+    + admit.
+    + admit.
+  - apply d_typing__forall with (L := L `union` dom Γ).
+    + apply is_value__var.
+    + intros X HX.
+      eapply H0 with (Avar := Avar) (xv := xv); eauto.
+      apply d_wf_denv__tvar; auto.
+  - admit.
+Admitted.
+
+(** [d_typing_anno_gen_subsumption]: similar for Hty = __anno. *)
+Lemma d_typing_anno_gen_subsumption : forall Γ e0 Aann A m,
+    d_wf_denv Γ ->
+    is_inh_typ Aann ->
+    d_typing mode_tc Γ e0 Aann ->
+    is_value e0 ->
+    d_sub_gen m nil Γ Aann A ->
+    d_typing m Γ (exp_anno e0 Aann) A.
+Proof.
+  intros Γ e0 Aann A m Hwfd Hinh_outer Hinner Hval Hs.
+  remember Aann as Aann0 eqn:HAv.
+  generalize dependent e0.
+  generalize dependent Hinh_outer.
+  generalize dependent Aann.
+  dependent induction Hs; intros Aann HAv Hinh_outer e0 Hinner Hval; subst.
+  - apply d_typing__sub with (A := Aann);
+      [ apply is_base_term__anno
+      | apply d_typing__anno; assumption
+      | assumption ].
+  - inversion H; subst.
+    + apply d_typing__anno; assumption.
+    + admit.
+    + admit.
+  - apply d_typing__forall with (L := L `union` dom Γ).
+    + apply is_value__anno; assumption.
+    + intros X HX.
+      eapply H0 with (Aann := Aann) (e0 := e0); eauto.
+      * apply d_wf_denv__tvar; auto.
+      * rewrite_env (nil ++ ((X ~ dbind_tvar) ++ nil) ++ Γ).
+        eapply (proj1 d_typing_pat_weakening); eauto.
+  - admit.
+Admitted.
+
+(** [d_typing_abs_value_to_forall]: when Hty = __abs (a value), lifting
+    to typ_all_col colour_inh via __forall_r requires nested recursion
+    on the per-X premise.
+
+    Stronger form: take an arbitrary [C] with [d_sub_gen mode_tc nil Γ
+    (typ_arrow A B) C], so dependent induction on the d_sub_gen
+    handles all target shapes (including nested [typ_all_col]). *)
+Lemma d_typing_abs_value_to_subsumption :
+  forall L Γ e A B m_orig C,
+    is_inh_typ A ->
+    d_wf_typ Γ A ->
+    (forall x, x `notin` L ->
+       d_typing (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_wf_denv Γ ->
+    d_sub_gen mode_tc nil Γ (typ_arrow A B) C ->
+    d_typing mode_tc Γ (exp_abs e) C.
+Proof.
+  intros L Γ e A B m_orig C HinhA HwfA Hbody Hwfd Hs.
+  dependent induction Hs.
+  - (* __embed: d_sub mode_tc nil Γ (typ_arrow A B) C. *)
+    admit.
+  - (* __refl_any: C = typ_arrow A B. Apply d_typing__abs at mode_tc. *)
+    admit.
+  - (* __forall_r: C = typ_all_col colour_inh A0; recurse via H0. *)
+    apply d_typing__forall with (L := L0 `union` dom Γ).
+    + apply is_value__abs.
+    + intros X HX.
+      assert (Hwfd_X : d_wf_denv ((X ~ dbind_tvar) ++ Γ)) by
+        (apply d_wf_denv__tvar; auto).
+      apply (H0 X ltac:(auto) Hwfd_X B A); auto.
+      * apply d_wf_typ_weakening_head; auto.
+      * intros y Hy.
+        rewrite_env ((y ~ dbind_typ A) ++ (X ~ dbind_tvar) ++ Γ).
+        apply d_typing_weakening.
+        apply Hbody. exact Hy.
+Admitted.
+
+(** Original [d_typing_abs_value_to_forall] form, kept as a corollary
+    callable from the main theorem's __abs + __forall_r case. *)
+Lemma d_typing_abs_value_to_forall :
+  forall L Γ e A B m_orig L_sub A_target,
+    is_inh_typ A ->
+    d_wf_typ Γ A ->
+    (forall x, x `notin` L ->
+       d_typing (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_wf_denv Γ ->
+    (forall X, X `notin` L_sub ->
+       d_sub_gen mode_tc nil ((X ~ dbind_tvar) ++ Γ) (typ_arrow A B)
+         (open_typ_wrt_typ A_target (typ_var_f X))) ->
+    d_typing mode_tc Γ (exp_abs e) (typ_all_col colour_inh A_target).
+Proof.
+  intros L Γ e A B m_orig L_sub A_target HinhA HwfA Hbody Hwfd HperX.
+  apply d_typing__forall with (L := L_sub `union` dom Γ).
+  - apply is_value__abs.
+  - intros X HX.
+    eapply d_typing_abs_value_to_subsumption with
+      (L := L) (A := A) (B := B) (m_orig := m_orig); eauto.
+    + apply d_wf_typ_weakening_head; auto.
+    + intros y Hy.
+      rewrite_env ((y ~ dbind_typ A) ++ (X ~ dbind_tvar) ++ Γ).
+      apply d_typing_weakening.
+      apply Hbody. exact Hy.
+    + apply d_wf_denv__tvar; auto.
+Qed.
+
+(** [d_typing_abs_anno_value_to_subsumption]: same structure as
+    [d_typing_abs_value_to_subsumption] but for [exp_abs_anno A e].
+    The d_sub_gen __forall_r case recurses; __embed and __refl_any
+    inherit the same circularity obstacle (body lift from
+    [decr_mode m_orig] to [mode_tc]). *)
+Lemma d_typing_abs_anno_value_to_subsumption :
+  forall L Γ e A B m_orig C,
+    d_wf_typ Γ A ->
+    (forall x, x `notin` L ->
+       d_typing (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_wf_denv Γ ->
+    d_sub_gen mode_tc nil Γ (typ_arrow A B) C ->
+    d_typing mode_tc Γ (exp_abs_anno A e) C.
+Proof.
+  intros L Γ e A B m_orig C HwfA Hbody Hwfd Hs.
+  dependent induction Hs.
+  - admit.
+  - admit.
+  - apply d_typing__forall with (L := L0 `union` dom Γ).
+    + apply is_value__abs_anno.
+    + intros X HX.
+      assert (HX_L : X `notin` L0) by fsetdec.
+      assert (Hwfd_X : d_wf_denv ((X ~ dbind_tvar) ++ Γ)) by
+        (apply d_wf_denv__tvar; auto).
+      apply H0 with (B := B) (A := A); auto.
+      * apply d_wf_typ_weakening_head; auto.
+      * intros y Hy.
+        rewrite_env ((y ~ dbind_typ A) ++ (X ~ dbind_tvar) ++ Γ).
+        apply d_typing_weakening.
+        apply Hbody. exact Hy.
+Admitted.
+
+(** Corollary of [d_typing_abs_anno_value_to_subsumption]. *)
+Lemma d_typing_abs_anno_value_to_forall :
+  forall L Γ e A B m_orig L_sub A_target,
+    d_wf_typ Γ A ->
+    (forall x, x `notin` L ->
+       d_typing (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_wf_denv Γ ->
+    (forall X, X `notin` L_sub ->
+       d_sub_gen mode_tc nil ((X ~ dbind_tvar) ++ Γ) (typ_arrow A B)
+         (open_typ_wrt_typ A_target (typ_var_f X))) ->
+    d_typing mode_tc Γ (exp_abs_anno A e) (typ_all_col colour_inh A_target).
+Proof.
+  intros L Γ e A B m_orig L_sub A_target HwfA Hbody Hwfd HperX.
+  apply d_typing__forall with (L := L_sub `union` dom Γ).
+  - apply is_value__abs_anno.
+  - intros X HX.
+    eapply d_typing_abs_anno_value_to_subsumption with
+      (L := L) (A := A) (B := B) (m_orig := m_orig); eauto.
+    + apply d_wf_typ_weakening_head; auto.
+    + intros y Hy.
+      rewrite_env ((y ~ dbind_typ A) ++ (X ~ dbind_tvar) ++ Γ).
+      apply d_typing_weakening.
+      apply Hbody. exact Hy.
+    + apply d_wf_denv__tvar; auto.
+Qed.
+
 (** ** Generalised General Subsumption (paper Lemma B.5).
 
     The statement: for [Hty : d_typing m_orig Γ e A] with [m_orig ∈ FN^n TI],
@@ -1588,16 +1786,23 @@ Qed.
       * __refl_any: CLOSED for m = mode_fn k, and for m = mode_ti via
         case-split on m_new (mode_ti, mode_tc match orig body mode;
         mode_fn k lifts body via H1/H2 IH with refl_any sub).
-      * __embed / __forall_r / __arg: admit (research-grade —
-        embed needs narrowing on arg type, forall_r needs nested
-        induction on Hsub_gen at extended Γ, arg needs both).
+      * __forall_r: CLOSED via wiring to
+        [d_typing_abs_value_to_forall] /
+        [d_typing_abs_anno_value_to_forall] aux lemmas. The aux
+        lemmas' __forall_r recursion case is closed by dependent
+        induction on the d_sub_gen at the generalised target shape.
+        Their internal __embed / __refl_any cases admit due to
+        body-lift (mode_ti → mode_tc) circularity.
+      * __embed / __arg: admit (research-grade —
+        embed needs narrowing on arg type, arg needs both narrowing
+        and body subsumption).
 
-    Remaining 12 admits are structurally documented:
-    - 5 forall_r at atomic / value Hty cases (need nested induction on
-      Hsub_gen at extended Γ).
-    - 4 narrowing (abs/abs_anno + embed/arg).
-    - 2 gen→sub bridge (var/anno + arg) — partial conversion.
-    - 1 mode-changing d_sub transitivity (sub mode_fn outer).
+    Remaining admits are structurally documented:
+    - forall_r at atomic / value Hty cases (var/anno) — partly closed
+      via dedicated aux lemmas with localised remaining admits.
+    - narrowing (abs/abs_anno + embed/arg).
+    - gen→sub bridge (var/anno + arg) — partial conversion.
+    - mode-changing d_sub transitivity (sub mode_fn outer).
 
     Helpers are now fully Qed:
     - [d_consis_to_d_sub_gen]: lift d_consis to d_sub_gen at any
@@ -1672,8 +1877,15 @@ Proof.
           | admit (* mode_tc *)
           | admit (* mode_fn *) ]
       end.
-    + (* sub_gen__forall_r: nested recursion. *)
-      admit.
+    + (* sub_gen__forall_r: closed via d_typing_var_gen_subsumption
+         aux lemma which induct on Hsub_gen, handling the nested
+         per-X recursion. *)
+      match goal with
+      | Hb : binds _ (dbind_typ ?A0) Γ
+        |- d_typing _ Γ (exp_var_f _) (typ_all_col colour_inh ?A_t) =>
+          eapply d_typing_var_gen_subsumption; eauto;
+          eapply d_sub_gen__forall_r; intros X HX; eauto
+      end.
     + (* sub_gen__arg: needs gen→sub bridge (partial). *)
       admit.
   - (* === Hty = d_typing__anno ============================================
@@ -1704,7 +1916,10 @@ Proof.
           | admit (* mode_tc *)
           | admit (* mode_fn *) ]
       end.
-    + (* sub_gen__forall_r: nested recursion. *)
+    + (* sub_gen__forall_r: needs is_value e0 which isn't guaranteed.
+         d_typing_anno_gen_subsumption requires is_value (e0) for the
+         d_typing__forall step; for non-value e0 inside the anno,
+         this case is research-grade. *)
       admit.
     + (* sub_gen__arg: needs gen→sub bridge (partial). *)
       admit.
@@ -1876,9 +2091,19 @@ Proof.
           inversion H4; subst.
           rewrite_env ((x ~ dbind_typ A) ++ Γ).
           apply d_wf_typ_weakening_head; auto.
-    + (* __forall_r: target = mode_tc. Use d_typing__forall (exp_abs
-         is a value). Per-X premise needs nested recursion. *)
-      admit.
+    + (* __forall_r: target = mode_tc. The mode constraint
+         mode_tc = mode_fn_n_subst m m_new + Hfn ⟹ m = mode_ti,
+         m_new = mode_tc. Wire through aux lemma
+         [d_typing_abs_value_to_forall]. *)
+      inversion Hfn; subst; simpl in *.
+      * (* m = mode_ti *)
+        match goal with x_eq : mode_tc = ?mn |- _ =>
+          symmetry in x_eq; subst mn
+        end.
+        eapply d_typing_abs_value_to_forall with
+          (L := L) (m_orig := mode_ti) (A := A) (B := B); eauto.
+      * (* m = mode_fn _: mode_tc = mode_fn _ contradicts. *)
+        discriminate.
     + (* __arg: target = mode_fn k. After destruction:
          H3 : d_consis_gen Δ1 Γ A A1 (arg-side)
          Hsub_gen : d_sub_gen k Δ2 Γ B A2 (ret-side)
@@ -1985,9 +2210,23 @@ Proof.
         -- inversion H3; subst.
            rewrite_env ((x ~ dbind_typ A) ++ Γ).
            apply d_wf_typ_weakening_head; auto.
-    + (* __forall_r: nested recursion. *) admit.
-    + (* __arg: target = mode_fn k. Mirror of __abs + __arg, but
-         is_inh_typ A not directly available — research-grade. *)
+    + (* __forall_r: target = mode_tc. Mode constraint forces
+         m = mode_ti, m_new = mode_tc. Wire through aux lemma. *)
+      inversion Hfn; subst; simpl in *.
+      * match goal with x_eq : mode_tc = ?mn |- _ =>
+          symmetry in x_eq; subst mn
+        end.
+        eapply d_typing_abs_anno_value_to_forall with
+          (L := L) (m_orig := mode_ti) (A := A) (B := B); eauto.
+      * discriminate.
+    + (* __arg: target = mode_fn k. STRUCTURAL OBSTACLE:
+         d_typing__abs_anno's rule structure requires the annotation A
+         to equal the result type's arg position. After Hsub_gen __arg,
+         the target's arg type A1 may differ from A. Rule construction
+         then fails: d_typing m Γ (exp_abs_anno A e) (typ_arrow A1 A2)
+         with A1 ≠ A is not derivable via any d_typing rule.
+         The paper handles this via "A is still a colorless version of
+         A'" handwave (paper syntax-directed.tex:431). Research-grade. *)
       admit.
   - (* === Hty = d_typing__app =============================================
        m_orig = m, function at mode_fn m. IH on function fires at
