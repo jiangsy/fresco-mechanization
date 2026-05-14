@@ -704,36 +704,29 @@ Lemma d_typing_narrow_consis :
         d_typing m Γ_full e B ->
         forall Γ1 x Aold Anew Γ2,
           Γ_full = Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2 ->
-          d_consis nil Γ2 Anew Aold ->
-          is_syn_typ Aold ->
-          d_wf_typ Γ2 Anew ->
+          syn_color Anew = syn_color Aold ->
           d_typing m (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) e B) /\
     (forall m Γ_full e P,
         d_pat m Γ_full e P ->
         forall Γ1 x Aold Anew Γ2,
           Γ_full = Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2 ->
-          d_consis nil Γ2 Anew Aold ->
-          is_syn_typ Aold ->
-          d_wf_typ Γ2 Anew ->
+          syn_color Anew = syn_color Aold ->
           d_pat m (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) e P).
 Proof.
   apply d_typing_pat_mut.
   (* d_typing__unit *)
-  - intros Γ Hcompat Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+  - intros Γ Hcompat Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_typing__unit. auto.
   (* d_typing__var *)
-  - intros Γ x A Hb Γ1 x0 Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+  - intros Γ x A Hb Γ1 x0 Aold Anew Γ2 HeqΓ Hsc. subst.
     apply binds_app_iff in Hb. destruct Hb as [Hb_pre | Hb_in].
     + apply d_typing__var. apply binds_app_iff. left. exact Hb_pre.
     + apply binds_app_iff in Hb_in. destruct Hb_in as [Hb_x | Hb_post].
       * apply binds_one_iff in Hb_x. destruct Hb_x as [Heq Hbeq].
         subst x. inversion Hbeq. subst A.
         (* var typed [syn_color Aold]; the narrowed binding gives
-           [syn_color Anew], and [d_consis_syn_color_eq] on Hc shows
-           [syn_color Anew = syn_color Aold] — so [d_typing__var]
-           closes it directly, no subsumption needed. *)
-        assert (Hsc : syn_color Anew = syn_color Aold)
-          by (eapply d_consis_syn_color_eq; eauto).
+           [syn_color Anew], and [Hsc : syn_color Anew = syn_color Aold]
+           shows [d_typing__var] closes it directly. *)
         rewrite <- Hsc.
         apply d_typing__var. apply binds_app_iff. right.
         apply binds_app_iff. left. apply binds_one_iff. auto.
@@ -741,12 +734,12 @@ Proof.
         apply binds_app_iff. right. exact Hb_post.
   (* d_typing__anno *)
   - intros Γ e A Hinh Hty_inner IH
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_typing__anno; auto.
     eapply IH; eauto.
   (* d_typing__sub *)
   - intros Γ m e A B Hbase Hty_inner IH Hsub
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_typing__sub with (A := A); auto.
     + eapply IH; eauto.
     + eapply d_sub_tvar_morph; [|exact Hsub].
@@ -759,11 +752,11 @@ Proof.
         -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
   (* d_typing__freeze *)
   - intros Γ e A Hty_inner IH
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_typing__freeze. eapply IH; eauto.
   (* d_typing__forall *)
   - intros L Γ e A Hval Hbody IH
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_typing__forall with
       (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
     intros X HX.
@@ -771,7 +764,7 @@ Proof.
     eapply IH; eauto.
   (* d_typing__abs *)
   - intros L Γ m e A B Hinh HwfA Hbody IH
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_typing__abs with
       (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
     + eapply d_wf_typ_tvar_morph; [|exact HwfA].
@@ -787,7 +780,7 @@ Proof.
       eapply IH; eauto.
   (* d_typing__abs_anno *)
   - intros L Γ m e A B HwfA Hbody IH
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_typing__abs_anno with
       (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
     + eapply d_wf_typ_tvar_morph; [|exact HwfA].
@@ -803,7 +796,7 @@ Proof.
       eapply IH; eauto.
   (* d_typing__app *)
   - intros Γ m e1 e2 P P' A B Hpat IH_pat Href Hty_fn IH_fn Hty_arg IH_arg
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_typing__app with (P := P) (P' := P') (A := A).
     + eapply IH_pat; eauto.
     + eapply d_refine_syn_tvar_morph; [|exact Href].
@@ -817,10 +810,10 @@ Proof.
     + eapply IH_fn; eauto.
     + eapply IH_arg; eauto.
   (* d_pat__unit *)
-  - intros Γ Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+  - intros Γ Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__unit.
   (* d_pat__var *)
-  - intros Γ X P Hb Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+  - intros Γ X P Hb Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__var.
     apply binds_app_iff in Hb. destruct Hb as [Hb_pre | Hb_in].
     + apply binds_app_iff. left. exact Hb_pre.
@@ -830,7 +823,7 @@ Proof.
         discriminate Hbeq.
       * apply binds_app_iff. right. exact Hb_post.
   (* d_pat__anno *)
-  - intros Γ e A HwfA Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+  - intros Γ e A HwfA Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__anno.
     eapply d_wf_typ_tvar_morph; [|exact HwfA].
     intros Y HbY. apply binds_app_iff in HbY.
@@ -842,7 +835,7 @@ Proof.
       * apply binds_app_iff. right. apply binds_app_iff. right. auto.
   (* d_pat__sub *)
   - intros Γ m e P Q Hbase Hpat_inner IH Hpsub
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__sub with (P := P); auto.
     + eapply IH; eauto.
     + eapply d_pat_sub_tvar_morph; [|exact Hpsub].
@@ -854,11 +847,11 @@ Proof.
            discriminate Hbeq.
         -- apply binds_app_iff. right. apply binds_app_iff. right. auto.
   (* d_pat__freeze *)
-  - intros Γ e P Hpat_inner IH Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+  - intros Γ e P Hpat_inner IH Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__freeze. eapply IH; eauto.
   (* d_pat__abs *)
   - intros L Γ m e P Q Hneq Hinh HwfS Hbody IH
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__abs with
       (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
     + eapply d_wf_skel_tvar_morph; [|exact HwfS].
@@ -873,7 +866,7 @@ Proof.
       rewrite_env (((x0 ~ dbind_skel P) ++ Γ1) ++ (x ~ dbind_typ Anew) ++ Γ2).
       eapply IH; eauto.
   (* d_pat__abs_check *)
-  - intros L Γ e Q Hbody IH Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+  - intros L Γ e Q Hbody IH Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__abs_check with
       (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)).
     intros x0 Hx0.
@@ -881,7 +874,7 @@ Proof.
     eapply IH; eauto.
   (* d_pat__abs_anno *)
   - intros L Γ m e A Q Hneq HwfA Hbody IH
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__abs_anno with
       (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
     + eapply d_wf_typ_tvar_morph; [|exact HwfA].
@@ -897,7 +890,7 @@ Proof.
       eapply IH; eauto.
   (* d_pat__abs_anno_check *)
   - intros L Γ e A Q HwfA Hbody IH
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__abs_anno_check with
       (L := L `union` dom (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2)); auto.
     + eapply d_wf_typ_tvar_morph; [|exact HwfA].
@@ -913,7 +906,7 @@ Proof.
       eapply IH; eauto.
   (* d_pat__app *)
   - intros Γ m e1 e2 P P' Q Hpat IH_pat Href Hty_fn IH_fn
-           Γ1 x Aold Anew Γ2 HeqΓ Hc Hsyn Hwf. subst.
+           Γ1 x Aold Anew Γ2 HeqΓ Hsc. subst.
     apply d_pat__app with (P := P) (P' := P').
     + eapply IH_pat; eauto.
     + eapply d_refine_syn_tvar_morph; [|exact Href].
@@ -944,12 +937,10 @@ Qed.
     Hsub_gen's d_consis_gen__refl_any (no narrowing needed). *)
 Corollary d_typing_narrow_consis_head : forall x Aold Anew Γ m e B,
     d_typing m ((x ~ dbind_typ Aold) ++ Γ) e B ->
-    d_consis nil Γ Anew Aold ->
-    is_syn_typ Aold ->
-    d_wf_typ Γ Anew ->
+    syn_color Anew = syn_color Aold ->
     d_typing m ((x ~ dbind_typ Anew) ++ Γ) e B.
 Proof.
-  intros x Aold Anew Γ m e B Hty Hc Hsyn Hwf.
+  intros x Aold Anew Γ m e B Hty Hsc.
   rewrite_env (nil ++ (x ~ dbind_typ Anew) ++ Γ).
   eapply (proj1 d_typing_narrow_consis) with
     (Γ1 := nil) (Aold := Aold); eauto.
@@ -1675,47 +1666,20 @@ Proof.
     + apply list_disjoint_nil_l.
 Qed.
 
-(** [d_typing_narrow_consis_head_arg]: narrowing variant for the
-    __abs / __abs_anno + __arg use case in the main theorem.
-
-    Takes [d_consis_gen Aold Anew] (the direction we get from
-    Hsub_gen __arg's arg-side) and [is_inh_typ Aold] (from Hty's
-    HinhA premise), handling the asymmetry via [d_consis_sym_inh]
-    and [d_consis_lhs_is_syn_typ] internally.
-
-    The __refl_any case (Anew = Aold) is identity. The __embed case
-    closes via the sym + is_syn helpers. The __arrow case admits
-    pending recursive narrowing for arrow components — which would
-    extend the body of this lemma to handle arrow-typed bound vars
-    with structurally narrowed components. *)
+(** [d_typing_narrow_consis_head_arg]: narrowing a [d_typing]
+    head-binding along a [d_consis_gen]. Now a clean corollary of
+    [d_typing_narrow_consis_head]: [d_consis_gen]-related types have
+    equal [syn_color] ([d_consis_gen_syn_color_eq]), which is exactly
+    the premise [d_typing_narrow_consis_head] needs. *)
 Lemma d_typing_narrow_consis_head_arg : forall x Aold Anew Γ m e B,
     d_typing m ((x ~ dbind_typ Aold) ++ Γ) e B ->
     d_consis_gen nil Γ Aold Anew ->
-    is_inh_typ Aold ->
-    d_wf_typ Γ Aold ->
-    d_wf_typ Γ Anew ->
     d_typing m ((x ~ dbind_typ Anew) ++ Γ) e B.
 Proof.
-  intros x Aold Anew Γ m e B Hty Hcg Hinh Hwf_old Hwf_new.
-  inversion Hcg; subst.
-  - (* __unit: Aold = Anew = typ_unit; narrowing is identity. *)
-    assumption.
-  - (* __var: Aold = Anew = typ_var_f X; narrowing is identity. *)
-    assumption.
-  - (* __forall_inh_untagged: Aold = typ_all_plain — not is_inh. *)
-    inversion Hinh.
-  - (* __forall_syn_tagged: Aold = typ_all_etag — not is_inh. *)
-    inversion Hinh.
-  - (* __forall_syn_untagged: Aold = typ_all_plain — not is_inh. *)
-    inversion Hinh.
-  - (* __forall_inh: Aold = typ_all_col colour_inh T,
-       Anew = typ_all_col colour_inh A0. Genuine narrowing on a
-       polytype binding — needs the recursive narrowing machinery
-       (same class of obstacle as __arrow). *)
-    admit.
-  - (* __arrow: recursive narrowing on arrow components. *)
-    admit.
-Admitted.
+  intros x Aold Anew Γ m e B Hty Hcg.
+  apply d_typing_narrow_consis_head with (Aold := Aold); auto.
+  symmetry. eapply d_consis_gen_syn_color_eq; eauto.
+Qed.
 
 (** ** Structural lemmas for the generalised relations.
 
@@ -1956,6 +1920,102 @@ Proof.
   - apply d_sub_gen__arg.
     + eapply d_consis_gen_tvar_morph; eauto.
     + apply IHd_sub_gen; auto.
+Qed.
+
+(** Narrowing a [dbind_typ] binding preserves [dbind_tvar] lookups
+    (the narrowed slot holds a [dbind_typ], so no [dbind_tvar] lookup
+    can resolve to it). *)
+Lemma binds_tvar_narrow_typ :
+  forall (Γ1 Γ2 : list (atom * dbind)) x Aold Anew X,
+    binds X dbind_tvar (Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2) ->
+    binds X dbind_tvar (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2).
+Proof.
+  intros Γ1 Γ2 x Aold Anew X HbY.
+  apply binds_app_iff in HbY. destruct HbY as [Hb | Hb].
+  - apply binds_app_iff. left. assumption.
+  - apply binds_app_iff in Hb. destruct Hb as [Hbx | Hbp].
+    + apply binds_one_iff in Hbx. destruct Hbx as [_ Habs]. inversion Habs.
+    + apply binds_app_iff. right. apply binds_app_iff. right. assumption.
+Qed.
+
+(** [d_typing_gen] narrowing along a [syn_color]-equal binding swap —
+    the [d_typing_gen] analogue of [d_typing_narrow_consis]. The
+    [__var] case at the narrowed binding closes immediately because
+    [d_typing_gen__var] gives the [syn_color] of the binding and
+    [Hsc] equates the two. [__sub]'s [d_sub_gen] and [__app]'s
+    [d_refine_syn] only read [dbind_tvar] entries
+    ([binds_tvar_narrow_typ]); [__app]'s [d_pat] narrows via
+    [d_typing_narrow_consis]. *)
+Lemma d_typing_gen_narrow_consis : forall m Γ_full e B,
+    d_typing_gen m Γ_full e B ->
+    forall Γ1 x Aold Anew Γ2,
+      Γ_full = Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2 ->
+      syn_color Anew = syn_color Aold ->
+      d_typing_gen m (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) e B.
+Proof.
+  intros m Γ_full e B H.
+  induction H; intros Γ1 x0 Aold Anew Γ2 HeqΓ Hsc; subst.
+  - (* __unit *) apply d_typing_gen__unit. assumption.
+  - (* __var *)
+    apply binds_app_iff in H. destruct H as [Hb_pre | Hb_in].
+    + apply d_typing_gen__var. apply binds_app_iff. left. exact Hb_pre.
+    + apply binds_app_iff in Hb_in. destruct Hb_in as [Hb_x | Hb_post].
+      * apply binds_one_iff in Hb_x. destruct Hb_x as [Heq Hbeq].
+        subst x. inversion Hbeq. subst A.
+        rewrite <- Hsc.
+        apply d_typing_gen__var. apply binds_app_iff. right.
+        apply binds_app_iff. left. apply binds_one_iff. auto.
+      * apply d_typing_gen__var. apply binds_app_iff. right.
+        apply binds_app_iff. right. exact Hb_post.
+  - (* __anno *)
+    apply d_typing_gen__anno; auto.
+    eapply IHd_typing_gen; eauto.
+  - (* __sub *)
+    apply d_typing_gen__sub with (A := A); auto.
+    + eapply IHd_typing_gen; eauto.
+    + eapply d_sub_gen_tvar_morph; [| exact H1].
+      intros Y HbY. eapply binds_tvar_narrow_typ; eauto.
+  - (* __freeze *)
+    apply d_typing_gen__freeze. eapply IHd_typing_gen; eauto.
+  - (* __forall *)
+    apply d_typing_gen__forall with
+      (L := L `union` dom (Γ1 ++ (x0 ~ dbind_typ Anew) ++ Γ2)); auto.
+    intros X HX.
+    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ (x0 ~ dbind_typ Anew) ++ Γ2).
+    eapply H1; eauto.
+  - (* __abs *)
+    apply d_typing_gen__abs with
+      (L := L `union` dom (Γ1 ++ (x0 ~ dbind_typ Anew) ++ Γ2)); auto.
+    + eapply d_wf_typ_tvar_morph; [| exact H0].
+      intros Y HbY. eapply binds_tvar_narrow_typ; eauto.
+    + intros y Hy.
+      rewrite_env (((y ~ dbind_typ A) ++ Γ1) ++ (x0 ~ dbind_typ Anew) ++ Γ2).
+      eapply H2; eauto.
+  - (* __abs_anno *)
+    apply d_typing_gen__abs_anno with
+      (L := L `union` dom (Γ1 ++ (x0 ~ dbind_typ Anew) ++ Γ2)); auto.
+    + eapply d_wf_typ_tvar_morph; [| exact H].
+      intros Y HbY. eapply binds_tvar_narrow_typ; eauto.
+    + intros y Hy.
+      rewrite_env (((y ~ dbind_typ A) ++ Γ1) ++ (x0 ~ dbind_typ Anew) ++ Γ2).
+      eapply H1; eauto.
+  - (* __app *)
+    apply d_typing_gen__app with (P := P) (P' := P') (A := A); auto.
+    + eapply (proj2 d_typing_narrow_consis); eauto.
+    + eapply d_refine_syn_tvar_morph; [| exact H0].
+      intros Y HbY. eapply binds_tvar_narrow_typ; eauto.
+    + eapply IHd_typing_gen1; eauto.
+    + eapply IHd_typing_gen2; eauto.
+Qed.
+
+Corollary d_typing_gen_narrow_consis_head : forall x Aold Anew Γ m e B,
+    d_typing_gen m ((x ~ dbind_typ Aold) ++ Γ) e B ->
+    syn_color Anew = syn_color Aold ->
+    d_typing_gen m ((x ~ dbind_typ Anew) ++ Γ) e B.
+Proof.
+  intros x Aold Anew Γ m e B Hty Hsc.
+  rewrite_env (nil ++ (x ~ dbind_typ Anew) ++ Γ).
+  eapply d_typing_gen_narrow_consis with (Γ1 := nil) (Aold := Aold); eauto.
 Qed.
 
 (** ** FN^n TI predicate (paper's mode-stack discipline).
