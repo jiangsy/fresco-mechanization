@@ -1063,26 +1063,29 @@ Inductive d_consis_gen :
 | d_consis_gen__embed : forall Δ Γ T A,
     d_consis Δ Γ T A ->
     d_consis_gen Δ Γ T A
-(* [d_consis_gen__refl_any] — refl for any wf type.
+(* [d_consis_gen__forall_inh] — the paper's generalised-consistency
+   [ForallInh] rule (syntax-directed.tex:116-122):
 
-   KNOWN LATENT ISSUE (analogous to the [d_sub_gen__refl_any] flaw
-   that motivated [d_sub_gen__refl_mono]): allowing refl on non-mono
-   types here means a variable bound to [typ_arrow A0 B] with [A0] a
-   non-mono polytype could be "subtyped" to [typ_arrow A0 A2] via
-   [d_sub_gen__arg], yet the [d_typing__var] reconstruction needs
-   [d_sub__arg] requiring [d_consis A0 A0] — which fails ([d_consis]
-   is not reflexive on polytypes). HOWEVER, this rule is genuinely
-   needed for the __app function-side lift (where the arg type IS
-   literally unchanged and the reconstruction is [d_typing__app], not
-   [d_typing__sub] — so no [d_consis] is required). The unsoundness
-   only manifests in the [d_typing__var] / [d_typing__anno] + __arg
-   cases, which remain ADMITTED — so no PROVEN case depends on the
-   unsound combination. A proper fix would split [d_sub_gen__arg]
-   into an "arg literally unchanged" variant vs. an "arg changed"
-   variant; deferred. *)
-| d_consis_gen__refl_any : forall Γ A,
-    d_wf_typ Γ A ->
-    d_consis_gen nil Γ A A
+     typconsis[Δ] (Γ,α) T T'  →  typconsis[Δ] Γ (inh{∀α.}T) (inh{∀α.}T')
+
+   This is the FAITHFUL mechanisation of the paper's generalised
+   [typconsis] over generalised unresolved types [\bid{T}], which
+   extend [\syn{T}] with [inh{∀α.}T] on the LHS. It is a STRUCTURAL
+   rule (not a [refl] axiom): it admits [typ_all_col colour_inh] on
+   the LHS, making [d_consis_gen] structurally reflexive on
+   inherited-forall types — exactly what the paper's __app step
+   relies on for [typconsis A A] when the function's argument type
+   [A] is an impredicative polytype.
+
+   (An earlier version used a [d_consis_gen__refl_any] axiom — refl
+   for any wf type — which was both unfaithful and unsound for the
+   gen→sub bridge. The structural [ForallInh] rule replaces it.) *)
+| d_consis_gen__forall_inh : forall L Δ Γ T A,
+    (forall X, X `notin` L ->
+       d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_typ_wrt_typ T (typ_var_f X))
+         (open_typ_wrt_typ A (typ_var_f X))) ->
+    d_consis_gen Δ Γ (typ_all_col colour_inh T) (typ_all_col colour_inh A)
 | d_consis_gen__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,
     d_consis_gen Δ1 Γ T1 A1 ->
     d_consis_gen Δ2 Γ T2 A2 ->
@@ -1175,6 +1178,55 @@ Proof.
     + apply IHHcompat; auto.
 Qed.
 
+(** [d_consis_gen] is reflexive on any [is_inh_typ] wf type — the
+    paper's generalised consistency is structurally reflexive on
+    generalised unresolved types. Proven by induction on the
+    [is_inh_typ] derivation: unit/var/arrow via [__embed]/[__arrow],
+    and [typ_all_col colour_inh] via the structural [__forall_inh]
+    rule. This is the mechanised analogue of the paper's implicit
+    "[typconsis] is reflexive" used in the __app step of Lemma B.5. *)
+Lemma d_consis_gen_refl : forall Γ A,
+    is_inh_typ A ->
+    d_wf_typ Γ A ->
+    d_consis_gen nil Γ A A.
+Proof.
+  intros Γ A Hinh. generalize dependent Γ.
+  induction Hinh; intros Γ Hwf.
+  - apply d_consis_gen__embed. apply d_consis__unit.
+  - apply d_consis_gen__embed. inversion Hwf; subst.
+    apply d_consis__var; assumption.
+  - inversion Hwf; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_consis_gen__arrow.
+    + apply IHHinh1; assumption.
+    + apply IHHinh2; assumption.
+    + apply list_disjoint_nil_l.
+  - (* typ_all_col colour_inh A *)
+    inversion Hwf; subst.
+    apply d_consis_gen__forall_inh with (L := L `union` L0 `union` dom Γ).
+    intros X HX. apply H0; auto.
+Qed.
+
+(** [d_typing_check_is_inh]: a [mode_tc] (check-mode) typing always
+    has an [is_inh_typ] type.
+
+    PAPER-LEVEL INVARIANT. In the paper, the check judgement is
+    written [typc Γ N (inh A)] — it checks against an INHERITED
+    (inh-coloured) type by construction. The mechanised
+    [d_typing mode_tc Γ e A] does not carry [is_inh_typ A] explicitly
+    on every rule (e.g. [d_typing__abs] / [d_typing__freeze] do not),
+    so this invariant is not derivable post-hoc from the current rule
+    set without strengthening the [d_typing] definition. We admit it
+    as the paper's implicit colour invariant; a fully faithful
+    mechanisation would thread [is_inh_typ] through the [mode_tc]
+    rules. Used only to discharge [is_inh_typ] of a function's
+    argument type in the __app function-side lift. *)
+Lemma d_typing_check_is_inh : forall Γ e A,
+    d_typing mode_tc Γ e A ->
+    is_inh_typ A.
+Proof.
+Admitted.
+
 (** [d_consis_lhs_is_syn_typ]: when [d_consis nil Γ A B] holds and
     [is_inh_typ A], then A is also [is_syn_typ]. d_consis rules
     don't admit typ_all_col on LHS, so A's shape is forced to be
@@ -1227,11 +1279,15 @@ Lemma d_consis_gen_rhs_is_inh_typ : forall Γ A B,
     is_inh_typ A ->
     is_inh_typ B.
 Proof.
-  intros Γ A B Hcg Hinh.
+  intros Γ A B Hcg.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
-  induction Hcg; subst.
+  induction Hcg; subst; intros Hinh.
   - eapply d_consis_rhs_is_inh_typ; eauto.
-  - assumption.
+  - (* __forall_inh: both sides typ_all_col colour_inh. IH = H0. *)
+    inversion Hinh; subst.
+    apply is_inh_typ__all with (L := L `union` L0).
+    intros X HX.
+    apply H0; auto.
   - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
     inversion Hinh; subst.
     apply is_inh_typ__arrow; auto.
@@ -1279,7 +1335,8 @@ Lemma d_consis_gen_preserves_wf : forall Δ Γ A B,
 Proof.
   intros Δ Γ A B Hcg. induction Hcg.
   - eapply d_consis_preserves_wf; eauto.
-  - assumption.
+  - (* __forall_inh: B = typ_all_col colour_inh A0. IH = H0. *)
+    apply d_wf_typ__all with (L := L). assumption.
   - apply d_wf_typ__arrow; auto.
 Qed.
 
@@ -1289,12 +1346,16 @@ Lemma d_consis_gen_sym_inh : forall Γ A B,
     is_inh_typ A ->
     d_consis_gen nil Γ B A.
 Proof.
-  intros Γ A B Hcg Hinh.
+  intros Γ A B Hcg.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
-  induction Hcg; subst.
+  induction Hcg; subst; intros Hinh.
   - apply d_consis_gen__embed.
     apply d_consis_sym_inh; auto.
-  - apply d_consis_gen__refl_any. assumption.
+  - (* __forall_inh: both sides typ_all_col colour_inh. IH = H0. *)
+    inversion Hinh; subst.
+    apply d_consis_gen__forall_inh with (L := L `union` L0).
+    intros X HX.
+    apply H0; auto.
   - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
     inversion Hinh; subst.
     rewrite_env (@nil atom ++ @nil atom).
@@ -1328,8 +1389,11 @@ Proof.
     apply d_typing_narrow_consis_head with (Aold := Aold); auto.
     + apply d_consis_sym_inh; auto.
     + eapply d_consis_lhs_is_syn_typ; eauto.
-  - (* __refl_any: Aold = Anew. Identity. *)
-    assumption.
+  - (* __forall_inh: Aold = typ_all_col colour_inh T,
+       Anew = typ_all_col colour_inh A0. Genuine narrowing on a
+       polytype binding — needs the recursive narrowing machinery
+       (same class of obstacle as __arrow). *)
+    admit.
   - (* __arrow: recursive narrowing on arrow components. *)
     admit.
 Admitted.
@@ -1349,7 +1413,9 @@ Lemma d_consis_gen_weakening : forall Γ1 Γ2 Γ3 Δ T A,
 Proof.
   intros Γ1 Γ2 Γ3 Δ T A H. dependent induction H.
   - apply d_consis_gen__embed. apply d_consis_weakening; auto.
-  - apply d_consis_gen__refl_any. eapply d_wf_typ_weakening; eauto.
+  - apply d_consis_gen__forall_inh with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
   - apply d_consis_gen__arrow; auto.
 Qed.
 
@@ -1391,7 +1457,11 @@ Proof.
   intros Γ Γ' Δ T A Hmorph H.
   generalize dependent Γ'. induction H; intros Γ' Hmorph.
   - apply d_consis_gen__embed. eapply d_consis_tvar_morph; eauto.
-  - apply d_consis_gen__refl_any. eapply d_wf_typ_tvar_morph; eauto.
+  - apply d_consis_gen__forall_inh with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hb | Hb]; apply binds_app_iff;
+      [ left; auto | right; auto ].
   - apply d_consis_gen__arrow; auto.
 Qed.
 
@@ -1510,8 +1580,13 @@ Proof.
     + simpl in Hperm.
       apply Permutation_sym in Hperm.
       apply Permutation_nil in Hperm. subst. exact Hcc.
-  - (* __refl_any: B = A, Hc gives the result via embed. *)
-    apply d_consis_gen__embed. assumption.
+  - (* __forall_inh: A = typ_all_col colour_inh T_inner,
+       B = typ_all_col colour_inh A_inner. Composing d_consis (with
+       RHS typ_all_col) on the LHS requires inverting Hc to
+       typ_all_plain shape and a per-X d_consis-vs-d_consis_gen
+       compose — the result needs to stay in d_consis (for __embed)
+       but composition yields d_consis_gen. Genuine gap; admitted. *)
+    admit.
   - (* __arrow: Δ1 ++ Δ2 = nil forces both nil. *)
     apply app_eq_nil in HeqΔ.
     destruct HeqΔ as [HΔ1 HΔ2]. subst.
@@ -1523,7 +1598,7 @@ Proof.
     inversion HwfT; subst.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_consis_gen__arrow; auto.
-Qed.
+Admitted.
 
 (** [d_consis_extends_d_sub_gen_nil]: extend d_sub_gen on the LHS via
     a d_consis. Mirrors [d_consis_extends_d_sub_nil] for the gen
@@ -2333,6 +2408,8 @@ Proof.
           assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
             (eapply (proj1 d_typing_pat_preserves_wf); eauto);
           assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
+          assert (Hinh_A0 : is_inh_typ A0) by
+            (eapply d_typing_check_is_inh; eassumption);
           eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
       end.
       (* Solve the function-side d_typing via IH. The IH's name is
@@ -2343,11 +2420,7 @@ Proof.
       | simpl;
         rewrite_env (@nil atom ++ @nil atom);
         apply d_sub_gen__arg;
-        [ apply d_consis_gen__refl_any;
-          match goal with
-          | Hw : d_wf_typ Γ (typ_arrow ?A0 _) |- _ =>
-              inversion Hw; assumption
-          end
+        [ apply d_consis_gen_refl; assumption
         | apply d_sub_gen__embed; assumption ] ].
     + (* __refl_mono: B_tgt = B0 (mono). Use IHHty1 (function-side IH)
          at a sub_gen for the lifted arrow. The arrow sub is built via
@@ -2370,9 +2443,11 @@ Proof.
       * simpl.
         rewrite_env (@nil atom ++ @nil atom).
         apply d_sub_gen__arg.
-        -- apply d_consis_gen__refl_any.
-           match goal with Hw : d_wf_typ Γ (typ_arrow ?A0 _) |- _ =>
-             inversion Hw; assumption end.
+        -- apply d_consis_gen_refl;
+           [ match goal with Harg : d_typing mode_tc _ _ ?A0 |- is_inh_typ ?A0 =>
+               eapply d_typing_check_is_inh; exact Harg end
+           | match goal with Hw : d_wf_typ Γ (typ_arrow ?A0 _) |- d_wf_typ Γ ?A0 =>
+               inversion Hw; assumption end ].
         -- apply d_sub_gen__refl_mono; auto;
            match goal with Hw : d_wf_typ Γ (typ_arrow _ ?B0) |- _ =>
              inversion Hw; assumption end.
@@ -2390,6 +2465,8 @@ Proof.
             assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
               (eapply (proj1 d_typing_pat_preserves_wf); eauto);
             assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
+          assert (Hinh_A0 : is_inh_typ A0) by
+            (eapply d_typing_check_is_inh; eassumption);
             eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
         end.
         eapply IHHty1.
@@ -2397,7 +2474,7 @@ Proof.
         -- assumption.
         -- simpl. rewrite_env (@nil atom ++ @nil atom).
            apply d_sub_gen__arg.
-           ++ apply d_consis_gen__refl_any. assumption.
+           ++ apply d_consis_gen_refl; assumption.
            ++ eapply d_sub_gen__forall_r. intros X HX. apply H1; auto.
       * (* m = mode_fn _: equation mode_tc = mode_fn (...) is False. *)
         discriminate x.
@@ -2414,6 +2491,8 @@ Proof.
           assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
             (eapply (proj1 d_typing_pat_preserves_wf); eauto);
           assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
+          assert (Hinh_A0 : is_inh_typ A0) by
+            (eapply d_typing_check_is_inh; eassumption);
           eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
       end.
       (* Function-side lift: IHHty1 expects sub from typ_arrow A B
@@ -2432,7 +2511,7 @@ Proof.
         end.
         rewrite_env (@nil atom ++ @nil atom).
         apply d_sub_gen__arg.
-        -- apply d_consis_gen__refl_any. assumption.
+        -- apply d_consis_gen_refl; assumption.
         -- rewrite_env (@nil atom ++ @nil atom).
            apply d_sub_gen__arg; eassumption.
 Admitted.
