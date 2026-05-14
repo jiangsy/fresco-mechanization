@@ -166,9 +166,11 @@ D12 `d_typing_general_subsumption_gen` cases:
 | `__sub` (m = mode_ti) | ✅ CLOSED — compose inner mode_ti `d_sub_gen` with outer via `d_consis_extends_d_sub_gen_nil` |
 | `__sub` (m = mode_fn) | ✅ CLOSED — mode-changing `d_sub_gen` composition via `d_sub_gen_trans` |
 | `__app` (`__infer_gen` / `__check_gen`) | 🔴 admit — new `d_sub_gen` rules; function-side lift not yet wired |
-| `__abs` / `__abs_anno` + `__refl_mono` | ✅ CLOSED — body IH + `d_sub_gen__refl_mono` |
-| `__abs` / `__abs_anno` + `__forall_r` | ✅ CLOSED — via `d_typing_abs[_anno]_value_to_forall` |
-| `__abs` / `__abs_anno` + `__embed` / `__infer_gen` / `__check_gen` / `__arg` | 🔴 admit — narrowing lemma (`d_typing_gen_narrow_consis_head`) is now DONE; these just need to apply it + the body-IH subsumption (mechanical, ~8 mode-bookkeeping cases) |
+| `__abs` + `__refl_mono` / `__forall_r` | ✅ CLOSED — body IH + `d_sub_gen__refl_mono` / `d_typing_abs_value_to_forall` |
+| `__abs` + `__arg` / `__infer_gen` / `__check_gen` | ✅ CLOSED — `d_typing_gen_narrow_consis_head` (narrow body arg type) + body-IH subsumption |
+| `__abs` + `__embed` | 🔴 admit — needs `d_sub` inversion on the `typ_arrow` LHS (4 sub-sub-cases), then same narrowing pattern |
+| `__abs_anno` + `__refl_mono` / `__forall_r` | ✅ CLOSED |
+| `__abs_anno` + `__embed` / `__infer_gen` / `__check_gen` / `__arg` | 🔴 admit — **genuine structural obstacle**: `d_typing_gen__abs_anno`'s annotation IS the arrow's arg type, so it can only produce `typ_arrow A _` — narrowing to `typ_arrow A1 _` (`A1 ≠ A`) is not derivable by the rule. Needs a rule-level rethink, not narrowing. |
 | `__freeze` / `__forall` | ✅ vacuous (mode_tc ∉ `is_fn_n_ti`) |
 
 THE residual concentrated gap: **`d_typing_gen_collapse`** `__sub` case
