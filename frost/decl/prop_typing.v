@@ -1137,6 +1137,90 @@ Inductive d_sub_gen :
     d_sub_gen m Δ2 Γ T2 A2 ->
     d_sub_gen (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
 
+(** ** Generalised typing [d_typing_gen].
+
+    Mirrors [d_typing] rule-for-rule, EXCEPT [d_typing_gen__sub] uses
+    the generalised subtyping [d_sub_gen] in place of [d_sub]. This is
+    the system the paper's Lemma B.5 (Generalised General Subsumption,
+    D12) is really about: the syntax-directed [Sub] rule takes the
+    generalised subtyping.
+
+    Standalone inductive (not mutual) — it reuses the ORIGINAL [d_pat]
+    in the [__app] rule (the pattern judgement is orthogonal to
+    subsumption and does not change). [d_typing] embeds into
+    [d_typing_gen] structurally via [d_sub_gen__embed]
+    ([d_typing_embed_gen] below).
+
+    With [d_typing_gen__sub] taking [d_sub_gen], the D12 cases that
+    were blocked on the gen→sub bridge (var/anno/+ __arg) close
+    directly: reconstruct [d_typing_gen__sub] with the [d_sub_gen]
+    in hand, no bridge needed. *)
+Inductive d_typing_gen :
+  mode -> list (atom * dbind) -> exp -> typ -> Prop :=
+| d_typing_gen__unit : forall Γ,
+    mode_typ_compat mode_ti typ_unit ->
+    d_typing_gen mode_ti Γ exp_unit typ_unit
+| d_typing_gen__var : forall Γ x A,
+    binds x (dbind_typ A) Γ ->
+    d_typing_gen mode_ti Γ (exp_var_f x) A
+| d_typing_gen__anno : forall Γ e A,
+    is_inh_typ A ->
+    d_typing_gen mode_tc Γ e A ->
+    d_typing_gen mode_ti Γ (exp_anno e A) A
+| d_typing_gen__sub : forall Γ m e A B,
+    is_base_term e ->
+    d_typing_gen mode_ti Γ e A ->
+    d_sub_gen m nil Γ A B ->
+    d_typing_gen m Γ e B
+| d_typing_gen__freeze : forall Γ e A,
+    d_typing_gen mode_ti Γ e A ->
+    d_typing_gen mode_tc Γ (exp_freeze e) A
+| d_typing_gen__forall : forall L Γ e A,
+    is_value e ->
+    (forall X, X `notin` L ->
+       d_typing_gen mode_tc ((X ~ dbind_tvar) ++ Γ) e
+         (open_typ_wrt_typ A (typ_var_f X))) ->
+    d_typing_gen mode_tc Γ e (typ_all_col colour_inh A)
+| d_typing_gen__abs : forall L Γ m e A B,
+    is_inh_typ A ->
+    d_wf_typ Γ A ->
+    (forall x, x `notin` L ->
+       d_typing_gen (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_typing_gen m Γ (exp_abs e) (typ_arrow A B)
+| d_typing_gen__abs_anno : forall L Γ m e A B,
+    d_wf_typ Γ A ->
+    (forall x, x `notin` L ->
+       d_typing_gen (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_typing_gen m Γ (exp_abs_anno A e) (typ_arrow A B)
+| d_typing_gen__app : forall Γ m e1 e2 P P' A B,
+    d_pat mode_tc Γ e2 P ->
+    d_refine_syn nil Γ P P' ->
+    d_typing_gen (mode_fn m) Γ e1 (typ_arrow A B) ->
+    d_typing_gen mode_tc Γ e2 A ->
+    d_typing_gen m Γ (exp_app e1 e2) B.
+
+(** [d_typing] embeds into [d_typing_gen]: every original typing is a
+    generalised typing (the [__sub] rule's [d_sub] embeds via
+    [d_sub_gen__embed]). Structural induction. *)
+Lemma d_typing_embed_gen : forall m Γ e A,
+    d_typing m Γ e A ->
+    d_typing_gen m Γ e A.
+Proof.
+  intros m Γ e A H. induction H.
+  - apply d_typing_gen__unit; assumption.
+  - apply d_typing_gen__var; assumption.
+  - apply d_typing_gen__anno; assumption.
+  - apply d_typing_gen__sub with (A := A); auto.
+    apply d_sub_gen__embed; assumption.
+  - apply d_typing_gen__freeze; assumption.
+  - apply d_typing_gen__forall with (L := L); assumption.
+  - apply d_typing_gen__abs with (L := L); assumption.
+  - apply d_typing_gen__abs_anno with (L := L); assumption.
+  - apply d_typing_gen__app with (P := P) (P' := P') (A := A); assumption.
+Qed.
+
 (** [d_sub_gen] is reflexive on any mono wf type at a compatible mode. *)
 Lemma d_sub_gen_refl : forall Γ A m,
     mono_typ A ->
@@ -1449,6 +1533,51 @@ Proof.
   apply d_sub_gen_weakening. simpl. auto.
 Qed.
 
+(** Weakening for [d_typing_gen] — structural, mirrors
+    [d_typing_weakening]. The [__sub] case uses [d_sub_gen_weakening]. *)
+Lemma d_typing_gen_weakening : forall Γ1 Γ2 Γ3 m e A,
+    d_typing_gen m (Γ1 ++ Γ3) e A ->
+    d_typing_gen m (Γ1 ++ Γ2 ++ Γ3) e A.
+Proof.
+  intros Γ1 Γ2 Γ3 m e A H.
+  remember (Γ1 ++ Γ3) as Γ eqn:HeqΓ.
+  generalize dependent Γ1.
+  induction H; intros Γ1 HeqΓ; subst.
+  - apply d_typing_gen__unit; assumption.
+  - apply d_typing_gen__var. apply binds_app_iff in H.
+    destruct H as [Hb | Hb].
+    + apply binds_app_iff. auto.
+    + apply binds_app_iff. right. apply binds_app_iff. auto.
+  - apply d_typing_gen__anno; auto.
+  - apply d_typing_gen__sub with (A := A); auto.
+    apply d_sub_gen_weakening; auto.
+  - apply d_typing_gen__freeze; auto.
+  - apply d_typing_gen__forall with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    + assumption.
+    + intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+      apply H1; auto.
+  - apply d_typing_gen__abs with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
+    + eapply d_wf_typ_weakening; eauto.
+    + intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
+      apply H2; auto.
+  - apply d_typing_gen__abs_anno with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
+    + eapply d_wf_typ_weakening; eauto.
+    + intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
+      apply H1; auto.
+  - apply d_typing_gen__app with (P := P) (P' := P') (A := A); auto.
+    + eapply (proj2 d_typing_pat_weakening) with
+        (Γ1 := Γ1) (Γ2 := Γ2) (Γ3 := Γ3); eauto.
+    + apply d_refine_syn_weakening; auto.
+Qed.
+
+Corollary d_typing_gen_weakening_head : forall Γ Γ' m e A,
+    d_typing_gen m Γ e A ->
+    d_typing_gen m (Γ' ++ Γ) e A.
+Proof.
+  intros. rewrite_env (nil ++ Γ' ++ Γ).
+  apply d_typing_gen_weakening. simpl. auto.
+Qed.
+
 Lemma d_consis_gen_tvar_morph : forall Γ Γ' Δ T A,
     (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
     d_consis_gen Δ Γ T A ->
@@ -1647,115 +1776,102 @@ Proof.
       eapply IHHs; eauto.
 Qed.
 
-(** Aux lemmas specialising the gen-subsumption theorem to specific
-    Hty constructors. Each is proven by induction on Hsub_gen so the
-    [__forall_r] case can recurse on the per-X premise — handling
-    the nested-induction obstacle that the outer Hty-induction
-    cannot. *)
+(** Mono-type mode-lift for [d_typing_gen] — the [d_typing_gen]
+    analogue of [d_typing_lift_mono]. By induction on the typing.
+    Base terms close via [d_typing_gen__sub]; [__abs]/[__abs_anno]
+    reconstruct with body lifted by the IH; [__app] is research-grade
+    (same gap as [d_typing_lift_mono]'s __app — function arg-type
+    mono not derivable from the rule). *)
+Lemma d_typing_gen_lift_mono : forall Γ e A m_target,
+    d_typing_gen mode_ti Γ e A ->
+    mono_typ A ->
+    d_wf_denv Γ ->
+    d_sub_gen m_target nil Γ A A ->
+    d_typing_gen m_target Γ e A.
+Proof.
+  intros Γ e A m_target Hty.
+  remember mode_ti as m0 eqn:Heqm0.
+  generalize dependent m_target.
+  induction Hty; intros m_target Hmono Hwfd Hrefl;
+    try discriminate Heqm0.
+  - (* __unit *)
+    apply d_typing_gen__sub with (A := typ_unit).
+    + apply is_base_term__unit.
+    + apply d_typing_gen__unit; assumption.
+    + exact Hrefl.
+  - (* __var *)
+    apply d_typing_gen__sub with (A := A).
+    + apply is_base_term__var.
+    + apply d_typing_gen__var; assumption.
+    + exact Hrefl.
+  - (* __anno *)
+    apply d_typing_gen__sub with (A := A).
+    + apply is_base_term__anno.
+    + apply d_typing_gen__anno; assumption.
+    + exact Hrefl.
+  - (* __sub: inner at mode_ti, compose via d_consis_extends_d_sub_gen_nil.
+       The embedded sub mode = m which from Heqm0 (m = mode_ti) is
+       mode_ti. The inner d_sub_gen mode_ti → __embed (d_sub__infer
+       gives d_consis) or __refl_mono. Both reduce to a d_consis on
+       the LHS, composed with Hrefl. *)
+    admit.
+  - (* __abs: A_outer = typ_arrow A B mono. Reconstruct d_typing_gen__abs
+       at m_target with body lifted via the IH H2. The body sub is
+       d_sub_gen__refl_mono on the mono body type B. *)
+    admit.
+  - (* __abs_anno: same shape as __abs. *)
+    admit.
+  - (* __app: research-grade (same gap as d_typing_lift_mono). *)
+    admit.
+Admitted.
 
-(** [d_typing_unit_gen_subsumption]: gen-subsumption at Hty = __unit. *)
+(** Aux lemmas specialising the gen-subsumption theorem to specific
+    Hty constructors. *)
+
+(** With [d_typing_gen], the base-term subsumption helpers are trivial:
+    [d_typing_gen__sub] takes the [d_sub_gen] directly, so no induction
+    on the subtyping derivation and no gen→sub bridge are needed. This
+    is exactly the structural payoff of mirroring the paper's
+    syntax-directed [Sub] rule (which uses the generalised subtyping). *)
 Lemma d_typing_unit_gen_subsumption : forall Γ A m,
     d_wf_denv Γ ->
     d_sub_gen m nil Γ typ_unit A ->
-    d_typing m Γ exp_unit A.
+    d_typing_gen m Γ exp_unit A.
 Proof.
-  intros Γ A m Hwfd Hs. dependent induction Hs.
-  - (* __embed: d_sub m nil Γ typ_unit A. *)
-    apply d_typing__sub with (A := typ_unit);
-      [ apply is_base_term__unit
-      | apply d_typing__unit;
-          apply mode_typ_compat__ti; apply is_syn_typ__unit
-      | assumption ].
-  - (* __refl_mono: A = typ_unit mono, mode_typ_compat m typ_unit.
-       Case-split on the mode via the mode_typ_compat hypothesis. *)
-    match goal with H_mc : mode_typ_compat ?m0 typ_unit |- _ =>
-      inversion H_mc; subst
-    end.
-    + apply d_typing__unit. apply mode_typ_compat__ti.
-      apply is_syn_typ__unit.
-    + apply d_typing__sub with (A := typ_unit);
-        [ apply is_base_term__unit
-        | apply d_typing__unit;
-            apply mode_typ_compat__ti; apply is_syn_typ__unit
-        | apply d_sub__check;
-            [ intros ε T' Heq; discriminate Heq
-            | intros T' Heq; discriminate Heq
-            | apply mono_typ_is_inh_typ; apply mono_typ__unit
-            | apply d_consis__unit ] ].
-  - (* __forall_r: m = mode_tc, A = typ_all_col col_inh A0.
-       Use d_typing__forall; the per-X IH (H0) fires on per-X
-       Hsub_gen at extended Γ. (sub_gen__arg auto-discharged:
-       typ_unit ≠ typ_arrow.) *)
-    apply d_typing__forall with (L := L `union` dom Γ).
-    + apply is_value__unit.
-    + intros X HX.
-      apply H0 with (X := X); auto.
-      apply d_wf_denv__tvar; auto.
+  intros Γ A m Hwfd Hs.
+  apply d_typing_gen__sub with (A := typ_unit).
+  - apply is_base_term__unit.
+  - apply d_typing_gen__unit. apply mode_typ_compat__ti.
+    apply is_syn_typ__unit.
+  - exact Hs.
 Qed.
 
-(** [d_typing_var_gen_subsumption]: gen-subsumption at Hty = __var.
-    __embed and __forall_r cases close cleanly; refl_any non-ti and
-    __arg cases are research-grade (non-mono d_consis refl /
-    gen→sub bridge). *)
 Lemma d_typing_var_gen_subsumption : forall Γ xv Avar A m,
     d_wf_denv Γ ->
     binds xv (dbind_typ Avar) Γ ->
     d_sub_gen m nil Γ Avar A ->
-    d_typing m Γ (exp_var_f xv) A.
+    d_typing_gen m Γ (exp_var_f xv) A.
 Proof.
   intros Γ xv Avar A m Hwfd Hb Hs.
-  remember Avar as Avar0 eqn:HAv.
-  generalize dependent xv.
-  generalize dependent Avar.
-  dependent induction Hs; intros Avar HAv xv Hb; subst.
-  - apply d_typing__sub with (A := Avar);
-      [ apply is_base_term__var
-      | apply d_typing__var; exact Hb
-      | assumption ].
-  - (* __refl_mono: Avar mono. Mode-lift the variable typing. *)
-    apply d_typing_lift_mono with (A := Avar); auto.
-    + apply d_typing__var; exact Hb.
-    + apply d_sub_refl_mono_mode; auto.
-  - apply d_typing__forall with (L := L `union` dom Γ).
-    + apply is_value__var.
-    + intros X HX.
-      eapply H0 with (Avar := Avar) (xv := xv); eauto.
-      apply d_wf_denv__tvar; auto.
-  - admit.
-Admitted.
+  apply d_typing_gen__sub with (A := Avar).
+  - apply is_base_term__var.
+  - apply d_typing_gen__var; exact Hb.
+  - exact Hs.
+Qed.
 
-(** [d_typing_anno_gen_subsumption]: similar for Hty = __anno. *)
 Lemma d_typing_anno_gen_subsumption : forall Γ e0 Aann A m,
     d_wf_denv Γ ->
     is_inh_typ Aann ->
-    d_typing mode_tc Γ e0 Aann ->
-    is_value e0 ->
+    d_typing_gen mode_tc Γ e0 Aann ->
     d_sub_gen m nil Γ Aann A ->
-    d_typing m Γ (exp_anno e0 Aann) A.
+    d_typing_gen m Γ (exp_anno e0 Aann) A.
 Proof.
-  intros Γ e0 Aann A m Hwfd Hinh_outer Hinner Hval Hs.
-  remember Aann as Aann0 eqn:HAv.
-  generalize dependent e0.
-  generalize dependent Hinh_outer.
-  generalize dependent Aann.
-  dependent induction Hs; intros Aann HAv Hinh_outer e0 Hinner Hval; subst.
-  - apply d_typing__sub with (A := Aann);
-      [ apply is_base_term__anno
-      | apply d_typing__anno; assumption
-      | assumption ].
-  - (* __refl_mono: Aann mono. Mode-lift the anno typing. *)
-    apply d_typing_lift_mono with (A := Aann); auto.
-    + apply d_typing__anno; assumption.
-    + apply d_sub_refl_mono_mode; auto.
-  - apply d_typing__forall with (L := L `union` dom Γ).
-    + apply is_value__anno; assumption.
-    + intros X HX.
-      eapply H0 with (Aann := Aann) (e0 := e0); eauto.
-      * apply d_wf_denv__tvar; auto.
-      * rewrite_env (nil ++ ((X ~ dbind_tvar) ++ nil) ++ Γ).
-        eapply (proj1 d_typing_pat_weakening); eauto.
-  - admit.
-Admitted.
+  intros Γ e0 Aann A m Hwfd Hinh_outer Hinner Hs.
+  apply d_typing_gen__sub with (A := Aann).
+  - apply is_base_term__anno.
+  - apply d_typing_gen__anno; assumption.
+  - exact Hs.
+Qed.
 
 (** [d_typing_abs_value_to_forall]: when Hty = __abs (a value), lifting
     to typ_all_col colour_inh via __forall_r requires nested recursion
@@ -1769,40 +1885,40 @@ Lemma d_typing_abs_value_to_subsumption :
     is_inh_typ A ->
     d_wf_typ Γ A ->
     (forall x, x `notin` L ->
-       d_typing (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
+       d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
     decr_mode m_orig = mode_ti ->
     d_wf_denv Γ ->
     d_sub_gen mode_tc nil Γ (typ_arrow A B) C ->
-    d_typing mode_tc Γ (exp_abs e) C.
+    d_typing_gen mode_tc Γ (exp_abs e) C.
 Proof.
   intros L Γ e A B m_orig C HinhA HwfA Hbody Hdecr Hwfd Hs.
   dependent induction Hs.
   - (* __embed: d_sub mode_tc nil Γ (typ_arrow A B) C. *)
     admit.
   - (* __refl_mono: C = typ_arrow A B, forced MONO. With A, B mono the
-       body lift is clean — reconstruct d_typing__abs at mode_tc and
+       body lift is clean — reconstruct d_typing_gen__abs at mode_tc and
        lift the body (at decr_mode m_orig = mode_ti) via
-       [d_typing_lift_mono]. *)
+       [d_typing_gen_lift_mono]. *)
     match goal with Hm : mono_typ (typ_arrow A B) |- _ =>
       assert (HmonoA : mono_typ A) by (inversion Hm; auto);
       assert (HmonoB : mono_typ B) by (inversion Hm; auto)
     end.
-    apply d_typing__abs with (L := L `union` dom Γ).
+    apply d_typing_gen__abs with (L := L `union` dom Γ).
     + apply mono_typ_is_inh_typ; auto.
     + assumption.
     + intros x Hx.
       assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
         (apply d_wf_denv__typ; auto).
-      apply d_typing_lift_mono with (A := B); auto.
+      apply d_typing_gen_lift_mono with (A := B); auto.
       * rewrite <- Hdecr. apply Hbody. auto.
-      * apply d_sub_refl_mono_mode; auto.
+      * apply d_sub_gen_refl; auto.
         -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; auto.
         -- rewrite_env ((x ~ dbind_typ A) ++ Γ).
            apply d_wf_typ_weakening_head.
            match goal with Hw : d_wf_typ Γ (typ_arrow A B) |- _ =>
              inversion Hw; assumption end.
   - (* __forall_r: C = typ_all_col colour_inh A0; recurse via H0. *)
-    apply d_typing__forall with (L := L0 `union` dom Γ).
+    apply d_typing_gen__forall with (L := L0 `union` dom Γ).
     + apply is_value__abs.
     + intros X HX.
       assert (Hwfd_X : d_wf_denv ((X ~ dbind_tvar) ++ Γ)) by
@@ -1811,7 +1927,7 @@ Proof.
       * apply d_wf_typ_weakening_head; auto.
       * intros y Hy.
         rewrite_env ((y ~ dbind_typ A) ++ (X ~ dbind_tvar) ++ Γ).
-        apply d_typing_weakening.
+        apply d_typing_gen_weakening.
         apply Hbody. exact Hy.
 Admitted.
 
@@ -1822,16 +1938,16 @@ Lemma d_typing_abs_value_to_forall :
     is_inh_typ A ->
     d_wf_typ Γ A ->
     (forall x, x `notin` L ->
-       d_typing (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
+       d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
     decr_mode m_orig = mode_ti ->
     d_wf_denv Γ ->
     (forall X, X `notin` L_sub ->
        d_sub_gen mode_tc nil ((X ~ dbind_tvar) ++ Γ) (typ_arrow A B)
          (open_typ_wrt_typ A_target (typ_var_f X))) ->
-    d_typing mode_tc Γ (exp_abs e) (typ_all_col colour_inh A_target).
+    d_typing_gen mode_tc Γ (exp_abs e) (typ_all_col colour_inh A_target).
 Proof.
   intros L Γ e A B m_orig L_sub A_target HinhA HwfA Hbody Hdecr Hwfd HperX.
-  apply d_typing__forall with (L := L_sub `union` dom Γ).
+  apply d_typing_gen__forall with (L := L_sub `union` dom Γ).
   - apply is_value__abs.
   - intros X HX.
     eapply d_typing_abs_value_to_subsumption with
@@ -1839,7 +1955,7 @@ Proof.
     + apply d_wf_typ_weakening_head; auto.
     + intros y Hy.
       rewrite_env ((y ~ dbind_typ A) ++ (X ~ dbind_tvar) ++ Γ).
-      apply d_typing_weakening.
+      apply d_typing_gen_weakening.
       apply Hbody. exact Hy.
     + apply d_wf_denv__tvar; auto.
 Qed.
@@ -1853,11 +1969,11 @@ Lemma d_typing_abs_anno_value_to_subsumption :
   forall L Γ e A B m_orig C,
     d_wf_typ Γ A ->
     (forall x, x `notin` L ->
-       d_typing (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
+       d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
     decr_mode m_orig = mode_ti ->
     d_wf_denv Γ ->
     d_sub_gen mode_tc nil Γ (typ_arrow A B) C ->
-    d_typing mode_tc Γ (exp_abs_anno A e) C.
+    d_typing_gen mode_tc Γ (exp_abs_anno A e) C.
 Proof.
   intros L Γ e A B m_orig C HwfA Hbody Hdecr Hwfd Hs.
   dependent induction Hs.
@@ -1867,20 +1983,20 @@ Proof.
       assert (HmonoA : mono_typ A) by (inversion Hm; auto);
       assert (HmonoB : mono_typ B) by (inversion Hm; auto)
     end.
-    apply d_typing__abs_anno with (L := L `union` dom Γ).
+    apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
     + assumption.
     + intros x Hx.
       assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
         (apply d_wf_denv__typ; auto).
-      apply d_typing_lift_mono with (A := B); auto.
+      apply d_typing_gen_lift_mono with (A := B); auto.
       * rewrite <- Hdecr. apply Hbody. auto.
-      * apply d_sub_refl_mono_mode; auto.
+      * apply d_sub_gen_refl; auto.
         -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; auto.
         -- rewrite_env ((x ~ dbind_typ A) ++ Γ).
            apply d_wf_typ_weakening_head.
            match goal with Hw : d_wf_typ Γ (typ_arrow A B) |- _ =>
              inversion Hw; assumption end.
-  - apply d_typing__forall with (L := L0 `union` dom Γ).
+  - apply d_typing_gen__forall with (L := L0 `union` dom Γ).
     + apply is_value__abs_anno.
     + intros X HX.
       assert (HX_L : X `notin` L0) by fsetdec.
@@ -1890,7 +2006,7 @@ Proof.
       * apply d_wf_typ_weakening_head; auto.
       * intros y Hy.
         rewrite_env ((y ~ dbind_typ A) ++ (X ~ dbind_tvar) ++ Γ).
-        apply d_typing_weakening.
+        apply d_typing_gen_weakening.
         apply Hbody. exact Hy.
 Admitted.
 
@@ -1899,16 +2015,16 @@ Lemma d_typing_abs_anno_value_to_forall :
   forall L Γ e A B m_orig L_sub A_target,
     d_wf_typ Γ A ->
     (forall x, x `notin` L ->
-       d_typing (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
+       d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
     decr_mode m_orig = mode_ti ->
     d_wf_denv Γ ->
     (forall X, X `notin` L_sub ->
        d_sub_gen mode_tc nil ((X ~ dbind_tvar) ++ Γ) (typ_arrow A B)
          (open_typ_wrt_typ A_target (typ_var_f X))) ->
-    d_typing mode_tc Γ (exp_abs_anno A e) (typ_all_col colour_inh A_target).
+    d_typing_gen mode_tc Γ (exp_abs_anno A e) (typ_all_col colour_inh A_target).
 Proof.
   intros L Γ e A B m_orig L_sub A_target HwfA Hbody Hdecr Hwfd HperX.
-  apply d_typing__forall with (L := L_sub `union` dom Γ).
+  apply d_typing_gen__forall with (L := L_sub `union` dom Γ).
   - apply is_value__abs_anno.
   - intros X HX.
     eapply d_typing_abs_anno_value_to_subsumption with
@@ -1916,16 +2032,16 @@ Proof.
     + apply d_wf_typ_weakening_head; auto.
     + intros y Hy.
       rewrite_env ((y ~ dbind_typ A) ++ (X ~ dbind_tvar) ++ Γ).
-      apply d_typing_weakening.
+      apply d_typing_gen_weakening.
       apply Hbody. exact Hy.
     + apply d_wf_denv__tvar; auto.
 Qed.
 
 (** ** Generalised General Subsumption (paper Lemma B.5).
 
-    The statement: for [Hty : d_typing m_orig Γ e A] with [m_orig ∈ FN^n TI],
+    The statement: for [Hty : d_typing_gen m_orig Γ e A] with [m_orig ∈ FN^n TI],
     and [Hsub_gen : d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B]
-    (using the GENERALISED sub), we derive [d_typing (mode_fn_n_subst
+    (using the GENERALISED sub), we derive [d_typing_gen (mode_fn_n_subst
     m_orig m_new) Γ e B].
 
     The use of [d_sub_gen] (rather than the original [d_sub]) is what
@@ -1945,7 +2061,7 @@ Qed.
     Closure status (this commit):
     - Vacuous mode_tc cases (Hty ∈ {__freeze, __forall}): CLOSED.
     - Hty ∈ {__unit, __var, __anno} / Hsub_gen = __embed: CLOSED via
-      [d_typing__sub] at the corresponding [is_base_term].
+      [d_typing_gen__sub] at the corresponding [is_base_term].
     - Hty = __unit / Hsub_gen = __refl_any: CLOSED via case-split on
       [mode_typ_compat] (mode_ti, mode_tc; mode_fn auto-discharged).
     - Hty = __var / Hsub_gen = __refl_any: mode_ti subcase CLOSED;
@@ -2005,515 +2121,51 @@ Qed.
     [d_sub_gen (mode_fn _) nil Γ typ_unit typ_unit] whose target
     d_typing is unreachable). *)
 Theorem d_typing_general_subsumption_gen : forall m_orig Γ e A,
-    d_typing m_orig Γ e A ->
+    d_typing_gen m_orig Γ e A ->
     is_fn_n_ti m_orig ->
     d_wf_denv Γ ->
     forall m_new B,
       d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B ->
-      d_typing (mode_fn_n_subst m_orig m_new) Γ e B.
+      d_typing_gen (mode_fn_n_subst m_orig m_new) Γ e B.
 Proof.
   intros m_orig Γ e A Hty.
   induction Hty; intros Hfn Hwfd m_new B_tgt Hsub_gen.
-  - (* === Hty = d_typing__unit ============================================
-       m_orig = mode_ti, e = exp_unit, A = typ_unit.
-       Target mode = [mode_fn_n_subst mode_ti m_new] = m_new.
-       Hsub_gen : d_sub_gen m_new nil Γ typ_unit B.
-
-       Dispatch on Hsub_gen. The [__embed] and [__arg] sub-cases close
-       cleanly. The [__refl_any] sub-case is sound only if m_new admits
-       typ_unit (i.e. [mode_typ_compat m_new typ_unit]) — for
-       m_new = mode_fn _, the conclusion is unreachable.
-       This is a gap in the current [d_sub_gen__refl_any] rule, which
-       lacks a [mode_typ_compat] premise. Documented as future
-       def-level fix. The [__forall_r] sub-case needs nested
-       recursion on Hsub_gen (Hty is atomic at __unit). *)
+  - (* === Hty = d_typing_gen__unit ===
+       m_orig = mode_ti, target mode = m_new. ALL Hsub_gen sub-cases
+       close in one step: [d_typing_gen__sub] takes the [d_sub_gen]
+       directly (this is the structural payoff of [d_typing_gen]). *)
     simpl in Hsub_gen |- *.
-    (* All __unit sub-cases close via the dedicated auxiliary
-       [d_typing_unit_gen_subsumption], which uses dependent induction
-       on Hsub_gen to handle __forall_r's nested recursion. *)
     apply d_typing_unit_gen_subsumption; assumption.
-  - (* === Hty = d_typing__var =============================================
-       m_orig = mode_ti, e = exp_var_f x, A = bound type for x.
-       binds x (dbind_typ A) Γ in scope.
-       Sub-case __embed: direct via d_typing__sub at is_base_term__var.
-       __refl_any: mode_typ_compat gap (same as __unit).
-       __forall_r: nested recursion needed.
-       __arg: A unifies to typ_arrow; conclusion needs converting
-       d_consis_gen / d_sub_gen pieces back to d_consis / d_sub —
-       only partial (gen __refl_any has no general inverse). *)
+  - (* === Hty = d_typing_gen__var ===
+       Closes in one step via [d_typing_var_gen_subsumption]. *)
     simpl in Hsub_gen |- *.
-    dependent destruction Hsub_gen.
-    + (* sub_gen__embed *)
-      match goal with
-      | Hb : binds _ (dbind_typ ?A0) Γ |- _ =>
-          apply d_typing__sub with (A := A0);
-            [ apply is_base_term__var
-            | apply d_typing__var; exact Hb
-            | assumption ]
-      end.
-    + (* sub_gen__refl_mono: A0 mono. Mode-lift the variable typing
-         via [d_typing_lift_mono] — all modes close (mono types are
-         reflexively subtypeable at every compatible mode). *)
-      match goal with
-      | Hmono : mono_typ ?A0,
-        Hcompat : mode_typ_compat ?m_ ?A0,
-        Hb : binds _ (dbind_typ ?A0) Γ
-        |- d_typing _ Γ (exp_var_f _) ?A0 =>
-          apply d_typing_lift_mono with (A := A0); auto;
-          [ apply d_typing__var; exact Hb
-          | apply d_sub_refl_mono_mode; auto ]
-      end.
-    + (* sub_gen__forall_r: closed via d_typing_var_gen_subsumption
-         aux lemma which induct on Hsub_gen, handling the nested
-         per-X recursion. *)
-      match goal with
-      | Hb : binds _ (dbind_typ ?A0) Γ
-        |- d_typing _ Γ (exp_var_f _) (typ_all_col colour_inh ?A_t) =>
-          eapply d_typing_var_gen_subsumption; eauto;
-          eapply d_sub_gen__forall_r; intros X HX; eauto
-      end.
-    + (* sub_gen__arg: needs gen→sub bridge (partial). *)
-      admit.
-  - (* === Hty = d_typing__anno ============================================
-       m_orig = mode_ti, e = exp_anno e' A, target mode = m_new.
-       The inner d_typing is at mode_tc — IH on it has Hfn premise
-       which fails (mode_tc ∉ is_fn_n_ti), so IH doesn't help.
-       Dispatch on Hsub_gen as in __var. *)
+    eapply d_typing_var_gen_subsumption; eauto.
+  - (* === Hty = d_typing_gen__anno ===
+       Closes in one step via [d_typing_anno_gen_subsumption]. The
+       inner [d_typing_gen mode_tc Γ e A] (premise of __anno) is in
+       scope from the induction. *)
     simpl in Hsub_gen |- *.
-    dependent destruction Hsub_gen.
-    + (* sub_gen__embed *)
-      match goal with
-      | HinhA : is_inh_typ ?A0,
-        Hinner : d_typing mode_tc Γ _ ?A0 |- _ =>
-          apply d_typing__sub with (A := A0);
-            [ apply is_base_term__anno
-            | apply d_typing__anno; [ exact HinhA | exact Hinner ]
-            | assumption ]
-      end.
-    + (* sub_gen__refl_mono: A0 mono. Mode-lift the anno typing via
-         [d_typing_lift_mono] — all modes close. *)
-      match goal with
-      | Hmono : mono_typ ?A0,
-        Hcompat : mode_typ_compat ?m_ ?A0,
-        HinhA : is_inh_typ ?A0,
-        Hinner : d_typing mode_tc Γ ?e0 ?A0
-        |- d_typing _ Γ (exp_anno ?e0 ?A0) ?A0 =>
-          apply d_typing_lift_mono with (A := A0); auto;
-          [ apply d_typing__anno; [ exact HinhA | exact Hinner ]
-          | apply d_sub_refl_mono_mode; auto ]
-      end.
-    + (* sub_gen__forall_r: needs is_value e0 which isn't guaranteed.
-         d_typing_anno_gen_subsumption requires is_value (e0) for the
-         d_typing__forall step; for non-value e0 inside the anno,
-         this case is research-grade. *)
-      admit.
-    + (* sub_gen__arg: needs gen→sub bridge (partial). *)
-      admit.
-  - (* === Hty = d_typing__sub =============================================
-       Case-split on Hfn to get m's shape. For m = mode_ti,
-       Hsub_orig = d_sub__infer (only mode_ti shape), giving a
-       d_consis we can compose via [d_consis_extends_d_sub_nil].
-       For m = mode_fn _, Hsub_orig = d_sub__arg (wf excludes
-       __forall_l_tagged / __forall_l_untagged); composition needs
-       mode-changing transitivity. *)
-    inversion Hfn; subst.
-    + (* m = mode_ti. mode_fn_n_subst mode_ti m_new = m_new. Apply IHHty
-         (the IH on Hty_inner at mode_ti) with the SAME outer sub —
-         the IH gives the result directly via d_sub_gen at the new
-         target, constructed by composing Hsub_orig and Hsub_gen. *)
-      simpl in Hsub_gen |- *.
-      (* Hsub_orig at mode_ti has d_consis embedded; extract it. *)
-      match goal with
-      | Hs_o : d_sub mode_ti nil Γ _ _ |- _ =>
-          inversion Hs_o; subst;
-          try (match goal with
-               | H_ne : mode_ti <> mode_ti |- _ =>
-                   exfalso; apply H_ne; reflexivity
-               end)
-      end.
-      (* Now we have d_consis nil Γ A0 B0_inner (renamed). Use IHHty
-         on the inner d_typing with the composed sub_gen, dispatching
-         on Hsub_gen for each constructor. *)
-      dependent destruction Hsub_gen.
-      * (* __embed: d_sub m_new nil Γ B0_inner B_tgt. Compose with
-           d_consis A0 B0_inner via [d_consis_extends_d_sub_nil] to get
-           d_sub m_new A0 B_tgt; embed into d_sub_gen; apply IHHty. *)
-        match goal with
-        | Hconsis : d_consis nil Γ ?A0 ?B0,
-          IHHty : is_fn_n_ti mode_ti -> d_wf_denv Γ -> _
-          |- d_typing _ Γ _ ?B_t =>
-            apply IHHty with (B := B_t);
-            [ apply is_fn_n_ti__ti
-            | assumption
-            | apply d_sub_gen__embed;
-              eapply d_consis_extends_d_sub_nil; eauto;
-              eapply (proj1 d_typing_pat_preserves_wf); eauto ]
-        end.
-      * (* __refl_mono: B_tgt = B0_inner mono. Build d_sub_gen m_new nil
-           Γ A0 B0_inner by composing d_consis A0 B0 (from Hsub_orig
-           __infer) with d_sub_gen m_new B0 B0 (refl_mono) via the
-           helper [d_consis_extends_d_sub_gen_nil]. *)
-        match goal with
-        | Hconsis : d_consis nil Γ ?A0 ?B0,
-          IHHty : is_fn_n_ti mode_ti -> d_wf_denv Γ -> _,
-          Hmono : mono_typ ?B0,
-          Hcompat : mode_typ_compat ?m_ ?B0,
-          Hwfb : d_wf_typ Γ ?B0
-          |- d_typing _ Γ _ ?B0 =>
-            apply IHHty with (B := B0);
-            [ apply is_fn_n_ti__ti
-            | assumption
-            | eapply d_consis_extends_d_sub_gen_nil;
-              [ apply d_sub_gen__refl_mono; assumption
-              | exact Hconsis
-              | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
-        end.
-      * (* __forall_r: B_tgt = typ_all_col colour_inh A_target.
-           Apply IHHty with sub built via d_consis_extends_d_sub_gen_nil
-           and d_sub_gen__forall_r reconstruction. *)
-        match goal with
-        | Hconsis : d_consis nil Γ ?A0 ?B0,
-          IHHty : is_fn_n_ti mode_ti -> d_wf_denv Γ -> _
-          |- d_typing _ Γ _ (typ_all_col colour_inh ?A_t) =>
-            apply IHHty with (B := typ_all_col colour_inh A_t);
-            [ apply is_fn_n_ti__ti
-            | assumption
-            | eapply d_consis_extends_d_sub_gen_nil;
-              [ eapply d_sub_gen__forall_r; intros X HX; eauto
-              | exact Hconsis
-              | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
-        end.
-      * (* __arg: H3 = d_consis, H1 = d_consis_gen arg, Hsub_gen = d_sub_gen ret.
-           Δ1 ++ Δ2 = nil ⟹ Δ1 = Δ2 = nil. *)
-        match goal with
-        | x : _ ++ _ = nil |- _ =>
-            apply app_eq_nil in x; destruct x as [HΔ1 HΔ2]; subst
-        end.
-        match goal with
-        | |- d_typing _ Γ _ (typ_arrow ?A1 ?A2) =>
-            apply IHHty with (B := typ_arrow A1 A2);
-            [ apply is_fn_n_ti__ti
-            | assumption
-            | eapply d_consis_extends_d_sub_gen_nil;
-              [ rewrite_env (@nil atom ++ @nil atom);
-                apply d_sub_gen__arg; [exact H1 | exact Hsub_gen]
-              | exact H3
-              | eapply (proj1 d_typing_pat_preserves_wf); eauto ] ]
-        end.
-    + (* m = mode_fn _ *)
-      admit.
-  - (* === Hty = d_typing__freeze ==========================================
+    eapply d_typing_anno_gen_subsumption; eauto.
+  - (* === Hty = d_typing_gen__sub: e is base, inner d_typing_gen
+       at mode_ti, Hsub_orig : d_sub_gen m nil Γ A0 A. Compose
+       with Hsub_gen — needs d_sub_gen transitivity / the
+       d_consis_extends_d_sub_gen_nil route adapted to a
+       d_sub_gen inner. Deferred. *)
+    admit.
+  - (* === Hty = d_typing_gen__freeze ==========================================
        m_orig = mode_tc — NOT in is_fn_n_ti. Vacuous via Hfn. *)
     inversion Hfn.
-  - (* === Hty = d_typing__forall ==========================================
+  - (* === Hty = d_typing_gen__forall ==========================================
        m_orig = mode_tc — NOT in is_fn_n_ti. Vacuous via Hfn. *)
     inversion Hfn.
-  - (* === Hty = d_typing__abs =============================================
-       Body's typing is at decr_mode m, which is in is_fn_n_ti
-       (by [is_fn_n_ti_decr]). *)
-    simpl in Hsub_gen |- *.
-    dependent destruction Hsub_gen.
-    + (* __embed: exp_abs not base, so __sub doesn't apply directly.
-         Research-grade absorption into __abs. *)
-      admit.
-    + (* __refl_mono: B_tgt = typ_arrow A B, now forced MONO by
-         [d_sub_gen__refl_mono]. With A, B mono the whole abs typing
-         is mono — case-split on m via Hfn and lift the body via the
-         IH (H2) with a [d_sub_gen__refl_mono] body sub.
-         H3 : mono_typ (typ_arrow A B)
-         H4 : mode_typ_compat (mode_fn_n_subst m m_new) (typ_arrow A B)
-         H5 : d_wf_typ Γ (typ_arrow A B) *)
-      assert (HmonoA : mono_typ A) by (inversion H3; auto).
-      assert (HmonoB : mono_typ B) by (inversion H3; auto).
-      assert (HwfA' : d_wf_typ Γ A) by (inversion H5; auto).
-      assert (HwfB' : d_wf_typ Γ B) by (inversion H5; auto).
-      inversion Hfn; subst.
-      * (* m = mode_ti: target = m_new. Body needs decr_mode m_new. *)
-        eapply d_typing__abs with (L := L `union` dom Γ).
-        -- apply mono_typ_is_inh_typ; auto.
-        -- exact HwfA'.
-        -- intros x Hx.
-           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
-             (apply d_wf_denv__typ; auto).
-           specialize (H2 x ltac:(auto) is_fn_n_ti__ti Hwfd_x
-                          (decr_mode m_new) B).
-           simpl in H2. apply H2.
-           apply d_sub_gen__refl_mono; auto.
-           ++ (* mode_typ_compat (decr_mode m_new) B *)
-             simpl in H4. inversion H4; subst; simpl;
-               [ apply mode_typ_compat__ti; apply mono_typ_is_syn_typ; auto
-               | apply mode_typ_compat__tc; apply mono_typ_is_inh_typ; auto
-               | assumption ].
-           ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
-              apply d_wf_typ_weakening_head; auto.
-      * (* m = mode_fn k: target = mode_fn (mode_fn_n_subst k m_new).
-           Body needs decr = mode_fn_n_subst k m_new. *)
-        eapply d_typing__abs with (L := L `union` dom Γ).
-        -- apply mono_typ_is_inh_typ; auto.
-        -- exact HwfA'.
-        -- intros x Hx.
-           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
-             (apply d_wf_denv__typ; auto).
-           specialize (H2 x ltac:(auto) (is_fn_n_ti_decr Hfn) Hwfd_x
-                          m_new B).
-           simpl in H2. apply H2.
-           apply d_sub_gen__refl_mono; auto.
-           ++ (* mode_typ_compat (mode_fn_n_subst k m_new) B from H4 *)
-             simpl in H4. inversion H4; subst; assumption.
-           ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
-              apply d_wf_typ_weakening_head; auto.
-    + (* __forall_r: target = mode_tc. The mode constraint
-         mode_tc = mode_fn_n_subst m m_new + Hfn ⟹ m = mode_ti,
-         m_new = mode_tc. Wire through aux lemma
-         [d_typing_abs_value_to_forall]. *)
-      inversion Hfn; subst; simpl in *.
-      * (* m = mode_ti *)
-        match goal with x_eq : mode_tc = ?mn |- _ =>
-          symmetry in x_eq; subst mn
-        end.
-        eapply d_typing_abs_value_to_forall with
-          (L := L) (m_orig := mode_ti) (A := A) (B := B); eauto.
-      * (* m = mode_fn _: mode_tc = mode_fn _ contradicts. *)
-        discriminate.
-    + (* __arg: target = mode_fn k. After destruction:
-         H3 : d_consis_gen Δ1 Γ A A1 (arg-side)
-         Hsub_gen : d_sub_gen k Δ2 Γ B A2 (ret-side)
-         B_tgt = typ_arrow A1 A2, with Δ1 ++ Δ2 = nil.
-         Reconstruct via d_typing__abs at mode_fn k. *)
-      match goal with
-      | x_eq : _ ++ _ = nil |- _ =>
-          apply app_eq_nil in x_eq; destruct x_eq as [HΔ1 HΔ2]; subst
-      end.
-      apply d_typing__abs with
-        (L := L `union` dom Γ).
-      * (* is_inh_typ A1 from d_consis_gen + is_inh_typ A. *)
-        eapply d_consis_gen_rhs_is_inh_typ; eauto.
-      * (* d_wf_typ Γ A1 from d_consis_gen preserves wf. *)
-        eapply d_consis_gen_preserves_wf; eauto.
-      * (* Body: lift via IH (H2) at m_new' such that the IH's mode
-           matches k, then narrow context (y:A) → (y:A1).
-           Case-split on m to find right m_new' for IH. *)
-        intros y Hy.
-        inversion Hfn; subst.
-        -- (* m = mode_ti: subst m_new := mode_fn k via the
-              constructor equation, then apply IH H2 at m_new' := k. *)
-          simpl in *.
-          match goal with
-          | x_eq : mode_fn _ = m_new |- _ =>
-              symmetry in x_eq; subst m_new
-          end.
-          assert (Hwfd_y : d_wf_denv ((y ~ dbind_typ A) ++ Γ)) by
-            (apply d_wf_denv__typ; auto).
-          assert (Hwf_A1 : d_wf_typ Γ A1) by
-            (eapply d_consis_gen_preserves_wf; eauto).
-          apply d_typing_narrow_consis_head_arg with (Aold := A); auto.
-          ++ (* d_typing k ((y:A)::Γ) (open e y) A2 via IH H2. *)
-            assert (Hsub_weak : d_sub_gen m0 nil ((y ~ dbind_typ A) ++ Γ) B A2)
-              by (apply d_sub_gen_weakening_head; assumption).
-            apply H2 with (B := A2); auto.
-        -- (* m = mode_fn m1: x0 : mode_fn k = mode_fn_n_subst (mode_fn m1) m_new.
-              After simpl: mode_fn k = mode_fn (mode_fn_n_subst m1 m_new).
-              Injection gives k = mode_fn_n_subst m1 m_new. *)
-          simpl in *.
-          injection x0 as Hkeq.
-          assert (Hwfd_y : d_wf_denv ((y ~ dbind_typ A) ++ Γ)) by
-            (apply d_wf_denv__typ; auto).
-          assert (Hwf_A1 : d_wf_typ Γ A1) by
-            (eapply d_consis_gen_preserves_wf; eauto).
-          apply d_typing_narrow_consis_head_arg with (Aold := A); auto.
-          ++ assert (Hsub_weak : d_sub_gen (mode_fn_n_subst m1 m_new)
-                                          nil ((y ~ dbind_typ A) ++ Γ) B A2)
-              by (rewrite <- Hkeq; apply d_sub_gen_weakening_head; assumption).
-            apply H2 with (B := A2); auto.
-  - (* === Hty = d_typing__abs_anno ========================================
-       Symmetric to __abs but with explicit annotation (no is_inh_typ
-       premise). Same dispatch shape on Hsub_gen. *)
-    simpl in Hsub_gen |- *.
-    dependent destruction Hsub_gen.
-    + (* __embed: exp_abs_anno not base. *) admit.
-    + (* __refl_mono: B_tgt = typ_arrow A B, forced MONO. Parallel to
-         __abs + __refl_mono but with body IH named H1 (abs_anno has
-         only 2 d_typing premises: HwfA = H, Hbody = H0, IH = H1).
-         H2 : mono_typ (typ_arrow A B)
-         H3 : mode_typ_compat (mode_fn_n_subst m m_new) (typ_arrow A B)
-         H4 : d_wf_typ Γ (typ_arrow A B) *)
-      assert (HmonoA : mono_typ A) by (inversion H2; auto).
-      assert (HmonoB : mono_typ B) by (inversion H2; auto).
-      assert (HwfA' : d_wf_typ Γ A) by (inversion H4; auto).
-      assert (HwfB' : d_wf_typ Γ B) by (inversion H4; auto).
-      inversion Hfn; subst.
-      * (* m = mode_ti: target = m_new. Body needs decr_mode m_new. *)
-        eapply d_typing__abs_anno with (L := L `union` dom Γ).
-        -- exact HwfA'.
-        -- intros x Hx.
-           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
-             (apply d_wf_denv__typ; auto).
-           specialize (H1 x ltac:(auto) is_fn_n_ti__ti Hwfd_x
-                          (decr_mode m_new) B).
-           simpl in H1. apply H1.
-           apply d_sub_gen__refl_mono; auto.
-           ++ simpl in H3. inversion H3; subst; simpl;
-               [ apply mode_typ_compat__ti; apply mono_typ_is_syn_typ; auto
-               | apply mode_typ_compat__tc; apply mono_typ_is_inh_typ; auto
-               | assumption ].
-           ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
-              apply d_wf_typ_weakening_head; auto.
-      * (* m = mode_fn k: target = mode_fn (mode_fn_n_subst k m_new). *)
-        eapply d_typing__abs_anno with (L := L `union` dom Γ).
-        -- exact HwfA'.
-        -- intros x Hx.
-           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
-             (apply d_wf_denv__typ; auto).
-           specialize (H1 x ltac:(auto) (is_fn_n_ti_decr Hfn) Hwfd_x
-                          m_new B).
-           simpl in H1. apply H1.
-           apply d_sub_gen__refl_mono; auto.
-           ++ simpl in H3. inversion H3; subst; assumption.
-           ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
-              apply d_wf_typ_weakening_head; auto.
-    + (* __forall_r: target = mode_tc. Mode constraint forces
-         m = mode_ti, m_new = mode_tc. Wire through aux lemma. *)
-      inversion Hfn; subst; simpl in *.
-      * match goal with x_eq : mode_tc = ?mn |- _ =>
-          symmetry in x_eq; subst mn
-        end.
-        eapply d_typing_abs_anno_value_to_forall with
-          (L := L) (m_orig := mode_ti) (A := A) (B := B); eauto.
-      * discriminate.
-    + (* __arg: target = mode_fn k. STRUCTURAL OBSTACLE:
-         d_typing__abs_anno's rule structure requires the annotation A
-         to equal the result type's arg position. After Hsub_gen __arg,
-         the target's arg type A1 may differ from A. Rule construction
-         then fails: d_typing m Γ (exp_abs_anno A e) (typ_arrow A1 A2)
-         with A1 ≠ A is not derivable via any d_typing rule.
-         The paper handles this via "A is still a colorless version of
-         A'" handwave (paper syntax-directed.tex:431). Research-grade. *)
-      admit.
-  - (* === Hty = d_typing__app =============================================
-       m_orig = m, function at mode_fn m. IH on function fires at
-       mode_fn m ∈ is_fn_n_ti. The sub for the IH is
-       [d_sub_gen__arg] with [d_consis_gen__refl_any] on the
-       argument type — the paper's bridge that removes the mono-A0
-       requirement. *)
-    simpl in Hsub_gen |- *.
-    dependent destruction Hsub_gen.
-    + (* __embed: lift function side via IHHty_fn at the constructed
-         d_sub_gen__arg(refl_any on arg, embed of outer sub). *)
-      match goal with
-      | H_pat : d_pat mode_tc Γ ?e2 ?P0,
-        H_ref : d_refine_syn nil Γ ?P0 ?P'0,
-        H_fn  : d_typing (mode_fn ?m_) Γ ?e1 (typ_arrow ?A0 ?B0),
-        H_arg : d_typing mode_tc Γ ?e2 ?A0
-        |- d_typing _ Γ (exp_app ?e1 ?e2) ?B_t =>
-          assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
-            (eapply (proj1 d_typing_pat_preserves_wf); eauto);
-          assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
-          assert (Hinh_A0 : is_inh_typ A0) by
-            (eapply d_typing_check_is_inh; eassumption);
-          eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
-      end.
-      (* Solve the function-side d_typing via IH. The IH's name is
-         auto-generated by [induction Hty]; we hunt for it by structure. *)
-      eapply IHHty1;
-      [ apply is_fn_n_ti__fn; assumption
-      | assumption
-      | simpl;
-        rewrite_env (@nil atom ++ @nil atom);
-        apply d_sub_gen__arg;
-        [ apply d_consis_gen_refl; assumption
-        | apply d_sub_gen__embed; assumption ] ].
-    + (* __refl_mono: B_tgt = B0 (mono). Use IHHty1 (function-side IH)
-         at a sub_gen for the lifted arrow. The arrow sub is built via
-         [d_sub_gen__arg] with [d_consis_gen__refl_any] on the arg A0
-         (which need NOT be mono) and [d_sub_gen__refl_mono] on the
-         mono ret B0. *)
-      match goal with
-      | Hpat0 : d_pat mode_tc Γ ?e2 ?P0,
-        Href0 : d_refine_syn nil Γ ?P0 ?P'0,
-        Hty_fn0 : d_typing (mode_fn ?m_) Γ ?e1 (typ_arrow ?A0 ?B0),
-        Hty_arg0 : d_typing mode_tc Γ ?e2 ?A0
-        |- d_typing _ Γ (exp_app ?e1 ?e2) ?B0 =>
-          assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
-            (eapply (proj1 d_typing_pat_preserves_wf); eauto);
-          eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
-      end.
-      eapply IHHty1.
-      * apply is_fn_n_ti__fn; assumption.
-      * assumption.
-      * simpl.
-        rewrite_env (@nil atom ++ @nil atom).
-        apply d_sub_gen__arg.
-        -- apply d_consis_gen_refl;
-           [ match goal with Harg : d_typing mode_tc _ _ ?A0 |- is_inh_typ ?A0 =>
-               eapply d_typing_check_is_inh; exact Harg end
-           | match goal with Hw : d_wf_typ Γ (typ_arrow ?A0 _) |- d_wf_typ Γ ?A0 =>
-               inversion Hw; assumption end ].
-        -- apply d_sub_gen__refl_mono; auto;
-           match goal with Hw : d_wf_typ Γ (typ_arrow _ ?B0) |- _ =>
-             inversion Hw; assumption end.
-    + (* __forall_r: target = mode_tc. Constraint mode_tc =
-         mode_fn_n_subst m m_new + Hfn ⟹ m = mode_ti, m_new = mode_tc. *)
-      inversion Hfn; subst; simpl in x.
-      * (* m = mode_ti, so m_new = mode_tc (from x : mode_tc = m_new). *)
-        symmetry in x; subst.
-        match goal with
-        | Hpat0 : d_pat mode_tc Γ ?e2 ?P0,
-          Href0 : d_refine_syn nil Γ ?P0 ?P'0,
-          Hty_fn0 : d_typing (mode_fn mode_ti) Γ ?e1 (typ_arrow ?A0 ?B0),
-          Hty_arg0 : d_typing mode_tc Γ ?e2 ?A0
-          |- d_typing _ Γ (exp_app ?e1 ?e2) (typ_all_col colour_inh ?A_t) =>
-            assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
-              (eapply (proj1 d_typing_pat_preserves_wf); eauto);
-            assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
-          assert (Hinh_A0 : is_inh_typ A0) by
-            (eapply d_typing_check_is_inh; eassumption);
-            eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
-        end.
-        eapply IHHty1.
-        -- apply is_fn_n_ti__fn; apply is_fn_n_ti__ti.
-        -- assumption.
-        -- simpl. rewrite_env (@nil atom ++ @nil atom).
-           apply d_sub_gen__arg.
-           ++ apply d_consis_gen_refl; assumption.
-           ++ eapply d_sub_gen__forall_r. intros X HX. apply H1; auto.
-      * (* m = mode_fn _: equation mode_tc = mode_fn (...) is False. *)
-        discriminate x.
-    + (* __arg: target = mode_fn target_inner. Reconstruct via
-         d_typing__app at mode_fn target_inner, function-side lift via
-         IHHty1 at a sub built via nested d_sub_gen__arg (refl_any on
-         outer arg + d_sub_gen__arg-from-destructed-pieces on ret). *)
-      match goal with
-      | Hpat0 : d_pat mode_tc Γ ?e2 ?P0,
-        Href0 : d_refine_syn nil Γ ?P0 ?P'0,
-        Hty_fn0 : d_typing (mode_fn ?m_) Γ ?e1 (typ_arrow ?A0 ?B0),
-        Hty_arg0 : d_typing mode_tc Γ ?e2 ?A0
-        |- d_typing _ Γ (exp_app ?e1 ?e2) (typ_arrow ?A1 ?A2) =>
-          assert (Hwf_arr : d_wf_typ Γ (typ_arrow A0 B0)) by
-            (eapply (proj1 d_typing_pat_preserves_wf); eauto);
-          assert (Hwf_A0 : d_wf_typ Γ A0) by (inversion Hwf_arr; auto);
-          assert (Hinh_A0 : is_inh_typ A0) by
-            (eapply d_typing_check_is_inh; eassumption);
-          eapply d_typing__app with (P := P0) (P' := P'0) (A := A0); eauto
-      end.
-      (* Function-side lift: IHHty1 expects sub from typ_arrow A B
-         to typ_arrow A (typ_arrow A1 A2) at mode mode_fn (mode_fn _). *)
-      match goal with
-      | x : _ ++ _ = nil |- _ =>
-          apply app_eq_nil in x; destruct x as [HΔ1 HΔ2]; subst
-      end.
-      eapply IHHty1.
-      * apply is_fn_n_ti__fn; assumption.
-      * assumption.
-      * simpl.
-        match goal with
-        | x0 : mode_fn _ = mode_fn_n_subst _ _ |- _ =>
-            rewrite <- x0
-        end.
-        rewrite_env (@nil atom ++ @nil atom).
-        apply d_sub_gen__arg.
-        -- apply d_consis_gen_refl; assumption.
-        -- rewrite_env (@nil atom ++ @nil atom).
-           apply d_sub_gen__arg; eassumption.
+  - (* === Hty = d_typing_gen__abs: reconstruct d_typing_gen__abs;
+       __refl_mono / __forall_r close, __embed / __arg deferred. *)
+    admit.
+  - (* === Hty = d_typing_gen__abs_anno: as __abs. *)
+    admit.
+  - (* === Hty = d_typing_gen__app: function-side lift via the
+       function IH at a d_sub_gen__arg. Deferred. *)
+    admit.
 Admitted.
 
 (** Strong form V2 (kept for now; will be replaced by the bridged D1
@@ -2788,15 +2440,42 @@ Proof.
   apply d_typing_general_subsumption_split with (Γ_pre := nil) (A := A); auto.
 Qed.
 
+(** [d_typing_gen_collapse]: the generalised typing collapses back to
+    the original. Structural except the [__sub] case, which needs the
+    gen→sub bridge [d_sub_gen → d_sub] — total except for
+    [d_consis_gen__forall_inh] (no [typ_all_col] LHS rule in
+    [d_consis]). This is THE residual gap of the [d_typing_gen]
+    refactor: D12 now closes the var/anno cases cleanly *inside*
+    [d_typing_gen]; the single remaining obstacle is concentrated
+    here. *)
+Lemma d_typing_gen_collapse : forall m Γ e A,
+    d_typing_gen m Γ e A ->
+    d_typing m Γ e A.
+Proof.
+  intros m Γ e A H. induction H.
+  - apply d_typing__unit; assumption.
+  - apply d_typing__var; assumption.
+  - apply d_typing__anno; assumption.
+  - (* __sub: need d_sub_gen → d_sub. Total except __forall_inh
+       in d_consis_gen — the residual gap. *)
+    admit.
+  - apply d_typing__freeze; assumption.
+  - apply d_typing__forall with (L := L); assumption.
+  - apply d_typing__abs with (L := L); assumption.
+  - apply d_typing__abs_anno with (L := L); assumption.
+  - apply d_typing__app with (P := P) (P' := P') (A := A); assumption.
+Admitted.
+
 (** ** D1 via the generalised bridge (paper's strategy).
 
-    An alternative derivation of D1 routing through the generalised
-    [d_typing_general_subsumption_gen] (Lemma B.5). Once the latter is
-    closed, this becomes the canonical D1.
+    D1 routes through D12 ([d_typing_general_subsumption_gen]):
+    embed [d_typing] into [d_typing_gen], apply D12 (which keeps us in
+    [d_typing_gen] and closes the var/anno cases directly via
+    [d_typing_gen__sub]), then collapse back via
+    [d_typing_gen_collapse].
 
     Set [m_orig := mode_ti], so [mode_fn_n_subst mode_ti m_new = m_new]
-    and the conclusion matches the original D1. Embed the original
-    [d_sub] into [d_sub_gen] via [d_sub_gen__embed]. *)
+    matches the original D1's conclusion mode. *)
 Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
     d_wf_denv Γ ->
     d_typing mode_ti Γ e A ->
@@ -2804,8 +2483,10 @@ Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
     d_typing m Γ e B.
 Proof.
   intros Γ e A B m Hwfd Hty Hsub.
+  apply d_typing_gen_collapse.
   change m with (mode_fn_n_subst mode_ti m).
   apply d_typing_general_subsumption_gen with (A := A); auto.
+  - apply d_typing_embed_gen; assumption.
   - apply is_fn_n_ti__ti.
   - simpl. apply d_sub_gen__embed. exact Hsub.
 Qed.
