@@ -1758,7 +1758,12 @@ Qed.
 
 (** [d_typing_gen] analogue of [d_typing_check_is_inh] — a mode_tc
     [d_typing_gen] always has an [is_inh_typ] type. Same paper-level
-    colour invariant; admitted. *)
+    colour invariant; admitted with the same concrete counter-example
+    as [d_typing_check_is_inh] (see the rationale block there). The
+    [d_typing_gen__freeze] rule mirrors [d_typing__freeze]'s
+    no-repainting behaviour, so the same counter-example applies:
+    [d_typing_gen mode_tc Γ (exp_freeze (exp_anno _ _))
+       (typ_all_col colour_syn _)] is derivable but not [is_inh_typ]. *)
 Lemma d_typing_gen_check_is_inh : forall Γ e A,
     d_typing_gen mode_tc Γ e A ->
     is_inh_typ A.
