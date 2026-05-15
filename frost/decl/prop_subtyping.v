@@ -533,26 +533,128 @@ Proof.
     exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
   - (* var X ~ var X. *)
     exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
-  - (* __forall_inh_tagged: A = typ_all_col colour_inh A0. With the new
-       [d_consis__forall_inh] rule, [Hc2] can match it (LHS =
-       typ_all_col colour_inh). Composition follows the cofinite-rename
-       pattern. Currently admitted; the proof pattern is in place but
-       Coq's inversion auto-naming complicates the verbatim closure
-       below. *)
-    admit.
-  - (* __forall_inh_untagged: A = typ_all_col colour_inh A. The only
-       d_consis rule that fits Hc2's LHS shape is the new __forall_inh.
-       Use cofinite-rename: pick fresh X0, apply IH, then alpha-rename.
-       Currently admitted; closure plan above is correct but Coq's
-       auto-naming after inversion is variant. *)
-    admit.
+  - (* __forall_inh_tagged: Hc1 has RHS = typ_all_col colour_inh A,
+       Δa = ε :: Δ. Hc2 matches the new __forall_inh. Compose via
+       cofinite-rename, then wrap with __forall_inh_tagged using
+       ε :: Δc0 (where Δc0 is a permutation of Δ ++ Δb). *)
+    inversion Hc2; subst.
+    (* Auto-names: A0, L0, H5 (body premise), H1 (ε ∉ Δ). *)
+    assert (Hdis_inner : list_disjoint Δ Δb).
+    { intros a Hin. apply Hdis. right. exact Hin. }
+    assert (Hε_Δb : ~ In ε Δb).
+    { apply Hdis. left. reflexivity. }
+    pick fresh X0 for
+      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+       `union` ftvar_in_typ A0 `union` dom Γ `union` singleton ε).
+    assert (HX0_L : X0 `notin` L) by fsetdec.
+    assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+    specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                  (H5 X0 HX0_L0) Hdis_inner).
+    destruct H0 as [Δc0 [Hperm Hcc]].
+    exists (ε :: Δc0). split.
+    + simpl. apply perm_skip. exact Hperm.
+    + apply d_consis__forall_inh_tagged with
+        (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+              `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0
+              `union` singleton ε).
+      * intros X' HX'.
+        assert (Hcc_weak :
+          d_consis Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+            (open_typ_wrt_typ T (typ_var_f X0))
+            (open_typ_wrt_typ A0 (typ_var_f X0))).
+        { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+          apply d_consis_weakening. simpl. exact Hcc. }
+        apply d_consis_subst_mono
+          with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+               (B := typ_var_f X') in Hcc_weak; auto.
+        -- rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+             by fsetdec.
+           rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+             by fsetdec.
+           exact Hcc_weak.
+        -- apply mono_typ__var.
+        -- apply d_wf_typ__var. left; reflexivity.
+      * (* ε ∉ Δc0: from Permutation Δc0 (Δ ++ Δb), ε ∉ Δ, ε ∉ Δb. *)
+        intros Hin. apply (Permutation_in _ Hperm) in Hin.
+        apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+        -- apply H1; exact Hin.
+        -- apply Hε_Δb; exact Hin.
+  - (* __forall_inh_untagged: Hc1's RHS = typ_all_col colour_inh A.
+       Hc2's only matching rule is the new __forall_inh. Compose via
+       cofinite-rename: pick fresh X0, apply IH on the body d_consis at
+       X0, then use [d_consis_subst_mono] to rename X0 → X' for any
+       fresh X'. *)
+    inversion Hc2; subst.
+    (* Coq auto-names: A0 (rule's A body), L0 (rule's L), H4 (body premise). *)
+    pick fresh X0 for
+      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+       `union` ftvar_in_typ A0 `union` dom Γ).
+    assert (HX0_L : X0 `notin` L) by fsetdec.
+    assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+    specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                  (H4 X0 HX0_L0) Hdis).
+    destruct H0 as [Δc0 [Hperm Hcc]].
+    exists Δc0. split; [exact Hperm |].
+    apply d_consis__forall_inh_untagged with
+      (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+            `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
+    intros X' HX'.
+    assert (Hcc_weak :
+      d_consis Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+        (open_typ_wrt_typ T (typ_var_f X0))
+        (open_typ_wrt_typ A0 (typ_var_f X0))).
+    { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+      apply d_consis_weakening. simpl. exact Hcc. }
+    apply d_consis_subst_mono
+      with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+           (B := typ_var_f X') in Hcc_weak; auto.
+    + (* Hcc_weak now has [subst X' X0 (open T X0)] and similar for A0.
+         Use [subst_typ_in_typ_intro] to rewrite to [open T X']. *)
+      rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+        by fsetdec.
+      rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+        by fsetdec.
+      exact Hcc_weak.
+    + apply mono_typ__var.
+    + apply d_wf_typ__var. left; reflexivity.
   - (* __forall_syn_tagged: A = typ_all_col colour_syn. No d_consis rule
        admits typ_all_col colour_syn on the LHS, so [Hc2] is vacuous. *)
     inversion Hc2.
   - (* __forall_syn_untagged: same. *)
     inversion Hc2.
-  - (* NEW __forall_inh: same compose pattern; admitted. *)
-    admit.
+  - (* NEW __forall_inh: Hc1 has RHS = typ_all_col colour_inh A,
+       Δa = Δ (no ε to track). Hc2 matches the new __forall_inh again.
+       Compose via cofinite-rename (no ε wrapping needed). *)
+    inversion Hc2; subst.
+    pick fresh X0 for
+      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+       `union` ftvar_in_typ A0 `union` dom Γ).
+    assert (HX0_L : X0 `notin` L) by fsetdec.
+    assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+    specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                  (H4 X0 HX0_L0) Hdis).
+    destruct H0 as [Δc0 [Hperm Hcc]].
+    exists Δc0. split; [exact Hperm |].
+    apply d_consis__forall_inh with
+      (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+            `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
+    intros X' HX'.
+    assert (Hcc_weak :
+      d_consis Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+        (open_typ_wrt_typ T (typ_var_f X0))
+        (open_typ_wrt_typ A0 (typ_var_f X0))).
+    { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+      apply d_consis_weakening. simpl. exact Hcc. }
+    apply d_consis_subst_mono
+      with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+           (B := typ_var_f X') in Hcc_weak; auto.
+    + rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+        by fsetdec.
+      rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+        by fsetdec.
+      exact Hcc_weak.
+    + apply mono_typ__var.
+    + apply d_wf_typ__var. left; reflexivity.
   - (* arrow: split Hc2 via inversion; recurse on each side; assemble
        via [list_swap_middle] and the disjointness decomposition. The
        inversion pattern now has 8 alternatives (7 bars before
@@ -579,7 +681,7 @@ Proof.
       * apply list_disjoint_app_r_iff. split; [exact H | exact Hd1b2].
       * apply list_disjoint_app_r_iff. split;
           [apply list_disjoint_sym; exact Hd2b1 | exact Hdis_b].
-Admitted.
+Qed.
 
 (** If [d_consis Δ Γ T A] and [d_wf_typ Γ T], then [T] is mono.
 
