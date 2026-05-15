@@ -1894,28 +1894,24 @@ Lemma d_consis_to_d_sub_gen : forall m Γ T A,
 Proof.
   intros m Γ T A Hcompat HwfT Hc. generalize dependent T.
   induction Hcompat; intros T HwfT Hc.
-  - (* mode_ti: route [d_sub_gen__embed] through [d_sub_refl_mono_mode]
-       via [d_consis_LHS_mono_wf] forcing [mono_typ T]. *)
-    apply d_sub_gen__embed.
+  - (* mode_ti: [mode_typ_compat mode_ti A] gives [is_syn_typ A]. The
+       [d_consis nil Γ T A] LHS is forced mono by [d_consis_LHS_mono_wf],
+       and a mono LHS round-trips through [syn_color (erase _)]; then
+       [d_consis_LHS_syn_color_mono] pins [A = T]. Conclude via
+       [d_sub_gen__refl_mono] (mono + compat + wf). *)
     assert (HmonoT : mono_typ T) by (eapply d_consis_LHS_mono_wf; eauto).
-    assert (Hg : d_sub mode_ti nil Γ (syn_color (erase T)) (syn_color (erase T))).
-    { apply d_sub__infer.
-      rewrite (mono_typ_syn_color_erase HmonoT).
-      (* [Hc : d_consis nil Γ T A]; need [d_consis nil Γ T T]. Since
-         [mono_typ T], [d_consis_refl_mono] gives that directly. *)
-      apply d_consis_refl_mono; auto. }
-    rewrite (mono_typ_syn_color_erase HmonoT) in Hg.
-    (* [T = A] when both are mono and [d_consis] connects them at nil;
-       composes by [d_consis_LHS_mono_wf] + [d_consis_empty_eq] /
-       [d_sub_arrow_refl_inner] on the head — but the mono-refl form
-       suffices: [d_sub mode_ti nil Γ T T] together with the
-       [d_consis nil Γ T A] would need the [_nil] composition, which
-       does not directly apply. Admitted for the build-green pass —
-       fully closed by routing through the [d_consis_to_d_sub_*]
-       family once it is restated for the [ctyp] era. *)
-    admit.
-  - (* mode_tc: same shape; admitted alongside [mode_ti]. *)
-    admit.
+    destruct (d_consis_LHS_syn_color_mono Hc (erase T)
+                (eq_sym (mono_typ_syn_color_erase HmonoT)))
+      as [_ [HeqAT _]]; subst.
+    apply d_sub_gen__refl_mono; auto.
+    apply mode_typ_compat__ti; apply mono_typ_is_syn_typ; auto.
+  - (* mode_tc: same chain, with [is_inh_typ T] from mono. *)
+    assert (HmonoT : mono_typ T) by (eapply d_consis_LHS_mono_wf; eauto).
+    destruct (d_consis_LHS_syn_color_mono Hc (erase T)
+                (eq_sym (mono_typ_syn_color_erase HmonoT)))
+      as [_ [HeqAT _]]; subst.
+    apply d_sub_gen__refl_mono; auto.
+    apply mode_typ_compat__tc; apply mono_typ_is_inh_typ; auto.
   - (* mode_fn: A = typ_arrow A0 B. T from d_consis must be typ_arrow. *)
     inversion Hc; subst.
     inversion HwfT; subst.
@@ -1930,7 +1926,7 @@ Proof.
     apply d_sub_gen__arg.
     + apply d_consis_gen__embed. assumption.
     + apply IHHcompat; auto.
-Admitted.
+Qed.
 
 (** [d_consis_extends_d_consis_gen_nil]: compose d_consis on LHS with
     d_consis_gen at outer Δ = nil. The Δ = nil restriction avoids a
@@ -1998,11 +1994,52 @@ Lemma d_consis_extends_d_sub_gen_nil : forall m Γ A B,
       d_wf_typ Γ T ->
       d_sub_gen m nil Γ T B.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): [__infer_gen] / [__check_gen] now
-     demand [syn_color]-shaped LHS; [d_consis nil Γ T _] + [d_wf_typ Γ T]
-     gives [mono_typ T] hence [syn_color (erase T) = T] but the
-     reconstruction is verbose; admitted for the build-green pass. *)
-Admitted.
+  intros m Γ A B Hs.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hs; intros T0 Hc HwfT.
+  - (* __embed: route through [d_consis_extends_d_sub_nil]. *)
+    subst. apply d_sub_gen__embed. eapply d_consis_extends_d_sub_nil; eauto.
+  - (* __infer_gen: a [d_consis] with a [syn_color]-shaped RHS forces
+       the LHS mono and equal to the RHS (via [d_consis_LHS_mono_wf] +
+       [d_consis_LHS_syn_color_mono]); reuse [Hs]'s d_consis_gen. *)
+    assert (HmonoT : mono_typ T0) by (eapply d_consis_LHS_mono_wf; eauto).
+    destruct (d_consis_LHS_syn_color_mono Hc (erase T0)
+                (eq_sym (mono_typ_syn_color_erase HmonoT)))
+      as [_ [HeqA _]]; subst.
+    apply d_sub_gen__infer_gen; assumption.
+  - (* __check_gen: same chain. *)
+    subst.
+    assert (HmonoT : mono_typ T0) by (eapply d_consis_LHS_mono_wf; eauto).
+    destruct (d_consis_LHS_syn_color_mono Hc (erase T0)
+                (eq_sym (mono_typ_syn_color_erase HmonoT)))
+      as [_ [HeqA _]]; subst.
+    apply d_sub_gen__check_gen; assumption.
+  - (* __refl_mono: A = B mono. Use [d_consis_to_d_sub_gen] (compat
+       carried by __refl_mono). *)
+    subst. eapply d_consis_to_d_sub_gen; eauto.
+  - (* __forall_r: B = typ_all_col colour_inh A0, m = mode_tc.
+       Reconstruct via __forall_r with per-X IH. *)
+    subst.
+    apply d_sub_gen__forall_r with (L := L `union` dom Γ).
+    intros X HX.
+    eapply H0; eauto.
+    + apply d_consis_weakening_head; auto.
+    + apply d_wf_typ_weakening_head; auto.
+  - (* __arg: A = typ_arrow T1 T2, B = typ_arrow A1 A2. Hc forces
+       T0 = typ_arrow T0_arg T0_ret. Compose Hc's arg-side d_consis
+       with Hs's arg-side d_consis_gen via [d_consis_extends_d_consis_gen]. *)
+    apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hc; subst.
+    match goal with
+    | H : _ ++ _ = nil |- _ =>
+        apply app_eq_nil in H; destruct H as [HΔ1a HΔ2a]; subst
+    end.
+    inversion HwfT; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_sub_gen__arg.
+    + eapply d_consis_extends_d_consis_gen; eauto.
+    + eapply IHHs; eauto.
+Qed.
 
 (** ** Mono-RHS rigidity for consistency / subtyping.
 
@@ -2119,6 +2156,47 @@ Qed.
     [d_consis_gen__embed] and land in the new [d_sub_gen__infer_gen] /
     [__check_gen]; [__forall_l_*] are vacuous ([d_consis_gen] has no
     [typ_all_etag]/[typ_all_plain] RHS). *)
+(** Helper: a [d_consis_gen] with a [syn_color]-shaped RHS pins the
+    LHS to [syn_color X] under wf — the [__forall_inh*] / [__forall_syn*]
+    / [__forall_inh] cases of [d_consis_gen] are either vacuous on
+    [syn_color]-shaped RHS (colour mismatch: [syn_color] paints
+    [colour_syn], not [colour_inh]) or LHS-unwf (etag/plain). *)
+Lemma d_consis_gen_RHS_syn_color_eq : forall Γ A X,
+    d_consis_gen nil Γ A (syn_color X) ->
+    d_wf_typ Γ A ->
+    A = syn_color X.
+Proof.
+  intros Γ A X Hcg.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  remember (syn_color X) as A_RHS eqn:HeqA.
+  generalize dependent X.
+  induction Hcg; intros X' HeqA HwfA; subst.
+  - (* __unit: X' = ctyp_unit. *)
+    destruct X'; simpl in HeqA; try discriminate. reflexivity.
+  - (* __var: X' = ctyp_var_f X. *)
+    destruct X'; simpl in HeqA; try discriminate.
+    injection HeqA; intro; subst; reflexivity.
+  - (* __forall_inh_tagged: A = typ_all_etag (NOT wf). *)
+    inversion HwfA.
+  - (* __forall_inh_untagged: A = typ_all_plain (NOT wf). *)
+    inversion HwfA.
+  - (* __forall_syn_tagged: A = typ_all_etag (NOT wf). *)
+    inversion HwfA.
+  - (* __forall_syn_untagged: A = typ_all_plain (NOT wf). *)
+    inversion HwfA.
+  - (* __forall_inh: RHS = typ_all_col colour_inh; but syn_color paints
+       colour_syn ⇒ contradiction. *)
+    destruct X'; simpl in HeqA; discriminate.
+  - (* __arrow *)
+    destruct X'; simpl in HeqA; try discriminate.
+    injection HeqA; intros HeqA2 HeqA1.
+    apply app_eq_nil in HeqΔ; destruct HeqΔ as [HΔ1 HΔ2]; subst.
+    inversion HwfA; subst.
+    f_equal.
+    + eapply IHHcg1; eauto.
+    + eapply IHHcg2; eauto.
+Qed.
+
 Lemma d_consis_gen_extends_d_sub_nil : forall m Γ B C,
     d_sub m nil Γ B C ->
     forall A,
@@ -2126,10 +2204,47 @@ Lemma d_consis_gen_extends_d_sub_nil : forall m Γ B C,
       d_wf_typ Γ A ->
       d_sub_gen m nil Γ A C.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): [__infer]/[__check] cases now
-     require [syn_color]-shaped LHS through [d_sub_gen__infer_gen]
-     / [__check_gen]; admitted for the build-green pass. *)
-Admitted.
+  intros m Γ B C Hd.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hd; intros A0 Hcg HwfA0.
+  - (* __infer: B = syn_color T, C = syn_color A.
+       [d_consis_gen_RHS_syn_color_eq] pins A0 = syn_color T;
+       reuse [Hd]'s premise. *)
+    assert (HeqA0 : A0 = syn_color _)
+      by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst A0.
+    apply d_sub_gen__infer_gen.
+    eapply d_consis_gen_trans; [ exact Hcg | apply d_consis_gen__embed; eassumption ].
+  - (* __check: B = syn_color T, C = inh_color A. Same chain. *)
+    subst.
+    assert (HeqA0 : A0 = syn_color _)
+      by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst A0.
+    apply d_sub_gen__check_gen; auto.
+    eapply d_consis_gen_trans; [ exact Hcg | apply d_consis_gen__embed; eassumption ].
+  - (* __forall_r: per-X recursion via the d_sub IH H0. *)
+    subst.
+    apply d_sub_gen__forall_r with (L := L `union` dom Γ).
+    intros X HX.
+    eapply H0; eauto.
+    + apply d_consis_gen_weakening_head; auto.
+    + apply d_wf_typ_weakening_head; auto.
+  - (* __arg: B = typ_arrow T1 T2; Hcg forces A0 = typ_arrow A0_1 A0_2. *)
+    apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hcg; subst.
+    match goal with
+    | H : _ ++ _ = nil |- _ =>
+        apply app_eq_nil in H; destruct H as [HΔ1a HΔ2a]; subst
+    end.
+    inversion HwfA0; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_sub_gen__arg.
+    + eapply d_consis_gen_trans;
+        [ eassumption | apply d_consis_gen__embed; eassumption ].
+    + eapply IHHd; eauto.
+  - (* __forall_l_tagged: B = typ_all_etag — no d_consis_gen RHS. *)
+    inversion Hcg.
+  - (* __forall_l_untagged: B = typ_all_plain — no d_consis_gen RHS. *)
+    inversion Hcg.
+Qed.
 
 (** [d_consis_gen_extends_d_sub_gen_nil]: same, on the LHS of a
     [d_sub_gen]. By induction on [d_sub_gen]; [__embed] routes through
@@ -2143,9 +2258,47 @@ Lemma d_consis_gen_extends_d_sub_gen_nil : forall m Γ B C,
       d_wf_typ Γ A ->
       d_sub_gen m nil Γ A C.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): same shape as
-     [d_consis_gen_extends_d_sub_nil] for the gen-side. *)
-Admitted.
+  intros m Γ B C Hs.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  induction Hs; intros A0 Hcg HwfA0.
+  - (* __embed *)
+    subst. eapply d_consis_gen_extends_d_sub_nil; eauto.
+  - (* __infer_gen: B = syn_color T, C = syn_color A. *)
+    assert (HeqA0 : A0 = syn_color _)
+      by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst A0.
+    apply d_sub_gen__infer_gen.
+    eapply d_consis_gen_trans; eauto.
+  - (* __check_gen: B = syn_color T, C = inh_color A. *)
+    subst.
+    assert (HeqA0 : A0 = syn_color _)
+      by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst A0.
+    apply d_sub_gen__check_gen.
+    + assumption.
+    + eapply d_consis_gen_trans; eauto.
+  - (* __refl_mono: B = C mono ⟹ A0 = B by mono-RHS rigidity. *)
+    subst.
+    assert (Heq : A0 = A) by (eapply d_consis_gen_mono_RHS_eq; eauto).
+    subst. apply d_sub_gen__refl_mono; auto.
+  - (* __forall_r: per-X recursion via IH H0. *)
+    subst.
+    apply d_sub_gen__forall_r with (L := L `union` dom Γ).
+    intros X HX.
+    eapply H0; eauto.
+    + apply d_consis_gen_weakening_head; auto.
+    + apply d_wf_typ_weakening_head; auto.
+  - (* __arg: B = typ_arrow B1 B2; Hcg forces A0 = typ_arrow A0_1 A0_2. *)
+    apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion Hcg; subst.
+    match goal with
+    | H : _ ++ _ = nil |- _ =>
+        apply app_eq_nil in H; destruct H as [HΔ1a HΔ2a]; subst
+    end.
+    inversion HwfA0; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_sub_gen__arg.
+    + eapply d_consis_gen_trans; eauto.
+    + eapply IHHs; eauto.
+Qed.
 
 (** [d_sub_gen_trans_arrow]: the arrow-shaped continuation shared by
     [d_sub_gen_trans]'s [Hso = __embed] and [Hso = __arg] cases. Both
@@ -2294,9 +2447,45 @@ Lemma d_sub_gen_arrow_refl_inner : forall Γ A B m,
     mono_typ B ->
     d_sub_gen (decr_mode m) nil Γ B B.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): same shape as
-     [d_sub_arrow_refl_inner] in [prop_subtyping.v]. *)
-Admitted.
+  intros Γ A B m Hrefl HmonoA HmonoB.
+  assert (Hwf_arr : d_wf_typ Γ (typ_arrow A B))
+    by (eapply d_sub_gen_preserves_wf; eauto).
+  inversion Hwf_arr; subst.
+  inversion Hrefl; subst.
+  - (* __embed: route through [d_sub_arrow_refl_inner]. *)
+    apply d_sub_gen__embed. eapply d_sub_arrow_refl_inner; eauto.
+  - (* __infer_gen: m = mode_ti. Build [__refl_mono] on B with
+       [is_syn_typ B] from mono. *)
+    simpl.
+    apply d_sub_gen__refl_mono; auto.
+    apply mode_typ_compat__ti. apply mono_typ_is_syn_typ; auto.
+  - (* __check_gen: m = mode_tc. Same with [is_inh_typ B]. *)
+    simpl.
+    apply d_sub_gen__refl_mono; auto.
+    apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; auto.
+  - (* __refl_mono: invert [mode_typ_compat m (typ_arrow A B)] to
+       extract compat at [decr_mode m] on B. *)
+    apply d_sub_gen__refl_mono; auto.
+    match goal with
+    | H : mode_typ_compat _ (typ_arrow _ _) |- _ =>
+        inversion H; subst; simpl;
+          [ apply mode_typ_compat__ti;
+            match goal with Hsy : is_syn_typ (typ_arrow _ _) |- _ =>
+              inversion Hsy; assumption
+            end
+          | apply mode_typ_compat__tc;
+            match goal with Hih : is_inh_typ (typ_arrow _ _) |- _ =>
+              inversion Hih; assumption
+            end
+          | assumption ]
+    end.
+  - (* __arg: m = mode_fn k, body sub gives the result directly. *)
+    match goal with
+    | H : _ ++ _ = nil |- _ =>
+        apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst
+    end.
+    simpl. assumption.
+Qed.
 
 (** Mono-type mode-lift for [d_typing_gen] — the [d_typing_gen]
     analogue of [d_typing_lift_mono]. By induction on the typing.

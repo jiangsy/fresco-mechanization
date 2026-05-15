@@ -75,18 +75,46 @@ Proof. intros A H. destruct H; constructor. Qed.
 (** [is_syn_typ] / [is_inh_typ] types round-trip through their
     [colour]-painting + [erase]. They are [syn_color]/[inh_color]
     images of their own [erase] — same role for the colour-discipline
-    lemmas as [mono_typ_*_color_erase] for monos. Cofinite [all] case
-    needs an extra [open_typ]/close commutation step; admitted for the
-    build-green pass. *)
+    lemmas as [mono_typ_*_color_erase] for monos. The cofinite [all]
+    case closes via [open_typ_wrt_typ_inj] on a fresh witness, using
+    [erase_ftvar] + [{syn,inh}_color_ftvar] to discharge the freshness
+    side conditions (the shared [erase]-image makes both freshness
+    sets coincide with [ftvar_in_typ A]). *)
 Lemma is_syn_typ_syn_color_erase : forall A,
     is_syn_typ A -> syn_color (erase A) = A.
 Proof.
-Admitted.
+  intros A H. induction H.
+  - reflexivity.
+  - reflexivity.
+  - simpl. f_equal; auto.
+  - simpl. f_equal.
+    pick fresh X for (L `union` ftvar_in_typ A).
+    specialize (H0 X ltac:(auto)).
+    rewrite erase_open_typ in H0.
+    simpl in H0.
+    rewrite syn_color_open_ctyp in H0.
+    simpl in H0.
+    apply open_typ_wrt_typ_inj in H0; auto.
+    rewrite syn_color_ftvar. rewrite erase_ftvar. auto.
+Qed.
 
 Lemma is_inh_typ_inh_color_erase : forall A,
     is_inh_typ A -> inh_color (erase A) = A.
 Proof.
-Admitted.
+  intros A H. induction H.
+  - reflexivity.
+  - reflexivity.
+  - simpl. f_equal; auto.
+  - simpl. f_equal.
+    pick fresh X for (L `union` ftvar_in_typ A).
+    specialize (H0 X ltac:(auto)).
+    rewrite erase_open_typ in H0.
+    simpl in H0.
+    rewrite inh_color_open_ctyp in H0.
+    simpl in H0.
+    apply open_typ_wrt_typ_inj in H0; auto.
+    rewrite inh_color_ftvar. rewrite erase_ftvar. auto.
+Qed.
 
 (** Substituting a *monotype* [B] into a colouring pushes through to a
     [ctyp]-substitution on the base (via [B = syn_color (erase B)] etc.
