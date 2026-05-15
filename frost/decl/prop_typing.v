@@ -2489,9 +2489,11 @@ Qed.
 
 (** Mono-type mode-lift for [d_typing_gen] — the [d_typing_gen]
     analogue of [d_typing_lift_mono]. By induction on the typing.
-    Base terms close via [d_typing_gen__sub]; [__abs]/[__abs_anno]
-    reconstruct with body lifted by the IH; [__app] is research-grade
-    (same gap as [d_typing_lift_mono]'s __app — function arg-type
+    Base terms close via [d_typing_gen__sub]; [__sub] composes the
+    inner mode_ti d_sub_gen with Hrefl via [d_sub_gen_trans];
+    [__abs]/[__abs_anno] reconstruct with body lifted by the IH and
+    [d_sub_gen_arrow_refl_inner]; [__app] is research-grade
+    (same gap as [d_typing_lift_mono]'s [__app] — function arg-type
     mono not derivable from the rule). *)
 Lemma d_typing_gen_lift_mono : forall Γ e A m_target,
     d_typing_gen mode_ti Γ e A ->
@@ -2500,6 +2502,61 @@ Lemma d_typing_gen_lift_mono : forall Γ e A m_target,
     d_sub_gen m_target nil Γ A A ->
     d_typing_gen m_target Γ e A.
 Proof.
+  intros Γ e A m_target H.
+  remember mode_ti as m0 eqn:Hm0.
+  generalize dependent m_target.
+  induction H; intros m_target Hmono Hwfd Hrefl.
+  - (* __unit *)
+    apply d_typing_gen__sub with (A := typ_unit); auto using is_base_term__unit.
+    apply d_typing_gen__unit; auto.
+  - (* __var *)
+    apply d_typing_gen__sub with (A := A); auto using is_base_term__var.
+    apply d_typing_gen__var; auto.
+  - (* __anno: rule conclusion is [syn_color A]; route through
+       [d_typing_gen__sub] at that target. *)
+    apply d_typing_gen__sub with (A := syn_color A);
+      auto using is_base_term__anno.
+    apply d_typing_gen__anno; auto.
+  - (* __sub: m = mode_ti (in context), inner mode_ti at A, sub
+       d_sub_gen mode_ti A B. Compose with Hrefl (d_sub_gen m_target B B)
+       via d_sub_gen_trans at m1 = mode_ti. *)
+    subst.
+    apply d_typing_gen__sub with (A := A); auto.
+    eapply d_sub_gen_trans with (m1 := mode_ti) (B := B).
+    + apply is_fn_n_ti__ti.
+    + eapply d_typing_gen_preserves_wf; eauto.
+    + exact H1.
+    + exact Hrefl.
+  - (* __freeze: produces mode_tc, contradicts m0 = mode_ti. *)
+    discriminate.
+  - (* __forall: produces mode_tc, contradicts. *)
+    discriminate.
+  - (* __abs at outer m = mode_ti. Conclusion: typ_arrow (inh_color A) B.
+       Mono ⇒ both arms mono. Body lifts via IH H1 with body refl from
+       [d_sub_gen_arrow_refl_inner] + weakening. *)
+    subst.
+    inversion Hmono; subst.
+    apply d_typing_gen__abs with (L := L `union` dom Γ); auto.
+    intros x Hx. apply H1; auto.
+    + apply d_wf_denv__typ;
+        [ assumption | fsetdec
+        | apply d_wf_typ_inh_color_syn_color; assumption ].
+    + rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+      apply d_sub_gen_weakening_head.
+      eapply d_sub_gen_arrow_refl_inner; eauto.
+  - (* __abs_anno: conclusion typ_arrow (syn_color A) B; body binding is
+       (x ~ dbind_typ (syn_color A)) — same colour, identity. *)
+    subst.
+    inversion Hmono; subst.
+    apply d_typing_gen__abs_anno with (L := L `union` dom Γ); auto.
+    intros x Hx. apply H1; auto.
+    + apply d_wf_denv__typ; [assumption | fsetdec | assumption].
+    + rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+      apply d_sub_gen_weakening_head.
+      eapply d_sub_gen_arrow_refl_inner; eauto.
+  - (* __app: research-grade gap (function arg-type mono not derivable
+       from the rule's premises — same as [d_typing_lift_mono]'s __app). *)
+    admit.
 Admitted.
 
 (** Aux lemmas specialising the gen-subsumption theorem to specific
@@ -2692,7 +2749,38 @@ Theorem d_typing_general_subsumption_gen : forall m_orig Γ e A,
       d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B ->
       d_typing_gen (mode_fn_n_subst m_orig m_new) Γ e B.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): body required restructuring for the [ctyp] re-encoding; admitted for build-green. *)
+  intros m_orig Γ e A Hty.
+  induction Hty; intros Hfn Hwfd m_new B_tgt Hsub_gen.
+  - (* Hty = __unit (m_orig = mode_ti). Closes via [d_typing_gen__sub]
+       directly through [d_typing_unit_gen_subsumption]. *)
+    simpl in Hsub_gen |- *.
+    apply d_typing_unit_gen_subsumption; assumption.
+  - (* Hty = __var (m_orig = mode_ti). *)
+    simpl in Hsub_gen |- *.
+    eapply d_typing_var_gen_subsumption; eauto.
+  - (* Hty = __anno (m_orig = mode_ti). Uses the restated (ctyp-base)
+       [d_typing_anno_gen_subsumption]. *)
+    simpl in Hsub_gen |- *.
+    eapply d_typing_anno_gen_subsumption; eauto.
+  - (* Hty = __sub: inner [d_typing_gen mode_ti Γ e A], outer
+       [d_sub_gen m_orig A B]. Compose with [Hsub_gen] via
+       [d_sub_gen_trans] at [m1 = m_orig]. *)
+    apply d_typing_gen__sub with (A := A); auto.
+    eapply d_sub_gen_trans with (m1 := m) (B := B); auto.
+    eapply d_typing_gen_preserves_wf; eauto.
+  - (* Hty = __freeze: m_orig = mode_tc ∉ is_fn_n_ti. Vacuous. *)
+    inversion Hfn.
+  - (* Hty = __forall: same. *)
+    inversion Hfn.
+  - (* Hty = __abs. Research-grade — needs body-lift narrowing under
+       the new [(x ~ dbind_typ (syn_color A))] binding, which interacts
+       with the [d_typing_gen_*_value_to_subsumption] helpers (still
+       admitted). *)
+    admit.
+  - (* Hty = __abs_anno. Same shape as __abs. *)
+    admit.
+  - (* Hty = __app. Research-grade — function-side lift threading. *)
+    admit.
 Admitted.
 
 (** [d_consis_gen_to_d_consis]: the gen→original bridge for
@@ -2705,7 +2793,21 @@ Lemma d_consis_gen_to_d_consis : forall Δ Γ T A,
     d_consis_gen Δ Γ T A ->
     d_consis Δ Γ T A.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): body required restructuring for the [ctyp] re-encoding; admitted for build-green. *)
+  intros Δ Γ T A H. induction H.
+  - apply d_consis__unit.
+  - apply d_consis__var; assumption.
+  - apply d_consis__forall_inh_tagged with (L := L); assumption.
+  - apply d_consis__forall_inh_untagged with (L := L); assumption.
+  - apply d_consis__forall_syn_tagged with (L := L); assumption.
+  - apply d_consis__forall_syn_untagged with (L := L); assumption.
+  - (* __forall_inh: LHS = typ_all_col colour_inh T_inner, RHS =
+       typ_all_col colour_inh A_inner. No [d_consis] rule admits
+       [typ_all_col] on the LHS — this is THE residual structural gap
+       of the D1-via-D12 development. Closing it requires extending
+       [d_consis] to admit [typ_all_col colour_inh] LHS (a rule-
+       definition change, not a proof-script change). *)
+    admit.
+  - apply d_consis__arrow; assumption.
 Admitted.
 
 (** [d_typing_gen_collapse]: the generalised typing collapses back to
