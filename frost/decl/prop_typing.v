@@ -2648,12 +2648,33 @@ Proof.
   - (* __check_gen: d_consis_gen Δ Γ (syn_color T_c) (inh_color A_c)
        forced via shape pinning at the arrow; same narrowing gap. *)
     admit.
-  - (* __refl_mono: target = typ_arrow A B forced mono; body lift from
-       (decr_mode m_orig = mode_ti) to mode_tc via [d_typing_gen_lift_mono]
-       (Qed except the __app case). With mono A, the body's binding
-       (x ~ A) coincides with the rule's (x ~ syn_color (erase A)) by
-       [mono_typ_syn_color_erase]. *)
-    admit.
+  - (* __refl_mono: target = typ_arrow A B forced mono ⇒ mono A and
+       mono B. The ctyp base for [d_typing_gen__abs] is [erase A]; for
+       mono A, [inh_color (erase A) = syn_color (erase A) = A], so the
+       rule's body binding [(x ~ syn_color (erase A))] coincides with
+       the lemma's [(x ~ A)]. Body lift from (decr_mode m_orig = mode_ti)
+       to mode_tc via [d_typing_gen_lift_mono] (Qed except its __app
+       case, which is the canonical mono-arg gap). *)
+    match goal with Hm : mono_typ (typ_arrow A B) |- _ =>
+      assert (HmonoA : mono_typ A) by (inversion Hm; auto);
+      assert (HmonoB : mono_typ B) by (inversion Hm; auto)
+    end.
+    rewrite <- (mono_typ_inh_color_erase HmonoA) at 1.
+    apply d_typing_gen__abs with (L := L `union` dom Γ).
+    + rewrite (mono_typ_inh_color_erase HmonoA). assumption.
+    + intros x Hx.
+      assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ))
+        by (apply d_wf_denv__typ; auto).
+      rewrite (mono_typ_syn_color_erase HmonoA).
+      apply d_typing_gen_lift_mono with (A := B); auto.
+      * rewrite <- Hdecr. apply Hbody. auto.
+      * apply d_sub_gen_refl; auto.
+        -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; auto.
+        -- rewrite_env ((x ~ dbind_typ A) ++ Γ).
+           apply d_wf_typ_weakening_head.
+           match goal with Hw : d_wf_typ Γ (typ_arrow A B) |- _ =>
+             inversion Hw; assumption
+           end.
   - (* __forall_r: target = typ_all_col colour_inh A_target. Reconstruct
        via [d_typing_gen__forall] (value rule) + recursive IH at each X.
        The dependent-induction IH [H0] takes the body-sub at each X plus
