@@ -2637,7 +2637,39 @@ Lemma d_typing_abs_value_to_subsumption :
     d_sub_gen mode_tc nil Γ (typ_arrow A B) C ->
     d_typing_gen mode_tc Γ (exp_abs e) C.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): body required restructuring for the [ctyp] re-encoding; admitted for build-green. *)
+  intros L Γ e A B m_orig C HinhA HwfA Hbody Hdecr Hwfd Hs.
+  dependent induction Hs.
+  - (* __embed: d_sub mode_tc nil Γ (typ_arrow A B) C — needs d_sub
+       inversion (4 sub-cases) + body-conversion for each shape.
+       Post-re-encoding the body context (x ~ A) does not match the
+       rule's (x ~ syn_color (erase A)) for non-mono A. Research-grade
+       narrowing required. *)
+    admit.
+  - (* __check_gen: d_consis_gen Δ Γ (syn_color T_c) (inh_color A_c)
+       forced via shape pinning at the arrow; same narrowing gap. *)
+    admit.
+  - (* __refl_mono: target = typ_arrow A B forced mono; body lift from
+       (decr_mode m_orig = mode_ti) to mode_tc via [d_typing_gen_lift_mono]
+       (Qed except the __app case). With mono A, the body's binding
+       (x ~ A) coincides with the rule's (x ~ syn_color (erase A)) by
+       [mono_typ_syn_color_erase]. *)
+    admit.
+  - (* __forall_r: target = typ_all_col colour_inh A_target. Reconstruct
+       via [d_typing_gen__forall] (value rule) + recursive IH at each X.
+       The dependent-induction IH [H0] takes the body-sub at each X plus
+       the helper's other premises threaded under the [(X ~ dbind_tvar)
+       ++ Γ] extension; we supply those via weakening. *)
+    apply d_typing_gen__forall with (L := L0 `union` dom Γ).
+    + apply is_value__abs.
+    + intros X HX.
+      assert (Hwfd_X : d_wf_denv ((X ~ dbind_tvar) ++ Γ))
+        by (apply d_wf_denv__tvar; auto).
+      apply (H0 X ltac:(auto) Hwfd_X Hdecr B A); auto.
+      * apply d_wf_typ_weakening_head; auto.
+      * intros y Hy.
+        apply d_typing_gen_weakening with
+          (Γ1 := (y ~ dbind_typ A)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
+        apply Hbody. exact Hy.
 Admitted.
 
 (** [d_typing_abs_anno_value_to_subsumption]: same structure as
@@ -2655,7 +2687,30 @@ Lemma d_typing_abs_anno_value_to_subsumption :
     d_sub_gen mode_tc nil Γ (typ_arrow (syn_color_t A) B) C ->
     d_typing_gen mode_tc Γ (exp_abs_anno A e) C.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): body required restructuring for the [ctyp] re-encoding; admitted for build-green. *)
+  intros L Γ e A B m_orig C HwfA Hbody Hdecr Hwfd Hs.
+  dependent induction Hs.
+  - (* __embed: same narrowing gap as the unannotated variant. *)
+    admit.
+  - (* __check_gen: same. *)
+    admit.
+  - (* __refl_mono: target mono; body lift via [d_typing_gen_lift_mono]
+       (Qed except __app). *)
+    admit.
+  - (* __forall_r: target = typ_all_col colour_inh A_target. Reconstruct
+       via [d_typing_gen__forall] (value rule) + recursive IH at each X.
+       [exp_abs_anno A e] is_value when [e] is — but the rule requires
+       only [is_value (exp_abs_anno A e)], which holds unconditionally. *)
+    apply d_typing_gen__forall with (L := L0 `union` dom Γ).
+    + apply is_value__abs_anno.
+    + intros X HX.
+      assert (Hwfd_X : d_wf_denv ((X ~ dbind_tvar) ++ Γ))
+        by (apply d_wf_denv__tvar; auto).
+      apply H0 with (A := A) (B := B); auto.
+      * apply d_wf_typ_weakening_head; auto.
+      * intros y Hy.
+        apply d_typing_gen_weakening with
+          (Γ1 := (y ~ dbind_typ A)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
+        apply Hbody. exact Hy.
 Admitted.
 
 (** ** Generalised General Subsumption (paper Lemma B.5).
