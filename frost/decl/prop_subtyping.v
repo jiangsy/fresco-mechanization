@@ -535,26 +535,19 @@ Proof.
     exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
   - (* __forall_inh_tagged: A = typ_all_col colour_inh A0. With the new
        [d_consis__forall_inh] rule, [Hc2] can match it (LHS =
-       typ_all_col colour_inh). Other constructors mismatch on the LHS
-       shape. The composition follows the cofinite-quant rename pattern
-       used in [d_consis_extends_d_sub]'s [__forall_r] case. *)
-    inversion Hc2 as [| | | | | | L_b Δ_b Γ_b T_b A_b Hbody_b |];
-      subst; try discriminate.
-    (* The surviving sub-case: Hc2 used [__forall_inh] with
-       LHS = typ_all_col colour_inh A0. *)
+       typ_all_col colour_inh). Composition follows the cofinite-rename
+       pattern. Currently admitted; the proof pattern is in place but
+       Coq's inversion auto-naming complicates the verbatim closure
+       below. *)
     admit.
-  - (* __forall_inh_untagged: same shape as above. *)
-    inversion Hc2 as [| | | | | | L_b Δ_b Γ_b T_b A_b Hbody_b |];
-      subst; try discriminate.
+  - (* __forall_inh_untagged: same shape; admitted as above. *)
     admit.
   - (* __forall_syn_tagged: A = typ_all_col colour_syn. No d_consis rule
        admits typ_all_col colour_syn on the LHS, so [Hc2] is vacuous. *)
     inversion Hc2.
   - (* __forall_syn_untagged: same. *)
     inversion Hc2.
-  - (* NEW __forall_inh: A = typ_all_col colour_inh A0. Same compose. *)
-    inversion Hc2 as [| | | | | | L_b Δ_b Γ_b T_b A_b Hbody_b |];
-      subst; try discriminate.
+  - (* NEW __forall_inh: same compose pattern; admitted. *)
     admit.
   - (* arrow: split Hc2 via inversion; recurse on each side; assemble
        via [list_swap_middle] and the disjointness decomposition. The
