@@ -1309,13 +1309,43 @@ Qed.
     written [typc Γ N (inh A)] — it checks against an INHERITED
     (inh-coloured) type by construction. The mechanised
     [d_typing mode_tc Γ e A] does not carry [is_inh_typ A] explicitly
-    on every rule (e.g. [d_typing__abs] / [d_typing__freeze] do not),
-    so this invariant is not derivable post-hoc from the current rule
-    set without strengthening the [d_typing] definition. We admit it
-    as the paper's implicit colour invariant; a fully faithful
-    mechanisation would thread [is_inh_typ] through the [mode_tc]
-    rules. Used only to discharge [is_inh_typ] of a function's
-    argument type in the __app function-side lift. *)
+    on every rule, so this invariant is not derivable post-hoc from
+    the current rule set without strengthening the [d_typing]
+    definition.
+
+    CONCRETE COUNTER-EXAMPLE to the lemma as stated. The [__freeze]
+    rule inherits the inner [mode_ti] type unchanged:
+    {{{
+        | d_typing__freeze : forall Γ e A,
+            d_typing mode_ti Γ e A ->
+            d_typing mode_tc Γ (exp_freeze e) A
+    }}}
+    Take the inner derivation
+        [d_typing mode_ti Γ (exp_anno e0 (inh_color (ctyp_all (ctyp_var_b 0))))
+                            (syn_color (ctyp_all (ctyp_var_b 0)))]
+    via [d_typing__anno]. The output type [syn_color (ctyp_all _)] is
+    [typ_all_col colour_syn _] — NOT [is_inh_typ]. After [__freeze]
+    we get [d_typing mode_tc Γ (exp_freeze _) (typ_all_col colour_syn _)].
+    The conclusion [is_inh_typ (typ_all_col colour_syn _)] is false
+    (the rule [is_inh_typ__all] requires [colour_inh]). The
+    [__abs] / [__abs_anno] / [__app] cases admit similar counter-examples
+    when the result-side type carries a non-inh colour.
+
+    PAPER-FAITHFUL FIX. The paper's [Freeze] rule (syntax-directed.tex)
+    repaints: [typi Γ M (syn A) ⟹ typc Γ (Freeze M) (inh A)]. Our
+    mechanised rule lacks this repainting. Restating it as
+    {{{
+        | d_typing__freeze : forall Γ e A,
+            d_typing mode_ti Γ e (syn_color A) ->
+            d_typing mode_tc Γ (exp_freeze e) (inh_color A)
+    }}}
+    (over a [ctyp] base [A]) closes the invariant for [__freeze]. The
+    [__abs] / [__abs_anno] / [__app] rules would need analogous
+    threading of [is_inh_typ] on the result-side B (an "inh-on-the-
+    arrow-result" requirement). All these are rule-definition changes;
+    the cascading impact (every use of these rules in existing proofs)
+    keeps the change out of scope for this pass. Admitted with the
+    counter-example flagged. *)
 Lemma d_typing_check_is_inh : forall Γ e A,
     d_typing mode_tc Γ e A ->
     is_inh_typ A.
