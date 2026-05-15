@@ -673,6 +673,204 @@ Proof. intros A H. inversion H; subst. auto. Qed.
 Lemma is_uskel_inv_col : forall c A, is_uskel (typ_all_col c A) -> False.
 Proof. intros c A H. inversion H. Qed.
 
+(** * Inversion lemmas for the [syn_color] / [inh_color] paintings.
+
+    A [syn_color C] / [inh_color C] equal to a [typ] constructor pins
+    down [C]'s head [ctyp] constructor. These are the [ctyp]-era
+    analogues of the [is_typ_inv_*] family above: whenever a rule whose
+    conclusion is [syn_color _] / [inh_color _] is inverted against a
+    concrete [typ] shape, these lemmas recover the [ctyp] base. *)
+
+Lemma syn_color_eq_unit_inv : forall C,
+    syn_color C = typ_unit -> C = ctyp_unit.
+Proof. intros C H. destruct C; simpl in H; try discriminate. reflexivity. Qed.
+
+Lemma syn_color_eq_var_inv : forall C X,
+    syn_color C = typ_var_f X -> C = ctyp_var_f X.
+Proof. intros C X H. destruct C; simpl in H; try discriminate. congruence. Qed.
+
+Lemma syn_color_eq_arrow_inv : forall C A B,
+    syn_color C = typ_arrow A B ->
+    exists C1 C2, C = ctyp_arrow C1 C2 /\ syn_color C1 = A /\ syn_color C2 = B.
+Proof.
+  intros C A B H. destruct C; simpl in H; try discriminate.
+  injection H as H1 H2. eauto.
+Qed.
+
+Lemma syn_color_eq_all_inv : forall C c A,
+    syn_color C = typ_all_col c A ->
+    c = colour_syn /\ exists C0, C = ctyp_all C0 /\ syn_color C0 = A.
+Proof.
+  intros C c A H. destruct C; simpl in H; try discriminate.
+  injection H as Hc H0. split; [auto | eauto].
+Qed.
+
+Lemma syn_color_eq_hole_inv : forall C,
+    syn_color C = typ_hole -> C = ctyp_hole.
+Proof. intros C H. destruct C; simpl in H; try discriminate. reflexivity. Qed.
+
+Lemma syn_color_eq_tophole_inv : forall C A,
+    syn_color C = typ_tophole A ->
+    exists C0, C = ctyp_tophole C0 /\ syn_color C0 = A.
+Proof.
+  intros C A H. destruct C; simpl in H; try discriminate.
+  injection H as H0. eauto.
+Qed.
+
+Lemma syn_color_not_etag : forall C ε A,
+    syn_color C <> typ_all_etag ε A.
+Proof. intros C ε A H. destruct C; simpl in H; discriminate. Qed.
+
+Lemma syn_color_not_plain : forall C A,
+    syn_color C <> typ_all_plain A.
+Proof. intros C A H. destruct C; simpl in H; discriminate. Qed.
+
+Lemma inh_color_eq_unit_inv : forall C,
+    inh_color C = typ_unit -> C = ctyp_unit.
+Proof. intros C H. destruct C; simpl in H; try discriminate. reflexivity. Qed.
+
+Lemma inh_color_eq_var_inv : forall C X,
+    inh_color C = typ_var_f X -> C = ctyp_var_f X.
+Proof. intros C X H. destruct C; simpl in H; try discriminate. congruence. Qed.
+
+Lemma inh_color_eq_arrow_inv : forall C A B,
+    inh_color C = typ_arrow A B ->
+    exists C1 C2, C = ctyp_arrow C1 C2 /\ inh_color C1 = A /\ inh_color C2 = B.
+Proof.
+  intros C A B H. destruct C; simpl in H; try discriminate.
+  injection H as H1 H2. eauto.
+Qed.
+
+Lemma inh_color_eq_all_inv : forall C c A,
+    inh_color C = typ_all_col c A ->
+    c = colour_inh /\ exists C0, C = ctyp_all C0 /\ inh_color C0 = A.
+Proof.
+  intros C c A H. destruct C; simpl in H; try discriminate.
+  injection H as Hc H0. split; [auto | eauto].
+Qed.
+
+Lemma inh_color_eq_hole_inv : forall C,
+    inh_color C = typ_hole -> C = ctyp_hole.
+Proof. intros C H. destruct C; simpl in H; try discriminate. reflexivity. Qed.
+
+Lemma inh_color_eq_tophole_inv : forall C A,
+    inh_color C = typ_tophole A ->
+    exists C0, C = ctyp_tophole C0 /\ inh_color C0 = A.
+Proof.
+  intros C A H. destruct C; simpl in H; try discriminate.
+  injection H as H0. eauto.
+Qed.
+
+Lemma inh_color_not_etag : forall C ε A,
+    inh_color C <> typ_all_etag ε A.
+Proof. intros C ε A H. destruct C; simpl in H; discriminate. Qed.
+
+Lemma inh_color_not_plain : forall C A,
+    inh_color C <> typ_all_plain A.
+Proof. intros C A H. destruct C; simpl in H; discriminate. Qed.
+
+(** * [typ]-level paintings, the [ctyp]-era successors of the Part-B
+    [syn_color] / [inh_color] : typ → typ.
+
+    The original ([typ]-domain) paintings were removed by the [ctyp]
+    re-encoding (where [syn_color] / [inh_color] became [ctyp → typ]).
+    The proof layer (notably [prop_typing.v]) still needs the [typ →
+    typ] versions — e.g. to state [d_consis_gen]-narrowing as "the
+    bound type is invariant under the [syn]-painting" as a [typ]-level
+    equality. We restore them here as a separate [Fixpoint] over
+    [typ], collapsing every [forall] flavour to [typ_all_col colour_syn]
+    / [typ_all_col colour_inh] respectively. Functionally they equal
+    [syn_color (erase _)] / [inh_color (erase _)] (composition with
+    [erase]) but the [Fixpoint] form keeps tactics like [rewrite]
+    matching their syntactic shape. *)
+Fixpoint syn_color_t (A : typ) : typ :=
+  match A with
+  | typ_unit => typ_unit
+  | typ_var_b n => typ_var_b n
+  | typ_var_f X => typ_var_f X
+  | typ_arrow A1 A2 => typ_arrow (syn_color_t A1) (syn_color_t A2)
+  | typ_all_col _ A0 => typ_all_col colour_syn (syn_color_t A0)
+  | typ_all_etag _ A0 => typ_all_col colour_syn (syn_color_t A0)
+  | typ_all_plain A0 => typ_all_col colour_syn (syn_color_t A0)
+  | typ_hole => typ_hole
+  | typ_tophole A0 => typ_tophole (syn_color_t A0)
+  end.
+
+Fixpoint inh_color_t (A : typ) : typ :=
+  match A with
+  | typ_unit => typ_unit
+  | typ_var_b n => typ_var_b n
+  | typ_var_f X => typ_var_f X
+  | typ_arrow A1 A2 => typ_arrow (inh_color_t A1) (inh_color_t A2)
+  | typ_all_col _ A0 => typ_all_col colour_inh (inh_color_t A0)
+  | typ_all_etag _ A0 => typ_all_col colour_inh (inh_color_t A0)
+  | typ_all_plain A0 => typ_all_col colour_inh (inh_color_t A0)
+  | typ_hole => typ_hole
+  | typ_tophole A0 => typ_tophole (inh_color_t A0)
+  end.
+
+Lemma syn_color_t_open_var_rec : forall A k Y,
+    syn_color_t (open_typ_wrt_typ_rec k (typ_var_f Y) A) =
+    open_typ_wrt_typ_rec k (typ_var_f Y) (syn_color_t A).
+Proof.
+  induction A; intros k Y; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+  - rewrite IHA1, IHA2; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+Qed.
+
+Lemma syn_color_t_open_var : forall A Y,
+    syn_color_t (open_typ_wrt_typ A (typ_var_f Y)) =
+    open_typ_wrt_typ (syn_color_t A) (typ_var_f Y).
+Proof.
+  intros A Y. unfold open_typ_wrt_typ. apply syn_color_t_open_var_rec.
+Qed.
+
+Lemma inh_color_t_open_var_rec : forall A k Y,
+    inh_color_t (open_typ_wrt_typ_rec k (typ_var_f Y) A) =
+    open_typ_wrt_typ_rec k (typ_var_f Y) (inh_color_t A).
+Proof.
+  induction A; intros k Y; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+  - rewrite IHA1, IHA2; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+Qed.
+
+Lemma inh_color_t_open_var : forall A Y,
+    inh_color_t (open_typ_wrt_typ A (typ_var_f Y)) =
+    open_typ_wrt_typ (inh_color_t A) (typ_var_f Y).
+Proof.
+  intros A Y. unfold open_typ_wrt_typ. apply inh_color_t_open_var_rec.
+Qed.
+
+Lemma syn_color_t_ftvar : forall A,
+    ftvar_in_typ (syn_color_t A) = ftvar_in_typ A.
+Proof.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1, IHA2. reflexivity.
+  - assumption.
+  - assumption.
+  - assumption.
+  - assumption.
+Qed.
+
+Lemma inh_color_t_ftvar : forall A,
+    ftvar_in_typ (inh_color_t A) = ftvar_in_typ A.
+Proof.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1, IHA2. reflexivity.
+  - assumption.
+  - assumption.
+  - assumption.
+  - assumption.
+Qed.
+
 (** * Mutual induction principle for d_typing ↔ d_pat. *)
 
 Scheme d_typing_mut := Induction for d_typing Sort Prop
