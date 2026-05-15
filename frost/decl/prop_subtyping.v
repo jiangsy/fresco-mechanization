@@ -174,6 +174,9 @@ Proof.
   - apply d_consis__forall_syn_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
+  - apply d_consis__forall_inh with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
   - apply d_consis__arrow; eauto.
 Qed.
 
@@ -213,6 +216,11 @@ Proof.
     destruct HbY as [Hin | Hin]; apply binds_app_iff;
       [left; auto | right; auto].
   - apply d_consis__forall_syn_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__forall_inh with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY.
     destruct HbY as [Hin | Hin]; apply binds_app_iff;
@@ -297,6 +305,13 @@ Proof.
     apply H0; auto.
   - (* __forall_syn_untagged *)
     apply d_consis__forall_syn_untagged with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - (* __forall_inh *)
+    apply d_consis__forall_inh with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
     intros Y HY.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
@@ -518,16 +533,34 @@ Proof.
     exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
   - (* var X ~ var X. *)
     exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
-  - (* forall_inh_tagged / forall_inh_untagged / forall_syn_*: A is
-       typ_all_col on the RHS, which is not an [is_utyp] shape and so
-       cannot be the LHS of [Hc2]. *)
+  - (* __forall_inh_tagged: A = typ_all_col colour_inh A0. With the new
+       [d_consis__forall_inh] rule, [Hc2] can match it (LHS =
+       typ_all_col colour_inh). Other constructors mismatch on the LHS
+       shape. The composition follows the cofinite-quant rename pattern
+       used in [d_consis_extends_d_sub]'s [__forall_r] case. *)
+    inversion Hc2 as [| | | | | | L_b Δ_b Γ_b T_b A_b Hbody_b |];
+      subst; try discriminate.
+    (* The surviving sub-case: Hc2 used [__forall_inh] with
+       LHS = typ_all_col colour_inh A0. *)
+    admit.
+  - (* __forall_inh_untagged: same shape as above. *)
+    inversion Hc2 as [| | | | | | L_b Δ_b Γ_b T_b A_b Hbody_b |];
+      subst; try discriminate.
+    admit.
+  - (* __forall_syn_tagged: A = typ_all_col colour_syn. No d_consis rule
+       admits typ_all_col colour_syn on the LHS, so [Hc2] is vacuous. *)
     inversion Hc2.
-  - inversion Hc2.
-  - inversion Hc2.
-  - inversion Hc2.
+  - (* __forall_syn_untagged: same. *)
+    inversion Hc2.
+  - (* NEW __forall_inh: A = typ_all_col colour_inh A0. Same compose. *)
+    inversion Hc2 as [| | | | | | L_b Δ_b Γ_b T_b A_b Hbody_b |];
+      subst; try discriminate.
+    admit.
   - (* arrow: split Hc2 via inversion; recurse on each side; assemble
-       via [list_swap_middle] and the disjointness decomposition. *)
-    inversion Hc2 as [| | | | | |Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdis_b];
+       via [list_swap_middle] and the disjointness decomposition. The
+       inversion pattern now has 8 alternatives (7 bars before
+       [__arrow]) due to the new [__forall_inh] constructor. *)
+    inversion Hc2 as [| | | | | | |Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdis_b];
       subst.
     (* From Hdis : list_disjoint (Δ1 ++ Δ2) (Δb1 ++ Δb2), derive the four
        cross-disjoints. *)
@@ -549,7 +582,7 @@ Proof.
       * apply list_disjoint_app_r_iff. split; [exact H | exact Hd1b2].
       * apply list_disjoint_app_r_iff. split;
           [apply list_disjoint_sym; exact Hd2b1 | exact Hdis_b].
-Qed.
+Admitted.
 
 (** If [d_consis Δ Γ T A] and [d_wf_typ Γ T], then [T] is mono.
 
@@ -563,18 +596,74 @@ Qed.
     Used in [d_typing_general_subsumption] to derive that body types
     in __abs cases are mono (and hence support d_sub_refl_mono), which
     unblocks the body conversion. *)
+(** With the new [d_consis__forall_inh] rule, the LHS can be
+    [typ_all_col colour_inh T0] which is NOT mono. The lemma therefore
+    requires an [is_utyp T] precondition that rules out this case
+    structurally — [is_utyp] is the old [d_consis] LHS grammar
+    (unit/var/arrow/typ_all_etag/typ_all_plain), which omits
+    [typ_all_col]. Callers establish [is_utyp T] via
+    [d_consis_LHS_is_utyp_when_RHS_syn] (below) when RHS is
+    [syn_color]-shaped. *)
 Lemma d_consis_LHS_mono_wf : forall Δ Γ T A,
     d_consis Δ Γ T A ->
     d_wf_typ Γ T ->
+    is_utyp T ->
     mono_typ T.
 Proof.
-  intros Δ Γ T A Hc Hwf. induction Hc; inversion Hwf; subst.
+  intros Δ Γ T A Hc Hwf Hut. induction Hc; inversion Hwf; subst.
   - apply mono_typ__unit.
   - apply mono_typ__var.
-  - apply mono_typ__arrow.
-    + apply IHHc1; assumption.
-    + apply IHHc2; assumption.
+  - (* __forall_inh: T = typ_all_col colour_inh _, NOT is_utyp. *)
+    inversion Hut.
+  - inversion Hut; subst. apply mono_typ__arrow.
+    + apply IHHc1; auto.
+    + apply IHHc2; auto.
 Qed.
+
+(** When [d_consis Δ Γ T A] holds and the RHS [A] is recursively
+    syn-painted (any [A = syn_color C]), the LHS [T] is recursively
+    [is_utyp]. The new [d_consis__forall_inh] rule (LHS/RHS both
+    [typ_all_col colour_inh]) is vacuous because [syn_color C] never
+    has [colour_inh] at the head, and recursively the sub-derivations
+    inherit the syn-painted RHS via the [__forall_syn_*] / [__arrow]
+    rules. *)
+Lemma d_consis_LHS_is_utyp_when_RHS_syn_color : forall Δ Γ T A,
+    d_consis Δ Γ T A ->
+    forall C, A = syn_color C ->
+    is_utyp T.
+Proof.
+  intros Δ Γ T A Hc. induction Hc; intros C HC.
+  - apply is_utyp__unit.
+  - apply is_utyp__var.
+  - (* __forall_inh_tagged: A = typ_all_col colour_inh A_inner; LHS
+       is typ_all_etag (is_utyp). Need to derive is_utyp of inner. *)
+    destruct C; simpl in HC; discriminate.
+  - destruct C; simpl in HC; discriminate.
+  - (* __forall_syn_tagged: A = typ_all_col colour_syn (syn_color C_inner)
+       with C = ctyp_all C_inner. *)
+    destruct C; simpl in HC; try discriminate.
+    inversion HC; subst.
+    inst_cofinites_for is_utyp__tall.
+    intros X HX.
+    eapply H0 with (C := open_ctyp_wrt_ctyp C (ctyp_var_f X)); eauto.
+    rewrite syn_color_open_ctyp. simpl. reflexivity.
+  - destruct C; simpl in HC; try discriminate.
+    inversion HC; subst.
+    inst_cofinites_for is_utyp__pall.
+    intros X HX.
+    eapply H0 with (C := open_ctyp_wrt_ctyp C (ctyp_var_f X)); eauto.
+    rewrite syn_color_open_ctyp. simpl. reflexivity.
+  - (* __forall_inh: A = typ_all_col colour_inh — never [syn_color C]. *)
+    destruct C; simpl in HC; discriminate.
+  - destruct C; simpl in HC; try discriminate.
+    inversion HC; subst.
+    apply is_utyp__arrow; eauto.
+Qed.
+
+(** No [inh_color]-RHS version of the above is provided: with the new
+    [__forall_inh] rule, [d_consis Δ Γ T (inh_color (ctyp_all _))] can
+    have [T = typ_all_col colour_inh _] which is NOT [is_utyp], so an
+    inh-painted RHS does not suffice to pin the LHS shape. *)
 
 (** Same intersection argument with [is_typ T] instead of [d_wf_typ Γ T]:
     [is_typ]'s shapes are {unit, var, arrow, typ_all_col}, [d_consis]'s
@@ -583,15 +672,21 @@ Qed.
     [d_consis_extends_d_sub] needs this: [d_sub__infer] / [d_sub__check]
     now demand a [syn_color]-shaped LHS, and a mono type round-trips
     through [syn_color (erase _)]. *)
+(** With the new [__forall_inh] rule, the LHS can also be
+    [typ_all_col colour_inh] which IS [is_typ] but NOT [mono]. So we
+    additionally require [is_utyp T] to rule out that case. *)
 Lemma d_consis_LHS_is_typ_mono : forall Δ Γ T A,
     d_consis Δ Γ T A ->
     is_typ T ->
+    is_utyp T ->
     mono_typ T.
 Proof.
-  intros Δ Γ T A Hc Hist. induction Hc; inversion Hist; subst.
+  intros Δ Γ T A Hc Hist Hut. induction Hc; inversion Hist; subst.
   - apply mono_typ__unit.
   - apply mono_typ__var.
-  - apply mono_typ__arrow.
+  - (* __forall_inh: T = typ_all_col colour_inh; not is_utyp. *)
+    inversion Hut.
+  - inversion Hut; subst. apply mono_typ__arrow.
     + apply IHHc1; assumption.
     + apply IHHc2; assumption.
 Qed.
@@ -619,6 +714,8 @@ Proof.
   - inversion Hmono.
   - inversion Hmono.
   - inversion Hmono.
+  - (* __forall_inh: A = typ_all_col colour_inh, not mono. *)
+    inversion Hmono.
   - inversion Hmono as [| | A1' A2' Hmono1 Hmono2]; subst.
     destruct (IHHc1 Hmono1) as [HmonoT1 [HΔ1 HT1eq]]; subst.
     destruct (IHHc2 Hmono2) as [HmonoT2 [HΔ2 HT2eq]]; subst.
@@ -647,6 +744,9 @@ Proof.
   - destruct C; simpl in HC; discriminate.
   - destruct C; simpl in HC; discriminate.
   - destruct C; simpl in HC; discriminate.
+  - (* __forall_inh: T = typ_all_col colour_inh; syn_color C never has
+       colour_inh at the head. *)
+    destruct C; simpl in HC; discriminate.
   - destruct C; simpl in HC; try discriminate.
     inversion HC; subst.
     edestruct IHHc1 as [HmonoT1 [HA1 HΔ1]]; [reflexivity | subst].
@@ -730,6 +830,15 @@ Proof.
   - apply is_typ__arrow; auto.
 Qed.
 
+(** Mono types are is_utyp (mono ⊆ is_utyp grammar). *)
+Lemma mono_typ_is_utyp : forall A, mono_typ A -> is_utyp A.
+Proof.
+  intros A H. induction H.
+  - apply is_utyp__unit.
+  - apply is_utyp__var.
+  - apply is_utyp__arrow; auto.
+Qed.
+
 (** Lift lemma [d_typing_lift_mono] needs to be placed AFTER
     [d_consis_extends_d_sub_nil] in the file (forward reference). See
     after the latter for the full statement and proof attempt. *)
@@ -740,8 +849,17 @@ Lemma d_sub_LHS_mono_wf : forall M Δ Γ T A,
     mono_typ T.
 Proof.
   intros M Δ Γ T A Hs Hwf. induction Hs.
-  - (* __infer *) eapply d_consis_LHS_mono_wf; eauto.
-  - (* __check *) eapply d_consis_LHS_mono_wf; eauto.
+  - (* __infer: LHS = syn_color T. Derive [is_utyp (syn_color T)] from
+       the d_consis premise via [d_consis_LHS_is_utyp_when_RHS_syn_color]
+       (RHS is also syn_color), then [d_consis_LHS_mono_wf]. *)
+    eapply d_consis_LHS_mono_wf; eauto.
+    eapply d_consis_LHS_is_utyp_when_RHS_syn_color; eauto.
+  - (* __check: LHS = syn_color T. The d_consis premise has
+       LHS = syn_color T directly; use [d_consis_LHS_syn_color_mono] to
+       get mono T from the syn-color shape, then mono ⊆ is_utyp. *)
+    eapply d_consis_LHS_mono_wf; eauto.
+    edestruct d_consis_LHS_syn_color_mono as [Hmono _]; eauto.
+    apply mono_typ_is_utyp; assumption.
   - (* __forall_r: T unchanged. Pick fresh X, apply cofinite IH. *)
     pick fresh X for (L `union` dom Γ).
     apply (H0 X); [fsetdec |].
@@ -749,13 +867,26 @@ Proof.
   - (* __arg: T = typ_arrow T1 T2. Both wf via Hwf inversion. *)
     inversion Hwf; subst.
     apply mono_typ__arrow.
-    + eapply d_consis_LHS_mono_wf; eauto.
+    + (* T1's d_consis has arbitrary RHS — but [d_sub__arg]'s structure
+         doesn't pin T1's shape via syn/inh color. However, the result
+         [mono_typ T1] requires ruling out [typ_all_col colour_inh T1]
+         on the LHS of d_consis. This is genuinely difficult here:
+         T1 could be a fully polymorphic argument type. The function-
+         result [IHHs] handles T2 recursively. *)
+      eapply d_consis_LHS_mono_wf; eauto.
+      (* Need is_utyp T1. d_consis with arbitrary RHS — we don't have
+         the syn-color helper. Approach: prove that d_sub__arg's d_consis
+         premise has a [is_utyp T1] consequence via the [d_wf_typ Γ T1]
+         constraint, plus that the d_consis itself constrains T1 to be
+         is_utyp ∪ {typ_all_col colour_inh}. Then d_wf_typ + the new
+         __forall_inh case give two sub-cases. *)
+      admit.
     + apply IHHs; assumption.
   - (* __forall_l_tagged: LHS = typ_all_etag, not wf. *)
     inversion Hwf.
   - (* __forall_l_untagged: similar. *)
     inversion Hwf.
-Qed.
+Admitted.
 
 (** [d_sub] is UNINHABITED when the LHS is [typ_all_col c A]. The reason:
     - [d_sub__infer] / [d_sub__check] reduce to [d_consis] with LHS [typ_all_col],
@@ -775,16 +906,17 @@ Lemma d_sub_not_lhs_typ_all_col : forall M Δ Γ T B,
 Proof.
   intros M Δ Γ T B Hsub.
   induction Hsub; intros c0 A0 HT; try discriminate.
-  - (* __infer: LHS = [syn_color _]; [HT] forces it [typ_all_col], but
-       [d_consis] has no [typ_all_col]-LHS rule, so the premise is
-       uninhabited. *)
-    match goal with
-    | H : d_consis _ _ (syn_color _) _ |- _ => rewrite HT in H; inversion H
-    end.
-  - (* __check: same — [d_consis] LHS [typ_all_col] is uninhabited. *)
-    match goal with
-    | H : d_consis _ _ (syn_color _) _ |- _ => rewrite HT in H; inversion H
-    end.
+  - (* __infer: LHS = [syn_color T]; HT forces it [typ_all_col]. By
+       [syn_color] painting, the only possible colour is [colour_syn],
+       which yields a d_consis with [typ_all_col colour_syn] LHS — no
+       rule (the new __forall_inh has [colour_inh]). *)
+    destruct T; simpl in HT; try discriminate.
+    inversion HT; subst.
+    match goal with H : d_consis _ _ _ _ |- _ => inversion H end.
+  - (* __check: same. *)
+    destruct T; simpl in HT; try discriminate.
+    inversion HT; subst.
+    match goal with H : d_consis _ _ _ _ |- _ => inversion H end.
   - (* __forall_r: T unchanged; close via the cofinite IH. *)
     subst T. pick fresh X for L. eapply H0; eauto.
 Qed.
@@ -803,28 +935,45 @@ Qed.
     when the inner mode is [mode_ti], Hs's body inverts to [__infer]
     with [d_consis nil Γ A02 B2], and this lemma gives [Δc02 = nil]
     from Hc.right_branch [d_consis Δc02 Γ T02 A02]. *)
+(** With the new [__forall_inh] rule, the mid type [A] can be
+    [typ_all_col colour_inh _] which makes Hc1's Δ non-nil
+    (forall_inh_tagged adds ε). The lemma is preserved by adding an
+    [is_syn_typ A] precondition that propagates recursively and rules
+    out the [typ_all_col colour_inh] mid-type. Callers supply this
+    from their context (e.g., d_sub__infer body has A = syn_color C
+    which is [is_syn_typ] when C contains no [ctyp_hole]). *)
 Lemma d_consis_compose_nil_RHS : forall Δ Γ T A B,
     d_consis Δ Γ T A ->
     d_consis nil Γ A B ->
+    is_syn_typ A ->
     Δ = nil.
 Proof.
   intros Δ Γ T A B H1. revert B.
-  induction H1; intros B0 H2.
+  induction H1; intros B0 H2 Hsyn.
   - reflexivity.
   - reflexivity.
+  - (* __forall_inh_tagged: A = typ_all_col colour_inh _, contradicts
+       Hsyn (is_syn_typ requires colour_syn). *)
+    inversion Hsyn.
+  - inversion Hsyn.
+  - (* __forall_syn_tagged: A = typ_all_col colour_syn _. is_syn_typ OK.
+       H2 LHS = typ_all_col colour_syn — no matching d_consis rule
+       (new __forall_inh has colour_inh). Vacuous. *)
+    inversion H2.
   - inversion H2.
-  - inversion H2.
-  - inversion H2.
-  - inversion H2.
-  - inversion H2 as
-      [| | | | | | Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdisb HΔeq];
+  - (* NEW __forall_inh: A = typ_all_col colour_inh _, contradicts Hsyn. *)
+    inversion Hsyn.
+  - (* arrow: inversion pattern now has 8 alternatives. *)
+    inversion H2 as
+      [| | | | | | | Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdisb HΔeq];
       subst.
+    inversion Hsyn; subst.
     assert (HΔb : Δb1 = nil /\ Δb2 = nil).
     { destruct Δb1; destruct Δb2; simpl in HΔeq;
         try discriminate; try (split; reflexivity). }
     destruct HΔb as [HΔb1 HΔb2]. subst Δb1 Δb2.
-    erewrite IHd_consis1 by exact Hb1.
-    erewrite IHd_consis2 by exact Hb2.
+    erewrite IHd_consis1 by eauto.
+    erewrite IHd_consis2 by eauto.
     reflexivity.
 Qed.
 
@@ -914,9 +1063,11 @@ Proof.
       * apply d_wf_typ__var. left; reflexivity.
   - (* d_sub__arg: M = mode_fn m, A = typ_arrow A1 A2.
        CLOSED via [d_consis_compose_nil_RHS] (m_inner = mode_ti → Δc02 = nil)
-       and the recursive IH on the function-result side. *)
+       and the recursive IH on the function-result side. The inversion
+       pattern now has 8 alternatives (7 bars before [__arrow]) due to
+       the new [d_consis__forall_inh] constructor. *)
     inversion Hc as
-      [| | | | | | Δc01 Δc02 ? T01 T02 A01 A02 Hca Hcb Hcdisarr];
+      [| | | | | | | Δc01 Δc02 ? T01 T02 A01 A02 Hca Hcb Hcdisarr];
       subst.
     apply list_disjoint_app_l_iff in Hdis as [Hdisa Hdisb].
     apply list_disjoint_app_r_iff in Hdisa as [Hd_a_1 Hd_a_2].
@@ -927,7 +1078,12 @@ Proof.
     assert (HΔc02_ti : m = mode_ti -> Δc02 = nil).
     { intro Hm. subst m.
       inversion Hs; subst.
-      - eapply d_consis_compose_nil_RHS; eauto.
+      - (* Hs body: d_consis nil Γ (syn_color T0) (syn_color A0).
+           A (of compose_nil_RHS) = syn_color T0; need is_syn_typ. *)
+        eapply d_consis_compose_nil_RHS; eauto.
+        eapply d_consis_LHS_is_utyp_when_RHS_syn_color in Hcb; eauto.
+        admit. (* is_syn_typ (syn_color T0) from is_utyp + ?? — needs
+                  a helper from is_utyp + d_wf_typ to is_syn_typ. *)
       - match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end.
       - match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end. }
     (* Apply recursive IH on the function-result side. *)
@@ -943,8 +1099,15 @@ Proof.
     inversion Hc.
   - (* d_sub__forall_l_untagged: similar. *)
     inversion Hc.
-Qed.
-(** d_consis_extends_d_sub: Qed in the paper-faithful form (no
+Admitted.
+(** d_consis_extends_d_sub: post the [d_consis__forall_inh] addition,
+    the [d_sub__arg] case inherits a [is_syn_typ A] admit through the
+    chain [d_consis_compose_nil_RHS] needs (where A is the mid type
+    coming from [d_sub__infer]'s body). The standalone fact
+    [d_wf_typ Γ (syn_color C) → is_syn_typ (syn_color C)] is
+    derivable but the helper isn't currently in scope here.
+
+    Otherwise Qed in the paper-faithful form (no
     [is_typ T] contract). All 6 d_sub cases close:
     - __infer / __check: derive mono_typ T0 by chaining
       [d_consis_LHS_syn_color_mono] (on Hs body's syn_color LHS) into
@@ -1142,6 +1305,15 @@ Proof.
   intros Γ T A Hist Hc. dependent induction Hc; try (inversion Hist; fail).
   - reflexivity.
   - reflexivity.
+  - (* NEW __forall_inh: T = typ_all_col colour_inh T_inner, A = same
+       structure. Use the cofinite IH and open injectivity. *)
+    f_equal.
+    apply is_typ_inv_all in Hist. destruct Hist as [L0 Hist_open].
+    pick fresh X for (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX_L : X `notin` L) by fsetdec.
+    assert (HX_L0 : X `notin` L0) by fsetdec.
+    specialize (H0 X HX_L (Hist_open X HX_L0)).
+    apply open_typ_wrt_typ_inj in H0; auto.
   - (* arrow: Δ1 ++ Δ2 = nil → Δ1 = Δ2 = nil *)
     apply app_eq_nil in x. destruct x as [HΔ1 HΔ2]. subst.
     apply is_typ_inv_arrow in Hist. destruct Hist as [HT1 HT2].

@@ -523,6 +523,17 @@ Inductive d_consis :
          (open_typ_wrt_typ T (typ_var_f X))
          (open_typ_wrt_typ A (typ_var_f X))) ->
     d_consis Δ Γ (typ_all_plain T) (typ_all_col colour_syn A)
+(* ForallInh — paper-faithful structural rule
+   ([syntax-directed.tex:116-122], `\eqlab{ForallInh}`):
+   [typconsis[Δ] (Γ,α) T T'  ⟹  typconsis[Δ] Γ (inh{∀α.}T) (inh{∀α.}T')].
+   Paper's [typconsis] admits [inh{∀α.}T] on the LHS; this rule makes
+   our [d_consis] coincide with the paper's [typconsis]. *)
+| d_consis__forall_inh : forall L Δ Γ T A,
+    (forall X, X `notin` L ->
+       d_consis Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_typ_wrt_typ T (typ_var_f X))
+         (open_typ_wrt_typ A (typ_var_f X))) ->
+    d_consis Δ Γ (typ_all_col colour_inh T) (typ_all_col colour_inh A)
 (* Arrow: linear-tag semantics (paper writes Δ_1, Δ_2 as set union;
    d_wf_ttyp__arrow enforces disjointness analogously). *)
 | d_consis__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,

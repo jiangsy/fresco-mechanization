@@ -986,6 +986,8 @@ Proof.
   - inst_cofinites_for d_wf_typ__all. eauto.
   - inst_cofinites_for d_wf_typ__all. eauto.
   - inst_cofinites_for d_wf_typ__all. eauto.
+  - (* d_consis__forall_inh: RHS = typ_all_col colour_inh A *)
+    inst_cofinites_for d_wf_typ__all. eauto.
   - apply d_wf_typ__arrow; auto.
 Qed.
 
