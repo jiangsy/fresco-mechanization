@@ -540,7 +540,11 @@ Proof.
        Coq's inversion auto-naming complicates the verbatim closure
        below. *)
     admit.
-  - (* __forall_inh_untagged: same shape; admitted as above. *)
+  - (* __forall_inh_untagged: A = typ_all_col colour_inh A. The only
+       d_consis rule that fits Hc2's LHS shape is the new __forall_inh.
+       Use cofinite-rename: pick fresh X0, apply IH, then alpha-rename.
+       Currently admitted; closure plan above is correct but Coq's
+       auto-naming after inversion is variant. *)
     admit.
   - (* __forall_syn_tagged: A = typ_all_col colour_syn. No d_consis rule
        admits typ_all_col colour_syn on the LHS, so [Hc2] is vacuous. *)
