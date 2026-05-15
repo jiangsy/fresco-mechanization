@@ -22,20 +22,92 @@ The re-encoding pass introduced new admits during the rule-definition
 rewrite; the subsequent repair pass has closed several of them. The
 counts below reflect the *current* state.
 
-Per-file `Admitted.` count (current, audited 2026-05-15 post-repair):
+Per-file `Admitted.` count (current, audited 2026-05-16 post-bridge-extraction):
 
 | File | Admits | Δ from pre-re-encoding |
 |---|---|---|
 | `frost/decl/prop_basic.v` | 0 | — |
 | `frost/decl/prop_wellformed.v` | 0 | — |
 | `frost/decl/prop_subtyping.v` | 3 | +1 net (was 2 pre-re-encoding; +3 introduced by repair, −2 closed: `is_syn_typ_syn_color_erase`, `is_inh_typ_inh_color_erase`) |
-| `frost/decl/prop_typing.v` | 18 | +9 net (was 9 pre-re-encoding; +14 introduced, −5 closed via mono+syn_color, −1 closed via signature restatement: `d_typing_anno_gen_subsumption`. The `via_gen` wrapper was also restored as Qed depending on the still-admitted D12 + collapse.) |
+| `frost/decl/prop_typing.v` | 17 | +8 net (was 9 pre-re-encoding; +14 introduced, −5 closed via mono+syn_color, −1 closed via signature restatement: `d_typing_anno_gen_subsumption`, −1 closed via bridge extraction: `d_typing_gen_collapse`. New Qed helpers: `d_sub_gen_to_d_sub`, `d_consis_gen_to_d_consis_syn_lhs`.) |
 | `frost/decl/prop_skeleton.v` | 2 | — |
 | `frost/algo/def_extra.v` | 0 | — |
 | `frost/algo/notations.v` | 0 | — |
 | `frost/algo/prop_soundness.v` | 3 | — |
 | `frost/algo/prop_completeness.v` | 3 | — |
-| **Total** | **29** | (was 19 pre-re-encoding) |
+| **Total** | **28** | (was 19 pre-re-encoding) |
+
+## 🚧 GAP ANALYSIS (audited 2026-05-16)
+
+The 28 remaining admits split into 5 categories. Closing them
+requires the listed structural work; none are one-line fixes.
+
+**1. Structural rule-design gap (1 admit).** `d_consis_gen_to_d_consis __forall_inh`
+([prop_typing.v:~2965](frost/decl/prop_typing.v)). Our `d_consis` is a
+strict subset of the paper's `typconsis`: the paper's [ForallInh] rule
+([syntax-directed.tex:116-122](../paper/sections/syntax-directed.tex))
+admits `inh{∀α.}T` on the LHS; our `d_consis` does not. The bridge
+`d_consis_gen → d_consis` cannot close this case. To fix, either
+(a) add `d_consis__forall_inh` and rework `d_consis_compose`
+(transitivity), `d_consis_LHS_mono_wf`, `d_consis_LHS_*_mono` —
+permutation-stability on the cofinite forall_inh compose case is the
+sticking point; (b) drop `d_consis` and route everything through
+`d_consis_gen`. Both are paper-faithful but cascading.
+
+**2. D12 body + helpers (7 admits).** `d_typing_general_subsumption_gen`
+[__abs, __abs_anno, __app]; `d_typing_abs[_anno]_value_to_subsumption`
+[__embed, __check_gen]. Closure requires mutual-induction restructure
+(D12 ↔ helpers) to break the mode_ti → mode_tc body-lift circularity.
+The helpers' __check_gen sub-case needs D12's IH on the body type
+(`syn_color T2 → inh_color A2'`), which closes via the helper's
+existing __forall_r path when the inner shape requires forall_r
+stripping; but the helper currently can't recurse into D12 from inside
+its own structural induction.
+
+**3. Re-encoding admits (4 admits).** `d_typing_narrow_consis`,
+`d_typing_gen_narrow_consis`, `d_typing_pat_subst_typ_mut` (a 18-case
+mechanical proof). Post-ctyp re-encoding, `d_typing__var` returns the
+binding raw rather than syn-painting; narrowing under `syn_color_t`
+equality alone is insufficient. Closure needs either a context
+invariant (bindings are syn-painted) plus syn_color injectivity, or
+a stronger relation (`d_consis nil Γ Anew Aold`) on the narrowing
+hypothesis.
+
+**4. Paper-faithfulness counter-examples (2 admits).**
+`d_typing_check_is_inh`, `d_typing_gen_check_is_inh`. Both FALSE
+under the current rule set; the in-file rationale block now carries
+a concrete derivation showing the failure (the `__freeze` rule
+inherits the inner mode_ti type unchanged rather than repainting
+`syn{A} → inh{A}` as the paper's `Freeze` does). Closure requires
+a rule-definition change.
+
+**5. Research-grade gaps (14 admits).**
+- Subsumption-chain: `d_typing_narrowing` (gated on D1), `d_typing_gen_lift_mono __app`
+  (function arg-type mono not derivable from rule premises).
+- Stability: `d_typing_swap_mono`, `d_typing_app_restructure`,
+  `d_typing_order_irrel_adj`.
+- Expressiveness benchmarks: `E1_intro`, `E1_elim`, `E1_roundtrip`
+  (gated on `d_typing_pat_subst_typ_mut`).
+- Paper-flagged: `d_sub_complete_mono` (flavour translation),
+  `d_sub_no_guess_uniqueness` (paper itself flags as sketchy;
+  strict equality provably false in general).
+- Skeleton: `d_pat_validity`, `d_pat_safety` (Phase 3 principal
+  skeleton construction).
+- Algorithmic: `a_sub_sound`, `a_pat_sound`, `a_typing_sound`,
+  plus completeness analogues (Phase 3, full proof trees pending).
+
+## Closed in the 2026-05-16 bridge-extraction pass
+
+- `d_typing_gen_collapse`: was `Admitted` with `admit` in `__sub`; now
+  `Qed`. Routes through the new `d_sub_gen_to_d_sub` bridge.
+- New `d_sub_gen_to_d_sub` (Qed): the `d_sub_gen → d_sub` bridge,
+  closed structurally for all 6 rule shapes. Uses
+  `d_consis_gen_to_d_consis` (still admitted at __forall_inh).
+- New `d_consis_gen_to_d_consis_syn_lhs` (Qed): conditional bridge
+  when LHS is `is_syn_typ`; the forall case is vacuous.
+- `d_typing_check_is_inh` and `d_typing_gen_check_is_inh`: comments
+  now embed the concrete counter-example showing the lemma is FALSE
+  under the current `__freeze` rule definition.
 
 ## ⚠️ ACTIVE: colour re-encoding of the rule definitions (2026-05-15)
 
