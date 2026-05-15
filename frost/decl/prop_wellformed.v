@@ -1228,11 +1228,15 @@ Lemma d_typing_pat_preserves_wf :
 Proof.
   apply d_typing_pat_mut; intros.
   - (* d_typing__unit *) apply d_wf_typ__unit.
-  - (* d_typing__var: type is [syn_color A]; [syn_color_wf] lifts the
-       context-lookup wf for [A]. *)
-    apply syn_color_wf. eapply d_wf_denv_binds_typ; eauto.
-  - (* d_typing__anno: IH gives d_wf_typ Γ A directly. *)
-    apply H; auto.
+  - (* d_typing__var: the rule now reads back the bound type [A]
+       directly (no [syn_color]); wf comes straight from the context. *)
+    eapply d_wf_denv_binds_typ; eauto.
+  - (* d_typing__anno: rule concludes [syn_color A]; IH on the
+       [mode_tc] premise gives [d_wf_typ Γ (inh_color A)], lifted to
+       the syn colouring (same shape) by [d_wf_typ_inh_color_syn_color]. *)
+    apply d_wf_typ_inh_color_syn_color.
+    match goal with IH : d_wf_denv Γ -> d_wf_typ Γ (inh_color _) |- _ =>
+      apply IH end; assumption.
   - (* d_typing__sub: d_sub_preserves_wf takes [d_wf_typ Γ A] as
        side hypothesis; we get it from the IH on [d_typing mode_ti Γ e A]. *)
     eapply d_sub_preserves_wf; eauto.
@@ -1243,21 +1247,29 @@ Proof.
     apply d_wf_typ__all with (L := L `union` dom Γ).
     intros X HX. apply H; auto.
     apply d_wf_denv__tvar; auto.
-  - (* d_typing__abs: rule now carries d_wf_typ Γ A as a premise (the
-       2026-05-11 rule-strengthening patch). Close: arrow wf from
-       new premise + IH strengthening on B. *)
+  - (* d_typing__abs: conclusion [typ_arrow (inh_color A) B]. Arg side
+       is the rule's [d_wf_typ Γ (inh_color A)] premise; B side by IH
+       strengthening — the body binds [syn_color A], so we first lift
+       the [inh] premise to the [syn] colouring (same shape). *)
+    assert (Hsyn : d_wf_typ Γ (syn_color A))
+      by (apply d_wf_typ_inh_color_syn_color; assumption).
     apply d_wf_typ__arrow; auto.
     pick fresh x for (L `union` dom Γ).
-    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
+    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := syn_color A).
     eauto using d_wf_denv__typ.
-  - (* d_typing__abs_anno: same pattern. *)
+  - (* d_typing__abs_anno: conclusion [typ_arrow (syn_color A) B]. Arg
+       side is the rule's [d_wf_typ Γ (syn_color A)] premise; B side as
+       in __abs (body also binds [syn_color A]). *)
     apply d_wf_typ__arrow; auto.
     pick fresh x for (L `union` dom Γ).
-    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
+    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := syn_color A).
     eauto using d_wf_denv__typ.
-  - (* d_typing__app: IH on the function gives d_wf_typ Γ (typ_arrow A B);
-       invert to project B. Refinement side adds no new obligation. *)
-    assert (Harr : d_wf_typ Γ (typ_arrow A B)) by (apply H0; auto).
+  - (* d_typing__app: IH on the function gives d_wf_typ Γ (typ_arrow P' B);
+       invert to project B. Refinement / arg sides add no new obligation. *)
+    match goal with
+    | IH : d_wf_denv Γ -> d_wf_typ Γ (typ_arrow _ _) |- _ =>
+        assert (Harr : d_wf_typ Γ (typ_arrow P' B)) by (apply IH; assumption)
+    end.
     inversion Harr; subst. auto.
   - (* d_pat__unit *) apply d_wf_skel__unit.
   - (* d_pat__var: similar to d_typing__var, using d_wf_denv_binds_skel. *)

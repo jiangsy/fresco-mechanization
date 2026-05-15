@@ -3,10 +3,16 @@
     Companion of [paper/sections/algorithmic.tex] and
     [paper/sections/full-alg-spec.tex].
 
-    The algorithmic system introduces two new sorts of type variables:
-    flex-mono [α̂] and flex-poly [α̌]. These appear as constructors
-    [typ_var_flex_mono] and [typ_var_flex_poly] in the unified [typ]
-    inductive (see [language.ott]).
+    The algorithmic system has two new sorts of type variables:
+    flex-mono [α̂] and flex-poly [α̌]. These are NOT distinct [typ]
+    constructors — a flex variable is an ordinary [typ_var_f X], and
+    whether [X] is rigid / flex-mono / flex-poly is read off its
+    binding in the algorithmic context [Θ] (see [language.ott]).
+    Consequently every rule that distinguishes flex-from-rigid carries
+    an explicit [binds X abind_* Θ] premise, and the purely-syntactic
+    side judgements ([a_non_flex], [a_non_flex_poly], [a_guess_mono],
+    [a_pre_sub], [a_pre_join]) now thread [Θ] so they can do the
+    lookup.
 
     Algorithmic contexts [Θ : aenv] are ordered lists of [abind]
     entries: rigid type variables, term bindings, flex-mono
@@ -207,13 +213,13 @@ Inductive a_wf_typ : aenv -> typ -> Prop :=
     a_wf_typ Θ (typ_tophole A)
 | a_wf_typ__flex_mono_decl : forall Θ X,
     binds X abind_flex_mono Θ ->
-    a_wf_typ Θ (typ_var_flex_mono X)
+    a_wf_typ Θ (typ_var_f X)
 | a_wf_typ__flex_mono_def : forall Θ X τ,
     binds X (abind_flex_mono_def τ) Θ ->
-    a_wf_typ Θ (typ_var_flex_mono X)
+    a_wf_typ Θ (typ_var_f X)
 | a_wf_typ__flex_poly : forall Θ X P,
     binds X (abind_flex_poly_def P) Θ ->
-    a_wf_typ Θ (typ_var_flex_poly X).
+    a_wf_typ Θ (typ_var_f X).
 
 (** [a_wf_aenv Θ] — algorithmic context well-formedness.  Paper §4.2,
     "Θ ⊢ ctx".  Each entry's well-formedness is checked against the
@@ -258,20 +264,21 @@ Inductive a_guarded : aenv -> typ -> Prop :=
 | a_guarded__unit : forall Θ,
     a_guarded Θ typ_unit
 | a_guarded__var : forall Θ X,
+    binds X abind_tvar Θ ->
     a_guarded Θ (typ_var_f X)
 | a_guarded__arrow : forall Θ A B,
     a_guarded Θ (typ_arrow A B)
 | a_guarded__flex_mono_decl : forall Θ X,
     binds X abind_flex_mono Θ ->
-    a_guarded Θ (typ_var_flex_mono X)
+    a_guarded Θ (typ_var_f X)
 | a_guarded__flex_mono_def : forall Θ X τ,
     binds X (abind_flex_mono_def τ) Θ ->
     a_guarded Θ τ ->
-    a_guarded Θ (typ_var_flex_mono X)
+    a_guarded Θ (typ_var_f X)
 | a_guarded__flex_poly_def : forall Θ X P,
     binds X (abind_flex_poly_def P) Θ ->
     a_guarded Θ P ->
-    a_guarded Θ (typ_var_flex_poly X).
+    a_guarded Θ (typ_var_f X).
 
 (** Modes vs. type/skeleton inputs (paper page 17 and 20).  Extends
     [mode_typ_compat] / [mode_skel_compat] to algorithmic syntax.  In
@@ -299,28 +306,36 @@ Inductive a_sub_mode : Set :=
 | a_sub_mode_ty : a_sub_mode
 | a_sub_mode_sk : a_sub_mode.
 
-(** "Non-flex-poly" side condition. *)
-Inductive a_non_flex_poly : typ -> Prop :=
-| a_non_flex_poly__unit  : a_non_flex_poly typ_unit
-| a_non_flex_poly__var   : forall X, a_non_flex_poly (typ_var_f X)
-| a_non_flex_poly__arrow : forall A B, a_non_flex_poly (typ_arrow A B)
-| a_non_flex_poly__all_col : forall c A, a_non_flex_poly (typ_all_col c A)
-| a_non_flex_poly__all_etag : forall ε A, a_non_flex_poly (typ_all_etag ε A)
-| a_non_flex_poly__all_plain : forall A, a_non_flex_poly (typ_all_plain A)
-| a_non_flex_poly__hole : a_non_flex_poly typ_hole
-| a_non_flex_poly__tophole : forall A, a_non_flex_poly (typ_tophole A)
-| a_non_flex_poly__flex_mono : forall X, a_non_flex_poly (typ_var_flex_mono X).
+(** "Non-flex-poly" side condition. [Θ]-threaded: a [typ_var_f X] is
+    non-flex-poly iff [X] is rigid or flex-mono (declared or defined)
+    in [Θ] — i.e. not bound as [abind_flex_poly_def]. *)
+Inductive a_non_flex_poly : aenv -> typ -> Prop :=
+| a_non_flex_poly__unit  : forall Θ, a_non_flex_poly Θ typ_unit
+| a_non_flex_poly__var_rigid : forall Θ X,
+    binds X abind_tvar Θ -> a_non_flex_poly Θ (typ_var_f X)
+| a_non_flex_poly__flex_mono : forall Θ X,
+    binds X abind_flex_mono Θ -> a_non_flex_poly Θ (typ_var_f X)
+| a_non_flex_poly__flex_mono_def : forall Θ X τ,
+    binds X (abind_flex_mono_def τ) Θ -> a_non_flex_poly Θ (typ_var_f X)
+| a_non_flex_poly__arrow : forall Θ A B, a_non_flex_poly Θ (typ_arrow A B)
+| a_non_flex_poly__all_col : forall Θ c A, a_non_flex_poly Θ (typ_all_col c A)
+| a_non_flex_poly__all_etag : forall Θ ε A, a_non_flex_poly Θ (typ_all_etag ε A)
+| a_non_flex_poly__all_plain : forall Θ A, a_non_flex_poly Θ (typ_all_plain A)
+| a_non_flex_poly__hole : forall Θ, a_non_flex_poly Θ typ_hole
+| a_non_flex_poly__tophole : forall Θ A, a_non_flex_poly Θ (typ_tophole A).
 
-(** "Non-flex" side condition (paper ulab{FlexL}/{FlexR}). *)
-Inductive a_non_flex : typ -> Prop :=
-| a_non_flex__unit  : a_non_flex typ_unit
-| a_non_flex__var   : forall X, a_non_flex (typ_var_f X)
-| a_non_flex__arrow : forall A B, a_non_flex (typ_arrow A B)
-| a_non_flex__all_col : forall c A, a_non_flex (typ_all_col c A)
-| a_non_flex__all_etag : forall ε A, a_non_flex (typ_all_etag ε A)
-| a_non_flex__all_plain : forall A, a_non_flex (typ_all_plain A)
-| a_non_flex__hole : a_non_flex typ_hole
-| a_non_flex__tophole : forall A, a_non_flex (typ_tophole A).
+(** "Non-flex" side condition (paper ulab{FlexL}/{FlexR}).
+    [Θ]-threaded: a [typ_var_f X] is non-flex iff [X] is rigid. *)
+Inductive a_non_flex : aenv -> typ -> Prop :=
+| a_non_flex__unit  : forall Θ, a_non_flex Θ typ_unit
+| a_non_flex__var   : forall Θ X,
+    binds X abind_tvar Θ -> a_non_flex Θ (typ_var_f X)
+| a_non_flex__arrow : forall Θ A B, a_non_flex Θ (typ_arrow A B)
+| a_non_flex__all_col : forall Θ c A, a_non_flex Θ (typ_all_col c A)
+| a_non_flex__all_etag : forall Θ ε A, a_non_flex Θ (typ_all_etag ε A)
+| a_non_flex__all_plain : forall Θ A, a_non_flex Θ (typ_all_plain A)
+| a_non_flex__hole : forall Θ, a_non_flex Θ typ_hole
+| a_non_flex__tophole : forall Θ A, a_non_flex Θ (typ_tophole A).
 
 
 (* ===================================================================== *)
@@ -331,51 +346,53 @@ Inductive a_non_flex : typ -> Prop :=
     Encoded as a 3-ary inductive: input skeleton P, output suffix Ξ
     (the freshly-introduced flex-mono declarations), and output type A.
     The suffix consists only of [abind_flex_mono] entries. *)
-Inductive a_guess_mono : typ -> aenv -> typ -> Prop :=
-| a_guess_mono__hole : forall α,
-    a_guess_mono typ_hole
+Inductive a_guess_mono : aenv -> typ -> aenv -> typ -> Prop :=
+| a_guess_mono__hole : forall Θ α,
+    a_guess_mono Θ typ_hole
       ((α ~ abind_flex_mono) ++ nil)
-      (typ_var_flex_mono α)
-| a_guess_mono__tophole : forall P Ξ A,
-    a_guess_mono P Ξ A ->
-    a_guess_mono (typ_tophole P) Ξ A
-| a_guess_mono__var : forall X,
-    a_guess_mono (typ_var_f X) nil (typ_var_f X)
-| a_guess_mono__unit :
-    a_guess_mono typ_unit nil typ_unit
-| a_guess_mono__flex_mono : forall α,
-    a_guess_mono (typ_var_flex_mono α) nil (typ_var_flex_mono α)
-| a_guess_mono__all_col : forall c P Ξ A,
-    a_guess_mono P Ξ A ->
-    a_guess_mono (typ_all_col c P) Ξ (typ_all_col c A)
-| a_guess_mono__all_plain : forall P Ξ A,
-    a_guess_mono P Ξ A ->
-    a_guess_mono (typ_all_plain P) Ξ (typ_all_plain A)
-| a_guess_mono__arrow : forall P Q Ξ1 Ξ2 A B,
-    a_guess_mono P Ξ1 A ->
-    a_guess_mono Q Ξ2 B ->
-    a_guess_mono (typ_arrow P Q) (Ξ1 ++ Ξ2) (typ_arrow A B).
+      (typ_var_f α)
+| a_guess_mono__tophole : forall Θ P Ξ A,
+    a_guess_mono Θ P Ξ A ->
+    a_guess_mono Θ (typ_tophole P) Ξ A
+(** [__var] covers rigid AND flex-mono variables — [guessMono] is the
+    identity on both — guarded by [a_non_flex_poly] so flex-poly
+    variables are (correctly) excluded. *)
+| a_guess_mono__var : forall Θ X,
+    a_non_flex_poly Θ (typ_var_f X) ->
+    a_guess_mono Θ (typ_var_f X) nil (typ_var_f X)
+| a_guess_mono__unit : forall Θ,
+    a_guess_mono Θ typ_unit nil typ_unit
+| a_guess_mono__all_col : forall Θ c P Ξ A,
+    a_guess_mono Θ P Ξ A ->
+    a_guess_mono Θ (typ_all_col c P) Ξ (typ_all_col c A)
+| a_guess_mono__all_plain : forall Θ P Ξ A,
+    a_guess_mono Θ P Ξ A ->
+    a_guess_mono Θ (typ_all_plain P) Ξ (typ_all_plain A)
+| a_guess_mono__arrow : forall Θ P Q Ξ1 Ξ2 A B,
+    a_guess_mono Θ P Ξ1 A ->
+    a_guess_mono Θ Q Ξ2 B ->
+    a_guess_mono Θ (typ_arrow P Q) (Ξ1 ++ Ξ2) (typ_arrow A B).
 
 (** [a_guess_mono_suffix Ξ Ξ_decl Ξ'] — extension to suffixes (paper
     page 21).  Takes an input suffix Ξ, produces the new declarations
     Ξ_decl and the rewritten suffix Ξ'. *)
-Inductive a_guess_mono_suffix : aenv -> aenv -> aenv -> Prop :=
-| a_guess_mono_suffix__nil :
-    a_guess_mono_suffix nil nil nil
-| a_guess_mono_suffix__flex_mono : forall a Ξ Ξ' Ξ_decl,
-    a_guess_mono_suffix Ξ Ξ_decl Ξ' ->
-    a_guess_mono_suffix ((a ~ abind_flex_mono) ++ Ξ)
+Inductive a_guess_mono_suffix : aenv -> aenv -> aenv -> aenv -> Prop :=
+| a_guess_mono_suffix__nil : forall Θ,
+    a_guess_mono_suffix Θ nil nil nil
+| a_guess_mono_suffix__flex_mono : forall Θ a Ξ Ξ' Ξ_decl,
+    a_guess_mono_suffix Θ Ξ Ξ_decl Ξ' ->
+    a_guess_mono_suffix Θ ((a ~ abind_flex_mono) ++ Ξ)
                         (Ξ_decl ++ (a ~ abind_flex_mono) ++ nil)
                         (Ξ' ++ (a ~ abind_flex_mono) ++ nil)
-| a_guess_mono_suffix__flex_mono_def : forall a τ Ξ Ξ' Ξ_decl,
-    a_guess_mono_suffix Ξ Ξ_decl Ξ' ->
-    a_guess_mono_suffix ((a ~ abind_flex_mono_def τ) ++ Ξ)
+| a_guess_mono_suffix__flex_mono_def : forall Θ a τ Ξ Ξ' Ξ_decl,
+    a_guess_mono_suffix Θ Ξ Ξ_decl Ξ' ->
+    a_guess_mono_suffix Θ ((a ~ abind_flex_mono_def τ) ++ Ξ)
                         Ξ_decl
                         (Ξ' ++ (a ~ abind_flex_mono_def τ) ++ nil)
-| a_guess_mono_suffix__flex_poly_def : forall a P P' Ξ Ξ' Ξ_decl Ξ_decl',
-    a_guess_mono_suffix Ξ Ξ_decl Ξ' ->
-    a_guess_mono P Ξ_decl' P' ->
-    a_guess_mono_suffix ((a ~ abind_flex_poly_def P) ++ Ξ)
+| a_guess_mono_suffix__flex_poly_def : forall Θ a P P' Ξ Ξ' Ξ_decl Ξ_decl',
+    a_guess_mono_suffix Θ Ξ Ξ_decl Ξ' ->
+    a_guess_mono (Ξ ++ Θ) P Ξ_decl' P' ->
+    a_guess_mono_suffix Θ ((a ~ abind_flex_poly_def P) ++ Ξ)
                         (Ξ_decl ++ Ξ_decl')
                         (Ξ' ++ (a ~ abind_flex_poly_def P') ++ nil).
 
@@ -386,86 +403,94 @@ Inductive a_guess_mono_suffix : aenv -> aenv -> aenv -> Prop :=
 
 (** Pre-subtyping ⊢_M P ≤̇ Q ↣ P' (paper page 26).  The output P' is
     obtained by aligning P and Q's quantifier / ghost structure. *)
-Inductive a_pre_sub : mode -> typ -> typ -> typ -> Prop :=
-| a_pre_sub__unit : forall m Q,
-    a_pre_sub m typ_unit Q typ_unit
-| a_pre_sub__var : forall m X Q,
-    a_pre_sub m (typ_var_f X) Q (typ_var_f X)
-| a_pre_sub__hole_l : forall m Q,
+Inductive a_pre_sub : aenv -> mode -> typ -> typ -> typ -> Prop :=
+| a_pre_sub__unit : forall Θ m Q,
+    a_pre_sub Θ m typ_unit Q typ_unit
+| a_pre_sub__var : forall Θ m X Q,
+    binds X abind_tvar Θ ->
+    a_pre_sub Θ m (typ_var_f X) Q (typ_var_f X)
+| a_pre_sub__hole_l : forall Θ m Q,
     guarded_typ Q \/ (exists c B, Q = typ_all_col c B)
                   \/ (exists ε B, Q = typ_all_etag ε B)
                   \/ (exists B, Q = typ_all_plain B)
                   \/ (exists B, Q = typ_tophole B) ->
-    a_pre_sub m typ_hole Q Q
-| a_pre_sub__hole_r : forall m P,
+    a_pre_sub Θ m typ_hole Q Q
+| a_pre_sub__hole_r : forall Θ m P,
     guarded_typ P ->
-    a_pre_sub m P typ_hole P
-| a_pre_sub__guarded : forall m P Q P',
+    a_pre_sub Θ m P typ_hole P
+| a_pre_sub__guarded : forall Θ m P Q P',
     guarded_typ P ->
     guarded_typ Q ->
     (m = mode_ti \/ m = mode_tc) ->
-    a_pre_join P Q P' ->
-    a_pre_sub m P Q P'
-| a_pre_sub__flex_mono_fn : forall m α Q,
+    a_pre_join Θ P Q P' ->
+    a_pre_sub Θ m P Q P'
+(** [__flex_mono_fn]: an unsolved flex-mono LHS in function mode is
+    kept as-is. (Declared case; a solved flex-mono is unfolded by
+    other rules.) *)
+| a_pre_sub__flex_mono_fn : forall Θ m α Q,
+    binds α abind_flex_mono Θ ->
     guarded_typ Q ->
-    a_pre_sub (mode_fn m) (typ_var_flex_mono α) Q (typ_var_flex_mono α)
-| a_pre_sub__all_l : forall L m P Q P',
+    a_pre_sub Θ (mode_fn m) (typ_var_f α) Q (typ_var_f α)
+| a_pre_sub__all_l : forall L Θ m P Q P',
     (forall X, X `notin` L ->
-      a_pre_sub m (open_typ_wrt_typ P (typ_var_f X)) Q P') ->
-    a_pre_sub m (typ_all_plain P) Q (typ_all_plain P')
-| a_pre_sub__all_r : forall L m P Q P',
+      a_pre_sub Θ m (open_typ_wrt_typ P (typ_var_f X)) Q P') ->
+    a_pre_sub Θ m (typ_all_plain P) Q (typ_all_plain P')
+| a_pre_sub__all_r : forall L Θ m P Q P',
     (forall X, X `notin` L ->
-      a_pre_sub m P (open_typ_wrt_typ Q (typ_var_f X)) P') ->
-    a_pre_sub m P (typ_all_plain Q) P'
-| a_pre_sub__tophole_l : forall m P Q P',
-    a_pre_sub m P Q P' ->
-    a_pre_sub m (typ_tophole P) Q P'
-| a_pre_sub__tophole_r : forall m P Q P',
-    a_pre_sub m P Q P' ->
-    a_pre_sub m P (typ_tophole Q) P'
-| a_pre_sub__arrow : forall m P1 P2 Q1 Q2 P1' P2',
-    a_pre_join P1 Q1 P1' ->
-    a_pre_sub m P2 Q2 P2' ->
-    a_pre_sub (mode_fn m) (typ_arrow P1 P2) (typ_arrow Q1 Q2) (typ_arrow P1' P2')
+      a_pre_sub Θ m P (open_typ_wrt_typ Q (typ_var_f X)) P') ->
+    a_pre_sub Θ m P (typ_all_plain Q) P'
+| a_pre_sub__tophole_l : forall Θ m P Q P',
+    a_pre_sub Θ m P Q P' ->
+    a_pre_sub Θ m (typ_tophole P) Q P'
+| a_pre_sub__tophole_r : forall Θ m P Q P',
+    a_pre_sub Θ m P Q P' ->
+    a_pre_sub Θ m P (typ_tophole Q) P'
+| a_pre_sub__arrow : forall Θ m P1 P2 Q1 Q2 P1' P2',
+    a_pre_join Θ P1 Q1 P1' ->
+    a_pre_sub Θ m P2 Q2 P2' ->
+    a_pre_sub Θ (mode_fn m) (typ_arrow P1 P2) (typ_arrow Q1 Q2) (typ_arrow P1' P2')
 
 (** Pre-join ⋖̇ (paper page 26). *)
-with a_pre_join : typ -> typ -> typ -> Prop :=
-| a_pre_join__unit : forall Q,
-    a_pre_join typ_unit Q typ_unit
-| a_pre_join__var : forall X Q,
-    a_pre_join (typ_var_f X) Q (typ_var_f X)
-| a_pre_join__flex_mono_l : forall α Q,
-    a_pre_join (typ_var_flex_mono α) Q (typ_var_flex_mono α)
-| a_pre_join__flex_mono_r : forall α P,
-    a_pre_join P (typ_var_flex_mono α) P
-| a_pre_join__all_both : forall L P Q P',
+with a_pre_join : aenv -> typ -> typ -> typ -> Prop :=
+| a_pre_join__unit : forall Θ Q,
+    a_pre_join Θ typ_unit Q typ_unit
+| a_pre_join__var : forall Θ X Q,
+    binds X abind_tvar Θ ->
+    a_pre_join Θ (typ_var_f X) Q (typ_var_f X)
+| a_pre_join__flex_mono_l : forall Θ α Q,
+    binds α abind_flex_mono Θ ->
+    a_pre_join Θ (typ_var_f α) Q (typ_var_f α)
+| a_pre_join__flex_mono_r : forall Θ α P,
+    binds α abind_flex_mono Θ ->
+    a_pre_join Θ P (typ_var_f α) P
+| a_pre_join__all_both : forall L Θ P Q P',
     (forall X, X `notin` L ->
-      a_pre_join (open_typ_wrt_typ P (typ_var_f X))
+      a_pre_join Θ (open_typ_wrt_typ P (typ_var_f X))
                  (open_typ_wrt_typ Q (typ_var_f X)) P') ->
-    a_pre_join (typ_all_plain P) (typ_all_plain Q) (typ_all_plain P')
-| a_pre_join__tophole_both : forall P Q P',
-    a_pre_join P Q P' ->
-    a_pre_join (typ_tophole P) (typ_tophole Q) (typ_tophole P')
-| a_pre_join__tophole_l_all : forall L P Q P',
+    a_pre_join Θ (typ_all_plain P) (typ_all_plain Q) (typ_all_plain P')
+| a_pre_join__tophole_both : forall Θ P Q P',
+    a_pre_join Θ P Q P' ->
+    a_pre_join Θ (typ_tophole P) (typ_tophole Q) (typ_tophole P')
+| a_pre_join__tophole_l_all : forall L Θ P Q P',
     (forall X, X `notin` L ->
-      a_pre_join (typ_tophole P) (open_typ_wrt_typ Q (typ_var_f X)) P') ->
-    a_pre_join (typ_tophole P) (typ_all_plain Q) (typ_all_plain P')
-| a_pre_join__tophole_l_guarded : forall P Q P',
+      a_pre_join Θ (typ_tophole P) (open_typ_wrt_typ Q (typ_var_f X)) P') ->
+    a_pre_join Θ (typ_tophole P) (typ_all_plain Q) (typ_all_plain P')
+| a_pre_join__tophole_l_guarded : forall Θ P Q P',
     guarded_typ Q ->
-    a_pre_join P Q P' ->
-    a_pre_join (typ_tophole P) Q P'
-| a_pre_join__all_l_tophole : forall L P Q P',
+    a_pre_join Θ P Q P' ->
+    a_pre_join Θ (typ_tophole P) Q P'
+| a_pre_join__all_l_tophole : forall L Θ P Q P',
     (forall X, X `notin` L ->
-      a_pre_join (open_typ_wrt_typ P (typ_var_f X)) (typ_tophole Q) P') ->
-    a_pre_join (typ_all_plain P) (typ_tophole Q) (typ_all_plain P')
-| a_pre_join__guarded_r_tophole : forall P Q P',
+      a_pre_join Θ (open_typ_wrt_typ P (typ_var_f X)) (typ_tophole Q) P') ->
+    a_pre_join Θ (typ_all_plain P) (typ_tophole Q) (typ_all_plain P')
+| a_pre_join__guarded_r_tophole : forall Θ P Q P',
     guarded_typ P ->
-    a_pre_join P Q P' ->
-    a_pre_join P (typ_tophole Q) P'
-| a_pre_join__arrow : forall P1 P2 Q1 Q2 P1' P2',
-    a_pre_join P1 Q1 P1' ->
-    a_pre_join P2 Q2 P2' ->
-    a_pre_join (typ_arrow P1 P2) (typ_arrow Q1 Q2) (typ_arrow P1' P2').
+    a_pre_join Θ P Q P' ->
+    a_pre_join Θ P (typ_tophole Q) P'
+| a_pre_join__arrow : forall Θ P1 P2 Q1 Q2 P1' P2',
+    a_pre_join Θ P1 Q1 P1' ->
+    a_pre_join Θ P2 Q2 P2' ->
+    a_pre_join Θ (typ_arrow P1 P2) (typ_arrow Q1 Q2) (typ_arrow P1' P2').
 
 
 (* ===================================================================== *)
@@ -486,16 +511,16 @@ Inductive a_unify : aenv -> typ -> typ -> typ -> aenv -> Prop :=
 | a_unify__hole_r : forall Θ S,
     a_unify Θ S typ_hole S Θ
 | a_unify__flex_flex : forall Θ Θ' α β,
-    a_unify_var Θ (typ_var_flex_mono α) β Θ' ->
-    a_unify Θ (typ_var_flex_mono α) (typ_var_flex_mono β) (typ_var_flex_mono α) Θ'
+    a_unify_var Θ (typ_var_f α) β Θ' ->
+    a_unify Θ (typ_var_f α) (typ_var_f β) (typ_var_f α) Θ'
 | a_unify__flex_l : forall Θ Θ' α P,
-    a_non_flex P ->
-    a_assign Θ nil (typ_var_flex_mono α) P Θ' ->
-    a_unify Θ (typ_var_flex_mono α) P (typ_var_flex_mono α) Θ'
+    a_non_flex Θ P ->
+    a_assign Θ nil (typ_var_f α) P Θ' ->
+    a_unify Θ (typ_var_f α) P (typ_var_f α) Θ'
 | a_unify__flex_r : forall Θ Θ' S α,
-    a_non_flex S ->
-    a_assign Θ nil (typ_var_flex_mono α) S Θ' ->
-    a_unify Θ S (typ_var_flex_mono α) (typ_var_flex_mono α) Θ'
+    a_non_flex Θ S ->
+    a_assign Θ nil (typ_var_f α) S Θ' ->
+    a_unify Θ S (typ_var_f α) (typ_var_f α) Θ'
 | a_unify__arrow : forall Θ Θ1 Θ2 S1 S2 P1 P2 S1' S2',
     a_unify Θ S1 P1 S1' Θ1 ->
     a_unify Θ1 S2 P2 S2' Θ2 ->
@@ -522,7 +547,7 @@ Inductive a_unify : aenv -> typ -> typ -> typ -> aenv -> Prop :=
     a_unify Θ (typ_all_plain S) (typ_tophole P) (typ_all_plain S') Θ'
 | a_unify__guarded_l_tophole : forall Θ Θ' S P S',
     a_guarded Θ S ->
-    a_non_flex S ->
+    a_non_flex Θ S ->
     a_unify Θ S P S' Θ' ->
     a_unify Θ S (typ_tophole P) S' Θ'
 | a_unify__tophole_l_all : forall L Θ Θ' S P S',
@@ -535,7 +560,7 @@ Inductive a_unify : aenv -> typ -> typ -> typ -> aenv -> Prop :=
     a_unify Θ (typ_tophole S) (typ_all_plain P) (typ_all_plain S') Θ'
 | a_unify__tophole_l_guarded : forall Θ Θ' S P S',
     a_guarded Θ P ->
-    a_non_flex P ->
+    a_non_flex Θ P ->
     a_unify Θ S P S' Θ' ->
     a_unify Θ (typ_tophole S) P S' Θ'
 
@@ -543,37 +568,37 @@ Inductive a_unify : aenv -> typ -> typ -> typ -> aenv -> Prop :=
 with a_unify_var : aenv -> typ -> atom -> aenv -> Prop :=
 | a_unify_var__id : forall Θ α,
     binds α abind_flex_mono Θ ->
-    a_unify_var Θ (typ_var_flex_mono α) α Θ
+    a_unify_var Θ (typ_var_f α) α Θ
 | a_unify_var__flex_flex_l : forall Θ α β,
     α <> β ->
     a_unify_var ((α ~ abind_flex_mono) ++ Θ)
-                (typ_var_flex_mono α) β
-                ((α ~ abind_flex_mono_def (typ_var_flex_mono β)) ++ Θ)
+                (typ_var_f α) β
+                ((α ~ abind_flex_mono_def (typ_var_f β)) ++ Θ)
 | a_unify_var__flex_flex_r : forall Θ α β,
     α <> β ->
     a_unify_var ((β ~ abind_flex_mono) ++ Θ)
-                (typ_var_flex_mono α) β
-                ((β ~ abind_flex_mono_def (typ_var_flex_mono α)) ++ Θ)
+                (typ_var_f α) β
+                ((β ~ abind_flex_mono_def (typ_var_f α)) ++ Θ)
 | a_unify_var__assign_mono : forall Θ Θ' γ τ αx β,
     a_unify Θ
             (open_typ_wrt_typ (close_typ_wrt_typ γ αx) τ)
-            (open_typ_wrt_typ (close_typ_wrt_typ γ (typ_var_flex_mono β)) τ)
+            (open_typ_wrt_typ (close_typ_wrt_typ γ (typ_var_f β)) τ)
             (open_typ_wrt_typ (close_typ_wrt_typ γ αx) τ)  (* unused output *)
             Θ' ->
     a_unify_var ((γ ~ abind_flex_mono_def τ) ++ Θ) αx β
                 ((γ ~ abind_flex_mono_def τ) ++ Θ')
 | a_unify_var__assign_poly : forall Θ Θ' α P β Q,
-    a_unify Θ P (typ_var_flex_mono β) Q Θ' ->
+    a_unify Θ P (typ_var_f β) Q Θ' ->
     a_unify_var ((α ~ abind_flex_poly_def P) ++ Θ)
-                (typ_var_flex_poly α) β
+                (typ_var_f α) β
                 ((α ~ abind_flex_poly_def Q) ++ Θ')
 | a_unify_var__skip_poly : forall Θ Θ' α P αx β,
-    αx <> typ_var_flex_poly α ->
+    αx <> typ_var_f α ->
     a_unify_var Θ αx β Θ' ->
     a_unify_var ((α ~ abind_flex_poly_def P) ++ Θ) αx β
                 ((α ~ abind_flex_poly_def P) ++ Θ')
 | a_unify_var__skip_mono : forall Θ Θ' γ αx β,
-    αx <> typ_var_flex_mono γ ->
+    αx <> typ_var_f γ ->
     β <> γ ->
     a_unify_var Θ αx β Θ' ->
     a_unify_var ((γ ~ abind_flex_mono) ++ Θ) αx β
@@ -598,18 +623,18 @@ with a_unify_var : aenv -> typ -> atom -> aenv -> Prop :=
 with a_assign : aenv -> aenv -> typ -> typ -> aenv -> Prop :=
 | a_assign__solve_mono : forall Θ Ξ α S Ξ_decl τ,
     α `notin` (ftvar_in_typ S) ->
-    a_guess_mono S Ξ_decl τ ->
+    a_guess_mono (Ξ ++ Θ) S Ξ_decl τ ->
     a_assign ((α ~ abind_flex_mono) ++ Θ) Ξ
-             (typ_var_flex_mono α) S
+             (typ_var_f α) S
              (Θ ++ Ξ ++ Ξ_decl ++
               (α ~ abind_flex_mono_def τ) ++ nil)
 | a_assign__solve_poly : forall Θ Ξ Θ' α P Q P',
     a_unify (Θ ++ Ξ) P Q P' Θ' ->
     a_assign ((α ~ abind_flex_poly_def P) ++ Θ) Ξ
-             (typ_var_flex_poly α) Q
+             (typ_var_f α) Q
              ((α ~ abind_flex_poly_def P') ++ Θ')
 | a_assign__assign_mono : forall Θ Ξ Θ' β τ α S αx Sout,
-    αx = typ_var_flex_mono α ->
+    αx = typ_var_f α ->
     a_unify (Θ ++ Ξ)
             (open_typ_wrt_typ (close_typ_wrt_typ β S) τ)
             (open_typ_wrt_typ (close_typ_wrt_typ β αx) τ)
@@ -618,15 +643,15 @@ with a_assign : aenv -> aenv -> typ -> typ -> aenv -> Prop :=
              αx S
              ((β ~ abind_flex_mono_def τ) ++ Θ')
 | a_assign__assign_mono_poly : forall Θ Ξ Θ' β τ α P Pout,
-    a_unify (Θ ++ Ξ) (typ_var_flex_poly α)
+    a_unify (Θ ++ Ξ) (typ_var_f α)
             (open_typ_wrt_typ (close_typ_wrt_typ β P) τ)
             Pout Θ' ->
     a_assign ((β ~ abind_flex_mono_def τ) ++ Θ) Ξ
-             (typ_var_flex_poly α) P
+             (typ_var_f α) P
              ((β ~ abind_flex_mono_def τ) ++ Θ')
 | a_assign__assign_poly : forall Θ Ξ Θ' β P γ_decl τ αx S Sout,
-    a_non_flex S ->  (* β ∈ ftv(S) is the paper's condition *)
-    a_guess_mono P γ_decl τ ->
+    a_non_flex (Θ ++ Ξ) S ->  (* β ∈ ftv(S) is the paper's condition *)
+    a_guess_mono (Ξ ++ Θ) P γ_decl τ ->
     a_assign Θ (γ_decl ++ Ξ) αx
              (open_typ_wrt_typ (close_typ_wrt_typ β S) τ)
              Θ' ->
@@ -634,18 +659,18 @@ with a_assign : aenv -> aenv -> typ -> typ -> aenv -> Prop :=
     a_assign ((β ~ abind_flex_poly_def P) ++ Θ) Ξ αx S
              ((β ~ abind_flex_poly_def τ) ++ Θ')
 | a_assign__skip_poly : forall Θ Ξ Θ' β P αx S,
-    αx <> typ_var_flex_poly β ->
+    αx <> typ_var_f β ->
     β `notin` (ftvar_in_typ S) ->
     a_assign Θ Ξ αx S Θ' ->
     a_assign ((β ~ abind_flex_poly_def P) ++ Θ) Ξ αx S
              ((β ~ abind_flex_poly_def P) ++ Θ')
 | a_assign__depend_mono : forall Θ Ξ Θ' β αx S,
-    αx <> typ_var_flex_mono β ->
+    αx <> typ_var_f β ->
     β `in` (ftvar_in_typ S) ->
     a_assign Θ ((β ~ abind_flex_mono) ++ Ξ) αx S Θ' ->
     a_assign ((β ~ abind_flex_mono) ++ Θ) Ξ αx S Θ'
 | a_assign__skip_mono : forall Θ Ξ Θ' β αx S,
-    αx <> typ_var_flex_mono β ->
+    αx <> typ_var_f β ->
     β `notin` (ftvar_in_typ S) ->
     a_assign Θ Ξ αx S Θ' ->
     a_assign ((β ~ abind_flex_mono) ++ Θ) Ξ αx S
@@ -714,11 +739,11 @@ Inductive a_consis : aenv -> typ -> typ -> aenv -> Prop :=
 | a_consis__flex_mono_def : forall Θ Θ' α τ A,
     binds α (abind_flex_mono_def τ) Θ ->
     a_consis Θ τ A Θ' ->
-    a_consis Θ (typ_var_flex_mono α) A Θ'
+    a_consis Θ (typ_var_f α) A Θ'
 | a_consis__flex_mono_decl : forall Θ Θ' α A,
     binds α abind_flex_mono Θ ->
-    a_unify Θ (typ_var_flex_mono α) A (typ_var_flex_mono α) Θ' ->
-    a_consis Θ (typ_var_flex_mono α) A Θ'
+    a_unify Θ (typ_var_f α) A (typ_var_f α) Θ' ->
+    a_consis Θ (typ_var_f α) A Θ'
 | a_consis__ghost : forall Θ A,
     a_consis Θ typ_hole A Θ
 | a_consis__univ_ghost_both : forall Θ Θ' T A,
@@ -753,15 +778,15 @@ Inductive a_ajoin : aenv -> typ -> typ -> typ -> aenv -> Prop :=
     a_ajoin Θ (typ_var_f α) (typ_var_f α) (typ_var_f α) Θ
 | a_ajoin__flex : forall Θ Θ' αx β,
     a_unify_var Θ αx β Θ' ->
-    a_ajoin Θ αx (typ_var_flex_mono β) αx Θ'
+    a_ajoin Θ αx (typ_var_f β) αx Θ'
 | a_ajoin__flex_l : forall Θ Θ' αx P,
-    a_non_flex P ->
+    a_non_flex Θ P ->
     a_assign Θ nil αx P Θ' ->
     a_ajoin Θ αx P αx Θ'
 | a_ajoin__flex_r : forall Θ Θ' α S,
-    a_non_flex S ->
-    a_assign Θ nil (typ_var_flex_mono α) S Θ' ->
-    a_ajoin Θ S (typ_var_flex_mono α) (typ_var_flex_mono α) Θ'.
+    a_non_flex Θ S ->
+    a_assign Θ nil (typ_var_f α) S Θ' ->
+    a_ajoin Θ S (typ_var_f α) (typ_var_f α) Θ'.
 
 
 (* ===================================================================== *)
@@ -808,10 +833,10 @@ Inductive a_broom : a_sub_mode -> mode -> typ -> aenv -> typ -> typ -> aenv -> P
     a_broom a_sub_mode_ty mode_tc A Θ T A Θ'
 | a_broom__univ_ghost_r : forall Θ S,
     a_guarded Θ S ->
-    a_non_flex_poly S ->
+    a_non_flex_poly Θ S ->
     a_broom a_sub_mode_sk mode_tc typ_hole Θ S (typ_tophole S) Θ
 | a_broom__forall_r : forall L Θ Θ' T A,
-    a_non_flex_poly T ->
+    a_non_flex_poly Θ T ->
     (forall X, X `notin` L ->
       a_broom a_sub_mode_ty mode_tc A
               ((X ~ abind_tvar) ++ Θ) T
@@ -829,7 +854,7 @@ Inductive a_broom : a_sub_mode -> mode -> typ -> aenv -> typ -> typ -> aenv -> P
     (forall X, X `notin` L ->
       a_broom NM m P
               ((X ~ abind_flex_poly_def typ_hole) ++ Θ)
-              (open_typ_wrt_typ S (typ_var_flex_poly X))
+              (open_typ_wrt_typ S (typ_var_f X))
               S'
               Θ') ->
     a_broom NM m P Θ (typ_all_plain S) S' Θ'
@@ -841,25 +866,25 @@ Inductive a_broom : a_sub_mode -> mode -> typ -> aenv -> typ -> typ -> aenv -> P
     m <> mode_ti ->
     a_broom a_sub_mode_sk m P Θ typ_hole P Θ
 | a_broom__flex_mono : forall NM m Θ Θ' P α τ,
-    a_ajoin Θ (typ_var_flex_mono α) P τ Θ' ->
-    a_broom NM (mode_fn m) P Θ (typ_var_flex_mono α) τ Θ'
+    a_ajoin Θ (typ_var_f α) P τ Θ' ->
+    a_broom NM (mode_fn m) P Θ (typ_var_f α) τ Θ'
 | a_broom__flex_poly : forall NM m Θ Θ' P α S,
     m <> mode_ti ->
     a_sub_flex_poly NM m P Θ nil α S Θ' ->
-    a_broom NM m P Θ (typ_var_flex_poly α) S Θ'
+    a_broom NM m P Θ (typ_var_f α) S Θ'
 
 (** Flex-poly side judgement: Θ₀ | Ξ ⊢ α̌ ↣ S ⊣ Θ₁ (paper page 25). *)
 with a_sub_flex_poly :
     a_sub_mode -> mode -> typ -> aenv -> aenv -> atom -> typ -> aenv -> Prop :=
 | a_sub_flex_poly__solve_ty : forall m Θ Ξ Θ' P α Q Q' Ξ_decl A T,
-    a_pre_sub m Q P Q' ->
-    a_guess_mono Q' Ξ_decl A ->
+    a_pre_sub (Ξ ++ Θ) m Q P Q' ->
+    a_guess_mono (Ξ ++ Θ) Q' Ξ_decl A ->
     a_broom a_sub_mode_ty m P (Θ ++ Ξ ++ Ξ_decl) A T Θ' ->
     a_sub_flex_poly a_sub_mode_ty m P
       ((α ~ abind_flex_poly_def Q) ++ Θ) Ξ α T
       ((α ~ abind_flex_poly_def A) ++ Θ')
 | a_sub_flex_poly__solve_sk : forall m Θ Ξ Θ' P α Q Q' S,
-    a_pre_sub m Q P Q' ->
+    a_pre_sub (Ξ ++ Θ) m Q P Q' ->
     a_broom a_sub_mode_sk m P (Θ ++ Ξ) Q' S Θ' ->
     a_sub_flex_poly a_sub_mode_sk m P
       ((α ~ abind_flex_poly_def Q) ++ Θ) Ξ α S
@@ -907,7 +932,7 @@ Inductive a_sub : a_sub_mode -> mode -> typ -> aenv -> typ -> typ -> aenv -> Pro
       a_broom a_sub_mode_ty m P0
               ((a ~ abind_marker) ++ Θ) P S
               (Ξ ++ (a ~ abind_marker) ++ Θ')) ->
-    a_guess_mono_suffix Ξ Ξ_decl Ξ' ->
+    a_guess_mono_suffix Θ' Ξ Ξ_decl Ξ' ->
     a_meta_subst Ξ' S Q ->
     a_sub a_sub_mode_ty m P0 Θ P Q (Ξ_decl ++ Θ')
 | a_sub__sk : forall L m P0 Θ Θ' Ξ P S Q,
@@ -947,13 +972,13 @@ Inductive a_split : aenv -> typ -> typ -> typ -> aenv -> Prop :=
     γ <> α ->
     a_unify
       ((β ~ abind_flex_mono) ++ (γ ~ abind_flex_mono) ++ Θ)
-      (typ_var_flex_mono α)
-      (typ_arrow (typ_var_flex_mono β) (typ_var_flex_mono γ))
-      (typ_var_flex_mono α)
+      (typ_var_f α)
+      (typ_arrow (typ_var_f β) (typ_var_f γ))
+      (typ_var_f α)
       Θ' ->
-    a_split Θ (typ_var_flex_mono α)
-              (typ_var_flex_mono β)
-              (typ_var_flex_mono γ)
+    a_split Θ (typ_var_f α)
+              (typ_var_f β)
+              (typ_var_f γ)
               Θ'.
 
 (* ===================================================================== *)
@@ -1004,7 +1029,7 @@ Inductive a_typing : mode -> aenv -> typ -> exp -> typ -> aenv -> Prop :=
 | a_typing__abs : forall L Θ Θ1 Θ2 Ξ Ξ_decl m P0 P Q A B e,
     m <> mode_tc ->
     a_split Θ P0 P Q Θ1 ->
-    a_guess_mono P Ξ_decl A ->
+    a_guess_mono Θ1 P Ξ_decl A ->
     (forall x, x `notin` L ->
       a_typing (decr_mode m)
                (Ξ_decl ++ Θ1) Q

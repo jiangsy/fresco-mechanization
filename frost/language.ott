@@ -36,6 +36,13 @@ colour, c :: 'colour_' ::=
 % def_extra.v. The four ∀ flavours (col-S, col-I, eps-tagged, plain) are
 % distinct constructors so category predicates can discriminate cleanly.
 %
+% Algorithmic flex variables (mono α̂, poly α̌) are NOT type constructors:
+% a flex var is morally an ordinary type variable [X] (typ_var_f),
+% distinguished as rigid / flex-mono / flex-poly purely by its binding
+% in the algorithmic context Θ (abind_tvar / abind_flex_mono /
+% abind_flex_poly_def, ...). This keeps [typ] free of the
+% solver-specific cases.
+%
 % Metavar aliases follow the paper:
 %   A, B, C, T  — plain types / unresolved types
 %   ph          — tagged types (paper's φ)
@@ -52,8 +59,6 @@ typ, A, B, C, T, ph, ps, P, Q, SS :: 'typ_' ::=
   | forall X . A        ::   :: all_plain (+ bind X in A +)
   | HOLE                ::   :: hole
   | TOPHOLE . A         ::   :: tophole
-  | hat monvar          ::   :: var_flex_mono
-  | check polvar        ::   :: var_flex_poly
   | ( A )               :: S :: paren {{ coq ([[A]]) }}
   | { A2 / X } A1       :: M :: subst {{ coq (open_typ_wrt_typ [[X A1]] [[A2]]) }}
 

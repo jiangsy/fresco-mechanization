@@ -72,8 +72,6 @@ Fixpoint close_typ_wrt_typ_rec (n1 : nat) (X1 : typvar) (A1 : typ) {struct A1} :
     | typ_all_plain A2 => typ_all_plain (close_typ_wrt_typ_rec (S n1) X1 A2)
     | typ_hole => typ_hole
     | typ_tophole A2 => typ_tophole (close_typ_wrt_typ_rec n1 X1 A2)
-    | typ_var_flex_mono monvar1 => typ_var_flex_mono monvar1
-    | typ_var_flex_poly polvar1 => typ_var_flex_poly polvar1
   end.
 
 Definition close_typ_wrt_typ X1 A1 := close_typ_wrt_typ_rec 0 X1 A1.
@@ -136,8 +134,6 @@ Fixpoint size_typ (A1 : typ) {struct A1} : nat :=
     | typ_all_plain A2 => 1 + (size_typ A2)
     | typ_hole => 1
     | typ_tophole A2 => 1 + (size_typ A2)
-    | typ_var_flex_mono monvar1 => 1
-    | typ_var_flex_poly polvar1 => 1
   end.
 
 Fixpoint size_dbind (db1 : dbind) {struct db1} : nat :=
@@ -197,11 +193,7 @@ Inductive degree_typ_wrt_typ : nat -> typ -> Prop :=
     degree_typ_wrt_typ n1 (typ_hole)
   | degree_wrt_typ_typ_tophole : forall n1 A1,
     degree_typ_wrt_typ n1 A1 ->
-    degree_typ_wrt_typ n1 (typ_tophole A1)
-  | degree_wrt_typ_typ_var_flex_mono : forall n1 monvar1,
-    degree_typ_wrt_typ n1 (typ_var_flex_mono monvar1)
-  | degree_wrt_typ_typ_var_flex_poly : forall n1 polvar1,
-    degree_typ_wrt_typ n1 (typ_var_flex_poly polvar1).
+    degree_typ_wrt_typ n1 (typ_tophole A1).
 
 Scheme degree_typ_wrt_typ_ind' := Induction for degree_typ_wrt_typ Sort Prop.
 
@@ -314,11 +306,7 @@ Inductive lc_set_typ : typ -> Set :=
     lc_set_typ (typ_hole)
   | lc_set_typ_tophole : forall A1,
     lc_set_typ A1 ->
-    lc_set_typ (typ_tophole A1)
-  | lc_set_typ_var_flex_mono : forall monvar1,
-    lc_set_typ (typ_var_flex_mono monvar1)
-  | lc_set_typ_var_flex_poly : forall polvar1,
-    lc_set_typ (typ_var_flex_poly polvar1).
+    lc_set_typ (typ_tophole A1).
 Scheme lc_typ_ind' := Induction for lc_typ Sort Prop.
 
 Combined Scheme lc_typ_mutind from lc_typ_ind'.

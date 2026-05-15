@@ -73,6 +73,73 @@ The mode-colour invariant `mode_typ_compat M A`:
 
 So the type's colour profile is determined by the mode it sits under.
 
+#### The colour-encoding principle: `ctyp` + the `syn_color` / `inh_color` paintings
+
+The paper writes `syn{A}` / `inh{A}` ambiguously — sometimes as a
+*predicate* ("`A` is all-synthesised"), sometimes as a
+*transformation* ("paint `A`'s skeleton all-synthesised"). The
+mechanization fixes **one uniform rule** built on a genuine
+**colourless type** `ctyp`:
+
+```text
+ctyp ::= unit | α | ctyp → ctyp | ∀.ctyp | □ | □̇.ctyp
+```
+
+`ctyp` is `typ`'s shape with the **three** `forall` flavours
+(`typ_all_col`, `typ_all_etag`, `typ_all_plain`) collapsed to **one**
+neutral binder `ctyp_all`, and **no** flex-var constructors (an
+algorithmic flex var is morally a variable, distinguished by its
+binding in `Θ`, not by a type former). It is the *free equivalence class* of
+coloured types — two coloured `typ`s are *convertible* exactly when
+they `erase` to the same `ctyp`. Three functions (`def_extra.v`):
+
+- `syn_color, inh_color : ctyp -> typ` — paint a colourless `ctyp`
+  all-synthesised / all-inherited (`ctyp_all` → `typ_all_col
+  colour_syn` / `typ_all_col colour_inh`);
+- `erase : typ -> ctyp` — forget all colour/tag, projecting onto the
+  equivalence class. Round-trips: `erase (syn_color C) = C =
+  erase (inh_color C)`.
+
+> Where the paper writes `syn{A}` / `inh{A}` over a meta-symbol `A`,
+> the mechanization quantifies **one base `C : ctyp`** and writes
+> `syn_color C` / `inh_color C`. Different-colour occurrences thus
+> share their shape (the base `C`), painted independently;
+> same-colour occurrences are literally the same term. **No**
+> `is_syn_typ` / `is_inh_typ` predicates and **no** `syn_color X =
+> syn_color Y` equalities — the shared base *is* the shape constraint.
+
+`ctyp` is **never used** as a term annotation, context binding, or
+judgement index — those stay `typ`. It appears only as a rule's
+shared base variable and as `erase`'s codomain. When a coloured `typ`
+`P'` (not a `ctyp` base — e.g. a refinement output) needs an
+opposite-colour reading, it goes through `erase`:
+`inh_color (erase P')` in `d_typing__app`.
+
+Three situations sit outside the base device, consistently: (1)
+**input read-back** — `d_typing__var` reads a `typ` straight out of
+`Γ` (already a `syn`-painting, by the invariant that `__abs` /
+`__abs_anno` bind `syn_color _`); (2) **`bid` / mode-dependent**
+positions (`B` in `__abs` / `__app`) are plain `typ` variables; (3)
+**literal tagged-forall constructors** — `d_sub__forall_l_tagged` etc.
+match a literal `typ_all_etag ε T`, a structural type former, not a
+coloured meta-symbol occurrence.
+
+**`ctyp`'s locally-nameless layer.** `ctyp` is hand-written (it stays
+out of `language.ott` / lngen), but it *is* a binder (`ctyp_all`) and
+the proof layer does open / substitute it — so `decl/def_extra.v`
+carries a hand-written locally-nameless layer for it
+(`open_ctyp_wrt_ctyp`, `ftvar_in_ctyp`, `subst_ctyp_in_ctyp`),
+mirroring lngen's `typ` operations definitionally so the
+`syn_color` / `inh_color` / `erase` commutation lemmas
+(`syn_color_open_ctyp`, `erase_open_typ`, `*_subst_ctyp`, …) and the
+round-trips (`erase_syn_color`, `erase_inh_color`) line up. So "no
+lngen" means "no generated `.v` file for `ctyp`", not "no binder
+infrastructure".
+
+The declarative rule definitions were re-encoded to this scheme on
+2026-05-15 — see [PROGRESS.md](PROGRESS.md) "colour re-encoding" for
+the per-rule table and the proof-repair status.
+
 ### 2.3 Tags (`epsvar`, `eps`; ranges via `dD : tagctx`)
 
 Tags `ε` are atoms tracking provenance during instantiation. When
@@ -185,25 +252,28 @@ So neither can be defined alone.
 
 ### 3.2 Algorithmic judgments (in `frost/algo/def_extra.v`)
 
-Algorithmic syntax extends `typ` with:
-- `typ_var_flex_mono monvar` — `α̂`, a unification variable for
-  monotypes.
-- `typ_var_flex_poly polvar` — `α̌`, a *polymorphic* flex var carrying
-  a skeleton assignment.
+Algorithmic syntax does **not** extend `typ`. A flex variable is an
+ordinary type variable (`typ_var_f X`); whether `X` is rigid,
+flex-mono (`α̂`), or flex-poly (`α̌`) is recorded **solely by its
+binding** in the algorithmic context `Θ`. (Pre-2026-05-15, `typ` had
+`typ_var_flex_mono` / `typ_var_flex_poly` constructors — removed for
+the same reason `ctyp` has no flex case, §2.2 / §4.4.)
 
 Algorithmic contexts `Θ` (`aenv`) are ordered lists of `abind`:
 
-```
+```text
 abind ::= tvar               -- rigid type variable
         | var_typ A          -- term-variable typing
-        | flex_mono          -- declared α̂
+        | flex_mono          -- declared α̂  (X bound here ⟹ X is flex-mono)
         | flex_mono_def τ    -- solved α̂ := τ
         | flex_poly_def P    -- declared α̌ ≜ P (skeleton)
         | marker             -- ⫶, scope delimiter for flex-poly
 ```
 
-The flex-poly assignment is the algorithm's novelty: every `α̌` is
-born with skeleton `□` and is refined as constraints arrive.
+So `α̂` / `α̌` are `typ_var_f X` entries whose `Θ`-binding is
+`flex_mono` / `flex_poly_def _`; rigid vars bind `tvar`. The flex-poly
+assignment is the algorithm's novelty: every `α̌` is born with
+skeleton `□` and is refined as constraints arrive.
 
 **Information increase** `Θ₀ ⊑ Θ₁` (paper `Θ₀ → Θ₁` with the
 metasubst) preserves variable dependency: `α̂` can become `α̂ := τ`;
@@ -246,6 +316,22 @@ paper's notation:
 3. **Cofinite-quantification binders via lngen**. Standard for
    locally-nameless mechanization; familiar to anyone who's done
    Metalib proofs.
+
+4. **Colour disambiguation via a colourless `ctyp`** (§2.2). The
+   paper's `syn{A}` / `inh{A}` notation is overloaded (predicate
+   vs. transformation); the mechanization fixes one uniform reading —
+   a genuine colourless type `ctyp` (the *free equivalence class* of
+   coloured types), with `syn_color` / `inh_color : ctyp -> typ`
+   painting a shared base and `erase : typ -> ctyp` projecting onto
+   the class. Every coloured occurrence of a meta-symbol is
+   `syn_color C` / `inh_color C` over one shared base `C : ctyp`. No
+   `is_c` predicates, no shape-equality premises. `ctyp` is the *one*
+   place the mechanization adds a second type-like inductive — kept
+   out of `language.ott` / lngen, but with a small **hand-written**
+   locally-nameless layer in `decl/def_extra.v` (`open_ctyp_wrt_ctyp`,
+   `ftvar_in_ctyp`, `subst_ctyp_in_ctyp` + commutation lemmas) because
+   the proof layer opens and substitutes it. Rule definitions were
+   re-encoded to this on 2026-05-15 (see PROGRESS.md).
 
 These are documented in [`language.ott`](frost/language.ott)'s header
 comment.
@@ -309,23 +395,22 @@ be slightly cleaner without changing semantics:
   established at the toplevel and shown to be preserved (likely via a
   separate regularity lemma if needed).
 
-- **`d_typing__anno` carries `is_inh_typ A`** as a premise (for the
-  TC-mode body) but produces `d_typing mode_ti` on the conclusion. By
-  `mode_typ_compat`-implicit, the result type ought to be syn-coloured.
-  This is consistent IFF the annotation type has no coloured ∀'s
-  (i.e. `is_typ A` in our predicate hierarchy — annotation types are
-  programmer-written and colour-free). The paper's typing rule reads
-  the same `A` in different colours via meta-notation `\inh{A}` /
-  `\syn{A}`; the mechanization captures one direction (`is_inh_typ`)
-  but relies on the unstated invariant that annotation types are plain
-  for the other direction. Not a soundness issue.
+- **`d_typing__anno` colour mismatch — RESOLVED 2026-05-15.** The rule
+  used one variable `A` (`is_inh_typ`) for the premise, term annotation
+  *and* the conclusion, where the paper concludes `syn{A}` not
+  `inh{A}`. Re-encoded per §2.2: one colourless base `A : ctyp`,
+  premise + term annotation at `inh_color A`, conclusion at
+  `syn_color A`. (Part of the colour re-encoding — see PROGRESS.md;
+  proofs not yet repaired.)
 
 - **Wf premises on intro rules** (added in commit `1932f03`):
-  `d_typing__abs` / `_abs_anno` / `d_pat__anno` / `d_pat__abs` now
-  carry explicit `d_wf_typ Γ A` / `d_wf_skel nil Γ P`. The paper does
+  `d_typing__abs` / `_abs_anno` / `d_pat__anno` / `d_pat__abs` carry
+  explicit `d_wf_typ Γ A` / `d_wf_skel nil Γ P`. The paper does
   not state these — they're regularity strengthenings the
   mechanization needs to close `d_typing_pat_preserves_wf`. Worth a
-  paper footnote.
+  paper footnote. (After the 2026-05-15 re-encoding the `d_typing__abs`
+  / `_abs_anno` wf premise is on `inh_color A` / `syn_color A` for the
+  `ctyp` base `A`.)
 
 - **`d_consis__var` lacks a `binds` premise**: paper-flagged. The
   var-case admit in `d_consis_preserves_wf` is direct evidence;
@@ -422,7 +507,16 @@ that re-parses the rules. **No paper inconsistency.**
 
 ## 7. Metatheory landmarks (current status; admits ≠ done)
 
-| Paper claim | Mechanization | Status |
+> ⚠️ **As of 2026-05-15 the build is RED** — the colour re-encoding
+> (`ctyp`) and the `typ` flex-var removal changed core rule shapes, so
+> the proof layer is mid-repair (`def_extra.v`, `prop_basic.v`,
+> `prop_wellformed.v` compile; `prop_subtyping.v` partway;
+> `prop_typing.v` / `prop_skeleton.v` / `algo/prop_*` not yet). The
+> "Status" column below reflects the **pre-re-encoding** state and is
+> the *target* the repair restores, not the current build. See
+> PROGRESS.md "colour re-encoding".
+
+| Paper claim | Mechanization | Status (pre-re-encoding target) |
 |---|---|---|
 | Subtyping soundness (paper:1095) | `d_sub_sound` | Qed |
 | Refinement preserves wf (paper:1380) | `d_refine_preserves_wf`, `d_refine_syn_preserves_wf` | Qed |

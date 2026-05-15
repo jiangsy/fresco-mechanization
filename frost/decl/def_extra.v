@@ -6,56 +6,287 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 
-(** [syn_color]: the paper's [syn] re-colouring at variable lookup
-    ([typi Γ x (syn A)]). Erases the colour/tag distinction at every
-    [forall]: [typ_all_col _], [typ_all_etag _], [typ_all_plain _]
-    all become [typ_all_col colour_syn]. Defined here (not in
-    prop_typing.v) because [d_typing__var] uses it. *)
-Fixpoint syn_color (A : typ) : typ :=
-  match A with
-  | typ_unit => typ_unit
-  | typ_var_b n => typ_var_b n
-  | typ_var_f X => typ_var_f X
-  | typ_arrow A1 A2 => typ_arrow (syn_color A1) (syn_color A2)
-  | typ_all_col _ A0 => typ_all_col colour_syn (syn_color A0)
-  | typ_all_etag _ A0 => typ_all_col colour_syn (syn_color A0)
-  | typ_all_plain A0 => typ_all_col colour_syn (syn_color A0)
-  | typ_hole => typ_hole
-  | typ_tophole A0 => typ_tophole (syn_color A0)
-  | typ_var_flex_mono mv => typ_var_flex_mono mv
-  | typ_var_flex_poly pv => typ_var_flex_poly pv
+(** ** Colourless types [ctyp] and the colour discipline.
+
+    [ctyp] is the *colourless* type: [typ]'s shape with the three
+    [forall] flavours ([typ_all_col], [typ_all_etag], [typ_all_plain])
+    collapsed to one neutral binder [ctyp_all]. It is the "free
+    equivalence class" of coloured types — two coloured [typ]s are
+    *convertible* (interchangeable up to colour) exactly when they
+    [erase] to the same [ctyp].
+
+    [ctyp] is never used as a term annotation, a context binding, or a
+    judgement index — those stay [typ]. It appears ONLY as the shared
+    base of a rule's coloured occurrences: where the paper writes
+    [syn{A}] / [inh{A}] over a meta-symbol [A], the mechanisation
+    quantifies one base [C : ctyp] and writes [syn_color C] /
+    [inh_color C]. Different-colour occurrences thus share their shape
+    (the base [C]), their colours painted independently; same-colour
+    occurrences are literally the same term. No [is_syn_typ] /
+    [is_inh_typ] predicates and no [syn_color X = syn_color Y]
+    equalities are needed — the shared base IS the shape constraint.
+
+    Defined here (not in prop_typing.v) because the [d_typing] /
+    [d_pat] / [d_sub] rules use them. *)
+Inductive ctyp : Set :=
+ | ctyp_unit : ctyp
+ | ctyp_var_b (_:nat)
+ | ctyp_var_f (X:typvar)
+ | ctyp_arrow (C1:ctyp) (C2:ctyp)
+ | ctyp_all (C:ctyp)
+ | ctyp_hole : ctyp
+ | ctyp_tophole (C:ctyp).
+ (* No flex-var case: an algorithmic flex var is morally a variable,
+    distinguished by its binding in the algorithmic context Θ, not by
+    a distinct type constructor. The declarative system has no flex
+    vars anyway, so [erase] never meets them in practice. *)
+
+(** ** Locally-nameless infrastructure for [ctyp].
+
+    [ctyp] is hand-written (not lngen-generated), so its [open] / [fv]
+    / [subst] operations are hand-written too, mirroring lngen's [typ]
+    operations exactly so the [syn_color] / [inh_color] / [erase]
+    commutation lemmas line up definitionally. *)
+Fixpoint open_ctyp_wrt_ctyp_rec (k:nat) (C_5:ctyp) (C__6:ctyp) {struct C__6} : ctyp :=
+  match C__6 with
+  | ctyp_unit => ctyp_unit
+  | ctyp_var_b n =>
+      match lt_eq_lt_dec n k with
+      | inleft (left _) => ctyp_var_b n
+      | inleft (right _) => C_5
+      | inright _ => ctyp_var_b (n - 1)
+      end
+  | ctyp_var_f X => ctyp_var_f X
+  | ctyp_arrow C1 C2 =>
+      ctyp_arrow (open_ctyp_wrt_ctyp_rec k C_5 C1) (open_ctyp_wrt_ctyp_rec k C_5 C2)
+  | ctyp_all C0 => ctyp_all (open_ctyp_wrt_ctyp_rec (S k) C_5 C0)
+  | ctyp_hole => ctyp_hole
+  | ctyp_tophole C0 => ctyp_tophole (open_ctyp_wrt_ctyp_rec k C_5 C0)
   end.
 
-Lemma syn_color_open_rec : forall A B k,
-    syn_color (open_typ_wrt_typ_rec k B A) =
-    open_typ_wrt_typ_rec k (syn_color B) (syn_color A).
+Definition open_ctyp_wrt_ctyp C_5 C__6 := open_ctyp_wrt_ctyp_rec 0 C__6 C_5.
+
+Fixpoint ftvar_in_ctyp (C_5:ctyp) : vars :=
+  match C_5 with
+  | ctyp_unit => {}
+  | ctyp_var_b _ => {}
+  | ctyp_var_f X => {{X}}
+  | ctyp_arrow C1 C2 => (ftvar_in_ctyp C1) \u (ftvar_in_ctyp C2)
+  | ctyp_all C0 => ftvar_in_ctyp C0
+  | ctyp_hole => {}
+  | ctyp_tophole C0 => ftvar_in_ctyp C0
+  end.
+
+Fixpoint subst_ctyp_in_ctyp (C_5:ctyp) (X5:typvar) (C__6:ctyp) {struct C__6} : ctyp :=
+  match C__6 with
+  | ctyp_unit => ctyp_unit
+  | ctyp_var_b n => ctyp_var_b n
+  | ctyp_var_f X => if eq_var X X5 then C_5 else ctyp_var_f X
+  | ctyp_arrow C1 C2 =>
+      ctyp_arrow (subst_ctyp_in_ctyp C_5 X5 C1) (subst_ctyp_in_ctyp C_5 X5 C2)
+  | ctyp_all C0 => ctyp_all (subst_ctyp_in_ctyp C_5 X5 C0)
+  | ctyp_hole => ctyp_hole
+  | ctyp_tophole C0 => ctyp_tophole (subst_ctyp_in_ctyp C_5 X5 C0)
+  end.
+
+(** [syn_color] / [inh_color]: paint a colourless [ctyp]
+    all-synthesised / all-inherited. The neutral binder [ctyp_all]
+    becomes [typ_all_col colour_syn] / [typ_all_col colour_inh]. *)
+Fixpoint syn_color (C : ctyp) : typ :=
+  match C with
+  | ctyp_unit => typ_unit
+  | ctyp_var_b n => typ_var_b n
+  | ctyp_var_f X => typ_var_f X
+  | ctyp_arrow C1 C2 => typ_arrow (syn_color C1) (syn_color C2)
+  | ctyp_all C0 => typ_all_col colour_syn (syn_color C0)
+  | ctyp_hole => typ_hole
+  | ctyp_tophole C0 => typ_tophole (syn_color C0)
+  end.
+
+Fixpoint inh_color (C : ctyp) : typ :=
+  match C with
+  | ctyp_unit => typ_unit
+  | ctyp_var_b n => typ_var_b n
+  | ctyp_var_f X => typ_var_f X
+  | ctyp_arrow C1 C2 => typ_arrow (inh_color C1) (inh_color C2)
+  | ctyp_all C0 => typ_all_col colour_inh (inh_color C0)
+  | ctyp_hole => typ_hole
+  | ctyp_tophole C0 => typ_tophole (inh_color C0)
+  end.
+
+(** [erase]: forget all colour/tag information, projecting a coloured
+    [typ] onto its [ctyp] equivalence class. The round-trips
+    [erase (syn_color C) = C = erase (inh_color C)] — what makes the
+    shared-base encoding sound — are proved in the proof layer. *)
+Fixpoint erase (A : typ) : ctyp :=
+  match A with
+  | typ_unit => ctyp_unit
+  | typ_var_b n => ctyp_var_b n
+  | typ_var_f X => ctyp_var_f X
+  | typ_arrow A1 A2 => ctyp_arrow (erase A1) (erase A2)
+  | typ_all_col _ A0 => ctyp_all (erase A0)
+  | typ_all_etag _ A0 => ctyp_all (erase A0)
+  | typ_all_plain A0 => ctyp_all (erase A0)
+  | typ_hole => ctyp_hole
+  | typ_tophole A0 => ctyp_tophole (erase A0)
+  end.
+
+(** *** [syn_color] / [inh_color] / [erase] commutation lemmas. *)
+
+Lemma syn_color_open_ctyp_rec : forall C D k,
+    syn_color (open_ctyp_wrt_ctyp_rec k D C) =
+    open_typ_wrt_typ_rec k (syn_color D) (syn_color C).
 Proof.
-  intros A. induction A; intros B k; simpl; try reflexivity.
+  induction C; intros D k; simpl; try reflexivity.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-  - rewrite IHA1. rewrite IHA2. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - rewrite IHC; reflexivity.
+  - rewrite IHC; reflexivity.
 Qed.
 
-Lemma syn_color_open_var : forall A X,
-    syn_color (open_typ_wrt_typ A (typ_var_f X)) =
-    open_typ_wrt_typ (syn_color A) (typ_var_f X).
+Lemma inh_color_open_ctyp_rec : forall C D k,
+    inh_color (open_ctyp_wrt_ctyp_rec k D C) =
+    open_typ_wrt_typ_rec k (inh_color D) (inh_color C).
 Proof.
-  intros A X. unfold open_typ_wrt_typ.
-  rewrite syn_color_open_rec. reflexivity.
+  induction C; intros D k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - rewrite IHC; reflexivity.
+  - rewrite IHC; reflexivity.
 Qed.
 
-Lemma syn_color_ftvar : forall A,
-    ftvar_in_typ (syn_color A) = ftvar_in_typ A.
+Lemma erase_open_typ_rec : forall A B k,
+    erase (open_typ_wrt_typ_rec k B A) =
+    open_ctyp_wrt_ctyp_rec k (erase B) (erase A).
 Proof.
-  intros A. induction A; simpl; try reflexivity.
-  - rewrite IHA1. rewrite IHA2. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
+  induction A; intros B k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+  - rewrite IHA1, IHA2; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+Qed.
+
+Lemma syn_color_open_ctyp : forall C D,
+    syn_color (open_ctyp_wrt_ctyp C D) =
+    open_typ_wrt_typ (syn_color C) (syn_color D).
+Proof.
+  intros C D. unfold open_ctyp_wrt_ctyp, open_typ_wrt_typ.
+  apply syn_color_open_ctyp_rec.
+Qed.
+
+Lemma inh_color_open_ctyp : forall C D,
+    inh_color (open_ctyp_wrt_ctyp C D) =
+    open_typ_wrt_typ (inh_color C) (inh_color D).
+Proof.
+  intros C D. unfold open_ctyp_wrt_ctyp, open_typ_wrt_typ.
+  apply inh_color_open_ctyp_rec.
+Qed.
+
+Lemma erase_open_typ : forall A B,
+    erase (open_typ_wrt_typ A B) =
+    open_ctyp_wrt_ctyp (erase A) (erase B).
+Proof.
+  intros A B. unfold open_typ_wrt_typ, open_ctyp_wrt_ctyp.
+  apply erase_open_typ_rec.
+Qed.
+
+(** Specialised to opening with a free variable — the form the
+    [forall]-rule proof obligations actually use. *)
+Lemma syn_color_open_var : forall C X,
+    syn_color (open_ctyp_wrt_ctyp C (ctyp_var_f X)) =
+    open_typ_wrt_typ (syn_color C) (typ_var_f X).
+Proof. intros C X. apply (syn_color_open_ctyp C (ctyp_var_f X)). Qed.
+
+Lemma inh_color_open_var : forall C X,
+    inh_color (open_ctyp_wrt_ctyp C (ctyp_var_f X)) =
+    open_typ_wrt_typ (inh_color C) (typ_var_f X).
+Proof. intros C X. apply (inh_color_open_ctyp C (ctyp_var_f X)). Qed.
+
+Lemma syn_color_ftvar : forall C,
+    ftvar_in_typ (syn_color C) = ftvar_in_ctyp C.
+Proof.
+  induction C; simpl; try reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - assumption.
+  - assumption.
+Qed.
+
+Lemma inh_color_ftvar : forall C,
+    ftvar_in_typ (inh_color C) = ftvar_in_ctyp C.
+Proof.
+  induction C; simpl; try reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - assumption.
+  - assumption.
+Qed.
+
+Lemma erase_ftvar : forall A,
+    ftvar_in_ctyp (erase A) = ftvar_in_typ A.
+Proof.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1, IHA2; reflexivity.
+  - assumption.
+  - assumption.
+  - assumption.
+  - assumption.
+Qed.
+
+(** Substitution commutes with the colourings / erasure. *)
+Lemma syn_color_subst_ctyp : forall C D X5,
+    subst_typ_in_typ (syn_color D) X5 (syn_color C) =
+    syn_color (subst_ctyp_in_ctyp D X5 C).
+Proof.
+  induction C; intros D X5; simpl; try reflexivity.
+  - destruct (eq_var X X5); reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - rewrite IHC; reflexivity.
+  - rewrite IHC; reflexivity.
+Qed.
+
+Lemma inh_color_subst_ctyp : forall C D X5,
+    subst_typ_in_typ (inh_color D) X5 (inh_color C) =
+    inh_color (subst_ctyp_in_ctyp D X5 C).
+Proof.
+  induction C; intros D X5; simpl; try reflexivity.
+  - destruct (eq_var X X5); reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - rewrite IHC; reflexivity.
+  - rewrite IHC; reflexivity.
+Qed.
+
+Lemma erase_subst_typ : forall A B X5,
+    erase (subst_typ_in_typ B X5 A) =
+    subst_ctyp_in_ctyp (erase B) X5 (erase A).
+Proof.
+  induction A; intros B X5; simpl; try reflexivity.
+  - destruct (eq_var X X5); reflexivity.
+  - rewrite IHA1, IHA2; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+  - rewrite IHA; reflexivity.
+Qed.
+
+(** [erase] is a left inverse of both colourings — two coloured types
+    are convertible exactly when they [erase] equal. *)
+Lemma erase_syn_color : forall C,
+    erase (syn_color C) = C.
+Proof.
+  induction C; simpl; try reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - rewrite IHC; reflexivity.
+  - rewrite IHC; reflexivity.
+Qed.
+
+Lemma erase_inh_color : forall C,
+    erase (inh_color C) = C.
+Proof.
+  induction C; simpl; try reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - rewrite IHC; reflexivity.
+  - rewrite IHC; reflexivity.
 Qed.
 
 (** ** Plain types under a context. *)
@@ -74,30 +305,52 @@ Inductive d_wf_typ : list (atom * dbind) -> typ -> Prop :=
        d_wf_typ ((X ~ dbind_tvar) ++ Γ) (open_typ_wrt_typ A (typ_var_f X))) ->
     d_wf_typ Γ (typ_all_col c A).
 
-(** [syn_color] preserves [d_wf_typ]. *)
-Lemma syn_color_wf : forall Γ A,
-    d_wf_typ Γ A ->
-    d_wf_typ Γ (syn_color A).
+(** [d_wf_typ] depends only on a type's *skeleton* (variable bindings
+    + structure), never on [forall]-colours ([d_wf_typ__all] is
+    colour-agnostic). So [syn_color C] and [inh_color C] — same shape,
+    different paint — are equi-wf. ([d_wf_typ_recolour] cannot be
+    stated as a general [erase]-equality lemma because [d_wf_typ] has
+    no rule for [typ_all_etag] / [typ_all_plain]; both colourings only
+    produce [typ_all_col], so we relate exactly those.) This is the
+    [ctyp]-era replacement for the old [syn_color_wf]. *)
+Lemma d_wf_typ_inh_color_syn_color : forall Γ C,
+    d_wf_typ Γ (inh_color C) -> d_wf_typ Γ (syn_color C).
 Proof.
-  intros Γ A H. induction H; simpl.
-  - apply d_wf_typ__unit.
-  - apply d_wf_typ__var; assumption.
-  - apply d_wf_typ__arrow; assumption.
-  - apply d_wf_typ__all with (L := L).
-    intros X HX. rewrite <- syn_color_open_var. auto.
+  intros Γ C H.
+  remember (inh_color C) as A eqn:HA. revert C HA.
+  induction H; intros C HA.
+  - destruct C; simpl in HA; try discriminate. apply d_wf_typ__unit.
+  - destruct C; simpl in HA; try discriminate.
+    injection HA as HA; subst. apply d_wf_typ__var; assumption.
+  - destruct C; simpl in HA; try discriminate.
+    injection HA as HA1 HA2.
+    apply d_wf_typ__arrow; [ apply IHd_wf_typ1 | apply IHd_wf_typ2 ]; assumption.
+  - destruct C; simpl in HA; try discriminate.
+    injection HA as Hc HA; subst.
+    apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. rewrite <- syn_color_open_var.
+    specialize (H0 X ltac:(auto) (open_ctyp_wrt_ctyp C (ctyp_var_f X))).
+    apply H0. symmetry. apply inh_color_open_var.
 Qed.
 
-(** A [d_wf_typ] becomes [is_syn_typ] under [syn_color]. *)
-Lemma syn_color_is_syn_typ : forall Γ A,
-    d_wf_typ Γ A ->
-    is_syn_typ (syn_color A).
+Lemma d_wf_typ_syn_color_inh_color : forall Γ C,
+    d_wf_typ Γ (syn_color C) -> d_wf_typ Γ (inh_color C).
 Proof.
-  intros Γ A H. induction H; simpl.
-  - apply is_syn_typ__unit.
-  - apply is_syn_typ__var.
-  - apply is_syn_typ__arrow; assumption.
-  - apply is_syn_typ__all with (L := L).
-    intros X HX. rewrite <- syn_color_open_var. auto.
+  intros Γ C H.
+  remember (syn_color C) as A eqn:HA. revert C HA.
+  induction H; intros C HA.
+  - destruct C; simpl in HA; try discriminate. apply d_wf_typ__unit.
+  - destruct C; simpl in HA; try discriminate.
+    injection HA as HA; subst. apply d_wf_typ__var; assumption.
+  - destruct C; simpl in HA; try discriminate.
+    injection HA as HA1 HA2.
+    apply d_wf_typ__arrow; [ apply IHd_wf_typ1 | apply IHd_wf_typ2 ]; assumption.
+  - destruct C; simpl in HA; try discriminate.
+    injection HA as Hc HA; subst.
+    apply d_wf_typ__all with (L := L `union` dom Γ).
+    intros X HX. rewrite <- inh_color_open_var.
+    specialize (H0 X ltac:(auto) (open_ctyp_wrt_ctyp C (ctyp_var_f X))).
+    apply H0. symmetry. apply syn_color_open_var.
 Qed.
 
 (** ** Well-formed skeletons. Ψ tracks type variables bound previously in
@@ -282,17 +535,16 @@ Inductive d_consis :
 Inductive d_sub :
   mode -> list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
 | d_sub__infer : forall Γ T A,
-    is_syn_typ A ->
-    d_consis nil Γ T A ->
-    d_sub mode_ti nil Γ T A
+    (* paper Infer: typsub TI · Γ syn{T} syn{A} — [T] and [A] are
+       colourless bases, each painted [syn] (their only colour). *)
+    d_consis nil Γ (syn_color T) (syn_color A) ->
+    d_sub mode_ti nil Γ (syn_color T) (syn_color A)
 | d_sub__check : forall Δ Γ T A,
-    (* T must be guarded — encoded as: not a top-level ∀ of any flavour.
-       The forall_l_* rules consume the tagged/plain ∀ cases on the left. *)
-    (forall ε T', T <> typ_all_etag ε T') ->
-    (forall T', T <> typ_all_plain T') ->
-    is_inh_typ A ->
-    d_consis Δ Γ T A ->
-    d_sub mode_tc Δ Γ T A
+    (* paper Check: typsub TC Δ Γ syn{T} inh{A} — base [T] painted
+       [syn] (and guarded), base [A] painted [inh]. *)
+    guarded_typ (syn_color T) ->
+    d_consis Δ Γ (syn_color T) (inh_color A) ->
+    d_sub mode_tc Δ Γ (syn_color T) (inh_color A)
 | d_sub__forall_r : forall L Δ Γ T A,
     (forall X, X `notin` L ->
        d_sub mode_tc Δ ((X ~ dbind_tvar) ++ Γ) T (open_typ_wrt_typ A (typ_var_f X))) ->
@@ -530,12 +782,20 @@ Inductive d_typing :
     mode_typ_compat mode_ti typ_unit ->
     d_typing mode_ti Γ exp_unit typ_unit
 | d_typing__var : forall Γ x A,
+    (* paper Var: Γ ∋ x : syn{A} ⟹ x : syn{A} — context binding and
+       conclusion are the SAME colour (syn), hence the same term [A].
+       [A] is already a [syn]-painting (a context invariant maintained
+       by __abs / __abs_anno binding [syn_color _]); this rule just
+       reads it back, so no painting is applied here. *)
     binds x (dbind_typ A) Γ ->
-    d_typing mode_ti Γ (exp_var_f x) (syn_color A)
+    d_typing mode_ti Γ (exp_var_f x) A
 | d_typing__anno : forall Γ e A,
-    is_inh_typ A ->
-    d_typing mode_tc Γ e A ->
-    d_typing mode_ti Γ (exp_anno e A) A
+    (* paper Anno: M : inh{A} ⟹ (M : inh{A}) : syn{A} — one colourless
+       base [A : ctyp]: the premise + term annotation are its [inh]
+       painting, the conclusion its [syn] painting. The term carries
+       [inh_color A] (a [typ]); [A : ctyp] never enters [exp]. *)
+    d_typing mode_tc Γ e (inh_color A) ->
+    d_typing mode_ti Γ (exp_anno e (inh_color A)) (syn_color A)
 | d_typing__sub : forall Γ m e A B,
     is_base_term e ->
     d_typing mode_ti Γ e A ->
@@ -551,23 +811,37 @@ Inductive d_typing :
          (open_typ_wrt_typ A (typ_var_f X))) ->
     d_typing mode_tc Γ e (typ_all_col colour_inh A)
 | d_typing__abs : forall L Γ m e A B,
-    is_inh_typ A ->
-    d_wf_typ Γ A ->
+    (* paper Abs: Γ,x:syn{A} ⊢ M:B ⟹ λx.M : inh{A}→B — one colourless
+       base [A]: the context binding is its [syn] painting, the
+       conclusion's arrow-arg its [inh] painting. *)
+    d_wf_typ Γ (inh_color A) ->
     (forall x, x `notin` L ->
-       d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+       d_typing (decr_mode m) ((x ~ dbind_typ (syn_color A)) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing m Γ (exp_abs e) (typ_arrow A B)
+    d_typing m Γ (exp_abs e) (typ_arrow (inh_color A) B)
 | d_typing__abs_anno : forall L Γ m e A B,
-    d_wf_typ Γ A ->
+    (* paper AbsAnno: Γ,x:syn{A} ⊢ M:B ⟹ λx^{inh A}.M : syn{A}→B — one
+       colourless base [A : ctyp]: the context binding AND conclusion
+       arrow-arg are its [syn] painting (same colour ⟹ same term); the
+       term carries [inh_color A] (a [typ]) — the paper's [inh A]
+       annotation; [A : ctyp] never enters [exp]. *)
+    d_wf_typ Γ (syn_color A) ->
     (forall x, x `notin` L ->
-       d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+       d_typing (decr_mode m) ((x ~ dbind_typ (syn_color A)) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing m Γ (exp_abs_anno A e) (typ_arrow A B)
-| d_typing__app : forall Γ m e1 e2 P P' A B,
-    d_pat mode_tc Γ e2 P ->
-    d_refine_syn nil Γ P P' ->
-    d_typing (mode_fn m) Γ e1 (typ_arrow A B) ->
-    d_typing mode_tc Γ e2 A ->
+    d_typing m Γ (exp_abs_anno (inh_color A) e) (typ_arrow (syn_color A) B)
+| d_typing__app : forall Γ m e1 e2 P P' B,
+    (* paper App: pati N syn{P} ⟹ inh{P} ⇝ bid{A} ⟹
+       M : bid{A}→bid{B} ⟹ N : inh{A} ⟹ (M N) : bid{B}.
+       One colourless skeleton base [P : ctyp]: [d_pat] reads its
+       [syn] painting, [d_refine_syn] its [inh] painting. The
+       refinement output [P' : typ] IS the function's argument type
+       ([bid{A}]); the argument is checked at [inh{A}], the [inh]
+       painting of [P']'s erasure: [inh_color (erase P')]. *)
+    d_pat mode_tc Γ e2 (syn_color P) ->
+    d_refine_syn nil Γ (inh_color P) P' ->
+    d_typing (mode_fn m) Γ e1 (typ_arrow P' B) ->
+    d_typing mode_tc Γ e2 (inh_color (erase P')) ->
     d_typing m Γ (exp_app e1 e2) B
 
 with d_pat :
@@ -615,8 +889,11 @@ with d_pat :
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat mode_tc Γ (exp_abs_anno A e) (typ_tophole (typ_arrow A Q))
 | d_pat__app : forall Γ m e1 e2 P P' Q,
-    d_pat mode_tc Γ e2 P ->
-    d_refine_syn nil Γ P P' ->
+    (* paper App (pattern side): one colourless skeleton base [P];
+       [d_pat] reads its [syn] painting, [d_refine_syn] its [inh]
+       painting; [P'] is the refinement output / function arg. *)
+    d_pat mode_tc Γ e2 (syn_color P) ->
+    d_refine_syn nil Γ (inh_color P) P' ->
     d_typing (mode_fn m) Γ e1 (typ_arrow P' Q) ->
     d_pat m Γ (exp_app e1 e2) Q
 .

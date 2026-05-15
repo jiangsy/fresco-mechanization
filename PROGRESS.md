@@ -17,7 +17,12 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 if the admits are "rationale-documented" or "research-grade". Track-level claims
 should be falsifiable by `grep -c "Admitted\." <file>`: if it's non-zero, it's not 🟢.
 
-Current per-file `Admitted.` count (run `grep -c "^Admitted\." mechanization/frost/**/*.v`):
+⚠️ **STALE as of 2026-05-15** — the build is RED mid proof-repair
+(see "colour re-encoding" below). The counts below are the
+*pre-re-encoding* snapshot; they are the target the proof repair
+restores, not the current state. Re-measure once the build is green.
+
+Per-file `Admitted.` count (pre-re-encoding snapshot):
 
 | File | Admits |
 |---|---|
@@ -31,6 +36,138 @@ Current per-file `Admitted.` count (run `grep -c "^Admitted\." mechanization/fro
 | `frost/algo/prop_soundness.v` | 3 |
 | `frost/algo/prop_completeness.v` | 3 |
 | **Total** | **19** (was 21 — D10 and `d_typing_sub_compose` fully closed 2026-05-13) |
+
+## ⚠️ ACTIVE: colour re-encoding of the rule definitions (2026-05-15)
+
+The rule definitions were re-encoded around a genuine **colourless
+type `ctyp`** (see [DESIGN.md §2.2](DESIGN.md)):
+
+> `ctyp` = `typ`'s shape with the three `forall` flavours collapsed to
+> one neutral binder `ctyp_all` — the *free equivalence class* of
+> coloured types. `syn_color`, `inh_color : ctyp -> typ` paint a
+> colourless base; `erase : typ -> ctyp` projects onto the class.
+> Where the paper writes `syn{A}` / `inh{A}` over a meta-symbol, the
+> rule quantifies one base `C : ctyp` and writes `syn_color C` /
+> `inh_color C`. Different-colour occurrences share the base `C`;
+> same-colour occurrences are the same term. No `is_syn_typ` /
+> `is_inh_typ` predicates, no shape-equality premises.
+
+Added to `def_extra.v`: the `ctyp` inductive (hand-written, 9
+constructors, **no lngen infrastructure** — never opened in a rule,
+never in `exp`), and the `syn_color` / `inh_color` / `erase`
+Fixpoints. The old `syn_color_*` structural lemmas were removed (they
+need `ctyp`'s binder lemmas and move to the proof layer).
+
+**Rules re-encoded** (`def_extra.v` + `prop_typing.v` `_gen` mirrors):
+
+| Rule | Was | Now (`ctyp` base) |
+|---|---|---|
+| `d_typing__var` | concluded `syn_color A` (transformation patch) | concludes `A : typ` directly — input read-back; `A` is already `syn`-painted by the context invariant |
+| `d_typing__anno` | one var `A` (`is_inh_typ`) for premise + term + conclusion | base `A : ctyp`: premise + term annotation `inh_color A`, conclusion `syn_color A` |
+| `d_typing__abs` | one var `A` (`is_inh_typ`) for context binding + conclusion | base `A : ctyp`: context binds `syn_color A`, conclusion arg `inh_color A` |
+| `d_typing__abs_anno` | concluded `typ_arrow (syn_color A) B` | base `A : ctyp`: context binds `syn_color A`, conclusion arg `syn_color A`, term carries `inh_color A` |
+| `d_typing__app` | one var `P` for `d_pat` + `d_refine_syn`; `P'` dangling; separate `A` for function arg | base skeleton `P : ctyp`: `d_pat` at `syn_color P`, `d_refine_syn` at `inh_color P`; refinement output `P' : typ` IS the function arg; arg checked at `inh_color (erase P')` |
+| `d_pat__app` | one var `P` for `d_pat` + `d_refine_syn` | base skeleton `P : ctyp`: `syn_color P` / `inh_color P` |
+| `d_sub__infer` | `is_syn_typ A` only | bases `T`, `A : ctyp`: `d_consis nil Γ (syn_color T) (syn_color A) → d_sub mode_ti nil Γ (syn_color T) (syn_color A)` |
+| `d_sub__check` | `is_inh_typ A`, ad-hoc `<>` guardedness, no constraint on `T` | bases `T`, `A : ctyp`: `guarded_typ (syn_color T)`, `d_consis Δ Γ (syn_color T) (inh_color A) → d_sub mode_tc Δ Γ (syn_color T) (inh_color A)` |
+
+`_gen` mirrors (`d_typing_gen__{var,anno,abs,abs_anno,app}`,
+`d_sub_gen__{infer_gen,check_gen}`) re-encoded identically.
+
+**Status: definitions done; proof repair IN PROGRESS.**
+
+- ✅ `frost/decl/def_extra.v` compiles. Now also carries the **`ctyp`
+  locally-nameless infrastructure** (`open_ctyp_wrt_ctyp` /
+  `ftvar_in_ctyp` / `subst_ctyp_in_ctyp`, hand-written mirroring
+  lngen's `typ` operations) plus the `syn_color` / `inh_color` /
+  `erase` commutation + round-trip lemmas (`syn_color_open_ctyp`,
+  `erase_open_typ`, `*_subst_ctyp`, `erase_syn_color`, …) and the
+  `d_wf_typ_inh_color_syn_color` / `_syn_color_inh_color` recolour
+  lemmas. This is the foundation the proof repair needs.
+- ✅ `frost/decl/prop_wellformed.v` — fully repaired, compiles.
+  `d_typing_pat_preserves_wf`'s `__var` / `__anno` / `__abs` /
+  `__abs_anno` / `__app` cases updated to the new rule shapes.
+- 🔄 `frost/decl/prop_subtyping.v` — in progress. Repaired so far:
+  `d_sub_refl_mono`, `d_sub_weakening`, `d_sub_subst_mono` (the
+  `__infer` / `__check` cases now push the mono substitution through
+  the colourings via `mono_subst_syn_color` / `mono_subst_inh_color`).
+  Added helpers: `mono_typ_syn_color_erase`, `mono_typ_inh_color_erase`,
+  `mono_typ_guarded`, `mono_subst_{syn,inh}_color`. Currently stuck at
+  `d_sub_arrow_refl_inner` (needs rework: `inversion` on the new
+  `d_sub__infer` exposes a `ctyp` base, not a raw `typ_arrow`).
+- 🔴 `frost/decl/prop_typing.v` (~4000 lines, the D12 development),
+  `frost/decl/prop_skeleton.v`, `frost/algo/prop_soundness.v`,
+  `frost/algo/prop_completeness.v` — not started.
+
+**Proof-repair shape.** It is *not* purely mechanical hyp-renaming.
+Every `d_sub` / `d_consis` / `d_typing` proof that inverts or inducts
+on the changed rules now meets `syn_color` / `inh_color` / `erase`
+under `open` / `subst`, and must reason through the `ctyp`-commutation
+lemmas (e.g. a `d_sub__infer` LHS is `syn_color T` for a `ctyp` `T`,
+not a raw `typ`). `prop_subtyping.v` has ~20 such lemmas;
+`prop_typing.v` is far larger. The `ctyp` infrastructure makes this
+*possible*; it remains a substantial multi-pass effort.
+
+**Why `ctyp` over `typ -> typ` colourings.** With `syn_color`,
+`inh_color : typ -> typ`, the "base" was just an ordinary `typ` whose
+forall-colours were ignored junk — no genuine colourless type. `ctyp`
+is the honest version: a real colourless type, and `erase` makes
+"convertible" precise (`A`, `B` convertible ⟺ `erase A = erase B`).
+It is kept lightweight — hand-written, no lngen — because it is never
+opened in a rule, never in `exp`, never a judgement index; it appears
+only as a shared base variable and as `erase`'s codomain.
+
+### Sub-task: flex vars removed from the `typ` AST (2026-05-15, IN PROGRESS)
+
+Following the `ctyp` cleanup, the same principle was applied to `typ`:
+an algorithmic flex variable is morally an ordinary type variable
+(`typ_var_f`), distinguished as rigid / flex-mono / flex-poly purely
+by its binding in the algorithmic context `Θ` (`abind_tvar` /
+`abind_flex_mono` / `abind_flex_mono_def` / `abind_flex_poly_def`) —
+not by a distinct `typ` constructor.
+
+- ✅ **`language.ott`** — `typ_var_flex_mono` / `typ_var_flex_poly`
+  productions removed from the `typ` grammar.
+- ✅ **`def_ott.v` + `prop_ln.v`** — regenerated via `make ott lngen`
+  (the proper `ott` / `lngen-new` toolchain). `typ` now has 9
+  constructors; `prop_ln.v` has zero flex references. Both compile.
+- ✅ **`frost/decl/def_extra.v`** — `erase`'s two junk flex cases
+  removed (now a clean total function over 9 constructors). The
+  shared `frost/def_extra.v`, `notations.v`, and `frost/decl/def_extra.v`
+  all compile.
+- ✅ **`frost/algo/def_extra.v`** — fully rewritten and **compiles**.
+  Flex vars are now `typ_var_f X`; flex-ness is read from `Θ` via
+  explicit `binds X abind_* Θ` premises. The five purely-syntactic
+  side judgements that distinguished flex-by-constructor were threaded
+  with `Θ` (option **A**): `a_non_flex` / `a_non_flex_poly` /
+  `a_guess_mono` / `a_guess_mono_suffix` gained an `aenv` argument;
+  `a_pre_sub` / `a_pre_join` gained a leading `aenv`. Generic
+  `typ_var_f` rules (`a_guarded__var`, `a_pre_sub__var`, …) gained
+  `binds X abind_tvar Θ` to stay disjoint from the flex rules;
+  `a_guess_mono__var` now covers rigid + flex-mono via
+  `a_non_flex_poly`. `monovar` / `polyvar` are still emitted by `ott`
+  as `var` aliases (the algorithmic `abind` keys flex entries by
+  plain `atom` already, so nothing further was needed there).
+- 🔴 **`frost/algo/prop_soundness.v` / `prop_completeness.v`** — not
+  yet adapted to the rewritten algorithmic defs (deferred proof
+  repair).
+
+**Follow-ups (not part of this re-encoding):**
+
+1. **`ctyp` proof-layer infrastructure.** The removed `syn_color_*`
+   lemmas (open / ftvar / wf / `is_syn_typ`) plus the `erase`
+   round-trips (`erase (syn_color C) = C`, etc.) must be re-derived;
+   this needs minimal `ctyp` binder lemmas (`open_ctyp`, `ftvar`).
+2. **`d_consis__forall_syn_tagged`** (and `d_consis_gen` mirror): reads
+   `typ_all_etag → typ_all_col colour_syn`, matching the paper's
+   `eqForallTagSynErasure`. The genuine `eqForallTagSyn`
+   (tag-preserving, `syn{foralltag} → syn{foralltag}`) seems absent —
+   needs verification.
+3. **`d_pat__abs` / `d_pat__abs_anno` / `d_pat__anno` / `d_pat__abs_*_check`**
+   were NOT re-encoded — their paper (pattern-inference) forms were not
+   verified in this pass.
+4. **Algorithmic rules** (`frost/algo/`, `a_typing` / `a_sub` / …) were
+   NOT re-encoded — same review needed there if they share the issue.
 
 ## Paper → Coq Mapping
 
@@ -61,7 +198,7 @@ syntax-directed restatement).
 | D9 | Consistency Transitivity | [syntax-directed.tex:146](../paper/sections/syntax-directed.tex#L146) (= paper Lemma B.2) | `d_consis_compose` [`prop_subtyping.v:318`](frost/decl/prop_subtyping.v#L318):<br>`d_consis Δa Γ T A → d_consis Δb Γ A B → list_disjoint Δa Δb → ∃ Δc, Permutation Δc (Δa ++ Δb) ∧ d_consis Δc Γ T B` | 🟢 mod Permutation — arrow case interleaves segments; paper writes "Δ1, Δ2" as set union |
 | D10 | Consistency-Subtyping Transitivity / Consistency extends subtyping | [syntax-directed.tex:161](../paper/sections/syntax-directed.tex#L161) = [proofs.tex:51](../paper/sections/proofs.tex#L51) | `d_consis_extends_d_sub` [`prop_subtyping.v:529`](frost/decl/prop_subtyping.v#L529):<br>`d_consis Δ Γ T A → d_sub M Δ' Γ A B → list_disjoint Δ Δ' → (M = mode_ti → Δ = nil) → (T not etag/plain) → ∃ Δc, Permutation Δc (Δ ++ Δ') ∧ d_sub M Δc Γ T B` | 🟢 **FULLY Qed in original general form** (no narrowing). All 6 d_sub cases closed: `__infer` / `__check` directly; `__forall_l_*` vacuously via Hc inversion; `__arg` via the two structural helpers [`d_sub_not_lhs_typ_all_col`](frost/decl/prop_subtyping.v#L459) and [`d_consis_compose_nil_RHS`](frost/decl/prop_subtyping.v#L484); `__forall_r` via [`d_sub_subst_mono`](frost/decl/prop_subtyping.v#L274) alpha-renaming (pick fresh X₀, get IH at X₀ giving canonical Δc, then rename X₀ → X' for the cofinite premise via mono substitution with B = typ_var_f X'). |
 | D11 | Subtyping Transitivity | [syntax-directed.tex:249](../paper/sections/syntax-directed.tex#L249) | — | 🔴 not separately mechanized; subsumed by D1 + D10 at use sites |
-| D12 | Generalised General Subsumption | [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343) | `d_typing_general_subsumption_gen` [`prop_typing.v`](frost/decl/prop_typing.v):<br>`d_typing_gen m_orig Γ e A → is_fn_n_ti m_orig → d_wf_denv Γ → d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B → d_typing_gen (mode_fn_n_subst m_orig m_new) Γ e B` | 🟡 **IN PROGRESS** — the paper's bridge. Restated over the generalised typing `d_typing_gen` (whose `__sub` uses the generalised subtyping `d_sub_gen`, mirroring the paper's syntax-directed `Sub`). `__unit`/`__var`/`__anno`/`__app` CLOSED; `__sub` (m=mode_ti) CLOSED; `__abs`/`__abs_anno` `__refl_mono`+`__forall_r` CLOSED; `__freeze`/`__forall` vacuous. Remaining admits: `__sub` (m=mode_fn), `__abs[_anno]` `__embed`/`__arg`. See "D12 admit map" below. |
+| D12 | Generalised General Subsumption | [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343) | `d_typing_general_subsumption_gen` [`prop_typing.v`](frost/decl/prop_typing.v):<br>`d_typing_gen m_orig Γ e A → is_fn_n_ti m_orig → d_wf_denv Γ → d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B → d_typing_gen (mode_fn_n_subst m_orig m_new) Γ e B` | 🟡 **IN PROGRESS** — the paper's bridge. Restated over the generalised typing `d_typing_gen` (whose `__sub` uses the generalised subtyping `d_sub_gen`, mirroring the paper's syntax-directed `Sub`). `__unit`/`__var`/`__anno`/`__app` CLOSED; `__sub` (both modes) CLOSED; `__abs` `__refl_mono`+`__forall_r`+`__infer_gen`/`__check_gen`/`__arg` CLOSED; `__abs_anno` ALL CLOSED except `__embed` (`__refl_mono`/`__forall_r`/`__infer_gen`/`__check_gen`/`__arg` done — see "AbsAnno made paper-faithful"); `__freeze`/`__forall` vacuous. Remaining admits: `__abs`/`__abs_anno` `__embed` (mechanical replay, unlocks no Qed). See "D12 admit map" below. |
 | D13 | Soundness of Syntax-directed | [syntax-directed.tex:556](../paper/sections/syntax-directed.tex#L556) | — | n/a — mech only has the bidirectional declarative system |
 | D14 | Completeness of Syntax-directed | [syntax-directed.tex:573](../paper/sections/syntax-directed.tex#L573) | — | n/a |
 
@@ -170,7 +307,8 @@ D12 `d_typing_general_subsumption_gen` cases:
 | `__abs` + `__arg` / `__infer_gen` / `__check_gen` | ✅ CLOSED — `d_typing_gen_narrow_consis_head` (narrow body arg type) + body-IH subsumption |
 | `__abs` + `__embed` | 🔴 admit — needs `d_sub` inversion on the `typ_arrow` LHS (4 sub-sub-cases), then same narrowing pattern |
 | `__abs_anno` + `__refl_mono` / `__forall_r` | ✅ CLOSED |
-| `__abs_anno` + `__embed` / `__infer_gen` / `__check_gen` / `__arg` | 🔴 admit — **genuine structural obstacle**: `d_typing_gen__abs_anno`'s annotation IS the arrow's arg type, so it can only produce `typ_arrow A _` — narrowing to `typ_arrow A1 _` (`A1 ≠ A`) is not derivable by the rule. Needs a rule-level rethink, not narrowing. |
+| `__abs_anno` + `__infer_gen` / `__check_gen` / `__arg` | ✅ CLOSED — see "AbsAnno made paper-faithful" below: the rule now produces `syn{A} → B`, and `d_consis_gen_lhs_syn_eq` pins the target arg side back to `syn_color A`, so `d_typing_gen__abs_anno` reconstructs directly (no body-arg narrowing — the annotation is pinned and the body context already binds raw `A`). |
+| `__abs_anno` + `__embed` | 🔴 admit — the structural obstacle is GONE; this is now a pure mechanical replay of the matching `d_sub_gen` subcases after inverting the embedded `d_sub` (`d_consis_lhs_syn_eq` is the `d_consis` analogue). Left as admit only because it unlocks no `Qed` (D12 stays `Admitted` on the symmetric `__abs + __embed` gap regardless). |
 | `__freeze` / `__forall` | ✅ vacuous (mode_tc ∉ `is_fn_n_ti`) |
 
 THE residual concentrated gap: **`d_typing_gen_collapse`** `__sub` case
@@ -215,15 +353,26 @@ is Qed across all 9 cases — the `__var` case closes immediately by
 `syn_color` invariance, no `d_sub_gen` step. This is the lemma D12's
 `__abs`/`__abs_anno`/`__arg` cases need.
 
-Next step — apply `d_typing_gen_narrow_consis_head` to close D12's
-`__abs`/`__abs_anno` (`__embed`/`__infer_gen`/`__check_gen`/`__arg`)
-and `__app` (`__infer_gen`/`__check_gen`) sub-cases. Each reduces to:
-`B_tgt = typ_arrow B1 B2`; reconstruct `d_typing_gen__abs` at the
-right mode (case-split `m_orig` via `inversion Hfn` as in the
-closed `__refl_mono` case), narrow the body's arg type via
-`d_typing_gen_narrow_consis_head`, subsume its result via the body
-IH + the ret-side `d_sub_gen`. Mechanical but ~10 fiddly mode-
-bookkeeping cases.
+**AbsAnno made paper-faithful (this commit).** `d_typing__abs_anno`
+and `d_typing_gen__abs_anno` now conclude `typ_arrow (syn_color A) B`
+(was `typ_arrow A B`) — matching `coloured.tex:684` (`ctyp m Γ
+(λx^{inh A}. M) (syn{A} → B)`). The paper resolves the AbsAnno case
+of D12 by noting *"`A` is still a colourless version of `inh{A'}`"*
+(`syntax-directed.tex:431`): the term annotation is colour-agnostic,
+so `λx^A.M` can be retyped at any same-skeleton arrow-arg. In the
+mechanization `typ` bakes colour in, so `syn_color` is the canonical
+"colourless representative" and the rule pins the arrow-arg to it.
+Two new Qed lemmas — `d_consis_gen_lhs_syn_eq` /
+`d_consis_lhs_syn_eq`: when the LHS is `is_syn_typ`, `d_consis(_gen)`
+is forced to be the identity (no constructor has a `typ_all_col
+colour_syn` LHS — mirrors the paper: `syn{∀α.}` is never a
+`typconsis` LHS). This is exactly what dissolves the old "structural
+obstacle": the target's arg side, being `d_consis_gen`-related to
+the pinned `syn_color A`, must EQUAL it — so `d_typing_gen__abs_anno`
+reconstructs directly with no body-arg narrowing. Fallout was
+contained to the `__abs_anno` cases of `prop_wellformed`,
+`prop_subtyping`, `prop_typing` (D1-split, D12, the two
+`d_typing_abs_anno_value_to_*` helpers).
 
 `d_typing_gen_preserves_wf` and `d_sub_gen_preserves_wf` are now
 fully Qed (mirror `d_typing_pat_preserves_wf` / `d_sub_preserves_wf`

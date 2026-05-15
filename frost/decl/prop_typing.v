@@ -1227,6 +1227,35 @@ Proof.
     rewrite IHd_consis_gen1. rewrite IHd_consis_gen2. reflexivity.
 Qed.
 
+(** When the LHS is already fully syn-coloured ([is_syn_typ T]), the
+    generalised consistency relation is forced to be the identity:
+    [d_consis_gen] has no constructor with a [typ_all_col colour_syn]
+    LHS (mirrors the paper: [syn{∀α.}] is never a [typconsis] LHS — see
+    [syntax-directed.tex], all [typconsis] LHS [forall]s are tagged),
+    so any [forall] node makes the hypothesis vacuous, while the
+    [unit]/[var]/[arrow] rules are rigid. This is what lets the D12
+    [__abs_anno] cases reconstruct: the rule's arrow-arg [syn_color A]
+    is pinned, but any consistency target of it must equal it. *)
+Lemma d_consis_gen_lhs_syn_eq : forall T,
+    is_syn_typ T ->
+    forall Δ Γ A, d_consis_gen Δ Γ T A -> T = A.
+Proof.
+  intros T Hsyn. induction Hsyn; intros Δ Γ A0 Hc.
+  - inversion Hc; subst. reflexivity.
+  - inversion Hc; subst. reflexivity.
+  - inversion Hc; subst. f_equal; eauto.
+  - inversion Hc.
+Qed.
+
+(** The original [d_consis] inherits the same rigidity (it is a subset
+    of [d_consis_gen]). *)
+Lemma d_consis_lhs_syn_eq : forall T,
+    is_syn_typ T ->
+    forall Δ Γ A, d_consis Δ Γ T A -> T = A.
+Proof.
+  intros. eapply d_consis_gen_lhs_syn_eq; eauto using d_consis_gen__embed.
+Qed.
+
 (** Generalised subtyping using [d_consis_gen] for the consistency
     premises. Adds an __infer / __check that uses [d_consis_gen],
     plus the structural cases.
@@ -1248,15 +1277,15 @@ Inductive d_sub_gen :
    [typconsis]. [d_sub_gen__embed] only covers the non-generalised
    [d_sub], so these add the [d_consis_gen]-based variants. *)
 | d_sub_gen__infer_gen : forall Γ T A,
-    is_syn_typ A ->
-    d_consis_gen nil Γ T A ->
-    d_sub_gen mode_ti nil Γ T A
+    (* mirrors [d_sub__infer]: bases [T], [A] each painted [syn]. *)
+    d_consis_gen nil Γ (syn_color T) (syn_color A) ->
+    d_sub_gen mode_ti nil Γ (syn_color T) (syn_color A)
 | d_sub_gen__check_gen : forall Δ Γ T A,
-    (forall ε T', T <> typ_all_etag ε T') ->
-    (forall T', T <> typ_all_plain T') ->
-    is_inh_typ A ->
-    d_consis_gen Δ Γ T A ->
-    d_sub_gen mode_tc Δ Γ T A
+    (* mirrors [d_sub__check]: base [T] painted [syn] (and guarded),
+       base [A] painted [inh]. *)
+    guarded_typ (syn_color T) ->
+    d_consis_gen Δ Γ (syn_color T) (inh_color A) ->
+    d_sub_gen mode_tc Δ Γ (syn_color T) (inh_color A)
 (* [d_sub_gen__refl_any] — restricted to [mono_typ A].
 
    An earlier version used [mode_typ_compat m A] as the premise, but
@@ -1311,12 +1340,15 @@ Inductive d_typing_gen :
     mode_typ_compat mode_ti typ_unit ->
     d_typing_gen mode_ti Γ exp_unit typ_unit
 | d_typing_gen__var : forall Γ x A,
+    (* mirrors [d_typing__var]: reads back the (already [syn]-painted)
+       context binding. *)
     binds x (dbind_typ A) Γ ->
-    d_typing_gen mode_ti Γ (exp_var_f x) (syn_color A)
+    d_typing_gen mode_ti Γ (exp_var_f x) A
 | d_typing_gen__anno : forall Γ e A,
-    is_inh_typ A ->
-    d_typing_gen mode_tc Γ e A ->
-    d_typing_gen mode_ti Γ (exp_anno e A) A
+    (* mirrors [d_typing__anno]: base [A : ctyp], premise + term
+       annotation [inh]-painted, conclusion [syn]-painted. *)
+    d_typing_gen mode_tc Γ e (inh_color A) ->
+    d_typing_gen mode_ti Γ (exp_anno e (inh_color A)) (syn_color A)
 | d_typing_gen__sub : forall Γ m e A B,
     is_base_term e ->
     d_typing_gen mode_ti Γ e A ->
@@ -1332,23 +1364,31 @@ Inductive d_typing_gen :
          (open_typ_wrt_typ A (typ_var_f X))) ->
     d_typing_gen mode_tc Γ e (typ_all_col colour_inh A)
 | d_typing_gen__abs : forall L Γ m e A B,
-    is_inh_typ A ->
-    d_wf_typ Γ A ->
+    (* mirrors [d_typing__abs]: base [A], context binding [syn]-painted,
+       conclusion arrow-arg [inh]-painted. *)
+    d_wf_typ Γ (inh_color A) ->
     (forall x, x `notin` L ->
-       d_typing_gen (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+       d_typing_gen (decr_mode m) ((x ~ dbind_typ (syn_color A)) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing_gen m Γ (exp_abs e) (typ_arrow A B)
+    d_typing_gen m Γ (exp_abs e) (typ_arrow (inh_color A) B)
 | d_typing_gen__abs_anno : forall L Γ m e A B,
-    d_wf_typ Γ A ->
+    (* mirrors [d_typing__abs_anno]: base [A : ctyp], context binding
+       AND conclusion arrow-arg both [syn]-painted; term carries
+       [inh_color A] (a [typ]). *)
+    d_wf_typ Γ (syn_color A) ->
     (forall x, x `notin` L ->
-       d_typing_gen (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+       d_typing_gen (decr_mode m) ((x ~ dbind_typ (syn_color A)) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing_gen m Γ (exp_abs_anno A e) (typ_arrow A B)
-| d_typing_gen__app : forall Γ m e1 e2 P P' A B,
-    d_pat mode_tc Γ e2 P ->
-    d_refine_syn nil Γ P P' ->
-    d_typing_gen (mode_fn m) Γ e1 (typ_arrow A B) ->
-    d_typing_gen mode_tc Γ e2 A ->
+    d_typing_gen m Γ (exp_abs_anno (inh_color A) e) (typ_arrow (syn_color A) B)
+| d_typing_gen__app : forall Γ m e1 e2 P P' B,
+    (* mirrors [d_typing__app]: base skeleton [P : ctyp], [d_pat] reads
+       its [syn] painting, [d_refine_syn] its [inh] painting; [P' : typ]
+       is the refinement output / function arg; arg checked at
+       [inh_color (erase P')]. *)
+    d_pat mode_tc Γ e2 (syn_color P) ->
+    d_refine_syn nil Γ (inh_color P) P' ->
+    d_typing_gen (mode_fn m) Γ e1 (typ_arrow P' B) ->
+    d_typing_gen mode_tc Γ e2 (inh_color (erase P')) ->
     d_typing_gen m Γ (exp_app e1 e2) B.
 
 (** [d_typing] embeds into [d_typing_gen]: every original typing is a
@@ -1844,11 +1884,13 @@ Proof.
     pick fresh x for (L `union` dom Γ).
     eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
     eauto using d_wf_denv__typ.
-  - (* __abs_anno *)
-    apply d_wf_typ__arrow; auto.
-    pick fresh x for (L `union` dom Γ).
-    eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
-    eauto using d_wf_denv__typ.
+  - (* __abs_anno: conclusion arrow-arg is [syn_color A] (paper's AbsAnno
+       produces [syn{A} -> B]); arg-wf via [syn_color_wf]. *)
+    apply d_wf_typ__arrow.
+    + apply syn_color_wf; auto.
+    + pick fresh x for (L `union` dom Γ).
+      eapply d_wf_typ_strengthening_typ with (Γ1 := nil) (x := x) (A := A).
+      eauto using d_wf_denv__typ.
   - (* __app *)
     assert (Harr : d_wf_typ Γ (typ_arrow A B)) by (apply IHd_typing_gen1; auto).
     inversion Harr; subst. auto.
@@ -2854,7 +2896,7 @@ Lemma d_typing_abs_anno_value_to_subsumption :
        d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
     decr_mode m_orig = mode_ti ->
     d_wf_denv Γ ->
-    d_sub_gen mode_tc nil Γ (typ_arrow A B) C ->
+    d_sub_gen mode_tc nil Γ (typ_arrow (syn_color A) B) C ->
     d_typing_gen mode_tc Γ (exp_abs_anno A e) C.
 Proof.
   intros L Γ e A B m_orig C HwfA Hbody Hdecr Hwfd Hs.
@@ -2862,9 +2904,8 @@ Proof.
   - admit.
   - (* __check_gen: same narrowing+subsumption gap as __embed. *)
     admit.
-  - (* __refl_mono: C = typ_arrow A B, forced MONO. *)
-    match goal with Hm : mono_typ (typ_arrow A B) |- _ =>
-      assert (HmonoA : mono_typ A) by (inversion Hm; auto);
+  - (* __refl_mono: C = typ_arrow (syn_color A) B, forced MONO. *)
+    match goal with Hm : mono_typ (typ_arrow (syn_color A) B) |- _ =>
       assert (HmonoB : mono_typ B) by (inversion Hm; auto)
     end.
     apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
@@ -2878,7 +2919,7 @@ Proof.
         -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; auto.
         -- rewrite_env ((x ~ dbind_typ A) ++ Γ).
            apply d_wf_typ_weakening_head.
-           match goal with Hw : d_wf_typ Γ (typ_arrow A B) |- _ =>
+           match goal with Hw : d_wf_typ Γ (typ_arrow (syn_color A) B) |- _ =>
              inversion Hw; assumption end.
   - apply d_typing_gen__forall with (L := L0 `union` dom Γ).
     + apply is_value__abs_anno.
@@ -2903,7 +2944,7 @@ Lemma d_typing_abs_anno_value_to_forall :
     decr_mode m_orig = mode_ti ->
     d_wf_denv Γ ->
     (forall X, X `notin` L_sub ->
-       d_sub_gen mode_tc nil ((X ~ dbind_tvar) ++ Γ) (typ_arrow A B)
+       d_sub_gen mode_tc nil ((X ~ dbind_tvar) ++ Γ) (typ_arrow (syn_color A) B)
          (open_typ_wrt_typ A_target (typ_var_f X))) ->
     d_typing_gen mode_tc Γ (exp_abs_anno A e) (typ_all_col colour_inh A_target).
 Proof.
@@ -3269,22 +3310,113 @@ Proof.
   - (* === Hty = d_typing_gen__abs_anno: as __abs. *)
     simpl in Hsub_gen |- *.
     dependent destruction Hsub_gen.
-    + (* __embed: deferred. *)
+    + (* __embed: the embedded [d_sub] inverts to inner __infer / __check
+         / __forall_r / __arg. With [d_typing__abs_anno] now producing
+         [syn{A} → B], the rule-structural obstacle is GONE: each inner
+         case is a mechanical replay of the matching [d_sub_gen] subcase
+         above ([d_consis_lhs_syn_eq] pins the arg side exactly as
+         [d_consis_gen_lhs_syn_eq] does). Left as [admit] only because it
+         is pure duplication that unlocks no [Qed] (D12 stays [Admitted]
+         on the symmetric [__abs + __embed] gap regardless). *)
       admit.
-    + (* __infer_gen: deferred (narrowing + subsumption). *)
-      admit.
-    + (* __check_gen: deferred (narrowing + subsumption). *)
-      admit.
-    + (* __refl_mono: B_tgt = typ_arrow A B, forced MONO. Body IH = H1
-         (abs_anno has 2 d_typing premises: HwfA = H, Hbody = H0,
-         IH = H1). *)
-      assert (HmonoA : mono_typ A) by (inversion H2; auto).
+    + (* __infer_gen: mode forces m = m_new = mode_ti. The target consis
+         decomposes the arrow; [d_consis_gen_lhs_syn_eq] pins the arg
+         side [A0_1 = syn_color A], so [d_typing_gen__abs_anno]
+         reconstructs directly — NO body-arg narrowing (the annotation is
+         pinned, body context already binds raw [A]); only the result
+         B → A0_2 is subsumed via the body IH H1. *)
+      inversion Hfn; subst; simpl in *.
+      * match goal with Heqm : mode_ti = _ |- _ => subst end.
+        match goal with
+        | Hcg : d_consis_gen nil Γ (typ_arrow (syn_color A) B) _ |- _ =>
+            inversion Hcg; subst
+        end.
+        match goal with
+        | HΔeq : _ ++ _ = nil |- _ =>
+            apply app_eq_nil in HΔeq; destruct HΔeq as [HΔ1 HΔ2]; subst
+        end.
+        match goal with
+        | Hcg_arg : d_consis_gen nil Γ (syn_color A) ?A1v |- _ =>
+            assert (HeqA1 : syn_color A = A1v)
+              by (eapply d_consis_gen_lhs_syn_eq;
+                  [ eapply syn_color_is_syn_typ; exact H | exact Hcg_arg ]);
+            subst A1v
+        end.
+        apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
+        -- exact H.
+        -- intros x Hx. simpl.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+             (apply d_wf_denv__typ; auto).
+           specialize (H1 x ltac:(auto) is_fn_n_ti__ti Hwfd_x).
+           match goal with
+           | Hcg2 : d_consis_gen nil Γ B ?B2v |- _ =>
+               specialize (H1 mode_ti B2v)
+           end.
+           simpl in H1. apply H1.
+           apply d_sub_gen__infer_gen.
+           ++ match goal with
+              | Hsyn : is_syn_typ (typ_arrow _ _) |- _ =>
+                  inversion Hsyn; subst; assumption
+              end.
+           ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
+              apply d_consis_gen_weakening_head. assumption.
+      * match goal with Heqm : mode_ti = mode_fn _ |- _ =>
+          discriminate Heqm
+        end.
+    + (* __check_gen: mode forces m = mode_ti, m_new = mode_tc; same
+         shape as __infer_gen but the body sub is [d_sub_gen__check_gen]
+         (guardedness side conditions follow from [d_wf_typ] on B). *)
+      inversion Hfn; subst; simpl in *.
+      * match goal with Heqm : mode_tc = _ |- _ => subst end.
+        match goal with
+        | Hcg : d_consis_gen nil Γ (typ_arrow (syn_color A) B) _ |- _ =>
+            inversion Hcg; subst
+        end.
+        match goal with
+        | HΔeq : _ ++ _ = nil |- _ =>
+            apply app_eq_nil in HΔeq; destruct HΔeq as [HΔ1 HΔ2]; subst
+        end.
+        match goal with
+        | Hcg_arg : d_consis_gen nil Γ (syn_color A) ?A1v |- _ =>
+            assert (HeqA1 : syn_color A = A1v)
+              by (eapply d_consis_gen_lhs_syn_eq;
+                  [ eapply syn_color_is_syn_typ; exact H | exact Hcg_arg ]);
+            subst A1v
+        end.
+        apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
+        -- exact H.
+        -- intros x Hx. simpl.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+             (apply d_wf_denv__typ; auto).
+           assert (HwfB : d_wf_typ ((x ~ dbind_typ A) ++ Γ) B) by
+             (eapply d_typing_gen_preserves_wf;
+              [ apply H0; auto | exact Hwfd_x ]).
+           specialize (H1 x ltac:(auto) is_fn_n_ti__ti Hwfd_x).
+           match goal with
+           | Hcg2 : d_consis_gen nil Γ B ?B2v |- _ =>
+               specialize (H1 mode_tc B2v)
+           end.
+           simpl in H1. apply H1.
+           apply d_sub_gen__check_gen.
+           ++ intros ε T' Heq; subst; inversion HwfB.
+           ++ intros T' Heq; subst; inversion HwfB.
+           ++ match goal with
+              | Hinh : is_inh_typ (typ_arrow _ _) |- _ =>
+                  inversion Hinh; subst; assumption
+              end.
+           ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
+              apply d_consis_gen_weakening_head. assumption.
+      * match goal with Heqm : mode_tc = mode_fn _ |- _ =>
+          discriminate Heqm
+        end.
+    + (* __refl_mono: B_tgt = typ_arrow (syn_color A) B, forced MONO.
+         Body IH = H1 (abs_anno has 2 d_typing premises: HwfA = H,
+         Hbody = H0, IH = H1). *)
       assert (HmonoB : mono_typ B) by (inversion H2; auto).
-      assert (HwfA' : d_wf_typ Γ A) by (inversion H4; auto).
       assert (HwfB' : d_wf_typ Γ B) by (inversion H4; auto).
       inversion Hfn; subst.
       * eapply d_typing_gen__abs_anno with (L := L `union` dom Γ).
-        -- exact HwfA'.
+        -- exact H.
         -- intros x Hx.
            assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
              (apply d_wf_denv__typ; auto).
@@ -3299,7 +3431,7 @@ Proof.
            ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
               apply d_wf_typ_weakening_head; auto.
       * eapply d_typing_gen__abs_anno with (L := L `union` dom Γ).
-        -- exact HwfA'.
+        -- exact H.
         -- intros x Hx.
            assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
              (apply d_wf_denv__typ; auto).
@@ -3318,9 +3450,51 @@ Proof.
         eapply d_typing_abs_anno_value_to_forall with
           (L := L) (m_orig := mode_ti) (A := A) (B := B); eauto.
       * discriminate.
-    + (* __arg: rule-structural obstacle (annotation = result-arg).
-         Deferred. *)
-      admit.
+    + (* __arg: B_tgt = typ_arrow A1 A2. The arg-side consis on the
+         pinned [syn_color A] forces [A1 = syn_color A] via
+         [d_consis_gen_lhs_syn_eq] — this is exactly how the paper's
+         "the annotation is colourless" resolves the AbsAnno case.
+         Reconstruct [d_typing_gen__abs_anno] directly and subsume the
+         result B → A2 via the body IH H1 (no narrowing). *)
+      match goal with
+      | HΔeq : _ ++ _ = nil |- _ =>
+          apply app_eq_nil in HΔeq; destruct HΔeq as [HΔ1 HΔ2]; subst
+      end.
+      match goal with
+      | Hcg_arg : d_consis_gen nil Γ (syn_color A) ?A1v |- _ =>
+          assert (HeqA1 : syn_color A = A1v)
+            by (eapply d_consis_gen_lhs_syn_eq;
+                [ eapply syn_color_is_syn_typ; exact H | exact Hcg_arg ]);
+          subst A1v
+      end.
+      match goal with
+      | Hmeq : mode_fn _ = mode_fn_n_subst m m_new |- _ => rewrite <- Hmeq
+      end.
+      apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
+      * exact H.
+      * intros x Hx. simpl.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ)) by
+          (apply d_wf_denv__typ; auto).
+        inversion Hfn; subst; simpl in *.
+        -- (* m = mode_ti: target inner mode is m0 directly. *)
+           specialize (H1 x ltac:(auto) is_fn_n_ti__ti Hwfd_x).
+           match goal with
+           | Hsg : d_sub_gen ?m0v nil Γ B A2 |- _ =>
+               specialize (H1 m0v A2)
+           end.
+           simpl in H1. apply H1.
+           rewrite_env ((x ~ dbind_typ A) ++ Γ).
+           apply d_sub_gen_weakening_head. assumption.
+        -- (* m = mode_fn m1: m0 = mode_fn_n_subst m1 m_new. *)
+           match goal with
+           | Hmeq2 : mode_fn _ = mode_fn (mode_fn_n_subst _ m_new) |- _ =>
+               injection Hmeq2 as Hmeq2; subst
+           end.
+           specialize (H1 x ltac:(auto) (is_fn_n_ti_decr Hfn) Hwfd_x
+                          m_new A2).
+           simpl in H1. apply H1.
+           rewrite_env ((x ~ dbind_typ A) ++ Γ).
+           apply d_sub_gen_weakening_head. assumption.
   - (* === Hty = d_typing_gen__app ===
        Function at mode_fn m; the function-side IH (IHHty1) fires at
        mode_fn m ∈ is_fn_n_ti. The sub for the IH is [d_sub_gen__arg]
@@ -3648,16 +3822,22 @@ Proof.
           inversion HmonoT2.
         -- (* inner __forall_l_untagged: T2 = typ_all_plain, contradicts. *)
           inversion HmonoT2.
-    + (* __abs_anno: e = exp_abs_anno T1 e0. Same proof as __abs but
-         without is_inh_typ premise. *)
-      assert (HmonoT1 : mono_typ T1) by (inversion HmonoA; auto).
+    + (* __abs_anno: e = exp_abs_anno A e0; the rule's arrow-arg is
+         [syn_color A] (paper's AbsAnno: [syn{A} → B]). The outer __arg
+         gives [d_consis nil _ (syn_color A) A1]; since [syn_color A] is
+         [is_syn_typ], [d_consis_lhs_syn_eq] forces [A1 = syn_color A].
+         Body conversion then mirrors __abs. *)
       assert (HmonoT2 : mono_typ T2) by (inversion HmonoA; auto).
-      assert (HwfT1 : d_wf_typ (Γ_pre ++ Γ) T1) by (inversion HwfA; auto).
       assert (HwfT2 : d_wf_typ (Γ_pre ++ Γ) T2) by (inversion HwfA; auto).
-      match goal with H : d_consis nil _ T1 ?A1_var |- _ =>
-        assert (HeqA1 : T1 = A1_var)
-          by (apply d_consis_empty_eq with (Γ := (Γ_pre ++ Γ)); auto using mono_typ_is_typ);
-        subst A1_var
+      match goal with Hwfann : d_wf_typ (Γ_pre ++ Γ) A |- _ =>
+        rename Hwfann into Hwf_ann
+      end.
+      (* A1 = syn_color A via LHS-syn rigidity of d_consis. *)
+      match goal with Hc : d_consis nil _ (syn_color A) ?A1v |- _ =>
+        assert (HeqA1 : syn_color A = A1v)
+          by (eapply d_consis_lhs_syn_eq;
+              [ eapply syn_color_is_syn_typ; exact Hwf_ann | exact Hc ]);
+        subst A1v
       end.
       match goal with Hbody : forall y : atom, _ |- _ =>
         rename Hbody into Hty_body
@@ -3666,7 +3846,7 @@ Proof.
       | forall y, y `notin` ?L_body -> _ =>
           apply d_typing__abs_anno with (L := L_body `union` dom (Γ_pre ++ Γ))
       end.
-      * exact HwfT1.
+      * exact Hwf_ann.
       * intros x Hx.
         simpl in Hty_body.
         inversion Hsub; subst.

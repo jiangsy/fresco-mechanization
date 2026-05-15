@@ -50,15 +50,59 @@ Proof.
   intros A H. induction H; constructor; auto.
 Qed.
 
+(** A monotype is colour-free: it round-trips through [erase] / any
+    colouring. (No [forall] / hole nodes, so [syn_color] and
+    [inh_color] are the identity on [erase A].) *)
+Lemma mono_typ_syn_color_erase : forall A,
+    mono_typ A -> syn_color (erase A) = A.
+Proof.
+  intros A H. induction H; simpl; try reflexivity.
+  rewrite IHmono_typ1, IHmono_typ2. reflexivity.
+Qed.
+
+Lemma mono_typ_inh_color_erase : forall A,
+    mono_typ A -> inh_color (erase A) = A.
+Proof.
+  intros A H. induction H; simpl; try reflexivity.
+  rewrite IHmono_typ1, IHmono_typ2. reflexivity.
+Qed.
+
+(** Every monotype is guarded (mono ⊆ {unit, var, arrow}). *)
+Lemma mono_typ_guarded : forall A,
+    mono_typ A -> guarded_typ A.
+Proof. intros A H. destruct H; constructor. Qed.
+
+(** Substituting a *monotype* [B] into a colouring pushes through to a
+    [ctyp]-substitution on the base (via [B = syn_color (erase B)] etc.
+    + the colouring/subst commutation). *)
+Lemma mono_subst_syn_color : forall B X C,
+    mono_typ B ->
+    subst_typ_in_typ B X (syn_color C) = syn_color (subst_ctyp_in_ctyp (erase B) X C).
+Proof.
+  intros B X C Hmono.
+  rewrite <- (mono_typ_syn_color_erase Hmono) at 1.
+  apply syn_color_subst_ctyp.
+Qed.
+
+Lemma mono_subst_inh_color : forall B X C,
+    mono_typ B ->
+    subst_typ_in_typ B X (inh_color C) = inh_color (subst_ctyp_in_ctyp (erase B) X C).
+Proof.
+  intros B X C Hmono.
+  rewrite <- (mono_typ_inh_color_erase Hmono) at 1.
+  apply inh_color_subst_ctyp.
+Qed.
+
 Lemma d_sub_refl_mono : forall Γ A,
     mono_typ A ->
     d_wf_typ Γ A ->
     Γ ⊢[ mode_ti ; nil ] A ⊑ A.
 Proof.
   intros Γ A H Hwf.
+  rewrite <- (mono_typ_syn_color_erase H).
   apply d_sub__infer.
-  - apply mono_typ_is_syn_typ; auto.
-  - apply d_consis_refl_mono; auto.
+  rewrite (mono_typ_syn_color_erase H).
+  apply d_consis_refl_mono; auto.
 Qed.
 
 (** * Weakening for [d_consis] and [d_sub] (used internally). *)
@@ -137,8 +181,12 @@ Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 M Δ T A,
     (Γ1 ++ Γ2 ++ Γ3) ⊢[ M ; Δ ] T ⊑ A.
 Proof.
   intros Γ1 Γ2 Γ3 M Δ T A H. dependent induction H.
-  - apply d_sub__infer; auto. apply d_consis_weakening. exact H0.
-  - apply d_sub__check; auto. apply d_consis_weakening. exact H2.
+  - (* __infer: single [d_consis] premise (post colour re-encoding). *)
+    apply d_sub__infer. apply d_consis_weakening.
+    match goal with Hc : d_consis nil (Γ1 ++ Γ3) _ _ |- _ => exact Hc end.
+  - (* __check: [guarded_typ] + [d_consis] premises. *)
+    apply d_sub__check; auto. apply d_consis_weakening.
+    match goal with Hc : d_consis _ (Γ1 ++ Γ3) _ _ |- _ => exact Hc end.
   - apply d_sub__forall_r with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
@@ -279,18 +327,33 @@ Lemma d_sub_subst_mono : forall Γ1 Γ2 X M Δ T A B,
 Proof.
   intros Γ1 Γ2 X M Δ T A B Hsub HBmono HBwf.
   dependent induction Hsub.
-  - (* __infer *)
+  - (* __infer: LHS/RHS are [syn_color]-painted. The mono subst [B]
+       pushes through to a [ctyp]-subst on the base; then it is a
+       [d_consis] substitution. *)
+    rewrite !mono_subst_syn_color by assumption.
     apply d_sub__infer.
-    + apply is_syn_typ_subst; auto.
-      apply mono_typ_is_syn_typ; auto.
-    + apply d_consis_subst_mono; auto.
-  - (* __check *)
-    apply d_sub__check; auto.
-    + apply subst_typ_not_etag; auto.
-    + apply subst_typ_not_plain; auto.
-    + apply is_inh_typ_subst; auto.
-      apply mono_typ_is_inh_typ; auto.
-    + apply d_consis_subst_mono; auto.
+    rewrite <- !mono_subst_syn_color by assumption.
+    apply d_consis_subst_mono; auto.
+  - (* __check: LHS [syn_color], RHS [inh_color]. *)
+    rewrite mono_subst_syn_color by assumption.
+    rewrite mono_subst_inh_color by assumption.
+    apply d_sub__check.
+    + (* guardedness transfers through the base [ctyp]-substitution:
+         the original [guarded_typ (syn_color T0)] premise forces [T0]
+         to be unit/var/arrow; subst preserves that, except a substituted
+         var becomes the (guarded, mono) [B]. *)
+      match goal with Hg : guarded_typ (syn_color ?T0) |- _ =>
+        destruct T0; simpl in Hg |- *;
+        try solve [constructor];
+        try solve [inversion Hg];
+        (destruct (eq_var X0 X);
+         [ rewrite (mono_typ_syn_color_erase HBmono);
+           apply mono_typ_guarded; assumption
+         | constructor ])
+      end.
+    + rewrite <- mono_subst_syn_color by assumption.
+      rewrite <- mono_subst_inh_color by assumption.
+      apply d_consis_subst_mono; auto.
   - (* __forall_r *)
     apply d_sub__forall_r with
       (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
@@ -911,9 +974,11 @@ Proof.
     apply d_typing__abs_anno with (L := L `union` dom Γ); auto.
     intros x Hx. apply H; auto.
     + apply d_wf_denv__typ; auto.
-    + match goal with
+    + (* body context binds the RAW annotation [A]; the inner B-refl comes
+         from Href on [typ_arrow (syn_color A) B]. *)
+      match goal with
       | Href : d_sub _ nil Γ (typ_arrow ?A0 ?B0) (typ_arrow ?A0 ?B0) |- _ =>
-          rewrite_env ([(x, dbind_typ A0)] ++ Γ);
+          rewrite_env ([(x, dbind_typ A)] ++ Γ);
           apply d_sub_weakening_head;
           apply (d_sub_arrow_refl_inner Href); auto
       end.
