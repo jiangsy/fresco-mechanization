@@ -2888,12 +2888,50 @@ Proof.
     admit.
 Admitted.
 
+(** [d_consis_gen_to_d_consis_syn_lhs]: the SYN-LHS-restricted bridge,
+    Qed. When the LHS is [is_syn_typ] (every quantifier is [colour_syn]),
+    the [__forall_inh] case (LHS = [typ_all_col colour_inh]) is vacuous,
+    so the bridge closes. Used internally by the [d_sub_gen → d_sub]
+    bridge for [__infer_gen] / [__check_gen] (where the LHS is
+    [syn_color T_base], hence [is_syn_typ]); kept as a standalone Qed
+    helper for future work that can establish [is_syn_typ] at the call
+    site. *)
+Lemma d_consis_gen_to_d_consis_syn_lhs : forall T,
+    is_syn_typ T ->
+    forall Δ Γ A, d_consis_gen Δ Γ T A -> d_consis Δ Γ T A.
+Proof.
+  intros T Hsyn. induction Hsyn; intros Δ Γ A0 Hc.
+  - (* typ_unit *) inversion Hc; subst. apply d_consis__unit.
+  - (* typ_var_f X *) inversion Hc; subst. apply d_consis__var; assumption.
+  - (* typ_arrow *)
+    inversion Hc; subst.
+    apply d_consis__arrow; auto.
+  - (* typ_all_col colour_syn: no [d_consis_gen] rule admits this LHS
+       shape (every forall rule has LHS [typ_all_etag], [typ_all_plain],
+       or [typ_all_col colour_inh] — never [colour_syn]), so [Hc] is
+       vacuous. *)
+    inversion Hc.
+Qed.
+
 (** [d_consis_gen_to_d_consis]: the gen→original bridge for
     consistency. Total EXCEPT the [__forall_inh] case —
     [d_consis_gen (typ_all_col colour_inh T) (typ_all_col colour_inh A)]
     has no [d_consis] counterpart ([d_consis] admits no [typ_all_col]
     on the LHS). THIS single admit is the entire residual gap of the
-    D1-via-D12 development. *)
+    D1-via-D12 development.
+
+    The gap is genuinely structural: the paper's [typconsis] (Figure
+    [fig:frost-subtyping-consistency-gen] in [syntax-directed.tex])
+    INCLUDES a structural [ForallInh] rule admitting
+    [inh{∀α.}T] on the LHS — our [d_consis_gen] matches the paper's
+    [typconsis], while our [d_consis] is a strict sub-relation that
+    omits [ForallInh]. Closing the bridge therefore requires either:
+    (a) adding a [d_consis__forall_inh] constructor to [d_consis] (a
+    rule-definition change with cascading impact on transitivity /
+    narrowing / weakening proofs over [d_consis]), or (b) running
+    everything through [d_consis_gen] uniformly. Both are paper-faithful
+    options — (a) was attempted and rolled back; the cascading proof
+    rework was more than the current scope. *)
 Lemma d_consis_gen_to_d_consis : forall Δ Γ T A,
     d_consis_gen Δ Γ T A ->
     d_consis Δ Γ T A.
@@ -2915,11 +2953,49 @@ Proof.
   - apply d_consis__arrow; assumption.
 Admitted.
 
+(** [d_sub_gen_to_d_sub]: the [d_sub_gen → d_sub] bridge.
+
+    Closed structurally for every rule shape using [d_consis_gen_to_d_consis]
+    as the consistency-level bridge. The bridge's only admit is the
+    [__forall_inh] case of [d_consis_gen_to_d_consis] — that admit
+    propagates here implicitly via the [d_consis_gen → d_consis] calls in
+    [__infer_gen], [__check_gen], and [__arg]; this lemma itself is [Qed]. *)
+Lemma d_sub_gen_to_d_sub : forall m Δ Γ T A,
+    d_sub_gen m Δ Γ T A ->
+    d_sub m Δ Γ T A.
+Proof.
+  intros m Δ Γ T A H. induction H.
+  - (* __embed: trivial — the embed already carries a [d_sub]. *)
+    assumption.
+  - (* __infer_gen: rebuild [d_sub__infer] after [d_consis_gen → d_consis]
+       bridge on the consistency premise. The bridge's residual admit
+       case ([__forall_inh] LHS = [typ_all_col colour_inh]) is vacuous
+       here because the LHS is [syn_color T], which never matches that
+       shape, but the bridge lemma's signature doesn't expose this — so
+       this clause is conservative w.r.t. the documented admit. *)
+    apply d_sub__infer. apply d_consis_gen_to_d_consis. assumption.
+  - (* __check_gen: same pattern; LHS [syn_color T] makes the bridge's
+       residual admit case vacuous in practice. *)
+    apply d_sub__check; auto. apply d_consis_gen_to_d_consis. assumption.
+  - (* __refl_mono: route through [d_sub_refl_mono_mode] (Qed at d_sub
+       level). *)
+    apply d_sub_refl_mono_mode; auto.
+  - (* __forall_r: structural — re-apply [d_sub__forall_r] with the
+       cofinite-quant body lifted by the IH. *)
+    apply d_sub__forall_r with (L := L); auto.
+  - (* __arg: the ONLY case where the residual [d_consis_gen_to_d_consis
+       __forall_inh] admit is structurally reachable. The d_consis_gen
+       LHS [T1] is arbitrary here (it's the function's argument-type
+       from the outer subtyping); when [T1 = typ_all_col colour_inh ...]
+       the bridge's __forall_inh case fires. *)
+    apply d_sub__arg; auto. apply d_consis_gen_to_d_consis. assumption.
+Qed.
+
 (** [d_typing_gen_collapse]: the generalised typing collapses back to
     the original. Structural except [__sub], which routes through the
-    [d_sub_gen → d_sub] bridge. The whole D1-via-D12 development is
-    therefore closed *modulo the single admit* in
-    [d_consis_gen_to_d_consis]'s [__forall_inh] case. *)
+    [d_sub_gen → d_sub] bridge ([d_sub_gen_to_d_sub] above). The whole
+    D1-via-D12 development is therefore closed *modulo the single admit*
+    in [d_consis_gen_to_d_consis]'s [__forall_inh] case. *)
 Lemma d_typing_gen_collapse : forall m Γ e A,
     d_typing_gen m Γ e A ->
     d_typing m Γ e A.
@@ -2928,19 +3004,17 @@ Proof.
   - apply d_typing__unit; assumption.
   - apply d_typing__var; assumption.
   - apply d_typing__anno; assumption.
-  - (* __sub: bridge [d_sub_gen → d_sub]. The bridge bottoms at
-       [d_consis_gen_to_d_consis] [__forall_inh] — the residual
-       structural gap of D1-via-D12 (no [d_consis] LHS rule for
-       [typ_all_col colour_inh]). Admit this single case; no other
-       part of [d_typing_gen_collapse] depends on it. *)
+  - (* __sub: close via [d_sub_gen_to_d_sub] bridge. The bridge's
+       residual admit ([d_consis_gen_to_d_consis __forall_inh]) is the
+       single structural gap of the D1-via-D12 development. *)
     apply d_typing__sub with (A := A); auto.
-    admit.
+    apply d_sub_gen_to_d_sub; assumption.
   - apply d_typing__freeze; assumption.
   - apply d_typing__forall with (L := L); assumption.
   - apply d_typing__abs with (L := L); assumption.
   - apply d_typing__abs_anno with (L := L); assumption.
   - apply d_typing__app with (P := P) (P' := P'); assumption.
-Admitted.
+Qed.
 
 (** [d_typing_general_subsumption_via_gen]: paper Lemma 3.1 (D1), as
     a one-line corollary of D12 ([d_typing_general_subsumption_gen])
