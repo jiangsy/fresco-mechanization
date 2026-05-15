@@ -2539,22 +2539,28 @@ Proof.
   - exact Hs.
 Qed.
 
-Lemma d_typing_anno_gen_subsumption : forall Γ e0 Aann A m,
+(** [d_typing_anno_gen_subsumption]: subsume an annotated check-mode
+    typing across a [d_sub_gen]. Post-re-encoding the helper is
+    naturally stated over a [ctyp] base [C] (matching the
+    [d_typing_gen__anno] rule shape): the inner check is at
+    [inh_color C], the synthesised result is at [syn_color C], and the
+    outer [d_sub_gen] subsumes the [syn_color C] conclusion to any [A].
+    The old [typ]-domain statement (`Aann : typ` with [is_inh_typ Aann]
+    plus a [d_sub_gen] from [Aann] to [A]) is unprovable post-re-encoding:
+    the rule produces [syn_color C] not [Aann], so the d_sub_gen
+    composition no longer lines up. *)
+Lemma d_typing_anno_gen_subsumption : forall Γ e0 C A m,
     d_wf_denv Γ ->
-    is_inh_typ Aann ->
-    d_typing_gen mode_tc Γ e0 Aann ->
-    d_sub_gen m nil Γ Aann A ->
-    d_typing_gen m Γ (exp_anno e0 Aann) A.
+    d_typing_gen mode_tc Γ e0 (inh_color C) ->
+    d_sub_gen m nil Γ (syn_color C) A ->
+    d_typing_gen m Γ (exp_anno e0 (inh_color C)) A.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): post-re-encoding,
-     [d_typing_gen__anno] concludes [syn_color A] for the [ctyp] base
-     [A] and requires the term carried in [exp_anno] to be
-     [inh_color A] — neither matches the raw [Aann] of this helper's
-     statement. Restating means routing [Aann] through
-     [is_inh_typ_inh_color_erase] (admitted above) to express
-     [Aann = inh_color (erase Aann)]; admitted for the build-green
-     pass. *)
-Admitted.
+  intros Γ e0 C A m Hwfd Hinner Hs.
+  apply d_typing_gen__sub with (A := syn_color C).
+  - apply is_base_term__anno.
+  - apply d_typing_gen__anno; assumption.
+  - exact Hs.
+Qed.
 
 (** [d_typing_abs_value_to_forall]: when Hty = __abs (a value), lifting
     to typ_all_col colour_inh via __forall_r requires nested recursion
@@ -2711,8 +2717,46 @@ Lemma d_typing_gen_collapse : forall m Γ e A,
     d_typing_gen m Γ e A ->
     d_typing m Γ e A.
 Proof.
-  (* RE-ENCODING ADMIT (2026-05-15): body required restructuring for the [ctyp] re-encoding; admitted for build-green. *)
+  intros m Γ e A H. induction H.
+  - apply d_typing__unit; assumption.
+  - apply d_typing__var; assumption.
+  - apply d_typing__anno; assumption.
+  - (* __sub: bridge [d_sub_gen → d_sub]. The bridge bottoms at
+       [d_consis_gen_to_d_consis] [__forall_inh] — the residual
+       structural gap of D1-via-D12 (no [d_consis] LHS rule for
+       [typ_all_col colour_inh]). Admit this single case; no other
+       part of [d_typing_gen_collapse] depends on it. *)
+    apply d_typing__sub with (A := A); auto.
+    admit.
+  - apply d_typing__freeze; assumption.
+  - apply d_typing__forall with (L := L); assumption.
+  - apply d_typing__abs with (L := L); assumption.
+  - apply d_typing__abs_anno with (L := L); assumption.
+  - apply d_typing__app with (P := P) (P' := P'); assumption.
 Admitted.
+
+(** [d_typing_general_subsumption_via_gen]: paper Lemma 3.1 (D1), as
+    a one-line corollary of D12 ([d_typing_general_subsumption_gen])
+    at [m_orig := mode_ti], threading the original [d_sub] in via
+    [d_sub_gen__embed]. Stays [Admitted] because the body of D12
+    is itself [Admitted] post-re-encoding, and the [d_typing_gen]
+    collapse bottoms at the [d_consis_gen_to_d_consis] [__forall_inh]
+    structural gap. Restored here as documentation of the intended
+    bridge. *)
+Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
+    d_wf_denv Γ ->
+    d_typing mode_ti Γ e A ->
+    d_sub m nil Γ A B ->
+    d_typing m Γ e B.
+Proof.
+  intros Γ e A B m Hwfd Hty Hsub.
+  apply d_typing_gen_collapse.
+  change m with (mode_fn_n_subst mode_ti m).
+  apply d_typing_general_subsumption_gen with (A := A); auto.
+  - apply d_typing_embed_gen; assumption.
+  - apply is_fn_n_ti__ti.
+  - simpl. apply d_sub_gen__embed. exact Hsub.
+Qed.
 
 (** * Phase 2.D.7 — Stability S1 (argument-permutation).
 

@@ -29,13 +29,13 @@ Per-file `Admitted.` count (current, audited 2026-05-15 post-repair):
 | `frost/decl/prop_basic.v` | 0 | — |
 | `frost/decl/prop_wellformed.v` | 0 | — |
 | `frost/decl/prop_subtyping.v` | 3 | +1 net (was 2 pre-re-encoding; +3 introduced by repair, −2 closed: `is_syn_typ_syn_color_erase`, `is_inh_typ_inh_color_erase`) |
-| `frost/decl/prop_typing.v` | 19 | +10 net (was 9 pre-re-encoding; +14 introduced, −5 closed: see "D12 admit map") |
+| `frost/decl/prop_typing.v` | 18 | +9 net (was 9 pre-re-encoding; +14 introduced, −5 closed via mono+syn_color, −1 closed via signature restatement: `d_typing_anno_gen_subsumption`. The `via_gen` wrapper was also restored as Qed depending on the still-admitted D12 + collapse.) |
 | `frost/decl/prop_skeleton.v` | 2 | — |
 | `frost/algo/def_extra.v` | 0 | — |
 | `frost/algo/notations.v` | 0 | — |
 | `frost/algo/prop_soundness.v` | 3 | — |
 | `frost/algo/prop_completeness.v` | 3 | — |
-| **Total** | **30** | (was 19 pre-re-encoding) |
+| **Total** | **29** | (was 19 pre-re-encoding) |
 
 ## ⚠️ ACTIVE: colour re-encoding of the rule definitions (2026-05-15)
 
@@ -264,7 +264,7 @@ syntax-directed restatement).
 
 | # | Paper lemma | Paper | Coq statement (file:line) | Status |
 |---|---|---|---|---|
-| D1 | General subsumption | [declarative.tex:574](../paper/sections/declarative.tex#L574) | *no top-level corollary in current `prop_typing.v`* — the previous wrapper `d_typing_general_subsumption_via_gen` (and the `_split` variant) was deleted in the 2026-05-15 re-encoding repair pass; the bridge composes `d_typing_embed_gen` (Qed) · `d_typing_general_subsumption_gen` (admitted) · `d_typing_gen_collapse` (admitted), but no single Coq lemma packages it. | 🟡 *blocked at D12* — re-adding the corollary is a one-line change but inherits two admits. So D1's status tracks D12's. |
+| D1 | General subsumption | [declarative.tex:574](../paper/sections/declarative.tex#L574) | `d_typing_general_subsumption_via_gen` [`prop_typing.v:2723`](frost/decl/prop_typing.v#L2723):<br>`d_wf_denv Γ → d_typing mode_ti Γ e A → d_sub m nil Γ A B → d_typing m Γ e B`<br>(restored 2026-05-15 post-repair as a Qed wrapper; bridge: `d_typing_embed_gen` (Qed) · D12 (admitted) · `d_typing_gen_collapse` (admitted)) | 🟡 *blocked at D12* — wrapper is Qed but inherits two admits via dependency on D12 + collapse. Status tracks D12. |
 | D2 | Soundness of subtyping | [declarative.tex:1095](../paper/sections/declarative.tex#L1095) | `d_sub_sound` [`prop_subtyping.v:497`](frost/decl/prop_subtyping.v#L497):<br>`is_typ A → d_sub mode_tc nil Γ A B → d_shallow_sub Γ A B` | 🟡 narrowed with `is_typ A` so LHS is `typ_all_col` flavour (matches `d_shallow_sub` shape) |
 | D3 | No guessing of polytypes | [declarative.tex:1102](../paper/sections/declarative.tex#L1102) | `d_sub_no_guess_uniqueness` [`prop_subtyping.v:607`](frost/decl/prop_subtyping.v#L607):<br>two instantiations `ph1`, `ph2` of same `d_sub` derivation imply `ph1 = ph2` (strict-equality form) | ⚠️ paper-flagged — counter-example inlined (`ph` can absorb into nested `forall_l_tagged` chains); paper revision suggested |
 | D4 | Refinement preserves wf | [declarative.tex:1380](../paper/sections/declarative.tex#L1380) | `d_refine_preserves_wf` [`prop_wellformed.v:766`](frost/decl/prop_wellformed.v#L766):<br>`Ψ ⨟ Γ ⊢ₛₖ P → Ψ ⨟ Γ ⊢ᵣ P ▸ Q → Ψ ⨟ Γ ⊢ₛₖ Q`<br>(coloured variant `d_refine_syn_preserves_wf` [`prop_wellformed.v:931`](frost/decl/prop_wellformed.v#L931) also Qed) | 🟢 |
@@ -337,11 +337,13 @@ consistency relations (`fig:frost-subtyping-consistency-gen`,
   invalidated the prior case map; restoration deferred). The
   supporting helpers (`d_consis_to_d_sub_gen`,
   `d_consis_extends_d_sub_gen_nil`, `d_consis_gen_extends_d_sub_*`,
-  `d_sub_gen_arrow_refl_inner`) are all Qed in the current file.
-- *No top-level D1 corollary.* The previous wrapper
-  `d_typing_general_subsumption_via_gen` was deleted by the
-  2026-05-15 re-encoding repair pass and not re-added (it would
-  inherit two admits).
+  `d_sub_gen_arrow_refl_inner`, `d_typing_anno_gen_subsumption`) are
+  Qed in the current file.
+- `d_typing_general_subsumption_via_gen`
+  ([`:2723`](frost/decl/prop_typing.v#L2723)) — D1 top-level corollary
+  at `m_orig := mode_ti`. Restored 2026-05-15 post-repair as a Qed
+  one-line wrapper; inherits two admits via dependency on D12 +
+  `d_typing_gen_collapse`.
 
 #### Soundness note (resolved)
 
@@ -368,10 +370,11 @@ D12 (`d_typing_general_subsumption_gen`) is **restated over
 cases that were the scattered gen→sub-bridge admits now close in **one
 step** — `d_typing_gen__sub` takes the `d_sub_gen` directly, no bridge.
 
-D1 routes (intended; not currently wired as a single lemma):
+D1 routes via [`d_typing_general_subsumption_via_gen`](frost/decl/prop_typing.v):
 `d_typing → d_typing_gen` (embed, Qed) → D12 (`d_typing_general_subsumption_gen`,
 admitted) → `d_typing_gen → d_typing` (collapse,
-`d_typing_gen_collapse`, admitted).
+`d_typing_gen_collapse`, admitted). The wrapper is Qed but inherits two
+admits via dependency on D12 + collapse.
 
 #### D12 admit map (post-re-encoding, 2026-05-15)
 
@@ -389,6 +392,7 @@ helpers needed for the body — broken down by current closure status:
 | `d_consis_gen_extends_d_sub_nil` | [`prop_typing.v:2200`](frost/decl/prop_typing.v#L2200) | uses the new helper for `__infer` / `__check` |
 | `d_consis_gen_extends_d_sub_gen_nil` | [`prop_typing.v:2254`](frost/decl/prop_typing.v#L2254) | symmetric to the above |
 | `d_sub_gen_arrow_refl_inner` | [`prop_typing.v:2444`](frost/decl/prop_typing.v#L2444) | mirror of `d_sub_arrow_refl_inner` from `prop_subtyping.v` |
+| `d_typing_anno_gen_subsumption` (restated over `ctyp`) | [`prop_typing.v:2542`](frost/decl/prop_typing.v#L2542) | signature restated to take a `ctyp` base `C` (was `typ`, blocked by colour mismatch); body is a one-line `d_typing_gen__sub` + `__anno`. Original signature unprovable post-re-encoding. |
 | `is_syn_typ_syn_color_erase` / `is_inh_typ_inh_color_erase` | [`prop_subtyping.v:81`](frost/decl/prop_subtyping.v#L81) / [`:96`](frost/decl/prop_subtyping.v#L96) | round-trip lemmas; cofinite `all` case via `open_typ_wrt_typ_inj` |
 
 **Helpers still admitted (the bottleneck on re-closing D12):**
@@ -396,7 +400,6 @@ helpers needed for the body — broken down by current closure status:
 | Helper | File:line | Why admitted |
 | --- | --- | --- |
 | `d_typing_gen_lift_mono` | [`prop_typing.v:2496`](frost/decl/prop_typing.v#L2496) | `__app` arg-type-mono not derivable from the rule (same gap as `d_typing_lift_mono`'s `__app`) |
-| `d_typing_anno_gen_subsumption` | [`prop_typing.v:2542`](frost/decl/prop_typing.v#L2542) | post-re-encoding the rule produces `syn_color (erase Aann)`, not `Aann` itself — colour mismatch makes the lemma's literal signature awkward; needs restatement over a `ctyp` base |
 | `d_typing_abs[_anno]_value_to_subsumption` | [`prop_typing.v:2566`](frost/decl/prop_typing.v#L2566) / [`:2585`](frost/decl/prop_typing.v#L2585) | body restructure for the new `__abs[_anno]` shape pending |
 | `d_typing_general_subsumption_gen` | [`prop_typing.v:2681`](frost/decl/prop_typing.v#L2681) | body bulk-admitted post-re-encoding |
 | `d_consis_gen_to_d_consis` | [`prop_typing.v:2698`](frost/decl/prop_typing.v#L2698) | THE residual structural gap — no `d_consis` rule admits `typ_all_col colour_inh` LHS (the `__forall_inh` shape) |
