@@ -871,6 +871,56 @@ Proof.
   - assumption.
 Qed.
 
+(** [syn_color_t] / [inh_color_t] are equivalent to [syn_color ∘ erase]
+    / [inh_color ∘ erase]. The [syn_color_t] form keeps a syntactic
+    match on [typ] for [rewrite] tactics; the [syn_color ∘ erase] form
+    is what the [d_*_gen] rules' [ctyp] base produces. Same value, two
+    presentations — relate them for cross-pollination. *)
+Lemma syn_color_t_syn_color_erase : forall A,
+    syn_color_t A = syn_color (erase A).
+Proof.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1, IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
+Lemma inh_color_t_inh_color_erase : forall A,
+    inh_color_t A = inh_color (erase A).
+Proof.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1, IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
+(** [mono_typ] is preserved by stripping [syn_color_t] / [inh_color_t]
+    paintings: if the painting is mono, so is the underlying type.
+    The non-mono cases ([typ_all_*], [typ_hole], [typ_tophole]) get
+    painted to non-mono shapes ([typ_all_col colour_syn/inh] or
+    [typ_hole]/[typ_tophole]) which contradict the mono premise. *)
+Lemma mono_typ_syn_color_t_inv : forall A,
+    mono_typ (syn_color_t A) -> mono_typ A.
+Proof.
+  induction A; simpl; intro H; try (inversion H; subst).
+  - apply mono_typ__unit.
+  - apply mono_typ__var.
+  - apply mono_typ__arrow; auto.
+Qed.
+
+Lemma mono_typ_inh_color_t_inv : forall A,
+    mono_typ (inh_color_t A) -> mono_typ A.
+Proof.
+  induction A; simpl; intro H; try (inversion H; subst).
+  - apply mono_typ__unit.
+  - apply mono_typ__var.
+  - apply mono_typ__arrow; auto.
+Qed.
+
 (** * Mutual induction principle for d_typing ↔ d_pat. *)
 
 Scheme d_typing_mut := Induction for d_typing Sort Prop

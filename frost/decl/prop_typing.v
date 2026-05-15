@@ -2714,9 +2714,38 @@ Proof.
     admit.
   - (* __check_gen: same. *)
     admit.
-  - (* __refl_mono: target mono; body lift via [d_typing_gen_lift_mono]
-       (Qed except __app). *)
-    admit.
+  - (* __refl_mono: target = typ_arrow (syn_color_t A) B forced mono.
+       From [mono_typ_syn_color_t_inv] we recover mono A; the [ctyp]
+       base for [d_typing_gen__abs_anno] is [erase A], with conclusion
+       arg [syn_color (erase A) = syn_color_t A] (via
+       [syn_color_t_syn_color_erase]). For mono A the body's
+       [(x ~ A)] matches the rule's [(x ~ syn_color (erase A))] via
+       [mono_typ_syn_color_erase]. Body lift mode_ti → mode_tc via
+       [d_typing_gen_lift_mono] (Qed except __app). *)
+    match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+      inversion Hm; subst
+    end.
+    match goal with HmsA : mono_typ (syn_color_t A) |- _ =>
+      assert (HmonoA : mono_typ A)
+        by (apply mono_typ_syn_color_t_inv; auto)
+    end.
+    rewrite syn_color_t_syn_color_erase.
+    rewrite <- (mono_typ_inh_color_erase HmonoA) at 1.
+    apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
+    + rewrite (mono_typ_syn_color_erase HmonoA). assumption.
+    + intros x Hx.
+      assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ))
+        by (apply d_wf_denv__typ; auto).
+      rewrite (mono_typ_syn_color_erase HmonoA).
+      apply d_typing_gen_lift_mono with (A := B); auto.
+      * rewrite <- Hdecr. apply Hbody. auto.
+      * apply d_sub_gen_refl; auto.
+        -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; auto.
+        -- rewrite_env ((x ~ dbind_typ A) ++ Γ).
+           apply d_wf_typ_weakening_head.
+           match goal with HwfA' : d_wf_typ Γ (typ_arrow _ _) |- _ =>
+             inversion HwfA'; assumption
+           end.
   - (* __forall_r: target = typ_all_col colour_inh A_target. Reconstruct
        via [d_typing_gen__forall] (value rule) + recursive IH at each X.
        [exp_abs_anno A e] is_value when [e] is — but the rule requires
