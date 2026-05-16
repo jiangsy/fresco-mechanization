@@ -13,9 +13,9 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
-Require Import src.frost.decl.prop_subtyping.basics.
-Require Import src.frost.decl.prop_subtyping.consis_compose.
-Require Import src.frost.decl.prop_subtyping.consis_extends.
+Require Import src.frost.decl.subtyping.prop_basics.
+Require Import src.frost.decl.subtyping.prop_consis_trans.
+Require Import src.frost.decl.subtyping.prop_consis_sub_trans.
 
 Set Implicit Arguments.
 

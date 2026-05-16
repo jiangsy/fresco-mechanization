@@ -527,7 +527,7 @@ that re-parses the rules. **No paper inconsistency.**
 | Consistency Transitivity (D9 / Lemma B.2) | `d_consis_compose` | Qed mod Permutation |
 | Consistency-Subtyping Transitivity (D10 / paper Lemma B.3) | `d_consis_sub_trans` | Qed (paper-faithful form, `d_wf_typ Γ T` premise added 2026-05-17) |
 | General subsumption (paper:574, D1) | `d_typing_general_subsumption_via_gen` — bridge: `d_typing_embed_gen` (Qed) · D12 (Qed) · `d_typing_gen_collapse` (Qed) | **Qed, closed under the global context** (2026-05-17) |
-| Generalised General Subsumption (D12, Lemma B.5) | `d_typing_general_subsumption_gen` | **Qed, closed under the global context** (2026-05-17). Routes through SPLIT helpers in `abs_subsumption.v` (take `Hbody_at_tc` premise constructed by D12 from its own IHbody). |
+| Generalised General Subsumption (D12, Lemma B.5) | `d_typing_general_subsumption_gen` | **Qed, closed under the global context** (2026-05-17). Routes through SPLIT helpers in `prop_subsumption_aux.v` (take `Hbody_at_tc` premise constructed by D12 from its own IHbody). |
 | `is_{syn,inh}_typ` round-trip through `{syn,inh}_color ∘ erase` | `is_syn_typ_syn_color_erase`, `is_inh_typ_inh_color_erase` | Qed (closed 2026-05-15 post-repair) |
 | No guessing of polytypes (paper:1102) | `d_sub_no_guess_uniqueness` | admitted (paper-flagged) |
 | Validity of skel inference (paper:1981) | `d_pat_validity` | admitted |

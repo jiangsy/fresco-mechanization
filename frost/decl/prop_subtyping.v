@@ -18,10 +18,10 @@ Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 
-Require Export src.frost.decl.prop_subtyping.basics.
-Require Export src.frost.decl.prop_subtyping.consis_compose.
-Require Export src.frost.decl.prop_subtyping.consis_extends.
-Require Export src.frost.decl.prop_subtyping.sub_sound.
+Require Export src.frost.decl.subtyping.prop_basics.
+Require Export src.frost.decl.subtyping.prop_consis_trans.
+Require Export src.frost.decl.subtyping.prop_consis_sub_trans.
+Require Export src.frost.decl.subtyping.prop_sub_sound.
 
 Set Implicit Arguments.
 

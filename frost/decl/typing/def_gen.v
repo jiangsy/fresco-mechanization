@@ -14,7 +14,7 @@ Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_subtyping.
-Require Import src.frost.decl.prop_typing.weakening.
+Require Import src.frost.decl.typing.prop_weakening.
 
 Set Implicit Arguments.
 

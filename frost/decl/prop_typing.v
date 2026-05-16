@@ -17,11 +17,10 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_subtyping.
 
-Require Export src.frost.decl.prop_typing.weakening.
-Require Export src.frost.decl.prop_typing.gen.
-Require Export src.frost.decl.prop_typing.mono_subsumption.
-Require Export src.frost.decl.prop_typing.abs_subsumption.
-Require Export src.frost.decl.prop_typing.d12.
+Require Export src.frost.decl.typing.prop_weakening.
+Require Export src.frost.decl.typing.def_gen.
+Require Export src.frost.decl.typing.prop_subsumption_aux.
+Require Export src.frost.decl.typing.prop_general_subsumption.
 
 Set Implicit Arguments.
 

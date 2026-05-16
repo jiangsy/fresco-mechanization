@@ -123,7 +123,7 @@ Check d_consis_compose.
 
     Adjacent companions:
     - [d_consis_sub_trans_nil] (narrowed Δ = nil corollary).
-    - [d_consis_sub_trans_gen_nil] in [prop_typing/gen.v] — same shape
+    - [d_consis_sub_trans_gen_nil] in [typing/def_gen.v] — same shape
       with [d_sub_gen] on the second relation (still non-gen
       [d_consis] on the first). Closer to paper B.3 in spirit. *)
 Check d_consis_sub_trans.
@@ -283,8 +283,8 @@ Check d_typing_gen_narrow_consis.
       new helper [d_consis_RHS_syn_color_eq] (mirror of
       [d_consis_gen_RHS_syn_color_eq]) to pin the LHS under wf.
     - [d_typing_gen_lift_mono __app]: broken via [Hbody_at_tc]
-      parameter on the 6 TC SPLIT helpers in [abs_subsumption.v]; D12
-      constructs the premise from its own IHbody at [m_new := mode_tc]
+      parameter on the 6 TC SPLIT helpers in [typing/prop_subsumption_aux.v];
+      D12 constructs the premise from its own IHbody at [m_new := mode_tc]
       with [d_sub_gen__refl_mono] on the mono body type.
 
     See [PROGRESS.md] Part 1 / Part 2 for the full audit. *)
