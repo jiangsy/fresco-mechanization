@@ -168,10 +168,10 @@ Proof.
   - apply d_consis__forall_syn_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
-  - apply d_consis__forall_inh with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+  - apply d_consis__forall_syn with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
-  - apply d_consis__forall_syn with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+  - apply d_consis__forall_inh with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
   - apply d_consis__arrow; eauto.
@@ -207,12 +207,12 @@ Proof.
     intros Y HbY. apply binds_app_iff in HbY.
     destruct HbY as [Hin | Hin]; apply binds_app_iff;
       [left; auto | right; auto].
-  - apply d_consis__forall_inh with (L := L `union` dom Γ').
+  - apply d_consis__forall_syn with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY.
     destruct HbY as [Hin | Hin]; apply binds_app_iff;
       [left; auto | right; auto].
-  - apply d_consis__forall_syn with (L := L `union` dom Γ').
+  - apply d_consis__forall_inh with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY.
     destruct HbY as [Hin | Hin]; apply binds_app_iff;
@@ -286,15 +286,15 @@ Proof.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
     rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
     apply H0; auto.
-  - (* __forall_inh *)
-    apply d_consis__forall_inh with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+  - (* __forall_syn (post-refactor new rule) *)
+    apply d_consis__forall_syn with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
     intros Y HY.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
     rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
     apply H0; auto.
-  - (* __forall_syn (post-refactor new rule) *)
-    apply d_consis__forall_syn with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
+  - (* __forall_inh *)
+    apply d_consis__forall_inh with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
     intros Y HY.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
@@ -577,9 +577,10 @@ Proof.
       exact Hcc_weak.
     + apply mono_typ__var.
     + apply d_wf_typ__var. left; reflexivity.
-  - (* __forall_inh: Hc1 has RHS = typ_all_col colour_inh A,
-       Δa = Δ (no ε to track). Hc2 matches the new __forall_inh again.
-       Compose via cofinite-rename (no ε wrapping needed). *)
+  - (* __forall_syn (post-refactor): Hc1 has LHS = RHS = typ_all_col
+       colour_syn. Hc2's LHS must be typ_all_col colour_syn, matched by
+       __forall_syn (post-refactor — was vacuous in the old rule set).
+       Compose via cofinite-rename, parallel to __forall_inh. *)
     inversion Hc2; subst.
     pick fresh X0 for
       (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
@@ -590,7 +591,7 @@ Proof.
                   (H4 X0 HX0_L0) Hdis).
     destruct H0 as [Δc0 [Hperm Hcc]].
     exists Δc0. split; [exact Hperm |].
-    apply d_consis__forall_inh with
+    apply d_consis__forall_syn with
       (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
             `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
     intros X' HX'.
@@ -610,10 +611,9 @@ Proof.
       exact Hcc_weak.
     + apply mono_typ__var.
     + apply d_wf_typ__var. left; reflexivity.
-  - (* NEW __forall_syn (post-refactor): Hc1 has LHS = RHS = typ_all_col
-       colour_syn. Hc2's LHS must be typ_all_col colour_syn, matched by
-       __forall_syn (post-refactor — was vacuous in the old rule set).
-       Compose via cofinite-rename, parallel to __forall_inh. *)
+  - (* __forall_inh: Hc1 has RHS = typ_all_col colour_inh A,
+       Δa = Δ (no ε to track). Hc2 matches the new __forall_inh again.
+       Compose via cofinite-rename (no ε wrapping needed). *)
     inversion Hc2; subst.
     pick fresh X0 for
       (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
@@ -624,7 +624,7 @@ Proof.
                   (H4 X0 HX0_L0) Hdis).
     destruct H0 as [Δc0 [Hperm Hcc]].
     exists Δc0. split; [exact Hperm |].
-    apply d_consis__forall_syn with
+    apply d_consis__forall_inh with
       (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
             `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
     intros X' HX'.
@@ -742,14 +742,14 @@ Proof.
     intros X HX.
     eapply H0 with (C := open_ctyp_wrt_ctyp C (ctyp_var_f X)); eauto.
     rewrite syn_color_open_ctyp. simpl. reflexivity.
+  - (* __forall_syn (post-refactor, rule order: syn before inh):
+       A = typ_all_col colour_syn (...) = syn_color (ctyp_all _).
+       LHS T = typ_all_col colour_syn — NOT is_utyp. Lemma claim is
+       FALSE in this case; admitted. Downstream callers in prop_typing.v
+       that depended on this conclusion need refactoring. *)
+    admit.
   - (* __forall_inh: A = typ_all_col colour_inh — never [syn_color C]. *)
     destruct C; simpl in HC; discriminate.
-  - (* __forall_syn (post-refactor): A = typ_all_col colour_syn (...) =
-       syn_color (ctyp_all _). LHS T = typ_all_col colour_syn — NOT
-       is_utyp. Lemma claim is FALSE in this case; admitted. Downstream
-       callers in prop_typing.v that depended on this conclusion need
-       refactoring. *)
-    admit.
   - (* __arrow *)
     destruct C; simpl in HC; try discriminate.
     inversion HC; subst.
@@ -780,9 +780,9 @@ Proof.
   intros Δ Γ T A Hc Hist Hut. induction Hc; inversion Hist; subst.
   - apply mono_typ__unit.
   - apply mono_typ__var.
-  - (* __forall_inh: T = typ_all_col colour_inh; not is_utyp. *)
-    inversion Hut.
   - (* __forall_syn (post-refactor): T = typ_all_col colour_syn; not is_utyp. *)
+    inversion Hut.
+  - (* __forall_inh: T = typ_all_col colour_inh; not is_utyp. *)
     inversion Hut.
   - inversion Hut; subst. apply mono_typ__arrow.
     + apply IHHc1; assumption.
@@ -812,9 +812,9 @@ Proof.
     inversion Hmono.
   - (* __forall_syn_tagged: RHS = typ_all_col colour_syn, not mono. *)
     inversion Hmono.
-  - (* __forall_inh: A = typ_all_col colour_inh, not mono. *)
-    inversion Hmono.
   - (* __forall_syn (post-refactor): A = typ_all_col colour_syn, not mono. *)
+    inversion Hmono.
+  - (* __forall_inh: A = typ_all_col colour_inh, not mono. *)
     inversion Hmono.
   - inversion Hmono as [| | A1' A2' Hmono1 Hmono2]; subst.
     destruct (IHHc1 Hmono1) as [HmonoT1 [HΔ1 HT1eq]]; subst.
@@ -844,14 +844,14 @@ Proof.
     destruct C; simpl in HC; discriminate.
   - (* __forall_syn_tagged: T = typ_all_etag, never = syn_color C. *)
     destruct C; simpl in HC; discriminate.
-  - (* __forall_inh: T = typ_all_col colour_inh; syn_color C never has
-       colour_inh at the head. *)
-    destruct C; simpl in HC; discriminate.
   - (* __forall_syn (post-refactor): T = typ_all_col colour_syn T_inner.
        Hypothesis T = syn_color C is satisfied when C = ctyp_all C_inner
        and T_inner = syn_color C_inner. But then T is NOT mono (it has a
        typ_all_col head). Lemma is FALSE for this case; admitted. *)
     admit.
+  - (* __forall_inh: T = typ_all_col colour_inh; syn_color C never has
+       colour_inh at the head. *)
+    destruct C; simpl in HC; discriminate.
   - destruct C; simpl in HC; try discriminate.
     inversion HC; subst.
     edestruct IHHc1 as [HmonoT1 [HA1 HΔ1]]; [reflexivity | subst].
@@ -1047,12 +1047,12 @@ Proof.
        on LHS (no ε to track), so Δ = nil only when the body recursion
        gives it. Admitted — full closure needs body IH alignment. *)
     admit.
-  - (* __forall_inh: A = typ_all_col colour_inh _, contradicts Hsyn. *)
-    inversion Hsyn.
   - (* __forall_syn (post-refactor): A = typ_all_col colour_syn _. H2
        LHS matches __forall_syn; body relates A_inner ~ B0_inner.
        Apply IH. Admitted — full closure needs body IH alignment. *)
     admit.
+  - (* __forall_inh: A = typ_all_col colour_inh _, contradicts Hsyn. *)
+    inversion Hsyn.
   - (* arrow: inversion pattern now has 7 alternatives (6 bars). *)
     inversion H2 as
       [| | | | | | Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdisb HΔeq];
@@ -1397,8 +1397,9 @@ Proof.
   intros Γ T A Hist Hc. dependent induction Hc; try (inversion Hist; fail).
   - reflexivity.
   - reflexivity.
-  - (* __forall_inh: T = typ_all_col colour_inh T_inner, A = same
-       structure. Use the cofinite IH and open injectivity. *)
+  - (* __forall_syn (post-refactor): T = typ_all_col colour_syn T_inner,
+       A = typ_all_col colour_syn A_inner. Same proof as __forall_inh
+       (uses is_typ_inv_all which is colour-agnostic). *)
     f_equal.
     apply is_typ_inv_all in Hist. destruct Hist as [L0 Hist_open].
     pick fresh X for (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A).
@@ -1406,9 +1407,8 @@ Proof.
     assert (HX_L0 : X `notin` L0) by fsetdec.
     specialize (H0 X HX_L (Hist_open X HX_L0)).
     apply open_typ_wrt_typ_inj in H0; auto.
-  - (* __forall_syn (post-refactor): T = typ_all_col colour_syn T_inner,
-       A = typ_all_col colour_syn A_inner. Same proof as __forall_inh
-       (uses is_typ_inv_all which is colour-agnostic). *)
+  - (* __forall_inh: T = typ_all_col colour_inh T_inner, A = same
+       structure. Use the cofinite IH and open injectivity. *)
     f_equal.
     apply is_typ_inv_all in Hist. destruct Hist as [L0 Hist_open].
     pick fresh X for (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A).

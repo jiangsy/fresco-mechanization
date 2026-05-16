@@ -439,9 +439,13 @@ Inductive d_consis :
    Paper mapping (syntax-directed.tex:91–122):
    - __forall_inh_tagged  = ForallTagInh (Δ-tracked, δ=ε)
    - __forall_syn_tagged  = ForallTagSynErasure (tag erasure on RHS)
-   - __forall_inh         = ForallInh (structural refl on inh)
    - __forall_syn         = ForallTagSyn untagged variant
-                            (structural refl on untagged syn). *)
+                            (structural refl on untagged syn)
+   - __forall_inh         = ForallInh (structural refl on inh)
+
+   Rule order: tagged first, then syn-paint, then inh-paint. This order
+   matches how the prior 6-rule set's bullets get rewritten (drop
+   _untagged, replace ones in-place). *)
 | d_consis__forall_inh_tagged : forall L Δ Γ ε T A,
     (forall X, X `notin` L ->
        d_consis Δ ((X ~ dbind_tvar) ++ Γ)
@@ -455,18 +459,18 @@ Inductive d_consis :
          (open_typ_wrt_typ T (typ_var_f X))
          (open_typ_wrt_typ A (typ_var_f X))) ->
     d_consis Δ Γ (typ_all_etag ε T) (typ_all_col colour_syn A)
-| d_consis__forall_inh : forall L Δ Γ T A,
-    (forall X, X `notin` L ->
-       d_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
-         (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis Δ Γ (typ_all_col colour_inh T) (typ_all_col colour_inh A)
 | d_consis__forall_syn : forall L Δ Γ T A,
     (forall X, X `notin` L ->
        d_consis Δ ((X ~ dbind_tvar) ++ Γ)
          (open_typ_wrt_typ T (typ_var_f X))
          (open_typ_wrt_typ A (typ_var_f X))) ->
     d_consis Δ Γ (typ_all_col colour_syn T) (typ_all_col colour_syn A)
+| d_consis__forall_inh : forall L Δ Γ T A,
+    (forall X, X `notin` L ->
+       d_consis Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_typ_wrt_typ T (typ_var_f X))
+         (open_typ_wrt_typ A (typ_var_f X))) ->
+    d_consis Δ Γ (typ_all_col colour_inh T) (typ_all_col colour_inh A)
 (* Arrow: linear-tag semantics (paper writes Δ_1, Δ_2 as set union;
    d_wf_ttyp__arrow enforces disjointness analogously). *)
 | d_consis__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,
