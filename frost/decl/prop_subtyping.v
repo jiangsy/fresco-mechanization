@@ -1011,6 +1011,43 @@ Admitted.
     when the inner mode is [mode_ti], Hs's body inverts to [__infer]
     with [d_consis nil Γ A02 B2], and this lemma gives [Δc02 = nil]
     from Hc.right_branch [d_consis Δc02 Γ T02 A02]. *)
+(** Helper: a [d_consis] firing with a [syn_color C] LHS pins the LHS
+    to [is_syn_typ] (structural — [d_consis] rules with [syn_color]-LHS
+    only fire on {unit, var, arrow, typ_all_col colour_syn}, all of
+    which are [is_syn_typ]). Used by [d_consis_extends_d_sub] to
+    discharge an [is_syn_typ] precondition without a [d_wf_typ Γ T] from
+    outside. *)
+Lemma d_consis_lhs_syn_color_is_syn_typ : forall Δ Γ C A,
+    d_consis Δ Γ (syn_color C) A ->
+    is_syn_typ (syn_color C).
+Proof.
+  intros Δ Γ C A Hc.
+  remember (syn_color C) as T eqn:HT.
+  revert C HT.
+  induction Hc; intros C0 HT; subst.
+  - destruct C0; simpl in HT; try discriminate. apply is_syn_typ__unit.
+  - destruct C0; simpl in HT; try discriminate.
+    inversion HT; subst. apply is_syn_typ__var.
+  - destruct C0; simpl in HT; discriminate.
+  - destruct C0; simpl in HT; discriminate.
+  - destruct C0; simpl in HT; try discriminate.
+    inversion HT; subst.
+    inst_cofinites_for is_syn_typ__all.
+    intros X HX.
+    assert (HX_L : X `notin` L) by fsetdec.
+    (* Goal: is_syn_typ (open (syn_color C0) X). H0's conclusion form
+       is also is_syn_typ (open (syn_color C0) X) — apply directly with
+       the body equation derived via syn_color_open_var. *)
+    apply (H0 X HX_L (open_ctyp_wrt_ctyp C0 (ctyp_var_f X))).
+    rewrite syn_color_open_var. reflexivity.
+  - destruct C0; simpl in HT; discriminate.
+  - destruct C0; simpl in HT; try discriminate.
+    inversion HT; subst.
+    apply is_syn_typ__arrow.
+    + eapply IHHc1; reflexivity.
+    + eapply IHHc2; reflexivity.
+Qed.
+
 (** With the new [__forall_inh] rule, the mid type [A] can be
     [typ_all_col colour_inh _] which makes Hc1's Δ non-nil
     (forall_inh_tagged adds ε). The lemma is preserved by adding an
@@ -1031,15 +1068,17 @@ Proof.
   - (* __forall_inh_tagged: A = typ_all_col colour_inh _, contradicts
        Hsyn (is_syn_typ requires colour_syn). *)
     inversion Hsyn.
-  - (* __forall_syn_tagged: A = typ_all_col colour_syn _. POST-REFACTOR:
-       H2 LHS now matches __forall_syn rule, not vacuous. We have Δ = Δ
-       on LHS (no ε to track), so Δ = nil only when the body recursion
-       gives it. Admitted — full closure needs body IH alignment. *)
-    admit.
-  - (* __forall_syn (post-refactor): A = typ_all_col colour_syn _. H2
-       LHS matches __forall_syn; body relates A_inner ~ B0_inner.
-       Apply IH. Admitted — full closure needs body IH alignment. *)
-    admit.
+  - (* __forall_syn_tagged: A = typ_all_col colour_syn _. H2's LHS matches
+       __forall_syn rule (post-refactor). Pick fresh X, apply IH on body. *)
+    inversion H2; subst.
+    inversion Hsyn; subst.
+    pick fresh X for (L `union` L0 `union` L1).
+    eapply H0 with (X := X); auto.
+  - (* __forall_syn: A = typ_all_col colour_syn _. Same pattern. *)
+    inversion H2; subst.
+    inversion Hsyn; subst.
+    pick fresh X for (L `union` L0 `union` L1).
+    eapply H0 with (X := X); auto.
   - (* __forall_inh: A = typ_all_col colour_inh _, contradicts Hsyn. *)
     inversion Hsyn.
   - (* arrow: inversion pattern now has 7 alternatives (6 bars). *)
@@ -1054,7 +1093,7 @@ Proof.
     erewrite IHd_consis1 by eauto.
     erewrite IHd_consis2 by eauto.
     reflexivity.
-Admitted.
+Qed.
 
 (** Paper Lemma D.5 (Consistency extends subtyping) — [paper-ref: lemma:consis-sub].
     The declarative version of the algorithmic "Consistency-Subtyping
@@ -1091,7 +1130,9 @@ Proof.
   - (* d_sub__infer: M = mode_ti, Δ' = nil. POST-REFACTOR: the body
        H : d_consis nil Γ (syn_color T) (syn_color A) no longer pins T
        mono (the new __forall_syn rule allows non-mono LHS), so the
-       chain that derived T0 mono from Hc + Hs is broken. *)
+       chain that derived T0 mono from Hc + Hs is broken. Closure would
+       require adding [d_wf_typ Γ T] premise so [d_consis_gen_RHS_syn_color_eq]
+       (lives in prop_typing.v — forward reference) can pin T0 syn-shape. *)
     admit.
   - (* d_sub__check: M = mode_tc. Same post-refactor mono gap. *)
     admit.
@@ -1147,13 +1188,10 @@ Proof.
     { intro Hm. subst m.
       inversion Hs; subst.
       - (* Hs body: d_consis nil Γ (syn_color T0) (syn_color A0).
-           Derive [is_syn_typ (syn_color T0)] from the body's structure:
-           mono_typ via [d_consis_LHS_syn_color_mono] (LHS = syn_color),
-           then mono ⟹ is_syn_typ via [mono_typ_is_syn_typ]. *)
+           Derive [is_syn_typ (syn_color T0)] from the body's structure
+           via [d_consis_lhs_syn_color_is_syn_typ] (no mono needed). *)
         eapply d_consis_compose_nil_RHS; eauto.
-        (* POST-REFACTOR: cannot derive is_syn_typ without mono premise
-           on syn_color C (the new __forall_syn rule allows non-mono LHS). *)
-        admit.
+        eapply d_consis_lhs_syn_color_is_syn_typ; eauto.
       - match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end. }
     (* Apply recursive IH on the function-result side. *)
     edestruct IHHs as [Δd2 [Hperm2 Hsubres]];

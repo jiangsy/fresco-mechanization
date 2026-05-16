@@ -2057,6 +2057,52 @@ Qed.
     a d_consis. Mirrors [d_consis_extends_d_sub_nil] for the gen
     relation. The signature has [T] after [d_sub_gen] so that
     [induction Hs; intros T] gives a properly T-abstracted IH. *)
+(** Helper: a [d_consis_gen] with a [syn_color]-shaped RHS pins the
+    LHS to [syn_color X] under wf — the [__forall_inh*] / [__forall_syn*]
+    / [__forall_inh] cases of [d_consis_gen] are either vacuous on
+    [syn_color]-shaped RHS (colour mismatch: [syn_color] paints
+    [colour_syn], not [colour_inh]) or LHS-unwf (etag/plain). *)
+Lemma d_consis_gen_RHS_syn_color_eq : forall Γ A X,
+    d_consis_gen nil Γ A (syn_color X) ->
+    d_wf_typ Γ A ->
+    A = syn_color X.
+Proof.
+  intros Γ A X Hcg.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  remember (syn_color X) as A_RHS eqn:HeqA.
+  generalize dependent X.
+  induction Hcg; intros X' HeqA HwfA; subst.
+  - destruct X'; simpl in HeqA; try discriminate. reflexivity.
+  - destruct X'; simpl in HeqA; try discriminate.
+    injection HeqA; intro; subst; reflexivity.
+  - inversion HwfA.
+  - inversion HwfA.
+  - destruct X'; simpl in HeqA; try discriminate.
+    inversion HeqA; subst.
+    inversion HwfA; subst.
+    f_equal.
+    pick fresh X0 for
+      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_ctyp X' `union` dom Γ).
+    assert (HX_L : X0 `notin` L) by fsetdec.
+    assert (HX_L0 : X0 `notin` L0) by fsetdec.
+    assert (HnotinT : X0 `notin` ftvar_in_typ T) by fsetdec.
+    assert (HnotinSC : X0 `notin` ftvar_in_typ (syn_color X')).
+    { rewrite syn_color_ftvar. fsetdec. }
+    pose proof (H0 X0 HX_L eq_refl
+                   (open_ctyp_wrt_ctyp X' (ctyp_var_f X0))) as Heq.
+    rewrite syn_color_open_var in Heq.
+    specialize (Heq eq_refl (H3 X0 HX_L0)).
+    apply (open_typ_wrt_typ_inj T (syn_color X') X0); auto.
+  - destruct X'; simpl in HeqA; discriminate.
+  - destruct X'; simpl in HeqA; try discriminate.
+    injection HeqA; intros HeqA2 HeqA1.
+    apply app_eq_nil in HeqΔ; destruct HeqΔ as [HΔ1 HΔ2]; subst.
+    inversion HwfA; subst.
+    f_equal.
+    + eapply IHHcg1; eauto.
+    + eapply IHHcg2; eauto.
+Qed.
+
 Lemma d_consis_extends_d_sub_gen_nil : forall m Γ A B,
     d_sub_gen m nil Γ A B ->
     forall T,
@@ -2234,68 +2280,8 @@ Qed.
     [d_consis_gen__embed] and land in the new [d_sub_gen__infer_gen] /
     [__check_gen]; [__forall_l_*] are vacuous ([d_consis_gen] has no
     [typ_all_etag]/[typ_all_plain] RHS). *)
-(** Helper: a [d_consis_gen] with a [syn_color]-shaped RHS pins the
-    LHS to [syn_color X] under wf — the [__forall_inh*] / [__forall_syn*]
-    / [__forall_inh] cases of [d_consis_gen] are either vacuous on
-    [syn_color]-shaped RHS (colour mismatch: [syn_color] paints
-    [colour_syn], not [colour_inh]) or LHS-unwf (etag/plain). *)
-Lemma d_consis_gen_RHS_syn_color_eq : forall Γ A X,
-    d_consis_gen nil Γ A (syn_color X) ->
-    d_wf_typ Γ A ->
-    A = syn_color X.
-Proof.
-  intros Γ A X Hcg.
-  remember (@nil atom) as Δ_nil eqn:HeqΔ.
-  remember (syn_color X) as A_RHS eqn:HeqA.
-  generalize dependent X.
-  induction Hcg; intros X' HeqA HwfA; subst.
-  - (* __unit: X' = ctyp_unit. *)
-    destruct X'; simpl in HeqA; try discriminate. reflexivity.
-  - (* __var: X' = ctyp_var_f X. *)
-    destruct X'; simpl in HeqA; try discriminate.
-    injection HeqA; intro; subst; reflexivity.
-  - (* __forall_inh_tagged: A = typ_all_etag (NOT wf). *)
-    inversion HwfA.
-  - (* __forall_syn_tagged: A = typ_all_etag (NOT wf). *)
-    inversion HwfA.
-  - (* __forall_syn (post-refactor): A = typ_all_col colour_syn A_inner.
-       RHS = syn_color X = typ_all_col colour_syn (syn_color X_inner)
-       when X = ctyp_all X_inner. Use cofinite IH on the body relation
-       to derive A_inner = syn_color X_inner via open-inj. *)
-    destruct X'; simpl in HeqA; try discriminate.
-    inversion HeqA; subst.
-    inversion HwfA; subst.
-    f_equal.
-    (* Goal: T = syn_color X' (where X' has been renamed by inversion).
-       H0's IH form: forall X1 ∉ L, nil=nil → forall X0,
-         open (syn_color X') X1 = syn_color X0 → d_wf_typ _ (open T X1) →
-         open T X1 = open (syn_color X') X1.
-       Strategy: pick fresh X0, instantiate IH at X0 with X0_arg = open X' X0
-       (using syn_color_open_var for the equation), then open_typ_wrt_typ_inj. *)
-    pick fresh X0 for
-      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_ctyp X' `union` dom Γ).
-    assert (HX_L : X0 `notin` L) by fsetdec.
-    assert (HX_L0 : X0 `notin` L0) by fsetdec.
-    assert (HnotinT : X0 `notin` ftvar_in_typ T) by fsetdec.
-    assert (HnotinSC : X0 `notin` ftvar_in_typ (syn_color X')).
-    { rewrite syn_color_ftvar. fsetdec. }
-    pose proof (H0 X0 HX_L eq_refl
-                   (open_ctyp_wrt_ctyp X' (ctyp_var_f X0))) as Heq.
-    rewrite syn_color_open_var in Heq.
-    specialize (Heq eq_refl (H3 X0 HX_L0)).
-    apply (open_typ_wrt_typ_inj T (syn_color X') X0); auto.
-  - (* __forall_inh: RHS = typ_all_col colour_inh; but syn_color paints
-       colour_syn ⇒ contradiction. *)
-    destruct X'; simpl in HeqA; discriminate.
-  - (* __arrow *)
-    destruct X'; simpl in HeqA; try discriminate.
-    injection HeqA; intros HeqA2 HeqA1.
-    apply app_eq_nil in HeqΔ; destruct HeqΔ as [HΔ1 HΔ2]; subst.
-    inversion HwfA; subst.
-    f_equal.
-    + eapply IHHcg1; eauto.
-    + eapply IHHcg2; eauto.
-Qed.
+(* [d_consis_gen_RHS_syn_color_eq] moved up before
+   [d_consis_extends_d_sub_gen_nil] which now uses it. *)
 
 Lemma d_consis_gen_extends_d_sub_nil : forall m Γ B C,
     d_sub m nil Γ B C ->
