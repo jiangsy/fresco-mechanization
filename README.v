@@ -275,16 +275,19 @@ Check d_typing_gen_narrow_consis.
     declarative theorems. Run `make coq` then `coqc -R . src README.v`
     (or step through this file in vsrocq) to see the live output.
 
-    Current state (2026-05-17): 2 transitive axioms, both isolated to
-    the helper layer:
-    - [d_typing_gen_lift_mono] — mode-lift on mono types. Admitted at
-      __app (function arg-type [P'] may be polytype; closure requires
-      D12, creating a cycle that needs mutual induction or inlining
-      ~400 lines of SPLIT helpers into D12 to break).
-    - [prop_subtyping.d_consis_sub_trans] — admitted at __check
-      sub-case (post-refactor: the [d_consis__forall_syn] rule allows
-      non-mono LHS, breaking the [T mono → A = T] chain). See CAVEAT
-      under Lemma B.3 in this file. *)
+    Current state (2026-05-17): **0 transitive axioms** — both
+    theorems are "Closed under the global context".
+
+    Closure path:
+    - [d_consis_sub_trans] (Lemma B.3): added [d_wf_typ Γ T] premise +
+      new helper [d_consis_RHS_syn_color_eq] (mirror of
+      [d_consis_gen_RHS_syn_color_eq]) to pin the LHS under wf.
+    - [d_typing_gen_lift_mono __app]: broken via [Hbody_at_tc]
+      parameter on the 6 TC SPLIT helpers in [abs_subsumption.v]; D12
+      constructs the premise from its own IHbody at [m_new := mode_tc]
+      with [d_sub_gen__refl_mono] on the mono body type.
+
+    See [PROGRESS.md] Part 1 / Part 2 for the full audit. *)
 
 Print Assumptions d_typing_general_subsumption_via_gen.
 Print Assumptions d_typing_general_subsumption_gen.

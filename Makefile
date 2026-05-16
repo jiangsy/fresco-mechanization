@@ -25,7 +25,7 @@ PAPER_AUX := ../paper/frost.aux
 # Use `make NJOBS=N coq` (or quick) for parallel compilation. Default 4.
 NJOBS ?= 4
 
-.PHONY: coq quick clean sync-paper-refs
+.PHONY: coq quick clean sync-paper-refs sync-paper-refs-md
 
 %/def_ott.v : %/language.ott
 	ott -i $^ -o $@ ${OTT_FLAGS}
@@ -81,8 +81,14 @@ clean :
 	${MAKE} -f ${COQ_MAKEFILE} clean
 	rm */prop_ln.v */def_ott.v ${COQ_MAKEFILE} ${COQ_MAKEFILE}.conf .FILE_LIST
 
-# Sync `[paper-ref: ...]`-marked comments in .v files with the latest
-# Lemma/Theorem numbers from the compiled paper. Requires paper to be
-# built first (`make -C ../paper` or similar).
+# Sync paper Lemma/Theorem numbers from the compiled paper into:
+#   - `[paper-ref: ...]`-marked comments in .v files
+#   - the auto-managed `<!-- BEGIN paper-refs -->`..`END` block in
+#     PROGRESS.md (label → file:line reference-link definitions)
+# Requires paper to be built first (`make -C ../paper` or similar).
 sync-paper-refs : ${PAPER_AUX}
 	python3 scripts/sync_paper_refs.py
+
+# Same, but only the Markdown block (no .v file edits) — fast.
+sync-paper-refs-md : ${PAPER_AUX}
+	python3 scripts/sync_paper_refs.py --md

@@ -509,14 +509,15 @@ that re-parses the rules. **No paper inconsistency.**
 
 ## 7. Metatheory landmarks (current status; admits ≠ done)
 
-> **Build status (2026-05-15, post-re-encoding partial repair): GREEN.**
-> The colour re-encoding (`ctyp`) and the `typ` flex-var removal
-> changed core rule shapes; the repair pass introduced new admits in
-> `prop_typing.v` (24 at peak, now 19 after the 2026-05-15 post-repair
-> closures) and `prop_subtyping.v` (5 at peak, now 3). The "Status"
-> column below reflects the **current** build. See PROGRESS.md "colour
-> re-encoding" for the diff list and "D12 admit map" for the helper-
-> closure status.
+> **Build status (2026-05-17, post-axiom-elimination push): GREEN.**
+> Both flagship theorems D1 (`d_typing_general_subsumption_via_gen`)
+> and D12 (`d_typing_general_subsumption_gen`) are now **Qed and
+> "Closed under the global context"** — no remaining transitive
+> axioms. The post-2026-05-15 re-encoding admits in `prop_typing.v`
+> are now fully repaired in the D1/D12 chain (other Phase 2.D research-
+> grade admits remain but are not transitively reachable). See
+> `PROGRESS.md` Part 1 for the full mapping and Part 2 for the
+> session-by-session closure log.
 
 | Paper claim | Mechanization | Current status |
 |---|---|---|
@@ -524,9 +525,9 @@ that re-parses the rules. **No paper inconsistency.**
 | Refinement preserves wf (paper:1380) | `d_refine_preserves_wf`, `d_refine_syn_preserves_wf` | Qed |
 | Skeleton wf preservation (paper:1970) | `d_pat_preserves_skel_wf` | Qed (projection) |
 | Consistency Transitivity (D9 / Lemma B.2) | `d_consis_compose` | Qed mod Permutation |
-| Consistency-Subtyping Transitivity (D10 / paper Lemma B.3) | `d_consis_sub_trans` | Qed (paper-faithful form) |
-| General subsumption (paper:574) | *no top-level lemma in current file* — bridge: `d_typing_embed_gen` (Qed) · D12 (admitted) · `d_typing_gen_collapse` (admitted) | blocked at D12 |
-| Generalised General Subsumption (D12, Lemma B.5) | `d_typing_general_subsumption_gen` | admitted (body bulk-admitted post-re-encoding; helpers all Qed) |
+| Consistency-Subtyping Transitivity (D10 / paper Lemma B.3) | `d_consis_sub_trans` | Qed (paper-faithful form, `d_wf_typ Γ T` premise added 2026-05-17) |
+| General subsumption (paper:574, D1) | `d_typing_general_subsumption_via_gen` — bridge: `d_typing_embed_gen` (Qed) · D12 (Qed) · `d_typing_gen_collapse` (Qed) | **Qed, closed under the global context** (2026-05-17) |
+| Generalised General Subsumption (D12, Lemma B.5) | `d_typing_general_subsumption_gen` | **Qed, closed under the global context** (2026-05-17). Routes through SPLIT helpers in `abs_subsumption.v` (take `Hbody_at_tc` premise constructed by D12 from its own IHbody). |
 | `is_{syn,inh}_typ` round-trip through `{syn,inh}_color ∘ erase` | `is_syn_typ_syn_color_erase`, `is_inh_typ_inh_color_erase` | Qed (closed 2026-05-15 post-repair) |
 | No guessing of polytypes (paper:1102) | `d_sub_no_guess_uniqueness` | admitted (paper-flagged) |
 | Validity of skel inference (paper:1981) | `d_pat_validity` | admitted |
