@@ -1384,30 +1384,25 @@ Admitted.
     the [__forall_inh] case: [A = typ_all_col colour_inh A_inner] is
     [is_inh_typ] but NOT [is_syn_typ]. The lemma is unused; admitting
     the broken case keeps the API but flags the issue. *)
+(** [d_consis_lhs_is_syn_typ]: stated for the pre-fix system as "is_inh
+    LHS in d_consis forces is_syn LHS" (via the intersection of
+    d_consis's allowed shapes with is_inh_typ — mono shapes only).
+    POST the [d_consis__forall_inh] addition, this is **FALSE** —
+    counter-example: [A = typ_all_col colour_inh (typ_var_b 0)] has
+    is_inh_typ A and [d_consis nil Γ A A] is derivable via the new
+    [__forall_inh] rule (with the trivial cofinite premise), but
+    is_syn_typ A FAILS at the head ([colour_inh ≠ colour_syn]).
+
+    Kept as ADMITTED with this concrete counter-example as a flag
+    that adding [d_consis__forall_inh] breaks the "is_inh ⇒ is_syn
+    under d_consis" invariant. The lemma has no callers in the
+    current codebase, so this admit propagates nowhere. *)
 Lemma d_consis_lhs_is_syn_typ : forall Γ A B,
     d_consis nil Γ A B ->
     is_inh_typ A ->
     is_syn_typ A.
 Proof.
-  intros Γ A B Hc Hinh.
-  remember (@nil atom) as Δ_nil eqn:HeqΔ.
-  induction Hc; subst.
-  - apply is_syn_typ__unit.
-  - apply is_syn_typ__var.
-  - inversion Hinh.
-  - inversion Hinh.
-  - inversion Hinh.
-  - inversion Hinh.
-  - (* NEW __forall_inh: A = typ_all_col colour_inh A_inner. is_inh_typ
-       holds but is_syn_typ DOES NOT (colour_inh ≠ colour_syn).
-       Counter-example: A = typ_all_col colour_inh (typ_var_b 0),
-       B = typ_all_col colour_inh (typ_var_b 0). The d_consis derivation
-       exists via [__forall_inh] with the reflexive cofinite premise,
-       and is_inh_typ holds, but is_syn_typ fails at the head. *)
-    admit.
-  - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
-    inversion Hinh; subst.
-    apply is_syn_typ__arrow; auto.
+  (* Counter-example: see comment above. *)
 Admitted.
 
 (** [d_consis_rhs_is_inh_typ]: when [d_consis nil Γ A B] holds and
@@ -1971,38 +1966,40 @@ Qed.
 
 (** Lift d_consis to d_sub_gen at a compatible mode. Recurses on the
     structure of mode_typ_compat (which mirrors the type structure). *)
+(** With the new [d_consis__forall_inh] rule, [d_consis nil Γ T A]
+    with A is_inh_typ no longer pins T to mono — T can be
+    [typ_all_col colour_inh _]. We add [is_utyp T] as precondition
+    to rule out the new case structurally; callers supply this from
+    their context (e.g., [mono_typ A] gives mono T via [d_consis_mono_RHS]
+    which gives is_utyp T via [mono_typ_is_utyp]). *)
 Lemma d_consis_to_d_sub_gen : forall m Γ T A,
     mode_typ_compat m A ->
     d_wf_typ Γ T ->
+    is_utyp T ->
     d_consis nil Γ T A ->
     d_sub_gen m nil Γ T A.
 Proof.
-  intros m Γ T A Hcompat HwfT Hc. generalize dependent T.
-  induction Hcompat; intros T HwfT Hc.
-  - (* mode_ti: [mode_typ_compat mode_ti A] gives [is_syn_typ A].
-       [is_syn_typ A → A = syn_color (erase A)] gives the syn-color
-       RHS shape, then [d_consis_LHS_is_utyp_when_RHS_syn_color]
-       supplies the [is_utyp T] precondition required by
-       [d_consis_LHS_mono_wf]. *)
-    assert (HsynA : A = syn_color (erase A)) by
-      (eapply eq_sym; apply is_syn_typ_syn_color_erase; assumption).
-    assert (HutT : is_utyp T) by
-      (eapply d_consis_LHS_is_utyp_when_RHS_syn_color; eauto).
+  intros m Γ T A Hcompat HwfT Hut Hc. generalize dependent T.
+  induction Hcompat; intros T HwfT Hut Hc.
+  - (* mode_ti: mono extraction → T = A. *)
     assert (HmonoT : mono_typ T) by (eapply d_consis_LHS_mono_wf; eauto).
     destruct (d_consis_LHS_syn_color_mono Hc (erase T)
                 (eq_sym (mono_typ_syn_color_erase HmonoT)))
       as [_ [HeqAT _]]; subst.
     apply d_sub_gen__refl_mono; auto.
     apply mode_typ_compat__ti; apply mono_typ_is_syn_typ; auto.
-  - (* mode_tc: A is [is_inh_typ]. With the new [__forall_inh] rule,
-       the d_consis derivation could have [T = typ_all_col colour_inh _]
-       on the LHS — which is NOT mono. So the original chain (mono →
-       syn_color round-trip) fails for the new case. The case is
-       genuinely difficult and is admitted with rationale. *)
-    admit.
+  - (* mode_tc: same mono-extraction chain (is_utyp T rules out
+       the [typ_all_col colour_inh] LHS case). *)
+    assert (HmonoT : mono_typ T) by (eapply d_consis_LHS_mono_wf; eauto).
+    destruct (d_consis_LHS_syn_color_mono Hc (erase T)
+                (eq_sym (mono_typ_syn_color_erase HmonoT)))
+      as [_ [HeqAT _]]; subst.
+    apply d_sub_gen__refl_mono; auto.
+    apply mode_typ_compat__tc; apply mono_typ_is_inh_typ; auto.
   - (* mode_fn: A = typ_arrow A0 B. T from d_consis must be typ_arrow. *)
     inversion Hc; subst.
     inversion HwfT; subst.
+    inversion Hut; subst.
     match goal with
     | H : _ ++ _ = nil |- _ =>
         apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst
@@ -2014,7 +2011,7 @@ Proof.
     apply d_sub_gen__arg.
     + apply d_consis_gen__embed. assumption.
     + apply IHHcompat; auto.
-Admitted.
+Qed.
 
 (** [d_consis_extends_d_consis_gen_nil]: compose d_consis on LHS with
     d_consis_gen at outer Δ = nil. The Δ = nil restriction avoids a
@@ -2123,8 +2120,13 @@ Proof.
       as [_ [HeqA _]]; subst.
     apply d_sub_gen__check_gen; assumption.
   - (* __refl_mono: A = B mono. Use [d_consis_to_d_sub_gen] (compat
-       carried by __refl_mono). *)
-    subst. eapply d_consis_to_d_sub_gen; eauto.
+       carried by __refl_mono). [is_utyp T0] derived via
+       [d_consis_mono_RHS] (mono A pins T0 = A, hence mono T0, hence
+       is_utyp T0). *)
+    subst.
+    edestruct (d_consis_mono_RHS Hc) as [HmonoT0 [_ _]]; eauto.
+    eapply d_consis_to_d_sub_gen; eauto.
+    apply mono_typ_is_utyp; assumption.
   - (* __forall_r: B = typ_all_col colour_inh A0, m = mode_tc.
        Reconstruct via __forall_r with per-X IH. *)
     subst.
