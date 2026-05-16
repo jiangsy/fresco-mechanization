@@ -134,51 +134,9 @@ Proof.
   apply (proj2 d_typing_pat_preserves_wf) with (m := mode_tc) (e := e); auto.
 Qed.
 
-(** * Task 5 — Validity of skeleton inference (paper declarative.tex:1981).
-
-    Paper restatable lemma: if [M] is well-typed AND skeleton-inferable,
-    the inferred skeleton [P] refines an actual type of [M].
-
-    Mechanically the proof would proceed by induction on [d_pat] using:
-    - Refinement reflexivity on guarded skeletons (deferred to Phase 3),
-    - Inversion of [d_pat_sub] / [d_pat_consis] (Task 3 splits help here
-      on the refinement side; the consis-side has the same paper-level
-      issue as Task 1's ghost case),
-    - Anti-symmetry interaction with [d_typing__sub] (Phase 2.C-adjacent).
-    Phase 2.E.5 admit; rationale in PROGRESS.md "Open Admitted". *)
-
-(** Paper Lemma 3.8 (Validity of skeleton inference). [paper-ref: name:"Validity of skeleton inference"] *)
-Theorem d_pat_validity : forall m Γ e P,
-    d_pat m Γ e P ->
-    d_wf_denv Γ ->
-    (exists A, d_typing m Γ e A) ->
-    (exists B, d_typing m Γ e B /\ d_refine nil Γ P B).
-Proof.
-  (* Admitted: see comment above. Depends on Phase 3 refinement reflexivity
-     and on resolving the d_pat_consis ghost-case narrowing. *)
-Admitted.
-
-(** * Task 6 — Safety of skeleton inference (paper declarative.tex:1986).
-
-    Paper restatable lemma (stronger than validity): for ANY well-typed
-    [M], there EXISTS a skeleton inference whose result refines EVERY
-    type of [M].
-
-    The universal "refines every type" claim relies on a principal-
-    skeleton property: the inferred [P] must be a most-precise skeleton
-    among those that match any of [M]'s types. The paper's proof
-    constructs this principal skeleton by induction on the typing
-    derivation; mechanising it would require defining a join operation
-    on skeletons under refinement, which sits at the same maturity as
-    the deferred algorithmic-side lemmas.
-    Phase 2.E.6 admit; see PROGRESS.md. *)
-
-(** Paper Lemma 3.9 (Safety of skeleton inference). [paper-ref: name:"Safety of skeleton inference"] *)
-Theorem d_pat_safety : forall m Γ e,
-    (exists A, d_typing m Γ e A) ->
-    d_wf_denv Γ ->
-    exists P, d_pat m Γ e P /\
-              (forall B, d_typing m Γ e B -> d_refine nil Γ P B).
-Proof.
-  (* Admitted: depends on principal-skeleton construction. *)
-Admitted.
+(** [d_pat_validity] (paper Lemma 3.8) and [d_pat_safety] (paper
+    Lemma 3.9) (REMOVED): these depend on Phase 3 refinement
+    reflexivity and on a principal-skeleton construction (a join
+    operation on skeletons under refinement) which is not in scope
+    for the declarative-properties pass. Removed as unused; future
+    work to be added when Phase 3 infrastructure is in place. *)
