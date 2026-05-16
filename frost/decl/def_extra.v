@@ -534,6 +534,20 @@ Inductive d_consis :
          (open_typ_wrt_typ T (typ_var_f X))
          (open_typ_wrt_typ A (typ_var_f X))) ->
     d_consis Δ Γ (typ_all_col colour_inh T) (typ_all_col colour_inh A)
+(* [paper-mismatch-flag 2026-05-16]: a [d_consis__forall_syn] rule
+   mirroring [__forall_inh] for [typ_all_col colour_syn] LHS would close
+   the D12 __app gap (function-side mode-shift requires [d_consis] refl
+   on a possibly non-inh polytype function-arg type). The mechanization
+   produces such shapes via [syn_color] paint (on [ctyp_all]) and via
+   [d_refine_syn__hole] (with [is_syn_skel] outputs), but the paper's
+   [bid{T}] grammar (syntax-directed.tex:14-19) does NOT admit
+   [typ_all_col colour_syn] (only the tagged/plain pre-paint shapes
+   [syn{∀^ε α.}T] / [syn{∀α.}T]). The 4-case rule set (this file) is
+   kept simpler; adding the 5th forall_syn rule was attempted but
+   reverted (10+ cascading lemma updates needed). Future work: either
+   (a) normalize [syn_color (ctyp_all _)] to [typ_all_plain (...)]
+   instead of [typ_all_col colour_syn (...)], OR (b) add the 5th rule
+   and do the cascade. *)
 (* Arrow: linear-tag semantics (paper writes Δ_1, Δ_2 as set union;
    d_wf_ttyp__arrow enforces disjointness analogously). *)
 | d_consis__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,

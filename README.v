@@ -42,9 +42,10 @@ Check d_sub_sound.
 
 (** ** Lemma 3.3 — No guessing of polytypes.
     Paper [declarative.tex:1102] (paper itself flags as "sketchy").
-    Strict-equality form is provably FALSE — counter-example flagged
-    inline in [prop_subtyping.v]. Status: [Admitted] with documented
-    counter-example. *)
+    Strict-equality form is PROVABLY FALSE — concrete counter-example
+    documented inline in [prop_subtyping.v]. Status: [Admitted] as a
+    paper-claim placeholder (to be tweaked to a weaker form in a
+    future paper-revision pass). *)
 Check d_sub_no_guess_uniqueness.
 
 (** ** Lemma 3.4 — Refinement preserves well-formedness.
