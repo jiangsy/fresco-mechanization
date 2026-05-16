@@ -942,50 +942,38 @@ Qed.
     [d_consis_extends_d_sub_nil] in the file (forward reference). See
     after the latter for the full statement and proof attempt. *)
 
+(** With the new [d_consis__forall_inh] rule, [d_sub__arg]'s d_consis
+    premise admits LHS = [typ_all_col colour_inh _], which is wf but
+    NOT mono. So the lemma needs an additional [is_utyp T] precondition
+    to rule out this case. (Currently unused outside docs; preserved
+    with the strengthened signature for consistency with
+    [d_consis_LHS_mono_wf].) *)
 Lemma d_sub_LHS_mono_wf : forall M Δ Γ T A,
     d_sub M Δ Γ T A ->
     d_wf_typ Γ T ->
+    is_utyp T ->
     mono_typ T.
 Proof.
-  intros M Δ Γ T A Hs Hwf. induction Hs.
-  - (* __infer: LHS = syn_color T. Derive [is_utyp (syn_color T)] from
-       the d_consis premise via [d_consis_LHS_is_utyp_when_RHS_syn_color]
-       (RHS is also syn_color), then [d_consis_LHS_mono_wf]. *)
+  intros M Δ Γ T A Hs Hwf Hut. induction Hs.
+  - (* __infer: LHS = syn_color T. *)
     eapply d_consis_LHS_mono_wf; eauto.
-    eapply d_consis_LHS_is_utyp_when_RHS_syn_color; eauto.
-  - (* __check: LHS = syn_color T. The d_consis premise has
-       LHS = syn_color T directly; use [d_consis_LHS_syn_color_mono] to
-       get mono T from the syn-color shape, then mono ⊆ is_utyp. *)
+  - (* __check: LHS = syn_color T. *)
     eapply d_consis_LHS_mono_wf; eauto.
-    edestruct d_consis_LHS_syn_color_mono as [Hmono _]; eauto.
-    apply mono_typ_is_utyp; assumption.
   - (* __forall_r: T unchanged. Pick fresh X, apply cofinite IH. *)
     pick fresh X for (L `union` dom Γ).
-    apply (H0 X); [fsetdec |].
-    apply d_wf_typ_weakening_head. assumption.
-  - (* __arg: T = typ_arrow T1 T2. Both wf via Hwf inversion. *)
-    inversion Hwf; subst.
+    apply (H0 X); [fsetdec | apply d_wf_typ_weakening_head; assumption |].
+    assumption.
+  - (* __arg: T = typ_arrow T1 T2. is_utyp inversion gives is_utyp on
+       each component; d_wf_typ inversion gives wf on each. *)
+    inversion Hwf; subst. inversion Hut; subst.
     apply mono_typ__arrow.
-    + (* T1's d_consis has arbitrary RHS — but [d_sub__arg]'s structure
-         doesn't pin T1's shape via syn/inh color. However, the result
-         [mono_typ T1] requires ruling out [typ_all_col colour_inh T1]
-         on the LHS of d_consis. This is genuinely difficult here:
-         T1 could be a fully polymorphic argument type. The function-
-         result [IHHs] handles T2 recursively. *)
-      eapply d_consis_LHS_mono_wf; eauto.
-      (* Need is_utyp T1. d_consis with arbitrary RHS — we don't have
-         the syn-color helper. Approach: prove that d_sub__arg's d_consis
-         premise has a [is_utyp T1] consequence via the [d_wf_typ Γ T1]
-         constraint, plus that the d_consis itself constrains T1 to be
-         is_utyp ∪ {typ_all_col colour_inh}. Then d_wf_typ + the new
-         __forall_inh case give two sub-cases. *)
-      admit.
+    + eapply d_consis_LHS_mono_wf; eauto.
     + apply IHHs; assumption.
   - (* __forall_l_tagged: LHS = typ_all_etag, not wf. *)
     inversion Hwf.
   - (* __forall_l_untagged: similar. *)
     inversion Hwf.
-Admitted.
+Qed.
 
 (** [d_sub] is UNINHABITED when the LHS is [typ_all_col c A]. The reason:
     - [d_sub__infer] / [d_sub__check] reduce to [d_consis] with LHS [typ_all_col],
@@ -1178,11 +1166,16 @@ Proof.
     { intro Hm. subst m.
       inversion Hs; subst.
       - (* Hs body: d_consis nil Γ (syn_color T0) (syn_color A0).
-           A (of compose_nil_RHS) = syn_color T0; need is_syn_typ. *)
+           Derive [is_syn_typ (syn_color T0)] from the body's structure:
+           mono_typ via [d_consis_LHS_syn_color_mono] (LHS = syn_color),
+           then mono ⟹ is_syn_typ via [mono_typ_is_syn_typ]. *)
         eapply d_consis_compose_nil_RHS; eauto.
-        eapply d_consis_LHS_is_utyp_when_RHS_syn_color in Hcb; eauto.
-        admit. (* is_syn_typ (syn_color T0) from is_utyp + ?? — needs
-                  a helper from is_utyp + d_wf_typ to is_syn_typ. *)
+        match goal with
+        | H : d_consis _ _ (syn_color ?C) _ |- is_syn_typ _ =>
+            edestruct (d_consis_LHS_syn_color_mono H C eq_refl)
+              as [Hmono [_ _]]
+        end.
+        apply mono_typ_is_syn_typ; assumption.
       - match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end.
       - match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end. }
     (* Apply recursive IH on the function-result side. *)
@@ -1198,7 +1191,7 @@ Proof.
     inversion Hc.
   - (* d_sub__forall_l_untagged: similar. *)
     inversion Hc.
-Admitted.
+Qed.
 (** d_consis_extends_d_sub: post the [d_consis__forall_inh] addition,
     the [d_sub__arg] case inherits a [is_syn_typ A] admit through the
     chain [d_consis_compose_nil_RHS] needs (where A is the mid type

@@ -3027,24 +3027,22 @@ Proof.
 Qed.
 
 (** [d_consis_gen_to_d_consis]: the gen→original bridge for
-    consistency. Total EXCEPT the [__forall_inh] case —
-    [d_consis_gen (typ_all_col colour_inh T) (typ_all_col colour_inh A)]
-    has no [d_consis] counterpart ([d_consis] admits no [typ_all_col]
-    on the LHS). THIS single admit is the entire residual gap of the
-    D1-via-D12 development.
+    consistency. Fully [Qed] post the structural fix.
 
-    The gap is genuinely structural: the paper's [typconsis] (Figure
-    [fig:frost-subtyping-consistency-gen] in [syntax-directed.tex])
-    INCLUDES a structural [ForallInh] rule admitting
-    [inh{∀α.}T] on the LHS — our [d_consis_gen] matches the paper's
-    [typconsis], while our [d_consis] is a strict sub-relation that
-    omits [ForallInh]. Closing the bridge therefore requires either:
-    (a) adding a [d_consis__forall_inh] constructor to [d_consis] (a
-    rule-definition change with cascading impact on transitivity /
-    narrowing / weakening proofs over [d_consis]), or (b) running
-    everything through [d_consis_gen] uniformly. Both are paper-faithful
-    options — (a) was attempted and rolled back; the cascading proof
-    rework was more than the current scope. *)
+    The fix: added [d_consis__forall_inh] to the base [d_consis]
+    inductive (paper-faithful — paper's [typconsis] in
+    [syntax-directed.tex:116] includes a structural [ForallInh] rule
+    admitting [inh{∀α.}T] on the LHS). The cascading impact (transitivity,
+    narrowing, weakening, mono-extraction) was absorbed in this pass:
+    [d_consis_compose] gains 3 cofinite-rename cases (Paper Lemma B.2 /
+    Consistency Transitivity);
+    [d_consis_LHS_mono_wf] gains an [is_utyp T] precondition (rules out
+    the new [typ_all_col colour_inh] LHS case which is wf but not mono);
+    [d_consis_LHS_is_typ_mono] gets the same precondition;
+    [d_consis_mono_RHS] / [d_consis_LHS_syn_color_mono] /
+    [d_consis_compose_nil_RHS] / [d_consis_empty_eq] /
+    [d_sub_not_lhs_typ_all_col] / [d_sub_LHS_mono_wf] each gain a
+    case for the new constructor. *)
 Lemma d_consis_gen_to_d_consis : forall Δ Γ T A,
     d_consis_gen Δ Γ T A ->
     d_consis Δ Γ T A.
