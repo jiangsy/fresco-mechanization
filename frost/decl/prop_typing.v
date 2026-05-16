@@ -2657,6 +2657,47 @@ Proof.
   - destruct C; simpl in HC; discriminate.
 Qed.
 
+(** [d_consis_syn_inh_mono]: when d_consis has a syn-painted LHS and an
+    inh-painted RHS, the LHS must be mono.
+
+    Proof by induction on d_consis. The new __forall_syn rule is vacuous
+    in this context because its RHS shape (typ_all_col colour_syn) cannot
+    equal an inh_color painting (inh_color paints colour_inh exclusively).
+    The other forall cases (tagged / colour_inh LHS) are vacuous via
+    syn_color injectivity (syn_color never produces typ_all_etag or
+    typ_all_col colour_inh). Unit/var/arrow recurse structurally. *)
+Lemma d_consis_syn_inh_mono : forall Γ Δ T A,
+    d_consis Δ Γ (syn_color T) (inh_color A) ->
+    mono_typ (syn_color T).
+Proof.
+  intros Γ Δ T A H.
+  remember (syn_color T) as A_lhs eqn:HeqLHS.
+  remember (inh_color A) as A_rhs eqn:HeqRHS.
+  revert T A HeqLHS HeqRHS.
+  induction H; intros T0 A0 HeqLHS HeqRHS.
+  - (* __unit *) apply mono_typ__unit.
+  - (* __var *) destruct T0; simpl in HeqLHS; try discriminate.
+    inversion HeqLHS; subst. apply mono_typ__var.
+  - (* __forall_inh_tagged: LHS typ_all_etag — syn_color never paints etag. *)
+    destruct T0; simpl in HeqLHS; discriminate.
+  - (* __forall_syn_tagged: LHS typ_all_etag — vacuous as above. *)
+    destruct T0; simpl in HeqLHS; discriminate.
+  - (* __forall_syn (post-refactor): LHS = typ_all_col colour_syn = syn_color
+       (ctyp_all _). RHS = typ_all_col colour_syn — but inh_color paints
+       colour_inh, never colour_syn. Vacuous via HeqRHS inversion. *)
+    destruct A0; simpl in HeqRHS; discriminate.
+  - (* __forall_inh: LHS = typ_all_col colour_inh — syn_color never paints
+       colour_inh. Vacuous via HeqLHS. *)
+    destruct T0; simpl in HeqLHS; try discriminate.
+  - (* __arrow *)
+    destruct T0; simpl in HeqLHS; try discriminate.
+    destruct A0; simpl in HeqRHS; try discriminate.
+    inversion HeqLHS; inversion HeqRHS; subst.
+    apply mono_typ__arrow.
+    + eapply IHd_consis1; reflexivity.
+    + eapply IHd_consis2; reflexivity.
+Qed.
+
 (** [d_typing_abs_value_to_subsumption_d_sub]: companion lemma for
     the d_sub-level closure of [d_typing_abs_value_to_subsumption]'s
     __embed case. Induction on d_sub: __check mirrors __check_gen
@@ -2688,18 +2729,26 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H5 into Hcons1. rename H6 into Hcons2.
-    assert (HmonoB : mono_typ (syn_color T2)).
-    { (* POST-REFACTOR: with the new __forall_syn rule, the d_consis on
-         syn-LHS can have a typ_all_col colour_syn shape that is NOT
-         mono. The original auxiliary recursion no longer proves
-         mono_typ; admitted. *)
-      admit. }
+    (* HmonoB derivation: d_consis_syn_inh_mono works from Hcons2's
+       (syn-LHS, inh-RHS) shape but Hcons2's RHS is the inversion-
+       extracted A2 typ-variable, not literally inh_color _. Bridging
+       requires inverting H3 : typ_arrow A1 A2 = inh_color A to get
+       A = ctyp_arrow A1' A2' with A1 = inh_color A1', A2 = inh_color A2'
+       — but the original proof's subsequent `subst` substitutes A2 →
+       syn_color T2 via HeqA2, breaking the rewrite chain. Closing
+       requires restructuring the proof to defer the subst; admitted
+       as a localised cost of the typ_all_plain refactor. *)
+    assert (HmonoB : mono_typ (syn_color T2)) by admit.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoA) Hcons1) as HeqA1.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoB) Hcons2) as HeqA2.
     subst.
     pose proof (mono_typ_inh_color_erase HmonoA) as HeqA_inh.
     rewrite erase_syn_color in HeqA_inh.
     rewrite <- HeqA_inh at 1.
+    (* Goal at this point: d_typing_gen mode_tc Γ (exp_abs e) (typ_arrow
+       (syn_color T1) (syn_color T2)). We use HA2_eq (which after subst
+       is syn_color T2 = inh_color A2') and HeqA_inh to map between
+       inh_color and syn_color paintings. *)
     apply d_typing_gen__abs with (L := Lvar `union` dom Γ).
     + rewrite HeqA_inh. exact HwfA.
     + intros x0 Hx0.
@@ -2758,8 +2807,8 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H6 into Hcons1. rename H7 into Hcons2.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     rename H2 into Heq_LHS.
     assert (HmonoA : mono_typ Ahead).
     { rewrite Heq_LHS in HmonoT1_syn.
@@ -2868,8 +2917,8 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H6 into Hcons1. rename H7 into Hcons2.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     rename H2 into Heq_LHS.
     (* Heq_LHS: syn_color T1 = inh_color_t Ahead. T1 mono ⇒ Ahead mono
        (since inh_color_t Ahead = inh_color (erase Ahead), and that's
@@ -2959,8 +3008,8 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H6 into Hcons1. rename H7 into Hcons2.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     match goal with H : syn_color T1 = inh_color_t A |- _ =>
       rename H into Heq_LHS
     end.
@@ -3068,8 +3117,8 @@ Proof.
     match goal with H : d_consis _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
     (* Force T1 mono via syn_color T1's mono structure preserved by Hcons1. *)
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     match goal with H : syn_color T1 = inh_color_t A |- _ =>
       rename H into Heq_LHS
     end.
@@ -3116,8 +3165,8 @@ Proof.
     end.
     match goal with H : d_consis_gen _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis_gen _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     match goal with H : syn_color T1 = inh_color_t A |- _ =>
       rename H into Heq_LHS
     end.
@@ -3217,8 +3266,8 @@ Proof.
     end.
     match goal with H : d_consis _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
       as HeqA2.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
@@ -3287,8 +3336,8 @@ Proof.
     end.
     match goal with H : d_consis_gen _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis_gen _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
       as HeqA2.
     pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
@@ -3380,8 +3429,8 @@ Proof.
     end.
     match goal with H : d_consis _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
       as HeqA2.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
@@ -3411,8 +3460,8 @@ Proof.
     end.
     match goal with H : d_consis_gen _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis_gen _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
       as HeqA2.
     pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
@@ -3647,8 +3696,8 @@ Proof.
       inversion Hcons; subst.
       apply app_eq_nil in H1. destruct H1 as [HΔ1 HΔ2]. subst Δ1 Δ2.
       rename H7 into Hcons1. rename H8 into Hcons2.
-      assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-      assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+      assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+      assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
       (* H3: syn_color T1 = syn_color_t A. With T1 mono → A mono. *)
       rename H3 into Heq_LHS.
       assert (HmonoA : mono_typ A).
@@ -3692,8 +3741,8 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H6 into Hcons1. rename H7 into Hcons2.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit. (* POST-REFACTOR: Haux mono-derivation broken by __forall_syn *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
     assert (HmonoA : mono_typ A).
     { rewrite H2 in HmonoT1_syn.
       exact (mono_typ_syn_color_t_inv A HmonoT1_syn). }
