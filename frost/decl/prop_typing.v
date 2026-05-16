@@ -2736,6 +2736,108 @@ Qed.
 
 (** Mono-extraction helpers (used in __check_gen closure). *)
 
+Lemma is_inh_typ_syn_color_mono_pre : forall A C,
+    is_inh_typ A ->
+    A = syn_color C ->
+    mono_typ A.
+Proof.
+  intros A C Hinh. revert C. induction Hinh; intros C HC.
+  - apply mono_typ__unit.
+  - apply mono_typ__var.
+  - destruct C; simpl in HC; inversion HC; subst.
+    apply mono_typ__arrow.
+    + eapply IHHinh1; reflexivity.
+    + eapply IHHinh2; reflexivity.
+  - destruct C; simpl in HC; discriminate.
+Qed.
+
+(** [d_typing_abs_value_to_subsumption_d_sub]: companion lemma for
+    the d_sub-level closure of [d_typing_abs_value_to_subsumption]'s
+    __embed case. Induction on d_sub: __check mirrors __check_gen
+    (mono extraction + reconstruction); __forall_r recurses via the
+    IH on the inner d_sub. Other cases vacuous via mode or shape
+    mismatch. *)
+Lemma d_typing_abs_value_to_subsumption_d_sub :
+  forall Γ Δ T0 C0,
+    d_sub mode_tc Δ Γ T0 C0 ->
+    Δ = nil ->
+    forall Lvar e Ahead Bhead m_orig,
+      T0 = typ_arrow Ahead Bhead ->
+      is_inh_typ Ahead ->
+      d_wf_typ Γ Ahead ->
+      (forall x, x `notin` Lvar ->
+         d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ Ahead) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) Bhead) ->
+      decr_mode m_orig = mode_ti ->
+      d_wf_denv Γ ->
+      d_typing_gen mode_tc Γ (exp_abs e) C0.
+Proof.
+  intros Γ Δ T0 C0 Hs. dependent induction Hs; intros HΔ Lvar e Ahead Bhead m_orig HT0 HinhA HwfA Hbody Hdecr Hwfd; subst.
+  - (* d_sub__check: LHS = syn_color T = typ_arrow Ahead Bhead. *)
+    (* Mirror __check_gen mono-extraction chain. *)
+    destruct T; simpl in HT0; try discriminate.
+    inversion HT0; subst.
+    assert (HmonoA : mono_typ (syn_color T1))
+      by (eapply is_inh_typ_syn_color_mono_pre; eauto).
+    rename H0 into Hcons.
+    inversion Hcons; subst.
+    apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
+    rename H5 into Hcons1. rename H6 into Hcons2.
+    assert (HmonoB : mono_typ (syn_color T2)).
+    { remember (syn_color T2) as A_cur in Hcons2.
+      assert (Hctyp_aux : forall T, syn_color T = A_cur -> mono_typ (syn_color T)).
+      { clear -Hcons2.
+        induction Hcons2; intros Tc HeqA_cur;
+          try (destruct Tc; simpl in HeqA_cur; discriminate).
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__unit.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__var.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__arrow.
+          + eapply IHHcons2_1; reflexivity.
+          + eapply IHHcons2_2; reflexivity. }
+      eapply Hctyp_aux; auto. }
+    pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoA) Hcons1) as HeqA1.
+    pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoB) Hcons2) as HeqA2.
+    subst.
+    pose proof (mono_typ_inh_color_erase HmonoA) as HeqA_inh.
+    rewrite erase_syn_color in HeqA_inh.
+    rewrite <- HeqA_inh at 1.
+    apply d_typing_gen__abs with (L := Lvar `union` dom Γ).
+    + rewrite HeqA_inh. exact HwfA.
+    + intros x0 Hx0.
+      assert (Hwfd_x : d_wf_denv ((x0 ~ dbind_typ (syn_color T1)) ++ Γ))
+        by (apply d_wf_denv__typ; auto).
+      apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
+      * rewrite <- Hdecr. apply Hbody. auto.
+      * apply d_sub_gen_refl; auto.
+        -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; assumption.
+        -- rewrite_env ((x0 ~ dbind_typ (syn_color T1)) ++ Γ).
+           apply d_wf_typ_weakening_head.
+           eapply d_consis_preserves_wf; eauto.
+  - (* d_sub__forall_r: target = typ_all_col colour_inh A. Reconstruct
+       via [d_typing_gen__forall] (value rule) + recursive IH at each X. *)
+    apply d_typing_gen__forall with (L := L `union` Lvar `union` dom Γ).
+    + apply is_value__abs.
+    + intros X HX.
+      assert (Hwfd_X : d_wf_denv ((X ~ dbind_tvar) ++ Γ))
+        by (apply d_wf_denv__tvar; auto).
+      (* IH H0 takes: X, X∉L, then the same args as the lemma at (X∷Γ). *)
+      eapply H0 with (Ahead := Ahead) (Bhead := Bhead) (m_orig := m_orig)
+        (Lvar := Lvar); eauto.
+      * apply d_wf_typ_weakening_head; auto.
+      * intros y Hy.
+        apply d_typing_gen_weakening with
+          (Γ1 := (y ~ dbind_typ Ahead)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
+        apply Hbody. exact Hy.
+  - (* d_sub__forall_l_tagged: LHS = typ_all_etag, contradicts typ_arrow. *)
+    discriminate.
+  - (* d_sub__forall_l_untagged: LHS = typ_all_plain, contradicts. *)
+    discriminate.
+Qed.
+
+(** Mono-extraction helpers (used in __check_gen closure). *)
+
 Lemma is_inh_typ_syn_color_mono : forall A C,
     is_inh_typ A ->
     A = syn_color C ->
@@ -2794,16 +2896,11 @@ Lemma d_typing_abs_value_to_subsumption :
 Proof.
   intros L Γ e A B m_orig C HinhA HwfA Hbody Hdecr Hwfd Hs.
   dependent induction Hs.
-  - (* __embed: d_sub mode_tc nil Γ (typ_arrow A B) C. Invert to
-       __check (mono extraction → mirror __refl_mono) or __forall_r
-       (would need recursion; handled by re-wrapping via d_sub_gen__embed
-       and applying outer d_sub_gen__forall_r — but the outer Hs is
-       this __embed case so dep induction doesn't provide IH).
-
-       For closure: the __check case mirrors __check_gen. The
-       __forall_r case requires either a mutual helper or strong
-       induction; left admitted pending that restructure. *)
-    admit.
+  - (* __embed: route through [d_typing_abs_value_to_subsumption_d_sub]
+       which inducts on the inner d_sub directly (so __forall_r recurses
+       naturally). *)
+    eapply d_typing_abs_value_to_subsumption_d_sub with
+      (Ahead := A) (Bhead := B) (m_orig := m_orig); eauto.
   - (* __check_gen: T : ctyp with syn_color T = typ_arrow A B forces
        T = ctyp_arrow T1 T2, A = syn_color T1, B = syn_color T2.
        From [HinhA: is_inh_typ A] + syn-LHS ⟹ A mono.
@@ -2894,7 +2991,7 @@ Proof.
         apply d_typing_gen_weakening with
           (Γ1 := (y ~ dbind_typ A)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
         apply Hbody. exact Hy.
-Admitted.
+Qed.
 
 (** [d_typing_abs_anno_value_to_subsumption]: same structure as
     [d_typing_abs_value_to_subsumption] but for [exp_abs_anno A e].
