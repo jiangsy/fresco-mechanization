@@ -822,42 +822,31 @@ Proof.
     split; [|split]; [apply mono_typ__arrow; assumption | reflexivity | reflexivity].
 Qed.
 
-(** [d_consis] with a [syn_color X] LHS is structurally pinned: the only
-    [d_consis] rules that can fire have non-forall LHS shapes (since
-    [syn_color] paints forall as [typ_all_col colour_syn], which is not a
-    [d_consis] LHS shape), so the derivation traces a pure
-    {unit, var, arrow} skeleton. Conclusion: [A = syn_color X], [Δ = nil],
-    [syn_color X] is mono.
+(** [d_consis_mono_LHS]: parallel to [d_consis_mono_RHS] but on the LHS.
+    Given [mono_typ T] (which forces T into {unit, var, arrow} — no
+    [typ_all_*]/[typ_hole]/[typ_tophole]), [d_consis] pins [A = T] and
+    [Δ = nil].
 
-    The [__forall_*] cases of [d_consis] are vacuous because they require
-    LHS = [typ_all_etag]/[typ_all_plain], which no [syn_color X] matches.
-    The [__arrow] case forces [X = ctyp_arrow X1 X2] and recurses. *)
-Lemma d_consis_LHS_syn_color_mono : forall Δ Γ T A,
+    Replaces the pre-refactor [d_consis_LHS_syn_color_mono] which tried
+    to DERIVE mono from [T = syn_color C]; that derivation is unsound
+    post-refactor because [d_consis__forall_syn] allows non-mono LHS. *)
+Lemma d_consis_mono_LHS : forall Δ Γ T A,
     d_consis Δ Γ T A ->
-    forall C, T = syn_color C ->
-    mono_typ T /\ A = T /\ Δ = nil.
+    mono_typ T ->
+    A = T /\ Δ = nil.
 Proof.
-  intros Δ Γ T A Hc. induction Hc; intros C HC.
-  - split; [|split]; [apply mono_typ__unit | reflexivity | reflexivity].
-  - split; [|split]; [apply mono_typ__var | reflexivity | reflexivity].
-  - (* __forall_inh_tagged: T = typ_all_etag, never = syn_color C. *)
-    destruct C; simpl in HC; discriminate.
-  - (* __forall_syn_tagged: T = typ_all_etag, never = syn_color C. *)
-    destruct C; simpl in HC; discriminate.
-  - (* __forall_syn (post-refactor): T = typ_all_col colour_syn T_inner.
-       Hypothesis T = syn_color C is satisfied when C = ctyp_all C_inner
-       and T_inner = syn_color C_inner. But then T is NOT mono (it has a
-       typ_all_col head). Lemma is FALSE for this case; admitted. *)
-    admit.
-  - (* __forall_inh: T = typ_all_col colour_inh; syn_color C never has
-       colour_inh at the head. *)
-    destruct C; simpl in HC; discriminate.
-  - destruct C; simpl in HC; try discriminate.
-    inversion HC; subst.
-    edestruct IHHc1 as [HmonoT1 [HA1 HΔ1]]; [reflexivity | subst].
-    edestruct IHHc2 as [HmonoT2 [HA2 HΔ2]]; [reflexivity | subst].
-    split; [|split]; [apply mono_typ__arrow; assumption | reflexivity | reflexivity].
-Admitted.
+  intros Δ Γ T A Hc Hmono. induction Hc.
+  - split; reflexivity.
+  - split; reflexivity.
+  - (* __forall_inh_tagged: T = typ_all_etag — not mono. *) inversion Hmono.
+  - (* __forall_syn_tagged: T = typ_all_etag — not mono. *) inversion Hmono.
+  - (* __forall_syn: T = typ_all_col — not mono. *) inversion Hmono.
+  - (* __forall_inh: T = typ_all_col — not mono. *) inversion Hmono.
+  - inversion Hmono; subst.
+    destruct (IHHc1 H2) as [HA1 HΔ1]; subst.
+    destruct (IHHc2 H3) as [HA2 HΔ2]; subst.
+    split; reflexivity.
+Qed.
 
 (** Analogous lemma for [d_sub]: a wf type appearing as a d_sub LHS is mono.
     Same intersection argument as [d_consis_LHS_mono_wf], extended through
@@ -1099,24 +1088,13 @@ Proof.
   intros M Δ Δ' Γ T A B Hc Hs.
   generalize dependent T. generalize dependent Δ.
   induction Hs; intros Δ0 T0 Hc Hdis Hti.
-  - (* d_sub__infer: M = mode_ti, Δ' = nil. Hs body H : d_consis nil Γ
-       (syn_color T) (syn_color A) — its syn_color LHS forces Hc's RHS
-       mono via [d_consis_LHS_syn_color_mono], then Hc's LHS (= T0)
-       mono and equal to A via [d_consis_mono_RHS]. *)
-    specialize (Hti eq_refl). subst Δ0.
-    edestruct (d_consis_LHS_syn_color_mono H T eq_refl)
-      as [HmonoSC [_ _]].
-    edestruct (d_consis_mono_RHS Hc HmonoSC)
-      as [_ [_ HT0eq]]. subst T0.
-    exists (@nil atom). split; [apply Permutation_refl |].
-    apply d_sub__infer; assumption.
-  - (* d_sub__check: M = mode_tc. Same chain via Hs body H. *)
-    edestruct (d_consis_LHS_syn_color_mono H0 T eq_refl)
-      as [HmonoSC [_ HΔrule]]. subst Δ.
-    edestruct (d_consis_mono_RHS Hc HmonoSC)
-      as [_ [HΔ0nil HT0eq]]. subst Δ0; subst T0.
-    exists (@nil atom). split; [apply Permutation_refl |].
-    apply d_sub__check; assumption.
+  - (* d_sub__infer: M = mode_ti, Δ' = nil. POST-REFACTOR: the body
+       H : d_consis nil Γ (syn_color T) (syn_color A) no longer pins T
+       mono (the new __forall_syn rule allows non-mono LHS), so the
+       chain that derived T0 mono from Hc + Hs is broken. *)
+    admit.
+  - (* d_sub__check: M = mode_tc. Same post-refactor mono gap. *)
+    admit.
   - (* d_sub__forall_r: B = typ_all_col colour_inh A.
        Closed via [d_sub_subst_mono]: pick fresh X0, get IH at X0 with
        canonical Δc, then alpha-rename X0 → X' for arbitrary X'. *)
@@ -1173,12 +1151,9 @@ Proof.
            mono_typ via [d_consis_LHS_syn_color_mono] (LHS = syn_color),
            then mono ⟹ is_syn_typ via [mono_typ_is_syn_typ]. *)
         eapply d_consis_compose_nil_RHS; eauto.
-        match goal with
-        | H : d_consis _ _ (syn_color ?C) _ |- is_syn_typ _ =>
-            edestruct (d_consis_LHS_syn_color_mono H C eq_refl)
-              as [Hmono [_ _]]
-        end.
-        apply mono_typ_is_syn_typ; assumption.
+        (* POST-REFACTOR: cannot derive is_syn_typ without mono premise
+           on syn_color C (the new __forall_syn rule allows non-mono LHS). *)
+        admit.
       - match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end. }
     (* Apply recursive IH on the function-result side. *)
     edestruct IHHs as [Δd2 [Hperm2 Hsubres]];
@@ -1191,7 +1166,7 @@ Proof.
   - (* d_sub__forall_l_tagged: A = typ_all_etag, but d_consis RHS is
        never typ_all_etag. *)
     inversion Hc.
-Qed.
+Admitted.
 (** d_consis_extends_d_sub: post the [d_consis__forall_inh] addition,
     the [d_sub__arg] case inherits a [is_syn_typ A] admit through the
     chain [d_consis_compose_nil_RHS] needs (where A is the mid type

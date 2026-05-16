@@ -1959,17 +1959,13 @@ Proof.
   induction Hcompat; intros T HwfT Hut Hc.
   - (* mode_ti: mono extraction → T = A. *)
     assert (HmonoT : mono_typ T) by (eapply d_consis_LHS_mono_wf; eauto).
-    destruct (d_consis_LHS_syn_color_mono Hc (erase T)
-                (eq_sym (mono_typ_syn_color_erase HmonoT)))
-      as [_ [HeqAT _]]; subst.
+    destruct (d_consis_mono_LHS Hc HmonoT) as [HeqAT _]; subst.
     apply d_sub_gen__refl_mono; auto.
     apply mode_typ_compat__ti; apply mono_typ_is_syn_typ; auto.
   - (* mode_tc: same mono-extraction chain (is_utyp T rules out
        the [typ_all_col colour_inh] LHS case). *)
     assert (HmonoT : mono_typ T) by (eapply d_consis_LHS_mono_wf; eauto).
-    destruct (d_consis_LHS_syn_color_mono Hc (erase T)
-                (eq_sym (mono_typ_syn_color_erase HmonoT)))
-      as [_ [HeqAT _]]; subst.
+    destruct (d_consis_mono_LHS Hc HmonoT) as [HeqAT _]; subst.
     apply d_sub_gen__refl_mono; auto.
     apply mode_typ_compat__tc; apply mono_typ_is_inh_typ; auto.
   - (* mode_fn: A = typ_arrow A0 B. T from d_consis must be typ_arrow. *)
@@ -2055,7 +2051,7 @@ Proof.
     inversion HwfT; subst.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_consis_gen__arrow; auto.
-Admitted.
+Qed.
 
 (** [d_consis_extends_d_sub_gen_nil]: extend d_sub_gen on the LHS via
     a d_consis. Mirrors [d_consis_extends_d_sub_nil] for the gen
@@ -2079,9 +2075,7 @@ Proof.
     assert (HutT : is_utyp T0) by
       (eapply d_consis_LHS_is_utyp_when_RHS_syn_color; eauto).
     assert (HmonoT : mono_typ T0) by (eapply d_consis_LHS_mono_wf; eauto).
-    destruct (d_consis_LHS_syn_color_mono Hc (erase T0)
-                (eq_sym (mono_typ_syn_color_erase HmonoT)))
-      as [_ [HeqA _]]; subst.
+    destruct (d_consis_mono_LHS Hc HmonoT) as [HeqA _]; subst.
     apply d_sub_gen__infer_gen; assumption.
   - (* __check_gen: Hc has RHS = inh_color A (inh-painted). The
        [is_utyp] helper for inh-painted RHS is unavailable due to the
@@ -2091,9 +2085,7 @@ Proof.
     subst.
     assert (HmonoT : mono_typ T0) by (eapply d_consis_LHS_mono_wf; eauto;
       eapply d_consis_LHS_is_utyp_when_RHS_syn_color; eauto).
-    destruct (d_consis_LHS_syn_color_mono Hc (erase T0)
-                (eq_sym (mono_typ_syn_color_erase HmonoT)))
-      as [_ [HeqA _]]; subst.
+    destruct (d_consis_mono_LHS Hc HmonoT) as [HeqA _]; subst.
     apply d_sub_gen__check_gen; assumption.
   - (* __refl_mono: A = B mono. Use [d_consis_to_d_sub_gen] (compat
        carried by __refl_mono). [is_utyp T0] derived via
@@ -2268,10 +2260,30 @@ Proof.
     inversion HwfA.
   - (* __forall_syn (post-refactor): A = typ_all_col colour_syn A_inner.
        RHS = syn_color X = typ_all_col colour_syn (syn_color X_inner)
-       when X = ctyp_all X_inner. The lemma claim A = syn_color X
-       requires proving A_inner = syn_color X_inner via cofinite IH on
-       the body relation; admitted for now. *)
-    admit.
+       when X = ctyp_all X_inner. Use cofinite IH on the body relation
+       to derive A_inner = syn_color X_inner via open-inj. *)
+    destruct X'; simpl in HeqA; try discriminate.
+    inversion HeqA; subst.
+    inversion HwfA; subst.
+    f_equal.
+    (* Goal: T = syn_color X' (where X' has been renamed by inversion).
+       H0's IH form: forall X1 ∉ L, nil=nil → forall X0,
+         open (syn_color X') X1 = syn_color X0 → d_wf_typ _ (open T X1) →
+         open T X1 = open (syn_color X') X1.
+       Strategy: pick fresh X0, instantiate IH at X0 with X0_arg = open X' X0
+       (using syn_color_open_var for the equation), then open_typ_wrt_typ_inj. *)
+    pick fresh X0 for
+      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_ctyp X' `union` dom Γ).
+    assert (HX_L : X0 `notin` L) by fsetdec.
+    assert (HX_L0 : X0 `notin` L0) by fsetdec.
+    assert (HnotinT : X0 `notin` ftvar_in_typ T) by fsetdec.
+    assert (HnotinSC : X0 `notin` ftvar_in_typ (syn_color X')).
+    { rewrite syn_color_ftvar. fsetdec. }
+    pose proof (H0 X0 HX_L eq_refl
+                   (open_ctyp_wrt_ctyp X' (ctyp_var_f X0))) as Heq.
+    rewrite syn_color_open_var in Heq.
+    specialize (Heq eq_refl (H3 X0 HX_L0)).
+    apply (open_typ_wrt_typ_inj T (syn_color X') X0); auto.
   - (* __forall_inh: RHS = typ_all_col colour_inh; but syn_color paints
        colour_syn ⇒ contradiction. *)
     destruct X'; simpl in HeqA; discriminate.
@@ -2283,7 +2295,7 @@ Proof.
     f_equal.
     + eapply IHHcg1; eauto.
     + eapply IHHcg2; eauto.
-Admitted.
+Qed.
 
 Lemma d_consis_gen_extends_d_sub_nil : forall m Γ B C,
     d_sub m nil Γ B C ->
