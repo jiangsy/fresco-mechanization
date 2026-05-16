@@ -1284,6 +1284,66 @@ Proof.
     intros X HX. apply H0; auto.
 Qed.
 
+(** [d_consis_gen_refl_syn]: reflexivity of [d_consis_gen] on
+    syn-painted types. Uses the new [__forall_syn] rule for
+    [typ_all_col colour_syn] LHS. Mirror of [d_consis_gen_refl] for
+    inh-painted types.
+
+    This is the typing-level analogue of the new [__forall_syn] rule's
+    main payoff: refl on syn-painted polytypes is now provable, unlocking
+    the D12 __app function-arg mode-shift composition. *)
+Lemma d_consis_gen_refl_syn : forall Γ A,
+    is_syn_typ A ->
+    d_wf_typ Γ A ->
+    d_consis_gen nil Γ A A.
+Proof.
+  intros Γ A Hsyn. generalize dependent Γ.
+  induction Hsyn; intros Γ Hwf.
+  - apply d_consis_gen__embed. apply d_consis__unit.
+  - apply d_consis_gen__embed. inversion Hwf; subst.
+    apply d_consis__var; assumption.
+  - inversion Hwf; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_consis_gen__arrow.
+    + apply IHHsyn1; assumption.
+    + apply IHHsyn2; assumption.
+    + apply list_disjoint_nil_l.
+  - (* typ_all_col colour_syn A: uses the new __forall_syn rule. *)
+    inversion Hwf; subst.
+    apply d_consis_gen__forall_syn with (L := L `union` L0 `union` dom Γ).
+    intros X HX. apply H0; auto.
+Qed.
+
+(** [d_consis_gen_refl_is_typ]: reflexivity of [d_consis_gen] on any
+    [is_typ] (decorated, colour-annotated) type. Combines refl_syn /
+    refl via dispatch on the [typ_all_col] colour. Used in D12's __app
+    case to reflexively type the function-arg [P'] regardless of its
+    colour annotation. *)
+Lemma d_consis_gen_refl_is_typ : forall Γ A,
+    is_typ A ->
+    d_wf_typ Γ A ->
+    d_consis_gen nil Γ A A.
+Proof.
+  intros Γ A Hist. generalize dependent Γ.
+  induction Hist; intros Γ Hwf.
+  - apply d_consis_gen__embed. apply d_consis__unit.
+  - apply d_consis_gen__embed. inversion Hwf; subst.
+    apply d_consis__var; assumption.
+  - inversion Hwf; subst.
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_consis_gen__arrow.
+    + apply IHHist1; assumption.
+    + apply IHHist2; assumption.
+    + apply list_disjoint_nil_l.
+  - (* typ_all_col c A: dispatch on colour. *)
+    inversion Hwf; subst.
+    destruct c.
+    + apply d_consis_gen__forall_syn with (L := L `union` L0 `union` dom Γ).
+      intros X HX. apply H0; auto.
+    + apply d_consis_gen__forall_inh with (L := L `union` L0 `union` dom Γ).
+      intros X HX. apply H0; auto.
+Qed.
+
 (** [d_typing_check_is_inh]: a [mode_tc] (check-mode) typing always
     has an [is_inh_typ] type. PROVABLY FALSE in the current rule set —
     [__freeze] inherits its inner mode_ti type unchanged, so for
@@ -4089,10 +4149,14 @@ Proof.
               — bridge to Hsub_gen. *)
            rewrite inh_color_t_inh_color_erase.
            rewrite erase_syn_color. exact Hsub_gen.
-      * (* m_new = mode_fn k. Hsub_gen at mode_fn; would require yet another
-           split helper variant + recursive body lift through d_sub_gen__arg.
-           The function-side mono extraction is the same gap as in
-           [d_typing_gen_lift_mono __app]. Admitted (research-grade). *)
+      * (* m_new = mode_fn k. Invert Hsub_gen on its mode_fn k rules.
+           __refl_mono: B_tgt = same arrow type, both arms mono → use IH
+             on Hbody to lift body mode_ti → k, then reconstruct __abs.
+           __arg: B_tgt = typ_arrow A1 A2; A1 = inh_color A_new from
+             Hcons (inh-LHS d_consis_gen forces inh-shape RHS); use IH
+             on Hbody for B → A2, then reconstruct __abs at typ_arrow
+             A1 A2 — requires A1 = inh_color _ which we'd derive from
+             Hcons inversion (research-grade — admitted). *)
         admit.
     + (* m_orig = mode_fn m'. Recursive structure on m'; admitted. *)
       admit.
@@ -4121,8 +4185,74 @@ Proof.
           (A := syn_color A) (B := B) (m_orig := mode_ti) (L := L); eauto.
       * (* m_new = mode_fn k. *) admit.
     + (* m_orig = mode_fn m'. *) admit.
-  - (* Hty = __app. Research-grade — function-side lift threading. *)
-    admit.
+  - (* Hty = __app. Closing this requires lifting the function-side
+       sub-derivation H1 (at mode_fn m_orig) to mode_fn m_new via the
+       IH (D12 on H1), composing with d_sub_gen__arg using:
+       - d_consis_gen_refl_is_typ on P' (the function-arg type)
+       - Hsub_gen on the result side.
+       Then reconstruct __app at outer mode m_new. *)
+    inversion Hfn; subst.
+    + (* m_orig = mode_ti. mode_fn_n_subst mode_ti m_new = m_new. *)
+      simpl in Hsub_gen |- *.
+      (* Derive d_wf_typ Γ P' from d_typing_gen_preserves_wf on the
+         function-side hypothesis Hty1 (renamed via match goal since the
+         auto-named hypothesis may differ across cases). *)
+      assert (HwfP' : d_wf_typ Γ P').
+      { (* All four __app premises are in context; the function-side
+           one has type d_typing_gen _ Γ _ (typ_arrow P' _). Pin it by
+           inspecting d_typing_gen at the function expression e1. *)
+        match goal with
+        | Hfun : d_typing_gen _ _ e1 _ |- _ =>
+            pose proof (d_typing_gen_preserves_wf Hfun Hwfd) as HwfArr
+        end.
+        inversion HwfArr; subst; assumption. }
+      assert (HistypP' : is_typ P')
+        by (eapply d_wf_typ_is_typ; eassumption).
+      eapply d_typing_gen__app with (P := P) (P' := P').
+      * exact H.
+      * exact H0.
+      * (* d_typing_gen (mode_fn m_new) Γ e1 (typ_arrow P' B_tgt).
+           Lift H1 via IHHty1 (= D12 on H1). *)
+        eapply IHHty1 with (m_new := m_new) (B := typ_arrow P' B_tgt); auto.
+        -- apply is_fn_n_ti__fn. apply is_fn_n_ti__ti.
+        -- (* d_sub_gen (mode_fn m_new) nil Γ (typ_arrow P' B) (typ_arrow P' B_tgt). *)
+           rewrite_env (@nil atom ++ @nil atom).
+           apply d_sub_gen__arg.
+           ++ (* d_consis_gen nil Γ P' P' (refl). Use d_consis_gen_refl_is_typ;
+                facts derived above from H1 + wf preservation. *)
+              apply d_consis_gen_refl_is_typ; assumption.
+           ++ exact Hsub_gen.
+      * (* d_typing_gen mode_tc Γ e2 (inh_color (erase P')) — unchanged. *)
+        match goal with
+        | Harg : d_typing_gen mode_tc _ _ (inh_color (erase _)) |- _ => exact Harg
+        end.
+    + (* m_orig = mode_fn m'. Parallel to mode_ti case: lift function via
+         IH, reconstruct __app at outer (mode_fn_n_subst m' m_new). *)
+      simpl in Hsub_gen |- *.
+      assert (HwfP' : d_wf_typ Γ P').
+      { match goal with
+        | Hfun : d_typing_gen _ _ e1 _ |- _ =>
+            pose proof (d_typing_gen_preserves_wf Hfun Hwfd) as HwfArr
+        end.
+        inversion HwfArr; subst; assumption. }
+      assert (HistypP' : is_typ P')
+        by (eapply d_wf_typ_is_typ; eassumption).
+      eapply d_typing_gen__app with (P := P) (P' := P').
+      * exact H.
+      * exact H0.
+      * (* d_typing_gen (mode_fn (mode_fn_n_subst m m_new)) Γ e1
+           (typ_arrow P' B_tgt). Lift via IHHty1 at m_new. *)
+        eapply IHHty1 with (m_new := m_new) (B := typ_arrow P' B_tgt); auto.
+        -- apply is_fn_n_ti__fn. apply is_fn_n_ti__fn. assumption.
+        -- (* d_sub_gen (mode_fn (mode_fn (mode_fn_n_subst m m_new))) ...
+              Need __arg again. *)
+           simpl. rewrite_env (@nil atom ++ @nil atom).
+           apply d_sub_gen__arg.
+           ++ apply d_consis_gen_refl_is_typ; assumption.
+           ++ exact Hsub_gen.
+      * match goal with
+        | Harg : d_typing_gen mode_tc _ _ (inh_color (erase _)) |- _ => exact Harg
+        end.
 Admitted.
 
 (** [d_consis_gen_to_d_consis_syn_lhs]: the SYN-LHS-restricted bridge,
