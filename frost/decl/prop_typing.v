@@ -2836,6 +2836,111 @@ Proof.
     discriminate.
 Qed.
 
+(** [d_typing_abs_anno_value_to_subsumption_d_sub]: anno-variant
+    companion. Same structure as the value variant's companion but
+    with LHS [typ_arrow (syn_color_t Ahead) Bhead] and conclusion
+    via [d_typing_gen__abs_anno]. No [is_inh_typ Ahead] precondition
+    (mono on Ahead derived via [mono_typ_syn_color_t_inv]). *)
+Lemma d_typing_abs_anno_value_to_subsumption_d_sub :
+  forall Γ Δ T0 C0,
+    d_sub mode_tc Δ Γ T0 C0 ->
+    Δ = nil ->
+    forall Lvar e Ahead Bhead m_orig,
+      T0 = typ_arrow (syn_color_t Ahead) Bhead ->
+      d_wf_typ Γ Ahead ->
+      (forall x, x `notin` Lvar ->
+         d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ Ahead) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) Bhead) ->
+      decr_mode m_orig = mode_ti ->
+      d_wf_denv Γ ->
+      d_typing_gen mode_tc Γ (exp_abs_anno Ahead e) C0.
+Proof.
+  intros Γ Δ T0 C0 Hs. dependent induction Hs;
+    intros HΔ Lvar e Ahead Bhead m_orig HT0 HwfA Hbody Hdecr Hwfd; subst.
+  - (* d_sub__check: parallel to anno helper's __check_gen case. *)
+    destruct T; simpl in HT0; try discriminate.
+    inversion HT0; subst.
+    rename H0 into Hcons.
+    inversion Hcons; subst.
+    apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
+    rename H6 into Hcons1. rename H7 into Hcons2.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+    { remember (syn_color T1) as A_cur in Hcons1.
+      assert (Haux : forall T, syn_color T = A_cur -> mono_typ (syn_color T)).
+      { clear -Hcons1.
+        induction Hcons1; intros Tc HeqA_cur;
+          try (destruct Tc; simpl in HeqA_cur; discriminate).
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__unit.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__var.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__arrow.
+          + eapply IHHcons1_1; reflexivity.
+          + eapply IHHcons1_2; reflexivity. }
+      eapply Haux; auto. }
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+    { remember (syn_color T2) as A_cur in Hcons2.
+      assert (Haux : forall T, syn_color T = A_cur -> mono_typ (syn_color T)).
+      { clear -Hcons2.
+        induction Hcons2; intros Tc HeqA_cur;
+          try (destruct Tc; simpl in HeqA_cur; discriminate).
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__unit.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__var.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__arrow.
+          + eapply IHHcons2_1; reflexivity.
+          + eapply IHHcons2_2; reflexivity. }
+      eapply Haux; auto. }
+    rename H2 into Heq_LHS.
+    assert (HmonoA : mono_typ Ahead).
+    { rewrite Heq_LHS in HmonoT1_syn.
+      exact (mono_typ_syn_color_t_inv Ahead HmonoT1_syn). }
+    pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
+      as HeqA2.
+    pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
+      as HeqA1.
+    subst.
+    pose proof (mono_typ_syn_color_erase HmonoA) as HsynA.
+    pose proof (mono_typ_inh_color_erase HmonoA) as HinhA.
+    apply (f_equal erase) in Heq_LHS.
+    rewrite syn_color_t_syn_color_erase in Heq_LHS.
+    rewrite !erase_syn_color in Heq_LHS.
+    subst T1.
+    rewrite <- (mono_typ_inh_color_erase HmonoA) at 1.
+    apply d_typing_gen__abs_anno with (L := Lvar `union` dom Γ).
+    + rewrite HsynA. exact HwfA.
+    + intros x0 Hx0.
+      rewrite HsynA.
+      assert (Hwfd_x0 : d_wf_denv ((x0 ~ dbind_typ Ahead) ++ Γ))
+        by (apply d_wf_denv__typ; auto).
+      apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
+      * rewrite <- Hdecr. apply Hbody. auto.
+      * apply d_sub_gen_refl; auto.
+        -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; assumption.
+        -- rewrite_env ((x0 ~ dbind_typ Ahead) ++ Γ).
+           apply d_wf_typ_weakening_head.
+           eapply d_consis_preserves_wf; eauto.
+  - (* d_sub__forall_r: recurse via IH. *)
+    apply d_typing_gen__forall with (L := L `union` Lvar `union` dom Γ).
+    + apply is_value__abs_anno.
+    + intros X HX.
+      assert (Hwfd_X : d_wf_denv ((X ~ dbind_tvar) ++ Γ))
+        by (apply d_wf_denv__tvar; auto).
+      eapply H0 with (Ahead := Ahead) (Bhead := Bhead) (m_orig := m_orig)
+        (Lvar := Lvar); eauto.
+      * apply d_wf_typ_weakening_head; auto.
+      * intros y Hy.
+        apply d_typing_gen_weakening with
+          (Γ1 := (y ~ dbind_typ Ahead)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
+        apply Hbody. exact Hy.
+  - (* d_sub__forall_l_tagged: vacuous. *)
+    discriminate.
+  - (* d_sub__forall_l_untagged: vacuous. *)
+    discriminate.
+Qed.
+
 (** Mono-extraction helpers (used in __check_gen closure). *)
 
 Lemma is_inh_typ_syn_color_mono : forall A C,
@@ -3083,9 +3188,10 @@ Proof.
            ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
               apply d_wf_typ_weakening_head.
               eapply d_consis_preserves_wf; eauto.
-    + (* d_sub__forall_r: target = typ_all_col colour_inh A1. Recursion
-         requires anno-variant d_sub-level companion (TODO). *)
-      admit.
+    + (* d_sub__forall_r: route through anno-variant companion which
+         recurses on the inner d_sub. *)
+      eapply d_typing_abs_anno_value_to_subsumption_d_sub
+        with (Ahead := A) (Bhead := B) (m_orig := m_orig); eauto.
   - (* __check_gen: T : ctyp with syn_color T = typ_arrow (syn_color_t A) B.
        Same mono extraction as the __embed __check sub-case above. *)
     destruct T; simpl in x; try discriminate.
@@ -3200,7 +3306,7 @@ Proof.
         apply d_typing_gen_weakening with
           (Γ1 := (y ~ dbind_typ A)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
         apply Hbody. exact Hy.
-Admitted.
+Qed.
 
 (** ** Generalised General Subsumption (paper Lemma B.5).
 
