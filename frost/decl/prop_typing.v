@@ -2760,8 +2760,15 @@ Proof.
        rule's (x ~ syn_color (erase A)) for non-mono A. Research-grade
        narrowing required. *)
     admit.
-  - (* __check_gen: d_consis_gen Δ Γ (syn_color T_c) (inh_color A_c)
-       forced via shape pinning at the arrow; same narrowing gap. *)
+  - (* __check_gen: rule's LHS = syn_color T (T : ctyp). The outer
+       equation forces T = [ctyp_arrow T1' T2'], hence A = syn_color T1',
+       B = syn_color T2'. With [is_inh_typ A], A is mono (syn vs inh
+       colour conflict at quantifiers). The inner d_consis_gen pins
+       A0 = ctyp_arrow ... with mono inner via [d_consis_gen_lhs_syn_eq].
+       Closure mirrors __refl_mono but requires careful interplay
+       between mono extraction, [d_consis_gen_lhs_syn_eq], and the
+       body's mode-lift via [d_typing_gen_lift_mono]. Substantial
+       chain; left as admit pending. *)
     admit.
   - (* __refl_mono: target = typ_arrow A B forced mono ⇒ mono A and
        mono B. The ctyp base for [d_typing_gen__abs] is [erase A]; for
