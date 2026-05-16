@@ -349,8 +349,6 @@ Proof.
   - constructor; auto.
   - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
     apply H0. auto.
-  - pick fresh X. apply lc_typ_all_plain_exists with (X1 := X).
-    apply H0. auto.
 Qed.
 
 (** Every is_ttyp is also an is_utyp (utyp's tall constructor accepts
@@ -374,12 +372,6 @@ Proof.
     + constructor.
   - constructor; auto.
   - apply is_utyp__tall with (L := L `union` singleton X) (ε := ε).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_ttyp_lc; exact HB.
-  - apply is_utyp__pall with (L := L `union` singleton X).
     intros Y Hni.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
     + apply H0; fsetdec.
@@ -428,8 +420,6 @@ Proof.
   - constructor; auto.
   - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
     apply H0. auto.
-  - pick fresh X. apply lc_typ_all_plain_exists with (X1 := X).
-    apply H0. auto.
   - constructor.
   - constructor; auto.
 Qed.
@@ -456,12 +446,6 @@ Proof.
     + constructor.
   - constructor; auto.
   - apply is_uskel__tall with (L := L `union` singleton X) (ε := ε).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_tskel_lc; exact HB.
-  - apply is_uskel__pall with (L := L `union` singleton X).
     intros Y Hni.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
     + apply H0; fsetdec.
@@ -494,8 +478,7 @@ Proof. intros A H. inversion H. Qed.
 Lemma is_typ_inv_etag : forall ε A, is_typ (typ_all_etag ε A) -> False.
 Proof. intros ε A H. inversion H. Qed.
 
-Lemma is_typ_inv_plain : forall A, is_typ (typ_all_plain A) -> False.
-Proof. intros A H. inversion H. Qed.
+(* is_typ_inv_plain dropped: typ_all_plain no longer in typ. *)
 
 (** ** is_syn_typ. *)
 
@@ -522,8 +505,7 @@ Proof. intros A H. inversion H. Qed.
 Lemma is_syn_typ_inv_etag : forall ε A, is_syn_typ (typ_all_etag ε A) -> False.
 Proof. intros ε A H. inversion H. Qed.
 
-Lemma is_syn_typ_inv_plain : forall A, is_syn_typ (typ_all_plain A) -> False.
-Proof. intros A H. inversion H. Qed.
+(* is_syn_typ_inv_plain dropped: typ_all_plain no longer in typ. *)
 
 (** ** is_inh_typ. *)
 
@@ -550,8 +532,7 @@ Proof. intros A H. inversion H. Qed.
 Lemma is_inh_typ_inv_etag : forall ε A, is_inh_typ (typ_all_etag ε A) -> False.
 Proof. intros ε A H. inversion H. Qed.
 
-Lemma is_inh_typ_inv_plain : forall A, is_inh_typ (typ_all_plain A) -> False.
-Proof. intros A H. inversion H. Qed.
+(* is_inh_typ_inv_plain dropped: typ_all_plain no longer in typ. *)
 
 (** ** is_ttyp. *)
 
@@ -568,8 +549,7 @@ Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
 Lemma is_ttyp_inv_col : forall c A, is_ttyp (typ_all_col c A) -> False.
 Proof. intros c A H. inversion H. Qed.
 
-Lemma is_ttyp_inv_plain : forall A, is_ttyp (typ_all_plain A) -> False.
-Proof. intros A H. inversion H. Qed.
+(* is_ttyp_inv_plain dropped: typ_all_plain no longer in typ. *)
 
 Lemma is_ttyp_inv_hole : is_ttyp typ_hole -> False.
 Proof. intros H. inversion H. Qed.
@@ -589,11 +569,7 @@ Lemma is_utyp_inv_etag : forall ε A,
        is_utyp (open_typ_wrt_typ A (typ_var_f X)).
 Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
 
-Lemma is_utyp_inv_plain : forall A,
-    is_utyp (typ_all_plain A) ->
-    exists L, forall X, X `notin` L ->
-       is_utyp (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros A H. inversion H; subst. exists L. auto. Qed.
+(* is_utyp_inv_plain dropped: typ_all_plain no longer in typ. *)
 
 Lemma is_utyp_inv_col : forall c A, is_utyp (typ_all_col c A) -> False.
 Proof. intros c A H. inversion H. Qed.
@@ -623,8 +599,7 @@ Proof. intros A H. inversion H; subst. auto. Qed.
 Lemma is_skel_inv_etag : forall ε A, is_skel (typ_all_etag ε A) -> False.
 Proof. intros ε A H. inversion H. Qed.
 
-Lemma is_skel_inv_plain : forall A, is_skel (typ_all_plain A) -> False.
-Proof. intros A H. inversion H. Qed.
+(* is_skel_inv_plain dropped: typ_all_plain no longer in typ. *)
 
 (** ** is_tskel. *)
 
@@ -645,8 +620,7 @@ Proof. intros A H. inversion H; subst. auto. Qed.
 Lemma is_tskel_inv_col : forall c A, is_tskel (typ_all_col c A) -> False.
 Proof. intros c A H. inversion H. Qed.
 
-Lemma is_tskel_inv_plain : forall A, is_tskel (typ_all_plain A) -> False.
-Proof. intros A H. inversion H. Qed.
+(* is_tskel_inv_plain dropped: typ_all_plain no longer in typ. *)
 
 (** ** is_uskel. *)
 
@@ -660,11 +634,7 @@ Lemma is_uskel_inv_etag : forall ε A,
        is_uskel (open_typ_wrt_typ A (typ_var_f X)).
 Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
 
-Lemma is_uskel_inv_plain : forall A,
-    is_uskel (typ_all_plain A) ->
-    exists L, forall X, X `notin` L ->
-       is_uskel (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros A H. inversion H; subst. exists L. auto. Qed.
+(* is_uskel_inv_plain dropped: typ_all_plain no longer in typ. *)
 
 Lemma is_uskel_inv_tophole : forall A,
     is_uskel (typ_tophole A) -> is_uskel A.
@@ -721,9 +691,7 @@ Lemma syn_color_not_etag : forall C ε A,
     syn_color C <> typ_all_etag ε A.
 Proof. intros C ε A H. destruct C; simpl in H; discriminate. Qed.
 
-Lemma syn_color_not_plain : forall C A,
-    syn_color C <> typ_all_plain A.
-Proof. intros C A H. destruct C; simpl in H; discriminate. Qed.
+(* syn_color_not_plain dropped: typ_all_plain no longer in typ. *)
 
 Lemma inh_color_eq_unit_inv : forall C,
     inh_color C = typ_unit -> C = ctyp_unit.
@@ -765,9 +733,7 @@ Lemma inh_color_not_etag : forall C ε A,
     inh_color C <> typ_all_etag ε A.
 Proof. intros C ε A H. destruct C; simpl in H; discriminate. Qed.
 
-Lemma inh_color_not_plain : forall C A,
-    inh_color C <> typ_all_plain A.
-Proof. intros C A H. destruct C; simpl in H; discriminate. Qed.
+(* inh_color_not_plain dropped: typ_all_plain no longer in typ. *)
 
 (** * [typ]-level paintings, the [ctyp]-era successors of the Part-B
     [syn_color] / [inh_color] : typ → typ.
@@ -791,7 +757,6 @@ Fixpoint syn_color_t (A : typ) : typ :=
   | typ_arrow A1 A2 => typ_arrow (syn_color_t A1) (syn_color_t A2)
   | typ_all_col _ A0 => typ_all_col colour_syn (syn_color_t A0)
   | typ_all_etag _ A0 => typ_all_col colour_syn (syn_color_t A0)
-  | typ_all_plain A0 => typ_all_col colour_syn (syn_color_t A0)
   | typ_hole => typ_hole
   | typ_tophole A0 => typ_tophole (syn_color_t A0)
   end.
@@ -804,7 +769,6 @@ Fixpoint inh_color_t (A : typ) : typ :=
   | typ_arrow A1 A2 => typ_arrow (inh_color_t A1) (inh_color_t A2)
   | typ_all_col _ A0 => typ_all_col colour_inh (inh_color_t A0)
   | typ_all_etag _ A0 => typ_all_col colour_inh (inh_color_t A0)
-  | typ_all_plain A0 => typ_all_col colour_inh (inh_color_t A0)
   | typ_hole => typ_hole
   | typ_tophole A0 => typ_tophole (inh_color_t A0)
   end.
@@ -816,7 +780,6 @@ Proof.
   induction A; intros k Y; simpl; try reflexivity.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
   - rewrite IHA1, IHA2; reflexivity.
-  - rewrite IHA; reflexivity.
   - rewrite IHA; reflexivity.
   - rewrite IHA; reflexivity.
   - rewrite IHA; reflexivity.
@@ -839,7 +802,6 @@ Proof.
   - rewrite IHA; reflexivity.
   - rewrite IHA; reflexivity.
   - rewrite IHA; reflexivity.
-  - rewrite IHA; reflexivity.
 Qed.
 
 Lemma inh_color_t_open_var : forall A Y,
@@ -857,7 +819,6 @@ Proof.
   - assumption.
   - assumption.
   - assumption.
-  - assumption.
 Qed.
 
 Lemma inh_color_t_ftvar : forall A,
@@ -865,7 +826,6 @@ Lemma inh_color_t_ftvar : forall A,
 Proof.
   induction A; simpl; try reflexivity.
   - rewrite IHA1, IHA2. reflexivity.
-  - assumption.
   - assumption.
   - assumption.
   - assumption.
@@ -884,7 +844,6 @@ Proof.
   - rewrite IHA. reflexivity.
   - rewrite IHA. reflexivity.
   - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
 Qed.
 
 Lemma inh_color_t_inh_color_erase : forall A,
@@ -892,7 +851,6 @@ Lemma inh_color_t_inh_color_erase : forall A,
 Proof.
   induction A; simpl; try reflexivity.
   - rewrite IHA1, IHA2. reflexivity.
-  - rewrite IHA. reflexivity.
   - rewrite IHA. reflexivity.
   - rewrite IHA. reflexivity.
   - rewrite IHA. reflexivity.
