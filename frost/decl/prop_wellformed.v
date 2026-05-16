@@ -243,7 +243,6 @@ Proof.
   - apply d_wf_skel__var. destruct H as [Hin | Hb]; [left|right]; auto.
   - apply d_wf_skel__arrow; auto.
   - apply d_wf_skel__all_col with (L := L `union` dom Γ'). auto.
-  - apply d_wf_skel__all_plain with (L := L `union` dom Γ'). auto.
   - apply d_wf_skel__hole.
   - apply d_wf_skel__tophole; auto.
 Qed.
@@ -279,10 +278,6 @@ Proof.
   - apply d_wf_uskel__var. apply Hmorph; auto.
   - apply d_wf_uskel__arrow; auto.
   - apply d_wf_uskel__tall with (L := L `union` dom Γ'); auto.
-    intros X HX. apply H0; auto.
-    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
-      apply binds_app_iff; [left | right]; auto.
-  - apply d_wf_uskel__pall with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
       apply binds_app_iff; [left | right]; auto.
@@ -352,8 +347,6 @@ Proof.
   - constructor; auto.
   - pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
     apply H0. auto.
-  - pick fresh X. apply lc_typ_all_plain_exists with (X1 := X).
-    apply H0. auto.
   - constructor.
   - constructor; auto.
 Qed.
@@ -376,8 +369,6 @@ Proof.
   - constructor; auto.
   - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
     apply H0. auto.
-  - pick fresh X. apply lc_typ_all_plain_exists with (X1 := X).
-    apply H0. auto.
 Qed.
 
 Lemma d_wf_tskel_lc : forall Δ Γ P, Δ ⨟ Γ ⊢ₜₛ P -> lc_typ P.
@@ -399,8 +390,6 @@ Proof.
   - constructor.
   - constructor; auto.
   - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
-    apply H0. auto.
-  - pick fresh X. apply lc_typ_all_plain_exists with (X1 := X).
     apply H0. auto.
   - constructor.
   - constructor; auto.
@@ -425,9 +414,6 @@ Proof.
     + right. exact Hin.
   - apply d_wf_skel__arrow; auto.
   - apply d_wf_skel__all_col with (L := L).
-    intros X HX. apply H0; auto.
-    intros y Hy. destruct Hy as [Heq | Htail]; [left; exact Heq | right; apply Hincl; exact Htail].
-  - apply d_wf_skel__all_plain with (L := L).
     intros X HX. apply H0; auto.
     intros y Hy. destruct Hy as [Heq | Htail]; [left; exact Heq | right; apply Hincl; exact Htail].
   - apply d_wf_skel__hole.
@@ -467,7 +453,7 @@ Proof.
   intros P Hist. induction Hist; intros Γ1 Γ2 X1 Ψ HXin Hwf.
   - apply d_wf_skel__unit.
   - (* var *)
-    inversion Hwf as [|? ? ? Hor| | | | |]; subst.
+    inversion Hwf as [|? ? ? Hor| | | |]; subst.
     apply d_wf_skel__var. destruct Hor as [Hin | Hbinds].
     + left. exact Hin.
     + apply binds_app_iff in Hbinds. destruct Hbinds as [Hb1 | Hb1].
@@ -477,10 +463,10 @@ Proof.
            left. exact HXin.
         -- right. apply binds_app_iff. right. exact Hb1.
   - (* arrow *)
-    inversion Hwf as [| |? ? ? ? HA HB| | | |]; subst.
+    inversion Hwf as [| |? ? ? ? HA HB| | |]; subst.
     apply d_wf_skel__arrow; eauto.
   - (* all_col c A *)
-    inversion Hwf as [| | |L0 ? ? ? ? Hbody| | |]; subst.
+    inversion Hwf as [| | |L0 ? ? ? ? Hbody| |]; subst.
     apply d_wf_skel__all_col
       with (L := L0 `union` L `union` dom (Γ1 ++ Γ2) `union` singleton X1).
     intros Y HY. apply (H0 Y) with (X := X1) (Ψ := Y :: Ψ).
@@ -594,10 +580,6 @@ Proof.
     intros Y HY.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_skel_lc HB)].
     apply H0; auto.
-  - inst_cofinites_for d_wf_skel__all_plain.
-    intros Y HY.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_skel_lc HB)].
-    apply H0; auto.
   - apply d_wf_skel__hole.
   - apply d_wf_skel__tophole.
     + (* guarded_skel preserved by subst, given [guarded_typ B]. *)
@@ -661,11 +643,6 @@ Proof.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_ttyp_lc HB)].
     rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
     apply H0; auto.
-  - apply d_wf_utyp__pall with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
-    intros Y HY.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_ttyp_lc HB)].
-    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    apply H0; auto.
 Qed.
 
 Lemma d_wf_tskel_subst : forall Γ1 Γ2 Δ X P B,
@@ -714,11 +691,6 @@ Proof.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_tskel_lc HB)].
     rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
     apply H0; auto.
-  - apply d_wf_uskel__pall with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
-    intros Y HY.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_tskel_lc HB)].
-    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    apply H0; auto.
   - apply d_wf_uskel__hole.
   - apply d_wf_uskel__tophole; auto.
 Qed.
@@ -759,20 +731,23 @@ Proof.
   - exact HwfP.
   - inversion HwfP; subst.
     apply d_wf_skel__arrow; auto.
-  - inversion HwfP; subst.
-    apply d_wf_skel__all_plain with (L := L `union` L0).
+  - (* d_refine__all: input typ_all_col colour_syn P, output
+       typ_all_col colour_syn Q (post-refactor: was typ_all_plain). *)
+    inversion HwfP; subst.
+    apply d_wf_skel__all_col with (L := L `union` L0).
     intros X HX. apply H0; auto.
   - (* hole: input typ_hole, output Q wf under nil; lift to Ψ. *)
     rewrite_env (Ψ ++ (@nil atom)). apply d_wf_skel_psi_weakening. exact H.
-  - (* tophole_no_top: input P = typ_tophole P0; output Q = typ_all_plain Q0.
+  - (* tophole_no_top: input P = typ_tophole P0; output Q =
+       typ_all_col colour_syn Q0 (post-refactor).
        Inversion on [d_wf_skel Ψ Γ (typ_tophole P0)] gives [guarded_skel P0]
        and [d_wf_skel nil Γ P0]. *)
     inversion HwfP; subst.
-    apply d_wf_skel__all_plain with (L := L).
+    apply d_wf_skel__all_col with (L := L).
     intros X HX. apply H0; auto.
     apply d_wf_skel_psi_incl with (Ψ := nil); [exact H5 | intros y []].
-  - (* tophole_with_top: Q = typ_all_plain (typ_tophole Q0). *)
-    apply d_wf_skel__all_plain with (L := L).
+  - (* tophole_with_top: Q = typ_all_col colour_syn (typ_tophole Q0). *)
+    apply d_wf_skel__all_col with (L := L).
     intros X HX.
     apply d_wf_skel__tophole.
     + apply guarded_skel_open. exact H.
@@ -839,8 +814,6 @@ Proof.
   - apply d_wf_skel__arrow; eauto.
   - apply d_wf_skel__all_col with (L := L `union` dom (Γ1 ++ Γ2)).
     intros X HX. eapply H0; eauto.
-  - apply d_wf_skel__all_plain with (L := L `union` dom (Γ1 ++ Γ2)).
-    intros X HX. eapply H0; eauto.
   - apply d_wf_skel__hole.
   - apply d_wf_skel__tophole; eauto.
 Qed.
@@ -862,8 +835,6 @@ Proof.
         -- exact Hin.
   - apply d_wf_skel__arrow; eauto.
   - apply d_wf_skel__all_col with (L := L `union` dom (Γ1 ++ Γ2)).
-    intros X HX. eapply H0; eauto.
-  - apply d_wf_skel__all_plain with (L := L `union` dom (Γ1 ++ Γ2)).
     intros X HX. eapply H0; eauto.
   - apply d_wf_skel__hole.
   - apply d_wf_skel__tophole; eauto.
@@ -968,11 +939,13 @@ Proof.
   - apply d_wf_typ__unit.
   - (* d_consis__var now carries binds via the strengthened rule. *)
     apply d_wf_typ__var; auto.
-  - inst_cofinites_for d_wf_typ__all. eauto.
-  - inst_cofinites_for d_wf_typ__all. eauto.
-  - inst_cofinites_for d_wf_typ__all. eauto.
-  - inst_cofinites_for d_wf_typ__all. eauto.
-  - (* d_consis__forall_inh: RHS = typ_all_col colour_inh A *)
+  - (* __forall_inh_tagged: RHS = typ_all_col colour_inh A *)
+    inst_cofinites_for d_wf_typ__all. eauto.
+  - (* __forall_syn_tagged: RHS = typ_all_col colour_syn A *)
+    inst_cofinites_for d_wf_typ__all. eauto.
+  - (* __forall_inh: RHS = typ_all_col colour_inh A *)
+    inst_cofinites_for d_wf_typ__all. eauto.
+  - (* __forall_syn (post-refactor new rule): RHS = typ_all_col colour_syn A *)
     inst_cofinites_for d_wf_typ__all. eauto.
   - apply d_wf_typ__arrow; auto.
 Qed.
@@ -988,7 +961,6 @@ Proof.
   - apply d_wf_typ__arrow; auto.
     eapply d_consis_preserves_wf; eauto.
   - assumption.
-  - assumption.
 Qed.
 
 (** * d_pat_consis / d_pat_sub preservation of wf and guardedness.
@@ -1003,8 +975,6 @@ Proof.
   intros Δ Γ SS P H Hg. inversion H; subst.
   - apply guarded_skel__unit.
   - apply guarded_skel__var.
-  - inversion Hg.
-  - inversion Hg.
   - inversion Hg.
   - inversion Hg.
   - inversion Hg.
@@ -1032,8 +1002,6 @@ Proof.
   intros Δ Γ SS P H. induction H; intros His_skel Hwf His_syn.
   - apply d_wf_skel__unit.
   - apply d_wf_skel__var. right. auto.
-  - inversion His_skel.
-  - inversion His_skel.
   - inversion His_skel.
   - inversion His_skel.
   - auto.
@@ -1081,7 +1049,6 @@ Proof.
     + eapply d_pat_consis_preserves_wf; eauto.
     + apply IHd_pat_sub; auto.
   - inversion His_skel.
-  - inversion His_skel.
 Qed.
 
 (** [d_wf_denv]-bound skeletons are is_skel (from the strengthened
@@ -1113,7 +1080,6 @@ Proof.
   - destruct Hm; subst; congruence.
   - apply IHd_pat_sub; auto. inversion Hskel; subst; auto.
   - destruct Hm; subst; congruence.
-  - inversion Hskel.
   - inversion Hskel.
 Qed.
 
