@@ -30,7 +30,7 @@ Set Implicit Arguments.
     This is the helper that extends paper Lemma 3.1 (general subsumption,
     [d_typing_general_subsumption] in [prop_typing.v]) to its [__sub]
     case at mode_ti. Lives here (not in prop_typing.v) because it
-    routes through [d_consis_extends_d_sub] which lives in the
+    routes through [d_consis_sub_trans] which lives in the
     [consis_extends] split above. *)
 Lemma d_typing_sub_compose : forall Γ e A_prev A B m,
     is_base_term e ->
@@ -48,9 +48,14 @@ Proof.
     try (match goal with H : ?m0 <> ?m0 |- _ => exfalso; apply H; reflexivity end).
   match goal with
   | Hconsis : d_consis nil Γ (syn_color ?Tin) (syn_color ?Ain) |- _ =>
-      edestruct d_consis_extends_d_sub as [Δc [Hperm Hsub_composed]];
+      (* [d_consis_sub_trans] requires [d_wf_typ Γ (syn_color Tin)];
+         derive it via [d_typing_pat_preserves_wf] on Hty_inner. *)
+      assert (Hwf_lhs : d_wf_typ Γ (syn_color Tin))
+        by (eapply (proj1 d_typing_pat_preserves_wf); eauto);
+      edestruct d_consis_sub_trans as [Δc [Hperm Hsub_composed]];
         [ exact Hconsis | exact Hsub | apply list_disjoint_nil_l
         | intros _; reflexivity
+        | exact Hwf_lhs
         | ];
       simpl in Hperm; apply Permutation_sym in Hperm;
       apply Permutation_nil in Hperm; subst Δc;

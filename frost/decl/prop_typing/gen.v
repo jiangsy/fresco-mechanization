@@ -43,13 +43,13 @@ Set Implicit Arguments.
     The mech does not have a separate syntax-directed system, so we
     close directly on the bidirectional system. The direct closure
     requires [d_sub] transitivity (paper [thm:subtyping-transitivity] /
-    [thm:consist-subtyping-transitivity]); see [d_consis_extends_d_sub_nil]
+    [thm:consist-subtyping-transitivity]); see [d_consis_sub_trans_nil]
     in [prop_subtyping.v] which is the narrowed transitivity sufficient
     for the [__sub] case.
 
     Added precondition [d_wf_denv Γ]: needed for [d_typing_pat_preserves_wf]
     to extract [d_wf_typ Γ A0] for the intermediate type, which then
-    discharges the [d_wf_typ] precondition of [d_consis_extends_d_sub_nil].
+    discharges the [d_wf_typ] precondition of [d_consis_sub_trans_nil].
 
     Closure status — see the [D1 closure structure] comment below for the
     detailed map across Hsub × Hty cases. *)
@@ -1248,8 +1248,8 @@ Proof.
     apply d_consis_gen__arrow; auto.
 Qed.
 
-(** [d_consis_extends_d_sub_gen_nil]: extend d_sub_gen on the LHS via
-    a d_consis. Mirrors [d_consis_extends_d_sub_nil] for the gen
+(** [d_consis_sub_trans_gen_nil]: extend d_sub_gen on the LHS via
+    a d_consis. Mirrors [d_consis_sub_trans_nil] for the gen
     relation. The signature has [T] after [d_sub_gen] so that
     [induction Hs; intros T] gives a properly T-abstracted IH. *)
 (** Helper: a [d_consis_gen] with a [syn_color]-shaped RHS pins the
@@ -1298,7 +1298,7 @@ Proof.
     + eapply IHHcg2; eauto.
 Qed.
 
-Lemma d_consis_extends_d_sub_gen_nil : forall m Γ A B,
+Lemma d_consis_sub_trans_gen_nil : forall m Γ A B,
     d_sub_gen m nil Γ A B ->
     forall T,
       d_consis nil Γ T A ->
@@ -1308,8 +1308,8 @@ Proof.
   intros m Γ A B Hs.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
   induction Hs; intros T0 Hc HwfT.
-  - (* __embed: route through [d_consis_extends_d_sub_nil]. *)
-    subst. apply d_sub_gen__embed. eapply d_consis_extends_d_sub_nil; eauto.
+  - (* __embed: route through [d_consis_sub_trans_nil]. *)
+    subst. apply d_sub_gen__embed. eapply d_consis_sub_trans_nil; eauto.
   - (* __infer_gen: Hc has RHS = syn_color T. Sound closure: use
        [d_consis_gen_RHS_syn_color_eq] (Qed) to pin T0 = syn_color T,
        then compose Hc with H via [d_consis_gen_trans] and reconstruct

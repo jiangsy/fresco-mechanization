@@ -134,7 +134,7 @@ Qed.
     [__check_gen]; [__forall_l_*] are vacuous ([d_consis_gen] has no
     [typ_all_etag]/[typ_all_plain] RHS). *)
 (* [d_consis_gen_RHS_syn_color_eq] moved up before
-   [d_consis_extends_d_sub_gen_nil] which now uses it. *)
+   [d_consis_sub_trans_gen_nil] which now uses it. *)
 
 Lemma d_consis_gen_extends_d_sub_nil : forall m Γ B C,
     d_sub m nil Γ B C ->
@@ -304,7 +304,7 @@ Qed.
 
     Induction on [is_fn_n_ti m1]:
     - [m1 = mode_ti]: the first sub is [__infer] (compose via
-      [d_consis_extends_d_sub_gen_nil]) or [__refl_mono] (identity).
+      [d_consis_sub_trans_gen_nil]) or [__refl_mono] (identity).
     - [m1 = mode_fn m]: the first sub is [__refl_mono] (identity) or
       arrow-shaped ([__embed]→[d_sub__arg], or [__arg]); the arrow
       cases route through [d_sub_gen_trans_arrow] with the IH.
@@ -330,7 +330,7 @@ Proof.
       match goal with H : d_sub mode_ti nil Γ _ _ |- _ =>
         inversion H
       end; subst; try (exfalso; congruence).
-      eapply d_consis_extends_d_sub_gen_nil; eauto.
+      eapply d_consis_sub_trans_gen_nil; eauto.
     + (* __infer_gen: d_consis_gen nil Γ A B; compose with Hsg via
          the d_consis_gen-LHS extension lemma. *)
       eapply d_consis_gen_extends_d_sub_gen_nil; eauto.

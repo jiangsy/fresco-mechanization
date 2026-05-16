@@ -348,7 +348,7 @@ Qed.
    exists in typ. *)
 
 (** [d_sub] respects monotype substitution. Closing this unblocks
-    [d_consis_extends_d_sub __forall_r] via alpha-renaming the cofinite
+    [d_consis_sub_trans __forall_r] via alpha-renaming the cofinite
     body's d_sub across X. *)
 Lemma d_sub_subst_mono : forall Γ1 Γ2 X M Δ T A B,
     Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ⊢[ M ; Δ ] T ⊑ A ->

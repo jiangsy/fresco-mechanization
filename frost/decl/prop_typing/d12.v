@@ -54,10 +54,10 @@ Set Implicit Arguments.
       mode_tc / mode_fn admit (same as __var).
     - Hty = __sub:
       * m = mode_ti: CLOSED for __embed, __refl_any (all 3 modes),
-        __arg via helpers [d_consis_extends_d_sub_gen_nil] composing
+        __arg via helpers [d_consis_sub_trans_gen_nil] composing
         Hsub_orig's d_consis with reconstructed Hsub_gen.
       * m = mode_ti / __forall_r: CLOSED via
-        d_consis_extends_d_sub_gen_nil + d_sub_gen__forall_r
+        d_consis_sub_trans_gen_nil + d_sub_gen__forall_r
         reconstruction.
       * m = mode_fn _: admit (mode-changing d_sub transitivity is
         research-grade — Hsub_orig is __arg, composition with outer
@@ -96,8 +96,8 @@ Set Implicit Arguments.
     - [d_consis_extends_d_consis_gen]: compose d_consis on LHS with
       d_consis_gen at Δ = nil; uses [d_consis_compose] and resolves
       the permutation via [Permutation Δc nil → Δc = nil].
-    - [d_consis_extends_d_sub_gen_nil]: gen-relation analogue of
-      [d_consis_extends_d_sub_nil]; statement has [T] after [Hs] so
+    - [d_consis_sub_trans_gen_nil]: gen-relation analogue of
+      [d_consis_sub_trans_nil]; statement has [T] after [Hs] so
       the [induction Hs] IH abstracts over [T] properly.
 
     [d_sub_gen__refl_any] requires [mode_typ_compat m A] (def-level
@@ -176,12 +176,39 @@ Proof.
               — bridge to Hsub_gen. *)
            rewrite inh_color_t_inh_color_erase.
            rewrite erase_syn_color. exact Hsub_gen.
-      * (* m_new = mode_tc. The split helper closes this directly. *)
+      * (* m_new = mode_tc. The split helper closes this directly.
+           Pass Hbody_at_tc constructed from D12 IH on body (H1) at
+           mode_tc, refl on mono B — breaks lift_mono dependency. *)
+        assert (HwfsynA' : d_wf_typ Γ (syn_color A))
+          by (apply d_wf_typ_inh_color_syn_color; exact H).
+        assert (HwfB : d_wf_typ Γ B).
+        { pick fresh x for (L `union` dom Γ).
+          assert (HwfBx : d_wf_typ ((x ~ dbind_typ (syn_color A)) ++ Γ) B).
+          { eapply d_typing_gen_preserves_wf with (m := mode_ti).
+            - apply H0. fsetdec.
+            - apply d_wf_denv__typ; [assumption | fsetdec | assumption]. }
+          rewrite_env (nil ++ (x ~ dbind_typ (syn_color A)) ++ Γ) in HwfBx.
+          rewrite_env (nil ++ Γ).
+          eapply d_wf_typ_strengthening_typ; eauto. }
         eapply d_typing_abs_value_to_subsumption_split with
           (A := syn_color A) (B := B) (m_orig := mode_ti) (L := L); eauto.
         -- (* d_wf_typ Γ (inh_color_t (syn_color A)) — bridge to H. *)
            rewrite inh_color_t_inh_color_erase.
            rewrite erase_syn_color. exact H.
+        -- (* Hbody_at_tc: invoke D12 IH on body (H1) at m_new = mode_tc
+              with refl-mono d_sub_gen on B. *)
+           intros x Hx Hmono.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+             by (apply d_wf_denv__typ; [ assumption | fsetdec | assumption ]).
+           apply H1 with (m_new := mode_tc) (B := B).
+           ++ fsetdec.
+           ++ apply is_fn_n_ti__ti.
+           ++ assumption.
+           ++ simpl. apply d_sub_gen__refl_mono.
+              ** assumption.
+              ** apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; assumption.
+              ** rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+                 apply d_wf_typ_weakening_head. assumption.
         -- (* d_sub_gen mode_tc nil Γ (typ_arrow (inh_color_t (syn_color A)) B) B_tgt
               — bridge to Hsub_gen. *)
            rewrite inh_color_t_inh_color_erase.
@@ -241,11 +268,14 @@ Proof.
            assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
              by (apply d_wf_denv__typ; auto; fsetdec).
            simpl.
-           apply d_typing_gen_lift_mono with (A := B).
-           ++ apply Hbody. fsetdec.
-           ++ assumption.
-           ++ assumption.
-           ++ apply d_sub_gen_refl; auto.
+           (* Replace lift_mono with IHbody (D12 IH on body) at m_inner,
+              refl-mono on B. Body's mode is decr_mode (mode_fn m_inner)
+              = m_inner; IHbody at m_new := m_inner gives the lifted body. *)
+           apply IHbody with (m_new := m_inner) (B := B).
+           ++ fsetdec.
+           ++ apply is_fn_n_ti__ti.
+           ++ exact Hwfd_x.
+           ++ simpl. apply d_sub_gen__refl_mono; auto.
               rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
               apply d_wf_typ_weakening_head. assumption.
         -- (* __arg: B_tgt = typ_arrow A1 A2 with d_consis_gen + d_sub_gen. *)
@@ -380,8 +410,31 @@ Proof.
           with (exp_abs_anno (inh_color_t (syn_color A)) e)
           by (rewrite inh_color_t_inh_color_erase;
               rewrite erase_syn_color; reflexivity).
+        assert (HwfB : d_wf_typ Γ B).
+        { pick fresh x for (L `union` dom Γ).
+          assert (HwfBx : d_wf_typ ((x ~ dbind_typ (syn_color A)) ++ Γ) B).
+          { eapply d_typing_gen_preserves_wf with (m := mode_ti).
+            - apply H0. fsetdec.
+            - apply d_wf_denv__typ; [assumption | fsetdec | assumption]. }
+          rewrite_env (nil ++ (x ~ dbind_typ (syn_color A)) ++ Γ) in HwfBx.
+          rewrite_env (nil ++ Γ).
+          eapply d_wf_typ_strengthening_typ; eauto. }
         eapply d_typing_abs_anno_value_to_subsumption_split with
           (A := syn_color A) (B := B) (m_orig := mode_ti) (L := L); eauto.
+        (* Hbody_at_tc: invoke D12 IH on body (H1) at m_new = mode_tc
+           with refl-mono d_sub_gen on B. *)
+        intros x Hx Hmono.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+          by (apply d_wf_denv__typ; [ assumption | fsetdec | assumption ]).
+        apply H1 with (m_new := mode_tc) (B := B).
+        -- fsetdec.
+        -- apply is_fn_n_ti__ti.
+        -- exact Hwfd_x.
+        -- simpl. apply d_sub_gen__refl_mono.
+           ++ assumption.
+           ++ apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; assumption.
+           ++ rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+              apply d_wf_typ_weakening_head. assumption.
       * (* m_new = mode_fn m_inner. Mirror of __abs case at mode_fn.
            Conclusion arrow-arg is [syn_color A] (not [inh_color A] like
            __abs), so we use [d_consis_gen_lhs_syn_eq] in the __arg case. *)
@@ -431,11 +484,12 @@ Proof.
            assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
              by (apply d_wf_denv__typ; auto; fsetdec).
            simpl.
-           apply d_typing_gen_lift_mono with (A := B).
-           ++ apply Hbody. fsetdec.
-           ++ assumption.
-           ++ assumption.
-           ++ apply d_sub_gen_refl; auto.
+           (* Replace lift_mono with IHbody (D12 IH on body) at m_inner. *)
+           apply IHbody with (m_new := m_inner) (B := B).
+           ++ fsetdec.
+           ++ apply is_fn_n_ti__ti.
+           ++ exact Hwfd_x.
+           ++ simpl. apply d_sub_gen__refl_mono; auto.
               rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
               apply d_wf_typ_weakening_head. assumption.
         -- (* __arg: B_tgt = typ_arrow A1 A2 with d_consis_gen + d_sub_gen. *)

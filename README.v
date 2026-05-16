@@ -97,37 +97,36 @@ Check d_pat_safety.
 Check d_consis_compose.
 
 (** ** Lemma B.3 — Consistency-Subtyping Transitivity.
-    
-    TODO: this lemma should be renamed, d_consis_extends_d_sub is a 
-    misleading name.  
-    
-    Paper [syntax-directed.tex:161]. Paper statement (verbatim):
-        If d_consis_gen Δ1 Γ T T'
-        and d_sub_gen M Δ2 Γ T' A,
-        then d_sub_gen M (Δ1 ∪ Δ2) Γ T A.
 
-    IMPORTANT: the paper uses the GENERALISED relations (d_consis_gen +
-    d_sub_gen, syntax-directed.tex §"Generalised subtyping/consistency").
-    Our mechanization does NOT currently have a lemma matching this
-    exact statement.
+    Paper [syntax-directed.tex:161] (`thm:consist-subtyping-transitivity`).
+    Paper statement:
+        If Δ1 ⊨ T ≈ T' (typconsis)
+        and Γ ⊢[M; Δ2] T' ⊑ A (typsub),
+        then Γ ⊢[M; Δ1, Δ2] T ⊑ A.
 
-    What we have instead:
-    - [d_consis_extends_d_sub] in [prop_subtyping.v]: same SHAPE but
-      uses the NON-generalised relations (d_consis + d_sub). It is
-      auxiliary scaffolding consumed by D12 via [d_sub_gen_trans]; it
-      is NOT a direct mechanization of paper B.3. Status: proof body
-      has 1 admit (d_sub__check sub-case post-refactor).
-    - [d_consis_extends_d_sub_gen_nil] in [prop_typing.v]: closer to
-      B.3 in spirit (uses d_sub_gen on the second relation) but
-      specialized to Δ = nil and still uses d_consis (not d_consis_gen)
-      on the first. Status: [Qed].
+    Mechanised as [d_consis_sub_trans] in [prop_subtyping.v] — paper
+    title "Consistency-Subtyping Transitivity" → Coq name
+    [d_consis_sub_trans]. Status: [Qed], with two deviations from the
+    paper signature:
+    1. Uses the NON-generalised [d_consis] / [d_sub] relations. The
+       paper's [typconsis] / [typsub] are the syntax-directed (i.e.
+       generalised) versions; our [d_consis_sub_trans] is structurally
+       parallel but instantiated on the embedded relations consumed by
+       D12 (see [d_consis_sub_trans_gen_nil] below for the gen-target
+       variant).
+    2. Added a [d_wf_typ Γ T] premise (closure post 2026-05-17): the
+       new [d_consis__forall_syn] rule admits non-mono [syn_color] LHS,
+       so [d_consis_RHS_syn_color_eq] is invoked in the __infer /
+       __check sub-cases to pin [T = syn_color X] under wf — ruling
+       out the [typ_all_etag] LHS of [__forall_syn_tagged] which is
+       not [d_wf_typ].
 
-    A faithful mechanization of B.3 is a TODO. Soundness of the current
-    [d_consis_extends_d_sub] in the DECLARATIVE rule set has not been
-    independently audited; the proof skeleton was ported from algorithmic
-    intuition. The remaining admit is the locus where post-refactor
-    soundness must be re-validated. *)
-Check d_consis_extends_d_sub.
+    Adjacent companions:
+    - [d_consis_sub_trans_nil] (narrowed Δ = nil corollary).
+    - [d_consis_sub_trans_gen_nil] in [prop_typing/gen.v] — same shape
+      with [d_sub_gen] on the second relation (still non-gen
+      [d_consis] on the first). Closer to paper B.3 in spirit. *)
+Check d_consis_sub_trans.
 
 (** ** Lemma B.4 — Subtyping Transitivity.
     Paper [syntax-directed.tex:249]. Mechanised as [d_sub_gen_trans]
@@ -180,7 +179,7 @@ Check d_refine_tophole_split.
     extends subtyping" with B.3 above. Paper Lemma D.5 (in [proofs.tex])
     is an ALGORITHMIC property, not a declarative one — there is no
     declarative paper-claim for "consis extends subtyping". Removed
-    the duplicate reference here; [d_consis_extends_d_sub] in our
+    the duplicate reference here; [d_consis_sub_trans] in our
     mechanization is auxiliary scaffolding for D12 (see CAVEAT under
     Lemma B.3 above), not the D.5 of [proofs.tex]. *)
 
@@ -282,7 +281,7 @@ Check d_typing_gen_narrow_consis.
       __app (function arg-type [P'] may be polytype; closure requires
       D12, creating a cycle that needs mutual induction or inlining
       ~400 lines of SPLIT helpers into D12 to break).
-    - [prop_subtyping.d_consis_extends_d_sub] — admitted at __check
+    - [prop_subtyping.d_consis_sub_trans] — admitted at __check
       sub-case (post-refactor: the [d_consis__forall_syn] rule allows
       non-mono LHS, breaking the [T mono → A = T] chain). See CAVEAT
       under Lemma B.3 in this file. *)

@@ -524,7 +524,7 @@ that re-parses the rules. **No paper inconsistency.**
 | Refinement preserves wf (paper:1380) | `d_refine_preserves_wf`, `d_refine_syn_preserves_wf` | Qed |
 | Skeleton wf preservation (paper:1970) | `d_pat_preserves_skel_wf` | Qed (projection) |
 | Consistency Transitivity (D9 / Lemma B.2) | `d_consis_compose` | Qed mod Permutation |
-| Consistency-Subtyping Transitivity (D10) | `d_consis_extends_d_sub` | Qed (paper-faithful form) |
+| Consistency-Subtyping Transitivity (D10 / paper Lemma B.3) | `d_consis_sub_trans` | Qed (paper-faithful form) |
 | General subsumption (paper:574) | *no top-level lemma in current file* — bridge: `d_typing_embed_gen` (Qed) · D12 (admitted) · `d_typing_gen_collapse` (admitted) | blocked at D12 |
 | Generalised General Subsumption (D12, Lemma B.5) | `d_typing_general_subsumption_gen` | admitted (body bulk-admitted post-re-encoding; helpers all Qed) |
 | `is_{syn,inh}_typ` round-trip through `{syn,inh}_color ∘ erase` | `is_syn_typ_syn_color_erase`, `is_inh_typ_inh_color_erase` | Qed (closed 2026-05-15 post-repair) |

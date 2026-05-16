@@ -1,6 +1,6 @@
 (** Frost — declarative subtyping metatheory: composition of consistency,
     consistency-RHS / LHS mono pinning lemmas, and the
-    [d_consis_compose_nil_RHS] step used by [d_consis_extends_d_sub]. *)
+    [d_consis_compose_nil_RHS] step used by [d_consis_sub_trans]. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
@@ -17,7 +17,9 @@ Require Import src.frost.decl.prop_subtyping.basics.
 
 Set Implicit Arguments.
 
-(** * Consistency extends subtyping (paper proofs.tex lemma:consis-sub).
+(** * Consistency-Subtyping Transitivity
+    (paper Lemma B.3, syntax-directed.tex:161,
+    thm:consist-subtyping-transitivity).
 
     Paper claim: if [d_consis Δ Γ T A] and [d_sub M Δ' Γ A B], then
     [d_sub M (Δ ++ Δ') Γ T B].
@@ -354,7 +356,7 @@ Admitted.
     [is_typ]'s shapes are {unit, var, arrow, typ_all_col}, [d_consis]'s
     LHS shapes are {unit, var, typ_all_etag, typ_all_plain, arrow}, so a
     type that is both is exactly [mono_typ]. The [ctyp]-era
-    [d_consis_extends_d_sub] needs this: [d_sub__infer] / [d_sub__check]
+    [d_consis_sub_trans] needs this: [d_sub__infer] / [d_sub__check]
     now demand a [syn_color]-shaped LHS, and a mono type round-trips
     through [syn_color (erase _)]. *)
 (** With the new [__forall_inh] rule, the LHS can also be
@@ -384,7 +386,7 @@ Qed.
 
     This is the RHS-side analogue of [d_consis_LHS_*_mono]: instead of
     "LHS is a paint-shape" forcing mono, "RHS is mono" forces mono. Used
-    by [d_consis_extends_d_sub] to lift the [is_typ T]/[d_wf_typ Γ T]
+    by [d_consis_sub_trans] to lift the [is_typ T]/[d_wf_typ Γ T]
     contract off the lemma signature — Hs's [__infer]/[__check] premise
     has a [syn_color]-shaped LHS that is mono via [d_consis_LHS_syn_color_mono]
     below, which then makes Hc's RHS mono, which then forces T mono via
@@ -523,7 +525,7 @@ Proof.
 Qed.
 
 (** Lift lemma [d_typing_lift_mono] needs to be placed AFTER
-    [d_consis_extends_d_sub_nil] in the file (forward reference). See
+    [d_consis_sub_trans_nil] in the file (forward reference). See
     after the latter for the full statement and proof attempt. *)
 
 (** With the new [d_consis__forall_inh] rule, [d_sub__arg]'s d_consis
@@ -565,7 +567,7 @@ Qed.
     - [d_sub__forall_r] recurses on the body's [d_sub] which has the same LHS;
       closes via IH.
 
-    This is used in [d_consis_extends_d_sub] to discharge the [__arg]
+    This is used in [d_consis_sub_trans] to discharge the [__arg]
     sub-case's "T02 not etag/plain" obligation: if T02 = typ_all_etag/plain,
     then A02 (the d_consis RHS at that branch) = typ_all_col c, and Hs's
     body [d_sub m Δ Γ A02 B2] is uninhabited, ruling the case out. *)
@@ -595,7 +597,7 @@ Admitted.
     have A = typ_all_col, which makes the second d_consis vacuous by
     inversion. The arrow case splits Δ recursively.
 
-    This is used in [d_consis_extends_d_sub]'s [__arg] sub-case to
+    This is used in [d_consis_sub_trans]'s [__arg] sub-case to
     discharge the recursive IH's [m = mode_ti → Δ = nil] obligation:
     when the inner mode is [mode_ti], Hs's body inverts to [__infer]
     with [d_consis nil Γ A02 B2], and this lemma gives [Δc02 = nil]
@@ -603,7 +605,7 @@ Admitted.
 (** Helper: a [d_consis] firing with a [syn_color C] LHS pins the LHS
     to [is_syn_typ] (structural — [d_consis] rules with [syn_color]-LHS
     only fire on {unit, var, arrow, typ_all_col colour_syn}, all of
-    which are [is_syn_typ]). Used by [d_consis_extends_d_sub] to
+    which are [is_syn_typ]). Used by [d_consis_sub_trans] to
     discharge an [is_syn_typ] precondition without a [d_wf_typ Γ T] from
     outside. *)
 Lemma d_consis_lhs_syn_color_is_syn_typ : forall Δ Γ C A,
