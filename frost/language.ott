@@ -18,6 +18,11 @@
 metavar typvar, X, Y, Z ::= {{ repr-locally-nameless }}
 metavar expvar, x, y, z ::= {{ repr-locally-nameless }}
 metavar epsvar, eps     ::= {{ coq var }}
+% Plain-type variable. Same `var` namespace as typvar at the Coq level
+% (both alias Metalib's atom); a separate ott metavar so lngen can
+% disambiguate substitutions (subst_typ_in_typ uses typvar binders;
+% subst_ctyp_in_ctyp uses ctypvar binders).
+metavar ctypvar, U, V, W ::= {{ repr-locally-nameless }}
 % Flex-mono and flex-poly type variable names. These are NOT
 % locally-nameless: they are plain atoms because in the algorithmic
 % system they are top-level entries in the algorithmic context Θ, not
@@ -32,9 +37,11 @@ colour, c :: 'colour_' ::=
   | S    ::   :: syn
   | I    ::   :: inh
 
-% Unified type AST. Six paper categories carved out by predicates in
-% def_extra.v. The four ∀ flavours (col-S, col-I, eps-tagged, plain) are
-% distinct constructors so category predicates can discriminate cleanly.
+% Decorated type AST. Five categories (col-S, col-I, eps-tagged, plus
+% unit/var/arrow/hole/tophole) — the un-decorated plain forall
+% (`forall X. A`) lives in `ctyp` below, NOT in `typ`. This keeps the
+% paper's distinction between *decorated* universes (where ∀ carries
+% colour or tag) and the *plain* universe (where ∀ has no decoration).
 %
 % Algorithmic flex variables (mono α̂, poly α̌) are NOT type constructors:
 % a flex var is morally an ordinary type variable [X] (typ_var_f),
@@ -44,7 +51,7 @@ colour, c :: 'colour_' ::=
 % solver-specific cases.
 %
 % Metavar aliases follow the paper:
-%   A, B, C, T  — plain types / unresolved types
+%   A, B, C, T  — decorated types / unresolved types
 %   ph          — tagged types (paper's φ)
 %   ps          — tagged skeletons (paper's ψ)
 %   P, Q        — skeletons
@@ -56,11 +63,30 @@ typ, A, B, C, T, ph, ps, P, Q, SS :: 'typ_' ::=
   | A1 -> A2            ::   :: arrow
   | forall^ c X . A     ::   :: all_col   (+ bind X in A +)
   | forall@ eps X . A   ::   :: all_etag  (+ bind X in A +)
-  | forall X . A        ::   :: all_plain (+ bind X in A +)
   | HOLE                ::   :: hole
   | TOPHOLE . A         ::   :: tophole
   | ( A )               :: S :: paren {{ coq ([[A]]) }}
   | { A2 / X } A1       :: M :: subst {{ coq (open_typ_wrt_typ [[X A1]] [[A2]]) }}
+
+% Plain (un-decorated) type AST `ctyp`. The "free equivalence class" of
+% decorated types — a ctyp `K` is the shape with no colour, no tag, just
+% a plain `pforall X. K`. Two decorated `typ`s are convertible (up to
+% colour/tag) exactly when they erase to the same `ctyp`. The painting
+% functions `syn_color` / `inh_color : ctyp -> typ` (def_extra.v) recover
+% a decorated form.
+%
+% ctyp also serves as the natural home for the paper's "plain" world
+% (skeleton wf, refinement output, plain pattern judgements), which the
+% mechanisation previously squeezed into `typ_all_plain`.
+ctyp, K, J :: 'ctyp_' ::=
+  | UNIT                ::   :: unit
+  | U                   ::   :: var
+  | K1 -> K2            ::   :: arrow
+  | pforall U . K       ::   :: all       (+ bind U in K +)
+  | HOLE                ::   :: hole
+  | TOPHOLE . K         ::   :: tophole
+  | ( K )               :: S :: paren {{ coq ([[K]]) }}
+  | { K2 / U } K1       :: M :: subst {{ coq (open_ctyp_wrt_ctyp [[U K1]] [[K2]]) }}
 
 % Terms.
 exp, e, f :: 'exp_' ::=
@@ -89,11 +115,13 @@ dbind, db :: 'dbind_' ::=
 
 substitutions
   single A X :: subst_typ_in
+  single K U :: subst_ctyp_in
   single e x :: subst_exp_in
   single e X :: subst_typ_in
 
 freevars
   A X :: ftvar_in
+  K U :: ftvar_in
   e X :: ftvar_in
   e x :: fvar_in
 

@@ -6,6 +6,7 @@ Require Import List.
 Definition typvar : Set := var.
 Definition expvar : Set := var.
 Definition εvar : Set := var.
+Notation ctypvar := typvar.
 Definition monovar : Set := var.
 Definition polyvar : Set := var.
 
@@ -20,7 +21,6 @@ Inductive typ : Set :=
  | typ_arrow (A1:typ) (A2:typ)
  | typ_all_col (c:colour) (A:typ)
  | typ_all_etag (ε:εvar) (A:typ)
- | typ_all_plain (A:typ)
  | typ_hole : typ
  | typ_tophole (A:typ).
 
@@ -43,6 +43,15 @@ Inductive exp : Set :=
  | exp_app (e1:exp) (e2:exp)
  | exp_anno (e:exp) (A:typ)
  | exp_freeze (e:exp).
+
+Inductive ctyp : Set := 
+ | ctyp_unit : ctyp
+ | ctyp_var_b (_:nat)
+ | ctyp_var_f (U:ctypvar)
+ | ctyp_arrow (K1:ctyp) (K2:ctyp)
+ | ctyp_all (K:ctyp)
+ | ctyp_hole : ctyp
+ | ctyp_tophole (K:ctyp).
 
 Definition denv : Set := list (atom*dbind).
 
@@ -69,7 +78,6 @@ Fixpoint open_typ_wrt_typ_rec (k:nat) (A_5:typ) (A__6:typ) {struct A__6}: typ :=
   | (typ_arrow A1 A2) => typ_arrow (open_typ_wrt_typ_rec k A_5 A1) (open_typ_wrt_typ_rec k A_5 A2)
   | (typ_all_col c A) => typ_all_col c (open_typ_wrt_typ_rec (S k) A_5 A)
   | (typ_all_etag ε A) => typ_all_etag ε (open_typ_wrt_typ_rec (S k) A_5 A)
-  | (typ_all_plain A) => typ_all_plain (open_typ_wrt_typ_rec (S k) A_5 A)
   | typ_hole => typ_hole 
   | (typ_tophole A) => typ_tophole (open_typ_wrt_typ_rec k A_5 A)
 end.
@@ -110,11 +118,29 @@ Fixpoint open_exp_wrt_typ_rec (k:nat) (A5:typ) (e_5:exp) {struct e_5}: exp :=
   | (exp_freeze e) => exp_freeze (open_exp_wrt_typ_rec k A5 e)
 end.
 
+Fixpoint open_ctyp_wrt_ctyp_rec (k:nat) (K_5:ctyp) (K__6:ctyp) {struct K__6}: ctyp :=
+  match K__6 with
+  | ctyp_unit => ctyp_unit 
+  | (ctyp_var_b nat) => 
+      match lt_eq_lt_dec nat k with
+        | inleft (left _) => ctyp_var_b nat
+        | inleft (right _) => K_5
+        | inright _ => ctyp_var_b (nat - 1)
+      end
+  | (ctyp_var_f U) => ctyp_var_f U
+  | (ctyp_arrow K1 K2) => ctyp_arrow (open_ctyp_wrt_ctyp_rec k K_5 K1) (open_ctyp_wrt_ctyp_rec k K_5 K2)
+  | (ctyp_all K) => ctyp_all (open_ctyp_wrt_ctyp_rec (S k) K_5 K)
+  | ctyp_hole => ctyp_hole 
+  | (ctyp_tophole K) => ctyp_tophole (open_ctyp_wrt_ctyp_rec k K_5 K)
+end.
+
 Definition open_dbind_wrt_typ A5 db5 := open_dbind_wrt_typ_rec 0 db5 A5.
 
 Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
 
 Definition open_exp_wrt_typ A5 e_5 := open_exp_wrt_typ_rec 0 e_5 A5.
+
+Definition open_ctyp_wrt_ctyp K_5 K__6 := open_ctyp_wrt_ctyp_rec 0 K__6 K_5.
 
 Definition open_typ_wrt_typ A_5 A__6 := open_typ_wrt_typ_rec 0 A__6 A_5.
 
@@ -137,9 +163,6 @@ Inductive lc_typ : typ -> Prop :=    (* defn lc_typ *)
  | lc_typ_all_etag : forall (ε:εvar) (A:typ),
       ( forall X , lc_typ  ( open_typ_wrt_typ A (typ_var_f X) )  )  ->
      (lc_typ (typ_all_etag ε A))
- | lc_typ_all_plain : forall (A:typ),
-      ( forall X , lc_typ  ( open_typ_wrt_typ A (typ_var_f X) )  )  ->
-     (lc_typ (typ_all_plain A))
  | lc_typ_hole : 
      (lc_typ typ_hole)
  | lc_typ_tophole : forall (A:typ),
@@ -181,6 +204,25 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
  | lc_exp_freeze : forall (e:exp),
      (lc_exp e) ->
      (lc_exp (exp_freeze e)).
+
+(* defns LC_ctyp *)
+Inductive lc_ctyp : ctyp -> Prop :=    (* defn lc_ctyp *)
+ | lc_ctyp_unit : 
+     (lc_ctyp ctyp_unit)
+ | lc_ctyp_var_f : forall (U:ctypvar),
+     (lc_ctyp (ctyp_var_f U))
+ | lc_ctyp_arrow : forall (K1 K2:ctyp),
+     (lc_ctyp K1) ->
+     (lc_ctyp K2) ->
+     (lc_ctyp (ctyp_arrow K1 K2))
+ | lc_ctyp_all : forall (K:ctyp),
+      ( forall U , lc_ctyp  ( open_ctyp_wrt_ctyp K (ctyp_var_f U) )  )  ->
+     (lc_ctyp (ctyp_all K))
+ | lc_ctyp_hole : 
+     (lc_ctyp ctyp_hole)
+ | lc_ctyp_tophole : forall (K:ctyp),
+     (lc_ctyp K) ->
+     (lc_ctyp (ctyp_tophole K)).
 (** free variables *)
 Fixpoint ftvar_in_typ (A_5:typ) : vars :=
   match A_5 with
@@ -190,7 +232,6 @@ Fixpoint ftvar_in_typ (A_5:typ) : vars :=
   | (typ_arrow A1 A2) => (ftvar_in_typ A1) \u (ftvar_in_typ A2)
   | (typ_all_col c A) => (ftvar_in_typ A)
   | (typ_all_etag ε A) => (ftvar_in_typ A)
-  | (typ_all_plain A) => (ftvar_in_typ A)
   | typ_hole => {}
   | (typ_tophole A) => (ftvar_in_typ A)
 end.
@@ -205,6 +246,17 @@ Fixpoint fvar_in_exp (e_5:exp) : vars :=
   | (exp_app e1 e2) => (fvar_in_exp e1) \u (fvar_in_exp e2)
   | (exp_anno e A) => (fvar_in_exp e)
   | (exp_freeze e) => (fvar_in_exp e)
+end.
+
+Fixpoint ftvar_in_ctyp (K_5:ctyp) : vars :=
+  match K_5 with
+  | ctyp_unit => {}
+  | (ctyp_var_b nat) => {}
+  | (ctyp_var_f U) => {{U}}
+  | (ctyp_arrow K1 K2) => (ftvar_in_ctyp K1) \u (ftvar_in_ctyp K2)
+  | (ctyp_all K) => (ftvar_in_ctyp K)
+  | ctyp_hole => {}
+  | (ctyp_tophole K) => (ftvar_in_ctyp K)
 end.
 
 Definition ftvar_in_dbind (db5:dbind) : vars :=
@@ -235,7 +287,6 @@ Fixpoint subst_typ_in_typ (A_5:typ) (X5:typvar) (A__6:typ) {struct A__6} : typ :
   | (typ_arrow A1 A2) => typ_arrow (subst_typ_in_typ A_5 X5 A1) (subst_typ_in_typ A_5 X5 A2)
   | (typ_all_col c A) => typ_all_col c (subst_typ_in_typ A_5 X5 A)
   | (typ_all_etag ε A) => typ_all_etag ε (subst_typ_in_typ A_5 X5 A)
-  | (typ_all_plain A) => typ_all_plain (subst_typ_in_typ A_5 X5 A)
   | typ_hole => typ_hole 
   | (typ_tophole A) => typ_tophole (subst_typ_in_typ A_5 X5 A)
 end.
@@ -250,6 +301,17 @@ Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :
   | (exp_app e1 e2) => exp_app (subst_exp_in_exp e_5 x5 e1) (subst_exp_in_exp e_5 x5 e2)
   | (exp_anno e A) => exp_anno (subst_exp_in_exp e_5 x5 e) A
   | (exp_freeze e) => exp_freeze (subst_exp_in_exp e_5 x5 e)
+end.
+
+Fixpoint subst_ctyp_in_ctyp (K_5:ctyp) (U5:ctypvar) (K__6:ctyp) {struct K__6} : ctyp :=
+  match K__6 with
+  | ctyp_unit => ctyp_unit 
+  | (ctyp_var_b nat) => ctyp_var_b nat
+  | (ctyp_var_f U) => (if eq_var U U5 then K_5 else (ctyp_var_f U))
+  | (ctyp_arrow K1 K2) => ctyp_arrow (subst_ctyp_in_ctyp K_5 U5 K1) (subst_ctyp_in_ctyp K_5 U5 K2)
+  | (ctyp_all K) => ctyp_all (subst_ctyp_in_ctyp K_5 U5 K)
+  | ctyp_hole => ctyp_hole 
+  | (ctyp_tophole K) => ctyp_tophole (subst_ctyp_in_ctyp K_5 U5 K)
 end.
 
 Definition subst_typ_in_dbind (A5:typ) (X5:typvar) (db5:dbind) : dbind :=
@@ -283,6 +345,6 @@ Definition list_disjoint (xs ys : list atom) : Prop :=
 
 
 (** infrastructure *)
-#[export] Hint Constructors lc_typ lc_dbind lc_exp : core.
+#[export] Hint Constructors lc_typ lc_dbind lc_exp lc_ctyp : core.
 
 

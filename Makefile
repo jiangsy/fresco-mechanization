@@ -31,6 +31,11 @@ PAPER_AUX := ../paper/frost.aux
 	sed -e "s/dD/Δ/g" ${SED_FLAG} $@
 	sed -e "s/dP/Ψ/g" ${SED_FLAG} $@
 	sed -e "s/eps/ε/g" ${SED_FLAG} $@
+	# ctypvar = typvar (both are atom). Use a Notation so Coq's
+	# type-class resolution sees ctypvar and typvar as the same
+	# syntactic head — Definition aliases don't unify for typeclasses,
+	# but Notation does (parse-time substitution).
+	sed -e "s/Definition ctypvar : Set := var\./Notation ctypvar := typvar./g" ${SED_FLAG} $@
 
 ott : ${OTT_OUTS}
 
@@ -41,6 +46,9 @@ ott : ${OTT_OUTS}
 	sed -e "s/dD/Δ/g" ${SED_FLAG} $@
 	sed -e "s/dP/Ψ/g" ${SED_FLAG} $@
 	sed -e "s/eps/ε/g" ${SED_FLAG} $@
+	# Same alias as in def_ott.v (defensive — lngen output is unlikely
+	# to redefine ctypvar, but keep the pass for symmetry / safety).
+	sed -e "s/Definition ctypvar : Set := var\./Notation ctypvar := typvar./g" ${SED_FLAG} $@
 
 
 lngen : ${LNGEN_OUTS}
