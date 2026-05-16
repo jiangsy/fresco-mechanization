@@ -22,7 +22,10 @@ endif
 
 PAPER_AUX := ../paper/frost.aux
 
-.PHONY: coq clean sync-paper-refs
+# Use `make NJOBS=N coq` (or quick) for parallel compilation. Default 4.
+NJOBS ?= 4
+
+.PHONY: coq quick clean sync-paper-refs
 
 %/def_ott.v : %/language.ott
 	ott -i $^ -o $@ ${OTT_FLAGS}
@@ -65,7 +68,14 @@ ${COQ_MAKEFILE} : ${COQ_PROJECT} .FILE_LIST ${LNGEN_OUTS}
 	tree . -if -I ${IGNORE_DIRS} | grep -E "v$$" | cut -c3- | xargs coq_makefile -o $@ -f ${COQ_PROJECT}
 
 coq : ${COQ_MAKEFILE}
-	${MAKE} -f ${COQ_MAKEFILE}
+	${MAKE} -j ${NJOBS} -f ${COQ_MAKEFILE}
+
+# `quick` skips Qed-proof checking via `vos`/`vok` mode (much faster for
+# development iteration on prop_typing.v). Files compile to .vos rather
+# than .vo; opaque proofs aren't replayed. Use plain `make coq` before
+# committing to verify the full kernel acceptance.
+quick : ${COQ_MAKEFILE}
+	${MAKE} -j ${NJOBS} -f ${COQ_MAKEFILE} vos
 
 clean :
 	${MAKE} -f ${COQ_MAKEFILE} clean

@@ -16,6 +16,16 @@
     To re-verify the index against the codebase, run:
         cd mechanization && make coq
         grep -cE "^\\s*Admitted\\." frost/decl/*.v frost/algo/*.v
+
+    For faster development iteration on large files like
+    [frost/decl/prop_typing.v] (~5 minutes single-threaded), use:
+        cd mechanization && make quick        (* vos: skips opaque-proof
+                                                 checking, ~3-4x faster *)
+        cd mechanization && make NJOBS=8 coq  (* parallel kernel check *)
+
+    [make coq] runs full kernel acceptance and is the bar for committing.
+    [make quick] is a development convenience — run [make coq] before
+    pushing.
 *)
 
 Require Import src.frost.decl.def_extra.
@@ -30,9 +40,11 @@ Require Import src.frost.decl.prop_skeleton.
 (* ========================================================================== *)
 
 (** ** Lemma 3.1 — General subsumption.
-    Paper [declarative.tex:574]. Status: corollary wrapper is [Qed]
-    once D12 ([d_typing_general_subsumption_gen]) closes — currently
-    inherits 3 admits from D12's body (__abs / __abs_anno / __app). *)
+    Paper [declarative.tex:574]. Mechanised as
+    [d_typing_general_subsumption_via_gen], a one-line corollary of D12
+    (Lemma B.5, [d_typing_general_subsumption_gen]). Status: [Qed]
+    proof body. Transitive axiom count via [Print Assumptions] at the
+    end of this file. *)
 Check d_typing_general_subsumption_via_gen.
 
 (** ** Lemma 3.2 — Soundness of subtyping.
@@ -87,7 +99,19 @@ Check d_consis_compose.
 (** ** Lemma B.3 — Consistency-Subtyping Transitivity.
     Paper [syntax-directed.tex:161]. Mechanised as [d_consis_extends_d_sub]
     (modulo Permutation on Δ — paper writes "Δ_1, Δ_2" as set union).
-    Status: [Qed]. *)
+
+    Status: proof body has 1 admit (d_sub__check sub-case post-refactor).
+    See [Print Assumptions] at file end.
+
+    CAVEAT: this lemma's TRUE habitat is the ALGORITHMIC side (the paper
+    states it in [syntax-directed.tex], not [declarative.tex]). Currently
+    it lives in [prop_subtyping.v] under the declarative tree and is
+    consumed by D12's [__sub] case via [d_sub_gen_trans] → the
+    [_extends_d_sub_nil] / [_gen_nil] wrappers. Soundness of "consis
+    extends sub" in the DECLARATIVE rule set has not been independently
+    audited; the proof skeleton was ported from the algorithmic-side
+    expectation. The remaining admit is the locus where post-refactor
+    soundness must be re-validated. *)
 Check d_consis_extends_d_sub.
 
 (** ** Lemma B.4 — Subtyping Transitivity.
@@ -96,10 +120,11 @@ Check d_consis_extends_d_sub.
 Check d_sub_gen_trans.
 
 (** ** Lemma B.5 — Generalised General Subsumption (D12).
-    Paper [syntax-directed.tex:343]. Status: [Admitted] at __abs /
-    __abs_anno / __app cases (body-restructure requiring
-    [d_typing_abs_value_to_subsumption] / [_anno_] helpers which are
-    themselves [Admitted] at __embed / __check_gen). *)
+    Paper [syntax-directed.tex:343]. Mechanised as
+    [d_typing_general_subsumption_gen]. Status: proof body is [Qed]
+    (all 4 __abs / __abs_anno × m_orig admits closed; __app case closed
+    via [d_consis_gen_refl_is_typ]). Remaining axioms are TRANSITIVE
+    dependencies through helpers — see [Print Assumptions] at file end. *)
 Check d_typing_general_subsumption_gen.
 
 (* ========================================================================== *)
@@ -136,10 +161,13 @@ Check d_refine_all_plain_split.
 Check d_refine_hole_split.
 Check d_refine_tophole_split.
 
-(** ** Lemma D.5 — Consistency extends subtyping.
-    Paper [proofs.tex:51]. Mechanised as [d_consis_extends_d_sub]
-    (same lemma as B.3). Status: [Qed]. *)
-(* See d_consis_extends_d_sub above. *)
+(** NOTE: Earlier drafts of this index conflated "D.5 — Consistency
+    extends subtyping" with B.3 above. Paper Lemma D.5 (in [proofs.tex])
+    is an ALGORITHMIC property, not a declarative one — there is no
+    declarative paper-claim for "consis extends subtyping". Removed
+    the duplicate reference here; [d_consis_extends_d_sub] in our
+    mechanization is auxiliary scaffolding for D12 (see CAVEAT under
+    Lemma B.3 above), not the D.5 of [proofs.tex]. *)
 
 (* ========================================================================== *)
 (*  E1 — EXPRESSIVENESS BENCHMARK (paper §3.D design)                         *)
@@ -224,3 +252,25 @@ Check d_typing_gen_narrow_consis.
       colour_inh (typ_var_b 0)] is [is_inh_typ] and [d_consis nil Γ A A]
       is derivable (via __forall_inh with trivial cofinite premise),
       but [is_syn_typ A] FAILS at the head. *)
+
+(* ========================================================================== *)
+(*  PRINT ASSUMPTIONS — D1 / D12 transitive axiom list                        *)
+(* ========================================================================== *)
+
+(** Re-verify the transitive axiom dependencies of the two flagship
+    declarative theorems. Run `make coq` then `coqc -R . src README.v`
+    (or step through this file in vsrocq) to see the live output.
+
+    Current state (2026-05-17): 2 transitive axioms, both isolated to
+    the helper layer:
+    - [d_typing_gen_lift_mono] — mode-lift on mono types. Admitted at
+      __app (function arg-type [P'] may be polytype; closure requires
+      D12, creating a cycle that needs mutual induction or inlining
+      ~400 lines of SPLIT helpers into D12 to break).
+    - [prop_subtyping.d_consis_extends_d_sub] — admitted at __check
+      sub-case (post-refactor: the [d_consis__forall_syn] rule allows
+      non-mono LHS, breaking the [T mono → A = T] chain). See CAVEAT
+      under Lemma B.3 in this file. *)
+
+Print Assumptions d_typing_general_subsumption_via_gen.
+Print Assumptions d_typing_general_subsumption_gen.

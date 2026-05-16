@@ -2115,23 +2115,28 @@ Proof.
   induction Hs; intros T0 Hc HwfT.
   - (* __embed: route through [d_consis_extends_d_sub_nil]. *)
     subst. apply d_sub_gen__embed. eapply d_consis_extends_d_sub_nil; eauto.
-  - (* __infer_gen: Hc has RHS = syn_color T (syn-painted). Derive
-       [is_utyp T0] from the syn-color helper, then [mono_typ T0]
-       via [d_consis_LHS_mono_wf]. *)
-    assert (HutT : is_utyp T0) by
-      (eapply d_consis_LHS_is_utyp_when_RHS_syn_color; eauto).
-    assert (HmonoT : mono_typ T0) by (eapply d_consis_LHS_mono_wf; eauto).
-    destruct (d_consis_mono_LHS Hc HmonoT) as [HeqA _]; subst.
-    apply d_sub_gen__infer_gen; assumption.
-  - (* __check_gen: Hc has RHS = inh_color A (inh-painted). The
-       [is_utyp] helper for inh-painted RHS is unavailable due to the
-       new [__forall_inh] case. This case becomes admitted; the
-       structural gap is real and matches the same gap in
-       [d_consis_to_d_sub_gen]'s mode_tc case. *)
+  - (* __infer_gen: Hc has RHS = syn_color T. Sound closure: use
+       [d_consis_gen_RHS_syn_color_eq] (Qed) to pin T0 = syn_color T,
+       then compose Hc with H via [d_consis_gen_trans] and reconstruct
+       via [d_sub_gen__infer_gen]. This avoids the unsound chain
+       through [d_consis_LHS_is_utyp_when_RHS_syn_color]. *)
     subst.
-    assert (HmonoT : mono_typ T0) by (eapply d_consis_LHS_mono_wf; eauto;
-      eapply d_consis_LHS_is_utyp_when_RHS_syn_color; eauto).
-    destruct (d_consis_mono_LHS Hc HmonoT) as [HeqA _]; subst.
+    assert (Hc_gen : d_consis_gen nil Γ T0 (syn_color T))
+      by (apply d_consis_gen__embed; assumption).
+    assert (HT0eq : T0 = syn_color T)
+      by (eapply d_consis_gen_RHS_syn_color_eq; eauto).
+    subst T0.
+    apply d_sub_gen__infer_gen.
+    eapply d_consis_gen_trans; eauto.
+  - (* __check_gen: same pattern — pin T0 = syn_color T via the RHS
+       rigidity lemma, then dispatch via [d_sub_gen__check_gen] (the
+       guarded_typ + d_consis_gen premise of __check_gen carry over). *)
+    subst.
+    assert (Hc_gen : d_consis_gen nil Γ T0 (syn_color T))
+      by (apply d_consis_gen__embed; assumption).
+    assert (HT0eq : T0 = syn_color T)
+      by (eapply d_consis_gen_RHS_syn_color_eq; eauto).
+    subst T0.
     apply d_sub_gen__check_gen; assumption.
   - (* __refl_mono: A = B mono. Use [d_consis_to_d_sub_gen] (compat
        carried by __refl_mono). [is_utyp T0] derived via
