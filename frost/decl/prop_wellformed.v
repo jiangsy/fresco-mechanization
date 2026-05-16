@@ -91,8 +91,6 @@ Proof.
   - apply d_wf_skel__arrow; auto.
   - inst_cofinites_for d_wf_skel__all_col.
     intros X HX. apply H0; auto.
-  - inst_cofinites_for d_wf_skel__all_plain.
-    intros X HX. apply H0; auto.
   - apply d_wf_skel__hole.
   - apply d_wf_skel__tophole; auto.
 Qed.
@@ -129,10 +127,6 @@ Proof.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
-  - inst_cofinites_for d_wf_utyp__pall.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply H0; auto.
 Qed.
 
 Lemma d_wf_tskel_weakening : forall Γ1 Γ2 Γ3 Δ P,
@@ -166,10 +160,6 @@ Proof.
     + apply binds_app_iff. right. apply binds_app_iff. auto.
   - apply d_wf_uskel__arrow; auto.
   - inst_cofinites_for d_wf_uskel__tall; auto.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply H0; auto.
-  - inst_cofinites_for d_wf_uskel__pall.
     intros X HX.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
@@ -235,10 +225,6 @@ Proof.
   - apply d_wf_utyp__var. apply Hmorph; auto.
   - apply d_wf_utyp__arrow; auto.
   - inst_cofinites_for d_wf_utyp__tall; auto.
-    intros X HX. apply H0; auto.
-    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
-      apply binds_app_iff; [left | right]; auto.
-  - inst_cofinites_for d_wf_utyp__pall.
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
       apply binds_app_iff; [left | right]; auto.
