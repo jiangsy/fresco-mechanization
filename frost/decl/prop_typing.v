@@ -2734,6 +2734,46 @@ Proof.
   - exact Hs.
 Qed.
 
+(** Mono-extraction helpers (used in __check_gen closure). *)
+
+Lemma is_inh_typ_syn_color_mono : forall A C,
+    is_inh_typ A ->
+    A = syn_color C ->
+    mono_typ A.
+Proof.
+  intros A C Hinh. revert C. induction Hinh; intros C HC.
+  - apply mono_typ__unit.
+  - apply mono_typ__var.
+  - destruct C; simpl in HC; inversion HC; subst.
+    apply mono_typ__arrow.
+    + eapply IHHinh1; reflexivity.
+    + eapply IHHinh2; reflexivity.
+  - (* A = typ_all_col colour_inh A_inner; syn_color C never has
+       colour_inh at head — destructed C is ctyp_all giving
+       colour_syn. Contradiction. *)
+    destruct C; simpl in HC; discriminate.
+Qed.
+
+Lemma d_consis_gen_LHS_syn_color_mono : forall Δ Γ T A,
+    d_consis_gen Δ Γ T A ->
+    forall C, T = syn_color C ->
+    mono_typ T.
+Proof.
+  intros Δ Γ T A Hc. induction Hc; intros C HC.
+  - apply mono_typ__unit.
+  - apply mono_typ__var.
+  - destruct C; simpl in HC; discriminate.
+  - destruct C; simpl in HC; discriminate.
+  - destruct C; simpl in HC; discriminate.
+  - destruct C; simpl in HC; discriminate.
+  - destruct C; simpl in HC; discriminate.
+  - destruct C; simpl in HC; try discriminate.
+    inversion HC; subst.
+    apply mono_typ__arrow.
+    + eapply IHHc1; reflexivity.
+    + eapply IHHc2; reflexivity.
+Qed.
+
 (** [d_typing_abs_value_to_forall]: when Hty = __abs (a value), lifting
     to typ_all_col colour_inh via __forall_r requires nested recursion
     on the per-X premise.
@@ -2754,28 +2794,63 @@ Lemma d_typing_abs_value_to_subsumption :
 Proof.
   intros L Γ e A B m_orig C HinhA HwfA Hbody Hdecr Hwfd Hs.
   dependent induction Hs.
-  - (* __embed: d_sub mode_tc nil Γ (typ_arrow A B) C — needs d_sub
-       inversion (4 sub-cases) + body-conversion for each shape.
-       Post-re-encoding the body context (x ~ A) does not match the
-       rule's (x ~ syn_color (erase A)) for non-mono A. Research-grade
-       narrowing required. *)
-    admit.
-  - (* __check_gen: structurally the same as __refl_mono but mono on
-       A, B isn't directly given — it follows from a chain:
-       (a) the equation [syn_color T = typ_arrow A B] forces T to be
-           [ctyp_arrow T1 T2], hence A, B are syn-painted;
-       (b) [is_inh_typ A] + syn-painted A ⟹ A mono (colour conflict
-           at any quantifier in A);
-       (c) the inner d_consis_gen on syn-painted LHS only matches
-           {unit/var/arrow} rules (typ_all_col colour_syn LHS has no
-           rule; new __forall_inh has colour_inh LHS, not colour_syn).
-           Hence B mono.
-       Then the closure mirrors __refl_mono with the mono witnesses.
+  - (* __embed: d_sub mode_tc nil Γ (typ_arrow A B) C. Invert to
+       __check (mono extraction → mirror __refl_mono) or __forall_r
+       (would need recursion; handled by re-wrapping via d_sub_gen__embed
+       and applying outer d_sub_gen__forall_r — but the outer Hs is
+       this __embed case so dep induction doesn't provide IH).
 
-       Admit pending: the chain is mechanized but the final
-       reconstruction step requires careful re-painting (inh_color of
-       a mono = mono itself), which is provable but adds ~30 lines. *)
+       For closure: the __check case mirrors __check_gen. The
+       __forall_r case requires either a mutual helper or strong
+       induction; left admitted pending that restructure. *)
     admit.
+  - (* __check_gen: T : ctyp with syn_color T = typ_arrow A B forces
+       T = ctyp_arrow T1 T2, A = syn_color T1, B = syn_color T2.
+       From [HinhA: is_inh_typ A] + syn-LHS ⟹ A mono.
+       From inner d_consis_gen on syn LHS ⟹ T1, T2 mono.
+       Then mirror __refl_mono with derived mono witnesses. *)
+    destruct T; simpl in x; try discriminate.
+    inversion x; subst.
+    (* A = syn_color T1, B = syn_color T2 now. *)
+    assert (HmonoA : mono_typ (syn_color T1))
+      by (eapply is_inh_typ_syn_color_mono; eauto).
+    (* H0 : d_consis_gen nil Γ (typ_arrow (syn_color T1) (syn_color T2))
+              (inh_color A0).  Inversion forces __arrow. *)
+    inversion H0; subst.
+    (* H6: d_consis_gen Δ1 Γ (syn_color T1) A1
+       H7: d_consis_gen Δ2 Γ (syn_color T2) A2
+       H1: Δ1 ++ Δ2 = nil
+       Goal: d_typing_gen mode_tc Γ (exp_abs e) (typ_arrow A1 A2). *)
+    apply app_eq_nil in H1. destruct H1 as [HΔ1 HΔ2]. subst Δ1 Δ2.
+    assert (HmonoB : mono_typ (syn_color T2))
+      by (eapply d_consis_gen_LHS_syn_color_mono; eauto).
+    (* By d_consis_gen_lhs_syn_eq, syn_color T1 = A1 and syn_color T2 = A2. *)
+    pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoA) H6) as HeqA1.
+    pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoB) H7) as HeqA2.
+    subst A1 A2.
+    (* Goal: d_typing_gen mode_tc Γ (exp_abs e)
+              (typ_arrow (syn_color T1) (syn_color T2)). *)
+    (* Mirror __refl_mono: rewrite syn_color T1 ↦ inh_color T1 via the
+       mono pinning [mono_typ (syn_color T1) ⇒ inh_color (erase (syn_color T1)) = syn_color T1
+       ⇒ inh_color T1 = syn_color T1 (via erase_syn_color)]. *)
+    pose proof (mono_typ_inh_color_erase HmonoA) as HeqA_inh.
+    rewrite erase_syn_color in HeqA_inh.
+    (* HeqA_inh : inh_color T1 = syn_color T1. *)
+    rewrite <- HeqA_inh at 1.
+    apply d_typing_gen__abs with (L := L `union` dom Γ).
+    + rewrite HeqA_inh. exact HwfA.
+    + intros x0 Hx0.
+      assert (Hwfd_x : d_wf_denv ((x0 ~ dbind_typ (syn_color T1)) ++ Γ)).
+      { apply d_wf_denv__typ; auto. }
+      (* Goal: d_typing_gen mode_tc ((x0:syn_color T1)∷Γ) (open e x0)
+                (syn_color T2). *)
+      apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
+      * rewrite <- Hdecr. apply Hbody. auto.
+      * apply d_sub_gen_refl; auto.
+        -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; assumption.
+        -- rewrite_env ((x0 ~ dbind_typ (syn_color T1)) ++ Γ).
+           apply d_wf_typ_weakening_head.
+           eapply d_consis_gen_preserves_wf; eauto.
   - (* __refl_mono: target = typ_arrow A B forced mono ⇒ mono A and
        mono B. The ctyp base for [d_typing_gen__abs] is [erase A]; for
        mono A, [inh_color (erase A) = syn_color (erase A) = A], so the
