@@ -31,9 +31,12 @@ Proof.
   intros Ψ Γ P1 P2 Q H. dependent destruction H. eauto.
 Qed.
 
+(** Post-refactor (typ_all_plain removed): d_refine now produces
+    [typ_all_col colour_syn _] in place of [typ_all_plain _]. The
+    splitting lemmas accordingly take [typ_all_col colour_syn] LHS. *)
 Lemma d_refine_all_plain_split : forall Ψ Γ P Q,
-    d_refine Ψ Γ (typ_all_plain P) Q ->
-    exists Q', Q = typ_all_plain Q' /\
+    d_refine Ψ Γ (typ_all_col colour_syn P) Q ->
+    exists Q', Q = typ_all_col colour_syn Q' /\
                exists L, forall X, X `notin` L ->
                   d_refine (X :: Ψ) Γ
                     (open_typ_wrt_typ P (typ_var_f X))
@@ -51,11 +54,11 @@ Qed.
 
 Lemma d_refine_tophole_split : forall Ψ Γ P Q,
     d_refine Ψ Γ (typ_tophole P) Q ->
-    (exists L Q', Q = typ_all_plain Q' /\
+    (exists L Q', Q = typ_all_col colour_syn Q' /\
                   (forall X, X `notin` L ->
                      d_refine (X :: Ψ) Γ P (open_typ_wrt_typ Q' (typ_var_f X))))
     \/
-    (exists L Q', Q = typ_all_plain (typ_tophole Q') /\
+    (exists L Q', Q = typ_all_col colour_syn (typ_tophole Q') /\
                   guarded_skel Q' /\
                   d_wf_skel nil Γ P /\
                   (forall X, X `notin` L ->

@@ -205,7 +205,7 @@ Inductive a_wf_typ : aenv -> typ -> Prop :=
 | a_wf_typ__all_plain : forall L Θ A,
     (forall X, X `notin` L ->
        a_wf_typ ((X ~ abind_tvar) ++ Θ) (open_typ_wrt_typ A (typ_var_f X))) ->
-    a_wf_typ Θ (typ_all_plain A)
+    a_wf_typ Θ (typ_all_col colour_syn A)
 | a_wf_typ__hole : forall Θ,
     a_wf_typ Θ typ_hole
 | a_wf_typ__tophole : forall Θ A,
@@ -320,7 +320,7 @@ Inductive a_non_flex_poly : aenv -> typ -> Prop :=
 | a_non_flex_poly__arrow : forall Θ A B, a_non_flex_poly Θ (typ_arrow A B)
 | a_non_flex_poly__all_col : forall Θ c A, a_non_flex_poly Θ (typ_all_col c A)
 | a_non_flex_poly__all_etag : forall Θ ε A, a_non_flex_poly Θ (typ_all_etag ε A)
-| a_non_flex_poly__all_plain : forall Θ A, a_non_flex_poly Θ (typ_all_plain A)
+| a_non_flex_poly__all_plain : forall Θ A, a_non_flex_poly Θ (typ_all_col colour_syn A)
 | a_non_flex_poly__hole : forall Θ, a_non_flex_poly Θ typ_hole
 | a_non_flex_poly__tophole : forall Θ A, a_non_flex_poly Θ (typ_tophole A).
 
@@ -333,7 +333,7 @@ Inductive a_non_flex : aenv -> typ -> Prop :=
 | a_non_flex__arrow : forall Θ A B, a_non_flex Θ (typ_arrow A B)
 | a_non_flex__all_col : forall Θ c A, a_non_flex Θ (typ_all_col c A)
 | a_non_flex__all_etag : forall Θ ε A, a_non_flex Θ (typ_all_etag ε A)
-| a_non_flex__all_plain : forall Θ A, a_non_flex Θ (typ_all_plain A)
+| a_non_flex__all_plain : forall Θ A, a_non_flex Θ (typ_all_col colour_syn A)
 | a_non_flex__hole : forall Θ, a_non_flex Θ typ_hole
 | a_non_flex__tophole : forall Θ A, a_non_flex Θ (typ_tophole A).
 
@@ -367,7 +367,7 @@ Inductive a_guess_mono : aenv -> typ -> aenv -> typ -> Prop :=
     a_guess_mono Θ (typ_all_col c P) Ξ (typ_all_col c A)
 | a_guess_mono__all_plain : forall Θ P Ξ A,
     a_guess_mono Θ P Ξ A ->
-    a_guess_mono Θ (typ_all_plain P) Ξ (typ_all_plain A)
+    a_guess_mono Θ (typ_all_col colour_syn P) Ξ (typ_all_col colour_syn A)
 | a_guess_mono__arrow : forall Θ P Q Ξ1 Ξ2 A B,
     a_guess_mono Θ P Ξ1 A ->
     a_guess_mono Θ Q Ξ2 B ->
@@ -412,7 +412,7 @@ Inductive a_pre_sub : aenv -> mode -> typ -> typ -> typ -> Prop :=
 | a_pre_sub__hole_l : forall Θ m Q,
     guarded_typ Q \/ (exists c B, Q = typ_all_col c B)
                   \/ (exists ε B, Q = typ_all_etag ε B)
-                  \/ (exists B, Q = typ_all_plain B)
+                  \/ (exists B, Q = typ_all_col colour_syn B)
                   \/ (exists B, Q = typ_tophole B) ->
     a_pre_sub Θ m typ_hole Q Q
 | a_pre_sub__hole_r : forall Θ m P,
@@ -434,11 +434,11 @@ Inductive a_pre_sub : aenv -> mode -> typ -> typ -> typ -> Prop :=
 | a_pre_sub__all_l : forall L Θ m P Q P',
     (forall X, X `notin` L ->
       a_pre_sub Θ m (open_typ_wrt_typ P (typ_var_f X)) Q P') ->
-    a_pre_sub Θ m (typ_all_plain P) Q (typ_all_plain P')
+    a_pre_sub Θ m (typ_all_col colour_syn P) Q (typ_all_col colour_syn P')
 | a_pre_sub__all_r : forall L Θ m P Q P',
     (forall X, X `notin` L ->
       a_pre_sub Θ m P (open_typ_wrt_typ Q (typ_var_f X)) P') ->
-    a_pre_sub Θ m P (typ_all_plain Q) P'
+    a_pre_sub Θ m P (typ_all_col colour_syn Q) P'
 | a_pre_sub__tophole_l : forall Θ m P Q P',
     a_pre_sub Θ m P Q P' ->
     a_pre_sub Θ m (typ_tophole P) Q P'
@@ -467,14 +467,14 @@ with a_pre_join : aenv -> typ -> typ -> typ -> Prop :=
     (forall X, X `notin` L ->
       a_pre_join Θ (open_typ_wrt_typ P (typ_var_f X))
                  (open_typ_wrt_typ Q (typ_var_f X)) P') ->
-    a_pre_join Θ (typ_all_plain P) (typ_all_plain Q) (typ_all_plain P')
+    a_pre_join Θ (typ_all_col colour_syn P) (typ_all_col colour_syn Q) (typ_all_col colour_syn P')
 | a_pre_join__tophole_both : forall Θ P Q P',
     a_pre_join Θ P Q P' ->
     a_pre_join Θ (typ_tophole P) (typ_tophole Q) (typ_tophole P')
 | a_pre_join__tophole_l_all : forall L Θ P Q P',
     (forall X, X `notin` L ->
       a_pre_join Θ (typ_tophole P) (open_typ_wrt_typ Q (typ_var_f X)) P') ->
-    a_pre_join Θ (typ_tophole P) (typ_all_plain Q) (typ_all_plain P')
+    a_pre_join Θ (typ_tophole P) (typ_all_col colour_syn Q) (typ_all_col colour_syn P')
 | a_pre_join__tophole_l_guarded : forall Θ P Q P',
     guarded_typ Q ->
     a_pre_join Θ P Q P' ->
@@ -482,7 +482,7 @@ with a_pre_join : aenv -> typ -> typ -> typ -> Prop :=
 | a_pre_join__all_l_tophole : forall L Θ P Q P',
     (forall X, X `notin` L ->
       a_pre_join Θ (open_typ_wrt_typ P (typ_var_f X)) (typ_tophole Q) P') ->
-    a_pre_join Θ (typ_all_plain P) (typ_tophole Q) (typ_all_plain P')
+    a_pre_join Θ (typ_all_col colour_syn P) (typ_tophole Q) (typ_all_col colour_syn P')
 | a_pre_join__guarded_r_tophole : forall Θ P Q P',
     guarded_typ P ->
     a_pre_join Θ P Q P' ->
@@ -533,7 +533,7 @@ Inductive a_unify : aenv -> typ -> typ -> typ -> aenv -> Prop :=
               (open_typ_wrt_typ P (typ_var_f X))
               (open_typ_wrt_typ S' (typ_var_f X))
               ((X ~ abind_tvar) ++ Θ')) ->
-    a_unify Θ (typ_all_plain S) (typ_all_plain P) (typ_all_plain S') Θ'
+    a_unify Θ (typ_all_col colour_syn S) (typ_all_col colour_syn P) (typ_all_col colour_syn S') Θ'
 | a_unify__tophole_both : forall Θ Θ' S P S',
     a_unify Θ S P S' Θ' ->
     a_unify Θ (typ_tophole S) (typ_tophole P) (typ_tophole S') Θ'
@@ -544,7 +544,7 @@ Inductive a_unify : aenv -> typ -> typ -> typ -> aenv -> Prop :=
               (typ_tophole P)
               (open_typ_wrt_typ S' (typ_var_f X))
               ((X ~ abind_tvar) ++ Θ')) ->
-    a_unify Θ (typ_all_plain S) (typ_tophole P) (typ_all_plain S') Θ'
+    a_unify Θ (typ_all_col colour_syn S) (typ_tophole P) (typ_all_col colour_syn S') Θ'
 | a_unify__guarded_l_tophole : forall Θ Θ' S P S',
     a_guarded Θ S ->
     a_non_flex Θ S ->
@@ -557,7 +557,7 @@ Inductive a_unify : aenv -> typ -> typ -> typ -> aenv -> Prop :=
               (open_typ_wrt_typ P (typ_var_f X))
               (open_typ_wrt_typ S' (typ_var_f X))
               ((X ~ abind_tvar) ++ Θ')) ->
-    a_unify Θ (typ_tophole S) (typ_all_plain P) (typ_all_plain S') Θ'
+    a_unify Θ (typ_tophole S) (typ_all_col colour_syn P) (typ_all_col colour_syn S') Θ'
 | a_unify__tophole_l_guarded : forall Θ Θ' S P S',
     a_guarded Θ P ->
     a_non_flex Θ P ->
@@ -716,7 +716,7 @@ Inductive a_consis : aenv -> typ -> typ -> aenv -> Prop :=
          (open_typ_wrt_typ T (typ_var_f X))
          (open_typ_wrt_typ A (typ_var_f X))
          ((X ~ abind_tvar) ++ Θ')) ->
-    a_consis Θ (typ_all_plain T) (typ_all_col colour_inh A) Θ'
+    a_consis Θ (typ_all_col colour_syn T) (typ_all_col colour_inh A) Θ'
 | a_consis__forall_syn_tagged : forall L Θ Θ' ε T A,
     (forall X, X `notin` L ->
        a_consis ((X ~ abind_tvar) ++ Θ)
@@ -730,7 +730,7 @@ Inductive a_consis : aenv -> typ -> typ -> aenv -> Prop :=
          (open_typ_wrt_typ T (typ_var_f X))
          (open_typ_wrt_typ A (typ_var_f X))
          ((X ~ abind_tvar) ++ Θ')) ->
-    a_consis Θ (typ_all_plain T) (typ_all_col colour_syn A) Θ'
+    a_consis Θ (typ_all_col colour_syn T) (typ_all_col colour_syn A) Θ'
 | a_consis__arrow : forall Θ Θ1 Θ2 T1 T2 A1 A2,
     a_consis Θ T1 A1 Θ1 ->
     a_consis Θ1 T2 A2 Θ2 ->
@@ -857,7 +857,7 @@ Inductive a_broom : a_sub_mode -> mode -> typ -> aenv -> typ -> typ -> aenv -> P
               (open_typ_wrt_typ S (typ_var_f X))
               S'
               Θ') ->
-    a_broom NM m P Θ (typ_all_plain S) S' Θ'
+    a_broom NM m P Θ (typ_all_col colour_syn S) S' Θ'
 | a_broom__univ_ghost_l : forall m Θ Θ' P S S',
     m <> mode_ti ->
     a_broom a_sub_mode_sk m P Θ S S' Θ' ->
