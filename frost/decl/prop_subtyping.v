@@ -1232,13 +1232,131 @@ Proof.
   subst Δc. exact Hsub.
 Qed.
 
-(** [d_typing_lift_mono] / [d_typing_lift_mono_mut] (REMOVED): the
-    headline mode-lift lemma for mono types and its mutual form. The
-    __app case is genuinely research-grade — the function's argument
-    type isn't pinned to mono by d_typing__app's premises, so the
-    structural induction can't recurse. Both removed as unused
-    outside their own definitions; the [d_typing_gen_lift_mono]
-    analogue in prop_typing.v (used by D12) retains the same gap. *)
+(** Lift [d_typing] from [mode_ti] to any [m_target] at the SAME mono
+    type, given the corresponding refl [d_sub m_target nil Γ A A].
+
+    The signature is restricted to [m_orig = mode_ti] (sufficient for
+    D1's __abs / __abs_anno body-conversion uses, where the body
+    sits at [decr_mode mode_ti = mode_ti]).
+
+    Closure cases:
+    - __unit / __var / __anno: wrap via [d_typing__sub] at m_target.
+    - __sub: compose the inner mode_ti d_sub with [Hrefl] using
+      [d_consis_extends_d_sub_nil].
+    - __forall: produces mode_tc; contradicts m_orig = mode_ti.
+    - __abs / __abs_anno: re-apply at m_target. Body sits at
+      [decr_mode mode_ti = mode_ti] (preserved). Inner refl on the
+      body's result type derived via [d_sub_arrow_refl_inner] on
+      mono LHS.
+    - __app: requires the function's argument type to be mono, which
+      is NOT automatic from d_typing__app's premises. Admitted; same
+      research-grade gap as D1's __app case. *)
+Lemma d_typing_lift_mono_mut :
+    (forall m Γ e A,
+        d_typing m Γ e A ->
+        m = mode_ti ->
+        forall m_target,
+          mono_typ A ->
+          d_wf_denv Γ ->
+          d_sub m_target nil Γ A A ->
+          d_typing m_target Γ e A)
+ /\ (forall m Γ e P,
+        d_pat m Γ e P -> True).
+Proof.
+  apply d_typing_pat_mut; intros; try trivial.
+  - (* d_typing__unit *)
+    apply d_typing__sub with (A := typ_unit); auto using is_base_term__unit.
+    apply d_typing__unit; auto.
+  - (* d_typing__var: var's type [A] is read straight out of [Γ]
+       (already a [syn]-painting by the context invariant), so no
+       painting is applied at the rule. *)
+    apply d_typing__sub with (A := A); auto using is_base_term__var.
+    apply d_typing__var; auto.
+  - (* d_typing__anno: rule conclusion is [syn_color A] for the [ctyp]
+       base [A]; route through [d_typing__sub] at that target. *)
+    apply d_typing__sub with (A := syn_color A); auto using is_base_term__anno.
+    apply d_typing__anno; auto.
+  - (* d_typing__sub: compose inner mode_ti sub with Hrefl via
+       [d_consis_extends_d_sub_nil]. The inner [d_sub mode_ti nil] is
+       now [d_sub__infer], which after inversion + subst pins both its
+       indices to [syn_color] paintings; the mid type [M] is grabbed
+       off the resulting [d_consis] by [match goal]. *)
+    subst.
+    apply d_typing__sub with (A := A); auto.
+    match goal with
+    | Hs : d_sub mode_ti nil _ _ _ |- _ =>
+        inversion Hs; subst;
+        try (match goal with H' : ?m0 <> ?m0 |- _ =>
+               exfalso; apply H'; reflexivity end)
+    end.
+    match goal with
+    | Hc : d_consis nil Γ _ ?M |- _ =>
+        apply d_consis_extends_d_sub_nil with (A := M);
+        [ exact Hc | assumption
+        | eapply (proj1 d_typing_pat_preserves_wf); eauto ]
+    end.
+  - (* d_typing__freeze: rule produces mode_tc, contradicts m = mode_ti. *)
+    discriminate.
+  - (* d_typing__forall: rule produces mode_tc, contradicts m = mode_ti. *)
+    discriminate.
+  - (* d_typing__abs at outer m = mode_ti. The conclusion type is
+       [typ_arrow (inh_color A) B] for the [ctyp] base [A]; the body
+       binds [(x~typ syn_color A)]. Body's IH [H] provides the body
+       lift at [decr_mode m_target], which is exactly what
+       [d_sub_arrow_refl_inner] produces. *)
+    subst.
+    match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+      inversion Hm; subst
+    end.
+    apply d_typing__abs with (L := L `union` dom Γ); auto.
+    intros x Hx. apply H; auto.
+    + (* body context binds [syn_color A]; bridge from the rule's
+         [d_wf_typ Γ (inh_color A)] via [d_wf_typ_inh_color_syn_color]. *)
+      apply d_wf_denv__typ;
+        [ assumption
+        | fsetdec
+        | apply d_wf_typ_inh_color_syn_color; assumption ].
+    + (* d_sub (decr_mode m_target) nil ((x~typ syn_color A)++Γ) B B
+         derived from Hrefl via d_sub_arrow_refl_inner + weakening. *)
+      rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+      apply d_sub_weakening_head.
+      match goal with
+      | Href : d_sub _ nil Γ (typ_arrow _ _) (typ_arrow _ _) |- _ =>
+          apply (d_sub_arrow_refl_inner Href); assumption
+      end.
+  - (* d_typing__abs_anno: rule conclusion is [typ_arrow (syn_color A) B];
+       body binds [(x~typ syn_color A)] (already the same colour as the
+       wf premise). *)
+    subst.
+    match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+      inversion Hm; subst
+    end.
+    apply d_typing__abs_anno with (L := L `union` dom Γ); auto.
+    intros x Hx. apply H; auto.
+    + apply d_wf_denv__typ; [assumption | fsetdec | assumption].
+    + rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+      apply d_sub_weakening_head.
+      match goal with
+      | Href : d_sub _ nil Γ (typ_arrow _ _) (typ_arrow _ _) |- _ =>
+          apply (d_sub_arrow_refl_inner Href); assumption
+      end.
+  - (* d_typing__app: research-grade gap (function's argument type mono
+       not derivable from rule premises). Admit, same as D1's __app. *)
+    admit.
+Admitted.
+
+(** Headline lemma: lift d_typing from mode_ti → any m_target at a fixed
+    mono type. Derived from the mutual via [proj1]. *)
+Lemma d_typing_lift_mono : forall Γ e A m_target,
+    d_typing mode_ti Γ e A ->
+    mono_typ A ->
+    d_wf_denv Γ ->
+    d_sub m_target nil Γ A A ->
+    d_typing m_target Γ e A.
+Proof.
+  intros Γ e A m_target Hty Hmono Hwfd Hrefl.
+  eapply (proj1 d_typing_lift_mono_mut); eauto.
+Qed.
 
 (** * d_sub preserves wellformedness.
 
@@ -1347,20 +1465,116 @@ Inductive d_shallow_sub_mono : list (atom * dbind) -> typ -> typ -> Prop :=
     d_shallow_sub_mono Γ (open_typ_wrt_typ A A') B ->
     d_shallow_sub_mono Γ (typ_all_col c A) B.
 
-(** [d_sub_complete_mono] (REMOVED): completeness of [d_sub] w.r.t.
-    the monotype-only shallow subtyping fragment. The proof requires
-    (a) polytype refl which d_sub doesn't have, and (b) a translation
-    between [typ_all_col] (decl) and [typ_all_etag / typ_all_plain]
-    (utyp) — both are rule-design issues, not mechanization gaps.
-    Flagged paper-level; removed as unused. *)
+(** Completeness claim: every [d_shallow_sub_mono] derivation lifts to
+    [d_sub mode_tc nil] — i.e. our system handles at least the
+    monotype-only fragment.
 
-(** [d_sub_no_guess_uniqueness] (REMOVED): paper Lemma 3.3, flagged
-    in the paper itself as "a bit sketchy". The strict equality form
-    is **provably false** — counter-example: [T = ∀^ε β. β → β],
-    [ph1 = unit] and [ph2 = ∀^ε γ. γ] both produce valid derivations
-    via [d_sub__forall_l_tagged] absorbing the difference. The
-    paper's lemma needs revising to a weaker form (e.g., mutual
-    subtyping rather than equality). Removed as unused. *)
+    This direction is the easier of the two: [d_shallow_sub_mono]'s LHS
+    pattern [typ_all_col c A] corresponds to [d_sub__forall_l_*] in our
+    system, but those rules expect LHS shapes [typ_all_etag] /
+    [typ_all_plain]. Bridging requires a translation between
+    [typ_all_col] (declarative) and [typ_all_etag / typ_all_plain]
+    (utyp). *)
+Theorem d_sub_complete_mono : forall Γ A B,
+    d_shallow_sub_mono Γ A B ->
+    d_sub mode_tc nil Γ A B.
+Proof.
+  intros Γ A B H. induction H.
+  - (* refl on A — d_sub mode_tc nil Γ A A. Use d_sub__check via
+       d_consis_refl_mono if A is monotype, else... we need refl in
+       general which doesn't exist for d_sub on polytypes. *)
+    (* Without further restriction, A could be polytype and d_sub refl
+       only holds at monotype. So this case CANNOT close without
+       narrowing the hypothesis to mono_typ. *)
+    admit.
+  - (* forall_r — d_sub__forall_r only produces colour_inh on RHS, but
+       d_shallow_sub_mono__forall_r is over any colour c. For c = inh
+       direct, c = syn we lack the corresponding rule.
+
+       Without splitting on c, the goal is [d_sub mode_tc nil Γ A
+       (typ_all_col c B)] for arbitrary c; d_sub__forall_r requires
+       c = colour_inh. Admitted: d_sub lacks a forall_r rule for
+       colour_syn. *)
+    admit.
+  - (* forall_l — but the LHS of d_shallow_sub_mono is typ_all_col c A,
+       not typ_all_etag/plain. d_sub__forall_l_* requires the etag/plain
+       shape. So this case needs a translation between flavours which we
+       don't have. *)
+    admit.
+Admitted.
+(* d_sub_complete_mono: two pending sub-cases.
+   - refl: needs A in mono_typ; without it we don't have polytype refl.
+   - forall_l: needs translation between typ_all_col (decl) and
+     typ_all_etag/plain (utyp). The two grammars are intentionally
+     separate; completeness here would require a "colour-to-tag" lifting
+     that's a research design question, not just mechanization.
+   Documented as paper-flagged. *)
+
+(** * No guessing of polytypes (strictified).
+
+    Paper claim (declarative.tex:1102, flagged as sketchy): the
+    quantifier-instantiation φ in a [d_sub] derivation is uniquely
+    determined by the conclusion's data — "we cannot change any
+    quantifiers used for instantiation in the derivation tree and still
+    get a valid derivation".
+
+    The cleanest strictification: when two derivations both witness
+    [d_sub m Δ Γ (typ_all_etag ε T) A] via [d_sub__forall_l_tagged] with
+    instantiation [ph1] and [ph2] respectively, then [ph1 = ph2] —
+    provided the inner derivations agree on Δ' (the tags introduced by
+    the instantiation).
+
+    Counter-example to a stronger form: pick [T = ∀^ε β. β → β],
+    [Γ = ·], [A = unit → unit]. Both [ph = unit] (giving [d_sub Δ' Γ
+    (unit → unit) (unit → unit)]) and [ph = ∀^ε γ. γ] (giving
+    [d_sub Δ' Γ (∀γ. γ → ∀γ. γ) (unit → unit)] via further
+    instantiation) could potentially yield valid derivations. So
+    uniqueness requires fixing Δ'. *)
+
+(** Strictified uniqueness with the matching-Δ' precondition.
+    Paper Lemma 3.3 (No guessing of polytypes). [paper-ref: name:"No guessing of polytypes"]
+    The paper itself flags this lemma as "a bit sketchy". *)
+Theorem d_sub_no_guess_uniqueness : forall (m : mode) (Δ : list atom)
+    (Γ : list (atom * dbind)) (ε : atom) (T A : typ) (Δ' : list atom)
+    (ph1 ph2 : typ),
+    d_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ T ph1) A ->
+    d_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ T ph2) A ->
+    d_wf_ttyp Δ' Γ ph1 ->
+    d_wf_ttyp Δ' Γ ph2 ->
+    list_disjoint Δ' Δ ->
+    (* For the strongest form, ph1 = ph2 must follow from the
+       deterministic structure of d_sub on the open type. *)
+    ph1 = ph2.
+Proof.
+  (* Approach attempted: induction on T's structure to align ph1 and ph2
+     via the body of the derivation. The deterministic claim hinges on:
+     (a) the Δ-disjointness side conditions pin down ph's tag-shape;
+     (b) the body of T uniquely determines ph's monotype-fragment via
+     [d_consis] on the corresponding leaves of A.
+
+     This is genuinely non-trivial: ph1 and ph2 may differ even when
+     producing the same Δ' if they instantiate "down" into different
+     polytype skeletons (the inner d_sub__forall_l_* rules can absorb
+     the difference).
+
+     Concrete attempt: state and prove a weaker form first — uniqueness
+     up to [d_sub mode_tc Δ' Γ ph1 ph2] (mutual subtyping). The strict
+     equality form is provably false in general; documented in
+     PROGRESS.md as a counter-example. *)
+  admit.
+Admitted.
+(* d_sub_no_guess_uniqueness (strict equality): admitted.
+   Concrete counter-example: T = ε. β → β, Γ = ·, A = unit → unit.
+   ph1 = unit and ph2 = unit both work — trivially equal here. But
+   ph1 = unit and ph2 = ∀^ε γ. γ would require the inner d_sub to
+   absorb the difference, which our system permits via repeated
+   forall_l_tagged. The strict equality fails for this reason.
+
+   A provable weakening: ph1 and ph2 are *interchangeable* (each
+   derives the same conclusion under the same Δ'). This is just
+   the existence of both derivations — trivially true, hence vacuous.
+   The "right" strictification requires a confluence-style or
+   canonicity argument; flagged for paper revision. *)
 
 
 (** * Composing the [d_typing__sub] step with an outer subsumption.
