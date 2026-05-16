@@ -17,10 +17,54 @@ any sub-agent task; the controller updates it after every dispatch and merge.
 if the admits are "rationale-documented" or "research-grade". Track-level claims
 should be falsifiable by `grep -c "Admitted\." <file>`: if it's non-zero, it's not 🟢.
 
-**Build status (2026-05-15, post-re-encoding partial repair): GREEN.**
+**Build status (2026-05-17, post-D12-closure push): GREEN.**
 The re-encoding pass introduced new admits during the rule-definition
-rewrite; the subsequent repair pass has closed several of them. The
-counts below reflect the *current* state.
+rewrite; subsequent repair passes closed most of them. As of the latest
+push, **D1 and D12 are Qed** in their proof bodies, with 2 remaining
+transitive axioms — see "Axiom Audit" section immediately below.
+
+## Axiom Audit (D1 / D12 transitive dependencies)
+
+`mechanization/README.v` ends with `Print Assumptions` for the two
+flagship theorems (Lemma 3.1 / D1 and Lemma B.5 / D12). `make coq`
+prints the live transitive axiom list at the tail of the build output.
+**Read it after every commit that touches `prop_*.v`** — silent axiom
+regressions are easy to miss otherwise.
+
+**Current live list (2 axioms, post commit `01c5545`):**
+
+1. `d_typing_gen_lift_mono` (`prop_typing.v`) — admitted at `__app` case
+   only. Closure requires breaking the **lift_mono ↔ D12** cycle:
+   `lift_mono.__app` needs D12 (function-side typing has potentially
+   non-mono arg type `P'`); but D12 currently uses SPLIT helpers which
+   use `lift_mono`. Resolution paths:
+   - **(a)** Combined mutual lemma proving lift_mono + D12 in one
+     induction (the user's "stronger thm" suggestion).
+   - **(b)** Inline ~400 lines of SPLIT helper logic into D12, replacing
+     internal `lift_mono` calls with `H1` (D12 IH on body).
+   Both options are pure mechanical work, no new admits.
+
+2. `prop_subtyping.d_consis_extends_d_sub` — admitted at `d_sub__infer`
+   and `d_sub__check` sub-cases post-refactor. The lemma's docstring
+   used to claim "Paper Lemma B.3" but B.3 is stated over the
+   GENERALISED relations (`d_consis_gen` + `d_sub_gen`) — our lemma uses
+   the non-generalised ones. So this is an auxiliary, NOT a direct
+   paper-claim mechanization. Soundness in the post-refactor declarative
+   rule set is unverified (the original proof relied on
+   `d_consis_LHS_syn_color_mono` which is unsound for the new
+   `__forall_syn` rule). Closure requires adding a `d_wf_typ Γ T`
+   premise and using `d_consis_RHS_syn_color_eq` for LHS rigidity.
+
+**Session-by-session closure history:**
+
+| Date | Commit | Axioms before → after | What closed |
+|---|---|---|---|
+| 2026-05-16 | `28e5212` | n/a | 6 HmonoT extraction admits (SPLIT helper bodies) |
+| 2026-05-16 | `8b46742` | n/a | D12 fully Qed (proof body); 4 __abs/__abs_anno admits |
+| 2026-05-16 | `4008695` | 8 → 6 | `_ti` SPLIT helper variants closed |
+| 2026-05-16 | `4be042e` | 6 → 5 | `d_consis_extends_d_consis_gen`, `d_consis_gen_RHS_syn_color_eq`; `d_consis_LHS_syn_color_mono` restated with mono premise |
+| 2026-05-16 | `7676aa0` | 5 → 3 | `d_consis_compose_nil_RHS` + helper |
+| 2026-05-17 | `01c5545` | 3 → 2 | `d_consis_LHS_is_utyp_when_RHS_syn_color` callsites rewritten via `d_consis_gen_RHS_syn_color_eq` |
 
 Per-file `Admitted.` count (current, audited 2026-05-16 post-bridge-extraction):
 

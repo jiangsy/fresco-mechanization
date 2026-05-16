@@ -97,20 +97,31 @@ Check d_pat_safety.
 Check d_consis_compose.
 
 (** ** Lemma B.3 — Consistency-Subtyping Transitivity.
-    Paper [syntax-directed.tex:161]. Mechanised as [d_consis_extends_d_sub]
-    (modulo Permutation on Δ — paper writes "Δ_1, Δ_2" as set union).
+    Paper [syntax-directed.tex:161]. Paper statement (verbatim):
+        If d_consis_gen Δ1 Γ T T'
+        and d_sub_gen M Δ2 Γ T' A,
+        then d_sub_gen M (Δ1 ∪ Δ2) Γ T A.
 
-    Status: proof body has 1 admit (d_sub__check sub-case post-refactor).
-    See [Print Assumptions] at file end.
+    IMPORTANT: the paper uses the GENERALISED relations (d_consis_gen +
+    d_sub_gen, syntax-directed.tex §"Generalised subtyping/consistency").
+    Our mechanization does NOT currently have a lemma matching this
+    exact statement.
 
-    CAVEAT: this lemma's TRUE habitat is the ALGORITHMIC side (the paper
-    states it in [syntax-directed.tex], not [declarative.tex]). Currently
-    it lives in [prop_subtyping.v] under the declarative tree and is
-    consumed by D12's [__sub] case via [d_sub_gen_trans] → the
-    [_extends_d_sub_nil] / [_gen_nil] wrappers. Soundness of "consis
-    extends sub" in the DECLARATIVE rule set has not been independently
-    audited; the proof skeleton was ported from the algorithmic-side
-    expectation. The remaining admit is the locus where post-refactor
+    What we have instead:
+    - [d_consis_extends_d_sub] in [prop_subtyping.v]: same SHAPE but
+      uses the NON-generalised relations (d_consis + d_sub). It is
+      auxiliary scaffolding consumed by D12 via [d_sub_gen_trans]; it
+      is NOT a direct mechanization of paper B.3. Status: proof body
+      has 1 admit (d_sub__check sub-case post-refactor).
+    - [d_consis_extends_d_sub_gen_nil] in [prop_typing.v]: closer to
+      B.3 in spirit (uses d_sub_gen on the second relation) but
+      specialized to Δ = nil and still uses d_consis (not d_consis_gen)
+      on the first. Status: [Qed].
+
+    A faithful mechanization of B.3 is a TODO. Soundness of the current
+    [d_consis_extends_d_sub] in the DECLARATIVE rule set has not been
+    independently audited; the proof skeleton was ported from algorithmic
+    intuition. The remaining admit is the locus where post-refactor
     soundness must be re-validated. *)
 Check d_consis_extends_d_sub.
 

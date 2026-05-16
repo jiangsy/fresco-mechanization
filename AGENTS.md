@@ -87,9 +87,17 @@ doc.
 
 ## Build And Workflow
 
-- Build everything: `make` from `mechanization/`.
+- **Full kernel check**: `make coq` from `mechanization/`. Parallelism is
+  on by default (`-j 4`); override with `make NJOBS=8 coq` on bigger
+  machines. **This is the bar for committing / pushing.**
+- **Fast dev iteration**: `make quick` runs the same pipeline in `vos`
+  mode (skips opaque-proof checking — ~3–4× faster than `make coq`).
+  Useful when iterating on `frost/decl/prop_typing.v` (~5 min full
+  compile single-threaded; opaque-proof checking dominates). The
+  axiom/admit count is **not** verified in `vos` mode — re-run
+  `make coq` before committing to catch any regressions.
 - Regenerate ott/lngen output: `make ott && make lngen` (this runs
-  automatically as part of `make`).
+  automatically as part of `make coq`).
 - Clean: `make clean`. Removes `*/def_ott.v`, `*/prop_ln.v`, `CoqMakefile`,
   `.FILE_LIST`.
 - The Makefile already wires `language.ott → def_ott.v → prop_ln.v` and
@@ -97,6 +105,7 @@ doc.
   introducing more atom-set variable conventions.
 - `_CoqProject` lists module roots; `coq_makefile` is regenerated from
   `tree -if` output, so just adding `.v` files in the right place is enough.
+
 
 ## Tooling
 
