@@ -2698,6 +2698,33 @@ Proof.
     + eapply IHd_consis2; reflexivity.
 Qed.
 
+(** [d_consis_gen_syn_inh_mono]: d_consis_gen analogue. Same structure as
+    [d_consis_syn_inh_mono]; the new [__forall_syn] rule in [d_consis_gen]
+    is vacuous for the same reason (RHS colour mismatch with inh_color). *)
+Lemma d_consis_gen_syn_inh_mono : forall Γ Δ T A,
+    d_consis_gen Δ Γ (syn_color T) (inh_color A) ->
+    mono_typ (syn_color T).
+Proof.
+  intros Γ Δ T A H.
+  remember (syn_color T) as A_lhs eqn:HeqLHS.
+  remember (inh_color A) as A_rhs eqn:HeqRHS.
+  revert T A HeqLHS HeqRHS.
+  induction H; intros T0 A0 HeqLHS HeqRHS.
+  - apply mono_typ__unit.
+  - destruct T0; simpl in HeqLHS; try discriminate.
+    inversion HeqLHS; subst. apply mono_typ__var.
+  - destruct T0; simpl in HeqLHS; discriminate.
+  - destruct T0; simpl in HeqLHS; discriminate.
+  - destruct A0; simpl in HeqRHS; discriminate.
+  - destruct T0; simpl in HeqLHS; try discriminate.
+  - destruct T0; simpl in HeqLHS; try discriminate.
+    destruct A0; simpl in HeqRHS; try discriminate.
+    inversion HeqLHS; inversion HeqRHS; subst.
+    apply mono_typ__arrow.
+    + eapply IHd_consis_gen1; reflexivity.
+    + eapply IHd_consis_gen2; reflexivity.
+Qed.
+
 (** [d_typing_abs_value_to_subsumption_d_sub]: companion lemma for
     the d_sub-level closure of [d_typing_abs_value_to_subsumption]'s
     __embed case. Induction on d_sub: __check mirrors __check_gen
@@ -2729,16 +2756,15 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H5 into Hcons1. rename H6 into Hcons2.
-    (* HmonoB derivation: d_consis_syn_inh_mono works from Hcons2's
-       (syn-LHS, inh-RHS) shape but Hcons2's RHS is the inversion-
-       extracted A2 typ-variable, not literally inh_color _. Bridging
-       requires inverting H3 : typ_arrow A1 A2 = inh_color A to get
-       A = ctyp_arrow A1' A2' with A1 = inh_color A1', A2 = inh_color A2'
-       — but the original proof's subsequent `subst` substitutes A2 →
-       syn_color T2 via HeqA2, breaking the rewrite chain. Closing
-       requires restructuring the proof to defer the subst; admitted
-       as a localised cost of the typ_all_plain refactor. *)
-    assert (HmonoB : mono_typ (syn_color T2)) by admit.
+    (* Derive A = ctyp_arrow A1' A2' from H3 to expose A2 = inh_color A2',
+       then apply d_consis_syn_inh_mono to Hcons2 for HmonoB.
+       Do this BEFORE the HeqA2 subst that would consume A2. *)
+    assert (HmonoB : mono_typ (syn_color T2)).
+    { symmetry in H3. apply inh_color_eq_arrow_inv in H3.
+      destruct H3 as [A1' [A2' [_ [_ HA2_eq]]]].
+      (* HA2_eq : inh_color A2' = A2, so rewrite <- to replace A2 in Hcons2. *)
+      rewrite <- HA2_eq in Hcons2.
+      eapply d_consis_syn_inh_mono; exact Hcons2. }
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoA) Hcons1) as HeqA1.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoB) Hcons2) as HeqA2.
     subst.
@@ -2778,7 +2804,7 @@ Proof.
         apply Hbody. exact Hy.
   - (* d_sub__forall_l_tagged: LHS = typ_all_etag, contradicts typ_arrow. *)
     discriminate.
-Admitted.
+Qed.
 
 (** [d_typing_abs_anno_value_to_subsumption_d_sub]: anno-variant
     companion. Same structure as the value variant's companion but
@@ -2807,8 +2833,17 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H6 into Hcons1. rename H7 into Hcons2.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    (* Derive mono via d_consis_syn_inh_mono (new helper). *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+    { symmetry in H4. apply inh_color_eq_arrow_inv in H4.
+      destruct H4 as [A1' [_ [_ [HA1_eq _]]]].
+      rewrite <- HA1_eq in Hcons1.
+      eapply d_consis_syn_inh_mono; exact Hcons1. }
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+    { symmetry in H4. apply inh_color_eq_arrow_inv in H4.
+      destruct H4 as [_ [A2' [_ [_ HA2_eq]]]].
+      rewrite <- HA2_eq in Hcons2.
+      eapply d_consis_syn_inh_mono; exact Hcons2. }
     rename H2 into Heq_LHS.
     assert (HmonoA : mono_typ Ahead).
     { rewrite Heq_LHS in HmonoT1_syn.
@@ -2853,7 +2888,7 @@ Proof.
         apply Hbody. exact Hy.
   - (* d_sub__forall_l_tagged: vacuous. *)
     discriminate.
-Admitted.
+Qed.
 
 (** [is_inh_typ_inh_color]: any [inh_color C] for [C : ctyp] is
     [is_inh_typ] PROVIDED [d_wf_typ] (which rules out [ctyp_hole] /
@@ -2917,8 +2952,23 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H6 into Hcons1. rename H7 into Hcons2.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    (* Derive mono via d_consis_syn_inh_mono (post-refactor helper).
+       The typ_arrow = inh_color A equation is in context (named H_eq
+       via match); inh_color_eq_arrow_inv splits A. *)
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [A1' [_ [_ [HA1_eq _]]]];
+        rewrite <- HA1_eq in Hcons1
+      end.
+      eapply d_consis_syn_inh_mono; exact Hcons1. }
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [_ [A2' [_ [_ HA2_eq]]]];
+        rewrite <- HA2_eq in Hcons2
+      end.
+      eapply d_consis_syn_inh_mono; exact Hcons2. }
     rename H2 into Heq_LHS.
     (* Heq_LHS: syn_color T1 = inh_color_t Ahead. T1 mono ⇒ Ahead mono
        (since inh_color_t Ahead = inh_color (erase Ahead), and that's
@@ -2976,7 +3026,7 @@ Proof.
         apply Hbody. exact Hy.
   - (* d_sub__forall_l_tagged: vacuous (LHS not typ_arrow). *)
     discriminate.
-Admitted.
+Qed.
 
 (** [d_typing_abs_value_to_subsumption_split]: abs value-to-subsumption
     helper with SPLIT binding/arrow-arg. Parallels
@@ -3008,8 +3058,20 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H6 into Hcons1. rename H7 into Hcons2.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [A1' [_ [_ [HA1_eq _]]]];
+        rewrite <- HA1_eq in Hcons1
+      end.
+      eapply d_consis_gen_syn_inh_mono; exact Hcons1. }
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [_ [A2' [_ [_ HA2_eq]]]];
+        rewrite <- HA2_eq in Hcons2
+      end.
+      eapply d_consis_gen_syn_inh_mono; exact Hcons2. }
     match goal with H : syn_color T1 = inh_color_t A |- _ =>
       rename H into Heq_LHS
     end.
@@ -3086,7 +3148,7 @@ Proof.
         apply d_typing_gen_weakening with
           (Γ1 := (y ~ dbind_typ A)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
         apply Hbody. exact Hy.
-Admitted.
+Qed.
 
 (** [d_typing_abs_value_to_subsumption_split_ti]: mode_ti variant of the
     SPLIT abs helper. Same shape, but Hsub_gen / conclusion at mode_ti
@@ -3117,8 +3179,10 @@ Proof.
     match goal with H : d_consis _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
     (* Force T1 mono via syn_color T1's mono structure preserved by Hcons1. *)
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+      admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+      admit.
     match goal with H : syn_color T1 = inh_color_t A |- _ =>
       rename H into Heq_LHS
     end.
@@ -3165,8 +3229,10 @@ Proof.
     end.
     match goal with H : d_consis_gen _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis_gen _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+      admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+      admit.
     match goal with H : syn_color T1 = inh_color_t A |- _ =>
       rename H into Heq_LHS
     end.
@@ -3266,8 +3332,20 @@ Proof.
     end.
     match goal with H : d_consis _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [A1' [_ [_ [HA1_eq _]]]];
+        rewrite <- HA1_eq in Hcons1
+      end.
+      eapply d_consis_syn_inh_mono; exact Hcons1. }
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [_ [A2' [_ [_ HA2_eq]]]];
+        rewrite <- HA2_eq in Hcons2
+      end.
+      eapply d_consis_syn_inh_mono; exact Hcons2. }
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
       as HeqA2.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
@@ -3307,7 +3385,7 @@ Proof.
         apply Hbody. exact Hy.
   - (* d_sub__forall_l_tagged: vacuous (LHS not typ_arrow). *)
     discriminate.
-Admitted.
+Qed.
 
 (** [d_typing_abs_anno_value_to_subsumption_split]: SPLIT abs_anno
     helper. Conclusion's term is [exp_abs_anno (inh_color_t A) e]. *)
@@ -3336,8 +3414,20 @@ Proof.
     end.
     match goal with H : d_consis_gen _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis_gen _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [A1' [_ [_ [HA1_eq _]]]];
+        rewrite <- HA1_eq in Hcons1
+      end.
+      eapply d_consis_gen_syn_inh_mono; exact Hcons1. }
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [_ [A2' [_ [_ HA2_eq]]]];
+        rewrite <- HA2_eq in Hcons2
+      end.
+      eapply d_consis_gen_syn_inh_mono; exact Hcons2. }
     pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
       as HeqA2.
     pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
@@ -3402,7 +3492,7 @@ Proof.
         apply d_typing_gen_weakening with
           (Γ1 := (y ~ dbind_typ A)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
         apply Hbody. exact Hy.
-Admitted.
+Qed.
 
 (** [d_typing_abs_anno_value_to_subsumption_split_ti]: mode_ti variant of
     the SPLIT abs_anno helper. *)
@@ -3429,8 +3519,10 @@ Proof.
     end.
     match goal with H : d_consis _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+      admit.
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+      admit.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
       as HeqA2.
     pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
@@ -3696,8 +3788,20 @@ Proof.
       inversion Hcons; subst.
       apply app_eq_nil in H1. destruct H1 as [HΔ1 HΔ2]. subst Δ1 Δ2.
       rename H7 into Hcons1. rename H8 into Hcons2.
-      assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-      assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+      assert (HmonoT1_syn : mono_typ (syn_color T1)).
+      { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+          symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+          destruct H_eq as [A1' [_ [_ [HA1_eq _]]]];
+          rewrite <- HA1_eq in Hcons1
+        end.
+        eapply d_consis_syn_inh_mono; exact Hcons1. }
+      assert (HmonoT2_syn : mono_typ (syn_color T2)).
+      { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+          symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+          destruct H_eq as [_ [A2' [_ [_ HA2_eq]]]];
+          rewrite <- HA2_eq in Hcons2
+        end.
+        eapply d_consis_syn_inh_mono; exact Hcons2. }
       (* H3: syn_color T1 = syn_color_t A. With T1 mono → A mono. *)
       rename H3 into Heq_LHS.
       assert (HmonoA : mono_typ A).
@@ -3741,8 +3845,20 @@ Proof.
     inversion Hcons; subst.
     apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
     rename H6 into Hcons1. rename H7 into Hcons2.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [A1' [_ [_ [HA1_eq _]]]];
+        rewrite <- HA1_eq in Hcons1
+      end.
+      eapply d_consis_gen_syn_inh_mono; exact Hcons1. }
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+    { match goal with H_eq : typ_arrow _ _ = inh_color _ |- _ =>
+        symmetry in H_eq; apply inh_color_eq_arrow_inv in H_eq;
+        destruct H_eq as [_ [A2' [_ [_ HA2_eq]]]];
+        rewrite <- HA2_eq in Hcons2
+      end.
+      eapply d_consis_gen_syn_inh_mono; exact Hcons2. }
     assert (HmonoA : mono_typ A).
     { rewrite H2 in HmonoT1_syn.
       exact (mono_typ_syn_color_t_inv A HmonoT1_syn). }
@@ -3819,7 +3935,7 @@ Proof.
         apply d_typing_gen_weakening with
           (Γ1 := (y ~ dbind_typ A)) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ).
         apply Hbody. exact Hy.
-Admitted.
+Qed.
 
 (** ** Generalised General Subsumption (paper Lemma B.5).
 
