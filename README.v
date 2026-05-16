@@ -97,6 +97,10 @@ Check d_pat_safety.
 Check d_consis_compose.
 
 (** ** Lemma B.3 — Consistency-Subtyping Transitivity.
+    
+    TODO: this lemma should be renamed, d_consis_extends_d_sub is a 
+    misleading name.  
+    
     Paper [syntax-directed.tex:161]. Paper statement (verbatim):
         If d_consis_gen Δ1 Γ T T'
         and d_sub_gen M Δ2 Γ T' A,
