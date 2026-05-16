@@ -879,6 +879,41 @@ Proof.
   - apply mono_typ__arrow; auto.
 Qed.
 
+(** [inh_color_t_eq_syn_color_mono]: an equation [inh_color_t A = syn_color T]
+    + [d_wf_typ Γ (inh_color_t A)] forces [A] mono. Structural induction on
+    [A] case-splits to:
+    - [typ_unit], [typ_var_f]: directly mono.
+    - [typ_arrow]: forces [T = ctyp_arrow T1 T2] with matching inner
+      equations; IH on each arm.
+    - [typ_all_col c _] / [typ_all_etag _ _]: [inh_color_t] paints
+      [colour_inh], but [syn_color] of any ctyp produces either
+      [colour_syn] or a non-forall; discriminate.
+    - [typ_var_b], [typ_hole], [typ_tophole]: not [d_wf_typ]; inversion. *)
+Lemma inh_color_t_eq_syn_color_mono : forall Γ A T,
+    inh_color_t A = syn_color T ->
+    d_wf_typ Γ (inh_color_t A) ->
+    mono_typ A.
+Proof.
+  intros Γ A. induction A; intros T Heq Hwf; simpl in *.
+  - apply mono_typ__unit.
+  - inversion Hwf. (* typ_var_b: no d_wf_typ rule. *)
+  - apply mono_typ__var.
+  - destruct T; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    inversion Hwf; subst.
+    apply mono_typ__arrow.
+    + eapply IHA1; eauto.
+    + eapply IHA2; eauto.
+  - (* typ_all_col c A0: inh_color_t paints colour_inh; syn_color T
+       produces typ_all_col colour_syn only, so all ctyp shapes
+       discriminate (none produce typ_all_col colour_inh). *)
+    destruct T; simpl in Heq; discriminate.
+  - (* typ_all_etag: same — also paints colour_inh. *)
+    destruct T; simpl in Heq; discriminate.
+  - inversion Hwf. (* typ_hole: no d_wf_typ rule. *)
+  - inversion Hwf. (* typ_tophole: no d_wf_typ rule. *)
+Qed.
+
 (** * Mutual induction principle for d_typing ↔ d_pat. *)
 
 Scheme d_typing_mut := Induction for d_typing Sort Prop

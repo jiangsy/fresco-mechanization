@@ -3036,6 +3036,7 @@ Proof.
     rewrite syn_color_open_var. reflexivity.
 Qed.
 
+
 (** [d_typing_abs_value_to_subsumption_split_d_sub]: d_sub companion
     for the SPLIT abs-value-to-subsumption helper. Parallels
     [d_typing_abs_anno_value_to_subsumption_d_sub] but:
@@ -3273,10 +3274,17 @@ Qed.
 (** [d_typing_abs_value_to_subsumption_split_ti]: mode_ti variant of the
     SPLIT abs helper. Same shape, but Hsub_gen / conclusion at mode_ti
     (not mode_tc). At mode_ti, d_sub_gen rules are only __embed,
-    __infer_gen, __refl_mono — no __forall_r recursion. *)
+    __infer_gen, __refl_mono — no __forall_r recursion.
+
+    Strengthened signature: added [d_wf_typ Γ B] premise so that the
+    __embed/__infer_gen cases can derive [is_syn_typ (syn_color T2)]
+    from [B = syn_color T2] (forced by [d_sub__infer]) + the wf premise.
+    Without this strengthening, the LHS-rigidity lemma would need an
+    inductive helper that fails on the [d_consis_gen__forall_syn] case. *)
 Lemma d_typing_abs_value_to_subsumption_split_ti :
   forall L Γ e A B m_orig C,
     d_wf_typ Γ (inh_color_t A) ->
+    d_wf_typ Γ B ->
     (forall x, x `notin` L ->
        d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
     decr_mode m_orig = mode_ti ->
@@ -3284,7 +3292,7 @@ Lemma d_typing_abs_value_to_subsumption_split_ti :
     d_sub_gen mode_ti nil Γ (typ_arrow (inh_color_t A) B) C ->
     d_typing_gen mode_ti Γ (exp_abs e) C.
 Proof.
-  intros L Γ e A B m_orig C HwfA Hbody Hdecr Hwfd Hs.
+  intros L Γ e A B m_orig C HwfA HwfB Hbody Hdecr Hwfd Hs.
   dependent induction Hs.
   - (* __embed: d_sub mode_ti, only d_sub__infer applies. *)
     rename H into Hdsub. dependent destruction Hdsub.
@@ -3298,23 +3306,13 @@ Proof.
     end.
     match goal with H : d_consis _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    (* Force T1 mono via syn_color T1's mono structure preserved by Hcons1. *)
-    assert (HmonoT1_syn : mono_typ (syn_color T1)).
-      admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)).
-      admit.
     match goal with H : syn_color T1 = inh_color_t A |- _ =>
       rename H into Heq_LHS
     end.
-    assert (HmonoIH : mono_typ (inh_color_t A))
-      by (rewrite <- Heq_LHS; exact HmonoT1_syn).
-    assert (HmonoA : mono_typ A)
-      by (apply mono_typ_inh_color_t_inv; exact HmonoIH).
-    pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
-      as HeqA2.
-    pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
-      as HeqA1.
-    subst.
+    (* Derive A mono from the equation [syn_color T1 = inh_color_t A]
+       (rules out [typ_all_*] colour-mismatch + [hole]/[tophole] via wf). *)
+    assert (HmonoA : mono_typ A).
+    { symmetry in Heq_LHS. eapply inh_color_t_eq_syn_color_mono; eauto. }
     pose proof (mono_typ_syn_color_erase HmonoA) as HsynA.
     pose proof (mono_typ_inh_color_erase HmonoA) as HinhA.
     apply (f_equal erase) in Heq_LHS.
@@ -3322,24 +3320,31 @@ Proof.
     rewrite erase_inh_color in Heq_LHS.
     rewrite erase_syn_color in Heq_LHS.
     subst T1.
+    (* Rigidity: derive [syn_color T2 = syn_color A2] from Hcons2 +
+       [HwfB] giving [is_syn_typ (syn_color T2)] via [is_syn_typ_syn_color]
+       (B = syn_color T2 after [inversion x; subst]). *)
     assert (HwfA_raw : d_wf_typ Γ A).
     { rewrite <- HinhA. rewrite <- inh_color_t_inh_color_erase. exact HwfA. }
+    assert (HwfsynA : d_wf_typ Γ (syn_color (erase A))).
+    { rewrite HsynA. assumption. }
+    assert (HsynT1 : is_syn_typ (syn_color (erase A)))
+      by (eapply is_syn_typ_syn_color; eassumption).
+    assert (HsynT2 : is_syn_typ (syn_color T2))
+      by (eapply is_syn_typ_syn_color; eassumption).
+    pose proof (d_consis_lhs_syn_eq HsynT1 Hcons1) as HeqA1.
+    pose proof (d_consis_lhs_syn_eq HsynT2 Hcons2) as HeqA2.
+    subst.
     rewrite HsynA.
     rewrite <- HinhA at 1.
     apply d_typing_gen__abs with (L := L `union` dom Γ).
     + rewrite <- inh_color_t_inh_color_erase. exact HwfA.
     + intros x0 Hx0.
       rewrite HsynA.
-      assert (Hwfd_x0 : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ))
-        by (apply d_wf_denv__typ; auto).
-      apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
-      * rewrite <- Hdecr. apply Hbody. auto.
-      * apply d_sub_gen_refl; auto.
-        -- apply mode_typ_compat__ti. apply mono_typ_is_syn_typ; assumption.
-        -- rewrite_env ((x0 ~ dbind_typ A) ++ Γ).
-           apply d_wf_typ_weakening_head.
-           eapply d_consis_preserves_wf; eauto.
-  - (* __infer_gen: parallel to __embed __infer. *)
+      (* Body Hbody already at mode_ti (decr_mode m_orig = mode_ti) with
+         binding [(x ~ dbind_typ A) ++ Γ] and conclusion B = syn_color T2;
+         no lift needed. *)
+      simpl. rewrite <- Hdecr. apply Hbody. fsetdec.
+  - (* __infer_gen: parallel to __embed __infer, with d_consis_gen. *)
     destruct T; simpl in x; try discriminate.
     inversion x; subst.
     match goal with H : d_consis_gen _ _ _ _ |- _ => rename H into Hcons end.
@@ -3349,22 +3354,11 @@ Proof.
     end.
     match goal with H : d_consis_gen _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis_gen _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)).
-      admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)).
-      admit.
     match goal with H : syn_color T1 = inh_color_t A |- _ =>
       rename H into Heq_LHS
     end.
-    assert (HmonoIH : mono_typ (inh_color_t A))
-      by (rewrite <- Heq_LHS; exact HmonoT1_syn).
-    assert (HmonoA : mono_typ A)
-      by (apply mono_typ_inh_color_t_inv; exact HmonoIH).
-    pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
-      as HeqA2.
-    pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
-      as HeqA1.
-    subst.
+    assert (HmonoA : mono_typ A).
+    { symmetry in Heq_LHS. eapply inh_color_t_eq_syn_color_mono; eauto. }
     pose proof (mono_typ_syn_color_erase HmonoA) as HsynA.
     pose proof (mono_typ_inh_color_erase HmonoA) as HinhA.
     apply (f_equal erase) in Heq_LHS.
@@ -3374,21 +3368,22 @@ Proof.
     subst T1.
     assert (HwfA_raw : d_wf_typ Γ A).
     { rewrite <- HinhA. rewrite <- inh_color_t_inh_color_erase. exact HwfA. }
+    assert (HwfsynA : d_wf_typ Γ (syn_color (erase A))).
+    { rewrite HsynA. assumption. }
+    assert (HsynT1 : is_syn_typ (syn_color (erase A)))
+      by (eapply is_syn_typ_syn_color; eassumption).
+    assert (HsynT2 : is_syn_typ (syn_color T2))
+      by (eapply is_syn_typ_syn_color; eassumption).
+    pose proof (d_consis_gen_lhs_syn_eq HsynT1 Hcons1) as HeqA1.
+    pose proof (d_consis_gen_lhs_syn_eq HsynT2 Hcons2) as HeqA2.
+    subst.
     rewrite HsynA.
     rewrite <- HinhA at 1.
     apply d_typing_gen__abs with (L := L `union` dom Γ).
     + rewrite <- inh_color_t_inh_color_erase. exact HwfA.
     + intros x0 Hx0.
       rewrite HsynA.
-      assert (Hwfd_x0 : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ))
-        by (apply d_wf_denv__typ; auto).
-      apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
-      * rewrite <- Hdecr. apply Hbody. auto.
-      * apply d_sub_gen_refl; auto.
-        -- apply mode_typ_compat__ti. apply mono_typ_is_syn_typ; assumption.
-        -- rewrite_env ((x0 ~ dbind_typ A) ++ Γ).
-           apply d_wf_typ_weakening_head.
-           eapply d_consis_gen_preserves_wf; eauto.
+      simpl. rewrite <- Hdecr. apply Hbody. fsetdec.
   - (* __refl_mono: target = typ_arrow (inh_color_t A) B forced mono. *)
     match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
       inversion Hm; subst
@@ -3404,20 +3399,11 @@ Proof.
     apply d_typing_gen__abs with (L := L `union` dom Γ).
     + rewrite (mono_typ_inh_color_erase HmonoA). assumption.
     + intros x Hx.
-      assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ))
-        by (apply d_wf_denv__typ; auto).
       rewrite (mono_typ_syn_color_erase HmonoA).
-      apply d_typing_gen_lift_mono with (A := B); auto.
-      * rewrite <- Hdecr. apply Hbody. auto.
-      * apply d_sub_gen_refl; auto.
-        -- apply mode_typ_compat__ti.
-           apply mono_typ_is_syn_typ; auto.
-        -- rewrite_env ((x ~ dbind_typ A) ++ Γ).
-           apply d_wf_typ_weakening_head.
-           match goal with H1 : d_wf_typ Γ (typ_arrow _ _) |- _ =>
-             inversion H1; subst; assumption
-           end.
-Admitted.
+      (* Body Hbody at mode_ti, binding (x ~ dbind_typ A), conclusion B;
+         direct application — lift_mono would be a no-op. *)
+      simpl. rewrite <- Hdecr. apply Hbody. fsetdec.
+Qed.
 
 (** [d_typing_abs_anno_value_to_subsumption_split_d_sub]: d_sub
     companion for the SPLIT abs_anno helper. Conclusion's term is
@@ -3615,10 +3601,12 @@ Proof.
 Qed.
 
 (** [d_typing_abs_anno_value_to_subsumption_split_ti]: mode_ti variant of
-    the SPLIT abs_anno helper. *)
+    the SPLIT abs_anno helper. Strengthened with [d_wf_typ Γ B] premise
+    (used to derive [is_syn_typ (syn_color T2)] in __embed/__infer_gen). *)
 Lemma d_typing_abs_anno_value_to_subsumption_split_ti :
   forall L Γ e A B m_orig C,
     d_wf_typ Γ A ->
+    d_wf_typ Γ B ->
     (forall x, x `notin` L ->
        d_typing_gen (decr_mode m_orig) ((x ~ dbind_typ A) ++ Γ) (open_exp_wrt_exp e (exp_var_f x)) B) ->
     decr_mode m_orig = mode_ti ->
@@ -3626,7 +3614,7 @@ Lemma d_typing_abs_anno_value_to_subsumption_split_ti :
     d_sub_gen mode_ti nil Γ (typ_arrow A B) C ->
     d_typing_gen mode_ti Γ (exp_abs_anno (inh_color_t A) e) C.
 Proof.
-  intros L Γ e A B m_orig C HwfA Hbody Hdecr Hwfd Hs.
+  intros L Γ e A B m_orig C HwfA HwfB Hbody Hdecr Hwfd Hs.
   dependent induction Hs.
   - (* __embed: d_sub mode_ti, only d_sub__infer applies. *)
     rename H into Hdsub. dependent destruction Hdsub.
@@ -3639,29 +3627,19 @@ Proof.
     end.
     match goal with H : d_consis _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)).
-      admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)).
-      admit.
-    pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
-      as HeqA2.
-    pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
-      as HeqA1.
+    assert (HsynT1' : is_syn_typ (syn_color T1))
+      by (eapply is_syn_typ_syn_color; eassumption).
+    assert (HsynT2' : is_syn_typ (syn_color T2))
+      by (eapply is_syn_typ_syn_color; eassumption).
+    pose proof (d_consis_lhs_syn_eq HsynT1' Hcons1) as HeqA1.
+    pose proof (d_consis_lhs_syn_eq HsynT2' Hcons2) as HeqA2.
     subst.
     replace (inh_color_t (syn_color T1)) with (inh_color T1)
       by (rewrite inh_color_t_inh_color_erase; rewrite erase_syn_color; reflexivity).
     apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
     + assumption.
     + intros x0 Hx0.
-      assert (Hwfd_x0 : d_wf_denv ((x0 ~ dbind_typ (syn_color T1)) ++ Γ))
-        by (apply d_wf_denv__typ; auto).
-      apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
-      * rewrite <- Hdecr. apply Hbody. auto.
-      * apply d_sub_gen_refl; auto.
-        -- apply mode_typ_compat__ti. apply mono_typ_is_syn_typ; assumption.
-        -- rewrite_env ((x0 ~ dbind_typ (syn_color T1)) ++ Γ).
-           apply d_wf_typ_weakening_head.
-           eapply d_consis_preserves_wf; eauto.
+      simpl. rewrite <- Hdecr. apply Hbody. fsetdec.
   - (* __infer_gen: parallel to __embed __infer with d_consis_gen. *)
     destruct T; simpl in x; try discriminate.
     inversion x; subst.
@@ -3672,27 +3650,19 @@ Proof.
     end.
     match goal with H : d_consis_gen _ _ (syn_color T1) _ |- _ => rename H into Hcons1 end.
     match goal with H : d_consis_gen _ _ (syn_color T2) _ |- _ => rename H into Hcons2 end.
-    assert (HmonoT1_syn : mono_typ (syn_color T1)) by admit.
-    assert (HmonoT2_syn : mono_typ (syn_color T2)) by admit.
-    pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
-      as HeqA2.
-    pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
-      as HeqA1.
+    assert (HsynT1 : is_syn_typ (syn_color T1))
+      by (eapply is_syn_typ_syn_color; eassumption).
+    assert (HsynT2 : is_syn_typ (syn_color T2))
+      by (eapply is_syn_typ_syn_color; eassumption).
+    pose proof (d_consis_gen_lhs_syn_eq HsynT1 Hcons1) as HeqA1.
+    pose proof (d_consis_gen_lhs_syn_eq HsynT2 Hcons2) as HeqA2.
     subst.
     replace (inh_color_t (syn_color T1)) with (inh_color T1)
       by (rewrite inh_color_t_inh_color_erase; rewrite erase_syn_color; reflexivity).
     apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
     + assumption.
     + intros x0 Hx0.
-      assert (Hwfd_x0 : d_wf_denv ((x0 ~ dbind_typ (syn_color T1)) ++ Γ))
-        by (apply d_wf_denv__typ; auto).
-      apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
-      * rewrite <- Hdecr. apply Hbody. auto.
-      * apply d_sub_gen_refl; auto.
-        -- apply mode_typ_compat__ti. apply mono_typ_is_syn_typ; assumption.
-        -- rewrite_env ((x0 ~ dbind_typ (syn_color T1)) ++ Γ).
-           apply d_wf_typ_weakening_head.
-           eapply d_consis_gen_preserves_wf; eauto.
+      simpl. rewrite <- Hdecr. apply Hbody. fsetdec.
   - (* __refl_mono: target = typ_arrow A B forced mono. *)
     match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
       inversion Hm; subst
@@ -3706,20 +3676,9 @@ Proof.
     apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
     + rewrite HsynA. assumption.
     + intros x Hx.
-      assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ))
-        by (apply d_wf_denv__typ; auto).
       rewrite HsynA.
-      apply d_typing_gen_lift_mono with (A := B); auto.
-      * rewrite <- Hdecr. apply Hbody. auto.
-      * apply d_sub_gen_refl; auto.
-        -- apply mode_typ_compat__ti.
-           apply mono_typ_is_syn_typ; auto.
-        -- rewrite_env ((x ~ dbind_typ A) ++ Γ).
-           apply d_wf_typ_weakening_head.
-           match goal with H1 : d_wf_typ Γ (typ_arrow _ _) |- _ =>
-             inversion H1; subst; assumption
-           end.
-Admitted.
+      simpl. rewrite <- Hdecr. apply Hbody. fsetdec.
+Qed.
 
 (** Mono-extraction helpers (used in __check_gen closure). *)
 
@@ -4192,6 +4151,17 @@ Proof.
       destruct m_new.
       * (* m_new = mode_ti. Wired via [d_typing_abs_value_to_subsumption_split_ti]
            — the mode_ti variant of the SPLIT helper. *)
+        assert (HwfsynA' : d_wf_typ Γ (syn_color A))
+          by (apply d_wf_typ_inh_color_syn_color; exact H).
+        assert (HwfB : d_wf_typ Γ B).
+        { pick fresh x for (L `union` dom Γ).
+          assert (HwfBx : d_wf_typ ((x ~ dbind_typ (syn_color A)) ++ Γ) B).
+          { eapply d_typing_gen_preserves_wf with (m := mode_ti).
+            - apply H0. fsetdec.
+            - apply d_wf_denv__typ; [assumption | fsetdec | assumption]. }
+          rewrite_env (nil ++ (x ~ dbind_typ (syn_color A)) ++ Γ) in HwfBx.
+          rewrite_env (nil ++ Γ).
+          eapply d_wf_typ_strengthening_typ; eauto. }
         eapply d_typing_abs_value_to_subsumption_split_ti with
           (A := syn_color A) (B := B) (m_orig := mode_ti) (L := L); eauto.
         -- (* d_wf_typ Γ (inh_color_t (syn_color A)) — bridge to H. *)
@@ -4385,6 +4355,15 @@ Proof.
       simpl in Hsub_gen |- *.
       destruct m_new.
       * (* m_new = mode_ti. Use the abs_anno_split_ti helper. *)
+        assert (HwfB : d_wf_typ Γ B).
+        { pick fresh x for (L `union` dom Γ).
+          assert (HwfBx : d_wf_typ ((x ~ dbind_typ (syn_color A)) ++ Γ) B).
+          { eapply d_typing_gen_preserves_wf with (m := mode_ti).
+            - apply H0. fsetdec.
+            - apply d_wf_denv__typ; [assumption | fsetdec | assumption]. }
+          rewrite_env (nil ++ (x ~ dbind_typ (syn_color A)) ++ Γ) in HwfBx.
+          rewrite_env (nil ++ Γ).
+          eapply d_wf_typ_strengthening_typ; eauto. }
         replace (exp_abs_anno (inh_color A) e)
           with (exp_abs_anno (inh_color_t (syn_color A)) e)
           by (rewrite inh_color_t_inh_color_erase;
