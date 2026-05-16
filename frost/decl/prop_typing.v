@@ -2760,15 +2760,21 @@ Proof.
        rule's (x ~ syn_color (erase A)) for non-mono A. Research-grade
        narrowing required. *)
     admit.
-  - (* __check_gen: rule's LHS = syn_color T (T : ctyp). The outer
-       equation forces T = [ctyp_arrow T1' T2'], hence A = syn_color T1',
-       B = syn_color T2'. With [is_inh_typ A], A is mono (syn vs inh
-       colour conflict at quantifiers). The inner d_consis_gen pins
-       A0 = ctyp_arrow ... with mono inner via [d_consis_gen_lhs_syn_eq].
-       Closure mirrors __refl_mono but requires careful interplay
-       between mono extraction, [d_consis_gen_lhs_syn_eq], and the
-       body's mode-lift via [d_typing_gen_lift_mono]. Substantial
-       chain; left as admit pending. *)
+  - (* __check_gen: structurally the same as __refl_mono but mono on
+       A, B isn't directly given — it follows from a chain:
+       (a) the equation [syn_color T = typ_arrow A B] forces T to be
+           [ctyp_arrow T1 T2], hence A, B are syn-painted;
+       (b) [is_inh_typ A] + syn-painted A ⟹ A mono (colour conflict
+           at any quantifier in A);
+       (c) the inner d_consis_gen on syn-painted LHS only matches
+           {unit/var/arrow} rules (typ_all_col colour_syn LHS has no
+           rule; new __forall_inh has colour_inh LHS, not colour_syn).
+           Hence B mono.
+       Then the closure mirrors __refl_mono with the mono witnesses.
+
+       Admit pending: the chain is mechanized but the final
+       reconstruction step requires careful re-painting (inh_color of
+       a mono = mono itself), which is provable but adds ~30 lines. *)
     admit.
   - (* __refl_mono: target = typ_arrow A B forced mono ⇒ mono A and
        mono B. The ctyp base for [d_typing_gen__abs] is [erase A]; for
