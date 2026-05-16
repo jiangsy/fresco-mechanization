@@ -3010,10 +3010,149 @@ Lemma d_typing_abs_anno_value_to_subsumption :
 Proof.
   intros L Γ e A B m_orig C HwfA Hbody Hdecr Hwfd Hs.
   dependent induction Hs.
-  - (* __embed: same narrowing gap as the unannotated variant. *)
-    admit.
-  - (* __check_gen: same. *)
-    admit.
+  - (* __embed: invert the wrapped d_sub and handle __check / __forall_r. *)
+    rename H into Hsub.
+    inversion Hsub; subst.
+    + (* d_sub__check: T : ctyp with syn_color T = typ_arrow (syn_color_t A) B
+         forces T = ctyp_arrow T1 T2. *)
+      destruct T; simpl in H; try discriminate.
+      inversion H; subst.
+      (* Now H : syn_color T1 = syn_color_t A (and syn_color T2 = B). *)
+      rename H1 into Hcons.
+      inversion Hcons; subst.
+      apply app_eq_nil in H1. destruct H1 as [HΔ1 HΔ2]. subst Δ1 Δ2.
+      rename H7 into Hcons1. rename H8 into Hcons2.
+      assert (HmonoT1_syn : mono_typ (syn_color T1)).
+      { remember (syn_color T1) as A_cur in Hcons1.
+        assert (Haux : forall T, syn_color T = A_cur -> mono_typ (syn_color T)).
+        { clear -Hcons1.
+          induction Hcons1; intros Tc HeqA_cur;
+            try (destruct Tc; simpl in HeqA_cur; discriminate).
+          - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+            apply mono_typ__unit.
+          - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+            apply mono_typ__var.
+          - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+            apply mono_typ__arrow.
+            + eapply IHHcons1_1; reflexivity.
+            + eapply IHHcons1_2; reflexivity. }
+        eapply Haux; auto. }
+      assert (HmonoT2_syn : mono_typ (syn_color T2)).
+      { remember (syn_color T2) as A_cur in Hcons2.
+        assert (Haux : forall T, syn_color T = A_cur -> mono_typ (syn_color T)).
+        { clear -Hcons2.
+          induction Hcons2; intros Tc HeqA_cur;
+            try (destruct Tc; simpl in HeqA_cur; discriminate).
+          - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+            apply mono_typ__unit.
+          - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+            apply mono_typ__var.
+          - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+            apply mono_typ__arrow.
+            + eapply IHHcons2_1; reflexivity.
+            + eapply IHHcons2_2; reflexivity. }
+        eapply Haux; auto. }
+      (* H3: syn_color T1 = syn_color_t A. With T1 mono → A mono. *)
+      rename H3 into Heq_LHS.
+      assert (HmonoA : mono_typ A).
+      { apply mono_typ_syn_color_t_inv.
+        rewrite <- Heq_LHS. exact HmonoT1_syn. }
+      pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
+        as HeqA2.
+      pose proof (d_consis_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
+        as HeqA1.
+      subst.
+      pose proof (mono_typ_syn_color_erase HmonoA) as HsynA.
+      pose proof (mono_typ_inh_color_erase HmonoA) as HinhA.
+      apply (f_equal erase) in Heq_LHS.
+      rewrite syn_color_t_syn_color_erase in Heq_LHS.
+      rewrite !erase_syn_color in Heq_LHS.
+      subst T1.
+      (* Goal: typ_arrow (syn_color (erase A)) (syn_color T2). *)
+      rewrite <- (mono_typ_inh_color_erase HmonoA) at 1.
+      apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
+      * rewrite HsynA. exact HwfA.
+      * intros x Hx.
+        rewrite HsynA.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ A) ++ Γ))
+          by (apply d_wf_denv__typ; auto).
+        apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
+        -- rewrite <- Hdecr. apply Hbody. auto.
+        -- apply d_sub_gen_refl; auto.
+           ++ apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; assumption.
+           ++ rewrite_env ((x ~ dbind_typ A) ++ Γ).
+              apply d_wf_typ_weakening_head.
+              eapply d_consis_preserves_wf; eauto.
+    + (* d_sub__forall_r: target = typ_all_col colour_inh A1. Recursion
+         requires anno-variant d_sub-level companion (TODO). *)
+      admit.
+  - (* __check_gen: T : ctyp with syn_color T = typ_arrow (syn_color_t A) B.
+       Same mono extraction as the __embed __check sub-case above. *)
+    destruct T; simpl in x; try discriminate.
+    inversion x; subst.
+    rename H0 into Hcons.
+    inversion Hcons; subst.
+    apply app_eq_nil in H0. destruct H0 as [HΔ1 HΔ2]. subst Δ1 Δ2.
+    rename H6 into Hcons1. rename H7 into Hcons2.
+    assert (HmonoT1_syn : mono_typ (syn_color T1)).
+    { remember (syn_color T1) as A_cur in Hcons1.
+      assert (Haux : forall T, syn_color T = A_cur -> mono_typ (syn_color T)).
+      { clear -Hcons1.
+        induction Hcons1; intros Tc HeqA_cur;
+          try (destruct Tc; simpl in HeqA_cur; discriminate).
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__unit.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__var.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__arrow.
+          + eapply IHHcons1_1; reflexivity.
+          + eapply IHHcons1_2; reflexivity. }
+      eapply Haux; auto. }
+    assert (HmonoT2_syn : mono_typ (syn_color T2)).
+    { remember (syn_color T2) as A_cur in Hcons2.
+      assert (Haux : forall T, syn_color T = A_cur -> mono_typ (syn_color T)).
+      { clear -Hcons2.
+        induction Hcons2 using d_consis_gen_ind; intros Tc HeqA_cur;
+          try (destruct Tc; simpl in HeqA_cur; discriminate).
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__unit.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__var.
+        - destruct Tc; simpl in HeqA_cur; inversion HeqA_cur; subst.
+          apply mono_typ__arrow.
+          + eapply IHHcons2_1; reflexivity.
+          + eapply IHHcons2_2; reflexivity. }
+      eapply Haux; auto. }
+    assert (HmonoA : mono_typ A).
+    { rewrite H2 in HmonoT1_syn.
+      exact (mono_typ_syn_color_t_inv A HmonoT1_syn). }
+    pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT2_syn) Hcons2)
+      as HeqA2.
+    pose proof (d_consis_gen_lhs_syn_eq (mono_typ_is_syn_typ HmonoT1_syn) Hcons1)
+      as HeqA1.
+    subst.
+    pose proof (mono_typ_syn_color_erase HmonoA) as HsynA.
+    pose proof (mono_typ_inh_color_erase HmonoA) as HinhA.
+    apply (f_equal erase) in H2.
+    rewrite syn_color_t_syn_color_erase in H2.
+    rewrite !erase_syn_color in H2.
+    subst T1.
+    (* Goal: typ_arrow (syn_color (erase A)) (syn_color T2). *)
+    rewrite <- (mono_typ_inh_color_erase HmonoA) at 1.
+    apply d_typing_gen__abs_anno with (L := L `union` dom Γ).
+    + rewrite HsynA. exact HwfA.
+    + intros x0 Hx0.
+      rewrite HsynA.
+      assert (Hwfd_x0 : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ))
+        by (apply d_wf_denv__typ; auto).
+      apply d_typing_gen_lift_mono with (A := syn_color T2); auto.
+      * rewrite <- Hdecr. apply Hbody. auto.
+      * apply d_sub_gen_refl; auto.
+        -- apply mode_typ_compat__tc. apply mono_typ_is_inh_typ; assumption.
+        -- rewrite_env ((x0 ~ dbind_typ A) ++ Γ).
+           apply d_wf_typ_weakening_head.
+           eapply d_consis_gen_preserves_wf; eauto.
   - (* __refl_mono: target = typ_arrow (syn_color_t A) B forced mono.
        From [mono_typ_syn_color_t_inv] we recover mono A; the [ctyp]
        base for [d_typing_gen__abs_anno] is [erase A], with conclusion
