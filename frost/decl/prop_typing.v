@@ -1051,6 +1051,41 @@ Proof.
   intros. eapply d_consis_gen_lhs_syn_eq; eauto using d_consis_gen__embed.
 Qed.
 
+(** Parallel rigidity on [is_inh_typ] LHS: for fully [inh]-painted [T],
+    every [d_consis_gen] target equals [T]. Same proof structure as the
+    [is_syn_typ] version: unit/var rigid, arrow inducts, [is_inh_typ__all]
+    forces the [__forall_inh] rule (the only [d_consis_gen] rule whose LHS
+    is [typ_all_col colour_inh _]); cofinite IH + open-inj. *)
+Lemma d_consis_gen_lhs_inh_eq : forall T,
+    is_inh_typ T ->
+    forall Δ Γ A, d_consis_gen Δ Γ T A -> T = A.
+Proof.
+  intros T Hinh. induction Hinh; intros Δ Γ A0 Hc.
+  - inversion Hc; subst. reflexivity.
+  - inversion Hc; subst. reflexivity.
+  - inversion Hc; subst. f_equal; eauto.
+  - inversion Hc; subst.
+    f_equal.
+    match goal with
+    | Hbody : forall X, X `notin` ?L0 -> d_consis_gen _ _ _ _ |- _ =>
+        pick fresh X for
+          (L `union` L0 `union` ftvar_in_typ A `union` ftvar_in_typ A1);
+        assert (HX_L : X `notin` L) by fsetdec;
+        assert (HX_L0 : X `notin` L0) by fsetdec;
+        specialize (H0 X HX_L Δ ((X ~ dbind_tvar) ++ Γ)
+                      (open_typ_wrt_typ A1 (typ_var_f X)) (Hbody X HX_L0));
+        apply open_typ_wrt_typ_inj in H0; auto
+    end.
+Qed.
+
+(** The original [d_consis] inherits the same rigidity. *)
+Lemma d_consis_lhs_inh_eq : forall T,
+    is_inh_typ T ->
+    forall Δ Γ A, d_consis Δ Γ T A -> T = A.
+Proof.
+  intros. eapply d_consis_gen_lhs_inh_eq; eauto using d_consis_gen__embed.
+Qed.
+
 (** Generalised subtyping using [d_consis_gen] for the consistency
     premises. Adds an __infer / __check that uses [d_consis_gen],
     plus the structural cases.
@@ -2976,6 +3011,31 @@ Proof.
     rewrite inh_color_open_var. reflexivity.
 Qed.
 
+(** [is_syn_typ_syn_color]: parallel to [is_inh_typ_inh_color] but for
+    the [syn_color] painting. Same shape of proof. *)
+Lemma is_syn_typ_syn_color : forall Γ C,
+    d_wf_typ Γ (syn_color C) ->
+    is_syn_typ (syn_color C).
+Proof.
+  intros Γ C Hwf. remember (syn_color C) as A in Hwf.
+  revert C HeqA. induction Hwf; intros C HeqA.
+  - destruct C; simpl in HeqA; try discriminate. apply is_syn_typ__unit.
+  - destruct C; simpl in HeqA; try discriminate.
+    inversion HeqA; subst. apply is_syn_typ__var.
+  - destruct C; simpl in HeqA; try discriminate.
+    inversion HeqA; subst. apply is_syn_typ__arrow.
+    + eapply IHHwf1; reflexivity.
+    + eapply IHHwf2; reflexivity.
+  - destruct C; simpl in HeqA; try discriminate.
+    inversion HeqA; subst.
+    inst_cofinites_for is_syn_typ__all.
+    intros X HX.
+    assert (HX' : X `notin` L) by fsetdec.
+    rewrite <- syn_color_open_var.
+    eapply H0; eauto.
+    rewrite syn_color_open_var. reflexivity.
+Qed.
+
 (** [d_typing_abs_value_to_subsumption_split_d_sub]: d_sub companion
     for the SPLIT abs-value-to-subsumption helper. Parallels
     [d_typing_abs_anno_value_to_subsumption_d_sub] but:
@@ -4119,11 +4179,13 @@ Proof.
        inh_color A0], matching Hsub_gen's LHS. The helper handles all
        Hsub_gen sub-cases internally; we only need to wire m_orig sub-cases.
 
-       Currently closes the m_orig = mode_ti + m_new = mode_tc sub-case
-       directly; other m_orig / m_new combinations still admitted (research-
-       grade — m_new = mode_ti/mode_fn need separate helpers or direct
-       case analysis; m_orig = mode_fn _ needs the recursive structure
-       described in the paper's appendix). *)
+       All m_orig / m_new combinations now closed inline:
+         - m_orig = mode_ti, m_new ∈ {mode_ti, mode_tc}: via SPLIT helpers.
+         - m_orig = mode_ti, m_new = mode_fn k: inline case-split on
+           Hsub_gen ([__embed/__refl_mono/__arg]); inh-LHS rigidity gives
+           [A1 = inh_color A] in [__arg].
+         - m_orig = mode_fn m': same case-split but body IH is applied at
+           [decr_mode m_orig = m'], yielding outer mode [mode_fn (mode_fn_n_subst m' m_new)]. *)
     inversion Hfn; subst.
     + (* m_orig = mode_ti. mode_fn_n_subst mode_ti m_new = m_new. *)
       simpl in Hsub_gen |- *.
@@ -4149,17 +4211,170 @@ Proof.
               — bridge to Hsub_gen. *)
            rewrite inh_color_t_inh_color_erase.
            rewrite erase_syn_color. exact Hsub_gen.
-      * (* m_new = mode_fn k. Invert Hsub_gen on its mode_fn k rules.
-           __refl_mono: B_tgt = same arrow type, both arms mono → use IH
-             on Hbody to lift body mode_ti → k, then reconstruct __abs.
-           __arg: B_tgt = typ_arrow A1 A2; A1 = inh_color A_new from
-             Hcons (inh-LHS d_consis_gen forces inh-shape RHS); use IH
-             on Hbody for B → A2, then reconstruct __abs at typ_arrow
-             A1 A2 — requires A1 = inh_color _ which we'd derive from
-             Hcons inversion (research-grade — admitted). *)
-        admit.
-    + (* m_orig = mode_fn m'. Recursive structure on m'; admitted. *)
-      admit.
+      * (* m_new = mode_fn m_inner. Invert Hsub_gen on its mode_fn rules:
+           __embed → d_sub (mode_fn m_inner) (__arg or __forall_l_tagged);
+           __refl_mono → target same arrow, mono;
+           __arg → target typ_arrow A1 A2 with d_consis_gen on inh-LHS,
+                   forcing A1 = inh_color A by [d_consis_gen_lhs_inh_eq]. *)
+        rename m_new into m_inner.
+        rename H into HwfA.
+        rename H0 into Hbody.
+        rename H1 into IHbody.
+        assert (HsynA : d_wf_typ Γ (syn_color A))
+          by (apply d_wf_typ_inh_color_syn_color; assumption).
+        assert (HinhA_inh : is_inh_typ (inh_color A))
+          by (eapply is_inh_typ_inh_color; eassumption).
+        dependent destruction Hsub_gen.
+        -- (* __embed: d_sub (mode_fn m_inner) nil Γ (typ_arrow (inh_color A) B) B_tgt.
+              Rename the auto-named d_sub hypothesis. *)
+           match goal with Hd : d_sub _ _ _ _ _ |- _ => rename Hd into Hd_sub end.
+           dependent destruction Hd_sub.
+           ++ (* d_sub__arg *)
+              match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
+              apply app_eq_nil in Heq_app. destruct Heq_app; subst.
+              match goal with Hc : d_consis _ _ (inh_color A) _ |- _ => rename Hc into Hcons end.
+              match goal with Hs : d_sub _ _ _ B _ |- _ => rename Hs into Hbs end.
+              assert (HA1_eq : inh_color A = A1)
+                by (eapply d_consis_lhs_inh_eq; eauto).
+              subst A1.
+              simpl.
+              apply d_typing_gen__abs with (L := L `union` dom Γ); auto.
+              intros x Hx.
+              assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+                by (apply d_wf_denv__typ; auto; fsetdec).
+              match type of Hbs with d_sub _ _ _ _ ?A2_ =>
+                apply IHbody with (x := x) (m_new := m_inner) (B := A2_)
+              end.
+              ** fsetdec.
+              ** apply is_fn_n_ti__ti.
+              ** assumption.
+              ** apply d_sub_gen__embed.
+                 rewrite_env (nil ++ (x ~ dbind_typ (syn_color A)) ++ Γ).
+                 apply d_sub_weakening; simpl; exact Hbs.
+        -- (* __refl_mono: target = typ_arrow (inh_color A) B (unchanged), both arms mono. *)
+           match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+             inversion Hm; subst
+           end.
+           match goal with Hmc : mode_typ_compat (mode_fn _) (typ_arrow _ _) |- _ =>
+             inversion Hmc; subst
+           end.
+           match goal with Hwa : d_wf_typ Γ (typ_arrow _ _) |- _ =>
+             inversion Hwa; subst
+           end.
+           apply d_typing_gen__abs with (L := L `union` dom Γ); auto.
+           intros x Hx.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+             by (apply d_wf_denv__typ; auto; fsetdec).
+           simpl.
+           apply d_typing_gen_lift_mono with (A := B).
+           ++ apply Hbody. fsetdec.
+           ++ assumption.
+           ++ assumption.
+           ++ apply d_sub_gen_refl; auto.
+              rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+              apply d_wf_typ_weakening_head. assumption.
+        -- (* __arg: B_tgt = typ_arrow A1 A2 with d_consis_gen + d_sub_gen. *)
+           match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
+           apply app_eq_nil in Heq_app. destruct Heq_app; subst.
+           match goal with Hcg : d_consis_gen _ _ (inh_color A) _ |- _ => rename Hcg into Hcons end.
+           match goal with Hs : d_sub_gen _ _ _ B _ |- _ => rename Hs into Hbs end.
+           assert (HA1_eq : inh_color A = _) by (eapply d_consis_gen_lhs_inh_eq; eauto).
+           match type of HA1_eq with inh_color A = ?A1 => subst A1 end.
+           simpl.
+           apply d_typing_gen__abs with (L := L `union` dom Γ); auto.
+           intros x Hx.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+             by (apply d_wf_denv__typ; auto; fsetdec).
+           match type of Hbs with d_sub_gen _ _ _ _ ?A2_ =>
+             apply IHbody with (x := x) (m_new := m_inner) (B := A2_)
+           end.
+           ++ fsetdec.
+           ++ apply is_fn_n_ti__ti.
+           ++ assumption.
+           ++ rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+              apply d_sub_gen_weakening_head; exact Hbs.
+    + (* m_orig = mode_fn m'. Outer mode is [mode_fn (mode_fn_n_subst m' m_new)];
+         same case-split on Hsub_gen as the m_orig=mode_ti case, but the
+         body IH lifts at mode m' (decr_mode (mode_fn m') = m'), and the
+         [is_fn_n_ti] premise to IHbody is the [is_fn_n_ti m'] from
+         inverting Hfn. *)
+      match goal with Hfn_m' : is_fn_n_ti _ |- _ => rename Hfn_m' into Hfn_inner end.
+      simpl in Hsub_gen |- *.
+      rename H into HwfA.
+      rename H0 into Hbody.
+      rename H1 into IHbody.
+      assert (HsynA : d_wf_typ Γ (syn_color A))
+        by (apply d_wf_typ_inh_color_syn_color; assumption).
+      assert (HinhA_inh : is_inh_typ (inh_color A))
+        by (eapply is_inh_typ_inh_color; eassumption).
+      rename m0 into m'.
+      dependent destruction Hsub_gen.
+      * (* __embed: d_sub (mode_fn (mode_fn_n_subst m' m_new)) nil Γ ... *)
+        match goal with Hd : d_sub _ _ _ _ _ |- _ => rename Hd into Hd_sub end.
+        dependent destruction Hd_sub.
+        -- (* d_sub__arg *)
+           match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
+           apply app_eq_nil in Heq_app. destruct Heq_app; subst.
+           match goal with Hc : d_consis _ _ (inh_color A) _ |- _ => rename Hc into Hcons end.
+           match goal with Hs : d_sub _ _ _ B _ |- _ => rename Hs into Hbs end.
+           assert (HA1_eq : inh_color A = _) by (eapply d_consis_lhs_inh_eq; eauto).
+           match type of HA1_eq with inh_color A = ?A1 => subst A1 end.
+           simpl.
+           apply d_typing_gen__abs with (L := L `union` dom Γ); auto.
+           intros x Hx.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+             by (apply d_wf_denv__typ; auto; fsetdec).
+           match type of Hbs with d_sub _ _ _ _ ?A2_ =>
+             apply IHbody with (x := x) (m_new := m_new) (B := A2_)
+           end.
+           ** fsetdec.
+           ** exact Hfn_inner.
+           ** assumption.
+           ** apply d_sub_gen__embed.
+              rewrite_env (nil ++ (x ~ dbind_typ (syn_color A)) ++ Γ).
+              apply d_sub_weakening; simpl. exact Hbs.
+      * (* __refl_mono *)
+        match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+          inversion Hm; subst
+        end.
+        match goal with Hmc : mode_typ_compat (mode_fn _) (typ_arrow _ _) |- _ =>
+          inversion Hmc; subst
+        end.
+        match goal with Hwa : d_wf_typ Γ (typ_arrow _ _) |- _ =>
+          inversion Hwa; subst
+        end.
+        apply d_typing_gen__abs with (L := L `union` dom Γ); auto.
+        intros x Hx.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+          by (apply d_wf_denv__typ; auto; fsetdec).
+        simpl.
+        apply IHbody with (x := x) (m_new := m_new) (B := B).
+        -- fsetdec.
+        -- exact Hfn_inner.
+        -- assumption.
+        -- apply d_sub_gen_refl; auto.
+           rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+           apply d_wf_typ_weakening_head. assumption.
+      * (* __arg *)
+        match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
+        apply app_eq_nil in Heq_app. destruct Heq_app; subst.
+        match goal with Hcg : d_consis_gen _ _ (inh_color A) _ |- _ => rename Hcg into Hcons end.
+        match goal with Hs : d_sub_gen _ _ _ B _ |- _ => rename Hs into Hbs end.
+        assert (HA1_eq : inh_color A = _) by (eapply d_consis_gen_lhs_inh_eq; eauto).
+        match type of HA1_eq with inh_color A = ?A1 => subst A1 end.
+        simpl.
+        apply d_typing_gen__abs with (L := L `union` dom Γ); auto.
+        intros x Hx.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+          by (apply d_wf_denv__typ; auto; fsetdec).
+        match type of Hbs with d_sub_gen _ _ _ _ ?A2_ =>
+          apply IHbody with (x := x) (m_new := m_new) (B := A2_)
+        end.
+        -- fsetdec.
+        -- exact Hfn_inner.
+        -- assumption.
+        -- rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+           apply d_sub_gen_weakening_head. exact Hbs.
   - (* Hty = __abs_anno. Parallel to __abs: use the SPLIT helper
        [d_typing_abs_anno_value_to_subsumption_split] whose conclusion
        term [exp_abs_anno (inh_color_t A_helper) e] matches the rule's
@@ -4183,8 +4398,159 @@ Proof.
               rewrite erase_syn_color; reflexivity).
         eapply d_typing_abs_anno_value_to_subsumption_split with
           (A := syn_color A) (B := B) (m_orig := mode_ti) (L := L); eauto.
-      * (* m_new = mode_fn k. *) admit.
-    + (* m_orig = mode_fn m'. *) admit.
+      * (* m_new = mode_fn m_inner. Mirror of __abs case at mode_fn.
+           Conclusion arrow-arg is [syn_color A] (not [inh_color A] like
+           __abs), so we use [d_consis_gen_lhs_syn_eq] in the __arg case. *)
+        rename m_new into m_inner.
+        rename H into HwfA.
+        rename H0 into Hbody.
+        rename H1 into IHbody.
+        assert (HsynA_syn : is_syn_typ (syn_color A))
+          by (eapply is_syn_typ_syn_color; eassumption).
+        dependent destruction Hsub_gen.
+        -- (* __embed: d_sub (mode_fn m_inner) nil Γ (typ_arrow (syn_color A) B) B_tgt. *)
+           match goal with Hd : d_sub _ _ _ _ _ |- _ => rename Hd into Hd_sub end.
+           dependent destruction Hd_sub.
+           ++ (* d_sub__arg *)
+              match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
+              apply app_eq_nil in Heq_app. destruct Heq_app; subst.
+              match goal with Hc : d_consis _ _ (syn_color A) _ |- _ => rename Hc into Hcons end.
+              match goal with Hs : d_sub _ _ _ B _ |- _ => rename Hs into Hbs end.
+              assert (HA1_eq : syn_color A = _) by (eapply d_consis_lhs_syn_eq; eauto).
+              match type of HA1_eq with syn_color A = ?A1 => subst A1 end.
+              simpl.
+              apply d_typing_gen__abs_anno with (L := L `union` dom Γ); auto.
+              intros x Hx.
+              assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+                by (apply d_wf_denv__typ; auto; fsetdec).
+              match type of Hbs with d_sub _ _ _ _ ?A2_ =>
+                apply IHbody with (x := x) (m_new := m_inner) (B := A2_)
+              end.
+              ** fsetdec.
+              ** apply is_fn_n_ti__ti.
+              ** assumption.
+              ** apply d_sub_gen__embed.
+                 rewrite_env (nil ++ (x ~ dbind_typ (syn_color A)) ++ Γ).
+                 apply d_sub_weakening; simpl; exact Hbs.
+        -- (* __refl_mono: target = typ_arrow (syn_color A) B (unchanged), both arms mono. *)
+           match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+             inversion Hm; subst
+           end.
+           match goal with Hmc : mode_typ_compat (mode_fn _) (typ_arrow _ _) |- _ =>
+             inversion Hmc; subst
+           end.
+           match goal with Hwa : d_wf_typ Γ (typ_arrow _ _) |- _ =>
+             inversion Hwa; subst
+           end.
+           apply d_typing_gen__abs_anno with (L := L `union` dom Γ); auto.
+           intros x Hx.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+             by (apply d_wf_denv__typ; auto; fsetdec).
+           simpl.
+           apply d_typing_gen_lift_mono with (A := B).
+           ++ apply Hbody. fsetdec.
+           ++ assumption.
+           ++ assumption.
+           ++ apply d_sub_gen_refl; auto.
+              rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+              apply d_wf_typ_weakening_head. assumption.
+        -- (* __arg: B_tgt = typ_arrow A1 A2 with d_consis_gen + d_sub_gen. *)
+           match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
+           apply app_eq_nil in Heq_app. destruct Heq_app; subst.
+           match goal with Hcg : d_consis_gen _ _ (syn_color A) _ |- _ => rename Hcg into Hcons end.
+           match goal with Hs : d_sub_gen _ _ _ B _ |- _ => rename Hs into Hbs end.
+           assert (HA1_eq : syn_color A = _) by (eapply d_consis_gen_lhs_syn_eq; eauto).
+           match type of HA1_eq with syn_color A = ?A1 => subst A1 end.
+           simpl.
+           apply d_typing_gen__abs_anno with (L := L `union` dom Γ); auto.
+           intros x Hx.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+             by (apply d_wf_denv__typ; auto; fsetdec).
+           match type of Hbs with d_sub_gen _ _ _ _ ?A2_ =>
+             apply IHbody with (x := x) (m_new := m_inner) (B := A2_)
+           end.
+           ++ fsetdec.
+           ++ apply is_fn_n_ti__ti.
+           ++ assumption.
+           ++ rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+              apply d_sub_gen_weakening_head; exact Hbs.
+    + (* m_orig = mode_fn m'. Mirror of __abs (m_orig=mode_fn m') but
+         arrow-arg is [syn_color A], using [d_consis_gen_lhs_syn_eq]. *)
+      match goal with Hfn_m' : is_fn_n_ti _ |- _ => rename Hfn_m' into Hfn_inner end.
+      simpl in Hsub_gen |- *.
+      rename H into HwfA.
+      rename H0 into Hbody.
+      rename H1 into IHbody.
+      assert (HsynA_syn : is_syn_typ (syn_color A))
+        by (eapply is_syn_typ_syn_color; eassumption).
+      rename m0 into m'.
+      dependent destruction Hsub_gen.
+      * (* __embed *)
+        match goal with Hd : d_sub _ _ _ _ _ |- _ => rename Hd into Hd_sub end.
+        dependent destruction Hd_sub.
+        -- (* d_sub__arg *)
+           match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
+           apply app_eq_nil in Heq_app. destruct Heq_app; subst.
+           match goal with Hc : d_consis _ _ (syn_color A) _ |- _ => rename Hc into Hcons end.
+           match goal with Hs : d_sub _ _ _ B _ |- _ => rename Hs into Hbs end.
+           assert (HA1_eq : syn_color A = _) by (eapply d_consis_lhs_syn_eq; eauto).
+           match type of HA1_eq with syn_color A = ?A1 => subst A1 end.
+           simpl.
+           apply d_typing_gen__abs_anno with (L := L `union` dom Γ); auto.
+           intros x Hx.
+           assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+             by (apply d_wf_denv__typ; auto; fsetdec).
+           match type of Hbs with d_sub _ _ _ _ ?A2_ =>
+             apply IHbody with (x := x) (m_new := m_new) (B := A2_)
+           end.
+           ** fsetdec.
+           ** exact Hfn_inner.
+           ** assumption.
+           ** apply d_sub_gen__embed.
+              rewrite_env (nil ++ (x ~ dbind_typ (syn_color A)) ++ Γ).
+              apply d_sub_weakening; simpl; exact Hbs.
+      * (* __refl_mono *)
+        match goal with Hm : mono_typ (typ_arrow _ _) |- _ =>
+          inversion Hm; subst
+        end.
+        match goal with Hmc : mode_typ_compat (mode_fn _) (typ_arrow _ _) |- _ =>
+          inversion Hmc; subst
+        end.
+        match goal with Hwa : d_wf_typ Γ (typ_arrow _ _) |- _ =>
+          inversion Hwa; subst
+        end.
+        apply d_typing_gen__abs_anno with (L := L `union` dom Γ); auto.
+        intros x Hx.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+          by (apply d_wf_denv__typ; auto; fsetdec).
+        simpl.
+        apply IHbody with (x := x) (m_new := m_new) (B := B).
+        -- fsetdec.
+        -- exact Hfn_inner.
+        -- assumption.
+        -- apply d_sub_gen_refl; auto.
+           rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+           apply d_wf_typ_weakening_head. assumption.
+      * (* __arg *)
+        match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
+        apply app_eq_nil in Heq_app. destruct Heq_app; subst.
+        match goal with Hcg : d_consis_gen _ _ (syn_color A) _ |- _ => rename Hcg into Hcons end.
+        match goal with Hs : d_sub_gen _ _ _ B _ |- _ => rename Hs into Hbs end.
+        assert (HA1_eq : syn_color A = _) by (eapply d_consis_gen_lhs_syn_eq; eauto).
+        match type of HA1_eq with syn_color A = ?A1 => subst A1 end.
+        simpl.
+        apply d_typing_gen__abs_anno with (L := L `union` dom Γ); auto.
+        intros x Hx.
+        assert (Hwfd_x : d_wf_denv ((x ~ dbind_typ (syn_color A)) ++ Γ))
+          by (apply d_wf_denv__typ; auto; fsetdec).
+        match type of Hbs with d_sub_gen _ _ _ _ ?A2_ =>
+          apply IHbody with (x := x) (m_new := m_new) (B := A2_)
+        end.
+        -- fsetdec.
+        -- exact Hfn_inner.
+        -- assumption.
+        -- rewrite_env ((x ~ dbind_typ (syn_color A)) ++ Γ).
+           apply d_sub_gen_weakening_head. exact Hbs.
   - (* Hty = __app. Closing this requires lifting the function-side
        sub-derivation H1 (at mode_fn m_orig) to mode_fn m_new via the
        IH (D12 on H1), composing with d_sub_gen__arg using:
@@ -4253,7 +4619,7 @@ Proof.
       * match goal with
         | Harg : d_typing_gen mode_tc _ _ (inh_color (erase _)) |- _ => exact Harg
         end.
-Admitted.
+Qed.
 
 (** [d_consis_gen_to_d_consis_syn_lhs]: the SYN-LHS-restricted bridge,
     Qed. When the LHS is [is_syn_typ] (every quantifier is [colour_syn]),
