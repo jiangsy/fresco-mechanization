@@ -220,11 +220,16 @@ Proof.
     + eapply IHHd; eauto.
   - (* __forall_l_tagged: B = typ_all_etag — no d_consis_gen RHS. *)
     inversion Hcg.
-  - (* __forall_l_untagged (NEW): B = typ_all_col colour_syn. d_consis_gen
-       RHS CAN be typ_all_col colour_syn. Non-trivial; admitted. *)
+  - (* __forall_l_untagged (NEW): B = typ_all_col colour_syn T_a.
+       Non-trivial composition; admitted for now. The case needs both
+       a substitution lemma for d_consis_gen cofinite bodies AND
+       generalisation of the trans to non-nil outer Δ for the non-mono
+       ph sub-case. Tracked separately. *)
     admit.
 Admitted.
-(* 1 admit post-δ-refactor for new d_sub rule. *)
+(* d_consis_gen_extends_d_sub_nil: 1 residual admit at __forall_l_untagged
+   case — needs d_consis_gen substitution lemma + non-nil-Δ trans
+   generalisation. *)
 
 (** [d_consis_gen_extends_d_sub_gen_nil]: same, on the LHS of a
     [d_sub_gen]. By induction on [d_sub_gen]; [__embed] routes through
