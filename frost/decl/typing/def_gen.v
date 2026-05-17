@@ -1384,3 +1384,81 @@ Proof.
     + eapply d_consis_extends_d_consis_gen; eauto.
     + eapply IHHs; eauto.
 Qed.
+
+(* ====================================================================== *)
+(*  Gen→original bridge lemmas. These were previously in                  *)
+(*  [prop_general_subsumption.v]; moved here 2026-05-17 so                 *)
+(*  [prop_subsumption_aux.v]'s [d_sub_gen_trans] can use the              *)
+(*  [d_sub_gen → d_sub] direction in the new                              *)
+(*  [d_sub__forall_l_untagged] inner case (which needs to wrap a body's   *)
+(*  inductively-produced [d_sub_gen] back into a [d_sub] for the          *)
+(*  [d_sub__forall_l_untagged] rule's body slot).                         *)
+(* ====================================================================== *)
+
+(** [d_consis_gen_to_d_consis_syn_lhs]: the SYN-LHS-restricted bridge.
+    When the LHS is [is_syn_typ] (every quantifier is [colour_syn]),
+    the [__forall_inh] case (LHS = [typ_all_col colour_inh]) is vacuous,
+    so the bridge closes. *)
+Lemma d_consis_gen_to_d_consis_syn_lhs : forall T,
+    is_syn_typ T ->
+    forall Δ Γ A, d_consis_gen Δ Γ T A -> d_consis Δ Γ T A.
+Proof.
+  intros T Hsyn. induction Hsyn; intros Δ Γ A0 Hc.
+  - (* typ_unit *) inversion Hc; subst. apply d_consis__unit.
+  - (* typ_var_f X *) inversion Hc; subst. apply d_consis__var; assumption.
+  - (* typ_arrow *)
+    inversion Hc; subst.
+    apply d_consis__arrow; auto.
+  - (* typ_all_col colour_syn (post-refactor): d_consis_gen admits two
+       rules with this LHS — __forall_syn (RHS colour_syn) and the new
+       __forall_inh_untagged (RHS colour_inh). Both bridge to their
+       d_consis counterparts via the IH on the opened body. *)
+    inversion Hc; subst.
+    + (* __forall_inh_untagged (NEW δ-rule) *)
+      apply d_consis__forall_inh_untagged with (L := L `union` L0).
+      intros X HX. apply H0; auto.
+    + (* __forall_syn *)
+      apply d_consis__forall_syn with (L := L `union` L0).
+      intros X HX. apply H0; auto.
+Qed.
+
+(** [d_consis_gen_to_d_consis]: the gen→original bridge for consistency.
+    Each d_consis_gen constructor reconstructs its d_consis counterpart;
+    [__forall_inh_untagged] (δ-NEW) and [__forall_inh] (added during the
+    earlier refactor) make this lemma Qed. *)
+Lemma d_consis_gen_to_d_consis : forall Δ Γ T A,
+    d_consis_gen Δ Γ T A ->
+    Δ ⨟ Γ ⊨ T ≈ A.
+Proof.
+  intros Δ Γ T A H. induction H.
+  - apply d_consis__unit.
+  - apply d_consis__var; assumption.
+  - apply d_consis__forall_inh_tagged with (L := L); assumption.
+  - apply d_consis__forall_inh_untagged with (L := L); assumption.
+  - apply d_consis__forall_syn_tagged with (L := L); assumption.
+  - apply d_consis__forall_syn with (L := L); assumption.
+  - apply d_consis__forall_inh with (L := L); assumption.
+  - apply d_consis__arrow; assumption.
+Qed.
+
+(** [d_sub_gen_to_d_sub]: the gen→original bridge for subtyping. Routes
+    [__refl_mono] through [d_sub_refl_mono_mode] and the consistency
+    components through [d_consis_gen_to_d_consis]. *)
+Lemma d_sub_gen_to_d_sub : forall m Δ Γ T A,
+    d_sub_gen m Δ Γ T A ->
+    Γ ⊢[ m ; Δ ] T ⊑ A.
+Proof.
+  intros m Δ Γ T A H. induction H.
+  - (* __embed: the d_sub is the premise. *)
+    assumption.
+  - (* __infer_gen *)
+    apply d_sub__infer. apply d_consis_gen_to_d_consis. assumption.
+  - (* __check_gen *)
+    apply d_sub__check; auto. apply d_consis_gen_to_d_consis. assumption.
+  - (* __refl_mono *)
+    apply d_sub_refl_mono_mode; auto.
+  - (* __forall_r *)
+    apply d_sub__forall_r with (L := L); auto.
+  - (* __arg *)
+    apply d_sub__arg; auto. apply d_consis_gen_to_d_consis. assumption.
+Qed.

@@ -332,6 +332,123 @@ Proof.
     + eapply IH; [ exact HwfA2 | exact Hsa_gen | eassumption ].
 Qed.
 
+(** [d_wf_ttyp_nil_d_wf_typ]: at empty Δ, [d_wf_ttyp] degenerates to
+    [d_wf_typ] (the only [d_wf_ttyp] rules with [Δ = nil] are unit /
+    var / arrow — same shapes as [d_wf_typ] base cases). [typ_all_etag]
+    requires non-nil Δ, so it's vacuous here. *)
+Lemma d_wf_ttyp_nil_d_wf_typ : forall Γ ph,
+    nil ⨟ Γ ⊢ₜₜ ph ->
+    d_wf_typ Γ ph.
+Proof.
+  intros Γ ph H. remember (@nil atom) as Δ_nil eqn:HΔ.
+  induction H; subst.
+  - apply d_wf_typ__unit.
+  - apply d_wf_typ__var; assumption.
+  - apply app_eq_nil in HΔ. destruct HΔ as [HΔ1 HΔ2]. subst.
+    apply d_wf_typ__arrow; auto.
+  - discriminate HΔ.   (* ε :: Δ ≠ nil *)
+Qed.
+
+(** [d_wf_typ_open_with_ttyp_nil]: opening a cofinitely-wf body with a
+    [d_wf_ttyp nil]-wf type produces wf. Standard substitution pattern
+    using [subst_typ_in_typ_intro]. *)
+Lemma d_wf_typ_open_with_ttyp_nil : forall Γ L T ph,
+    (forall X, X `notin` L ->
+       d_wf_typ ((X ~ dbind_tvar) ++ Γ) (open_typ_wrt_typ T (typ_var_f X))) ->
+    nil ⨟ Γ ⊢ₜₜ ph ->
+    d_wf_typ Γ (open_typ_wrt_typ T ph).
+Proof.
+  intros Γ L T ph Hcofin Hwfph.
+  pick fresh X for (L `union` ftvar_in_typ T `union` dom Γ).
+  rewrite (subst_typ_in_typ_intro X T ph); [| fsetdec].
+  rewrite_env (nil ++ Γ).
+  apply d_wf_typ_subst with (X := X).
+  - simpl. apply Hcofin. fsetdec.
+  - apply d_wf_ttyp_nil_d_wf_typ. exact Hwfph.
+Qed.
+
+(** [d_sub_gen_trans_forall_l_untagged_helper]: inner transitivity for
+    the [d_sub__forall_l_untagged] case of [d_sub_gen_trans] at
+    [mode_fn m]. Inducts on the inner d_sub structure (paper-faithful:
+    cf. syntax-directed.tex:323-338, ForallL case of Subtyping
+    Transitivity inducts on the first d_sub).
+
+    For [__forall_l_untagged] the body's d_sub is structurally smaller;
+    IH applies to give the composed body output as a [d_sub_gen]. We
+    bridge back to [d_sub] via [d_sub_gen_to_d_sub] (Qed, in def_gen.v)
+    so the rule's body slot accepts it.
+
+    [__arg] dispatches to [d_sub_gen_trans_arrow] with the passed-in
+    inner-mode IH (the same one used by [d_sub_gen_trans]'s outer __arg
+    case).
+
+    [__forall_l_tagged] is vacuous via [inversion HwfA] ([typ_all_etag]
+    is not [d_wf_typ]). *)
+Lemma d_sub_gen_trans_forall_l_untagged_helper :
+  forall m,
+  forall Γ A B C m_new,
+    is_fn_n_ti m ->
+    d_wf_typ Γ A ->
+    Γ ⊢[ mode_fn m ; nil ] A ⊑ B ->
+    d_sub_gen (mode_fn (mode_fn_n_subst m m_new)) nil Γ B C ->
+    (forall Γ' A' B' C',
+       d_wf_typ Γ' A' ->
+       d_sub_gen m nil Γ' A' B' ->
+       d_sub_gen (mode_fn_n_subst m m_new) nil Γ' B' C' ->
+       d_sub_gen (mode_fn_n_subst m m_new) nil Γ' A' C') ->
+    d_sub_gen (mode_fn (mode_fn_n_subst m m_new)) nil Γ A C.
+Proof.
+  intros m Γ A B C m_new Hfn HwfA Hsub Hsg IH_inner.
+  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  revert C Hsg HwfA.
+  dependent induction Hsub; intros C2 Hsg HwfA.
+  - (* __arg: rule's mode_fn m_rule = mode_fn m ⇒ m_rule = m. *)
+    apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
+    inversion HwfA; subst.
+    eapply d_sub_gen_trans_arrow;
+      [ eassumption | eassumption
+      | apply d_consis_gen__embed; eassumption
+      | apply d_sub_gen__embed; eassumption
+      | exact Hsg | exact IH_inner ].
+  - (* __forall_l_tagged: A = typ_all_etag — not wf. *)
+    inversion HwfA.
+  - (* __forall_l_untagged: A = typ_all_col colour_syn T.
+       Case-split on rule's Δ': nil (ph mono) vs non-nil (ph has ε-tags).
+       For Δ' = nil, we re-instantiate the output rule with nil; the
+       body's d_sub composes with Hsg via the IH (output is d_sub_gen,
+       bridged to d_sub via [d_sub_gen_to_d_sub]).
+       For Δ' non-nil, the body's d_sub is at non-nil Δ ++ Δ' = Δ',
+       and the IH (which expects Δ_total = nil per our trans signature)
+       doesn't apply — would require a generalised trans at non-nil Δ. *)
+    subst.
+    destruct Δ' as [| ε_first rest_Δ' ].
+    + (* Δ' = nil: ph is mono / d_wf_typ. *)
+      apply d_sub_gen__embed.
+      apply d_sub__forall_l_untagged with (Δ' := @nil atom) (ph := ph).
+      * discriminate.
+      * apply list_disjoint_nil_l.
+      * assumption.
+      * simpl.
+        apply d_sub_gen_to_d_sub.
+        eapply IHHsub.
+        -- reflexivity.
+        -- exact Hfn.
+        -- reflexivity.
+        -- exact IH_inner.
+        -- simpl. exact Hsg.
+        -- inversion HwfA; subst.
+           eapply d_wf_typ_open_with_ttyp_nil; eassumption.
+    + (* Δ' = ε_first :: rest_Δ': non-nil; ph contains typ_all_etag.
+         The body's d_sub LHS (open T ph) is not d_wf_typ-shape; closing
+         this requires generalising the trans to non-nil outer Δ —
+         deferred. *)
+      admit.
+Admitted.
+(* d_sub_gen_trans_forall_l_untagged_helper: 1 residual admit when the
+   inner __forall_l_untagged instantiates with non-nil Δ' (i.e., a
+   polymorphic ph with ε-tags). Requires a generalised trans at non-nil
+   outer Δ — separate restructure. *)
+
 (** [d_sub_gen_trans]: transitivity of [d_sub_gen] along the FN^n
     mode-stack. With [m1] in [is_fn_n_ti] form and the second
     derivation at [mode_fn_n_subst m1 m_new] (the innermost TI
@@ -342,7 +459,10 @@ Qed.
       [d_consis_sub_trans_gen_nil]) or [__refl_mono] (identity).
     - [m1 = mode_fn m]: the first sub is [__refl_mono] (identity) or
       arrow-shaped ([__embed]→[d_sub__arg], or [__arg]); the arrow
-      cases route through [d_sub_gen_trans_arrow] with the IH.
+      cases route through [d_sub_gen_trans_arrow] with the IH; the
+      [__forall_l_untagged] case routes through
+      [d_sub_gen_trans_forall_l_untagged_helper] (above) which uses
+      [d_sub_gen_to_d_sub] to convert IH output back to [d_sub].
 
     This closes the D12 [__sub] [m = mode_fn _] case (mode-changing
     subtyping transitivity). *)
@@ -392,11 +512,16 @@ Proof.
           | exact Hsg | exact IHHfn ].
       * (* d_sub__forall_l_tagged: A = typ_all_etag — not wf. *)
         inversion HwfA.
-      * (* d_sub__forall_l_untagged: A = typ_all_col colour_syn — IS wf.
-           δ-NEW. Will be closed once d_sub_mono_RHS_eq / equivalent
-           bridge is strengthened to exclude this LHS (or via cofinite
-           induction on the body). Phase 1 of the δ-cleanup plan. *)
-        admit.
+      * (* d_sub__forall_l_untagged: A = typ_all_col colour_syn T —
+           IS wf (δ-NEW case). Route through the helper that inducts on
+           the inner d_sub structure (paper-faithful). *)
+        eapply d_sub_gen_trans_forall_l_untagged_helper
+          with (B := B);
+          [ exact Hfn | exact HwfA | | exact Hsg | exact IHHfn ].
+        (* Rebuild the d_sub from the destructured premises of the
+           __forall_l_untagged constructor. *)
+        eapply d_sub__forall_l_untagged with (Δ' := Δ') (ph := ph);
+          eassumption.
     + (* __refl_mono: A = B. *)
       exact Hsg.
     + (* __arg: gen sub-derivations directly. *)
@@ -408,9 +533,7 @@ Proof.
       eapply d_sub_gen_trans_arrow;
         [ eassumption | eassumption | eassumption | eassumption
         | exact Hsg | exact IHHfn ].
-Admitted.
-(* d_sub_gen_trans: 1 admit post-δ-refactor — __forall_l_untagged inner
-   case at mode_fn m needs reasoning beyond inversion HwfA. *)
+Qed.
 
 (** [d_sub_gen] analogue of [d_sub_arrow_refl_inner]: a reflexive
     [d_sub_gen] on a mono arrow type yields a reflexive [d_sub_gen] on

@@ -658,113 +658,12 @@ Proof.
         end.
 Qed.
 
-(** [d_consis_gen_to_d_consis_syn_lhs]: the SYN-LHS-restricted bridge,
-    Qed. When the LHS is [is_syn_typ] (every quantifier is [colour_syn]),
-    the [__forall_inh] case (LHS = [typ_all_col colour_inh]) is vacuous,
-    so the bridge closes. Used internally by the [d_sub_gen → d_sub]
-    bridge for [__infer_gen] / [__check_gen] (where the LHS is
-    [syn_color T_base], hence [is_syn_typ]); kept as a standalone Qed
-    helper for future work that can establish [is_syn_typ] at the call
-    site. *)
-Lemma d_consis_gen_to_d_consis_syn_lhs : forall T,
-    is_syn_typ T ->
-    forall Δ Γ A, d_consis_gen Δ Γ T A -> d_consis Δ Γ T A.
-Proof.
-  intros T Hsyn. induction Hsyn; intros Δ Γ A0 Hc.
-  - (* typ_unit *) inversion Hc; subst. apply d_consis__unit.
-  - (* typ_var_f X *) inversion Hc; subst. apply d_consis__var; assumption.
-  - (* typ_arrow *)
-    inversion Hc; subst.
-    apply d_consis__arrow; auto.
-  - (* typ_all_col colour_syn (post-refactor): d_consis_gen admits two
-       rules with this LHS — __forall_syn (RHS colour_syn) and the new
-       __forall_inh_untagged (RHS colour_inh). Both bridge to their
-       d_consis counterparts via the IH on the opened body. *)
-    inversion Hc; subst.
-    + (* __forall_inh_untagged (NEW δ-rule) *)
-      apply d_consis__forall_inh_untagged with (L := L `union` L0).
-      intros X HX. apply H0; auto.
-    + (* __forall_syn *)
-      apply d_consis__forall_syn with (L := L `union` L0).
-      intros X HX. apply H0; auto.
-Qed.
-
-(** [d_consis_gen_to_d_consis]: the gen→original bridge for
-    consistency. Fully [Qed] post the structural fix.
-
-    The fix: added [d_consis__forall_inh] to the base [d_consis]
-    inductive (paper-faithful — paper's [typconsis] in
-    [syntax-directed.tex:116] includes a structural [ForallInh] rule
-    admitting [inh{∀α.}T] on the LHS). The cascading impact (transitivity,
-    narrowing, weakening, mono-extraction) was absorbed in this pass:
-    [d_consis_compose] gains 3 cofinite-rename cases (Paper Lemma B.2 /
-    Consistency Transitivity);
-    [d_consis_LHS_mono_wf] gains an [is_utyp T] precondition (rules out
-    the new [typ_all_col colour_inh] LHS case which is wf but not mono);
-    [d_consis_LHS_is_typ_mono] gets the same precondition;
-    [d_consis_mono_RHS] / [d_consis_LHS_syn_color_mono] /
-    [d_consis_compose_nil_RHS] / [d_consis_empty_eq] /
-    [d_sub_not_lhs_typ_all_col] / [d_sub_LHS_mono_wf] each gain a
-    case for the new constructor. *)
-Lemma d_consis_gen_to_d_consis : forall Δ Γ T A,
-    d_consis_gen Δ Γ T A ->
-    Δ ⨟ Γ ⊨ T ≈ A.
-Proof.
-  intros Δ Γ T A H. induction H.
-  - apply d_consis__unit.
-  - apply d_consis__var; assumption.
-  - apply d_consis__forall_inh_tagged with (L := L); assumption.
-  - (* __forall_inh_untagged (NEW δ-rule): LHS typ_all_col colour_syn,
-       RHS typ_all_col colour_inh. Mirrors the tagged case but on the
-       untagged-syn LHS. *)
-    apply d_consis__forall_inh_untagged with (L := L); assumption.
-  - apply d_consis__forall_syn_tagged with (L := L); assumption.
-  - apply d_consis__forall_syn with (L := L); assumption.
-  - (* __forall_inh: LHS = typ_all_col colour_inh T, RHS =
-       typ_all_col colour_inh A. With the new [d_consis__forall_inh]
-       rule (added to the base [d_consis] in this pass), this case
-       closes directly. *)
-    apply d_consis__forall_inh with (L := L); assumption.
-  - apply d_consis__arrow; assumption.
-Qed.
-
-(** [d_sub_gen_to_d_sub]: the [d_sub_gen → d_sub] bridge.
-
-    Closed structurally for every rule shape using [d_consis_gen_to_d_consis]
-    as the consistency-level bridge. The bridge's only admit is the
-    [__forall_inh] case of [d_consis_gen_to_d_consis] — that admit
-    propagates here implicitly via the [d_consis_gen → d_consis] calls in
-    [__infer_gen], [__check_gen], and [__arg]; this lemma itself is [Qed]. *)
-Lemma d_sub_gen_to_d_sub : forall m Δ Γ T A,
-    d_sub_gen m Δ Γ T A ->
-    Γ ⊢[ m ; Δ ] T ⊑ A.
-Proof.
-  intros m Δ Γ T A H. induction H.
-  - (* __embed: trivial — the embed already carries a [d_sub]. *)
-    assumption.
-  - (* __infer_gen: rebuild [d_sub__infer] after [d_consis_gen → d_consis]
-       bridge on the consistency premise. The bridge's residual admit
-       case ([__forall_inh] LHS = [typ_all_col colour_inh]) is vacuous
-       here because the LHS is [syn_color T], which never matches that
-       shape, but the bridge lemma's signature doesn't expose this — so
-       this clause is conservative w.r.t. the documented admit. *)
-    apply d_sub__infer. apply d_consis_gen_to_d_consis. assumption.
-  - (* __check_gen: same pattern; LHS [syn_color T] makes the bridge's
-       residual admit case vacuous in practice. *)
-    apply d_sub__check; auto. apply d_consis_gen_to_d_consis. assumption.
-  - (* __refl_mono: route through [d_sub_refl_mono_mode] (Qed at d_sub
-       level). *)
-    apply d_sub_refl_mono_mode; auto.
-  - (* __forall_r: structural — re-apply [d_sub__forall_r] with the
-       cofinite-quant body lifted by the IH. *)
-    apply d_sub__forall_r with (L := L); auto.
-  - (* __arg: the ONLY case where the residual [d_consis_gen_to_d_consis
-       __forall_inh] admit is structurally reachable. The d_consis_gen
-       LHS [T1] is arbitrary here (it's the function's argument-type
-       from the outer subtyping); when [T1 = typ_all_col colour_inh ...]
-       the bridge's __forall_inh case fires. *)
-    apply d_sub__arg; auto. apply d_consis_gen_to_d_consis. assumption.
-Qed.
+(* [d_consis_gen_to_d_consis_syn_lhs], [d_consis_gen_to_d_consis], and
+   [d_sub_gen_to_d_sub] moved to [decl/typing/def_gen.v] (2026-05-17,
+   δ-cascade Phase 1) so [prop_subsumption_aux.v]'s [d_sub_gen_trans]
+   can use the gen→original bridge in the new [__forall_l_untagged]
+   inner case. They remain available here via [def_gen.v]'s transitive
+   import. *)
 
 (** [d_typing_gen_collapse]: the generalised typing collapses back to
     the original. Structural except [__sub], which routes through the
