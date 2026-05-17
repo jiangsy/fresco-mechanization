@@ -741,55 +741,71 @@ Qed.
     [typconsis] is transitive (Lemma B.2 generalised); this is the
     [Δ = nil] instance, which is all the D12 [__sub]/[__arg] use
     sites need (their outer [Δ] is forced [nil]). *)
+(** [d_consis_gen_trans]: composes [d_consis_gen] at empty Δ. The [is_typ T]
+    precondition excludes [typ_all_etag] at the LHS top, which would otherwise
+    let [__forall_syn_tagged] compose with [__forall_inh_untagged] into
+    [typ_all_etag → typ_all_col colour_inh] — a shape whose only producer is
+    [d_consis_gen__forall_inh_tagged] at output Δ = ε :: Δ_body ≠ nil, breaking
+    the nil-Δ output signature. Call sites supply [is_typ T] from [syn_color]
+    shapes (which are always [is_typ]). *)
 Lemma d_consis_gen_trans : forall Γ T A B,
+    is_typ T ->
     d_consis_gen nil Γ T A ->
     d_consis_gen nil Γ A B ->
     d_consis_gen nil Γ T B.
 Proof.
-  intros Γ T A B Hc1 Hc2.
-  (* δ-encoding refactor (2026-05-17): adding
-     [d_consis_gen__forall_inh_untagged] introduces several new
-     compositional sub-cases. Wholesale admit pending restructure.
-     See spec [docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md]. *)
-  admit.
-  (* Original proof body:
+  intros Γ T A B Hwf_T Hc1 Hc2.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
   generalize dependent B.
-  induction Hc1; intros B0 Hc2; try discriminate HeqΔ.
-  - (* __unit: T = A = typ_unit; Hc2 already gives the answer. *)
-    exact Hc2.
-  - (* __var: T = A = typ_var_f X; Hc2 already gives the answer. *)
-    exact Hc2.
-  - (* __forall_syn_tagged: A = typ_all_col colour_syn A0; matched by
-       __forall_syn in d_consis_gen (post-refactor). *)
+  induction Hc1; intros B0 Hc2.
+  - (* __unit *) exact Hc2.
+  - (* __var *) exact Hc2.
+  - (* __forall_inh_tagged: T = typ_all_etag — not is_typ. *)
+    inversion Hwf_T.
+  - (* __forall_inh_untagged (NEW δ): LHS typ_all_col colour_syn,
+       RHS typ_all_col colour_inh. Hc2 LHS = colour_inh ⟹ __forall_inh.
+       Compose via cofinite IH. *)
+    subst.
     inversion Hc2; subst.
-    apply d_consis_gen__forall_syn_tagged with (L := L `union` L0).
-    intros X HX. apply H0; auto.
-  - (* __forall_syn (post-refactor): A = typ_all_col colour_syn A0; Hc2
-       matches __forall_syn. *)
+    inversion Hwf_T; subst.
+    apply d_consis_gen__forall_inh_untagged with (L := L `union` L0 `union` L1).
+    intros X HX.
+    apply H0; auto.
+  - (* __forall_syn_tagged: T = typ_all_etag — not is_typ. *)
+    inversion Hwf_T.
+  - (* __forall_syn: LHS typ_all_col colour_syn, RHS typ_all_col colour_syn.
+       Hc2 LHS = colour_syn ⟹ __forall_syn OR __forall_inh_untagged. *)
+    subst.
     inversion Hc2; subst.
-    apply d_consis_gen__forall_syn with (L := L `union` L0).
-    intros X HX. apply H0; auto.
-  - (* __forall_inh: A = typ_all_col colour_inh A0; Hc2 = __forall_inh. *)
+    + (* Hc2 = __forall_inh_untagged: result LHS colour_syn → RHS colour_inh *)
+      inversion Hwf_T; subst.
+      apply d_consis_gen__forall_inh_untagged with (L := L `union` L0 `union` L1).
+      intros X HX. apply H0; auto.
+    + (* Hc2 = __forall_syn: result LHS colour_syn → RHS colour_syn *)
+      inversion Hwf_T; subst.
+      apply d_consis_gen__forall_syn with (L := L `union` L0 `union` L1).
+      intros X HX. apply H0; auto.
+  - (* __forall_inh: LHS typ_all_col colour_inh, RHS typ_all_col colour_inh.
+       Hc2 LHS = colour_inh ⟹ __forall_inh. *)
+    subst.
     inversion Hc2; subst.
-    apply d_consis_gen__forall_inh with (L := L `union` L0).
+    inversion Hwf_T; subst.
+    apply d_consis_gen__forall_inh with (L := L `union` L0 `union` L1).
     intros X HX. apply H0; auto.
-  - (* __arrow: Δ1 = Δ2 = nil; Hc2 = __arrow. *)
+  - (* __arrow: Δ1 ++ Δ2 = nil ⇒ both nil *)
     apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
     simpl in Hc2. inversion Hc2; subst.
     match goal with
     | H : _ ++ _ = nil |- _ =>
         apply app_eq_nil in H; destruct H as [HΔ1a HΔ2a]; subst
     end.
+    inversion Hwf_T; subst.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_consis_gen__arrow.
     + apply IHHc1_1; auto.
     + apply IHHc1_2; auto.
     + apply list_disjoint_nil_l.
-  *)
-Admitted.
-(* d_consis_gen_trans: WHOLESALE ADMIT — δ-encoding refactor cascade.
-   Original proof body commented out. *)
+Qed.
 
 (** [d_typing_narrow_consis_head_arg]: narrowing a [d_typing]
     head-binding along a [d_consis_gen]. Now a clean corollary of
@@ -1202,55 +1218,95 @@ Lemma d_consis_extends_d_consis_gen : forall Γ T A B,
     d_consis_gen nil Γ T B.
 Proof.
   intros Γ T0 A B Hc Hcg HwfT.
-  (* δ-encoding refactor cascade: wholesale admit pending restructure. *)
-  admit.
-  (* Original body:
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
   generalize dependent T0.
-  induction Hcg; intros T0 Hc HwfT; try discriminate HeqΔ.
-  - (* __unit: A = B = typ_unit; Hc already gives the answer. *)
+  induction Hcg; intros T0 Hc HwfT.
+  - (* __unit: A = B = typ_unit. *)
     apply d_consis_gen__embed. assumption.
-  - (* __var: A = B = typ_var_f X; Hc already gives the answer. *)
+  - (* __var: A = B = typ_var_f X. *)
     apply d_consis_gen__embed. assumption.
-  - (* __forall_syn_tagged: A = typ_all_etag — no d_consis rule has
-       typ_all_etag as RHS, so Hc is vacuous. *)
-    inversion Hc.
-  - (* __forall_syn (post-refactor): A = typ_all_col colour_syn T_inner.
-       Hc has RHS = typ_all_col colour_syn — d_consis rules matching:
-       __forall_syn_tagged (LHS = typ_all_etag, T0 not d_wf_typ since
-       d_wf_typ doesn't admit typ_all_etag → vacuous) or __forall_syn
-       (LHS = typ_all_col colour_syn). Inversion gives both subcases. *)
+  - (* __forall_inh_tagged: outer Δ = ε :: Δ ≠ nil — vacuous. *)
+    exfalso; congruence.
+  - (* __forall_inh_untagged (NEW δ): A = typ_all_col colour_syn T_inner,
+       B = typ_all_col colour_inh A_inner. Hc : d_consis nil Γ T0 (typ_all_col colour_syn T_inner).
+       RHS = colour_syn ⟹ __forall_syn_tagged (LHS typ_all_etag, vacuous via HwfT)
+       OR __forall_syn (LHS typ_all_col colour_syn). *)
     subst.
     inversion Hc; subst.
-    + (* __forall_syn_tagged: LHS T0 = typ_all_etag _ _. HwfT inversion
-         on d_wf_typ Γ (typ_all_etag _ _) has 0 cases. Use solve. *)
+    + (* __forall_syn_tagged: T0 = typ_all_etag, not d_wf_typ. *)
       inversion HwfT.
-    + (* __forall_syn: LHS = typ_all_col colour_syn, compose via
-         d_consis_gen__forall_syn. *)
-      apply d_consis_gen__forall_syn with (L := L `union` L0).
+    + (* __forall_syn: T0 = typ_all_col colour_syn. Compose via
+         d_consis_gen__forall_inh_untagged. *)
+      inversion HwfT; subst.
+      apply d_consis_gen__forall_inh_untagged with (L := L `union` L0 `union` L1).
       intros X HX.
       apply d_consis_gen_trans with (A := open_typ_wrt_typ T (typ_var_f X)).
+      * match goal with H_wf_body : forall X, X `notin` ?L1 -> d_wf_typ _ _ |- _ =>
+          eapply d_wf_typ_is_typ; apply H_wf_body; fsetdec end.
       * apply d_consis_gen__embed.
         match goal with
         | H' : forall X0, X0 `notin` _ -> d_consis _ _ _ _ |- _ =>
             apply H'; auto
         end.
       * apply H; auto.
-  - (* __forall_inh: A = typ_all_col colour_inh T_inner. Hc with Δ=nil
-       and RHS = typ_all_col colour_inh — __forall_inh_tagged forces
-       Δ = ε :: Δ_inner ≠ nil so discharged. Only __forall_inh matches. *)
+  - (* __forall_syn_tagged: A = typ_all_etag — no d_consis rule has
+       typ_all_etag as RHS, so Hc is vacuous. *)
+    inversion Hc.
+  - (* __forall_syn (post-refactor): A = typ_all_col colour_syn T_inner.
+       Hc has RHS = colour_syn — __forall_syn_tagged or __forall_syn. *)
     subst.
     inversion Hc; subst.
-    apply d_consis_gen__forall_inh with (L := L `union` L0).
-    intros X HX.
-    apply d_consis_gen_trans with (A := open_typ_wrt_typ T (typ_var_f X)).
-    + apply d_consis_gen__embed.
-      match goal with
-      | H' : forall X0, X0 `notin` _ -> d_consis _ _ _ _ |- _ =>
-          apply H'; auto
-      end.
-    + apply H; auto.
-  - (* __arrow: Δ1 ++ Δ2 = nil forces both nil. *)
+    + (* __forall_syn_tagged: T0 = typ_all_etag, not wf. *)
+      inversion HwfT.
+    + (* __forall_syn: compose via d_consis_gen__forall_syn. *)
+      inversion HwfT; subst.
+      apply d_consis_gen__forall_syn with (L := L `union` L0 `union` L1).
+      intros X HX.
+      apply d_consis_gen_trans with (A := open_typ_wrt_typ T (typ_var_f X)).
+      * match goal with H_wf_body : forall X, X `notin` ?L1 -> d_wf_typ _ _ |- _ =>
+          eapply d_wf_typ_is_typ; apply H_wf_body; fsetdec end.
+      * apply d_consis_gen__embed.
+        match goal with
+        | H' : forall X0, X0 `notin` _ -> d_consis _ _ _ _ |- _ =>
+            apply H'; auto
+        end.
+      * apply H; auto.
+  - (* __forall_inh: A = typ_all_col colour_inh T_inner. Hc RHS = colour_inh.
+       d_consis rules matching: __forall_inh_tagged (LHS typ_all_etag,
+       Δ = ε :: Δ_rule, with Hc's Δ = nil → discriminate), __forall_inh_untagged
+       (LHS typ_all_col colour_syn), or __forall_inh (LHS typ_all_col colour_inh). *)
+    subst.
+    inversion Hc; subst.
+    (* Note: __forall_inh_tagged case (Δ = ε :: Δ_rule ≠ nil) is
+       auto-discharged by inversion since outer Δ = nil. *)
+    + (* __forall_inh_untagged: T0 = typ_all_col colour_syn.
+         Compose via d_consis_gen__forall_inh_untagged. *)
+      inversion HwfT; subst.
+      apply d_consis_gen__forall_inh_untagged with (L := L `union` L0 `union` L1).
+      intros X HX.
+      apply d_consis_gen_trans with (A := open_typ_wrt_typ T (typ_var_f X)).
+      * match goal with H_wf_body : forall X, X `notin` ?L1 -> d_wf_typ _ _ |- _ =>
+          eapply d_wf_typ_is_typ; apply H_wf_body; fsetdec end.
+      * apply d_consis_gen__embed.
+        match goal with
+        | H' : forall X0, X0 `notin` _ -> d_consis _ _ _ _ |- _ =>
+            apply H'; auto
+        end.
+      * apply H; auto.
+    + (* __forall_inh: T0 = typ_all_col colour_inh. Compose via __forall_inh. *)
+      inversion HwfT; subst.
+      apply d_consis_gen__forall_inh with (L := L `union` L0 `union` L1).
+      intros X HX.
+      apply d_consis_gen_trans with (A := open_typ_wrt_typ T (typ_var_f X)).
+      * match goal with H_wf_body : forall X, X `notin` ?L1 -> d_wf_typ _ _ |- _ =>
+          eapply d_wf_typ_is_typ; apply H_wf_body; fsetdec end.
+      * apply d_consis_gen__embed.
+        match goal with
+        | H' : forall X0, X0 `notin` _ -> d_consis _ _ _ _ |- _ =>
+            apply H'; auto
+        end.
+      * apply H; auto.
+  - (* __arrow *)
     apply app_eq_nil in HeqΔ.
     destruct HeqΔ as [HΔ1 HΔ2]. subst.
     inversion Hc; subst.
@@ -1261,9 +1317,7 @@ Proof.
     inversion HwfT; subst.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_consis_gen__arrow; auto.
-  *)
-Admitted.
-(* WHOLESALE ADMIT — δ-encoding refactor cascade. *)
+Qed.
 
 (** [d_consis_sub_trans_gen_nil]: extend d_sub_gen on the LHS via
     a d_consis. Mirrors [d_consis_sub_trans_nil] for the gen
@@ -1342,7 +1396,7 @@ Proof.
       by (eapply d_consis_gen_RHS_syn_color_eq; eauto).
     subst T0.
     apply d_sub_gen__infer_gen.
-    eapply d_consis_gen_trans; eauto.
+    eapply d_consis_gen_trans; [ eapply d_wf_typ_is_typ; eassumption | | ]; eauto.
   - (* __check_gen: same pattern — pin T0 = syn_color T via the RHS
        rigidity lemma, then dispatch via [d_sub_gen__check_gen] (the
        guarded_typ + d_consis_gen premise of __check_gen carry over). *)

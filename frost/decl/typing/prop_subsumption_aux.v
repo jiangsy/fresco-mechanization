@@ -183,13 +183,19 @@ Proof.
     assert (HeqA0 : A0 = syn_color _)
       by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst A0.
     apply d_sub_gen__infer_gen.
-    eapply d_consis_gen_trans; [ exact Hcg | apply d_consis_gen__embed; eassumption ].
+    eapply d_consis_gen_trans;
+      [ eapply d_wf_typ_is_typ; eassumption
+      | exact Hcg
+      | apply d_consis_gen__embed; eassumption ].
   - (* __check: B = syn_color T, C = inh_color A. Same chain. *)
     subst.
     assert (HeqA0 : A0 = syn_color _)
       by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst A0.
     apply d_sub_gen__check_gen; auto.
-    eapply d_consis_gen_trans; [ exact Hcg | apply d_consis_gen__embed; eassumption ].
+    eapply d_consis_gen_trans;
+      [ eapply d_wf_typ_is_typ; eassumption
+      | exact Hcg
+      | apply d_consis_gen__embed; eassumption ].
   - (* __forall_r: per-X recursion via the d_sub IH H0. *)
     subst.
     apply d_sub_gen__forall_r with (L := L `union` dom Γ).
@@ -208,7 +214,9 @@ Proof.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_sub_gen__arg.
     + eapply d_consis_gen_trans;
-        [ eassumption | apply d_consis_gen__embed; eassumption ].
+        [ eapply d_wf_typ_is_typ; eassumption
+        | eassumption
+        | apply d_consis_gen__embed; eassumption ].
     + eapply IHHd; eauto.
   - (* __forall_l_tagged: B = typ_all_etag — no d_consis_gen RHS. *)
     inversion Hcg.
@@ -239,14 +247,16 @@ Proof.
     assert (HeqA0 : A0 = syn_color _)
       by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst A0.
     apply d_sub_gen__infer_gen.
-    eapply d_consis_gen_trans; eauto.
+    eapply d_consis_gen_trans;
+      [ eapply d_wf_typ_is_typ; eassumption | eauto | eauto ].
   - (* __check_gen: B = syn_color T, C = inh_color A. *)
     subst.
     assert (HeqA0 : A0 = syn_color _)
       by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst A0.
     apply d_sub_gen__check_gen.
     + assumption.
-    + eapply d_consis_gen_trans; eauto.
+    + eapply d_consis_gen_trans;
+        [ eapply d_wf_typ_is_typ; eassumption | eauto | eauto ].
   - (* __refl_mono: B = C mono ⟹ A0 = B by mono-RHS rigidity. *)
     subst.
     assert (Heq : A0 = A) by (eapply d_consis_gen_mono_RHS_eq; eauto).
@@ -268,7 +278,8 @@ Proof.
     inversion HwfA0; subst.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_sub_gen__arg.
-    + eapply d_consis_gen_trans; eauto.
+    + eapply d_consis_gen_trans;
+        [ eapply d_wf_typ_is_typ; eassumption | eauto | eauto ].
     + eapply IHHs; eauto.
 Qed.
 
@@ -309,7 +320,9 @@ Proof.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_sub_gen__arg.
     + eapply d_consis_gen_trans;
-        [ exact Hca_gen | apply d_consis_gen__embed; eassumption ].
+        [ eapply d_wf_typ_is_typ; eassumption
+        | exact Hca_gen
+        | apply d_consis_gen__embed; eassumption ].
     + eapply IH;
         [ exact HwfA2 | exact Hsa_gen | apply d_sub_gen__embed; eassumption ].
   - (* __refl_mono: typ_arrow B1 B2 = C, mono. *)
@@ -328,7 +341,8 @@ Proof.
     end.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_sub_gen__arg.
-    + eapply d_consis_gen_trans; [ exact Hca_gen | eassumption ].
+    + eapply d_consis_gen_trans;
+        [ eapply d_wf_typ_is_typ; eassumption | exact Hca_gen | eassumption ].
     + eapply IH; [ exact HwfA2 | exact Hsa_gen | eassumption ].
 Qed.
 
