@@ -7,34 +7,62 @@ Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 **Spec:** [`docs/superpowers/specs/2026-05-10-frost-phase23-design.md`](../docs/superpowers/specs/2026-05-10-frost-phase23-design.md)
 
-## Status (current — 2026-05-17)
+## Status (current — 2026-05-17, after δ-cascade Phase 0)
 
-**Build:** 🔴 RED — δ-encoding refactor (commit `0bf2815`) in progress.
-Stops mid-cascade at `prop_subsumption_aux.v:395`. Pre-refactor build
-(commit `8701b4a`) was green.
+**Build:** 🟢 GREEN. δ-cascade Phase 0 (this session) added missing
+bullet placeholders for the new constructors (`d_sub__forall_l_untagged`,
+`d_consis__forall_inh_untagged`, `d_consis_gen__forall_inh_untagged`)
+across the case-splitting proofs the δ-refactor broke. All `admit.`
+placeholders are documented inline.
 
-**Flagship theorems (D1 / D12):** Status uncertain after the δ refactor.
-Both `d_typing_general_subsumption_via_gen` and `_gen` rely transitively
-on `d_consis_gen_trans` (now WHOLESALE admit) and several other
-admitted lemmas — `Print Assumptions` will almost certainly NOT report
-"Closed under the global context" once the build is back green. Needs
-re-verification.
+**Flagship theorems (D1 / D12):** ⚠️ **NOT** "Closed under the global
+context" post-δ. `Print Assumptions` on
+`d_typing_general_subsumption_via_gen` and `_gen` now lists 4 axioms,
+all introduced by the δ refactor:
+
+1. `d_sub_gen_trans` — new `__forall_l_untagged` inner case at `mode_fn m`.
+   The `is_fn_n_ti m1` induction doesn't provide an IH at the same
+   `mode_fn m` for the body composition; needs proof restructuring to
+   match the paper's induction-on-d_sub style (syntax-directed.tex:323-338).
+2. `d_consis_syn_inh_mono` — **provably false** post-δ. The
+   `__forall_inh_untagged` rule admits `syn_color (ctyp_all C) ≈ inh_color
+   (ctyp_all D)` consistencies, breaking the shortcut "syn-LHS ↔ inh-RHS
+   d_consis ⇒ LHS mono". Used in 4 SPLIT-helper call sites.
+3. `d_consis_gen_syn_inh_mono` — parallel provably-false case for
+   d_consis_gen.
+4. `d_consis_gen_lhs_syn_eq` — **provably false** post-δ. The
+   `__forall_inh_untagged` rule means LHS colour_syn ↔ RHS colour_inh
+   (not equal). Used in 8 SPLIT-helper call sites for the
+   `A = syn_color T` subst.
+
+Re-closing D1 / D12 requires either (a) restructuring the SPLIT helpers
+and `d_sub_gen_trans` to be polymorphic-body-aware without leaning on
+the broken shortcuts, or (b) adding precondition restrictions at the
+entry points (potentially cascading to D12's signature). This is a
+multi-session effort. See plan: [`docs/superpowers/plans/2026-05-17-delta-encoding-admit-cleanup.md`](docs/superpowers/plans/2026-05-17-delta-encoding-admit-cleanup.md).
 
 **Pre-refactor flagship status (commit `8701b4a`)**: both Qed and "Closed under the global context", zero axioms.
 
-**Admit counts (frost/decl/):** 15 base admits (pre-refactor) + **16 new
-admits from the δ-encoding refactor** (commit `0bf2815`). Of the 16 new:
-- **6 are PROVABLY FALSE post-refactor** (lemma's conclusion now
+**Admit counts (frost/decl/):** 15 base admits (pre-refactor) + **18 new
+admits from the δ-encoding refactor** (commits `0bf2815` + δ-cascade
+Phase 0). Of the 18 new:
+- **8 are PROVABLY FALSE post-refactor** (lemma's conclusion now
   contradicts the new rule's behaviour — needs precondition strengthening,
   not just proof completion):
   - `d_consis_LHS_mono_wf` / `_is_typ_mono`
   - `d_sub_LHS_mono_wf` / `_mono_RHS_eq`
   - `d_consis_empty_eq`
   - `d_consis_gen_lhs_syn_eq`
+  - `d_consis_syn_inh_mono` (newly surfaced in Phase 0)
+  - `d_consis_gen_syn_inh_mono` (newly surfaced in Phase 0)
 - **3 are wholesale-admitted** with original body preserved as
   `(* ... *)` for re-introduction: `d_consis_compose`,
   `d_consis_gen_trans`, `d_consis_extends_d_consis_gen`.
-- Remaining 7 are sub-case admits with spec links.
+- **1 is a structurally-reachable new case requiring proof restructure:**
+  `d_sub_gen_trans` `__forall_l_untagged` inner case at `mode_fn m`
+  (surfaced in Phase 0; paper's proof inducts on first d_sub, mechanization
+  inducts on `is_fn_n_ti m1` and lacks the matching IH).
+- Remaining 6 are sub-case admits with spec links.
 
 See [`docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md`](../docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md)
 and the 2026-05-17 (δ-refactor) entry in Part 2 below.
@@ -178,6 +206,54 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 # Part 2: Daily progress
 
 Session-by-session closure log. Most recent first.
+
+## 2026-05-17 — δ-cascade Phase 0 (build green, 4 leaking axioms documented)
+
+**Plan:** [`docs/superpowers/plans/2026-05-17-delta-encoding-admit-cleanup.md`](docs/superpowers/plans/2026-05-17-delta-encoding-admit-cleanup.md)
+
+**What this session did.** Restored the green build that was halted at
+`prop_subsumption_aux.v:395` since commit `0bf2815` (the WIP δ-refactor).
+Added missing sub-case bullets / disjunctive-pattern branches for the
+new constructors across the case-splitting proofs they broke:
+
+- `prop_subsumption_aux.v`:
+  - `d_sub_gen_trans` (mode_fn m / __embed): added `*` bullet for
+    `d_sub__forall_l_untagged`. Inner case at `mode_fn m` requires
+    actual proof (paper inducts on first d_sub, mechanization inducts
+    on `is_fn_n_ti m1` — IH not aligned). Lemma now `Admitted.`
+  - `d_consis_syn_inh_mono` + `d_consis_gen_syn_inh_mono`: added bullets
+    for `d_consis__forall_inh_untagged`. **Conclusion `mono_typ (syn_color T)`
+    is FALSE on `ctyp_all T` input** — the OLD invariant ("syn-LHS ↔ inh-RHS
+    d_consis ⇒ LHS mono") no longer holds. Both lemmas now `Admitted.`
+  - `d_typing_abs_value_to_subsumption_split_d_sub` +
+    `d_typing_abs_anno_value_to_subsumption_split_d_sub`: added missing
+    `d_sub__forall_l_untagged` case (vacuous via outer-shape mismatch).
+- `prop_general_subsumption.v`:
+  - `d_consis_gen_to_d_consis_syn_lhs` + `d_consis_gen_to_d_consis`:
+    added new constructor case (mirrors `d_consis__forall_inh_untagged`).
+- `prop_typing.v`:
+  - `d_typing_app_reorder`: extended inversion patterns by one branch
+    (`d_sub` now has 6 constructors).
+
+**Findings about what's required to close D1 / D12 again.** The 4 leaking
+axioms (above) and the 12 other δ-NEW admits share a coupled dependency
+on the three broken invariants (4: "syn-LHS↔inh-RHS d_consis ⇒ mono",
+5: "d_consis empty Δ ⇒ LHS=RHS", 6: "d_sub mode_fn _ wf LHS ⇒ arrow shape").
+Each shortcut lemma's call sites use its conclusion as a load-bearing
+equation in downstream proof steps; refactoring individual call sites
+doesn't compose. Closing D1 / D12 again requires either:
+- (a) Restructuring the SPLIT helpers + `d_sub_gen_trans` to be
+  polymorphic-body-aware without leaning on the broken shortcuts
+  (paper's proof structure: induct on first d_sub, IH on body), OR
+- (b) Adding precondition restrictions at the entry points (e.g. force
+  mono binding types at D12's `__abs` call site), cascading upward.
+
+Neither is a single-session change. Phase 0 leaves the codebase in a
+clean intermediate state with full documentation.
+
+**Plan updates.** The phase-1+ tasks in
+[`docs/superpowers/plans/2026-05-17-delta-encoding-admit-cleanup.md`](docs/superpowers/plans/2026-05-17-delta-encoding-admit-cleanup.md)
+have been revised with the feasibility analysis from this session.
 
 ## 2026-05-17 — δ-encoding refactor (WIP, commit `0bf2815`)
 
