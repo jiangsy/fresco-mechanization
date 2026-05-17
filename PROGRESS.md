@@ -102,6 +102,42 @@ and the 2026-05-17 (δ-refactor) entry in Part 2 below.
 
 **Admit counts (frost/algo/):** 6 admits — all Phase 3.B/C HEADLINE soundness/completeness theorems.
 
+## TODOs (δ-cascade closure — next-session priorities)
+
+Tracked here so the next session has a clean hand-off without scanning the daily log.
+
+### Critical path to D1/D12 "Closed under the global context"
+
+The 6 leaking axioms split into two patterns, each needing one structural fix:
+
+**Pattern A — non-mono ph in `__forall_l_untagged` (3 axioms):**
+- [ ] **Add `d_consis_subst_typ_with_ttyp`** (generalize `d_consis_subst_mono` from `mono_typ B` to `d_wf_ttyp Δ_ph Γ2 ph`; output Δ becomes `Δ_outer ++ Δ_ph` with disjointness). ~150-line induction on d_consis with ε-tag bookkeeping per constructor case. Add at the same location as `d_consis_subst_mono` in `subtyping/prop_basics.v`.
+- [ ] **Close `d_consis_sub_trans` non-mono case** (1 admit at `subtyping/prop_consis_sub_trans.v:208` `__forall_l_untagged` branch). Mechanical given the subst lemma.
+- [ ] **Close `d_sub_gen_trans_forall_l_untagged_helper` non-mono case** (1 admit at `typing/prop_subsumption_aux.v:~445`). Mechanical given the subst lemma.
+- [ ] **Close `d_consis_gen_extends_d_sub_nil` non-mono case** (1 admit at `typing/prop_subsumption_aux.v:~225` `__forall_l_untagged` branch). Mechanical given the subst lemma.
+
+**Pattern B — SPLIT-helper provably-false deps (3 axioms):**
+- [ ] **Add `d_consis_gen_syn_inh_erase_eq`** (gen variant of the Phase 1.F lemma — same proof structure, applied to `d_consis_gen` rules).
+- [ ] **Solve the T2-mono blocker.** Two viable options:
+  - **(a) Add `mono_typ Bhead` precondition** to all 4 SPLIT helpers (`d_typing_abs_value_to_subsumption_split[_d_sub]` and `_abs_anno_value_*`). D12 supplies via `d_sub_gen__refl_mono`-derived mono. Cascade D12 to compute mono at all 3 `m_new` branches (currently only computed at `m_new = mode_tc`; need new logic at `mode_ti` and `mode_fn _`).
+  - **(b) Restructure `Hbody_at_tc` construction** in D12 to not require `d_sub_gen__refl_mono` on potentially-poly `B` — would require a non-`refl_mono` IH lift, likely via `d_sub__check` + body's d_consis. Deeper restructure.
+  - Recommendation: try (a) first — more mechanical.
+- [ ] **Refactor 4 SPLIT helpers** to use Phase 1.E's `syn_color_eq_inh_color_mono` (for T1 side; works via `Heq_LHS : syn_color T1 = inh_color_t Ahead → inh_color (erase Ahead)`) and Phase 1.F's `d_consis_syn_inh_erase_eq` (for T2 side; gives `T2 = A2'` ctyp equality replacing the broken `d_consis_lhs_syn_eq`). Mono of T2 comes from option (a) or (b) above.
+- [ ] **Verify** all references to `d_consis_syn_inh_mono`, `d_consis_gen_syn_inh_mono`, `d_consis_lhs_syn_eq`, `d_consis_gen_lhs_syn_eq` in SPLIT helpers are gone, then those 4 lemmas can stay Admitted-but-unused (no longer appear in `Print Assumptions`).
+
+### Verification gate
+
+After Pattern A + Pattern B fixes:
+
+- [ ] `Print Assumptions d_typing_general_subsumption_via_gen` → `Closed under the global context`.
+- [ ] `Print Assumptions d_typing_general_subsumption_gen` → `Closed under the global context`.
+- [ ] Update PROGRESS.md status banner: 🟢 GREEN + flagship theorems closed.
+- [ ] Update the 4 provably-false lemma entries in Part 1 to reflect their now-unused status.
+
+### Out of scope (separate effort)
+
+The pre-refactor admits in `prop_typing.v` (E1, S1/S2), `typing/prop_weakening.v` (narrowing), and `subtyping/prop_sub_sound.v` (`d_sub_complete_mono`, `d_sub_no_guess_uniqueness`) remain research-grade — not affected by the δ cascade.
+
 ## Status legend
 
 - 🟢 fully closed — Qed with paper-faithful statement (modulo trivial wf preconditions)
@@ -231,6 +267,61 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 # Part 2: Daily progress
 
 Session-by-session closure log. Most recent first.
+
+## 2026-05-17 — δ-cascade Phase 1.F (erase-eq lemma; user-suggested option (b) clarified)
+
+**Commit:** `a461bb9`.
+
+**What this session did.** User suggested option (b): "Add a stronger
+d_consis-inversion lemma proving `d_consis ... (syn_color T2) (inh_color
+A2') → syn_color T2 = inh_color A2'` under wf conditions."
+
+**Finding.** The literal form is **provably FALSE post-δ** — the new
+`d_consis__forall_inh_untagged` rule allows
+`d_consis Δ Γ (typ_all_col colour_syn T') (typ_all_col colour_inh A')`,
+i.e. `syn_color (ctyp_all T'_ctyp)` on LHS and `inh_color (ctyp_all A'_ctyp)`
+on RHS. These differ in colour (`colour_syn` vs `colour_inh`) — the typ
+equality fails.
+
+**Closest viable form (Qed):** the **erase weakening**, added to
+`prop_consis_trans.v`:
+
+```coq
+Lemma d_consis_syn_inh_erase_eq : forall Γ Δ T A,
+    Δ ⨟ Γ ⊨ T ≈ A ->
+    is_syn_typ T ->
+    is_inh_typ A ->
+    erase T = erase A.
+```
+
+Provable because [erase] discards colour information — for the
+`__forall_inh_untagged` case, both `erase (typ_all_col colour_syn _)`
+and `erase (typ_all_col colour_inh _)` give `ctyp_all (erase body)`.
+The cofinite IH on the body + `open_ctyp_wrt_ctyp_inj` + `erase_ftvar`
+closes that case. Other cases close via shape exclusion
+(`is_syn_typ` excludes `typ_all_etag`; `is_inh_typ` excludes
+`colour_syn`).
+
+**At call sites,** applying gives `erase (syn_color T2) = erase
+(inh_color A2') ⟹ T2 = A2'` (ctyp equality, via `erase_syn_color` /
+`erase_inh_color` round-trips). Suitable for `subst`.
+
+**Why this doesn't yet drop axioms.** Wiring into SPLIT helpers
+requires also solving the T2-mono blocker: even with `T2 = A2'`,
+deriving `mono_typ (syn_color T2)` needs either:
+
+- Adding `mono_typ Bhead` to the SPLIT helper signature (cascades to
+  D12, requires D12 to establish mono of body type at all m_new
+  branches; D12 has `HwfB` at `m_new = mode_tc` but not at others).
+- A different construction of `Hbody_at_tc` that doesn't require
+  `d_sub_gen__refl_mono` on potentially-poly `B` (would change D12's
+  internal IH usage).
+
+Both options are substantive cascading restructures — planned for next
+session.
+
+**Axiom count: still 6** (no drop this session; foundation lemma added
+for follow-up).
 
 ## 2026-05-17 — δ-cascade Phase 1.D + 1.E (partial close + foundation)
 
