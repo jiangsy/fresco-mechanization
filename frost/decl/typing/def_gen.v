@@ -1802,22 +1802,23 @@ Qed.
     / [__forall_inh] cases of [d_consis_gen] are either vacuous on
     [syn_color]-shaped RHS (colour mismatch: [syn_color] paints
     [colour_syn], not [colour_inh]) or LHS-unwf (etag/plain). *)
-Lemma d_consis_gen_RHS_syn_color_eq : forall Γ A X,
-    d_consis_gen nil Γ A (syn_color X) ->
+(** Generalized to any Δ (not just nil). The pinning A = syn_color X
+    is structural and doesn't depend on Δ being empty. *)
+Lemma d_consis_gen_RHS_syn_color_eq : forall Δ Γ A X,
+    d_consis_gen Δ Γ A (syn_color X) ->
     d_wf_typ Γ A ->
     A = syn_color X.
 Proof.
-  intros Γ A X Hcg.
-  remember (@nil atom) as Δ_nil eqn:HeqΔ.
+  intros Δ Γ A X Hcg.
   remember (syn_color X) as A_RHS eqn:HeqA.
   generalize dependent X.
-  induction Hcg; intros X' HeqA HwfA; subst.
+  induction Hcg; intros X' HeqA HwfA.
   - destruct X'; simpl in HeqA; try discriminate. reflexivity.
   - destruct X'; simpl in HeqA; try discriminate.
     injection HeqA; intro; subst; reflexivity.
   - inversion HwfA.
-  - (* __forall_inh_untagged (NEW): RHS = typ_all_col colour_inh,
-       syn_color paints colour_syn — discriminate via destruct X'. *)
+  - (* __forall_inh_untagged: RHS = typ_all_col colour_inh, syn_color
+       paints colour_syn — discriminate. *)
     destruct X'; simpl in HeqA; try discriminate.
   - inversion HwfA.
   - (* __forall_syn_tagged_both (NEW): LHS = typ_all_etag, not d_wf_typ. *)
@@ -1833,7 +1834,7 @@ Proof.
     assert (HnotinT : X0 `notin` ftvar_in_typ T) by fsetdec.
     assert (HnotinSC : X0 `notin` ftvar_in_typ (syn_color X')).
     { rewrite syn_color_ftvar. fsetdec. }
-    pose proof (H0 X0 HX_L eq_refl
+    pose proof (H0 X0 HX_L
                    (open_ctyp_wrt_ctyp X' (ctyp_var_f X0))) as Heq.
     rewrite syn_color_open_var in Heq.
     specialize (Heq eq_refl (H3 X0 HX_L0)).
@@ -1841,7 +1842,6 @@ Proof.
   - destruct X'; simpl in HeqA; discriminate.
   - destruct X'; simpl in HeqA; try discriminate.
     injection HeqA; intros HeqA2 HeqA1.
-    apply app_eq_nil in HeqΔ; destruct HeqΔ as [HΔ1 HΔ2]; subst.
     inversion HwfA; subst.
     f_equal.
     + eapply IHHcg1; eauto.
@@ -1945,22 +1945,81 @@ Qed.
       a new lemma [d_consis_gen_subst_typ_with_ttyp] that uses the
       new tagged-tagged rule for refl on ph.
 *)
+(** [d_consis_gen_sub_trans] — gen B.3. Output is [d_sub_gen] (not
+    [d_sub]) to stay in the gen world: this avoids invoking the
+    [d_consis_gen_to_d_consis] admit for the new-rule case at __infer
+    / __check / __arg positions of the output.
+
+    All cases proceed by induction on the second d_sub. Input is d_sub
+    (non-gen), but we embed via [d_sub_gen__embed] when needed. *)
 Lemma d_consis_gen_sub_trans : forall M Δ Δ' Γ T A B,
     d_consis_gen Δ Γ T A ->
     Γ ⊢[ M ; Δ' ] A ⊑ B ->
     list_disjoint Δ Δ' ->
     (M = mode_ti -> Δ = nil) ->
     d_wf_typ Γ T ->
-    exists Δc, Permutation Δc (Δ ++ Δ') /\ Γ ⊢[ M ; Δc ] T ⊑ B.
+    exists Δc, Permutation Δc (Δ ++ Δ') /\ d_sub_gen M Δc Γ T B.
 Proof.
+  intros M Δ Δ' Γ T A B Hc Hs.
+  generalize dependent T. generalize dependent Δ.
+  induction Hs; intros Δ0 T0 Hc Hdis Hti HwfT.
+  - (* d_sub__infer: M = mode_ti, Δ' = nil. Pin T0 = syn_color T via
+       [d_consis_gen_RHS_syn_color_eq]; Δ0 = nil via Hti. *)
+    assert (HΔ0nil : Δ0 = nil) by (apply Hti; reflexivity); subst Δ0.
+    assert (HT0eq : T0 = syn_color T)
+      by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst T0.
+    exists nil. split; [reflexivity |].
+    apply d_sub_gen__infer_gen.
+    eapply d_consis_gen_trans;
+      [ eapply d_wf_typ_is_typ; eassumption
+      | exact Hc
+      | apply d_consis_gen__embed; exact H ].
+  - (* d_sub__check: M = mode_tc. Pin T0 = syn_color T via generalized
+       RHS_syn_color_eq (works at non-nil Δ0). Compose Hc + embed(Hs body)
+       via [d_consis_gen_compose]. Output via [d_sub_gen__check_gen]. *)
+    assert (HT0eq : T0 = syn_color T)
+      by (eapply d_consis_gen_RHS_syn_color_eq; eauto); subst T0.
+    edestruct d_consis_gen_compose as [Δc [Hperm Hcc]];
+      [ exact Hc
+      | apply d_consis_gen__embed; exact H0
+      | exact Hdis
+      | exact HwfT
+      | ].
+    exists Δc. split; [exact Hperm |].
+    apply d_sub_gen__check_gen; assumption.
+  - (* d_sub__forall_r: B = typ_all_col colour_inh A. Use d_sub_gen__forall_r
+       with per-X recursion. Need IH on weakened context. *)
+    pick fresh X0 for
+      (L `union` dom Γ `union` ftvar_in_typ A `union` ftvar_in_typ T0).
+    assert (HX0 : X0 `notin` L) by fsetdec.
+    edestruct (H0 X0 HX0 Δ0 T0) as [Δc [Hperm Hsub_X0]].
+    + apply d_consis_gen_weakening_head; exact Hc.
+    + exact Hdis.
+    + intros HM_ti. discriminate.
+    + apply d_wf_typ_weakening_head; exact HwfT.
+    + exists Δc. split; [exact Hperm |].
+      apply d_sub_gen__forall_r with
+        (L := L `union` dom Γ `union` ftvar_in_typ A `union` ftvar_in_typ T0
+              `union` singleton X0).
+      (* Need to use d_sub_gen subst-mono renaming X0 → X'. *)
+      admit.
+  - (* d_sub__arg: M = mode_fn m, A = typ_arrow A1 A2. *)
+    admit.
+  - (* d_sub__forall_l_tagged: A = typ_all_etag. d_consis_gen RHS = typ_all_etag
+       only via NEW rule. T0 = typ_all_etag — vacuous via HwfT. *)
+    inversion Hc; subst; inversion HwfT.
+  - (* d_sub__forall_l_untagged: A = typ_all_col colour_syn. d_consis_gen RHS
+       matches __forall_syn_tagged (T0 typ_all_etag, vacuous via HwfT) or
+       __forall_syn (T0 = typ_all_col colour_syn). Substitute ph via subst lemma. *)
+    admit.
 Admitted.
 
-(** Narrowed corollary (nil/nil), parallel to [d_consis_sub_trans_nil]. *)
+(** Narrowed corollary (nil/nil). Output is d_sub_gen. *)
 Lemma d_consis_gen_sub_trans_nil : forall M Γ T A B,
     d_consis_gen nil Γ T A ->
     Γ ⊢[ M ; nil ] A ⊑ B ->
     d_wf_typ Γ T ->
-    Γ ⊢[ M ; nil ] T ⊑ B.
+    d_sub_gen M nil Γ T B.
 Proof.
   intros M Γ T A B Hc Hs HwfT.
   edestruct d_consis_gen_sub_trans as [Δc [Hperm Hsub]];
