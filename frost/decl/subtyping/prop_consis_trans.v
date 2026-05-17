@@ -698,3 +698,57 @@ Proof.
 Admitted.
 (* d_consis_compose_nil_RHS: 2 sub-case admits for H2 = __forall_inh_untagged
    in Hc1 = __forall_syn_tagged / __forall_syn cases. See spec. *)
+
+(** [d_consis_syn_inh_erase_eq]: a [d_consis] with [is_syn_typ] LHS and
+    [is_inh_typ] RHS gives an [erase]-equality (colour-blind ctyp
+    equality). This is the [erase] weakening of the literally-false
+    "syn-LHS = inh-RHS" claim — the literal version fails for the new
+    [__forall_inh_untagged] case (LHS [typ_all_col colour_syn _] vs RHS
+    [typ_all_col colour_inh _] — same erase shape, different colours).
+
+    The lemma IS provable because [erase] discards colour: for
+    [__forall_inh_untagged], [erase (typ_all_col colour_syn T') =
+    erase (typ_all_col colour_inh A') = ctyp_all _], and the cofinite
+    IH on the body gives the inner erase-equality.
+
+    Used by the SPLIT helpers to derive ctyp-equality between the
+    cofinitely-bound types, enabling the chain that previously used the
+    provably-false [d_consis_lhs_syn_eq]. *)
+Lemma d_consis_syn_inh_erase_eq : forall Γ Δ T A,
+    Δ ⨟ Γ ⊨ T ≈ A ->
+    is_syn_typ T ->
+    is_inh_typ A ->
+    erase T = erase A.
+Proof.
+  intros Γ Δ T A Hc.
+  induction Hc; intros Hsyn Hinh.
+  - (* __unit *) reflexivity.
+  - (* __var *) reflexivity.
+  - (* __forall_inh_tagged: T = typ_all_etag — is_syn_typ excludes. *)
+    inversion Hsyn.
+  - (* __forall_inh_untagged (NEW δ): T = typ_all_col colour_syn,
+       A = typ_all_col colour_inh. erase typ_all_col c X = ctyp_all (erase X)
+       — colour discarded; both sides give ctyp_all (erase body). *)
+    simpl. f_equal.
+    inversion Hsyn; subst.
+    inversion Hinh; subst.
+    pick fresh X for (L `union` L0 `union` L1
+                      `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (Heq_open : erase (open_typ_wrt_typ T (typ_var_f X))
+                     = erase (open_typ_wrt_typ A (typ_var_f X))).
+    { eapply H0; auto. }
+    rewrite !erase_open_typ in Heq_open.
+    simpl in Heq_open.
+    apply open_ctyp_wrt_ctyp_inj in Heq_open; auto; rewrite erase_ftvar; auto.
+  - (* __forall_syn_tagged: T = typ_all_etag — is_syn_typ excludes. *)
+    inversion Hsyn.
+  - (* __forall_syn: T = typ_all_col colour_syn, A = typ_all_col colour_syn.
+       is_inh_typ A requires colour_inh — contradicts. *)
+    inversion Hinh.
+  - (* __forall_inh: T = typ_all_col colour_inh — is_syn_typ excludes. *)
+    inversion Hsyn.
+  - (* __arrow: recurse on sub-parts. *)
+    simpl. f_equal.
+    + inversion Hsyn; subst. inversion Hinh; subst. eauto.
+    + inversion Hsyn; subst. inversion Hinh; subst. eauto.
+Qed.
