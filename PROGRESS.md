@@ -7,39 +7,64 @@ Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 **Spec:** [`docs/superpowers/specs/2026-05-10-frost-phase23-design.md`](../docs/superpowers/specs/2026-05-10-frost-phase23-design.md)
 
-## Status (current — 2026-05-17, after δ-cascade Phase 0)
+## Status (current — 2026-05-17, after δ-cascade Phases 0 + 1A + 1B + 1C)
 
-**Build:** 🟢 GREEN. δ-cascade Phase 0 (this session) added missing
-bullet placeholders for the new constructors (`d_sub__forall_l_untagged`,
-`d_consis__forall_inh_untagged`, `d_consis_gen__forall_inh_untagged`)
-across the case-splitting proofs the δ-refactor broke. All `admit.`
-placeholders are documented inline.
+**Build:** 🟢 GREEN.
 
 **Flagship theorems (D1 / D12):** ⚠️ **NOT** "Closed under the global
 context" post-δ. `Print Assumptions` on
-`d_typing_general_subsumption_via_gen` and `_gen` now lists 4 axioms,
-all introduced by the δ refactor:
+`d_typing_general_subsumption_via_gen` and `_gen` lists **6 axioms** (was
+10 after Phase 0; 4 closed in Phases 1A-1C).
 
-1. `d_sub_gen_trans` — new `__forall_l_untagged` inner case at `mode_fn m`.
-   The `is_fn_n_ti m1` induction doesn't provide an IH at the same
-   `mode_fn m` for the body composition; needs proof restructuring to
-   match the paper's induction-on-d_sub style (syntax-directed.tex:323-338).
-2. `d_consis_syn_inh_mono` — **provably false** post-δ. The
-   `__forall_inh_untagged` rule admits `syn_color (ctyp_all C) ≈ inh_color
-   (ctyp_all D)` consistencies, breaking the shortcut "syn-LHS ↔ inh-RHS
-   d_consis ⇒ LHS mono". Used in 4 SPLIT-helper call sites.
-3. `d_consis_gen_syn_inh_mono` — parallel provably-false case for
-   d_consis_gen.
-4. `d_consis_gen_lhs_syn_eq` — **provably false** post-δ. The
-   `__forall_inh_untagged` rule means LHS colour_syn ↔ RHS colour_inh
-   (not equal). Used in 8 SPLIT-helper call sites for the
-   `A = syn_color T` subst.
+**Closed in Phases 1A-1C (4 axioms):**
+- `d_sub_gen_trans` — was fully Admitted; now Qed mod its helper
+  (replaced by `d_sub_gen_trans_forall_l_untagged_helper` which itself
+  has 1 residual admit, see below).
+- `d_consis_gen_trans` — was wholesale-admitted; now Qed with added
+  `is_typ T` precondition (rules out the unreachable
+  `typ_all_etag → typ_all_col colour_inh` composition; call sites supply
+  via `d_wf_typ_is_typ`).
+- `d_consis_extends_d_consis_gen` — was wholesale-admitted; now Qed.
+- `d_sub_mono_RHS_eq` + `d_consis_LHS_mono_wf` — auto-dropped from the
+  axiom list as a side effect of closing `d_sub_gen_trans` (they were
+  pulled in only via that lemma's chain).
 
-Re-closing D1 / D12 requires either (a) restructuring the SPLIT helpers
-and `d_sub_gen_trans` to be polymorphic-body-aware without leaning on
-the broken shortcuts, or (b) adding precondition restrictions at the
-entry points (potentially cascading to D12's signature). This is a
-multi-session effort. See plan: [`docs/superpowers/plans/2026-05-17-delta-encoding-admit-cleanup.md`](docs/superpowers/plans/2026-05-17-delta-encoding-admit-cleanup.md).
+**Remaining 6 axioms (structural):**
+
+**Pattern A — "non-nil Δ' for __forall_l_untagged" (3 axioms):**
+1. `d_sub_gen_trans_forall_l_untagged_helper` — closes for ph mono
+   (Δ' = nil); admits when ph contains ε-tags (Δ' ≠ nil).
+2. `d_consis_gen_extends_d_sub_nil` — 1 sub-case admit at the new
+   `d_sub__forall_l_untagged`. Same Δ' issue.
+3. `d_consis_sub_trans` (paper B.3) — 1 sub-case admit at the new
+   `d_sub__forall_l_untagged`. Signature DOES handle non-nil Δ via
+   Permutation, so this might be closable with a `d_consis_subst_typ`
+   helper. Most tractable of the three.
+
+**Pattern B — provably-false via SPLIT-helper dependence (3 axioms):**
+4. `d_consis_syn_inh_mono` — provably false; used in 4 SPLIT-helper sites.
+5. `d_consis_gen_syn_inh_mono` — provably false; same pattern, gen variant.
+6. `d_consis_gen_lhs_syn_eq` — provably false; used in 8 SPLIT-helper sites.
+
+**Strategy for remaining work:**
+- Pattern A: unblocker is a `d_consis_gen_subst_typ` lemma (substitute a
+  wf type for a free var in d_consis_gen — generalization of existing
+  `d_consis_subst_mono` to non-mono substitutes). Add it once, close
+  all 3 admits.
+- Pattern B: requires restructuring the SPLIT helpers
+  (`d_typing_abs_value_to_subsumption_split_d_sub` and its anno variant)
+  to derive mono/equality via the structural equation
+  `syn_color T1 = inh_color_t Ahead` (invariant 3, intact) instead of
+  routing through the broken d_consis chain. T2 side needs a
+  polymorphic-body-aware variant.
+
+**Alternative direction (separate effort):** paper-faithful translation
+of Lemma B.2 (Consistency Transitivity) and B.3 (Consistency-Subtyping
+Transitivity) as **more general** versions (handling arbitrary Δ via
+Permutation, matching the paper signatures). The current mechanized
+versions over-restrict to nil Δ, which is why some compositions don't
+fit. The paper-faithful versions would subsume both Pattern A and
+several Pattern-B-adjacent uses.
 
 **Pre-refactor flagship status (commit `8701b4a`)**: both Qed and "Closed under the global context", zero axioms.
 
@@ -206,6 +231,56 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 # Part 2: Daily progress
 
 Session-by-session closure log. Most recent first.
+
+## 2026-05-17 — δ-cascade Phase 1A/1B/1C (4 axioms closed, 10 → 6)
+
+**Commits:** `530796c` (Phase 1A), `cccfca0` (Phase 1B), `1829862` (Phase 1C).
+
+**Phase 1A** — partial close of `d_sub_gen_trans`'s `__forall_l_untagged`
+inner case:
+
+- Moved bridge lemmas (`d_consis_gen_to_d_consis_syn_lhs`,
+  `d_consis_gen_to_d_consis`, `d_sub_gen_to_d_sub`) from
+  `prop_general_subsumption.v` into `def_gen.v` so they're available to
+  `prop_subsumption_aux.v`. All three were already Qed; move was clean.
+- Added helper `d_sub_gen_trans_forall_l_untagged_helper` in
+  `prop_subsumption_aux.v` that handles the new
+  `d_sub__forall_l_untagged` case in `d_sub_gen_trans`'s `mode_fn m`
+  branch. Paper-faithful: inducts on the inner d_sub (matching
+  syntax-directed.tex:323-338's ForallL induction in Subtyping
+  Transitivity).
+- Helper handles the ph-mono sub-case (rule's `Δ' = nil`); admits the
+  non-mono sub-case (Δ' ≠ nil) — that requires generalising trans to
+  non-nil outer Δ.
+- `d_sub_gen_trans` itself now Qed; uses the helper for the previously
+  fully-admitted case.
+
+**Phase 1B** — closed two wholesale-admitted lemmas:
+
+- `d_consis_gen_trans` (paper B.2 / Lemma D9 at nil Δ): added `is_typ T`
+  precondition that rules out the unreachable
+  `__forall_syn_tagged × __forall_inh_untagged` composition (whose result
+  shape `typ_all_etag → typ_all_col colour_inh` has no d_consis_gen
+  producer at nil Δ — the only producer is `__forall_inh_tagged` at
+  `(ε :: Δ_body)`). All call sites supply is_typ via
+  `d_wf_typ_is_typ` from their d_wf_typ premises.
+- `d_consis_extends_d_consis_gen`: parallel restoration. Added the
+  `__forall_inh_untagged` case (inverts d_consis_gen's RHS-syn
+  matching). Threads is_typ through to its `d_consis_gen_trans` calls.
+
+Side-effect: `d_sub_mono_RHS_eq` and `d_consis_LHS_mono_wf` dropped from
+the `Print Assumptions` list — they were transitively reachable only
+via `d_sub_gen_trans`'s previously-admitted chain.
+
+**Phase 1C** — documentation refinement on
+`d_consis_gen_extends_d_sub_nil`'s residual `__forall_l_untagged` admit
+clarifying the two sub-blockers (substitution lemma + non-nil trans).
+
+**Axiom count:** 10 (after Phase 0) → 6 (after Phase 1C).
+
+**Remaining 6 axioms** split into two structural patterns — see [Status
+banner above](#status-current--2026-05-17-after-δ-cascade-phases-0--1a--1b--1c)
+for the breakdown and the strategic options for finishing the closure.
 
 ## 2026-05-17 — δ-cascade Phase 0 (build green, 4 leaking axioms documented)
 
