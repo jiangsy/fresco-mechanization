@@ -942,6 +942,36 @@ Proof.
   - inversion Hwf. (* typ_tophole: no d_wf_typ rule. *)
 Qed.
 
+(** [syn_color_eq_inh_color_mono]: ctyp-domain analog of
+    [inh_color_t_eq_syn_color_mono]. An equation [syn_color T = inh_color A]
+    (both ctyp paintings) forces [syn_color T] mono. The ctyp_all
+    case is vacuous because syn_color paints colour_syn while inh_color
+    paints colour_inh — distinct constructors.
+
+    The [d_wf_typ Γ (syn_color T)] precondition rules out
+    [ctyp_var_b] / [ctyp_hole] / [ctyp_tophole] inputs (which aren't
+    [d_wf_typ]-shape). *)
+Lemma syn_color_eq_inh_color_mono : forall Γ T A,
+    syn_color T = inh_color A ->
+    d_wf_typ Γ (syn_color T) ->
+    mono_typ (syn_color T).
+Proof.
+  intros Γ T A Heq Hwf.
+  revert A Heq.
+  induction T; intros A0 Heq; destruct A0; simpl in Heq; try discriminate;
+    simpl in Hwf; try (now inversion Hwf).
+  - apply mono_typ__unit.
+  - inversion Heq; subst. apply mono_typ__var.
+  - inversion Heq; subst.
+    inversion Hwf; subst.
+    apply mono_typ__arrow.
+    + eapply IHT1; eassumption.
+    + eapply IHT2; eassumption.
+  (* ctyp_all case: syn_color paints colour_syn, inh_color paints colour_inh
+     — inversion of typ_all_col colour_syn = typ_all_col colour_inh gives
+     colour_syn = colour_inh which discriminates. *)
+Qed.
+
 (** * Mutual induction principle for d_typing ↔ d_pat. *)
 
 Scheme d_typing_mut := Induction for d_typing Sort Prop
