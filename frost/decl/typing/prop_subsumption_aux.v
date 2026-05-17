@@ -392,6 +392,11 @@ Proof.
           | exact Hsg | exact IHHfn ].
       * (* d_sub__forall_l_tagged: A = typ_all_etag — not wf. *)
         inversion HwfA.
+      * (* d_sub__forall_l_untagged: A = typ_all_col colour_syn — IS wf.
+           δ-NEW. Will be closed once d_sub_mono_RHS_eq / equivalent
+           bridge is strengthened to exclude this LHS (or via cofinite
+           induction on the body). Phase 1 of the δ-cleanup plan. *)
+        admit.
     + (* __refl_mono: A = B. *)
       exact Hsg.
     + (* __arg: gen sub-derivations directly. *)
@@ -403,7 +408,9 @@ Proof.
       eapply d_sub_gen_trans_arrow;
         [ eassumption | eassumption | eassumption | eassumption
         | exact Hsg | exact IHHfn ].
-Qed.
+Admitted.
+(* d_sub_gen_trans: 1 admit post-δ-refactor — __forall_l_untagged inner
+   case at mode_fn m needs reasoning beyond inversion HwfA. *)
 
 (** [d_sub_gen] analogue of [d_sub_arrow_refl_inner]: a reflexive
     [d_sub_gen] on a mono arrow type yields a reflexive [d_sub_gen] on
@@ -661,6 +668,11 @@ Proof.
     inversion HeqLHS; subst. apply mono_typ__var.
   - (* __forall_inh_tagged: LHS typ_all_etag — syn_color never paints etag. *)
     destruct T0; simpl in HeqLHS; discriminate.
+  - (* __forall_inh_untagged (NEW δ-rule): LHS typ_all_col colour_syn — CAN
+       match syn_color (ctyp_all C). Conclusion mono_typ (syn_color (ctyp_all C))
+       is FALSE (it's typ_all_col, not mono). Lemma becomes provably-false
+       on this case; needs precondition strengthening in Phase 1. *)
+    admit.
   - (* __forall_syn_tagged: LHS typ_all_etag — vacuous as above. *)
     destruct T0; simpl in HeqLHS; discriminate.
   - (* __forall_syn (post-refactor): LHS = typ_all_col colour_syn = syn_color
@@ -677,7 +689,9 @@ Proof.
     apply mono_typ__arrow.
     + eapply IHd_consis1; reflexivity.
     + eapply IHd_consis2; reflexivity.
-Qed.
+Admitted.
+(* d_consis_syn_inh_mono: 1 admit post-δ-refactor — __forall_inh_untagged
+   makes the LHS-mono claim false on syn_color (ctyp_all _) inputs. *)
 
 (** [d_consis_gen_syn_inh_mono]: d_consis_gen analogue. Same structure as
     [d_consis_syn_inh_mono]; the new [__forall_syn] rule in [d_consis_gen]
@@ -694,17 +708,27 @@ Proof.
   - apply mono_typ__unit.
   - destruct T0; simpl in HeqLHS; try discriminate.
     inversion HeqLHS; subst. apply mono_typ__var.
-  - destruct T0; simpl in HeqLHS; discriminate.
-  - destruct T0; simpl in HeqLHS; discriminate.
-  - destruct A0; simpl in HeqRHS; discriminate.
-  - destruct T0; simpl in HeqLHS; try discriminate.
-  - destruct T0; simpl in HeqLHS; try discriminate.
+  - (* __forall_inh_tagged: LHS typ_all_etag — vacuous. *)
+    destruct T0; simpl in HeqLHS; discriminate.
+  - (* __forall_inh_untagged (NEW): LHS typ_all_col colour_syn — provably
+       false on ctyp_all input (parallel to d_consis_syn_inh_mono). *)
+    admit.
+  - (* __forall_syn_tagged: LHS typ_all_etag — vacuous. *)
+    destruct T0; simpl in HeqLHS; discriminate.
+  - (* __forall_syn: RHS colour_syn — inh_color never produces colour_syn. *)
+    destruct A0; simpl in HeqRHS; discriminate.
+  - (* __forall_inh: LHS colour_inh — syn_color never produces colour_inh. *)
+    destruct T0; simpl in HeqLHS; try discriminate.
+  - (* __arrow *)
+    destruct T0; simpl in HeqLHS; try discriminate.
     destruct A0; simpl in HeqRHS; try discriminate.
     inversion HeqLHS; inversion HeqRHS; subst.
     apply mono_typ__arrow.
     + eapply IHd_consis_gen1; reflexivity.
     + eapply IHd_consis_gen2; reflexivity.
-Qed.
+Admitted.
+(* d_consis_gen_syn_inh_mono: 1 admit post-δ-refactor — parallel
+   provably-false case to d_consis_syn_inh_mono. *)
 
 (* ====================================================================== *)
 (*  §2 — SPLIT helpers for [exp_abs] / [exp_abs_anno] value cases         *)
@@ -885,6 +909,11 @@ Proof.
         apply Hbody_at_tc; auto.
   - (* d_sub__forall_l_tagged: vacuous (LHS not typ_arrow). *)
     discriminate.
+  - (* d_sub__forall_l_untagged (NEW δ-rule): LHS typ_all_col colour_syn,
+       not typ_arrow ⇒ HT0 (typ_arrow ... = syn_color T) contradicts;
+       syn_color T = typ_all_col only when T = ctyp_all _ which forces
+       typ_arrow ≠ typ_all_col. *)
+    destruct T; simpl in HT0; try discriminate.
 Qed.
 
 (** [d_typing_abs_value_to_subsumption_split]: abs value-to-subsumption
@@ -1223,6 +1252,9 @@ Proof.
         apply Hbody_at_tc; auto.
   - (* d_sub__forall_l_tagged: vacuous (LHS not typ_arrow). *)
     discriminate.
+  - (* d_sub__forall_l_untagged (NEW δ-rule): LHS typ_all_col colour_syn,
+       not typ_arrow ⇒ vacuous via shape mismatch. *)
+    destruct T; simpl in HT0; try discriminate.
 Qed.
 
 (** [d_typing_abs_anno_value_to_subsumption_split]: SPLIT abs_anno

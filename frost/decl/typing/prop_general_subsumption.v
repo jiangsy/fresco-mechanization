@@ -676,12 +676,17 @@ Proof.
   - (* typ_arrow *)
     inversion Hc; subst.
     apply d_consis__arrow; auto.
-  - (* typ_all_col colour_syn (post-refactor): now admitted by d_consis_gen
-       via __forall_syn rule. Bridge directly via d_consis__forall_syn,
-       with body recursion via IH H0. *)
+  - (* typ_all_col colour_syn (post-refactor): d_consis_gen admits two
+       rules with this LHS — __forall_syn (RHS colour_syn) and the new
+       __forall_inh_untagged (RHS colour_inh). Both bridge to their
+       d_consis counterparts via the IH on the opened body. *)
     inversion Hc; subst.
-    apply d_consis__forall_syn with (L := L `union` L0).
-    intros X HX. apply H0; auto.
+    + (* __forall_inh_untagged (NEW δ-rule) *)
+      apply d_consis__forall_inh_untagged with (L := L `union` L0).
+      intros X HX. apply H0; auto.
+    + (* __forall_syn *)
+      apply d_consis__forall_syn with (L := L `union` L0).
+      intros X HX. apply H0; auto.
 Qed.
 
 (** [d_consis_gen_to_d_consis]: the gen→original bridge for
@@ -709,6 +714,10 @@ Proof.
   - apply d_consis__unit.
   - apply d_consis__var; assumption.
   - apply d_consis__forall_inh_tagged with (L := L); assumption.
+  - (* __forall_inh_untagged (NEW δ-rule): LHS typ_all_col colour_syn,
+       RHS typ_all_col colour_inh. Mirrors the tagged case but on the
+       untagged-syn LHS. *)
+    apply d_consis__forall_inh_untagged with (L := L); assumption.
   - apply d_consis__forall_syn_tagged with (L := L); assumption.
   - apply d_consis__forall_syn with (L := L); assumption.
   - (* __forall_inh: LHS = typ_all_col colour_inh T, RHS =

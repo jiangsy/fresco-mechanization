@@ -263,7 +263,7 @@ Proof.
      [__forall_l_tagged]'s [m <> mode_ti] premise specialised to
      [mode_fn _]. *)
   inversion Hxsub as
-    [ | | | Δa Δb Γ_s ms T1 T2 A1' A2' Hca Hsub_rest | ];
+    [ | | | Δa Δb Γ_s ms T1 T2 A1' A2' Hca Hsub_rest | | ];
     subst; clear Hxsub; try discriminate; try congruence.
   (* Δa ++ Δb = nil → Δa = Δb = nil. *)
   match goal with
@@ -272,7 +272,7 @@ Proof.
   end.
   (* Invert [Hsub_rest] : d_sub (mode_fn m) nil Γ (typ_arrow A2 R) (typ_arrow P2' R). *)
   inversion Hsub_rest as
-    [ | | | Δa' Δb' Γ_s' ms' T1' T2' A1'' A2'' Hcb Hsub_R | ];
+    [ | | | Δa' Δb' Γ_s' ms' T1' T2' A1'' A2'' Hcb Hsub_R | | ];
     subst; clear Hsub_rest; try discriminate; try congruence.
   match goal with
   | Heq : ?Δa' ++ ?Δb' = nil |- _ =>
