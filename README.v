@@ -205,11 +205,14 @@ Check d_sub_refl_mono.
 Check d_sub_refl_mono_mode.
 
 (** ** Mode-lift on mono types.
-    [d_typing mode_ti] lifts to any compatible mode at the same mono
-    type. Status: [Admitted] at __app (function arg-type mono not
-    derivable from d_typing__app's premises — research-grade gap
-    shared with D12's __app). *)
-Check d_typing_lift_mono.
+    The d_typing-level lift ([d_typing mode_ti] → any compatible
+    mode at the same mono type) had the same __app obstruction as
+    D12's, with zero live callers. Deleted 2026-05-17. The d_typing_gen
+    analogue [d_typing_gen_lift_mono] remains in
+    [typing/prop_subsumption_aux.v], also admitted at __app but no
+    longer transitively reachable from D1/D12 (broken via the
+    [Hbody_at_tc] refactor on SPLIT helpers). *)
+(* Check d_typing_lift_mono. *)
 
 (** ** Completeness of d_sub w.r.t. monotype-only shallow sub.
     Status: [Admitted] (refl on polytypes / typ_all_col → typ_all_etag

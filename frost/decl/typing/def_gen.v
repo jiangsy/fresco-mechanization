@@ -63,7 +63,8 @@ Set Implicit Arguments.
     - [d_sub_LHS_mono_wf] on Hsub + [d_wf_typ Γ A] → [mono_typ A].
     - For [Hsub = __infer / __check]: LHS is_typ (from mono) → by
       [d_consis_empty_eq], B = A. So both reduce to a mode-lift at the
-      same mono type → discharged by [d_typing_lift_mono].
+      same mono type → discharged by [d_typing_gen_lift_mono] (the
+      non-gen [d_typing_lift_mono] was deleted 2026-05-17 as unused).
     - For [Hsub = __forall_r]: dispatch on Hty.
       * base terms (unit/var/anno/sub): use [d_typing__sub] with Hsub.
       * values (abs/abs_anno): use [d_typing__forall] + Hsub-IH at each X.
@@ -326,7 +327,7 @@ Inductive d_sub_gen :
 
    Restricting to [mono_typ A] keeps the rule sound: mono types are
    reflexively subtypeable ([d_consis_refl_mono]) and mode-liftable
-   ([d_typing_lift_mono]). *)
+   (cf. [d_typing_gen_lift_mono]). *)
 | d_sub_gen__refl_mono : forall m Γ A,
     mono_typ A ->
     mode_typ_compat m A ->
