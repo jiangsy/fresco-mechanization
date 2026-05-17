@@ -1321,6 +1321,19 @@ Proof.
   apply d_sub_gen_weakening. simpl. auto.
 Qed.
 
+(** [d_sub_gen_subst_mono]: monotype substitution for d_sub_gen.
+    Mirrors [d_sub_subst_mono] but for gen. Needed for gen B.3's
+    __forall_r alpha-renaming. Body deferred — need helpers
+    [subst_typ_in_typ_mono], [mode_typ_compat_subst_mono],
+    [d_wf_typ_subst_mono] that don't yet exist. *)
+Lemma d_sub_gen_subst_mono : forall Γ1 Γ2 X M Δ T A B,
+    d_sub_gen M Δ (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) T A ->
+    mono_typ B ->
+    d_wf_typ Γ2 B ->
+    d_sub_gen M Δ (Γ1 ++ Γ2) (subst_typ_in_typ B X T) (subst_typ_in_typ B X A).
+Proof.
+Admitted.
+
 (** Weakening for [d_typing_gen] — structural, mirrors
     [d_typing_weakening]. The [__sub] case uses [d_sub_gen_weakening]. *)
 Lemma d_typing_gen_weakening : forall Γ1 Γ2 Γ3 m e A,
