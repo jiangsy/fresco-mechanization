@@ -75,7 +75,7 @@ Proof.
 Qed.
 
 Lemma d_consis_gen_mono_RHS_eq : forall Γ A B,
-    d_consis_gen nil Γ A B ->
+    nil ⨟ Γ ⊨ᵍ A ≈ B ->
     mono_typ B ->
     A = B.
 Proof.
@@ -131,7 +131,7 @@ Admitted.
 (* d_sub_mono_RHS_eq: 1 admit post-δ-refactor — needs strengthening. *)
 
 Lemma d_sub_gen_mono_RHS_eq : forall m Γ A B,
-    d_sub_gen m nil Γ A B ->
+    Γ ⊢ᵍ[ m ; nil ] A ⊑ B ->
     d_wf_typ Γ A ->
     mono_typ B ->
     A = B.
@@ -141,9 +141,9 @@ Proof.
   induction Hs; intros HwfA Hmono; try discriminate HeqΔ.
   - (* __embed: d_sub m nil Γ A B. *)
     subst. eapply d_sub_mono_RHS_eq; eauto.
-  - (* __infer_gen: d_consis_gen nil Γ A B + mono B. *)
+  - (* __infer_gen: nil ⨟ Γ ⊨ᵍ A ≈ B + mono B. *)
     eapply d_consis_gen_mono_RHS_eq; eauto.
-  - (* __check_gen: d_consis_gen Δ Γ A B (Δ = nil) + mono B. *)
+  - (* __check_gen: Δ ⨟ Γ ⊨ᵍ A ≈ B (Δ = nil) + mono B. *)
     subst. eapply d_consis_gen_mono_RHS_eq; eauto.
   - (* __refl_mono: A = B. *)
     reflexivity.
@@ -172,9 +172,9 @@ Qed.
 Lemma d_consis_gen_extends_d_sub_nil : forall m Γ B C,
     Γ ⊢[ m ; nil ] B ⊑ C ->
     forall A,
-      d_consis_gen nil Γ A B ->
+      nil ⨟ Γ ⊨ᵍ A ≈ B ->
       d_wf_typ Γ A ->
-      d_sub_gen m nil Γ A C.
+      Γ ⊢ᵍ[ m ; nil ] A ⊑ C.
 Proof.
   intros m Γ B C Hd.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
@@ -242,11 +242,11 @@ Admitted.
     [d_sub]'s internal structure), the gen rules chain via
     [d_consis_gen_trans], [__forall_r]/[__arg] recurse. *)
 Lemma d_consis_gen_extends_d_sub_gen_nil : forall m Γ B C,
-    d_sub_gen m nil Γ B C ->
+    Γ ⊢ᵍ[ m ; nil ] B ⊑ C ->
     forall A,
-      d_consis_gen nil Γ A B ->
+      nil ⨟ Γ ⊨ᵍ A ≈ B ->
       d_wf_typ Γ A ->
-      d_sub_gen m nil Γ A C.
+      Γ ⊢ᵍ[ m ; nil ] A ⊑ C.
 Proof.
   intros m Γ B C Hs.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
@@ -307,12 +307,12 @@ Qed.
 Lemma d_sub_gen_trans_arrow : forall m m_new Γ A1 A2 B1 B2 C,
     d_wf_typ Γ A1 ->
     d_wf_typ Γ A2 ->
-    d_consis_gen nil Γ A1 B1 ->
-    d_sub_gen m nil Γ A2 B2 ->
+    nil ⨟ Γ ⊨ᵍ A1 ≈ B1 ->
+    Γ ⊢ᵍ[ m ; nil ] A2 ⊑ B2 ->
     d_sub_gen (mode_fn (mode_fn_n_subst m m_new)) nil Γ (typ_arrow B1 B2) C ->
     (forall Γ' A' B' C',
        d_wf_typ Γ' A' ->
-       d_sub_gen m nil Γ' A' B' ->
+       Γ' ⊢ᵍ[ m ; nil ] A' ⊑ B' ->
        d_sub_gen (mode_fn_n_subst m m_new) nil Γ' B' C' ->
        d_sub_gen (mode_fn_n_subst m m_new) nil Γ' A' C') ->
     d_sub_gen (mode_fn (mode_fn_n_subst m m_new)) nil Γ (typ_arrow A1 A2) C.
@@ -387,7 +387,7 @@ Lemma d_sub_gen_trans_forall_l_untagged_helper :
     d_sub_gen (mode_fn (mode_fn_n_subst m m_new)) nil Γ B C ->
     (forall Γ' A' B' C',
        d_wf_typ Γ' A' ->
-       d_sub_gen m nil Γ' A' B' ->
+       Γ' ⊢ᵍ[ m ; nil ] A' ⊑ B' ->
        d_sub_gen (mode_fn_n_subst m m_new) nil Γ' B' C' ->
        d_sub_gen (mode_fn_n_subst m m_new) nil Γ' A' C') ->
     d_sub_gen (mode_fn (mode_fn_n_subst m m_new)) nil Γ A C.
@@ -463,7 +463,7 @@ Admitted.
 Lemma d_sub_gen_trans : forall m1 Γ A B C m_new,
     is_fn_n_ti m1 ->
     d_wf_typ Γ A ->
-    d_sub_gen m1 nil Γ A B ->
+    Γ ⊢ᵍ[ m1 ; nil ] A ⊑ B ->
     d_sub_gen (mode_fn_n_subst m1 m_new) nil Γ B C ->
     d_sub_gen (mode_fn_n_subst m1 m_new) nil Γ A C.
 Proof.
@@ -480,7 +480,7 @@ Proof.
         inversion H
       end; subst; try (exfalso; congruence).
       eapply d_consis_sub_trans_gen_nil; eauto.
-    + (* __infer_gen: d_consis_gen nil Γ A B; compose with Hsg via
+    + (* __infer_gen: nil ⨟ Γ ⊨ᵍ A ≈ B; compose with Hsg via
          the d_consis_gen-LHS extension lemma. *)
       eapply d_consis_gen_extends_d_sub_gen_nil; eauto.
     + (* __refl_mono: A = B. *)
@@ -591,11 +591,11 @@ Qed.
     (same gap as [d_typing_lift_mono]'s [__app] — function arg-type
     mono not derivable from the rule). *)
 Lemma d_typing_gen_lift_mono : forall Γ e A m_target,
-    d_typing_gen mode_ti Γ e A ->
+    Γ ⊢ᵍ[ mode_ti ] e ⇒ A ->
     mono_typ A ->
     d_wf_denv Γ ->
-    d_sub_gen m_target nil Γ A A ->
-    d_typing_gen m_target Γ e A.
+    Γ ⊢ᵍ[ m_target ; nil ] A ⊑ A ->
+    Γ ⊢ᵍ[ m_target ] e ⇒ A.
 Proof.
   intros Γ e A m_target H.
   remember mode_ti as m0 eqn:Hm0.
@@ -663,7 +663,7 @@ Proof.
        - __refl_mono : requires typ_arrow P' B mono, i.e., P' mono.
          FAILS for P' = typ_all_col colour_syn _ (from d_refine_syn__hole
          with an is_syn_skel polytype Q — a valid refinement output).
-       - __arg : requires d_consis_gen Δ1 Γ A0_arg P'. The d_consis_gen
+       - __arg : requires Δ1 ⨟ Γ ⊨ᵍ A0_arg ≈ P'. The d_consis_gen
          refl on P' via [d_consis_gen_refl] requires [is_inh_typ P'],
          which FAILS for typ_all_col colour_syn (only colour_inh quantifier
          heads satisfy is_inh_typ__all).
@@ -696,8 +696,8 @@ Admitted.
     syntax-directed [Sub] rule (which uses the generalised subtyping). *)
 Lemma d_typing_unit_gen_subsumption : forall Γ A m,
     d_wf_denv Γ ->
-    d_sub_gen m nil Γ typ_unit A ->
-    d_typing_gen m Γ exp_unit A.
+    Γ ⊢ᵍ[ m ; nil ] typ_unit ⊑ A ->
+    Γ ⊢ᵍ[ m ] exp_unit ⇒ A.
 Proof.
   intros Γ A m Hwfd Hs.
   apply d_typing_gen__sub with (A := typ_unit).
@@ -713,7 +713,7 @@ Qed.
 Lemma d_typing_var_gen_subsumption : forall Γ xv Avar A m,
     d_wf_denv Γ ->
     binds xv (dbind_typ Avar) Γ ->
-    d_sub_gen m nil Γ Avar A ->
+    Γ ⊢ᵍ[ m ; nil ] Avar ⊑ A ->
     d_typing_gen m Γ (exp_var_f xv) A.
 Proof.
   intros Γ xv Avar A m Hwfd Hb Hs.
@@ -1228,7 +1228,7 @@ Proof.
   - (* __infer_gen: parallel to __embed __infer, with d_consis_gen. *)
     destruct T; simpl in x; try discriminate.
     inversion x; subst.
-    match goal with H : d_consis_gen _ _ _ _ |- _ => rename H into Hcons end.
+    match goal with H : _ ⨟ _ ⊨ᵍ _ ≈ _ |- _ => rename H into Hcons end.
     inversion Hcons; subst.
     match goal with H : ?l1 ++ ?l2 = nil |- _ =>
       apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst l1 l2
@@ -1401,7 +1401,7 @@ Proof.
   - (* __check_gen: parallel to _d_sub __check. *)
     destruct T; simpl in x; try discriminate.
     inversion x; subst.
-    match goal with H : d_consis_gen _ _ _ _ |- _ => rename H into Hcons end.
+    match goal with H : _ ⨟ _ ⊨ᵍ _ ≈ _ |- _ => rename H into Hcons end.
     inversion Hcons; subst.
     match goal with H : ?l1 ++ ?l2 = nil |- _ =>
       apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst l1 l2
@@ -1517,7 +1517,7 @@ Proof.
   - (* __infer_gen: parallel to __embed __infer with d_consis_gen. *)
     destruct T; simpl in x; try discriminate.
     inversion x; subst.
-    match goal with H : d_consis_gen _ _ _ _ |- _ => rename H into Hcons end.
+    match goal with H : _ ⨟ _ ⊨ᵍ _ ≈ _ |- _ => rename H into Hcons end.
     inversion Hcons; subst.
     match goal with H : ?l1 ++ ?l2 = nil |- _ =>
       apply app_eq_nil in H; destruct H as [HΔ1 HΔ2]; subst l1 l2

@@ -102,9 +102,9 @@ Set Implicit Arguments.
 (** Notations for the generalised relations. Mirror the non-gen
     notations from [decl/def_extra.v], distinguished by a subscript
     [ᵍ] (modifier letter small g) on the turnstile/equiv symbol:
-    - [Δ ⨟ Γ ⊨ᵍ T ≈ A] for [d_consis_gen Δ Γ T A]
-    - [Γ ⊢ᵍ[ M ; Δ ] T ⊑ A] for [d_sub_gen M Δ Γ T A]
-    - [Γ ⊢ᵍ[ M ] e ⇒ A] for [d_typing_gen M Γ e A] *)
+    - [Δ ⨟ Γ ⊨ᵍ T ≈ A] for [Δ ⨟ Γ ⊨ᵍ T ≈ A]
+    - [Γ ⊢ᵍ[ M ; Δ ] T ⊑ A] for [Γ ⊢ᵍ[ M ; Δ ] T ⊑ A]
+    - [Γ ⊢ᵍ[ M ] e ⇒ A] for [Γ ⊢ᵍ[ M ] e ⇒ A] *)
 Reserved Notation "Δ ⨟ Γ ⊨ᵍ T ≈ A"
   (at level 75, Γ at level 75, T at level 74, A at level 74, no associativity).
 Reserved Notation "Γ ⊢ᵍ[ M ; Δ ] T ⊑ A"
@@ -179,7 +179,7 @@ where "Δ ⨟ Γ ⊨ᵍ T ≈ A" := (d_consis_gen Δ Γ T A) : type_scope.
 (** [d_consis] embeds into [d_consis_gen] — same rules across both. *)
 Lemma d_consis_gen__embed : forall Δ Γ T A,
     Δ ⨟ Γ ⊨ T ≈ A ->
-    d_consis_gen Δ Γ T A.
+    Δ ⨟ Γ ⊨ᵍ T ≈ A.
 Proof.
   intros Δ Γ T A H. induction H.
   - apply d_consis_gen__unit.
@@ -201,7 +201,7 @@ Qed.
     tag, exactly what [syn_color_t] erases. This is what makes a
     [syn_color_t]-typed variable invariant under narrowing. *)
 Lemma d_consis_gen_syn_color_eq : forall Δ Γ A B,
-    d_consis_gen Δ Γ A B ->
+    Δ ⨟ Γ ⊨ᵍ A ≈ B ->
     syn_color_t A = syn_color_t B.
 Proof.
   intros Δ Γ A B H. induction H; simpl; try reflexivity.
@@ -268,14 +268,14 @@ Qed.
     is pinned, but any consistency target of it must equal it. *)
 Lemma d_consis_gen_lhs_syn_eq : forall T,
     is_syn_typ T ->
-    forall Δ Γ A, d_consis_gen Δ Γ T A -> T = A.
+    forall Δ Γ A, Δ ⨟ Γ ⊨ᵍ T ≈ A -> T = A.
 Proof.
   intros T Hsyn. induction Hsyn; intros Δ Γ A0 Hc.
   - inversion Hc; subst. reflexivity.
   - inversion Hc; subst. reflexivity.
   - inversion Hc; subst. f_equal; eauto.
   - (* is_syn_typ__all: T = typ_all_col colour_syn A. Post δ-refactor,
-       d_consis_gen has TWO rules with LHS typ_all_col colour_syn:
+       has ⨟ TWO ⊨ᵍ rules ≈ with LHS typ_all_col colour_syn:
        __forall_syn (T = A, original) and __forall_inh_untagged (NEW,
        T ≠ A by colour). The new rule makes this lemma provably FALSE.
        Admitted pending precondition strengthening (e.g., is_syn_typ A
@@ -302,7 +302,7 @@ Qed.
     is [typ_all_col colour_inh _]); cofinite IH + open-inj. *)
 Lemma d_consis_gen_lhs_inh_eq : forall T,
     is_inh_typ T ->
-    forall Δ Γ A, d_consis_gen Δ Γ T A -> T = A.
+    forall Δ Γ A, Δ ⨟ Γ ⊨ᵍ T ≈ A -> T = A.
 Proof.
   intros T Hinh. induction Hinh; intros Δ Γ A0 Hc.
   - inversion Hc; subst. reflexivity.
@@ -311,7 +311,7 @@ Proof.
   - inversion Hc; subst.
     f_equal.
     match goal with
-    | Hbody : forall X, X `notin` ?L0 -> d_consis_gen _ _ _ _ |- _ =>
+    | Hbody : forall X, X `notin` ?L0 -> _ ⨟ _ ⊨ᵍ _ ≈ _ |- _ =>
         pick fresh X for
           (L `union` L0 `union` ftvar_in_typ A `union` ftvar_in_typ A1);
         assert (HX_L : X `notin` L) by fsetdec;
@@ -363,7 +363,7 @@ Inductive d_sub_gen :
 (* [d_sub_gen__refl_any] — restricted to [mono_typ A].
 
    An earlier version used [mode_typ_compat m A] as the premise, but
-   that is UNSOUND: it admits [d_sub_gen mode_tc nil Γ A A] for
+   that is UNSOUND: it admits [Γ ⊢ᵍ[ mode_tc ; nil ] A ⊑ A] for
    [A = typ_all_col colour_inh A_inner] (since [is_inh_typ] includes
    such [A]), yet the corresponding mode-lift of typing is not always
    derivable. Concrete counter-example: [e = exp_anno e0 A] with [e0]
@@ -472,7 +472,7 @@ where "Γ ⊢ᵍ[ M ] e ⇒ A" := (d_typing_gen M Γ e A) : type_scope.
     [d_sub_gen__embed]). Structural induction. *)
 Lemma d_typing_embed_gen : forall m Γ e A,
     Γ ⊢[ m ] e ⇒ A ->
-    d_typing_gen m Γ e A.
+    Γ ⊢ᵍ[ m ] e ⇒ A.
 Proof.
   intros m Γ e A H. induction H.
   - apply d_typing_gen__unit; assumption.
@@ -492,7 +492,7 @@ Lemma d_sub_gen_refl : forall Γ A m,
     mono_typ A ->
     mode_typ_compat m A ->
     d_wf_typ Γ A ->
-    d_sub_gen m nil Γ A A.
+    Γ ⊢ᵍ[ m ; nil ] A ⊑ A.
 Proof.
   intros. apply d_sub_gen__refl_mono; auto.
 Qed.
@@ -546,7 +546,7 @@ Qed.
 Lemma d_consis_gen_refl : forall Γ A,
     is_inh_typ A ->
     d_wf_typ Γ A ->
-    d_consis_gen nil Γ A A.
+    nil ⨟ Γ ⊨ᵍ A ≈ A.
 Proof.
   intros Γ A Hinh. generalize dependent Γ.
   induction Hinh; intros Γ Hwf.
@@ -576,7 +576,7 @@ Qed.
 Lemma d_consis_gen_refl_syn : forall Γ A,
     is_syn_typ A ->
     d_wf_typ Γ A ->
-    d_consis_gen nil Γ A A.
+    nil ⨟ Γ ⊨ᵍ A ≈ A.
 Proof.
   intros Γ A Hsyn. generalize dependent Γ.
   induction Hsyn; intros Γ Hwf.
@@ -603,7 +603,7 @@ Qed.
 Lemma d_consis_gen_refl_is_typ : forall Γ A,
     is_typ A ->
     d_wf_typ Γ A ->
-    d_consis_gen nil Γ A A.
+    nil ⨟ Γ ⊨ᵍ A ≈ A.
 Proof.
   intros Γ A Hist. generalize dependent Γ.
   induction Hist; intros Γ Hwf.
@@ -638,7 +638,7 @@ Qed.
     so multiple X-occurrences don't multiply [Δ_φ] in the output. *)
 Lemma d_consis_gen_refl_wf_ttyp : forall Γ Δ ph,
     d_wf_ttyp Δ Γ ph ->
-    d_consis_gen nil Γ ph ph.
+    nil ⨟ Γ ⊨ᵍ ph ≈ ph.
 Proof.
   intros Γ Δ ph H. induction H.
   - (* __unit *) apply d_consis_gen__unit.
@@ -717,7 +717,7 @@ Qed.
 
 (** [d_consis_gen_rhs_is_inh_typ]: same as above but for d_consis_gen. *)
 Lemma d_consis_gen_rhs_is_inh_typ : forall Γ A B,
-    d_consis_gen nil Γ A B ->
+    nil ⨟ Γ ⊨ᵍ A ≈ B ->
     is_inh_typ A ->
     is_inh_typ B.
 Proof.
@@ -804,7 +804,7 @@ Proof.
     eapply H0; auto. symmetry. apply inh_color_open_var.
 Qed.
 
-(** [d_consis_gen_preserves_wf]: d_consis_gen preserves wf on RHS, when
+(** [d_consis_gen_preserves_wf]: preserves ⨟ wf ⊨ᵍ on ≈ RHS, when
     the RHS is [is_typ] (i.e., colour-painted, not [typ_all_etag]).
     The [is_typ B] precondition excludes the new
     [__forall_syn_tagged_both] rule (whose RHS is [typ_all_etag],
@@ -813,7 +813,7 @@ Qed.
     [syn_color]/[inh_color] painting which is always [is_typ]; at
     [__arg] from [is_typ A1] (the arrow's arg side). *)
 Lemma d_consis_gen_preserves_wf : forall Δ Γ A B,
-    d_consis_gen Δ Γ A B ->
+    Δ ⨟ Γ ⊨ᵍ A ≈ B ->
     is_typ B ->
     d_wf_typ Γ B.
 Proof.
@@ -849,9 +849,9 @@ Qed.
 
 (** [d_consis_gen_sym_inh]: symmetry for d_consis_gen on is_inh types. *)
 Lemma d_consis_gen_sym_inh : forall Γ A B,
-    d_consis_gen nil Γ A B ->
+    nil ⨟ Γ ⊨ᵍ A ≈ B ->
     is_inh_typ A ->
-    d_consis_gen nil Γ B A.
+    nil ⨟ Γ ⊨ᵍ B ≈ A.
 Proof.
   intros Γ A B Hcg.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
@@ -896,9 +896,9 @@ Qed.
     shapes (which are always [is_typ]). *)
 Lemma d_consis_gen_trans : forall Γ T A B,
     is_typ T ->
-    d_consis_gen nil Γ T A ->
-    d_consis_gen nil Γ A B ->
-    d_consis_gen nil Γ T B.
+    nil ⨟ Γ ⊨ᵍ T ≈ A ->
+    nil ⨟ Γ ⊨ᵍ A ≈ B ->
+    nil ⨟ Γ ⊨ᵍ T ≈ B.
 Proof.
   intros Γ T A B Hwf_T Hc1 Hc2.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
@@ -962,7 +962,7 @@ Qed.
     the premise [d_typing_narrow_consis_head] needs. *)
 Lemma d_typing_narrow_consis_head_arg : forall x Aold Anew Γ m e B,
     ((x ~ dbind_typ Aold) ++ Γ) ⊢[ m ] e ⇒ B ->
-    d_consis_gen nil Γ Aold Anew ->
+    nil ⨟ Γ ⊨ᵍ Aold ≈ Anew ->
     ((x ~ dbind_typ Anew) ++ Γ) ⊢[ m ] e ⇒ B.
 Proof.
   intros x Aold Anew Γ m e B Hty Hcg.
@@ -1014,7 +1014,7 @@ Proof.
 Qed.
 
 Corollary d_consis_gen_weakening_head : forall Γ Γ' Δ T A,
-    d_consis_gen Δ Γ T A ->
+    Δ ⨟ Γ ⊨ᵍ T ≈ A ->
     d_consis_gen Δ (Γ' ++ Γ) T A.
 Proof.
   intros. rewrite_env (nil ++ Γ' ++ Γ).
@@ -1129,11 +1129,11 @@ Qed.
 
     The remaining cases mirror d_consis_compose structurally. *)
 Lemma d_consis_gen_compose : forall Δa Δb Γ T A B,
-    d_consis_gen Δa Γ T A ->
-    d_consis_gen Δb Γ A B ->
+    Δa ⨟ Γ ⊨ᵍ T ≈ A ->
+    Δb ⨟ Γ ⊨ᵍ A ≈ B ->
     list_disjoint Δa Δb ->
     d_wf_typ Γ T ->
-    exists Δc, Permutation Δc (Δa ++ Δb) /\ d_consis_gen Δc Γ T B.
+    exists Δc, Permutation Δc (Δa ++ Δb) /\ Δc ⨟ Γ ⊨ᵍ T ≈ B.
 Proof.
   intros Δa Δb Γ T A B Hc1. generalize dependent B. generalize dependent Δb.
   induction Hc1; intros Δb B0 Hc2 Hdis HwfT.
@@ -1152,7 +1152,7 @@ Proof.
     assert (HX0_L0 : X0 `notin` L0) by fsetdec.
     assert (HX0_L1 : X0 `notin` L1) by fsetdec.
     match goal with
-    | Hcb : forall X, X `notin` L0 -> d_consis_gen _ _ _ _,
+    | Hcb : forall X, X `notin` L0 -> _ ⨟ _ ⊨ᵍ _ ≈ _,
       Hwfb : forall X, X `notin` L1 -> d_wf_typ _ _ |- _ =>
         specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
                       (Hcb X0 HX0_L0) Hdis (Hwfb X0 HX0_L1))
@@ -1194,7 +1194,7 @@ Proof.
       assert (HX0_L0 : X0 `notin` L0) by fsetdec.
       assert (HX0_L1 : X0 `notin` L1) by fsetdec.
       match goal with
-      | Hcb : forall X, X `notin` L0 -> d_consis_gen _ _ _ _,
+      | Hcb : forall X, X `notin` L0 -> _ ⨟ _ ⊨ᵍ _ ≈ _,
         Hwfb : forall X, X `notin` L1 -> d_wf_typ _ _ |- _ =>
           specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
                         (Hcb X0 HX0_L0) Hdis (Hwfb X0 HX0_L1))
@@ -1229,7 +1229,7 @@ Proof.
       assert (HX0_L0 : X0 `notin` L0) by fsetdec.
       assert (HX0_L1 : X0 `notin` L1) by fsetdec.
       match goal with
-      | Hcb : forall X, X `notin` L0 -> d_consis_gen _ _ _ _,
+      | Hcb : forall X, X `notin` L0 -> _ ⨟ _ ⊨ᵍ _ ≈ _,
         Hwfb : forall X, X `notin` L1 -> d_wf_typ _ _ |- _ =>
           specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
                         (Hcb X0 HX0_L0) Hdis (Hwfb X0 HX0_L1))
@@ -1265,7 +1265,7 @@ Proof.
     assert (HX0_L0 : X0 `notin` L0) by fsetdec.
     assert (HX0_L1 : X0 `notin` L1) by fsetdec.
     match goal with
-    | Hcb : forall X, X `notin` L0 -> d_consis_gen _ _ _ _,
+    | Hcb : forall X, X `notin` L0 -> _ ⨟ _ ⊨ᵍ _ ≈ _,
       Hwfb : forall X, X `notin` L1 -> d_wf_typ _ _ |- _ =>
         specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
                       (Hcb X0 HX0_L0) Hdis (Hwfb X0 HX0_L1))
@@ -1332,7 +1332,7 @@ Proof.
 Qed.
 
 Corollary d_sub_gen_weakening_head : forall Γ Γ' m Δ T A,
-    d_sub_gen m Δ Γ T A ->
+    Γ ⊢ᵍ[ m ; Δ ] T ⊑ A ->
     d_sub_gen m Δ (Γ' ++ Γ) T A.
 Proof.
   intros. rewrite_env (nil ++ Γ' ++ Γ).
@@ -1392,7 +1392,7 @@ Proof.
 Qed.
 
 Corollary d_typing_gen_weakening_head : forall Γ Γ' m e A,
-    d_typing_gen m Γ e A ->
+    Γ ⊢ᵍ[ m ] e ⇒ A ->
     d_typing_gen m (Γ' ++ Γ) e A.
 Proof.
   intros. rewrite_env (nil ++ Γ' ++ Γ).
@@ -1408,7 +1408,7 @@ Qed.
     requirement — needed because the new [d_consis_gen__forall_syn_tagged_both]
     rule can produce tagged RHS via [__arg]'s d_consis_gen premise. *)
 Lemma d_sub_gen_preserves_wf : forall m Δ Γ T A,
-    d_sub_gen m Δ Γ T A ->
+    Γ ⊢ᵍ[ m ; Δ ] T ⊑ A ->
     is_typ A ->
     d_wf_typ Γ A.
 Proof.
@@ -1450,7 +1450,7 @@ Qed.
     research-grade gap introduced by the [d_consis_gen__forall_syn_tagged_both]
     addition. *)
 Lemma d_sub_gen_preserves_is_typ : forall m Δ Γ T A,
-    d_sub_gen m Δ Γ T A ->
+    Γ ⊢ᵍ[ m ; Δ ] T ⊑ A ->
     is_typ T ->
     is_typ A.
 Proof.
@@ -1461,7 +1461,7 @@ Admitted.
     that proof case-for-case; [__sub] routes through
     [d_sub_gen_preserves_wf]. *)
 Lemma d_typing_gen_preserves_wf : forall m Γ e A,
-    d_typing_gen m Γ e A ->
+    Γ ⊢ᵍ[ m ] e ⇒ A ->
     d_wf_denv Γ ->
     d_wf_typ Γ A.
 Proof.
@@ -1511,8 +1511,8 @@ Qed.
 
 Lemma d_consis_gen_tvar_morph : forall Γ Γ' Δ T A,
     (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
-    d_consis_gen Δ Γ T A ->
-    d_consis_gen Δ Γ' T A.
+    Δ ⨟ Γ ⊨ᵍ T ≈ A ->
+    Δ ⨟ Γ' ⊨ᵍ T ≈ A.
 Proof.
   intros Γ Γ' Δ T A Hmorph H.
   generalize dependent Γ'. induction H; intros Γ' Hmorph.
@@ -1556,8 +1556,8 @@ Qed.
 
 Lemma d_sub_gen_tvar_morph : forall Γ Γ' m Δ T A,
     (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
-    d_sub_gen m Δ Γ T A ->
-    d_sub_gen m Δ Γ' T A.
+    Γ ⊢ᵍ[ m ; Δ ] T ⊑ A ->
+    Γ' ⊢ᵍ[ m ; Δ ] T ⊑ A.
 Proof.
   intros Γ Γ' m Δ T A Hmorph H.
   generalize dependent Γ'. induction H; intros Γ' Hmorph.
@@ -1600,7 +1600,7 @@ Qed.
     ([binds_tvar_narrow_typ]); [__app]'s [d_pat] narrows via
     [d_typing_narrow_consis]. *)
 Lemma d_typing_gen_narrow_consis : forall m Γ_full e B,
-    d_typing_gen m Γ_full e B ->
+    Γ_full ⊢ᵍ[ m ] e ⇒ B ->
     forall Γ1 x Aold Anew Γ2,
       Γ_full = Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2 ->
       syn_color_t Anew = syn_color_t Aold ->
@@ -1678,7 +1678,7 @@ Lemma d_consis_to_d_sub_gen : forall m Γ T A,
     d_wf_typ Γ T ->
     is_utyp T ->
     nil ⨟ Γ ⊨ T ≈ A ->
-    d_sub_gen m nil Γ T A.
+    Γ ⊢ᵍ[ m ; nil ] T ⊑ A.
 Proof.
   intros m Γ T A Hcompat HwfT Hut Hc. generalize dependent T.
   induction Hcompat; intros T HwfT Hut Hc.
@@ -1715,9 +1715,9 @@ Qed.
     permutation issue in d_consis_compose. *)
 Lemma d_consis_extends_d_consis_gen : forall Γ T A B,
     nil ⨟ Γ ⊨ T ≈ A ->
-    d_consis_gen nil Γ A B ->
+    nil ⨟ Γ ⊨ᵍ A ≈ B ->
     d_wf_typ Γ T ->
-    d_consis_gen nil Γ T B.
+    nil ⨟ Γ ⊨ᵍ T ≈ B.
 Proof.
   intros Γ T0 A B Hc Hcg HwfT.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
@@ -1880,11 +1880,11 @@ Proof.
 Qed.
 
 Lemma d_consis_sub_trans_gen_nil : forall m Γ A B,
-    d_sub_gen m nil Γ A B ->
+    Γ ⊢ᵍ[ m ; nil ] A ⊑ B ->
     forall T,
       nil ⨟ Γ ⊨ T ≈ A ->
       d_wf_typ Γ T ->
-      d_sub_gen m nil Γ T B.
+      Γ ⊢ᵍ[ m ; nil ] T ⊑ B.
 Proof.
   intros m Γ A B Hs.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
@@ -1906,7 +1906,7 @@ Proof.
     eapply d_consis_gen_trans; [ eapply d_wf_typ_is_typ; eassumption | | ]; eauto.
   - (* __check_gen: same pattern — pin T0 = syn_color T via the RHS
        rigidity lemma, then dispatch via [d_sub_gen__check_gen] (the
-       guarded_typ + d_consis_gen premise of __check_gen carry over). *)
+       guarded_typ + premise ⨟ of ⊨ᵍ __check_gen ≈ carry over). *)
     subst.
     assert (Hc_gen : d_consis_gen nil Γ T0 (syn_color T))
       by (apply d_consis_gen__embed; assumption).
@@ -1950,7 +1950,7 @@ Qed.
 (*  Paper B.3 (Consistency-Subtyping Transitivity) — gen-flavoured.       *)
 (*  Reformulated over [d_consis_gen] (per syntax-directed.tex). The      *)
 (*  reformulation makes the new [d_consis_gen__forall_syn_tagged_both]    *)
-(*  rule available to derive [d_consis_gen Δ Γ φ φ] for tagged φ at      *)
+(*  rule available to derive [Δ ⨟ Γ ⊨ᵍ φ ≈ φ] for tagged φ at      *)
 (*  variable-substitution positions (Δ stays nil because the new rule    *)
 (*  keeps Δ unchanged through tagged-∀ peeling — no multiplication of    *)
 (*  Δ_φ even with multiple X occurrences).                                *)
@@ -1984,12 +1984,12 @@ Qed.
     All cases proceed by induction on the second d_sub. Input is d_sub
     (non-gen), but we embed via [d_sub_gen__embed] when needed. *)
 Lemma d_consis_gen_sub_trans : forall M Δ Δ' Γ T A B,
-    d_consis_gen Δ Γ T A ->
+    Δ ⨟ Γ ⊨ᵍ T ≈ A ->
     Γ ⊢[ M ; Δ' ] A ⊑ B ->
     list_disjoint Δ Δ' ->
     (M = mode_ti -> Δ = nil) ->
     d_wf_typ Γ T ->
-    exists Δc, Permutation Δc (Δ ++ Δ') /\ d_sub_gen M Δc Γ T B.
+    exists Δc, Permutation Δc (Δ ++ Δ') /\ Γ ⊢ᵍ[ M ; Δc ] T ⊑ B.
 Proof.
   intros M Δ Δ' Γ T A B Hc Hs.
   generalize dependent T. generalize dependent Δ.
@@ -2047,10 +2047,10 @@ Admitted.
 
 (** Narrowed corollary (nil/nil). Output is d_sub_gen. *)
 Lemma d_consis_gen_sub_trans_nil : forall M Γ T A B,
-    d_consis_gen nil Γ T A ->
+    nil ⨟ Γ ⊨ᵍ T ≈ A ->
     Γ ⊢[ M ; nil ] A ⊑ B ->
     d_wf_typ Γ T ->
-    d_sub_gen M nil Γ T B.
+    Γ ⊢ᵍ[ M ; nil ] T ⊑ B.
 Proof.
   intros M Γ T A B Hc Hs HwfT.
   edestruct d_consis_gen_sub_trans as [Δc [Hperm Hsub]];
@@ -2078,7 +2078,7 @@ Qed.
     so the bridge closes. *)
 Lemma d_consis_gen_to_d_consis_syn_lhs : forall T,
     is_syn_typ T ->
-    forall Δ Γ A, d_consis_gen Δ Γ T A -> d_consis Δ Γ T A.
+    forall Δ Γ A, Δ ⨟ Γ ⊨ᵍ T ≈ A -> d_consis Δ Γ T A.
 Proof.
   intros T Hsyn. induction Hsyn; intros Δ Γ A0 Hc.
   - (* typ_unit *) inversion Hc; subst. apply d_consis__unit.
@@ -2100,7 +2100,7 @@ Proof.
 Qed.
 
 (** [d_consis_gen_to_d_consis]: the gen→original bridge for consistency.
-    Each d_consis_gen constructor reconstructs its d_consis counterpart;
+    Each constructor ⨟ reconstructs ⊨ᵍ its ≈ d_consis counterpart;
     [__forall_inh_untagged] (δ-NEW) and [__forall_inh] (added during the
     earlier refactor) make this lemma Qed.
 
@@ -2109,7 +2109,7 @@ Qed.
     declarative.tex (d_consis has no rule producing typ_all_etag on RHS),
     so this case is admitted. Tracked separately. *)
 Lemma d_consis_gen_to_d_consis : forall Δ Γ T A,
-    d_consis_gen Δ Γ T A ->
+    Δ ⨟ Γ ⊨ᵍ T ≈ A ->
     Δ ⨟ Γ ⊨ T ≈ A.
 Proof.
   intros Δ Γ T A H. induction H.
@@ -2130,7 +2130,7 @@ Admitted.
     [__refl_mono] through [d_sub_refl_mono_mode] and the consistency
     components through [d_consis_gen_to_d_consis]. *)
 Lemma d_sub_gen_to_d_sub : forall m Δ Γ T A,
-    d_sub_gen m Δ Γ T A ->
+    Γ ⊢ᵍ[ m ; Δ ] T ⊑ A ->
     Γ ⊢[ m ; Δ ] T ⊑ A.
 Proof.
   intros m Δ Γ T A H. induction H.

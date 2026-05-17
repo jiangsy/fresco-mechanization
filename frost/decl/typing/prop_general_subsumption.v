@@ -22,7 +22,7 @@ Set Implicit Arguments.
 
 (** ** Generalised General Subsumption (paper Lemma B.5).
 
-    The statement: for [Hty : d_typing_gen m_orig Γ e A] with [m_orig ∈ FN^n TI],
+    The statement: for [Hty : Γ ⊢ᵍ[ m_orig ] e ⇒ A] with [m_orig ∈ FN^n TI],
     and [Hsub_gen : d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B]
     (using the GENERALISED sub), we derive [d_typing_gen (mode_fn_n_subst
     m_orig m_new) Γ e B].
@@ -75,7 +75,7 @@ Set Implicit Arguments.
         [d_typing_abs_value_to_forall] /
         [d_typing_abs_anno_value_to_forall] aux lemmas. The aux
         lemmas' __forall_r recursion case is closed by dependent
-        induction on the d_sub_gen at the generalised target shape.
+        induction on the generalised ⊢ᵍ[ at ; the ] target ⊑ shape.
         Their internal __embed / __refl_any cases admit due to
         body-lift (mode_ti → mode_tc) circularity.
       * __embed / __arg: admit (research-grade —
@@ -104,7 +104,7 @@ Set Implicit Arguments.
     [d_sub_gen (mode_fn _) nil Γ typ_unit typ_unit] whose target
     d_typing is unreachable). *)
 Theorem d_typing_general_subsumption_gen : forall m_orig Γ e A,
-    d_typing_gen m_orig Γ e A ->
+    Γ ⊢ᵍ[ m_orig ] e ⇒ A ->
     is_fn_n_ti m_orig ->
     d_wf_denv Γ ->
     forall m_new B,
@@ -124,7 +124,7 @@ Proof.
        [d_typing_anno_gen_subsumption]. *)
     simpl in Hsub_gen |- *.
     eapply d_typing_anno_gen_subsumption; eauto.
-  - (* Hty = __sub: inner [d_typing_gen mode_ti Γ e A], outer
+  - (* Hty = __sub: inner [Γ ⊢ᵍ[ mode_ti ] e ⇒ A], outer
        [d_sub_gen m_orig A B]. Compose with [Hsub_gen] via
        [d_sub_gen_trans] at [m1 = m_orig]. *)
     apply d_typing_gen__sub with (A := A); auto.
@@ -281,7 +281,7 @@ Proof.
            match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
            apply app_eq_nil in Heq_app. destruct Heq_app; subst.
            match goal with Hcg : d_consis_gen _ _ (inh_color A) _ |- _ => rename Hcg into Hcons end.
-           match goal with Hs : d_sub_gen _ _ _ B _ |- _ => rename Hs into Hbs end.
+           match goal with Hs : _ ⊢ᵍ[ _ ; _ ] B ⊑ _ |- _ => rename Hs into Hbs end.
            assert (HA1_eq : inh_color A = _) by (eapply d_consis_gen_lhs_inh_eq; eauto).
            match type of HA1_eq with inh_color A = ?A1 => subst A1 end.
            simpl.
@@ -363,7 +363,7 @@ Proof.
         match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
         apply app_eq_nil in Heq_app. destruct Heq_app; subst.
         match goal with Hcg : d_consis_gen _ _ (inh_color A) _ |- _ => rename Hcg into Hcons end.
-        match goal with Hs : d_sub_gen _ _ _ B _ |- _ => rename Hs into Hbs end.
+        match goal with Hs : _ ⊢ᵍ[ _ ; _ ] B ⊑ _ |- _ => rename Hs into Hbs end.
         assert (HA1_eq : inh_color A = _) by (eapply d_consis_gen_lhs_inh_eq; eauto).
         match type of HA1_eq with inh_color A = ?A1 => subst A1 end.
         simpl.
@@ -495,7 +495,7 @@ Proof.
            match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
            apply app_eq_nil in Heq_app. destruct Heq_app; subst.
            match goal with Hcg : d_consis_gen _ _ (syn_color A) _ |- _ => rename Hcg into Hcons end.
-           match goal with Hs : d_sub_gen _ _ _ B _ |- _ => rename Hs into Hbs end.
+           match goal with Hs : _ ⊢ᵍ[ _ ; _ ] B ⊑ _ |- _ => rename Hs into Hbs end.
            assert (HA1_eq : syn_color A = _) by (eapply d_consis_gen_lhs_syn_eq; eauto).
            match type of HA1_eq with syn_color A = ?A1 => subst A1 end.
            simpl.
@@ -572,7 +572,7 @@ Proof.
         match goal with HΔ : _ ++ _ = nil |- _ => rename HΔ into Heq_app end.
         apply app_eq_nil in Heq_app. destruct Heq_app; subst.
         match goal with Hcg : d_consis_gen _ _ (syn_color A) _ |- _ => rename Hcg into Hcons end.
-        match goal with Hs : d_sub_gen _ _ _ B _ |- _ => rename Hs into Hbs end.
+        match goal with Hs : _ ⊢ᵍ[ _ ; _ ] B ⊑ _ |- _ => rename Hs into Hbs end.
         assert (HA1_eq : syn_color A = _) by (eapply d_consis_gen_lhs_syn_eq; eauto).
         match type of HA1_eq with syn_color A = ?A1 => subst A1 end.
         simpl.
@@ -603,9 +603,9 @@ Proof.
       assert (HwfP' : d_wf_typ Γ P').
       { (* All four __app premises are in context; the function-side
            one has type d_typing_gen _ Γ _ (typ_arrow P' _). Pin it by
-           inspecting d_typing_gen at the function expression e1. *)
+           inspecting the ⊢ᵍ[ at ] function ⇒ expression e1. *)
         match goal with
-        | Hfun : d_typing_gen _ _ e1 _ |- _ =>
+        | Hfun : _ ⊢ᵍ[ _ ] e1 ⇒ _ |- _ =>
             pose proof (d_typing_gen_preserves_wf Hfun Hwfd) as HwfArr
         end.
         inversion HwfArr; subst; assumption. }
@@ -621,7 +621,7 @@ Proof.
         -- (* d_sub_gen (mode_fn m_new) nil Γ (typ_arrow P' B) (typ_arrow P' B_tgt). *)
            rewrite_env (@nil atom ++ @nil atom).
            apply d_sub_gen__arg.
-           ++ (* d_consis_gen nil Γ P' P' (refl). Use d_consis_gen_refl_is_typ;
+           ++ (* nil ⨟ Γ ⊨ᵍ P' ≈ P' (refl). Use d_consis_gen_refl_is_typ;
                 facts derived above from H1 + wf preservation. *)
               apply d_consis_gen_refl_is_typ; assumption.
            ++ exact Hsub_gen.
@@ -634,7 +634,7 @@ Proof.
       simpl in Hsub_gen |- *.
       assert (HwfP' : d_wf_typ Γ P').
       { match goal with
-        | Hfun : d_typing_gen _ _ e1 _ |- _ =>
+        | Hfun : _ ⊢ᵍ[ _ ] e1 ⇒ _ |- _ =>
             pose proof (d_typing_gen_preserves_wf Hfun Hwfd) as HwfArr
         end.
         inversion HwfArr; subst; assumption. }
@@ -671,7 +671,7 @@ Qed.
     D1-via-D12 development is therefore closed *modulo the single admit*
     in [d_consis_gen_to_d_consis]'s [__forall_inh] case. *)
 Lemma d_typing_gen_collapse : forall m Γ e A,
-    d_typing_gen m Γ e A ->
+    Γ ⊢ᵍ[ m ] e ⇒ A ->
     Γ ⊢[ m ] e ⇒ A.
 Proof.
   intros m Γ e A H. induction H.
