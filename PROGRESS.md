@@ -232,6 +232,40 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 
 Session-by-session closure log. Most recent first.
 
+## 2026-05-17 — δ-cascade Phase 1.D + 1.E (partial close + foundation)
+
+**Commits:** `25d99cb` (Phase 1.D), `0e5010c` (Phase 1.E).
+
+**Phase 1.D** — closed the mono-ph half of `d_consis_sub_trans`'s
+`__forall_l_untagged` admit:
+
+- Moved 3 helpers to `prop_wellformed.v` (shared use across subtyping/
+  and typing/): `d_wf_ttyp_nil_d_wf_typ`, `d_wf_ttyp_nil_mono_typ`,
+  `d_wf_typ_open_with_ttyp_nil`.
+- In `prop_consis_sub_trans.v`'s `__forall_l_untagged` case: inversion
+  of Hc gives `__forall_syn_tagged` (vacuous via HwfT) and `__forall_syn`
+  (productive). For Δ' = nil (ph mono), uses `d_consis_subst_mono` on
+  Hc's cofinite body, composes with IH on inner d_sub, re-applies
+  `d_sub__forall_l_untagged` with Δ' := nil. Non-mono ph case still
+  admitted (needs d_consis substitution over `d_wf_ttyp`).
+
+**Phase 1.E** — added foundation for SPLIT-helper refactor:
+
+- New lemma `syn_color_eq_inh_color_mono` (in `prop_basic.v`): the
+  ctyp-domain analog of `inh_color_t_eq_syn_color_mono`. Given
+  `syn_color T = inh_color A` + `d_wf_typ Γ (syn_color T)`, derives
+  `mono_typ (syn_color T)`. Closes via structural disagreement between
+  syn_color (colour_syn) and inh_color (colour_inh) on `ctyp_all`.
+- Not yet wired into SPLIT helpers. Wiring requires threading several
+  structural equations through 4 SPLIT-helper proofs (the chain:
+  `Heq_LHS : syn_color T1 = inh_color_t Ahead` + `HA1_eq : inh_color A1'
+  = inh_color_t Ahead` → `syn_color T1 = inh_color A1'`). Planned
+  follow-up Phase 1.F.
+
+**Axiom count:** still 6 — d_consis_sub_trans appears in
+Print Assumptions because the non-mono ph sub-case still leaks, and
+the 3 SPLIT-helper-dependent provably-false admits still need wiring.
+
 ## 2026-05-17 — δ-cascade Phase 1A/1B/1C (4 axioms closed, 10 → 6)
 
 **Commits:** `530796c` (Phase 1A), `cccfca0` (Phase 1B), `1829862` (Phase 1C).
