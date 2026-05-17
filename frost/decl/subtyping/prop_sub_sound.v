@@ -146,7 +146,7 @@ Inductive d_shallow_sub_mono : list (atom * dbind) -> typ -> typ -> Prop :=
     (utyp). *)
 Theorem d_sub_complete_mono : forall Γ A B,
     d_shallow_sub_mono Γ A B ->
-    d_sub mode_tc nil Γ A B.
+    Γ ⊢[ mode_tc ; nil ] A ⊑ B.
 Proof.
   intros Γ A B H. induction H.
   - (* refl on A — d_sub mode_tc nil Γ A A. Use d_sub__check via
@@ -203,10 +203,10 @@ Admitted.
 Theorem d_sub_no_guess_uniqueness : forall (m : mode) (Δ : list atom)
     (Γ : list (atom * dbind)) (ε : atom) (T A : typ) (Δ' : list atom)
     (ph1 ph2 : typ),
-    d_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ T ph1) A ->
-    d_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ T ph2) A ->
-    d_wf_ttyp Δ' Γ ph1 ->
-    d_wf_ttyp Δ' Γ ph2 ->
+    Γ ⊢[ m ; Δ ++ Δ' ] (open_typ_wrt_typ T ph1) ⊑ A ->
+    Γ ⊢[ m ; Δ ++ Δ' ] (open_typ_wrt_typ T ph2) ⊑ A ->
+    Δ' ⨟ Γ ⊢ₜₜ ph1 ->
+    Δ' ⨟ Γ ⊢ₜₜ ph2 ->
     list_disjoint Δ' Δ ->
     ph1 = ph2.
 Proof.

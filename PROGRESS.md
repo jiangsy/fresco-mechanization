@@ -13,11 +13,11 @@ Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 **Flagship theorems (D1 / D12):** Both **Qed and "Closed under the global context"** — no remaining transitive axioms. `Print Assumptions d_typing_general_subsumption_via_gen` and `Print Assumptions d_typing_general_subsumption_gen` both report zero axioms.
 
-**Admit counts (frost/decl/):** 20 admits across 9 files. **None are transitively reachable from D1 or D12.** Categories:
+**Admit counts (frost/decl/):** 16 admits across 8 files (was 20, -4 from the 2026-05-17 false-admit cleanup). **None are transitively reachable from D1 or D12.** Categories:
 - Phase 2.E skeleton inference (D6, D7) — 2 admits
 - Phase 2.D research-grade (stability S1/S2, expressiveness E1) — 6 admits in `prop_typing.v`
 - Phase 2.D narrowing / type subst — 3 admits in `typing/prop_weakening.v`
-- Post-refactor dead helpers (lemmas became false under new rule set) — 5 admits
+- Post-refactor false helper (lemma is FALSE under new rule set; kept with explanatory comment for now) — 1 admit (`d_consis_gen_narrow_consis` re-encoding gap, see also `d_typing_narrow_consis`)
 - Paper-flagged (D3) + colour-tag translation (`d_sub_complete_mono`) — 2 admits in `prop_sub_sound.v`
 - `d_typing_lift_mono_mut` / `d_typing_gen_lift_mono` __app — 2 admits (no longer reachable; broken via `Hbody_at_tc` refactor)
 
@@ -124,22 +124,20 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 | `E1_intro` / `E1_elim` / `E1_roundtrip` | 🟠 | [`prop_typing.v:218,237,247`](frost/decl/prop_typing.v) | Expressiveness benchmark (Church-encoded existentials); gated on `d_typing_pat_subst_typ_mut` |
 | `d_sub_complete_mono` | 🟠 | [`prop_sub_sound.v:173`](frost/decl/subtyping/prop_sub_sound.v#L173) | reviewer-suggested completeness vs monotype-only shallow subtyping; forall_r/forall_l colour-flavour mismatch |
 | `d_typing_lift_mono_mut` / `d_typing_gen_lift_mono` | 🟠 | [`prop_consis_sub_trans.v:333`](frost/decl/subtyping/prop_consis_sub_trans.v#L333), [`prop_subsumption_aux.v:527`](frost/decl/typing/prop_subsumption_aux.v#L527) | `__app` requires function arg-type mononess (not derivable from rule); **NOT reachable from D1/D12** (broken via `Hbody_at_tc` parameter on SPLIT helpers, 2026-05-17) |
-| `d_consis_lhs_is_inh_for_typ` / `d_consis_gen_LHS_syn_color_mono` / `d_consis_LHS_is_utyp_when_RHS_syn_color` / `d_sub_not_lhs_typ_all_col` | 🟠 | [`def_gen.v:696`](frost/decl/typing/def_gen.v#L696), [`prop_subsumption_aux.v:915`](frost/decl/typing/prop_subsumption_aux.v#L915), [`prop_consis_trans.v:348,589`](frost/decl/subtyping/prop_consis_trans.v#L348) | post-refactor: false under new rule set (new `__forall_syn` rule admits `typ_all_col colour_syn` LHS, breaking prior vacuity arguments); call sites rewritten elsewhere — dead code |
+| ~~`d_consis_lhs_is_inh_for_typ` / `d_consis_gen_LHS_syn_color_mono` / `d_consis_LHS_is_utyp_when_RHS_syn_color` / `d_sub_not_lhs_typ_all_col`~~ | — | (deleted 2026-05-17) | All four were post-refactor FALSE under the new `__forall_syn` rule. Removed along with their dead caller chain (the two `d_typing_abs[_anno]_value_to_subsumption` umbrellas + the two `_d_sub` helpers + `is_inh_typ_syn_color_mono`) — none of those had callers outside `prop_subsumption_aux.v`. |
 
 ## Per-file admit summary
 
-`frost/decl/` (20 admits total):
+`frost/decl/` (16 admits total — was 20; 4 false-admit deletions on 2026-05-17):
 
 | File | Count | Admitted lemmas |
 |---|---|---|
 | `prop_typing.v` | 6 | `d_typing_swap_mono`, `d_typing_app_restructure`, `d_typing_order_irrel_adj`, `E1_intro`, `E1_elim`, `E1_roundtrip` |
-| `typing/prop_weakening.v` | 3 | `d_typing_pat_subst_typ_mut`, `d_typing_narrowing`, `d_typing_narrow_consis` |
-| `typing/def_gen.v` | 2 | `d_consis_lhs_is_inh_for_typ`, `d_typing_gen_narrow_consis` |
-| `typing/prop_subsumption_aux.v` | 1 | `d_consis_gen_LHS_syn_color_mono` (false post-refactor) |
-| `typing/prop_subsumption_aux.v` | 1 | `d_typing_gen_lift_mono` |
-| `subtyping/prop_consis_trans.v` | 2 | `d_consis_LHS_is_utyp_when_RHS_syn_color`, `d_sub_not_lhs_typ_all_col` (both false post-refactor) |
+| `typing/prop_weakening.v` | 3 | `d_typing_pat_subst_typ_mut`, `d_typing_narrowing` (D1 done; blocked on `d_sub_complete`), `d_typing_narrow_consis` |
+| `typing/def_gen.v` | 1 | `d_typing_gen_narrow_consis` |
+| `typing/prop_subsumption_aux.v` | 1 | `d_typing_gen_lift_mono` (__app obstruction; not reachable from D1/D12) |
 | `subtyping/prop_consis_sub_trans.v` | 1 | `d_typing_lift_mono_mut` |
-| `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` |
+| `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` (paper-flagged) |
 | `prop_skeleton.v` | 2 | `d_pat_validity`, `d_pat_safety` |
 
 `frost/algo/` (6 admits — all Phase 3.B/C HEADLINEs):

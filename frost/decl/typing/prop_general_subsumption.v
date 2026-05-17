@@ -703,7 +703,7 @@ Qed.
     case for the new constructor. *)
 Lemma d_consis_gen_to_d_consis : forall Δ Γ T A,
     d_consis_gen Δ Γ T A ->
-    d_consis Δ Γ T A.
+    Δ ⨟ Γ ⊨ T ≈ A.
 Proof.
   intros Δ Γ T A H. induction H.
   - apply d_consis__unit.
@@ -728,7 +728,7 @@ Qed.
     [__infer_gen], [__check_gen], and [__arg]; this lemma itself is [Qed]. *)
 Lemma d_sub_gen_to_d_sub : forall m Δ Γ T A,
     d_sub_gen m Δ Γ T A ->
-    d_sub m Δ Γ T A.
+    Γ ⊢[ m ; Δ ] T ⊑ A.
 Proof.
   intros m Δ Γ T A H. induction H.
   - (* __embed: trivial — the embed already carries a [d_sub]. *)
@@ -764,7 +764,7 @@ Qed.
     in [d_consis_gen_to_d_consis]'s [__forall_inh] case. *)
 Lemma d_typing_gen_collapse : forall m Γ e A,
     d_typing_gen m Γ e A ->
-    d_typing m Γ e A.
+    Γ ⊢[ m ] e ⇒ A.
 Proof.
   intros m Γ e A H. induction H.
   - apply d_typing__unit; assumption.
@@ -792,9 +792,9 @@ Qed.
     bridge. *)
 Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
     d_wf_denv Γ ->
-    d_typing mode_ti Γ e A ->
-    d_sub m nil Γ A B ->
-    d_typing m Γ e B.
+    Γ ⊢[ mode_ti ] e ⇒ A ->
+    Γ ⊢[ m ; nil ] A ⊑ B ->
+    Γ ⊢[ m ] e ⇒ B.
 Proof.
   intros Γ e A B m Hwfd Hty Hsub.
   apply d_typing_gen_collapse.

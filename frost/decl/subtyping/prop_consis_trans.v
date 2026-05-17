@@ -284,7 +284,7 @@ Qed.
     [d_consis_LHS_is_utyp_when_RHS_syn] (below) when RHS is
     [syn_color]-shaped. *)
 Lemma d_consis_LHS_mono_wf : forall Δ Γ T A,
-    d_consis Δ Γ T A ->
+    Δ ⨟ Γ ⊨ T ≈ A ->
     d_wf_typ Γ T ->
     is_utyp T ->
     mono_typ T.
@@ -301,56 +301,13 @@ Proof.
     + apply IHHc2; auto.
 Qed.
 
-(** When [d_consis Δ Γ T A] holds and the RHS [A] is recursively
-    syn-painted (any [A = syn_color C]), the LHS [T] is recursively
-    [is_utyp]. The new [d_consis__forall_inh] rule (LHS/RHS both
-    [typ_all_col colour_inh]) is vacuous because [syn_color C] never
-    has [colour_inh] at the head, and recursively the sub-derivations
-    inherit the syn-painted RHS via the [__forall_syn_*] / [__arrow]
-    rules.
-
-    POST-REFACTOR (typ_all_plain removed): the new [d_consis__forall_syn]
-    rule (LHS/RHS both [typ_all_col colour_syn]) BREAKS this lemma: T
-    can now be [typ_all_col colour_syn] which is NOT [is_utyp]. The
-    lemma is therefore admitted in that case; downstream callers must
-    accept a weaker conclusion or restrict their use. *)
-Lemma d_consis_LHS_is_utyp_when_RHS_syn_color : forall Δ Γ T A,
-    d_consis Δ Γ T A ->
-    forall C, A = syn_color C ->
-    is_utyp T.
-Proof.
-  intros Δ Γ T A Hc. induction Hc; intros C HC.
-  - apply is_utyp__unit.
-  - apply is_utyp__var.
-  - (* __forall_inh_tagged: A = typ_all_col colour_inh A_inner; never
-       equal to [syn_color C]. *)
-    destruct C; simpl in HC; discriminate.
-  - (* __forall_syn_tagged: A = typ_all_col colour_syn (syn_color C_inner)
-       with C = ctyp_all C_inner. LHS is typ_all_etag (is_utyp). *)
-    destruct C; simpl in HC; try discriminate.
-    inversion HC; subst.
-    inst_cofinites_for is_utyp__tall.
-    intros X HX.
-    eapply H0 with (C := open_ctyp_wrt_ctyp C (ctyp_var_f X)); eauto.
-    rewrite syn_color_open_ctyp. simpl. reflexivity.
-  - (* __forall_syn (post-refactor, rule order: syn before inh):
-       A = typ_all_col colour_syn (...) = syn_color (ctyp_all _).
-       LHS T = typ_all_col colour_syn — NOT is_utyp. Lemma claim is
-       FALSE in this case; admitted. Downstream callers in prop_typing.v
-       that depended on this conclusion need refactoring. *)
-    admit.
-  - (* __forall_inh: A = typ_all_col colour_inh — never [syn_color C]. *)
-    destruct C; simpl in HC; discriminate.
-  - (* __arrow *)
-    destruct C; simpl in HC; try discriminate.
-    inversion HC; subst.
-    apply is_utyp__arrow; eauto.
-Admitted.
-
-(** No [inh_color]-RHS version of the above is provided: with the new
-    [__forall_inh] rule, [d_consis Δ Γ T (inh_color (ctyp_all _))] can
-    have [T = typ_all_col colour_inh _] which is NOT [is_utyp], so an
-    inh-painted RHS does not suffice to pin the LHS shape. *)
+(* [d_consis_LHS_is_utyp_when_RHS_syn_color] (formerly here) DELETED
+   2026-05-17 — provably FALSE post-refactor: the new
+   [d_consis__forall_syn] rule (LHS/RHS both [typ_all_col colour_syn])
+   admits a non-[is_utyp] LHS. Had zero callers; the original
+   callsites in [prop_general_subsumption.v] / [d12.v] were rewritten
+   to use [d_consis_gen_RHS_syn_color_eq] (a Qed analogue with stronger
+   wf hypothesis) before this deletion. *)
 
 (** Same intersection argument with [is_typ T] instead of [d_wf_typ Γ T]:
     [is_typ]'s shapes are {unit, var, arrow, typ_all_col}, [d_consis]'s
@@ -363,7 +320,7 @@ Admitted.
     [typ_all_col colour_inh] which IS [is_typ] but NOT [mono]. So we
     additionally require [is_utyp T] to rule out that case. *)
 Lemma d_consis_LHS_is_typ_mono : forall Δ Γ T A,
-    d_consis Δ Γ T A ->
+    Δ ⨟ Γ ⊨ T ≈ A ->
     is_typ T ->
     is_utyp T ->
     mono_typ T.
@@ -392,7 +349,7 @@ Qed.
     below, which then makes Hc's RHS mono, which then forces T mono via
     this lemma. *)
 Lemma d_consis_mono_RHS : forall Δ Γ T A,
-    d_consis Δ Γ T A ->
+    Δ ⨟ Γ ⊨ T ≈ A ->
     mono_typ A ->
     mono_typ T /\ Δ = nil /\ T = A.
 Proof.
@@ -422,7 +379,7 @@ Qed.
     to DERIVE mono from [T = syn_color C]; that derivation is unsound
     post-refactor because [d_consis__forall_syn] allows non-mono LHS. *)
 Lemma d_consis_mono_LHS : forall Δ Γ T A,
-    d_consis Δ Γ T A ->
+    Δ ⨟ Γ ⊨ T ≈ A ->
     mono_typ T ->
     A = T /\ Δ = nil.
 Proof.
@@ -446,10 +403,10 @@ Qed.
 (** Refl d_sub at mode m on a mono arrow type implies refl d_sub at
     [decr_mode m] on the result type. Used in body conversion lifts. *)
 Lemma d_sub_arrow_refl_inner : forall Γ A B m,
-    d_sub m nil Γ (typ_arrow A B) (typ_arrow A B) ->
+    Γ ⊢[ m ; nil ] (typ_arrow A B) ⊑ (typ_arrow A B) ->
     mono_typ A ->
     mono_typ B ->
-    d_sub (decr_mode m) nil Γ B B.
+    Γ ⊢[ (decr_mode m) ; nil ] B ⊑ B.
 Proof.
   intros Γ A B m Hrefl Hmono_a Hmono_b.
   inversion Hrefl; subst.
@@ -535,7 +492,7 @@ Qed.
     with the strengthened signature for consistency with
     [d_consis_LHS_mono_wf].) *)
 Lemma d_sub_LHS_mono_wf : forall M Δ Γ T A,
-    d_sub M Δ Γ T A ->
+    Γ ⊢[ M ; Δ ] T ⊑ A ->
     d_wf_typ Γ T ->
     is_utyp T ->
     mono_typ T.
@@ -559,34 +516,11 @@ Proof.
     inversion Hwf.
 Qed.
 
-(** [d_sub] is UNINHABITED when the LHS is [typ_all_col c A]. The reason:
-    - [d_sub__infer] / [d_sub__check] reduce to [d_consis] with LHS [typ_all_col],
-      which has no defining rule (d_consis LHS is [is_utyp]-shape: unit / var /
-      typ_all_etag / typ_all_plain / typ_arrow).
-    - [d_sub__arg] / [d_sub__forall_l_*] have rigid LHS shapes that mismatch.
-    - [d_sub__forall_r] recurses on the body's [d_sub] which has the same LHS;
-      closes via IH.
-
-    This is used in [d_consis_sub_trans] to discharge the [__arg]
-    sub-case's "T02 not etag/plain" obligation: if T02 = typ_all_etag/plain,
-    then A02 (the d_consis RHS at that branch) = typ_all_col c, and Hs's
-    body [d_sub m Δ Γ A02 B2] is uninhabited, ruling the case out. *)
-Lemma d_sub_not_lhs_typ_all_col : forall M Δ Γ T B,
-    d_sub M Δ Γ T B ->
-    forall c A, T <> typ_all_col c A.
-Proof.
-  intros M Δ Γ T B Hsub.
-  induction Hsub; intros c0 A0 HT; try discriminate.
-  - (* POST-REFACTOR: __infer / __check LHS = [syn_color T_base] which CAN
-       be [typ_all_col colour_syn] when T_base = ctyp_all _. The new
-       __forall_syn rule in d_consis admits exactly this shape — so the
-       prior vacuity argument fails. Lemma is FALSE under the new rule
-       set; admitted. Downstream callers need to restrict or restate. *)
-    admit.
-  - admit.
-  - (* __forall_r: T unchanged; close via the cofinite IH. *)
-    subst T. pick fresh X for L. eapply H0; eauto.
-Admitted.
+(* [d_sub_not_lhs_typ_all_col] (formerly here) DELETED 2026-05-17 —
+   provably FALSE post-refactor: [d_sub__infer] / [d_sub__check] LHS
+   is [syn_color T_base] which CAN be [typ_all_col colour_syn] (when
+   T_base = ctyp_all _), admitted by the new [d_consis__forall_syn]
+   rule. Had zero callers. *)
 
 (** If [d_consis Δ Γ T A] and [d_consis nil Γ A B] both hold, then [Δ = nil].
 
@@ -609,7 +543,7 @@ Admitted.
     discharge an [is_syn_typ] precondition without a [d_wf_typ Γ T] from
     outside. *)
 Lemma d_consis_lhs_syn_color_is_syn_typ : forall Δ Γ C A,
-    d_consis Δ Γ (syn_color C) A ->
+    Δ ⨟ Γ ⊨ (syn_color C) ≈ A ->
     is_syn_typ (syn_color C).
 Proof.
   intros Δ Γ C A Hc.
@@ -647,8 +581,8 @@ Qed.
     from their context (e.g., d_sub__infer body has A = syn_color C
     which is [is_syn_typ] when C contains no [ctyp_hole]). *)
 Lemma d_consis_compose_nil_RHS : forall Δ Γ T A B,
-    d_consis Δ Γ T A ->
-    d_consis nil Γ A B ->
+    Δ ⨟ Γ ⊨ T ≈ A ->
+    nil ⨟ Γ ⊨ A ≈ B ->
     is_syn_typ A ->
     Δ = nil.
 Proof.

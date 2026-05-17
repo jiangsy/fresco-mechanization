@@ -20,8 +20,8 @@ Set Implicit Arguments.
 (** * Supporting weakening lemmas for non-mutual judgments. *)
 
 Lemma d_consis_weakening : forall Γ1 Γ2 Γ3 Δ T A,
-    d_consis Δ (Γ1 ++ Γ3) T A ->
-    d_consis Δ (Γ1 ++ Γ2 ++ Γ3) T A.
+    Δ ⨟ (Γ1 ++ Γ3) ⊨ T ≈ A ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊨ T ≈ A.
 Proof.
   intros Γ1 Γ2 Γ3 Δ T A H.
   dependent induction H.
@@ -51,7 +51,7 @@ Qed.
     [d_consis_gen_syn_color_eq], proved later.) Used to show a
     [syn_color_t]-typed variable is invariant under [d_consis]-narrowing. *)
 Lemma d_consis_syn_color_eq : forall Δ Γ A B,
-    d_consis Δ Γ A B ->
+    Δ ⨟ Γ ⊨ A ≈ B ->
     syn_color_t A = syn_color_t B.
 Proof.
   intros Δ Γ A B H. induction H; simpl; try reflexivity.
@@ -92,8 +92,8 @@ Proof.
 Qed.
 
 Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 M Δ T A,
-    d_sub M Δ (Γ1 ++ Γ3) T A ->
-    d_sub M Δ (Γ1 ++ Γ2 ++ Γ3) T A.
+    (Γ1 ++ Γ3) ⊢[ M ; Δ ] T ⊑ A ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢[ M ; Δ ] T ⊑ A.
 Proof.
   intros Γ1 Γ2 Γ3 M Δ T A H. dependent induction H.
   - apply d_sub__infer; auto. apply d_consis_weakening; auto.
@@ -110,8 +110,8 @@ Qed.
     (see [prop_subtyping.v]); duplicated here to avoid a cyclic import. *)
 Lemma d_consis_tvar_morph : forall Γ Γ' Δ T A,
     (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
-    d_consis Δ Γ T A ->
-    d_consis Δ Γ' T A.
+    Δ ⨟ Γ ⊨ T ≈ A ->
+    Δ ⨟ Γ' ⊨ T ≈ A.
 Proof.
   intros Γ Γ' Δ T A Hmorph H. generalize dependent Γ'.
   induction H; intros Γ' Hmorph.
@@ -142,8 +142,8 @@ Qed.
 
 Lemma d_sub_tvar_morph : forall Γ Γ' M Δ T A,
     (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
-    d_sub M Δ Γ T A ->
-    d_sub M Δ Γ' T A.
+    Γ ⊢[ M ; Δ ] T ⊑ A ->
+    Γ' ⊢[ M ; Δ ] T ⊑ A.
 Proof.
   intros Γ Γ' M Δ T A Hmorph H. generalize dependent Γ'.
   induction H; intros Γ' Hmorph.
@@ -161,8 +161,8 @@ Proof.
 Qed.
 
 Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Ψ P Q,
-    d_refine_syn Ψ (Γ1 ++ Γ3) P Q ->
-    d_refine_syn Ψ (Γ1 ++ Γ2 ++ Γ3) P Q.
+    Ψ ⨟ (Γ1 ++ Γ3) ⊢ᵣ P ⊳ Q ->
+    Ψ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵣ P ⊳ Q.
 Proof.
   intros Γ1 Γ2 Γ3 Ψ P Q H. dependent induction H.
   - apply d_refine_syn__unit.
@@ -184,8 +184,8 @@ Proof.
 Qed.
 
 Lemma d_refine_weakening : forall Γ1 Γ2 Γ3 Ψ P Q,
-    d_refine Ψ (Γ1 ++ Γ3) P Q ->
-    d_refine Ψ (Γ1 ++ Γ2 ++ Γ3) P Q.
+    Ψ ⨟ (Γ1 ++ Γ3) ⊢ᵣ P ▸ Q ->
+    Ψ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵣ P ▸ Q.
 Proof.
   intros Γ1 Γ2 Γ3 Ψ P Q H. dependent induction H.
   - apply d_refine__unit.
@@ -205,20 +205,20 @@ Proof.
 Qed.
 
 Lemma d_refine_weakening_head : forall Γ Γ' Ψ P Q,
-    d_refine Ψ Γ P Q ->
-    d_refine Ψ (Γ' ++ Γ) P Q.
+    Ψ ⨟ Γ ⊢ᵣ P ▸ Q ->
+    Ψ ⨟ (Γ' ++ Γ) ⊢ᵣ P ▸ Q.
 Proof. intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_refine_weakening. simpl. auto. Qed.
 
 Lemma d_refine_syn_weakening_head : forall Γ Γ' Ψ P Q,
-    d_refine_syn Ψ Γ P Q ->
-    d_refine_syn Ψ (Γ' ++ Γ) P Q.
+    Ψ ⨟ Γ ⊢ᵣ P ⊳ Q ->
+    Ψ ⨟ (Γ' ++ Γ) ⊢ᵣ P ⊳ Q.
 Proof. intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_refine_syn_weakening. simpl. auto. Qed.
 
 (** Context tvar-morphism for [d_refine]. *)
 Lemma d_refine_tvar_morph : forall Γ Γ' Ψ P Q,
     (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
-    d_refine Ψ Γ P Q ->
-    d_refine Ψ Γ' P Q.
+    Ψ ⨟ Γ ⊢ᵣ P ▸ Q ->
+    Ψ ⨟ Γ' ⊢ᵣ P ▸ Q.
 Proof.
   intros Γ Γ' Ψ P Q Hmorph H. generalize dependent Γ'.
   induction H; intros Γ' Hmorph.
@@ -237,8 +237,8 @@ Qed.
 (** Context tvar-morphism for [d_refine_syn]. *)
 Lemma d_refine_syn_tvar_morph : forall Γ Γ' Ψ P Q,
     (forall X, binds X dbind_tvar Γ -> binds X dbind_tvar Γ') ->
-    d_refine_syn Ψ Γ P Q ->
-    d_refine_syn Ψ Γ' P Q.
+    Ψ ⨟ Γ ⊢ᵣ P ⊳ Q ->
+    Ψ ⨟ Γ' ⊢ᵣ P ⊳ Q.
 Proof.
   intros Γ Γ' Ψ P Q Hmorph H. generalize dependent Γ'.
   induction H; intros Γ' Hmorph.
@@ -362,7 +362,7 @@ Lemma d_typing_pat_weakening :
                          d_typing m (Γ1 ++ Γ2 ++ Γ3) e A) /\
     (forall m Γ e P, d_pat m Γ e P ->
        forall Γ1 Γ2 Γ3, Γ = Γ1 ++ Γ3 ->
-                         d_pat m (Γ1 ++ Γ2 ++ Γ3) e P).
+                         (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ P).
 Proof.
   apply d_typing_pat_mut; intros; subst.
   - apply d_typing__unit; auto.
@@ -421,23 +421,23 @@ Proof.
 Qed.
 
 Corollary d_typing_weakening : forall Γ1 Γ2 Γ3 m e A,
-    d_typing m (Γ1 ++ Γ3) e A ->
-    d_typing m (Γ1 ++ Γ2 ++ Γ3) e A.
+    (Γ1 ++ Γ3) ⊢[ m ] e ⇒ A ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇒ A.
 Proof. intros. eapply (proj1 d_typing_pat_weakening); eauto. Qed.
 
 Corollary d_pat_weakening : forall Γ1 Γ2 Γ3 m e P,
-    d_pat m (Γ1 ++ Γ3) e P ->
-    d_pat m (Γ1 ++ Γ2 ++ Γ3) e P.
+    (Γ1 ++ Γ3) ⊢[ m ] e ⇨ P ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ P.
 Proof. intros. eapply (proj2 d_typing_pat_weakening); eauto. Qed.
 
 Corollary d_typing_weakening_head : forall Γ Γ' m e A,
-    d_typing m Γ e A ->
-    d_typing m (Γ' ++ Γ) e A.
+    Γ ⊢[ m ] e ⇒ A ->
+    (Γ' ++ Γ) ⊢[ m ] e ⇒ A.
 Proof. intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_typing_weakening. simpl. auto. Qed.
 
 Corollary d_pat_weakening_head : forall Γ Γ' m e P,
-    d_pat m Γ e P ->
-    d_pat m (Γ' ++ Γ) e P.
+    Γ ⊢[ m ] e ⇨ P ->
+    (Γ' ++ Γ) ⊢[ m ] e ⇨ P.
 Proof. intros. rewrite_env (nil ++ Γ' ++ Γ). apply d_pat_weakening. simpl. auto. Qed.
 
 (** Mutual context morphism for [d_typing] / [d_pat]: preserve ALL
@@ -450,7 +450,7 @@ Lemma d_typing_pat_ctx_morph :
                   d_typing m Γ' e A) /\
     (forall m Γ e P, d_pat m Γ e P ->
        forall Γ', (forall X bn, binds X bn Γ -> binds X bn Γ') ->
-                  d_pat m Γ' e P).
+                  Γ' ⊢[ m ] e ⇨ P).
 Proof.
   apply d_typing_pat_mut.
   - (* d_typing__unit *)
@@ -549,14 +549,14 @@ Qed.
 
 Corollary d_typing_ctx_morph : forall Γ Γ' m e A,
     (forall X bn, binds X bn Γ -> binds X bn Γ') ->
-    d_typing m Γ e A ->
-    d_typing m Γ' e A.
+    Γ ⊢[ m ] e ⇒ A ->
+    Γ' ⊢[ m ] e ⇒ A.
 Proof. intros. eapply (proj1 d_typing_pat_ctx_morph); eauto. Qed.
 
 Corollary d_pat_ctx_morph : forall Γ Γ' m e P,
     (forall X bn, binds X bn Γ -> binds X bn Γ') ->
-    d_pat m Γ e P ->
-    d_pat m Γ' e P.
+    Γ ⊢[ m ] e ⇨ P ->
+    Γ' ⊢[ m ] e ⇨ P.
 Proof. intros. eapply (proj2 d_typing_pat_ctx_morph); eauto. Qed.
 
 (** * Phase 2.D.2 — Term substitution (expvar) for d_typing / d_pat.
@@ -579,13 +579,13 @@ Lemma d_typing_pat_subst_exp_mut :
     (forall m Γ e1 B, d_typing m Γ e1 B ->
        forall Γ1 Γ2 x A e2,
          Γ = Γ1 ++ (x ~ dbind_typ A) ++ Γ2 ->
-         d_typing mode_ti Γ2 e2 A ->
+         Γ2 ⊢[ mode_ti ] e2 ⇒ A ->
          d_typing m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) B) /\
     (forall m Γ e1 P, d_pat m Γ e1 P ->
        forall Γ1 Γ2 x A e2,
          Γ = Γ1 ++ (x ~ dbind_typ A) ++ Γ2 ->
-         d_typing mode_ti Γ2 e2 A ->
-         d_pat m (Γ1 ++ Γ2) (subst_exp_in_exp e2 x e1) P).
+         Γ2 ⊢[ mode_ti ] e2 ⇒ A ->
+         (Γ1 ++ Γ2) ⊢[ m ] (subst_exp_in_exp e2 x e1) ⇨ P).
 Proof.
 Abort.
 
@@ -620,7 +620,7 @@ Abort.
 
 Lemma d_typing_pat_subst_typ_mut :
     (forall m Γ e A,
-        d_typing m Γ e A ->
+        Γ ⊢[ m ] e ⇒ A ->
         forall X B Γ1 Γ2,
           Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
           d_wf_typ Γ2 B ->
@@ -629,7 +629,7 @@ Lemma d_typing_pat_subst_typ_mut :
                      (subst_typ_in_exp B X e)
                      (subst_typ_in_typ B X A))
  /\ (forall m Γ e P,
-        d_pat m Γ e P ->
+        Γ ⊢[ m ] e ⇨ P ->
         forall X B Γ1 Γ2,
           Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
           d_wf_typ Γ2 B ->
@@ -655,16 +655,24 @@ Admitted.
 *)
 
 Lemma d_typing_narrowing : forall Γ1 x A A' Γ2 m e B,
-    d_typing m (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) e B ->
-    d_shallow_sub Γ2 A' A ->
+    (Γ1 ++ (x ~ dbind_typ A) ++ Γ2) ⊢[ m ] e ⇒ B ->
+    Γ2 ⊢ A' ≤ A ->
     d_wf_typ Γ2 A' ->
-    d_typing m (Γ1 ++ (x ~ dbind_typ A') ++ Γ2) e B.
+    (Γ1 ++ (x ~ dbind_typ A') ++ Γ2) ⊢[ m ] e ⇒ B.
 Proof.
-  (* Induction on the typing derivation. The only delicate case is
-     [d_typing__var] for the narrowed x: we need to produce a derivation
-     of e=exp_var_f x with the narrowed type A. Per paper:574 (general
-     subsumption), this requires invoking d_typing_general_subsumption
-     (Task 6). Since Task 6 itself is research-grade, we admit. *)
+  (* RESIDUAL ADMIT (updated 2026-05-17). D1 (general subsumption,
+     [d_typing_general_subsumption_via_gen]) is now Qed and closed
+     under the global context, so the [d_typing__var] case would close
+     IF we could lift the [d_shallow_sub] hypothesis to a [d_sub] one.
+     The remaining blocker is therefore [d_sub_complete] — the reverse
+     of [d_sub_sound] (D2) — which lifts shallow polymorphic subtyping
+     back to [d_sub]. Only a [mono]-restricted form
+     ([d_sub_complete_mono]) is currently mechanised (research-grade,
+     paper-flagged colour-tag translation issue). A reasonable
+     alternative is to restate this lemma with [d_sub mode_ti nil Γ2
+     A' A] in place of [d_shallow_sub Γ2 A' A] — which closes
+     immediately via D1 — but no caller exists yet to motivate
+     fixing the interface. *)
 Admitted.
 
 (** [d_typing_narrow_consis]: narrowing under d_consis equivalence,
@@ -690,17 +698,17 @@ Admitted.
     further research-grade machinery). *)
 Lemma d_typing_narrow_consis :
     (forall m Γ_full e B,
-        d_typing m Γ_full e B ->
+        Γ_full ⊢[ m ] e ⇒ B ->
         forall Γ1 x Aold Anew Γ2,
           Γ_full = Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2 ->
           syn_color_t Anew = syn_color_t Aold ->
           d_typing m (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) e B) /\
     (forall m Γ_full e P,
-        d_pat m Γ_full e P ->
+        Γ_full ⊢[ m ] e ⇨ P ->
         forall Γ1 x Aold Anew Γ2,
           Γ_full = Γ1 ++ (x ~ dbind_typ Aold) ++ Γ2 ->
           syn_color_t Anew = syn_color_t Aold ->
-          d_pat m (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) e P).
+          (Γ1 ++ (x ~ dbind_typ Anew) ++ Γ2) ⊢[ m ] e ⇨ P).
 Proof.
   (* RE-ENCODING ADMIT (2026-05-15): post-ctyp re-encoding,
      [d_typing__var] returns the bound type RAW (not [syn_color]-painted),
@@ -729,9 +737,9 @@ Admitted.
     actually reachable; the typ_all_col cases force Anew = Aold via
     Hsub_gen's d_consis_gen__refl_any (no narrowing needed). *)
 Corollary d_typing_narrow_consis_head : forall x Aold Anew Γ m e B,
-    d_typing m ((x ~ dbind_typ Aold) ++ Γ) e B ->
+    ((x ~ dbind_typ Aold) ++ Γ) ⊢[ m ] e ⇒ B ->
     syn_color_t Anew = syn_color_t Aold ->
-    d_typing m ((x ~ dbind_typ Anew) ++ Γ) e B.
+    ((x ~ dbind_typ Anew) ++ Γ) ⊢[ m ] e ⇒ B.
 Proof.
   intros x Aold Anew Γ m e B Hty Hsc.
   rewrite_env (nil ++ (x ~ dbind_typ Anew) ++ Γ).
@@ -750,9 +758,9 @@ Qed.
     forces A ∈ {typ_unit, typ_var, typ_arrow} — for which d_consis
     is structurally symmetric (RHS shape forced by LHS shape). *)
 Lemma d_consis_sym_inh : forall Γ A B,
-    d_consis nil Γ A B ->
+    nil ⨟ Γ ⊨ A ≈ B ->
     is_inh_typ A ->
-    d_consis nil Γ B A.
+    nil ⨟ Γ ⊨ B ≈ A.
 Proof.
   intros Γ A B Hc Hinh.
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
@@ -795,9 +803,9 @@ Qed.
     morph-based proof (since [binds] is duplicate-tolerant), but we
     keep it in the statement to track the paper's preconditions. *)
 Lemma d_typing_suffix_moving_singleton : forall Γ1 y b Γ2 m e A,
-    d_typing m (Γ1 ++ (y ~ b) ++ Γ2) e A ->
+    (Γ1 ++ (y ~ b) ++ Γ2) ⊢[ m ] e ⇒ A ->
     y `notin` dom Γ1 ->
-    d_typing m (Γ1 ++ Γ2 ++ (y ~ b)) e A.
+    (Γ1 ++ Γ2 ++ (y ~ b)) ⊢[ m ] e ⇒ A.
 Proof.
   intros Γ1 y b Γ2 m e A Hty Hnotin.
   eapply d_typing_ctx_morph; [|exact Hty].
@@ -811,9 +819,9 @@ Qed.
 
 (** d_pat analogue. *)
 Lemma d_pat_suffix_moving_singleton : forall Γ1 y b Γ2 m e P,
-    d_pat m (Γ1 ++ (y ~ b) ++ Γ2) e P ->
+    (Γ1 ++ (y ~ b) ++ Γ2) ⊢[ m ] e ⇨ P ->
     y `notin` dom Γ1 ->
-    d_pat m (Γ1 ++ Γ2 ++ (y ~ b)) e P.
+    (Γ1 ++ Γ2 ++ (y ~ b)) ⊢[ m ] e ⇨ P.
 Proof.
   intros Γ1 y b Γ2 m e P Hpat Hnotin.
   eapply d_pat_ctx_morph; [|exact Hpat].

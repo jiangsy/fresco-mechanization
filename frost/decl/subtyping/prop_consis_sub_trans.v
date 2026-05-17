@@ -26,7 +26,7 @@ Set Implicit Arguments.
     LHS-unwf (etag is not [d_wf_typ]). Used by [d_consis_sub_trans]
     __infer / __check sub-cases for LHS rigidity. *)
 Lemma d_consis_RHS_syn_color_eq : forall Δ Γ A X,
-    d_consis Δ Γ A (syn_color X) ->
+    Δ ⨟ Γ ⊨ A ≈ (syn_color X) ->
     d_wf_typ Γ A ->
     A = syn_color X /\ Δ = nil.
 Proof.
@@ -240,15 +240,15 @@ Qed.
       research-grade gap as D1's __app case. *)
 Lemma d_typing_lift_mono_mut :
     (forall m Γ e A,
-        d_typing m Γ e A ->
+        Γ ⊢[ m ] e ⇒ A ->
         m = mode_ti ->
         forall m_target,
           mono_typ A ->
           d_wf_denv Γ ->
-          d_sub m_target nil Γ A A ->
-          d_typing m_target Γ e A)
+          Γ ⊢[ m_target ; nil ] A ⊑ A ->
+          Γ ⊢[ m_target ] e ⇒ A)
  /\ (forall m Γ e P,
-        d_pat m Γ e P -> True).
+        Γ ⊢[ m ] e ⇨ P -> True).
 Proof.
   apply d_typing_pat_mut; intros; try trivial.
   - (* d_typing__unit *)
@@ -335,11 +335,11 @@ Admitted.
 (** Headline lemma: lift d_typing from mode_ti → any m_target at a fixed
     mono type. Derived from the mutual via [proj1]. *)
 Lemma d_typing_lift_mono : forall Γ e A m_target,
-    d_typing mode_ti Γ e A ->
+    Γ ⊢[ mode_ti ] e ⇒ A ->
     mono_typ A ->
     d_wf_denv Γ ->
-    d_sub m_target nil Γ A A ->
-    d_typing m_target Γ e A.
+    Γ ⊢[ m_target ; nil ] A ⊑ A ->
+    Γ ⊢[ m_target ] e ⇒ A.
 Proof.
   intros Γ e A m_target Hty Hmono Hwfd Hrefl.
   eapply (proj1 d_typing_lift_mono_mut); eauto.

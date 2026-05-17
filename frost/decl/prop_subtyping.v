@@ -34,11 +34,11 @@ Set Implicit Arguments.
     [consis_extends] split above. *)
 Lemma d_typing_sub_compose : forall Γ e A_prev A B m,
     is_base_term e ->
-    d_typing mode_ti Γ e A_prev ->
-    d_sub mode_ti nil Γ A_prev A ->
-    d_sub m nil Γ A B ->
+    Γ ⊢[ mode_ti ] e ⇒ A_prev ->
+    Γ ⊢[ mode_ti ; nil ] A_prev ⊑ A ->
+    Γ ⊢[ m ; nil ] A ⊑ B ->
     d_wf_denv Γ ->
-    d_typing m Γ e B.
+    Γ ⊢[ m ] e ⇒ B.
 Proof.
   intros Γ e A_prev A B m Hbase Hty_inner Hsub_inner Hsub Hwfdenv.
   (* Invert the [mode_ti] [d_sub]: only [__infer] survives (the

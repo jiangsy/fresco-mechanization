@@ -141,7 +141,7 @@ Inductive d_consis_gen :
 
 (** [d_consis] embeds into [d_consis_gen] — same rules across both. *)
 Lemma d_consis_gen__embed : forall Δ Γ T A,
-    d_consis Δ Γ T A ->
+    Δ ⨟ Γ ⊨ T ≈ A ->
     d_consis_gen Δ Γ T A.
 Proof.
   intros Δ Γ T A H. induction H.
@@ -420,7 +420,7 @@ Inductive d_typing_gen :
     generalised typing (the [__sub] rule's [d_sub] embeds via
     [d_sub_gen__embed]). Structural induction. *)
 Lemma d_typing_embed_gen : forall m Γ e A,
-    d_typing m Γ e A ->
+    Γ ⊢[ m ] e ⇒ A ->
     d_typing_gen m Γ e A.
 Proof.
   intros m Γ e A H. induction H.
@@ -454,7 +454,7 @@ Lemma d_sub_refl_mono_mode : forall Γ A m,
     mono_typ A ->
     mode_typ_compat m A ->
     d_wf_typ Γ A ->
-    d_sub m nil Γ A A.
+    Γ ⊢[ m ; nil ] A ⊑ A.
 Proof.
   intros Γ A m Hmono Hcompat. generalize dependent Γ.
   induction Hcompat; intros Γ Hwf.
@@ -602,7 +602,7 @@ Qed.
     is_inh-ness through d_consis (necessary to invoke
     [d_consis_sym_inh] in the reverse direction). *)
 Lemma d_consis_rhs_is_inh_typ : forall Γ A B,
-    d_consis nil Γ A B ->
+    nil ⨟ Γ ⊨ A ≈ B ->
     is_inh_typ A ->
     is_inh_typ B.
 Proof.
@@ -664,36 +664,10 @@ Proof.
   - apply is_typ__all with (L := L); auto.
 Qed.
 
-(** [d_consis_lhs_is_inh_for_typ]: when [d_consis nil Γ A B] fires and
-    A is [is_typ], A is is_inh_typ. d_consis LHS rules force A ∈
-    {typ_unit, typ_var, typ_arrow, typ_all_etag, typ_all_plain};
-    is_typ excludes etag/plain → so A ∈ {typ_unit, typ_var, typ_arrow},
-    which are all is_inh_typ. *)
-Lemma d_consis_lhs_is_inh_for_typ : forall Γ A B,
-    d_consis nil Γ A B ->
-    is_typ A ->
-    is_inh_typ A.
-Proof.
-  intros Γ A B Hc Hist.
-  remember (@nil atom) as Δ_nil eqn:HeqΔ.
-  induction Hc; subst.
-  - apply is_inh_typ__unit.
-  - apply is_inh_typ__var.
-  - exfalso. inversion Hist. (* __forall_inh_tagged: typ_all_etag — not is_typ *)
-  - exfalso. inversion Hist. (* __forall_syn_tagged: typ_all_etag — not is_typ *)
-  - (* __forall_syn (post-refactor): A = typ_all_col colour_syn — is_typ
-       ✓ but NOT is_inh_typ. Lemma is FALSE in this case; admitted. *)
-    admit.
-  - (* __forall_inh: A = typ_all_col colour_inh A_inner. is_typ ✓,
-       is_inh_typ ✓ via cofinite IH. *)
-    inversion Hist as [| | | L0 c0 A0 Hist_inner Heq]; subst.
-    apply is_inh_typ__all with (L := L `union` L0).
-    intros X HX.
-    eapply H0; eauto.
-  - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
-    inversion Hist; subst.
-    apply is_inh_typ__arrow; auto.
-Admitted.
+(* [d_consis_lhs_is_inh_for_typ] (formerly here) DELETED 2026-05-17 —
+   provably FALSE post-refactor: the new [d_consis__forall_syn] rule
+   admits [typ_all_col colour_syn] LHS which is [is_typ] but NOT
+   [is_inh_typ]. Had zero callers across the codebase. *)
 
 (** [d_consis_gen_preserves_wf]: d_consis_gen preserves wf on RHS.
     Every forall rule's RHS is [typ_all_col _ A0] with per-X RHS-wf
@@ -795,9 +769,9 @@ Qed.
     equal [syn_color_t] ([d_consis_gen_syn_color_eq]), which is exactly
     the premise [d_typing_narrow_consis_head] needs. *)
 Lemma d_typing_narrow_consis_head_arg : forall x Aold Anew Γ m e B,
-    d_typing m ((x ~ dbind_typ Aold) ++ Γ) e B ->
+    ((x ~ dbind_typ Aold) ++ Γ) ⊢[ m ] e ⇒ B ->
     d_consis_gen nil Γ Aold Anew ->
-    d_typing m ((x ~ dbind_typ Anew) ++ Γ) e B.
+    ((x ~ dbind_typ Anew) ++ Γ) ⊢[ m ] e ⇒ B.
 Proof.
   intros x Aold Anew Γ m e B Hty Hcg.
   apply d_typing_narrow_consis_head with (Aold := Aold); auto.
@@ -1147,7 +1121,7 @@ Lemma d_consis_to_d_sub_gen : forall m Γ T A,
     mode_typ_compat m A ->
     d_wf_typ Γ T ->
     is_utyp T ->
-    d_consis nil Γ T A ->
+    nil ⨟ Γ ⊨ T ≈ A ->
     d_sub_gen m nil Γ T A.
 Proof.
   intros m Γ T A Hcompat HwfT Hut Hc. generalize dependent T.
@@ -1184,7 +1158,7 @@ Qed.
     d_consis_gen at outer Δ = nil. The Δ = nil restriction avoids a
     permutation issue in d_consis_compose. *)
 Lemma d_consis_extends_d_consis_gen : forall Γ T A B,
-    d_consis nil Γ T A ->
+    nil ⨟ Γ ⊨ T ≈ A ->
     d_consis_gen nil Γ A B ->
     d_wf_typ Γ T ->
     d_consis_gen nil Γ T B.
@@ -1301,7 +1275,7 @@ Qed.
 Lemma d_consis_sub_trans_gen_nil : forall m Γ A B,
     d_sub_gen m nil Γ A B ->
     forall T,
-      d_consis nil Γ T A ->
+      nil ⨟ Γ ⊨ T ≈ A ->
       d_wf_typ Γ T ->
       d_sub_gen m nil Γ T B.
 Proof.
