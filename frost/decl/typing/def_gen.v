@@ -99,36 +99,51 @@ Set Implicit Arguments.
     — [d_consis_gen_trans] goes through entirely within gen-land. The
     original [d_consis] embeds via the [d_consis_gen__embed] LEMMA
     (proved by induction below). *)
+(** Notations for the generalised relations. Mirror the non-gen
+    notations from [decl/def_extra.v], distinguished by a subscript
+    [ᵍ] (modifier letter small g) on the turnstile/equiv symbol:
+    - [Δ ⨟ Γ ⊨ᵍ T ≈ A] for [d_consis_gen Δ Γ T A]
+    - [Γ ⊢ᵍ[ M ; Δ ] T ⊑ A] for [d_sub_gen M Δ Γ T A]
+    - [Γ ⊢ᵍ[ M ] e ⇒ A] for [d_typing_gen M Γ e A] *)
+Reserved Notation "Δ ⨟ Γ ⊨ᵍ T ≈ A"
+  (at level 75, Γ at level 75, T at level 74, A at level 74, no associativity).
+Reserved Notation "Γ ⊢ᵍ[ M ; Δ ] T ⊑ A"
+  (at level 75, M at level 0, Δ at level 0, T at level 74, A at level 74,
+   no associativity).
+Reserved Notation "Γ ⊢ᵍ[ M ] e ⇒ A"
+  (at level 75, M at level 0, e at level 74, A at level 74,
+   no associativity).
+
 (* Post-refactor (typ_all_plain removed from typ): d_consis_gen mirrors
-   d_consis exactly — 4 forall rules, no _untagged variants (those were
-   paper-unfaithful). Rule order: tagged-inh, tagged-syn, syn, inh. *)
+   d_consis exactly — plus the δ-refactor's untagged variants and the
+   new __forall_syn_tagged_both rule. *)
 Inductive d_consis_gen :
     list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
 | d_consis_gen__unit : forall Γ,
-    d_consis_gen nil Γ typ_unit typ_unit
+    nil ⨟ Γ ⊨ᵍ typ_unit ≈ typ_unit
 | d_consis_gen__var : forall Γ X,
     binds X dbind_tvar Γ ->
-    d_consis_gen nil Γ (typ_var_f X) (typ_var_f X)
+    nil ⨟ Γ ⊨ᵍ (typ_var_f X) ≈ (typ_var_f X)
 | d_consis_gen__forall_inh_tagged : forall L Δ Γ ε T A,
     (forall X, X `notin` L ->
-       d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
     ~ List.In ε Δ ->
-    d_consis_gen (ε :: Δ) Γ (typ_all_etag ε T) (typ_all_col colour_inh A)
+    (ε :: Δ) ⨟ Γ ⊨ᵍ (typ_all_etag ε T) ≈ (typ_all_col colour_inh A)
 | d_consis_gen__forall_inh_untagged : forall L Δ Γ T A,
     (* Mirror of d_consis__forall_inh_untagged (δ=· case of EqForallInh). *)
     (forall X, X `notin` L ->
-       d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis_gen Δ Γ (typ_all_col colour_syn T) (typ_all_col colour_inh A)
+    Δ ⨟ Γ ⊨ᵍ (typ_all_col colour_syn T) ≈ (typ_all_col colour_inh A)
 | d_consis_gen__forall_syn_tagged : forall L Δ Γ ε T A,
     (forall X, X `notin` L ->
-       d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis_gen Δ Γ (typ_all_etag ε T) (typ_all_col colour_syn A)
+    Δ ⨟ Γ ⊨ᵍ (typ_all_etag ε T) ≈ (typ_all_col colour_syn A)
 (* Paper [ForallTagSyn] (syntax-directed.tex:99-105) at δ=ε case:
    same ε on both sides, Δ unchanged. The "tagged ≈ tagged" rule
    that the δ-refactor missed. Required to derive d_consis_gen on
@@ -138,27 +153,28 @@ Inductive d_consis_gen :
    to discharge this case as vacuous. *)
 | d_consis_gen__forall_syn_tagged_both : forall L Δ Γ ε T A,
     (forall X, X `notin` L ->
-       d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis_gen Δ Γ (typ_all_etag ε T) (typ_all_etag ε A)
+    Δ ⨟ Γ ⊨ᵍ (typ_all_etag ε T) ≈ (typ_all_etag ε A)
 | d_consis_gen__forall_syn : forall L Δ Γ T A,
     (forall X, X `notin` L ->
-       d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis_gen Δ Γ (typ_all_col colour_syn T) (typ_all_col colour_syn A)
+    Δ ⨟ Γ ⊨ᵍ (typ_all_col colour_syn T) ≈ (typ_all_col colour_syn A)
 | d_consis_gen__forall_inh : forall L Δ Γ T A,
     (forall X, X `notin` L ->
-       d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis_gen Δ Γ (typ_all_col colour_inh T) (typ_all_col colour_inh A)
+    Δ ⨟ Γ ⊨ᵍ (typ_all_col colour_inh T) ≈ (typ_all_col colour_inh A)
 | d_consis_gen__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,
-    d_consis_gen Δ1 Γ T1 A1 ->
-    d_consis_gen Δ2 Γ T2 A2 ->
+    Δ1 ⨟ Γ ⊨ᵍ T1 ≈ A1 ->
+    Δ2 ⨟ Γ ⊨ᵍ T2 ≈ A2 ->
     list_disjoint Δ1 Δ2 ->
-    d_consis_gen (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
+    (Δ1 ++ Δ2) ⨟ Γ ⊨ᵍ (typ_arrow T1 T2) ≈ (typ_arrow A1 A2)
+where "Δ ⨟ Γ ⊨ᵍ T ≈ A" := (d_consis_gen Δ Γ T A) : type_scope.
 
 (** [d_consis] embeds into [d_consis_gen] — same rules across both. *)
 Lemma d_consis_gen__embed : forall Δ Γ T A,
@@ -327,8 +343,8 @@ Qed.
 Inductive d_sub_gen :
     mode -> list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
 | d_sub_gen__embed : forall m Δ Γ T A,
-    d_sub m Δ Γ T A ->
-    d_sub_gen m Δ Γ T A
+    Γ ⊢[ m ; Δ ] T ⊑ A ->
+    Γ ⊢ᵍ[ m ; Δ ] T ⊑ A
 (* [d_sub_gen__infer_gen] / [d_sub_gen__check_gen] — the generalised
    TI/TC subtyping rules (paper syntax-directed.tex:43-53): the
    syntax-directed [typsub] at TI/TC takes the GENERALISED
@@ -336,14 +352,14 @@ Inductive d_sub_gen :
    [d_sub], so these add the [d_consis_gen]-based variants. *)
 | d_sub_gen__infer_gen : forall Γ T A,
     (* mirrors [d_sub__infer]: bases [T], [A] each painted [syn]. *)
-    d_consis_gen nil Γ (syn_color T) (syn_color A) ->
-    d_sub_gen mode_ti nil Γ (syn_color T) (syn_color A)
+    nil ⨟ Γ ⊨ᵍ (syn_color T) ≈ (syn_color A) ->
+    Γ ⊢ᵍ[ mode_ti ; nil ] (syn_color T) ⊑ (syn_color A)
 | d_sub_gen__check_gen : forall Δ Γ T A,
     (* mirrors [d_sub__check]: base [T] painted [syn] (and guarded),
        base [A] painted [inh]. *)
     guarded_typ (syn_color T) ->
-    d_consis_gen Δ Γ (syn_color T) (inh_color A) ->
-    d_sub_gen mode_tc Δ Γ (syn_color T) (inh_color A)
+    Δ ⨟ Γ ⊨ᵍ (syn_color T) ≈ (inh_color A) ->
+    Γ ⊢ᵍ[ mode_tc ; Δ ] (syn_color T) ⊑ (inh_color A)
 (* [d_sub_gen__refl_any] — restricted to [mono_typ A].
 
    An earlier version used [mode_typ_compat m A] as the premise, but
@@ -364,15 +380,16 @@ Inductive d_sub_gen :
     mono_typ A ->
     mode_typ_compat m A ->
     d_wf_typ Γ A ->
-    d_sub_gen m nil Γ A A
+    Γ ⊢ᵍ[ m ; nil ] A ⊑ A
 | d_sub_gen__forall_r : forall L Δ Γ T A,
     (forall X, X `notin` L ->
-       d_sub_gen mode_tc Δ ((X ~ dbind_tvar) ++ Γ) T (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_sub_gen mode_tc Δ Γ T (typ_all_col colour_inh A)
+       ((X ~ dbind_tvar) ++ Γ) ⊢ᵍ[ mode_tc ; Δ ] T ⊑ (open_typ_wrt_typ A (typ_var_f X))) ->
+    Γ ⊢ᵍ[ mode_tc ; Δ ] T ⊑ (typ_all_col colour_inh A)
 | d_sub_gen__arg : forall Δ1 Δ2 Γ m T1 T2 A1 A2,
-    d_consis_gen Δ1 Γ T1 A1 ->
-    d_sub_gen m Δ2 Γ T2 A2 ->
-    d_sub_gen (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
+    Δ1 ⨟ Γ ⊨ᵍ T1 ≈ A1 ->
+    Γ ⊢ᵍ[ m ; Δ2 ] T2 ⊑ A2 ->
+    Γ ⊢ᵍ[ (mode_fn m) ; (Δ1 ++ Δ2) ] (typ_arrow T1 T2) ⊑ (typ_arrow A1 A2)
+where "Γ ⊢ᵍ[ M ; Δ ] T ⊑ A" := (d_sub_gen M Δ Γ T A) : type_scope.
 
 (** ** Generalised typing [d_typing_gen].
 
@@ -396,58 +413,59 @@ Inductive d_typing_gen :
   mode -> list (atom * dbind) -> exp -> typ -> Prop :=
 | d_typing_gen__unit : forall Γ,
     mode_typ_compat mode_ti typ_unit ->
-    d_typing_gen mode_ti Γ exp_unit typ_unit
+    Γ ⊢ᵍ[ mode_ti ] exp_unit ⇒ typ_unit
 | d_typing_gen__var : forall Γ x A,
     (* mirrors [d_typing__var]: reads back the (already [syn]-painted)
        context binding. *)
     binds x (dbind_typ A) Γ ->
-    d_typing_gen mode_ti Γ (exp_var_f x) A
+    Γ ⊢ᵍ[ mode_ti ] (exp_var_f x) ⇒ A
 | d_typing_gen__anno : forall Γ e A,
     (* mirrors [d_typing__anno]: base [A : ctyp], premise + term
        annotation [inh]-painted, conclusion [syn]-painted. *)
-    d_typing_gen mode_tc Γ e (inh_color A) ->
-    d_typing_gen mode_ti Γ (exp_anno e (inh_color A)) (syn_color A)
+    Γ ⊢ᵍ[ mode_tc ] e ⇒ (inh_color A) ->
+    Γ ⊢ᵍ[ mode_ti ] (exp_anno e (inh_color A)) ⇒ (syn_color A)
 | d_typing_gen__sub : forall Γ m e A B,
     is_base_term e ->
-    d_typing_gen mode_ti Γ e A ->
-    d_sub_gen m nil Γ A B ->
-    d_typing_gen m Γ e B
+    Γ ⊢ᵍ[ mode_ti ] e ⇒ A ->
+    Γ ⊢ᵍ[ m ; nil ] A ⊑ B ->
+    Γ ⊢ᵍ[ m ] e ⇒ B
 | d_typing_gen__freeze : forall Γ e A,
-    d_typing_gen mode_ti Γ e A ->
-    d_typing_gen mode_tc Γ (exp_freeze e) A
+    Γ ⊢ᵍ[ mode_ti ] e ⇒ A ->
+    Γ ⊢ᵍ[ mode_tc ] (exp_freeze e) ⇒ A
 | d_typing_gen__forall : forall L Γ e A,
     is_value e ->
     (forall X, X `notin` L ->
-       d_typing_gen mode_tc ((X ~ dbind_tvar) ++ Γ) e
+       ((X ~ dbind_tvar) ++ Γ) ⊢ᵍ[ mode_tc ] e ⇒
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_typing_gen mode_tc Γ e (typ_all_col colour_inh A)
+    Γ ⊢ᵍ[ mode_tc ] e ⇒ (typ_all_col colour_inh A)
 | d_typing_gen__abs : forall L Γ m e A B,
     (* mirrors [d_typing__abs]: base [A], context binding [syn]-painted,
        conclusion arrow-arg [inh]-painted. *)
     d_wf_typ Γ (inh_color A) ->
     (forall x, x `notin` L ->
-       d_typing_gen (decr_mode m) ((x ~ dbind_typ (syn_color A)) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing_gen m Γ (exp_abs e) (typ_arrow (inh_color A) B)
+       ((x ~ dbind_typ (syn_color A)) ++ Γ) ⊢ᵍ[ (decr_mode m) ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇒ B) ->
+    Γ ⊢ᵍ[ m ] (exp_abs e) ⇒ (typ_arrow (inh_color A) B)
 | d_typing_gen__abs_anno : forall L Γ m e A B,
     (* mirrors [d_typing__abs_anno]: base [A : ctyp], context binding
        AND conclusion arrow-arg both [syn]-painted; term carries
        [inh_color A] (a [typ]). *)
     d_wf_typ Γ (syn_color A) ->
     (forall x, x `notin` L ->
-       d_typing_gen (decr_mode m) ((x ~ dbind_typ (syn_color A)) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing_gen m Γ (exp_abs_anno (inh_color A) e) (typ_arrow (syn_color A) B)
+       ((x ~ dbind_typ (syn_color A)) ++ Γ) ⊢ᵍ[ (decr_mode m) ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇒ B) ->
+    Γ ⊢ᵍ[ m ] (exp_abs_anno (inh_color A) e) ⇒ (typ_arrow (syn_color A) B)
 | d_typing_gen__app : forall Γ m e1 e2 P P' B,
     (* mirrors [d_typing__app]: base skeleton [P : ctyp], [d_pat] reads
        its [syn] painting, [d_refine_syn] its [inh] painting; [P' : typ]
        is the refinement output / function arg; arg checked at
        [inh_color (erase P')]. *)
-    d_pat mode_tc Γ e2 (syn_color P) ->
-    d_refine_syn nil Γ (inh_color P) P' ->
-    d_typing_gen (mode_fn m) Γ e1 (typ_arrow P' B) ->
-    d_typing_gen mode_tc Γ e2 (inh_color (erase P')) ->
-    d_typing_gen m Γ (exp_app e1 e2) B.
+    Γ ⊢[ mode_tc ] e2 ⇨ (syn_color P) ->
+    nil ⨟ Γ ⊢ᵣ (inh_color P) ⊳ P' ->
+    Γ ⊢ᵍ[ (mode_fn m) ] e1 ⇒ (typ_arrow P' B) ->
+    Γ ⊢ᵍ[ mode_tc ] e2 ⇒ (inh_color (erase P')) ->
+    Γ ⊢ᵍ[ m ] (exp_app e1 e2) ⇒ B
+where "Γ ⊢ᵍ[ M ] e ⇒ A" := (d_typing_gen M Γ e A) : type_scope.
 
 (** [d_typing] embeds into [d_typing_gen]: every original typing is a
     generalised typing (the [__sub] rule's [d_sub] embeds via
