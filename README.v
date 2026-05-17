@@ -48,12 +48,12 @@ Require Import src.frost.decl.prop_skeleton.
 Check d_typing_general_subsumption_via_gen.
 
 (** ** Lemma 3.2 — Soundness of subtyping.
-    Paper [declarative.tex:1095]. Mechanised as [d_sub_sound]. Status:
+    Paper [declarative.tex:1101]. Mechanised as [d_sub_sound]. Status:
     stated under [is_typ A] precondition; [Qed]. *)
 Check d_sub_sound.
 
 (** ** Lemma 3.3 — No guessing of polytypes.
-    Paper [declarative.tex:1102] (paper itself flags as "sketchy").
+    Paper [declarative.tex:1108] (paper itself flags as "sketchy").
     Strict-equality form is PROVABLY FALSE — concrete counter-example
     documented inline in [prop_subtyping.v]. Status: [Admitted] as a
     paper-claim placeholder (to be tweaked to a weaker form in a
@@ -61,11 +61,11 @@ Check d_sub_sound.
 Check d_sub_no_guess_uniqueness.
 
 (** ** Lemma 3.4 — Refinement preserves well-formedness.
-    Paper [declarative.tex:1380]. Status: [Qed]. *)
+    Paper [declarative.tex:1386]. Status: [Qed]. *)
 Check d_refine_preserves_wf.
 
 (** ** Lemma 3.7 — Preservation of Skeleton Well-formedness.
-    Paper [declarative.tex:1970]. Mechanised as the d_pat half of the
+    Paper [declarative.tex:1976]. Mechanised as the d_pat half of the
     mutual [d_typing_pat_preserves_wf]. Status: [Qed].
 
     See also [d_pat_preserves_skel_wf] (specialised wrapper in
@@ -74,13 +74,13 @@ Check d_typing_pat_preserves_wf.
 Check d_pat_preserves_skel_wf.
 
 (** ** Lemma 3.8 — Validity of skeleton inference.
-    Paper [declarative.tex:1981]. Status: [Admitted] (depends on
+    Paper [declarative.tex:1987]. Status: [Admitted] (depends on
     Phase 3 refinement reflexivity + d_pat_consis ghost-case
     narrowing). *)
 Check d_pat_validity.
 
 (** ** Lemma 3.9 — Safety of skeleton inference.
-    Paper [declarative.tex:1986]. Status: [Admitted] (depends on
+    Paper [declarative.tex:1992]. Status: [Admitted] (depends on
     principal-skeleton construction — a join operation on skeletons
     under refinement). *)
 Check d_pat_safety.

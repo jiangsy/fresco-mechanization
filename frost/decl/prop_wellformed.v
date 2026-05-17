@@ -1102,8 +1102,7 @@ Proof.
     eapply d_pat_sub_implies_is_syn_skel; eauto.
 Qed.
 
-(** * Paper Lemma 3.7 (Preservation of Skeleton Well-formedness).
-    [paper-ref: name:"Preservation of Skeleton Well-formedness"]
+(** * Paper Lemma 3.7 (Preservation of Skeleton Well-formedness). [paper-ref: name:"Preservation of Skeleton Well-formedness"]
 
     Mutual statement: well-typed terms yield wf result types
     (plumbing — not paper-stated), and well-patterned terms yield wf
