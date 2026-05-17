@@ -361,6 +361,39 @@ Proof.
     apply H0. auto.
 Qed.
 
+(** [d_wf_ttyp_nil_d_wf_typ]: at empty Δ, [d_wf_ttyp] degenerates to
+    [d_wf_typ] (only unit/var/arrow rules fire at nil Δ; [typ_all_etag]
+    requires non-nil Δ via ε :: Δ). *)
+Lemma d_wf_ttyp_nil_d_wf_typ : forall Γ ph,
+    nil ⨟ Γ ⊢ₜₜ ph ->
+    d_wf_typ Γ ph.
+Proof.
+  intros Γ ph H. remember (@nil atom) as Δ_nil eqn:HΔ.
+  induction H; subst.
+  - apply d_wf_typ__unit.
+  - apply d_wf_typ__var; assumption.
+  - apply app_eq_nil in HΔ. destruct HΔ as [HΔ1 HΔ2]. subst.
+    apply d_wf_typ__arrow; auto.
+  - discriminate HΔ.
+Qed.
+
+(** [d_wf_ttyp_nil_mono_typ]: at empty Δ, [d_wf_ttyp] also implies
+    [mono_typ]. *)
+Lemma d_wf_ttyp_nil_mono_typ : forall Γ ph,
+    nil ⨟ Γ ⊢ₜₜ ph ->
+    mono_typ ph.
+Proof.
+  intros Γ ph H. remember (@nil atom) as Δ_nil eqn:HΔ.
+  induction H; subst.
+  - apply mono_typ__unit.
+  - apply mono_typ__var.
+  - apply app_eq_nil in HΔ. destruct HΔ as [HΔ1 HΔ2]. subst.
+    apply mono_typ__arrow; auto.
+  - discriminate HΔ.
+Qed.
+
+(* [d_wf_typ_open_with_ttyp_nil] defined after [d_wf_typ_subst] below. *)
+
 Lemma d_wf_utyp_lc : forall Δ Γ A, Δ ⨟ Γ ⊢ᵤₜ A -> lc_typ A.
 Proof.
   intros Δ Γ A H. induction H.
@@ -548,6 +581,23 @@ Proof.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HB)].
     rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
     apply H0; auto.
+Qed.
+
+(** [d_wf_typ_open_with_ttyp_nil]: opening a cofinitely-wf body with a
+    [d_wf_ttyp nil]-wf type produces wf. Uses [d_wf_typ_subst]. *)
+Lemma d_wf_typ_open_with_ttyp_nil : forall Γ L T ph,
+    (forall X, X `notin` L ->
+       d_wf_typ ((X ~ dbind_tvar) ++ Γ) (open_typ_wrt_typ T (typ_var_f X))) ->
+    nil ⨟ Γ ⊢ₜₜ ph ->
+    d_wf_typ Γ (open_typ_wrt_typ T ph).
+Proof.
+  intros Γ L T ph Hcofin Hwfph.
+  pick fresh X for (L `union` ftvar_in_typ T `union` dom Γ).
+  rewrite (subst_typ_in_typ_intro X T ph); [| fsetdec].
+  rewrite_env (nil ++ Γ).
+  apply d_wf_typ_subst with (X := X).
+  - simpl. apply Hcofin. fsetdec.
+  - apply d_wf_ttyp_nil_d_wf_typ. exact Hwfph.
 Qed.
 
 (** [d_wf_skel] substitution requires the substituted-in [B] to be a

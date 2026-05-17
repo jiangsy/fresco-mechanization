@@ -202,12 +202,74 @@ Proof.
   - (* d_sub__forall_l_tagged: A = typ_all_etag, but d_consis RHS is
        never typ_all_etag. *)
     inversion Hc.
-  - (* d_sub__forall_l_untagged (NEW): A = typ_all_col colour_syn. d_consis
-       RHS CAN be typ_all_col colour_syn (via several rules). Non-trivial
-       composition needed; admitted. *)
-    admit.
+  - (* d_sub__forall_l_untagged (NEW δ): A = typ_all_col colour_syn T_rule.
+       d_consis RHS = typ_all_col colour_syn matches __forall_syn_tagged
+       (vacuous via HwfT — d_wf_typ excludes typ_all_etag LHS) or
+       __forall_syn (T0 = typ_all_col colour_syn T0_inner).
+
+       For __forall_syn: substitute the rule's ph into Hc's cofinite
+       body, then compose with the inner d_sub via IH and re-apply
+       d_sub__forall_l_untagged on output.
+
+       For the substitution to apply, ph must be mono (which holds when
+       rule's inner Δ' = nil via [d_wf_ttyp_nil_mono_typ]). For ph
+       non-mono (rule's Δ' ≠ nil), a more general subst lemma over
+       d_wf_ttyp ph is needed — admit pending that. *)
+    inversion Hc; subst.
+    + (* __forall_syn_tagged: T0 = typ_all_etag — not d_wf_typ. *)
+      inversion HwfT.
+    + (* __forall_syn: T0 = typ_all_col colour_syn T_c, body cofinite. *)
+      destruct Δ' as [| ε_first rest_Δ' ].
+      * (* Δ' = nil: rule's ph is mono. Substitute X := ph in Hc's body
+           and compose via IH. *)
+        assert (Hph_mono : mono_typ ph)
+          by (apply d_wf_ttyp_nil_mono_typ in H1; exact H1).
+        assert (Hph_wf : d_wf_typ Γ ph)
+          by (apply d_wf_ttyp_nil_d_wf_typ in H1; exact H1).
+        (* Match Hc's body to find its existentials *)
+        match goal with
+        | Hc_body : forall X : atom, X `notin` ?Lc ->
+                    _ ⨟ _ ⊨ open_typ_wrt_typ ?Tbody_lhs _ ≈ open_typ_wrt_typ ?Tbody_rhs _
+          |- _ =>
+            pick fresh X0 for
+              (Lc `union` L `union` dom Γ `union` ftvar_in_typ Tbody_lhs
+               `union` ftvar_in_typ Tbody_rhs `union` ftvar_in_typ ph);
+            assert (HX0_Lc : X0 `notin` Lc) by fsetdec;
+            pose proof (Hc_body X0 HX0_Lc) as Hc_body_X0
+        end.
+        apply d_consis_subst_mono
+          with (Γ1 := nil) (X := X0) (Γ2 := Γ) (B := ph) in Hc_body_X0;
+          [| exact Hph_mono | exact Hph_wf ].
+        simpl in Hc_body_X0.
+        (* Rewrite subst (open _ X0) into (open _ ph). *)
+        match type of Hc_body_X0 with
+        | _ ⨟ _ ⊨ subst_typ_in_typ _ _ (open_typ_wrt_typ ?T1 _) ≈
+                  subst_typ_in_typ _ _ (open_typ_wrt_typ ?T2 _) =>
+            rewrite <- (subst_typ_in_typ_intro X0 T1 ph) in Hc_body_X0 by fsetdec;
+            rewrite <- (subst_typ_in_typ_intro X0 T2 ph) in Hc_body_X0 by fsetdec
+        end.
+        (* Now Hc_body_X0 : d_consis Δ0 Γ (open T_c ph) (open T ph). *)
+        (* Apply IHHs with Hc_body_X0 and the rule's inner d_sub. *)
+        rewrite app_nil_r in *.
+        edestruct IHHs as [Δc [Hperm Hsub_body]];
+          [ exact Hc_body_X0
+          | exact Hdis
+          | exact Hti
+          | (* d_wf_typ Γ (open T_c ph): from HwfT cofinite + ph wf. *)
+            inversion HwfT; subst;
+            eapply d_wf_typ_open_with_ttyp_nil; eassumption
+          | ].
+        (* Build output via d_sub__forall_l_untagged. *)
+        exists Δc. split; [exact Hperm |].
+        apply d_sub__forall_l_untagged with (Δ' := @nil atom) (ph := ph); auto.
+        -- apply list_disjoint_nil_l.
+        -- rewrite app_nil_r. exact Hsub_body.
+      * (* Δ' = ε_first :: rest_Δ': ph non-mono; admitted pending
+           generalised d_consis subst lemma over d_wf_ttyp. *)
+        admit.
 Admitted.
-(* d_consis_sub_trans: 1 admit post-δ-refactor (new d_sub rule). *)
+(* d_consis_sub_trans: 1 residual admit post-δ-refactor — non-mono ph
+   case at the new d_sub__forall_l_untagged. Mono ph case closes. *)
 
 (** Narrowed corollary: both Δ-sides nil. The [d_wf_typ Γ T]
     precondition is now actively used by [d_consis_sub_trans] to

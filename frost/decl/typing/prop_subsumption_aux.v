@@ -351,40 +351,10 @@ Proof.
     + eapply IH; [ exact HwfA2 | exact Hsa_gen | eassumption ].
 Qed.
 
-(** [d_wf_ttyp_nil_d_wf_typ]: at empty Δ, [d_wf_ttyp] degenerates to
-    [d_wf_typ] (the only [d_wf_ttyp] rules with [Δ = nil] are unit /
-    var / arrow — same shapes as [d_wf_typ] base cases). [typ_all_etag]
-    requires non-nil Δ, so it's vacuous here. *)
-Lemma d_wf_ttyp_nil_d_wf_typ : forall Γ ph,
-    nil ⨟ Γ ⊢ₜₜ ph ->
-    d_wf_typ Γ ph.
-Proof.
-  intros Γ ph H. remember (@nil atom) as Δ_nil eqn:HΔ.
-  induction H; subst.
-  - apply d_wf_typ__unit.
-  - apply d_wf_typ__var; assumption.
-  - apply app_eq_nil in HΔ. destruct HΔ as [HΔ1 HΔ2]. subst.
-    apply d_wf_typ__arrow; auto.
-  - discriminate HΔ.   (* ε :: Δ ≠ nil *)
-Qed.
+(* [d_wf_ttyp_nil_d_wf_typ] and [d_wf_ttyp_nil_mono_typ] now live in
+   [decl/prop_wellformed.v] for shared use across subtyping/typing. *)
 
-(** [d_wf_typ_open_with_ttyp_nil]: opening a cofinitely-wf body with a
-    [d_wf_ttyp nil]-wf type produces wf. Standard substitution pattern
-    using [subst_typ_in_typ_intro]. *)
-Lemma d_wf_typ_open_with_ttyp_nil : forall Γ L T ph,
-    (forall X, X `notin` L ->
-       d_wf_typ ((X ~ dbind_tvar) ++ Γ) (open_typ_wrt_typ T (typ_var_f X))) ->
-    nil ⨟ Γ ⊢ₜₜ ph ->
-    d_wf_typ Γ (open_typ_wrt_typ T ph).
-Proof.
-  intros Γ L T ph Hcofin Hwfph.
-  pick fresh X for (L `union` ftvar_in_typ T `union` dom Γ).
-  rewrite (subst_typ_in_typ_intro X T ph); [| fsetdec].
-  rewrite_env (nil ++ Γ).
-  apply d_wf_typ_subst with (X := X).
-  - simpl. apply Hcofin. fsetdec.
-  - apply d_wf_ttyp_nil_d_wf_typ. exact Hwfph.
-Qed.
+(* [d_wf_typ_open_with_ttyp_nil] also moved to [decl/prop_wellformed.v]. *)
 
 (** [d_sub_gen_trans_forall_l_untagged_helper]: inner transitivity for
     the [d_sub__forall_l_untagged] case of [d_sub_gen_trans] at
