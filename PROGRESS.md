@@ -9,17 +9,43 @@ Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 ## Status (current — 2026-05-17)
 
-**Build:** GREEN. Full `make coq` clean.
+**Build:** 🔴 RED — δ-encoding refactor (commit `0bf2815`) in progress.
+Stops mid-cascade at `prop_subsumption_aux.v:395`. Pre-refactor build
+(commit `8701b4a`) was green.
 
-**Flagship theorems (D1 / D12):** Both **Qed and "Closed under the global context"** — no remaining transitive axioms. `Print Assumptions d_typing_general_subsumption_via_gen` and `Print Assumptions d_typing_general_subsumption_gen` both report zero axioms.
+**Flagship theorems (D1 / D12):** Status uncertain after the δ refactor.
+Both `d_typing_general_subsumption_via_gen` and `_gen` rely transitively
+on `d_consis_gen_trans` (now WHOLESALE admit) and several other
+admitted lemmas — `Print Assumptions` will almost certainly NOT report
+"Closed under the global context" once the build is back green. Needs
+re-verification.
 
-**Admit counts (frost/decl/):** 15 admits across 8 files (was 20, -5 from the 2026-05-17 cleanup: 4 false admits + the dead-code `d_typing_lift_mono_mut`/`d_typing_lift_mono` pair). **None are transitively reachable from D1 or D12.** Categories:
+**Pre-refactor flagship status (commit `8701b4a`)**: both Qed and "Closed under the global context", zero axioms.
+
+**Admit counts (frost/decl/):** 15 base admits (pre-refactor) + **16 new
+admits from the δ-encoding refactor** (commit `0bf2815`). Of the 16 new:
+- **6 are PROVABLY FALSE post-refactor** (lemma's conclusion now
+  contradicts the new rule's behaviour — needs precondition strengthening,
+  not just proof completion):
+  - `d_consis_LHS_mono_wf` / `_is_typ_mono`
+  - `d_sub_LHS_mono_wf` / `_mono_RHS_eq`
+  - `d_consis_empty_eq`
+  - `d_consis_gen_lhs_syn_eq`
+- **3 are wholesale-admitted** with original body preserved as
+  `(* ... *)` for re-introduction: `d_consis_compose`,
+  `d_consis_gen_trans`, `d_consis_extends_d_consis_gen`.
+- Remaining 7 are sub-case admits with spec links.
+
+See [`docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md`](../docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md)
+and the 2026-05-17 (δ-refactor) entry in Part 2 below.
+
+**Pre-refactor admit categories (still apply to baseline):**
 - Phase 2.E skeleton inference (D6, D7) — 2 admits
 - Phase 2.D research-grade (stability S1/S2, expressiveness E1) — 6 admits in `prop_typing.v`
 - Phase 2.D narrowing / type subst — 3 admits in `typing/prop_weakening.v`
 - Post-refactor false helper (lemma is FALSE under new rule set; kept with explanatory comment for now) — 1 admit (`d_consis_gen_narrow_consis` re-encoding gap, see also `d_typing_narrow_consis`)
 - Paper-flagged (D3) + colour-tag translation (`d_sub_complete_mono`) — 2 admits in `prop_sub_sound.v`
-- `d_typing_gen_lift_mono` __app — 1 admit (no longer reachable; broken via `Hbody_at_tc` refactor). The non-gen sibling `d_typing_lift_mono_mut` / `d_typing_lift_mono` was deleted 2026-05-17 (zero callers).
+- `d_typing_gen_lift_mono` __app — 1 admit (was no longer reachable pre-refactor; broken via `Hbody_at_tc` refactor). The non-gen sibling `d_typing_lift_mono_mut` / `d_typing_lift_mono` was deleted 2026-05-17 (zero callers).
 
 **Admit counts (frost/algo/):** 6 admits — all Phase 3.B/C HEADLINE soundness/completeness theorems.
 
@@ -152,6 +178,77 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 # Part 2: Daily progress
 
 Session-by-session closure log. Most recent first.
+
+## 2026-05-17 — δ-encoding refactor (WIP, commit `0bf2815`)
+
+**Spec:** [`docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md`](../docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md)
+
+**Motivation.** The paper's `\sublab{ForallL}` rule (declarative.tex:923–930) and four
+analogues (declarative.tex:946, 954, 1814, 1837, 1845) allow the potential tag
+`δ ∈ {·, ε}`. The post-`typ_all_plain` refactor (2026-05-15) dropped the
+`δ = ·` cases with a note "not paper-faithful" — they ARE paper-faithful.
+The gap surfaced when trying to generalise `d_typing_order_irrel_adj` to
+the n-quantifier version: with `typ_all_col` bindings, `d_sub` at `mode_fn _`
+has no instantiation rule, so the typing antecedent is vacuous.
+
+**What changed.**
+- **5 new rule constructors** (mechanization/frost/decl/def_extra.v):
+  - `d_sub__forall_l_untagged` (LHS `typ_all_col colour_syn`)
+  - `d_consis__forall_inh_untagged`
+  - `d_pat_sub__forall_l_untagged`
+  - `d_pat_consis__forall_inh_untagged`
+  - `d_pat_consis__forall_syn_untagged`
+- **2 predicate-grammar gaps fixed** (frost/def_extra.v): `is_utyp__pall`
+  and `is_uskel__pall` add the `typ_all_col colour_syn` case (paper's
+  utyp grammar `T ::= unit | α | T → T | syn{∀^δα.T}` covers both
+  `δ = ε ↦ typ_all_etag` and `δ = · ↦ typ_all_col colour_syn`).
+- **Rules grouped by paper rule** (tagged + untagged adjacent), not
+  appended-last. Easier manual audit per user preference.
+- **Notations inlined** via `Reserved Notation` + `where` clauses on 7
+  judgments (`d_wf_skel`, `d_wf_ttyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
+  `d_pat_consis`, `d_pat_sub`), so rule bodies are paper-faithful in
+  one glance. `decl/notations.v` pared down accordingly.
+
+**Cascade.** 13 files modified, +986/−261 lines. ~15 lemmas patched
+with new case bullets (mechanical); **16 new `Admitted`s** introduced
+in 12 lemmas. Of those:
+- **6 admits flag PROVABLY-FALSE lemmas** (conclusion no longer holds
+  because the new rule's LHS-colour permissiveness breaks the lemma's
+  shape-discrimination):
+  - `d_consis_LHS_mono_wf`, `d_consis_LHS_is_typ_mono`
+  - `d_sub_LHS_mono_wf`, `d_sub_mono_RHS_eq`
+  - `d_consis_empty_eq`
+  - `d_consis_gen_lhs_syn_eq`
+
+  These need **precondition strengthening** (e.g. exclude `is_utyp__pall`,
+  add `is_typ A` on conclusion side), not just proof completion.
+- **3 wholesale admits** with original body preserved as `(* ... *)`
+  for re-introduction once the cascade is restructured:
+  `d_consis_compose`, `d_consis_gen_trans`,
+  `d_consis_extends_d_consis_gen`.
+- Remaining 7 are sub-case admits with spec links.
+
+**Build state.** RED — stops at `prop_subsumption_aux.v:395` (one
+mechanical `*` bullet away from advancing to the next failure). Remaining
+patching scope: estimated 20–50 more bullet additions across
+`prop_general_subsumption.v`, `prop_typing.v`, and possibly Phase 3
+algo files.
+
+**Flagship-theorem risk.** D1 / D12 (`d_typing_general_subsumption_via_gen`
+and `_gen`) almost certainly no longer "Closed under the global
+context": both rely transitively on `d_consis_gen_trans` (WHOLESALE
+admit). `Print Assumptions` re-check is gated on the build coming back
+green.
+
+**Audit.** Independent verifier-agent pass (post-commit) confirmed
+rule correctness vs paper, found 5 of the 6 provably-false admits not
+enumerated in the original spec, and flagged the D1/D12 closure risk.
+
+**Next steps.** (1) Finish mechanical bullet patching to get build
+green. (2) Re-verify `Print Assumptions` on flagship theorems. (3)
+For each provably-false lemma, decide between strengthening the
+precondition vs restating. (4) Then resume n-arg permutation lemma
+work (the original motivation).
 
 ## 2026-05-17 — D1 / D12 axiom elimination + B.3 rename
 

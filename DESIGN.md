@@ -357,6 +357,76 @@ The declarative rule definitions were re-encoded to this scheme on
 2026-05-15 (see [PROGRESS.md Part 2](PROGRESS.md#part-2-daily-progress)
 for the closure log).
 
+### 4.5 The δ-encoding (potential tags `δ ∈ {·, ε}`)
+
+The paper writes a `\sublab{ForallL}`-family of rules with a "potential tag"
+`δ ∈ {·, ε}` on the bound quantifier (declarative.tex:778–783):
+
+```text
+Potential tags δ ::= · | ε
+```
+
+A `syn{∀^δ α.T}` is either **tagged-syn** (`δ = ε`, paper writes
+`syn{∀^ε α.T}`) or **untagged-syn** (`δ = ·`, paper writes `syn{∀α.T}`).
+The mechanization maps these to two distinct AST shapes:
+
+- `δ = ε ↦ typ_all_etag ε T` (the ε-tagged ∀)
+- `δ = ·  ↦ typ_all_col colour_syn T` (the untagged syn-painted ∀;
+  post `typ_all_plain` removal this colour-paint is the encoding home
+  for "untagged syn ∀", since `typ_all_plain` no longer exists)
+
+**Each paper rule with `δ` therefore splits into TWO Coq constructors**
+— one per encoding of `δ`. The judgments affected (paper rule ↔ Coq
+constructors):
+
+| Paper rule | δ=ε | δ=· |
+|---|---|---|
+| `\sublab{ForallL}` (Fig 6) | `d_sub__forall_l_tagged` | `d_sub__forall_l_untagged` |
+| `\eqlab{ForallInh}` (Fig 6) | `d_consis__forall_inh_tagged` | `d_consis__forall_inh_untagged` |
+| `\eqlab{ForallSyn}` (Fig 6) | `d_consis__forall_syn_tagged` | `d_consis__forall_syn` |
+| `\sublab{ForallL}` (Fig 12) | `d_pat_sub__forall_l_tagged` | `d_pat_sub__forall_l_untagged` |
+| `\textsc{Forall}` (Fig 12) | `d_pat_consis__forall_inh_tagged` | `d_pat_consis__forall_inh_untagged` |
+| `\textsc{Forall'}` (Fig 12) | `d_pat_consis__forall_syn_tagged` | `d_pat_consis__forall_syn_untagged` |
+
+The same δ split also propagates into the **unresolved-type / unresolved-skel
+predicate grammars** (utyp / uskel), since paper's
+`utyp T ::= unit | α | T → T | syn{∀^δα.T}` covers both `δ` cases:
+
+- `is_utyp__tall` (tagged) + `is_utyp__pall` (untagged-syn)
+- `is_uskel__tall` (tagged) + `is_uskel__pall` (untagged-syn)
+
+**History note.** The 2026-05-15 `typ_all_plain` removal pass mistakenly
+dropped the `δ = ·` cases from `d_sub`, `d_consis` (partially),
+`d_pat_sub`, `d_pat_consis`, `is_utyp`, and `is_uskel` with the note
+"the colour-painted shape isn't `is_utyp`" / "ForallL for that shape
+is not paper-faithful". The note was incorrect — the paper IS faithful
+to having both `δ` cases. Restoration was done 2026-05-17 (commit
+`0bf2815`, WIP); see [PROGRESS.md](PROGRESS.md) for cascade details.
+
+**Rule ordering preference.** In `decl/def_extra.v` the tagged and
+untagged constructors of the same paper rule are kept ADJACENT (e.g.
+`d_consis__forall_inh_tagged` immediately followed by
+`d_consis__forall_inh_untagged`), grouped by paper rule rather than
+appended-last. This makes the audit "does Coq cover the paper's δ
+spread for rule X?" a one-glance check.
+
+**Rule-body notation.** Notations for the 7 main judgments
+(`d_wf_skel`, `d_wf_ttyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
+`d_pat_consis`, `d_pat_sub`) are declared as `Reserved Notation` at
+the top of `decl/def_extra.v` and bound via `where` clauses on each
+`Inductive`. Rule bodies use the notations directly — same reason:
+audit-against-paper without translating `d_consis Δ Γ T A` ↔
+`Δ ⨟ Γ ⊨ T ≈ A` in your head.
+
+**Consequences for downstream lemmas.** A bunch of `d_consis` /
+`d_consis_gen` / `is_utyp` invariants used to ride on the absence of
+the δ=· case (typically: "if LHS is syn-paint shape S, then RHS is
+also S" or "if X is is_utyp then no typ_all_col"). Adding the δ=·
+rules invalidates those invariants. Several lemmas become **provably
+false** under the restored encoding — they need precondition
+strengthening, not just proof patching. Tracked in
+[PROGRESS.md](PROGRESS.md)'s δ-refactor entry.
+
 ## 5. Cross-check vs current defs
 
 (Audit performed 2026-05-12 against `mech` HEAD; spot-refreshed
@@ -417,9 +487,13 @@ which Coq file at which status. Don't track per-lemma status here —
 it WILL go stale.
 
 Top-line: D1 (`d_typing_general_subsumption_via_gen`) and D12
-(`d_typing_general_subsumption_gen`) are **Qed and "Closed under the
-global context"** as of 2026-05-17. Phase 3 (algo soundness /
-completeness) has scaffolding with HEADLINE admits.
+(`d_typing_general_subsumption_gen`) were **Qed and "Closed under the
+global context"** as of commit `8701b4a` (2026-05-17, pre-δ-refactor).
+The in-progress δ-encoding refactor (commit `0bf2815`, §4.5 above)
+wholesale-admits `d_consis_gen_trans`, which is transitively used by
+the flagship theorems; the closure property therefore needs
+re-verification once the refactor's cascade is patched. Phase 3 (algo
+soundness / completeness) has scaffolding with HEADLINE admits.
 
 ## 6. Proof debugging methodology — read through the colour/mode lens
 
