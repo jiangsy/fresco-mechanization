@@ -7,14 +7,27 @@ Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 **Spec:** [`docs/superpowers/specs/2026-05-10-frost-phase23-design.md`](../docs/superpowers/specs/2026-05-10-frost-phase23-design.md)
 
-## Status (current — 2026-05-17, after δ-cascade Phases 0 + 1A + 1B + 1C)
+## Status (current — 2026-05-17, after δ-cascade Phases 0 + 1A-1G)
 
 **Build:** 🟢 GREEN.
 
 **Flagship theorems (D1 / D12):** ⚠️ **NOT** "Closed under the global
 context" post-δ. `Print Assumptions` on
-`d_typing_general_subsumption_via_gen` and `_gen` lists **6 axioms** (was
-10 after Phase 0; 4 closed in Phases 1A-1C).
+`d_typing_general_subsumption_via_gen` and `_gen` lists **8 axioms**
+(was 10 after Phase 0; 4 nominally closed in Phases 1A-1C, but
+`d_sub_mono_RHS_eq` + `d_consis_LHS_mono_wf` re-surfaced via
+`d_sub_gen_trans_forall_l_untagged_helper`'s residual admit chain
+— see Phase 1.G entry for the corrected count).
+
+**Phase 1.G summary (2026-05-17):** TODO plan to close the remaining
+axioms has fundamental blockers — Pattern A's `d_consis_subst_typ_with_ttyp`
+is unsound when subst'd var has multiple occurrences (ε-tag linearity
+violation, also a paper-level gap in B.3 ForallL). Pattern B option (a)
+doesn't compose at D12 (no source of `mono_typ Bhead` for poly body types).
+Inline at D12 has the same blocker as SPLIT. Both require either
+expressivity restriction OR a paper-faithful redesign of ε-tags as
+binders. **Foundation `d_consis_gen_syn_inh_erase_eq` added** for future
+work but doesn't drop axioms by itself.
 
 **Closed in Phases 1A-1C (4 axioms):**
 - `d_sub_gen_trans` — was fully Admitted; now Qed mod its helper
@@ -267,6 +280,177 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 # Part 2: Daily progress
 
 Session-by-session closure log. Most recent first.
+
+## 2026-05-17 — δ-cascade Phase 1.H (rule added + foundation lemmas + scope of remaining work)
+
+**What this session did.**
+
+1. **Added paper-missing rule `d_consis_gen__forall_syn_tagged_both`** to
+   `d_consis_gen` (matches paper's `ForallTagSyn` at δ=ε case from
+   syntax-directed.tex, which the δ-refactor had omitted). The rule
+   gives `typ_all_etag ε T ≈ typ_all_etag ε A` with Δ unchanged.
+
+2. **Updated all case-analysis sites** (~10 lemmas) to handle the new
+   constructor case via inversion / vacuous discharge / structural recursion.
+
+3. **Added 2 helper conversion lemmas:**
+   - `is_typ_syn_color_imp_inh_color`: is_typ is invariant under syn ↔ inh re-paint.
+   - `is_typ_inh_color_imp_syn_color`: dual.
+
+4. **Added `d_consis_gen_refl_wf_ttyp`** (refl on tagged ph via new rule).
+   KEY INSIGHT: output Δ = nil even for tagged ph because the new rule
+   keeps Δ unchanged through tagged-∀ peeling. This breaks the apparent
+   counting/linearity issue at variable-substitution positions.
+
+5. **Proved `d_consis_gen_subst_typ_with_ttyp`** (substitution lemma).
+   Substitutes tagged ph for X in d_consis_gen with output Δ unchanged
+   (no `Δ ++ N × Δ_φ` multiplication). The lemma is the foundation for
+   closing Pattern A.
+
+6. **Stated `d_consis_gen_sub_trans`** (B.3 gen) as Admitted skeleton +
+   `_nil` corollary.
+
+7. **Updated `d_consis_gen_preserves_wf`** with `is_typ B` precondition;
+   cascade through `d_sub_gen_preserves_wf` (with `is_typ A` precondition);
+   added `d_sub_gen_preserves_is_typ` as research-grade Admitted helper.
+
+8. **Documented `d_consis_gen_to_d_consis`** as research-grade Admitted for
+   the new rule case (no d_consis counterpart per declarative.tex).
+
+**Current axiom count: 10**
+- 8 pre-existing (Pattern A × 3, Pattern B × 3, misc × 2).
+- 2 new admits introduced (`d_sub_gen_preserves_is_typ`, `d_consis_gen_to_d_consis`).
+
+**Net 0 closure this session** — all the foundation work is in place,
+but the actual close of Pattern A admits requires more work, scoped below.
+
+### Remaining work to close D1/D12
+
+The dependency tree is deeper than initially visible:
+
+1. **Prove `d_consis_compose`** (paper B.2, currently wholesale admitted).
+   Needs cofinite-rename arguments for 3 new compositional sub-cases
+   introduced by `__forall_inh_untagged` (per the existing TODO note in
+   `prop_consis_trans.v:87-94`). Multi-day work.
+
+2. **Prove `d_consis_gen_compose`** (B.2 gen variant). Mirror of (1) over
+   d_consis_gen, plus new rule case. Provable but ~200 lines.
+
+3. **Prove `d_consis_gen_sub_trans`** (B.3 gen, body). Uses (2) for the
+   __arg case and the new substitution lemma for __forall_l_*. ~150 lines.
+
+4. **Close Pattern A admits via gen B.3 + embed:**
+   - `d_consis_sub_trans` non-mono — replace use with gen version.
+   - `d_sub_gen_trans_forall_l_untagged_helper` non-mono — similar.
+   - `d_consis_gen_extends_d_sub_nil` non-mono — similar.
+
+5. **Inline D12 m_new=mode_tc** to remove SPLIT helper dependence
+   (Pattern B). Replace SPLIT helper calls with structural inversion of
+   Hsub_gen + structural peeling for poly-body lift using new rule.
+   Pattern B's broken lemmas become orphaned.
+
+6. **Verify** Print Assumptions on D1/D12 reports "Closed under the
+   global context".
+
+**Estimated effort:** 1-2 full sessions of focused work on (2)-(4) alone,
+assuming (1) is tackled in parallel. (5) is a separate ~1-day refactor.
+Total: 3-5 sessions to full closure.
+
+**Build is 🟢 green this session.** All edits compile; the foundation
+work is committed in the codebase.
+
+## 2026-05-17 — δ-cascade Phase 1.G (paper-audit: missing rule + cascade scope)
+
+**What this session did.**
+
+1. **Audited paper vs mech rule-faithfulness for d_consis_gen.** Found
+   that the mechanization is missing **one rule from syntax-directed.tex's
+   d_consis_gen figure**: the `δ=ε` case of `ForallTagSyn`
+   ([syntax-directed.tex:99-105](../paper/sections/syntax-directed.tex#L99))
+   which relates `typ_all_etag ε T ≈ typ_all_etag ε T'` (tagged on both
+   sides, same ε, Δ unchanged). The δ-refactor entry (2026-05-17) added
+   `__forall_inh_untagged` (the δ=· case of `ForallTagInh`) but missed
+   the δ=ε case of `ForallTagSyn` — they should have been added together.
+
+2. **Verified scope of the gap.** d_consis (declarative.tex Fig 6) does
+   NOT have this rule per paper — its `ForallSyn` rule has RHS
+   `syn{∀α. A}` (UNTAGGED, no δ subscript). d_pat_consis similarly. So
+   the missing rule is exclusively in d_consis_gen.
+
+3. **Corrected axiom count.** `Print Assumptions` reports **8 axioms**
+   (not 6 — banner was stale). `d_sub_mono_RHS_eq` and
+   `d_consis_LHS_mono_wf` are back in the chain via
+   `d_sub_gen_trans_forall_l_untagged_helper`'s residual admit.
+
+### Why the missing rule matters
+
+Without `d_consis_gen__forall_syn_tagged_both` (the missing δ=ε case of
+ForallTagSyn), there's **no way to derive `d_consis_gen Δ Γ φ φ` for
+tagged φ** — d_consis_gen has tagged LHS rules (`__forall_inh_tagged`,
+`__forall_syn_tagged`) that pair tagged-LHS with COLOUR-painted-RHS, but
+no tagged-RHS rule. This makes the substitution lemma
+`d_consis_gen_subst_typ_with_ttyp` (the gen analogue of what Pattern A
+needs) impossible to prove at variable positions when ph is tagged.
+
+With the missing rule added: at a `__var X` position, substituting `X ↦ φ`
+yields `d_consis_gen Δ_φ Γ φ φ` derivable by peeling matching tagged ∀'s
+on both sides via the new rule, bottoming out at unit/var/arrow. Output Δ
+is `Δ_φ` (not N copies), so **no linearity violation** — the "counting"
+worry was a red herring; with the right rule the derivation builds the
+correct Δ structurally.
+
+### Cascade scope (assessed, not yet implemented)
+
+Adding the rule to d_consis_gen breaks **`d_consis_gen_preserves_wf`**
+(and transitively `d_sub_gen_preserves_wf`, `d_typing_gen_preserves_wf`),
+because its conclusion `d_wf_typ Γ B` cannot hold when B is
+`typ_all_etag ε A` (d_wf_typ has no constructor for typ_all_etag — only
+typ_all_col). Cascade scope:
+
+1. **Define `d_wf_btyp`** — a unified wf-predicate covering both
+   colour-painted (`typ_all_col`) AND tagged (`typ_all_etag`, with
+   linearity tracking) shapes. Matches the paper's `bid{T}` grammar
+   ([syntax-directed.tex:14-19](../paper/sections/syntax-directed.tex#L14)):
+   `bid{T} ::= unit | α | bid{T1}→bid{T2} | syn{∀^ε α.}bid{T} |
+   syn{∀α.}bid{T} | inh{∀α.}bid{T}`.
+
+2. **Reformulate `d_consis_gen_preserves_wf`** to conclude
+   `d_wf_btyp Γ B` (with appropriate Δ tracking).
+
+3. **Reformulate `d_sub_gen_preserves_wf` / `d_typing_gen_preserves_wf`**
+   similarly. d_sub_gen's `__arg` produces arrows with bid-shape
+   components, so its preservation also needs `d_wf_btyp`.
+
+4. **Update all consumers** of these preservation lemmas — every site
+   that currently expects `d_wf_typ` from a gen-relation needs either
+   `d_wf_btyp` or an explicit narrowing to `d_wf_typ` (which is the
+   restriction "no tagged components").
+
+5. **Reformulate `d_consis_sub_trans` (paper B.3)** over `d_consis_gen`
+   instead of d_consis. The mechanization currently states B.3 on non-gen
+   d_consis, but the paper's B.3 is in syntax-directed.tex which is about
+   the generalised relation. The reformulation makes the new tagged-tagged
+   rule available for the substitution lemma's var case.
+
+6. **Close the 3 Pattern A admits** (`d_consis_sub_trans` non-mono case,
+   `d_sub_gen_trans_forall_l_untagged_helper` non-mono case,
+   `d_consis_gen_extends_d_sub_nil` non-mono case) using the new
+   substitution lemma.
+
+Pattern B (the SPLIT helpers' `d_consis_syn_inh_mono` etc.) is a
+SEPARATE issue from the missing rule — it's about lifting body from
+mode_ti to mode_tc when the body type is poly, which doesn't directly
+benefit from the new rule. Pattern B needs its own design pass.
+
+### Status this session
+
+**Reverted in-progress edits** to def_gen.v after discovering the cascade
+scope mid-implementation. Build remains 🟢 green. The audit finding +
+cascade plan are documented above. **No axiom drop this session.**
+
+The PROPER fix (steps 1-6 above) is a multi-day effort and warrants its
+own design spec before implementation. Recommend starting with step 1
+(define `d_wf_btyp`) and propagating in a controlled sequence.
 
 ## 2026-05-17 — δ-cascade Phase 1.F (erase-eq lemma; user-suggested option (b) clarified)
 

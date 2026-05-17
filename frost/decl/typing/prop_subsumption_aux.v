@@ -87,6 +87,8 @@ Proof.
   - (* __forall_inh_untagged (NEW): B = typ_all_col colour_inh — not mono. *)
     inversion Hmono.
   - inversion Hmono.
+  - (* __forall_syn_tagged_both (NEW): B = typ_all_etag — not mono. *)
+    inversion Hmono.
   - inversion Hmono.
   - inversion Hmono.
   - apply app_eq_nil in HeqΔ. destruct HeqΔ as [HΔ1 HΔ2]. subst.
@@ -218,8 +220,11 @@ Proof.
         | eassumption
         | apply d_consis_gen__embed; eassumption ].
     + eapply IHHd; eauto.
-  - (* __forall_l_tagged: B = typ_all_etag — no d_consis_gen RHS. *)
-    inversion Hcg.
+  - (* __forall_l_tagged: B = typ_all_etag. d_consis_gen with RHS
+       typ_all_etag is now possible via the NEW
+       d_consis_gen__forall_syn_tagged_both rule (LHS also typ_all_etag).
+       That case closes via inversion HwfA0 (typ_all_etag isn't d_wf_typ). *)
+    inversion Hcg; subst; inversion HwfA0.
   - (* __forall_l_untagged (NEW): B = typ_all_col colour_syn T_a.
        Non-trivial composition; admitted for now. The case needs both
        a substitution lemma for d_consis_gen cofinite bodies AND
@@ -537,8 +542,9 @@ Lemma d_sub_gen_arrow_refl_inner : forall Γ A B m,
     d_sub_gen (decr_mode m) nil Γ B B.
 Proof.
   intros Γ A B m Hrefl HmonoA HmonoB.
-  assert (Hwf_arr : d_wf_typ Γ (typ_arrow A B))
-    by (eapply d_sub_gen_preserves_wf; eauto).
+  assert (Hwf_arr : d_wf_typ Γ (typ_arrow A B)).
+  { eapply d_sub_gen_preserves_wf; eauto.
+    apply is_typ__arrow; apply mono_typ_is_typ; auto. }
   inversion Hwf_arr; subst.
   inversion Hrefl; subst.
   - (* __embed: route through [d_sub_arrow_refl_inner]. *)
@@ -826,6 +832,8 @@ Proof.
        false on ctyp_all input (parallel to d_consis_syn_inh_mono). *)
     admit.
   - (* __forall_syn_tagged: LHS typ_all_etag — vacuous. *)
+    destruct T0; simpl in HeqLHS; discriminate.
+  - (* __forall_syn_tagged_both (NEW): LHS typ_all_etag — vacuous. *)
     destruct T0; simpl in HeqLHS; discriminate.
   - (* __forall_syn: RHS colour_syn — inh_color never produces colour_syn. *)
     destruct A0; simpl in HeqRHS; discriminate.
