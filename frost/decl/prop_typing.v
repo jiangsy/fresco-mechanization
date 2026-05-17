@@ -121,35 +121,173 @@ Admitted.
     [paper-ref: stability:order-irrelevance] (no paper match yet; new
     target inspired by external system) *)
 
+(** ** Helpers for [d_typing_order_irrel_adj].
+
+    The key proof-debugging observation (colour/mode lens — see
+    [DESIGN.md] Part 2): typing a [d_typing] application term
+    [exp_app f e] is rigid because [exp_app] is NOT [is_base_term]
+    and NOT [is_value], so only [d_typing__app] can fire. Similarly,
+    typing [exp_var_f x] at [mode_fn m] (which is neither [mode_ti]
+    nor [mode_tc]) can only use [d_typing__sub] — [__var] requires
+    [mode_ti], [__forall] requires [mode_tc].
+*)
+
+(** A [mode_ti] typing of a variable factors through its binding,
+    either by literal equality (the [__var] base case) or by a
+    [d_consis] derivation (collapsed [__sub] chain — [d_sub] at
+    [mode_ti] is [__infer], i.e. wrapped [d_consis]). *)
+Lemma d_typing_var_ti_to_consis_or_eq : forall Γ x A B,
+    uniq Γ ->
+    binds x (dbind_typ A) Γ ->
+    Γ ⊢[ mode_ti ] (exp_var_f x) ⇒ B ->
+    A = B \/ nil ⨟ Γ ⊨ A ≈ B.
+Proof.
+  intros Γ x A B Huniq Hb Htyp.
+  remember (exp_var_f x) as evx. remember mode_ti as m_ti.
+  induction Htyp; subst; try discriminate.
+  - (* __var: B = A0, with binds x A0. Use uniq to conclude A = A0. *)
+    inversion Heqevx; subst x0.
+    left.
+    assert (Hdbeq : dbind_typ A = dbind_typ A0)
+      by (eapply binds_unique; eauto).
+    inversion Hdbeq; reflexivity.
+  - (* __sub at mode_ti: only d_sub__infer fires (mode = mode_ti).
+       [discriminate] kills the mode-constructor mismatches (__check,
+       __forall_r, __arg). [congruence] kills [__forall_l_tagged]
+       whose [m <> mode_ti] premise becomes [mode_ti <> mode_ti]. *)
+    match goal with
+    | Hsub : d_sub mode_ti nil _ _ _ |- _ =>
+        inversion Hsub; subst; try discriminate; try congruence
+    end.
+    edestruct IHHtyp as [Heq | Hcons]; auto.
+    + (* IH: A = A0; subst A. The goal collapses to the inversion's
+         d_consis (the only d_consis in scope after subst). *)
+      subst A. right.
+      match goal with
+      | Hc_inv : d_consis nil _ (syn_color _) (syn_color _) |- _ => exact Hc_inv
+      end.
+    + (* IH: d_consis nil Γ A A0 = d_consis nil Γ A (syn_color T_rule).
+         Inversion gives d_consis nil Γ (syn_color T_rule) (syn_color A_rule).
+         Compose. The (syn_color _) (syn_color _) pattern picks the
+         inverted hypothesis (Hcons's LHS [A] is a variable, not syn_color). *)
+      right.
+      match goal with
+      | Hc_inv : d_consis nil _ (syn_color _) (syn_color _) |- _ =>
+          edestruct (d_consis_compose (Δa := @nil atom) (Δb := @nil atom))
+            as [Δc [Hperm Hccompose]];
+            [ exact Hcons | exact Hc_inv | apply list_disjoint_nil_l |];
+          simpl in Hperm; apply Permutation_sym, Permutation_nil in Hperm;
+          subst Δc; exact Hccompose
+      end.
+Qed.
+
+(** A [mode_fn _] typing of a variable factors through its binding
+    via a [d_sub] derivation. Combines [d_typing_var_ti_to_consis_or_eq]
+    with [d_consis_sub_trans_nil] (the latter requires [d_wf_typ Γ A]). *)
+Lemma d_typing_var_at_fn_to_d_sub : forall Γ x A B m,
+    uniq Γ ->
+    binds x (dbind_typ A) Γ ->
+    d_wf_typ Γ A ->
+    Γ ⊢[ mode_fn m ] (exp_var_f x) ⇒ B ->
+    Γ ⊢[ mode_fn m ; nil ] A ⊑ B.
+Proof.
+  intros Γ x A B m Huniq Hb Hwf Htyp.
+  remember (exp_var_f x) as evx. remember (mode_fn m) as m_fn.
+  induction Htyp; subst; try discriminate; try congruence.
+  - (* __sub: only surviving case (other cases fail on mode or exp
+       shape; __forall would require mode_tc, ruled out by [try congruence]
+       on the mode equation).
+       After [subst], the rule's [e] became [exp_var_f x] directly
+       (Heqevx was consumed). Apply the [mode_ti] helper to the inner
+       d_typing, then compose with the outer d_sub. *)
+    edestruct d_typing_var_ti_to_consis_or_eq
+      as [Heq | Hcons]; [exact Huniq | exact Hb | exact Htyp | | ].
+    + subst A0.
+      match goal with
+      | Hsub : d_sub (mode_fn _) nil Γ A B |- _ => exact Hsub
+      end.
+    + eapply d_consis_sub_trans_nil; eauto.
+Qed.
+
 (** Two-argument adjacent swap when both functions are simultaneously
-    in scope with the swapped function types. *)
+    in scope with the swapped function types.
+
+    We additionally require [d_wf_denv Γ] — used both to derive [uniq Γ]
+    (so the variable rule's binding is unique) and to derive [d_wf_typ]
+    of the bindings (needed by [d_consis_sub_trans_nil] inside
+    [d_typing_var_at_fn_to_d_sub]). *)
 Lemma d_typing_order_irrel_adj : forall Γ x y A1 A2 R e1 e2 m,
+    d_wf_denv Γ ->
     binds x (dbind_typ (typ_arrow A1 (typ_arrow A2 R))) Γ ->
     binds y (dbind_typ (typ_arrow A2 (typ_arrow A1 R))) Γ ->
-    d_typing m Γ (exp_app (exp_app (exp_var_f x) e1) e2) R ->
-    d_typing m Γ (exp_app (exp_app (exp_var_f y) e2) e1) R.
+    Γ ⊢[ m ] (exp_app (exp_app (exp_var_f x) e1) e2) ⇒ R ->
+    Γ ⊢[ m ] (exp_app (exp_app (exp_var_f y) e2) e1) ⇒ R.
 Proof.
-  (* Proof strategy via the colour/mode lens:
-
-     Invert d_typing on the outer application: d_typing__app fires
-     (with d_typing__sub for the function side at mode_fn). The
-     function-side d_typing of [exp_app x e1] at [mode_fn m] inverts
-     similarly, ending at d_typing__var for x. From binds-x we recover
-     the type [A1 → A2 → R]. The d_refine_syn / d_pat structures pin
-     e1 to A1 and e2 to A2.
-
-     Reconstruct symmetrically: d_typing__app at [exp_app y e2] with
-     [d_typing__var] for y giving [A2 → A1 → R], then outer app with e1.
-
-     The skeleton inference (d_pat / d_refine_syn) for e2 and e1 is
-     mode_tc and is mechanically preserved by argument-order swap
-     (the patterns don't reference position).
-
-     ADMITTED: requires non-trivial d_typing inversion through d_pat
-     and d_refine_syn — same machinery as d_typing_swap_mono. The
-     auxiliary d_pat-from-d_typing lemma (cited in d_typing_swap_mono)
-     is the key blocker. *)
-Admitted.
+  intros Γ x y A1 A2 R e1 e2 m Hwfd Hbx Hby Htyp.
+  assert (Huniq : uniq Γ) by (clear - Hwfd; induction Hwfd; auto).
+  assert (Hwfx : d_wf_typ Γ (typ_arrow A1 (typ_arrow A2 R)))
+    by (eapply d_wf_denv_binds_typ; eauto).
+  assert (Hwfy : d_wf_typ Γ (typ_arrow A2 (typ_arrow A1 R)))
+    by (eapply d_wf_denv_binds_typ; eauto).
+  (* Outer __app inversion. [exp_app] is not [is_base_term] and not
+     [is_value]; only [d_typing__app] fires. Name the surviving case's
+     existentials and premises explicitly. *)
+  inversion Htyp as
+    [ | | | | | | | |
+      Γ_o m_o e1_o e2_o P2 P2' B_o
+      Hpat_e2 Href_e2 Hfn He2_tc ];
+    subst; clear Htyp;
+    try discriminate;
+    try (match goal with H : is_base_term (exp_app _ _) |- _ => inversion H end);
+    try (match goal with H : is_value (exp_app _ _) |- _ => inversion H end).
+  (* Inner __app inversion on [Hfn : d_typing (mode_fn m) Γ (exp_app x e1) _]. *)
+  inversion Hfn as
+    [ | | | | | | | |
+      Γ_i m_i e1_i e2_i P1 P1' B_i
+      Hpat_e1 Href_e1 Hx_typ He1_tc ];
+    subst; clear Hfn;
+    try discriminate;
+    try (match goal with H : is_base_term (exp_app _ _) |- _ => inversion H end);
+    try (match goal with H : is_value (exp_app _ _) |- _ => inversion H end).
+  (* Rebuild for [y] via [d_typing__app] twice. *)
+  eapply d_typing__app with (P := P1) (P' := P1');
+    [ exact Hpat_e1 | exact Href_e1 | | exact He1_tc ].
+  eapply d_typing__app with (P := P2) (P' := P2');
+    [ exact Hpat_e2 | exact Href_e2 | | exact He2_tc ].
+  (* Goal: d_typing (mode_fn (mode_fn m)) Γ y (typ_arrow P2' (typ_arrow P1' R)). *)
+  assert (Hxsub : Γ ⊢[ mode_fn (mode_fn m) ; nil ]
+            (typ_arrow A1 (typ_arrow A2 R)) ⊑ (typ_arrow P1' (typ_arrow P2' R)))
+    by (eapply d_typing_var_at_fn_to_d_sub; eauto).
+  (* Invert [Hxsub]: only [d_sub__arg] fires (mode_fn _, arrow LHS).
+     [discriminate] kills mode-mismatch cases; [congruence] kills
+     [__forall_l_tagged]'s [m <> mode_ti] premise specialised to
+     [mode_fn _]. *)
+  inversion Hxsub as
+    [ | | | Δa Δb Γ_s ms T1 T2 A1' A2' Hca Hsub_rest | ];
+    subst; clear Hxsub; try discriminate; try congruence.
+  (* Δa ++ Δb = nil → Δa = Δb = nil. *)
+  match goal with
+  | Heq : ?Δa' ++ ?Δb' = nil |- _ =>
+      apply app_eq_nil in Heq as [-> ->]
+  end.
+  (* Invert [Hsub_rest] : d_sub (mode_fn m) nil Γ (typ_arrow A2 R) (typ_arrow P2' R). *)
+  inversion Hsub_rest as
+    [ | | | Δa' Δb' Γ_s' ms' T1' T2' A1'' A2'' Hcb Hsub_R | ];
+    subst; clear Hsub_rest; try discriminate; try congruence.
+  match goal with
+  | Heq : ?Δa' ++ ?Δb' = nil |- _ =>
+      apply app_eq_nil in Heq as [-> ->]
+  end.
+  (* Now [Hca : d_consis nil Γ A1 P1'], [Hcb : d_consis nil Γ A2 P2'],
+     [Hsub_R : d_sub m nil Γ R R]. Build [y]'s typing. *)
+  eapply d_typing__sub with (A := typ_arrow A2 (typ_arrow A1 R)).
+  - apply is_base_term__var.
+  - apply d_typing__var. exact Hby.
+  - rewrite_env (@nil atom ++ @nil atom).
+    apply d_sub__arg; [exact Hcb |].
+    rewrite_env (@nil atom ++ @nil atom).
+    apply d_sub__arg; [exact Hca | exact Hsub_R].
+Qed.
 
 (** N-argument version (target). Requires [forall_prefix] /
     [curry_ty] / [curry_tm] helpers. The forall-prefixed version

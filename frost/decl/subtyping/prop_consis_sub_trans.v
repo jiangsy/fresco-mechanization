@@ -45,6 +45,8 @@ Proof.
     split; reflexivity.
   - (* __forall_inh_tagged: RHS = typ_all_col colour_inh, syn_color paints colour_syn. *)
     destruct X'; simpl in HeqA; try discriminate.
+  - (* __forall_inh_untagged (NEW): RHS = typ_all_col colour_inh, same. *)
+    destruct X'; simpl in HeqA; try discriminate.
   - (* __forall_syn_tagged: LHS = typ_all_etag — not d_wf_typ. *)
     inversion HwfA.
   - (* __forall_syn: LHS = typ_all_col colour_syn T, RHS = typ_all_col colour_syn A. *)
@@ -169,7 +171,7 @@ Proof.
        pattern now has 8 alternatives (7 bars before [__arrow]) due to
        the new [d_consis__forall_inh] constructor. *)
     inversion Hc as
-      [| | | | | | Δc01 Δc02 ? T01 T02 A01 A02 Hca Hcb Hcdisarr];
+      [| | | | | | | Δc01 Δc02 ? T01 T02 A01 A02 Hca Hcb Hcdisarr];
       subst.
     apply list_disjoint_app_l_iff in Hdis as [Hdisa Hdisb].
     apply list_disjoint_app_r_iff in Hdisa as [Hd_a_1 Hd_a_2].
@@ -185,7 +187,9 @@ Proof.
            via [d_consis_lhs_syn_color_is_syn_typ] (no mono needed). *)
         eapply d_consis_compose_nil_RHS; eauto.
         eapply d_consis_lhs_syn_color_is_syn_typ; eauto.
-      - match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end. }
+      - match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end.
+      - (* __forall_l_untagged (NEW): same m ≠ mode_ti contradiction. *)
+        match goal with H : mode_ti <> mode_ti |- _ => exfalso; apply H; reflexivity end. }
     (* Apply recursive IH on the function-result side. *)
     inversion HwfT; subst.
     edestruct IHHs as [Δd2 [Hperm2 Hsubres]];
@@ -198,7 +202,12 @@ Proof.
   - (* d_sub__forall_l_tagged: A = typ_all_etag, but d_consis RHS is
        never typ_all_etag. *)
     inversion Hc.
-Qed.
+  - (* d_sub__forall_l_untagged (NEW): A = typ_all_col colour_syn. d_consis
+       RHS CAN be typ_all_col colour_syn (via several rules). Non-trivial
+       composition needed; admitted. *)
+    admit.
+Admitted.
+(* d_consis_sub_trans: 1 admit post-δ-refactor (new d_sub rule). *)
 
 (** Narrowed corollary: both Δ-sides nil. The [d_wf_typ Γ T]
     precondition is now actively used by [d_consis_sub_trans] to

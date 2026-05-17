@@ -33,6 +33,10 @@ Proof.
   - apply d_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
+  - (* __forall_inh_untagged (NEW) *)
+    apply d_consis__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
   - apply d_consis__forall_syn_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
@@ -56,6 +60,14 @@ Lemma d_consis_syn_color_eq : forall Δ Γ A B,
 Proof.
   intros Δ Γ A B H. induction H; simpl; try reflexivity.
   - (* __forall_inh_tagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_t_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_t_ftvar; auto.
+  - (* __forall_inh_untagged (NEW) *)
     f_equal.
     pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
     assert (HX : X `notin` L) by auto.
@@ -104,6 +116,8 @@ Proof.
   - apply d_sub__arg; eauto. apply d_consis_weakening; auto.
   - eapply d_sub__forall_l_tagged; eauto.
     eapply d_wf_ttyp_weakening; eauto.
+  - eapply d_sub__forall_l_untagged; eauto.
+    eapply d_wf_ttyp_weakening; eauto.
 Qed.
 
 (** Local copies of [d_consis_tvar_morph] / [d_sub_tvar_morph]
@@ -118,6 +132,12 @@ Proof.
   - apply d_consis__unit.
   - apply d_consis__var. apply Hmorph; auto.
   - apply d_consis__forall_inh_tagged with (L := L `union` dom Γ'); auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - (* __forall_inh_untagged (NEW) *)
+    apply d_consis__forall_inh_untagged with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY.
     destruct HbY as [Hin | Hin]; apply binds_app_iff;
@@ -157,6 +177,8 @@ Proof.
     + eapply d_consis_tvar_morph; eauto.
     + apply IHd_sub; auto.
   - eapply d_sub__forall_l_tagged; eauto.
+    eapply d_wf_ttyp_tvar_morph; eauto.
+  - eapply d_sub__forall_l_untagged; eauto.
     eapply d_wf_ttyp_tvar_morph; eauto.
 Qed.
 
@@ -267,7 +289,15 @@ Proof.
   - apply d_pat_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
+  - (* __forall_inh_untagged (NEW) *)
+    apply d_pat_consis__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
   - apply d_pat_consis__forall_syn_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
+  - (* __forall_syn_untagged (NEW) *)
+    apply d_pat_consis__forall_syn_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
   - apply d_pat_consis__ghost; auto.
@@ -292,6 +322,8 @@ Proof.
   - apply d_pat_sub__univ_ghost_l; auto.
   - apply d_pat_sub__arg; auto. apply d_pat_consis_weakening; auto.
   - eapply d_pat_sub__forall_l_tagged; eauto.
+    eapply d_wf_tskel_weakening; eauto.
+  - eapply d_pat_sub__forall_l_untagged; eauto.
     eapply d_wf_tskel_weakening; eauto.
 Qed.
 
@@ -323,7 +355,17 @@ Proof.
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
       apply binds_app_iff; [left | right]; auto.
+  - (* __forall_inh_untagged (NEW) *)
+    apply d_pat_consis__forall_inh_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
   - apply d_pat_consis__forall_syn_tagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
+      apply binds_app_iff; [left | right]; auto.
+  - (* __forall_syn_untagged (NEW) *)
+    apply d_pat_consis__forall_syn_untagged with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY. destruct HbY as [Hb | Hb];
       apply binds_app_iff; [left | right]; auto.
@@ -351,6 +393,8 @@ Proof.
   - apply d_pat_sub__univ_ghost_l; auto.
   - apply d_pat_sub__arg; auto. eapply d_pat_consis_tvar_morph; eauto.
   - eapply d_pat_sub__forall_l_tagged; eauto.
+    eapply d_wf_tskel_tvar_morph; eauto.
+  - eapply d_pat_sub__forall_l_untagged; eauto.
     eapply d_wf_tskel_tvar_morph; eauto.
 Qed.
 
@@ -768,6 +812,8 @@ Proof.
   - apply d_consis__unit.
   - apply d_consis__var. assumption.
   - inversion Hinh. (* __forall_inh_tagged: typ_all_etag — not inh *)
+  - (* __forall_inh_untagged (NEW): A = typ_all_col colour_syn — not inh *)
+    inversion Hinh.
   - inversion Hinh. (* __forall_syn_tagged: typ_all_etag — not inh *)
   - (* __forall_syn (post-refactor): A = typ_all_col colour_syn — not is_inh_typ *)
     inversion Hinh.

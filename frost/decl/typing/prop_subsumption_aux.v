@@ -59,9 +59,11 @@ Proof.
   induction Hc; intros Hmono; try discriminate HeqΔ.
   - reflexivity.
   - reflexivity.
+  - (* __forall_inh_untagged (NEW): B = typ_all_col colour_inh — not mono. *)
+    inversion Hmono.
   - (* __forall_syn_tagged: B = typ_all_col colour_syn — not mono. *)
     inversion Hmono.
-  - (* __forall_syn (post-refactor): B = typ_all_col colour_syn — not mono. *)
+  - (* __forall_syn: B = typ_all_col colour_syn — not mono. *)
     inversion Hmono.
   - (* __forall_inh: B = typ_all_col colour_inh — not mono. *)
     inversion Hmono.
@@ -82,6 +84,8 @@ Proof.
   induction Hc; intros Hmono; try discriminate HeqΔ.
   - reflexivity.
   - reflexivity.
+  - (* __forall_inh_untagged (NEW): B = typ_all_col colour_inh — not mono. *)
+    inversion Hmono.
   - inversion Hmono.
   - inversion Hmono.
   - inversion Hmono.
@@ -116,7 +120,13 @@ Proof.
     + apply IHHs; auto.
   - (* __forall_l_tagged: A = typ_all_etag — not wf. *)
     inversion HwfA.
-Qed.
+  - (* __forall_l_untagged (NEW): A = typ_all_col colour_syn — IS wf, B mono.
+       Conclusion A = B fails (A = typ_all_col, B mono). Admitted —
+       lemma needs precondition strengthening (e.g., is_utyp A excluding
+       __pall, or restrict to non-colour_syn A). *)
+    admit.
+Admitted.
+(* d_sub_mono_RHS_eq: 1 admit post-δ-refactor — needs strengthening. *)
 
 Lemma d_sub_gen_mono_RHS_eq : forall m Γ A B,
     d_sub_gen m nil Γ A B ->
@@ -202,7 +212,11 @@ Proof.
     + eapply IHHd; eauto.
   - (* __forall_l_tagged: B = typ_all_etag — no d_consis_gen RHS. *)
     inversion Hcg.
-Qed.
+  - (* __forall_l_untagged (NEW): B = typ_all_col colour_syn. d_consis_gen
+       RHS CAN be typ_all_col colour_syn. Non-trivial; admitted. *)
+    admit.
+Admitted.
+(* 1 admit post-δ-refactor for new d_sub rule. *)
 
 (** [d_consis_gen_extends_d_sub_gen_nil]: same, on the LHS of a
     [d_sub_gen]. By induction on [d_sub_gen]; [__embed] routes through

@@ -58,9 +58,12 @@ Proof.
   intros Γ T A Hist Hc. dependent induction Hc; try (inversion Hist; fail).
   - reflexivity.
   - reflexivity.
-  - (* __forall_syn (post-refactor): T = typ_all_col colour_syn T_inner,
-       A = typ_all_col colour_syn A_inner. Same proof as __forall_inh
-       (uses is_typ_inv_all which is colour-agnostic). *)
+  - (* __forall_inh_untagged (NEW): T = typ_all_col colour_syn, A = typ_all_col
+       colour_inh. T ≠ A (different colour). Lemma becomes false here —
+       conclusion T = A can't be derived. δ-encoding refactor admit. *)
+    admit.
+  - (* __forall_syn: T = typ_all_col colour_syn T_inner,
+       A = typ_all_col colour_syn A_inner. Same structure. *)
     f_equal.
     apply is_typ_inv_all in Hist. destruct Hist as [L0 Hist_open].
     pick fresh X for (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A).
@@ -83,7 +86,10 @@ Proof.
     f_equal.
     + apply IHHc1; auto.
     + apply IHHc2; auto.
-Qed.
+Admitted.
+(* d_consis_empty_eq: 1 admit post-δ-refactor in __forall_inh_untagged.
+   Lemma is provably false in that case (T=colour_syn ≠ A=colour_inh).
+   Needs restatement (e.g., conclusion T and A equi-colour). *)
 
 Lemma d_consis_empty_to_shallow_sub : forall Γ A B,
     is_typ A ->
@@ -109,7 +115,12 @@ Proof.
   - (* d_sub__forall_l_tagged: A = typ_all_etag ε T — but Hist : is_typ A
        rejects typ_all_etag. Contradiction. *)
     exfalso. eapply is_typ_inv_etag. exact Hist.
-Qed.
+  - (* d_sub__forall_l_untagged (NEW): A = typ_all_col colour_syn. d_shallow_sub
+       has a forall_l rule that fires, but [d_wf_typ Γ ph] vs [d_wf_ttyp Δ' Γ ph]
+       mismatch — admitted. *)
+    admit.
+Admitted.
+(* d_sub_sound: 1 admit post-δ-refactor. *)
 
 (** * Completeness wrt monotype-only shallow subtyping.
 

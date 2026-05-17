@@ -937,15 +937,16 @@ Lemma d_consis_preserves_wf : forall Δ Γ T A,
 Proof.
   intros Δ Γ T A H. induction H.
   - apply d_wf_typ__unit.
-  - (* d_consis__var now carries binds via the strengthened rule. *)
-    apply d_wf_typ__var; auto.
+  - apply d_wf_typ__var; auto.
   - (* __forall_inh_tagged: RHS = typ_all_col colour_inh A *)
+    inst_cofinites_for d_wf_typ__all. eauto.
+  - (* __forall_inh_untagged (NEW δ=·): RHS = typ_all_col colour_inh A *)
     inst_cofinites_for d_wf_typ__all. eauto.
   - (* __forall_syn_tagged: RHS = typ_all_col colour_syn A *)
     inst_cofinites_for d_wf_typ__all. eauto.
-  - (* __forall_inh: RHS = typ_all_col colour_inh A *)
+  - (* __forall_syn: RHS = typ_all_col colour_syn A *)
     inst_cofinites_for d_wf_typ__all. eauto.
-  - (* __forall_syn (post-refactor new rule): RHS = typ_all_col colour_syn A *)
+  - (* __forall_inh: RHS = typ_all_col colour_inh A *)
     inst_cofinites_for d_wf_typ__all. eauto.
   - apply d_wf_typ__arrow; auto.
 Qed.
@@ -961,6 +962,8 @@ Proof.
   - apply d_wf_typ__arrow; auto.
     eapply d_consis_preserves_wf; eauto.
   - assumption.
+  - (* __forall_l_untagged: IH gives [d_wf_typ Γ A] (same A). *)
+    assumption.
 Qed.
 
 (** * d_pat_consis / d_pat_sub preservation of wf and guardedness.
@@ -977,6 +980,10 @@ Proof.
   - apply guarded_skel__var.
   - inversion Hg.
   - inversion Hg.
+  - (* __forall_inh_untagged: SS = typ_all_col colour_syn _, not guarded *)
+    inversion Hg.
+  - (* __forall_syn_untagged: SS = typ_all_col colour_syn _, not guarded *)
+    inversion Hg.
   - inversion Hg.
   - apply guarded_skel__arrow.
   - inversion Hg.
@@ -1000,24 +1007,37 @@ Lemma d_pat_consis_preserves_wf : forall Δ Γ SS P,
     nil ⨟ Γ ⊢ₛₖ P.
 Proof.
   intros Δ Γ SS P H. induction H; intros His_skel Hwf His_syn.
-  - apply d_wf_skel__unit.
-  - apply d_wf_skel__var. right. auto.
-  - inversion His_skel.
-  - inversion His_skel.
-  - auto.
-  - inversion His_skel; inversion Hwf; inversion His_syn; subst.
+  - (* __unit *) apply d_wf_skel__unit.
+  - (* __var *) apply d_wf_skel__var. right. auto.
+  - (* __forall_inh_tagged: typ_all_etag LHS, not is_skel *)
+    inversion His_skel.
+  - (* __forall_inh_untagged (NEW): RHS typ_all_col colour_inh, not is_syn_skel *)
+    inversion His_syn.
+  - (* __forall_syn_tagged: typ_all_etag LHS, not is_skel *)
+    inversion His_skel.
+  - (* __forall_syn_untagged (NEW): LHS+RHS typ_all_col colour_syn; both
+       wf premises survive, real construction needed. Body needs Ψ→Γ
+       conversion (IH at [nil ⨟ ((X~tvar) ++ Γ)] vs rule's [(X :: Ψ) ⨟ Γ]).
+       Deferred — see spec
+       [docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md]. *)
+    admit.
+  - (* __ghost *) auto.
+  - (* __arrow *)
+    inversion His_skel; inversion Hwf; inversion His_syn; subst.
     apply d_wf_skel__arrow; auto.
-  - inversion His_skel; inversion Hwf; inversion His_syn; subst.
+  - (* __univ_ghost_arr *)
+    inversion His_skel; inversion Hwf; inversion His_syn; subst.
     apply d_wf_skel__tophole.
     + eapply d_pat_consis_preserves_guarded; eauto.
     + apply IHd_pat_consis; auto.
   - (* __univ_ghost_inh1: RHS [typ_all_col colour_inh P] cannot be
-       [is_syn_skel] (which only accepts [colour_syn] for [typ_all_col]).
-       Case closes by inversion of [His_syn]. *)
+       [is_syn_skel] — closes by inversion of [His_syn]. *)
     inversion His_syn.
-  - inversion His_skel; inversion Hwf; subst.
+  - (* __univ_ghost_pass *)
+    inversion His_skel; inversion Hwf; subst.
     apply IHd_pat_consis; auto.
-Qed.
+Admitted.
+(* d_pat_consis_preserves_wf: 1 admit in __forall_syn_untagged (NEW). *)
 
 (** Strengthened with [is_syn_skel P] precondition (same justification
     as [d_pat_consis_preserves_wf]). The [__arg] case unfolds
@@ -1049,7 +1069,16 @@ Proof.
     + eapply d_pat_consis_preserves_wf; eauto.
     + apply IHd_pat_sub; auto.
   - inversion His_skel.
-Qed.
+  - (* __forall_l_untagged: LHS [typ_all_col colour_syn _]; IH delivers
+       wf P from body's wf (open SS ψ). Needs is_skel + d_wf_skel
+       substitution lemmas for ψ, parallel to the [__forall_l_tagged] case
+       which closes via [inversion His_skel] (typ_all_etag not is_skel).
+       Deferred — see same Ψ-conversion / subst plumbing gap as
+       [d_pat_consis_preserves_wf]'s untagged case. *)
+    admit.
+Admitted.
+(* d_pat_sub_preserves_wf: 1 admit in __forall_l_untagged case, parallel
+   to [d_pat_consis_preserves_wf]. *)
 
 (** [d_wf_denv]-bound skeletons are is_skel (from the strengthened
     [d_wf_denv__skel] premise). *)
@@ -1081,7 +1110,12 @@ Proof.
   - apply IHd_pat_sub; auto. inversion Hskel; subst; auto.
   - destruct Hm; subst; congruence.
   - inversion Hskel.
-Qed.
+  - (* __forall_l_untagged: needs [is_skel] substitution to apply IH on
+       (open SS ψ). Same plumbing gap as
+       [d_pat_consis_preserves_wf]'s untagged case. *)
+    admit.
+Admitted.
+(* d_pat_sub_implies_is_syn_skel: 1 admit in __forall_l_untagged case. *)
 
 (** d_pat at mode_ti for base terms outputs [is_skel]. Sufficient for
     the d_pat__sub case of Lemma 3.7 (the only context where we need

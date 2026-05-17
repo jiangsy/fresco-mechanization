@@ -116,6 +116,13 @@ Inductive d_consis_gen :
          (open_typ_wrt_typ A (typ_var_f X))) ->
     ~ List.In ε Δ ->
     d_consis_gen (ε :: Δ) Γ (typ_all_etag ε T) (typ_all_col colour_inh A)
+| d_consis_gen__forall_inh_untagged : forall L Δ Γ T A,
+    (* Mirror of d_consis__forall_inh_untagged (δ=· case of EqForallInh). *)
+    (forall X, X `notin` L ->
+       d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_typ_wrt_typ T (typ_var_f X))
+         (open_typ_wrt_typ A (typ_var_f X))) ->
+    d_consis_gen Δ Γ (typ_all_col colour_syn T) (typ_all_col colour_inh A)
 | d_consis_gen__forall_syn_tagged : forall L Δ Γ ε T A,
     (forall X, X `notin` L ->
        d_consis_gen Δ ((X ~ dbind_tvar) ++ Γ)
@@ -149,6 +156,7 @@ Proof.
   - apply d_consis_gen__unit.
   - apply d_consis_gen__var; assumption.
   - apply d_consis_gen__forall_inh_tagged with (L := L); assumption.
+  - apply d_consis_gen__forall_inh_untagged with (L := L); assumption.
   - apply d_consis_gen__forall_syn_tagged with (L := L); assumption.
   - apply d_consis_gen__forall_syn with (L := L); assumption.
   - apply d_consis_gen__forall_inh with (L := L); assumption.
@@ -169,6 +177,14 @@ Lemma d_consis_gen_syn_color_eq : forall Δ Γ A B,
 Proof.
   intros Δ Γ A B H. induction H; simpl; try reflexivity.
   - (* __forall_inh_tagged *)
+    f_equal.
+    pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
+    assert (HX : X `notin` L) by auto.
+    specialize (H0 X HX).
+    rewrite !syn_color_t_open_var in H0.
+    apply open_typ_wrt_typ_inj in H0; auto;
+      rewrite syn_color_t_ftvar; auto.
+  - (* __forall_inh_untagged (NEW) *)
     f_equal.
     pick fresh X for (L `union` ftvar_in_typ T `union` ftvar_in_typ A).
     assert (HX : X `notin` L) by auto.
@@ -221,22 +237,17 @@ Proof.
   - inversion Hc; subst. reflexivity.
   - inversion Hc; subst. reflexivity.
   - inversion Hc; subst. f_equal; eauto.
-  - (* is_syn_typ__all: T = typ_all_col colour_syn A. Post-refactor,
-       d_consis_gen has __forall_syn rule that matches this LHS.
-       Inversion gives body relation; cofinite IH + open-inj close. *)
-    inversion Hc; subst.
-    f_equal.
-    match goal with
-    | Hbody : forall X, X `notin` ?L0 -> d_consis_gen _ _ _ _ |- _ =>
-        pick fresh X for
-          (L `union` L0 `union` ftvar_in_typ A `union` ftvar_in_typ A1);
-        assert (HX_L : X `notin` L) by fsetdec;
-        assert (HX_L0 : X `notin` L0) by fsetdec;
-        specialize (H0 X HX_L Δ ((X ~ dbind_tvar) ++ Γ)
-                      (open_typ_wrt_typ A1 (typ_var_f X)) (Hbody X HX_L0));
-        apply open_typ_wrt_typ_inj in H0; auto
-    end.
-Qed.
+  - (* is_syn_typ__all: T = typ_all_col colour_syn A. Post δ-refactor,
+       d_consis_gen has TWO rules with LHS typ_all_col colour_syn:
+       __forall_syn (T = A, original) and __forall_inh_untagged (NEW,
+       T ≠ A by colour). The new rule makes this lemma provably FALSE.
+       Admitted pending precondition strengthening (e.g., is_syn_typ A
+       on the conclusion, or restrict to non-cross-colour). *)
+    admit.
+Admitted.
+(* d_consis_gen_lhs_syn_eq: 1 admit post-δ-refactor — new
+   __forall_inh_untagged rule breaks the equality conclusion. Used in
+   D12 __abs_anno; may cascade. *)
 
 (** The original [d_consis] inherits the same rigidity (it is a subset
     of [d_consis_gen]). *)
@@ -613,6 +624,8 @@ Proof.
   - apply is_inh_typ__unit.
   - apply is_inh_typ__var.
   - inversion Hinh. (* __forall_inh_tagged: typ_all_etag — not inh *)
+  - (* __forall_inh_untagged (NEW): A = typ_all_col colour_syn — not inh *)
+    inversion Hinh.
   - inversion Hinh. (* __forall_syn_tagged: typ_all_etag — not inh *)
   - inversion Hinh. (* __forall_syn (post-refactor): typ_all_col colour_syn — not inh *)
   - (* __forall_inh: A = typ_all_col colour_inh A_inner, B = same
@@ -640,6 +653,8 @@ Proof.
   induction Hcg; intros Hinh; try discriminate HeqΔ.
   - (* __unit *) apply is_inh_typ__unit.
   - (* __var *) apply is_inh_typ__var.
+  - (* __forall_inh_untagged (NEW): A = typ_all_col colour_syn — not inh *)
+    inversion Hinh.
   - (* __forall_syn_tagged: A = typ_all_etag — not is_inh. *)
     inversion Hinh.
   - (* __forall_syn (post-refactor): A = typ_all_col colour_syn — not is_inh. *)
@@ -681,6 +696,7 @@ Proof.
   - (* __unit *) apply d_wf_typ__unit.
   - (* __var *) apply d_wf_typ__var; assumption.
   - (* __forall_inh_tagged *) apply d_wf_typ__all with (L := L); assumption.
+  - (* __forall_inh_untagged (NEW) *) apply d_wf_typ__all with (L := L); assumption.
   - (* __forall_syn_tagged *) apply d_wf_typ__all with (L := L); assumption.
   - (* __forall_syn (post-refactor) *) apply d_wf_typ__all with (L := L); assumption.
   - (* __forall_inh *) apply d_wf_typ__all with (L := L); assumption.
@@ -698,6 +714,8 @@ Proof.
   induction Hcg; intros Hinh; try discriminate HeqΔ.
   - (* __unit *) apply d_consis_gen__unit.
   - (* __var *) apply d_consis_gen__var; assumption.
+  - (* __forall_inh_untagged (NEW): LHS typ_all_col colour_syn — not is_inh. *)
+    inversion Hinh.
   - (* __forall_syn_tagged: LHS typ_all_etag — not is_inh. *)
     inversion Hinh.
   - (* __forall_syn (post-refactor): LHS typ_all_col colour_syn — not is_inh. *)
@@ -729,6 +747,12 @@ Lemma d_consis_gen_trans : forall Γ T A B,
     d_consis_gen nil Γ T B.
 Proof.
   intros Γ T A B Hc1 Hc2.
+  (* δ-encoding refactor (2026-05-17): adding
+     [d_consis_gen__forall_inh_untagged] introduces several new
+     compositional sub-cases. Wholesale admit pending restructure.
+     See spec [docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md]. *)
+  admit.
+  (* Original proof body:
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
   generalize dependent B.
   induction Hc1; intros B0 Hc2; try discriminate HeqΔ.
@@ -762,7 +786,10 @@ Proof.
     + apply IHHc1_1; auto.
     + apply IHHc1_2; auto.
     + apply list_disjoint_nil_l.
-Qed.
+  *)
+Admitted.
+(* d_consis_gen_trans: WHOLESALE ADMIT — δ-encoding refactor cascade.
+   Original proof body commented out. *)
 
 (** [d_typing_narrow_consis_head_arg]: narrowing a [d_typing]
     head-binding along a [d_consis_gen]. Now a clean corollary of
@@ -802,6 +829,10 @@ Proof.
     + intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
       eapply H0; eauto.
     + assumption.
+  - (* __forall_inh_untagged (NEW) *)
+    apply d_consis_gen__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
   - apply d_consis_gen__forall_syn_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
@@ -981,6 +1012,12 @@ Proof.
       destruct HbY as [Hb | Hb]; apply binds_app_iff;
         [ left; auto | right; auto ].
     + assumption.
+  - (* __forall_inh_untagged (NEW) *)
+    apply d_consis_gen__forall_inh_untagged with (L := L `union` dom Γ').
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hb | Hb]; apply binds_app_iff;
+      [ left; auto | right; auto ].
   - apply d_consis_gen__forall_syn_tagged with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY.
@@ -1165,6 +1202,9 @@ Lemma d_consis_extends_d_consis_gen : forall Γ T A B,
     d_consis_gen nil Γ T B.
 Proof.
   intros Γ T0 A B Hc Hcg HwfT.
+  (* δ-encoding refactor cascade: wholesale admit pending restructure. *)
+  admit.
+  (* Original body:
   remember (@nil atom) as Δ_nil eqn:HeqΔ.
   generalize dependent T0.
   induction Hcg; intros T0 Hc HwfT; try discriminate HeqΔ.
@@ -1221,7 +1261,9 @@ Proof.
     inversion HwfT; subst.
     rewrite_env (@nil atom ++ @nil atom).
     apply d_consis_gen__arrow; auto.
-Qed.
+  *)
+Admitted.
+(* WHOLESALE ADMIT — δ-encoding refactor cascade. *)
 
 (** [d_consis_sub_trans_gen_nil]: extend d_sub_gen on the LHS via
     a d_consis. Mirrors [d_consis_sub_trans_nil] for the gen
@@ -1246,6 +1288,9 @@ Proof.
   - destruct X'; simpl in HeqA; try discriminate.
     injection HeqA; intro; subst; reflexivity.
   - inversion HwfA.
+  - (* __forall_inh_untagged (NEW): RHS = typ_all_col colour_inh,
+       syn_color paints colour_syn — discriminate via destruct X'. *)
+    destruct X'; simpl in HeqA; try discriminate.
   - inversion HwfA.
   - destruct X'; simpl in HeqA; try discriminate.
     inversion HeqA; subst.

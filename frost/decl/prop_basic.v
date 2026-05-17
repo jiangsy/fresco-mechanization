@@ -349,6 +349,9 @@ Proof.
   - constructor; auto.
   - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
     apply H0. auto.
+  - (* __pall (NEW): typ_all_col colour_syn *)
+    pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
+    apply H0. auto.
 Qed.
 
 (** Every is_ttyp is also an is_utyp (utyp's tall constructor accepts
@@ -372,6 +375,13 @@ Proof.
     + constructor.
   - constructor; auto.
   - apply is_utyp__tall with (L := L `union` singleton X) (ε := ε).
+    intros Y Hni.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
+    + apply H0; fsetdec.
+    + fsetdec.
+    + apply is_ttyp_lc; exact HB.
+  - (* __pall (NEW): typ_all_col colour_syn *)
+    apply is_utyp__pall with (L := L `union` singleton X).
     intros Y Hni.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
     + apply H0; fsetdec.
@@ -420,6 +430,9 @@ Proof.
   - constructor; auto.
   - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
     apply H0. auto.
+  - (* __pall (NEW): typ_all_col colour_syn *)
+    pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
+    apply H0. auto.
   - constructor.
   - constructor; auto.
 Qed.
@@ -446,6 +459,13 @@ Proof.
     + constructor.
   - constructor; auto.
   - apply is_uskel__tall with (L := L `union` singleton X) (ε := ε).
+    intros Y Hni.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
+    + apply H0; fsetdec.
+    + fsetdec.
+    + apply is_tskel_lc; exact HB.
+  - (* __pall (NEW): typ_all_col colour_syn *)
+    apply is_uskel__pall with (L := L `union` singleton X).
     intros Y Hni.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
     + apply H0; fsetdec.
@@ -571,8 +591,13 @@ Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
 
 (* is_utyp_inv_plain dropped: typ_all_plain no longer in typ. *)
 
-Lemma is_utyp_inv_col : forall c A, is_utyp (typ_all_col c A) -> False.
-Proof. intros c A H. inversion H. Qed.
+(** [is_utyp_inv_col] strengthened: post δ-encoding refactor, the
+    [colour_syn] case IS allowed (via [is_utyp__pall]). Only [colour_inh]
+    is rejected. *)
+Lemma is_utyp_inv_col_inh : forall A, is_utyp (typ_all_col colour_inh A) -> False.
+Proof. intros A H. inversion H. Qed.
+(* [is_utyp_inv_col] (old, claimed any colour false) DELETED 2026-05-17 —
+   provably false with [is_utyp__pall] for colour_syn. *)
 
 Lemma is_utyp_inv_hole : is_utyp typ_hole -> False.
 Proof. intros H. inversion H. Qed.
@@ -640,8 +665,11 @@ Lemma is_uskel_inv_tophole : forall A,
     is_uskel (typ_tophole A) -> is_uskel A.
 Proof. intros A H. inversion H; subst. auto. Qed.
 
-Lemma is_uskel_inv_col : forall c A, is_uskel (typ_all_col c A) -> False.
-Proof. intros c A H. inversion H. Qed.
+(** [is_uskel_inv_col] strengthened: post δ-encoding refactor, [colour_syn]
+    case is allowed via [is_uskel__pall]. *)
+Lemma is_uskel_inv_col_inh : forall A, is_uskel (typ_all_col colour_inh A) -> False.
+Proof. intros A H. inversion H. Qed.
+(* is_uskel_inv_col (old) DELETED 2026-05-17 — see is_utyp_inv_col_inh. *)
 
 (** * Inversion lemmas for the [syn_color] / [inh_color] paintings.
 

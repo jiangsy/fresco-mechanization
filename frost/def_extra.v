@@ -54,11 +54,11 @@ Inductive is_ttyp : typ -> Prop :=
        is_ttyp (open_typ_wrt_typ A (typ_var_f X))) ->
     is_ttyp (typ_all_etag ε A).
 
-(** Unresolved types: forall@ε; no other quantifiers, no holes.
-    Post-refactor: the un-decorated "plain-forall" no longer exists in
-    [typ]. Paper's [\syn{\forall α.}T] (un-tagged synthesised forall) is
-    now encoded as [typ_all_col colour_syn _]; that's a separate
-    "colour-painted" shape, not [is_utyp]. *)
+(** Unresolved types: covers paper's [\syn{\foralltag{δ}α.T}] with
+    [δ ∈ {·, ε}]. δ=ε ↦ [typ_all_etag ε A] (tagged); δ=· ↦
+    [typ_all_col colour_syn A] (untagged-syn). Both are valid unresolved
+    syn ∀s per paper. δ-encoding refactor 2026-05-17 added the colour_syn
+    case (previously missing). *)
 Inductive is_utyp : typ -> Prop :=
 | is_utyp__unit  : is_utyp typ_unit
 | is_utyp__var   : forall X, is_utyp (typ_var_f X)
@@ -67,7 +67,11 @@ Inductive is_utyp : typ -> Prop :=
 | is_utyp__tall  : forall L ε A,
     (forall X, X `notin` L ->
        is_utyp (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_utyp (typ_all_etag ε A).
+    is_utyp (typ_all_etag ε A)
+| is_utyp__pall  : forall L A,
+    (forall X, X `notin` L ->
+       is_utyp (open_typ_wrt_typ A (typ_var_f X))) ->
+    is_utyp (typ_all_col colour_syn A).
 
 (** Skeletons: is_typ + holes + topholes. *)
 Inductive is_skel : typ -> Prop :=
@@ -95,7 +99,8 @@ Inductive is_tskel : typ -> Prop :=
 | is_tskel__hole    : is_tskel typ_hole
 | is_tskel__tophole : forall A, is_tskel A -> is_tskel (typ_tophole A).
 
-(** Unresolved skeletons: is_utyp + holes + topholes. *)
+(** Unresolved skeletons: is_utyp + holes + topholes. δ-encoding refactor
+    added [is_uskel__pall] for parallel coverage of [typ_all_col colour_syn]. *)
 Inductive is_uskel : typ -> Prop :=
 | is_uskel__unit    : is_uskel typ_unit
 | is_uskel__var     : forall X, is_uskel (typ_var_f X)
@@ -105,6 +110,10 @@ Inductive is_uskel : typ -> Prop :=
     (forall X, X `notin` L ->
        is_uskel (open_typ_wrt_typ A (typ_var_f X))) ->
     is_uskel (typ_all_etag ε A)
+| is_uskel__pall    : forall L A,
+    (forall X, X `notin` L ->
+       is_uskel (open_typ_wrt_typ A (typ_var_f X))) ->
+    is_uskel (typ_all_col colour_syn A)
 | is_uskel__hole    : is_uskel typ_hole
 | is_uskel__tophole : forall A, is_uskel A -> is_uskel (typ_tophole A).
 

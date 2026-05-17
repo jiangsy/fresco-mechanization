@@ -234,6 +234,33 @@ Proof.
   - rewrite IHC; reflexivity.
 Qed.
 
+(** ** Reserved notations.
+
+    Notations are bound via [where] clauses on each [Inductive] so the
+    rule bodies use paper-faithful notation directly. This keeps the
+    rule definitions auditable against the paper [paper-ref] in one
+    glance. The notations themselves are RE-DECLARED (as plain
+    [Notation]) in [decl/notations.v] for use in client files;
+    declaring [Reserved Notation] here ensures the parser knows them
+    before the [Inductive]s. *)
+
+Reserved Notation "Ψ ⨟ Γ ⊢ₛₖ P"
+  (at level 75, Γ at level 75, P at level 75, no associativity).
+Reserved Notation "Δ ⨟ Γ ⊢ₜₜ φ"
+  (at level 75, Γ at level 75, φ at level 75, no associativity).
+Reserved Notation "Δ ⨟ Γ ⊢ₜₛ ψ"
+  (at level 75, Γ at level 75, ψ at level 75, no associativity).
+Reserved Notation "Δ ⨟ Γ ⊨ T ≈ A"
+  (at level 75, Γ at level 75, T at level 74, A at level 74, no associativity).
+Reserved Notation "Γ ⊢[ M ; Δ ] T ⊑ A"
+  (at level 75, M at level 0, Δ at level 0, T at level 74, A at level 74,
+   no associativity).
+Reserved Notation "Δ ⨟ Γ ⊨ₛ S ≈ P"
+  (at level 75, Γ at level 75, S at level 74, P at level 74, no associativity).
+Reserved Notation "Γ ⊢ₛ[ M ; Δ ] S ⊑ P"
+  (at level 75, M at level 0, Δ at level 0, S at level 74, P at level 74,
+   no associativity).
+
 (** ** Plain types under a context. *)
 Inductive d_wf_typ : list (atom * dbind) -> typ -> Prop :=
 | d_wf_typ__unit : forall Γ,
@@ -304,46 +331,48 @@ Qed.
 Inductive d_wf_skel :
   list atom -> list (atom * dbind) -> typ -> Prop :=
 | d_wf_skel__unit : forall Ψ Γ,
-    d_wf_skel Ψ Γ typ_unit
+    Ψ ⨟ Γ ⊢ₛₖ typ_unit
 | d_wf_skel__var : forall Ψ Γ X,
     List.In X Ψ \/ binds X dbind_tvar Γ ->
-    d_wf_skel Ψ Γ (typ_var_f X)
+    Ψ ⨟ Γ ⊢ₛₖ (typ_var_f X)
 | d_wf_skel__arrow : forall Ψ Γ P Q,
-    d_wf_skel Ψ Γ P ->
-    d_wf_skel Ψ Γ Q ->
-    d_wf_skel Ψ Γ (typ_arrow P Q)
+    Ψ ⨟ Γ ⊢ₛₖ P ->
+    Ψ ⨟ Γ ⊢ₛₖ Q ->
+    Ψ ⨟ Γ ⊢ₛₖ (typ_arrow P Q)
 | d_wf_skel__all_col : forall L Ψ Γ c P,
     (forall X, X `notin` L ->
-       d_wf_skel (X :: Ψ) Γ (open_typ_wrt_typ P (typ_var_f X))) ->
-    d_wf_skel Ψ Γ (typ_all_col c P)
+       (X :: Ψ) ⨟ Γ ⊢ₛₖ (open_typ_wrt_typ P (typ_var_f X))) ->
+    Ψ ⨟ Γ ⊢ₛₖ (typ_all_col c P)
 (* d_wf_skel__all_plain dropped post-refactor: typ_all_plain no longer in
    the typ AST. Paper's plain forall (no colour) lives in ctyp, not typ. *)
 | d_wf_skel__hole : forall Ψ Γ,
-    d_wf_skel Ψ Γ typ_hole
+    Ψ ⨟ Γ ⊢ₛₖ typ_hole
 | d_wf_skel__tophole : forall Ψ Γ P,
     guarded_skel P ->
-    d_wf_skel nil Γ P ->
-    d_wf_skel Ψ Γ (typ_tophole P).
+    nil ⨟ Γ ⊢ₛₖ P ->
+    Ψ ⨟ Γ ⊢ₛₖ (typ_tophole P)
+where "Ψ ⨟ Γ ⊢ₛₖ P" := (d_wf_skel Ψ Γ P) : type_scope.
 
 (** ** Well-formedness of tagged types. Each ε must appear exactly once
     (linearity by disjoint append). *)
 Inductive d_wf_ttyp :
   list atom -> list (atom * dbind) -> typ -> Prop :=
 | d_wf_ttyp__unit : forall Γ,
-    d_wf_ttyp nil Γ typ_unit
+    nil ⨟ Γ ⊢ₜₜ typ_unit
 | d_wf_ttyp__var : forall Γ X,
     binds X dbind_tvar Γ ->
-    d_wf_ttyp nil Γ (typ_var_f X)
+    nil ⨟ Γ ⊢ₜₜ (typ_var_f X)
 | d_wf_ttyp__arrow : forall Δ1 Δ2 Γ A B,
-    d_wf_ttyp Δ1 Γ A ->
-    d_wf_ttyp Δ2 Γ B ->
+    Δ1 ⨟ Γ ⊢ₜₜ A ->
+    Δ2 ⨟ Γ ⊢ₜₜ B ->
     list_disjoint Δ1 Δ2 ->
-    d_wf_ttyp (Δ1 ++ Δ2) Γ (typ_arrow A B)
+    (Δ1 ++ Δ2) ⨟ Γ ⊢ₜₜ (typ_arrow A B)
 | d_wf_ttyp__all : forall L Δ Γ ε A,
     (forall X, X `notin` L ->
-       d_wf_ttyp Δ ((X ~ dbind_tvar) ++ Γ) (open_typ_wrt_typ A (typ_var_f X))) ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ₜₜ (open_typ_wrt_typ A (typ_var_f X))) ->
     ~ List.In ε Δ ->
-    d_wf_ttyp (ε :: Δ) Γ (typ_all_etag ε A).
+    (ε :: Δ) ⨟ Γ ⊢ₜₜ (typ_all_etag ε A)
+where "Δ ⨟ Γ ⊢ₜₜ φ" := (d_wf_ttyp Δ Γ φ) : type_scope.
 
 (** ** Well-formedness of unresolved types. The "potential tag δ" (empty or ε)
     is encoded by two ∀ constructors; Δ tracks only the ε-tagged ones. *)
@@ -371,26 +400,26 @@ Inductive d_wf_utyp :
 Inductive d_wf_tskel :
   list atom -> list (atom * dbind) -> typ -> Prop :=
 | d_wf_tskel__unit : forall Γ,
-    d_wf_tskel nil Γ typ_unit
+    nil ⨟ Γ ⊢ₜₛ typ_unit
 | d_wf_tskel__var : forall Γ X,
     binds X dbind_tvar Γ ->
-    d_wf_tskel nil Γ (typ_var_f X)
+    nil ⨟ Γ ⊢ₜₛ (typ_var_f X)
 | d_wf_tskel__arrow : forall Δ1 Δ2 Γ psi1 psi2,
-    d_wf_tskel Δ1 Γ psi1 ->
-    d_wf_tskel Δ2 Γ psi2 ->
+    Δ1 ⨟ Γ ⊢ₜₛ psi1 ->
+    Δ2 ⨟ Γ ⊢ₜₛ psi2 ->
     list_disjoint Δ1 Δ2 ->
-    d_wf_tskel (Δ1 ++ Δ2) Γ (typ_arrow psi1 psi2)
+    (Δ1 ++ Δ2) ⨟ Γ ⊢ₜₛ (typ_arrow psi1 psi2)
 | d_wf_tskel__all : forall L Δ Γ ε psi,
     (forall X, X `notin` L ->
-       d_wf_tskel Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ psi (typ_var_f X))) ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ₜₛ (open_typ_wrt_typ psi (typ_var_f X))) ->
     ~ List.In ε Δ ->
-    d_wf_tskel (ε :: Δ) Γ (typ_all_etag ε psi)
+    (ε :: Δ) ⨟ Γ ⊢ₜₛ (typ_all_etag ε psi)
 | d_wf_tskel__hole : forall Γ,
-    d_wf_tskel nil Γ typ_hole
+    nil ⨟ Γ ⊢ₜₛ typ_hole
 | d_wf_tskel__tophole : forall Δ Γ psi,
-    d_wf_tskel Δ Γ psi ->
-    d_wf_tskel Δ Γ (typ_tophole psi).
+    Δ ⨟ Γ ⊢ₜₛ psi ->
+    Δ ⨟ Γ ⊢ₜₛ (typ_tophole psi)
+where "Δ ⨟ Γ ⊢ₜₛ ψ" := (d_wf_tskel Δ Γ ψ) : type_scope.
 
 (** ** Unresolved skeletons: unresolved types + holes/topholes. *)
 Inductive d_wf_uskel :
@@ -424,60 +453,74 @@ Inductive d_wf_uskel :
 Inductive d_consis :
   list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
 | d_consis__unit : forall Γ,
-    d_consis nil Γ typ_unit typ_unit
+    nil ⨟ Γ ⊨ typ_unit ≈ typ_unit
 (* Paper d_consis__var has empty premise; we add binds (the paper's
    implicit wf invariant) so d_consis_preserves_wf goes through
    without a side hypothesis. *)
 | d_consis__var : forall Γ X,
     binds X dbind_tvar Γ ->
-    d_consis nil Γ (typ_var_f X) (typ_var_f X)
+    nil ⨟ Γ ⊨ (typ_var_f X) ≈ (typ_var_f X)
 (* Post-refactor (typ_all_plain removed from typ): LHS shapes are
    {typ_all_etag ε T (tagged-syn), typ_all_col colour_inh T (inh),
    typ_all_col colour_syn T (untagged-syn)}. RHS shapes are
    {typ_all_col colour_inh A, typ_all_col colour_syn A}.
 
-   Paper mapping (syntax-directed.tex:91–122):
-   - __forall_inh_tagged  = ForallTagInh (Δ-tracked, δ=ε)
-   - __forall_syn_tagged  = ForallTagSynErasure (tag erasure on RHS)
-   - __forall_syn         = ForallTagSyn untagged variant
-                            (structural refl on untagged syn)
-   - __forall_inh         = ForallInh (structural refl on inh)
+   Paper mapping (declarative.tex Fig 6 / syntax-directed.tex:91–122):
+   - __forall_inh_tagged    = EqForallInh, δ=ε case
+   - __forall_inh_untagged  = EqForallInh, δ=· case (added 2026-05-17)
+   - __forall_syn_tagged    = EqForallSyn, δ=ε case
+   - __forall_syn           = EqForallSyn, δ=· case
+   - __forall_inh           = structural refl on inh (Coq-only;
+                              not in declarative.tex Fig 6)
 
-   Rule order: tagged first, then syn-paint, then inh-paint. This order
-   matches how the prior 6-rule set's bullets get rewritten (drop
-   _untagged, replace ones in-place). *)
+   Paper rule [EqForallInh] (declarative.tex:946–952) allows the
+   potential tag [δ ∈ {·, ε}]; both cases now mechanised. *)
+(* Paper [EqForallInh] (declarative.tex:946–952): the δ ∈ {·, ε} cases. *)
 | d_consis__forall_inh_tagged : forall L Δ Γ ε T A,
     (forall X, X `notin` L ->
-       d_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
     ~ List.In ε Δ ->
-    d_consis (ε :: Δ) Γ (typ_all_etag ε T) (typ_all_col colour_inh A)
+    (ε :: Δ) ⨟ Γ ⊨ (typ_all_etag ε T) ≈ (typ_all_col colour_inh A)
+| d_consis__forall_inh_untagged : forall L Δ Γ T A,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
+         (open_typ_wrt_typ A (typ_var_f X))) ->
+    Δ ⨟ Γ ⊨ (typ_all_col colour_syn T) ≈ (typ_all_col colour_inh A)
+(* Paper [EqForallSyn] (declarative.tex:954–960): the δ ∈ {·, ε} cases.
+   The δ = · case here is [d_consis__forall_syn] below (LHS colour_syn
+   → RHS colour_syn structurally). *)
 | d_consis__forall_syn_tagged : forall L Δ Γ ε T A,
     (forall X, X `notin` L ->
-       d_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis Δ Γ (typ_all_etag ε T) (typ_all_col colour_syn A)
+    Δ ⨟ Γ ⊨ (typ_all_etag ε T) ≈ (typ_all_col colour_syn A)
 | d_consis__forall_syn : forall L Δ Γ T A,
     (forall X, X `notin` L ->
-       d_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis Δ Γ (typ_all_col colour_syn T) (typ_all_col colour_syn A)
+    Δ ⨟ Γ ⊨ (typ_all_col colour_syn T) ≈ (typ_all_col colour_syn A)
+(* Paper syntax-directed [EqForallInh] (syntax-directed.tex:116–122):
+   LHS inh, RHS inh — distinct from declarative Fig 6's [EqForallInh]
+   which has LHS syn / RHS inh. *)
 | d_consis__forall_inh : forall L Δ Γ T A,
     (forall X, X `notin` L ->
-       d_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ T (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+         (open_typ_wrt_typ T (typ_var_f X)) ≈
          (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_consis Δ Γ (typ_all_col colour_inh T) (typ_all_col colour_inh A)
+    Δ ⨟ Γ ⊨ (typ_all_col colour_inh T) ≈ (typ_all_col colour_inh A)
 (* Arrow: linear-tag semantics (paper writes Δ_1, Δ_2 as set union;
    d_wf_ttyp__arrow enforces disjointness analogously). *)
 | d_consis__arrow : forall Δ1 Δ2 Γ T1 T2 A1 A2,
-    d_consis Δ1 Γ T1 A1 ->
-    d_consis Δ2 Γ T2 A2 ->
+    Δ1 ⨟ Γ ⊨ T1 ≈ A1 ->
+    Δ2 ⨟ Γ ⊨ T2 ≈ A2 ->
     list_disjoint Δ1 Δ2 ->
-    d_consis (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2).
+    (Δ1 ++ Δ2) ⨟ Γ ⊨ (typ_arrow T1 T2) ≈ (typ_arrow A1 A2)
+where "Δ ⨟ Γ ⊨ T ≈ A" := (d_consis Δ Γ T A) : type_scope.
 
 (** ** Type subtyping Γ ⊢_M^Δ T ≤ A. *)
 Inductive d_sub :
@@ -485,32 +528,40 @@ Inductive d_sub :
 | d_sub__infer : forall Γ T A,
     (* paper Infer: typsub TI · Γ syn{T} syn{A} — [T] and [A] are
        colourless bases, each painted [syn] (their only colour). *)
-    d_consis nil Γ (syn_color T) (syn_color A) ->
-    d_sub mode_ti nil Γ (syn_color T) (syn_color A)
+    nil ⨟ Γ ⊨ (syn_color T) ≈ (syn_color A) ->
+    Γ ⊢[ mode_ti ; nil ] (syn_color T) ⊑ (syn_color A)
 | d_sub__check : forall Δ Γ T A,
     (* paper Check: typsub TC Δ Γ syn{T} inh{A} — base [T] painted
        [syn] (and guarded), base [A] painted [inh]. *)
     guarded_typ (syn_color T) ->
-    d_consis Δ Γ (syn_color T) (inh_color A) ->
-    d_sub mode_tc Δ Γ (syn_color T) (inh_color A)
+    Δ ⨟ Γ ⊨ (syn_color T) ≈ (inh_color A) ->
+    Γ ⊢[ mode_tc ; Δ ] (syn_color T) ⊑ (inh_color A)
 | d_sub__forall_r : forall L Δ Γ T A,
     (forall X, X `notin` L ->
-       d_sub mode_tc Δ ((X ~ dbind_tvar) ++ Γ) T (open_typ_wrt_typ A (typ_var_f X))) ->
-    d_sub mode_tc Δ Γ T (typ_all_col colour_inh A)
+       ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ; Δ ] T ⊑ (open_typ_wrt_typ A (typ_var_f X))) ->
+    Γ ⊢[ mode_tc ; Δ ] T ⊑ (typ_all_col colour_inh A)
 | d_sub__arg : forall Δ1 Δ2 Γ m T1 T2 A1 A2,
-    d_consis Δ1 Γ T1 A1 ->
-    d_sub m Δ2 Γ T2 A2 ->
-    d_sub (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow T1 T2) (typ_arrow A1 A2)
+    Δ1 ⨟ Γ ⊨ T1 ≈ A1 ->
+    Γ ⊢[ m ; Δ2 ] T2 ⊑ A2 ->
+    Γ ⊢[ mode_fn m ; (Δ1 ++ Δ2) ] (typ_arrow T1 T2) ⊑ (typ_arrow A1 A2)
 | d_sub__forall_l_tagged : forall Δ Δ' Γ m ε T ph A,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
-    d_wf_ttyp Δ' Γ ph ->
-    d_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ T ph) A ->
-    d_sub m Δ Γ (typ_all_etag ε T) A.
-(* d_sub__forall_l_untagged dropped post-refactor: typ_all_plain no longer
-   in typ. Paper's [syn{∀α.}T] (untagged) LHS for d_sub is now encoded as
-   [typ_all_col colour_syn T] (syn-painted), and ForallL for that shape
-   is not paper-faithful — d_sub only instantiates tagged-syn quantifiers. *)
+    Δ' ⨟ Γ ⊢ₜₜ ph ->
+    Γ ⊢[ m ; (Δ ++ Δ') ] (open_typ_wrt_typ T ph) ⊑ A ->
+    Γ ⊢[ m ; Δ ] (typ_all_etag ε T) ⊑ A
+(* Paper [sublab{ForallL}] (declarative.tex:923–930) allows the potential
+   tag [δ ∈ {·, ε}]. The [δ = ε] case is [d_sub__forall_l_tagged] above.
+   The [δ = ·] case is [d_sub__forall_l_untagged] below: the LHS is an
+   untagged-syn ∀ encoded as [typ_all_col colour_syn T]; no ε to track.
+   See [docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md]. *)
+| d_sub__forall_l_untagged : forall Δ Δ' Γ m T ph A,
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    Δ' ⨟ Γ ⊢ₜₜ ph ->
+    Γ ⊢[ m ; (Δ ++ Δ') ] (open_typ_wrt_typ T ph) ⊑ A ->
+    Γ ⊢[ m ; Δ ] (typ_all_col colour_syn T) ⊑ A
+where "Γ ⊢[ M ; Δ ] T ⊑ A" := (d_sub M Δ Γ T A) : type_scope.
 
 (** ** Shallow polymorphic subtyping (paper line 1062). The Phase 2 target:
     we will prove d_sub TC ε Γ A B → d_shallow_sub Γ A B. *)
@@ -622,47 +673,61 @@ Inductive d_refine :
 Inductive d_pat_consis :
   list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
 | d_pat_consis__unit : forall Γ,
-    d_pat_consis nil Γ typ_unit typ_unit
+    nil ⨟ Γ ⊨ₛ typ_unit ≈ typ_unit
 | d_pat_consis__var : forall Γ X,
     binds X dbind_tvar Γ ->
-    d_pat_consis nil Γ (typ_var_f X) (typ_var_f X)
-(* Post-refactor: _untagged variants dropped (typ_all_plain LHS gone). *)
+    nil ⨟ Γ ⊨ₛ (typ_var_f X) ≈ (typ_var_f X)
 | d_pat_consis__forall_inh_tagged : forall L Δ Γ ε SS P,
     (forall X, X `notin` L ->
-       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ SS (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
+         (open_typ_wrt_typ SS (typ_var_f X)) ≈
          (open_typ_wrt_typ P (typ_var_f X))) ->
     ~ List.In ε Δ ->
-    d_pat_consis (ε :: Δ) Γ (typ_all_etag ε SS) (typ_all_col colour_inh P)
+    (ε :: Δ) ⨟ Γ ⊨ₛ (typ_all_etag ε SS) ≈ (typ_all_col colour_inh P)
+(* Paper [PatEqForall] (declarative.tex:1837–1843): LHS syn, RHS inh. *)
+| d_pat_consis__forall_inh_untagged : forall L Δ Γ SS P,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
+         (open_typ_wrt_typ SS (typ_var_f X)) ≈
+         (open_typ_wrt_typ P (typ_var_f X))) ->
+    Δ ⨟ Γ ⊨ₛ (typ_all_col colour_syn SS) ≈ (typ_all_col colour_inh P)
+(* Paper [PatEqForall'] (declarative.tex:1845–1851): LHS syn, RHS syn. *)
 | d_pat_consis__forall_syn_tagged : forall L Δ Γ ε SS P,
     (forall X, X `notin` L ->
-       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (open_typ_wrt_typ SS (typ_var_f X))
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
+         (open_typ_wrt_typ SS (typ_var_f X)) ≈
          (open_typ_wrt_typ P (typ_var_f X))) ->
-    d_pat_consis Δ Γ (typ_all_etag ε SS) (typ_all_col colour_syn P)
+    Δ ⨟ Γ ⊨ₛ (typ_all_etag ε SS) ≈ (typ_all_col colour_syn P)
+| d_pat_consis__forall_syn_untagged : forall L Δ Γ SS P,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
+         (open_typ_wrt_typ SS (typ_var_f X)) ≈
+         (open_typ_wrt_typ P (typ_var_f X))) ->
+    Δ ⨟ Γ ⊨ₛ (typ_all_col colour_syn SS) ≈ (typ_all_col colour_syn P)
 (* Ghost: paper rule says "no synthesised ∀ in P" but assumes P is wf
    via the meta-level invariant. We make the wf premise explicit so
    that d_pat_consis_preserves_wf is provable. *)
 | d_pat_consis__ghost : forall Γ P,
     no_forall_typ P ->
-    d_wf_skel nil Γ P ->
-    d_pat_consis nil Γ typ_hole P
+    nil ⨟ Γ ⊢ₛₖ P ->
+    nil ⨟ Γ ⊨ₛ typ_hole ≈ P
 | d_pat_consis__arrow : forall Δ1 Δ2 Γ SS1 SS2 P1 P2,
-    d_pat_consis Δ1 Γ SS1 P1 ->
-    d_pat_consis Δ2 Γ SS2 P2 ->
+    Δ1 ⨟ Γ ⊨ₛ SS1 ≈ P1 ->
+    Δ2 ⨟ Γ ⊨ₛ SS2 ≈ P2 ->
     list_disjoint Δ1 Δ2 ->
-    d_pat_consis (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
+    (Δ1 ++ Δ2) ⨟ Γ ⊨ₛ (typ_arrow SS1 SS2) ≈ (typ_arrow P1 P2)
 | d_pat_consis__univ_ghost_arr : forall Δ Γ SS P,
-    d_pat_consis Δ Γ SS P ->
-    d_pat_consis Δ Γ (typ_tophole SS) (typ_tophole P)
+    Δ ⨟ Γ ⊨ₛ SS ≈ P ->
+    Δ ⨟ Γ ⊨ₛ (typ_tophole SS) ≈ (typ_tophole P)
 | d_pat_consis__univ_ghost_inh1 : forall L Δ Γ SS P,
     (forall X, X `notin` L ->
-       d_pat_consis Δ ((X ~ dbind_tvar) ++ Γ)
-         (typ_tophole SS) (open_typ_wrt_typ P (typ_var_f X))) ->
-    d_pat_consis Δ Γ (typ_tophole SS) (typ_all_col colour_inh P)
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
+         (typ_tophole SS) ≈ (open_typ_wrt_typ P (typ_var_f X))) ->
+    Δ ⨟ Γ ⊨ₛ (typ_tophole SS) ≈ (typ_all_col colour_inh P)
 | d_pat_consis__univ_ghost_pass : forall Δ Γ SS P,
-    d_pat_consis Δ Γ SS P ->
-    d_pat_consis Δ Γ (typ_tophole SS) P.
+    Δ ⨟ Γ ⊨ₛ SS ≈ P ->
+    Δ ⨟ Γ ⊨ₛ (typ_tophole SS) ≈ P
+where "Δ ⨟ Γ ⊨ₛ S ≈ P" := (d_pat_consis Δ Γ S P) : type_scope.
 
 (** ** Skeleton subtyping Γ ⊢ₛ[ M ; Δ ] S ⊑ P.
     Standalone — depends on d_pat_consis but not on d_typing/d_pat. *)
@@ -670,8 +735,8 @@ Inductive d_pat_sub :
   mode -> list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
 | d_pat_sub__infer : forall Γ SS P,
     is_syn_skel P ->
-    d_pat_consis nil Γ SS P ->
-    d_pat_sub mode_ti nil Γ SS P
+    nil ⨟ Γ ⊨ₛ SS ≈ P ->
+    Γ ⊢ₛ[ mode_ti ; nil ] SS ⊑ P
 (* Paper sublab{UnivGhostR} requires "syn{S} guarded" — added now. *)
 | d_pat_sub__univ_ghost_r : forall Γ SS P,
     guarded_skel SS ->
@@ -679,28 +744,36 @@ Inductive d_pat_sub :
     (forall SS', SS <> typ_tophole SS') ->
     SS <> typ_hole ->
     is_syn_skel P ->
-    d_pat_consis nil Γ SS P ->
-    d_pat_sub mode_tc nil Γ SS (typ_tophole P)
+    nil ⨟ Γ ⊨ₛ SS ≈ P ->
+    Γ ⊢ₛ[ mode_tc ; nil ] SS ⊑ (typ_tophole P)
 (* d_pat_sub__ghost: same wf strengthening as d_pat_consis__ghost. *)
 | d_pat_sub__ghost : forall Γ m P,
     no_forall_typ P ->
-    d_wf_skel nil Γ P ->
-    d_pat_sub (mode_fn m) nil Γ typ_hole P
+    nil ⨟ Γ ⊢ₛₖ P ->
+    Γ ⊢ₛ[ mode_fn m ; nil ] typ_hole ⊑ P
 | d_pat_sub__univ_ghost_l : forall Δ Γ m SS P,
     m <> mode_ti ->
-    d_pat_sub m Δ Γ SS P ->
-    d_pat_sub m Δ Γ (typ_tophole SS) P
+    Γ ⊢ₛ[ m ; Δ ] SS ⊑ P ->
+    Γ ⊢ₛ[ m ; Δ ] (typ_tophole SS) ⊑ P
 | d_pat_sub__arg : forall Δ1 Δ2 Γ m SS1 SS2 P1 P2,
-    d_pat_consis Δ1 Γ SS1 P1 ->
-    d_pat_sub m Δ2 Γ SS2 P2 ->
-    d_pat_sub (mode_fn m) (Δ1 ++ Δ2) Γ (typ_arrow SS1 SS2) (typ_arrow P1 P2)
+    Δ1 ⨟ Γ ⊨ₛ SS1 ≈ P1 ->
+    Γ ⊢ₛ[ m ; Δ2 ] SS2 ⊑ P2 ->
+    Γ ⊢ₛ[ mode_fn m ; (Δ1 ++ Δ2) ] (typ_arrow SS1 SS2) ⊑ (typ_arrow P1 P2)
 | d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε SS psi P,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
-    d_wf_tskel Δ' Γ psi ->
-    d_pat_sub m (Δ ++ Δ') Γ (open_typ_wrt_typ SS psi) P ->
-    d_pat_sub m Δ Γ (typ_all_etag ε SS) P.
-(* d_pat_sub__forall_l_untagged dropped post-refactor (typ_all_plain gone). *)
+    Δ' ⨟ Γ ⊢ₜₛ psi ->
+    Γ ⊢ₛ[ m ; (Δ ++ Δ') ] (open_typ_wrt_typ SS psi) ⊑ P ->
+    Γ ⊢ₛ[ m ; Δ ] (typ_all_etag ε SS) ⊑ P
+(* Paper [PatSubForallL] δ=· case (declarative.tex:1814–1821): LHS untagged
+   syn, parallels [d_pat_sub__forall_l_tagged] with [typ_all_col colour_syn]. *)
+| d_pat_sub__forall_l_untagged : forall Δ Δ' Γ m SS psi P,
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    Δ' ⨟ Γ ⊢ₜₛ psi ->
+    Γ ⊢ₛ[ m ; (Δ ++ Δ') ] (open_typ_wrt_typ SS psi) ⊑ P ->
+    Γ ⊢ₛ[ m ; Δ ] (typ_all_col colour_syn SS) ⊑ P
+where "Γ ⊢ₛ[ M ; Δ ] S ⊑ P" := (d_pat_sub M Δ Γ S P) : type_scope.
 
 (** ** Declarative typing Γ ⊢[ M ] e ⇒ A and skeleton inference Γ ⊢[ M ] e ⇨ P.
     These two are genuinely mutual due to the App rule (d_typing__app reads

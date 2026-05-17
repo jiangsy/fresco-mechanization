@@ -166,6 +166,9 @@ Proof.
   - apply d_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)); auto.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
+  - apply d_consis__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    eapply H0; eauto.
   - apply d_consis__forall_syn_tagged with (L := L `union` dom (Γ1 ++ Γ2 ++ Γ3)).
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply H0; eauto.
@@ -199,6 +202,11 @@ Proof.
   - apply d_consis__unit.
   - apply d_consis__var. apply Hmorph; auto.
   - apply d_consis__forall_inh_tagged with (L := L `union` dom Γ'); auto.
+    intros X HX. apply H0; auto.
+    intros Y HbY. apply binds_app_iff in HbY.
+    destruct HbY as [Hin | Hin]; apply binds_app_iff;
+      [left; auto | right; auto].
+  - apply d_consis__forall_inh_untagged with (L := L `union` dom Γ').
     intros X HX. apply H0; auto.
     intros Y HbY. apply binds_app_iff in HbY.
     destruct HbY as [Hin | Hin]; apply binds_app_iff;
@@ -240,6 +248,8 @@ Proof.
     + apply IHd_sub; auto.
   - eapply d_sub__forall_l_tagged; eauto.
     eapply d_wf_ttyp_weakening. exact H1.
+  - eapply d_sub__forall_l_untagged; eauto.
+    eapply d_wf_ttyp_weakening. exact H1.
 Qed.
 
 Lemma d_sub_weakening_head : forall Γ Γ' M Δ T A,
@@ -275,6 +285,13 @@ Proof.
       apply d_consis__var. apply binds_app_iff in H. destruct H; apply binds_app_iff; auto.
   - (* __forall_inh_tagged *)
     apply d_consis__forall_inh_tagged with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)); auto.
+    intros Y HY.
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    apply H0; auto.
+  - (* __forall_inh_untagged *)
+    apply d_consis__forall_inh_untagged with (L := L `union` singleton X `union` dom (Γ1 ++ Γ2)).
     intros Y HY.
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
     rewrite subst_typ_in_typ_open_typ_wrt_typ_var; [| fsetdec | apply (d_wf_typ_lc HBwf)].
@@ -406,6 +423,13 @@ Proof.
       apply mono_typ_d_wf_ttyp; auto.
     + rewrite <- subst_typ_in_typ_open_typ_wrt_typ; [| apply (d_wf_typ_lc HBwf)].
       apply IHHsub; auto.
+  - (* __forall_l_untagged: parallel to tagged, LHS typ_all_col colour_syn *)
+    simpl.
+    eapply d_sub__forall_l_untagged with (Δ' := Δ') (ph := subst_typ_in_typ B X ph); auto.
+    + eapply d_wf_ttyp_subst; eauto.
+      apply mono_typ_d_wf_ttyp; auto.
+    + rewrite <- subst_typ_in_typ_open_typ_wrt_typ; [| apply (d_wf_typ_lc HBwf)].
+      apply IHHsub; auto.
 Qed.
 
 (** Context tvar-morphism for [d_sub]. *)
@@ -426,5 +450,7 @@ Proof.
     + eapply d_consis_tvar_morph; eauto.
     + apply IHd_sub; auto.
   - eapply d_sub__forall_l_tagged; eauto.
+    eapply d_wf_ttyp_tvar_morph; eauto.
+  - eapply d_sub__forall_l_untagged; eauto.
     eapply d_wf_ttyp_tvar_morph; eauto.
 Qed.
