@@ -199,6 +199,77 @@ The re-encoding pass introduced bulk admits (~14 new during rewrite); subsequent
 - `80ccb23`: closed `d_sub_LHS_mono_wf` + `d_consis_extends_d_sub` (then-name; now `d_consis_sub_trans`).
 - `023a711`: closed `d_consis_to_d_sub_gen`.
 
+## Earlier retrospective: Lemma 3.7 (`d_pat_preserves_skel_wf`) — worked example of the colour-discipline closure pattern
+
+**Status: Qed-closed** at the paper-faithful signature
+([`d_pat_preserves_skel_wf`](frost/decl/prop_skeleton.v):
+`d_pat mode_tc Γ e P → d_wf_denv Γ → d_wf_skel nil Γ P` — no extra
+premises). Closure took several iterations and bottomed out at a
+*methodological* insight rather than a structural patch — see
+[DESIGN.md §6 — Proof debugging methodology](DESIGN.md).
+
+**What looked like the obstacle (it wasn't).** The
+`d_pat_consis__univ_ghost_inh1` rule recurses on Γ-extension while
+`d_wf_skel__all_col` recurses on Ψ-extension. At a `typ_tophole`
+boundary, Ψ gets stripped while Γ survives. So a derivation that
+introduces α into Γ during d_pat_consis can produce an output ∀α.P
+where the wf-check (which rebinds α in Ψ) fails because α is under a
+tophole. A concrete counter-example exists at the standalone-rule
+level: input `TopHole.(Hole → Unit)`, output
+`∀α. TopHole.(α → Unit)` — d_pat_consis derives it, wf rejects it.
+This was diagnosed as a "paper-level Γ↔Ψ tension" needing rule
+changes.
+
+**What the actual obstacle was.** The d_pat_consis rule *can* derive
+the bad shape **in isolation**, but the *only* contexts in the typing
+system that invoke d_pat_consis are `d_pat_sub__infer` and
+`d_pat_sub__univ_ghost_r`, both of which carry `is_syn_skel P` as an
+explicit rule premise. `is_syn_skel` rejects `typ_all_col colour_inh`
+at the top — exactly the shape the counter-example produces. So the
+bad derivation can be *built*, but it **can never be plugged into a
+typing-context use of d_pat_consis.** The paper's informal proof of
+Lemma 3.7 implicitly relied on this contextual constraint.
+Mechanically, the fix is to surface it on the helper lemma:
+
+```coq
+Lemma d_pat_consis_preserves_wf :
+    d_pat_consis Δ Γ SS P -> is_skel SS -> wf(SS) ->
+    is_syn_skel P ->                                    (* the call-site contract *)
+    wf(P).
+```
+
+The previously-admitted `__univ_ghost_inh1` case closed by inversion
+of `is_syn_skel` on the output.
+
+**The shape of the fix.**
+
+1. `d_pat_consis_preserves_wf` and `d_pat_sub_preserves_wf` strengthened
+   with `is_syn_skel P` (call-site contract surfaced).
+2. `d_wf_denv__skel` strengthened with `is_skel P` (already true of
+   every constructor of dbind_skel-entries; we made it explicit).
+3. Auxiliary lemmas: `d_pat_sub_implies_is_syn_skel` (mode_tc /
+   mode_ti), `d_pat_base_mode_ti_is_skel` (d_pat output for base
+   terms at mode_ti).
+4. Mutual `d_typing_pat_preserves_wf` conditions its d_pat side on
+   `(m = mode_tc ∨ m = mode_ti)` — implementation detail.
+5. **`d_pat_preserves_skel_wf` corollary at mode_tc, no extra
+   premises** — matches the paper's signature exactly.
+
+The top-level paper-facing lemma carries no new premises. The
+premises appear only on internal helpers, where they reflect the
+colour discipline the paper proof's narration was already using.
+
+**Related: "P2/P3 paper inconsistency" — RESOLVED (was a parsing
+bug).** An earlier read of paper rules at `declarative.tex:1620` and
+`:1635` interpreted them as producing `(typ_tophole typ_hole) → Q` and
+`(typ_tophole A) → Q` respectively, concluding the rules produced
+shapes that fail wf. That was a **precedence misreading**. In math
+notation, `TopHole.X → Y` parses as `TopHole.(X → Y)` (binder
+right-associative, like `∀x. P → Q ≡ ∀x.(P → Q)`). The actual rules
+produce `typ_tophole (typ_arrow typ_hole Q)` /
+`typ_tophole (typ_arrow A Q)` — both bodies are arrows, hence
+guarded, hence wf. **No paper inconsistency.**
+
 ## Phase 1 (definitions only)
 
 🟢 Complete (commit `6b5f7c3`, 2026-05-10). Every paper rule from `paper/sections/declarative.tex` has a corresponding `Inductive` constructor in `mechanization/frost/decl/def_extra.v`; full clean build; no `Admitted`. Bug audit performed and 9 fixes applied. Mutual block reduced to just `d_typing` ↔ `d_pat`.

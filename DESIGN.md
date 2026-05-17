@@ -1,8 +1,23 @@
 # Frost — High-Level Design Notes
 
-A single-page mental model for the mechanization. Lives alongside
-[`AGENTS.md`](AGENTS.md) and [`PROGRESS.md`](PROGRESS.md); read this
-before touching defs.
+A single-page mental model for the mechanization. Two parts:
+
+- **[Part 1 — Frost calculus design](#part-1--frost-calculus-design)** — the
+  paper-level design: what problem Frost solves, the four mechanisms,
+  the judgment families. Read this if you want to understand the
+  *calculus*.
+- **[Part 2 — Mechanization design](#part-2--mechanization-design)** — the
+  encoding decisions, methodology, and rationale for known gaps. Read
+  this if you want to understand the *Coq files*.
+
+Lives alongside [`AGENTS.md`](AGENTS.md) (ground rules + dirs) and
+[`PROGRESS.md`](PROGRESS.md) (per-lemma status). Status numbers
+(per-lemma admit lists, daily progress) live in PROGRESS.md and are
+NOT duplicated here.
+
+---
+
+# Part 1 — Frost calculus design
 
 ## 1. What problem does Frost solve?
 
@@ -10,7 +25,7 @@ Type inference for **first-class polymorphism (FCP)** with both
 directions of information flow between functions and arguments,
 without backtracking and without ad-hoc heuristics.
 
-Concretely, Frost wants the following all in one system:
+Concretely, Frost wants all four of the following in one system:
 
 1. *Function → argument* — `poly (λx. x)` where `poly : (∀a. a→a) → Int`
    propagates `∀a. a→a` inward to type-check `λx. x`.
@@ -32,7 +47,7 @@ an escape hatch.
 
 ### 2.1 Modes (`mode`, `m`)
 
-```
+```text
 M ::= TI | TC | FN M
 ```
 
@@ -50,7 +65,7 @@ instantiation is allowed (`M ≠ TI` in `forall_l`).
 
 ### 2.2 Colours (`colour`, `c`)
 
-```
+```text
 c ::= S | I
 ```
 
@@ -66,6 +81,7 @@ predicate `is_syn_typ` / `is_inh_typ` says all ∀'s in a type are S /
 all I respectively.
 
 The mode-colour invariant `mode_typ_compat M A`:
+
 - `TI` requires `is_syn_typ A`
 - `TC` requires `is_inh_typ A`
 - `FN M` requires arrow shape with bidirectional argument and
@@ -73,7 +89,207 @@ The mode-colour invariant `mode_typ_compat M A`:
 
 So the type's colour profile is determined by the mode it sits under.
 
-#### The colour-encoding principle: `ctyp` + the `syn_color` / `inh_color` paintings
+> The mechanization's encoding of "the same `A` in two different
+> colours" (the paper's `syn{A}` / `inh{A}` overload) is documented
+> in [Part 2 §4.4](#44-the-colourless-base-ctyp--syn_color--inh_color-paintings).
+
+### 2.3 Tags (`epsvar`, `eps`; ranges via `dD : tagctx`)
+
+Tags `ε` are atoms tracking provenance during instantiation. When
+subtyping `∀ε α. T ≤ A` triggers via `sub__forall_l`, Frost picks a
+**tagged** instantiation `φ` (a synthesised type whose every ∀ carries
+a fresh tag). The tag context `Δ` collects every tag the derivation
+binds. This is how "no guessing out of thin air" gets enforced: every
+quantifier the algorithm conjures up must be tagged, and the typing
+context provides its tags.
+
+In the syntax:
+
+- `typ_all_etag ε X. A` — ε-tagged ∀
+- `typ_all_col c X. A` — bidirectional ∀ (synthesised or inherited)
+
+The mechanization uses a **single unified `typ` AST**. The six paper
+"categories" — plain types, tagged types `φ`, unresolved types `T`,
+skeletons `P`, tagged skeletons `ψ`, unresolved skeletons `S` — are
+**predicates** over `typ`:
+
+| Paper | Predicate | Allowed ∀'s | Holes? |
+|-------|-----------|-------------|--------|
+| `A`   | `is_typ`   | `_col` only | no |
+| `φ`   | `is_ttyp`  | `_etag`     | no |
+| `T`   | `is_utyp`  | `_etag,_col` | no |
+| `P`   | `is_skel`  | `_col`      | yes |
+| `ψ`   | `is_tskel` | `_etag`     | yes |
+| `S`   | `is_uskel` | `_etag,_col` | yes |
+
+Inhabitation predicates: `is_inh_typ`, `is_syn_typ`, `is_inh_skel`,
+`is_syn_skel` narrow further by colour.
+
+### 2.4 Skeletons & ghosts
+
+```text
+Skeletons P, Q ::= □ | α | P → Q | ∀α.P | TopHole.P
+```
+
+Skeletons are types extended with two ghosts:
+
+- **`HOLE`** (paper `□`) — an unknown atomic type.
+- **`TOPHOLE.P`** (paper `□̇.P`) — an unknown prefix of universal
+  quantifiers followed by a guarded `P`.
+
+A skeleton is a **shape extracted from a term, independent of the
+context**. The pattern of `λx.x` is `TopHole.□→□`: any function type,
+modulo unknown top-level quantifiers. The pattern of `ids` is
+`TopHole.List (∀a.a→a)`: a `List (∀a.a→a)` possibly with implicit
+top-level quantification.
+
+Skeleton **refinement** `P ⟶ Q` fills ghosts in `P` to get `Q`. The
+two-level context `Ψ | Γ` tracks variables: `Ψ` is the scope inside
+the *current* `TopHole`-block; `Γ` is the outer term context. `TopHole`
+clears `Ψ` (universal-ghost contents cannot mention `Ψ`-vars).
+
+**Coloured refinement** `inh{P} ⟶ bid{Q}` fills inherited skeletons
+with synthesised continuations — the bridge from skeleton inference's
+output to typing's input in the `App` rule.
+
+### 2.5 Freezing
+
+`freeze e` forces `e`'s type to be exactly what synthesis produces —
+no implicit instantiation, no implicit ∀-introduction. It switches
+mode from `TI` to `TC` and uses the synthesised type as the *inherited*
+type. Used to disambiguate `single id` (returns `∀a. a→a List`) vs
+`single ~id` (returns `List (∀a. a→a)`).
+
+## 3. The judgment families
+
+### 3.1 Declarative judgments (in `frost/decl/def_extra.v`)
+
+Roughly the dependency DAG:
+
+```text
+d_wf_typ ⊆ {d_wf_ttyp, d_wf_utyp} ⊆ d_wf_skel ⊆ {d_wf_tskel, d_wf_uskel}
+                      │
+                      ▼
+                 d_consis  ── d_sub  ── d_shallow_sub
+                      │         │
+                      ▼         ▼
+                 d_pat_consis ── d_pat_sub
+                      │              │
+                      ▼              ▼
+                 d_refine_syn    d_refine
+                      │              │
+                      └──────────────┘
+                              │
+                              ▼
+                          d_typing  ⇄  d_pat       (mutual)
+```
+
+Modes appear in `d_sub`, `d_pat_sub`, `d_refine`, `d_typing`, `d_pat`.
+Tag contexts `Δ` thread through `d_consis`, `d_sub`, `d_pat_consis`,
+`d_pat_sub` (in a "linear use" discipline — disjoint at arrows,
+singleton at tagged ∀, empty at unit/var).
+
+The two-context split `Ψ | Γ` shows up only in skeleton-related
+judgments (`d_wf_skel`, `d_refine`, `d_refine_syn`). Term-typing
+judgments use only `Γ`. `Ψ` tracks variables bound *inside* the
+current skeleton; arrow rules thread `Ψ` to both branches; `TopHole`
+rules **clear** `Ψ`.
+
+The mutual `d_typing ⇄ d_pat` block exists because:
+
+- `d_typing__app` fires `d_pat` on the argument to grab its skeleton,
+  then refines that into the inherited side of the function's arrow.
+- `d_pat__app` mirrors the same shape on the skeleton-inference side.
+
+So neither can be defined alone.
+
+### 3.2 Algorithmic judgments (in `frost/algo/def_extra.v`)
+
+Algorithmic syntax does **not** extend `typ`. A flex variable is an
+ordinary type variable (`typ_var_f X`); whether `X` is rigid,
+flex-mono (`α̂`), or flex-poly (`α̌`) is recorded **solely by its
+binding** in the algorithmic context `Θ`. (Pre-2026-05-15, `typ` had
+`typ_var_flex_mono` / `typ_var_flex_poly` constructors — removed for
+the same reason `ctyp` has no flex case, see Part 2 §4.4.)
+
+Algorithmic contexts `Θ` (`aenv`) are ordered lists of `abind`:
+
+```text
+abind ::= tvar               -- rigid type variable
+        | var_typ A          -- term-variable typing
+        | flex_mono          -- declared α̂  (X bound here ⟹ X is flex-mono)
+        | flex_mono_def τ    -- solved α̂ := τ
+        | flex_poly_def P    -- declared α̌ ≜ P (skeleton)
+        | marker             -- ⫶, scope delimiter for flex-poly
+```
+
+So `α̂` / `α̌` are `typ_var_f X` entries whose `Θ`-binding is
+`flex_mono` / `flex_poly_def _`; rigid vars bind `tvar`. The flex-poly
+assignment is the algorithm's novelty: every `α̌` is born with
+skeleton `□` and is refined as constraints arrive.
+
+**Information increase** `Θ₀ ⊑ Θ₁` (paper `Θ₀ → Θ₁` with the
+metasubst) preserves variable dependency: `α̂` can become `α̂ := τ`;
+`α̌ ≜ P` can become `α̌ ≜ Q` with `P ⟶ Q`; markers and rigid vars are
+preserved; suffixes can be appended.
+
+The algorithmic judgments (`a_sub`, `a_pat`, `a_typing`, etc.) take
+`Θ₀` as input and produce `Θ₁` as output — they monotonically
+*augment* information. **Transfer** `a_transfers Θ Γ` projects an
+algorithmic context to its declarative shadow by erasing flex vars
+(only feasible when every flex-mono is solved).
+
+The declarative and algorithmic systems are connected by:
+
+- **Soundness** (paper §Type Inference) — every algorithmic judgment
+  has a declarative shadow under `a_transfers`.
+- **Completeness** (paper §"Subtyping is complete") — every
+  declarative derivation can be matched algorithmically (modulo
+  flex-var choices).
+- **Stability** (paper proofs.tex §1) — declarative judgments are
+  preserved under `Θ₀ ⊑ Θ₁` after transfer.
+
+---
+
+# Part 2 — Mechanization design
+
+## 4. Encoding choices
+
+The mechanization makes four load-bearing encoding choices that
+diverge from the paper's notation. Each is documented here with the
+*why*.
+
+### 4.1 One `typ` inductive (instead of six)
+
+The paper's six categories (`A`, `φ`, `T`, `P`, `ψ`, `S`) are encoded
+as **predicates** over a single `typ` AST (see the table in §2.3).
+
+Pre-rejected: six mutually-defined inductives — lngen rejected it
+with "Ambiguous type for X". Fix: single `typ`, predicates layer on
+top. Category-preservation under substitution becomes a structural
+lemma instead of being built into the type system.
+
+### 4.2 Predicative contexts (`list atom`)
+
+Tag contexts `Δ` and skeleton-scope contexts `Ψ` are plain `list
+atom`. Disjoint-union `Δ₁ ⊎ Δ₂` is encoded as `list_disjoint Δ₁ Δ₂`
+plus `++`. Avoids the multiset machinery the paper's prose hints at.
+
+The cost: arrow cases of transitivity-style lemmas like
+`d_consis_compose` (paper Lemma B.2) interleave segments
+`(Δ₁ ++ Δb1) ++ (Δ₂ ++ Δb2)` vs the natural `Δa ++ Δb`. Worked
+around with a `Permutation`-quantified conclusion plus the
+`list_swap_middle` helper. Switching to multiset would simplify
+this; deferred decision.
+
+### 4.3 Cofinite-quantification binders via lngen
+
+Standard locally-nameless mechanization. lngen generates `prop_ln.v`
+with the free-variable lemmas, opening / substitution operators, etc.
+Cofinite premises on binder rules (i.e. `forall X, X ∉ L → ...`) are
+the norm.
+
+### 4.4 The colourless base `ctyp` + `syn_color` / `inh_color` paintings
 
 The paper writes `syn{A}` / `inh{A}` ambiguously — sometimes as a
 *predicate* ("`A` is all-synthesised"), sometimes as a
@@ -85,13 +301,14 @@ mechanization fixes **one uniform rule** built on a genuine
 ctyp ::= unit | α | ctyp → ctyp | ∀.ctyp | □ | □̇.ctyp
 ```
 
-`ctyp` is `typ`'s shape with the **three** `forall` flavours
-(`typ_all_col`, `typ_all_etag`, `typ_all_plain`) collapsed to **one**
-neutral binder `ctyp_all`, and **no** flex-var constructors (an
-algorithmic flex var is morally a variable, distinguished by its
-binding in `Θ`, not by a type former). It is the *free equivalence class* of
-coloured types — two coloured `typ`s are *convertible* exactly when
-they `erase` to the same `ctyp`. Three functions (`def_extra.v`):
+`ctyp` is `typ`'s shape with the **two** colour-bearing `forall`
+flavours (`typ_all_col`, `typ_all_etag`) collapsed to **one** neutral
+binder `ctyp_all`, and **no** flex-var constructors (an algorithmic
+flex var is morally a variable, distinguished by its binding in `Θ`,
+not by a type former). It is the *free equivalence class* of coloured
+types — two coloured `typ`s are *convertible* exactly when they
+`erase` to the same `ctyp`. Three functions
+([`decl/def_extra.v`](frost/decl/def_extra.v)):
 
 - `syn_color, inh_color : ctyp -> typ` — paint a colourless `ctyp`
   all-synthesised / all-inherited (`ctyp_all` → `typ_all_col
@@ -137,214 +354,18 @@ lngen" means "no generated `.v` file for `ctyp`", not "no binder
 infrastructure".
 
 The declarative rule definitions were re-encoded to this scheme on
-2026-05-15 — see [PROGRESS.md](PROGRESS.md) "colour re-encoding" for
-the per-rule table and the proof-repair status.
-
-### 2.3 Tags (`epsvar`, `eps`; ranges via `dD : tagctx`)
-
-Tags `ε` are atoms tracking provenance during instantiation. When
-subtyping `∀ε α. T ≤ A` triggers via `sub__forall_l`, Frost picks a
-**tagged** instantiation `φ` (a synthesised type whose every ∀ carries
-a fresh tag). The tag context `Δ` collects every tag the derivation
-binds. This is how "no guessing out of thin air" gets enforced: every
-quantifier the algorithm conjures up must be tagged, and the typing
-context provides its tags.
-
-In the syntax:
-- `typ_all_etag eps X. A` — ε-tagged ∀
-- `typ_all_col c X. A` — bidirectional ∀ (synthesised or inherited)
-- `typ_all_plain X. A` — plain ∀ (e.g., inside skeletons before
-  colouring)
-
-The mechanization uses a **single unified `typ` AST** (the language.ott
-choice). The six paper "categories" — plain types, tagged types `φ`,
-unresolved types `T`, skeletons `P`, tagged skeletons `ψ`, unresolved
-skeletons `S` — are **predicates** over `typ`:
-
-| Paper | Predicate          | Allowed ∀'s | Holes? |
-|-------|--------------------|-------------|--------|
-| `A`   | `is_typ`           | `_plain`    | no     |
-| `φ`   | `is_ttyp`          | `_etag`     | no     |
-| `T`   | `is_utyp`          | `_etag,_plain` | no  |
-| `P`   | `is_skel`          | `_col,_plain` | yes  |
-| `ψ`   | `is_tskel`         | `_etag`     | yes    |
-| `S`   | `is_uskel`         | `_etag,_plain` | yes  |
-
-Inhabitation predicates: `is_inh_typ`, `is_syn_typ`, `is_inh_skel`,
-`is_syn_skel` narrow further by colour.
-
-### 2.4 Skeletons & ghosts
-
-```
-Skeletons P, Q ::= □ | α | P → Q | ∀α.P | TopHole.P
-```
-
-Skeletons are types extended with two ghosts:
-
-- **`HOLE`** (paper `□`) — an unknown atomic type.
-- **`TOPHOLE.P`** (paper `□̇.P`) — an unknown prefix of universal
-  quantifiers followed by a guarded `P`.
-
-A skeleton is a **shape extracted from a term, independent of the
-context**. The pattern of `λx.x` is `TopHole.□→□`: any function type,
-modulo unknown top-level quantifiers. The pattern of `ids` is
-`TopHole.List (∀a.a→a)`: a `List (∀a.a→a)` possibly with implicit
-top-level quantification.
-
-Skeleton **refinement** `P ⟶ Q` fills ghosts in `P` to get `Q`. The
-two-level context `Ψ | Γ` tracks variables: `Ψ` is the scope inside
-the *current* `TopHole`-block; `Γ` is the outer term context. `TopHole`
-clears `Ψ` (universal-ghost contents cannot mention `Ψ`-vars).
-
-**Coloured refinement** `inh{P} ⟶ bid{Q}` fills inherited skeletons
-with synthesised continuations — the bridge from skeleton inference's
-output to typing's input in the `App` rule.
-
-### 2.5 Freezing
-
-`freeze e` forces `e`'s type to be exactly what synthesis produces —
-no implicit instantiation, no implicit ∀-introduction. It switches
-mode from `TI` to `TC` and uses the synthesised type as the *inherited*
-type. Used to disambiguate `single id` (returns `∀a. a→a List`) vs
-`single ~id` (returns `List (∀a. a→a)`).
-
-## 3. The judgment families
-
-### 3.1 Declarative judgments (in `frost/decl/def_extra.v`)
-
-Roughly the dependency DAG:
-
-```
-d_wf_typ ⊆ {d_wf_ttyp, d_wf_utyp} ⊆ d_wf_skel ⊆ {d_wf_tskel, d_wf_uskel}
-                      │
-                      ▼
-                 d_consis  ── d_sub  ── d_shallow_sub
-                      │         │
-                      ▼         ▼
-                 d_pat_consis ── d_pat_sub
-                      │              │
-                      ▼              ▼
-                 d_refine_syn    d_refine
-                      │              │
-                      └──────────────┘
-                              │
-                              ▼
-                          d_typing  ⇄  d_pat       (mutual)
-```
-
-Modes appear in `d_sub`, `d_pat_sub`, `d_refine`, `d_typing`, `d_pat`.
-Tag contexts `Δ` thread through `d_consis`, `d_sub`, `d_pat_consis`,
-`d_pat_sub` (in a "linear use" discipline — disjoint at arrows, singleton
-at tagged ∀, empty at unit/var).
-
-The two-context split `Ψ | Γ` shows up only in skeleton-related
-judgments (`d_wf_skel`, `d_refine`, `d_refine_syn`). Term-typing
-judgments use only `Γ`. `Ψ` tracks variables bound *inside* the
-current skeleton; arrow rules thread `Ψ` to both branches; `TopHole`
-rules **clear** `Ψ`.
-
-The mutual `d_typing ⇄ d_pat` block exists because:
-- `d_typing__app` fires `d_pat` on the argument to grab its skeleton,
-  then refines that into the inherited side of the function's arrow.
-- `d_pat__app` mirrors the same shape on the skeleton-inference side.
-
-So neither can be defined alone.
-
-### 3.2 Algorithmic judgments (in `frost/algo/def_extra.v`)
-
-Algorithmic syntax does **not** extend `typ`. A flex variable is an
-ordinary type variable (`typ_var_f X`); whether `X` is rigid,
-flex-mono (`α̂`), or flex-poly (`α̌`) is recorded **solely by its
-binding** in the algorithmic context `Θ`. (Pre-2026-05-15, `typ` had
-`typ_var_flex_mono` / `typ_var_flex_poly` constructors — removed for
-the same reason `ctyp` has no flex case, §2.2 / §4.4.)
-
-Algorithmic contexts `Θ` (`aenv`) are ordered lists of `abind`:
-
-```text
-abind ::= tvar               -- rigid type variable
-        | var_typ A          -- term-variable typing
-        | flex_mono          -- declared α̂  (X bound here ⟹ X is flex-mono)
-        | flex_mono_def τ    -- solved α̂ := τ
-        | flex_poly_def P    -- declared α̌ ≜ P (skeleton)
-        | marker             -- ⫶, scope delimiter for flex-poly
-```
-
-So `α̂` / `α̌` are `typ_var_f X` entries whose `Θ`-binding is
-`flex_mono` / `flex_poly_def _`; rigid vars bind `tvar`. The flex-poly
-assignment is the algorithm's novelty: every `α̌` is born with
-skeleton `□` and is refined as constraints arrive.
-
-**Information increase** `Θ₀ ⊑ Θ₁` (paper `Θ₀ → Θ₁` with the
-metasubst) preserves variable dependency: `α̂` can become `α̂ := τ`;
-`α̌ ≜ P` can become `α̌ ≜ Q` with `P ⟶ Q`; markers and rigid vars are
-preserved; suffixes can be appended.
-
-The algorithmic judgments (`a_sub`, `a_pat`, `a_typing`, etc.) take
-`Θ₀` as input and produce `Θ₁` as output — they monotonically
-*augment* information. **Transfer** `a_transfers Θ Γ` projects an
-algorithmic context to its declarative shadow by erasing flex vars
-(only feasible when every flex-mono is solved).
-
-The declarative and algorithmic systems are connected by:
-
-- **Soundness** (paper §Type Inference) — every algorithmic judgment
-  has a declarative shadow under `a_transfers`.
-- **Completeness** (paper §"Subtyping is complete") — every
-  declarative derivation can be matched algorithmically (modulo
-  flex-var choices).
-- **Stability** (paper proofs.tex §1) — declarative judgments are
-  preserved under `Θ₀ ⊑ Θ₁` after transfer.
-
-## 4. Why these design choices in the mechanization
-
-The mechanization makes three encoding choices that diverge from the
-paper's notation:
-
-1. **One `typ` inductive** (instead of six). Pre-rejected approach:
-   six mutually defined inductives. lngen rejected it with "Ambiguous
-   type for X". Fix: predicates over a single `typ`. Category-preservation
-   under substitution becomes a structural lemma instead of being
-   built into the type system.
-
-2. **Predicative contexts** (`list atom` in Set, not `vars : Type`).
-   Tag contexts `Δ` and skeleton-scope contexts `Ψ` are plain `list
-   atom`. Disjoint-union `Δ₁ ⊎ Δ₂` is encoded as `list_disjoint Δ₁ Δ₂
-   ∧ append`. Avoids the multiset machinery the paper's prose hints
-   at.
-
-3. **Cofinite-quantification binders via lngen**. Standard for
-   locally-nameless mechanization; familiar to anyone who's done
-   Metalib proofs.
-
-4. **Colour disambiguation via a colourless `ctyp`** (§2.2). The
-   paper's `syn{A}` / `inh{A}` notation is overloaded (predicate
-   vs. transformation); the mechanization fixes one uniform reading —
-   a genuine colourless type `ctyp` (the *free equivalence class* of
-   coloured types), with `syn_color` / `inh_color : ctyp -> typ`
-   painting a shared base and `erase : typ -> ctyp` projecting onto
-   the class. Every coloured occurrence of a meta-symbol is
-   `syn_color C` / `inh_color C` over one shared base `C : ctyp`. No
-   `is_c` predicates, no shape-equality premises. `ctyp` is the *one*
-   place the mechanization adds a second type-like inductive — kept
-   out of `language.ott` / lngen, but with a small **hand-written**
-   locally-nameless layer in `decl/def_extra.v` (`open_ctyp_wrt_ctyp`,
-   `ftvar_in_ctyp`, `subst_ctyp_in_ctyp` + commutation lemmas) because
-   the proof layer opens and substitutes it. Rule definitions were
-   re-encoded to this on 2026-05-15 (see PROGRESS.md).
-
-These are documented in [`language.ott`](frost/language.ott)'s header
-comment.
+2026-05-15 (see [PROGRESS.md Part 2](PROGRESS.md#part-2-daily-progress)
+for the closure log).
 
 ## 5. Cross-check vs current defs
 
-(Audit performed 2026-05-12 against `mech` HEAD.)
+(Audit performed 2026-05-12 against `mech` HEAD; spot-refreshed
+2026-05-17.)
 
 ### 5.1 Consistencies
 
 - **Modes**: `mode_ti`, `mode_tc`, `mode_fn` match paper's `TI / TC /
-  FN M`; `decr_mode` matches `M-`. [`frost/def_extra.v`](frost/def_extra.v):
-  ✓
+  FN M`; `decr_mode` matches `M-`. ✓
 - **Colour-mode compatibility**: `is_syn_typ` / `is_inh_typ` /
   `mode_typ_compat` / `mode_skel_compat` match the paper's `M ⊢ A : TY
   / SK`. ✓
@@ -354,36 +375,15 @@ comment.
   skeleton version additionally rejects `HOLE` and `TOPHOLE` at the
   top. ✓ (matches paper line 220 + 1168)
 - **Mutual block**: only `d_typing ↔ d_pat` are mutual; everything
-  else stands alone. ✓ (`d_pat` does NOT depend on `d_refine`/`d_pat_sub`
-  mutually — paper's typing rules force `d_pat` to inherit the
-  refinement/subtyping output from outside, but the proof reading of
-  the rules supports a non-mutual `d_refine` etc.)
+  else stands alone. ✓
 - **Algorithmic flex-poly with skeleton assignment**:
   `abind_flex_poly_def P` carries a skeleton (paper's novelty
   preserved). ✓
-- **`a_transfers` as a relation** (not partial Fixpoint): correct
-  choice — flex-mono `Θ`s without definitions have no shadow, so the
-  Prop form is cleaner than `option`. ✓
+- **`a_transfers` as a relation** (not a partial Fixpoint): the
+  Prop form is cleaner than `option` for flex-mono `Θ`s without
+  definitions. ✓
 
-### 5.2 Known tensions (documented in PROGRESS.md, repeated here)
-
-- **`d_pat__abs_check` produces `typ_tophole typ_hole`** which the
-  paper's own `d_wf_skel` rejects (paper line 1191). This is a
-  paper-level inconsistency, not a mechanization bug. Flagged.
-
-- **Γ↔Ψ "move" lemma**: closing `d_wf_typ → d_wf_skel` (a typ→skel
-  bridge) requires rebalancing variables between `Γ` and `Ψ`. The
-  paper sketches no proof of this; not attempted.
-
-- **`d_sub_no_guess_uniqueness` (paper line 1102)** sketch: the
-  paper itself flags it as "a bit sketchy". A counter-example shape
-  is documented inline in [`prop_subtyping.v`](frost/decl/prop_subtyping.v).
-  Flagged for paper revision.
-
-### 5.3 Spotted inconsistencies in current defs (FOLLOW-UP)
-
-None of the following are bugs — they're places where the def could
-be slightly cleaner without changing semantics:
+### 5.2 Encoding-induced premises (paper-implicit, mech-explicit)
 
 - **`mode_typ_compat` / `mode_skel_compat` are NOT threaded as
   premises through `d_typing` / `d_pat` rules**. The paper says
@@ -394,155 +394,36 @@ be slightly cleaner without changing semantics:
   doesn't follow from rule shapes alone; the invariant must be
   established at the toplevel and shown to be preserved (likely via a
   separate regularity lemma if needed).
-
-- **`d_typing__anno` colour mismatch — RESOLVED 2026-05-15.** The rule
-  used one variable `A` (`is_inh_typ`) for the premise, term annotation
-  *and* the conclusion, where the paper concludes `syn{A}` not
-  `inh{A}`. Re-encoded per §2.2: one colourless base `A : ctyp`,
-  premise + term annotation at `inh_color A`, conclusion at
-  `syn_color A`. (Part of the colour re-encoding — see PROGRESS.md;
-  the proof-layer repair landed with partial admits, then a
-  post-repair pass on 2026-05-15 closed several helper lemmas; see
-  PROGRESS.md "D12 admit map" for what remains.)
-
-- **Wf premises on intro rules** (added in commit `1932f03`):
-  `d_typing__abs` / `_abs_anno` / `d_pat__anno` / `d_pat__abs` carry
-  explicit `d_wf_typ Γ A` / `d_wf_skel nil Γ P`. The paper does
-  not state these — they're regularity strengthenings the
-  mechanization needs to close `d_typing_pat_preserves_wf`. Worth a
-  paper footnote. (After the 2026-05-15 re-encoding the `d_typing__abs`
-  / `_abs_anno` wf premise is on `inh_color A` / `syn_color A` for the
-  `ctyp` base `A`.)
-
-- **`d_consis__var` lacks a `binds` premise**: paper-flagged. The
-  var-case admit in `d_consis_preserves_wf` is direct evidence;
-  closing it requires either a `binds X dbind_tvar Γ` premise on
-  `d_consis__var` or a side-hypothesis precondition on the lemma.
-
+- **Wf premises on intro rules.** `d_typing__abs` / `_abs_anno` /
+  `d_pat__anno` / `d_pat__abs` carry explicit `d_wf_typ Γ A` /
+  `d_wf_skel nil Γ P`. The paper does not state these — they're
+  regularity strengthenings the mechanization needs to close
+  `d_typing_pat_preserves_wf`. Worth a paper footnote. (After the
+  2026-05-15 re-encoding, `d_typing__abs` / `_abs_anno` wf premise is
+  on `inh_color A` / `syn_color A` for the `ctyp` base `A`.)
+- **`d_consis__var` carries a `binds X dbind_tvar Γ` premise**
+  (paper-faithful: the paper assumes the wf invariant implicitly).
+  Without it, `d_consis_preserves_wf`'s var case is open.
 - **Linearity of tag contexts** is encoded as `list_disjoint` +
-  append, not multiset. This is a faithful prosaic reading of the
-  paper (`Δ₁ ⊎ Δ₂` = disjoint union) but readers expecting linear
-  logic might want a stronger statement. Out of scope for the
-  current mechanization.
+  append, not multiset. This is a prosaic reading of the paper
+  (`Δ₁ ⊎ Δ₂` = disjoint union) but readers expecting linear logic
+  might want a stronger statement. Out of scope.
 
-## 6. Paper Lemma 3.7 — closed via the colour discipline (was open)
+### 5.3 Status of paper claims
 
-**Status: Qed-closed** at the paper-faithful signature
-([`d_pat_preserves_skel_wf`](frost/decl/prop_skeleton.v):
-`d_pat mode_tc Γ e P → d_wf_denv Γ → d_wf_skel nil Γ P` — no extra
-premises). Closure took several iterations and bottomed out at a
-*methodological* insight rather than a structural patch — see §8.
+[`PROGRESS.md` Part 1](PROGRESS.md#part-1-paper--mechanization-mapping)
+is the single source of truth for which paper Lemma / Theorem is in
+which Coq file at which status. Don't track per-lemma status here —
+it WILL go stale.
 
-### What looked like the obstacle (it wasn't)
+Top-line: D1 (`d_typing_general_subsumption_via_gen`) and D12
+(`d_typing_general_subsumption_gen`) are **Qed and "Closed under the
+global context"** as of 2026-05-17. Phase 3 (algo soundness /
+completeness) has scaffolding with HEADLINE admits.
 
-The `d_pat_consis__univ_ghost_inh1` rule recurses on Γ-extension while
-`d_wf_skel__all_col` recurses on Ψ-extension. At a `typ_tophole`
-boundary, Ψ gets stripped while Γ survives. So a derivation that
-introduces α into Γ during d_pat_consis can produce an output ∀α.P
-where the wf-check (which rebinds α in Ψ) fails because α is under a
-tophole. A concrete counter-example exists at the standalone-rule
-level: input `TopHole.(Hole → Unit)`, output
-`∀α. TopHole.(α → Unit)` — d_pat_consis derives it, wf rejects it.
+## 6. Proof debugging methodology — read through the colour/mode lens
 
-I diagnosed this as a "paper-level Γ↔Ψ tension" needing rule changes.
-
-### What the actual obstacle was
-
-The d_pat_consis rule *can* derive the bad shape **in isolation**, but
-the *only* contexts in the typing system that invoke d_pat_consis are
-`d_pat_sub__infer` and `d_pat_sub__univ_ghost_r`, both of which carry
-`is_syn_skel P` as an explicit rule premise. `is_syn_skel` rejects
-`typ_all_col colour_inh` at the top — exactly the shape the
-counter-example produces. So the bad derivation can be *built*, but
-it **can never be plugged into a typing-context use of d_pat_consis.**
-
-The paper's informal proof of Lemma 3.7 implicitly relied on this
-contextual constraint. Mechanically, the fix is to surface it on the
-helper lemma:
-
-```coq
-Lemma d_pat_consis_preserves_wf :
-    d_pat_consis Δ Γ SS P -> is_skel SS -> wf(SS) ->
-    is_syn_skel P ->                                    (* the call-site contract *)
-    wf(P).
-```
-
-The previously-admitted `__univ_ghost_inh1` case is now closed by
-inversion of `is_syn_skel` on the output.
-
-### The shape of the fix
-
-1. `d_pat_consis_preserves_wf` and `d_pat_sub_preserves_wf` strengthened
-   with `is_syn_skel P` (call-site contract surfaced).
-2. `d_wf_denv__skel` strengthened with `is_skel P` (already true of every
-   constructor of dbind_skel-entries; we made it explicit).
-3. Auxiliary lemmas: `d_pat_sub_implies_is_syn_skel` (mode_tc / mode_ti),
-   `d_pat_base_mode_ti_is_skel` (d_pat output for base terms at mode_ti).
-4. Mutual `d_typing_pat_preserves_wf` conditions its d_pat side on
-   `(m = mode_tc ∨ m = mode_ti)` — implementation detail.
-5. **`d_pat_preserves_skel_wf` corollary at mode_tc, no extra premises** —
-   matches the paper's signature exactly.
-
-The top-level paper-facing lemma carries no new premises. The premises
-appear only on internal helpers, where they reflect the colour
-discipline the paper proof's narration was already using.
-
-### 6.1 Originally-flagged "P2/P3 paper inconsistency" — RESOLVED (was a parsing bug)
-
-I originally read the paper rules at declarative.tex:1620 and 1635 as
-producing `(typ_tophole typ_hole) → Q` and `(typ_tophole A) → Q`
-respectively, concluding the rules produced shapes that fail wf.
-
-That was a **precedence misreading**. In math notation, `TopHole.X → Y`
-parses as `TopHole.(X → Y)` (binder right-associative, like
-`∀x. P → Q ≡ ∀x.(P → Q)`). The actual rules produce:
-
-- `\plab{AbsCheck}` (paper:1620): `TopHole.(Hole → Q)`, i.e.
-  `typ_tophole (typ_arrow typ_hole Q)`.
-- `\plab{AbsAnnoCheck}` (paper:1635): `TopHole.(A → Q)`, i.e.
-  `typ_tophole (typ_arrow A Q)`.
-
-The body of each `TopHole` is now an arrow, which IS guarded
-(`guarded_skel` accepts arrows). Both wf cases close cleanly via the
-existing `d_wf_skel__tophole` rule + bridge lemmas. Fixed in commit
-that re-parses the rules. **No paper inconsistency.**
-
-## 7. Metatheory landmarks (current status; admits ≠ done)
-
-> **Build status (2026-05-17, post-axiom-elimination push): GREEN.**
-> Both flagship theorems D1 (`d_typing_general_subsumption_via_gen`)
-> and D12 (`d_typing_general_subsumption_gen`) are now **Qed and
-> "Closed under the global context"** — no remaining transitive
-> axioms. The post-2026-05-15 re-encoding admits in `prop_typing.v`
-> are now fully repaired in the D1/D12 chain (other Phase 2.D research-
-> grade admits remain but are not transitively reachable). See
-> `PROGRESS.md` Part 1 for the full mapping and Part 2 for the
-> session-by-session closure log.
-
-| Paper claim | Mechanization | Current status |
-|---|---|---|
-| Subtyping soundness (paper:1095) | `d_sub_sound` | Qed |
-| Refinement preserves wf (paper:1380) | `d_refine_preserves_wf`, `d_refine_syn_preserves_wf` | Qed |
-| Skeleton wf preservation (paper:1970) | `d_pat_preserves_skel_wf` | Qed (projection) |
-| Consistency Transitivity (D9 / Lemma B.2) | `d_consis_compose` | Qed mod Permutation |
-| Consistency-Subtyping Transitivity (D10 / paper Lemma B.3) | `d_consis_sub_trans` | Qed (paper-faithful form, `d_wf_typ Γ T` premise added 2026-05-17) |
-| General subsumption (paper:574, D1) | `d_typing_general_subsumption_via_gen` — bridge: `d_typing_embed_gen` (Qed) · D12 (Qed) · `d_typing_gen_collapse` (Qed) | **Qed, closed under the global context** (2026-05-17) |
-| Generalised General Subsumption (D12, Lemma B.5) | `d_typing_general_subsumption_gen` | **Qed, closed under the global context** (2026-05-17). Routes through SPLIT helpers in `prop_subsumption_aux.v` (take `Hbody_at_tc` premise constructed by D12 from its own IHbody). |
-| `is_{syn,inh}_typ` round-trip through `{syn,inh}_color ∘ erase` | `is_syn_typ_syn_color_erase`, `is_inh_typ_inh_color_erase` | Qed (closed 2026-05-15 post-repair) |
-| No guessing of polytypes (paper:1102) | `d_sub_no_guess_uniqueness` | admitted (paper-flagged) |
-| Validity of skel inference (paper:1981) | `d_pat_validity` | admitted |
-| Safety of skel inference (paper:1986) | `d_pat_safety` | admitted |
-| Stability (paper proofs.tex §1) | `stability_d_wf_typ`, `stability_d_*` | Qed (9 of 9) |
-| Algorithmic soundness | `a_sub_sound`, `a_pat_sound`, `a_typing_sound` | admitted (research-grade) |
-| Algorithmic completeness | `a_sub_complete`, `a_pat_complete`, `a_typing_complete` | admitted (research-grade) |
-| Decidability of `a_sub` | `a_sub_decidable_existential` | narrowed (vacuous-disjunct) |
-
-Honest accounting: only fully Qed-ed lemmas count as done.
-PROGRESS.md tracks which lemmas are at which stage.
-
-## 8. Proof debugging methodology — read through the colour/mode lens
-
-A general lesson from the Lemma 3.7 closure (§6): **when a metatheory
+A general lesson from successive admit-closures: **when a metatheory
 lemma in Frost looks "almost-but-not-quite true" structurally, the
 right question is rarely "how do I patch the wf rules" and almost
 always "which call-site predicate, induced by the calculus's
@@ -577,11 +458,12 @@ into the colour discipline. A few patterns to watch for:
 
 | structural gap | look for this call-site predicate | example |
 |---|---|---|
-| consistency RHS appears non-wf | `is_syn_skel P` on the calling d_pat_sub rule | Lemma 3.7 (§6) |
-| d_typing__sub takes arbitrary B | `is_base_term e` (paper restricts to base terms) | general-subsumption (§7) |
-| forall-introduction in TI mode | `is_value e` (value restriction) | d_typing__forall |
-| arrow-position pattern coerces freely | `mode_fn m` (function-position mode) | d_pat_sub__arg |
-| skeleton input to a refinement rule | `is_inh_skel` / `is_syn_skel` matching colour expectation | d_refine_* family |
+| consistency RHS appears non-wf | `is_syn_skel P` on the calling `d_pat_sub` rule | Lemma 3.7 (`d_pat_preserves_skel_wf`) |
+| `d_typing__sub` takes arbitrary B | `is_base_term e` (paper restricts to base terms) | general-subsumption (D1) |
+| ∀-introduction in TI mode | `is_value e` (value restriction) | `d_typing__forall` |
+| arrow-position pattern coerces freely | `mode_fn m` (function-position mode) | `d_pat_sub__arg` |
+| skeleton input to a refinement rule | `is_inh_skel` / `is_syn_skel` matching colour expectation | `d_refine_*` family |
+| `d_consis` LHS shape "looks too permissive" | `d_wf_typ Γ T` to rule out `typ_all_etag` LHS | `d_consis_sub_trans` (D10 / paper B.3) |
 
 A standalone helper lemma that drops one of these contextual
 predicates is almost always provably false on isolated derivations,
@@ -610,25 +492,31 @@ at the call site.
 
 ### Concrete payoffs already realised
 
-- Lemma 3.7 (§6) — closed by reading the colour discipline at the
-  d_pat_consis call sites.
-- Lemma D.3 / suffix-moving — closed via `d_typing_pat_ctx_morph`
+- **Lemma 3.7** (`d_pat_preserves_skel_wf`) — closed by reading the
+  colour discipline at the `d_pat_consis` call sites (worked example
+  written up in [PROGRESS.md Part 2](PROGRESS.md#part-2-daily-progress)).
+- **Lemma D.3** / suffix-moving — closed via `d_typing_pat_ctx_morph`
   because the structural reordering preserves *all* bindings, which
   the morph captures uniformly.
-- The 9 stability lemmas — closed via tvar-morph helpers + the
+- **The 9 stability lemmas** — closed via tvar-morph helpers + the
   binding-preservation invariant of `aenv_extends`.
+- **D10 / paper B.3** (`d_consis_sub_trans`) — closed via a
+  `d_wf_typ Γ T` premise that lets the new helper
+  `d_consis_RHS_syn_color_eq` pin the LHS syn-shape (post the
+  2026-05-15 `__forall_syn` rule addition).
+- **D12** — closed by adding an `Hbody_at_tc` parameter on the SPLIT
+  helpers so D12 can construct it from its own IHbody — breaking the
+  `lift_mono ↔ D12` cycle without restructuring the inductive.
 
 ### Where this lens is likely to pay off next
 
-- **General subsumption (paper Lemma 3.1)** non-base cases: the
-  `is_base_term e` premise on `d_typing__sub` is the analogue of
-  `is_syn_skel P` in §6. The non-base cases need either restructuring
-  through the rule that introduced the non-base term, or a paper-level
-  generalisation of `d_typing__sub`.
-- **Validity / Safety of skeleton inference (3.8 / 3.9)** — the
+- **Validity / Safety of skeleton inference (D6 / D7)** — the
   refinement reflexivity on *guarded* skeletons is exactly the kind
-  of side-condition that the colour discipline supplies; look at
-  the d_refine_syn rules' guardedness premises.
+  of side-condition that the colour discipline supplies; look at the
+  `d_refine_syn` rules' guardedness premises.
 - **Algorithmic stability lemma chain** — colours and modes survive
   algorithmically; many "obvious" stability claims should reduce to
   the same morph + discipline trick.
+- **Phase 3 soundness / completeness HEADLINES** — these are gated on
+  five auxiliary `a_*_sound` / `a_*_complete` lemmas. Each is
+  expected to follow the same morph + discipline pattern.
