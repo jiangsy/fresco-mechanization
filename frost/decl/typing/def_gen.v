@@ -1104,6 +1104,197 @@ Proof.
     apply d_consis_gen__arrow; auto.
 Qed.
 
+(** [d_consis_gen_compose] — gen variant of paper B.2 (Consistency
+    Transitivity). Same [d_wf_typ Γ T] precondition as d_consis_compose:
+    typ_all_etag-LHS cases (including the NEW
+    [__forall_syn_tagged_both]) become vacuous, simplifying the proof.
+
+    The remaining cases mirror d_consis_compose structurally. *)
+Lemma d_consis_gen_compose : forall Δa Δb Γ T A B,
+    d_consis_gen Δa Γ T A ->
+    d_consis_gen Δb Γ A B ->
+    list_disjoint Δa Δb ->
+    d_wf_typ Γ T ->
+    exists Δc, Permutation Δc (Δa ++ Δb) /\ d_consis_gen Δc Γ T B.
+Proof.
+  intros Δa Δb Γ T A B Hc1. generalize dependent B. generalize dependent Δb.
+  induction Hc1; intros Δb B0 Hc2 Hdis HwfT.
+  - (* __unit *) exists Δb. split; [apply Permutation_refl | exact Hc2].
+  - (* __var *) exists Δb. split; [apply Permutation_refl | exact Hc2].
+  - (* __forall_inh_tagged: LHS typ_all_etag — vacuous via HwfT. *)
+    inversion HwfT.
+  - (* __forall_inh_untagged (NEW δ): LHS typ_all_col colour_syn,
+       RHS typ_all_col colour_inh. Hc2 LHS colour_inh — only [__forall_inh]. *)
+    inversion Hc2; subst.
+    inversion HwfT; subst.
+    pick fresh X0 for
+      (L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+       `union` ftvar_in_typ A0 `union` dom Γ).
+    assert (HX0_L : X0 `notin` L) by fsetdec.
+    assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+    assert (HX0_L1 : X0 `notin` L1) by fsetdec.
+    match goal with
+    | Hcb : forall X, X `notin` L0 -> d_consis_gen _ _ _ _,
+      Hwfb : forall X, X `notin` L1 -> d_wf_typ _ _ |- _ =>
+        specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                      (Hcb X0 HX0_L0) Hdis (Hwfb X0 HX0_L1))
+    end.
+    destruct H0 as [Δc0 [Hperm Hcc]].
+    exists Δc0. split; [exact Hperm |].
+    apply d_consis_gen__forall_inh_untagged with
+      (L := L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+            `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
+    intros X' HX'.
+    assert (Hcc_weak :
+      d_consis_gen Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+        (open_typ_wrt_typ T (typ_var_f X0))
+        (open_typ_wrt_typ A0 (typ_var_f X0))).
+    { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+      apply d_consis_gen_weakening. simpl. exact Hcc. }
+    apply d_consis_gen_subst_typ_with_ttyp
+      with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+           (ph := typ_var_f X') (Δ_ph := nil) in Hcc_weak.
+    + rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+        by fsetdec.
+      rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+        by fsetdec.
+      exact Hcc_weak.
+    + apply d_wf_ttyp__var. left; reflexivity.
+  - (* __forall_syn_tagged: LHS typ_all_etag — vacuous via HwfT. *)
+    inversion HwfT.
+  - (* __forall_syn_tagged_both (NEW): LHS typ_all_etag — vacuous. *)
+    inversion HwfT.
+  - (* __forall_syn: LHS = RHS = typ_all_col colour_syn. Hc2 LHS = colour_syn
+       — matches [__forall_inh_untagged] or [__forall_syn]. *)
+    inversion Hc2; subst.
+    + (* Hc2 = __forall_inh_untagged: output [__forall_inh_untagged]. *)
+      inversion HwfT; subst.
+      pick fresh X0 for
+        (L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+         `union` ftvar_in_typ A0 `union` dom Γ).
+      assert (HX0_L : X0 `notin` L) by fsetdec.
+      assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+      assert (HX0_L1 : X0 `notin` L1) by fsetdec.
+      match goal with
+      | Hcb : forall X, X `notin` L0 -> d_consis_gen _ _ _ _,
+        Hwfb : forall X, X `notin` L1 -> d_wf_typ _ _ |- _ =>
+          specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                        (Hcb X0 HX0_L0) Hdis (Hwfb X0 HX0_L1))
+      end.
+      destruct H0 as [Δc0 [Hperm Hcc]].
+      exists Δc0. split; [exact Hperm |].
+      apply d_consis_gen__forall_inh_untagged with
+        (L := L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+              `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
+      intros X' HX'.
+      assert (Hcc_weak :
+        d_consis_gen Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+          (open_typ_wrt_typ T (typ_var_f X0))
+          (open_typ_wrt_typ A0 (typ_var_f X0))).
+      { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+        apply d_consis_gen_weakening. simpl. exact Hcc. }
+      apply d_consis_gen_subst_typ_with_ttyp
+        with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+             (ph := typ_var_f X') (Δ_ph := nil) in Hcc_weak.
+      * rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+          by fsetdec.
+        rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+          by fsetdec.
+        exact Hcc_weak.
+      * apply d_wf_ttyp__var. left; reflexivity.
+    + (* Hc2 = __forall_syn: output [__forall_syn]. *)
+      inversion HwfT; subst.
+      pick fresh X0 for
+        (L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+         `union` ftvar_in_typ A0 `union` dom Γ).
+      assert (HX0_L : X0 `notin` L) by fsetdec.
+      assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+      assert (HX0_L1 : X0 `notin` L1) by fsetdec.
+      match goal with
+      | Hcb : forall X, X `notin` L0 -> d_consis_gen _ _ _ _,
+        Hwfb : forall X, X `notin` L1 -> d_wf_typ _ _ |- _ =>
+          specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                        (Hcb X0 HX0_L0) Hdis (Hwfb X0 HX0_L1))
+      end.
+      destruct H0 as [Δc0 [Hperm Hcc]].
+      exists Δc0. split; [exact Hperm |].
+      apply d_consis_gen__forall_syn with
+        (L := L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+              `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
+      intros X' HX'.
+      assert (Hcc_weak :
+        d_consis_gen Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+          (open_typ_wrt_typ T (typ_var_f X0))
+          (open_typ_wrt_typ A0 (typ_var_f X0))).
+      { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+        apply d_consis_gen_weakening. simpl. exact Hcc. }
+      apply d_consis_gen_subst_typ_with_ttyp
+        with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+             (ph := typ_var_f X') (Δ_ph := nil) in Hcc_weak.
+      * rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+          by fsetdec.
+        rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+          by fsetdec.
+        exact Hcc_weak.
+      * apply d_wf_ttyp__var. left; reflexivity.
+  - (* __forall_inh: both LHS = RHS = typ_all_col colour_inh. *)
+    inversion Hc2; subst.
+    inversion HwfT; subst.
+    pick fresh X0 for
+      (L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+       `union` ftvar_in_typ A0 `union` dom Γ).
+    assert (HX0_L : X0 `notin` L) by fsetdec.
+    assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+    assert (HX0_L1 : X0 `notin` L1) by fsetdec.
+    match goal with
+    | Hcb : forall X, X `notin` L0 -> d_consis_gen _ _ _ _,
+      Hwfb : forall X, X `notin` L1 -> d_wf_typ _ _ |- _ =>
+        specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                      (Hcb X0 HX0_L0) Hdis (Hwfb X0 HX0_L1))
+    end.
+    destruct H0 as [Δc0 [Hperm Hcc]].
+    exists Δc0. split; [exact Hperm |].
+    apply d_consis_gen__forall_inh with
+      (L := L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+            `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
+    intros X' HX'.
+    assert (Hcc_weak :
+      d_consis_gen Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+        (open_typ_wrt_typ T (typ_var_f X0))
+        (open_typ_wrt_typ A0 (typ_var_f X0))).
+    { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+      apply d_consis_gen_weakening. simpl. exact Hcc. }
+    apply d_consis_gen_subst_typ_with_ttyp
+      with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+           (ph := typ_var_f X') (Δ_ph := nil) in Hcc_weak.
+    + rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+        by fsetdec.
+      rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+        by fsetdec.
+      exact Hcc_weak.
+    + apply d_wf_ttyp__var. left; reflexivity.
+  - (* __arrow: split Hc2 via inversion; recurse on each side. *)
+    inversion Hc2 as [| | | | | | | |Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdis_b];
+      subst.
+    apply list_disjoint_app_l_iff in Hdis as [Hdis1 Hdis2].
+    apply list_disjoint_app_r_iff in Hdis1 as [Hd1b1 Hd1b2].
+    apply list_disjoint_app_r_iff in Hdis2 as [Hd2b1 Hd2b2].
+    inversion HwfT; subst.
+    destruct (IHHc1_1 _ _ Hb1 Hd1b1 H3) as [Δc1 [Hperm1 Hcc1]].
+    destruct (IHHc1_2 _ _ Hb2 Hd2b2 H4) as [Δc2 [Hperm2 Hcc2]].
+    exists (Δc1 ++ Δc2). split.
+    + transitivity ((Δ1 ++ Δb1) ++ (Δ2 ++ Δb2)).
+      * apply Permutation_app; assumption.
+      * apply list_swap_middle.
+    + apply d_consis_gen__arrow; auto.
+      eapply list_disjoint_perm_l; [apply Permutation_sym; exact Hperm1|].
+      eapply list_disjoint_perm_r; [apply Permutation_sym; exact Hperm2|].
+      apply list_disjoint_app_l_iff. split.
+      * apply list_disjoint_app_r_iff. split; [exact H | exact Hd1b2].
+      * apply list_disjoint_app_r_iff. split;
+          [apply list_disjoint_sym; exact Hd2b1 | exact Hdis_b].
+Qed.
+
 Lemma d_sub_gen_weakening : forall Γ1 Γ2 Γ3 m Δ T A,
     d_sub_gen m Δ (Γ1 ++ Γ3) T A ->
     d_sub_gen m Δ (Γ1 ++ Γ2 ++ Γ3) T A.
