@@ -75,99 +75,50 @@ Qed.
     [A = typ_all_col c _], which is not an [is_utyp] shape and so
     cannot be the LHS of [Hc2]. *)
 
+(** [d_consis_compose] — restated 2026-05-17 (Phase 1.I) with
+    [d_wf_typ Γ T] precondition. The wf premise makes [typ_all_etag]-LHS
+    cases vacuous (rules out the new [__forall_syn_tagged ×
+    __forall_inh_untagged] composition that doesn't fit any output
+    d_consis rule without ε-inflation, and similarly the existing
+    [__forall_inh_tagged] case becomes vacuous). Two of the original
+    three admits are now CLOSED via this wf precondition. *)
 Lemma d_consis_compose : forall Δa Δb Γ T A B,
     Δa ⨟ Γ ⊨ T ≈ A ->
     Δb ⨟ Γ ⊨ A ≈ B ->
     list_disjoint Δa Δb ->                 (* linearity premise: tags from
                                               the two sub-derivations are
                                               fresh w.r.t. each other. *)
+    d_wf_typ Γ T ->                        (* wf premise (NEW Phase 1.I):
+                                              rules out typ_all_etag at
+                                              top of T. *)
     exists Δc, Permutation Δc (Δa ++ Δb) /\ Δc ⨟ Γ ⊨ T ≈ B.
 Proof.
   intros Δa Δb Γ T A B Hc1. generalize dependent B. generalize dependent Δb.
-  (* δ-encoding refactor (2026-05-17): adding [d_consis__forall_inh_untagged]
-     introduces 3 new compositional sub-cases in this proof:
-     - Hc1 = __forall_syn_tagged × Hc2 = __forall_inh_untagged
-     - Hc1 = __forall_syn × Hc2 = __forall_inh_untagged
-     - Hc1 = __forall_inh_untagged (new top-level case) × Hc2 = __forall_inh
-     Each requires a new cofinite-rename argument. The full restructure is
-     deferred — admitting wholesale to gate the n-arg lemma work.
-     See [docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md]. *)
-  admit.
-  (* original proof preserved below as a comment for re-introduction. *)
-  (*
-  induction Hc1; intros Δb B0 Hc2 Hdis.
-  - (* unit ~ unit, then unit ~ B0: Δa = nil, so Δc = Δb. *)
+  induction Hc1; intros Δb B0 Hc2 Hdis HwfT.
+  - (* unit ~ unit *)
     exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
-  - (* var X ~ var X. *)
+  - (* var X ~ var X *)
     exists Δb. split; [simpl; apply Permutation_refl | exact Hc2].
-  - (* __forall_inh_tagged: Hc1 has RHS = typ_all_col colour_inh A,
-       Δa = ε :: Δ. Hc2 matches the new __forall_inh. Compose via
-       cofinite-rename, then wrap with __forall_inh_tagged using
-       ε :: Δc0 (where Δc0 is a permutation of Δ ++ Δb). *)
+  - (* __forall_inh_tagged: LHS = typ_all_etag — vacuous via HwfT
+       (d_wf_typ excludes typ_all_etag at top). *)
+    inversion HwfT.
+  - (* __forall_inh_untagged (NEW Hc1 case): Hc1 LHS = typ_all_col colour_syn,
+       RHS = typ_all_col colour_inh. Hc2 matches only [__forall_inh].
+       Compose via cofinite-rename + __forall_inh_untagged output. *)
     inversion Hc2; subst.
-    (* Auto-names: A0, L0, H5 (body premise), H1 (ε ∉ Δ). *)
-    assert (Hdis_inner : list_disjoint Δ Δb).
-    { intros a Hin. apply Hdis. right. exact Hin. }
-    assert (Hε_Δb : ~ In ε Δb).
-    { apply Hdis. left. reflexivity. }
+    inversion HwfT; subst.
     pick fresh X0 for
-      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
-       `union` ftvar_in_typ A0 `union` dom Γ `union` singleton ε).
-    assert (HX0_L : X0 `notin` L) by fsetdec.
-    assert (HX0_L0 : X0 `notin` L0) by fsetdec.
-    specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
-                  (H5 X0 HX0_L0) Hdis_inner).
-    destruct H0 as [Δc0 [Hperm Hcc]].
-    exists (ε :: Δc0). split.
-    + simpl. apply perm_skip. exact Hperm.
-    + apply d_consis__forall_inh_tagged with
-        (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
-              `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0
-              `union` singleton ε).
-      * intros X' HX'.
-        assert (Hcc_weak :
-          d_consis Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
-            (open_typ_wrt_typ T (typ_var_f X0))
-            (open_typ_wrt_typ A0 (typ_var_f X0))).
-        { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
-          apply d_consis_weakening. simpl. exact Hcc. }
-        apply d_consis_subst_mono
-          with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
-               (B := typ_var_f X') in Hcc_weak; auto.
-        -- rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
-             by fsetdec.
-           rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
-             by fsetdec.
-           exact Hcc_weak.
-        -- apply mono_typ__var.
-        -- apply d_wf_typ__var. left; reflexivity.
-      * (* ε ∉ Δc0: from Permutation Δc0 (Δ ++ Δb), ε ∉ Δ, ε ∉ Δb. *)
-        intros Hin. apply (Permutation_in _ Hperm) in Hin.
-        apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-        -- apply H1; exact Hin.
-        -- apply Hε_Δb; exact Hin.
-  - (* __forall_syn_tagged: Hc1's RHS = typ_all_col colour_syn A.
-       Hc2's matching rules: __forall_syn (existing) and
-       __forall_inh_untagged (NEW δ=·, constructor declared earlier so
-       appears as FIRST surviving subgoal in inversion order). *)
-    inversion Hc2; subst;
-      [ (* Hc2 = __forall_inh_untagged: compose syn-tagged with untagged-inh
-           gives a [__forall_inh_tagged] result. Non-trivial composition
-           involving cross-colour bridge — admitted.
-           See [docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md]. *)
-        admit
-      | ].
-    pick fresh X0 for
-      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+      (L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
        `union` ftvar_in_typ A0 `union` dom Γ).
     assert (HX0_L : X0 `notin` L) by fsetdec.
     assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+    assert (HX0_L1 : X0 `notin` L1) by fsetdec.
     specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
-                  (H4 X0 HX0_L0) Hdis).
+                  (H4 X0 HX0_L0) Hdis (H3 X0 HX0_L1)).
     destruct H0 as [Δc0 [Hperm Hcc]].
     exists Δc0. split; [exact Hperm |].
-    apply d_consis__forall_syn_tagged with
-      (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+    apply d_consis__forall_inh_untagged with
+      (L := L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
             `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
     intros X' HX'.
     assert (Hcc_weak :
@@ -186,58 +137,95 @@ Proof.
       exact Hcc_weak.
     + apply mono_typ__var.
     + apply d_wf_typ__var. left; reflexivity.
-  - (* __forall_syn: Hc1 LHS = RHS = typ_all_col colour_syn. Hc2's
-       matching rules: __forall_syn (existing) and __forall_inh_untagged
-       (NEW, appears first in inversion order). *)
-    inversion Hc2; subst;
-      [ (* Hc2 = __forall_inh_untagged: compose syn-untagged with
-           untagged-inh gives __forall_inh_untagged result. Admitted. *)
-        admit
-      | ].
-    pick fresh X0 for
-      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
-       `union` ftvar_in_typ A0 `union` dom Γ).
-    assert (HX0_L : X0 `notin` L) by fsetdec.
-    assert (HX0_L0 : X0 `notin` L0) by fsetdec.
-    specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
-                  (H4 X0 HX0_L0) Hdis).
-    destruct H0 as [Δc0 [Hperm Hcc]].
-    exists Δc0. split; [exact Hperm |].
-    apply d_consis__forall_syn with
-      (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
-            `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
-    intros X' HX'.
-    assert (Hcc_weak :
-      d_consis Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
-        (open_typ_wrt_typ T (typ_var_f X0))
-        (open_typ_wrt_typ A0 (typ_var_f X0))).
-    { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
-      apply d_consis_weakening. simpl. exact Hcc. }
-    apply d_consis_subst_mono
-      with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
-           (B := typ_var_f X') in Hcc_weak; auto.
-    + rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
-        by fsetdec.
-      rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
-        by fsetdec.
-      exact Hcc_weak.
-    + apply mono_typ__var.
-    + apply d_wf_typ__var. left; reflexivity.
-  - (* __forall_inh: Hc1 has RHS = typ_all_col colour_inh A,
-       Δa = Δ (no ε to track). Hc2 matches the new __forall_inh again.
-       Compose via cofinite-rename (no ε wrapping needed). *)
+  - (* __forall_syn_tagged: LHS = typ_all_etag — vacuous via HwfT. *)
+    inversion HwfT.
+  - (* __forall_syn: Hc1 LHS = typ_all_col colour_syn T, RHS = typ_all_col
+       colour_syn A. Hc2 LHS = typ_all_col colour_syn — matches
+       [__forall_inh_untagged] (NEW δ=·, listed first in inversion order)
+       OR [__forall_syn]. *)
     inversion Hc2; subst.
+    + (* Hc2 = __forall_inh_untagged: result has typ_all_col colour_inh
+         on RHS; use __forall_inh_untagged on output. *)
+      inversion HwfT; subst.
+      pick fresh X0 for
+        (L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+         `union` ftvar_in_typ A0 `union` dom Γ).
+      assert (HX0_L : X0 `notin` L) by fsetdec.
+      assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+      assert (HX0_L1 : X0 `notin` L1) by fsetdec.
+      specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                    (H4 X0 HX0_L0) Hdis (H3 X0 HX0_L1)).
+      destruct H0 as [Δc0 [Hperm Hcc]].
+      exists Δc0. split; [exact Hperm |].
+      apply d_consis__forall_inh_untagged with
+        (L := L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+              `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
+      intros X' HX'.
+      assert (Hcc_weak :
+        d_consis Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+          (open_typ_wrt_typ T (typ_var_f X0))
+          (open_typ_wrt_typ A0 (typ_var_f X0))).
+      { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+        apply d_consis_weakening. simpl. exact Hcc. }
+      apply d_consis_subst_mono
+        with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+             (B := typ_var_f X') in Hcc_weak; auto.
+      * rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+          by fsetdec.
+        rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+          by fsetdec.
+        exact Hcc_weak.
+      * apply mono_typ__var.
+      * apply d_wf_typ__var. left; reflexivity.
+    + (* Hc2 = __forall_syn: result has typ_all_col colour_syn on both
+         sides; use __forall_syn on output. *)
+      inversion HwfT; subst.
+      pick fresh X0 for
+        (L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+         `union` ftvar_in_typ A0 `union` dom Γ).
+      assert (HX0_L : X0 `notin` L) by fsetdec.
+      assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+      assert (HX0_L1 : X0 `notin` L1) by fsetdec.
+      specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
+                    (H4 X0 HX0_L0) Hdis (H3 X0 HX0_L1)).
+      destruct H0 as [Δc0 [Hperm Hcc]].
+      exists Δc0. split; [exact Hperm |].
+      apply d_consis__forall_syn with
+        (L := L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
+              `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
+      intros X' HX'.
+      assert (Hcc_weak :
+        d_consis Δc0 ((X0 ~ dbind_tvar) ++ (X' ~ dbind_tvar) ++ Γ)
+          (open_typ_wrt_typ T (typ_var_f X0))
+          (open_typ_wrt_typ A0 (typ_var_f X0))).
+      { rewrite_env (((X0 ~ dbind_tvar) ++ nil) ++ (X' ~ dbind_tvar) ++ Γ).
+        apply d_consis_weakening. simpl. exact Hcc. }
+      apply d_consis_subst_mono
+        with (Γ1 := nil) (X := X0) (Γ2 := (X' ~ dbind_tvar) ++ Γ)
+             (B := typ_var_f X') in Hcc_weak; auto.
+      * rewrite <- (subst_typ_in_typ_intro X0 T (typ_var_f X')) in Hcc_weak
+          by fsetdec.
+        rewrite <- (subst_typ_in_typ_intro X0 A0 (typ_var_f X')) in Hcc_weak
+          by fsetdec.
+        exact Hcc_weak.
+      * apply mono_typ__var.
+      * apply d_wf_typ__var. left; reflexivity.
+  - (* __forall_inh: Hc1 has both sides typ_all_col colour_inh.
+       Hc2 LHS = typ_all_col colour_inh — only __forall_inh matches. *)
+    inversion Hc2; subst.
+    inversion HwfT; subst.
     pick fresh X0 for
-      (L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+      (L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
        `union` ftvar_in_typ A0 `union` dom Γ).
     assert (HX0_L : X0 `notin` L) by fsetdec.
     assert (HX0_L0 : X0 `notin` L0) by fsetdec.
+    assert (HX0_L1 : X0 `notin` L1) by fsetdec.
     specialize (H0 X0 HX0_L Δb (open_typ_wrt_typ A0 (typ_var_f X0))
-                  (H4 X0 HX0_L0) Hdis).
+                  (H4 X0 HX0_L0) Hdis (H3 X0 HX0_L1)).
     destruct H0 as [Δc0 [Hperm Hcc]].
     exists Δc0. split; [exact Hperm |].
     apply d_consis__forall_inh with
-      (L := L `union` L0 `union` ftvar_in_typ T `union` ftvar_in_typ A
+      (L := L `union` L0 `union` L1 `union` ftvar_in_typ T `union` ftvar_in_typ A
             `union` ftvar_in_typ A0 `union` dom Γ `union` singleton X0).
     intros X' HX'.
     assert (Hcc_weak :
@@ -256,43 +244,27 @@ Proof.
       exact Hcc_weak.
     + apply mono_typ__var.
     + apply d_wf_typ__var. left; reflexivity.
-  - (* __forall_inh_untagged (NEW Hc1 case): Hc1's RHS = typ_all_col
-       colour_inh A. Hc2's only matching rule is __forall_inh.
-       Compose via cofinite-rename, parallel to __forall_inh. *)
-    admit.
-  - (* arrow: split Hc2 via inversion; recurse on each side; assemble
-       via [list_swap_middle] and the disjointness decomposition. The
-       inversion pattern has 8 alternatives (7 bars before [__arrow])
-       for the now 8-rule d_consis (added __forall_inh_untagged). *)
+  - (* arrow: split Hc2 via inversion; recurse on each side. *)
     inversion Hc2 as [| | | | | | |Δb1 Δb2 ? T1' T2' A1' A2' Hb1 Hb2 Hdis_b];
       subst.
-    (* From Hdis : list_disjoint (Δ1 ++ Δ2) (Δb1 ++ Δb2), derive the four
-       cross-disjoints. *)
     apply list_disjoint_app_l_iff in Hdis as [Hdis1 Hdis2].
     apply list_disjoint_app_r_iff in Hdis1 as [Hd1b1 Hd1b2].
     apply list_disjoint_app_r_iff in Hdis2 as [Hd2b1 Hd2b2].
-    destruct (IHHc1_1 _ _ Hb1 Hd1b1) as [Δc1 [Hperm1 Hcc1]].
-    destruct (IHHc1_2 _ _ Hb2 Hd2b2) as [Δc2 [Hperm2 Hcc2]].
+    inversion HwfT; subst.
+    destruct (IHHc1_1 _ _ Hb1 Hd1b1 H3) as [Δc1 [Hperm1 Hcc1]].
+    destruct (IHHc1_2 _ _ Hb2 Hd2b2 H4) as [Δc2 [Hperm2 Hcc2]].
     exists (Δc1 ++ Δc2). split.
     + transitivity ((Δ1 ++ Δb1) ++ (Δ2 ++ Δb2)).
       * apply Permutation_app; assumption.
       * apply list_swap_middle.
     + apply d_consis__arrow; auto.
-      (* list_disjoint Δc1 Δc2: transfer through permutations.
-         Δc1 ~ Δ1 ++ Δb1, Δc2 ~ Δ2 ++ Δb2. Use Hdis1', Hd1b2, Hdis_b. *)
       eapply list_disjoint_perm_l; [apply Permutation_sym; exact Hperm1|].
       eapply list_disjoint_perm_r; [apply Permutation_sym; exact Hperm2|].
       apply list_disjoint_app_l_iff. split.
       * apply list_disjoint_app_r_iff. split; [exact H | exact Hd1b2].
       * apply list_disjoint_app_r_iff. split;
           [apply list_disjoint_sym; exact Hd2b1 | exact Hdis_b].
-  *)
-Admitted.
-(* d_consis_compose: WHOLESALE ADMIT — δ-encoding refactor (2026-05-17)
-   adds new sub-cases (3 sub-case combinations + 1 new top-level)
-   requiring substantial proof restructuring. Original proof body
-   commented out; needs adaptation for [d_consis__forall_inh_untagged].
-   See spec at docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md *)
+Qed.
 
 (** If [d_consis Δ Γ T A] and [d_wf_typ Γ T], then [T] is mono.
 

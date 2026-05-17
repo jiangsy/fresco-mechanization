@@ -139,10 +139,13 @@ Admitted.
 Lemma d_typing_var_ti_to_consis_or_eq : forall Γ x A B,
     uniq Γ ->
     binds x (dbind_typ A) Γ ->
+    d_wf_typ Γ A ->                          (* NEW Phase 1.I: needed by
+                                                [d_consis_compose] which now
+                                                requires d_wf_typ on LHS. *)
     Γ ⊢[ mode_ti ] (exp_var_f x) ⇒ B ->
     A = B \/ nil ⨟ Γ ⊨ A ≈ B.
 Proof.
-  intros Γ x A B Huniq Hb Htyp.
+  intros Γ x A B Huniq Hb HwfA Htyp.
   remember (exp_var_f x) as evx. remember mode_ti as m_ti.
   induction Htyp; subst; try discriminate.
   - (* __var: B = A0, with binds x A0. Use uniq to conclude A = A0. *)
@@ -175,7 +178,8 @@ Proof.
       | Hc_inv : d_consis nil _ (syn_color _) (syn_color _) |- _ =>
           edestruct (d_consis_compose (Δa := @nil atom) (Δb := @nil atom))
             as [Δc [Hperm Hccompose]];
-            [ exact Hcons | exact Hc_inv | apply list_disjoint_nil_l |];
+            [ exact Hcons | exact Hc_inv | apply list_disjoint_nil_l
+            | exact HwfA |];
           simpl in Hperm; apply Permutation_sym, Permutation_nil in Hperm;
           subst Δc; exact Hccompose
       end.
@@ -201,7 +205,7 @@ Proof.
        (Heqevx was consumed). Apply the [mode_ti] helper to the inner
        d_typing, then compose with the outer d_sub. *)
     edestruct d_typing_var_ti_to_consis_or_eq
-      as [Heq | Hcons]; [exact Huniq | exact Hb | exact Htyp | | ].
+      as [Heq | Hcons]; [exact Huniq | exact Hb | exact Hwf | exact Htyp | | ].
     + subst A0.
       match goal with
       | Hsub : d_sub (mode_fn _) nil Γ A B |- _ => exact Hsub

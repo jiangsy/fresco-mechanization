@@ -176,8 +176,11 @@ Proof.
     apply list_disjoint_app_l_iff in Hdis as [Hdisa Hdisb].
     apply list_disjoint_app_r_iff in Hdisa as [Hd_a_1 Hd_a_2].
     apply list_disjoint_app_r_iff in Hdisb as [Hd_b_1 Hd_b_2].
+    (* Derive d_wf_typ Γ T01 from HwfT (d_wf_typ Γ (typ_arrow T01 T02)). *)
+    assert (HwfT01 : d_wf_typ Γ T01) by (inversion HwfT; assumption).
+    assert (HwfT02 : d_wf_typ Γ T02) by (inversion HwfT; assumption).
     edestruct d_consis_compose as [Δd1 [Hperm1 Hccarg]];
-      [exact Hca | exact H | exact Hd_a_1 |].
+      [exact Hca | exact H | exact Hd_a_1 | exact HwfT01 |].
     (* Derive m = mode_ti → Δc02 = nil from Hs body at mode_ti = __infer. *)
     assert (HΔc02_ti : m = mode_ti -> Δc02 = nil).
     { intro Hm. subst m.
