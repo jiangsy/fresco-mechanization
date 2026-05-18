@@ -18,13 +18,35 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.def_extra.
 
-(** ===== Monotypes over ctyp ===== *)
-
+(** ===== Monotypes over ctyp =====
+    Admits unit/var/arrow only — no ∀. ctyp's hole/tophole are also
+    excluded (mono is a "real type" predicate). *)
 Inductive mono_ctyp : ctyp -> Prop :=
 | mono_ctyp__unit  : mono_ctyp ctyp_unit
 | mono_ctyp__var   : forall X, mono_ctyp (ctyp_var_f X)
 | mono_ctyp__arrow : forall K1 K2,
     mono_ctyp K1 -> mono_ctyp K2 -> mono_ctyp (ctyp_arrow K1 K2).
+
+(** ===== Monotypes over ptyp ===== *)
+Inductive mono_ptyp : ptyp -> Prop :=
+| mono_ptyp__unit  : mono_ptyp ptyp_unit
+| mono_ptyp__var   : forall X, mono_ptyp (ptyp_var_f X)
+| mono_ptyp__arrow : forall N1 N2,
+    mono_ptyp N1 -> mono_ptyp N2 -> mono_ptyp (ptyp_arrow N1 N2).
+
+(** ===== Monotypes over bid ===== *)
+Inductive mono_bid : bid -> Prop :=
+| mono_bid__unit  : mono_bid bid_unit
+| mono_bid__var   : forall X, mono_bid (bid_var_f X)
+| mono_bid__arrow : forall D1 D2,
+    mono_bid D1 -> mono_bid D2 -> mono_bid (bid_arrow D1 D2).
+
+(** ===== Monotypes over utyp ===== *)
+Inductive mono_utyp : utyp -> Prop :=
+| mono_utyp__unit  : mono_utyp utyp_unit
+| mono_utyp__var   : forall X, mono_utyp (utyp_var_f X)
+| mono_utyp__arrow : forall F1 F2,
+    mono_utyp F1 -> mono_utyp F2 -> mono_utyp (utyp_arrow F1 F2).
 
 (** ===== Synthesised colour over bid =====
     Admits unit, var, arrow, bid_all_syn (recursively). Excludes

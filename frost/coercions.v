@@ -111,6 +111,64 @@ Fixpoint utyp_to_ctyp (F : utyp) : ctyp :=
   | utyp_all_etag _ F0   => ctyp_all (utyp_to_ctyp F0)
   end.
 
+(** ===== ptyp paintings (direct; bypass the ctyp intermediate) =====
+    ptyp embeds in ctyp via the implicit coercion, so [ctyp_to_bid_syn N]
+    works for [N : ptyp]. These direct versions exist for clarity in
+    rule statements and so the proof obligations don't have to peel
+    layers of coercions. *)
+
+Fixpoint ptyp_to_bid_syn (N : ptyp) : bid :=
+  match N with
+  | ptyp_unit          => bid_unit
+  | ptyp_var_b n       => bid_var_b n
+  | ptyp_var_f X       => bid_var_f X
+  | ptyp_arrow N1 N2   => bid_arrow (ptyp_to_bid_syn N1) (ptyp_to_bid_syn N2)
+  | ptyp_all N0        => bid_all_syn (ptyp_to_bid_syn N0)
+  end.
+
+Fixpoint ptyp_to_bid_inh (N : ptyp) : bid :=
+  match N with
+  | ptyp_unit          => bid_unit
+  | ptyp_var_b n       => bid_var_b n
+  | ptyp_var_f X       => bid_var_f X
+  | ptyp_arrow N1 N2   => bid_arrow (ptyp_to_bid_inh N1) (ptyp_to_bid_inh N2)
+  | ptyp_all N0        => bid_all_inh (ptyp_to_bid_inh N0)
+  end.
+
+Fixpoint ptyp_to_utyp_syn (N : ptyp) : utyp :=
+  match N with
+  | ptyp_unit          => utyp_unit
+  | ptyp_var_b n       => utyp_var_b n
+  | ptyp_var_f X       => utyp_var_f X
+  | ptyp_arrow N1 N2   => utyp_arrow (ptyp_to_utyp_syn N1) (ptyp_to_utyp_syn N2)
+  | ptyp_all N0        => utyp_all_syn (ptyp_to_utyp_syn N0)
+  end.
+
+(** ===== Erasures back to ptyp =====
+    Forget colour AND tag. [bid_to_ptyp] is total: tagged ∀ erases to
+    plain ∀ (the tag was just bookkeeping). *)
+
+Fixpoint bid_to_ptyp (D : bid) : ptyp :=
+  match D with
+  | bid_unit            => ptyp_unit
+  | bid_var_b n         => ptyp_var_b n
+  | bid_var_f X         => ptyp_var_f X
+  | bid_arrow D1 D2     => ptyp_arrow (bid_to_ptyp D1) (bid_to_ptyp D2)
+  | bid_all_syn D0      => ptyp_all (bid_to_ptyp D0)
+  | bid_all_inh D0      => ptyp_all (bid_to_ptyp D0)
+  | bid_all_etag _ D0   => ptyp_all (bid_to_ptyp D0)
+  end.
+
+Fixpoint utyp_to_ptyp (F : utyp) : ptyp :=
+  match F with
+  | utyp_unit            => ptyp_unit
+  | utyp_var_b n         => ptyp_var_b n
+  | utyp_var_f X         => ptyp_var_f X
+  | utyp_arrow F1 F2     => ptyp_arrow (utyp_to_ptyp F1) (utyp_to_ptyp F2)
+  | utyp_all_syn F0      => ptyp_all (utyp_to_ptyp F0)
+  | utyp_all_etag _ F0   => ptyp_all (utyp_to_ptyp F0)
+  end.
+
 (** ===== ctyp → skel (explicit; preserves hole/tophole) ===== *)
 
 Fixpoint ctyp_to_skel (K : ctyp) : skel :=
