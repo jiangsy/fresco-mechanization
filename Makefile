@@ -43,6 +43,8 @@ NJOBS ?= 4
 	sed -e "s/Definition bidvar : Set := var\./Notation bidvar := typvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition utypvar : Set := var\./Notation utypvar := typvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition skelvar : Set := var\./Notation skelvar := typvar./g" ${SED_FLAG} $@
+	# Phase B-c: ptypvar (plain-type variable, for exp annotations).
+	sed -e "s/Definition ptypvar : Set := var\./Notation ptypvar := typvar./g" ${SED_FLAG} $@
 
 ott : ${OTT_OUTS}
 
@@ -59,6 +61,7 @@ ott : ${OTT_OUTS}
 	sed -e "s/Definition bidvar : Set := var\./Notation bidvar := typvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition utypvar : Set := var\./Notation utypvar := typvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition skelvar : Set := var\./Notation skelvar := typvar./g" ${SED_FLAG} $@
+	sed -e "s/Definition ptypvar : Set := var\./Notation ptypvar := typvar./g" ${SED_FLAG} $@
 
 
 lngen : ${LNGEN_OUTS}

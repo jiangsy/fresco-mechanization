@@ -21,6 +21,22 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.def_extra.
 
+(** ===== ptyp → ctyp (implicit Coercion) =====
+    Plain types embed uniquely into ctyp by mapping the 5 plain
+    constructors to the matching ctyp ones (ptyp has no holes /
+    tophole; that's the whole point of ptyp). *)
+
+Fixpoint ptyp_to_ctyp (N : ptyp) : ctyp :=
+  match N with
+  | ptyp_unit          => ctyp_unit
+  | ptyp_var_b n       => ctyp_var_b n
+  | ptyp_var_f X       => ctyp_var_f X
+  | ptyp_arrow N1 N2   => ctyp_arrow (ptyp_to_ctyp N1) (ptyp_to_ctyp N2)
+  | ptyp_all N0        => ctyp_all (ptyp_to_ctyp N0)
+  end.
+
+Coercion ptyp_to_ctyp : ptyp >-> ctyp.
+
 (** ===== utyp → bid (the implicit Coercion) ===== *)
 
 Fixpoint utyp_to_bid (F : utyp) : bid :=

@@ -30,6 +30,7 @@ metavar ctypvar, U, V, W ::= {{ repr-locally-nameless }}
 metavar bidvar, Xd ::= {{ repr-locally-nameless }}
 metavar utypvar, Xf ::= {{ repr-locally-nameless }}
 metavar skelvar, Xr ::= {{ repr-locally-nameless }}
+metavar ptypvar, Xp ::= {{ repr-locally-nameless }}
 % Flex-mono and flex-poly type variable names. These are NOT
 % locally-nameless: they are plain atoms because in the algorithmic
 % system they are top-level entries in the algorithmic context Θ, not
@@ -125,6 +126,20 @@ utyp, F :: 'utyp_' ::=
   | ( F )               :: S :: paren {{ coq ([[F]]) }}
   | { F2 / Xf } F1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xf F1]] [[F2]]) }}
 
+% Plain types — paper's "real user type" written in source annotations.
+% Exactly the 5 "type" shapes: unit, var, arrow, ∀ (no colour, no tag,
+% no holes). Used as the annotation type in [exp_anno] / [exp_abs_anno]
+% post-refactor. Colours / tags are derivation-internal bookkeeping
+% added when the typing rule paints a [ptyp] into [bid] for use in
+% subtyping / consistency premises.
+ptyp, N :: 'ptyp_' ::=
+  | UNIT                ::   :: unit
+  | Xp                  ::   :: var
+  | N1 -> N2            ::   :: arrow
+  | forall Xp . N       ::   :: all       (+ bind Xp in N +)
+  | ( N )               :: S :: paren {{ coq ([[N]]) }}
+  | { N2 / Xp } N1      :: M :: subst {{ coq (open_ptyp_wrt_ptyp [[Xp N1]] [[N2]]) }}
+
 % Skeletons — for d_wf_skel, d_refine, d_pat_consis, etc.
 % Broadest skeleton: matches [bid] shapes (syn / inh / etag ∀s) plus
 % holes / tophole. Narrow classes (e.g. syn-only, no-etag) are
@@ -172,6 +187,7 @@ substitutions
   single D Xd :: subst_bid_in
   single F Xf :: subst_utyp_in
   single R Xr :: subst_skel_in
+  single N Xp :: subst_ptyp_in
   single e x  :: subst_exp_in
   single e X  :: subst_typ_in
 
@@ -181,6 +197,7 @@ freevars
   D Xd :: ftvar_in
   F Xf :: ftvar_in
   R Xr :: ftvar_in
+  N Xp :: ftvar_in
   e X  :: ftvar_in
   e x  :: fvar_in
 

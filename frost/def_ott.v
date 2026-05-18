@@ -10,6 +10,7 @@ Notation ctypvar := typvar.
 Notation bidvar := typvar.
 Notation utypvar := typvar.
 Notation skelvar := typvar.
+Notation ptypvar := typvar.
 Definition monovar : Set := var.
 Definition polyvar : Set := var.
 
@@ -57,6 +58,13 @@ Inductive skel : Set :=
  | skel_all_etag (ε:εvar) (R:skel)
  | skel_hole : skel
  | skel_tophole (R:skel).
+
+Inductive ptyp : Set := 
+ | ptyp_unit : ptyp
+ | ptyp_var_b (_:nat)
+ | ptyp_var_f (Xp:ptypvar)
+ | ptyp_arrow (N1:ptyp) (N2:ptyp)
+ | ptyp_all (N:ptyp).
 
 Inductive utyp : Set := 
  | utyp_unit : utyp
@@ -167,6 +175,20 @@ Fixpoint open_skel_wrt_skel_rec (k:nat) (R_5:skel) (R__6:skel) {struct R__6}: sk
   | (skel_tophole R) => skel_tophole (open_skel_wrt_skel_rec k R_5 R)
 end.
 
+Fixpoint open_ptyp_wrt_ptyp_rec (k:nat) (N_5:ptyp) (N__6:ptyp) {struct N__6}: ptyp :=
+  match N__6 with
+  | ptyp_unit => ptyp_unit 
+  | (ptyp_var_b nat) => 
+      match lt_eq_lt_dec nat k with
+        | inleft (left _) => ptyp_var_b nat
+        | inleft (right _) => N_5
+        | inright _ => ptyp_var_b (nat - 1)
+      end
+  | (ptyp_var_f Xp) => ptyp_var_f Xp
+  | (ptyp_arrow N1 N2) => ptyp_arrow (open_ptyp_wrt_ptyp_rec k N_5 N1) (open_ptyp_wrt_ptyp_rec k N_5 N2)
+  | (ptyp_all N) => ptyp_all (open_ptyp_wrt_ptyp_rec (S k) N_5 N)
+end.
+
 Fixpoint open_utyp_wrt_utyp_rec (k:nat) (F_5:utyp) (F__6:utyp) {struct F__6}: utyp :=
   match F__6 with
   | utyp_unit => utyp_unit 
@@ -221,6 +243,8 @@ Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
 Definition open_exp_wrt_typ A5 e_5 := open_exp_wrt_typ_rec 0 e_5 A5.
 
 Definition open_skel_wrt_skel R_5 R__6 := open_skel_wrt_skel_rec 0 R__6 R_5.
+
+Definition open_ptyp_wrt_ptyp N_5 N__6 := open_ptyp_wrt_ptyp_rec 0 N__6 N_5.
 
 Definition open_utyp_wrt_utyp F_5 F__6 := open_utyp_wrt_utyp_rec 0 F__6 F_5.
 
@@ -316,6 +340,20 @@ Inductive lc_skel : skel -> Prop :=    (* defn lc_skel *)
      (lc_skel R) ->
      (lc_skel (skel_tophole R)).
 
+(* defns LC_ptyp *)
+Inductive lc_ptyp : ptyp -> Prop :=    (* defn lc_ptyp *)
+ | lc_ptyp_unit : 
+     (lc_ptyp ptyp_unit)
+ | lc_ptyp_var_f : forall (Xp:ptypvar),
+     (lc_ptyp (ptyp_var_f Xp))
+ | lc_ptyp_arrow : forall (N1 N2:ptyp),
+     (lc_ptyp N1) ->
+     (lc_ptyp N2) ->
+     (lc_ptyp (ptyp_arrow N1 N2))
+ | lc_ptyp_all : forall (N:ptyp),
+      ( forall Xp , lc_ptyp  ( open_ptyp_wrt_ptyp N (ptyp_var_f Xp) )  )  ->
+     (lc_ptyp (ptyp_all N)).
+
 (* defns LC_utyp *)
 Inductive lc_utyp : utyp -> Prop :=    (* defn lc_utyp *)
  | lc_utyp_unit : 
@@ -394,6 +432,15 @@ Fixpoint fvar_in_exp (e_5:exp) : vars :=
   | (exp_app e1 e2) => (fvar_in_exp e1) \u (fvar_in_exp e2)
   | (exp_anno e A) => (fvar_in_exp e)
   | (exp_freeze e) => (fvar_in_exp e)
+end.
+
+Fixpoint ftvar_in_ptyp (N_5:ptyp) : vars :=
+  match N_5 with
+  | ptyp_unit => {}
+  | (ptyp_var_b nat) => {}
+  | (ptyp_var_f Xp) => {{Xp}}
+  | (ptyp_arrow N1 N2) => (ftvar_in_ptyp N1) \u (ftvar_in_ptyp N2)
+  | (ptyp_all N) => (ftvar_in_ptyp N)
 end.
 
 Fixpoint ftvar_in_skel (R_5:skel) : vars :=
@@ -485,6 +532,15 @@ Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :
   | (exp_freeze e) => exp_freeze (subst_exp_in_exp e_5 x5 e)
 end.
 
+Fixpoint subst_ptyp_in_ptyp (N_5:ptyp) (Xp5:ptypvar) (N__6:ptyp) {struct N__6} : ptyp :=
+  match N__6 with
+  | ptyp_unit => ptyp_unit 
+  | (ptyp_var_b nat) => ptyp_var_b nat
+  | (ptyp_var_f Xp) => (if eq_var Xp Xp5 then N_5 else (ptyp_var_f Xp))
+  | (ptyp_arrow N1 N2) => ptyp_arrow (subst_ptyp_in_ptyp N_5 Xp5 N1) (subst_ptyp_in_ptyp N_5 Xp5 N2)
+  | (ptyp_all N) => ptyp_all (subst_ptyp_in_ptyp N_5 Xp5 N)
+end.
+
 Fixpoint subst_skel_in_skel (R_5:skel) (Xr5:skelvar) (R__6:skel) {struct R__6} : skel :=
   match R__6 with
   | skel_unit => skel_unit 
@@ -561,6 +617,6 @@ Definition list_disjoint (xs ys : list atom) : Prop :=
 
 
 (** infrastructure *)
-#[export] Hint Constructors lc_typ lc_dbind lc_exp lc_skel lc_utyp lc_bid lc_ctyp : core.
+#[export] Hint Constructors lc_typ lc_dbind lc_exp lc_skel lc_ptyp lc_utyp lc_bid lc_ctyp : core.
 
 
