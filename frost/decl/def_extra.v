@@ -5,6 +5,8 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
+Require Import src.frost.coercions.
+Require Import src.frost.predicates.
 
 (** ** Colour discipline — [ctyp] is the colourless / un-decorated type.
 
@@ -260,6 +262,85 @@ Reserved Notation "Δ ⨟ Γ ⊨ₛ S ≈ P"
 Reserved Notation "Γ ⊢ₛ[ M ; Δ ] S ⊑ P"
   (at level 75, M at level 0, Δ at level 0, S at level 74, P at level 74,
    no associativity).
+
+(* ===================================================================== *)
+(*  Type-hierarchy refactor (Phase B) — wf relations over the new        *)
+(*  derivation-internal types ([bid], [utyp], [skel]). These coexist     *)
+(*  with the old [typ]-based [d_wf_typ] / [d_wf_skel] etc. during        *)
+(*  the migration. Phase F removes the old versions.                     *)
+(*                                                                       *)
+(*  Design rationale: see                                                *)
+(*  docs/superpowers/specs/2026-05-18-type-hierarchy-refactor-design.md  *)
+(* ===================================================================== *)
+
+(** [d_wf_bid]: structural wf over [bid]. Admits all three ∀ forms
+    (colour_syn, colour_inh, ε-tagged). Linearity of ε tags is tracked
+    separately (cf. [d_wf_ttyp] for the old typ-based version). *)
+Inductive d_wf_bid : list (atom * dbind) -> bid -> Prop :=
+| d_wf_bid__unit : forall Γ,
+    d_wf_bid Γ bid_unit
+| d_wf_bid__var : forall Γ X,
+    binds X dbind_tvar Γ ->
+    d_wf_bid Γ (bid_var_f X)
+| d_wf_bid__arrow : forall Γ D1 D2,
+    d_wf_bid Γ D1 ->
+    d_wf_bid Γ D2 ->
+    d_wf_bid Γ (bid_arrow D1 D2)
+| d_wf_bid__all_syn : forall L Γ D,
+    (forall X, X `notin` L ->
+       d_wf_bid ((X ~ dbind_tvar) ++ Γ) (open_bid_wrt_bid D (bid_var_f X))) ->
+    d_wf_bid Γ (bid_all_syn D)
+| d_wf_bid__all_inh : forall L Γ D,
+    (forall X, X `notin` L ->
+       d_wf_bid ((X ~ dbind_tvar) ++ Γ) (open_bid_wrt_bid D (bid_var_f X))) ->
+    d_wf_bid Γ (bid_all_inh D)
+| d_wf_bid__all_etag : forall L Γ ε D,
+    (forall X, X `notin` L ->
+       d_wf_bid ((X ~ dbind_tvar) ++ Γ) (open_bid_wrt_bid D (bid_var_f X))) ->
+    d_wf_bid Γ (bid_all_etag ε D).
+
+(** [d_wf_utyp_new]: structural wf over [utyp]. (The legacy
+    [d_wf_utyp] over [typ] retains its name until Phase F.) Admits
+    colour_syn and ε-tagged ∀; no colour_inh by construction of [utyp]. *)
+Inductive d_wf_utyp_new : list (atom * dbind) -> utyp -> Prop :=
+| d_wf_utyp_new__unit : forall Γ,
+    d_wf_utyp_new Γ utyp_unit
+| d_wf_utyp_new__var : forall Γ X,
+    binds X dbind_tvar Γ ->
+    d_wf_utyp_new Γ (utyp_var_f X)
+| d_wf_utyp_new__arrow : forall Γ F1 F2,
+    d_wf_utyp_new Γ F1 ->
+    d_wf_utyp_new Γ F2 ->
+    d_wf_utyp_new Γ (utyp_arrow F1 F2)
+| d_wf_utyp_new__all_syn : forall L Γ F,
+    (forall X, X `notin` L ->
+       d_wf_utyp_new ((X ~ dbind_tvar) ++ Γ) (open_utyp_wrt_utyp F (utyp_var_f X))) ->
+    d_wf_utyp_new Γ (utyp_all_syn F)
+| d_wf_utyp_new__all_etag : forall L Γ ε F,
+    (forall X, X `notin` L ->
+       d_wf_utyp_new ((X ~ dbind_tvar) ++ Γ) (open_utyp_wrt_utyp F (utyp_var_f X))) ->
+    d_wf_utyp_new Γ (utyp_all_etag ε F).
+
+(** [d_wf_skel_new]: structural wf over [skel]. Admits hole / tophole. *)
+Inductive d_wf_skel_new : list atom -> list (atom * dbind) -> skel -> Prop :=
+| d_wf_skel_new__unit : forall Ψ Γ,
+    d_wf_skel_new Ψ Γ skel_unit
+| d_wf_skel_new__var : forall Ψ Γ X,
+    List.In X Ψ \/ binds X dbind_tvar Γ ->
+    d_wf_skel_new Ψ Γ (skel_var_f X)
+| d_wf_skel_new__arrow : forall Ψ Γ R1 R2,
+    d_wf_skel_new Ψ Γ R1 ->
+    d_wf_skel_new Ψ Γ R2 ->
+    d_wf_skel_new Ψ Γ (skel_arrow R1 R2)
+| d_wf_skel_new__all_syn : forall L Ψ Γ R,
+    (forall X, X `notin` L ->
+       d_wf_skel_new (X :: Ψ) Γ (open_skel_wrt_skel R (skel_var_f X))) ->
+    d_wf_skel_new Ψ Γ (skel_all_syn R)
+| d_wf_skel_new__hole : forall Ψ Γ,
+    d_wf_skel_new Ψ Γ skel_hole
+| d_wf_skel_new__tophole : forall Γ R,
+    d_wf_skel_new nil Γ R ->
+    d_wf_skel_new nil Γ (skel_tophole R).
 
 (** ** Plain types under a context. *)
 Inductive d_wf_typ : list (atom * dbind) -> typ -> Prop :=
@@ -522,6 +603,69 @@ Inductive d_consis :
     (Δ1 ++ Δ2) ⨟ Γ ⊨ (typ_arrow T1 T2) ≈ (typ_arrow A1 A2)
 where "Δ ⨟ Γ ⊨ T ≈ A" := (d_consis Δ Γ T A) : type_scope.
 
+(** [d_consis_bid]: consistency over the new [bid] inductive (Phase B
+    refactor). Mechanical translation of [d_consis] with [typ_*] →
+    [bid_*]: each colour-tagged ∀ becomes its own bid constructor, no
+    more [colour_syn] / [colour_inh] parameter. Includes the
+    [__forall_syn_tagged_both] rule (tagged ≈ tagged) from
+    [d_consis_gen] since [bid] allows tagged shapes uniformly. *)
+Inductive d_consis_bid :
+    list atom -> list (atom * dbind) -> bid -> bid -> Prop :=
+| d_consis_bid__unit : forall Γ,
+    d_consis_bid nil Γ bid_unit bid_unit
+| d_consis_bid__var : forall Γ X,
+    binds X dbind_tvar Γ ->
+    d_consis_bid nil Γ (bid_var_f X) (bid_var_f X)
+(* δ=ε case of EqForallInh: tagged LHS, inh-colour RHS, ε tracked. *)
+| d_consis_bid__forall_inh_tagged : forall L Δ Γ ε D D',
+    (forall X, X `notin` L ->
+       d_consis_bid Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_bid_wrt_bid D (bid_var_f X))
+         (open_bid_wrt_bid D' (bid_var_f X))) ->
+    ~ List.In ε Δ ->
+    d_consis_bid (ε :: Δ) Γ (bid_all_etag ε D) (bid_all_inh D')
+(* δ=· case of EqForallInh: syn-colour LHS, inh-colour RHS. *)
+| d_consis_bid__forall_inh_untagged : forall L Δ Γ D D',
+    (forall X, X `notin` L ->
+       d_consis_bid Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_bid_wrt_bid D (bid_var_f X))
+         (open_bid_wrt_bid D' (bid_var_f X))) ->
+    d_consis_bid Δ Γ (bid_all_syn D) (bid_all_inh D')
+(* δ=ε case of EqForallSyn: tagged LHS, syn-colour RHS. *)
+| d_consis_bid__forall_syn_tagged : forall L Δ Γ ε D D',
+    (forall X, X `notin` L ->
+       d_consis_bid Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_bid_wrt_bid D (bid_var_f X))
+         (open_bid_wrt_bid D' (bid_var_f X))) ->
+    d_consis_bid Δ Γ (bid_all_etag ε D) (bid_all_syn D')
+(* δ=ε both sides: tagged ≈ tagged with same ε; needed for refl on
+   tagged ph in substitution lemmas. *)
+| d_consis_bid__forall_syn_tagged_both : forall L Δ Γ ε D D',
+    (forall X, X `notin` L ->
+       d_consis_bid Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_bid_wrt_bid D (bid_var_f X))
+         (open_bid_wrt_bid D' (bid_var_f X))) ->
+    d_consis_bid Δ Γ (bid_all_etag ε D) (bid_all_etag ε D')
+(* δ=· case of EqForallSyn: syn-colour both sides. *)
+| d_consis_bid__forall_syn : forall L Δ Γ D D',
+    (forall X, X `notin` L ->
+       d_consis_bid Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_bid_wrt_bid D (bid_var_f X))
+         (open_bid_wrt_bid D' (bid_var_f X))) ->
+    d_consis_bid Δ Γ (bid_all_syn D) (bid_all_syn D')
+(* Structural refl on inh ∀ (Coq-only; not in declarative.tex Fig 6). *)
+| d_consis_bid__forall_inh : forall L Δ Γ D D',
+    (forall X, X `notin` L ->
+       d_consis_bid Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_bid_wrt_bid D (bid_var_f X))
+         (open_bid_wrt_bid D' (bid_var_f X))) ->
+    d_consis_bid Δ Γ (bid_all_inh D) (bid_all_inh D')
+| d_consis_bid__arrow : forall Δ1 Δ2 Γ D1 D2 D1' D2',
+    d_consis_bid Δ1 Γ D1 D1' ->
+    d_consis_bid Δ2 Γ D2 D2' ->
+    list_disjoint Δ1 Δ2 ->
+    d_consis_bid (Δ1 ++ Δ2) Γ (bid_arrow D1 D2) (bid_arrow D1' D2').
+
 (** ** Type subtyping Γ ⊢_M^Δ T ≤ A. *)
 Inductive d_sub :
   mode -> list atom -> list (atom * dbind) -> typ -> typ -> Prop :=
@@ -562,6 +706,52 @@ Inductive d_sub :
     Γ ⊢[ m ; (Δ ++ Δ') ] (open_typ_wrt_typ T ph) ⊑ A ->
     Γ ⊢[ m ; Δ ] (typ_all_col colour_syn T) ⊑ A
 where "Γ ⊢[ M ; Δ ] T ⊑ A" := (d_sub M Δ Γ T A) : type_scope.
+
+(** [d_sub_bid]: subtyping over the new [bid] inductive (Phase B
+    refactor). Mechanical translation of [d_sub] with [typ_*] →
+    [bid_*], plus the BROADENED __infer / __check rules: the LHS is
+    [utyp] (paper's syn{∀^δ}, admits both colour_syn and ε-tagged ∀),
+    the RHS is [bid] plus a structural predicate ([is_syn] for
+    __infer, [is_inh] for __check). This removes the spurious
+    [d_wf_typ Γ T] premise B.3's __infer case needed in the
+    typ-based formulation.
+
+    The utyp LHS is coerced to bid via [utyp_to_bid] (implicit). *)
+Inductive d_sub_bid :
+  mode -> list atom -> list (atom * dbind) -> bid -> bid -> Prop :=
+| d_sub_bid__infer : forall Γ (F : utyp) (D : bid),
+    d_consis_bid nil Γ F D ->
+    is_syn D ->
+    d_sub_bid mode_ti nil Γ F D
+| d_sub_bid__check : forall Δ Γ (F : utyp) (D : bid),
+    (* TODO: guarded_typ analogue over utyp / bid — placeholder for
+       now (omit guardedness; restore once we have guarded_bid). *)
+    d_consis_bid Δ Γ F D ->
+    is_inh D ->
+    d_sub_bid mode_tc Δ Γ F D
+| d_sub_bid__forall_r : forall L Δ Γ D D',
+    (forall X, X `notin` L ->
+       d_sub_bid mode_tc Δ ((X ~ dbind_tvar) ++ Γ) D
+         (open_bid_wrt_bid D' (bid_var_f X))) ->
+    d_sub_bid mode_tc Δ Γ D (bid_all_inh D')
+| d_sub_bid__arg : forall Δ1 Δ2 Γ m D1 D2 D1' D2',
+    d_consis_bid Δ1 Γ D1 D1' ->
+    d_sub_bid m Δ2 Γ D2 D2' ->
+    d_sub_bid (mode_fn m) (Δ1 ++ Δ2) Γ (bid_arrow D1 D2) (bid_arrow D1' D2')
+| d_sub_bid__forall_l_tagged : forall Δ Δ' Γ m ε D ph D',
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    (* ph is a utyp with is_ttyp_utyp; embedded as bid via coercion.
+       For now we keep ph : utyp and require is_ttyp_utyp. *)
+    is_ttyp_utyp ph ->
+    d_sub_bid m (Δ ++ Δ') Γ (open_bid_wrt_bid D (utyp_to_bid ph)) D' ->
+    d_sub_bid m Δ Γ (bid_all_etag ε D) D'
+| d_sub_bid__forall_l_untagged : forall Δ Δ' Γ m D ph D',
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    is_ttyp_utyp ph ->
+    d_sub_bid m (Δ ++ Δ') Γ (open_bid_wrt_bid D (utyp_to_bid ph)) D' ->
+    d_sub_bid m Δ Γ (bid_all_syn D) D'.
 
 (** ** Shallow polymorphic subtyping (paper line 1062). The Phase 2 target:
     we will prove d_sub TC ε Γ A B → d_shallow_sub Γ A B. *)
