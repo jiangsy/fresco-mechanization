@@ -39,6 +39,10 @@ NJOBS ?= 4
 	# syntactic head — Definition aliases don't unify for typeclasses,
 	# but Notation does (parse-time substitution).
 	sed -e "s/Definition ctypvar : Set := var\./Notation ctypvar := typvar./g" ${SED_FLAG} $@
+	# Phase A refactor: bidvar / utypvar / skelvar also alias typvar.
+	sed -e "s/Definition bidvar : Set := var\./Notation bidvar := typvar./g" ${SED_FLAG} $@
+	sed -e "s/Definition utypvar : Set := var\./Notation utypvar := typvar./g" ${SED_FLAG} $@
+	sed -e "s/Definition skelvar : Set := var\./Notation skelvar := typvar./g" ${SED_FLAG} $@
 
 ott : ${OTT_OUTS}
 
@@ -52,6 +56,9 @@ ott : ${OTT_OUTS}
 	# Same alias as in def_ott.v (defensive — lngen output is unlikely
 	# to redefine ctypvar, but keep the pass for symmetry / safety).
 	sed -e "s/Definition ctypvar : Set := var\./Notation ctypvar := typvar./g" ${SED_FLAG} $@
+	sed -e "s/Definition bidvar : Set := var\./Notation bidvar := typvar./g" ${SED_FLAG} $@
+	sed -e "s/Definition utypvar : Set := var\./Notation utypvar := typvar./g" ${SED_FLAG} $@
+	sed -e "s/Definition skelvar : Set := var\./Notation skelvar := typvar./g" ${SED_FLAG} $@
 
 
 lngen : ${LNGEN_OUTS}

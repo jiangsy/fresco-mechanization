@@ -7,6 +7,9 @@ Definition typvar : Set := var.
 Definition expvar : Set := var.
 Definition εvar : Set := var.
 Notation ctypvar := typvar.
+Notation bidvar := typvar.
+Notation utypvar := typvar.
+Notation skelvar := typvar.
 Definition monovar : Set := var.
 Definition polyvar : Set := var.
 
@@ -43,6 +46,32 @@ Inductive exp : Set :=
  | exp_app (e1:exp) (e2:exp)
  | exp_anno (e:exp) (A:typ)
  | exp_freeze (e:exp).
+
+Inductive skel : Set := 
+ | skel_unit : skel
+ | skel_var_b (_:nat)
+ | skel_var_f (Xr:skelvar)
+ | skel_arrow (R1:skel) (R2:skel)
+ | skel_all_syn (R:skel)
+ | skel_hole : skel
+ | skel_tophole (R:skel).
+
+Inductive utyp : Set := 
+ | utyp_unit : utyp
+ | utyp_var_b (_:nat)
+ | utyp_var_f (Xf:utypvar)
+ | utyp_arrow (F1:utyp) (F2:utyp)
+ | utyp_all_syn (F:utyp)
+ | utyp_all_etag (ε:εvar) (F:utyp).
+
+Inductive bid : Set := 
+ | bid_unit : bid
+ | bid_var_b (_:nat)
+ | bid_var_f (Xd:bidvar)
+ | bid_arrow (D1:bid) (D2:bid)
+ | bid_all_syn (D:bid)
+ | bid_all_inh (D:bid)
+ | bid_all_etag (ε:εvar) (D:bid).
 
 Inductive ctyp : Set := 
  | ctyp_unit : ctyp
@@ -118,6 +147,53 @@ Fixpoint open_exp_wrt_typ_rec (k:nat) (A5:typ) (e_5:exp) {struct e_5}: exp :=
   | (exp_freeze e) => exp_freeze (open_exp_wrt_typ_rec k A5 e)
 end.
 
+Fixpoint open_skel_wrt_skel_rec (k:nat) (R_5:skel) (R__6:skel) {struct R__6}: skel :=
+  match R__6 with
+  | skel_unit => skel_unit 
+  | (skel_var_b nat) => 
+      match lt_eq_lt_dec nat k with
+        | inleft (left _) => skel_var_b nat
+        | inleft (right _) => R_5
+        | inright _ => skel_var_b (nat - 1)
+      end
+  | (skel_var_f Xr) => skel_var_f Xr
+  | (skel_arrow R1 R2) => skel_arrow (open_skel_wrt_skel_rec k R_5 R1) (open_skel_wrt_skel_rec k R_5 R2)
+  | (skel_all_syn R) => skel_all_syn (open_skel_wrt_skel_rec (S k) R_5 R)
+  | skel_hole => skel_hole 
+  | (skel_tophole R) => skel_tophole (open_skel_wrt_skel_rec k R_5 R)
+end.
+
+Fixpoint open_utyp_wrt_utyp_rec (k:nat) (F_5:utyp) (F__6:utyp) {struct F__6}: utyp :=
+  match F__6 with
+  | utyp_unit => utyp_unit 
+  | (utyp_var_b nat) => 
+      match lt_eq_lt_dec nat k with
+        | inleft (left _) => utyp_var_b nat
+        | inleft (right _) => F_5
+        | inright _ => utyp_var_b (nat - 1)
+      end
+  | (utyp_var_f Xf) => utyp_var_f Xf
+  | (utyp_arrow F1 F2) => utyp_arrow (open_utyp_wrt_utyp_rec k F_5 F1) (open_utyp_wrt_utyp_rec k F_5 F2)
+  | (utyp_all_syn F) => utyp_all_syn (open_utyp_wrt_utyp_rec (S k) F_5 F)
+  | (utyp_all_etag ε F) => utyp_all_etag ε (open_utyp_wrt_utyp_rec (S k) F_5 F)
+end.
+
+Fixpoint open_bid_wrt_bid_rec (k:nat) (D_5:bid) (D__6:bid) {struct D__6}: bid :=
+  match D__6 with
+  | bid_unit => bid_unit 
+  | (bid_var_b nat) => 
+      match lt_eq_lt_dec nat k with
+        | inleft (left _) => bid_var_b nat
+        | inleft (right _) => D_5
+        | inright _ => bid_var_b (nat - 1)
+      end
+  | (bid_var_f Xd) => bid_var_f Xd
+  | (bid_arrow D1 D2) => bid_arrow (open_bid_wrt_bid_rec k D_5 D1) (open_bid_wrt_bid_rec k D_5 D2)
+  | (bid_all_syn D) => bid_all_syn (open_bid_wrt_bid_rec (S k) D_5 D)
+  | (bid_all_inh D) => bid_all_inh (open_bid_wrt_bid_rec (S k) D_5 D)
+  | (bid_all_etag ε D) => bid_all_etag ε (open_bid_wrt_bid_rec (S k) D_5 D)
+end.
+
 Fixpoint open_ctyp_wrt_ctyp_rec (k:nat) (K_5:ctyp) (K__6:ctyp) {struct K__6}: ctyp :=
   match K__6 with
   | ctyp_unit => ctyp_unit 
@@ -139,6 +215,12 @@ Definition open_dbind_wrt_typ A5 db5 := open_dbind_wrt_typ_rec 0 db5 A5.
 Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
 
 Definition open_exp_wrt_typ A5 e_5 := open_exp_wrt_typ_rec 0 e_5 A5.
+
+Definition open_skel_wrt_skel R_5 R__6 := open_skel_wrt_skel_rec 0 R__6 R_5.
+
+Definition open_utyp_wrt_utyp F_5 F__6 := open_utyp_wrt_utyp_rec 0 F__6 F_5.
+
+Definition open_bid_wrt_bid D_5 D__6 := open_bid_wrt_bid_rec 0 D__6 D_5.
 
 Definition open_ctyp_wrt_ctyp K_5 K__6 := open_ctyp_wrt_ctyp_rec 0 K__6 K_5.
 
@@ -205,6 +287,62 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
      (lc_exp e) ->
      (lc_exp (exp_freeze e)).
 
+(* defns LC_skel *)
+Inductive lc_skel : skel -> Prop :=    (* defn lc_skel *)
+ | lc_skel_unit : 
+     (lc_skel skel_unit)
+ | lc_skel_var_f : forall (Xr:skelvar),
+     (lc_skel (skel_var_f Xr))
+ | lc_skel_arrow : forall (R1 R2:skel),
+     (lc_skel R1) ->
+     (lc_skel R2) ->
+     (lc_skel (skel_arrow R1 R2))
+ | lc_skel_all_syn : forall (R:skel),
+      ( forall Xr , lc_skel  ( open_skel_wrt_skel R (skel_var_f Xr) )  )  ->
+     (lc_skel (skel_all_syn R))
+ | lc_skel_hole : 
+     (lc_skel skel_hole)
+ | lc_skel_tophole : forall (R:skel),
+     (lc_skel R) ->
+     (lc_skel (skel_tophole R)).
+
+(* defns LC_utyp *)
+Inductive lc_utyp : utyp -> Prop :=    (* defn lc_utyp *)
+ | lc_utyp_unit : 
+     (lc_utyp utyp_unit)
+ | lc_utyp_var_f : forall (Xf:utypvar),
+     (lc_utyp (utyp_var_f Xf))
+ | lc_utyp_arrow : forall (F1 F2:utyp),
+     (lc_utyp F1) ->
+     (lc_utyp F2) ->
+     (lc_utyp (utyp_arrow F1 F2))
+ | lc_utyp_all_syn : forall (F:utyp),
+      ( forall Xf , lc_utyp  ( open_utyp_wrt_utyp F (utyp_var_f Xf) )  )  ->
+     (lc_utyp (utyp_all_syn F))
+ | lc_utyp_all_etag : forall (ε:εvar) (F:utyp),
+      ( forall Xf , lc_utyp  ( open_utyp_wrt_utyp F (utyp_var_f Xf) )  )  ->
+     (lc_utyp (utyp_all_etag ε F)).
+
+(* defns LC_bid *)
+Inductive lc_bid : bid -> Prop :=    (* defn lc_bid *)
+ | lc_bid_unit : 
+     (lc_bid bid_unit)
+ | lc_bid_var_f : forall (Xd:bidvar),
+     (lc_bid (bid_var_f Xd))
+ | lc_bid_arrow : forall (D1 D2:bid),
+     (lc_bid D1) ->
+     (lc_bid D2) ->
+     (lc_bid (bid_arrow D1 D2))
+ | lc_bid_all_syn : forall (D:bid),
+      ( forall Xd , lc_bid  ( open_bid_wrt_bid D (bid_var_f Xd) )  )  ->
+     (lc_bid (bid_all_syn D))
+ | lc_bid_all_inh : forall (D:bid),
+      ( forall Xd , lc_bid  ( open_bid_wrt_bid D (bid_var_f Xd) )  )  ->
+     (lc_bid (bid_all_inh D))
+ | lc_bid_all_etag : forall (ε:εvar) (D:bid),
+      ( forall Xd , lc_bid  ( open_bid_wrt_bid D (bid_var_f Xd) )  )  ->
+     (lc_bid (bid_all_etag ε D)).
+
 (* defns LC_ctyp *)
 Inductive lc_ctyp : ctyp -> Prop :=    (* defn lc_ctyp *)
  | lc_ctyp_unit : 
@@ -246,6 +384,38 @@ Fixpoint fvar_in_exp (e_5:exp) : vars :=
   | (exp_app e1 e2) => (fvar_in_exp e1) \u (fvar_in_exp e2)
   | (exp_anno e A) => (fvar_in_exp e)
   | (exp_freeze e) => (fvar_in_exp e)
+end.
+
+Fixpoint ftvar_in_skel (R_5:skel) : vars :=
+  match R_5 with
+  | skel_unit => {}
+  | (skel_var_b nat) => {}
+  | (skel_var_f Xr) => {{Xr}}
+  | (skel_arrow R1 R2) => (ftvar_in_skel R1) \u (ftvar_in_skel R2)
+  | (skel_all_syn R) => (ftvar_in_skel R)
+  | skel_hole => {}
+  | (skel_tophole R) => (ftvar_in_skel R)
+end.
+
+Fixpoint ftvar_in_utyp (F_5:utyp) : vars :=
+  match F_5 with
+  | utyp_unit => {}
+  | (utyp_var_b nat) => {}
+  | (utyp_var_f Xf) => {{Xf}}
+  | (utyp_arrow F1 F2) => (ftvar_in_utyp F1) \u (ftvar_in_utyp F2)
+  | (utyp_all_syn F) => (ftvar_in_utyp F)
+  | (utyp_all_etag ε F) => (ftvar_in_utyp F)
+end.
+
+Fixpoint ftvar_in_bid (D_5:bid) : vars :=
+  match D_5 with
+  | bid_unit => {}
+  | (bid_var_b nat) => {}
+  | (bid_var_f Xd) => {{Xd}}
+  | (bid_arrow D1 D2) => (ftvar_in_bid D1) \u (ftvar_in_bid D2)
+  | (bid_all_syn D) => (ftvar_in_bid D)
+  | (bid_all_inh D) => (ftvar_in_bid D)
+  | (bid_all_etag ε D) => (ftvar_in_bid D)
 end.
 
 Fixpoint ftvar_in_ctyp (K_5:ctyp) : vars :=
@@ -303,6 +473,38 @@ Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :
   | (exp_freeze e) => exp_freeze (subst_exp_in_exp e_5 x5 e)
 end.
 
+Fixpoint subst_skel_in_skel (R_5:skel) (Xr5:skelvar) (R__6:skel) {struct R__6} : skel :=
+  match R__6 with
+  | skel_unit => skel_unit 
+  | (skel_var_b nat) => skel_var_b nat
+  | (skel_var_f Xr) => (if eq_var Xr Xr5 then R_5 else (skel_var_f Xr))
+  | (skel_arrow R1 R2) => skel_arrow (subst_skel_in_skel R_5 Xr5 R1) (subst_skel_in_skel R_5 Xr5 R2)
+  | (skel_all_syn R) => skel_all_syn (subst_skel_in_skel R_5 Xr5 R)
+  | skel_hole => skel_hole 
+  | (skel_tophole R) => skel_tophole (subst_skel_in_skel R_5 Xr5 R)
+end.
+
+Fixpoint subst_utyp_in_utyp (F_5:utyp) (Xf5:utypvar) (F__6:utyp) {struct F__6} : utyp :=
+  match F__6 with
+  | utyp_unit => utyp_unit 
+  | (utyp_var_b nat) => utyp_var_b nat
+  | (utyp_var_f Xf) => (if eq_var Xf Xf5 then F_5 else (utyp_var_f Xf))
+  | (utyp_arrow F1 F2) => utyp_arrow (subst_utyp_in_utyp F_5 Xf5 F1) (subst_utyp_in_utyp F_5 Xf5 F2)
+  | (utyp_all_syn F) => utyp_all_syn (subst_utyp_in_utyp F_5 Xf5 F)
+  | (utyp_all_etag ε F) => utyp_all_etag ε (subst_utyp_in_utyp F_5 Xf5 F)
+end.
+
+Fixpoint subst_bid_in_bid (D_5:bid) (Xd5:bidvar) (D__6:bid) {struct D__6} : bid :=
+  match D__6 with
+  | bid_unit => bid_unit 
+  | (bid_var_b nat) => bid_var_b nat
+  | (bid_var_f Xd) => (if eq_var Xd Xd5 then D_5 else (bid_var_f Xd))
+  | (bid_arrow D1 D2) => bid_arrow (subst_bid_in_bid D_5 Xd5 D1) (subst_bid_in_bid D_5 Xd5 D2)
+  | (bid_all_syn D) => bid_all_syn (subst_bid_in_bid D_5 Xd5 D)
+  | (bid_all_inh D) => bid_all_inh (subst_bid_in_bid D_5 Xd5 D)
+  | (bid_all_etag ε D) => bid_all_etag ε (subst_bid_in_bid D_5 Xd5 D)
+end.
+
 Fixpoint subst_ctyp_in_ctyp (K_5:ctyp) (U5:ctypvar) (K__6:ctyp) {struct K__6} : ctyp :=
   match K__6 with
   | ctyp_unit => ctyp_unit 
@@ -345,6 +547,6 @@ Definition list_disjoint (xs ys : list atom) : Prop :=
 
 
 (** infrastructure *)
-#[export] Hint Constructors lc_typ lc_dbind lc_exp lc_ctyp : core.
+#[export] Hint Constructors lc_typ lc_dbind lc_exp lc_skel lc_utyp lc_bid lc_ctyp : core.
 
 

@@ -23,6 +23,13 @@ metavar epsvar, eps     ::= {{ coq var }}
 % disambiguate substitutions (subst_typ_in_typ uses typvar binders;
 % subst_ctyp_in_ctyp uses ctypvar binders).
 metavar ctypvar, U, V, W ::= {{ repr-locally-nameless }}
+% Variable atoms for the new derivation-internal types (Phase A
+% refactor). Each grammar gets its own ott-level typvar so lngen can
+% disambiguate which substitution to generate. All alias to [typvar]
+% in Coq (same atom identity, via Notation rewrites in the Makefile).
+metavar bidvar, Xd ::= {{ repr-locally-nameless }}
+metavar utypvar, Xf ::= {{ repr-locally-nameless }}
+metavar skelvar, Xr ::= {{ repr-locally-nameless }}
 % Flex-mono and flex-poly type variable names. These are NOT
 % locally-nameless: they are plain atoms because in the algorithmic
 % system they are top-level entries in the algorithmic context Θ, not
@@ -88,6 +95,48 @@ ctyp, K, J :: 'ctyp_' ::=
   | ( K )               :: S :: paren {{ coq ([[K]]) }}
   | { K2 / U } K1       :: M :: subst {{ coq (open_ctyp_wrt_ctyp [[U K1]] [[K2]]) }}
 
+% =====================================================================
+% Type-hierarchy refactor (Phase A) — new derivation-internal types.
+% These coexist with `typ` during the migration; `typ` is removed in
+% Phase F. See docs/superpowers/specs/2026-05-18-type-hierarchy-refactor-design.md
+% =====================================================================
+
+% Bidirectional types — paper's bid{T}. Derivation-internal coloured ∀s
+% (no holes). The umbrella type for d_sub / d_consis / d_typing rules
+% (post-refactor).
+bid, D :: 'bid_' ::=
+  | UNIT                ::   :: unit
+  | Xd                  ::   :: var
+  | D1 -> D2            ::   :: arrow
+  | forall^syn Xd . D   ::   :: all_syn   (+ bind Xd in D +)
+  | forall^inh Xd . D   ::   :: all_inh   (+ bind Xd in D +)
+  | forall@ eps Xd . D  ::   :: all_etag  (+ bind Xd in D +)
+  | ( D )               :: S :: paren {{ coq ([[D]]) }}
+  | { D2 / Xd } D1      :: M :: subst {{ coq (open_bid_wrt_bid [[Xd D1]] [[D2]]) }}
+
+% Unresolved synthesised types — paper's syn{∀^δ α.}T. Subset of bid:
+% only colour_syn ∀ and ε-tagged ∀ allowed (no colour_inh).
+utyp, F :: 'utyp_' ::=
+  | UNIT                ::   :: unit
+  | Xf                  ::   :: var
+  | F1 -> F2            ::   :: arrow
+  | forall^syn Xf . F   ::   :: all_syn   (+ bind Xf in F +)
+  | forall@ eps Xf . F  ::   :: all_etag  (+ bind Xf in F +)
+  | ( F )               :: S :: paren {{ coq ([[F]]) }}
+  | { F2 / Xf } F1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xf F1]] [[F2]]) }}
+
+% Skeletons — for d_wf_skel, d_refine, etc. Colour_syn ∀ only, no
+% ε-tags, with holes and tophole.
+skel, R :: 'skel_' ::=
+  | UNIT                ::   :: unit
+  | Xr                  ::   :: var
+  | R1 -> R2            ::   :: arrow
+  | forall^syn Xr . R   ::   :: all_syn   (+ bind Xr in R +)
+  | HOLE                ::   :: hole
+  | TOPHOLE . R         ::   :: tophole
+  | ( R )               :: S :: paren {{ coq ([[R]]) }}
+  | { R2 / Xr } R1      :: M :: subst {{ coq (open_skel_wrt_skel [[Xr R1]] [[R2]]) }}
+
 % Terms.
 exp, e, f :: 'exp_' ::=
   | unit                    ::   :: unit
@@ -114,16 +163,22 @@ dbind, db :: 'dbind_' ::=
   | : P     ::   :: skel
 
 substitutions
-  single A X :: subst_typ_in
-  single K U :: subst_ctyp_in
-  single e x :: subst_exp_in
-  single e X :: subst_typ_in
+  single A X  :: subst_typ_in
+  single K U  :: subst_ctyp_in
+  single D Xd :: subst_bid_in
+  single F Xf :: subst_utyp_in
+  single R Xr :: subst_skel_in
+  single e x  :: subst_exp_in
+  single e X  :: subst_typ_in
 
 freevars
-  A X :: ftvar_in
-  K U :: ftvar_in
-  e X :: ftvar_in
-  e x :: fvar_in
+  A X  :: ftvar_in
+  K U  :: ftvar_in
+  D Xd :: ftvar_in
+  F Xf :: ftvar_in
+  R Xr :: ftvar_in
+  e X  :: ftvar_in
+  e x  :: fvar_in
 
 grammar
 
