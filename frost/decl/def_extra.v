@@ -965,6 +965,181 @@ Inductive d_pat_sub :
     Γ ⊢ₛ[ m ; Δ ] (typ_all_col colour_syn SS) ⊑ P
 where "Γ ⊢ₛ[ M ; Δ ] S ⊑ P" := (d_pat_sub M Δ Γ S P) : type_scope.
 
+(* ===================================================================== *)
+(*  Skeleton-typed counterparts (Phase B-b). Mechanical translation of   *)
+(*  the four typ-based skeleton judgments above ([d_refine_syn],          *)
+(*  [d_refine], [d_pat_consis], [d_pat_sub]) over the new [skel]         *)
+(*  inductive. [skel] now includes all three ∀ forms (all_syn,           *)
+(*  all_inh, all_etag) + hole + tophole — broad enough for both the     *)
+(*  LHS shapes that d_pat_consis admits and the RHS shapes that          *)
+(*  d_refine produces.                                                   *)
+(* ===================================================================== *)
+
+(** [d_refine_syn_skel]: skel-typed version of [d_refine_syn]. *)
+Inductive d_refine_syn_skel :
+  list atom -> list (atom * dbind) -> skel -> skel -> Prop :=
+| d_refine_syn_skel__unit : forall Ψ Γ,
+    d_refine_syn_skel Ψ Γ skel_unit skel_unit
+| d_refine_syn_skel__var : forall Ψ Γ X,
+    List.In X Ψ \/ binds X dbind_tvar Γ ->
+    d_refine_syn_skel Ψ Γ (skel_var_f X) (skel_var_f X)
+| d_refine_syn_skel__arrow : forall Ψ Γ R1 R2 R1' R2',
+    d_refine_syn_skel Ψ Γ R1 R1' ->
+    d_refine_syn_skel Ψ Γ R2 R2' ->
+    d_refine_syn_skel Ψ Γ (skel_arrow R1 R2) (skel_arrow R1' R2')
+| d_refine_syn_skel__all_inh : forall L Ψ Γ R R',
+    (forall X, X `notin` L ->
+       d_refine_syn_skel (X :: Ψ) Γ
+         (open_skel_wrt_skel R (skel_var_f X))
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_refine_syn_skel Ψ Γ (skel_all_inh R) (skel_all_inh R')
+| d_refine_syn_skel__hole : forall Ψ Γ R',
+    is_syn_skel_new R' ->
+    d_wf_skel_new Ψ Γ R' ->
+    d_refine_syn_skel Ψ Γ skel_hole R'
+| d_refine_syn_skel__tophole_no_top : forall L Ψ Γ R R',
+    (forall X, X `notin` L ->
+       d_refine_syn_skel (X :: Ψ) Γ R
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_refine_syn_skel Ψ Γ (skel_tophole R) (skel_all_syn R')
+| d_refine_syn_skel__tophole_with_top : forall L Ψ Γ R R',
+    guarded_skel_new R' ->
+    d_wf_skel_new nil Γ R ->
+    (forall X, X `notin` L ->
+       d_refine_syn_skel nil Γ R
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_refine_syn_skel Ψ Γ (skel_tophole R)
+      (skel_all_syn (skel_tophole R')).
+
+(** [d_refine_skel]: skel-typed version of [d_refine]. *)
+Inductive d_refine_skel :
+  list atom -> list (atom * dbind) -> skel -> skel -> Prop :=
+| d_refine_skel__unit : forall Ψ Γ,
+    d_refine_skel Ψ Γ skel_unit skel_unit
+| d_refine_skel__var : forall Ψ Γ X,
+    List.In X Ψ \/ binds X dbind_tvar Γ ->
+    d_refine_skel Ψ Γ (skel_var_f X) (skel_var_f X)
+| d_refine_skel__arrow : forall Ψ Γ R1 R2 R1' R2',
+    d_refine_skel Ψ Γ R1 R1' ->
+    d_refine_skel Ψ Γ R2 R2' ->
+    d_refine_skel Ψ Γ (skel_arrow R1 R2) (skel_arrow R1' R2')
+| d_refine_skel__all : forall L Ψ Γ R R',
+    (forall X, X `notin` L ->
+       d_refine_skel (X :: Ψ) Γ
+         (open_skel_wrt_skel R (skel_var_f X))
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_refine_skel Ψ Γ (skel_all_syn R) (skel_all_syn R')
+| d_refine_skel__hole : forall Ψ Γ R',
+    d_wf_skel_new nil Γ R' ->
+    d_refine_skel Ψ Γ skel_hole R'
+| d_refine_skel__tophole_no_top : forall L Ψ Γ R R',
+    (forall X, X `notin` L ->
+       d_refine_skel (X :: Ψ) Γ R
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_refine_skel Ψ Γ (skel_tophole R) (skel_all_syn R')
+| d_refine_skel__tophole_with_top : forall L Ψ Γ R R',
+    guarded_skel_new R' ->
+    d_wf_skel_new nil Γ R ->
+    (forall X, X `notin` L ->
+       d_refine_skel nil Γ R
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_refine_skel Ψ Γ (skel_tophole R)
+      (skel_all_syn (skel_tophole R')).
+
+(** [d_pat_consis_skel]: skel-typed version of [d_pat_consis]. *)
+Inductive d_pat_consis_skel :
+  list atom -> list (atom * dbind) -> skel -> skel -> Prop :=
+| d_pat_consis_skel__unit : forall Γ,
+    d_pat_consis_skel nil Γ skel_unit skel_unit
+| d_pat_consis_skel__var : forall Γ X,
+    binds X dbind_tvar Γ ->
+    d_pat_consis_skel nil Γ (skel_var_f X) (skel_var_f X)
+| d_pat_consis_skel__forall_inh_tagged : forall L Δ Γ ε R R',
+    (forall X, X `notin` L ->
+       d_pat_consis_skel Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_skel_wrt_skel R (skel_var_f X))
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    ~ List.In ε Δ ->
+    d_pat_consis_skel (ε :: Δ) Γ (skel_all_etag ε R) (skel_all_inh R')
+| d_pat_consis_skel__forall_inh_untagged : forall L Δ Γ R R',
+    (forall X, X `notin` L ->
+       d_pat_consis_skel Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_skel_wrt_skel R (skel_var_f X))
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_pat_consis_skel Δ Γ (skel_all_syn R) (skel_all_inh R')
+| d_pat_consis_skel__forall_syn_tagged : forall L Δ Γ ε R R',
+    (forall X, X `notin` L ->
+       d_pat_consis_skel Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_skel_wrt_skel R (skel_var_f X))
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_pat_consis_skel Δ Γ (skel_all_etag ε R) (skel_all_syn R')
+| d_pat_consis_skel__forall_syn_untagged : forall L Δ Γ R R',
+    (forall X, X `notin` L ->
+       d_pat_consis_skel Δ ((X ~ dbind_tvar) ++ Γ)
+         (open_skel_wrt_skel R (skel_var_f X))
+         (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_pat_consis_skel Δ Γ (skel_all_syn R) (skel_all_syn R')
+| d_pat_consis_skel__ghost : forall Γ R',
+    no_forall_skel R' ->
+    d_wf_skel_new nil Γ R' ->
+    d_pat_consis_skel nil Γ skel_hole R'
+| d_pat_consis_skel__arrow : forall Δ1 Δ2 Γ R1 R2 R1' R2',
+    d_pat_consis_skel Δ1 Γ R1 R1' ->
+    d_pat_consis_skel Δ2 Γ R2 R2' ->
+    list_disjoint Δ1 Δ2 ->
+    d_pat_consis_skel (Δ1 ++ Δ2) Γ (skel_arrow R1 R2) (skel_arrow R1' R2')
+| d_pat_consis_skel__univ_ghost_arr : forall Δ Γ R R',
+    d_pat_consis_skel Δ Γ R R' ->
+    d_pat_consis_skel Δ Γ (skel_tophole R) (skel_tophole R')
+| d_pat_consis_skel__univ_ghost_inh1 : forall L Δ Γ R R',
+    (forall X, X `notin` L ->
+       d_pat_consis_skel Δ ((X ~ dbind_tvar) ++ Γ)
+         (skel_tophole R) (open_skel_wrt_skel R' (skel_var_f X))) ->
+    d_pat_consis_skel Δ Γ (skel_tophole R) (skel_all_inh R')
+| d_pat_consis_skel__univ_ghost_pass : forall Δ Γ R R',
+    d_pat_consis_skel Δ Γ R R' ->
+    d_pat_consis_skel Δ Γ (skel_tophole R) R'.
+
+(** [d_pat_sub_skel]: skel-typed version of [d_pat_sub]. *)
+Inductive d_pat_sub_skel :
+  mode -> list atom -> list (atom * dbind) -> skel -> skel -> Prop :=
+| d_pat_sub_skel__infer : forall Γ R R',
+    is_syn_skel_new R' ->
+    d_pat_consis_skel nil Γ R R' ->
+    d_pat_sub_skel mode_ti nil Γ R R'
+| d_pat_sub_skel__univ_ghost_r : forall Γ R R',
+    guarded_skel_new R ->
+    (forall ε R'', R <> skel_all_etag ε R'') ->
+    (forall R'', R <> skel_tophole R'') ->
+    R <> skel_hole ->
+    is_syn_skel_new R' ->
+    d_pat_consis_skel nil Γ R R' ->
+    d_pat_sub_skel mode_tc nil Γ R (skel_tophole R')
+| d_pat_sub_skel__ghost : forall Γ m R',
+    no_forall_skel R' ->
+    d_wf_skel_new nil Γ R' ->
+    d_pat_sub_skel (mode_fn m) nil Γ skel_hole R'
+| d_pat_sub_skel__univ_ghost_l : forall Δ Γ m R R',
+    m <> mode_ti ->
+    d_pat_sub_skel m Δ Γ R R' ->
+    d_pat_sub_skel m Δ Γ (skel_tophole R) R'
+| d_pat_sub_skel__arg : forall Δ1 Δ2 Γ m R1 R2 R1' R2',
+    d_pat_consis_skel Δ1 Γ R1 R1' ->
+    d_pat_sub_skel m Δ2 Γ R2 R2' ->
+    d_pat_sub_skel (mode_fn m) (Δ1 ++ Δ2) Γ (skel_arrow R1 R2) (skel_arrow R1' R2')
+| d_pat_sub_skel__forall_l_tagged : forall Δ Δ' Γ m ε R psi R',
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    (* TODO: d_wf_tskel_new analogue over skel. Skipping for now. *)
+    d_pat_sub_skel m (Δ ++ Δ') Γ (open_skel_wrt_skel R psi) R' ->
+    d_pat_sub_skel m Δ Γ (skel_all_etag ε R) R'
+| d_pat_sub_skel__forall_l_untagged : forall Δ Δ' Γ m R psi R',
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    (* TODO: same. *)
+    d_pat_sub_skel m (Δ ++ Δ') Γ (open_skel_wrt_skel R psi) R' ->
+    d_pat_sub_skel m Δ Γ (skel_all_syn R) R'.
+
 (** ** Declarative typing Γ ⊢[ M ] e ⇒ A and skeleton inference Γ ⊢[ M ] e ⇨ P.
     These two are genuinely mutual due to the App rule (d_typing__app reads
     the argument's skeleton via d_pat, and d_pat__app reads the function's

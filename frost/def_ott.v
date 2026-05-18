@@ -53,6 +53,8 @@ Inductive skel : Set :=
  | skel_var_f (Xr:skelvar)
  | skel_arrow (R1:skel) (R2:skel)
  | skel_all_syn (R:skel)
+ | skel_all_inh (R:skel)
+ | skel_all_etag (ε:εvar) (R:skel)
  | skel_hole : skel
  | skel_tophole (R:skel).
 
@@ -159,6 +161,8 @@ Fixpoint open_skel_wrt_skel_rec (k:nat) (R_5:skel) (R__6:skel) {struct R__6}: sk
   | (skel_var_f Xr) => skel_var_f Xr
   | (skel_arrow R1 R2) => skel_arrow (open_skel_wrt_skel_rec k R_5 R1) (open_skel_wrt_skel_rec k R_5 R2)
   | (skel_all_syn R) => skel_all_syn (open_skel_wrt_skel_rec (S k) R_5 R)
+  | (skel_all_inh R) => skel_all_inh (open_skel_wrt_skel_rec (S k) R_5 R)
+  | (skel_all_etag ε R) => skel_all_etag ε (open_skel_wrt_skel_rec (S k) R_5 R)
   | skel_hole => skel_hole 
   | (skel_tophole R) => skel_tophole (open_skel_wrt_skel_rec k R_5 R)
 end.
@@ -300,6 +304,12 @@ Inductive lc_skel : skel -> Prop :=    (* defn lc_skel *)
  | lc_skel_all_syn : forall (R:skel),
       ( forall Xr , lc_skel  ( open_skel_wrt_skel R (skel_var_f Xr) )  )  ->
      (lc_skel (skel_all_syn R))
+ | lc_skel_all_inh : forall (R:skel),
+      ( forall Xr , lc_skel  ( open_skel_wrt_skel R (skel_var_f Xr) )  )  ->
+     (lc_skel (skel_all_inh R))
+ | lc_skel_all_etag : forall (ε:εvar) (R:skel),
+      ( forall Xr , lc_skel  ( open_skel_wrt_skel R (skel_var_f Xr) )  )  ->
+     (lc_skel (skel_all_etag ε R))
  | lc_skel_hole : 
      (lc_skel skel_hole)
  | lc_skel_tophole : forall (R:skel),
@@ -393,6 +403,8 @@ Fixpoint ftvar_in_skel (R_5:skel) : vars :=
   | (skel_var_f Xr) => {{Xr}}
   | (skel_arrow R1 R2) => (ftvar_in_skel R1) \u (ftvar_in_skel R2)
   | (skel_all_syn R) => (ftvar_in_skel R)
+  | (skel_all_inh R) => (ftvar_in_skel R)
+  | (skel_all_etag ε R) => (ftvar_in_skel R)
   | skel_hole => {}
   | (skel_tophole R) => (ftvar_in_skel R)
 end.
@@ -480,6 +492,8 @@ Fixpoint subst_skel_in_skel (R_5:skel) (Xr5:skelvar) (R__6:skel) {struct R__6} :
   | (skel_var_f Xr) => (if eq_var Xr Xr5 then R_5 else (skel_var_f Xr))
   | (skel_arrow R1 R2) => skel_arrow (subst_skel_in_skel R_5 Xr5 R1) (subst_skel_in_skel R_5 Xr5 R2)
   | (skel_all_syn R) => skel_all_syn (subst_skel_in_skel R_5 Xr5 R)
+  | (skel_all_inh R) => skel_all_inh (subst_skel_in_skel R_5 Xr5 R)
+  | (skel_all_etag ε R) => skel_all_etag ε (subst_skel_in_skel R_5 Xr5 R)
   | skel_hole => skel_hole 
   | (skel_tophole R) => skel_tophole (subst_skel_in_skel R_5 Xr5 R)
 end.

@@ -125,13 +125,17 @@ utyp, F :: 'utyp_' ::=
   | ( F )               :: S :: paren {{ coq ([[F]]) }}
   | { F2 / Xf } F1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xf F1]] [[F2]]) }}
 
-% Skeletons — for d_wf_skel, d_refine, etc. Colour_syn ∀ only, no
-% ε-tags, with holes and tophole.
+% Skeletons — for d_wf_skel, d_refine, d_pat_consis, etc.
+% Broadest skeleton: matches [bid] shapes (syn / inh / etag ∀s) plus
+% holes / tophole. Narrow classes (e.g. syn-only, no-etag) are
+% recovered via predicates over skel.
 skel, R :: 'skel_' ::=
   | UNIT                ::   :: unit
   | Xr                  ::   :: var
   | R1 -> R2            ::   :: arrow
   | forall^syn Xr . R   ::   :: all_syn   (+ bind Xr in R +)
+  | forall^inh Xr . R   ::   :: all_inh   (+ bind Xr in R +)
+  | forall@ eps Xr . R  ::   :: all_etag  (+ bind Xr in R +)
   | HOLE                ::   :: hole
   | TOPHOLE . R         ::   :: tophole
   | ( R )               :: S :: paren {{ coq ([[R]]) }}

@@ -64,3 +64,44 @@ Inductive is_ttyp_utyp : utyp -> Prop :=
     (forall X, X `notin` L ->
        is_ttyp_utyp (open_utyp_wrt_utyp F (utyp_var_f X))) ->
     is_ttyp_utyp (utyp_all_etag ε F).
+
+(** ===== Guarded over bid =====
+    No top-level forall (any colour / tag) or atomic-but-special
+    shape. Used by d_sub_bid__check (paper's "syn{T} guarded"). *)
+Inductive guarded_bid : bid -> Prop :=
+| guarded_bid__unit  : guarded_bid bid_unit
+| guarded_bid__var   : forall X, guarded_bid (bid_var_f X)
+| guarded_bid__arrow : forall D1 D2, guarded_bid (bid_arrow D1 D2).
+
+(** ===== Guarded over skel ===== *)
+Inductive guarded_skel_new : skel -> Prop :=
+| guarded_skel_new__unit  : guarded_skel_new skel_unit
+| guarded_skel_new__var   : forall X, guarded_skel_new (skel_var_f X)
+| guarded_skel_new__arrow : forall R1 R2, guarded_skel_new (skel_arrow R1 R2).
+
+(** ===== Syn-only over skel =====
+    Admits unit, var, arrow, all_syn, hole, tophole. Excludes
+    all_inh and all_etag. Mirrors old [is_syn_skel] over typ. *)
+Inductive is_syn_skel_new : skel -> Prop :=
+| is_syn_skel_new__unit    : is_syn_skel_new skel_unit
+| is_syn_skel_new__var     : forall X, is_syn_skel_new (skel_var_f X)
+| is_syn_skel_new__arrow   : forall R1 R2,
+    is_syn_skel_new R1 -> is_syn_skel_new R2 -> is_syn_skel_new (skel_arrow R1 R2)
+| is_syn_skel_new__all     : forall L R,
+    (forall X, X `notin` L ->
+       is_syn_skel_new (open_skel_wrt_skel R (skel_var_f X))) ->
+    is_syn_skel_new (skel_all_syn R)
+| is_syn_skel_new__hole    : is_syn_skel_new skel_hole
+| is_syn_skel_new__tophole : forall R,
+    is_syn_skel_new R -> is_syn_skel_new (skel_tophole R).
+
+(** ===== No-forall over skel =====
+    No ∀ at any depth. Used by d_pat_consis_skel__ghost. *)
+Inductive no_forall_skel : skel -> Prop :=
+| no_forall_skel__unit    : no_forall_skel skel_unit
+| no_forall_skel__var     : forall X, no_forall_skel (skel_var_f X)
+| no_forall_skel__arrow   : forall R1 R2,
+    no_forall_skel R1 -> no_forall_skel R2 -> no_forall_skel (skel_arrow R1 R2)
+| no_forall_skel__hole    : no_forall_skel skel_hole
+| no_forall_skel__tophole : forall R,
+    no_forall_skel R -> no_forall_skel (skel_tophole R).

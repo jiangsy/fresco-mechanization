@@ -152,6 +152,8 @@ Fixpoint close_skel_wrt_skel_rec (n1 : nat) (Xr1 : skelvar) (R1 : skel) {struct 
     | skel_var_b n2 => if (lt_ge_dec n2 n1) then (skel_var_b n2) else (skel_var_b (S n2))
     | skel_arrow R2 R3 => skel_arrow (close_skel_wrt_skel_rec n1 Xr1 R2) (close_skel_wrt_skel_rec n1 Xr1 R3)
     | skel_all_syn R2 => skel_all_syn (close_skel_wrt_skel_rec (S n1) Xr1 R2)
+    | skel_all_inh R2 => skel_all_inh (close_skel_wrt_skel_rec (S n1) Xr1 R2)
+    | skel_all_etag ε1 R2 => skel_all_etag ε1 (close_skel_wrt_skel_rec (S n1) Xr1 R2)
     | skel_hole => skel_hole
     | skel_tophole R2 => skel_tophole (close_skel_wrt_skel_rec n1 Xr1 R2)
   end.
@@ -256,6 +258,8 @@ Fixpoint size_skel (R1 : skel) {struct R1} : nat :=
     | skel_var_b n1 => 1
     | skel_arrow R2 R3 => 1 + (size_skel R2) + (size_skel R3)
     | skel_all_syn R2 => 1 + (size_skel R2)
+    | skel_all_inh R2 => 1 + (size_skel R2)
+    | skel_all_etag ε1 R2 => 1 + (size_skel R2)
     | skel_hole => 1
     | skel_tophole R2 => 1 + (size_skel R2)
   end.
@@ -417,6 +421,12 @@ Inductive degree_skel_wrt_skel : nat -> skel -> Prop :=
   | degree_wrt_skel_skel_all_syn : forall n1 R1,
     degree_skel_wrt_skel (S n1) R1 ->
     degree_skel_wrt_skel n1 (skel_all_syn R1)
+  | degree_wrt_skel_skel_all_inh : forall n1 R1,
+    degree_skel_wrt_skel (S n1) R1 ->
+    degree_skel_wrt_skel n1 (skel_all_inh R1)
+  | degree_wrt_skel_skel_all_etag : forall n1 ε1 R1,
+    degree_skel_wrt_skel (S n1) R1 ->
+    degree_skel_wrt_skel n1 (skel_all_etag ε1 R1)
   | degree_wrt_skel_skel_hole : forall n1,
     degree_skel_wrt_skel n1 (skel_hole)
   | degree_wrt_skel_skel_tophole : forall n1 R1,
@@ -658,6 +668,12 @@ Inductive lc_set_skel : skel -> Set :=
   | lc_set_skel_all_syn : forall R1,
     (forall Xr1 : skelvar, lc_set_skel (open_skel_wrt_skel R1 (skel_var_f Xr1))) ->
     lc_set_skel (skel_all_syn R1)
+  | lc_set_skel_all_inh : forall R1,
+    (forall Xr1 : skelvar, lc_set_skel (open_skel_wrt_skel R1 (skel_var_f Xr1))) ->
+    lc_set_skel (skel_all_inh R1)
+  | lc_set_skel_all_etag : forall ε1 R1,
+    (forall Xr1 : skelvar, lc_set_skel (open_skel_wrt_skel R1 (skel_var_f Xr1))) ->
+    lc_set_skel (skel_all_etag ε1 R1)
   | lc_set_skel_hole :
     lc_set_skel (skel_hole)
   | lc_set_skel_tophole : forall R1,
@@ -5523,6 +5539,22 @@ Proof.
 intros; skel_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
+Lemma lc_skel_all_inh_exists :
+forall Xr1 R1,
+  lc_skel (open_skel_wrt_skel R1 (skel_var_f Xr1)) ->
+  lc_skel (skel_all_inh R1).
+Proof.
+intros; skel_lc_exists_tac; eauto 6 with lngen.
+Qed.
+
+Lemma lc_skel_all_etag_exists :
+forall Xr1 ε1 R1,
+  lc_skel (open_skel_wrt_skel R1 (skel_var_f Xr1)) ->
+  lc_skel (skel_all_etag ε1 R1).
+Proof.
+intros; skel_lc_exists_tac; eauto 6 with lngen.
+Qed.
+
 Lemma lc_exp_abs_exists :
 forall x1 e1,
   lc_exp (open_exp_wrt_exp e1 (exp_var_f x1)) ->
@@ -5584,6 +5616,16 @@ Qed.
   let Xr1 := fresh in
   pick_fresh Xr1;
   apply (lc_skel_all_syn_exists Xr1) : core.
+
+#[export] Hint Extern 1 (lc_skel (skel_all_inh _)) =>
+  let Xr1 := fresh in
+  pick_fresh Xr1;
+  apply (lc_skel_all_inh_exists Xr1) : core.
+
+#[export] Hint Extern 1 (lc_skel (skel_all_etag _ _)) =>
+  let Xr1 := fresh in
+  pick_fresh Xr1;
+  apply (lc_skel_all_etag_exists Xr1) : core.
 
 #[export] Hint Extern 1 (lc_exp (exp_abs _)) =>
   let x1 := fresh in
@@ -5820,6 +5862,26 @@ default_simp.
 Qed.
 
 #[export] Hint Resolve lc_body_skel_all_syn_1 : lngen.
+
+Lemma lc_body_skel_all_inh_1 :
+forall R1,
+  lc_skel (skel_all_inh R1) ->
+  body_skel_wrt_skel R1.
+Proof.
+default_simp.
+Qed.
+
+#[export] Hint Resolve lc_body_skel_all_inh_1 : lngen.
+
+Lemma lc_body_skel_all_etag_2 :
+forall ε1 R1,
+  lc_skel (skel_all_etag ε1 R1) ->
+  body_skel_wrt_skel R1.
+Proof.
+default_simp.
+Qed.
+
+#[export] Hint Resolve lc_body_skel_all_etag_2 : lngen.
 
 Lemma lc_body_exp_abs_1 :
 forall e1,
@@ -11829,6 +11891,28 @@ default_simp.
 Qed.
 
 #[export] Hint Resolve subst_skel_in_skel_skel_all_syn : lngen.
+
+Lemma subst_skel_in_skel_skel_all_inh :
+forall Xr2 R2 R1 Xr1,
+  lc_skel R1 ->
+  Xr2 `notin` ftvar_in_skel R1 `union` ftvar_in_skel R2 `union` singleton Xr1 ->
+  subst_skel_in_skel R1 Xr1 (skel_all_inh R2) = skel_all_inh (close_skel_wrt_skel Xr2 (subst_skel_in_skel R1 Xr1 (open_skel_wrt_skel R2 (skel_var_f Xr2)))).
+Proof.
+default_simp.
+Qed.
+
+#[export] Hint Resolve subst_skel_in_skel_skel_all_inh : lngen.
+
+Lemma subst_skel_in_skel_skel_all_etag :
+forall Xr2 ε1 R2 R1 Xr1,
+  lc_skel R1 ->
+  Xr2 `notin` ftvar_in_skel R1 `union` ftvar_in_skel R2 `union` singleton Xr1 ->
+  subst_skel_in_skel R1 Xr1 (skel_all_etag ε1 R2) = skel_all_etag (ε1) (close_skel_wrt_skel Xr2 (subst_skel_in_skel R1 Xr1 (open_skel_wrt_skel R2 (skel_var_f Xr2)))).
+Proof.
+default_simp.
+Qed.
+
+#[export] Hint Resolve subst_skel_in_skel_skel_all_etag : lngen.
 
 Lemma subst_typ_in_exp_exp_abs :
 forall x1 e1 A1 X1,
