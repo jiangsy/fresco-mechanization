@@ -1046,6 +1046,11 @@ Inductive d_refine_skel :
     d_refine_skel Ψ Γ (skel_tophole R)
       (skel_all_syn (skel_tophole R')).
 
+(** [d_refine_bid] is just an alias for [d_refine_skel] — the two
+    judgments coincide structurally. Define as a Notation to avoid
+    duplicating the inductive. *)
+Notation d_refine_bid := d_refine_skel.
+
 (** [d_pat_consis_skel]: skel-typed version of [d_pat_consis]. *)
 Inductive d_pat_consis_skel :
   list atom -> list (atom * dbind) -> skel -> skel -> Prop :=
@@ -1266,6 +1271,119 @@ with d_pat :
     d_refine_syn nil Γ (inh_color P) P' ->
     d_typing (mode_fn m) Γ e1 (typ_arrow P' Q) ->
     d_pat m Γ (exp_app e1 e2) Q
+.
+
+(* ===================================================================== *)
+(*  Phase C.0 — bid-typed typing + pat mutual block. Mirrors the legacy  *)
+(*  [d_typing] / [d_pat] over the new type hierarchy.                    *)
+(* ===================================================================== *)
+
+Inductive d_typing_bid :
+  mode -> list (atom * dbind) -> exp -> bid -> Prop :=
+| d_typing_bid__unit : forall Γ,
+    mode_typ_compat mode_ti typ_unit ->
+    d_typing_bid mode_ti Γ exp_unit bid_unit
+| d_typing_bid__var : forall Γ x A,
+    binds x (dbind_typ A) Γ ->
+    d_typing_bid mode_ti Γ (exp_var_f x) (ctyp_to_bid_syn (erase A))
+| d_typing_bid__anno : forall Γ e (N : ptyp),
+    d_typing_bid mode_tc Γ e (ptyp_to_bid_inh N) ->
+    d_typing_bid mode_ti Γ (exp_anno e (inh_color (ptyp_to_ctyp N)))
+                          (ptyp_to_bid_syn N)
+| d_typing_bid__sub : forall Γ m e A B,
+    is_base_term e ->
+    d_typing_bid mode_ti Γ e A ->
+    d_sub_bid m nil Γ A B ->
+    d_typing_bid m Γ e B
+| d_typing_bid__freeze : forall Γ e A,
+    d_typing_bid mode_ti Γ e A ->
+    d_typing_bid mode_tc Γ (exp_freeze e) A
+| d_typing_bid__forall : forall L Γ e D,
+    is_value e ->
+    (forall X, X `notin` L ->
+       d_typing_bid mode_tc ((X ~ dbind_tvar) ++ Γ) e
+         (open_bid_wrt_bid D (bid_var_f X))) ->
+    d_typing_bid mode_tc Γ e (bid_all_inh D)
+| d_typing_bid__abs : forall L Γ m e (N : ptyp) B,
+    d_wf_bid Γ (ptyp_to_bid_inh N) ->
+    (forall x, x `notin` L ->
+       d_typing_bid (decr_mode m) ((x ~ dbind_typ (syn_color (ptyp_to_ctyp N))) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_typing_bid m Γ (exp_abs e) (bid_arrow (ptyp_to_bid_inh N) B)
+| d_typing_bid__abs_anno : forall L Γ m e (N : ptyp) B,
+    d_wf_bid Γ (ptyp_to_bid_syn N) ->
+    (forall x, x `notin` L ->
+       d_typing_bid (decr_mode m) ((x ~ dbind_typ (syn_color (ptyp_to_ctyp N))) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_typing_bid m Γ (exp_abs_anno (inh_color (ptyp_to_ctyp N)) e)
+                     (bid_arrow (ptyp_to_bid_syn N) B)
+| d_typing_bid__app : forall Γ m e1 e2 (P : ctyp) P' B,
+    d_pat_bid mode_tc Γ e2 (ctyp_to_skel P) ->
+    d_refine_syn_skel nil Γ (ctyp_to_skel P) P' ->
+    d_typing_bid (mode_fn m) Γ e1 (bid_arrow (ctyp_to_bid_inh (skel_to_ctyp P')) B) ->
+    d_typing_bid mode_tc Γ e2 (ctyp_to_bid_inh (skel_to_ctyp P')) ->
+    d_typing_bid m Γ (exp_app e1 e2) B
+
+with d_pat_bid :
+  mode -> list (atom * dbind) -> exp -> skel -> Prop :=
+| d_pat_bid__unit : forall Γ,
+    d_pat_bid mode_ti Γ exp_unit skel_unit
+| d_pat_bid__var : forall Γ x P,
+    binds x (dbind_skel P) Γ ->
+    d_pat_bid mode_ti Γ (exp_var_f x) (ctyp_to_skel (erase P))
+| d_pat_bid__anno : forall Γ e (N : ptyp),
+    d_wf_bid Γ (ptyp_to_bid_syn N) ->
+    d_pat_bid mode_ti Γ (exp_anno e (inh_color (ptyp_to_ctyp N)))
+                        (ctyp_to_skel (ptyp_to_ctyp N))
+| d_pat_bid__sub : forall Γ m e P Q,
+    is_base_term e ->
+    d_pat_bid mode_ti Γ e P ->
+    d_pat_sub_skel m nil Γ P Q ->
+    d_pat_bid m Γ e Q
+| d_pat_bid__freeze : forall Γ e P,
+    d_pat_bid mode_ti Γ e P ->
+    d_pat_bid mode_tc Γ (exp_freeze e) P
+| d_pat_bid__abs : forall L Γ m e P Q,
+    m <> mode_tc ->
+    (forall R, P <> skel_all_syn R) ->
+    (forall ε R, P <> skel_all_etag ε R) ->
+    P <> skel_hole ->
+    (forall R, P <> skel_tophole R) ->
+    d_wf_skel_new nil Γ P ->
+    (forall x, x `notin` L ->
+       d_pat_bid (decr_mode m) ((x ~ dbind_skel (erase_skel_to_typ P)) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) Q) ->
+    d_pat_bid m Γ (exp_abs e) (skel_arrow P Q)
+| d_pat_bid__abs_check : forall L Γ e Q,
+    (forall x, x `notin` L ->
+       d_pat_bid mode_tc ((x ~ dbind_skel typ_hole) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) Q) ->
+    d_pat_bid mode_tc Γ (exp_abs e) (skel_tophole (skel_arrow skel_hole Q))
+| d_pat_bid__abs_anno : forall L Γ m e (N : ptyp) Q,
+    m <> mode_tc ->
+    d_wf_bid Γ (ptyp_to_bid_syn N) ->
+    (forall x, x `notin` L ->
+       d_pat_bid (decr_mode m) ((x ~ dbind_typ (inh_color (ptyp_to_ctyp N))) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) Q) ->
+    d_pat_bid m Γ (exp_abs_anno (inh_color (ptyp_to_ctyp N)) e)
+                  (skel_arrow (ctyp_to_skel (ptyp_to_ctyp N)) Q)
+| d_pat_bid__abs_anno_check : forall L Γ e (N : ptyp) Q,
+    d_wf_bid Γ (ptyp_to_bid_syn N) ->
+    (forall x, x `notin` L ->
+       d_pat_bid mode_tc ((x ~ dbind_typ (inh_color (ptyp_to_ctyp N))) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) Q) ->
+    d_pat_bid mode_tc Γ (exp_abs_anno (inh_color (ptyp_to_ctyp N)) e)
+                        (skel_tophole (skel_arrow (ctyp_to_skel (ptyp_to_ctyp N)) Q))
+| d_pat_bid__app : forall Γ m e1 e2 (P : ctyp) P' (Q : skel),
+    (* Note: [Q] is the pat output (skel); the function's return is the
+       bid lifting [ctyp_to_bid_inh (skel_to_ctyp Q)] of that skel. The
+       skel→bid bridge here parallels [d_typing_bid__app]'s arg side. *)
+    d_pat_bid mode_tc Γ e2 (ctyp_to_skel P) ->
+    d_refine_syn_skel nil Γ (ctyp_to_skel P) P' ->
+    d_typing_bid (mode_fn m) Γ e1
+      (bid_arrow (ctyp_to_bid_inh (skel_to_ctyp P'))
+                 (ctyp_to_bid_inh (skel_to_ctyp Q))) ->
+    d_pat_bid m Γ (exp_app e1 e2) Q
 .
 
 (** ** Syntax-directed declarative typing (paper syntax-directed.tex:454+).

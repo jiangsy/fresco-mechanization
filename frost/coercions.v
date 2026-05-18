@@ -181,3 +181,36 @@ Fixpoint ctyp_to_skel (K : ctyp) : skel :=
   | ctyp_hole          => skel_hole
   | ctyp_tophole K0    => skel_tophole (ctyp_to_skel K0)
   end.
+
+(** [skel_to_ctyp]: collapse a skel back to ctyp. Information-losing
+    where the skel carries inh / etag ∀ (those collapse to plain ∀);
+    used in d_typing_bid__app to recover the colourless P' from a
+    refined skel. *)
+Fixpoint skel_to_ctyp (R : skel) : ctyp :=
+  match R with
+  | skel_unit            => ctyp_unit
+  | skel_var_b n         => ctyp_var_b n
+  | skel_var_f X         => ctyp_var_f X
+  | skel_arrow R1 R2     => ctyp_arrow (skel_to_ctyp R1) (skel_to_ctyp R2)
+  | skel_all_syn R0      => ctyp_all (skel_to_ctyp R0)
+  | skel_all_inh R0      => ctyp_all (skel_to_ctyp R0)
+  | skel_all_etag _ R0   => ctyp_all (skel_to_ctyp R0)
+  | skel_hole            => ctyp_hole
+  | skel_tophole R0      => ctyp_tophole (skel_to_ctyp R0)
+  end.
+
+(** [erase_skel_to_typ]: lift a skel into the legacy typ AST.
+    Used in d_pat_bid__abs because dbind_skel still carries [typ].
+    Once Phase E refactors dbind, this helper is obsolete. *)
+Fixpoint erase_skel_to_typ (R : skel) : typ :=
+  match R with
+  | skel_unit            => typ_unit
+  | skel_var_b n         => typ_var_b n
+  | skel_var_f X         => typ_var_f X
+  | skel_arrow R1 R2     => typ_arrow (erase_skel_to_typ R1) (erase_skel_to_typ R2)
+  | skel_all_syn R0      => typ_all_col colour_syn (erase_skel_to_typ R0)
+  | skel_all_inh R0      => typ_all_col colour_inh (erase_skel_to_typ R0)
+  | skel_all_etag ε R0   => typ_all_etag ε (erase_skel_to_typ R0)
+  | skel_hole            => typ_hole
+  | skel_tophole R0      => typ_tophole (erase_skel_to_typ R0)
+  end.
