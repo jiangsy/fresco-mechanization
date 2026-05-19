@@ -89,17 +89,28 @@ Inductive is_ttyp_utyp : utyp -> Prop :=
 
 (** ===== Guarded over bid =====
     No top-level forall (any colour / tag) or atomic-but-special
-    shape. Used by d_sub_bid__check (paper's "syn{T} guarded"). *)
+    shape. Used by d_sub_bid__check (paper's "syn{T} guarded").
+
+    The [arrow] constructor carries [lc_bid] premises for its two
+    sub-terms so that [guarded_bid] implies [lc_bid]; without these
+    premises [guarded_bid_lc] is unprovable (the arrow sub-terms are
+    structurally unconstrained otherwise). No call sites construct
+    [guarded_bid] directly yet (the predicate is only consumed via
+    inversion), so the extra premises do not propagate. *)
 Inductive guarded_bid : bid -> Prop :=
 | guarded_bid__unit  : guarded_bid bid_unit
 | guarded_bid__var   : forall X, guarded_bid (bid_var_f X)
-| guarded_bid__arrow : forall D1 D2, guarded_bid (bid_arrow D1 D2).
+| guarded_bid__arrow : forall D1 D2,
+    lc_bid D1 -> lc_bid D2 -> guarded_bid (bid_arrow D1 D2).
 
-(** ===== Guarded over skel ===== *)
+(** ===== Guarded over skel =====
+    Same shape as [guarded_bid] — arrow carries [lc_skel] premises
+    so [guarded_skel_new] implies [lc_skel]. *)
 Inductive guarded_skel_new : skel -> Prop :=
 | guarded_skel_new__unit  : guarded_skel_new skel_unit
 | guarded_skel_new__var   : forall X, guarded_skel_new (skel_var_f X)
-| guarded_skel_new__arrow : forall R1 R2, guarded_skel_new (skel_arrow R1 R2).
+| guarded_skel_new__arrow : forall R1 R2,
+    lc_skel R1 -> lc_skel R2 -> guarded_skel_new (skel_arrow R1 R2).
 
 (** ===== Syn-only over skel =====
     Admits unit, var, arrow, all_syn, hole, tophole. Excludes

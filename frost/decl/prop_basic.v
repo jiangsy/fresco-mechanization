@@ -7,6 +7,7 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
+Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 
 Set Implicit Arguments.
@@ -987,5 +988,222 @@ Lemma d_typing_pat_mut_smoke :
     (forall m Γ e P, d_pat m Γ e P -> True).
 Proof.
   apply d_typing_pat_mut; intros; trivial.
+Qed.
+
+(* ===================================================================== *)
+(*  Phase C.1 — predicate / structural lemmas over the new type         *)
+(*  hierarchy (bid / utyp / skel / ptyp). Mirrors the typ-side section  *)
+(*  above. Naming convention: <pred>_lc / <pred>_subst / <pred>_inv_*.  *)
+(* ===================================================================== *)
+
+(** ===== mono lc + subst (foundation for the other proofs) ===== *)
+
+Lemma mono_bid_lc : forall D, mono_bid D -> lc_bid D.
+Proof.
+  intros D H. induction H; constructor; auto.
+Qed.
+
+Lemma mono_utyp_lc : forall F, mono_utyp F -> lc_utyp F.
+Proof.
+  intros F H. induction H; constructor; auto.
+Qed.
+
+Lemma mono_ptyp_lc : forall N, mono_ptyp N -> lc_ptyp N.
+Proof.
+  intros N H. induction H; constructor; auto.
+Qed.
+
+Lemma mono_bid_subst : forall D D' X,
+    mono_bid D -> mono_bid D' -> mono_bid (subst_bid_in_bid D' X D).
+Proof.
+  intros D D' X H Hm. induction H; simpl.
+  - constructor.
+  - destruct (X0 == X); subst. exact Hm. constructor.
+  - constructor; auto.
+Qed.
+
+Lemma mono_utyp_subst : forall F F' X,
+    mono_utyp F -> mono_utyp F' -> mono_utyp (subst_utyp_in_utyp F' X F).
+Proof.
+  intros F F' X H Hm. induction H; simpl.
+  - constructor.
+  - destruct (X0 == X); subst. exact Hm. constructor.
+  - constructor; auto.
+Qed.
+
+(** ===== is_syn (over bid) ===== *)
+
+Lemma is_syn_lc : forall D, is_syn D -> lc_bid D.
+Proof.
+  intros D H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - pick fresh X. apply lc_bid_all_syn_exists with (Xd1 := X).
+    apply H0. auto.
+Qed.
+
+Lemma is_syn_subst : forall D D' X,
+    is_syn D -> mono_bid D' -> is_syn (subst_bid_in_bid D' X D).
+Proof.
+  intros D D' X H Hm. induction H; simpl.
+  - constructor.
+  - destruct (X0 == X); subst.
+    + induction Hm; simpl.
+      * constructor.
+      * constructor.
+      * constructor; auto.
+    + constructor.
+  - constructor; auto.
+  - apply is_syn__all with (L := L `union` singleton X).
+    intros Y Hni.
+    rewrite subst_bid_in_bid_open_bid_wrt_bid_var.
+    + apply H0; fsetdec.
+    + fsetdec.
+    + apply mono_bid_lc; exact Hm.
+Qed.
+
+Lemma is_syn_inv_arrow : forall D1 D2,
+    is_syn (bid_arrow D1 D2) -> is_syn D1 /\ is_syn D2.
+Proof. intros D1 D2 H. inversion H; subst. split; auto. Qed.
+
+Lemma is_syn_inv_all_syn : forall D,
+    is_syn (bid_all_syn D) ->
+    exists L, forall X, X `notin` L ->
+       is_syn (open_bid_wrt_bid D (bid_var_f X)).
+Proof. intros D H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_syn_inv_all_inh : forall D, is_syn (bid_all_inh D) -> False.
+Proof. intros D H. inversion H. Qed.
+
+Lemma is_syn_inv_all_etag : forall ε D, is_syn (bid_all_etag ε D) -> False.
+Proof. intros ε D H. inversion H. Qed.
+
+(** ===== is_inh (over bid). Mirror of is_syn. ===== *)
+
+Lemma is_inh_lc : forall D, is_inh D -> lc_bid D.
+Proof.
+  intros D H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - pick fresh X. apply lc_bid_all_inh_exists with (Xd1 := X).
+    apply H0. auto.
+Qed.
+
+Lemma is_inh_subst : forall D D' X,
+    is_inh D -> mono_bid D' -> is_inh (subst_bid_in_bid D' X D).
+Proof.
+  intros D D' X H Hm. induction H; simpl.
+  - constructor.
+  - destruct (X0 == X); subst.
+    + induction Hm; simpl.
+      * constructor.
+      * constructor.
+      * constructor; auto.
+    + constructor.
+  - constructor; auto.
+  - apply is_inh__all with (L := L `union` singleton X).
+    intros Y Hni.
+    rewrite subst_bid_in_bid_open_bid_wrt_bid_var.
+    + apply H0; fsetdec.
+    + fsetdec.
+    + apply mono_bid_lc; exact Hm.
+Qed.
+
+Lemma is_inh_inv_arrow : forall D1 D2,
+    is_inh (bid_arrow D1 D2) -> is_inh D1 /\ is_inh D2.
+Proof. intros D1 D2 H. inversion H; subst. split; auto. Qed.
+
+Lemma is_inh_inv_all_inh : forall D,
+    is_inh (bid_all_inh D) ->
+    exists L, forall X, X `notin` L ->
+       is_inh (open_bid_wrt_bid D (bid_var_f X)).
+Proof. intros D H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_inh_inv_all_syn : forall D, is_inh (bid_all_syn D) -> False.
+Proof. intros D H. inversion H. Qed.
+
+Lemma is_inh_inv_all_etag : forall ε D, is_inh (bid_all_etag ε D) -> False.
+Proof. intros ε D H. inversion H. Qed.
+
+(** ===== is_ttyp_utyp (over utyp) ===== *)
+
+Lemma is_ttyp_utyp_lc : forall F, is_ttyp_utyp F -> lc_utyp F.
+Proof.
+  intros F H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - pick fresh X. apply lc_utyp_all_etag_exists with (Xf1 := X).
+    apply H0. auto.
+Qed.
+
+Lemma is_ttyp_utyp_subst : forall F F' X,
+    is_ttyp_utyp F -> mono_utyp F' -> is_ttyp_utyp (subst_utyp_in_utyp F' X F).
+Proof.
+  intros F F' X H Hm. induction H; simpl.
+  - constructor.
+  - destruct (X0 == X); subst.
+    + induction Hm; simpl.
+      * constructor.
+      * constructor.
+      * constructor; auto.
+    + constructor.
+  - constructor; auto.
+  - apply is_ttyp_utyp__all with (L := L `union` singleton X) (ε := ε).
+    intros Y Hni.
+    rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var.
+    + apply H0; fsetdec.
+    + fsetdec.
+    + apply mono_utyp_lc; exact Hm.
+Qed.
+
+Lemma is_ttyp_utyp_inv_arrow : forall F1 F2,
+    is_ttyp_utyp (utyp_arrow F1 F2) -> is_ttyp_utyp F1 /\ is_ttyp_utyp F2.
+Proof. intros F1 F2 H. inversion H; subst. split; auto. Qed.
+
+Lemma is_ttyp_utyp_inv_all_etag : forall ε F,
+    is_ttyp_utyp (utyp_all_etag ε F) ->
+    exists L, forall X, X `notin` L ->
+       is_ttyp_utyp (open_utyp_wrt_utyp F (utyp_var_f X)).
+Proof. intros ε F H. inversion H; subst. exists L. auto. Qed.
+
+Lemma is_ttyp_utyp_inv_all_syn : forall F, is_ttyp_utyp (utyp_all_syn F) -> False.
+Proof. intros F H. inversion H. Qed.
+
+(** ===== is_syn_skel_new =====
+    Six rules total: unit, var, arrow, cofinite all_syn, hole, tophole (recursive). *)
+
+Lemma is_syn_skel_new_lc : forall R, is_syn_skel_new R -> lc_skel R.
+Proof.
+  intros R H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - pick fresh X. apply lc_skel_all_syn_exists with (Xr1 := X).
+    apply H0. auto.
+  - constructor.
+  - constructor; auto.
+Qed.
+
+(** ===== no_forall_skel =====
+    Five rules: unit, var, arrow, hole, tophole (recursive). *)
+
+Lemma no_forall_skel_lc : forall R, no_forall_skel R -> lc_skel R.
+Proof.
+  intros R H. induction H; constructor; auto.
+Qed.
+
+(** ===== guarded predicates ===== *)
+
+Lemma guarded_bid_lc : forall D, guarded_bid D -> lc_bid D.
+Proof.
+  intros D H. induction H; constructor; auto.
+Qed.
+
+Lemma guarded_skel_new_lc : forall R, guarded_skel_new R -> lc_skel R.
+Proof.
+  intros R H. induction H; constructor; auto.
 Qed.
 
