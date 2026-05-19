@@ -44,7 +44,8 @@ NJOBS ?= 4
 	sed -e "s/Definition utypvar : Set := var\./Notation utypvar := ptypvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition psklvar : Set := var\./Notation psklvar := ptypvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition bsklvar : Set := var\./Notation bsklvar := ptypvar./g" ${SED_FLAG} $@
-	
+	sed -e "s/Definition usklvar : Set := var\./Notation usklvar := ptypvar./g" ${SED_FLAG} $@
+
 ott : ${OTT_OUTS}
 
 %/prop_ln.v : %/def_ott.v
@@ -54,14 +55,6 @@ ott : ${OTT_OUTS}
 	sed -e "s/dD/Δ/g" ${SED_FLAG} $@
 	sed -e "s/dP/Ψ/g" ${SED_FLAG} $@
 	sed -e "s/eps/ε/g" ${SED_FLAG} $@
-	# Same alias as in def_ott.v (defensive — lngen output is unlikely
-	# to redefine ctypvar, but keep the pass for symmetry / safety).
-	sed -e "s/Definition ctypvar : Set := var\./Notation ctypvar := typvar./g" ${SED_FLAG} $@
-	sed -e "s/Definition bidvar : Set := var\./Notation bidvar := typvar./g" ${SED_FLAG} $@
-	sed -e "s/Definition utypvar : Set := var\./Notation utypvar := typvar./g" ${SED_FLAG} $@
-	sed -e "s/Definition skelvar : Set := var\./Notation skelvar := typvar./g" ${SED_FLAG} $@
-	sed -e "s/Definition ptypvar : Set := var\./Notation ptypvar := typvar./g" ${SED_FLAG} $@
-
 
 lngen : ${LNGEN_OUTS}
 

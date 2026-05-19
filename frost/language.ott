@@ -26,6 +26,7 @@ metavar btypvar, Xbt ::= {{ repr-locally-nameless }}
 metavar utypvar, Xut ::= {{ repr-locally-nameless }}
 metavar psklvar, Xps ::= {{ repr-locally-nameless }}
 metavar bsklvar, Xbs ::= {{ repr-locally-nameless }}
+metavar usklvar, Xus ::= {{ repr-locally-nameless }}
 
 grammar
 
@@ -45,7 +46,7 @@ grammar
 % =====================================================================
 % Type-hierarchy refactor (Phase A) — new derivation-internal types.
 % These coexist with `typ` during the migration; `typ` is removed in
-% Phase F. See docs/superpowers/specs/2026-05-18-type-hierarchy-refactor-design.md
+% Phase C. See docs/superpowers/specs/2026-05-18-type-hierarchy-refactor-design.md
 % =====================================================================
 
 % Plain types — paper's "real user type" written in source annotations.
@@ -54,36 +55,36 @@ grammar
 % post-refactor. Colours / tags are derivation-internal bookkeeping
 % added when the typing rule paints a [ptyp] into [bid] for use in
 % subtyping / consistency premises.
-ptyp, N :: 'ptyp_' ::=
+ptyp, A :: 'ptyp_' ::=
   | UNIT                 ::   :: unit
   | Xpt                  ::   :: var
-  | N1 -> N2             ::   :: arrow
-  | forall Xpt . N       ::   :: all   (+ bind Xpt in N +)
-  | ( N )                :: S :: paren {{ coq ([[N]]) }}
-  | { N2 / Xpt } N1      :: M :: subst {{ coq (open_ptyp_wrt_ptyp [[Xpt N1]] [[N2]]) }}
+  | A1 -> A2             ::   :: arrow
+  | forall Xpt . A       ::   :: all   (+ bind Xpt in A +)
+  | ( A )                :: S :: paren {{ coq ([[A]]) }}
+  | { A2 / Xpt } A1      :: M :: subst {{ coq (open_ptyp_wrt_ptyp [[Xpt A1]] [[A2]]) }}
 
 % Bidirectional types — paper's bid{T}. Derivation-internal coloured ∀s
 % (no holes). The umbrella type for d_sub / d_consis / d_typing rules
 % (post-refactor).
-btyp, D :: 'btyp_' ::=
+btyp, B :: 'btyp_' ::=
   | UNIT                 ::   :: unit
   | Xbt                  ::   :: var
   | D1 -> D2             ::   :: arrow
-  | forall^syn Xbt . D   ::   :: all_syn   (+ bind Xbt in D +)
-  | forall^inh Xbt . D   ::   :: all_inh   (+ bind Xbt in D +)
-  | ( D )                :: S :: paren {{ coq ([[D]]) }}
-  | { D2 / Xbt } D1      :: M :: subst {{ coq (open_btyp_wrt_btyp [[Xbt D1]] [[D2]]) }}
+  | forall^syn Xbt . B   ::   :: all_syn   (+ bind Xbt in B +)
+  | forall^inh Xbt . B   ::   :: all_inh   (+ bind Xbt in B +)
+  | ( B )                :: S :: paren {{ coq ([[B]]) }}
+  | { B2 / Xbt } B1      :: M :: subst {{ coq (open_btyp_wrt_btyp [[Xbt B1]] [[B2]]) }}
 
 % Unresolved synthesised types — paper's syn{∀^δ α.}T. Subset of bid:
 % only colour_syn ∀ and ε-tagged ∀ allowed (no colour_inh).
-utyp, F :: 'utyp_' ::=
+utyp, C :: 'utyp_' ::=
   | UNIT                 ::   :: unit
   | Xut                  ::   :: var
-  | F1 -> F2             ::   :: arrow
-  | forall^syn Xut . F   ::   :: all_syn   (+ bind Xut in F +)
-  | forall@ eps Xut . F  ::   :: all_etag  (+ bind Xut in F +)
-  | ( F )                :: S :: paren {{ coq ([[F]]) }}
-  | { F2 / Xut } F1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xut F1]] [[F2]]) }}
+  | C1 -> C2             ::   :: arrow
+  | forall^syn Xut . C   ::   :: all_syn   (+ bind Xut in C +)
+  | forall@ eps Xut . C  ::   :: all_etag  (+ bind Xut in C +)
+  | ( C )                :: S :: paren {{ coq ([[C]]) }}
+  | { C2 / Xut } C1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xut C1]] [[C2]]) }}
 
 % Skeletons — for d_wf_skel, d_refine, d_pat_consis, etc.
 % Broadest skeleton: matches [bid] shapes (syn / inh / etag ∀s) plus
@@ -93,35 +94,46 @@ pskel, P :: 'pskel_' ::=
   | UNIT                 ::   :: unit
   | Xps                  ::   :: var
   | P1 -> P2             ::   :: arrow
-  | forall^syn Xps . P1  ::   :: all_syn (+ bind Xps in P1 +)
+  | forall Xps . P1      ::   :: all_syn (+ bind Xps in P1 +)
   | HOLE                 ::   :: hole
   | TOPHOLE . P          ::   :: tophole
   | ( P )                :: S :: paren {{ coq ([[P]]) }}
   | { P2 / Xps } P1      :: M :: subst {{ coq (open_pskel_wrt_pskel [[Xps P1]] [[P2]]) }}
 
-bskel, R :: 'bskel_' ::=
+bskel, Q :: 'bskel_' ::=
   | UNIT                 ::   :: unit
   | Xbs                  ::   :: var
+  | Q1 -> Q2             ::   :: arrow
+  | forall^syn Xbs . Q   ::   :: all_syn   (+ bind Xbs in Q +)
+  | forall^inh Xbs . Q   ::   :: all_inh   (+ bind Xbs in Q +)
+  | HOLE                 ::   :: hole
+  | TOPHOLE . Q          ::   :: tophole
+  | ( Q )                :: S :: paren {{ coq ([[Q]]) }}
+  | { Q2 / Xbs } Q1      :: M :: subst {{ coq (open_bskel_wrt_bskel [[Xbs Q1]] [[Q2]]) }}
+
+uskel, R :: 'uskel_' ::=
+  | UNIT                 ::   :: unit
+  | Xus                  ::   :: var
   | R1 -> R2             ::   :: arrow
-  | forall^syn Xbs . R   ::   :: all_syn   (+ bind Xbs in R +)
-  | forall^inh Xbs . R   ::   :: all_inh   (+ bind Xbs in R +)
+  | forall^syn Xus . R   ::   :: all_syn   (+ bind Xus in R +)
+  | forall@ eps Xus . R  ::   :: all_etag  (+ bind Xus in R +)
   | HOLE                 ::   :: hole
   | TOPHOLE . R          ::   :: tophole
   | ( R )                :: S :: paren {{ coq ([[R]]) }}
-  | { R2 / Xbs } R1      :: M :: subst {{ coq (open_bskel_wrt_bskel [[Xbs R1]] [[R2]]) }}
+  | { R2 / Xus } R1      :: M :: subst {{ coq (open_uskel_wrt_uskel [[Xus R1]] [[R2]]) }}
 
 % Terms.
 exp, e, f :: 'exp_' ::=
   | unit                    ::   :: unit
   | x                       ::   :: var
   | \ x . e                 ::   :: abs       (+ bind x in e +)
-  | \ x : N . e             ::   :: abs_anno  (+ bind x in e +)
+  | \ x : A . e             ::   :: abs_anno  (+ bind x in e +)
   | e1 e2                   ::   :: app
-  | e : N                   ::   :: anno
+  | e : A                   ::   :: anno
   | freeze e                ::   :: freeze
   | ( e )                   :: S :: paren {{ coq ([[e]]) }}
   | { e2 / x } e1           :: M :: subste {{ coq (open_exp_wrt_exp [[x e1]] [[e2]]) }}
-  | { N / Xpt } e           :: M :: substt {{ coq (open_exp_wrt_ptyp [[Xpt e]] [[N]]) }}
+  | { A / Xpt } e           :: M :: substt {{ coq (open_exp_wrt_ptyp [[Xpt e]] [[A]]) }}
 
 % Modes M ::= TI | TC | FN M.
 mode, m :: 'mode_' ::=
@@ -130,20 +142,22 @@ mode, m :: 'mode_' ::=
   | FN m       ::   :: fn
 
 substitutions
-  single N Xpt  :: subst_ptyp_in
-  single D Xbt  :: subst_btyp_in
-  single F Xut  :: subst_utyp_in
+  single A Xpt  :: subst_ptyp_in
+  single B Xbt  :: subst_btyp_in
+  single C Xut  :: subst_utyp_in
   single P Xps  :: subst_pskl_in
-  single R Xbs  :: subst_bskl_in
+  single Q Xbs  :: subst_bskl_in
+  single R Xus  :: subst_bskl_in
   single e x    :: subst_exp_in
   single e Xpt  :: subst_typ_in
 
 freevars
-  N Xpt :: ftvar_in
-  D Xbt :: ftvar_in
-  F Xut :: ftvar_in
+  A Xpt :: ftvar_in
+  B Xbt :: ftvar_in
+  C Xut :: ftvar_in
   P Xps :: ftvar_in
-  R Xbs :: ftvar_in
+  Q Xbs :: ftvar_in
+  R Xus :: ftvar_in
   e Xpt :: ftvar_in
   e x   :: fvar_in
 
@@ -152,7 +166,7 @@ embed
 
 Inductive dbind : Set := 
  | dbind_tvar : dbind
- | dbind_typ (N:ptyp)
+ | dbind_typ (A:ptyp)
  | dbind_skel (P:pskel).
 
 Definition tagctx : Set := list atom.
