@@ -1275,12 +1275,35 @@ with d_pat :
 
 (* ===================================================================== *)
 (*  Phase C.0 — bid-typed typing + pat mutual block. Mirrors the legacy  *)
-(*  [d_typing] / [d_pat] over the new type hierarchy.                    *)
+(*  [d_typing] / [d_pat] over the new type hierarchy, with these         *)
+(*  deliberate departures from a literal 1:1 mirror:                     *)
+(*    - typ result → bid result; pat result → skel.                      *)
+(*    - exp_anno / exp_abs_anno annotation argument → ptyp (colourless;  *)
+(*      painted into bid via [ptyp_to_bid_syn] / [ptyp_to_bid_inh] in    *)
+(*      the rule body, mirroring the paper's syn{·} / inh{·} story).     *)
+(*    - sub / refine_syn / pat_sub premises route through the _bid /     *)
+(*      _skel versions ([d_sub_bid], [d_refine_syn_skel],                *)
+(*      [d_pat_sub_skel]).                                               *)
+(*    - dbind_typ argument still carries [typ] for now — the dbind       *)
+(*      constructor lives in def_ott.v and changing it would cascade     *)
+(*      into algo. Bid-aware binding is reconstructed at lookup via      *)
+(*      [ctyp_to_bid_syn (erase _)]. Phase E introduces a dbind variant. *)
+(*    - [d_pat_bid__abs] hard-excludes [skel_hole] / [skel_tophole] /    *)
+(*      [skel_all_syn] / [skel_all_etag] via inequality premises (rather *)
+(*      than admitting them through a generic [is_inh_skel] as the       *)
+(*      legacy [d_pat__abs] does); the hole-output and tophole cases     *)
+(*      are covered by the dedicated [d_pat_bid__abs_check] /            *)
+(*      [d_pat_bid__abs_anno_check] rules.                               *)
 (* ===================================================================== *)
 
 Inductive d_typing_bid :
   mode -> list (atom * dbind) -> exp -> bid -> Prop :=
 | d_typing_bid__unit : forall Γ,
+    (* The [mode_typ_compat mode_ti typ_unit] premise is trivially true
+       (mode_ti always matches concrete types). Retained verbatim from
+       the legacy [d_typing__unit] as a porting placeholder; collapses
+       to a pure unit-introduction once a [mode_bid_compat] over [bid]
+       lands. *)
     mode_typ_compat mode_ti typ_unit ->
     d_typing_bid mode_ti Γ exp_unit bid_unit
 | d_typing_bid__var : forall Γ x A,
