@@ -22,166 +22,105 @@ Definition decr_mode (m : mode) : mode :=
   end.
 
 (** Monotypes: no forall at any depth, no holes. *)
-Inductive mono_typ : typ -> Prop :=
-| mono_typ__unit  : mono_typ typ_unit
-| mono_typ__var   : forall X, mono_typ (typ_var_f X)
+Inductive mono_typ : ptyp -> Prop :=
+| mono_typ__unit  : mono_typ ptyp_unit
+| mono_typ__var   : forall X, mono_typ (ptyp_var_f X)
 | mono_typ__arrow : forall A B,
-    mono_typ A -> mono_typ B -> mono_typ (typ_arrow A B).
+    mono_typ A -> mono_typ B -> mono_typ (ptyp_arrow A B).
 
 (* ===================================================================== *)
 (*  Six category predicates                                               *)
 (* ===================================================================== *)
 
-(** Plain types: only forall^c (colour-tagged); no ε-tags, no plain-forall, no holes. *)
-Inductive is_typ : typ -> Prop :=
-| is_typ__unit  : is_typ typ_unit
-| is_typ__var   : forall X, is_typ (typ_var_f X)
-| is_typ__arrow : forall A B,
-    is_typ A -> is_typ B -> is_typ (typ_arrow A B)
-| is_typ__all   : forall L c A,
-    (forall X, X `notin` L ->
-       is_typ (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_typ (typ_all_col c A).
-
 (** Tagged types: only forall@ε; no other quantifiers, no holes. *)
-Inductive is_ttyp : typ -> Prop :=
-| is_ttyp__unit  : is_ttyp typ_unit
-| is_ttyp__var   : forall X, is_ttyp (typ_var_f X)
-| is_ttyp__arrow : forall A B,
-    is_ttyp A -> is_ttyp B -> is_ttyp (typ_arrow A B)
-| is_ttyp__all   : forall L ε A,
+Inductive is_ttyp : utyp -> Prop :=
+| is_ttyp__unit  : is_ttyp utyp_unit
+| is_ttyp__var   : forall X, is_ttyp (utyp_var_f X)
+| is_ttyp__arrow : forall C1 C2,
+    is_ttyp C1 -> is_ttyp C2 -> is_ttyp (utyp_arrow C1 C2)
+| is_ttyp__all_etag   : forall L ε C,
     (forall X, X `notin` L ->
-       is_ttyp (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_ttyp (typ_all_etag ε A).
+       is_ttyp (open_utyp_wrt_utyp C (utyp_var_f X))) ->
+    is_ttyp (utyp_all_etag ε C).
 
-(** Unresolved types: covers paper's [\syn{\foralltag{δ}α.T}] with
-    [δ ∈ {·, ε}]. δ=ε ↦ [typ_all_etag ε A] (tagged); δ=· ↦
-    [typ_all_col colour_syn A] (untagged-syn). Both are valid unresolved
-    syn ∀s per paper. δ-encoding refactor 2026-05-17 added the colour_syn
-    case (previously missing). *)
-Inductive is_utyp : typ -> Prop :=
-| is_utyp__unit  : is_utyp typ_unit
-| is_utyp__var   : forall X, is_utyp (typ_var_f X)
-| is_utyp__arrow : forall A B,
-    is_utyp A -> is_utyp B -> is_utyp (typ_arrow A B)
-| is_utyp__tall  : forall L ε A,
+(** Tagged skletons: is_ttyp + holes + topholes. *)
+Inductive is_tskl : uskl -> Prop :=
+| is_tskl__unit    : is_tskl uskl_unit
+| is_tskl__var     : forall X, is_tskl (uskl_var_f X)
+| is_tskl__arrow   : forall R1 R2,
+    is_tskl R1 -> is_tskl R2 -> is_tskl (uskl_arrow R1 R2)
+| is_tskl__all_etag     : forall L ε R,
     (forall X, X `notin` L ->
-       is_utyp (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_utyp (typ_all_etag ε A)
-| is_utyp__pall  : forall L A,
-    (forall X, X `notin` L ->
-       is_utyp (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_utyp (typ_all_col colour_syn A).
-
-(** Skeletons: is_typ + holes + topholes. *)
-Inductive is_skel : typ -> Prop :=
-| is_skel__unit    : is_skel typ_unit
-| is_skel__var     : forall X, is_skel (typ_var_f X)
-| is_skel__arrow   : forall A B,
-    is_skel A -> is_skel B -> is_skel (typ_arrow A B)
-| is_skel__all     : forall L c A,
-    (forall X, X `notin` L ->
-       is_skel (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_skel (typ_all_col c A)
-| is_skel__hole    : is_skel typ_hole
-| is_skel__tophole : forall A, is_skel A -> is_skel (typ_tophole A).
-
-(** Tagged skeletons: is_ttyp + holes + topholes. *)
-Inductive is_tskel : typ -> Prop :=
-| is_tskel__unit    : is_tskel typ_unit
-| is_tskel__var     : forall X, is_tskel (typ_var_f X)
-| is_tskel__arrow   : forall A B,
-    is_tskel A -> is_tskel B -> is_tskel (typ_arrow A B)
-| is_tskel__all     : forall L ε A,
-    (forall X, X `notin` L ->
-       is_tskel (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_tskel (typ_all_etag ε A)
-| is_tskel__hole    : is_tskel typ_hole
-| is_tskel__tophole : forall A, is_tskel A -> is_tskel (typ_tophole A).
-
-(** Unresolved skeletons: is_utyp + holes + topholes. δ-encoding refactor
-    added [is_uskel__pall] for parallel coverage of [typ_all_col colour_syn]. *)
-Inductive is_uskel : typ -> Prop :=
-| is_uskel__unit    : is_uskel typ_unit
-| is_uskel__var     : forall X, is_uskel (typ_var_f X)
-| is_uskel__arrow   : forall A B,
-    is_uskel A -> is_uskel B -> is_uskel (typ_arrow A B)
-| is_uskel__tall    : forall L ε A,
-    (forall X, X `notin` L ->
-       is_uskel (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_uskel (typ_all_etag ε A)
-| is_uskel__pall    : forall L A,
-    (forall X, X `notin` L ->
-       is_uskel (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_uskel (typ_all_col colour_syn A)
-| is_uskel__hole    : is_uskel typ_hole
-| is_uskel__tophole : forall A, is_uskel A -> is_uskel (typ_tophole A).
+       is_tskl (open_uskl_wrt_uskl R (uskl_var_f X))) ->
+    is_tskl (uskl_all_etag ε R)
+| is_tskl__hole    : is_tskl uskl_hole
+| is_tskl__tophole : forall A, is_tskl A -> is_tskl (uskl_tophole A).
 
 (* ===================================================================== *)
 (*  Colour-discipline predicates                                          *)
 (* ===================================================================== *)
 
 (** Synthesised: every colour-tagged forall is colour_syn. Implies is_typ. *)
-Inductive is_syn_typ : typ -> Prop :=
-| is_syn_typ__unit  : is_syn_typ typ_unit
-| is_syn_typ__var   : forall X, is_syn_typ (typ_var_f X)
-| is_syn_typ__arrow : forall A B,
-    is_syn_typ A -> is_syn_typ B -> is_syn_typ (typ_arrow A B)
-| is_syn_typ__all   : forall L A,
+Inductive is_styp : btyp -> Prop :=
+| is_styp__unit  : is_styp btyp_unit
+| is_styp__var   : forall X, is_styp (btyp_var_f X)
+| is_styp__arrow : forall B1 B2,
+    is_styp B1 -> is_styp B2 -> is_styp (btyp_arrow B1 B2)
+| is_styp__all   : forall L B,
     (forall X, X `notin` L ->
-       is_syn_typ (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_syn_typ (typ_all_col colour_syn A).
+       is_styp (open_btyp_wrt_btyp B (btyp_var_f X))) ->
+    is_styp (btyp_all_syn B).
 
 (** Inherited: every colour-tagged forall is colour_inh. *)
-Inductive is_inh_typ : typ -> Prop :=
-| is_inh_typ__unit  : is_inh_typ typ_unit
-| is_inh_typ__var   : forall X, is_inh_typ (typ_var_f X)
-| is_inh_typ__arrow : forall A B,
-    is_inh_typ A -> is_inh_typ B -> is_inh_typ (typ_arrow A B)
-| is_inh_typ__all   : forall L A,
+Inductive is_ityp : btyp -> Prop :=
+| is_ityp__unit  : is_ityp btyp_unit
+| is_ityp__var   : forall X, is_ityp (btyp_var_f X)
+| is_ityp__arrow : forall B1 B2,
+    is_ityp B1 -> is_ityp B2 -> is_ityp (btyp_arrow B1 B2)
+| is_ityp__all   : forall L A,
     (forall X, X `notin` L ->
-       is_inh_typ (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_inh_typ (typ_all_col colour_inh A).
+       is_ityp (open_btyp_wrt_btyp A (btyp_var_f X))) ->
+    is_ityp (btyp_all_inh A).
 
-(** Same patterns extended to skeletons. *)
-Inductive is_syn_skel : typ -> Prop :=
-| is_syn_skel__unit    : is_syn_skel typ_unit
-| is_syn_skel__var     : forall X, is_syn_skel (typ_var_f X)
-| is_syn_skel__arrow   : forall A B,
-    is_syn_skel A -> is_syn_skel B -> is_syn_skel (typ_arrow A B)
-| is_syn_skel__all     : forall L A,
+(** Same patterns extended to skletons. *)
+Inductive is_sskl : bskl -> Prop :=
+| is_sskl__unit    : is_sskl bskl_unit
+| is_sskl__var     : forall X, is_sskl (bskl_var_f X)
+| is_sskl__arrow   : forall A B,
+    is_sskl A -> is_sskl B -> is_sskl (bskl_arrow A B)
+| is_sskl__all     : forall L A,
     (forall X, X `notin` L ->
-       is_syn_skel (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_syn_skel (typ_all_col colour_syn A)
-| is_syn_skel__hole    : is_syn_skel typ_hole
-| is_syn_skel__tophole : forall A, is_syn_skel A -> is_syn_skel (typ_tophole A).
+       is_sskl (open_bskl_wrt_bskl A (bskl_var_f X))) ->
+    is_sskl (bskl_all_syn A)
+| is_sskl__hole    : is_sskl bskl_hole
+| is_sskl__tophole : forall A, is_sskl A -> is_sskl (bskl_tophole A).
 
-Inductive is_inh_skel : typ -> Prop :=
-| is_inh_skel__unit    : is_inh_skel typ_unit
-| is_inh_skel__var     : forall X, is_inh_skel (typ_var_f X)
-| is_inh_skel__arrow   : forall A B,
-    is_inh_skel A -> is_inh_skel B -> is_inh_skel (typ_arrow A B)
-| is_inh_skel__all     : forall L A,
+Inductive is_iskl : bskl -> Prop :=
+| is_iskl__unit    : is_iskl bskl_unit
+| is_iskl__var     : forall X, is_iskl (bskl_var_f X)
+| is_iskl__arrow   : forall A B,
+    is_iskl A -> is_iskl B -> is_iskl (bskl_arrow A B)
+| is_iskl__all     : forall L A,
     (forall X, X `notin` L ->
-       is_inh_skel (open_typ_wrt_typ A (typ_var_f X))) ->
-    is_inh_skel (typ_all_col colour_inh A)
-| is_inh_skel__hole    : is_inh_skel typ_hole
-| is_inh_skel__tophole : forall A, is_inh_skel A -> is_inh_skel (typ_tophole A).
+       is_iskl (open_bskl_wrt_bskl A (bskl_var_f X))) ->
+    is_iskl (bskl_all_inh A)
+| is_iskl__hole    : is_iskl bskl_hole
+| is_iskl__tophole : forall A, is_iskl A -> is_iskl (bskl_tophole A).
 
 (* ===================================================================== *)
 (*  Guarded and value predicates                                          *)
 (* ===================================================================== *)
 
 (** Guarded: no top-level forall (any flavour) or hole/tophole. *)
-Inductive guarded_typ : typ -> Prop :=
-| guarded_typ__unit  : guarded_typ typ_unit
-| guarded_typ__var   : forall X, guarded_typ (typ_var_f X)
-| guarded_typ__arrow : forall A B, guarded_typ (typ_arrow A B).
+Inductive guarded_ptyp : ptyp -> Prop :=
+| guarded_ptyp__unit  : guarded_ptyp ptyp_unit
+| guarded_ptyp__var   : forall X, guarded_ptyp (ptyp_var_f X)
+| guarded_ptyp__arrow : forall A1 A2, lc_ptyp A1 -> lc_ptyp A2 -> guarded_ptyp (ptyp_arrow A1 A2).
 
-Inductive guarded_skel : typ -> Prop :=
-| guarded_skel__unit  : guarded_skel typ_unit
-| guarded_skel__var   : forall X, guarded_skel (typ_var_f X)
-| guarded_skel__arrow : forall A B, guarded_skel (typ_arrow A B).
+Inductive guarded_pskl : pskl -> Prop :=
+| guarded_pskl__unit  : guarded_pskl pskl_unit
+| guarded_pskl__var   : forall X, guarded_pskl (pskl_var_f X)
+| guarded_pskl__arrow : forall P1 P2, lc_pskl P1 -> lc_pskl P2 -> guarded_pskl (pskl_arrow P1 P2).
 
 (** Value restriction: terms that may be generalised in checking mode. *)
 Inductive is_value : exp -> Prop :=
@@ -196,17 +135,17 @@ Inductive is_value : exp -> Prop :=
 (* ===================================================================== *)
 
 (** Paper's M |-_TY A. *)
-Inductive mode_typ_compat : mode -> typ -> Prop :=
-| mode_typ_compat__ti : forall A, is_syn_typ A -> mode_typ_compat mode_ti A
-| mode_typ_compat__tc : forall A, is_inh_typ A -> mode_typ_compat mode_tc A
-| mode_typ_compat__fn : forall m A B,
-    mode_typ_compat m B ->
-    mode_typ_compat (mode_fn m) (typ_arrow A B).
+Inductive mode_typ_compat : mode -> ptyp -> Prop :=
+| mode_typ_compat__ti : forall A, lc_ptyp A -> mode_typ_compat mode_ti A
+| mode_typ_compat__tc : forall A, lc_ptyp A -> mode_typ_compat mode_tc A
+| mode_typ_compat__fn : forall m A1 A2,
+    mode_typ_compat m A2 ->
+    mode_typ_compat (mode_fn m) (ptyp_arrow A1 A2).
 
-(** Paper's M |-_SK P. Both TI and TC require synthesised skeletons. *)
-Inductive mode_skel_compat : mode -> typ -> Prop :=
-| mode_skel_compat__ti : forall P, is_syn_skel P -> mode_skel_compat mode_ti P
-| mode_skel_compat__tc : forall P, is_syn_skel P -> mode_skel_compat mode_tc P
-| mode_skel_compat__fn : forall m P Q,
-    mode_skel_compat m Q ->
-    mode_skel_compat (mode_fn m) (typ_arrow P Q).
+(** Paper's M |-_SK P. Both TI and TC require synthesised skletons. *)
+Inductive mode_skl_compat : mode -> pskl -> Prop :=
+| mode_skl_compat__ti : forall P, lc_pskl P -> mode_skl_compat mode_ti P
+| mode_skl_compat__tc : forall P, lc_pskl P -> mode_skl_compat mode_tc P
+| mode_skl_compat__fn : forall m P1 P2,
+    mode_skl_compat m P2 ->
+    mode_skl_compat (mode_fn m) (pskl_arrow P1 P2).

@@ -34,34 +34,34 @@ Inductive exp : Set :=
  | exp_anno (e:exp) (A:ptyp)
  | exp_freeze (e:exp).
 
-Inductive uskel : Set := 
- | uskel_unit : uskel
- | uskel_var_b (_:nat)
- | uskel_var_f (Xus:usklvar)
- | uskel_arrow (R1:uskel) (R2:uskel)
- | uskel_all_syn (R:uskel)
- | uskel_all_etag (ε:εvar) (R:uskel)
- | uskel_hole : uskel
- | uskel_tophole (R:uskel).
+Inductive uskl : Set := 
+ | uskl_unit : uskl
+ | uskl_var_b (_:nat)
+ | uskl_var_f (Xus:usklvar)
+ | uskl_arrow (R1:uskl) (R2:uskl)
+ | uskl_all_syn (R:uskl)
+ | uskl_all_etag (ε:εvar) (R:uskl)
+ | uskl_hole : uskl
+ | uskl_tophole (R:uskl).
 
-Inductive bskel : Set := 
- | bskel_unit : bskel
- | bskel_var_b (_:nat)
- | bskel_var_f (Xbs:bsklvar)
- | bskel_arrow (Q1:bskel) (Q2:bskel)
- | bskel_all_syn (Q:bskel)
- | bskel_all_inh (Q:bskel)
- | bskel_hole : bskel
- | bskel_tophole (Q:bskel).
+Inductive bskl : Set := 
+ | bskl_unit : bskl
+ | bskl_var_b (_:nat)
+ | bskl_var_f (Xbs:bsklvar)
+ | bskl_arrow (Q1:bskl) (Q2:bskl)
+ | bskl_all_syn (Q:bskl)
+ | bskl_all_inh (Q:bskl)
+ | bskl_hole : bskl
+ | bskl_tophole (Q:bskl).
 
-Inductive pskel : Set := 
- | pskel_unit : pskel
- | pskel_var_b (_:nat)
- | pskel_var_f (Xps:psklvar)
- | pskel_arrow (P1:pskel) (P2:pskel)
- | pskel_all_syn (P1:pskel)
- | pskel_hole : pskel
- | pskel_tophole (P:pskel).
+Inductive pskl : Set := 
+ | pskl_unit : pskl
+ | pskl_var_b (_:nat)
+ | pskl_var_f (Xps:psklvar)
+ | pskl_arrow (P1:pskl) (P2:pskl)
+ | pskl_all_syn (P1:pskl)
+ | pskl_hole : pskl
+ | pskl_tophole (P:pskl).
 
 Inductive utyp : Set := 
  | utyp_unit : utyp
@@ -75,7 +75,7 @@ Inductive btyp : Set :=
  | btyp_unit : btyp
  | btyp_var_b (_:nat)
  | btyp_var_f (Xbt:btypvar)
- | btyp_arrow : btyp
+ | btyp_arrow (B1:btyp) (B2:btyp)
  | btyp_all_syn (B:btyp)
  | btyp_all_inh (B:btyp).
 
@@ -128,54 +128,54 @@ Fixpoint open_exp_wrt_exp_rec (k:nat) (e_5:exp) (e__6:exp) {struct e__6}: exp :=
   | (exp_freeze e) => exp_freeze (open_exp_wrt_exp_rec k e_5 e)
 end.
 
-Fixpoint open_uskel_wrt_uskel_rec (k:nat) (R_5:uskel) (R__6:uskel) {struct R__6}: uskel :=
+Fixpoint open_uskl_wrt_uskl_rec (k:nat) (R_5:uskl) (R__6:uskl) {struct R__6}: uskl :=
   match R__6 with
-  | uskel_unit => uskel_unit 
-  | (uskel_var_b nat) => 
+  | uskl_unit => uskl_unit 
+  | (uskl_var_b nat) => 
       match lt_eq_lt_dec nat k with
-        | inleft (left _) => uskel_var_b nat
+        | inleft (left _) => uskl_var_b nat
         | inleft (right _) => R_5
-        | inright _ => uskel_var_b (nat - 1)
+        | inright _ => uskl_var_b (nat - 1)
       end
-  | (uskel_var_f Xus) => uskel_var_f Xus
-  | (uskel_arrow R1 R2) => uskel_arrow (open_uskel_wrt_uskel_rec k R_5 R1) (open_uskel_wrt_uskel_rec k R_5 R2)
-  | (uskel_all_syn R) => uskel_all_syn (open_uskel_wrt_uskel_rec (S k) R_5 R)
-  | (uskel_all_etag ε R) => uskel_all_etag ε (open_uskel_wrt_uskel_rec (S k) R_5 R)
-  | uskel_hole => uskel_hole 
-  | (uskel_tophole R) => uskel_tophole (open_uskel_wrt_uskel_rec k R_5 R)
+  | (uskl_var_f Xus) => uskl_var_f Xus
+  | (uskl_arrow R1 R2) => uskl_arrow (open_uskl_wrt_uskl_rec k R_5 R1) (open_uskl_wrt_uskl_rec k R_5 R2)
+  | (uskl_all_syn R) => uskl_all_syn (open_uskl_wrt_uskl_rec (S k) R_5 R)
+  | (uskl_all_etag ε R) => uskl_all_etag ε (open_uskl_wrt_uskl_rec (S k) R_5 R)
+  | uskl_hole => uskl_hole 
+  | (uskl_tophole R) => uskl_tophole (open_uskl_wrt_uskl_rec k R_5 R)
 end.
 
-Fixpoint open_bskel_wrt_bskel_rec (k:nat) (Q_5:bskel) (Q__6:bskel) {struct Q__6}: bskel :=
+Fixpoint open_bskl_wrt_bskl_rec (k:nat) (Q_5:bskl) (Q__6:bskl) {struct Q__6}: bskl :=
   match Q__6 with
-  | bskel_unit => bskel_unit 
-  | (bskel_var_b nat) => 
+  | bskl_unit => bskl_unit 
+  | (bskl_var_b nat) => 
       match lt_eq_lt_dec nat k with
-        | inleft (left _) => bskel_var_b nat
+        | inleft (left _) => bskl_var_b nat
         | inleft (right _) => Q_5
-        | inright _ => bskel_var_b (nat - 1)
+        | inright _ => bskl_var_b (nat - 1)
       end
-  | (bskel_var_f Xbs) => bskel_var_f Xbs
-  | (bskel_arrow Q1 Q2) => bskel_arrow (open_bskel_wrt_bskel_rec k Q_5 Q1) (open_bskel_wrt_bskel_rec k Q_5 Q2)
-  | (bskel_all_syn Q) => bskel_all_syn (open_bskel_wrt_bskel_rec (S k) Q_5 Q)
-  | (bskel_all_inh Q) => bskel_all_inh (open_bskel_wrt_bskel_rec (S k) Q_5 Q)
-  | bskel_hole => bskel_hole 
-  | (bskel_tophole Q) => bskel_tophole (open_bskel_wrt_bskel_rec k Q_5 Q)
+  | (bskl_var_f Xbs) => bskl_var_f Xbs
+  | (bskl_arrow Q1 Q2) => bskl_arrow (open_bskl_wrt_bskl_rec k Q_5 Q1) (open_bskl_wrt_bskl_rec k Q_5 Q2)
+  | (bskl_all_syn Q) => bskl_all_syn (open_bskl_wrt_bskl_rec (S k) Q_5 Q)
+  | (bskl_all_inh Q) => bskl_all_inh (open_bskl_wrt_bskl_rec (S k) Q_5 Q)
+  | bskl_hole => bskl_hole 
+  | (bskl_tophole Q) => bskl_tophole (open_bskl_wrt_bskl_rec k Q_5 Q)
 end.
 
-Fixpoint open_pskel_wrt_pskel_rec (k:nat) (P_5:pskel) (P__6:pskel) {struct P__6}: pskel :=
+Fixpoint open_pskl_wrt_pskl_rec (k:nat) (P_5:pskl) (P__6:pskl) {struct P__6}: pskl :=
   match P__6 with
-  | pskel_unit => pskel_unit 
-  | (pskel_var_b nat) => 
+  | pskl_unit => pskl_unit 
+  | (pskl_var_b nat) => 
       match lt_eq_lt_dec nat k with
-        | inleft (left _) => pskel_var_b nat
+        | inleft (left _) => pskl_var_b nat
         | inleft (right _) => P_5
-        | inright _ => pskel_var_b (nat - 1)
+        | inright _ => pskl_var_b (nat - 1)
       end
-  | (pskel_var_f Xps) => pskel_var_f Xps
-  | (pskel_arrow P1 P2) => pskel_arrow (open_pskel_wrt_pskel_rec k P_5 P1) (open_pskel_wrt_pskel_rec k P_5 P2)
-  | (pskel_all_syn P1) => pskel_all_syn (open_pskel_wrt_pskel_rec (S k) P_5 P1)
-  | pskel_hole => pskel_hole 
-  | (pskel_tophole P) => pskel_tophole (open_pskel_wrt_pskel_rec k P_5 P)
+  | (pskl_var_f Xps) => pskl_var_f Xps
+  | (pskl_arrow P1 P2) => pskl_arrow (open_pskl_wrt_pskl_rec k P_5 P1) (open_pskl_wrt_pskl_rec k P_5 P2)
+  | (pskl_all_syn P1) => pskl_all_syn (open_pskl_wrt_pskl_rec (S k) P_5 P1)
+  | pskl_hole => pskl_hole 
+  | (pskl_tophole P) => pskl_tophole (open_pskl_wrt_pskl_rec k P_5 P)
 end.
 
 Fixpoint open_utyp_wrt_utyp_rec (k:nat) (C_5:utyp) (C__6:utyp) {struct C__6}: utyp :=
@@ -203,7 +203,7 @@ Fixpoint open_btyp_wrt_btyp_rec (k:nat) (B_5:btyp) (B__6:btyp) {struct B__6}: bt
         | inright _ => btyp_var_b (nat - 1)
       end
   | (btyp_var_f Xbt) => btyp_var_f Xbt
-  | btyp_arrow => btyp_arrow 
+  | (btyp_arrow B1 B2) => btyp_arrow (open_btyp_wrt_btyp_rec k B_5 B1) (open_btyp_wrt_btyp_rec k B_5 B2)
   | (btyp_all_syn B) => btyp_all_syn (open_btyp_wrt_btyp_rec (S k) B_5 B)
   | (btyp_all_inh B) => btyp_all_inh (open_btyp_wrt_btyp_rec (S k) B_5 B)
 end.
@@ -212,11 +212,11 @@ Definition open_exp_wrt_ptyp A5 e_5 := open_exp_wrt_ptyp_rec 0 e_5 A5.
 
 Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
 
-Definition open_uskel_wrt_uskel R_5 R__6 := open_uskel_wrt_uskel_rec 0 R__6 R_5.
+Definition open_uskl_wrt_uskl R_5 R__6 := open_uskl_wrt_uskl_rec 0 R__6 R_5.
 
-Definition open_bskel_wrt_bskel Q_5 Q__6 := open_bskel_wrt_bskel_rec 0 Q__6 Q_5.
+Definition open_bskl_wrt_bskl Q_5 Q__6 := open_bskl_wrt_bskl_rec 0 Q__6 Q_5.
 
-Definition open_pskel_wrt_pskel P_5 P__6 := open_pskel_wrt_pskel_rec 0 P__6 P_5.
+Definition open_pskl_wrt_pskl P_5 P__6 := open_pskl_wrt_pskl_rec 0 P__6 P_5.
 
 Definition open_utyp_wrt_utyp C_5 C__6 := open_utyp_wrt_utyp_rec 0 C__6 C_5.
 
@@ -266,68 +266,68 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
      (lc_exp e) ->
      (lc_exp (exp_freeze e)).
 
-(* defns LC_uskel *)
-Inductive lc_uskel : uskel -> Prop :=    (* defn lc_uskel *)
- | lc_uskel_unit : 
-     (lc_uskel uskel_unit)
- | lc_uskel_var_f : forall (Xus:usklvar),
-     (lc_uskel (uskel_var_f Xus))
- | lc_uskel_arrow : forall (R1 R2:uskel),
-     (lc_uskel R1) ->
-     (lc_uskel R2) ->
-     (lc_uskel (uskel_arrow R1 R2))
- | lc_uskel_all_syn : forall (R:uskel),
-      ( forall Xus , lc_uskel  ( open_uskel_wrt_uskel R (uskel_var_f Xus) )  )  ->
-     (lc_uskel (uskel_all_syn R))
- | lc_uskel_all_etag : forall (ε:εvar) (R:uskel),
-      ( forall Xus , lc_uskel  ( open_uskel_wrt_uskel R (uskel_var_f Xus) )  )  ->
-     (lc_uskel (uskel_all_etag ε R))
- | lc_uskel_hole : 
-     (lc_uskel uskel_hole)
- | lc_uskel_tophole : forall (R:uskel),
-     (lc_uskel R) ->
-     (lc_uskel (uskel_tophole R)).
+(* defns LC_uskl *)
+Inductive lc_uskl : uskl -> Prop :=    (* defn lc_uskl *)
+ | lc_uskl_unit : 
+     (lc_uskl uskl_unit)
+ | lc_uskl_var_f : forall (Xus:usklvar),
+     (lc_uskl (uskl_var_f Xus))
+ | lc_uskl_arrow : forall (R1 R2:uskl),
+     (lc_uskl R1) ->
+     (lc_uskl R2) ->
+     (lc_uskl (uskl_arrow R1 R2))
+ | lc_uskl_all_syn : forall (R:uskl),
+      ( forall Xus , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f Xus) )  )  ->
+     (lc_uskl (uskl_all_syn R))
+ | lc_uskl_all_etag : forall (ε:εvar) (R:uskl),
+      ( forall Xus , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f Xus) )  )  ->
+     (lc_uskl (uskl_all_etag ε R))
+ | lc_uskl_hole : 
+     (lc_uskl uskl_hole)
+ | lc_uskl_tophole : forall (R:uskl),
+     (lc_uskl R) ->
+     (lc_uskl (uskl_tophole R)).
 
-(* defns LC_bskel *)
-Inductive lc_bskel : bskel -> Prop :=    (* defn lc_bskel *)
- | lc_bskel_unit : 
-     (lc_bskel bskel_unit)
- | lc_bskel_var_f : forall (Xbs:bsklvar),
-     (lc_bskel (bskel_var_f Xbs))
- | lc_bskel_arrow : forall (Q1 Q2:bskel),
-     (lc_bskel Q1) ->
-     (lc_bskel Q2) ->
-     (lc_bskel (bskel_arrow Q1 Q2))
- | lc_bskel_all_syn : forall (Q:bskel),
-      ( forall Xbs , lc_bskel  ( open_bskel_wrt_bskel Q (bskel_var_f Xbs) )  )  ->
-     (lc_bskel (bskel_all_syn Q))
- | lc_bskel_all_inh : forall (Q:bskel),
-      ( forall Xbs , lc_bskel  ( open_bskel_wrt_bskel Q (bskel_var_f Xbs) )  )  ->
-     (lc_bskel (bskel_all_inh Q))
- | lc_bskel_hole : 
-     (lc_bskel bskel_hole)
- | lc_bskel_tophole : forall (Q:bskel),
-     (lc_bskel Q) ->
-     (lc_bskel (bskel_tophole Q)).
+(* defns LC_bskl *)
+Inductive lc_bskl : bskl -> Prop :=    (* defn lc_bskl *)
+ | lc_bskl_unit : 
+     (lc_bskl bskl_unit)
+ | lc_bskl_var_f : forall (Xbs:bsklvar),
+     (lc_bskl (bskl_var_f Xbs))
+ | lc_bskl_arrow : forall (Q1 Q2:bskl),
+     (lc_bskl Q1) ->
+     (lc_bskl Q2) ->
+     (lc_bskl (bskl_arrow Q1 Q2))
+ | lc_bskl_all_syn : forall (Q:bskl),
+      ( forall Xbs , lc_bskl  ( open_bskl_wrt_bskl Q (bskl_var_f Xbs) )  )  ->
+     (lc_bskl (bskl_all_syn Q))
+ | lc_bskl_all_inh : forall (Q:bskl),
+      ( forall Xbs , lc_bskl  ( open_bskl_wrt_bskl Q (bskl_var_f Xbs) )  )  ->
+     (lc_bskl (bskl_all_inh Q))
+ | lc_bskl_hole : 
+     (lc_bskl bskl_hole)
+ | lc_bskl_tophole : forall (Q:bskl),
+     (lc_bskl Q) ->
+     (lc_bskl (bskl_tophole Q)).
 
-(* defns LC_pskel *)
-Inductive lc_pskel : pskel -> Prop :=    (* defn lc_pskel *)
- | lc_pskel_unit : 
-     (lc_pskel pskel_unit)
- | lc_pskel_var_f : forall (Xps:psklvar),
-     (lc_pskel (pskel_var_f Xps))
- | lc_pskel_arrow : forall (P1 P2:pskel),
-     (lc_pskel P1) ->
-     (lc_pskel P2) ->
-     (lc_pskel (pskel_arrow P1 P2))
- | lc_pskel_all_syn : forall (P1:pskel),
-      ( forall Xps , lc_pskel  ( open_pskel_wrt_pskel P1 (pskel_var_f Xps) )  )  ->
-     (lc_pskel (pskel_all_syn P1))
- | lc_pskel_hole : 
-     (lc_pskel pskel_hole)
- | lc_pskel_tophole : forall (P:pskel),
-     (lc_pskel P) ->
-     (lc_pskel (pskel_tophole P)).
+(* defns LC_pskl *)
+Inductive lc_pskl : pskl -> Prop :=    (* defn lc_pskl *)
+ | lc_pskl_unit : 
+     (lc_pskl pskl_unit)
+ | lc_pskl_var_f : forall (Xps:psklvar),
+     (lc_pskl (pskl_var_f Xps))
+ | lc_pskl_arrow : forall (P1 P2:pskl),
+     (lc_pskl P1) ->
+     (lc_pskl P2) ->
+     (lc_pskl (pskl_arrow P1 P2))
+ | lc_pskl_all_syn : forall (P1:pskl),
+      ( forall Xps , lc_pskl  ( open_pskl_wrt_pskl P1 (pskl_var_f Xps) )  )  ->
+     (lc_pskl (pskl_all_syn P1))
+ | lc_pskl_hole : 
+     (lc_pskl pskl_hole)
+ | lc_pskl_tophole : forall (P:pskl),
+     (lc_pskl P) ->
+     (lc_pskl (pskl_tophole P)).
 
 (* defns LC_utyp *)
 Inductive lc_utyp : utyp -> Prop :=    (* defn lc_utyp *)
@@ -352,8 +352,10 @@ Inductive lc_btyp : btyp -> Prop :=    (* defn lc_btyp *)
      (lc_btyp btyp_unit)
  | lc_btyp_var_f : forall (Xbt:btypvar),
      (lc_btyp (btyp_var_f Xbt))
- | lc_btyp_arrow : 
-     (lc_btyp btyp_arrow)
+ | lc_btyp_arrow : forall (B1 B2:btyp),
+     (lc_btyp B1) ->
+     (lc_btyp B2) ->
+     (lc_btyp (btyp_arrow B1 B2))
  | lc_btyp_all_syn : forall (B:btyp),
       ( forall Xbt , lc_btyp  ( open_btyp_wrt_btyp B (btyp_var_f Xbt) )  )  ->
      (lc_btyp (btyp_all_syn B))
@@ -382,39 +384,39 @@ Fixpoint fvar_in_exp (e_5:exp) : vars :=
   | (exp_freeze e) => (fvar_in_exp e)
 end.
 
-Fixpoint ftvar_in_uskel (R_5:uskel) : vars :=
+Fixpoint ftvar_in_uskl (R_5:uskl) : vars :=
   match R_5 with
-  | uskel_unit => {}
-  | (uskel_var_b nat) => {}
-  | (uskel_var_f Xus) => {{Xus}}
-  | (uskel_arrow R1 R2) => (ftvar_in_uskel R1) \u (ftvar_in_uskel R2)
-  | (uskel_all_syn R) => (ftvar_in_uskel R)
-  | (uskel_all_etag ε R) => (ftvar_in_uskel R)
-  | uskel_hole => {}
-  | (uskel_tophole R) => (ftvar_in_uskel R)
+  | uskl_unit => {}
+  | (uskl_var_b nat) => {}
+  | (uskl_var_f Xus) => {{Xus}}
+  | (uskl_arrow R1 R2) => (ftvar_in_uskl R1) \u (ftvar_in_uskl R2)
+  | (uskl_all_syn R) => (ftvar_in_uskl R)
+  | (uskl_all_etag ε R) => (ftvar_in_uskl R)
+  | uskl_hole => {}
+  | (uskl_tophole R) => (ftvar_in_uskl R)
 end.
 
-Fixpoint ftvar_in_bskel (Q_5:bskel) : vars :=
+Fixpoint ftvar_in_bskl (Q_5:bskl) : vars :=
   match Q_5 with
-  | bskel_unit => {}
-  | (bskel_var_b nat) => {}
-  | (bskel_var_f Xbs) => {{Xbs}}
-  | (bskel_arrow Q1 Q2) => (ftvar_in_bskel Q1) \u (ftvar_in_bskel Q2)
-  | (bskel_all_syn Q) => (ftvar_in_bskel Q)
-  | (bskel_all_inh Q) => (ftvar_in_bskel Q)
-  | bskel_hole => {}
-  | (bskel_tophole Q) => (ftvar_in_bskel Q)
+  | bskl_unit => {}
+  | (bskl_var_b nat) => {}
+  | (bskl_var_f Xbs) => {{Xbs}}
+  | (bskl_arrow Q1 Q2) => (ftvar_in_bskl Q1) \u (ftvar_in_bskl Q2)
+  | (bskl_all_syn Q) => (ftvar_in_bskl Q)
+  | (bskl_all_inh Q) => (ftvar_in_bskl Q)
+  | bskl_hole => {}
+  | (bskl_tophole Q) => (ftvar_in_bskl Q)
 end.
 
-Fixpoint ftvar_in_pskel (P_5:pskel) : vars :=
+Fixpoint ftvar_in_pskl (P_5:pskl) : vars :=
   match P_5 with
-  | pskel_unit => {}
-  | (pskel_var_b nat) => {}
-  | (pskel_var_f Xps) => {{Xps}}
-  | (pskel_arrow P1 P2) => (ftvar_in_pskel P1) \u (ftvar_in_pskel P2)
-  | (pskel_all_syn P1) => (ftvar_in_pskel P1)
-  | pskel_hole => {}
-  | (pskel_tophole P) => (ftvar_in_pskel P)
+  | pskl_unit => {}
+  | (pskl_var_b nat) => {}
+  | (pskl_var_f Xps) => {{Xps}}
+  | (pskl_arrow P1 P2) => (ftvar_in_pskl P1) \u (ftvar_in_pskl P2)
+  | (pskl_all_syn P1) => (ftvar_in_pskl P1)
+  | pskl_hole => {}
+  | (pskl_tophole P) => (ftvar_in_pskl P)
 end.
 
 Fixpoint ftvar_in_utyp (C_5:utyp) : vars :=
@@ -432,7 +434,7 @@ Fixpoint ftvar_in_btyp (B_5:btyp) : vars :=
   | btyp_unit => {}
   | (btyp_var_b nat) => {}
   | (btyp_var_f Xbt) => {{Xbt}}
-  | btyp_arrow => {}
+  | (btyp_arrow B1 B2) => (ftvar_in_btyp B1) \u (ftvar_in_btyp B2)
   | (btyp_all_syn B) => (ftvar_in_btyp B)
   | (btyp_all_inh B) => (ftvar_in_btyp B)
 end.
@@ -471,39 +473,39 @@ Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :
   | (exp_freeze e) => exp_freeze (subst_exp_in_exp e_5 x5 e)
 end.
 
-Fixpoint subst_bskl_in_uskel (R_5:uskel) (Xus5:usklvar) (R__6:uskel) {struct R__6} : uskel :=
+Fixpoint subst_bskl_in_uskl (R_5:uskl) (Xus5:usklvar) (R__6:uskl) {struct R__6} : uskl :=
   match R__6 with
-  | uskel_unit => uskel_unit 
-  | (uskel_var_b nat) => uskel_var_b nat
-  | (uskel_var_f Xus) => (if eq_var Xus Xus5 then R_5 else (uskel_var_f Xus))
-  | (uskel_arrow R1 R2) => uskel_arrow (subst_bskl_in_uskel R_5 Xus5 R1) (subst_bskl_in_uskel R_5 Xus5 R2)
-  | (uskel_all_syn R) => uskel_all_syn (subst_bskl_in_uskel R_5 Xus5 R)
-  | (uskel_all_etag ε R) => uskel_all_etag ε (subst_bskl_in_uskel R_5 Xus5 R)
-  | uskel_hole => uskel_hole 
-  | (uskel_tophole R) => uskel_tophole (subst_bskl_in_uskel R_5 Xus5 R)
+  | uskl_unit => uskl_unit 
+  | (uskl_var_b nat) => uskl_var_b nat
+  | (uskl_var_f Xus) => (if eq_var Xus Xus5 then R_5 else (uskl_var_f Xus))
+  | (uskl_arrow R1 R2) => uskl_arrow (subst_bskl_in_uskl R_5 Xus5 R1) (subst_bskl_in_uskl R_5 Xus5 R2)
+  | (uskl_all_syn R) => uskl_all_syn (subst_bskl_in_uskl R_5 Xus5 R)
+  | (uskl_all_etag ε R) => uskl_all_etag ε (subst_bskl_in_uskl R_5 Xus5 R)
+  | uskl_hole => uskl_hole 
+  | (uskl_tophole R) => uskl_tophole (subst_bskl_in_uskl R_5 Xus5 R)
 end.
 
-Fixpoint subst_bskl_in_bskel (Q_5:bskel) (Xbs5:bsklvar) (Q__6:bskel) {struct Q__6} : bskel :=
+Fixpoint subst_bskl_in_bskl (Q_5:bskl) (Xbs5:bsklvar) (Q__6:bskl) {struct Q__6} : bskl :=
   match Q__6 with
-  | bskel_unit => bskel_unit 
-  | (bskel_var_b nat) => bskel_var_b nat
-  | (bskel_var_f Xbs) => (if eq_var Xbs Xbs5 then Q_5 else (bskel_var_f Xbs))
-  | (bskel_arrow Q1 Q2) => bskel_arrow (subst_bskl_in_bskel Q_5 Xbs5 Q1) (subst_bskl_in_bskel Q_5 Xbs5 Q2)
-  | (bskel_all_syn Q) => bskel_all_syn (subst_bskl_in_bskel Q_5 Xbs5 Q)
-  | (bskel_all_inh Q) => bskel_all_inh (subst_bskl_in_bskel Q_5 Xbs5 Q)
-  | bskel_hole => bskel_hole 
-  | (bskel_tophole Q) => bskel_tophole (subst_bskl_in_bskel Q_5 Xbs5 Q)
+  | bskl_unit => bskl_unit 
+  | (bskl_var_b nat) => bskl_var_b nat
+  | (bskl_var_f Xbs) => (if eq_var Xbs Xbs5 then Q_5 else (bskl_var_f Xbs))
+  | (bskl_arrow Q1 Q2) => bskl_arrow (subst_bskl_in_bskl Q_5 Xbs5 Q1) (subst_bskl_in_bskl Q_5 Xbs5 Q2)
+  | (bskl_all_syn Q) => bskl_all_syn (subst_bskl_in_bskl Q_5 Xbs5 Q)
+  | (bskl_all_inh Q) => bskl_all_inh (subst_bskl_in_bskl Q_5 Xbs5 Q)
+  | bskl_hole => bskl_hole 
+  | (bskl_tophole Q) => bskl_tophole (subst_bskl_in_bskl Q_5 Xbs5 Q)
 end.
 
-Fixpoint subst_pskl_in_pskel (P_5:pskel) (Xps5:psklvar) (P__6:pskel) {struct P__6} : pskel :=
+Fixpoint subst_pskl_in_pskl (P_5:pskl) (Xps5:psklvar) (P__6:pskl) {struct P__6} : pskl :=
   match P__6 with
-  | pskel_unit => pskel_unit 
-  | (pskel_var_b nat) => pskel_var_b nat
-  | (pskel_var_f Xps) => (if eq_var Xps Xps5 then P_5 else (pskel_var_f Xps))
-  | (pskel_arrow P1 P2) => pskel_arrow (subst_pskl_in_pskel P_5 Xps5 P1) (subst_pskl_in_pskel P_5 Xps5 P2)
-  | (pskel_all_syn P1) => pskel_all_syn (subst_pskl_in_pskel P_5 Xps5 P1)
-  | pskel_hole => pskel_hole 
-  | (pskel_tophole P) => pskel_tophole (subst_pskl_in_pskel P_5 Xps5 P)
+  | pskl_unit => pskl_unit 
+  | (pskl_var_b nat) => pskl_var_b nat
+  | (pskl_var_f Xps) => (if eq_var Xps Xps5 then P_5 else (pskl_var_f Xps))
+  | (pskl_arrow P1 P2) => pskl_arrow (subst_pskl_in_pskl P_5 Xps5 P1) (subst_pskl_in_pskl P_5 Xps5 P2)
+  | (pskl_all_syn P1) => pskl_all_syn (subst_pskl_in_pskl P_5 Xps5 P1)
+  | pskl_hole => pskl_hole 
+  | (pskl_tophole P) => pskl_tophole (subst_pskl_in_pskl P_5 Xps5 P)
 end.
 
 Fixpoint subst_utyp_in_utyp (C_5:utyp) (Xut5:utypvar) (C__6:utyp) {struct C__6} : utyp :=
@@ -521,7 +523,7 @@ Fixpoint subst_btyp_in_btyp (B_5:btyp) (Xbt5:btypvar) (B__6:btyp) {struct B__6} 
   | btyp_unit => btyp_unit 
   | (btyp_var_b nat) => btyp_var_b nat
   | (btyp_var_f Xbt) => (if eq_var Xbt Xbt5 then B_5 else (btyp_var_f Xbt))
-  | btyp_arrow => btyp_arrow 
+  | (btyp_arrow B1 B2) => btyp_arrow (subst_btyp_in_btyp B_5 Xbt5 B1) (subst_btyp_in_btyp B_5 Xbt5 B2)
   | (btyp_all_syn B) => btyp_all_syn (subst_btyp_in_btyp B_5 Xbt5 B)
   | (btyp_all_inh B) => btyp_all_inh (subst_btyp_in_btyp B_5 Xbt5 B)
 end.
@@ -542,7 +544,7 @@ end.
 Inductive dbind : Set := 
  | dbind_tvar : dbind
  | dbind_typ (A:ptyp)
- | dbind_skel (P:pskel).
+ | dbind_skl (P:pskl).
 
 Definition tagctx : Set := list atom.
 
@@ -562,6 +564,6 @@ Definition list_disjoint (xs ys : list atom) : Prop :=
 
 
 (** infrastructure *)
-#[export] Hint Constructors lc_ptyp lc_exp lc_uskel lc_bskel lc_pskel lc_utyp lc_btyp : core.
+#[export] Hint Constructors lc_ptyp lc_exp lc_uskl lc_bskl lc_pskl lc_utyp lc_btyp : core.
 
 

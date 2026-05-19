@@ -1,7 +1,7 @@
 % Frost — pure syntax (Phase 1 of the mechanization).
 % Companion of paper/sections/declarative.tex.
 % Encoding: ONE unified `typ` inductive that covers all six paper categories
-% (plain, tagged, unresolved, skel, tagged-skel, unresolved-skel). Categories
+% (plain, tagged, unresolved, skl, tagged-skl, unresolved-skl). Categories
 % are predicates over `typ` defined in def_extra.v. No typing/subtyping/
 % consistency rules here — those live in def_extra.v files.
 %
@@ -11,7 +11,7 @@
 %   generated def_ott.v / prop_ln.v:
 %      dE → Γ   (term context)
 %      dD → Δ   (tag context)
-%      dP → Ψ   (skeleton-scope context)
+%      dP → Ψ   (skleton-scope context)
 %   ε tags use the metavar `eps` in ott; the constructor for ε-tagged ∀ is
 %   renamed to `typ_all_etag` so that sed `eps → ε` doesn't mangle it.
 
@@ -69,7 +69,7 @@ ptyp, A :: 'ptyp_' ::=
 btyp, B :: 'btyp_' ::=
   | UNIT                 ::   :: unit
   | Xbt                  ::   :: var
-  | D1 -> D2             ::   :: arrow
+  | B1 -> B2             ::   :: arrow
   | forall^syn Xbt . B   ::   :: all_syn   (+ bind Xbt in B +)
   | forall^inh Xbt . B   ::   :: all_inh   (+ bind Xbt in B +)
   | ( B )                :: S :: paren {{ coq ([[B]]) }}
@@ -86,11 +86,11 @@ utyp, C :: 'utyp_' ::=
   | ( C )                :: S :: paren {{ coq ([[C]]) }}
   | { C2 / Xut } C1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xut C1]] [[C2]]) }}
 
-% Skeletons — for d_wf_skel, d_refine, d_pat_consis, etc.
-% Broadest skeleton: matches [bid] shapes (syn / inh / etag ∀s) plus
+% Skeletons — for d_wf_skl, d_refine, d_pat_consis, etc.
+% Broadest skleton: matches [bid] shapes (syn / inh / etag ∀s) plus
 % holes / tophole. Narrow classes (e.g. syn-only, no-etag) are
-% recovered via predicates over skel.
-pskel, P :: 'pskel_' ::=
+% recovered via predicates over skl.
+pskl, P :: 'pskl_' ::=
   | UNIT                 ::   :: unit
   | Xps                  ::   :: var
   | P1 -> P2             ::   :: arrow
@@ -98,9 +98,9 @@ pskel, P :: 'pskel_' ::=
   | HOLE                 ::   :: hole
   | TOPHOLE . P          ::   :: tophole
   | ( P )                :: S :: paren {{ coq ([[P]]) }}
-  | { P2 / Xps } P1      :: M :: subst {{ coq (open_pskel_wrt_pskel [[Xps P1]] [[P2]]) }}
+  | { P2 / Xps } P1      :: M :: subst {{ coq (open_pskl_wrt_pskl [[Xps P1]] [[P2]]) }}
 
-bskel, Q :: 'bskel_' ::=
+bskl, Q :: 'bskl_' ::=
   | UNIT                 ::   :: unit
   | Xbs                  ::   :: var
   | Q1 -> Q2             ::   :: arrow
@@ -109,9 +109,9 @@ bskel, Q :: 'bskel_' ::=
   | HOLE                 ::   :: hole
   | TOPHOLE . Q          ::   :: tophole
   | ( Q )                :: S :: paren {{ coq ([[Q]]) }}
-  | { Q2 / Xbs } Q1      :: M :: subst {{ coq (open_bskel_wrt_bskel [[Xbs Q1]] [[Q2]]) }}
+  | { Q2 / Xbs } Q1      :: M :: subst {{ coq (open_bskl_wrt_bskl [[Xbs Q1]] [[Q2]]) }}
 
-uskel, R :: 'uskel_' ::=
+uskl, R :: 'uskl_' ::=
   | UNIT                 ::   :: unit
   | Xus                  ::   :: var
   | R1 -> R2             ::   :: arrow
@@ -120,7 +120,7 @@ uskel, R :: 'uskel_' ::=
   | HOLE                 ::   :: hole
   | TOPHOLE . R          ::   :: tophole
   | ( R )                :: S :: paren {{ coq ([[R]]) }}
-  | { R2 / Xus } R1      :: M :: subst {{ coq (open_uskel_wrt_uskel [[Xus R1]] [[R2]]) }}
+  | { R2 / Xus } R1      :: M :: subst {{ coq (open_uskl_wrt_uskl [[Xus R1]] [[R2]]) }}
 
 % Terms.
 exp, e, f :: 'exp_' ::=
@@ -167,7 +167,7 @@ embed
 Inductive dbind : Set := 
  | dbind_tvar : dbind
  | dbind_typ (A:ptyp)
- | dbind_skel (P:pskel).
+ | dbind_skl (P:pskl).
 
 Definition tagctx : Set := list atom.
 
