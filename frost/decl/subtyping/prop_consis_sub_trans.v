@@ -18,16 +18,16 @@ Set Implicit Arguments.
 (** Paper B.3, native split form. *)
 Lemma d_consis_sub_trans : forall M Δ Δ' Γ C A B,
     Δ ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A ->
-    Γ ⊢[ M ; Δ' ] (ptyp_to_utyp_syn A) ⊑ B ->
+    Δ' ⨟ Γ ⊢[ M ] (ptyp_to_utyp_syn A) ⊑ B ->
     list_disjoint Δ Δ' ->
-    exists Δc, Permutation Δc (Δ ++ Δ') /\ Γ ⊢[ M ; Δc ] C ⊑ B.
+    exists Δc, Permutation Δc (Δ ++ Δ') /\ Δc ⨟ Γ ⊢[ M ] C ⊑ B.
 Proof.
 Admitted.
 
 Lemma d_consis_sub_trans_nil : forall M Γ C A B,
     nil ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A ->
-    Γ ⊢[ M ; nil ] (ptyp_to_utyp_syn A) ⊑ B ->
-    Γ ⊢[ M ; nil ] C ⊑ B.
+    nil ⨟ Γ ⊢[ M ] (ptyp_to_utyp_syn A) ⊑ B ->
+    nil ⨟ Γ ⊢[ M ] C ⊑ B.
 Proof.
   intros M Γ C A B Hc Hs.
   edestruct d_consis_sub_trans as [Δc [Hperm Hsub]];

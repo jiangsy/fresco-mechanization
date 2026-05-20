@@ -21,12 +21,12 @@ Set Implicit Arguments.
     terminal [TI] by [m_new].  The subtyping premise is the generalised
     relation over [btyp], matching the split syntax directly. *)
 Theorem d_typing_general_subsumption_gen : forall m_orig Γ e B1,
-    Γ ⊢ᵍ[ m_orig ] e ⇒ B1 ->
+    Γ ⊢ᵍ[ m_orig ] e ⦂ B1 ->
     is_fn_n_ti m_orig ->
     d_wf_denv Γ ->
     forall m_new B2,
-      Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ; nil ] B1 ⊑ B2 ->
-      Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] e ⇒ B2.
+      nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] B1 ⊑ B2 ->
+      Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] e ⦂ B2.
 Proof.
 Admitted.
 
@@ -35,17 +35,17 @@ Admitted.
     quantifies the plain type [A] and uses both paintings explicitly. *)
 Theorem d_typing_general_subsumption : forall Γ e A B m,
     d_wf_denv Γ ->
-    Γ ⊢[ mode_ti ] e ⇒ ptyp_to_btyp_syn A ->
-    Γ ⊢[ m ; nil ] (ptyp_to_utyp_syn A) ⊑ B ->
-    Γ ⊢[ m ] e ⇒ B.
+    Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
+    nil ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    Γ ⊢[ m ] e ⦂ B.
 Proof.
 Admitted.
 
 Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
     d_wf_denv Γ ->
-    Γ ⊢[ mode_ti ] e ⇒ ptyp_to_btyp_syn A ->
-    Γ ⊢[ m ; nil ] (ptyp_to_utyp_syn A) ⊑ B ->
-    Γ ⊢[ m ] e ⇒ B.
+    Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
+    nil ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    Γ ⊢[ m ] e ⦂ B.
 Proof.
   apply d_typing_general_subsumption.
 Qed.

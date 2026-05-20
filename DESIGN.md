@@ -370,6 +370,28 @@ needed, either quantify the underlying `A : ptyp` and use
 `ptyp_to_utyp_syn A`, or add an explicit synthesized-shape premise on the
 `btyp`.
 
+### 4.6 Generalized subtyping (`d_sub_gen`)
+
+The paper's generalized subsumption proof uses a generalized subtyping
+judgment whose outer LHS is written as `bid{A}`.  This does not mean
+every subtyping rule may consume an inherited forall at the top level.
+The syntax-directed rules still distinguish their entry shapes:
+
+- `Infer`, `Check`, and `ForallR` consume a synthesized/unresolved LHS;
+  in Coq these constructors use `utyp_to_btyp C`.
+- `Arg` is the place where generalized bidirectional components appear:
+  its domain consistency premise and codomain subtyping premise are over
+  `btyp` components.
+
+This distinction matters.  An earlier scaffold allowed
+`btyp_all_inh ...` as a top-level generalized LHS for `Check`, which
+produced a false counterexample to the intended collapse/transitivity
+story.  The current mechanization has the checked lemma
+`d_sub_gen_top_inherited_lhs_impossible`, so that counterexample is now
+classified as a translation bug, not a core issue.  The remaining hard
+proof obligation is generalized composition through `Arg`'s
+bidirectional arrow components.
+
 ## 5. Cross-check vs current defs
 
 (Audit performed 2026-05-12 against `mech` HEAD; spot-refreshed
@@ -398,7 +420,7 @@ the paper theorem without qualification**:
 
 | Flagship | Current Coq statement | Paper-faithfulness verdict |
 |---|---|---|
-| D1 General subsumption | `d_typing_general_subsumption` quantifies `A : ptyp`, assumes `Γ ⊢[TI] e ⇒ ptyp_to_btyp_syn A`, and subtypes from `ptyp_to_utyp_syn A` to `B`. | **Faithful statement shape, proof admitted.** This matches the paper's shared `syn{A}` premise without erasing an arbitrary `btyp`. |
+| D1 General subsumption | `d_typing_general_subsumption` quantifies `A : ptyp`, assumes `Γ ⊢[TI] e ⦂ ptyp_to_btyp_syn A`, and subtypes from `ptyp_to_utyp_syn A` to `B`. | **Faithful statement shape, proof admitted.** This matches the paper's shared `syn{A}` premise without erasing an arbitrary `btyp`. |
 | D12 Generalised general subsumption | `d_typing_general_subsumption_gen` uses `d_typing_gen` and `d_sub_gen` over `btyp`, with `is_fn_n_ti` encoding `FN^n TI`. | **Close in shape, proof admitted.** Missing explicit counterpart of the paper premise `skmod[TY] (FN^n TI) bid{A}`; current `d_sub_gen` is also a compact scaffold, not the full syntax-directed relation. |
 | Algorithmic soundness | `a_typing_sound`, `a_pat_sound`, `a_sub_sound`. | **Not faithful.** Current algorithmic judgments are permissive placeholders and `a_transfers` relates any `Θ` to any `Γ`; the theorems are admitted and do not express paper questions/solutions/minimality. |
 | Algorithmic completeness | `a_typing_complete`, `a_pat_complete`, `a_sub_complete`. | **Not faithful.** Current statements are declarative-to-algorithmic existence lemmas, not the paper's question/solution minimality theorem. |

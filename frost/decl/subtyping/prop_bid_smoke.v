@@ -18,7 +18,7 @@ Lemma d_sub_infer_smoke :
   forall Γ C B,
     nil ⨟ Γ ⊨ C ≈ B ->
     is_styp B ->
-    Γ ⊢[ mode_ti ; nil ] C ⊑ B.
+    nil ⨟ Γ ⊢[ mode_ti ] C ⊑ B.
 Proof.
   intros. apply d_sub__infer; auto.
 Qed.

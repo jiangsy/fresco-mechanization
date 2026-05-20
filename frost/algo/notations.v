@@ -29,14 +29,14 @@ Notation "Θ ⊢ᵇ[ NM ; m ; P0 ] B ◁ B' ⊣ Θ'" := (a_broom NM m P0 Θ B B'
    B at level 74, B' at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
-Notation "Θ ⊢[ m ; P0 ] e ⇒ B ⊣ Θ'" := (a_typing m Θ P0 e B Θ')
-  (at level 75, m at level 0, P0 at level 0,
-   e at level 74, B at level 74, Θ' at level 74,
+Notation "Θ ⊢[ m ; P0 ] e ⦂ B ⊣ Θ'" := (a_typing m Θ P0 e B Θ')
+  (at level 100, m at level 0, P0 at level 0,
+   e at level 75, B at level 75, Θ' at level 75,
    no associativity) : type_scope.
 
 Notation "Θ ⊢[ m ; P0 ] e ⇨ Q ⊣ Θ'" := (a_pat m Θ P0 e Q Θ')
-  (at level 75, m at level 0, P0 at level 0,
-   e at level 74, Q at level 74, Θ' at level 74,
+  (at level 100, m at level 0, P0 at level 0,
+   e at level 75, Q at level 75, Θ' at level 75,
    no associativity) : type_scope.
 
 Notation "Θ ⊢ B ≐ B' ↣ B'' ⊣ Θ'" := (a_unify Θ B B' B'' Θ')
@@ -45,4 +45,3 @@ Notation "Θ ⊢ B ≐ B' ↣ B'' ⊣ Θ'" := (a_unify Θ B B' B'' Θ')
 
 Notation "Θ ⊑ᵢ Θ'" := (aenv_extends Θ Θ')
   (at level 75, no associativity, only parsing) : type_scope.
-

@@ -35,10 +35,10 @@ Set Implicit Arguments.
     [consis_extends] split above. *)
 Lemma d_typing_sub_compose : forall Γ e A1 A2 B m,
     is_base_term e ->
-    Γ ⊢[ mode_ti ] e ⇒ ptyp_to_btyp_syn A1 ->
-    Γ ⊢[ mode_ti ; nil ] (ptyp_to_utyp_syn A1) ⊑ ptyp_to_btyp_syn A2 ->
-    Γ ⊢[ m ; nil ] (ptyp_to_utyp_syn A2) ⊑ B ->
+    Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A1 ->
+    nil ⨟ Γ ⊢[ mode_ti ] (ptyp_to_utyp_syn A1) ⊑ ptyp_to_btyp_syn A2 ->
+    nil ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A2) ⊑ B ->
     d_wf_denv Γ ->
-    Γ ⊢[ m ] e ⇒ B.
+    Γ ⊢[ m ] e ⦂ B.
 Proof.
 Admitted.

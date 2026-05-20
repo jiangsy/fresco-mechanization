@@ -7,7 +7,7 @@
 
     Conventions:
     - Greek letters in the paper map to the same letters here (Γ, Δ, Ψ, ε, φ, ψ).
-    - Mode subscripts are written as `⊢[ M ]`; mode + tag-context as `⊢[ M ; Δ ]`.
+    - Mode subscripts are written as `⊢[ M ]`; subtyping writes the tag context first as `Δ ⨟ Γ ⊢[ M ]`.
 *)
 
 Require Export src.frost.def_ott.

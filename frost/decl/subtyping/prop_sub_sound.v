@@ -21,7 +21,7 @@ Set Implicit Arguments.
     The shallow target is over [ptyp], so both sides erase from
     [utyp]/[btyp] to [ptyp]. *)
 Theorem d_sub_sound : forall Γ C B,
-    Γ ⊢[ mode_tc ; nil ] C ⊑ B ->
+    nil ⨟ Γ ⊢[ mode_tc ] C ⊑ B ->
     Γ ⊢ (btyp_to_ptyp C) ≤ (btyp_to_ptyp B).
 Proof.
 Admitted.
@@ -46,12 +46,12 @@ Inductive d_shallow_sub_mono : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
 
 Theorem d_sub_complete_mono : forall Γ A B,
     d_shallow_sub_mono Γ A B ->
-    exists C, C = ptyp_to_utyp_syn A /\ Γ ⊢[ mode_tc ; nil ] C ⊑ (ptyp_to_btyp_inh B).
+    exists C, C = ptyp_to_utyp_syn A /\ nil ⨟ Γ ⊢[ mode_tc ] C ⊑ (ptyp_to_btyp_inh B).
 Proof.
 Admitted.
 
 Theorem d_sub_no_guess_uniqueness : forall Γ m Δ C B,
-    Γ ⊢[ m ; Δ ] C ⊑ B ->
+    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
     True.
 Proof.
   auto.

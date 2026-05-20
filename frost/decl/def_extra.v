@@ -26,8 +26,8 @@ Reserved Notation "Δ ⨟ Γ ⊢ᵤₛ R"
   (at level 75, Γ at level 75, R at level 75, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊨ C ≈ B"
   (at level 75, Γ at level 75, C at level 74, B at level 74, no associativity).
-Reserved Notation "Γ ⊢[ M ; Δ ] C ⊑ B"
-  (at level 75, M at level 0, Δ at level 0, C at level 74, B at level 74,
+Reserved Notation "Δ ⨟ Γ ⊢[ M ] C ⊑ B"
+  (at level 75, Γ at level 75, M at level 0, C at level 74, B at level 74,
    no associativity).
 Reserved Notation "Ψ ⨟ Γ ⊢ᵣ P ▸ Q"
   (at level 75, Γ at level 75, P at level 74, Q at level 74, no associativity).
@@ -35,8 +35,8 @@ Reserved Notation "Ψ ⨟ Γ ⊢ᵣ Q ⊳ P"
   (at level 75, Γ at level 75, Q at level 74, P at level 74, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊨ₛ R ≈ Q"
   (at level 75, Γ at level 75, R at level 74, Q at level 74, no associativity).
-Reserved Notation "Γ ⊢ₛ[ M ; Δ ] R ⊑ Q"
-  (at level 75, M at level 0, Δ at level 0, R at level 74, Q at level 74,
+Reserved Notation "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q"
+  (at level 75, Γ at level 75, M at level 0, R at level 74, Q at level 74,
    no associativity).
 
 (* ===================================================================== *)
@@ -200,36 +200,36 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
 | d_sub__infer : forall Γ C B,
     nil ⨟ Γ ⊨ C ≈ B ->
     is_styp B ->
-    Γ ⊢[ mode_ti ; nil ] C ⊑ B
+    nil ⨟ Γ ⊢[ mode_ti ] C ⊑ B
 | d_sub__check : forall Δ Γ C B,
     guarded_utyp C ->
     Δ ⨟ Γ ⊨ C ≈ B ->
     is_ityp B ->
-    Γ ⊢[ mode_tc ; Δ ] C ⊑ B
+    Δ ⨟ Γ ⊢[ mode_tc ] C ⊑ B
 | d_sub__forall_r : forall L Δ Γ C B,
     (forall X, X `notin` L ->
-       ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ; Δ ] C ⊑
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⊑
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    Γ ⊢[ mode_tc ; Δ ] C ⊑ (btyp_all_inh B)
+    Δ ⨟ Γ ⊢[ mode_tc ] C ⊑ (btyp_all_inh B)
 | d_sub__arg : forall Δ1 Δ2 Γ m C1 C2 B1 B2,
     Δ1 ⨟ Γ ⊨ C1 ≈ B1 ->
-    Γ ⊢[ m ; Δ2 ] C2 ⊑ B2 ->
-    Γ ⊢[ mode_fn m ; (Δ1 ++ Δ2) ] (utyp_arrow C1 C2) ⊑ (btyp_arrow B1 B2)
+    Δ2 ⨟ Γ ⊢[ m ] C2 ⊑ B2 ->
+    (Δ1 ++ Δ2) ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⊑ (btyp_arrow B1 B2)
 | d_sub__forall_l_tagged : forall Δ Δ' Γ m ε C ph B,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
     Δ' ⨟ Γ ⊢ᵤ ph ->
     is_ttyp ph ->
-    Γ ⊢[ m ; (Δ ++ Δ') ] (open_utyp_wrt_utyp C ph) ⊑ B ->
-    Γ ⊢[ m ; Δ ] (utyp_all_etag ε C) ⊑ B
+    (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
+    Δ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⊑ B
 | d_sub__forall_l_untagged : forall Δ Δ' Γ m C ph B,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
     Δ' ⨟ Γ ⊢ᵤ ph ->
     is_ttyp ph ->
-    Γ ⊢[ m ; (Δ ++ Δ') ] (open_utyp_wrt_utyp C ph) ⊑ B ->
-    Γ ⊢[ m ; Δ ] (utyp_all_syn C) ⊑ B
-where "Γ ⊢[ M ; Δ ] C ⊑ B" := (d_sub M Δ Γ C B) : type_scope.
+    (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
+    Δ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
+where "Δ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Δ Γ C B) : type_scope.
 
 Inductive d_shallow_sub : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
 | d_shallow_sub__refl : forall Γ A,
@@ -349,36 +349,36 @@ Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -
 | d_pat_sub__infer : forall Γ R Q,
     nil ⨟ Γ ⊨ₛ R ≈ Q ->
     is_sskl Q ->
-    Γ ⊢ₛ[ mode_ti ; nil ] R ⊑ Q
+    nil ⨟ Γ ⊢ₛ[ mode_ti ] R ⊑ Q
 | d_pat_sub__check : forall Δ Γ R Q,
     guarded_uskl R ->
     Δ ⨟ Γ ⊨ₛ R ≈ Q ->
     is_iskl Q ->
-    Γ ⊢ₛ[ mode_tc ; Δ ] R ⊑ Q
+    Δ ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ Q
 | d_pat_sub__forall_r : forall L Δ Γ R Q,
     (forall X, X `notin` L ->
-       ((X ~ dbind_tvar) ++ Γ) ⊢ₛ[ mode_tc ; Δ ] R ⊑
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ₛ[ mode_tc ] R ⊑
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    Γ ⊢ₛ[ mode_tc ; Δ ] R ⊑ (bskl_all_inh Q)
+    Δ ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ (bskl_all_inh Q)
 | d_pat_sub__arg : forall Δ1 Δ2 Γ m R1 R2 Q1 Q2,
     Δ1 ⨟ Γ ⊨ₛ R1 ≈ Q1 ->
-    Γ ⊢ₛ[ m ; Δ2 ] R2 ⊑ Q2 ->
-    Γ ⊢ₛ[ mode_fn m ; (Δ1 ++ Δ2) ] (uskl_arrow R1 R2) ⊑ (bskl_arrow Q1 Q2)
+    Δ2 ⨟ Γ ⊢ₛ[ m ] R2 ⊑ Q2 ->
+    (Δ1 ++ Δ2) ⨟ Γ ⊢ₛ[ mode_fn m ] (uskl_arrow R1 R2) ⊑ (bskl_arrow Q1 Q2)
 | d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε R psi Q,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
     Δ' ⨟ Γ ⊢ᵤₛ psi ->
     is_tskl psi ->
-    Γ ⊢ₛ[ m ; (Δ ++ Δ') ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
-    Γ ⊢ₛ[ m ; Δ ] (uskl_all_etag ε R) ⊑ Q
+    (Δ ++ Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
+    Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_etag ε R) ⊑ Q
 | d_pat_sub__forall_l_untagged : forall Δ Δ' Γ m R psi Q,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
     Δ' ⨟ Γ ⊢ᵤₛ psi ->
     is_tskl psi ->
-    Γ ⊢ₛ[ m ; (Δ ++ Δ') ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
-    Γ ⊢ₛ[ m ; Δ ] (uskl_all_syn R) ⊑ Q
-where "Γ ⊢ₛ[ M ; Δ ] R ⊑ Q" := (d_pat_sub M Δ Γ R Q) : type_scope.
+    (Δ ++ Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
+    Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_syn R) ⊑ Q
+where "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Δ Γ R Q) : type_scope.
 
 (* ===================================================================== *)
 (*  Typing and pattern inference                                          *)

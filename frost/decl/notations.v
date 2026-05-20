@@ -28,12 +28,12 @@ Notation "Γ ⊢ A ≤ B" := (d_shallow_sub Γ A B)
 
 (** ** Typing and skeleton inference (mutual). *)
 
-Notation "Γ ⊢[ M ] e ⇒ A" := (d_typing M Γ e A)
-  (at level 75, M at level 0, e at level 74, A at level 74, no associativity)
+Notation "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A)
+  (at level 100, M at level 0, e at level 75, A at level 75, no associativity)
   : type_scope.
 
 Notation "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P)
-  (at level 75, M at level 0, e at level 74, P at level 74, no associativity)
+  (at level 100, M at level 0, e at level 75, P at level 75, no associativity)
   : type_scope.
 
 (** ** Skeleton refinement. [⊢ᵣ] = uncoloured refinement (▸),

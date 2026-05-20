@@ -40,7 +40,7 @@ Admitted.
 Lemma d_sub_refl_mono : forall Γ A,
     mono_ptyp A ->
     d_wf_ptyp Γ A ->
-    Γ ⊢[ mode_ti ; nil ] (ptyp_to_utyp_syn A) ⊑ (ptyp_to_btyp_syn A).
+    nil ⨟ Γ ⊢[ mode_ti ] (ptyp_to_utyp_syn A) ⊑ (ptyp_to_btyp_syn A).
 Proof.
   intros Γ A Hmono Hwf.
   apply d_sub__infer.
@@ -64,14 +64,14 @@ Proof.
 Qed.
 
 Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 m Δ C B,
-    Γ1 ++ Γ3 ⊢[ m ; Δ ] C ⊑ B ->
-    Γ1 ++ Γ2 ++ Γ3 ⊢[ m ; Δ ] C ⊑ B.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢[ m ] C ⊑ B ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] C ⊑ B.
 Proof.
 Admitted.
 
 Lemma d_sub_weakening_head : forall Γ Γ' m Δ C B,
-    Γ ⊢[ m ; Δ ] C ⊑ B ->
-    Γ' ++ Γ ⊢[ m ; Δ ] C ⊑ B.
+    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
+    Δ ⨟ (Γ' ++ Γ) ⊢[ m ] C ⊑ B.
 Proof.
   intros Γ Γ' m Δ C B H.
   rewrite_env (nil ++ Γ' ++ Γ).
@@ -83,4 +83,3 @@ Lemma d_consis_empty_eq : forall Γ C B,
     btyp_to_ptyp C = btyp_to_ptyp B.
 Proof.
 Admitted.
-
