@@ -4,7 +4,7 @@
     [where] clauses inline in [decl/def_extra.v] (so the rule bodies
     themselves are paper-faithful and the rules are easy to audit).
     This file only carries notations for judgments whose definitions
-    haven't been inlined yet (d_wf_typ, d_wf_utyp, d_wf_uskel,
+    haven't been inlined yet (d_wf_ptyp, d_wf_utyp, d_wf_uskl,
     d_shallow_sub, d_refine, d_refine_syn, d_typing, d_pat). *)
 
 Require Export src.frost.notations.
@@ -12,11 +12,14 @@ Require Export src.frost.decl.def_extra.
 
 (** ** Well-formedness judgments. *)
 
-Notation "Δ ⨟ Γ ⊢ᵤₜ T" := (d_wf_utyp Δ Γ T)
-  (at level 75, Γ at level 75, T at level 75, no associativity) : type_scope.
+Notation "Γ ⊢ₚ A" := (d_wf_ptyp Γ A)
+  (at level 75, A at level 75, no associativity) : type_scope.
 
-Notation "Δ ⨟ Γ ⊢ᵤₛ S" := (d_wf_uskel Δ Γ S)
-  (at level 75, Γ at level 75, S at level 75, no associativity) : type_scope.
+Notation "Δ ⨟ Γ ⊢ᵤₜ C" := (d_wf_utyp Δ Γ C)
+  (at level 75, Γ at level 75, C at level 75, no associativity) : type_scope.
+
+Notation "Δ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Δ Γ R)
+  (at level 75, Γ at level 75, R at level 75, no associativity) : type_scope.
 
 (** ** Shallow subtyping (separate from main d_sub). *)
 

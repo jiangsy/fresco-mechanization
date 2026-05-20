@@ -1,216 +1,140 @@
-(** Coercions between the type-hierarchy categories.
+(** Coercions and explicit paintings between Frost's current type
+    hierarchy categories.
 
-    See [docs/superpowers/specs/2026-05-18-type-hierarchy-refactor-design.md].
+    Current syntax is generated as:
+    - [ptyp] : plain source types;
+    - [btyp] : bidirectional/coloured types;
+    - [utyp] : unresolved synthesised types;
+    - [pskl] : plain skeletons;
+    - [bskl] : bidirectional skeletons;
+    - [uskl] : unresolved skeletons.
 
-    - [utyp_to_bid]   — implicit [Coercion]. utyp is a subset of bid;
-                        every utyp embeds uniquely as a bid.
-    - [ctyp_to_bid_syn] / [ctyp_to_bid_inh] — paint a colourless
-                        ctyp into bid with chosen colour. NOT a
-                        coercion (two paths; ambiguous).
-    - [ctyp_to_utyp_syn] — paint ctyp into utyp (only syn-colour
-                        sensible at the utyp level — utyp has no
-                        inh ∀). NOT a coercion.
-    - [bid_to_ctyp] / [utyp_to_ctyp] — erase colour/tag. Explicit.
-    - [ctyp_to_skel] — lift ctyp shape to skel (with hole/tophole
-                        preserved). Could be implicit Coercion but
-                        kept explicit for clarity. *)
+    The only implicit embeddings used by rule statements are the
+    unambiguous subset embeddings and the two erasing coercions requested
+    by the refactor: [btyp >-> ptyp] and [bskl >-> pskl]. Colour choices
+    from [ptyp] remain explicit. *)
 
-Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
-Require Import src.frost.notations.
 Require Import src.frost.def_extra.
 
-(** ===== ptyp → ctyp (implicit Coercion) =====
-    Plain types embed uniquely into ctyp by mapping the 5 plain
-    constructors to the matching ctyp ones (ptyp has no holes /
-    tophole; that's the whole point of ptyp). *)
+(** ===== utyp -> btyp (implicit subset embedding) ===== *)
 
-Fixpoint ptyp_to_ctyp (N : ptyp) : ctyp :=
-  match N with
-  | ptyp_unit          => ctyp_unit
-  | ptyp_var_b n       => ctyp_var_b n
-  | ptyp_var_f X       => ctyp_var_f X
-  | ptyp_arrow N1 N2   => ctyp_arrow (ptyp_to_ctyp N1) (ptyp_to_ctyp N2)
-  | ptyp_all N0        => ctyp_all (ptyp_to_ctyp N0)
+Fixpoint utyp_to_btyp (C : utyp) : btyp :=
+  match C with
+  | utyp_unit => btyp_unit
+  | utyp_var_b n => btyp_var_b n
+  | utyp_var_f X => btyp_var_f X
+  | utyp_arrow C1 C2 => btyp_arrow (utyp_to_btyp C1) (utyp_to_btyp C2)
+  | utyp_all_syn C0 => btyp_all_syn (utyp_to_btyp C0)
+  | utyp_all_etag _ C0 => btyp_all_syn (utyp_to_btyp C0)
   end.
 
-Coercion ptyp_to_ctyp : ptyp >-> ctyp.
+Coercion utyp_to_btyp : utyp >-> btyp.
 
-(** ===== utyp → bid (the implicit Coercion) ===== *)
+(** ===== btyp -> ptyp (implicit erasure) ===== *)
 
-Fixpoint utyp_to_bid (F : utyp) : bid :=
-  match F with
-  | utyp_unit            => bid_unit
-  | utyp_var_b n         => bid_var_b n
-  | utyp_var_f X         => bid_var_f X
-  | utyp_arrow F1 F2     => bid_arrow (utyp_to_bid F1) (utyp_to_bid F2)
-  | utyp_all_syn F0      => bid_all_syn (utyp_to_bid F0)
-  | utyp_all_etag ε F0   => bid_all_etag ε (utyp_to_bid F0)
+Fixpoint btyp_to_ptyp (B : btyp) : ptyp :=
+  match B with
+  | btyp_unit => ptyp_unit
+  | btyp_var_b n => ptyp_var_b n
+  | btyp_var_f X => ptyp_var_f X
+  | btyp_arrow B1 B2 => ptyp_arrow (btyp_to_ptyp B1) (btyp_to_ptyp B2)
+  | btyp_all_syn B0 => ptyp_all (btyp_to_ptyp B0)
+  | btyp_all_inh B0 => ptyp_all (btyp_to_ptyp B0)
   end.
 
-Coercion utyp_to_bid : utyp >-> bid.
+Coercion btyp_to_ptyp : btyp >-> ptyp.
 
-(** ===== ctyp → bid (explicit; two colour choices) ===== *)
+(** ===== ptyp -> btyp / utyp (explicit paintings) ===== *)
 
-Fixpoint ctyp_to_bid_syn (K : ctyp) : bid :=
-  match K with
-  | ctyp_unit          => bid_unit
-  | ctyp_var_b n       => bid_var_b n
-  | ctyp_var_f X       => bid_var_f X
-  | ctyp_arrow K1 K2   => bid_arrow (ctyp_to_bid_syn K1) (ctyp_to_bid_syn K2)
-  | ctyp_all K0        => bid_all_syn (ctyp_to_bid_syn K0)
-  | ctyp_hole          => bid_unit  (* unreachable; ctyp_hole has no bid analogue *)
-  | ctyp_tophole _     => bid_unit  (* same *)
+Fixpoint ptyp_to_btyp_syn (A : ptyp) : btyp :=
+  match A with
+  | ptyp_unit => btyp_unit
+  | ptyp_var_b n => btyp_var_b n
+  | ptyp_var_f X => btyp_var_f X
+  | ptyp_arrow A1 A2 => btyp_arrow (ptyp_to_btyp_syn A1) (ptyp_to_btyp_syn A2)
+  | ptyp_all A0 => btyp_all_syn (ptyp_to_btyp_syn A0)
   end.
 
-Fixpoint ctyp_to_bid_inh (K : ctyp) : bid :=
-  match K with
-  | ctyp_unit          => bid_unit
-  | ctyp_var_b n       => bid_var_b n
-  | ctyp_var_f X       => bid_var_f X
-  | ctyp_arrow K1 K2   => bid_arrow (ctyp_to_bid_inh K1) (ctyp_to_bid_inh K2)
-  | ctyp_all K0        => bid_all_inh (ctyp_to_bid_inh K0)
-  | ctyp_hole          => bid_unit
-  | ctyp_tophole _     => bid_unit
+Fixpoint ptyp_to_btyp_inh (A : ptyp) : btyp :=
+  match A with
+  | ptyp_unit => btyp_unit
+  | ptyp_var_b n => btyp_var_b n
+  | ptyp_var_f X => btyp_var_f X
+  | ptyp_arrow A1 A2 => btyp_arrow (ptyp_to_btyp_inh A1) (ptyp_to_btyp_inh A2)
+  | ptyp_all A0 => btyp_all_inh (ptyp_to_btyp_inh A0)
   end.
 
-(** ===== ctyp → utyp (explicit) ===== *)
-
-Fixpoint ctyp_to_utyp_syn (K : ctyp) : utyp :=
-  match K with
-  | ctyp_unit          => utyp_unit
-  | ctyp_var_b n       => utyp_var_b n
-  | ctyp_var_f X       => utyp_var_f X
-  | ctyp_arrow K1 K2   => utyp_arrow (ctyp_to_utyp_syn K1) (ctyp_to_utyp_syn K2)
-  | ctyp_all K0        => utyp_all_syn (ctyp_to_utyp_syn K0)
-  | ctyp_hole          => utyp_unit
-  | ctyp_tophole _     => utyp_unit
+Fixpoint ptyp_to_utyp_syn (A : ptyp) : utyp :=
+  match A with
+  | ptyp_unit => utyp_unit
+  | ptyp_var_b n => utyp_var_b n
+  | ptyp_var_f X => utyp_var_f X
+  | ptyp_arrow A1 A2 => utyp_arrow (ptyp_to_utyp_syn A1) (ptyp_to_utyp_syn A2)
+  | ptyp_all A0 => utyp_all_syn (ptyp_to_utyp_syn A0)
   end.
 
-(** ===== Erasures: bid / utyp → ctyp ===== *)
+(** ===== ptyp -> pskl ===== *)
 
-Fixpoint bid_to_ctyp (D : bid) : ctyp :=
-  match D with
-  | bid_unit            => ctyp_unit
-  | bid_var_b n         => ctyp_var_b n
-  | bid_var_f X         => ctyp_var_f X
-  | bid_arrow D1 D2     => ctyp_arrow (bid_to_ctyp D1) (bid_to_ctyp D2)
-  | bid_all_syn D0      => ctyp_all (bid_to_ctyp D0)
-  | bid_all_inh D0      => ctyp_all (bid_to_ctyp D0)
-  | bid_all_etag _ D0   => ctyp_all (bid_to_ctyp D0)
+Fixpoint ptyp_to_pskl (A : ptyp) : pskl :=
+  match A with
+  | ptyp_unit => pskl_unit
+  | ptyp_var_b n => pskl_var_b n
+  | ptyp_var_f X => pskl_var_f X
+  | ptyp_arrow A1 A2 => pskl_arrow (ptyp_to_pskl A1) (ptyp_to_pskl A2)
+  | ptyp_all A0 => pskl_all_syn (ptyp_to_pskl A0)
   end.
 
-Fixpoint utyp_to_ctyp (F : utyp) : ctyp :=
-  match F with
-  | utyp_unit            => ctyp_unit
-  | utyp_var_b n         => ctyp_var_b n
-  | utyp_var_f X         => ctyp_var_f X
-  | utyp_arrow F1 F2     => ctyp_arrow (utyp_to_ctyp F1) (utyp_to_ctyp F2)
-  | utyp_all_syn F0      => ctyp_all (utyp_to_ctyp F0)
-  | utyp_all_etag _ F0   => ctyp_all (utyp_to_ctyp F0)
+(** ===== pskl / bskl / uskl conversions ===== *)
+
+Fixpoint pskl_to_bskl_syn (P : pskl) : bskl :=
+  match P with
+  | pskl_unit => bskl_unit
+  | pskl_var_b n => bskl_var_b n
+  | pskl_var_f X => bskl_var_f X
+  | pskl_arrow P1 P2 => bskl_arrow (pskl_to_bskl_syn P1) (pskl_to_bskl_syn P2)
+  | pskl_all_syn P0 => bskl_all_syn (pskl_to_bskl_syn P0)
+  | pskl_hole => bskl_hole
+  | pskl_tophole P0 => bskl_tophole (pskl_to_bskl_syn P0)
   end.
 
-(** ===== ptyp paintings (direct; bypass the ctyp intermediate) =====
-    ptyp embeds in ctyp via the implicit coercion, so [ctyp_to_bid_syn N]
-    works for [N : ptyp]. These direct versions exist for clarity in
-    rule statements and so the proof obligations don't have to peel
-    layers of coercions. *)
-
-Fixpoint ptyp_to_bid_syn (N : ptyp) : bid :=
-  match N with
-  | ptyp_unit          => bid_unit
-  | ptyp_var_b n       => bid_var_b n
-  | ptyp_var_f X       => bid_var_f X
-  | ptyp_arrow N1 N2   => bid_arrow (ptyp_to_bid_syn N1) (ptyp_to_bid_syn N2)
-  | ptyp_all N0        => bid_all_syn (ptyp_to_bid_syn N0)
+Fixpoint bskl_to_pskl (Q : bskl) : pskl :=
+  match Q with
+  | bskl_unit => pskl_unit
+  | bskl_var_b n => pskl_var_b n
+  | bskl_var_f X => pskl_var_f X
+  | bskl_arrow Q1 Q2 => pskl_arrow (bskl_to_pskl Q1) (bskl_to_pskl Q2)
+  | bskl_all_syn Q0 => pskl_all_syn (bskl_to_pskl Q0)
+  | bskl_all_inh Q0 => pskl_all_syn (bskl_to_pskl Q0)
+  | bskl_hole => pskl_hole
+  | bskl_tophole Q0 => pskl_tophole (bskl_to_pskl Q0)
   end.
 
-Fixpoint ptyp_to_bid_inh (N : ptyp) : bid :=
-  match N with
-  | ptyp_unit          => bid_unit
-  | ptyp_var_b n       => bid_var_b n
-  | ptyp_var_f X       => bid_var_f X
-  | ptyp_arrow N1 N2   => bid_arrow (ptyp_to_bid_inh N1) (ptyp_to_bid_inh N2)
-  | ptyp_all N0        => bid_all_inh (ptyp_to_bid_inh N0)
+Coercion bskl_to_pskl : bskl >-> pskl.
+
+Fixpoint bskl_to_uskl (Q : bskl) : uskl :=
+  match Q with
+  | bskl_unit => uskl_unit
+  | bskl_var_b n => uskl_var_b n
+  | bskl_var_f X => uskl_var_f X
+  | bskl_arrow Q1 Q2 => uskl_arrow (bskl_to_uskl Q1) (bskl_to_uskl Q2)
+  | bskl_all_syn Q0 => uskl_all_syn (bskl_to_uskl Q0)
+  | bskl_all_inh Q0 => uskl_all_syn (bskl_to_uskl Q0)
+  | bskl_hole => uskl_hole
+  | bskl_tophole Q0 => uskl_tophole (bskl_to_uskl Q0)
   end.
 
-Fixpoint ptyp_to_utyp_syn (N : ptyp) : utyp :=
-  match N with
-  | ptyp_unit          => utyp_unit
-  | ptyp_var_b n       => utyp_var_b n
-  | ptyp_var_f X       => utyp_var_f X
-  | ptyp_arrow N1 N2   => utyp_arrow (ptyp_to_utyp_syn N1) (ptyp_to_utyp_syn N2)
-  | ptyp_all N0        => utyp_all_syn (ptyp_to_utyp_syn N0)
-  end.
-
-(** ===== Erasures back to ptyp =====
-    Forget colour AND tag. [bid_to_ptyp] is total: tagged ∀ erases to
-    plain ∀ (the tag was just bookkeeping). *)
-
-Fixpoint bid_to_ptyp (D : bid) : ptyp :=
-  match D with
-  | bid_unit            => ptyp_unit
-  | bid_var_b n         => ptyp_var_b n
-  | bid_var_f X         => ptyp_var_f X
-  | bid_arrow D1 D2     => ptyp_arrow (bid_to_ptyp D1) (bid_to_ptyp D2)
-  | bid_all_syn D0      => ptyp_all (bid_to_ptyp D0)
-  | bid_all_inh D0      => ptyp_all (bid_to_ptyp D0)
-  | bid_all_etag _ D0   => ptyp_all (bid_to_ptyp D0)
-  end.
-
-Fixpoint utyp_to_ptyp (F : utyp) : ptyp :=
-  match F with
-  | utyp_unit            => ptyp_unit
-  | utyp_var_b n         => ptyp_var_b n
-  | utyp_var_f X         => ptyp_var_f X
-  | utyp_arrow F1 F2     => ptyp_arrow (utyp_to_ptyp F1) (utyp_to_ptyp F2)
-  | utyp_all_syn F0      => ptyp_all (utyp_to_ptyp F0)
-  | utyp_all_etag _ F0   => ptyp_all (utyp_to_ptyp F0)
-  end.
-
-(** ===== ctyp → skel (explicit; preserves hole/tophole) ===== *)
-
-Fixpoint ctyp_to_skel (K : ctyp) : skel :=
-  match K with
-  | ctyp_unit          => skel_unit
-  | ctyp_var_b n       => skel_var_b n
-  | ctyp_var_f X       => skel_var_f X
-  | ctyp_arrow K1 K2   => skel_arrow (ctyp_to_skel K1) (ctyp_to_skel K2)
-  | ctyp_all K0        => skel_all_syn (ctyp_to_skel K0)
-  | ctyp_hole          => skel_hole
-  | ctyp_tophole K0    => skel_tophole (ctyp_to_skel K0)
-  end.
-
-(** [skel_to_ctyp]: collapse a skel back to ctyp. Information-losing
-    where the skel carries inh / etag ∀ (those collapse to plain ∀);
-    used in d_typing_bid__app to recover the colourless P' from a
-    refined skel. *)
-Fixpoint skel_to_ctyp (R : skel) : ctyp :=
+Fixpoint uskl_to_bskl (R : uskl) : bskl :=
   match R with
-  | skel_unit            => ctyp_unit
-  | skel_var_b n         => ctyp_var_b n
-  | skel_var_f X         => ctyp_var_f X
-  | skel_arrow R1 R2     => ctyp_arrow (skel_to_ctyp R1) (skel_to_ctyp R2)
-  | skel_all_syn R0      => ctyp_all (skel_to_ctyp R0)
-  | skel_all_inh R0      => ctyp_all (skel_to_ctyp R0)
-  | skel_all_etag _ R0   => ctyp_all (skel_to_ctyp R0)
-  | skel_hole            => ctyp_hole
-  | skel_tophole R0      => ctyp_tophole (skel_to_ctyp R0)
+  | uskl_unit => bskl_unit
+  | uskl_var_b n => bskl_var_b n
+  | uskl_var_f X => bskl_var_f X
+  | uskl_arrow R1 R2 => bskl_arrow (uskl_to_bskl R1) (uskl_to_bskl R2)
+  | uskl_all_syn R0 => bskl_all_syn (uskl_to_bskl R0)
+  | uskl_all_etag _ R0 => bskl_all_syn (uskl_to_bskl R0)
+  | uskl_hole => bskl_hole
+  | uskl_tophole R0 => bskl_tophole (uskl_to_bskl R0)
   end.
 
-(** [erase_skel_to_typ]: lift a skel into the legacy typ AST.
-    Used in d_pat_bid__abs because dbind_skel still carries [typ].
-    Once Phase E refactors dbind, this helper is obsolete. *)
-Fixpoint erase_skel_to_typ (R : skel) : typ :=
-  match R with
-  | skel_unit            => typ_unit
-  | skel_var_b n         => typ_var_b n
-  | skel_var_f X         => typ_var_f X
-  | skel_arrow R1 R2     => typ_arrow (erase_skel_to_typ R1) (erase_skel_to_typ R2)
-  | skel_all_syn R0      => typ_all_col colour_syn (erase_skel_to_typ R0)
-  | skel_all_inh R0      => typ_all_col colour_inh (erase_skel_to_typ R0)
-  | skel_all_etag ε R0   => typ_all_etag ε (erase_skel_to_typ R0)
-  | skel_hole            => typ_hole
-  | skel_tophole R0      => typ_tophole (erase_skel_to_typ R0)
-  end.
+Coercion uskl_to_bskl : uskl >-> bskl.

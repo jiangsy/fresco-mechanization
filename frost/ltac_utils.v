@@ -29,38 +29,22 @@ Ltac inst_cofinites :=
   | x : atom |- _ => inst_cofinites_with x
   end.
 
-(* Discharge an absurd category-mismatch on the unified typ AST. Use inside
-   an Inductive whose case-split implicitly assumes a category (e.g.,
-   d_consis case where we know the input is is_utyp; if a typ_hole shows
-   up, this tactic kills it). *)
+(* Discharge absurd category mismatches for the current split syntax. *)
 Ltac discharge_category :=
   match goal with
-  | H : is_typ typ_hole |- _ => inversion H
-  | H : is_typ (typ_tophole _) |- _ => inversion H
-  | H : is_typ (typ_all_etag _ _) |- _ => inversion H
-  | H : is_ttyp typ_hole |- _ => inversion H
-  | H : is_ttyp (typ_tophole _) |- _ => inversion H
-  | H : is_ttyp (typ_all_col _ _) |- _ => inversion H
-  | H : is_utyp typ_hole |- _ => inversion H
-  | H : is_utyp (typ_tophole _) |- _ => inversion H
-  | H : is_utyp (typ_all_col _ _) |- _ => inversion H
-  | H : is_syn_typ typ_hole |- _ => inversion H
-  | H : is_syn_typ (typ_tophole _) |- _ => inversion H
-  | H : is_syn_typ (typ_all_etag _ _) |- _ => inversion H
-  | H : is_syn_typ (typ_all_col colour_inh _) |- _ => inversion H
-  | H : is_inh_typ typ_hole |- _ => inversion H
-  | H : is_inh_typ (typ_tophole _) |- _ => inversion H
-  | H : is_inh_typ (typ_all_etag _ _) |- _ => inversion H
-  | H : is_inh_typ (typ_all_col colour_syn _) |- _ => inversion H
-  | H : is_skel (typ_all_etag _ _) |- _ => inversion H
-  | H : is_tskel (typ_all_col _ _) |- _ => inversion H
-  | H : is_uskel (typ_all_col _ _) |- _ => inversion H
+  | H : is_styp (btyp_all_inh _) |- _ => inversion H
+  | H : is_ityp (btyp_all_syn _) |- _ => inversion H
+  | H : is_ttyp (utyp_all_syn _) |- _ => inversion H
+  | H : is_sskl (bskl_all_inh _) |- _ => inversion H
+  | H : is_iskl (bskl_all_syn _) |- _ => inversion H
+  | H : is_tskl (uskl_all_syn _) |- _ => inversion H
   end.
 
 (** Override Metalib's [gather_atoms] to include every atom-bearing
     source in our context: name-sets [atoms], single atoms, term
     contexts ([list (atom * dbind)]), tag / Ψ-scope contexts
-    ([list atom]), and free-variable functions on [typ] / [exp].
+    ([list atom]), and free-variable functions on all current type
+    categories / [exp].
 
     Pairs with [pick fresh] (already metalib) and with
     [inst_cofinites_for], defined below, which applies a cofinite
@@ -76,8 +60,14 @@ Ltac gather_atoms ::=
   let D := gather_atoms_with (fun x : list atom => List.fold_right add empty x) in
   let E := gather_atoms_with (fun x : exp => fvar_in_exp x) in
   let F := gather_atoms_with (fun x : exp => ftvar_in_exp x) in
-  let G := gather_atoms_with (fun x : typ => ftvar_in_typ x) in
-  constr:(A `union` B `union` C `union` D `union` E `union` F `union` G).
+  let G := gather_atoms_with (fun x : ptyp => ftvar_in_ptyp x) in
+  let H := gather_atoms_with (fun x : btyp => ftvar_in_btyp x) in
+  let I := gather_atoms_with (fun x : utyp => ftvar_in_utyp x) in
+  let J := gather_atoms_with (fun x : pskl => ftvar_in_pskl x) in
+  let K := gather_atoms_with (fun x : bskl => ftvar_in_bskl x) in
+  let L := gather_atoms_with (fun x : uskl => ftvar_in_uskl x) in
+  constr:(A `union` B `union` C `union` D `union` E `union` F `union`
+          G `union` H `union` I `union` J `union` K `union` L).
 
 (** Apply a cofinite-quantified rule [R] using [gather_atoms] as the
     freshness set. Replaces [apply R with (L := L `union` ... `union` dom Γ)]. *)
