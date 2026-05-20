@@ -1,12 +1,12 @@
-(** Frost — basic syntactic lemmas (Phase 2.A foundation). *)
+(** Frost — basic syntactic lemmas for the current split syntax. *)
 
 Require Import Coq.Lists.List.
-Require Import Coq.Program.Equality.
 Require Import Coq.Sorting.Permutation.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
+Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 
@@ -14,7 +14,6 @@ Set Implicit Arguments.
 
 (** * list_disjoint algebra. *)
 
-(** Symmetry. *)
 Lemma list_disjoint_sym : forall (xs ys : list atom),
     list_disjoint xs ys -> list_disjoint ys xs.
 Proof.
@@ -22,21 +21,18 @@ Proof.
   apply (H a); auto.
 Qed.
 
-(** Empty on the left. *)
 Lemma list_disjoint_nil_l : forall (ys : list atom),
     list_disjoint nil ys.
 Proof.
   intros ys a Hy. inversion Hy.
 Qed.
 
-(** Empty on the right. *)
 Lemma list_disjoint_nil_r : forall (xs : list atom),
     list_disjoint xs nil.
 Proof.
   intros xs a _ Hy. inversion Hy.
 Qed.
 
-(** Cons-left split. *)
 Lemma list_disjoint_cons_l_inv : forall (a : atom) (xs ys : list atom),
     list_disjoint (a :: xs) ys ->
     ~ List.In a ys /\ list_disjoint xs ys.
@@ -57,7 +53,6 @@ Proof.
   - apply (Hd b); auto.
 Qed.
 
-(** Append-left distribution. *)
 Lemma list_disjoint_app_l_iff : forall (xs1 xs2 ys : list atom),
     list_disjoint (xs1 ++ xs2) ys <->
     list_disjoint xs1 ys /\ list_disjoint xs2 ys.
@@ -69,7 +64,6 @@ Proof.
     + apply (H2 a); auto.
 Qed.
 
-(** Append-right distribution (via symmetry). *)
 Lemma list_disjoint_app_r_iff : forall (xs ys1 ys2 : list atom),
     list_disjoint xs (ys1 ++ ys2) <->
     list_disjoint xs ys1 /\ list_disjoint xs ys2.
@@ -82,16 +76,6 @@ Proof.
     apply list_disjoint_app_l_iff. split; apply list_disjoint_sym; auto.
 Qed.
 
-(** If two lists are disjoint, removing an element preserves disjointness. *)
-Lemma list_disjoint_remove_l : forall (a : atom) (xs ys : list atom),
-    list_disjoint xs ys ->
-    list_disjoint (List.remove eq_dec a xs) ys.
-Proof.
-  intros a xs ys H b Hb Hy.
-  apply in_remove in Hb as [Hb _]. apply (H b); auto.
-Qed.
-
-(** Singleton disjointness. *)
 Lemma list_disjoint_singleton_l : forall (a : atom) (ys : list atom),
     ~ List.In a ys ->
     list_disjoint (a :: nil) ys.
@@ -99,15 +83,13 @@ Proof.
   intros a ys Hni. apply list_disjoint_cons_l; auto using list_disjoint_nil_l.
 Qed.
 
-Lemma list_disjoint_singleton_r : forall (xs : list atom) (a : atom) ,
+Lemma list_disjoint_singleton_r : forall (xs : list atom) (a : atom),
     ~ List.In a xs ->
     list_disjoint xs (a :: nil).
 Proof.
   intros xs a Hni. apply list_disjoint_sym, list_disjoint_singleton_l, Hni.
 Qed.
 
-(** Permutation preserves [list_disjoint]: same elements ↔ same
-    disjointness. *)
 Lemma list_disjoint_perm_l : forall (xs xs' ys : list atom),
     Permutation xs xs' ->
     list_disjoint xs ys ->
@@ -130,1080 +112,111 @@ Proof.
   apply list_disjoint_sym; auto.
 Qed.
 
-(** * Locally-closed predicates.
+(** * Local closure for shape predicates. *)
 
-    lngen generates [lc_typ] and [lc_exp] in [prop_ln.v]. Verified to cover
-    all eight [typ] constructors (incl. four ∀ flavours: [typ_all_col],
-    [typ_all_etag], [typ_all_plain], plus [typ_hole] / [typ_tophole]) and
-    all seven [exp] constructors. No additions needed here; the lemmas
-    [lc_typ_unique], [lc_typ_of_lc_set_*], [lc_typ_all_col_exists],
-    [lc_typ_all_etag_exists], [lc_typ_all_plain_exists], etc. are exported
-    via the transitive [Require Export prop_ln] in [notations.v]. *)
-
-(** * Substitution composition aliases.
-
-    Paper-friendly names for the three most-used lngen lemmas. These are
-    not new theorems; the underlying proofs are lngen-generated. *)
-
-(** [α/X][β/Y] commutes when X ≠ Y and X ∉ FV(β). *)
-Definition subst_typ_typ_comm := subst_typ_in_typ_subst_typ_in_typ.
-
-(** Push subst into open. *)
-Definition subst_typ_open_typ := subst_typ_in_typ_open_typ_wrt_typ.
-
-(** Pull subst out of var-open (the "intro" direction). *)
-Definition subst_typ_intro := subst_typ_in_typ_intro.
-
-(** * Category preservation under substitution.
-
-    For each category predicate P, if [P A] and [P B], then
-    [P (subst_typ_in_typ B X A)]. Proved by induction on the
-    category-predicate derivation, using lngen's [subst_typ_open_typ]
-    for the binder case. *)
-
-(** ** is_typ. *)
-
-Lemma is_typ_lc : forall A, is_typ A -> lc_typ A.
+Lemma mono_ptyp_lc : forall A, mono_ptyp A -> lc_ptyp A.
 Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
-    apply H0. auto.
+  intros A H. induction H; constructor; auto.
 Qed.
 
-Lemma is_typ_subst : forall A B X,
-    is_typ A -> is_typ B -> is_typ (subst_typ_in_typ B X A).
+Lemma mono_btyp_lc : forall B, mono_btyp B -> lc_btyp B.
 Proof.
-  intros A B X HA HB.
-  induction HA; simpl.
-  - constructor.
-  - destruct (X0 == X); subst. exact HB. constructor.
-  - constructor; auto.
-  - apply is_typ__all with (L := L `union` singleton X).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_typ_lc; exact HB.
+  intros B H. induction H; constructor; auto.
 Qed.
 
-(** ** is_syn_typ. *)
-
-Lemma is_syn_typ_lc : forall A, is_syn_typ A -> lc_typ A.
+Lemma mono_utyp_lc : forall C, mono_utyp C -> lc_utyp C.
 Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
-    apply H0. auto.
+  intros C H. induction H; constructor; auto.
 Qed.
 
-Lemma is_syn_typ_subst : forall A B X,
-    is_syn_typ A -> is_syn_typ B -> is_syn_typ (subst_typ_in_typ B X A).
+Lemma is_styp_lc : forall B, is_styp B -> lc_btyp B.
 Proof.
-  intros A B X HA HB. induction HA; simpl.
-  - constructor.
-  - destruct (X0 == X); subst. exact HB. constructor.
-  - constructor; auto.
-  - apply is_syn_typ__all with (L := L `union` singleton X).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_syn_typ_lc; exact HB.
+  intros B H. induction H; eauto.
 Qed.
 
-(** ** is_inh_typ. *)
-
-Lemma is_inh_typ_lc : forall A, is_inh_typ A -> lc_typ A.
+Lemma is_ityp_lc : forall B, is_ityp B -> lc_btyp B.
 Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
-    apply H0. auto.
+  intros B H. induction H; eauto.
 Qed.
 
-Lemma is_inh_typ_subst : forall A B X,
-    is_inh_typ A -> is_inh_typ B -> is_inh_typ (subst_typ_in_typ B X A).
+Lemma is_ttyp_lc : forall C, is_ttyp C -> lc_utyp C.
 Proof.
-  intros A B X HA HB. induction HA; simpl.
-  - constructor.
-  - destruct (X0 == X); subst. exact HB. constructor.
-  - constructor; auto.
-  - apply is_inh_typ__all with (L := L `union` singleton X).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_inh_typ_lc; exact HB.
+  intros C H. induction H; eauto.
 Qed.
 
-(** ** is_skel. *)
-
-Lemma is_skel_lc : forall A, is_skel A -> lc_typ A.
+Lemma is_sskl_lc : forall Q, is_sskl Q -> lc_bskl Q.
 Proof.
-  intros A H. induction H.
+  intros Q H. induction H; eauto.
+Qed.
+
+Lemma is_iskl_lc : forall Q, is_iskl Q -> lc_bskl Q.
+Proof.
+  intros Q H. induction H; eauto.
+Qed.
+
+Lemma is_tskl_lc : forall R, is_tskl R -> lc_uskl R.
+Proof.
+  intros R H. induction H; eauto.
+Qed.
+
+(** * Inclusion facts. *)
+
+Lemma is_styp_is_syn : forall B, is_styp B -> is_syn B.
+Proof.
+  intros B H. induction H.
   - constructor.
   - constructor.
   - constructor; auto.
-  - pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
-    apply H0. auto.
+  - apply is_syn__all with (L := L); auto.
+Qed.
+
+Lemma is_ityp_is_inh : forall B, is_ityp B -> is_inh B.
+Proof.
+  intros B H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - apply is_inh__all with (L := L); auto.
+Qed.
+
+Lemma is_ttyp_is_ttyp_utyp : forall C, is_ttyp C -> is_ttyp_utyp C.
+Proof.
+  intros C H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - apply is_ttyp_utyp__all with (L := L); auto.
+Qed.
+
+Lemma is_sskl_is_syn_bskl : forall Q, is_sskl Q -> is_syn_bskl Q.
+Proof.
+  intros Q H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; auto.
+  - apply is_syn_bskl__all with (L := L); auto.
   - constructor.
   - constructor; auto.
 Qed.
 
-Lemma is_inh_skel_is_skel : forall A, is_inh_skel A -> is_skel A.
+(** * Coercion local-closure preservation. *)
+
+Lemma ptyp_to_btyp_syn_lc : forall A,
+    lc_ptyp A -> lc_btyp (ptyp_to_btyp_syn A).
 Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - apply is_skel__all with (L := L). intros X Hni. apply H0; auto.
-  - constructor.
-  - constructor; auto.
-Qed.
+Admitted.
 
-Lemma is_syn_skel_is_skel : forall A, is_syn_skel A -> is_skel A.
+Lemma ptyp_to_btyp_inh_lc : forall A,
+    lc_ptyp A -> lc_btyp (ptyp_to_btyp_inh A).
 Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - apply is_skel__all with (L := L). intros X Hni. apply H0; auto.
-  - constructor.
-  - constructor; auto.
-Qed.
+Admitted.
 
-Lemma is_typ_is_skel : forall A, is_typ A -> is_skel A.
+Lemma ptyp_to_utyp_syn_lc : forall A,
+    lc_ptyp A -> lc_utyp (ptyp_to_utyp_syn A).
 Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - apply is_skel__all with (L := L). intros X Hni. apply H0; auto.
-Qed.
+Admitted.
 
-Lemma is_skel_subst : forall A B X,
-    is_skel A -> is_skel B -> is_skel (subst_typ_in_typ B X A).
-Proof.
-  intros A B X HA HB. induction HA; simpl.
-  - constructor.
-  - destruct (X0 == X); subst. exact HB. constructor.
-  - constructor; auto.
-  - apply is_skel__all with (L := L `union` singleton X).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_skel_lc; exact HB.
-  - constructor.
-  - constructor; auto.
-Qed.
-
-(** ** is_ttyp.
-
-    Substituting a typvar X in a tagged type with a replacement B requires
-    B itself to be a tagged type — otherwise the result may contain
-    non-ε-tagged ∀ structure or holes. *)
-
-Lemma is_ttyp_lc : forall A, is_ttyp A -> lc_typ A.
-Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
-    apply H0. auto.
-Qed.
-
-Lemma is_ttyp_subst : forall A B X,
-    is_ttyp A -> is_ttyp B -> is_ttyp (subst_typ_in_typ B X A).
-Proof.
-  intros A B X HA HB. induction HA; simpl.
-  - constructor.
-  - destruct (X0 == X); subst. exact HB. constructor.
-  - constructor; auto.
-  - apply is_ttyp__all with (L := L `union` singleton X) (ε := ε).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_ttyp_lc; exact HB.
-Qed.
-
-(** ** is_utyp.
-
-    Substitution target must be a ttyp (the more restrictive shape), since
-    is_utyp permits both ε-tagged and plain ∀ at the head — but only ttyp
-    matches the role of an instantiation φ in the paper. *)
-
-Lemma is_utyp_lc : forall A, is_utyp A -> lc_typ A.
-Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
-    apply H0. auto.
-  - (* __pall (NEW): typ_all_col colour_syn *)
-    pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
-    apply H0. auto.
-Qed.
-
-(** Every is_ttyp is also an is_utyp (utyp's tall constructor accepts
-    is_ttyp's all-etag structure). *)
-Lemma is_ttyp_is_utyp : forall A, is_ttyp A -> is_utyp A.
-Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - apply is_utyp__tall with (L := L) (ε := ε). intros. apply H0; auto.
-Qed.
-
-Lemma is_utyp_subst : forall A B X,
-    is_utyp A -> is_ttyp B -> is_utyp (subst_typ_in_typ B X A).
-Proof.
-  intros A B X HA HB. induction HA; simpl.
-  - constructor.
-  - destruct (X0 == X); subst.
-    + apply is_ttyp_is_utyp; exact HB.
-    + constructor.
-  - constructor; auto.
-  - apply is_utyp__tall with (L := L `union` singleton X) (ε := ε).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_ttyp_lc; exact HB.
-  - (* __pall (NEW): typ_all_col colour_syn *)
-    apply is_utyp__pall with (L := L `union` singleton X).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_ttyp_lc; exact HB.
-Qed.
-
-(** ** is_tskel. *)
-
-Lemma is_tskel_lc : forall A, is_tskel A -> lc_typ A.
-Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
-    apply H0. auto.
-  - constructor.
-  - constructor; auto.
-Qed.
-
-Lemma is_tskel_subst : forall A B X,
-    is_tskel A -> is_tskel B -> is_tskel (subst_typ_in_typ B X A).
-Proof.
-  intros A B X HA HB. induction HA; simpl.
-  - constructor.
-  - destruct (X0 == X); subst. exact HB. constructor.
-  - constructor; auto.
-  - apply is_tskel__all with (L := L `union` singleton X) (ε := ε).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_tskel_lc; exact HB.
-  - constructor.
-  - constructor; auto.
-Qed.
-
-(** ** is_uskel. *)
-
-Lemma is_uskel_lc : forall A, is_uskel A -> lc_typ A.
-Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_typ_all_etag_exists with (X1 := X).
-    apply H0. auto.
-  - (* __pall (NEW): typ_all_col colour_syn *)
-    pick fresh X. apply lc_typ_all_col_exists with (X1 := X).
-    apply H0. auto.
-  - constructor.
-  - constructor; auto.
-Qed.
-
-(** Every is_tskel is also an is_uskel. *)
-Lemma is_tskel_is_uskel : forall A, is_tskel A -> is_uskel A.
-Proof.
-  intros A H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - apply is_uskel__tall with (L := L) (ε := ε). intros. apply H0; auto.
-  - constructor.
-  - constructor; auto.
-Qed.
-
-Lemma is_uskel_subst : forall A B X,
-    is_uskel A -> is_tskel B -> is_uskel (subst_typ_in_typ B X A).
-Proof.
-  intros A B X HA HB. induction HA; simpl.
-  - constructor.
-  - destruct (X0 == X); subst.
-    + apply is_tskel_is_uskel; exact HB.
-    + constructor.
-  - constructor; auto.
-  - apply is_uskel__tall with (L := L `union` singleton X) (ε := ε).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_tskel_lc; exact HB.
-  - (* __pall (NEW): typ_all_col colour_syn *)
-    apply is_uskel__pall with (L := L `union` singleton X).
-    intros Y Hni.
-    rewrite subst_typ_in_typ_open_typ_wrt_typ_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply is_tskel_lc; exact HB.
-  - constructor.
-  - constructor; auto.
-Qed.
-
-(** * Category inversion lemmas. *)
-
-(** ** is_typ. *)
-
-Lemma is_typ_inv_arrow : forall A B,
-    is_typ (typ_arrow A B) -> is_typ A /\ is_typ B.
-Proof. intros A B H. inversion H; subst. split; auto. Qed.
-
-Lemma is_typ_inv_all : forall c A,
-    is_typ (typ_all_col c A) ->
-    exists L, forall X, X `notin` L ->
-       is_typ (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros c A H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_typ_inv_hole : is_typ typ_hole -> False.
-Proof. intros H. inversion H. Qed.
-
-Lemma is_typ_inv_tophole : forall A, is_typ (typ_tophole A) -> False.
-Proof. intros A H. inversion H. Qed.
-
-Lemma is_typ_inv_etag : forall ε A, is_typ (typ_all_etag ε A) -> False.
-Proof. intros ε A H. inversion H. Qed.
-
-(* is_typ_inv_plain dropped: typ_all_plain no longer in typ. *)
-
-(** ** is_syn_typ. *)
-
-Lemma is_syn_typ_inv_arrow : forall A B,
-    is_syn_typ (typ_arrow A B) -> is_syn_typ A /\ is_syn_typ B.
-Proof. intros A B H. inversion H; subst. split; auto. Qed.
-
-Lemma is_syn_typ_inv_all_syn : forall A,
-    is_syn_typ (typ_all_col colour_syn A) ->
-    exists L, forall X, X `notin` L ->
-       is_syn_typ (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros A H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_syn_typ_inv_all_inh : forall A,
-    is_syn_typ (typ_all_col colour_inh A) -> False.
-Proof. intros A H. inversion H. Qed.
-
-Lemma is_syn_typ_inv_hole : is_syn_typ typ_hole -> False.
-Proof. intros H. inversion H. Qed.
-
-Lemma is_syn_typ_inv_tophole : forall A, is_syn_typ (typ_tophole A) -> False.
-Proof. intros A H. inversion H. Qed.
-
-Lemma is_syn_typ_inv_etag : forall ε A, is_syn_typ (typ_all_etag ε A) -> False.
-Proof. intros ε A H. inversion H. Qed.
-
-(* is_syn_typ_inv_plain dropped: typ_all_plain no longer in typ. *)
-
-(** ** is_inh_typ. *)
-
-Lemma is_inh_typ_inv_arrow : forall A B,
-    is_inh_typ (typ_arrow A B) -> is_inh_typ A /\ is_inh_typ B.
-Proof. intros A B H. inversion H; subst. split; auto. Qed.
-
-Lemma is_inh_typ_inv_all_inh : forall A,
-    is_inh_typ (typ_all_col colour_inh A) ->
-    exists L, forall X, X `notin` L ->
-       is_inh_typ (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros A H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_inh_typ_inv_all_syn : forall A,
-    is_inh_typ (typ_all_col colour_syn A) -> False.
-Proof. intros A H. inversion H. Qed.
-
-Lemma is_inh_typ_inv_hole : is_inh_typ typ_hole -> False.
-Proof. intros H. inversion H. Qed.
-
-Lemma is_inh_typ_inv_tophole : forall A, is_inh_typ (typ_tophole A) -> False.
-Proof. intros A H. inversion H. Qed.
-
-Lemma is_inh_typ_inv_etag : forall ε A, is_inh_typ (typ_all_etag ε A) -> False.
-Proof. intros ε A H. inversion H. Qed.
-
-(* is_inh_typ_inv_plain dropped: typ_all_plain no longer in typ. *)
-
-(** ** is_ttyp. *)
-
-Lemma is_ttyp_inv_arrow : forall A B,
-    is_ttyp (typ_arrow A B) -> is_ttyp A /\ is_ttyp B.
-Proof. intros A B H. inversion H; subst. split; auto. Qed.
-
-Lemma is_ttyp_inv_etag : forall ε A,
-    is_ttyp (typ_all_etag ε A) ->
-    exists L, forall X, X `notin` L ->
-       is_ttyp (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_ttyp_inv_col : forall c A, is_ttyp (typ_all_col c A) -> False.
-Proof. intros c A H. inversion H. Qed.
-
-(* is_ttyp_inv_plain dropped: typ_all_plain no longer in typ. *)
-
-Lemma is_ttyp_inv_hole : is_ttyp typ_hole -> False.
-Proof. intros H. inversion H. Qed.
-
-Lemma is_ttyp_inv_tophole : forall A, is_ttyp (typ_tophole A) -> False.
-Proof. intros A H. inversion H. Qed.
-
-(** ** is_utyp. *)
-
-Lemma is_utyp_inv_arrow : forall A B,
-    is_utyp (typ_arrow A B) -> is_utyp A /\ is_utyp B.
-Proof. intros A B H. inversion H; subst. split; auto. Qed.
-
-Lemma is_utyp_inv_etag : forall ε A,
-    is_utyp (typ_all_etag ε A) ->
-    exists L, forall X, X `notin` L ->
-       is_utyp (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
-
-(* is_utyp_inv_plain dropped: typ_all_plain no longer in typ. *)
-
-(** [is_utyp_inv_col] strengthened: post δ-encoding refactor, the
-    [colour_syn] case IS allowed (via [is_utyp__pall]). Only [colour_inh]
-    is rejected. *)
-Lemma is_utyp_inv_col_inh : forall A, is_utyp (typ_all_col colour_inh A) -> False.
-Proof. intros A H. inversion H. Qed.
-(* [is_utyp_inv_col] (old, claimed any colour false) DELETED 2026-05-17 —
-   provably false with [is_utyp__pall] for colour_syn. *)
-
-Lemma is_utyp_inv_hole : is_utyp typ_hole -> False.
-Proof. intros H. inversion H. Qed.
-
-Lemma is_utyp_inv_tophole : forall A, is_utyp (typ_tophole A) -> False.
-Proof. intros A H. inversion H. Qed.
-
-(** ** is_skel. *)
-
-Lemma is_skel_inv_arrow : forall A B,
-    is_skel (typ_arrow A B) -> is_skel A /\ is_skel B.
-Proof. intros A B H. inversion H; subst. split; auto. Qed.
-
-Lemma is_skel_inv_all : forall c A,
-    is_skel (typ_all_col c A) ->
-    exists L, forall X, X `notin` L ->
-       is_skel (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros c A H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_skel_inv_tophole : forall A,
-    is_skel (typ_tophole A) -> is_skel A.
-Proof. intros A H. inversion H; subst. auto. Qed.
-
-Lemma is_skel_inv_etag : forall ε A, is_skel (typ_all_etag ε A) -> False.
-Proof. intros ε A H. inversion H. Qed.
-
-(* is_skel_inv_plain dropped: typ_all_plain no longer in typ. *)
-
-(** ** is_tskel. *)
-
-Lemma is_tskel_inv_arrow : forall A B,
-    is_tskel (typ_arrow A B) -> is_tskel A /\ is_tskel B.
-Proof. intros A B H. inversion H; subst. split; auto. Qed.
-
-Lemma is_tskel_inv_etag : forall ε A,
-    is_tskel (typ_all_etag ε A) ->
-    exists L, forall X, X `notin` L ->
-       is_tskel (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_tskel_inv_tophole : forall A,
-    is_tskel (typ_tophole A) -> is_tskel A.
-Proof. intros A H. inversion H; subst. auto. Qed.
-
-Lemma is_tskel_inv_col : forall c A, is_tskel (typ_all_col c A) -> False.
-Proof. intros c A H. inversion H. Qed.
-
-(* is_tskel_inv_plain dropped: typ_all_plain no longer in typ. *)
-
-(** ** is_uskel. *)
-
-Lemma is_uskel_inv_arrow : forall A B,
-    is_uskel (typ_arrow A B) -> is_uskel A /\ is_uskel B.
-Proof. intros A B H. inversion H; subst. split; auto. Qed.
-
-Lemma is_uskel_inv_etag : forall ε A,
-    is_uskel (typ_all_etag ε A) ->
-    exists L, forall X, X `notin` L ->
-       is_uskel (open_typ_wrt_typ A (typ_var_f X)).
-Proof. intros ε A H. inversion H; subst. exists L. auto. Qed.
-
-(* is_uskel_inv_plain dropped: typ_all_plain no longer in typ. *)
-
-Lemma is_uskel_inv_tophole : forall A,
-    is_uskel (typ_tophole A) -> is_uskel A.
-Proof. intros A H. inversion H; subst. auto. Qed.
-
-(** [is_uskel_inv_col] strengthened: post δ-encoding refactor, [colour_syn]
-    case is allowed via [is_uskel__pall]. *)
-Lemma is_uskel_inv_col_inh : forall A, is_uskel (typ_all_col colour_inh A) -> False.
-Proof. intros A H. inversion H. Qed.
-(* is_uskel_inv_col (old) DELETED 2026-05-17 — see is_utyp_inv_col_inh. *)
-
-(** * Inversion lemmas for the [syn_color] / [inh_color] paintings.
-
-    A [syn_color C] / [inh_color C] equal to a [typ] constructor pins
-    down [C]'s head [ctyp] constructor. These are the [ctyp]-era
-    analogues of the [is_typ_inv_*] family above: whenever a rule whose
-    conclusion is [syn_color _] / [inh_color _] is inverted against a
-    concrete [typ] shape, these lemmas recover the [ctyp] base. *)
-
-Lemma syn_color_eq_unit_inv : forall C,
-    syn_color C = typ_unit -> C = ctyp_unit.
-Proof. intros C H. destruct C; simpl in H; try discriminate. reflexivity. Qed.
-
-Lemma syn_color_eq_var_inv : forall C X,
-    syn_color C = typ_var_f X -> C = ctyp_var_f X.
-Proof. intros C X H. destruct C; simpl in H; try discriminate. congruence. Qed.
-
-Lemma syn_color_eq_arrow_inv : forall C A B,
-    syn_color C = typ_arrow A B ->
-    exists C1 C2, C = ctyp_arrow C1 C2 /\ syn_color C1 = A /\ syn_color C2 = B.
-Proof.
-  intros C A B H. destruct C; simpl in H; try discriminate.
-  injection H as H1 H2. eauto.
-Qed.
-
-Lemma syn_color_eq_all_inv : forall C c A,
-    syn_color C = typ_all_col c A ->
-    c = colour_syn /\ exists C0, C = ctyp_all C0 /\ syn_color C0 = A.
-Proof.
-  intros C c A H. destruct C; simpl in H; try discriminate.
-  injection H as Hc H0. split; [auto | eauto].
-Qed.
-
-Lemma syn_color_eq_hole_inv : forall C,
-    syn_color C = typ_hole -> C = ctyp_hole.
-Proof. intros C H. destruct C; simpl in H; try discriminate. reflexivity. Qed.
-
-Lemma syn_color_eq_tophole_inv : forall C A,
-    syn_color C = typ_tophole A ->
-    exists C0, C = ctyp_tophole C0 /\ syn_color C0 = A.
-Proof.
-  intros C A H. destruct C; simpl in H; try discriminate.
-  injection H as H0. eauto.
-Qed.
-
-Lemma syn_color_not_etag : forall C ε A,
-    syn_color C <> typ_all_etag ε A.
-Proof. intros C ε A H. destruct C; simpl in H; discriminate. Qed.
-
-(* syn_color_not_plain dropped: typ_all_plain no longer in typ. *)
-
-Lemma inh_color_eq_unit_inv : forall C,
-    inh_color C = typ_unit -> C = ctyp_unit.
-Proof. intros C H. destruct C; simpl in H; try discriminate. reflexivity. Qed.
-
-Lemma inh_color_eq_var_inv : forall C X,
-    inh_color C = typ_var_f X -> C = ctyp_var_f X.
-Proof. intros C X H. destruct C; simpl in H; try discriminate. congruence. Qed.
-
-Lemma inh_color_eq_arrow_inv : forall C A B,
-    inh_color C = typ_arrow A B ->
-    exists C1 C2, C = ctyp_arrow C1 C2 /\ inh_color C1 = A /\ inh_color C2 = B.
-Proof.
-  intros C A B H. destruct C; simpl in H; try discriminate.
-  injection H as H1 H2. eauto.
-Qed.
-
-Lemma inh_color_eq_all_inv : forall C c A,
-    inh_color C = typ_all_col c A ->
-    c = colour_inh /\ exists C0, C = ctyp_all C0 /\ inh_color C0 = A.
-Proof.
-  intros C c A H. destruct C; simpl in H; try discriminate.
-  injection H as Hc H0. split; [auto | eauto].
-Qed.
-
-Lemma inh_color_eq_hole_inv : forall C,
-    inh_color C = typ_hole -> C = ctyp_hole.
-Proof. intros C H. destruct C; simpl in H; try discriminate. reflexivity. Qed.
-
-Lemma inh_color_eq_tophole_inv : forall C A,
-    inh_color C = typ_tophole A ->
-    exists C0, C = ctyp_tophole C0 /\ inh_color C0 = A.
-Proof.
-  intros C A H. destruct C; simpl in H; try discriminate.
-  injection H as H0. eauto.
-Qed.
-
-Lemma inh_color_not_etag : forall C ε A,
-    inh_color C <> typ_all_etag ε A.
-Proof. intros C ε A H. destruct C; simpl in H; discriminate. Qed.
-
-(* inh_color_not_plain dropped: typ_all_plain no longer in typ. *)
-
-(** * [typ]-level paintings, the [ctyp]-era successors of the Part-B
-    [syn_color] / [inh_color] : typ → typ.
-
-    The original ([typ]-domain) paintings were removed by the [ctyp]
-    re-encoding (where [syn_color] / [inh_color] became [ctyp → typ]).
-    The proof layer (notably [prop_typing.v]) still needs the [typ →
-    typ] versions — e.g. to state [d_consis_gen]-narrowing as "the
-    bound type is invariant under the [syn]-painting" as a [typ]-level
-    equality. We restore them here as a separate [Fixpoint] over
-    [typ], collapsing every [forall] flavour to [typ_all_col colour_syn]
-    / [typ_all_col colour_inh] respectively. Functionally they equal
-    [syn_color (erase _)] / [inh_color (erase _)] (composition with
-    [erase]) but the [Fixpoint] form keeps tactics like [rewrite]
-    matching their syntactic shape. *)
-Fixpoint syn_color_t (A : typ) : typ :=
-  match A with
-  | typ_unit => typ_unit
-  | typ_var_b n => typ_var_b n
-  | typ_var_f X => typ_var_f X
-  | typ_arrow A1 A2 => typ_arrow (syn_color_t A1) (syn_color_t A2)
-  | typ_all_col _ A0 => typ_all_col colour_syn (syn_color_t A0)
-  | typ_all_etag _ A0 => typ_all_col colour_syn (syn_color_t A0)
-  | typ_hole => typ_hole
-  | typ_tophole A0 => typ_tophole (syn_color_t A0)
-  end.
-
-Fixpoint inh_color_t (A : typ) : typ :=
-  match A with
-  | typ_unit => typ_unit
-  | typ_var_b n => typ_var_b n
-  | typ_var_f X => typ_var_f X
-  | typ_arrow A1 A2 => typ_arrow (inh_color_t A1) (inh_color_t A2)
-  | typ_all_col _ A0 => typ_all_col colour_inh (inh_color_t A0)
-  | typ_all_etag _ A0 => typ_all_col colour_inh (inh_color_t A0)
-  | typ_hole => typ_hole
-  | typ_tophole A0 => typ_tophole (inh_color_t A0)
-  end.
-
-Lemma syn_color_t_open_var_rec : forall A k Y,
-    syn_color_t (open_typ_wrt_typ_rec k (typ_var_f Y) A) =
-    open_typ_wrt_typ_rec k (typ_var_f Y) (syn_color_t A).
-Proof.
-  induction A; intros k Y; simpl; try reflexivity.
-  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-  - rewrite IHA1, IHA2; reflexivity.
-  - rewrite IHA; reflexivity.
-  - rewrite IHA; reflexivity.
-  - rewrite IHA; reflexivity.
-Qed.
-
-Lemma syn_color_t_open_var : forall A Y,
-    syn_color_t (open_typ_wrt_typ A (typ_var_f Y)) =
-    open_typ_wrt_typ (syn_color_t A) (typ_var_f Y).
-Proof.
-  intros A Y. unfold open_typ_wrt_typ. apply syn_color_t_open_var_rec.
-Qed.
-
-Lemma inh_color_t_open_var_rec : forall A k Y,
-    inh_color_t (open_typ_wrt_typ_rec k (typ_var_f Y) A) =
-    open_typ_wrt_typ_rec k (typ_var_f Y) (inh_color_t A).
-Proof.
-  induction A; intros k Y; simpl; try reflexivity.
-  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
-  - rewrite IHA1, IHA2; reflexivity.
-  - rewrite IHA; reflexivity.
-  - rewrite IHA; reflexivity.
-  - rewrite IHA; reflexivity.
-Qed.
-
-Lemma inh_color_t_open_var : forall A Y,
-    inh_color_t (open_typ_wrt_typ A (typ_var_f Y)) =
-    open_typ_wrt_typ (inh_color_t A) (typ_var_f Y).
-Proof.
-  intros A Y. unfold open_typ_wrt_typ. apply inh_color_t_open_var_rec.
-Qed.
-
-Lemma syn_color_t_ftvar : forall A,
-    ftvar_in_typ (syn_color_t A) = ftvar_in_typ A.
-Proof.
-  induction A; simpl; try reflexivity.
-  - rewrite IHA1, IHA2. reflexivity.
-  - assumption.
-  - assumption.
-  - assumption.
-Qed.
-
-Lemma inh_color_t_ftvar : forall A,
-    ftvar_in_typ (inh_color_t A) = ftvar_in_typ A.
-Proof.
-  induction A; simpl; try reflexivity.
-  - rewrite IHA1, IHA2. reflexivity.
-  - assumption.
-  - assumption.
-  - assumption.
-Qed.
-
-(** [syn_color_t] / [inh_color_t] are equivalent to [syn_color ∘ erase]
-    / [inh_color ∘ erase]. The [syn_color_t] form keeps a syntactic
-    match on [typ] for [rewrite] tactics; the [syn_color ∘ erase] form
-    is what the [d_*_gen] rules' [ctyp] base produces. Same value, two
-    presentations — relate them for cross-pollination. *)
-Lemma syn_color_t_syn_color_erase : forall A,
-    syn_color_t A = syn_color (erase A).
-Proof.
-  induction A; simpl; try reflexivity.
-  - rewrite IHA1, IHA2. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-Qed.
-
-Lemma inh_color_t_inh_color_erase : forall A,
-    inh_color_t A = inh_color (erase A).
-Proof.
-  induction A; simpl; try reflexivity.
-  - rewrite IHA1, IHA2. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-  - rewrite IHA. reflexivity.
-Qed.
-
-(** [mono_typ] is preserved by stripping [syn_color_t] / [inh_color_t]
-    paintings: if the painting is mono, so is the underlying type.
-    The non-mono cases ([typ_all_*], [typ_hole], [typ_tophole]) get
-    painted to non-mono shapes ([typ_all_col colour_syn/inh] or
-    [typ_hole]/[typ_tophole]) which contradict the mono premise. *)
-Lemma mono_typ_syn_color_t_inv : forall A,
-    mono_typ (syn_color_t A) -> mono_typ A.
-Proof.
-  induction A; simpl; intro H; try (inversion H; subst).
-  - apply mono_typ__unit.
-  - apply mono_typ__var.
-  - apply mono_typ__arrow; auto.
-Qed.
-
-Lemma mono_typ_inh_color_t_inv : forall A,
-    mono_typ (inh_color_t A) -> mono_typ A.
-Proof.
-  induction A; simpl; intro H; try (inversion H; subst).
-  - apply mono_typ__unit.
-  - apply mono_typ__var.
-  - apply mono_typ__arrow; auto.
-Qed.
-
-(** [inh_color_t_eq_syn_color_mono]: an equation [inh_color_t A = syn_color T]
-    + [d_wf_typ Γ (inh_color_t A)] forces [A] mono. Structural induction on
-    [A] case-splits to:
-    - [typ_unit], [typ_var_f]: directly mono.
-    - [typ_arrow]: forces [T = ctyp_arrow T1 T2] with matching inner
-      equations; IH on each arm.
-    - [typ_all_col c _] / [typ_all_etag _ _]: [inh_color_t] paints
-      [colour_inh], but [syn_color] of any ctyp produces either
-      [colour_syn] or a non-forall; discriminate.
-    - [typ_var_b], [typ_hole], [typ_tophole]: not [d_wf_typ]; inversion. *)
-Lemma inh_color_t_eq_syn_color_mono : forall Γ A T,
-    inh_color_t A = syn_color T ->
-    d_wf_typ Γ (inh_color_t A) ->
-    mono_typ A.
-Proof.
-  intros Γ A. induction A; intros T Heq Hwf; simpl in *.
-  - apply mono_typ__unit.
-  - inversion Hwf. (* typ_var_b: no d_wf_typ rule. *)
-  - apply mono_typ__var.
-  - destruct T; simpl in Heq; try discriminate.
-    inversion Heq; subst.
-    inversion Hwf; subst.
-    apply mono_typ__arrow.
-    + eapply IHA1; eauto.
-    + eapply IHA2; eauto.
-  - (* typ_all_col c A0: inh_color_t paints colour_inh; syn_color T
-       produces typ_all_col colour_syn only, so all ctyp shapes
-       discriminate (none produce typ_all_col colour_inh). *)
-    destruct T; simpl in Heq; discriminate.
-  - (* typ_all_etag: same — also paints colour_inh. *)
-    destruct T; simpl in Heq; discriminate.
-  - inversion Hwf. (* typ_hole: no d_wf_typ rule. *)
-  - inversion Hwf. (* typ_tophole: no d_wf_typ rule. *)
-Qed.
-
-(** [syn_color_eq_inh_color_mono]: ctyp-domain analog of
-    [inh_color_t_eq_syn_color_mono]. An equation [syn_color T = inh_color A]
-    (both ctyp paintings) forces [syn_color T] mono. The ctyp_all
-    case is vacuous because syn_color paints colour_syn while inh_color
-    paints colour_inh — distinct constructors.
-
-    The [d_wf_typ Γ (syn_color T)] precondition rules out
-    [ctyp_var_b] / [ctyp_hole] / [ctyp_tophole] inputs (which aren't
-    [d_wf_typ]-shape). *)
-Lemma syn_color_eq_inh_color_mono : forall Γ T A,
-    syn_color T = inh_color A ->
-    d_wf_typ Γ (syn_color T) ->
-    mono_typ (syn_color T).
-Proof.
-  intros Γ T A Heq Hwf.
-  revert A Heq.
-  induction T; intros A0 Heq; destruct A0; simpl in Heq; try discriminate;
-    simpl in Hwf; try (now inversion Hwf).
-  - apply mono_typ__unit.
-  - inversion Heq; subst. apply mono_typ__var.
-  - inversion Heq; subst.
-    inversion Hwf; subst.
-    apply mono_typ__arrow.
-    + eapply IHT1; eassumption.
-    + eapply IHT2; eassumption.
-  (* ctyp_all case: syn_color paints colour_syn, inh_color paints colour_inh
-     — inversion of typ_all_col colour_syn = typ_all_col colour_inh gives
-     colour_syn = colour_inh which discriminates. *)
-Qed.
-
-(** * Mutual induction principle for d_typing ↔ d_pat. *)
+(** * Mutual induction principle for typing/pattern inference. *)
 
 Scheme d_typing_mut := Induction for d_typing Sort Prop
   with d_pat_mut    := Induction for d_pat    Sort Prop.
-
-Combined Scheme d_typing_pat_mut from d_typing_mut, d_pat_mut.
-
-(** Smoke test: any mutual induction goal can be opened with the scheme.
-    This trivial lemma is not used downstream; it just verifies the scheme
-    is syntactically usable. *)
-Lemma d_typing_pat_mut_smoke :
-    (forall m Γ e A, d_typing m Γ e A -> True) /\
-    (forall m Γ e P, d_pat m Γ e P -> True).
-Proof.
-  apply d_typing_pat_mut; intros; trivial.
-Qed.
-
-(* ===================================================================== *)
-(*  Phase C.1 — predicate / structural lemmas over the new type         *)
-(*  hierarchy (bid / utyp / skel / ptyp). Mirrors the typ-side section  *)
-(*  above. Naming convention: <pred>_lc / <pred>_subst / <pred>_inv_*.  *)
-(* ===================================================================== *)
-
-(** ===== mono lc + subst (foundation for the other proofs) ===== *)
-
-Lemma mono_bid_lc : forall D, mono_bid D -> lc_bid D.
-Proof.
-  intros D H. induction H; constructor; auto.
-Qed.
-
-Lemma mono_utyp_lc : forall F, mono_utyp F -> lc_utyp F.
-Proof.
-  intros F H. induction H; constructor; auto.
-Qed.
-
-Lemma mono_ptyp_lc : forall N, mono_ptyp N -> lc_ptyp N.
-Proof.
-  intros N H. induction H; constructor; auto.
-Qed.
-
-Lemma mono_bid_subst : forall D D' X,
-    mono_bid D -> mono_bid D' -> mono_bid (subst_bid_in_bid D' X D).
-Proof.
-  intros D D' X H Hm. induction H; simpl.
-  - constructor.
-  - destruct (X0 == X); subst. exact Hm. constructor.
-  - constructor; auto.
-Qed.
-
-Lemma mono_utyp_subst : forall F F' X,
-    mono_utyp F -> mono_utyp F' -> mono_utyp (subst_utyp_in_utyp F' X F).
-Proof.
-  intros F F' X H Hm. induction H; simpl.
-  - constructor.
-  - destruct (X0 == X); subst. exact Hm. constructor.
-  - constructor; auto.
-Qed.
-
-(** ===== is_syn (over bid) ===== *)
-
-Lemma is_syn_lc : forall D, is_syn D -> lc_bid D.
-Proof.
-  intros D H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_bid_all_syn_exists with (Xd1 := X).
-    apply H0. auto.
-Qed.
-
-Lemma is_syn_subst : forall D D' X,
-    is_syn D -> mono_bid D' -> is_syn (subst_bid_in_bid D' X D).
-Proof.
-  intros D D' X H Hm. induction H; simpl.
-  - constructor.
-  - destruct (X0 == X); subst.
-    + induction Hm; simpl.
-      * constructor.
-      * constructor.
-      * constructor; auto.
-    + constructor.
-  - constructor; auto.
-  - apply is_syn__all with (L := L `union` singleton X).
-    intros Y Hni.
-    rewrite subst_bid_in_bid_open_bid_wrt_bid_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply mono_bid_lc; exact Hm.
-Qed.
-
-Lemma is_syn_inv_arrow : forall D1 D2,
-    is_syn (bid_arrow D1 D2) -> is_syn D1 /\ is_syn D2.
-Proof. intros D1 D2 H. inversion H; subst. split; auto. Qed.
-
-Lemma is_syn_inv_all_syn : forall D,
-    is_syn (bid_all_syn D) ->
-    exists L, forall X, X `notin` L ->
-       is_syn (open_bid_wrt_bid D (bid_var_f X)).
-Proof. intros D H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_syn_inv_all_inh : forall D, is_syn (bid_all_inh D) -> False.
-Proof. intros D H. inversion H. Qed.
-
-Lemma is_syn_inv_all_etag : forall ε D, is_syn (bid_all_etag ε D) -> False.
-Proof. intros ε D H. inversion H. Qed.
-
-(** ===== is_inh (over bid). Mirror of is_syn. ===== *)
-
-Lemma is_inh_lc : forall D, is_inh D -> lc_bid D.
-Proof.
-  intros D H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_bid_all_inh_exists with (Xd1 := X).
-    apply H0. auto.
-Qed.
-
-Lemma is_inh_subst : forall D D' X,
-    is_inh D -> mono_bid D' -> is_inh (subst_bid_in_bid D' X D).
-Proof.
-  intros D D' X H Hm. induction H; simpl.
-  - constructor.
-  - destruct (X0 == X); subst.
-    + induction Hm; simpl.
-      * constructor.
-      * constructor.
-      * constructor; auto.
-    + constructor.
-  - constructor; auto.
-  - apply is_inh__all with (L := L `union` singleton X).
-    intros Y Hni.
-    rewrite subst_bid_in_bid_open_bid_wrt_bid_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply mono_bid_lc; exact Hm.
-Qed.
-
-Lemma is_inh_inv_arrow : forall D1 D2,
-    is_inh (bid_arrow D1 D2) -> is_inh D1 /\ is_inh D2.
-Proof. intros D1 D2 H. inversion H; subst. split; auto. Qed.
-
-Lemma is_inh_inv_all_inh : forall D,
-    is_inh (bid_all_inh D) ->
-    exists L, forall X, X `notin` L ->
-       is_inh (open_bid_wrt_bid D (bid_var_f X)).
-Proof. intros D H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_inh_inv_all_syn : forall D, is_inh (bid_all_syn D) -> False.
-Proof. intros D H. inversion H. Qed.
-
-Lemma is_inh_inv_all_etag : forall ε D, is_inh (bid_all_etag ε D) -> False.
-Proof. intros ε D H. inversion H. Qed.
-
-(** ===== is_ttyp_utyp (over utyp) ===== *)
-
-Lemma is_ttyp_utyp_lc : forall F, is_ttyp_utyp F -> lc_utyp F.
-Proof.
-  intros F H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_utyp_all_etag_exists with (Xf1 := X).
-    apply H0. auto.
-Qed.
-
-Lemma is_ttyp_utyp_subst : forall F F' X,
-    is_ttyp_utyp F -> mono_utyp F' -> is_ttyp_utyp (subst_utyp_in_utyp F' X F).
-Proof.
-  intros F F' X H Hm. induction H; simpl.
-  - constructor.
-  - destruct (X0 == X); subst.
-    + induction Hm; simpl.
-      * constructor.
-      * constructor.
-      * constructor; auto.
-    + constructor.
-  - constructor; auto.
-  - apply is_ttyp_utyp__all with (L := L `union` singleton X) (ε := ε).
-    intros Y Hni.
-    rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var.
-    + apply H0; fsetdec.
-    + fsetdec.
-    + apply mono_utyp_lc; exact Hm.
-Qed.
-
-Lemma is_ttyp_utyp_inv_arrow : forall F1 F2,
-    is_ttyp_utyp (utyp_arrow F1 F2) -> is_ttyp_utyp F1 /\ is_ttyp_utyp F2.
-Proof. intros F1 F2 H. inversion H; subst. split; auto. Qed.
-
-Lemma is_ttyp_utyp_inv_all_etag : forall ε F,
-    is_ttyp_utyp (utyp_all_etag ε F) ->
-    exists L, forall X, X `notin` L ->
-       is_ttyp_utyp (open_utyp_wrt_utyp F (utyp_var_f X)).
-Proof. intros ε F H. inversion H; subst. exists L. auto. Qed.
-
-Lemma is_ttyp_utyp_inv_all_syn : forall F, is_ttyp_utyp (utyp_all_syn F) -> False.
-Proof. intros F H. inversion H. Qed.
-
-(** ===== is_syn_skel_new =====
-    Six rules total: unit, var, arrow, cofinite all_syn, hole, tophole (recursive). *)
-
-Lemma is_syn_skel_new_lc : forall R, is_syn_skel_new R -> lc_skel R.
-Proof.
-  intros R H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; auto.
-  - pick fresh X. apply lc_skel_all_syn_exists with (Xr1 := X).
-    apply H0. auto.
-  - constructor.
-  - constructor; auto.
-Qed.
-
-(** ===== no_forall_skel =====
-    Five rules: unit, var, arrow, hole, tophole (recursive). *)
-
-Lemma no_forall_skel_lc : forall R, no_forall_skel R -> lc_skel R.
-Proof.
-  intros R H. induction H; constructor; auto.
-Qed.
-
-(** ===== guarded predicates ===== *)
-
-Lemma guarded_bid_lc : forall D, guarded_bid D -> lc_bid D.
-Proof.
-  intros D H. induction H; constructor; auto.
-Qed.
-
-Lemma guarded_skel_new_lc : forall R, guarded_skel_new R -> lc_skel R.
-Proof.
-  intros R H. induction H; constructor; auto.
-Qed.
-

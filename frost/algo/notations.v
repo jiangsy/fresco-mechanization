@@ -1,48 +1,37 @@
-(** Frost — algorithmic-system paper-faithful notations.
-
-    Imports the algo/def_extra.v judgements and adds notations for them.
-    Phase 3 metatheory files should `Require Import src.frost.algo.notations.`
-    instead of `src.frost.notations.` directly. *)
+(** Frost algorithmic-system notations for the split syntax. *)
 
 Require Export src.frost.notations.
 Require Export src.frost.algo.def_extra.
 
-(** ** Information-increase relation. *)
-
 Notation "Θ ⊑ Θ'" := (aenv_extends Θ Θ')
   (at level 75, no associativity) : type_scope.
 
-(** ** Well-formedness. *)
-
-Notation "Θ ⊢ A 'atype'" := (a_wf_typ Θ A)
+Notation "Θ ⊢ A 'aptyp'" := (a_wf_ptyp Θ A)
   (at level 75, A at level 74, no associativity) : type_scope.
+
+Notation "Θ ⊢ B 'abtyp'" := (a_wf_btyp Θ B)
+  (at level 75, B at level 74, no associativity) : type_scope.
 
 Notation "⊢ₐ Θ" := (a_wf_aenv Θ)
   (at level 75, no associativity) : type_scope.
 
-(** ** Algorithmic consistency. *)
-
-Notation "Θ ⊢ T '~ᴬ' A ⊣ Θ'" := (a_consis Θ T A Θ')
-  (at level 75, T at level 74, A at level 74, Θ' at level 74,
+Notation "Θ ⊢ C '~ᴬ' B ⊣ Θ'" := (a_consis Θ C B Θ')
+  (at level 75, C at level 74, B at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
-(** ** Algorithmic subtyping (outer / inner / flex-poly). *)
-
-Notation "Θ ⊢[ NM ; m ; P0 ] P ⊑ᴬ Q ⊣ Θ'" := (a_sub NM m P0 Θ P Q Θ')
+Notation "Θ ⊢[ NM ; m ; P0 ] B1 ⊑ᴬ B2 ⊣ Θ'" := (a_sub NM m P0 Θ B1 B2 Θ')
   (at level 75, NM at level 0, m at level 0, P0 at level 0,
-   P at level 74, Q at level 74, Θ' at level 74,
+   B1 at level 74, B2 at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
-Notation "Θ ⊢ᵇ[ NM ; m ; P0 ] S ◁ S' ⊣ Θ'" := (a_broom NM m P0 Θ S S' Θ')
+Notation "Θ ⊢ᵇ[ NM ; m ; P0 ] B ◁ B' ⊣ Θ'" := (a_broom NM m P0 Θ B B' Θ')
   (at level 75, NM at level 0, m at level 0, P0 at level 0,
-   S at level 74, S' at level 74, Θ' at level 74,
+   B at level 74, B' at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
-(** ** Algorithmic typing and skeleton inference. *)
-
-Notation "Θ ⊢[ m ; P0 ] e ⇒ A ⊣ Θ'" := (a_typing m Θ P0 e A Θ')
+Notation "Θ ⊢[ m ; P0 ] e ⇒ B ⊣ Θ'" := (a_typing m Θ P0 e B Θ')
   (at level 75, m at level 0, P0 at level 0,
-   e at level 74, A at level 74, Θ' at level 74,
+   e at level 74, B at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
 Notation "Θ ⊢[ m ; P0 ] e ⇨ Q ⊣ Θ'" := (a_pat m Θ P0 e Q Θ')
@@ -50,13 +39,10 @@ Notation "Θ ⊢[ m ; P0 ] e ⇨ Q ⊣ Θ'" := (a_pat m Θ P0 e Q Θ')
    e at level 74, Q at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
-(** ** Unification. *)
-
-Notation "Θ ⊢ S ≐ S' ↣ S'' ⊣ Θ'" := (a_unify Θ S S' S'' Θ')
-  (at level 75, S at level 74, S' at level 74, S'' at level 74,
+Notation "Θ ⊢ B ≐ B' ↣ B'' ⊣ Θ'" := (a_unify Θ B B' B'' Θ')
+  (at level 75, B at level 74, B' at level 74, B'' at level 74,
    Θ' at level 74, no associativity) : type_scope.
-
-(** ** Information-increase identity-metasubstitution alias. *)
 
 Notation "Θ ⊑ᵢ Θ'" := (aenv_extends Θ Θ')
   (at level 75, no associativity, only parsing) : type_scope.
+

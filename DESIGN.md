@@ -103,27 +103,22 @@ binds. This is how "no guessing out of thin air" gets enforced: every
 quantifier the algorithm conjures up must be tagged, and the typing
 context provides its tags.
 
-In the syntax:
+In the current mechanization the paper categories are separate generated
+syntax categories rather than predicates over one AST:
 
-- `typ_all_etag ε X. A` — ε-tagged ∀
-- `typ_all_col c X. A` — bidirectional ∀ (synthesised or inherited)
+| Paper | Coq category | Allowed ∀'s / ghosts |
+|-------|--------------|----------------------|
+| `A`   | `ptyp`       | plain `∀`; no holes |
+| `B`   | `btyp`       | bidirectional `∀^S` / `∀^I`; no holes |
+| `C`   | `utyp`       | unresolved `∀^S` / `∀^ε`; no inherited ∀ |
+| `P`   | `pskl`       | plain skeletons with holes / topholes |
+| `Q`   | `bskl`       | bidirectional skeletons |
+| `R`   | `uskl`       | unresolved skeletons |
 
-The mechanization uses a **single unified `typ` AST**. The six paper
-"categories" — plain types, tagged types `φ`, unresolved types `T`,
-skeletons `P`, tagged skeletons `ψ`, unresolved skeletons `S` — are
-**predicates** over `typ`:
-
-| Paper | Predicate | Allowed ∀'s | Holes? |
-|-------|-----------|-------------|--------|
-| `A`   | `is_typ`   | `_col` only | no |
-| `φ`   | `is_ttyp`  | `_etag`     | no |
-| `T`   | `is_utyp`  | `_etag,_col` | no |
-| `P`   | `is_skel`  | `_col`      | yes |
-| `ψ`   | `is_tskel` | `_etag`     | yes |
-| `S`   | `is_uskel` | `_etag,_col` | yes |
-
-Inhabitation predicates: `is_inh_typ`, `is_syn_typ`, `is_inh_skel`,
-`is_syn_skel` narrow further by colour.
+The rule statements use these categories directly.  Predicates such as
+`is_styp`, `is_ityp`, `is_ttyp`, `mono_ptyp`, and the guarded predicates
+are now refinements of already-split categories, not substitutes for the
+categories themselves.
 
 ### 2.4 Skeletons & ghosts
 
@@ -205,49 +200,30 @@ So neither can be defined alone.
 
 ### 3.2 Algorithmic judgments (in `frost/algo/def_extra.v`)
 
-Algorithmic syntax does **not** extend `typ`. A flex variable is an
-ordinary type variable (`typ_var_f X`); whether `X` is rigid,
-flex-mono (`α̂`), or flex-poly (`α̌`) is recorded **solely by its
-binding** in the algorithmic context `Θ`. (Pre-2026-05-15, `typ` had
-`typ_var_flex_mono` / `typ_var_flex_poly` constructors — removed for
-the same reason `ctyp` has no flex case, see Part 2 §4.4.)
+The current algorithmic files are **split-syntax placeholders**, not a
+faithful mechanization of the algorithmic rules in
+`paper/sections/algorithmic.tex`.  They keep the high-level shape of an
+algorithmic context and input/output judgments so the repository can
+compile while the declarative split-syntax port proceeds, but most rules
+are permissive one-constructor stubs.
 
 Algorithmic contexts `Θ` (`aenv`) are ordered lists of `abind`:
 
 ```text
 abind ::= tvar               -- rigid type variable
-        | var_typ A          -- term-variable typing
-        | flex_mono          -- declared α̂  (X bound here ⟹ X is flex-mono)
-        | flex_mono_def τ    -- solved α̂ := τ
-        | flex_poly_def P    -- declared α̌ ≜ P (skeleton)
+        | var_typ A          -- term-variable typing, A : ptyp
+        | flex_mono          -- declared α̂
+        | flex_mono_def A    -- solved α̂ := A, A : ptyp
+        | flex_poly_def P    -- declared α̌ ≜ P, P : pskl
         | marker             -- ⫶, scope delimiter for flex-poly
 ```
 
-So `α̂` / `α̌` are `typ_var_f X` entries whose `Θ`-binding is
-`flex_mono` / `flex_poly_def _`; rigid vars bind `tvar`. The flex-poly
-assignment is the algorithm's novelty: every `α̌` is born with
-skeleton `□` and is refined as constraints arrive.
-
-**Information increase** `Θ₀ ⊑ Θ₁` (paper `Θ₀ → Θ₁` with the
-metasubst) preserves variable dependency: `α̂` can become `α̂ := τ`;
-`α̌ ≜ P` can become `α̌ ≜ Q` with `P ⟶ Q`; markers and rigid vars are
-preserved; suffixes can be appended.
-
-The algorithmic judgments (`a_sub`, `a_pat`, `a_typing`, etc.) take
-`Θ₀` as input and produce `Θ₁` as output — they monotonically
-*augment* information. **Transfer** `a_transfers Θ Γ` projects an
-algorithmic context to its declarative shadow by erasing flex vars
-(only feasible when every flex-mono is solved).
-
-The declarative and algorithmic systems are connected by:
-
-- **Soundness** (paper §Type Inference) — every algorithmic judgment
-  has a declarative shadow under `a_transfers`.
-- **Completeness** (paper §"Subtyping is complete") — every
-  declarative derivation can be matched algorithmically (modulo
-  flex-var choices).
-- **Stability** (paper proofs.tex §1) — declarative judgments are
-  preserved under `Θ₀ ⊑ Θ₁` after transfer.
+The intended paper-faithful algorithm still needs to restore the
+non-trivial information-increase relation, flex-variable solving,
+subtyping broom, unification, splitting, algorithmic typing, and
+algorithmic skeleton inference.  Consequently the current
+`a_*_sound` / `a_*_complete` theorem statements are audit targets, not
+validated paper matches; see `PROGRESS.md` for the exact mismatch list.
 
 ---
 
@@ -259,15 +235,30 @@ The mechanization makes four load-bearing encoding choices that
 diverge from the paper's notation. Each is documented here with the
 *why*.
 
-### 4.1 One `typ` inductive (instead of six)
+### 4.1 Split syntax categories
 
-The paper's six categories (`A`, `φ`, `T`, `P`, `ψ`, `S`) are encoded
-as **predicates** over a single `typ` AST (see the table in §2.3).
+The current `language.ott` generates separate categories for the paper's
+type/skeleton strata:
 
-Pre-rejected: six mutually-defined inductives — lngen rejected it
-with "Ambiguous type for X". Fix: single `typ`, predicates layer on
-top. Category-preservation under substitution becomes a structural
-lemma instead of being built into the type system.
+```text
+ptyp, btyp, utyp, pskl, bskl, uskl
+```
+
+This is the canonical encoding going forward.  Do not add aliases such
+as `typ := ...` or old compatibility constructors; rule statements
+should be rewritten against the split categories directly.  Where the
+paper writes a painted occurrence of a plain type or skeleton, the
+mechanization uses explicit conversions from `frost/coercions.v`:
+
+- `ptyp_to_btyp_syn`, `ptyp_to_btyp_inh`
+- `ptyp_to_utyp_syn`
+- `ptyp_to_pskl`, `pskl_to_bskl_syn`
+- erasing/subset embeddings `utyp_to_btyp`, `btyp_to_ptyp`,
+  `bskl_to_pskl`, `uskl_to_bskl`
+
+Metavariable convention in comments and statements: `A` for `ptyp`,
+`B` for `btyp`, `C` for `utyp`; `P` for `pskl`, `Q` for `bskl`,
+`R` for `uskl`.
 
 ### 4.2 Predicative contexts (`list atom`)
 
@@ -289,73 +280,33 @@ with the free-variable lemmas, opening / substitution operators, etc.
 Cofinite premises on binder rules (i.e. `forall X, X ∉ L → ...`) are
 the norm.
 
-### 4.4 The colourless base `ctyp` + `syn_color` / `inh_color` paintings
+### 4.4 Paintings and erasures between split categories
 
-The paper writes `syn{A}` / `inh{A}` ambiguously — sometimes as a
-*predicate* ("`A` is all-synthesised"), sometimes as a
-*transformation* ("paint `A`'s skeleton all-synthesised"). The
-mechanization fixes **one uniform rule** built on a genuine
-**colourless type** `ctyp`:
+The paper writes `syn{A}` / `inh{A}` as if painting were notation over a
+single meta-object.  In the split mechanization, those paintings are
+explicit functions from plain syntax:
 
-```text
-ctyp ::= unit | α | ctyp → ctyp | ∀.ctyp | □ | □̇.ctyp
+```coq
+ptyp_to_btyp_syn : ptyp -> btyp
+ptyp_to_btyp_inh : ptyp -> btyp
+ptyp_to_utyp_syn : ptyp -> utyp
+ptyp_to_pskl     : ptyp -> pskl
 ```
 
-`ctyp` is `typ`'s shape with the **two** colour-bearing `forall`
-flavours (`typ_all_col`, `typ_all_etag`) collapsed to **one** neutral
-binder `ctyp_all`, and **no** flex-var constructors (an algorithmic
-flex var is morally a variable, distinguished by its binding in `Θ`,
-not by a type former). It is the *free equivalence class* of coloured
-types — two coloured `typ`s are *convertible* exactly when they
-`erase` to the same `ctyp`. Three functions
-([`decl/def_extra.v`](frost/decl/def_extra.v)):
+Erasure is also explicit:
 
-- `syn_color, inh_color : ctyp -> typ` — paint a colourless `ctyp`
-  all-synthesised / all-inherited (`ctyp_all` → `typ_all_col
-  colour_syn` / `typ_all_col colour_inh`);
-- `erase : typ -> ctyp` — forget all colour/tag, projecting onto the
-  equivalence class. Round-trips: `erase (syn_color C) = C =
-  erase (inh_color C)`.
+```coq
+btyp_to_ptyp : btyp -> ptyp
+bskl_to_pskl : bskl -> pskl
+```
 
-> Where the paper writes `syn{A}` / `inh{A}` over a meta-symbol `A`,
-> the mechanization quantifies **one base `C : ctyp`** and writes
-> `syn_color C` / `inh_color C`. Different-colour occurrences thus
-> share their shape (the base `C`), painted independently;
-> same-colour occurrences are literally the same term. **No**
-> `is_syn_typ` / `is_inh_typ` predicates and **no** `syn_color X =
-> syn_color Y` equalities — the shared base *is* the shape constraint.
-
-`ctyp` is **never used** as a term annotation, context binding, or
-judgement index — those stay `typ`. It appears only as a rule's
-shared base variable and as `erase`'s codomain. When a coloured `typ`
-`P'` (not a `ctyp` base — e.g. a refinement output) needs an
-opposite-colour reading, it goes through `erase`:
-`inh_color (erase P')` in `d_typing__app`.
-
-Three situations sit outside the base device, consistently: (1)
-**input read-back** — `d_typing__var` reads a `typ` straight out of
-`Γ` (already a `syn`-painting, by the invariant that `__abs` /
-`__abs_anno` bind `syn_color _`); (2) **`bid` / mode-dependent**
-positions (`B` in `__abs` / `__app`) are plain `typ` variables; (3)
-**literal tagged-forall constructors** — `d_sub__forall_l_tagged` etc.
-match a literal `typ_all_etag ε T`, a structural type former, not a
-coloured meta-symbol occurrence.
-
-**`ctyp`'s locally-nameless layer.** `ctyp` is hand-written (it stays
-out of `language.ott` / lngen), but it *is* a binder (`ctyp_all`) and
-the proof layer does open / substitute it — so `decl/def_extra.v`
-carries a hand-written locally-nameless layer for it
-(`open_ctyp_wrt_ctyp`, `ftvar_in_ctyp`, `subst_ctyp_in_ctyp`),
-mirroring lngen's `typ` operations definitionally so the
-`syn_color` / `inh_color` / `erase` commutation lemmas
-(`syn_color_open_ctyp`, `erase_open_typ`, `*_subst_ctyp`, …) and the
-round-trips (`erase_syn_color`, `erase_inh_color`) line up. So "no
-lngen" means "no generated `.v` file for `ctyp`", not "no binder
-infrastructure".
-
-The declarative rule definitions were re-encoded to this scheme on
-2026-05-15 (see [PROGRESS.md Part 2](PROGRESS.md#part-2-daily-progress)
-for the closure log).
+The key audit consequence is that paper-facing theorems should not start
+from an arbitrary inferred `B : btyp` and then erase/repaint it as a
+synthesized unresolved type.  If the paper premise is `syn{A}`, the
+native statement should quantify `A : ptyp` and use
+`ptyp_to_btyp_syn A` / `ptyp_to_utyp_syn A` directly.  Where a theorem
+really must accept an arbitrary `B : btyp`, it needs an explicit
+synthesized-shape premise instead of silent erasure.
 
 ### 4.5 The δ-encoding (potential tags `δ ∈ {·, ε}`)
 
@@ -368,12 +319,13 @@ Potential tags δ ::= · | ε
 
 A `syn{∀^δ α.T}` is either **tagged-syn** (`δ = ε`, paper writes
 `syn{∀^ε α.T}`) or **untagged-syn** (`δ = ·`, paper writes `syn{∀α.T}`).
-The mechanization maps these to two distinct AST shapes:
+The split mechanization maps these to two distinct constructors:
 
-- `δ = ε ↦ typ_all_etag ε T` (the ε-tagged ∀)
-- `δ = ·  ↦ typ_all_col colour_syn T` (the untagged syn-painted ∀;
-  post `typ_all_plain` removal this colour-paint is the encoding home
-  for "untagged syn ∀", since `typ_all_plain` no longer exists)
+- `δ = ε ↦ utyp_all_etag ε C` / `uskl_all_etag ε R`
+- `δ = ·  ↦ utyp_all_syn C` / `uskl_all_syn R`
+
+The corresponding bidirectional outputs are `btyp_all_syn`,
+`btyp_all_inh`, `bskl_all_syn`, and `bskl_all_inh`.
 
 **Each paper rule with `δ` therefore splits into TWO Coq constructors**
 — one per encoding of `δ`. The judgments affected (paper rule ↔ Coq
@@ -388,20 +340,13 @@ constructors):
 | `\textsc{Forall}` (Fig 12) | `d_pat_consis__forall_inh_tagged` | `d_pat_consis__forall_inh_untagged` |
 | `\textsc{Forall'}` (Fig 12) | `d_pat_consis__forall_syn_tagged` | `d_pat_consis__forall_syn_untagged` |
 
-The same δ split also propagates into the **unresolved-type / unresolved-skel
-predicate grammars** (utyp / uskel), since paper's
-`utyp T ::= unit | α | T → T | syn{∀^δα.T}` covers both `δ` cases:
+The same δ split is now built into the `utyp` / `uskl` grammar rather
+than represented as `is_utyp` / `is_uskel` predicate cases.
 
-- `is_utyp__tall` (tagged) + `is_utyp__pall` (untagged-syn)
-- `is_uskel__tall` (tagged) + `is_uskel__pall` (untagged-syn)
-
-**History note.** The 2026-05-15 `typ_all_plain` removal pass mistakenly
-dropped the `δ = ·` cases from `d_sub`, `d_consis` (partially),
-`d_pat_sub`, `d_pat_consis`, `is_utyp`, and `is_uskel` with the note
-"the colour-painted shape isn't `is_utyp`" / "ForallL for that shape
-is not paper-faithful". The note was incorrect — the paper IS faithful
-to having both `δ` cases. Restoration was done 2026-05-17 (commit
-`0bf2815`, WIP); see [PROGRESS.md](PROGRESS.md) for cascade details.
+**History note.** Older docs discuss `typ_all_plain` and a unified
+`typ` encoding.  That history is obsolete after the split-syntax port;
+new code should use `utyp_all_syn` / `utyp_all_etag` and the skeleton
+counterparts directly.
 
 **Rule ordering preference.** In `decl/def_extra.v` the tagged and
 untagged constructors of the same paper rule are kept ADJACENT (e.g.
@@ -418,14 +363,12 @@ the top of `decl/def_extra.v` and bound via `where` clauses on each
 audit-against-paper without translating `d_consis Δ Γ T A` ↔
 `Δ ⨟ Γ ⊨ T ≈ A` in your head.
 
-**Consequences for downstream lemmas.** A bunch of `d_consis` /
-`d_consis_gen` / `is_utyp` invariants used to ride on the absence of
-the δ=· case (typically: "if LHS is syn-paint shape S, then RHS is
-also S" or "if X is is_utyp then no typ_all_col"). Adding the δ=·
-rules invalidates those invariants. Several lemmas become **provably
-false** under the restored encoding — they need precondition
-strengthening, not just proof patching. Tracked in
-[PROGRESS.md](PROGRESS.md)'s δ-refactor entry.
+**Consequences for downstream lemmas.** Invariants must be stated over
+the split categories.  In particular, do not prove facts by first
+pretending a `btyp` is a `utyp`; when an unresolved synthesized LHS is
+needed, either quantify the underlying `A : ptyp` and use
+`ptyp_to_utyp_syn A`, or add an explicit synthesized-shape premise on the
+`btyp`.
 
 ## 5. Cross-check vs current defs
 
@@ -436,22 +379,29 @@ strengthening, not just proof patching. Tracked in
 
 - **Modes**: `mode_ti`, `mode_tc`, `mode_fn` match paper's `TI / TC /
   FN M`; `decr_mode` matches `M-`. ✓
-- **Colour-mode compatibility**: `is_syn_typ` / `is_inh_typ` /
-  `mode_typ_compat` / `mode_skel_compat` match the paper's `M ⊢ A : TY
-  / SK`. ✓
-- **Six categories** as predicates: `is_typ`, `is_ttyp`, `is_utyp`,
-  `is_skel`, `is_tskel`, `is_uskel`. ✓
-- **`guarded_typ` / `guarded_skel`**: a top-level non-∀ check;
-  skeleton version additionally rejects `HOLE` and `TOPHOLE` at the
-  top. ✓ (matches paper line 220 + 1168)
+- **Split categories**: `ptyp`, `btyp`, `utyp`, `pskl`, `bskl`,
+  `uskl` are native categories matching the paper strata. ✓
+- **Colour/tag distinction**: `btyp`/`bskl` carry synthesized vs
+  inherited quantifiers; `utyp`/`uskl` carry synthesized vs tagged
+  quantifiers. ✓
 - **Mutual block**: only `d_typing ↔ d_pat` are mutual; everything
   else stands alone. ✓
 - **Algorithmic flex-poly with skeleton assignment**:
-  `abind_flex_poly_def P` carries a skeleton (paper's novelty
-  preserved). ✓
-- **`a_transfers` as a relation** (not a partial Fixpoint): the
-  Prop form is cleaner than `option` for flex-mono `Θ`s without
-  definitions. ✓
+  `abind_flex_poly_def P` carries a `pskl`, matching the paper's
+  skeleton-assigned flexible polymorphic variables. ✓
+
+### 5.1.1 Current audit verdict for flagship statements
+
+As of 2026-05-20, the repository builds, but several flagship theorem
+statements are **not faithful enough to be claimed as mechanizations of
+the paper theorem without qualification**:
+
+| Flagship | Current Coq statement | Paper-faithfulness verdict |
+|---|---|---|
+| D1 General subsumption | `d_typing_general_subsumption` quantifies `A : ptyp`, assumes `Γ ⊢[TI] e ⇒ ptyp_to_btyp_syn A`, and subtypes from `ptyp_to_utyp_syn A` to `B`. | **Faithful statement shape, proof admitted.** This matches the paper's shared `syn{A}` premise without erasing an arbitrary `btyp`. |
+| D12 Generalised general subsumption | `d_typing_general_subsumption_gen` uses `d_typing_gen` and `d_sub_gen` over `btyp`, with `is_fn_n_ti` encoding `FN^n TI`. | **Close in shape, proof admitted.** Missing explicit counterpart of the paper premise `skmod[TY] (FN^n TI) bid{A}`; current `d_sub_gen` is also a compact scaffold, not the full syntax-directed relation. |
+| Algorithmic soundness | `a_typing_sound`, `a_pat_sound`, `a_sub_sound`. | **Not faithful.** Current algorithmic judgments are permissive placeholders and `a_transfers` relates any `Θ` to any `Γ`; the theorems are admitted and do not express paper questions/solutions/minimality. |
+| Algorithmic completeness | `a_typing_complete`, `a_pat_complete`, `a_sub_complete`. | **Not faithful.** Current statements are declarative-to-algorithmic existence lemmas, not the paper's question/solution minimality theorem. |
 
 ### 5.2 Encoding-induced premises (paper-implicit, mech-explicit)
 

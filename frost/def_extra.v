@@ -10,7 +10,7 @@ Require Export src.frost.prop_ln.
    src.frost.def_ott.` above. No redefinition needed here. *)
 
 (* ===================================================================== *)
-(*  decr_mode and mono_typ                                                *)
+(*  decr_mode                                                            *)
 (* ===================================================================== *)
 
 (** The paper's M- operation. Decreases function modes by one. *)
@@ -20,13 +20,6 @@ Definition decr_mode (m : mode) : mode :=
   | mode_tc => mode_tc
   | mode_fn m' => m'
   end.
-
-(** Monotypes: no forall at any depth, no holes. *)
-Inductive mono_typ : ptyp -> Prop :=
-| mono_typ__unit  : mono_typ ptyp_unit
-| mono_typ__var   : forall X, mono_typ (ptyp_var_f X)
-| mono_typ__arrow : forall A B,
-    mono_typ A -> mono_typ B -> mono_typ (ptyp_arrow A B).
 
 (* ===================================================================== *)
 (*  Six category predicates                                               *)
