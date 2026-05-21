@@ -42,6 +42,7 @@ NJOBS ?= 4
 	# Phase A refactor: btypvar / utypvar / skelvar also alias typvar.
 	sed -e "s/Definition btypvar : Set := var\./Notation btypvar := ptypvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition utypvar : Set := var\./Notation utypvar := ptypvar./g" ${SED_FLAG} $@
+	sed -e "s/Definition gutypvar : Set := var\./Notation gutypvar := ptypvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition psklvar : Set := var\./Notation psklvar := ptypvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition bsklvar : Set := var\./Notation bsklvar := ptypvar./g" ${SED_FLAG} $@
 	sed -e "s/Definition usklvar : Set := var\./Notation usklvar := ptypvar./g" ${SED_FLAG} $@

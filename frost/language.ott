@@ -24,6 +24,7 @@ metavar epsvar, eps     ::= {{ coq var }}
 metavar ptypvar, Xpt ::= {{ repr-locally-nameless }}
 metavar btypvar, Xbt ::= {{ repr-locally-nameless }}
 metavar utypvar, Xut ::= {{ repr-locally-nameless }}
+metavar gutypvar, Xgt ::= {{ repr-locally-nameless }}
 metavar psklvar, Xps ::= {{ repr-locally-nameless }}
 metavar bsklvar, Xbs ::= {{ repr-locally-nameless }}
 metavar usklvar, Xus ::= {{ repr-locally-nameless }}
@@ -86,6 +87,19 @@ utyp, C :: 'utyp_' ::=
   | ( C )                :: S :: paren {{ coq ([[C]]) }}
   | { C2 / Xut } C1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xut C1]] [[C2]]) }}
 
+% Generalised unresolved types — paper's bid{T} in the generalized
+% syntax-directed subtyping/consistency figure.  This extends [utyp]
+% with inherited quantifiers while preserving ε-tagged quantifiers.
+gutyp, G :: 'gutyp_' ::=
+  | UNIT                 ::   :: unit
+  | Xgt                  ::   :: var
+  | G1 -> G2             ::   :: arrow
+  | forall^syn Xgt . G   ::   :: all_syn   (+ bind Xgt in G +)
+  | forall^inh Xgt . G   ::   :: all_inh   (+ bind Xgt in G +)
+  | forall@ eps Xgt . G  ::   :: all_etag  (+ bind Xgt in G +)
+  | ( G )                :: S :: paren {{ coq ([[G]]) }}
+  | { G2 / Xgt } G1      :: M :: subst {{ coq (open_gutyp_wrt_gutyp [[Xgt G1]] [[G2]]) }}
+
 % Skeletons — for d_wf_skl, d_refine, d_pat_consis, etc.
 % Broadest skleton: matches [bid] shapes (syn / inh / etag ∀s) plus
 % holes / tophole. Narrow classes (e.g. syn-only, no-etag) are
@@ -145,6 +159,7 @@ substitutions
   single A Xpt  :: subst_ptyp_in
   single B Xbt  :: subst_btyp_in
   single C Xut  :: subst_utyp_in
+  single G Xgt  :: subst_gutyp_in
   single P Xps  :: subst_pskl_in
   single Q Xbs  :: subst_bskl_in
   single R Xus  :: subst_bskl_in
@@ -155,6 +170,7 @@ freevars
   A Xpt :: ftvar_in
   B Xbt :: ftvar_in
   C Xut :: ftvar_in
+  G Xgt :: ftvar_in
   P Xps :: ftvar_in
   Q Xbs :: ftvar_in
   R Xus :: ftvar_in

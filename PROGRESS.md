@@ -21,7 +21,7 @@ than faithful paper mechanizations**.
 | Flagship | Paper claim | Current Coq name | Faithfulness |
 |---|---|---|---|
 | D1 General subsumption | `Γ ⊢[TI] M ⦂ syn{A}` and `Γ ⊢[M] syn{A} ⊑ bid{B}` imply `Γ ⊢[M] M ⦂ bid{B}` | `d_typing_general_subsumption`, `d_typing_general_subsumption_via_gen` | 🟡 **faithful statement shape, proof admitted**. Current statement quantifies `A : ptyp`, assumes `Γ ⊢[TI] e ⦂ ptyp_to_btyp_syn A`, and subtypes from `ptyp_to_utyp_syn A`; no erased/repainted arbitrary `btyp` remains. |
-| D12 Generalised General Subsumption | `FN^n TI` typing plus mode/type compatibility plus generalized subtyping implies `FN^n M` typing | `d_typing_general_subsumption_gen` | 🟡 **close but incomplete**. Uses `is_fn_n_ti` and `mode_fn_n_subst`, which matches `FN^n`; uses `btyp` as generalized LHS. Missing explicit paper premise `skmod[TY] (FN^n TI) bid{A}` and relies on scaffold `d_sub_gen`. Proof is admitted. |
+| D12 Generalised General Subsumption | `FN^n TI` typing plus mode/type compatibility plus generalized subtyping implies `FN^n M` typing | `d_typing_general_subsumption_gen` | 🟡 **close but incomplete**. Uses `is_fn_n_ti` and `mode_fn_n_subst`, which matches `FN^n`; generalized subtyping now uses native `gutyp` for the paper's generalized unresolved `bid{T}`. Missing explicit paper premise `skmod[TY] (FN^n TI) bid{A}` and relies on scaffold `d_sub_gen`. Proof is admitted. |
 | Algorithmic type inference soundness | If the algorithm answers a type-inference question, its output is a solution | `a_typing_sound` | 🔴 **not faithful**. Current `a_typing` has one permissive constructor and current `a_transfers` relates any algorithmic context to any declarative context. |
 | Algorithmic type inference completeness/minimality | If a solution exists, the algorithm returns a minimal solution | `a_typing_complete` | 🔴 **not faithful**. Current statement is only declarative-to-algorithmic existence; it does not mention paper questions, solutions, metasubstitution factorization, consistency of outputs, or minimality. |
 | Algorithmic subtyping soundness/completeness/minimality | If a solution exists, `a_sub` returns the minimal solution | `a_sub_sound`, `a_sub_complete` | 🔴 **not faithful**. Current `a_sub` is reflexive-only, while `a_sub_sound`/`a_sub_complete` use simplified declarative shadows and omit the paper's question/solution/minimality structure. |
@@ -41,33 +41,36 @@ proof-completeness audit; it is a statement faithfulness audit.
 3. Rebuild `a_transfers` so it is an actual projection from algorithmic
    contexts to declarative contexts, not the current universal relation.
 
-**Hard-proof finding (2026-05-20):** the first apparent counterexample
-was a **mechanization translation issue**, not a core calculus issue.
-The scaffolded generalized subtyping rules allowed top-level inherited
-forall on the left of `Infer`/`Check`/`ForallR`.  The paper rules do not:
-those rules have a synthesized/unresolved LHS; only `Arg` recursively
-uses generalized bidirectional components.  The constructors
+**Hard-proof finding (2026-05-20/21):** the first apparent
+counterexample was a **mechanization translation issue**, not a core
+calculus issue.  The scaffolded generalized subtyping/consistency layer
+used `btyp`, which both lost ε-tags and allowed top-level inherited
+forall on the left of `Infer`/`Check`/`ForallR`.  The paper's generalized
+consistency works over generalized unresolved types.  The mechanization
+now has a native `gutyp` category for that grammar, and
 `d_sub_gen__infer_gen`, `d_sub_gen__check_gen`, and
-`d_sub_gen__forall_r` now enforce an LHS of shape `utyp_to_btyp C`, and
-`d_sub_gen_top_inherited_lhs_impossible` checks that
-`btyp_all_inh ...` can no longer appear as a top-level generalized
+`d_sub_gen__forall_r` use synthesized/unresolved `utyp_to_gutyp C` on
+entry.  The non-paper `d_consis_gen__embed`,
+`d_consis_gen__refl_plain`, and `d_sub_gen__embed` shortcut rules have
+been removed; ordinary cases now have to go through the native
+generalized rules.  `d_sub_gen_top_inherited_lhs_impossible` checks that
+`gutyp_all_inh ...` can no longer appear as a top-level generalized
 subtyping LHS.
 
 **Remaining hard-proof issue:** generalized `Arg` still permits
 bidirectional arrow components, as the paper's generalized proof
 requires.  Closing `d_sub_gen_trans` now needs generalized
-consistency/subtyping composition for those bidirectional components.
-That is a proof-generalization/support-lemma issue unless a smaller
-counterexample is found in the arrow cases.
+consistency/subtyping composition for those bidirectional components
+and the native generalized `ForallL` cases.  That is a
+proof-generalization/support-lemma issue unless a smaller counterexample
+is found in the arrow/forall-left cases.
 
 **Proof push update:** trying `d_sub_gen_trans` directly no longer
-stops on top-level inherited forall.  The first nontrivial branch is
-`d_sub_gen__embed` composed with `d_sub_gen__embed`, which is exactly
-ordinary split-syntax subtyping transitivity with an embeddable middle.
-So the next required theorem is B.4/D11 in native syntax, or an
-equivalent generalized composition lemma.  This classifies the current
-blocker as a missing generalization/support theorem, not as the earlier
-translation bug.
+stops on top-level inherited forall.  After removing the non-paper
+embedding shortcuts, the next required theorem is a native generalized
+composition lemma for `d_consis_gen`/`d_sub_gen`, covering `Arg` and
+`ForallL` directly.  This classifies the current blocker as a missing
+generalized support theorem, not as the earlier translation bug.
 
 ## Historical status (pre split-syntax audit; retained for archaeology)
 
@@ -262,8 +265,8 @@ Paper labels resolved to file:line in the auto-managed block at end of file (reg
 | D8 | General Subsumption (syntax-directed, paper [syntax-directed.tex:3](../paper/sections/syntax-directed.tex#L3), no `\label`) | (same as D1) | n/a — duplicate of D1; mech has one declarative system |
 | D9 | [Lemma B.2: Consistency Transitivity][thm:consist-transitivity] | **Mech:** `d_consis_compose` [`prop_consis_trans.v`](frost/decl/subtyping/prop_consis_trans.v):<br>`Δa ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A → Δb ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B → list_disjoint Δa Δb → ∃ Δc, Permutation Δc (Δa ++ Δb) ∧ Δc ⨟ Γ ⊨ C ≈ B`<br>**Paper:** `If ⊨[Δ₁] Γ T ≈ T' and ⊨[Δ₂] Γ T' ≈ A, then ⊨[Δ₁,Δ₂] Γ T ≈ A` (LaTeX: `\typconsis[\Delta_1]{\Gamma}{\bid{T}}{\bid{T'}}`, `\typconsis[\Delta_2]{\Gamma}{\bid{T'}}{\bid{A}}`, `\typconsis[\Delta_1, \Delta_2]{\Gamma}{\bid{T}}{\bid{A}}`) | 🟡 Native split-syntax scaffold for synthesized middle `A : ptyp`; proof currently `Admitted`. It no longer erases/repaints an arbitrary `btyp`. |
 | D10 | [Lemma B.3: Consistency-Subtyping Transitivity][thm:consist-subtyping-transitivity] | **Mech:** `d_consis_sub_trans` [`prop_consis_sub_trans.v`](frost/decl/subtyping/prop_consis_sub_trans.v):<br>`Δ ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A → Δ' ⨟ Γ ⊢[ M ] ptyp_to_utyp_syn A ⊑ B → list_disjoint Δ Δ' → ∃ Δc, Permutation Δc (Δ ++ Δ') ∧ Δc ⨟ Γ ⊢[ M ] C ⊑ B`<br>**Paper:** `If ⊨[Δ₁] Γ T ≈ T' and ⊢[M;Δ₂] Γ T' ⊑ A, then ⊢[M; Δ₁,Δ₂] Γ T ⊑ A`. | 🟡 Native split-syntax scaffold for synthesized middle type; proof currently `Admitted`. It no longer erases/repaints an arbitrary middle `btyp`. |
-| D11 | [Lemma B.4: Subtyping Transitivity][thm:subtyping-transitivity] | **Mech support:** `d_sub_gen_trans` [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v):<br>`nil ⨟ Γ ⊢ᵍ[ m1 ] B1 ⊑ B2 → nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] B2 ⊑ B3 → nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] B1 ⊑ B3` | 🟠 proof currently `Admitted`; after fixing top-level generalized LHS shapes, the remaining work is generalized composition through `Arg` arrow components. |
-| D12 | Generalised General Subsumption (paper Lemma B.5, [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343), no `\label`) | **Mech:** `d_typing_general_subsumption_gen` [`prop_general_subsumption.v`](frost/decl/typing/prop_general_subsumption.v):<br>`d_typing_gen m_orig Γ e A → is_fn_n_ti m_orig → d_wf_denv Γ → d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ A B → d_typing_gen (mode_fn_n_subst m_orig m_new) Γ e B`<br>**Paper:** `If ⊢_FN[n] TI Γ M ⇒ bid{A}, ⊢_TY (FN[n] TI) bid{A}, and ⊢_FN[n] M Γ bid{A} ⊑ bid{B}, then ⊢_FN[n] M Γ M ⇒ bid{B}` (LaTeX: `\typp[\FN[n]~\TI]{\Gamma}{M}{\bid{A}}`, `\skmod[\TY]{{\FN[n]}~\TI}{\bid{A}}`, `\typsub[\FN[n]\M]{\Gamma}{\bid{A}}{\bid{B}}`, `\typp[\FN[n]\M]{\Gamma}{M}{\bid{B}}`) | 🟡 Close statement shape, proof currently `Admitted`. Missing explicit counterpart of `skmod[TY] (FN^n TI) bid{A}`; depends on `d_sub_gen_trans`. |
+| D11 | [Lemma B.4: Subtyping Transitivity][thm:subtyping-transitivity] | **Mech support:** `d_sub_gen_trans` [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v):<br>`nil ⨟ Γ ⊢ᵍ[ m1 ] G1 ⊑ B2 → nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] btyp_to_gutyp B2 ⊑ B3 → nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] G1 ⊑ B3` | 🟠 proof currently `Admitted`; after fixing top-level generalized LHS shapes, the remaining work is generalized composition through `Arg` arrow components. |
+| D12 | Generalised General Subsumption (paper Lemma B.5, [syntax-directed.tex:343](../paper/sections/syntax-directed.tex#L343), no `\label`) | **Mech:** `d_typing_general_subsumption_gen` [`prop_general_subsumption.v`](frost/decl/typing/prop_general_subsumption.v):<br>`d_typing_gen m_orig Γ e B1 → is_fn_n_ti m_orig → d_wf_denv Γ → d_sub_gen (mode_fn_n_subst m_orig m_new) nil Γ (btyp_to_gutyp B1) B2 → d_typing_gen (mode_fn_n_subst m_orig m_new) Γ e B2`<br>**Paper:** `If ⊢_FN[n] TI Γ M ⇒ bid{A}, ⊢_TY (FN[n] TI) bid{A}, and ⊢_FN[n] M Γ bid{A} ⊑ bid{B}, then ⊢_FN[n] M Γ M ⇒ bid{B}` (LaTeX: `\typp[\FN[n]~\TI]{\Gamma}{M}{\bid{A}}`, `\skmod[\TY]{{\FN[n]}~\TI}{\bid{A}}`, `\typsub[\FN[n]\M]{\Gamma}{\bid{A}}{\bid{B}}`, `\typp[\FN[n]\M]{\Gamma}{M}{\bid{B}}`) | 🟡 Close statement shape, proof currently `Admitted`. Missing explicit counterpart of `skmod[TY] (FN^n TI) bid{A}`; depends on `d_sub_gen_trans`. |
 | D13 | [Lemma B.6: Soundness of Syntax-directed Rule][thm:typing-syn-soundness] | — | n/a — mech only has the bidirectional declarative system |
 | D14 | [Lemma B.7: Completeness of Syntax-directed Rule][thm:typing-syn-completeness] | — | n/a |
 
@@ -298,10 +301,9 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 | `d_sub_gen_weakening` / `_head` | 🟢 | [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v) | weakening for the generalized subtyping scaffold |
 | `d_consis_gen_weakening` / `_head` | 🟢 | [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v) | weakening for generalized consistency |
 | `d_sub_gen_trans` | 🟠 | [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v) | generalized transitivity; still admitted, now blocked on generalized consistency/subtyping composition for `Arg` |
-| `d_typing_gen_lift_plain` | 🟢 | [`prop_subsumption_aux.v`](frost/decl/typing/prop_subsumption_aux.v) | lifts generalized typing at `ptyp_to_btyp_syn A` across modes via `d_sub_gen__refl_plain` |
 | `d_typing_pat_weakening` / `_ctx_morph` | 🟢 | [`prop_weakening.v`](frost/decl/typing/prop_weakening.v) | full 18-case weakening + context morphism (mutual) |
 | `d_typing_pat_preserves_wf` | 🟢 | [`prop_wellformed.v`](frost/decl/prop_wellformed.v) | full 18-case wf preservation (mutual) |
-| `d_typing_sub_compose` | 🟠 | [`prop_subtyping.v`](frost/decl/prop_subtyping.v) | helper for D1's `__sub` case; statement updated to quantify the synthesized middle as `A1 A2 : ptyp`, proof currently `Admitted` |
+| `d_typing_sub_compose` | 🟢 | [`prop_subtyping.v`](frost/decl/prop_subtyping.v) | helper for D1's `__sub` case; proof closes using D10's nil corollary |
 | `d_typing_pat_subst_typ_mut` | 🟠 | [`prop_weakening.v:644`](frost/decl/typing/prop_weakening.v#L644) | mutual type subst; blocked on `d_sub_subst` / `d_refine_syn_subst` / `d_pat_*_subst` (not yet stated) |
 | `d_typing_narrowing` | 🟠 | [`prop_weakening.v:668`](frost/decl/typing/prop_weakening.v#L668) | reduces to D1; gated on `d_typing_general_subsumption` non-base cases |
 | `d_typing_narrow_consis` / `_gen_narrow_consis` | 🟠 | [`prop_weakening.v:713`](frost/decl/typing/prop_weakening.v#L713), [`def_gen.v:1083`](frost/decl/typing/def_gen.v#L1083) | post-ctyp re-encoding: `__var` returns raw bound type; old `syn_color_t`-equality insufficient |

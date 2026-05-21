@@ -5,20 +5,81 @@
     - [ptyp] : plain source types;
     - [btyp] : bidirectional/coloured types;
     - [utyp] : unresolved synthesised types;
+    - [gutyp] : generalised unresolved types;
     - [pskl] : plain skeletons;
     - [bskl] : bidirectional skeletons;
     - [uskl] : unresolved skeletons.
 
     The only implicit embeddings used by rule statements are the
-    unambiguous subset embeddings and the two erasing coercions requested
-    by the refactor: [btyp >-> ptyp] and [bskl >-> pskl]. Colour choices
-    from [ptyp] remain explicit. *)
+    established [utyp >-> btyp] map and the two erasing coercions
+    requested by the refactor: [btyp >-> ptyp] and [bskl >-> pskl].
+    Colour choices from [ptyp] remain explicit.
+
+    The [*_to_gutyp] maps are explicit injections into the paper's
+    generalized-unresolved syntax.  They are intentionally not declared
+    as Coercions: [utyp -> btyp] and [btyp -> ptyp] are existing erasure
+    paths, and adding [utyp -> gutyp] / [btyp -> gutyp] as ambient
+    coercions makes Coq's coercion graph ambiguous and obscures where the
+    generalized syntax is being used. *)
 
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.def_extra.
 
-(** ===== utyp -> btyp (implicit subset embedding) ===== *)
+(** ===== explicit injections into generalized unresolved types ===== *)
+
+Fixpoint utyp_to_gutyp (C : utyp) : gutyp :=
+  match C with
+  | utyp_unit => gutyp_unit
+  | utyp_var_b n => gutyp_var_b n
+  | utyp_var_f X => gutyp_var_f X
+  | utyp_arrow C1 C2 => gutyp_arrow (utyp_to_gutyp C1) (utyp_to_gutyp C2)
+  | utyp_all_syn C0 => gutyp_all_syn (utyp_to_gutyp C0)
+  | utyp_all_etag ε C0 => gutyp_all_etag ε (utyp_to_gutyp C0)
+  end.
+
+Fixpoint btyp_to_gutyp (B : btyp) : gutyp :=
+  match B with
+  | btyp_unit => gutyp_unit
+  | btyp_var_b n => gutyp_var_b n
+  | btyp_var_f X => gutyp_var_f X
+  | btyp_arrow B1 B2 => gutyp_arrow (btyp_to_gutyp B1) (btyp_to_gutyp B2)
+  | btyp_all_syn B0 => gutyp_all_syn (btyp_to_gutyp B0)
+  | btyp_all_inh B0 => gutyp_all_inh (btyp_to_gutyp B0)
+  end.
+
+Fixpoint gutyp_to_btyp (G : gutyp) : btyp :=
+  match G with
+  | gutyp_unit => btyp_unit
+  | gutyp_var_b n => btyp_var_b n
+  | gutyp_var_f X => btyp_var_f X
+  | gutyp_arrow G1 G2 => btyp_arrow (gutyp_to_btyp G1) (gutyp_to_btyp G2)
+  | gutyp_all_syn G0 => btyp_all_syn (gutyp_to_btyp G0)
+  | gutyp_all_inh G0 => btyp_all_inh (gutyp_to_btyp G0)
+  | gutyp_all_etag _ G0 => btyp_all_syn (gutyp_to_btyp G0)
+  end.
+
+Lemma btyp_to_gutyp_open_rec : forall B1 B2 k,
+    btyp_to_gutyp (open_btyp_wrt_btyp_rec k B2 B1) =
+    open_gutyp_wrt_gutyp_rec k (btyp_to_gutyp B2) (btyp_to_gutyp B1).
+Proof.
+  induction B1; intros B2 k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[|]|]; reflexivity.
+  - rewrite IHB1_1. rewrite IHB1_2. reflexivity.
+  - rewrite IHB1. reflexivity.
+  - rewrite IHB1. reflexivity.
+Qed.
+
+Lemma btyp_to_gutyp_open : forall B1 B2,
+    btyp_to_gutyp (open_btyp_wrt_btyp B1 B2) =
+    open_gutyp_wrt_gutyp (btyp_to_gutyp B1) (btyp_to_gutyp B2).
+Proof.
+  intros B1 B2.
+  unfold open_btyp_wrt_btyp, open_gutyp_wrt_gutyp.
+  apply btyp_to_gutyp_open_rec.
+Qed.
+
+(** ===== utyp -> btyp (implicit erasure into bidirectional types) ===== *)
 
 Fixpoint utyp_to_btyp (C : utyp) : btyp :=
   match C with
@@ -74,6 +135,25 @@ Fixpoint ptyp_to_utyp_syn (A : ptyp) : utyp :=
   | ptyp_arrow A1 A2 => utyp_arrow (ptyp_to_utyp_syn A1) (ptyp_to_utyp_syn A2)
   | ptyp_all A0 => utyp_all_syn (ptyp_to_utyp_syn A0)
   end.
+
+Definition ptyp_to_gutyp_syn (A : ptyp) : gutyp :=
+  utyp_to_gutyp (ptyp_to_utyp_syn A).
+
+Lemma ptyp_to_gutyp_syn_btyp_to_gutyp : forall A,
+    ptyp_to_gutyp_syn A = btyp_to_gutyp (ptyp_to_btyp_syn A).
+Proof.
+  induction A; unfold ptyp_to_gutyp_syn in *; simpl; try reflexivity.
+  - rewrite IHA1. rewrite IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
+Lemma ptyp_to_utyp_syn_btyp_to_ptyp_syn : forall A,
+    ptyp_to_utyp_syn (ptyp_to_btyp_syn A) = ptyp_to_utyp_syn A.
+Proof.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1. rewrite IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
 
 (** ===== ptyp -> pskl ===== *)
 

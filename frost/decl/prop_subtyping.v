@@ -41,4 +41,13 @@ Lemma d_typing_sub_compose : forall Γ e A1 A2 B m,
     d_wf_denv Γ ->
     Γ ⊢[ m ] e ⦂ B.
 Proof.
-Admitted.
+  intros Γ e A1 A2 B m Hbase Hty Hsub12 Hsub2 Hwf.
+  dependent destruction Hsub12; try contradiction.
+  pose proof (@d_consis_sub_trans_nil m Γ (ptyp_to_utyp_syn A1) A2 B
+                H Hsub2) as Hsub.
+  eapply d_typing__sub.
+  - exact Hbase.
+  - exact Hty.
+  - rewrite ptyp_to_utyp_syn_btyp_to_ptyp_syn.
+    exact Hsub.
+Qed.

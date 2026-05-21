@@ -111,6 +111,7 @@ syntax categories rather than predicates over one AST:
 | `A`   | `ptyp`       | plain `∀`; no holes |
 | `B`   | `btyp`       | bidirectional `∀^S` / `∀^I`; no holes |
 | `C`   | `utyp`       | unresolved `∀^S` / `∀^ε`; no inherited ∀ |
+| `G`   | `gutyp`      | generalized unresolved `∀^S` / `∀^I` / `∀^ε` |
 | `P`   | `pskl`       | plain skeletons with holes / topholes |
 | `Q`   | `bskl`       | bidirectional skeletons |
 | `R`   | `uskl`       | unresolved skeletons |
@@ -373,18 +374,31 @@ needed, either quantify the underlying `A : ptyp` and use
 ### 4.6 Generalized subtyping (`d_sub_gen`)
 
 The paper's generalized subsumption proof uses a generalized subtyping
-judgment whose outer LHS is written as `bid{A}`.  This does not mean
-every subtyping rule may consume an inherited forall at the top level.
-The syntax-directed rules still distinguish their entry shapes:
+judgment whose outer LHS is written as `bid{T}` in
+`syntax-directed.tex`; this is a generalized unresolved type, not plain
+`btyp`.  The mechanization represents it as `gutyp`, which preserves
+ε-tagged quantifiers and also admits inherited quantifiers.
 
 - `Infer`, `Check`, and `ForallR` consume a synthesized/unresolved LHS;
-  in Coq these constructors use `utyp_to_btyp C`.
+  in Coq these constructors use `utyp_to_gutyp C`.
 - `Arg` is the place where generalized bidirectional components appear:
   its domain consistency premise and codomain subtyping premise are over
-  `btyp` components.
+  `gutyp` components, while the result type remains `btyp`.
+- `ForallL` is native to the generalized relation over
+  `gutyp_all_etag`; the split syntax also carries the corresponding
+  untagged `gutyp_all_syn` case, matching the ordinary δ-erasure split.
+
+The maps `utyp_to_gutyp` and `btyp_to_gutyp` are explicit injections,
+not global Coq coercions.  This keeps the existing erasure coercions
+(`utyp >-> btyp`, `btyp >-> ptyp`) from competing with the generalized
+syntax embedding.
+
+There are no embedding or reflexivity shortcut constructors in
+`d_consis_gen` / `d_sub_gen`.  Ordinary cases must be reconstructed by
+the native generalized rules, not by an ad-hoc compatibility layer.
 
 This distinction matters.  An earlier scaffold allowed
-`btyp_all_inh ...` as a top-level generalized LHS for `Check`, which
+`gutyp_all_inh ...` as a top-level generalized LHS for `Check`, which
 produced a false counterexample to the intended collapse/transitivity
 story.  The current mechanization has the checked lemma
 `d_sub_gen_top_inherited_lhs_impossible`, so that counterexample is now

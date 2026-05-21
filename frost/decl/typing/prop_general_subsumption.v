@@ -18,14 +18,14 @@ Set Implicit Arguments.
 
 (** D12, paper Lemma B.5: generalised general subsumption.  The source
     mode is restricted to [FN^n TI], and the target mode replaces the
-    terminal [TI] by [m_new].  The subtyping premise is the generalised
-    relation over [btyp], matching the split syntax directly. *)
+    terminal [TI] by [m_new].  The subtyping premise consumes the
+    generalized-unresolved embedding of the synthesized type. *)
 Theorem d_typing_general_subsumption_gen : forall m_orig Γ e B1,
     Γ ⊢ᵍ[ m_orig ] e ⦂ B1 ->
     is_fn_n_ti m_orig ->
     d_wf_denv Γ ->
     forall m_new B2,
-      nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] B1 ⊑ B2 ->
+      nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] (btyp_to_gutyp B1) ⊑ B2 ->
       Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] e ⦂ B2.
 Proof.
 Admitted.

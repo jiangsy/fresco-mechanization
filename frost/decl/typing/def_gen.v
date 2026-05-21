@@ -1,10 +1,9 @@
 (** Frost declarative typing metatheory: generalised relations in the
     current split syntax.
 
-    The generalised left-hand side is a [btyp]: this is the smallest
-    native category that contains both ordinary synthesised unresolved
-    types via [utyp_to_btyp] and the extra inherited-forall shape needed
-    by the paper's D12/generalised-subsumption argument. *)
+    The generalised left-hand side is a [gutyp], matching the paper's
+    "generalised unresolved type" grammar: ordinary unresolved types
+    extended with inherited forall while preserving ε-tagged forall. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
@@ -22,54 +21,94 @@ Require Import src.frost.decl.typing.prop_weakening.
 
 Set Implicit Arguments.
 
-Reserved Notation "Δ ⨟ Γ ⊨ᵍ B1 ≈ B2"
-  (at level 75, Γ at level 75, B1 at level 74, B2 at level 74, no associativity).
-Reserved Notation "Δ ⨟ Γ ⊢ᵍ[ M ] B1 ⊑ B2"
-  (at level 75, Γ at level 75, M at level 0, B1 at level 74, B2 at level 74,
+Reserved Notation "Δ ⨟ Γ ⊨ᵍ G1 ≈ G2"
+  (at level 75, Γ at level 75, G1 at level 74, G2 at level 74, no associativity).
+Reserved Notation "Δ ⨟ Γ ⊢ᵍ[ M ] G ⊑ B"
+  (at level 75, Γ at level 75, M at level 0, G at level 74, B at level 74,
    no associativity).
 Reserved Notation "Γ ⊢ᵍ[ M ] e ⦂ B"
   (at level 100, M at level 0, e at level 75, B at level 75, no associativity).
 
-Inductive d_consis_gen : list atom -> list (atom * dbind) -> btyp -> btyp -> Prop :=
-| d_consis_gen__embed : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
-    Δ ⨟ Γ ⊨ᵍ (utyp_to_btyp C) ≈ B
-| d_consis_gen__forall_inh : forall L Δ Γ B1 B2,
+Inductive d_consis_gen : list atom -> list (atom * dbind) -> gutyp -> gutyp -> Prop :=
+| d_consis_gen__unit : forall Γ,
+    nil ⨟ Γ ⊨ᵍ gutyp_unit ≈ gutyp_unit
+| d_consis_gen__var : forall Γ X,
+    binds X dbind_tvar Γ ->
+    nil ⨟ Γ ⊨ᵍ (gutyp_var_f X) ≈ (gutyp_var_f X)
+| d_consis_gen__arrow : forall Δ1 Δ2 Γ G1 G2 G1' G2',
+    Δ1 ⨟ Γ ⊨ᵍ G1 ≈ G1' ->
+    Δ2 ⨟ Γ ⊨ᵍ G2 ≈ G2' ->
+    list_disjoint Δ1 Δ2 ->
+    (Δ1 ++ Δ2) ⨟ Γ ⊨ᵍ (gutyp_arrow G1 G2) ≈ (gutyp_arrow G1' G2')
+| d_consis_gen__forall_tag_inh : forall L Δ Γ ε G1 G2,
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
-         (open_btyp_wrt_btyp B1 (btyp_var_f X)) ≈
-         (open_btyp_wrt_btyp B2 (btyp_var_f X))) ->
-    Δ ⨟ Γ ⊨ᵍ (btyp_all_inh B1) ≈ (btyp_all_inh B2)
-| d_consis_gen__refl_plain : forall Γ A,
-    d_wf_ptyp Γ A ->
-    nil ⨟ Γ ⊨ᵍ (ptyp_to_btyp_syn A) ≈ (ptyp_to_btyp_syn A)
+         (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
+         (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
+    ~ List.In ε Δ ->
+    (ε :: Δ) ⨟ Γ ⊨ᵍ (gutyp_all_etag ε G1) ≈ (gutyp_all_inh G2)
+| d_consis_gen__forall_tag_syn : forall L Δ Γ ε G1 G2,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
+         (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
+    Δ ⨟ Γ ⊨ᵍ (gutyp_all_etag ε G1) ≈ (gutyp_all_etag ε G2)
+| d_consis_gen__forall_tag_syn_erasure : forall L Δ Γ ε G1 G2,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
+         (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
+    Δ ⨟ Γ ⊨ᵍ (gutyp_all_etag ε G1) ≈ (gutyp_all_syn G2)
+| d_consis_gen__forall_syn : forall L Δ Γ G1 G2,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
+         (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
+    Δ ⨟ Γ ⊨ᵍ (gutyp_all_syn G1) ≈ (gutyp_all_syn G2)
+| d_consis_gen__forall_inh : forall L Δ Γ G1 G2,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
+         (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
+    Δ ⨟ Γ ⊨ᵍ (gutyp_all_inh G1) ≈ (gutyp_all_inh G2)
 where "Δ ⨟ Γ ⊨ᵍ B1 ≈ B2" := (d_consis_gen Δ Γ B1 B2) : type_scope.
 
-Inductive d_sub_gen : mode -> list atom -> list (atom * dbind) -> btyp -> btyp -> Prop :=
-| d_sub_gen__embed : forall m Δ Γ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
-    Δ ⨟ Γ ⊢ᵍ[ m ] (utyp_to_btyp C) ⊑ B
+Inductive d_sub_gen : mode -> list atom -> list (atom * dbind) -> gutyp -> btyp -> Prop :=
 | d_sub_gen__infer_gen : forall Γ C B,
-    nil ⨟ Γ ⊨ᵍ (utyp_to_btyp C) ≈ B ->
-    nil ⨟ Γ ⊢ᵍ[ mode_ti ] (utyp_to_btyp C) ⊑ B
+    nil ⨟ Γ ⊨ᵍ (utyp_to_gutyp C) ≈ (btyp_to_gutyp B) ->
+    is_styp B ->
+    nil ⨟ Γ ⊢ᵍ[ mode_ti ] (utyp_to_gutyp C) ⊑ B
 | d_sub_gen__check_gen : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ᵍ (utyp_to_btyp C) ≈ B ->
-    Δ ⨟ Γ ⊢ᵍ[ mode_tc ] (utyp_to_btyp C) ⊑ B
-| d_sub_gen__refl_plain : forall Γ m A,
-    d_wf_ptyp Γ A ->
-    nil ⨟ Γ ⊢ᵍ[ m ] (ptyp_to_btyp_syn A) ⊑ (ptyp_to_btyp_syn A)
+    guarded_utyp C ->
+    Δ ⨟ Γ ⊨ᵍ (utyp_to_gutyp C) ≈ (btyp_to_gutyp B) ->
+    is_ityp B ->
+    Δ ⨟ Γ ⊢ᵍ[ mode_tc ] (utyp_to_gutyp C) ⊑ B
 | d_sub_gen__forall_r : forall L Δ Γ C B,
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ᵍ[ mode_tc ]
-         (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f X)))
+         (utyp_to_gutyp (open_utyp_wrt_utyp C (utyp_var_f X)))
          ⊑ open_btyp_wrt_btyp B (btyp_var_f X)) ->
-    Δ ⨟ Γ ⊢ᵍ[ mode_tc ] (utyp_to_btyp C) ⊑ btyp_all_inh B
-| d_sub_gen__arg : forall Δ1 Δ2 Γ m B11 B12 B21 B22,
-    Δ1 ⨟ Γ ⊨ᵍ B21 ≈ B11 ->
-    Δ2 ⨟ Γ ⊢ᵍ[ m ] B12 ⊑ B22 ->
+    Δ ⨟ Γ ⊢ᵍ[ mode_tc ] (utyp_to_gutyp C) ⊑ btyp_all_inh B
+| d_sub_gen__arg : forall Δ1 Δ2 Γ m B11 G12 G21 B22,
+    Δ1 ⨟ Γ ⊨ᵍ G21 ≈ (btyp_to_gutyp B11) ->
+    Δ2 ⨟ Γ ⊢ᵍ[ m ] G12 ⊑ B22 ->
     list_disjoint Δ1 Δ2 ->
     (Δ1 ++ Δ2) ⨟ Γ ⊢ᵍ[ mode_fn m ]
-      (btyp_arrow B11 B12) ⊑ (btyp_arrow B21 B22)
+      (gutyp_arrow G21 G12) ⊑ (btyp_arrow B11 B22)
+| d_sub_gen__forall_l_tagged : forall Δ Δ' Γ m ε G ph B,
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    Δ' ⨟ Γ ⊢ᵤ ph ->
+    is_ttyp ph ->
+    (Δ ++ Δ') ⨟ Γ ⊢ᵍ[ m ] (open_gutyp_wrt_gutyp G (utyp_to_gutyp ph)) ⊑ B ->
+    Δ ⨟ Γ ⊢ᵍ[ m ] (gutyp_all_etag ε G) ⊑ B
+| d_sub_gen__forall_l_untagged : forall Δ Δ' Γ m G ph B,
+    m <> mode_ti ->
+    list_disjoint Δ' Δ ->
+    Δ' ⨟ Γ ⊢ᵤ ph ->
+    is_ttyp ph ->
+    (Δ ++ Δ') ⨟ Γ ⊢ᵍ[ m ] (open_gutyp_wrt_gutyp G (utyp_to_gutyp ph)) ⊑ B ->
+    Δ ⨟ Γ ⊢ᵍ[ m ] (gutyp_all_syn G) ⊑ B
 where "Δ ⨟ Γ ⊢ᵍ[ M ] B1 ⊑ B2" := (d_sub_gen M Δ Γ B1 B2) : type_scope.
 
 Inductive d_typing_gen : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
@@ -78,7 +117,7 @@ Inductive d_typing_gen : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     Γ ⊢ᵍ[ m ] e ⦂ B
 | d_typing_gen__sub : forall Γ m e B1 B2,
     d_typing_gen mode_ti Γ e B1 ->
-    d_sub_gen m nil Γ B1 B2 ->
+    d_sub_gen m nil Γ (btyp_to_gutyp B1) B2 ->
     Γ ⊢ᵍ[ m ] e ⦂ B2
 where "Γ ⊢ᵍ[ M ] e ⦂ B" := (d_typing_gen M Γ e B) : type_scope.
 
@@ -107,7 +146,7 @@ Proof.
 Admitted.
 
 Lemma d_sub_gen_top_inherited_lhs_impossible : forall Γ m Δ B,
-    ~ Δ ⨟ Γ ⊢ᵍ[ m ] (btyp_all_inh btyp_unit) ⊑ B.
+    ~ Δ ⨟ Γ ⊢ᵍ[ m ] (gutyp_all_inh gutyp_unit) ⊑ B.
 Proof.
   intros Γ m Δ B H.
   dependent destruction H; simpl in *; try discriminate;
