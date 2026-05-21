@@ -45,26 +45,31 @@ Inductive d_consis_gen : list atom -> list (atom * dbind) -> gutyp -> gutyp -> P
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
          (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
          (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
-    ~ List.In ε Δ ->
     (ε :: Δ) ⨟ Γ ⊨ᵍ (gutyp_all_etag ε G1) ≈ (gutyp_all_inh G2)
+| d_consis_gen__forall_syn_inh : forall L Δ Γ ε G1 G2,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
+         (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
+    (ε :: Δ) ⨟ Γ ⊨ᵍ (gutyp_all_syn G1) ≈ (gutyp_all_inh G2)
 | d_consis_gen__forall_tag_syn : forall L Δ Γ ε G1 G2,
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
          (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
          (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
     Δ ⨟ Γ ⊨ᵍ (gutyp_all_etag ε G1) ≈ (gutyp_all_etag ε G2)
-| d_consis_gen__forall_tag_syn_erasure : forall L Δ Γ ε G1 G2,
-    (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
-         (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
-         (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
-    Δ ⨟ Γ ⊨ᵍ (gutyp_all_etag ε G1) ≈ (gutyp_all_syn G2)
 | d_consis_gen__forall_syn : forall L Δ Γ G1 G2,
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
          (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
          (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
     Δ ⨟ Γ ⊨ᵍ (gutyp_all_syn G1) ≈ (gutyp_all_syn G2)
+| d_consis_gen__forall_tag_syn_erasure : forall L Δ Γ ε G1 G2,
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
+         (open_gutyp_wrt_gutyp G1 (gutyp_var_f X)) ≈
+         (open_gutyp_wrt_gutyp G2 (gutyp_var_f X))) ->
+    Δ ⨟ Γ ⊨ᵍ (gutyp_all_etag ε G1) ≈ (gutyp_all_syn G2)
 | d_consis_gen__forall_inh : forall L Δ Γ G1 G2,
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ᵍ
@@ -75,26 +80,29 @@ where "Δ ⨟ Γ ⊨ᵍ B1 ≈ B2" := (d_consis_gen Δ Γ B1 B2) : type_scope.
 
 Inductive d_sub_gen : mode -> list atom -> list (atom * dbind) -> gutyp -> btyp -> Prop :=
 | d_sub_gen__infer_gen : forall Γ C B,
-    nil ⨟ Γ ⊨ᵍ (utyp_to_gutyp C) ≈ (btyp_to_gutyp B) ->
-    is_styp B ->
-    nil ⨟ Γ ⊢ᵍ[ mode_ti ] (utyp_to_gutyp C) ⊑ B
+    (* I think we don't need the d_con *)
+    is_syn B ->
+    nil ⨟ Γ ⊨ C ≈ B ->
+    nil ⨟ Γ ⊢ᵍ[ mode_ti ] (utyp_to_gutyp  C) ⊑ B
 | d_sub_gen__check_gen : forall Δ Γ C B,
     guarded_utyp C ->
-    Δ ⨟ Γ ⊨ᵍ (utyp_to_gutyp C) ≈ (btyp_to_gutyp B) ->
+    is_inh B ->
+    Δ ⨟ Γ ⊨ C ≈ B ->
     is_ityp B ->
     Δ ⨟ Γ ⊢ᵍ[ mode_tc ] (utyp_to_gutyp C) ⊑ B
 | d_sub_gen__forall_r : forall L Δ Γ C B,
+    is_inh (btyp_all_inh B) ->
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ᵍ[ mode_tc ]
          (utyp_to_gutyp (open_utyp_wrt_utyp C (utyp_var_f X)))
-         ⊑ open_btyp_wrt_btyp B (btyp_var_f X)) ->
-    Δ ⨟ Γ ⊢ᵍ[ mode_tc ] (utyp_to_gutyp C) ⊑ btyp_all_inh B
-| d_sub_gen__arg : forall Δ1 Δ2 Γ m B11 G12 G21 B22,
-    Δ1 ⨟ Γ ⊨ᵍ G21 ≈ (btyp_to_gutyp B11) ->
-    Δ2 ⨟ Γ ⊢ᵍ[ m ] G12 ⊑ B22 ->
+         ⊑ (open_btyp_wrt_btyp B (btyp_var_f X))) ->
+    Δ ⨟ Γ ⊢ᵍ[ mode_tc ] (utyp_to_gutyp C) ⊑ (btyp_all_inh B)
+| d_sub_gen__arg : forall Δ1 Δ2 Γ m B1 B2 D1 D2,
+    Δ1 ⨟ Γ ⊨ D2 ≈ B1 ->
+    Δ2 ⨟ Γ ⊢ᵍ[ m ] D1 ⊑ B2 ->
     list_disjoint Δ1 Δ2 ->
     (Δ1 ++ Δ2) ⨟ Γ ⊢ᵍ[ mode_fn m ]
-      (gutyp_arrow G21 G12) ⊑ (btyp_arrow B11 B22)
+      (gutyp_arrow (utyp_to_gutyp D2) D1) ⊑ (btyp_arrow B1 B2)
 | d_sub_gen__forall_l_tagged : forall Δ Δ' Γ m ε G ph B,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
@@ -109,7 +117,7 @@ Inductive d_sub_gen : mode -> list atom -> list (atom * dbind) -> gutyp -> btyp 
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢ᵍ[ m ] (open_gutyp_wrt_gutyp G (utyp_to_gutyp ph)) ⊑ B ->
     Δ ⨟ Γ ⊢ᵍ[ m ] (gutyp_all_syn G) ⊑ B
-where "Δ ⨟ Γ ⊢ᵍ[ M ] B1 ⊑ B2" := (d_sub_gen M Δ Γ B1 B2) : type_scope.
+where "Δ ⨟ Γ ⊢ᵍ[ M ] D1 ⊑ D2" := (d_sub_gen M Δ Γ D1 D2) : type_scope.
 
 Inductive d_typing_gen : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_typing_gen__embed : forall m Γ e B,

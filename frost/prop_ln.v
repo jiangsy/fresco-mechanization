@@ -128,18 +128,18 @@ Fixpoint close_utyp_wrt_utyp_rec (n1 : nat) (Xut1 : utypvar) (C1 : utyp) {struct
 
 Definition close_utyp_wrt_utyp Xut1 C1 := close_utyp_wrt_utyp_rec 0 Xut1 C1.
 
-Fixpoint close_gutyp_wrt_gutyp_rec (n1 : nat) (Xgt1 : gutypvar) (G1 : gutyp) {struct G1} : gutyp :=
-  match G1 with
+Fixpoint close_gutyp_wrt_gutyp_rec (n1 : nat) (Xgt1 : gutypvar) (D1 : gutyp) {struct D1} : gutyp :=
+  match D1 with
     | gutyp_unit => gutyp_unit
     | gutyp_var_f Xgt2 => if (Xgt1 == Xgt2) then (gutyp_var_b n1) else (gutyp_var_f Xgt2)
     | gutyp_var_b n2 => if (lt_ge_dec n2 n1) then (gutyp_var_b n2) else (gutyp_var_b (S n2))
-    | gutyp_arrow G2 G3 => gutyp_arrow (close_gutyp_wrt_gutyp_rec n1 Xgt1 G2) (close_gutyp_wrt_gutyp_rec n1 Xgt1 G3)
-    | gutyp_all_syn G2 => gutyp_all_syn (close_gutyp_wrt_gutyp_rec (S n1) Xgt1 G2)
-    | gutyp_all_inh G2 => gutyp_all_inh (close_gutyp_wrt_gutyp_rec (S n1) Xgt1 G2)
-    | gutyp_all_etag ε1 G2 => gutyp_all_etag ε1 (close_gutyp_wrt_gutyp_rec (S n1) Xgt1 G2)
+    | gutyp_arrow D2 D3 => gutyp_arrow (close_gutyp_wrt_gutyp_rec n1 Xgt1 D2) (close_gutyp_wrt_gutyp_rec n1 Xgt1 D3)
+    | gutyp_all_syn D2 => gutyp_all_syn (close_gutyp_wrt_gutyp_rec (S n1) Xgt1 D2)
+    | gutyp_all_inh D2 => gutyp_all_inh (close_gutyp_wrt_gutyp_rec (S n1) Xgt1 D2)
+    | gutyp_all_etag ε1 D2 => gutyp_all_etag ε1 (close_gutyp_wrt_gutyp_rec (S n1) Xgt1 D2)
   end.
 
-Definition close_gutyp_wrt_gutyp Xgt1 G1 := close_gutyp_wrt_gutyp_rec 0 Xgt1 G1.
+Definition close_gutyp_wrt_gutyp Xgt1 D1 := close_gutyp_wrt_gutyp_rec 0 Xgt1 D1.
 
 Fixpoint close_pskl_wrt_pskl_rec (n1 : nat) (Xps1 : psklvar) (P1 : pskl) {struct P1} : pskl :=
   match P1 with
@@ -243,15 +243,15 @@ Fixpoint size_utyp (C1 : utyp) {struct C1} : nat :=
     | utyp_all_etag ε1 C2 => 1 + (size_utyp C2)
   end.
 
-Fixpoint size_gutyp (G1 : gutyp) {struct G1} : nat :=
-  match G1 with
+Fixpoint size_gutyp (D1 : gutyp) {struct D1} : nat :=
+  match D1 with
     | gutyp_unit => 1
     | gutyp_var_f Xgt1 => 1
     | gutyp_var_b n1 => 1
-    | gutyp_arrow G2 G3 => 1 + (size_gutyp G2) + (size_gutyp G3)
-    | gutyp_all_syn G2 => 1 + (size_gutyp G2)
-    | gutyp_all_inh G2 => 1 + (size_gutyp G2)
-    | gutyp_all_etag ε1 G2 => 1 + (size_gutyp G2)
+    | gutyp_arrow D2 D3 => 1 + (size_gutyp D2) + (size_gutyp D3)
+    | gutyp_all_syn D2 => 1 + (size_gutyp D2)
+    | gutyp_all_inh D2 => 1 + (size_gutyp D2)
+    | gutyp_all_etag ε1 D2 => 1 + (size_gutyp D2)
   end.
 
 Fixpoint size_pskl (P1 : pskl) {struct P1} : nat :=
@@ -394,19 +394,19 @@ Inductive degree_gutyp_wrt_gutyp : nat -> gutyp -> Prop :=
   | degree_wrt_gutyp_gutyp_var_b : forall n1 n2,
     lt n2 n1 ->
     degree_gutyp_wrt_gutyp n1 (gutyp_var_b n2)
-  | degree_wrt_gutyp_gutyp_arrow : forall n1 G1 G2,
-    degree_gutyp_wrt_gutyp n1 G1 ->
-    degree_gutyp_wrt_gutyp n1 G2 ->
-    degree_gutyp_wrt_gutyp n1 (gutyp_arrow G1 G2)
-  | degree_wrt_gutyp_gutyp_all_syn : forall n1 G1,
-    degree_gutyp_wrt_gutyp (S n1) G1 ->
-    degree_gutyp_wrt_gutyp n1 (gutyp_all_syn G1)
-  | degree_wrt_gutyp_gutyp_all_inh : forall n1 G1,
-    degree_gutyp_wrt_gutyp (S n1) G1 ->
-    degree_gutyp_wrt_gutyp n1 (gutyp_all_inh G1)
-  | degree_wrt_gutyp_gutyp_all_etag : forall n1 ε1 G1,
-    degree_gutyp_wrt_gutyp (S n1) G1 ->
-    degree_gutyp_wrt_gutyp n1 (gutyp_all_etag ε1 G1).
+  | degree_wrt_gutyp_gutyp_arrow : forall n1 D1 D2,
+    degree_gutyp_wrt_gutyp n1 D1 ->
+    degree_gutyp_wrt_gutyp n1 D2 ->
+    degree_gutyp_wrt_gutyp n1 (gutyp_arrow D1 D2)
+  | degree_wrt_gutyp_gutyp_all_syn : forall n1 D1,
+    degree_gutyp_wrt_gutyp (S n1) D1 ->
+    degree_gutyp_wrt_gutyp n1 (gutyp_all_syn D1)
+  | degree_wrt_gutyp_gutyp_all_inh : forall n1 D1,
+    degree_gutyp_wrt_gutyp (S n1) D1 ->
+    degree_gutyp_wrt_gutyp n1 (gutyp_all_inh D1)
+  | degree_wrt_gutyp_gutyp_all_etag : forall n1 ε1 D1,
+    degree_gutyp_wrt_gutyp (S n1) D1 ->
+    degree_gutyp_wrt_gutyp n1 (gutyp_all_etag ε1 D1).
 
 Scheme degree_gutyp_wrt_gutyp_ind' := Induction for degree_gutyp_wrt_gutyp Sort Prop.
 
@@ -663,19 +663,19 @@ Inductive lc_set_gutyp : gutyp -> Set :=
     lc_set_gutyp (gutyp_unit)
   | lc_set_gutyp_var_f : forall Xgt1,
     lc_set_gutyp (gutyp_var_f Xgt1)
-  | lc_set_gutyp_arrow : forall G1 G2,
-    lc_set_gutyp G1 ->
-    lc_set_gutyp G2 ->
-    lc_set_gutyp (gutyp_arrow G1 G2)
-  | lc_set_gutyp_all_syn : forall G1,
-    (forall Xgt1 : gutypvar, lc_set_gutyp (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1))) ->
-    lc_set_gutyp (gutyp_all_syn G1)
-  | lc_set_gutyp_all_inh : forall G1,
-    (forall Xgt1 : gutypvar, lc_set_gutyp (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1))) ->
-    lc_set_gutyp (gutyp_all_inh G1)
-  | lc_set_gutyp_all_etag : forall ε1 G1,
-    (forall Xgt1 : gutypvar, lc_set_gutyp (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1))) ->
-    lc_set_gutyp (gutyp_all_etag ε1 G1).
+  | lc_set_gutyp_arrow : forall D1 D2,
+    lc_set_gutyp D1 ->
+    lc_set_gutyp D2 ->
+    lc_set_gutyp (gutyp_arrow D1 D2)
+  | lc_set_gutyp_all_syn : forall D1,
+    (forall Xgt1 : gutypvar, lc_set_gutyp (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1))) ->
+    lc_set_gutyp (gutyp_all_syn D1)
+  | lc_set_gutyp_all_inh : forall D1,
+    (forall Xgt1 : gutypvar, lc_set_gutyp (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1))) ->
+    lc_set_gutyp (gutyp_all_inh D1)
+  | lc_set_gutyp_all_etag : forall ε1 D1,
+    (forall Xgt1 : gutypvar, lc_set_gutyp (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1))) ->
+    lc_set_gutyp (gutyp_all_etag ε1 D1).
 Scheme lc_gutyp_ind' := Induction for lc_gutyp Sort Prop.
 
 Combined Scheme lc_gutyp_mutind from lc_gutyp_ind'.
@@ -852,7 +852,7 @@ Definition body_utyp_wrt_utyp C1 := forall Xut1, lc_utyp (open_utyp_wrt_utyp C1 
 
 #[export] Hint Unfold body_utyp_wrt_utyp : core.
 
-Definition body_gutyp_wrt_gutyp G1 := forall Xgt1, lc_gutyp (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1)).
+Definition body_gutyp_wrt_gutyp D1 := forall Xgt1, lc_gutyp (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1)).
 
 #[export] Hint Unfold body_gutyp_wrt_gutyp : core.
 
@@ -960,7 +960,7 @@ Qed.
 (* begin hide *)
 
 Lemma size_gutyp_min_mutual :
-(forall G1, 1 <= size_gutyp G1).
+(forall D1, 1 <= size_gutyp D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -969,7 +969,7 @@ Qed.
 (* end hide *)
 
 Lemma size_gutyp_min :
-forall G1, 1 <= size_gutyp G1.
+forall D1, 1 <= size_gutyp D1.
 Proof.
 pose proof size_gutyp_min_mutual as H; intuition eauto.
 Qed.
@@ -1152,8 +1152,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_gutyp_close_gutyp_wrt_gutyp_rec_mutual :
-(forall G1 Xgt1 n1,
-  size_gutyp (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1) = size_gutyp G1).
+(forall D1 Xgt1 n1,
+  size_gutyp (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1) = size_gutyp D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -1164,8 +1164,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_gutyp_close_gutyp_wrt_gutyp_rec :
-forall G1 Xgt1 n1,
-  size_gutyp (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1) = size_gutyp G1.
+forall D1 Xgt1 n1,
+  size_gutyp (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1) = size_gutyp D1.
 Proof.
 pose proof size_gutyp_close_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -1336,8 +1336,8 @@ Qed.
 #[export] Hint Rewrite size_utyp_close_utyp_wrt_utyp using solve [auto] : lngen.
 
 Lemma size_gutyp_close_gutyp_wrt_gutyp :
-forall G1 Xgt1,
-  size_gutyp (close_gutyp_wrt_gutyp Xgt1 G1) = size_gutyp G1.
+forall D1 Xgt1,
+  size_gutyp (close_gutyp_wrt_gutyp Xgt1 D1) = size_gutyp D1.
 Proof.
 unfold close_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -1473,8 +1473,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_gutyp_open_gutyp_wrt_gutyp_rec_mutual :
-(forall G1 G2 n1,
-  size_gutyp G1 <= size_gutyp (open_gutyp_wrt_gutyp_rec n1 G2 G1)).
+(forall D1 D2 n1,
+  size_gutyp D1 <= size_gutyp (open_gutyp_wrt_gutyp_rec n1 D2 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -1485,8 +1485,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_gutyp_open_gutyp_wrt_gutyp_rec :
-forall G1 G2 n1,
-  size_gutyp G1 <= size_gutyp (open_gutyp_wrt_gutyp_rec n1 G2 G1).
+forall D1 D2 n1,
+  size_gutyp D1 <= size_gutyp (open_gutyp_wrt_gutyp_rec n1 D2 D1).
 Proof.
 pose proof size_gutyp_open_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -1648,8 +1648,8 @@ Qed.
 #[export] Hint Resolve size_utyp_open_utyp_wrt_utyp : lngen.
 
 Lemma size_gutyp_open_gutyp_wrt_gutyp :
-forall G1 G2,
-  size_gutyp G1 <= size_gutyp (open_gutyp_wrt_gutyp G1 G2).
+forall D1 D2,
+  size_gutyp D1 <= size_gutyp (open_gutyp_wrt_gutyp D1 D2).
 Proof.
 unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -1782,8 +1782,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_gutyp_open_gutyp_wrt_gutyp_rec_var_mutual :
-(forall G1 Xgt1 n1,
-  size_gutyp (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G1) = size_gutyp G1).
+(forall D1 Xgt1 n1,
+  size_gutyp (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D1) = size_gutyp D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -1794,8 +1794,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_gutyp_open_gutyp_wrt_gutyp_rec_var :
-forall G1 Xgt1 n1,
-  size_gutyp (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G1) = size_gutyp G1.
+forall D1 Xgt1 n1,
+  size_gutyp (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D1) = size_gutyp D1.
 Proof.
 pose proof size_gutyp_open_gutyp_wrt_gutyp_rec_var_mutual as H; intuition eauto.
 Qed.
@@ -1966,8 +1966,8 @@ Qed.
 #[export] Hint Rewrite size_utyp_open_utyp_wrt_utyp_var using solve [auto] : lngen.
 
 Lemma size_gutyp_open_gutyp_wrt_gutyp_var :
-forall G1 Xgt1,
-  size_gutyp (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1)) = size_gutyp G1.
+forall D1 Xgt1,
+  size_gutyp (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1)) = size_gutyp D1.
 Proof.
 unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -2104,9 +2104,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_S_mutual :
-(forall n1 G1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  degree_gutyp_wrt_gutyp (S n1) G1).
+(forall n1 D1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  degree_gutyp_wrt_gutyp (S n1) D1).
 Proof.
 apply_mutual_ind degree_gutyp_wrt_gutyp_mutind;
 default_simp.
@@ -2115,9 +2115,9 @@ Qed.
 (* end hide *)
 
 Lemma degree_gutyp_wrt_gutyp_S :
-forall n1 G1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  degree_gutyp_wrt_gutyp (S n1) G1.
+forall n1 D1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  degree_gutyp_wrt_gutyp (S n1) D1.
 Proof.
 pose proof degree_gutyp_wrt_gutyp_S_mutual as H; intuition eauto.
 Qed.
@@ -2270,9 +2270,9 @@ Qed.
 #[export] Hint Resolve degree_utyp_wrt_utyp_O : lngen.
 
 Lemma degree_gutyp_wrt_gutyp_O :
-forall n1 G1,
-  degree_gutyp_wrt_gutyp O G1 ->
-  degree_gutyp_wrt_gutyp n1 G1.
+forall n1 D1,
+  degree_gutyp_wrt_gutyp O D1 ->
+  degree_gutyp_wrt_gutyp n1 D1.
 Proof.
 induction n1; default_simp.
 Qed.
@@ -2413,9 +2413,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp_rec_mutual :
-(forall G1 Xgt1 n1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  degree_gutyp_wrt_gutyp (S n1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1)).
+(forall D1 Xgt1 n1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  degree_gutyp_wrt_gutyp (S n1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -2426,9 +2426,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp_rec :
-forall G1 Xgt1 n1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  degree_gutyp_wrt_gutyp (S n1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1).
+forall D1 Xgt1 n1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  degree_gutyp_wrt_gutyp (S n1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1).
 Proof.
 pose proof degree_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -2657,9 +2657,9 @@ Qed.
 #[export] Hint Resolve degree_utyp_wrt_utyp_close_utyp_wrt_utyp : lngen.
 
 Lemma degree_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp :
-forall G1 Xgt1,
-  degree_gutyp_wrt_gutyp 0 G1 ->
-  degree_gutyp_wrt_gutyp 1 (close_gutyp_wrt_gutyp Xgt1 G1).
+forall D1 Xgt1,
+  degree_gutyp_wrt_gutyp 0 D1 ->
+  degree_gutyp_wrt_gutyp 1 (close_gutyp_wrt_gutyp Xgt1 D1).
 Proof.
 unfold close_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -2820,9 +2820,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp_rec_inv_mutual :
-(forall G1 Xgt1 n1,
-  degree_gutyp_wrt_gutyp (S n1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1) ->
-  degree_gutyp_wrt_gutyp n1 G1).
+(forall D1 Xgt1 n1,
+  degree_gutyp_wrt_gutyp (S n1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1) ->
+  degree_gutyp_wrt_gutyp n1 D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; eauto with lngen.
@@ -2833,9 +2833,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp_rec_inv :
-forall G1 Xgt1 n1,
-  degree_gutyp_wrt_gutyp (S n1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1) ->
-  degree_gutyp_wrt_gutyp n1 G1.
+forall D1 Xgt1 n1,
+  degree_gutyp_wrt_gutyp (S n1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1) ->
+  degree_gutyp_wrt_gutyp n1 D1.
 Proof.
 pose proof degree_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp_rec_inv_mutual as H; intuition eauto.
 Qed.
@@ -3064,9 +3064,9 @@ Qed.
 #[export] Hint Immediate degree_utyp_wrt_utyp_close_utyp_wrt_utyp_inv : lngen.
 
 Lemma degree_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp_inv :
-forall G1 Xgt1,
-  degree_gutyp_wrt_gutyp 1 (close_gutyp_wrt_gutyp Xgt1 G1) ->
-  degree_gutyp_wrt_gutyp 0 G1.
+forall D1 Xgt1,
+  degree_gutyp_wrt_gutyp 1 (close_gutyp_wrt_gutyp Xgt1 D1) ->
+  degree_gutyp_wrt_gutyp 0 D1.
 Proof.
 unfold close_gutyp_wrt_gutyp; eauto with lngen.
 Qed.
@@ -3233,10 +3233,10 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp_rec_mutual :
-(forall G1 G2 n1,
-  degree_gutyp_wrt_gutyp (S n1) G1 ->
-  degree_gutyp_wrt_gutyp n1 G2 ->
-  degree_gutyp_wrt_gutyp n1 (open_gutyp_wrt_gutyp_rec n1 G2 G1)).
+(forall D1 D2 n1,
+  degree_gutyp_wrt_gutyp (S n1) D1 ->
+  degree_gutyp_wrt_gutyp n1 D2 ->
+  degree_gutyp_wrt_gutyp n1 (open_gutyp_wrt_gutyp_rec n1 D2 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -3247,10 +3247,10 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp_rec :
-forall G1 G2 n1,
-  degree_gutyp_wrt_gutyp (S n1) G1 ->
-  degree_gutyp_wrt_gutyp n1 G2 ->
-  degree_gutyp_wrt_gutyp n1 (open_gutyp_wrt_gutyp_rec n1 G2 G1).
+forall D1 D2 n1,
+  degree_gutyp_wrt_gutyp (S n1) D1 ->
+  degree_gutyp_wrt_gutyp n1 D2 ->
+  degree_gutyp_wrt_gutyp n1 (open_gutyp_wrt_gutyp_rec n1 D2 D1).
 Proof.
 pose proof degree_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -3494,10 +3494,10 @@ Qed.
 #[export] Hint Resolve degree_utyp_wrt_utyp_open_utyp_wrt_utyp : lngen.
 
 Lemma degree_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp :
-forall G1 G2,
-  degree_gutyp_wrt_gutyp 1 G1 ->
-  degree_gutyp_wrt_gutyp 0 G2 ->
-  degree_gutyp_wrt_gutyp 0 (open_gutyp_wrt_gutyp G1 G2).
+forall D1 D2,
+  degree_gutyp_wrt_gutyp 1 D1 ->
+  degree_gutyp_wrt_gutyp 0 D2 ->
+  degree_gutyp_wrt_gutyp 0 (open_gutyp_wrt_gutyp D1 D2).
 Proof.
 unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -3664,9 +3664,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp_rec_inv_mutual :
-(forall G1 G2 n1,
-  degree_gutyp_wrt_gutyp n1 (open_gutyp_wrt_gutyp_rec n1 G2 G1) ->
-  degree_gutyp_wrt_gutyp (S n1) G1).
+(forall D1 D2 n1,
+  degree_gutyp_wrt_gutyp n1 (open_gutyp_wrt_gutyp_rec n1 D2 D1) ->
+  degree_gutyp_wrt_gutyp (S n1) D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; eauto with lngen.
@@ -3677,9 +3677,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp_rec_inv :
-forall G1 G2 n1,
-  degree_gutyp_wrt_gutyp n1 (open_gutyp_wrt_gutyp_rec n1 G2 G1) ->
-  degree_gutyp_wrt_gutyp (S n1) G1.
+forall D1 D2 n1,
+  degree_gutyp_wrt_gutyp n1 (open_gutyp_wrt_gutyp_rec n1 D2 D1) ->
+  degree_gutyp_wrt_gutyp (S n1) D1.
 Proof.
 pose proof degree_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp_rec_inv_mutual as H; intuition eauto.
 Qed.
@@ -3908,9 +3908,9 @@ Qed.
 #[export] Hint Immediate degree_utyp_wrt_utyp_open_utyp_wrt_utyp_inv : lngen.
 
 Lemma degree_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp_inv :
-forall G1 G2,
-  degree_gutyp_wrt_gutyp 0 (open_gutyp_wrt_gutyp G1 G2) ->
-  degree_gutyp_wrt_gutyp 1 G1.
+forall D1 D2,
+  degree_gutyp_wrt_gutyp 0 (open_gutyp_wrt_gutyp D1 D2) ->
+  degree_gutyp_wrt_gutyp 1 D1.
 Proof.
 unfold open_gutyp_wrt_gutyp; eauto with lngen.
 Qed.
@@ -4087,9 +4087,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_gutyp_wrt_gutyp_rec_inj_mutual :
-(forall G1 G2 Xgt1 n1,
-  close_gutyp_wrt_gutyp_rec n1 Xgt1 G1 = close_gutyp_wrt_gutyp_rec n1 Xgt1 G2 ->
-  G1 = G2).
+(forall D1 D2 Xgt1 n1,
+  close_gutyp_wrt_gutyp_rec n1 Xgt1 D1 = close_gutyp_wrt_gutyp_rec n1 Xgt1 D2 ->
+  D1 = D2).
 Proof.
 apply_mutual_ind gutyp_mutind;
 intros; match goal with
@@ -4103,9 +4103,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_gutyp_wrt_gutyp_rec_inj :
-forall G1 G2 Xgt1 n1,
-  close_gutyp_wrt_gutyp_rec n1 Xgt1 G1 = close_gutyp_wrt_gutyp_rec n1 Xgt1 G2 ->
-  G1 = G2.
+forall D1 D2 Xgt1 n1,
+  close_gutyp_wrt_gutyp_rec n1 Xgt1 D1 = close_gutyp_wrt_gutyp_rec n1 Xgt1 D2 ->
+  D1 = D2.
 Proof.
 pose proof close_gutyp_wrt_gutyp_rec_inj_mutual as H; intuition eauto.
 Qed.
@@ -4295,9 +4295,9 @@ Qed.
 #[export] Hint Immediate close_utyp_wrt_utyp_inj : lngen.
 
 Lemma close_gutyp_wrt_gutyp_inj :
-forall G1 G2 Xgt1,
-  close_gutyp_wrt_gutyp Xgt1 G1 = close_gutyp_wrt_gutyp Xgt1 G2 ->
-  G1 = G2.
+forall D1 D2 Xgt1,
+  close_gutyp_wrt_gutyp Xgt1 D1 = close_gutyp_wrt_gutyp Xgt1 D2 ->
+  D1 = D2.
 Proof.
 unfold close_gutyp_wrt_gutyp; eauto with lngen.
 Qed.
@@ -4441,9 +4441,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_gutyp_wrt_gutyp_rec_open_gutyp_wrt_gutyp_rec_mutual :
-(forall G1 Xgt1 n1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  close_gutyp_wrt_gutyp_rec n1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G1) = G1).
+(forall D1 Xgt1 n1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  close_gutyp_wrt_gutyp_rec n1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D1) = D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -4454,9 +4454,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_gutyp_wrt_gutyp_rec_open_gutyp_wrt_gutyp_rec :
-forall G1 Xgt1 n1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  close_gutyp_wrt_gutyp_rec n1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G1) = G1.
+forall D1 Xgt1 n1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  close_gutyp_wrt_gutyp_rec n1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D1) = D1.
 Proof.
 pose proof close_gutyp_wrt_gutyp_rec_open_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -4640,9 +4640,9 @@ Qed.
 #[export] Hint Rewrite close_utyp_wrt_utyp_open_utyp_wrt_utyp using solve [auto] : lngen.
 
 Lemma close_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp :
-forall G1 Xgt1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  close_gutyp_wrt_gutyp Xgt1 (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1)) = G1.
+forall D1 Xgt1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  close_gutyp_wrt_gutyp Xgt1 (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1)) = D1.
 Proof.
 unfold close_gutyp_wrt_gutyp; unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -4786,8 +4786,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_gutyp_wrt_gutyp_rec_close_gutyp_wrt_gutyp_rec_mutual :
-(forall G1 Xgt1 n1,
-  open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1) = G1).
+(forall D1 Xgt1 n1,
+  open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1) = D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -4798,8 +4798,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_gutyp_wrt_gutyp_rec_close_gutyp_wrt_gutyp_rec :
-forall G1 Xgt1 n1,
-  open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1) = G1.
+forall D1 Xgt1 n1,
+  open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1) = D1.
 Proof.
 pose proof open_gutyp_wrt_gutyp_rec_close_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -4970,8 +4970,8 @@ Qed.
 #[export] Hint Rewrite open_utyp_wrt_utyp_close_utyp_wrt_utyp using solve [auto] : lngen.
 
 Lemma open_gutyp_wrt_gutyp_close_gutyp_wrt_gutyp :
-forall G1 Xgt1,
-  open_gutyp_wrt_gutyp (close_gutyp_wrt_gutyp Xgt1 G1) (gutyp_var_f Xgt1) = G1.
+forall D1 Xgt1,
+  open_gutyp_wrt_gutyp (close_gutyp_wrt_gutyp Xgt1 D1) (gutyp_var_f Xgt1) = D1.
 Proof.
 unfold close_gutyp_wrt_gutyp; unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -5134,11 +5134,11 @@ Qed.
 (* begin hide *)
 
 Lemma open_gutyp_wrt_gutyp_rec_inj_mutual :
-(forall G2 G1 Xgt1 n1,
-  Xgt1 `notin` ftvar_in_gutyp G2 ->
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G2 = open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G1 ->
-  G2 = G1).
+(forall D2 D1 Xgt1 n1,
+  Xgt1 `notin` ftvar_in_gutyp D2 ->
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D2 = open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D1 ->
+  D2 = D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 intros; match goal with
@@ -5152,11 +5152,11 @@ Qed.
 (* begin hide *)
 
 Lemma open_gutyp_wrt_gutyp_rec_inj :
-forall G2 G1 Xgt1 n1,
-  Xgt1 `notin` ftvar_in_gutyp G2 ->
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G2 = open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G1 ->
-  G2 = G1.
+forall D2 D1 Xgt1 n1,
+  Xgt1 `notin` ftvar_in_gutyp D2 ->
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D2 = open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D1 ->
+  D2 = D1.
 Proof.
 pose proof open_gutyp_wrt_gutyp_rec_inj_mutual as H; intuition eauto.
 Qed.
@@ -5372,11 +5372,11 @@ Qed.
 #[export] Hint Immediate open_utyp_wrt_utyp_inj : lngen.
 
 Lemma open_gutyp_wrt_gutyp_inj :
-forall G2 G1 Xgt1,
-  Xgt1 `notin` ftvar_in_gutyp G2 ->
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  open_gutyp_wrt_gutyp G2 (gutyp_var_f Xgt1) = open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1) ->
-  G2 = G1.
+forall D2 D1 Xgt1,
+  Xgt1 `notin` ftvar_in_gutyp D2 ->
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  open_gutyp_wrt_gutyp D2 (gutyp_var_f Xgt1) = open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1) ->
+  D2 = D1.
 Proof.
 unfold open_gutyp_wrt_gutyp; eauto with lngen.
 Qed.
@@ -5537,9 +5537,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_gutyp_wrt_gutyp_of_lc_gutyp_mutual :
-(forall G1,
-  lc_gutyp G1 ->
-  degree_gutyp_wrt_gutyp 0 G1).
+(forall D1,
+  lc_gutyp D1 ->
+  degree_gutyp_wrt_gutyp 0 D1).
 Proof.
 apply_mutual_ind lc_gutyp_mutind;
 intros;
@@ -5553,9 +5553,9 @@ Qed.
 (* end hide *)
 
 Lemma degree_gutyp_wrt_gutyp_of_lc_gutyp :
-forall G1,
-  lc_gutyp G1 ->
-  degree_gutyp_wrt_gutyp 0 G1.
+forall D1,
+  lc_gutyp D1 ->
+  degree_gutyp_wrt_gutyp 0 D1.
 Proof.
 pose proof degree_gutyp_wrt_gutyp_of_lc_gutyp_mutual as H; intuition eauto.
 Qed.
@@ -5822,10 +5822,10 @@ Qed.
 
 Lemma lc_gutyp_of_degree_size_mutual :
 forall i1,
-(forall G1,
-  size_gutyp G1 = i1 ->
-  degree_gutyp_wrt_gutyp 0 G1 ->
-  lc_gutyp G1).
+(forall D1,
+  size_gutyp D1 = i1 ->
+  degree_gutyp_wrt_gutyp 0 D1 ->
+  lc_gutyp D1).
 Proof.
 intros i1; pattern i1; apply lt_wf_rec;
 clear i1; intros i1 H1;
@@ -5845,12 +5845,12 @@ Qed.
 (* end hide *)
 
 Lemma lc_gutyp_of_degree :
-forall G1,
-  degree_gutyp_wrt_gutyp 0 G1 ->
-  lc_gutyp G1.
+forall D1,
+  degree_gutyp_wrt_gutyp 0 D1 ->
+  lc_gutyp D1.
 Proof.
-intros G1; intros;
-pose proof (lc_gutyp_of_degree_size_mutual (size_gutyp G1));
+intros D1; intros;
+pose proof (lc_gutyp_of_degree_size_mutual (size_gutyp D1));
 intuition eauto.
 Qed.
 
@@ -6106,25 +6106,25 @@ intros; utyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_gutyp_all_syn_exists :
-forall Xgt1 G1,
-  lc_gutyp (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1)) ->
-  lc_gutyp (gutyp_all_syn G1).
+forall Xgt1 D1,
+  lc_gutyp (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1)) ->
+  lc_gutyp (gutyp_all_syn D1).
 Proof.
 intros; gutyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_gutyp_all_inh_exists :
-forall Xgt1 G1,
-  lc_gutyp (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1)) ->
-  lc_gutyp (gutyp_all_inh G1).
+forall Xgt1 D1,
+  lc_gutyp (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1)) ->
+  lc_gutyp (gutyp_all_inh D1).
 Proof.
 intros; gutyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_gutyp_all_etag_exists :
-forall Xgt1 ε1 G1,
-  lc_gutyp (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1)) ->
-  lc_gutyp (gutyp_all_etag ε1 G1).
+forall Xgt1 ε1 D1,
+  lc_gutyp (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1)) ->
+  lc_gutyp (gutyp_all_etag ε1 D1).
 Proof.
 intros; gutyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
@@ -6313,10 +6313,10 @@ Qed.
 #[export] Hint Resolve lc_body_utyp_wrt_utyp : lngen.
 
 Lemma lc_body_gutyp_wrt_gutyp :
-forall G1 G2,
-  body_gutyp_wrt_gutyp G1 ->
-  lc_gutyp G2 ->
-  lc_gutyp (open_gutyp_wrt_gutyp G1 G2).
+forall D1 D2,
+  body_gutyp_wrt_gutyp D1 ->
+  lc_gutyp D2 ->
+  lc_gutyp (open_gutyp_wrt_gutyp D1 D2).
 Proof.
 unfold body_gutyp_wrt_gutyp;
 default_simp;
@@ -6465,9 +6465,9 @@ Qed.
 #[export] Hint Resolve lc_body_utyp_all_etag_2 : lngen.
 
 Lemma lc_body_gutyp_all_syn_1 :
-forall G1,
-  lc_gutyp (gutyp_all_syn G1) ->
-  body_gutyp_wrt_gutyp G1.
+forall D1,
+  lc_gutyp (gutyp_all_syn D1) ->
+  body_gutyp_wrt_gutyp D1.
 Proof.
 default_simp.
 Qed.
@@ -6475,9 +6475,9 @@ Qed.
 #[export] Hint Resolve lc_body_gutyp_all_syn_1 : lngen.
 
 Lemma lc_body_gutyp_all_inh_1 :
-forall G1,
-  lc_gutyp (gutyp_all_inh G1) ->
-  body_gutyp_wrt_gutyp G1.
+forall D1,
+  lc_gutyp (gutyp_all_inh D1) ->
+  body_gutyp_wrt_gutyp D1.
 Proof.
 default_simp.
 Qed.
@@ -6485,9 +6485,9 @@ Qed.
 #[export] Hint Resolve lc_body_gutyp_all_inh_1 : lngen.
 
 Lemma lc_body_gutyp_all_etag_2 :
-forall ε1 G1,
-  lc_gutyp (gutyp_all_etag ε1 G1) ->
-  body_gutyp_wrt_gutyp G1.
+forall ε1 D1,
+  lc_gutyp (gutyp_all_etag ε1 D1) ->
+  body_gutyp_wrt_gutyp D1.
 Proof.
 default_simp.
 Qed.
@@ -6633,7 +6633,7 @@ Qed.
 (* begin hide *)
 
 Lemma lc_gutyp_unique_mutual :
-(forall G1 (proof2 proof3 : lc_gutyp G1), proof2 = proof3).
+(forall D1 (proof2 proof3 : lc_gutyp D1), proof2 = proof3).
 Proof.
 apply_mutual_ind lc_gutyp_mutind;
 intros;
@@ -6645,7 +6645,7 @@ Qed.
 (* end hide *)
 
 Lemma lc_gutyp_unique :
-forall G1 (proof2 proof3 : lc_gutyp G1), proof2 = proof3.
+forall D1 (proof2 proof3 : lc_gutyp D1), proof2 = proof3.
 Proof.
 pose proof lc_gutyp_unique_mutual as H; intuition eauto.
 Qed.
@@ -6800,7 +6800,7 @@ Qed.
 (* begin hide *)
 
 Lemma lc_gutyp_of_lc_set_gutyp_mutual :
-(forall G1, lc_set_gutyp G1 -> lc_gutyp G1).
+(forall D1, lc_set_gutyp D1 -> lc_gutyp D1).
 Proof.
 apply_mutual_ind lc_set_gutyp_mutind;
 default_simp.
@@ -6809,7 +6809,7 @@ Qed.
 (* end hide *)
 
 Lemma lc_gutyp_of_lc_set_gutyp :
-forall G1, lc_set_gutyp G1 -> lc_gutyp G1.
+forall D1, lc_set_gutyp D1 -> lc_gutyp D1.
 Proof.
 pose proof lc_gutyp_of_lc_set_gutyp_mutual as H; intuition eauto.
 Qed.
@@ -7019,10 +7019,10 @@ Qed.
 
 Lemma lc_set_gutyp_of_lc_gutyp_size_mutual :
 forall i1,
-(forall G1,
-  size_gutyp G1 = i1 ->
-  lc_gutyp G1 ->
-  lc_set_gutyp G1).
+(forall D1,
+  size_gutyp D1 = i1 ->
+  lc_gutyp D1 ->
+  lc_set_gutyp D1).
 Proof.
 intros i1; pattern i1; apply lt_wf_rec;
 clear i1; intros i1 H1;
@@ -7045,12 +7045,12 @@ Qed.
 (* end hide *)
 
 Lemma lc_set_gutyp_of_lc_gutyp :
-forall G1,
-  lc_gutyp G1 ->
-  lc_set_gutyp G1.
+forall D1,
+  lc_gutyp D1 ->
+  lc_set_gutyp D1.
 Proof.
-intros G1; intros;
-pose proof (lc_set_gutyp_of_lc_gutyp_size_mutual (size_gutyp G1));
+intros D1; intros;
+pose proof (lc_set_gutyp_of_lc_gutyp_size_mutual (size_gutyp D1));
 intuition eauto.
 Qed.
 
@@ -7321,10 +7321,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_gutyp_wrt_gutyp_rec_degree_gutyp_wrt_gutyp_mutual :
-(forall G1 Xgt1 n1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  close_gutyp_wrt_gutyp_rec n1 Xgt1 G1 = G1).
+(forall D1 Xgt1 n1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  close_gutyp_wrt_gutyp_rec n1 Xgt1 D1 = D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -7335,10 +7335,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_gutyp_wrt_gutyp_rec_degree_gutyp_wrt_gutyp :
-forall G1 Xgt1 n1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  close_gutyp_wrt_gutyp_rec n1 Xgt1 G1 = G1.
+forall D1 Xgt1 n1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  close_gutyp_wrt_gutyp_rec n1 Xgt1 D1 = D1.
 Proof.
 pose proof close_gutyp_wrt_gutyp_rec_degree_gutyp_wrt_gutyp_mutual as H; intuition eauto.
 Qed.
@@ -7535,10 +7535,10 @@ Qed.
 #[export] Hint Rewrite close_utyp_wrt_utyp_lc_utyp using solve [auto] : lngen.
 
 Lemma close_gutyp_wrt_gutyp_lc_gutyp :
-forall G1 Xgt1,
-  lc_gutyp G1 ->
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  close_gutyp_wrt_gutyp Xgt1 G1 = G1.
+forall D1 Xgt1,
+  lc_gutyp D1 ->
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  close_gutyp_wrt_gutyp Xgt1 D1 = D1.
 Proof.
 unfold close_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -7693,9 +7693,9 @@ Qed.
 (* begin hide *)
 
 Lemma open_gutyp_wrt_gutyp_rec_degree_gutyp_wrt_gutyp_mutual :
-(forall G2 G1 n1,
-  degree_gutyp_wrt_gutyp n1 G2 ->
-  open_gutyp_wrt_gutyp_rec n1 G1 G2 = G2).
+(forall D2 D1 n1,
+  degree_gutyp_wrt_gutyp n1 D2 ->
+  open_gutyp_wrt_gutyp_rec n1 D1 D2 = D2).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -7706,9 +7706,9 @@ Qed.
 (* begin hide *)
 
 Lemma open_gutyp_wrt_gutyp_rec_degree_gutyp_wrt_gutyp :
-forall G2 G1 n1,
-  degree_gutyp_wrt_gutyp n1 G2 ->
-  open_gutyp_wrt_gutyp_rec n1 G1 G2 = G2.
+forall D2 D1 n1,
+  degree_gutyp_wrt_gutyp n1 D2 ->
+  open_gutyp_wrt_gutyp_rec n1 D1 D2 = D2.
 Proof.
 pose proof open_gutyp_wrt_gutyp_rec_degree_gutyp_wrt_gutyp_mutual as H; intuition eauto.
 Qed.
@@ -7892,9 +7892,9 @@ Qed.
 #[export] Hint Rewrite open_utyp_wrt_utyp_lc_utyp using solve [auto] : lngen.
 
 Lemma open_gutyp_wrt_gutyp_lc_gutyp :
-forall G2 G1,
-  lc_gutyp G2 ->
-  open_gutyp_wrt_gutyp G2 G1 = G2.
+forall D2 D1,
+  lc_gutyp D2 ->
+  open_gutyp_wrt_gutyp D2 D1 = D2.
 Proof.
 unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -8045,8 +8045,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_close_gutyp_wrt_gutyp_rec_mutual :
-(forall G1 Xgt1 n1,
-  ftvar_in_gutyp (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1) [=] remove Xgt1 (ftvar_in_gutyp G1)).
+(forall D1 Xgt1 n1,
+  ftvar_in_gutyp (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1) [=] remove Xgt1 (ftvar_in_gutyp D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; fsetdec.
@@ -8057,8 +8057,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_close_gutyp_wrt_gutyp_rec :
-forall G1 Xgt1 n1,
-  ftvar_in_gutyp (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1) [=] remove Xgt1 (ftvar_in_gutyp G1).
+forall D1 Xgt1 n1,
+  ftvar_in_gutyp (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1) [=] remove Xgt1 (ftvar_in_gutyp D1).
 Proof.
 pose proof ftvar_in_gutyp_close_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -8281,8 +8281,8 @@ Qed.
 #[export] Hint Rewrite ftvar_in_utyp_close_utyp_wrt_utyp using solve [auto] : lngen.
 
 Lemma ftvar_in_gutyp_close_gutyp_wrt_gutyp :
-forall G1 Xgt1,
-  ftvar_in_gutyp (close_gutyp_wrt_gutyp Xgt1 G1) [=] remove Xgt1 (ftvar_in_gutyp G1).
+forall D1 Xgt1,
+  ftvar_in_gutyp (close_gutyp_wrt_gutyp Xgt1 D1) [=] remove Xgt1 (ftvar_in_gutyp D1).
 Proof.
 unfold close_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -8438,8 +8438,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_open_gutyp_wrt_gutyp_rec_lower_mutual :
-(forall G1 G2 n1,
-  ftvar_in_gutyp G1 [<=] ftvar_in_gutyp (open_gutyp_wrt_gutyp_rec n1 G2 G1)).
+(forall D1 D2 n1,
+  ftvar_in_gutyp D1 [<=] ftvar_in_gutyp (open_gutyp_wrt_gutyp_rec n1 D2 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; fsetdec.
@@ -8450,8 +8450,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_open_gutyp_wrt_gutyp_rec_lower :
-forall G1 G2 n1,
-  ftvar_in_gutyp G1 [<=] ftvar_in_gutyp (open_gutyp_wrt_gutyp_rec n1 G2 G1).
+forall D1 D2 n1,
+  ftvar_in_gutyp D1 [<=] ftvar_in_gutyp (open_gutyp_wrt_gutyp_rec n1 D2 D1).
 Proof.
 pose proof ftvar_in_gutyp_open_gutyp_wrt_gutyp_rec_lower_mutual as H; intuition eauto.
 Qed.
@@ -8663,8 +8663,8 @@ Qed.
 #[export] Hint Resolve ftvar_in_utyp_open_utyp_wrt_utyp_lower : lngen.
 
 Lemma ftvar_in_gutyp_open_gutyp_wrt_gutyp_lower :
-forall G1 G2,
-  ftvar_in_gutyp G1 [<=] ftvar_in_gutyp (open_gutyp_wrt_gutyp G1 G2).
+forall D1 D2,
+  ftvar_in_gutyp D1 [<=] ftvar_in_gutyp (open_gutyp_wrt_gutyp D1 D2).
 Proof.
 unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -8812,8 +8812,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_open_gutyp_wrt_gutyp_rec_upper_mutual :
-(forall G1 G2 n1,
-  ftvar_in_gutyp (open_gutyp_wrt_gutyp_rec n1 G2 G1) [<=] ftvar_in_gutyp G2 `union` ftvar_in_gutyp G1).
+(forall D1 D2 n1,
+  ftvar_in_gutyp (open_gutyp_wrt_gutyp_rec n1 D2 D1) [<=] ftvar_in_gutyp D2 `union` ftvar_in_gutyp D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; fsetdec.
@@ -8824,8 +8824,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_open_gutyp_wrt_gutyp_rec_upper :
-forall G1 G2 n1,
-  ftvar_in_gutyp (open_gutyp_wrt_gutyp_rec n1 G2 G1) [<=] ftvar_in_gutyp G2 `union` ftvar_in_gutyp G1.
+forall D1 D2 n1,
+  ftvar_in_gutyp (open_gutyp_wrt_gutyp_rec n1 D2 D1) [<=] ftvar_in_gutyp D2 `union` ftvar_in_gutyp D1.
 Proof.
 pose proof ftvar_in_gutyp_open_gutyp_wrt_gutyp_rec_upper_mutual as H; intuition eauto.
 Qed.
@@ -9037,8 +9037,8 @@ Qed.
 #[export] Hint Resolve ftvar_in_utyp_open_utyp_wrt_utyp_upper : lngen.
 
 Lemma ftvar_in_gutyp_open_gutyp_wrt_gutyp_upper :
-forall G1 G2,
-  ftvar_in_gutyp (open_gutyp_wrt_gutyp G1 G2) [<=] ftvar_in_gutyp G2 `union` ftvar_in_gutyp G1.
+forall D1 D2,
+  ftvar_in_gutyp (open_gutyp_wrt_gutyp D1 D2) [<=] ftvar_in_gutyp D2 `union` ftvar_in_gutyp D1.
 Proof.
 unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -9183,9 +9183,9 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_subst_gutyp_in_gutyp_fresh_mutual :
-(forall G1 G2 Xgt1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  ftvar_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1) [=] ftvar_in_gutyp G1).
+(forall D1 D2 Xgt1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  ftvar_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1) [=] ftvar_in_gutyp D1).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; fsetdec.
@@ -9194,9 +9194,9 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_gutyp_subst_gutyp_in_gutyp_fresh :
-forall G1 G2 Xgt1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  ftvar_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1) [=] ftvar_in_gutyp G1.
+forall D1 D2 Xgt1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  ftvar_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1) [=] ftvar_in_gutyp D1.
 Proof.
 pose proof ftvar_in_gutyp_subst_gutyp_in_gutyp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -9412,8 +9412,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_subst_gutyp_in_gutyp_lower_mutual :
-(forall G1 G2 Xgt1,
-  remove Xgt1 (ftvar_in_gutyp G1) [<=] ftvar_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1)).
+(forall D1 D2 Xgt1,
+  remove Xgt1 (ftvar_in_gutyp D1) [<=] ftvar_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; fsetdec.
@@ -9422,8 +9422,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_gutyp_subst_gutyp_in_gutyp_lower :
-forall G1 G2 Xgt1,
-  remove Xgt1 (ftvar_in_gutyp G1) [<=] ftvar_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1).
+forall D1 D2 Xgt1,
+  remove Xgt1 (ftvar_in_gutyp D1) [<=] ftvar_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1).
 Proof.
 pose proof ftvar_in_gutyp_subst_gutyp_in_gutyp_lower_mutual as H; intuition eauto.
 Qed.
@@ -9655,10 +9655,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_subst_gutyp_in_gutyp_notin_mutual :
-(forall G1 G2 Xgt1 Xgt2,
-  Xgt2 `notin` ftvar_in_gutyp G1 ->
-  Xgt2 `notin` ftvar_in_gutyp G2 ->
-  Xgt2 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1)).
+(forall D1 D2 Xgt1 Xgt2,
+  Xgt2 `notin` ftvar_in_gutyp D1 ->
+  Xgt2 `notin` ftvar_in_gutyp D2 ->
+  Xgt2 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; fsetdec.
@@ -9667,10 +9667,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_gutyp_subst_gutyp_in_gutyp_notin :
-forall G1 G2 Xgt1 Xgt2,
-  Xgt2 `notin` ftvar_in_gutyp G1 ->
-  Xgt2 `notin` ftvar_in_gutyp G2 ->
-  Xgt2 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1).
+forall D1 D2 Xgt1 Xgt2,
+  Xgt2 `notin` ftvar_in_gutyp D1 ->
+  Xgt2 `notin` ftvar_in_gutyp D2 ->
+  Xgt2 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1).
 Proof.
 pose proof ftvar_in_gutyp_subst_gutyp_in_gutyp_notin_mutual as H; intuition eauto.
 Qed.
@@ -9916,8 +9916,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_gutyp_subst_gutyp_in_gutyp_upper_mutual :
-(forall G1 G2 Xgt1,
-  ftvar_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1) [<=] ftvar_in_gutyp G2 `union` remove Xgt1 (ftvar_in_gutyp G1)).
+(forall D1 D2 Xgt1,
+  ftvar_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1) [<=] ftvar_in_gutyp D2 `union` remove Xgt1 (ftvar_in_gutyp D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp; fsetdec.
@@ -9926,8 +9926,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_gutyp_subst_gutyp_in_gutyp_upper :
-forall G1 G2 Xgt1,
-  ftvar_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1) [<=] ftvar_in_gutyp G2 `union` remove Xgt1 (ftvar_in_gutyp G1).
+forall D1 D2 Xgt1,
+  ftvar_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1) [<=] ftvar_in_gutyp D2 `union` remove Xgt1 (ftvar_in_gutyp D1).
 Proof.
 pose proof ftvar_in_gutyp_subst_gutyp_in_gutyp_upper_mutual as H; intuition eauto.
 Qed.
@@ -10172,11 +10172,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_close_gutyp_wrt_gutyp_rec_mutual :
-(forall G2 G1 Xgt1 Xgt2 n1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
+(forall D2 D1 Xgt1 Xgt2 n1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
   Xgt1 <> Xgt2 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (close_gutyp_wrt_gutyp_rec n1 Xgt2 G2) = close_gutyp_wrt_gutyp_rec n1 Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 G2)).
+  Xgt2 `notin` ftvar_in_gutyp D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (close_gutyp_wrt_gutyp_rec n1 Xgt2 D2) = close_gutyp_wrt_gutyp_rec n1 Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 D2)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -10185,11 +10185,11 @@ Qed.
 (* end hide *)
 
 Lemma subst_gutyp_in_gutyp_close_gutyp_wrt_gutyp_rec :
-forall G2 G1 Xgt1 Xgt2 n1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
+forall D2 D1 Xgt1 Xgt2 n1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
   Xgt1 <> Xgt2 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (close_gutyp_wrt_gutyp_rec n1 Xgt2 G2) = close_gutyp_wrt_gutyp_rec n1 Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 G2).
+  Xgt2 `notin` ftvar_in_gutyp D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (close_gutyp_wrt_gutyp_rec n1 Xgt2 D2) = close_gutyp_wrt_gutyp_rec n1 Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 D2).
 Proof.
 pose proof subst_gutyp_in_gutyp_close_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -10411,10 +10411,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_close_utyp_wrt_utyp : lngen.
 
 Lemma subst_gutyp_in_gutyp_close_gutyp_wrt_gutyp :
-forall G2 G1 Xgt1 Xgt2,
-  lc_gutyp G1 ->  Xgt1 <> Xgt2 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (close_gutyp_wrt_gutyp Xgt2 G2) = close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 G2).
+forall D2 D1 Xgt1 Xgt2,
+  lc_gutyp D1 ->  Xgt1 <> Xgt2 ->
+  Xgt2 `notin` ftvar_in_gutyp D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (close_gutyp_wrt_gutyp Xgt2 D2) = close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 D2).
 Proof.
 unfold close_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -10573,10 +10573,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_degree_gutyp_wrt_gutyp_mutual :
-(forall G1 G2 Xgt1 n1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  degree_gutyp_wrt_gutyp n1 G2 ->
-  degree_gutyp_wrt_gutyp n1 (subst_gutyp_in_gutyp G2 Xgt1 G1)).
+(forall D1 D2 Xgt1 n1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  degree_gutyp_wrt_gutyp n1 D2 ->
+  degree_gutyp_wrt_gutyp n1 (subst_gutyp_in_gutyp D2 Xgt1 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -10585,10 +10585,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_gutyp_in_gutyp_degree_gutyp_wrt_gutyp :
-forall G1 G2 Xgt1 n1,
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  degree_gutyp_wrt_gutyp n1 G2 ->
-  degree_gutyp_wrt_gutyp n1 (subst_gutyp_in_gutyp G2 Xgt1 G1).
+forall D1 D2 Xgt1 n1,
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  degree_gutyp_wrt_gutyp n1 D2 ->
+  degree_gutyp_wrt_gutyp n1 (subst_gutyp_in_gutyp D2 Xgt1 D1).
 Proof.
 pose proof subst_gutyp_in_gutyp_degree_gutyp_wrt_gutyp_mutual as H; intuition eauto.
 Qed.
@@ -10843,9 +10843,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_fresh_eq_mutual :
-(forall G2 G1 Xgt1,
-  Xgt1 `notin` ftvar_in_gutyp G2 ->
-  subst_gutyp_in_gutyp G1 Xgt1 G2 = G2).
+(forall D2 D1 Xgt1,
+  Xgt1 `notin` ftvar_in_gutyp D2 ->
+  subst_gutyp_in_gutyp D1 Xgt1 D2 = D2).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -10854,9 +10854,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_gutyp_in_gutyp_fresh_eq :
-forall G2 G1 Xgt1,
-  Xgt1 `notin` ftvar_in_gutyp G2 ->
-  subst_gutyp_in_gutyp G1 Xgt1 G2 = G2.
+forall D2 D1 Xgt1,
+  Xgt1 `notin` ftvar_in_gutyp D2 ->
+  subst_gutyp_in_gutyp D1 Xgt1 D2 = D2.
 Proof.
 pose proof subst_gutyp_in_gutyp_fresh_eq_mutual as H; intuition eauto.
 Qed.
@@ -11056,9 +11056,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_fresh_same_mutual :
-(forall G2 G1 Xgt1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  Xgt1 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp G1 Xgt1 G2)).
+(forall D2 D1 Xgt1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  Xgt1 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp D1 Xgt1 D2)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -11067,9 +11067,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_gutyp_in_gutyp_fresh_same :
-forall G2 G1 Xgt1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  Xgt1 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp G1 Xgt1 G2).
+forall D2 D1 Xgt1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  Xgt1 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp D1 Xgt1 D2).
 Proof.
 pose proof subst_gutyp_in_gutyp_fresh_same_mutual as H; intuition eauto.
 Qed.
@@ -11269,10 +11269,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_fresh_mutual :
-(forall G2 G1 Xgt1 Xgt2,
-  Xgt1 `notin` ftvar_in_gutyp G2 ->
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  Xgt1 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp G1 Xgt2 G2)).
+(forall D2 D1 Xgt1 Xgt2,
+  Xgt1 `notin` ftvar_in_gutyp D2 ->
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  Xgt1 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp D1 Xgt2 D2)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -11281,10 +11281,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_gutyp_in_gutyp_fresh :
-forall G2 G1 Xgt1 Xgt2,
-  Xgt1 `notin` ftvar_in_gutyp G2 ->
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  Xgt1 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp G1 Xgt2 G2).
+forall D2 D1 Xgt1 Xgt2,
+  Xgt1 `notin` ftvar_in_gutyp D2 ->
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  Xgt1 `notin` ftvar_in_gutyp (subst_gutyp_in_gutyp D1 Xgt2 D2).
 Proof.
 pose proof subst_gutyp_in_gutyp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -11450,10 +11450,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_lc_utyp : lngen.
 
 Lemma subst_gutyp_in_gutyp_lc_gutyp :
-forall G1 G2 Xgt1,
-  lc_gutyp G1 ->
-  lc_gutyp G2 ->
-  lc_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G1).
+forall D1 D2 Xgt1,
+  lc_gutyp D1 ->
+  lc_gutyp D2 ->
+  lc_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D1).
 Proof.
 default_simp.
 Qed.
@@ -11599,9 +11599,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_open_gutyp_wrt_gutyp_rec_mutual :
-(forall G3 G1 G2 Xgt1 n1,
-  lc_gutyp G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 G2 G3) = open_gutyp_wrt_gutyp_rec n1 (subst_gutyp_in_gutyp G1 Xgt1 G2) (subst_gutyp_in_gutyp G1 Xgt1 G3)).
+(forall D3 D1 D2 Xgt1 n1,
+  lc_gutyp D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 D2 D3) = open_gutyp_wrt_gutyp_rec n1 (subst_gutyp_in_gutyp D1 Xgt1 D2) (subst_gutyp_in_gutyp D1 Xgt1 D3)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -11612,9 +11612,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_open_gutyp_wrt_gutyp_rec :
-forall G3 G1 G2 Xgt1 n1,
-  lc_gutyp G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 G2 G3) = open_gutyp_wrt_gutyp_rec n1 (subst_gutyp_in_gutyp G1 Xgt1 G2) (subst_gutyp_in_gutyp G1 Xgt1 G3).
+forall D3 D1 D2 Xgt1 n1,
+  lc_gutyp D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 D2 D3) = open_gutyp_wrt_gutyp_rec n1 (subst_gutyp_in_gutyp D1 Xgt1 D2) (subst_gutyp_in_gutyp D1 Xgt1 D3).
 Proof.
 pose proof subst_gutyp_in_gutyp_open_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -11841,9 +11841,9 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_open_utyp_wrt_utyp : lngen.
 
 Lemma subst_gutyp_in_gutyp_open_gutyp_wrt_gutyp :
-forall G3 G1 G2 Xgt1,
-  lc_gutyp G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp G3 G2) = open_gutyp_wrt_gutyp (subst_gutyp_in_gutyp G1 Xgt1 G3) (subst_gutyp_in_gutyp G1 Xgt1 G2).
+forall D3 D1 D2 Xgt1,
+  lc_gutyp D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp D3 D2) = open_gutyp_wrt_gutyp (subst_gutyp_in_gutyp D1 Xgt1 D3) (subst_gutyp_in_gutyp D1 Xgt1 D2).
 Proof.
 unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -11953,10 +11953,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_open_utyp_wrt_utyp_var : lngen.
 
 Lemma subst_gutyp_in_gutyp_open_gutyp_wrt_gutyp_var :
-forall G2 G1 Xgt1 Xgt2,
+forall D2 D1 Xgt1 Xgt2,
   Xgt1 <> Xgt2 ->
-  lc_gutyp G1 ->
-  open_gutyp_wrt_gutyp (subst_gutyp_in_gutyp G1 Xgt1 G2) (gutyp_var_f Xgt2) = subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp G2 (gutyp_var_f Xgt2)).
+  lc_gutyp D1 ->
+  open_gutyp_wrt_gutyp (subst_gutyp_in_gutyp D1 Xgt1 D2) (gutyp_var_f Xgt2) = subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp D2 (gutyp_var_f Xgt2)).
 Proof.
 intros; rewrite subst_gutyp_in_gutyp_open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -12115,8 +12115,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_spec_rec_mutual :
-(forall G1 G2 Xgt1 n1,
-  subst_gutyp_in_gutyp G2 Xgt1 G1 = open_gutyp_wrt_gutyp_rec n1 G2 (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1)).
+(forall D1 D2 Xgt1 n1,
+  subst_gutyp_in_gutyp D2 Xgt1 D1 = open_gutyp_wrt_gutyp_rec n1 D2 (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -12127,8 +12127,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_spec_rec :
-forall G1 G2 Xgt1 n1,
-  subst_gutyp_in_gutyp G2 Xgt1 G1 = open_gutyp_wrt_gutyp_rec n1 G2 (close_gutyp_wrt_gutyp_rec n1 Xgt1 G1).
+forall D1 D2 Xgt1 n1,
+  subst_gutyp_in_gutyp D2 Xgt1 D1 = open_gutyp_wrt_gutyp_rec n1 D2 (close_gutyp_wrt_gutyp_rec n1 Xgt1 D1).
 Proof.
 pose proof subst_gutyp_in_gutyp_spec_rec_mutual as H; intuition eauto.
 Qed.
@@ -12290,8 +12290,8 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_spec : lngen.
 
 Lemma subst_gutyp_in_gutyp_spec :
-forall G1 G2 Xgt1,
-  subst_gutyp_in_gutyp G2 Xgt1 G1 = open_gutyp_wrt_gutyp (close_gutyp_wrt_gutyp Xgt1 G1) G2.
+forall D1 D2 Xgt1,
+  subst_gutyp_in_gutyp D2 Xgt1 D1 = open_gutyp_wrt_gutyp (close_gutyp_wrt_gutyp Xgt1 D1) D2.
 Proof.
 unfold close_gutyp_wrt_gutyp; unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -12421,10 +12421,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_subst_gutyp_in_gutyp_mutual :
-(forall G1 G2 G3 Xgt2 Xgt1,
-  Xgt2 `notin` ftvar_in_gutyp G2 ->
+(forall D1 D2 D3 Xgt2 Xgt1,
+  Xgt2 `notin` ftvar_in_gutyp D2 ->
   Xgt2 <> Xgt1 ->
-  subst_gutyp_in_gutyp G2 Xgt1 (subst_gutyp_in_gutyp G3 Xgt2 G1) = subst_gutyp_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G3) Xgt2 (subst_gutyp_in_gutyp G2 Xgt1 G1)).
+  subst_gutyp_in_gutyp D2 Xgt1 (subst_gutyp_in_gutyp D3 Xgt2 D1) = subst_gutyp_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D3) Xgt2 (subst_gutyp_in_gutyp D2 Xgt1 D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -12433,10 +12433,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_gutyp_in_gutyp_subst_gutyp_in_gutyp :
-forall G1 G2 G3 Xgt2 Xgt1,
-  Xgt2 `notin` ftvar_in_gutyp G2 ->
+forall D1 D2 D3 Xgt2 Xgt1,
+  Xgt2 `notin` ftvar_in_gutyp D2 ->
   Xgt2 <> Xgt1 ->
-  subst_gutyp_in_gutyp G2 Xgt1 (subst_gutyp_in_gutyp G3 Xgt2 G1) = subst_gutyp_in_gutyp (subst_gutyp_in_gutyp G2 Xgt1 G3) Xgt2 (subst_gutyp_in_gutyp G2 Xgt1 G1).
+  subst_gutyp_in_gutyp D2 Xgt1 (subst_gutyp_in_gutyp D3 Xgt2 D1) = subst_gutyp_in_gutyp (subst_gutyp_in_gutyp D2 Xgt1 D3) Xgt2 (subst_gutyp_in_gutyp D2 Xgt1 D1).
 Proof.
 pose proof subst_gutyp_in_gutyp_subst_gutyp_in_gutyp_mutual as H; intuition eauto.
 Qed.
@@ -12714,12 +12714,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_close_gutyp_wrt_gutyp_rec_open_gutyp_wrt_gutyp_rec_mutual :
-(forall G2 G1 Xgt1 Xgt2 n1,
-  Xgt2 `notin` ftvar_in_gutyp G2 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 ->
+(forall D2 D1 Xgt1 Xgt2 n1,
+  Xgt2 `notin` ftvar_in_gutyp D2 ->
+  Xgt2 `notin` ftvar_in_gutyp D1 ->
   Xgt2 <> Xgt1 ->
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 G2 = close_gutyp_wrt_gutyp_rec n1 Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt2) G2))).
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 D2 = close_gutyp_wrt_gutyp_rec n1 Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt2) D2))).
 Proof.
 apply_mutual_ind gutyp_mutrec;
 default_simp.
@@ -12730,12 +12730,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_close_gutyp_wrt_gutyp_rec_open_gutyp_wrt_gutyp_rec :
-forall G2 G1 Xgt1 Xgt2 n1,
-  Xgt2 `notin` ftvar_in_gutyp G2 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 ->
+forall D2 D1 Xgt1 Xgt2 n1,
+  Xgt2 `notin` ftvar_in_gutyp D2 ->
+  Xgt2 `notin` ftvar_in_gutyp D1 ->
   Xgt2 <> Xgt1 ->
-  degree_gutyp_wrt_gutyp n1 G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 G2 = close_gutyp_wrt_gutyp_rec n1 Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt2) G2)).
+  degree_gutyp_wrt_gutyp n1 D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 D2 = close_gutyp_wrt_gutyp_rec n1 Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt2) D2)).
 Proof.
 pose proof subst_gutyp_in_gutyp_close_gutyp_wrt_gutyp_rec_open_gutyp_wrt_gutyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -13007,12 +13007,12 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_close_utyp_wrt_utyp_open_utyp_wrt_utyp : lngen.
 
 Lemma subst_gutyp_in_gutyp_close_gutyp_wrt_gutyp_open_gutyp_wrt_gutyp :
-forall G2 G1 Xgt1 Xgt2,
-  Xgt2 `notin` ftvar_in_gutyp G2 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 ->
+forall D2 D1 Xgt1 Xgt2,
+  Xgt2 `notin` ftvar_in_gutyp D2 ->
+  Xgt2 `notin` ftvar_in_gutyp D1 ->
   Xgt2 <> Xgt1 ->
-  lc_gutyp G1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 G2 = close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp G2 (gutyp_var_f Xgt2))).
+  lc_gutyp D1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 D2 = close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp D2 (gutyp_var_f Xgt2))).
 Proof.
 unfold close_gutyp_wrt_gutyp; unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
@@ -13163,10 +13163,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_utyp_all_etag : lngen.
 
 Lemma subst_gutyp_in_gutyp_gutyp_all_syn :
-forall Xgt2 G2 G1 Xgt1,
-  lc_gutyp G1 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 `union` ftvar_in_gutyp G2 `union` singleton Xgt1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (gutyp_all_syn G2) = gutyp_all_syn (close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp G2 (gutyp_var_f Xgt2)))).
+forall Xgt2 D2 D1 Xgt1,
+  lc_gutyp D1 ->
+  Xgt2 `notin` ftvar_in_gutyp D1 `union` ftvar_in_gutyp D2 `union` singleton Xgt1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (gutyp_all_syn D2) = gutyp_all_syn (close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp D2 (gutyp_var_f Xgt2)))).
 Proof.
 default_simp.
 Qed.
@@ -13174,10 +13174,10 @@ Qed.
 #[export] Hint Resolve subst_gutyp_in_gutyp_gutyp_all_syn : lngen.
 
 Lemma subst_gutyp_in_gutyp_gutyp_all_inh :
-forall Xgt2 G2 G1 Xgt1,
-  lc_gutyp G1 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 `union` ftvar_in_gutyp G2 `union` singleton Xgt1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (gutyp_all_inh G2) = gutyp_all_inh (close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp G2 (gutyp_var_f Xgt2)))).
+forall Xgt2 D2 D1 Xgt1,
+  lc_gutyp D1 ->
+  Xgt2 `notin` ftvar_in_gutyp D1 `union` ftvar_in_gutyp D2 `union` singleton Xgt1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (gutyp_all_inh D2) = gutyp_all_inh (close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp D2 (gutyp_var_f Xgt2)))).
 Proof.
 default_simp.
 Qed.
@@ -13185,10 +13185,10 @@ Qed.
 #[export] Hint Resolve subst_gutyp_in_gutyp_gutyp_all_inh : lngen.
 
 Lemma subst_gutyp_in_gutyp_gutyp_all_etag :
-forall Xgt2 ε1 G2 G1 Xgt1,
-  lc_gutyp G1 ->
-  Xgt2 `notin` ftvar_in_gutyp G1 `union` ftvar_in_gutyp G2 `union` singleton Xgt1 ->
-  subst_gutyp_in_gutyp G1 Xgt1 (gutyp_all_etag ε1 G2) = gutyp_all_etag (ε1) (close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp G1 Xgt1 (open_gutyp_wrt_gutyp G2 (gutyp_var_f Xgt2)))).
+forall Xgt2 ε1 D2 D1 Xgt1,
+  lc_gutyp D1 ->
+  Xgt2 `notin` ftvar_in_gutyp D1 `union` ftvar_in_gutyp D2 `union` singleton Xgt1 ->
+  subst_gutyp_in_gutyp D1 Xgt1 (gutyp_all_etag ε1 D2) = gutyp_all_etag (ε1) (close_gutyp_wrt_gutyp Xgt2 (subst_gutyp_in_gutyp D1 Xgt1 (open_gutyp_wrt_gutyp D2 (gutyp_var_f Xgt2)))).
 Proof.
 default_simp.
 Qed.
@@ -13369,9 +13369,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_gutyp_in_gutyp_intro_rec_mutual :
-(forall G1 Xgt1 G2 n1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  open_gutyp_wrt_gutyp_rec n1 G2 G1 = subst_gutyp_in_gutyp G2 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G1)).
+(forall D1 Xgt1 D2 n1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  open_gutyp_wrt_gutyp_rec n1 D2 D1 = subst_gutyp_in_gutyp D2 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D1)).
 Proof.
 apply_mutual_ind gutyp_mutind;
 default_simp.
@@ -13380,9 +13380,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_gutyp_in_gutyp_intro_rec :
-forall G1 Xgt1 G2 n1,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  open_gutyp_wrt_gutyp_rec n1 G2 G1 = subst_gutyp_in_gutyp G2 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) G1).
+forall D1 Xgt1 D2 n1,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  open_gutyp_wrt_gutyp_rec n1 D2 D1 = subst_gutyp_in_gutyp D2 Xgt1 (open_gutyp_wrt_gutyp_rec n1 (gutyp_var_f Xgt1) D1).
 Proof.
 pose proof subst_gutyp_in_gutyp_intro_rec_mutual as H; intuition eauto.
 Qed.
@@ -13541,9 +13541,9 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_intro : lngen.
 
 Lemma subst_gutyp_in_gutyp_intro :
-forall Xgt1 G1 G2,
-  Xgt1 `notin` ftvar_in_gutyp G1 ->
-  open_gutyp_wrt_gutyp G1 G2 = subst_gutyp_in_gutyp G2 Xgt1 (open_gutyp_wrt_gutyp G1 (gutyp_var_f Xgt1)).
+forall Xgt1 D1 D2,
+  Xgt1 `notin` ftvar_in_gutyp D1 ->
+  open_gutyp_wrt_gutyp D1 D2 = subst_gutyp_in_gutyp D2 Xgt1 (open_gutyp_wrt_gutyp D1 (gutyp_var_f Xgt1)).
 Proof.
 unfold open_gutyp_wrt_gutyp; default_simp.
 Qed.
