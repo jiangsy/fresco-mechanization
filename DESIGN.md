@@ -274,6 +274,29 @@ around with a `Permutation`-quantified conclusion plus the
 `list_swap_middle` helper. Switching to multiset would simplify
 this; deferred decision.
 
+**Set semantics for `d_consis` (2026-05-23).** The paper's `Δ` is a *set*
+(`declarative.tex:818`): consistency `[Arrow]` combines tags by **set union**
+(no disjointness side-condition) and `[ForallInh]` by **idempotent** union (no
+freshness side-condition). The mechanized `d_consis` rules had been *stricter*
+— `list_disjoint Δ1 Δ2` on `d_consis__arrow` and `~ List.In ε Δ` on
+`d_consis__forall_inh_tagged` — which is exactly what made B.2 (consistency
+transitivity) un-provable: composing two derivations can legitimately reuse a
+tag, which a set absorbs but disjoint-`++` cannot. Both premises were
+**dropped** (paper-faithful set semantics). B.2 then closes with a **superset**
+conclusion `∃ Δc, incl (Δa ++ Δb) Δc ∧ …`: the superset is *not* slack but
+necessary — the **tagged→syn→inh** path (an etag-∀ syn-matched against the
+synthesised middle, then inh-matched against the target) mints a tag that is in
+the output but neither input. Conversely the middle MUST stay syn (an inh
+middle drops a recorded tag, breaking the superset) — and this is faithful,
+since the consistency-transitivity middle is always the LHS of the second
+consistency, hence synthesised. Proof uses an explicit witness *function*
+`compose_tags : utyp → btyp → list atom` (the output Δ as a function of the
+endpoints, invariant under the opening variable), which sidesteps the cofinite
+"different Δc per opening X" obstruction. The same superset shape now applies
+to B.4 (`d_sub_gen_trans{,_ti_lhs}`); `d_sub_gen_trans_btyp_nil` recovers the
+nil output for the etag-free `btyp_to_gutyp` LHS that the gen-typing `__sub`
+consumes.
+
 ### 4.3 Cofinite-quantification binders via lngen
 
 Standard locally-nameless mechanization. lngen generates `prop_ln.v`

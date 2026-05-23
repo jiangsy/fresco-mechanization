@@ -7,9 +7,16 @@ Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 **Spec:** [`docs/superpowers/specs/2026-05-10-frost-phase23-design.md`](../docs/superpowers/specs/2026-05-10-frost-phase23-design.md)
 
-## Status (current — 2026-05-20 split-syntax faithfulness audit)
+## Status (current — 2026-05-23 B.2 closed + B.4 tool layer)
 
 **Build:** 🟢 GREEN (`make coq -j 4`).
+
+**Latest (2026-05-23):** paper B.2 (`d_consis_compose`) is **Qed** with the
+faithful superset conclusion; the full consistency-composition tool layer for
+B.4 is Qed; D12 is reduced to one `admit` (function-mode `__embed`); the B.4
+lemmas (`d_sub_gen_trans{,_ti_lhs}`) were restated with superset output. See
+the 2026-05-23 entry in Part 2. The 2026-05-20 audit below remains the
+reference for flagship faithfulness.
 
 **Audit scope requested:** flagship statements only, especially
 general/generalised subsumption and algorithmic soundness/completeness.
@@ -325,9 +332,9 @@ files:
 | `prop_typing.v` | 6 | `d_typing_swap_mono`, `d_typing_app_restructure`, `d_typing_order_irrel_adj`, `E1_intro`, `E1_elim`, `E1_roundtrip` |
 | `typing/prop_weakening.v` | 3 | `d_typing_pat_subst_typ_mut`, `d_typing_narrowing` (D1 done; blocked on `d_sub_complete`), `d_typing_narrow_consis` |
 | `typing/def_gen.v` | 1 | `d_typing_gen_collapse` |
-| `typing/prop_subsumption_aux.v` | 1 | `d_sub_gen_trans` |
-| `typing/prop_general_subsumption.v` | 2 | `d_typing_general_subsumption_gen`, `d_typing_general_subsumption` |
-| `subtyping/prop_consis_trans.v` | 1 | `d_consis_compose` |
+| `typing/prop_subsumption_aux.v` | 4 | `d_consis_gen_trans` (B.2-gen, OFF the D1/D12 path), `d_sub_gen_trans_ti_lhs`, `d_sub_gen_trans`, `d_sub_gen_trans_btyp_nil` — **`d_consis_compose` (B.2) now Qed here**, with full tool layer (`compose_tags*`, `d_consis_compose_syn{,_nil}`, `btyp_to_gutyp_syn_eq`, round-trip lemmas) Qed |
+| `typing/prop_general_subsumption.v` | 2 | `d_typing_general_subsumption_gen` (D12 — only the function-mode `__embed` admit remains), `d_typing_general_subsumption` (D1) |
+| `subtyping/prop_consis_trans.v` | 1 | `d_consis_compose` (redundant Admitted copy; the live B.2 is the Qed one in `prop_subsumption_aux.v`) |
 | `subtyping/prop_consis_sub_trans.v` | 1 | `d_consis_sub_trans` |
 | `prop_subtyping.v` | 1 | `d_typing_sub_compose` |
 | `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` (paper-flagged) |
@@ -345,6 +352,65 @@ files:
 # Part 2: Daily progress
 
 Session-by-session closure log. Most recent first.
+
+## 2026-05-23 — B.2 closed + B.4 tool layer + D12/B.4 statements corrected
+
+**Build:** 🟢 GREEN (`make coq`) throughout.
+
+**1. Consistency tag context made paper-faithful (set semantics).** The
+paper's `Δ` is a *set* (`declarative.tex:818`): consistency `[Arrow]` uses
+set union (no disjointness) and `[ForallInh]` idempotent union (no
+freshness). The Coq `d_consis` rules carried *stricter* artifacts —
+`list_disjoint Δ1 Δ2` on `d_consis__arrow` and `~ List.In ε Δ` on
+`d_consis__forall_inh_tagged`. Both **dropped** (in `decl/def_extra.v`).
+Audit-confirmed safe: `d_consis__arrow` was constructed in one proof only;
+`d_consis__forall_inh_tagged` in none; D1/D12 never invert `d_consis`.
+
+**2. B.2 `d_consis_compose` CLOSED (Qed)** in `prop_subsumption_aux.v`,
+with the **superset** conclusion `∃ Δc, incl (Δa ++ Δb) Δc ∧ Δc ⨟ Γ ⊨ C ≈ B`.
+The superset is genuinely necessary: the **tagged→syn→inh** path mints an `ε`
+present in the output but not the inputs. Proof technique: an explicit
+witness *function* `compose_tags : utyp → btyp → list atom` (output Δ as a
+function of the endpoints, invariant under the opening variable), dissolving
+the cofinite "different Δc per X" blocker; `d_consis_compose_strong` by size
+induction on the middle `A`. (NB the `prop_consis_trans.v` copy of
+`d_consis_compose` is now a redundant Admitted stub.)
+
+**3. Faithfulness check.** Confirmed B.2's syn-restricted middle is necessary
+(an inh middle breaks the superset — counterexample
+`utyp_all_etag ε unit ≈ btyp_all_inh unit` composed to a syn target) AND
+sufficient for its consumers: in paper B.3/B.4 every Consistency-Transitivity
+use has the middle as the LHS of the second consistency, which is always
+synthesised.
+
+**4. B.4 tool layer built (all Qed):**
+`btyp_to_gutyp_syn_eq` (`is_syn B → btyp_to_gutyp B = utyp_to_gutyp
+(btyp_to_utyp_syn B)`; collapses B.4's middle into the utyp image where B.2
+applies), the round-trip lemmas (`btyp_to_ptyp_open`, `ftvar_*`,
+`ptyp_to_utyp_syn_btyp_to_ptyp`, `ptyp_to_btyp_syn_btyp_to_ptyp`),
+`d_consis_compose_syn` (B.2 over any `is_syn` middle), `compose_tags_is_syn_nil`
+(`is_syn B → compose_tags C B = nil`), and `d_consis_compose_syn_nil` (nil-output
+composition for the `mode_ti`/`__infer_gen` base).
+
+**5. D12 `d_typing_general_subsumption_gen`** reduced from full `Admitted` to a
+single `admit`: `__sub` (via `d_sub_gen_trans_btyp_nil`) and `__embed` at
+`mode_ti`/`mode_tc` are closed; only the function-mode `__embed` (abs/app
+function-side subsumption) remains.
+
+**6. Dependency map corrected.** `d_sub_gen` premises use **non-gen
+`d_consis`**, so `d_sub_gen_trans` (B.4) needs only the closed (non-gen) B.2 —
+`d_consis_gen_trans` (B.2-gen) is **off the D1/D12 path**.
+
+**7. B.4 statements corrected (user decision).** `d_sub_gen_trans_ti_lhs` and
+`d_sub_gen_trans` restated with a **superset** output `∃ Δc, Δc ⨟ Γ ⊢ᵍ[..] B1 ⊑ B3`
+(the nil output was too strong for an etag-bearing LHS). Added
+`d_sub_gen_trans_btyp_nil` (etag-free `btyp_to_gutyp` LHS ⟹ nil output) — the
+specialisation D12's `__sub` consumes.
+
+**Remaining on the D1/D12 path:** `d_sub_gen_trans_ti_lhs` (6-case induction,
+tool layer ready — needs `utyp_to_gutyp_inj`), `d_sub_gen_trans`,
+`d_sub_gen_trans_btyp_nil`; the D12 function-mode `__embed` (abs/app
+subsumption); the bridges (`d_typing_gen_collapse` etc.) + D1.
 
 ## 2026-05-17 — δ-cascade Phase 1.H (rule added + foundation lemmas + scope of remaining work)
 

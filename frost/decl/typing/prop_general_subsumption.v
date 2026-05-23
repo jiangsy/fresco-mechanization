@@ -28,6 +28,25 @@ Theorem d_typing_general_subsumption_gen : forall m_orig Γ e B1,
       nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] (btyp_to_gutyp B1) ⊑ B2 ->
       Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] e ⦂ B2.
 Proof.
+  intros m_orig Γ e B1 Hty.
+  induction Hty; intros Hfn Hwf m_new B_tgt Hsub.
+  - (* __embed: H : d_typing m Γ e B *)
+    destruct m.
+    + (* mode_ti *)
+      simpl in Hsub |- *.
+      apply d_typing_gen__sub with (B1 := B).
+      * apply d_typing_gen__embed. exact H.
+      * exact Hsub.
+    + (* mode_tc: not in is_fn_n_ti *)
+      inversion Hfn.
+    + (* mode_fn m: function-side subsumption *)
+      admit.
+  - (* __sub: e synthesises B1 (mode_ti), then two gen-subtypings
+       B1 ⊑ B0 (at m) and B0 ⊑ B_tgt (at the substituted mode) compose
+       via B.3 transitivity into one B1 ⊑ B_tgt. *)
+    eapply d_typing_gen__sub.
+    + exact Hty.
+    + eapply d_sub_gen_trans_btyp_nil; [ exact H | exact Hsub ].
 Admitted.
 
 (** D1, paper Lemma 3.1: ordinary general subsumption.  The paper's

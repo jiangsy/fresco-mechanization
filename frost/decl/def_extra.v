@@ -165,16 +165,22 @@ Inductive d_consis : list atom -> list (atom * dbind) -> utyp -> btyp -> Prop :=
     binds X dbind_tvar Γ ->
     nil ⨟ Γ ⊨ (utyp_var_f X) ≈ (btyp_var_f X)
 | d_consis__arrow : forall Δ1 Δ2 Γ C1 C2 B1 B2,
+    (* Paper [Arrow]: the tag context is the SET UNION [Δ₁,Δ₂]
+       (declarative.tex:967, with Δ a set), not a disjoint union — so we
+       neither require nor record [list_disjoint Δ1 Δ2].  This faithfulness
+       is what makes consistency transitivity (B.2) provable: composing two
+       derivations may legitimately reuse a tag, which a set absorbs. *)
     Δ1 ⨟ Γ ⊨ C1 ≈ B1 ->
     Δ2 ⨟ Γ ⊨ C2 ≈ B2 ->
-    list_disjoint Δ1 Δ2 ->
     (Δ1 ++ Δ2) ⨟ Γ ⊨ (utyp_arrow C1 C2) ≈ (btyp_arrow B1 B2)
 | d_consis__forall_inh_tagged : forall L Δ Γ ε C B,
+    (* Paper [ForallInh] with δ=ε: output is [Δ,ε] = Δ ∪ {ε}, the
+       idempotent set union (declarative.tex:950) — no [~ In ε Δ] freshness
+       side condition (a singleton union is idempotent, not a cons). *)
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
          (open_utyp_wrt_utyp C (utyp_var_f X)) ≈
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    ~ List.In ε Δ ->
     (ε :: Δ) ⨟ Γ ⊨ (utyp_all_etag ε C) ≈ (btyp_all_inh B)
 | d_consis__forall_inh_untagged : forall L Δ Γ C B,
     (forall X, X `notin` L ->

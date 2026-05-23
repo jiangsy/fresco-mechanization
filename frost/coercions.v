@@ -205,6 +205,44 @@ Proof.
   - rewrite IHA. reflexivity.
 Qed.
 
+Lemma ptyp_to_btyp_syn_open_rec : forall A1 A2 k,
+    ptyp_to_btyp_syn (open_ptyp_wrt_ptyp_rec k A2 A1) =
+    open_btyp_wrt_btyp_rec k (ptyp_to_btyp_syn A2) (ptyp_to_btyp_syn A1).
+Proof.
+  induction A1; intros A2 k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[|]|]; reflexivity.
+  - rewrite IHA1_1. rewrite IHA1_2. reflexivity.
+  - rewrite IHA1. reflexivity.
+Qed.
+
+Lemma ptyp_to_btyp_syn_open : forall A1 A2,
+    ptyp_to_btyp_syn (open_ptyp_wrt_ptyp A1 A2) =
+    open_btyp_wrt_btyp (ptyp_to_btyp_syn A1) (ptyp_to_btyp_syn A2).
+Proof.
+  intros A1 A2.
+  unfold open_ptyp_wrt_ptyp, open_btyp_wrt_btyp.
+  apply ptyp_to_btyp_syn_open_rec.
+Qed.
+
+Lemma ptyp_to_utyp_syn_open_rec : forall A1 A2 k,
+    ptyp_to_utyp_syn (open_ptyp_wrt_ptyp_rec k A2 A1) =
+    open_utyp_wrt_utyp_rec k (ptyp_to_utyp_syn A2) (ptyp_to_utyp_syn A1).
+Proof.
+  induction A1; intros A2 k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[|]|]; reflexivity.
+  - rewrite IHA1_1. rewrite IHA1_2. reflexivity.
+  - rewrite IHA1. reflexivity.
+Qed.
+
+Lemma ptyp_to_utyp_syn_open : forall A1 A2,
+    ptyp_to_utyp_syn (open_ptyp_wrt_ptyp A1 A2) =
+    open_utyp_wrt_utyp (ptyp_to_utyp_syn A1) (ptyp_to_utyp_syn A2).
+Proof.
+  intros A1 A2.
+  unfold open_ptyp_wrt_ptyp, open_utyp_wrt_utyp.
+  apply ptyp_to_utyp_syn_open_rec.
+Qed.
+
 (** ===== ptyp -> pskl ===== *)
 
 Fixpoint ptyp_to_pskl (A : ptyp) : pskl :=
