@@ -408,6 +408,23 @@ by the typing rules, for a skeleton metatheory that is currently all
 (the headline of the paper change) but its `⫯`/`□` rules still match
 the merge-base encoding.
 
+**C. Pre-subtyping / pre-join ported to the split AST (+ 3 missing
+cases).** `algo/def_extra.v`'s `a_pre_sub` / `a_pre_join` were `refl`
+/`left` stubs (the type-hierarchy refactor gutted the algo defs), and
+`a_pre_sub` was mis-sorted as `btyp` (which has no ghosts). Ported the
+full paper rule sets to `bskl` as a mutual inductive, including the
+three recently-added missing cases: `presub(□,□)=□`,
+`prejoin(□,Q)=Q`, `prejoin(P,□)=P`. Following the latest paper,
+overlapping rules are allowed, so the hole rules use a plain `guarded`
+side condition. Nothing yet consumes these (algo soundness/completeness
+remain HEADLINE admits), so this is a definition port only.
+
+**Verification.** `make coq` green. `Print Assumptions` on
+`d_typing_general_subsumption_via_gen` / `_gen` reports only the two
+pre-existing flagship admits (`d_typing_general_subsumption`,
+`d_typing_general_subsumption_gen`) — this sync introduced no new
+axioms.
+
 ## 2026-05-24 — gen-relation set semantics + B.4-base AUX (infer/check/arg)
 
 **Build:** 🟢 GREEN (`make coq`, exit 0).

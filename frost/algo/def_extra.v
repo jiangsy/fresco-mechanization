@@ -8,6 +8,7 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
+Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 
@@ -99,13 +100,102 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
 | a_guess_mono__plain : forall Θ A,
     a_guess_mono Θ (ptyp_to_pskl A) nil A.
 
-Inductive a_pre_sub : aenv -> mode -> btyp -> btyp -> btyp -> Prop :=
-| a_pre_sub__refl : forall Θ m B,
-    a_pre_sub Θ m B B B.
+(** Pre-subtyping [⊢_M presub P Q [P']] and pre-join [prejoin P Q [P']]
+    (paper algorithmic.tex).  Both operate on (algorithmic) skeletons
+    [bskl] — the sort carrying ghosts [□]/[⫯] and the ∀; flex-mono
+    variables [α̂] are [bskl_var_f] bound as [abind_flex_mono] in [Θ].
 
-Inductive a_pre_join : aenv -> bskl -> bskl -> bskl -> Prop :=
-| a_pre_join__left : forall Θ Q,
-    a_pre_join Θ Q Q Q.
+    Following the latest paper, overlapping rules are permitted (they
+    agree on overlaps), so the hole rules use a plain [guarded] side
+    condition.  The [(□,□)] presub case and the [(□,Q)] / [(P,□)]
+    prejoin cases are the recently-added missing cases. *)
+Inductive a_pre_sub : aenv -> mode -> bskl -> bskl -> bskl -> Prop :=
+| a_pre_sub__hole_hole : forall Θ m,
+    a_pre_sub Θ m bskl_hole bskl_hole bskl_hole
+| a_pre_sub__unit : forall Θ m Q,
+    a_pre_sub Θ m bskl_unit Q bskl_unit
+| a_pre_sub__var : forall Θ m X Q,
+    binds X abind_tvar Θ ->
+    a_pre_sub Θ m (bskl_var_f X) Q (bskl_var_f X)
+| a_pre_sub__hole_l : forall Θ m Q,
+    guarded_bskl Q ->
+    a_pre_sub Θ m bskl_hole Q Q
+| a_pre_sub__hole_r : forall Θ m P,
+    guarded_bskl P ->
+    a_pre_sub Θ m P bskl_hole P
+| a_pre_sub__guarded : forall Θ m P Q P',
+    guarded_bskl P ->
+    guarded_bskl Q ->
+    (m = mode_ti \/ m = mode_tc) ->
+    a_pre_join Θ P Q P' ->
+    a_pre_sub Θ m P Q P'
+| a_pre_sub__flex_mono_fn : forall Θ m α Q,
+    binds α abind_flex_mono Θ ->
+    guarded_bskl Q ->
+    a_pre_sub Θ (mode_fn m) (bskl_var_f α) Q (bskl_var_f α)
+| a_pre_sub__all_l : forall L Θ m P Q P',
+    (forall X, X `notin` L ->
+       a_pre_sub Θ m (open_bskl_wrt_bskl P (bskl_var_f X)) Q P') ->
+    a_pre_sub Θ m (bskl_all_syn P) Q (bskl_all_syn P')
+| a_pre_sub__all_r : forall L Θ m P Q P',
+    (forall X, X `notin` L ->
+       a_pre_sub Θ m P (open_bskl_wrt_bskl Q (bskl_var_f X)) P') ->
+    a_pre_sub Θ m P (bskl_all_syn Q) P'
+| a_pre_sub__tophole_l : forall Θ m P Q P',
+    a_pre_sub Θ m P Q P' ->
+    a_pre_sub Θ m (bskl_tophole P) Q P'
+| a_pre_sub__tophole_r : forall Θ m P Q P',
+    a_pre_sub Θ m P Q P' ->
+    a_pre_sub Θ m P (bskl_tophole Q) P'
+| a_pre_sub__arrow : forall Θ m P1 P2 Q1 Q2 P1' P2',
+    a_pre_join Θ P1 Q1 P1' ->
+    a_pre_sub Θ m P2 Q2 P2' ->
+    a_pre_sub Θ (mode_fn m) (bskl_arrow P1 P2) (bskl_arrow Q1 Q2) (bskl_arrow P1' P2')
+
+with a_pre_join : aenv -> bskl -> bskl -> bskl -> Prop :=
+| a_pre_join__hole_l : forall Θ Q,
+    a_pre_join Θ bskl_hole Q Q
+| a_pre_join__hole_r : forall Θ P,
+    a_pre_join Θ P bskl_hole P
+| a_pre_join__unit : forall Θ Q,
+    a_pre_join Θ bskl_unit Q bskl_unit
+| a_pre_join__var : forall Θ X Q,
+    binds X abind_tvar Θ ->
+    a_pre_join Θ (bskl_var_f X) Q (bskl_var_f X)
+| a_pre_join__flex_mono_l : forall Θ α Q,
+    binds α abind_flex_mono Θ ->
+    a_pre_join Θ (bskl_var_f α) Q (bskl_var_f α)
+| a_pre_join__flex_mono_r : forall Θ α P,
+    binds α abind_flex_mono Θ ->
+    a_pre_join Θ P (bskl_var_f α) P
+| a_pre_join__all_both : forall L Θ P Q P',
+    (forall X, X `notin` L ->
+       a_pre_join Θ (open_bskl_wrt_bskl P (bskl_var_f X))
+                  (open_bskl_wrt_bskl Q (bskl_var_f X)) P') ->
+    a_pre_join Θ (bskl_all_syn P) (bskl_all_syn Q) (bskl_all_syn P')
+| a_pre_join__tophole_both : forall Θ P Q P',
+    a_pre_join Θ P Q P' ->
+    a_pre_join Θ (bskl_tophole P) (bskl_tophole Q) (bskl_tophole P')
+| a_pre_join__tophole_l_all : forall L Θ P Q P',
+    (forall X, X `notin` L ->
+       a_pre_join Θ (bskl_tophole P) (open_bskl_wrt_bskl Q (bskl_var_f X)) P') ->
+    a_pre_join Θ (bskl_tophole P) (bskl_all_syn Q) (bskl_all_syn P')
+| a_pre_join__tophole_l_guarded : forall Θ P Q P',
+    guarded_bskl Q ->
+    a_pre_join Θ P Q P' ->
+    a_pre_join Θ (bskl_tophole P) Q P'
+| a_pre_join__all_l_tophole : forall L Θ P Q P',
+    (forall X, X `notin` L ->
+       a_pre_join Θ (open_bskl_wrt_bskl P (bskl_var_f X)) (bskl_tophole Q) P') ->
+    a_pre_join Θ (bskl_all_syn P) (bskl_tophole Q) (bskl_all_syn P')
+| a_pre_join__guarded_r_tophole : forall Θ P Q P',
+    guarded_bskl P ->
+    a_pre_join Θ P Q P' ->
+    a_pre_join Θ P (bskl_tophole Q) P'
+| a_pre_join__arrow : forall Θ P1 P2 Q1 Q2 P1' P2',
+    a_pre_join Θ P1 Q1 P1' ->
+    a_pre_join Θ P2 Q2 P2' ->
+    a_pre_join Θ (bskl_arrow P1 P2) (bskl_arrow Q1 Q2) (bskl_arrow P1' P2').
 
 Inductive a_unify : aenv -> btyp -> btyp -> btyp -> aenv -> Prop :=
 | a_unify__refl : forall Θ B,
