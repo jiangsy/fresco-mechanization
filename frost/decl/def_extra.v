@@ -307,28 +307,34 @@ Inductive d_shallow_sub : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
 (*  Skeleton refinement, consistency, and subtyping                       *)
 (* ===================================================================== *)
 
-Inductive d_refine_syn : list atom -> list (atom * dbind) -> bskl -> pskl -> Prop :=
+(* Output is [bskl] (bidirectional), not [pskl]: the paper's refinement
+   produces bidirectional skeletons [bid{Q}], e.g. the ∀-rule outputs an
+   inherited [inh{∀α.}bid{Q}] (declarative.tex), which [pskl] (which has
+   only [pskl_all_syn]) cannot express.  Filling a ghost [□] still yields
+   a synthesised skeleton, encoded as a [pskl] coerced via
+   [pskl_to_bskl_syn]. *)
+Inductive d_refine_syn : list atom -> list (atom * dbind) -> bskl -> bskl -> Prop :=
 | d_refine_syn__unit : forall Ψ Γ,
-    Ψ ⨟ Γ ⊢ᵣ bskl_unit ⊳ pskl_unit
+    Ψ ⨟ Γ ⊢ᵣ bskl_unit ⊳ bskl_unit
 | d_refine_syn__var : forall Ψ Γ X,
     List.In X Ψ \/ binds X dbind_tvar Γ ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_var_f X) ⊳ (pskl_var_f X)
+    Ψ ⨟ Γ ⊢ᵣ (bskl_var_f X) ⊳ (bskl_var_f X)
 | d_refine_syn__arrow : forall Ψ Γ Q1 Q2 P1 P2,
     Ψ ⨟ Γ ⊢ᵣ Q1 ⊳ P1 ->
     Ψ ⨟ Γ ⊢ᵣ Q2 ⊳ P2 ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (pskl_arrow P1 P2)
+    Ψ ⨟ Γ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2)
 | d_refine_syn__all : forall L Ψ Γ Q P,
     (forall X, X `notin` L ->
        (X :: Ψ) ⨟ Γ ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f X)) ⊳
-         (open_pskl_wrt_pskl P (pskl_var_f X))) ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_all_syn Q) ⊳ (pskl_all_syn P)
+         (open_bskl_wrt_bskl P (bskl_var_f X))) ->
+    Ψ ⨟ Γ ⊢ᵣ (bskl_all_syn Q) ⊳ (bskl_all_syn P)
 | d_refine_syn__hole : forall Ψ Γ P,
     Ψ ⨟ Γ ⊢ₚₛ P ->
-    Ψ ⨟ Γ ⊢ᵣ bskl_hole ⊳ P
+    Ψ ⨟ Γ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
 | d_refine_syn__tophole : forall Ψ Γ Q P,
     nil ⨟ Γ ⊢ᵣ Q ⊳ P ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ (pskl_tophole P)
+    Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P)
 where "Ψ ⨟ Γ ⊢ᵣ Q ⊳ P" := (d_refine_syn Ψ Γ Q P) : type_scope.
 
 (* The latest paper keeps only the coloured refinement relation
@@ -465,7 +471,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     d_typing m Γ (exp_abs_anno A e) (btyp_arrow (ptyp_to_btyp_syn A) B)
 | d_typing__app : forall Γ m e1 e2 P A B,
     d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
-    d_refine_syn nil Γ (pskl_to_bskl_syn P) (ptyp_to_pskl A) ->
+    d_refine_syn nil Γ (pskl_to_bskl_syn P) (pskl_to_bskl_syn (ptyp_to_pskl A)) ->
     d_typing (mode_fn m) Γ e1 (btyp_arrow (ptyp_to_btyp_inh A) B) ->
     d_typing mode_tc Γ e2 (ptyp_to_btyp_inh A) ->
     d_typing m Γ (exp_app e1 e2) B
@@ -517,7 +523,7 @@ with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
       (bskl_tophole (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A)) Q))
 | d_pat__app : forall Γ m e1 e2 P A1 A2,
     d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
-    d_refine_syn nil Γ (pskl_to_bskl_syn P) (ptyp_to_pskl A1) ->
+    d_refine_syn nil Γ (pskl_to_bskl_syn P) (pskl_to_bskl_syn (ptyp_to_pskl A1)) ->
     d_typing (mode_fn m) Γ e1
       (btyp_arrow (ptyp_to_btyp_inh A1) (ptyp_to_btyp_inh A2)) ->
     d_pat m Γ (exp_app e1 e2) (pskl_to_bskl_syn (ptyp_to_pskl A2)).

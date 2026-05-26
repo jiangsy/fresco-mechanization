@@ -395,18 +395,28 @@ just the colour-erasure of the coloured `◁syn`). Mechanized:
   `d_pat_safety` over `d_refine_syn` (kept the names so `README.v`'s
   `Check`s still resolve; proofs remain `Admitted` as before).
 
-**B — deferred (re-encoding gap): the `⫯`-filling rule restructure
-(paper `f0b41b3`).** The paper's coloured refinement now has three
-`⫯`-rules (remove `⫯` / fill with a concrete `∀α` / keep `⫯` when
-guarded) plus `Ψ`-clearing on `□`, and produces bidirectional outputs
-`inh{∀α.}bid{Q}`. The mech's `d_refine_syn` outputs a `pskl`
-(synthesised-only) skeleton, which cannot express inherited-`∀`
-outputs, so faithfully porting these rules needs `d_refine_syn`'s
-output sort widened to `bskl` — a larger change to a relation consumed
-by the typing rules, for a skeleton metatheory that is currently all
-`Admitted`. Deferred to a dedicated pass; the relation is consolidated
-(the headline of the paper change) but its `⫯`/`□` rules still match
-the merge-base encoding.
+**B2 — `d_refine_syn` output sort widened `pskl → bskl` (done).** The
+paper's coloured refinement produces *bidirectional* outputs `bid{Q}`;
+in particular the ∀-rule (declarative.tex L1300) outputs an inherited
+`inh{∀α.}bid{Q}`, which a `pskl` (only `pskl_all_syn`) cannot express.
+So `d_refine_syn`'s output was changed `pskl → bskl`. Filling a ghost
+`□` still yields a synthesised skeleton, encoded as a `pskl` coerced via
+`pskl_to_bskl_syn`. The two typing-rule consumers (`d_typing__app`,
+`d_pat__app`) and the `prop_skeleton.v` split lemmas / `preserves_wf`
+were updated; `make coq` stays green and `Print Assumptions` is
+unchanged. No new `d_wf_bskl` was introduced — `preserves_wf` is stated
+over the `bskl_to_pskl` projection.
+
+**B2 — still pending (rule-colour faithfulness + the `⫯` restructure).**
+The output sort now *can* carry `inh{∀α.}`, but the rules still produce
+syn-coloured outputs (the `all` rule is `bskl_all_syn ⊳ bskl_all_syn`),
+and the `⫯` rule is still the single merge-base "keep" form rather than
+the paper's three rules (remove / fill-`∀α` / keep-guarded) with
+`Ψ`-clearing on `□`. Producing the paper's inherited-`∀` output needs
+resolving a colour-convention question first: the mech feeds a
+*synthesised* skeleton into refinement (`pskl_to_bskl_syn P` in
+`d_pat__app`), whereas the paper refines an *inherited* skeleton
+`inh{P} ◁syn bid{Q}`. Pending that decision.
 
 **C. Pre-subtyping / pre-join ported to the split AST (+ 3 missing
 cases).** `algo/def_extra.v`'s `a_pre_sub` / `a_pre_join` were `refl`
