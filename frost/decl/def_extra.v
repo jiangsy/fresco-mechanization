@@ -333,9 +333,26 @@ Inductive d_refine_syn : list atom -> list (atom * dbind) -> bskl -> bskl -> Pro
          (open_bskl_wrt_bskl P (bskl_var_f X))) ->
     Ψ ⨟ Γ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P)
 | d_refine_syn__hole : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
+    (* [□ ◁syn syn{Q}]: clear Ψ so the filling cannot use variables
+       bound by other universal quantifiers. *)
+    nil ⨟ Γ ⊢ₚₛ P ->
     Ψ ⨟ Γ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
-| d_refine_syn__tophole : forall Ψ Γ Q P,
+| d_refine_syn__tophole_remove : forall Ψ Γ Q P,
+    (* [⫯.inh{P} ◁syn bid{Q}]: remove the universal ghost. *)
+    nil ⨟ Γ ⊢ᵣ Q ⊳ P ->
+    Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ P
+| d_refine_syn__tophole_fill : forall L Ψ Γ Q P,
+    (* [⫯.inh{P} ◁syn syn{∀α.}bid{Q}]: fill the universal ghost with a
+       concrete quantifier; α joins Γ (it may be used filling ghosts,
+       unlike ∀-bound vars which live in Ψ), Ψ cleared. *)
+    (forall X, X `notin` L ->
+       nil ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ᵣ
+         (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl P (bskl_var_f X))) ->
+    Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P)
+| d_refine_syn__tophole_keep : forall Ψ Γ Q P,
+    (* [⫯.inh{P} ◁syn ⫯.bid{Q}]: keep the universal ghost; the output
+       under the ghost must be guarded to preserve well-formedness. *)
+    guarded_bskl P ->
     nil ⨟ Γ ⊢ᵣ Q ⊳ P ->
     Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P)
 where "Ψ ⨟ Γ ⊢ᵣ Q ⊳ P" := (d_refine_syn Ψ Γ Q P) : type_scope.

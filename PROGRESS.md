@@ -418,10 +418,17 @@ already used in those rules' typing premises (the "same `bskl`,
 repainted" principle: the syn-inferred skeleton is repainted inherited
 for refinement). `make coq` green; `Print Assumptions` unchanged.
 
-**B2 — still pending: the `⫯`/`□` rule restructure.** The `⫯` rule is
-still the single merge-base "keep" form rather than the paper's three
-rules (remove `⫯` / fill with a concrete `∀α` / keep `⫯` when guarded),
-and `□`/`⫯` do not yet clear `Ψ`. Deferred.
+**B2 — `⫯`/`□` rule restructure (done).** Replaced the single
+merge-base "keep" `⫯` rule with the paper's three rules:
+`d_refine_syn__tophole_remove` (`⫯.inh{P} ◁syn bid{Q}`, drop the ghost),
+`d_refine_syn__tophole_fill` (`⫯.inh{P} ◁syn syn{∀α.}bid{Q}`, fill with
+a concrete `∀α` — α joins Γ, cofinite binder), and
+`d_refine_syn__tophole_keep` (`⫯.inh{P} ◁syn ⫯.bid{Q}`, keep when the
+body is guarded). The `□` rule now clears `Ψ` (premise `nil ⨟ Γ ⊢ₚₛ P`).
+`d_refine_syn_hole_split` updated; the `tophole` split lemma was removed
+(a `⫯` no longer refines uniquely to a `⫯`). `make coq` green;
+`Print Assumptions` unchanged. **B2 complete:** `d_refine_syn` now
+matches the paper's coloured refinement (8 rules), output sort `bskl`.
 
 **C. Pre-subtyping / pre-join ported to the split AST (+ 3 missing
 cases).** `algo/def_extra.v`'s `a_pre_sub` / `a_pre_join` were `refl`
