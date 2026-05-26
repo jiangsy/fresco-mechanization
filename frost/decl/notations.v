@@ -36,13 +36,11 @@ Notation "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P)
   (at level 100, M at level 0, e at level 75, P at level 75, no associativity)
   : type_scope.
 
-(** ** Skeleton refinement. [⊢ᵣ] = uncoloured refinement (▸),
-    [⊢ᵣₛ] = filled with synthesised (⊳). Subscripted [⊢] disambiguates
-    from [d_shallow_sub]'s bare [Γ ⊢ A ≤ B]. *)
-
-Notation "Ψ ⨟ Γ ⊢ᵣ P ▸ Q" := (d_refine Ψ Γ P Q)
-  (at level 75, Γ at level 75, P at level 74, Q at level 74, no associativity)
-  : type_scope.
+(** ** Skeleton refinement. [⊢ᵣ … ⊳ …] = the (single, coloured)
+    refinement relation, filling ghosts with synthesised skeletons.
+    Subscripted [⊢] disambiguates from [d_shallow_sub]'s bare
+    [Γ ⊢ A ≤ B].  (The former uncoloured [▸] relation was dropped to
+    match the paper's single coloured refinement relation.) *)
 
 Notation "Ψ ⨟ Γ ⊢ᵣ P ⊳ Q" := (d_refine_syn Ψ Γ P Q)
   (at level 75, Γ at level 75, P at level 74, Q at level 74, no associativity)

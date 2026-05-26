@@ -14,41 +14,10 @@ Require Import src.frost.decl.prop_wellformed.
 
 Set Implicit Arguments.
 
-(** * Splitting / inversion lemmas for refinement. *)
+(** * Splitting / inversion lemmas for refinement.
 
-Lemma d_refine_arrow_split : forall Ψ Γ P1 P2 P,
-    d_refine Ψ Γ (pskl_arrow P1 P2) P ->
-    exists P1' P2', P = pskl_arrow P1' P2' /\
-                    d_refine Ψ Γ P1 P1' /\
-                    d_refine Ψ Γ P2 P2'.
-Proof.
-  intros Ψ Γ P1 P2 P H. dependent destruction H. eauto.
-Qed.
-
-Lemma d_refine_all_split : forall Ψ Γ P P',
-    d_refine Ψ Γ (pskl_all_syn P) P' ->
-    exists P'', P' = pskl_all_syn P'' /\
-               exists L, forall X, X `notin` L ->
-                  d_refine (X :: Ψ) Γ
-                    (open_pskl_wrt_pskl P (pskl_var_f X))
-                    (open_pskl_wrt_pskl P'' (pskl_var_f X)).
-Proof.
-  intros Ψ Γ P P' H. dependent destruction H. eauto.
-Qed.
-
-Lemma d_refine_hole_split : forall Ψ Γ P,
-    d_refine Ψ Γ pskl_hole P ->
-    d_wf_pskl Ψ Γ P.
-Proof.
-  intros Ψ Γ P H. dependent destruction H. assumption.
-Qed.
-
-Lemma d_refine_tophole_split : forall Ψ Γ P P',
-    d_refine Ψ Γ (pskl_tophole P) P' ->
-    exists P'', P' = pskl_tophole P'' /\ d_refine nil Γ P P''.
-Proof.
-  intros Ψ Γ P P' H. dependent destruction H. eauto.
-Qed.
+    Only the coloured refinement relation [d_refine_syn] remains; the
+    former uncoloured [d_refine] split lemmas were removed with it. *)
 
 Lemma d_refine_syn_arrow_split : forall Ψ Γ Q1 Q2 P,
     d_refine_syn Ψ Γ (bskl_arrow Q1 Q2) P ->
@@ -84,9 +53,9 @@ Proof.
   intros Ψ Γ Q P H. dependent destruction H. eauto.
 Qed.
 
-Lemma d_refine_preserves_wf : forall Ψ Γ P Q,
-    d_refine Ψ Γ P Q ->
-    d_wf_pskl Ψ Γ Q.
+Lemma d_refine_preserves_wf : forall Ψ Γ Q P,
+    d_refine_syn Ψ Γ Q P ->
+    d_wf_pskl Ψ Γ P.
 Proof.
 Admitted.
 
@@ -110,7 +79,7 @@ Theorem d_pat_validity : forall m Γ e Q,
     d_wf_denv Γ ->
     (exists B, d_typing m Γ e B) ->
     (exists B, d_typing m Γ e B /\
-               d_refine nil Γ (bskl_to_pskl Q) (ptyp_to_pskl (btyp_to_ptyp B))).
+               d_refine_syn nil Γ Q (ptyp_to_pskl (btyp_to_ptyp B))).
 Proof.
 Admitted.
 
@@ -119,6 +88,6 @@ Theorem d_pat_safety : forall m Γ e,
     d_wf_denv Γ ->
     exists Q, d_pat m Γ e Q /\
               (forall B, d_typing m Γ e B ->
-                 d_refine nil Γ (bskl_to_pskl Q) (ptyp_to_pskl (btyp_to_ptyp B))).
+                 d_refine_syn nil Γ Q (ptyp_to_pskl (btyp_to_ptyp B))).
 Proof.
 Admitted.

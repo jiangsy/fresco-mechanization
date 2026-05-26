@@ -331,29 +331,12 @@ Inductive d_refine_syn : list atom -> list (atom * dbind) -> bskl -> pskl -> Pro
     Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ (pskl_tophole P)
 where "Ψ ⨟ Γ ⊢ᵣ Q ⊳ P" := (d_refine_syn Ψ Γ Q P) : type_scope.
 
-Inductive d_refine : list atom -> list (atom * dbind) -> pskl -> pskl -> Prop :=
-| d_refine__unit : forall Ψ Γ,
-    Ψ ⨟ Γ ⊢ᵣ pskl_unit ▸ pskl_unit
-| d_refine__var : forall Ψ Γ X,
-    List.In X Ψ \/ binds X dbind_tvar Γ ->
-    Ψ ⨟ Γ ⊢ᵣ (pskl_var_f X) ▸ (pskl_var_f X)
-| d_refine__arrow : forall Ψ Γ P1 P2 Q1 Q2,
-    Ψ ⨟ Γ ⊢ᵣ P1 ▸ Q1 ->
-    Ψ ⨟ Γ ⊢ᵣ P2 ▸ Q2 ->
-    Ψ ⨟ Γ ⊢ᵣ (pskl_arrow P1 P2) ▸ (pskl_arrow Q1 Q2)
-| d_refine__all : forall L Ψ Γ P1 P2,
-    (forall X, X `notin` L ->
-       (X :: Ψ) ⨟ Γ ⊢ᵣ
-         (open_pskl_wrt_pskl P1 (pskl_var_f X)) ▸
-         (open_pskl_wrt_pskl P2 (pskl_var_f X))) ->
-    Ψ ⨟ Γ ⊢ᵣ (pskl_all_syn P1) ▸ (pskl_all_syn P2)
-| d_refine__hole : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
-    Ψ ⨟ Γ ⊢ᵣ pskl_hole ▸ P
-| d_refine__tophole : forall Ψ Γ P1 P2,
-    nil ⨟ Γ ⊢ᵣ P1 ▸ P2 ->
-    Ψ ⨟ Γ ⊢ᵣ (pskl_tophole P1) ▸ (pskl_tophole P2)
-where "Ψ ⨟ Γ ⊢ᵣ P ▸ Q" := (d_refine Ψ Γ P Q) : type_scope.
+(* The latest paper keeps only the coloured refinement relation
+   [Γ ⊢ inh{P} ◁syn bid{Q}] (the uncoloured [◁] is just its colour
+   erasure).  The former uncoloured [d_refine] ([▸]) is therefore
+   dropped; [d_refine_syn] ([⊳]) above is the single refinement
+   relation.  (declarative.tex, "only keep the coloured refinement
+   relation".) *)
 
 Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_consis__unit : forall Γ,

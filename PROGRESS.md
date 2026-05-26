@@ -384,6 +384,30 @@ Cascade was small: most proofs absorbed the extra premise through
 inversion; only the two `d_sub_gen__forall_l_*` rename sites in
 `prop_subsumption_aux.v` needed an explicit `d_tags` bullet.
 
+**B. Refinement consolidation — "only keep the coloured refinement
+relation".** The paper drops the uncoloured refinement `◁` (it is now
+just the colour-erasure of the coloured `◁syn`). Mechanized:
+
+- Removed the uncoloured `d_refine` (`▸`) inductive, its notation, and
+  its (unused) split lemmas; `d_refine_syn` (`⊳`) is now the single
+  refinement relation.
+- Restated the paper-facing `d_refine_preserves_wf`, `d_pat_validity`,
+  `d_pat_safety` over `d_refine_syn` (kept the names so `README.v`'s
+  `Check`s still resolve; proofs remain `Admitted` as before).
+
+**B — deferred (re-encoding gap): the `⫯`-filling rule restructure
+(paper `f0b41b3`).** The paper's coloured refinement now has three
+`⫯`-rules (remove `⫯` / fill with a concrete `∀α` / keep `⫯` when
+guarded) plus `Ψ`-clearing on `□`, and produces bidirectional outputs
+`inh{∀α.}bid{Q}`. The mech's `d_refine_syn` outputs a `pskl`
+(synthesised-only) skeleton, which cannot express inherited-`∀`
+outputs, so faithfully porting these rules needs `d_refine_syn`'s
+output sort widened to `bskl` — a larger change to a relation consumed
+by the typing rules, for a skeleton metatheory that is currently all
+`Admitted`. Deferred to a dedicated pass; the relation is consolidated
+(the headline of the paper change) but its `⫯`/`□` rules still match
+the merge-base encoding.
+
 ## 2026-05-24 — gen-relation set semantics + B.4-base AUX (infer/check/arg)
 
 **Build:** 🟢 GREEN (`make coq`, exit 0).
