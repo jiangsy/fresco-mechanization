@@ -168,6 +168,46 @@ Proof.
   apply d_wf_btyp_weakening. rewrite_env Γ. exact H.
 Qed.
 
+(** * Tag-relation bridges.
+
+    The latest paper factors the old combined premise [Δ | Γ ⊢ φ] of the
+    [d_sub] / [d_pat_sub] ForallL rules into well-scopedness (kept in
+    [d_wf_utyp] / [d_wf_uskl]) plus the pure tag relation [d_tags] /
+    [d_tags_skl].  Because [d_wf_utyp] still tracks the tag context, the
+    tag relation is derivable from it on tagged shapes; these bridges
+    discharge the new [d_tags] premise at construction sites from the
+    [d_wf_*] + [is_t*] facts already in scope. *)
+
+Lemma d_wf_utyp_d_tags : forall Δ Γ C,
+    Δ ⨟ Γ ⊢ᵤ C ->
+    is_ttyp C ->
+    d_tags Δ C.
+Proof.
+  intros Δ Γ C H. induction H; intros Htt.
+  - constructor.
+  - constructor.
+  - dependent destruction Htt. constructor; auto.
+  - dependent destruction Htt.            (* all_syn is not a tagged type *)
+  - dependent destruction Htt.
+    inst_cofinites_for d_tags__all_etag; auto.
+Qed.
+
+Lemma d_wf_uskl_d_tags_skl : forall Δ Γ R,
+    Δ ⨟ Γ ⊢ᵤₛ R ->
+    is_tskl R ->
+    d_tags_skl Δ R.
+Proof.
+  intros Δ Γ R H. induction H; intros Htt.
+  - constructor.
+  - constructor.
+  - dependent destruction Htt. constructor; auto.
+  - dependent destruction Htt.            (* all_syn is not a tagged skeleton *)
+  - dependent destruction Htt.
+    inst_cofinites_for d_tags_skl__all_etag; auto.
+  - constructor.
+  - dependent destruction Htt. constructor; auto.
+Qed.
+
 (** * Preservation hooks.
 
     These are the shape-correct statements the later typing/subtyping

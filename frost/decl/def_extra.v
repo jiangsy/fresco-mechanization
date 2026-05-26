@@ -155,6 +155,52 @@ Inductive d_wf_uskl : list atom -> list (atom * dbind) -> uskl -> Prop :=
 where "Δ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Δ Γ R) : type_scope.
 
 (* ===================================================================== *)
+(*  Tag relation  [tags{Δ}{φ}]  (paper notation [φ # Δ], declarative.tex) *)
+(*  Pure tag-counting: [Δ] is exactly the set of ε-tags appearing in the  *)
+(*  tagged type / skeleton, each used linearly (hence [list_disjoint] /    *)
+(*  [~ In] sidecars mirroring the paper's [⊎]).  This is the relation the  *)
+(*  latest paper factors out of the old combined [Δ | Γ ⊢ φ]: the [d_sub] *)
+(*  ForallL premise is now [Γ ⊢ tags{Δ}{φ}] = well-scopedness (kept in     *)
+(*  [d_wf_utyp]) ∧ this relation.  Decoupled from [Γ]: tags ignore the     *)
+(*  type context. *)
+(* ===================================================================== *)
+
+Inductive d_tags : list atom -> utyp -> Prop :=
+| d_tags__unit : d_tags nil utyp_unit
+| d_tags__var : forall X, d_tags nil (utyp_var_f X)
+| d_tags__arrow : forall Δ1 Δ2 C1 C2,
+    d_tags Δ1 C1 ->
+    d_tags Δ2 C2 ->
+    list_disjoint Δ1 Δ2 ->
+    d_tags (Δ1 ++ Δ2) (utyp_arrow C1 C2)
+| d_tags__all_etag : forall L Δ ε C,
+    (forall X, X `notin` L ->
+       d_tags Δ (open_utyp_wrt_utyp C (utyp_var_f X))) ->
+    ~ List.In ε Δ ->
+    d_tags (ε :: Δ) (utyp_all_etag ε C).
+
+(** Skeleton analog [tags{Δ}{ψ}] (declarative.tex, skeleton subtyping).
+    Same as [d_tags] plus the two ghost cases: a [hole] carries no tags,
+    and a universal ghost [⫯ψ] carries exactly the tags of its body. *)
+Inductive d_tags_skl : list atom -> uskl -> Prop :=
+| d_tags_skl__unit : d_tags_skl nil uskl_unit
+| d_tags_skl__var : forall X, d_tags_skl nil (uskl_var_f X)
+| d_tags_skl__arrow : forall Δ1 Δ2 R1 R2,
+    d_tags_skl Δ1 R1 ->
+    d_tags_skl Δ2 R2 ->
+    list_disjoint Δ1 Δ2 ->
+    d_tags_skl (Δ1 ++ Δ2) (uskl_arrow R1 R2)
+| d_tags_skl__all_etag : forall L Δ ε R,
+    (forall X, X `notin` L ->
+       d_tags_skl Δ (open_uskl_wrt_uskl R (uskl_var_f X))) ->
+    ~ List.In ε Δ ->
+    d_tags_skl (ε :: Δ) (uskl_all_etag ε R)
+| d_tags_skl__hole : d_tags_skl nil uskl_hole
+| d_tags_skl__tophole : forall Δ R,
+    d_tags_skl Δ R ->
+    d_tags_skl Δ (uskl_tophole R).
+
+(* ===================================================================== *)
 (*  Type consistency and subtyping                                        *)
 (* ===================================================================== *)
 
@@ -223,14 +269,16 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
     (Δ1 ++ Δ2) ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⊑ (btyp_arrow B1 B2)
 | d_sub__forall_l_tagged : forall Δ Δ' Γ m ε C ph B,
     m <> mode_ti ->
-    list_disjoint Δ' Δ ->
-    Δ' ⨟ Γ ⊢ᵤ ph ->
+    list_disjoint Δ' Δ ->            (* Δ' fresh w.r.t. the outer tags *)
+    d_tags Δ' ph ->                  (* tags{Δ'}{φ} : Δ' is exactly φ's tags *)
+    Δ' ⨟ Γ ⊢ᵤ ph ->                 (* Γ ⊢ φ : well-scopedness half *)
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
     Δ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⊑ B
 | d_sub__forall_l_untagged : forall Δ Δ' Γ m C ph B,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
+    d_tags Δ' ph ->
     Δ' ⨟ Γ ⊢ᵤ ph ->
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
@@ -373,6 +421,7 @@ Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -
 | d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε R psi Q,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
+    d_tags_skl Δ' psi ->             (* tags{Δ'}{ψ} : skeleton-tag relation *)
     Δ' ⨟ Γ ⊢ᵤₛ psi ->
     is_tskl psi ->
     (Δ ++ Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
@@ -380,6 +429,7 @@ Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -
 | d_pat_sub__forall_l_untagged : forall Δ Δ' Γ m R psi Q,
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
+    d_tags_skl Δ' psi ->
     Δ' ⨟ Γ ⊢ᵤₛ psi ->
     is_tskl psi ->
     (Δ ++ Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->

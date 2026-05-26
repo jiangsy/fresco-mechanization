@@ -353,6 +353,79 @@ files:
 
 Session-by-session closure log. Most recent first.
 
+## 2026-05-26 — paper sync (origin/main): φ#Δ tags relation in subtyping
+
+**Build:** 🟢 GREEN (`make coq`, exit 0). No new admits.
+
+Sync pass against the latest paper on `origin/main` (declarative.tex
++700 / algorithmic.tex +454 vs the branch merge-base). This entry covers
+part A; refinement consolidation (B) and presub/prejoin (C) follow in
+later commits. Spec: `docs/superpowers/specs/2026-05-26-frost-paper-sync-design.md`.
+
+**A. New tag relation `tags{Δ}{φ}` (paper notation `φ # Δ`).** The paper
+factors the old combined premise `Δ | Γ ⊢ φ` into a pure tag-counting
+relation plus standard well-scopedness. Mechanized as:
+
+- `d_tags : list atom -> utyp -> Prop` and `d_tags_skl : list atom ->
+  uskl -> Prop` in [`decl/def_extra.v`](frost/decl/def_extra.v), with the
+  paper's rules (`⊎` modelled by `list_disjoint` / `~ In`; skeleton
+  version adds `□ → ·` and `⫯ψ → Δ`).
+- Wired the new premise into `d_sub__forall_l_*` and
+  `d_pat_sub__forall_l_*` (non-gen) and `d_sub_gen__forall_l_*` (gen,
+  [`def_gen.v`](frost/decl/typing/def_gen.v)). `d_wf_utyp` / `d_wf_uskl`
+  are retained for the well-scopedness half (encoding decision: add
+  `d_tags`, keep `d_wf_utyp`), so their other ~28 uses are unaffected.
+- Bridges `d_wf_utyp_d_tags` / `d_wf_uskl_d_tags_skl` in
+  [`prop_wellformed.v`](frost/decl/prop_wellformed.v) (Qed) discharge the
+  new premise at construction sites from the `d_wf_*` + `is_t*` facts
+  already in scope.
+
+Cascade was small: most proofs absorbed the extra premise through
+inversion; only the two `d_sub_gen__forall_l_*` rename sites in
+`prop_subsumption_aux.v` needed an explicit `d_tags` bullet.
+
+## 2026-05-24 — gen-relation set semantics + B.4-base AUX (infer/check/arg)
+
+**Build:** 🟢 GREEN (`make coq`, exit 0).
+
+**1. Removed `list_disjoint` from the generalised relations.** The 2026-05-23
+set-semantics fix to non-gen `d_consis__arrow` had not been applied to the
+*generalised* rules. `d_consis_gen__arrow`, `d_sub_gen__arg`, and both
+`d_sub_gen__forall_l_*` (in `decl/typing/def_gen.v`) still carried
+`list_disjoint`, which is *strictly stronger* than the paper's set-union `Δ`:
+idempotent `∪` absorbs a tag reused across both arrow halves, but
+disjoint-append forbids it — a reachable, paper-derivable composition that
+blocks B.4's arg case. Dropped the premises (kept plain `Δ1 ++ Δ2`). Cascade
+fixed in `prop_subsumption_aux.v` (`d_consis_gen_refl_*` no longer discharge
+`list_disjoint_nil_l`; `d_sub_gen_weakening` arg/forall_l bullets simplified).
+
+**2. B.4-base scaffolding (`d_sub_gen_trans_ti_lhs_aux`).** The btyp-image
+middle invariant breaks at `forall_l` under a *tagged* `ph` (impredicative
+instantiation puts etags into the opened middle, leaving the `btyp_to_utyp_syn`
+image). Reformulated with a **utyp-middle invariant**: `Cmid` is the 2nd sub's
+LHS (`G = utyp_to_gutyp Cmid`), `Csrc` related by `Δa ⊨ Csrc ≈ utyp_to_btyp
+Cmid`. AUX `dependent induction` on the 2nd sub; **infer / check / arg cases
+PROVEN** (compile, modulo the lemma's own `Admitted`). All leaves use
+`d_consis_synerase_lhs` (etag→syn on the LHS lands at nil) + `d_consis_compose_syn`.
+
+**3. New reusable infra (all Qed, `prop_subsumption_aux.v`):**
+`utyp_to_gutyp_inj`, `utyp_to_btyp_open(_rec)`, `is_syn_utyp_to_btyp`,
+`synerase_open`, `d_consis_synerase_lhs`, `d_consis_compose_syn_nil_l`,
+`d_consis_is_syn_erase`, `d_consis_lc_utyp`, `d_consis_guarded_lhs`.
+
+**4. Remaining (documented `admit`s in the AUX, 3 total):**
+- **forall_r** needs a `d_sub_gen` tvar-renaming lemma (uniform `Δc` across the
+  cofinite premise; `Δc` is etag-only ⇒ renaming-invariant).
+- **forall_l ×2** need a `d_consis` substitution lemma (push the body
+  consistency under `X ↦ (ph, utyp_to_btyp ph)`; var case = reflexive
+  `nil ⊨ ph ≈ utyp_to_btyp ph`, no new tags) **and** the rigid `Δ'' ++ Δ'`
+  context match — the list-vs-set bookkeeping the deferred multiset `Δ`
+  refactor would dissolve (`d_sub_gen` is not Permutation-closed). Etag-free
+  `ph` (`Δ'=nil`) has no issue; tagged `ph` is the blocker.
+
+`d_sub_gen_trans_ti_lhs` / `_trans` / `_btyp_nil` remain `Admitted` (not yet
+wired to the AUX).
+
 ## 2026-05-23 — B.2 closed + B.4 tool layer + D12/B.4 statements corrected
 
 **Build:** 🟢 GREEN (`make coq`) throughout.

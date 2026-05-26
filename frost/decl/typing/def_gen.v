@@ -38,7 +38,10 @@ Inductive d_consis_gen : list atom -> list (atom * dbind) -> gutyp -> gutyp -> P
 | d_consis_gen__arrow : forall Δ1 Δ2 Γ G1 G2 G1' G2',
     Δ1 ⨟ Γ ⊨ᵍ G1 ≈ G1' ->
     Δ2 ⨟ Γ ⊨ᵍ G2 ≈ G2' ->
-    list_disjoint Δ1 Δ2 ->
+    (* Paper [Arrow]: tag context is the set-union [Δ1 ∪ Δ2] (idempotent), so
+       no [list_disjoint] — same set-semantics decision as non-gen
+       [d_consis__arrow].  Disjoint-append was a too-strong artifact that
+       blocks B.4 when a tag is reused across both arrow halves. *)
     (Δ1 ++ Δ2) ⨟ Γ ⊨ᵍ (gutyp_arrow G1 G2) ≈ (gutyp_arrow G1' G2')
 | d_consis_gen__forall_tag_inh : forall L Δ Γ ε G1 G2,
     (forall X, X `notin` L ->
@@ -100,19 +103,21 @@ Inductive d_sub_gen : mode -> list atom -> list (atom * dbind) -> gutyp -> btyp 
 | d_sub_gen__arg : forall Δ1 Δ2 Γ m B1 B2 D1 D2,
     Δ1 ⨟ Γ ⊨ D2 ≈ B1 ->
     Δ2 ⨟ Γ ⊢ᵍ[ m ] D1 ⊑ B2 ->
-    list_disjoint Δ1 Δ2 ->
+    (* set-union tag context (see [d_consis_gen__arrow]); no [list_disjoint] *)
     (Δ1 ++ Δ2) ⨟ Γ ⊢ᵍ[ mode_fn m ]
       (gutyp_arrow (utyp_to_gutyp D2) D1) ⊑ (btyp_arrow B1 B2)
 | d_sub_gen__forall_l_tagged : forall Δ Δ' Γ m ε G ph B,
     m <> mode_ti ->
-    list_disjoint Δ' Δ ->
+    (* set-union tag context; no [list_disjoint] (see [d_consis_gen__arrow]) *)
+    d_tags Δ' ph ->                  (* tags{Δ'}{φ}, mirrors non-gen [d_sub] *)
     Δ' ⨟ Γ ⊢ᵤ ph ->
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢ᵍ[ m ] (open_gutyp_wrt_gutyp G (utyp_to_gutyp ph)) ⊑ B ->
     Δ ⨟ Γ ⊢ᵍ[ m ] (gutyp_all_etag ε G) ⊑ B
 | d_sub_gen__forall_l_untagged : forall Δ Δ' Γ m G ph B,
     m <> mode_ti ->
-    list_disjoint Δ' Δ ->
+    (* set-union tag context; no [list_disjoint] (see [d_consis_gen__arrow]) *)
+    d_tags Δ' ph ->
     Δ' ⨟ Γ ⊢ᵤ ph ->
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢ᵍ[ m ] (open_gutyp_wrt_gutyp G (utyp_to_gutyp ph)) ⊑ B ->
