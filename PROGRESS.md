@@ -407,16 +407,21 @@ were updated; `make coq` stays green and `Print Assumptions` is
 unchanged. No new `d_wf_bskl` was introduced — `preserves_wf` is stated
 over the `bskl_to_pskl` projection.
 
-**B2 — still pending (rule-colour faithfulness + the `⫯` restructure).**
-The output sort now *can* carry `inh{∀α.}`, but the rules still produce
-syn-coloured outputs (the `all` rule is `bskl_all_syn ⊳ bskl_all_syn`),
-and the `⫯` rule is still the single merge-base "keep" form rather than
-the paper's three rules (remove / fill-`∀α` / keep-guarded) with
-`Ψ`-clearing on `□`. Producing the paper's inherited-`∀` output needs
-resolving a colour-convention question first: the mech feeds a
-*synthesised* skeleton into refinement (`pskl_to_bskl_syn P` in
-`d_pat__app`), whereas the paper refines an *inherited* skeleton
-`inh{P} ◁syn bid{Q}`. Pending that decision.
+**B2 — ∀-rule now matches the paper (inh/inh).** The paper's ∀-rule is
+`inh{∀α.P} ◁syn inh{∀α.}bid{Q}` — inherited on both sides. Changed
+`d_refine_syn__all` from `bskl_all_syn ⊳ bskl_all_syn` to
+`bskl_all_inh ⊳ bskl_all_inh`. Added `pskl_to_bskl_inh` (coercions.v,
+the inherited painting of a skeleton — same base as `pskl_to_bskl_syn`,
+∀ painted inh) and use it for the refinement *input and output* in
+`d_typing__app` / `d_pat__app`, consistent with the `ptyp_to_btyp_inh A`
+already used in those rules' typing premises (the "same `bskl`,
+repainted" principle: the syn-inferred skeleton is repainted inherited
+for refinement). `make coq` green; `Print Assumptions` unchanged.
+
+**B2 — still pending: the `⫯`/`□` rule restructure.** The `⫯` rule is
+still the single merge-base "keep" form rather than the paper's three
+rules (remove `⫯` / fill with a concrete `∀α` / keep `⫯` when guarded),
+and `□`/`⫯` do not yet clear `Ψ`. Deferred.
 
 **C. Pre-subtyping / pre-join ported to the split AST (+ 3 missing
 cases).** `algo/def_extra.v`'s `a_pre_sub` / `a_pre_join` were `refl`

@@ -267,6 +267,22 @@ Fixpoint pskl_to_bskl_syn (P : pskl) : bskl :=
   | pskl_tophole P0 => bskl_tophole (pskl_to_bskl_syn P0)
   end.
 
+(** Inherited painting of a (synthesised-only) skeleton: same base
+    skeleton as [pskl_to_bskl_syn], with every concrete quantifier
+    painted inherited.  Used where the paper refines an inherited
+    skeleton [inh{P}] (the same [bskl] as the synthesised view, just
+    repainted). *)
+Fixpoint pskl_to_bskl_inh (P : pskl) : bskl :=
+  match P with
+  | pskl_unit => bskl_unit
+  | pskl_var_b n => bskl_var_b n
+  | pskl_var_f X => bskl_var_f X
+  | pskl_arrow P1 P2 => bskl_arrow (pskl_to_bskl_inh P1) (pskl_to_bskl_inh P2)
+  | pskl_all_syn P0 => bskl_all_inh (pskl_to_bskl_inh P0)
+  | pskl_hole => bskl_hole
+  | pskl_tophole P0 => bskl_tophole (pskl_to_bskl_inh P0)
+  end.
+
 Fixpoint bskl_to_pskl (Q : bskl) : pskl :=
   match Q with
   | bskl_unit => pskl_unit

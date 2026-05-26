@@ -324,11 +324,14 @@ Inductive d_refine_syn : list atom -> list (atom * dbind) -> bskl -> bskl -> Pro
     Ψ ⨟ Γ ⊢ᵣ Q2 ⊳ P2 ->
     Ψ ⨟ Γ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2)
 | d_refine_syn__all : forall L Ψ Γ Q P,
+    (* Paper ∀-rule (declarative.tex): inh{∀α.P} ◁syn inh{∀α.}bid{Q} —
+       the quantifier is inherited on both sides (the input is the
+       inherited painting of the same skeleton fed by [d_*__app]). *)
     (forall X, X `notin` L ->
        (X :: Ψ) ⨟ Γ ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f X)) ⊳
          (open_bskl_wrt_bskl P (bskl_var_f X))) ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_all_syn Q) ⊳ (bskl_all_syn P)
+    Ψ ⨟ Γ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P)
 | d_refine_syn__hole : forall Ψ Γ P,
     Ψ ⨟ Γ ⊢ₚₛ P ->
     Ψ ⨟ Γ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
@@ -471,7 +474,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     d_typing m Γ (exp_abs_anno A e) (btyp_arrow (ptyp_to_btyp_syn A) B)
 | d_typing__app : forall Γ m e1 e2 P A B,
     d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
-    d_refine_syn nil Γ (pskl_to_bskl_syn P) (pskl_to_bskl_syn (ptyp_to_pskl A)) ->
+    d_refine_syn nil Γ (pskl_to_bskl_inh P) (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
     d_typing (mode_fn m) Γ e1 (btyp_arrow (ptyp_to_btyp_inh A) B) ->
     d_typing mode_tc Γ e2 (ptyp_to_btyp_inh A) ->
     d_typing m Γ (exp_app e1 e2) B
@@ -523,7 +526,7 @@ with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
       (bskl_tophole (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A)) Q))
 | d_pat__app : forall Γ m e1 e2 P A1 A2,
     d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
-    d_refine_syn nil Γ (pskl_to_bskl_syn P) (pskl_to_bskl_syn (ptyp_to_pskl A1)) ->
+    d_refine_syn nil Γ (pskl_to_bskl_inh P) (pskl_to_bskl_inh (ptyp_to_pskl A1)) ->
     d_typing (mode_fn m) Γ e1
       (btyp_arrow (ptyp_to_btyp_inh A1) (ptyp_to_btyp_inh A2)) ->
     d_pat m Γ (exp_app e1 e2) (pskl_to_bskl_syn (ptyp_to_pskl A2)).

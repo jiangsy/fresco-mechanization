@@ -29,8 +29,8 @@ Proof.
 Qed.
 
 Lemma d_refine_syn_all_split : forall Ψ Γ Q P,
-    d_refine_syn Ψ Γ (bskl_all_syn Q) P ->
-    exists P', P = bskl_all_syn P' /\
+    d_refine_syn Ψ Γ (bskl_all_inh Q) P ->
+    exists P', P = bskl_all_inh P' /\
                exists L, forall X, X `notin` L ->
                   d_refine_syn (X :: Ψ) Γ
                     (open_bskl_wrt_bskl Q (bskl_var_f X))
