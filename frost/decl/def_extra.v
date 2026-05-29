@@ -79,6 +79,13 @@ Inductive d_wf_btyp : list (atom * dbind) -> btyp -> Prop :=
     Γ ⊢ᵦ (btyp_all_inh B)
 where "Γ ⊢ᵦ B" := (d_wf_btyp Γ B) : type_scope.
 
+(* WT: I updated the notation in the paper to separate well-formedness
+of unresolved/tagged types and their linear uses of tags. But I still
+write Γ ⊢ T # Δ as checking both, which is consistent with the
+definition here.
+%
+OK, now I saw d_tags defined below. Then we can just remove Δ here.
+*)
 Inductive d_wf_utyp : list atom -> list (atom * dbind) -> utyp -> Prop :=
 | d_wf_utyp__unit : forall Γ,
     nil ⨟ Γ ⊢ᵤ utyp_unit
@@ -125,6 +132,8 @@ Inductive d_wf_pskl : list atom -> list (atom * dbind) -> pskl -> Prop :=
     nil ⨟ Γ ⊢ₚₛ (pskl_tophole P)
 where "Ψ ⨟ Γ ⊢ₚₛ P" := (d_wf_pskl Ψ Γ P) : type_scope.
 
+(* WT: With d_tags_skl defined blow, we should remove Δ here but add Ψ
+as in d_wf_pskl. *)
 Inductive d_wf_uskl : list atom -> list (atom * dbind) -> uskl -> Prop :=
 | d_wf_uskl__unit : forall Γ,
     nil ⨟ Γ ⊢ᵤₛ uskl_unit
@@ -254,7 +263,9 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
     is_styp B ->
     nil ⨟ Γ ⊢[ mode_ti ] C ⊑ B
 | d_sub__check : forall Δ Γ C B,
-    guarded_utyp C ->
+    (* WT: I modified this case in the new draft to require both C and
+    B to be guarded. *)
+    guarded_utyp C -> 
     Δ ⨟ Γ ⊨ C ≈ B ->
     is_ityp B ->
     Δ ⨟ Γ ⊢[ mode_tc ] C ⊑ B
@@ -271,7 +282,7 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
     m <> mode_ti ->
     list_disjoint Δ' Δ ->            (* Δ' fresh w.r.t. the outer tags *)
     d_tags Δ' ph ->                  (* tags{Δ'}{φ} : Δ' is exactly φ's tags *)
-    Δ' ⨟ Γ ⊢ᵤ ph ->                 (* Γ ⊢ φ : well-scopedness half *)
+    Δ' ⨟ Γ ⊢ᵤ ph ->                 (* Γ ⊢ φ : well-scopedness half *)   (* WT: No need for Δ' here *)
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
     Δ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⊑ B
@@ -279,7 +290,7 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
     d_tags Δ' ph ->
-    Δ' ⨟ Γ ⊢ᵤ ph ->
+    Δ' ⨟ Γ ⊢ᵤ ph ->   (* WT: and here *)
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
     Δ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
@@ -314,6 +325,8 @@ Inductive d_shallow_sub : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
    a synthesised skeleton, encoded as a [pskl] coerced via
    [pskl_to_bskl_syn]. *)
 Inductive d_refine_syn : list atom -> list (atom * dbind) -> bskl -> bskl -> Prop :=
+(* WT: LHS is always an inherited skeleton. I'm not sure if it's worth
+mentioning as a predicate. *)
 | d_refine_syn__unit : forall Ψ Γ,
     Ψ ⨟ Γ ⊢ᵣ bskl_unit ⊳ bskl_unit
 | d_refine_syn__var : forall Ψ Γ X,
@@ -363,6 +376,10 @@ where "Ψ ⨟ Γ ⊢ᵣ Q ⊳ P" := (d_refine_syn Ψ Γ Q P) : type_scope.
    dropped; [d_refine_syn] ([⊳]) above is the single refinement
    relation.  (declarative.tex, "only keep the coloured refinement
    relation".) *)
+(* WT: In the lastest draft I mentioned the uncoloured version is
+defined by ignoring colours. I used the uncoloured version when
+defining valid and safe skeletons. I would need to spend more time on
+these definitions, so we can ignore it for now. *)
 
 Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_consis__unit : forall Γ,
@@ -373,7 +390,7 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
 | d_pat_consis__arrow : forall Δ1 Δ2 Γ R1 R2 Q1 Q2,
     Δ1 ⨟ Γ ⊨ₛ R1 ≈ Q1 ->
     Δ2 ⨟ Γ ⊨ₛ R2 ≈ Q2 ->
-    list_disjoint Δ1 Δ2 ->
+    list_disjoint Δ1 Δ2 -> (* WT: It shouldn't be disjoint union. *)
     (Δ1 ++ Δ2) ⨟ Γ ⊨ₛ (uskl_arrow R1 R2) ≈ (bskl_arrow Q1 Q2)
 | d_pat_consis__forall_inh_tagged : forall L Δ Γ ε R Q,
     (forall X, X `notin` L ->
@@ -381,6 +398,8 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
          (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
     ~ List.In ε Δ ->
+    (* WT: I didn't realise it when reading, but codex told me the
+    above condition is checking freshness. We should remove it. *)
     (ε :: Δ) ⨟ Γ ⊨ₛ (uskl_all_etag ε R) ≈ (bskl_all_inh Q)
 | d_pat_consis__forall_inh_untagged : forall L Δ Γ R Q,
     (forall X, X `notin` L ->
@@ -403,11 +422,14 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
 | d_pat_consis__hole : forall Γ P,
     d_wf_pskl nil Γ P ->
     nil ⨟ Γ ⊨ₛ uskl_hole ≈ (pskl_to_bskl_syn P)
+    (* WT: RHS should just be P? *)
 | d_pat_consis__tophole : forall Δ Γ R Q,
     Δ ⨟ Γ ⊨ₛ R ≈ Q ->
     Δ ⨟ Γ ⊨ₛ (uskl_tophole R) ≈ (bskl_tophole Q)
+    (* WT: There are two missing cases for tophole *)
 where "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q) : type_scope.
 
+(* WT: This definition seems rather out-of-sync. I'll skip it. *)
 Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_sub__infer : forall Γ R Q,
     nil ⨟ Γ ⊨ₛ R ≈ Q ->
@@ -415,8 +437,9 @@ Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -
     nil ⨟ Γ ⊢ₛ[ mode_ti ] R ⊑ Q
 | d_pat_sub__check : forall Δ Γ R Q,
     guarded_uskl R ->
+    (* WT: In the lastest version I require both R and Q to be guarded. *)
     Δ ⨟ Γ ⊨ₛ R ≈ Q ->
-    is_iskl Q ->
+    is_iskl Q -> (* WT: I don't understand this condition. Shouldn't Q be synthesised instead? *)
     Δ ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ Q
 | d_pat_sub__forall_r : forall L Δ Γ R Q,
     (forall X, X `notin` L ->
@@ -489,12 +512,18 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
     d_typing m Γ (exp_abs_anno A e) (btyp_arrow (ptyp_to_btyp_syn A) B)
+    (* WT: A is not synthesised but bidirectional. So this rule says
+    ``there exists a bidirectional A, whose uncoloured version is what
+    the annotation gives'' *)
 | d_typing__app : forall Γ m e1 e2 P A B,
     d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
     d_refine_syn nil Γ (pskl_to_bskl_inh P) (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
     d_typing (mode_fn m) Γ e1 (btyp_arrow (ptyp_to_btyp_inh A) B) ->
     d_typing mode_tc Γ e2 (ptyp_to_btyp_inh A) ->
     d_typing m Γ (exp_app e1 e2) B
+    (* WT: The uses of A in this definition seems wrong. An inherited
+    A is used for the middle part, but I intended to say there exists
+    a bidirectional A. *)
 
 with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__unit : forall Γ,
@@ -520,6 +549,7 @@ with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        d_pat (decr_mode m) ((x ~ dbind_skl P) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat m Γ (exp_abs e) (bskl_arrow (pskl_to_bskl_syn P) Q)
+    (* WT: P in the conclusion should be inherited *)
 | d_pat__abs_check : forall L Γ e Q,
     (forall x, x `notin` L ->
        d_pat mode_tc ((x ~ dbind_skl pskl_hole) ++ Γ)
@@ -534,6 +564,7 @@ with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat m Γ (exp_abs_anno A e)
       (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A)) Q)
+      (* WT: as with d_typing, there exists a bidirectional A *)
 | d_pat__abs_anno_check : forall L Γ e A Q,
     d_wf_ptyp Γ A ->
     (forall x, x `notin` L ->
@@ -541,9 +572,21 @@ with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat mode_tc Γ (exp_abs_anno A e)
       (bskl_tophole (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A)) Q))
+      (* WT: same here, A should be bidirectional *)
 | d_pat__app : forall Γ m e1 e2 P A1 A2,
     d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
     d_refine_syn nil Γ (pskl_to_bskl_inh P) (pskl_to_bskl_inh (ptyp_to_pskl A1)) ->
     d_typing (mode_fn m) Γ e1
       (btyp_arrow (ptyp_to_btyp_inh A1) (ptyp_to_btyp_inh A2)) ->
     d_pat m Γ (exp_app e1 e2) (pskl_to_bskl_syn (ptyp_to_pskl A2)).
+    (* WT: as with d_typing, there exists a bidirectional A; also, the
+    result A_2 should be bidirectional *)
+
+(* WT: Other comments:
+1. In the paper I have \skmod[\N]{\M}{P} as well-formedness conditions
+for typing and skinfer judgements. I'm not sure if we want them to be
+part of the definitions, but we should at least prove that they are
+preserved. I mentioned this because in d_pat, some of the requirements
+of colours are not mentioned explicitly, but can be guaranteed from
+\skmod.
+*)
