@@ -92,11 +92,11 @@ Proof.
     apply H0; auto.
 Qed.
 
-Lemma d_wf_utyp_weakening : forall Γ1 Γ2 Γ3 Δ C,
-    Δ ⨟ (Γ1 ++ Γ3) ⊢ᵤ C ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤ C.
+Lemma d_wf_utyp_weakening : forall Γ1 Γ2 Γ3 C,
+    (Γ1 ++ Γ3) ⊢ᵤ C ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤ C.
 Proof.
-  intros Γ1 Γ2 Γ3 Δ C H. dependent induction H.
+  intros Γ1 Γ2 Γ3 C H. dependent induction H.
   - constructor.
   - constructor. apply binds_app_iff in H. destruct H as [Hin | Hin].
     + apply binds_app_iff; auto.
@@ -130,24 +130,22 @@ Proof.
   - constructor; auto.
 Qed.
 
-Lemma d_wf_uskl_weakening : forall Γ1 Γ2 Γ3 Δ R,
-    Δ ⨟ (Γ1 ++ Γ3) ⊢ᵤₛ R ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤₛ R.
+Lemma d_wf_uskl_weakening : forall Γ1 Γ2 Γ3 Ψ R,
+    Ψ ⨟ (Γ1 ++ Γ3) ⊢ᵤₛ R ->
+    Ψ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤₛ R.
 Proof.
-  intros Γ1 Γ2 Γ3 Δ R H. dependent induction H.
+  intros Γ1 Γ2 Γ3 Ψ R H. dependent induction H.
   - constructor.
-  - constructor. apply binds_app_iff in H. destruct H as [Hin | Hin].
-    + apply binds_app_iff; auto.
-    + apply binds_app_iff. right. apply binds_app_iff; auto.
-  - econstructor; eauto.
+  - constructor. destruct H as [Hin | Hin].
+    + left; auto.
+    + right. apply binds_app_iff in Hin. destruct Hin as [Hin | Hin].
+      * apply binds_app_iff; auto.
+      * apply binds_app_iff. right. apply binds_app_iff; auto.
+  - constructor; auto.
   - inst_cofinites_for d_wf_uskl__all_syn.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply H0; auto.
-  - inst_cofinites_for d_wf_uskl__all_etag; auto.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply H0; auto.
+    intros X HX. apply H0; auto.
+  - inst_cofinites_for d_wf_uskl__all_etag.
+    intros X HX. apply H0; auto.
   - constructor.
   - constructor; auto.
 Qed.
@@ -168,44 +166,31 @@ Proof.
   apply d_wf_btyp_weakening. rewrite_env Γ. exact H.
 Qed.
 
-(** * Tag-relation bridges.
+(** * Tag-relation under renaming.
 
-    The latest paper factors the old combined premise [Δ | Γ ⊢ φ] of the
-    [d_sub] / [d_pat_sub] ForallL rules into well-scopedness (kept in
-    [d_wf_utyp] / [d_wf_uskl]) plus the pure tag relation [d_tags] /
-    [d_tags_skl].  Because [d_wf_utyp] still tracks the tag context, the
-    tag relation is derivable from it on tagged shapes; these bridges
-    discharge the new [d_tags] premise at construction sites from the
-    [d_wf_*] + [is_t*] facts already in scope. *)
+    The latest paper (WT review) factors the old combined premise
+    [Δ | Γ ⊢ φ] of the [d_sub] / [d_pat_sub] ForallL rules into pure
+    well-scopedness ([d_wf_utyp], which no longer tracks tags) plus the
+    pure tag relation [d_tags].  The old [d_wf_utyp_d_tags] /
+    [d_wf_uskl_d_tags_skl] bridges (which read tags off the wf relation's
+    context) are therefore obsolete.  What the [d_sub_gen] rename proof
+    now needs is that [d_tags] is invariant under a type-variable
+    renaming — tags are ε-atoms untouched by tvar substitution. *)
 
-Lemma d_wf_utyp_d_tags : forall Δ Γ C,
-    Δ ⨟ Γ ⊢ᵤ C ->
-    is_ttyp C ->
-    d_tags Δ C.
+Lemma d_tags_subst_tvar : forall Δ C X Y,
+    d_tags Δ C ->
+    d_tags Δ (subst_utyp_in_utyp (utyp_var_f Y) X C).
 Proof.
-  intros Δ Γ C H. induction H; intros Htt.
+  intros Δ C X Y H. induction H; simpl.
   - constructor.
-  - constructor.
-  - dependent destruction Htt. constructor; auto.
-  - dependent destruction Htt.            (* all_syn is not a tagged type *)
-  - dependent destruction Htt.
-    inst_cofinites_for d_tags__all_etag; auto.
-Qed.
-
-Lemma d_wf_uskl_d_tags_skl : forall Δ Γ R,
-    Δ ⨟ Γ ⊢ᵤₛ R ->
-    is_tskl R ->
-    d_tags_skl Δ R.
-Proof.
-  intros Δ Γ R H. induction H; intros Htt.
-  - constructor.
-  - constructor.
-  - dependent destruction Htt. constructor; auto.
-  - dependent destruction Htt.            (* all_syn is not a tagged skeleton *)
-  - dependent destruction Htt.
-    inst_cofinites_for d_tags_skl__all_etag; auto.
-  - constructor.
-  - dependent destruction Htt. constructor; auto.
+  - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
+      constructor.
+  - apply d_tags__arrow; auto.
+  - inst_cofinites_for d_tags__all_etag; [ | assumption ].
+    intros Z HZ.
+    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
+      by (solve [ fsetdec | apply lc_utyp_var_f ]).
+    apply H0; auto.
 Qed.
 
 (** * Preservation hooks.
@@ -229,7 +214,7 @@ Admitted.
 
 Lemma d_wf_ptyp_to_utyp_syn : forall Γ A,
     d_wf_ptyp Γ A ->
-    nil ⨟ Γ ⊢ᵤ (ptyp_to_utyp_syn A).
+    Γ ⊢ᵤ (ptyp_to_utyp_syn A).
 Proof.
 Admitted.
 

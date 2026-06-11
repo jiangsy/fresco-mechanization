@@ -87,7 +87,7 @@ Proof.
     rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3); nbauto.
     eapply H1; eauto.
   - apply d_sub_gen__arg.
-    + apply d_consis_weakening. exact H.
+    + apply d_consis_gen_weakening. exact H.
     + eapply IHd_sub_gen; eauto.
   - apply d_sub_gen__forall_l_tagged with (Δ' := Δ') (ph := ph); nbauto.
     + apply d_wf_utyp_weakening. eassumption.
@@ -847,15 +847,15 @@ Proof.
     eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
 Qed.
 
-(** [d_wf_utyp] is closed under tvar renaming (Δ tracks etags, untouched). *)
-Lemma d_wf_utyp_rename : forall Δ Γ C,
-    Δ ⨟ Γ ⊢ᵤ C ->
+(** [d_wf_utyp] is closed under tvar renaming (pure well-scopedness). *)
+Lemma d_wf_utyp_rename : forall Γ C,
+    Γ ⊢ᵤ C ->
     forall Γ1 Γ2 X0 Y,
       Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
       Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-      Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp (utyp_var_f Y) X0 C).
+      (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp (utyp_var_f Y) X0 C).
 Proof.
-  intros Δ Γ C H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
+  intros Γ C H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
   - apply d_wf_utyp__unit.
   - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
     + apply d_wf_utyp__var. auto.
@@ -863,7 +863,6 @@ Proof.
   - apply d_wf_utyp__arrow.
     + eapply IHd_wf_utyp1; [ reflexivity | exact Hfr ].
     + eapply IHd_wf_utyp2; [ reflexivity | exact Hfr ].
-    + assumption.
   - apply d_wf_utyp__all_syn with
       (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
     intros Z HZ.
@@ -872,11 +871,10 @@ Proof.
     eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - apply d_wf_utyp__all_etag with
       (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
-    + intros Z HZ.
-      erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-      rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-      eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-    + assumption.
+    intros Z HZ.
+    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
 Qed.
 
 (** [d_sub_gen] is closed under tvar renaming.  [Δ] (etags) is untouched. *)
@@ -913,19 +911,17 @@ Proof.
       erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
       rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
       eapply (H1 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-  - (* arg *)
-    simpl. rewrite subst_utyp_to_gutyp.
-    apply d_sub_gen__arg.
-    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
-    + eapply IHd_sub_gen; [ reflexivity | exact Hfr ].
+  - (* arg : after the [d_sub_gen__arg] redesign the LHS argument is a raw
+       [gutyp Darg] related by [d_consis_gen]; this case now needs
+       [d_consis_gen_rename] (the gen analog of [d_consis_rename], not yet
+       proved).  Stubbed while validating the redesign. *)
+    admit.
   - (* forall_l_tagged *)
     simpl.
     apply d_sub_gen__forall_l_tagged with
       (Δ' := Δ') (ph := subst_utyp_in_utyp (utyp_var_f Y) X0 ph).
     + assumption.
-    + eapply d_wf_utyp_d_tags;
-        [ eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ]
-        | apply is_ttyp_rename; assumption ].
+    + eapply d_tags_subst_tvar; eassumption.
     + eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ].
     + apply is_ttyp_rename; assumption.
     + rewrite <- subst_utyp_to_gutyp.
@@ -936,15 +932,15 @@ Proof.
     apply d_sub_gen__forall_l_untagged with
       (Δ' := Δ') (ph := subst_utyp_in_utyp (utyp_var_f Y) X0 ph).
     + assumption.
-    + eapply d_wf_utyp_d_tags;
-        [ eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ]
-        | apply is_ttyp_rename; assumption ].
+    + eapply d_tags_subst_tvar; eassumption.
     + eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ].
     + apply is_ttyp_rename; assumption.
     + rewrite <- subst_utyp_to_gutyp.
       rewrite <- subst_gutyp_in_gutyp_open_gutyp_wrt_gutyp; [ | apply lc_gutyp_var_f ].
       eapply IHd_sub_gen; [ reflexivity | exact Hfr ].
-Qed.
+(* d_sub_gen_rename: [arg] case stubbed pending [d_consis_gen_rename]
+   (gen analog needed after the d_sub_gen__arg redesign). *)
+Admitted.
 
 (** B.4 base, AUX.  [Cmid] is the second sub's LHS [utyp]; the source [Csrc] is
     tied to it by consistency against its [btyp] erasure [utyp_to_btyp Cmid].
@@ -1010,18 +1006,11 @@ Proof.
       rewrite subst_utyp_in_utyp_fresh_eq in Hren by fsetdec.
       rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f X)) in Hren by fsetdec.
       exact Hren.
-  - (* arg *)
-    destruct Cmid as [ | nidx | Xv | Cmid1 Cmid2 | Cmid0 | ev Cmid0 ];
-      simpl in Heq; try discriminate.
-    injection Heq as HeqA HeqB.
-    apply utyp_to_gutyp_inj in HeqA. subst.
-    simpl in Hcons.
-    dependent destruction Hcons.
-    pose proof (d_consis_compose_syn (d_consis_is_syn_erase H) Hcons1
-                  (d_consis_synerase_lhs H)) as [Δarg [Hinclarg Harg]].
-    edestruct (IHd_sub_gen C2 Cmid2 Δ3 eq_refl Hcons2) as [Δres Hres].
-    exists (Δarg ++ Δres). simpl.
-    apply d_sub_gen__arg; [ exact Harg | exact Hres ].
+  - (* arg : after the [d_sub_gen__arg] redesign the argument is a [gutyp]
+       related by [d_consis_gen], so the composition here needs a *gen*
+       consistency-compose (not the [d_consis_compose_syn] used here).
+       Stubbed pending that gen analog. *)
+    admit.
   - (* forall_l_tagged.  Instantiate [Csrc]'s ∀ with the same [ph]; recurse via
        the IH on the opened body.  Needs (a) a [d_consis] substitution lemma to
        push the body consistency under [X ↦ (ph, utyp_to_btyp ph)] (the var
@@ -1067,4 +1056,56 @@ Lemma d_sub_gen_trans_btyp_nil : forall m1 Γ B0 B2 B3 m2,
     nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] (btyp_to_gutyp B2) ⊑ B3 ->
     nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m1 m2 ] (btyp_to_gutyp B0) ⊑ B3.
 Proof.
+Admitted.
+
+(** * D1/D12 route — step 1: function-side subsumption.
+
+    The [__embed] half of D12, extracted as an induction on the *plain*
+    typing derivation so the FN-spine recursion is structural (n
+    decrements with the arrow spine).  Driving this case-by-case is what
+    tells us whether D12 holds as currently stated, and which (if any)
+    rule side-conditions must move after the bidirectional-A refactor. *)
+Lemma d_typing_gen_lift : forall m_orig Γ e B1,
+    d_typing m_orig Γ e B1 ->
+    is_fn_n_ti m_orig ->
+    d_wf_denv Γ ->
+    forall m_new B2,
+      nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] (btyp_to_gutyp B1) ⊑ B2 ->
+      Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] e ⦂ B2.
+Proof.
+  intros m_orig Γ e B1 H.
+  induction H; intros Hfn Hwf m_new B_tgt Hsub.
+  - (* __unit : ti-synthesis, wrap via gen sub *)
+    eapply d_typing_gen__sub;
+      [ apply d_typing_gen__embed; apply d_typing__unit | exact Hsub ].
+  - (* __var *)
+    eapply d_typing_gen__sub;
+      [ apply d_typing_gen__embed; apply d_typing__var; exact H | exact Hsub ].
+  - (* __anno *)
+    eapply d_typing_gen__sub;
+      [ apply d_typing_gen__embed; apply d_typing__anno; exact H | exact Hsub ].
+  - (* __sub : compose the two subtypings.  Needs (a) lifting the non-gen
+       [d_sub m nil Γ (ptyp_to_utyp_syn B1) B2] to [d_sub_gen], and (b)
+       [d_sub_gen_trans_btyp_nil] to compose with [Hsub]; then the [ti] IH
+       closes.  Tower-dependent. *)
+    admit.
+  - (* __freeze : mode_tc is not is_fn_n_ti *)
+    inversion Hfn.
+  - (* __forall : mode_tc is not is_fn_n_ti *)
+    inversion Hfn.
+  - (* __abs : FUNCTION-SIDE HARD CORE.  [Hsub] subtypes
+       [arrow (inh A) B] at [fn^n m_new]; via [d_sub_gen__arg] the new arg
+       [B1'] need only satisfy [D2 ~ B1'], but [__abs] forces the rebuilt
+       arrow's arg to be exactly [ptyp_to_btyp_inh A] (the body binds
+       [x : A]).  So rebuilding needs arg-PRESERVATION that the consistency
+       does not give directly — the genuine obstruction. *)
+    admit.
+  - (* __abs_anno : as __abs, compounded by the S2 bidirectional [Barg]
+       ([H0 : btyp_to_ptyp Barg = A]) — the arg painting is now existential,
+       so the companion must thread the erasure invariant. *)
+    admit.
+  - (* __app : function-side via [e1]'s arrow type [arrow Barg B]; the
+       result [B] is subtyped, the arg [Barg] reconciled through the same
+       consistency mechanism as __abs. *)
+    admit.
 Admitted.

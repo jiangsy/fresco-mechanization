@@ -15,10 +15,10 @@ Require Export src.frost.decl.def_extra.
 Notation "Γ ⊢ₚ A" := (d_wf_ptyp Γ A)
   (at level 75, A at level 75, no associativity) : type_scope.
 
-Notation "Δ ⨟ Γ ⊢ᵤₜ C" := (d_wf_utyp Δ Γ C)
-  (at level 75, Γ at level 75, C at level 75, no associativity) : type_scope.
+Notation "Γ ⊢ᵤₜ C" := (d_wf_utyp Γ C)
+  (at level 75, C at level 75, no associativity) : type_scope.
 
-Notation "Δ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Δ Γ R)
+Notation "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R)
   (at level 75, Γ at level 75, R at level 75, no associativity) : type_scope.
 
 (** ** Shallow subtyping (separate from main d_sub). *)

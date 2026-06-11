@@ -100,17 +100,22 @@ Inductive d_sub_gen : mode -> list atom -> list (atom * dbind) -> gutyp -> btyp 
          (utyp_to_gutyp (open_utyp_wrt_utyp C (utyp_var_f X)))
          ⊑ (open_btyp_wrt_btyp B (btyp_var_f X))) ->
     Δ ⨟ Γ ⊢ᵍ[ mode_tc ] (utyp_to_gutyp C) ⊑ (btyp_all_inh B)
-| d_sub_gen__arg : forall Δ1 Δ2 Γ m B1 B2 D1 D2,
-    Δ1 ⨟ Γ ⊨ D2 ≈ B1 ->
+| d_sub_gen__arg : forall Δ1 Δ2 Γ m B1 B2 D1 Darg,
+    (* Argument is INVARIANT (related by consistency, not subtyping), carried
+       at the [gutyp] level via the *generalized* consistency [d_consis_gen]
+       so that a polymorphic *inherited* argument ([gutyp_all_inh]) is
+       expressible — which [utyp_to_gutyp _] could never produce.  Subsumes
+       the old [utyp] form (it embeds via [utyp_to_gutyp]/[btyp_to_gutyp]). *)
+    Δ1 ⨟ Γ ⊨ᵍ Darg ≈ (btyp_to_gutyp B1) ->
     Δ2 ⨟ Γ ⊢ᵍ[ m ] D1 ⊑ B2 ->
     (* set-union tag context (see [d_consis_gen__arrow]); no [list_disjoint] *)
     (Δ1 ++ Δ2) ⨟ Γ ⊢ᵍ[ mode_fn m ]
-      (gutyp_arrow (utyp_to_gutyp D2) D1) ⊑ (btyp_arrow B1 B2)
+      (gutyp_arrow Darg D1) ⊑ (btyp_arrow B1 B2)
 | d_sub_gen__forall_l_tagged : forall Δ Δ' Γ m ε G ph B,
     m <> mode_ti ->
     (* set-union tag context; no [list_disjoint] (see [d_consis_gen__arrow]) *)
     d_tags Δ' ph ->                  (* tags{Δ'}{φ}, mirrors non-gen [d_sub] *)
-    Δ' ⨟ Γ ⊢ᵤ ph ->
+    Γ ⊢ᵤ ph ->
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢ᵍ[ m ] (open_gutyp_wrt_gutyp G (utyp_to_gutyp ph)) ⊑ B ->
     Δ ⨟ Γ ⊢ᵍ[ m ] (gutyp_all_etag ε G) ⊑ B
@@ -118,7 +123,7 @@ Inductive d_sub_gen : mode -> list atom -> list (atom * dbind) -> gutyp -> btyp 
     m <> mode_ti ->
     (* set-union tag context; no [list_disjoint] (see [d_consis_gen__arrow]) *)
     d_tags Δ' ph ->
-    Δ' ⨟ Γ ⊢ᵤ ph ->
+    Γ ⊢ᵤ ph ->
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢ᵍ[ m ] (open_gutyp_wrt_gutyp G (utyp_to_gutyp ph)) ⊑ B ->
     Δ ⨟ Γ ⊢ᵍ[ m ] (gutyp_all_syn G) ⊑ B

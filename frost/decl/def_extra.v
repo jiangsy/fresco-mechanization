@@ -85,30 +85,33 @@ write Γ ⊢ T # Δ as checking both, which is consistent with the
 definition here.
 %
 OK, now I saw d_tags defined below. Then we can just remove Δ here.
-*)
-Inductive d_wf_utyp : list atom -> list (atom * dbind) -> utyp -> Prop :=
+
+Done (WT review): the tag context is dropped — [d_wf_utyp] is now pure
+well-scopedness ([Γ ⊢ C]); the linear tag content of a tagged type is
+checked separately by [d_tags] below. *)
+Inductive d_wf_utyp : list (atom * dbind) -> utyp -> Prop :=
 | d_wf_utyp__unit : forall Γ,
-    nil ⨟ Γ ⊢ᵤ utyp_unit
+    d_wf_utyp Γ utyp_unit
 | d_wf_utyp__var : forall Γ X,
     binds X dbind_tvar Γ ->
-    nil ⨟ Γ ⊢ᵤ (utyp_var_f X)
-| d_wf_utyp__arrow : forall Δ1 Δ2 Γ C1 C2,
-    Δ1 ⨟ Γ ⊢ᵤ C1 ->
-    Δ2 ⨟ Γ ⊢ᵤ C2 ->
-    list_disjoint Δ1 Δ2 ->
-    (Δ1 ++ Δ2) ⨟ Γ ⊢ᵤ (utyp_arrow C1 C2)
-| d_wf_utyp__all_syn : forall L Δ Γ C,
+    d_wf_utyp Γ (utyp_var_f X)
+| d_wf_utyp__arrow : forall Γ C1 C2,
+    d_wf_utyp Γ C1 ->
+    d_wf_utyp Γ C2 ->
+    d_wf_utyp Γ (utyp_arrow C1 C2)
+| d_wf_utyp__all_syn : forall L Γ C,
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ᵤ
+       d_wf_utyp ((X ~ dbind_tvar) ++ Γ)
          (open_utyp_wrt_utyp C (utyp_var_f X))) ->
-    Δ ⨟ Γ ⊢ᵤ (utyp_all_syn C)
-| d_wf_utyp__all_etag : forall L Δ Γ ε C,
+    d_wf_utyp Γ (utyp_all_syn C)
+| d_wf_utyp__all_etag : forall L Γ ε C,
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ᵤ
+       d_wf_utyp ((X ~ dbind_tvar) ++ Γ)
          (open_utyp_wrt_utyp C (utyp_var_f X))) ->
-    ~ List.In ε Δ ->
-    (ε :: Δ) ⨟ Γ ⊢ᵤ (utyp_all_etag ε C)
-where "Δ ⨟ Γ ⊢ᵤ C" := (d_wf_utyp Δ Γ C) : type_scope.
+    d_wf_utyp Γ (utyp_all_etag ε C).
+
+Notation "Γ ⊢ᵤ C" := (d_wf_utyp Γ C)
+  (at level 75, C at level 75, no associativity) : type_scope.
 
 Inductive d_wf_pskl : list atom -> list (atom * dbind) -> pskl -> Prop :=
 | d_wf_pskl__unit : forall Ψ Γ,
@@ -133,35 +136,40 @@ Inductive d_wf_pskl : list atom -> list (atom * dbind) -> pskl -> Prop :=
 where "Ψ ⨟ Γ ⊢ₚₛ P" := (d_wf_pskl Ψ Γ P) : type_scope.
 
 (* WT: With d_tags_skl defined blow, we should remove Δ here but add Ψ
-as in d_wf_pskl. *)
+as in d_wf_pskl.
+
+Done (WT review): the tag context is dropped; the first context is now
+the skeleton-scope context [Ψ] (type variables bound by ∀ *within* the
+skeleton), exactly as in [d_wf_pskl] — [Ψ] is cleared at every
+[uskl_tophole], and the var rule consults [Ψ] or [Γ].  Linear tag
+content is checked separately by [d_tags_skl] below. *)
 Inductive d_wf_uskl : list atom -> list (atom * dbind) -> uskl -> Prop :=
-| d_wf_uskl__unit : forall Γ,
-    nil ⨟ Γ ⊢ᵤₛ uskl_unit
-| d_wf_uskl__var : forall Γ X,
-    binds X dbind_tvar Γ ->
-    nil ⨟ Γ ⊢ᵤₛ (uskl_var_f X)
-| d_wf_uskl__arrow : forall Δ1 Δ2 Γ R1 R2,
-    Δ1 ⨟ Γ ⊢ᵤₛ R1 ->
-    Δ2 ⨟ Γ ⊢ᵤₛ R2 ->
-    list_disjoint Δ1 Δ2 ->
-    (Δ1 ++ Δ2) ⨟ Γ ⊢ᵤₛ (uskl_arrow R1 R2)
-| d_wf_uskl__all_syn : forall L Δ Γ R,
+| d_wf_uskl__unit : forall Ψ Γ,
+    Ψ ⨟ Γ ⊢ᵤₛ uskl_unit
+| d_wf_uskl__var : forall Ψ Γ X,
+    List.In X Ψ \/ binds X dbind_tvar Γ ->
+    Ψ ⨟ Γ ⊢ᵤₛ (uskl_var_f X)
+| d_wf_uskl__arrow : forall Ψ Γ R1 R2,
+    Ψ ⨟ Γ ⊢ᵤₛ R1 ->
+    Ψ ⨟ Γ ⊢ᵤₛ R2 ->
+    Ψ ⨟ Γ ⊢ᵤₛ (uskl_arrow R1 R2)
+| d_wf_uskl__all_syn : forall L Ψ Γ R,
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ᵤₛ
+       (X :: Ψ) ⨟ Γ ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f X))) ->
-    Δ ⨟ Γ ⊢ᵤₛ (uskl_all_syn R)
-| d_wf_uskl__all_etag : forall L Δ Γ ε R,
+    Ψ ⨟ Γ ⊢ᵤₛ (uskl_all_syn R)
+| d_wf_uskl__all_etag : forall L Ψ Γ ε R,
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ᵤₛ
+       (X :: Ψ) ⨟ Γ ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f X))) ->
-    ~ List.In ε Δ ->
-    (ε :: Δ) ⨟ Γ ⊢ᵤₛ (uskl_all_etag ε R)
-| d_wf_uskl__hole : forall Γ,
-    nil ⨟ Γ ⊢ᵤₛ uskl_hole
-| d_wf_uskl__tophole : forall Δ Γ R,
-    Δ ⨟ Γ ⊢ᵤₛ R ->
-    Δ ⨟ Γ ⊢ᵤₛ (uskl_tophole R)
-where "Δ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Δ Γ R) : type_scope.
+    Ψ ⨟ Γ ⊢ᵤₛ (uskl_all_etag ε R)
+| d_wf_uskl__hole : forall Ψ Γ,
+    Ψ ⨟ Γ ⊢ᵤₛ uskl_hole
+| d_wf_uskl__tophole : forall Ψ Γ R,
+    guarded_uskl R ->
+    nil ⨟ Γ ⊢ᵤₛ R ->
+    Ψ ⨟ Γ ⊢ᵤₛ (uskl_tophole R)
+where "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R) : type_scope.
 
 (* ===================================================================== *)
 (*  Tag relation  [tags{Δ}{φ}]  (paper notation [φ # Δ], declarative.tex) *)
@@ -265,7 +273,8 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
 | d_sub__check : forall Δ Γ C B,
     (* WT: I modified this case in the new draft to require both C and
     B to be guarded. *)
-    guarded_utyp C -> 
+    guarded_utyp C ->
+    guarded_btyp B ->
     Δ ⨟ Γ ⊨ C ≈ B ->
     is_ityp B ->
     Δ ⨟ Γ ⊢[ mode_tc ] C ⊑ B
@@ -282,7 +291,7 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
     m <> mode_ti ->
     list_disjoint Δ' Δ ->            (* Δ' fresh w.r.t. the outer tags *)
     d_tags Δ' ph ->                  (* tags{Δ'}{φ} : Δ' is exactly φ's tags *)
-    Δ' ⨟ Γ ⊢ᵤ ph ->                 (* Γ ⊢ φ : well-scopedness half *)   (* WT: No need for Δ' here *)
+    Γ ⊢ᵤ ph ->                       (* Γ ⊢ φ : well-scopedness half (WT: no Δ') *)
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
     Δ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⊑ B
@@ -290,7 +299,7 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
     d_tags Δ' ph ->
-    Δ' ⨟ Γ ⊢ᵤ ph ->   (* WT: and here *)
+    Γ ⊢ᵤ ph ->   (* WT: no Δ' *)
     is_ttyp ph ->
     (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
     Δ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
@@ -390,16 +399,17 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
 | d_pat_consis__arrow : forall Δ1 Δ2 Γ R1 R2 Q1 Q2,
     Δ1 ⨟ Γ ⊨ₛ R1 ≈ Q1 ->
     Δ2 ⨟ Γ ⊨ₛ R2 ≈ Q2 ->
-    list_disjoint Δ1 Δ2 -> (* WT: It shouldn't be disjoint union. *)
+    (* WT: It shouldn't be disjoint union.
+       [list_disjoint Δ1 Δ2] premise removed per WT review: tag
+       contexts combine by (non-disjoint) set union, not disjoint union. *)
     (Δ1 ++ Δ2) ⨟ Γ ⊨ₛ (uskl_arrow R1 R2) ≈ (bskl_arrow Q1 Q2)
 | d_pat_consis__forall_inh_tagged : forall L Δ Γ ε R Q,
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
          (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    ~ List.In ε Δ ->
-    (* WT: I didn't realise it when reading, but codex told me the
-    above condition is checking freshness. We should remove it. *)
+    (* WT: codex confirmed the [~ List.In ε Δ] premise was checking
+       freshness; removed per WT review. *)
     (ε :: Δ) ⨟ Γ ⊨ₛ (uskl_all_etag ε R) ≈ (bskl_all_inh Q)
 | d_pat_consis__forall_inh_untagged : forall L Δ Γ R Q,
     (forall X, X `notin` L ->
@@ -419,42 +429,81 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
          (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
     Δ ⨟ Γ ⊨ₛ (uskl_all_syn R) ≈ (bskl_all_syn Q)
+(* NB: the consistency ghost-G rules [GhostTag] ([HoleG ~ Hole]) and
+   [UnivGhostG] ([TopHoleG.S ~ TopHole.P]) are DEFERRED for the same
+   reason as the [d_pat_sub] ghost-G rules — see the deferral note on
+   [d_pat_sub] below (no [HoleG]/[TopHoleG] in [uskl]; feature tentative
+   in the paper). *)
 | d_pat_consis__hole : forall Γ P,
+    (* Paper [Ghost]: a [Hole] matches any *inherited* skeleton [inh{P}]
+       (WT: "RHS should just be P?" — the RHS is the inherited painting
+       of the pattern skeleton, not the synthesised one). *)
     d_wf_pskl nil Γ P ->
-    nil ⨟ Γ ⊨ₛ uskl_hole ≈ (pskl_to_bskl_syn P)
-    (* WT: RHS should just be P? *)
+    nil ⨟ Γ ⊨ₛ uskl_hole ≈ (pskl_to_bskl_inh P)
 | d_pat_consis__tophole : forall Δ Γ R Q,
+    (* Paper [UnivGhost]: TopHole ≈ TopHole. *)
     Δ ⨟ Γ ⊨ₛ R ≈ Q ->
     Δ ⨟ Γ ⊨ₛ (uskl_tophole R) ≈ (bskl_tophole Q)
-    (* WT: There are two missing cases for tophole *)
+| d_pat_consis__tophole_inh : forall L Δ Γ R Q,
+    (* Paper [UnivGhost1] (was missing, WT): the RHS TopHole can produce
+       an inherited quantifier.  LHS [TopHole.R] is unchanged; the RHS
+       body [Q] is checked under a fresh [α]. *)
+    (forall X, X `notin` L ->
+       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
+         (uskl_tophole R) ≈ (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
+    Δ ⨟ Γ ⊨ₛ (uskl_tophole R) ≈ (bskl_all_inh Q)
+| d_pat_consis__tophole_drop : forall Δ Γ R Q,
+    (* Paper [UnivGhost2] (was missing, WT): the LHS TopHole can be
+       dropped against a plain inherited RHS. *)
+    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
+    Δ ⨟ Γ ⊨ₛ (uskl_tophole R) ≈ Q
 where "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q) : type_scope.
 
-(* WT: This definition seems rather out-of-sync. I'll skip it. *)
+(* WT: "This definition seems rather out-of-sync. I'll skip it."
+   Reworked (WT review) against the current paper looksub figure
+   (declarative.tex, [patsub]).  [d_pat_sub] has no metatheory consumers
+   yet, so this is a definition-only sync.  Note: paper rules [GhostG]
+   ([HoleG ⊑ Hole]) and [UnivGhostLG] ([TopHoleG.S ⊑ P]) are NOT encoded
+   — the mech skeleton AST has no separate ghost-tagged [HoleG] /
+   [TopHoleG] constructors.
+
+   DEFERRED (decision 2026-06-11): a faithful extension would add the
+   ghost-tagged constructors to [uskl] ONLY (the paper's unresolved
+   skeleton [S], declarative.tex:1638; the resolved [bskl]/[pskl] sorts
+   have only plain [Hole]/[TopHole], so extending them would over-talk).
+   But the paper marks [HoleG]/[TopHoleG] as tentative (`\hl{}` highlight
+   + WT's note at declarative.tex:1649, "I don't think that simplifies
+   much things"), so the [uskl] AST extension is held until the paper
+   settles.  Same deferral applies to the consistency rules [GhostTag]
+   ([HoleG ~ Hole]) and [UnivGhostG] ([TopHoleG.S ~ TopHole.P]). *)
 Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_sub__infer : forall Γ R Q,
+    (* Paper [Infer]: synthesise by consistency, dropping tags. *)
     nil ⨟ Γ ⊨ₛ R ≈ Q ->
     is_sskl Q ->
     nil ⨟ Γ ⊢ₛ[ mode_ti ] R ⊑ Q
-| d_pat_sub__check : forall Δ Γ R Q,
+| d_pat_sub__univ_ghost_r : forall Γ R Q,
+    (* Paper [UnivGhostR] (replaces the out-of-sync [check]; WT review):
+       the checking rule produces a [TopHole] on the RHS, requires BOTH
+       [R] and the synthesised body [Q] guarded, and [Q] synthesised
+       ([is_sskl]) — answering WT's "shouldn't Q be synthesised?". *)
     guarded_uskl R ->
-    (* WT: In the lastest version I require both R and Q to be guarded. *)
-    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
-    is_iskl Q -> (* WT: I don't understand this condition. Shouldn't Q be synthesised instead? *)
-    Δ ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ Q
-| d_pat_sub__forall_r : forall L Δ Γ R Q,
-    (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ₛ[ mode_tc ] R ⊑
-         (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    Δ ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ (bskl_all_inh Q)
+    guarded_bskl Q ->
+    is_sskl Q ->
+    nil ⨟ Γ ⊨ₛ R ≈ Q ->
+    nil ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ (bskl_tophole Q)
 | d_pat_sub__arg : forall Δ1 Δ2 Γ m R1 R2 Q1 Q2,
+    (* Paper [Arrow]: set-union tag context (no [list_disjoint]). *)
     Δ1 ⨟ Γ ⊨ₛ R1 ≈ Q1 ->
     Δ2 ⨟ Γ ⊢ₛ[ m ] R2 ⊑ Q2 ->
     (Δ1 ++ Δ2) ⨟ Γ ⊢ₛ[ mode_fn m ] (uskl_arrow R1 R2) ⊑ (bskl_arrow Q1 Q2)
 | d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε R psi Q,
+    (* Paper [ForallL] (tagged head).  [Ψ' fresh] = [list_disjoint];
+       well-scopedness is [nil ⨟ Γ ⊢ᵤₛ ψ] (S1: scope, not tags). *)
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
     d_tags_skl Δ' psi ->             (* tags{Δ'}{ψ} : skeleton-tag relation *)
-    Δ' ⨟ Γ ⊢ᵤₛ psi ->
+    nil ⨟ Γ ⊢ᵤₛ psi ->
     is_tskl psi ->
     (Δ ++ Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_etag ε R) ⊑ Q
@@ -462,10 +511,19 @@ Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -
     m <> mode_ti ->
     list_disjoint Δ' Δ ->
     d_tags_skl Δ' psi ->
-    Δ' ⨟ Γ ⊢ᵤₛ psi ->
+    nil ⨟ Γ ⊢ᵤₛ psi ->
     is_tskl psi ->
     (Δ ++ Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_syn R) ⊑ Q
+| d_pat_sub__ghost : forall m Γ P,
+    (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}]. *)
+    d_wf_pskl nil Γ P ->
+    nil ⨟ Γ ⊢ₛ[ m ] uskl_hole ⊑ (pskl_to_bskl_inh P)
+| d_pat_sub__univ_ghost_l : forall m Δ Γ R Q,
+    (* Paper [UnivGhostL]: drop a [TopHole] on the LHS (any [M ≠ TI]). *)
+    m <> mode_ti ->
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
+    Δ ⨟ Γ ⊢ₛ[ m ] (uskl_tophole R) ⊑ Q
 where "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Δ Γ R Q) : type_scope.
 
 (* ===================================================================== *)
@@ -506,24 +564,27 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
     d_typing m Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
-| d_typing__abs_anno : forall L Γ m e A B,
+| d_typing__abs_anno : forall L Γ m e A Barg B,
+    (* WT: "A is not synthesised but bidirectional — there exists a
+       bidirectional A whose uncoloured version is the annotation."
+       Encoded: the conclusion's arrow-arg is an arbitrary bidirectional
+       [Barg] whose erasure [btyp_to_ptyp] is the annotation [A]. *)
     d_wf_ptyp Γ A ->
+    btyp_to_ptyp Barg = A ->
     (forall x, x `notin` L ->
        d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing m Γ (exp_abs_anno A e) (btyp_arrow (ptyp_to_btyp_syn A) B)
-    (* WT: A is not synthesised but bidirectional. So this rule says
-    ``there exists a bidirectional A, whose uncoloured version is what
-    the annotation gives'' *)
-| d_typing__app : forall Γ m e1 e2 P A B,
+    d_typing m Γ (exp_abs_anno A e) (btyp_arrow Barg B)
+| d_typing__app : forall Γ m e1 e2 P A Barg B,
+    (* WT: the function-arg should be a bidirectional [A] (here [Barg]
+       with [btyp_to_ptyp Barg = A]), not the forced inherited painting;
+       the argument is still *checked* at [inh{A}] (paper D-App). *)
+    btyp_to_ptyp Barg = A ->
     d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
     d_refine_syn nil Γ (pskl_to_bskl_inh P) (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
-    d_typing (mode_fn m) Γ e1 (btyp_arrow (ptyp_to_btyp_inh A) B) ->
+    d_typing (mode_fn m) Γ e1 (btyp_arrow Barg B) ->
     d_typing mode_tc Γ e2 (ptyp_to_btyp_inh A) ->
     d_typing m Γ (exp_app e1 e2) B
-    (* WT: The uses of A in this definition seems wrong. An inherited
-    A is used for the middle part, but I intended to say there exists
-    a bidirectional A. *)
 
 with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__unit : forall Γ,
@@ -548,39 +609,46 @@ with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     (forall x, x `notin` L ->
        d_pat (decr_mode m) ((x ~ dbind_skl P) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
-    d_pat m Γ (exp_abs e) (bskl_arrow (pskl_to_bskl_syn P) Q)
-    (* WT: P in the conclusion should be inherited *)
+    (* WT: "P in the conclusion should be inherited" (paper P-Abs:
+       [inh{P} → bid{Q}]). *)
+    d_pat m Γ (exp_abs e) (bskl_arrow (pskl_to_bskl_inh P) Q)
 | d_pat__abs_check : forall L Γ e Q,
     (forall x, x `notin` L ->
        d_pat mode_tc ((x ~ dbind_skl pskl_hole) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat mode_tc Γ (exp_abs e)
       (bskl_tophole (bskl_arrow bskl_hole Q))
-| d_pat__abs_anno : forall L Γ m e A Q,
+| d_pat__abs_anno : forall L Γ m e A Sarg Q,
+    (* WT: "as with d_typing, there exists a bidirectional A" — the
+       arrow-arg skeleton [Sarg] is an arbitrary bidirectional skeleton
+       whose erasure [bskl_to_pskl] is the annotation's pattern. *)
     m <> mode_tc ->
     d_wf_ptyp Γ A ->
+    bskl_to_pskl Sarg = ptyp_to_pskl A ->
     (forall x, x `notin` L ->
        d_pat (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
-    d_pat m Γ (exp_abs_anno A e)
-      (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A)) Q)
-      (* WT: as with d_typing, there exists a bidirectional A *)
-| d_pat__abs_anno_check : forall L Γ e A Q,
+    d_pat m Γ (exp_abs_anno A e) (bskl_arrow Sarg Q)
+| d_pat__abs_anno_check : forall L Γ e A Sarg Q,
+    (* WT: "same here, A should be bidirectional". *)
     d_wf_ptyp Γ A ->
+    bskl_to_pskl Sarg = ptyp_to_pskl A ->
     (forall x, x `notin` L ->
        d_pat mode_tc ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) Q) ->
     d_pat mode_tc Γ (exp_abs_anno A e)
-      (bskl_tophole (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A)) Q))
-      (* WT: same here, A should be bidirectional *)
-| d_pat__app : forall Γ m e1 e2 P A1 A2,
+      (bskl_tophole (bskl_arrow Sarg Q))
+| d_pat__app : forall Γ m e1 e2 P A1 A2 Barg1 Sres,
+    (* WT: "there exists a bidirectional A; also, the result A_2 should
+       be bidirectional" — [Barg1] is a bidirectional arg ([= A1]) and
+       [Sres] a bidirectional result skeleton ([= A2]). *)
+    btyp_to_ptyp Barg1 = A1 ->
+    bskl_to_pskl Sres = ptyp_to_pskl A2 ->
     d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
     d_refine_syn nil Γ (pskl_to_bskl_inh P) (pskl_to_bskl_inh (ptyp_to_pskl A1)) ->
     d_typing (mode_fn m) Γ e1
-      (btyp_arrow (ptyp_to_btyp_inh A1) (ptyp_to_btyp_inh A2)) ->
-    d_pat m Γ (exp_app e1 e2) (pskl_to_bskl_syn (ptyp_to_pskl A2)).
-    (* WT: as with d_typing, there exists a bidirectional A; also, the
-    result A_2 should be bidirectional *)
+      (btyp_arrow Barg1 (ptyp_to_btyp_inh A2)) ->
+    d_pat m Γ (exp_app e1 e2) Sres.
 
 (* WT: Other comments:
 1. In the paper I have \skmod[\N]{\M}{P} as well-formedness conditions
