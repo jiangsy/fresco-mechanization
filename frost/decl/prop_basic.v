@@ -204,12 +204,28 @@ Qed.
 Lemma ptyp_to_btyp_syn_lc : forall A,
     lc_ptyp A -> lc_btyp (ptyp_to_btyp_syn A).
 Proof.
-Admitted.
+  intros A H. induction H; simpl.
+  - apply lc_btyp_unit.
+  - apply lc_btyp_var_f.
+  - apply lc_btyp_arrow; assumption.
+  - apply lc_btyp_all_syn. intros X.
+    change (btyp_var_f X) with (ptyp_to_btyp_syn (ptyp_var_f X)).
+    rewrite <- ptyp_to_btyp_syn_open.
+    match goal with Hb : forall _, lc_btyp _ |- _ => apply Hb end.
+Qed.
 
 Lemma ptyp_to_btyp_inh_lc : forall A,
     lc_ptyp A -> lc_btyp (ptyp_to_btyp_inh A).
 Proof.
-Admitted.
+  intros A H. induction H; simpl.
+  - apply lc_btyp_unit.
+  - apply lc_btyp_var_f.
+  - apply lc_btyp_arrow; assumption.
+  - apply lc_btyp_all_inh. intros X.
+    change (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)).
+    rewrite <- ptyp_to_btyp_inh_open.
+    match goal with Hb : forall _, lc_btyp _ |- _ => apply Hb end.
+Qed.
 
 Lemma ptyp_to_utyp_syn_lc : forall A,
     lc_ptyp A -> lc_utyp (ptyp_to_utyp_syn A).
