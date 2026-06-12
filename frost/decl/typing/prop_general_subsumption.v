@@ -518,17 +518,22 @@ Inductive btyp_spine : nat -> btyp -> btyp -> btyp -> btyp -> Prop :=
 
 (** Subtyping Transitivity (paper, syntax-directed.tex:179): subtyping into
     an [FN^n TI] spine composes with a subtyping out of its synthesised
-    tail, replacing the tail throughout the spine.  Proved by induction on
-    the subtyping: [infer] is [CST], [arg] is the recursion, [check] /
-    [forall_r] are excluded by [is_fn_n], and the [forall_l] cases share
-    CST's tag-context bookkeeping gap. *)
+    tail, replacing the tail throughout the spine.  The conclusion carries
+    the paper's [Ψ ⊆ Ψ'] invariant ([Δ [<=] Δ']) — the output context only
+    *grows*.  That invariant is what the [forall_l] cases need: the IH gives
+    [(Δ ∪ Δ') ⊆ Δr], so the instantiation tags [Δ'] are inside [Δr] and the
+    reconstruct picks the outer context [Δr ∖ Δ'] — set difference makes the
+    rule's freshness side condition ([Δ' ∩ outer = ∅]) automatic and the
+    premise context [=]-equal to [Δr] (the paper's "Ψ1 still disjoint from
+    Ψ'" line, discharged here by [fsetdec]).  [check]/[forall_r] are
+    excluded by [is_fn_n]. *)
 Lemma d_sub_trans_spine : forall m1 Δ Γ T Bfull,
     Δ ⨟ Γ ⊢[ m1 ] T ⊑ Bfull ->
     forall n A M B Bres,
       is_fn_n n m1 ->
       btyp_spine n Bfull A B Bres ->
       empty ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
-      exists Δ', Δ' ⨟ Γ ⊢[ mode_fn_n_subst m1 M ] T ⊑ Bres.
+      exists Δ', Δ [<=] Δ' /\ Δ' ⨟ Γ ⊢[ mode_fn_n_subst m1 M ] T ⊑ Bres.
 Proof.
   intros m1 Δ Γ T Bfull Hsub.
   induction Hsub; intros n A0 M0 B0 Bres Hfn Hspine Htail.
@@ -536,10 +541,8 @@ Proof.
     inversion Hfn; subst.
     dependent destruction Hspine.
     edestruct (d_consis_sub_trans Htail) as [Δ' HΔ'];
-      [ reflexivity
-      | apply is_styp_is_syn; eassumption
-      | eassumption
-      | exists Δ'; simpl; exact HΔ' ].
+      [ reflexivity | apply is_styp_is_syn; eassumption | eassumption | ].
+    exists Δ'. split; [ fsetdec | simpl; exact HΔ' ].
   - (* d_sub__check (tc): excluded, [is_fn_n n mode_tc] is uninhabited. *)
     inversion Hfn.
   - (* d_sub__forall_r (tc): excluded. *)
@@ -547,16 +550,38 @@ Proof.
   - (* d_sub__arg (fn m'): peel one arrow, recurse on the result spine. *)
     inversion Hfn; subst.
     dependent destruction Hspine.
-    edestruct IHHsub as [Δ2' Hres];
+    edestruct IHHsub as [Δ2' [Hb2 Hres]];
       [ eassumption | eassumption | eassumption | ].
-    eexists. simpl. eapply d_sub__arg; [ eassumption | eassumption | reflexivity ].
-  - (* d_sub__forall_l_tagged: needs the tag-context bookkeeping (the
-       instantiation tags [Δ'] must be split back out of the IH's context),
-       the same gap as CST's forall_l.  Deferred. *)
-    admit.
+    exists (Δ1 `union` Δ2'). split.
+    + fsetdec.
+    + simpl. eapply d_sub__arg; [ eassumption | exact Hres | reflexivity ].
+  - (* d_sub__forall_l_tagged: subset invariant + set difference. *)
+    edestruct IHHsub as [Δr [Hb Hr]];
+      [ eassumption | eassumption | eassumption | ].
+    exists (AtomSetImpl.diff Δr Δ'). split.
+    + fsetdec.
+    + eapply d_sub__forall_l_tagged with (Δ' := Δ').
+      * destruct m as [ | | m']; simpl;
+          [ exfalso; apply H; reflexivity | discriminate | discriminate ].
+      * fsetdec.
+      * eassumption.
+      * eassumption.
+      * eassumption.
+      * eapply d_sub_equiv; [ | exact Hr ]. fsetdec.
   - (* d_sub__forall_l_untagged: as above. *)
-    admit.
-Admitted.
+    edestruct IHHsub as [Δr [Hb Hr]];
+      [ eassumption | eassumption | eassumption | ].
+    exists (AtomSetImpl.diff Δr Δ'). split.
+    + fsetdec.
+    + eapply d_sub__forall_l_untagged with (Δ' := Δ').
+      * destruct m as [ | | m']; simpl;
+          [ exfalso; apply H; reflexivity | discriminate | discriminate ].
+      * fsetdec.
+      * eassumption.
+      * eassumption.
+      * eassumption.
+      * eapply d_sub_equiv; [ | exact Hr ]. fsetdec.
+Qed.
 
 (** Generalised General Subsumption (paper, syntax-directed.tex:287): the
     headline.  Over PLAIN typing; subtypes only the synthesised result of
