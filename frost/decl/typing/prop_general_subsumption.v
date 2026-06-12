@@ -562,8 +562,20 @@ Proof.
     assert (HgT : guarded_utyp T) by (eapply d_consis_guarded_lhs; [ exact H | exact Hcons ]).
     destruct (d_consis_trans_mid (d_consis_lc_utyp H1) Hcons H1) as [Δc Hc].
     exists Δc. apply d_sub__check; [ exact HgT | exact H0 | exact Hc | exact H2 ].
-  - (* forall_r (tc): cofinite-uniform witness — needs ordinary d_sub_rename. *)
-    admit.
+  - (* forall_r (tc): pick one fresh [X0], run the per-[X] IH with the
+       consistency weakened to [X0::Γ], then transport that single instance
+       to all [X] via [d_sub_rename] — the cofinite-uniform witness. *)
+    pick fresh X0 for (L `union` dom Γ `union` ftvar_in_utyp T
+                       `union` ftvar_in_btyp B).
+    destruct (H0 X0 ltac:(fsetdec) Δ0 T
+                ltac:(apply d_consis_weakening_head; exact Hcons)) as [Δ' HΔ'].
+    exists Δ'. apply d_sub__forall_r with
+      (L := L `union` dom Γ `union` ftvar_in_utyp T `union` ftvar_in_btyp B
+            `union` singleton X0).
+    intros X HX.
+    rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
+    rewrite <- (subst_utyp_in_utyp_fresh_eq T (utyp_var_f X) X0) by fsetdec.
+    apply (@d_sub_rename _ _ _ _ _ HΔ' nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
   - (* arg (fn m): arg by trans_mid on the consistency, result by IH. *)
     simpl in Hcons. dependent destruction Hcons.
     destruct (d_consis_trans_mid (d_consis_lc_utyp H) ltac:(eassumption) H) as [Δc1 Hc1].
