@@ -377,6 +377,45 @@ Proof.
       | assumption ].
 Qed.
 
+(** Against an INHERITED ([is_ityp]) RHS, every ε-tag of the source is solved
+    ([ForallInh]), so the source's full tag set sits inside the consistency
+    context.  This is the lower bound the [forall_l] reconstruct needs: the
+    instantiation tags [Δ'] of [ph] survive into the output *because* [ph]
+    occurs in the subject and the RHS is inherited.  ([forall_syn*] cases are
+    vacuous: their RHS [btyp_all_syn] is not [is_ityp]; [forall_inh_untagged]
+    is vacuous: its source [utyp_all_syn] has no [d_tags].) *)
+Lemma d_consis_tags_subset_ityp : forall Δ Γ C B Δc,
+    Δ ⨟ Γ ⊨ C ≈ B ->
+    is_ityp B ->
+    d_tags Δc C ->
+    Δc [<=] Δ.
+Proof.
+  intros Δ Γ C B Δc Hcons. revert Δc. induction Hcons; intros Δc Hity Htags.
+  - dependent destruction Htags. fsetdec.
+  - dependent destruction Htags. fsetdec.
+  - dependent destruction Hity. dependent destruction Htags.
+    match goal with
+    | IH1 : forall _, is_ityp ?B1 -> _, IH2 : forall _, is_ityp ?B2 -> _ |- _ =>
+        specialize (IH1 _ ltac:(assumption) ltac:(eassumption));
+        specialize (IH2 _ ltac:(assumption) ltac:(eassumption))
+    end. fsetdec.
+  - (* forall_inh_tagged: source etag, RHS inh — the tag-solving case. *)
+    dependent destruction Htags.
+    dependent destruction Hity.
+    pick fresh X.
+    match goal with
+    | IH : forall _, _ `notin` _ -> _ |- _ =>
+        assert (Hsub0 : _ [<=] _) by
+          (eapply (IH X); [ fsetdec
+                          | match goal with H : forall _, _ -> is_ityp _ |- _ => apply H; fsetdec end
+                          | match goal with H : forall _, _ -> d_tags _ _ |- _ => apply H; fsetdec end ])
+    end.
+    fsetdec.
+  - dependent destruction Htags.   (* forall_inh_untagged: utyp_all_syn has no d_tags *)
+  - dependent destruction Hity.    (* forall_syn_tagged: btyp_all_syn not is_ityp *)
+  - dependent destruction Hity.    (* forall_syn: btyp_all_syn not is_ityp *)
+Qed.
+
 (** Consistency-Subtyping Transitivity (paper, syntax-directed.tex:152):
     a consistency into a synthesised type composes with a subtyping out of
     it.  The synthesised middle is carried as a [btyp] [B_A] with [is_syn],
