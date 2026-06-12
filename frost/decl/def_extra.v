@@ -169,6 +169,13 @@ Inductive d_wf_uskl : list atom -> list (atom * dbind) -> uskl -> Prop :=
     guarded_uskl R ->
     nil ⨟ Γ ⊢ᵤₛ R ->
     Ψ ⨟ Γ ⊢ᵤₛ (uskl_tophole R)
+(* Dotted ghosts: same well-formedness as the plain Hole / TopHole. *)
+| d_wf_uskl__holeg : forall Ψ Γ,
+    Ψ ⨟ Γ ⊢ᵤₛ uskl_holeg
+| d_wf_uskl__topholeg : forall Ψ Γ R,
+    guarded_uskl R ->
+    nil ⨟ Γ ⊢ᵤₛ R ->
+    Ψ ⨟ Γ ⊢ᵤₛ (uskl_topholeg R)
 where "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R) : type_scope.
 
 (* ===================================================================== *)
@@ -232,7 +239,14 @@ Inductive d_tags_skl : list atom -> uskl -> Prop :=
 | d_tags_skl__hole : d_tags_skl nil uskl_hole
 | d_tags_skl__tophole : forall Δ R,
     d_tags_skl Δ R ->
-    d_tags_skl Δ (uskl_tophole R).
+    d_tags_skl Δ (uskl_tophole R)
+(* Dotted ghosts (declarative.tex:1698,1704): HoleG carries no tags;
+   TopHoleG.ψ carries exactly the tags of its body — same as the plain
+   Hole / TopHole. *)
+| d_tags_skl__holeg : d_tags_skl nil uskl_holeg
+| d_tags_skl__topholeg : forall Δ R,
+    d_tags_skl Δ R ->
+    d_tags_skl Δ (uskl_topholeg R).
 
 (* ===================================================================== *)
 (*  Type consistency and subtyping                                        *)
@@ -452,11 +466,14 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
          (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
     Δ ⨟ Γ ⊨ₛ (uskl_all_syn R) ≈ (bskl_all_syn Q)
-(* NB: the consistency ghost-G rules [GhostTag] ([HoleG ~ Hole]) and
-   [UnivGhostG] ([TopHoleG.S ~ TopHole.P]) are DEFERRED for the same
-   reason as the [d_pat_sub] ghost-G rules — see the deferral note on
-   [d_pat_sub] below (no [HoleG]/[TopHoleG] in [uskl]; feature tentative
-   in the paper). *)
+| d_pat_consis__ghostg : forall Γ,
+    (* Paper [GhostG] (declarative.tex eqlab): a ghost hole [HoleG] is
+       consistent with a plain [Hole]. *)
+    nil ⨟ Γ ⊨ₛ uskl_holeg ≈ bskl_hole
+| d_pat_consis__topholeg : forall Δ Γ R Q,
+    (* Paper [UnivGhostG]: [TopHoleG.S ~ TopHole.P] from [S ~ P]. *)
+    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
+    Δ ⨟ Γ ⊨ₛ (uskl_topholeg R) ≈ (bskl_tophole Q)
 | d_pat_consis__hole : forall Γ P,
     (* Paper [Ghost]: a [Hole] matches any *inherited* skeleton [inh{P}]
        (WT: "RHS should just be P?" — the RHS is the inherited painting
@@ -482,23 +499,14 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
     Δ ⨟ Γ ⊨ₛ (uskl_tophole R) ≈ Q
 where "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q) : type_scope.
 
-(* WT: "This definition seems rather out-of-sync. I'll skip it."
-   Reworked (WT review) against the current paper looksub figure
+(* Reworked (WT review) against the current paper looksub figure
    (declarative.tex, [patsub]).  [d_pat_sub] has no metatheory consumers
-   yet, so this is a definition-only sync.  Note: paper rules [GhostG]
-   ([HoleG ⊑ Hole]) and [UnivGhostLG] ([TopHoleG.S ⊑ P]) are NOT encoded
-   — the mech skeleton AST has no separate ghost-tagged [HoleG] /
-   [TopHoleG] constructors.
-
-   DEFERRED (decision 2026-06-11): a faithful extension would add the
-   ghost-tagged constructors to [uskl] ONLY (the paper's unresolved
-   skeleton [S], declarative.tex:1638; the resolved [bskl]/[pskl] sorts
-   have only plain [Hole]/[TopHole], so extending them would over-talk).
-   But the paper marks [HoleG]/[TopHoleG] as tentative (`\hl{}` highlight
-   + WT's note at declarative.tex:1649, "I don't think that simplifies
-   much things"), so the [uskl] AST extension is held until the paper
-   settles.  Same deferral applies to the consistency rules [GhostTag]
-   ([HoleG ~ Hole]) and [UnivGhostG] ([TopHoleG.S ~ TopHole.P]). *)
+   yet, so this is a definition-only sync.  The dotted-ghost constructors
+   ([uskl_holeg]/[uskl_topholeg]) are now in the AST ([uskl] only — the
+   paper's unresolved skeleton [S], declarative.tex:1638), so the paper
+   rules [GhostG] ([HoleG ⊑ Hole]) and [UnivGhostLG] ([TopHoleG.S ⊑ P])
+   are encoded below (and the matching consistency rules [GhostG]/
+   [UnivGhostG] on [d_pat_consis]). *)
 Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_sub__infer : forall Γ R Q,
     (* Paper [Infer]: synthesise by consistency, dropping tags. *)
@@ -547,6 +555,14 @@ Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -
     m <> mode_ti ->
     Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_tophole R) ⊑ Q
+| d_pat_sub__ghostg : forall m Γ,
+    (* Paper [GhostG]: a ghost hole [HoleG] is below a plain [Hole]. *)
+    nil ⨟ Γ ⊢ₛ[ m ] uskl_holeg ⊑ bskl_hole
+| d_pat_sub__univ_ghost_lg : forall m Δ Γ R Q,
+    (* Paper [UnivGhostLG]: drop a [TopHoleG] on the LHS (any [M ≠ TI]). *)
+    m <> mode_ti ->
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
+    Δ ⨟ Γ ⊢ₛ[ m ] (uskl_topholeg R) ⊑ Q
 where "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Δ Γ R Q) : type_scope.
 
 (* ===================================================================== *)

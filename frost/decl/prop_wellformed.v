@@ -148,6 +148,8 @@ Proof.
     intros X HX. apply H0; auto.
   - constructor.
   - constructor; auto.
+  - constructor.         (* holeg, as hole *)
+  - constructor; auto.   (* topholeg, as tophole *)
 Qed.
 
 Lemma d_wf_ptyp_weakening_head : forall Γ Γ' A,
