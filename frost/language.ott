@@ -24,7 +24,6 @@ metavar epsvar, eps     ::= {{ coq var }}
 metavar ptypvar, Xpt ::= {{ repr-locally-nameless }}
 metavar btypvar, Xbt ::= {{ repr-locally-nameless }}
 metavar utypvar, Xut ::= {{ repr-locally-nameless }}
-metavar gutypvar, Xgt ::= {{ repr-locally-nameless }}
 metavar psklvar, Xps ::= {{ repr-locally-nameless }}
 metavar bsklvar, Xbs ::= {{ repr-locally-nameless }}
 metavar usklvar, Xus ::= {{ repr-locally-nameless }}
@@ -87,19 +86,6 @@ utyp, C :: 'utyp_' ::=
   | ( C )                :: S :: paren {{ coq ([[C]]) }}
   | { C2 / Xut } C1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xut C1]] [[C2]]) }}
 
-% Generalised unresolved types — paper's bid{T} in the generalized
-% syntax-directed subtyping/consistency figure.  This extends [utyp]
-% with inherited quantifiers while preserving ε-tagged quantifiers.
-gutyp, D :: 'gutyp_' ::=
-  | UNIT                 ::   :: unit
-  | Xgt                  ::   :: var
-  | D1 -> D2             ::   :: arrow
-  | forall^syn Xgt . D   ::   :: all_syn   (+ bind Xgt in D +)
-  | forall^inh Xgt . D   ::   :: all_inh   (+ bind Xgt in D +)
-  | forall@ eps Xgt . D  ::   :: all_etag  (+ bind Xgt in D +)
-  | ( D )                :: S :: paren {{ coq ([[G]]) }}
-  | { D2 / Xgt } GD      :: M :: subst {{ coq (open_gutyp_wrt_gutyp [[Xgt D1]] [[D2]]) }}
-
 % Skeletons — for d_wf_skl, d_refine, d_pat_consis, etc.
 % Broadest skleton: matches [bid] shapes (syn / inh / etag ∀s) plus
 % holes / tophole. Narrow classes (e.g. syn-only, no-etag) are
@@ -133,6 +119,11 @@ uskl, R :: 'uskl_' ::=
   | forall@ eps Xus . R  ::   :: all_etag  (+ bind Xus in R +)
   | HOLE                 ::   :: hole
   | TOPHOLE . R          ::   :: tophole
+  % Dotted ghosts (paper's HoleG / TopHoleG, rendered dotted): ghost
+  % holes that coexist with the plain Hole/TopHole in unresolved
+  % skeletons; the tagged-skeleton class [is_tskl] keeps only these.
+  | HOLEG                ::   :: holeg
+  | TOPHOLEG . R         ::   :: topholeg
   | ( R )                :: S :: paren {{ coq ([[R]]) }}
   | { R2 / Xus } R1      :: M :: subst {{ coq (open_uskl_wrt_uskl [[Xus R1]] [[R2]]) }}
 
@@ -159,7 +150,6 @@ substitutions
   single A Xpt  :: subst_ptyp_in
   single B Xbt  :: subst_btyp_in
   single C Xut  :: subst_utyp_in
-  single D Xgt  :: subst_gutyp_in
   single P Xps  :: subst_pskl_in
   single Q Xbs  :: subst_bskl_in
   single R Xus  :: subst_bskl_in
@@ -170,7 +160,6 @@ freevars
   A Xpt :: ftvar_in
   B Xbt :: ftvar_in
   C Xut :: ftvar_in
-  D Xgt :: ftvar_in
   P Xps :: ftvar_in
   Q Xbs :: ftvar_in
   R Xus :: ftvar_in
