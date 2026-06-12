@@ -416,12 +416,21 @@ Proof.
                 ltac:(eassumption) ltac:(exact Hcons) ltac:(eassumption))
       as [Δc [Hincl Hc]].
     exists Δc. apply d_sub__check; assumption.
-  - (* d_sub__forall_r (tc): IH under a fresh [α] (consistency weakened via
-       d_consis_weakening_head), then re-[ForallR].  Blocked on the
-       cofinite-uniform witness: the IH gives a per-[α] context [Δ], so we
-       need an ordinary [d_sub_rename] (only [d_sub_gen_rename] exists) to
-       transport one fresh instance to all [α].  Deferred. *)
-    admit.
+  - (* d_sub__forall_r (tc): pick one fresh [X0], run the per-[X] IH with the
+       consistency weakened to [X0::Γ], then transport that single instance
+       to all [X] via [d_sub_rename] — the cofinite-uniform witness. *)
+    subst C.
+    pick fresh X0 for (L `union` dom Γ `union` ftvar_in_utyp T
+                       `union` ftvar_in_btyp B `union` ftvar_in_btyp B_A).
+    destruct (H0 X0 ltac:(fsetdec) B_A T Δt eq_refl Hsyn
+                ltac:(apply d_consis_weakening_head; exact Hcons)) as [Δ0 HΔ0].
+    exists Δ0. apply d_sub__forall_r with
+      (L := L `union` dom Γ `union` ftvar_in_utyp T `union` ftvar_in_btyp B
+            `union` singleton X0).
+    intros X HX.
+    rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
+    rewrite <- (subst_utyp_in_utyp_fresh_eq T (utyp_var_f X) X0) by fsetdec.
+    apply (@d_sub_rename _ _ _ _ _ HΔ0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
   - (* d_sub__arg (fn m'): the source is an arrow, so [B_A] is an arrow;
        compose on the (consistency) argument, recurse (IH) on the result. *)
     destruct B_A as [ | n | X | B_A1 B_A2 | B_A0 | B_A0 ];

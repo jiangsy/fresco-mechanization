@@ -688,3 +688,84 @@ Qed.
     decrements with the arrow spine).  Driving this case-by-case is what
     tells us whether D12 holds as currently stated, and which (if any)
     rule side-conditions must move after the bidirectional-A refactor. *)
+
+(** Shape predicates [is_styp]/[guarded_btyp] under tvar renaming (for
+    [d_sub_rename]'s infer/check cases). *)
+Lemma is_styp_rename : forall B Z W,
+    is_styp B -> is_styp (subst_btyp_in_btyp (btyp_var_f W) Z B).
+Proof.
+  intros B Z W H. induction H; simpl.
+  - constructor.
+  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
+  - constructor; assumption.
+  - apply is_styp__all with (L := L `union` singleton Z `union` singleton W).
+    intros X HX.
+    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
+      by (solve [ fsetdec | apply lc_btyp_var_f ]).
+    apply H0; fsetdec.
+Qed.
+
+Lemma guarded_btyp_rename : forall B Z W,
+    guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp (btyp_var_f W) Z B).
+Proof.
+  intros B Z W H. induction H; simpl.
+  - constructor.
+  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
+  - constructor; apply subst_btyp_in_btyp_lc_btyp; auto; apply lc_btyp_var_f.
+Qed.
+
+(** [d_sub] is closed under tvar renaming (Δ is etag-only, untouched).  The
+    ordinary analogue of the deleted [d_sub_gen_rename]; closes the
+    cofinite-uniform [forall_r] case of the transitivity lemmas. *)
+Lemma d_sub_rename : forall m Δ Γ C B,
+    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
+    forall Γ1 Γ2 X0 Y,
+      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+      Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
+      Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢[ m ]
+         (subst_utyp_in_utyp (utyp_var_f Y) X0 C)
+         ⊑ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
+Proof.
+  intros m Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
+  - (* infer *)
+    apply d_sub__infer.
+    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_styp_rename. assumption.
+    + assumption.
+  - (* check *)
+    apply d_sub__check.
+    + apply guarded_utyp_rename. assumption.
+    + apply guarded_btyp_rename. assumption.
+    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_ityp_rename. assumption.
+  - (* forall_r *)
+    apply d_sub__forall_r with
+      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
+    intros Z HZ.
+    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
+  - (* arg *)
+    eapply d_sub__arg.
+    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
+    + eapply IHd_sub; [ reflexivity | exact Hfr ].
+    + assumption.
+  - (* forall_l_tagged *)
+    eapply d_sub__forall_l_tagged with (Δ' := Δ').
+    + assumption.
+    + assumption.
+    + apply d_tags_subst_tvar. eassumption.
+    + eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_ttyp_rename. assumption.
+    + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
+      eapply IHd_sub; [ reflexivity | exact Hfr ].
+  - (* forall_l_untagged *)
+    eapply d_sub__forall_l_untagged with (Δ' := Δ').
+    + assumption.
+    + assumption.
+    + apply d_tags_subst_tvar. eassumption.
+    + eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_ttyp_rename. assumption.
+    + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
+      eapply IHd_sub; [ reflexivity | exact Hfr ].
+Qed.
