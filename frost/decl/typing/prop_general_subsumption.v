@@ -13,10 +13,19 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_subtyping.
 Require Import src.frost.decl.typing.prop_weakening.
-Require Import src.frost.decl.typing.def_gen.
 Require Import src.frost.decl.typing.prop_subsumption_aux.
 
 Set Implicit Arguments.
+
+(** Mode arithmetic for the [FN^n] generalisation: replace the trailing
+    [mode_ti] of an [FN^n TI] mode with [m_new] (formerly in [def_gen.v],
+    the only survivor of the deleted [gutyp]/[d_sub_gen] route). *)
+Fixpoint mode_fn_n_subst (m_orig m_new : mode) : mode :=
+  match m_orig with
+  | mode_ti => m_new
+  | mode_tc => mode_tc
+  | mode_fn m => mode_fn (mode_fn_n_subst m m_new)
+  end.
 
 (** * Paper-faithful general subsumption (2026-06 rework).
 
@@ -44,19 +53,20 @@ Lemma d_sub_function_nontc : forall m Δ Γ C1 C2 B,
 Proof.
   intros m Δ Γ C1 C2 B Hm Hsub.
   dependent destruction Hsub.
-  - (* d_sub__infer (m = ti): the whole arrow is matched by consistency *)
+  - (* d_sub__infer (m = ti): the whole arrow is matched by consistency.
+       The arrow-consistency now carries [empty [=] Δ1 ∪ Δ2], so both halves
+       sit at the empty tag context (recovered by [fsetdec]). *)
     dependent destruction H.                 (* d_consis__arrow *)
-    match goal with
-    | H : _ ++ _ = nil |- _ => apply app_eq_nil in H as [-> ->]
-    | H : nil = _ ++ _ |- _ => symmetry in H; apply app_eq_nil in H as [-> ->]
-    end.
     match goal with                          (* is_styp (btyp_arrow _ _), any name *)
     | H : is_styp (btyp_arrow _ _) |- _ => dependent destruction H
     end.
-    do 2 eexists; exists (@nil atom), (@nil atom).
+    do 2 eexists; exists empty, empty.
     split; [ reflexivity | split ].
-    + eassumption.
-    + simpl. eauto using d_sub__infer.
+    + eapply d_consis_equiv; [ | eassumption ]. fsetdec.
+    + simpl. apply d_sub__infer.
+      * eapply d_consis_equiv; [ | eassumption ]. fsetdec.
+      * assumption.
+      * reflexivity.
   - (* d_sub__check (m = tc): excluded *) contradiction.
   - (* d_sub__forall_r (m = tc): excluded *) contradiction.
   - (* d_sub__arg (m = fn m'): argument by consistency, result subtyped *)
@@ -92,14 +102,13 @@ Qed.
 Lemma d_consis_ttyp_refl : forall Γ ph,
     Γ ⊢ᵤ ph ->
     is_ttyp ph ->
-    nil ⨟ Γ ⊨ ph ≈ (utyp_to_btyp ph).
+    empty ⨟ Γ ⊨ ph ≈ (utyp_to_btyp ph).
 Proof.
   intros Γ ph Hwf. induction Hwf; intros Htt; simpl.
-  - apply d_consis__unit.
-  - apply d_consis__var. assumption.
+  - apply d_consis__unit. reflexivity.
+  - apply d_consis__var; [ assumption | reflexivity ].
   - inversion Htt; subst.
-    replace (@nil atom) with (@nil atom ++ @nil atom) by reflexivity.
-    apply d_consis__arrow; [ apply IHHwf1 | apply IHHwf2 ]; assumption.
+    eapply d_consis__arrow; [ apply IHHwf1 | apply IHHwf2 | fsetdec ]; assumption.
   - inversion Htt.                          (* utyp_all_syn is not is_ttyp *)
   - inversion Htt; subst.
     apply d_consis__forall_syn_tagged with (L := L `union` L0).
@@ -118,13 +127,12 @@ Qed.
     "middle reflexivity" the general-middle CST reformulation needs. *)
 Lemma d_consis_utyp_refl : forall Γ C,
     Γ ⊢ᵤ C ->
-    nil ⨟ Γ ⊨ C ≈ (utyp_to_btyp C).
+    empty ⨟ Γ ⊨ C ≈ (utyp_to_btyp C).
 Proof.
   intros Γ C Hwf. induction Hwf; simpl.
-  - apply d_consis__unit.
-  - apply d_consis__var. assumption.
-  - replace (@nil atom) with (@nil atom ++ @nil atom) by reflexivity.
-    apply d_consis__arrow; assumption.
+  - apply d_consis__unit. reflexivity.
+  - apply d_consis__var; [ assumption | reflexivity ].
+  - eapply d_consis__arrow; [ eassumption | eassumption | fsetdec ].
   - apply d_consis__forall_syn with (L := L).
     intros X HX. change (btyp_var_f X) with (utyp_to_btyp (utyp_var_f X)).
     rewrite <- utyp_to_btyp_open. apply H0; auto.
@@ -188,11 +196,12 @@ Lemma d_consis_erase_tags : forall Δ Γ C B,
     exists Δ', Δ' ⨟ Γ ⊨ (btyp_to_utyp_syn (utyp_to_btyp C)) ≈ B.
 Proof.
   intros Δ Γ C B H. induction H.
-  - (* unit *) exists (@nil atom). apply d_consis__unit.
-  - (* var *) exists (@nil atom). simpl. apply d_consis__var; assumption.
+  - (* unit *) exists empty. apply d_consis__unit. reflexivity.
+  - (* var *) exists empty. simpl. apply d_consis__var; [ assumption | reflexivity ].
   - (* arrow *)
     destruct IHd_consis1 as [Δ1' H1']. destruct IHd_consis2 as [Δ2' H2'].
-    exists (Δ1' ++ Δ2'). simpl. apply d_consis__arrow; assumption.
+    exists (Δ1' `union` Δ2'). simpl.
+    eapply d_consis__arrow; [ eassumption | eassumption | reflexivity ].
   - (* forall_inh_tagged: ε-tag erased, ForallInhTagged → ForallInhUntagged *)
     pick fresh X0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
@@ -277,7 +286,7 @@ Lemma d_consis_trans_mid_nil : forall Δ1 Δ2 Γ T Cmid B,
     is_syn B ->
     Δ1 ⨟ Γ ⊨ T ≈ (utyp_to_btyp Cmid) ->
     Δ2 ⨟ Γ ⊨ Cmid ≈ B ->
-    nil ⨟ Γ ⊨ T ≈ B.
+    empty ⨟ Γ ⊨ T ≈ B.
 Proof.
   intros Δ1 Δ2 Γ T Cmid B Hlc Hsyn HT HCmid.
   destruct (d_consis_erase_tags HCmid) as [Δ2' Herase].
@@ -306,25 +315,27 @@ Lemma d_consis_subst_tvar : forall Δ Γ C B,
                       ≈ (subst_btyp_in_btyp (utyp_to_btyp ph) X0 B).
 Proof.
   intros Δ Γ C B H. induction H; intros Γ1 Γ2 X0 ph Heq Hwf Htt; subst; simpl.
-  - apply d_consis__unit.
+  - apply d_consis__unit. assumption.
   - (* var: [X = X0] uses the base fact; [X <> X0] stays a variable. *)
     match goal with |- context [ if ?d then _ else _ ] => destruct d end.
-    + apply d_consis_ttyp_refl; assumption.
-    + apply d_consis__var. analyze_binds H; auto.
-  - apply d_consis__arrow; [ eapply IHd_consis1 | eapply IHd_consis2 ]; eauto.
-  - apply d_consis__forall_inh_tagged with
+    + eapply d_consis_equiv; [ | apply d_consis_ttyp_refl; assumption ]. fsetdec.
+    + apply d_consis__var; [ analyze_binds H; auto | assumption ].
+  - eapply d_consis__arrow;
+      [ eapply IHd_consis1; eauto | eapply IHd_consis2; eauto | assumption ].
+  - eapply d_consis__forall_inh_tagged with
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton X0).
-    intros Z HZ.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    eapply (H0 Z);
-      [ fsetdec | simpl; reflexivity
-      | rewrite_env ((Z ~ dbind_tvar) ++ (Γ1 ++ Γ2));
-        apply d_wf_utyp_weakening_head; exact Hwf
-      | assumption ].
+    + intros Z HZ.
+      erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
+        by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
+      erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
+        by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
+      rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+      eapply (H0 Z);
+        [ fsetdec | simpl; reflexivity
+        | rewrite_env ((Z ~ dbind_tvar) ++ (Γ1 ++ Γ2));
+          apply d_wf_utyp_weakening_head; exact Hwf
+        | assumption ].
+    + assumption.
   - apply d_consis__forall_inh_untagged with
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton X0).
     intros Z HZ.
@@ -385,13 +396,14 @@ Proof.
   - (* d_sub__infer (ti): compose the two consistencies.  Since the RHS [B]
        is synthesised, no inh quantifier is reached, so the composed context
        collapses to [nil] (d_consis_compose_syn_nil_l). *)
-    subst C. exists (@nil atom). apply d_sub__infer.
+    subst C. exists empty. apply d_sub__infer.
     + eapply d_consis_compose_syn_nil_l.
       * exact Hsyn.
       * apply is_styp_is_syn. eassumption.
       * exact Hcons.
       * eassumption.
     + assumption.
+    + reflexivity.
   - (* d_sub__check (tc): [T] is guarded (from [B_A] guarded + the
        consistency, via [d_consis_guarded_lhs] and the syn round-trip),
        and the consistency composes through to the inh target [B]. *)
@@ -422,7 +434,8 @@ Proof.
       as [Δc1 [Hincl1 Hc1]].
     destruct (IHHsub B_A2 _ _ eq_refl ltac:(eassumption) ltac:(eassumption))
       as [Δc2 Hres].
-    exists (Δc1 ++ Δc2). apply d_sub__arg; eassumption.
+    exists (Δc1 `union` Δc2).
+    eapply d_sub__arg; [ eassumption | eassumption | reflexivity ].
   - (* d_sub__forall_l_tagged: LHS [utyp_all_etag] cannot be a
        [btyp_to_utyp_syn] image (no etag in a synthesised type). *)
     destruct B_A as [ | n | X | B_A1 B_A2 | B_A0 | B_A0 ];
@@ -432,6 +445,45 @@ Proof.
        [d_consis] substitution lemma (does not exist) to push [T]'s
        consistency under [α ↦ ph] — the same hard sub-problem the old
        [d_sub_gen_trans_ti_lhs_aux] forall_l case flagged.  Deferred. *)
+    admit.
+Admitted.
+
+(** Reformulated CST over a GENERAL middle [Cmid] (paper-faithful: the syn
+    middle is not closed under tagged instantiation).  infer/check/arg close
+    via the proven bridges; forall_l is the concrete attempt with the
+    existing list-typed tag context. *)
+Lemma d_consis_sub_trans_mid : forall M Δ2 Γ Cmid B,
+    Δ2 ⨟ Γ ⊢[ M ] Cmid ⊑ B ->
+    forall Δ1 T,
+      Δ1 ⨟ Γ ⊨ T ≈ (utyp_to_btyp Cmid) ->
+      exists Δ, Δ ⨟ Γ ⊢[ M ] T ⊑ B.
+Proof.
+  intros M Δ2 Γ Cmid B Hsub.
+  induction Hsub; intros Δ0 T Hcons.
+  - (* infer (ti): compose by trans_mid_nil (empty ctx, is_styp B). *)
+    exists empty. apply d_sub__infer.
+    + apply (d_consis_trans_mid_nil (Cmid := C) (Δ1 := Δ0) (Δ2 := empty)).
+      * exact (d_consis_lc_utyp H).
+      * apply is_styp_is_syn; exact H0.
+      * exact Hcons.
+      * exact H.
+    + exact H0.
+    + reflexivity.
+  - (* check (tc): T guarded by d_consis_guarded_lhs; compose by trans_mid. *)
+    assert (HgT : guarded_utyp T) by (eapply d_consis_guarded_lhs; [ exact H | exact Hcons ]).
+    destruct (d_consis_trans_mid (d_consis_lc_utyp H1) Hcons H1) as [Δc Hc].
+    exists Δc. apply d_sub__check; [ exact HgT | exact H0 | exact Hc | exact H2 ].
+  - (* forall_r (tc): cofinite-uniform witness — needs ordinary d_sub_rename. *)
+    admit.
+  - (* arg (fn m): arg by trans_mid on the consistency, result by IH. *)
+    simpl in Hcons. dependent destruction Hcons.
+    destruct (d_consis_trans_mid (d_consis_lc_utyp H) ltac:(eassumption) H) as [Δc1 Hc1].
+    destruct (IHHsub _ _ ltac:(eassumption)) as [Δc2 Hres].
+    exists (Δc1 `union` Δc2).
+    eapply d_sub__arg; [ eassumption | eassumption | reflexivity ].
+  - (* forall_l_tagged: ATTEMPT with list-typed context. *)
+    admit.
+  - (* forall_l_untagged: ATTEMPT with list-typed context. *)
     admit.
 Admitted.
 
@@ -475,7 +527,7 @@ Lemma d_sub_trans_spine : forall m1 Δ Γ T Bfull,
     forall n A M B Bres,
       is_fn_n n m1 ->
       btyp_spine n Bfull A B Bres ->
-      nil ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
+      empty ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
       exists Δ', Δ' ⨟ Γ ⊢[ mode_fn_n_subst m1 M ] T ⊑ Bres.
 Proof.
   intros m1 Δ Γ T Bfull Hsub.
@@ -497,7 +549,7 @@ Proof.
     dependent destruction Hspine.
     edestruct IHHsub as [Δ2' Hres];
       [ eassumption | eassumption | eassumption | ].
-    eexists. simpl. apply d_sub__arg; eassumption.
+    eexists. simpl. eapply d_sub__arg; [ eassumption | eassumption | reflexivity ].
   - (* d_sub__forall_l_tagged: needs the tag-context bookkeeping (the
        instantiation tags [Δ'] must be split back out of the IH's context),
        the same gap as CST's forall_l.  Deferred. *)
@@ -515,7 +567,7 @@ Lemma d_typing_general_subsumption_spine : forall m1 Γ e Bfull,
     forall n A M B Bres,
       is_fn_n n m1 ->
       btyp_spine n Bfull A B Bres ->
-      nil ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
+      empty ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
       Γ ⊢[ mode_fn_n_subst m1 M ] e ⦂ Bres.
 Proof.
   intros m1 Γ e Bfull Hty.
@@ -564,46 +616,13 @@ Proof.
     admit.
 Admitted.
 
-(** D12, paper Lemma B.5: generalised general subsumption.  The source
-    mode is restricted to [FN^n TI], and the target mode replaces the
-    terminal [TI] by [m_new].  The subtyping premise consumes the
-    generalized-unresolved embedding of the synthesized type. *)
-Theorem d_typing_general_subsumption_gen : forall m_orig Γ e B1,
-    Γ ⊢ᵍ[ m_orig ] e ⦂ B1 ->
-    is_fn_n_ti m_orig ->
-    d_wf_denv Γ ->
-    forall m_new B2,
-      nil ⨟ Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] (btyp_to_gutyp B1) ⊑ B2 ->
-      Γ ⊢ᵍ[ mode_fn_n_subst m_orig m_new ] e ⦂ B2.
-Proof.
-  intros m_orig Γ e B1 Hty.
-  induction Hty; intros Hfn Hwf m_new B_tgt Hsub.
-  - (* __embed: H : d_typing m Γ e B *)
-    destruct m.
-    + (* mode_ti *)
-      simpl in Hsub |- *.
-      apply d_typing_gen__sub with (B1 := B).
-      * apply d_typing_gen__embed. exact H.
-      * exact Hsub.
-    + (* mode_tc: not in is_fn_n_ti *)
-      inversion Hfn.
-    + (* mode_fn m: function-side subsumption *)
-      admit.
-  - (* __sub: e synthesises B1 (mode_ti), then two gen-subtypings
-       B1 ⊑ B0 (at m) and B0 ⊑ B_tgt (at the substituted mode) compose
-       via B.3 transitivity into one B1 ⊑ B_tgt. *)
-    eapply d_typing_gen__sub.
-    + exact Hty.
-    + eapply d_sub_gen_trans_btyp_nil; [ exact H | exact Hsub ].
-Admitted.
-
 (** D1, paper Lemma 3.1: ordinary general subsumption.  The paper's
     premise is a synthesized painting [syn{A}], so the native statement
     quantifies the plain type [A] and uses both paintings explicitly. *)
 Theorem d_typing_general_subsumption : forall Γ e A B m,
     d_wf_denv Γ ->
     Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
-    nil ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
     Γ ⊢[ m ] e ⦂ B.
 Proof.
 Admitted.
@@ -611,7 +630,7 @@ Admitted.
 Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
     d_wf_denv Γ ->
     Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
-    nil ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
     Γ ⊢[ m ] e ⦂ B.
 Proof.
   apply d_typing_general_subsumption.

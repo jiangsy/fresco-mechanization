@@ -9,9 +9,9 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.prop_soundness.
 Require Import src.frost.algo.prop_completeness.
 
-Check d_typing_general_subsumption_gen.
 Check d_typing_general_subsumption.
 Check d_typing_general_subsumption_via_gen.
+Check d_typing_general_subsumption_spine.
 
 Check d_sub_sound.
 Check d_sub_no_guess_uniqueness.
@@ -24,7 +24,6 @@ Check d_pat_safety.
 
 Check d_consis_compose.
 Check d_consis_sub_trans.
-Check d_sub_gen_trans.
 
 Check a_sub_sound.
 Check a_typing_sound.
@@ -34,5 +33,4 @@ Check a_typing_complete.
 Check a_pat_complete.
 
 Print Assumptions d_typing_general_subsumption_via_gen.
-Print Assumptions d_typing_general_subsumption_gen.
 

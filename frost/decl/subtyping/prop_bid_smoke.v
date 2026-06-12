@@ -16,10 +16,10 @@ Require Import src.frost.decl.subtyping.prop_basics.
 
 Lemma d_sub_infer_smoke :
   forall Γ C B,
-    nil ⨟ Γ ⊨ C ≈ B ->
+    empty ⨟ Γ ⊨ C ≈ B ->
     is_styp B ->
-    nil ⨟ Γ ⊢[ mode_ti ] C ⊑ B.
+    empty ⨟ Γ ⊢[ mode_ti ] C ⊑ B.
 Proof.
-  intros. apply d_sub__infer; auto.
+  intros. apply d_sub__infer; auto. reflexivity.
 Qed.
 

@@ -21,7 +21,7 @@ Admitted.
 Theorem a_sub_sound : forall NM m P0 Θ0 B1 B2 Θ1 Γ,
     a_sub NM m P0 Θ0 B1 B2 Θ1 ->
     a_transfers Θ1 Γ ->
-    exists C, B1 = utyp_to_btyp C /\ d_sub m nil Γ C B2.
+    exists C, B1 = utyp_to_btyp C /\ d_sub m empty Γ C B2.
 Proof.
 Admitted.
 

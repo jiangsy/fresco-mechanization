@@ -182,19 +182,36 @@ where "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R) : type_scope.
 (*  type context. *)
 (* ===================================================================== *)
 
-Inductive d_tags : list atom -> utyp -> Prop :=
-| d_tags__unit : d_tags nil utyp_unit
-| d_tags__var : forall X, d_tags nil (utyp_var_f X)
-| d_tags__arrow : forall Δ1 Δ2 C1 C2,
+(** Tag context is a SET ([atoms]), matching the paper ("a tag context Ψ
+    is a set of tags", declarative.tex:799).  The paper's disjoint union
+    [Ψ⊎Ψ'] (declarative.tex:826, the linear [tags] relation) is set union
+    with a disjointness side-condition; the plain [Ψ,Ψ'] elsewhere is plain
+    set union.  This is what makes [d_sub]'s [forall_l] reconstruct work:
+    a set can be recovered by difference, an ordered list cannot. *)
+(** Context-building rules carry their output set [Δ] up to set-equality
+    [=], so the relation ranges over set-equivalence classes (Coq's [atoms]
+    is not extensional: [empty] and [empty ∪ empty] are [=] but not
+    convertible).  This makes the morphism [Δ [=] Δ' → … Δ … → … Δ' …]
+    provable while keeping inversions one-case-per-type. *)
+Inductive d_tags : atoms -> utyp -> Prop :=
+| d_tags__unit : forall Δ,
+    Δ [=] empty ->
+    d_tags Δ utyp_unit
+| d_tags__var : forall Δ X,
+    Δ [=] empty ->
+    d_tags Δ (utyp_var_f X)
+| d_tags__arrow : forall Δ Δ1 Δ2 C1 C2,
     d_tags Δ1 C1 ->
     d_tags Δ2 C2 ->
-    list_disjoint Δ1 Δ2 ->
-    d_tags (Δ1 ++ Δ2) (utyp_arrow C1 C2)
-| d_tags__all_etag : forall L Δ ε C,
+    AtomSetImpl.inter Δ1 Δ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
+    Δ [=] Δ1 `union` Δ2 ->
+    d_tags Δ (utyp_arrow C1 C2)
+| d_tags__all_etag : forall L Δ Δ0 ε C,
     (forall X, X `notin` L ->
-       d_tags Δ (open_utyp_wrt_utyp C (utyp_var_f X))) ->
-    ~ List.In ε Δ ->
-    d_tags (ε :: Δ) (utyp_all_etag ε C).
+       d_tags Δ0 (open_utyp_wrt_utyp C (utyp_var_f X))) ->
+    ε `notin` Δ0 ->
+    Δ [=] add ε Δ0 ->
+    d_tags Δ (utyp_all_etag ε C).
 
 (** Skeleton analog [tags{Δ}{ψ}] (declarative.tex, skeleton subtyping).
     Same as [d_tags] plus the two ghost cases: a [hole] carries no tags,
@@ -221,30 +238,34 @@ Inductive d_tags_skl : list atom -> uskl -> Prop :=
 (*  Type consistency and subtyping                                        *)
 (* ===================================================================== *)
 
-Inductive d_consis : list atom -> list (atom * dbind) -> utyp -> btyp -> Prop :=
-| d_consis__unit : forall Γ,
-    nil ⨟ Γ ⊨ utyp_unit ≈ btyp_unit
-| d_consis__var : forall Γ X,
+Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
+| d_consis__unit : forall Δ Γ,
+    Δ [=] empty ->
+    Δ ⨟ Γ ⊨ utyp_unit ≈ btyp_unit
+| d_consis__var : forall Δ Γ X,
     binds X dbind_tvar Γ ->
-    nil ⨟ Γ ⊨ (utyp_var_f X) ≈ (btyp_var_f X)
-| d_consis__arrow : forall Δ1 Δ2 Γ C1 C2 B1 B2,
+    Δ [=] empty ->
+    Δ ⨟ Γ ⊨ (utyp_var_f X) ≈ (btyp_var_f X)
+| d_consis__arrow : forall Δ Δ1 Δ2 Γ C1 C2 B1 B2,
     (* Paper [Arrow]: the tag context is the SET UNION [Δ₁,Δ₂]
        (declarative.tex:967, with Δ a set), not a disjoint union — so we
-       neither require nor record [list_disjoint Δ1 Δ2].  This faithfulness
-       is what makes consistency transitivity (B.2) provable: composing two
+       neither require nor record disjointness.  This faithfulness is what
+       makes consistency transitivity (B.2) provable: composing two
        derivations may legitimately reuse a tag, which a set absorbs. *)
     Δ1 ⨟ Γ ⊨ C1 ≈ B1 ->
     Δ2 ⨟ Γ ⊨ C2 ≈ B2 ->
-    (Δ1 ++ Δ2) ⨟ Γ ⊨ (utyp_arrow C1 C2) ≈ (btyp_arrow B1 B2)
-| d_consis__forall_inh_tagged : forall L Δ Γ ε C B,
+    Δ [=] Δ1 `union` Δ2 ->
+    Δ ⨟ Γ ⊨ (utyp_arrow C1 C2) ≈ (btyp_arrow B1 B2)
+| d_consis__forall_inh_tagged : forall L Δ Δ0 Γ ε C B,
     (* Paper [ForallInh] with δ=ε: output is [Δ,ε] = Δ ∪ {ε}, the
-       idempotent set union (declarative.tex:950) — no [~ In ε Δ] freshness
-       side condition (a singleton union is idempotent, not a cons). *)
+       idempotent set union (declarative.tex:950) — no freshness side
+       condition ([add] on a set is idempotent). *)
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+       Δ0 ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
          (open_utyp_wrt_utyp C (utyp_var_f X)) ≈
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    (ε :: Δ) ⨟ Γ ⊨ (utyp_all_etag ε C) ≈ (btyp_all_inh B)
+    Δ [=] add ε Δ0 ->
+    Δ ⨟ Γ ⊨ (utyp_all_etag ε C) ≈ (btyp_all_inh B)
 | d_consis__forall_inh_untagged : forall L Δ Γ C B,
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
@@ -265,11 +286,12 @@ Inductive d_consis : list atom -> list (atom * dbind) -> utyp -> btyp -> Prop :=
     Δ ⨟ Γ ⊨ (utyp_all_syn C) ≈ (btyp_all_syn B)
 where "Δ ⨟ Γ ⊨ C ≈ B" := (d_consis Δ Γ C B) : type_scope.
 
-Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Prop :=
-| d_sub__infer : forall Γ C B,
-    nil ⨟ Γ ⊨ C ≈ B ->
+Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
+| d_sub__infer : forall Δ Γ C B,
+    empty ⨟ Γ ⊨ C ≈ B ->
     is_styp B ->
-    nil ⨟ Γ ⊢[ mode_ti ] C ⊑ B
+    Δ [=] empty ->
+    Δ ⨟ Γ ⊢[ mode_ti ] C ⊑ B
 | d_sub__check : forall Δ Γ C B,
     (* WT: I modified this case in the new draft to require both C and
     B to be guarded. *)
@@ -283,25 +305,26 @@ Inductive d_sub : mode -> list atom -> list (atom * dbind) -> utyp -> btyp -> Pr
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⊑
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
     Δ ⨟ Γ ⊢[ mode_tc ] C ⊑ (btyp_all_inh B)
-| d_sub__arg : forall Δ1 Δ2 Γ m C1 C2 B1 B2,
+| d_sub__arg : forall Δ Δ1 Δ2 Γ m C1 C2 B1 B2,
     Δ1 ⨟ Γ ⊨ C1 ≈ B1 ->
     Δ2 ⨟ Γ ⊢[ m ] C2 ⊑ B2 ->
-    (Δ1 ++ Δ2) ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⊑ (btyp_arrow B1 B2)
+    Δ [=] Δ1 `union` Δ2 ->
+    Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⊑ (btyp_arrow B1 B2)
 | d_sub__forall_l_tagged : forall Δ Δ' Γ m ε C ph B,
     m <> mode_ti ->
-    list_disjoint Δ' Δ ->            (* Δ' fresh w.r.t. the outer tags *)
+    AtomSetImpl.inter Δ' Δ [=] empty ->      (* Δ' fresh w.r.t. the outer tags *)
     d_tags Δ' ph ->                  (* tags{Δ'}{φ} : Δ' is exactly φ's tags *)
     Γ ⊢ᵤ ph ->                       (* Γ ⊢ φ : well-scopedness half (WT: no Δ') *)
     is_ttyp ph ->
-    (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
+    (Δ `union` Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
     Δ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⊑ B
 | d_sub__forall_l_untagged : forall Δ Δ' Γ m C ph B,
     m <> mode_ti ->
-    list_disjoint Δ' Δ ->
+    AtomSetImpl.inter Δ' Δ [=] empty ->
     d_tags Δ' ph ->
     Γ ⊢ᵤ ph ->   (* WT: no Δ' *)
     is_ttyp ph ->
-    (Δ ++ Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
+    (Δ `union` Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
     Δ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
 where "Δ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Δ Γ C B) : type_scope.
 
@@ -547,7 +570,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_typing__sub : forall Γ m e B1 B2,
     is_base_term e ->
     d_typing mode_ti Γ e B1 ->
-    d_sub m nil Γ (ptyp_to_utyp_syn B1) B2 ->
+    d_sub m empty Γ (ptyp_to_utyp_syn B1) B2 ->
     d_typing m Γ e B2
 | d_typing__freeze : forall Γ e B,
     d_typing mode_ti Γ e B ->

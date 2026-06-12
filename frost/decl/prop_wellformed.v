@@ -182,15 +182,70 @@ Lemma d_tags_subst_tvar : forall Δ C X Y,
     d_tags Δ (subst_utyp_in_utyp (utyp_var_f Y) X C).
 Proof.
   intros Δ C X Y H. induction H; simpl.
-  - constructor.
+  - apply d_tags__unit; assumption.
   - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
-      constructor.
-  - apply d_tags__arrow; auto.
-  - inst_cofinites_for d_tags__all_etag; [ | assumption ].
+      apply d_tags__var; assumption.
+  - eapply d_tags__arrow; [ eassumption | eassumption | assumption | assumption ].
+  - inst_cofinites_for d_tags__all_etag Δ0 := Δ0; [ | assumption | assumption ].
     intros Z HZ.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply lc_utyp_var_f ]).
     apply H0; auto.
+Qed.
+
+(** * Set-equality morphisms for the tag-indexed relations.
+
+    [atoms] is not extensional, so the rules carry their built context up to
+    [=]; these lemmas let any tag context be replaced by a set-equal one.
+    They are the device that makes [forall_l] reconstruct and the [B.2]
+    composition lemmas go through. *)
+Lemma d_tags_equiv : forall Δ Δo C,
+    Δ [=] Δo -> d_tags Δ C -> d_tags Δo C.
+Proof.
+  intros Δ Δo C Heq H. revert Δo Heq. induction H; intros Δo Heq.
+  - apply d_tags__unit. fsetdec.
+  - apply d_tags__var. fsetdec.
+  - eapply d_tags__arrow; [ eassumption | eassumption | eassumption | fsetdec ].
+  - eapply d_tags__all_etag; [ eassumption | eassumption | fsetdec ].
+Qed.
+
+Lemma d_consis_equiv : forall Δ Δo Γ C B,
+    Δ [=] Δo -> Δ ⨟ Γ ⊨ C ≈ B -> Δo ⨟ Γ ⊨ C ≈ B.
+Proof.
+  intros Δ Δo Γ C B Heq H. revert Δo Heq. induction H; intros Δo Heq.
+  - apply d_consis__unit. fsetdec.
+  - apply d_consis__var; [ assumption | fsetdec ].
+  - eapply d_consis__arrow; [ eassumption | eassumption | fsetdec ].
+  - eapply d_consis__forall_inh_tagged; [ eassumption | fsetdec ].
+  - apply d_consis__forall_inh_untagged with (L := L);
+      intros X HX; eauto.
+  - apply d_consis__forall_syn_tagged with (L := L);
+      intros X HX; eauto.
+  - apply d_consis__forall_syn with (L := L);
+      intros X HX; eauto.
+Qed.
+
+Lemma d_sub_equiv : forall m Δ Δo Γ C B,
+    Δ [=] Δo -> Δ ⨟ Γ ⊢[ m ] C ⊑ B -> Δo ⨟ Γ ⊢[ m ] C ⊑ B.
+Proof.
+  intros m Δ Δo Γ C B Heq H. revert Δo Heq. induction H; intros Δo Heq.
+  - apply d_sub__infer; [ assumption | assumption | fsetdec ].
+  - apply d_sub__check; [ assumption | assumption | | assumption ].
+    eapply d_consis_equiv; [ exact Heq | eassumption ].
+  - apply d_sub__forall_r with (L := L);
+      intros X HX; eauto.
+  - eapply d_sub__arg; [ eassumption | eassumption | fsetdec ].
+  - (* forall_l_tagged: outer context pass-through, premise via IH *)
+    eapply d_sub__forall_l_tagged with (Δ' := Δ');
+      [ assumption | fsetdec | eassumption | assumption | assumption | ].
+    match goal with
+    | IH : forall _, _ [=] _ -> _ |- _ => eapply IH; fsetdec
+    end.
+  - eapply d_sub__forall_l_untagged with (Δ' := Δ');
+      [ assumption | fsetdec | eassumption | assumption | assumption | ].
+    match goal with
+    | IH : forall _, _ [=] _ -> _ |- _ => eapply IH; fsetdec
+    end.
 Qed.
 
 (** * Preservation hooks.

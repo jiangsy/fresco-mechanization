@@ -24,7 +24,7 @@ Proof.
 Admitted.
 
 Theorem a_sub_complete : forall Γ Θ0 m C B,
-    d_sub m nil Γ C B ->
+    d_sub m empty Γ C B ->
     a_transfers Θ0 Γ ->
     exists Θ1 NM P0,
       a_sub NM m P0 Θ0 (utyp_to_btyp C) B Θ1 /\ a_transfers Θ1 Γ.

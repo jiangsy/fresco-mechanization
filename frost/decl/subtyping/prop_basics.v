@@ -18,7 +18,7 @@ Set Implicit Arguments.
 Lemma d_consis_refl_mono : forall Γ A,
     mono_ptyp A ->
     d_wf_ptyp Γ A ->
-    nil ⨟ Γ ⊨ (ptyp_to_utyp_syn A) ≈ (ptyp_to_btyp_syn A).
+    empty ⨟ Γ ⊨ (ptyp_to_utyp_syn A) ≈ (ptyp_to_btyp_syn A).
 Proof.
 Admitted.
 
@@ -40,12 +40,13 @@ Admitted.
 Lemma d_sub_refl_mono : forall Γ A,
     mono_ptyp A ->
     d_wf_ptyp Γ A ->
-    nil ⨟ Γ ⊢[ mode_ti ] (ptyp_to_utyp_syn A) ⊑ (ptyp_to_btyp_syn A).
+    empty ⨟ Γ ⊢[ mode_ti ] (ptyp_to_utyp_syn A) ⊑ (ptyp_to_btyp_syn A).
 Proof.
   intros Γ A Hmono Hwf.
   apply d_sub__infer.
   - apply d_consis_refl_mono; auto.
   - apply mono_ptyp_is_styp; auto.
+  - reflexivity.
 Qed.
 
 Lemma d_consis_weakening : forall Γ1 Γ2 Γ3 Δ C B,
@@ -79,7 +80,7 @@ Proof.
 Qed.
 
 Lemma d_consis_empty_eq : forall Γ C B,
-    nil ⨟ Γ ⊨ C ≈ B ->
+    empty ⨟ Γ ⊨ C ≈ B ->
     btyp_to_ptyp C = btyp_to_ptyp B.
 Proof.
 Admitted.
