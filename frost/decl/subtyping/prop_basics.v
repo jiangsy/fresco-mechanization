@@ -20,22 +20,52 @@ Lemma d_consis_refl_mono : forall Γ A,
     d_wf_ptyp Γ A ->
     empty ⨟ Γ ⊨ (ptyp_to_utyp_syn A) ≈ (ptyp_to_btyp_syn A).
 Proof.
-Admitted.
+  intros Γ A Hmono. induction Hmono; intros Hwf; simpl.
+  - apply d_consis__unit. reflexivity.
+  - inversion Hwf; subst. apply d_consis__var; [ assumption | reflexivity ].
+  - inversion Hwf; subst.
+    eapply d_consis__arrow; [ apply IHHmono1 | apply IHHmono2 | fsetdec ]; assumption.
+Qed.
+
+(** The synthesised painting of any locally-closed [ptyp] is synthesised
+    ([is_styp]): every ∀ becomes [btyp_all_syn].  (Induct on [lc_ptyp] so the
+    ∀ body's [is_styp] follows from the per-instance IH.) *)
+Lemma is_styp_ptyp_to_btyp_syn : forall A,
+    lc_ptyp A -> is_styp (ptyp_to_btyp_syn A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - apply is_styp__all with (L := empty). intros X _.
+    change (btyp_var_f X) with (ptyp_to_btyp_syn (ptyp_var_f X)).
+    rewrite <- ptyp_to_btyp_syn_open.
+    match goal with H : forall _, is_styp _ |- _ => apply H end.
+Qed.
 
 Lemma mono_ptyp_is_styp : forall A,
     mono_ptyp A -> is_styp (ptyp_to_btyp_syn A).
 Proof.
-Admitted.
+  intros A H. apply is_styp_ptyp_to_btyp_syn. apply mono_ptyp_lc. exact H.
+Qed.
 
 Lemma mono_ptyp_is_ityp : forall A,
     mono_ptyp A -> is_ityp (ptyp_to_btyp_inh A).
 Proof.
-Admitted.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+Qed.
 
 Lemma mono_ptyp_guarded : forall A,
     mono_ptyp A -> guarded_utyp (ptyp_to_utyp_syn A).
 Proof.
-Admitted.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; apply ptyp_to_utyp_syn_lc; apply mono_ptyp_lc; assumption.
+Qed.
 
 Lemma d_sub_refl_mono : forall Γ A,
     mono_ptyp A ->

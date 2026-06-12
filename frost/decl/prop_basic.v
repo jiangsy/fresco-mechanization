@@ -214,7 +214,15 @@ Admitted.
 Lemma ptyp_to_utyp_syn_lc : forall A,
     lc_ptyp A -> lc_utyp (ptyp_to_utyp_syn A).
 Proof.
-Admitted.
+  intros A H. induction H; simpl.
+  - apply lc_utyp_unit.
+  - apply lc_utyp_var_f.
+  - apply lc_utyp_arrow; assumption.
+  - apply lc_utyp_all_syn. intros X.
+    change (utyp_var_f X) with (ptyp_to_utyp_syn (ptyp_var_f X)).
+    rewrite <- ptyp_to_utyp_syn_open.
+    match goal with Hb : forall _, lc_utyp _ |- _ => apply Hb end.
+Qed.
 
 (** * Mutual induction principle for typing/pattern inference. *)
 
