@@ -584,8 +584,44 @@ Proof.
     eapply d_sub__arg; [ eassumption | eassumption | reflexivity ].
   - (* forall_l_tagged: ATTEMPT with list-typed context. *)
     admit.
-  - (* forall_l_untagged: ATTEMPT with list-typed context. *)
-    admit.
+  - (* forall_l_untagged: instantiate the ∀-consistency at ph (the same
+       instantiation the subtyping uses) via d_consis_subst_tvar — which
+       keeps btyp tag-free (RHS erases to utyp_to_btyp ph) — then the IH,
+       then reconstruct via d_sub__forall_l_untagged with that same ph. *)
+    simpl in Hcons.
+    dependent destruction Hcons.
+    + (* T = utyp_all_etag ε T0 (matched syn: forall_syn_tagged) *)
+      admit.
+    + (* T = utyp_all_syn C0 (forall_syn) *)
+      pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C0
+                        `union` ftvar_in_utyp C `union` ftvar_in_btyp B
+                        `union` Δ0 `union` Δ `union` Δ').
+      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 X ltac:(fsetdec)) nil Γ X ph
+                    eq_refl ltac:(simpl; exact H2) H3) as Hinst.
+      rewrite <- (subst_utyp_in_utyp_intro X C0 ph) in Hinst by fsetdec.
+      rewrite <- (subst_btyp_in_btyp_intro X (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
+        by (rewrite ftvar_utyp_to_btyp; fsetdec).
+      rewrite <- utyp_to_btyp_open in Hinst.
+      simpl in Hinst.
+      destruct (IHHsub _ _ Hinst) as [Δ_IH HΔ_IH].
+      exists (AtomSetImpl.diff Δ_IH Δ').
+      eapply d_sub__forall_l_untagged with (Δ' := Δ').
+      * exact H.
+      * fsetdec.
+      * exact H1.
+      * exact H2.
+      * exact H3.
+      * eapply d_sub_equiv; [ | exact HΔ_IH ].
+        (* Residual: Δ' [<=] Δ_IH, i.e. the instantiation's tags [Δ'] survive
+           in the IH-composed subtyping's context.  Δ' is present in the
+           PREMISE subtyping [Hsub]'s context (Δ ∪ Δ'), but [IHHsub] re-derives
+           Δ_IH from the CONSISTENCY side [Δ0] (d_consis_subst_tvar kept Δ0,
+           did not add Δ').  Threading Δ' through requires the composition to
+           preserve the subtyping-side tags — but d_consis_trans_mid ERASES
+           them (d_consis_erase_tags, forced because the consistency's RHS is a
+           tag-free btyp).  So this is the one genuine residual, located
+           exactly at the btyp-erasure in the consistency composition. *)
+        admit.
 Admitted.
 
 (** * FN^n spine encoding (the design choice for the headline theorems).
