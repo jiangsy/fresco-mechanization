@@ -416,46 +416,6 @@ Proof.
   - dependent destruction Hity.    (* forall_syn: btyp_all_syn not is_ityp *)
 Qed.
 
-(** Subtyping lift of the lower bound: against an inherited RHS, the
-    subtyping context contains the source's full tag set.  Induct on the
-    subtyping — infer/check/arg/forall_r thread through via the consistency
-    version; forall_l_untagged is vacuous ([utyp_all_syn] has no [d_tags]).
-    The [forall_l_tagged] case is where the source ∀^ε is *instantiated* and
-    its own tag ε is consumed (dropped from the context) — so it genuinely
-    does NOT hold there; that case is left for the call-site argument that ph
-    only occupies checked positions. *)
-Lemma d_sub_tags_subset_ityp : forall M Δ Γ C B Δc,
-    Δ ⨟ Γ ⊢[ M ] C ⊑ B ->
-    is_ityp B ->
-    d_tags Δc C ->
-    Δc [<=] Δ.
-Proof.
-  intros M Δ Γ C B Δc Hsub. revert Δc. induction Hsub; intros Δc Hity Htags.
-  - (* infer: empty consis, is_styp ∧ is_ityp B; consis lower bound. *)
-    pose proof (d_consis_tags_subset_ityp H Hity Htags). fsetdec.
-  - (* check: consis lower bound directly. *)
-    pose proof (d_consis_tags_subset_ityp H1 Hity Htags). fsetdec.
-  - (* forall_r: open the inh ∀, recurse. *)
-    dependent destruction Hity. pick fresh X.
-    eapply (H0 X);
-      [ fsetdec
-      | match goal with H : forall _, _ `notin` _ -> is_ityp _ |- _ => apply H; fsetdec end
-      | exact Htags ].
-  - (* arg: domain by consis lower bound (is_ityp B1), codomain by IH. *)
-    dependent destruction Hity. dependent destruction Htags.
-    match goal with
-    | Hc : _ ⨟ _ ⊨ _ ≈ _ |- _ =>
-        pose proof (d_consis_tags_subset_ityp Hc ltac:(assumption) ltac:(eassumption))
-    end.
-    match goal with
-    | IH : forall _, is_ityp _ -> _ |- _ =>
-        specialize (IH _ ltac:(assumption) ltac:(eassumption))
-    end. fsetdec.
-  - (* forall_l_tagged: instantiated ∀^ε, tag ε consumed — see header. *)
-    admit.
-  - (* forall_l_untagged: utyp_all_syn has no d_tags. *)
-    dependent destruction Htags.
-Admitted.
 
 (** Consistency-Subtyping Transitivity (paper, syntax-directed.tex:152):
     a consistency into a synthesised type composes with a subtyping out of
