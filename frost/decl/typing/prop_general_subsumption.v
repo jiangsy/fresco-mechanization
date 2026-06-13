@@ -607,6 +607,69 @@ Proof.
   intros T C U H. unfold open_utyp_wrt_utyp. apply utyp_tag_refines_open_rec_gen; auto.
 Qed.
 
+(** Closing (de Bruijn abstraction) preserves refinement — the inverse
+    direction of opening, used to recover structural refinement of ∀ bodies
+    from the cofinite hypothesis. *)
+Lemma utyp_tag_refines_close_rec_pres : forall T C,
+    utyp_tag_refines T C ->
+    forall k Y,
+      utyp_tag_refines (close_utyp_wrt_utyp_rec k Y T)
+                       (close_utyp_wrt_utyp_rec k Y C).
+Proof.
+  induction 1; intros k Y; simpl; auto using utyp_tag_refines_refl.
+Qed.
+
+Lemma utyp_tag_refines_close : forall C D Y k,
+    Y `notin` ftvar_in_utyp C ->
+    Y `notin` ftvar_in_utyp D ->
+    utyp_tag_refines (open_utyp_wrt_utyp_rec k (utyp_var_f Y) C)
+                     (open_utyp_wrt_utyp_rec k (utyp_var_f Y) D) ->
+    utyp_tag_refines C D.
+Proof.
+  intros C D Y k HC HD H.
+  pose proof (@utyp_tag_refines_close_rec_pres _ _ H k Y) as H'.
+  rewrite !close_utyp_wrt_utyp_rec_open_utyp_wrt_utyp_rec in H' by assumption.
+  exact H'.
+Qed.
+
+(** ∀-body helper: recover structural refinement of [C] against [paint B]
+    from the cofinite consistency body, via [close] + [paint]-opening. *)
+Lemma consis_refines_paint_body : forall L C B,
+    (forall X, X `notin` L ->
+       utyp_tag_refines (open_utyp_wrt_utyp C (utyp_var_f X))
+                        (btyp_to_utyp_syn (open_btyp_wrt_btyp B (btyp_var_f X)))) ->
+    utyp_tag_refines C (btyp_to_utyp_syn B).
+Proof.
+  intros L C B H.
+  pick fresh X for (L `union` ftvar_in_utyp C `union` ftvar_in_btyp B).
+  apply (@utyp_tag_refines_close C (btyp_to_utyp_syn B) X 0).
+  - fsetdec.
+  - rewrite ftvar_btyp_to_utyp_syn; fsetdec.
+  - change (open_utyp_wrt_utyp_rec 0 (utyp_var_f X) C)
+      with (open_utyp_wrt_utyp C (utyp_var_f X)).
+    change (open_utyp_wrt_utyp_rec 0 (utyp_var_f X) (btyp_to_utyp_syn B))
+      with (open_utyp_wrt_utyp (btyp_to_utyp_syn B) (utyp_var_f X)).
+    specialize (H X ltac:(fsetdec)).
+    rewrite btyp_to_utyp_syn_open in H. exact H.
+Qed.
+
+(** The unresolved source of a consistency refines the syn-painting of the
+    bidirectional target: same shape, painting fully syn (tag-free), so [T]'s
+    tags trivially dominate. *)
+Lemma consis_refines_paint : forall Δ Γ T B_A,
+    Δ ⨟ Γ ⊨ T ≈ B_A ->
+    utyp_tag_refines T (btyp_to_utyp_syn B_A).
+Proof.
+  intros Δ Γ T B_A H. induction H; simpl.
+  - apply utr_unit.
+  - apply utr_var_f.
+  - apply utr_arrow; assumption.
+  - apply utr_etag_syn. eapply consis_refines_paint_body; eauto.
+  - apply utr_syn_syn.  eapply consis_refines_paint_body; eauto.
+  - apply utr_etag_syn. eapply consis_refines_paint_body; eauto.
+  - apply utr_syn_syn.  eapply consis_refines_paint_body; eauto.
+Qed.
+
 (** [refines] makes [compose_tags] monotone: [Cmid]'s composed tags are a
     subset of [T]'s (extra tags only grow the result). *)
 Lemma utyp_tag_refines_compose_mono : forall T C,
@@ -890,12 +953,17 @@ Lemma d_sub_trans_spine : forall m1 Δ Γ T Bfull,
 Proof.
   intros m1 Δ Γ T Bfull Hsub.
   induction Hsub; intros n A0 M0 B0 Bres Hfn Hspine Htail.
-  - (* d_sub__infer (ti): n = 0 forces the tail; compose by CST. *)
+  - (* d_sub__infer (ti): n = 0 forces the tail; compose by CST — now the
+       fully-closed erase-form [d_consis_sub_trans_mid].  Middle is
+       [btyp_to_utyp_syn A0]; its erasure is [A0] (is_syn), matching the infer
+       consistency, and [T] refines it by [consis_refines_paint]. *)
     inversion Hfn; subst.
     dependent destruction Hspine.
-    edestruct (d_consis_sub_trans Htail) as [Δ' [_ HΔ']];
-      [ reflexivity | apply is_styp_is_syn; eassumption | eassumption | ].
-    exists Δ'. split; [ fsetdec | simpl; exact HΔ' ].
+    edestruct (d_consis_sub_trans_mid Htail) as [Δ' [_ HΔ']].
+    + rewrite utyp_to_btyp_btyp_to_utyp_syn by (apply is_styp_is_syn; eassumption).
+      eassumption.
+    + eapply consis_refines_paint; eassumption.
+    + exists Δ'. split; [ fsetdec | simpl; exact HΔ' ].
   - (* d_sub__check (tc): excluded, [is_fn_n n mode_tc] is uninhabited. *)
     inversion Hfn.
   - (* d_sub__forall_r (tc): excluded. *)
