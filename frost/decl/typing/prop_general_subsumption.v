@@ -760,14 +760,60 @@ Proof.
         [ match goal with Hr : utyp_tag_refines _ C1 |- _ =>
             apply (refines_consis_swap H Hr) end
         | exact Hres | reflexivity ].
-  - (* forall_l_tagged: source ∀^ε; mirror of untagged. *)
-    admit.
+  - (* forall_l_tagged: subtyping source is utyp_all_etag ε C; Href forces
+       T = utyp_all_etag ε C0 (utr_etag_etag); reconstruct via forall_l_tagged. *)
+    dependent destruction Href.
+    simpl in Hcons. dependent destruction Hcons.
+    pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp T0
+                      `union` ftvar_in_utyp C `union` ftvar_in_btyp B
+                      `union` Δ `union` Δ').
+    pose proof (@d_consis_subst_tvar _ _ _ _ (H4 X ltac:(fsetdec)) nil Γ X ph
+                  eq_refl ltac:(simpl; exact H2) H3) as Hinst.
+    rewrite <- (subst_utyp_in_utyp_intro X T0 ph) in Hinst by fsetdec.
+    rewrite <- (subst_btyp_in_btyp_intro X (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
+      by (rewrite ftvar_utyp_to_btyp; fsetdec).
+    rewrite <- utyp_to_btyp_open in Hinst.
+    simpl in Hinst.
+    destruct (IHHsub _ _ Hinst
+                (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
+      as [Δ_IH [Hbnd HΔ_IH]].
+    exists (AtomSetImpl.diff Δ_IH Δ'). split.
+    + fsetdec.
+    + eapply d_sub__forall_l_tagged with (Δ' := Δ').
+      * exact H.
+      * fsetdec.
+      * exact H1.
+      * exact H2.
+      * exact H3.
+      * eapply d_sub_equiv; [ | exact HΔ_IH ]. fsetdec.
   - (* forall_l_untagged: with Δ2 ⊆ Δ in the IH, the residual Δ' ⊆ Δ_IH FOLLOWS
        from (Δ ∪ Δ') ⊆ Δ_IH; refinement threaded by [open_gen]. *)
     simpl in Hcons.
     dependent destruction Hcons.
-    + (* T = utyp_all_etag ε T0 (matched syn) *)
-      admit.
+    + (* T = utyp_all_etag ε C0 (matched syn): mirror, reconstruct via forall_l_tagged *)
+      dependent destruction Href.
+      pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C0
+                        `union` ftvar_in_utyp C `union` ftvar_in_btyp B
+                        `union` Δ0 `union` Δ `union` Δ').
+      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 X ltac:(fsetdec)) nil Γ X ph
+                    eq_refl ltac:(simpl; exact H2) H3) as Hinst.
+      rewrite <- (subst_utyp_in_utyp_intro X C0 ph) in Hinst by fsetdec.
+      rewrite <- (subst_btyp_in_btyp_intro X (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
+        by (rewrite ftvar_utyp_to_btyp; fsetdec).
+      rewrite <- utyp_to_btyp_open in Hinst.
+      simpl in Hinst.
+      destruct (IHHsub _ _ Hinst
+                  (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
+        as [Δ_IH [Hbnd HΔ_IH]].
+      exists (AtomSetImpl.diff Δ_IH Δ'). split.
+      * fsetdec.
+      * eapply d_sub__forall_l_tagged with (Δ' := Δ').
+        -- exact H.
+        -- fsetdec.
+        -- exact H1.
+        -- exact H2.
+        -- exact H3.
+        -- eapply d_sub_equiv; [ | exact HΔ_IH ]. fsetdec.
     + (* T = utyp_all_syn C0 *)
       dependent destruction Href.
       pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C0
@@ -792,7 +838,7 @@ Proof.
         -- exact H2.
         -- exact H3.
         -- eapply d_sub_equiv; [ | exact HΔ_IH ]. fsetdec.
-Admitted.
+Qed.
 
 (** * FN^n spine encoding (the design choice for the headline theorems).
 
