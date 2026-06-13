@@ -410,7 +410,7 @@ Proof.
                           | match goal with H : forall _, _ -> is_ityp _ |- _ => apply H; fsetdec end
                           | match goal with H : forall _, _ -> d_tags _ _ |- _ => apply H; fsetdec end ])
     end.
-    fsetdec.
+    clear - H1 H5 Hsub0; fsetdec.
   - dependent destruction Htags.   (* forall_inh_untagged: utyp_all_syn has no d_tags *)
   - dependent destruction Hity.    (* forall_syn_tagged: btyp_all_syn not is_ityp *)
   - dependent destruction Hity.    (* forall_syn: btyp_all_syn not is_ityp *)
@@ -540,6 +540,167 @@ Proof.
        fixes the IH shape; tracked there. *)
     admit.
 Admitted.
+
+(** [utyp_tag_refines T Cmid]: [T] and [Cmid] have the same shape, and at
+    every quantifier where [Cmid] is ε-tagged [T] carries the SAME tag, while
+    [T] may carry EXTRA tags where [Cmid] is synthesised.  This captures the
+    "T and A have the same shape modulo T may have extra tags" of the paper's
+    CST (syntax-directed.tex), and — crucially — is closed under the shared-ph
+    instantiation that [forall_l] performs (both sides gain the same ph).  It
+    is the linearity-free replacement for the [d_tags] lower-bound chain. *)
+Inductive utyp_tag_refines : utyp -> utyp -> Prop :=
+| utr_unit  : utyp_tag_refines utyp_unit utyp_unit
+| utr_var_b : forall n, utyp_tag_refines (utyp_var_b n) (utyp_var_b n)
+| utr_var_f : forall X, utyp_tag_refines (utyp_var_f X) (utyp_var_f X)
+| utr_arrow : forall T1 T2 C1 C2,
+    utyp_tag_refines T1 C1 -> utyp_tag_refines T2 C2 ->
+    utyp_tag_refines (utyp_arrow T1 T2) (utyp_arrow C1 C2)
+| utr_etag_etag : forall ε T0 C0,
+    utyp_tag_refines T0 C0 ->
+    utyp_tag_refines (utyp_all_etag ε T0) (utyp_all_etag ε C0)
+| utr_etag_syn : forall ε T0 C0,
+    utyp_tag_refines T0 C0 ->
+    utyp_tag_refines (utyp_all_etag ε T0) (utyp_all_syn C0)
+| utr_syn_syn : forall T0 C0,
+    utyp_tag_refines T0 C0 ->
+    utyp_tag_refines (utyp_all_syn T0) (utyp_all_syn C0).
+
+#[local] Hint Constructors utyp_tag_refines : core.
+
+Lemma utyp_tag_refines_refl : forall T, utyp_tag_refines T T.
+Proof. induction T; auto. Qed.
+
+Lemma utyp_tag_refines_open_rec : forall T C,
+    utyp_tag_refines T C ->
+    forall k Y,
+      utyp_tag_refines (open_utyp_wrt_utyp_rec k (utyp_var_f Y) T)
+                       (open_utyp_wrt_utyp_rec k (utyp_var_f Y) C).
+Proof.
+  induction 1; intros k Y; simpl; auto.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; auto.
+Qed.
+
+Lemma utyp_tag_refines_open : forall T C X,
+    utyp_tag_refines T C ->
+    utyp_tag_refines (open_utyp_wrt_utyp T (utyp_var_f X))
+                     (open_utyp_wrt_utyp C (utyp_var_f X)).
+Proof.
+  intros T C X H. unfold open_utyp_wrt_utyp. apply utyp_tag_refines_open_rec; auto.
+Qed.
+
+(** Opening with a GENERAL [U] (the [ph] instantiation): both sides gain the
+    SAME [U], so refinement is preserved (the bound variable becomes [U] on
+    both, [refl]). *)
+Lemma utyp_tag_refines_open_rec_gen : forall T C,
+    utyp_tag_refines T C ->
+    forall k U,
+      utyp_tag_refines (open_utyp_wrt_utyp_rec k U T) (open_utyp_wrt_utyp_rec k U C).
+Proof.
+  induction 1; intros k U; simpl; auto.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; auto using utyp_tag_refines_refl.
+Qed.
+
+Lemma utyp_tag_refines_open_gen : forall T C U,
+    utyp_tag_refines T C ->
+    utyp_tag_refines (open_utyp_wrt_utyp T U) (open_utyp_wrt_utyp C U).
+Proof.
+  intros T C U H. unfold open_utyp_wrt_utyp. apply utyp_tag_refines_open_rec_gen; auto.
+Qed.
+
+(** [refines] makes [compose_tags] monotone: [Cmid]'s composed tags are a
+    subset of [T]'s (extra tags only grow the result). *)
+Lemma utyp_tag_refines_compose_mono : forall T C,
+    utyp_tag_refines T C ->
+    forall B, compose_tags C B [<=] compose_tags T B.
+Proof.
+  induction 1; intros B0; destruct B0; simpl; try fsetdec;
+    try (specialize (IHutyp_tag_refines1 B0_1); specialize (IHutyp_tag_refines2 B0_2); fsetdec);
+    specialize (IHutyp_tag_refines B0); fsetdec.
+Qed.
+
+(** The consistency context is bounded above by [compose_tags] — the
+    canonical (linearity-free) tag witness.  This is the lower link of the
+    bound chain [Δ2 ⊆ compose_tags Cmid B]. *)
+Lemma d_consis_ctx_subset_compose : forall Δ Γ C B,
+    Δ ⨟ Γ ⊨ C ≈ B ->
+    Δ [<=] compose_tags C B.
+Proof.
+  intros Δ Γ C B H. induction H; simpl.
+  - fsetdec.
+  - fsetdec.
+  - fsetdec.
+  - pick fresh X. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH X ltac:(fsetdec)) end.
+    rewrite compose_tags_open in *. fsetdec.
+  - pick fresh X. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH X ltac:(fsetdec)) end.
+    rewrite compose_tags_open in *. fsetdec.
+  - pick fresh X. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH X ltac:(fsetdec)) end.
+    rewrite compose_tags_open in *. fsetdec.
+  - pick fresh X. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH X ltac:(fsetdec)) end.
+    rewrite compose_tags_open in *. fsetdec.
+Qed.
+
+(** Source-swap with the [compose_tags] witness: if [T] refines [Cmid] (same
+    shape, tags ⊇) and [Cmid ≈ B], then [T ≈ B] holds at the canonical
+    context [compose_tags T B].  The witness is UNIFORM (opening-invariant via
+    [compose_tags_open]), so the ∀ cases avoid the cofinite per-X existential.
+    No [d_tags], no linearity. *)
+Lemma refines_consis_swap : forall Δ Γ Cmid B,
+    Δ ⨟ Γ ⊨ Cmid ≈ B ->
+    forall T, utyp_tag_refines T Cmid ->
+      (compose_tags T B) ⨟ Γ ⊨ T ≈ B.
+Proof.
+  intros Δ Γ Cmid B H. induction H; intros T Href.
+  - inversion Href; subst. simpl. apply d_consis__unit. reflexivity.
+  - inversion Href; subst. simpl. apply d_consis__var; [ assumption | reflexivity ].
+  - inversion Href; subst. simpl.
+    eapply d_consis__arrow; [ apply IHd_consis1 | apply IHd_consis2 | reflexivity ]; assumption.
+  - (* forall_inh_tagged: Cmid = utyp_all_etag ε C, B = btyp_all_inh; T = utyp_all_etag ε T0 *)
+    inversion Href; subst. simpl.
+    eapply d_consis__forall_inh_tagged with (L := L) (Δ0 := compose_tags T0 B); [ | reflexivity ].
+    intros X HX.
+    match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+      rewrite <- (compose_tags_open Tb Bb X X) end.
+    apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+  - (* forall_inh_untagged: Cmid = utyp_all_syn C, B = btyp_all_inh; T tagged or syn *)
+    inversion Href; subst; simpl.
+    + (* T = utyp_all_etag ε T0 (extra tag) *)
+      eapply d_consis__forall_inh_tagged with (L := L) (Δ0 := compose_tags T0 B); [ | reflexivity ].
+      intros X HX.
+      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+        rewrite <- (compose_tags_open Tb Bb X X) end.
+      apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+    + (* T = utyp_all_syn T0 *)
+      apply d_consis__forall_inh_untagged with (L := L).
+      intros X HX.
+      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+        rewrite <- (compose_tags_open Tb Bb X X) end.
+      apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+  - (* forall_syn_tagged: Cmid = utyp_all_etag ε C, B = btyp_all_syn; T = utyp_all_etag ε T0 *)
+    inversion Href; subst. simpl.
+    apply d_consis__forall_syn_tagged with (L := L).
+    intros X HX.
+    match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+      rewrite <- (compose_tags_open Tb Bb X X) end.
+    apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+  - (* forall_syn: Cmid = utyp_all_syn C, B = btyp_all_syn; T tagged or syn *)
+    inversion Href; subst; simpl.
+    + (* T = utyp_all_etag ε T0 *)
+      apply d_consis__forall_syn_tagged with (L := L).
+      intros X HX.
+      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+        rewrite <- (compose_tags_open Tb Bb X X) end.
+      apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+    + (* T = utyp_all_syn T0 *)
+      apply d_consis__forall_syn with (L := L).
+      intros X HX.
+      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+        rewrite <- (compose_tags_open Tb Bb X X) end.
+      apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+Qed.
 
 (** Reformulated CST over a GENERAL middle [Cmid] (paper-faithful: the syn
     middle is not closed under tagged instantiation).  infer/check/arg close
