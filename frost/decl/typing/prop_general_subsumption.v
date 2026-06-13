@@ -710,10 +710,11 @@ Lemma d_consis_sub_trans_mid : forall M Δ2 Γ Cmid B,
     Δ2 ⨟ Γ ⊢[ M ] Cmid ⊑ B ->
     forall Δ1 T,
       Δ1 ⨟ Γ ⊨ T ≈ (utyp_to_btyp Cmid) ->
+      utyp_tag_refines T Cmid ->
       exists Δ, Δ2 [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] T ⊑ B.
 Proof.
   intros M Δ2 Γ Cmid B Hsub.
-  induction Hsub; intros Δ0 T Hcons.
+  induction Hsub; intros Δ0 T Hcons Href.
   - (* infer (ti): Δ2 [=] ∅. *)
     exists empty. split; [ fsetdec | ].
     apply d_sub__infer.
@@ -724,18 +725,19 @@ Proof.
       * exact H.
     + exact H0.
     + reflexivity.
-  - (* check (tc): the bound Δ2 ⊆ Δc needs a TAG-PRESERVING composition;
-       d_consis_trans_mid erases (loses Δ2's inherited tags). *)
+  - (* check (tc): output context is the canonical witness [compose_tags T B];
+       bound Δ2 ⊆ it via the tag chain, output consistency via the source-swap. *)
     assert (HgT : guarded_utyp T) by (eapply d_consis_guarded_lhs; [ exact H | exact Hcons ]).
-    destruct (d_consis_trans_mid (d_consis_lc_utyp H1) Hcons H1) as [Δc Hc].
-    exists Δc. split;
-      [ admit (* Δ2 ⊆ Δc — tag-preserving trans_mid *)
-      | apply d_sub__check; [ exact HgT | exact H0 | exact Hc | exact H2 ] ].
-  - (* forall_r (tc): IH carries the bound; context unchanged. *)
+    exists (compose_tags T B). split.
+    + pose proof (d_consis_ctx_subset_compose H1) as Hc1.
+      pose proof (utyp_tag_refines_compose_mono Href B) as Hc2. fsetdec.
+    + apply d_sub__check;
+        [ exact HgT | exact H0 | apply (refines_consis_swap H1 Href) | exact H2 ].
+  - (* forall_r (tc): IH carries the bound; refinement unchanged. *)
     pick fresh X0 for (L `union` dom Γ `union` ftvar_in_utyp T
                        `union` ftvar_in_btyp B).
     destruct (H0 X0 ltac:(fsetdec) Δ0 T
-                ltac:(apply d_consis_weakening_head; exact Hcons)) as [Δ' [Hbnd HΔ']].
+                ltac:(apply d_consis_weakening_head; exact Hcons) Href) as [Δ' [Hbnd HΔ']].
     exists Δ'. split; [ exact Hbnd | ].
     apply d_sub__forall_r with
       (L := L `union` dom Γ `union` ftvar_in_utyp T `union` ftvar_in_btyp B
@@ -744,24 +746,30 @@ Proof.
     rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
     rewrite <- (subst_utyp_in_utyp_fresh_eq T (utyp_var_f X) X0) by fsetdec.
     apply (@d_sub_rename _ _ _ _ _ HΔ' nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
-  - (* arg (fn m): same tag-preserving gap on the consistency argument. *)
+  - (* arg (fn m): domain by source-swap, result by IH; bound by chain + IH. *)
     simpl in Hcons. dependent destruction Hcons.
-    destruct (d_consis_trans_mid (d_consis_lc_utyp H) ltac:(eassumption) H) as [Δc1 Hc1].
-    destruct (IHHsub _ _ ltac:(eassumption)) as [Δc2 [Hbnd2 Hres]].
-    exists (Δc1 `union` Δc2). split;
-      [ admit (* Δ ⊆ Δc1 ∪ Δc2 — needs Δ1 ⊆ Δc1 (tag-preserving) *)
-      | eapply d_sub__arg; [ eassumption | eassumption | reflexivity ] ].
+    dependent destruction Href.
+    destruct (IHHsub _ _ ltac:(eassumption) ltac:(eassumption)) as [Δc2 [Hbnd2 Hres]].
+    match goal with Hr : utyp_tag_refines ?t C1 |- _ =>
+      exists (compose_tags t B1 `union` Δc2) end. split.
+    + pose proof (d_consis_ctx_subset_compose H) as Hc1.
+      match goal with Hr : utyp_tag_refines _ C1 |- _ =>
+        pose proof (utyp_tag_refines_compose_mono Hr B1) as Hc2 end.
+      fsetdec.
+    + eapply d_sub__arg;
+        [ match goal with Hr : utyp_tag_refines _ C1 |- _ =>
+            apply (refines_consis_swap H Hr) end
+        | exact Hres | reflexivity ].
   - (* forall_l_tagged: source ∀^ε; mirror of untagged. *)
     admit.
-  - (* forall_l_untagged: instantiate the ∀-consistency at the same ph via
-       d_consis_subst_tvar, apply the IH, reconstruct via forall_l.  With the
-       Δ2 ⊆ Δ bound now in the IH, the residual Δ' ⊆ Δ_IH FOLLOWS: the IH gives
-       (Δ ∪ Δ') ⊆ Δ_IH, so the instantiation tags Δ' live in Δ_IH. *)
+  - (* forall_l_untagged: with Δ2 ⊆ Δ in the IH, the residual Δ' ⊆ Δ_IH FOLLOWS
+       from (Δ ∪ Δ') ⊆ Δ_IH; refinement threaded by [open_gen]. *)
     simpl in Hcons.
     dependent destruction Hcons.
     + (* T = utyp_all_etag ε T0 (matched syn) *)
       admit.
     + (* T = utyp_all_syn C0 *)
+      dependent destruction Href.
       pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C0
                         `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                         `union` Δ0 `union` Δ `union` Δ').
@@ -772,18 +780,18 @@ Proof.
         by (rewrite ftvar_utyp_to_btyp; fsetdec).
       rewrite <- utyp_to_btyp_open in Hinst.
       simpl in Hinst.
-      destruct (IHHsub _ _ Hinst) as [Δ_IH [Hbnd HΔ_IH]].
+      destruct (IHHsub _ _ Hinst
+                  (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
+        as [Δ_IH [Hbnd HΔ_IH]].
       exists (AtomSetImpl.diff Δ_IH Δ'). split.
-      * (* Δ ⊆ Δ_IH ∖ Δ' : Δ ⊆ Δ_IH (Hbnd) and Δ ∩ Δ' = ∅ (H0). *)
-        fsetdec.
+      * fsetdec.
       * eapply d_sub__forall_l_untagged with (Δ' := Δ').
         -- exact H.
         -- fsetdec.
         -- exact H1.
         -- exact H2.
         -- exact H3.
-        -- (* (Δ_IH ∖ Δ') ∪ Δ' [=] Δ_IH  ⟸  Δ' ⊆ Δ_IH (from Hbnd). *)
-           eapply d_sub_equiv; [ | exact HΔ_IH ]. fsetdec.
+        -- eapply d_sub_equiv; [ | exact HΔ_IH ]. fsetdec.
 Admitted.
 
 (** * FN^n spine encoding (the design choice for the headline theorems).
