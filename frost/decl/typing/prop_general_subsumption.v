@@ -463,20 +463,25 @@ Admitted.
     bridged to the subtyping LHS via [btyp_to_utyp_syn] (the same convention
     as [d_consis_compose_syn_nil]).  [is_syn] = [is_styp] up to
     [is_styp_is_syn]. *)
+(** Paper CST (syntax-directed.tex:152), with the load-bearing [Ψ ⊆ Ψ']
+    invariant the paper's "straightforward induction" silently needs: the
+    subtyping context [Δb] is GENERAL (not [·]) — that is the inductive
+    generalisation that lets the [forall_l] IH fire on its non-empty
+    premise — and the conclusion context contains it ([Δb ⊆ Δ]).  The
+    paper's [·]-statement is the [Δb = ∅] corollary. *)
 Lemma d_consis_sub_trans : forall M Δb Γ C B,
     Δb ⨟ Γ ⊢[ M ] C ⊑ B ->
     forall B_A T Δt,
       C = btyp_to_utyp_syn B_A ->
       is_syn B_A ->
       Δt ⨟ Γ ⊨ T ≈ B_A ->
-      exists Δ, Δ ⨟ Γ ⊢[ M ] T ⊑ B.
+      exists Δ, Δb [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] T ⊑ B.
 Proof.
   intros M Δb Γ C B Hsub.
   induction Hsub; intros B_A T Δt Heq Hsyn Hcons.
-  - (* d_sub__infer (ti): compose the two consistencies.  Since the RHS [B]
-       is synthesised, no inh quantifier is reached, so the composed context
-       collapses to [nil] (d_consis_compose_syn_nil_l). *)
-    subst C. exists empty. apply d_sub__infer.
+  - (* d_sub__infer (ti): Δb [=] ∅; compose collapses to ∅. *)
+    subst C. exists empty. split; [ fsetdec | ].
+    apply d_sub__infer.
     + eapply d_consis_compose_syn_nil_l.
       * exact Hsyn.
       * apply is_styp_is_syn. eassumption.
@@ -484,9 +489,7 @@ Proof.
       * eassumption.
     + assumption.
     + reflexivity.
-  - (* d_sub__check (tc): [T] is guarded (from [B_A] guarded + the
-       consistency, via [d_consis_guarded_lhs] and the syn round-trip),
-       and the consistency composes through to the inh target [B]. *)
+  - (* d_sub__check (tc): the composed context [Δc] ⊇ [Δt ∪ Δb] ⊇ [Δb]. *)
     subst C.
     assert (HgT : guarded_utyp T).
     { eapply d_consis_guarded_lhs.
@@ -495,24 +498,23 @@ Proof.
     destruct (@d_consis_compose_syn _ _ _ _ B_A _
                 ltac:(eassumption) ltac:(exact Hcons) ltac:(eassumption))
       as [Δc [Hincl Hc]].
-    exists Δc. apply d_sub__check; assumption.
-  - (* d_sub__forall_r (tc): pick one fresh [X0], run the per-[X] IH with the
-       consistency weakened to [X0::Γ], then transport that single instance
-       to all [X] via [d_sub_rename] — the cofinite-uniform witness. *)
+    exists Δc. split; [ fsetdec | apply d_sub__check; assumption ].
+  - (* d_sub__forall_r (tc): context unchanged; IH carries the bound. *)
     subst C.
     pick fresh X0 for (L `union` dom Γ `union` ftvar_in_utyp T
                        `union` ftvar_in_btyp B `union` ftvar_in_btyp B_A).
     destruct (H0 X0 ltac:(fsetdec) B_A T Δt eq_refl Hsyn
-                ltac:(apply d_consis_weakening_head; exact Hcons)) as [Δ0 HΔ0].
-    exists Δ0. apply d_sub__forall_r with
+                ltac:(apply d_consis_weakening_head; exact Hcons)) as [Δ0 [HΔbound HΔ0]].
+    exists Δ0. split; [ exact HΔbound | ].
+    apply d_sub__forall_r with
       (L := L `union` dom Γ `union` ftvar_in_utyp T `union` ftvar_in_btyp B
             `union` singleton X0).
     intros X HX.
     rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
     rewrite <- (subst_utyp_in_utyp_fresh_eq T (utyp_var_f X) X0) by fsetdec.
     apply (@d_sub_rename _ _ _ _ _ HΔ0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
-  - (* d_sub__arg (fn m'): the source is an arrow, so [B_A] is an arrow;
-       compose on the (consistency) argument, recurse (IH) on the result. *)
+  - (* d_sub__arg (fn m'): arg [Δc1 ⊇ Δ1], result [Δc2 ⊇ Δ2], so
+       [Δc1 ∪ Δc2 ⊇ Δ1 ∪ Δ2 = Δb]. *)
     destruct B_A as [ | n | X | B_A1 B_A2 | B_A0 | B_A0 ];
       simpl in Heq; try discriminate.
     injection Heq as HeqC1 HeqC2. subst.
@@ -522,18 +524,20 @@ Proof.
                   ltac:(eassumption) ltac:(eassumption) ltac:(eassumption))
       as [Δc1 [Hincl1 Hc1]].
     destruct (IHHsub B_A2 _ _ eq_refl ltac:(eassumption) ltac:(eassumption))
-      as [Δc2 Hres].
-    exists (Δc1 `union` Δc2).
+      as [Δc2 [HΔbound2 Hres]].
+    exists (Δc1 `union` Δc2). split; [ fsetdec | ].
     eapply d_sub__arg; [ eassumption | eassumption | reflexivity ].
   - (* d_sub__forall_l_tagged: LHS [utyp_all_etag] cannot be a
        [btyp_to_utyp_syn] image (no etag in a synthesised type). *)
     destruct B_A as [ | n | X | B_A1 B_A2 | B_A0 | B_A0 ];
       simpl in Heq; discriminate.
-  - (* d_sub__forall_l_untagged: LHS is [utyp_all_syn] (so [B_A] is
-       [btyp_all_syn]); the rule instantiates with [ph].  Blocked on a
-       [d_consis] substitution lemma (does not exist) to push [T]'s
-       consistency under [α ↦ ph] — the same hard sub-problem the old
-       [d_sub_gen_trans_ti_lhs_aux] forall_l case flagged.  Deferred. *)
+  - (* d_sub__forall_l_untagged: LHS is [utyp_all_syn] so [B_A = btyp_all_syn
+       B_A0] and the rule instantiates with [ph].  With [Δb ⊆ Δ] in hand the
+       tag bookkeeping is no longer the obstacle; the remaining blocker is
+       STRUCTURAL: the recursive subject [open (paint B_A0) ph] is NOT a
+       [btyp_to_utyp_syn] image when [ph] carries ε-tags, so the syn-form IH
+       ([_ = btyp_to_utyp_syn _]) cannot fire.  (It needs the erase-form IH
+       [utyp_to_btyp _ = _], i.e. the [_mid] reformulation.)  Deferred. *)
     admit.
 Admitted.
 
@@ -677,7 +681,7 @@ Proof.
   - (* d_sub__infer (ti): n = 0 forces the tail; compose by CST. *)
     inversion Hfn; subst.
     dependent destruction Hspine.
-    edestruct (d_consis_sub_trans Htail) as [Δ' HΔ'];
+    edestruct (d_consis_sub_trans Htail) as [Δ' [_ HΔ']];
       [ reflexivity | apply is_styp_is_syn; eassumption | eassumption | ].
     exists Δ'. split; [ fsetdec | simpl; exact HΔ' ].
   - (* d_sub__check (tc): excluded, [is_fn_n n mode_tc] is uninhabited. *)
