@@ -353,6 +353,61 @@ files:
 
 Session-by-session closure log. Most recent first.
 
+## 2026-06-14 — CST keystone closed (`d_consis_sub_trans_mid` Qed), `btyp` tag-free
+
+The Consistency-Subtyping Transitivity case that blocked general
+subsumption all along is **fully proven** (`d_consis_sub_trans_mid`,
+commit `866644e`), with `btyp` kept **tag-free** throughout.
+
+Final statement (the paper's CST, syntax-directed.tex:152, generalised
+for the induction):
+
+```
+Δ2 ⊢[M] Cmid ⊑ B → Δ1 ⊨ T ≈ utyp_to_btyp Cmid → utyp_tag_refines T Cmid
+  → ∃ Δ, Δ2 [<=] Δ ∧ Δ ⊢[M] T ⊑ B
+```
+
+Three ingredients, found interactively:
+
+1. **Erase-form hypothesis** `T ≈ utyp_to_btyp Cmid` (not the paint form
+   `Cmid = btyp_to_utyp_syn B_A`). The paint form is *not* an inductive
+   invariant — `forall_l` instantiates with a tagged `ph`, and
+   `open(paint B_A0) ph` is not a `btyp_to_utyp_syn` image. The erase
+   form always lands in tag-free `btyp`, so it survives.
+
+2. **The paper's `Ψ ⊆ Ψ'` invariant** `Δ2 [<=] Δ`. The paper states CST
+   at the empty context `·` and calls it "straightforward induction",
+   but `forall_l`'s premise sits at a *non-empty* `Ψ,Ψ'`, so the IH must
+   generalise the subtyping context and carry `Ψ ⊆ Ψ'` (exactly as
+   Subtyping Transitivity, lemma 179, does). That bound is what closes
+   `forall_l`'s residual: the IH delivers `(Δ ∪ Δ') ⊆ Δ_IH`, giving both
+   `Δ' ⊆ Δ_IH` and the output bound `Δ ⊆ Δ_IH ∖ Δ'`.
+
+3. **A linearity-free source-swap** for `check`/`arg`'s bound. The naive
+   `d_tags` lower-bound chain dies because `d_tags` is the *linear*
+   (disjoint-union) relation and the recursion produces non-linear types
+   (the same `ph` in several positions). New, reusable infrastructure
+   instead (all in `prop_general_subsumption.v`):
+   - `utyp_tag_refines T Cmid` — same shape; `T`'s ε-tags ⊇ `Cmid`'s
+     position-wise; `T` may carry extra tags. Closed under the shared-`ph`
+     instantiation `forall_l` performs (both sides gain the same `ph`).
+   - `d_consis_ctx_subset_compose` : `Δ ⊨ C ≈ B → Δ ⊆ compose_tags C B`.
+   - `refines_consis_swap` : `refines T Cmid → (Cmid ≈ B) →
+     (compose_tags T B ⊨ T ≈ B)`, built on the **uniform `compose_tags`
+     witness** (opening-invariant via `compose_tags_open`), which
+     dissolves *both* the cofinite per-`X` existential *and* the
+     `d_tags`-linearity wall.
+   - bound chain: `Δ2 ⊆ compose_tags Cmid B ⊆ compose_tags T B`.
+
+The encoding debate ("does `btyp` need ε-tags?") is settled: **no.** The
+paper's distinction (unresolved `utyp` carries tags; resolved/`btyp`
+does not) is faithful, and CST closes within it. The `_mid` lemma still
+needs to be wired into `d_sub_trans_spine`'s `infer` case (it currently
+calls the SYN `d_consis_sub_trans`, whose `forall_l` is admitted but is
+now *superseded*); then the spine's `sub`/`abs`/`app` typing cases and
+the headline D1. Build gotcha: individual `make X.vo` is stale-prone —
+always `touch` + full `make coq`.
+
 ## 2026-05-26 — paper sync (origin/main): φ#Δ tags relation in subtyping
 
 **Build:** 🟢 GREEN (`make coq`, exit 0). No new admits.
