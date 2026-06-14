@@ -395,8 +395,12 @@ then `Abs`, then `Forall` re-wraps ᾱ.  Mechanizing this requires:
 1. **`d_refine_syn_weakening`** (new) — needed by step 2's app case.
 2. **`d_typing_weakening` / `d_pat_weakening`** — currently **Admitted**
    (prop_weakening.v); the ~15-case mutual induction over `d_typing_mut`/
-   `d_pat_mut`, using the existing `d_{wf_ptyp,wf_utyp,consis,sub}_weakening`
-   + the new refine weakening.
+   `d_pat_mut`.  **This pulls in a whole chain of missing skeleton-side
+   weakening lemmas**: `d_pat__sub` needs `d_pat_sub_weakening`, which needs
+   `d_consis_skl_weakening` (skeleton consistency), etc.  `d_refine_syn_weakening`
+   is **done** (commit e1d1394); the `d_pat_sub`/`d_consis_skl`/`d_pat`
+   weakenings remain.  Existing type-side weakenings
+   (`d_{wf_ptyp,wf_utyp,consis,sub}_weakening`) are reused.
 3. **Strengthen Function Subtyping** to the `inh{∀ᾱ}.A₁→B'` shape (peel the
    `forall_r` ∀-prefix; current `d_sub_function_nontc` only does the bare
    arrow and excludes `tc`).
