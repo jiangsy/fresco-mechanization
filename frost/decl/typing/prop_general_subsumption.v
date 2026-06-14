@@ -841,14 +841,14 @@ Proof.
                 (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
       as [Δ_IH [Hbnd HΔ_IH]].
     exists (AtomSetImpl.diff Δ_IH Δ'). split.
-    + fsetdec.
+    + clear - Hbnd H0; fsetdec.
     + eapply d_sub__forall_l_tagged with (Δ' := Δ').
       * exact H.
-      * fsetdec.
+      * clear - Hbnd H0; fsetdec.
       * exact H1.
       * exact H2.
       * exact H3.
-      * eapply d_sub_equiv; [ | exact HΔ_IH ]. fsetdec.
+      * eapply d_sub_equiv; [ | exact HΔ_IH ]. clear - Hbnd H0; fsetdec.
   - (* forall_l_untagged: with Δ2 ⊆ Δ in the IH, the residual Δ' ⊆ Δ_IH FOLLOWS
        from (Δ ∪ Δ') ⊆ Δ_IH; refinement threaded by [open_gen]. *)
     simpl in Hcons.
@@ -869,14 +869,14 @@ Proof.
                   (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
         as [Δ_IH [Hbnd HΔ_IH]].
       exists (AtomSetImpl.diff Δ_IH Δ'). split.
-      * fsetdec.
+      * clear - Hbnd H0; fsetdec.
       * eapply d_sub__forall_l_tagged with (Δ' := Δ').
         -- exact H.
-        -- fsetdec.
+        -- clear - Hbnd H0; fsetdec.
         -- exact H1.
         -- exact H2.
         -- exact H3.
-        -- eapply d_sub_equiv; [ | exact HΔ_IH ]. fsetdec.
+        -- eapply d_sub_equiv; [ | exact HΔ_IH ]. clear - Hbnd H0; fsetdec.
     + (* T = utyp_all_syn C0 *)
       dependent destruction Href.
       pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C0
@@ -893,14 +893,14 @@ Proof.
                   (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
         as [Δ_IH [Hbnd HΔ_IH]].
       exists (AtomSetImpl.diff Δ_IH Δ'). split.
-      * fsetdec.
+      * clear - Hbnd H0; fsetdec.
       * eapply d_sub__forall_l_untagged with (Δ' := Δ').
         -- exact H.
-        -- fsetdec.
+        -- clear - Hbnd H0; fsetdec.
         -- exact H1.
         -- exact H2.
         -- exact H3.
-        -- eapply d_sub_equiv; [ | exact HΔ_IH ]. fsetdec.
+        -- eapply d_sub_equiv; [ | exact HΔ_IH ]. clear - Hbnd H0; fsetdec.
 Qed.
 
 (** * FN^n spine encoding (the design choice for the headline theorems).
