@@ -77,6 +77,46 @@ Proof.
       * simpl. eassumption.
 Qed.
 
+(** Mono chain for the n=0 abstraction (tail) case.  [is_styp (inh A)]
+    forces [A] monomorphic — the only way the *inherited* painting can be
+    synthesised is to carry no ∀ (a ∀ paints to [btyp_all_inh], never
+    [btyp_all_syn]). *)
+Lemma is_styp_ptyp_to_btyp_inh_mono : forall A,
+    is_styp (ptyp_to_btyp_inh A) -> mono_ptyp A.
+Proof.
+  induction A; simpl; intros Hst.
+  - constructor.
+  - inversion Hst.
+  - constructor.
+  - dependent destruction Hst. constructor; auto.
+  - inversion Hst.
+Qed.
+
+(** For monomorphic [A] the two paintings coincide (no ∀ to colour). *)
+Lemma mono_ptyp_inh_eq_syn : forall A,
+    mono_ptyp A -> ptyp_to_btyp_inh A = ptyp_to_btyp_syn A.
+Proof.
+  induction 1; simpl; [ reflexivity | reflexivity | ].
+  rewrite IHmono_ptyp1, IHmono_ptyp2. reflexivity.
+Qed.
+
+(** Consistency rigidity for monomorphic sources: a [mono] syn-source pins
+    the bidirectional RHS to its syn painting (no tags, no colour freedom).
+    Holds at ANY tag context — a [mono] source carries no [etag], so the
+    arrow recursion threads through whatever [Δ] the split produced. *)
+Lemma d_consis_mono_determines : forall Δ Γ A B,
+    Δ ⨟ Γ ⊨ (ptyp_to_utyp_syn A) ≈ B ->
+    mono_ptyp A ->
+    B = ptyp_to_btyp_syn A.
+Proof.
+  intros Δ Γ A B Hcons Hmono. generalize dependent B. generalize dependent Δ.
+  induction Hmono; intros Δ B Hcons; simpl in *.
+  - dependent destruction Hcons. reflexivity.
+  - dependent destruction Hcons. reflexivity.
+  - dependent destruction Hcons.
+    f_equal; [ eapply IHHmono1 | eapply IHHmono2 ]; eassumption.
+Qed.
+
 (** Syn round-trip: painting a synthesised [btyp] to a [utyp] and back is
     the identity.  Derived from the existing [ptyp] round-trips (the
     coercions are structural [Fixpoint]s, so the [ptyp]-level identity
