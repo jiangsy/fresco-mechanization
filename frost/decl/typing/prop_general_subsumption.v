@@ -1205,6 +1205,18 @@ Theorem d_typing_general_subsumption : forall Γ e A B m,
     empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
     Γ ⊢[ m ] e ⦂ B.
 Proof.
+  (* The n=0 corollary of the spine lemma: the [FN^0] spine is the tail, so
+     [e : syn{A}] subsumes to [B] through [empty ⊢[m] syn{A} ⊑ B] directly. *)
+  intros Γ e A B m Hwf Hty Hsub.
+  assert (Hst : is_styp (ptyp_to_btyp_syn A)).
+  { (* well-formedness side condition: [syn{A}] is [is_styp] (it is [lc] since
+       [Hty]/[Hsub] are well-formed).  Pending the wf lemma. *)
+    admit. }
+  eapply (d_typing_general_subsumption_spine Hty (ctx_weaken_refl Γ)
+            (n := 0) (A := ptyp_to_btyp_syn A) (M := m) (B := B) (Bres := B)).
+  - apply is_fn_n__ti.
+  - apply btyp_spine__tail. exact Hst.
+  - rewrite btyp_to_utyp_syn_ptyp_to_btyp_syn. exact Hsub.
 Admitted.
 
 Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
