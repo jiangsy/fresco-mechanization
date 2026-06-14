@@ -5,7 +5,6 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.prop_typing.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.notations.
 

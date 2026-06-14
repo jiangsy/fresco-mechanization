@@ -43,21 +43,23 @@ Reserved Notation "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q"
 (*  Well-formedness                                                       *)
 (* ===================================================================== *)
 
+Reserved Notation "Γ ⊢ₚ A"
+  (at level 75, A at level 75, no associativity).
 Inductive d_wf_ptyp : list (atom * dbind) -> ptyp -> Prop :=
 | d_wf_ptyp__unit : forall Γ,
-    d_wf_ptyp Γ ptyp_unit
+    Γ ⊢ₚ ptyp_unit
 | d_wf_ptyp__var : forall Γ X,
     binds X dbind_tvar Γ ->
-    d_wf_ptyp Γ (ptyp_var_f X)
+    Γ ⊢ₚ (ptyp_var_f X)
 | d_wf_ptyp__arrow : forall Γ A1 A2,
-    d_wf_ptyp Γ A1 ->
-    d_wf_ptyp Γ A2 ->
-    d_wf_ptyp Γ (ptyp_arrow A1 A2)
+    Γ ⊢ₚ A1 ->
+    Γ ⊢ₚ A2 ->
+    Γ ⊢ₚ (ptyp_arrow A1 A2)
 | d_wf_ptyp__all : forall L Γ A,
     (forall X, X `notin` L ->
-       d_wf_ptyp ((X ~ dbind_tvar) ++ Γ)
-         (open_ptyp_wrt_ptyp A (ptyp_var_f X))) ->
-    d_wf_ptyp Γ (ptyp_all A).
+       ((X ~ dbind_tvar) ++ Γ) ⊢ₚ (open_ptyp_wrt_ptyp A (ptyp_var_f X))) ->
+    Γ ⊢ₚ (ptyp_all A)
+where "Γ ⊢ₚ A" := (d_wf_ptyp Γ A) : type_scope.
 
 Inductive d_wf_btyp : list (atom * dbind) -> btyp -> Prop :=
 | d_wf_btyp__unit : forall Γ,
@@ -89,29 +91,27 @@ OK, now I saw d_tags defined below. Then we can just remove Δ here.
 Done (WT review): the tag context is dropped — [d_wf_utyp] is now pure
 well-scopedness ([Γ ⊢ C]); the linear tag content of a tagged type is
 checked separately by [d_tags] below. *)
+Reserved Notation "Γ ⊢ᵤ C"
+  (at level 75, C at level 75, no associativity).
 Inductive d_wf_utyp : list (atom * dbind) -> utyp -> Prop :=
 | d_wf_utyp__unit : forall Γ,
-    d_wf_utyp Γ utyp_unit
+    Γ ⊢ᵤ utyp_unit
 | d_wf_utyp__var : forall Γ X,
     binds X dbind_tvar Γ ->
-    d_wf_utyp Γ (utyp_var_f X)
+    Γ ⊢ᵤ (utyp_var_f X)
 | d_wf_utyp__arrow : forall Γ C1 C2,
-    d_wf_utyp Γ C1 ->
-    d_wf_utyp Γ C2 ->
-    d_wf_utyp Γ (utyp_arrow C1 C2)
+    Γ ⊢ᵤ C1 ->
+    Γ ⊢ᵤ C2 ->
+    Γ ⊢ᵤ (utyp_arrow C1 C2)
 | d_wf_utyp__all_syn : forall L Γ C,
     (forall X, X `notin` L ->
-       d_wf_utyp ((X ~ dbind_tvar) ++ Γ)
-         (open_utyp_wrt_utyp C (utyp_var_f X))) ->
-    d_wf_utyp Γ (utyp_all_syn C)
+       ((X ~ dbind_tvar) ++ Γ) ⊢ᵤ (open_utyp_wrt_utyp C (utyp_var_f X))) ->
+    Γ ⊢ᵤ (utyp_all_syn C)
 | d_wf_utyp__all_etag : forall L Γ ε C,
     (forall X, X `notin` L ->
-       d_wf_utyp ((X ~ dbind_tvar) ++ Γ)
-         (open_utyp_wrt_utyp C (utyp_var_f X))) ->
-    d_wf_utyp Γ (utyp_all_etag ε C).
-
-Notation "Γ ⊢ᵤ C" := (d_wf_utyp Γ C)
-  (at level 75, C at level 75, no associativity) : type_scope.
+       ((X ~ dbind_tvar) ++ Γ) ⊢ᵤ (open_utyp_wrt_utyp C (utyp_var_f X))) ->
+    Γ ⊢ᵤ (utyp_all_etag ε C)
+where "Γ ⊢ᵤ C" := (d_wf_utyp Γ C) : type_scope.
 
 Inductive d_wf_pskl : list atom -> list (atom * dbind) -> pskl -> Prop :=
 | d_wf_pskl__unit : forall Ψ Γ,
@@ -342,23 +342,25 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     Δ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
 where "Δ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Δ Γ C B) : type_scope.
 
+Reserved Notation "Γ ⊢ A ≤ B"
+  (at level 75, A at level 74, B at level 74, no associativity).
 Inductive d_shallow_sub : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
 | d_shallow_sub__refl : forall Γ A,
-    d_wf_ptyp Γ A ->
-    d_shallow_sub Γ A A
+    Γ ⊢ₚ A ->
+    Γ ⊢ A ≤ A
 | d_shallow_sub__arrow : forall Γ A1 A2 A1' A2',
-    d_shallow_sub Γ A1' A1 ->
-    d_shallow_sub Γ A2 A2' ->
-    d_shallow_sub Γ (ptyp_arrow A1 A2) (ptyp_arrow A1' A2')
+    Γ ⊢ A1' ≤ A1 ->
+    Γ ⊢ A2 ≤ A2' ->
+    Γ ⊢ (ptyp_arrow A1 A2) ≤ (ptyp_arrow A1' A2')
 | d_shallow_sub__forall_r : forall L Γ A1 A2,
     (forall X, X `notin` L ->
-       d_shallow_sub ((X ~ dbind_tvar) ++ Γ) A1
-         (open_ptyp_wrt_ptyp A2 (ptyp_var_f X))) ->
-    d_shallow_sub Γ A1 (ptyp_all A2)
+       ((X ~ dbind_tvar) ++ Γ) ⊢ A1 ≤ (open_ptyp_wrt_ptyp A2 (ptyp_var_f X))) ->
+    Γ ⊢ A1 ≤ (ptyp_all A2)
 | d_shallow_sub__forall_l : forall Γ A1 A2 I,
-    d_wf_ptyp Γ I ->
-    d_shallow_sub Γ (open_ptyp_wrt_ptyp A1 I) A2 ->
-    d_shallow_sub Γ (ptyp_all A1) A2.
+    Γ ⊢ₚ I ->
+    Γ ⊢ (open_ptyp_wrt_ptyp A1 I) ≤ A2 ->
+    Γ ⊢ (ptyp_all A1) ≤ A2
+where "Γ ⊢ A ≤ B" := (d_shallow_sub Γ A B) : type_scope.
 
 (* ===================================================================== *)
 (*  Skeleton refinement, consistency, and subtyping                       *)
@@ -574,142 +576,135 @@ Inductive is_base_term : exp -> Prop :=
 | is_base_term__var  : forall x, is_base_term (exp_var_f x)
 | is_base_term__anno : forall e A, is_base_term (exp_anno e A).
 
+Reserved Notation "Γ ⊢[ M ] e ⦂ A"
+  (at level 100, M at level 0, e at level 75, A at level 75, no associativity).
+Reserved Notation "Γ ⊢[ M ] e ⇨ P"
+  (at level 100, M at level 0, e at level 75, P at level 75, no associativity).
+
 Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_typing__unit : forall Γ,
-    d_typing mode_ti Γ exp_unit btyp_unit
+    Γ ⊢[ mode_ti ] exp_unit ⦂ btyp_unit
 | d_typing__var : forall Γ x A,
     binds x (dbind_typ A) Γ ->
-    d_typing mode_ti Γ (exp_var_f x) (ptyp_to_btyp_syn A)
+    Γ ⊢[ mode_ti ] (exp_var_f x) ⦂ (ptyp_to_btyp_syn A)
 | d_typing__anno : forall Γ e A,
-    d_typing mode_tc Γ e (ptyp_to_btyp_inh A) ->
-    d_typing mode_ti Γ (exp_anno e A) (ptyp_to_btyp_syn A)
+    Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
+    Γ ⊢[ mode_ti ] (exp_anno e A) ⦂ (ptyp_to_btyp_syn A)
 | d_typing__sub : forall Γ m e B1 B2,
     is_base_term e ->
-    d_typing mode_ti Γ e B1 ->
-    d_sub m empty Γ (ptyp_to_utyp_syn B1) B2 ->
-    d_typing m Γ e B2
+    Γ ⊢[ mode_ti ] e ⦂ B1 ->
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn B1) ⊑ B2 ->
+    Γ ⊢[ m ] e ⦂ B2
 | d_typing__freeze : forall Γ e B,
-    d_typing mode_ti Γ e B ->
-    d_typing mode_tc Γ (exp_freeze e) B
+    Γ ⊢[ mode_ti ] e ⦂ B ->
+    Γ ⊢[ mode_tc ] (exp_freeze e) ⦂ B
 | d_typing__forall : forall L Γ e B,
     is_value e ->
     (forall X, X `notin` L ->
-       d_typing mode_tc ((X ~ dbind_tvar) ++ Γ) e
-         (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    d_typing mode_tc Γ e (btyp_all_inh B)
+       ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] e ⦂ (open_btyp_wrt_btyp B (btyp_var_f X))) ->
+    Γ ⊢[ mode_tc ] e ⦂ (btyp_all_inh B)
 | d_typing__abs : forall L Γ m e A B,
     (* Paper [Abs] (syntax-directed.tex): [M ≠ TC]; the check-mode
        abstraction goes through [d_typing__abs_check] instead. *)
     m <> mode_tc ->
-    d_wf_ptyp Γ A ->
+    Γ ⊢ₚ A ->
     (forall x, x `notin` L ->
-       d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing m Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
+    Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
 | d_typing__abs_check : forall L Γ e A B,
     (* Paper [AbsCheck] (syntax-directed.tex), [ᾱ = ·] base; the [∀ᾱ]
        prefix is supplied by [d_typing__forall].  Mirrors [d_pat__abs_check]. *)
-    d_wf_ptyp Γ A ->
+    Γ ⊢ₚ A ->
     (forall x, x `notin` L ->
-       d_typing mode_tc ((x ~ dbind_typ A) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing mode_tc Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
+    Γ ⊢[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
 | d_typing__abs_anno : forall L Γ m e A Barg B,
-    (* WT: "A is not synthesised but bidirectional — there exists a
-       bidirectional A whose uncoloured version is the annotation."
-       Encoded: the conclusion's arrow-arg is an arbitrary bidirectional
-       [Barg] whose erasure [btyp_to_ptyp] is the annotation [A].
-       Paper [AbsAnno] (syntax-directed.tex): [M ≠ TC]. *)
+    (* The arrow-arg is an arbitrary bidirectional [Barg] whose erasure
+       [btyp_to_ptyp] is the annotation [A].  Paper [AbsAnno]: [M ≠ TC]. *)
     m <> mode_tc ->
-    d_wf_ptyp Γ A ->
+    Γ ⊢ₚ A ->
     btyp_to_ptyp Barg = A ->
     (forall x, x `notin` L ->
-       d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing m Γ (exp_abs_anno A e) (btyp_arrow Barg B)
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
+    Γ ⊢[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow Barg B)
 | d_typing__abs_anno_check : forall L Γ e A Barg B,
-    (* Paper [AbsAnnoCheck] (syntax-directed.tex), [ᾱ = ·] base.  Mirrors
-       [d_pat__abs_anno_check]. *)
-    d_wf_ptyp Γ A ->
+    (* Paper [AbsAnnoCheck], [ᾱ = ·] base.  Mirrors [d_pat__abs_anno_check]. *)
+    Γ ⊢ₚ A ->
     btyp_to_ptyp Barg = A ->
     (forall x, x `notin` L ->
-       d_typing mode_tc ((x ~ dbind_typ A) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    d_typing mode_tc Γ (exp_abs_anno A e) (btyp_arrow Barg B)
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
+    Γ ⊢[ mode_tc ] (exp_abs_anno A e) ⦂ (btyp_arrow Barg B)
 | d_typing__app : forall Γ m e1 e2 P A Barg B,
-    (* WT: the function-arg should be a bidirectional [A] (here [Barg]
-       with [btyp_to_ptyp Barg = A]), not the forced inherited painting;
-       the argument is still *checked* at [inh{A}] (paper D-App). *)
+    (* The function-arg is a bidirectional [A] ([Barg] with
+       [btyp_to_ptyp Barg = A]); the argument is checked at [inh{A}]. *)
     btyp_to_ptyp Barg = A ->
-    d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
-    d_refine_syn nil Γ (pskl_to_bskl_inh P) (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
-    d_typing (mode_fn m) Γ e1 (btyp_arrow Barg B) ->
-    d_typing mode_tc Γ e2 (ptyp_to_btyp_inh A) ->
-    d_typing m Γ (exp_app e1 e2) B
+    Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
+    nil ⨟ Γ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
+    Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow Barg B) ->
+    Γ ⊢[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh A) ->
+    Γ ⊢[ m ] (exp_app e1 e2) ⦂ B
 
 with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__unit : forall Γ,
-    d_pat mode_ti Γ exp_unit bskl_unit
+    Γ ⊢[ mode_ti ] exp_unit ⇨ bskl_unit
 | d_pat__var : forall Γ x P,
     binds x (dbind_skl P) Γ ->
-    d_pat mode_ti Γ (exp_var_f x) (pskl_to_bskl_syn P)
+    Γ ⊢[ mode_ti ] (exp_var_f x) ⇨ (pskl_to_bskl_syn P)
 | d_pat__anno : forall Γ e A,
-    d_wf_ptyp Γ A ->
-    d_pat mode_ti Γ (exp_anno e A) (pskl_to_bskl_syn (ptyp_to_pskl A))
+    Γ ⊢ₚ A ->
+    Γ ⊢[ mode_ti ] (exp_anno e A) ⇨ (pskl_to_bskl_syn (ptyp_to_pskl A))
 | d_pat__sub : forall Γ m e Q1 Q2,
     is_base_term e ->
-    d_pat mode_ti Γ e Q1 ->
-    d_pat_sub m nil Γ (bskl_to_uskl Q1) Q2 ->
-    d_pat m Γ e Q2
+    Γ ⊢[ mode_ti ] e ⇨ Q1 ->
+    nil ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl Q1) ⊑ Q2 ->
+    Γ ⊢[ m ] e ⇨ Q2
 | d_pat__freeze : forall Γ e Q,
-    d_pat mode_ti Γ e Q ->
-    d_pat mode_tc Γ (exp_freeze e) Q
+    Γ ⊢[ mode_ti ] e ⇨ Q ->
+    Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ Q
 | d_pat__abs : forall L Γ m e P Q,
     m <> mode_tc ->
-    d_wf_pskl nil Γ P ->
+    nil ⨟ Γ ⊢ₚₛ P ->
     (forall x, x `notin` L ->
-       d_pat (decr_mode m) ((x ~ dbind_skl P) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) Q) ->
-    (* WT: "P in the conclusion should be inherited" (paper P-Abs:
-       [inh{P} → bid{Q}]). *)
-    d_pat m Γ (exp_abs e) (bskl_arrow (pskl_to_bskl_inh P) Q)
+       ((x ~ dbind_skl P) ++ Γ) ⊢[ decr_mode m ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
+    Γ ⊢[ m ] (exp_abs e) ⇨ (bskl_arrow (pskl_to_bskl_inh P) Q)
 | d_pat__abs_check : forall L Γ e Q,
     (forall x, x `notin` L ->
-       d_pat mode_tc ((x ~ dbind_skl pskl_hole) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) Q) ->
-    d_pat mode_tc Γ (exp_abs e)
-      (bskl_tophole (bskl_arrow bskl_hole Q))
+       ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
+    Γ ⊢[ mode_tc ] (exp_abs e) ⇨ (bskl_tophole (bskl_arrow bskl_hole Q))
 | d_pat__abs_anno : forall L Γ m e A Sarg Q,
-    (* WT: "as with d_typing, there exists a bidirectional A" — the
-       arrow-arg skeleton [Sarg] is an arbitrary bidirectional skeleton
-       whose erasure [bskl_to_pskl] is the annotation's pattern. *)
+    (* The arrow-arg skeleton [Sarg] is bidirectional, [bskl_to_pskl Sarg]
+       the annotation's pattern. *)
     m <> mode_tc ->
-    d_wf_ptyp Γ A ->
+    Γ ⊢ₚ A ->
     bskl_to_pskl Sarg = ptyp_to_pskl A ->
     (forall x, x `notin` L ->
-       d_pat (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) Q) ->
-    d_pat m Γ (exp_abs_anno A e) (bskl_arrow Sarg Q)
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
+    Γ ⊢[ m ] (exp_abs_anno A e) ⇨ (bskl_arrow Sarg Q)
 | d_pat__abs_anno_check : forall L Γ e A Sarg Q,
-    (* WT: "same here, A should be bidirectional". *)
-    d_wf_ptyp Γ A ->
+    Γ ⊢ₚ A ->
     bskl_to_pskl Sarg = ptyp_to_pskl A ->
     (forall x, x `notin` L ->
-       d_pat mode_tc ((x ~ dbind_typ A) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) Q) ->
-    d_pat mode_tc Γ (exp_abs_anno A e)
-      (bskl_tophole (bskl_arrow Sarg Q))
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
+    Γ ⊢[ mode_tc ] (exp_abs_anno A e) ⇨ (bskl_tophole (bskl_arrow Sarg Q))
 | d_pat__app : forall Γ m e1 e2 P A1 A2 Barg1 Sres,
-    (* WT: "there exists a bidirectional A; also, the result A_2 should
-       be bidirectional" — [Barg1] is a bidirectional arg ([= A1]) and
-       [Sres] a bidirectional result skeleton ([= A2]). *)
+    (* [Barg1] a bidirectional arg ([= A1]); [Sres] a bidirectional result
+       skeleton ([= A2]). *)
     btyp_to_ptyp Barg1 = A1 ->
     bskl_to_pskl Sres = ptyp_to_pskl A2 ->
-    d_pat mode_tc Γ e2 (pskl_to_bskl_syn P) ->
-    d_refine_syn nil Γ (pskl_to_bskl_inh P) (pskl_to_bskl_inh (ptyp_to_pskl A1)) ->
-    d_typing (mode_fn m) Γ e1
-      (btyp_arrow Barg1 (ptyp_to_btyp_inh A2)) ->
-    d_pat m Γ (exp_app e1 e2) Sres.
+    Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
+    nil ⨟ Γ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A1)) ->
+    Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow Barg1 (ptyp_to_btyp_inh A2)) ->
+    Γ ⊢[ m ] (exp_app e1 e2) ⇨ Sres
+where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope
+  and "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P) : type_scope.
 
 (* WT: Other comments:
 1. In the paper I have \skmod[\N]{\M}{P} as well-formedness conditions
