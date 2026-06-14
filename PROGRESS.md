@@ -381,7 +381,39 @@ typing-level cases of `d_typing_general_subsumption_spine`:
   generalisation), which needs the abs body capability available at
   tvar-extended contexts.  `forall_l` is excluded by the `utyp_arrow` LHS.
 - `sub`: needs "syn (paint) LHS ⇒ empty tag context" (a `d_sub` context
-  bound; its `forall_l` is the hard sub-case).
+  bound; its `forall_l` is the hard sub-case).  The paper asserts exactly
+  this ("the tag context must be empty since there is no tags in syn{A}",
+  syntax-directed.tex:332).
+
+### abs/abs_anno n=0 — the paper-driven reformulation plan
+
+The paper (syntax-directed.tex:375–395) closes the abs n=0 case with:
+Function-Subtyping yields `B = inh{∀ᾱ}.A₁→B'` (peeling a ∀-prefix), then the
+**body IH at the ᾱ-extended context** (`Γ,ᾱ,x:A₁`, via "context weakening"),
+then `Abs`, then `Forall` re-wraps ᾱ.  Mechanizing this requires:
+
+1. **`d_refine_syn_weakening`** (new) — needed by step 2's app case.
+2. **`d_typing_weakening` / `d_pat_weakening`** — currently **Admitted**
+   (prop_weakening.v); the ~15-case mutual induction over `d_typing_mut`/
+   `d_pat_mut`, using the existing `d_{wf_ptyp,wf_utyp,consis,sub}_weakening`
+   + the new refine weakening.
+3. **Strengthen Function Subtyping** to the `inh{∀ᾱ}.A₁→B'` shape (peel the
+   `forall_r` ∀-prefix; current `d_sub_function_nontc` only does the bare
+   arrow and excludes `tc`).
+4. **Split-context reformulation** of `d_typing_general_subsumption_spine`:
+   state the context as `Γlocal ++ Γbase` and weaken `Γbase` to
+   `Γw ++ Γbase` (`Γlocal ++ Γw ++ Γbase`).  This inserts ᾱ *between* the
+   abs binder `x:A₁` and the base — matching `d_typing_weakening`'s
+   middle-insertion — so **no context-exchange lemma is needed** (there
+   is none).  The body IH then lands at `(x:A₁) ++ Γw ++ Γbase`.
+5. **abs/abs_anno n=0**: strengthened Function Subtyping → ᾱ + arrow; body
+   IH (context-general via step 4) at the ᾱ-extension + `d_consis_mono_determines`
+   for the (mono) arg; `Abs`; `d_typing__forall` (value generalisation, ᾱ
+   nonempty ⇒ `M=TC`) to re-wrap.
+6. Wire the **headline** as the `Γlocal=Γw=nil`, n=0 corollary.
+
+This is a multi-stage program resting on closing the admitted weakening
+infrastructure first.
 
 ## 2026-06-14 — CST keystone closed (`d_consis_sub_trans_mid` Qed), `btyp` tag-free
 
