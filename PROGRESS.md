@@ -353,6 +353,37 @@ files:
 
 Session-by-session closure log. Most recent first.
 
+## 2026-06-14 — Weakening infrastructure closed + spine lemma reformulated (split-context)
+
+Built out the weakening infrastructure the abs/abs_anno n=0 generalisation
+needs (the chain documented below), and reformulated the spine lemma:
+
+- **`d_refine_syn_weakening`** (was missing) — Qed.
+- **`d_pat_consis_weakening`** (skeleton consistency ≈ₛ) — Qed.
+- **`d_pat_sub_weakening`** (skeleton subtyping ⊑ₛ) — Qed.
+- **`d_typing_weakening` + `d_pat_weakening`** — **were `Admitted`; now Qed**
+  via `Combined Scheme d_typing_pat_mutind` (the ~19-case mutual induction).
+  A long-standing admit closed.
+- **`d_typing_general_subsumption_spine` reformulated** with a split context
+  `Γ = Γl ++ Γb`, concluding at `Γl ++ Γw ++ Γb` so the body IH is
+  weakening-closed.  **base / app / abs+abs_anno `__arrow` cases all proven**
+  under the new statement.
+- Sped up the 9 `forall_l` `fsetdec` calls in `d_consis_sub_trans_mid`
+  (`clear - Hbnd H0`).
+
+**Remaining for the final theorem** (all unblocked by the above):
+- abs/abs_anno `__tail` (n=0): the arrow targets (infer/check/arg of the
+  tail subtyping) close with a single `Γw` insertion + `d_consis_mono_determines`
+  + the body IH; the **`forall_r` ∀-target (generalisation) needs a *general*
+  context weakening** — the generalisation tvars ᾱ go *between* the abs binder
+  `x:A` and the base, while the spine's `Γw` goes *after* the base prefix, so
+  for rank-2 targets (`∀ᾱ.(A→∀β.C)`) **two distinct insertion points** are
+  needed, which the single-`Γw` reformulation can't express.  Fix: replace the
+  `Γl/Γw/Γb` split with a `ctx_weaken Γ Γ'` (order-preserving insertion)
+  relation + its `d_typing` closure, then the body IH lands at any extension.
+- `sub`: the `d_sub` "syn-LHS ⇒ empty tag context" bound.
+- Wire the headline as the `Γl=Γw=nil`, n=0 corollary.
+
 ## 2026-06-14 — Spine typing cases: `app` + `n>0` abs/abs_anno closed; mono groundwork for `n=0`
 
 With the CST keystone wired into `d_sub_trans_spine` (below), worked the
