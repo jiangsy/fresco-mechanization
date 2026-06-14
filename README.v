@@ -3,7 +3,6 @@
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
-Require Import src.frost.decl.prop_subtyping.
 Require Import src.frost.decl.prop_typing.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.prop_soundness.
@@ -11,9 +10,6 @@ Require Import src.frost.algo.prop_completeness.
 
 Check d_typing_general_subsumption.
 Check d_typing_general_subsumption_spine.
-
-Check d_sub_sound.
-Check d_sub_no_guess_uniqueness.
 
 Check d_refine_preserves_wf.
 Check d_typing_pat_preserves_wf.
@@ -30,7 +26,5 @@ Check a_pat_sound.
 Check a_sub_complete.
 Check a_typing_complete.
 Check a_pat_complete.
-
-
 
 Print Assumptions d_typing_general_subsumption.

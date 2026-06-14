@@ -72,3 +72,19 @@ Qed.
 
 Scheme d_typing_mut := Induction for d_typing Sort Prop
   with d_pat_mut    := Induction for d_pat    Sort Prop.
+
+(** The synthesised painting of any locally-closed [ptyp] is synthesised
+    ([is_styp]): every ∀ becomes [btyp_all_syn].  (Induct on [lc_ptyp] so the
+    ∀ body's [is_styp] follows from the per-instance IH.) *)
+Lemma is_styp_ptyp_to_btyp_syn : forall A,
+    lc_ptyp A -> is_styp (ptyp_to_btyp_syn A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - apply is_styp__all with (L := empty). intros X _.
+    change (btyp_var_f X) with (ptyp_to_btyp_syn (ptyp_var_f X)).
+    rewrite <- ptyp_to_btyp_syn_open.
+    match goal with H : forall _, is_styp _ |- _ => apply H end.
+Qed.
