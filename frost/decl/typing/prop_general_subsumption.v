@@ -1005,21 +1005,41 @@ Proof.
     inversion Hfn.
   - (* forall (tc): excluded. *)
     inversion Hfn.
-  - (* abs: split on the spine.
-       - [__arrow] (n>0): the abs's inherited argument [inh A] is the first
-         spine ARGUMENT [B1] (no [is_styp] needed there); recurse via the IH
-         on the body and rebuild [d_typing__abs].  (Mode arithmetic:
-         [decr (mode_fn_n_subst m M) = mode_fn_n_subst (decr m) M].)
-       - [__tail] (n=0): requires [is_styp (btyp_arrow (inh A) B)], i.e.
-         [is_styp (inh A)] — FALSE for polymorphic [A] (vacuous), but
-         REACHABLE for monomorphic [A] (where [inh A = syn A]); that
-         sub-case needs Function Subtyping (the paper's n=0 abs).
-       Deferred. *)
-    admit.
+  - (* abs: split on the spine. *)
+    dependent destruction Hspine.
+    + (* __tail (n=0): requires [is_styp (btyp_arrow (inh A) B)], i.e.
+         [is_styp (inh A)] — FALSE for polymorphic [A] (vacuous), REACHABLE
+         for monomorphic [A] (where [inh A = syn A]); Function Subtyping. *)
+      admit.
+    + (* __arrow (n>0): the abs's inherited arg [inh A] is the first spine
+         ARGUMENT, kept fixed; recurse on the body via [H1] and rebuild
+         [d_typing__abs].  [decr (mode_fn (mode_fn_n_subst m'' M0)) =
+         mode_fn_n_subst m'' M0 = mode_fn_n_subst (decr m) M0]. *)
+      dependent destruction Hfn. simpl.
+      apply d_typing__abs with (L := L) (A := A).
+      * exact H.
+      * intros x Hx. eapply H1.
+        -- exact Hx.
+        -- eassumption.
+        -- eassumption.
+        -- apply d_sub_weakening_head. exact Htail.
   - (* abs_anno: as abs, with the bidirectional [Barg].  Deferred. *)
     admit.
-  - (* app: Function Subtyping on [e1]'s arrow type.  Deferred. *)
-    admit.
+  - (* app: thread the spine through [e1]'s arrow type via the IH, then
+       rebuild [d_typing__app] at the substituted mode.  No tail split — the
+       function's arrow is simply PREPENDED to the spine ([btyp_spine__arrow]),
+       so the synthesised tail [A0] stays in the function's result and the IH
+       on [e1] does the work.  [mode_fn_n_subst (mode_fn m) M0] is definitionally
+       [mode_fn (mode_fn_n_subst m M0)], the mode [d_typing__app] expects. *)
+    eapply d_typing__app.
+    + exact H.
+    + exact H0.
+    + exact H1.
+    + eapply IHHty1.
+      * apply is_fn_n__fn. exact Hfn.
+      * apply btyp_spine__arrow. exact Hspine.
+      * exact Htail.
+    + exact Hty2.
 Admitted.
 
 (** D1, paper Lemma 3.1: ordinary general subsumption.  The paper's
