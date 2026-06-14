@@ -1,5 +1,8 @@
-(** Auxiliary facts for declarative general subsumption, stated over the
-    current split syntax. *)
+(** Auxiliary facts for declarative general subsumption (the [utyp]/[btyp]
+    split syntax): the [compose_tags] witness and consistency composition
+    (paper B.2), coercion / opening / free-variable lemmas relating the three
+    type layers, and consistency basics ([lc], [guarded]).  Tvar-renaming
+    closure lives in [prop_renaming]. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
@@ -21,33 +24,6 @@ Require Import src.frost.decl.typing.prop_weakening.
 Set Implicit Arguments.
 
 Ltac nbauto := try sauto limit:30.
-
-
-
-
-
-
-
-Lemma d_consis_refl_styp_as_utyp : forall Γ B,
-    Γ ⊢ᵦ B ->
-    is_styp B ->
-    empty ⨟ Γ ⊨ (btyp_to_utyp_syn B) ≈ B.
-Proof.
-  intros Γ B Hwf Hst.
-  generalize dependent Hst.
-  dependent induction Hwf; intros Hst; inversion Hst; subst; simpl.
-  - apply d_consis__unit. reflexivity.
-  - apply d_consis__var; [ exact H | reflexivity ].
-  - eapply d_consis__arrow.
-    + apply IHHwf1. exact H1.
-    + apply IHHwf2. exact H2.
-    + fsetdec.
-  - apply d_consis__forall_syn with (L := L `union` L0).
-    intros X HX.
-    change (utyp_var_f X) with (btyp_to_utyp_syn (btyp_var_f X)).
-    rewrite <- btyp_to_utyp_syn_open.
-    apply H0; auto.
-Qed.
 
 
 (** [compose_tags C B] is the tag context produced by composing the two
@@ -109,7 +85,7 @@ Qed.
 
 (** A synthesised target carries no inh quantifier, so composing against it
     introduces no tag: [compose_tags C B = nil].  This is what lets the
-    [mode_ti]/[__infer_gen] base of B.4 keep its nil output. *)
+    [mode_ti] infer base keeps its empty-tag output. *)
 Lemma compose_tags_is_syn_nil : forall B C,
     is_syn B -> compose_tags C B [=] empty.
 Proof.
@@ -223,11 +199,6 @@ Lemma ftvar_btyp_to_utyp_syn : forall B,
     ftvar_in_utyp (btyp_to_utyp_syn B) [<=] ftvar_in_btyp B.
 Proof. induction B; simpl; fsetdec. Qed.
 
-(** Keystone for B.4: on a synthesised [btyp], the [gutyp] embedding equals
-    the [utyp]-route embedding.  This collapses [d_sub_gen_trans]'s middle
-    [btyp_to_gutyp B2] into the [utyp] image, where the (non-gen) B.2
-    [d_consis_compose] applies. *)
-
 (** A synthesised [btyp] is the syn-painting of its own forgetful image, so
     [d_consis_compose]'s [ptyp_to_btyp_syn A] middle can be fed an arbitrary
     [is_syn] btyp via [A := btyp_to_ptyp B]. *)
@@ -283,51 +254,8 @@ Proof.
       exact H0.
 Qed.
 
-(** B.2 with an arbitrary synthesised middle [B2] (not just a ptyp painting):
-    immediate corollary of [d_consis_compose] via the round-trip above. *)
-Lemma d_consis_compose_syn : forall Δa Δb Γ C B2 B,
-    is_syn B2 ->
-    Δa ⨟ Γ ⊨ C ≈ B2 ->
-    Δb ⨟ Γ ⊨ (btyp_to_utyp_syn B2) ≈ B ->
-    exists Δc, (Δa `union` Δb) [<=] Δc /\ Δc ⨟ Γ ⊨ C ≈ B.
-Proof.
-  intros Δa Δb Γ C B2 B Hsyn Hc Hd.
-  apply (@d_consis_compose Δa Δb Γ C (btyp_to_ptyp B2) B).
-  - rewrite ptyp_to_btyp_syn_btyp_to_ptyp by exact Hsyn. exact Hc.
-  - rewrite ptyp_to_utyp_syn_btyp_to_ptyp. exact Hd.
-Qed.
 
-(** Nil-output composition: when both the synthesised middle [B2] and the
-    target [B] carry no inh quantifier, the composed context is nil (no etag
-    is recorded), so the result holds at the empty tag context — needed for
-    the [mode_ti]/[__infer_gen] base, which demands nil. *)
-Lemma d_consis_compose_syn_nil : forall Γ C B2 B,
-    is_syn B2 -> is_syn B ->
-    empty ⨟ Γ ⊨ C ≈ B2 ->
-    empty ⨟ Γ ⊨ (btyp_to_utyp_syn B2) ≈ B ->
-    empty ⨟ Γ ⊨ C ≈ B.
-Proof.
-  intros Γ C B2 B Hsyn2 HsynB Hc Hd.
-  rewrite <- (ptyp_to_btyp_syn_btyp_to_ptyp Hsyn2) in Hc.
-  rewrite <- (ptyp_to_utyp_syn_btyp_to_ptyp B2) in Hd.
-  pose proof (@d_consis_compose_strong (S (size_ptyp (btyp_to_ptyp B2)))
-                (btyp_to_ptyp B2) ltac:(lia) empty empty Γ C B Hc Hd) as [_ Hcons].
-  exact (d_consis_equiv (@compose_tags_is_syn_nil B C HsynB) Hcons).
-Qed.
-(** [utyp_to_gutyp] is injective: [gutyp] has constructors outside its image
-    ([gutyp_all_inh]) and is structural on the shared ones, so equal images
-    come from equal sources.  Lets us invert the rule premise
-    [utyp_to_gutyp C0 = utyp_to_gutyp (btyp_to_utyp_syn B2)] into [C0 = ...]. *)
-
-
-(** ===== Infrastructure for B.4 (generalized utyp-middle composition) =====
-
-    The B.4 base composes a [mode_ti] first sub ([utyp_to_gutyp C ⊑ B2], i.e.
-    [C ≈ B2] with [B2] synthesised) with a second sub whose LHS is a [utyp]
-    image [utyp_to_gutyp Cmid].  The clean inductive invariant relates the
-    source [Csrc] to the middle by a consistency against the *btyp erasure*
-    [Csrc ≈ utyp_to_btyp Cmid] — this survives the [forall_l] instantiation
-    (where a tagged [ph] would break a "[btyp_to_utyp_syn] image" invariant). *)
+(** ===== [utyp_to_btyp] opening / erasure lemmas ===== *)
 
 (** [utyp_to_btyp] commutes with opening. *)
 Lemma utyp_to_btyp_open_rec : forall C1 C2 k,
@@ -370,70 +298,9 @@ Proof.
     apply H0.
 Qed.
 
-(** [btyp_to_utyp_syn ∘ utyp_to_btyp] (forcing every forall to syn) commutes
-    with variable opening. *)
-Lemma synerase_open : forall C X,
-    btyp_to_utyp_syn (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f X))) =
-    open_utyp_wrt_utyp (btyp_to_utyp_syn (utyp_to_btyp C)) (utyp_var_f X).
-Proof.
-  intros C X. rewrite utyp_to_btyp_open. simpl.
-  rewrite btyp_to_utyp_syn_open. reflexivity.
-Qed.
 
-(** The [btyp] erasure of a consistent [utyp] is [is_syn] (all foralls become
-    synthesised); read straight off the consistency derivation. *)
-Lemma d_consis_is_syn_erase : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B -> is_syn (utyp_to_btyp C).
-Proof.
-  intros Δ Γ C B H. induction H; simpl.
-  - apply is_syn__unit.
-  - apply is_syn__var.
-  - apply is_syn__arrow; assumption.
-  - apply is_syn__all with (L := L). intros X HX.
-    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f X))
-      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f X)))
-      by (rewrite utyp_to_btyp_open; reflexivity).
-    apply H0; assumption.
-  - apply is_syn__all with (L := L). intros X HX.
-    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f X))
-      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f X)))
-      by (rewrite utyp_to_btyp_open; reflexivity).
-    apply H0; assumption.
-  - apply is_syn__all with (L := L). intros X HX.
-    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f X))
-      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f X)))
-      by (rewrite utyp_to_btyp_open; reflexivity).
-    apply H0; assumption.
-  - apply is_syn__all with (L := L). intros X HX.
-    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f X))
-      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f X)))
-      by (rewrite utyp_to_btyp_open; reflexivity).
-    apply H0; assumption.
-Qed.
-
-(** Forcing the [utyp] side's foralls to syn ([btyp_to_utyp_syn ∘ utyp_to_btyp])
-    preserves consistency and lands at the empty tag context — an etag-free LHS
-    triggers no [forall_inh_tagged], so nothing is recorded. *)
-Lemma d_consis_synerase_lhs : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
-    empty ⨟ Γ ⊨ (btyp_to_utyp_syn (utyp_to_btyp C)) ≈ B.
-Proof.
-  intros Δ Γ C B H. induction H; simpl.
-  - apply d_consis__unit. reflexivity.
-  - apply d_consis__var; [ assumption | reflexivity ].
-  - eapply d_consis__arrow; [ eassumption | eassumption | fsetdec ].
-  - apply d_consis__forall_inh_untagged with (L := L). intros X HX.
-    rewrite <- synerase_open. apply H0; assumption.
-  - apply d_consis__forall_inh_untagged with (L := L). intros X HX.
-    rewrite <- synerase_open. apply H0; assumption.
-  - apply d_consis__forall_syn with (L := L). intros X HX.
-    rewrite <- synerase_open. apply H0; assumption.
-  - apply d_consis__forall_syn with (L := L). intros X HX.
-    rewrite <- synerase_open. apply H0; assumption.
-Qed.
-
-(** Generalized nil composition: arbitrary input tag contexts, syn middle and
-    target ⟹ nil output (the [mode_ti]/[__infer_gen] base demands nil). *)
+(** Empty-context composition: arbitrary input tag contexts, syn middle and
+    target ⟹ empty output (the [mode_ti] infer base demands the empty set). *)
 Lemma d_consis_compose_syn_nil_l : forall Δa Δb Γ C B2 B,
     is_syn B2 -> is_syn B ->
     Δa ⨟ Γ ⊨ C ≈ B2 ->
@@ -462,19 +329,6 @@ Proof.
   - pick fresh X. apply lc_utyp_all_syn_exists with (Xut1 := X). apply H0. fsetdec.
 Qed.
 
-(** A consistency derivation's [btyp] side is locally closed. *)
-Lemma d_consis_lc_btyp : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B -> lc_btyp B.
-Proof.
-  intros Δ Γ C B H. induction H.
-  - apply lc_btyp_unit.
-  - apply lc_btyp_var_f.
-  - apply lc_btyp_arrow; assumption.
-  - pick fresh X. apply lc_btyp_all_inh_exists with (Xbt1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_btyp_all_inh_exists with (Xbt1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_btyp_all_syn_exists with (Xbt1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_btyp_all_syn_exists with (Xbt1 := X). apply H0. fsetdec.
-Qed.
 
 (** A guarded middle forces a guarded source: consistency against a guarded
     ([unit]/[var]/[arrow]) erasure leaves no room for a forall on the LHS. *)
@@ -490,282 +344,4 @@ Proof.
   - inversion Hc; subst. apply guarded_utyp__arrow.
     + eapply d_consis_lc_utyp; eauto.
     + eapply d_consis_lc_utyp; eauto.
-Qed.
-
-(** ===== tvar renaming infrastructure (closes B.4's [forall_r]) =====
-
-    Renaming a free type variable [X ↦ Y] in a [d_sub_gen] derivation.  The tag
-    context [Δ] is etag-only, so it is untouched; [dbind] payloads are inert for
-    these judgments, so the context renaming is just the binder [X~tvar ↦
-    Y~tvar].  Built bottom-up: coercion/subst commutes, predicate renamings,
-    then [d_consis] / [d_wf_utyp] / [d_sub_gen]. *)
-
-(** Coercions commute with type-variable substitution. *)
-
-Lemma subst_utyp_to_btyp : forall C X Y,
-    subst_btyp_in_btyp (btyp_var_f Y) X (utyp_to_btyp C) =
-    utyp_to_btyp (subst_utyp_in_utyp (utyp_var_f Y) X C).
-Proof.
-  induction C; intros X Y; simpl; try reflexivity.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; reflexivity.
-  - rewrite IHC1, IHC2; reflexivity.
-  - rewrite IHC; reflexivity.
-  - rewrite IHC; reflexivity.
-Qed.
-
-
-(** Shape predicates are preserved by tvar renaming. *)
-Lemma is_syn_rename : forall B Z W,
-    is_syn B -> is_syn (subst_btyp_in_btyp (btyp_var_f W) Z B).
-Proof.
-  intros B Z W H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; assumption.
-  - apply is_syn__all with (L := L `union` singleton Z `union` singleton W).
-    intros X HX.
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    apply H0; fsetdec.
-Qed.
-
-Lemma is_inh_rename : forall B Z W,
-    is_inh B -> is_inh (subst_btyp_in_btyp (btyp_var_f W) Z B).
-Proof.
-  intros B Z W H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; assumption.
-  - apply is_inh__all with (L := L `union` singleton Z `union` singleton W).
-    intros X HX.
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    apply H0; fsetdec.
-Qed.
-
-Lemma is_ityp_rename : forall B Z W,
-    is_ityp B -> is_ityp (subst_btyp_in_btyp (btyp_var_f W) Z B).
-Proof.
-  intros B Z W H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; assumption.
-  - apply is_ityp__all with (L := L `union` singleton Z `union` singleton W).
-    intros X HX.
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    apply H0; fsetdec.
-Qed.
-
-Lemma is_ttyp_rename : forall C Z W,
-    is_ttyp C -> is_ttyp (subst_utyp_in_utyp (utyp_var_f W) Z C).
-Proof.
-  intros C Z W H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; assumption.
-  - apply is_ttyp__all_etag with (L := L `union` singleton Z `union` singleton W).
-    intros X HX.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    apply H0; fsetdec.
-Qed.
-
-Lemma guarded_utyp_rename : forall C Z W,
-    guarded_utyp C -> guarded_utyp (subst_utyp_in_utyp (utyp_var_f W) Z C).
-Proof.
-  intros C Z W H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; apply subst_utyp_in_utyp_lc_utyp; auto; apply lc_utyp_var_f.
-Qed.
-
-(** [d_consis] is closed under tvar renaming (Δ is etag-only, untouched). *)
-Lemma d_consis_rename : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
-    forall Γ1 Γ2 X0 Y,
-      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
-      Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-      Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊨
-         (subst_utyp_in_utyp (utyp_var_f Y) X0 C)
-         ≈ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
-Proof.
-  intros Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
-  - apply d_consis__unit. assumption.
-  - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
-    + apply d_consis__var; [ auto | assumption ].
-    + apply d_consis__var; [ analyze_binds H; auto | assumption ].
-  - eapply d_consis__arrow.
-    + eapply IHd_consis1; [ reflexivity | exact Hfr ].
-    + eapply IHd_consis2; [ reflexivity | exact Hfr ].
-    + assumption.
-  - eapply d_consis__forall_inh_tagged with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
-    + intros Z HZ.
-      erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-      erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-      rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-      eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-    + assumption.
-  - apply d_consis__forall_inh_untagged with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
-    intros Z HZ.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-  - apply d_consis__forall_syn_tagged with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
-    intros Z HZ.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-  - apply d_consis__forall_syn with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
-    intros Z HZ.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-Qed.
-
-(** [d_wf_utyp] is closed under tvar renaming (pure well-scopedness). *)
-Lemma d_wf_utyp_rename : forall Γ C,
-    Γ ⊢ᵤ C ->
-    forall Γ1 Γ2 X0 Y,
-      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
-      Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-      (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp (utyp_var_f Y) X0 C).
-Proof.
-  intros Γ C H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
-  - apply d_wf_utyp__unit.
-  - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
-    + apply d_wf_utyp__var. auto.
-    + apply d_wf_utyp__var. analyze_binds H; auto.
-  - apply d_wf_utyp__arrow.
-    + eapply IHd_wf_utyp1; [ reflexivity | exact Hfr ].
-    + eapply IHd_wf_utyp2; [ reflexivity | exact Hfr ].
-  - apply d_wf_utyp__all_syn with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
-    intros Z HZ.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-  - apply d_wf_utyp__all_etag with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
-    intros Z HZ.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-Qed.
-
-(** [d_sub_gen] is closed under tvar renaming.  [Δ] (etags) is untouched. *)
-
-(** B.4 base, AUX.  [Cmid] is the second sub's LHS [utyp]; the source [Csrc] is
-    tied to it by consistency against its [btyp] erasure [utyp_to_btyp Cmid].
-    Inducting on the second sub with [Csrc]/[Cmid]/[Δa] quantified after lets
-    the IH re-pick them in the arrow/forall recursions; the erasure invariant
-    survives [forall_l] instantiation by a tagged [ph]. *)
-
-(** B.3 base / B.4: the output tag context is a SUPERSET of the inputs, NOT
-    nil.  For a general (etag-bearing) [B1], an etag-∀ in [B1] that is
-    syn-matched against the synthesised middle [B2] (no tag) but reaches an
-    inh part of the target [B3] forces [forall_inh_tagged] to record a tag —
-    so the composed subtyping's context is genuinely non-nil (the same
-    tagged→syn→inh phenomenon as B.2).  Hence [exists Δc, incl ...]. *)
-
-
-(** Specialisation D12 actually needs: when the LHS is an etag-free
-    [btyp_to_gutyp] image (a typing result), there is no syn→inh etag flip,
-    so the composed context collapses to nil — letting [d_typing_gen__sub]
-    (which demands a nil context) consume it. *)
-
-(** * D1/D12 route — step 1: function-side subsumption.
-
-    The [__embed] half of D12, extracted as an induction on the *plain*
-    typing derivation so the FN-spine recursion is structural (n
-    decrements with the arrow spine).  Driving this case-by-case is what
-    tells us whether D12 holds as currently stated, and which (if any)
-    rule side-conditions must move after the bidirectional-A refactor. *)
-
-(** Shape predicates [is_styp]/[guarded_btyp] under tvar renaming (for
-    [d_sub_rename]'s infer/check cases). *)
-Lemma is_styp_rename : forall B Z W,
-    is_styp B -> is_styp (subst_btyp_in_btyp (btyp_var_f W) Z B).
-Proof.
-  intros B Z W H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; assumption.
-  - apply is_styp__all with (L := L `union` singleton Z `union` singleton W).
-    intros X HX.
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    apply H0; fsetdec.
-Qed.
-
-Lemma guarded_btyp_rename : forall B Z W,
-    guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp (btyp_var_f W) Z B).
-Proof.
-  intros B Z W H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; apply subst_btyp_in_btyp_lc_btyp; auto; apply lc_btyp_var_f.
-Qed.
-
-(** [d_sub] is closed under tvar renaming (Δ is etag-only, untouched).  The
-    ordinary analogue of the deleted [d_sub_gen_rename]; closes the
-    cofinite-uniform [forall_r] case of the transitivity lemmas. *)
-Lemma d_sub_rename : forall m Δ Γ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
-    forall Γ1 Γ2 X0 Y,
-      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
-      Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-      Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢[ m ]
-         (subst_utyp_in_utyp (utyp_var_f Y) X0 C)
-         ⊑ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
-Proof.
-  intros m Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
-  - (* infer *)
-    apply d_sub__infer.
-    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_styp_rename. assumption.
-    + assumption.
-  - (* check *)
-    apply d_sub__check.
-    + apply guarded_utyp_rename. assumption.
-    + apply guarded_btyp_rename. assumption.
-    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_ityp_rename. assumption.
-  - (* forall_r *)
-    apply d_sub__forall_r with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
-    intros Z HZ.
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
-  - (* arg *)
-    eapply d_sub__arg.
-    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
-    + eapply IHd_sub; [ reflexivity | exact Hfr ].
-    + assumption.
-  - (* forall_l_tagged *)
-    eapply d_sub__forall_l_tagged with (Δ' := Δ').
-    + assumption.
-    + assumption.
-    + apply d_tags_subst_tvar. eassumption.
-    + eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_ttyp_rename. assumption.
-    + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
-      eapply IHd_sub; [ reflexivity | exact Hfr ].
-  - (* forall_l_untagged *)
-    eapply d_sub__forall_l_untagged with (Δ' := Δ').
-    + assumption.
-    + assumption.
-    + apply d_tags_subst_tvar. eassumption.
-    + eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_ttyp_rename. assumption.
-    + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
-      eapply IHd_sub; [ reflexivity | exact Hfr ].
 Qed.

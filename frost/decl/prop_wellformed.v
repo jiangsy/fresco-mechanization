@@ -33,26 +33,6 @@ Inductive d_wf_denv : list (atom * dbind) -> Prop :=
     d_wf_pskl nil Γ P ->
     d_wf_denv ((x ~ dbind_skl P) ++ Γ).
 
-Lemma d_wf_denv_inv_tvar : forall Γ X,
-    d_wf_denv ((X ~ dbind_tvar) ++ Γ) ->
-    d_wf_denv Γ /\ X `notin` dom Γ.
-Proof.
-  intros Γ X H. inversion H; subst; auto.
-Qed.
-
-Lemma d_wf_denv_inv_typ : forall Γ x A,
-    d_wf_denv ((x ~ dbind_typ A) ++ Γ) ->
-    d_wf_denv Γ /\ x `notin` dom Γ /\ d_wf_ptyp Γ A.
-Proof.
-  intros Γ x A H. inversion H; subst; auto.
-Qed.
-
-Lemma d_wf_denv_inv_skl : forall Γ x P,
-    d_wf_denv ((x ~ dbind_skl P) ++ Γ) ->
-    d_wf_denv Γ /\ x `notin` dom Γ /\ d_wf_pskl nil Γ P.
-Proof.
-  intros Γ x P H. inversion H; subst; auto.
-Qed.
 
 (** * Weakening. *)
 
@@ -72,25 +52,6 @@ Proof.
     apply H0; auto.
 Qed.
 
-Lemma d_wf_btyp_weakening : forall Γ1 Γ2 Γ3 B,
-    d_wf_btyp (Γ1 ++ Γ3) B ->
-    d_wf_btyp (Γ1 ++ Γ2 ++ Γ3) B.
-Proof.
-  intros Γ1 Γ2 Γ3 B H. dependent induction H.
-  - constructor.
-  - constructor. apply binds_app_iff in H. destruct H as [Hin | Hin].
-    + apply binds_app_iff; auto.
-    + apply binds_app_iff. right. apply binds_app_iff; auto.
-  - constructor; auto.
-  - inst_cofinites_for d_wf_btyp__all_syn.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply H0; auto.
-  - inst_cofinites_for d_wf_btyp__all_inh.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply H0; auto.
-Qed.
 
 Lemma d_wf_utyp_weakening : forall Γ1 Γ2 Γ3 C,
     (Γ1 ++ Γ3) ⊢ᵤ C ->
@@ -152,21 +113,6 @@ Proof.
   - constructor; auto.   (* topholeg, as tophole *)
 Qed.
 
-Lemma d_wf_ptyp_weakening_head : forall Γ Γ' A,
-    d_wf_ptyp Γ A ->
-    d_wf_ptyp (Γ' ++ Γ) A.
-Proof.
-  intros Γ Γ' A H. rewrite_env (nil ++ Γ' ++ Γ).
-  apply d_wf_ptyp_weakening. rewrite_env Γ. exact H.
-Qed.
-
-Lemma d_wf_btyp_weakening_head : forall Γ Γ' B,
-    d_wf_btyp Γ B ->
-    d_wf_btyp (Γ' ++ Γ) B.
-Proof.
-  intros Γ Γ' B H. rewrite_env (nil ++ Γ' ++ Γ).
-  apply d_wf_btyp_weakening. rewrite_env Γ. exact H.
-Qed.
 
 (** * Tag-relation under renaming.
 
@@ -175,7 +121,7 @@ Qed.
     well-scopedness ([d_wf_utyp], which no longer tracks tags) plus the
     pure tag relation [d_tags].  The old [d_wf_utyp_d_tags] /
     [d_wf_uskl_d_tags_skl] bridges (which read tags off the wf relation's
-    context) are therefore obsolete.  What the [d_sub_gen] rename proof
+    context) are therefore obsolete.  What the [d_sub] rename proof
     now needs is that [d_tags] is invariant under a type-variable
     renaming — tags are ε-atoms untouched by tvar substitution. *)
 
@@ -201,15 +147,6 @@ Qed.
     [=]; these lemmas let any tag context be replaced by a set-equal one.
     They are the device that makes [forall_l] reconstruct and the [B.2]
     composition lemmas go through. *)
-Lemma d_tags_equiv : forall Δ Δo C,
-    Δ [=] Δo -> d_tags Δ C -> d_tags Δo C.
-Proof.
-  intros Δ Δo C Heq H. revert Δo Heq. induction H; intros Δo Heq.
-  - apply d_tags__unit. fsetdec.
-  - apply d_tags__var. fsetdec.
-  - eapply d_tags__arrow; [ eassumption | eassumption | eassumption | fsetdec ].
-  - eapply d_tags__all_etag; [ eassumption | eassumption | fsetdec ].
-Qed.
 
 Lemma d_consis_equiv : forall Δ Δo Γ C B,
     Δ [=] Δo -> Δ ⨟ Γ ⊨ C ≈ B -> Δo ⨟ Γ ⊨ C ≈ B.
@@ -257,23 +194,6 @@ Qed.
     proof layer is being moved off the old unified syntax; they are
     intentionally stated over the latest categories. *)
 
-Lemma d_wf_ptyp_to_btyp_syn : forall Γ A,
-    d_wf_ptyp Γ A ->
-    d_wf_btyp Γ (ptyp_to_btyp_syn A).
-Proof.
-Admitted.
-
-Lemma d_wf_ptyp_to_btyp_inh : forall Γ A,
-    d_wf_ptyp Γ A ->
-    d_wf_btyp Γ (ptyp_to_btyp_inh A).
-Proof.
-Admitted.
-
-Lemma d_wf_ptyp_to_utyp_syn : forall Γ A,
-    d_wf_ptyp Γ A ->
-    Γ ⊢ᵤ (ptyp_to_utyp_syn A).
-Proof.
-Admitted.
 
 Lemma d_typing_pat_preserves_wf :
   (forall m Γ e B, d_typing m Γ e B -> d_wf_btyp Γ B) /\

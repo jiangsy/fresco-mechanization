@@ -35,14 +35,6 @@ Proof.
   - apply d_refine_syn__tophole_keep; [ assumption | auto ].
 Qed.
 
-Lemma d_refine_syn_weakening_head : forall Γ Γ' Ψ Q P,
-    d_refine_syn Ψ Γ Q P ->
-    d_refine_syn Ψ (Γ' ++ Γ) Q P.
-Proof.
-  intros Γ Γ' Ψ Q P H.
-  rewrite_env (nil ++ Γ' ++ Γ).
-  apply d_refine_syn_weakening. simpl. exact H.
-Qed.
 
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ R Q,
     d_pat_consis Δ (Γ1 ++ Γ3) R Q ->
@@ -212,24 +204,6 @@ Lemma d_pat_weakening : forall Γ1 Γ2 Γ3 m e Q,
 Proof.
   intros Γ1 Γ2 Γ3 m e Q H.
   eapply (proj2 (d_typing_pat_weakening Γ2)); [ exact H | reflexivity ].
-Qed.
-
-Lemma d_typing_weakening_head : forall Γ Γ' m e B,
-    d_typing m Γ e B ->
-    d_typing m (Γ' ++ Γ) e B.
-Proof.
-  intros Γ Γ' m e B H.
-  rewrite_env (nil ++ Γ' ++ Γ).
-  apply d_typing_weakening. exact H.
-Qed.
-
-Lemma d_pat_weakening_head : forall Γ Γ' m e Q,
-    d_pat m Γ e Q ->
-    d_pat m (Γ' ++ Γ) e Q.
-Proof.
-  intros Γ Γ' m e Q H.
-  rewrite_env (nil ++ Γ' ++ Γ).
-  apply d_pat_weakening. exact H.
 Qed.
 
 

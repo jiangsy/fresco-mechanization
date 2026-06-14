@@ -23,12 +23,3 @@ Lemma d_consis_sub_trans : forall M Δ Δ' Γ C A B,
 Proof.
 Admitted.
 
-Lemma d_consis_sub_trans_nil : forall M Γ C A B,
-    empty ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A ->
-    empty ⨟ Γ ⊢[ M ] (ptyp_to_utyp_syn A) ⊑ B ->
-    empty ⨟ Γ ⊢[ M ] C ⊑ B.
-Proof.
-  intros M Γ C A B Hc Hs.
-  eapply d_sub_equiv; [ | eapply d_consis_sub_trans; eassumption ].
-  fsetdec.
-Qed.

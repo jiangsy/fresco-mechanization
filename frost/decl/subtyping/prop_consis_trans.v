@@ -26,12 +26,3 @@ Lemma d_consis_compose : forall Δa Δb Γ C A B,
 Proof.
 Admitted.
 
-Lemma d_consis_compose_nil_RHS : forall Γ C A B,
-    empty ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A ->
-    empty ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B ->
-    empty ⨟ Γ ⊨ C ≈ B.
-Proof.
-  intros Γ C A B H1 H2.
-  eapply d_consis_equiv; [ | eapply d_consis_compose; eassumption ].
-  fsetdec.
-Qed.

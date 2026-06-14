@@ -14,12 +14,12 @@ Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_subtyping.
 Require Import src.frost.decl.typing.prop_weakening.
 Require Import src.frost.decl.typing.prop_subsumption_aux.
+Require Import src.frost.decl.typing.prop_renaming.
 
 Set Implicit Arguments.
 
 (** Mode arithmetic for the [FN^n] generalisation: replace the trailing
-    [mode_ti] of an [FN^n TI] mode with [m_new] (formerly in [def_gen.v],
-    the only survivor of the deleted [gutyp]/[d_sub_gen] route). *)
+    [mode_ti] of an [FN^n TI] mode with [m_new]. *)
 Fixpoint mode_fn_n_subst (m_orig m_new : mode) : mode :=
   match m_orig with
   | mode_ti => m_new
@@ -34,8 +34,7 @@ Fixpoint mode_fn_n_subst (m_orig m_new : mode) : mode :=
     auxiliary lemmas — Consistency-Subtyping Transitivity, Subtyping
     Transitivity, Function Subtyping — and a mode-indexed ([FN^n])
     generalisation that subtypes only the synthesised RESULT tail while
-    keeping the function arguments fixed.  This supersedes the [gutyp] /
-    [d_sub_gen] route below.
+    keeping the function arguments fixed.
 
     Function Subtyping (syntax-directed.tex:256): if a function source is
     subtyped, the target is a polymorphic function shape
@@ -43,39 +42,6 @@ Fixpoint mode_fn_n_subst (m_orig m_new : mode) : mode :=
     and the result subtyped at the decremented mode.  Here we prove the
     non-[TC] modes, where the inh-∀ prefix ᾱ is empty (the paper notes ᾱ
     is non-empty only when M = TC, via repeated [ForallR]). *)
-Lemma d_sub_function_nontc : forall m Δ Γ C1 C2 B,
-    m <> mode_tc ->
-    Δ ⨟ Γ ⊢[ m ] (utyp_arrow C1 C2) ⊑ B ->
-    exists B1 B2 Δ1 Δ2,
-      B = btyp_arrow B1 B2 /\
-      Δ1 ⨟ Γ ⊨ C1 ≈ B1 /\
-      Δ2 ⨟ Γ ⊢[ decr_mode m ] C2 ⊑ B2.
-Proof.
-  intros m Δ Γ C1 C2 B Hm Hsub.
-  dependent destruction Hsub.
-  - (* d_sub__infer (m = ti): the whole arrow is matched by consistency.
-       The arrow-consistency now carries [empty [=] Δ1 ∪ Δ2], so both halves
-       sit at the empty tag context (recovered by [fsetdec]). *)
-    dependent destruction H.                 (* d_consis__arrow *)
-    match goal with                          (* is_styp (btyp_arrow _ _), any name *)
-    | H : is_styp (btyp_arrow _ _) |- _ => dependent destruction H
-    end.
-    do 2 eexists; exists empty, empty.
-    split; [ reflexivity | split ].
-    + eapply d_consis_equiv; [ | eassumption ]. fsetdec.
-    + simpl. apply d_sub__infer.
-      * eapply d_consis_equiv; [ | eassumption ]. fsetdec.
-      * assumption.
-      * reflexivity.
-  - (* d_sub__check (m = tc): excluded *) contradiction.
-  - (* d_sub__forall_r (m = tc): excluded *) contradiction.
-  - (* d_sub__arg (m = fn m'): argument by consistency, result subtyped *)
-    do 4 eexists. split.
-    + reflexivity.
-    + split.
-      * eassumption.
-      * simpl. eassumption.
-Qed.
 
 (** Mono chain for the n=0 abstraction (tail) case.  [is_styp (inh A)]
     forces [A] monomorphic — the only way the *inherited* painting can be
@@ -205,6 +171,8 @@ Qed.
     the identity.  Derived from the existing [ptyp] round-trips (the
     coercions are structural [Fixpoint]s, so the [ptyp]-level identity
     needs no binder reasoning). *)
+(** ** Erasure ([utyp_to_btyp]) and tag-erasure facts. *)
+
 Lemma utyp_to_btyp_ptyp_to_utyp_syn : forall A,
     utyp_to_btyp (ptyp_to_utyp_syn A) = ptyp_to_btyp_syn A.
 Proof. induction A; simpl; congruence. Qed.
@@ -245,25 +213,6 @@ Proof.
     end.
 Qed.
 
-(** Every well-formed [utyp] is consistent (nil tags) with its bidirectional
-    image — generalises [d_consis_ttyp_refl] from [is_ttyp] to all [utyp]
-    (the extra [utyp_all_syn] case goes via [ForallSyn]).  This is the
-    "middle reflexivity" the general-middle CST reformulation needs. *)
-Lemma d_consis_utyp_refl : forall Γ C,
-    Γ ⊢ᵤ C ->
-    empty ⨟ Γ ⊨ C ≈ (utyp_to_btyp C).
-Proof.
-  intros Γ C Hwf. induction Hwf; simpl.
-  - apply d_consis__unit. reflexivity.
-  - apply d_consis__var; [ assumption | reflexivity ].
-  - eapply d_consis__arrow; [ eassumption | eassumption | fsetdec ].
-  - apply d_consis__forall_syn with (L := L).
-    intros X HX. change (btyp_var_f X) with (utyp_to_btyp (utyp_var_f X)).
-    rewrite <- utyp_to_btyp_open. apply H0; auto.
-  - apply d_consis__forall_syn_tagged with (L := L).
-    intros X HX. change (btyp_var_f X) with (utyp_to_btyp (utyp_var_f X)).
-    rewrite <- utyp_to_btyp_open. apply H0; auto.
-Qed.
 
 (** [utyp_to_btyp] preserves local closure (needed for the btyp-side
     subst/open commute in the substitution lemma). *)
@@ -384,23 +333,6 @@ Proof.
     apply (@d_consis_rename _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
 Qed.
 
-(** Composition through a general (possibly tagged) middle [Cmid] — the
-    reusable bridge for the reformulated CST's infer/check/arg cases:
-    [T ≈ ⌈Cmid⌉] composed with [Cmid ≈ B] gives [T ≈ B].  [utyp_to_btyp Cmid]
-    is synthesised, so [d_consis_compose_syn] applies once the second
-    premise's tags are erased ([d_consis_erase_tags]). *)
-Lemma d_consis_trans_mid : forall Δ1 Δ2 Γ T Cmid B,
-    lc_utyp Cmid ->
-    Δ1 ⨟ Γ ⊨ T ≈ (utyp_to_btyp Cmid) ->
-    Δ2 ⨟ Γ ⊨ Cmid ≈ B ->
-    exists Δ, Δ ⨟ Γ ⊨ T ≈ B.
-Proof.
-  intros Δ1 Δ2 Γ T Cmid B Hlc HT HCmid.
-  destruct (d_consis_erase_tags HCmid) as [Δ2' Herase].
-  destruct (d_consis_compose_syn (is_syn_utyp_to_btyp Hlc) HT Herase)
-    as [Δ [Hincl Hc]].
-  exists Δ. exact Hc.
-Qed.
 
 (** [nil]-context variant for the reformulated CST's [infer] case: when the
     target [B] is synthesised the composed tag context collapses to [nil]
@@ -501,46 +433,6 @@ Proof.
       | assumption ].
 Qed.
 
-(** Against an INHERITED ([is_ityp]) RHS, every ε-tag of the source is solved
-    ([ForallInh]), so the source's full tag set sits inside the consistency
-    context.  This is the lower bound the [forall_l] reconstruct needs: the
-    instantiation tags [Δ'] of [ph] survive into the output *because* [ph]
-    occurs in the subject and the RHS is inherited.  ([forall_syn*] cases are
-    vacuous: their RHS [btyp_all_syn] is not [is_ityp]; [forall_inh_untagged]
-    is vacuous: its source [utyp_all_syn] has no [d_tags].) *)
-Lemma d_consis_tags_subset_ityp : forall Δ Γ C B Δc,
-    Δ ⨟ Γ ⊨ C ≈ B ->
-    is_ityp B ->
-    d_tags Δc C ->
-    Δc [<=] Δ.
-Proof.
-  intros Δ Γ C B Δc Hcons. revert Δc. induction Hcons; intros Δc Hity Htags.
-  - dependent destruction Htags. fsetdec.
-  - dependent destruction Htags. fsetdec.
-  - dependent destruction Hity. dependent destruction Htags.
-    match goal with
-    | IH1 : forall _, is_ityp ?B1 -> _, IH2 : forall _, is_ityp ?B2 -> _ |- _ =>
-        specialize (IH1 _ ltac:(assumption) ltac:(eassumption));
-        specialize (IH2 _ ltac:(assumption) ltac:(eassumption))
-    end. fsetdec.
-  - (* forall_inh_tagged: source etag, RHS inh — the tag-solving case. *)
-    dependent destruction Htags.
-    dependent destruction Hity.
-    pick fresh X.
-    match goal with
-    | IH : forall _, _ `notin` _ -> _ |- _ =>
-        assert (Hsub0 : _ [<=] _) by
-          (eapply (IH X); [ fsetdec
-                          | match goal with H : forall _, _ -> is_ityp _ |- _ => apply H; fsetdec end
-                          | match goal with H : forall _, _ -> d_tags _ _ |- _ => apply H; fsetdec end ])
-    end.
-    clear - H1 H5 Hsub0; fsetdec.
-  - dependent destruction Htags.   (* forall_inh_untagged: utyp_all_syn has no d_tags *)
-  - dependent destruction Hity.    (* forall_syn_tagged: btyp_all_syn not is_ityp *)
-  - dependent destruction Hity.    (* forall_syn: btyp_all_syn not is_ityp *)
-Qed.
-
-
 
 (** [utyp_tag_refines T Cmid]: [T] and [Cmid] have the same shape, and at
     every quantifier where [Cmid] is ε-tagged [T] carries the SAME tag, while
@@ -549,6 +441,13 @@ Qed.
     CST (syntax-directed.tex), and — crucially — is closed under the shared-ph
     instantiation that [forall_l] performs (both sides gain the same ph).  It
     is the linearity-free replacement for the [d_tags] lower-bound chain. *)
+(** ** Tag refinement and the [compose_tags] source-swap.
+
+    [utyp_tag_refines T C]: [T] has [C]'s shape but may carry extra ε-tags.
+    With the uniform [compose_tags] witness this swaps the source of a
+    consistency without per-variable existentials — the linearity-free core
+    of CST below. *)
+
 Inductive utyp_tag_refines : utyp -> utyp -> Prop :=
 | utr_unit  : utyp_tag_refines utyp_unit utyp_unit
 | utr_var_b : forall n, utyp_tag_refines (utyp_var_b n) (utyp_var_b n)
@@ -770,6 +669,12 @@ Qed.
     middle is not closed under tagged instantiation).  infer/check/arg close
     via the proven bridges; forall_l is the concrete attempt with the
     existing list-typed tag context. *)
+(** ** Consistency-Subtyping Transitivity (paper B.3 / Lemma 3 dependency).
+
+    [_mid] is the erase-form (middle carried as [T ≈ utyp_to_btyp Cmid]),
+    which survives [forall_l] instantiation; [d_consis_sub_trans] is the
+    paint-form corollary used downstream. *)
+
 Lemma d_consis_sub_trans_mid : forall M Δ2 Γ Cmid B,
     Δ2 ⨟ Γ ⊢[ M ] Cmid ⊑ B ->
     forall Δ1 T,
@@ -1039,6 +944,12 @@ Qed.
 (** A consistency whose RHS is guarded forces the (synthesised) LHS to be
     guarded too: every ∀-RHS consistency rule is ruled out by [guarded_btyp]
     (which excludes ∀). *)
+(** * Consistency ⇒ checking-subtyping, and the [FN^0] abstraction helpers.
+
+    [d_consis_syn_sub_tc] turns a consistency into a [tc] subtyping (the ∀
+    target is instantiated by the bound variable — an untagged witness), and
+    drives the [check] case of the abstraction tail helpers. *)
+
 Lemma consis_guarded_btyp_lhs : forall Δ Γ C B,
     Δ ⨟ Γ ⊨ C ≈ B -> guarded_btyp B -> guarded_utyp C.
 Proof.
@@ -1264,6 +1175,12 @@ Qed.
 (** The free ε-tags (etag binders) of a [utyp].  This is a purely syntactic
     upper bound on every tag context a subtyping/consistency can carry: a
     paint-image LHS has NONE, forcing its subtyping context to be empty. *)
+(** * Paint-LHS forces the empty tag context.
+
+    A subtyping's tag context is bounded by the LHS's own ε-tags
+    ([d_sub_ctx_subset_etags]); a paint image has none, so any subtyping out
+    of one is at the empty context — the fact the spine [sub] case needs. *)
+
 Fixpoint utyp_etags (C : utyp) : atoms :=
   match C with
   | utyp_arrow C1 C2 => utyp_etags C1 `union` utyp_etags C2

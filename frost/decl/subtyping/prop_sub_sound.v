@@ -44,11 +44,6 @@ Inductive d_shallow_sub_mono : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
     d_shallow_sub_mono Γ (open_ptyp_wrt_ptyp A1 I) A2 ->
     d_shallow_sub_mono Γ (ptyp_all A1) A2.
 
-Theorem d_sub_complete_mono : forall Γ A B,
-    d_shallow_sub_mono Γ A B ->
-    exists C, C = ptyp_to_utyp_syn A /\ empty ⨟ Γ ⊢[ mode_tc ] C ⊑ (ptyp_to_btyp_inh B).
-Proof.
-Admitted.
 
 Theorem d_sub_no_guess_uniqueness : forall Γ m Δ C B,
     Δ ⨟ Γ ⊢[ m ] C ⊑ B ->

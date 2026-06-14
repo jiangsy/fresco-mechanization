@@ -107,13 +107,6 @@ Fixpoint ptyp_to_utyp_syn (A : ptyp) : utyp :=
   | ptyp_all A0 => utyp_all_syn (ptyp_to_utyp_syn A0)
   end.
 
-Lemma ptyp_to_utyp_syn_btyp_to_ptyp_syn : forall A,
-    ptyp_to_utyp_syn (ptyp_to_btyp_syn A) = ptyp_to_utyp_syn A.
-Proof.
-  induction A; simpl; try reflexivity.
-  - rewrite IHA1. rewrite IHA2. reflexivity.
-  - rewrite IHA. reflexivity.
-Qed.
 
 Lemma ptyp_to_btyp_syn_open_rec : forall A1 A2 k,
     ptyp_to_btyp_syn (open_ptyp_wrt_ptyp_rec k A2 A1) =
@@ -144,14 +137,6 @@ Proof.
   - rewrite IHA1. reflexivity.
 Qed.
 
-Lemma ptyp_to_btyp_inh_open : forall A1 A2,
-    ptyp_to_btyp_inh (open_ptyp_wrt_ptyp A1 A2) =
-    open_btyp_wrt_btyp (ptyp_to_btyp_inh A1) (ptyp_to_btyp_inh A2).
-Proof.
-  intros A1 A2.
-  unfold open_ptyp_wrt_ptyp, open_btyp_wrt_btyp.
-  apply ptyp_to_btyp_inh_open_rec.
-Qed.
 
 Lemma ptyp_to_utyp_syn_open_rec : forall A1 A2 k,
     ptyp_to_utyp_syn (open_ptyp_wrt_ptyp_rec k A2 A1) =

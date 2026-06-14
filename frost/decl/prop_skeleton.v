@@ -19,32 +19,6 @@ Set Implicit Arguments.
     Only the coloured refinement relation [d_refine_syn] remains; the
     former uncoloured [d_refine] split lemmas were removed with it. *)
 
-Lemma d_refine_syn_arrow_split : forall Ψ Γ Q1 Q2 P,
-    d_refine_syn Ψ Γ (bskl_arrow Q1 Q2) P ->
-    exists P1 P2, P = bskl_arrow P1 P2 /\
-                  d_refine_syn Ψ Γ Q1 P1 /\
-                  d_refine_syn Ψ Γ Q2 P2.
-Proof.
-  intros Ψ Γ Q1 Q2 P H. dependent destruction H. eauto.
-Qed.
-
-Lemma d_refine_syn_all_split : forall Ψ Γ Q P,
-    d_refine_syn Ψ Γ (bskl_all_inh Q) P ->
-    exists P', P = bskl_all_inh P' /\
-               exists L, forall X, X `notin` L ->
-                  d_refine_syn (X :: Ψ) Γ
-                    (open_bskl_wrt_bskl Q (bskl_var_f X))
-                    (open_bskl_wrt_bskl P' (bskl_var_f X)).
-Proof.
-  intros Ψ Γ Q P H. dependent destruction H. eauto.
-Qed.
-
-Lemma d_refine_syn_hole_split : forall Ψ Γ P,
-    d_refine_syn Ψ Γ bskl_hole P ->
-    exists P0, P = pskl_to_bskl_syn P0 /\ d_wf_pskl nil Γ P0.
-Proof.
-  intros Ψ Γ P H. dependent destruction H. eauto.
-Qed.
 
 (* No [tophole] split lemma: a universal ghost [⫯] now refines by three
    rules (remove / fill-with-∀α / keep), so the output is not uniquely a

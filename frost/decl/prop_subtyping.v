@@ -1,10 +1,9 @@
 (** Frost — declarative subtyping metatheory (Phase 2.C).
 
-    Umbrella file: re-exports the split modules under [prop_subtyping/]
-    and defines [d_typing_sub_compose], the only top-level lemma that
-    must live here (its callers in [prop_typing.v] expect
-    [Require Import src.frost.decl.prop_subtyping] to bring it into
-    scope). *)
+    Umbrella file: [Require Export]s the split [subtyping/] modules
+    ([prop_basics], [prop_consis_trans], [prop_consis_sub_trans],
+    [prop_sub_sound]) so downstream files get the whole subtyping subtree
+    by [Require Import src.frost.decl.prop_subtyping]. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
@@ -25,29 +24,3 @@ Require Export src.frost.decl.subtyping.prop_consis_sub_trans.
 Require Export src.frost.decl.subtyping.prop_sub_sound.
 
 Set Implicit Arguments.
-
-(** * Composing the [d_typing__sub] step with an outer subsumption.
-
-    This is the helper that extends paper Lemma 3.1 (general subsumption,
-    [d_typing_general_subsumption] in [prop_typing.v]) to its [__sub]
-    case at mode_ti. Lives here (not in prop_typing.v) because it
-    routes through [d_consis_sub_trans] which lives in the
-    [consis_extends] split above. *)
-Lemma d_typing_sub_compose : forall Γ e A1 A2 B m,
-    is_base_term e ->
-    Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A1 ->
-    empty ⨟ Γ ⊢[ mode_ti ] (ptyp_to_utyp_syn A1) ⊑ ptyp_to_btyp_syn A2 ->
-    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A2) ⊑ B ->
-    d_wf_denv Γ ->
-    Γ ⊢[ m ] e ⦂ B.
-Proof.
-  intros Γ e A1 A2 B m Hbase Hty Hsub12 Hsub2 Hwf.
-  dependent destruction Hsub12; try contradiction.
-  pose proof (@d_consis_sub_trans_nil m Γ (ptyp_to_utyp_syn A1) A2 B
-                H Hsub2) as Hsub.
-  eapply d_typing__sub.
-  - exact Hbase.
-  - exact Hty.
-  - rewrite ptyp_to_utyp_syn_btyp_to_ptyp_syn.
-    exact Hsub.
-Qed.
