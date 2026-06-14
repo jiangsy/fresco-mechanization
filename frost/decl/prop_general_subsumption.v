@@ -1377,6 +1377,7 @@ Proof.
     rename B1 into Bn1. rename B2 into Bn2.
     pose proof (consis_mono_arg H Hmono) as HBn1. subst Bn1.
     apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    + discriminate.
     + assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv mode_ti Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
@@ -1393,7 +1394,7 @@ Proof.
         pose proof (consis_mono_arg Harg Hmono) as HBn1
     end. subst Bn1.
     match goal with Hit : is_ityp (btyp_arrow _ Bn2) |- _ => inversion Hit; subst end.
-    apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    apply d_typing__abs_check with (L := L0 `union` dom Γ) (A := A).
     + assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
@@ -1416,6 +1417,7 @@ Proof.
     subst. injection HC; intros; subst.
     pose proof (consis_mono_arg H Hmono) as HBn1. subst B1.
     apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    + discriminate.
     + assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
@@ -1455,6 +1457,7 @@ Proof.
       rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
       symmetry. exact He. }
     apply d_typing__abs_anno with (L := L0 `union` dom Γ) (Barg := Bn1).
+    + discriminate.
     + assumption.
     + exact Herase.
     + intros xv Hxv.
@@ -1471,7 +1474,7 @@ Proof.
       rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
       symmetry. exact He. }
     match goal with Hit : is_ityp (btyp_arrow _ Bn2) |- _ => inversion Hit; subst end.
-    apply d_typing__abs_anno with (L := L0 `union` dom Γ) (Barg := Bn1).
+    apply d_typing__abs_anno_check with (L := L0 `union` dom Γ) (Barg := Bn1).
     + assumption.
     + exact Herase.
     + intros xv Hxv.
@@ -1498,6 +1501,7 @@ Proof.
       rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
       symmetry. exact He. }
     apply d_typing__abs_anno with (L := L0 `union` dom Γ) (Barg := B1).
+    + discriminate.
     + assumption.
     + exact Herase.
     + intros xv Hxv.
@@ -1689,7 +1693,7 @@ Proof.
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_r Hs) end.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros Γ'' x M' B'' Hcw'' Hfr Hsb.
-        eapply (H1 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ'')).
+        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ'')).
         -- apply ctx_weaken_cons. eapply ctx_weaken_trans; [ exact Hcw | exact Hcw'' ].
         -- apply is_fn_n__ti.
         -- apply btyp_spine__tail.
@@ -1700,13 +1704,16 @@ Proof.
          context-general IH (insert under the binder [x:A]). *)
       dependent destruction Hfn. simpl.
       apply d_typing__abs with (L := L `union` dom Γ') (A := A).
+      * discriminate.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros x Hx.
-        eapply (H1 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
+        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
         -- apply ctx_weaken_cons. exact Hcw.
         -- eassumption.
         -- eassumption.
         -- apply d_sub_weakening_head with (Γ' := (x ~ dbind_typ A)). exact Htail.
+  - (* abs_check (M = tc): excluded, [is_fn_n n mode_tc] is uninhabited. *)
+    inversion Hfn.
   - (* abs_anno: split on the spine. *)
     dependent destruction Hspine.
     + (* __tail (n=0): abs_anno generalisation helper. *)
@@ -1717,7 +1724,7 @@ Proof.
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_r Hs) end.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros Γ'' x M' B'' Hcw'' Hfr Hsb.
-        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp Barg)) ++ Γ'')).
+        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp Barg)) ++ Γ'')).
         -- apply ctx_weaken_cons. eapply ctx_weaken_trans; [ exact Hcw | exact Hcw'' ].
         -- apply is_fn_n__ti.
         -- apply btyp_spine__tail.
@@ -1727,14 +1734,17 @@ Proof.
     + (* __arrow (n>0). *)
       dependent destruction Hfn. simpl.
       apply d_typing__abs_anno with (L := L `union` dom Γ') (A := A) (Barg := Barg).
+      * discriminate.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
-      * exact H0.
+      * exact H1.
       * intros x Hx.
-        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
+        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
         -- apply ctx_weaken_cons. exact Hcw.
         -- eassumption.
         -- eassumption.
         -- apply d_sub_weakening_head with (Γ' := (x ~ dbind_typ A)). exact Htail.
+  - (* abs_anno_check (M = tc): excluded. *)
+    inversion Hfn.
   - (* app: thread the spine through [e1] via the IH; weaken the side
        premises ([d_pat], [d_refine_syn], [e2]) by [ctx_weaken]. *)
     eapply d_typing__app.

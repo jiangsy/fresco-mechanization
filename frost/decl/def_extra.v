@@ -598,22 +598,44 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
     d_typing mode_tc Γ e (btyp_all_inh B)
 | d_typing__abs : forall L Γ m e A B,
+    (* Paper [Abs] (syntax-directed.tex): [M ≠ TC]; the check-mode
+       abstraction goes through [d_typing__abs_check] instead. *)
+    m <> mode_tc ->
     d_wf_ptyp Γ A ->
     (forall x, x `notin` L ->
        d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
     d_typing m Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
+| d_typing__abs_check : forall L Γ e A B,
+    (* Paper [AbsCheck] (syntax-directed.tex), [ᾱ = ·] base; the [∀ᾱ]
+       prefix is supplied by [d_typing__forall].  Mirrors [d_pat__abs_check]. *)
+    d_wf_ptyp Γ A ->
+    (forall x, x `notin` L ->
+       d_typing mode_tc ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_typing mode_tc Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
 | d_typing__abs_anno : forall L Γ m e A Barg B,
     (* WT: "A is not synthesised but bidirectional — there exists a
        bidirectional A whose uncoloured version is the annotation."
        Encoded: the conclusion's arrow-arg is an arbitrary bidirectional
-       [Barg] whose erasure [btyp_to_ptyp] is the annotation [A]. *)
+       [Barg] whose erasure [btyp_to_ptyp] is the annotation [A].
+       Paper [AbsAnno] (syntax-directed.tex): [M ≠ TC]. *)
+    m <> mode_tc ->
     d_wf_ptyp Γ A ->
     btyp_to_ptyp Barg = A ->
     (forall x, x `notin` L ->
        d_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
     d_typing m Γ (exp_abs_anno A e) (btyp_arrow Barg B)
+| d_typing__abs_anno_check : forall L Γ e A Barg B,
+    (* Paper [AbsAnnoCheck] (syntax-directed.tex), [ᾱ = ·] base.  Mirrors
+       [d_pat__abs_anno_check]. *)
+    d_wf_ptyp Γ A ->
+    btyp_to_ptyp Barg = A ->
+    (forall x, x `notin` L ->
+       d_typing mode_tc ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_typing mode_tc Γ (exp_abs_anno A e) (btyp_arrow Barg B)
 | d_typing__app : forall Γ m e1 e2 P A Barg B,
     (* WT: the function-arg should be a bidirectional [A] (here [Barg]
        with [btyp_to_ptyp Barg = A]), not the forced inherited painting;

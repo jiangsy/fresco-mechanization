@@ -219,14 +219,26 @@ Proof.
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply (IHbody X ltac:(fsetdec) ((X ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   (* d_typing__abs *)
-  - intros L Γ m e A B Hwf Hbody IHbody Γ1 Γ3 Heq; subst Γ.
+  - intros L Γ m e A B Hneq Hwf Hbody IHbody Γ1 Γ3 Heq; subst Γ.
     apply d_typing__abs with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
+      [ exact Hneq | apply d_wf_ptyp_weakening; assumption | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
+    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
+  (* d_typing__abs_check *)
+  - intros L Γ e A B Hwf Hbody IHbody Γ1 Γ3 Heq; subst Γ.
+    apply d_typing__abs_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
       [ apply d_wf_ptyp_weakening; assumption | ].
     intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
     apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
   (* d_typing__abs_anno *)
-  - intros L Γ m e A Barg B Hwf Hbarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
+  - intros L Γ m e A Barg B Hneq Hwf Hbarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
     apply d_typing__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Barg := Barg);
+      [ exact Hneq | apply d_wf_ptyp_weakening; assumption | exact Hbarg | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
+    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
+  (* d_typing__abs_anno_check *)
+  - intros L Γ e A Barg B Hwf Hbarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
+    apply d_typing__abs_anno_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Barg := Barg);
       [ apply d_wf_ptyp_weakening; assumption | exact Hbarg | ].
     intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
     apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
