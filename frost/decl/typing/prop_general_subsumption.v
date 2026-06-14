@@ -100,6 +100,16 @@ Proof.
   rewrite IHmono_ptyp1, IHmono_ptyp2. reflexivity.
 Qed.
 
+(** Paint round-trip: erasing a syn-painted [btyp] to a [utyp] equals the
+    direct utyp painting (structural). *)
+Lemma btyp_to_utyp_syn_ptyp_to_btyp_syn : forall A,
+    btyp_to_utyp_syn (ptyp_to_btyp_syn A) = ptyp_to_utyp_syn A.
+Proof.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1, IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
 (** Consistency rigidity for monomorphic sources: a [mono] syn-source pins
     the bidirectional RHS to its syn painting (no tags, no colour freedom).
     Holds at ANY tag context — a [mono] source carries no [etag], so the

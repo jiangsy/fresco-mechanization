@@ -232,3 +232,80 @@ Proof.
   apply d_pat_weakening. exact H.
 Qed.
 
+
+(** General (order-preserving) context weakening: [Γ'] is [Γ] with extra
+    bindings inserted at arbitrary positions.  Encoded as a chain of the
+    middle-insertions that [d_typing_weakening] already supports, so the
+    judgement closures below are one-liners. *)
+Inductive ctx_weaken : list (atom * dbind) -> list (atom * dbind) -> Prop :=
+| ctx_weaken_refl : forall Γ, ctx_weaken Γ Γ
+| ctx_weaken_insert : forall Γ1 Γ2 Γ3 Γ',
+    ctx_weaken (Γ1 ++ Γ2 ++ Γ3) Γ' ->
+    ctx_weaken (Γ1 ++ Γ3) Γ'.
+
+Lemma d_typing_ctx_weaken : forall Γ Γ',
+    ctx_weaken Γ Γ' -> forall m e B, d_typing m Γ e B -> d_typing m Γ' e B.
+Proof.
+  induction 1; intros m e B Hty; [ assumption | ].
+  apply IHctx_weaken. apply d_typing_weakening. exact Hty.
+Qed.
+
+Lemma d_pat_ctx_weaken : forall Γ Γ',
+    ctx_weaken Γ Γ' -> forall m e Q, d_pat m Γ e Q -> d_pat m Γ' e Q.
+Proof.
+  induction 1; intros m e Q Hp; [ assumption | ].
+  apply IHctx_weaken. apply d_pat_weakening. exact Hp.
+Qed.
+
+Lemma d_refine_syn_ctx_weaken : forall Γ Γ',
+    ctx_weaken Γ Γ' -> forall Ψ Q P, d_refine_syn Ψ Γ Q P -> d_refine_syn Ψ Γ' Q P.
+Proof.
+  induction 1; intros Ψ Q P Hr; [ assumption | ].
+  apply IHctx_weaken. apply d_refine_syn_weakening. exact Hr.
+Qed.
+
+Lemma binds_ctx_weaken : forall Γ Γ',
+    ctx_weaken Γ Γ' -> forall x b, binds x b Γ -> binds x b Γ'.
+Proof.
+  induction 1; intros x b Hb; [ assumption | ].
+  apply IHctx_weaken. analyze_binds Hb.
+Qed.
+
+Lemma ctx_weaken_cons : forall Γ Γ' a,
+    ctx_weaken Γ Γ' -> ctx_weaken (a ++ Γ) (a ++ Γ').
+Proof.
+  intros Γ Γ' a H. revert a. induction H; intros a.
+  - apply ctx_weaken_refl.
+  - rewrite_env ((a ++ Γ1) ++ Γ3).
+    apply ctx_weaken_insert with (Γ2 := Γ2).
+    rewrite_env (a ++ (Γ1 ++ Γ2 ++ Γ3)). apply IHctx_weaken.
+Qed.
+
+Lemma ctx_weaken_trans : forall Γa Γb Γc,
+    ctx_weaken Γa Γb -> ctx_weaken Γb Γc -> ctx_weaken Γa Γc.
+Proof.
+  intros Γa Γb Γc H. revert Γc. induction H; intros Γc Hbc; [ assumption | ].
+  apply ctx_weaken_insert with (Γ2 := Γ2). apply IHctx_weaken. exact Hbc.
+Qed.
+
+(** Inserting a single block at the front. *)
+Lemma ctx_weaken_app_front : forall Γ2 Γ,
+    ctx_weaken Γ (Γ2 ++ Γ).
+Proof.
+  intros Γ2 Γ. rewrite_env (nil ++ Γ).
+  apply ctx_weaken_insert with (Γ2 := Γ2). simpl. apply ctx_weaken_refl.
+Qed.
+
+Lemma d_wf_ptyp_ctx_weaken : forall Γ Γ',
+    ctx_weaken Γ Γ' -> forall A, d_wf_ptyp Γ A -> d_wf_ptyp Γ' A.
+Proof.
+  induction 1; intros A Hwf; [ assumption | ].
+  apply IHctx_weaken. apply d_wf_ptyp_weakening. exact Hwf.
+Qed.
+
+Lemma d_sub_ctx_weaken : forall Γ Γ',
+    ctx_weaken Γ Γ' -> forall m Δ C B, d_sub m Δ Γ C B -> d_sub m Δ Γ' C B.
+Proof.
+  induction 1; intros m Δ C B Hs; [ assumption | ].
+  apply IHctx_weaken. apply d_sub_weakening. exact Hs.
+Qed.
