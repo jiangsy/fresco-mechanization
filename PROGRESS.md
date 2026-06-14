@@ -7,7 +7,70 @@ Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 **Spec:** [`docs/superpowers/specs/2026-05-10-frost-phase23-design.md`](../docs/superpowers/specs/2026-05-10-frost-phase23-design.md)
 
-## Status (current — 2026-05-23 B.2 closed + B.4 tool layer)
+## Status (current — 2026-06-14 **D1 General Subsumption FULLY CLOSED**)
+
+**Build:** 🟢 GREEN (`make NJOBS=8 coq`). **`Print Assumptions d_typing_general_subsumption` → "Closed under the global context"** — zero admits, zero axioms (`README.v` line 36).
+
+`d_typing_general_subsumption` (paper Lemma 3.1) and its generalised driver
+`d_typing_general_subsumption_spine` (paper Lemma B.5, the `FN^n` form) are both
+`Qed`, on branch `mech-type-refactor`, file
+[`prop_general_subsumption.v`](frost/decl/typing/prop_general_subsumption.v).
+
+### Proof architecture (how D1 closes)
+
+The headline is the `n = 0` corollary of the **spine lemma**
+`d_typing_general_subsumption_spine`:
+
+> `Γ ⊢[m₁] e ⦂ Bfull → ctx_weaken Γ Γ' → is_fn_n n m₁ → btyp_spine n Bfull A B Bres → empty ⊨ Γ' ⊢[M] paint A ⊑ B → Γ' ⊢[mode_fn_n_subst m₁ M] e ⦂ Bres`
+
+`btyp_spine n Bfull A B Bres` encodes the paper's `FN^n` telescope `Ā → A` with
+the synthesised tail `A` swapped for `B` (keeping the `n` shared arguments
+`Ā`), so general subsumption replaces *only the tail*. The lemma is proved by
+induction on the typing derivation:
+
+- **base terms (`unit`/`var`/`anno`)** — `n = 0`, rebuild with `d_typing__sub`.
+- **`abs` / `abs_anno`** — split on the spine. `n > 0` (`__arrow`) peels one
+  argument and recurses; `n = 0` (`__tail`) hands off to the standalone
+  induction helpers `d_typing_abs_tail_gen` / `d_typing_abs_anno_tail_gen`
+  (induction on the *tail subtyping*; body capability quantified over
+  `ctx_weaken` so the `forall_r` ∀-generalisation can fire at the
+  tvar-extended context — the two-insertion case a single-slot formulation
+  cannot express). The helper **`check` (tc)** case is driven by the new
+  `d_consis_syn_sub_tc` (consistency ⇒ checking-subtyping for a synthesised LHS
+  against an `is_ityp` target): guarded targets close by `d_sub__check`; the ∀
+  target generalises by `forall_r` then instantiates the synthesised ∀ with the
+  **bound variable** — an untagged `is_ttyp` witness with `d_tags ∅` — so the
+  IH fires with zero tag bookkeeping.
+- **`app`** — recurse with `is_fn_n (S n)` / `btyp_spine__arrow`.
+- **`sub`** — `e` infers `B1` at `ti`; weaken the subsumption
+  `empty ⊢[m₁] paint B1 ⊑ Bfull` to `Γ'`, compose with the `Bfull`-spine via the
+  (already `Qed`) **`d_sub_trans_spine`** to get `Δ' ⊢[…] paint B1 ⊑ Bres`, then
+  re-base `Δ'` to `empty` (see below) and re-emit through `d_typing__sub`.
+
+### The two enabling lemmas
+
+1. **CST `forall_l` dissolved.** `d_consis_sub_trans` (paper B.3, SYN form) had
+   an admitted `forall_l_untagged`; it is now `Qed` by pure delegation to the
+   erase-form `d_consis_sub_trans_mid` (which threads tagged witnesses via
+   `utyp_tag_refines` + `compose_tags`, and was already closed), using the
+   `consis_refines_paint` bridge. btyp stays tag-free.
+
+2. **Paint-LHS ⇒ empty tag context** (the key to `sub`). A subtyping's tag
+   context is bounded above by the LHS's *own* ε-tags, and a paint image has
+   none. New machinery (`utyp_etags : utyp → atoms`):
+   `utyp_etags_paint` (`= ∅` on `btyp_to_utyp_syn B`);
+   `d_tags_etags : d_tags Δ ph → Δ [=] utyp_etags ph` (**equality**, so the
+   `forall_l` freshness `Δ' ∩ Δ = ∅` subtracts `utyp_etags ph`);
+   `d_consis_ctx_subset_etags` / `d_sub_ctx_subset_etags : Δ ⊢[M] C ⊑ B → Δ [<=] utyp_etags C`
+   (the `forall_l` case closes since `(Δ∪Δ') ⊆ utyp_etags(open C ph) ⊆ utyp_etags C ∪ utyp_etags ph`
+   and `Δ` is disjoint from `utyp_etags ph`);
+   hence `d_sub_paint_lhs_empty : Δ ⊢[M] paint B ⊑ B' → Δ [=] empty`. This is
+   what lets `d_sub_trans_spine`'s grown output be re-based to `empty` for the
+   subsumption rule — uniformly for all `n`, no case split.
+
+---
+
+## Status (2026-05-23 B.2 closed + B.4 tool layer)
 
 **Build:** 🟢 GREEN (`make coq -j 4`).
 
@@ -262,7 +325,7 @@ Paper labels resolved to file:line in the auto-managed block at end of file (reg
 
 | # | Paper lemma | Mech & paper statement | Status |
 |---|---|---|---|
-| D1 | [Lemma 3.1: General subsumption][lemma:general-subsumption] | **Mech:** `d_typing_general_subsumption_via_gen` [`prop_general_subsumption.v`](frost/decl/typing/prop_general_subsumption.v):<br>`d_wf_denv Γ → Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A → nil ⨟ Γ ⊢[ m ] ptyp_to_utyp_syn A ⊑ B → Γ ⊢[ m ] e ⦂ B`<br>**Paper:** `If Γ ⊢_TI M ⇒ syn{A} and Γ ⊢_M syn{A} ≤ bid{B}, then Γ ⊢_M M ⇒ bid{B}` (LaTeX: `\typp[\TI]{\Gamma}{M}{\syn{A}}`, `\typsub[\M]{\Gamma}{\syn{A}}{\bid{B}}`, `\typp[\M]{\Gamma}{M}{\bid{B}}`) | 🟡 Faithful split-syntax statement shape; proof currently `Admitted`. The previous erased/repainted `ptyp_to_utyp_syn (btyp_to_ptyp B)` form has been removed. |
+| D1 | [Lemma 3.1: General subsumption][lemma:general-subsumption] | **Mech:** `d_typing_general_subsumption` [`prop_general_subsumption.v`](frost/decl/typing/prop_general_subsumption.v):<br>`d_wf_denv Γ → Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A → empty ⨟ Γ ⊢[ m ] ptyp_to_utyp_syn A ⊑ B → Γ ⊢[ m ] e ⦂ B`<br>**Paper:** `If Γ ⊢_TI M ⇒ syn{A} and Γ ⊢_M syn{A} ≤ bid{B}, then Γ ⊢_M M ⇒ bid{B}` (LaTeX: `\typp[\TI]{\Gamma}{M}{\syn{A}}`, `\typsub[\M]{\Gamma}{\syn{A}}{\bid{B}}`, `\typp[\M]{\Gamma}{M}{\bid{B}}`) | 🟢 **`Qed`, "Closed under the global context"** (`Print Assumptions`, `README.v` L36). The `n=0` corollary of `d_typing_general_subsumption_spine` (paper Lemma B.5). See the 2026-06-14 status block for the proof architecture. |
 | D2 | Soundness of subtyping (paper [declarative.tex:1101](../paper/sections/declarative.tex#L1101), no `\label`) | **Mech:** `d_sub_sound` [`prop_sub_sound.v`](frost/decl/subtyping/prop_sub_sound.v):<br>`is_typ A → nil ⨟ Γ ⊢[ mode_tc ] A ⊑ B → Γ ⊢ A ≤ B`<br>**Paper:** for `mode_tc` subtyping, the conclusion is shallow-subtypeable. | 🟡 narrowed with `is_typ A` so LHS is `typ_all_col` flavour (matches `d_shallow_sub` shape) |
 | D3 | No guessing of polytypes (paper [declarative.tex:1108](../paper/sections/declarative.tex#L1108), no `\label`) | **Mech:** `d_sub_no_guess_uniqueness` [`prop_sub_sound.v:215`](frost/decl/subtyping/prop_sub_sound.v#L215):<br>two instantiations `ph1`, `ph2` of same `d_sub` derivation imply `ph1 = ph2`<br>**Paper:** intuition that the polytype guessing `ph` in `d_sub__forall_l_tagged` is uniquely determined. | ⚠️ paper-flagged — counter-example inlined (`ph` can absorb into nested `forall_l_tagged` chains); paper revision suggested |
 | D4 | Refinement preserves wf (paper [declarative.tex:1386](../paper/sections/declarative.tex#L1386), no `\label`) | **Mech:** `d_refine_preserves_wf` [`prop_wellformed.v:766`](frost/decl/prop_wellformed.v#L766):<br>`Ψ ⨟ Γ ⊢ₛₖ P → Ψ ⨟ Γ ⊢ᵣ P ▸ Q → Ψ ⨟ Γ ⊢ₛₖ Q` (coloured variant `d_refine_syn_preserves_wf` also Qed) | 🟢 |
