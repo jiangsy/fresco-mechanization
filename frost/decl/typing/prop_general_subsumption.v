@@ -133,6 +133,37 @@ Proof. intros B1 B2 H. inversion H; subst; assumption. Qed.
 Lemma is_styp_arrow_l : forall B1 B2, is_styp (btyp_arrow B1 B2) -> is_styp B1.
 Proof. intros B1 B2 H. inversion H; subst; assumption. Qed.
 
+(** A subtyping's source is locally closed (the standard lngen fact: the
+    [forall_l] instantiation case goes through the degree-inversion lemma). *)
+Lemma d_sub_lc_l : forall m Δ Γ C B, Δ ⨟ Γ ⊢[ m ] C ⊑ B -> lc_utyp C.
+Proof.
+  intros m Δ Γ C B H. induction H.
+  - eapply d_consis_lc_utyp; eassumption.
+  - eapply d_consis_lc_utyp; eassumption.
+  - pick fresh X.
+    match goal with H : forall _ : atom, _ -> lc_utyp _ |- _ => apply (H X); fsetdec end.
+  - apply lc_utyp_arrow; [ eapply d_consis_lc_utyp; eassumption | assumption ].
+  - apply lc_utyp_of_degree. constructor.
+    eapply degree_utyp_wrt_utyp_open_utyp_wrt_utyp_inv.
+    apply degree_utyp_wrt_utyp_of_lc_utyp. eassumption.
+  - apply lc_utyp_of_degree. constructor.
+    eapply degree_utyp_wrt_utyp_open_utyp_wrt_utyp_inv.
+    apply degree_utyp_wrt_utyp_of_lc_utyp. eassumption.
+Qed.
+
+(** Reverse paint-lc: a locally-closed syn-painting comes from a
+    locally-closed source.  Induction on the [lc_utyp] derivation. *)
+Lemma lc_ptyp_of_lc_utyp_syn : forall A,
+    lc_utyp (ptyp_to_utyp_syn A) -> lc_ptyp A.
+Proof.
+  intros A Hlc. remember (ptyp_to_utyp_syn A) as C eqn:HC. revert A HC.
+  induction Hlc; intros A0 HC; destruct A0; simpl in HC; inversion HC; subst;
+    try (constructor; eauto; fail).
+  - pick fresh X. apply (lc_ptyp_all_exists X).
+    eapply (H0 X (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))).
+    rewrite ptyp_to_utyp_syn_open. reflexivity.
+Qed.
+
 (** The (mono) inherited argument of an abstraction is pinned by the arg
     consistency: the painted [inh A] is consistent only with [inh A]. *)
 Lemma consis_mono_arg : forall Δ Γ A B,
@@ -1209,15 +1240,16 @@ Proof.
      [e : syn{A}] subsumes to [B] through [empty ⊢[m] syn{A} ⊑ B] directly. *)
   intros Γ e A B m Hwf Hty Hsub.
   assert (Hst : is_styp (ptyp_to_btyp_syn A)).
-  { (* well-formedness side condition: [syn{A}] is [is_styp] (it is [lc] since
-       [Hty]/[Hsub] are well-formed).  Pending the wf lemma. *)
-    admit. }
+  { (* [syn{A}] is [is_styp]: it is [lc] because the subtyping [Hsub] forces
+       its source [ptyp_to_utyp_syn A] locally closed. *)
+    apply is_styp_ptyp_to_btyp_syn, lc_ptyp_of_lc_utyp_syn.
+    eapply d_sub_lc_l. exact Hsub. }
   eapply (d_typing_general_subsumption_spine Hty (ctx_weaken_refl Γ)
             (n := 0) (A := ptyp_to_btyp_syn A) (M := m) (B := B) (Bres := B)).
   - apply is_fn_n__ti.
   - apply btyp_spine__tail. exact Hst.
   - rewrite btyp_to_utyp_syn_ptyp_to_btyp_syn. exact Hsub.
-Admitted.
+Qed.
 
 Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
     d_wf_denv Γ ->
