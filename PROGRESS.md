@@ -353,6 +353,36 @@ files:
 
 Session-by-session closure log. Most recent first.
 
+## 2026-06-14 — Spine typing cases: `app` + `n>0` abs/abs_anno closed; mono groundwork for `n=0`
+
+With the CST keystone wired into `d_sub_trans_spine` (below), worked the
+typing-level cases of `d_typing_general_subsumption_spine`:
+
+- **`app`: fully closed.**  Threads the spine through `e1`'s arrow type
+  (`btyp_spine__arrow` prepends the function's argument) and recurses via
+  the `e1` IH; no Function Subtyping or tail split needed.
+- **`abs` / `abs_anno` `__arrow` (n>0): closed.**  Keep the
+  inherited/bidirectional argument fixed, recurse on the body via the body
+  IH, rebuild `d_typing__abs(_anno)` at the substituted mode
+  (`d_sub_weakening_head` for the tail).
+- **Mono groundwork** for the `n=0` (`__tail`) sub-case:
+  `is_styp_ptyp_to_btyp_inh_mono` (an `is_styp` inherited painting forces
+  the source monomorphic), `mono_ptyp_inh_eq_syn` (mono paintings coincide),
+  `d_consis_mono_determines` (a mono syn-source pins the bidirectional RHS,
+  at any tag context).
+
+**Remaining in the spine lemma:**
+- `abs`/`abs_anno` `__tail` (n=0): the documented function-side-subsumption
+  hard core.  Resolves to an **induction on the tail subtyping `Htail`**
+  (`utyp_arrow` LHS): `infer`/`check`/`arg` rebuild `d_typing__abs` via the
+  arrow consistency/Function-Subtyping + `d_consis_mono_determines` (arg)
+  and the body IH (result, after a consistency→subtyping conversion);
+  `forall_r` recurses and generalises via `d_typing__forall` (value
+  generalisation), which needs the abs body capability available at
+  tvar-extended contexts.  `forall_l` is excluded by the `utyp_arrow` LHS.
+- `sub`: needs "syn (paint) LHS ⇒ empty tag context" (a `d_sub` context
+  bound; its `forall_l` is the hard sub-case).
+
 ## 2026-06-14 — CST keystone closed (`d_consis_sub_trans_mid` Qed), `btyp` tag-free
 
 The Consistency-Subtyping Transitivity case that blocked general
