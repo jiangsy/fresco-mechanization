@@ -353,6 +353,35 @@ files:
 
 Session-by-session closure log. Most recent first.
 
+## 2026-06-14 — D1 fully structured: spine + abs n=0 generalisation + headline wired (4 isolated admits)
+
+The whole general-subsumption proof is now in place end-to-end.  Built on the
+weakening infrastructure (below), added the **general `ctx_weaken`** relation
+(order-preserving insertion; closures for `d_typing`/`d_pat`/`d_refine_syn`/
+`d_wf_ptyp`/`d_sub`/`binds` are one-liners over the weakening lemmas, plus
+`ctx_weaken_trans`/`_cons`/`_app_front`), and:
+
+- **`d_typing_general_subsumption_spine`** — re-reformulated over `ctx_weaken`.
+  base / var / anno / app / abs+abs_anno `__arrow` **proven**; **abs `__tail`
+  proven** via the generalisation helper.
+- **`d_typing_abs_tail_gen`** (new) — the abs n=0 generalisation, by induction
+  on the tail subtyping with the body capability quantified over `ctx_weaken`
+  extensions.  **infer / arg / forall_r proven** (forall_r generalises via
+  `d_typing__forall`, recursing at the tvar-extended context — the
+  two-insertion case `ctx_weaken` unlocks).
+- **`d_typing_general_subsumption`** (the headline) — **wired** as the n=0
+  spine corollary (`btyp_spine__tail` + `ctx_weaken_refl` + paint round-trip).
+
+**4 precise isolated admits remain** (all reachable from the headline):
+1. helper `check` case — body's tc-subtyping from a consistency needs a split
+   on the (is_ityp) body target (guarded arrow/base vs ∀-via-`forall_r`), since
+   `guarded_btyp` excludes ∀.
+2. spine `sub` case — the `d_sub` "syn-LHS ⇒ empty tag context" bound (paper
+   asserts it; hard `forall_l`).
+3. `abs_anno __tail` — needs a `Barg` variant of the generalisation helper
+   (arbitrary bidirectional arg, not the mono `inh A`).
+4. headline `is_styp(syn{A})` — a wf side-condition (`lc A`).
+
 ## 2026-06-14 — Weakening infrastructure closed + spine lemma reformulated (split-context)
 
 Built out the weakening infrastructure the abs/abs_anno n=0 generalisation
