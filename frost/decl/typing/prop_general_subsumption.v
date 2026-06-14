@@ -1023,8 +1023,21 @@ Proof.
         -- eassumption.
         -- eassumption.
         -- apply d_sub_weakening_head. exact Htail.
-  - (* abs_anno: as abs, with the bidirectional [Barg].  Deferred. *)
-    admit.
+  - (* abs_anno: as abs, with the bidirectional [Barg] kept fixed. *)
+    dependent destruction Hspine.
+    + (* __tail (n=0): requires [is_styp (btyp_arrow Barg B)]; Function
+         Subtyping.  Deferred. *)
+      admit.
+    + (* __arrow (n>0): keep [Barg] fixed, recurse on the body. *)
+      dependent destruction Hfn. simpl.
+      apply d_typing__abs_anno with (L := L) (A := A) (Barg := Barg).
+      * exact H.
+      * exact H0.
+      * intros x Hx. eapply H2.
+        -- exact Hx.
+        -- eassumption.
+        -- eassumption.
+        -- apply d_sub_weakening_head. exact Htail.
   - (* app: thread the spine through [e1]'s arrow type via the IH, then
        rebuild [d_typing__app] at the substituted mode.  No tail split — the
        function's arrow is simply PREPENDED to the spine ([btyp_spine__arrow]),
