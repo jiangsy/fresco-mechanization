@@ -10,7 +10,6 @@ Require Import src.frost.algo.prop_soundness.
 Require Import src.frost.algo.prop_completeness.
 
 Check d_typing_general_subsumption.
-Check d_typing_general_subsumption_via_gen.
 Check d_typing_general_subsumption_spine.
 
 Check d_sub_sound.
@@ -32,5 +31,6 @@ Check a_sub_complete.
 Check a_typing_complete.
 Check a_pat_complete.
 
-Print Assumptions d_typing_general_subsumption_via_gen.
 
+
+Print Assumptions d_typing_general_subsumption.

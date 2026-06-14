@@ -1250,12 +1250,3 @@ Proof.
   - apply btyp_spine__tail. exact Hst.
   - rewrite btyp_to_utyp_syn_ptyp_to_btyp_syn. exact Hsub.
 Qed.
-
-Theorem d_typing_general_subsumption_via_gen : forall Γ e A B m,
-    d_wf_denv Γ ->
-    Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
-    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
-    Γ ⊢[ m ] e ⦂ B.
-Proof.
-  apply d_typing_general_subsumption.
-Qed.
