@@ -281,10 +281,14 @@ Proof.
     rewrite_env (a ++ (Γ1 ++ Γ2 ++ Γ3)). apply IHctx_weaken.
 Qed.
 
-Lemma ctx_weaken_trans : forall Γa Γb Γc,
-    ctx_weaken Γa Γb -> ctx_weaken Γb Γc -> ctx_weaken Γa Γc.
+Lemma ctx_weaken_trans : forall Γ1 Γ2 Γ3,
+    ctx_weaken Γ1 Γ2 -> ctx_weaken Γ2 Γ3 -> ctx_weaken Γ1 Γ3.
 Proof.
-  intros Γa Γb Γc H. revert Γc. induction H; intros Γc Hbc; [ assumption | ].
+  (* [induction H] reintroduces [ctx_weaken_insert]'s own [Γ1 Γ2 Γ3], so the
+     reverted target is named [Γ0] to avoid colliding with the constructor's
+     [Γ3] (the statement's [Γ1]/[Γ2] are fine — they are consumed by the
+     induction). *)
+  intros Γ1 Γ2 Γ3 H. revert Γ3. induction H; intros Γ0 Hbc; [ assumption | ].
   apply ctx_weaken_insert with (Γ2 := Γ2). apply IHctx_weaken. exact Hbc.
 Qed.
 

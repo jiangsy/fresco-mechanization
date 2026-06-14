@@ -127,6 +127,23 @@ Proof.
     f_equal; [ eapply IHHmono1 | eapply IHHmono2 ]; eassumption.
 Qed.
 
+Lemma is_styp_arrow_r : forall B1 B2, is_styp (btyp_arrow B1 B2) -> is_styp B2.
+Proof. intros B1 B2 H. inversion H; subst; assumption. Qed.
+
+(** The (mono) inherited argument of an abstraction is pinned by the arg
+    consistency: the painted [inh A] is consistent only with [inh A]. *)
+Lemma consis_mono_arg : forall Δ Γ A B,
+    Δ ⨟ Γ ⊨ (btyp_to_utyp_syn (ptyp_to_btyp_inh A)) ≈ B ->
+    mono_ptyp A ->
+    B = ptyp_to_btyp_inh A.
+Proof.
+  intros Δ Γ A B Hc Hmono.
+  rewrite (mono_ptyp_inh_eq_syn Hmono) in Hc.
+  rewrite btyp_to_utyp_syn_ptyp_to_btyp_syn in Hc.
+  rewrite (mono_ptyp_inh_eq_syn Hmono).
+  eapply d_consis_mono_determines; eassumption.
+Qed.
+
 (** Syn round-trip: painting a synthesised [btyp] to a [utyp] and back is
     the identity.  Derived from the existing [ptyp] round-trips (the
     coercions are structural [Fixpoint]s, so the [ptyp]-level identity
@@ -1013,6 +1030,71 @@ Proof.
       * eassumption.
       * eapply d_sub_equiv; [ | exact Hr ]. fsetdec.
 Qed.
+
+(** The n=0 abstraction (tail) case, as a standalone induction on the tail
+    subtyping.  [Bbody] is synthesised, [A] monomorphic (forced by [is_styp
+    (inh A)]).  The body capability [Hbody] is quantified over [ctx_weaken]
+    extensions so the [forall_r] (∀-target generalisation) recursion can use
+    it at the tvar-extended context — the two-insertion case the single-slot
+    formulation can't express.  Arrow targets (infer/check/arg) rebuild
+    [d_typing__abs] with [consis_mono_arg] pinning the argument and [Hbody]
+    subsuming the body; [forall_r] generalises via [d_typing__forall]. *)
+Lemma d_typing_abs_tail_gen : forall L0 e A Bbody M Bnew Γ',
+    mono_ptyp A ->
+    is_styp Bbody ->
+    d_wf_ptyp Γ' A ->
+    (forall Γ'' x M' B'',
+       ctx_weaken Γ' Γ'' ->
+       x `notin` (L0 `union` dom Γ'') ->
+       empty ⨟ ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] (btyp_to_utyp_syn Bbody) ⊑ B'' ->
+       ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] open_exp_wrt_exp e (exp_var_f x) ⦂ B'') ->
+    empty ⨟ Γ' ⊢[ M ]
+      (utyp_arrow (btyp_to_utyp_syn (ptyp_to_btyp_inh A)) (btyp_to_utyp_syn Bbody)) ⊑ Bnew ->
+    Γ' ⊢[ M ] exp_abs e ⦂ Bnew.
+Proof.
+  intros L0 e A Bbody M Bnew Γ' Hmono Hstyp Hwf Hbody Hsub.
+  remember (utyp_arrow (btyp_to_utyp_syn (ptyp_to_btyp_inh A))
+              (btyp_to_utyp_syn Bbody)) as Clhs eqn:HC.
+  remember (@empty) as Δ0 eqn:HD.
+  revert Hwf Hbody.
+  induction Hsub; intros Hwf Hbody; try (exfalso; discriminate HC).
+  - (* infer (M = ti): Bnew = arrow Bn1 Bn2 by arrow consistency. *)
+    subst. dependent destruction H.
+    rename B1 into Bn1. rename B2 into Bn2.
+    pose proof (consis_mono_arg H Hmono) as HBn1. subst Bn1.
+    apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    + assumption.
+    + intros xv Hxv.
+      eapply (Hbody Γ xv mode_ti Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
+      apply d_sub_weakening_head.
+      apply d_sub__infer; [ | exact (is_styp_arrow_r H2) | reflexivity ].
+      eapply d_consis_equiv; [ | eassumption ]. fsetdec.
+  - (* check (M = tc): the body's tc-subtyping from a consistency needs a
+       case split on the (is_ityp) body target [Bn2] — guarded (arrow/base)
+       vs ∀ (forall_r) — since [guarded_btyp] excludes ∀.  Isolated. *)
+    admit.
+  - (* forall_r (M = tc): generalise via d_typing__forall, recurse. *)
+    subst. apply d_typing__forall with (L := L `union` L0 `union` dom Γ).
+    + apply is_value__abs.
+    + intros X HX.
+      eapply (H0 X ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
+      * apply d_wf_ptyp_ctx_weaken with (Γ := Γ);
+          [ apply ctx_weaken_app_front | assumption ].
+      * intros Γ'' xv M' B'' Hcw Hfr Hsb.
+        eapply (Hbody Γ'' xv M' B''); [ | exact Hfr | exact Hsb ].
+        eapply ctx_weaken_trans; [ apply ctx_weaken_app_front | exact Hcw ].
+  - (* arg (M = fn m'): the result is already a subtyping (at Δ2 [=] empty). *)
+    subst. injection HC; intros; subst.
+    pose proof (consis_mono_arg H Hmono) as HBn1. subst B1.
+    apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    + assumption.
+    + intros xv Hxv.
+      eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
+      apply d_sub_weakening_head.
+      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⊑ B2 |- _ =>
+        eapply d_sub_equiv; [ | exact Hs ] end.
+      fsetdec.
+Admitted.
 
 (** Generalised General Subsumption (paper, syntax-directed.tex:287): the
     headline.  Over PLAIN typing; subtypes only the synthesised result of
