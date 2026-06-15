@@ -45,20 +45,27 @@ Proof.
   apply (proj2 d_typing_pat_preserves_wf) with (m := mode_tc) (e := e); auto.
 Qed.
 
-Theorem d_pat_validity : forall m Γ e Q,
-    d_pat m Γ e Q ->
+(** Paper "Validity of skeleton inference" (declarative.tex): a well-typed
+    [M] with inferred skeleton [Γ ⊢ti M ⇨ Q] yields a *valid* skeleton — some
+    type [A] with [Γ ⊢tc M : inh A] and [Γ ⊢ inh{Q} ⊳ inh{A}] (the [fill]
+    judgment is the coloured refinement [d_refine_syn]).  Proof deferred. *)
+Theorem d_pat_validity : forall Γ e Q,
+    Γ ⊢[ mode_ti ] e ⇨ Q ->
+    (exists B, Γ ⊢[ mode_ti ] e ⦂ B) ->
     d_wf_denv Γ ->
-    (exists B, d_typing m Γ e B) ->
-    (exists B, d_typing m Γ e B /\
-               d_refine_syn nil Γ Q (pskl_to_bskl_syn (ptyp_to_pskl (btyp_to_ptyp B)))).
+    exists A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) /\
+              nil ⨟ Γ ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
 Proof.
 Admitted.
 
-Theorem d_pat_safety : forall m Γ e,
-    (exists B, d_typing m Γ e B) ->
+(** Paper "Safety of skeleton inference" (declarative.tex): a well-typed [M]
+    has an inference [Γ ⊢ti M ⇨ Q] whose [Q] is *safe* — it fills *every*
+    checking type [A] (and hence is valid).  Proof deferred. *)
+Theorem d_pat_safety : forall Γ e,
+    (exists B, Γ ⊢[ mode_ti ] e ⦂ B) ->
     d_wf_denv Γ ->
-    exists Q, d_pat m Γ e Q /\
-              (forall B, d_typing m Γ e B ->
-                 d_refine_syn nil Γ Q (pskl_to_bskl_syn (ptyp_to_pskl (btyp_to_ptyp B)))).
+    exists Q, Γ ⊢[ mode_ti ] e ⇨ Q /\
+              (forall A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
+                 nil ⨟ Γ ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))).
 Proof.
 Admitted.
