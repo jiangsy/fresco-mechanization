@@ -200,10 +200,8 @@ with a_pre_join : aenv -> bskl -> bskl -> bskl -> Prop :=
 (* ===================================================================== *)
 (*  Polymorphic information extraction (paper Fig. 10): constraint-based  *)
 (*  algorithmic subtyping / consistency over plain (uncoloured) skeletons *)
-(*  [pskl].  [looksub] / [lookeq] collect constraints [C]; [solve] (added  *)
-(*  separately) resolves them.  Hat-variables [α̂] are flexible variables  *)
-(*  ([pskl_var_f] bound [abind_flex_mono] in [Θ]); [⫮] is [pskl_tophole],  *)
-(*  [□] is [pskl_hole].                                                    *)
+(*  [pskl].  Hat-variables [α̂] are flexible variables ([pskl_var_f] bound  *)
+(*  [abind_flex_mono] in [Θ]); [⫮] is [pskl_tophole], [□] is [pskl_hole].  *)
 (* ===================================================================== *)
 
 (* Constraints  [C ::= · | sub_m(P) | eq(P), C] *)
@@ -222,181 +220,202 @@ Inductive a_refresh : pskl -> aenv -> pskl -> Prop :=
        a_refresh (open_pskl_wrt_pskl P (pskl_var_f α)) Ξ P') ->
     a_refresh (pskl_all_syn P) Ξ P'.
 
-(* Constraint collection.  [a_looksub α m P P' Ξ C] = [P ≤_m P' ⤳^α Ξ; C]
-   and [a_lookeq α P P' Ξ C] = [P ~ P' ⤳^α Ξ; C], where [α] is the flexible
-   variable being solved for. *)
+Reserved Notation "P ≼[ α , m ] P' ⤳ Ξ ⨾ C"
+  (at level 75, α at level 0, m at level 0, P' at level 74, Ξ at level 0,
+   C at level 74, no associativity).
+Reserved Notation "P ∼[ α ] P' ⤳ Ξ ⨾ C"
+  (at level 75, α at level 0, P' at level 74, Ξ at level 0, C at level 74,
+   no associativity).
+
+(* Constraint collection: [P ≤_m P' ⤳^α Ξ; C] and [P ~ P' ⤳^α Ξ; C], where
+   [α] is the flexible variable being solved for. *)
 Inductive a_looksub : atom -> mode -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
 | a_looksub__var : forall α m P Ξ P',           (* LS-Var *)
     a_refresh P Ξ P' ->
-    a_looksub α m (pskl_var_f α) P Ξ (a_cstr_sub m P' :: nil)
+    (pskl_var_f α) ≼[ α , m ] P ⤳ Ξ ⨾ (a_cstr_sub m P' :: nil)
 | a_looksub__absent : forall α m P P',           (* LS-Absent *)
     α `notin` ftvar_in_pskl P ->
-    a_looksub α m P P' nil nil
+    P ≼[ α , m ] P' ⤳ nil ⨾ nil
 | a_looksub__vacuous : forall α m P P',          (* LS-Vacuous *)
-    a_looksub α m P (pskl_tophole P') nil nil
+    P ≼[ α , m ] (pskl_tophole P') ⤳ nil ⨾ nil
 | a_looksub__check : forall α A B Ξ C,           (* LS-Check *)
     guarded_pskl A ->
     guarded_pskl B ->
-    a_lookeq α A B Ξ C ->
-    a_looksub α mode_tc A B Ξ C
+    A ∼[ α ] B ⤳ Ξ ⨾ C ->
+    A ≼[ α , mode_tc ] B ⤳ Ξ ⨾ C
 | a_looksub__forall_r : forall L α A B Ξ C,      (* LS-ForallR *)
     (forall β, β `notin` L ->
-       a_looksub α mode_tc A (open_pskl_wrt_pskl B (pskl_var_f β)) Ξ C) ->
-    a_looksub α mode_tc A (pskl_all_syn B) Ξ C
+       A ≼[ α , mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C) ->
+    A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C
 | a_looksub__arrow : forall α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,   (* LS-Arrow *)
-    a_lookeq α P1 P1' Ξ1 C1 ->
-    a_looksub α m P2 P2' Ξ2 C2 ->
-    a_looksub α (mode_fn m) (pskl_arrow P1 P2) (pskl_arrow P1' P2')
-              (Ξ1 ++ Ξ2) (C1 ++ C2)
+    P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
+    P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 ->
+    (pskl_arrow P1 P2) ≼[ α , (mode_fn m) ] (pskl_arrow P1' P2')
+        ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2)
 | a_looksub__forall_l : forall L α m P P' Ξ C,   (* LS-ForallL *)
     (forall β, β `notin` L ->
-       a_looksub α m (open_pskl_wrt_pskl P (pskl_var_f β)) P' Ξ C) ->
-    a_looksub α m (pskl_all_syn P) P' Ξ C
+       (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ α , m ] P' ⤳ Ξ ⨾ C) ->
+    (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
 | a_looksub__univ_ghost_l : forall α m P P' Ξ C, (* LS-UnivGhostL *)
-    a_looksub α m P P' Ξ C ->
-    a_looksub α m (pskl_tophole P) P' Ξ C
+    P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+    (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
 
 with a_lookeq : atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
 | a_lookeq__var : forall α P Ξ P',               (* LE-Var *)
     a_refresh P Ξ P' ->
-    a_lookeq α (pskl_var_f α) P Ξ (a_cstr_eq P' :: nil)
+    (pskl_var_f α) ∼[ α ] P ⤳ Ξ ⨾ (a_cstr_eq P' :: nil)
 | a_lookeq__absent : forall α P P',              (* LE-Absent *)
     α `notin` ftvar_in_pskl P ->
-    a_lookeq α P P' nil nil
+    P ∼[ α ] P' ⤳ nil ⨾ nil
 | a_lookeq__vacuous : forall α P P',             (* LE-Vacuous *)
-    a_lookeq α P (pskl_tophole P') nil nil
+    P ∼[ α ] (pskl_tophole P') ⤳ nil ⨾ nil
 | a_lookeq__flex_r : forall α P β γ,             (* LE-FlexR (β̂ a flex var) *)
     P <> pskl_var_f α ->
     α `in` ftvar_in_pskl P ->
-    a_lookeq α P (pskl_var_f β) ((γ ~ abind_flex_mono) ++ nil)
-            (a_cstr_eq (pskl_var_f γ) :: nil)
+    P ∼[ α ] (pskl_var_f β) ⤳ ((γ ~ abind_flex_mono) ++ nil)
+        ⨾ (a_cstr_eq (pskl_var_f γ) :: nil)
 | a_lookeq__arrow : forall α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,      (* LE-Arrow *)
-    a_lookeq α P1 P1' Ξ1 C1 ->
-    a_lookeq α P2 P2' Ξ2 C2 ->
-    a_lookeq α (pskl_arrow P1 P2) (pskl_arrow P1' P2') (Ξ1 ++ Ξ2) (C1 ++ C2)
+    P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
+    P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 ->
+    (pskl_arrow P1 P2) ∼[ α ] (pskl_arrow P1' P2') ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2)
 | a_lookeq__forall_inh : forall L α P P' Ξ C,    (* LE-ForallInh *)
     (forall β, β `notin` L ->
-       a_lookeq α (open_pskl_wrt_pskl P (pskl_var_f β))
-                  (open_pskl_wrt_pskl P' (pskl_var_f β)) Ξ C) ->
-    a_lookeq α (pskl_all_syn P) (pskl_all_syn P') Ξ C
+       (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
+         (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C) ->
+    (pskl_all_syn P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C
 | a_lookeq__forall_syn : forall L α P P' Ξ C,    (* LE-ForallSyn *)
     (forall β, β `notin` L ->
-       a_lookeq α (open_pskl_wrt_pskl P (pskl_var_f β)) (pskl_tophole P') Ξ C) ->
-    a_lookeq α (pskl_all_syn P) (pskl_tophole P') Ξ C
+       (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C) ->
+    (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
 | a_lookeq__univ_ghost : forall α P P' Ξ C,      (* LE-UnivGhost *)
-    a_lookeq α P P' Ξ C ->
-    a_lookeq α (pskl_tophole P) (pskl_tophole P') Ξ C
+    P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+    (pskl_tophole P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
 | a_lookeq__univ_ghost1 : forall L α P P' Ξ C,   (* LE-UnivGhost1 *)
     (forall β, β `notin` L ->
-       a_lookeq α (pskl_tophole P) (open_pskl_wrt_pskl P' (pskl_var_f β)) Ξ C) ->
-    a_lookeq α (pskl_tophole P) (pskl_all_syn P') Ξ C
+       (pskl_tophole P) ∼[ α ] (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C) ->
+    (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C
 | a_lookeq__univ_ghost2 : forall α P P' Ξ C,     (* LE-UnivGhost2 *)
     guarded_pskl P' ->
-    a_lookeq α P P' Ξ C ->
-    a_lookeq α (pskl_tophole P) P' Ξ C
+    P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+    (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C
 | a_lookeq__univ_ghost_r : forall α P P' Ξ C,    (* LE-UnivGhostR *)
     P <> pskl_var_f α ->
     guarded_pskl P ->
-    a_lookeq α P P' Ξ C ->
-    a_lookeq α P (pskl_tophole P') Ξ C.
+    P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+    P ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
+where "P ≼[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub α m P P' Ξ C) : type_scope
+  and "P ∼[ α ] P' ⤳ Ξ ⨾ C" := (a_lookeq α P P' Ξ C) : type_scope.
 
-(* [solve(P ≤_m Q) = P'] and [solve(P ~ Q) = P'] (paper Fig. 10), as
-   relations [a_solve_sub] / [a_solve_eq].  [Θ] lets the flex-variable rules
-   ([α̂] absorbs) check [abind_flex_mono]; a non-flex variable only matches
-   itself.  [⫮] is [pskl_tophole], [□] is [pskl_hole]. *)
+Reserved Notation "Θ ⊢ₛ P ≼[ m ] Q ⤳ P'"
+  (at level 75, P at level 74, m at level 0, Q at level 74, P' at level 74,
+   no associativity).
+Reserved Notation "Θ ⊢ₑ P ∼ Q ⤳ P'"
+  (at level 75, P at level 74, Q at level 74, P' at level 74, no associativity).
+
+(* [solve(P ≤_m Q) = P'] / [solve(P ~ Q) = P'] (paper Fig. 10), as relations.
+   [Θ] lets the flex-variable rules ([α̂] absorbs) check [abind_flex_mono]. *)
 Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> pskl -> Prop :=
-| a_solve_sub__var : forall Θ m X Q,             (* solve(α ≤ Q)=α, solve(α̂ ≤ Q)=α̂ *)
-    a_solve_sub Θ m (pskl_var_f X) Q (pskl_var_f X)
-| a_solve_sub__forall_l : forall L Θ m P Q P',    (* solve(∀α.P ≤ Q)=∀α.solve(P ≤ Q) *)
+| a_solve_sub__var : forall Θ m X Q,
+    Θ ⊢ₛ (pskl_var_f X) ≼[ m ] Q ⤳ (pskl_var_f X)
+| a_solve_sub__forall_l : forall L Θ m P Q P',
     (forall β, β `notin` L ->
-       a_solve_sub Θ m (open_pskl_wrt_pskl P (pskl_var_f β)) Q
-                     (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
-    a_solve_sub Θ m (pskl_all_syn P) Q (pskl_all_syn P')
-| a_solve_sub__univ_ghost_l : forall Θ m P Q P',  (* solve(⫮.P ≤ Q)=⫮.solve(P ≤ Q) *)
-    a_solve_sub Θ m P Q P' ->
-    a_solve_sub Θ m (pskl_tophole P) Q (pskl_tophole P')
-| a_solve_sub__top_r : forall Θ m P P',           (* solve(P ≤ ⫮)=P *)
-    a_solve_sub Θ m P (pskl_tophole P') P
-| a_solve_sub__check : forall Θ P Q P',           (* solve(P ≤_c Q)=solve(P ~ Q) if guarded *)
+       Θ ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ m ] Q
+            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
+    Θ ⊢ₛ (pskl_all_syn P) ≼[ m ] Q ⤳ (pskl_all_syn P')
+| a_solve_sub__univ_ghost_l : forall Θ m P Q P',
+    Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+    Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ (pskl_tophole P')
+| a_solve_sub__top_r : forall Θ m P P',
+    Θ ⊢ₛ P ≼[ m ] (pskl_tophole P') ⤳ P
+| a_solve_sub__check : forall Θ P Q P',
     guarded_pskl P ->
     guarded_pskl Q ->
-    a_solve_eq Θ P Q P' ->
-    a_solve_sub Θ mode_tc P Q P'
-| a_solve_sub__forall_r : forall Θ A B P',        (* solve(A ≤_c ∀β.B)=solve(A ≤_c B[⫮/β]) *)
-    a_solve_sub Θ mode_tc A (open_pskl_wrt_pskl B (pskl_tophole pskl_hole)) P' ->
-    a_solve_sub Θ mode_tc A (pskl_all_syn B) P'
-| a_solve_sub__arrow : forall Θ m P1 P2 Q1 Q2 P1' P2',   (* solve(arrow ≤_Fm arrow) *)
-    a_solve_eq Θ P1 Q1 P1' ->
-    a_solve_sub Θ m P2 Q2 P2' ->
-    a_solve_sub Θ (mode_fn m) (pskl_arrow P1 P2) (pskl_arrow Q1 Q2)
-                (pskl_arrow P1' P2')
+    Θ ⊢ₑ P ∼ Q ⤳ P' ->
+    Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ P'
+| a_solve_sub__forall_r : forall Θ A B P',
+    Θ ⊢ₛ A ≼[ mode_tc ] (open_pskl_wrt_pskl B (pskl_tophole pskl_hole)) ⤳ P' ->
+    Θ ⊢ₛ A ≼[ mode_tc ] (pskl_all_syn B) ⤳ P'
+| a_solve_sub__arrow : forall Θ m P1 P2 Q1 Q2 P1' P2',
+    Θ ⊢ₑ P1 ∼ Q1 ⤳ P1' ->
+    Θ ⊢ₛ P2 ≼[ m ] Q2 ⤳ P2' ->
+    Θ ⊢ₛ (pskl_arrow P1 P2) ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
+         ⤳ (pskl_arrow P1' P2')
 
 with a_solve_eq : aenv -> pskl -> pskl -> pskl -> Prop :=
-| a_solve_eq__flex_l : forall Θ α Q,             (* solve(α̂ ~ Q)=α̂ *)
+| a_solve_eq__flex_l : forall Θ α Q,
     binds α abind_flex_mono Θ ->
-    a_solve_eq Θ (pskl_var_f α) Q (pskl_var_f α)
-| a_solve_eq__flex_r : forall Θ α P,             (* solve(P ~ α̂)=α̂ *)
+    Θ ⊢ₑ (pskl_var_f α) ∼ Q ⤳ (pskl_var_f α)
+| a_solve_eq__flex_r : forall Θ α P,
     binds α abind_flex_mono Θ ->
-    a_solve_eq Θ P (pskl_var_f α) (pskl_var_f α)
-| a_solve_eq__unit : forall Θ,                   (* solve(1 ~ 1)=1 *)
-    a_solve_eq Θ pskl_unit pskl_unit pskl_unit
-| a_solve_eq__var : forall Θ X,                  (* solve(α ~ α)=α *)
-    a_solve_eq Θ (pskl_var_f X) (pskl_var_f X) (pskl_var_f X)
-| a_solve_eq__hole_l : forall Θ Q,               (* solve(□ ~ Q)=Q *)
-    a_solve_eq Θ pskl_hole Q Q
-| a_solve_eq__hole_r : forall Θ P,               (* solve(P ~ □)=P *)
-    a_solve_eq Θ P pskl_hole P
+    Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ (pskl_var_f α)
+| a_solve_eq__unit : forall Θ,
+    Θ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ pskl_unit
+| a_solve_eq__var : forall Θ X,
+    Θ ⊢ₑ (pskl_var_f X) ∼ (pskl_var_f X) ⤳ (pskl_var_f X)
+| a_solve_eq__hole_l : forall Θ Q,
+    Θ ⊢ₑ pskl_hole ∼ Q ⤳ Q
+| a_solve_eq__hole_r : forall Θ P,
+    Θ ⊢ₑ P ∼ pskl_hole ⤳ P
 | a_solve_eq__arrow : forall Θ P1 P2 Q1 Q2 P1' P2',
-    a_solve_eq Θ P1 Q1 P1' ->
-    a_solve_eq Θ P2 Q2 P2' ->
-    a_solve_eq Θ (pskl_arrow P1 P2) (pskl_arrow Q1 Q2) (pskl_arrow P1' P2')
-| a_solve_eq__forall : forall L Θ P Q P',        (* solve(∀α.P ~ ∀α.Q)=∀α.solve(P ~ Q) *)
+    Θ ⊢ₑ P1 ∼ Q1 ⤳ P1' ->
+    Θ ⊢ₑ P2 ∼ Q2 ⤳ P2' ->
+    Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2) ⤳ (pskl_arrow P1' P2')
+| a_solve_eq__forall : forall L Θ P Q P',
     (forall β, β `notin` L ->
-       a_solve_eq Θ (open_pskl_wrt_pskl P (pskl_var_f β))
-                    (open_pskl_wrt_pskl Q (pskl_var_f β))
-                    (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
-    a_solve_eq Θ (pskl_all_syn P) (pskl_all_syn Q) (pskl_all_syn P')
-| a_solve_eq__tophole_both : forall Θ P Q P',     (* solve(⫮.P ~ ⫮.Q)=⫮.solve(P ~ Q) *)
-    a_solve_eq Θ P Q P' ->
-    a_solve_eq Θ (pskl_tophole P) (pskl_tophole Q) (pskl_tophole P')
-| a_solve_eq__tophole_l_all : forall L Θ P Q P',  (* solve(⫮.P ~ ∀α.Q)=∀α.solve(⫮.P ~ Q) *)
+       Θ ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
+            ∼ (open_pskl_wrt_pskl Q (pskl_var_f β))
+            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
+    Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q) ⤳ (pskl_all_syn P')
+| a_solve_eq__tophole_both : forall Θ P Q P',
+    Θ ⊢ₑ P ∼ Q ⤳ P' ->
+    Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ (pskl_tophole P')
+| a_solve_eq__tophole_l_all : forall L Θ P Q P',
     (forall β, β `notin` L ->
-       a_solve_eq Θ (pskl_tophole P) (open_pskl_wrt_pskl Q (pskl_var_f β))
-                    (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
-    a_solve_eq Θ (pskl_tophole P) (pskl_all_syn Q) (pskl_all_syn P')
-| a_solve_eq__all_l_tophole : forall L Θ P Q P',  (* solve(∀α.P ~ ⫮.Q)=∀α.solve(P ~ ⫮.Q) *)
+       Θ ⊢ₑ (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f β))
+            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
+    Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q) ⤳ (pskl_all_syn P')
+| a_solve_eq__all_l_tophole : forall L Θ P Q P',
     (forall β, β `notin` L ->
-       a_solve_eq Θ (open_pskl_wrt_pskl P (pskl_var_f β)) (pskl_tophole Q)
-                    (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
-    a_solve_eq Θ (pskl_all_syn P) (pskl_tophole Q) (pskl_all_syn P')
-| a_solve_eq__tophole_l_guarded : forall Θ P Q P',  (* solve(⫮.P ~ Q)=solve(P ~ Q) if Q guarded *)
+       Θ ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼ (pskl_tophole Q)
+            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
+    Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q) ⤳ (pskl_all_syn P')
+| a_solve_eq__tophole_l_guarded : forall Θ P Q P',
     guarded_pskl Q ->
-    a_solve_eq Θ P Q P' ->
-    a_solve_eq Θ (pskl_tophole P) Q P'
-| a_solve_eq__tophole_r_guarded : forall Θ P Q P',  (* solve(P ~ ⫮.Q)=solve(P ~ Q) if P guarded *)
+    Θ ⊢ₑ P ∼ Q ⤳ P' ->
+    Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ P'
+| a_solve_eq__tophole_r_guarded : forall Θ P Q P',
     guarded_pskl P ->
-    a_solve_eq Θ P Q P' ->
-    a_solve_eq Θ P (pskl_tophole Q) P'.
+    Θ ⊢ₑ P ∼ Q ⤳ P' ->
+    Θ ⊢ₑ P ∼ (pskl_tophole Q) ⤳ P'
+where "Θ ⊢ₛ P ≼[ m ] Q ⤳ P'" := (a_solve_sub Θ m P Q P') : type_scope
+  and "Θ ⊢ₑ P ∼ Q ⤳ P'" := (a_solve_eq Θ P Q P') : type_scope.
 
+Reserved Notation "Θ ⊩ C ⨾ P ⤳ Q"
+  (at level 75, C at level 74, P at level 74, Q at level 74, no associativity).
 (* Constraint solving  [C; P ⤳ Q] (paper Fig. 10). *)
 Inductive a_solve_cstr : aenv -> a_cstrs -> pskl -> pskl -> Prop :=
 | a_solve_cstr__empty : forall Θ P,
-    a_solve_cstr Θ nil P P
+    Θ ⊩ nil ⨾ P ⤳ P
 | a_solve_cstr__sub : forall Θ m Q P P',
-    a_solve_sub Θ m P Q P' ->
-    a_solve_cstr Θ (a_cstr_sub m Q :: nil) P P'
+    Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+    Θ ⊩ (a_cstr_sub m Q :: nil) ⨾ P ⤳ P'
 | a_solve_cstr__eq : forall Θ Q C P P' P'',
-    a_solve_eq Θ P Q P'' ->
-    a_solve_cstr Θ C P'' P' ->
-    a_solve_cstr Θ (a_cstr_eq Q :: C) P P'.
+    Θ ⊢ₑ P ∼ Q ⤳ P'' ->
+    Θ ⊩ C ⨾ P'' ⤳ P' ->
+    Θ ⊩ (a_cstr_eq Q :: C) ⨾ P ⤳ P'
+where "Θ ⊩ C ⨾ P ⤳ Q" := (a_solve_cstr Θ C P Q) : type_scope.
 
-(* Top-level information extraction  [P ≤_m P' ⤳^α Ξ; Q]: collect then solve
-   from the universal ghost (paper Fig. 10, the combined rule). *)
+Reserved Notation "P ⊳[ α , m ] P' ⤳ Ξ ↪ Q"
+  (at level 75, α at level 0, m at level 0, P' at level 74, Ξ at level 0,
+   Q at level 74, no associativity).
+(* Top-level information extraction  [P ≤_m P' ⤳^α Ξ; Q]: collect, then solve
+   the constraints from the universal ghost (paper Fig. 10). *)
 Inductive a_extract : atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_extract__solve : forall α m P P' Ξ C Q,
-    a_looksub α m P P' Ξ C ->
-    a_solve_cstr Ξ C (pskl_tophole pskl_hole) Q ->
-    a_extract α m P P' Ξ Q.
+    P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+    Ξ ⊩ C ⨾ (pskl_tophole pskl_hole) ⤳ Q ->
+    P ⊳[ α , m ] P' ⤳ Ξ ↪ Q
+where "P ⊳[ α , m ] P' ⤳ Ξ ↪ Q" := (a_extract α m P P' Ξ Q) : type_scope.
 
 Inductive a_unify : aenv -> btyp -> btyp -> btyp -> aenv -> Prop :=
 | a_unify__refl : forall Θ B,
