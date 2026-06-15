@@ -12,8 +12,6 @@ Require Export src.frost.decl.def_extra.
 
 (** ** Well-formedness judgments. *)
 
-Notation "Γ ⊢ₚ A" := (d_wf_ptyp Γ A)
-  (at level 75, A at level 75, no associativity) : type_scope.
 
 Notation "Γ ⊢ᵤₜ C" := (d_wf_utyp Γ C)
   (at level 75, C at level 75, no associativity) : type_scope.
@@ -23,18 +21,10 @@ Notation "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R)
 
 (** ** Shallow subtyping (separate from main d_sub). *)
 
-Notation "Γ ⊢ A ≤ B" := (d_shallow_sub Γ A B)
-  (at level 75, A at level 74, B at level 74, no associativity) : type_scope.
 
 (** ** Typing and skeleton inference (mutual). *)
 
-Notation "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A)
-  (at level 100, M at level 0, e at level 75, A at level 75, no associativity)
-  : type_scope.
 
-Notation "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P)
-  (at level 100, M at level 0, e at level 75, P at level 75, no associativity)
-  : type_scope.
 
 (** ** Skeleton refinement. [⊢ᵣ … ⊳ …] = the (single, coloured)
     refinement relation, filling ghosts with synthesised skeletons.

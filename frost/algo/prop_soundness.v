@@ -5,18 +5,11 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
-Require Import src.frost.decl.prop_typing.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.notations.
 Require Import src.frost.algo.prop_completeness.
 
 Set Implicit Arguments.
-
-Lemma stability_d_typing : forall Γ0 Γ1 m e B,
-    d_typing m Γ0 e B ->
-    d_typing m Γ1 e B.
-Proof.
-Admitted.
 
 Theorem a_sub_sound : forall NM m P0 Θ0 B1 B2 Θ1 Γ,
     a_sub NM m P0 Θ0 B1 B2 Θ1 ->

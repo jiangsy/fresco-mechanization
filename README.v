@@ -3,7 +3,7 @@
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
-Require Import src.frost.decl.prop_typing.
+Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.prop_soundness.
 Require Import src.frost.algo.prop_completeness.
