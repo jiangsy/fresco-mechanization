@@ -416,6 +416,57 @@ files:
 
 Session-by-session closure log. Most recent first.
 
+## 2026-06-15 — Order irrelevance (`d_typing_order_irrel`) — FULLY PROVED (Closed under the global context)
+
+**File:** [`frost/decl/prop_stability.v`](frost/decl/prop_stability.v) (was the
+`Admitted` n-ary stub). Full `make coq` green;
+`Print Assumptions d_typing_order_irrel` → **Closed under the global context**
+(no axioms, no admits). A concrete worked `Example order_irrel_x_y` instantiates
+it for the user's `x : ∀a.a→(a→a)→int`, `y : ∀a.(a→a)→a→int` case.
+
+**Statement fix (was unprovable as written).** Added the **`d_wf_denv Γ`**
+premise — required, not cosmetic: inverting `Γ ⊢[mode_ti] (exp_var_f x) ⦂ B1`
+only gives `B1 = ptyp_to_btyp_syn A₀` for *some* binding, and `uniq Γ` (from
+`d_wf_denv`) is what pins `A₀` to the lemma's binding; the consistency-
+transitivity steps also need binding well-formedness. Mirrors the old (pre-
+refactor, Qed) `d_typing_order_irrel_adj`, which carried `d_wf_denv`.
+
+**Architecture (3 verified layers + 1 isolated admit).**
+- **Layer B (Qed):** `d_wf_denv_uniq`, `d_wf_denv_binds_ptyp`, `d_wf_ptyp_lc`,
+  `d_consis_syn_refl`, `d_typing_var_ti_consis`, `d_typing_var_fn_factor`
+  (variable head-factoring: `var x` at a function mode ⟹ subsumption out of its
+  painted binding, via `d_consis_sub_trans`).
+- **Layer A (Qed):** head-GENERIC spine reassembly `d_typing_app_spine_inv` /
+  `_build` (+ `arg_ok`, `curry_btyp`, `mode_fn_n`, `d_typing_app_step`). Works
+  for an arbitrary head because only `d_typing__app` fires on `exp_app _ _`
+  (discharges the old "generalise the head" TODO).
+- **Layer C1 (Qed):** `d_sub_arrow_spine_perm` — the conceptual crux. A curried-
+  arrow subtyping is stable under argument-spine permutation; the `perm_swap`
+  case is exactly `Δp ∪ (Δq ∪ Δr) [=] Δq ∪ (Δp ∪ Δr)`, i.e. set-union
+  commutativity. **This is why the `Δ`-as-`atoms` (set) refactor makes order
+  irrelevance clean** — the old `list`-disjoint-append `Δ` could not commute the
+  two argument consistencies without reproving disjointness.
+- **Main theorem (Qed modulo one admit):** `d_typing_order_irrel` reassembles
+  via A-inv → head permutation → A-build. `Print Assumptions` shows the SOLE
+  axiom is `d_typing_var_head_perm`.
+
+**Worked example (Qed):** `order_irrel_x_y` instantiates the lemma for
+`x : ∀a. a→(a→a)→int`, `y : ∀a. (a→a)→a→int`, deriving `y (λz.z) 1` typeable
+from `x 1 (λz.z)` typeable (`Permutation` = `perm_swap`; binding/term forms are
+definitional `ptyp_forall_prefix`/`curry_ptyp`/`curry_exp` instances).
+
+**Head-subsumption permutation — `d_typing_var_head_perm` (now Qed).** The
+empty-`Δ` exactness worry dissolved: a variable's `mode_ti` type is EXACTLY its
+binding painting (`d_consis_paint_syn_eq` — consistency against an `is_styp`
+target is structural equality), so the `d_typing__sub` inversion yields the
+empty-`Δ` subtyping directly from the binding, no `Δ`-growth. The `∀`-prefix is
+stripped/rebuilt with the same instantiation witnesses (`d_sub_prefix_spine_perm`,
+by induction on the prefix length, generalised over arbitrary `utyp` spine
+arguments since witnesses need not be paintings). Supporting: `paint_forall_prefix`,
+`paint_curry_spine`, `spine_btyp_curry`, `open_spine_utyp_rec`,
+`open_utyp_all_syn_n_rec`, `Permutation_zip_transport`, `d_typing_var_rename`
+(the `k = 0` case). All Qed.
+
 ## 2026-06-14 — D1 fully structured: spine + abs n=0 generalisation + headline wired (4 isolated admits)
 
 The whole general-subsumption proof is now in place end-to-end.  Built on the
