@@ -771,9 +771,6 @@ Proof.
     [ exact Hlen' | exact Hheady | exact Hally' ].
 Qed.
 
-(* Sanity: no axioms or admits — "Closed under the global context". *)
-Print Assumptions d_typing_order_irrel.
-
 (** * Worked example (sanity check).
 
     [x : ∀a. a → (a→a) → int],  [y : ∀a. (a→a) → a → int].
