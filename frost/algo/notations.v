@@ -45,3 +45,29 @@ Notation "Θ ⊢ B ≐ B' ↣ B'' ⊣ Θ'" := (a_unify Θ B B' B'' Θ')
 
 Notation "Θ ⊑ᵢ Θ'" := (aenv_extends Θ Θ')
   (at level 75, no associativity, only parsing) : type_scope.
+
+(** ** Polymorphic information extraction (paper Fig. 10). *)
+
+Notation "P ≤[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub α m P P' Ξ C)
+  (at level 75, α at level 0, m at level 0, P' at level 74, Ξ at level 0,
+   C at level 74, no associativity) : type_scope.
+
+Notation "P ∼[ α ] P' ⤳ Ξ ⨾ C" := (a_lookeq α P P' Ξ C)
+  (at level 75, α at level 0, P' at level 74, Ξ at level 0, C at level 74,
+   no associativity) : type_scope.
+
+Notation "Θ ⊢ₛ P ≤[ m ] Q ⤳ P'" := (a_solve_sub Θ m P Q P')
+  (at level 75, P at level 74, m at level 0, Q at level 74, P' at level 74,
+   no associativity) : type_scope.
+
+Notation "Θ ⊢ₛ P ∼ Q ⤳ P'" := (a_solve_eq Θ P Q P')
+  (at level 75, P at level 74, Q at level 74, P' at level 74,
+   no associativity) : type_scope.
+
+Notation "Θ ⊢ C ⨾ P ⤳ Q" := (a_solve_cstr Θ C P Q)
+  (at level 75, C at level 74, P at level 74, Q at level 74,
+   no associativity) : type_scope.
+
+Notation "P ≤[ α , m ] P' ⤳ Ξ ⊨ Q" := (a_extract α m P P' Ξ Q)
+  (at level 75, α at level 0, m at level 0, P' at level 74, Ξ at level 0,
+   Q at level 74, no associativity) : type_scope.
