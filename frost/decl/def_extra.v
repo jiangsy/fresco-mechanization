@@ -129,10 +129,14 @@ Inductive d_wf_pskl : list atom -> list (atom * dbind) -> pskl -> Prop :=
     Ψ ⨟ Γ ⊢ₚₛ (pskl_all_syn P)
 | d_wf_pskl__hole : forall Ψ Γ,
     Ψ ⨟ Γ ⊢ₚₛ pskl_hole
-| d_wf_pskl__tophole : forall Γ P,
+| d_wf_pskl__tophole : forall Ψ Γ P,
+    (* Paper [⫯.P] rule (declarative.tex): the scope set [Ψ] (paper's [Δ])
+       is cleared in the PREMISE, but the conclusion holds under an
+       ARBITRARY [Ψ] — matching [d_wf_uskl__tophole].  (The old [nil]
+       conclusion wrongly rejected [∀α.⫯.P].) *)
     guarded_pskl P ->
     nil ⨟ Γ ⊢ₚₛ P ->
-    nil ⨟ Γ ⊢ₚₛ (pskl_tophole P)
+    Ψ ⨟ Γ ⊢ₚₛ (pskl_tophole P)
 where "Ψ ⨟ Γ ⊢ₚₛ P" := (d_wf_pskl Ψ Γ P) : type_scope.
 
 (* WT: With d_tags_skl defined blow, we should remove Δ here but add Ψ
