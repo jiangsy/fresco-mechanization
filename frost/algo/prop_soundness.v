@@ -29,11 +29,41 @@ Theorem a_consis_sound : forall Θ0 P0 P Q Θ1,
     exists θ1, a_consis_solution Θ0 P0 P θ1 Θ1 Q.
 Proof. Admitted.
 
-(* Soundness of subtyping (paper Theorem: Soundness of subtyping). *)
+(* Soundness of subtyping (paper Theorem / subtyping-proofs.tex).
+   Proof scaffolding: induction on the algorithmic derivation, one
+   obligation per rule.  Each case must (1) exhibit the identity
+   metasubstitution [θ₁] for [Θ₀ ≤[θ₁] Θ₁], (2) build the declarative
+   skeleton subtyping [d_pat_sub] under [⌊Θ₁⌋], and (3) discharge the
+   inherited-refinement side condition [a_fillsyn]. *)
 Theorem a_sub_sound : forall NM M P0 Θ0 P Q Θ1,
     a_sub NM M P0 Θ0 P Q Θ1 ->
     exists θ1, a_sub_solution M Θ0 P0 P θ1 Θ1 Q.
-Proof. Admitted.
+Proof.
+  intros NM M P0 Θ0 P Q Θ1 Hsub.
+  induction Hsub.
+  - (* Infer  [⊢_{ti;□} P ⊑ P ⊣ Θ₀]: identity increase; the painted
+       [d_pat_sub] is reflexive ti-mode subtyping; [a_fillsyn] refines the
+       hole [□] (= [msubst_pskl θ₁ □]) to [P].  Needs [a_isub_refl],
+       [msubst_pskl_refl_hole], d_pat_sub reflexivity, d_refine hole. *)
+    admit.
+  - (* Check  [⊢_{TY;TC;B} A ⊑ B]: from soundness of consistency
+       ([a_consis_chk] ⇒ [d_pat_consis]) + the [Check] subtyping rule
+       (paper subtyping-proofs.tex, Check case). *)
+    admit.
+  - (* ForallR: extend the context with [α], apply the IH, repackage the
+       output dropping the suffix [Ξ]. *)
+    admit.
+  - (* UnivGhostR  [⊢_{SK;TC;□} P ⊑ ⫯.P]: identity increase; refinement
+       fills the universal ghost. *)
+    admit.
+  - (* Arrow: compose consistency soundness on the argument with the IH on
+       the result; the join outputs [Q₁→Q₂]. *)
+    admit.
+  - (* Ghost  [⊢_{SK;M;P₀} □ ⊑ P₀]: identity increase. *)
+    admit.
+  - (* UnivGhostL: strip the universal ghost on the left and apply the IH. *)
+    admit.
+Admitted.
 
 (* Soundness of skeleton inference (paper Theorem). *)
 Theorem a_pat_sound : forall M Θ0 P0 e P Θ1,

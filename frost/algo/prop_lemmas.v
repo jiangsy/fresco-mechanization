@@ -66,6 +66,19 @@ Inductive a_skel_split : aenv -> pskl -> pskl -> aenv -> Prop :=
 | a_skel_split__refl : forall Θ P, a_skel_split Θ P P Θ.
 
 (* ===================================================================== *)
+(*  Identity information increase.  Every algorithm produces the identity  *)
+(*  metasubstitution between its input and output contexts; the reflexive  *)
+(*  case [Θ ⊴ Θ] is the witness used by the soundness base cases.          *)
+(* ===================================================================== *)
+
+Lemma a_isub_refl : forall Θ, Θ ⊴ Θ.
+Proof. Admitted.
+
+(* Identity metasubstitution acts trivially on skeletons / types. *)
+Lemma msubst_pskl_refl_hole : forall θ, msubst_pskl θ pskl_hole = pskl_hole.
+Proof. induction θ as [|[α A] θ IH]; simpl; auto. Qed.
+
+(* ===================================================================== *)
 (*  Stability (paper Lemma: Stability) — every statement is preserved by  *)
 (*  information increase [Θ₀ ≤ Θ₁].  One lemma per judgment.              *)
 (* ===================================================================== *)

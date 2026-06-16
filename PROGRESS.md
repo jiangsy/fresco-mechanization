@@ -430,6 +430,39 @@ order `a_morepoly`, skeleton splitting `a_skel_split`, type equivalence
 
 Session-by-session closure log. Most recent first.
 
+## 2026-06-16 — Algorithmic system made uncoloured (ptyp/pskl); algo defs filled in; subtyping-soundness proof started
+
+**Design correction (load-bearing):** the algorithmic system works on
+UNCOLOURED sorts only — [ptyp]/[pskl]/[uskl], never [btyp]/[bskl].  The
+coloured sorts are declarative; painting happens only at the
+soundness/completeness bridge ([algo/def_question.v]).
+
+**`algo/def_extra.v`** re-sorted + filled (`make coq` green):
+
+- Removed dead bskl machinery: `a_pre_sub`/`a_pre_join` (superseded by the
+  uncoloured constraint-based `a_solve_*`), `a_ajoin`, `a_meta_subst`.
+- `a_typing` now outputs `ptyp`; `a_pat` outputs `pskl` (rule bodies
+  de-painted).  `a_sub`/`a_broom`/`a_split` over `pskl`; `a_unify` `ptyp`.
+- Real rules transcribed: `a_consis` (Ghost/Unit/Rigid/Arrow/Forall{Inh,
+  Syn}/UnivGhost{,1,2,R}/GhostR) + `a_consis_chk`; `a_sub` (Infer/Check/
+  ForallR/UnivGhost{L,R}/Arrow/Ghost); `a_split` (arrow/hole);
+  `a_guess_mono` (full guessMono); `skmod`/wf re-sorted.
+
+**DEFERRED (flagged in-file, the remaining algo-def work):**
+- Flex-variable solving: the `move` judgments (unify/assign,
+  fig:alg-consistency move boxes) — `a_unify`/`a_assign` are reflexive
+  stubs.
+- `a_sub`: `ForallL` (instantiation via extract/guess) + `FlexMono` (the
+  `◁` "broom" box) — `a_broom` is a reflexive stub.
+- `a_consis`: `Flex`/`FlexL`/`FlexR` (need the move machinery).
+- `a_split`: the flex case `split α̂ = β̂→γ̂`.
+
+**Proof scaffolding started:** `a_sub_sound` ([prop_soundness.v]) is now an
+induction over the algorithmic derivation with one documented obligation
+per rule (Infer/Check/ForallR/UnivGhostR/Arrow/Ghost/UnivGhostL).  Added
+aux lemmas `a_isub_refl` (identity increase) and `msubst_pskl_refl_hole`
+(Qed) that the base cases consume.
+
 ## 2026-06-16 — Faithful algorithmic-metatheory scaffolding (metasubstitution + questions/solutions/optimality)
 
 Rebuilt the Phase 3 soundness/completeness scaffolding to match the
