@@ -9,14 +9,11 @@ Notation "Θ ⊑ Θ'" := (aenv_extends Θ Θ')
 Notation "Θ ⊢ A 'aptyp'" := (a_wf_ptyp Θ A)
   (at level 75, A at level 74, no associativity) : type_scope.
 
-Notation "Θ ⊢ B 'abtyp'" := (a_wf_btyp Θ B)
-  (at level 75, B at level 74, no associativity) : type_scope.
-
 Notation "⊢ₐ Θ" := (a_wf_aenv Θ)
   (at level 75, no associativity) : type_scope.
 
-Notation "Θ ⊢ C '~ᴬ' B ⊣ Θ'" := (a_consis Θ C B Θ')
-  (at level 75, C at level 74, B at level 74, Θ' at level 74,
+Notation "Θ ⊢[ P0 ] P '~ᴬ' Q ⊣ Θ'" := (a_consis Θ P0 P Q Θ')
+  (at level 75, P0 at level 0, P at level 74, Q at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
 Notation "Θ ⊢[ NM ; m ; P0 ] B1 ⊑ᴬ B2 ⊣ Θ'" := (a_sub NM m P0 Θ B1 B2 Θ')

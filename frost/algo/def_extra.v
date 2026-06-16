@@ -1,7 +1,10 @@
 (** Frost algorithmic-system definitions for the current split syntax.
 
-    This file intentionally uses the latest generated categories
-    directly: [ptyp], [btyp], [utyp], [pskl], [bskl], and [uskl]. *)
+    The algorithmic system is UNCOLOURED: every judgment ranges over
+    [ptyp] / [pskl] (and [uskl] where needed) — never the coloured
+    [btyp] / [bskl], which belong to the declarative system.  Painting to
+    the coloured sorts happens only at the soundness/completeness bridge
+    (see [algo/def_question.v]). *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -67,11 +70,6 @@ Inductive a_wf_ptyp : aenv -> ptyp -> Prop :=
     lc_ptyp A ->
     a_wf_ptyp Θ A.
 
-Inductive a_wf_btyp : aenv -> btyp -> Prop :=
-| a_wf_btyp__decl : forall Θ B,
-    lc_btyp B ->
-    a_wf_btyp Θ B.
-
 Inductive a_wf_pskl : aenv -> pskl -> Prop :=
 | a_wf_pskl__decl : forall Θ P,
     lc_pskl P ->
@@ -80,11 +78,15 @@ Inductive a_wf_pskl : aenv -> pskl -> Prop :=
 Inductive a_guarded : aenv -> ptyp -> Prop :=
 | a_guarded__ptyp : forall Θ A, a_wf_ptyp Θ A -> a_guarded Θ A.
 
-Inductive a_ty_mode_compat : mode -> btyp -> Prop :=
-| a_ty_mode_compat__any : forall m B, a_ty_mode_compat m B.
+(* [skmod_TY P M] / [skmod_SK P M] : P is a skeleton compatible with mode
+   [M] for type / skeleton inference (paper [\skmod], algorithmic.tex).
+   Uncoloured: over [pskl].  PLACEHOLDER bodies retained pending the full
+   [\skmod] rules. *)
+Inductive a_ty_mode_compat : mode -> ptyp -> Prop :=
+| a_ty_mode_compat__any : forall m A, a_ty_mode_compat m A.
 
-Inductive a_sk_mode_compat : mode -> bskl -> Prop :=
-| a_sk_mode_compat__any : forall m Q, a_sk_mode_compat m Q.
+Inductive a_sk_mode_compat : mode -> pskl -> Prop :=
+| a_sk_mode_compat__any : forall m P, a_sk_mode_compat m P.
 
 Inductive a_sub_mode : Set :=
 | a_sub_mode_ty : a_sub_mode
@@ -96,106 +98,32 @@ Inductive a_non_flex_poly : aenv -> ptyp -> Prop :=
 Inductive a_non_flex : aenv -> ptyp -> Prop :=
 | a_non_flex__ptyp : forall Θ A, a_wf_ptyp Θ A -> a_non_flex Θ A.
 
+(* [guessMono P = (Ξ; A)] (paper algorithmic.tex): fill the holes of a
+   skeleton [P] with fresh flexible variables [Ξ], yielding a type [A].
+   Uncoloured: [pskl] in, [ptyp] out.  ([guess_SK P = (·; P)] is the
+   identity and is inlined at the [N = SK] call sites.) *)
 Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
-| a_guess_mono__plain : forall Θ A,
-    a_guess_mono Θ (ptyp_to_pskl A) nil A.
+| a_guess_mono__hole : forall Θ α,                            (* □ ↦ fresh α̂ *)
+    a_guess_mono Θ pskl_hole ((α ~ abind_flex_mono) ++ nil) (ptyp_var_f α)
+| a_guess_mono__tophole : forall Θ P Ξ A,                     (* ⫯.P ↦ guess P *)
+    a_guess_mono Θ P Ξ A ->
+    a_guess_mono Θ (pskl_tophole P) Ξ A
+| a_guess_mono__var : forall Θ α,                             (* α / α̂ ↦ (·; α) *)
+    a_guess_mono Θ (pskl_var_f α) nil (ptyp_var_f α)
+| a_guess_mono__unit : forall Θ,
+    a_guess_mono Θ pskl_unit nil ptyp_unit
+| a_guess_mono__arrow : forall Θ P Q Ξ1 Ξ2 A B,
+    a_guess_mono Θ P Ξ1 A ->
+    a_guess_mono Θ Q Ξ2 B ->
+    a_guess_mono Θ (pskl_arrow P Q) (Ξ1 ++ Ξ2) (ptyp_arrow A B)
+| a_guess_mono__forall : forall L Θ P Ξ A,
+    (forall α, α `notin` L ->
+       a_guess_mono Θ (open_pskl_wrt_pskl P (pskl_var_f α)) Ξ
+         (open_ptyp_wrt_ptyp A (ptyp_var_f α))) ->
+    a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all A).
 
-(** Pre-subtyping [⊢_M presub P Q [P']] and pre-join [prejoin P Q [P']]
-    (paper algorithmic.tex).  Both operate on (algorithmic) skeletons
-    [bskl] — the sort carrying ghosts [□]/[⫯] and the ∀; flex-mono
-    variables [α̂] are [bskl_var_f] bound as [abind_flex_mono] in [Θ].
-
-    Following the latest paper, overlapping rules are permitted (they
-    agree on overlaps), so the hole rules use a plain [guarded] side
-    condition.  The [(□,□)] presub case and the [(□,Q)] / [(P,□)]
-    prejoin cases are the recently-added missing cases. *)
-Inductive a_pre_sub : aenv -> mode -> bskl -> bskl -> bskl -> Prop :=
-| a_pre_sub__hole_hole : forall Θ m,
-    a_pre_sub Θ m bskl_hole bskl_hole bskl_hole
-| a_pre_sub__unit : forall Θ m Q,
-    a_pre_sub Θ m bskl_unit Q bskl_unit
-| a_pre_sub__var : forall Θ m X Q,
-    binds X abind_tvar Θ ->
-    a_pre_sub Θ m (bskl_var_f X) Q (bskl_var_f X)
-| a_pre_sub__hole_l : forall Θ m Q,
-    guarded_bskl Q ->
-    a_pre_sub Θ m bskl_hole Q Q
-| a_pre_sub__hole_r : forall Θ m P,
-    guarded_bskl P ->
-    a_pre_sub Θ m P bskl_hole P
-| a_pre_sub__guarded : forall Θ m P Q P',
-    guarded_bskl P ->
-    guarded_bskl Q ->
-    (m = mode_ti \/ m = mode_tc) ->
-    a_pre_join Θ P Q P' ->
-    a_pre_sub Θ m P Q P'
-| a_pre_sub__flex_mono_fn : forall Θ m α Q,
-    binds α abind_flex_mono Θ ->
-    guarded_bskl Q ->
-    a_pre_sub Θ (mode_fn m) (bskl_var_f α) Q (bskl_var_f α)
-| a_pre_sub__all_l : forall L Θ m P Q P',
-    (forall X, X `notin` L ->
-       a_pre_sub Θ m (open_bskl_wrt_bskl P (bskl_var_f X)) Q P') ->
-    a_pre_sub Θ m (bskl_all_syn P) Q (bskl_all_syn P')
-| a_pre_sub__all_r : forall L Θ m P Q P',
-    (forall X, X `notin` L ->
-       a_pre_sub Θ m P (open_bskl_wrt_bskl Q (bskl_var_f X)) P') ->
-    a_pre_sub Θ m P (bskl_all_syn Q) P'
-| a_pre_sub__tophole_l : forall Θ m P Q P',
-    a_pre_sub Θ m P Q P' ->
-    a_pre_sub Θ m (bskl_tophole P) Q P'
-| a_pre_sub__tophole_r : forall Θ m P Q P',
-    a_pre_sub Θ m P Q P' ->
-    a_pre_sub Θ m P (bskl_tophole Q) P'
-| a_pre_sub__arrow : forall Θ m P1 P2 Q1 Q2 P1' P2',
-    a_pre_join Θ P1 Q1 P1' ->
-    a_pre_sub Θ m P2 Q2 P2' ->
-    a_pre_sub Θ (mode_fn m) (bskl_arrow P1 P2) (bskl_arrow Q1 Q2) (bskl_arrow P1' P2')
-
-with a_pre_join : aenv -> bskl -> bskl -> bskl -> Prop :=
-| a_pre_join__hole_l : forall Θ Q,
-    a_pre_join Θ bskl_hole Q Q
-| a_pre_join__hole_r : forall Θ P,
-    a_pre_join Θ P bskl_hole P
-| a_pre_join__unit : forall Θ Q,
-    a_pre_join Θ bskl_unit Q bskl_unit
-| a_pre_join__var : forall Θ X Q,
-    binds X abind_tvar Θ ->
-    a_pre_join Θ (bskl_var_f X) Q (bskl_var_f X)
-| a_pre_join__flex_mono_l : forall Θ α Q,
-    binds α abind_flex_mono Θ ->
-    a_pre_join Θ (bskl_var_f α) Q (bskl_var_f α)
-| a_pre_join__flex_mono_r : forall Θ α P,
-    binds α abind_flex_mono Θ ->
-    a_pre_join Θ P (bskl_var_f α) P
-| a_pre_join__all_both : forall L Θ P Q P',
-    (forall X, X `notin` L ->
-       a_pre_join Θ (open_bskl_wrt_bskl P (bskl_var_f X))
-                  (open_bskl_wrt_bskl Q (bskl_var_f X)) P') ->
-    a_pre_join Θ (bskl_all_syn P) (bskl_all_syn Q) (bskl_all_syn P')
-| a_pre_join__tophole_both : forall Θ P Q P',
-    a_pre_join Θ P Q P' ->
-    a_pre_join Θ (bskl_tophole P) (bskl_tophole Q) (bskl_tophole P')
-| a_pre_join__tophole_l_all : forall L Θ P Q P',
-    (forall X, X `notin` L ->
-       a_pre_join Θ (bskl_tophole P) (open_bskl_wrt_bskl Q (bskl_var_f X)) P') ->
-    a_pre_join Θ (bskl_tophole P) (bskl_all_syn Q) (bskl_all_syn P')
-| a_pre_join__tophole_l_guarded : forall Θ P Q P',
-    guarded_bskl Q ->
-    a_pre_join Θ P Q P' ->
-    a_pre_join Θ (bskl_tophole P) Q P'
-| a_pre_join__all_l_tophole : forall L Θ P Q P',
-    (forall X, X `notin` L ->
-       a_pre_join Θ (open_bskl_wrt_bskl P (bskl_var_f X)) (bskl_tophole Q) P') ->
-    a_pre_join Θ (bskl_all_syn P) (bskl_tophole Q) (bskl_all_syn P')
-| a_pre_join__guarded_r_tophole : forall Θ P Q P',
-    guarded_bskl P ->
-    a_pre_join Θ P Q P' ->
-    a_pre_join Θ P (bskl_tophole Q) P'
-| a_pre_join__arrow : forall Θ P1 P2 Q1 Q2 P1' P2',
-    a_pre_join Θ P1 Q1 P1' ->
-    a_pre_join Θ P2 Q2 P2' ->
-    a_pre_join Θ (bskl_arrow P1 P2) (bskl_arrow Q1 Q2) (bskl_arrow P1' P2').
+(* (Dead [a_pre_sub]/[a_pre_join] bskl machinery removed — superseded by
+   the uncoloured constraint-based [a_solve_*] judgments below.) *)
 
 (* ===================================================================== *)
 (*  Polymorphic information extraction (paper Fig. 10): constraint-based  *)
@@ -417,121 +345,197 @@ Inductive a_extract : atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     P ⊳[ α , m ] P' ⤳ Ξ ↪ Q
 where "P ⊳[ α , m ] P' ⤳ Ξ ↪ Q" := (a_extract α m P P' Ξ Q) : type_scope.
 
-Inductive a_unify : aenv -> btyp -> btyp -> btyp -> aenv -> Prop :=
-| a_unify__refl : forall Θ B,
-    a_unify Θ B B B Θ.
+(* ----- Flexible-variable solving (move judgments).  Deferred: the
+   full unification / assignment rules (paper fig:alg-consistency,
+   move boxes) are not yet transcribed; minimal reflexive stubs at the
+   correct uncoloured sorts. ----- *)
+Inductive a_unify : aenv -> ptyp -> ptyp -> ptyp -> aenv -> Prop :=
+| a_unify__refl : forall Θ A, a_unify Θ A A A Θ.
 
 Inductive a_assign : aenv -> aenv -> ptyp -> ptyp -> aenv -> Prop :=
-| a_assign__refl : forall Θ A,
-    a_assign Θ nil A A Θ.
+| a_assign__refl : forall Θ A, a_assign Θ nil A A Θ.
 
-Inductive a_consis : aenv -> utyp -> btyp -> aenv -> Prop :=
-| a_consis__decl : forall Θ C B,
-    a_consis Θ C B Θ.
+(* ===================================================================== *)
+(*  Algorithmic consistency  [Θ0 ⊢ P ~ Q ⊣ Θ1] with inherited skeleton    *)
+(*  [P0]  (paper fig:alg-consistency).  Uncoloured: over [pskl].          *)
+(*  [□]=[pskl_hole], [⫯.P]=[pskl_tophole P], [∀α.P]=[pskl_all_syn P].      *)
+(*  Flex rules (Flex/FlexL/FlexR) are DEFERRED with the move machinery.    *)
+(* ===================================================================== *)
+Inductive a_consis : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
+| a_consis__ghost : forall Θ0 P,                              (* Ghost *)
+    a_consis Θ0 P pskl_hole P Θ0
+| a_consis__unit : forall Θ0,                                 (* Unit *)
+    a_consis Θ0 pskl_unit pskl_unit pskl_unit Θ0
+| a_consis__rigid : forall Θ0 α,                              (* Rigid *)
+    binds α abind_tvar Θ0 ->
+    a_consis Θ0 (pskl_var_f α) (pskl_var_f α) (pskl_var_f α) Θ0
+| a_consis__arrow : forall Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2,      (* Arrow *)
+    a_consis Θ0 P0a P1 Q1 Θ1 ->
+    a_consis Θ1 P0b P2 Q2 Θ2 ->
+    a_consis Θ0 (pskl_arrow P0a P0b) (pskl_arrow P1 P2) (pskl_arrow Q1 Q2) Θ2
+| a_consis__forall_inh : forall L Θ0 Θ1 P0 P Q,              (* ForallInh *)
+    (forall α, α `notin` L ->
+       a_consis ((α ~ abind_tvar) ++ Θ0)
+         (open_pskl_wrt_pskl P0 (pskl_var_f α))
+         (open_pskl_wrt_pskl P (pskl_var_f α))
+         (open_pskl_wrt_pskl Q (pskl_var_f α))
+         ((α ~ abind_tvar) ++ Θ1)) ->
+    a_consis Θ0 (pskl_all_syn P0) (pskl_all_syn P) (pskl_all_syn Q) Θ1
+| a_consis__forall_syn : forall L Θ0 Θ1 P0 P Q,             (* ForallSyn *)
+    (forall α, α `notin` L ->
+       a_consis ((α ~ abind_tvar) ++ Θ0)
+         (pskl_tophole P0)
+         (open_pskl_wrt_pskl P (pskl_var_f α))
+         (open_pskl_wrt_pskl Q (pskl_var_f α))
+         ((α ~ abind_tvar) ++ Θ1)) ->
+    a_consis Θ0 (pskl_tophole P0) (pskl_all_syn P) (pskl_all_syn Q) Θ1
+| a_consis__univ_ghost : forall Θ0 Θ1 P0 P Q,               (* UnivGhost *)
+    a_consis Θ0 P0 P Q Θ1 ->
+    a_consis Θ0 (pskl_tophole P0) (pskl_tophole P) (pskl_tophole Q) Θ1
+| a_consis__univ_ghost1 : forall L Θ0 Θ1 P0 P Q,            (* UnivGhost1 *)
+    (forall α, α `notin` L ->
+       a_consis ((α ~ abind_tvar) ++ Θ0)
+         (open_pskl_wrt_pskl P0 (pskl_var_f α))
+         (pskl_tophole P)
+         (open_pskl_wrt_pskl Q (pskl_var_f α))
+         ((α ~ abind_tvar) ++ Θ1)) ->
+    a_consis Θ0 (pskl_all_syn P0) (pskl_tophole P) (pskl_all_syn Q) Θ1
+| a_consis__univ_ghost2 : forall Θ0 Θ1 P0 P Q,             (* UnivGhost2 *)
+    guarded_pskl P0 ->
+    (forall β, P0 <> pskl_var_f β) ->
+    a_consis Θ0 P0 P Q Θ1 ->
+    a_consis Θ0 P0 (pskl_tophole P) Q Θ1
+| a_consis__ghost_r : forall Θ0 P,                          (* GhostR *)
+    a_consis Θ0 pskl_hole P P Θ0
+| a_consis__univ_ghost_r : forall Θ0 Θ1 P0 P Q,            (* UnivGhostR *)
+    guarded_pskl P ->
+    (forall β, P <> pskl_var_f β) ->
+    a_consis Θ0 P0 P Q Θ1 ->
+    a_consis Θ0 (pskl_tophole P0) P Q Θ1.
 
-Inductive a_ajoin : aenv -> bskl -> bskl -> bskl -> aenv -> Prop :=
-| a_ajoin__refl : forall Θ Q,
-    a_ajoin Θ Q Q Q Θ.
+(* [Θ0 ⊢ P ~ P0 ⊣ Θ1]: consistency when the join output is not used
+   (paper abbreviation [aconsis{Θ0}{P}{P0}{Θ1}]). *)
+Definition a_consis_chk (Θ0 : aenv) (P P0 : pskl) (Θ1 : aenv) : Prop :=
+  exists Q, a_consis Θ0 P0 P Q Θ1.
 
-Inductive a_meta_subst : aenv -> ptyp -> ptyp -> Prop :=
-| a_meta_subst__nil : forall A, a_meta_subst nil A A.
+(* Flexible-variable subtyping (the "broom" [◁], paper fig:alg-subtyping
+   second box).  DEFERRED: minimal reflexive stub at uncoloured sort. *)
+Inductive a_broom : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> Prop :=
+| a_broom__refl : forall NM m P0 Θ P, a_broom NM m P0 Θ P P Θ.
 
-Inductive a_broom : a_sub_mode -> mode -> pskl -> aenv -> btyp -> btyp -> aenv -> Prop :=
-| a_broom__sub : forall NM m P0 Θ B,
-    a_broom NM m P0 Θ B B Θ.
+(* ===================================================================== *)
+(*  Algorithmic subtyping  [Θ0 ⊢_{N;M;P0} P ⊑ Q ⊣ Θ1]                      *)
+(*  (paper fig:alg-subtyping, main box).  Uncoloured: over [pskl].        *)
+(*  DEFERRED: ForallL (instantiation via extract/guess) and FlexMono      *)
+(*  (the flex-variable [◁] box).                                          *)
+(* ===================================================================== *)
+Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> Prop :=
+| a_sub__infer : forall NM P Θ0,                              (* Infer *)
+    a_sub NM mode_ti pskl_hole Θ0 P P Θ0
+| a_sub__check : forall Θ0 Θ1 A B,                           (* Check *)
+    guarded_pskl A -> guarded_pskl B ->
+    a_consis_chk Θ0 A B Θ1 ->
+    a_sub a_sub_mode_ty mode_tc B Θ0 A B Θ1
+| a_sub__forall_r : forall L Θ0 Θ1 Ξ A B,                    (* ForallR *)
+    a_suffix Ξ ->
+    (forall α, α `notin` L ->
+       a_sub a_sub_mode_ty mode_tc (open_pskl_wrt_pskl B (pskl_var_f α))
+         ((α ~ abind_tvar) ++ Θ0) A (open_pskl_wrt_pskl B (pskl_var_f α))
+         (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
+    a_sub a_sub_mode_ty mode_tc (pskl_all_syn B) Θ0 A (pskl_all_syn B) Θ1
+| a_sub__univ_ghost_r : forall Θ0 P,                         (* UnivGhostR *)
+    guarded_pskl P ->
+    a_sub a_sub_mode_sk mode_tc pskl_hole Θ0 P (pskl_tophole P) Θ0
+| a_sub__arrow : forall NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2,   (* Arrow *)
+    a_consis Θ0 P0a P1 Q1 Θ1 ->
+    a_sub NM M P0b Θ1 P2 Q2 Θ2 ->
+    a_sub NM (mode_fn M) (pskl_arrow P0a P0b) Θ0 (pskl_arrow P1 P2)
+      (pskl_arrow Q1 Q2) Θ2
+| a_sub__ghost : forall M Θ0 P0,                             (* Ghost *)
+    a_sub a_sub_mode_sk M P0 Θ0 pskl_hole P0 Θ0
+| a_sub__univ_ghost_l : forall M Θ0 Θ1 P0 P Q,              (* UnivGhostL *)
+    M <> mode_ti ->
+    a_sub a_sub_mode_sk M P0 Θ0 P Q Θ1 ->
+    a_sub a_sub_mode_sk M P0 Θ0 (pskl_tophole P) Q Θ1.
 
-Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> btyp -> btyp -> aenv -> Prop :=
-| a_sub__refl : forall NM m P0 Θ B,
-    a_sub NM m P0 Θ B B Θ.
+(* Skeleton splitting  [Θ0 ⊢ split P0 = P→Q ⊣ Θ1]
+   (paper fig:alg-type-inference).  Uncoloured.  Flex case deferred. *)
+Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
+| a_split__arrow : forall Θ0 P Q,
+    a_split Θ0 (pskl_arrow P Q) P Q Θ0
+| a_split__hole : forall Θ0,
+    a_split Θ0 pskl_hole pskl_hole pskl_hole Θ0.
 
-Inductive a_split : aenv -> btyp -> btyp -> btyp -> aenv -> Prop :=
-| a_split__arrow : forall Θ B1 B2,
-    a_split Θ (btyp_arrow B1 B2) B1 B2 Θ.
-
-(* Algorithmic type inference [Θ ⊢[m;P0] e ⦂ B ⊣ Θ'] and skeleton
-   inference [Θ ⊢[m;P0] e ⇨ Q ⊣ Θ'] (paper algorithmic.tex
-   fig:alg-type-inference / fig:alg-skeleton-inference, latest draft).
-
-   First-pass sync with the latest paper rules: the rule structure and the
-   recent paper changes are reflected —
-     - [Freeze] / [AbsAnno] / [AbsAnnoCheck] consistency premises use the
-       (renamed) [a_consis] judgment, not [a_unify];
-     - [Abs] / [AbsAnno] carry [M ≠ TC];
-     - [App] checks the argument at a possibly-distinct type [A'].
-   The output-context [Θ2,x:A,Ξ] discipline is encoded with an [a_suffix Ξ]
-   that is dropped from the conclusion.  TODO (deferred): a dedicated
-   skeleton-splitting judgment for the abstraction input skeleton (here the
-   argument mono type is taken directly by [a_guess_mono] and the body's
-   input skeleton is left a hole). *)
-Inductive a_typing : mode -> aenv -> pskl -> exp -> btyp -> aenv -> Prop :=
+(* Algorithmic type inference [Θ ⊢[m;P0] e ⦂ A ⊣ Θ'] (output [ptyp]) and
+   skeleton inference [Θ ⊢[m;P0] e ⇨ P ⊣ Θ'] (output [pskl]) — paper
+   fig:alg-type-inference / fig:alg-skeleton-inference.  Uncoloured: the
+   whole algorithm works on [ptyp]/[pskl], no [btyp]/[bskl] painting (that
+   happens only at the soundness/completeness bridge). *)
+Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
 | a_typing__unit : forall m Θ0 P0 A Θ1,
-    a_sub a_sub_mode_ty m P0 Θ0 btyp_unit A Θ1 ->
+    a_sub a_sub_mode_ty m P0 Θ0 pskl_unit (ptyp_to_pskl A) Θ1 ->
     a_typing m Θ0 P0 exp_unit A Θ1
 | a_typing__var : forall m Θ0 P0 x A B Θ1,
     binds x (abind_var_typ A) Θ0 ->
-    a_sub a_sub_mode_ty m P0 Θ0 (ptyp_to_btyp_syn A) B Θ1 ->
+    a_sub a_sub_mode_ty m P0 Θ0 (ptyp_to_pskl A) (ptyp_to_pskl B) Θ1 ->
     a_typing m Θ0 P0 (exp_var_f x) B Θ1
 | a_typing__anno : forall m Θ0 P0 e A B Θ1 Θ2,
-    a_typing mode_tc Θ0 (ptyp_to_pskl A) e (ptyp_to_btyp_inh A) Θ1 ->
-    a_sub a_sub_mode_ty m P0 Θ1 (ptyp_to_btyp_syn A) B Θ2 ->
+    a_typing mode_tc Θ0 (ptyp_to_pskl A) e A Θ1 ->
+    a_sub a_sub_mode_ty m P0 Θ1 (ptyp_to_pskl A) (ptyp_to_pskl B) Θ2 ->
     a_typing m Θ0 P0 (exp_anno e A) B Θ2
 | a_typing__freeze : forall Θ0 P0 e A B Θ1 Θ2,
     a_typing mode_ti Θ0 pskl_hole e B Θ1 ->
-    a_consis Θ1 (btyp_to_utyp_syn B) A Θ2 ->
+    a_consis_chk Θ1 (ptyp_to_pskl B) (ptyp_to_pskl A) Θ2 ->
     a_typing mode_tc Θ0 P0 (exp_freeze e) A Θ2
-| a_typing__abs : forall L m Θ0 Θ2 P0 αs A e B Ξ,
+| a_typing__abs : forall L m Θ0 Θ1 Θ2 P0 P Q αs A e B Ξ,
     m <> mode_tc ->
-    a_guess_mono Θ0 P0 αs A ->
+    a_split Θ0 P0 P Q Θ1 ->
+    a_guess_mono Θ1 P αs A ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ αs ++ Θ0) pskl_hole
+       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ αs ++ Θ1) Q
          (open_exp_wrt_exp e (exp_var_f x)) B
          (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    a_typing m Θ0 P0 (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B) (Ξ ++ Θ2)
-| a_typing__abs_anno : forall L m Θ0 Θ1 Θ2 P0 A e B Ξ,
+    a_typing m Θ0 P0 (exp_abs e) (ptyp_arrow A B) (Ξ ++ Θ2)
+| a_typing__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q A e B Ξ,
     m <> mode_tc ->
-    a_consis Θ0 (ptyp_to_utyp_syn A) (ptyp_to_btyp_inh A) Θ1 ->
+    a_split Θ0 P0 P Q Θ1 ->
+    a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ Θ1) pskl_hole
+       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ Θ2) Q
          (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    a_typing m Θ0 P0 (exp_abs_anno A e) (btyp_arrow (ptyp_to_btyp_inh A) B) (Ξ ++ Θ2)
+         (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
+    a_typing m Θ0 P0 (exp_abs_anno A e) (ptyp_arrow A B) (Ξ ++ Θ3)
 | a_typing__abs_check : forall L Θ0 Θ1 A e B Ξ,
     a_suffix Ξ ->
     (forall x, x `notin` L ->
        a_typing mode_tc ((x ~ abind_var_typ A) ++ Θ0) pskl_hole
          (open_exp_wrt_exp e (exp_var_f x)) B
          (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
-    a_typing mode_tc Θ0 pskl_hole (exp_abs e)
-      (btyp_arrow (ptyp_to_btyp_inh A) B) (Ξ ++ Θ1)
+    a_typing mode_tc Θ0 pskl_hole (exp_abs e) (ptyp_arrow A B) (Ξ ++ Θ1)
 | a_typing__abs_anno_check : forall L Θ0 Θ1 Θ2 A e B Ξ,
-    a_consis Θ0 (ptyp_to_utyp_syn A) (ptyp_to_btyp_inh A) Θ1 ->
+    a_consis_chk Θ0 (ptyp_to_pskl A) (ptyp_to_pskl A) Θ1 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
        a_typing mode_tc ((x ~ abind_var_typ A) ++ Θ1) pskl_hole
          (open_exp_wrt_exp e (exp_var_f x)) B
          (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    a_typing mode_tc Θ0 pskl_hole (exp_abs_anno A e)
-      (btyp_arrow (ptyp_to_btyp_inh A) B) (Ξ ++ Θ2)
+    a_typing mode_tc Θ0 pskl_hole (exp_abs_anno A e) (ptyp_arrow A B) (Ξ ++ Θ2)
 | a_typing__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,
-    a_pat mode_tc Θ0 pskl_hole e2 (pskl_to_bskl_syn P) Θ1 ->
-    a_typing (mode_fn m) Θ1 (pskl_arrow P Q) e1 (btyp_arrow A B) Θ2 ->
-    (* the argument is re-checked, possibly at a distinct type [A'] *)
-    a_typing mode_tc Θ2 (ptyp_to_pskl (btyp_to_ptyp A)) e2 A' Θ3 ->
+    a_pat mode_tc Θ0 pskl_hole e2 P Θ1 ->
+    a_typing (mode_fn m) Θ1 (pskl_arrow P Q) e1 (ptyp_arrow A B) Θ2 ->
+    a_typing mode_tc Θ2 (ptyp_to_pskl A) e2 A' Θ3 ->
     a_typing m Θ0 Q (exp_app e1 e2) B Θ3
 
-with a_pat : mode -> aenv -> pskl -> exp -> bskl -> aenv -> Prop :=
-(* TODO (deferred): the base cases should thread [Θ] through a
-   skeleton-mode subtyping ([atypsub SK]); the mechanization currently lacks
-   a skeleton-typed [a_sub] with context output, so they pass [Θ] through. *)
+with a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__unit : forall m Θ0 P0,
-    a_pat m Θ0 P0 exp_unit bskl_unit Θ0
+    a_pat m Θ0 P0 exp_unit pskl_unit Θ0
 | a_pat__var : forall m Θ0 P0 x P,
     binds x (abind_var_typ P) Θ0 ->
-    a_pat m Θ0 P0 (exp_var_f x) (pskl_to_bskl_syn (ptyp_to_pskl P)) Θ0
+    a_pat m Θ0 P0 (exp_var_f x) (ptyp_to_pskl P) Θ0
 | a_pat__anno : forall m Θ0 P0 e A,
-    a_pat m Θ0 P0 (exp_anno e A) (pskl_to_bskl_syn (ptyp_to_pskl A)) Θ0
+    a_pat m Θ0 P0 (exp_anno e A) (ptyp_to_pskl A) Θ0
 | a_pat__freeze : forall Θ0 e Q Θ1,
     a_pat mode_ti Θ0 pskl_hole e Q Θ1 ->
     a_pat mode_tc Θ0 pskl_hole (exp_freeze e) Q Θ1
@@ -542,7 +546,7 @@ with a_pat : mode -> aenv -> pskl -> exp -> bskl -> aenv -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) Q
          (Ξ ++ (x ~ abind_var_typ P) ++ Θ2)) ->
     a_pat m Θ0 (ptyp_to_pskl P) (exp_abs e)
-      (bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl P)) Q) (Ξ ++ Θ2)
+      (pskl_arrow (ptyp_to_pskl P) Q) (Ξ ++ Θ2)
 | a_pat__abs_check : forall L Θ0 Θ1 e Q Ξ,
     a_suffix Ξ ->
     (forall x, x `notin` L ->
@@ -550,7 +554,7 @@ with a_pat : mode -> aenv -> pskl -> exp -> bskl -> aenv -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) Q
          (Ξ ++ (x ~ abind_var_typ ptyp_unit) ++ Θ1)) ->
     a_pat mode_tc Θ0 pskl_hole (exp_abs e)
-      (bskl_tophole (bskl_arrow bskl_hole Q)) (Ξ ++ Θ1)
+      (pskl_tophole (pskl_arrow pskl_hole Q)) (Ξ ++ Θ1)
 | a_pat__abs_anno : forall L m Θ0 Θ2 A e Q Ξ,
     a_suffix Ξ ->
     (forall x, x `notin` L ->
@@ -558,7 +562,7 @@ with a_pat : mode -> aenv -> pskl -> exp -> bskl -> aenv -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) Q
          (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
     a_pat m Θ0 (ptyp_to_pskl A) (exp_abs_anno A e)
-      (bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl A)) Q) (Ξ ++ Θ2)
+      (pskl_arrow (ptyp_to_pskl A) Q) (Ξ ++ Θ2)
 | a_pat__abs_anno_check : forall L Θ0 Θ1 A e Q Ξ,
     a_suffix Ξ ->
     (forall x, x `notin` L ->
@@ -566,9 +570,9 @@ with a_pat : mode -> aenv -> pskl -> exp -> bskl -> aenv -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) Q
          (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
     a_pat mode_tc Θ0 pskl_hole (exp_abs_anno A e)
-      (bskl_tophole (bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl A)) Q)) (Ξ ++ Θ1)
+      (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) (Ξ ++ Θ1)
 | a_pat__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A2 B Sres e1 e2,
-    a_pat mode_tc Θ0 pskl_hole e2 (pskl_to_bskl_syn P) Θ1 ->
-    a_typing (mode_fn m) Θ1 (pskl_arrow P Q) e1 (btyp_arrow A B) Θ2 ->
-    a_pat mode_tc Θ2 (ptyp_to_pskl (btyp_to_ptyp A)) e2 Sres Θ3 ->
-    a_pat m Θ0 Q (exp_app e1 e2) (bskl_arrow A2 Sres) Θ3.
+    a_pat mode_tc Θ0 pskl_hole e2 P Θ1 ->
+    a_typing (mode_fn m) Θ1 (pskl_arrow P Q) e1 (ptyp_arrow A B) Θ2 ->
+    a_pat mode_tc Θ2 (ptyp_to_pskl A) e2 Sres Θ3 ->
+    a_pat m Θ0 Q (exp_app e1 e2) (pskl_arrow A2 Sres) Θ3.
