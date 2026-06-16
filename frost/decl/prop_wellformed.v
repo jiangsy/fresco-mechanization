@@ -73,6 +73,25 @@ Proof.
     apply H0; auto.
 Qed.
 
+(** [d_wf_pskl] is monotone in the scope set [Ψ]: enlarging [Ψ] only
+    relaxes the [var] rule (and the [∀] rule under its binder).  Used by
+    [d_refine_preserves_wf] to bridge a premise whose cleared context
+    yields a [Ψ ⊆] the one the conclusion needs. *)
+Lemma d_wf_pskl_Psi_mono : forall Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P ->
+    forall Ψ', (forall X, List.In X Ψ -> List.In X Ψ') ->
+    Ψ' ⨟ Γ ⊢ₚₛ P.
+Proof.
+  intros Ψ Γ P H. induction H; intros Ψ' Hmono.
+  - constructor.
+  - constructor. destruct H as [Hin | Hb]; [ left; auto | right; auto ].
+  - constructor; auto.
+  - inst_cofinites_for d_wf_pskl__all. intros X HX. apply H0; auto.
+    intros Y HY. simpl in HY |- *. destruct HY as [HY | HY]; [ left; auto | right; auto ].
+  - constructor.
+  - apply d_wf_pskl__tophole; auto.
+Qed.
+
 Lemma d_wf_pskl_weakening : forall Γ1 Γ2 Γ3 Ψ P,
     Ψ ⨟ (Γ1 ++ Γ3) ⊢ₚₛ P ->
     Ψ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₚₛ P.

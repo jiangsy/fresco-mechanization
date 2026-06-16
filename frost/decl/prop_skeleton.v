@@ -7,6 +7,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
+Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -24,11 +25,57 @@ Set Implicit Arguments.
    rules (remove / fill-with-∀α / keep), so the output is not uniquely a
    [bskl_tophole].  Invert [d_refine_syn] directly where needed. *)
 
-Lemma d_refine_preserves_wf : forall Ψ Γ Q P,
-    d_refine_syn Ψ Γ Q P ->
-    d_wf_pskl Ψ Γ (bskl_to_pskl P).
+(** Refinement preserves well-formedness (paper "Refinement preserves
+    well-formedness", declarative.tex).  The two skeleton-scope contexts
+    of refinement — [Δs] (syn-quantifier vars) and [Δi] (inh-quantifier
+    vars) — collapse, on the colour-erased [pskl] output, into the single
+    [d_wf_pskl] scope set [Ψ := Δs ++ Δi] (colours do not affect skeleton
+    well-formedness, so both kinds of ∀-bound var live in the one [Ψ]).
+    The three-context refinement (which clears [Δs] under a kept [TopHole]
+    and [Δi] at [Hole]-fills) is exactly what guarantees the colour-erased
+    output is [d_wf_pskl]; with the old "syn var dumped into [Γ]"
+    encoding this lemma was false (e.g. [⫯.(□→unit)] refined to
+    [∀^syn α.⫯.(α→unit)], which is not well-formed).
+
+    Each [TopHole] / [Hole] rule clears some context, so its premise's
+    IH yields wf at a [Ψ] that is a *subset* of the one the conclusion
+    needs; we close the gap with [d_wf_pskl_Psi_mono] (monotone in [Ψ]). *)
+Lemma d_refine_preserves_wf : forall Γ Δs Δi Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    (Δs ++ Δi) ⨟ Γ ⊢ₚₛ (bskl_to_pskl P).
 Proof.
-Admitted.
+  intros Γ Δs Δi Q P H. induction H; simpl.
+  - (* unit *) constructor.
+  - (* var *) constructor.
+    destruct H as [HS | [HI | HG]].
+    + left. apply in_or_app; auto.
+    + left. apply in_or_app; auto.
+    + right; auto.
+  - (* arrow *) constructor; auto.
+  - (* all (inh): bound var joins Δi; wf Ψ gains it under the binder.
+       [d_wf_pskl_Psi_mono] leaves the wf premise first, the [Ψ ⊆ Ψ'] last. *)
+    inst_cofinites_for d_wf_pskl__all. intros X HX.
+    rewrite <- bskl_to_pskl_open.
+    apply d_wf_pskl_Psi_mono with (Ψ := Δs ++ (X :: Δi)); [ apply H0; auto | ].
+    intros Y HY. simpl. rewrite in_app_iff in *. simpl in HY |- *. tauto.
+  - (* hole: fill is wf with Ψ := Δs; weaken to Δs ++ Δi *)
+    rewrite bskl_to_pskl_pskl_to_bskl_syn.
+    apply d_wf_pskl_Psi_mono with (Ψ := Δs); [ assumption | ].
+    intros Y HY. rewrite in_app_iff. tauto.
+  - (* tophole_remove: keeps Δs, clears Δi; IH gives Ψ := Δs ++ nil *)
+    apply d_wf_pskl_Psi_mono with (Ψ := Δs ++ nil); [ assumption | ].
+    intros Y HY. rewrite in_app_iff in *. simpl in HY. tauto.
+  - (* tophole_fill: output ∀^syn; body wf with Ψ := (X :: Δs) ++ nil *)
+    inst_cofinites_for d_wf_pskl__all. intros X HX.
+    rewrite <- bskl_to_pskl_open.
+    apply d_wf_pskl_Psi_mono with (Ψ := (X :: Δs) ++ nil); [ apply H0; auto | ].
+    intros Y HY. simpl. rewrite in_app_iff in *. simpl in HY |- *. tauto.
+  - (* tophole_keep: output ⫯; clears both; guarded + wf-under-nil *)
+    apply d_wf_pskl__tophole.
+    + apply guarded_bskl_to_pskl; auto.
+    + apply d_wf_pskl_Psi_mono with (Ψ := nil ++ nil); [ assumption | ].
+      intros Y HY. inversion HY.
+Qed.
 
 (** * Paper-facing skeleton properties.
 
@@ -37,9 +84,9 @@ Admitted.
     re-established. *)
 
 Lemma d_pat_preserves_skel_wf : forall Γ e Q,
-    d_pat mode_tc Γ e Q ->
+    Γ ⊢[ mode_tc ] e ⇨ Q ->
     d_wf_denv Γ ->
-    d_wf_pskl nil Γ Q.
+    nil ⨟ Γ ⊢ₚₛ Q.
 Proof.
   intros Γ e Q H _.
   apply (proj2 d_typing_pat_preserves_wf) with (m := mode_tc) (e := e); auto.
@@ -54,7 +101,7 @@ Theorem d_pat_validity : forall Γ e Q,
     (exists B, Γ ⊢[ mode_ti ] e ⦂ B) ->
     d_wf_denv Γ ->
     exists A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) /\
-              nil ⨟ Γ ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
+              Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
 Proof.
 Admitted.
 
@@ -66,6 +113,6 @@ Theorem d_pat_safety : forall Γ e,
     d_wf_denv Γ ->
     exists Q, Γ ⊢[ mode_ti ] e ⇨ Q /\
               (forall A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
-                 nil ⨟ Γ ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))).
+                 Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))).
 Proof.
 Admitted.

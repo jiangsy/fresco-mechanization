@@ -233,7 +233,7 @@ Proof. intros. unfold curry_btyp. rewrite fold_right_app. reflexivity. Qed.
 Definition arg_ok (Γ : list (atom * dbind)) (Barg : btyp) (e : exp) : Prop :=
   exists P,
     (Γ ⊢[ mode_tc ] e ⇨ (pskl_to_bskl_syn P)) /\
-    (nil ⨟ Γ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl (btyp_to_ptyp Barg)))) /\
+    (Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl (btyp_to_ptyp Barg)))) /\
     (Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp Barg))).
 
 (** A single application step from a head arrow type plus argument

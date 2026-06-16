@@ -34,3 +34,18 @@ Proof.
     try (rewrite IHP; reflexivity);
     try (rewrite IHP1, IHP2; reflexivity).
 Qed.
+
+(** [bskl_to_pskl] preserves local closure (both ∀-colours collapse to
+    [pskl_all_syn]). *)
+Lemma lc_bskl_to_pskl : forall Q,
+    lc_bskl Q -> lc_pskl (bskl_to_pskl Q).
+Proof.
+  intros Q H. induction H; simpl.
+  - apply lc_pskl_unit.
+  - apply lc_pskl_var_f.
+  - apply lc_pskl_arrow; auto.
+  - apply lc_pskl_all_syn. intro X. rewrite <- bskl_to_pskl_open. auto.
+  - apply lc_pskl_all_syn. intro X. rewrite <- bskl_to_pskl_open. auto.
+  - apply lc_pskl_hole.
+  - apply lc_pskl_tophole; auto.
+Qed.

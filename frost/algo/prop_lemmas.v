@@ -107,9 +107,9 @@ Lemma a_stable_d_consis : forall Θ0 Θ1 C B,
 Proof. Admitted.
 
 Lemma a_stable_d_refine_syn : forall Θ0 Θ1 P Q,
-    nil ⨟ ⌊ Θ0 ⌋ ⊢ᵣ P ⊳ Q ->
+    ⌊ Θ0 ⌋ ⨟ nil ⨟ nil ⊢ᵣ P ⊳ Q ->
     Θ0 ⊴ Θ1 ->
-    nil ⨟ ⌊ Θ1 ⌋ ⊢ᵣ P ⊳ Q.
+    ⌊ Θ1 ⌋ ⨟ nil ⨟ nil ⊢ᵣ P ⊳ Q.
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -141,7 +141,7 @@ Proof. Admitted.
 
 Lemma a_split_refine : forall Θ0 Θ1 P0 P1,
     a_skel_split Θ0 P0 P1 Θ1 ->
-    nil ⨟ ⌊ Θ1 ⌋ ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (pskl_to_bskl_inh P1).
+    ⌊ Θ1 ⌋ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (pskl_to_bskl_inh P1).
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -172,7 +172,7 @@ Proof. Admitted.
 (* ===================================================================== *)
 
 Lemma a_inherited_refinement_precision : forall Θ P Q,
-    nil ⨟ ⌊ Θ ⌋ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh Q) ->
+    ⌊ Θ ⌋ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh Q) ->
     Θ ⊢ (pskl_to_bskl_syn P) ≼ (pskl_to_bskl_syn Q).
 Proof. Admitted.
 
@@ -184,10 +184,10 @@ Proof. Admitted.
 Lemma a_context_precision_skeleton : forall M Θ Θ' P e Q,
     a_ctx_precise Θ' Θ ->
     (⌊ Θ ⌋ ⊢[ M ] e ⇨ Q) ->
-    nil ⨟ ⌊ Θ ⌋ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q ->
+    ⌊ Θ ⌋ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q ->
     exists Q',
       (⌊ Θ' ⌋ ⊢[ M ] e ⇨ Q') /\
-      nil ⨟ ⌊ Θ' ⌋ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q' /\
+      ⌊ Θ' ⌋ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q' /\
       a_precise Θ' Q' Q.
 Proof. Admitted.
 

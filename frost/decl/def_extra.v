@@ -16,27 +16,32 @@ Require Import src.frost.predicates.
 
 Set Implicit Arguments.
 
+(* All [⨟]-prefixed judgments keep their middle context slot at level 74
+   (not 75): the three-context refinement [Γ ⨟ Δs ⨟ Δi ⊢ᵣ …] needs its
+   inner slots below the notation level to avoid self-recursion, and
+   camlp5 requires every notation sharing the [_ ⨟ _] prefix to agree on
+   that slot's level.  Context slots only ever hold [Γ]/[Δ] built from
+   [++]/[::]/[~] (all ≤ 60), so level 74 is ample. *)
 Reserved Notation "Ψ ⨟ Γ ⊢ₚₛ P"
-  (at level 75, Γ at level 75, P at level 75, no associativity).
+  (at level 75, Γ at level 74, P at level 75, no associativity).
 Reserved Notation "Γ ⊢ᵦ B"
   (at level 75, B at level 75, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊢ᵤ C"
-  (at level 75, Γ at level 75, C at level 75, no associativity).
+  (at level 75, Γ at level 74, C at level 75, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊢ᵤₛ R"
-  (at level 75, Γ at level 75, R at level 75, no associativity).
+  (at level 75, Γ at level 74, R at level 75, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊨ C ≈ B"
-  (at level 75, Γ at level 75, C at level 74, B at level 74, no associativity).
+  (at level 75, Γ at level 74, C at level 74, B at level 74, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊢[ M ] C ⊑ B"
-  (at level 75, Γ at level 75, M at level 0, C at level 74, B at level 74,
+  (at level 75, Γ at level 74, M at level 0, C at level 74, B at level 74,
    no associativity).
-Reserved Notation "Ψ ⨟ Γ ⊢ᵣ P ▸ Q"
-  (at level 75, Γ at level 75, P at level 74, Q at level 74, no associativity).
-Reserved Notation "Ψ ⨟ Γ ⊢ᵣ Q ⊳ P"
-  (at level 75, Γ at level 75, Q at level 74, P at level 74, no associativity).
+Reserved Notation "Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P"
+  (at level 75, Δs at level 74, Δi at level 74,
+   Q at level 74, P at level 74, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊨ₛ R ≈ Q"
-  (at level 75, Γ at level 75, R at level 74, Q at level 74, no associativity).
+  (at level 75, Γ at level 74, R at level 74, Q at level 74, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q"
-  (at level 75, Γ at level 75, M at level 0, R at level 74, Q at level 74,
+  (at level 75, Γ at level 74, M at level 0, R at level 74, Q at level 74,
    no associativity).
 
 (* ===================================================================== *)
@@ -376,51 +381,75 @@ where "Γ ⊢ A ≤ B" := (d_shallow_sub Γ A B) : type_scope.
    only [pskl_all_syn]) cannot express.  Filling a ghost [□] still yields
    a synthesised skeleton, encoded as a [pskl] coerced via
    [pskl_to_bskl_syn]. *)
-Inductive d_refine_syn : list atom -> list (atom * dbind) -> bskl -> bskl -> Prop :=
+(* Two skeleton-scope contexts beyond the existing tvar context [Γ]:
+     - [Δs] : tvars bound by *synthesised* quantifiers seen so far in the
+              skeleton (those introduced by filling a universal ghost
+              [TopHole] with a concrete [∀^syn]);
+     - [Δi] : tvars bound by *inherited* quantifiers ([∀^inh]) seen so far.
+   The two are tracked separately because they have different scope
+   discipline (see the [Hole] / [TopHole] rules below).  Earlier this
+   was a single context [Ψ] plus dumping the syn-quantifier var into
+   [Γ]; that let an inner body refer to an *outside* syn quantifier
+   (e.g. refining [⫯.(□→unit)] to [∀^syn α.⫯.(α→unit)], which is NOT
+   [d_wf_pskl]), breaking [d_refine_preserves_wf].  Clearing-profile:
+     | context  | as var occ. | fills [Hole] | survives [TopHole] |
+     | Γ         |     ✓       |      ✓       |        ✓           |
+     | Δs (syn)  |     ✓       |      ✓       |        ✗           |
+     | Δi (inh)  |     ✓       |      ✗       |        ✗           | *)
+Inductive d_refine_syn : list (atom * dbind) -> list atom -> list atom -> bskl -> bskl -> Prop :=
 (* WT: LHS is always an inherited skeleton. I'm not sure if it's worth
 mentioning as a predicate. *)
-| d_refine_syn__unit : forall Ψ Γ,
-    Ψ ⨟ Γ ⊢ᵣ bskl_unit ⊳ bskl_unit
-| d_refine_syn__var : forall Ψ Γ X,
-    List.In X Ψ \/ binds X dbind_tvar Γ ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_var_f X) ⊳ (bskl_var_f X)
-| d_refine_syn__arrow : forall Ψ Γ Q1 Q2 P1 P2,
-    Ψ ⨟ Γ ⊢ᵣ Q1 ⊳ P1 ->
-    Ψ ⨟ Γ ⊢ᵣ Q2 ⊳ P2 ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2)
-| d_refine_syn__all : forall L Ψ Γ Q P,
+| d_refine_syn__unit : forall Γ Δs Δi,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ bskl_unit ⊳ bskl_unit
+| d_refine_syn__var : forall Γ Δs Δi X,
+    (* A plain occurrence may be any in-scope tvar (Γ, syn, or inh). *)
+    List.In X Δs \/ List.In X Δi \/ binds X dbind_tvar Γ ->
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_var_f X) ⊳ (bskl_var_f X)
+| d_refine_syn__arrow : forall Γ Δs Δi Q1 Q2 P1 P2,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q1 ⊳ P1 ->
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q2 ⊳ P2 ->
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2)
+| d_refine_syn__all : forall L Γ Δs Δi Q P,
     (* Paper ∀-rule (declarative.tex): inh{∀α.P} ◁syn inh{∀α.}bid{Q} —
        the quantifier is inherited on both sides (the input is the
-       inherited painting of the same skeleton fed by [d_*__app]). *)
+       inherited painting of the same skeleton fed by [d_*__app]); the
+       bound var joins the *inherited* context [Δi]. *)
     (forall X, X `notin` L ->
-       (X :: Ψ) ⨟ Γ ⊢ᵣ
+       Γ ⨟ Δs ⨟ (X :: Δi) ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f X)) ⊳
          (open_bskl_wrt_bskl P (bskl_var_f X))) ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P)
-| d_refine_syn__hole : forall Ψ Γ P,
-    (* [□ ◁syn syn{Q}]: clear Ψ so the filling cannot use variables
-       bound by other universal quantifiers. *)
-    nil ⨟ Γ ⊢ₚₛ P ->
-    Ψ ⨟ Γ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
-| d_refine_syn__tophole_remove : forall Ψ Γ Q P,
-    (* [⫯.inh{P} ◁syn bid{Q}]: remove the universal ghost. *)
-    nil ⨟ Γ ⊢ᵣ Q ⊳ P ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ P
-| d_refine_syn__tophole_fill : forall L Ψ Γ Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P)
+| d_refine_syn__hole : forall Γ Δs Δi P,
+    (* [□ ◁syn syn{Q}]: clear [Δi] so the filling cannot use inherited
+       ∀-bound vars; keep [Δs] (syn-quantifier vars *can* fill ghosts).
+       So the fill is checked by [d_wf_pskl] with scope set [Ψ := Δs]. *)
+    Δs ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
+| d_refine_syn__tophole_remove : forall Γ Δs Δi Q P,
+    (* [⫯.inh{P} ◁syn bid{Q}]: remove the universal ghost.  Clear [Δi]
+       (inherited vars unusable below a ghost), but KEEP [Δs]: the body
+       is promoted to the same synthesised-quantifier scope, so prior
+       syn-vars stay available. *)
+    Γ ⨟ Δs ⨟ nil ⊢ᵣ Q ⊳ P ->
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole Q) ⊳ P
+| d_refine_syn__tophole_fill : forall L Γ Δs Δi Q P,
     (* [⫯.inh{P} ◁syn syn{∀α.}bid{Q}]: fill the universal ghost with a
-       concrete quantifier; α joins Γ (it may be used filling ghosts,
-       unlike ∀-bound vars which live in Ψ), Ψ cleared. *)
+       concrete synthesised quantifier; α is ADDED to the *syn* context
+       [Δs] (so consecutive synthesised quantifiers accumulate and may
+       fill ghosts), while [Δi] is cleared. *)
     (forall X, X `notin` L ->
-       nil ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢ᵣ
+       Γ ⨟ (X :: Δs) ⨟ nil ⊢ᵣ
          (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl P (bskl_var_f X))) ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P)
-| d_refine_syn__tophole_keep : forall Ψ Γ Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P)
+| d_refine_syn__tophole_keep : forall Γ Δs Δi Q P,
     (* [⫯.inh{P} ◁syn ⫯.bid{Q}]: keep the universal ghost; the output
-       under the ghost must be guarded to preserve well-formedness. *)
+       under the ghost must be guarded to preserve well-formedness.
+       This is a genuine universal-ghost boundary, so clear BOTH [Δs]
+       and [Δi]. *)
     guarded_bskl P ->
-    nil ⨟ Γ ⊢ᵣ Q ⊳ P ->
-    Ψ ⨟ Γ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P)
-where "Ψ ⨟ Γ ⊢ᵣ Q ⊳ P" := (d_refine_syn Ψ Γ Q P) : type_scope.
+    Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ P ->
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P)
+where "Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P" := (d_refine_syn Γ Δs Δi Q P) : type_scope.
 
 (* The latest paper keeps only the coloured refinement relation
    [Γ ⊢ inh{P} ◁syn bid{Q}] (the uncoloured [◁] is just its colour
@@ -647,7 +676,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        [btyp_to_ptyp Barg = A]); the argument is checked at [inh{A}]. *)
     btyp_to_ptyp Barg = A ->
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    nil ⨟ Γ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
+    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow Barg B) ->
     Γ ⊢[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh A) ->
     Γ ⊢[ m ] (exp_app e1 e2) ⦂ B
@@ -704,7 +733,7 @@ with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     btyp_to_ptyp Barg1 = A1 ->
     bskl_to_pskl Sres = ptyp_to_pskl A2 ->
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    nil ⨟ Γ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A1)) ->
+    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A1)) ->
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow Barg1 (ptyp_to_btyp_inh A2)) ->
     Γ ⊢[ m ] (exp_app e1 e2) ⇨ Sres
 where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope

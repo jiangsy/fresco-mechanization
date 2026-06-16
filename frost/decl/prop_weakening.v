@@ -102,32 +102,33 @@ Proof.
   apply d_sub_weakening. simpl. exact H.
 Qed.
 
-Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Ψ Q P,
-    d_refine_syn Ψ (Γ1 ++ Γ3) Q P ->
-    d_refine_syn Ψ (Γ1 ++ Γ2 ++ Γ3) Q P.
+Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Δs Δi Q P,
+    (Γ1 ++ Γ3) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
 Proof.
-  intros Γ1 Γ2 Γ3 Ψ Q P H.
+  intros Γ1 Γ2 Γ3 Δs Δi Q P H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_refine_syn__unit.
   - apply d_refine_syn__var.
-    match goal with H : _ \/ _ |- _ => destruct H as [HΨ | Hb] end;
-      [ left; assumption | right; analyze_binds Hb ].
+    match goal with H : _ \/ _ |- _ => destruct H as [HS | [HI | Hb]] end;
+      [ left; assumption | right; left; assumption | right; right; analyze_binds Hb ].
   - apply d_refine_syn__arrow; auto.
   - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ3)). intros X HX.
     eapply (H0 X ltac:(fsetdec) Γ1 Γ3). reflexivity.
   - apply d_refine_syn__hole. apply d_wf_pskl_weakening. assumption.
   - apply d_refine_syn__tophole_remove; auto.
-  - apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)). intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 X ltac:(fsetdec) ((X ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+  - (* [tophole_fill] now extends the syn context [Δs], not [Γ], so the
+       weakened [Γ] threads unchanged through the premise. *)
+    apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)). intros X HX.
+    eapply (H0 X ltac:(fsetdec) Γ1 Γ3). reflexivity.
   - apply d_refine_syn__tophole_keep; [ assumption | auto ].
 Qed.
 
 
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ R Q,
-    d_pat_consis Δ (Γ1 ++ Γ3) R Q ->
-    d_pat_consis Δ (Γ1 ++ Γ2 ++ Γ3) R Q.
+    Δ ⨟ (Γ1 ++ Γ3) ⊨ₛ R ≈ Q ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊨ₛ R ≈ Q.
 Proof.
   intros Γ1 Γ2 Γ3 Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -159,8 +160,8 @@ Proof.
 Qed.
 
 Lemma d_pat_sub_weakening : forall Γ1 Γ2 Γ3 m Δ R Q,
-    d_pat_sub m Δ (Γ1 ++ Γ3) R Q ->
-    d_pat_sub m Δ (Γ1 ++ Γ2 ++ Γ3) R Q.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢ₛ[ m ] R ⊑ Q ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ[ m ] R ⊑ Q.
 Proof.
   intros Γ1 Γ2 Γ3 m Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -193,10 +194,10 @@ Qed.
 Combined Scheme d_typing_pat_mutind from d_typing_mut, d_pat_mut.
 
 Lemma d_typing_pat_weakening : forall Γ2,
-  (forall m Γ e B, d_typing m Γ e B ->
-     forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> d_typing m (Γ1 ++ Γ2 ++ Γ3) e B) /\
-  (forall m Γ e Q, d_pat m Γ e Q ->
-     forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> d_pat m (Γ1 ++ Γ2 ++ Γ3) e Q).
+  (forall m Γ e B, Γ ⊢[ m ] e ⦂ B ->
+     forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B) /\
+  (forall m Γ e Q, Γ ⊢[ m ] e ⇨ Q ->
+     forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ Q).
 Proof.
   intros Γ2. apply d_typing_pat_mutind.
   (* d_typing__unit *)
@@ -292,16 +293,16 @@ Proof.
 Qed.
 
 Lemma d_typing_weakening : forall Γ1 Γ2 Γ3 m e B,
-    d_typing m (Γ1 ++ Γ3) e B ->
-    d_typing m (Γ1 ++ Γ2 ++ Γ3) e B.
+    (Γ1 ++ Γ3) ⊢[ m ] e ⦂ B ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B.
 Proof.
   intros Γ1 Γ2 Γ3 m e B H.
   eapply (proj1 (d_typing_pat_weakening Γ2)); [ exact H | reflexivity ].
 Qed.
 
 Lemma d_pat_weakening : forall Γ1 Γ2 Γ3 m e Q,
-    d_pat m (Γ1 ++ Γ3) e Q ->
-    d_pat m (Γ1 ++ Γ2 ++ Γ3) e Q.
+    (Γ1 ++ Γ3) ⊢[ m ] e ⇨ Q ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ Q.
 Proof.
   intros Γ1 Γ2 Γ3 m e Q H.
   eapply (proj2 (d_typing_pat_weakening Γ2)); [ exact H | reflexivity ].
@@ -319,23 +320,23 @@ Inductive ctx_weaken : list (atom * dbind) -> list (atom * dbind) -> Prop :=
     ctx_weaken (Γ1 ++ Γ3) Γ'.
 
 Lemma d_typing_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall m e B, d_typing m Γ e B -> d_typing m Γ' e B.
+    ctx_weaken Γ Γ' -> forall m e B, Γ ⊢[ m ] e ⦂ B -> Γ' ⊢[ m ] e ⦂ B.
 Proof.
   induction 1; intros m e B Hty; [ assumption | ].
   apply IHctx_weaken. apply d_typing_weakening. exact Hty.
 Qed.
 
 Lemma d_pat_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall m e Q, d_pat m Γ e Q -> d_pat m Γ' e Q.
+    ctx_weaken Γ Γ' -> forall m e Q, Γ ⊢[ m ] e ⇨ Q -> Γ' ⊢[ m ] e ⇨ Q.
 Proof.
   induction 1; intros m e Q Hp; [ assumption | ].
   apply IHctx_weaken. apply d_pat_weakening. exact Hp.
 Qed.
 
 Lemma d_refine_syn_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall Ψ Q P, d_refine_syn Ψ Γ Q P -> d_refine_syn Ψ Γ' Q P.
+    ctx_weaken Γ Γ' -> forall Δs Δi Q P, Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P -> Γ' ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
 Proof.
-  induction 1; intros Ψ Q P Hr; [ assumption | ].
+  induction 1; intros Δs Δi Q P Hr; [ assumption | ].
   apply IHctx_weaken. apply d_refine_syn_weakening. exact Hr.
 Qed.
 

@@ -8,9 +8,22 @@ Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
+Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 
 Set Implicit Arguments.
+
+(** [bskl_to_pskl] preserves guardedness ([guarded] only ranges over
+    unit / var / arrow, all of which [bskl_to_pskl] maps homomorphically;
+    the arrow case needs local-closure preservation [lc_bskl_to_pskl]). *)
+Lemma guarded_bskl_to_pskl : forall Q,
+    guarded_bskl Q -> guarded_pskl (bskl_to_pskl Q).
+Proof.
+  intros Q H. induction H; simpl.
+  - apply guarded_pskl__unit.
+  - apply guarded_pskl__var.
+  - apply guarded_pskl__arrow; apply lc_bskl_to_pskl; assumption.
+Qed.
 
 (** * list_disjoint algebra. *)
 

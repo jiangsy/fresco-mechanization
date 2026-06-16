@@ -17,7 +17,7 @@ Notation "Γ ⊢ᵤₜ C" := (d_wf_utyp Γ C)
   (at level 75, C at level 75, no associativity) : type_scope.
 
 Notation "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R)
-  (at level 75, Γ at level 75, R at level 75, no associativity) : type_scope.
+  (at level 75, Γ at level 74, R at level 75, no associativity) : type_scope.
 
 (** ** Shallow subtyping (separate from main d_sub). *)
 
@@ -32,6 +32,5 @@ Notation "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R)
     [Γ ⊢ A ≤ B].  (The former uncoloured [▸] relation was dropped to
     match the paper's single coloured refinement relation.) *)
 
-Notation "Ψ ⨟ Γ ⊢ᵣ P ⊳ Q" := (d_refine_syn Ψ Γ P Q)
-  (at level 75, Γ at level 75, P at level 74, Q at level 74, no associativity)
-  : type_scope.
+(* Notation now declared inline in [decl/def_extra.v] via the [where]
+   clause: [Γ ⊢ᵣ[ S ⨟ I ] Q ⊳ P] with the three-context refinement. *)

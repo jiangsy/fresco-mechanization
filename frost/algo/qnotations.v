@@ -56,9 +56,9 @@ Notation "Δ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Δ Γ C B)
 Notation "Δ ⨟ Γ ⊨ C ≈ B" := (d_consis Δ Γ C B)
   (in custom decl at level 80, Δ constr at level 0, Γ constr at level 0,
    C constr at level 0, B constr at level 0).
-Notation "Ψ ⨟ Γ ⊢ᵣ Q ⊳ P" := (d_refine_syn Ψ Γ Q P)
-  (in custom decl at level 80, Ψ constr at level 0, Γ constr at level 0,
-   Q constr at level 0, P constr at level 0).
+Notation "Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P" := (d_refine_syn Γ Δs Δi Q P)
+  (in custom decl at level 80, Γ constr at level 0, Δs constr at level 0,
+   Δi constr at level 0, Q constr at level 0, P constr at level 0).
 Notation "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q)
   (in custom decl at level 80, Δ constr at level 0, Γ constr at level 0,
    R constr at level 0, Q constr at level 0).
