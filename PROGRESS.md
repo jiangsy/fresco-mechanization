@@ -90,7 +90,7 @@ than faithful paper mechanizations**.
 
 | Flagship | Paper claim | Current Coq name | Faithfulness |
 |---|---|---|---|
-| D1 General subsumption | `Γ ⊢[TI] M ⦂ syn{A}` and `Γ ⊢[M] syn{A} ⊑ bid{B}` imply `Γ ⊢[M] M ⦂ bid{B}` | `d_typing_general_subsumption`, `d_typing_general_subsumption_via_gen` | 🟡 **faithful statement shape, proof admitted**. Current statement quantifies `A : ptyp`, assumes `Γ ⊢[TI] e ⦂ ptyp_to_btyp_syn A`, and subtypes from `ptyp_to_utyp_syn A`; no erased/repainted arbitrary `btyp` remains. |
+| D1 General subsumption | `Γ ⊢[TI] M ⦂ syn{A}` and `Γ ⊢[M] syn{A} ⊑ bid{B}` imply `Γ ⊢[M] M ⦂ bid{B}` | `d_typing_general_subsumption` | 🟡 **faithful statement shape, proof admitted**. Current statement quantifies `A : ptyp`, assumes `Γ ⊢[TI] e ⦂ ptyp_to_btyp_syn A`, and subtypes from `ptyp_to_utyp_syn A`; no erased/repainted arbitrary `btyp` remains. |
 | D12 Generalised General Subsumption | `FN^n TI` typing plus mode/type compatibility plus generalized subtyping implies `FN^n M` typing | `d_typing_general_subsumption_gen` | 🟡 **close but incomplete**. Uses `is_fn_n_ti` and `mode_fn_n_subst`, which matches `FN^n`; generalized subtyping now uses native `gutyp` for the paper's generalized unresolved `bid{T}`. Missing explicit paper premise `skmod[TY] (FN^n TI) bid{A}` and relies on scaffold `d_sub_gen`. Proof is admitted. |
 | Algorithmic type inference soundness | If the algorithm answers a type-inference question, its output is a solution | `a_typing_sound` | 🔴 **not faithful**. Current `a_typing` has one permissive constructor and current `a_transfers` relates any algorithmic context to any declarative context. |
 | Algorithmic type inference completeness/minimality | If a solution exists, the algorithm returns a minimal solution | `a_typing_complete` | 🔴 **not faithful**. Current statement is only declarative-to-algorithmic existence; it does not mention paper questions, solutions, metasubstitution factorization, consistency of outputs, or minimality. |
@@ -149,7 +149,7 @@ and is no longer the current status of the repository.
 
 **Flagship theorems (D1 / D12):** ⚠️ **NOT** "Closed under the global
 context" post-δ. `Print Assumptions` on
-`d_typing_general_subsumption_via_gen` and `_gen` lists **8 axioms**
+`d_typing_general_subsumption` and `_gen` lists **8 axioms**
 (was 10 after Phase 0; 4 nominally closed in Phases 1A-1C, but
 `d_sub_mono_RHS_eq` + `d_consis_LHS_mono_wf` re-surfaced via
 `d_sub_gen_trans_forall_l_untagged_helper`'s residual admit chain
@@ -278,7 +278,7 @@ The 6 leaking axioms split into two patterns, each needing one structural fix:
 
 After Pattern A + Pattern B fixes:
 
-- [ ] `Print Assumptions d_typing_general_subsumption_via_gen` → `Closed under the global context`.
+- [ ] `Print Assumptions d_typing_general_subsumption` → `Closed under the global context`.
 - [ ] `Print Assumptions d_typing_general_subsumption_gen` → `Closed under the global context`.
 - [ ] Update PROGRESS.md status banner: 🟢 GREEN + flagship theorems closed.
 - [ ] Update the 4 provably-false lemma entries in Part 1 to reflect their now-unused status.
@@ -319,7 +319,7 @@ Counts against paper-stated signatures only. A `d_wf_denv Γ` precondition that 
 ## Declarative metatheory (`paper/sections/declarative.tex`, `paper/sections/syntax-directed.tex`)
 
 Mech statements use the notations from [`frost/decl/notations.v`](frost/decl/notations.v):
-`Γ ⊢[ M ] e ⦂ A` for `d_typing`, `Γ ⊢[ M ] e ⇨ P` for `d_pat`, `Δ ⨟ Γ ⊢[ M ] T ⊑ A` for `d_sub`, `Δ ⨟ Γ ⊨ T ≈ A` for `d_consis`, `Γ ⊢ A ≤ B` for `d_shallow_sub`, `Ψ ⨟ Γ ⊢ₛₖ P` for `d_wf_skel`, `Ψ ⨟ Γ ⊢ᵣ P ▸ Q` for `d_refine`, `Ψ ⨟ Γ ⊢ᵣ P ⊳ Q` for `d_refine_syn`. The "gen" relations (`d_typing_gen`, `d_consis_gen`, `d_sub_gen`) and `d_wf_typ` have no dedicated notation — application form used.
+`Γ ⊢[ M ] e ⦂ A` for `d_typing`, `Γ ⊢[ M ] e ⇨ P` for `d_pat`, `Δ ⨟ Γ ⊢[ M ] T ⊑ A` for `d_sub`, `Δ ⨟ Γ ⊨ T ≈ A` for `d_consis`, `Γ ⊢ A ≤ B` for `d_shallow_sub`, `Ψ ⨟ Γ ⊢ₚₛ P` for `d_wf_pskl` (and `Ψ ⨟ Γ ⊢ᵤₛ P` for `d_wf_uskl`), `Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P` for `d_refine_syn` (three contexts: Γ = existing tvars, Δs = synthesised-∀ tvars, Δi = inherited-∀ tvars). The "gen" relations (`d_typing_gen`, `d_consis_gen`, `d_sub_gen`) and `d_wf_typ` have no dedicated notation — application form used.
 
 Paper labels resolved to file:line in the auto-managed block at end of file (regenerate with `python3 scripts/sync_paper_refs.py --md`). Lemmas without a `\label{...}` in the paper source carry a plain `paper:LINE` ref + a `(no label)` marker.
 
@@ -328,8 +328,8 @@ Paper labels resolved to file:line in the auto-managed block at end of file (reg
 | D1 | [Lemma 3.1: General subsumption][lemma:general-subsumption] | **Mech:** `d_typing_general_subsumption` [`prop_general_subsumption.v`](frost/decl/prop_general_subsumption.v):<br>`d_wf_denv Γ → Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A → empty ⨟ Γ ⊢[ m ] ptyp_to_utyp_syn A ⊑ B → Γ ⊢[ m ] e ⦂ B`<br>**Paper:** `If Γ ⊢_TI M ⇒ syn{A} and Γ ⊢_M syn{A} ≤ bid{B}, then Γ ⊢_M M ⇒ bid{B}` (LaTeX: `\typp[\TI]{\Gamma}{M}{\syn{A}}`, `\typsub[\M]{\Gamma}{\syn{A}}{\bid{B}}`, `\typp[\M]{\Gamma}{M}{\bid{B}}`) | 🟢 **`Qed`, "Closed under the global context"** (`Print Assumptions`, `README.v` L36). The `n=0` corollary of `d_typing_general_subsumption_spine` (paper Lemma B.5). See the 2026-06-14 status block for the proof architecture. |
 | D2 | Soundness of subtyping (paper [declarative.tex:1101](../paper/sections/declarative.tex#L1101), no `\label`) | **Mech:** `d_sub_sound` [`prop_sub_sound.v`](frost/decl/subtyping/prop_sub_sound.v):<br>`is_typ A → nil ⨟ Γ ⊢[ mode_tc ] A ⊑ B → Γ ⊢ A ≤ B`<br>**Paper:** for `mode_tc` subtyping, the conclusion is shallow-subtypeable. | 🟡 narrowed with `is_typ A` so LHS is `typ_all_col` flavour (matches `d_shallow_sub` shape) |
 | D3 | No guessing of polytypes (paper [declarative.tex:1108](../paper/sections/declarative.tex#L1108), no `\label`) | **Mech:** `d_sub_no_guess_uniqueness` [`prop_sub_sound.v:215`](frost/decl/subtyping/prop_sub_sound.v#L215):<br>two instantiations `ph1`, `ph2` of same `d_sub` derivation imply `ph1 = ph2`<br>**Paper:** intuition that the polytype guessing `ph` in `d_sub__forall_l_tagged` is uniquely determined. | ⚠️ paper-flagged — counter-example inlined (`ph` can absorb into nested `forall_l_tagged` chains); paper revision suggested |
-| D4 | Refinement preserves wf (paper [declarative.tex:1386](../paper/sections/declarative.tex#L1386), no `\label`) | **Mech:** `d_refine_preserves_wf` [`prop_wellformed.v:766`](frost/decl/prop_wellformed.v#L766):<br>`Ψ ⨟ Γ ⊢ₛₖ P → Ψ ⨟ Γ ⊢ᵣ P ▸ Q → Ψ ⨟ Γ ⊢ₛₖ Q` (coloured variant `d_refine_syn_preserves_wf` also Qed) | 🟢 |
-| D5 | Preservation of skeleton wf (paper [declarative.tex:1976](../paper/sections/declarative.tex#L1976), no `\label`) | **Mech:** `d_pat_preserves_skel_wf` [`prop_skeleton.v:128`](frost/decl/prop_skeleton.v#L128):<br>`Γ ⊢[ mode_tc ] e ⇨ P → d_wf_denv Γ → nil ⨟ Γ ⊢ₛₖ P` | 🟢 narrowed via `d_pat_*_preserves_wf` with `is_syn_skel P` side hypothesis |
+| D4 | Refinement preserves wf (paper [declarative.tex:1386](../paper/sections/declarative.tex#L1386), no `\label`) | **Mech:** `d_refine_preserves_wf` [`prop_skeleton.v`](frost/decl/prop_skeleton.v):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P → (Δs ++ Δi) ⨟ Γ ⊢ₚₛ (bskl_to_pskl P)` | 🟢 **`Qed`, "Closed under the global context"** |
+| D5 | Preservation of skeleton wf (paper [declarative.tex:1976](../paper/sections/declarative.tex#L1976), no `\label`) | **Mech:** `d_pat_preserves_skel_wf` [`prop_skeleton.v:128`](frost/decl/prop_skeleton.v#L128):<br>`Γ ⊢[ mode_tc ] e ⇨ P → d_wf_denv Γ → nil ⨟ Γ ⊢ₚₛ P` | 🟢 narrowed via `d_pat_*_preserves_wf` with `is_syn_skel P` side hypothesis |
 | D6 | Validity of skeleton inference (paper [declarative.tex:1987](../paper/sections/declarative.tex#L1987), no `\label`) | **Mech:** `d_pat_validity` [`prop_skeleton.v:154`](frost/decl/prop_skeleton.v#L154):<br>`Γ ⊢[ m ] e ⇨ P → d_wf_denv Γ → (∃ A, Γ ⊢[ m ] e ⦂ A) → ∃ B, Γ ⊢[ m ] e ⦂ B ∧ nil ⨟ Γ ⊢ᵣ P ▸ B` | 🟠 depends on refinement reflexivity (guarded skeletons) + anti-symmetry with `d_typing__sub` |
 | D7 | Safety of skeleton inference (paper [declarative.tex:1992](../paper/sections/declarative.tex#L1992), no `\label`) | **Mech:** `d_pat_safety` [`prop_skeleton.v:180`](frost/decl/prop_skeleton.v#L180):<br>`(∃ A, Γ ⊢[ m ] e ⦂ A) → d_wf_denv Γ → ∃ P, Γ ⊢[ m ] e ⇨ P ∧ (∀ B, Γ ⊢[ m ] e ⦂ B → nil ⨟ Γ ⊢ᵣ P ▸ B)` | 🟠 universal "refines every type" — needs principal-skeleton construction (join under refinement) |
 | D8 | General Subsumption (syntax-directed, paper [syntax-directed.tex:3](../paper/sections/syntax-directed.tex#L3), no `\label`) | (same as D1) | n/a — duplicate of D1; mech has one declarative system |
@@ -344,9 +344,9 @@ Paper labels resolved to file:line in the auto-managed block at end of file (reg
 
 | # | Paper lemma | Mech & paper statement | Status |
 |---|---|---|---|
-| A1 | [Lemma D.2: Stability][lemma:stability] | **Mech:** `stability_d_typing` [`prop_soundness.v:620`](frost/algo/prop_soundness.v#L620) + 8 siblings:<br>`aenv_extends Θ0 Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ0 ⊢[ m ] e ⦂ A → Γ1 ⊢[ m ] e ⦂ A` (same shape for `_d_wf_typ`, `_d_consis`, `_d_sub`, `_d_pat_consis`, `_d_pat_sub`, `_d_refine`, `_d_refine_syn`, `_d_pat`)<br>**Paper:** "All statements in this paper are stable" — for every judgment `J` and `Θ₀ ≤ Θ₁`, `Θ₀ ⊢ J ⇒ Θ₁ ⊢ J`. | 🟢 9 of 9 |
+| A1 | [Lemma D.2: Stability][lemma:stability] | **Mech:** `stability_d_typing` [`prop_soundness.v:620`](frost/algo/prop_soundness.v#L620) + 7 siblings:<br>`aenv_extends Θ0 Θ1 → a_transfers Θ0 Γ0 → a_transfers Θ1 Γ1 → Γ0 ⊢[ m ] e ⦂ A → Γ1 ⊢[ m ] e ⦂ A` (same shape for `_d_wf_typ`, `_d_consis`, `_d_sub`, `_d_pat_consis`, `_d_pat_sub`, `_d_refine_syn`, `_d_pat`)<br>**Paper:** "All statements in this paper are stable" — for every judgment `J` and `Θ₀ ≤ Θ₁`, `Θ₀ ⊢ J ⇒ Θ₁ ⊢ J`. | 🟢 8 of 8 |
 | A2 | [Lemma D.3: Structural rules][lemma:structural] | **Mech:** `d_typing_suffix_moving_singleton` [`prop_typing.v`](frost/decl/prop_typing.v) + `d_pat_suffix_moving_singleton`:<br>`Γ1 ++ y~b ++ Γ2 ⊢[ m ] e ⦂ A → y ∉ dom Γ1 → Γ1 ++ Γ2 ++ y~b ⊢[ m ] e ⦂ A`<br>**Paper:** SuffixMoving rule — moving a binding past a suffix preserves typing. | 🟢 narrowed to single-binding move; full n-binding form needs free-vars-of-context machinery |
-| A3 | [Lemma D.4: Splitting refines][lemma:split-refine] | **Mech:** `d_refine_arrow_split` [`prop_skeleton.v:25`](frost/decl/prop_skeleton.v#L25) + 7 siblings (`_all_plain_split`, `_hole_split`, `_tophole_split`, syn-painted variants):<br>`Ψ ⨟ Γ ⊢ᵣ typ_arrow P1 P2 ▸ Q → ∃ Q1 Q2, Q = typ_arrow Q1 Q2 ∧ Ψ ⨟ Γ ⊢ᵣ P1 ▸ Q1 ∧ Ψ ⨟ Γ ⊢ᵣ P2 ▸ Q2`<br>**Paper:** `If Θ₀ ⊢ split[P₀][P₁] ⇒ Θ₁, then Θ₁ ⊢ inh{P₀} fillsyn inh{P₁}` (LaTeX: `\mov{\Theta_0}{\split[P_0][P_1]{}}{\Theta_1}`, `\Theta_1\vdash\inh{P_0}\fillsyn\inh{P_1}`) | 🟢 8 of 8 |
+| A3 | [Lemma D.4: Splitting refines][lemma:split-refine] | **Mech:** `d_refine_arrow_split` [`prop_skeleton.v:25`](frost/decl/prop_skeleton.v#L25) + 7 siblings (`_all_plain_split`, `_hole_split`, `_tophole_split`, syn-painted variants):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ typ_arrow P1 P2 → ∃ Q1 Q2, Q = typ_arrow Q1 Q2 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q1 ⊳ P1 ∧ Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q2 ⊳ P2`<br>**Paper:** `If Θ₀ ⊢ split[P₀][P₁] ⇒ Θ₁, then Θ₁ ⊢ inh{P₀} fillsyn inh{P₁}` (LaTeX: `\mov{\Theta_0}{\split[P_0][P_1]{}}{\Theta_1}`, `\Theta_1\vdash\inh{P_0}\fillsyn\inh{P_1}`) | 🟢 8 of 8 |
 | A4 | [Lemma D.5: Consistency extends subtyping][lemma:consis-sub] | — (NOT mechanized; distinct from D10/B.3) | 🔴 D.5 is stated over algorithmic `allsub` / `consistent`, distinct from D10/B.3 (declarative `d_consis` + `d_sub`). `d_consis_sub_trans` (D10) is NOT a mechanization of D.5; earlier docs conflated the two. Paper: `If Θ ⊢ consistent(P, P') and ⊢_{N,M} Θ P ⊑ Q, then ⊢_{N,M} Θ P' ⊑ Q`. |
 | A5 | [Lemma D.6: Substitution preserves safety][lemma:safety-preservation] | — | 🔴 paper proof is "obvious — θ monotype only"; corollary of typ-subst preservation (itself admitted) |
 | A6 | [Lemma D.7: Substitution preserves informativeness][lemma:informativeness-preservation] | — | 🔴 same |
@@ -429,6 +429,18 @@ order `a_morepoly`, skeleton splitting `a_skel_split`, type equivalence
 # Part 2: Daily progress
 
 Session-by-session closure log. Most recent first.
+
+## 2026-06-16 — `d_refine_syn` three-context refactor + D4 closed (`d_refine_preserves_wf` Qed)
+
+- `d_refine_syn` refactored to three contexts (`Γ ⨟ Δs ⨟ Δi`): Γ =
+  existing tvars, Δs = synthesised-∀ tvars, Δi = inherited-∀ tvars.
+- `d_refine_preserves_wf` (D4) closed — `Qed`, "Closed under the global
+  context" — in [`prop_skeleton.v`](frost/decl/prop_skeleton.v), now
+  stated `Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P → (Δs ++ Δi) ⨟ Γ ⊢ₚₛ (bskl_to_pskl P)`.
+  Helper lemmas added: `d_wf_pskl_Psi_mono`, `guarded_bskl_to_pskl`,
+  `lc_bskl_to_pskl`.
+- All `⨟`-judgment notation middle slots moved to level 74 for the
+  triple-`⨟` chain.
 
 ## 2026-06-16 — Algorithmic system made uncoloured (ptyp/pskl); algo defs filled in; subtyping-soundness proof started
 
@@ -816,7 +828,7 @@ side condition. Nothing yet consumes these (algo soundness/completeness
 remain HEADLINE admits), so this is a definition port only.
 
 **Verification.** `make coq` green. `Print Assumptions` on
-`d_typing_general_subsumption_via_gen` / `_gen` reports only the two
+`d_typing_general_subsumption` / `_gen` reports only the two
 pre-existing flagship admits (`d_typing_general_subsumption`,
 `d_typing_general_subsumption_gen`) — this sync introduced no new
 axioms.
@@ -1335,7 +1347,7 @@ patching scope: estimated 20–50 more bullet additions across
 `prop_general_subsumption.v`, `prop_typing.v`, and possibly Phase 3
 algo files.
 
-**Flagship-theorem risk.** D1 / D12 (`d_typing_general_subsumption_via_gen`
+**Flagship-theorem risk.** D1 / D12 (`d_typing_general_subsumption`
 and `_gen`) almost certainly no longer "Closed under the global
 context": both rely transitively on `d_consis_gen_trans` (WHOLESALE
 admit). `Print Assumptions` re-check is gated on the build coming back
@@ -1355,7 +1367,7 @@ work (the original motivation).
 
 **Commit:** `64545d1` — "mech: eliminate both D1/D12 transitive axioms (2 → 0)"
 
-`Print Assumptions d_typing_general_subsumption_via_gen` now reports **"Closed under the global context"**.
+`Print Assumptions d_typing_general_subsumption` now reports **"Closed under the global context"**.
 
 - **Axiom 1 closed** (`d_consis_sub_trans`, paper Lemma B.3): added `d_wf_typ Γ T` premise + new helper `d_consis_RHS_syn_color_eq` (mirror of `d_consis_gen_RHS_syn_color_eq`). Rules out the unsound `typ_all_etag` LHS that the post-refactor `d_consis__forall_syn` rule otherwise admits. Caller `d_typing_sub_compose` discharges the premise via `d_typing_pat_preserves_wf`.
 - **Axiom 2 closed** (`d_typing_gen_lift_mono __app`): broken via `Hbody_at_tc` parameter on the 6 TC SPLIT helpers in `prop_subsumption_aux.v`. Internal `lift_mono` calls replaced by `apply Hbody_at_tc`. D12 constructs `Hbody_at_tc` from its own `IHbody` (`H1`) at `m_new := mode_tc` with `d_sub_gen__refl_mono` on the mono body type. The 2 direct `lift_mono` calls in `prop_general_subsumption.v` also replaced by `IHbody` at `m_inner`. `d_typing_gen_lift_mono` itself remains Admitted but is no longer transitively reachable from D12.

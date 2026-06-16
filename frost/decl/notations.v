@@ -33,4 +33,5 @@ Notation "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R)
     match the paper's single coloured refinement relation.) *)
 
 (* Notation now declared inline in [decl/def_extra.v] via the [where]
-   clause: [Γ ⊢ᵣ[ S ⨟ I ] Q ⊳ P] with the three-context refinement. *)
+   clause: [Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P], the three-context refinement (Γ
+   existing tvars, Δs synthesised-∀ tvars, Δi inherited-∀ tvars). *)

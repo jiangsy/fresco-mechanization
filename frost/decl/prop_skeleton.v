@@ -77,6 +77,39 @@ Proof.
       intros Y HY. inversion HY.
 Qed.
 
+(** Refinement reflexivity for the inh-painted skeleton of a type.  A
+    type's skeleton [ptyp_to_pskl A] has no ghosts, so refinement on it is
+    purely structural: it refines to itself, with each ∀ matched by the
+    [bskl_all_inh] rule.  Stated with a scope-coverage premise (rather than
+    [d_wf_ptyp]) so the [all] case can route the bound var into [Δi] — the
+    inherited-quantifier context — which is exactly where the refinement
+    [all] rule puts it.  This is the engine for [d_pat_validity]'s base
+    cases (inferred skeleton already equal to the type's skeleton). *)
+Lemma d_refine_syn_refl_inh : forall A,
+    lc_ptyp A ->
+    forall Γ Δs Δi,
+      (forall X, X `in` ftvar_in_ptyp A ->
+         List.In X Δs \/ List.In X Δi \/ binds X dbind_tvar Γ) ->
+      Γ ⨟ Δs ⨟ Δi ⊢ᵣ
+        (pskl_to_bskl_inh (ptyp_to_pskl A)) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
+Proof.
+  intros A Hlc. induction Hlc; intros Γ Δs Δi Hcov; simpl.
+  - (* unit *) apply d_refine_syn__unit.
+  - (* var_f X *) apply d_refine_syn__var. apply Hcov. simpl. fsetdec.
+  - (* arrow *) apply d_refine_syn__arrow;
+      [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; simpl; fsetdec.
+  - (* all: bound var → Δi, matching the [bskl_all_inh] refine rule *)
+    inst_cofinites_for d_refine_syn__all. intros X HX.
+    rewrite <- pskl_to_bskl_inh_open. rewrite <- ptyp_to_pskl_open.
+    apply H0. intros Y HY.
+    apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + (* Y = X *) right. left. apply AtomSetImpl.singleton_1 in HY. simpl. left. assumption.
+    + (* Y ∈ ftvar A *) specialize (Hcov Y HY).
+      destruct Hcov as [HS | [HI | HG]];
+        [ left; assumption | right; left; simpl; right; assumption | right; right; assumption ].
+Qed.
+
 (** * Paper-facing skeleton properties.
 
     The statements below are native to the new syntax. They remain
@@ -95,7 +128,35 @@ Qed.
 (** Paper "Validity of skeleton inference" (declarative.tex): a well-typed
     [M] with inferred skeleton [Γ ⊢ti M ⇨ Q] yields a *valid* skeleton — some
     type [A] with [Γ ⊢tc M : inh A] and [Γ ⊢ inh{Q} ⊳ inh{A}] (the [fill]
-    judgment is the coloured refinement [d_refine_syn]).  Proof deferred. *)
+    judgment is the coloured refinement [d_refine_syn]).
+
+    PROOF ROADMAP (not a single induction on [d_pat]).  Three obligations:
+
+    1. PAINTING.  As written the refinement is [Q ⊳ inh{A}] with the raw
+       (possibly syn-painted) inferred [Q] on the left.  [d_refine_syn] has
+       NO rule with [bskl_all_syn] on the left, so this is stuck whenever
+       [Q] carries a concrete synthesised quantifier (e.g. an annotation
+       [(e : ∀α.A)]).  The faithful, provable statement paints the LHS
+       inherited too — matching the *only* consumer of refinement,
+       [d_typing__app], which uses [pskl_to_bskl_inh _ ⊳ pskl_to_bskl_inh _].
+       I.e. replace the LHS by [pskl_to_bskl_inh (bskl_to_pskl Q)] (this is
+       the paper's *uncoloured* [fill], encoded by painting both sides the
+       same colour; cf. the WT note at [def_extra.v]).
+
+    2. MUTUAL COMPANION.  [d_pat] and [d_typing] are mutually defined, and
+       variables carry DIFFERENT binders in the two: [d_pat__var] reads
+       [dbind_skl P], [d_typing__var] reads [dbind_typ A].  So validity must
+       be proved by mutual induction with a [d_typing]-side statement, under
+       a context-coherence relation linking the [dbind_skl]/[dbind_typ]
+       views (a well-typed-skeleton-context invariant).
+
+    3. PER-CASE ENGINE.  With the painting fix, the structural cases close
+       with [d_refine_syn_refl_inh] (proved above) — the inh-painted
+       skeleton of the witnessed type [A] refines to itself; and
+       [d_refine_preserves_wf] handles the well-formedness side.  The [app]
+       case threads the argument's skeleton/refinement (the [d_pat__app] /
+       [d_typing__app] premises) and is where universal ghosts may be
+       dropped (connecting to the safety story below). *)
 Theorem d_pat_validity : forall Γ e Q,
     Γ ⊢[ mode_ti ] e ⇨ Q ->
     (exists B, Γ ⊢[ mode_ti ] e ⦂ B) ->
@@ -105,9 +166,25 @@ Theorem d_pat_validity : forall Γ e Q,
 Proof.
 Admitted.
 
-(** Paper "Safety of skeleton inference" (declarative.tex): a well-typed [M]
-    has an inference [Γ ⊢ti M ⇨ Q] whose [Q] is *safe* — it fills *every*
-    checking type [A] (and hence is valid).  Proof deferred. *)
+(** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
+    well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
+    *safe* — it fills *every* checking type [A].
+
+    This is an **existential** over inference derivations, and it holds.
+    The paper's WT note (declarative.tex:1956) that declarative inference
+    "does not *always* give safe skeletons" is the **universal** statement
+    — not every derivation is safe, because inference is non-deterministic
+    ([tophole_remove]/[keep]/[fill] are distinct rules; [ForallL] may pick
+    a ghost or a monotype) and some choices drop universal ghosts or guess
+    monotypes.  Safety only asks for *one* good derivation, which always
+    exists (the algorithmic inference is precisely a decision procedure
+    that computes such a [Q], and it is sound w.r.t. this declarative
+    relation).
+
+    Proof deferred: it needs the safe-skeleton *construction* (choose
+    ghost-keeping refinements / ghost instantiations), essentially the
+    declarative shadow of the algorithm.  See also the coloured-vs-
+    uncoloured refinement caveat on [d_pat_validity] above. *)
 Theorem d_pat_safety : forall Γ e,
     (exists B, Γ ⊢[ mode_ti ] e ⦂ B) ->
     d_wf_denv Γ ->

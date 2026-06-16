@@ -163,30 +163,29 @@ type. Used to disambiguate `single id` (returns `∀a. a→a List`) vs
 Roughly the dependency DAG:
 
 ```text
-d_wf_typ ⊆ {d_wf_ttyp, d_wf_utyp} ⊆ d_wf_skel ⊆ {d_wf_tskel, d_wf_uskel}
+d_wf_typ ⊆ {d_wf_ttyp, d_wf_utyp} ⊆ d_wf_pskl ⊆ {d_wf_tskel, d_wf_uskel}
                       │
                       ▼
                  d_consis  ── d_sub  ── d_shallow_sub
                       │         │
                       ▼         ▼
                  d_pat_consis ── d_pat_sub
-                      │              │
-                      ▼              ▼
-                 d_refine_syn    d_refine
-                      │              │
-                      └──────────────┘
-                              │
-                              ▼
+                      │
+                      ▼
+                 d_refine_syn
+                      │
+                      ▼
                           d_typing  ⇄  d_pat       (mutual)
 ```
 
-Modes appear in `d_sub`, `d_pat_sub`, `d_refine`, `d_typing`, `d_pat`.
+Modes appear in `d_sub`, `d_pat_sub`, `d_refine_syn`, `d_typing`, `d_pat`.
 Tag contexts `Δ` thread through `d_consis`, `d_sub`, `d_pat_consis`,
 `d_pat_sub` (in a "linear use" discipline — disjoint at arrows,
 singleton at tagged ∀, empty at unit/var).
 
-The two-context split `Ψ | Γ` shows up only in skeleton-related
-judgments (`d_wf_skel`, `d_refine`, `d_refine_syn`). Term-typing
+The two-context split `Ψ ⨟ Γ` shows up in the skeleton well-formedness
+judgments (`d_wf_pskl`, `d_wf_uskl`); `d_refine_syn` is now
+**three-context** (`Γ ⨟ Δs ⨟ Δi`). Term-typing
 judgments use only `Γ`. `Ψ` tracks variables bound *inside* the
 current skeleton; arrow rules thread `Ψ` to both branches; `TopHole`
 rules **clear** `Ψ`.
@@ -380,7 +379,7 @@ appended-last. This makes the audit "does Coq cover the paper's δ
 spread for rule X?" a one-glance check.
 
 **Rule-body notation.** Notations for the 7 main judgments
-(`d_wf_skel`, `d_wf_ttyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
+(`d_wf_pskl`, `d_wf_ttyp`, `d_wf_tskel`, `d_consis`, `d_sub`,
 `d_pat_consis`, `d_pat_sub`) are declared as `Reserved Notation` at
 the top of `decl/def_extra.v` and bound via `where` clauses on each
 `Inductive`. Rule bodies use the notations directly — same reason:
@@ -475,7 +474,7 @@ the paper theorem without qualification**:
   separate regularity lemma if needed).
 - **Wf premises on intro rules.** `d_typing__abs` / `_abs_anno` /
   `d_pat__anno` / `d_pat__abs` carry explicit `d_wf_typ Γ A` /
-  `d_wf_skel nil Γ P`. The paper does not state these — they're
+  `d_wf_pskl nil Γ P`. The paper does not state these — they're
   regularity strengthenings the mechanization needs to close
   `d_typing_pat_preserves_wf`. Worth a paper footnote. (After the
   2026-05-15 re-encoding, `d_typing__abs` / `_abs_anno` wf premise is
@@ -495,7 +494,7 @@ is the single source of truth for which paper Lemma / Theorem is in
 which Coq file at which status. Don't track per-lemma status here —
 it WILL go stale.
 
-Top-line: D1 (`d_typing_general_subsumption_via_gen`) and D12
+Top-line: D1 (`d_typing_general_subsumption`) and D12
 (`d_typing_general_subsumption_gen`) were **Qed and "Closed under the
 global context"** as of commit `8701b4a` (2026-05-17, pre-δ-refactor).
 The in-progress δ-encoding refactor (commit `0bf2815`, §4.5 above)

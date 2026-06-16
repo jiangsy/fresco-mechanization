@@ -35,6 +35,44 @@ Proof.
     try (rewrite IHP1, IHP2; reflexivity).
 Qed.
 
+(** [ptyp_to_pskl] commutes with (recursive) opening. *)
+Lemma ptyp_to_pskl_open_rec : forall A V k,
+    ptyp_to_pskl (open_ptyp_wrt_ptyp_rec k V A) =
+    open_pskl_wrt_pskl_rec k (ptyp_to_pskl V) (ptyp_to_pskl A).
+Proof.
+  induction A; intros V k; simpl; try reflexivity;
+    try (rewrite IHA; reflexivity);
+    try (rewrite IHA1, IHA2; reflexivity).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+Qed.
+
+Lemma ptyp_to_pskl_open : forall A X,
+    ptyp_to_pskl (open_ptyp_wrt_ptyp A (ptyp_var_f X)) =
+    open_pskl_wrt_pskl (ptyp_to_pskl A) (pskl_var_f X).
+Proof.
+  intros. unfold open_ptyp_wrt_ptyp, open_pskl_wrt_pskl.
+  apply (ptyp_to_pskl_open_rec A (ptyp_var_f X) 0).
+Qed.
+
+(** [pskl_to_bskl_inh] commutes with (recursive) opening. *)
+Lemma pskl_to_bskl_inh_open_rec : forall P V k,
+    pskl_to_bskl_inh (open_pskl_wrt_pskl_rec k V P) =
+    open_bskl_wrt_bskl_rec k (pskl_to_bskl_inh V) (pskl_to_bskl_inh P).
+Proof.
+  induction P; intros V k; simpl; try reflexivity;
+    try (rewrite IHP; reflexivity);
+    try (rewrite IHP1, IHP2; reflexivity).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+Qed.
+
+Lemma pskl_to_bskl_inh_open : forall P X,
+    pskl_to_bskl_inh (open_pskl_wrt_pskl P (pskl_var_f X)) =
+    open_bskl_wrt_bskl (pskl_to_bskl_inh P) (bskl_var_f X).
+Proof.
+  intros. unfold open_pskl_wrt_pskl, open_bskl_wrt_bskl.
+  apply (pskl_to_bskl_inh_open_rec P (pskl_var_f X) 0).
+Qed.
+
 (** [bskl_to_pskl] preserves local closure (both ∀-colours collapse to
     [pskl_all_syn]). *)
 Lemma lc_bskl_to_pskl : forall Q,

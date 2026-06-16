@@ -209,8 +209,8 @@ before changing any of them.
   file is missing a lemma, add the corresponding declaration in
   `language.ott` (or hand-write the lemma in `prop_basic.v`).
 - When closing an admit, **always check `Print Assumptions` on the
-  flagship theorems** (`d_typing_general_subsumption_via_gen` /
-  `_gen`) to ensure you didn't accidentally introduce a new
+  flagship theorems** (`d_typing_general_subsumption` /
+  `d_typing_general_subsumption_gen`) to ensure you didn't accidentally introduce a new
   transitive axiom. The `make coq` tail prints both.
 
 ## Where things live (cheat sheet)

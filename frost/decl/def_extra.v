@@ -535,8 +535,14 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
 where "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q) : type_scope.
 
 (* Reworked (WT review) against the current paper looksub figure
-   (declarative.tex, [patsub]).  [d_pat_sub] has no metatheory consumers
-   yet, so this is a definition-only sync.  The dotted-ghost constructors
+   (declarative.tex, [patsub]).  [d_pat_sub] is used only as a premise of
+   [d_pat__sub] (the Sub rule of skeleton inference, paper [Sub] in
+   fig:decl-skeleton-inference).  No proof reasons about its *content*
+   (how skeleton subtyping behaves); the only consumer is the structural
+   [d_pat_sub_weakening], reached transitively from D1's [app] case via
+   [d_pat_ctx_weaken].  Its content-level consumers — Validity / Safety of
+   skeleton inference ([d_pat_validity] / [d_pat_safety]) — are still open.
+   The dotted-ghost constructors
    ([uskl_holeg]/[uskl_topholeg]) are now in the AST ([uskl] only — the
    paper's unresolved skeleton [S], declarative.tex:1638), so the paper
    rules [GhostG] ([HoleG ⊑ Hole]) and [UnivGhostLG] ([TopHoleG.S ⊑ P])
