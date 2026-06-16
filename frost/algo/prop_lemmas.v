@@ -83,21 +83,21 @@ Proof. induction θ as [|[α A] θ IH]; simpl; auto. Qed.
 (* ===================================================================== *)
 
 Lemma a_stable_d_typing : forall M Θ0 Θ1 e A,
-    d_typing M ⌊ Θ0 ⌋ e A ->
+    (⌊ Θ0 ⌋ ⊢[ M ] e ⦂ A) ->
     Θ0 ⊴ Θ1 ->
-    d_typing M ⌊ Θ1 ⌋ e A.
+    (⌊ Θ1 ⌋ ⊢[ M ] e ⦂ A).
 Proof. Admitted.
 
 Lemma a_stable_d_pat : forall M Θ0 Θ1 e P,
-    d_pat M ⌊ Θ0 ⌋ e P ->
+    (⌊ Θ0 ⌋ ⊢[ M ] e ⇨ P) ->
     Θ0 ⊴ Θ1 ->
-    d_pat M ⌊ Θ1 ⌋ e P.
+    (⌊ Θ1 ⌋ ⊢[ M ] e ⇨ P).
 Proof. Admitted.
 
 Lemma a_stable_d_sub : forall M Θ0 Θ1 C B,
-    d_sub M empty ⌊ Θ0 ⌋ C B ->
+    empty ⨟ ⌊ Θ0 ⌋ ⊢[ M ] C ⊑ B ->
     Θ0 ⊴ Θ1 ->
-    d_sub M empty ⌊ Θ1 ⌋ C B.
+    empty ⨟ ⌊ Θ1 ⌋ ⊢[ M ] C ⊑ B.
 Proof. Admitted.
 
 Lemma a_stable_d_consis : forall Θ0 Θ1 C B,
@@ -120,8 +120,8 @@ Proof. Admitted.
 
 Lemma a_structural_suffix_moving : forall M Θ1 Θ2 Ξ e A,
     a_suffix Ξ ->
-    d_typing M ⌊ Ξ ++ Θ2 ++ Θ1 ⌋ e A ->
-    d_typing M ⌊ Θ2 ++ Ξ ++ Θ1 ⌋ e A.
+    (⌊ Ξ ++ Θ2 ++ Θ1 ⌋ ⊢[ M ] e ⦂ A) ->
+    (⌊ Θ2 ++ Ξ ++ Θ1 ⌋ ⊢[ M ] e ⦂ A).
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -131,8 +131,8 @@ Proof. Admitted.
 Lemma a_suffix_erasure : forall M Θ Ξ e A,
     a_suffix Ξ ->
     (forall x, x `in` dom Ξ -> x `notin` ftvar_in_btyp A) ->
-    d_typing M ⌊ Ξ ++ Θ ⌋ e A ->
-    d_typing M ⌊ Θ ⌋ e A.
+    (⌊ Ξ ++ Θ ⌋ ⊢[ M ] e ⦂ A) ->
+    (⌊ Θ ⌋ ⊢[ M ] e ⦂ A).
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -151,8 +151,8 @@ Proof. Admitted.
 
 Lemma a_consis_extends_sub : forall M Θ C B Bq,
     empty ⨟ ⌊ Θ ⌋ ⊨ C ≈ B ->
-    d_sub M empty ⌊ Θ ⌋ C Bq ->
-    d_sub M empty ⌊ Θ ⌋ (btyp_to_utyp_syn B) Bq.
+    empty ⨟ ⌊ Θ ⌋ ⊢[ M ] C ⊑ Bq ->
+    empty ⨟ ⌊ Θ ⌋ ⊢[ M ] (btyp_to_utyp_syn B) ⊑ Bq.
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -183,10 +183,10 @@ Proof. Admitted.
 
 Lemma a_context_precision_skeleton : forall M Θ Θ' P e Q,
     a_ctx_precise Θ' Θ ->
-    d_pat M ⌊ Θ ⌋ e Q ->
+    (⌊ Θ ⌋ ⊢[ M ] e ⇨ Q) ->
     nil ⨟ ⌊ Θ ⌋ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q ->
     exists Q',
-      d_pat M ⌊ Θ' ⌋ e Q' /\
+      (⌊ Θ' ⌋ ⊢[ M ] e ⇨ Q') /\
       nil ⨟ ⌊ Θ' ⌋ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q' /\
       a_precise Θ' Q' Q.
 Proof. Admitted.
@@ -217,7 +217,7 @@ Proof. Admitted.
 (* ===================================================================== *)
 
 Lemma a_more_information_no_harm : forall M Θ e A A',
-    d_typing M ⌊ Θ ⌋ e A ->
+    (⌊ Θ ⌋ ⊢[ M ] e ⦂ A) ->
     a_morepoly Θ A' A ->
-    d_typing M ⌊ Θ ⌋ e A'.
+    (⌊ Θ ⌋ ⊢[ M ] e ⦂ A').
 Proof. Admitted.

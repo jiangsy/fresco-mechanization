@@ -115,7 +115,7 @@ Definition a_pat_solution
     (M : mode) (Θ0 : aenv) (P0 : pskl) (e : exp)
     (θ1 : metasubst) (Θ1 : aenv) (P1 : pskl) : Prop :=
   Θ0 ≤[ θ1 ] Θ1 /\
-  d_pat M ⌊ Θ1 ⌋ e (pskl_to_bskl_syn P1) /\
+  (⌊ Θ1 ⌋ ⊢[ M ] e ⇨ (pskl_to_bskl_syn P1)) /\
   a_fillsyn Θ1 θ1 P0 (pskl_to_bskl_syn P1).
 
 Definition a_pat_solution_ex (M : mode) (Θ0 : aenv) (P0 : pskl) (e : exp) : Prop :=
@@ -140,7 +140,7 @@ Definition a_typing_solution
     (M : mode) (Θ0 : aenv) (P : pskl) (e : exp)
     (θ1 : metasubst) (Θ1 : aenv) (A : ptyp) : Prop :=
   Θ0 ≤[ θ1 ] Θ1 /\
-  d_typing M ⌊ Θ1 ⌋ e (ptyp_to_btyp_syn A) /\
+  (⌊ Θ1 ⌋ ⊢[ M ] e ⦂ (ptyp_to_btyp_syn A)) /\
   a_fillsyn Θ1 θ1 P (ptyp_to_bskl_inh A).
 
 Definition a_typing_solution_ex (M : mode) (Θ0 : aenv) (P : pskl) (e : exp) : Prop :=
