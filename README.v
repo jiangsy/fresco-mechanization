@@ -6,6 +6,9 @@ Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.decl.prop_stability.
+Require Import src.frost.algo.def_meta.
+Require Import src.frost.algo.def_question.
+Require Import src.frost.algo.prop_lemmas.
 Require Import src.frost.algo.prop_soundness.
 Require Import src.frost.algo.prop_completeness.
 
@@ -74,30 +77,66 @@ Check d_pat_validity.
                       → ∅ ⨟ Γ ⊢ᵣ Q ⊳ pskl_to_bskl_inh (ptyp_to_pskl A)) *)
 Check d_pat_safety.
 
-(* Paper Theorem 4.19 (soundness of algorithmic subtyping):
-     a_sub NM m P0 Θ0 B1 B2 Θ1  →  a_transfers Θ1 Γ
-       →  ∃ C, B1 = utyp_to_btyp C  ∧  ∅ ⨟ Γ ⊢[ m ] C ⊑ B2 *)
+(* === Algorithmic metatheory (faithful question / solution / optimality
+   layer, paper algorithmic.tex / proofs.tex / subtyping-proofs.tex).
+
+   The old [a_transfers] placeholder (which related *any* Θ to *any* Γ) is
+   replaced by:
+     - the metasubstitution / information-increase relation [a_inc] /
+       [a_isub] (paper fig:information-increase), in [algo/def_meta.v];
+     - the deterministic projection [denv_of] from algorithmic to
+       declarative contexts, in [algo/def_meta.v];
+     - the [*_solution] / [*_solution_ex] / [*_optimal] predicates
+       encoding the paper's questions and (optimal) solutions, in
+       [algo/def_question.v].
+   The ~11 auxiliary lemmas of proofs.tex §Lemmas are in
+   [algo/prop_lemmas.v].  All headline theorems below are [Admitted]
+   scaffolding. *)
+
+(* Infrastructure. *)
+Check a_inc.        (* Θ ≤[θ] Θ'   (metasubstitution / information increase) *)
+Check a_isub.       (* Θ ≤ Θ'      (information increase, some metasubst) *)
+Check denv_of.      (* aenv → denv (projection replacing a_transfers) *)
+
+(* Paper Lemma: Soundness of consistency (part 1, type level):
+     a_consis Θ0 C B Θ1  →  ∃ θ1, a_inc Θ0 θ1 Θ1 ∧ ∅ ⨟ denv_of Θ1 ⊨ C ≈ B *)
+Check a_consis_sound.
+
+(* Paper Theorem: Soundness of subtyping:
+     a_sub NM M P0 Θ0 B B1 Θ1  →  ∃ θ1, a_sub_solution M Θ0 P0 B θ1 Θ1 B1 *)
 Check a_sub_sound.
 
-(* Paper Theorem E.4 (soundness of type inference):
-     a_typing m Θ0 P0 e B Θ1  →  a_transfers Θ1 Γ  →  Γ ⊢[ m ] e ⦂ B *)
+(* Paper Theorem: Soundness of type inference:
+     a_typing M Θ0 P e A Θ1  →  ∃ θ1, a_typing_solution M Θ0 P e θ1 Θ1 A *)
 Check a_typing_sound.
 
-(* Paper Theorem 4.15 (soundness of skeleton inference):
-     a_pat m Θ0 P0 e Q Θ1  →  a_transfers Θ1 Γ  →  Γ ⊢[ m ] e ⇨ Q *)
+(* Paper Theorem: Soundness of skeleton inference:
+     a_pat M Θ0 P0 e P Θ1  →  ∃ θ1, a_pat_solution M Θ0 P0 e θ1 Θ1 P *)
 Check a_pat_sound.
 
-(* Paper Theorem 4.19 (completeness of algorithmic subtyping):
-     ∅ ⨟ Γ ⊢[ m ] C ⊑ B  →  a_transfers Θ0 Γ
-       →  ∃ Θ1 NM P0, a_sub NM m P0 Θ0 (utyp_to_btyp C) B Θ1 ∧ a_transfers Θ1 Γ *)
+(* Paper Lemma: Completeness of consistency (part 1, type level). *)
+Check a_consis_complete.
+
+(* Paper Theorem: Completeness & optimality of subtyping:
+     a_sub_solution_ex M Θ0 P0 B
+       →  ∃ θ1 Θ1 B1, a_sub NM M P0 Θ0 B B1 Θ1 ∧ a_sub_optimal … *)
 Check a_sub_complete.
 
-(* Paper Theorem E.5 (completeness & minimality of type inference):
-     Γ ⊢[ m ] e ⦂ B  →  a_transfers Θ0 Γ
-       →  ∃ Θ1 P0, a_typing m Θ0 P0 e B Θ1 ∧ a_transfers Θ1 Γ *)
+(* Paper Theorem: Completeness & optimality of type inference. *)
 Check a_typing_complete.
 
-(* Paper Theorem 4.16 (completeness of skeleton inference):
-     Γ ⊢[ m ] e ⇨ Q  →  a_transfers Θ0 Γ
-       →  ∃ Θ1 P0, a_pat m Θ0 P0 e Q Θ1 ∧ a_transfers Θ1 Γ *)
+(* Paper Theorem: Completeness & optimality of skeleton inference. *)
 Check a_pat_complete.
+
+(* Representative auxiliary lemmas (proofs.tex §Lemmas). *)
+Check a_stable_d_typing.                 (* Lemma: Stability *)
+Check a_structural_suffix_moving.        (* Lemma: Structural rules *)
+Check a_suffix_erasure.                  (* Lemma: Suffix erasure *)
+Check a_split_refine.                    (* Lemma: Splitting refines *)
+Check a_consis_extends_sub.              (* Lemma: Consistency extends subtyping *)
+Check a_precision_extends_sub.           (* Lemma: Precision extends skeleton subtyping *)
+Check a_inherited_refinement_precision.  (* Lemma: Inherited refinement gives precision *)
+Check a_context_precision_skeleton.      (* Lemma: Context precision for skeleton inference *)
+Check a_subst_preserves_safety.          (* Lemma: Substitution preserves safety *)
+Check a_subst_preserves_informativeness. (* Lemma: Substitution preserves informativeness *)
+Check a_more_information_no_harm.         (* Lemma: More information does not harm *)

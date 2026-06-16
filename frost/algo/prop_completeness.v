@@ -1,48 +1,63 @@
-(** Algorithmic completeness placeholders for the split syntax. *)
+(** Completeness and optimality of the algorithmic system (paper
+    [algorithmic.tex] / [proofs.tex]).
+
+    Dual to [prop_soundness.v]: whenever a question has *some* solution,
+    the algorithm succeeds and returns the *optimal* one (every other
+    solution factors through it via a cofactor metasubstitution — see the
+    [_optimal] predicates in [def_question.v]).  Proofs are [Admitted]
+    scaffolding. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.notations.
+Require Import src.frost.algo.def_meta.
+Require Import src.frost.algo.def_question.
+Require Import src.frost.algo.prop_lemmas.
 
 Set Implicit Arguments.
 
-Inductive a_transfers : aenv -> list (atom * dbind) -> Prop :=
-| a_transfers__nil : a_transfers nil nil
-| a_transfers__decl : forall Θ Γ,
-    a_transfers Θ Γ.
+(* ===================================================================== *)
+(*  Completeness of consistency (paper Lemma: Completeness and optimality *)
+(*  of consistency, part 1).                                              *)
+(* ===================================================================== *)
 
-Theorem a_sub_decidable_existential :
-  forall NM m P0 Θ B1 B2,
-    (exists Θ', a_sub NM m P0 Θ B1 B2 Θ') \/
-    (forall Θ', ~ a_sub NM m P0 Θ B1 B2 Θ').
-Proof.
-Admitted.
+Theorem a_consis_complete : forall Θ0 C B,
+    (exists θ Θ, Θ0 ≤[ θ ] Θ /\ d_consis empty ⌊ Θ ⌋ C B) ->
+    exists Θ1, a_consis Θ0 C B Θ1.
+Proof. Admitted.
 
-Theorem a_sub_complete : forall Γ Θ0 m C B,
-    d_sub m empty Γ C B ->
-    a_transfers Θ0 Γ ->
-    exists Θ1 NM P0,
-      a_sub NM m P0 Θ0 (utyp_to_btyp C) B Θ1 /\ a_transfers Θ1 Γ.
-Proof.
-Admitted.
+(* ===================================================================== *)
+(*  Completeness and optimality of subtyping (paper Theorem).             *)
+(*  If a solution exists, [a_sub] returns the optimal one.                *)
+(* ===================================================================== *)
 
-Theorem a_pat_complete : forall Γ Θ0 m e Q,
-    d_pat m Γ e Q ->
-    a_transfers Θ0 Γ ->
-    exists Θ1 P0,
-      a_pat m Θ0 P0 e Q Θ1 /\ a_transfers Θ1 Γ.
-Proof.
-Admitted.
+Theorem a_sub_complete : forall NM M P0 Θ0 B,
+    a_sub_solution_ex M Θ0 P0 B ->
+    exists θ1 Θ1 B1,
+      a_sub NM M P0 Θ0 B B1 Θ1 /\ a_sub_optimal M Θ0 P0 B θ1 Θ1 B1.
+Proof. Admitted.
 
-Theorem a_typing_complete : forall Γ Θ0 m e B,
-    d_typing m Γ e B ->
-    a_transfers Θ0 Γ ->
-    exists Θ1 P0,
-      a_typing m Θ0 P0 e B Θ1 /\ a_transfers Θ1 Γ.
-Proof.
-Admitted.
+(* ===================================================================== *)
+(*  Completeness and optimality of skeleton inference (paper Theorem).    *)
+(* ===================================================================== *)
 
+Theorem a_pat_complete : forall M Θ0 P0 e,
+    a_pat_solution_ex M Θ0 P0 e ->
+    exists θ1 Θ1 P,
+      a_pat M Θ0 P0 e P Θ1 /\ a_pat_optimal M Θ0 P0 e θ1 Θ1 P.
+Proof. Admitted.
+
+(* ===================================================================== *)
+(*  Completeness and optimality of type inference (paper Theorem).        *)
+(* ===================================================================== *)
+
+Theorem a_typing_complete : forall M Θ0 P e,
+    a_typing_solution_ex M Θ0 P e ->
+    exists θ1 Θ1 A,
+      a_typing M Θ0 P e A Θ1 /\ a_typing_optimal M Θ0 P e θ1 Θ1 A.
+Proof. Admitted.

@@ -403,18 +403,64 @@ files:
 | `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` (paper-flagged) |
 | `prop_skeleton.v` | 2 | `d_pat_validity`, `d_pat_safety` |
 
-`frost/algo/` (6 admits — all Phase 3.B/C HEADLINEs):
+`frost/algo/` (26 admits — faithful question/solution/optimality scaffolding):
 
 | File | Count | Admitted lemmas |
 |---|---|---|
-| `prop_soundness.v` | 3 | `a_sub_sound`, `a_pat_sound`, `a_typing_sound` |
-| `prop_completeness.v` | 3 | `a_sub_complete`, `a_pat_complete`, `a_typing_complete` |
+| `def_meta.v` | 0 | metasubstitution `a_inc`/`a_isub`/`a_inc_equiv`, application `msubst_*`, projection `denv_of`/`aenv_to_denv` (all definitions, no admits) |
+| `def_question.v` | 0 | `a_*_solution` / `a_*_solution_ex` / `a_*_optimal` for consistency, subtyping, skeleton/type inference (definitions) |
+| `prop_lemmas.v` | 16 | Stability ×5 + Structural, Suffix erasure, Splitting refines, Consistency-extends-sub, Precision-extends-sub, Inherited-refinement-precision, Context-precision, Substitution-preserves-safety/informativeness, More-information-no-harm |
+| `prop_soundness.v` | 4 | `a_consis_sound`, `a_sub_sound`, `a_pat_sound`, `a_typing_sound` |
+| `prop_completeness.v` | 4 | `a_consis_complete`, `a_sub_complete`, `a_pat_complete`, `a_typing_complete` |
+
+The old trivial `a_transfers` relation (related *any* Θ to *any* Γ) is
+gone; soundness/completeness now read against the paper's
+metasubstitution / questions / solutions / optimality (paper
+`algorithmic.tex` fig:information-increase, the four *Questions of …*
+definitions, and `proofs.tex` §Lemmas).  A few declarative notions the
+paper relies on are still PLACEHOLDER inductives in `def_question.v` /
+`prop_lemmas.v` (skeleton precision `a_precise`, context precision
+`a_ctx_precise`, safe/most-informative skeletons, the poly-information
+order `a_morepoly`, skeleton splitting `a_skel_split`, type equivalence
+`a_tyequiv`/`a_btyequiv`) — flagged in-file for replacement.
 
 ---
 
 # Part 2: Daily progress
 
 Session-by-session closure log. Most recent first.
+
+## 2026-06-16 — Faithful algorithmic-metatheory scaffolding (metasubstitution + questions/solutions/optimality)
+
+Rebuilt the Phase 3 soundness/completeness scaffolding to match the
+paper's now-fleshed-out algorithmic proofs (Wenhao's recent
+`subtyping-proofs.tex` / `proofs.tex` / `algorithmic.tex` updates).
+
+**New files (all compile under `make coq`, EXIT 0):**
+
+- [`frost/algo/def_meta.v`](frost/algo/def_meta.v) — metasubstitutions
+  `θ` (`metasubst`), application `msubst_{ptyp,pskl,btyp,bskl}`, the
+  information-increase relation `a_inc Θ θ Θ'` (paper
+  fig:information-increase, Gundry-style — **not** a worklist transfer),
+  its identity specialisation `a_isub`, equivalence `a_inc_equiv`, and the
+  deterministic projection `aenv_to_denv`/`denv_of` (replaces the trivial
+  `a_transfers`).
+- [`frost/algo/def_question.v`](frost/algo/def_question.v) —
+  `a_{consis,sub,pat,typing}_solution` / `_solution_ex` / `_optimal`
+  encoding the four *Questions of …* definitions + optimality cofactor.
+- [`frost/algo/prop_lemmas.v`](frost/algo/prop_lemmas.v) — the 11
+  proofs.tex §Lemmas (16 admits).
+
+**Rewritten:** `prop_soundness.v` (4 admits) and `prop_completeness.v`
+(4 admits) now conclude `*_solution` / `*_optimal` instead of the
+`a_transfers`-based placeholders. `README.v` Checks + this file updated.
+
+**Caveat:** several declarative notions the paper uses are still
+PLACEHOLDER inductives (skeleton/context precision, safe/most-informative
+skeletons, poly order, skeleton splitting, type equivalence), flagged
+in-file. The N=TY/SK collapse and the dbind_typ-vs-dbind_skl projection
+nuance for the skeleton-inference var case are noted in `def_meta.v` /
+`def_question.v`.
 
 ## 2026-06-15 — Order irrelevance (`d_typing_order_irrel`) — FULLY PROVED (Closed under the global context)
 
@@ -1397,9 +1443,13 @@ guarded, hence wf. **No paper inconsistency.**
 
 **3.A Algorithmic defs** (`frost/algo/def_extra.v`): 🟢 done. ~140 constructors across 16 inductives.
 
-**3.B Algo soundness** (`frost/algo/prop_soundness.v`): 🟡 scaffolding only. 3 admits: `a_sub_sound`, `a_pat_sound`, `a_typing_sound` (HEADLINE — depend on `a_consis_sound`, `a_unify_sound`, `a_assign_sound`, `a_pre_sub_sound`, `a_split_sound`, `a_guess_mono_sound` not yet stated). All 9 stability lemmas Qed.
+**3.A′ Metasubstitution / questions / solutions** (`frost/algo/def_meta.v`, `def_question.v`): 🟢 done (definitions). Replaces the trivial `a_transfers` with the paper's information-increase relation `a_inc`/`a_isub` (fig:information-increase), the `denv_of` projection, and the `*_solution`/`*_optimal` question layer for all four properties.
 
-**3.C Algo completeness** (`frost/algo/prop_completeness.v`): 🟡 scaffolding only. 3 admits: `a_sub_complete`, `a_pat_complete`, `a_typing_complete` (HEADLINE — dual to 3.B). `a_sub_decidable_existential` Qed in vacuous-disjunct form.
+**3.B Algo soundness** (`frost/algo/prop_soundness.v`): 🟡 scaffolding only, now **faithful**. 4 admits: `a_consis_sound`, `a_sub_sound`, `a_pat_sound`, `a_typing_sound`, each concluding the relevant `*_solution`.
+
+**3.C Algo completeness** (`frost/algo/prop_completeness.v`): 🟡 scaffolding only, now **faithful**. 4 admits: `a_consis_complete`, `a_sub_complete`, `a_pat_complete`, `a_typing_complete`, each producing the `*_optimal` solution from `*_solution_ex`.
+
+**3.D Auxiliary lemmas** (`frost/algo/prop_lemmas.v`): 🟡 scaffolding. 16 admits covering proofs.tex §Lemmas (Stability, Structural rules, Suffix erasure, Splitting refines, Consistency-extends-sub, Precision-extends-sub, Inherited-refinement-precision, Context-precision, Substitution-preserves-safety/informativeness, More-information-no-harm).
 
 <!-- BEGIN paper-refs (auto-generated by scripts/sync_paper_refs.py) -->
 [thm:sound-type-inference]: ../paper/sections/algorithmic.tex#L686 "Theorem E.4: Soundness of type inference"
