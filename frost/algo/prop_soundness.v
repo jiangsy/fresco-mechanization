@@ -16,7 +16,6 @@ Require Import src.frost.coercions.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo.notations.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_question.
 Require Import src.frost.algo.prop_lemmas.

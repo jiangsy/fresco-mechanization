@@ -22,7 +22,6 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
-Require Import src.frost.algo.notations.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_question.
 
@@ -102,15 +101,15 @@ Lemma a_stable_d_sub : forall M Θ0 Θ1 C B,
 Proof. Admitted.
 
 Lemma a_stable_d_consis : forall Θ0 Θ1 C B,
-    d_consis empty ⌊ Θ0 ⌋ C B ->
+    empty ⨟ ⌊ Θ0 ⌋ ⊨ C ≈ B ->
     Θ0 ⊴ Θ1 ->
-    d_consis empty ⌊ Θ1 ⌋ C B.
+    empty ⨟ ⌊ Θ1 ⌋ ⊨ C ≈ B.
 Proof. Admitted.
 
 Lemma a_stable_d_refine_syn : forall Θ0 Θ1 P Q,
-    d_refine_syn nil ⌊ Θ0 ⌋ P Q ->
+    nil ⨟ ⌊ Θ0 ⌋ ⊢ᵣ P ⊳ Q ->
     Θ0 ⊴ Θ1 ->
-    d_refine_syn nil ⌊ Θ1 ⌋ P Q.
+    nil ⨟ ⌊ Θ1 ⌋ ⊢ᵣ P ⊳ Q.
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -142,8 +141,7 @@ Proof. Admitted.
 
 Lemma a_split_refine : forall Θ0 Θ1 P0 P1,
     a_skel_split Θ0 P0 P1 Θ1 ->
-    d_refine_syn nil ⌊ Θ1 ⌋
-      (pskl_to_bskl_inh P0) (pskl_to_bskl_inh P1).
+    nil ⨟ ⌊ Θ1 ⌋ ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (pskl_to_bskl_inh P1).
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -152,7 +150,7 @@ Proof. Admitted.
 (* ===================================================================== *)
 
 Lemma a_consis_extends_sub : forall M Θ C B Bq,
-    d_consis empty ⌊ Θ ⌋ C B ->
+    empty ⨟ ⌊ Θ ⌋ ⊨ C ≈ B ->
     d_sub M empty ⌊ Θ ⌋ C Bq ->
     d_sub M empty ⌊ Θ ⌋ (btyp_to_utyp_syn B) Bq.
 Proof. Admitted.
@@ -163,9 +161,9 @@ Proof. Admitted.
 (* ===================================================================== *)
 
 Lemma a_precision_extends_sub : forall M Θ P P' Q,
-    a_precise Θ (pskl_to_bskl_syn P') (pskl_to_bskl_syn P) ->
-    d_pat_sub M nil ⌊ Θ ⌋ (bskl_to_uskl (pskl_to_bskl_syn P)) Q ->
-    d_pat_sub M nil ⌊ Θ ⌋ (bskl_to_uskl (pskl_to_bskl_syn P')) Q.
+    Θ ⊢ (pskl_to_bskl_syn P') ≼ (pskl_to_bskl_syn P) ->
+    nil ⨟ ⌊ Θ ⌋ ⊢ₛ[ M ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q ->
+    nil ⨟ ⌊ Θ ⌋ ⊢ₛ[ M ] (bskl_to_uskl (pskl_to_bskl_syn P')) ⊑ Q.
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -174,8 +172,8 @@ Proof. Admitted.
 (* ===================================================================== *)
 
 Lemma a_inherited_refinement_precision : forall Θ P Q,
-    d_refine_syn nil ⌊ Θ ⌋ (pskl_to_bskl_inh P) (pskl_to_bskl_inh Q) ->
-    a_precise Θ (pskl_to_bskl_syn P) (pskl_to_bskl_syn Q).
+    nil ⨟ ⌊ Θ ⌋ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh Q) ->
+    Θ ⊢ (pskl_to_bskl_syn P) ≼ (pskl_to_bskl_syn Q).
 Proof. Admitted.
 
 (* ===================================================================== *)
@@ -186,10 +184,10 @@ Proof. Admitted.
 Lemma a_context_precision_skeleton : forall M Θ Θ' P e Q,
     a_ctx_precise Θ' Θ ->
     d_pat M ⌊ Θ ⌋ e Q ->
-    d_refine_syn nil ⌊ Θ ⌋ (pskl_to_bskl_inh P) Q ->
+    nil ⨟ ⌊ Θ ⌋ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q ->
     exists Q',
       d_pat M ⌊ Θ' ⌋ e Q' /\
-      d_refine_syn nil ⌊ Θ' ⌋ (pskl_to_bskl_inh P) Q' /\
+      nil ⨟ ⌊ Θ' ⌋ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q' /\
       a_precise Θ' Q' Q.
 Proof. Admitted.
 
