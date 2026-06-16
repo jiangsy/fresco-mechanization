@@ -12,17 +12,24 @@ Notation "Θ ⊢ A 'aptyp'" := (a_wf_ptyp Θ A)
 Notation "⊢ₐ Θ" := (a_wf_aenv Θ)
   (at level 75, no associativity) : type_scope.
 
+(* The [⊢[ … ]] algorithmic judgments share one grammar entry (level 100)
+   and disambiguate by the bracket shape: [a_consis] has 1 item ([⊢[ P0 ]],
+   closes with []]), [a_typing]/[a_pat] have 2 ([⊢[ m ; P0 ]], [;]
+   separator), [a_sub] has 3 ([⊢[ NM | m | P0 ]], [|] separator).  Coq
+   cannot factor different [;]-counts, hence the distinct [|] for [a_sub].
+   (For files mixing the declarative and algorithmic systems, use the
+   qualified [a{{ … }}] / [d{{ … }}] brackets in [algo/qnotations.v].) *)
 Notation "Θ ⊢[ P0 ] P '~ᴬ' Q ⊣ Θ'" := (a_consis Θ P0 P Q Θ')
-  (at level 75, P0 at level 0, P at level 74, Q at level 74, Θ' at level 74,
+  (at level 100, P0 at level 0, P at level 74, Q at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
-Notation "Θ ⊢[ NM ; m ; P0 ] B1 ⊑ᴬ B2 ⊣ Θ'" := (a_sub NM m P0 Θ B1 B2 Θ')
-  (at level 75, NM at level 0, m at level 0, P0 at level 0,
+Notation "Θ ⊢[ NM | m | P0 ] B1 ⊑ᴬ B2 ⊣ Θ'" := (a_sub NM m P0 Θ B1 B2 Θ')
+  (at level 100, NM at level 0, m at level 0, P0 at level 0,
    B1 at level 74, B2 at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
-Notation "Θ ⊢ᵇ[ NM ; m ; P0 ] B ◁ B' ⊣ Θ'" := (a_broom NM m P0 Θ B B' Θ')
-  (at level 75, NM at level 0, m at level 0, P0 at level 0,
+Notation "Θ ⊢ᵇ[ NM | m | P0 ] B ◁ B' ⊣ Θ'" := (a_broom NM m P0 Θ B B' Θ')
+  (at level 100, NM at level 0, m at level 0, P0 at level 0,
    B at level 74, B' at level 74, Θ' at level 74,
    no associativity) : type_scope.
 
