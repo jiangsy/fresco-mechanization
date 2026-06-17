@@ -203,7 +203,10 @@ Theorem d_pat_validity : forall Γ e Q B,
     exists A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) /\
               Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
 Proof.
-Admitted.
+(* FALSE for the current rules (see the [freeze (λx.(x:unit))] counterexample
+   above); aborted rather than admitted.  Recover by disciplining
+   [d_pat__abs] to bind a ghost, then prove via [denv_coh]. *)
+Abort.
 
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
@@ -226,10 +229,28 @@ Admitted.
     [□] rather than an over-specific one), so the over-specific inferences
     that break validity are simply not chosen.
 
-    Proof deferred: it needs the safe-skeleton *construction* (choose
-    ghost-keeping refinements / ghost instantiations), essentially the
-    declarative shadow of the algorithm.  See also the coloured-vs-
-    uncoloured refinement caveat on [d_pat_validity] above. *)
+    (The [freeze (λx.(x:unit))] validity counterexample is NOT a safety
+    counterexample: [freeze] is not a value, so the term checks only at
+    [unit→unit], which [□→unit] fills.)
+
+    PROOF PLAN.  The cleanest witness is the algorithm's "looking" relation
+    [a_pat_optimal] / [a_pat_solution] (algo/def_question.v:114), NOT a
+    from-scratch declarative construction:
+    1. WITNESS via the algorithm.  [a_pat_solution M Θ0 P0 e θ1 Θ1 P1]
+       *already embeds* the declarative inference
+       [⌊Θ1⌋ ⊢[M] e ⇨ pskl_to_bskl_syn P1].  So the OPTIMAL solution
+       ([a_pat_optimal]) directly supplies a declarative [Q], and its
+       [≼]-maximality (it refines every other solution) is exactly the
+       "fills every checking type" half.  Safety thus reduces to
+       algorithmic completeness (a well-typed term has a solution) +
+       existence of an optimal one + the precision↔fill bridge — i.e. to
+       the Phase-3 algorithmic results, not new declarative machinery.
+    2. GHOST-FILLS-ANY (the residual analytic fact).  A bare [□] fills only
+       *monotypes* — [d_pat__hole] outputs a *syn*-painted fill; filling a
+       *polytype* [inh{∀…}] needs a universal ghost [⫯] under inh/inh
+       painting, i.e. this still depends on the DEFERRED painting fix (see
+       [d_pat_validity]).
+    Hence still [Admitted] (the statement is true). *)
 Theorem d_pat_safety : forall Γ e B,
     Γ ⊢[ mode_tc ] e ⦂ B ->
     d_wf_denv Γ ->

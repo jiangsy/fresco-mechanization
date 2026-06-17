@@ -72,7 +72,10 @@ Check d_pat_preserves_skel_wf.
      Γ ⊢[ mode_tc ] e ⇨ Q  →  Γ ⊢[ mode_tc ] e ⦂ B  →  d_wf_denv Γ
        →  ∃ A, Γ ⊢[ mode_tc ] e ⦂ ptyp_to_btyp_inh A
               ∧ Γ ⨟ ∅ ⨟ ∅ ⊢ᵣ Q ⊳ pskl_to_bskl_inh (ptyp_to_pskl A) *)
-Check d_pat_validity.
+(* [d_pat_validity] is ABORTED (a non-theorem for the current rules): the
+   liberal synthesis-mode [d_pat__abs] (re-exposed in check mode via
+   [freeze]) yields over-specific ghost-free skeletons.  Provable only once
+   [d_pat__abs] is disciplined.  See prop_skeleton.v for the counterexamples. *)
 
 (* Paper Lemma D7 (declarative.tex:1992 — safety of skeleton inference):
    existential (∃ a safe inference); CHECK mode.
