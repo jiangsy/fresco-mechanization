@@ -110,6 +110,45 @@ Proof.
         [ left; assumption | right; left; simpl; right; assumption | right; right; assumption ].
 Qed.
 
+(** A *typing context*: only type/tvar bindings, no ghost-bearing
+    skeleton bindings.  (The user's "context has only A, not P" predicate.)
+    Every context a [d_typing] derivation actually uses is of this shape. *)
+Inductive typ_denv : list (atom * dbind) -> Prop :=
+| typ_denv__nil  : typ_denv nil
+| typ_denv__tvar : forall Γ X, typ_denv Γ -> typ_denv ((X ~ dbind_tvar) ++ Γ)
+| typ_denv__typ  : forall Γ x A, typ_denv Γ -> typ_denv ((x ~ dbind_typ A) ++ Γ).
+
+(** Context coherence between a skeleton-inference context [Γs] and a
+    typing context [Γt]: same shape, with each *unannotated*-λ skeleton
+    binding [x:P] in [Γs] matched by a type binding [x:A] in [Γt] such that
+    the inference skeleton refines the type ([inh{P} ⊳ inh{ptyp A}]).  For
+    coerced (ghost-free) bindings this refinement is [refl]; for the λ
+    ghost [□] it is "hole refines anything".  This is the invariant that
+    lets validity's induction cross a λ where the two judgments bind a
+    variable differently ([dbind_skl] vs [dbind_typ]). *)
+Inductive denv_coh : list (atom * dbind) -> list (atom * dbind) -> Prop :=
+| denv_coh__nil  : denv_coh nil nil
+| denv_coh__tvar : forall Γs Γt X,
+    denv_coh Γs Γt ->
+    denv_coh ((X ~ dbind_tvar) ++ Γs) ((X ~ dbind_tvar) ++ Γt)
+| denv_coh__typ  : forall Γs Γt x A,
+    denv_coh Γs Γt ->
+    denv_coh ((x ~ dbind_typ A) ++ Γs) ((x ~ dbind_typ A) ++ Γt)
+| denv_coh__skl  : forall Γs Γt x P A,
+    denv_coh Γs Γt ->
+    Γt ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
+    denv_coh ((x ~ dbind_skl P) ++ Γs) ((x ~ dbind_typ A) ++ Γt).
+
+(** Coherence is reflexive on pure typing contexts: there the only
+    bindings are [tvar]/[typ], matched by themselves. *)
+Lemma denv_coh_refl : forall Γ, typ_denv Γ -> denv_coh Γ Γ.
+Proof.
+  intros Γ H. induction H.
+  - apply denv_coh__nil.
+  - apply denv_coh__tvar; assumption.
+  - apply denv_coh__typ; assumption.
+Qed.
+
 (** * Paper-facing skeleton properties.
 
     The statements below are native to the new syntax. They remain
@@ -129,24 +168,34 @@ Qed.
     well-typed [M] whose skeleton inference is [Γ ⊢tc M ⇨ Q] yields a
     *valid* [Q] — some [A] with [Γ ⊢tc M ⦂ inh{A}] and [Q] fills [inh{A}].
 
-    THE MODE IS CHECK ([mode_tc]), not infer.  The valid-skeleton
-    definition is stated at [⊢tc], and [mode_tc] is the mode in which
-    [d_typing__app] infers an argument's skeleton.  It must be [mode_tc]:
-    under [mode_ti] the lemma is FALSE.  Counterexample (synthesis mode):
-    [d_pat__abs] permits an arbitrary, over-specific argument skeleton, so
-    [λx.(x:unit) ⇨ti (unit→unit)→unit] (the body annotation is not
-    checked); this skeleton is ghost-free, hence fills *only* to
-    [(unit→unit)→unit], where [λx.(x:unit)] is untypeable — even though the
-    term is well-typed (at [unit→unit]).  In check mode the unannotated λ
-    instead binds a ghost ([d_pat__abs_check], [x:□]), so the inferred
-    argument skeleton fills to *any* type and the witness from the
-    well-typedness premise applies.
+    STATUS: this is FALSE for the current rules (paper AND mech), in BOTH
+    modes, because the synthesis-mode λ rule [d_pat__abs] / paper [Abs]
+    binds an *arbitrary* argument skeleton.  Two counterexamples:
 
-    Proof plan: induction on the check-mode inference under a context-
-    coherence invariant (each inference-bound skeleton refines the
-    corresponding typing type — [refl] for coerced bindings,
-    ghost-refines-anything for the λ ghost); structural cases close with
-    [d_refine_syn_refl_inh]. *)
+    - [mode_ti] (direct): [λx.(x:unit) ⇨ti (unit→unit)→unit] (choose arg
+      skeleton [unit→unit]; [Anno] does not check the body).  The skeleton
+      is ghost-free, so it fills *only* to [(unit→unit)→unit], where the
+      term is untypeable — yet it is well-typed (at [unit→unit]).
+
+    - [mode_tc] (via [freeze]): [d_pat__freeze] lifts a *ti*-inference to
+      *tc* verbatim, re-exposing the liberal [d_pat__abs].  So
+      [freeze (λx.(x:unit)) ⇨tc (unit→unit)→unit], well-typed at
+      [unit→unit], same ghost-free dead-end.  (The paper [Freeze] rule,
+      declarative.tex:1543, has the identical shape.)
+
+    So [mode_tc] is *necessary* (under [mode_ti] even the non-[freeze] case
+    fails) but NOT *sufficient*.  The root cause is that the inferred
+    argument skeleton can be over-specific and ghost-free.  Validity holds
+    only once [d_pat__abs] is disciplined the way [d_pat__abs_check]
+    already is — bind a ghost [□] (or otherwise forbid concrete content in
+    the inferred argument skeleton).  That is a rule change to the calculus
+    (paper-side), DEFERRED pending discussion.
+
+    Once disciplined, the proof is: induction on the check-mode inference
+    under the [denv_coh] context-coherence invariant above (each
+    inference-bound skeleton refines the corresponding typing type — [refl]
+    for coerced bindings via [d_refine_syn_refl_inh], ghost-refines-anything
+    for the λ ghost). *)
 Theorem d_pat_validity : forall Γ e Q B,
     Γ ⊢[ mode_tc ] e ⇨ Q ->
     Γ ⊢[ mode_tc ] e ⦂ B ->
@@ -170,6 +219,12 @@ Admitted.
     exists (the algorithmic inference is precisely a decision procedure
     that computes such a [Q], and it is sound w.r.t. this declarative
     relation).
+
+    Note: the liberal-[d_pat__abs] gap that falsifies [d_pat_validity]
+    (above) does NOT affect safety — being existential, safety just *picks*
+    the well-behaved derivation (e.g. the unannotated-λ argument skeleton
+    [□] rather than an over-specific one), so the over-specific inferences
+    that break validity are simply not chosen.
 
     Proof deferred: it needs the safe-skeleton *construction* (choose
     ghost-keeping refinements / ghost instantiations), essentially the

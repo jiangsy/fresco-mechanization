@@ -65,8 +65,10 @@ Check d_typing_pat_preserves_wf.
 Check d_pat_preserves_skel_wf.
 
 (* Paper Lemma D6 (declarative.tex:1987 — validity of skeleton inference):
-   CHECK mode ([mode_tc]) — under [mode_ti] the lemma is false (see the
-   counterexample on [d_pat_validity]).
+   CHECK mode ([mode_tc]).  NOTE: false for the current rules in BOTH modes
+   — the liberal synthesis-mode [d_pat__abs] (arbitrary argument skeleton)
+   is re-exposed in check mode via [freeze]; see the two counterexamples on
+   [d_pat_validity].  Provable only once [d_pat__abs] is disciplined.
      Γ ⊢[ mode_tc ] e ⇨ Q  →  Γ ⊢[ mode_tc ] e ⦂ B  →  d_wf_denv Γ
        →  ∃ A, Γ ⊢[ mode_tc ] e ⦂ ptyp_to_btyp_inh A
               ∧ Γ ⨟ ∅ ⨟ ∅ ⊢ᵣ Q ⊳ pskl_to_bskl_inh (ptyp_to_pskl A) *)
