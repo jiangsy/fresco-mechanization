@@ -110,6 +110,46 @@ Proof.
         [ left; assumption | right; left; simpl; right; assumption | right; right; assumption ].
 Qed.
 
+(** A well-scoped type's skeleton is a well-formed [pskl].  ([ptyp_to_pskl]
+    images are ghost-free, so — as in [d_refine_syn_refl_inh] — a scope
+    coverage premise lets the [∀] case route the bound var into [Ψ].) *)
+Lemma d_wf_pskl_of_ptyp : forall A,
+    lc_ptyp A ->
+    forall Γ Ψ,
+      (forall X, X `in` ftvar_in_ptyp A -> List.In X Ψ \/ binds X dbind_tvar Γ) ->
+      Ψ ⨟ Γ ⊢ₚₛ (ptyp_to_pskl A).
+Proof.
+  intros A Hlc. induction Hlc; intros Γ Ψ Hcov; simpl.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. apply Hcov. simpl. fsetdec.
+  - apply d_wf_pskl__arrow;
+      [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; simpl; fsetdec.
+  - inst_cofinites_for d_wf_pskl__all. intros X HX.
+    rewrite <- ptyp_to_pskl_open. apply H0. intros Y HY.
+    apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + left. apply AtomSetImpl.singleton_1 in HY. simpl. left. assumption.
+    + specialize (Hcov Y HY).
+      destruct Hcov as [HΨ | HG]; [ left; simpl; right; assumption | right; assumption ].
+Qed.
+
+(** UNIVERSAL FILL ENGINE for [d_pat_safety]: a plain ghost [□] refines to
+    *any* well-scoped type's syn-skeleton — INCLUDING polytypes, since the
+    [hole] rule fills with any well-formed [pskl] (which may carry concrete
+    [∀]s).  This is the "fills every checking type" half of safety, once the
+    safe inference is hole-rich.  (NB this corrects the misconception that
+    [□] fills only monotypes: it is the [inh]-painted target that blocked
+    polytypes, not the fill itself — see [d_pat_safety].) *)
+Lemma d_refine_syn_hole_fills : forall A,
+    lc_ptyp A ->
+    forall Γ Δs Δi,
+      (forall X, X `in` ftvar_in_ptyp A -> List.In X Δs \/ binds X dbind_tvar Γ) ->
+      Γ ⨟ Δs ⨟ Δi ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A)).
+Proof.
+  intros A Hlc Γ Δs Δi Hcov.
+  apply d_refine_syn__hole. eapply d_wf_pskl_of_ptyp; eassumption.
+Qed.
+
 (** A *typing context*: only type/tvar bindings, no ghost-bearing
     skeleton bindings.  (The user's "context has only A, not P" predicate.)
     Every context a [d_typing] derivation actually uses is of this shape. *)
@@ -252,15 +292,21 @@ Abort.
     [λx.x ⊢tc inh{∀α.α→α}] with [Q = ⫯.(□→□)]: [⫯ ⊳ inh{∀}] is (correctly)
     underivable, but [⫯ ⊳ syn{∀}] holds.
 
-    PROOF PLAN — the witness is the algorithm's "looking" relation
-    [a_pat_optimal] / [a_pat_solution] (algo/def_question.v:114):
-    [a_pat_solution …] *already embeds* the declarative inference
-    [⌊Θ1⌋ ⊢[M] e ⇨ pskl_to_bskl_syn P1], so the OPTIMAL solution supplies a
-    declarative [Q] whose [≼]-maximality is exactly "fills every checking
-    type".  Safety reduces to the Phase-3 algorithmic results (completeness
-    → a solution exists; optimal-existence; the precision↔fill bridge), not
-    new declarative machinery.  Still [Admitted] (the statement is true)
-    pending those. *)
+    FILL ENGINE (proved): [d_refine_syn_hole_fills] above shows a plain
+    ghost [□] refines to ANY well-scoped type's syn-skeleton (polytypes
+    included — the [hole] rule fills with any well-formed [pskl]).  So the
+    "fills every checking type" half is discharged whenever the safe [Q] is
+    hole-rich at the relevant positions.
+
+    REMAINING — the constructive witness: produce a hole-rich inferable [Q]
+    for each well-typed [e] (induction on [Γ ⊢tc e ⦂ B]).  Cleanest source
+    is the algorithm's "looking" relation [a_pat_optimal] / [a_pat_solution]
+    (algo/def_question.v:114), which *already embeds* the declarative
+    inference [⌊Θ1⌋ ⊢[M] e ⇨ pskl_to_bskl_syn P1]; its [≼]-maximality gives
+    fills-every-type via the engine.  This reduces to the Phase-3
+    algorithmic results (completeness → a solution exists; optimal-existence;
+    precision↔fill).  Still [Admitted] (the statement is true) pending the
+    witness construction. *)
 Theorem d_pat_safety : forall Γ e B,
     Γ ⊢[ mode_tc ] e ⦂ B ->
     d_wf_denv Γ ->
