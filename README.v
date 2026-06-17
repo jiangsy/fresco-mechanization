@@ -65,16 +65,19 @@ Check d_typing_pat_preserves_wf.
 Check d_pat_preserves_skel_wf.
 
 (* Paper Lemma D6 (declarative.tex:1987 — validity of skeleton inference):
-     Γ ⊢[ mode_ti ] e ⇨ Q  →  (∃ B, Γ ⊢[ mode_ti ] e ⦂ B)  →  d_wf_denv Γ
+   CHECK mode ([mode_tc]) — under [mode_ti] the lemma is false (see the
+   counterexample on [d_pat_validity]).
+     Γ ⊢[ mode_tc ] e ⇨ Q  →  Γ ⊢[ mode_tc ] e ⦂ B  →  d_wf_denv Γ
        →  ∃ A, Γ ⊢[ mode_tc ] e ⦂ ptyp_to_btyp_inh A
-              ∧ ∅ ⨟ Γ ⊢ᵣ Q ⊳ pskl_to_bskl_inh (ptyp_to_pskl A) *)
+              ∧ Γ ⨟ ∅ ⨟ ∅ ⊢ᵣ Q ⊳ pskl_to_bskl_inh (ptyp_to_pskl A) *)
 Check d_pat_validity.
 
 (* Paper Lemma D7 (declarative.tex:1992 — safety of skeleton inference):
-     (∃ B, Γ ⊢[ mode_ti ] e ⦂ B)  →  d_wf_denv Γ
-       →  ∃ Q, Γ ⊢[ mode_ti ] e ⇨ Q
+   existential (∃ a safe inference); CHECK mode.
+     Γ ⊢[ mode_tc ] e ⦂ B  →  d_wf_denv Γ
+       →  ∃ Q, Γ ⊢[ mode_tc ] e ⇨ Q
               ∧ (∀ A, Γ ⊢[ mode_tc ] e ⦂ ptyp_to_btyp_inh A
-                      → ∅ ⨟ Γ ⊢ᵣ Q ⊳ pskl_to_bskl_inh (ptyp_to_pskl A)) *)
+                      → Γ ⨟ ∅ ⨟ ∅ ⊢ᵣ Q ⊳ pskl_to_bskl_inh (ptyp_to_pskl A)) *)
 Check d_pat_safety.
 
 (* === Algorithmic metatheory (faithful question / solution / optimality

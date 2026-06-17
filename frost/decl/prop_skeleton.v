@@ -125,41 +125,31 @@ Proof.
   apply (proj2 d_typing_pat_preserves_wf) with (m := mode_tc) (e := e); auto.
 Qed.
 
-(** Paper "Validity of skeleton inference" (declarative.tex): a well-typed
-    [M] with inferred skeleton [Γ ⊢ti M ⇨ Q] yields a *valid* skeleton — some
-    type [A] with [Γ ⊢tc M : inh A] and [Γ ⊢ inh{Q} ⊳ inh{A}] (the [fill]
-    judgment is the coloured refinement [d_refine_syn]).
+(** Paper "Validity of skeleton inference" (declarative.tex:1945): a
+    well-typed [M] whose skeleton inference is [Γ ⊢tc M ⇨ Q] yields a
+    *valid* [Q] — some [A] with [Γ ⊢tc M ⦂ inh{A}] and [Q] fills [inh{A}].
 
-    PROOF ROADMAP (not a single induction on [d_pat]).  Three obligations:
+    THE MODE IS CHECK ([mode_tc]), not infer.  The valid-skeleton
+    definition is stated at [⊢tc], and [mode_tc] is the mode in which
+    [d_typing__app] infers an argument's skeleton.  It must be [mode_tc]:
+    under [mode_ti] the lemma is FALSE.  Counterexample (synthesis mode):
+    [d_pat__abs] permits an arbitrary, over-specific argument skeleton, so
+    [λx.(x:unit) ⇨ti (unit→unit)→unit] (the body annotation is not
+    checked); this skeleton is ghost-free, hence fills *only* to
+    [(unit→unit)→unit], where [λx.(x:unit)] is untypeable — even though the
+    term is well-typed (at [unit→unit]).  In check mode the unannotated λ
+    instead binds a ghost ([d_pat__abs_check], [x:□]), so the inferred
+    argument skeleton fills to *any* type and the witness from the
+    well-typedness premise applies.
 
-    1. PAINTING.  As written the refinement is [Q ⊳ inh{A}] with the raw
-       (possibly syn-painted) inferred [Q] on the left.  [d_refine_syn] has
-       NO rule with [bskl_all_syn] on the left, so this is stuck whenever
-       [Q] carries a concrete synthesised quantifier (e.g. an annotation
-       [(e : ∀α.A)]).  The faithful, provable statement paints the LHS
-       inherited too — matching the *only* consumer of refinement,
-       [d_typing__app], which uses [pskl_to_bskl_inh _ ⊳ pskl_to_bskl_inh _].
-       I.e. replace the LHS by [pskl_to_bskl_inh (bskl_to_pskl Q)] (this is
-       the paper's *uncoloured* [fill], encoded by painting both sides the
-       same colour; cf. the WT note at [def_extra.v]).
-
-    2. MUTUAL COMPANION.  [d_pat] and [d_typing] are mutually defined, and
-       variables carry DIFFERENT binders in the two: [d_pat__var] reads
-       [dbind_skl P], [d_typing__var] reads [dbind_typ A].  So validity must
-       be proved by mutual induction with a [d_typing]-side statement, under
-       a context-coherence relation linking the [dbind_skl]/[dbind_typ]
-       views (a well-typed-skeleton-context invariant).
-
-    3. PER-CASE ENGINE.  With the painting fix, the structural cases close
-       with [d_refine_syn_refl_inh] (proved above) — the inh-painted
-       skeleton of the witnessed type [A] refines to itself; and
-       [d_refine_preserves_wf] handles the well-formedness side.  The [app]
-       case threads the argument's skeleton/refinement (the [d_pat__app] /
-       [d_typing__app] premises) and is where universal ghosts may be
-       dropped (connecting to the safety story below). *)
-Theorem d_pat_validity : forall Γ e Q,
-    Γ ⊢[ mode_ti ] e ⇨ Q ->
-    (exists B, Γ ⊢[ mode_ti ] e ⦂ B) ->
+    Proof plan: induction on the check-mode inference under a context-
+    coherence invariant (each inference-bound skeleton refines the
+    corresponding typing type — [refl] for coerced bindings,
+    ghost-refines-anything for the λ ghost); structural cases close with
+    [d_refine_syn_refl_inh]. *)
+Theorem d_pat_validity : forall Γ e Q B,
+    Γ ⊢[ mode_tc ] e ⇨ Q ->
+    Γ ⊢[ mode_tc ] e ⦂ B ->
     d_wf_denv Γ ->
     exists A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) /\
               Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
@@ -185,10 +175,10 @@ Admitted.
     ghost-keeping refinements / ghost instantiations), essentially the
     declarative shadow of the algorithm.  See also the coloured-vs-
     uncoloured refinement caveat on [d_pat_validity] above. *)
-Theorem d_pat_safety : forall Γ e,
-    (exists B, Γ ⊢[ mode_ti ] e ⦂ B) ->
+Theorem d_pat_safety : forall Γ e B,
+    Γ ⊢[ mode_tc ] e ⦂ B ->
     d_wf_denv Γ ->
-    exists Q, Γ ⊢[ mode_ti ] e ⇨ Q /\
+    exists Q, Γ ⊢[ mode_tc ] e ⇨ Q /\
               (forall A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
                  Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))).
 Proof.
