@@ -82,7 +82,7 @@ Check d_pat_preserves_skel_wf.
      Γ ⊢[ mode_tc ] e ⦂ B  →  d_wf_denv Γ
        →  ∃ Q, Γ ⊢[ mode_tc ] e ⇨ Q
               ∧ (∀ A, Γ ⊢[ mode_tc ] e ⦂ ptyp_to_btyp_inh A
-                      → Γ ⨟ ∅ ⨟ ∅ ⊢ᵣ Q ⊳ pskl_to_bskl_inh (ptyp_to_pskl A)) *)
+                      → Γ ⨟ ∅ ⨟ ∅ ⊢ᵣ Q ⊳ pskl_to_bskl_syn (ptyp_to_pskl A)) *)
 Check d_pat_safety.
 
 (* === Algorithmic metatheory (faithful question / solution / optimality

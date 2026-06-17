@@ -191,17 +191,25 @@ Qed.
     the inferred argument skeleton).  That is a rule change to the calculus
     (paper-side), DEFERRED pending discussion.
 
+    (Painting: the fill target is *syn*-painted, like [d_pat_safety] — the
+    faithful encoding of the paper's uncoloured [fill]; filling a ghost to
+    an inherited [∀] is deliberately banned.)
+
     Once disciplined, the proof is: induction on the check-mode inference
-    under the [denv_coh] context-coherence invariant above (each
-    inference-bound skeleton refines the corresponding typing type — [refl]
-    for coerced bindings via [d_refine_syn_refl_inh], ghost-refines-anything
-    for the λ ghost). *)
+    under the [denv_coh] invariant above (each inference-bound skeleton
+    refines the corresponding typing type — ghost-refines-anything for the
+    λ ghost).  NB a *further* refinement gap surfaces for annotated
+    polytypes: a concrete [bskl_all_syn] on the LHS has NO refine rule
+    (only [bskl_all_inh] via [__all], plus the ghost rules), so [(e:∀α.B)],
+    which infers [bskl_all_syn(…)], cannot even refine to [syn{∀α.B}]
+    (refl on a synthesised [∀]).  [d_refine_syn] would need a
+    [bskl_all_syn]-LHS rule too. *)
 Theorem d_pat_validity : forall Γ e Q B,
     Γ ⊢[ mode_tc ] e ⇨ Q ->
     Γ ⊢[ mode_tc ] e ⦂ B ->
     d_wf_denv Γ ->
     exists A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) /\
-              Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
+              Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A)).
 Proof.
 (* FALSE for the current rules (see the [freeze (λx.(x:unit))] counterexample
    above); aborted rather than admitted.  Recover by disciplining
@@ -233,29 +241,31 @@ Abort.
     counterexample: [freeze] is not a value, so the term checks only at
     [unit→unit], which [□→unit] fills.)
 
-    PROOF PLAN.  The cleanest witness is the algorithm's "looking" relation
-    [a_pat_optimal] / [a_pat_solution] (algo/def_question.v:114), NOT a
-    from-scratch declarative construction:
-    1. WITNESS via the algorithm.  [a_pat_solution M Θ0 P0 e θ1 Θ1 P1]
-       *already embeds* the declarative inference
-       [⌊Θ1⌋ ⊢[M] e ⇨ pskl_to_bskl_syn P1].  So the OPTIMAL solution
-       ([a_pat_optimal]) directly supplies a declarative [Q], and its
-       [≼]-maximality (it refines every other solution) is exactly the
-       "fills every checking type" half.  Safety thus reduces to
-       algorithmic completeness (a well-typed term has a solution) +
-       existence of an optimal one + the precision↔fill bridge — i.e. to
-       the Phase-3 algorithmic results, not new declarative machinery.
-    2. GHOST-FILLS-ANY (the residual analytic fact).  A bare [□] fills only
-       *monotypes* — [d_pat__hole] outputs a *syn*-painted fill; filling a
-       *polytype* [inh{∀…}] needs a universal ghost [⫯] under inh/inh
-       painting, i.e. this still depends on the DEFERRED painting fix (see
-       [d_pat_validity]).
-    Hence still [Admitted] (the statement is true). *)
+    PAINTING (resolved).  The fill target is *synthesised*-painted
+    ([pskl_to_bskl_syn (ptyp_to_pskl A)]), the faithful encoding of the
+    paper's uncoloured [P fill A].  This matches what filling actually
+    produces: [d_pat__hole]/[d_pat__tophole_fill] yield SYN content, and a
+    universal ghost [⫯] fills to a *synthesised* [∀] ([tophole_fill] →
+    [bskl_all_syn]).  Filling a ghost to an *inherited* [∀] is deliberately
+    banned (the no-guess-polytype invariant), so the target must NOT be
+    [inh]-painted — that was the earlier mis-statement.  E.g.
+    [λx.x ⊢tc inh{∀α.α→α}] with [Q = ⫯.(□→□)]: [⫯ ⊳ inh{∀}] is (correctly)
+    underivable, but [⫯ ⊳ syn{∀}] holds.
+
+    PROOF PLAN — the witness is the algorithm's "looking" relation
+    [a_pat_optimal] / [a_pat_solution] (algo/def_question.v:114):
+    [a_pat_solution …] *already embeds* the declarative inference
+    [⌊Θ1⌋ ⊢[M] e ⇨ pskl_to_bskl_syn P1], so the OPTIMAL solution supplies a
+    declarative [Q] whose [≼]-maximality is exactly "fills every checking
+    type".  Safety reduces to the Phase-3 algorithmic results (completeness
+    → a solution exists; optimal-existence; the precision↔fill bridge), not
+    new declarative machinery.  Still [Admitted] (the statement is true)
+    pending those. *)
 Theorem d_pat_safety : forall Γ e B,
     Γ ⊢[ mode_tc ] e ⦂ B ->
     d_wf_denv Γ ->
     exists Q, Γ ⊢[ mode_tc ] e ⇨ Q /\
               (forall A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
-                 Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A))).
+                 Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A))).
 Proof.
 Admitted.
