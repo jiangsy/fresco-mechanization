@@ -281,37 +281,47 @@ Abort.
     counterexample: [freeze] is not a value, so the term checks only at
     [unit→unit], which [□→unit] fills.)
 
-    PAINTING (resolved).  The fill target is *synthesised*-painted
-    ([pskl_to_bskl_syn (ptyp_to_pskl A)]), the faithful encoding of the
-    paper's uncoloured [P fill A].  This matches what filling actually
-    produces: [d_pat__hole]/[d_pat__tophole_fill] yield SYN content, and a
-    universal ghost [⫯] fills to a *synthesised* [∀] ([tophole_fill] →
-    [bskl_all_syn]).  Filling a ghost to an *inherited* [∀] is deliberately
-    banned (the no-guess-polytype invariant), so the target must NOT be
-    [inh]-painted — that was the earlier mis-statement.  E.g.
-    [λx.x ⊢tc inh{∀α.α→α}] with [Q = ⫯.(□→□)]: [⫯ ⊳ inh{∀}] is (correctly)
-    underivable, but [⫯ ⊳ syn{∀}] holds.
+    PAINTING (per the current def — see statement below).  The LHS is
+    *inherited* ([inh{P}]) and the target *bidirectional* ([bid{A}]).  This
+    is what makes it work: concrete [∀]s in [P] become inh-[∀] (handled by
+    [d_refine_syn__all]); ghosts fill via [hole] (any well-formed pskl) /
+    [tophole] (universal ghost → syn-[∀] by [tophole_fill]).  Filling a
+    ghost to an *inherited* [∀] stays (correctly) banned — the inh-painting
+    is on [P], not the target.
 
-    FILL ENGINE (proved): [d_refine_syn_hole_fills] above shows a plain
-    ghost [□] refines to ANY well-scoped type's syn-skeleton (polytypes
-    included — the [hole] rule fills with any well-formed [pskl]).  So the
-    "fills every checking type" half is discharged whenever the safe [Q] is
-    hole-rich at the relevant positions.
+    ENGINES (proved): [d_refine_syn_refl_inh] handles concrete/coerced
+    parts ([inh{ptyp A} ⊳ inh{ptyp A}]); [d_refine_syn_hole_fills] handles
+    ghosts ([□ ⊳] any well-scoped type's syn-skeleton, polytypes included).
 
-    REMAINING — the constructive witness: produce a hole-rich inferable [Q]
-    for each well-typed [e] (induction on [Γ ⊢tc e ⦂ B]).  Cleanest source
-    is the algorithm's "looking" relation [a_pat_optimal] / [a_pat_solution]
-    (algo/def_question.v:114), which *already embeds* the declarative
-    inference [⌊Θ1⌋ ⊢[M] e ⇨ pskl_to_bskl_syn P1]; its [≼]-maximality gives
-    fills-every-type via the engine.  This reduces to the Phase-3
-    algorithmic results (completeness → a solution exists; optimal-existence;
-    precision↔fill).  Still [Admitted] (the statement is true) pending the
-    witness construction. *)
-Theorem d_pat_safety : forall Γ e B,
-    Γ ⊢[ mode_tc ] e ⦂ B ->
+    REMAINING — the witness: a safe inferable [Q] per well-typed [e] whose
+    [inh{Q}] refines every checking type.  Two viable strategies (the
+    per-case refinement is discharged by the engines above either way):
+    (a) a direct declarative induction on the typing that builds [Q]
+        (threading [denv_coh] through λ; the existential IH may well suffice
+        with the right invariant); or
+    (b) algorithmically — the "looking" relation [a_pat_solution] /
+        [a_pat_optimal] (algo/def_question.v:114) computes the skeleton, and
+        [a_pat_solution] already *embeds* the declarative inference
+        [⌊Θ1⌋ ⊢[M] e ⇨ pskl_to_bskl_syn P1], its [≼]-optimality giving
+        fills-every-type; this reduces safety to the Phase-3 algorithmic
+        results.
+    Still [Admitted] (true) pending the witness. *)
+(** Updated to the current paper "Safe Skeleton" definition
+    (declarative.tex:1925): [P] is safe for [M] under [Γ] if for every [A]
+    with [Γ ⊢tc M ⦂ inh{A}], [inh{P} ⊳ bid{A}] — the inferred skeleton
+    *painted inherited* fills to *some bidirectional colouring* of [A].
+    Encoding: [inh{P}] = [pskl_to_bskl_inh (bskl_to_pskl Q)] (erase the
+    inferred [Q]'s colours, repaint inherited); [bid{A}] = an existential
+    [B] with [bskl_to_pskl B = ptyp_to_pskl A] (the refinement output,
+    unique by "Refinement determines colours").  The inh-painted LHS is
+    what makes this work — concrete [∀]s in [P] become inh-[∀] (handled by
+    [d_refine_syn__all]); ghosts fill via [hole]/[tophole]. *)
+Theorem d_pat_safety : forall Γ e B0,
+    Γ ⊢[ mode_tc ] e ⦂ B0 ->
     d_wf_denv Γ ->
     exists Q, Γ ⊢[ mode_tc ] e ⇨ Q /\
               (forall A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
-                 Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A))).
+                 exists B, bskl_to_pskl B = ptyp_to_pskl A /\
+                   Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B).
 Proof.
 Admitted.

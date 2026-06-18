@@ -77,12 +77,15 @@ Check d_pat_preserves_skel_wf.
    [freeze]) yields over-specific ghost-free skeletons.  Provable only once
    [d_pat__abs] is disciplined.  See prop_skeleton.v for the counterexamples. *)
 
-(* Paper Lemma D7 (declarative.tex:1992 — safety of skeleton inference):
-   existential (∃ a safe inference); CHECK mode.
-     Γ ⊢[ mode_tc ] e ⦂ B  →  d_wf_denv Γ
+(* Paper Lemma D7 (declarative.tex — safety of skeleton inference):
+   existential (∃ a safe inference); CHECK mode.  Current "Safe Skeleton"
+   def: ∀A with M ⦂ inh{A}, inh{P} ⊳ bid{A} (inferred skeleton painted
+   inherited fills to some bidirectional colouring of A).
+     Γ ⊢[ mode_tc ] e ⦂ B0  →  d_wf_denv Γ
        →  ∃ Q, Γ ⊢[ mode_tc ] e ⇨ Q
               ∧ (∀ A, Γ ⊢[ mode_tc ] e ⦂ ptyp_to_btyp_inh A
-                      → Γ ⨟ ∅ ⨟ ∅ ⊢ᵣ Q ⊳ pskl_to_bskl_syn (ptyp_to_pskl A)) *)
+                      → ∃ B, bskl_to_pskl B = ptyp_to_pskl A
+                             ∧ Γ ⨟ ∅ ⨟ ∅ ⊢ᵣ pskl_to_bskl_inh (bskl_to_pskl Q) ⊳ B) *)
 Check d_pat_safety.
 
 (* === Algorithmic metatheory (faithful question / solution / optimality
