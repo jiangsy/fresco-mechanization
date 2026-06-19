@@ -41,7 +41,7 @@ projection `aenv_to_denv`, and the solution/optimality predicate *shapes* in
 **Deferred stubs (reflexive placeholders) — this work:**
 - `a_unify` — `a_unify__refl` only; wrong arity.
 - `a_assign` — `a_assign__refl` only.
-- `a_broom` — `a_broom__refl` only; missing the `Θ | Ξ` worklist slot.
+- `a_broom` — `a_broom__refl` only; missing the `Θ | Ξ` context-suffix slot.
 - `a_consis` — flex rules `Flex`/`FlexL`/`FlexR` missing.
 - `a_sub` — `ForallL` and `FlexMono` missing.
 - `a_split` — flex case missing.
@@ -62,10 +62,11 @@ type-inference-in-context style. Three load-bearing encoding facts:
    head-most-recent, so `Θ₀, e` is `(a ~ b) ++ Θ₀` — matching the existing
    convention in `a_consis`/`a_sub`. Move rules recurse by peeling the head.
 
-2. **The `Θ | Ξ` split is two `aenv`s.** The pending-suffix `Ξ` in
-   `\mov{\Theta\mid\Xi}{…}{…}` is a second `aenv` accumulator. Entries migrate
-   `Θ → Ξ` (`Assign-Depend`) and `Ξ` is dumped at commit (`Assign-SolveM`:
-   output `Θ₀, Ξ, β̄, α̂ := τ`).
+2. **The `Θ | Ξ` split is two `aenv`s.** This is type-inference-IN-CONTEXT,
+   NOT a worklist algorithm: `Ξ` in `\mov{\Theta\mid\Xi}{…}{…}` is a local
+   context *suffix* of flexible-variable bindings (a second `aenv`), not a
+   list of pending judgments. Entries migrate `Θ → Ξ` (`Assign-Depend`) and
+   `Ξ` is dumped at commit (`Assign-SolveM`: output `Θ₀, Ξ, β̄, α̂ := τ`).
 
 3. **Substitution-sort decision (key).** Forward substitution `[τ/β̂]` puts a
    **monotype `τ : ptyp`** in for a flex var.
@@ -140,7 +141,7 @@ Add the `Θ | Ξ` slot. Signature
 `a_sub_mode → mode → pskl → aenv → aenv → ptyp → pskl → aenv → Prop`
 (`Θ | Ξ ⊢_{N;FN M;P₀} α̂ ◁ A ⊣ Θ'`). Rules `Flex-Solve` (solve
 `α̂₀ := α̂→β̂` then recurse on `α̂→β̂`), `Flex-Assign`, `Flex-Depend`,
-`Flex-Skip`, `FlexPoly-SkipRigid` — same worklist discipline as `a_assign`.
+`Flex-Skip`, `FlexPoly-SkipRigid` — same context-suffix discipline as `a_assign`.
 
 ### 2b. `a_sub` two missing rules (alg.tex:1046–1073)
 

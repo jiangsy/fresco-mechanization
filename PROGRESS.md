@@ -430,6 +430,42 @@ order `a_morepoly`, skeleton splitting `a_skel_split`, type equivalence
 
 Session-by-session closure log. Most recent first.
 
+## 2026-06-19 — Algorithmic DEFINITIONS made faithful (Units 1–5; branch `mech-algo-defs-faithful`)
+
+Goal: make every algorithmic *definition* paper-faithful (proofs stay
+admitted). Spec:
+[`docs/superpowers/specs/2026-06-19-frost-algo-defs-faithful-design.md`](docs/superpowers/specs/2026-06-19-frost-algo-defs-faithful-design.md).
+On an isolated worktree branch (the declarative "safety brick" work was
+committing concurrently on `mech-refine-three-ctx`). `make coq` green after
+every unit; **zero new admits / axioms** from the definition work.
+
+- **Unit 1** — flex-variable move judgments (paper fig:alg-consistency): real
+  `a_unify` (`Θ ⊲ α̂ ≈ β̂ ⊣ Θ'`, args `ptyp`) and `a_assign`
+  (`Θ | Ξ ⊲ α̂ := P ⊣ Θ'`), replacing reflexive stubs; `a_consis`
+  `Flex`/`FlexL`/`FlexR` wired in; `a_non_flex` tightened to real "not a flex
+  var". Type-inference-IN-CONTEXT, not a worklist (`Ξ` = local context suffix).
+- **Unit 2** — `a_sub` and `a_broom` made mutually inductive: `a_sub__forall_l`
+  (instantiate ∀-left via the real `a_extract`), `a_sub__flex_mono`, and the
+  real `a_broom` (`Flex-Solve`/`Assign`/`Depend`/`Skip`/`FlexPoly-SkipRigid`).
+- **Unit 3** — `a_split__flex` (`split[α̂] = β̂→γ̂` via `a_unify`).
+- **Unit 4** — real `skmod[TY]`/`skmod[SK]` (`a_ty/sk_mode_compat`), over `pskl`
+  (was `ptyp` — Finding F4), replacing accept-all stubs.
+- **Unit 5** — real `a_precise` (paper precision rules); `a_skel_split` removed
+  (deduped onto the real `a_split`); `a_ctx_precise` now meaningful. Paper-gap
+  predicates left as flagged stubs (see findings): `a_morepoly` (F6),
+  `a_safe_skel`/`a_most_informative` (F7), `a_tyequiv` (F8).
+
+**Paper-issues log (mech-as-bug-finder).** Surfaced for back-port:
+- **F4** `skmod[TY]` was over `ptyp` but its `□`/`P→Q` cases are skeleton-shaped → `pskl`.
+- **F5** Context precision is used in proofs but never defined standalone (paper uses `\inc`).
+- **F6** `\morepoly` definition is inside an `\iffalse` (disabled) block, yet "More information does not harm" depends on it.
+- **F7** "Safe / most-informative skeleton for term M" needs the term `e`, absent from the bridge-layer signatures; "most-informative" is never formally defined.
+- **F8** `\tyequiv` used in premises, never formally defined.
+- **F10** `Assign-Assign` premise writes `unify(S[τ/β̂])` over a general skeleton (only monotype-ified later by `guessMono`); mechanized as the `a_assign` continuation.
+- **F11** `broom` `Flex-Assign` premise merges `Θ0,Ξ` and writes the main-`a_sub` symbol, which would discard the accumulated `Ξ`; mechanized as the `a_broom` continuation keeping `Θ0|Ξ`.
+- **F12** `a_extract` carries no `N` (the `guess[N]` step); fine for `N=SK` (identity), flagged for `N=TY`.
+- **F1/F2/F3/F9** (paper-source polish): duplicate `Flex-Flex-Skip` label; `Assign-SkipTmVar` assignee written `\tilde\alpha` not `\hat\alpha`; commented-out `FlexMono-Def` "subsumed by below"; `\wenhao` TODO that the four Abs side-conditions changed and proofs need updating.
+
 ## 2026-06-16 — `d_refine_syn` three-context refactor + D4 closed (`d_refine_preserves_wf` Qed)
 
 - `d_refine_syn` refactored to three contexts (`Γ ⨟ Δs ⨟ Δi`): Γ =
