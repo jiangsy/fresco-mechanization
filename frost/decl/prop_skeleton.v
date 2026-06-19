@@ -343,6 +343,52 @@ Qed.
    (with the [ε]-tag bookkeeping) assembling all of the above.  The inference
    side (bricks 1-2 above) is complete and Qed; this is the remaining work. *)
 
+(** [more_ghost Q' Q]: [Q'] is [Q] with some sub-skeletons replaced by the
+    plain ghost [□].  The tool for lemma (1)/(2) of the plan above — the [□]s
+    in the [forall_l]-instantiated [Q] are [more_ghost] than any concrete
+    instantiation, and the fill is monotone in this order (at the syn-painted
+    leaves).  Defined now (independent of the open design questions); the
+    monotonicity + relating lemmas that consume it are next session's first
+    targets. *)
+Inductive more_ghost : bskl -> bskl -> Prop :=
+| more_ghost__hole  : forall Q, more_ghost bskl_hole Q
+| more_ghost__unit  : more_ghost bskl_unit bskl_unit
+| more_ghost__var   : forall X, more_ghost (bskl_var_f X) (bskl_var_f X)
+| more_ghost__arrow : forall Q1 Q2 R1 R2,
+    more_ghost Q1 R1 -> more_ghost Q2 R2 ->
+    more_ghost (bskl_arrow Q1 Q2) (bskl_arrow R1 R2)
+| more_ghost__all_syn : forall L Q R,
+    (forall X, X `notin` L ->
+       more_ghost (open_bskl_wrt_bskl Q (bskl_var_f X))
+                  (open_bskl_wrt_bskl R (bskl_var_f X))) ->
+    more_ghost (bskl_all_syn Q) (bskl_all_syn R)
+| more_ghost__all_inh : forall L Q R,
+    (forall X, X `notin` L ->
+       more_ghost (open_bskl_wrt_bskl Q (bskl_var_f X))
+                  (open_bskl_wrt_bskl R (bskl_var_f X))) ->
+    more_ghost (bskl_all_inh Q) (bskl_all_inh R)
+| more_ghost__tophole : forall Q R,
+    more_ghost Q R -> more_ghost (bskl_tophole Q) (bskl_tophole R).
+
+(** BRICK 3 GOAL (next session's first task).  The fill side: the ghost [Q]
+    inferred for a base term's principal type [C] refines some colouring [B]
+    of every checking type [A'] the term subsumes to.  [B] is existential
+    precisely because it is the [Q]-driven position-dependent colouring (syn
+    at hole-filled leaves, inh at kept nested ∀s — see the obstacle note).
+    Once proved, the [__sub] case of [d_pat_safety] is: take [Q] from
+    [ghost_of_total]+[ghost_of_infer] (inference), then [ghost_of_fill] gives
+    the per-[A'] refinement.  PROOF PLAN: induction on the [d_sub] derivation —
+    [more_ghost]+hole-monotonicity for [__forall_l] ([□] absorbs [φ]),
+    consistency→refinement for [__check], [tophole_fill] for [__forall_r]. *)
+Lemma ghost_of_fill : forall C Q Γ A',
+    ghost_of (ptyp_to_pskl C) Q ->
+    empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn C) ⊑ (ptyp_to_btyp_inh A') ->
+    exists B, bskl_to_pskl B = ptyp_to_pskl A' /\
+              Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B.
+Proof.
+  (* NEXT SESSION — see the 4-lemma plan in the obstacle note above. *)
+Admitted.
+
 (** Γ-weakening for refinement (local copy — the general
     [d_refine_syn_weakening] lives in [prop_weakening], built later).  Used
     by [denv_coh_lookup] to lift a binding's refinement to the full

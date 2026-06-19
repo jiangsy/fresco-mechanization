@@ -401,7 +401,7 @@ files:
 | `subtyping/prop_consis_sub_trans.v` | 1 | `d_consis_sub_trans` |
 | `prop_subtyping.v` | 1 | `d_typing_sub_compose` |
 | `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` (paper-flagged) |
-| `prop_skeleton.v` | 1 | `d_pat_safety` |
+| `prop_skeleton.v` | 2 | `d_pat_safety`, `ghost_of_fill` (brick-3 stub; inference side `ghost_of`/`ghost_of_infer` is Qed) |
 
 `frost/algo/` (26 admits — faithful question/solution/optimality scaffolding):
 
