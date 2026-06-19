@@ -298,6 +298,52 @@ Proof.
      induction: safety must be generalised over [denv_coh Γs Γt] (inference
      context with [dbind_skl] vs typing context with [dbind_typ]); the leaves
      then close with the ghost-fill engines [d_refine_syn_hole_fills] /
-     [d_refine_syn_tophole_hole_fills].  The remaining work is the witness —
-     the [d_pat_sub] generalisation of concrete skeletons to ghosts. *)
+     [d_refine_syn_tophole_hole_fills].
+
+     The witness is CONSTRUCTIVE (not the algorithm's optimality): the
+     declarative inference is permissive enough to pick a fully-ghostified
+     skeleton.  Per case: [var] → [□] (the [denv_coh]-bound skeleton);
+     [unit] → [⫯.unit] (univ_ghost_r); annotations → [d_pat__sub] generalises
+     the concrete skeleton, instantiating each top-level [∀] with [□] via
+     [d_pat_sub__forall_l_*] (see [d_pat_sub_forall_hole_witness]); λ →
+     [⫯.(□→Q)] via [abs_check].  The per-[A] fill then holds because [d_sub]
+     check-mode is SHALLOW (one-level consistency + top-level [forall_l]
+     only): the only [A'] a term checks at differ from its principal type at
+     positions [forall_l] instantiated, exactly where the witness placed a
+     [□] (which fills anything via [__hole]); nested [∀]s stay concrete and
+     are matched structurally by [__all]/[__arrow].  The remaining work is
+     to (i) build [denv_coh] for the top-level [Γ] (coerce typ→[□] skl) and
+     (ii) grind the 11-case induction with these witnesses + a bridge lemma
+     [d_sub C B -> inh{ghostify C} ⊳ bid{B}]. *)
 Admitted.
+
+(** GHOSTIFICATION WITNESS (the mechanism the safety witness relies on).
+    A *top-level* [∀] in an annotation's concrete skeleton can be
+    generalised to a ghost by [d_pat__sub]: [d_pat_sub__forall_l_untagged]
+    instantiates the [∀] with [ψ = □] ([is_tskl □] holds — ghosts ARE
+    tagged skeletons), and [d_pat_sub__ghost] then yields [□].  So
+    [(e:∀α.α) ⇨tc □], and [□] fills every type ([d_refine_syn_hole_fills]).
+
+    This is why the existential safety is constructive (and why it is NOT
+    the algorithm's optimality): the declarative inference is permissive
+    enough to pick the fully-ghostified skeleton directly.  No nested-ghost
+    problem arises because [d_sub] check-mode is shallow — one-level
+    consistency + top-level [forall_l] only, never deep instantiation under
+    an arrow — so a term never checks at an instance of a nested covariant
+    [∀], and that [∀] need not be ghostified (it stays concrete, matched by
+    [d_refine_syn__all] / [__arrow]). *)
+Lemma d_pat_sub_forall_hole_witness : forall Γ,
+  nil ⨟ Γ ⊢ₛ[ mode_tc ]
+    (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl (ptyp_all (ptyp_var_b 0)))))
+      ⊑ bskl_hole.
+Proof.
+  intros Γ. simpl.
+  eapply d_pat_sub__forall_l_untagged with (Δ' := nil) (psi := uskl_hole).
+  - discriminate.
+  - apply list_disjoint_nil_l.
+  - apply d_tags_skl__hole.
+  - apply d_wf_uskl__hole.
+  - apply is_tskl__hole.
+  - simpl. change bskl_hole with (pskl_to_bskl_inh pskl_hole).
+    apply d_pat_sub__ghost. apply d_wf_pskl__hole.
+Qed.
