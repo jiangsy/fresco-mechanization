@@ -370,6 +370,66 @@ Inductive more_ghost : bskl -> bskl -> Prop :=
 | more_ghost__tophole : forall Q R,
     more_ghost Q R -> more_ghost (bskl_tophole Q) (bskl_tophole R).
 
+(** HOLE-MONOTONICITY (lemma (1) of the plan), for a syn-painted RHS: making
+    the LHS [Q] more ghost ([more_ghost Q' Q]) preserves the refinement when
+    the RHS is [pskl_to_bskl_syn Pp] (well-formed).  Proof by induction on the
+    refinement derivation: wherever [more_ghost] turns a subterm into [□] the
+    [__hole] rule fires (the matching RHS sub-skeleton is syn-painted and wf);
+    the [__all] case is vacuous (a syn RHS is never [bskl_all_inh]); the [⫯]
+    cases reconstruct via the same rule, the IH applied at [Q' = ⫯ …]. *)
+Lemma d_refine_syn_more_ghost_syn : forall Γ Δs Δi Q Bsyn,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ Bsyn ->
+    forall Pp, Bsyn = pskl_to_bskl_syn Pp ->
+    Δs ⨟ Γ ⊢ₚₛ Pp ->
+    forall Q', more_ghost Q' Q ->
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q' ⊳ Bsyn.
+Proof.
+  intros Γ Δs Δi Q Bsyn Href.
+  induction Href; intros Pp Heq Hwf Q' Hmg.
+  - (* __unit *) inversion Hmg; subst.
+    + rewrite Heq. apply d_refine_syn__hole. assumption.
+    + apply d_refine_syn__unit.
+  - (* __var *) inversion Hmg; subst.
+    + rewrite Heq. apply d_refine_syn__hole. assumption.
+    + apply d_refine_syn__var; assumption.
+  - (* __arrow *) inversion Hmg; subst.
+    + rewrite Heq. apply d_refine_syn__hole. assumption.
+    + destruct Pp; simpl in Heq; try discriminate. inversion Heq; subst.
+      inversion Hwf; subst.
+      apply d_refine_syn__arrow;
+        [ eapply IHHref1 with (Pp := Pp1) | eapply IHHref2 with (Pp := Pp2) ];
+        solve [ reflexivity | assumption ].
+  - (* __all: RHS bskl_all_inh, never a syn-painting ⟹ vacuous *)
+    destruct Pp; simpl in Heq; discriminate.
+  - (* __hole: Q = bskl_hole ⟹ Q' = bskl_hole *)
+    inversion Hmg; subst. apply d_refine_syn__hole. assumption.
+  - (* __tophole_remove (RHS is a var P; [subst] already rewrote it to syn Pp) *)
+    inversion Hmg; subst.
+    + apply d_refine_syn__hole. assumption.
+    + apply d_refine_syn__tophole_remove. eapply IHHref with (Pp := Pp); auto.
+  - (* __tophole_fill: Bsyn = bskl_all_syn P = syn Pp ⟹ Pp = pskl_all_syn Pp0 *)
+    inversion Hmg; subst.
+    + rewrite Heq. apply d_refine_syn__hole. assumption.
+    + destruct Pp; simpl in Heq; try discriminate. inversion Heq; subst.
+      inversion Hwf; subst.
+      inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
+      eapply H0 with (Pp := open_pskl_wrt_pskl Pp (pskl_var_f X)).
+      * auto.
+      * rewrite pskl_to_bskl_syn_open. reflexivity.
+      * match goal with
+        | Hb : forall _ : atom, _ `notin` _ -> _ ⨟ _ ⊢ₚₛ _ |- _ =>
+            apply Hb; auto
+        end.
+      * apply more_ghost__tophole. assumption.
+  - (* __tophole_keep: Bsyn = bskl_tophole P = syn Pp ⟹ Pp = pskl_tophole Pp0 *)
+    inversion Hmg; subst.
+    + rewrite Heq. apply d_refine_syn__hole. assumption.
+    + destruct Pp; simpl in Heq; try discriminate. inversion Heq; subst.
+      inversion Hwf; subst.
+      apply d_refine_syn__tophole_keep; [ assumption | ].
+      eapply IHHref with (Pp := Pp); auto.
+Qed.
+
 (** BRICK 3 GOAL (next session's first task).  The fill side: the ghost [Q]
     inferred for a base term's principal type [C] refines some colouring [B]
     of every checking type [A'] the term subsumes to.  [B] is existential
