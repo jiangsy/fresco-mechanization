@@ -297,6 +297,33 @@ Proof.
   exists Q. apply ghost_of_infer; assumption.
 Qed.
 
+(** ===================================================================== *)
+(** BRICK 3 — FILL SIDE, and THE OBSTACLE.                                  *)
+(**
+   Goal: [ghost_of (ptyp_to_pskl C) Q -> empty ⨟ Γ ⊢[tc] (ptyp_to_utyp_syn C)
+          ⊑ (ptyp_to_btyp_inh A') -> inh{Q} ⊳ syn{A'}], i.e. the ghost [Q]
+   produced for a base term's principal type [C] refines every checking type
+   [A'] the term subsumes to.  (The [inh{Q}] / [syn{A'}] painting is the
+   safety statement's; the syn-RHS is what the fill engines target.)
+
+   THE OBSTACLE — [forall_l] / ghost mis-alignment.  Induct on the [d_sub]
+   derivation.  The [tc] cases are [__check] (consistency core), [__forall_r]
+   (RHS adds an inherited ∀, absorbed by the [⫯] via [tophole_fill]) and
+   [__forall_l].  In [__forall_l] the LHS ∀ of [C] is instantiated with a
+   CONCRETE [φ] ([is_ttyp]), reducing to [open(C-body) φ ⊑ inh{A'}] — but
+   [ghost_of] stripped the SAME ∀ by opening its body with [□]
+   ([ghost_of__all]).  So I hold [ghost_of (open (skel C-body) □) Q] while a
+   naive IH wants [ghost_of (open (skel C-body) (skel φ)) Q].  They differ
+   exactly at the instantiated position, where [Q] has a [□].
+
+   Why it is still TRUE: that [□] fills ANYTHING ([d_refine_syn__hole]), so it
+   absorbs whatever [φ] became in [A'].  Mechanically this needs a GENERALISED
+   statement / a hole-monotonicity of the fill ("replacing a sub-skeleton of
+   [Q] by [□] only enlarges what [inh{Q}] refines"), so the [□]s uniformly
+   absorb the [forall_l] instantiations.  Plus the tags ([ε]) carried by [φ]
+   add a second axis to track.  This is the one genuinely intricate piece
+   left; the inference side (bricks 1-2 above) is complete and Qed. *)
+
 (** Γ-weakening for refinement (local copy — the general
     [d_refine_syn_weakening] lives in [prop_weakening], built later).  Used
     by [denv_coh_lookup] to lift a binding's refinement to the full
