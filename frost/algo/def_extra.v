@@ -95,8 +95,15 @@ Inductive a_sub_mode : Set :=
 Inductive a_non_flex_poly : aenv -> ptyp -> Prop :=
 | a_non_flex_poly__ptyp : forall Θ A, a_wf_ptyp Θ A -> a_non_flex_poly Θ A.
 
-Inductive a_non_flex : aenv -> ptyp -> Prop :=
-| a_non_flex__ptyp : forall Θ A, a_wf_ptyp Θ A -> a_non_flex Θ A.
+(* [a_flex Θ P]: [P] is a (bound) flexible variable [α̂].  [a_non_flex Θ P]
+   (paper [\nonflex{P}]): [P] is well-formed and NOT a flexible variable. *)
+Inductive a_flex : aenv -> pskl -> Prop :=
+| a_flex__var : forall Θ α,
+    binds α abind_flex_mono Θ ->
+    a_flex Θ (pskl_var_f α).
+
+Definition a_non_flex (Θ : aenv) (P : pskl) : Prop :=
+  lc_pskl P /\ ~ a_flex Θ P.
 
 (* [guessMono P = (Ξ; A)] (paper algorithmic.tex): fill the holes of a
    skeleton [P] with fresh flexible variables [Ξ], yielding a type [A].
@@ -345,15 +352,73 @@ Inductive a_extract : atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     P ⊳[ α , m ] P' ⤳ Ξ ↪ Q
 where "P ⊳[ α , m ] P' ⤳ Ξ ↪ Q" := (a_extract α m P P' Ξ Q) : type_scope.
 
-(* ----- Flexible-variable solving (move judgments).  Deferred: the
-   full unification / assignment rules (paper fig:alg-consistency,
-   move boxes) are not yet transcribed; minimal reflexive stubs at the
-   correct uncoloured sorts. ----- *)
-Inductive a_unify : aenv -> ptyp -> ptyp -> ptyp -> aenv -> Prop :=
-| a_unify__refl : forall Θ A, a_unify Θ A A A Θ.
+(* ----- Flexible-variable solving (move judgments), paper fig:alg-consistency.
+   [a_unify Θ0 α̂ β̂ Θ1] = [Θ0 ⊲ α̂ ≈ β̂ ⊣ Θ1]; the two arguments are [ptyp]
+   so that [Flex-Flex-Assign]'s forward substitution [α̂[τ/γ̂]] stays in-sort.
+   [a_assign Θ0 Ξ α̂ P Θ1] = [Θ0 | Ξ ⊲ α̂ := P ⊣ Θ1]; [Ξ] is the pending-suffix
+   accumulator.  Both judgments peel the list HEAD — the rightmost (most
+   recent) entry in the paper's [Θ0, e].  Substitution [P[τ/β̂]] over a
+   skeleton is [subst_pskl_in_pskl (ptyp_to_pskl τ) β P] (a monotype [τ]
+   embedded into [pskl]); see DESIGN/spec for the in-sort argument. ----- *)
+Inductive a_unify : aenv -> ptyp -> ptyp -> aenv -> Prop :=
+| a_unify__flex_id : forall Θ0 α,                          (* Flex-Flex-Id *)
+    binds α abind_flex_mono Θ0 ->
+    a_unify Θ0 (ptyp_var_f α) (ptyp_var_f α) Θ0
+| a_unify__flex_l : forall Θ0 α β,                         (* Flex-Flex-L *)
+    α <> β ->
+    a_unify ((α ~ abind_flex_mono) ++ Θ0) (ptyp_var_f α) (ptyp_var_f β)
+      ((α ~ abind_flex_mono_def (ptyp_var_f β)) ++ Θ0)
+| a_unify__flex_r : forall Θ0 α β,                         (* Flex-Flex-R *)
+    α <> β ->
+    a_unify ((β ~ abind_flex_mono) ++ Θ0) (ptyp_var_f α) (ptyp_var_f β)
+      ((β ~ abind_flex_mono_def (ptyp_var_f α)) ++ Θ0)
+| a_unify__flex_assign : forall Θ0 Θ1 γ τ A B,             (* Flex-Flex-Assign *)
+    a_unify Θ0 (subst_ptyp_in_ptyp τ γ A) (subst_ptyp_in_ptyp τ γ B) Θ1 ->
+    a_unify ((γ ~ abind_flex_mono_def τ) ++ Θ0) A B
+      ((γ ~ abind_flex_mono_def τ) ++ Θ1)
+| a_unify__flex_skip : forall Θ0 Θ1 γ A B,                 (* Flex-Flex-Skip (flex γ̂) *)
+    γ `notin` (ftvar_in_ptyp A `union` ftvar_in_ptyp B) ->
+    a_unify Θ0 A B Θ1 ->
+    a_unify ((γ ~ abind_flex_mono) ++ Θ0) A B ((γ ~ abind_flex_mono) ++ Θ1)
+| a_unify__skip_other : forall Θ0 Θ1 c b A B,              (* Flex-Flex-Skip (rigid γ / x:Q) *)
+    (b = abind_tvar \/ (exists Q, b = abind_var_typ Q)) ->
+    a_unify Θ0 A B Θ1 ->
+    a_unify ((c ~ b) ++ Θ0) A B ((c ~ b) ++ Θ1).
 
-Inductive a_assign : aenv -> aenv -> ptyp -> ptyp -> aenv -> Prop :=
-| a_assign__refl : forall Θ A, a_assign Θ nil A A Θ.
+(* [a_assign].  NB (Finding F10): the paper's [Assign-Assign] premise is
+   written [unify(S[τ/β̂])(α̂[τ/β̂])] over a merged context [Θ0,Ξ], but the
+   assigned object [P] is a general skeleton (only monotype-ified later, in
+   [Assign-SolveM] via [guessMono]), so [unify] (monotype-level) does not
+   apply to it.  We mechanize the coherent reading: CONTINUE the assignment
+   on [P[τ/β̂]] (keeping the [Θ0 | Ξ] split), since [α̂ ≠ β̂] makes
+   [α̂[τ/β̂] = α̂].  Flagged for back-port. *)
+Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
+| a_assign__solve_m : forall Θ0 Ξ α P βs τ,               (* Assign-SolveM *)
+    α `notin` ftvar_in_pskl P ->
+    a_guess_mono Θ0 P βs τ ->
+    a_assign ((α ~ abind_flex_mono) ++ Θ0) Ξ α P
+      ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)
+| a_assign__assign : forall Θ0 Θ1 Ξ α β τ P,              (* Assign-Assign (see F10) *)
+    a_assign Θ0 Ξ α (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) Θ1 ->
+    a_assign ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α P
+      ((β ~ abind_flex_mono_def τ) ++ Θ1)
+| a_assign__depend : forall Θ0 Θ1 Ξ α β P,                (* Assign-Depend *)
+    α <> β ->
+    β `in` ftvar_in_pskl P ->
+    a_assign Θ0 ((β ~ abind_flex_mono) ++ Ξ) α P Θ1 ->
+    a_assign ((β ~ abind_flex_mono) ++ Θ0) Ξ α P Θ1
+| a_assign__skip : forall Θ0 Θ1 Ξ α β P,                  (* Assign-Skip *)
+    α <> β ->
+    β `notin` ftvar_in_pskl P ->
+    a_assign Θ0 Ξ α P Θ1 ->
+    a_assign ((β ~ abind_flex_mono) ++ Θ0) Ξ α P ((β ~ abind_flex_mono) ++ Θ1)
+| a_assign__skip_rigid : forall Θ0 Θ1 Ξ α β P,            (* Assign-SkipRigid *)
+    β `notin` ftvar_in_pskl P ->
+    a_assign Θ0 Ξ α P Θ1 ->
+    a_assign ((β ~ abind_tvar) ++ Θ0) Ξ α P ((β ~ abind_tvar) ++ Θ1)
+| a_assign__skip_tm_var : forall Θ0 Θ1 Ξ α x Q P,         (* Assign-SkipTmVar *)
+    a_assign Θ0 Ξ α P Θ1 ->
+    a_assign ((x ~ abind_var_typ Q) ++ Θ0) Ξ α P ((x ~ abind_var_typ Q) ++ Θ1).
 
 (* ===================================================================== *)
 (*  Algorithmic consistency  [Θ0 ⊢ P ~ Q ⊣ Θ1] with inherited skeleton    *)
@@ -411,7 +476,18 @@ Inductive a_consis : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
     guarded_pskl P ->
     (forall β, P <> pskl_var_f β) ->
     a_consis Θ0 P0 P Q Θ1 ->
-    a_consis Θ0 (pskl_tophole P0) P Q Θ1.
+    a_consis Θ0 (pskl_tophole P0) P Q Θ1
+| a_consis__flex : forall Θ0 Θ1 α β,                       (* Flex *)
+    a_unify Θ0 (ptyp_var_f α) (ptyp_var_f β) Θ1 ->
+    a_consis Θ0 (pskl_var_f β) (pskl_var_f α) (pskl_var_f α) Θ1
+| a_consis__flex_l : forall Θ0 Θ1 α P0,                    (* FlexL *)
+    a_non_flex Θ0 P0 ->
+    a_assign Θ0 nil α P0 Θ1 ->
+    a_consis Θ0 P0 (pskl_var_f α) (pskl_var_f α) Θ1
+| a_consis__flex_r : forall Θ0 Θ1 α P,                     (* FlexR *)
+    a_non_flex Θ0 P ->
+    a_assign Θ0 nil α P Θ1 ->
+    a_consis Θ0 (pskl_var_f α) P (pskl_var_f α) Θ1.
 
 (* [Θ0 ⊢ P ~ P0 ⊣ Θ1]: consistency when the join output is not used
    (paper abbreviation [aconsis{Θ0}{P}{P0}{Θ1}]). *)

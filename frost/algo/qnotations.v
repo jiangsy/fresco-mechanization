@@ -89,6 +89,6 @@ Notation "Θ ⊢[ m ; P0 ] e ⇨ Q ⊣ Θ'" := (a_pat m Θ P0 e Q Θ')
   (in custom algo at level 80, Θ constr at level 0, m constr at level 0,
    P0 constr at level 0, e constr at level 0, Q constr at level 0,
    Θ' constr at level 0).
-Notation "Θ ⊢ B ≐ B' ↣ B'' ⊣ Θ'" := (a_unify Θ B B' B'' Θ')
+Notation "Θ ⊢ B ≐ B' ⊣ Θ'" := (a_unify Θ B B' Θ')
   (in custom algo at level 80, Θ constr at level 0, B constr at level 0,
-   B' constr at level 0, B'' constr at level 0, Θ' constr at level 0).
+   B' constr at level 0, Θ' constr at level 0).

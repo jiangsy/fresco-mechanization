@@ -439,7 +439,18 @@ Qed.
     [ghost_of_total]+[ghost_of_infer] (inference), then [ghost_of_fill] gives
     the per-[A'] refinement.  PROOF PLAN: induction on the [d_sub] derivation —
     [more_ghost]+hole-monotonicity for [__forall_l] ([□] absorbs [φ]),
-    consistency→refinement for [__check], [tophole_fill] for [__forall_r]. *)
+    consistency→refinement for [__check], [tophole_fill] for [__forall_r].
+
+    STATUS: lemma (1), hole-monotonicity, is PROVED ([d_refine_syn_more_ghost_syn]
+    above, Qed) — but for a *whole*-syn RHS.  DESIGN FORK discovered while
+    assembling: the witness [B] is MIXED (syn at hole-filled leaves, inh at
+    kept nested ∀s), so the whole-syn [mono] does not directly absorb [φ]
+    against [B].  Two ways forward: (a) generalise [mono] to be POSITIONAL
+    (holed positions face syn-RHS, others arbitrary); or (b) drop [mono] and
+    CONSTRUCT [B] directly by recursion on [inh{Q}] / the [d_sub] core — which
+    needs a [utyp→pskl] skeleton + a "holed-subsumes" invariant (neither
+    exists yet).  (b) is the cleaner long-term shape.  This fork is the next
+    decision; the inference side (bricks 1-2) is complete and Qed. *)
 Lemma ghost_of_fill : forall C Q Γ A',
     ghost_of (ptyp_to_pskl C) Q ->
     empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn C) ⊑ (ptyp_to_btyp_inh A') ->
