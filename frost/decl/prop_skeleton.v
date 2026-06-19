@@ -150,6 +150,21 @@ Proof.
   apply d_refine_syn__hole. eapply d_wf_pskl_of_ptyp; eassumption.
 Qed.
 
+(** A universal ghost over a hole [⫯.□] also refines any well-scoped type
+    (drop the [⫯] via [tophole_remove], then the [□] fills via the engine).
+    Together with [d_refine_syn_hole_fills] this is the full fill side of
+    safety: a ghost-rich skeleton refines every checking type. *)
+Lemma d_refine_syn_tophole_hole_fills : forall A,
+    lc_ptyp A ->
+    forall Γ Δs Δi,
+      (forall X, X `in` ftvar_in_ptyp A -> binds X dbind_tvar Γ) ->
+      Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole bskl_hole) ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A)).
+Proof.
+  intros A Hlc Γ Δs Δi Hcov.
+  apply d_refine_syn__tophole_remove.
+  apply d_refine_syn_hole_fills; auto.
+Qed.
+
 (** Γ-weakening for refinement (local copy — the general
     [d_refine_syn_weakening] lives in [prop_weakening], built later).  Used
     by [denv_coh_lookup] to lift a binding's refinement to the full
