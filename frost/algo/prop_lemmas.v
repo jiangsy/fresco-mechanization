@@ -28,11 +28,18 @@ Require Import src.frost.algo.def_question.
 Set Implicit Arguments.
 
 (* ===================================================================== *)
-(*  PLACEHOLDER predicates for unmechanised paper notions.                *)
+(*  Declarative notions used in the solution / optimality statements.     *)
+(*  [a_skel_split] removed — the real [a_split] (def_extra.v, now with the *)
+(*  flex case) is the single splitting relation.                          *)
 (* ===================================================================== *)
 
-(* Context precision [Θ' ⪯ctx Θ] (paper Definition: Context precision):
-   same non-term-variable entries, every term variable more precise. *)
+(* Context precision [Θ' ⪯ctx Θ]: same non-term-variable entries, every term
+   variable more precise.  Now meaningful (derives from the real [a_precise]).
+   FINDING F5: the paper has NO standalone context-precision relation — it
+   expresses the notion via metasubstitution / information increase
+   ([\inc], algorithmic.tex:133-209).  This is our reading; the
+   [lemma:context-precision-skeleton] (proofs.tex:119-156, itself marked
+   "TODO: check") should be cross-checked and back-ported. *)
 Inductive a_ctx_precise : aenv -> aenv -> Prop :=
 | a_ctx_precise__nil :
     a_ctx_precise nil nil
@@ -46,23 +53,32 @@ Inductive a_ctx_precise : aenv -> aenv -> Prop :=
                  (pskl_to_bskl_syn (ptyp_to_pskl A)) ->
     a_ctx_precise ((x ~ abind_var_typ A') ++ Θ') ((x ~ abind_var_typ A) ++ Θ).
 
-(* [P] is a safe skeleton for [e] under [Θ] and mode [M] (paper "Safe"). *)
+(* [P] is a safe skeleton for a term under [Θ] and mode [M] (paper "Safe
+   Skeleton", declarative.tex:1927-1931: P safe for M iff every type the
+   term checks against is refined by [inh P]).  PLACEHOLDER (accept-all) —
+   FINDING F7: the signature lacks the term [e], so the paper definition
+   (which quantifies over the term's checking types) cannot be expressed
+   here without a signature refactor of the bridge layer (the
+   substitution-preservation lemmas below would thread [e] too).  Left as a
+   flagged stub pending that refactor. *)
 Inductive a_safe_skel : aenv -> mode -> pskl -> Prop :=
 | a_safe_skel__any : forall Θ M P, a_safe_skel Θ M P.
 
-(* [P] is a most-informative skeleton for [e] under [Θ] and mode [M]
-   (paper "most informative"). *)
+(* [P] is a most-informative skeleton.  PLACEHOLDER (accept-all) — FINDING
+   F7: "most-informative skeleton" is used only in paper lemma prose and is
+   never formally defined; it also needs the term [e] (see [a_safe_skel]).
+   Flagged stub pending a paper definition. *)
 Inductive a_most_informative : aenv -> mode -> pskl -> Prop :=
 | a_most_informative__any : forall Θ M P, a_most_informative Θ M P.
 
-(* [Θ ⊢ A' ⊑poly A]: [A'] carries at least as much polymorphic
-   information as [A] (paper [\morepoly]). *)
+(* [Θ ⊢ A' ⊑poly A]: [A'] carries at least as much polymorphic information
+   as [A] (paper [\morepoly]).  PLACEHOLDER (reflexive) — FINDING F6: the
+   paper's [\morepoly] definition (algorithmic.tex:694-819, 10 rules) is
+   currently inside an [\iffalse] block (disabled), yet "More information
+   does not harm" depends on it.  Left reflexive pending the authors'
+   decision to re-enable / finalise that definition. *)
 Inductive a_morepoly : aenv -> btyp -> btyp -> Prop :=
 | a_morepoly__refl : forall Θ A, a_morepoly Θ A A.
-
-(* Skeleton splitting [mov Θ₀ (split P₀ P₁) Θ₁] (paper [split]). *)
-Inductive a_skel_split : aenv -> pskl -> pskl -> aenv -> Prop :=
-| a_skel_split__refl : forall Θ P, a_skel_split Θ P P Θ.
 
 (* ===================================================================== *)
 (*  Identity information increase.  Every algorithm produces the identity  *)
@@ -139,9 +155,10 @@ Proof. Admitted.
 (*  Splitting refines (paper Lemma: Splitting refines).                   *)
 (* ===================================================================== *)
 
-Lemma a_split_refine : forall Θ0 Θ1 P0 P1,
-    a_skel_split Θ0 P0 P1 Θ1 ->
-    ⌊ Θ1 ⌋ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ (pskl_to_bskl_inh P1).
+Lemma a_split_refine : forall Θ0 Θ1 P0 P Q,
+    a_split Θ0 P0 P Q Θ1 ->
+    ⌊ Θ1 ⌋ ⨟ nil ⨟ nil ⊢ᵣ
+      (pskl_to_bskl_inh P0) ⊳ (pskl_to_bskl_inh (pskl_arrow P Q)).
 Proof. Admitted.
 
 (* ===================================================================== *)
