@@ -73,6 +73,45 @@ Proof.
   apply (pskl_to_bskl_inh_open_rec P (pskl_var_f X) 0).
 Qed.
 
+(** [pskl_to_bskl_syn] commutes with (recursive) opening. *)
+Lemma pskl_to_bskl_syn_open_rec : forall P V k,
+    pskl_to_bskl_syn (open_pskl_wrt_pskl_rec k V P) =
+    open_bskl_wrt_bskl_rec k (pskl_to_bskl_syn V) (pskl_to_bskl_syn P).
+Proof.
+  induction P; intros V k; simpl; try reflexivity;
+    try (rewrite IHP; reflexivity);
+    try (rewrite IHP1, IHP2; reflexivity).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+Qed.
+
+Lemma pskl_to_bskl_syn_open : forall P X,
+    pskl_to_bskl_syn (open_pskl_wrt_pskl P (pskl_var_f X)) =
+    open_bskl_wrt_bskl (pskl_to_bskl_syn P) (bskl_var_f X).
+Proof.
+  intros. unfold open_pskl_wrt_pskl, open_bskl_wrt_bskl.
+  apply (pskl_to_bskl_syn_open_rec P (pskl_var_f X) 0).
+Qed.
+
+(** [bskl_to_uskl] commutes with (recursive) opening (both ∀-colours
+    collapse to [uskl_all_syn]). *)
+Lemma bskl_to_uskl_open_rec : forall Q V k,
+    bskl_to_uskl (open_bskl_wrt_bskl_rec k V Q) =
+    open_uskl_wrt_uskl_rec k (bskl_to_uskl V) (bskl_to_uskl Q).
+Proof.
+  induction Q; intros V k; simpl; try reflexivity;
+    try (rewrite IHQ; reflexivity);
+    try (rewrite IHQ1, IHQ2; reflexivity).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+Qed.
+
+Lemma bskl_to_uskl_open : forall Q X,
+    bskl_to_uskl (open_bskl_wrt_bskl Q (bskl_var_f X)) =
+    open_uskl_wrt_uskl (bskl_to_uskl Q) (uskl_var_f X).
+Proof.
+  intros. unfold open_bskl_wrt_bskl, open_uskl_wrt_uskl.
+  apply (bskl_to_uskl_open_rec Q (bskl_var_f X) 0).
+Qed.
+
 (** [bskl_to_pskl] preserves local closure (both ∀-colours collapse to
     [pskl_all_syn]). *)
 Lemma lc_bskl_to_pskl : forall Q,

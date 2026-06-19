@@ -132,6 +132,44 @@ Proof.
   apply d_refine_syn_hole_fills; auto.
 Qed.
 
+(** CONSISTENCY REFLEXIVITY for a syn-painted skeleton (on [pskl], so it
+    covers BOTH hole-free type skeletons AND skeletons carrying ghost holes
+    [pskl_hole]/[pskl_tophole]): the [uskl] erasure of a syn-painted skeleton
+    is consistent with that skeleton.  This is the foundational brick of the
+    inference side — [d_pat_sub__univ_ghost_r] / [__infer] consume an
+    [R ≈ Q] to wrap a base term's skeleton core into a (ghost-)bidirectional
+    one, and the core that arises AFTER [forall_l] instantiates a top-level
+    [∀] with [□] carries exactly such holes.  All tags are empty (no ε-tags):
+    [unit]/[var]/[hole] give [nil], [arrow] combines [nil ++ nil], and the
+    syn-painting sends each [∀] to [bskl_all_syn] (matched by [__forall_syn]).
+    A [pskl_hole] matches [inh{□}] (= [bskl_hole]) via [__hole]. *)
+Lemma d_pat_consis_refl_pskl : forall P,
+    lc_pskl P ->
+    forall Γ,
+      (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
+      nil ⨟ Γ ⊨ₛ (bskl_to_uskl (pskl_to_bskl_syn P)) ≈ (pskl_to_bskl_syn P).
+Proof.
+  intros P Hlc. induction Hlc; intros Γ Hcov; simpl.
+  - (* unit *) apply d_pat_consis__unit.
+  - (* var_f X *) apply d_pat_consis__var. apply Hcov. simpl. fsetdec.
+  - (* arrow *) apply d_pat_consis__arrow with (Δ1 := nil) (Δ2 := nil);
+      [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; simpl; fsetdec.
+  - (* all_syn: syn-painting → bskl_all_syn, matched by __forall_syn *)
+    inst_cofinites_for d_pat_consis__forall_syn. intros X HX.
+    rewrite <- bskl_to_uskl_open. rewrite <- pskl_to_bskl_syn_open.
+    apply H0. intros Y HY.
+    apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + (* Y = X *) apply AtomSetImpl.singleton_1 in HY. subst.
+      apply binds_app_2. apply binds_one_3; reflexivity.
+    + (* Y ∈ ftvar P *) apply binds_app_3. apply (Hcov Y HY).
+  - (* hole: □ ≈ inh{□} = bskl_hole via __hole *)
+    change bskl_hole with (pskl_to_bskl_inh pskl_hole).
+    apply d_pat_consis__hole. apply d_wf_pskl__hole.
+  - (* tophole: ⫯ ≈ ⫯ via __tophole, recurse *)
+    apply d_pat_consis__tophole. apply IHHlc. assumption.
+Qed.
+
 (** Γ-weakening for refinement (local copy — the general
     [d_refine_syn_weakening] lives in [prop_weakening], built later).  Used
     by [denv_coh_lookup] to lift a binding's refinement to the full
