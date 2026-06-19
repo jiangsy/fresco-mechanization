@@ -150,6 +150,31 @@ Proof.
   apply d_refine_syn__hole. eapply d_wf_pskl_of_ptyp; eassumption.
 Qed.
 
+(** Γ-weakening for refinement (local copy — the general
+    [d_refine_syn_weakening] lives in [prop_weakening], built later).  Used
+    by [denv_coh_lookup] to lift a binding's refinement to the full
+    context. *)
+Lemma d_refine_syn_wkn : forall Γ1 Γ2 Γ3 Δs Δi Q P,
+    (Γ1 ++ Γ3) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Proof.
+  intros Γ1 Γ2 Γ3 Δs Δi Q P H.
+  remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
+  induction H; intros Γ1 Γ3 Heq; subst Γ.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var.
+    match goal with H : _ \/ _ |- _ => destruct H as [HS | [HI | Hb]] end;
+      [ left; assumption | right; left; assumption | right; right; analyze_binds Hb ].
+  - apply d_refine_syn__arrow; auto.
+  - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ3)). intros X HX.
+    eapply (H0 X ltac:(fsetdec) Γ1 Γ3). reflexivity.
+  - apply d_refine_syn__hole. apply d_wf_pskl_weakening. assumption.
+  - apply d_refine_syn__tophole_remove; auto.
+  - apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)). intros X HX.
+    eapply (H0 X ltac:(fsetdec) Γ1 Γ3). reflexivity.
+  - apply d_refine_syn__tophole_keep; [ assumption | auto ].
+Qed.
+
 (** A *typing context*: only type/tvar bindings, no ghost-bearing
     skeleton bindings.  (The user's "context has only A, not P" predicate.)
     Every context a [d_typing] derivation actually uses is of this shape. *)
@@ -159,34 +184,46 @@ Inductive typ_denv : list (atom * dbind) -> Prop :=
 | typ_denv__typ  : forall Γ x A, typ_denv Γ -> typ_denv ((x ~ dbind_typ A) ++ Γ).
 
 (** Context coherence between a skeleton-inference context [Γs] and a
-    typing context [Γt]: same shape, with each *unannotated*-λ skeleton
-    binding [x:P] in [Γs] matched by a type binding [x:A] in [Γt] such that
-    the inference skeleton refines the type ([inh{P} ⊳ inh{ptyp A}]).  For
-    coerced (ghost-free) bindings this refinement is [refl]; for the λ
-    ghost [□] it is "hole refines anything".  This is the invariant that
-    lets validity's induction cross a λ where the two judgments bind a
-    variable differently ([dbind_skl] vs [dbind_typ]). *)
+    typing context [Γt].  Every term variable is [dbind_skl] in [Γs] (so
+    [d_pat__var] applies — inference reads skeletons) and [dbind_typ] in
+    [Γt] (so [d_typing__var] applies), linked by a refinement
+    [inh{P} ⊳ inh{ptyp A}] (refl for coerced bindings, hole-fills for a λ
+    ghost).  This is the bridge a safety/validity induction needs to cross a
+    λ where the two judgments bind a variable differently. *)
 Inductive denv_coh : list (atom * dbind) -> list (atom * dbind) -> Prop :=
 | denv_coh__nil  : denv_coh nil nil
 | denv_coh__tvar : forall Γs Γt X,
     denv_coh Γs Γt ->
     denv_coh ((X ~ dbind_tvar) ++ Γs) ((X ~ dbind_tvar) ++ Γt)
-| denv_coh__typ  : forall Γs Γt x A,
-    denv_coh Γs Γt ->
-    denv_coh ((x ~ dbind_typ A) ++ Γs) ((x ~ dbind_typ A) ++ Γt)
 | denv_coh__skl  : forall Γs Γt x P A,
     denv_coh Γs Γt ->
     Γt ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
     denv_coh ((x ~ dbind_skl P) ++ Γs) ((x ~ dbind_typ A) ++ Γt).
 
-(** Coherence is reflexive on pure typing contexts: there the only
-    bindings are [tvar]/[typ], matched by themselves. *)
-Lemma denv_coh_refl : forall Γ, typ_denv Γ -> denv_coh Γ Γ.
+(** Lookup: a [dbind_typ A] term-var in [Γt] is matched by some [dbind_skl P]
+    in [Γs] whose inh-painting refines [inh{ptyp A}] (weakened to the full
+    [Γt]).  This is what discharges the [var] case of safety. *)
+Lemma denv_coh_lookup : forall Γs Γt x A,
+    denv_coh Γs Γt ->
+    binds x (dbind_typ A) Γt ->
+    exists P, binds x (dbind_skl P) Γs /\
+              Γt ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
 Proof.
-  intros Γ H. induction H.
-  - apply denv_coh__nil.
-  - apply denv_coh__tvar; assumption.
-  - apply denv_coh__typ; assumption.
+  intros Γs Γt x A Hcoh. induction Hcoh; intros Hb.
+  - inversion Hb.
+  - (* tvar *) apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
+    + apply binds_one_iff in Hb. destruct Hb as [_ Hd]. inversion Hd.
+    + destruct (IHHcoh Hb) as [P [HbP Href]]. exists P. split.
+      * apply binds_app_3. exact HbP.
+      * rewrite_env (nil ++ (X ~ dbind_tvar) ++ Γt). apply d_refine_syn_wkn. exact Href.
+  - (* skl *) apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
+    + apply binds_one_iff in Hb. destruct Hb as [Hx Hd]. inversion Hd. subst.
+      exists P. split.
+      * apply binds_app_2. apply binds_one_3; auto.
+      * rewrite_env (nil ++ (x0 ~ dbind_typ A0) ++ Γt). apply d_refine_syn_wkn. exact H.
+    + destruct (IHHcoh Hb) as [P' [HbP' Href']]. exists P'. split.
+      * apply binds_app_3. exact HbP'.
+      * rewrite_env (nil ++ (x0 ~ dbind_typ A0) ++ Γt). apply d_refine_syn_wkn. exact Href'.
 Qed.
 
 (** * Paper-facing skeleton properties.
@@ -324,4 +361,14 @@ Theorem d_pat_safety : forall Γ e B0,
                  exists B, bskl_to_pskl B = ptyp_to_pskl A /\
                    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B).
 Proof.
+  (* Attempted directly: [intros Γ e B0 Hty Hwf; induction Hty] gives 11
+     cases.  The [var] case is STUCK: its hypothesis is
+     [binds x (dbind_typ A) Γ] (typing binds term-vars as [dbind_typ]), but
+     constructing the inference [x ⇨ Q] needs [d_pat__var], which requires
+     [binds x (dbind_skl P) Γ] — a [dbind_typ]-bound variable is not
+     inferable.  So the single-[Γ] statement cannot be proved by direct
+     induction: safety, like [d_pat_validity], must be generalised over
+     [denv_coh Γs Γt] (inference context with [dbind_skl] vs typing context
+     with [dbind_typ]); the leaves then close with [d_refine_syn_refl_inh] /
+     [d_refine_syn_hole_fills].  That generalisation is the remaining work. *)
 Admitted.
