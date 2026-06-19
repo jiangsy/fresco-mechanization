@@ -500,6 +500,48 @@ Proof.
       eapply IHHref with (Pp := Pp); auto.
 Qed.
 
+(** Generalised fill, by induction on the [d_sub] derivation, carrying the
+    [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
+    obstacle) closes cleanly — the invariant is preserved by
+    [pskl_subsumes_open_rec] ([□] subsumes the instantiation [φ]'s skeleton)
+    with the SAME [Q], so the IH applies; no monotonicity needed.
+
+    STATUS (WIP): the [forall_l] cases (tagged + untagged, the recursive step
+    — the ORIGINAL obstacle) are PROVED.  Four [admit]s remain, all easier:
+    the two [P = □] subcases ([Q = □] fills any wf type — needs
+    [d_wf_ptyp → nil ⨟ Γ ⊢ₚₛ skel]), [__check] (consistency→refinement base),
+    and [__forall_r] ([⫯] fills the added inh-∀ via [tophole_fill]). *)
+Lemma ghost_of_fill_gen : forall Δ Γ U V,
+    Δ ⨟ Γ ⊢[ mode_tc ] U ⊑ V ->
+    forall A' P Q,
+      V = ptyp_to_btyp_inh A' ->
+      d_wf_ptyp Γ A' ->
+      pskl_subsumes P (utyp_to_pskl U) ->
+      ghost_of P Q ->
+      exists B, bskl_to_pskl B = ptyp_to_pskl A' /\
+                Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B.
+Proof.
+  intros Δ Γ U V H. remember mode_tc as m eqn:Hm. revert Hm.
+  induction H; intros Hm A' P Q Heq Hwfa Hsub Hg; try discriminate Hm.
+  - (* __check — delegate to the consistency→refinement base (next) *) admit.
+  - (* __forall_r — RHS adds an inh ∀; ⫯ fills via tophole_fill (next) *) admit.
+  - (* __forall_l_tagged: U = utyp_all_etag ε C *)
+    simpl in Hsub. inversion Hsub; subst.
+    + (* P = □ ⟹ Q = □, fills any type *) admit.
+    + (* P = pskl_all_syn P' : the KEY case — recurse with □ absorbing φ *)
+      inversion Hg; subst.
+      eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption ].
+      rewrite utyp_to_pskl_open.
+      apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
+  - (* __forall_l_untagged: U = utyp_all_syn C — identical to tagged *)
+    simpl in Hsub. inversion Hsub; subst.
+    + admit.
+    + inversion Hg; subst.
+      eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption ].
+      rewrite utyp_to_pskl_open.
+      apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
+Admitted.
+
 (** BRICK 3 GOAL (next session's first task).  The fill side: the ghost [Q]
     inferred for a base term's principal type [C] refines some colouring [B]
     of every checking type [A'] the term subsumes to.  [B] is existential
