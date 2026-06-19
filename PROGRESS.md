@@ -401,7 +401,7 @@ files:
 | `subtyping/prop_consis_sub_trans.v` | 1 | `d_consis_sub_trans` |
 | `prop_subtyping.v` | 1 | `d_typing_sub_compose` |
 | `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` (paper-flagged) |
-| `prop_skeleton.v` | 3 | `d_pat_safety`, `ghost_of_fill` (stub), `ghost_of_fill_gen` (WIP: forall_l + P=box PROVED; 2 admits: __check, __forall_r) |
+| `prop_skeleton.v` | 3 | `d_pat_safety`, `ghost_of_fill` (stub), `ghost_of_fill_gen` (forall_l obstacle + P=box + forall_r-box PROVED; 2 admits: __check, forall_r-tophole). `ghost_of_fill` now Qed corollary |
 
 `frost/algo/` (26 admits — faithful question/solution/optimality scaffolding):
 

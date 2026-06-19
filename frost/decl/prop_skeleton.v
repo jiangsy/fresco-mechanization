@@ -611,6 +611,18 @@ Lemma colour_open : forall A Q X,
 Proof. intros. unfold open_ptyp_wrt_ptyp, open_bskl_wrt_bskl.
   apply colour_open_rec. Qed.
 
+(** [colour] with a [□] guide is the plain syn-painting. *)
+Lemma colour_hole : forall A,
+    colour bskl_hole A = pskl_to_bskl_syn (ptyp_to_pskl A).
+Proof. induction A; simpl; reflexivity. Qed.
+
+(** A ghostification is always a hole or a universal ghost (top-level shape). *)
+Lemma ghost_of_shape : forall P Q,
+    ghost_of P Q -> Q = bskl_hole \/ exists Q0, Q = bskl_tophole Q0.
+Proof.
+  intros P Q H. induction H; eauto.
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
@@ -632,19 +644,34 @@ Lemma ghost_of_fill_gen : forall Δ Γ U V,
       d_wf_ptyp Γ A' ->
       pskl_subsumes P (utyp_to_pskl U) ->
       ghost_of P Q ->
-      exists B, bskl_to_pskl B = ptyp_to_pskl A' /\
-                Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B.
+      Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q))
+                       ⊳ (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A').
 Proof.
   intros Δ Γ U V H. remember mode_tc as m eqn:Hm. revert Hm.
   induction H; intros Hm A' P Q Heq Hwfa Hsub Hg; try discriminate Hm.
-  - (* __check — delegate to the consistency→refinement base (next) *) admit.
-  - (* __forall_r — RHS adds an inh ∀; ⫯ fills via tophole_fill (next) *) admit.
+  - (* __check — consistency→refinement base (remaining) *) admit.
+  - (* __forall_r: A' = ∀.A'0; the ⫯ in [inh{Q}] fills it (tophole_fill) *)
+    destruct A' as [ | | | | A'0 ]; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    destruct (ghost_of_shape Hg) as [HQ | [Q0 HQ]]; subst.
+    + (* Q = □: [inh{Q}] = □ fills any type *)
+      replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
+      rewrite colour_hole. apply d_refine_syn__hole.
+      apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
+    + (* Q = ⫯Q0: tophole_fill reduces to the body at [Γ ⨟ (X::Δs) ⨟ nil],
+         but the cofinite IH (from d_sub.__forall_r) gives it at
+         [(X::Γ) ⨟ nil ⨟ nil] — X lives in the TYPING context, not the
+         skeleton-scope.  A naive Γ→Δs context-move is FALSE (a [⫯] clears
+         the scope, so a var under it must be in Γ).  Reconciling where the
+         forall_r-introduced tvar lives across d_sub/d_refine_syn is the
+         remaining subtlety here. *)
+      admit.
   - (* __forall_l_tagged: U = utyp_all_etag ε C *)
     simpl in Hsub. inversion Hsub; subst.
     + (* P = □ ⟹ Q = □, fills any type *)
-      inversion Hg; subst. exists (pskl_to_bskl_syn (ptyp_to_pskl A')). split.
-      * apply bskl_to_pskl_pskl_to_bskl_syn.
-      * simpl. apply d_refine_syn__hole. apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
+      inversion Hg; subst.
+      replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
+      rewrite colour_hole. apply d_refine_syn__hole. apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
     + (* P = pskl_all_syn P' : the KEY case — recurse with □ absorbing φ *)
       inversion Hg; subst.
       eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption ].
@@ -652,44 +679,36 @@ Proof.
       apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
   - (* __forall_l_untagged: U = utyp_all_syn C — identical to tagged *)
     simpl in Hsub. inversion Hsub; subst.
-    + inversion Hg; subst. exists (pskl_to_bskl_syn (ptyp_to_pskl A')). split.
-      * apply bskl_to_pskl_pskl_to_bskl_syn.
-      * simpl. apply d_refine_syn__hole. apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
+    + inversion Hg; subst.
+      replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
+      rewrite colour_hole. apply d_refine_syn__hole. apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
     + inversion Hg; subst.
       eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption ].
       rewrite utyp_to_pskl_open.
       apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
 Admitted.
 
-(** BRICK 3 GOAL (next session's first task).  The fill side: the ghost [Q]
-    inferred for a base term's principal type [C] refines some colouring [B]
-    of every checking type [A'] the term subsumes to.  [B] is existential
-    precisely because it is the [Q]-driven position-dependent colouring (syn
-    at hole-filled leaves, inh at kept nested ∀s — see the obstacle note).
-    Once proved, the [__sub] case of [d_pat_safety] is: take [Q] from
-    [ghost_of_total]+[ghost_of_infer] (inference), then [ghost_of_fill] gives
-    the per-[A'] refinement.  PROOF PLAN: induction on the [d_sub] derivation —
-    [more_ghost]+hole-monotonicity for [__forall_l] ([□] absorbs [φ]),
-    consistency→refinement for [__check], [tophole_fill] for [__forall_r].
-
-    STATUS: lemma (1), hole-monotonicity, is PROVED ([d_refine_syn_more_ghost_syn]
-    above, Qed) — but for a *whole*-syn RHS.  DESIGN FORK discovered while
-    assembling: the witness [B] is MIXED (syn at hole-filled leaves, inh at
-    kept nested ∀s), so the whole-syn [mono] does not directly absorb [φ]
-    against [B].  Two ways forward: (a) generalise [mono] to be POSITIONAL
-    (holed positions face syn-RHS, others arbitrary); or (b) drop [mono] and
-    CONSTRUCT [B] directly by recursion on [inh{Q}] / the [d_sub] core — which
-    needs a [utyp→pskl] skeleton + a "holed-subsumes" invariant (neither
-    exists yet).  (b) is the cleaner long-term shape.  This fork is the next
-    decision; the inference side (bricks 1-2) is complete and Qed. *)
+(** BRICK 3 GOAL — the fill side, now a corollary of [ghost_of_fill_gen]
+    (path (b) was taken: deterministic witness [colour]).  The ghost [Q]
+    inferred for a base term's principal type [C] refines the colouring
+    [colour inh{Q} A'] of every checking type [A'] the term subsumes to.
+    Depends on [ghost_of_fill_gen]'s two remaining admits ([__check],
+    [forall_r/⫯]); the rest of the induction (incl. the original [forall_l]
+    [φ]/[□] obstacle and [P=□]) is proved. *)
 Lemma ghost_of_fill : forall C Q Γ A',
     ghost_of (ptyp_to_pskl C) Q ->
+    d_wf_ptyp Γ A' ->
     empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn C) ⊑ (ptyp_to_btyp_inh A') ->
     exists B, bskl_to_pskl B = ptyp_to_pskl A' /\
               Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B.
 Proof.
-  (* NEXT SESSION — see the 4-lemma plan in the obstacle note above. *)
-Admitted.
+  intros C Q Γ A' Hg Hwfa Hsub.
+  exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A'). split.
+  - apply colour_erasure.
+  - eapply ghost_of_fill_gen with (P := ptyp_to_pskl C);
+      [ exact Hsub | reflexivity | exact Hwfa | | exact Hg ].
+    rewrite utyp_to_pskl_ptyp_to_utyp_syn. apply pskl_subsumes_refl.
+Qed.
 
 (** Γ-weakening for refinement (local copy — the general
     [d_refine_syn_weakening] lives in [prop_weakening], built later).  Used
