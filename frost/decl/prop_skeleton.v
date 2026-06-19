@@ -623,6 +623,154 @@ Proof.
   intros P Q H. induction H; eauto.
 Qed.
 
+(** [⫯]-free skeletons.  [colour] never emits a [⫯], which is what lets the
+    Γ→Δs context-move below go through (a [⫯] would clear the scope). *)
+Inductive no_tophole_pskl : pskl -> Prop :=
+| nthp_unit  : no_tophole_pskl pskl_unit
+| nthp_var_b : forall n, no_tophole_pskl (pskl_var_b n)
+| nthp_var_f : forall X, no_tophole_pskl (pskl_var_f X)
+| nthp_arrow : forall P1 P2, no_tophole_pskl P1 -> no_tophole_pskl P2 ->
+    no_tophole_pskl (pskl_arrow P1 P2)
+| nthp_all   : forall P, no_tophole_pskl P -> no_tophole_pskl (pskl_all_syn P)
+| nthp_hole  : no_tophole_pskl pskl_hole.
+
+Inductive no_tophole_bskl : bskl -> Prop :=
+| nthb_unit  : no_tophole_bskl bskl_unit
+| nthb_var_b : forall n, no_tophole_bskl (bskl_var_b n)
+| nthb_var_f : forall X, no_tophole_bskl (bskl_var_f X)
+| nthb_arrow : forall Q1 Q2, no_tophole_bskl Q1 -> no_tophole_bskl Q2 ->
+    no_tophole_bskl (bskl_arrow Q1 Q2)
+| nthb_all_syn : forall Q, no_tophole_bskl Q -> no_tophole_bskl (bskl_all_syn Q)
+| nthb_all_inh : forall Q, no_tophole_bskl Q -> no_tophole_bskl (bskl_all_inh Q)
+| nthb_hole  : no_tophole_bskl bskl_hole.
+
+Lemma no_tophole_pskl_of_ptyp : forall A, no_tophole_pskl (ptyp_to_pskl A).
+Proof. induction A; simpl; constructor; assumption. Qed.
+
+Lemma no_tophole_syn : forall P,
+    no_tophole_pskl P -> no_tophole_bskl (pskl_to_bskl_syn P).
+Proof. intros P H. induction H; simpl; constructor; assumption. Qed.
+
+Lemma colour_no_tophole : forall A Q, no_tophole_bskl (colour Q A).
+Proof.
+  induction A; intros Q; simpl.
+  - constructor.
+  - constructor.
+  - constructor.
+  - (* arrow *) destruct (match Q with bskl_tophole Q0 => Q0 | _ => Q end);
+      try (constructor; auto; fail);
+      constructor; apply no_tophole_syn; apply no_tophole_pskl_of_ptyp.
+  - (* all *) destruct Q;
+      try (constructor; apply no_tophole_syn; apply no_tophole_pskl_of_ptyp; fail);
+      constructor; auto.
+Qed.
+
+Lemma no_tophole_pskl_open_rec : forall P X k,
+    no_tophole_pskl P ->
+    no_tophole_pskl (open_pskl_wrt_pskl_rec k (pskl_var_f X) P).
+Proof.
+  intros P X k H. revert k. induction H; intros k; simpl;
+    try (constructor; auto; fail).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; constructor.
+Qed.
+
+Lemma no_tophole_bskl_open_rec : forall Q X k,
+    no_tophole_bskl Q ->
+    no_tophole_bskl (open_bskl_wrt_bskl_rec k (bskl_var_f X) Q).
+Proof.
+  intros Q X k H. revert k. induction H; intros k; simpl;
+    try (constructor; auto; fail).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; constructor.
+Qed.
+
+Lemma no_tophole_syn_inv : forall P,
+    no_tophole_bskl (pskl_to_bskl_syn P) -> no_tophole_pskl P.
+Proof.
+  induction P; simpl; intros H; try (constructor; fail);
+    inversion H; subst; constructor; auto.
+Qed.
+
+(** Move a tvar from the type context into the [pskl] scope set [Ψ] (valid
+    for [⫯]-free skeletons — a [⫯] would clear [Ψ]). *)
+Lemma d_wf_pskl_move : forall Ψ Γ' P,
+    Ψ ⨟ Γ' ⊢ₚₛ P ->
+    no_tophole_pskl P ->
+    forall X Γ, Γ' = (X ~ dbind_tvar) ++ Γ ->
+    (X :: Ψ) ⨟ Γ ⊢ₚₛ P.
+Proof.
+  intros Ψ Γ' P H. induction H; intros Hnt X0 Γ0 HΓ; subst.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. destruct H as [HΨ | Hb].
+    + left. simpl. right. assumption.
+    + apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
+      * apply binds_one_iff in Hb. destruct Hb as [HX _]. subst.
+        left. simpl. left. reflexivity.
+      * right. assumption.
+  - inversion Hnt; subst. apply d_wf_pskl__arrow; auto.
+  - inversion Hnt; subst. inst_cofinites_for d_wf_pskl__all. intros Y HY.
+    apply d_wf_pskl_Psi_mono with (Ψ := X0 :: (Y :: Ψ)).
+    + apply H0; auto. apply no_tophole_pskl_open_rec. assumption.
+    + intros Z HZ. simpl in *. tauto.
+  - apply d_wf_pskl__hole.
+  - inversion Hnt.
+Qed.
+
+(** Refinement is monotone in the syn-scope [Δs] (for [⫯]-free RHS). *)
+Lemma d_refine_syn_Ds_mono : forall Γ Δs Δi Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    no_tophole_bskl P ->
+    forall Δs', (forall X, List.In X Δs -> List.In X Δs') ->
+    Γ ⨟ Δs' ⨟ Δi ⊢ᵣ Q ⊳ P.
+Proof.
+  intros Γ Δs Δi Q P H. induction H; intros Hnt Δs' Hmono.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
+      [ left; auto | right; left; assumption | right; right; assumption ].
+  - inversion Hnt; subst. apply d_refine_syn__arrow; auto.
+  - inversion Hnt; subst. inst_cofinites_for d_refine_syn__all. intros X HX.
+    apply H0; auto. apply no_tophole_bskl_open_rec. assumption.
+  - apply d_refine_syn__hole.
+    apply d_wf_pskl_Psi_mono with (Ψ := Δs); assumption.
+  - apply d_refine_syn__tophole_remove. apply IHd_refine_syn; auto.
+  - inversion Hnt; subst. inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
+    apply H0; auto.
+    + apply no_tophole_bskl_open_rec. assumption.
+    + intros Y HY. simpl in HY |- *. destruct HY as [HY | HY]; [ left; assumption | right; auto ].
+  - inversion Hnt.
+Qed.
+
+(** Move a tvar from the type context into the syn-scope [Δs] ([⫯]-free RHS). *)
+Lemma d_refine_syn_move : forall Γ' Δs Δi Q P,
+    Γ' ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    no_tophole_bskl P ->
+    forall X Γ, Γ' = (X ~ dbind_tvar) ++ Γ ->
+    Γ ⨟ (X :: Δs) ⨟ Δi ⊢ᵣ Q ⊳ P.
+Proof.
+  intros Γ' Δs Δi Q P H. induction H; intros Hnt X0 Γ0 HΓ; subst.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]].
+    + left. simpl. right. assumption.
+    + right. left. assumption.
+    + apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
+      * apply binds_one_iff in Hb. destruct Hb as [HX _]. subst.
+        left. simpl. left. reflexivity.
+      * right. right. assumption.
+  - inversion Hnt; subst. apply d_refine_syn__arrow; auto.
+  - inversion Hnt; subst. inst_cofinites_for d_refine_syn__all. intros Y HY.
+    apply H0; auto. apply no_tophole_bskl_open_rec. assumption.
+  - apply d_refine_syn__hole.
+    eapply d_wf_pskl_move; [ eassumption | | reflexivity ].
+    apply no_tophole_syn_inv. assumption.
+  - apply d_refine_syn__tophole_remove. apply IHd_refine_syn; auto.
+  - inversion Hnt; subst. inst_cofinites_for d_refine_syn__tophole_fill. intros Y HY.
+    (* IH gives [X0 :: (Y :: Δs)]; reorder to [Y :: (X0 :: Δs)] via Ds_mono *)
+    apply d_refine_syn_Ds_mono with (Δs := X0 :: (Y :: Δs)).
+    + apply H0; auto. apply no_tophole_bskl_open_rec. assumption.
+    + apply no_tophole_bskl_open_rec. assumption.
+    + intros Z HZ. simpl in HZ |- *. tauto.
+  - inversion Hnt.
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
@@ -658,14 +806,20 @@ Proof.
       replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
       rewrite colour_hole. apply d_refine_syn__hole.
       apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
-    + (* Q = ⫯Q0: tophole_fill reduces to the body at [Γ ⨟ (X::Δs) ⨟ nil],
-         but the cofinite IH (from d_sub.__forall_r) gives it at
-         [(X::Γ) ⨟ nil ⨟ nil] — X lives in the TYPING context, not the
-         skeleton-scope.  A naive Γ→Δs context-move is FALSE (a [⫯] clears
-         the scope, so a var under it must be in Γ).  Reconciling where the
-         forall_r-introduced tvar lives across d_sub/d_refine_syn is the
-         remaining subtlety here. *)
-      admit.
+    + (* Q = ⫯Q0: tophole_fill; the cofinite IH gives the body at (X::Γ)⨟nil⨟nil,
+         moved to Γ⨟(X::nil)⨟nil by [d_refine_syn_move] (colour output is
+         [⫯]-free, so the move is valid). *)
+      simpl. inversion Hwfa; subst.
+      inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
+      rewrite <- colour_open.
+      eapply d_refine_syn_move; [ | apply colour_no_tophole | reflexivity ].
+      eapply H0 with (P := P) (Q := bskl_tophole Q0).
+      * auto.
+      * reflexivity.
+      * unfold open_btyp_wrt_btyp. symmetry. apply ptyp_to_btyp_inh_open_rec.
+      * match goal with Hb : forall _, _ `notin` _ -> d_wf_ptyp _ _ |- _ => apply Hb; auto end.
+      * exact Hsub.
+      * exact Hg.
   - (* __forall_l_tagged: U = utyp_all_etag ε C *)
     simpl in Hsub. inversion Hsub; subst.
     + (* P = □ ⟹ Q = □, fills any type *)
