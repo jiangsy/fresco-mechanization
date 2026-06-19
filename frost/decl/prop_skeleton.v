@@ -611,6 +611,47 @@ Lemma colour_open : forall A Q X,
 Proof. intros. unfold open_ptyp_wrt_ptyp, open_bskl_wrt_bskl.
   apply colour_open_rec. Qed.
 
+(** [colour] inspects only the guide [Q]'s CONSTRUCTORS, never its leaves, so
+    opening the guide leaves [colour] unchanged. *)
+Lemma colour_guide_open_rec : forall A Q X k,
+    colour (open_bskl_wrt_bskl_rec k (bskl_var_f X) Q) A = colour Q A.
+Proof.
+  induction A; intros Q X k; simpl; try reflexivity.
+  - (* arrow *) destruct Q as [ | n0 | X0 | qa qb | qs | qi | | q0 ]; simpl.
+    + reflexivity.
+    + destruct (lt_eq_lt_dec n0 k) as [[?|?]|?]; reflexivity.
+    + reflexivity.
+    + rewrite IHA1, IHA2; reflexivity.
+    + reflexivity.
+    + reflexivity.
+    + reflexivity.
+    + (* tophole q0: peek *) destruct q0 as [ | n1 | X1 | qa qb | qs | qi | | q1 ]; simpl.
+      * reflexivity.
+      * destruct (lt_eq_lt_dec n1 k) as [[?|?]|?]; reflexivity.
+      * reflexivity.
+      * rewrite IHA1, IHA2; reflexivity.
+      * reflexivity.
+      * reflexivity.
+      * reflexivity.
+      * reflexivity.
+  - (* all *) destruct Q as [ | n0 | X0 | qa qb | qs | qi | | q0 ]; simpl.
+    + reflexivity.
+    + destruct (lt_eq_lt_dec n0 k) as [[?|?]|?]; reflexivity.
+    + reflexivity.
+    + reflexivity.
+    + reflexivity.
+    + (* all_inh qi *) rewrite IHA; reflexivity.
+    + reflexivity.
+    + (* tophole q0 *) f_equal.
+      change (bskl_tophole (open_bskl_wrt_bskl_rec k (bskl_var_f X) q0))
+        with (open_bskl_wrt_bskl_rec k (bskl_var_f X) (bskl_tophole q0)).
+      rewrite IHA. reflexivity.
+Qed.
+
+Lemma colour_guide_open : forall A Q X,
+    colour (open_bskl_wrt_bskl Q (bskl_var_f X)) A = colour Q A.
+Proof. intros. unfold open_bskl_wrt_bskl. apply colour_guide_open_rec. Qed.
+
 (** [colour] with a [□] guide is the plain syn-painting. *)
 Lemma colour_hole : forall A,
     colour bskl_hole A = pskl_to_bskl_syn (ptyp_to_pskl A).
