@@ -500,17 +500,56 @@ Proof.
       eapply IHHref with (Pp := Pp); auto.
 Qed.
 
+(** A well-formed type is locally closed. *)
+Lemma d_wf_ptyp_lc_loc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
+Proof.
+  intros Γ A H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh X. apply (lc_ptyp_all_exists X). apply H0. auto.
+Qed.
+
+(** A well-formed type's free tvars are all bound in the context. *)
+Lemma d_wf_ptyp_ftvar : forall Γ A,
+    d_wf_ptyp Γ A ->
+    forall X, X `in` ftvar_in_ptyp A -> binds X dbind_tvar Γ.
+Proof.
+  intros Γ A H. induction H; intros Y HY; simpl in HY.
+  - fsetdec.
+  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
+  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY]; auto.
+  - pick fresh X for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f X))).
+    { eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower. eassumption. }
+    specialize (H0 X ltac:(auto) Y HYo).
+    analyze_binds H0.
+Qed.
+
+(** Hence a well-formed type's skeleton is a well-formed [pskl] (any scope). *)
+Lemma d_wf_pskl_of_wf_ptyp : forall Γ A,
+    d_wf_ptyp Γ A ->
+    forall Ψ, Ψ ⨟ Γ ⊢ₚₛ (ptyp_to_pskl A).
+Proof.
+  intros Γ A H Ψ. apply d_wf_pskl_of_ptyp.
+  - eapply d_wf_ptyp_lc_loc; eassumption.
+  - intros X HX. right. eapply d_wf_ptyp_ftvar; eassumption.
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
     [pskl_subsumes_open_rec] ([□] subsumes the instantiation [φ]'s skeleton)
     with the SAME [Q], so the IH applies; no monotonicity needed.
 
-    STATUS (WIP): the [forall_l] cases (tagged + untagged, the recursive step
-    — the ORIGINAL obstacle) are PROVED.  Four [admit]s remain, all easier:
-    the two [P = □] subcases ([Q = □] fills any wf type — needs
-    [d_wf_ptyp → nil ⨟ Γ ⊢ₚₛ skel]), [__check] (consistency→refinement base),
-    and [__forall_r] ([⫯] fills the added inh-∀ via [tophole_fill]). *)
+    STATUS (WIP): the [forall_l] cases (the ORIGINAL obstacle) AND both
+    [P = □] subcases are PROVED.  TWO [admit]s remain: [__check]
+    (consistency→refinement base) and [__forall_r].  NOTE: [__forall_r] will
+    need the existential witness [B] replaced by a DETERMINISTIC colouring
+    function of [Q] and [A'] — the cofinite premise gives [B_X] per fresh [X]
+    but a plain existential cannot be closed back over [X]; a function
+    [colour Q A'] with [colour Q (open A'0 X) = open (colour Q A'0) X] fixes
+    it (and threads through [__check] too). *)
 Lemma ghost_of_fill_gen : forall Δ Γ U V,
     Δ ⨟ Γ ⊢[ mode_tc ] U ⊑ V ->
     forall A' P Q,
@@ -527,7 +566,10 @@ Proof.
   - (* __forall_r — RHS adds an inh ∀; ⫯ fills via tophole_fill (next) *) admit.
   - (* __forall_l_tagged: U = utyp_all_etag ε C *)
     simpl in Hsub. inversion Hsub; subst.
-    + (* P = □ ⟹ Q = □, fills any type *) admit.
+    + (* P = □ ⟹ Q = □, fills any type *)
+      inversion Hg; subst. exists (pskl_to_bskl_syn (ptyp_to_pskl A')). split.
+      * apply bskl_to_pskl_pskl_to_bskl_syn.
+      * simpl. apply d_refine_syn__hole. apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
     + (* P = pskl_all_syn P' : the KEY case — recurse with □ absorbing φ *)
       inversion Hg; subst.
       eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption ].
@@ -535,7 +577,9 @@ Proof.
       apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
   - (* __forall_l_untagged: U = utyp_all_syn C — identical to tagged *)
     simpl in Hsub. inversion Hsub; subst.
-    + admit.
+    + inversion Hg; subst. exists (pskl_to_bskl_syn (ptyp_to_pskl A')). split.
+      * apply bskl_to_pskl_pskl_to_bskl_syn.
+      * simpl. apply d_refine_syn__hole. apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
     + inversion Hg; subst.
       eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption ].
       rewrite utyp_to_pskl_open.
