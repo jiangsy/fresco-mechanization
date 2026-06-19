@@ -321,8 +321,27 @@ Qed.
    statement / a hole-monotonicity of the fill ("replacing a sub-skeleton of
    [Q] by [□] only enlarges what [inh{Q}] refines"), so the [□]s uniformly
    absorb the [forall_l] instantiations.  Plus the tags ([ε]) carried by [φ]
-   add a second axis to track.  This is the one genuinely intricate piece
-   left; the inference side (bricks 1-2 above) is complete and Qed. *)
+   add a second axis to track.
+
+   SECOND subtlety — the RHS colouring is NOT uniformly syn.  [inh{Q}] repaints
+   [Q]'s ∀-colours to *inherited* ([bskl_to_pskl] collapses to [pskl_all_syn],
+   then [pskl_to_bskl_inh] → [bskl_all_inh]).  So a NESTED concrete ∀ kept by
+   [ghost_of] (e.g. the codomain of [unit→∀β.β], untouched by the shallow
+   subtyping) appears as [bskl_all_inh] on the LHS, and [d_refine_syn__all]
+   matches it ONLY against an *inherited* ∀ on the RHS.  Hence the witnessing
+   [B] in [∃B, bskl_to_pskl B = ptyp_to_pskl A' ∧ inh{Q} ⊳ B] is a
+   POSITION-DEPENDENT colouring of [A']: syn at the ghost/[forall_l]-varied
+   leaves ([□] fills them via [__hole] → [pskl_to_bskl_syn]) but inh at the
+   kept nested ∀s (matched by [__all]).  So [B] must be built FROM [Q] (track
+   it alongside the [d_sub] induction), not fixed to [pskl_to_bskl_syn A'].
+
+   NET: brick 3 is a focused multi-lemma development (≈ brick 2 in size):
+   (1) a [more_ghost] relation + hole-monotonicity of the fill (for the [□]/[φ]
+   absorption); (2) a relating lemma [ghost_of(open S □) Q□ ∧ ghost_of(open S V)
+   Qᵥ → more_ghost Q□ Qᵥ]; (3) a [Q]-driven colouring [B] of [A'] with
+   [bskl_to_pskl B = ptyp_to_pskl A']; (4) [ghost_of_fill] by [d_sub] induction
+   (with the [ε]-tag bookkeeping) assembling all of the above.  The inference
+   side (bricks 1-2 above) is complete and Qed; this is the remaining work. *)
 
 (** Γ-weakening for refinement (local copy — the general
     [d_refine_syn_weakening] lives in [prop_weakening], built later).  Used
