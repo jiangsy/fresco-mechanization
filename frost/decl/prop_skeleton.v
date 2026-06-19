@@ -536,6 +536,81 @@ Proof.
   - intros X HX. right. eapply d_wf_ptyp_ftvar; eassumption.
 Qed.
 
+(** The DETERMINISTIC witness colouring [colour Q A]: colour the checking type
+    [A] guided by the inferred ghost [Q] — syn where [Q] is a ghost/leaf, inh
+    at a nested [∀] that [Q] kept ([bskl_all_inh]), syn at a [∀] the universal
+    ghost [⫯] fills.  Recurses on [A] (so it commutes with opening [A], which
+    [__forall_r] needs); the single leading [⫯] is peeked (not recursed) to
+    stay structural. *)
+Fixpoint colour (Q : bskl) (A : ptyp) {struct A} : bskl :=
+  match A with
+  | ptyp_unit => bskl_unit
+  | ptyp_var_b n => bskl_var_b n
+  | ptyp_var_f X => bskl_var_f X
+  | ptyp_arrow A1 A2 =>
+      match (match Q with bskl_tophole Q0 => Q0 | _ => Q end) with
+      | bskl_arrow Q1 Q2 => bskl_arrow (colour Q1 A1) (colour Q2 A2)
+      | _ => bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A1))
+                        (pskl_to_bskl_syn (ptyp_to_pskl A2))
+      end
+  | ptyp_all A0 =>
+      match Q with
+      | bskl_all_inh Q0 => bskl_all_inh (colour Q0 A0)
+      | bskl_tophole Q0 => bskl_all_syn (colour (bskl_tophole Q0) A0)
+      | _ => bskl_all_syn (pskl_to_bskl_syn (ptyp_to_pskl A0))
+      end
+  end.
+
+(** [colour] erases to [A]'s skeleton (independent of [Q]). *)
+Lemma colour_erasure : forall A Q,
+    bskl_to_pskl (colour Q A) = ptyp_to_pskl A.
+Proof.
+  induction A; intros Q; simpl; try reflexivity.
+  - (* arrow *)
+    destruct Q; simpl;
+      try (rewrite IHA1, IHA2; reflexivity);
+      try (rewrite ! bskl_to_pskl_pskl_to_bskl_syn; reflexivity).
+    (* Q = bskl_tophole Q0: peek Q0 *)
+    destruct Q; simpl;
+      try (rewrite IHA1, IHA2; reflexivity);
+      rewrite ! bskl_to_pskl_pskl_to_bskl_syn; reflexivity.
+  - (* all *)
+    destruct Q; simpl;
+      try (rewrite IHA; reflexivity);
+      rewrite bskl_to_pskl_pskl_to_bskl_syn; reflexivity.
+Qed.
+
+(** [colour] commutes with opening [A] by a fresh tvar (what [__forall_r]
+    needs to close the cofinite premise; specialised to a variable so the
+    [colour Q V] / [colour Q0 V] divergence at the nested-∀ case vanishes). *)
+Lemma colour_open_rec : forall A Q X k,
+    colour Q (open_ptyp_wrt_ptyp_rec k (ptyp_var_f X) A) =
+    open_bskl_wrt_bskl_rec k (bskl_var_f X) (colour Q A).
+Proof.
+  induction A; intros Q X k; simpl.
+  - reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+  - reflexivity.
+  - (* arrow *)
+    destruct Q as [ | ? | ? | qa qb | ? | ? | | q0 ]; simpl;
+      try (rewrite IHA1, IHA2; reflexivity);
+      try (rewrite !ptyp_to_pskl_open_rec, !pskl_to_bskl_syn_open_rec; reflexivity).
+    (* tophole: peek q0 *)
+    destruct q0 as [ | | | qa qb | | | | ]; simpl;
+      try (rewrite IHA1, IHA2; reflexivity);
+      rewrite !ptyp_to_pskl_open_rec, !pskl_to_bskl_syn_open_rec; reflexivity.
+  - (* all *)
+    destruct Q as [ | ? | ? | ? ? | ? | ? | | ? ]; simpl;
+      try (rewrite IHA; reflexivity);
+      rewrite !ptyp_to_pskl_open_rec, !pskl_to_bskl_syn_open_rec; reflexivity.
+Qed.
+
+Lemma colour_open : forall A Q X,
+    colour Q (open_ptyp_wrt_ptyp A (ptyp_var_f X)) =
+    open_bskl_wrt_bskl (colour Q A) (bskl_var_f X).
+Proof. intros. unfold open_ptyp_wrt_ptyp, open_bskl_wrt_bskl.
+  apply colour_open_rec. Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
