@@ -370,6 +370,76 @@ Inductive more_ghost : bskl -> bskl -> Prop :=
 | more_ghost__tophole : forall Q R,
     more_ghost Q R -> more_ghost (bskl_tophole Q) (bskl_tophole R).
 
+(** ===================================================================== *)
+(** PATH (b) INFRASTRUCTURE — tag-erasing [utyp] skeleton + the holed-subsumes
+    invariant the [d_sub] induction carries. *)
+
+(** [utyp_to_pskl]: the tag-erased skeleton of a [utyp] (both ∀-colours and
+    ε-tags collapse to [pskl_all_syn], as in [utyp_to_btyp]). *)
+Fixpoint utyp_to_pskl (C : utyp) : pskl :=
+  match C with
+  | utyp_unit => pskl_unit
+  | utyp_var_b n => pskl_var_b n
+  | utyp_var_f X => pskl_var_f X
+  | utyp_arrow C1 C2 => pskl_arrow (utyp_to_pskl C1) (utyp_to_pskl C2)
+  | utyp_all_syn C0 => pskl_all_syn (utyp_to_pskl C0)
+  | utyp_all_etag _ C0 => pskl_all_syn (utyp_to_pskl C0)
+  end.
+
+(** The skeleton of a type's syn-painting is the type's skeleton. *)
+Lemma utyp_to_pskl_ptyp_to_utyp_syn : forall C,
+    utyp_to_pskl (ptyp_to_utyp_syn C) = ptyp_to_pskl C.
+Proof. induction C; simpl; try reflexivity; try (rewrite IHC; reflexivity);
+  try (rewrite IHC1, IHC2; reflexivity). Qed.
+
+Lemma utyp_to_pskl_open_rec : forall C V k,
+    utyp_to_pskl (open_utyp_wrt_utyp_rec k V C) =
+    open_pskl_wrt_pskl_rec k (utyp_to_pskl V) (utyp_to_pskl C).
+Proof.
+  induction C; intros V k; simpl; try reflexivity;
+    try (rewrite IHC; reflexivity); try (rewrite IHC1, IHC2; reflexivity).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+Qed.
+
+Lemma utyp_to_pskl_open : forall C V,
+    utyp_to_pskl (open_utyp_wrt_utyp C V) =
+    open_pskl_wrt_pskl (utyp_to_pskl C) (utyp_to_pskl V).
+Proof. intros. unfold open_utyp_wrt_utyp, open_pskl_wrt_pskl.
+  apply (utyp_to_pskl_open_rec C V 0). Qed.
+
+(** [pskl_subsumes P S]: [P] is [S] with some sub-skeletons replaced by [□].
+    The invariant the [d_sub] induction carries — [P] (the skeleton driving
+    [ghost_of]/[Q]) is the LHS-skeleton with [forall_l]-instantiated positions
+    holed out. *)
+Inductive pskl_subsumes : pskl -> pskl -> Prop :=
+| pskl_subsumes__hole  : forall S, pskl_subsumes pskl_hole S
+| pskl_subsumes__unit  : pskl_subsumes pskl_unit pskl_unit
+| pskl_subsumes__var_f : forall X, pskl_subsumes (pskl_var_f X) (pskl_var_f X)
+| pskl_subsumes__var_b : forall n, pskl_subsumes (pskl_var_b n) (pskl_var_b n)
+| pskl_subsumes__arrow : forall P1 P2 S1 S2,
+    pskl_subsumes P1 S1 -> pskl_subsumes P2 S2 ->
+    pskl_subsumes (pskl_arrow P1 P2) (pskl_arrow S1 S2)
+| pskl_subsumes__all   : forall P S,
+    pskl_subsumes P S -> pskl_subsumes (pskl_all_syn P) (pskl_all_syn S)
+| pskl_subsumes__tophole : forall P S,
+    pskl_subsumes P S -> pskl_subsumes (pskl_tophole P) (pskl_tophole S).
+
+Lemma pskl_subsumes_refl : forall S, pskl_subsumes S S.
+Proof. induction S; constructor; assumption. Qed.
+
+(** Subsumption is preserved by opening, where the LHS opens with [□]
+    ([□] subsumes anything) and the RHS with the corresponding instantiation. *)
+Lemma pskl_subsumes_open_rec : forall P S,
+    pskl_subsumes P S ->
+    forall V W k, pskl_subsumes V W ->
+    pskl_subsumes (open_pskl_wrt_pskl_rec k V P) (open_pskl_wrt_pskl_rec k W S).
+Proof.
+  intros P S H. induction H; intros V W k Hvw; simpl;
+    try (constructor; auto; fail).
+  - (* var_b *) destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl;
+      [ apply pskl_subsumes__var_b | assumption | apply pskl_subsumes__var_b ].
+Qed.
+
 (** HOLE-MONOTONICITY (lemma (1) of the plan), for a syn-painted RHS: making
     the LHS [Q] more ghost ([more_ghost Q' Q]) preserves the refinement when
     the RHS is [pskl_to_bskl_syn Pp] (well-formed).  Proof by induction on the
