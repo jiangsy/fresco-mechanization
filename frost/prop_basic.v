@@ -126,3 +126,31 @@ Proof.
   - apply lc_pskl_hole.
   - apply lc_pskl_tophole; auto.
 Qed.
+
+(** The syn-painting preserves local closure. *)
+Lemma lc_pskl_to_bskl_syn : forall P,
+    lc_pskl P -> lc_bskl (pskl_to_bskl_syn P).
+Proof.
+  intros P H. induction H; simpl.
+  - apply lc_bskl_unit.
+  - apply lc_bskl_var_f.
+  - apply lc_bskl_arrow; auto.
+  - apply lc_bskl_all_syn. intro X. rewrite <- pskl_to_bskl_syn_open. auto.
+  - apply lc_bskl_hole.
+  - apply lc_bskl_tophole; auto.
+Qed.
+
+(** [bskl_to_uskl] preserves local closure (both ∀-colours collapse to
+    [uskl_all_syn]). *)
+Lemma lc_bskl_to_uskl : forall Q,
+    lc_bskl Q -> lc_uskl (bskl_to_uskl Q).
+Proof.
+  intros Q H. induction H; simpl.
+  - apply lc_uskl_unit.
+  - apply lc_uskl_var_f.
+  - apply lc_uskl_arrow; auto.
+  - apply lc_uskl_all_syn. intro X. rewrite <- bskl_to_uskl_open. auto.
+  - apply lc_uskl_all_syn. intro X. rewrite <- bskl_to_uskl_open. auto.
+  - apply lc_uskl_hole.
+  - apply lc_uskl_tophole; auto.
+Qed.

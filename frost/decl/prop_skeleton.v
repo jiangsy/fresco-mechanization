@@ -2,11 +2,13 @@
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
+Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
+Require Import src.frost.predicates.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
@@ -168,6 +170,99 @@ Proof.
     apply d_pat_consis__hole. apply d_wf_pskl__hole.
   - (* tophole: ⫯ ≈ ⫯ via __tophole, recurse *)
     apply d_pat_consis__tophole. apply IHHlc. assumption.
+Qed.
+
+(** Helpers for the ghostified-inference lemma below. *)
+
+(** Opening with the closed ghost [□] preserves skeleton size (both
+    [pskl_var_b] and [pskl_hole] have size 1) — gives the size decrease the
+    [∀]-prefix recursion needs. *)
+Lemma size_pskl_open_hole_rec : forall P k,
+    size_pskl (open_pskl_wrt_pskl_rec k pskl_hole P) = size_pskl P.
+Proof.
+  induction P; intros k; simpl; try reflexivity;
+    try (rewrite IHP; reflexivity);
+    try (rewrite IHP1, IHP2; reflexivity).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+Qed.
+
+Lemma size_pskl_open_hole : forall P,
+    size_pskl (open_pskl_wrt_pskl P pskl_hole) = size_pskl P.
+Proof. intro P. apply (size_pskl_open_hole_rec P 0). Qed.
+
+(** The syn-painting of any (lc) skeleton is a synthesised bskl. *)
+Lemma is_sskl_pskl_to_bskl_syn : forall P,
+    lc_pskl P -> is_sskl (pskl_to_bskl_syn P).
+Proof.
+  intros P H. induction H; simpl; try (constructor; auto; fail).
+  - (* all_syn *) inst_cofinites_for is_sskl__all. intros X HX.
+    rewrite <- pskl_to_bskl_syn_open. auto.
+Qed.
+
+(** BRICK 2 — GHOSTIFIED INFERENCE.  The [uskl] erasure of any (lc) type
+    skeleton subtypes (in [mode_tc]) to a ghost-rich skeleton: each leading
+    [∀] is instantiated with [□] via [forall_l] (whence the size induction —
+    opening a [∀] with [□] can expose nested [∀]s, so structural recursion
+    fails but the size strictly drops), and the resulting core is wrapped by
+    [univ_ghost_r] using [d_pat_consis_refl_pskl] (or, for a bare hole core,
+    closed directly by [__ghost]).  This is the witness side of safety for
+    base terms: combined with [d_pat__sub] it gives [(e:A) ⇨tc Q]. *)
+Lemma d_pat_sub_infer_ghost : forall n P,
+    size_pskl P <= n ->
+    lc_pskl P ->
+    forall Γ,
+      (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
+      exists Q, nil ⨟ Γ ⊢ₛ[ mode_tc ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q.
+Proof.
+  induction n; intros P Hsz Hlc Γ Hcov.
+  - (* size 0 is impossible *) destruct Hlc; simpl in Hsz; lia.
+  - destruct Hlc as [ | X | P1 P2 HP1 HP2 | body Hbody | | P0 HP0 ];
+      simpl in Hsz; simpl.
+    + (* unit *) exists (bskl_tophole bskl_unit).
+      apply d_pat_sub__univ_ghost_r;
+        [ apply guarded_uskl__unit | apply guarded_bskl__unit
+        | apply is_sskl__unit | apply d_pat_consis__unit ].
+    + (* var_f X *) exists (bskl_tophole (bskl_var_f X)).
+      apply d_pat_sub__univ_ghost_r;
+        [ apply guarded_uskl__var | apply guarded_bskl__var | apply is_sskl__var | ].
+      apply d_pat_consis__var. apply Hcov. simpl. fsetdec.
+    + (* arrow: ⫯.(syn P1 → syn P2), core wrapped by univ_ghost_r *)
+      exists (bskl_tophole (bskl_arrow (pskl_to_bskl_syn P1) (pskl_to_bskl_syn P2))).
+      apply d_pat_sub__univ_ghost_r.
+      * apply guarded_uskl__arrow; apply lc_bskl_to_uskl; apply lc_pskl_to_bskl_syn; assumption.
+      * apply guarded_bskl__arrow; apply lc_pskl_to_bskl_syn; assumption.
+      * apply is_sskl__arrow; apply is_sskl_pskl_to_bskl_syn; assumption.
+      * apply (@d_pat_consis_refl_pskl (pskl_arrow P1 P2));
+          [ apply lc_pskl_arrow; assumption | assumption ].
+    + (* all_syn: forall_l(□), then IH on the (smaller) instantiated body *)
+      destruct (IHn (open_pskl_wrt_pskl body pskl_hole)) with (Γ := Γ) as [Q HQ].
+      * rewrite size_pskl_open_hole. lia.
+      * apply lc_body_pskl_wrt_pskl; [ exact Hbody | apply lc_pskl_hole ].
+      * intros Y HY. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
+        simpl in HY. apply Hcov. simpl. fsetdec.
+      * exists Q.
+        eapply d_pat_sub__forall_l_untagged with (Δ' := nil) (psi := uskl_hole).
+        ** discriminate.
+        ** apply list_disjoint_nil_l.
+        ** apply d_tags_skl__hole.
+        ** apply d_wf_uskl__hole.
+        ** apply is_tskl__hole.
+        ** simpl.
+           replace (open_uskl_wrt_uskl (bskl_to_uskl (pskl_to_bskl_syn body)) uskl_hole)
+             with (bskl_to_uskl (pskl_to_bskl_syn (open_pskl_wrt_pskl body pskl_hole))).
+           2:{ unfold open_pskl_wrt_pskl, open_uskl_wrt_uskl.
+               rewrite pskl_to_bskl_syn_open_rec. rewrite bskl_to_uskl_open_rec.
+               reflexivity. }
+           exact HQ.
+    + (* hole: □ ⊑ inh{□} = □ via __ghost *)
+      exists bskl_hole. change bskl_hole with (pskl_to_bskl_inh pskl_hole).
+      apply d_pat_sub__ghost. apply d_wf_pskl__hole.
+    + (* tophole: drop the ⫯ on the LHS via univ_ghost_l, IH on the body *)
+      destruct (IHn P0) with (Γ := Γ) as [Q HQ].
+      * lia.
+      * exact HP0.
+      * intros Y HY. apply Hcov. simpl. assumption.
+      * exists Q. apply d_pat_sub__univ_ghost_l; [ discriminate | exact HQ ].
 Qed.
 
 (** Γ-weakening for refinement (local copy — the general
