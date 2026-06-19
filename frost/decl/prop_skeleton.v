@@ -199,70 +199,102 @@ Proof.
     rewrite <- pskl_to_bskl_syn_open. auto.
 Qed.
 
-(** BRICK 2 — GHOSTIFIED INFERENCE.  The [uskl] erasure of any (lc) type
-    skeleton subtypes (in [mode_tc]) to a ghost-rich skeleton: each leading
-    [∀] is instantiated with [□] via [forall_l] (whence the size induction —
-    opening a [∀] with [□] can expose nested [∀]s, so structural recursion
-    fails but the size strictly drops), and the resulting core is wrapped by
-    [univ_ghost_r] using [d_pat_consis_refl_pskl] (or, for a bare hole core,
-    closed directly by [__ghost]).  This is the witness side of safety for
-    base terms: combined with [d_pat__sub] it gives [(e:A) ⇨tc Q]. *)
-Lemma d_pat_sub_infer_ghost : forall n P,
-    size_pskl P <= n ->
+(** BRICK 2 — GHOSTIFICATION as a RELATION [ghost_of P Q]: [Q] is the
+    ghost-rich skeleton obtained from skeleton [P] by instantiating each
+    leading [∀] with [□] (the [__all] case strips one [∀] by opening its
+    body with [□]) and wrapping the resulting core in a universal ghost [⫯]
+    (a bare-hole core stays [□]).  Naming [Q] via a relation (rather than an
+    existential) lets the FILL side (brick 3) refer to the SAME [Q] the
+    inference side produced. *)
+Inductive ghost_of : pskl -> bskl -> Prop :=
+| ghost_of__unit : ghost_of pskl_unit (bskl_tophole bskl_unit)
+| ghost_of__var  : forall X, ghost_of (pskl_var_f X) (bskl_tophole (bskl_var_f X))
+| ghost_of__arrow : forall P1 P2,
+    ghost_of (pskl_arrow P1 P2)
+             (bskl_tophole (bskl_arrow (pskl_to_bskl_syn P1) (pskl_to_bskl_syn P2)))
+| ghost_of__hole : ghost_of pskl_hole bskl_hole
+| ghost_of__tophole : forall P0 Q,
+    ghost_of P0 Q -> ghost_of (pskl_tophole P0) Q
+| ghost_of__all : forall body Q,
+    ghost_of (open_pskl_wrt_pskl body pskl_hole) Q ->
+    ghost_of (pskl_all_syn body) Q.
+
+(** Every (lc) skeleton HAS a ghostification.  Size induction: stripping a
+    [∀] opens its body with the closed [□], which preserves size, so the
+    recursion is well-founded ([size_pskl_open_hole]). *)
+Lemma ghost_of_total : forall n P,
+    size_pskl P <= n -> lc_pskl P -> exists Q, ghost_of P Q.
+Proof.
+  induction n; intros P Hsz Hlc.
+  - destruct Hlc; simpl in Hsz; lia.
+  - destruct Hlc as [ | X | P1 P2 _ _ | body Hbody | | P0 HP0 ]; simpl in Hsz.
+    + exists (bskl_tophole bskl_unit). apply ghost_of__unit.
+    + exists (bskl_tophole (bskl_var_f X)). apply ghost_of__var.
+    + eexists. apply ghost_of__arrow.
+    + destruct (IHn (open_pskl_wrt_pskl body pskl_hole)) as [Q HQ].
+      * rewrite size_pskl_open_hole. lia.
+      * apply lc_body_pskl_wrt_pskl; [ exact Hbody | apply lc_pskl_hole ].
+      * exists Q. apply ghost_of__all. exact HQ.
+    + exists bskl_hole. apply ghost_of__hole.
+    + destruct (IHn P0) as [Q HQ]; [ lia | exact HP0 | ].
+      exists Q. apply ghost_of__tophole. exact HQ.
+Qed.
+
+(** INFERENCE side: the [uskl] erasure of [syn P] subtypes (in [mode_tc]) to
+    any ghostification [Q] of [P].  By induction on [ghost_of]: [__all] via
+    [forall_l(□)], cores via [univ_ghost_r]+[consis_refl] (bare hole via
+    [__ghost], leading ⫯ dropped by [univ_ghost_l]). *)
+Lemma ghost_of_infer : forall P Q,
+    ghost_of P Q ->
+    lc_pskl P ->
+    forall Γ,
+      (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
+      nil ⨟ Γ ⊢ₛ[ mode_tc ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q.
+Proof.
+  intros P Q Hg. induction Hg; intros Hlc Γ Hcov; simpl.
+  - (* unit *) apply d_pat_sub__univ_ghost_r;
+      [ apply guarded_uskl__unit | apply guarded_bskl__unit
+      | apply is_sskl__unit | apply d_pat_consis__unit ].
+  - (* var *) apply d_pat_sub__univ_ghost_r;
+      [ apply guarded_uskl__var | apply guarded_bskl__var | apply is_sskl__var | ].
+    apply d_pat_consis__var. apply Hcov. simpl. fsetdec.
+  - (* arrow *) inversion Hlc; subst. apply d_pat_sub__univ_ghost_r.
+    + apply guarded_uskl__arrow; apply lc_bskl_to_uskl; apply lc_pskl_to_bskl_syn; assumption.
+    + apply guarded_bskl__arrow; apply lc_pskl_to_bskl_syn; assumption.
+    + apply is_sskl__arrow; apply is_sskl_pskl_to_bskl_syn; assumption.
+    + apply (@d_pat_consis_refl_pskl (pskl_arrow P1 P2));
+        [ apply lc_pskl_arrow; assumption | assumption ].
+  - (* hole *) change bskl_hole with (pskl_to_bskl_inh pskl_hole).
+    apply d_pat_sub__ghost. apply d_wf_pskl__hole.
+  - (* tophole *) inversion Hlc; subst.
+    apply d_pat_sub__univ_ghost_l; [ discriminate | ].
+    apply IHHg; [ assumption | intros Y HY; apply Hcov; simpl; assumption ].
+  - (* all: forall_l(□) then IH on the instantiated body *)
+    eapply d_pat_sub__forall_l_untagged with (Δ' := nil) (psi := uskl_hole);
+      [ discriminate | apply list_disjoint_nil_l | apply d_tags_skl__hole
+      | apply d_wf_uskl__hole | apply is_tskl__hole | ].
+    simpl.
+    replace (open_uskl_wrt_uskl (bskl_to_uskl (pskl_to_bskl_syn body)) uskl_hole)
+      with (bskl_to_uskl (pskl_to_bskl_syn (open_pskl_wrt_pskl body pskl_hole))).
+    2:{ unfold open_pskl_wrt_pskl, open_uskl_wrt_uskl.
+        rewrite pskl_to_bskl_syn_open_rec. rewrite bskl_to_uskl_open_rec.
+        reflexivity. }
+    apply IHHg.
+    + apply lc_body_pskl_wrt_pskl; [ apply lc_body_pskl_all_syn_1; exact Hlc | apply lc_pskl_hole ].
+    + intros Y HY. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
+      simpl in HY. apply Hcov. simpl. fsetdec.
+Qed.
+
+(** Corollary (the existential inference, brick 2's headline). *)
+Lemma d_pat_sub_infer_ghost : forall P,
     lc_pskl P ->
     forall Γ,
       (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
       exists Q, nil ⨟ Γ ⊢ₛ[ mode_tc ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q.
 Proof.
-  induction n; intros P Hsz Hlc Γ Hcov.
-  - (* size 0 is impossible *) destruct Hlc; simpl in Hsz; lia.
-  - destruct Hlc as [ | X | P1 P2 HP1 HP2 | body Hbody | | P0 HP0 ];
-      simpl in Hsz; simpl.
-    + (* unit *) exists (bskl_tophole bskl_unit).
-      apply d_pat_sub__univ_ghost_r;
-        [ apply guarded_uskl__unit | apply guarded_bskl__unit
-        | apply is_sskl__unit | apply d_pat_consis__unit ].
-    + (* var_f X *) exists (bskl_tophole (bskl_var_f X)).
-      apply d_pat_sub__univ_ghost_r;
-        [ apply guarded_uskl__var | apply guarded_bskl__var | apply is_sskl__var | ].
-      apply d_pat_consis__var. apply Hcov. simpl. fsetdec.
-    + (* arrow: ⫯.(syn P1 → syn P2), core wrapped by univ_ghost_r *)
-      exists (bskl_tophole (bskl_arrow (pskl_to_bskl_syn P1) (pskl_to_bskl_syn P2))).
-      apply d_pat_sub__univ_ghost_r.
-      * apply guarded_uskl__arrow; apply lc_bskl_to_uskl; apply lc_pskl_to_bskl_syn; assumption.
-      * apply guarded_bskl__arrow; apply lc_pskl_to_bskl_syn; assumption.
-      * apply is_sskl__arrow; apply is_sskl_pskl_to_bskl_syn; assumption.
-      * apply (@d_pat_consis_refl_pskl (pskl_arrow P1 P2));
-          [ apply lc_pskl_arrow; assumption | assumption ].
-    + (* all_syn: forall_l(□), then IH on the (smaller) instantiated body *)
-      destruct (IHn (open_pskl_wrt_pskl body pskl_hole)) with (Γ := Γ) as [Q HQ].
-      * rewrite size_pskl_open_hole. lia.
-      * apply lc_body_pskl_wrt_pskl; [ exact Hbody | apply lc_pskl_hole ].
-      * intros Y HY. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
-        simpl in HY. apply Hcov. simpl. fsetdec.
-      * exists Q.
-        eapply d_pat_sub__forall_l_untagged with (Δ' := nil) (psi := uskl_hole).
-        ** discriminate.
-        ** apply list_disjoint_nil_l.
-        ** apply d_tags_skl__hole.
-        ** apply d_wf_uskl__hole.
-        ** apply is_tskl__hole.
-        ** simpl.
-           replace (open_uskl_wrt_uskl (bskl_to_uskl (pskl_to_bskl_syn body)) uskl_hole)
-             with (bskl_to_uskl (pskl_to_bskl_syn (open_pskl_wrt_pskl body pskl_hole))).
-           2:{ unfold open_pskl_wrt_pskl, open_uskl_wrt_uskl.
-               rewrite pskl_to_bskl_syn_open_rec. rewrite bskl_to_uskl_open_rec.
-               reflexivity. }
-           exact HQ.
-    + (* hole: □ ⊑ inh{□} = □ via __ghost *)
-      exists bskl_hole. change bskl_hole with (pskl_to_bskl_inh pskl_hole).
-      apply d_pat_sub__ghost. apply d_wf_pskl__hole.
-    + (* tophole: drop the ⫯ on the LHS via univ_ghost_l, IH on the body *)
-      destruct (IHn P0) with (Γ := Γ) as [Q HQ].
-      * lia.
-      * exact HP0.
-      * intros Y HY. apply Hcov. simpl. assumption.
-      * exists Q. apply d_pat_sub__univ_ghost_l; [ discriminate | exact HQ ].
+  intros P Hlc Γ Hcov.
+  destruct (ghost_of_total (le_n (size_pskl P)) Hlc) as [Q HQ].
+  exists Q. apply ghost_of_infer; assumption.
 Qed.
 
 (** Γ-weakening for refinement (local copy — the general
