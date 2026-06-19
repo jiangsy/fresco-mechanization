@@ -242,7 +242,7 @@ See [`docs/superpowers/specs/2026-05-17-delta-encoding-refactor-design.md`](../d
 and the 2026-05-17 (δ-refactor) entry in Part 2 below.
 
 **Pre-refactor admit categories (still apply to baseline):**
-- Phase 2.E skeleton inference (D6, D7) — 2 admits
+- Phase 2.E skeleton inference (D7) — 1 admit
 - Phase 2.D research-grade (stability S1/S2, expressiveness E1) — 6 admits in `prop_typing.v`
 - Phase 2.D narrowing / type subst — 3 admits in `typing/prop_weakening.v`
 - Post-refactor false helper (lemma is FALSE under new rule set; kept with explanatory comment for now) — 1 admit (`d_consis_gen_narrow_consis` re-encoding gap, see also `d_typing_narrow_consis`)
@@ -311,7 +311,7 @@ Counts against paper-stated signatures only. A `d_wf_denv Γ` precondition that 
 - Paper-stated lemmas (excluding "n/a" duplicates): **23**
 - 🟢 fully closed: **4** (D4, D5, A1, A2/A3)
 - 🟡 partial / narrowed: **5** (D1/D12 statements compile but proofs are admitted in the split-syntax scaffold; D2 is narrowed; D9/D10 are native split-syntax statements but still admitted)
-- 🟠 admitted (HEADLINE): **6** (D6, D7, A8, A9, A11, A12, A13)
+- 🟠 admitted (HEADLINE): **5** (D7, A8, A9, A11, A12, A13)
 - ⚠️ paper-flagged: **1** (D3)
 - 🔴 not mechanized: **7** (D11, A4, A5, A6, A7, A10, A14)
 - n/a: **3** (D8, D13, D14)
@@ -330,7 +330,7 @@ Paper labels resolved to file:line in the auto-managed block at end of file (reg
 | D3 | No guessing of polytypes (paper [declarative.tex:1108](../paper/sections/declarative.tex#L1108), no `\label`) | **Mech:** `d_sub_no_guess_uniqueness` [`prop_sub_sound.v:215`](frost/decl/subtyping/prop_sub_sound.v#L215):<br>two instantiations `ph1`, `ph2` of same `d_sub` derivation imply `ph1 = ph2`<br>**Paper:** intuition that the polytype guessing `ph` in `d_sub__forall_l_tagged` is uniquely determined. | ⚠️ paper-flagged — counter-example inlined (`ph` can absorb into nested `forall_l_tagged` chains); paper revision suggested |
 | D4 | Refinement preserves wf (paper [declarative.tex:1386](../paper/sections/declarative.tex#L1386), no `\label`) | **Mech:** `d_refine_preserves_wf` [`prop_skeleton.v`](frost/decl/prop_skeleton.v):<br>`Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P → (Δs ++ Δi) ⨟ Γ ⊢ₚₛ (bskl_to_pskl P)` | 🟢 **`Qed`, "Closed under the global context"** |
 | D5 | Preservation of skeleton wf (paper [declarative.tex:1976](../paper/sections/declarative.tex#L1976), no `\label`) | **Mech:** `d_pat_preserves_skel_wf` [`prop_skeleton.v:128`](frost/decl/prop_skeleton.v#L128):<br>`Γ ⊢[ mode_tc ] e ⇨ P → d_wf_denv Γ → nil ⨟ Γ ⊢ₚₛ P` | 🟢 narrowed via `d_pat_*_preserves_wf` with `is_syn_skel P` side hypothesis |
-| D6 | Validity of skeleton inference (paper [declarative.tex:1987](../paper/sections/declarative.tex#L1987), no `\label`) | **Mech:** `d_pat_validity` [`prop_skeleton.v:154`](frost/decl/prop_skeleton.v#L154):<br>`Γ ⊢[ m ] e ⇨ P → d_wf_denv Γ → (∃ A, Γ ⊢[ m ] e ⦂ A) → ∃ B, Γ ⊢[ m ] e ⦂ B ∧ nil ⨟ Γ ⊢ᵣ P ▸ B` | 🟠 depends on refinement reflexivity (guarded skeletons) + anti-symmetry with `d_typing__sub` |
+| D6 | Validity of skeleton inference | **REMOVED** — the paper's Valid-Skeleton definition is now commented out (declarative.tex), so `d_pat_validity` was deleted. (It was also a non-theorem for the current rules: the `freeze (λx.(x:unit))` counterexample.) | ⬜ n/a |
 | D7 | Safety of skeleton inference (paper [declarative.tex:1992](../paper/sections/declarative.tex#L1992), no `\label`) | **Mech:** `d_pat_safety` [`prop_skeleton.v:180`](frost/decl/prop_skeleton.v#L180):<br>`(∃ A, Γ ⊢[ m ] e ⦂ A) → d_wf_denv Γ → ∃ P, Γ ⊢[ m ] e ⇨ P ∧ (∀ B, Γ ⊢[ m ] e ⦂ B → nil ⨟ Γ ⊢ᵣ P ▸ B)` | 🟠 universal "refines every type" — needs principal-skeleton construction (join under refinement) |
 | D8 | General Subsumption (syntax-directed, paper [syntax-directed.tex:3](../paper/sections/syntax-directed.tex#L3), no `\label`) | (same as D1) | n/a — duplicate of D1; mech has one declarative system |
 | D9 | [Lemma B.2: Consistency Transitivity][thm:consist-transitivity] | **Mech:** `d_consis_compose` [`prop_consis_trans.v`](frost/decl/subtyping/prop_consis_trans.v):<br>`Δa ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A → Δb ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B → list_disjoint Δa Δb → ∃ Δc, Permutation Δc (Δa ++ Δb) ∧ Δc ⨟ Γ ⊨ C ≈ B`<br>**Paper:** `If ⊨[Δ₁] Γ T ≈ T' and ⊨[Δ₂] Γ T' ≈ A, then ⊨[Δ₁,Δ₂] Γ T ≈ A` (LaTeX: `\typconsis[\Delta_1]{\Gamma}{\bid{T}}{\bid{T'}}`, `\typconsis[\Delta_2]{\Gamma}{\bid{T'}}{\bid{A}}`, `\typconsis[\Delta_1, \Delta_2]{\Gamma}{\bid{T}}{\bid{A}}`) | 🟡 Native split-syntax scaffold for synthesized middle `A : ptyp`; proof currently `Admitted`. It no longer erases/repaints an arbitrary `btyp`. |
@@ -401,7 +401,7 @@ files:
 | `subtyping/prop_consis_sub_trans.v` | 1 | `d_consis_sub_trans` |
 | `prop_subtyping.v` | 1 | `d_typing_sub_compose` |
 | `subtyping/prop_sub_sound.v` | 2 | `d_sub_complete_mono`, `d_sub_no_guess_uniqueness` (paper-flagged) |
-| `prop_skeleton.v` | 2 | `d_pat_validity`, `d_pat_safety` |
+| `prop_skeleton.v` | 1 | `d_pat_safety` |
 
 `frost/algo/` (26 admits — faithful question/solution/optimality scaffolding):
 
