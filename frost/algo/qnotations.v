@@ -77,10 +77,10 @@ Notation "Θ ⊢[ NM | m | P0 ] B1 ⊑ᴬ B2 ⊣ Θ'" := (a_sub NM m P0 Θ B1 B2
   (in custom algo at level 80, Θ constr at level 0, NM constr at level 0,
    m constr at level 0, P0 constr at level 0, B1 constr at level 0,
    B2 constr at level 0, Θ' constr at level 0).
-Notation "Θ ⊢ᵇ[ NM | m | P0 ] B ◁ B' ⊣ Θ'" := (a_broom NM m P0 Θ B B' Θ')
-  (in custom algo at level 80, Θ constr at level 0, NM constr at level 0,
-   m constr at level 0, P0 constr at level 0, B constr at level 0,
-   B' constr at level 0, Θ' constr at level 0).
+Notation "Θ ⨾ Ξ ⊢ᵇ[ NM | m | P0 ] α ◁ A ⊣ Θ'" := (a_broom NM m P0 Θ Ξ α A Θ')
+  (in custom algo at level 80, Θ constr at level 0, Ξ constr at level 0,
+   NM constr at level 0, m constr at level 0, P0 constr at level 0,
+   α constr at level 0, A constr at level 0, Θ' constr at level 0).
 Notation "Θ ⊢[ m ; P0 ] e ⦂ B ⊣ Θ'" := (a_typing m Θ P0 e B Θ')
   (in custom algo at level 80, Θ constr at level 0, m constr at level 0,
    P0 constr at level 0, e constr at level 0, B constr at level 0,

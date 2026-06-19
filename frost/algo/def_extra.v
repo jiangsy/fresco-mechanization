@@ -353,13 +353,16 @@ Inductive a_extract : atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 where "P ⊳[ α , m ] P' ⤳ Ξ ↪ Q" := (a_extract α m P P' Ξ Q) : type_scope.
 
 (* ----- Flexible-variable solving (move judgments), paper fig:alg-consistency.
+   This is type-inference-IN-CONTEXT (each judgment threads [Θ ⊢ … ⊣ Θ']), NOT
+   a worklist algorithm: [Ξ] is a local context SUFFIX of flexible-variable
+   bindings (the paper's [Θ | Ξ] split), not a list of pending judgments.
    [a_unify Θ0 α̂ β̂ Θ1] = [Θ0 ⊲ α̂ ≈ β̂ ⊣ Θ1]; the two arguments are [ptyp]
    so that [Flex-Flex-Assign]'s forward substitution [α̂[τ/γ̂]] stays in-sort.
-   [a_assign Θ0 Ξ α̂ P Θ1] = [Θ0 | Ξ ⊲ α̂ := P ⊣ Θ1]; [Ξ] is the pending-suffix
-   accumulator.  Both judgments peel the list HEAD — the rightmost (most
-   recent) entry in the paper's [Θ0, e].  Substitution [P[τ/β̂]] over a
-   skeleton is [subst_pskl_in_pskl (ptyp_to_pskl τ) β P] (a monotype [τ]
-   embedded into [pskl]); see DESIGN/spec for the in-sort argument. ----- *)
+   [a_assign Θ0 Ξ α̂ P Θ1] = [Θ0 | Ξ ⊲ α̂ := P ⊣ Θ1].  Rules recurse on the
+   list HEAD — the rightmost (most recent) entry in the paper's [Θ0, e].
+   Substitution [P[τ/β̂]] over a skeleton is [subst_pskl_in_pskl
+   (ptyp_to_pskl τ) β P] (a monotype [τ] embedded into [pskl]); see
+   DESIGN/spec for the in-sort argument. ----- *)
 Inductive a_unify : aenv -> ptyp -> ptyp -> aenv -> Prop :=
 | a_unify__flex_id : forall Θ0 α,                          (* Flex-Flex-Id *)
     binds α abind_flex_mono Θ0 ->
@@ -494,16 +497,14 @@ Inductive a_consis : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 Definition a_consis_chk (Θ0 : aenv) (P P0 : pskl) (Θ1 : aenv) : Prop :=
   exists Q, a_consis Θ0 P0 P Q Θ1.
 
-(* Flexible-variable subtyping (the "broom" [◁], paper fig:alg-subtyping
-   second box).  DEFERRED: minimal reflexive stub at uncoloured sort. *)
-Inductive a_broom : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> Prop :=
-| a_broom__refl : forall NM m P0 Θ P, a_broom NM m P0 Θ P P Θ.
-
 (* ===================================================================== *)
-(*  Algorithmic subtyping  [Θ0 ⊢_{N;M;P0} P ⊑ Q ⊣ Θ1]                      *)
-(*  (paper fig:alg-subtyping, main box).  Uncoloured: over [pskl].        *)
-(*  DEFERRED: ForallL (instantiation via extract/guess) and FlexMono      *)
-(*  (the flex-variable [◁] box).                                          *)
+(*  Algorithmic subtyping  [Θ0 ⊢_{N;M;P0} P ⊑ Q ⊣ Θ1] (paper               *)
+(*  fig:alg-subtyping, main box) MUTUALLY with the flexible-variable       *)
+(*  subtyping "broom" [◁] (second box).  Uncoloured: over [pskl].          *)
+(*  Mutual because [a_sub]'s [FlexMono] hands a bare flex LHS [α̂] to       *)
+(*  [a_broom], and [a_broom]'s [Flex-Solve] (having solved [α̂₀:=α̂→β̂])     *)
+(*  re-enters [a_sub] on the arrow.  [a_broom]'s [Θ | Ξ] is a context       *)
+(*  split with [Ξ] a local SUFFIX of flexible variables (not a worklist).  *)
 (* ===================================================================== *)
 Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> Prop :=
 | a_sub__infer : forall NM P Θ0,                              (* Infer *)
@@ -519,9 +520,20 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
          ((α ~ abind_tvar) ++ Θ0) A (open_pskl_wrt_pskl B (pskl_var_f α))
          (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
     a_sub a_sub_mode_ty mode_tc (pskl_all_syn B) Θ0 A (pskl_all_syn B) Θ1
+| a_sub__forall_l : forall L NM M P0 Θ0 Θ1 P Q Ξ P1,         (* ForallL *)
+    M <> mode_ti ->
+    (guarded_pskl P0 \/ P0 = pskl_hole) ->
+    (forall α, α `notin` L ->
+       a_extract α M (open_pskl_wrt_pskl P (pskl_var_f α)) P0 Ξ P1) ->
+    a_wf_pskl (Ξ ++ Θ0) P1 ->
+    a_sub NM M P0 (Ξ ++ Θ0) (open_pskl_wrt_pskl P P1) Q Θ1 ->
+    a_sub NM M P0 Θ0 (pskl_all_syn P) Q Θ1
 | a_sub__univ_ghost_r : forall Θ0 P,                         (* UnivGhostR *)
     guarded_pskl P ->
     a_sub a_sub_mode_sk mode_tc pskl_hole Θ0 P (pskl_tophole P) Θ0
+| a_sub__flex_mono : forall NM M P0 Θ0 Θ1 α A,              (* FlexMono *)
+    a_broom NM M P0 Θ0 nil α A Θ1 ->
+    a_sub NM (mode_fn M) P0 Θ0 (pskl_var_f α) A Θ1
 | a_sub__arrow : forall NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2,   (* Arrow *)
     a_consis Θ0 P0a P1 Q1 Θ1 ->
     a_sub NM M P0b Θ1 P2 Q2 Θ2 ->
@@ -532,7 +544,42 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
 | a_sub__univ_ghost_l : forall M Θ0 Θ1 P0 P Q,              (* UnivGhostL *)
     M <> mode_ti ->
     a_sub a_sub_mode_sk M P0 Θ0 P Q Θ1 ->
-    a_sub a_sub_mode_sk M P0 Θ0 (pskl_tophole P) Q Θ1.
+    a_sub a_sub_mode_sk M P0 Θ0 (pskl_tophole P) Q Θ1
+
+(* Flexible-variable subtyping (paper fig:alg-subtyping, second box):
+   [a_broom NM M P0 Θ Ξ α̂ A Θ'] = [Θ | Ξ ⊢_{N;FN M;P0} α̂ ◁ A ⊣ Θ'].  The
+   subject [α̂] is the flex var being given the lower bound; it stays a bare
+   variable (in [Flex-Assign], [α̂ ≠ β̂] makes [α̂[τ/β̂] = α̂]) until [Flex-Solve]
+   solves it as [α̂₀ := α̂→β̂] and hands off to [a_sub] (Finding F11: the paper's
+   [Flex-Assign] premise merges [Θ0,Ξ] and writes the main-[a_sub] symbol, but
+   doing so would re-enter [FlexMono] and DISCARD the accumulated [Ξ]; we read
+   it as the [a_broom] continuation keeping the [Θ0 | Ξ] split). *)
+with a_broom : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
+| a_broom__flex_solve : forall NM M P0 Θ0 Θ1 Ξ α0 α β A,    (* Flex-Solve *)
+    a_sub NM (mode_fn M) P0
+      (Ξ ++ (α0 ~ abind_flex_mono_def (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
+          ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0)
+      (pskl_arrow (pskl_var_f α) (pskl_var_f β)) A Θ1 ->
+    a_broom NM M P0 ((α0 ~ abind_flex_mono) ++ Θ0) Ξ α0 A Θ1
+| a_broom__flex_assign : forall NM M P0 Θ0 Θ1 Ξ α β τ A,    (* Flex-Assign (F11) *)
+    a_broom NM M (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0) Θ0 Ξ α A Θ1 ->
+    a_broom NM M P0 ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α A
+      ((β ~ abind_flex_mono_def τ) ++ Θ1)
+| a_broom__flex_depend : forall NM M P0 Θ0 Θ1 Ξ α β A,      (* Flex-Depend *)
+    α <> β ->
+    β `in` ftvar_in_pskl P0 ->
+    a_broom NM M P0 Θ0 ((β ~ abind_flex_mono) ++ Ξ) α A Θ1 ->
+    a_broom NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A Θ1
+| a_broom__flex_skip : forall NM M P0 Θ0 Θ1 Ξ α β A,        (* Flex-Skip *)
+    α <> β ->
+    β `notin` ftvar_in_pskl P0 ->
+    a_broom NM M P0 Θ0 Ξ α A Θ1 ->
+    a_broom NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A
+      ((β ~ abind_flex_mono) ++ Θ1)
+| a_broom__flex_poly_skip_rigid : forall NM M P0 Θ0 Θ1 Ξ α β A,  (* FlexPoly-SkipRigid *)
+    β `notin` ftvar_in_pskl P0 ->
+    a_broom NM M P0 Θ0 Ξ α A Θ1 ->
+    a_broom NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1).
 
 (* Skeleton splitting  [Θ0 ⊢ split P0 = P→Q ⊣ Θ1]
    (paper fig:alg-type-inference).  Uncoloured.  Flex case deferred. *)
