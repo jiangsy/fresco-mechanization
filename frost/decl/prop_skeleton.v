@@ -166,46 +166,56 @@ Inductive typ_denv : list (atom * dbind) -> Prop :=
 | typ_denv__typ  : forall Γ x A, typ_denv Γ -> typ_denv ((x ~ dbind_typ A) ++ Γ).
 
 (** Context coherence between a skeleton-inference context [Γs] and a
-    typing context [Γt].  Every term variable is [dbind_skl] in [Γs] (so
-    [d_pat__var] applies — inference reads skeletons) and [dbind_typ] in
-    [Γt] (so [d_typing__var] applies), linked by a refinement
-    [inh{P} ⊳ inh{ptyp A}] (refl for coerced bindings, hole-fills for a λ
-    ghost).  This is the bridge the safety induction needs to cross a
-    λ where the two judgments bind a variable differently. *)
+    typing context [Γt].  Every term variable is [dbind_skl □] in [Γs] (so
+    [d_pat__var] applies and infers [□], which fills ANY type via
+    [d_refine_syn_hole_fills]) and [dbind_typ A] in [Γt] (so [d_typing__var]
+    applies).  Binding [□] for *every* term var is exactly the constructive
+    safety witness for the [var] case — no refinement side-condition is
+    needed, because the leaf fill is discharged by [hole_fills], not by a
+    stored refinement.  This is the bridge the safety induction needs to
+    cross a λ where the two judgments bind a variable differently. *)
 Inductive denv_coh : list (atom * dbind) -> list (atom * dbind) -> Prop :=
 | denv_coh__nil  : denv_coh nil nil
 | denv_coh__tvar : forall Γs Γt X,
     denv_coh Γs Γt ->
     denv_coh ((X ~ dbind_tvar) ++ Γs) ((X ~ dbind_tvar) ++ Γt)
-| denv_coh__skl  : forall Γs Γt x P A,
+| denv_coh__skl  : forall Γs Γt x A,
     denv_coh Γs Γt ->
-    Γt ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
-    denv_coh ((x ~ dbind_skl P) ++ Γs) ((x ~ dbind_typ A) ++ Γt).
+    denv_coh ((x ~ dbind_skl pskl_hole) ++ Γs) ((x ~ dbind_typ A) ++ Γt).
 
-(** Lookup: a [dbind_typ A] term-var in [Γt] is matched by some [dbind_skl P]
-    in [Γs] whose inh-painting refines [inh{ptyp A}] (weakened to the full
-    [Γt]).  This is what discharges the [var] case of safety. *)
+(** Lookup: a [dbind_typ A] term-var in [Γt] is matched by a [dbind_skl □]
+    in [Γs].  This discharges the [var] case of safety: [d_pat__var] then
+    infers [□], and [□] fills [inh{A'}] for every checking [A']. *)
 Lemma denv_coh_lookup : forall Γs Γt x A,
     denv_coh Γs Γt ->
     binds x (dbind_typ A) Γt ->
-    exists P, binds x (dbind_skl P) Γs /\
-              Γt ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)).
+    binds x (dbind_skl pskl_hole) Γs.
 Proof.
   intros Γs Γt x A Hcoh. induction Hcoh; intros Hb.
   - inversion Hb.
   - (* tvar *) apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
     + apply binds_one_iff in Hb. destruct Hb as [_ Hd]. inversion Hd.
-    + destruct (IHHcoh Hb) as [P [HbP Href]]. exists P. split.
-      * apply binds_app_3. exact HbP.
-      * rewrite_env (nil ++ (X ~ dbind_tvar) ++ Γt). apply d_refine_syn_wkn. exact Href.
+    + apply binds_app_3. apply (IHHcoh Hb).
   - (* skl *) apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
     + apply binds_one_iff in Hb. destruct Hb as [Hx Hd]. inversion Hd. subst.
-      exists P. split.
-      * apply binds_app_2. apply binds_one_3; auto.
-      * rewrite_env (nil ++ (x0 ~ dbind_typ A0) ++ Γt). apply d_refine_syn_wkn. exact H.
-    + destruct (IHHcoh Hb) as [P' [HbP' Href']]. exists P'. split.
-      * apply binds_app_3. exact HbP'.
-      * rewrite_env (nil ++ (x0 ~ dbind_typ A0) ++ Γt). apply d_refine_syn_wkn. exact Href'.
+      apply binds_app_2. apply binds_one_3; auto.
+    + apply binds_app_3. apply (IHHcoh Hb).
+Qed.
+
+(** Every type-only context [Γ] (a typing context — all term vars are
+    [dbind_typ], all type vars [dbind_tvar]) has a coherent skeleton
+    context: coerce each [dbind_typ] to [dbind_skl □].  This builds the
+    [denv_coh] the top-level safety theorem feeds to the generalisation. *)
+Lemma denv_coh_exists : forall Γ,
+    typ_denv Γ ->
+    exists Γs, denv_coh Γs Γ.
+Proof.
+  intros Γ H. induction H.
+  - exists nil. apply denv_coh__nil.
+  - destruct IHtyp_denv as [Γs Hcoh]. exists ((X ~ dbind_tvar) ++ Γs).
+    apply denv_coh__tvar; auto.
+  - destruct IHtyp_denv as [Γs Hcoh]. exists ((x ~ dbind_skl pskl_hole) ++ Γs).
+    apply denv_coh__skl; auto.
 Qed.
 
 (** * Paper-facing skeleton properties.
