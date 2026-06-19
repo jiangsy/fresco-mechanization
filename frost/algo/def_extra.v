@@ -78,15 +78,32 @@ Inductive a_wf_pskl : aenv -> pskl -> Prop :=
 Inductive a_guarded : aenv -> ptyp -> Prop :=
 | a_guarded__ptyp : forall Θ A, a_wf_ptyp Θ A -> a_guarded Θ A.
 
-(* [skmod_TY P M] / [skmod_SK P M] : P is a skeleton compatible with mode
-   [M] for type / skeleton inference (paper [\skmod], algorithmic.tex).
-   Uncoloured: over [pskl].  PLACEHOLDER bodies retained pending the full
-   [\skmod] rules. *)
-Inductive a_ty_mode_compat : mode -> ptyp -> Prop :=
-| a_ty_mode_compat__any : forall m A, a_ty_mode_compat m A.
+(* [a_ty_mode_compat M P] / [a_sk_mode_compat M P] : skeleton [P] is
+   compatible with mode [M] for type- / skeleton-inference (paper
+   [\skmod[\TY]{P}{\M}] / [\skmod[\SK]{P}{\M}], algorithmic.tex:278-300,
+   578-591).  Both are over skeletons [pskl] — the annotation [TY]/[SK] is
+   what distinguishes them (Finding F4: the [TY] judgment was previously
+   declared over [ptyp], but its [\Hole]/[P→Q] cases are skeleton-shaped;
+   corrected to [pskl] here.  In the [TY]/[TC] case the paper writes a bare
+   type [A]; read as a guarded skeleton). *)
+Inductive a_ty_mode_compat : mode -> pskl -> Prop :=
+| a_ty_mode_compat__ti :                                  (* skmod[TY] □ TI *)
+    a_ty_mode_compat mode_ti pskl_hole
+| a_ty_mode_compat__tc : forall A,                        (* skmod[TY] A TC *)
+    guarded_pskl A ->
+    a_ty_mode_compat mode_tc A
+| a_ty_mode_compat__fn : forall M P Q,                    (* skmod[TY] (P→Q) (FN M) *)
+    a_ty_mode_compat M Q ->
+    a_ty_mode_compat (mode_fn M) (pskl_arrow P Q).
 
 Inductive a_sk_mode_compat : mode -> pskl -> Prop :=
-| a_sk_mode_compat__any : forall m P, a_sk_mode_compat m P.
+| a_sk_mode_compat__ti :                                  (* skmod[SK] □ TI *)
+    a_sk_mode_compat mode_ti pskl_hole
+| a_sk_mode_compat__tc :                                  (* skmod[SK] □ TC *)
+    a_sk_mode_compat mode_tc pskl_hole
+| a_sk_mode_compat__fn : forall M P Q,                    (* skmod[SK] (P→Q) (FN M) *)
+    a_sk_mode_compat M Q ->
+    a_sk_mode_compat (mode_fn M) (pskl_arrow P Q).
 
 Inductive a_sub_mode : Set :=
 | a_sub_mode_ty : a_sub_mode
@@ -582,12 +599,16 @@ with a_broom : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> aen
     a_broom NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1).
 
 (* Skeleton splitting  [Θ0 ⊢ split P0 = P→Q ⊣ Θ1]
-   (paper fig:alg-type-inference).  Uncoloured.  Flex case deferred. *)
+   (paper fig:alg-type-inference).  Uncoloured. *)
 Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_split__arrow : forall Θ0 P Q,
     a_split Θ0 (pskl_arrow P Q) P Q Θ0
 | a_split__hole : forall Θ0,
-    a_split Θ0 pskl_hole pskl_hole pskl_hole Θ0.
+    a_split Θ0 pskl_hole pskl_hole pskl_hole Θ0
+| a_split__flex : forall Θ0 Θ1 α β γ,                   (* split[α̂] = β̂→γ̂ *)
+    a_unify ((γ ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
+      (ptyp_var_f α) (ptyp_arrow (ptyp_var_f β) (ptyp_var_f γ)) Θ1 ->
+    a_split Θ0 (pskl_var_f α) (pskl_var_f β) (pskl_var_f γ) Θ1.
 
 (* Algorithmic type inference [Θ ⊢[m;P0] e ⦂ A ⊣ Θ'] (output [ptyp]) and
    skeleton inference [Θ ⊢[m;P0] e ⇨ P ⊣ Θ'] (output [pskl]) — paper
