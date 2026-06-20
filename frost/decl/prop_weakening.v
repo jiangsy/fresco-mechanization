@@ -270,11 +270,10 @@ Proof.
     intros x Hx. rewrite_env (((x ~ dbind_skl P) ++ Γ1) ++ Γ2 ++ Γ3).
     apply (IHbody x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) Γ3). simpl. reflexivity.
   (* d_pat__abs_check *)
-  - intros L Γ e A Q Hwf Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__abs_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A).
-    + apply d_wf_ptyp_weakening; assumption.
-    + intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
-      apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
+  - intros L Γ e Q Hbody IHbody Γ1 Γ3 Heq; subst Γ.
+    apply d_pat__abs_check with (L := L `union` dom (Γ1 ++ Γ3)).
+    intros x Hx. rewrite_env (((x ~ dbind_skl pskl_hole) ++ Γ1) ++ Γ2 ++ Γ3).
+    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_skl pskl_hole) ++ Γ1) Γ3). simpl. reflexivity.
   (* d_pat__abs_anno *)
   - intros L Γ m e A Sarg Q Hm Hwf Hsarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
     apply d_pat__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Sarg := Sarg);
@@ -288,10 +287,11 @@ Proof.
     intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
     apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
   (* d_pat__app *)
-  - intros Γ m e1 e2 P A1 A2 Barg1 Sres Hbarg Hsres Hpat IHpat Href Hty IHty Γ1 Γ3 Heq; subst Γ.
+  - intros Γ m e1 e2 P P' Q Hpat IHpat Href Hfn IHfn Γ1 Γ3 Heq; subst Γ.
     eapply d_pat__app;
-      [ exact Hbarg | exact Hsres | apply IHpat; reflexivity
-      | apply d_refine_syn_weakening; eassumption | apply IHty; reflexivity ].
+      [ apply IHpat; reflexivity
+      | apply d_refine_syn_weakening; eassumption
+      | apply IHfn; reflexivity ].
 Qed.
 
 Lemma d_typing_weakening : forall Γ1 Γ2 Γ3 m e B,
