@@ -887,6 +887,83 @@ Proof.
           [ left; assumption | right; left; simpl; right; assumption | right; right; assumption ].
 Qed.
 
+(** [utyp]-level hole-safety, the invariant [ghost_of_fill_gen] carries (since
+    [forall_l] changes [P] and the LHS [U] together while keeping the RHS
+    [A'] fixed, hole-safety must relate [P] to [U]). *)
+Inductive hole_safe_u : list atom -> pskl -> utyp -> Prop :=
+| hsu_hole  : forall L C,
+    (forall X, X `in` ftvar_in_utyp C -> ~ List.In X L) -> hole_safe_u L pskl_hole C
+| hsu_unit  : forall L, hole_safe_u L pskl_unit utyp_unit
+| hsu_var_f : forall L X, hole_safe_u L (pskl_var_f X) (utyp_var_f X)
+| hsu_var_b : forall L n, hole_safe_u L (pskl_var_b n) (utyp_var_b n)
+| hsu_arrow : forall L P1 P2 C1 C2,
+    hole_safe_u L P1 C1 -> hole_safe_u L P2 C2 ->
+    hole_safe_u L (pskl_arrow P1 P2) (utyp_arrow C1 C2)
+| hsu_all_syn : forall L Lc P0 C0,
+    (forall X, X `notin` Lc ->
+       hole_safe_u (X :: L) (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                            (open_utyp_wrt_utyp C0 (utyp_var_f X))) ->
+    hole_safe_u L (pskl_all_syn P0) (utyp_all_syn C0)
+| hsu_all_etag : forall L Lc e P0 C0,
+    (forall X, X `notin` Lc ->
+       hole_safe_u (X :: L) (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                            (open_utyp_wrt_utyp C0 (utyp_var_f X))) ->
+    hole_safe_u L (pskl_all_syn P0) (utyp_all_etag e C0).
+
+(** Anti-monotone in [L] (a smaller forbidden set is a weaker condition). *)
+Lemma hole_safe_u_weaken : forall L P C,
+    hole_safe_u L P C ->
+    forall L', (forall X, List.In X L' -> List.In X L) ->
+    hole_safe_u L' P C.
+Proof.
+  intros L P C H. induction H; intros L' Hsub; try (constructor; auto; fail).
+  - apply hsu_hole. intros X HX HInL'. eapply H; eauto.
+  - apply hsu_all_syn with (Lc := Lc). intros X HX. apply H0; auto.
+    intros Y HY. simpl in HY |- *. destruct HY; [ left; assumption | right; auto ].
+  - apply hsu_all_etag with (Lc := Lc). intros X HX. apply H0; auto.
+    intros Y HY. simpl in HY |- *. destruct HY; [ left; assumption | right; auto ].
+Qed.
+
+(** Substituting [X] with [□] (in [P]) and [φ] (in [C]) preserves hole-safety
+    (keeping [L]), provided [φ]'s free vars avoid [L].  [X] is a free param
+    (not [L]'s head), so it composes under the [∀] binders. *)
+Lemma hole_safe_u_subst : forall L P C,
+    hole_safe_u L P C ->
+    forall X phi, lc_utyp phi ->
+    (forall Y, Y `in` ftvar_in_utyp phi -> ~ List.In Y L) ->
+    hole_safe_u L (subst_pskl_in_pskl pskl_hole X P)
+                  (subst_utyp_in_utyp phi X C).
+Proof.
+  intros L P C H. induction H; intros X0 phi Hlcphi Hphi; simpl.
+  - (* hole *) apply hsu_hole. intros Y HY HInL.
+    apply ftvar_in_utyp_subst_utyp_in_utyp_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + eapply Hphi; eauto.
+    + apply AtomSetImpl.remove_3 in HY. eapply H; eauto.
+  - (* unit *) apply hsu_unit.
+  - (* var_f X *) destruct (X == X0); subst.
+    + apply hsu_hole. intros Y HY. eapply Hphi; eauto.
+    + apply hsu_var_f.
+  - (* var_b *) apply hsu_var_b.
+  - (* arrow *) apply hsu_arrow; [ apply IHhole_safe_u1 | apply IHhole_safe_u2 ]; assumption.
+  - (* all_syn *) apply hsu_all_syn with (Lc := Lc \u singleton X0 \u ftvar_in_utyp phi).
+    intros Y HY. assert (HYX : X0 <> Y) by fsetdec.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var by (try assumption; apply lc_pskl_hole).
+    rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (try assumption).
+    eapply H0; [ fsetdec | assumption | ].
+    intros Z HZ HZin. simpl in HZin. destruct HZin as [HZeq | HZL].
+    * subst Z. assert (Y `notin` ftvar_in_utyp phi) by fsetdec. contradiction.
+    * eapply Hphi; eauto.
+  - (* all_etag *) apply hsu_all_etag with (Lc := Lc \u singleton X0 \u ftvar_in_utyp phi).
+    intros Y HY. assert (HYX : X0 <> Y) by fsetdec.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var by (try assumption; apply lc_pskl_hole).
+    rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (try assumption).
+    eapply H0; [ fsetdec | assumption | ].
+    intros Z HZ HZin. simpl in HZin. destruct HZin as [HZeq | HZL].
+    * subst Z. assert (Y `notin` ftvar_in_utyp phi) by fsetdec. contradiction.
+    * eapply Hphi; eauto.
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
