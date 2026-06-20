@@ -270,10 +270,11 @@ Proof.
     intros x Hx. rewrite_env (((x ~ dbind_skl P) ++ Γ1) ++ Γ2 ++ Γ3).
     apply (IHbody x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) Γ3). simpl. reflexivity.
   (* d_pat__abs_check *)
-  - intros L Γ e Q Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__abs_check with (L := L `union` dom (Γ1 ++ Γ3)).
-    intros x Hx. rewrite_env (((x ~ dbind_skl pskl_hole) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_skl pskl_hole) ++ Γ1) Γ3). simpl. reflexivity.
+  - intros L Γ e A Q Hwf Hbody IHbody Γ1 Γ3 Heq; subst Γ.
+    apply d_pat__abs_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A).
+    + apply d_wf_ptyp_weakening; assumption.
+    + intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
+      apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
   (* d_pat__abs_anno *)
   - intros L Γ m e A Sarg Q Hm Hwf Hsarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
     apply d_pat__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Sarg := Sarg);

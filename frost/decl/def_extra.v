@@ -712,9 +712,14 @@ with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        ((x ~ dbind_skl P) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
     Γ ⊢[ m ] (exp_abs e) ⇨ (bskl_arrow (pskl_to_bskl_inh P) Q)
-| d_pat__abs_check : forall L Γ e Q,
+| d_pat__abs_check : forall L Γ e A Q,
+    (* The λ-var carries its type [A] (a type is a skeleton), so the body can
+       both type it (function position) and infer through it; the inferred arg
+       skeleton stays [□] (the permissive ghost). Mirrors [d_typing__abs_check]
+       and [d_pat__abs_anno_check]. *)
+    Γ ⊢ₚ A ->
     (forall x, x `notin` L ->
-       ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢[ mode_tc ]
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
     Γ ⊢[ mode_tc ] (exp_abs e) ⇨ (bskl_tophole (bskl_arrow bskl_hole Q))
 | d_pat__abs_anno : forall L Γ m e A Sarg Q,
