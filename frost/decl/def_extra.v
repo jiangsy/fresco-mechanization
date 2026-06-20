@@ -690,8 +690,9 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__unit : forall Γ,
     Γ ⊢[ mode_ti ] exp_unit ⇨ bskl_unit
-| d_pat__var : forall Γ x P,
-    binds x (dbind_skl P) Γ ->
+| d_pat__var : forall Γ x P d,
+    binds x d Γ ->
+    dbind_to_pskl d = Some P ->
     Γ ⊢[ mode_ti ] (exp_var_f x) ⇨ (pskl_to_bskl_syn P)
 | d_pat__anno : forall Γ e A,
     Γ ⊢ₚ A ->

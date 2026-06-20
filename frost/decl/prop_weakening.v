@@ -251,7 +251,8 @@ Proof.
   (* d_pat__unit *)
   - intros Γ Γ1 Γ3 Heq; subst Γ. apply d_pat__unit.
   (* d_pat__var *)
-  - intros Γ x P Hb Γ1 Γ3 Heq; subst Γ. apply d_pat__var. analyze_binds Hb.
+  - intros Γ x P d Hb Hd Γ1 Γ3 Heq; subst Γ.
+    apply d_pat__var with (d := d); [ analyze_binds Hb | exact Hd ].
   (* d_pat__anno *)
   - intros Γ e A Hwf Γ1 Γ3 Heq; subst Γ.
     apply d_pat__anno. apply d_wf_ptyp_weakening; assumption.

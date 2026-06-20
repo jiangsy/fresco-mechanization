@@ -168,6 +168,18 @@ Fixpoint ptyp_to_pskl (A : ptyp) : pskl :=
   | ptyp_all A0 => pskl_all_syn (ptyp_to_pskl A0)
   end.
 
+(** A term-variable binding's skeleton view: a [dbind_skl] carries its skeleton
+    directly; a [dbind_typ A] doubles as the (hole-free) skeleton [ptyp_to_pskl
+    A] — "a type is a skeleton".  Used by [d_pat__var] so skeleton inference can
+    read either binding kind, letting one [Γ] serve both [d_typing] (reads the
+    type) and [d_pat] (reads the type-as-skeleton). *)
+Definition dbind_to_pskl (d : dbind) : option pskl :=
+  match d with
+  | dbind_skl P => Some P
+  | dbind_typ A => Some (ptyp_to_pskl A)
+  | dbind_tvar => None
+  end.
+
 (** ===== pskl / bskl / uskl conversions ===== *)
 
 Fixpoint pskl_to_bskl_syn (P : pskl) : bskl :=
