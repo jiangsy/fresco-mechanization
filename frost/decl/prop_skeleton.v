@@ -1133,6 +1133,51 @@ Proof.
         -- destruct (Hcov Y HY) as [HS | HG]; [ left; simpl; right; assumption | right; assumption ].
 Qed.
 
+(** [forall_l] maintenance: from the [hsu_all] body (one [∀] stripped), the
+    instantiation [□]/[φ] re-establishes [hole_safe_u] at [nil] for the
+    recursion — exactly [subst_intro] + [hole_safe_u_subst] + [weaken]. *)
+Lemma hole_safe_u_open_fill : forall L P0 C ph,
+    (forall X, X `notin` L ->
+       hole_safe_u (X :: nil) (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                              (open_utyp_wrt_utyp C (utyp_var_f X))) ->
+    lc_utyp ph ->
+    hole_safe_u nil (open_pskl_wrt_pskl P0 pskl_hole) (open_utyp_wrt_utyp C ph).
+Proof.
+  intros L P0 C ph Hbody Hlc.
+  pick fresh X for (L \u ftvar_in_pskl P0 \u ftvar_in_utyp C \u ftvar_in_utyp ph).
+  rewrite (subst_pskl_in_pskl_intro X P0 pskl_hole) by fsetdec.
+  rewrite (subst_utyp_in_utyp_intro X C ph) by fsetdec.
+  apply hole_safe_u_weaken with (L := X :: nil); [ | intros Y HY; inversion HY ].
+  apply hole_safe_u_subst.
+  - apply Hbody. fsetdec.
+  - exact Hlc.
+  - intros Y HY HIn. simpl in HIn. destruct HIn as [Heq | Hnil];
+      [ subst Y; fsetdec | inversion Hnil ].
+Qed.
+
+(** A [__check] leaf: the ghost's top [⫯] over [P] refines [colour]'s output
+    against the guarded checking type [A'].  Consumes the threaded
+    [hole_safe_u nil P C] invariant (via [hole_safe_u_transport] to [A']) and
+    feeds [refine_colour_tophole]. *)
+Lemma check_leaf : forall Γ P C A' Δ,
+    guarded_btyp (ptyp_to_btyp_inh A') ->
+    Δ ⨟ Γ ⊨ C ≈ ptyp_to_btyp_inh A' ->
+    hole_safe_u nil P C ->
+    d_wf_ptyp Γ A' ->
+    Γ ⨟ nil ⨟ nil ⊢ᵣ (bskl_tophole (pskl_to_bskl_inh P))
+                   ⊳ (colour (bskl_tophole (pskl_to_bskl_inh P)) A').
+Proof.
+  intros Γ P C A' Δ Hgb Hcons Hhsu Hwf.
+  assert (Hnall' : forall A0, A' <> ptyp_all A0)
+    by (intros A0 Hc; subst A'; inversion Hgb).
+  apply refine_colour_tophole.
+  - eapply d_wf_ptyp_lc_loc; eauto.
+  - apply ths_leaf;
+      [ exact Hnall'
+      | eapply hole_safe_u_transport; [ exact Hhsu | exact Hcons | reflexivity ] ].
+  - intros X HX. right. eapply d_wf_ptyp_ftvar; eauto.
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
@@ -1154,12 +1199,34 @@ Lemma ghost_of_fill_gen : forall Δ Γ U V,
       d_wf_ptyp Γ A' ->
       pskl_subsumes P (utyp_to_pskl U) ->
       ghost_of P Q ->
+      hole_safe_u nil P U ->
       Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q))
                        ⊳ (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A').
 Proof.
   intros Δ Γ U V H. remember mode_tc as m eqn:Hm. revert Hm.
-  induction H; intros Hm A' P Q Heq Hwfa Hsub Hg; try discriminate Hm.
-  - (* __check — consistency→refinement base (remaining) *) admit.
+  induction H; intros Hm A' P Q Heq Hwfa Hsub Hg Hhsu; try discriminate Hm.
+  - (* __check: ghost top-⫯ over P, refined against guarded A' via check_leaf;
+       P=□ fills directly.  Δ/A' from Heq; C guarded ⟹ P is non-∀/non-⫯. *)
+    subst B.
+    destruct Hg as [ | Xg | Pg1 Pg2 | | Pgt Qgt | bdy Qbdy ].
+    + (* ghost__unit: P = pskl_unit, Q = ⫯unit *)
+      eapply check_leaf with (P := pskl_unit);
+        [ eassumption | eassumption | exact Hhsu | exact Hwfa ].
+    + (* ghost__var *)
+      eapply check_leaf with (P := pskl_var_f Xg);
+        [ eassumption | eassumption | exact Hhsu | exact Hwfa ].
+    + (* ghost__arrow *)
+      simpl. rewrite !bskl_to_pskl_pskl_to_bskl_syn.
+      eapply check_leaf with (P := pskl_arrow Pg1 Pg2);
+        [ eassumption | eassumption | exact Hhsu | exact Hwfa ].
+    + (* ghost__hole: P = □, Q = □ — fills any type *)
+      simpl. rewrite colour_hole. apply d_refine_syn__hole.
+      apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
+    + (* ghost__tophole: P = ⫯P0 — impossible (skel C has no ⫯) *)
+      exfalso. inversion Hsub; subst. destruct C; simpl in *; discriminate.
+    + (* ghost__all: P = all_syn — impossible (C guarded) *)
+      exfalso. inversion Hsub; subst. destruct C; simpl in *; try discriminate;
+        match goal with Hg2 : guarded_utyp _ |- _ => inversion Hg2 end.
   - (* __forall_r: A' = ∀.A'0; the ⫯ in [inh{Q}] fills it (tophole_fill) *)
     destruct A' as [ | | | | A'0 ]; simpl in Heq; try discriminate.
     inversion Heq; subst.
@@ -1182,6 +1249,7 @@ Proof.
       * match goal with Hb : forall _, _ `notin` _ -> d_wf_ptyp _ _ |- _ => apply Hb; auto end.
       * exact Hsub.
       * exact Hg.
+      * exact Hhsu.
   - (* __forall_l_tagged: U = utyp_all_etag ε C *)
     simpl in Hsub. inversion Hsub; subst.
     + (* P = □ ⟹ Q = □, fills any type *)
@@ -1190,19 +1258,25 @@ Proof.
       rewrite colour_hole. apply d_refine_syn__hole. apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
     + (* P = pskl_all_syn P' : the KEY case — recurse with □ absorbing φ *)
       inversion Hg; subst.
-      eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption ].
-      rewrite utyp_to_pskl_open.
-      apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
+      eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption | ].
+      * rewrite utyp_to_pskl_open.
+        apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
+      * inversion Hhsu; subst.
+        match goal with Hb : forall _ : atom, _ -> hole_safe_u _ _ _ |- _ =>
+          eapply hole_safe_u_open_fill; [ exact Hb | apply is_ttyp_lc; eassumption ] end.
   - (* __forall_l_untagged: U = utyp_all_syn C — identical to tagged *)
     simpl in Hsub. inversion Hsub; subst.
     + inversion Hg; subst.
       replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
       rewrite colour_hole. apply d_refine_syn__hole. apply d_wf_pskl_of_wf_ptyp; exact Hwfa.
     + inversion Hg; subst.
-      eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption ].
-      rewrite utyp_to_pskl_open.
-      apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
-Admitted.
+      eapply IHd_sub; [ reflexivity | reflexivity | exact Hwfa | | eassumption | ].
+      * rewrite utyp_to_pskl_open.
+        apply pskl_subsumes_open_rec; [ assumption | apply pskl_subsumes__hole ].
+      * inversion Hhsu; subst.
+        match goal with Hb : forall _ : atom, _ -> hole_safe_u _ _ _ |- _ =>
+          eapply hole_safe_u_open_fill; [ exact Hb | apply is_ttyp_lc; eassumption ] end.
+Qed.
 
 (** BRICK 3 GOAL — the fill side, now a corollary of [ghost_of_fill_gen]
     (path (b) was taken: deterministic witness [colour]).  The ghost [Q]
@@ -1212,18 +1286,20 @@ Admitted.
     [forall_r/⫯]); the rest of the induction (incl. the original [forall_l]
     [φ]/[□] obstacle and [P=□]) is proved. *)
 Lemma ghost_of_fill : forall C Q Γ A',
+    lc_ptyp C ->
     ghost_of (ptyp_to_pskl C) Q ->
     d_wf_ptyp Γ A' ->
     empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn C) ⊑ (ptyp_to_btyp_inh A') ->
     exists B, bskl_to_pskl B = ptyp_to_pskl A' /\
               Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B.
 Proof.
-  intros C Q Γ A' Hg Hwfa Hsub.
+  intros C Q Γ A' Hlc Hg Hwfa Hsub.
   exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A'). split.
   - apply colour_erasure.
   - eapply ghost_of_fill_gen with (P := ptyp_to_pskl C);
-      [ exact Hsub | reflexivity | exact Hwfa | | exact Hg ].
-    rewrite utyp_to_pskl_ptyp_to_utyp_syn. apply pskl_subsumes_refl.
+      [ exact Hsub | reflexivity | exact Hwfa | | exact Hg | ].
+    + rewrite utyp_to_pskl_ptyp_to_utyp_syn. apply pskl_subsumes_refl.
+    + apply hole_safe_u_of_ptyp. exact Hlc.
 Qed.
 
 (** Γ-weakening for refinement (local copy — the general
