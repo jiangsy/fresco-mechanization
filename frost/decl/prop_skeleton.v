@@ -964,6 +964,21 @@ Proof.
     * eapply Hphi; eauto.
 Qed.
 
+(** A type's skeleton is hole-safe w.r.t. the type's syn-painting (trivially —
+    no holes).  Establishes the [hole_safe_u] invariant at the [ghost_of_fill]
+    entry, where [P = ptyp_to_pskl C0]. *)
+Lemma hole_safe_u_of_ptyp : forall C0,
+    lc_ptyp C0 ->
+    forall L, hole_safe_u L (ptyp_to_pskl C0) (ptyp_to_utyp_syn C0).
+Proof.
+  intros C0 Hlc. induction Hlc; intros L; simpl.
+  - apply hsu_unit.
+  - apply hsu_var_f.
+  - apply hsu_arrow; auto.
+  - apply hsu_all_syn with (Lc := empty). intros X HX.
+    rewrite <- ptyp_to_pskl_open. rewrite <- (ptyp_to_utyp_syn_open _ (ptyp_var_f X)). auto.
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
