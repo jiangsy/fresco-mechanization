@@ -979,6 +979,84 @@ Proof.
     rewrite <- ptyp_to_pskl_open. rewrite <- (ptyp_to_utyp_syn_open _ (ptyp_var_f X)). auto.
 Qed.
 
+Lemma ptyp_to_btyp_inh_open_var : forall A X,
+    open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f X) =
+    ptyp_to_btyp_inh (open_ptyp_wrt_ptyp A (ptyp_var_f X)).
+Proof.
+  intros. unfold open_btyp_wrt_btyp, open_ptyp_wrt_ptyp.
+  rewrite ptyp_to_btyp_inh_open_rec. reflexivity.
+Qed.
+
+(** Consistency preserves free vars: [A']'s ftvars are among [C]'s. *)
+Lemma d_consis_ftvar : forall Δ Γ C B,
+    Δ ⨟ Γ ⊨ C ≈ B ->
+    forall A', B = ptyp_to_btyp_inh A' ->
+    ftvar_in_ptyp A' [<=] ftvar_in_utyp C.
+Proof.
+  intros Δ Γ C B H. induction H; intros A' Heq;
+    destruct A'; simpl in Heq; try discriminate; inversion Heq; subst; simpl.
+  - fsetdec.
+  - fsetdec.
+  - specialize (IHd_consis1 A'1 eq_refl). specialize (IHd_consis2 A'2 eq_refl). fsetdec.
+  - (* forall_inh_tagged: A' = ptyp_all A'0 *)
+    pick fresh X for (L \u ftvar_in_ptyp A' \u ftvar_in_utyp C).
+    assert (Hsub : ftvar_in_ptyp (open_ptyp_wrt_ptyp A' (ptyp_var_f X)) [<=]
+                   ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X))).
+    { eapply H0; [ auto | ]. rewrite ptyp_to_btyp_inh_open_var. reflexivity. }
+    assert (HL : ftvar_in_ptyp A' [<=] ftvar_in_ptyp (open_ptyp_wrt_ptyp A' (ptyp_var_f X)))
+      by apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower.
+    assert (HU : ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X)) [<=]
+                 AtomSetImpl.union (ftvar_in_utyp (utyp_var_f X)) (ftvar_in_utyp C))
+      by apply ftvar_in_utyp_open_utyp_wrt_utyp_upper.
+    simpl in HU. fsetdec.
+  - (* forall_inh_untagged *)
+    pick fresh X for (L \u ftvar_in_ptyp A' \u ftvar_in_utyp C).
+    assert (Hsub : ftvar_in_ptyp (open_ptyp_wrt_ptyp A' (ptyp_var_f X)) [<=]
+                   ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X))).
+    { eapply H0; [ auto | ]. rewrite ptyp_to_btyp_inh_open_var. reflexivity. }
+    assert (HL : ftvar_in_ptyp A' [<=] ftvar_in_ptyp (open_ptyp_wrt_ptyp A' (ptyp_var_f X)))
+      by apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower.
+    assert (HU : ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X)) [<=]
+                 AtomSetImpl.union (ftvar_in_utyp (utyp_var_f X)) (ftvar_in_utyp C))
+      by apply ftvar_in_utyp_open_utyp_wrt_utyp_upper.
+    simpl in HU. fsetdec.
+Qed.
+
+(** TRANSPORT: hole-safety on the [utyp] [C] transfers to the checking type
+    [A'] consistent with it.  This bridges [gen]'s [utyp] invariant
+    [hole_safe_u] to the [hole_safe] that [refine_colour_core] consumes. *)
+Lemma hole_safe_u_transport : forall La Pa C,
+    hole_safe_u La Pa C ->
+    forall Δ Γ B A', Δ ⨟ Γ ⊨ C ≈ B -> B = ptyp_to_btyp_inh A' ->
+    hole_safe La Pa A'.
+Proof.
+  intros La Pa C H. induction H; intros Δ Γ B A' Hd Heq.
+  - (* hsu_hole *) apply hs_hole. intros Y HY.
+    assert (Hsub : ftvar_in_ptyp A' [<=] ftvar_in_utyp C)
+      by (eapply d_consis_ftvar; [ exact Hd | exact Heq ]).
+    apply H. fsetdec.
+  - (* hsu_unit *) revert Heq. inversion Hd; subst; intros Heq.
+    destruct A'; simpl in Heq; try discriminate. apply hs_unit.
+  - (* hsu_var_f *) revert Heq. inversion Hd; subst; intros Heq.
+    destruct A'; simpl in Heq; try discriminate. inversion Heq; subst. apply hs_var_f.
+  - (* hsu_var_b *) inversion Hd.
+  - (* hsu_arrow *) revert Heq. inversion Hd; subst; intros Heq.
+    destruct A'; simpl in Heq; try discriminate. inversion Heq; subst.
+    apply hs_arrow; [ eapply IHhole_safe_u1 | eapply IHhole_safe_u2 ]; eauto.
+  - (* hsu_all_syn *) revert Heq. inversion Hd; subst; intros Heq;
+      destruct A'; simpl in Heq; try discriminate; inversion Heq; subst.
+    match goal with Hsc : forall _ : atom, _ -> d_consis _ _ _ _ |- _ =>
+      apply hs_all with (Lc := Lc \u L0); intros X HX;
+      eapply H0; [ fsetdec | apply Hsc; fsetdec
+                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity ] end.
+  - (* hsu_all_etag *) revert Heq. inversion Hd; subst; intros Heq;
+      destruct A'; simpl in Heq; try discriminate; inversion Heq; subst.
+    match goal with Hsc : forall _ : atom, _ -> d_consis _ _ _ _ |- _ =>
+      apply hs_all with (Lc := Lc \u L0); intros X HX;
+      eapply H0; [ fsetdec | apply Hsc; fsetdec
+                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity ] end.
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
