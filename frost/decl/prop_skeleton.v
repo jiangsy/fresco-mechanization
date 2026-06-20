@@ -812,6 +812,81 @@ Proof.
   - inversion Hnt.
 Qed.
 
+(** THE HOLE/Δi INVARIANT.  [hole_safe L P A]: [P] structurally matches the
+    type [A] (with holes), and EVERY hole in [P] faces an [A]-subterm whose
+    free vars avoid [L] (the enclosing-∀ vars).  This is the formal "ghosts
+    fill only NON-inherited-∀ positions" discipline: under refinement, a kept
+    nested ∀ routes its var into [Δi], and a hole there would be the banned
+    "ghost fills an inh-∀" — [hs_hole]'s side condition rules it out, and is
+    exactly what lets the hole case's well-formedness use [Δs ∪ Γ] (not Δi). *)
+Inductive hole_safe : list atom -> pskl -> ptyp -> Prop :=
+| hs_hole  : forall L A,
+    (forall X, X `in` ftvar_in_ptyp A -> ~ List.In X L) -> hole_safe L pskl_hole A
+| hs_unit  : forall L, hole_safe L pskl_unit ptyp_unit
+| hs_var_f : forall L X, hole_safe L (pskl_var_f X) (ptyp_var_f X)
+| hs_var_b : forall L n, hole_safe L (pskl_var_b n) (ptyp_var_b n)
+| hs_arrow : forall L P1 P2 A1 A2,
+    hole_safe L P1 A1 -> hole_safe L P2 A2 ->
+    hole_safe L (pskl_arrow P1 P2) (ptyp_arrow A1 A2)
+| hs_all   : forall L Lc P0 A0,
+    (forall X, X `notin` Lc ->
+       hole_safe (X :: L) (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                          (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
+    hole_safe L (pskl_all_syn P0) (ptyp_all A0).
+
+(** CONSISTENCY→REFINEMENT CORE (the heart of [__check]): an [inh]-painted
+    [hole_safe] skeleton refines the [colour]ing of its type.  By induction on
+    [A]; at a hole [hs_hole]'s condition + the coverage give [Δs ∪ Γ] (so
+    [hole_fills] applies); the ∀ case routes the var into [Δi] and recurses
+    using [colour_open] + [colour_guide_open] + [pskl_to_bskl_inh_open]. *)
+Lemma refine_colour_core : forall A,
+    lc_ptyp A ->
+    forall P Γ Δs Δi,
+      hole_safe Δi P A ->
+      (forall X, X `in` ftvar_in_ptyp A ->
+         List.In X Δs \/ List.In X Δi \/ binds X dbind_tvar Γ) ->
+      Γ ⨟ Δs ⨟ Δi ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (colour (pskl_to_bskl_inh P) A).
+Proof.
+  intros A Hlc. induction Hlc; intros P Γ Δs Δi Hhs Hcov.
+  - (* unit *) inversion Hhs; subst.
+    + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+      rewrite colour_hole. apply d_refine_syn_hole_fills;
+        [ apply lc_ptyp_unit | intros X HX; simpl in HX; fsetdec ].
+    + simpl. apply d_refine_syn__unit.
+  - (* var X *) inversion Hhs; subst.
+    + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+      rewrite colour_hole. apply d_refine_syn_hole_fills.
+      * apply lc_ptyp_var_f.
+      * intros Y HY. destruct (Hcov Y HY) as [HS | [HI | HG]];
+          [ left; assumption | exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end | right; assumption ].
+    + simpl. apply d_refine_syn__var. apply Hcov. simpl. fsetdec.
+  - (* arrow *) inversion Hhs; subst.
+    + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+      rewrite colour_hole. apply d_refine_syn_hole_fills.
+      * apply lc_ptyp_arrow; assumption.
+      * intros Y HY. destruct (Hcov Y HY) as [HS | [HI | HG]];
+          [ left; assumption | exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end | right; assumption ].
+    + simpl. apply d_refine_syn__arrow;
+        [ apply IHHlc1 | apply IHHlc2 ]; try assumption;
+        intros Y HY; apply Hcov; simpl; fsetdec.
+  - (* all *) inversion Hhs; subst.
+    + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+      rewrite colour_hole. apply d_refine_syn_hole_fills.
+      * pick fresh X; apply (lc_ptyp_all_exists X); auto.
+      * intros Y HY. destruct (Hcov Y HY) as [HS | [HI | HG]];
+          [ left; assumption | exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end | right; assumption ].
+    + simpl. inst_cofinites_for d_refine_syn__all. intros X HX.
+      rewrite <- colour_open.
+      rewrite <- (colour_guide_open _ (pskl_to_bskl_inh P0) X).
+      rewrite <- !pskl_to_bskl_inh_open.
+      apply H0; auto.
+      intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+      simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+      * apply AtomSetImpl.singleton_1 in HY. subst. right. left. simpl. left. reflexivity.
+      * destruct (Hcov Y HY) as [HS | [HI | HG]];
+          [ left; assumption | right; left; simpl; right; assumption | right; right; assumption ].
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
