@@ -1057,6 +1057,82 @@ Proof.
                  | rewrite ptyp_to_btyp_inh_open_var; reflexivity ] end.
 Qed.
 
+(** [tophole_safe P0 A]: a single top ghost [⫯] over a [hole_safe] core [P0],
+    against [A].  The [⫯] skips [A]'s leading ∀s ([ths_all], → [__tophole_fill])
+    and, at the first non-∀, the core [P0] must be [hole_safe] against that
+    ∀-stripped [A] ([ths_leaf], → [__tophole_remove]).  This is exactly the
+    shape [bskl_to_pskl Q] takes for a non-□ ghost [Q] (one top [⫯], syn-painted
+    — hence [hole_safe], no nested [⫯] — below). *)
+Inductive tophole_safe : pskl -> ptyp -> Prop :=
+| ths_leaf : forall P0 A,
+    (forall A0, A <> ptyp_all A0) -> hole_safe nil P0 A -> tophole_safe P0 A
+| ths_all  : forall L P0 A0,
+    (forall X, X `notin` L ->
+       tophole_safe P0 (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
+    tophole_safe P0 (ptyp_all A0).
+
+(** [colour] of a [⫯]-guide against a non-∀ type peeks past the [⫯] (provided
+    the peeled guide isn't itself a [⫯]). *)
+Lemma colour_tophole_peek : forall A Q0,
+    (forall A0, A <> ptyp_all A0) ->
+    (forall Q1, Q0 <> bskl_tophole Q1) ->
+    colour (bskl_tophole Q0) A = colour Q0 A.
+Proof.
+  intros A Q0 HnA HnQ. destruct A; simpl; try reflexivity.
+  - destruct Q0; simpl; try reflexivity. exfalso; eapply HnQ; reflexivity.
+  - exfalso; eapply HnA; reflexivity.
+Qed.
+
+(** TOPHOLE refinement: the [⫯]-ghost refines [colour]'s output against [A].
+    Leaf (non-∀ [A]): [__tophole_remove] + [refine_colour_core].
+    ∀ [A]: [__tophole_fill] (the [⫯] persists into the body, joining [Δs]) +
+    recursion on the body. *)
+Lemma refine_colour_tophole : forall A,
+    lc_ptyp A ->
+    forall P0 Γ Δs Δi,
+      tophole_safe P0 A ->
+      (forall X, X `in` ftvar_in_ptyp A ->
+         List.In X Δs \/ binds X dbind_tvar Γ) ->
+      Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole (pskl_to_bskl_inh P0))
+                     ⊳ (colour (bskl_tophole (pskl_to_bskl_inh P0)) A).
+Proof.
+  intros A Hlc. induction Hlc; intros P0 Γ Δs Δi Hts Hcov.
+  - (* unit *) inversion Hts; subst.
+    match goal with Hhs : hole_safe nil P0 ptyp_unit |- _ =>
+      assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
+        by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
+    rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
+    apply d_refine_syn__tophole_remove.
+    apply refine_colour_core; [ apply lc_ptyp_unit | assumption | intros Y HY; simpl in HY; fsetdec ].
+  - (* var X *) inversion Hts; subst.
+    match goal with Hhs : hole_safe nil P0 (ptyp_var_f _) |- _ =>
+      assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
+        by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
+    rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
+    apply d_refine_syn__tophole_remove.
+    apply refine_colour_core; [ apply lc_ptyp_var_f | assumption
+      | intros Y HY; destruct (Hcov Y HY) as [HS | HG]; [ left; assumption | right; right; assumption ] ].
+  - (* arrow *) inversion Hts; subst.
+    match goal with Hhs : hole_safe nil P0 (ptyp_arrow _ _) |- _ =>
+      assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
+        by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
+    rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
+    apply d_refine_syn__tophole_remove.
+    apply refine_colour_core; [ apply lc_ptyp_arrow; assumption | assumption
+      | intros Y HY; destruct (Hcov Y HY) as [HS | HG]; [ left; assumption | right; right; assumption ] ].
+  - (* all *) inversion Hts; subst.
+    + (* ths_leaf: impossible, A = ptyp_all *)
+      match goal with H : forall _ : ptyp, _ |- _ => exfalso; apply (H _ eq_refl) end.
+    + (* ths_all: __tophole_fill *)
+      simpl. inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
+      rewrite <- colour_open. apply H0.
+      * match goal with Hb : forall _ : atom, _ -> tophole_safe _ _ |- _ => apply Hb; auto end.
+      * intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+        simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+        -- apply AtomSetImpl.singleton_1 in HY. subst. left. simpl. left. reflexivity.
+        -- destruct (Hcov Y HY) as [HS | HG]; [ left; simpl; right; assumption | right; assumption ].
+Qed.
+
 (** Generalised fill, by induction on the [d_sub] derivation, carrying the
     [pskl_subsumes] invariant.  KEY: the [forall_l] case (the original
     obstacle) closes cleanly — the invariant is preserved by
