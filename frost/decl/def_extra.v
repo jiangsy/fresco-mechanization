@@ -620,6 +620,68 @@ Reserved Notation "Γ ⊢[ M ] e ⦂ A"
 Reserved Notation "Γ ⊢[ M ] e ⇨ P"
   (at level 100, M at level 0, e at level 75, P at level 75, no associativity).
 
+(** Skeleton inference [d_pat] ([⇨]) is SELF-CONTAINED — no [d_typing] premises
+    (the paper's P-App infers the function, declarative.tex:1560) — so it is
+    defined standalone, BEFORE [d_typing], rather than mutually. *)
+Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
+| d_pat__unit : forall Γ,
+    Γ ⊢[ mode_ti ] exp_unit ⇨ bskl_unit
+| d_pat__var : forall Γ x P d,
+    binds x d Γ ->
+    dbind_to_pskl d = Some P ->
+    Γ ⊢[ mode_ti ] (exp_var_f x) ⇨ (pskl_to_bskl_syn P)
+| d_pat__anno : forall Γ e A,
+    Γ ⊢ₚ A ->
+    Γ ⊢[ mode_ti ] (exp_anno e A) ⇨ (pskl_to_bskl_syn (ptyp_to_pskl A))
+| d_pat__sub : forall Γ m e Q1 Q2,
+    is_base_term e ->
+    Γ ⊢[ mode_ti ] e ⇨ Q1 ->
+    nil ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl Q1) ⊑ Q2 ->
+    Γ ⊢[ m ] e ⇨ Q2
+| d_pat__freeze : forall Γ e Q,
+    Γ ⊢[ mode_ti ] e ⇨ Q ->
+    Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ Q
+| d_pat__abs : forall L Γ m e P Q,
+    m <> mode_tc ->
+    nil ⨟ Γ ⊢ₚₛ P ->
+    (forall x, x `notin` L ->
+       ((x ~ dbind_skl P) ++ Γ) ⊢[ decr_mode m ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
+    Γ ⊢[ m ] (exp_abs e) ⇨ (bskl_arrow (pskl_to_bskl_inh P) Q)
+| d_pat__abs_check : forall L Γ e Q,
+    (forall x, x `notin` L ->
+       ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
+    Γ ⊢[ mode_tc ] (exp_abs e) ⇨ (bskl_tophole (bskl_arrow bskl_hole Q))
+| d_pat__abs_anno : forall L Γ m e A Sarg Q,
+    (* The arrow-arg skeleton [Sarg] is bidirectional, [bskl_to_pskl Sarg]
+       the annotation's pattern. *)
+    m <> mode_tc ->
+    Γ ⊢ₚ A ->
+    bskl_to_pskl Sarg = ptyp_to_pskl A ->
+    (forall x, x `notin` L ->
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
+    Γ ⊢[ m ] (exp_abs_anno A e) ⇨ (bskl_arrow Sarg Q)
+| d_pat__abs_anno_check : forall L Γ e A Sarg Q,
+    Γ ⊢ₚ A ->
+    bskl_to_pskl Sarg = ptyp_to_pskl A ->
+    (forall x, x `notin` L ->
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
+    Γ ⊢[ mode_tc ] (exp_abs_anno A e) ⇨ (bskl_tophole (bskl_arrow Sarg Q))
+| d_pat__app : forall Γ m e1 e2 P P' Q,
+    (* Paper P-App (declarative.tex:1560): the function [e1] is SKELETON-
+       INFERRED ([⇨]) in [FN] mode, not typed — d_pat is self-contained
+       skeleton inference.  [P'] is the fill output (the arg skeleton). *)
+    Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
+    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ P' ->
+    Γ ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow P' Q) ->
+    Γ ⊢[ m ] (exp_app e1 e2) ⇨ Q
+where "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P) : type_scope.
+
+(** Typing [d_typing] ([⦂]) uses [d_pat] in [App] (it infers the argument's
+    skeleton), so it is defined after [d_pat]. *)
 Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_typing__unit : forall Γ,
     Γ ⊢[ mode_ti ] exp_unit ⦂ btyp_unit
@@ -686,64 +748,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow Barg B) ->
     Γ ⊢[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh A) ->
     Γ ⊢[ m ] (exp_app e1 e2) ⦂ B
-
-with d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
-| d_pat__unit : forall Γ,
-    Γ ⊢[ mode_ti ] exp_unit ⇨ bskl_unit
-| d_pat__var : forall Γ x P d,
-    binds x d Γ ->
-    dbind_to_pskl d = Some P ->
-    Γ ⊢[ mode_ti ] (exp_var_f x) ⇨ (pskl_to_bskl_syn P)
-| d_pat__anno : forall Γ e A,
-    Γ ⊢ₚ A ->
-    Γ ⊢[ mode_ti ] (exp_anno e A) ⇨ (pskl_to_bskl_syn (ptyp_to_pskl A))
-| d_pat__sub : forall Γ m e Q1 Q2,
-    is_base_term e ->
-    Γ ⊢[ mode_ti ] e ⇨ Q1 ->
-    nil ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl Q1) ⊑ Q2 ->
-    Γ ⊢[ m ] e ⇨ Q2
-| d_pat__freeze : forall Γ e Q,
-    Γ ⊢[ mode_ti ] e ⇨ Q ->
-    Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ Q
-| d_pat__abs : forall L Γ m e P Q,
-    m <> mode_tc ->
-    nil ⨟ Γ ⊢ₚₛ P ->
-    (forall x, x `notin` L ->
-       ((x ~ dbind_skl P) ++ Γ) ⊢[ decr_mode m ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ m ] (exp_abs e) ⇨ (bskl_arrow (pskl_to_bskl_inh P) Q)
-| d_pat__abs_check : forall L Γ e Q,
-    (forall x, x `notin` L ->
-       ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢[ mode_tc ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ mode_tc ] (exp_abs e) ⇨ (bskl_tophole (bskl_arrow bskl_hole Q))
-| d_pat__abs_anno : forall L Γ m e A Sarg Q,
-    (* The arrow-arg skeleton [Sarg] is bidirectional, [bskl_to_pskl Sarg]
-       the annotation's pattern. *)
-    m <> mode_tc ->
-    Γ ⊢ₚ A ->
-    bskl_to_pskl Sarg = ptyp_to_pskl A ->
-    (forall x, x `notin` L ->
-       ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ m ] (exp_abs_anno A e) ⇨ (bskl_arrow Sarg Q)
-| d_pat__abs_anno_check : forall L Γ e A Sarg Q,
-    Γ ⊢ₚ A ->
-    bskl_to_pskl Sarg = ptyp_to_pskl A ->
-    (forall x, x `notin` L ->
-       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ mode_tc ] (exp_abs_anno A e) ⇨ (bskl_tophole (bskl_arrow Sarg Q))
-| d_pat__app : forall Γ m e1 e2 P P' Q,
-    (* Paper P-App (declarative.tex:1560): the function [e1] is SKELETON-
-       INFERRED ([⇨]) in [FN] mode, not typed — d_pat is self-contained
-       skeleton inference.  [P'] is the fill output (the arg skeleton). *)
-    Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ P' ->
-    Γ ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow P' Q) ->
-    Γ ⊢[ m ] (exp_app e1 e2) ⇨ Q
-where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope
-  and "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P) : type_scope.
+where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope.
 
 (* WT: Other comments:
 1. In the paper I have \skmod[\N]{\M}{P} as well-formedness conditions

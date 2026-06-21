@@ -81,11 +81,6 @@ Qed.
 (** * Coercion local-closure preservation. *)
 
 
-(** * Mutual induction principle for typing/pattern inference. *)
-
-Scheme d_typing_mut := Induction for d_typing Sort Prop
-  with d_pat_mut    := Induction for d_pat    Sort Prop.
-
 (** The synthesised painting of any locally-closed [ptyp] is synthesised
     ([is_styp]): every ∀ becomes [btyp_all_syn].  (Induct on [lc_ptyp] so the
     ∀ body's [is_styp] follows from the per-instance IH.) *)

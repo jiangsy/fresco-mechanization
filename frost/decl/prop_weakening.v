@@ -191,123 +191,93 @@ Proof.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; reflexivity ].
 Qed.
 
-Combined Scheme d_typing_pat_mutind from d_typing_mut, d_pat_mut.
+(** Apply a cofinite-body IH (found by shape) after the env has been reshaped to
+    [(bind ++ Γ1) ++ Γ2 ++ Γ3]; [eapply] unifies the split, leaving freshness +
+    the trivial context equation. *)
+Ltac wk_cof :=
+  match goal with
+  | IH : forall _ : atom, _ -> forall _ _ : list (atom * dbind), _ = _ -> _ |- _ =>
+      eapply IH; [ fsetdec | simpl; reflexivity ]
+  end.
+(** Apply the direct IH for subterm [ex]. *)
+Ltac wk_dir ex :=
+  match goal with
+  | IH : forall _ _ : list (atom * dbind), _ = _ -> _ ⊢[ _ ] ex ⇨ _ |- _ => apply IH; reflexivity
+  | IH : forall _ _ : list (atom * dbind), _ = _ -> _ ⊢[ _ ] ex ⦂ _ |- _ => apply IH; reflexivity
+  end.
 
-Lemma d_typing_pat_weakening : forall Γ2,
-  (forall m Γ e B, Γ ⊢[ m ] e ⦂ B ->
-     forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B) /\
-  (forall m Γ e Q, Γ ⊢[ m ] e ⇨ Q ->
-     forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ Q).
+(** [d_pat] is self-contained, so its weakening is a standalone induction. *)
+Lemma d_pat_weakening_mid : forall Γ2 m Γ e Q,
+    Γ ⊢[ m ] e ⇨ Q ->
+    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ Q.
 Proof.
-  intros Γ2. apply d_typing_pat_mutind.
-  (* d_typing__unit *)
-  - intros Γ Γ1 Γ3 Heq; subst Γ. apply d_typing__unit.
-  (* d_typing__var *)
-  - intros Γ x A Hb Γ1 Γ3 Heq; subst Γ. apply d_typing__var. analyze_binds Hb.
-  (* d_typing__anno *)
-  - intros Γ e A Hty IHty Γ1 Γ3 Heq; subst Γ.
-    apply d_typing__anno. apply IHty; reflexivity.
-  (* d_typing__sub *)
-  - intros Γ m e B1 B2 Hbase Hty IHty Hsub Γ1 Γ3 Heq; subst Γ.
-    apply d_typing__sub with (B1 := B1);
-      [ exact Hbase | apply IHty; reflexivity | apply d_sub_weakening; exact Hsub ].
-  (* d_typing__freeze *)
-  - intros Γ e B Hty IHty Γ1 Γ3 Heq; subst Γ.
-    apply d_typing__freeze. apply IHty; reflexivity.
-  (* d_typing__forall *)
-  - intros L Γ e B Hval Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_typing__forall with (L := L `union` dom (Γ1 ++ Γ3)); [ exact Hval | ].
-    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody X ltac:(fsetdec) ((X ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_typing__abs *)
-  - intros L Γ m e A B Hneq Hwf Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_typing__abs with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
-      [ exact Hneq | apply d_wf_ptyp_weakening; assumption | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_typing__abs_check *)
-  - intros L Γ e A B Hwf Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_typing__abs_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
-      [ apply d_wf_ptyp_weakening; assumption | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_typing__abs_anno *)
-  - intros L Γ m e A Barg B Hneq Hwf Hbarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_typing__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Barg := Barg);
-      [ exact Hneq | apply d_wf_ptyp_weakening; assumption | exact Hbarg | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_typing__abs_anno_check *)
-  - intros L Γ e A Barg B Hwf Hbarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_typing__abs_anno_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Barg := Barg);
-      [ apply d_wf_ptyp_weakening; assumption | exact Hbarg | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_typing__app *)
-  - intros Γ m e1 e2 P A Barg B Hbarg Hpat IHpat Href Hty1 IHty1 Hty2 IHty2 Γ1 Γ3 Heq; subst Γ.
-    eapply d_typing__app;
-      [ exact Hbarg | apply IHpat; reflexivity | apply d_refine_syn_weakening; eassumption
-      | apply IHty1; reflexivity | apply IHty2; reflexivity ].
-  (* d_pat__unit *)
-  - intros Γ Γ1 Γ3 Heq; subst Γ. apply d_pat__unit.
-  (* d_pat__var *)
-  - intros Γ x P d Hb Hd Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__var with (d := d); [ analyze_binds Hb | exact Hd ].
-  (* d_pat__anno *)
-  - intros Γ e A Hwf Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__anno. apply d_wf_ptyp_weakening; assumption.
-  (* d_pat__sub *)
-  - intros Γ m e Q1 Q2 Hbase Hpat IHpat Hsub Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__sub with (Q1 := Q1);
-      [ exact Hbase | apply IHpat; reflexivity | apply d_pat_sub_weakening; exact Hsub ].
-  (* d_pat__freeze *)
-  - intros Γ e Q Hpat IHpat Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__freeze. apply IHpat; reflexivity.
-  (* d_pat__abs *)
-  - intros L Γ m e P Q Hm Hwf Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__abs with (L := L `union` dom (Γ1 ++ Γ3)) (P := P);
-      [ exact Hm | apply d_wf_pskl_weakening; assumption | ].
-    intros x Hx. rewrite_env (((x ~ dbind_skl P) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_pat__abs_check *)
-  - intros L Γ e Q Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__abs_check with (L := L `union` dom (Γ1 ++ Γ3)).
+  intros Γ2 m Γ e Q H. induction H; intros Γ1 Γ3 Heq; subst.
+  - apply d_pat__unit.
+  - apply d_pat__var with (d := d); [ analyze_binds H | exact H0 ].
+  - apply d_pat__anno. apply d_wf_ptyp_weakening; assumption.
+  - apply d_pat__sub with (Q1 := Q1);
+      [ exact H | apply IHd_pat; reflexivity | apply d_pat_sub_weakening; exact H1 ].
+  - apply d_pat__freeze. apply IHd_pat; reflexivity.
+  - apply d_pat__abs with (L := L `union` dom (Γ1 ++ Γ3)) (P := P);
+      [ exact H | apply d_wf_pskl_weakening; assumption | ].
+    intros x Hx. rewrite_env (((x ~ dbind_skl P) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_pat__abs_check with (L := L `union` dom (Γ1 ++ Γ3)).
     intros x Hx. rewrite_env (((x ~ dbind_skl pskl_hole) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_skl pskl_hole) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_pat__abs_anno *)
-  - intros L Γ m e A Sarg Q Hm Hwf Hsarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Sarg := Sarg);
-      [ exact Hm | apply d_wf_ptyp_weakening; assumption | exact Hsarg | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_pat__abs_anno_check *)
-  - intros L Γ e A Sarg Q Hwf Hsarg Hbody IHbody Γ1 Γ3 Heq; subst Γ.
-    apply d_pat__abs_anno_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Sarg := Sarg);
-      [ apply d_wf_ptyp_weakening; assumption | exact Hsarg | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3).
-    apply (IHbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ3). simpl. reflexivity.
-  (* d_pat__app *)
-  - intros Γ m e1 e2 P P' Q Hpat IHpat Href Hfn IHfn Γ1 Γ3 Heq; subst Γ.
-    eapply d_pat__app;
-      [ apply IHpat; reflexivity
-      | apply d_refine_syn_weakening; eassumption
-      | apply IHfn; reflexivity ].
-Qed.
-
-Lemma d_typing_weakening : forall Γ1 Γ2 Γ3 m e B,
-    (Γ1 ++ Γ3) ⊢[ m ] e ⦂ B ->
-    (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B.
-Proof.
-  intros Γ1 Γ2 Γ3 m e B H.
-  eapply (proj1 (d_typing_pat_weakening Γ2)); [ exact H | reflexivity ].
+    wk_cof.
+  - apply d_pat__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Sarg := Sarg);
+      [ exact H | apply d_wf_ptyp_weakening; assumption | exact H1 | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_pat__abs_anno_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Sarg := Sarg);
+      [ apply d_wf_ptyp_weakening; assumption | exact H0 | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - eapply d_pat__app;
+      [ wk_dir e2 | apply d_refine_syn_weakening; eassumption | wk_dir e1 ].
 Qed.
 
 Lemma d_pat_weakening : forall Γ1 Γ2 Γ3 m e Q,
     (Γ1 ++ Γ3) ⊢[ m ] e ⇨ Q ->
     (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ Q.
 Proof.
-  intros Γ1 Γ2 Γ3 m e Q H.
-  eapply (proj2 (d_typing_pat_weakening Γ2)); [ exact H | reflexivity ].
+  intros Γ1 Γ2 Γ3 m e Q H. eapply d_pat_weakening_mid; [ exact H | reflexivity ].
+Qed.
+
+(** [d_typing] weakening — its [App] [⇨] premise is closed by [d_pat_weakening]. *)
+Lemma d_typing_weakening_mid : forall Γ2 m Γ e B,
+    Γ ⊢[ m ] e ⦂ B ->
+    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B.
+Proof.
+  intros Γ2 m Γ e B H. induction H; intros Γ1 Γ3 Heq; subst Γ.
+  - apply d_typing__unit.
+  - apply d_typing__var. analyze_binds H.
+  - apply d_typing__anno. apply IHd_typing; reflexivity.
+  - apply d_typing__sub with (B1 := B1);
+      [ exact H | apply IHd_typing; reflexivity | apply d_sub_weakening; exact H1 ].
+  - apply d_typing__freeze. apply IHd_typing; reflexivity.
+  - apply d_typing__forall with (L := L `union` dom (Γ1 ++ Γ3)); [ exact H | ].
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_typing__abs with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
+      [ exact H | apply d_wf_ptyp_weakening; assumption | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_typing__abs_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
+      [ apply d_wf_ptyp_weakening; assumption | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_typing__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Barg := Barg);
+      [ exact H | apply d_wf_ptyp_weakening; assumption | exact H1 | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_typing__abs_anno_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Barg := Barg);
+      [ apply d_wf_ptyp_weakening; assumption | exact H0 | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - eapply d_typing__app;
+      [ exact H | eapply d_pat_weakening_mid; [ exact H0 | reflexivity ]
+      | apply d_refine_syn_weakening; eassumption
+      | wk_dir e1 | wk_dir e2 ].
+Qed.
+
+Lemma d_typing_weakening : forall Γ1 Γ2 Γ3 m e B,
+    (Γ1 ++ Γ3) ⊢[ m ] e ⦂ B ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⦂ B.
+Proof.
+  intros Γ1 Γ2 Γ3 m e B H. eapply d_typing_weakening_mid; [ exact H | reflexivity ].
 Qed.
 
 
