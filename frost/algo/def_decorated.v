@@ -46,8 +46,6 @@ Fixpoint uskl_to_pskl (R : uskl) : pskl :=
   | uskl_topholeg R0 => pskl_tophole (uskl_to_pskl R0)
   end.
 
-Notation "⌊ R ⌋ᵤ" := (uskl_to_pskl R) (at level 0, R at level 0) : type_scope.
-
 (* [a_tag_support Θ NM Ψ ψ] — paper [\tagsupp{Θ}{tags(Ψ)}{syn(ψ)}]
    (decorated-algosub.tex:99): the decorated instantiation [ψ] is supported by
    the tag set [Ψ] under [Θ] (sort [NM]).  PLACEHOLDER for the scaffolding —
