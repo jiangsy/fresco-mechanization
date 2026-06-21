@@ -628,64 +628,7 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
    fig:alg-type-inference / fig:alg-skeleton-inference.  Uncoloured: the
    whole algorithm works on [ptyp]/[pskl], no [btyp]/[bskl] painting (that
    happens only at the soundness/completeness bridge). *)
-Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
-| a_typing__unit : forall m Θ0 P0 A Θ1,
-    a_sub a_sub_mode_ty m P0 Θ0 pskl_unit (ptyp_to_pskl A) Θ1 ->
-    a_typing m Θ0 P0 exp_unit A Θ1
-| a_typing__var : forall m Θ0 P0 x A B Θ1,
-    binds x (abind_var_typ A) Θ0 ->
-    a_sub a_sub_mode_ty m P0 Θ0 (ptyp_to_pskl A) (ptyp_to_pskl B) Θ1 ->
-    a_typing m Θ0 P0 (exp_var_f x) B Θ1
-| a_typing__anno : forall m Θ0 P0 e A B Θ1 Θ2,
-    a_typing mode_tc Θ0 (ptyp_to_pskl A) e A Θ1 ->
-    a_sub a_sub_mode_ty m P0 Θ1 (ptyp_to_pskl A) (ptyp_to_pskl B) Θ2 ->
-    a_typing m Θ0 P0 (exp_anno e A) B Θ2
-| a_typing__freeze : forall Θ0 P0 e A B Θ1 Θ2,
-    a_typing mode_ti Θ0 pskl_hole e B Θ1 ->
-    a_consis_chk Θ1 (ptyp_to_pskl B) (ptyp_to_pskl A) Θ2 ->
-    a_typing mode_tc Θ0 P0 (exp_freeze e) A Θ2
-| a_typing__abs : forall L m Θ0 Θ1 Θ2 P0 P Q αs A e B Ξ,
-    m <> mode_tc ->
-    a_split Θ0 P0 P Q Θ1 ->
-    a_guess_mono Θ1 P αs A ->
-    a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ αs ++ Θ1) Q
-         (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    a_typing m Θ0 P0 (exp_abs e) (ptyp_arrow A B) (Ξ ++ Θ2)
-| a_typing__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q A e B Ξ,
-    m <> mode_tc ->
-    a_split Θ0 P0 P Q Θ1 ->
-    a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
-    a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ Θ2) Q
-         (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
-    a_typing m Θ0 P0 (exp_abs_anno A e) (ptyp_arrow A B) (Ξ ++ Θ3)
-| a_typing__abs_check : forall L Θ0 Θ1 A e B Ξ,
-    a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       a_typing mode_tc ((x ~ abind_var_typ A) ++ Θ0) pskl_hole
-         (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
-    a_typing mode_tc Θ0 pskl_hole (exp_abs e) (ptyp_arrow A B) (Ξ ++ Θ1)
-| a_typing__abs_anno_check : forall L Θ0 Θ1 Θ2 A e B Ξ,
-    a_consis_chk Θ0 (ptyp_to_pskl A) (ptyp_to_pskl A) Θ1 ->
-    a_suffix Ξ ->
-    (forall x, x `notin` L ->
-       a_typing mode_tc ((x ~ abind_var_typ A) ++ Θ1) pskl_hole
-         (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    a_typing mode_tc Θ0 pskl_hole (exp_abs_anno A e) (ptyp_arrow A B) (Ξ ++ Θ2)
-| a_typing__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,
-    a_pat mode_tc Θ0 pskl_hole e2 P Θ1 ->
-    a_typing (mode_fn m) Θ1 (pskl_arrow P Q) e1 (ptyp_arrow A B) Θ2 ->
-    a_typing mode_tc Θ2 (ptyp_to_pskl A) e2 A' Θ3 ->
-    a_typing m Θ0 Q (exp_app e1 e2) B Θ3
-
-with a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
+Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__unit : forall m Θ0 Θ1 P0 P,                        (* paper pilab Unit *)
     a_sub a_sub_mode_sk m P0 Θ0 pskl_unit P Θ1 ->
     a_pat m Θ0 P0 exp_unit P Θ1
@@ -747,3 +690,62 @@ with a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
     a_pat mode_tc Θ0 pskl_hole e2 P0 Θ1 ->
     a_pat (mode_fn m) Θ1 (pskl_arrow P0 Q0) e1 (pskl_arrow P Q) Θ2 ->
     a_pat m Θ0 Q0 (exp_app e1 e2) Q Θ2.
+
+(* Algorithmic type inference (paper fig:alg-type-inference); uses
+   [a_pat] in the App case. *)
+Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
+| a_typing__unit : forall m Θ0 P0 A Θ1,
+    a_sub a_sub_mode_ty m P0 Θ0 pskl_unit (ptyp_to_pskl A) Θ1 ->
+    a_typing m Θ0 P0 exp_unit A Θ1
+| a_typing__var : forall m Θ0 P0 x A B Θ1,
+    binds x (abind_var_typ A) Θ0 ->
+    a_sub a_sub_mode_ty m P0 Θ0 (ptyp_to_pskl A) (ptyp_to_pskl B) Θ1 ->
+    a_typing m Θ0 P0 (exp_var_f x) B Θ1
+| a_typing__anno : forall m Θ0 P0 e A B Θ1 Θ2,
+    a_typing mode_tc Θ0 (ptyp_to_pskl A) e A Θ1 ->
+    a_sub a_sub_mode_ty m P0 Θ1 (ptyp_to_pskl A) (ptyp_to_pskl B) Θ2 ->
+    a_typing m Θ0 P0 (exp_anno e A) B Θ2
+| a_typing__freeze : forall Θ0 P0 e A B Θ1 Θ2,
+    a_typing mode_ti Θ0 pskl_hole e B Θ1 ->
+    a_consis_chk Θ1 (ptyp_to_pskl B) (ptyp_to_pskl A) Θ2 ->
+    a_typing mode_tc Θ0 P0 (exp_freeze e) A Θ2
+| a_typing__abs : forall L m Θ0 Θ1 Θ2 P0 P Q αs A e B Ξ,
+    m <> mode_tc ->
+    a_split Θ0 P0 P Q Θ1 ->
+    a_guess_mono Θ1 P αs A ->
+    a_suffix Ξ ->
+    (forall x, x `notin` L ->
+       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ αs ++ Θ1) Q
+         (open_exp_wrt_exp e (exp_var_f x)) B
+         (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
+    a_typing m Θ0 P0 (exp_abs e) (ptyp_arrow A B) (Ξ ++ Θ2)
+| a_typing__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q A e B Ξ,
+    m <> mode_tc ->
+    a_split Θ0 P0 P Q Θ1 ->
+    a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
+    a_suffix Ξ ->
+    (forall x, x `notin` L ->
+       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ Θ2) Q
+         (open_exp_wrt_exp e (exp_var_f x)) B
+         (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
+    a_typing m Θ0 P0 (exp_abs_anno A e) (ptyp_arrow A B) (Ξ ++ Θ3)
+| a_typing__abs_check : forall L Θ0 Θ1 A e B Ξ,
+    a_suffix Ξ ->
+    (forall x, x `notin` L ->
+       a_typing mode_tc ((x ~ abind_var_typ A) ++ Θ0) pskl_hole
+         (open_exp_wrt_exp e (exp_var_f x)) B
+         (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
+    a_typing mode_tc Θ0 pskl_hole (exp_abs e) (ptyp_arrow A B) (Ξ ++ Θ1)
+| a_typing__abs_anno_check : forall L Θ0 Θ1 Θ2 A e B Ξ,
+    a_consis_chk Θ0 (ptyp_to_pskl A) (ptyp_to_pskl A) Θ1 ->
+    a_suffix Ξ ->
+    (forall x, x `notin` L ->
+       a_typing mode_tc ((x ~ abind_var_typ A) ++ Θ1) pskl_hole
+         (open_exp_wrt_exp e (exp_var_f x)) B
+         (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
+    a_typing mode_tc Θ0 pskl_hole (exp_abs_anno A e) (ptyp_arrow A B) (Ξ ++ Θ2)
+| a_typing__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,
+    a_pat mode_tc Θ0 pskl_hole e2 P Θ1 ->
+    a_typing (mode_fn m) Θ1 (pskl_arrow P Q) e1 (ptyp_arrow A B) Θ2 ->
+    a_typing mode_tc Θ2 (ptyp_to_pskl A) e2 A' Θ3 ->
+    a_typing m Θ0 Q (exp_app e1 e2) B Θ3.
