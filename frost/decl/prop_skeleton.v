@@ -2053,6 +2053,73 @@ Proof.
       [ apply guarded_uskl_subst_unit; assumption | eapply IHd_wf_uskl; eauto ].
 Qed.
 
+(** [pskl_to_bskl_inh] commutes with the tvar→unit substitution. *)
+Lemma pskl_to_bskl_inh_subst_unit : forall P X,
+    subst_bskl_in_bskl bskl_unit X (pskl_to_bskl_inh P)
+    = pskl_to_bskl_inh (subst_pskl_in_pskl pskl_unit X P).
+Proof.
+  induction P; intros X; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma is_sskl_subst_unit : forall Q X,
+    is_sskl Q -> is_sskl (subst_bskl_in_bskl bskl_unit X Q).
+Proof.
+  intros Q X H. induction H; simpl.
+  - apply is_sskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      [ apply is_sskl__unit | apply is_sskl__var ].
+  - apply is_sskl__arrow; assumption.
+  - apply is_sskl__all with (L := L `union` {{X}}). intros Y HY.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      try (apply lc_bskl_unit); try fsetdec. auto.
+  - apply is_sskl__hole.
+  - apply is_sskl__tophole; assumption.
+Qed.
+
+Lemma is_tskl_subst_unit : forall R X,
+    is_tskl R -> is_tskl (subst_bskl_in_uskl uskl_unit X R).
+Proof.
+  intros R X H. induction H; simpl.
+  - apply is_tskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      [ apply is_tskl__unit | apply is_tskl__var ].
+  - apply is_tskl__arrow; assumption.
+  - apply is_tskl__all_etag with (L := L `union` {{X}}). intros Y HY.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      try (apply lc_uskl_unit); try fsetdec. auto.
+  - apply is_tskl__hole.
+  - apply is_tskl__tophole; assumption.
+Qed.
+
+Lemma guarded_bskl_subst_unit : forall Q X,
+    guarded_bskl Q -> guarded_bskl (subst_bskl_in_bskl bskl_unit X Q).
+Proof.
+  intros Q X H. induction H; simpl.
+  - apply guarded_bskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      [ apply guarded_bskl__unit | apply guarded_bskl__var ].
+  - apply guarded_bskl__arrow; apply subst_bskl_in_bskl_lc_bskl; (assumption || apply lc_bskl_unit).
+Qed.
+
+Lemma d_tags_skl_subst_unit : forall Δ R X,
+    d_tags_skl Δ R -> d_tags_skl Δ (subst_bskl_in_uskl uskl_unit X R).
+Proof.
+  intros Δ R X H. induction H; simpl.
+  - apply d_tags_skl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      [ apply d_tags_skl__unit | apply d_tags_skl__var ].
+  - apply d_tags_skl__arrow; assumption.
+  - apply d_tags_skl__all_etag with (L := L `union` {{X}}); [ | assumption ]. intros Y HY.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      try (apply lc_uskl_unit); try fsetdec. auto.
+  - apply d_tags_skl__hole.
+  - apply d_tags_skl__tophole; assumption.
+  - apply d_tags_skl__holeg.
+  - apply d_tags_skl__topholeg; assumption.
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
