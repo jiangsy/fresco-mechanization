@@ -298,77 +298,19 @@ Proof.
 Qed.
 
 (** ===================================================================== *)
-(** BRICK 3 — FILL SIDE, and THE OBSTACLE.                                  *)
+(** BRICK 3 — FILL SIDE ([ghost_of_fill], below).                          *)
 (**
-   Goal: [ghost_of (ptyp_to_pskl C) Q -> empty ⨟ Γ ⊢[tc] (ptyp_to_utyp_syn C)
-          ⊑ (ptyp_to_btyp_inh A') -> inh{Q} ⊳ syn{A'}], i.e. the ghost [Q]
-   produced for a base term's principal type [C] refines every checking type
-   [A'] the term subsumes to.  (The [inh{Q}] / [syn{A'}] painting is the
-   safety statement's; the syn-RHS is what the fill engines target.)
+   [ghost_of (ptyp_to_pskl C) Q -> ... empty⨟Γ ⊢[tc] (ptyp_to_utyp_syn C) ⊑
+   (ptyp_to_btyp_inh A') -> exists B, bskl_to_pskl B = ptyp_to_pskl A' ∧
+   inh{Q} ⊳ B]: the ghost [Q] for a base term's principal type [C] refines a
+   colouring of every checking type [A'].  PROVED (Qed, axiom-free) by a
+   DETERMINISTIC witness [colour] (B := colour inh{Q} A') + a [d_sub] induction
+   ([ghost_of_fill_gen]) carrying [hole_safe_u nil P U]: the [forall_l] [□]/[φ]
+   absorption is handled by [hole_safe_u_subst]; the [__check] base by
+   [hole_safe_u_transport] (to A') + [refine_colour_core] / [refine_colour_tophole]
+   (the ghost's top [⫯]).  (The earlier [more_ghost]-monotonicity plan was
+   abandoned in favour of the [colour] witness.) *)
 
-   THE OBSTACLE — [forall_l] / ghost mis-alignment.  Induct on the [d_sub]
-   derivation.  The [tc] cases are [__check] (consistency core), [__forall_r]
-   (RHS adds an inherited ∀, absorbed by the [⫯] via [tophole_fill]) and
-   [__forall_l].  In [__forall_l] the LHS ∀ of [C] is instantiated with a
-   CONCRETE [φ] ([is_ttyp]), reducing to [open(C-body) φ ⊑ inh{A'}] — but
-   [ghost_of] stripped the SAME ∀ by opening its body with [□]
-   ([ghost_of__all]).  So I hold [ghost_of (open (skel C-body) □) Q] while a
-   naive IH wants [ghost_of (open (skel C-body) (skel φ)) Q].  They differ
-   exactly at the instantiated position, where [Q] has a [□].
-
-   Why it is still TRUE: that [□] fills ANYTHING ([d_refine_syn__hole]), so it
-   absorbs whatever [φ] became in [A'].  Mechanically this needs a GENERALISED
-   statement / a hole-monotonicity of the fill ("replacing a sub-skeleton of
-   [Q] by [□] only enlarges what [inh{Q}] refines"), so the [□]s uniformly
-   absorb the [forall_l] instantiations.  Plus the tags ([ε]) carried by [φ]
-   add a second axis to track.
-
-   SECOND subtlety — the RHS colouring is NOT uniformly syn.  [inh{Q}] repaints
-   [Q]'s ∀-colours to *inherited* ([bskl_to_pskl] collapses to [pskl_all_syn],
-   then [pskl_to_bskl_inh] → [bskl_all_inh]).  So a NESTED concrete ∀ kept by
-   [ghost_of] (e.g. the codomain of [unit→∀β.β], untouched by the shallow
-   subtyping) appears as [bskl_all_inh] on the LHS, and [d_refine_syn__all]
-   matches it ONLY against an *inherited* ∀ on the RHS.  Hence the witnessing
-   [B] in [∃B, bskl_to_pskl B = ptyp_to_pskl A' ∧ inh{Q} ⊳ B] is a
-   POSITION-DEPENDENT colouring of [A']: syn at the ghost/[forall_l]-varied
-   leaves ([□] fills them via [__hole] → [pskl_to_bskl_syn]) but inh at the
-   kept nested ∀s (matched by [__all]).  So [B] must be built FROM [Q] (track
-   it alongside the [d_sub] induction), not fixed to [pskl_to_bskl_syn A'].
-
-   NET: brick 3 is a focused multi-lemma development (≈ brick 2 in size):
-   (1) a [more_ghost] relation + hole-monotonicity of the fill (for the [□]/[φ]
-   absorption); (2) a relating lemma [ghost_of(open S □) Q□ ∧ ghost_of(open S V)
-   Qᵥ → more_ghost Q□ Qᵥ]; (3) a [Q]-driven colouring [B] of [A'] with
-   [bskl_to_pskl B = ptyp_to_pskl A']; (4) [ghost_of_fill] by [d_sub] induction
-   (with the [ε]-tag bookkeeping) assembling all of the above.  The inference
-   side (bricks 1-2 above) is complete and Qed; this is the remaining work. *)
-
-(** [more_ghost Q' Q]: [Q'] is [Q] with some sub-skeletons replaced by the
-    plain ghost [□].  The tool for lemma (1)/(2) of the plan above — the [□]s
-    in the [forall_l]-instantiated [Q] are [more_ghost] than any concrete
-    instantiation, and the fill is monotone in this order (at the syn-painted
-    leaves).  Defined now (independent of the open design questions); the
-    monotonicity + relating lemmas that consume it are next session's first
-    targets. *)
-Inductive more_ghost : bskl -> bskl -> Prop :=
-| more_ghost__hole  : forall Q, more_ghost bskl_hole Q
-| more_ghost__unit  : more_ghost bskl_unit bskl_unit
-| more_ghost__var   : forall X, more_ghost (bskl_var_f X) (bskl_var_f X)
-| more_ghost__arrow : forall Q1 Q2 R1 R2,
-    more_ghost Q1 R1 -> more_ghost Q2 R2 ->
-    more_ghost (bskl_arrow Q1 Q2) (bskl_arrow R1 R2)
-| more_ghost__all_syn : forall L Q R,
-    (forall X, X `notin` L ->
-       more_ghost (open_bskl_wrt_bskl Q (bskl_var_f X))
-                  (open_bskl_wrt_bskl R (bskl_var_f X))) ->
-    more_ghost (bskl_all_syn Q) (bskl_all_syn R)
-| more_ghost__all_inh : forall L Q R,
-    (forall X, X `notin` L ->
-       more_ghost (open_bskl_wrt_bskl Q (bskl_var_f X))
-                  (open_bskl_wrt_bskl R (bskl_var_f X))) ->
-    more_ghost (bskl_all_inh Q) (bskl_all_inh R)
-| more_ghost__tophole : forall Q R,
-    more_ghost Q R -> more_ghost (bskl_tophole Q) (bskl_tophole R).
 
 (** ===================================================================== *)
 (** PATH (b) INFRASTRUCTURE — tag-erasing [utyp] skeleton + the holed-subsumes
@@ -440,65 +382,6 @@ Proof.
       [ apply pskl_subsumes__var_b | assumption | apply pskl_subsumes__var_b ].
 Qed.
 
-(** HOLE-MONOTONICITY (lemma (1) of the plan), for a syn-painted RHS: making
-    the LHS [Q] more ghost ([more_ghost Q' Q]) preserves the refinement when
-    the RHS is [pskl_to_bskl_syn Pp] (well-formed).  Proof by induction on the
-    refinement derivation: wherever [more_ghost] turns a subterm into [□] the
-    [__hole] rule fires (the matching RHS sub-skeleton is syn-painted and wf);
-    the [__all] case is vacuous (a syn RHS is never [bskl_all_inh]); the [⫯]
-    cases reconstruct via the same rule, the IH applied at [Q' = ⫯ …]. *)
-Lemma d_refine_syn_more_ghost_syn : forall Γ Δs Δi Q Bsyn,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ Bsyn ->
-    forall Pp, Bsyn = pskl_to_bskl_syn Pp ->
-    Δs ⨟ Γ ⊢ₚₛ Pp ->
-    forall Q', more_ghost Q' Q ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q' ⊳ Bsyn.
-Proof.
-  intros Γ Δs Δi Q Bsyn Href.
-  induction Href; intros Pp Heq Hwf Q' Hmg.
-  - (* __unit *) inversion Hmg; subst.
-    + rewrite Heq. apply d_refine_syn__hole. assumption.
-    + apply d_refine_syn__unit.
-  - (* __var *) inversion Hmg; subst.
-    + rewrite Heq. apply d_refine_syn__hole. assumption.
-    + apply d_refine_syn__var; assumption.
-  - (* __arrow *) inversion Hmg; subst.
-    + rewrite Heq. apply d_refine_syn__hole. assumption.
-    + destruct Pp; simpl in Heq; try discriminate. inversion Heq; subst.
-      inversion Hwf; subst.
-      apply d_refine_syn__arrow;
-        [ eapply IHHref1 with (Pp := Pp1) | eapply IHHref2 with (Pp := Pp2) ];
-        solve [ reflexivity | assumption ].
-  - (* __all: RHS bskl_all_inh, never a syn-painting ⟹ vacuous *)
-    destruct Pp; simpl in Heq; discriminate.
-  - (* __hole: Q = bskl_hole ⟹ Q' = bskl_hole *)
-    inversion Hmg; subst. apply d_refine_syn__hole. assumption.
-  - (* __tophole_remove (RHS is a var P; [subst] already rewrote it to syn Pp) *)
-    inversion Hmg; subst.
-    + apply d_refine_syn__hole. assumption.
-    + apply d_refine_syn__tophole_remove. eapply IHHref with (Pp := Pp); auto.
-  - (* __tophole_fill: Bsyn = bskl_all_syn P = syn Pp ⟹ Pp = pskl_all_syn Pp0 *)
-    inversion Hmg; subst.
-    + rewrite Heq. apply d_refine_syn__hole. assumption.
-    + destruct Pp; simpl in Heq; try discriminate. inversion Heq; subst.
-      inversion Hwf; subst.
-      inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
-      eapply H0 with (Pp := open_pskl_wrt_pskl Pp (pskl_var_f X)).
-      * auto.
-      * rewrite pskl_to_bskl_syn_open. reflexivity.
-      * match goal with
-        | Hb : forall _ : atom, _ `notin` _ -> _ ⨟ _ ⊢ₚₛ _ |- _ =>
-            apply Hb; auto
-        end.
-      * apply more_ghost__tophole. assumption.
-  - (* __tophole_keep: Bsyn = bskl_tophole P = syn Pp ⟹ Pp = pskl_tophole Pp0 *)
-    inversion Hmg; subst.
-    + rewrite Heq. apply d_refine_syn__hole. assumption.
-    + destruct Pp; simpl in Heq; try discriminate. inversion Heq; subst.
-      inversion Hwf; subst.
-      apply d_refine_syn__tophole_keep; [ assumption | ].
-      eapply IHHref with (Pp := Pp); auto.
-Qed.
 
 (** A well-formed type is locally closed. *)
 Lemma d_wf_ptyp_lc_loc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
