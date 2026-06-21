@@ -1413,6 +1413,45 @@ Proof.
   - apply more_ghost__tophole. assumption.
 Qed.
 
+(** [ghost_rel Γp Γt]: the [d_pat] context [Γp] is the typing context [Γt] with
+    each term var either KEPT (same binding — "a type is a skel" makes
+    [d_pat__var] read [dbind_typ A] as [skl(skel A)]) or GHOSTIFIED to [skl □]
+    (so the body of a checked-λ infers for any checking arg type).  Backbone of
+    the mode-generalised [d_pat_total]. *)
+Inductive ghost_rel : list (atom * dbind) -> list (atom * dbind) -> Prop :=
+| gr_nil   : ghost_rel nil nil
+| gr_keep  : forall Γp Γt x d,
+    ghost_rel Γp Γt -> ghost_rel ((x ~ d) ++ Γp) ((x ~ d) ++ Γt)
+| gr_ghost : forall Γp Γt x A,
+    ghost_rel Γp Γt ->
+    ghost_rel ((x ~ dbind_skl pskl_hole) ++ Γp) ((x ~ dbind_typ A) ++ Γt).
+
+Lemma ghost_rel_refl : forall Γ, ghost_rel Γ Γ.
+Proof.
+  induction Γ as [|[x d] Γ' IH].
+  - apply gr_nil.
+  - apply gr_keep; assumption.
+Qed.
+
+(** A term var typed in [Γt] is bound in [Γp] to *some* binding whose
+    [dbind_to_pskl] is defined (its own skel if kept, [□] if ghostified). *)
+Lemma ghost_rel_binds_typ : forall Γp Γt x A,
+    ghost_rel Γp Γt ->
+    binds x (dbind_typ A) Γt ->
+    exists d P, binds x d Γp /\ dbind_to_pskl d = Some P.
+Proof.
+  intros Γp Γt x A Hgr. induction Hgr; intros Hb.
+  - analyze_binds Hb.
+  - analyze_binds Hb.
+    + exists (dbind_typ A), (ptyp_to_pskl A). split; [ auto | reflexivity ].
+    + destruct (IHHgr BindsTac) as [d' [P' [Hb' Hd']]].
+      exists d', P'. split; [ auto | assumption ].
+  - analyze_binds Hb.
+    + exists (dbind_skl pskl_hole), pskl_hole. split; [ auto | reflexivity ].
+    + destruct (IHHgr BindsTac) as [d' [P' [Hb' Hd']]].
+      exists d', P'. split; [ auto | assumption ].
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
