@@ -2226,6 +2226,38 @@ Proof.
   - apply d_pat_consis__tophole. apply IHHs. intros X HX; apply Hwf; simpl; assumption.
 Qed.
 
+(** Opening with [□] preserves size (both a bound var and [□] have size 1). *)
+Lemma size_bskl_open_hole_rec : forall Q k,
+    size_bskl (open_bskl_wrt_bskl_rec k bskl_hole Q) = size_bskl Q.
+Proof.
+  induction Q; intro k; simpl;
+    try reflexivity;
+    try (rewrite IHQ1, IHQ2; reflexivity);
+    try (rewrite IHQ; reflexivity).
+  - destruct (lt_eq_lt_dec n k) as [[? | ?] | ?]; simpl; reflexivity.
+Qed.
+
+Lemma size_bskl_open_hole : forall Q,
+    size_bskl (open_bskl_wrt_bskl Q bskl_hole) = size_bskl Q.
+Proof.
+  intro Q. apply (size_bskl_open_hole_rec Q 0).
+Qed.
+
+Lemma is_sskl_subst_hole : forall Q X,
+    is_sskl Q -> is_sskl (subst_bskl_in_bskl bskl_hole X Q).
+Proof.
+  intros Q X H. induction H; simpl.
+  - apply is_sskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      [ apply is_sskl__hole | apply is_sskl__var ].
+  - apply is_sskl__arrow; assumption.
+  - apply is_sskl__all with (L := L `union` {{X}}). intros Y HY.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      try (apply lc_bskl_hole); try fsetdec. auto.
+  - apply is_sskl__hole.
+  - apply is_sskl__tophole; assumption.
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
