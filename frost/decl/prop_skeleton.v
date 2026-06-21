@@ -1452,6 +1452,119 @@ Proof.
       exists d', P'. split; [ auto | assumption ].
 Qed.
 
+(** [ghost_rel] preserves tvar bindings (it only ever changes a term var's
+    binding — keep, or [typ A ↦ skl □]). *)
+Lemma ghost_rel_binds_tvar : forall Γp Γt X,
+    ghost_rel Γp Γt -> binds X dbind_tvar Γt -> binds X dbind_tvar Γp.
+Proof.
+  intros Γp Γt X Hgr. induction Hgr; intros Hb.
+  - analyze_binds Hb.
+  - analyze_binds Hb; auto.
+  - analyze_binds Hb; auto.
+Qed.
+
+(** The [ghost_rel]-invariance cascade: every side-condition judgment in the
+    [d_pat] rules reads only tvar bindings, so it transports along [ghost_rel].
+    Mirrors the [binding_eq] cascade; var cases via [ghost_rel_binds_tvar],
+    Γ-growing cofinite cases via [gr_keep]. *)
+Lemma d_wf_pskl_ghost_rel : forall Ψ Γt P,
+    Ψ ⨟ Γt ⊢ₚₛ P -> forall Γp, ghost_rel Γp Γt -> Ψ ⨟ Γp ⊢ₚₛ P.
+Proof.
+  intros Ψ Γt P H. induction H; intros Γp Hgr.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. destruct H as [HΨ | Hb];
+      [ left; assumption | right; eapply ghost_rel_binds_tvar; eauto ].
+  - apply d_wf_pskl__arrow; [ eapply IHd_wf_pskl1 | eapply IHd_wf_pskl2 ]; eauto.
+  - apply d_wf_pskl__all with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_wf_pskl__hole.
+  - apply d_wf_pskl__tophole; [ assumption | eapply IHd_wf_pskl; eauto ].
+Qed.
+
+Lemma d_wf_ptyp_ghost_rel : forall Γt A,
+    Γt ⊢ₚ A -> forall Γp, ghost_rel Γp Γt -> Γp ⊢ₚ A.
+Proof.
+  intros Γt A H. induction H; intros Γp Hgr.
+  - apply d_wf_ptyp__unit.
+  - apply d_wf_ptyp__var. eapply ghost_rel_binds_tvar; eauto.
+  - apply d_wf_ptyp__arrow; [ eapply IHd_wf_ptyp1 | eapply IHd_wf_ptyp2 ]; eauto.
+  - apply d_wf_ptyp__all with (L := L). intros X HX.
+    eapply H0; [ exact HX | apply gr_keep; exact Hgr ].
+Qed.
+
+Lemma d_wf_uskl_ghost_rel : forall Ψ Γt R,
+    Ψ ⨟ Γt ⊢ᵤₛ R -> forall Γp, ghost_rel Γp Γt -> Ψ ⨟ Γp ⊢ᵤₛ R.
+Proof.
+  intros Ψ Γt R H. induction H; intros Γp Hgr.
+  - apply d_wf_uskl__unit.
+  - apply d_wf_uskl__var. destruct H as [HΨ | Hb];
+      [ left; assumption | right; eapply ghost_rel_binds_tvar; eauto ].
+  - apply d_wf_uskl__arrow; [ eapply IHd_wf_uskl1 | eapply IHd_wf_uskl2 ]; eauto.
+  - apply d_wf_uskl__all_syn with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_wf_uskl__all_etag with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_wf_uskl__hole.
+  - apply d_wf_uskl__tophole; [ assumption | eapply IHd_wf_uskl; eauto ].
+  - apply d_wf_uskl__holeg.
+  - apply d_wf_uskl__topholeg; [ assumption | eapply IHd_wf_uskl; eauto ].
+Qed.
+
+Lemma d_pat_consis_ghost_rel : forall Δ Γt R Q,
+    Δ ⨟ Γt ⊨ₛ R ≈ Q -> forall Γp, ghost_rel Γp Γt -> Δ ⨟ Γp ⊨ₛ R ≈ Q.
+Proof.
+  intros Δ Γt R Q H. induction H; intros Γp Hgr.
+  - apply d_pat_consis__unit.
+  - apply d_pat_consis__var. eapply ghost_rel_binds_tvar; eauto.
+  - eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 ]; eauto.
+  - apply d_pat_consis__forall_inh_tagged with (L := L). intros Z HZ.
+    eapply H0; [ exact HZ | apply gr_keep; exact Hgr ].
+  - apply d_pat_consis__forall_inh_untagged with (L := L). intros Z HZ.
+    eapply H0; [ exact HZ | apply gr_keep; exact Hgr ].
+  - apply d_pat_consis__forall_syn_tagged with (L := L). intros Z HZ.
+    eapply H0; [ exact HZ | apply gr_keep; exact Hgr ].
+  - apply d_pat_consis__forall_syn with (L := L). intros Z HZ.
+    eapply H0; [ exact HZ | apply gr_keep; exact Hgr ].
+  - apply d_pat_consis__ghostg.
+  - apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
+  - apply d_pat_consis__hole. eapply d_wf_pskl_ghost_rel; eauto.
+  - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
+  - apply d_pat_consis__tophole_inh with (L := L). intros Z HZ.
+    eapply H0; [ exact HZ | apply gr_keep; exact Hgr ].
+  - apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
+Qed.
+
+Lemma d_pat_sub_ghost_rel : forall Δ Γt m R Q,
+    Δ ⨟ Γt ⊢ₛ[ m ] R ⊑ Q -> forall Γp, ghost_rel Γp Γt -> Δ ⨟ Γp ⊢ₛ[ m ] R ⊑ Q.
+Proof.
+  intros Δ Γt m R Q H. induction H; intros Γp Hgr.
+  - apply d_pat_sub__infer; [ eapply d_pat_consis_ghost_rel; eauto | assumption ].
+  - apply d_pat_sub__univ_ghost_r; try assumption. eapply d_pat_consis_ghost_rel; eauto.
+  - eapply d_pat_sub__arg; [ eapply d_pat_consis_ghost_rel; eauto | eapply IHd_pat_sub; eauto ].
+  - eapply d_pat_sub__forall_l_tagged;
+      [ assumption | eassumption | eassumption | eapply d_wf_uskl_ghost_rel; eauto
+      | assumption | eapply IHd_pat_sub; eauto ].
+  - eapply d_pat_sub__forall_l_untagged;
+      [ assumption | eassumption | eassumption | eapply d_wf_uskl_ghost_rel; eauto
+      | assumption | eapply IHd_pat_sub; eauto ].
+  - apply d_pat_sub__ghost. eapply d_wf_pskl_ghost_rel; eauto.
+  - apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
+  - apply d_pat_sub__ghostg.
+  - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
+Qed.
+
+Lemma d_refine_syn_ghost_rel : forall Γt Δs Δi Q P,
+    Γt ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P -> forall Γp, ghost_rel Γp Γt -> Γp ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Proof.
+  intros Γt Δs Δi Q P H. induction H; intros Γp Hgr.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
+      [ left; assumption | right; left; assumption | right; right; eapply ghost_rel_binds_tvar; eauto ].
+  - apply d_refine_syn__arrow; [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
+  - apply d_refine_syn__all with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_refine_syn__hole. eapply d_wf_pskl_ghost_rel; eauto.
+  - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
+  - apply d_refine_syn__tophole_fill with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
