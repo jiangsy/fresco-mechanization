@@ -1259,6 +1259,124 @@ Proof.
   - apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
 Qed.
 
+Lemma d_wf_ptyp_binding_eq : forall Γ A,
+    Γ ⊢ₚ A ->
+    forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
+    dbind_to_pskl d = dbind_to_pskl d' ->
+    (Γ1 ++ (x ~ d') ++ Γ2) ⊢ₚ A.
+Proof.
+  intros Γ A H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  - apply d_wf_ptyp__unit.
+  - apply d_wf_ptyp__var. analyze_binds H;
+      assert (d0' = dbind_tvar) by (destruct d0'; simpl in Hdd; (reflexivity || discriminate));
+      subst d0'; auto.
+  - apply d_wf_ptyp__arrow; [ eapply IHd_wf_ptyp1 | eapply IHd_wf_ptyp2 ]; eauto.
+  - apply d_wf_ptyp__all with (L := L). intros X HX.
+    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H0 X HX ((X ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+Qed.
+
+Lemma d_wf_uskl_binding_eq : forall Ψ Γ R,
+    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
+    dbind_to_pskl d = dbind_to_pskl d' ->
+    Ψ ⨟ (Γ1 ++ (x ~ d') ++ Γ2) ⊢ᵤₛ R.
+Proof.
+  intros Ψ Γ R H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  - apply d_wf_uskl__unit.
+  - apply d_wf_uskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
+    analyze_binds Hb;
+      assert (d0' = dbind_tvar) by (destruct d0'; simpl in Hdd; (reflexivity || discriminate));
+      subst d0'; auto.
+  - apply d_wf_uskl__arrow; [ eapply IHd_wf_uskl1 | eapply IHd_wf_uskl2 ]; eauto.
+  - apply d_wf_uskl__all_syn with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_wf_uskl__all_etag with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_wf_uskl__hole.
+  - apply d_wf_uskl__tophole; [ assumption | eapply IHd_wf_uskl; eauto ].
+  - apply d_wf_uskl__holeg.
+  - apply d_wf_uskl__topholeg; [ assumption | eapply IHd_wf_uskl; eauto ].
+Qed.
+
+Lemma d_pat_sub_binding_eq : forall Δ Γ m R Q,
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
+    forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
+    dbind_to_pskl d = dbind_to_pskl d' ->
+    Δ ⨟ (Γ1 ++ (x ~ d') ++ Γ2) ⊢ₛ[ m ] R ⊑ Q.
+Proof.
+  intros Δ Γ m R Q H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  - apply d_pat_sub__infer; [ eapply d_pat_consis_binding_eq; eauto | assumption ].
+  - apply d_pat_sub__univ_ghost_r; try assumption. eapply d_pat_consis_binding_eq; eauto.
+  - eapply d_pat_sub__arg; [ eapply d_pat_consis_binding_eq; eauto | eapply IHd_pat_sub; eauto ].
+  - eapply d_pat_sub__forall_l_tagged;
+      [ assumption | eassumption | eassumption | eapply d_wf_uskl_binding_eq; eauto
+      | assumption | eapply IHd_pat_sub; eauto ].
+  - eapply d_pat_sub__forall_l_untagged;
+      [ assumption | eassumption | eassumption | eapply d_wf_uskl_binding_eq; eauto
+      | assumption | eapply IHd_pat_sub; eauto ].
+  - apply d_pat_sub__ghost. eapply d_wf_pskl_binding_eq; eauto.
+  - apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
+  - apply d_pat_sub__ghostg.
+  - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
+Qed.
+
+Lemma d_refine_syn_binding_eq : forall Γ Δs Δi Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
+    dbind_to_pskl d = dbind_to_pskl d' ->
+    (Γ1 ++ (x ~ d') ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Proof.
+  intros Γ Δs Δi Q P H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
+      [ left; assumption | right; left; assumption | right; right ].
+    analyze_binds Hb;
+      assert (d0' = dbind_tvar) by (destruct d0'; simpl in Hdd; (reflexivity || discriminate));
+      subst d0'; auto.
+  - apply d_refine_syn__arrow; [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
+  - apply d_refine_syn__all with (L := L). intros X HX.
+    eapply (H0 X HX Γ1 x0 d0 d0' Γ2); [ reflexivity | exact Hdd ].
+  - apply d_refine_syn__hole. eapply d_wf_pskl_binding_eq; eauto.
+  - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
+  - apply d_refine_syn__tophole_fill with (L := L). intros X HX.
+    eapply (H0 X HX Γ1 x0 d0 d0' Γ2); [ reflexivity | exact Hdd ].
+  - apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
+Qed.
+
+Lemma d_pat_binding_eq : forall m Γ e Q,
+    Γ ⊢[ m ] e ⇨ Q ->
+    forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
+    dbind_to_pskl d = dbind_to_pskl d' ->
+    (Γ1 ++ (x ~ d') ++ Γ2) ⊢[ m ] e ⇨ Q.
+Proof.
+  intros m Γ e Q H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  - apply d_pat__unit.
+  - analyze_binds H.
+    + apply d_pat__var with (d := d); [ auto | exact H0 ].
+    + apply d_pat__var with (d := d0'); [ auto | rewrite <- Hdd; exact H0 ].
+    + apply d_pat__var with (d := d); [ auto | exact H0 ].
+  - apply d_pat__anno. eapply d_wf_ptyp_binding_eq; eauto.
+  - apply d_pat__sub with (Q1 := Q1);
+      [ exact H | eapply IHd_pat; eauto | eapply d_pat_sub_binding_eq; eauto ].
+  - apply d_pat__freeze. eapply IHd_pat; eauto.
+  - apply d_pat__abs with (L := L) (P := P);
+      [ exact H | eapply d_wf_pskl_binding_eq; eauto | ].
+    intros y Hy. rewrite_env (((y ~ dbind_skl P) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H2 y Hy ((y ~ dbind_skl P) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat__abs_check with (L := L).
+    intros y Hy. rewrite_env (((y ~ dbind_skl pskl_hole) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H0 y Hy ((y ~ dbind_skl pskl_hole) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat__abs_anno with (L := L) (A := A) (Sarg := Sarg);
+      [ exact H | eapply d_wf_ptyp_binding_eq; eauto | exact H1 | ].
+    intros y Hy. rewrite_env (((y ~ dbind_typ A) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H3 y Hy ((y ~ dbind_typ A) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat__abs_anno_check with (L := L) (A := A) (Sarg := Sarg);
+      [ eapply d_wf_ptyp_binding_eq; eauto | exact H0 | ].
+    intros y Hy. rewrite_env (((y ~ dbind_typ A) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H2 y Hy ((y ~ dbind_typ A) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - eapply d_pat__app;
+      [ eapply IHd_pat1; eauto | eapply d_refine_syn_binding_eq; eauto | eapply IHd_pat2; eauto ].
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
