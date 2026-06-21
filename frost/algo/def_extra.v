@@ -20,6 +20,9 @@ Set Implicit Arguments.
 Inductive abind : Set :=
 | abind_tvar : abind
 | abind_var_typ : ptyp -> abind
+(* Term variable bound with a SKELETON (skeleton inference, paper [\pilab{Abs}]
+   binds [x:P] with [P] a skeleton — projects to the declarative [dbind_skl]). *)
+| abind_var_skl : pskl -> abind
 | abind_flex_mono : abind
 | abind_flex_mono_def : ptyp -> abind
 | abind_flex_poly_def : pskl -> abind
@@ -683,40 +686,50 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     a_typing m Θ0 Q (exp_app e1 e2) B Θ3
 
 with a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
-| a_pat__unit : forall m Θ0 P0,
-    a_pat m Θ0 P0 exp_unit pskl_unit Θ0
-| a_pat__var : forall m Θ0 P0 x P,
+| a_pat__unit : forall m Θ0 Θ1 P0 P,                        (* paper pilab Unit *)
+    a_sub a_sub_mode_sk m P0 Θ0 pskl_unit P Θ1 ->
+    a_pat m Θ0 P0 exp_unit P Θ1
+| a_pat__var : forall m Θ0 Θ1 P0 x P Q,         (* paper pilab Var, type-bound *)
     binds x (abind_var_typ P) Θ0 ->
-    a_pat m Θ0 P0 (exp_var_f x) (ptyp_to_pskl P) Θ0
-| a_pat__anno : forall m Θ0 P0 e A,
-    a_pat m Θ0 P0 (exp_anno e A) (ptyp_to_pskl A) Θ0
+    a_sub a_sub_mode_sk m P0 Θ0 (ptyp_to_pskl P) Q Θ1 ->
+    a_pat m Θ0 P0 (exp_var_f x) Q Θ1
+| a_pat__var_skl : forall m Θ0 Θ1 P0 x P Q,     (* paper pilab Var, skeleton-bound *)
+    binds x (abind_var_skl P) Θ0 ->
+    a_sub a_sub_mode_sk m P0 Θ0 P Q Θ1 ->
+    a_pat m Θ0 P0 (exp_var_f x) Q Θ1
+| a_pat__anno : forall m Θ0 Θ1 P0 e A Q,                    (* paper pilab Anno *)
+    a_sub a_sub_mode_sk m P0 Θ0 (ptyp_to_pskl A) Q Θ1 ->
+    a_pat m Θ0 P0 (exp_anno e A) Q Θ1
 | a_pat__freeze : forall Θ0 e Q Θ1,
     a_pat mode_ti Θ0 pskl_hole e Q Θ1 ->
     a_pat mode_tc Θ0 pskl_hole (exp_freeze e) Q Θ1
-| a_pat__abs : forall L m Θ0 Θ2 P e Q Ξ,
+| a_pat__abs : forall L m Θ0 Θ1 Θ2 P0 P Q0 e Q Ξ,          (* paper pilab Abs *)
+    m <> mode_tc ->
+    a_split Θ0 P0 P Q0 Θ1 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_pat (decr_mode m) ((x ~ abind_var_typ P) ++ Θ0) pskl_hole
+       a_pat (decr_mode m) ((x ~ abind_var_skl P) ++ Θ1) Q0
          (open_exp_wrt_exp e (exp_var_f x)) Q
-         (Ξ ++ (x ~ abind_var_typ P) ++ Θ2)) ->
-    a_pat m Θ0 (ptyp_to_pskl P) (exp_abs e)
-      (pskl_arrow (ptyp_to_pskl P) Q) (Ξ ++ Θ2)
-| a_pat__abs_check : forall L Θ0 Θ1 e Q Ξ,
+         (Ξ ++ (x ~ abind_var_skl P) ++ Θ2)) ->
+    a_pat m Θ0 P0 (exp_abs e) (pskl_arrow P Q) (Ξ ++ Θ2)
+| a_pat__abs_check : forall L Θ0 Θ1 e Q Ξ,                 (* paper pilab AbsCheck *)
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_pat mode_tc ((x ~ abind_var_typ ptyp_unit) ++ Θ0) pskl_hole
+       a_pat mode_tc ((x ~ abind_var_skl pskl_hole) ++ Θ0) pskl_hole
          (open_exp_wrt_exp e (exp_var_f x)) Q
-         (Ξ ++ (x ~ abind_var_typ ptyp_unit) ++ Θ1)) ->
+         (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1)) ->
     a_pat mode_tc Θ0 pskl_hole (exp_abs e)
       (pskl_tophole (pskl_arrow pskl_hole Q)) (Ξ ++ Θ1)
-| a_pat__abs_anno : forall L m Θ0 Θ2 A e Q Ξ,
+| a_pat__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q0 A e Q Ξ,  (* paper pilab AbsAnno *)
+    m <> mode_tc ->
+    a_split Θ0 P0 P Q0 Θ1 ->
+    a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_pat (decr_mode m) ((x ~ abind_var_typ A) ++ Θ0) pskl_hole
+       a_pat (decr_mode m) ((x ~ abind_var_typ A) ++ Θ2) Q0
          (open_exp_wrt_exp e (exp_var_f x)) Q
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    a_pat m Θ0 (ptyp_to_pskl A) (exp_abs_anno A e)
-      (pskl_arrow (ptyp_to_pskl A) Q) (Ξ ++ Θ2)
+         (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
+    a_pat m Θ0 P0 (exp_abs_anno A e) (pskl_arrow (ptyp_to_pskl A) Q) (Ξ ++ Θ3)
 | a_pat__abs_anno_check : forall L Θ0 Θ1 A e Q Ξ,
     a_suffix Ξ ->
     (forall x, x `notin` L ->

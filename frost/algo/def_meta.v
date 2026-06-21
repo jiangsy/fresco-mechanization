@@ -179,6 +179,7 @@ Fixpoint aenv_to_denv (Θ : aenv) : list (atom * dbind) :=
   match Θ with
   | nil => nil
   | (x, abind_var_typ A) :: Θ' => (x ~ dbind_typ A) ++ aenv_to_denv Θ'
+  | (x, abind_var_skl P) :: Θ' => (x ~ dbind_skl P) ++ aenv_to_denv Θ'
   | (α, abind_tvar) :: Θ' => (α ~ dbind_tvar) ++ aenv_to_denv Θ'
   | (α, abind_flex_mono) :: Θ' => (α ~ dbind_tvar) ++ aenv_to_denv Θ'
   | (α, abind_flex_mono_def _) :: Θ' => (α ~ dbind_tvar) ++ aenv_to_denv Θ'
