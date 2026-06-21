@@ -27,9 +27,9 @@ Combined Scheme a_looksub_lookeq_mutind from a_looksub_mut, a_lookeq_mut.
    constraint collection produces no fresh variables and no constraints.
    This discharges the "[Absent] for [Q]" subcases of the stability lemma. *)
 Lemma a_look_absent_empty :
-  (forall α m P P0 Ξ C, a_looksub α m P P0 Ξ C ->
+  (forall α m P P0 Ξ C, P ≼[ α , m ] P0 ⤳ Ξ ⨾ C ->
      α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil) /\
-  (forall α P P0 Ξ C, a_lookeq α P P0 Ξ C ->
+  (forall α P P0 Ξ C, P ∼[ α ] P0 ⤳ Ξ ⨾ C ->
      α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil).
 Proof.
   apply a_looksub_lookeq_mutind; intros; simpl in *;
@@ -76,12 +76,12 @@ Qed.
    subst/open commutation in the quantifier cases; it is implicit in the
    paper's on-paper substitution. *)
 Lemma a_look_stable_subst :
-  (forall α m P P0 Ξ C, a_looksub α m P P0 Ξ C ->
+  (forall α m P P0 Ξ C, P ≼[ α , m ] P0 ⤳ Ξ ⨾ C ->
      forall β Q, β <> α -> lc_pskl Q -> α `notin` ftvar_in_pskl Q ->
-     a_looksub α m (subst_pskl_in_pskl Q β P) P0 Ξ C) /\
-  (forall α P P0 Ξ C, a_lookeq α P P0 Ξ C ->
+     (subst_pskl_in_pskl Q β P) ≼[ α , m ] P0 ⤳ Ξ ⨾ C) /\
+  (forall α P P0 Ξ C, P ∼[ α ] P0 ⤳ Ξ ⨾ C ->
      forall β Q, β <> α -> lc_pskl Q -> α `notin` ftvar_in_pskl Q ->
-     a_lookeq α (subst_pskl_in_pskl Q β P) P0 Ξ C).
+     (subst_pskl_in_pskl Q β P) ∼[ α ] P0 ⤳ Ξ ⨾ C).
 Proof.
   (* Proof structure: mutual induction via [a_looksub_lookeq_mutind].  Per case,
      [simpl] the substitution on the LHS head, then:
@@ -213,9 +213,9 @@ Scheme a_solve_sub_mut := Minimality for a_solve_sub Sort Prop
 Combined Scheme a_solve_sub_eq_mutind from a_solve_sub_mut, a_solve_eq_mut.
 
 Lemma a_solve_ftv :
-  (forall Θ m P Q P', a_solve_sub Θ m P Q P' ->
+  (forall Θ m P Q P', Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
      ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q) /\
-  (forall Θ P Q P', a_solve_eq Θ P Q P' ->
+  (forall Θ P Q P', Θ ⊢ₑ P ∼ Q ⤳ P' ->
      ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q).
 Proof.
   apply a_solve_sub_eq_mutind; intros; simpl in *; try fsetdec.
