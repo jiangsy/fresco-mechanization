@@ -1828,6 +1828,99 @@ Proof.
   - simpl in HX. apply d_wf_uskl__topholeg; [ assumption | eapply IHd_wf_uskl; eauto ].
 Qed.
 
+(** Both paintings preserve free tvars (they only repaint quantifiers). *)
+Lemma ftvar_pskl_to_bskl_inh : forall P,
+    ftvar_in_bskl (pskl_to_bskl_inh P) = ftvar_in_pskl P.
+Proof.
+  induction P; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+Qed.
+
+Lemma ftvar_pskl_to_bskl_syn : forall P,
+    ftvar_in_bskl (pskl_to_bskl_syn P) = ftvar_in_pskl P.
+Proof.
+  induction P; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+Qed.
+
+(** [d_pat_consis] strengthening: every tvar LOOKUP goes through the RHS skeleton
+    [Q] ([__var] matches [R'=Q'=var X']; [__hole]'s fill lives in [Q = inh P]), so
+    conditioning on [X ∉ ftvar Q] suffices.  Forall cases grow [Γ]; recurse with
+    [ftvar_in_bskl_open_bskl_wrt_bskl_upper]. *)
+Lemma d_pat_consis_strengthen : forall Δ Γ R Q,
+    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    X `notin` ftvar_in_bskl Q ->
+    Δ ⨟ (Γ1 ++ Γ2) ⊨ₛ R ≈ Q.
+Proof.
+  intros Δ Γ R Q H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  - apply d_pat_consis__unit.
+  - simpl in HX. apply d_pat_consis__var. analyze_binds H; try (exfalso; fsetdec); auto.
+  - simpl in HX. eapply d_pat_consis__arrow;
+      [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 ]; eauto.
+  - simpl in HX. apply d_pat_consis__forall_inh_tagged with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Z)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_pat_consis__forall_inh_untagged with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Z)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_pat_consis__forall_syn_tagged with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Z)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_pat_consis__forall_syn with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Z)) as Hup.
+    simpl in Hup. fsetdec.
+  - apply d_pat_consis__ghostg.
+  - simpl in HX. apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
+  - apply d_pat_consis__hole. eapply d_wf_pskl_strengthen; eauto.
+    rewrite <- ftvar_pskl_to_bskl_inh. assumption.
+  - simpl in HX. apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
+  - simpl in HX. apply d_pat_consis__tophole_inh with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Z)) as Hup.
+    simpl in Hup. fsetdec.
+  - apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
+Qed.
+
+(** [d_refine_syn] strengthening: lookups go through the OUTPUT [P] ([__var] has
+    [Q'=P'=var X']; [__hole]'s fill is on the output), so condition on
+    [X ∉ ftvar P].  Forall/tophole-fill grow [Δs]/[Δi] not [Γ]. *)
+Lemma d_refine_syn_strengthen : forall Γ Δs Δi Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    X `notin` ftvar_in_bskl P ->
+    (Γ1 ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Proof.
+  intros Γ Δs Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  - apply d_refine_syn__unit.
+  - simpl in HX. apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
+      [ left; assumption | right; left; assumption | right; right ].
+    analyze_binds Hb; try (exfalso; fsetdec); auto.
+  - simpl in HX. apply d_refine_syn__arrow;
+      [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
+  - simpl in HX. apply d_refine_syn__all with (L := L `union` {{X0}}).
+    intros Z HZ. eapply (H0 Z ltac:(auto) Γ1 X0 Γ2); [ reflexivity | ].
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f Z)) as Hup.
+    simpl in Hup. fsetdec.
+  - apply d_refine_syn__hole. eapply d_wf_pskl_strengthen; eauto.
+    rewrite <- ftvar_pskl_to_bskl_syn. assumption.
+  - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
+  - apply d_refine_syn__tophole_fill with (L := L `union` {{X0}}).
+    intros Z HZ. eapply (H0 Z ltac:(auto) Γ1 X0 Γ2); [ reflexivity | ].
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f Z)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
