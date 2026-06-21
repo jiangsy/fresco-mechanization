@@ -162,15 +162,25 @@ Inductive a_cstr : Set :=
 | a_cstr_eq : pskl -> a_cstr.
 Definition a_cstrs : Set := list a_cstr.
 
-(* [refresh(P) = (Ξ; P')]: instantiate [P]'s leading quantifiers with fresh
-   flexible variables [Ξ], yielding the body [P']. *)
+(* [refresh(P) = (Ξ; P')] (paper algorithmic.tex:1165):
+   [refresh(P) = (β̄; [β̄/ᾱ̂]P)] where [ᾱ̂ = ffv(P)] — RENAME [P]'s free FLEXIBLE
+   variables to fresh ones [β̄], recording them in [Ξ].  Models the renaming as
+   one fresh-substitution per step.
+   NB (Finding F14): the previous ∀-stripping encoding modelled the WRONG
+   operation (refresh does not touch ∀-structure) and was degenerate ([Ξ]
+   always nil).  Distinguishing flex from rigid free variables needs [Θ], which
+   the uncoloured [a_looksub] does not thread; this relation therefore renames
+   an arbitrary free variable per step (an over-approximation) — the
+   [Θ]-restricted, terminating faithful version is deferred.  The paper itself
+   flags refresh as provisional ("perhaps I don't need refresh", alg.tex:1204). *)
 Inductive a_refresh : pskl -> aenv -> pskl -> Prop :=
 | a_refresh__base : forall P,
     a_refresh P nil P
-| a_refresh__all : forall L P Ξ P',
-    (forall α, α `notin` L ->
-       a_refresh (open_pskl_wrt_pskl P (pskl_var_f α)) Ξ P') ->
-    a_refresh (pskl_all_syn P) Ξ P'.
+| a_refresh__rename : forall P α β Ξ P',
+    α `in` ftvar_in_pskl P ->
+    β `notin` ftvar_in_pskl P ->
+    a_refresh (subst_pskl_in_pskl (pskl_var_f β) α P) Ξ P' ->
+    a_refresh P ((β ~ abind_flex_mono) ++ Ξ) P'.
 
 Reserved Notation "P ≼[ α , m ] P' ⤳ Ξ ⨾ C"
   (at level 75, α at level 0, m at level 0, P' at level 74, Ξ at level 0,
