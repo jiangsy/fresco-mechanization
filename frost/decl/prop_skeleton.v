@@ -1201,6 +1201,64 @@ Proof.
   apply (proj2 d_typing_pat_preserves_wf) with (m := mode_tc) (e := e); auto.
 Qed.
 
+(** ===================================================================== *)
+(** Binding-replacement invariance (cascade for the [d_pat_safety] λ cases:
+    rebind a λ-var [x:typ A ↦ x:skl (skel A)], same [dbind_to_pskl]).  These
+    judgements read [Γ] only through TVAR lookups, so changing a term-var's
+    binding (to one with the same skeleton view) is invariant. *)
+
+Lemma d_wf_pskl_binding_eq : forall Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P ->
+    forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
+    dbind_to_pskl d = dbind_to_pskl d' ->
+    Ψ ⨟ (Γ1 ++ (x ~ d') ++ Γ2) ⊢ₚₛ P.
+Proof.
+  intros Ψ Γ P H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
+    analyze_binds Hb;
+      assert (d0' = dbind_tvar) by (destruct d0'; simpl in Hdd; (reflexivity || discriminate));
+      subst d0'; auto.
+  - apply d_wf_pskl__arrow; [ eapply IHd_wf_pskl1 | eapply IHd_wf_pskl2 ]; eauto.
+  - apply d_wf_pskl__all with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_wf_pskl__hole.
+  - apply d_wf_pskl__tophole; [ assumption | eapply IHd_wf_pskl; eauto ].
+Qed.
+
+Lemma d_pat_consis_binding_eq : forall Δ Γ R Q,
+    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
+    forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
+    dbind_to_pskl d = dbind_to_pskl d' ->
+    Δ ⨟ (Γ1 ++ (x ~ d') ++ Γ2) ⊨ₛ R ≈ Q.
+Proof.
+  intros Δ Γ R Q H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  - apply d_pat_consis__unit.
+  - apply d_pat_consis__var. analyze_binds H;
+      assert (d0' = dbind_tvar) by (destruct d0'; simpl in Hdd; (reflexivity || discriminate));
+      subst d0'; auto.
+  - eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 ]; eauto.
+  - apply d_pat_consis__forall_inh_tagged with (L := L). intros Z HZ.
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat_consis__forall_inh_untagged with (L := L). intros Z HZ.
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat_consis__forall_syn_tagged with (L := L). intros Z HZ.
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat_consis__forall_syn with (L := L). intros Z HZ.
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat_consis__ghostg.
+  - apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
+  - apply d_pat_consis__hole. eapply d_wf_pskl_binding_eq; eauto.
+  - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
+  - apply d_pat_consis__tophole_inh with (L := L). intros Z HZ.
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
