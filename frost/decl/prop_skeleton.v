@@ -1977,6 +1977,82 @@ Proof.
   - (* univ_ghost_lg *) fsetdec.
 Qed.
 
+(** Tvar→[unit] SUBSTITUTION cascade: replace a fresh tvar [X] by [unit] and drop
+    it.  [unit] is guarded / [is_tskl] / well-formed / a valid type, so this is
+    CORNER-FREE — it sidesteps both the strengthen corner ([var X] is removable:
+    [X↦unit]) and the subst-hole corner ([tophole(var X) ↦ tophole(unit)] stays
+    guarded), and keeps tags ([unit] and [var] both carry [nil]).  Applied at the
+    [forall] case of [d_pat_total] with an [X]-free derivation, the substitution
+    is the identity, so it strengthens away the fresh ∀-var. *)
+Lemma guarded_pskl_subst_unit : forall P X,
+    guarded_pskl P -> guarded_pskl (subst_pskl_in_pskl pskl_unit X P).
+Proof.
+  intros P X H. induction H; simpl.
+  - apply guarded_pskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      [ apply guarded_pskl__unit | apply guarded_pskl__var ].
+  - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; (assumption || apply lc_pskl_unit).
+Qed.
+
+Lemma guarded_uskl_subst_unit : forall R X,
+    guarded_uskl R -> guarded_uskl (subst_bskl_in_uskl uskl_unit X R).
+Proof.
+  intros R X H. induction H; simpl.
+  - apply guarded_uskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      [ apply guarded_uskl__unit | apply guarded_uskl__var ].
+  - apply guarded_uskl__arrow; apply subst_bskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_unit).
+Qed.
+
+Lemma d_wf_pskl_subst_unit : forall Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    Ψ ⨟ (Γ1 ++ Γ2) ⊢ₚₛ (subst_pskl_in_pskl pskl_unit X P).
+Proof.
+  intros Ψ Γ P H. induction H; intros Γ1 X0 Γ2 Heq; subst.
+  - apply d_wf_pskl__unit.
+  - simpl. match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+    + apply d_wf_pskl__unit.
+    + apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
+      analyze_binds Hb; auto.
+  - simpl. apply d_wf_pskl__arrow; [ eapply IHd_wf_pskl1 | eapply IHd_wf_pskl2 ]; eauto.
+  - simpl. apply d_wf_pskl__all with (L := L `union` {{X0}}).
+    intros Y HY. rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      try (apply lc_pskl_unit); try fsetdec.
+    eapply (H0 Y ltac:(auto) Γ1 X0 Γ2); reflexivity.
+  - apply d_wf_pskl__hole.
+  - simpl. apply d_wf_pskl__tophole;
+      [ apply guarded_pskl_subst_unit; assumption | eapply IHd_wf_pskl; eauto ].
+Qed.
+
+Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
+    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    Ψ ⨟ (Γ1 ++ Γ2) ⊢ᵤₛ (subst_bskl_in_uskl uskl_unit X R).
+Proof.
+  intros Ψ Γ R H. induction H; intros Γ1 X0 Γ2 Heq; subst.
+  - apply d_wf_uskl__unit.
+  - simpl. match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+    + apply d_wf_uskl__unit.
+    + apply d_wf_uskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
+      analyze_binds Hb; auto.
+  - simpl. apply d_wf_uskl__arrow; [ eapply IHd_wf_uskl1 | eapply IHd_wf_uskl2 ]; eauto.
+  - simpl. apply d_wf_uskl__all_syn with (L := L `union` {{X0}}).
+    intros Y HY. rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      try (apply lc_uskl_unit); try fsetdec.
+    eapply (H0 Y ltac:(auto) Γ1 X0 Γ2); reflexivity.
+  - simpl. apply d_wf_uskl__all_etag with (L := L `union` {{X0}}).
+    intros Y HY. rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      try (apply lc_uskl_unit); try fsetdec.
+    eapply (H0 Y ltac:(auto) Γ1 X0 Γ2); reflexivity.
+  - apply d_wf_uskl__hole.
+  - simpl. apply d_wf_uskl__tophole;
+      [ apply guarded_uskl_subst_unit; assumption | eapply IHd_wf_uskl; eauto ].
+  - apply d_wf_uskl__holeg.
+  - simpl. apply d_wf_uskl__topholeg;
+      [ apply guarded_uskl_subst_unit; assumption | eapply IHd_wf_uskl; eauto ].
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
