@@ -725,8 +725,12 @@ with a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
          (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
     a_pat mode_tc Θ0 pskl_hole (exp_abs_anno A e)
       (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) (Ξ ++ Θ1)
-| a_pat__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A2 B Sres e1 e2,
-    a_pat mode_tc Θ0 pskl_hole e2 P Θ1 ->
-    a_typing (mode_fn m) Θ1 (pskl_arrow P Q) e1 (ptyp_arrow A B) Θ2 ->
-    a_pat mode_tc Θ2 (ptyp_to_pskl A) e2 Sres Θ3 ->
-    a_pat m Θ0 Q (exp_app e1 e2) (pskl_arrow A2 Sres) Θ3.
+(* Paper [\pilab{App}] (algorithmic.tex:657): the function [e1] is
+   SKELETON-inferred (not type-inferred), so [a_pat] only calls [a_pat] —
+   [a_pat] is self-contained, NOT mutual with [a_typing] (F20 fix: the previous
+   encoding copied the type-inference [\tilab{App}], calling [a_typing] with a
+   spurious third premise and an unconstrained output [A2]). *)
+| a_pat__app : forall m Θ0 Θ1 Θ2 P0 Q0 P Q e1 e2,
+    a_pat mode_tc Θ0 pskl_hole e2 P0 Θ1 ->
+    a_pat (mode_fn m) Θ1 (pskl_arrow P0 Q0) e1 (pskl_arrow P Q) Θ2 ->
+    a_pat m Θ0 Q0 (exp_app e1 e2) Q Θ2.
