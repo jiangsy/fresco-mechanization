@@ -1761,6 +1761,73 @@ Proof.
       [ eapply IHd_pat1; eauto | eapply d_refine_syn_rename; eauto | eapply IHd_pat2; eauto ].
 Qed.
 
+(** Tvar STRENGTHENING cascade: drop an UNUSED tvar [X] (one that does not occur
+    free in the skeleton/type) from the context.  This is what the [forall] case
+    of [d_pat_total] needs: the body is inferred over [(X:tvar)::Γ] for a fresh
+    [X ∉ ftvar(e)], so the inferred skeleton is [X]-free and [X] strengthens away.
+    Var cases: [X ∉ ftvar] forces the looked-up tvar [≠ X]; cofinite cases use
+    [ftvar_in_*_open_*_upper]. *)
+Lemma d_wf_ptyp_strengthen : forall Γ A,
+    Γ ⊢ₚ A ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    X `notin` ftvar_in_ptyp A ->
+    (Γ1 ++ Γ2) ⊢ₚ A.
+Proof.
+  intros Γ A H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  - apply d_wf_ptyp__unit.
+  - simpl in HX. apply d_wf_ptyp__var. analyze_binds H; try (exfalso; fsetdec); auto.
+  - simpl in HX. apply d_wf_ptyp__arrow; [ eapply IHd_wf_ptyp1 | eapply IHd_wf_ptyp2 ]; eauto.
+  - simpl in HX. apply d_wf_ptyp__all with (L := L `union` {{X0}} `union` dom (Γ1 ++ Γ2)).
+    intros Y HY. rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Y ltac:(auto) ((Y ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A (ptyp_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+Qed.
+
+Lemma d_wf_pskl_strengthen : forall Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    X `notin` ftvar_in_pskl P ->
+    Ψ ⨟ (Γ1 ++ Γ2) ⊢ₚₛ P.
+Proof.
+  intros Ψ Γ P H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  - apply d_wf_pskl__unit.
+  - simpl in HX. apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
+    analyze_binds Hb; try (exfalso; fsetdec); auto.
+  - simpl in HX. apply d_wf_pskl__arrow; [ eapply IHd_wf_pskl1 | eapply IHd_wf_pskl2 ]; eauto.
+  - simpl in HX. apply d_wf_pskl__all with (L := L `union` {{X0}}).
+    intros Y HY. eapply (H0 Y ltac:(auto) Γ1 X0 Γ2); [ reflexivity | ].
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+  - apply d_wf_pskl__hole.
+  - simpl in HX. apply d_wf_pskl__tophole; [ assumption | eapply IHd_wf_pskl; eauto ].
+Qed.
+
+Lemma d_wf_uskl_strengthen : forall Ψ Γ R,
+    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    X `notin` ftvar_in_uskl R ->
+    Ψ ⨟ (Γ1 ++ Γ2) ⊢ᵤₛ R.
+Proof.
+  intros Ψ Γ R H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  - apply d_wf_uskl__unit.
+  - simpl in HX. apply d_wf_uskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
+    analyze_binds Hb; try (exfalso; fsetdec); auto.
+  - simpl in HX. apply d_wf_uskl__arrow; [ eapply IHd_wf_uskl1 | eapply IHd_wf_uskl2 ]; eauto.
+  - simpl in HX. apply d_wf_uskl__all_syn with (L := L `union` {{X0}}).
+    intros Y HY. eapply (H0 Y ltac:(auto) Γ1 X0 Γ2); [ reflexivity | ].
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_wf_uskl__all_etag with (L := L `union` {{X0}}).
+    intros Y HY. eapply (H0 Y ltac:(auto) Γ1 X0 Γ2); [ reflexivity | ].
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+  - apply d_wf_uskl__hole.
+  - simpl in HX. apply d_wf_uskl__tophole; [ assumption | eapply IHd_wf_uskl; eauto ].
+  - apply d_wf_uskl__holeg.
+  - simpl in HX. apply d_wf_uskl__topholeg; [ assumption | eapply IHd_wf_uskl; eauto ].
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
