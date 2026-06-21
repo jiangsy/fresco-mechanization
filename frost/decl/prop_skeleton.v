@@ -1921,6 +1921,62 @@ Proof.
   - simpl in HX. apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
 Qed.
 
+(** The LHS of a consistency / subtyping judgment has no free tvars beyond the
+    RHS: every concrete tvar in [R] is matched (via [__var]) to the same tvar in
+    [Q]; ghosts/holes in [R] are tvar-free.  Hence [X ∉ ftvar Q ⇒ X ∉ ftvar R],
+    which is what makes [d_pat_sub]'s [forall_l] recursion strengthen. *)
+Lemma d_pat_consis_ftvar : forall Δ Γ R Q,
+    Δ ⨟ Γ ⊨ₛ R ≈ Q -> ftvar_in_uskl R [<=] ftvar_in_bskl Q.
+Proof.
+  intros Δ Γ R Q H. induction H; simpl; try fsetdec.
+  - (* forall_inh_tagged *) pick fresh X for
+      (L `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
+    specialize (H0 X ltac:(auto)).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f X)).
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f X)).
+    simpl in *. fsetdec.
+  - (* forall_inh_untagged *) pick fresh X for
+      (L `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
+    specialize (H0 X ltac:(auto)).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f X)).
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f X)).
+    simpl in *. fsetdec.
+  - (* forall_syn_tagged *) pick fresh X for
+      (L `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
+    specialize (H0 X ltac:(auto)).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f X)).
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f X)).
+    simpl in *. fsetdec.
+  - (* forall_syn *) pick fresh X for
+      (L `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
+    specialize (H0 X ltac:(auto)).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f X)).
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f X)).
+    simpl in *. fsetdec.
+  - (* tophole_inh *) pick fresh X for
+      (L `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
+    specialize (H0 X ltac:(auto)).
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f X)).
+    simpl in *. fsetdec.
+Qed.
+
+Lemma d_pat_sub_ftvar : forall Δ Γ m R Q,
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q -> ftvar_in_uskl R [<=] ftvar_in_bskl Q.
+Proof.
+  intros Δ Γ m R Q H. induction H; simpl.
+  - (* infer *) apply d_pat_consis_ftvar in H. assumption.
+  - (* univ_ghost_r *) apply d_pat_consis_ftvar in H2. simpl. fsetdec.
+  - (* arg *) apply d_pat_consis_ftvar in H. fsetdec.
+  - (* forall_l_tagged *)
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R psi). fsetdec.
+  - (* forall_l_untagged *)
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R psi). fsetdec.
+  - (* ghost *) fsetdec.
+  - (* univ_ghost_l *) fsetdec.
+  - (* ghostg *) fsetdec.
+  - (* univ_ghost_lg *) fsetdec.
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
