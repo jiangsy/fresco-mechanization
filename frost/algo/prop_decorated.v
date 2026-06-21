@@ -41,28 +41,37 @@ Definition Ψtoδ (Ψ : atoms) : list atom := AtomSetImpl.elements Ψ.
 
 (* ===================================================================== *)
 (*  Soundness of decorated consistency  (paper soundness, \wenhao{TODO}). *)
+(*  F17 FIX: the algo output [Q : pskl] is the colour-ERASURE                *)
+(*  [bskl_to_pskl Q'] of a coloured declarative RHS [Q'] synthesised by the  *)
+(*  derivation (per-rule choice of [bskl_all_inh] vs [bskl_all_syn]).        *)
 (* ===================================================================== *)
 Theorem a_consistag_sound : forall P0 Ψ Θ0 S Q Θ1,
     Θ0 ⊢ᶜ[ P0 | Ψ ] S ⤳ Q ⊣ Θ1 ->
-    (Ψtoδ Ψ) ⨟ ⌊ Θ1 ⌋ ⊨ₛ S ≈ (pskl_to_bskl_syn Q).
+    exists Q', bskl_to_pskl Q' = Q /\ (Ψtoδ Ψ) ⨟ ⌊ Θ1 ⌋ ⊨ₛ S ≈ Q'.
 Proof.
   intros P0 Ψ Θ0 S Q Θ1 H. induction H.
-  - (* GhostG → d_pat_consis__ghostg.  Needs elements ∅ = nil. *)
+  - (* GhostG → ghostg.  Witness bskl_hole; needs elements ∅ = nil. *)
     admit.
-  - (* Arrow → d_pat_consis__arrow.  F18 (Γ threading) + F16 (elements of a
-       union vs append). *)
+  - (* Arrow → d_pat_consis__arrow.  F18 (Γ threading) + F16 (elements). *)
     admit.
-  - (* ForallInh → d_pat_consis__forall_inh_tagged.  F17: RHS bskl_all_inh. *)
+  - (* ForallInh → forall_inh_tagged.  Witness bskl_all_INH (colour now
+       expressible).  Binder + existential-under-cofinite to assemble. *)
     admit.
-  - (* ForallSyn → d_pat_consis__forall_syn_tagged. *)
+  - (* ForallSyn → forall_syn_tagged.  Witness bskl_all_syn.  Same binder. *)
     admit.
-  - (* UnivGhost → d_pat_consis__tophole.  Unary, colour-free: closes. *)
-    simpl. apply d_pat_consis__tophole. assumption.
+  - (* UnivGhost → d_pat_consis__tophole.  Synthesise bskl_tophole: closes. *)
+    destruct IHa_consistag as [Q' [Heq Hd]].
+    exists (bskl_tophole Q'). split; [ simpl; rewrite Heq; reflexivity | ].
+    apply d_pat_consis__tophole. assumption.
   - (* UnivGhostG → d_pat_consis__topholeg.  Closes. *)
-    simpl. apply d_pat_consis__topholeg. assumption.
-  - (* UnivGhost1 → d_pat_consis__tophole_inh.  F17: RHS bskl_all_inh. *)
+    destruct IHa_consistag as [Q' [Heq Hd]].
+    exists (bskl_tophole Q'). split; [ simpl; rewrite Heq; reflexivity | ].
+    apply d_pat_consis__topholeg. assumption.
+  - (* UnivGhost1 → d_pat_consis__tophole_inh.  Witness bskl_all_inh + binder. *)
     admit.
   - (* UnivGhost2 → d_pat_consis__tophole_drop.  Closes. *)
+    destruct IHa_consistag as [Q' [Heq Hd]].
+    exists Q'. split; [ assumption | ].
     apply d_pat_consis__tophole_drop. assumption.
   - (* GhostR → ??? F15: no declarative rule. *)
     admit.
@@ -75,23 +84,25 @@ Admitted.
 (* ===================================================================== *)
 Theorem a_subtag_sound : forall NM M P0 Ψ Θ0 S Q Θ1,
     Θ0 ⊢ˢ[ NM | M | P0 | Ψ ] S ⤳ Q ⊣ Θ1 ->
-    (Ψtoδ Ψ) ⨟ ⌊ Θ1 ⌋ ⊢ₛ[ M ] S ⊑ (pskl_to_bskl_syn Q).
+    exists Q', bskl_to_pskl Q' = Q /\ (Ψtoδ Ψ) ⨟ ⌊ Θ1 ⌋ ⊢ₛ[ M ] S ⊑ Q'.
 Proof.
   intros NM M P0 Ψ Θ0 S Q Θ1 H. induction H.
-  - (* Check → via a_consistag_sound. *)
+  - (* Check → via a_consistag_sound (consistency ⇒ subtyping). *)
     admit.
   - (* ForallR → forall-on-right; output suffix Ξ dropped (F18-like). *)
     admit.
-  - (* UnivGhostR → d_pat_sub__univ_ghost_r. *)
+  - (* UnivGhostR → d_pat_sub__univ_ghost_r.  Synthesise the universal ghost. *)
     admit.
   - (* Arrow → d_pat_sub__arg + a_consistag_sound on the domain (F18). *)
     admit.
   - (* ForallL → d_pat_sub__forall_l_*; blocked on a_tag_support placeholder. *)
     admit.
-  - (* GhostG → d_pat_sub__ghostg. *)
+  - (* GhostG → d_pat_sub__ghostg.  Witness bskl_hole; needs elements ∅ = nil. *)
     admit.
-  - (* UnivGhostL → d_pat_sub__univ_ghost_l. *)
-    admit.
-  - (* UnivGhostLG → d_pat_sub__univ_ghost_lg. *)
-    admit.
+  - (* UnivGhostL → d_pat_sub__univ_ghost_l.  Closes (RHS unchanged). *)
+    destruct IHa_subtag as [Q' [Heq Hd]]. exists Q'. split; [ assumption | ].
+    apply d_pat_sub__univ_ghost_l; assumption.
+  - (* UnivGhostLG → d_pat_sub__univ_ghost_lg.  Closes. *)
+    destruct IHa_subtag as [Q' [Heq Hd]]. exists Q'. split; [ assumption | ].
+    apply d_pat_sub__univ_ghost_lg; assumption.
 Admitted.
