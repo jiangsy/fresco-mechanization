@@ -1690,6 +1690,77 @@ Proof.
   - apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
 Qed.
 
+(** [d_pat] is invariant under renaming a (non-tvar, unshadowed) term var [x ↦ y]
+    in the context, substituting [x ↦ y] in the term.  The inferred skeleton [Q]
+    is UNCHANGED (skeletons carry no term vars).  This is exactly what makes
+    [d_pat__abs_check]'s cofinite-uniform witness work: infer the body at one
+    fresh [x], then rename to any other fresh [y] keeping the SAME [Q]. *)
+Lemma d_pat_rename : forall m Γ e Q,
+    Γ ⊢[ m ] e ⇨ Q ->
+    forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
+    x `notin` dom (Γ1 ++ Γ2) ->
+    (Γ1 ++ (y ~ d) ++ Γ2) ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⇨ Q.
+Proof.
+  intros m Γ e Q H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd Hxf; subst.
+  - (* unit *) simpl. apply d_pat__unit.
+  - (* var *) simpl.
+    match goal with |- context [ if ?b then _ else _ ] => destruct b as [Heq | Hne] end.
+    + subst x.
+      assert (Hdeq : d = d0).
+      { analyze_binds H; try reflexivity;
+          exfalso; rewrite dom_app in Hxf;
+          match goal with B : binds x0 _ _ |- _ => apply binds_In in B end; fsetdec. }
+      subst d. apply d_pat__var with (d := d0); [ auto | exact H0 ].
+    + apply d_pat__var with (d := d); [ analyze_binds H; auto | exact H0 ].
+  - (* anno *) simpl. apply d_pat__anno. eapply d_wf_ptyp_rename; eauto.
+  - (* sub *) simpl. apply d_pat__sub with (Q1 := Q1).
+    + inversion H; subst; simpl;
+        [ apply is_base_term__unit
+        | match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+          apply is_base_term__var
+        | apply is_base_term__anno ].
+    + eapply IHd_pat; eauto.
+    + eapply d_pat_sub_rename; eauto.
+  - (* freeze *) simpl. apply d_pat__freeze. eapply IHd_pat; eauto.
+  - (* abs *) simpl. apply d_pat__abs with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2)) (P := P).
+    + assumption.
+    + eapply d_wf_pskl_rename; eauto.
+    + intros w Hw.
+      rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+      rewrite_env (((w ~ dbind_skl P) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+      eapply (H2 w ltac:(fsetdec) ((w ~ dbind_skl P) ++ Γ1) x0 y0 d0 Γ2);
+        [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* abs_check *) simpl. apply d_pat__abs_check with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2)).
+    intros w Hw.
+    rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    rewrite_env (((w ~ dbind_skl pskl_hole) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H0 w ltac:(fsetdec) ((w ~ dbind_skl pskl_hole) ++ Γ1) x0 y0 d0 Γ2);
+      [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* abs_anno *) simpl. apply d_pat__abs_anno with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2)) (A := A) (Sarg := Sarg).
+    + assumption.
+    + eapply d_wf_ptyp_rename; eauto.
+    + assumption.
+    + intros w Hw.
+      rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+      rewrite_env (((w ~ dbind_typ A) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+      eapply (H3 w ltac:(fsetdec) ((w ~ dbind_typ A) ++ Γ1) x0 y0 d0 Γ2);
+        [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* abs_anno_check *) simpl. apply d_pat__abs_anno_check with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2)) (A := A) (Sarg := Sarg).
+    + eapply d_wf_ptyp_rename; eauto.
+    + assumption.
+    + intros w Hw.
+      rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+      rewrite_env (((w ~ dbind_typ A) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+      eapply (H2 w ltac:(fsetdec) ((w ~ dbind_typ A) ++ Γ1) x0 y0 d0 Γ2);
+        [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* app *) simpl. eapply d_pat__app;
+      [ eapply IHd_pat1; eauto | eapply d_refine_syn_rename; eauto | eapply IHd_pat2; eauto ].
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
