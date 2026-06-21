@@ -2200,6 +2200,32 @@ Proof.
   - simpl. apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
 Qed.
 
+(** Consistency reflexivity: a well-scoped synthesised skeleton is consistent with
+    its own [uskl]-erasure.  Foundation of the [ti] sub case of the CONSTRUCTION
+    path for [d_pat_total] (build [d_pat__sub] via [d_pat_sub__infer]).  Var case
+    needs the skeleton well-scoped; holes go via [__hole] (bskl_hole = inh □). *)
+Lemma d_pat_consis_refl : forall Q Γ,
+    is_sskl Q ->
+    (forall X, X `in` ftvar_in_bskl Q -> binds X dbind_tvar Γ) ->
+    nil ⨟ Γ ⊨ₛ (bskl_to_uskl Q) ≈ Q.
+Proof.
+  intros Q Γ Hs. generalize dependent Γ. induction Hs; intros Γ Hwf; simpl.
+  - apply d_pat_consis__unit.
+  - apply d_pat_consis__var. apply Hwf. simpl. fsetdec.
+  - apply d_pat_consis__arrow with (Δ1 := nil) (Δ2 := nil);
+      [ apply IHHs1 | apply IHHs2 ]; intros X HX; apply Hwf; simpl; fsetdec.
+  - apply d_pat_consis__forall_syn with (L := L `union` dom Γ).
+    intros X HX. rewrite <- bskl_to_uskl_open. apply H0; [ fsetdec | ].
+    intros Y HY.
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper A (bskl_var_f X)) as Hup.
+    simpl in Hup. destruct (Y == X).
+    + subst. auto.
+    + assert (binds Y dbind_tvar Γ) by (apply Hwf; simpl; fsetdec). auto.
+  - replace bskl_hole with (pskl_to_bskl_inh pskl_hole) by reflexivity.
+    apply d_pat_consis__hole. apply d_wf_pskl__hole.
+  - apply d_pat_consis__tophole. apply IHHs. intros X HX; apply Hwf; simpl; assumption.
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
