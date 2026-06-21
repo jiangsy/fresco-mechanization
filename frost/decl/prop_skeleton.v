@@ -2243,6 +2243,21 @@ Proof.
   intro Q. apply (size_bskl_open_hole_rec Q 0).
 Qed.
 
+(** A synthesised skeleton round-trips through its [pskl]-erasure. *)
+Lemma is_sskl_syn_roundtrip : forall Q,
+    is_sskl Q -> pskl_to_bskl_syn (bskl_to_pskl Q) = Q.
+Proof.
+  intros Q H. induction H; simpl;
+    try reflexivity;
+    try (rewrite IHis_sskl; reflexivity);
+    try (rewrite IHis_sskl1, IHis_sskl2; reflexivity).
+  - (* all_syn *) f_equal.
+    pick fresh X for
+      (L `union` ftvar_in_bskl A `union` ftvar_in_bskl (pskl_to_bskl_syn (bskl_to_pskl A))).
+    apply open_bskl_wrt_bskl_inj with (Xbs1 := X); [ fsetdec | fsetdec | ].
+    rewrite <- pskl_to_bskl_syn_open, <- bskl_to_pskl_open. apply H0. fsetdec.
+Qed.
+
 Lemma is_sskl_subst_hole : forall Q X,
     is_sskl Q -> is_sskl (subst_bskl_in_bskl bskl_hole X Q).
 Proof.
@@ -2275,6 +2290,12 @@ Proof.
   intros. unfold open_bskl_wrt_bskl, open_uskl_wrt_uskl. apply bskl_to_uskl_open_rec.
 Qed.
 
+Lemma bskl_to_pskl_open_gen : forall A V,
+    bskl_to_pskl (open_bskl_wrt_bskl A V) = open_pskl_wrt_pskl (bskl_to_pskl A) (bskl_to_pskl V).
+Proof.
+  intros. unfold open_bskl_wrt_bskl, open_pskl_wrt_pskl. apply bskl_to_pskl_open_rec.
+Qed.
+
 (** Safe [d_pat_sub] construction at [tc] (size induction): a well-scoped
     synthesised skeleton subtypes to a *safe* checking skeleton — guards wrap in a
     [TopHole] ([univ_ghost_r]); ∀s are stripped by [forall_l] instantiated with a
@@ -2285,27 +2306,36 @@ Lemma d_pat_sub_safe_tc : forall n Q1 Γ,
     size_bskl Q1 <= n ->
     is_sskl Q1 ->
     (forall X, X `in` ftvar_in_bskl Q1 -> binds X dbind_tvar Γ) ->
-    exists Q2, nil ⨟ Γ ⊢ₛ[ mode_tc ] (bskl_to_uskl Q1) ⊑ Q2.
+    exists Q2, nil ⨟ Γ ⊢ₛ[ mode_tc ] (bskl_to_uskl Q1) ⊑ Q2
+               /\ ghost_of (bskl_to_pskl Q1) Q2.
 Proof.
   induction n; intros Q1 Γ Hsz Hs Hwf.
   - destruct Hs; simpl in Hsz; lia.
   - destruct Hs.
-    + (* unit *) exists (bskl_tophole bskl_unit). simpl.
-      apply d_pat_sub__univ_ghost_r;
-        [ apply guarded_uskl__unit | apply guarded_bskl__unit
-        | apply is_sskl__unit | apply d_pat_consis__unit ].
-    + (* var X *) exists (bskl_tophole (bskl_var_f X)). simpl.
-      apply d_pat_sub__univ_ghost_r;
-        [ apply guarded_uskl__var | apply guarded_bskl__var
-        | apply is_sskl__var | apply d_pat_consis__var; apply Hwf; simpl; fsetdec ].
-    + (* arrow A B *) exists (bskl_tophole (bskl_arrow A B)). simpl.
-      apply d_pat_sub__univ_ghost_r.
-      * apply guarded_uskl__arrow; apply lc_bskl_to_uskl; apply is_sskl_lc; assumption.
-      * apply guarded_bskl__arrow; apply is_sskl_lc; assumption.
-      * apply is_sskl__arrow; assumption.
-      * change (uskl_arrow (bskl_to_uskl A) (bskl_to_uskl B))
-          with (bskl_to_uskl (bskl_arrow A B)).
-        apply d_pat_consis_refl; [ apply is_sskl__arrow; assumption | assumption ].
+    + (* unit *) exists (bskl_tophole bskl_unit). split.
+      * simpl. apply d_pat_sub__univ_ghost_r;
+          [ apply guarded_uskl__unit | apply guarded_bskl__unit
+          | apply is_sskl__unit | apply d_pat_consis__unit ].
+      * apply ghost_of__unit.
+    + (* var X *) exists (bskl_tophole (bskl_var_f X)). split.
+      * simpl. apply d_pat_sub__univ_ghost_r;
+          [ apply guarded_uskl__var | apply guarded_bskl__var
+          | apply is_sskl__var | apply d_pat_consis__var; apply Hwf; simpl; fsetdec ].
+      * apply ghost_of__var.
+    + (* arrow A B *) exists (bskl_tophole (bskl_arrow A B)). split.
+      * simpl. apply d_pat_sub__univ_ghost_r.
+        -- apply guarded_uskl__arrow; apply lc_bskl_to_uskl; apply is_sskl_lc; assumption.
+        -- apply guarded_bskl__arrow; apply is_sskl_lc; assumption.
+        -- apply is_sskl__arrow; assumption.
+        -- change (uskl_arrow (bskl_to_uskl A) (bskl_to_uskl B))
+             with (bskl_to_uskl (bskl_arrow A B)).
+           apply d_pat_consis_refl; [ apply is_sskl__arrow; assumption | assumption ].
+      * simpl. replace (bskl_arrow A B)
+          with (bskl_arrow (pskl_to_bskl_syn (bskl_to_pskl A))
+                           (pskl_to_bskl_syn (bskl_to_pskl B)))
+          by (rewrite (is_sskl_syn_roundtrip Hs1), (is_sskl_syn_roundtrip Hs2);
+              reflexivity).
+        apply ghost_of__arrow.
     + (* all_syn A *) pick fresh X for (L `union` ftvar_in_bskl A `union` dom Γ).
       assert (Hsk : is_sskl (open_bskl_wrt_bskl A bskl_hole)).
       { rewrite (subst_bskl_in_bskl_intro X A bskl_hole) by fsetdec.
@@ -2316,25 +2346,34 @@ Proof.
                        binds Y dbind_tvar Γ).
       { intros Y HY. pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper A bskl_hole) as Hup.
         simpl in Hup. apply Hwf. simpl. fsetdec. }
-      destruct (IHn (open_bskl_wrt_bskl A bskl_hole) Γ Hsz2 Hsk Hwf2) as [Q2 HQ2].
-      exists Q2. simpl.
-      apply d_pat_sub__forall_l_untagged with (psi := uskl_hole) (Δ' := nil);
-        [ discriminate | apply list_disjoint_nil_l | apply d_tags_skl__hole
-        | apply d_wf_uskl__hole | apply is_tskl__hole | ].
-      simpl.
-      replace (open_uskl_wrt_uskl (bskl_to_uskl A) uskl_hole)
-        with (bskl_to_uskl (open_bskl_wrt_bskl A bskl_hole))
-        by (rewrite bskl_to_uskl_open_gen; reflexivity).
-      exact HQ2.
-    + (* hole *) exists bskl_hole. simpl.
-      change bskl_hole with (pskl_to_bskl_inh pskl_hole).
-      apply d_pat_sub__ghost. apply d_wf_pskl__hole.
+      destruct (IHn (open_bskl_wrt_bskl A bskl_hole) Γ Hsz2 Hsk Hwf2) as [Q2 [HQ2 Hg2]].
+      exists Q2. split.
+      * simpl.
+        apply d_pat_sub__forall_l_untagged with (psi := uskl_hole) (Δ' := nil);
+          [ discriminate | apply list_disjoint_nil_l | apply d_tags_skl__hole
+          | apply d_wf_uskl__hole | apply is_tskl__hole | ].
+        simpl.
+        replace (open_uskl_wrt_uskl (bskl_to_uskl A) uskl_hole)
+          with (bskl_to_uskl (open_bskl_wrt_bskl A bskl_hole))
+          by (rewrite bskl_to_uskl_open_gen; reflexivity).
+        exact HQ2.
+      * simpl. apply ghost_of__all.
+        replace (open_pskl_wrt_pskl (bskl_to_pskl A) pskl_hole)
+          with (bskl_to_pskl (open_bskl_wrt_bskl A bskl_hole))
+          by (rewrite bskl_to_pskl_open_gen; reflexivity).
+        exact Hg2.
+    + (* hole *) exists bskl_hole. split.
+      * simpl. change bskl_hole with (pskl_to_bskl_inh pskl_hole).
+        apply d_pat_sub__ghost. apply d_wf_pskl__hole.
+      * apply ghost_of__hole.
     + (* tophole A *)
       assert (Hsz2 : size_bskl A <= n) by (simpl in Hsz; lia).
       assert (Hwf2 : forall Y, Y `in` ftvar_in_bskl A -> binds Y dbind_tvar Γ)
         by (intros Y HY; apply Hwf; simpl; fsetdec).
-      destruct (IHn A Γ Hsz2 Hs Hwf2) as [Q2 HQ2].
-      exists Q2. simpl. apply d_pat_sub__univ_ghost_l; [ discriminate | exact HQ2 ].
+      destruct (IHn A Γ Hsz2 Hs Hwf2) as [Q2 [HQ2 Hg2]].
+      exists Q2. split.
+      * simpl. apply d_pat_sub__univ_ghost_l; [ discriminate | exact HQ2 ].
+      * simpl. apply ghost_of__tophole. exact Hg2.
 Qed.
 
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
