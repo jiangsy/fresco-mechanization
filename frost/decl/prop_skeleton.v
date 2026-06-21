@@ -1479,17 +1479,43 @@ Theorem d_pat_safety : forall Γ e B0,
                  exists B, bskl_to_pskl B = ptyp_to_pskl A /\
                    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B).
 Proof.
-  (* RE-PLAN (post model-fix: d_pat is self-contained over ONE Γ, "a type is a
-     skel" via [d_pat__var]/[dbind_to_pskl]; the old [denv_coh] two-context plan
-     and its [var]-case "stuck" worry are GONE).  Decoupled into:
-     - [d_pat_total] (induction on [d_typing]): [exists Q, Γ ⊢[m] e ⇨ Q].
-       Helpers: [d_pat_binding_eq] (abs: rebind [x:typ A] ↦ [x:skl (skel A)];
-       cascades to [d_pat_sub]/[d_pat_consis]/[d_wf_pskl] binding-invariance,
-       all routine since those read only tvar bindings); a weaken-to-[□] lemma
-       (abs_check); tvar-strengthening (forall); [d_pat_sub_infer_ghost] (sub).
-     - [d_pat_fill] (induction on [d_pat]): the per-[A] refinement; base-term
-       leaves close with [ghost_of_fill] (Qed, axiom-free); λ/app recurse.
-     Then [d_pat_safety] combines [d_pat_total] (the [Q]) with [d_pat_fill]. *)
+  (* RE-PLAN v3 (the algorithmic-"look" construction — declarative.tex:1957-1981
+     Wenhao note: the safe witness is the skeleton the algorithm computes, where
+     "the inferred skeletons of arguments are directly passed to the function").
+
+     Decompose into TOTALITY (build the [Q]) + FILL (the per-[A] refinement):
+     - [d_pat_total] (induction on [d_typing], MODE-GENERALISED so the [mode_fn]
+       IH is available): [d_typing m Γ e B -> exists Q, d_pat m Γ e Q].
+
+       * APP coordination is the crux, and it DISSOLVES here, not via a
+         weaken-to-[□]-by-transport.  [d_typing__app] (def_extra.v:742) ALREADY
+         carries [e2 ⇨ syn P] and the fill [inh P ⊳ inh(skel A)] as premises
+         over the very same [Γ] — REUSE them.  [e1] is consumed in [mode_fn]:
+         the function *receives* the (e2-derived) fill output as its arg, so the
+         arg is PASSED, never independently re-ghostified.  No determinism / no
+         more_ghost coordination needed for the app.
+
+       * ABS_CHECK is the one case needing a ghostified binding: [d_pat__abs_check]
+         binds [x:□] and the body must infer for ANY checking arg type, so the
+         body's [d_pat] is over [(x:□)::Γ] while its typing is over [(x:typ A)::Γ].
+         Generalise [d_pat_total] over a GHOST-CONTEXT relation (each term var
+         kept as [skl(skel A)] — via [d_pat_binding_eq], or ghostified to [□]);
+         abs_check ghostifies the new λ-var, keeping the app coordination
+         consistent (one ghost-context throughout).  [more_ghost] (above) tracks
+         the resulting skeleton.
+
+       * FN-mode [abs]: choose [d_pat__abs]'s existential arg = the passed skel
+         (so the body is over [x:skl(skel A)] = [x:typ A] by [d_pat_binding_eq],
+         IH applies directly).  [forall]: tvar-strengthen the body.  [sub]:
+         [d_pat__sub] + [d_pat_sub_infer_ghost].
+
+     - FILL (induction on [d_pat]): base-term leaves close with [ghost_of_fill]
+       (Qed, axiom-free); λ/app recurse.  PAINTING caveat to settle at the proof
+       assistant: over a ghost-context [e2]'s syn skel gains holes, so the fill
+       output gains syn-paintings — check the function (esp. λ via [d_pat__abs]'s
+       inh-painted arg) still receives it; var-functions match (syn-arg) directly.
+
+     Then [d_pat_safety] = [d_pat_total] (the [Q]) + FILL.  Still [Admitted]. *)
 Admitted.
 
 (** GHOSTIFICATION WITNESS (the mechanism the safety witness relies on).
