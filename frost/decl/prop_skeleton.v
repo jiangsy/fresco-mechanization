@@ -2120,6 +2120,86 @@ Proof.
   - apply d_tags_skl__topholeg; assumption.
 Qed.
 
+Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
+    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    Δ ⨟ (Γ1 ++ Γ2) ⊨ₛ
+      (subst_bskl_in_uskl uskl_unit X R) ≈ (subst_bskl_in_bskl bskl_unit X Q).
+Proof.
+  intros Δ Γ R Q H. induction H; intros Γ1 X0 Γ2 Heq; subst.
+  - apply d_pat_consis__unit.
+  - simpl. match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+    + apply d_pat_consis__unit.
+    + apply d_pat_consis__var. analyze_binds H; auto.
+  - simpl. eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 ]; eauto.
+  - simpl. apply d_pat_consis__forall_inh_tagged with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); simpl_env; reflexivity.
+  - simpl. apply d_pat_consis__forall_inh_untagged with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); simpl_env; reflexivity.
+  - simpl. apply d_pat_consis__forall_syn_tagged with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); simpl_env; reflexivity.
+  - simpl. apply d_pat_consis__forall_syn with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); simpl_env; reflexivity.
+  - apply d_pat_consis__ghostg.
+  - simpl. apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
+  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__hole.
+    eapply d_wf_pskl_subst_unit; eauto.
+  - simpl. apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
+  - simpl. apply d_pat_consis__tophole_inh with (L := L `union` {{X0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
+    change (uskl_tophole (subst_bskl_in_uskl uskl_unit X0 R))
+      with (subst_bskl_in_uskl uskl_unit X0 (uskl_tophole R)).
+    eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); simpl_env; reflexivity.
+  - simpl. apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
+Qed.
+
+Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ[ m ]
+      (subst_bskl_in_uskl uskl_unit X R) ⊑ (subst_bskl_in_bskl bskl_unit X Q).
+Proof.
+  intros Δ Γ m R Q H. induction H; intros Γ1 X0 Γ2 Heq; subst.
+  - apply d_pat_sub__infer; [ eapply d_pat_consis_subst_unit; eauto | apply is_sskl_subst_unit; assumption ].
+  - simpl. apply d_pat_sub__univ_ghost_r;
+      [ apply guarded_uskl_subst_unit; assumption
+      | apply guarded_bskl_subst_unit; assumption
+      | apply is_sskl_subst_unit; assumption
+      | eapply d_pat_consis_subst_unit; eauto ].
+  - simpl. eapply d_pat_sub__arg;
+      [ eapply d_pat_consis_subst_unit; eauto | eapply IHd_pat_sub; eauto ].
+  - simpl. eapply d_pat_sub__forall_l_tagged with
+      (psi := subst_bskl_in_uskl uskl_unit X0 psi);
+      [ assumption | eassumption | apply d_tags_skl_subst_unit; assumption
+      | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
+    rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
+    eapply IHd_pat_sub; eauto.
+  - simpl. eapply d_pat_sub__forall_l_untagged with
+      (psi := subst_bskl_in_uskl uskl_unit X0 psi);
+      [ assumption | eassumption | apply d_tags_skl_subst_unit; assumption
+      | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
+    rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
+    eapply IHd_pat_sub; eauto.
+  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_sub__ghost.
+    eapply d_wf_pskl_subst_unit; eauto.
+  - simpl. apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
+  - apply d_pat_sub__ghostg.
+  - simpl. apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
