@@ -39,6 +39,9 @@ Set Implicit Arguments.
 (* Tag context bridge (F16): decorated [Ψ : atoms] ↦ declarative [Δ : list]. *)
 Definition Ψtoδ (Ψ : atoms) : list atom := AtomSetImpl.elements Ψ.
 
+Lemma Ψtoδ_empty : Ψtoδ empty = nil.
+Proof. unfold Ψtoδ. apply AtomSetProperties.elements_empty. Qed.
+
 (* ===================================================================== *)
 (*  Soundness of decorated consistency  (paper soundness, \wenhao{TODO}). *)
 (*  F17 FIX: the algo output [Q : pskl] is the colour-ERASURE                *)
@@ -50,8 +53,9 @@ Theorem a_consistag_sound : forall P0 Ψ Θ0 S Q Θ1,
     exists Q', bskl_to_pskl Q' = Q /\ (Ψtoδ Ψ) ⨟ ⌊ Θ1 ⌋ ⊨ₛ S ≈ Q'.
 Proof.
   intros P0 Ψ Θ0 S Q Θ1 H. induction H.
-  - (* GhostG → ghostg.  Witness bskl_hole; needs elements ∅ = nil. *)
-    admit.
+  - (* GhostG → ghostg.  Closes. *)
+    exists bskl_hole. split; [ reflexivity | ].
+    rewrite Ψtoδ_empty. apply d_pat_consis__ghostg.
   - (* Arrow → d_pat_consis__arrow.  F18 (Γ threading) + F16 (elements). *)
     admit.
   - (* ForallInh → forall_inh_tagged.  Witness bskl_all_INH (colour now
@@ -97,8 +101,9 @@ Proof.
     admit.
   - (* ForallL → d_pat_sub__forall_l_*; blocked on a_tag_support placeholder. *)
     admit.
-  - (* GhostG → d_pat_sub__ghostg.  Witness bskl_hole; needs elements ∅ = nil. *)
-    admit.
+  - (* GhostG → d_pat_sub__ghostg.  Closes. *)
+    exists bskl_hole. split; [ reflexivity | ].
+    rewrite Ψtoδ_empty. apply d_pat_sub__ghostg.
   - (* UnivGhostL → d_pat_sub__univ_ghost_l.  Closes (RHS unchanged). *)
     destruct IHa_subtag as [Q' [Heq Hd]]. exists Q'. split; [ assumption | ].
     apply d_pat_sub__univ_ghost_l; assumption.
