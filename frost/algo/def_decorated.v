@@ -9,10 +9,12 @@
     Encoding reuse: the decorated SOURCE skeleton [S] (with tagged ∀
     [\foralltag{δ}], dotted ghosts [\HoleG]/[\TopHoleG]) is exactly the
     declarative unresolved skeleton [uskl] ([uskl_all_etag] = [\foralltag],
-    [uskl_holeg]/[uskl_topholeg] = the ghosts).  The tag [δ]/[ε] is an [εvar];
-    the tag context [Ψ] is [atoms] (like the declarative [Δ]).  The outputs [Q]
-    and target [P0] stay ordinary [pskl].  Flex/rigid variables share the
-    [ptypvar] atom namespace across [uskl]/[pskl]. *)
+    [uskl_holeg]/[uskl_topholeg] = the ghosts).  The tag [δ]/[ε] is an [εvar].
+    The tag context [Ψ] is a [list atom], matching the declarative skeleton
+    judgements [d_pat_consis]/[d_pat_sub] (F16): set-union [Ψ1,Ψ2] is list
+    append [Ψ1 ++ Ψ2], [Ψ,δ] is [δ :: Ψ] (cf. [d_pat_consis__forall_inh_tagged]
+    [ε :: Δ]).  Outputs [Q] and target [P0] stay ordinary [pskl]; flex/rigid
+    variables share the [ptypvar] atom namespace across [uskl]/[pskl]. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -47,35 +49,29 @@ Fixpoint uskl_to_pskl (R : uskl) : pskl :=
   end.
 
 (* [a_tag_support Θ NM Ψ ψ] — paper [\tagsupp{Θ}{tags(Ψ)}{syn(ψ)}]
-   (decorated-algosub.tex:99): the decorated instantiation [ψ] is supported by
-   the tag set [Ψ] under [Θ] (sort [NM]).  PLACEHOLDER for the scaffolding —
-   the faithful judgement (tag well-formedness of the syn-painted [ψ]) is
-   deferred. *)
-Inductive a_tag_support : aenv -> a_sub_mode -> atoms -> uskl -> Prop :=
+   (decorated-algosub.tex:99).  PLACEHOLDER for the scaffolding. *)
+Inductive a_tag_support : aenv -> a_sub_mode -> list atom -> uskl -> Prop :=
 | a_tag_support__any : forall Θ NM Ψ ψ, a_tag_support Θ NM Ψ ψ.
 
 (* ===================================================================== *)
-(*  Decorated algorithmic consistency                                     *)
-(*  [a_consistag P0 Ψ Θ0 S Q Θ1]  =  [⊢ᶜ_tag[P0][Ψ] Θ0 ▷ S ◁ Q ⊲ Θ1]       *)
-(*  (decorated-algosub.tex fig:decorated-alg-consistency).  S : uskl       *)
-(*  (decorated source), Q : pskl (output), P0 : pskl (target), Ψ : atoms.  *)
-(*  The flex-variable rules (Flex/FlexL/FlexR) are inherited from           *)
-(*  [a_consis] with empty tag context — OMITTED here (scaffolding).         *)
+(*  Decorated algorithmic consistency  (fig:decorated-alg-consistency).    *)
+(*  [a_consistag P0 Ψ Θ0 S Q Θ1].  S : uskl, Q : pskl, P0 : pskl,           *)
+(*  Ψ : list atom.  Flex-variable / inherited-unchanged rules OMITTED.      *)
 (* ===================================================================== *)
-Inductive a_consistag : pskl -> atoms -> aenv -> uskl -> pskl -> aenv -> Prop :=
+Inductive a_consistag : pskl -> list atom -> aenv -> uskl -> pskl -> aenv -> Prop :=
 | a_consistag__ghostg : forall Θ0,                          (* GhostG *)
-    a_consistag pskl_hole empty Θ0 uskl_holeg pskl_hole Θ0
+    a_consistag pskl_hole nil Θ0 uskl_holeg pskl_hole Θ0
 | a_consistag__arrow : forall Θ0 Θ1 Θ2 P1' P2' S1 S2 Q1 Q2 Ψ1 Ψ2,   (* Arrow *)
     a_consistag P1' Ψ1 Θ0 S1 Q1 Θ1 ->
     a_consistag P2' Ψ2 Θ1 S2 Q2 Θ2 ->
-    a_consistag (pskl_arrow P1' P2') (Ψ1 `union` Ψ2) Θ0
+    a_consistag (pskl_arrow P1' P2') (Ψ1 ++ Ψ2) Θ0
       (uskl_arrow S1 S2) (pskl_arrow Q1 Q2) Θ2
 | a_consistag__forall_inh : forall L δ Θ0 Θ1 P0 R Q Ψ,      (* ForallInh *)
     (forall α, α `notin` L ->
        a_consistag (open_pskl_wrt_pskl P0 (pskl_var_f α)) Ψ ((α ~ abind_tvar) ++ Θ0)
          (open_uskl_wrt_uskl R (uskl_var_f α))
          (open_pskl_wrt_pskl Q (pskl_var_f α)) ((α ~ abind_tvar) ++ Θ1)) ->
-    a_consistag (pskl_all_syn P0) (Ψ `union` singleton δ) Θ0
+    a_consistag (pskl_all_syn P0) (δ :: Ψ) Θ0
       (uskl_all_etag δ R) (pskl_all_syn Q) Θ1
 | a_consistag__forall_syn : forall L δ Θ0 Θ1 P0 R Q Ψ,      (* ForallSyn *)
     (forall α, α `notin` L ->
@@ -100,22 +96,20 @@ Inductive a_consistag : pskl -> atoms -> aenv -> uskl -> pskl -> aenv -> Prop :=
     a_non_flex Θ0 P0 ->
     a_consistag P0 Ψ Θ0 R Q Θ1 ->
     a_consistag P0 Ψ Θ0 (uskl_tophole R) Q Θ1
-| a_consistag__ghost_r : forall Θ0 R,                      (* GhostR *)
-    a_consistag pskl_hole empty Θ0 R (uskl_to_pskl R) Θ0
-| a_consistag__univ_ghost_r : forall Θ0 Θ1 P0 R Q Ψ,       (* UnivGhostR *)
+| a_consistag__ghost_r : forall Θ0 R,                      (* GhostR (F15) *)
+    a_consistag pskl_hole nil Θ0 R (uskl_to_pskl R) Θ0
+| a_consistag__univ_ghost_r : forall Θ0 Θ1 P0 R Q Ψ,       (* UnivGhostR (F15) *)
     guarded_pskl (uskl_to_pskl R) ->
     a_non_flex Θ0 (uskl_to_pskl R) ->
     a_consistag P0 Ψ Θ0 R Q Θ1 ->
     a_consistag (pskl_tophole P0) Ψ Θ0 R Q Θ1.
 
 (* ===================================================================== *)
-(*  Decorated algorithmic subtyping                                       *)
-(*  [a_subtag N M P0 Ψ Θ0 S Q Θ1] = [⊢_tag[N][M][P0][Ψ] Θ0 ▷ S ◁ Q ⊲ Θ1]   *)
-(*  (decorated-algosub.tex fig:decorated-alg-subtyping).  Depends on        *)
-(*  [a_consistag]; [ForallL] uses [a_extract] + the [a_tag_support]         *)
-(*  placeholder.  Inherited-unchanged ordinary rules omitted (scaffolding). *)
+(*  Decorated algorithmic subtyping  (fig:decorated-alg-subtyping).        *)
+(*  [a_subtag N M P0 Ψ Θ0 S Q Θ1].  Depends on [a_consistag]; [ForallL]     *)
+(*  uses [a_extract] + the [a_tag_support] placeholder.                     *)
 (* ===================================================================== *)
-Inductive a_subtag : a_sub_mode -> mode -> pskl -> atoms -> aenv -> uskl -> pskl -> aenv -> Prop :=
+Inductive a_subtag : a_sub_mode -> mode -> pskl -> list atom -> aenv -> uskl -> pskl -> aenv -> Prop :=
 | a_subtag__check : forall Θ0 Θ1 T B Ψ,                     (* Check *)
     guarded_pskl (uskl_to_pskl T) -> guarded_pskl B ->
     a_consistag B Ψ Θ0 T B Θ1 ->
@@ -129,12 +123,12 @@ Inductive a_subtag : a_sub_mode -> mode -> pskl -> atoms -> aenv -> uskl -> pskl
     a_subtag a_sub_mode_ty mode_tc (pskl_all_syn B) Ψ Θ0 S (pskl_all_syn B) Θ1
 | a_subtag__univ_ghost_r : forall Θ0 S,                    (* UnivGhostR *)
     guarded_pskl (uskl_to_pskl S) ->
-    a_subtag a_sub_mode_sk mode_tc pskl_hole empty Θ0 S
+    a_subtag a_sub_mode_sk mode_tc pskl_hole nil Θ0 S
       (pskl_tophole (uskl_to_pskl S)) Θ0
 | a_subtag__arrow : forall NM M Θ0 Θ1 Θ2 P1' P2' S1 S2 Q1 Q2 Ψ1 Ψ2,  (* Arrow *)
     a_consistag P1' Ψ1 Θ0 S1 Q1 Θ1 ->
     a_subtag NM M P2' Ψ2 Θ1 S2 Q2 Θ2 ->
-    a_subtag NM (mode_fn M) (pskl_arrow P1' P2') (Ψ1 `union` Ψ2) Θ0
+    a_subtag NM (mode_fn M) (pskl_arrow P1' P2') (Ψ1 ++ Ψ2) Θ0
       (uskl_arrow S1 S2) (pskl_arrow Q1 Q2) Θ2
 | a_subtag__forall_l : forall L NM M P0 δ Θ0 Θ1 R Q Ψ Ψg ψg Ξ P1,  (* ForallL *)
     M <> mode_ti ->
@@ -144,11 +138,11 @@ Inductive a_subtag : a_sub_mode -> mode -> pskl -> atoms -> aenv -> uskl -> pskl
     uskl_to_pskl ψg = P1 ->
     (forall α, α `notin` L ->
        a_extract α M (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) P0 Ξ P1) ->
-    a_subtag NM M P0 (Ψ `union` Ψg) (Ξ ++ Θ0)
+    a_subtag NM M P0 (Ψ ++ Ψg) (Ξ ++ Θ0)
       (open_uskl_wrt_uskl R ψg) Q Θ1 ->
     a_subtag NM M P0 Ψ Θ0 (uskl_all_etag δ R) Q Θ1
 | a_subtag__ghostg : forall M Θ0,                          (* GhostG *)
-    a_subtag a_sub_mode_sk M pskl_hole empty Θ0 uskl_holeg pskl_hole Θ0
+    a_subtag a_sub_mode_sk M pskl_hole nil Θ0 uskl_holeg pskl_hole Θ0
 | a_subtag__univ_ghost_l : forall M Θ0 Θ1 P0 R Q Ψ,        (* UnivGhostL *)
     M <> mode_ti ->
     a_subtag a_sub_mode_sk M P0 Ψ Θ0 R Q Θ1 ->
