@@ -204,3 +204,41 @@ Proof.
         | apply guarded_pskl_subst; [ constructor; assumption | assumption | discriminate ]
         | apply IHpr; assumption ].
 Qed.
+
+(* Free-variable monotonicity of constraint SOLVING: the output skeleton's
+   free variables come from the two inputs.  Building block for tracking
+   freshness through [a_extract] (paper lemma:look-output-fresh). *)
+Scheme a_solve_sub_mut := Minimality for a_solve_sub Sort Prop
+  with a_solve_eq_mut  := Minimality for a_solve_eq  Sort Prop.
+Combined Scheme a_solve_sub_eq_mutind from a_solve_sub_mut, a_solve_eq_mut.
+
+Lemma a_solve_ftv :
+  (forall Θ m P Q P', a_solve_sub Θ m P Q P' ->
+     ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q) /\
+  (forall Θ P Q P', a_solve_eq Θ P Q P' ->
+     ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q).
+Proof.
+  apply a_solve_sub_eq_mutind; intros; simpl in *; try fsetdec.
+  (* ForallR: instantiation by [⫯.□] contributes no free variable. *)
+  all: try (
+    match goal with
+    | [ H : ftvar_in_pskl _ [<=] ftvar_in_pskl _
+              `union` ftvar_in_pskl (open_pskl_wrt_pskl ?B (pskl_tophole pskl_hole)) |- _ ] =>
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_tophole pskl_hole)) as Hbr;
+        simpl in Hbr
+    end; fsetdec).
+  (* Cofinite quantifier cases: open at a fresh [b], bound it away. *)
+  all: (
+    pick fresh b;
+    repeat match goal with
+    | [ H : forall x : atom, x `notin` ?L -> _ |- _ ] => specialize (H b ltac:(fsetdec))
+    end;
+    simpl in *;
+    match goal with
+    | [ |- ftvar_in_pskl ?P' [<=] ftvar_in_pskl ?P `union` ftvar_in_pskl ?Q ] =>
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P' (pskl_var_f b));
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f b));
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f b))
+    end;
+    simpl in *; fsetdec).
+Qed.
