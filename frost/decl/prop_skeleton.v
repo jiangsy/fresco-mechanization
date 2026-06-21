@@ -1267,32 +1267,17 @@ Theorem d_pat_safety : forall Γ e B0,
                  exists B, bskl_to_pskl B = ptyp_to_pskl A /\
                    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B).
 Proof.
-  (* Attempted directly: [intros Γ e B0 Hty Hwf; induction Hty] gives 11
-     cases.  The [var] case is STUCK: its hypothesis is
-     [binds x (dbind_typ A) Γ] (typing binds term-vars as [dbind_typ]), but
-     constructing the inference [x ⇨ Q] needs [d_pat__var], which requires
-     [binds x (dbind_skl P) Γ] — a [dbind_typ]-bound variable is not
-     inferable.  So the single-[Γ] statement cannot be proved by direct
-     induction: safety must be generalised over [denv_coh Γs Γt] (inference
-     context with [dbind_skl] vs typing context with [dbind_typ]); the leaves
-     then close with the ghost-fill engines [d_refine_syn_hole_fills] /
-     [d_refine_syn_tophole_hole_fills].
-
-     The witness is CONSTRUCTIVE (not the algorithm's optimality): the
-     declarative inference is permissive enough to pick a fully-ghostified
-     skeleton.  Per case: [var] → [□] (the [denv_coh]-bound skeleton);
-     [unit] → [⫯.unit] (univ_ghost_r); annotations → [d_pat__sub] generalises
-     the concrete skeleton, instantiating each top-level [∀] with [□] via
-     [d_pat_sub__forall_l_*] (see [d_pat_sub_forall_hole_witness]); λ →
-     [⫯.(□→Q)] via [abs_check].  The per-[A] fill then holds because [d_sub]
-     check-mode is SHALLOW (one-level consistency + top-level [forall_l]
-     only): the only [A'] a term checks at differ from its principal type at
-     positions [forall_l] instantiated, exactly where the witness placed a
-     [□] (which fills anything via [__hole]); nested [∀]s stay concrete and
-     are matched structurally by [__all]/[__arrow].  The remaining work is
-     to (i) build [denv_coh] for the top-level [Γ] (coerce typ→[□] skl) and
-     (ii) grind the 11-case induction with these witnesses + a bridge lemma
-     [d_sub C B -> inh{ghostify C} ⊳ bid{B}]. *)
+  (* RE-PLAN (post model-fix: d_pat is self-contained over ONE Γ, "a type is a
+     skel" via [d_pat__var]/[dbind_to_pskl]; the old [denv_coh] two-context plan
+     and its [var]-case "stuck" worry are GONE).  Decoupled into:
+     - [d_pat_total] (induction on [d_typing]): [exists Q, Γ ⊢[m] e ⇨ Q].
+       Helpers: [d_pat_binding_eq] (abs: rebind [x:typ A] ↦ [x:skl (skel A)];
+       cascades to [d_pat_sub]/[d_pat_consis]/[d_wf_pskl] binding-invariance,
+       all routine since those read only tvar bindings); a weaken-to-[□] lemma
+       (abs_check); tvar-strengthening (forall); [d_pat_sub_infer_ghost] (sub).
+     - [d_pat_fill] (induction on [d_pat]): the per-[A] refinement; base-term
+       leaves close with [ghost_of_fill] (Qed, axiom-free); λ/app recurse.
+     Then [d_pat_safety] combines [d_pat_total] (the [Q]) with [d_pat_fill]. *)
 Admitted.
 
 (** GHOSTIFICATION WITNESS (the mechanism the safety witness relies on).
