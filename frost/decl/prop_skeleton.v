@@ -1377,6 +1377,42 @@ Proof.
       [ eapply IHd_pat1; eauto | eapply d_refine_syn_binding_eq; eauto | eapply IHd_pat2; eauto ].
 Qed.
 
+(** [more_ghost Q' Q]: [Q'] is [Q] with some sub-skeletons replaced by the plain
+    ghost [□].  Backbone of [d_pat_weaken_hole]: rebinding a λ-var to [□]
+    ghostifies its uses, so the inferred skeleton becomes [more_ghost] than the
+    original. *)
+Inductive more_ghost : bskl -> bskl -> Prop :=
+| more_ghost__hole  : forall Q, more_ghost bskl_hole Q
+| more_ghost__unit  : more_ghost bskl_unit bskl_unit
+| more_ghost__var   : forall X, more_ghost (bskl_var_f X) (bskl_var_f X)
+| more_ghost__arrow : forall Q1 Q2 R1 R2,
+    more_ghost Q1 R1 -> more_ghost Q2 R2 ->
+    more_ghost (bskl_arrow Q1 Q2) (bskl_arrow R1 R2)
+| more_ghost__all_syn : forall L Q R,
+    (forall X, X `notin` L ->
+       more_ghost (open_bskl_wrt_bskl Q (bskl_var_f X))
+                  (open_bskl_wrt_bskl R (bskl_var_f X))) ->
+    more_ghost (bskl_all_syn Q) (bskl_all_syn R)
+| more_ghost__all_inh : forall L Q R,
+    (forall X, X `notin` L ->
+       more_ghost (open_bskl_wrt_bskl Q (bskl_var_f X))
+                  (open_bskl_wrt_bskl R (bskl_var_f X))) ->
+    more_ghost (bskl_all_inh Q) (bskl_all_inh R)
+| more_ghost__tophole : forall Q R,
+    more_ghost Q R -> more_ghost (bskl_tophole Q) (bskl_tophole R).
+
+Lemma more_ghost_refl : forall Q, lc_bskl Q -> more_ghost Q Q.
+Proof.
+  intros Q H. induction H.
+  - apply more_ghost__unit.
+  - apply more_ghost__var.
+  - apply more_ghost__arrow; assumption.
+  - apply more_ghost__all_syn with (L := empty). intros X _. auto.
+  - apply more_ghost__all_inh with (L := empty). intros X _. auto.
+  - apply more_ghost__hole.
+  - apply more_ghost__tophole. assumption.
+Qed.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
