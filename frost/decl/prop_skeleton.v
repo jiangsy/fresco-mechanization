@@ -2493,6 +2493,72 @@ Proof.
   - rewrite H1, H2. reflexivity.
 Qed.
 
+Lemma ftvar_ptyp_to_pskl : forall A,
+    ftvar_in_pskl (ptyp_to_pskl A) = ftvar_in_ptyp A.
+Proof.
+  induction A; simpl; try reflexivity;
+    try (rewrite IHA; reflexivity); try (rewrite IHA1, IHA2; reflexivity).
+Qed.
+
+Lemma lc_pskl_ptyp_to_pskl : forall A,
+    lc_ptyp A -> lc_pskl (ptyp_to_pskl A).
+Proof.
+  intros A H. induction H; simpl.
+  - apply lc_pskl_unit.
+  - apply lc_pskl_var_f.
+  - apply lc_pskl_arrow; assumption.
+  - apply lc_pskl_all_syn. intro X.
+    rewrite <- ptyp_to_pskl_open. auto.
+Qed.
+
+(** The annotation of a well-typed [exp_anno] is well-formed (peeling sub-ti). *)
+Lemma d_typing_anno_wf : forall Γ e A B,
+    d_typing mode_ti Γ (exp_anno e A) B -> d_wf_denv Γ -> d_wf_ptyp Γ A.
+Proof.
+  intros Γ e A B H. remember (exp_anno e A) as ea eqn:Heqea.
+  remember mode_ti as m eqn:Heqm. revert e A Heqea.
+  induction H; intros e0 A0 Heqea Hwf; try discriminate;
+    try (inversion Heqea; subst).
+  - apply d_wf_ptyp_of_btyp_inh. eapply d_typing_wf_btyp; eauto.
+  - eapply IHd_typing; eauto.
+Qed.
+
+(** A base term's [mode_ti] inference: a well-scoped synthesised skeleton whose
+    [pskl] matches the type (the safe ingredient for the [tc]/[fn] sub cases). *)
+Lemma d_pat_ti_base_safe : forall Γ e B,
+    d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B ->
+    exists Q, d_pat mode_ti Γ e Q /\ is_sskl Q
+      /\ (forall X, X `in` ftvar_in_bskl Q -> binds X dbind_tvar Γ)
+      /\ bskl_to_pskl Q = ptyp_to_pskl (btyp_to_ptyp B).
+Proof.
+  intros Γ e B Hwf Hbase Hty. destruct Hbase.
+  - (* unit *) pose proof (d_typing_ti_primary Hty) as Hp. simpl in Hp.
+    exists bskl_unit. repeat split.
+    + apply d_pat__unit.
+    + apply is_sskl__unit.
+    + intros X HX; simpl in HX; fsetdec.
+    + simpl. symmetry. exact Hp.
+  - (* var x *) pose proof (d_typing_ti_primary Hty) as Hp. simpl in Hp.
+    destruct Hp as [A [Hbinds Hsk]].
+    assert (HwfA : d_wf_ptyp Γ A) by (eapply d_wf_denv_binds_typ; eauto).
+    exists (pskl_to_bskl_syn (ptyp_to_pskl A)). repeat split.
+    + apply d_pat__var with (d := dbind_typ A); [ exact Hbinds | reflexivity ].
+    + apply is_sskl_pskl_to_bskl_syn. apply lc_pskl_ptyp_to_pskl.
+      eapply d_wf_ptyp_lc_loc; eauto.
+    + intros X HX. rewrite ftvar_pskl_to_bskl_syn, ftvar_ptyp_to_pskl in HX.
+      eapply d_wf_ptyp_ftvar; eauto.
+    + rewrite bskl_to_pskl_pskl_to_bskl_syn. symmetry. exact Hsk.
+  - (* anno e A *) pose proof (d_typing_ti_primary Hty) as Hp. simpl in Hp.
+    pose proof (d_typing_anno_wf Hty Hwf) as HwfA.
+    exists (pskl_to_bskl_syn (ptyp_to_pskl A)). repeat split.
+    + apply d_pat__anno. exact HwfA.
+    + apply is_sskl_pskl_to_bskl_syn. apply lc_pskl_ptyp_to_pskl.
+      eapply d_wf_ptyp_lc_loc; eauto.
+    + intros X HX. rewrite ftvar_pskl_to_bskl_syn, ftvar_ptyp_to_pskl in HX.
+      eapply d_wf_ptyp_ftvar; eauto.
+    + rewrite bskl_to_pskl_pskl_to_bskl_syn. symmetry. exact Hp.
+Qed.
+
 (** ** Totality + safety of skeleton inference ([d_pat_total]).
 
     The joint invariant carried by the induction (the paper's
@@ -2546,7 +2612,19 @@ Proof.
       eapply d_typing_wf_btyp; eassumption.
     + simpl. rewrite btyp_to_ptyp_ptyp_to_btyp_syn, bskl_to_pskl_pskl_to_bskl_syn.
       reflexivity.
-  - (* sub *) admit.
+  - (* sub *) destruct m.
+    + (* ti *) destruct (IHHty Hwf) as [Q1 [HQ1 HS1]].
+      exists Q1. split; [ exact HQ1 | ].
+      simpl in HS1 |- *. rewrite HS1.
+      match goal with Hsub : empty ⨟ _ ⊢[ mode_ti ] _ ⊑ _ |- _ =>
+        inversion Hsub; subst;
+        try (exfalso; match goal with Hne : ?mm <> ?mm |- _ =>
+                        apply Hne; reflexivity end) end.
+      match goal with Hc : empty ⨟ _ ⊨ _ ≈ _ |- _ =>
+        apply d_consis_skel in Hc; rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hc;
+        exact Hc end.
+    + (* tc *) admit.
+    + (* fn *) admit.
   - (* freeze *) admit.
   - (* forall *) admit.
   - (* abs *) admit.
