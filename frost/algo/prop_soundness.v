@@ -19,17 +19,17 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_question.
 Require Import src.frost.algo.prop_lemmas.
-Require Import src.frost.algo.qnotations.
 
 Set Implicit Arguments.
 
-(* Algorithmic judgments are written with the [a{{ … }}] qualified
-   notation (paper algorithmic.tex); the declarative readings live inside
-   the opaque [*_solution] predicates ([def_question.v]). *)
+(* Algorithmic judgments are written with the [⊢ₐ[ … ]] notation
+   ([algo/def_extra.v], paper algorithmic.tex with the [ₐ]-subscripted
+   turnstile); the declarative readings live inside the opaque [*_solution]
+   predicates ([def_question.v]). *)
 
 (* Soundness of consistency (paper Lemma: Soundness of consistency). *)
 Theorem a_consis_sound : forall Θ0 P0 P Q Θ1,
-    a{{ Θ0 ⊢[ P0 ] P ~ᴬ Q ⊣ Θ1 }} ->
+    Θ0 ⊢ₐ[ P0 ] P ~ᴬ Q ⊣ Θ1 ->
     exists θ1, a_consis_solution Θ0 P0 P θ1 Θ1 Q.
 Proof. Admitted.
 
@@ -40,7 +40,7 @@ Proof. Admitted.
    skeleton subtyping [d_pat_sub] under [⌊Θ₁⌋], and (3) discharge the
    inherited-refinement side condition [a_fillsyn]. *)
 Theorem a_sub_sound : forall NM M P0 Θ0 P Q Θ1,
-    a{{ Θ0 ⊢[ NM | M | P0 ] P ⊑ᴬ Q ⊣ Θ1 }} ->
+    Θ0 ⊢ₐ[ NM | M | P0 ] P ⊑ᴬ Q ⊣ Θ1 ->
     exists θ1, a_sub_solution M Θ0 P0 P θ1 Θ1 Q.
 Proof.
   intros NM M P0 Θ0 P Q Θ1 Hsub.
@@ -75,7 +75,7 @@ Admitted.
    alone.  Driven by subtyping / consistency soundness ([a_sub_sound] /
    [a_consis_sound], the "subtyping admit") + the structural lemmas — admitted. *)
 Theorem a_pat_sound : forall M Θ0 P0 e P Θ1,
-    a{{ Θ0 ⊢[ M ; P0 ] e ⇨ P ⊣ Θ1 }} ->
+    Θ0 ⊢ₐ[ M ; P0 ] e ⇨ P ⊣ Θ1 ->
     exists θ1, a_pat_solution M Θ0 P0 e θ1 Θ1 P.
 Proof.
   intros M Θ0 P0 e P Θ1 H. induction H.
@@ -98,7 +98,7 @@ Admitted.
    WT's paper proofs, driven by subtyping / consistency soundness, stability,
    splitting-refines and identity increase — admitted. *)
 Theorem a_typing_sound : forall M Θ0 P e A Θ1,
-    a{{ Θ0 ⊢[ M ; P ] e ⦂ A ⊣ Θ1 }} ->
+    Θ0 ⊢ₐ[ M ; P ] e ⦂ A ⊣ Θ1 ->
     exists θ1, a_typing_solution M Θ0 P e θ1 Θ1 A.
 Proof.
   intros M Θ0 P e A Θ1 H. induction H.

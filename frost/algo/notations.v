@@ -13,12 +13,12 @@ Notation "⊢ₐ Θ" := (a_wf_aenv Θ)
   (at level 75, no associativity) : type_scope.
 
 (* The algorithmic JUDGMENT notations ([a_typing]/[a_pat]/[a_sub]/
-   [a_consis]/[a_broom]/[a_unify], all [⊢[ … ]]-shaped) live in the [algo]
-   custom entry in [algo/qnotations.v], entered via [a{{ … }}].  Custom
-   entries give them a separate grammar — they neither clash with the
-   declarative [⊢[ … ]] notations nor with Coq's term grammar — and unlike
-   a [type_scope] notation they also print.  Do NOT re-add them to
-   [type_scope] here: that reintroduces the clash. *)
+   [a_consis], paper's [⊢[ … ]] shape) live in [algo/def_extra.v], bound
+   recursively with their Inductives via [where]-clauses so the RULES read
+   with notation.  Their turnstile carries an [ₐ] subscript ([⊢ₐ[ … ]]) so
+   they do not clash with the declarative [⊢[ … ]] in mixed
+   soundness/completeness files — type_scope, no custom entry needed.
+   (Superseded [algo/qnotations.v]'s [a{{ … }}] custom entry, now removed.) *)
 
 Notation "Θ ⊑ᵢ Θ'" := (aenv_extends Θ Θ')
   (at level 75, no associativity, only parsing) : type_scope.

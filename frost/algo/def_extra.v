@@ -17,6 +17,28 @@ Require Import src.frost.decl.notations.
 
 Set Implicit Arguments.
 
+(* ── Algorithmic judgment notations ─────────────────────────────────────
+   The paper writes every judgment with a [⊢[ … ]] turnstile; so does the
+   declarative system (decl/notations.v).  So the algorithmic RULES can be
+   written WITH notation while still sharing soundness/completeness files
+   with the declarative notations, the algorithmic turnstile carries an [ₐ]
+   subscript: [⊢ₐ].  Each notation is bound (recursively) with its Inductive
+   below via a [where]-clause; here we only RESERVE the grammar.  (Moved here
+   from [qnotations.v] — custom entries cannot be bound by [where]-clauses,
+   so the rules could not otherwise be written with notation.) *)
+Reserved Notation "Θ ⊢ₐ[ P0 ] P '~ᴬ' Q ⊣ Θ'"
+  (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0,
+   no associativity).
+Reserved Notation "Θ ⊢ₐ[ N | m | P0 ] P ⊑ᴬ Q ⊣ Θ'"
+  (at level 70, N at level 0, m at level 0, P0 at level 0, P at level 0,
+   Q at level 0, Θ' at level 0, no associativity).
+Reserved Notation "Θ ⊢ₐ[ m ; P0 ] e ⇨ Q ⊣ Θ'"
+  (at level 70, m at level 0, P0 at level 0, e at level 0, Q at level 0,
+   Θ' at level 0, no associativity).
+Reserved Notation "Θ ⊢ₐ[ m ; P0 ] e ⦂ B ⊣ Θ'"
+  (at level 70, m at level 0, P0 at level 0, e at level 0, B at level 0,
+   Θ' at level 0, no associativity).
+
 Inductive abind : Set :=
 | abind_tvar : abind
 | abind_var_typ : ptyp -> abind
@@ -520,7 +542,8 @@ Inductive a_consis : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_consis__flex_r : forall Θ0 Θ1 α P,                     (* FlexR *)
     a_non_flex Θ0 P ->
     a_assign Θ0 nil α P Θ1 ->
-    a_consis Θ0 (pskl_var_f α) P (pskl_var_f α) Θ1.
+    a_consis Θ0 (pskl_var_f α) P (pskl_var_f α) Θ1
+where "Θ ⊢ₐ[ P0 ] P ~ᴬ Q ⊣ Θ'" := (a_consis Θ P0 P Q Θ').
 
 (* [Θ0 ⊢ P ~ P0 ⊣ Θ1]: consistency when the join output is not used
    (paper abbreviation [aconsis{Θ0}{P}{P0}{Θ1}]). *)
@@ -621,7 +644,8 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_split__flex : forall Θ0 Θ1 α β γ,                   (* split[α̂] = β̂→γ̂ *)
     a_unify ((γ ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
       (ptyp_var_f α) (ptyp_arrow (ptyp_var_f β) (ptyp_var_f γ)) Θ1 ->
-    a_split Θ0 (pskl_var_f α) (pskl_var_f β) (pskl_var_f γ) Θ1.
+    a_split Θ0 (pskl_var_f α) (pskl_var_f β) (pskl_var_f γ) Θ1
+where "Θ ⊢ₐ[ N | m | P0 ] P ⊑ᴬ Q ⊣ Θ'" := (a_sub N m P0 Θ P Q Θ').
 
 (* Algorithmic type inference [Θ ⊢[m;P0] e ⦂ A ⊣ Θ'] (output [ptyp]) and
    skeleton inference [Θ ⊢[m;P0] e ⇨ P ⊣ Θ'] (output [pskl]) — paper
@@ -630,122 +654,116 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
    happens only at the soundness/completeness bridge). *)
 Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__unit : forall m Θ0 Θ1 P0 P,                        (* paper pilab Unit *)
-    a_sub a_sub_mode_sk m P0 Θ0 pskl_unit P Θ1 ->
-    a_pat m Θ0 P0 exp_unit P Θ1
+    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] pskl_unit ⊑ᴬ P ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ m ; P0 ] exp_unit ⇨ P ⊣ Θ1
 | a_pat__var : forall m Θ0 Θ1 P0 x P Q,         (* paper pilab Var, type-bound *)
     binds x (abind_var_typ P) Θ0 ->
-    a_sub a_sub_mode_sk m P0 Θ0 (ptyp_to_pskl P) Q Θ1 ->
-    a_pat m Θ0 P0 (exp_var_f x) Q Θ1
+    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl P) ⊑ᴬ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_var_f x) ⇨ Q ⊣ Θ1
 | a_pat__var_skl : forall m Θ0 Θ1 P0 x P Q,     (* paper pilab Var, skeleton-bound *)
     binds x (abind_var_skl P) Θ0 ->
-    a_sub a_sub_mode_sk m P0 Θ0 P Q Θ1 ->
-    a_pat m Θ0 P0 (exp_var_f x) Q Θ1
+    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] P ⊑ᴬ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_var_f x) ⇨ Q ⊣ Θ1
 | a_pat__anno : forall m Θ0 Θ1 P0 e A Q,                    (* paper pilab Anno *)
-    a_sub a_sub_mode_sk m P0 Θ0 (ptyp_to_pskl A) Q Θ1 ->
-    a_pat m Θ0 P0 (exp_anno e A) Q Θ1
+    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⊑ᴬ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_anno e A) ⇨ Q ⊣ Θ1
 | a_pat__freeze : forall Θ0 e Q Θ1,
-    a_pat mode_ti Θ0 pskl_hole e Q Θ1 ->
-    a_pat mode_tc Θ0 pskl_hole (exp_freeze e) Q Θ1
+    Θ0 ⊢ₐ[ mode_ti ; pskl_hole ] e ⇨ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] (exp_freeze e) ⇨ Q ⊣ Θ1
 | a_pat__abs : forall L m Θ0 Θ1 Θ2 P0 P Q0 e Q Ξ,          (* paper pilab Abs *)
     m <> mode_tc ->
     a_split Θ0 P0 P Q0 Θ1 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_pat (decr_mode m) ((x ~ abind_var_skl P) ++ Θ1) Q0
-         (open_exp_wrt_exp e (exp_var_f x)) Q
-         (Ξ ++ (x ~ abind_var_skl P) ++ Θ2)) ->
-    a_pat m Θ0 P0 (exp_abs e) (pskl_arrow P Q) (Ξ ++ Θ2)
+       ((x ~ abind_var_skl P) ++ Θ1) ⊢ₐ[ (decr_mode m) ; Q0 ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q ⊣ (Ξ ++ (x ~ abind_var_skl P) ++ Θ2)) ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_abs e) ⇨ (pskl_arrow P Q) ⊣ (Ξ ++ Θ2)
 | a_pat__abs_check : forall L Θ0 Θ1 e Q Ξ,                 (* paper pilab AbsCheck *)
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_pat mode_tc ((x ~ abind_var_skl pskl_hole) ++ Θ0) pskl_hole
-         (open_exp_wrt_exp e (exp_var_f x)) Q
-         (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1)) ->
-    a_pat mode_tc Θ0 pskl_hole (exp_abs e)
-      (pskl_tophole (pskl_arrow pskl_hole Q)) (Ξ ++ Θ1)
+       ((x ~ abind_var_skl pskl_hole) ++ Θ0) ⊢ₐ[ mode_tc ; pskl_hole ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q ⊣ (Ξ ++ (x ~ abind_var_skl pskl_hole) ++ Θ1)) ->
+    Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] (exp_abs e)
+      ⇨ (pskl_tophole (pskl_arrow pskl_hole Q)) ⊣ (Ξ ++ Θ1)
 | a_pat__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q0 A e Q Ξ,  (* paper pilab AbsAnno *)
     m <> mode_tc ->
     a_split Θ0 P0 P Q0 Θ1 ->
     a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_pat (decr_mode m) ((x ~ abind_var_typ A) ++ Θ2) Q0
-         (open_exp_wrt_exp e (exp_var_f x)) Q
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
-    a_pat m Θ0 P0 (exp_abs_anno A e) (pskl_arrow (ptyp_to_pskl A) Q) (Ξ ++ Θ3)
+       ((x ~ abind_var_typ A) ++ Θ2) ⊢ₐ[ (decr_mode m) ; Q0 ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_abs_anno A e) ⇨ (pskl_arrow (ptyp_to_pskl A) Q) ⊣ (Ξ ++ Θ3)
 | a_pat__abs_anno_check : forall L Θ0 Θ1 A e Q Ξ,
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_pat mode_tc ((x ~ abind_var_typ A) ++ Θ0) pskl_hole
-         (open_exp_wrt_exp e (exp_var_f x)) Q
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
-    a_pat mode_tc Θ0 pskl_hole (exp_abs_anno A e)
-      (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) (Ξ ++ Θ1)
+       ((x ~ abind_var_typ A) ++ Θ0) ⊢ₐ[ mode_tc ; pskl_hole ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
+    Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] (exp_abs_anno A e)
+      ⇨ (pskl_tophole (pskl_arrow (ptyp_to_pskl A) Q)) ⊣ (Ξ ++ Θ1)
 (* Paper [\pilab{App}] (algorithmic.tex:657): the function [e1] is
    SKELETON-inferred (not type-inferred), so [a_pat] only calls [a_pat] —
    [a_pat] is self-contained, NOT mutual with [a_typing] (F20 fix: the previous
    encoding copied the type-inference [\tilab{App}], calling [a_typing] with a
    spurious third premise and an unconstrained output [A2]). *)
 | a_pat__app : forall m Θ0 Θ1 Θ2 P0 Q0 P Q e1 e2,
-    a_pat mode_tc Θ0 pskl_hole e2 P0 Θ1 ->
-    a_pat (mode_fn m) Θ1 (pskl_arrow P0 Q0) e1 (pskl_arrow P Q) Θ2 ->
-    a_pat m Θ0 Q0 (exp_app e1 e2) Q Θ2.
+    Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] e2 ⇨ P0 ⊣ Θ1 ->
+    Θ1 ⊢ₐ[ (mode_fn m) ; (pskl_arrow P0 Q0) ] e1 ⇨ (pskl_arrow P Q) ⊣ Θ2 ->
+    Θ0 ⊢ₐ[ m ; Q0 ] (exp_app e1 e2) ⇨ Q ⊣ Θ2
+where "Θ ⊢ₐ[ m ; P0 ] e ⇨ Q ⊣ Θ'" := (a_pat m Θ P0 e Q Θ').
 
 (* Algorithmic type inference (paper fig:alg-type-inference); uses
    [a_pat] in the App case. *)
 Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
 | a_typing__unit : forall m Θ0 P0 A Θ1,
-    a_sub a_sub_mode_ty m P0 Θ0 pskl_unit (ptyp_to_pskl A) Θ1 ->
-    a_typing m Θ0 P0 exp_unit A Θ1
+    Θ0 ⊢ₐ[ a_sub_mode_ty | m | P0 ] pskl_unit ⊑ᴬ (ptyp_to_pskl A) ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ m ; P0 ] exp_unit ⦂ A ⊣ Θ1
 | a_typing__var : forall m Θ0 P0 x A B Θ1,
     binds x (abind_var_typ A) Θ0 ->
-    a_sub a_sub_mode_ty m P0 Θ0 (ptyp_to_pskl A) (ptyp_to_pskl B) Θ1 ->
-    a_typing m Θ0 P0 (exp_var_f x) B Θ1
+    Θ0 ⊢ₐ[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⊑ᴬ (ptyp_to_pskl B) ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_var_f x) ⦂ B ⊣ Θ1
 | a_typing__anno : forall m Θ0 P0 e A B Θ1 Θ2,
-    a_typing mode_tc Θ0 (ptyp_to_pskl A) e A Θ1 ->
-    a_sub a_sub_mode_ty m P0 Θ1 (ptyp_to_pskl A) (ptyp_to_pskl B) Θ2 ->
-    a_typing m Θ0 P0 (exp_anno e A) B Θ2
+    Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A) ] e ⦂ A ⊣ Θ1 ->
+    Θ1 ⊢ₐ[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⊑ᴬ (ptyp_to_pskl B) ⊣ Θ2 ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_anno e A) ⦂ B ⊣ Θ2
 | a_typing__freeze : forall Θ0 P0 e A B Θ1 Θ2,
-    a_typing mode_ti Θ0 pskl_hole e B Θ1 ->
+    Θ0 ⊢ₐ[ mode_ti ; pskl_hole ] e ⦂ B ⊣ Θ1 ->
     a_consis_chk Θ1 (ptyp_to_pskl B) (ptyp_to_pskl A) Θ2 ->
-    a_typing mode_tc Θ0 P0 (exp_freeze e) A Θ2
+    Θ0 ⊢ₐ[ mode_tc ; P0 ] (exp_freeze e) ⦂ A ⊣ Θ2
 | a_typing__abs : forall L m Θ0 Θ1 Θ2 P0 P Q αs A e B Ξ,
     m <> mode_tc ->
     a_split Θ0 P0 P Q Θ1 ->
     a_guess_mono Θ1 P αs A ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ αs ++ Θ1) Q
-         (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    a_typing m Θ0 P0 (exp_abs e) (ptyp_arrow A B) (Ξ ++ Θ2)
+       ((x ~ abind_var_typ A) ++ αs ++ Θ1) ⊢ₐ[ (decr_mode m) ; Q ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_abs e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ2)
 | a_typing__abs_anno : forall L m Θ0 Θ1 Θ2 Θ3 P0 P Q A e B Ξ,
     m <> mode_tc ->
     a_split Θ0 P0 P Q Θ1 ->
     a_consis_chk Θ1 (ptyp_to_pskl A) P Θ2 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_typing (decr_mode m) ((x ~ abind_var_typ A) ++ Θ2) Q
-         (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
-    a_typing m Θ0 P0 (exp_abs_anno A e) (ptyp_arrow A B) (Ξ ++ Θ3)
+       ((x ~ abind_var_typ A) ++ Θ2) ⊢ₐ[ (decr_mode m) ; Q ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3)) ->
+    Θ0 ⊢ₐ[ m ; P0 ] (exp_abs_anno A e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ3)
 | a_typing__abs_check : forall L Θ0 Θ1 A e B Ξ,
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_typing mode_tc ((x ~ abind_var_typ A) ++ Θ0) pskl_hole
-         (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
-    a_typing mode_tc Θ0 pskl_hole (exp_abs e) (ptyp_arrow A B) (Ξ ++ Θ1)
+       ((x ~ abind_var_typ A) ++ Θ0) ⊢ₐ[ mode_tc ; pskl_hole ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ1)) ->
+    Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] (exp_abs e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ1)
 | a_typing__abs_anno_check : forall L Θ0 Θ1 Θ2 A e B Ξ,
     a_consis_chk Θ0 (ptyp_to_pskl A) (ptyp_to_pskl A) Θ1 ->
     a_suffix Ξ ->
     (forall x, x `notin` L ->
-       a_typing mode_tc ((x ~ abind_var_typ A) ++ Θ1) pskl_hole
-         (open_exp_wrt_exp e (exp_var_f x)) B
-         (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
-    a_typing mode_tc Θ0 pskl_hole (exp_abs_anno A e) (ptyp_arrow A B) (Ξ ++ Θ2)
+       ((x ~ abind_var_typ A) ++ Θ1) ⊢ₐ[ mode_tc ; pskl_hole ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2)) ->
+    Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] (exp_abs_anno A e) ⦂ (ptyp_arrow A B) ⊣ (Ξ ++ Θ2)
 | a_typing__app : forall m Θ0 Θ1 Θ2 Θ3 P Q A A' B e1 e2,
-    a_pat mode_tc Θ0 pskl_hole e2 P Θ1 ->
-    a_typing (mode_fn m) Θ1 (pskl_arrow P Q) e1 (ptyp_arrow A B) Θ2 ->
-    a_typing mode_tc Θ2 (ptyp_to_pskl A) e2 A' Θ3 ->
-    a_typing m Θ0 Q (exp_app e1 e2) B Θ3.
+    Θ0 ⊢ₐ[ mode_tc ; pskl_hole ] e2 ⇨ P ⊣ Θ1 ->
+    Θ1 ⊢ₐ[ (mode_fn m) ; (pskl_arrow P Q) ] e1 ⦂ (ptyp_arrow A B) ⊣ Θ2 ->
+    Θ2 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A) ] e2 ⦂ A' ⊣ Θ3 ->
+    Θ0 ⊢ₐ[ m ; Q ] (exp_app e1 e2) ⦂ B ⊣ Θ3
+where "Θ ⊢ₐ[ m ; P0 ] e ⦂ B ⊣ Θ'" := (a_typing m Θ P0 e B Θ').
