@@ -35,6 +35,31 @@ Proof.
     try (rewrite IHP1, IHP2; reflexivity).
 Qed.
 
+Lemma bskl_to_pskl_pskl_to_bskl_inh : forall P,
+    bskl_to_pskl (pskl_to_bskl_inh P) = P.
+Proof.
+  induction P; simpl; try reflexivity;
+    try (rewrite IHP; reflexivity);
+    try (rewrite IHP1, IHP2; reflexivity).
+Qed.
+
+(** [btyp_to_ptyp] is a left inverse of the two paintings. *)
+Lemma btyp_to_ptyp_ptyp_to_btyp_syn : forall A,
+    btyp_to_ptyp (ptyp_to_btyp_syn A) = A.
+Proof.
+  induction A; simpl; try reflexivity;
+    try (rewrite IHA; reflexivity);
+    try (rewrite IHA1, IHA2; reflexivity).
+Qed.
+
+Lemma btyp_to_ptyp_ptyp_to_btyp_inh : forall A,
+    btyp_to_ptyp (ptyp_to_btyp_inh A) = A.
+Proof.
+  induction A; simpl; try reflexivity;
+    try (rewrite IHA; reflexivity);
+    try (rewrite IHA1, IHA2; reflexivity).
+Qed.
+
 (** [ptyp_to_pskl] commutes with (recursive) opening. *)
 Lemma ptyp_to_pskl_open_rec : forall A V k,
     ptyp_to_pskl (open_ptyp_wrt_ptyp_rec k V A) =
