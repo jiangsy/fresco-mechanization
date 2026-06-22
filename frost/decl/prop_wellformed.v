@@ -243,6 +243,420 @@ Proof.
     apply d_wf_pskl_cons; first [ assumption | apply IHHwf; assumption ].
 Qed.
 
+(** [d_wf_ptyp] local-closure / scoping projections.  (These are also
+    proven in prop_skeleton.v, which sits ABOVE this file in the dependency
+    order; restated here so the wf lemmas below can use them.) *)
+Lemma d_wf_ptyp_lc_loc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
+Proof.
+  intros Γ A H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh X. apply (lc_ptyp_all_exists X). apply H0. auto.
+Qed.
+
+Lemma d_wf_ptyp_ftvar : forall Γ A,
+    d_wf_ptyp Γ A ->
+    forall X, X `in` ftvar_in_ptyp A -> binds X dbind_tvar Γ.
+Proof.
+  intros Γ A H. induction H; intros Y HY; simpl in HY.
+  - fsetdec.
+  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
+  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY]; auto.
+  - pick fresh X for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f X))).
+    { eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower. eassumption. }
+    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
+Qed.
+
+(** * Well-formedness of bidirectional / unresolved types from lc + scoping.
+
+    Modelled exactly on [d_wf_pskl_of_ptyp] (prop_skeleton.v): induct on
+    local-closure; the binder cases use [inst_cofinites_for] then an
+    open-commute step and the lngen upper bound on free vars under opening. *)
+
+Lemma d_wf_btyp_of_lc_ftvar : forall B Γ,
+    lc_btyp B ->
+    (forall X, X `in` ftvar_in_btyp B -> binds X dbind_tvar Γ) ->
+    d_wf_btyp Γ B.
+Proof.
+  intros B Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov; simpl in *.
+  - apply d_wf_btyp__unit.
+  - apply d_wf_btyp__var. apply Hcov. simpl. fsetdec.
+  - apply d_wf_btyp__arrow;
+      [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; fsetdec.
+  - inst_cofinites_for d_wf_btyp__all_syn. intros X HX. apply H0.
+    intros Y HY. apply ftvar_in_btyp_open_btyp_wrt_btyp_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst.
+      apply binds_app_2. apply binds_one_3; reflexivity.
+    + apply binds_app_3. apply Hcov; assumption.
+  - inst_cofinites_for d_wf_btyp__all_inh. intros X HX. apply H0.
+    intros Y HY. apply ftvar_in_btyp_open_btyp_wrt_btyp_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst.
+      apply binds_app_2. apply binds_one_3; reflexivity.
+    + apply binds_app_3. apply Hcov; assumption.
+Qed.
+
+Lemma d_wf_utyp_of_lc_ftvar : forall C Γ,
+    lc_utyp C ->
+    (forall X, X `in` ftvar_in_utyp C -> binds X dbind_tvar Γ) ->
+    d_wf_utyp Γ C.
+Proof.
+  intros C Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov; simpl in *.
+  - apply d_wf_utyp__unit.
+  - apply d_wf_utyp__var. apply Hcov. simpl. fsetdec.
+  - apply d_wf_utyp__arrow;
+      [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; fsetdec.
+  - inst_cofinites_for d_wf_utyp__all_syn. intros X HX. apply H0.
+    intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst.
+      apply binds_app_2. apply binds_one_3; reflexivity.
+    + apply binds_app_3. apply Hcov; assumption.
+  - inst_cofinites_for d_wf_utyp__all_etag. intros X HX. apply H0.
+    intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst.
+      apply binds_app_2. apply binds_one_3; reflexivity.
+    + apply binds_app_3. apply Hcov; assumption.
+Qed.
+
+(** Conversely: a wf type is locally closed and its free vars are bound. *)
+
+Lemma d_wf_btyp_lc : forall Γ B, d_wf_btyp Γ B -> lc_btyp B.
+Proof.
+  intros Γ B H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh X. apply (lc_btyp_all_syn_exists X). apply H0. auto.
+  - pick fresh X. apply (lc_btyp_all_inh_exists X). apply H0. auto.
+Qed.
+
+Lemma d_wf_btyp_ftvar : forall Γ B,
+    d_wf_btyp Γ B ->
+    forall X, X `in` ftvar_in_btyp B -> binds X dbind_tvar Γ.
+Proof.
+  intros Γ B H. induction H; intros Y HY; simpl in HY.
+  - fsetdec.
+  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
+  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY]; auto.
+  - pick fresh X for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f X))).
+    { eapply ftvar_in_btyp_open_btyp_wrt_btyp_lower. eassumption. }
+    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
+  - pick fresh X for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f X))).
+    { eapply ftvar_in_btyp_open_btyp_wrt_btyp_lower. eassumption. }
+    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
+Qed.
+
+Lemma d_wf_utyp_lc : forall Γ C, d_wf_utyp Γ C -> lc_utyp C.
+Proof.
+  intros Γ C H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh X. apply (lc_utyp_all_syn_exists X). apply H0. auto.
+  - pick fresh X. apply (lc_utyp_all_etag_exists X). apply H0. auto.
+Qed.
+
+Lemma d_wf_utyp_ftvar : forall Γ C,
+    d_wf_utyp Γ C ->
+    forall X, X `in` ftvar_in_utyp C -> binds X dbind_tvar Γ.
+Proof.
+  intros Γ C H. induction H; intros Y HY; simpl in HY.
+  - fsetdec.
+  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
+  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY]; auto.
+  - pick fresh X for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X))).
+    { eapply ftvar_in_utyp_open_utyp_wrt_utyp_lower. eassumption. }
+    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
+  - pick fresh X for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X))).
+    { eapply ftvar_in_utyp_open_utyp_wrt_utyp_lower. eassumption. }
+    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
+Qed.
+
+(** * Painting preserves well-formedness.
+
+    Route via lc/ftvar: the paintings of a [ptyp] are lc whenever the
+    [ptyp] is, and they have exactly the same free tvars; then apply the
+    [_of_lc_ftvar] lemmas. *)
+
+Lemma lc_ptyp_to_btyp_syn : forall A, lc_ptyp A -> lc_btyp (ptyp_to_btyp_syn A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh X. apply (lc_btyp_all_syn_exists X).
+    specialize (H0 X). rewrite ptyp_to_btyp_syn_open in H0. simpl in H0. exact H0.
+Qed.
+
+Lemma lc_ptyp_to_btyp_inh : forall A, lc_ptyp A -> lc_btyp (ptyp_to_btyp_inh A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh X. apply (lc_btyp_all_inh_exists X).
+    specialize (H0 X). unfold open_btyp_wrt_btyp.
+    unfold open_ptyp_wrt_ptyp in H0.
+    rewrite ptyp_to_btyp_inh_open_rec in H0. simpl in H0. exact H0.
+Qed.
+
+Lemma lc_ptyp_to_utyp_syn : forall A, lc_ptyp A -> lc_utyp (ptyp_to_utyp_syn A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh X. apply (lc_utyp_all_syn_exists X).
+    specialize (H0 X). rewrite ptyp_to_utyp_syn_open in H0. simpl in H0. exact H0.
+Qed.
+
+Lemma ftvar_ptyp_to_btyp_syn : forall A,
+    ftvar_in_btyp (ptyp_to_btyp_syn A) = ftvar_in_ptyp A.
+Proof. induction A; simpl; try reflexivity; try (rewrite IHA1, IHA2); auto. Qed.
+
+Lemma ftvar_ptyp_to_btyp_inh : forall A,
+    ftvar_in_btyp (ptyp_to_btyp_inh A) = ftvar_in_ptyp A.
+Proof. induction A; simpl; try reflexivity; try (rewrite IHA1, IHA2); auto. Qed.
+
+Lemma ftvar_ptyp_to_utyp_syn : forall A,
+    ftvar_in_utyp (ptyp_to_utyp_syn A) = ftvar_in_ptyp A.
+Proof. induction A; simpl; try reflexivity; try (rewrite IHA1, IHA2); auto. Qed.
+
+Lemma d_wf_btyp_painting_syn : forall Γ A,
+    d_wf_ptyp Γ A -> d_wf_btyp Γ (ptyp_to_btyp_syn A).
+Proof.
+  intros Γ A H. apply d_wf_btyp_of_lc_ftvar.
+  - apply lc_ptyp_to_btyp_syn. eapply d_wf_ptyp_lc_loc; eassumption.
+  - rewrite ftvar_ptyp_to_btyp_syn. intros X HX. eapply d_wf_ptyp_ftvar; eassumption.
+Qed.
+
+Lemma d_wf_btyp_painting_inh : forall Γ A,
+    d_wf_ptyp Γ A -> d_wf_btyp Γ (ptyp_to_btyp_inh A).
+Proof.
+  intros Γ A H. apply d_wf_btyp_of_lc_ftvar.
+  - apply lc_ptyp_to_btyp_inh. eapply d_wf_ptyp_lc_loc; eassumption.
+  - rewrite ftvar_ptyp_to_btyp_inh. intros X HX. eapply d_wf_ptyp_ftvar; eassumption.
+Qed.
+
+Lemma d_wf_utyp_painting_syn : forall Γ A,
+    d_wf_ptyp Γ A -> d_wf_utyp Γ (ptyp_to_utyp_syn A).
+Proof.
+  intros Γ A H. apply d_wf_utyp_of_lc_ftvar.
+  - apply lc_ptyp_to_utyp_syn. eapply d_wf_ptyp_lc_loc; eassumption.
+  - rewrite ftvar_ptyp_to_utyp_syn. intros X HX. eapply d_wf_ptyp_ftvar; eassumption.
+Qed.
+
+(** A [ptyp] is lc whenever its inh painting is.  Route via [degree]:
+    the inh painting preserves binder structure exactly, so it preserves
+    [degree] at every level; then bridge degree 0 back to [lc_ptyp]. *)
+Lemma degree_btyp_inh_of_degree_ptyp : forall A k,
+    degree_ptyp_wrt_ptyp k A -> degree_btyp_wrt_btyp k (ptyp_to_btyp_inh A).
+Proof.
+  induction A; intros k H; simpl; inversion H; subst; constructor; auto.
+Qed.
+
+Lemma degree_ptyp_of_degree_btyp_inh : forall A k,
+    degree_btyp_wrt_btyp k (ptyp_to_btyp_inh A) -> degree_ptyp_wrt_ptyp k A.
+Proof.
+  induction A; intros k H; simpl in H; inversion H; subst; constructor; auto.
+Qed.
+
+Lemma lc_ptyp_of_lc_btyp_inh : forall A, lc_btyp (ptyp_to_btyp_inh A) -> lc_ptyp A.
+Proof.
+  intros A H. apply lc_ptyp_of_degree. apply degree_ptyp_of_degree_btyp_inh.
+  apply degree_btyp_wrt_btyp_of_lc_btyp. assumption.
+Qed.
+
+(** Inherited painting wf transfers to synthesised painting (same lc / ftvar). *)
+Lemma d_wf_btyp_inh_to_syn : forall A Γ,
+    d_wf_btyp Γ (ptyp_to_btyp_inh A) -> d_wf_btyp Γ (ptyp_to_btyp_syn A).
+Proof.
+  intros A Γ H. apply d_wf_btyp_of_lc_ftvar.
+  - apply lc_ptyp_to_btyp_syn. apply lc_ptyp_of_lc_btyp_inh.
+    eapply d_wf_btyp_lc; eassumption.
+  - rewrite ftvar_ptyp_to_btyp_syn. intros X HX.
+    eapply (d_wf_btyp_ftvar H). rewrite ftvar_ptyp_to_btyp_inh. assumption.
+Qed.
+
+(** [btyp_to_ptyp] (the erasing coercion) preserves free vars and reflects
+    local closure — lets the [AbsAnno]/[App] cases recover [Barg]'s wf from
+    its erasure's wf. *)
+Lemma ftvar_btyp_to_ptyp : forall B,
+    ftvar_in_ptyp (btyp_to_ptyp B) = ftvar_in_btyp B.
+Proof. induction B; simpl; try reflexivity; try (rewrite IHB1, IHB2); auto. Qed.
+
+Lemma degree_btyp_of_degree_ptyp_erase : forall B k,
+    degree_ptyp_wrt_ptyp k (btyp_to_ptyp B) -> degree_btyp_wrt_btyp k B.
+Proof.
+  induction B; intros k H; simpl in H; inversion H; subst; constructor; auto.
+Qed.
+
+Lemma d_wf_btyp_of_wf_ptyp_erase : forall Γ B,
+    d_wf_ptyp Γ (btyp_to_ptyp B) -> d_wf_btyp Γ B.
+Proof.
+  intros Γ B H. apply d_wf_btyp_of_lc_ftvar.
+  - apply lc_btyp_of_degree. apply degree_btyp_of_degree_ptyp_erase.
+    apply degree_ptyp_wrt_ptyp_of_lc_ptyp. eapply d_wf_ptyp_lc_loc; eassumption.
+  - intros X HX. eapply d_wf_ptyp_ftvar; [ eassumption | ].
+    rewrite ftvar_btyp_to_ptyp. assumption.
+Qed.
+
+(** * Single-binding strengthening for [d_wf_btyp].
+    A term binding ([dbind_typ] / [dbind_skl]) at the head of the context is
+    never a [dbind_tvar], so the body type's wf does not depend on it. *)
+Lemma d_wf_btyp_strengthen_head : forall x d Γ B,
+    d_wf_btyp ((x ~ d) ++ Γ) B -> d <> dbind_tvar -> d_wf_btyp Γ B.
+Proof.
+  intros x d Γ B H Hd.
+  apply d_wf_btyp_of_lc_ftvar.
+  - eapply d_wf_btyp_lc; eassumption.
+  - intros X HX. pose proof (d_wf_btyp_ftvar H HX) as Hb.
+    analyze_binds Hb; try (subst; contradiction).
+Qed.
+
+(** * Consistency / subtyping preserve well-formedness (utyp ⇒ btyp). *)
+
+Lemma d_consis_wf : forall Δ Γ C B,
+    Δ ⨟ Γ ⊨ C ≈ B -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
+Proof.
+  intros Δ Γ C B H. induction H; intros Hwf.
+  - apply d_wf_btyp__unit.
+  - apply d_wf_btyp__var. assumption.
+  - inversion Hwf; subst. apply d_wf_btyp__arrow; auto.
+  - (* forall_inh_tagged: utyp_all_etag ε C ≈ btyp_all_inh B *)
+    inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
+    intros X HX. apply H0; auto.
+  - (* forall_inh_untagged: utyp_all_syn C ≈ btyp_all_inh B *)
+    inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
+    intros X HX. apply H0; auto.
+  - (* forall_syn_tagged: utyp_all_etag ε C ≈ btyp_all_syn B *)
+    inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
+    intros X HX. apply H0; auto.
+  - (* forall_syn: utyp_all_syn C ≈ btyp_all_syn B *)
+    inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
+    intros X HX. apply H0; auto.
+Qed.
+
+(** Substituting a well-formed [ph] for a head tvar preserves [d_wf_utyp]. *)
+Lemma d_wf_utyp_subst_tvar : forall X Γ D ph,
+    d_wf_utyp ((X ~ dbind_tvar) ++ Γ) D ->
+    d_wf_utyp Γ ph ->
+    d_wf_utyp Γ (subst_utyp_in_utyp ph X D).
+Proof.
+  intros X Γ D ph HD Hph.
+  apply d_wf_utyp_of_lc_ftvar.
+  - apply subst_utyp_in_utyp_lc_utyp; [ eapply d_wf_utyp_lc; eassumption
+                                      | eapply d_wf_utyp_lc; eassumption ].
+  - intros Y HY. apply ftvar_in_utyp_subst_utyp_in_utyp_upper in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + eapply d_wf_utyp_ftvar; eassumption.
+    + assert (HYne : Y <> X).
+      { intro Heq. subst. eapply AtomSetImpl.remove_1; [ reflexivity | eassumption ]. }
+      apply AtomSetImpl.remove_3 in HY.
+      pose proof (d_wf_utyp_ftvar HD HY) as Hb. analyze_binds Hb.
+Qed.
+
+Lemma d_sub_wf : forall m Δ Γ C B,
+    Δ ⨟ Γ ⊢[ m ] C ⊑ B -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
+Proof.
+  intros m Δ Γ C B H. induction H; intros Hwf.
+  - (* infer *) eapply d_consis_wf; eassumption.
+  - (* check *) eapply d_consis_wf; eassumption.
+  - (* forall_r: C ⊑ btyp_all_inh B *)
+    inst_cofinites_for d_wf_btyp__all_inh. intros X HX.
+    apply H0; auto. apply d_wf_utyp_weakening with (Γ1 := nil). simpl. assumption.
+  - (* arg: utyp_arrow C1 C2 ⊑ btyp_arrow B1 B2 *)
+    inversion Hwf; subst. apply d_wf_btyp__arrow.
+    + eapply d_consis_wf; eassumption.
+    + apply IHd_sub; assumption.
+  - (* forall_l_tagged: utyp_all_etag ε C ⊑ B; recurse on opened body *)
+    inversion Hwf; subst. apply IHd_sub.
+    pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C).
+    rewrite (subst_utyp_in_utyp_intro X) by auto.
+    apply d_wf_utyp_subst_tvar; auto.
+  - (* forall_l_untagged: utyp_all_syn C ⊑ B *)
+    inversion Hwf; subst. apply IHd_sub.
+    pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C).
+    rewrite (subst_utyp_in_utyp_intro X) by auto.
+    apply d_wf_utyp_subst_tvar; auto.
+Qed.
+
+(** For the [Sub] case: the subtyping LHS is [ptyp_to_utyp_syn] of the
+    btyp [B1]'s erasure.  Its wf follows from [B1]'s wf via lc/ftvar. *)
+Lemma lc_ptyp_btyp_to_ptyp : forall B, lc_btyp B -> lc_ptyp (btyp_to_ptyp B).
+Proof.
+  intros B H. apply lc_ptyp_of_degree.
+  (* degree of erasure equals degree of B (structure preserved) *)
+  assert (forall k, degree_btyp_wrt_btyp k B -> degree_ptyp_wrt_ptyp k (btyp_to_ptyp B)) as Hd.
+  { clear H. induction B; intros k Hn; simpl in *; inversion Hn; subst; constructor; auto. }
+  apply Hd. apply degree_btyp_wrt_btyp_of_lc_btyp. assumption.
+Qed.
+
+Lemma d_wf_utyp_painting_syn_btyp : forall Γ B,
+    d_wf_btyp Γ B -> d_wf_utyp Γ (ptyp_to_utyp_syn (btyp_to_ptyp B)).
+Proof.
+  intros Γ B H. apply d_wf_utyp_of_lc_ftvar.
+  - apply lc_ptyp_to_utyp_syn. apply lc_ptyp_btyp_to_ptyp.
+    eapply d_wf_btyp_lc; eassumption.
+  - rewrite ftvar_ptyp_to_utyp_syn. rewrite ftvar_btyp_to_ptyp.
+    intros X HX. eapply d_wf_btyp_ftvar; eassumption.
+Qed.
+
+(** * Typing preserves well-formedness of the synthesised/checked btyp.
+
+    Standalone (NOT mutual with [d_pat]): the App case's result type wf
+    comes from the FUNCTION premise via the IH + arrow inversion, never
+    from the [d_pat] premise. *)
+Lemma d_typing_wf_btyp : forall m Γ e B,
+    d_typing m Γ e B -> d_wf_denv Γ -> d_wf_btyp Γ B.
+Proof.
+  intros m Γ e B H. induction H; intros Hwf.
+  - (* unit *) apply d_wf_btyp__unit.
+  - (* var *) apply d_wf_btyp_painting_syn. eapply d_wf_denv_binds_typ; eassumption.
+  - (* anno *) apply d_wf_btyp_inh_to_syn. apply IHd_typing; assumption.
+  - (* sub *) eapply d_sub_wf; [ eassumption | ].
+    apply d_wf_utyp_painting_syn_btyp. apply IHd_typing; assumption.
+  - (* freeze *) apply IHd_typing; assumption.
+  - (* forall *) apply d_wf_btyp__all_inh with (L := L `union` dom Γ). intros X HX.
+    apply H1; auto. apply d_wf_denv__tvar; auto.
+  - (* abs *) apply d_wf_btyp__arrow.
+    + apply d_wf_btyp_painting_inh. assumption.
+    + pick fresh x for (L `union` dom Γ).
+      eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
+      * apply H2; auto. apply d_wf_denv__typ; auto.
+      * discriminate.
+  - (* abs_check *) apply d_wf_btyp__arrow.
+    + apply d_wf_btyp_painting_inh. assumption.
+    + pick fresh x for (L `union` dom Γ).
+      eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
+      * apply H1; auto. apply d_wf_denv__typ; auto.
+      * discriminate.
+  - (* abs_anno *) apply d_wf_btyp__arrow.
+    + apply d_wf_btyp_of_wf_ptyp_erase. rewrite H1. assumption.
+    + pick fresh x for (L `union` dom Γ).
+      eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
+      * apply H3; auto. apply d_wf_denv__typ; auto.
+      * discriminate.
+  - (* abs_anno_check *) apply d_wf_btyp__arrow.
+    + apply d_wf_btyp_of_wf_ptyp_erase. rewrite H0. assumption.
+    + pick fresh x for (L `union` dom Γ).
+      eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
+      * apply H2; auto. apply d_wf_denv__typ; auto.
+      * discriminate.
+  - (* app: result B from e1 : btyp_arrow Barg B *)
+    assert (Harr : d_wf_btyp Γ (btyp_arrow Barg B)) by (apply IHd_typing1; assumption).
+    inversion Harr; subst. assumption.
+Qed.
+
 Lemma d_typing_pat_preserves_wf :
   (forall m Γ e B, d_typing m Γ e B -> d_wf_btyp Γ B) /\
   (forall m Γ e Q, d_pat m Γ e Q -> d_wf_pskl nil Γ Q).
