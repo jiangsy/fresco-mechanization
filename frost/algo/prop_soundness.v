@@ -80,7 +80,8 @@ Theorem a_pat_sound : forall M Θ0 P0 e P Θ1,
 Proof.
   intros M Θ0 P0 e P Θ1 H. induction H.
   - (* Unit *) admit.
-  - (* Var *) admit.
+  - (* Var (type-bound) *) admit.
+  - (* Var (skeleton-bound) *) admit.
   - (* Anno *) admit.
   - (* Freeze *) admit.
   - (* Abs *) admit.
