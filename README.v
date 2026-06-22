@@ -5,6 +5,7 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.decl.prop_skeleton.
+Require Import src.frost.decl.prop_safety.
 Require Import src.frost.decl.prop_stability.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_question.
