@@ -2376,6 +2376,186 @@ Proof.
       * simpl. apply ghost_of__tophole. exact Hg2.
 Qed.
 
+(** [d_wf_ptyp] from local closure + scoping (the [ptyp] analogue of
+    [d_wf_pskl_of_ptyp]); and the painting inversion needed by the Anno case. *)
+Lemma d_wf_ptyp_of_lc_ftvar : forall A Γ,
+    lc_ptyp A ->
+    (forall X, X `in` ftvar_in_ptyp A -> binds X dbind_tvar Γ) ->
+    d_wf_ptyp Γ A.
+Proof.
+  intros A Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov.
+  - apply d_wf_ptyp__unit.
+  - apply d_wf_ptyp__var. apply Hcov. simpl. fsetdec.
+  - apply d_wf_ptyp__arrow; [ apply IHHlc1 | apply IHHlc2 ];
+      intros Y HY; apply Hcov; simpl; fsetdec.
+  - inst_cofinites_for d_wf_ptyp__all. intros X HX. apply H0. intros Y HY.
+    apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst. simpl_env. auto.
+    + apply binds_app_iff. right. apply Hcov. assumption.
+Qed.
+
+Lemma d_wf_ptyp_of_btyp_inh : forall A Γ,
+    d_wf_btyp Γ (ptyp_to_btyp_inh A) -> d_wf_ptyp Γ A.
+Proof.
+  intros A Γ H. apply d_wf_ptyp_of_lc_ftvar.
+  - apply lc_ptyp_of_lc_btyp_inh. eapply d_wf_btyp_lc; eassumption.
+  - intros X HX. eapply d_wf_btyp_ftvar; [ eassumption | ].
+    rewrite ftvar_ptyp_to_btyp_inh. assumption.
+Qed.
+
+(** * Skeleton determinism for synthesis (prerequisites for [d_pat_total]).
+    [d_consis] preserves the underlying [pskl]; a base term's [mode_ti] type is
+    therefore skeleton-determined (sub-[ti] only re-types to a consistent
+    variant, same skeleton). *)
+
+Lemma utyp_to_pskl_open_fvar : forall C X,
+    utyp_to_pskl (open_utyp_wrt_utyp C (utyp_var_f X)) =
+    open_pskl_wrt_pskl (utyp_to_pskl C) (pskl_var_f X).
+Proof.
+  intros. unfold open_utyp_wrt_utyp, open_pskl_wrt_pskl.
+  apply (utyp_to_pskl_open_rec C (utyp_var_f X) 0).
+Qed.
+
+Lemma btyp_to_ptyp_open_rec : forall B V k,
+    btyp_to_ptyp (open_btyp_wrt_btyp_rec k V B) =
+    open_ptyp_wrt_ptyp_rec k (btyp_to_ptyp V) (btyp_to_ptyp B).
+Proof.
+  intros B V. induction B; intros k; simpl; try reflexivity;
+    try (rewrite IHB; reflexivity); try (rewrite IHB1, IHB2; reflexivity).
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+Qed.
+
+Lemma btyp_to_ptyp_open : forall B X,
+    btyp_to_ptyp (open_btyp_wrt_btyp B (btyp_var_f X)) =
+    open_ptyp_wrt_ptyp (btyp_to_ptyp B) (ptyp_var_f X).
+Proof.
+  intros. unfold open_btyp_wrt_btyp, open_ptyp_wrt_ptyp.
+  apply (btyp_to_ptyp_open_rec B (btyp_var_f X) 0).
+Qed.
+
+Lemma d_consis_skel : forall Δ Γ C B,
+    d_consis Δ Γ C B -> utyp_to_pskl C = ptyp_to_pskl (btyp_to_ptyp B).
+Proof.
+  intros Δ Γ C B H. induction H; simpl; try reflexivity;
+    try (rewrite IHd_consis1, IHd_consis2; reflexivity).
+  all: f_equal;
+    pick fresh X for (L `union` ftvar_in_pskl (utyp_to_pskl C)
+                        `union` ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B)));
+    apply open_pskl_wrt_pskl_inj with (Xps1 := X); [ fsetdec | fsetdec | ];
+    rewrite <- utyp_to_pskl_open_fvar, <- ptyp_to_pskl_open, <- btyp_to_ptyp_open;
+    apply H0; fsetdec.
+Qed.
+
+(** A [mode_ti] derivation pins the skeleton by the term's head form. *)
+Lemma d_typing_ti_primary : forall Γ e B,
+    d_typing mode_ti Γ e B ->
+    match e with
+    | exp_unit => ptyp_to_pskl (btyp_to_ptyp B) = pskl_unit
+    | exp_var_f x => exists A, binds x (dbind_typ A) Γ
+                       /\ ptyp_to_pskl (btyp_to_ptyp B) = ptyp_to_pskl A
+    | exp_anno _ A => ptyp_to_pskl (btyp_to_ptyp B) = ptyp_to_pskl A
+    | _ => True
+    end.
+Proof.
+  intros Γ e B H. remember mode_ti as m eqn:Hm.
+  induction H; subst; try discriminate; simpl; try exact I; try reflexivity;
+    try (rewrite btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity).
+  1: ( match goal with Hb : binds _ (dbind_typ ?AA) _ |- exists _, _ =>
+         exists AA; split; [ assumption
+           | rewrite btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity ] end ).
+  match goal with Hsub : empty ⨟ _ ⊢[ mode_ti ] _ ⊑ _ |- _ =>
+    inversion Hsub; subst;
+    try (exfalso; match goal with Hne : ?mm <> ?mm |- _ =>
+                    apply Hne; reflexivity end) end.
+  specialize (IHd_typing eq_refl).
+  match goal with Hcs : empty ⨟ _ ⊨ _ ≈ _ |- _ => rename Hcs into Hc end.
+  apply d_consis_skel in Hc. rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hc.
+  destruct e; simpl in *; try exact I.
+  all: try solve [ rewrite <- Hc; assumption ].
+  all: destruct IHd_typing as [A0 [Hb2 Hsk]]; exists A0; split;
+    [ assumption | rewrite <- Hc; assumption ].
+Qed.
+
+(** Base-term [mode_ti] typing is skeleton-deterministic. *)
+Lemma d_typing_ti_skel_det : forall Γ e B1 B2,
+    uniq Γ -> is_base_term e ->
+    d_typing mode_ti Γ e B1 -> d_typing mode_ti Γ e B2 ->
+    ptyp_to_pskl (btyp_to_ptyp B1) = ptyp_to_pskl (btyp_to_ptyp B2).
+Proof.
+  intros Γ e B1 B2 Huniq Hbase H1 H2.
+  apply d_typing_ti_primary in H1. apply d_typing_ti_primary in H2.
+  destruct e; inversion Hbase; subst.
+  - rewrite H1, H2. reflexivity.
+  - destruct H1 as [A1 [Hb1 He1]]. destruct H2 as [A2 [Hb2 He2]].
+    assert (dbind_typ A1 = dbind_typ A2) by (eapply binds_unique; eauto).
+    inversion H; subst. rewrite He1, He2. reflexivity.
+  - rewrite H1, H2. reflexivity.
+Qed.
+
+(** ** Totality + safety of skeleton inference ([d_pat_total]).
+
+    The joint invariant carried by the induction (the paper's
+    "context-precision for skeleton inference", proofs.tex).  Per mode:
+    - [ti]: the inferred skeleton's [pskl] equals the type's [pskl] (synthesis
+      is skeleton-determined).
+    - [tc]: SAFETY — for every checking type [A], [inh{Q}] fills some colouring
+      of [A] (expression-based, the actual safety statement).
+    - [fn m']: the inferred skeleton is an arrow whose DOMAIN is forced to
+      [inh{skel arg}] (so [d_pat__app] can thread it), and whose codomain
+      [Qc] is [safe_skel] for the codomain type — recursively. *)
+
+Fixpoint safe_skel (Γ : list (atom * dbind)) (m : mode) (Q : bskl) (B : btyp)
+  : Prop :=
+  match m with
+  | mode_ti => bskl_to_pskl Q = ptyp_to_pskl (btyp_to_ptyp B)
+  | mode_tc =>
+      exists B', bskl_to_pskl B' = ptyp_to_pskl (btyp_to_ptyp B)
+                 /\ Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B'
+  | mode_fn m' =>
+      exists Barg B0 Qc,
+        B = btyp_arrow Barg B0
+        /\ Q = bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl (btyp_to_ptyp Barg))) Qc
+        /\ safe_skel Γ m' Qc B0
+  end.
+
+Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
+  : Prop :=
+  match m with
+  | mode_tc =>
+      exists Q, Γ ⊢[ mode_tc ] e ⇨ Q
+                /\ (forall A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
+                       exists B', bskl_to_pskl B' = ptyp_to_pskl A
+                         /\ Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
+  | _ => exists Q, Γ ⊢[ m ] e ⇨ Q /\ safe_skel Γ m Q B
+  end.
+
+Lemma d_pat_total : forall m Γ e B,
+    Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ -> gpat m Γ e B.
+Proof.
+  intros m Γ e B Hty. induction Hty; intros Hwf.
+  - (* unit *) exists bskl_unit. split.
+    + apply d_pat__unit.
+    + simpl. reflexivity.
+  - (* var *) eexists. split.
+    + apply d_pat__var with (d := dbind_typ A); [ assumption | reflexivity ].
+    + simpl. rewrite btyp_to_ptyp_ptyp_to_btyp_syn, bskl_to_pskl_pskl_to_bskl_syn.
+      reflexivity.
+  - (* anno *) eexists. split.
+    + apply d_pat__anno. apply d_wf_ptyp_of_btyp_inh.
+      eapply d_typing_wf_btyp; eassumption.
+    + simpl. rewrite btyp_to_ptyp_ptyp_to_btyp_syn, bskl_to_pskl_pskl_to_bskl_syn.
+      reflexivity.
+  - (* sub *) admit.
+  - (* freeze *) admit.
+  - (* forall *) admit.
+  - (* abs *) admit.
+  - (* abs_check *) admit.
+  - (* abs_anno *) admit.
+  - (* abs_anno_check *) admit.
+  - (* app *) admit.
+Admitted.
+
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
     *safe* — it fills *every* checking type [A].
