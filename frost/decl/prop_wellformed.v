@@ -214,6 +214,35 @@ Qed.
     intentionally stated over the latest categories. *)
 
 
+(** Single-binding weakening (specialisations of the general weakening). *)
+Lemma d_wf_ptyp_cons : forall x d Γ A,
+    d_wf_ptyp Γ A -> d_wf_ptyp ((x ~ d) ++ Γ) A.
+Proof. intros. apply (d_wf_ptyp_weakening nil (x ~ d) Γ). simpl. auto. Qed.
+
+Lemma d_wf_pskl_cons : forall x d Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P -> Ψ ⨟ ((x ~ d) ++ Γ) ⊢ₚₛ P.
+Proof. intros. apply (d_wf_pskl_weakening nil (x ~ d) Γ). simpl. auto. Qed.
+
+(** Bindings recorded in a well-formed context are well-formed there (the
+    binding's type/skeleton is wf in the prefix, weaken to the whole context). *)
+Lemma d_wf_denv_binds_typ : forall x A Γ,
+    d_wf_denv Γ -> binds x (dbind_typ A) Γ -> d_wf_ptyp Γ A.
+Proof.
+  intros x A Γ Hwf. induction Hwf; intros Hb; try solve [ inversion Hb ];
+    analyze_binds Hb;
+    try (match goal with HV : dbind_typ _ = dbind_typ _ |- _ => inversion HV; subst end);
+    apply d_wf_ptyp_cons; first [ assumption | apply IHHwf; assumption ].
+Qed.
+
+Lemma d_wf_denv_binds_skl : forall x P Γ,
+    d_wf_denv Γ -> binds x (dbind_skl P) Γ -> nil ⨟ Γ ⊢ₚₛ P.
+Proof.
+  intros x P Γ Hwf. induction Hwf; intros Hb; try solve [ inversion Hb ];
+    analyze_binds Hb;
+    try (match goal with HV : dbind_skl _ = dbind_skl _ |- _ => inversion HV; subst end);
+    apply d_wf_pskl_cons; first [ assumption | apply IHHwf; assumption ].
+Qed.
+
 Lemma d_typing_pat_preserves_wf :
   (forall m Γ e B, d_typing m Γ e B -> d_wf_btyp Γ B) /\
   (forall m Γ e Q, d_pat m Γ e Q -> d_wf_pskl nil Γ Q).
