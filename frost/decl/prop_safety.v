@@ -189,7 +189,13 @@ Proof.
         -- apply d_wf_ptyp_of_btyp_inh. eapply d_typing_wf_btyp; eauto.
         -- exact (d_typing_base_principal_sub Hwf H Hty HA).
     + (* fn *) admit.
-  - (* freeze *) admit.
+  - (* freeze *) destruct (IHHty Hwf) as [Q [HQ Hsafe]].
+    exists Q. split.
+    + apply d_pat__freeze. exact HQ.
+    + intros A HA. inversion HA; subst;
+        try (match goal with Hb : is_base_term (exp_freeze _) |- _ => inversion Hb end);
+        try (match goal with Hv : is_value (exp_freeze _) |- _ => inversion Hv end);
+        apply Hsafe; assumption.
   - (* forall *) admit.
   - (* abs *) admit.
   - (* abs_check *) admit.
