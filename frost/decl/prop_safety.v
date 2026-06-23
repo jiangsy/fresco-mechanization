@@ -21,6 +21,39 @@ Require Import src.frost.decl.prop_stability.
 
 Set Implicit Arguments.
 
+(** * Context precision (declarative analog of the paper's [⪯ctx]).
+    [Γ'] refines [Γ] if it is [Γ] with some term-bindings [x:typ A] replaced by
+    the most-general skeleton binding [x:□].  This is what an [abs] in CHECK mode
+    does to the body's context, and is the keystone for the abstraction cases. *)
+Inductive dbind_refines : dbind -> dbind -> Prop :=
+| dbr_refl : forall d, dbind_refines d d
+| dbr_typ_hole : forall A, dbind_refines (dbind_skl pskl_hole) (dbind_typ A).
+
+Inductive ctx_refines : list (atom * dbind) -> list (atom * dbind) -> Prop :=
+| ctxr_nil : ctx_refines nil nil
+| ctxr_cons : forall x d' d Γ' Γ,
+    dbind_refines d' d -> ctx_refines Γ' Γ ->
+    ctx_refines ((x ~ d') ++ Γ') ((x ~ d) ++ Γ).
+
+Lemma ctx_refines_refl : forall Γ, ctx_refines Γ Γ.
+Proof.
+  induction Γ as [ | [x d] Γ IH ]; [ apply ctxr_nil | ].
+  apply ctxr_cons; [ apply dbr_refl | exact IH ].
+Qed.
+
+(** [ctx_refines] preserves [dom] and tvar bindings. *)
+Lemma ctx_refines_dom : forall Γ' Γ, ctx_refines Γ' Γ -> dom Γ' [=] dom Γ.
+Proof.
+  intros Γ' Γ H. induction H; simpl; [ fsetdec | fsetdec ].
+Qed.
+
+Lemma ctx_refines_binds_tvar : forall Γ' Γ X,
+    ctx_refines Γ' Γ -> binds X dbind_tvar Γ -> binds X dbind_tvar Γ'.
+Proof.
+  intros Γ' Γ X H. induction H; intros Hb; [ assumption | ].
+  analyze_binds Hb; try (inversion H; subst); auto.
+Qed.
+
 (** A base term's [mode_ti] type is synthesised ([is_styp]). *)
 Lemma d_typing_ti_base_is_styp : forall Γ e B,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> is_styp B.
