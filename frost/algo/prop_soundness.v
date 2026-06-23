@@ -19,17 +19,17 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_question.
 Require Import src.frost.algo.prop_lemmas.
-Require Import src.frost.algo.qnotations.
 
 Set Implicit Arguments.
 
-(* Algorithmic judgments are written with the [a{{ … }}] qualified
-   notation (paper algorithmic.tex); the declarative readings live inside
-   the opaque [*_solution] predicates ([def_question.v]). *)
+(* Algorithmic judgments are written with the [⊢ₐ[ … ]] notation
+   ([algo/def_extra.v], paper algorithmic.tex with the [ₐ]-subscripted
+   turnstile); the declarative readings live inside the opaque [*_solution]
+   predicates ([def_question.v]). *)
 
 (* Soundness of consistency (paper Lemma: Soundness of consistency). *)
 Theorem a_consis_sound : forall Θ0 P0 P Q Θ1,
-    a{{ Θ0 ⊢[ P0 ] P ~ᴬ Q ⊣ Θ1 }} ->
+    Θ0 ⊢ₐ[ P0 ] P ~ᴬ Q ⊣ Θ1 ->
     exists θ1, a_consis_solution Θ0 P0 P θ1 Θ1 Q.
 Proof. Admitted.
 
@@ -40,7 +40,7 @@ Proof. Admitted.
    skeleton subtyping [d_pat_sub] under [⌊Θ₁⌋], and (3) discharge the
    inherited-refinement side condition [a_fillsyn]. *)
 Theorem a_sub_sound : forall NM M P0 Θ0 P Q Θ1,
-    a{{ Θ0 ⊢[ NM | M | P0 ] P ⊑ᴬ Q ⊣ Θ1 }} ->
+    Θ0 ⊢ₐ[ NM | M | P0 ] P ⊑ᴬ Q ⊣ Θ1 ->
     exists θ1, a_sub_solution M Θ0 P0 P θ1 Θ1 Q.
 Proof.
   intros NM M P0 Θ0 P Q Θ1 Hsub.
@@ -69,14 +69,57 @@ Proof.
     admit.
 Admitted.
 
-(* Soundness of skeleton inference (paper Theorem). *)
+(* Soundness of SKELETON inference (paper Theorem, proofs.tex:1421-1702).
+   SCAFFOLDING.  [a_pat] is SELF-CONTAINED (paper [\pilab{App}] skeleton-infers
+   the function — [a_pat] only calls [a_pat], F20), so induction on [a_pat]
+   alone.  Driven by subtyping / consistency soundness ([a_sub_sound] /
+   [a_consis_sound], the "subtyping admit") + the structural lemmas — admitted. *)
 Theorem a_pat_sound : forall M Θ0 P0 e P Θ1,
-    a{{ Θ0 ⊢[ M ; P0 ] e ⇨ P ⊣ Θ1 }} ->
+    Θ0 ⊢ₐ[ M ; P0 ] e ⇨ P ⊣ Θ1 ->
     exists θ1, a_pat_solution M Θ0 P0 e θ1 Θ1 P.
-Proof. Admitted.
+Proof.
+  intros M Θ0 P0 e P Θ1 H. induction H.
+  - (* Unit *) admit.
+  - (* Var (type-bound) *) admit.
+  - (* Var (skeleton-bound) *) admit.
+  - (* Anno *) admit.
+  - (* Freeze *) admit.
+  - (* Abs *) admit.
+  - (* AbsCheck *) admit.
+  - (* AbsAnno *) admit.
+  - (* AbsAnnoCheck *) admit.
+  - (* App: BOTH premises are [a_pat] (skeleton-infer arg + function); compose
+       their IHs (no [a_typing] — see F20). *)
+    admit.
+Admitted.
 
-(* Soundness of type inference (paper Theorem: Soundness of type inference). *)
+(* Soundness of TYPE inference (paper Theorem, proofs.tex:175-593).
+   SCAFFOLDING.  Induction on [a_typing]; the App case uses [a_pat_sound] for
+   the argument-skeleton premise (the only cross-judgement dependency).  Per
+   WT's paper proofs, driven by subtyping / consistency soundness, stability,
+   splitting-refines and identity increase — admitted. *)
 Theorem a_typing_sound : forall M Θ0 P e A Θ1,
-    a{{ Θ0 ⊢[ M ; P ] e ⦂ A ⊣ Θ1 }} ->
+    Θ0 ⊢ₐ[ M ; P ] e ⦂ A ⊣ Θ1 ->
     exists θ1, a_typing_solution M Θ0 P e θ1 Θ1 A.
-Proof. Admitted.
+Proof.
+  intros M Θ0 P e A Θ1 H. induction H.
+  - (* Unit: identity increase; declarative Unit + subtyping soundness; fillsyn. *)
+    admit.
+  - (* Var: declarative Var + subtyping soundness on the looked-up A. *)
+    admit.
+  - (* Anno: IH on the annotation check (tc) + subtyping soundness. *)
+    admit.
+  - (* Freeze: IH (ti) + consistency soundness (the join). *)
+    admit.
+  - (* Abs (M≠TC): split P0, guessMono, body IH; splitting-refines for fillsyn. *)
+    admit.
+  - (* AbsAnno (M≠TC): split + domain consistency soundness + body IH. *)
+    admit.
+  - (* AbsCheck (TC): check-mode λ under the inherited skeleton; body IH. *)
+    admit.
+  - (* AbsAnnoCheck (TC): domain consistency soundness + body IH. *)
+    admit.
+  - (* App: a_pat_sound (argument skeleton) + a_typing IH (function) +
+       a_typing IH (argument re-check); compose via refinement + stability. *)
+    admit.
+Admitted.

@@ -77,11 +77,12 @@ Definition is_id_msubst (θ : metasubst) : Prop :=
   Forall is_id_entry θ.
 
 (* Type equivalence under an algorithmic context, [Θ ⊢ τ ≡ τ'] in the
-   paper.  PLACEHOLDER: definitional equality up to solved flexible
-   variables; for the scaffolding it is plain syntactic equality (the
-   algorithms always produce identity metasubstitutions, so the two
-   coincide on the cases we need).  Replace with the real definitional
-   equivalence when the metatheory needs it. *)
+   paper.  Reflexive — definitional equality up to solved flexible
+   variables; the algorithms always produce identity metasubstitutions, so
+   plain syntactic equality coincides on the cases needed.  FINDING F8: the
+   paper uses [\tyequiv] only in premises and never defines it formally
+   (treated as α-equivalence + solved-flex equality).  Kept reflexive as our
+   documented reading pending a paper definition. *)
 Reserved Notation "Θ ⊢ A ≡ᵗ B"
   (at level 75, A at level 74, B at level 74, no associativity).
 Inductive a_tyequiv : aenv -> ptyp -> ptyp -> Prop :=
@@ -178,6 +179,7 @@ Fixpoint aenv_to_denv (Θ : aenv) : list (atom * dbind) :=
   match Θ with
   | nil => nil
   | (x, abind_var_typ A) :: Θ' => (x ~ dbind_typ A) ++ aenv_to_denv Θ'
+  | (x, abind_var_skl P) :: Θ' => (x ~ dbind_skl P) ++ aenv_to_denv Θ'
   | (α, abind_tvar) :: Θ' => (α ~ dbind_tvar) ++ aenv_to_denv Θ'
   | (α, abind_flex_mono) :: Θ' => (α ~ dbind_tvar) ++ aenv_to_denv Θ'
   | (α, abind_flex_mono_def _) :: Θ' => (α ~ dbind_tvar) ++ aenv_to_denv Θ'

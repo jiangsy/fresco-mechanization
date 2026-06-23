@@ -43,11 +43,46 @@ Definition pskl_to_uskl_syn (P : pskl) : uskl := bskl_to_uskl (pskl_to_bskl_syn 
 (*  Placeholders for declarative notions not yet mechanised.              *)
 (* ===================================================================== *)
 
-(* Skeleton precision [Θ ⊢ P' ≼ P] (paper [\precise]).  A declarative
-   notion, so over the (coloured) [bskl]; the algorithmic [pskl] outputs
-   are painted before comparison.  PLACEHOLDER: reflexive. *)
+(* Skeleton precision [Θ ⊢ P ≼ Q] (paper [\precise], algorithmic.tex:854-922):
+   [P] has exactly [Q]'s quantifiers but may have more universal ghosts and
+   fewer monotypes.  Over the (coloured) [bskl]; algorithmic [pskl] outputs
+   are painted (syn) before comparison.  Flex vars [α̂] are [bskl_var_f]
+   distinguished by their [Θ]-binding.  ([□ ≼ π] "[π] a monotype" is read as
+   [guarded_bskl] — head-monotype — since there is no [bskl] monotype
+   predicate; the [∀] rule uses the syn colour, matching [pskl_to_bskl_syn].) *)
 Inductive a_precise : aenv -> bskl -> bskl -> Prop :=
-| a_precise__refl : forall Θ Q, a_precise Θ Q Q.
+| a_precise__unit : forall Θ,
+    a_precise Θ bskl_unit bskl_unit
+| a_precise__var : forall Θ X,                       (* rigid α / unsolved flex α̂ *)
+    a_precise Θ (bskl_var_f X) (bskl_var_f X)
+| a_precise__hole : forall Θ,
+    a_precise Θ bskl_hole bskl_hole
+| a_precise__hole_mono : forall Θ Q,                 (* □ ≼ π *)
+    guarded_bskl Q ->
+    a_precise Θ bskl_hole Q
+| a_precise__arrow : forall Θ P1 P2 Q1 Q2,
+    a_precise Θ P1 Q1 ->
+    a_precise Θ P2 Q2 ->
+    a_precise Θ (bskl_arrow P1 P2) (bskl_arrow Q1 Q2)
+| a_precise__all : forall L Θ P Q,
+    (forall α, α `notin` L ->
+       a_precise Θ (open_bskl_wrt_bskl P (bskl_var_f α))
+                   (open_bskl_wrt_bskl Q (bskl_var_f α))) ->
+    a_precise Θ (bskl_all_syn P) (bskl_all_syn Q)
+| a_precise__tophole_l : forall Θ P Q,               (* ⫯.P ≼ Q (more ghosts) *)
+    a_precise Θ P Q ->
+    a_precise Θ (bskl_tophole P) Q
+| a_precise__tophole : forall Θ P Q,                 (* ⫯.P ≼ ⫯.Q *)
+    a_precise Θ P Q ->
+    a_precise Θ (bskl_tophole P) (bskl_tophole Q)
+| a_precise__flex_l : forall Θ α τ Q,               (* Θ ∋ α̂:=τ,  τ ≼ Q *)
+    binds α (abind_flex_mono_def τ) Θ ->
+    a_precise Θ (pskl_to_bskl_syn (ptyp_to_pskl τ)) Q ->
+    a_precise Θ (bskl_var_f α) Q
+| a_precise__flex_r : forall Θ α τ P,               (* Θ ∋ α̂:=τ,  P ≼ τ *)
+    binds α (abind_flex_mono_def τ) Θ ->
+    a_precise Θ P (pskl_to_bskl_syn (ptyp_to_pskl τ)) ->
+    a_precise Θ P (bskl_var_f α).
 
 Notation "Θ ⊢ P ≼ Q" := (a_precise Θ P Q)
   (at level 75, P at level 74, Q at level 74, no associativity) : type_scope.
