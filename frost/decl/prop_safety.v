@@ -353,6 +353,28 @@ Proof.
         | exact Hcrt ].
 Qed.
 
+(** The [abs_check] fill (the paper's context-precision lemma for a checked
+    λ): given the body's safety over [(x0:□)::Γ'], the universal-ghost arrow
+    skeleton [⫯.(□ → inh{Qb})] fills every type the λ checks against — by
+    induction on that typing, peeling [∀]s ([tophole_fill]) down to the
+    function base ([tophole_remove] + [arrow] + body-safety + strengthening). *)
+Lemma abs_check_fill : forall e x0 Qb,
+    x0 `notin` fvar_in_exp e ->
+    forall Γ',
+    (forall Γt'' A'',
+        ctx_refines ((x0 ~ dbind_skl pskl_hole) ++ Γ') Γt'' -> d_wf_denv Γt'' ->
+        Γt'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x0)) ⦂ ptyp_to_btyp_inh A'' ->
+        exists B', bskl_to_pskl B' = ptyp_to_pskl A'' /\
+          ((x0 ~ dbind_skl pskl_hole) ++ Γ') ⨟ nil ⨟ nil ⊢ᵣ
+            (pskl_to_bskl_inh (bskl_to_pskl Qb)) ⊳ B') ->
+    forall Γt A',
+      ctx_refines Γ' Γt -> d_wf_denv Γt ->
+      Γt ⊢[ mode_tc ] (exp_abs e) ⦂ (ptyp_to_btyp_inh A') ->
+      exists B', bskl_to_pskl B' = ptyp_to_pskl A' /\
+        Γ' ⨟ nil ⨟ nil ⊢ᵣ
+          (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) ⊳ B'.
+Admitted.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
@@ -377,7 +399,27 @@ Proof.
       eapply Hsafe; [ exact Hcrt | exact Hwft | eassumption ].
   - (* forall *) admit.
   - (* abs *) admit.
-  - (* abs_check *) admit.
+  - (* abs_check *)
+    (* H : Γ ⊢ₚ A ; the body premise + its IH (the one carrying [d_wf_denv]). *)
+    pick fresh x0 for (L `union` dom Γ `union` dom Γ' `union` fvar_in_exp e).
+    assert (Hwf0 : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ))
+      by (apply d_wf_denv__typ; [ exact Hwf | auto | exact H ]).
+    destruct (H1 x0 ltac:(fsetdec) Hwf0 ((x0 ~ dbind_skl pskl_hole) ++ Γ')
+                 (@ctxr_cons x0 (dbind_skl pskl_hole) (dbind_typ A) Γ' Γ
+                    (dbr_typ_hole A) Hcr)) as [Qb [HQb Hsafe_b]].
+    exists (bskl_tophole (bskl_arrow bskl_hole Qb)). split.
+    + (* inference: synthesise a uniform body skeleton via d_pat_rename *)
+      apply d_pat__abs_check with (L := L `union` dom Γ' `union` {{x0}} `union` fvar_in_exp e).
+      intros x Hx.
+      rewrite (subst_exp_in_exp_intro x0 e (exp_var_f x)); [ | fsetdec ].
+      apply (@d_pat_rename mode_tc ((x0 ~ dbind_skl pskl_hole) ++ Γ')
+               (open_exp_wrt_exp e (exp_var_f x0)) Qb HQb
+               nil x0 x (dbind_skl pskl_hole) Γ');
+        [ reflexivity | discriminate | simpl; fsetdec ].
+    + (* fill — isolated as abs_check_fill (the nested induction) *)
+      intros Γt A' Hcrt Hwft HA'.
+      eapply (abs_check_fill (e := e) (x0 := x0));
+        [ fsetdec | exact Hsafe_b | exact Hcrt | exact Hwft | exact HA' ].
   - (* abs_anno *) admit.
   - (* abs_anno_check *) admit.
   - (* app *) admit.
