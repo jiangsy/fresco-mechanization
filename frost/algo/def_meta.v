@@ -192,3 +192,21 @@ Definition denv_of (Θ : aenv) : list (atom * dbind) := aenv_to_denv Θ.
 
 Notation "⌊ Θ ⌋" := (denv_of Θ)
   (at level 0, Θ at level 99) : type_scope.
+
+(* Embedding a (solved, metavar-free) declarative context as a fully-known
+   algorithmic context.  It is a section of the projection [aenv_to_denv]
+   ([aenv_to_denv (aenv_of_denv Γ) = Γ]) — the bridge for running the
+   algorithm starting from a declarative context. *)
+Fixpoint aenv_of_denv (Γ : list (atom * dbind)) : aenv :=
+  match Γ with
+  | nil => nil
+  | (x, dbind_typ A) :: Γ' => (x ~ abind_var_typ A) ++ aenv_of_denv Γ'
+  | (x, dbind_skl P) :: Γ' => (x ~ abind_var_skl P) ++ aenv_of_denv Γ'
+  | (x, dbind_tvar) :: Γ' => (x ~ abind_tvar) ++ aenv_of_denv Γ'
+  end.
+
+Lemma aenv_to_denv_of_denv : forall Γ, aenv_to_denv (aenv_of_denv Γ) = Γ.
+Proof.
+  induction Γ as [ | [x d] Γ' IH ]; [ reflexivity | ].
+  destruct d; simpl; rewrite IH; reflexivity.
+Qed.
