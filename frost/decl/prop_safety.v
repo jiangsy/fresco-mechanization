@@ -239,10 +239,10 @@ Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
   | mode_fn _ => exists Q, Γ ⊢[ m ] e ⇨ Q /\ safe_skel Γ m Q B
   | _ =>
       exists Q, Γ ⊢[ m ] e ⇨ Q
-                /\ (forall Γt A, ctx_refines Γ Γt -> d_wf_denv Γt ->
-                       Γt ⊢[ m ] e ⦂ (ptyp_to_btyp_inh A) ->
+                /\ (forall Γext Γt A, ctx_weaken Γ Γext -> ctx_refines Γext Γt ->
+                       d_wf_denv Γt -> Γt ⊢[ m ] e ⦂ (ptyp_to_btyp_inh A) ->
                        exists B', bskl_to_pskl B' = ptyp_to_pskl A
-                         /\ Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
+                         /\ Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
   end.
 
 (** A type's own skeleton is [hole_safe] for it (concrete refinement-refl). *)
@@ -306,7 +306,7 @@ Proof.
   destruct Hbase; simpl in Hpri.
   - (* unit *)
     exists bskl_unit. split; [ apply d_pat__unit | ].
-    intros Γt A Hcrt Hwft HA.
+    intros Γext Γt A Hcw Hcrt Hwft HA.
     pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
     rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hp.
     eapply gpat_syn_fill;
@@ -320,12 +320,15 @@ Proof.
     + (* kept: x : typ A0 *)
       exists (pskl_to_bskl_syn (ptyp_to_pskl A0)). split.
       * apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ].
-      * intros Γt A Hcrt Hwft HA.
+      * intros Γext Γt A Hcw Hcrt Hwft HA.
         pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
         destruct Hp as [A1 [Hbnd1 Hskel1]].
         rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hskel1.
-        (* x : typ A0 in Γ' refines x's Γt-binding ⇒ that is typ A0, so A1 = A0 *)
-        destruct (@ctx_refines_binds_fwd Γ' Γt x (dbind_typ A0) Hcrt Hb') as [dt [Hbt Hdrt]].
+        (* x : typ A0 in Γ' ⊆ Γext refines x's Γt-binding ⇒ typ A0, so A1 = A0 *)
+        assert (Hb'ext : binds x (dbind_typ A0) Γext)
+          by (eapply binds_ctx_weaken; [ exact Hcw | exact Hb' ]).
+        destruct (@ctx_refines_binds_fwd Γext Γt x (dbind_typ A0) Hcrt Hb'ext)
+          as [dt [Hbt Hdrt]].
         inversion Hdrt; subst.
         assert (dbind_typ A1 = dbind_typ A0) by (eapply binds_unique; [ exact Hbnd1 | exact Hbt | eapply d_wf_denv_uniq; eauto ]).
         match goal with H : dbind_typ _ = dbind_typ _ |- _ => inversion H; subst end.
@@ -337,14 +340,14 @@ Proof.
       exists bskl_hole. split.
       * apply d_pat__var with (d := dbind_skl pskl_hole) (P := pskl_hole);
           [ exact Hb' | reflexivity ].
-      * intros Γt A Hcrt Hwft HA.
+      * intros Γext Γt A Hcw Hcrt Hwft HA.
         eapply gpat_hole_fill;
           [ apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto | exact Hcrt ].
   - (* anno e A0 *)
     exists (pskl_to_bskl_syn (ptyp_to_pskl A)). split.
     + apply d_pat__anno. eapply d_wf_ptyp_ctx_refines;
         [ eapply d_typing_anno_wf; eauto | exact Hcr ].
-    + intros Γt A1 Hcrt Hwft HA.
+    + intros Γext Γt A1 Hcw Hcrt Hwft HA.
       pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
       rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hp.
       eapply gpat_syn_fill;
@@ -361,17 +364,17 @@ Qed.
 Lemma abs_check_fill : forall e x0 Qb,
     x0 `notin` fvar_in_exp e ->
     forall Γ',
-    (forall Γt'' A'',
-        ctx_refines ((x0 ~ dbind_skl pskl_hole) ++ Γ') Γt'' -> d_wf_denv Γt'' ->
+    (forall Γext Γt'' A'',
+        ctx_weaken ((x0 ~ dbind_skl pskl_hole) ++ Γ') Γext -> ctx_refines Γext Γt'' ->
+        d_wf_denv Γt'' ->
         Γt'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x0)) ⦂ ptyp_to_btyp_inh A'' ->
         exists B', bskl_to_pskl B' = ptyp_to_pskl A'' /\
-          ((x0 ~ dbind_skl pskl_hole) ++ Γ') ⨟ nil ⨟ nil ⊢ᵣ
-            (pskl_to_bskl_inh (bskl_to_pskl Qb)) ⊳ B') ->
-    forall Γt A',
-      ctx_refines Γ' Γt -> d_wf_denv Γt ->
+          Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Qb)) ⊳ B') ->
+    forall Γext0 Γt A',
+      ctx_weaken Γ' Γext0 -> ctx_refines Γext0 Γt -> d_wf_denv Γt ->
       Γt ⊢[ mode_tc ] (exp_abs e) ⦂ (ptyp_to_btyp_inh A') ->
       exists B', bskl_to_pskl B' = ptyp_to_pskl A' /\
-        Γ' ⨟ nil ⨟ nil ⊢ᵣ
+        Γext0 ⨟ nil ⨟ nil ⊢ᵣ
           (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) ⊳ B'.
 Admitted.
 
@@ -393,10 +396,10 @@ Proof.
     + (* fn *) admit.
   - (* freeze *) destruct (IHHty Hwf Γ' Hcr) as [Q [HQ Hsafe]].
     exists Q. split; [ apply d_pat__freeze; exact HQ | ].
-    intros Γt A Hcrt Hwft HA. inversion HA; subst;
+    intros Γext Γt A Hcw Hcrt Hwft HA. inversion HA; subst;
       try (match goal with Hb : is_base_term (exp_freeze _) |- _ => inversion Hb end);
       try (match goal with Hv : is_value (exp_freeze _) |- _ => inversion Hv end);
-      eapply Hsafe; [ exact Hcrt | exact Hwft | eassumption ].
+      eapply Hsafe; [ exact Hcw | exact Hcrt | exact Hwft | eassumption ].
   - (* forall *) admit.
   - (* abs *) admit.
   - (* abs_check *)
@@ -417,9 +420,9 @@ Proof.
                nil x0 x (dbind_skl pskl_hole) Γ');
         [ reflexivity | discriminate | simpl; fsetdec ].
     + (* fill — isolated as abs_check_fill (the nested induction) *)
-      intros Γt A' Hcrt Hwft HA'.
+      intros Γext Γt A' Hcw Hcrt Hwft HA'.
       eapply (abs_check_fill (e := e) (x0 := x0));
-        [ fsetdec | exact Hsafe_b | exact Hcrt | exact Hwft | exact HA' ].
+        [ fsetdec | exact Hsafe_b | exact Hcw | exact Hcrt | exact Hwft | exact HA' ].
   - (* abs_anno *) admit.
   - (* abs_anno_check *) admit.
   - (* app *) admit.
@@ -494,7 +497,7 @@ Proof.
   intros Γ e B0 Hty Hwf.
   destruct (d_pat_total_gen Hty Hwf (ctx_refines_refl Γ)) as [Q [HQ Hsafe]].
   exists Q. split; [ exact HQ | ].
-  intros A HA. apply (Hsafe Γ A (ctx_refines_refl Γ) Hwf HA).
+  intros A HA. apply (Hsafe Γ Γ A (ctx_weaken_refl Γ) (ctx_refines_refl Γ) Hwf HA).
 Qed.
 
 (** GHOSTIFICATION WITNESS (the mechanism the safety witness relies on).
