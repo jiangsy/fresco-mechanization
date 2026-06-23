@@ -1761,6 +1761,126 @@ Proof.
       [ eapply IHd_pat1; eauto | eapply d_refine_syn_rename; eauto | eapply IHd_pat2; eauto ].
 Qed.
 
+(** Substituting one variable for another preserves [is_value] / [is_base_term]
+    (the substituted term is itself a variable, so the head shape is kept). *)
+Lemma is_value_subst_var : forall e x y,
+    is_value e -> is_value (subst_exp_in_exp (exp_var_f y) x e).
+Proof.
+  intros e x y H. induction H; simpl;
+    [ apply is_value__unit
+    | match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      apply is_value__var
+    | apply is_value__abs | apply is_value__abs_anno
+    | apply is_value__anno; assumption ].
+Qed.
+
+Lemma is_base_subst_var : forall e x y,
+    is_base_term e -> is_base_term (subst_exp_in_exp (exp_var_f y) x e).
+Proof.
+  intros e x y H. induction H; simpl;
+    [ apply is_base_term__unit
+    | match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      apply is_base_term__var
+    | apply is_base_term__anno ].
+Qed.
+
+(** GENERAL variable substitution for skeleton inference: substituting [y] for
+    [x] in ANY expression preserves [⇨], provided [x] and [y] have the same
+    binding in the (unchanged) context. *)
+Lemma d_pat_subst_var : forall m Γ e Q,
+    Γ ⊢[ m ] e ⇨ Q ->
+    forall x y d, uniq Γ -> binds x d Γ -> binds y d Γ ->
+    Γ ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⇨ Q.
+Proof.
+  intros m Γ e Q H. induction H; intros x0 y0 d0 Huniq Hbx Hby; simpl.
+  - apply d_pat__unit.
+  - (* var *) match goal with |- context [ if ?b then _ else _ ] => destruct b as [Heq | Hne] end.
+    + subst x. assert (d = d0) by (eapply binds_unique; eauto). subst d.
+      apply d_pat__var with (d := d0); [ exact Hby | exact H0 ].
+    + apply d_pat__var with (d := d); [ exact H | exact H0 ].
+  - (* anno *) apply d_pat__anno. exact H.
+  - (* sub *) apply d_pat__sub with (Q1 := Q1);
+      [ apply is_base_subst_var; exact H | eapply IHd_pat; eauto | exact H1 ].
+  - (* freeze *) apply d_pat__freeze. eapply IHd_pat; eauto.
+  - (* abs *) apply d_pat__abs with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (P := P);
+      [ assumption | assumption | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H2; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* abs_check *) apply d_pat__abs_check with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ).
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H0; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* abs_anno *) apply d_pat__abs_anno with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A) (Sarg := Sarg);
+      [ assumption | assumption | assumption | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H3; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* abs_anno_check *) apply d_pat__abs_anno_check with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A) (Sarg := Sarg);
+      [ assumption | assumption | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H2; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* app *) eapply d_pat__app;
+      [ eapply IHd_pat1; eauto | exact H0 | eapply IHd_pat2; eauto ].
+Qed.
+
+(** GENERAL variable substitution for typing: substituting [y] for [x] in ANY
+    expression preserves [⦂] (same context, [x] and [y] same [typ]-binding). *)
+Lemma d_typing_subst_var : forall m Γ e B,
+    Γ ⊢[ m ] e ⦂ B ->
+    forall x y T, uniq Γ -> binds x (dbind_typ T) Γ -> binds y (dbind_typ T) Γ ->
+    Γ ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
+Proof.
+  intros m Γ e B H. induction H; intros x0 y0 T Huniq Hbx Hby; simpl.
+  - apply d_typing__unit.
+  - (* var *) match goal with |- context [ if ?b then _ else _ ] => destruct b as [Heq | Hne] end.
+    + subst x. assert (dbind_typ A = dbind_typ T) by (eapply binds_unique; eauto).
+      match goal with He : dbind_typ _ = dbind_typ _ |- _ => inversion He; subst end.
+      apply d_typing__var; exact Hby.
+    + apply d_typing__var; exact H.
+  - (* anno *) apply d_typing__anno. eapply IHd_typing; eauto.
+  - (* sub *) eapply d_typing__sub;
+      [ apply is_base_subst_var; exact H | eapply IHd_typing; eauto | exact H1 ].
+  - (* freeze *) apply d_typing__freeze. eapply IHd_typing; eauto.
+  - (* forall *) apply d_typing__forall with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ);
+      [ apply is_value_subst_var; exact H | ].
+    intros X HX. eapply H1; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* abs *) apply d_typing__abs with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A);
+      [ assumption | assumption | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H2; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* abs_check *) apply d_typing__abs_check with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A);
+      [ assumption | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H1; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* abs_anno *) apply d_typing__abs_anno with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A) (Barg := Barg);
+      [ assumption | assumption | assumption | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H3; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* abs_anno_check *) apply d_typing__abs_anno_check with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A) (Barg := Barg);
+      [ assumption | assumption | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H2; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* app *) eapply d_typing__app;
+      [ exact H | eapply d_pat_subst_var; [ exact H0 | exact Huniq | exact Hbx | exact Hby ]
+      | exact H1 | eapply IHd_typing1; eauto | eapply IHd_typing2; eauto ].
+Qed.
+
 (** Tvar STRENGTHENING cascade: drop an UNUSED tvar [X] (one that does not occur
     free in the skeleton/type) from the context.  This is what the [forall] case
     of [d_pat_total] needs: the body is inferred over [(X:tvar)::Γ] for a fresh

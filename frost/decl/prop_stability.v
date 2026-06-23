@@ -15,6 +15,7 @@ Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_general_subsumption.
+Require Import src.frost.decl.prop_skeleton.
 
 Set Implicit Arguments.
 
@@ -584,33 +585,6 @@ Proof.
     exists l2''. split; [ assumption | eapply Permutation_trans; eassumption ].
 Qed.
 
-(** A variable head can be renamed to any other variable with an identical
-    binding (only [d_typing__var] consults the binding; [uniq] pins it). *)
-Lemma d_typing_var_rename : forall Γ m e B,
-    Γ ⊢[ m ] e ⦂ B ->
-    forall x y T, e = exp_var_f x -> uniq Γ ->
-    binds x (dbind_typ T) Γ -> binds y (dbind_typ T) Γ ->
-    Γ ⊢[ m ] (exp_var_f y) ⦂ B.
-Proof.
-  intros Γ m e B Htyp. induction Htyp; intros x0 y T Heq Huniq Hbx Hby;
-    subst; try discriminate.
-  - (* __var *)
-    inversion Heq; subst.
-    assert (dbind_typ A = dbind_typ T) by (eapply binds_unique; eauto).
-    assert (A = T) by congruence. subst T.
-    apply d_typing__var; exact Hby.
-  - (* __sub *)
-    eapply d_typing__sub;
-      [ apply is_base_term__var | eapply IHHtyp; eauto | eassumption ].
-  - (* __forall (var is a value) *)
-    apply d_typing__forall with (L := L `union` dom Γ);
-      [ apply is_value__var | ].
-    intros X HX. eapply H1 with (x := x0) (y := y) (T := T); try reflexivity.
-    + fsetdec.
-    + apply uniq_push; [ exact Huniq | fsetdec ].
-    + apply binds_cons_3; auto.
-    + apply binds_cons_3; auto.
-Qed.
 
 (** * Head-subsumption permutation (the core).
 
@@ -668,8 +642,10 @@ Proof.
     subst args. apply Permutation_nil in Hperm. subst args'.
     simpl in Hheadx, Hallx |- *.
     inversion Hallx; subst Bargs. inversion Hall'2; subst Bargs'.
-    eapply d_typing_var_rename;
-      [ exact Hheadx | reflexivity | exact Huniq | exact Hbx | exact Hby ].
+    assert (Hsub := d_typing_subst_var Hheadx x y _ Huniq Hbx Hby).
+    assert (Heqv : subst_exp_in_exp (exp_var_f y) x (exp_var_f x) = exp_var_f y)
+      by default_simp.
+    rewrite Heqv in Hsub. exact Hsub.
   - (* k ≥ 1 *)
     assert (Hpos : 1 <= length args) by lia.
     assert (Hpos' : 1 <= length args') by (rewrite <- (Permutation_length Hperm); exact Hpos).
