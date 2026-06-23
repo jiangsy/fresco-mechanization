@@ -54,6 +54,30 @@ Proof.
   analyze_binds Hb; try (inversion H; subst); auto.
 Qed.
 
+(** Well-formedness is preserved under context refinement (tvars are unchanged). *)
+Lemma d_wf_ptyp_ctx_refines : forall Γ A,
+    d_wf_ptyp Γ A -> forall Γ', ctx_refines Γ' Γ -> d_wf_ptyp Γ' A.
+Proof.
+  intros Γ A H. induction H; intros Γ' Hcr.
+  - apply d_wf_ptyp__unit.
+  - apply d_wf_ptyp__var. eapply ctx_refines_binds_tvar; eauto.
+  - apply d_wf_ptyp__arrow; eauto.
+  - apply d_wf_ptyp__all with (L := L). intros X HX.
+    eapply H0; [ exact HX | apply ctxr_cons; [ apply dbr_refl | exact Hcr ] ].
+Qed.
+
+(** A binding in [Γ] has a refining binding in any [Γ' ⪯ Γ]. *)
+Lemma ctx_refines_binds : forall Γ' Γ x d,
+    ctx_refines Γ' Γ -> binds x d Γ ->
+    exists d', binds x d' Γ' /\ dbind_refines d' d.
+Proof.
+  intros Γ' Γ x d H. induction H; intros Hb; [ inversion Hb | ].
+  analyze_binds Hb.
+  - exists d'. split; [ apply binds_app_iff; left; apply binds_one_iff; auto | assumption ].
+  - destruct (IHctx_refines BindsTac) as [d'' [Hb'' Hr'']].
+    exists d''. split; [ apply binds_app_iff; right; assumption | assumption ].
+Qed.
+
 (** A base term's [mode_ti] type is synthesised ([is_styp]). *)
 Lemma d_typing_ti_base_is_styp : forall Γ e B,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> is_styp B.
