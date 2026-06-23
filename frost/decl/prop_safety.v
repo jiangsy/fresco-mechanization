@@ -4,6 +4,7 @@
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
+Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -17,6 +18,7 @@ Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_weakening.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.decl.prop_general_subsumption.
+Require Import src.frost.decl.prop_renaming.
 Require Import src.frost.decl.prop_stability.
 
 Set Implicit Arguments.
@@ -353,18 +355,80 @@ Proof.
         | exact Hcrt ].
 Qed.
 
+(** GENERAL binder rename for typing (mirrors [d_pat_rename]): renaming the
+    context binder [x ↦ y] (and [x ↦ y] in the term) preserves [⦂].  The [sub]
+    case goes through [d_sub_subst_nontvar] (the subtyping ignores the relabeled
+    term binding).  Aligns an abstraction body's premise to a fixed binder. *)
+Lemma d_typing_rename : forall m Γ e B,
+    Γ ⊢[ m ] e ⦂ B ->
+    forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
+    x `notin` dom (Γ1 ++ Γ2) ->
+    (Γ1 ++ (y ~ d) ++ Γ2) ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
+Proof.
+  intros m Γ e B H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd Hxf; subst.
+  - (* unit *) simpl. apply d_typing__unit.
+  - (* var *) simpl.
+    match goal with |- context [ if ?b then _ else _ ] => destruct b as [Heq | Hne] end.
+    + subst x. assert (Hdeq : dbind_typ A = d0).
+      { analyze_binds H; try reflexivity; exfalso; rewrite dom_app in Hxf;
+          match goal with B : binds x0 _ _ |- _ => apply binds_In in B end; fsetdec. }
+      apply d_typing__var. rewrite Hdeq. auto.
+    + apply d_typing__var. analyze_binds H; auto.
+  - (* anno *) simpl. apply d_typing__anno. eapply IHd_typing; eauto.
+  - (* sub *) simpl. eapply d_typing__sub;
+      [ apply is_base_subst_var; exact H | eapply IHd_typing; eauto
+      | eapply d_sub_subst_nontvar; [ exact H1 | reflexivity | exact Hd ] ].
+  - (* freeze *) simpl. apply d_typing__freeze. eapply IHd_typing; eauto.
+  - (* forall *) simpl. apply d_typing__forall with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2));
+      [ apply is_value_subst_var; exact H | ].
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H1 X ltac:(fsetdec) ((X ~ dbind_tvar) ++ Γ1) x0 y0 d0 Γ2);
+      [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* abs *) simpl. apply d_typing__abs with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2)) (A := A);
+      [ assumption | eapply d_wf_ptyp_rename; [ eassumption | reflexivity | exact Hd ] | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    rewrite_env (((w ~ dbind_typ A) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H2 w ltac:(fsetdec) ((w ~ dbind_typ A) ++ Γ1) x0 y0 d0 Γ2);
+      [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* abs_check *) simpl. apply d_typing__abs_check with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2)) (A := A);
+      [ eapply d_wf_ptyp_rename; [ eassumption | reflexivity | exact Hd ] | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    rewrite_env (((w ~ dbind_typ A) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H1 w ltac:(fsetdec) ((w ~ dbind_typ A) ++ Γ1) x0 y0 d0 Γ2);
+      [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* abs_anno *) simpl. eapply d_typing__abs_anno with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2));
+      [ eassumption | eapply d_wf_ptyp_rename; [ eassumption | reflexivity | exact Hd ]
+      | reflexivity | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    rewrite_env (((w ~ dbind_typ (btyp_to_ptyp Barg)) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H3 w ltac:(fsetdec) ((w ~ dbind_typ (btyp_to_ptyp Barg)) ++ Γ1) x0 y0 d0 Γ2);
+      [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* abs_anno_check *) simpl. eapply d_typing__abs_anno_check with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom (Γ1 ++ Γ2));
+      [ eapply d_wf_ptyp_rename; [ eassumption | reflexivity | exact Hd ] | reflexivity | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    rewrite_env (((w ~ dbind_typ (btyp_to_ptyp Barg)) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H2 w ltac:(fsetdec) ((w ~ dbind_typ (btyp_to_ptyp Barg)) ++ Γ1) x0 y0 d0 Γ2);
+      [ simpl_env; reflexivity | exact Hd | simpl_env in Hxf; simpl_env; fsetdec ].
+  - (* app *) simpl. eapply d_typing__app;
+      [ reflexivity | eapply d_pat_rename; eauto | eapply d_refine_syn_rename; eauto
+      | eapply IHd_typing1; eauto | eapply IHd_typing2; eauto ].
+Qed.
+
 (** The [abs_check] fill (the paper's context-precision lemma for a checked
     λ): given the body's safety over [(x0:□)::Γ'], the universal-ghost arrow
     skeleton [⫯.(□ → inh{Qb})] fills every type the λ checks against — by
     induction on that typing, peeling [∀]s ([tophole_fill]) down to the
     function base ([tophole_remove] + [arrow] + body-safety + strengthening). *)
-Lemma abs_check_fill : forall e x0 Qb,
-    x0 `notin` fvar_in_exp e ->
-    forall Γ',
-    (forall Γext Γt'' A'',
-        ctx_weaken ((x0 ~ dbind_skl pskl_hole) ++ Γ') Γext -> ctx_refines Γext Γt'' ->
+Lemma abs_check_fill : forall e Qb Γ' L_b,
+    (forall x, x `notin` L_b -> forall Γext Γt'' A'',
+        ctx_weaken ((x ~ dbind_skl pskl_hole) ++ Γ') Γext -> ctx_refines Γext Γt'' ->
         d_wf_denv Γt'' ->
-        Γt'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x0)) ⦂ ptyp_to_btyp_inh A'' ->
+        Γt'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ ptyp_to_btyp_inh A'' ->
         Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Qb)) ⊳
           (colour (pskl_to_bskl_inh (bskl_to_pskl Qb)) A'')) ->
     forall Γext0 Γt A',
@@ -373,7 +437,79 @@ Lemma abs_check_fill : forall e x0 Qb,
       Γext0 ⨟ nil ⨟ nil ⊢ᵣ
         (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) ⊳
         (colour (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) A').
-Admitted.
+Proof.
+  intros e Qb Γ' L_b Hbs.
+  set (Qbi := pskl_to_bskl_inh (bskl_to_pskl Qb)).
+  assert (MAIN : forall n A' Γext0 Γt,
+            size_ptyp A' <= n -> ctx_weaken Γ' Γext0 -> ctx_refines Γext0 Γt ->
+            d_wf_denv Γt -> Γt ⊢[ mode_tc ] exp_abs e ⦂ ptyp_to_btyp_inh A' ->
+            Γext0 ⨟ nil ⨟ nil ⊢ᵣ (bskl_tophole (bskl_arrow bskl_hole Qbi)) ⊳
+              colour (bskl_tophole (bskl_arrow bskl_hole Qbi)) A').
+  { intros n; induction n as [ | n IHn ]; intros A' Γext0 Γt Hle Hcw Hcr Hwf Hty.
+    - destruct A'; simpl in Hle; lia.
+    - destruct A' as [ | nb | X | A1 A2 | A0 ].
+      + (* unit *) exfalso. inversion Hty; subst;
+          match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end.
+      + (* var_b *) exfalso. inversion Hty; subst;
+          match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end.
+      + (* var_f *) exfalso. inversion Hty; subst;
+          match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end.
+      + (* arrow A1 A2 *)
+        cbn [colour]. fold Qbi.
+        inversion Hty; subst;
+          try (match goal with Hm : ?mm <> mode_tc |- _ => exfalso; apply Hm; reflexivity end);
+          try (match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+        match goal with
+        | Hdom : ptyp_to_btyp_inh ?A1' = ptyp_to_btyp_inh A1 |- _ =>
+          assert (A1' = A1) by
+            (apply (f_equal btyp_to_ptyp) in Hdom;
+             rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in Hdom; exact Hdom); subst A1'
+        end.
+        apply d_refine_syn__tophole_remove. apply d_refine_syn__arrow.
+        * (* domain: hole fill *)
+          rewrite colour_hole. apply d_refine_syn_hole_fills;
+            [ eapply d_wf_ptyp_lc_loc; eassumption
+            | intros Y HY; right; eapply ctx_refines_binds_tvar;
+              [ exact Hcr | eapply d_wf_ptyp_ftvar; eassumption ] ].
+        * (* codomain: body safety at a fresh binder + strengthen *)
+          match goal with Hbody : forall x, x `notin` ?LL -> _ |- _ =>
+            pick fresh x_t for (LL `union` L_b `union` dom Γt `union` dom Γext0 `union` fvar_in_exp e)
+          end.
+          assert (Hfill : ((x_t ~ dbind_skl pskl_hole) ++ Γext0) ⨟ nil ⨟ nil ⊢ᵣ
+                            Qbi ⊳ colour Qbi A2).
+          { eapply (Hbs x_t ltac:(fsetdec) ((x_t ~ dbind_skl pskl_hole) ++ Γext0)
+                      ((x_t ~ dbind_typ A1) ++ Γt) A2).
+            - apply ctx_weaken_cons. exact Hcw.
+            - apply ctxr_cons; [ apply dbr_typ_hole | exact Hcr ].
+            - apply d_wf_denv__typ; [ exact Hwf | fsetdec | eassumption ].
+            - match goal with Hbody : forall x, x `notin` _ -> _ |- _ =>
+                apply Hbody; fsetdec end. }
+          apply (@d_refine_syn_strengthen_nontvar nil x_t (dbind_skl pskl_hole) Γext0
+                   nil nil Qbi (colour Qbi A2));
+            [ discriminate | exact Hfill ].
+      + (* all A0 *)
+        cbn [colour]. fold Qbi.
+        inversion Hty; subst;
+          try (match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+        match goal with Hall : forall X, X `notin` ?LL -> _ |- _ =>
+          apply d_refine_syn__tophole_fill with (L := LL `union` dom Γt `union` dom Γext0)
+        end.
+        intros X HX. rewrite <- colour_open.
+        eapply d_refine_syn_move with (Γ' := (X ~ dbind_tvar) ++ Γext0);
+          [ | apply colour_no_tophole | reflexivity ].
+        apply (IHn (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))
+                 ((X ~ dbind_tvar) ++ Γext0) ((X ~ dbind_tvar) ++ Γt)).
+        * rewrite size_ptyp_open_ptyp_wrt_ptyp_var. simpl in Hle. lia.
+        * apply ctx_weaken_trans with (Γ2 := Γext0); [ exact Hcw | apply ctx_weaken_app_front ].
+        * apply ctxr_cons; [ apply dbr_refl | exact Hcr ].
+        * apply d_wf_denv__tvar; [ exact Hwf | fsetdec ].
+        * rewrite <- ptyp_to_btyp_inh_open_var;
+            match goal with Hall : forall X, X `notin` _ -> _ |- _ => apply Hall; fsetdec end. }
+  intros Γext0 Γt A' Hcw Hcr Hwf Hty.
+  assert (HQT : pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))
+                = bskl_tophole (bskl_arrow bskl_hole Qbi)) by reflexivity.
+  rewrite HQT. apply (MAIN (size_ptyp A') A' Γext0 Γt (le_n _) Hcw Hcr Hwf Hty).
+Qed.
 
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
@@ -416,10 +552,10 @@ Proof.
                (open_exp_wrt_exp e (exp_var_f x0)) Qb HQb
                nil x0 x (dbind_skl pskl_hole) Γ');
         [ reflexivity | discriminate | simpl; fsetdec ].
-    + (* fill — isolated as abs_check_fill (the nested induction) *)
-      intros Γext Γt A' Hcw Hcrt Hwft HA'.
-      eapply (abs_check_fill (e := e) (x0 := x0));
-        [ fsetdec | exact Hsafe_b | exact Hcw | exact Hcrt | exact Hwft | exact HA' ].
+    + (* fill — via abs_check_fill; needs the cofinite body-safety (transport
+         Hsafe_b from x0 to an arbitrary fresh binder via d_typing_rename /
+         d_refine_syn_rename). *)
+      admit.
   - (* abs_anno *) admit.
   - (* abs_anno_check *) admit.
   - (* app *) admit.
