@@ -218,3 +218,88 @@ Proof.
     + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
       eapply IHd_sub; [ reflexivity | exact Hfr ].
 Qed.
+
+(** * NON-tvar binder relabel for the subtyping suite.
+
+    [d_sub]/[d_consis]/[d_wf_utyp] never consult a *term* binding (only tvars),
+    so relabeling a non-tvar binder [x ↦ y] is inert — and, unlike the tvar
+    rename above, the TYPES are unchanged (they hold no term variables).  These
+    discharge the [sub] case of the typing binder-rename [d_typing_rename]. *)
+Lemma d_wf_utyp_subst_nontvar : forall Γ C,
+    Γ ⊢ᵤ C ->
+    forall Γ1 x d Γ2 y, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
+    (Γ1 ++ (y ~ d) ++ Γ2) ⊢ᵤ C.
+Proof.
+  intros Γ C H. induction H; intros Γ1 x0 d0 Γ2 y0 Heq Hd; subst.
+  - apply d_wf_utyp__unit.
+  - apply d_wf_utyp__var. analyze_binds H; try (exfalso; congruence); auto.
+  - apply d_wf_utyp__arrow; [ eapply IHd_wf_utyp1 | eapply IHd_wf_utyp2 ]; eauto.
+  - apply d_wf_utyp__all_syn with
+      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
+  - apply d_wf_utyp__all_etag with
+      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
+Qed.
+
+Lemma d_consis_subst_nontvar : forall Δ Γ C B,
+    Δ ⨟ Γ ⊨ C ≈ B ->
+    forall Γ1 x d Γ2 y, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
+    Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊨ C ≈ B.
+Proof.
+  intros Δ Γ C B H. induction H; intros Γ1 x0 d0 Γ2 y0 Heq Hd; subst.
+  - apply d_consis__unit. assumption.
+  - apply d_consis__var; [ analyze_binds H; try (exfalso; congruence); auto | assumption ].
+  - eapply d_consis__arrow;
+      [ eapply IHd_consis1; [ reflexivity | exact Hd ]
+      | eapply IHd_consis2; [ reflexivity | exact Hd ] | assumption ].
+  - eapply d_consis__forall_inh_tagged with
+      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}});
+      [ intros Z HZ; rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2);
+        eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ]
+      | assumption ].
+  - apply d_consis__forall_inh_untagged with
+      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
+  - apply d_consis__forall_syn_tagged with
+      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
+  - apply d_consis__forall_syn with
+      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
+Qed.
+
+Lemma d_sub_subst_nontvar : forall m Δ Γ C B,
+    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
+    forall Γ1 x d Γ2 y, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
+    Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢[ m ] C ⊑ B.
+Proof.
+  intros m Δ Γ C B H. induction H; intros Γ1 x0 d0 Γ2 y0 Heq Hd; subst.
+  - apply d_sub__infer;
+      [ eapply d_consis_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      | assumption | assumption ].
+  - apply d_sub__check;
+      [ assumption | assumption
+      | eapply d_consis_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      | assumption ].
+  - apply d_sub__forall_r with
+      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
+  - eapply d_sub__arg;
+      [ eapply d_consis_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      | eapply IHd_sub; [ reflexivity | exact Hd ] | assumption ].
+  - eapply d_sub__forall_l_tagged with (Δ' := Δ');
+      [ eassumption | eassumption | eassumption
+      | eapply d_wf_utyp_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      | eassumption | eapply IHd_sub; [ reflexivity | exact Hd ] ].
+  - eapply d_sub__forall_l_untagged with (Δ' := Δ');
+      [ eassumption | eassumption | eassumption
+      | eapply d_wf_utyp_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      | eassumption | eapply IHd_sub; [ reflexivity | exact Hd ] ].
+Qed.
