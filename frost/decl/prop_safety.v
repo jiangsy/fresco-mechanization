@@ -90,6 +90,55 @@ Proof.
     exists d''. split; [ apply binds_app_iff; right; assumption | assumption ].
 Qed.
 
+(** * Strengthening by a NON-tvar binding (no freshness side-condition: a
+    non-tvar binding is never looked up, so it strengthens away freely).  This
+    is what transports the [abs] body's fill from [(x:□)::Γ'] down to [Γ']. *)
+Lemma d_wf_ptyp_strengthen_nontvar : forall Γ1 x d Γ2 A,
+    d <> dbind_tvar -> (Γ1 ++ (x ~ d) ++ Γ2) ⊢ₚ A -> (Γ1 ++ Γ2) ⊢ₚ A.
+Proof.
+  intros Γ1 x d Γ2 A Hd H. remember (Γ1 ++ (x ~ d) ++ Γ2) as Γ eqn:HΓ.
+  revert Γ1 HΓ. induction H; intros Γ1 HΓ; subst.
+  - apply d_wf_ptyp__unit.
+  - apply d_wf_ptyp__var. analyze_binds H; try (exfalso; congruence); auto.
+  - apply d_wf_ptyp__arrow; [ eapply IHd_wf_ptyp1 | eapply IHd_wf_ptyp2 ]; eauto.
+  - apply d_wf_ptyp__all with (L := L `union` dom (Γ1 ++ Γ2)). intros Y HY.
+    rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Y ltac:(auto) ((Y ~ dbind_tvar) ++ Γ1)); simpl_env; reflexivity.
+Qed.
+
+Lemma d_wf_pskl_strengthen_nontvar : forall Γ1 x d Γ2 Ψ P,
+    d <> dbind_tvar -> Ψ ⨟ (Γ1 ++ (x ~ d) ++ Γ2) ⊢ₚₛ P -> Ψ ⨟ (Γ1 ++ Γ2) ⊢ₚₛ P.
+Proof.
+  intros Γ1 x d Γ2 Ψ P Hd H. remember (Γ1 ++ (x ~ d) ++ Γ2) as Γ eqn:HΓ.
+  revert Γ1 HΓ. induction H; intros Γ1 HΓ; subst.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
+    analyze_binds Hb; try (exfalso; congruence); auto.
+  - apply d_wf_pskl__arrow; [ eapply IHd_wf_pskl1 | eapply IHd_wf_pskl2 ]; eauto.
+  - apply d_wf_pskl__all with (L := L). intros Y HY. eapply (H0 Y HY Γ1); reflexivity.
+  - apply d_wf_pskl__hole.
+  - apply d_wf_pskl__tophole; [ assumption | eapply IHd_wf_pskl; eauto ].
+Qed.
+
+Lemma d_refine_syn_strengthen_nontvar : forall Γ1 x d Γ2 Δs Δi Q P,
+    d <> dbind_tvar ->
+    (Γ1 ++ (x ~ d) ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    (Γ1 ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Proof.
+  intros Γ1 x d Γ2 Δs Δi Q P Hd H. remember (Γ1 ++ (x ~ d) ++ Γ2) as Γ eqn:HΓ.
+  revert Γ1 HΓ. induction H; intros Γ1 HΓ; subst.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
+      [ left; assumption | right; left; assumption | right; right;
+        analyze_binds Hb; try (exfalso; congruence); auto ].
+  - apply d_refine_syn__arrow; [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
+  - apply d_refine_syn__all with (L := L). intros Y HY. eapply (H0 Y HY Γ1); reflexivity.
+  - apply d_refine_syn__hole. eapply d_wf_pskl_strengthen_nontvar; eauto.
+  - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
+  - apply d_refine_syn__tophole_fill with (L := L). intros Y HY. eapply (H0 Y HY Γ1); reflexivity.
+  - apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
+Qed.
+
 (** A base term's [mode_ti] type is synthesised ([is_styp]). *)
 Lemma d_typing_ti_base_is_styp : forall Γ e B,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> is_styp B.
