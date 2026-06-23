@@ -78,6 +78,18 @@ Proof.
     exists d''. split; [ apply binds_app_iff; right; assumption | assumption ].
 Qed.
 
+(** Forward lookup: a [Γ']-binding refines some [Γ]-binding. *)
+Lemma ctx_refines_binds_fwd : forall Γ' Γ x d',
+    ctx_refines Γ' Γ -> binds x d' Γ' ->
+    exists d, binds x d Γ /\ dbind_refines d' d.
+Proof.
+  intros Γ' Γ x d' H. induction H; intros Hb; [ inversion Hb | ].
+  analyze_binds Hb.
+  - exists d. split; [ apply binds_app_iff; left; apply binds_one_iff; auto | assumption ].
+  - destruct (IHctx_refines BindsTac) as [d'' [Hb'' Hr'']].
+    exists d''. split; [ apply binds_app_iff; right; assumption | assumption ].
+Qed.
+
 (** A base term's [mode_ti] type is synthesised ([is_styp]). *)
 Lemma d_typing_ti_base_is_styp : forall Γ e B,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> is_styp B.
@@ -168,20 +180,20 @@ Fixpoint safe_skel (Γ : list (atom * dbind)) (m : mode) (Q : bskl) (B : btyp)
         /\ safe_skel Γ m' Qc B0
   end.
 
+(** Generalized safe-inference predicate (declarative context precision): the
+    inference is over [Γ] (possibly carrying [□] for refined vars); the safety
+    is quantified over EVERY well-formed [Γt] that [Γ] refines, so a [□]-refined
+    inference is safe for the term under any concrete type at that variable. *)
 Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
   : Prop :=
   match m with
-  | mode_tc =>
-      exists Q, Γ ⊢[ mode_tc ] e ⇨ Q
-                /\ (forall A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
-                       exists B', bskl_to_pskl B' = ptyp_to_pskl A
-                         /\ Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
-  | mode_ti =>
-      exists Q, Γ ⊢[ mode_ti ] e ⇨ Q
-                /\ (forall A, Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_inh A) ->
-                       exists B', bskl_to_pskl B' = ptyp_to_pskl A
-                         /\ Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
   | mode_fn _ => exists Q, Γ ⊢[ m ] e ⇨ Q /\ safe_skel Γ m Q B
+  | _ =>
+      exists Q, Γ ⊢[ m ] e ⇨ Q
+                /\ (forall Γt A, ctx_refines Γ Γt -> d_wf_denv Γt ->
+                       Γt ⊢[ m ] e ⦂ (ptyp_to_btyp_inh A) ->
+                       exists B', bskl_to_pskl B' = ptyp_to_pskl A
+                         /\ Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
   end.
 
 (** A type's own skeleton is [hole_safe] for it (concrete refinement-refl). *)
@@ -196,63 +208,124 @@ Proof.
     rewrite <- ptyp_to_pskl_open. apply H0.
 Qed.
 
-(** Base-term [mode_ti] safety: the synthesised skeleton fills every [inh]-type
-    the term ti-types to (those types are [is_styp], hence ∀-free here, so the
-    concrete refinement [refine_colour_core] applies). *)
-Lemma d_pat_base_ti_safe : forall Γ e B,
-    d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> gpat mode_ti Γ e B.
+(** Fill for a skeleton whose [pskl] matches the checking type [A] (the
+    synthesised path: the inh-painted skeleton fills the concrete colouring of
+    [A]).  Coverage transfers from [Γt] to [Γ'] since refinement keeps tvars. *)
+Lemma gpat_syn_fill : forall Γ' Γt A Q,
+    bskl_to_pskl Q = ptyp_to_pskl A ->
+    d_wf_ptyp Γt A -> ctx_refines Γ' Γt ->
+    exists B', bskl_to_pskl B' = ptyp_to_pskl A /\
+      Γ' ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B'.
 Proof.
-  intros Γ e B Hwf Hbase Hty.
-  destruct (d_pat_ti_base_safe Hwf Hbase Hty) as [Q [HQ [Hsskl [Hftv Hskel]]]].
-  exists Q. split; [ exact HQ | ]. intros A HA.
-  assert (Hwfa : d_wf_ptyp Γ A)
-    by (apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto).
-  assert (HQA : bskl_to_pskl Q = ptyp_to_pskl A).
-  { rewrite Hskel.
-    pose proof (d_typing_ti_skel_det (d_wf_denv_uniq Hwf) Hbase Hty HA) as Hdet.
-    rewrite Hdet. rewrite btyp_to_ptyp_ptyp_to_btyp_inh. reflexivity. }
+  intros Γ' Γt A Q Hsk Hwfa Hcr.
   exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A). split.
   - apply colour_erasure.
   - apply refine_colour_core.
     + eapply d_wf_ptyp_lc_loc; eauto.
-    + rewrite HQA. apply hole_safe_of_ptyp. eapply d_wf_ptyp_lc_loc; eauto.
-    + intros X HX. right. right. eapply d_wf_ptyp_ftvar; eauto.
+    + rewrite Hsk. apply hole_safe_of_ptyp. eapply d_wf_ptyp_lc_loc; eauto.
+    + intros X HX. right. right.
+      eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_ptyp_ftvar; eauto ].
 Qed.
 
-Lemma d_pat_total : forall m Γ e B,
-    Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ -> gpat m Γ e B.
+(** Fill for the ghost skeleton [□] (the refined-variable path): [□] fills the
+    syn-colouring of any well-formed checking type. *)
+Lemma gpat_hole_fill : forall Γ' Γt A,
+    d_wf_ptyp Γt A -> ctx_refines Γ' Γt ->
+    exists B', bskl_to_pskl B' = ptyp_to_pskl A /\
+      Γ' ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) ⊳ B'.
 Proof.
-  intros m Γ e B Hty. induction Hty; intros Hwf.
-  - (* unit *) apply d_pat_base_ti_safe;
-      [ exact Hwf | apply is_base_term__unit | apply d_typing__unit ].
-  - (* var *) apply d_pat_base_ti_safe;
-      [ exact Hwf | apply is_base_term__var | eapply d_typing__var; eauto ].
-  - (* anno *) apply d_pat_base_ti_safe;
-      [ exact Hwf | apply is_base_term__anno | apply d_typing__anno; eauto ].
+  intros Γ' Γt A Hwfa Hcr.
+  exists (pskl_to_bskl_syn (ptyp_to_pskl A)). split.
+  - apply bskl_to_pskl_pskl_to_bskl_syn.
+  - replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
+    apply d_refine_syn_hole_fills.
+    + eapply d_wf_ptyp_lc_loc; eauto.
+    + intros X HX. right.
+      eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_ptyp_ftvar; eauto ].
+Qed.
+
+(** Base-term safety under context refinement: [unit]/[var]/[anno].  The inferred
+    [Q] is over [Γ'] ([□] for a refined var, else the syn skeleton); its [pskl]
+    matches every checking type by [d_typing_ti_primary], and fills via the two
+    helpers above. *)
+Lemma d_pat_base_safe_gen : forall Γ e B,
+    d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B ->
+    forall Γ', ctx_refines Γ' Γ -> gpat mode_ti Γ' e B.
+Proof.
+  intros Γ e B Hwf Hbase Hty Γ' Hcr.
+  pose proof (d_typing_ti_primary Hty) as Hpri.
+  destruct Hbase; simpl in Hpri.
+  - (* unit *)
+    exists bskl_unit. split; [ apply d_pat__unit | ].
+    intros Γt A Hcrt Hwft HA.
+    pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
+    rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hp.
+    eapply gpat_syn_fill;
+      [ simpl; rewrite Hp; reflexivity
+      | apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto
+      | exact Hcrt ].
+  - (* var x *)
+    destruct Hpri as [A0 [Hbnd Hskel0]].
+    destruct (@ctx_refines_binds Γ' Γ x (dbind_typ A0) Hcr Hbnd) as [d' [Hb' Hdr]].
+    inversion Hdr; subst.
+    + (* kept: x : typ A0 *)
+      exists (pskl_to_bskl_syn (ptyp_to_pskl A0)). split.
+      * apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ].
+      * intros Γt A Hcrt Hwft HA.
+        pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
+        destruct Hp as [A1 [Hbnd1 Hskel1]].
+        rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hskel1.
+        (* x : typ A0 in Γ' refines x's Γt-binding ⇒ that is typ A0, so A1 = A0 *)
+        destruct (@ctx_refines_binds_fwd Γ' Γt x (dbind_typ A0) Hcrt Hb') as [dt [Hbt Hdrt]].
+        inversion Hdrt; subst.
+        assert (dbind_typ A1 = dbind_typ A0) by (eapply binds_unique; [ exact Hbnd1 | exact Hbt | eapply d_wf_denv_uniq; eauto ]).
+        match goal with H : dbind_typ _ = dbind_typ _ |- _ => inversion H; subst end.
+        eapply gpat_syn_fill;
+          [ rewrite bskl_to_pskl_pskl_to_bskl_syn; rewrite Hskel1; reflexivity
+          | apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto
+          | exact Hcrt ].
+    + (* refined: x : □ *)
+      exists bskl_hole. split.
+      * apply d_pat__var with (d := dbind_skl pskl_hole) (P := pskl_hole);
+          [ exact Hb' | reflexivity ].
+      * intros Γt A Hcrt Hwft HA.
+        eapply gpat_hole_fill;
+          [ apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto | exact Hcrt ].
+  - (* anno e A0 *)
+    exists (pskl_to_bskl_syn (ptyp_to_pskl A)). split.
+    + apply d_pat__anno. eapply d_wf_ptyp_ctx_refines;
+        [ eapply d_typing_anno_wf; eauto | exact Hcr ].
+    + intros Γt A1 Hcrt Hwft HA.
+      pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
+      rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hp.
+      eapply gpat_syn_fill;
+        [ rewrite bskl_to_pskl_pskl_to_bskl_syn; rewrite Hp; reflexivity
+        | apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto
+        | exact Hcrt ].
+Qed.
+
+Lemma d_pat_total_gen : forall m Γ e B,
+    Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
+    forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
+Proof.
+  intros m Γ e B Hty. induction Hty; intros Hwf Γ' Hcr.
+  - (* unit *) eapply d_pat_base_safe_gen;
+      [ exact Hwf | apply is_base_term__unit | apply d_typing__unit | exact Hcr ].
+  - (* var *) eapply d_pat_base_safe_gen;
+      [ exact Hwf | apply is_base_term__var | eapply d_typing__var; eauto | exact Hcr ].
+  - (* anno *) eapply d_pat_base_safe_gen;
+      [ exact Hwf | apply is_base_term__anno | apply d_typing__anno; eassumption | exact Hcr ].
   - (* sub *) destruct m.
-    + (* ti *) apply d_pat_base_ti_safe;
-        [ exact Hwf | exact H | eapply d_typing__sub; [ exact H | exact Hty | exact H0 ] ].
-    + (* tc *) simpl.
-      destruct (d_pat_ti_base_safe Hwf H Hty) as [Q1 [HQ1 [Hsskl1 [Hftv1 Hskel1]]]].
-      destruct (d_pat_sub_safe_tc Γ (le_n (size_bskl Q1)) Hsskl1 Hftv1)
-        as [Q2 [Hsub2 Hghost2]].
-      exists Q2. split.
-      * eapply d_pat__sub; [ exact H | exact HQ1 | exact Hsub2 ].
-      * intros A HA.
-        apply (ghost_of_fill (C := btyp_to_ptyp B1)).
-        -- apply lc_ptyp_btyp_to_ptyp. eapply d_wf_btyp_lc.
-           eapply d_typing_wf_btyp; eauto.
-        -- rewrite <- Hskel1. exact Hghost2.
-        -- apply d_wf_ptyp_of_btyp_inh. eapply d_typing_wf_btyp; eauto.
-        -- exact (d_typing_base_principal_sub Hwf H Hty HA).
+    + (* ti *) eapply d_pat_base_safe_gen;
+        [ exact Hwf | eassumption | eapply d_typing__sub; eassumption | exact Hcr ].
+    + (* tc *) admit.
     + (* fn *) admit.
-  - (* freeze *) destruct (IHHty Hwf) as [Q [HQ Hsafe]].
-    exists Q. split.
-    + apply d_pat__freeze. exact HQ.
-    + intros A HA. inversion HA; subst;
-        try (match goal with Hb : is_base_term (exp_freeze _) |- _ => inversion Hb end);
-        try (match goal with Hv : is_value (exp_freeze _) |- _ => inversion Hv end);
-        apply Hsafe; assumption.
+  - (* freeze *) destruct (IHHty Hwf Γ' Hcr) as [Q [HQ Hsafe]].
+    exists Q. split; [ apply d_pat__freeze; exact HQ | ].
+    intros Γt A Hcrt Hwft HA. inversion HA; subst;
+      try (match goal with Hb : is_base_term (exp_freeze _) |- _ => inversion Hb end);
+      try (match goal with Hv : is_value (exp_freeze _) |- _ => inversion Hv end);
+      eapply Hsafe; [ exact Hcrt | exact Hwft | eassumption ].
   - (* forall *) admit.
   - (* abs *) admit.
   - (* abs_check *) admit.
@@ -327,44 +400,11 @@ Theorem d_pat_safety : forall Γ e B0,
                  exists B, bskl_to_pskl B = ptyp_to_pskl A /\
                    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B).
 Proof.
-  (* RE-PLAN v3 (the algorithmic-"look" construction — declarative.tex:1957-1981
-     Wenhao note: the safe witness is the skeleton the algorithm computes, where
-     "the inferred skeletons of arguments are directly passed to the function").
-
-     Decompose into TOTALITY (build the [Q]) + FILL (the per-[A] refinement):
-     - [d_pat_total] (induction on [d_typing], MODE-GENERALISED so the [mode_fn]
-       IH is available): [d_typing m Γ e B -> exists Q, d_pat m Γ e Q].
-
-       * APP coordination is the crux, and it DISSOLVES here, not via a
-         weaken-to-[□]-by-transport.  [d_typing__app] (def_extra.v:742) ALREADY
-         carries [e2 ⇨ syn P] and the fill [inh P ⊳ inh(skel A)] as premises
-         over the very same [Γ] — REUSE them.  [e1] is consumed in [mode_fn]:
-         the function *receives* the (e2-derived) fill output as its arg, so the
-         arg is PASSED, never independently re-ghostified.  No determinism / no
-         more_ghost coordination needed for the app.
-
-       * ABS_CHECK is the one case needing a ghostified binding: [d_pat__abs_check]
-         binds [x:□] and the body must infer for ANY checking arg type, so the
-         body's [d_pat] is over [(x:□)::Γ] while its typing is over [(x:typ A)::Γ].
-         Generalise [d_pat_total] over a GHOST-CONTEXT relation (each term var
-         kept as [skl(skel A)] — via [d_pat_binding_eq], or ghostified to [□]);
-         abs_check ghostifies the new λ-var, keeping the app coordination
-         consistent (one ghost-context throughout).  [more_ghost] (above) tracks
-         the resulting skeleton.
-
-       * FN-mode [abs]: choose [d_pat__abs]'s existential arg = the passed skel
-         (so the body is over [x:skl(skel A)] = [x:typ A] by [d_pat_binding_eq],
-         IH applies directly).  [forall]: tvar-strengthen the body.  [sub]:
-         [d_pat__sub] + [d_pat_sub_infer_ghost].
-
-     - FILL (induction on [d_pat]): base-term leaves close with [ghost_of_fill]
-       (Qed, axiom-free); λ/app recurse.  PAINTING caveat to settle at the proof
-       assistant: over a ghost-context [e2]'s syn skel gains holes, so the fill
-       output gains syn-paintings — check the function (esp. λ via [d_pat__abs]'s
-       inh-painted arg) still receives it; var-functions match (syn-arg) directly.
-
-     Then [d_pat_safety] = [d_pat_total] (the [Q]) + FILL.  Still [Admitted]. *)
-Admitted.
+  intros Γ e B0 Hty Hwf.
+  destruct (d_pat_total_gen Hty Hwf (ctx_refines_refl Γ)) as [Q [HQ Hsafe]].
+  exists Q. split; [ exact HQ | ].
+  intros A HA. apply (Hsafe Γ A (ctx_refines_refl Γ) Hwf HA).
+Qed.
 
 (** GHOSTIFICATION WITNESS (the mechanism the safety witness relies on).
     A *top-level* [∀] in an annotation's concrete skeleton can be
