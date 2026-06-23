@@ -11,12 +11,79 @@ Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
 Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_wellformed.
+Require Import src.frost.decl.prop_weakening.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.decl.prop_general_subsumption.
+Require Import src.frost.decl.prop_stability.
 
 Set Implicit Arguments.
+
+(** A base term's [mode_ti] type is synthesised ([is_styp]). *)
+Lemma d_typing_ti_base_is_styp : forall Γ e B,
+    d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> is_styp B.
+Proof.
+  intros Γ e B Hwf Hbase Hty. remember mode_ti as m eqn:Hm.
+  induction Hty; subst; try discriminate; try solve [ inversion Hbase ].
+  - apply is_styp__unit.
+  - apply is_styp_ptyp_to_btyp_syn. eapply d_wf_ptyp_lc_loc.
+    eapply d_wf_denv_binds_typ; eauto.
+  - apply is_styp_ptyp_to_btyp_syn. eapply d_wf_ptyp_lc_loc.
+    apply d_wf_ptyp_of_btyp_inh. eapply d_typing_wf_btyp; eauto.
+  - match goal with Hs : empty ⨟ _ ⊢[ mode_ti ] _ ⊑ _ |- _ =>
+      inversion Hs; subst;
+      try (exfalso; match goal with Hne : ?mm <> ?mm |- _ =>
+                      apply Hne; reflexivity end) end.
+    assumption.
+Qed.
+
+(** Skeleton determines a synthesised type. *)
+Lemma is_styp_skel_inj : forall B1, is_styp B1 ->
+    forall C, is_styp C ->
+    ptyp_to_pskl (btyp_to_ptyp B1) = ptyp_to_pskl (btyp_to_ptyp C) -> B1 = C.
+Proof.
+  intros B1 H1. induction H1; intros C HC Hsk; destruct HC; simpl in Hsk;
+    try discriminate.
+  - reflexivity.
+  - inversion Hsk; subst; reflexivity.
+  - inversion Hsk. f_equal; [ apply IHis_styp1 | apply IHis_styp2 ]; auto.
+  - inversion Hsk. f_equal.
+    pick fresh X for (L `union` L0 `union` ftvar_in_btyp B `union` ftvar_in_btyp B0).
+    apply open_btyp_wrt_btyp_inj with (Xbt1 := X); [ fsetdec | fsetdec | ].
+    eapply H0; [ fsetdec | apply H1; fsetdec | ].
+    rewrite ! btyp_to_ptyp_open; cbn [btyp_to_ptyp];
+      rewrite ! ptyp_to_pskl_open, H3; reflexivity.
+Qed.
+
+(** Principal subsumption: a base term's [mode_ti] type subtypes to every
+    [mode_tc] type it checks against (sub case = [is_styp]-skeleton injectivity;
+    forall case = [d_sub__forall_r]). *)
+Lemma d_typing_base_principal_sub : forall Γ e Bp Bc,
+    d_wf_denv Γ -> is_base_term e ->
+    d_typing mode_ti Γ e Bp -> d_typing mode_tc Γ e Bc ->
+    empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn Bp) ⊑ Bc.
+Proof.
+  intros Γ e Bp Bc Hwf Hbase Hti Htc. remember mode_tc as m eqn:Hm.
+  revert Bp Hti. induction Htc; intros Bp Hti; subst; try discriminate;
+    try solve [ inversion Hbase ].
+  - (* sub *)
+    assert (Bp = B1) by
+      (apply is_styp_skel_inj;
+        [ eapply d_typing_ti_base_is_styp; eauto
+        | eapply d_typing_ti_base_is_styp; eauto
+        | eapply d_typing_ti_skel_det;
+          [ eapply d_wf_denv_uniq; eauto | exact Hbase | exact Hti | exact Htc ] ]).
+    subst. exact H0.
+  - (* forall *) apply d_sub__forall_r with (L := L `union` dom Γ).
+    intros X HX. eapply H1;
+      [ fsetdec
+      | apply d_wf_denv__tvar; [ exact Hwf | fsetdec ]
+      | exact Hbase
+      | reflexivity
+      | apply (d_typing_weakening nil (X ~ dbind_tvar) Γ); exact Hti ].
+Qed.
 
 (** ** Totality + safety of skeleton inference ([d_pat_total]).
 
@@ -82,7 +149,19 @@ Proof.
       match goal with Hc : empty ⨟ _ ⊨ _ ≈ _ |- _ =>
         apply d_consis_skel in Hc; rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hc;
         exact Hc end.
-    + (* tc *) admit.
+    + (* tc *) simpl.
+      destruct (d_pat_ti_base_safe Hwf H Hty) as [Q1 [HQ1 [Hsskl1 [Hftv1 Hskel1]]]].
+      destruct (d_pat_sub_safe_tc Γ (le_n (size_bskl Q1)) Hsskl1 Hftv1)
+        as [Q2 [Hsub2 Hghost2]].
+      exists Q2. split.
+      * eapply d_pat__sub; [ exact H | exact HQ1 | exact Hsub2 ].
+      * intros A HA.
+        apply (ghost_of_fill (C := btyp_to_ptyp B1)).
+        -- apply lc_ptyp_btyp_to_ptyp. eapply d_wf_btyp_lc.
+           eapply d_typing_wf_btyp; eauto.
+        -- rewrite <- Hskel1. exact Hghost2.
+        -- apply d_wf_ptyp_of_btyp_inh. eapply d_typing_wf_btyp; eauto.
+        -- exact (d_typing_base_principal_sub Hwf H Hty HA).
     + (* fn *) admit.
   - (* freeze *) admit.
   - (* forall *) admit.
