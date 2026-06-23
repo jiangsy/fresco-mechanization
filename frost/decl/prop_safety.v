@@ -241,8 +241,8 @@ Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
       exists Q, Γ ⊢[ m ] e ⇨ Q
                 /\ (forall Γext Γt A, ctx_weaken Γ Γext -> ctx_refines Γext Γt ->
                        d_wf_denv Γt -> Γt ⊢[ m ] e ⦂ (ptyp_to_btyp_inh A) ->
-                       exists B', bskl_to_pskl B' = ptyp_to_pskl A
-                         /\ Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
+                       Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳
+                         (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A))
   end.
 
 (** A type's own skeleton is [hole_safe] for it (concrete refinement-refl). *)
@@ -263,34 +263,31 @@ Qed.
 Lemma gpat_syn_fill : forall Γ' Γt A Q,
     bskl_to_pskl Q = ptyp_to_pskl A ->
     d_wf_ptyp Γt A -> ctx_refines Γ' Γt ->
-    exists B', bskl_to_pskl B' = ptyp_to_pskl A /\
-      Γ' ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B'.
+    Γ' ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳
+      (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A).
 Proof.
   intros Γ' Γt A Q Hsk Hwfa Hcr.
-  exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A). split.
-  - apply colour_erasure.
-  - apply refine_colour_core.
-    + eapply d_wf_ptyp_lc_loc; eauto.
-    + rewrite Hsk. apply hole_safe_of_ptyp. eapply d_wf_ptyp_lc_loc; eauto.
-    + intros X HX. right. right.
-      eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_ptyp_ftvar; eauto ].
+  apply refine_colour_core.
+  - eapply d_wf_ptyp_lc_loc; eauto.
+  - rewrite Hsk. apply hole_safe_of_ptyp. eapply d_wf_ptyp_lc_loc; eauto.
+  - intros X HX. right. right.
+    eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_ptyp_ftvar; eauto ].
 Qed.
 
 (** Fill for the ghost skeleton [□] (the refined-variable path): [□] fills the
     syn-colouring of any well-formed checking type. *)
 Lemma gpat_hole_fill : forall Γ' Γt A,
     d_wf_ptyp Γt A -> ctx_refines Γ' Γt ->
-    exists B', bskl_to_pskl B' = ptyp_to_pskl A /\
-      Γ' ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) ⊳ B'.
+    Γ' ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) ⊳
+      (colour (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) A).
 Proof.
   intros Γ' Γt A Hwfa Hcr.
-  exists (pskl_to_bskl_syn (ptyp_to_pskl A)). split.
-  - apply bskl_to_pskl_pskl_to_bskl_syn.
-  - replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
-    apply d_refine_syn_hole_fills.
-    + eapply d_wf_ptyp_lc_loc; eauto.
-    + intros X HX. right.
-      eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_ptyp_ftvar; eauto ].
+  replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
+  rewrite colour_hole.
+  apply d_refine_syn_hole_fills.
+  - eapply d_wf_ptyp_lc_loc; eauto.
+  - intros X HX. right.
+    eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_ptyp_ftvar; eauto ].
 Qed.
 
 (** Base-term safety under context refinement: [unit]/[var]/[anno].  The inferred
@@ -368,14 +365,14 @@ Lemma abs_check_fill : forall e x0 Qb,
         ctx_weaken ((x0 ~ dbind_skl pskl_hole) ++ Γ') Γext -> ctx_refines Γext Γt'' ->
         d_wf_denv Γt'' ->
         Γt'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x0)) ⦂ ptyp_to_btyp_inh A'' ->
-        exists B', bskl_to_pskl B' = ptyp_to_pskl A'' /\
-          Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Qb)) ⊳ B') ->
+        Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Qb)) ⊳
+          (colour (pskl_to_bskl_inh (bskl_to_pskl Qb)) A'')) ->
     forall Γext0 Γt A',
       ctx_weaken Γ' Γext0 -> ctx_refines Γext0 Γt -> d_wf_denv Γt ->
       Γt ⊢[ mode_tc ] (exp_abs e) ⦂ (ptyp_to_btyp_inh A') ->
-      exists B', bskl_to_pskl B' = ptyp_to_pskl A' /\
-        Γext0 ⨟ nil ⨟ nil ⊢ᵣ
-          (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) ⊳ B'.
+      Γext0 ⨟ nil ⨟ nil ⊢ᵣ
+        (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) ⊳
+        (colour (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) A').
 Admitted.
 
 Lemma d_pat_total_gen : forall m Γ e B,
@@ -497,7 +494,10 @@ Proof.
   intros Γ e B0 Hty Hwf.
   destruct (d_pat_total_gen Hty Hwf (ctx_refines_refl Γ)) as [Q [HQ Hsafe]].
   exists Q. split; [ exact HQ | ].
-  intros A HA. apply (Hsafe Γ Γ A (ctx_weaken_refl Γ) (ctx_refines_refl Γ) Hwf HA).
+  intros A HA.
+  exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A). split;
+    [ apply colour_erasure
+    | apply (Hsafe Γ Γ A (ctx_weaken_refl Γ) (ctx_refines_refl Γ) Hwf HA) ].
 Qed.
 
 (** GHOSTIFICATION WITNESS (the mechanism the safety witness relies on).
