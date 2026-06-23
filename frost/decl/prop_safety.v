@@ -119,36 +119,62 @@ Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
                 /\ (forall A, Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
                        exists B', bskl_to_pskl B' = ptyp_to_pskl A
                          /\ Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
-  | _ => exists Q, Γ ⊢[ m ] e ⇨ Q /\ safe_skel Γ m Q B
+  | mode_ti =>
+      exists Q, Γ ⊢[ mode_ti ] e ⇨ Q
+                /\ (forall A, Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_inh A) ->
+                       exists B', bskl_to_pskl B' = ptyp_to_pskl A
+                         /\ Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B')
+  | mode_fn _ => exists Q, Γ ⊢[ m ] e ⇨ Q /\ safe_skel Γ m Q B
   end.
+
+(** A type's own skeleton is [hole_safe] for it (concrete refinement-refl). *)
+Lemma hole_safe_of_ptyp : forall A,
+    lc_ptyp A -> forall L, hole_safe L (ptyp_to_pskl A) A.
+Proof.
+  intros A H. induction H; intros L; simpl.
+  - apply hs_unit.
+  - apply hs_var_f.
+  - apply hs_arrow; [ apply IHlc_ptyp1 | apply IHlc_ptyp2 ].
+  - apply hs_all with (Lc := empty). intros X _.
+    rewrite <- ptyp_to_pskl_open. apply H0.
+Qed.
+
+(** Base-term [mode_ti] safety: the synthesised skeleton fills every [inh]-type
+    the term ti-types to (those types are [is_styp], hence ∀-free here, so the
+    concrete refinement [refine_colour_core] applies). *)
+Lemma d_pat_base_ti_safe : forall Γ e B,
+    d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> gpat mode_ti Γ e B.
+Proof.
+  intros Γ e B Hwf Hbase Hty.
+  destruct (d_pat_ti_base_safe Hwf Hbase Hty) as [Q [HQ [Hsskl [Hftv Hskel]]]].
+  exists Q. split; [ exact HQ | ]. intros A HA.
+  assert (Hwfa : d_wf_ptyp Γ A)
+    by (apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto).
+  assert (HQA : bskl_to_pskl Q = ptyp_to_pskl A).
+  { rewrite Hskel.
+    pose proof (d_typing_ti_skel_det (d_wf_denv_uniq Hwf) Hbase Hty HA) as Hdet.
+    rewrite Hdet. rewrite btyp_to_ptyp_ptyp_to_btyp_inh. reflexivity. }
+  exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A). split.
+  - apply colour_erasure.
+  - apply refine_colour_core.
+    + eapply d_wf_ptyp_lc_loc; eauto.
+    + rewrite HQA. apply hole_safe_of_ptyp. eapply d_wf_ptyp_lc_loc; eauto.
+    + intros X HX. right. right. eapply d_wf_ptyp_ftvar; eauto.
+Qed.
 
 Lemma d_pat_total : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ -> gpat m Γ e B.
 Proof.
   intros m Γ e B Hty. induction Hty; intros Hwf.
-  - (* unit *) exists bskl_unit. split.
-    + apply d_pat__unit.
-    + simpl. reflexivity.
-  - (* var *) eexists. split.
-    + apply d_pat__var with (d := dbind_typ A); [ assumption | reflexivity ].
-    + simpl. rewrite btyp_to_ptyp_ptyp_to_btyp_syn, bskl_to_pskl_pskl_to_bskl_syn.
-      reflexivity.
-  - (* anno *) eexists. split.
-    + apply d_pat__anno. apply d_wf_ptyp_of_btyp_inh.
-      eapply d_typing_wf_btyp; eassumption.
-    + simpl. rewrite btyp_to_ptyp_ptyp_to_btyp_syn, bskl_to_pskl_pskl_to_bskl_syn.
-      reflexivity.
+  - (* unit *) apply d_pat_base_ti_safe;
+      [ exact Hwf | apply is_base_term__unit | apply d_typing__unit ].
+  - (* var *) apply d_pat_base_ti_safe;
+      [ exact Hwf | apply is_base_term__var | eapply d_typing__var; eauto ].
+  - (* anno *) apply d_pat_base_ti_safe;
+      [ exact Hwf | apply is_base_term__anno | apply d_typing__anno; eauto ].
   - (* sub *) destruct m.
-    + (* ti *) destruct (IHHty Hwf) as [Q1 [HQ1 HS1]].
-      exists Q1. split; [ exact HQ1 | ].
-      simpl in HS1 |- *. rewrite HS1.
-      match goal with Hsub : empty ⨟ _ ⊢[ mode_ti ] _ ⊑ _ |- _ =>
-        inversion Hsub; subst;
-        try (exfalso; match goal with Hne : ?mm <> ?mm |- _ =>
-                        apply Hne; reflexivity end) end.
-      match goal with Hc : empty ⨟ _ ⊨ _ ≈ _ |- _ =>
-        apply d_consis_skel in Hc; rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hc;
-        exact Hc end.
+    + (* ti *) apply d_pat_base_ti_safe;
+        [ exact Hwf | exact H | eapply d_typing__sub; [ exact H | exact Hty | exact H0 ] ].
     + (* tc *) simpl.
       destruct (d_pat_ti_base_safe Hwf H Hty) as [Q1 [HQ1 [Hsskl1 [Hftv1 Hskel1]]]].
       destruct (d_pat_sub_safe_tc Γ (le_n (size_bskl Q1)) Hsskl1 Hftv1)
