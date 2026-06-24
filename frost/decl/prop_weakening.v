@@ -133,13 +133,16 @@ Proof.
   intros Γ1 Γ2 Γ3 Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
-  - apply d_pat_consis__unit.
-  - apply d_pat_consis__var. analyze_binds H.
+  - apply d_pat_consis__unit. assumption.
+  - apply d_pat_consis__var; [ assumption | analyze_binds H ].
   - eapply d_pat_consis__arrow;
-      [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 ]; reflexivity.
-  - apply d_pat_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ3)).
-    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
-    eapply (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
+      [ eapply IHd_pat_consis1; reflexivity
+      | eapply IHd_pat_consis2; reflexivity
+      | eassumption ].
+  - apply d_pat_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ3)) (Δ0 := Δ0);
+      [ intros Z HZ; rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3);
+        eapply (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ3); simpl; reflexivity
+      | eassumption ].
   - apply d_pat_consis__forall_inh_untagged with (L := L `union` dom (Γ1 ++ Γ3)).
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
@@ -149,9 +152,9 @@ Proof.
   - apply d_pat_consis__forall_syn with (L := L `union` dom (Γ1 ++ Γ3)).
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
-  - apply d_pat_consis__ghostg.
+  - apply d_pat_consis__ghostg. assumption.
   - apply d_pat_consis__topholeg. eapply IHd_pat_consis; reflexivity.
-  - apply d_pat_consis__hole. apply d_wf_pskl_weakening. assumption.
+  - apply d_pat_consis__hole; [ assumption | apply d_wf_pskl_weakening; assumption ].
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; reflexivity.
   - apply d_pat_consis__tophole_inh with (L := L `union` dom (Γ1 ++ Γ3)).
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
@@ -166,11 +169,12 @@ Proof.
   intros Γ1 Γ2 Γ3 m Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
-  - apply d_pat_sub__infer; [ apply d_pat_consis_weakening; assumption | assumption ].
+  - apply d_pat_sub__infer; [ assumption | apply d_pat_consis_weakening; assumption | assumption ].
   - apply d_pat_sub__univ_ghost_r; try assumption.
     apply d_pat_consis_weakening; assumption.
   - eapply d_pat_sub__arg;
-      [ apply d_pat_consis_weakening; eassumption | eapply IHd_pat_sub; reflexivity ].
+      [ apply d_pat_consis_weakening; eassumption | eapply IHd_pat_sub; reflexivity
+      | eassumption ].
   - eapply d_pat_sub__forall_l_tagged.
     + assumption.
     + eassumption.
@@ -185,9 +189,9 @@ Proof.
     + apply d_wf_uskl_weakening; eassumption.
     + assumption.
     + eapply IHd_pat_sub; reflexivity.
-  - apply d_pat_sub__ghost. apply d_wf_pskl_weakening. assumption.
+  - apply d_pat_sub__ghost; [ assumption | apply d_wf_pskl_weakening; assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; reflexivity ].
-  - apply d_pat_sub__ghostg.
+  - apply d_pat_sub__ghostg. assumption.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; reflexivity ].
 Qed.
 

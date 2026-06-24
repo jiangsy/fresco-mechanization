@@ -36,11 +36,13 @@ Require Import src.frost.algo.def_decorated.
 
 Set Implicit Arguments.
 
-(* Tag context bridge (F16): decorated [Ψ : atoms] ↦ declarative [Δ : list]. *)
-Definition Ψtoδ (Ψ : atoms) : list atom := AtomSetImpl.elements Ψ.
+(* Tag context bridge: the declarative skeleton tag context is now an [atoms]
+   set (matching the type level), so the decorated scope [Ψ : atoms] maps over
+   by the identity (no [elements] list conversion). *)
+Definition Ψtoδ (Ψ : atoms) : atoms := Ψ.
 
-Lemma Ψtoδ_empty : Ψtoδ empty = nil.
-Proof. unfold Ψtoδ. apply AtomSetProperties.elements_empty. Qed.
+Lemma Ψtoδ_empty : Ψtoδ empty = empty.
+Proof. reflexivity. Qed.
 
 (* ===================================================================== *)
 (*  Soundness of decorated consistency  (paper soundness, \wenhao{TODO}). *)
@@ -55,7 +57,7 @@ Proof.
   intros P0 Ψ Θ0 S Q Θ1 H. induction H.
   - (* GhostG → ghostg.  Closes. *)
     exists bskl_hole. split; [ reflexivity | ].
-    rewrite Ψtoδ_empty. apply d_pat_consis__ghostg.
+    rewrite Ψtoδ_empty. apply d_pat_consis__ghostg. fsetdec.
   - (* Arrow → d_pat_consis__arrow.  F18 (Γ threading) + F16 (elements). *)
     admit.
   - (* ForallInh → forall_inh_tagged.  Witness bskl_all_INH (colour now
@@ -103,7 +105,7 @@ Proof.
     admit.
   - (* GhostG → d_pat_sub__ghostg.  Closes. *)
     exists bskl_hole. split; [ reflexivity | ].
-    rewrite Ψtoδ_empty. apply d_pat_sub__ghostg.
+    rewrite Ψtoδ_empty. apply d_pat_sub__ghostg. fsetdec.
   - (* UnivGhostL → d_pat_sub__univ_ghost_l.  Closes (RHS unchanged). *)
     destruct IHa_subtag as [Q' [Heq Hd]]. exists Q'. split; [ assumption | ].
     apply d_pat_sub__univ_ghost_l; assumption.

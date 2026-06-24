@@ -232,27 +232,29 @@ Inductive d_tags : atoms -> utyp -> Prop :=
 (** Skeleton analog [tags{Δ}{ψ}] (declarative.tex, skeleton subtyping).
     Same as [d_tags] plus the two ghost cases: a [hole] carries no tags,
     and a universal ghost [⫯ψ] carries exactly the tags of its body. *)
-Inductive d_tags_skl : list atom -> uskl -> Prop :=
-| d_tags_skl__unit : d_tags_skl nil uskl_unit
-| d_tags_skl__var : forall X, d_tags_skl nil (uskl_var_f X)
-| d_tags_skl__arrow : forall Δ1 Δ2 R1 R2,
+Inductive d_tags_skl : atoms -> uskl -> Prop :=
+| d_tags_skl__unit : forall Δ, Δ [=] empty -> d_tags_skl Δ uskl_unit
+| d_tags_skl__var : forall Δ X, Δ [=] empty -> d_tags_skl Δ (uskl_var_f X)
+| d_tags_skl__arrow : forall Δ Δ1 Δ2 R1 R2,
     d_tags_skl Δ1 R1 ->
     d_tags_skl Δ2 R2 ->
-    list_disjoint Δ1 Δ2 ->
-    d_tags_skl (Δ1 ++ Δ2) (uskl_arrow R1 R2)
-| d_tags_skl__all_etag : forall L Δ ε R,
+    AtomSetImpl.inter Δ1 Δ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
+    Δ [=] Δ1 `union` Δ2 ->
+    d_tags_skl Δ (uskl_arrow R1 R2)
+| d_tags_skl__all_etag : forall L Δ Δ0 ε R,
     (forall X, X `notin` L ->
-       d_tags_skl Δ (open_uskl_wrt_uskl R (uskl_var_f X))) ->
-    ~ List.In ε Δ ->
-    d_tags_skl (ε :: Δ) (uskl_all_etag ε R)
-| d_tags_skl__hole : d_tags_skl nil uskl_hole
+       d_tags_skl Δ0 (open_uskl_wrt_uskl R (uskl_var_f X))) ->
+    ε `notin` Δ0 ->
+    Δ [=] add ε Δ0 ->
+    d_tags_skl Δ (uskl_all_etag ε R)
+| d_tags_skl__hole : forall Δ, Δ [=] empty -> d_tags_skl Δ uskl_hole
 | d_tags_skl__tophole : forall Δ R,
     d_tags_skl Δ R ->
     d_tags_skl Δ (uskl_tophole R)
 (* Dotted ghosts (declarative.tex:1698,1704): HoleG carries no tags;
    TopHoleG.ψ carries exactly the tags of its body — same as the plain
    Hole / TopHole. *)
-| d_tags_skl__holeg : d_tags_skl nil uskl_holeg
+| d_tags_skl__holeg : forall Δ, Δ [=] empty -> d_tags_skl Δ uskl_holeg
 | d_tags_skl__topholeg : forall Δ R,
     d_tags_skl Δ R ->
     d_tags_skl Δ (uskl_topholeg R).
@@ -462,27 +464,27 @@ defined by ignoring colours. I used the uncoloured version when
 defining valid and safe skeletons. I would need to spend more time on
 these definitions, so we can ignore it for now. *)
 
-Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Prop :=
-| d_pat_consis__unit : forall Γ,
-    nil ⨟ Γ ⊨ₛ uskl_unit ≈ bskl_unit
-| d_pat_consis__var : forall Γ X,
+Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
+| d_pat_consis__unit : forall Δ Γ,
+    Δ [=] empty ->
+    Δ ⨟ Γ ⊨ₛ uskl_unit ≈ bskl_unit
+| d_pat_consis__var : forall Δ Γ X,
+    Δ [=] empty ->
     binds X dbind_tvar Γ ->
-    nil ⨟ Γ ⊨ₛ (uskl_var_f X) ≈ (bskl_var_f X)
-| d_pat_consis__arrow : forall Δ1 Δ2 Γ R1 R2 Q1 Q2,
+    Δ ⨟ Γ ⊨ₛ (uskl_var_f X) ≈ (bskl_var_f X)
+| d_pat_consis__arrow : forall Δ Δ1 Δ2 Γ R1 R2 Q1 Q2,
     Δ1 ⨟ Γ ⊨ₛ R1 ≈ Q1 ->
     Δ2 ⨟ Γ ⊨ₛ R2 ≈ Q2 ->
-    (* WT: It shouldn't be disjoint union.
-       [list_disjoint Δ1 Δ2] premise removed per WT review: tag
-       contexts combine by (non-disjoint) set union, not disjoint union. *)
-    (Δ1 ++ Δ2) ⨟ Γ ⊨ₛ (uskl_arrow R1 R2) ≈ (bskl_arrow Q1 Q2)
-| d_pat_consis__forall_inh_tagged : forall L Δ Γ ε R Q,
+    (* tag contexts combine by (non-disjoint) set union (WT review). *)
+    Δ [=] Δ1 `union` Δ2 ->
+    Δ ⨟ Γ ⊨ₛ (uskl_arrow R1 R2) ≈ (bskl_arrow Q1 Q2)
+| d_pat_consis__forall_inh_tagged : forall L Δ Δ0 Γ ε R Q,
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
+       Δ0 ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
          (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    (* WT: codex confirmed the [~ List.In ε Δ] premise was checking
-       freshness; removed per WT review. *)
-    (ε :: Δ) ⨟ Γ ⊨ₛ (uskl_all_etag ε R) ≈ (bskl_all_inh Q)
+    Δ [=] add ε Δ0 ->
+    Δ ⨟ Γ ⊨ₛ (uskl_all_etag ε R) ≈ (bskl_all_inh Q)
 | d_pat_consis__forall_inh_untagged : forall L Δ Γ R Q,
     (forall X, X `notin` L ->
        Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨ₛ
@@ -501,20 +503,22 @@ Inductive d_pat_consis : list atom -> list (atom * dbind) -> uskl -> bskl -> Pro
          (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
     Δ ⨟ Γ ⊨ₛ (uskl_all_syn R) ≈ (bskl_all_syn Q)
-| d_pat_consis__ghostg : forall Γ,
+| d_pat_consis__ghostg : forall Δ Γ,
+    Δ [=] empty ->
     (* Paper [GhostG] (declarative.tex eqlab): a ghost hole [HoleG] is
        consistent with a plain [Hole]. *)
-    nil ⨟ Γ ⊨ₛ uskl_holeg ≈ bskl_hole
+    Δ ⨟ Γ ⊨ₛ uskl_holeg ≈ bskl_hole
 | d_pat_consis__topholeg : forall Δ Γ R Q,
     (* Paper [UnivGhostG]: [TopHoleG.S ~ TopHole.P] from [S ~ P]. *)
     Δ ⨟ Γ ⊨ₛ R ≈ Q ->
     Δ ⨟ Γ ⊨ₛ (uskl_topholeg R) ≈ (bskl_tophole Q)
-| d_pat_consis__hole : forall Γ P,
+| d_pat_consis__hole : forall Δ Γ P,
+    Δ [=] empty ->
     (* Paper [Ghost]: a [Hole] matches any *inherited* skeleton [inh{P}]
        (WT: "RHS should just be P?" — the RHS is the inherited painting
        of the pattern skeleton, not the synthesised one). *)
     d_wf_pskl nil Γ P ->
-    nil ⨟ Γ ⊨ₛ uskl_hole ≈ (pskl_to_bskl_inh P)
+    Δ ⨟ Γ ⊨ₛ uskl_hole ≈ (pskl_to_bskl_inh P)
 | d_pat_consis__tophole : forall Δ Γ R Q,
     (* Paper [UnivGhost]: TopHole ≈ TopHole. *)
     Δ ⨟ Γ ⊨ₛ R ≈ Q ->
@@ -548,57 +552,63 @@ where "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q) : type_scope.
    rules [GhostG] ([HoleG ⊑ Hole]) and [UnivGhostLG] ([TopHoleG.S ⊑ P])
    are encoded below (and the matching consistency rules [GhostG]/
    [UnivGhostG] on [d_pat_consis]). *)
-Inductive d_pat_sub : mode -> list atom -> list (atom * dbind) -> uskl -> bskl -> Prop :=
-| d_pat_sub__infer : forall Γ R Q,
+Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
+| d_pat_sub__infer : forall Δ Γ R Q,
     (* Paper [Infer]: synthesise by consistency, dropping tags. *)
-    nil ⨟ Γ ⊨ₛ R ≈ Q ->
+    Δ [=] empty ->
+    empty ⨟ Γ ⊨ₛ R ≈ Q ->
     is_sskl Q ->
-    nil ⨟ Γ ⊢ₛ[ mode_ti ] R ⊑ Q
+    Δ ⨟ Γ ⊢ₛ[ mode_ti ] R ⊑ Q
 | d_pat_sub__univ_ghost_r : forall Γ R Q,
     (* Paper [UnivGhostR] (replaces the out-of-sync [check]; WT review):
        the checking rule produces a [TopHole] on the RHS, requires BOTH
        [R] and the synthesised body [Q] guarded, and [Q] synthesised
        ([is_sskl]) — answering WT's "shouldn't Q be synthesised?". *)
+    forall Δ,
+    Δ [=] empty ->
     guarded_uskl R ->
     guarded_bskl Q ->
     is_sskl Q ->
-    nil ⨟ Γ ⊨ₛ R ≈ Q ->
-    nil ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ (bskl_tophole Q)
-| d_pat_sub__arg : forall Δ1 Δ2 Γ m R1 R2 Q1 Q2,
-    (* Paper [Arrow]: set-union tag context (no [list_disjoint]). *)
+    empty ⨟ Γ ⊨ₛ R ≈ Q ->
+    Δ ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ (bskl_tophole Q)
+| d_pat_sub__arg : forall Δ Δ1 Δ2 Γ m R1 R2 Q1 Q2,
+    (* Paper [Arrow]: set-union tag context. *)
     Δ1 ⨟ Γ ⊨ₛ R1 ≈ Q1 ->
     Δ2 ⨟ Γ ⊢ₛ[ m ] R2 ⊑ Q2 ->
-    (Δ1 ++ Δ2) ⨟ Γ ⊢ₛ[ mode_fn m ] (uskl_arrow R1 R2) ⊑ (bskl_arrow Q1 Q2)
+    Δ [=] Δ1 `union` Δ2 ->
+    Δ ⨟ Γ ⊢ₛ[ mode_fn m ] (uskl_arrow R1 R2) ⊑ (bskl_arrow Q1 Q2)
 | d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε R psi Q,
     (* Paper [ForallL] (tagged head).  [Ψ' fresh] = [list_disjoint];
        well-scopedness is [nil ⨟ Γ ⊢ᵤₛ ψ] (S1: scope, not tags). *)
     m <> mode_ti ->
-    list_disjoint Δ' Δ ->
+    AtomSetImpl.inter Δ' Δ [=] empty ->
     d_tags_skl Δ' psi ->             (* tags{Δ'}{ψ} : skeleton-tag relation *)
     nil ⨟ Γ ⊢ᵤₛ psi ->
     is_tskl psi ->
-    (Δ ++ Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
+    (Δ `union` Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_etag ε R) ⊑ Q
 | d_pat_sub__forall_l_untagged : forall Δ Δ' Γ m R psi Q,
     m <> mode_ti ->
-    list_disjoint Δ' Δ ->
+    AtomSetImpl.inter Δ' Δ [=] empty ->
     d_tags_skl Δ' psi ->
     nil ⨟ Γ ⊢ᵤₛ psi ->
     is_tskl psi ->
-    (Δ ++ Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
+    (Δ `union` Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_syn R) ⊑ Q
 | d_pat_sub__ghost : forall m Γ P,
     (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}]. *)
+    forall Δ, Δ [=] empty ->
     d_wf_pskl nil Γ P ->
-    nil ⨟ Γ ⊢ₛ[ m ] uskl_hole ⊑ (pskl_to_bskl_inh P)
+    Δ ⨟ Γ ⊢ₛ[ m ] uskl_hole ⊑ (pskl_to_bskl_inh P)
 | d_pat_sub__univ_ghost_l : forall m Δ Γ R Q,
     (* Paper [UnivGhostL]: drop a [TopHole] on the LHS (any [M ≠ TI]). *)
     m <> mode_ti ->
     Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_tophole R) ⊑ Q
-| d_pat_sub__ghostg : forall m Γ,
+| d_pat_sub__ghostg : forall m Δ Γ,
     (* Paper [GhostG]: a ghost hole [HoleG] is below a plain [Hole]. *)
-    nil ⨟ Γ ⊢ₛ[ m ] uskl_holeg ⊑ bskl_hole
+    Δ [=] empty ->
+    Δ ⨟ Γ ⊢ₛ[ m ] uskl_holeg ⊑ bskl_hole
 | d_pat_sub__univ_ghost_lg : forall m Δ Γ R Q,
     (* Paper [UnivGhostLG]: drop a [TopHoleG] on the LHS (any [M ≠ TI]). *)
     m <> mode_ti ->
@@ -636,7 +646,7 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__sub : forall Γ m e Q1 Q2,
     is_base_term e ->
     Γ ⊢[ mode_ti ] e ⇨ Q1 ->
-    nil ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl Q1) ⊑ Q2 ->
+    empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl Q1) ⊑ Q2 ->
     Γ ⊢[ m ] e ⇨ Q2
 | d_pat__freeze : forall Γ e Q,
     Γ ⊢[ mode_ti ] e ⇨ Q ->

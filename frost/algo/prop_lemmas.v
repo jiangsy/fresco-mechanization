@@ -179,8 +179,8 @@ Proof. Admitted.
 
 Lemma a_precision_extends_sub : forall M Θ P P' Q,
     Θ ⊢ (pskl_to_bskl_syn P') ≼ (pskl_to_bskl_syn P) ->
-    nil ⨟ ⌊ Θ ⌋ ⊢ₛ[ M ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q ->
-    nil ⨟ ⌊ Θ ⌋ ⊢ₛ[ M ] (bskl_to_uskl (pskl_to_bskl_syn P')) ⊑ Q.
+    empty ⨟ ⌊ Θ ⌋ ⊢ₛ[ M ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q ->
+    empty ⨟ ⌊ Θ ⌋ ⊢ₛ[ M ] (bskl_to_uskl (pskl_to_bskl_syn P')) ⊑ Q.
 Proof. Admitted.
 
 (* ===================================================================== *)

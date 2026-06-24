@@ -102,7 +102,7 @@ Definition a_fillsyn (Θ : aenv) (θ : metasubst) (P0 : pskl) (out : bskl) : Pro
 Definition a_consis_solution
     (Θ0 : aenv) (P0 P : pskl) (θ1 : metasubst) (Θ1 : aenv) (P1 : pskl) : Prop :=
   Θ0 ≤[ θ1 ] Θ1 /\
-  nil ⨟ ⌊ Θ1 ⌋ ⊨ₛ (pskl_to_uskl_syn (msubst_pskl θ1 P)) ≈ (pskl_to_bskl_syn P1) /\
+  empty ⨟ ⌊ Θ1 ⌋ ⊨ₛ (pskl_to_uskl_syn (msubst_pskl θ1 P)) ≈ (pskl_to_bskl_syn P1) /\
   a_fillsyn Θ1 θ1 P0 (pskl_to_bskl_syn P1).
 
 Definition a_consis_solution_ex (Θ0 : aenv) (P0 P : pskl) : Prop :=
@@ -126,7 +126,7 @@ Definition a_sub_solution
     (M : mode) (Θ0 : aenv) (P0 P : pskl)
     (θ1 : metasubst) (Θ1 : aenv) (Q : pskl) : Prop :=
   Θ0 ≤[ θ1 ] Θ1 /\
-  nil ⨟ ⌊ Θ1 ⌋ ⊢ₛ[ M ] (pskl_to_uskl_syn (msubst_pskl θ1 P)) ⊑ (pskl_to_bskl_syn Q) /\
+  empty ⨟ ⌊ Θ1 ⌋ ⊢ₛ[ M ] (pskl_to_uskl_syn (msubst_pskl θ1 P)) ⊑ (pskl_to_bskl_syn Q) /\
   a_fillsyn Θ1 θ1 P0 (pskl_to_bskl_syn Q).
 
 Definition a_sub_solution_ex (M : mode) (Θ0 : aenv) (P0 P : pskl) : Prop :=
