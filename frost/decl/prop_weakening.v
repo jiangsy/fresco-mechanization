@@ -254,7 +254,7 @@ Proof.
   - apply d_typing__unit.
   - apply d_typing__var. analyze_binds H.
   - apply d_typing__anno. apply IHd_typing; reflexivity.
-  - apply d_typing__sub with (B1 := B1);
+  - apply d_typing__sub with (A := A);
       [ exact H | apply IHd_typing; reflexivity | apply d_sub_weakening; exact H1 ].
   - apply d_typing__freeze. apply IHd_typing; reflexivity.
   - apply d_typing__forall with (L := L `union` dom (Γ1 ++ Γ3)); [ exact H | ].
@@ -265,14 +265,11 @@ Proof.
   - apply d_typing__abs_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
       [ apply d_wf_ptyp_weakening; assumption | ].
     intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
-  - apply d_typing__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Barg := Barg);
+  - apply d_typing__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (B1 := B1);
       [ exact H | apply d_wf_ptyp_weakening; assumption | exact H1 | ].
     intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
-  - apply d_typing__abs_anno_check with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (Barg := Barg);
-      [ apply d_wf_ptyp_weakening; assumption | exact H0 | ].
-    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
   - eapply d_typing__app;
-      [ exact H | eapply d_pat_weakening_mid; [ exact H0 | reflexivity ]
+      [ eapply d_pat_weakening_mid; [ exact H | reflexivity ]
       | apply d_refine_syn_weakening; eassumption
       | wk_dir e1 | wk_dir e2 ].
 Qed.

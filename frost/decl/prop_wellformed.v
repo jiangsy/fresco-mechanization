@@ -8,6 +8,7 @@ Require Import src.frost.notations.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
+Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_basic.
@@ -476,6 +477,18 @@ Proof.
   apply degree_btyp_wrt_btyp_of_lc_btyp. assumption.
 Qed.
 
+Lemma degree_ptyp_of_degree_btyp_syn : forall A k,
+    degree_btyp_wrt_btyp k (ptyp_to_btyp_syn A) -> degree_ptyp_wrt_ptyp k A.
+Proof.
+  induction A; intros k H; simpl in H; inversion H; subst; constructor; auto.
+Qed.
+
+Lemma lc_ptyp_of_lc_btyp_syn : forall A, lc_btyp (ptyp_to_btyp_syn A) -> lc_ptyp A.
+Proof.
+  intros A H. apply lc_ptyp_of_degree. apply degree_ptyp_of_degree_btyp_syn.
+  apply degree_btyp_wrt_btyp_of_lc_btyp. assumption.
+Qed.
+
 (** Inherited painting wf transfers to synthesised painting (same lc / ftvar). *)
 Lemma d_wf_btyp_inh_to_syn : forall A Γ,
     d_wf_btyp Γ (ptyp_to_btyp_inh A) -> d_wf_btyp Γ (ptyp_to_btyp_syn A).
@@ -485,6 +498,16 @@ Proof.
     eapply d_wf_btyp_lc; eassumption.
   - rewrite ftvar_ptyp_to_btyp_syn. intros X HX.
     eapply (d_wf_btyp_ftvar H). rewrite ftvar_ptyp_to_btyp_inh. assumption.
+Qed.
+
+Lemma d_wf_btyp_syn_to_inh : forall A Γ,
+    d_wf_btyp Γ (ptyp_to_btyp_syn A) -> d_wf_btyp Γ (ptyp_to_btyp_inh A).
+Proof.
+  intros A Γ H. apply d_wf_btyp_of_lc_ftvar.
+  - apply lc_ptyp_to_btyp_inh. apply lc_ptyp_of_lc_btyp_syn.
+    eapply d_wf_btyp_lc; eassumption.
+  - rewrite ftvar_ptyp_to_btyp_inh. intros X HX.
+    eapply (d_wf_btyp_ftvar H). rewrite ftvar_ptyp_to_btyp_syn. assumption.
 Qed.
 
 (** [btyp_to_ptyp] (the erasing coercion) preserves free vars and reflects
@@ -624,8 +647,9 @@ Proof.
   - (* var *) apply d_wf_btyp_painting_syn. eapply d_wf_denv_binds_typ; eassumption.
   - (* anno *) apply d_wf_btyp_inh_to_syn. apply IHd_typing; assumption.
   - (* sub *) eapply d_sub_wf; [ eassumption | ].
+    rewrite <- (btyp_to_ptyp_ptyp_to_btyp_syn A).
     apply d_wf_utyp_painting_syn_btyp. apply IHd_typing; assumption.
-  - (* freeze *) apply IHd_typing; assumption.
+  - (* freeze *) apply d_wf_btyp_syn_to_inh. apply IHd_typing; assumption.
   - (* forall *) apply d_wf_btyp__all_inh with (L := L `union` dom Γ). intros X HX.
     apply H1; auto. apply d_wf_denv__tvar; auto.
   - (* abs *) apply d_wf_btyp__arrow.
@@ -646,14 +670,8 @@ Proof.
       eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
       * apply H3; auto. apply d_wf_denv__typ; auto.
       * discriminate.
-  - (* abs_anno_check *) apply d_wf_btyp__arrow.
-    + apply d_wf_btyp_of_wf_ptyp_erase. rewrite H0. assumption.
-    + pick fresh x for (L `union` dom Γ).
-      eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
-      * apply H2; auto. apply d_wf_denv__typ; auto.
-      * discriminate.
-  - (* app: result B from e1 : btyp_arrow Barg B *)
-    assert (Harr : d_wf_btyp Γ (btyp_arrow Barg B)) by (apply IHd_typing1; assumption).
+  - (* app: result B2 from e1 : btyp_arrow B1 B2 *)
+    assert (Harr : d_wf_btyp Γ (btyp_arrow B1 B2)) by (apply IHd_typing1; assumption).
     inversion Harr; subst. assumption.
 Qed.
 

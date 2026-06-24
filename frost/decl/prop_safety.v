@@ -527,12 +527,9 @@ Proof.
         [ exact Hwf | eassumption | eapply d_typing__sub; eassumption | exact Hcr ].
     + (* tc *) admit.
     + (* fn *) admit.
-  - (* freeze *) destruct (IHHty Hwf Γ' Hcr) as [Q [HQ Hsafe]].
-    exists Q. split; [ apply d_pat__freeze; exact HQ | ].
-    intros Γext Γt A Hcw Hcrt Hwft HA. inversion HA; subst;
-      try (match goal with Hb : is_base_term (exp_freeze _) |- _ => inversion Hb end);
-      try (match goal with Hv : is_value (exp_freeze _) |- _ => inversion Hv end);
-      eapply Hsafe; [ exact Hcw | exact Hcrt | exact Hwft | eassumption ].
+  - (* freeze *) admit.
+    (* SAFETY: the Freeze rule now repaints [syn A ⇒ inh A]; this gpat case
+       needs the colour bookkeeping reworked alongside the rest of safety. *)
   - (* forall *) admit.
   - (* abs *) admit.
   - (* abs_check *)

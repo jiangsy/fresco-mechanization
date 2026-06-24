@@ -209,6 +209,20 @@ Fixpoint pskl_to_bskl_inh (P : pskl) : bskl :=
   | pskl_tophole P0 => bskl_tophole (pskl_to_bskl_inh P0)
   end.
 
+(** Colour-preserving skeleton of a [btyp]: same shape and the SAME
+    synthesised/inherited colour at every quantifier (a [btyp] has no holes).
+    Used by [App] so the refinement output [inh{P} ⊳ btyp_to_bskl B1] is exactly
+    the skeleton of the function domain [B1] — tying the two together. *)
+Fixpoint btyp_to_bskl (B : btyp) : bskl :=
+  match B with
+  | btyp_unit => bskl_unit
+  | btyp_var_b n => bskl_var_b n
+  | btyp_var_f X => bskl_var_f X
+  | btyp_arrow B1 B2 => bskl_arrow (btyp_to_bskl B1) (btyp_to_bskl B2)
+  | btyp_all_syn B0 => bskl_all_syn (btyp_to_bskl B0)
+  | btyp_all_inh B0 => bskl_all_inh (btyp_to_bskl B0)
+  end.
+
 Fixpoint bskl_to_pskl (Q : bskl) : pskl :=
   match Q with
   | bskl_unit => pskl_unit

@@ -643,14 +643,14 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__anno : forall Γ e A,
     Γ ⊢ₚ A ->
     Γ ⊢[ mode_ti ] (exp_anno e A) ⇨ (pskl_to_bskl_syn (ptyp_to_pskl A))
-| d_pat__sub : forall Γ m e Q1 Q2,
+| d_pat__sub : forall Γ m e P Q,
     is_base_term e ->
-    Γ ⊢[ mode_ti ] e ⇨ Q1 ->
-    empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl Q1) ⊑ Q2 ->
-    Γ ⊢[ m ] e ⇨ Q2
-| d_pat__freeze : forall Γ e Q,
-    Γ ⊢[ mode_ti ] e ⇨ Q ->
-    Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ Q
+    Γ ⊢[ mode_ti ] e ⇨ (pskl_to_bskl_syn P) ->
+    empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q ->
+    Γ ⊢[ m ] e ⇨ Q
+| d_pat__freeze : forall Γ e P,
+    Γ ⊢[ mode_ti ] e ⇨ (pskl_to_bskl_syn P) ->
+    Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ (pskl_to_bskl_syn P)
 | d_pat__abs : forall L Γ m e P Q,
     m <> mode_tc ->
     nil ⨟ Γ ⊢ₚₛ P ->
@@ -658,36 +658,35 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        ((x ~ dbind_skl P) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
     Γ ⊢[ m ] (exp_abs e) ⇨ (bskl_arrow (pskl_to_bskl_inh P) Q)
-| d_pat__abs_check : forall L Γ e Q,
-    (forall x, x `notin` L ->
-       ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢[ mode_tc ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ mode_tc ] (exp_abs e) ⇨ (bskl_tophole (bskl_arrow bskl_hole Q))
-| d_pat__abs_anno : forall L Γ m e A Sarg Q,
+| d_pat__abs_anno : forall L Γ m e (A : ptyp) (B : btyp) Q,
     (* The arrow-arg skeleton [Sarg] is bidirectional, [bskl_to_pskl Sarg]
        the annotation's pattern. *)
     m <> mode_tc ->
     Γ ⊢ₚ A ->
-    bskl_to_pskl Sarg = ptyp_to_pskl A ->
+    btyp_to_ptyp B = A ->
     (forall x, x `notin` L ->
        ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ m ] (exp_abs_anno A e) ⇨ (bskl_arrow Sarg Q)
-| d_pat__abs_anno_check : forall L Γ e A Sarg Q,
-    Γ ⊢ₚ A ->
-    bskl_to_pskl Sarg = ptyp_to_pskl A ->
-    (forall x, x `notin` L ->
-       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
-    Γ ⊢[ mode_tc ] (exp_abs_anno A e) ⇨ (bskl_tophole (bskl_arrow Sarg Q))
-| d_pat__app : forall Γ m e1 e2 P P' Q,
+    Γ ⊢[ m ] (exp_abs_anno A e) ⇨ (bskl_arrow (btyp_to_bskl B) Q)
+| d_pat__app : forall Γ m e1 e2 P (Q1 Q2 : bskl),
     (* Paper P-App (declarative.tex:1560): the function [e1] is SKELETON-
        INFERRED ([⇨]) in [FN] mode, not typed — d_pat is self-contained
        skeleton inference.  [P'] is the fill output (the arg skeleton). *)
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ P' ->
-    Γ ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow P' Q) ->
-    Γ ⊢[ m ] (exp_app e1 e2) ⇨ Q
+    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q1 ->
+    Γ ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow Q1 Q2) ->
+    Γ ⊢[ m ] (exp_app e1 e2) ⇨ Q2
+| d_pat__abs_check : forall L Γ e P,
+    (forall x, x `notin` L ->
+       ((x ~ dbind_skl pskl_hole) ++ Γ) ⊢[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ (pskl_to_bskl_syn P)) ->
+    Γ ⊢[ mode_tc ] (exp_abs e) ⇨ (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_syn P)))
+| d_pat__abs_anno_check : forall L Γ e A P,
+    Γ ⊢ₚ A ->
+    (forall x, x `notin` L ->
+       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⇨ (pskl_to_bskl_syn P)) ->
+    Γ ⊢[ mode_tc ] (exp_abs_anno A e) ⇨ (bskl_tophole (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) (pskl_to_bskl_syn P)))
 where "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P) : type_scope.
 
 (** Typing [d_typing] ([⦂]) uses [d_pat] in [App] (it infers the argument's
@@ -701,23 +700,26 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_typing__anno : forall Γ e A,
     Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
     Γ ⊢[ mode_ti ] (exp_anno e A) ⦂ (ptyp_to_btyp_syn A)
-| d_typing__sub : forall Γ m e B1 B2,
+| d_typing__sub : forall Γ m e A B,
     is_base_term e ->
-    Γ ⊢[ mode_ti ] e ⦂ B1 ->
-    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn B1) ⊑ B2 ->
-    Γ ⊢[ m ] e ⦂ B2
-| d_typing__freeze : forall Γ e B,
-    Γ ⊢[ mode_ti ] e ⦂ B ->
-    Γ ⊢[ mode_tc ] (exp_freeze e) ⦂ B
-| d_typing__forall : forall L Γ e B,
+    Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    Γ ⊢[ m ] e ⦂ B
+| d_typing__freeze : forall Γ e A,
+    (* Paper [Freeze]: TI [syn{A}] ⇒ TC [inh{A}].  The premise IS a synthesised
+       colouring [syn A] and the result is repainted to [inh A]; keeping an
+       arbitrary [B] would (i) accept a non-synthesised premise and (ii) let a
+       synthesised colour be used directly in check mode. *)
+    Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
+    Γ ⊢[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A)
+| d_typing__forall : forall L Γ e A,
     is_value e ->
     (forall X, X `notin` L ->
-       ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] e ⦂ (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    Γ ⊢[ mode_tc ] e ⦂ (btyp_all_inh B)
+       ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] e ⦂ (open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f X))) ->
+    Γ ⊢[ mode_tc ] e ⦂ (btyp_all_inh (ptyp_to_btyp_inh A))
 | d_typing__abs : forall L Γ m e A B,
     (* Paper [Abs] (syntax-directed.tex): [M ≠ TC]; the check-mode
        abstraction goes through [d_typing__abs_check] instead. *)
-    m <> mode_tc ->
     Γ ⊢ₚ A ->
     (forall x, x `notin` L ->
        ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
@@ -731,33 +733,25 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
     Γ ⊢[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
-| d_typing__abs_anno : forall L Γ m e A Barg B,
+| d_typing__abs_anno : forall L Γ m e A B1 B2,
     (* The arrow-arg is an arbitrary bidirectional [Barg] whose erasure
        [btyp_to_ptyp] is the annotation [A].  Paper [AbsAnno]: [M ≠ TC]. *)
-    m <> mode_tc ->
     Γ ⊢ₚ A ->
-    btyp_to_ptyp Barg = A ->
+    btyp_to_ptyp B1 = A ->
     (forall x, x `notin` L ->
        ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
-    Γ ⊢[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow Barg B)
-| d_typing__abs_anno_check : forall L Γ e A Barg B,
-    (* Paper [AbsAnnoCheck], [ᾱ = ·] base.  Mirrors [d_pat__abs_anno_check]. *)
-    Γ ⊢ₚ A ->
-    btyp_to_ptyp Barg = A ->
-    (forall x, x `notin` L ->
-       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
-    Γ ⊢[ mode_tc ] (exp_abs_anno A e) ⦂ (btyp_arrow Barg B)
-| d_typing__app : forall Γ m e1 e2 P A Barg B,
-    (* The function-arg is a bidirectional [A] ([Barg] with
-       [btyp_to_ptyp Barg = A]); the argument is checked at [inh{A}]. *)
-    btyp_to_ptyp Barg = A ->
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B2) ->
+    Γ ⊢[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow B1 B2)
+| d_typing__app : forall Γ m e1 e2 P B1 B2,
+    (* Paper [App]: ONE domain [inh A] (the refinement output) is used by both
+       the refinement and the function premise; the argument is checked at the
+       same [inh A].  (Previously the function domain was an arbitrary [Barg]
+       with erasure [A], not justified by the [inh A] refinement output.) *)
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
-    Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow Barg B) ->
-    Γ ⊢[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh A) ->
-    Γ ⊢[ m ] (exp_app e1 e2) ⦂ B
+    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
+    Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) ->
+    Γ ⊢[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
+    Γ ⊢[ m ] (exp_app e1 e2) ⦂ B2
 where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope.
 
 (* ===================================================================== *)
@@ -799,9 +793,10 @@ Inductive sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     sd_typing mode_ti Γ e B1 ->
     empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn B1) ⊑ B2 ->
     sd_typing m Γ e B2
-| sd_typing__freeze : forall Γ e B,
-    sd_typing mode_ti Γ e B ->
-    sd_typing mode_tc Γ (exp_freeze e) B
+| sd_typing__freeze : forall Γ e A,
+    (* Paper [Freeze]: TI [syn{A}] ⇒ TC [inh{A}]. *)
+    sd_typing mode_ti Γ e (ptyp_to_btyp_syn A) ->
+    sd_typing mode_tc Γ (exp_freeze e) (ptyp_to_btyp_inh A)
 | sd_typing__abs : forall L Γ m e A B,
     (* Paper [sdtylab{Abs}]: [M ≠ TC]. *)
     m <> mode_tc ->
@@ -841,20 +836,22 @@ Inductive sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        sd_typing mode_tc ((X ~ dbind_tvar) ++ Γ) (exp_abs_anno A0 e)
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
     sd_typing mode_tc Γ (exp_abs_anno A0 e) (btyp_all_inh B)
-| sd_typing__abs_anno_check_base : forall L Γ e A0 Barg B,
+| sd_typing__abs_anno_check_base : forall L Γ e A0 B,
+    (* Paper [AbsAnnoCheck]: inherited annotation domain [inh A] in check mode. *)
     Γ ⊢ₚ A0 ->
-    btyp_to_ptyp Barg = A0 ->
     (forall x, x `notin` L ->
        sd_typing mode_tc ((x ~ dbind_typ A0) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    sd_typing mode_tc Γ (exp_abs_anno A0 e) (btyp_arrow Barg B)
-| sd_typing__app : forall Γ m e1 e2 P A Barg B,
-    btyp_to_ptyp Barg = A ->
+    sd_typing mode_tc Γ (exp_abs_anno A0 e) (btyp_arrow (ptyp_to_btyp_inh A0) B)
+| sd_typing__app : forall Γ m e1 e2 P B1 B2,
+    (* Paper [App]: ONE domain [B1] used by both the refinement (its skeleton
+       [btyp_to_bskl B1]) and the function premise; the argument is checked at
+       the inherited colouring of the same domain. *)
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)) ->
-    sd_typing (mode_fn m) Γ e1 (btyp_arrow Barg B) ->
-    sd_typing mode_tc Γ e2 (ptyp_to_btyp_inh A) ->
-    sd_typing m Γ (exp_app e1 e2) B.
+    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
+    sd_typing (mode_fn m) Γ e1 (btyp_arrow B1 B2) ->
+    sd_typing mode_tc Γ e2 (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
+    sd_typing m Γ (exp_app e1 e2) B2.
 
 (* WT: Other comments:
 1. In the paper I have \skmod[\N]{\M}{P} as well-formedness conditions
