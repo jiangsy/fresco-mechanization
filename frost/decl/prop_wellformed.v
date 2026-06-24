@@ -192,15 +192,15 @@ Proof.
   - apply d_sub__check; [ assumption | assumption | | assumption ].
     eapply d_consis_equiv; [ exact Heq | eassumption ].
   - apply d_sub__forall_r with (L := L);
-      intros X HX; eauto.
+      [ assumption | intros X HX; eauto ].
   - eapply d_sub__arg; [ eassumption | eassumption | fsetdec ].
   - (* forall_l_tagged: outer context pass-through, premise via IH *)
-    eapply d_sub__forall_l_tagged with (Δ' := Δ');
+    eapply d_sub__forall_l_tagged with (Ψ' := Ψ');
       [ assumption | fsetdec | eassumption | assumption | assumption | ].
     match goal with
     | IH : forall _, _ [=] _ -> _ |- _ => eapply IH; fsetdec
     end.
-  - eapply d_sub__forall_l_untagged with (Δ' := Δ');
+  - eapply d_sub__forall_l_untagged with (Ψ' := Ψ');
       [ assumption | fsetdec | eassumption | assumption | assumption | ].
     match goal with
     | IH : forall _, _ [=] _ -> _ |- _ => eapply IH; fsetdec
@@ -517,6 +517,27 @@ Lemma ftvar_btyp_to_ptyp : forall B,
     ftvar_in_ptyp (btyp_to_ptyp B) = ftvar_in_btyp B.
 Proof. induction B; simpl; try reflexivity; try (rewrite IHB1, IHB2); auto. Qed.
 
+(** A fully-inherited [btyp] is the inh-painting of its own erasure: re-painting
+    every (already-inh) quantifier returns the same type.  Needed by the
+    [forall_r] case of the abstraction-tail subsumption lemmas, where the result
+    [btyp_all_inh B] (with [is_ityp B]) must be matched against the painted
+    result [btyp_all_inh (ptyp_to_btyp_inh A)] forced by [d_typing__forall]. *)
+Lemma is_ityp_ptyp_to_btyp_inh : forall B,
+    is_ityp B -> ptyp_to_btyp_inh (btyp_to_ptyp B) = B.
+Proof.
+  induction 1; simpl; try reflexivity.
+  - rewrite IHis_ityp1, IHis_ityp2. reflexivity.
+  - f_equal.
+    pick fresh X for (L `union` ftvar_in_btyp A).
+    apply open_btyp_wrt_btyp_inj with (Xbt1 := X).
+    + rewrite ftvar_ptyp_to_btyp_inh, ftvar_btyp_to_ptyp. fsetdec.
+    + fsetdec.
+    + specialize (H0 X ltac:(fsetdec)).
+      unfold open_btyp_wrt_btyp in H0 |- *.
+      rewrite btyp_to_ptyp_open_rec, ptyp_to_btyp_inh_open_rec in H0.
+      simpl in H0. exact H0.
+Qed.
+
 Lemma degree_btyp_of_degree_ptyp_erase : forall B k,
     degree_ptyp_wrt_ptyp k (btyp_to_ptyp B) -> degree_btyp_wrt_btyp k B.
 Proof.
@@ -596,7 +617,7 @@ Proof.
   - (* check *) eapply d_consis_wf; eassumption.
   - (* forall_r: C ⊑ btyp_all_inh B *)
     inst_cofinites_for d_wf_btyp__all_inh. intros X HX.
-    apply H0; auto. apply d_wf_utyp_weakening with (Γ1 := nil). simpl. assumption.
+    apply H1; auto. apply d_wf_utyp_weakening with (Γ1 := nil). simpl. assumption.
   - (* arg: utyp_arrow C1 C2 ⊑ btyp_arrow B1 B2 *)
     inversion Hwf; subst. apply d_wf_btyp__arrow.
     + eapply d_consis_wf; eassumption.
@@ -652,23 +673,17 @@ Proof.
   - (* freeze *) apply d_wf_btyp_syn_to_inh. apply IHd_typing; assumption.
   - (* forall *) apply d_wf_btyp__all_inh with (L := L `union` dom Γ). intros X HX.
     apply H1; auto. apply d_wf_denv__tvar; auto.
-  - (* abs *) apply d_wf_btyp__arrow.
-    + apply d_wf_btyp_painting_inh. assumption.
-    + pick fresh x for (L `union` dom Γ).
-      eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
-      * apply H2; auto. apply d_wf_denv__typ; auto.
-      * discriminate.
-  - (* abs_check *) apply d_wf_btyp__arrow.
+  - (* abs (general) *) apply d_wf_btyp__arrow.
     + apply d_wf_btyp_painting_inh. assumption.
     + pick fresh x for (L `union` dom Γ).
       eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
       * apply H1; auto. apply d_wf_denv__typ; auto.
       * discriminate.
-  - (* abs_anno *) apply d_wf_btyp__arrow.
-    + apply d_wf_btyp_of_wf_ptyp_erase. rewrite H1. assumption.
+  - (* abs_anno (general) *) apply d_wf_btyp__arrow.
+    + apply d_wf_btyp_of_wf_ptyp_erase. rewrite H0. assumption.
     + pick fresh x for (L `union` dom Γ).
       eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
-      * apply H3; auto. apply d_wf_denv__typ; auto.
+      * apply H2; auto. apply d_wf_denv__typ; auto.
       * discriminate.
   - (* app: result B2 from e1 : btyp_arrow B1 B2 *)
     assert (Harr : d_wf_btyp Γ (btyp_arrow B1 B2)) by (apply IHd_typing1; assumption).

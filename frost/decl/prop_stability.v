@@ -9,6 +9,7 @@ Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
+Require Import src.frost.prop_basic.
 Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
@@ -62,7 +63,7 @@ Proof.
   intros Γ A Hwf. induction Hwf; simpl.
   - apply d_consis__unit; reflexivity.
   - apply d_consis__var; [ exact H | reflexivity ].
-  - apply d_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+  - apply d_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ exact IHHwf1 | exact IHHwf2 | fsetdec ].
   - apply d_consis__forall_syn with (L := L). intros X HX.
     specialize (H0 X HX).
@@ -142,21 +143,18 @@ Proof.
     + apply is_styp_ptyp_to_btyp_syn; eapply d_wf_ptyp_lc; eauto.
     + exists empty. apply d_consis_syn_refl; exact Hwfa.
   - (* __sub at mode_ti: only d_sub__infer; compose the inner consistency. *)
-    match goal with H : empty ⨟ _ ⊢[ mode_ti ] _ ⊑ B2 |- _ =>
+    match goal with H : empty ⨟ _ ⊢[ mode_ti ] _ ⊑ B |- _ =>
       rename H into Hsub end.
     inversion Hsub as [ Δ0 Γ0 C0 B0 Hcons0 Hstyp0 HΔ0 | | | | | ]; subst;
       try congruence.
     edestruct IHHtyp as [Hstyp1 [Δt Hcons1]]; auto.
     split; [ exact Hstyp0 | ].
-    (* Hcons1 : Δt ⊨ ptyp_to_utyp_syn A ≈ B1   (B1 the inner type)
-       Hcons0 : empty ⊨ btyp_to_utyp_syn B1 ≈ B2  (coerced from ptyp_to_utyp_syn) *)
-    rewrite ptyp_to_utyp_syn_btyp_to_ptyp in Hcons0.
-    assert (HB1 : B1 = ptyp_to_btyp_syn (btyp_to_ptyp B1)) by
-      (symmetry; apply ptyp_to_btyp_syn_btyp_to_ptyp; apply is_styp_is_syn; exact Hstyp1).
-    rewrite HB1 in Hcons1.
+    (* Hcons1 : Δt ⊨ ptyp_to_utyp_syn A ≈ ptyp_to_btyp_syn A0  (inner syn type)
+       Hcons0 : Δ0 ⊨ ptyp_to_utyp_syn A0 ≈ B                  (sub premise, infer)
+       compose at the common middle [A0]. *)
     edestruct d_consis_compose as [Δc [_ Hc]].
     + exact Hcons1.
-    + rewrite ptyp_to_utyp_syn_btyp_to_ptyp. exact Hcons0.
+    + exact Hcons0.
     + exists Δc. exact Hc.
 Qed.
 
@@ -176,12 +174,11 @@ Proof.
   induction Htyp; subst; try discriminate; try congruence.
   - (* __sub: inner [Γ ⊢[ti] x ⦂ B1] (= Htyp), outer
        [empty ⊢[fn m] paint B1 ⊑ B2] (= H0). *)
-    destruct (@d_typing_var_ti_consis Γ x A B1 Hwf Hb Htyp)
+    destruct (@d_typing_var_ti_consis Γ x A (ptyp_to_btyp_syn A0) Hwf Hb Htyp)
       as [Hstyp1 [Δt Hcons1]].
-    rewrite ptyp_to_utyp_syn_btyp_to_ptyp in H0.
-    edestruct (@d_consis_sub_trans (mode_fn m) empty Γ (btyp_to_utyp_syn B1) B2
-                 H0 B1 (ptyp_to_utyp_syn A) Δt) as [Δ [_ Hgoal]].
-    + reflexivity.
+    edestruct (@d_consis_sub_trans (mode_fn m) empty Γ (ptyp_to_utyp_syn A0) B
+                 H0 (ptyp_to_btyp_syn A0) (ptyp_to_utyp_syn A) Δt) as [Δ [_ Hgoal]].
+    + rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity.
     + apply is_styp_is_syn; exact Hstyp1.
     + exact Hcons1.
     + exists Δ. exact Hgoal.
@@ -234,7 +231,7 @@ Proof. intros. unfold curry_btyp. rewrite fold_right_app. reflexivity. Qed.
 Definition arg_ok (Γ : list (atom * dbind)) (Barg : btyp) (e : exp) : Prop :=
   exists P,
     (Γ ⊢[ mode_tc ] e ⇨ (pskl_to_bskl_syn P)) /\
-    (Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl (btyp_to_ptyp Barg)))) /\
+    (Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl Barg)) /\
     (Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp Barg))).
 
 (** A single application step from a head arrow type plus argument
@@ -245,8 +242,8 @@ Lemma d_typing_app_step : forall Γ m e1 e2 Barg B,
     Γ ⊢[ m ] (exp_app e1 e2) ⦂ B.
 Proof.
   intros Γ m e1 e2 Barg B Hhead [P [Hpat [Href Hchk]]].
-  eapply d_typing__app with (P := P) (A := btyp_to_ptyp Barg) (Barg := Barg);
-    [ reflexivity | exact Hpat | exact Href | exact Hhead | exact Hchk ].
+  eapply d_typing__app with (P := P) (B1 := Barg);
+    [ exact Hpat | exact Href | exact Hhead | exact Hchk ].
 Qed.
 
 (** Head-generic spine INVERSION: a curried application factors into a
@@ -274,9 +271,9 @@ Proof.
            | Hb : is_base_term (exp_app _ _) |- _ => inversion Hb
            end).
     (* surviving [__app] case: head [H6], arg evidence [P], [Barg]. *)
-    edestruct (IHinit Γ f (mode_fn m) (btyp_arrow Barg R')) as [Bi [Hlen [Hhd Hfa]]];
+    edestruct (IHinit Γ f (mode_fn m) (btyp_arrow B1 R')) as [Bi [Hlen [Hhd Hfa]]];
       [ eassumption | ].
-    exists (Bi ++ Barg :: nil). repeat split.
+    exists (Bi ++ B1 :: nil). repeat split.
     + rewrite !app_length. simpl. rewrite Hlen. reflexivity.
     + rewrite curry_btyp_snoc.
       rewrite mode_fn_n_fn in Hhd.
@@ -341,15 +338,15 @@ Proof.
   - (* skip x : sp = x::l, sp' = x::l' *)
     simpl in Hsub |- *.
     inversion Hsub as [ | | | Δ0 Δ1 Δ2 Γ0 m0 C1 C2 B1 B2 Hcons Hrest HΔ | | ]; subst.
-    apply d_sub__arg with (Δ1 := Δ1) (Δ2 := Δ2);
+    apply d_sub__arg with (Ψ1 := Δ1) (Ψ2 := Δ2);
       [ exact Hcons | apply IHHperm; exact Hrest | exact HΔ ].
   - (* swap x y : sp = y::x::l, sp' = x::y::l *)
     simpl in Hsub |- *.
     inversion Hsub as [ | | | Δ0 Δy Δyr Γ0 m0 Cy C2 By B2 Hcy Hyr HΔyr | | ]; subst.
     inversion Hyr as [ | | | Δ0' Δx Δl Γ0' m0' Cx C2' Bx B2' Hcx Hl HΔl | | ]; subst.
-    apply d_sub__arg with (Δ1 := Δx) (Δ2 := (Δy `union` Δl));
+    apply d_sub__arg with (Ψ1 := Δx) (Ψ2 := (Δy `union` Δl));
       [ exact Hcx
-      | apply d_sub__arg with (Δ1 := Δy) (Δ2 := Δl);
+      | apply d_sub__arg with (Ψ1 := Δy) (Ψ2 := Δl);
           [ exact Hcy | exact Hl | reflexivity ]
       | fsetdec ].
   - (* trans *)
@@ -521,7 +518,7 @@ Proof.
     rewrite List.map_length in Hp.
     rewrite spine_btyp_map_fst in Hp.
     (* reconstruct y's outer forall_l *)
-    simpl. apply d_sub__forall_l_untagged with (Δ' := Δ') (ph := ph).
+    simpl. apply d_sub__forall_l_untagged with (Ψ' := Δ') (ph := ph).
     + destruct (mode_fn_n_ge1_fn m Hpos') as [m'' Hm'']. rewrite Hm''. discriminate.
     + exact Hf.
     + exact Ht.
@@ -651,13 +648,14 @@ Proof.
     assert (Hpos' : 1 <= length args') by (rewrite <- (Permutation_length Hperm); exact Hpos).
     (* x's head: extract the empty-[Δ] subtyping from the binding painting *)
     destruct (mode_fn_n_ge1_fn m Hpos) as [mfx Hmfx]. rewrite Hmfx in Hheadx.
-    inversion Hheadx as [ | | | Γ0 m0 e0 B1 B2 Hbt Hti Hsub | | | | | | | ]; subst;
+    inversion Hheadx as [ | | | Γ0 m0 e0 B1 B2 Hbt Hti Hsub | | | | | ]; subst;
       try discriminate.
-    destruct (@d_typing_var_ti_consis Γ x (ptyp_forall_prefix n (curry_ptyp args R)) B1
-                Hwf Hbx Hti) as [Hstyp1 [Δt Hcons1]].
-    pose proof (@d_consis_paint_syn_eq B1 Hstyp1 Δt Γ
-                  (ptyp_forall_prefix n (curry_ptyp args R)) Hcons1) as HB1. subst B1.
-    rewrite ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_utyp_syn_ptyp_to_btyp_syn in Hsub.
+    destruct (@d_typing_var_ti_consis Γ x (ptyp_forall_prefix n (curry_ptyp args R))
+                (ptyp_to_btyp_syn B1) Hwf Hbx Hti) as [Hstyp1 [Δt Hcons1]].
+    pose proof (@d_consis_paint_syn_eq (ptyp_to_btyp_syn B1) Hstyp1 Δt Γ
+                  (ptyp_forall_prefix n (curry_ptyp args R)) Hcons1) as HB1.
+    apply (f_equal btyp_to_ptyp) in HB1.
+    rewrite !btyp_to_ptyp_ptyp_to_btyp_syn in HB1. subst B1.
     rewrite paint_forall_prefix, (paint_curry_spine args Bargs R ltac:(lia)) in Hsub.
     rewrite <- (spine_btyp_curry args Bargs R' ltac:(lia)) in Hsub.
     rewrite <- Hmfx in Hsub.
@@ -688,11 +686,10 @@ Proof.
     rewrite <- paint_forall_prefix in Hsub'.
     rewrite (spine_btyp_curry args' Bargs' R' ltac:(lia)) in Hsub'.
     eapply d_typing__sub with
-      (B1 := ptyp_to_btyp_syn (ptyp_forall_prefix n (curry_ptyp args' R))).
+      (A := ptyp_forall_prefix n (curry_ptyp args' R)).
     + apply is_base_term__var.
     + apply d_typing__var. exact Hby.
-    + rewrite ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_utyp_syn_ptyp_to_btyp_syn.
-      exact Hsub'.
+    + exact Hsub'.
 Qed.
 
 (** * Order irrelevance of argument permutation.

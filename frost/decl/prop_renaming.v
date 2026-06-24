@@ -189,18 +189,20 @@ Proof.
     + apply is_ityp_rename. assumption.
   - (* forall_r *)
     apply d_sub__forall_r with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
+      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y);
+      [ change (is_ityp (subst_btyp_in_btyp (btyp_var_f Y) X0 (btyp_all_inh B)));
+        apply is_ityp_rename; assumption | ].
     intros Z HZ.
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
     rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
-    eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
+    eapply (H1 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - (* arg *)
     eapply d_sub__arg.
     + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
     + eapply IHd_sub; [ reflexivity | exact Hfr ].
     + assumption.
   - (* forall_l_tagged *)
-    eapply d_sub__forall_l_tagged with (Δ' := Δ').
+    eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
     + assumption.
     + assumption.
     + apply d_tags_subst_tvar. eassumption.
@@ -209,7 +211,7 @@ Proof.
     + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
       eapply IHd_sub; [ reflexivity | exact Hfr ].
   - (* forall_l_untagged *)
-    eapply d_sub__forall_l_untagged with (Δ' := Δ').
+    eapply d_sub__forall_l_untagged with (Ψ' := Ψ').
     + assumption.
     + assumption.
     + apply d_tags_subst_tvar. eassumption.
@@ -288,17 +290,18 @@ Proof.
       | eapply d_consis_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
       | assumption ].
   - apply d_sub__forall_r with
-      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}}).
+      (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}});
+      [ assumption | ].
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
-    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
+    eapply (H1 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
   - eapply d_sub__arg;
       [ eapply d_consis_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
       | eapply IHd_sub; [ reflexivity | exact Hd ] | assumption ].
-  - eapply d_sub__forall_l_tagged with (Δ' := Δ');
+  - eapply d_sub__forall_l_tagged with (Ψ' := Ψ');
       [ eassumption | eassumption | eassumption
       | eapply d_wf_utyp_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
       | eassumption | eapply IHd_sub; [ reflexivity | exact Hd ] ].
-  - eapply d_sub__forall_l_untagged with (Δ' := Δ');
+  - eapply d_sub__forall_l_untagged with (Ψ' := Ψ');
       [ eassumption | eassumption | eassumption
       | eapply d_wf_utyp_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
       | eassumption | eapply IHd_sub; [ reflexivity | exact Hd ] ].

@@ -138,6 +138,17 @@ Proof.
 Qed.
 
 
+Lemma btyp_to_ptyp_open_rec : forall B1 B2 k,
+    btyp_to_ptyp (open_btyp_wrt_btyp_rec k B2 B1) =
+    open_ptyp_wrt_ptyp_rec k (btyp_to_ptyp B2) (btyp_to_ptyp B1).
+Proof.
+  induction B1; intros B2 k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[|]|]; reflexivity.
+  - rewrite IHB1_1, IHB1_2; reflexivity.
+  - rewrite IHB1; reflexivity.
+  - rewrite IHB1; reflexivity.
+Qed.
+
 Lemma ptyp_to_utyp_syn_open_rec : forall A1 A2 k,
     ptyp_to_utyp_syn (open_ptyp_wrt_ptyp_rec k A2 A1) =
     open_utyp_wrt_utyp_rec k (ptyp_to_utyp_syn A2) (ptyp_to_utyp_syn A1).
