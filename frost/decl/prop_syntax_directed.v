@@ -51,3 +51,120 @@ Proof.
   - (* app *)
     eapply d_typing__app; eassumption.
 Qed.
+
+(* ===================================================================== *)
+(*  tvar-strengthening cascade (for the completeness Forall/anno case).   *)
+(*  Each judgment drops an unused tvar binding [X ∉ ftvar(type)].         *)
+(* ===================================================================== *)
+
+Lemma d_wf_utyp_strengthen : forall Γ C,
+    Γ ⊢ᵤ C ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    X `notin` ftvar_in_utyp C ->
+    (Γ1 ++ Γ2) ⊢ᵤ C.
+Proof.
+  intros Γ C H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  - apply d_wf_utyp__unit.
+  - simpl in HX. apply d_wf_utyp__var. analyze_binds H; try (exfalso; fsetdec); auto.
+  - simpl in HX. apply d_wf_utyp__arrow; [ eapply IHd_wf_utyp1 | eapply IHd_wf_utyp2 ]; eauto.
+  - simpl in HX. apply d_wf_utyp__all_syn with (L := L `union` {{X0}}).
+    intros Y HY. rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Y ltac:(auto) ((Y ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_wf_utyp__all_etag with (L := L `union` {{X0}}).
+    intros Y HY. rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Y ltac:(auto) ((Y ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+Qed.
+
+Lemma d_consis_strengthen : forall Δ Γ C B,
+    Δ ⨟ Γ ⊨ C ≈ B ->
+    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    X `notin` ftvar_in_utyp C ->
+    Δ ⨟ (Γ1 ++ Γ2) ⊨ C ≈ B.
+Proof.
+  intros Δ Γ C B H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  - apply d_consis__unit; assumption.
+  - simpl in HX. apply d_consis__var; [ | assumption ]. analyze_binds H; try (exfalso; fsetdec); auto.
+  - simpl in HX. eapply d_consis__arrow;
+      [ eapply IHd_consis1 | eapply IHd_consis2 | eassumption ]; eauto.
+  - simpl in HX. apply d_consis__forall_inh_tagged with (L := L `union` {{X0}}) (Δ0 := Δ0).
+    2: eassumption.
+    intros Y HY. rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Y ltac:(auto) ((Y ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_consis__forall_inh_untagged with (L := L `union` {{X0}}).
+    intros Y HY. rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Y ltac:(auto) ((Y ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_consis__forall_syn_tagged with (L := L `union` {{X0}}).
+    intros Y HY. rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Y ltac:(auto) ((Y ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+  - simpl in HX. apply d_consis__forall_syn with (L := L `union` {{X0}}).
+    intros Y HY. rewrite_env (((Y ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Y ltac:(auto) ((Y ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
+    pose proof (ftvar_in_utyp_open_utyp_wrt_utyp_upper C (utyp_var_f Y)) as Hup.
+    simpl in Hup. fsetdec.
+Qed.
+
+(* NOTE on [d_sub]: a conclusion-only tvar-strengthening ([X ∉ ftvar C] ⇒
+   drop X) is FALSE — [d_sub__forall_l] may instantiate with the witness
+   [ph = X], which the conclusion does not expose.  The robust replacement is
+   type-substitution [X := unit] (rewriting the witnesses too); the pieces
+   [d_consis_subst_tvar], [d_wf_utyp_subst_tvar], [d_tags_subst_tvar],
+   [d_pat_consis_subst_unit], [d_pat_sub_subst_unit] already exist, and the
+   remaining [d_sub] / [d_pat] / [sd_typing] subst lemmas are the content of
+   [sd_typing_forall_admissible]'s base-term cases below. *)
+
+(* ===================================================================== *)
+(*  Completeness:  d_typing ⊆ sd_typing                                   *)
+(* ===================================================================== *)
+
+(** The paper's "interesting case" [dtylab{Forall}]: a [∀]-generalised value
+    [V] is admissible in [sd_typing].  For [λ]-values the [∀] is the folded
+    [abs_check_step] / [abs_anno_check_step] (proved here).  For base-term
+    values it is re-routed through [Sub] + [d_sub__forall_r], which needs the
+    synthesis re-established at [Γ] (the fresh [∀]-var dropped) — an
+    [sd_typing] tvar-strengthening provided by type-substitution [X := unit]
+    (see the [d_sub] note above).  Those three base-term subcases are the only
+    remaining holes. *)
+Lemma sd_typing_forall_admissible : forall L Γ V B,
+    is_value V ->
+    (forall X, X `notin` L ->
+       sd_typing mode_tc ((X ~ dbind_tvar) ++ Γ) V (open_btyp_wrt_btyp B (btyp_var_f X))) ->
+    sd_typing mode_tc Γ V (btyp_all_inh B).
+Proof.
+  intros L Γ V B Hv IH. inversion Hv; subst.
+  - (* unit: base term — Sub + ForallR + (X := unit) strengthening *) admit.
+  - (* var: base term — likewise *) admit.
+  - (* λx.M : the folded ∀-peel *)
+    apply sd_typing__abs_check_step with (L := L); assumption.
+  - (* λxᴬ.M : the folded ∀-peel *)
+    apply sd_typing__abs_anno_check_step with (L := L); assumption.
+  - (* (M : A) : base term — likewise *) admit.
+Admitted.
+
+Theorem sd_typing_complete : forall M Γ e A,
+    d_typing M Γ e A -> sd_typing M Γ e A.
+Proof.
+  intros M Γ e A H. induction H.
+  - apply sd_typing__unit.
+  - apply sd_typing__var; assumption.
+  - apply sd_typing__anno; assumption.
+  - eapply sd_typing__sub; eassumption.
+  - apply sd_typing__freeze; assumption.
+  - (* forall *) eapply sd_typing_forall_admissible; eassumption.
+  - (* abs (m ≠ tc) *) apply sd_typing__abs with (L := L); assumption.
+  - (* abs_check → abs_check_base *)
+    apply sd_typing__abs_check_base with (L := L); assumption.
+  - (* abs_anno (m ≠ tc) *) apply sd_typing__abs_anno with (L := L); assumption.
+  - (* abs_anno_check → abs_anno_check_base *)
+    apply sd_typing__abs_anno_check_base with (L := L); assumption.
+  - (* app *) eapply sd_typing__app; eassumption.
+Qed.
