@@ -725,14 +725,6 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
     Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
-| d_typing__abs_check : forall L Γ e A B,
-    (* Paper [AbsCheck] (syntax-directed.tex), [ᾱ = ·] base; the [∀ᾱ]
-       prefix is supplied by [d_typing__forall].  Mirrors [d_pat__abs_check]. *)
-    Γ ⊢ₚ A ->
-    (forall x, x `notin` L ->
-       ((x ~ dbind_typ A) ++ Γ) ⊢[ mode_tc ]
-         (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
-    Γ ⊢[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
 | d_typing__abs_anno : forall L Γ m e A B1 B2,
     (* The arrow-arg is an arbitrary bidirectional [Barg] whose erasure
        [btyp_to_ptyp] is the annotation [A].  Paper [AbsAnno]: [M ≠ TC]. *)
