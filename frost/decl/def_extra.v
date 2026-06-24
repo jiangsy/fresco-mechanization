@@ -30,9 +30,9 @@ Reserved Notation "Δ ⨟ Γ ⊢ᵤ C"
   (at level 75, Γ at level 74, C at level 75, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊢ᵤₛ R"
   (at level 75, Γ at level 74, R at level 75, no associativity).
-Reserved Notation "Δ ⨟ Γ ⊨ C ≈ B"
+Reserved Notation "Ψ ⨟ Γ ⊨ C ≈ B"
   (at level 75, Γ at level 74, C at level 74, B at level 74, no associativity).
-Reserved Notation "Δ ⨟ Γ ⊢[ M ] C ⊑ B"
+Reserved Notation "Ψ ⨟ Γ ⊢[ M ] C ⊑ B"
   (at level 75, Γ at level 74, M at level 0, C at level 74, B at level 74,
    no associativity).
 Reserved Notation "Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P"
@@ -264,94 +264,95 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
 (* ===================================================================== *)
 
 Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
-| d_consis__unit : forall Δ Γ,
-    Δ [=] empty ->
-    Δ ⨟ Γ ⊨ utyp_unit ≈ btyp_unit
-| d_consis__var : forall Δ Γ X,
+| d_consis__unit : forall Ψ Γ,
+    Ψ [=] empty ->
+    Ψ ⨟ Γ ⊨ utyp_unit ≈ btyp_unit
+| d_consis__var : forall Ψ Γ X,
     binds X dbind_tvar Γ ->
-    Δ [=] empty ->
-    Δ ⨟ Γ ⊨ (utyp_var_f X) ≈ (btyp_var_f X)
-| d_consis__arrow : forall Δ Δ1 Δ2 Γ C1 C2 B1 B2,
-    (* Paper [Arrow]: the tag context is the SET UNION [Δ₁,Δ₂]
-       (declarative.tex:967, with Δ a set), not a disjoint union — so we
+    Ψ [=] empty ->
+    Ψ ⨟ Γ ⊨ (utyp_var_f X) ≈ (btyp_var_f X)
+| d_consis__arrow : forall Ψ Ψ1 Ψ2 Γ C1 C2 B1 B2,
+    (* Paper [Arrow]: the tag context is the SET UNION [Ψ₁,Ψ₂]
+       (declarative.tex:967, with Ψ a set), not a disjoint union — so we
        neither require nor record disjointness.  This faithfulness is what
        makes consistency transitivity (B.2) provable: composing two
        derivations may legitimately reuse a tag, which a set absorbs. *)
-    Δ1 ⨟ Γ ⊨ C1 ≈ B1 ->
-    Δ2 ⨟ Γ ⊨ C2 ≈ B2 ->
-    Δ [=] Δ1 `union` Δ2 ->
-    Δ ⨟ Γ ⊨ (utyp_arrow C1 C2) ≈ (btyp_arrow B1 B2)
-| d_consis__forall_inh_tagged : forall L Δ Δ0 Γ ε C B,
-    (* Paper [ForallInh] with δ=ε: output is [Δ,ε] = Δ ∪ {ε}, the
+    Ψ1 ⨟ Γ ⊨ C1 ≈ B1 ->
+    Ψ2 ⨟ Γ ⊨ C2 ≈ B2 ->
+    Ψ [=] Ψ1 `union` Ψ2 ->
+    Ψ ⨟ Γ ⊨ (utyp_arrow C1 C2) ≈ (btyp_arrow B1 B2)
+| d_consis__forall_inh_tagged : forall L Ψ Ψ0 Γ ε C B,
+    (* Paper [ForallInh] with δ=ε: output is [Ψ,ε] = Ψ ∪ {ε}, the
        idempotent set union (declarative.tex:950) — no freshness side
        condition ([add] on a set is idempotent). *)
     (forall X, X `notin` L ->
-       Δ0 ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+       Ψ0 ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
          (open_utyp_wrt_utyp C (utyp_var_f X)) ≈
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    Δ [=] add ε Δ0 ->
-    Δ ⨟ Γ ⊨ (utyp_all_etag ε C) ≈ (btyp_all_inh B)
-| d_consis__forall_inh_untagged : forall L Δ Γ C B,
+    Ψ [=] add ε Ψ0 ->
+    Ψ ⨟ Γ ⊨ (utyp_all_etag ε C) ≈ (btyp_all_inh B)
+| d_consis__forall_inh_untagged : forall L Ψ Γ C B,
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+       Ψ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
          (open_utyp_wrt_utyp C (utyp_var_f X)) ≈
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    Δ ⨟ Γ ⊨ (utyp_all_syn C) ≈ (btyp_all_inh B)
-| d_consis__forall_syn_tagged : forall L Δ Γ ε C B,
+    Ψ ⨟ Γ ⊨ (utyp_all_syn C) ≈ (btyp_all_inh B)
+| d_consis__forall_syn_tagged : forall L Ψ Γ ε C B,
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+       Ψ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
          (open_utyp_wrt_utyp C (utyp_var_f X)) ≈
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    Δ ⨟ Γ ⊨ (utyp_all_etag ε C) ≈ (btyp_all_syn B)
-| d_consis__forall_syn : forall L Δ Γ C B,
+    Ψ ⨟ Γ ⊨ (utyp_all_etag ε C) ≈ (btyp_all_syn B)
+| d_consis__forall_syn : forall L Ψ Γ C B,
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
+       Ψ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊨
          (open_utyp_wrt_utyp C (utyp_var_f X)) ≈
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    Δ ⨟ Γ ⊨ (utyp_all_syn C) ≈ (btyp_all_syn B)
-where "Δ ⨟ Γ ⊨ C ≈ B" := (d_consis Δ Γ C B) : type_scope.
+    Ψ ⨟ Γ ⊨ (utyp_all_syn C) ≈ (btyp_all_syn B)
+where "Ψ ⨟ Γ ⊨ C ≈ B" := (d_consis Ψ Γ C B) : type_scope.
 
 Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
-| d_sub__infer : forall Δ Γ C B,
+| d_sub__infer : forall Ψ Γ C B,
     empty ⨟ Γ ⊨ C ≈ B ->
     is_styp B ->
-    Δ [=] empty ->
-    Δ ⨟ Γ ⊢[ mode_ti ] C ⊑ B
-| d_sub__check : forall Δ Γ C B,
+    Ψ [=] empty ->
+    Ψ ⨟ Γ ⊢[ mode_ti ] C ⊑ B
+| d_sub__check : forall Ψ Γ C B,
     (* WT: I modified this case in the new draft to require both C and
     B to be guarded. *)
     guarded_utyp C ->
     guarded_btyp B ->
-    Δ ⨟ Γ ⊨ C ≈ B ->
+    Ψ ⨟ Γ ⊨ C ≈ B ->
     is_ityp B ->
-    Δ ⨟ Γ ⊢[ mode_tc ] C ⊑ B
-| d_sub__forall_r : forall L Δ Γ C B,
+    Ψ ⨟ Γ ⊢[ mode_tc ] C ⊑ B
+| d_sub__forall_r : forall L Ψ Γ C B,
+    is_ityp (btyp_all_inh B) ->
     (forall X, X `notin` L ->
-       Δ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⊑
+       Ψ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⊑
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    Δ ⨟ Γ ⊢[ mode_tc ] C ⊑ (btyp_all_inh B)
-| d_sub__arg : forall Δ Δ1 Δ2 Γ m C1 C2 B1 B2,
-    Δ1 ⨟ Γ ⊨ C1 ≈ B1 ->
-    Δ2 ⨟ Γ ⊢[ m ] C2 ⊑ B2 ->
-    Δ [=] Δ1 `union` Δ2 ->
-    Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⊑ (btyp_arrow B1 B2)
-| d_sub__forall_l_tagged : forall Δ Δ' Γ m ε C ph B,
+    Ψ ⨟ Γ ⊢[ mode_tc ] C ⊑ (btyp_all_inh B)
+| d_sub__arg : forall Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
+    Ψ1 ⨟ Γ ⊨ C1 ≈ B1 ->
+    Ψ2 ⨟ Γ ⊢[ m ] C2 ⊑ B2 ->
+    Ψ [=] Ψ1 `union` Ψ2 ->
+    Ψ ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⊑ (btyp_arrow B1 B2)
+| d_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε C ph B,
     m <> mode_ti ->
-    AtomSetImpl.inter Δ' Δ [=] empty ->      (* Δ' fresh w.r.t. the outer tags *)
-    d_tags Δ' ph ->                  (* tags{Δ'}{φ} : Δ' is exactly φ's tags *)
-    Γ ⊢ᵤ ph ->                       (* Γ ⊢ φ : well-scopedness half (WT: no Δ') *)
+    AtomSetImpl.inter Ψ' Ψ [=] empty ->      (* Ψ' fresh w.r.t. the outer tags *)
+    d_tags Ψ' ph ->                  (* tags{Ψ'}{φ} : Ψ' is exactly φ's tags *)
+    Γ ⊢ᵤ ph ->                       (* Γ ⊢ φ : well-scopedness half (WT: no Ψ') *)
     is_ttyp ph ->
-    (Δ `union` Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
-    Δ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⊑ B
-| d_sub__forall_l_untagged : forall Δ Δ' Γ m C ph B,
+    (Ψ `union` Ψ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
+    Ψ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⊑ B
+| d_sub__forall_l_untagged : forall Ψ Ψ' Γ m C ph B,
     m <> mode_ti ->
-    AtomSetImpl.inter Δ' Δ [=] empty ->
-    d_tags Δ' ph ->
-    Γ ⊢ᵤ ph ->   (* WT: no Δ' *)
+    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    d_tags Ψ' ph ->
+    Γ ⊢ᵤ ph ->   (* WT: no Ψ' *)
     is_ttyp ph ->
-    (Δ `union` Δ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
-    Δ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
-where "Δ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Δ Γ C B) : type_scope.
+    (Ψ `union` Ψ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
+    Ψ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
+where "Ψ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Ψ Γ C B) : type_scope.
 
 Reserved Notation "Γ ⊢ A ≤ B"
   (at level 75, A at level 74, B at level 74, no associativity).
