@@ -137,6 +137,15 @@ Proof.
   - rewrite IHA1. reflexivity.
 Qed.
 
+Lemma ptyp_to_btyp_inh_open : forall A1 A2,
+    ptyp_to_btyp_inh (open_ptyp_wrt_ptyp A1 A2) =
+    open_btyp_wrt_btyp (ptyp_to_btyp_inh A1) (ptyp_to_btyp_inh A2).
+Proof.
+  intros A1 A2.
+  unfold open_ptyp_wrt_ptyp, open_btyp_wrt_btyp.
+  apply ptyp_to_btyp_inh_open_rec.
+Qed.
+
 
 Lemma btyp_to_ptyp_open_rec : forall B1 B2 k,
     btyp_to_ptyp (open_btyp_wrt_btyp_rec k B2 B1) =

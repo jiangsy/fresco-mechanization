@@ -538,6 +538,19 @@ Proof.
       simpl in H0. exact H0.
 Qed.
 
+(** The inh-painting of a (locally-closed) [ptyp] is fully inherited. *)
+Lemma is_ityp_paint : forall A, lc_ptyp A -> is_ityp (ptyp_to_btyp_inh A).
+Proof.
+  intros A H. induction H; simpl.
+  - apply is_ityp__unit.
+  - apply is_ityp__var.
+  - apply is_ityp__arrow; assumption.
+  - apply is_ityp__all with (L := empty). intros X _.
+    change (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)).
+    rewrite <- ptyp_to_btyp_inh_open.
+    match goal with Hb : forall _, is_ityp _ |- _ => apply Hb end.
+Qed.
+
 Lemma degree_btyp_of_degree_ptyp_erase : forall B k,
     degree_ptyp_wrt_ptyp k (btyp_to_ptyp B) -> degree_btyp_wrt_btyp k B.
 Proof.

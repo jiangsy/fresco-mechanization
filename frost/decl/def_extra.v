@@ -751,7 +751,7 @@ where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope.
 (*  Syntax-directed declarative typing  (paper Fig. syntax-directed)      *)
 (* ===================================================================== *)
 
-(** The syntax-directed system [sd_typing] is the paper's [sdtylab]: it folds
+(** The syntax-directed system [d_syn_typing] is the paper's [sdtylab]: it folds
     the standalone type-abstraction rule [dtylab{Forall}] into the lambda
     rules.  Concretely [sdtylab{AbsCheck}] / [sdtylab{AbsAnnoCheck}] type a
     checked lambda directly at a polymorphic function type
@@ -760,91 +760,98 @@ where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope.
 
     The [∀ᾱ] telescope is encoded by two auxiliary judgments [sd_poly_abs]
     (for [λx.M]) and [sd_poly_abs_anno] (for [λxᴬ.M]), each mutually defined
-    with [sd_typing]: a [__step] peels one inherited [∀] (binding a fresh tvar,
+    with [d_syn_typing]: a [__step] peels one inherited [∀] (binding a fresh tvar,
     paper's [ᾱ]) and a [__base] is the [ᾱ = ·] arrow whose body checks.  This
     is exactly "[Forall] repeated, then [Abs]/[AbsAnno]" — the relationship the
     soundness/completeness proofs make precise.
 
-    We keep [sd_typing]'s non-checking [Abs]/[AbsAnno] restricted to [M ≠ TC]
+    We keep [d_syn_typing]'s non-checking [Abs]/[AbsAnno] restricted to [M ≠ TC]
     (paper [sdtylab{Abs}]/[sdtylab{AbsAnno}]); the [TC] lambda goes through the
     [_check] rules.  Equivalence with the full declarative [d_typing] (which is
     [dtylab]: general [Forall] + general [Abs], the latter mechanised as the
-    [abs] / [abs_check] mode split) is [sd_typing_sound] / [sd_typing_complete]
+    [abs] / [abs_check] mode split) is [d_syn_typing_sound] / [d_syn_typing_complete]
     below. *)
 
-Inductive sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
-| sd_typing__unit : forall Γ,
-    sd_typing mode_ti Γ exp_unit btyp_unit
-| sd_typing__var : forall Γ x A,
+Inductive d_syn_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
+| d_syn_typing__unit : forall Γ,
+    d_syn_typing mode_ti Γ exp_unit btyp_unit
+| d_syn_typing__var : forall Γ x A,
     binds x (dbind_typ A) Γ ->
-    sd_typing mode_ti Γ (exp_var_f x) (ptyp_to_btyp_syn A)
-| sd_typing__anno : forall Γ e A,
-    sd_typing mode_tc Γ e (ptyp_to_btyp_inh A) ->
-    sd_typing mode_ti Γ (exp_anno e A) (ptyp_to_btyp_syn A)
-| sd_typing__sub : forall Γ m e B1 B2,
+    d_syn_typing mode_ti Γ (exp_var_f x) (ptyp_to_btyp_syn A)
+| d_syn_typing__anno : forall Γ e A,
+    d_syn_typing mode_tc Γ e (ptyp_to_btyp_inh A) ->
+    d_syn_typing mode_ti Γ (exp_anno e A) (ptyp_to_btyp_syn A)
+| d_syn_typing__sub : forall Γ m e A B,
+    (* Mirrors [d_typing__sub]: the [ti] premise is a synthesised painting
+       [syn{A}] and the subsumption runs from the [utyp]-painting of the same
+       [A], so soundness/completeness against [d_typing] are by-construction. *)
     is_base_term e ->
-    sd_typing mode_ti Γ e B1 ->
-    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn B1) ⊑ B2 ->
-    sd_typing m Γ e B2
-| sd_typing__freeze : forall Γ e A,
+    d_syn_typing mode_ti Γ e (ptyp_to_btyp_syn A) ->
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    d_syn_typing m Γ e B
+| d_syn_typing__freeze : forall Γ e A,
     (* Paper [Freeze]: TI [syn{A}] ⇒ TC [inh{A}]. *)
-    sd_typing mode_ti Γ e (ptyp_to_btyp_syn A) ->
-    sd_typing mode_tc Γ (exp_freeze e) (ptyp_to_btyp_inh A)
-| sd_typing__abs : forall L Γ m e A B,
+    d_syn_typing mode_ti Γ e (ptyp_to_btyp_syn A) ->
+    d_syn_typing mode_tc Γ (exp_freeze e) (ptyp_to_btyp_inh A)
+| d_syn_typing__abs_check_step : forall L Γ e B,
+    is_ityp (btyp_all_inh B) ->
+    (forall X, X `notin` L ->
+       d_syn_typing mode_tc ((X ~ dbind_tvar) ++ Γ) (exp_abs e)
+         (open_btyp_wrt_btyp B (btyp_var_f X))) ->
+    d_syn_typing mode_tc Γ (exp_abs e) (btyp_all_inh B)
+| d_syn_typing__abs_check_base : forall L Γ e A B,
+    Γ ⊢ₚ A ->
+    is_ityp B ->
+    (forall x, x `notin` L ->
+       d_syn_typing mode_tc ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_syn_typing mode_tc Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
+(* Paper [sdtylab{AbsAnnoCheck}]: same fold for the annotated checked lambda. *)
+| d_syn_typing__abs_anno_check_step : forall L Γ A e B,
+    is_ityp (btyp_all_inh B) ->
+    (forall X, X `notin` L ->
+       d_syn_typing mode_tc ((X ~ dbind_tvar) ++ Γ) (exp_abs_anno A e)
+         (open_btyp_wrt_btyp B (btyp_var_f X))) ->
+    d_syn_typing mode_tc Γ (exp_abs_anno A e) (btyp_all_inh B)
+| d_syn_typing__abs_anno_check_base : forall L Γ e A B,
+    (* Paper [AbsAnnoCheck]: inherited annotation domain [inh A] in check mode. *)
+    Γ ⊢ₚ A ->
+    is_ityp B ->
+    (forall x, x `notin` L ->
+       d_syn_typing mode_tc ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B) ->
+    d_syn_typing mode_tc Γ (exp_abs_anno A e) (btyp_arrow (ptyp_to_btyp_inh A) B)
+| d_syn_typing__abs : forall L Γ m e A B,
     (* Paper [sdtylab{Abs}]: [M ≠ TC]. *)
     m <> mode_tc ->
     Γ ⊢ₚ A ->
     (forall x, x `notin` L ->
-       sd_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+       d_syn_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    sd_typing m Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
-| sd_typing__abs_anno : forall L Γ m e A Barg B,
+    d_syn_typing m Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
+| d_syn_typing__abs_anno : forall L Γ m e A B1 B2,
     (* Paper [sdtylab{AbsAnno}]: [M ≠ TC]. *)
     m <> mode_tc ->
     Γ ⊢ₚ A ->
-    btyp_to_ptyp Barg = A ->
+    btyp_to_ptyp B1 = A ->
     (forall x, x `notin` L ->
-       sd_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    sd_typing m Γ (exp_abs_anno A e) (btyp_arrow Barg B)
+       d_syn_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
+         (open_exp_wrt_exp e (exp_var_f x)) B2) ->
+    d_syn_typing m Γ (exp_abs_anno A e) (btyp_arrow B1 B2)
 (* Paper [sdtylab{AbsCheck}]: the standalone [dtylab{Forall}] is FOLDED into
    the checked lambda rule.  [__abs_check_step] peels one inherited [∀] over
    the SAME lambda (this is [Forall] restricted to [λ]-values, self-recursive
-   in [sd_typing] — no mutual block), and [__abs_check_base] is the [ᾱ = ·]
+   in [d_syn_typing] — no mutual block), and [__abs_check_base] is the [ᾱ = ·]
    arrow whose body checks.  Together they type [λx.M] at [∀ᾱ.(inh A → B)]. *)
-| sd_typing__abs_check_step : forall L Γ e B,
-    (forall X, X `notin` L ->
-       sd_typing mode_tc ((X ~ dbind_tvar) ++ Γ) (exp_abs e)
-         (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    sd_typing mode_tc Γ (exp_abs e) (btyp_all_inh B)
-| sd_typing__abs_check_base : forall L Γ e A B,
-    Γ ⊢ₚ A ->
-    (forall x, x `notin` L ->
-       sd_typing mode_tc ((x ~ dbind_typ A) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    sd_typing mode_tc Γ (exp_abs e) (btyp_arrow (ptyp_to_btyp_inh A) B)
-(* Paper [sdtylab{AbsAnnoCheck}]: same fold for the annotated checked lambda. *)
-| sd_typing__abs_anno_check_step : forall L Γ A0 e B,
-    (forall X, X `notin` L ->
-       sd_typing mode_tc ((X ~ dbind_tvar) ++ Γ) (exp_abs_anno A0 e)
-         (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    sd_typing mode_tc Γ (exp_abs_anno A0 e) (btyp_all_inh B)
-| sd_typing__abs_anno_check_base : forall L Γ e A0 B,
-    (* Paper [AbsAnnoCheck]: inherited annotation domain [inh A] in check mode. *)
-    Γ ⊢ₚ A0 ->
-    (forall x, x `notin` L ->
-       sd_typing mode_tc ((x ~ dbind_typ A0) ++ Γ)
-         (open_exp_wrt_exp e (exp_var_f x)) B) ->
-    sd_typing mode_tc Γ (exp_abs_anno A0 e) (btyp_arrow (ptyp_to_btyp_inh A0) B)
-| sd_typing__app : forall Γ m e1 e2 P B1 B2,
+| d_syn_typing__app : forall Γ m e1 e2 P B1 B2,
     (* Paper [App]: ONE domain [B1] used by both the refinement (its skeleton
        [btyp_to_bskl B1]) and the function premise; the argument is checked at
        the inherited colouring of the same domain. *)
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
     Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
-    sd_typing (mode_fn m) Γ e1 (btyp_arrow B1 B2) ->
-    sd_typing mode_tc Γ e2 (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
-    sd_typing m Γ (exp_app e1 e2) B2.
+    d_syn_typing (mode_fn m) Γ e1 (btyp_arrow B1 B2) ->
+    d_syn_typing mode_tc Γ e2 (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
+    d_syn_typing m Γ (exp_app e1 e2) B2.
 
 (* WT: Other comments:
 1. In the paper I have \skmod[\N]{\M}{P} as well-formedness conditions
