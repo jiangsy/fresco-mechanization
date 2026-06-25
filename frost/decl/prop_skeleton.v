@@ -1655,10 +1655,69 @@ Lemma d_pat_rename : forall m Γ e Q,
     x `notin` dom (Γ1 ++ Γ2) ->
     (Γ1 ++ (y ~ d) ++ Γ2) ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⇨ Q.
 Proof.
-  (* Admitted: broken by the rule-faithfulness pass (d_pat reorder / abs_anno
-     btyp / sub P-Q); structural d_pat lemma, NOT used by D1 or order-
-     irrelevance. To be re-proved with the safety layer. *)
-Admitted.
+  (* Direct structural induction.  The skeleton [Q] never changes (it carries
+     no term vars); each sub-judgment is transported by its own [_rename] lemma,
+     and the λ bodies commute the [x↦y] substitution past the opener.  The only
+     real content is the [var] case, where [x ∉ dom(Γ1++Γ2)] pins the looked-up
+     binding to the relabelled middle one. *)
+  intros m Γ e Q H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd Hnotin; subst.
+  - simpl. apply d_pat__unit.
+  - (* var *) simpl.
+    match goal with |- context [ if ?b then _ else _ ] => destruct b as [Heq | Hne] end.
+    + (* x = x0: the relabelled var; [Hnotin] forces [d = d0] *)
+      subst x. assert (Hdd : d = d0).
+      { apply binds_app_1 in H. destruct H as [Hb1 | Hb2].
+        - apply binds_In in Hb1. exfalso. apply Hnotin. rewrite dom_app. fsetdec.
+        - apply binds_app_1 in Hb2. destruct Hb2 as [Hb3 | Hb4].
+          + apply binds_one_iff in Hb3. destruct Hb3 as [_ Heqd]. exact Heqd.
+          + apply binds_In in Hb4. exfalso. apply Hnotin. rewrite dom_app. fsetdec. }
+      subst d. apply d_pat__var with (d := d0); [ | assumption ].
+      apply binds_app_3; simpl; auto.
+    + (* x <> x0: binding unchanged *)
+      apply d_pat__var with (d := d); [ | assumption ].
+      apply binds_app_1 in H. destruct H as [Hb1 | Hb2].
+      * apply binds_app_2; assumption.
+      * apply binds_app_1 in Hb2. destruct Hb2 as [Hb3 | Hb4].
+        -- apply binds_one_iff in Hb3. destruct Hb3 as [Hxe _]. exfalso. apply Hne. exact Hxe.
+        -- apply binds_app_3; simpl; auto.
+  - simpl. apply d_pat__anno. eapply d_wf_ptyp_rename; eauto.
+  - simpl. apply d_pat__sub with (P := P);
+      [ match goal with Hbe : is_base_term _ |- _ =>
+          inversion Hbe; subst; simpl;
+          try (match goal with |- context [ if ?b then _ else _ ] => destruct b end);
+          constructor end
+      | eapply IHd_pat; eauto | eapply d_pat_sub_rename; eauto ].
+  - simpl. apply d_pat__freeze. eapply IHd_pat; eauto.
+  - simpl. apply d_pat__abs with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (P := P);
+      [ assumption | eapply d_wf_pskl_rename; eauto | ].
+    intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
+      by (solve [ apply lc_exp_var_f | fsetdec ]).
+    rewrite_env (((z ~ dbind_skl P) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
+  - simpl. apply d_pat__abs_anno with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (B := B);
+      [ assumption | eapply d_wf_ptyp_rename; eauto | reflexivity | ].
+    intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
+      by (solve [ apply lc_exp_var_f | fsetdec ]).
+    rewrite_env (((z ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
+  - simpl. eapply d_pat__app;
+      [ eapply IHd_pat1 | eapply d_refine_syn_rename | eapply IHd_pat2 ]; eauto.
+  - simpl. apply d_pat__abs_check with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)).
+    intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
+      by (solve [ apply lc_exp_var_f | fsetdec ]).
+    rewrite_env (((z ~ dbind_skl pskl_hole) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
+  - simpl. apply d_pat__abs_anno_check with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (A := A);
+      [ eapply d_wf_ptyp_rename; eauto | ].
+    intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
+      by (solve [ apply lc_exp_var_f | fsetdec ]).
+    rewrite_env (((z ~ dbind_typ A) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
+Qed.
 
 (** Substituting one variable for another preserves [is_value] / [is_base_term]
     (the substituted term is itself a variable, so the head shape is kept). *)
