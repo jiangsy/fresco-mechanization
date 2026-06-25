@@ -354,21 +354,32 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     Ψ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
 where "Ψ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Ψ Γ C B) : type_scope.
 
+(* [d_shallow_sub] — the PAPER's shallow polymorphic subtyping relation
+   [Γ ⊢ A ≤ B] (declarative.tex), restricted to MONOTYPE instantiation
+   (Bruno's margin note).  This is the COMPLETENESS target for the check-mode
+   subtyping [⊑]:  [Γ ⊢ A ≤ B  →  ∅ ⨟ Γ ⊢[mode_tc] syn{A} ⊑ inh{B}].
+
+   Exactly the paper's rules: [refl] (the [≡]/α-equivalence base — in this
+   locally-nameless encoding α-equivalence is syntactic equality, so it is
+   reflexivity at a well-formed type), [forall_r] (prenex skolemisation,
+   [≤∀R]), and [forall_l] ([≤∀L]; the paper guesses an arbitrary type, the
+   monotype restriction here is Bruno's completeness variant).  As in the
+   paper there is NO arrow rule: the relation only instantiates / skolemises
+   top-level quantifiers, with α-equivalence at the matrix — and at [mode_tc]
+   the [⊑] arrow rule [SubCheck] is precisely consistency = structural
+   identity, already covered by [refl]. *)
 Reserved Notation "Γ ⊢ A ≤ B"
   (at level 75, A at level 74, B at level 74, no associativity).
 Inductive d_shallow_sub : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
 | d_shallow_sub__refl : forall Γ A,
     Γ ⊢ₚ A ->
     Γ ⊢ A ≤ A
-| d_shallow_sub__arrow : forall Γ A1 A2 A1' A2',
-    Γ ⊢ A1' ≤ A1 ->
-    Γ ⊢ A2 ≤ A2' ->
-    Γ ⊢ (ptyp_arrow A1 A2) ≤ (ptyp_arrow A1' A2')
 | d_shallow_sub__forall_r : forall L Γ A1 A2,
     (forall X, X `notin` L ->
        ((X ~ dbind_tvar) ++ Γ) ⊢ A1 ≤ (open_ptyp_wrt_ptyp A2 (ptyp_var_f X))) ->
     Γ ⊢ A1 ≤ (ptyp_all A2)
 | d_shallow_sub__forall_l : forall Γ A1 A2 I,
+    mono_ptyp I ->
     Γ ⊢ₚ I ->
     Γ ⊢ (open_ptyp_wrt_ptyp A1 I) ≤ A2 ->
     Γ ⊢ (ptyp_all A1) ≤ A2
