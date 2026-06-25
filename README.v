@@ -7,6 +7,7 @@ Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.decl.prop_safety.
 Require Import src.frost.decl.prop_stability.
+Require Import src.frost.decl.prop_syntax_directed.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_question.
 Require Import src.frost.algo.prop_lemmas.
@@ -49,6 +50,18 @@ Print Assumptions d_consis_sub_trans.
        →  Γ ⊢[ m ] curry_exp (var y) args' ⦂ R' *)
 Check d_typing_order_irrel.
 Print Assumptions d_typing_order_irrel.
+
+(* Syntax-directed system equivalence — soundness (syntax-directed.tex):
+     d_syn_typing M Γ e A  →  d_typing M Γ e A *)
+Check d_syn_typing_sound.
+Print Assumptions d_syn_typing_sound.
+
+(* Syntax-directed system equivalence — completeness (syntax-directed.tex);
+   the base-term ∀-admissibility [dtylab{Forall}] is discharged by the
+   [X := unit] type-substitution strengthening:
+     d_typing M Γ e A  →  d_syn_typing M Γ e A *)
+Check d_syn_typing_complete.
+Print Assumptions d_syn_typing_complete.
 
 (** In-progress properties — stated and [Check]ed, but still depend on admits
     (so no [Print Assumptions] yet). *)
