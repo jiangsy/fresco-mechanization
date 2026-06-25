@@ -350,10 +350,60 @@ Lemma d_typing_rename : forall m Γ e B,
     x `notin` dom (Γ1 ++ Γ2) ->
     (Γ1 ++ (y ~ d) ++ Γ2) ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
 Proof.
-  (* Admitted: broken by the rule-faithfulness pass (d_pat reorder / abs_anno
-     btyp / sub P-Q); structural d_pat lemma, NOT used by D1 or order-
-     irrelevance. To be re-proved with the safety layer. *)
-Admitted.
+  (* Structural induction on the typing.  Skeletons / types carry no term vars,
+     so the relabelling only ever touches term-var lookups; each non-typing
+     premise is transported by its own renaming lemma ([d_sub_subst_nontvar],
+     [d_pat_rename], [d_refine_syn_rename], [d_wf_ptyp_rename]), and the λ /
+     ∀ bodies thread the substitution.  Mirrors [d_pat_rename]. *)
+  intros m Γ e B H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd Hnotin; subst.
+  - simpl. apply d_typing__unit.
+  - (* var *) simpl.
+    match goal with |- context [ if ?b then _ else _ ] => destruct b as [Hxeq | Hxne] end.
+    + subst x. assert (Hdd : dbind_typ A = d0).
+      { apply binds_app_1 in H. destruct H as [Hb1 | Hb2].
+        - apply binds_In in Hb1. exfalso. apply Hnotin. rewrite dom_app. fsetdec.
+        - apply binds_app_1 in Hb2. destruct Hb2 as [Hb3 | Hb4].
+          + apply binds_one_iff in Hb3. destruct Hb3 as [_ Heqd]. exact Heqd.
+          + apply binds_In in Hb4. exfalso. apply Hnotin. rewrite dom_app. fsetdec. }
+      rewrite <- Hdd. apply d_typing__var. apply binds_app_3; simpl; auto.
+    + apply d_typing__var. apply binds_app_1 in H. destruct H as [Hb1 | Hb2].
+      * apply binds_app_2; assumption.
+      * apply binds_app_1 in Hb2. destruct Hb2 as [Hb3 | Hb4].
+        -- apply binds_one_iff in Hb3. destruct Hb3 as [Hxe _]. exfalso. apply Hxne; exact Hxe.
+        -- apply binds_app_3; simpl; auto.
+  - simpl. apply d_typing__anno. eapply IHd_typing; eauto.
+  - simpl. apply d_typing__sub with (A := A);
+      [ match goal with Hbe : is_base_term _ |- _ =>
+          inversion Hbe; subst; simpl;
+          try (match goal with |- context [ if ?b then _ else _ ] => destruct b end);
+          constructor end
+      | eapply IHd_typing; eauto | eapply d_sub_subst_nontvar; eauto ].
+  - simpl. apply d_typing__freeze. eapply IHd_typing; eauto.
+  - (* forall: term unchanged under the binder (type opens, not the term) *)
+    apply d_typing__forall with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2));
+      [ apply is_value_subst_var; assumption | ].
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
+  - simpl. apply d_typing__abs with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (A := A) (B := B);
+      [ eapply d_wf_ptyp_rename; eauto | assumption | ].
+    intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
+      by (solve [ apply lc_exp_var_f | fsetdec ]).
+    rewrite_env (((z ~ dbind_typ A) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
+  - simpl. apply d_typing__abs_anno with
+      (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (A := btyp_to_ptyp B1) (B1 := B1) (B2 := B2);
+      [ eapply d_wf_ptyp_rename; eauto | reflexivity | assumption | ].
+    intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
+      by (solve [ apply lc_exp_var_f | fsetdec ]).
+    rewrite_env (((z ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
+  - simpl. eapply d_typing__app;
+      [ eapply d_pat_rename | eapply d_refine_syn_rename
+      | eapply IHd_typing1 | eapply IHd_typing2 ]; eauto.
+Qed.
 
 (** The [abs_check] fill (the paper's context-precision lemma for a checked
     λ): given the body's safety over [(x0:□)::Γ'], the universal-ghost arrow
