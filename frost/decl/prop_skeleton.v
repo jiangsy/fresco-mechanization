@@ -1078,6 +1078,21 @@ Qed.
     but a plain existential cannot be closed back over [X]; a function
     [colour Q A'] with [colour Q (open A'0 X) = open (colour Q A'0) X] fixes
     it (and threads through [__check] too). *)
+(** The uniform [Q = □] subcase of [ghost_of_fill_gen]: the bare ghost fills the
+    syn-colouring of any well-formed checking type, independent of the [d_sub]
+    derivation. *)
+Lemma ghost_fill_hole_case : forall Γ A',
+    d_wf_ptyp Γ A' ->
+    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl (@bskl_hole)))
+                     ⊳ (colour (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) A').
+Proof.
+  intros Γ A' Hwf.
+  replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
+  rewrite colour_hole. apply d_refine_syn_hole_fills.
+  - eapply d_wf_ptyp_lc_loc; eauto.
+  - intros X HX. right. eapply d_wf_ptyp_ftvar; eauto.
+Qed.
+
 Lemma ghost_of_fill_gen : forall Δ Γ U V,
     Δ ⨟ Γ ⊢[ mode_tc ] U ⊑ V ->
     forall A' P Q,
@@ -1089,10 +1104,72 @@ Lemma ghost_of_fill_gen : forall Δ Γ U V,
       Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q))
                        ⊳ (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A').
 Proof.
-  (* SAFETY/fill machinery: hyp indices shifted by the rule-faithfulness pass
-     (Freeze/App/AbsAnno colour fixes, d_pat reorder); admitted with the rest
-     of safety, which is being reworked. Not used by D1 / order-irrelevance. *)
-Admitted.
+  intros Δ Γ U V Hsub. remember mode_tc as m eqn:Hm. revert Hm.
+  induction Hsub; intros Hm A' P Q Heq Hwfa Hsubs Hg Hhsu; try discriminate Hm.
+  - (* check : U guarded, consis U V, V = inh A' *)
+    destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
+    + apply ghost_fill_hole_case; assumption.
+    + (* Q = ⫯Q0 : P guarded, so bskl_to_pskl Q0 = P; the check leaf closes it *)
+      assert (Hbq : bskl_to_pskl Q0 = P).
+      { match goal with Hgu : guarded_utyp ?Uu |- _ => inversion Hgu; subst end;
+        simpl in Hsubs; inversion Hsubs; subst; inversion Hg; subst; simpl;
+        try reflexivity; rewrite ! bskl_to_pskl_pskl_to_bskl_syn; reflexivity. }
+      replace (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole Q0)))
+        with (bskl_tophole (pskl_to_bskl_inh (bskl_to_pskl Q0))) by reflexivity.
+      rewrite Hbq.
+      eapply check_leaf;
+        [ rewrite <- Heq; eassumption
+        | rewrite <- Heq; eassumption
+        | exact Hhsu | exact Hwfa ].
+  - (* forall_r : V = btyp_all_inh B = inh (ptyp_all A'0) *)
+    destruct A' as [ | n | X | A'a A'b | A'0 ]; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
+    + apply ghost_fill_hole_case; assumption.
+    + (* RHS ∀ is filled by a synthesised quantifier ([tophole_fill]) *)
+      replace (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole Q0)))
+        with (bskl_tophole (pskl_to_bskl_inh (bskl_to_pskl Q0))) by reflexivity.
+      replace (colour (bskl_tophole (pskl_to_bskl_inh (bskl_to_pskl Q0))) (ptyp_all A'0))
+        with (bskl_all_syn (colour (bskl_tophole (pskl_to_bskl_inh (bskl_to_pskl Q0))) A'0))
+        by reflexivity.
+      inversion Hwfa; subst.
+      inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
+      rewrite <- colour_open.
+      eapply d_refine_syn_move; [ | apply colour_no_tophole | reflexivity ].
+      match goal with
+      | IH : forall _ : atom, _ -> _ -> forall _ _ _ : _, _ |- _ =>
+          eapply (IH X ltac:(fsetdec) eq_refl (open_ptyp_wrt_ptyp A'0 (ptyp_var_f X)) P (bskl_tophole Q0))
+      end;
+        [ rewrite ptyp_to_btyp_inh_open_var; reflexivity
+        | match goal with Hb : forall _ : atom, _ -> d_wf_ptyp _ _ |- _ => apply Hb; fsetdec end
+        | exact Hsubs | exact Hg | exact Hhsu ].
+  - (* forall_l_tagged *)
+    destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
+    + apply ghost_fill_hole_case; assumption.
+    + simpl in Hsubs. inversion Hsubs; subst.
+      * inversion Hg.
+      * inversion Hg; subst. inversion Hhsu; subst.
+        match goal with Hs0 : pskl_subsumes ?P0 (utyp_to_pskl _) |- _ =>
+          eapply (IHHsub eq_refl A' (open_pskl_wrt_pskl P0 pskl_hole) (bskl_tophole Q0)) end;
+          [ reflexivity | exact Hwfa
+          | rewrite utyp_to_pskl_open; unfold open_pskl_wrt_pskl;
+            apply pskl_subsumes_open_rec; [ eassumption | apply pskl_subsumes__hole ]
+          | eassumption
+          | eapply hole_safe_u_open_fill; [ eassumption | apply is_ttyp_lc; eassumption ] ].
+  - (* forall_l_untagged *)
+    destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
+    + apply ghost_fill_hole_case; assumption.
+    + simpl in Hsubs. inversion Hsubs; subst.
+      * inversion Hg.
+      * inversion Hg; subst. inversion Hhsu; subst.
+        match goal with Hs0 : pskl_subsumes ?P0 (utyp_to_pskl _) |- _ =>
+          eapply (IHHsub eq_refl A' (open_pskl_wrt_pskl P0 pskl_hole) (bskl_tophole Q0)) end;
+          [ reflexivity | exact Hwfa
+          | rewrite utyp_to_pskl_open; unfold open_pskl_wrt_pskl;
+            apply pskl_subsumes_open_rec; [ eassumption | apply pskl_subsumes__hole ]
+          | eassumption
+          | eapply hole_safe_u_open_fill; [ eassumption | apply is_ttyp_lc; eassumption ] ].
+Qed.
 
 (** BRICK 3 GOAL — the fill side, now a corollary of [ghost_of_fill_gen]
     (path (b) was taken: deterministic witness [colour]).  The ghost [Q]
