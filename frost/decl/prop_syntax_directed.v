@@ -23,6 +23,8 @@ Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_weakening.
+Require Import src.frost.decl.prop_skeleton.
+Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.decl.prop_stability.
 
 (* Inversions of the colour predicates / [skmod_ty] at [tc]. *)
@@ -234,6 +236,161 @@ Proof.
   - apply is_ttyp__arrow; assumption.
   - apply is_ttyp__all_etag with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]). auto.
+Qed.
+
+(* [d_tags] is insensitive to a tvar:=unit substitution — the ε-tags it counts
+   are unaffected (unit carries none, and the substituted var is a tvar). *)
+Lemma d_tags_subst_unit : forall Δ C X,
+    d_tags Δ C ->
+    d_tags Δ (subst_utyp_in_utyp utyp_unit X C).
+Proof.
+  intros Δ C X H. induction H; simpl.
+  - apply d_tags__unit; assumption.
+  - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
+      [ apply d_tags__unit | apply d_tags__var ]; assumption.
+  - eapply d_tags__arrow; [ eassumption | eassumption | assumption | assumption ].
+  - apply d_tags__all_etag with (L := L `union` {{X}}) (Δ0 := Δ0).
+    + intros Z HZ.
+      erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
+        by (solve [ fsetdec | apply lc_utyp_unit ]).
+      apply H0; auto.
+    + assumption.
+    + assumption.
+Qed.
+
+(* Mid-context tvar:=unit strengthening for [d_wf_utyp] (the head-only
+   [d_wf_utyp_subst_tvar] does not reach a [Γ1 ++ X0 :: Γ2] split). *)
+Lemma d_wf_utyp_subst_unit : forall Γ C,
+    Γ ⊢ᵤ C ->
+    forall Γ1 X0 Γ2, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    (Γ1 ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp utyp_unit X0 C).
+Proof.
+  intros Γ C H. induction H; intros Γ1 X0 Γ2 Heq; subst; simpl.
+  - apply d_wf_utyp__unit.
+  - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
+      [ apply d_wf_utyp__unit | apply d_wf_utyp__var; analyze_binds H ].
+  - apply d_wf_utyp__arrow; [ eapply IHd_wf_utyp1 | eapply IHd_wf_utyp2 ]; reflexivity.
+  - apply d_wf_utyp__all_syn with (L := L `union` dom (Γ1 ++ Γ2) `union` {{X0}}).
+    intros Z HZ.
+    rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity ].
+  - apply d_wf_utyp__all_etag with (L := L `union` dom (Γ1 ++ Γ2) `union` {{X0}}).
+    intros Z HZ.
+    rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 Z); [ fsetdec | simpl_env; reflexivity ].
+Qed.
+
+(* tvar:=unit substitution for subtyping.  Tag context [Ψ] is untouched (tags,
+   not tvars); [Γ] loses the substituted tvar; types are substituted.  Consis
+   premises go through [d_consis_subst_tvar] with [ph := utyp_unit]. *)
+Lemma d_sub_subst_unit : forall m Ψ Γ C B,
+    Ψ ⨟ Γ ⊢[ m ] C ⊑ B ->
+    forall Γ1 Γ2 X0,
+      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+      Ψ ⨟ (Γ1 ++ Γ2) ⊢[ m ]
+        (subst_utyp_in_utyp utyp_unit X0 C) ⊑ (subst_btyp_in_btyp btyp_unit X0 B).
+Proof.
+  intros m Ψ Γ C B H. induction H; intros Γ1 Γ2 X0 Heq; subst; simpl.
+  - (* infer *)
+    apply d_sub__infer; [ | apply is_styp_subst_unit; assumption | assumption ].
+    change btyp_unit with (utyp_to_btyp utyp_unit).
+    eapply d_consis_subst_tvar;
+      [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_ttyp__unit ].
+  - (* check *)
+    apply d_sub__check;
+      [ apply guarded_utyp_subst_unit; assumption
+      | apply guarded_btyp_subst_unit; assumption
+      | change btyp_unit with (utyp_to_btyp utyp_unit);
+        eapply d_consis_subst_tvar;
+          [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_ttyp__unit ]
+      | apply is_ityp_subst_unit; assumption ].
+  - (* forall_r *)
+    apply d_sub__forall_r with (L := L `union` dom (Γ1 ++ Γ2) `union` singleton X0).
+    + change (btyp_all_inh (subst_btyp_in_btyp btyp_unit X0 B))
+        with (subst_btyp_in_btyp btyp_unit X0 (btyp_all_inh B)).
+      apply is_ityp_subst_unit; assumption.
+    + intros Z HZ.
+      rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
+        by (first [ apply lc_btyp_unit | fsetdec ]).
+      rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
+      eapply (H1 Z); [ fsetdec | simpl_env; reflexivity ].
+  - (* arg *)
+    eapply d_sub__arg.
+    + change btyp_unit with (utyp_to_btyp utyp_unit).
+      eapply d_consis_subst_tvar;
+        [ eassumption | reflexivity | apply d_wf_utyp__unit | apply is_ttyp__unit ].
+    + eapply IHd_sub; reflexivity.
+    + assumption.
+  - (* forall_l_tagged *)
+    eapply d_sub__forall_l_tagged with
+      (Ψ' := Ψ') (ph := subst_utyp_in_utyp utyp_unit X0 ph);
+      [ assumption | assumption
+      | apply d_tags_subst_unit; assumption
+      | eapply d_wf_utyp_subst_unit; [ eassumption | reflexivity ]
+      | apply is_ttyp_subst_unit; assumption
+      | ].
+    rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by (apply lc_utyp_unit).
+    eapply IHd_sub; reflexivity.
+  - (* forall_l_untagged *)
+    eapply d_sub__forall_l_untagged with
+      (Ψ' := Ψ') (ph := subst_utyp_in_utyp utyp_unit X0 ph);
+      [ assumption | assumption
+      | apply d_tags_subst_unit; assumption
+      | eapply d_wf_utyp_subst_unit; [ eassumption | reflexivity ]
+      | apply is_ttyp_subst_unit; assumption
+      | ].
+    rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by (apply lc_utyp_unit).
+    eapply IHd_sub; reflexivity.
+Qed.
+
+(* [pskl_to_bskl_syn] commutes with tvar:=unit (companion to the existing
+   [pskl_to_bskl_inh_subst_unit]). *)
+Lemma pskl_to_bskl_syn_subst_unit : forall P X,
+    subst_bskl_in_bskl bskl_unit X (pskl_to_bskl_syn P)
+    = pskl_to_bskl_syn (subst_pskl_in_pskl pskl_unit X P).
+Proof.
+  induction P; intros X; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+(* tvar:=unit substitution for skeleton refinement (mirrors
+   [d_refine_syn_strengthen], but substitutes the var instead of requiring it
+   absent).  [Δs]/[Δi] are refinement-local ∀-vars, disjoint from the Γ-tvar
+   [X0], so they are untouched. *)
+Lemma d_refine_syn_subst_unit : forall Γ Δs Δi Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    forall Γ1 X0 Γ2, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    (Γ1 ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ
+      (subst_bskl_in_bskl bskl_unit X0 Q) ⊳ (subst_bskl_in_bskl bskl_unit X0 P).
+Proof.
+  intros Γ Δs Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq; subst; simpl.
+  - apply d_refine_syn__unit.
+  - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
+    + apply d_refine_syn__unit.
+    + apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
+        [ left; assumption | right; left; assumption | right; right; analyze_binds Hb ].
+  - apply d_refine_syn__arrow;
+      [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; reflexivity.
+  - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ2) `union` {{X0}}).
+    intros Z HZ.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var
+      by (first [ apply lc_bskl_unit | fsetdec ]).
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var
+      by (first [ apply lc_bskl_unit | fsetdec ]).
+    eapply (H0 Z); [ fsetdec | reflexivity ].
+  - rewrite pskl_to_bskl_syn_subst_unit. apply d_refine_syn__hole.
+    eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ].
+  - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; reflexivity.
+  - apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ2) `union` {{X0}}).
+    intros Z HZ.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var
+      by (first [ apply lc_bskl_unit | fsetdec ]).
+    eapply (H0 Z); [ fsetdec | reflexivity ].
+  - apply d_refine_syn__tophole_keep;
+      [ apply guarded_bskl_subst_unit; assumption | eapply IHd_refine_syn; reflexivity ].
 Qed.
 
 (* ===================================================================== *)
