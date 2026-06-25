@@ -44,7 +44,7 @@ Inductive uskl : Set :=
  | uskl_hole : uskl
  | uskl_tophole (R:uskl)
  | uskl_holeg : uskl
- | uskl_topholeg (R:uskl).
+ | uskl_topholeg (ε:εvar) (R:uskl).
 
 Inductive bskl : Set := 
  | bskl_unit : bskl
@@ -146,7 +146,7 @@ Fixpoint open_uskl_wrt_uskl_rec (k:nat) (R_5:uskl) (R__6:uskl) {struct R__6}: us
   | uskl_hole => uskl_hole 
   | (uskl_tophole R) => uskl_tophole (open_uskl_wrt_uskl_rec k R_5 R)
   | uskl_holeg => uskl_holeg 
-  | (uskl_topholeg R) => uskl_topholeg (open_uskl_wrt_uskl_rec k R_5 R)
+  | (uskl_topholeg ε R) => uskl_topholeg ε (open_uskl_wrt_uskl_rec k R_5 R)
 end.
 
 Fixpoint open_bskl_wrt_bskl_rec (k:nat) (Q_5:bskl) (Q__6:bskl) {struct Q__6}: bskl :=
@@ -293,9 +293,9 @@ Inductive lc_uskl : uskl -> Prop :=    (* defn lc_uskl *)
      (lc_uskl (uskl_tophole R))
  | lc_uskl_holeg : 
      (lc_uskl uskl_holeg)
- | lc_uskl_topholeg : forall (R:uskl),
+ | lc_uskl_topholeg : forall (ε:εvar) (R:uskl),
      (lc_uskl R) ->
-     (lc_uskl (uskl_topholeg R)).
+     (lc_uskl (uskl_topholeg ε R)).
 
 (* defns LC_bskl *)
 Inductive lc_bskl : bskl -> Prop :=    (* defn lc_bskl *)
@@ -404,7 +404,7 @@ Fixpoint ftvar_in_uskl (R_5:uskl) : vars :=
   | uskl_hole => {}
   | (uskl_tophole R) => (ftvar_in_uskl R)
   | uskl_holeg => {}
-  | (uskl_topholeg R) => (ftvar_in_uskl R)
+  | (uskl_topholeg ε R) => (ftvar_in_uskl R)
 end.
 
 Fixpoint ftvar_in_bskl (Q_5:bskl) : vars :=
@@ -495,7 +495,7 @@ Fixpoint subst_bskl_in_uskl (R_5:uskl) (Xus5:usklvar) (R__6:uskl) {struct R__6} 
   | uskl_hole => uskl_hole 
   | (uskl_tophole R) => uskl_tophole (subst_bskl_in_uskl R_5 Xus5 R)
   | uskl_holeg => uskl_holeg 
-  | (uskl_topholeg R) => uskl_topholeg (subst_bskl_in_uskl R_5 Xus5 R)
+  | (uskl_topholeg ε R) => uskl_topholeg ε (subst_bskl_in_uskl R_5 Xus5 R)
 end.
 
 Fixpoint subst_bskl_in_bskl (Q_5:bskl) (Xbs5:bsklvar) (Q__6:bskl) {struct Q__6} : bskl :=

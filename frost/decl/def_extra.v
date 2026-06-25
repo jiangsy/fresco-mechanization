@@ -181,10 +181,10 @@ Inductive d_wf_uskl : list atom -> list (atom * dbind) -> uskl -> Prop :=
 (* Dotted ghosts: same well-formedness as the plain Hole / TopHole. *)
 | d_wf_uskl__holeg : forall Ψ Γ,
     Ψ ⨟ Γ ⊢ᵤₛ uskl_holeg
-| d_wf_uskl__topholeg : forall Ψ Γ R,
+| d_wf_uskl__topholeg : forall Ψ Γ ε R,
     guarded_uskl R ->
     nil ⨟ Γ ⊢ᵤₛ R ->
-    Ψ ⨟ Γ ⊢ᵤₛ (uskl_topholeg R)
+    Ψ ⨟ Γ ⊢ᵤₛ (uskl_topholeg ε R)
 where "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R) : type_scope.
 
 (* ===================================================================== *)
@@ -251,13 +251,15 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__tophole : forall Δ R,
     d_tags_skl Δ R ->
     d_tags_skl Δ (uskl_tophole R)
-(* Dotted ghosts (declarative.tex:1698,1704): HoleG carries no tags;
-   TopHoleG.ψ carries exactly the tags of its body — same as the plain
-   Hole / TopHole. *)
+(* Tagged ghosts (declarative.tex:1698,1704): HoleG carries no tags;
+   TopHoletag{ε}.ψ adds its own ε on top of the tags of its body —
+   [tags{Ψ⊎{ε}}{TopHoletag{ε}.ψ}], exactly mirroring [all_etag]. *)
 | d_tags_skl__holeg : forall Δ, Δ [=] empty -> d_tags_skl Δ uskl_holeg
-| d_tags_skl__topholeg : forall Δ R,
-    d_tags_skl Δ R ->
-    d_tags_skl Δ (uskl_topholeg R).
+| d_tags_skl__topholeg : forall Δ Δ0 ε R,
+    d_tags_skl Δ0 R ->
+    ε `notin` Δ0 ->
+    Δ [=] add ε Δ0 ->
+    d_tags_skl Δ (uskl_topholeg ε R).
 
 (* ===================================================================== *)
 (*  Type consistency and subtyping                                        *)
@@ -520,10 +522,13 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     (* Paper [GhostG] (declarative.tex eqlab): a ghost hole [HoleG] is
        consistent with a plain [Hole]. *)
     Δ ⨟ Γ ⊨ₛ uskl_holeg ≈ bskl_hole
-| d_pat_consis__topholeg : forall Δ Γ R Q,
-    (* Paper [UnivGhostG]: [TopHoleG.S ~ TopHole.P] from [S ~ P]. *)
-    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
-    Δ ⨟ Γ ⊨ₛ (uskl_topholeg R) ≈ (bskl_tophole Q)
+| d_pat_consis__topholeg : forall Δ Δ0 Γ ε R Q,
+    (* Paper [UnivGhostG]: [TopHoletag{δ}.S ~ TopHole.P] from [S ~ P],
+       adding the ghost's tag δ — [typconsis[Ψ,δ]] from [typconsis[Ψ]].
+       Mirrors [forall_inh_tagged]'s [Δ [=] add ε Δ0]. *)
+    Δ0 ⨟ Γ ⊨ₛ R ≈ Q ->
+    Δ [=] add ε Δ0 ->
+    Δ ⨟ Γ ⊨ₛ (uskl_topholeg ε R) ≈ (bskl_tophole Q)
 | d_pat_consis__hole : forall Δ Γ P,
     Δ [=] empty ->
     (* Paper [Ghost]: a [Hole] matches any *inherited* skeleton [inh{P}]
@@ -558,10 +563,10 @@ where "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q) : type_scope.
    [d_pat_sub_weakening], reached transitively from D1's [app] case via
    [d_pat_ctx_weaken].  Its content-level consumers — Validity / Safety of
    skeleton inference ([d_pat_validity] / [d_pat_safety]) — are still open.
-   The dotted-ghost constructors
+   The tagged-ghost constructors
    ([uskl_holeg]/[uskl_topholeg]) are now in the AST ([uskl] only — the
    paper's unresolved skeleton [S], declarative.tex:1638), so the paper
-   rules [GhostG] ([HoleG ⊑ Hole]) and [UnivGhostLG] ([TopHoleG.S ⊑ P])
+   rules [GhostG] ([HoleG ⊑ Hole]) and [UnivGhostL] ([TopHoletag{δ}.S ⊑ P])
    are encoded below (and the matching consistency rules [GhostG]/
    [UnivGhostG] on [d_pat_consis]). *)
 Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
@@ -621,11 +626,13 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     (* Paper [GhostG]: a ghost hole [HoleG] is below a plain [Hole]. *)
     Δ [=] empty ->
     Δ ⨟ Γ ⊢ₛ[ m ] uskl_holeg ⊑ bskl_hole
-| d_pat_sub__univ_ghost_lg : forall m Δ Γ R Q,
-    (* Paper [UnivGhostLG]: drop a [TopHoleG] on the LHS (any [M ≠ TI]). *)
+| d_pat_sub__univ_ghost_lg : forall m Δ Γ ε R Q,
+    (* Paper [UnivGhostL]: drop a tagged ghost [TopHoletag{δ}] on the LHS
+       (any [M ≠ TI]).  Unlike consistency, subtyping leaves [Ψ] unchanged
+       — [patsub[M][Ψ]] from [patsub[M][Ψ]] (declarative.tex UnivGhostL). *)
     m <> mode_ti ->
     Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
-    Δ ⨟ Γ ⊢ₛ[ m ] (uskl_topholeg R) ⊑ Q
+    Δ ⨟ Γ ⊢ₛ[ m ] (uskl_topholeg ε R) ⊑ Q
 where "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Δ Γ R Q) : type_scope.
 
 (* ===================================================================== *)

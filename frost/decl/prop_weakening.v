@@ -153,7 +153,8 @@ Proof.
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_pat_consis__ghostg. assumption.
-  - apply d_pat_consis__topholeg. eapply IHd_pat_consis; reflexivity.
+  - apply d_pat_consis__topholeg with (Δ0 := Δ0);
+      [ eapply IHd_pat_consis; reflexivity | eassumption ].
   - apply d_pat_consis__hole; [ assumption | apply d_wf_pskl_weakening; assumption ].
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; reflexivity.
   - apply d_pat_consis__tophole_inh with (L := L `union` dom (Γ1 ++ Γ3)).

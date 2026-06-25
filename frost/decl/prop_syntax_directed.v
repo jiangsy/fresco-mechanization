@@ -640,7 +640,8 @@ Proof.
   - apply d_pat_consis__forall_syn with (L := L). intros X HX.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
   - apply d_pat_consis__ghostg; assumption.
-  - apply d_pat_consis__topholeg; apply IHd_pat_consis; assumption.
+  - apply d_pat_consis__topholeg with (Δ0 := Δ0);
+      [ apply IHd_pat_consis; assumption | eassumption ].
   - apply d_pat_consis__hole; [ assumption | eapply d_wf_pskl_same_tvar; eassumption ].
   - apply d_pat_consis__tophole; apply IHd_pat_consis; assumption.
   - apply d_pat_consis__tophole_inh with (L := L). intros X HX.

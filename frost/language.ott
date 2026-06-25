@@ -119,11 +119,12 @@ uskl, R :: 'uskl_' ::=
   | forall@ eps Xus . R  ::   :: all_etag  (+ bind Xus in R +)
   | HOLE                 ::   :: hole
   | TOPHOLE . R          ::   :: tophole
-  % Dotted ghosts (paper's HoleG / TopHoleG, rendered dotted): ghost
-  % holes that coexist with the plain Hole/TopHole in unresolved
-  % skeletons; the tagged-skeleton class [is_tskl] keeps only these.
+  % Tagged ghosts (paper's HoleG / TopHoletag{ε}): ghost holes that
+  % coexist with the plain Hole/TopHole in unresolved skeletons.
+  % HoleG carries no tag; the universal ghost TopHoletag{ε} is tagged
+  % with an ε (like [all_etag]), so it is `TOPHOLEG@ eps . R`.
   | HOLEG                ::   :: holeg
-  | TOPHOLEG . R         ::   :: topholeg
+  | TOPHOLEG @ eps . R   ::   :: topholeg
   | ( R )                :: S :: paren {{ coq ([[R]]) }}
   | { R2 / Xus } R1      :: M :: subst {{ coq (open_uskl_wrt_uskl [[Xus R1]] [[R2]]) }}
 
