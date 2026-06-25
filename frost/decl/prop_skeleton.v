@@ -1715,15 +1715,15 @@ Proof.
                | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
   - (* abs (general) *) apply d_typing__abs with
       (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A);
-      [ assumption | ].
+      [ assumption | exact H0 | ].
     intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
-    eapply H1; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+    eapply H2; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
                | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
   - (* abs_anno (general) *) apply d_typing__abs_anno with
       (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A) (B1 := B1);
-      [ assumption | assumption | ].
+      [ assumption | assumption | exact H1 | ].
     intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
-    eapply H2; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+    eapply H3; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
                | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
   - (* app *) eapply d_typing__app;
       [ eapply d_pat_subst_var; [ exact H | exact Huniq | exact Hbx | exact Hby ]

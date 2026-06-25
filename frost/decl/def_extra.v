@@ -719,18 +719,24 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] e ⦂ (open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f X))) ->
     Γ ⊢[ mode_tc ] e ⦂ (btyp_all_inh (ptyp_to_btyp_inh A))
 | d_typing__abs : forall L Γ m e A B,
-    (* Paper [Abs] (syntax-directed.tex): [M ≠ TC]; the check-mode
-       abstraction goes through [d_typing__abs_check] instead. *)
+    (* Paper [Abs].  [skmod_ty … m] is the paper's implicit [skmod{TY}]
+       colour/mode well-formedness on the conclusion: it excludes the ill-moded
+       [ti] reading (whose result would have to be synthesised yet has an
+       inherited domain) and forces the colour to match the mode. *)
     Γ ⊢ₚ A ->
+    skmod_ty (btyp_arrow (ptyp_to_btyp_inh A) B) m ->
     (forall x, x `notin` L ->
        ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B) ->
     Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B)
 | d_typing__abs_anno : forall L Γ m e A B1 B2,
     (* The arrow-arg is an arbitrary bidirectional [Barg] whose erasure
-       [btyp_to_ptyp] is the annotation [A].  Paper [AbsAnno]: [M ≠ TC]. *)
+       [btyp_to_ptyp] is the annotation [A].  Paper [AbsAnno].  [skmod_ty … m]
+       (paper's [skmod{TY}]) colours the domain by the mode: at [TC] it forces
+       [is_ityp B1], i.e. [B1 = inh A]. *)
     Γ ⊢ₚ A ->
     btyp_to_ptyp B1 = A ->
+    skmod_ty (btyp_arrow B1 B2) m ->
     (forall x, x `notin` L ->
        ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B2) ->
@@ -822,9 +828,11 @@ Inductive d_syn_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
     d_syn_typing mode_tc Γ (exp_abs_anno A e) (btyp_arrow (ptyp_to_btyp_inh A) B)
 | d_syn_typing__abs : forall L Γ m e A B,
-    (* Paper [sdtylab{Abs}]: [M ≠ TC]. *)
+    (* Paper [sdtylab{Abs}]: [M ≠ TC].  Same [skmod_ty] colour/mode discipline
+       as [d_typing__abs] (so the equivalence transfers the premise directly). *)
     m <> mode_tc ->
     Γ ⊢ₚ A ->
+    skmod_ty (btyp_arrow (ptyp_to_btyp_inh A) B) m ->
     (forall x, x `notin` L ->
        d_syn_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B) ->
@@ -834,6 +842,7 @@ Inductive d_syn_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     m <> mode_tc ->
     Γ ⊢ₚ A ->
     btyp_to_ptyp B1 = A ->
+    skmod_ty (btyp_arrow B1 B2) m ->
     (forall x, x `notin` L ->
        d_syn_typing (decr_mode m) ((x ~ dbind_typ A) ++ Γ)
          (open_exp_wrt_exp e (exp_var_f x)) B2) ->

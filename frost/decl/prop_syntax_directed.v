@@ -25,6 +25,14 @@ Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_weakening.
 Require Import src.frost.decl.prop_stability.
 
+(* Inversions of the colour predicates / [skmod_ty] at [tc]. *)
+Lemma is_ityp_arrow_l : forall B1 B2, is_ityp (btyp_arrow B1 B2) -> is_ityp B1.
+Proof. intros B1 B2 H. inversion H; assumption. Qed.
+Lemma is_ityp_arrow_r : forall B1 B2, is_ityp (btyp_arrow B1 B2) -> is_ityp B2.
+Proof. intros B1 B2 H. inversion H; assumption. Qed.
+Lemma skmod_ty_tc_inv : forall B, skmod_ty B mode_tc -> is_ityp B.
+Proof. intros B H. inversion H; subst; assumption. Qed.
+
 (* ===================================================================== *)
 (*  Soundness:  d_syn_typing ⊆ d_typing                                      *)
 (* ===================================================================== *)
@@ -46,8 +54,14 @@ Proof.
     + apply is_value__abs.
     + intros X HX. rewrite Hrt. apply H1; assumption.
   - (* abs_check_base (ᾱ = ·): the standalone check rule was removed from
-       d_typing, so use the GENERAL d_typing__abs at [tc]. *)
-    apply d_typing__abs with (L := L) (A := A); assumption.
+       d_typing, so use the GENERAL d_typing__abs at [tc].  Its [skmod_ty]
+       premise at [tc] is [is_ityp (inh A → B)] — domain inherited (lc [A] from
+       [Γ⊢ₚA]), codomain inherited by the rule's [is_ityp B]. *)
+    apply d_typing__abs with (L := L) (A := A);
+      [ assumption
+      | apply skmod_ty__tc; apply is_ityp__arrow;
+          [ apply is_ityp_paint; eapply d_wf_ptyp_lc; eassumption | assumption ]
+      | assumption ].
   - (* abs_anno_check_step: as abs_check_step, over the annotated lambda. *)
     pose proof (is_ityp_ptyp_to_btyp_inh H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
     rewrite <- Hrt. apply d_typing__forall with (L := L) (A := btyp_to_ptyp B).
@@ -58,6 +72,8 @@ Proof.
     apply d_typing__abs_anno with (L := L) (A := A) (B1 := ptyp_to_btyp_inh A).
     + assumption.
     + apply btyp_to_ptyp_ptyp_to_btyp_inh.
+    + apply skmod_ty__tc; apply is_ityp__arrow;
+        [ apply is_ityp_paint; eapply d_wf_ptyp_lc; eassumption | assumption ].
     + assumption.
   - (* abs (m ≠ tc) *)
     apply d_typing__abs with (L := L) (A := A); assumption.
@@ -272,15 +288,30 @@ Proof.
        the body inherited ([is_ityp B]); since a [tc]-checked body is inherited
        (the same recovery as the forall/lambda cases) this is not a real gap. *)
     destruct m as [ | | m' ].
-    + apply d_syn_typing__abs with (L := L); [ discriminate | assumption | assumption ].
-    + apply d_syn_typing__abs_check_base with (L := L); [ assumption | admit | assumption ].
-    + apply d_syn_typing__abs with (L := L); [ discriminate | assumption | assumption ].
-  - (* abs_anno: as [abs]; the [tc] case is [__abs_anno_check_base]. *)
+    + apply d_syn_typing__abs with (L := L);
+        [ discriminate | assumption | assumption | assumption ].
+    + apply d_syn_typing__abs_check_base with (L := L);
+        [ assumption
+        | apply is_ityp_arrow_r with (B1 := ptyp_to_btyp_inh A);
+          apply skmod_ty_tc_inv; assumption
+        | assumption ].
+    + apply d_syn_typing__abs with (L := L);
+        [ discriminate | assumption | assumption | assumption ].
+  - (* abs_anno: as [abs]; the [tc] case is [__abs_anno_check_base].  The skmod
+       premise forces the domain inherited at [tc]: [is_ityp B1] + [erase B1 = A]
+       give [B1 = inh A], so the d_typing type [B1→B2] IS the [inh A → B2] that
+       [__abs_anno_check_base] produces. *)
     destruct m as [ | | m' ].
     + apply d_syn_typing__abs_anno with (L := L) (B1 := B1);
-        [ discriminate | assumption | assumption | assumption ].
-    + admit.
+        [ discriminate | assumption | assumption | assumption | assumption ].
+    + assert (Hia : is_ityp (btyp_arrow B1 B2)) by (apply skmod_ty_tc_inv; assumption).
+      assert (HB1 : ptyp_to_btyp_inh A = B1).
+      { pose proof (is_ityp_ptyp_to_btyp_inh (is_ityp_arrow_l _ _ Hia)) as HR.
+        rewrite H0 in HR. exact HR. }
+      rewrite <- HB1.
+      apply d_syn_typing__abs_anno_check_base with (L := L);
+        [ assumption | exact (is_ityp_arrow_r _ _ Hia) | assumption ].
     + apply d_syn_typing__abs_anno with (L := L) (B1 := B1);
-        [ discriminate | assumption | assumption | assumption ].
+        [ discriminate | assumption | assumption | assumption | assumption ].
   - (* app *) eapply d_syn_typing__app; eassumption.
-Admitted.
+Qed.

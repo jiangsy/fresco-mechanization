@@ -142,3 +142,16 @@ Inductive mode_skl_compat : mode -> pskl -> Prop :=
 | mode_skl_compat__fn : forall m P1 P2,
     mode_skl_compat m P2 ->
     mode_skl_compat (mode_fn m) (pskl_arrow P1 P2).
+
+(** Paper's [skmod{TY}{bid A}{M}] (declarative.tex:415-434): the COLOURED
+    mode/type well-formedness — synthesised at [TI], inherited at [TC], and a
+    function type whose result is [M]-compatible at [FN M] (the argument colour
+    is unconstrained / bidirectional).  Implicitly required of every typing
+    judgement; embedded as a premise on each rule's conclusion mode+type.
+    (Distinct from the colourless, unused [mode_typ_compat] above.) *)
+Inductive skmod_ty : btyp -> mode -> Prop :=
+| skmod_ty__ti : forall B, is_styp B -> skmod_ty B mode_ti
+| skmod_ty__tc : forall B, is_ityp B -> skmod_ty B mode_tc
+| skmod_ty__fn : forall m B1 B2,
+    skmod_ty B2 m ->
+    skmod_ty (btyp_arrow B1 B2) (mode_fn m).

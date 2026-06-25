@@ -260,10 +260,10 @@ Proof.
   - apply d_typing__forall with (L := L `union` dom (Γ1 ++ Γ3)); [ exact H | ].
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
   - apply d_typing__abs with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
-      [ apply d_wf_ptyp_weakening; assumption | ].
+      [ apply d_wf_ptyp_weakening; assumption | exact H0 | ].
     intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
   - apply d_typing__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (B1 := B1);
-      [ apply d_wf_ptyp_weakening; assumption | exact H0 | ].
+      [ apply d_wf_ptyp_weakening; assumption | exact H0 | exact H1 | ].
     intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
   - eapply d_typing__app;
       [ eapply d_pat_weakening_mid; [ exact H | reflexivity ]

@@ -690,13 +690,13 @@ Proof.
     + apply d_wf_btyp_painting_inh. assumption.
     + pick fresh x for (L `union` dom Γ).
       eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
-      * apply H1; auto. apply d_wf_denv__typ; auto.
+      * apply H2; auto. apply d_wf_denv__typ; auto.
       * discriminate.
   - (* abs_anno (general) *) apply d_wf_btyp__arrow.
     + apply d_wf_btyp_of_wf_ptyp_erase. rewrite H0. assumption.
     + pick fresh x for (L `union` dom Γ).
       eapply (d_wf_btyp_strengthen_head (x := x) (d := dbind_typ A)).
-      * apply H2; auto. apply d_wf_denv__typ; auto.
+      * apply H3; auto. apply d_wf_denv__typ; auto.
       * discriminate.
   - (* app: result B2 from e1 : btyp_arrow B1 B2 *)
     assert (Harr : d_wf_btyp Γ (btyp_arrow B1 B2)) by (apply IHd_typing1; assumption).

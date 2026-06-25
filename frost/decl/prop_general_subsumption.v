@@ -1356,6 +1356,36 @@ Qed.
     formulation can't express.  Arrow targets (infer/check/arg) rebuild
     [d_typing__abs] with [consis_mono_arg] pinning the argument and [Hbody]
     subsuming the body; [forall_r] generalises via [d_typing__forall]. *)
+(** [d_sub]'s RHS colour matches its mode — the [skmod_ty] discipline holds for
+    subtyping (and hence for the [sub]/[app] typing rules, which read their
+    result colour off a subtyping / a function arrow). *)
+Lemma d_sub_skmod : forall m Ψ Γ C B, Ψ ⨟ Γ ⊢[ m ] C ⊑ B -> skmod_ty B m.
+Proof.
+  intros m Ψ Γ C B H. induction H.
+  - apply skmod_ty__ti; assumption.
+  - apply skmod_ty__tc; assumption.
+  - apply skmod_ty__tc; assumption.
+  - apply skmod_ty__fn; assumption.
+  - assumption.
+  - assumption.
+Qed.
+
+(** A [btyp_spine] preserves [skmod_ty]: if the tail [Bnew] is [M]-coloured then
+    the whole spine result [Bres] is [(mode_fn_n_subst m M)]-coloured (each
+    peeled arrow re-wraps with [skmod_ty__fn]).  Discharges the [skmod] premise
+    of the abstraction reconstructed in [d_typing_general_subsumption_spine]. *)
+Lemma btyp_spine_skmod : forall n Bfull A Bnew Bres m M,
+    btyp_spine n Bfull A Bnew Bres ->
+    is_fn_n n m ->
+    skmod_ty Bnew M ->
+    skmod_ty Bres (mode_fn_n_subst m M).
+Proof.
+  intros n Bfull A Bnew Bres m M Hsp. revert m M.
+  induction Hsp; intros m M Hfn Hsk.
+  - inversion Hfn; subst. simpl. exact Hsk.
+  - inversion Hfn; subst. simpl. apply skmod_ty__fn. eapply IHHsp; eassumption.
+Qed.
+
 Lemma d_typing_abs_tail_gen : forall L0 e A Bbody M Bnew Γ',
     mono_ptyp A ->
     is_styp Bbody ->
@@ -1381,6 +1411,7 @@ Proof.
     pose proof (consis_mono_arg H Hmono) as HBn1. subst Bn1.
     apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
     + assumption.
+    + apply skmod_ty__ti. assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv mode_ti Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
@@ -1398,6 +1429,7 @@ Proof.
     match goal with Hit : is_ityp (btyp_arrow _ Bn2) |- _ => inversion Hit; subst end.
     apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
     + assumption.
+    + apply skmod_ty__tc. apply is_ityp__arrow; assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
@@ -1423,6 +1455,9 @@ Proof.
     pose proof (consis_mono_arg H Hmono) as HBn1. subst B1.
     apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
     + assumption.
+    + apply skmod_ty__fn.
+      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⊑ B2 |- _ =>
+        exact (d_sub_skmod Hs) end.
     + intros xv Hxv.
       eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
@@ -1463,6 +1498,7 @@ Proof.
     apply d_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := Bn1).
     + assumption.
     + exact Herase.
+    + apply skmod_ty__ti; assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv mode_ti Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
@@ -1480,6 +1516,7 @@ Proof.
     apply d_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := Bn1).
     + assumption.
     + exact Herase.
+    + apply skmod_ty__tc. apply is_ityp__arrow; assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
@@ -1509,6 +1546,9 @@ Proof.
     apply d_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := B1).
     + assumption.
     + exact Herase.
+    + apply skmod_ty__fn.
+      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⊑ B2 |- _ =>
+        exact (d_sub_skmod Hs) end.
     + intros xv Hxv.
       eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
@@ -1690,6 +1730,8 @@ Proof.
   - (* forall (tc): excluded. *)
     inversion Hfn.
   - (* abs: split on the spine. *)
+    assert (Hskm : skmod_ty Bres (mode_fn_n_subst m M0))
+      by (eapply btyp_spine_skmod; [ exact Hspine | exact Hfn | exact (d_sub_skmod Htail) ]).
     dependent destruction Hspine.
     + (* __tail (n=0): generalisation helper. *)
       inversion Hfn; subst. simpl.
@@ -1699,7 +1741,7 @@ Proof.
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_r Hs) end.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros Γ'' x M' B'' Hcw'' Hfr Hsb.
-        eapply (H1 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ'')).
+        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ'')).
         -- apply ctx_weaken_cons. eapply ctx_weaken_trans; [ exact Hcw | exact Hcw'' ].
         -- apply is_fn_n__ti.
         -- apply btyp_spine__tail.
@@ -1711,13 +1753,16 @@ Proof.
       dependent destruction Hfn. simpl.
       apply d_typing__abs with (L := L `union` dom Γ') (A := A).
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
+      * exact Hskm.
       * intros x Hx.
-        eapply (H1 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
+        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
         -- apply ctx_weaken_cons. exact Hcw.
         -- eassumption.
         -- eassumption.
         -- apply d_sub_weakening_head with (Γ' := (x ~ dbind_typ A)). exact Htail.
   - (* abs_anno: split on the spine. *)
+    assert (Hskm : skmod_ty Bres (mode_fn_n_subst m M0))
+      by (eapply btyp_spine_skmod; [ exact Hspine | exact Hfn | exact (d_sub_skmod Htail) ]).
     dependent destruction Hspine.
     + (* __tail (n=0): abs_anno generalisation helper. *)
       inversion Hfn; subst. simpl.
@@ -1727,7 +1772,7 @@ Proof.
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_r Hs) end.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros Γ'' x M' B'' Hcw'' Hfr Hsb.
-        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ'')).
+        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ'')).
         -- apply ctx_weaken_cons. eapply ctx_weaken_trans; [ exact Hcw | exact Hcw'' ].
         -- apply is_fn_n__ti.
         -- apply btyp_spine__tail.
@@ -1739,8 +1784,9 @@ Proof.
       apply d_typing__abs_anno with (L := L `union` dom Γ') (A := A) (B1 := B1).
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * exact H0.
+      * exact Hskm.
       * intros x Hx.
-        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
+        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
         -- apply ctx_weaken_cons. exact Hcw.
         -- eassumption.
         -- eassumption.
