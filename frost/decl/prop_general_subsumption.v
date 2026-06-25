@@ -1356,19 +1356,8 @@ Qed.
     formulation can't express.  Arrow targets (infer/check/arg) rebuild
     [d_typing__abs] with [consis_mono_arg] pinning the argument and [Hbody]
     subsuming the body; [forall_r] generalises via [d_typing__forall]. *)
-(** [d_sub]'s RHS colour matches its mode — the [skmod_ty] discipline holds for
-    subtyping (and hence for the [sub]/[app] typing rules, which read their
-    result colour off a subtyping / a function arrow). *)
-Lemma d_sub_skmod : forall m Ψ Γ C B, Ψ ⨟ Γ ⊢[ m ] C ⊑ B -> skmod_ty B m.
-Proof.
-  intros m Ψ Γ C B H. induction H.
-  - apply skmod_ty__ti; assumption.
-  - apply skmod_ty__tc; assumption.
-  - apply skmod_ty__tc; assumption.
-  - apply skmod_ty__fn; assumption.
-  - assumption.
-  - assumption.
-Qed.
+(** [d_sub_skmod] (subtyping preserves the [skmod{TY}] colour/mode discipline)
+    now lives in [prop_wellformed] alongside [d_typing_skmod]. *)
 
 (** A [btyp_spine] preserves [skmod_ty]: if the tail [Bnew] is [M]-coloured then
     the whole spine result [Bres] is [(mode_fn_n_subst m M)]-coloured (each

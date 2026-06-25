@@ -60,6 +60,11 @@ Proof.
   intros B H. induction H; eauto.
 Qed.
 
+Lemma is_styp_lc : forall B, is_styp B -> lc_btyp B.
+Proof.
+  intros B H. induction H; eauto.
+Qed.
+
 Lemma is_ttyp_lc : forall C, is_ttyp C -> lc_utyp C.
 Proof.
   intros C H. induction H; eauto.

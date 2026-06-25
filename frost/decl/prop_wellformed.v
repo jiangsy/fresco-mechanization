@@ -703,6 +703,55 @@ Proof.
     inversion Harr; subst. assumption.
 Qed.
 
+(** Subtyping preserves the colour/mode discipline [skmod{TY}]: its RHS colour
+    matches its mode (the [sub]/[app] typing rules read their result colour off
+    a subtyping / a function arrow, so this feeds [d_typing_skmod]). *)
+Lemma d_sub_skmod : forall m Ψ Γ C B, Ψ ⨟ Γ ⊢[ m ] C ⊑ B -> skmod_ty B m.
+Proof.
+  intros m Ψ Γ C B H. induction H.
+  - apply skmod_ty__ti; assumption.
+  - apply skmod_ty__tc; assumption.
+  - apply skmod_ty__tc; assumption.
+  - apply skmod_ty__fn; assumption.
+  - assumption.
+  - assumption.
+Qed.
+
+(** Typing preserves the colour/mode discipline [skmod{TY}]: a well-formed
+    [d_typing] derivation's result type is [M]-coloured.  Companion to
+    [d_typing_wf_btyp] (this is the colour half of the implicit [skmod{TY}]
+    well-formedness on the conclusion). *)
+Lemma d_typing_skmod : forall m Γ e B,
+    d_typing m Γ e B -> d_wf_denv Γ -> skmod_ty B m.
+Proof.
+  intros m Γ e B H. induction H; intros Hwf.
+  - (* unit *) apply skmod_ty__ti. apply is_styp__unit.
+  - (* var *) apply skmod_ty__ti. apply is_styp_ptyp_to_btyp_syn.
+    eapply d_wf_ptyp_lc_loc. eapply d_wf_denv_binds_typ; eassumption.
+  - (* anno: result syn A — lc A from the inherited premise (IH) *)
+    apply skmod_ty__ti. apply is_styp_ptyp_to_btyp_syn.
+    apply lc_ptyp_of_lc_btyp_inh. apply is_ityp_lc.
+    assert (Hi : skmod_ty (ptyp_to_btyp_inh A) mode_tc) by (apply IHd_typing; assumption).
+    inversion Hi; subst. assumption.
+  - (* sub *) eapply d_sub_skmod; eassumption.
+  - (* freeze: result inh A — lc A from the synthesised premise (IH) *)
+    apply skmod_ty__tc. apply is_ityp_paint.
+    apply lc_ptyp_of_lc_btyp_syn. apply is_styp_lc.
+    assert (Hs : skmod_ty (ptyp_to_btyp_syn A) mode_ti) by (apply IHd_typing; assumption).
+    inversion Hs; subst. assumption.
+  - (* forall: result ∀-inherited — each instance is inherited (IH) *)
+    apply skmod_ty__tc. apply is_ityp__all with (L := L `union` dom Γ).
+    intros X HX.
+    assert (Hsk : skmod_ty (open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f X)) mode_tc)
+      by (apply H1; [ auto | apply d_wf_denv__tvar; auto ]).
+    inversion Hsk; subst. assumption.
+  - (* abs: skmod premise is embedded on the rule *) assumption.
+  - (* abs_anno: skmod premise is embedded on the rule *) assumption.
+  - (* app: result B2 from the [fn m]-coloured function arrow *)
+    assert (Hf : skmod_ty (btyp_arrow B1 B2) (mode_fn m)) by (apply IHd_typing1; assumption).
+    inversion Hf; subst. assumption.
+Qed.
+
 Lemma d_typing_pat_preserves_wf :
   (forall m Γ e B, d_typing m Γ e B -> d_wf_btyp Γ B) /\
   (forall m Γ e Q, d_pat m Γ e Q -> d_wf_pskl nil Γ Q).

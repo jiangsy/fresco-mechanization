@@ -52,16 +52,16 @@ Check d_typing_order_irrel.
 Print Assumptions d_typing_order_irrel.
 
 (* Syntax-directed system equivalence — soundness (syntax-directed.tex):
-     d_syn_typing M Γ e A  →  d_typing M Γ e A *)
-Check d_syn_typing_sound.
-Print Assumptions d_syn_typing_sound.
+     d_sd_typing M Γ e A  →  d_typing M Γ e A *)
+Check d_sd_typing_sound.
+Print Assumptions d_sd_typing_sound.
 
 (* Syntax-directed system equivalence — completeness (syntax-directed.tex);
    the base-term ∀-admissibility [dtylab{Forall}] is discharged by the
    [X := unit] type-substitution strengthening:
-     d_typing M Γ e A  →  d_syn_typing M Γ e A *)
-Check d_syn_typing_complete.
-Print Assumptions d_syn_typing_complete.
+     d_typing M Γ e A  →  d_sd_typing M Γ e A *)
+Check d_sd_typing_complete.
+Print Assumptions d_sd_typing_complete.
 
 (** In-progress properties — stated and [Check]ed, but still depend on admits
     (so no [Print Assumptions] yet). *)

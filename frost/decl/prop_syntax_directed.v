@@ -1,10 +1,10 @@
 (** Equivalence of the full declarative typing [d_typing] (paper [dtylab],
-    Fig. decl-typing) and the syntax-directed typing [d_syn_typing] (paper
+    Fig. decl-typing) and the syntax-directed typing [d_sd_typing] (paper
     [sdtylab], Fig. syntax-directed-typing).
 
     Paper Lemmas: Soundness / Completeness of the syntax-directed rules.
     The only structural difference between the two systems is the standalone
-    type-abstraction rule [dtylab{Forall}]: [d_syn_typing] folds it into the
+    type-abstraction rule [dtylab{Forall}]: [d_sd_typing] folds it into the
     checked-lambda rules ([__abs_check_step] / [__abs_anno_check_step], a
     [∀]-peel restricted to [λ]-values).  Soundness replays each peel as a
     [Forall]; completeness case-splits the [Forall] value on whether it is a
@@ -37,11 +37,11 @@ Lemma skmod_ty_tc_inv : forall B, skmod_ty B mode_tc -> is_ityp B.
 Proof. intros B H. inversion H; subst; assumption. Qed.
 
 (* ===================================================================== *)
-(*  Soundness:  d_syn_typing ⊆ d_typing                                      *)
+(*  Soundness:  d_sd_typing ⊆ d_typing                                      *)
 (* ===================================================================== *)
 
-Theorem d_syn_typing_sound : forall M Γ e A,
-    d_syn_typing M Γ e A -> d_typing M Γ e A.
+Theorem d_sd_typing_sound : forall M Γ e A,
+    d_sd_typing M Γ e A -> d_typing M Γ e A.
 Proof.
   intros M Γ e A H. induction H.
   - apply d_typing__unit.
@@ -153,16 +153,16 @@ Qed.
    type-substitution [X := unit] (rewriting the witnesses too); the pieces
    [d_consis_subst_tvar], [d_wf_utyp_subst_tvar], [d_tags_subst_tvar],
    [d_pat_consis_subst_unit], [d_pat_sub_subst_unit] already exist, and the
-   remaining [d_sub] / [d_pat] / [d_syn_typing] subst lemmas are the content of
-   [d_syn_typing_forall_admissible]'s base-term cases below. *)
+   remaining [d_sub] / [d_pat] / [d_sd_typing] subst lemmas are the content of
+   [d_sd_typing_forall_admissible]'s base-term cases below. *)
 
 (** A [tc]-checked lambda is typed only by the [abs_check] rules, which carry
     the body-inheritance side condition — so its type is fully inherited.
     (No [sub] interference: a lambda is not [is_base_term]; no [app]: it is not
     an application.)  This recovers the [is_ityp] obligation that the folded
     [abs_check_step] / [abs_anno_check_step] demand. *)
-Lemma d_syn_typing_tc_abs_is_ityp : forall Γ e B,
-    d_syn_typing mode_tc Γ (exp_abs e) B -> is_ityp B.
+Lemma d_sd_typing_tc_abs_is_ityp : forall Γ e B,
+    d_sd_typing mode_tc Γ (exp_abs e) B -> is_ityp B.
 Proof.
   intros Γ e B H. dependent induction H.
   - match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end.
@@ -172,8 +172,8 @@ Proof.
   - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
 Qed.
 
-Lemma d_syn_typing_tc_abs_anno_is_ityp : forall Γ A0 e B,
-    d_syn_typing mode_tc Γ (exp_abs_anno A0 e) B -> is_ityp B.
+Lemma d_sd_typing_tc_abs_anno_is_ityp : forall Γ A0 e B,
+    d_sd_typing mode_tc Γ (exp_abs_anno A0 e) B -> is_ityp B.
 Proof.
   intros Γ A0 e B H. dependent induction H.
   - match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end.
@@ -395,7 +395,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Direct tvar-strengthening for [d_pat] and [d_syn_typing].             *)
+(*  Direct tvar-strengthening for [d_pat] and [d_sd_typing].             *)
 (*                                                                         *)
 (*  Conclusion-only tvar-strengthening is FALSE for the subtyping         *)
 (*  judgments ([d_sub] / [d_pat_sub] may instantiate a [forall_l] witness *)
@@ -459,7 +459,7 @@ Qed.
 
 (** Paintings commute with the [X0 := unit] substitution (the unit witness on
     each side is the unit of that sort).  Needed because the embedded skeletons /
-    types in a [d_pat] / [d_syn_typing] derivation are produced by paintings, and
+    types in a [d_pat] / [d_sd_typing] derivation are produced by paintings, and
     we strengthen by substituting [X0 := unit]. *)
 Lemma ptyp_to_pskl_subst_unit : forall A X,
     subst_pskl_in_pskl pskl_unit X (ptyp_to_pskl A)
@@ -532,10 +532,10 @@ Qed.
 (* ===================================================================== *)
 (*  Tvar-binding congruence for the auxiliary judgments.                   *)
 (*                                                                         *)
-(*  The [*_subst_unit] lemmas above strengthen a [d_pat] / [d_syn_typing]  *)
+(*  The [*_subst_unit] lemmas above strengthen a [d_pat] / [d_sd_typing]  *)
 (*  derivation by [X0 := unit], but their embedded subtyping / wf premises *)
 (*  ([d_sub], [d_pat_sub], [d_refine_syn], [d_wf_*]) come back over the    *)
-(*  context [Γ1 ++ Γ2], whereas [d_pat_subst_unit] / [d_syn_typing_subst_unit]  *)
+(*  context [Γ1 ++ Γ2], whereas [d_pat_subst_unit] / [d_sd_typing_subst_unit]  *)
 (*  must place every binding over the MAPPED context [map (subst_unit) Γ1 ++ Γ2].*)
 (*  All of these judgments consult [Γ] only through [binds X dbind_tvar Γ] *)
 (*  (tvar bindings carry no type), and the map ([subst_unit_dbind]) is the *)
@@ -701,7 +701,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  [X0 := unit] context-substitution for [d_pat] / [d_syn_typing].       *)
+(*  [X0 := unit] context-substitution for [d_pat] / [d_sd_typing].       *)
 (* ===================================================================== *)
 
 Definition subst_unit_dbind (X0 : atom) (d : dbind) : dbind :=
@@ -890,36 +890,36 @@ Proof.
   - simpl. apply skmod_ty__fn. assumption.
 Qed.
 
-Lemma d_syn_typing_subst_unit : forall m Γ e B,
-    d_syn_typing m Γ e B ->
+Lemma d_sd_typing_subst_unit : forall m Γ e B,
+    d_sd_typing m Γ e B ->
     forall Γ1 X0 Γ2, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
     tvar_clean X0 Γ2 ->
-    d_syn_typing m (map (subst_unit_dbind X0) Γ1 ++ Γ2)
+    d_sd_typing m (map (subst_unit_dbind X0) Γ1 ++ Γ2)
       (subst_ptyp_in_exp ptyp_unit X0 e) (subst_btyp_in_btyp btyp_unit X0 B).
 Proof.
   intros m Γ e B H. induction H; intros Γ1 X0 Γ2 Heq Hclean; subst; simpl.
-  - apply d_syn_typing__unit.
+  - apply d_sd_typing__unit.
   - rewrite ptyp_to_btyp_syn_subst_unit.
-    apply d_syn_typing__var.
+    apply d_sd_typing__var.
     assert (Hb : binds x (dbind_typ A) (Γ1 ++ Γ2)) by (analyze_binds H).
     apply binds_typ_subst_unit_dbind; assumption.
   - rewrite ptyp_to_btyp_syn_subst_unit.
-    apply d_syn_typing__anno. rewrite <- ptyp_to_btyp_inh_subst_unit.
-    eapply IHd_syn_typing; [ reflexivity | assumption ].
+    apply d_sd_typing__anno. rewrite <- ptyp_to_btyp_inh_subst_unit.
+    eapply IHd_sd_typing; [ reflexivity | assumption ].
   - (* sub *)
-    eapply d_syn_typing__sub.
+    eapply d_sd_typing__sub.
     + apply is_base_term_subst_ptyp. assumption.
-    + rewrite <- ptyp_to_btyp_syn_subst_unit. eapply IHd_syn_typing; [ reflexivity | assumption ].
+    + rewrite <- ptyp_to_btyp_syn_subst_unit. eapply IHd_sd_typing; [ reflexivity | assumption ].
     + rewrite <- ptyp_to_utyp_syn_subst_unit.
       eapply d_sub_same_tvar;
         [ eapply d_sub_subst_unit; [ eassumption | reflexivity ]
         | apply same_tvar_map_subst_unit ].
   - (* freeze *)
     rewrite ptyp_to_btyp_inh_subst_unit.
-    apply d_syn_typing__freeze. rewrite <- ptyp_to_btyp_syn_subst_unit.
-    eapply IHd_syn_typing; [ reflexivity | assumption ].
+    apply d_sd_typing__freeze. rewrite <- ptyp_to_btyp_syn_subst_unit.
+    eapply IHd_sd_typing; [ reflexivity | assumption ].
   - (* abs_check_step *)
-    apply d_syn_typing__abs_check_step with (L := L `union` {{X0}}).
+    apply d_sd_typing__abs_check_step with (L := L `union` {{X0}}).
     + pose proof (is_ityp_subst_unit (btyp_all_inh B) X0 H) as Hi. simpl in Hi. exact Hi.
     + intros X HX.
       rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]).
@@ -929,7 +929,7 @@ Proof.
         [ simpl_env; reflexivity | assumption ].
   - (* abs_check_base *)
     rewrite ptyp_to_btyp_inh_subst_unit.
-    apply d_syn_typing__abs_check_base with (L := L `union` {{X0}}).
+    apply d_sd_typing__abs_check_base with (L := L `union` {{X0}}).
     + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
     + apply is_ityp_subst_unit. assumption.
     + intros x Hx.
@@ -939,7 +939,7 @@ Proof.
       eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) X0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check_step *)
-    apply d_syn_typing__abs_anno_check_step with (L := L `union` {{X0}}).
+    apply d_sd_typing__abs_anno_check_step with (L := L `union` {{X0}}).
     + pose proof (is_ityp_subst_unit (btyp_all_inh B) X0 H) as Hi. simpl in Hi. exact Hi.
     + intros X HX.
       rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]).
@@ -949,7 +949,7 @@ Proof.
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check_base *)
     rewrite ptyp_to_btyp_inh_subst_unit.
-    apply d_syn_typing__abs_anno_check_base with (L := L `union` {{X0}}).
+    apply d_sd_typing__abs_anno_check_base with (L := L `union` {{X0}}).
     + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
     + apply is_ityp_subst_unit. assumption.
     + intros x Hx.
@@ -960,7 +960,7 @@ Proof.
         [ simpl_env; reflexivity | assumption ].
   - (* abs (m ≠ tc, cofinite) *)
     rewrite ptyp_to_btyp_inh_subst_unit.
-    apply d_syn_typing__abs with (L := L `union` {{X0}}).
+    apply d_sd_typing__abs with (L := L `union` {{X0}}).
     + assumption.
     + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
     + rewrite <- ptyp_to_btyp_inh_subst_unit.
@@ -975,7 +975,7 @@ Proof.
       eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) X0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno (m ≠ tc, cofinite) *)
-    apply d_syn_typing__abs_anno with (L := L `union` {{X0}})
+    apply d_sd_typing__abs_anno with (L := L `union` {{X0}})
       (B1 := subst_btyp_in_btyp btyp_unit X0 B1).
     + assumption.
     + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
@@ -988,7 +988,7 @@ Proof.
       eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ1) X0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* app *)
-    eapply d_syn_typing__app.
+    eapply d_sd_typing__app.
     + rewrite <- pskl_to_bskl_syn_subst_unit.
       eapply d_pat_subst_unit; [ eassumption | reflexivity | assumption ].
     + rewrite <- btyp_to_bskl_subst_unit. rewrite <- pskl_to_bskl_inh_subst_unit.
@@ -998,19 +998,19 @@ Proof.
     + change (btyp_arrow (subst_btyp_in_btyp btyp_unit X0 B1)
                          (subst_btyp_in_btyp btyp_unit X0 B2))
         with (subst_btyp_in_btyp btyp_unit X0 (btyp_arrow B1 B2)).
-      eapply IHd_syn_typing1; [ reflexivity | assumption ].
+      eapply IHd_sd_typing1; [ reflexivity | assumption ].
     + rewrite <- btyp_to_ptyp_subst_unit. rewrite <- ptyp_to_btyp_inh_subst_unit.
-      eapply IHd_syn_typing2; [ reflexivity | assumption ].
+      eapply IHd_sd_typing2; [ reflexivity | assumption ].
 Qed.
 
 (* ===================================================================== *)
-(*  Completeness:  d_typing ⊆ d_syn_typing                                   *)
+(*  Completeness:  d_typing ⊆ d_sd_typing                                   *)
 (* ===================================================================== *)
 
 (** Free type-variables of all binding types in a context.  Used to pick a
     [∀]-var fresh enough that the context is [tvar_clean] for it (the [anno]
     base-term case of [forall_admissible] strengthens through it via
-    [d_syn_typing_subst_unit], which needs the [∀]-var absent from the context's
+    [d_sd_typing_subst_unit], which needs the [∀]-var absent from the context's
     binding types). *)
 Definition ftvar_in_dbind (d : dbind) : atoms :=
   match d with
@@ -1117,9 +1117,9 @@ Qed.
    [ti]: [Sub] there is [Infer], which keeps variables).  This lets us choose a
    fresh [∀]-var absent from the synthesised source, so the synthesis survives
    dropping it ([subst_unit]) AND the per-[X] subtyping survives renaming. *)
-Lemma d_syn_typing_ti_base_ftvar : forall Γ e B,
+Lemma d_sd_typing_ti_base_ftvar : forall Γ e B,
     is_base_term e ->
-    d_syn_typing mode_ti Γ e B ->
+    d_sd_typing mode_ti Γ e B ->
     ftvar_in_btyp B [<=] ftvar_in_denv Γ `union` ftvar_in_exp e.
 Proof.
   intros Γ e B Hbase H. dependent induction H;
@@ -1137,18 +1137,18 @@ Proof.
     | [ Hc : empty ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B |- _ ] =>
         pose proof (d_consis_ftvar_gen _ _ _ _ Hc) as Hcf
     end.
-    specialize (IHd_syn_typing Hbase eq_refl).
+    specialize (IHd_sd_typing Hbase eq_refl).
     assert (HcfA : ftvar_in_btyp B [<=] ftvar_in_ptyp A).
     { transitivity (ftvar_in_utyp (ptyp_to_utyp_syn A));
         [ exact Hcf | exact (eq_subset _ _ (ftvar_ptyp_to_utyp_syn A)) ]. }
     assert (HihA : ftvar_in_ptyp A [<=] ftvar_in_denv Γ `union` ftvar_in_exp e).
     { transitivity (ftvar_in_btyp (ptyp_to_btyp_syn A));
-        [ exact (eq_subset _ _ (eq_sym (ftvar_paint_btyp_syn_eq A))) | exact IHd_syn_typing ]. }
+        [ exact (eq_subset _ _ (eq_sym (ftvar_paint_btyp_syn_eq A))) | exact IHd_sd_typing ]. }
     transitivity (ftvar_in_ptyp A); assumption.
 Qed.
 
 (* Shared closing tactic for the three base-term cases of
-   [d_syn_typing_forall_admissible].  [X0] is a pre-chosen fresh [∀]-var and
+   [d_sd_typing_forall_admissible].  [X0] is a pre-chosen fresh [∀]-var and
    [Hbt] a proof that the current value [V] is a base term. *)
 Ltac base_term_admissible_tac IH Γ B X0 Hbt :=
   let IH0 := fresh "IH0" in
@@ -1161,13 +1161,13 @@ Ltac base_term_admissible_tac IH Γ B X0 Hbt :=
   pose proof (IH X0 ltac:(fsetdec)) as IH0;
   inversion IH0; subst;
   match goal with
-  | [ HS : d_syn_typing mode_ti _ ?V0 (ptyp_to_btyp_syn ?A0),
+  | [ HS : d_sd_typing mode_ti _ ?V0 (ptyp_to_btyp_syn ?A0),
       HR : empty ⨟ _ ⊢[ mode_tc ]
              ptyp_to_utyp_syn ?A0 ⊑ _ |- _ ] =>
       rename HS into Hsyn; rename HR into Hs0;
       (* [A0] is [X0]-free *)
       assert (HX0A : X0 `notin` ftvar_in_ptyp A0);
-      [ pose proof (d_syn_typing_ti_base_ftvar _ _ _ Hbt Hsyn) as Hbnd;
+      [ pose proof (d_sd_typing_ti_base_ftvar _ _ _ Hbt Hsyn) as Hbnd;
         simpl in Hbnd;
         let Hin := fresh "Hin" in intro Hin;
         rewrite <- (ftvar_paint_btyp_syn_eq A0) in Hin;
@@ -1180,10 +1180,10 @@ Ltac base_term_admissible_tac IH Γ B X0 Hbt :=
         rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec;
         exact Hir
       | ];
-      apply d_syn_typing__sub with (A := A0);
+      apply d_sd_typing__sub with (A := A0);
       [ exact Hbt
       | (* synthesis at [Γ]: drop [X0] from [Hsyn] via [subst_unit] (identity). *)
-        pose proof (d_syn_typing_subst_unit _ _ _ _ Hsyn nil X0 Γ
+        pose proof (d_sd_typing_subst_unit _ _ _ _ Hsyn nil X0 Γ
                       ltac:(reflexivity) ltac:(apply tvar_clean_fresh; fsetdec)) as Hsg;
         rewrite subst_ptyp_in_exp_fresh_eq in Hsg by fsetdec;
         rewrite subst_btyp_in_btyp_fresh_eq in Hsg
@@ -1204,24 +1204,24 @@ Ltac base_term_admissible_tac IH Γ B X0 Hbt :=
   end.
 
 (** The paper's "interesting case" [dtylab{Forall}]: a [∀]-generalised value
-    [V] is admissible in [d_syn_typing].  For [λ]-values the [∀] is the folded
+    [V] is admissible in [d_sd_typing].  For [λ]-values the [∀] is the folded
     [abs_check_step] / [abs_anno_check_step] (proved here).  For base-term
     values it is re-routed through [Sub] + [d_sub__forall_r], which needs the
     synthesis re-established at [Γ] (the fresh [∀]-var dropped) — an
-    [d_syn_typing] tvar-strengthening provided by type-substitution [X := unit]
+    [d_sd_typing] tvar-strengthening provided by type-substitution [X := unit]
     (see the [d_sub] note above).  Those three base-term subcases are the only
     remaining holes. *)
-Lemma d_syn_typing_forall_admissible : forall L Γ V B,
+Lemma d_sd_typing_forall_admissible : forall L Γ V B,
     is_value V ->
     (forall X, X `notin` L ->
-       d_syn_typing mode_tc ((X ~ dbind_tvar) ++ Γ) V (open_btyp_wrt_btyp B (btyp_var_f X))) ->
-    d_syn_typing mode_tc Γ V (btyp_all_inh B).
+       d_sd_typing mode_tc ((X ~ dbind_tvar) ++ Γ) V (open_btyp_wrt_btyp B (btyp_var_f X))) ->
+    d_sd_typing mode_tc Γ V (btyp_all_inh B).
 Proof.
   intros L Γ V B Hv IH.
   inversion Hv; subst.
   (* Unified base-term tactic: pick one fresh [X0], invert [IH X0] to a [Sub]
      ([Hbase]/[H0] synthesis/[H1] subtyping over source [A]); the source [A] is
-     [X0]-free ([d_syn_typing_ti_base_ftvar], [X0] picked fresh for the context's
+     [X0]-free ([d_sd_typing_ti_base_ftvar], [X0] picked fresh for the context's
      binding ftvars and [V]'s ftvars), so the synthesis survives DROPPING [X0]
      ([subst_unit], identity on [V] and [A]) and the per-[X] subtyping survives
      RENAMING [X0→X] ([d_sub_rename], identity on the [X0]-free LHS). *)
@@ -1230,7 +1230,7 @@ Proof.
       (L `union` dom Γ `union` ftvar_in_btyp B `union` ftvar_in_denv Γ `union` ftvar_in_exp exp_unit).
     pose proof (IH X0 ltac:(fsetdec)) as IH0. inversion IH0; subst.
     assert (HX0A : X0 `notin` ftvar_in_ptyp A).
-    { pose proof (d_syn_typing_ti_base_ftvar _ _ _ is_base_term__unit H0) as Hbnd.
+    { pose proof (d_sd_typing_ti_base_ftvar _ _ _ is_base_term__unit H0) as Hbnd.
       simpl in Hbnd. intro Hin.
       rewrite <- (ftvar_paint_btyp_syn_eq A) in Hin.
       specialize (Hbnd _ Hin). fsetdec. }
@@ -1239,9 +1239,9 @@ Proof.
       pose proof (is_ityp_rename X0 Y (skmod_ty_tc_inv _ (d_sub_skmod H1))) as Hir.
       rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec.
       exact Hir. }
-    apply d_syn_typing__sub with (A := A).
+    apply d_sd_typing__sub with (A := A).
     + exact is_base_term__unit.
-    + pose proof (d_syn_typing_subst_unit _ _ _ _ H0 nil X0 Γ
+    + pose proof (d_sd_typing_subst_unit _ _ _ _ H0 nil X0 Γ
                     ltac:(reflexivity) ltac:(apply tvar_clean_fresh; fsetdec)) as Hsg.
       rewrite subst_ptyp_in_exp_fresh_eq in Hsg by fsetdec.
       rewrite subst_btyp_in_btyp_fresh_eq in Hsg
@@ -1264,22 +1264,22 @@ Proof.
     base_term_admissible_tac IH Γ B X0 (is_base_term__var x).
   - (* λx.M : the folded ∀-peel.  [is_ityp (btyp_all_inh B)] is recovered from
        the per-instance typings: each [open B X] types the lambda at [tc], so is
-       inherited ([d_syn_typing_tc_abs_is_ityp]). *)
-    apply d_syn_typing__abs_check_step with (L := L);
+       inherited ([d_sd_typing_tc_abs_is_ityp]). *)
+    apply d_sd_typing__abs_check_step with (L := L);
       [ apply is_ityp__all with (L := L); intros X HX;
-        exact (d_syn_typing_tc_abs_is_ityp _ _ _ (IH X HX))
+        exact (d_sd_typing_tc_abs_is_ityp _ _ _ (IH X HX))
       | assumption ].
   - (* λxᴬ.M : the folded ∀-peel (as above). *)
-    apply d_syn_typing__abs_anno_check_step with (L := L);
+    apply d_sd_typing__abs_anno_check_step with (L := L);
       [ apply is_ityp__all with (L := L); intros X HX;
-        exact (d_syn_typing_tc_abs_anno_is_ityp _ _ _ _ (IH X HX))
+        exact (d_sd_typing_tc_abs_anno_is_ityp _ _ _ _ (IH X HX))
       | assumption ].
   - (* (M : A) : base term — likewise *)
     pick fresh X0 for
       (L `union` dom Γ `union` ftvar_in_btyp B `union` ftvar_in_denv Γ `union` ftvar_in_exp (exp_anno e A)).
     pose proof (IH X0 ltac:(fsetdec)) as IH0. inversion IH0; subst.
     assert (HX0A : X0 `notin` ftvar_in_ptyp A0).
-    { pose proof (d_syn_typing_ti_base_ftvar _ _ _ (is_base_term__anno e A) H1) as Hbnd.
+    { pose proof (d_sd_typing_ti_base_ftvar _ _ _ (is_base_term__anno e A) H1) as Hbnd.
       simpl in Hbnd, Fr. intro Hin.
       rewrite <- (ftvar_paint_btyp_syn_eq A0) in Hin.
       specialize (Hbnd _ Hin). fsetdec. }
@@ -1288,9 +1288,9 @@ Proof.
       pose proof (is_ityp_rename X0 Y (skmod_ty_tc_inv _ (d_sub_skmod H2))) as Hir.
       rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec.
       exact Hir. }
-    apply d_syn_typing__sub with (A := A0).
+    apply d_sd_typing__sub with (A := A0).
     + exact (is_base_term__anno e A).
-    + pose proof (d_syn_typing_subst_unit _ _ _ _ H1 nil X0 Γ
+    + pose proof (d_sd_typing_subst_unit _ _ _ _ H1 nil X0 Γ
                     ltac:(reflexivity) ltac:(apply tvar_clean_fresh; fsetdec)) as Hsg.
       rewrite subst_ptyp_in_exp_fresh_eq in Hsg by fsetdec.
       rewrite subst_btyp_in_btyp_fresh_eq in Hsg
@@ -1309,46 +1309,46 @@ Proof.
         exact Hren.
 Qed.
 
-Theorem d_syn_typing_complete : forall M Γ e A,
-    d_typing M Γ e A -> d_syn_typing M Γ e A.
+Theorem d_sd_typing_complete : forall M Γ e A,
+    d_typing M Γ e A -> d_sd_typing M Γ e A.
 Proof.
   intros M Γ e A H. induction H.
-  - apply d_syn_typing__unit.
-  - apply d_syn_typing__var; assumption.
-  - apply d_syn_typing__anno; assumption.
-  - eapply d_syn_typing__sub; eassumption.
-  - apply d_syn_typing__freeze; assumption.
+  - apply d_sd_typing__unit.
+  - apply d_sd_typing__var; assumption.
+  - apply d_sd_typing__anno; assumption.
+  - eapply d_sd_typing__sub; eassumption.
+  - apply d_sd_typing__freeze; assumption.
   - (* forall: folded ∀ via the admissibility bridge *)
-    eapply d_syn_typing_forall_admissible; eassumption.
+    eapply d_sd_typing_forall_admissible; eassumption.
   - (* abs: d_typing's Abs is general; d_syn splits on the mode — [m≠tc] is
        [__abs], the [tc] case folds into [__abs_check_base].  The latter needs
        the body inherited ([is_ityp B]); since a [tc]-checked body is inherited
        (the same recovery as the forall/lambda cases) this is not a real gap. *)
     destruct m as [ | | m' ].
-    + apply d_syn_typing__abs with (L := L);
+    + apply d_sd_typing__abs with (L := L);
         [ discriminate | assumption | assumption | assumption ].
-    + apply d_syn_typing__abs_check_base with (L := L);
+    + apply d_sd_typing__abs_check_base with (L := L);
         [ assumption
         | apply is_ityp_arrow_r with (B1 := ptyp_to_btyp_inh A);
           apply skmod_ty_tc_inv; assumption
         | assumption ].
-    + apply d_syn_typing__abs with (L := L);
+    + apply d_sd_typing__abs with (L := L);
         [ discriminate | assumption | assumption | assumption ].
   - (* abs_anno: as [abs]; the [tc] case is [__abs_anno_check_base].  The skmod
        premise forces the domain inherited at [tc]: [is_ityp B1] + [erase B1 = A]
        give [B1 = inh A], so the d_typing type [B1→B2] IS the [inh A → B2] that
        [__abs_anno_check_base] produces. *)
     destruct m as [ | | m' ].
-    + apply d_syn_typing__abs_anno with (L := L) (B1 := B1);
+    + apply d_sd_typing__abs_anno with (L := L) (B1 := B1);
         [ discriminate | assumption | assumption | assumption | assumption ].
     + assert (Hia : is_ityp (btyp_arrow B1 B2)) by (apply skmod_ty_tc_inv; assumption).
       assert (HB1 : ptyp_to_btyp_inh A = B1).
       { pose proof (is_ityp_ptyp_to_btyp_inh (is_ityp_arrow_l _ _ Hia)) as HR.
         rewrite H0 in HR. exact HR. }
       rewrite <- HB1.
-      apply d_syn_typing__abs_anno_check_base with (L := L);
+      apply d_sd_typing__abs_anno_check_base with (L := L);
         [ assumption | exact (is_ityp_arrow_r _ _ Hia) | assumption ].
-    + apply d_syn_typing__abs_anno with (L := L) (B1 := B1);
+    + apply d_sd_typing__abs_anno with (L := L) (B1 := B1);
         [ discriminate | assumption | assumption | assumption | assumption ].
-  - (* app *) eapply d_syn_typing__app; eassumption.
+  - (* app *) eapply d_sd_typing__app; eassumption.
 Qed.
