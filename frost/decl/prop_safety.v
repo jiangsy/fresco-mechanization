@@ -8,6 +8,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
 Require Import src.frost.predicates.
@@ -424,10 +425,73 @@ Lemma abs_check_fill : forall e Qb Γ' L_b,
         (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) ⊳
         (colour (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb)))) A').
 Proof.
-  (* Admitted: broken by the rule-faithfulness pass (d_pat reorder / abs_anno
-     btyp / sub P-Q); structural d_pat lemma, NOT used by D1 or order-
-     irrelevance. To be re-proved with the safety layer. *)
-Admitted.
+  intros e Qb Γ' L_b Hbody Γext0 Γt A' Hcw Hcr Hwf Hty.
+  remember (exp_abs e) as ee eqn:Hee.
+  remember (ptyp_to_btyp_inh A') as B0 eqn:HB0.
+  remember mode_tc as m eqn:Hm.
+  revert Γext0 A' Hcw Hcr Hwf Hee HB0 Hm.
+  induction Hty; intros Γext0 A'0 Hcw Hcr Hwf Hee HB0 Hm;
+    try discriminate Hee;
+    try (exfalso; subst;
+         match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+  - (* forall : A'0 = ∀A, peel one ∀ (tophole_fill + move + IH) *)
+    change (btyp_all_inh (ptyp_to_btyp_inh A)) with (ptyp_to_btyp_inh (ptyp_all A)) in HB0.
+    apply (f_equal btyp_to_ptyp) in HB0.
+    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in HB0. subst A'0.
+    replace (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb))))
+      with (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_inh (bskl_to_pskl Qb)))) by reflexivity.
+    replace (colour (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_inh (bskl_to_pskl Qb)))) (ptyp_all A))
+      with (bskl_all_syn (colour (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_inh (bskl_to_pskl Qb)))) A))
+      by reflexivity.
+    apply d_refine_syn__tophole_fill with
+      (L := L_b `union` L `union` dom Γ `union` dom Γext0). intros X HX.
+    rewrite <- colour_open.
+    eapply d_refine_syn_move; [ | apply colour_no_tophole | reflexivity ].
+    eapply (H1 X ltac:(fsetdec) Hbody ((X ~ dbind_tvar) ++ Γext0)
+              (open_ptyp_wrt_ptyp A (ptyp_var_f X))).
+    + eapply ctx_weaken_trans; [ exact Hcw | apply ctx_weaken_app_front ].
+    + rewrite_env ((X ~ dbind_tvar) ++ Γext0); rewrite_env ((X ~ dbind_tvar) ++ Γ).
+      apply ctxr_cons; [ apply dbr_refl | exact Hcr ].
+    + apply d_wf_denv__tvar; [ exact Hwf | fsetdec ].
+    + exact Hee.
+    + rewrite ptyp_to_btyp_inh_open_var. reflexivity.
+    + reflexivity.
+  - (* abs : A'0 = arrow A (btyp_to_ptyp B); ⫯ peeled, domain holed, codomain via body-hyp *)
+    subst m. injection Hee as Hee'; subst e0.
+    match goal with Hsk : skmod_ty _ mode_tc |- _ =>
+      inversion Hsk as [ | ? Hia | ]; subst end.
+    match goal with Hia : is_ityp (btyp_arrow _ _) |- _ =>
+      inversion Hia as [ | | ? ? Hi1 Hi2 | ]; subst end.
+    rewrite <- (is_ityp_ptyp_to_btyp_inh Hi2) in HB0.
+    change (btyp_arrow (ptyp_to_btyp_inh A) (ptyp_to_btyp_inh (btyp_to_ptyp B)))
+      with (ptyp_to_btyp_inh (ptyp_arrow A (btyp_to_ptyp B))) in HB0.
+    apply (f_equal btyp_to_ptyp) in HB0.
+    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in HB0. subst A'0.
+    replace (pskl_to_bskl_inh (bskl_to_pskl (bskl_tophole (bskl_arrow bskl_hole Qb))))
+      with (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_inh (bskl_to_pskl Qb)))) by reflexivity.
+    replace (colour (bskl_tophole (bskl_arrow bskl_hole (pskl_to_bskl_inh (bskl_to_pskl Qb)))) (ptyp_arrow A (btyp_to_ptyp B)))
+      with (bskl_arrow (colour bskl_hole A) (colour (pskl_to_bskl_inh (bskl_to_pskl Qb)) (btyp_to_ptyp B)))
+      by reflexivity.
+    apply d_refine_syn__tophole_remove. apply d_refine_syn__arrow.
+    + rewrite colour_hole. apply d_refine_syn_hole_fills.
+      * eapply d_wf_ptyp_lc_loc; eauto.
+      * intros Y HY. right. eapply ctx_refines_binds_tvar; [ exact Hcr | ].
+        eapply d_wf_ptyp_ftvar; [ | exact HY ]. assumption.
+    + (* codomain : body-hyp at a fresh x, then strengthen away (x:□) *)
+      pick fresh x for (L_b `union` L `union` dom Γ `union` dom Γext0).
+      rewrite_env (nil ++ Γext0).
+      eapply d_refine_syn_strengthen_nontvar with (x := x) (d := dbind_skl pskl_hole);
+        [ discriminate | ].
+      simpl.
+      eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_skl pskl_hole) ++ Γext0)
+                ((x ~ dbind_typ A) ++ Γ) (btyp_to_ptyp B)).
+      * apply ctx_weaken_cons; exact Hcw.
+      * apply ctxr_cons; [ apply dbr_typ_hole | exact Hcr ].
+      * apply d_wf_denv__typ; [ exact Hwf | fsetdec | assumption ].
+      * rewrite (is_ityp_ptyp_to_btyp_inh Hi2).
+        match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
+          apply Hbp; fsetdec end.
+Qed.
 
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
