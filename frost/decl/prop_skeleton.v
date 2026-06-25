@@ -1286,10 +1286,48 @@ Lemma d_pat_binding_eq : forall m Γ e Q,
     dbind_to_pskl d = dbind_to_pskl d' ->
     (Γ1 ++ (x ~ d') ++ Γ2) ⊢[ m ] e ⇨ Q.
 Proof.
-  (* Admitted: broken by the rule-faithfulness pass (d_pat reorder / abs_anno
-     btyp / sub P-Q); structural d_pat lemma, NOT used by D1 or order-
-     irrelevance. To be re-proved with the safety layer. *)
-Admitted.
+  (* Structural induction on [d_pat]; [Γ] is read only through tvar/binding
+     lookups whose [pskl]-view is preserved, so each sub-judgment is rebound by
+     its own [binding_eq] lemma.  Mirrors [d_pat_weakening_mid]. *)
+  intros m Γ e Q H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  - apply d_pat__unit.
+  - (* var *) analyze_binds H.
+    + apply d_pat__var with (d := d);
+        [ apply binds_app_iff; left; assumption | assumption ].
+    + apply d_pat__var with (d := d0');
+        [ apply binds_app_iff; right; apply binds_app_iff; left;
+          apply binds_one_iff; auto
+        | rewrite <- Hdd; assumption ].
+    + apply d_pat__var with (d := d);
+        [ apply binds_app_iff; right; apply binds_app_iff; right; assumption
+        | assumption ].
+  - apply d_pat__anno. eapply d_wf_ptyp_binding_eq; eauto.
+  - apply d_pat__sub with (P := P);
+      [ assumption | eapply IHd_pat; eauto | eapply d_pat_sub_binding_eq; eauto ].
+  - apply d_pat__freeze. eapply IHd_pat; eauto.
+  - apply d_pat__abs with (L := L `union` dom (Γ1 ++ (x0 ~ d0') ++ Γ2)) (P := P);
+      [ assumption | eapply d_wf_pskl_binding_eq; eauto | ].
+    intros y Hy. rewrite_env (((y ~ dbind_skl P) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat__abs_anno with (L := L `union` dom (Γ1 ++ (x0 ~ d0') ++ Γ2)) (B := B);
+      [ assumption | eapply d_wf_ptyp_binding_eq; eauto | reflexivity | ].
+    intros y Hy. rewrite_env (((y ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hdd ].
+  - eapply d_pat__app;
+      [ eapply IHd_pat1; eauto | eapply d_refine_syn_binding_eq; eauto
+      | eapply IHd_pat2; eauto ].
+  - apply d_pat__abs_check with (L := L `union` dom (Γ1 ++ (x0 ~ d0') ++ Γ2)).
+    intros y Hy. rewrite_env (((y ~ dbind_skl pskl_hole) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hdd ].
+  - apply d_pat__abs_anno_check with (L := L `union` dom (Γ1 ++ (x0 ~ d0') ++ Γ2)) (A := A);
+      [ eapply d_wf_ptyp_binding_eq; eauto | ].
+    intros y Hy. rewrite_env (((y ~ dbind_typ A) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
+    match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
+      eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hdd ].
+Qed.
 
 (** [more_ghost Q' Q]: [Q'] is [Q] with some sub-skeletons replaced by the plain
     ghost [□].  Backbone of [d_pat_weaken_hole]: rebinding a λ-var to [□]
@@ -2278,10 +2316,18 @@ Lemma d_pat_sub_safe_tc : forall n Q1 Γ,
     exists Q2, empty ⨟ Γ ⊢ₛ[ mode_tc ] (bskl_to_uskl Q1) ⊑ Q2
                /\ ghost_of (bskl_to_pskl Q1) Q2.
 Proof.
-  (* SAFETY: reworked alongside the syntax-directed/full-decl split and the
-     set-tag refactor (decl validity is false in the liberal d_pat__abs
-     presentation); admitted for now. *)
-Admitted.
+  (* Corollary of the (Qed) ghost-instantiation engine: [Q1]'s pskl-erasure has
+     a ghostification [Q2] ([ghost_of_total]), and the [tc]-subtyping to it is
+     [ghost_of_infer]; [Q1] round-trips through its pskl since it is [is_sskl]. *)
+  intros n Q1 Γ Hsz Hsskl Hcov.
+  pose proof (lc_bskl_to_pskl _ (is_sskl_lc Hsskl)) as Hlc.
+  destruct (ghost_of_total (le_n (size_pskl (bskl_to_pskl Q1))) Hlc) as [Q2 HQ2].
+  exists Q2. split; [ | exact HQ2 ].
+  rewrite <- (is_sskl_syn_roundtrip Hsskl).
+  apply ghost_of_infer; [ exact HQ2 | exact Hlc | fsetdec | ].
+  intros X HX. apply Hcov.
+  rewrite <- (is_sskl_syn_roundtrip Hsskl), ftvar_pskl_to_bskl_syn. exact HX.
+Qed.
 
 (** [d_wf_ptyp] from local closure + scoping (the [ptyp] analogue of
     [d_wf_pskl_of_ptyp]); and the painting inversion needed by the Anno case. *)
@@ -2365,10 +2411,23 @@ Lemma d_typing_ti_primary : forall Γ e B,
     | _ => True
     end.
 Proof.
-  (* Admitted: broken by the rule-faithfulness pass (d_pat reorder / abs_anno
-     btyp / sub P-Q); structural d_pat lemma, NOT used by D1 or order-
-     irrelevance. To be re-proved with the safety layer. *)
-Admitted.
+  intros Γ e B H. remember mode_ti as m eqn:Hm.
+  induction H; subst; try discriminate; try exact I.
+  - (* unit *) reflexivity.
+  - (* var *) exists A. split; [ assumption | ].
+    rewrite btyp_to_ptyp_ptyp_to_btyp_syn. reflexivity.
+  - (* anno *) rewrite btyp_to_ptyp_ptyp_to_btyp_syn. reflexivity.
+  - (* sub : e is a base term, the ti premise gives [match e ...] in terms of
+       [A], and the ti-subsumption ([d_sub__infer], the only ti case) forces
+       [ptyp_to_pskl (btyp_to_ptyp B) = ptyp_to_pskl A] via consistency. *)
+    inversion H1; subst; try (exfalso; congruence).
+    pose proof (d_consis_skel H2) as Hba.
+    rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hba.
+    (* Hba : ptyp_to_pskl A = ptyp_to_pskl (btyp_to_ptyp B) *)
+    specialize (IHd_typing eq_refl).
+    rewrite btyp_to_ptyp_ptyp_to_btyp_syn in IHd_typing.
+    destruct e; simpl in *; try exact I; rewrite <- Hba; exact IHd_typing.
+Qed.
 
 (** Base-term [mode_ti] typing is skeleton-deterministic. *)
 Lemma d_typing_ti_skel_det : forall Γ e B1 B2,
@@ -2376,10 +2435,16 @@ Lemma d_typing_ti_skel_det : forall Γ e B1 B2,
     d_typing mode_ti Γ e B1 -> d_typing mode_ti Γ e B2 ->
     ptyp_to_pskl (btyp_to_ptyp B1) = ptyp_to_pskl (btyp_to_ptyp B2).
 Proof.
-  (* Admitted: broken by the rule-faithfulness pass (d_pat reorder / abs_anno
-     btyp / sub P-Q); structural d_pat lemma, NOT used by D1 or order-
-     irrelevance. To be re-proved with the safety layer. *)
-Admitted.
+  intros Γ e B1 B2 Huniq Hbase H1 H2.
+  pose proof (d_typing_ti_primary H1) as P1.
+  pose proof (d_typing_ti_primary H2) as P2.
+  destruct Hbase; simpl in P1, P2.
+  - (* unit *) rewrite P1, P2. reflexivity.
+  - (* var *) destruct P1 as [A1 [Hb1 He1]]. destruct P2 as [A2 [Hb2 He2]].
+    assert (Heq : dbind_typ A1 = dbind_typ A2) by (eapply binds_unique; eauto).
+    inversion Heq; subst. rewrite He1, He2. reflexivity.
+  - (* anno *) rewrite P1, P2. reflexivity.
+Qed.
 
 Lemma ftvar_ptyp_to_pskl : forall A,
     ftvar_in_pskl (ptyp_to_pskl A) = ftvar_in_ptyp A.
@@ -2419,10 +2484,35 @@ Lemma d_pat_ti_base_safe : forall Γ e B,
       /\ (forall X, X `in` ftvar_in_bskl Q -> binds X dbind_tvar Γ)
       /\ bskl_to_pskl Q = ptyp_to_pskl (btyp_to_ptyp B).
 Proof.
-  (* SAFETY: reworked alongside the syntax-directed/full-decl split and the
-     set-tag refactor (decl validity is false in the liberal d_pat__abs
-     presentation); admitted for now. *)
-Admitted.
+  (* The [mode_ti] type is skeleton-pinned by the head ([d_typing_ti_primary]),
+     so the synthesised pattern skeleton is read off the binding / annotation
+     directly — uniformly across the [sub] re-typing (same pskl). *)
+  intros Γ e B Hwf Hbase Hty.
+  pose proof (d_typing_ti_primary Hty) as Hpri.
+  destruct Hbase; simpl in Hpri.
+  - (* unit *) exists bskl_unit.
+    repeat split;
+      [ apply d_pat__unit | apply is_sskl__unit
+      | intros X HX; simpl in HX; fsetdec
+      | simpl; rewrite Hpri; reflexivity ].
+  - (* var x *) destruct Hpri as [A [Hbnd Hsk]].
+    assert (HwfA : d_wf_ptyp Γ A) by (eapply d_wf_denv_binds_typ; eauto).
+    exists (pskl_to_bskl_syn (ptyp_to_pskl A)).
+    repeat split.
+    + apply d_pat__var with (d := dbind_typ A); [ exact Hbnd | reflexivity ].
+    + apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl. eapply d_wf_ptyp_lc_loc; eauto.
+    + intros X HX. rewrite ftvar_pskl_to_bskl_syn, ftvar_ptyp_to_pskl in HX.
+      eapply d_wf_ptyp_ftvar; eauto.
+    + rewrite bskl_to_pskl_pskl_to_bskl_syn. symmetry; exact Hsk.
+  - (* anno e A *) pose proof (d_typing_anno_wf Hty Hwf) as HwfA.
+    exists (pskl_to_bskl_syn (ptyp_to_pskl A)).
+    repeat split.
+    + apply d_pat__anno. exact HwfA.
+    + apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl. eapply d_wf_ptyp_lc_loc; eauto.
+    + intros X HX. rewrite ftvar_pskl_to_bskl_syn, ftvar_ptyp_to_pskl in HX.
+      eapply d_wf_ptyp_ftvar; eauto.
+    + rewrite bskl_to_pskl_pskl_to_bskl_syn. symmetry; exact Hpri.
+Qed.
 
 Lemma d_pat_sub_forall_hole_witness : forall Γ,
   empty ⨟ Γ ⊢ₛ[ mode_tc ]
