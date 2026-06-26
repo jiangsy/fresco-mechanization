@@ -549,6 +549,106 @@ Proof.
         | exact Hcrt ].
 Qed.
 
+(** TC analog of [d_pat_base_safe_gen]: a base term checked in TC mode has a
+    GHOSTIFIED safe inference.  Inference = [d_pat__sub] with the ghost
+    [ghost_of (skel C) Q] ([ghost_of_infer]); fill = [ghost_of_fill_gen] fed by
+    the checking inversion [d_typing_base_check_sub] (moved to [Γext] by
+    [d_sub_ctx_refines]).  The refined-variable subcase falls back to the
+    bare-hole fill [gpat_hole_fill]. *)
+Lemma d_pat_base_safe_tc_gen : forall Γ e A,
+    d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e (ptyp_to_btyp_syn A) ->
+    forall Γ' B, ctx_refines Γ' Γ -> gpat mode_tc Γ' e B.
+Proof.
+  intros Γ e A Hwf Hbase Hty Γ' B Hcr.
+  (* common: the ghost-inference's [cov] premise over [Γ'] for a [C] wf over [Γ] *)
+  assert (cov_of : forall C, d_wf_ptyp Γ C ->
+            forall X, X `in` ftvar_in_pskl (ptyp_to_pskl C) -> binds X dbind_tvar Γ').
+  { intros C HwfC X HX. rewrite ftvar_ptyp_to_pskl in HX.
+    eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_ptyp_ftvar; eauto ]. }
+  destruct Hbase.
+  - (* unit *)
+    destruct (ghost_of_total (le_n (size_pskl (ptyp_to_pskl ptyp_unit)))
+                (lc_pskl_ptyp_to_pskl lc_ptyp_unit)) as [Q HQ].
+    exists Q. split.
+    + eapply d_pat__sub with (P := ptyp_to_pskl ptyp_unit); [ apply is_base_term__unit | apply d_pat__unit | ].
+      eapply (ghost_of_infer HQ (lc_pskl_ptyp_to_pskl lc_ptyp_unit));
+        [ reflexivity | apply cov_of; apply d_wf_ptyp__unit ].
+    + intros Γext Γt A1 Hcw Hcr2 Hwft HA.
+      eapply ghost_of_fill_gen with (P := ptyp_to_pskl ptyp_unit) (U := ptyp_to_utyp_syn ptyp_unit) (A' := A1);
+        [ eapply d_sub_ctx_refines;
+            [ eapply d_typing_base_check_sub; [ exact Hwft | apply bp_unit | exact HA ] | exact Hcr2 ]
+        | reflexivity
+        | eapply d_wf_ptyp_ctx_refines;
+            [ apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; [ exact HA | exact Hwft ] | exact Hcr2 ]
+        | rewrite utyp_to_pskl_ptyp_to_utyp_syn; apply pskl_subsumes_refl
+        | exact HQ
+        | apply hole_safe_u_of_ptyp; apply lc_ptyp_unit ].
+  - (* var x *)
+    pose proof (d_typing_ti_primary Hty) as Hpri. simpl in Hpri.
+    destruct Hpri as [A0 [Hbnd Hsk]].
+    assert (HwfA0 : d_wf_ptyp Γ A0)
+      by (eapply d_wf_denv_binds_typ; [ exact Hwf | exact Hbnd ]).
+    assert (HlcA0 : lc_ptyp A0) by (eapply d_wf_ptyp_lc; exact HwfA0).
+    destruct (@ctx_refines_binds Γ' Γ x (dbind_typ A0) Hcr Hbnd) as [d' [Hb' Hdr]].
+    inversion Hdr; subst.
+    + (* kept: x : typ A0 in Γ' *)
+      destruct (ghost_of_total (le_n (size_pskl (ptyp_to_pskl A0)))
+                  (lc_pskl_ptyp_to_pskl HlcA0)) as [Q HQ].
+      exists Q. split.
+      * eapply d_pat__sub with (P := ptyp_to_pskl A0);
+          [ apply is_base_term__var
+          | apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ] | ].
+        eapply (ghost_of_infer HQ (lc_pskl_ptyp_to_pskl HlcA0));
+          [ reflexivity | apply cov_of; exact HwfA0 ].
+      * intros Γext Γt A1 Hcw Hcr2 Hwft HA.
+        assert (Hbt : binds x (dbind_typ A0) Γt).
+        { eapply ctx_refines_binds_fwd in Hcr2;
+            [ | eapply binds_ctx_weaken; [ exact Hcw | exact Hb' ] ].
+          destruct Hcr2 as [dt [Hbt Hdrt]]. inversion Hdrt; subst. exact Hbt. }
+        eapply ghost_of_fill_gen with (P := ptyp_to_pskl A0) (U := ptyp_to_utyp_syn A0) (A' := A1);
+          [ eapply d_sub_ctx_refines;
+              [ eapply d_typing_base_check_sub;
+                  [ exact Hwft | apply bp_var; exact Hbt | exact HA ] | exact Hcr2 ]
+          | reflexivity
+          | eapply d_wf_ptyp_ctx_refines;
+              [ apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; [ exact HA | exact Hwft ] | exact Hcr2 ]
+          | rewrite utyp_to_pskl_ptyp_to_utyp_syn; apply pskl_subsumes_refl
+          | exact HQ
+          | apply hole_safe_u_of_ptyp; exact HlcA0 ].
+    + (* refined: x : □ in Γ' — the bare ghost fills everything *)
+      exists bskl_hole. split.
+      * eapply d_pat__sub with (P := pskl_hole);
+          [ apply is_base_term__var
+          | apply d_pat__var with (d := dbind_skl pskl_hole) (P := pskl_hole);
+              [ exact Hb' | reflexivity ] | ].
+        eapply (ghost_of_infer ghost_of__hole lc_pskl_hole);
+          [ reflexivity | intros X HX; simpl in HX; fsetdec ].
+      * intros Γext Γt A1 Hcw Hcr2 Hwft HA.
+        eapply gpat_hole_fill;
+          [ apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; [ exact HA | exact Hwft ] | exact Hcr2 ].
+  - (* anno e0 A0 *)
+    assert (HwfA0 : d_wf_ptyp Γ A0) by (eapply d_typing_anno_wf; eauto).
+    assert (HlcA0 : lc_ptyp A0) by (eapply d_wf_ptyp_lc; exact HwfA0).
+    destruct (ghost_of_total (le_n (size_pskl (ptyp_to_pskl A0)))
+                (lc_pskl_ptyp_to_pskl HlcA0)) as [Q HQ].
+    exists Q. split.
+    + eapply d_pat__sub with (P := ptyp_to_pskl A0);
+        [ apply is_base_term__anno
+        | apply d_pat__anno; eapply d_wf_ptyp_ctx_refines; [ exact HwfA0 | exact Hcr ] | ].
+      eapply (ghost_of_infer HQ (lc_pskl_ptyp_to_pskl HlcA0));
+        [ reflexivity | apply cov_of; exact HwfA0 ].
+    + intros Γext Γt A1 Hcw Hcr2 Hwft HA.
+      eapply ghost_of_fill_gen with (P := ptyp_to_pskl A0) (U := ptyp_to_utyp_syn A0) (A' := A1);
+        [ eapply d_sub_ctx_refines;
+            [ eapply d_typing_base_check_sub; [ exact Hwft | apply bp_anno | exact HA ] | exact Hcr2 ]
+        | reflexivity
+        | eapply d_wf_ptyp_ctx_refines;
+            [ apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; [ exact HA | exact Hwft ] | exact Hcr2 ]
+        | rewrite utyp_to_pskl_ptyp_to_utyp_syn; apply pskl_subsumes_refl
+        | exact HQ
+        | apply hole_safe_u_of_ptyp; exact HlcA0 ].
+Qed.
+
 (** GENERAL binder rename for typing (mirrors [d_pat_rename]): renaming the
     context binder [x ↦ y] (and [x ↦ y] in the term) preserves [⦂].  The [sub]
     case goes through [d_sub_subst_nontvar] (the subtyping ignores the relabeled
@@ -716,13 +816,9 @@ Proof.
     + (* ti: subsumed base term still synthesises (skeleton determined) *)
       eapply d_pat_base_safe_gen;
         [ exact Hwf | eassumption | eapply d_typing__sub; eassumption | exact Hcr ].
-    + (* tc: SAFETY of a checked, subsumed base term.  All three ingredients
-         are now in hand: the FILL side [ghost_of_fill] (prop_skeleton.v, Qed)
-         + the inference side [d_pat__sub] + [ghost_of_infer] (Qed) + the
-         checking-type inversion [d_typing_base_principal_sub] (Qed above).
-         Remaining: the assembly threading [Γ' ⊆ Γext refines Γt] and the
-         base-term ti-skeleton shape (always [pskl_to_bskl_syn P']). *)
-      admit.
+    + (* tc: SAFETY of a checked, subsumed base term — the ghostified safe
+         inference, fully assembled in [d_pat_base_safe_tc_gen]. *)
+      eapply d_pat_base_safe_tc_gen; [ exact Hwf | eassumption | eassumption | exact Hcr ].
     + (* fn: a subsumed base term in function mode (skeleton is an arrow whose
          domain is forced [inh]); same missing fill-side machinery. *)
       admit.
