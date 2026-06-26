@@ -175,6 +175,61 @@ Proof.
   - apply d_refine_syn__tophole_keep; [ assumption | apply IHd_refine_syn; assumption ].
 Qed.
 
+(** Subtyping / consistency / utyp-wf also transfer along [ctx_refines]: they
+    read [Γ] only through tvar lookups.  These move the [syn C ⊑ inh A]
+    subtyping (extracted from a checking derivation over [Γt]) onto the
+    refined fill context [Γext]. *)
+Lemma d_wf_utyp_ctx_refines : forall Γ C,
+    Γ ⊢ᵤ C -> forall Γ', ctx_refines Γ' Γ -> Γ' ⊢ᵤ C.
+Proof.
+  intros Γ C H. induction H; intros Γ' Hcr.
+  - apply d_wf_utyp__unit.
+  - apply d_wf_utyp__var. eapply ctx_refines_binds_tvar; eauto.
+  - apply d_wf_utyp__arrow; [ apply IHd_wf_utyp1 | apply IHd_wf_utyp2 ]; assumption.
+  - apply d_wf_utyp__all_syn with (L := L). intros X HX.
+    apply H0; [ assumption | apply ctxr_cons; [ apply dbr_refl | assumption ] ].
+  - apply d_wf_utyp__all_etag with (L := L). intros X HX.
+    apply H0; [ assumption | apply ctxr_cons; [ apply dbr_refl | assumption ] ].
+Qed.
+
+Lemma d_consis_ctx_refines : forall Ψ Γ C B,
+    Ψ ⨟ Γ ⊨ C ≈ B -> forall Γ', ctx_refines Γ' Γ -> Ψ ⨟ Γ' ⊨ C ≈ B.
+Proof.
+  intros Ψ Γ C B H. induction H; intros Γ' Hcr.
+  - apply d_consis__unit; assumption.
+  - apply d_consis__var; [ eapply ctx_refines_binds_tvar; eauto | assumption ].
+  - eapply d_consis__arrow;
+      [ apply IHd_consis1; assumption | apply IHd_consis2; assumption | eassumption ].
+  - apply d_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0); [ | eassumption ].
+    intros X HX. apply H0; [ assumption | apply ctxr_cons; [ apply dbr_refl | assumption ] ].
+  - apply d_consis__forall_inh_untagged with (L := L). intros X HX.
+    apply H0; [ assumption | apply ctxr_cons; [ apply dbr_refl | assumption ] ].
+  - apply d_consis__forall_syn_tagged with (L := L). intros X HX.
+    apply H0; [ assumption | apply ctxr_cons; [ apply dbr_refl | assumption ] ].
+  - apply d_consis__forall_syn with (L := L). intros X HX.
+    apply H0; [ assumption | apply ctxr_cons; [ apply dbr_refl | assumption ] ].
+Qed.
+
+Lemma d_sub_ctx_refines : forall m Ψ Γ C B,
+    Ψ ⨟ Γ ⊢[ m ] C ⊑ B -> forall Γ', ctx_refines Γ' Γ -> Ψ ⨟ Γ' ⊢[ m ] C ⊑ B.
+Proof.
+  intros m Ψ Γ C B H. induction H; intros Γ' Hcr.
+  - apply d_sub__infer;
+      [ eapply d_consis_ctx_refines; eauto | assumption | assumption ].
+  - apply d_sub__check;
+      [ assumption | assumption | eapply d_consis_ctx_refines; eauto | assumption ].
+  - apply d_sub__forall_r with (L := L); [ assumption | ].
+    intros X HX. apply H1; [ assumption | apply ctxr_cons; [ apply dbr_refl | assumption ] ].
+  - eapply d_sub__arg;
+      [ eapply d_consis_ctx_refines; eauto | apply IHd_sub; assumption | eassumption ].
+  - eapply d_sub__forall_l_tagged;
+      [ assumption | eassumption | eassumption
+      | eapply d_wf_utyp_ctx_refines; eauto | assumption | apply IHd_sub; assumption ].
+  - eapply d_sub__forall_l_untagged;
+      [ assumption | eassumption | eassumption
+      | eapply d_wf_utyp_ctx_refines; eauto | assumption | apply IHd_sub; assumption ].
+Qed.
+
 (** A base term's [mode_ti] type is synthesised ([is_styp]). *)
 Lemma d_typing_ti_base_is_styp : forall Γ e B,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> is_styp B.
