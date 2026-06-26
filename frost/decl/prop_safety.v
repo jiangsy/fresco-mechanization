@@ -142,6 +142,39 @@ Proof.
   - apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
 Qed.
 
+(** Context-refinement transfer (the safety assembly needs to move a fill /
+    skeleton-wf from the concrete checking context [Γt] to the refined
+    inference context [Γext]).  Both judgements read [Γ] only through TVAR
+    lookups, which [ctx_refines] preserves ([ctx_refines_binds_tvar]). *)
+Lemma d_wf_pskl_ctx_refines : forall Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P -> forall Γ', ctx_refines Γ' Γ -> Ψ ⨟ Γ' ⊢ₚₛ P.
+Proof.
+  intros Ψ Γ P H. induction H; intros Γ' Hcr.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. destruct H as [HΨ | HΓ];
+      [ left; assumption | right; eapply ctx_refines_binds_tvar; eauto ].
+  - apply d_wf_pskl__arrow; [ apply IHd_wf_pskl1 | apply IHd_wf_pskl2 ]; assumption.
+  - apply d_wf_pskl__all with (L := L). intros X HX. apply H0; assumption.
+  - apply d_wf_pskl__hole.
+  - apply d_wf_pskl__tophole; [ assumption | apply IHd_wf_pskl; assumption ].
+Qed.
+
+Lemma d_refine_syn_ctx_refines : forall Γ Δs Δi Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P -> forall Γ', ctx_refines Γ' Γ -> Γ' ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Proof.
+  intros Γ Δs Δi Q P H. induction H; intros Γ' Hcr.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var. destruct H as [HS | [HI | HΓ]];
+      [ left; assumption | right; left; assumption
+      | right; right; eapply ctx_refines_binds_tvar; eauto ].
+  - apply d_refine_syn__arrow; [ apply IHd_refine_syn1 | apply IHd_refine_syn2 ]; assumption.
+  - apply d_refine_syn__all with (L := L). intros X HX. apply H0; assumption.
+  - apply d_refine_syn__hole. eapply d_wf_pskl_ctx_refines; eauto.
+  - apply d_refine_syn__tophole_remove. apply IHd_refine_syn; assumption.
+  - apply d_refine_syn__tophole_fill with (L := L). intros X HX. apply H0; assumption.
+  - apply d_refine_syn__tophole_keep; [ assumption | apply IHd_refine_syn; assumption ].
+Qed.
+
 (** A base term's [mode_ti] type is synthesised ([is_styp]). *)
 Lemma d_typing_ti_base_is_styp : forall Γ e B,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> is_styp B.
