@@ -134,6 +134,93 @@ Proof.
   apply d_refine_syn_hole_fills; auto.
 Qed.
 
+(** ===================================================================== *)
+(**  GHOST-LHS relation [ghc P R] — faithful [ForallL] instantiation.       *)
+(** ===================================================================== *)
+
+(** [ghc P R]: [R] is a [uskl] erasure of the synthesised skeleton [P] in
+    which every resolved hole [pskl_hole] erases to EITHER the plain
+    unresolved hole [uskl_hole] or the universal/ghost hole [uskl_holeg].
+    This is exactly the freedom the paper-faithful [ForallL] needs — the
+    tagged-skeleton instantiation [ψ] guesses [HoleG] ([uskl_holeg]) for the
+    bound variable (plain [Hole] is NOT a tagged skeleton: [is_tskl]
+    excludes it), while [P]'s own intrinsic holes stay [uskl_hole].  Both
+    erasures are below / consistent with the same [bskl_hole], so the
+    ghostification target [Q] is unchanged. *)
+Inductive ghc : pskl -> uskl -> Prop :=
+| ghc__unit    : ghc pskl_unit uskl_unit
+| ghc__var     : forall X, ghc (pskl_var_f X) (uskl_var_f X)
+| ghc__arrow   : forall P1 P2 R1 R2,
+    ghc P1 R1 -> ghc P2 R2 -> ghc (pskl_arrow P1 P2) (uskl_arrow R1 R2)
+| ghc__all     : forall L body R,
+    (forall X, X `notin` L ->
+       ghc (open_pskl_wrt_pskl body (pskl_var_f X))
+           (open_uskl_wrt_uskl R (uskl_var_f X))) ->
+    ghc (pskl_all_syn body) (uskl_all_syn R)
+| ghc__hole_h  : ghc pskl_hole uskl_hole
+| ghc__hole_g  : ghc pskl_hole uskl_holeg
+| ghc__tophole : forall P0 R, ghc P0 R -> ghc (pskl_tophole P0) (uskl_tophole R).
+
+#[local] Hint Constructors ghc : core.
+
+(** The exact syn-erasure (every hole plain) is a [ghc]. *)
+Lemma ghc_exact : forall P, lc_pskl P -> ghc P (bskl_to_uskl (pskl_to_bskl_syn P)).
+Proof.
+  intros P H. induction H; simpl; eauto.
+  - inst_cofinites_for ghc__all. intros X HX.
+    rewrite <- bskl_to_uskl_open. rewrite <- pskl_to_bskl_syn_open. auto.
+Qed.
+
+(** [R] is locally closed whenever [P] is. *)
+Lemma ghc_lc : forall P R, ghc P R -> lc_pskl P -> lc_uskl R.
+Proof.
+  intros P R H. induction H; intros Hlc.
+  - apply lc_uskl_unit.
+  - apply lc_uskl_var_f.
+  - inversion Hlc; subst. apply lc_uskl_arrow; [ apply IHghc1 | apply IHghc2 ]; assumption.
+  - inversion Hlc; subst. pick fresh X. apply (lc_uskl_all_syn_exists X).
+    apply H0; [ fsetdec | auto ].
+  - apply lc_uskl_hole.
+  - apply lc_uskl_holeg.
+  - inversion Hlc; subst. apply lc_uskl_tophole. apply IHghc; assumption.
+Qed.
+
+(** [ghc] is preserved by substituting a free var by the ghost pair
+    [(pskl_hole, uskl_holeg)] (the two are [ghc]-related — [ghc__hole_g]). *)
+Lemma ghc_subst : forall P R X,
+    ghc P R ->
+    ghc (subst_pskl_in_pskl pskl_hole X P) (subst_bskl_in_uskl uskl_holeg X R).
+Proof.
+  intros P R X H. induction H; simpl.
+  - apply ghc__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      [ apply ghc__hole_g | apply ghc__var ].
+  - apply ghc__arrow; assumption.
+  - apply ghc__all with (L := L `union` {{X}}). intros Y HY.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var; [ | fsetdec | apply lc_pskl_hole ].
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; [ | fsetdec | apply lc_uskl_holeg ].
+    apply H0. fsetdec.
+  - apply ghc__hole_h.
+  - apply ghc__hole_g.
+  - apply ghc__tophole; assumption.
+Qed.
+
+(** Opening a [ghc__all] body with the ghost pair stays a [ghc]: the bound
+    variable becomes [pskl_hole] on the left, [uskl_holeg] on the right —
+    exactly the [ForallL] instantiation with [HoleG]. *)
+Lemma ghc_open_holeg : forall L body R,
+    (forall X, X `notin` L ->
+       ghc (open_pskl_wrt_pskl body (pskl_var_f X))
+           (open_uskl_wrt_uskl R (uskl_var_f X))) ->
+    ghc (open_pskl_wrt_pskl body pskl_hole) (open_uskl_wrt_uskl R uskl_holeg).
+Proof.
+  intros L body R H.
+  pick fresh X for (L `union` ftvar_in_pskl body `union` ftvar_in_uskl R).
+  rewrite (subst_pskl_in_pskl_intro X body); [ | fsetdec ].
+  rewrite (subst_bskl_in_uskl_intro X R); [ | fsetdec ].
+  apply ghc_subst. apply H. fsetdec.
+Qed.
+
 (** CONSISTENCY REFLEXIVITY for a syn-painted skeleton (on [pskl], so it
     covers BOTH hole-free type skeletons AND skeletons carrying ghost holes
     [pskl_hole]/[pskl_tophole]): the [uskl] erasure of a syn-painted skeleton
@@ -170,6 +257,42 @@ Proof.
     apply d_pat_consis__hole; [ fsetdec | apply d_wf_pskl__hole ].
   - (* tophole: ⫯ ≈ ⫯ via __tophole, recurse *)
     apply d_pat_consis__tophole. apply IHHlc. assumption.
+Qed.
+
+(** [ghc]-generalised consistency reflexivity: a ghost-LHS [R] of [P] (holes
+    plain OR ghost) is consistent with [P]'s syn-painting.  Same as
+    [d_pat_consis_refl_pskl] except a [uskl_holeg] hole matches [bskl_hole]
+    via [__ghostg] instead of [__hole]. *)
+Lemma d_pat_consis_refl_ghc : forall P R,
+    ghc P R ->
+    lc_pskl P ->
+    forall Γ,
+      (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
+      empty ⨟ Γ ⊨ₛ R ≈ (pskl_to_bskl_syn P).
+Proof.
+  intros P R H. induction H; intros Hlc Γ Hcov; simpl.
+  - apply d_pat_consis__unit. fsetdec.
+  - apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
+  - inversion Hlc; subst.
+    apply d_pat_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+      [ apply IHghc1 | apply IHghc2 | fsetdec ]; try assumption;
+      intros Y HY; apply Hcov; simpl; fsetdec.
+  - (* all *) inversion Hlc; subst.
+    inst_cofinites_for d_pat_consis__forall_syn. intros X HX.
+    rewrite <- pskl_to_bskl_syn_open.
+    apply H0; [ fsetdec | auto | ].
+    intros Y HY. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY. simpl in HY.
+    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst.
+      apply binds_app_2. apply binds_one_3; reflexivity.
+    + apply binds_app_3. apply (Hcov Y HY).
+  - (* hole_h: □ ≈ inh{□} = bskl_hole via __hole *)
+    change bskl_hole with (pskl_to_bskl_inh pskl_hole).
+    apply d_pat_consis__hole; [ fsetdec | apply d_wf_pskl__hole ].
+  - (* hole_g: ghost □ ≈ bskl_hole via __ghostg *)
+    apply d_pat_consis__ghostg. fsetdec.
+  - (* tophole *) inversion Hlc; subst.
+    apply d_pat_consis__tophole. apply IHghc; assumption.
 Qed.
 
 (** Helpers for the ghostified-inference lemma below. *)
@@ -240,10 +363,61 @@ Proof.
       exists Q. apply ghost_of__tophole. exact HQ.
 Qed.
 
-(** INFERENCE side: the [uskl] erasure of [syn P] subtypes (in [mode_tc]) to
-    any ghostification [Q] of [P].  By induction on [ghost_of]: [__all] via
-    [forall_l(□)], cores via [univ_ghost_r]+[consis_refl] (bare hole via
-    [__ghost], leading ⫯ dropped by [univ_ghost_l]). *)
+(** INFERENCE side (generalised over the ghost-LHS [ghc P R]): any ghost-LHS
+    [R] of [P] subtypes (in [mode_tc]) to any ghostification [Q] of [P].
+    Paper-faithful: the [__all] case instantiates [ForallL] with the tagged
+    ghost [HoleG] ([psi := uskl_holeg] ∈ [is_tskl]); the bound variable then
+    lands as [uskl_holeg] in the body (tracked by [ghc_open_holeg]), matched
+    against [bskl_hole] by [GhostG].  Cores go via [univ_ghost_r] +
+    [consis_refl_ghc]; a bare hole-h via [__ghost], a bare hole-g via
+    [__ghostg]; leading ⫯ dropped by [univ_ghost_l]. *)
+Lemma ghost_of_infer_ghc : forall P Q,
+    ghost_of P Q ->
+    lc_pskl P ->
+    forall R, ghc P R ->
+    forall Δ Γ,
+      Δ [=] empty ->
+      (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
+      Δ ⨟ Γ ⊢ₛ[ mode_tc ] R ⊑ Q.
+Proof.
+  intros P Q Hg. induction Hg; intros Hlc R Hghc Δ Γ Hempty Hcov.
+  - (* unit *) inversion Hghc; subst. apply d_pat_sub__univ_ghost_r;
+      [ exact Hempty | apply guarded_uskl__unit | apply guarded_bskl__unit
+      | apply is_sskl__unit | apply d_pat_consis__unit; fsetdec ].
+  - (* var *) inversion Hghc; subst. apply d_pat_sub__univ_ghost_r;
+      [ exact Hempty | apply guarded_uskl__var | apply guarded_bskl__var | apply is_sskl__var | ].
+    apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
+  - (* arrow *) inversion Hlc; subst. inversion Hghc; subst.
+    apply d_pat_sub__univ_ghost_r.
+    + exact Hempty.
+    + apply guarded_uskl__arrow; eapply ghc_lc; eauto.
+    + apply guarded_bskl__arrow; apply lc_pskl_to_bskl_syn; assumption.
+    + apply is_sskl__arrow; apply is_sskl_pskl_to_bskl_syn; assumption.
+    + apply (@d_pat_consis_refl_ghc (pskl_arrow P1 P2));
+        [ apply ghc__arrow; assumption | apply lc_pskl_arrow; assumption | assumption ].
+  - (* hole: R is uskl_hole (Ghost) or uskl_holeg (GhostG) *) inversion Hghc; subst.
+    + change bskl_hole with (pskl_to_bskl_inh pskl_hole).
+      apply d_pat_sub__ghost; [ exact Hempty | apply d_wf_pskl__hole ].
+    + apply d_pat_sub__ghostg. exact Hempty.
+  - (* tophole *) inversion Hlc; subst. inversion Hghc; subst.
+    apply d_pat_sub__univ_ghost_l; [ discriminate | ].
+    apply IHHg;
+      [ assumption | assumption | exact Hempty | intros Y HY; apply Hcov; simpl; assumption ].
+  - (* all: forall_l(HoleG) then IH on the instantiated body *)
+    inversion Hlc; subst. inversion Hghc; subst.
+    eapply d_pat_sub__forall_l_untagged with (Δ' := empty) (psi := uskl_holeg);
+      [ discriminate | fsetdec | apply d_tags_skl__holeg; fsetdec
+      | apply d_wf_uskl__holeg | apply is_tskl__holeg | ].
+    apply IHHg.
+    + apply lc_body_pskl_wrt_pskl; [ apply lc_body_pskl_all_syn_1; exact Hlc | apply lc_pskl_hole ].
+    + eapply ghc_open_holeg. eassumption.
+    + fsetdec.
+    + intros Y HY. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
+      simpl in HY. apply Hcov. simpl. fsetdec.
+Qed.
+
+(** Corollary recovering the original statement: the exact syn-erasure is a
+    ghost-LHS ([ghc_exact]), so it subtypes to any ghostification. *)
 Lemma ghost_of_infer : forall P Q,
     ghost_of P Q ->
     lc_pskl P ->
@@ -252,40 +426,9 @@ Lemma ghost_of_infer : forall P Q,
       (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
       Δ ⨟ Γ ⊢ₛ[ mode_tc ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q.
 Proof.
-  intros P Q Hg. induction Hg; intros Hlc Δ Γ Hempty Hcov; simpl.
-  - (* unit *) apply d_pat_sub__univ_ghost_r;
-      [ exact Hempty | apply guarded_uskl__unit | apply guarded_bskl__unit
-      | apply is_sskl__unit | apply d_pat_consis__unit; fsetdec ].
-  - (* var *) apply d_pat_sub__univ_ghost_r;
-      [ exact Hempty | apply guarded_uskl__var | apply guarded_bskl__var | apply is_sskl__var | ].
-    apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
-  - (* arrow *) inversion Hlc; subst. apply d_pat_sub__univ_ghost_r.
-    + exact Hempty.
-    + apply guarded_uskl__arrow; apply lc_bskl_to_uskl; apply lc_pskl_to_bskl_syn; assumption.
-    + apply guarded_bskl__arrow; apply lc_pskl_to_bskl_syn; assumption.
-    + apply is_sskl__arrow; apply is_sskl_pskl_to_bskl_syn; assumption.
-    + apply (@d_pat_consis_refl_pskl (pskl_arrow P1 P2));
-        [ apply lc_pskl_arrow; assumption | assumption ].
-  - (* hole *) change bskl_hole with (pskl_to_bskl_inh pskl_hole).
-    apply d_pat_sub__ghost; [ exact Hempty | apply d_wf_pskl__hole ].
-  - (* tophole *) inversion Hlc; subst.
-    apply d_pat_sub__univ_ghost_l; [ discriminate | ].
-    apply IHHg; [ assumption | exact Hempty | intros Y HY; apply Hcov; simpl; assumption ].
-  - (* all: forall_l(□) then IH on the instantiated body *)
-    eapply d_pat_sub__forall_l_untagged with (Δ' := empty) (psi := uskl_hole);
-      [ discriminate | fsetdec | apply d_tags_skl__hole; fsetdec
-      | apply d_wf_uskl__hole | apply is_tskl__hole | ].
-    simpl.
-    replace (open_uskl_wrt_uskl (bskl_to_uskl (pskl_to_bskl_syn body)) uskl_hole)
-      with (bskl_to_uskl (pskl_to_bskl_syn (open_pskl_wrt_pskl body pskl_hole))).
-    2:{ unfold open_pskl_wrt_pskl, open_uskl_wrt_uskl.
-        rewrite pskl_to_bskl_syn_open_rec. rewrite bskl_to_uskl_open_rec.
-        reflexivity. }
-    apply IHHg.
-    + apply lc_body_pskl_wrt_pskl; [ apply lc_body_pskl_all_syn_1; exact Hlc | apply lc_pskl_hole ].
-    + fsetdec.
-    + intros Y HY. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
-      simpl in HY. apply Hcov. simpl. fsetdec.
+  intros P Q Hg Hlc Δ Γ Hempty Hcov.
+  eapply ghost_of_infer_ghc;
+    [ exact Hg | exact Hlc | apply ghc_exact; exact Hlc | exact Hempty | exact Hcov ].
 Qed.
 
 (** Corollary (the existential inference, brick 2's headline). *)
@@ -2236,8 +2379,8 @@ Proof.
   - apply is_tskl__all_etag with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
-  - apply is_tskl__hole.
-  - apply is_tskl__tophole; assumption.
+  - apply is_tskl__holeg.
+  - apply is_tskl__topholeg; assumption.
 Qed.
 
 Lemma guarded_bskl_subst_unit : forall Q X,
@@ -2661,12 +2804,14 @@ Lemma d_pat_sub_forall_hole_witness : forall Γ,
       ⊑ bskl_hole.
 Proof.
   intros Γ. simpl.
-  eapply d_pat_sub__forall_l_untagged with (Δ' := empty) (psi := uskl_hole).
+  (* Paper-faithful: instantiate the ∀ with the tagged ghost [HoleG]; the
+     bound variable becomes [uskl_holeg], matched against [bskl_hole] by
+     [GhostG]. *)
+  eapply d_pat_sub__forall_l_untagged with (Δ' := empty) (psi := uskl_holeg).
   - discriminate.
   - fsetdec.
-  - apply d_tags_skl__hole; fsetdec.
-  - apply d_wf_uskl__hole.
-  - apply is_tskl__hole.
-  - simpl. change bskl_hole with (pskl_to_bskl_inh pskl_hole).
-    apply d_pat_sub__ghost; [ (assumption || fsetdec) | ]; apply d_wf_pskl__hole.
+  - apply d_tags_skl__holeg; fsetdec.
+  - apply d_wf_uskl__holeg.
+  - apply is_tskl__holeg.
+  - simpl. apply d_pat_sub__ghostg. fsetdec.
 Qed.
