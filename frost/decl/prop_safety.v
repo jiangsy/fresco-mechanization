@@ -497,9 +497,48 @@ Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
 Proof.
-  (* Admitted: broken by the rule-faithfulness pass (d_pat reorder / abs_anno
-     btyp / sub P-Q); structural d_pat lemma, NOT used by D1 or order-
-     irrelevance. To be re-proved with the safety layer. *)
+  intros m Γ e B Hty. induction Hty; intros Hwf Γ' Hcr.
+  - (* unit *) eapply d_pat_base_safe_gen;
+      [ exact Hwf | apply is_base_term__unit | apply d_typing__unit | exact Hcr ].
+  - (* var *) eapply d_pat_base_safe_gen;
+      [ exact Hwf | apply is_base_term__var | eapply d_typing__var; eauto | exact Hcr ].
+  - (* anno *) eapply d_pat_base_safe_gen;
+      [ exact Hwf | apply is_base_term__anno | apply d_typing__anno; eassumption | exact Hcr ].
+  - (* sub *) destruct m.
+    + (* ti: subsumed base term still synthesises (skeleton determined) *)
+      eapply d_pat_base_safe_gen;
+        [ exact Hwf | eassumption | eapply d_typing__sub; eassumption | exact Hcr ].
+    + (* tc: SAFETY of a checked, subsumed base term.  Needs the FILL side of
+         ghostification — for [ghost_of P Q] (prop_skeleton.v, now HoleG-
+         faithful), [inh{Q}] fills every type that [syn{P}] checks against.
+         The inference side [d_pat__sub] + [ghost_of_infer] is ready; the fill
+         lemma (generalising [d_refine_syn_hole_fills] beyond a bare [□]) is
+         not yet proved. *)
+      admit.
+    + (* fn: a subsumed base term in function mode (skeleton is an arrow whose
+         domain is forced [inh]); same missing fill-side machinery. *)
+      admit.
+  - (* freeze: TI [syn A] repainted to TC [inh A]; the [d_pat__freeze]
+       inference keeps [syn P], whose safety needs the same ghost fill side
+       plus the colour-repaint bookkeeping. *)
+    admit.
+  - (* forall: a value checked at [∀]; gpat tc needs a skeleton whose inh
+       painting fills every [∀]-prefixed checking type (peel ∀ via
+       [tophole_fill], recurse). *)
+    admit.
+  - (* abs: λ in mode [m].  At TC the fill is the (Qed) [abs_check_fill], but
+       [d_pat__abs_check] needs the body to infer a SYN/principal skeleton
+       [pskl_to_bskl_syn P], whereas the IH ([gpat tc]) only yields the body's
+       SAFE (ghostified) skeleton — a distinct, more concrete inference not yet
+       available (needs a principal-body-skeleton lemma).  At FN the domain is
+       forced [inh]. *)
+    admit.
+  - (* abs_anno: annotated λ; analogous to [abs] with [d_pat__abs_anno_check]
+       / [abs_check_fill] on the annotated domain. *)
+    admit.
+  - (* app: [d_pat__app] infers the function arrow and threads the refined
+       argument; safety follows from the codomain's [safe_skel]. *)
+    admit.
 Admitted.
 
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
