@@ -691,6 +691,195 @@ Proof.
     + destruct (Hcov Y HY) as [HΨ | HΓ]; [ left; simpl; right; exact HΨ | right; exact HΓ ].
 Qed.
 
+Lemma lc_pskl_utyp_to_pskl : forall C, lc_utyp C -> lc_pskl (utyp_to_pskl C).
+Proof.
+  intros C H. induction H; simpl.
+  - apply lc_pskl_unit.
+  - apply lc_pskl_var_f.
+  - apply lc_pskl_arrow; assumption.
+  - pick fresh X. apply (lc_pskl_all_syn_exists X).
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. auto.
+  - pick fresh X. apply (lc_pskl_all_syn_exists X).
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. auto.
+Qed.
+
+Lemma ftvar_utyp_to_pskl : forall C, ftvar_in_pskl (utyp_to_pskl C) = ftvar_in_utyp C.
+Proof.
+  induction C; simpl; try reflexivity;
+    try (rewrite IHC1, IHC2; reflexivity); try (rewrite IHC; reflexivity).
+Qed.
+
+(** The skeleton syn-erasure commutes with type instantiation. *)
+Lemma syn_erase_utyp_open : forall C ph,
+    bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl (open_utyp_wrt_utyp C ph)))
+    = open_uskl_wrt_uskl (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl C)))
+                         (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))).
+Proof.
+  intros C ph.
+  unfold open_utyp_wrt_utyp, open_pskl_wrt_pskl, open_bskl_wrt_bskl, open_uskl_wrt_uskl.
+  rewrite utyp_to_pskl_open_rec, pskl_to_bskl_syn_open_rec, bskl_to_uskl_open_rec.
+  reflexivity.
+Qed.
+
+(** Type instantiation preserves well-formedness (open a forall body). *)
+Lemma d_wf_utyp_open : forall L Γ C ph,
+    (forall X, X `notin` L -> ((X ~ dbind_tvar) ++ Γ) ⊢ᵤ (open_utyp_wrt_utyp C (utyp_var_f X))) ->
+    Γ ⊢ᵤ ph ->
+    Γ ⊢ᵤ (open_utyp_wrt_utyp C ph).
+Proof.
+  intros L Γ C ph Hbody Hph.
+  pick fresh X for (L `union` ftvar_in_utyp C `union` dom Γ).
+  rewrite (subst_utyp_in_utyp_intro X); [ | fsetdec ].
+  eapply d_wf_utyp_subst_tvar; [ apply Hbody; fsetdec | exact Hph ].
+Qed.
+
+(** Skeleton subtyping respects set-equality of its tag context. *)
+Lemma d_pat_sub_eq_tags : forall m Δ Γ R Q,
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q -> forall Δ', Δ [=] Δ' -> Δ' ⨟ Γ ⊢ₛ[ m ] R ⊑ Q.
+Proof.
+  intros m Δ Γ R Q H. induction H; intros Δ'' Heq.
+  - apply d_pat_sub__infer; [ fsetdec | assumption | assumption ].
+  - apply d_pat_sub__univ_ghost_r;
+      [ fsetdec | assumption | assumption | assumption | assumption ].
+  - eapply d_pat_sub__arg; [ eassumption | eassumption | fsetdec ].
+  - (* [Δ']/[psi] are constructor existentials, NOT fixed by the conclusion —
+       a bare eapply leaves them as set-evars and [fsetdec] on [inter ?Δ' Δ'']
+       loops.  Recover the derivation's actual [Δ']/[psi] from [d_tags_skl]. *)
+    match goal with Htags : d_tags_skl ?D ?S |- _ =>
+      eapply d_pat_sub__forall_l_tagged with (Δ' := D) (psi := S) end;
+      [ assumption | fsetdec | eassumption | assumption | assumption
+      | apply IHd_pat_sub; fsetdec ].
+  - match goal with Htags : d_tags_skl ?D ?S |- _ =>
+      eapply d_pat_sub__forall_l_untagged with (Δ' := D) (psi := S) end;
+      [ assumption | fsetdec | eassumption | assumption | assumption
+      | apply IHd_pat_sub; fsetdec ].
+  - apply d_pat_sub__ghost; [ fsetdec | assumption ].
+  - apply d_pat_sub__univ_ghost_l; [ assumption | apply IHd_pat_sub; exact Heq ].
+  - apply d_pat_sub__ghostg; fsetdec.
+  - apply d_pat_sub__univ_ghost_lg; [ assumption | apply IHd_pat_sub; exact Heq ].
+Qed.
+
+(** The FN-mode safe skeleton, by recursion over the (general-utyp) subtyping.
+    [arg] folds the arrow (domain via [consis_syn_inh_u], codomain by the IH);
+    [infer] (TI) gives the syn-painting whose pskl equals the target's
+    ([d_consis_skel]); [check]/[forall_r] (TC) ghostify via [ghost_of_fill_gen]
+    (general U); [forall_l] instantiates the (synthesised) forall with
+    [ψ := syn-erase(skel ph)] — now [is_tskl] — and recurses on the body. *)
+Lemma safe_fn_skel : forall m Ψ Γ U B,
+    d_wf_utyp Γ U -> d_wf_btyp Γ B ->
+    Ψ ⨟ Γ ⊢[ m ] U ⊑ B ->
+    exists Q,
+      empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl U))) ⊑ Q
+      /\ safe_skel Γ m Q B.
+Proof.
+  intros m Ψ Γ U B HwfU HwfB Hsub. revert HwfU HwfB. induction Hsub; intros HwfU HwfB.
+  - (* infer (TI) *)
+    exists (pskl_to_bskl_syn (utyp_to_pskl C)). split.
+    + apply d_pat_sub__infer;
+        [ fsetdec
+        | apply d_pat_consis_refl;
+            [ apply is_sskl_pskl_to_bskl_syn, lc_pskl_utyp_to_pskl, (d_wf_utyp_lc HwfU)
+            | intros X HX; rewrite ftvar_pskl_to_bskl_syn, ftvar_utyp_to_pskl in HX;
+              eapply d_wf_utyp_ftvar; [ exact HwfU | exact HX ] ]
+        | apply is_sskl_pskl_to_bskl_syn, lc_pskl_utyp_to_pskl, (d_wf_utyp_lc HwfU) ].
+    + simpl. rewrite bskl_to_pskl_pskl_to_bskl_syn. apply (d_consis_skel H).
+  - (* check (TC) *)
+    assert (Hlc : lc_utyp C) by (apply (d_wf_utyp_lc HwfU)).
+    destruct (ghost_of_total (le_n (size_pskl (utyp_to_pskl C))) (lc_pskl_utyp_to_pskl Hlc))
+      as [Q HQ].
+    exists Q. split.
+    + eapply (ghost_of_infer HQ (lc_pskl_utyp_to_pskl Hlc));
+        [ reflexivity | intros X HX; rewrite ftvar_utyp_to_pskl in HX;
+          eapply d_wf_utyp_ftvar; [ exact HwfU | exact HX ] ].
+    + simpl.
+      assert (Hs : Ψ ⨟ Γ ⊢[ mode_tc ] C ⊑ (ptyp_to_btyp_inh (btyp_to_ptyp B)))
+        by (rewrite (is_ityp_ptyp_to_btyp_inh H2); apply d_sub__check; assumption).
+      pose proof (ghost_of_fill_gen Hs eq_refl
+                    ltac:(apply d_wf_ptyp_of_btyp_inh; rewrite (is_ityp_ptyp_to_btyp_inh H2); exact HwfB)
+                    (pskl_subsumes_refl (utyp_to_pskl C)) HQ (hole_safe_u_of_utyp Hlc nil)) as Href.
+      exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) (btyp_to_ptyp B)).
+      split; [ apply colour_erasure | exact Href ].
+  - (* forall_r (TC) *)
+    assert (Hlc : lc_utyp C) by (apply (d_wf_utyp_lc HwfU)).
+    destruct (ghost_of_total (le_n (size_pskl (utyp_to_pskl C))) (lc_pskl_utyp_to_pskl Hlc))
+      as [Q HQ].
+    exists Q. split.
+    + eapply (ghost_of_infer HQ (lc_pskl_utyp_to_pskl Hlc));
+        [ reflexivity | intros X HX; rewrite ftvar_utyp_to_pskl in HX;
+          eapply d_wf_utyp_ftvar; [ exact HwfU | exact HX ] ].
+    + simpl.
+      assert (Hs : Ψ ⨟ Γ ⊢[ mode_tc ] C ⊑ (ptyp_to_btyp_inh (btyp_to_ptyp (btyp_all_inh B))))
+        by (rewrite (is_ityp_ptyp_to_btyp_inh H); apply d_sub__forall_r with (L := L); assumption).
+      pose proof (ghost_of_fill_gen Hs eq_refl
+                    ltac:(apply d_wf_ptyp_of_btyp_inh; rewrite (is_ityp_ptyp_to_btyp_inh H); exact HwfB)
+                    (pskl_subsumes_refl (utyp_to_pskl C)) HQ (hole_safe_u_of_utyp Hlc nil)) as Href.
+      exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) (btyp_to_ptyp (btyp_all_inh B))).
+      split; [ apply colour_erasure | exact Href ].
+  - (* arg (FN m) *)
+    inversion HwfU; subst. inversion HwfB; subst.
+    match goal with
+    | HC1 : d_wf_utyp Γ C1, HC2 : d_wf_utyp Γ C2,
+      _ : d_wf_btyp Γ B1, HB2 : d_wf_btyp Γ B2 |- _ =>
+      destruct (IHHsub HC2 HB2) as [Qc [HscQc HsafeQc]];
+      assert (Hsk1 : utyp_to_pskl C1 = ptyp_to_pskl (btyp_to_ptyp B1)) by (apply (d_consis_skel H));
+      exists (bskl_arrow (pskl_to_bskl_inh (utyp_to_pskl C1)) Qc); split;
+      [ simpl; eapply d_pat_sub__arg with (Δ1 := empty) (Δ2 := empty);
+          [ apply consis_syn_inh_u;
+              [ apply (d_wf_utyp_lc HC1)
+              | intros X HX; eapply d_wf_utyp_ftvar; [ exact HC1 | exact HX ] ]
+          | exact HscQc | fsetdec ]
+      | simpl; exists B1, B2, Qc;
+        split; [ reflexivity | split; [ rewrite Hsk1; reflexivity | exact HsafeQc ] ] ]
+    end.
+  - (* forall_l_tagged: the (erased) forall is all_syn; instantiate with syn-erase(skel ph) *)
+    assert (Hlcph : lc_utyp ph)
+      by (match goal with Hph : Γ ⊢ᵤ ph |- _ => apply (d_wf_utyp_lc Hph) end).
+    assert (HwfO : Γ ⊢ᵤ (open_utyp_wrt_utyp C ph)).
+    { inversion HwfU; subst.
+      match goal with
+      | Hbody : forall X, X `notin` _ -> ((X ~ dbind_tvar) ++ Γ) ⊢ᵤ _,
+        Hph : Γ ⊢ᵤ ph |- _ => eapply d_wf_utyp_open; [ exact Hbody | exact Hph ]
+      end. }
+    destruct (IHHsub HwfO HwfB) as [Q [Hsc Hsafe]].
+    exists Q. split; [ | exact Hsafe ].
+    simpl. eapply d_pat_sub__forall_l_untagged
+      with (psi := bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))) (Δ' := empty);
+      [ assumption | fsetdec
+      | apply d_tags_skl_syn_erase; exact Hlcph
+      | eapply d_wf_uskl_syn_erase;
+          [ exact Hlcph
+          | intros X HX; right;
+            match goal with Hph : Γ ⊢ᵤ ph |- _ => eapply d_wf_utyp_ftvar; [ exact Hph | exact HX ] end ]
+      | apply is_tskl_syn_erase; exact Hlcph
+      | rewrite <- syn_erase_utyp_open;
+        match goal with |- _ ⨟ _ ⊢ₛ[ _ ] _ ⊑ _ => idtac end;
+        eapply d_pat_sub_eq_tags; [ exact Hsc | fsetdec ] ].
+  - (* forall_l_untagged: same *)
+    assert (Hlcph : lc_utyp ph)
+      by (match goal with Hph : Γ ⊢ᵤ ph |- _ => apply (d_wf_utyp_lc Hph) end).
+    assert (HwfO : Γ ⊢ᵤ (open_utyp_wrt_utyp C ph)).
+    { inversion HwfU; subst.
+      match goal with
+      | Hbody : forall X, X `notin` _ -> ((X ~ dbind_tvar) ++ Γ) ⊢ᵤ _,
+        Hph : Γ ⊢ᵤ ph |- _ => eapply d_wf_utyp_open; [ exact Hbody | exact Hph ]
+      end. }
+    destruct (IHHsub HwfO HwfB) as [Q [Hsc Hsafe]].
+    exists Q. split; [ | exact Hsafe ].
+    simpl. eapply d_pat_sub__forall_l_untagged
+      with (psi := bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))) (Δ' := empty);
+      [ assumption | fsetdec
+      | apply d_tags_skl_syn_erase; exact Hlcph
+      | eapply d_wf_uskl_syn_erase;
+          [ exact Hlcph
+          | intros X HX; right;
+            match goal with Hph : Γ ⊢ᵤ ph |- _ => eapply d_wf_utyp_ftvar; [ exact Hph | exact HX ] end ]
+      | apply is_tskl_syn_erase; exact Hlcph
+      | rewrite <- syn_erase_utyp_open;
+        eapply d_pat_sub_eq_tags; [ exact Hsc | fsetdec ] ].
+Qed.
+
 (** TC analog of [d_pat_base_safe_gen]: a base term checked in TC mode has a
     GHOSTIFIED safe inference.  Inference = [d_pat__sub] with the ghost
     [ghost_of (skel C) Q] ([ghost_of_infer]); fill = [ghost_of_fill_gen] fed by
