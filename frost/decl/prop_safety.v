@@ -549,6 +549,32 @@ Proof.
         | exact Hcrt ].
 Qed.
 
+(** A type's syn-erasure is consistent with its INH-painting (the domain
+    obligation of the [FN]-mode arrow inference, where [safe_skel] forces an
+    inh-painted domain).  Monotype parts match structurally; a [∀] uses
+    [forall_inh_untagged] ([syn ∀ ≈ inh ∀]). *)
+Lemma consis_syn_inh : forall C Γ,
+    lc_ptyp C ->
+    (forall X, X `in` ftvar_in_ptyp C -> binds X dbind_tvar Γ) ->
+    empty ⨟ Γ ⊨ₛ (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl C)))
+                ≈ (pskl_to_bskl_inh (ptyp_to_pskl C)).
+Proof.
+  intros C Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov; simpl.
+  - apply d_pat_consis__unit; fsetdec.
+  - apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
+  - apply d_pat_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+      [ apply IHHlc1 | apply IHHlc2 | fsetdec ];
+      intros Y HY; apply Hcov; simpl; fsetdec.
+  - inst_cofinites_for d_pat_consis__forall_inh_untagged. intros X HX.
+    rewrite <- bskl_to_uskl_open. rewrite <- pskl_to_bskl_syn_open.
+    rewrite <- pskl_to_bskl_inh_open. rewrite <- ! ptyp_to_pskl_open.
+    apply H0.
+    intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst. apply binds_app_2. apply binds_one_3; reflexivity.
+    + apply binds_app_3. apply Hcov. assumption.
+Qed.
+
 (** TC analog of [d_pat_base_safe_gen]: a base term checked in TC mode has a
     GHOSTIFIED safe inference.  Inference = [d_pat__sub] with the ghost
     [ghost_of (skel C) Q] ([ghost_of_infer]); fill = [ghost_of_fill_gen] fed by
