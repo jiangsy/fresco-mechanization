@@ -575,6 +575,75 @@ Proof.
     + apply binds_app_3. apply Hcov. assumption.
 Qed.
 
+(** The syn-erasure of any (lc) utyp's skeleton is a tagged skeleton (every
+    forall erases to the synthesised [all_syn], now in [is_tskl]), carries no
+    instantiation tags, and is consistent with the inh-painting.  These are the
+    three obligations the FN-mode [ForallL] witness [ψ := syn-erase(skel ph)]
+    must discharge. *)
+Lemma is_tskl_syn_erase : forall C, lc_utyp C ->
+    is_tskl (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl C))).
+Proof.
+  intros C H. induction H; simpl.
+  - apply is_tskl__unit.
+  - apply is_tskl__var.
+  - apply is_tskl__arrow; assumption.
+  - inst_cofinites_for is_tskl__all_syn. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. auto.
+  - inst_cofinites_for is_tskl__all_syn. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. auto.
+Qed.
+
+Lemma d_tags_skl_syn_erase : forall C, lc_utyp C ->
+    d_tags_skl empty (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl C))).
+Proof.
+  intros C H. induction H; simpl.
+  - apply d_tags_skl__unit; fsetdec.
+  - apply d_tags_skl__var; fsetdec.
+  - apply d_tags_skl__arrow with (Δ1 := empty) (Δ2 := empty);
+      [ assumption | assumption | fsetdec | fsetdec ].
+  - inst_cofinites_for d_tags_skl__all_syn. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. auto.
+  - inst_cofinites_for d_tags_skl__all_syn. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. auto.
+Qed.
+
+Lemma consis_syn_inh_u : forall C Γ, lc_utyp C ->
+    (forall X, X `in` ftvar_in_utyp C -> binds X dbind_tvar Γ) ->
+    empty ⨟ Γ ⊨ₛ (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl C)))
+                ≈ (pskl_to_bskl_inh (utyp_to_pskl C)).
+Proof.
+  intros C Γ H. revert Γ. induction H; intros Γ Hcov; simpl.
+  - apply d_pat_consis__unit; fsetdec.
+  - apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
+  - apply d_pat_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+      [ apply IHlc_utyp1 | apply IHlc_utyp2 | fsetdec ];
+      intros Y HY; apply Hcov; simpl; fsetdec.
+  - inst_cofinites_for d_pat_consis__forall_inh_untagged. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open, <- pskl_to_bskl_inh_open.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- ! utyp_to_pskl_open.
+    apply H0. intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst. apply binds_app_2. apply binds_one_3; reflexivity.
+    + apply binds_app_3. apply Hcov. assumption.
+  - inst_cofinites_for d_pat_consis__forall_inh_untagged. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open, <- pskl_to_bskl_inh_open.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- ! utyp_to_pskl_open.
+    apply H0. intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst. apply binds_app_2. apply binds_one_3; reflexivity.
+    + apply binds_app_3. apply Hcov. assumption.
+Qed.
+
 (** TC analog of [d_pat_base_safe_gen]: a base term checked in TC mode has a
     GHOSTIFIED safe inference.  Inference = [d_pat__sub] with the ghost
     [ghost_of (skel C) Q] ([ghost_of_infer]); fill = [ghost_of_fill_gen] fed by
