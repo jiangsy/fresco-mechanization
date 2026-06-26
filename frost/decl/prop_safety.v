@@ -644,6 +644,53 @@ Proof.
     + apply binds_app_3. apply Hcov. assumption.
 Qed.
 
+(** A type's own (hole-free) skeleton is [hole_safe_u] for it (the
+    [ghost_of_fill_gen] invariant for a general utyp LHS). *)
+Lemma hole_safe_u_of_utyp : forall C, lc_utyp C ->
+    forall L, hole_safe_u L (utyp_to_pskl C) C.
+Proof.
+  intros C Hlc. induction Hlc; intros L; simpl.
+  - apply hsu_unit.
+  - apply hsu_var_f.
+  - apply hsu_arrow; auto.
+  - apply hsu_all_syn with (Lc := empty). intros X HX.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. auto.
+  - apply hsu_all_etag with (Lc := empty). intros X HX.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. auto.
+Qed.
+
+(** The syn-erasure of a (lc) utyp's skeleton is well-formed: its foralls are
+    all [all_syn] (the bound var joins the skeleton scope [Ψ]), no holes. *)
+Lemma d_wf_uskl_syn_erase : forall C, lc_utyp C ->
+    forall Ψ Γ,
+      (forall X, X `in` ftvar_in_utyp C -> List.In X Ψ \/ binds X dbind_tvar Γ) ->
+      Ψ ⨟ Γ ⊢ᵤₛ (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl C))).
+Proof.
+  intros C Hlc. induction Hlc; intros Ψ Γ Hcov; simpl.
+  - apply d_wf_uskl__unit.
+  - apply d_wf_uskl__var. apply Hcov. simpl. fsetdec.
+  - apply d_wf_uskl__arrow; [ apply IHHlc1 | apply IHHlc2 ];
+      intros Y HY; apply Hcov; simpl; fsetdec.
+  - apply d_wf_uskl__all_syn with (L := empty). intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. apply H0.
+    intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst. left. simpl. left. reflexivity.
+    + destruct (Hcov Y HY) as [HΨ | HΓ]; [ left; simpl; right; exact HΨ | right; exact HΓ ].
+  - apply d_wf_uskl__all_syn with (L := empty). intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open.
+    change (pskl_var_f X) with (utyp_to_pskl (utyp_var_f X)).
+    rewrite <- utyp_to_pskl_open. apply H0.
+    intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst. left. simpl. left. reflexivity.
+    + destruct (Hcov Y HY) as [HΨ | HΓ]; [ left; simpl; right; exact HΨ | right; exact HΓ ].
+Qed.
+
 (** TC analog of [d_pat_base_safe_gen]: a base term checked in TC mode has a
     GHOSTIFIED safe inference.  Inference = [d_pat__sub] with the ghost
     [ghost_of (skel C) Q] ([ghost_of_infer]); fill = [ghost_of_fill_gen] fed by
