@@ -1314,13 +1314,13 @@ Proof.
           | eapply hole_safe_u_open_fill; [ eassumption | apply is_ttyp_lc; eassumption ] ].
 Qed.
 
-(** BRICK 3 GOAL — the fill side, now a corollary of [ghost_of_fill_gen]
-    (path (b) was taken: deterministic witness [colour]).  The ghost [Q]
-    inferred for a base term's principal type [C] refines the colouring
-    [colour inh{Q} A'] of every checking type [A'] the term subsumes to.
-    Depends on [ghost_of_fill_gen]'s two remaining admits ([__check],
-    [forall_r/⫯]); the rest of the induction (incl. the original [forall_l]
-    [φ]/[□] obstacle and [P=□]) is proved. *)
+(** BRICK 3 GOAL — the fill side, a corollary of [ghost_of_fill_gen]
+    (path (b): deterministic witness [colour]).  The ghost [Q] inferred for a
+    base term's principal type [C] refines the colouring [colour inh{Q} A'] of
+    every checking type [A'] the term subsumes to.  FULLY PROVED (Qed): the
+    earlier [__check] and [__forall_r/⫯] admits are closed (via [check_leaf]
+    and [tophole_fill] + the deterministic [colour] witness), as is the
+    original [forall_l] [φ]/[□] obstacle. *)
 Lemma ghost_of_fill : forall C Q Γ A',
     lc_ptyp C ->
     ghost_of (ptyp_to_pskl C) Q ->

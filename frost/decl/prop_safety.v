@@ -181,15 +181,58 @@ Qed.
 (** Principal subsumption: a base term's [mode_ti] type subtypes to every
     [mode_tc] type it checks against (sub case = [is_styp]-skeleton injectivity;
     forall case = [d_sub__forall_r]). *)
+(** A base term's [mode_ti] type is unique: its skeleton is determined
+    ([d_typing_ti_primary]) and a synthesised [btyp] is determined by its
+    skeleton ([is_styp_skel_inj]). *)
+Lemma d_typing_ti_base_unique : forall Γ e B1 B2,
+    d_wf_denv Γ -> is_base_term e ->
+    d_typing mode_ti Γ e B1 -> d_typing mode_ti Γ e B2 -> B1 = B2.
+Proof.
+  intros Γ e B1 B2 Hwf Hbase H1 H2.
+  apply is_styp_skel_inj;
+    [ eapply d_typing_ti_base_is_styp; eauto
+    | eapply d_typing_ti_base_is_styp; eauto | ].
+  pose proof (d_typing_ti_primary H1) as P1.
+  pose proof (d_typing_ti_primary H2) as P2.
+  destruct Hbase; simpl in P1, P2.
+  - (* unit *) rewrite P1, P2. reflexivity.
+  - (* var x *) destruct P1 as [A1 [Hb1 Hs1]]. destruct P2 as [A2 [Hb2 Hs2]].
+    assert (dbind_typ A1 = dbind_typ A2) as Ha
+      by (eapply binds_unique; [ exact Hb1 | exact Hb2 | eapply d_wf_denv_uniq; eauto ]).
+    inversion Ha; subst A2. rewrite Hs1, Hs2. reflexivity.
+  - (* anno e A *) rewrite P1, P2. reflexivity.
+Qed.
+
 Lemma d_typing_base_principal_sub : forall Γ e Bp Bc,
     d_wf_denv Γ -> is_base_term e ->
     d_typing mode_ti Γ e Bp -> d_typing mode_tc Γ e Bc ->
     empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn Bp) ⊑ Bc.
 Proof.
-  (* Admitted: broken by the rule-faithfulness pass (d_pat reorder / abs_anno
-     btyp / sub P-Q); structural d_pat lemma, NOT used by D1 or order-
-     irrelevance. To be re-proved with the safety layer. *)
-Admitted.
+  intros Γ e Bp Bc Hwf Hbase Htip Htc.
+  remember mode_tc as m0 eqn:Hm. revert Bp Hwf Hbase Htip Hm.
+  induction Htc; intros Bp Hwf Hbase Htip Hm; try discriminate Hm;
+    try solve [ inversion Hbase ].
+  - (* sub: the ti-premise type equals [Bp] (base ti uniqueness), then the
+       rule's own subtyping IS the goal (same mode as the conclusion). *)
+    match goal with Hsub : empty ⨟ _ ⊢[ _ ] _ ⊑ _ |- _ =>
+      assert (Bp = ptyp_to_btyp_syn A) as HBp
+        by (eapply d_typing_ti_base_unique; [ exact Hwf | exact Hbase | exact Htip | eassumption ]);
+      subst Bp; rewrite btyp_to_ptyp_ptyp_to_btyp_syn; exact Hsub end.
+  - (* forall: build the ∀ on the right via [d_sub__forall_r]; IH on the body
+       with [Bp] weakened to [X :: Γ]. *)
+    apply d_sub__forall_r with (L := L `union` dom Γ).
+    + change (btyp_all_inh (ptyp_to_btyp_inh A))
+        with (ptyp_to_btyp_inh (ptyp_all A)).
+      apply is_ityp_paint. eapply d_wf_ptyp_lc. apply d_wf_ptyp_of_btyp_inh.
+      eapply d_typing_wf_btyp; [ eapply d_typing__forall with (L := L); eassumption | exact Hwf ].
+    + intros X HX.
+      match goal with IH : forall _ : atom, _ -> forall _ : btyp, _ |- _ =>
+        eapply (IH X ltac:(fsetdec) Bp) end.
+      * apply d_wf_denv__tvar; [ exact Hwf | fsetdec ].
+      * exact Hbase.
+      * rewrite_env (nil ++ (X ~ dbind_tvar) ++ Γ). apply d_typing_weakening. exact Htip.
+      * reflexivity.
+Qed.
 
 (** ** Totality + safety of skeleton inference ([d_pat_total]).
 
@@ -508,12 +551,12 @@ Proof.
     + (* ti: subsumed base term still synthesises (skeleton determined) *)
       eapply d_pat_base_safe_gen;
         [ exact Hwf | eassumption | eapply d_typing__sub; eassumption | exact Hcr ].
-    + (* tc: SAFETY of a checked, subsumed base term.  Needs the FILL side of
-         ghostification — for [ghost_of P Q] (prop_skeleton.v, now HoleG-
-         faithful), [inh{Q}] fills every type that [syn{P}] checks against.
-         The inference side [d_pat__sub] + [ghost_of_infer] is ready; the fill
-         lemma (generalising [d_refine_syn_hole_fills] beyond a bare [□]) is
-         not yet proved. *)
+    + (* tc: SAFETY of a checked, subsumed base term.  All three ingredients
+         are now in hand: the FILL side [ghost_of_fill] (prop_skeleton.v, Qed)
+         + the inference side [d_pat__sub] + [ghost_of_infer] (Qed) + the
+         checking-type inversion [d_typing_base_principal_sub] (Qed above).
+         Remaining: the assembly threading [Γ' ⊆ Γext refines Γt] and the
+         base-term ti-skeleton shape (always [pskl_to_bskl_syn P']). *)
       admit.
     + (* fn: a subsumed base term in function mode (skeleton is an arrow whose
          domain is forced [inh]); same missing fill-side machinery. *)
