@@ -247,6 +247,12 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
     ε `notin` Δ0 ->
     Δ [=] add ε Δ0 ->
     d_tags_skl Δ (uskl_all_etag ε R)
+(* The tag-elided synthesised forall [all_syn] carries no instantiation tag of
+   its own, so its tags are exactly its body's. *)
+| d_tags_skl__all_syn : forall L Δ R,
+    (forall X, X `notin` L ->
+       d_tags_skl Δ (open_uskl_wrt_uskl R (uskl_var_f X))) ->
+    d_tags_skl Δ (uskl_all_syn R)
 | d_tags_skl__hole : forall Δ, Δ [=] empty -> d_tags_skl Δ uskl_hole
 | d_tags_skl__tophole : forall Δ R,
     d_tags_skl Δ R ->

@@ -37,7 +37,6 @@ Ltac discharge_category :=
   | H : is_ttyp (utyp_all_syn _) |- _ => inversion H
   | H : is_sskl (bskl_all_inh _) |- _ => inversion H
   | H : is_iskl (bskl_all_syn _) |- _ => inversion H
-  | H : is_tskl (uskl_all_syn _) |- _ => inversion H
   end.
 
 (** Override Metalib's [gather_atoms] to include every atom-bearing

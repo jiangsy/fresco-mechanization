@@ -2379,6 +2379,9 @@ Proof.
   - apply is_tskl__all_etag with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
+  - apply is_tskl__all_syn with (L := L `union` {{X}}). intros Y HY.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      try (apply lc_uskl_unit); try fsetdec. auto.
   - apply is_tskl__holeg.
   - apply is_tskl__topholeg; assumption.
 Qed.
@@ -2403,6 +2406,9 @@ Proof.
       | apply d_tags_skl__var; (assumption || fsetdec) ].
   - apply d_tags_skl__arrow with (Δ1 := Δ1) (Δ2 := Δ2); assumption.
   - apply d_tags_skl__all_etag with (L := L `union` {{X}}) (Δ0 := Δ0); [ | assumption | assumption ]. intros Y HY.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      try (apply lc_uskl_unit); try fsetdec. auto.
+  - apply d_tags_skl__all_syn with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - apply d_tags_skl__hole; (assumption || fsetdec).

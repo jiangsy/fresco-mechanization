@@ -42,10 +42,18 @@ Inductive is_tskl : uskl -> Prop :=
 | is_tskl__var     : forall X, is_tskl (uskl_var_f X)
 | is_tskl__arrow   : forall R1 R2,
     is_tskl R1 -> is_tskl R2 -> is_tskl (uskl_arrow R1 R2)
+(* Every forall in a tagged skeleton ψ is SYNTHESISED (the [ε]/[δ] superscript
+   is an instantiation tag, not a colour — there is no inherited forall in
+   skeletons).  So both the tagged [all_etag] and the tag-elided [all_syn]
+   forms are tagged-skeleton foralls. *)
 | is_tskl__all_etag     : forall L ε R,
     (forall X, X `notin` L ->
        is_tskl (open_uskl_wrt_uskl R (uskl_var_f X))) ->
     is_tskl (uskl_all_etag ε R)
+| is_tskl__all_syn      : forall L R,
+    (forall X, X `notin` L ->
+       is_tskl (open_uskl_wrt_uskl R (uskl_var_f X))) ->
+    is_tskl (uskl_all_syn R)
 (* Paper tagged skeleton ψ (declarative.tex:1633) carries the GHOSTS [HoleG]
    / [TopHoletag{ε}], NOT plain [Hole] / [TopHole] (those live only in the
    unresolved skeleton S / the bid RHS).  So [is_tskl] admits the ghost
