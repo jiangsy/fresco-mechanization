@@ -230,6 +230,83 @@ Proof.
       | eapply d_wf_utyp_ctx_refines; eauto | assumption | apply IHd_sub; assumption ].
 Qed.
 
+(** [ptyp_to_pskl] is injective on types (no holes): the skeleton determines
+    the type. *)
+Lemma ptyp_to_pskl_inj : forall A A', ptyp_to_pskl A = ptyp_to_pskl A' -> A = A'.
+Proof.
+  induction A; intros A' Heq; destruct A'; simpl in Heq; try discriminate;
+    try reflexivity.
+  - inversion Heq; reflexivity.
+  - inversion Heq; reflexivity.
+  - inversion Heq. f_equal; [ apply IHA1 | apply IHA2 ]; assumption.
+  - inversion Heq. f_equal; apply IHA; assumption.
+Qed.
+
+(** SYNTACTIC principal type of a base term: [unit] / the annotation / the
+    variable's binding.  Unlike the [ti] typing, this needs NO inner check for
+    [anno] (so it never forces a tvar-strengthening), and for the value cases
+    it is context-stable. *)
+Inductive base_principal : exp -> list (atom * dbind) -> ptyp -> Prop :=
+| bp_unit : forall Γ, base_principal exp_unit Γ ptyp_unit
+| bp_var  : forall Γ x A, binds x (dbind_typ A) Γ -> base_principal (exp_var_f x) Γ A
+| bp_anno : forall Γ e A, base_principal (exp_anno e A) Γ A.
+
+Lemma base_principal_weaken_tvar : forall e Γ C X,
+    base_principal e Γ C -> base_principal e ((X ~ dbind_tvar) ++ Γ) C.
+Proof.
+  intros e Γ C X H. destruct H.
+  - apply bp_unit.
+  - apply bp_var. apply binds_app_3. assumption.
+  - apply bp_anno.
+Qed.
+
+(** Base-term checking inversion (subtyping form): a base term checked at [Bc]
+    (tc) has its SYNTACTIC principal type [C] subtype to [Bc].  Avoids the
+    [anno]-as-value-in-[∀] strengthening obstacle entirely: [C] is an INPUT
+    (so the [forall] case fixes it — no existential), and the [sub] case
+    relates [C] to the rule's ti type via [d_typing_ti_primary] + skeleton
+    injectivity ([ptyp_to_pskl_inj]) — no inner-check production. *)
+Lemma d_typing_base_check_sub : forall Γ e C Bc,
+    d_wf_denv Γ -> base_principal e Γ C -> d_typing mode_tc Γ e Bc ->
+    empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn C) ⊑ Bc.
+Proof.
+  intros Γ e C Bc Hwf Hbp Htc.
+  remember mode_tc as m0 eqn:Hm. revert C Hwf Hbp Hm.
+  induction Htc; intros C Hwf Hbp Hm; try discriminate Hm;
+    try solve [ inversion Hbp ].
+  - (* sub: ptyp_to_utyp_syn C = ptyp_to_utyp_syn A, then the rule's subtyping *)
+    match goal with
+    | Hti : d_typing mode_ti _ _ (ptyp_to_btyp_syn ?Aa),
+      Hsub : empty ⨟ _ ⊢[ _ ] _ ⊑ _ |- _ =>
+        assert (C = Aa) as HCA;
+        [ pose proof (d_typing_ti_primary Hti) as Hp;
+          inversion Hbp; subst; simpl in Hp;
+          [ (* unit *) apply ptyp_to_pskl_inj;
+              rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hp; rewrite Hp; reflexivity
+          | (* var *) destruct Hp as [A1 [Hb1 Hsk]];
+              match goal with Hbnd : binds _ (dbind_typ C) _ |- _ =>
+                assert (dbind_typ C = dbind_typ A1)
+                  by (eapply binds_unique; [ exact Hbnd | exact Hb1 | eapply d_wf_denv_uniq; eauto ]) end;
+              apply ptyp_to_pskl_inj; rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hsk;
+              match goal with H : dbind_typ _ = dbind_typ _ |- _ => inversion H; subst end;
+              rewrite Hsk; reflexivity
+          | (* anno *) apply ptyp_to_pskl_inj;
+              rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hp; rewrite Hp; reflexivity ]
+        | subst C; assumption ]
+    end.
+  - (* forall: C fixed → IH directly, then forall_r *)
+    apply d_sub__forall_r with (L := L `union` dom Γ).
+    + change (btyp_all_inh (ptyp_to_btyp_inh A)) with (ptyp_to_btyp_inh (ptyp_all A)).
+      apply is_ityp_paint. eapply d_wf_ptyp_lc. apply d_wf_ptyp_of_btyp_inh.
+      eapply d_typing_wf_btyp; [ eapply d_typing__forall with (L := L); eassumption | exact Hwf ].
+    + intros X HX.
+      match goal with IH : forall _ : atom, _ -> forall _ : ptyp, _ |- _ =>
+        eapply (IH X ltac:(fsetdec) C) end.
+      * apply d_wf_denv__tvar; [ exact Hwf | fsetdec ].
+      * apply base_principal_weaken_tvar; exact Hbp.
+      * reflexivity.
+Qed.
+
 (** A base term's [mode_ti] type is synthesised ([is_styp]). *)
 Lemma d_typing_ti_base_is_styp : forall Γ e B,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B -> is_styp B.
