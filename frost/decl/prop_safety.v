@@ -21,6 +21,7 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.decl.prop_renaming.
 Require Import src.frost.decl.prop_stability.
+Require Import src.frost.decl.prop_syntax_directed.
 
 Set Implicit Arguments.
 
@@ -48,6 +49,500 @@ Qed.
 Lemma ctx_refines_dom : forall Γ' Γ, ctx_refines Γ' Γ -> dom Γ' [=] dom Γ.
 Proof.
   intros Γ' Γ H. induction H; simpl; [ fsetdec | fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  tvar-RENAMING for [d_refine_syn] (and onward [d_pat]) — the infra the  *)
+(*  [forall] case needs: the inference's fresh tvar [X0] must be α-renamed  *)
+(*  to a per-instance-fresh [Y] before transporting it past the (possibly   *)
+(*  [X0]-binding) fill context.  Mirrors the [_subst_unit] family but keeps  *)
+(*  the binding (relabelled [X0 ↦ Y]) instead of dropping it.                *)
+(* ===================================================================== *)
+
+(* coercion / tvar-rename commutes *)
+Lemma pskl_to_bskl_syn_subst_var : forall P X Y,
+    subst_bskl_in_bskl (bskl_var_f Y) X (pskl_to_bskl_syn P)
+    = pskl_to_bskl_syn (subst_pskl_in_pskl (pskl_var_f Y) X P).
+Proof.
+  induction P; intros X Y; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma guarded_bskl_subst_var : forall Q X Y,
+    guarded_bskl Q -> guarded_bskl (subst_bskl_in_bskl (bskl_var_f Y) X Q).
+Proof.
+  intros Q X Y H. induction H; simpl.
+  - apply guarded_bskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; apply guarded_bskl__var.
+  - apply guarded_bskl__arrow; apply subst_bskl_in_bskl_lc_bskl; (assumption || apply lc_bskl_var_f).
+Qed.
+
+Lemma guarded_pskl_subst_var : forall P X Y,
+    guarded_pskl P -> guarded_pskl (subst_pskl_in_pskl (pskl_var_f Y) X P).
+Proof.
+  intros P X Y H. induction H; simpl.
+  - apply guarded_pskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; apply guarded_pskl__var.
+  - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; (assumption || apply lc_pskl_var_f).
+Qed.
+
+Lemma d_wf_pskl_rename_tvar : forall Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P ->
+    forall Γ1 X0 Γ2 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
+    Ψ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ₚₛ (subst_pskl_in_pskl (pskl_var_f Y) X0 P).
+Proof.
+  intros Ψ Γ P H. induction H; intros Γ1 X0 Γ2 Y Heq Hfr; subst; simpl.
+  - apply d_wf_pskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+    + apply d_wf_pskl__var. right. simpl_env. auto.
+    + apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right; analyze_binds Hb ].
+  - apply d_wf_pskl__arrow; [ eapply IHd_wf_pskl1 | eapply IHd_wf_pskl2 ]; eauto.
+  - apply d_wf_pskl__all
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros X HX.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var by (first [ apply lc_pskl_var_f | fsetdec ]).
+    eapply (H0 X ltac:(fsetdec) Γ1 X0 Γ2 Y); [ reflexivity | fsetdec ].
+  - apply d_wf_pskl__hole.
+  - apply d_wf_pskl__tophole;
+      [ apply guarded_pskl_subst_var; assumption | eapply IHd_wf_pskl; eauto ].
+Qed.
+
+Lemma d_refine_syn_rename_tvar : forall Γ Δs Δi Q P,
+    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+    forall Γ1 X0 Γ2 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
+    (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ
+      (subst_bskl_in_bskl (bskl_var_f Y) X0 Q) ⊳ (subst_bskl_in_bskl (bskl_var_f Y) X0 P).
+Proof.
+  intros Γ Δs Δi Q P H. induction H; intros Γ1 X0 Γ2 Y Heq Hfr; subst; simpl.
+  - apply d_refine_syn__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+    + apply d_refine_syn__var. right; right. simpl_env. auto.
+    + apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
+        [ left; assumption | right; left; assumption | right; right; analyze_binds Hb ].
+  - apply d_refine_syn__arrow;
+      [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
+  - apply d_refine_syn__all
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros Z HZ.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var by (first [ apply lc_bskl_var_f | fsetdec ]).
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var by (first [ apply lc_bskl_var_f | fsetdec ]).
+    eapply (H0 Z ltac:(fsetdec) Γ1 X0 Γ2 Y); [ reflexivity | fsetdec ].
+  - rewrite pskl_to_bskl_syn_subst_var. apply d_refine_syn__hole.
+    eapply d_wf_pskl_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+  - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
+  - apply d_refine_syn__tophole_fill
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros Z HZ.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var by (first [ apply lc_bskl_var_f | fsetdec ]).
+    eapply (H0 Z ltac:(fsetdec) Γ1 X0 Γ2 Y); [ reflexivity | fsetdec ].
+  - apply d_refine_syn__tophole_keep;
+      [ apply guarded_bskl_subst_var; assumption | eapply IHd_refine_syn; eauto ].
+Qed.
+
+(* more coercion / tvar-rename commutes (for [d_pat_rename_tvar]) *)
+Lemma pskl_to_bskl_inh_subst_var : forall P X Y,
+    subst_bskl_in_bskl (bskl_var_f Y) X (pskl_to_bskl_inh P)
+    = pskl_to_bskl_inh (subst_pskl_in_pskl (pskl_var_f Y) X P).
+Proof.
+  induction P; intros X Y; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma ptyp_to_pskl_subst_var : forall A X Y,
+    subst_pskl_in_pskl (pskl_var_f Y) X (ptyp_to_pskl A)
+    = ptyp_to_pskl (subst_ptyp_in_ptyp (ptyp_var_f Y) X A).
+Proof.
+  induction A; intros X Y; simpl; try reflexivity;
+    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma btyp_to_bskl_subst_var : forall B X Y,
+    subst_bskl_in_bskl (bskl_var_f Y) X (btyp_to_bskl B)
+    = btyp_to_bskl (subst_btyp_in_btyp (btyp_var_f Y) X B).
+Proof.
+  induction B; intros X Y; simpl; try reflexivity;
+    try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma ptyp_to_btyp_syn_subst_var : forall A X Y,
+    subst_btyp_in_btyp (btyp_var_f Y) X (ptyp_to_btyp_syn A)
+    = ptyp_to_btyp_syn (subst_ptyp_in_ptyp (ptyp_var_f Y) X A).
+Proof.
+  induction A; intros X Y; simpl; try reflexivity;
+    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma btyp_to_ptyp_subst_var : forall B X Y,
+    subst_ptyp_in_ptyp (ptyp_var_f Y) X (btyp_to_ptyp B)
+    = btyp_to_ptyp (subst_btyp_in_btyp (btyp_var_f Y) X B).
+Proof.
+  induction B; intros X Y; simpl; try reflexivity;
+    try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma bskl_to_uskl_subst_var : forall Q X Y,
+    subst_bskl_in_uskl (uskl_var_f Y) X (bskl_to_uskl Q)
+    = bskl_to_uskl (subst_bskl_in_bskl (bskl_var_f Y) X Q).
+Proof.
+  induction Q; intros X Y; simpl; try reflexivity;
+    try (rewrite IHQ1, IHQ2; reflexivity); try (rewrite IHQ; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+(* shape predicates preserved by tvar-rename (subst by a var) *)
+Lemma is_sskl_subst_var : forall Q X Y,
+    is_sskl Q -> is_sskl (subst_bskl_in_bskl (bskl_var_f Y) X Q).
+Proof.
+  intros Q X Y H. induction H; simpl.
+  - apply is_sskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; apply is_sskl__var.
+  - apply is_sskl__arrow; assumption.
+  - apply is_sskl__all with (L := L `union` {{X}}). intros Z HZ.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_var_f); try fsetdec. auto.
+  - apply is_sskl__hole.
+  - apply is_sskl__tophole; assumption.
+Qed.
+
+Lemma is_tskl_subst_var : forall R X Y,
+    is_tskl R -> is_tskl (subst_bskl_in_uskl (uskl_var_f Y) X R).
+Proof.
+  intros R X Y H. induction H; simpl.
+  - apply is_tskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; apply is_tskl__var.
+  - apply is_tskl__arrow; assumption.
+  - apply is_tskl__all_etag with (L := L `union` {{X}}). intros Z HZ.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec. auto.
+  - apply is_tskl__all_syn with (L := L `union` {{X}}). intros Z HZ.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec. auto.
+  - apply is_tskl__holeg.
+  - apply is_tskl__topholeg; assumption.
+Qed.
+
+Lemma d_tags_skl_subst_var : forall Δ R X Y,
+    d_tags_skl Δ R -> d_tags_skl Δ (subst_bskl_in_uskl (uskl_var_f Y) X R).
+Proof.
+  intros Δ R X Y H. induction H; simpl.
+  - apply d_tags_skl__unit; (assumption || fsetdec).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+      apply d_tags_skl__var; (assumption || fsetdec).
+  - apply d_tags_skl__arrow with (Δ1 := Δ1) (Δ2 := Δ2); assumption.
+  - apply d_tags_skl__all_etag with (L := L `union` {{X}}) (Δ0 := Δ0); [ | assumption | assumption ].
+    intros Z HZ.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec. auto.
+  - apply d_tags_skl__all_syn with (L := L `union` {{X}}). intros Z HZ.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec. auto.
+  - apply d_tags_skl__hole; (assumption || fsetdec).
+  - apply d_tags_skl__tophole; assumption.
+  - apply d_tags_skl__holeg; (assumption || fsetdec).
+  - apply d_tags_skl__topholeg with (Δ0 := Δ0); assumption.
+Qed.
+
+Lemma guarded_uskl_subst_var : forall R X Y,
+    guarded_uskl R -> guarded_uskl (subst_bskl_in_uskl (uskl_var_f Y) X R).
+Proof.
+  intros R X Y H. induction H; simpl.
+  - apply guarded_uskl__unit.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; apply guarded_uskl__var.
+  - apply guarded_uskl__arrow; apply subst_bskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_var_f).
+Qed.
+
+Lemma d_wf_uskl_rename_tvar : forall Ψ Γ R,
+    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    forall Γ1 X0 Γ2 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
+    Ψ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ᵤₛ (subst_bskl_in_uskl (uskl_var_f Y) X0 R).
+Proof.
+  intros Ψ Γ R H. induction H; intros Γ1 X0 Γ2 Y Heq Hfr; subst.
+  - apply d_wf_uskl__unit.
+  - simpl. match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+    + apply d_wf_uskl__var. right. simpl_env. auto.
+    + apply d_wf_uskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right; analyze_binds Hb ].
+  - simpl. apply d_wf_uskl__arrow; [ eapply IHd_wf_uskl1 | eapply IHd_wf_uskl2 ]; eauto.
+  - simpl. apply d_wf_uskl__all_syn
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros Z HZ. rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec.
+    eapply (H0 Z ltac:(fsetdec) Γ1 X0 Γ2 Y); [ reflexivity | fsetdec ].
+  - simpl. apply d_wf_uskl__all_etag
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros Z HZ. rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec.
+    eapply (H0 Z ltac:(fsetdec) Γ1 X0 Γ2 Y); [ reflexivity | fsetdec ].
+  - apply d_wf_uskl__hole.
+  - simpl. apply d_wf_uskl__tophole;
+      [ apply guarded_uskl_subst_var; assumption | eapply IHd_wf_uskl; eauto ].
+  - apply d_wf_uskl__holeg.
+  - simpl. apply d_wf_uskl__topholeg;
+      [ apply guarded_uskl_subst_var; assumption | eapply IHd_wf_uskl; eauto ].
+Qed.
+
+Lemma d_pat_consis_rename_tvar : forall Δ Γ R Q,
+    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
+    forall Γ1 X0 Γ2 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
+    Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊨ₛ
+      (subst_bskl_in_uskl (uskl_var_f Y) X0 R) ≈ (subst_bskl_in_bskl (bskl_var_f Y) X0 Q).
+Proof.
+  intros Δ Γ R Q H. induction H; intros Γ1 X0 Γ2 Y Heq Hfr; subst.
+  - apply d_pat_consis__unit; (assumption || fsetdec).
+  - simpl. match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+    + apply d_pat_consis__var; [ (assumption || fsetdec) | simpl_env; auto ].
+    + apply d_pat_consis__var; [ (assumption || fsetdec)
+        | match goal with Hb : binds _ _ (_ ++ _ ~ dbind_tvar ++ _) |- _ => analyze_binds Hb end ].
+  - simpl. eapply d_pat_consis__arrow;
+      [ eapply (IHd_pat_consis1 Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ]
+      | eapply (IHd_pat_consis2 Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ]
+      | (eassumption || fsetdec) ].
+  - simpl. apply d_pat_consis__forall_inh_tagged
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}) (Δ0 := Δ0).
+    2: assumption.
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_var_f); try fsetdec.
+    exact (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2 Y ltac:(simpl_env; reflexivity) ltac:(simpl_env in *; fsetdec)).
+  - simpl. apply d_pat_consis__forall_inh_untagged
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_var_f); try fsetdec.
+    exact (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2 Y ltac:(simpl_env; reflexivity) ltac:(simpl_env in *; fsetdec)).
+  - simpl. apply d_pat_consis__forall_syn_tagged
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_var_f); try fsetdec.
+    exact (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2 Y ltac:(simpl_env; reflexivity) ltac:(simpl_env in *; fsetdec)).
+  - simpl. apply d_pat_consis__forall_syn
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_var_f); try fsetdec.
+    exact (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2 Y ltac:(simpl_env; reflexivity) ltac:(simpl_env in *; fsetdec)).
+  - apply d_pat_consis__ghostg; (assumption || fsetdec).
+  - simpl. apply d_pat_consis__topholeg with (Δ0 := Δ0);
+      [ eapply (IHd_pat_consis Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ] | eassumption ].
+  - simpl. rewrite pskl_to_bskl_inh_subst_var.
+    apply d_pat_consis__hole; [ (assumption || fsetdec)
+      | eapply d_wf_pskl_rename_tvar; [ eassumption | reflexivity | exact Hfr ] ].
+  - simpl. apply d_pat_consis__tophole.
+    eapply (IHd_pat_consis Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ].
+  - simpl. apply d_pat_consis__tophole_inh
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}).
+    intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_var_f); try fsetdec.
+    exact (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2 Y
+             ltac:(simpl_env; reflexivity) ltac:(simpl_env in *; fsetdec)).
+  - simpl. apply d_pat_consis__tophole_drop.
+    eapply (IHd_pat_consis Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ].
+Qed.
+
+Lemma d_pat_sub_rename_tvar : forall Δ Γ m R Q,
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
+    forall Γ1 X0 Γ2 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
+    Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ₛ[ m ]
+      (subst_bskl_in_uskl (uskl_var_f Y) X0 R) ⊑ (subst_bskl_in_bskl (bskl_var_f Y) X0 Q).
+Proof.
+  intros Δ Γ m R Q H. induction H; intros Γ1 X0 Γ2 Y Heq Hfr; subst.
+  - apply d_pat_sub__infer;
+      [ (assumption || fsetdec) | eapply d_pat_consis_rename_tvar; eauto | apply is_sskl_subst_var; assumption ].
+  - simpl. apply d_pat_sub__univ_ghost_r;
+      [ (assumption || fsetdec) | apply guarded_uskl_subst_var; assumption
+      | apply guarded_bskl_subst_var; assumption | apply is_sskl_subst_var; assumption
+      | eapply d_pat_consis_rename_tvar; eauto ].
+  - simpl. eapply d_pat_sub__arg;
+      [ eapply d_pat_consis_rename_tvar; eauto
+      | eapply (IHd_pat_sub Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ]
+      | (eassumption || fsetdec) ].
+  - simpl. eapply d_pat_sub__forall_l_tagged with (psi := subst_bskl_in_uskl (uskl_var_f Y) X0 psi);
+      [ assumption | eassumption | apply d_tags_skl_subst_var; assumption
+      | eapply d_wf_uskl_rename_tvar; eauto | apply is_tskl_subst_var; assumption | ].
+    rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_var_f).
+    eapply (IHd_pat_sub Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ].
+  - simpl. eapply d_pat_sub__forall_l_untagged with (psi := subst_bskl_in_uskl (uskl_var_f Y) X0 psi);
+      [ assumption | eassumption | apply d_tags_skl_subst_var; assumption
+      | eapply d_wf_uskl_rename_tvar; eauto | apply is_tskl_subst_var; assumption | ].
+    rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_var_f).
+    eapply (IHd_pat_sub Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ].
+  - simpl. rewrite pskl_to_bskl_inh_subst_var. apply d_pat_sub__ghost;
+      [ (assumption || fsetdec) | eapply d_wf_pskl_rename_tvar; [ eassumption | reflexivity | exact Hfr ] ].
+  - simpl. apply d_pat_sub__univ_ghost_l;
+      [ assumption | eapply (IHd_pat_sub Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ] ].
+  - apply d_pat_sub__ghostg; (assumption || fsetdec).
+  - simpl. apply d_pat_sub__univ_ghost_lg;
+      [ assumption | eapply (IHd_pat_sub Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr ] ].
+Qed.
+
+(* context-map for the tvar-rename of [d_pat] / [d_typing] (relabel X0↦Y in
+   the bindings AFTER X0; bindings before X0 are X0-clean). *)
+Definition subst_var_dbind (X0 Y : atom) (d : dbind) : dbind :=
+  match d with
+  | dbind_tvar => dbind_tvar
+  | dbind_typ A => dbind_typ (subst_ptyp_in_ptyp (ptyp_var_f Y) X0 A)
+  | dbind_skl P => dbind_skl (subst_pskl_in_pskl (pskl_var_f Y) X0 P)
+  end.
+
+Lemma map_subst_var_dbind_cons : forall x d X0 Y Γ1,
+    (x ~ subst_var_dbind X0 Y d) ++ map (subst_var_dbind X0 Y) Γ1
+    = map (subst_var_dbind X0 Y) ((x ~ d) ++ Γ1).
+Proof. intros. simpl_env. reflexivity. Qed.
+
+Lemma same_tvar_map_subst_var : forall X0 Y Γ1 Γ2,
+    same_tvar (Γ1 ++ Γ2) (map (subst_var_dbind X0 Y) Γ1 ++ Γ2).
+Proof.
+  intros X0 Y Γ1 Γ2 X. split; intro Hb; apply binds_app_iff in Hb; apply binds_app_iff;
+    destruct Hb as [Hb | Hb].
+  - left. change dbind_tvar with (subst_var_dbind X0 Y dbind_tvar). apply binds_map_2. assumption.
+  - right. assumption.
+  - left. apply binds_map_3 in Hb as [b [Heq Hb']]. destruct b; inversion Heq; subst. assumption.
+  - right. assumption.
+Qed.
+
+Lemma binds_typ_subst_var_dbind : forall x A X0 Y Γ1 Γ2,
+    binds x (dbind_typ A) (Γ1 ++ Γ2) -> tvar_clean X0 Γ2 ->
+    binds x (dbind_typ (subst_ptyp_in_ptyp (ptyp_var_f Y) X0 A))
+          (map (subst_var_dbind X0 Y) Γ1 ++ (Y ~ dbind_tvar) ++ Γ2).
+Proof.
+  intros x A X0 Y Γ1 Γ2 Hb [Ht Hs].
+  apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+  - apply binds_app_2.
+    change (dbind_typ (subst_ptyp_in_ptyp (ptyp_var_f Y) X0 A))
+      with (subst_var_dbind X0 Y (dbind_typ A)). apply binds_map_2. assumption.
+  - apply binds_app_3. apply binds_app_3.
+    rewrite (subst_ptyp_in_ptyp_fresh_eq _ _ _ (Ht _ _ Hb)). assumption.
+Qed.
+
+Lemma binds_skl_subst_var_dbind : forall x P X0 Y Γ1 Γ2,
+    binds x (dbind_skl P) (Γ1 ++ Γ2) -> tvar_clean X0 Γ2 ->
+    binds x (dbind_skl (subst_pskl_in_pskl (pskl_var_f Y) X0 P))
+          (map (subst_var_dbind X0 Y) Γ1 ++ (Y ~ dbind_tvar) ++ Γ2).
+Proof.
+  intros x P X0 Y Γ1 Γ2 Hb [Ht Hs].
+  apply binds_app_iff in Hb. destruct Hb as [Hb | Hb].
+  - apply binds_app_2.
+    change (dbind_skl (subst_pskl_in_pskl (pskl_var_f Y) X0 P))
+      with (subst_var_dbind X0 Y (dbind_skl P)). apply binds_map_2. assumption.
+  - apply binds_app_3. apply binds_app_3.
+    rewrite (subst_pskl_in_pskl_fresh_eq _ _ _ (Hs _ _ Hb)). assumption.
+Qed.
+
+Lemma d_wf_ptyp_rename_tvar : forall Γ A,
+    Γ ⊢ₚ A -> forall Γ1 X0 Γ2 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
+    (map (subst_var_dbind X0 Y) Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ₚ
+      (subst_ptyp_in_ptyp (ptyp_var_f Y) X0 A).
+Proof.
+  intros Γ A H Γ1 X0 Γ2 Y Heq Hfr. subst Γ.
+  apply d_wf_ptyp_of_lc_ftvar.
+  - apply subst_ptyp_in_ptyp_lc_ptyp; [ eapply d_wf_ptyp_lc; eassumption | apply lc_ptyp_var_f ].
+  - intros Z HZ.
+    pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper A (ptyp_var_f Y) X0) as Hup. simpl in Hup.
+    destruct (Z == Y).
+    + subst Z. apply binds_app_3. simpl_env. auto.
+    + assert (HZA : Z `in` ftvar_in_ptyp A) by (clear - HZ Hup n; fsetdec).
+      assert (HZne : Z <> X0) by (clear - HZ Hup n; fsetdec).
+      assert (Hbnd : binds Z dbind_tvar (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2))
+        by (eapply d_wf_ptyp_ftvar; eassumption).
+      apply binds_remove_mid in Hbnd; [ | exact HZne ].
+      apply binds_app_iff in Hbnd. destruct Hbnd as [Hb | Hb].
+      * apply binds_app_2. change dbind_tvar with (subst_var_dbind X0 Y dbind_tvar).
+        apply binds_map_2. assumption.
+      * apply binds_app_3. apply binds_app_3. assumption.
+Qed.
+
+Lemma d_pat_rename_tvar : forall m Γ e Q,
+    Γ ⊢[ m ] e ⇨ Q ->
+    forall Γ1 X0 Γ2 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) -> tvar_clean X0 Γ2 ->
+    (map (subst_var_dbind X0 Y) Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢[ m ]
+      (subst_ptyp_in_exp (ptyp_var_f Y) X0 e) ⇨ (subst_bskl_in_bskl (bskl_var_f Y) X0 Q).
+Proof.
+  intros m Γ e Q H. induction H; intros Γ1 X0 Γ2 Y Heq Hfr Hclean; subst; simpl.
+  - apply d_pat__unit.
+  - rewrite pskl_to_bskl_syn_subst_var.
+    destruct d as [ | A | P0 ]; simpl in H0.
+    + discriminate.
+    + injection H0 as H0. subst P. rewrite ptyp_to_pskl_subst_var.
+      assert (Hb : binds x (dbind_typ A) (Γ1 ++ Γ2)) by (analyze_binds H).
+      eapply d_pat__var; [ apply binds_typ_subst_var_dbind; eassumption | reflexivity ].
+    + injection H0 as H0. subst P.
+      assert (Hb : binds x (dbind_skl P0) (Γ1 ++ Γ2)) by (analyze_binds H).
+      eapply d_pat__var; [ apply binds_skl_subst_var_dbind; eassumption | reflexivity ].
+  - rewrite pskl_to_bskl_syn_subst_var. rewrite ptyp_to_pskl_subst_var.
+    apply d_pat__anno. eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+  - eapply d_pat__sub.
+    + apply is_base_term_subst_ptyp. assumption.
+    + rewrite <- pskl_to_bskl_syn_subst_var.
+      eapply (IHd_pat Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr | exact Hclean ].
+    + rewrite <- pskl_to_bskl_syn_subst_var. rewrite <- bskl_to_uskl_subst_var.
+      eapply d_pat_sub_same_tvar;
+        [ eapply d_pat_sub_rename_tvar; [ exact H1 | reflexivity | exact Hfr ]
+        | apply same_tvar_map_subst_var ].
+  - rewrite pskl_to_bskl_syn_subst_var.
+    apply d_pat__freeze. rewrite <- pskl_to_bskl_syn_subst_var.
+    eapply (IHd_pat Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr | exact Hclean ].
+  - rewrite pskl_to_bskl_inh_subst_var.
+    apply d_pat__abs with (L := L `union` {{X0}} `union` {{Y}} `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2))
+      (P := subst_pskl_in_pskl (pskl_var_f Y) X0 P).
+    + assumption.
+    + eapply d_wf_pskl_same_tvar;
+        [ eapply d_wf_pskl_rename_tvar; [ exact H0 | reflexivity | exact Hfr ]
+        | apply same_tvar_map_subst_var ].
+    + intros x Hx.
+      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
+      rewrite_env (((x ~ subst_var_dbind X0 Y (dbind_skl P)) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+      rewrite map_subst_var_dbind_cons.
+      eapply (H2 x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) X0 Γ2 Y);
+        [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
+  - rewrite btyp_to_bskl_subst_var.
+    eapply d_pat__abs_anno with (L := L `union` {{X0}} `union` {{Y}} `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2)).
+    + assumption.
+    + eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + symmetry. apply btyp_to_ptyp_subst_var.
+    + intros x Hx.
+      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
+      rewrite_env (((x ~ subst_var_dbind X0 Y (dbind_typ (btyp_to_ptyp B))) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+      rewrite map_subst_var_dbind_cons.
+      eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) X0 Γ2 Y);
+        [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
+  - eapply d_pat__app.
+    + rewrite <- pskl_to_bskl_syn_subst_var.
+      eapply (IHd_pat1 Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr | exact Hclean ].
+    + rewrite <- pskl_to_bskl_inh_subst_var.
+      eapply d_refine_syn_same_tvar;
+        [ eapply d_refine_syn_rename_tvar; [ exact H0 | reflexivity | exact Hfr ]
+        | apply same_tvar_map_subst_var ].
+    + change (bskl_arrow (subst_bskl_in_bskl (bskl_var_f Y) X0 Q1) (subst_bskl_in_bskl (bskl_var_f Y) X0 Q2))
+        with (subst_bskl_in_bskl (bskl_var_f Y) X0 (bskl_arrow Q1 Q2)).
+      eapply (IHd_pat2 Γ1 X0 Γ2 Y); [ reflexivity | exact Hfr | exact Hclean ].
+  - rewrite pskl_to_bskl_syn_subst_var.
+    apply d_pat__abs_check with (L := L `union` {{X0}} `union` {{Y}} `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2))
+      (P := subst_pskl_in_pskl (pskl_var_f Y) X0 P).
+    intros x Hx.
+    rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
+    rewrite_env (((x ~ subst_var_dbind X0 Y (dbind_skl pskl_hole)) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite map_subst_var_dbind_cons.
+    rewrite <- pskl_to_bskl_syn_subst_var.
+    eapply (H0 x ltac:(fsetdec) ((x ~ dbind_skl pskl_hole) ++ Γ1) X0 Γ2 Y);
+      [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
+  - rewrite btyp_to_bskl_subst_var. rewrite ptyp_to_btyp_syn_subst_var.
+    rewrite pskl_to_bskl_syn_subst_var.
+    apply d_pat__abs_anno_check with (L := L `union` {{X0}} `union` {{Y}} `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2))
+      (A := subst_ptyp_in_ptyp (ptyp_var_f Y) X0 A) (P := subst_pskl_in_pskl (pskl_var_f Y) X0 P).
+    + eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + intros x Hx.
+      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
+      rewrite_env (((x ~ subst_var_dbind X0 Y (dbind_typ A)) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+      rewrite map_subst_var_dbind_cons.
+      rewrite <- pskl_to_bskl_syn_subst_var.
+      eapply (H1 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) X0 Γ2 Y);
+        [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
 Qed.
 
 Lemma ctx_refines_binds_tvar : forall Γ' Γ X,
