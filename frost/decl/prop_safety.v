@@ -433,10 +433,22 @@ Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
   : Prop :=
   match m with
   | mode_fn _ => exists Q, Γ ⊢[ m ] e ⇨ Q /\ safe_skel Γ m Q B
-  | _ =>
-      exists Q, Γ ⊢[ m ] e ⇨ Q
+  | mode_ti =>
+      (* The TI inference is a SYNTHESISED skeleton ([is_sskl] — so it is the
+         syn-painting of its erasure, [is_sskl_syn_roundtrip]); this lets
+         [freeze] lift it via [d_pat__freeze].  The fill is keyed on the SYN
+         painting ([ptyp_to_btyp_syn A]) — TI's own output colour — so [freeze]
+         (which repaints [syn A ⇒ inh A]) reuses it after inverting the
+         freeze typing back to [Γt ⊢ti e ⦂ syn A]. *)
+      exists Q, Γ ⊢[ mode_ti ] e ⇨ Q /\ is_sskl Q
                 /\ (forall Γext Γt A, ctx_weaken Γ Γext -> ctx_refines Γext Γt ->
-                       d_wf_denv Γt -> Γt ⊢[ m ] e ⦂ (ptyp_to_btyp_inh A) ->
+                       d_wf_denv Γt -> Γt ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
+                       Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳
+                         (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A))
+  | mode_tc =>
+      exists Q, Γ ⊢[ mode_tc ] e ⇨ Q
+                /\ (forall Γext Γt A, ctx_weaken Γ Γext -> ctx_refines Γext Γt ->
+                       d_wf_denv Γt -> Γt ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
                        Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳
                          (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A))
   end.
@@ -490,6 +502,17 @@ Qed.
     [Q] is over [Γ'] ([□] for a refined var, else the syn skeleton); its [pskl]
     matches every checking type by [d_typing_ti_primary], and fills via the two
     helpers above. *)
+(** SYN analog of [d_wf_ptyp_of_btyp_inh] (missing in the library): the syn
+    painting's well-formedness erases to the underlying type's. *)
+Lemma d_wf_ptyp_of_btyp_syn : forall A Γ,
+    d_wf_btyp Γ (ptyp_to_btyp_syn A) -> d_wf_ptyp Γ A.
+Proof.
+  intros A Γ H. apply d_wf_ptyp_of_lc_ftvar.
+  - apply lc_ptyp_of_lc_btyp_syn; eapply d_wf_btyp_lc; eassumption.
+  - intros X HX. eapply d_wf_btyp_ftvar;
+      [ eassumption | rewrite prop_wellformed.ftvar_ptyp_to_btyp_syn; exact HX ].
+Qed.
+
 Lemma d_pat_base_safe_gen : forall Γ e B,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e B ->
     forall Γ', ctx_refines Γ' Γ -> gpat mode_ti Γ' e B.
@@ -498,25 +521,27 @@ Proof.
   pose proof (d_typing_ti_primary Hty) as Hpri.
   destruct Hbase; simpl in Hpri.
   - (* unit *)
-    exists bskl_unit. split; [ apply d_pat__unit | ].
+    exists bskl_unit. split; [ apply d_pat__unit | split; [ apply is_sskl__unit | ] ].
     intros Γext Γt A Hcw Hcrt Hwft HA.
     pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
-    rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hp.
+    rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hp.
     eapply gpat_syn_fill;
       [ simpl; rewrite Hp; reflexivity
-      | apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto
+      | apply d_wf_ptyp_of_btyp_syn; eapply d_typing_wf_btyp; eauto
       | exact Hcrt ].
   - (* var x *)
     destruct Hpri as [A0 [Hbnd Hskel0]].
     destruct (@ctx_refines_binds Γ' Γ x (dbind_typ A0) Hcr Hbnd) as [d' [Hb' Hdr]].
     inversion Hdr; subst.
     + (* kept: x : typ A0 *)
-      exists (pskl_to_bskl_syn (ptyp_to_pskl A0)). split.
-      * apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ].
-      * intros Γext Γt A Hcw Hcrt Hwft HA.
+      exists (pskl_to_bskl_syn (ptyp_to_pskl A0)).
+      split; [ apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ] | ].
+      split; [ apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl;
+               eapply d_wf_ptyp_lc, d_wf_denv_binds_typ; [ exact Hwf | exact Hbnd ] | ].
+      intros Γext Γt A Hcw Hcrt Hwft HA.
         pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
         destruct Hp as [A1 [Hbnd1 Hskel1]].
-        rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hskel1.
+        rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hskel1.
         (* x : typ A0 in Γ' ⊆ Γext refines x's Γt-binding ⇒ typ A0, so A1 = A0 *)
         assert (Hb'ext : binds x (dbind_typ A0) Γext)
           by (eapply binds_ctx_weaken; [ exact Hcw | exact Hb' ]).
@@ -527,25 +552,28 @@ Proof.
         match goal with H : dbind_typ _ = dbind_typ _ |- _ => inversion H; subst end.
         eapply gpat_syn_fill;
           [ rewrite bskl_to_pskl_pskl_to_bskl_syn; rewrite Hskel1; reflexivity
-          | apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto
+          | apply d_wf_ptyp_of_btyp_syn; eapply d_typing_wf_btyp; eauto
           | exact Hcrt ].
     + (* refined: x : □ *)
-      exists bskl_hole. split.
-      * apply d_pat__var with (d := dbind_skl pskl_hole) (P := pskl_hole);
-          [ exact Hb' | reflexivity ].
-      * intros Γext Γt A Hcw Hcrt Hwft HA.
+      exists bskl_hole.
+      split; [ apply d_pat__var with (d := dbind_skl pskl_hole) (P := pskl_hole);
+                 [ exact Hb' | reflexivity ] | ].
+      split; [ apply is_sskl__hole | ].
+      intros Γext Γt A Hcw Hcrt Hwft HA.
         eapply gpat_hole_fill;
-          [ apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto | exact Hcrt ].
+          [ apply d_wf_ptyp_of_btyp_syn; eapply d_typing_wf_btyp; eauto | exact Hcrt ].
   - (* anno e A0 *)
-    exists (pskl_to_bskl_syn (ptyp_to_pskl A)). split.
-    + apply d_pat__anno. eapply d_wf_ptyp_ctx_refines;
-        [ eapply d_typing_anno_wf; eauto | exact Hcr ].
-    + intros Γext Γt A1 Hcw Hcrt Hwft HA.
+    exists (pskl_to_bskl_syn (ptyp_to_pskl A)).
+    split; [ apply d_pat__anno; eapply d_wf_ptyp_ctx_refines;
+               [ eapply d_typing_anno_wf; eauto | exact Hcr ] | ].
+    split; [ apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl;
+             eapply d_wf_ptyp_lc; eapply d_typing_anno_wf; eauto | ].
+    intros Γext Γt A1 Hcw Hcrt Hwft HA.
       pose proof (d_typing_ti_primary HA) as Hp. simpl in Hp.
-      rewrite btyp_to_ptyp_ptyp_to_btyp_inh in Hp.
+      rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hp.
       eapply gpat_syn_fill;
         [ rewrite bskl_to_pskl_pskl_to_bskl_syn; rewrite Hp; reflexivity
-        | apply d_wf_ptyp_of_btyp_inh; eapply d_typing_wf_btyp; eauto
+        | apply d_wf_ptyp_of_btyp_syn; eapply d_typing_wf_btyp; eauto
         | exact Hcrt ].
 Qed.
 
@@ -1252,6 +1280,30 @@ Proof.
       | exact Hsc ].
 Qed.
 
+Lemma ptyp_to_btyp_inh_inj : forall A B,
+    ptyp_to_btyp_inh A = ptyp_to_btyp_inh B -> A = B.
+Proof.
+  intros A B H. apply (f_equal btyp_to_ptyp) in H.
+  rewrite !btyp_to_ptyp_ptyp_to_btyp_inh in H. exact H.
+Qed.
+
+(** Inversion of a frozen term's checking type: [freeze e] checks at [inh A]
+    exactly when [e] synthesises [syn A].  The [sub] / [forall] cases are
+    impossible ([freeze _] is neither a base term nor a value). *)
+Lemma d_typing_freeze_inv : forall Γ e A,
+    Γ ⊢[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A) ->
+    Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A).
+Proof.
+  intros Γ e A H. inversion H; subst;
+    try (match goal with Hb : is_base_term (exp_freeze _) |- _ => inversion Hb end);
+    try (match goal with Hv : is_value (exp_freeze _) |- _ => inversion Hv end).
+  match goal with
+  | Heq : ptyp_to_btyp_inh _ = ptyp_to_btyp_inh _ |- _ =>
+      apply ptyp_to_btyp_inh_inj in Heq; subst
+  end.
+  assumption.
+Qed.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
@@ -1274,10 +1326,16 @@ Proof.
          anno) via [safe_fn_skel], or the [□]-fill route via [safe_skel_hole_fill],
          assembled in [d_pat_base_safe_fn_gen]. *)
       eapply d_pat_base_safe_fn_gen; [ exact Hwf | eassumption | eassumption | eassumption | exact Hcr ].
-  - (* freeze: TI [syn A] repainted to TC [inh A]; the [d_pat__freeze]
-       inference keeps [syn P], whose safety needs the same ghost fill side
-       plus the colour-repaint bookkeeping. *)
-    admit.
+  - (* freeze: the inner TI inference is [is_sskl] ⇒ a syn-painting that
+       [d_pat__freeze] lifts; safety reuses the IH's (syn-keyed) TI fill after
+       inverting the freeze typing back to [Γt ⊢ti e ⦂ syn A1]. *)
+    destruct (IHHty Hwf Γ' Hcr) as [Q0 [Hinf [Hsskl Hfill]]].
+    exists Q0. split.
+    + rewrite <- (is_sskl_syn_roundtrip Hsskl). apply d_pat__freeze.
+      rewrite (is_sskl_syn_roundtrip Hsskl). exact Hinf.
+    + intros Γext Γt A1 Hcw Hcrt Hwft HA.
+      apply d_typing_freeze_inv in HA.
+      exact (Hfill Γext Γt A1 Hcw Hcrt Hwft HA).
   - (* forall: a value checked at [∀]; gpat tc needs a skeleton whose inh
        painting fills every [∀]-prefixed checking type (peel ∀ via
        [tophole_fill], recurse). *)
