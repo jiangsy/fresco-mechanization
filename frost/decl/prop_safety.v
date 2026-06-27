@@ -980,6 +980,50 @@ Proof.
         | apply hole_safe_u_of_ptyp; exact HlcA0 ].
 Qed.
 
+Lemma bskl_to_pskl_pskl_to_bskl_inh : forall P, bskl_to_pskl (pskl_to_bskl_inh P) = P.
+Proof. induction P; simpl; congruence. Qed.
+
+(** The mode-directed canonical fill of a [□] in FN/TI/TC mode: a refined
+    variable infers a [Hole] which, in function mode, must become a SAFE
+    concrete arrow.  We exhibit one [P0] whose inherited painting is safe for
+    [B] — [skel B] at TI leaves (erasure matches), [pskl_hole] at TC leaves
+    (the bare ghost, filled by [d_refine_syn_hole_fills]), arrow at FN nodes.
+    The driving [uskl_hole ⊑ inh{P0}] is then one [d_pat_sub__ghost]. *)
+Lemma safe_skel_hole_fill : forall m Γ B,
+    skmod_ty B m -> d_wf_btyp Γ B ->
+    exists P0, nil ⨟ Γ ⊢ₚₛ P0 /\ safe_skel Γ m (pskl_to_bskl_inh P0) B.
+Proof.
+  intros m Γ B Hsk. induction Hsk; intros HwfB.
+  - (* ti: is_styp B — paint the whole skeleton (erasure matches) *)
+    exists (ptyp_to_pskl (btyp_to_ptyp B)). split.
+    + apply d_wf_pskl_of_ptyp;
+        [ apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfB
+        | intros X HX; right; rewrite ftvar_btyp_to_ptyp in HX;
+          eapply d_wf_btyp_ftvar; [ exact HwfB | exact HX ] ].
+    + simpl. rewrite bskl_to_pskl_pskl_to_bskl_inh. reflexivity.
+  - (* tc: is_ityp B — [pskl_hole], filled by [d_refine_syn_hole_fills] *)
+    exists pskl_hole. split; [ apply d_wf_pskl__hole | ].
+    simpl. exists (pskl_to_bskl_syn (ptyp_to_pskl (btyp_to_ptyp B))). split.
+    + rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
+    + simpl. apply d_refine_syn_hole_fills;
+        [ apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfB
+        | intros X HX; right; rewrite ftvar_btyp_to_ptyp in HX;
+          eapply d_wf_btyp_ftvar; [ exact HwfB | exact HX ] ].
+  - (* fn: arrow — rigid [inh] domain, recurse on the result *)
+    inversion HwfB; subst.
+    destruct (IHHsk ltac:(assumption)) as [P0' [HwfP0' Hsafe']].
+    exists (pskl_arrow (ptyp_to_pskl (btyp_to_ptyp B1)) P0'). split.
+    + apply d_wf_pskl__arrow;
+        [ apply d_wf_pskl_of_ptyp;
+            [ apply lc_ptyp_btyp_to_ptyp;
+              match goal with H : Γ ⊢ᵦ B1 |- _ => eapply d_wf_btyp_lc; exact H end
+            | intros X HX; right; rewrite ftvar_btyp_to_ptyp in HX;
+              match goal with H : Γ ⊢ᵦ B1 |- _ => eapply d_wf_btyp_ftvar; [ exact H | exact HX ] end ]
+        | exact HwfP0' ].
+    + simpl. exists B1, B2, (pskl_to_bskl_inh P0').
+      split; [ reflexivity | split; [ reflexivity | exact Hsafe' ] ].
+Qed.
+
 (** GENERAL binder rename for typing (mirrors [d_pat_rename]): renaming the
     context binder [x ↦ y] (and [x ↦ y] in the term) preserves [⦂].  The [sub]
     case goes through [d_sub_subst_nontvar] (the subtyping ignores the relabeled
@@ -1132,6 +1176,82 @@ Proof.
           apply Hbp; fsetdec end.
 Qed.
 
+(** FN analog of [d_pat_base_safe_tc_gen]: a base term that TI-types to
+    [syn A] and is FN-subsumed to [B] has a SAFE function-mode inference.
+    Two routes via [d_pat__sub]:
+    - unit / kept-var / anno infer the SYN skeleton [pskl_to_bskl_syn(skel A)];
+      the safe arrow comes straight from [safe_fn_skel] on the (refined)
+      subtyping.
+    - a [□]-refined var infers a [Hole]; in FN mode the hole must become a
+      concrete arrow, so it fills to [inh{P0}] (one [d_pat_sub__ghost]) with
+      [P0] the mode-directed canonical fill of [safe_skel_hole_fill]. *)
+Lemma d_pat_base_safe_fn_gen : forall Γ e A m0 B,
+    d_wf_denv Γ -> is_base_term e ->
+    Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
+    empty ⨟ Γ ⊢[ mode_fn m0 ] (ptyp_to_utyp_syn A) ⊑ B ->
+    forall Γ', ctx_refines Γ' Γ -> gpat (mode_fn m0) Γ' e B.
+Proof.
+  intros Γ e A m0 B Hwf Hbase Hty Hsub Γ' Hcr.
+  assert (HwfsynB : d_wf_btyp Γ (ptyp_to_btyp_syn A))
+    by (eapply d_typing_wf_btyp; [ exact Hty | exact Hwf ]).
+  assert (HwfA : d_wf_ptyp Γ A).
+  { apply d_wf_ptyp_of_lc_ftvar;
+      [ apply lc_ptyp_of_lc_btyp_syn; eapply d_wf_btyp_lc; exact HwfsynB
+      | intros X HX; eapply d_wf_btyp_ftvar;
+          [ exact HwfsynB | rewrite prop_wellformed.ftvar_ptyp_to_btyp_syn; exact HX ] ]. }
+  assert (HwfU : Γ ⊢ᵤ (ptyp_to_utyp_syn A)) by (apply d_wf_utyp_painting_syn; exact HwfA).
+  assert (HwfB : d_wf_btyp Γ B) by (eapply d_sub_wf; [ exact Hsub | exact HwfU ]).
+  assert (HwfA' : d_wf_ptyp Γ' A) by (eapply d_wf_ptyp_ctx_refines; [ exact HwfA | exact Hcr ]).
+  assert (HwfU' : Γ' ⊢ᵤ (ptyp_to_utyp_syn A)) by (apply d_wf_utyp_painting_syn; exact HwfA').
+  assert (HwfB' : d_wf_btyp Γ' B).
+  { apply d_wf_btyp_of_lc_ftvar;
+      [ eapply d_wf_btyp_lc; exact HwfB
+      | intros X HX; eapply ctx_refines_binds_tvar;
+          [ exact Hcr | eapply d_wf_btyp_ftvar; [ exact HwfB | exact HX ] ] ]. }
+  assert (Hsub' : empty ⨟ Γ' ⊢[ mode_fn m0 ] (ptyp_to_utyp_syn A) ⊑ B)
+    by (eapply d_sub_ctx_refines; [ exact Hsub | exact Hcr ]).
+  destruct (safe_fn_skel HwfU' HwfB' Hsub') as [Qsyn [Hsc Hsafe]].
+  rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hsc.
+  destruct Hbase.
+  - (* unit *)
+    pose proof (d_typing_ti_primary Hty) as Hpri. simpl in Hpri.
+    rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hpri.
+    exists Qsyn. split; [ | exact Hsafe ].
+    eapply d_pat__sub with (P := ptyp_to_pskl A);
+      [ apply is_base_term__unit | rewrite Hpri; apply d_pat__unit | exact Hsc ].
+  - (* var x *)
+    pose proof (d_typing_ti_primary Hty) as Hpri. simpl in Hpri.
+    rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hpri.
+    destruct Hpri as [A0 [Hbnd Hpsk]].
+    destruct (@ctx_refines_binds Γ' Γ x (dbind_typ A0) Hcr Hbnd) as [d' [Hb' Hdr]].
+    inversion Hdr; subst.
+    + (* kept: x : typ A0 in Γ' — SYN route *)
+      exists Qsyn. split; [ | exact Hsafe ].
+      eapply d_pat__sub with (P := ptyp_to_pskl A);
+        [ apply is_base_term__var
+        | rewrite Hpsk; apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ]
+        | exact Hsc ].
+    + (* refined: x : □ in Γ' — HOLE fill route *)
+      assert (Hskmod : skmod_ty B (mode_fn m0)) by (eapply d_sub_skmod; exact Hsub).
+      destruct (safe_skel_hole_fill Hskmod HwfB') as [P0 [HwfP0 Hsafe0]].
+      exists (pskl_to_bskl_inh P0). split; [ | exact Hsafe0 ].
+      eapply d_pat__sub with (P := pskl_hole);
+        [ apply is_base_term__var
+        | apply d_pat__var with (d := dbind_skl pskl_hole) (P := pskl_hole);
+            [ exact Hb' | reflexivity ]
+        | change (bskl_to_uskl (pskl_to_bskl_syn pskl_hole)) with uskl_hole;
+          apply d_pat_sub__ghost; [ fsetdec | exact HwfP0 ] ].
+  - (* anno e0 A0 *)
+    pose proof (d_typing_ti_primary Hty) as Hpri. simpl in Hpri.
+    rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hpri.
+    assert (HwfA0 : d_wf_ptyp Γ A0) by (eapply d_typing_anno_wf; [ exact Hty | exact Hwf ]).
+    exists Qsyn. split; [ | exact Hsafe ].
+    eapply d_pat__sub with (P := ptyp_to_pskl A);
+      [ apply is_base_term__anno
+      | rewrite Hpri; apply d_pat__anno; eapply d_wf_ptyp_ctx_refines; [ exact HwfA0 | exact Hcr ]
+      | exact Hsc ].
+Qed.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
@@ -1150,9 +1270,10 @@ Proof.
     + (* tc: SAFETY of a checked, subsumed base term — the ghostified safe
          inference, fully assembled in [d_pat_base_safe_tc_gen]. *)
       eapply d_pat_base_safe_tc_gen; [ exact Hwf | eassumption | eassumption | exact Hcr ].
-    + (* fn: a subsumed base term in function mode (skeleton is an arrow whose
-         domain is forced [inh]); same missing fill-side machinery. *)
-      admit.
+    + (* fn: a subsumed base term in function mode — SYN route (unit/kept-var/
+         anno) via [safe_fn_skel], or the [□]-fill route via [safe_skel_hole_fill],
+         assembled in [d_pat_base_safe_fn_gen]. *)
+      eapply d_pat_base_safe_fn_gen; [ exact Hwf | eassumption | eassumption | eassumption | exact Hcr ].
   - (* freeze: TI [syn A] repainted to TC [inh A]; the [d_pat__freeze]
        inference keeps [syn P], whose safety needs the same ghost fill side
        plus the colour-repaint bookkeeping. *)
