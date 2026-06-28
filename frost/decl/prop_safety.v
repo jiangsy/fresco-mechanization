@@ -1960,6 +1960,20 @@ Proof.
           | apply same_tvar_map_subst_var ].
 Qed.
 
+(* INFRA STUB (delegated): strengthening — an unused front/mid tvar can be
+   dropped from a skeleton INFERENCE.  Needed for the [forall] case's conclusion
+   inference [Γ' ⊢tc e ⇨ Q] (obtained from the IH over [(X0::Γ')], with X0 not in
+   [e]).  Analog of the existing [d_refine_syn_strengthen] / [d_pat_consis_strengthen]
+   / [d_wf_ptyp_strengthen] family (prop_skeleton.v ~2059-2253).  May require a
+   helper [d_pat_sub_strengthen]. *)
+Lemma d_pat_strengthen_tvar : forall m Γ e Q,
+    Γ ⊢[ m ] e ⇨ Q ->
+    forall Γ1 X0 Γ2, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    X0 `notin` ftvar_in_exp e ->
+    (Γ1 ++ Γ2) ⊢[ m ] e ⇨ Q.
+Proof.
+Admitted.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
