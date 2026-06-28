@@ -1932,11 +1932,33 @@ Lemma d_wf_denv_rename_tvar : forall Γ,
     Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
     d_wf_denv (map (subst_var_dbind X0 Y) Γ1 ++ (Y ~ dbind_tvar) ++ Γ2).
 Proof.
-  (* DELEGATED: induction on d_wf_denv; tvar case = d_wf_denv__tvar with the
-     relabelled binder; typ case uses d_wf_ptyp_rename_tvar on the carried
-     type; skl case uses d_wf_pskl_rename_tvar.  Domain freshness via
-     same_tvar_map_subst_var / dom_map.  Mirror d_wf_ptyp_rename_tvar. *)
-Admitted.
+  (* Induction on Γ1 (the prefix before X0); d_wf_denv peels bindings from the
+     front, so each step inverts the head binding and recurses on the tail. *)
+  intros Γ H Γ1. revert Γ H. induction Γ1 as [ | [x d] Γ1' IH ];
+    intros Γ H Γ2 X0 Y Heq Hfr; subst Γ; simpl_env in *.
+  - (* Γ1 = nil : the head binding (X0 ~ tvar) is relabelled to (Y ~ tvar). *)
+    inversion H; subst.
+    apply d_wf_denv__tvar; [ assumption | fsetdec ].
+  - (* Γ1 = (x ~ d) :: Γ1' : invert the head binding and recurse on the tail. *)
+    inversion H; subst.
+    + (* head is a tvar *)
+      apply d_wf_denv__tvar.
+      * eapply (IH _ ltac:(eassumption) Γ2 X0 Y); [ reflexivity | simpl_env in *; fsetdec ].
+      * simpl_env in *; fsetdec.
+    + (* head is a term var carrying a type *)
+      apply d_wf_denv__typ.
+      * eapply (IH _ ltac:(eassumption) Γ2 X0 Y); [ reflexivity | simpl_env in *; fsetdec ].
+      * simpl_env in *; fsetdec.
+      * eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | simpl_env in *; fsetdec ].
+    + (* head is a term var carrying a skeleton *)
+      apply d_wf_denv__skl.
+      * eapply (IH _ ltac:(eassumption) Γ2 X0 Y); [ reflexivity | simpl_env in *; fsetdec ].
+      * simpl_env in *; fsetdec.
+      * (* d_wf_pskl_rename_tvar keeps Γ1 un-mapped; re-base via d_wf_pskl_same_tvar. *)
+        eapply d_wf_pskl_same_tvar;
+          [ eapply d_wf_pskl_rename_tvar; [ eassumption | reflexivity | simpl_env in *; fsetdec ]
+          | apply same_tvar_map_subst_var ].
+Qed.
 
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
