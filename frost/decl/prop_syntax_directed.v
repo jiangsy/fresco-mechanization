@@ -1177,7 +1177,7 @@ Ltac base_term_admissible_tac IH Γ B X0 Hbt :=
       (* [is_ityp (btyp_all_inh B)] by renaming the [X0]-instance subtyping. *)
       assert (Hia : is_ityp (btyp_all_inh B));
       [ apply is_ityp__all with (L := {{X0}} `union` ftvar_in_btyp B); intros Y HY;
-        pose proof (is_ityp_rename X0 Y (skmod_ty_tc_inv _ (d_sub_skmod Hs0))) as Hir;
+        pose proof (is_ityp_rename_tvar X0 Y (skmod_ty_tc_inv _ (d_sub_skmod Hs0))) as Hir;
         rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec;
         exact Hir
       | ];
@@ -1195,7 +1195,7 @@ Ltac base_term_admissible_tac IH Γ B X0 Hbt :=
         [ exact Hia | ];
         intros X HX;
         let Hren := fresh "Hren" in
-        pose proof (d_sub_rename (Y := X) Hs0 nil Γ X0
+        pose proof (d_sub_rename_tvar (Y := X) Hs0 nil Γ X0
                       ltac:(reflexivity) ltac:(simpl; fsetdec)) as Hren;
         simpl in Hren;
         rewrite (subst_utyp_in_utyp_fresh_eq (ptyp_to_utyp_syn A0) (utyp_var_f X) X0)
@@ -1225,7 +1225,7 @@ Proof.
      [X0]-free ([d_sd_typing_ti_base_ftvar], [X0] picked fresh for the context's
      binding ftvars and [V]'s ftvars), so the synthesis survives DROPPING [X0]
      ([subst_unit], identity on [V] and [A]) and the per-[X] subtyping survives
-     RENAMING [X0→X] ([d_sub_rename], identity on the [X0]-free LHS). *)
+     RENAMING [X0→X] ([d_sub_rename_tvar], identity on the [X0]-free LHS). *)
   - (* unit *)
     pick fresh X0 for
       (L `union` dom Γ `union` ftvar_in_btyp B `union` ftvar_in_denv Γ `union` ftvar_in_exp exp_unit).
@@ -1237,7 +1237,7 @@ Proof.
       specialize (Hbnd _ Hin). fsetdec. }
     assert (Hia : is_ityp (btyp_all_inh B)).
     { apply is_ityp__all with (L := {{X0}} `union` ftvar_in_btyp B). intros Y HY.
-      pose proof (is_ityp_rename X0 Y (skmod_ty_tc_inv _ (d_sub_skmod H1))) as Hir.
+      pose proof (is_ityp_rename_tvar X0 Y (skmod_ty_tc_inv _ (d_sub_skmod H1))) as Hir.
       rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec.
       exact Hir. }
     apply d_sd_typing__sub with (A := A).
@@ -1252,7 +1252,7 @@ Proof.
         (L := dom Γ `union` {{X0}} `union` ftvar_in_ptyp A `union` ftvar_in_btyp B).
       * exact Hia.
       * intros X HX.
-        pose proof (d_sub_rename (Y := X) H1 nil Γ X0
+        pose proof (d_sub_rename_tvar (Y := X) H1 nil Γ X0
                       ltac:(reflexivity) ltac:(simpl; fsetdec)) as Hren.
         simpl in Hren.
         rewrite (subst_utyp_in_utyp_fresh_eq (ptyp_to_utyp_syn A) (utyp_var_f X) X0)
@@ -1286,7 +1286,7 @@ Proof.
       specialize (Hbnd _ Hin). fsetdec. }
     assert (Hia : is_ityp (btyp_all_inh B)).
     { apply is_ityp__all with (L := {{X0}} `union` ftvar_in_btyp B). intros Y HY.
-      pose proof (is_ityp_rename X0 Y (skmod_ty_tc_inv _ (d_sub_skmod H2))) as Hir.
+      pose proof (is_ityp_rename_tvar X0 Y (skmod_ty_tc_inv _ (d_sub_skmod H2))) as Hir.
       rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec.
       exact Hir. }
     apply d_sd_typing__sub with (A := A0).
@@ -1301,7 +1301,7 @@ Proof.
         (L := dom Γ `union` {{X0}} `union` ftvar_in_ptyp A0 `union` ftvar_in_btyp B).
       * exact Hia.
       * intros X HX.
-        pose proof (d_sub_rename (Y := X) H2 nil Γ X0
+        pose proof (d_sub_rename_tvar (Y := X) H2 nil Γ X0
                       ltac:(reflexivity) ltac:(simpl; fsetdec)) as Hren.
         simpl in Hren.
         rewrite (subst_utyp_in_utyp_fresh_eq (ptyp_to_utyp_syn A0) (utyp_var_f X) X0)

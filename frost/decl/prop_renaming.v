@@ -22,7 +22,7 @@ Set Implicit Arguments.
 (** Coercions commute with type-variable substitution. *)
 
 
-Lemma is_ityp_rename : forall B Z W,
+Lemma is_ityp_rename_tvar : forall B Z W,
     is_ityp B -> is_ityp (subst_btyp_in_btyp (btyp_var_f W) Z B).
 Proof.
   intros B Z W H. induction H; simpl.
@@ -36,7 +36,7 @@ Proof.
     apply H0; fsetdec.
 Qed.
 
-Lemma is_ttyp_rename : forall C Z W,
+Lemma is_ttyp_rename_tvar : forall C Z W,
     is_ttyp C -> is_ttyp (subst_utyp_in_utyp (utyp_var_f W) Z C).
 Proof.
   intros C Z W H. induction H; simpl.
@@ -50,7 +50,7 @@ Proof.
     apply H0; fsetdec.
 Qed.
 
-Lemma guarded_utyp_rename : forall C Z W,
+Lemma guarded_utyp_rename_tvar : forall C Z W,
     guarded_utyp C -> guarded_utyp (subst_utyp_in_utyp (utyp_var_f W) Z C).
 Proof.
   intros C Z W H. induction H; simpl.
@@ -60,7 +60,7 @@ Proof.
 Qed.
 
 (** [d_consis] is closed under tvar renaming (Δ is etag-only, untouched). *)
-Lemma d_consis_rename : forall Δ Γ C B,
+Lemma d_consis_rename_tvar : forall Δ Γ C B,
     Δ ⨟ Γ ⊨ C ≈ B ->
     forall Γ1 Γ2 X0 Y,
       Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
@@ -110,7 +110,7 @@ Proof.
 Qed.
 
 (** [d_wf_utyp] is closed under tvar renaming (pure well-scopedness). *)
-Lemma d_wf_utyp_rename : forall Γ C,
+Lemma d_wf_utyp_rename_tvar : forall Γ C,
     Γ ⊢ᵤ C ->
     forall Γ1 Γ2 X0 Y,
       Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
@@ -140,8 +140,8 @@ Proof.
 Qed.
 
 (** Shape predicates [is_styp]/[guarded_btyp] under tvar renaming (for
-    [d_sub_rename]'s infer/check cases). *)
-Lemma is_styp_rename : forall B Z W,
+    [d_sub_rename_tvar]'s infer/check cases). *)
+Lemma is_styp_rename_tvar : forall B Z W,
     is_styp B -> is_styp (subst_btyp_in_btyp (btyp_var_f W) Z B).
 Proof.
   intros B Z W H. induction H; simpl.
@@ -155,7 +155,7 @@ Proof.
     apply H0; fsetdec.
 Qed.
 
-Lemma guarded_btyp_rename : forall B Z W,
+Lemma guarded_btyp_rename_tvar : forall B Z W,
     guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp (btyp_var_f W) Z B).
 Proof.
   intros B Z W H. induction H; simpl.
@@ -166,7 +166,7 @@ Qed.
 
 (** [d_sub] is closed under tvar renaming ([Δ] is etag-only, untouched);
     closes the cofinite-uniform [forall_r] case of the transitivity lemmas. *)
-Lemma d_sub_rename : forall m Δ Γ C B,
+Lemma d_sub_rename_tvar : forall m Δ Γ C B,
     Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
     forall Γ1 Γ2 X0 Y,
       Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
@@ -178,27 +178,27 @@ Proof.
   intros m Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
   - (* infer *)
     apply d_sub__infer.
-    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_styp_rename. assumption.
+    + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_styp_rename_tvar. assumption.
     + assumption.
   - (* check *)
     apply d_sub__check.
-    + apply guarded_utyp_rename. assumption.
-    + apply guarded_btyp_rename. assumption.
-    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_ityp_rename. assumption.
+    + apply guarded_utyp_rename_tvar. assumption.
+    + apply guarded_btyp_rename_tvar. assumption.
+    + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_ityp_rename_tvar. assumption.
   - (* forall_r *)
     apply d_sub__forall_r with
       (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y);
       [ change (is_ityp (subst_btyp_in_btyp (btyp_var_f Y) X0 (btyp_all_inh B)));
-        apply is_ityp_rename; assumption | ].
+        apply is_ityp_rename_tvar; assumption | ].
     intros Z HZ.
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
     rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
     eapply (H1 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - (* arg *)
     eapply d_sub__arg.
-    + eapply d_consis_rename; [ eassumption | reflexivity | exact Hfr ].
+    + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
     + eapply IHd_sub; [ reflexivity | exact Hfr ].
     + assumption.
   - (* forall_l_tagged *)
@@ -206,8 +206,8 @@ Proof.
     + assumption.
     + assumption.
     + apply d_tags_subst_tvar. eassumption.
-    + eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_ttyp_rename. assumption.
+    + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_ttyp_rename_tvar. assumption.
     + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
       eapply IHd_sub; [ reflexivity | exact Hfr ].
   - (* forall_l_untagged *)
@@ -215,8 +215,8 @@ Proof.
     + assumption.
     + assumption.
     + apply d_tags_subst_tvar. eassumption.
-    + eapply d_wf_utyp_rename; [ eassumption | reflexivity | exact Hfr ].
-    + apply is_ttyp_rename. assumption.
+    + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_ttyp_rename_tvar. assumption.
     + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
       eapply IHd_sub; [ reflexivity | exact Hfr ].
 Qed.
@@ -226,8 +226,8 @@ Qed.
     [d_sub]/[d_consis]/[d_wf_utyp] never consult a *term* binding (only tvars),
     so relabeling a non-tvar binder [x ↦ y] is inert — and, unlike the tvar
     rename above, the TYPES are unchanged (they hold no term variables).  These
-    discharge the [sub] case of the typing binder-rename [d_typing_rename]. *)
-Lemma d_wf_utyp_subst_nontvar : forall Γ C,
+    discharge the [sub] case of the typing binder-rename [d_typing_rename_var]. *)
+Lemma d_wf_utyp_rename_var : forall Γ C,
     Γ ⊢ᵤ C ->
     forall Γ1 x d Γ2 y, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     (Γ1 ++ (y ~ d) ++ Γ2) ⊢ᵤ C.
@@ -246,7 +246,7 @@ Proof.
     eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
 Qed.
 
-Lemma d_consis_subst_nontvar : forall Δ Γ C B,
+Lemma d_consis_rename_var : forall Δ Γ C B,
     Δ ⨟ Γ ⊨ C ≈ B ->
     forall Γ1 x d Γ2 y, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊨ C ≈ B.
@@ -276,18 +276,18 @@ Proof.
     eapply (H0 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
 Qed.
 
-Lemma d_sub_subst_nontvar : forall m Δ Γ C B,
+Lemma d_sub_rename_var : forall m Δ Γ C B,
     Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
     forall Γ1 x d Γ2 y, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢[ m ] C ⊑ B.
 Proof.
   intros m Δ Γ C B H. induction H; intros Γ1 x0 d0 Γ2 y0 Heq Hd; subst.
   - apply d_sub__infer;
-      [ eapply d_consis_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      [ eapply d_consis_rename_var; [ eassumption | reflexivity | exact Hd ]
       | assumption | assumption ].
   - apply d_sub__check;
       [ assumption | assumption
-      | eapply d_consis_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      | eapply d_consis_rename_var; [ eassumption | reflexivity | exact Hd ]
       | assumption ].
   - apply d_sub__forall_r with
       (L := L `union` dom (Γ1 ++ Γ2) `union` {{x0}} `union` {{y0}});
@@ -295,14 +295,14 @@ Proof.
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
     eapply (H1 Z); [ fsetdec | simpl_env; reflexivity | exact Hd ].
   - eapply d_sub__arg;
-      [ eapply d_consis_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      [ eapply d_consis_rename_var; [ eassumption | reflexivity | exact Hd ]
       | eapply IHd_sub; [ reflexivity | exact Hd ] | assumption ].
   - eapply d_sub__forall_l_tagged with (Ψ' := Ψ');
       [ eassumption | eassumption | eassumption
-      | eapply d_wf_utyp_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      | eapply d_wf_utyp_rename_var; [ eassumption | reflexivity | exact Hd ]
       | eassumption | eapply IHd_sub; [ reflexivity | exact Hd ] ].
   - eapply d_sub__forall_l_untagged with (Ψ' := Ψ');
       [ eassumption | eassumption | eassumption
-      | eapply d_wf_utyp_subst_nontvar; [ eassumption | reflexivity | exact Hd ]
+      | eapply d_wf_utyp_rename_var; [ eassumption | reflexivity | exact Hd ]
       | eassumption | eapply IHd_sub; [ reflexivity | exact Hd ] ].
 Qed.

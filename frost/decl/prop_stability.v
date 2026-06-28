@@ -593,7 +593,7 @@ Qed.
 
     PROOF ([k = length args]):
     - [k = 0]: [args = args' = []], the two bindings coincide, so [y]'s
-      typing is [x]'s with the variable renamed ([d_typing_var_rename]).
+      typing is [x]'s with the variable renamed ([d_typing_rename_var]).
     - [k ≥ 1]: invert [x]'s head typing — at [mode_fn_n k m] only
       [d_typing__sub] fires, giving an EMPTY-[Δ] subtyping out of [x]'s
       [mode_ti] type.  That type is EXACTLY the binding painting

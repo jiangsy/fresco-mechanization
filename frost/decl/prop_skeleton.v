@@ -1745,9 +1745,9 @@ Qed.
     context.  Side-condition judgments read only tvar bindings, so the looked-up
     tvar is never the renamed term var ([d <> dbind_tvar] rules out the clash),
     and no freshness on [y] is needed (a tvar found in [Γ1]/[Γ2] stays bound
-    after splicing [y~d] into the middle).  Backbone of [d_pat_rename], itself
+    after splicing [y~d] into the middle).  Backbone of [d_pat_rename_var], itself
     needed for [d_pat__abs_check]'s cofinite-uniform witness in [d_pat_total]. *)
-Lemma d_wf_pskl_rename : forall Ψ Γ P,
+Lemma d_wf_pskl_rename_var : forall Ψ Γ P,
     Ψ ⨟ Γ ⊢ₚₛ P ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     Ψ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢ₚₛ P.
@@ -1762,7 +1762,7 @@ Proof.
   - apply d_wf_pskl__tophole; [ assumption | eapply IHd_wf_pskl; eauto ].
 Qed.
 
-Lemma d_wf_ptyp_rename : forall Γ A,
+Lemma d_wf_ptyp_rename_var : forall Γ A,
     Γ ⊢ₚ A ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     (Γ1 ++ (y ~ d) ++ Γ2) ⊢ₚ A.
@@ -1776,7 +1776,7 @@ Proof.
     eapply (H0 X HX ((X ~ dbind_tvar) ++ Γ1) x0 y0 d0 Γ2); [ simpl_env; reflexivity | exact Hd ].
 Qed.
 
-Lemma d_wf_uskl_rename : forall Ψ Γ R,
+Lemma d_wf_uskl_rename_var : forall Ψ Γ R,
     Ψ ⨟ Γ ⊢ᵤₛ R ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     Ψ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢ᵤₛ R.
@@ -1794,7 +1794,7 @@ Proof.
   - apply d_wf_uskl__topholeg; [ assumption | eapply IHd_wf_uskl; eauto ].
 Qed.
 
-Lemma d_pat_consis_rename : forall Δ Γ R Q,
+Lemma d_pat_consis_rename_var : forall Δ Γ R Q,
     Δ ⨟ Γ ⊨ₛ R ≈ Q ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊨ₛ R ≈ Q.
@@ -1818,7 +1818,7 @@ Proof.
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
   - apply d_pat_consis__topholeg with (Δ0 := Δ0);
       [ eapply IHd_pat_consis; eauto | eassumption ].
-  - apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_rename; eauto.
+  - apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_rename_var; eauto.
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
   - apply d_pat_consis__tophole_inh with (L := L). intros Z HZ.
     rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
@@ -1826,28 +1826,28 @@ Proof.
   - apply d_pat_consis__tophole_drop. eapply IHd_pat_consis; eauto.
 Qed.
 
-Lemma d_pat_sub_rename : forall Δ Γ m R Q,
+Lemma d_pat_sub_rename_var : forall Δ Γ m R Q,
     Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢ₛ[ m ] R ⊑ Q.
 Proof.
   intros Δ Γ m R Q H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd; subst.
-  - apply d_pat_sub__infer; [ (assumption || fsetdec) | eapply d_pat_consis_rename; eauto | assumption ].
-  - apply d_pat_sub__univ_ghost_r; try assumption. eapply d_pat_consis_rename; eauto.
-  - eapply d_pat_sub__arg; [ eapply d_pat_consis_rename; eauto | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
+  - apply d_pat_sub__infer; [ (assumption || fsetdec) | eapply d_pat_consis_rename_var; eauto | assumption ].
+  - apply d_pat_sub__univ_ghost_r; try assumption. eapply d_pat_consis_rename_var; eauto.
+  - eapply d_pat_sub__arg; [ eapply d_pat_consis_rename_var; eauto | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
   - eapply d_pat_sub__forall_l_tagged;
-      [ assumption | eassumption | eassumption | eapply d_wf_uskl_rename; eauto
+      [ assumption | eassumption | eassumption | eapply d_wf_uskl_rename_var; eauto
       | assumption | eapply IHd_pat_sub; eauto ].
   - eapply d_pat_sub__forall_l_untagged;
-      [ assumption | eassumption | eassumption | eapply d_wf_uskl_rename; eauto
+      [ assumption | eassumption | eassumption | eapply d_wf_uskl_rename_var; eauto
       | assumption | eapply IHd_pat_sub; eauto ].
-  - apply d_pat_sub__ghost; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_rename; eauto.
+  - apply d_pat_sub__ghost; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_rename_var; eauto.
   - apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
   - apply d_pat_sub__ghostg; (assumption || fsetdec).
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
 Qed.
 
-Lemma d_refine_syn_rename : forall Γ Δs Δi Q P,
+Lemma d_refine_syn_rename_var : forall Γ Δs Δi Q P,
     Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     (Γ1 ++ (y ~ d) ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
@@ -1860,7 +1860,7 @@ Proof.
   - apply d_refine_syn__arrow; [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
   - apply d_refine_syn__all with (L := L). intros X HX.
     eapply (H0 X HX Γ1 x0 y0 d0 Γ2); [ reflexivity | exact Hd ].
-  - apply d_refine_syn__hole. eapply d_wf_pskl_rename; eauto.
+  - apply d_refine_syn__hole. eapply d_wf_pskl_rename_var; eauto.
   - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
   - apply d_refine_syn__tophole_fill with (L := L). intros X HX.
     eapply (H0 X HX Γ1 x0 y0 d0 Γ2); [ reflexivity | exact Hd ].
@@ -1872,7 +1872,7 @@ Qed.
     is UNCHANGED (skeletons carry no term vars).  This is exactly what makes
     [d_pat__abs_check]'s cofinite-uniform witness work: infer the body at one
     fresh [x], then rename to any other fresh [y] keeping the SAME [Q]. *)
-Lemma d_pat_rename : forall m Γ e Q,
+Lemma d_pat_rename_var : forall m Γ e Q,
     Γ ⊢[ m ] e ⇨ Q ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
     x `notin` dom (Γ1 ++ Γ2) ->
@@ -1903,30 +1903,30 @@ Proof.
       * apply binds_app_1 in Hb2. destruct Hb2 as [Hb3 | Hb4].
         -- apply binds_one_iff in Hb3. destruct Hb3 as [Hxe _]. exfalso. apply Hne. exact Hxe.
         -- apply binds_app_3; simpl; auto.
-  - simpl. apply d_pat__anno. eapply d_wf_ptyp_rename; eauto.
+  - simpl. apply d_pat__anno. eapply d_wf_ptyp_rename_var; eauto.
   - simpl. apply d_pat__sub with (P := P);
       [ match goal with Hbe : is_base_term _ |- _ =>
           inversion Hbe; subst; simpl;
           try (match goal with |- context [ if ?b then _ else _ ] => destruct b end);
           constructor end
-      | eapply IHd_pat; eauto | eapply d_pat_sub_rename; eauto ].
+      | eapply IHd_pat; eauto | eapply d_pat_sub_rename_var; eauto ].
   - simpl. apply d_pat__freeze. eapply IHd_pat; eauto.
   - simpl. apply d_pat__abs with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (P := P);
-      [ assumption | eapply d_wf_pskl_rename; eauto | ].
+      [ assumption | eapply d_wf_pskl_rename_var; eauto | ].
     intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
       by (solve [ apply lc_exp_var_f | fsetdec ]).
     rewrite_env (((z ~ dbind_skl P) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
     match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
       eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
   - simpl. apply d_pat__abs_anno with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (B := B);
-      [ assumption | eapply d_wf_ptyp_rename; eauto | reflexivity | ].
+      [ assumption | eapply d_wf_ptyp_rename_var; eauto | reflexivity | ].
     intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
       by (solve [ apply lc_exp_var_f | fsetdec ]).
     rewrite_env (((z ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
     match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
       eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
   - simpl. eapply d_pat__app;
-      [ eapply IHd_pat1 | eapply d_refine_syn_rename | eapply IHd_pat2 ]; eauto.
+      [ eapply IHd_pat1 | eapply d_refine_syn_rename_var | eapply IHd_pat2 ]; eauto.
   - simpl. apply d_pat__abs_check with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)).
     intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
       by (solve [ apply lc_exp_var_f | fsetdec ]).
@@ -1934,7 +1934,7 @@ Proof.
     match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
       eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
   - simpl. apply d_pat__abs_anno_check with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (A := A);
-      [ eapply d_wf_ptyp_rename; eauto | ].
+      [ eapply d_wf_ptyp_rename_var; eauto | ].
     intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
       by (solve [ apply lc_exp_var_f | fsetdec ]).
     rewrite_env (((z ~ dbind_typ A) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).

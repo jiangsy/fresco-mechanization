@@ -583,7 +583,7 @@ Qed.
     structural; each forall case replaces the tagged rule by its untagged
     counterpart ([ForallInhTagged → ForallInhUntagged], [ForallSynTagged →
     ForallSyn]) and recovers the cofinite-uniform witness by picking one
-    fresh [X0] and renaming via [d_consis_rename].  Needs small commute/ftvar
+    fresh [X0] and renaming via [d_consis_rename_tvar].  Needs small commute/ftvar
     helpers ([btyp_to_utyp_syn_open], [utyp_to_btyp_open], an
     [ftvar_utyp_to_btyp] bound).  This is the last genuinely-new lemma the
     CST reformulation rests on. *)
@@ -625,7 +625,7 @@ Proof.
     intros X HX.
     rewrite (subst_utyp_in_utyp_intro X0) by fsetdec.
     rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    apply (@d_consis_rename _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+    apply (@d_consis_rename_tvar _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
   - (* forall_inh_untagged: ForallInhUntagged → ForallInhUntagged *)
     pick fresh X0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
@@ -639,7 +639,7 @@ Proof.
     intros X HX.
     rewrite (subst_utyp_in_utyp_intro X0) by fsetdec.
     rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    apply (@d_consis_rename _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+    apply (@d_consis_rename_tvar _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
   - (* forall_syn_tagged: ε-tag erased, ForallSynTagged → ForallSyn *)
     pick fresh X0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
@@ -653,7 +653,7 @@ Proof.
     intros X HX.
     rewrite (subst_utyp_in_utyp_intro X0) by fsetdec.
     rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    apply (@d_consis_rename _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+    apply (@d_consis_rename_tvar _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
   - (* forall_syn: ForallSyn → ForallSyn *)
     pick fresh X0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
@@ -667,7 +667,7 @@ Proof.
     intros X HX.
     rewrite (subst_utyp_in_utyp_intro X0) by fsetdec.
     rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    apply (@d_consis_rename _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+    apply (@d_consis_rename_tvar _ _ _ _ HΔ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
 Qed.
 
 
@@ -696,7 +696,7 @@ Qed.
     bidirectional image [utyp_to_btyp ph] on the bidirectional side,
     preserves consistency WITHOUT adding tags — the variable occurrences
     become [ph ≈ utyp_to_btyp ph], which is tag-free ([d_consis_ttyp_refl]).
-    Structure mirrors [d_consis_rename] (var→var); the only changes are the
+    Structure mirrors [d_consis_rename_tvar] (var→var); the only changes are the
     [X0]-case (use the base fact) and the [lc]/wf side-conditions for [ph]. *)
 Lemma d_consis_subst_tvar : forall Δ Γ C B,
     Δ ⨟ Γ ⊨ C ≈ B ->
@@ -1052,7 +1052,7 @@ Proof.
     intros X HX.
     rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
     rewrite <- (subst_utyp_in_utyp_fresh_eq T (utyp_var_f X) X0) by fsetdec.
-    apply (@d_sub_rename _ _ _ _ _ HΔ' nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+    apply (@d_sub_rename_tvar _ _ _ _ _ HΔ' nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
   - (* arg (fn m): domain by source-swap, result by IH; bound by chain + IH. *)
     simpl in Hcons. dependent destruction Hcons.
     dependent destruction Href.
