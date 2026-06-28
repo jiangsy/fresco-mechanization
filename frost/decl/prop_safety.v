@@ -188,6 +188,33 @@ Proof.
   - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
 Qed.
 
+Lemma ptyp_to_btyp_inh_subst_var : forall A X Y,
+    subst_btyp_in_btyp (btyp_var_f Y) X (ptyp_to_btyp_inh A)
+    = ptyp_to_btyp_inh (subst_ptyp_in_ptyp (ptyp_var_f Y) X A).
+Proof.
+  induction A; intros X Y; simpl; try reflexivity;
+    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma ptyp_to_utyp_syn_subst_var : forall A X Y,
+    subst_utyp_in_utyp (utyp_var_f Y) X (ptyp_to_utyp_syn A)
+    = ptyp_to_utyp_syn (subst_ptyp_in_ptyp (ptyp_var_f Y) X A).
+Proof.
+  induction A; intros X Y; simpl; try reflexivity;
+    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+Lemma skmod_ty_rename_tvar : forall B m X0 Y,
+    skmod_ty B m -> skmod_ty (subst_btyp_in_btyp (btyp_var_f Y) X0 B) m.
+Proof.
+  intros B m X0 Y H. induction H.
+  - apply skmod_ty__ti. apply is_styp_rename_tvar. assumption.
+  - apply skmod_ty__tc. apply is_ityp_rename_tvar. assumption.
+  - simpl. apply skmod_ty__fn. assumption.
+Qed.
+
 Lemma bskl_to_uskl_subst_var : forall Q X Y,
     subst_bskl_in_uskl (uskl_var_f Y) X (bskl_to_uskl Q)
     = bskl_to_uskl (subst_bskl_in_bskl (bskl_var_f Y) X Q).
@@ -543,6 +570,97 @@ Proof.
       rewrite <- pskl_to_bskl_syn_subst_var.
       eapply (H1 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ1) Γ2 X0 Y);
         [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
+Qed.
+
+(** Term typing is closed under tvar renaming [X0 -> Y].  Mirrors
+    [d_pat_rename_tvar]: types/skeletons carry the renamed tvar (so binders are
+    mapped through [subst_var_dbind]), and the [sub]/[app] premises are
+    transported by [d_sub_rename_tvar] / [d_refine_syn_rename_tvar] /
+    [d_pat_rename_tvar] (re-based onto the mapped Γ1 via the [same_tvar]
+    congruences, since those judgments ignore term bindings). *)
+Lemma d_typing_rename_tvar : forall m Γ e B,
+    Γ ⊢[ m ] e ⦂ B ->
+    forall Γ1 Γ2 X0 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) -> tvar_clean X0 Γ2 ->
+    (map (subst_var_dbind X0 Y) Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢[ m ]
+      (subst_ptyp_in_exp (ptyp_var_f Y) X0 e) ⦂ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
+Proof.
+  intros m Γ e B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr Hclean; subst; simpl.
+  - apply d_typing__unit.
+  - rewrite ptyp_to_btyp_syn_subst_var. apply d_typing__var.
+    assert (Hb : binds x (dbind_typ A) (Γ1 ++ Γ2)) by (analyze_binds H).
+    apply binds_typ_subst_var_dbind; [ exact Hb | exact Hclean ].
+  - rewrite ptyp_to_btyp_syn_subst_var. apply d_typing__anno.
+    rewrite <- ptyp_to_btyp_inh_subst_var.
+    eapply (IHd_typing Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr | exact Hclean ].
+  - eapply d_typing__sub;
+      [ apply is_base_term_subst_ptyp; assumption
+      | rewrite <- ptyp_to_btyp_syn_subst_var;
+        eapply (IHd_typing Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr | exact Hclean ]
+      | rewrite <- ptyp_to_utyp_syn_subst_var;
+        eapply d_sub_same_tvar;
+          [ eapply d_sub_rename_tvar; [ eassumption | reflexivity | exact Hfr ]
+          | apply same_tvar_map_subst_var ] ].
+  - rewrite ptyp_to_btyp_inh_subst_var. apply d_typing__freeze.
+    rewrite <- ptyp_to_btyp_syn_subst_var.
+    eapply (IHd_typing Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr | exact Hclean ].
+  - rewrite ptyp_to_btyp_inh_subst_var.
+    apply d_typing__forall with
+      (L := L `union` {{X0}} `union` {{Y}} `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2))
+      (A := subst_ptyp_in_ptyp (ptyp_var_f Y) X0 A).
+    + apply is_value_subst_ptyp. assumption.
+    + intros Z HZ.
+      rewrite <- ptyp_to_btyp_inh_subst_var.
+      rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_var_f | fsetdec ]).
+      rewrite_env (((Z ~ subst_var_dbind X0 Y dbind_tvar) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+      rewrite map_subst_var_dbind_cons.
+      match goal with IH : forall _ : atom, _ |- _ =>
+        eapply (IH Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ2 X0 Y) end;
+        [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
+  - rewrite ptyp_to_btyp_inh_subst_var.
+    apply d_typing__abs with
+      (L := L `union` {{X0}} `union` {{Y}} `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2))
+      (A := subst_ptyp_in_ptyp (ptyp_var_f Y) X0 A) (B := subst_btyp_in_btyp (btyp_var_f Y) X0 B).
+    + eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + rewrite <- ptyp_to_btyp_inh_subst_var.
+      apply skmod_ty_rename_tvar with (B := btyp_arrow (ptyp_to_btyp_inh A) B). assumption.
+    + intros z Hz.
+      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
+      rewrite_env (((z ~ subst_var_dbind X0 Y (dbind_typ A)) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+      rewrite map_subst_var_dbind_cons.
+      match goal with IH : forall _ : atom, _ |- _ =>
+        eapply (IH z ltac:(fsetdec) ((z ~ dbind_typ A) ++ Γ1) Γ2 X0 Y) end;
+        [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
+  - (* abs_anno: [subst] consumed [btyp_to_ptyp B1 = A], so [A] is now [btyp_to_ptyp B1]. *)
+    apply d_typing__abs_anno with
+      (L := L `union` {{X0}} `union` {{Y}} `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2))
+      (A := subst_ptyp_in_ptyp (ptyp_var_f Y) X0 (btyp_to_ptyp B1))
+      (B1 := subst_btyp_in_btyp (btyp_var_f Y) X0 B1) (B2 := subst_btyp_in_btyp (btyp_var_f Y) X0 B2).
+    + eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + symmetry. apply btyp_to_ptyp_subst_var.
+    + apply skmod_ty_rename_tvar with (B := btyp_arrow B1 B2). assumption.
+    + intros z Hz.
+      rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
+      rewrite_env (((z ~ subst_var_dbind X0 Y (dbind_typ (btyp_to_ptyp B1))) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+      rewrite map_subst_var_dbind_cons.
+      match goal with IH : forall _ : atom, _ |- _ =>
+        eapply (IH z ltac:(fsetdec) ((z ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ1) Γ2 X0 Y) end;
+        [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
+  - apply d_typing__app with
+      (P := subst_pskl_in_pskl (pskl_var_f Y) X0 P)
+      (B1 := subst_btyp_in_btyp (btyp_var_f Y) X0 B1)
+      (B2 := subst_btyp_in_btyp (btyp_var_f Y) X0 B2).
+    + rewrite <- pskl_to_bskl_syn_subst_var.
+      eapply d_pat_rename_tvar; [ eassumption | reflexivity | exact Hfr | exact Hclean ].
+    + rewrite <- pskl_to_bskl_inh_subst_var. rewrite <- btyp_to_bskl_subst_var.
+      eapply d_refine_syn_same_tvar;
+        [ eapply d_refine_syn_rename_tvar; [ eassumption | reflexivity | exact Hfr ]
+        | apply same_tvar_map_subst_var ].
+    + change (btyp_arrow (subst_btyp_in_btyp (btyp_var_f Y) X0 B1) (subst_btyp_in_btyp (btyp_var_f Y) X0 B2))
+        with (subst_btyp_in_btyp (btyp_var_f Y) X0 (btyp_arrow B1 B2)).
+      eapply (IHd_typing1 Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr | exact Hclean ].
+    + rewrite <- btyp_to_ptyp_subst_var. rewrite <- ptyp_to_btyp_inh_subst_var.
+      eapply (IHd_typing2 Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr | exact Hclean ].
 Qed.
 
 Lemma ctx_refines_binds_tvar : forall Γ' Γ X,
