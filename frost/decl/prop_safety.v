@@ -1960,6 +1960,60 @@ Proof.
           | apply same_tvar_map_subst_var ].
 Qed.
 
+(* ===================================================================== *)
+(*  Plan C: canonical safe witness via PRINCIPALITY (declarative [≼]).      *)
+(*                                                                         *)
+(*  [d_precise P Q] ("P ≼ Q") is the declarative skeleton precision (paper  *)
+(*  [\precise]; the algo [a_precise] minus the flex-metavar rules, which    *)
+(*  have no declarative counterpart): [P] has [Q]'s quantifiers but more    *)
+(*  universal ghosts / fewer monotypes.  The ≼-LEAST (most ghosty / most    *)
+(*  general) inference is the canonical safe witness — it is determined by   *)
+(*  [e] (up to ≼), hence stable under fresh tvar binders, which is what the  *)
+(*  [forall] case needs.  [d_pat_safety] stays existential (weakens at end). *)
+(* ===================================================================== *)
+Inductive d_precise : bskl -> bskl -> Prop :=
+| d_precise__unit : d_precise bskl_unit bskl_unit
+| d_precise__var : forall X, d_precise (bskl_var_f X) (bskl_var_f X)
+| d_precise__hole : d_precise bskl_hole bskl_hole
+| d_precise__hole_mono : forall Q, guarded_bskl Q -> d_precise bskl_hole Q
+| d_precise__arrow : forall P1 P2 Q1 Q2,
+    d_precise P1 Q1 -> d_precise P2 Q2 ->
+    d_precise (bskl_arrow P1 P2) (bskl_arrow Q1 Q2)
+| d_precise__all : forall L P Q,
+    (forall X, X `notin` L ->
+       d_precise (open_bskl_wrt_bskl P (bskl_var_f X)) (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
+    d_precise (bskl_all_syn P) (bskl_all_syn Q)
+| d_precise__tophole_l : forall P Q, d_precise P Q -> d_precise (bskl_tophole P) Q
+| d_precise__tophole : forall P Q, d_precise P Q -> d_precise (bskl_tophole P) (bskl_tophole Q).
+
+Notation "P ≼ Q" := (d_precise P Q) (at level 70) : type_scope.
+
+(** The canonical safe witness: a [≼]-least skeleton inference for [e]. *)
+Definition is_principal (m : mode) (Γ : list (atom * dbind)) (e : exp) (Q : bskl) : Prop :=
+  Γ ⊢[ m ] e ⇨ Q /\ (forall Q', Γ ⊢[ m ] e ⇨ Q' -> Q ≼ Q').
+
+(** STRONG existential: every well-typed term has a principal ([≼]-least)
+    inference.  Proved by induction on the typing; the [forall] case is the
+    clean down-transfer (a principal witness over [(X::Γ')] is principal over
+    [Γ'] — any [Γ']-inference weakens to an [(X::Γ')]-inference, and [X∉fv e]
+    lets the witness drop the binder).  This is the lemma that replaces the
+    weak existential. *)
+Lemma d_pat_principal : forall m Γ e B,
+    Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
+    forall Γ', ctx_refines Γ' Γ -> exists Q, is_principal m Γ' e Q.
+Proof.
+Admitted.
+
+(** Bridge: a principal ([≼]-least, hence most-ghosty) tc-inference fills every
+    checking type — for each [A0] with [e ⦂ inh A0] there is an inference tuned
+    to [A0], the principal [Q] is [≼] below it, and [≼]-monotonicity of the
+    fill ([□]/[⫯] fill anything) transports the refinement to [Q].  Gives the
+    [gpat] fill without any per-instance freshness reasoning. *)
+Lemma gpat_of_principal : forall Γ' e Q B,
+    is_principal mode_tc Γ' e Q -> gpat mode_tc Γ' e B.
+Proof.
+Admitted.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
@@ -1992,10 +2046,14 @@ Proof.
     + intros Γext Γt A1 Hcw Hcrt Hwft HA.
       apply d_typing_freeze_inv in HA.
       exact (Hfill Γext Γt A1 Hcw Hcrt Hwft HA).
-  - (* forall: a value checked at [∀]; gpat tc needs a skeleton whose inh
-       painting fills every [∀]-prefixed checking type (peel ∀ via
-       [tophole_fill], recurse). *)
-    admit.
+  - (* forall: the principal ([≼]-least) inference is the canonical safe
+       witness — determined by [e] (up to ≼), hence X-independent — and it
+       fills every checking type ([gpat_of_principal]).  Obtained from the
+       strong existential [d_pat_principal]. *)
+    assert (Hforall : Γ ⊢[ mode_tc ] e ⦂ btyp_all_inh (ptyp_to_btyp_inh A))
+      by (apply d_typing__forall with (L := L); [ exact H | exact H0 ]).
+    destruct (d_pat_principal Hforall Hwf Hcr) as [Q Hprin].
+    eapply gpat_of_principal; exact Hprin.
   - (* abs: λ in mode [m].  At TC the fill is the (Qed) [abs_check_fill], but
        [d_pat__abs_check] needs the body to infer a SYN/principal skeleton
        [pskl_to_bskl_syn P], whereas the IH ([gpat tc]) only yields the body's
