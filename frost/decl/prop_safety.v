@@ -1917,6 +1917,27 @@ Proof.
   assumption.
 Qed.
 
+(* ===================================================================== *)
+(*  INFRA STUBS — expected-to-hold tvar-rename lemmas, delegated.          *)
+(*  These are the [d_wf_denv] analog of the rename family already proved   *)
+(*  ([d_wf_ptyp_rename_tvar], [d_typing_rename_tvar], etc.): renaming a     *)
+(*  bound tvar [X0 ↦ Y] preserves context well-formedness (binders'        *)
+(*  carried types are mapped through [subst_var_dbind]).  Used by the       *)
+(*  [forall] case of [d_pat_total_gen].  Proof delegated; statement is the  *)
+(*  direct map-form analog of [d_wf_ptyp_rename_tvar].                      *)
+(* ===================================================================== *)
+Lemma d_wf_denv_rename_tvar : forall Γ,
+    d_wf_denv Γ ->
+    forall Γ1 Γ2 X0 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+    Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
+    d_wf_denv (map (subst_var_dbind X0 Y) Γ1 ++ (Y ~ dbind_tvar) ++ Γ2).
+Proof.
+  (* DELEGATED: induction on d_wf_denv; tvar case = d_wf_denv__tvar with the
+     relabelled binder; typ case uses d_wf_ptyp_rename_tvar on the carried
+     type; skl case uses d_wf_pskl_rename_tvar.  Domain freshness via
+     same_tvar_map_subst_var / dom_map.  Mirror d_wf_ptyp_rename_tvar. *)
+Admitted.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
