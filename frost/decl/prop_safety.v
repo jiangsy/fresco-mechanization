@@ -1988,6 +1988,19 @@ Inductive d_precise : bskl -> bskl -> Prop :=
 
 Notation "P ≼ Q" := (d_precise P Q) (at level 70) : type_scope.
 
+(** Synthesised skeletons are [≼]-reflexive ([d_precise]'s rules mirror
+    [is_sskl]'s constructors exactly). *)
+Lemma is_sskl_precise_refl : forall Q, is_sskl Q -> Q ≼ Q.
+Proof.
+  intros Q H. induction H.
+  - apply d_precise__unit.
+  - apply d_precise__var.
+  - apply d_precise__arrow; assumption.
+  - apply d_precise__all with (L := L). intros X HX. auto.
+  - apply d_precise__hole.
+  - apply d_precise__tophole. assumption.
+Qed.
+
 (** The canonical safe witness: a [≼]-least skeleton inference for [e]. *)
 Definition is_principal (m : mode) (Γ : list (atom * dbind)) (e : exp) (Q : bskl) : Prop :=
   Γ ⊢[ m ] e ⇨ Q /\ (forall Q', Γ ⊢[ m ] e ⇨ Q' -> Q ≼ Q').
