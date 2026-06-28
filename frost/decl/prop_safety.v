@@ -1974,6 +1974,34 @@ Lemma d_pat_strengthen_tvar : forall m Γ e Q,
 Proof.
 Admitted.
 
+(* INFRA STUB (delegated): tvar-rename closure of the two context relations used
+   by the forall fill's α-rename dance.  ctx_weaken / ctx_refines ignore the
+   CONTENT of bindings beyond shape, so relabelling a bound tvar X0 ↦ Y (and
+   mapping carried types via subst_var_dbind) preserves them.  Forms below are
+   the map-split shape matching d_wf_denv_rename_tvar; the proving agent may
+   adjust the exact decomposition (e.g. side-conditions) — report if so. *)
+Lemma ctx_weaken_rename_tvar : forall Γs Γb,
+    ctx_weaken Γs Γb ->
+    forall X0 Γ0 Γb1 Γb2 Y,
+      Γs = (X0 ~ dbind_tvar) ++ Γ0 ->
+      Γb = Γb1 ++ (X0 ~ dbind_tvar) ++ Γb2 ->
+      Y `notin` dom Γb ->
+      ctx_weaken ((Y ~ dbind_tvar) ++ Γ0)
+                 (map (subst_var_dbind X0 Y) Γb1 ++ (Y ~ dbind_tvar) ++ Γb2).
+Proof.
+Admitted.
+
+Lemma ctx_refines_rename_tvar : forall Γs Γ,
+    ctx_refines Γs Γ ->
+    forall Γ1s Γ1 Γ2s Γ2 X0 Y,
+      Γs = Γ1s ++ (X0 ~ dbind_tvar) ++ Γ2s ->
+      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
+      Y `notin` (dom Γs `union` dom Γ) ->
+      ctx_refines (map (subst_var_dbind X0 Y) Γ1s ++ (Y ~ dbind_tvar) ++ Γ2s)
+                  (map (subst_var_dbind X0 Y) Γ1 ++ (Y ~ dbind_tvar) ++ Γ2).
+Proof.
+Admitted.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
