@@ -181,6 +181,32 @@ tvar, defeating the obstruction at the cost of a weaker fill.
   solved. The forall case should connect the value's witness to this machinery
   (the same machinery the `abs` admit needs), rather than via principality.
 
+## 2.6 Finding: tc-syn is FORCED-GHOST (2026-06-29) — the real abs/forall blocker
+
+Investigated "does a concrete syn tc-inference `⊢tc e ⇨ pskl_to_bskl_syn P`
+exist?" (the principal-body-skeleton the `abs` admit asks for). **Answer: no,
+except for `freeze`.**
+
+- `d_pat_sub` at `m = tc`: a *guarded* LHS (a base term's syn skeleton) matches
+  only `univ_ghost_r` → `bskl_tophole _`; a *hole* LHS matches `ghost` → `inh P`.
+  No tc rule emits a concrete syn skeleton. Only `d_pat__freeze` does.
+- Confirmed by the closed `d_pat_base_safe_tc_gen`: the tc safe witness is
+  **`ghost_of P`** (built/inferred/filled by the closed `ghost_of_total` /
+  `ghost_of_infer` / `ghost_of_fill_gen`); the kept-var witness is `bskl_hole`.
+
+**Therefore the principal-body-skeleton lemma is FALSE**, and the
+ghost(IH)→syn(`abs_check`) bridge is a dead end. The real machinery is
+`ghost_of`, but `ghost_of_infer` routes through `d_pat__sub` which needs
+`is_base_term`; a λ is not a base term, and `d_pat__abs_check` (the only tc λ
+rule) demands a concrete-syn body it can never have.
+
+**OPEN CALCULUS QUESTION (owner):** how does a λ obtain a *safe* (ghost) tc
+skeleton, given `d_pat__abs_check`'s `⇨ pskl_to_bskl_syn P` premise is
+unsatisfiable for general bodies? Candidates: (a) `d_pat__abs_check`'s body
+premise should accept a ghost / `is_sskl` body (what is actually inferable);
+(b) a ghost rule for λ. This is the genuine blocker for `abs`/`abs_anno`/
+forall-of-λ — not a missing lemma but a rule-shape question.
+
 ## 3. Recommendation
 
 Design **A** (`d_look`) is favored: closest to the validated `a_pat`,
