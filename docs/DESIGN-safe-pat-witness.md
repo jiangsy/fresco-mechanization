@@ -146,6 +146,41 @@ tvar, defeating the obstruction at the cost of a weaker fill.
   — needs verification before committing. Changes the public-facing shape.
 - **Risk:** the weakened fill may be insufficient downstream.
 
+## 2.5 Findings while validating C (2026-06-28)
+
+- **The `d_pat` inference set is BOUNDED** ⇒ a `≼`-least element exists ⇒
+  `d_pat_principal` is *true*. TI mode: only `d_pat_sub__infer` fires (every
+  other `d_pat_sub` rule needs `m ≠ ti` or a `hole`/`tophole`/`forall` LHS), so
+  TI inference is essentially deterministic (consistency + `is_sskl`). TC/FN:
+  ghosts come from `univ_ghost_r`, which adds **exactly one** `tophole` (premise
+  is `R ≈ Q`, not recursive on the output). So `tophole_remove/keep`
+  non-determinism is bounded.
+- **But C's leastness (`∀Q', infer Q' → Q ≼ Q'`) ≈ declarative `a_pat_complete`**
+  (heavy): per case it inverts the whole inference set of `e`. The forall case
+  does **not** need leastness — it needs the witness to be an inference,
+  X-stable, and fill — so "construct the witness + prove fill directly" (A/B
+  mechanism) is strictly less work. Decision: go that way; keep `d_precise` only
+  for stating stability/monotonicity, drop the `∀Q'` obligation.
+- **The fill is NOT purely structural** — `Q` must refine `colour(bskl_to_pskl Q) A0`
+  for each *checking* type `A0` (with `e ⦂ inh A0`), so it is entangled with the
+  typing; a structural `is_safe_skel ⇒ FILL` lemma is FALSE. The fill stays a
+  per-case obligation (the same one `abs`/`app` face).
+- **The fill PRIMITIVES are in place:**
+  - `gpat_syn_fill` (prop_safety.v): when `bskl_to_pskl Q = ptyp_to_pskl A0`
+    (witness erasure matches the type), discharges the refinement.
+  - `d_refine_syn_hole_fills` / `d_refine_syn_tophole_hole_fills`
+    (prop_skeleton.v): `□` / `⫯.□` fill *any* type (with tvar scoping).
+  - **`abs_check_fill` (prop_safety.v, `Qed`)** discharges the λ fill for the
+    canonical λ witness `bskl_tophole (bskl_arrow bskl_hole Qb)` — and its OWN
+    induction's **forall sub-case peels a `∀`-checking-type** via
+    `d_refine_syn__tophole_fill` + `colour_open` + `d_refine_syn_move`,
+    introducing the fresh `X` *inside* the fill (cofinitely) with plain context
+    constructors (`ctx_weaken_app_front`/`ctxr_cons`/`d_wf_denv__tvar`) — **no
+    renaming, no witness-side freshness clash.**
+  ⇒ The hard part of the forall fill (∀-prefixed checking types) is ALREADY
+  solved. The forall case should connect the value's witness to this machinery
+  (the same machinery the `abs` admit needs), rather than via principality.
+
 ## 3. Recommendation
 
 Design **A** (`d_look`) is favored: closest to the validated `a_pat`,
