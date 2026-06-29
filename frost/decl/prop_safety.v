@@ -2049,6 +2049,56 @@ Proof.
   (* joint induction per the plan above; in progress *)
 Admitted.
 
+(** [d_wf_denv] front term-var rename: the front binding's variable is a
+    placeholder (the whole sub-well-formedness lives below it). *)
+Lemma d_wf_denv_rename_front : forall x d Γ y,
+    d_wf_denv ((x ~ d) ++ Γ) -> y `notin` dom Γ -> d_wf_denv ((y ~ d) ++ Γ).
+Proof.
+  intros x d Γ y H Hy. inversion H; subst.
+  - apply d_wf_denv__tvar; auto.
+  - apply d_wf_denv__typ; auto.
+  - apply d_wf_denv__skl; auto.
+Qed.
+
+(** STRUCTURAL bound-var rename of the [gpat] tc fill — the clean replacement for
+    the old erasure-canonicity detour.  Collision-free BY CONSTRUCTION: a
+    structural [ctx_refines ((y:□)::Γ') Γt] forces [Γt = (y:d)::Γt0] with [y] ONLY
+    at the front and [y ∉ Γt0] (refinement preserves [dom]), so relabelling
+    [y → x] cannot collide.  Uses [d_typing_rename_var] + [d_refine_syn_rename_var]
+    (refinement reads only tvars, so its rename has no freshness premise). *)
+Lemma gpat_fill_rename : forall e Γ' Q x,
+    x `notin` (fvar_in_exp e `union` dom Γ') ->
+    (forall Γt A, ctx_refines ((x ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+       Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ (ptyp_to_btyp_inh A) ->
+       Γt ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳
+         (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A)) ->
+    forall y, y `notin` (fvar_in_exp e `union` dom Γ') ->
+      forall Γt A, ctx_refines ((y ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+        Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh A) ->
+        Γt ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳
+          (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A).
+Proof.
+  intros e Γ' Q x Hx Hfill y Hy Γt A Hcr Hwf Hty.
+  inversion Hcr as [ | xp d'p dt Γ'p Γt0 Hdr Hcr0 Heqa Heqb ]; subst.
+  assert (Hxd : x `notin` dom Γt0)
+    by (erewrite <- ctx_refines_dom by exact Hcr0; simpl in Hx; fsetdec).
+  assert (Hyd : y `notin` dom Γt0) by (inversion Hwf; subst; assumption).
+  assert (Hntv : dt <> dbind_tvar) by (inversion Hdr; discriminate).
+  assert (Htyx : ((x ~ dt) ++ Γt0) ⊢[ mode_tc ]
+                   (open_exp_wrt_exp e (exp_var_f x)) ⦂ (ptyp_to_btyp_inh A)).
+  { replace (open_exp_wrt_exp e (exp_var_f x))
+      with (subst_exp_in_exp (exp_var_f x) y (open_exp_wrt_exp e (exp_var_f y)))
+      by (symmetry; apply subst_exp_in_exp_intro; simpl in Hy; fsetdec).
+    eapply d_typing_rename_var with (Γ1 := nil) (x := y) (d := dt);
+      [ exact Hty | reflexivity | exact Hntv | simpl_env; exact Hyd ]. }
+  eapply d_refine_syn_rename_var with (Γ1 := nil) (x := x) (d := dt) (Γ2 := Γt0);
+    [ | reflexivity | exact Hntv ].
+  apply Hfill.
+  - apply ctxr_cons; [ exact Hdr | exact Hcr0 ].
+  - eapply d_wf_denv_rename_front; [ exact Hwf | exact Hxd ].
+  - exact Htyx.
+Qed.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
