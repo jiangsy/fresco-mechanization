@@ -2006,6 +2006,58 @@ Fixpoint rename_tag (ε ε' : εvar) (R : uskl) : uskl :=
 Definition rename_atom_set (ε ε' : atom) (Δ : atoms) : atoms :=
   if AtomSetImpl.mem ε Δ then add ε' (remove ε Δ) else Δ.
 
+(* ===================================================================== *)
+(*  Erasure-canonicity of safe tc-witnesses.                              *)
+(*                                                                        *)
+(*  Two safe ([gpat tc]) witnesses [Qb], [Qx] of the SAME body at         *)
+(*  α-equivalent front-extended contexts ([x0] vs [xb]) have equal        *)
+(*  [bskl_to_pskl] erasure.  This is what the abs/forall fills bottom out  *)
+(*  on (route 1): the abstraction's chosen body witness [Qb] and the       *)
+(*  per-instance witness [Qx] re-derived at the body-hyp's own [xb] must    *)
+(*  agree up to erasure for the [abs_check_fill] body-hyp to close.         *)
+(*                                                                          *)
+(*  PROOF PLAN (joint induction; α-aware — uses each witness's NATIVE fill, *)
+(*  since the fill cannot be renamed across [x0]/[xb], the [x0∈Γe] wall):   *)
+(*   1. Align the two INFERENCES to a common var by [d_pat_rename_var]      *)
+(*      ([Qb] is term-var-free, so the witness is unchanged) — legal for    *)
+(*      the inference (not the fill).                                       *)
+(*   2. Induct on the (aligned) inference; invert the other.  Heads agree   *)
+(*      (same opened body), so rules pair up:                              *)
+(*      - [abs_check]/[abs_anno_check]: erasure [tophole(arrow _ P)];       *)
+(*        recurse on the cofinite body (its own [is_sskl] body witness).    *)
+(*      - [freeze]: erasure = the [ti] skeleton, which is erasure-          *)
+(*        deterministic (syntax-directed [ti] rules).                       *)
+(*      - [sub]: [R] (the [ti] skeleton) is determined; the only split is   *)
+(*        [d_pat_sub] at tc, where [forall_l] picks [psi].  The two NATIVE  *)
+(*        fills pin [psi] to the ghost ([□], empty tags) on each side; the  *)
+(*        [rename_tag] lemma is the LN handle for the [Δ']-freshness there.  *)
+(*      - [app]: the codomain [Q2] via the function inference + refinement. *)
+(*  Erasure is tag-free ([bskl] carries no [ε]), so tag DIFFERENCES never   *)
+(*  reach the conclusion; [rename_tag] is only needed inside the [forall_l] *)
+(*  reconciliation, not in the statement.                                   *)
+(* ===================================================================== *)
+Lemma safe_tc_erasure_canon : forall Γ' e x0 xb Qb Qx,
+    x0 `notin` (fvar_in_exp e `union` dom Γ') ->
+    xb `notin` (fvar_in_exp e `union` dom Γ') ->
+    ((x0 ~ dbind_skl pskl_hole) ++ Γ') ⊢[ mode_tc ]
+       (open_exp_wrt_exp e (exp_var_f x0)) ⇨ Qb ->
+    (forall Γext Γt A, ctx_weaken ((x0 ~ dbind_skl pskl_hole) ++ Γ') Γext ->
+        ctx_refines Γext Γt -> d_wf_denv Γt ->
+        Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x0)) ⦂ (ptyp_to_btyp_inh A) ->
+        Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Qb)) ⊳
+          (colour (pskl_to_bskl_inh (bskl_to_pskl Qb)) A)) ->
+    ((xb ~ dbind_skl pskl_hole) ++ Γ') ⊢[ mode_tc ]
+       (open_exp_wrt_exp e (exp_var_f xb)) ⇨ Qx ->
+    (forall Γext Γt A, ctx_weaken ((xb ~ dbind_skl pskl_hole) ++ Γ') Γext ->
+        ctx_refines Γext Γt -> d_wf_denv Γt ->
+        Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f xb)) ⦂ (ptyp_to_btyp_inh A) ->
+        Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Qx)) ⊳
+          (colour (pskl_to_bskl_inh (bskl_to_pskl Qx)) A)) ->
+    bskl_to_pskl Qx = bskl_to_pskl Qb.
+Proof.
+  (* joint induction per the plan above; in progress *)
+Admitted.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
@@ -2096,7 +2148,10 @@ Proof.
                     ((xb ~ dbind_skl pskl_hole) ++ Γ')
                     ltac:(apply ctxr_cons; [ apply dbr_typ_hole | exact Hcr ]))
           as [Qx [Hinfx [Hsskx Hfillx]]].
-        assert (Herasure : bskl_to_pskl Qx = bskl_to_pskl Qb) by admit.
+        assert (Herasure : bskl_to_pskl Qx = bskl_to_pskl Qb).
+        { eapply safe_tc_erasure_canon with
+            (x0 := x0) (xb := xb) (e := e) (Γ' := Γ') (Qb := Qb) (Qx := Qx);
+            [ fsetdec | fsetdec | exact Hinfb | exact Hfillb | exact Hinfx | exact Hfillx ]. }
         rewrite <- Herasure.
         apply (Hfillx Γeb Γtb Ab Hcwb Hcrtb Hwftb Htyb).
     + (* fn *) admit.
