@@ -181,31 +181,36 @@ tvar, defeating the obstruction at the cost of a weaker fill.
   solved. The forall case should connect the value's witness to this machinery
   (the same machinery the `abs` admit needs), rather than via principality.
 
-## 2.6 Finding: tc-syn is FORCED-GHOST (2026-06-29) — the real abs/forall blocker
+## 2.6 Finding (2026-06-29, CORRECTED): the tc safe witness is `is_sskl` ⇒ bundle it
 
-Investigated "does a concrete syn tc-inference `⊢tc e ⇨ pskl_to_bskl_syn P`
-exist?" (the principal-body-skeleton the `abs` admit asks for). **Answer: no,
-except for `freeze`.**
+First (wrong) reading: "tc can't emit a concrete syn skeleton, so the
+principal-body-skeleton is FALSE." The *premise* is right but the *conclusion*
+was wrong — I conflated "concrete **guarded** syn" with "syn-painted `is_sskl`".
 
-- `d_pat_sub` at `m = tc`: a *guarded* LHS (a base term's syn skeleton) matches
-  only `univ_ghost_r` → `bskl_tophole _`; a *hole* LHS matches `ghost` → `inh P`.
-  No tc rule emits a concrete syn skeleton. Only `d_pat__freeze` does.
-- Confirmed by the closed `d_pat_base_safe_tc_gen`: the tc safe witness is
-  **`ghost_of P`** (built/inferred/filled by the closed `ghost_of_total` /
-  `ghost_of_infer` / `ghost_of_fill_gen`); the kept-var witness is `bskl_hole`.
+- True: `d_pat_sub` at `m=tc` from a *guarded* LHS forces `bskl_tophole _`
+  (`univ_ghost_r`); a *hole* LHS gives `inh P` (`ghost`). So no **concrete
+  guarded** syn tc output (only `freeze`).
+- BUT `d_pat__abs_check`'s body premise is `⇨ pskl_to_bskl_syn P` where `P` may
+  be a **ghost**. The tc safe witness is `ghost_of P`, whose outputs are
+  `bskl_tophole(...)` / `bskl_hole` (prop_skeleton.v:332) — these **are
+  `is_sskl`** (`is_sskl` has `__hole`,`__tophole`). And
+  `is_sskl_syn_roundtrip : is_sskl Q → pskl_to_bskl_syn (bskl_to_pskl Q) = Q`.
+  So the ghost body witness **already satisfies** the `⇨ syn P` premise with
+  `P := bskl_to_pskl Q`. The principal-body-skeleton is **NOT false**.
 
-**Therefore the principal-body-skeleton lemma is FALSE**, and the
-ghost(IH)→syn(`abs_check`) bridge is a dead end. The real machinery is
-`ghost_of`, but `ghost_of_infer` routes through `d_pat__sub` which needs
-`is_base_term`; a λ is not a base term, and `d_pat__abs_check` (the only tc λ
-rule) demands a concrete-syn body it can never have.
+**RESOLUTION (tractable):** strengthen `gpat`'s **tc** case to bundle
+`is_sskl Q` (mirroring the ti case — and the actual tc witnesses, `ghost_of` and
+freeze's, are already `is_sskl`). Re-prove the closed tc cases to carry it
+(easy). Then:
+- `abs`/`abs_anno`: IH gives `is_sskl Q_body` ⇒ `is_sskl_syn_roundtrip` ⇒
+  `Q_body = pskl_to_bskl_syn P` ⇒ `d_pat__abs_check` gives
+  `λ ⇨ bskl_tophole(bskl_arrow bskl_hole Q_body)` (itself `is_sskl`), and
+  `abs_check_fill` (Qed) gives the fill from the IH's body fill.
+- `forall`: the value's witness is `is_sskl` and X-independent (built from `e`);
+  the ∀-checking-types are peeled inside `abs_check_fill`'s machinery.
 
-**OPEN CALCULUS QUESTION (owner):** how does a λ obtain a *safe* (ghost) tc
-skeleton, given `d_pat__abs_check`'s `⇨ pskl_to_bskl_syn P` premise is
-unsatisfiable for general bodies? Candidates: (a) `d_pat__abs_check`'s body
-premise should accept a ghost / `is_sskl` body (what is actually inferable);
-(b) a ghost rule for λ. This is the genuine blocker for `abs`/`abs_anno`/
-forall-of-λ — not a missing lemma but a rule-shape question.
+So plan C's `≼`/principality is **not needed**; the fix is the `is_sskl` bundle
++ roundtrip + the existing `abs_check_fill`. This supersedes §2.5/§2 designs.
 
 ## 3. Recommendation
 
