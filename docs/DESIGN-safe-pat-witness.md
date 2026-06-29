@@ -212,6 +212,34 @@ freeze's, are already `is_sskl`). Re-prove the closed tc cases to carry it
 So plan C's `≼`/principality is **not needed**; the fix is the `is_sskl` bundle
 + roundtrip + the existing `abs_check_fill`. This supersedes §2.5/§2 designs.
 
+## 2.7 Finding (2026-06-29): is_sskl closes the INFERENCE; the FILL wall is gpat's ∀Γext
+
+DONE (committed 42cdb2d): the **abs tc INFERENCE** is closed via the is_sskl route
+— body witness `Qb` is `is_sskl` ⇒ `is_sskl_syn_roundtrip` ⇒ `Qb = pskl_to_bskl_syn
+(bskl_to_pskl Qb)` ⇒ `d_pat__abs_check`; the per-`x` body inference comes from the
+`x0` one by `d_pat_rename_var` + `subst_exp_in_exp_intro`. This confirms the
+"principal-body-skeleton" was a red herring (the ghost witness IS syn-paintable).
+Also: `is_sskl` is now bundled into `gpat`'s tc case (committed 1aafca3), threaded
+through `d_pat_base_safe_tc_gen`/freeze/`d_pat_safety`.
+
+NOT closed — the **FILL** (abs `abs_check_fill` body-hyp, and forall): the obstruction
+is **`gpat`'s fill quantifying over arbitrary `Γext`/`Γt`**. The body-hyp must hold for
+universally-quantified `Γt''`; discharging it from the single-instantiation witness's
+fill `Hfillb` (tied to a fresh `x0`) needs `d_wf_denv ((x0~hole)++Γt'')`, i.e.
+**`x0 ∉ dom Γt''`** — unprovable for arbitrary `Γt''` (no constraint forces `x0` out;
+`Γt''` may bind `x0` via the weakening). The asymmetry with the inference: the
+inference renames over a FIXED context (`(x0~hole)++Γ'`, `x0∉dom Γ'` holds), whereas the
+fill renames over the fill's ARBITRARY contexts. Term-var context renames just relocate
+the obligation onto that freshness; they don't break it. Erasure-determinism (use the IH
+at the body-hyp's own `x`) also fails — `d_pat_sub__forall_l` picks `psi`
+non-deterministically, so a forall-skeleton'd body can erase two ways.
+
+⇒ Root cause for BOTH abs and forall fills = `gpat`'s `forall Γext, ctx_weaken Γ' Γext
+-> ...`. Resolving it is design-E territory: is the `∀Γext` generality actually needed
+beyond the contexts it is consumed at (`d_pat_safety` uses `Γext=Γ`; `abs_check_fill`
+applies the body fill at `(x~hole)++Γext0`)? A freshness side-condition on `Γext`, or a
+witness that is canonical-by-construction (not instantiation-tied), would break the wall.
+
 ## 3. Recommendation
 
 Design **A** (`d_look`) is favored: closest to the validated `a_pat`,
