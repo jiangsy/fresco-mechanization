@@ -1980,6 +1980,32 @@ Proof.
           | apply same_tvar_map_subst_var ].
 Qed.
 
+(* ===================================================================== *)
+(*  Tag (εvar) renaming.  [εvar := var] is a plain label parameter of      *)
+(*  [uskl_all_etag]/[uskl_topholeg] (lngen generated no substitution for    *)
+(*  it), so we define the relabelling [ε ↦ ε'] by hand, both on the         *)
+(*  skeleton ([rename_tag]) and on its tag set ([rename_atom_set]).  This    *)
+(*  is the LN handle the set-based tag encoding was missing: the freshness   *)
+(*  of a tag is dischargeable by renaming it (used by the safe-witness       *)
+(*  erasure-canonicity feeding the abs/forall fills).                        *)
+(* ===================================================================== *)
+Fixpoint rename_tag (ε ε' : εvar) (R : uskl) : uskl :=
+  match R with
+  | uskl_unit => uskl_unit
+  | uskl_var_b n => uskl_var_b n
+  | uskl_var_f X => uskl_var_f X
+  | uskl_arrow R1 R2 => uskl_arrow (rename_tag ε ε' R1) (rename_tag ε ε' R2)
+  | uskl_all_syn R0 => uskl_all_syn (rename_tag ε ε' R0)
+  | uskl_all_etag e R0 => uskl_all_etag (if e == ε then ε' else e) (rename_tag ε ε' R0)
+  | uskl_hole => uskl_hole
+  | uskl_tophole R0 => uskl_tophole (rename_tag ε ε' R0)
+  | uskl_holeg => uskl_holeg
+  | uskl_topholeg e R0 => uskl_topholeg (if e == ε then ε' else e) (rename_tag ε ε' R0)
+  end.
+
+Definition rename_atom_set (ε ε' : atom) (Δ : atoms) : atoms :=
+  if AtomSetImpl.mem ε Δ then add ε' (remove ε Δ) else Δ.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
@@ -2052,12 +2078,27 @@ Proof.
           [ exact Hinfb | reflexivity | discriminate | simpl_env; fsetdec ].
       * (* is_sskl *)
         apply is_sskl__tophole, is_sskl__arrow; [ apply is_sskl__hole | exact Hssklb ].
-      * (* fill via abs_check_fill *)
+      * (* fill via abs_check_fill.  The body-hyp is discharged by ROUTE 1:
+           re-instantiate the IH [H2] at the body-hyp's OWN fresh [xb] (which
+           genuinely lives in the typing context [Γtb]), so there is no [x0]
+           freshness wall.  The body's per-[xb] safe witness [Qx] has the same
+           erasure as the abstraction's chosen body witness [Qb] — the single
+           remaining obligation is this erasure-canonicity of safe tc-witnesses. *)
         intros Γext Γt A1 Hcw Hcrt Hwft HA.
         eapply abs_check_fill with (Qb := Qb)
           (L_b := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e);
           [ | exact Hcw | exact Hcrt | exact Hwft | exact HA ].
-        admit.
+        intros xb Hxb Γeb Γtb Ab Hcwb Hcrtb Hwftb Htyb.
+        destruct (H2 xb ltac:(fsetdec)
+                    ltac:(apply d_wf_denv__typ;
+                            [ exact Hwf | fsetdec
+                            | match goal with HA0 : _ ⊢ₚ _ |- _ => exact HA0 end ])
+                    ((xb ~ dbind_skl pskl_hole) ++ Γ')
+                    ltac:(apply ctxr_cons; [ apply dbr_typ_hole | exact Hcr ]))
+          as [Qx [Hinfx [Hsskx Hfillx]]].
+        assert (Herasure : bskl_to_pskl Qx = bskl_to_pskl Qb) by admit.
+        rewrite <- Herasure.
+        apply (Hfillx Γeb Γtb Ab Hcwb Hcrtb Hwftb Htyb).
     + (* fn *) admit.
   - (* abs_anno: annotated λ; analogous to [abs] with [d_pat__abs_anno_check]
        / [abs_check_fill] on the annotated domain. *)
