@@ -1059,7 +1059,11 @@ Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
                        Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳
                          (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A))
   | mode_tc =>
-      exists Q, Γ ⊢[ mode_tc ] e ⇨ Q
+      (* The TC inference is also SYNTHESISED ([is_sskl] — the actual safe
+         witnesses [ghost_of P] / freeze's are [is_sskl]).  This lets the λ
+         cases lift the body skeleton to a [pskl_to_bskl_syn P] body via
+         [is_sskl_syn_roundtrip], feeding [d_pat__abs_check] / [abs_check_fill]. *)
+      exists Q, Γ ⊢[ mode_tc ] e ⇨ Q /\ is_sskl Q
                 /\ (forall Γext Γt A, ctx_weaken Γ Γext -> ctx_refines Γext Γt ->
                        d_wf_denv Γt -> Γt ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
                        Γext ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳
@@ -1527,6 +1531,22 @@ Qed.
     the checking inversion [d_typing_base_check_sub] (moved to [Γext] by
     [d_sub_ctx_refines]).  The refined-variable subcase falls back to the
     bare-hole fill [gpat_hole_fill]. *)
+(** A ghostification is a synthesised skeleton (its outputs are
+    [bskl_tophole]/[bskl_hole], all [is_sskl]).  Lets the tc safe witnesses
+    carry the [is_sskl] component now bundled into [gpat]'s tc case. *)
+Lemma is_sskl_ghost_of : forall P Q, ghost_of P Q -> lc_pskl P -> is_sskl Q.
+Proof.
+  intros P Q H. induction H; intros Hlc.
+  - apply is_sskl__tophole, is_sskl__unit.
+  - apply is_sskl__tophole, is_sskl__var.
+  - inversion Hlc; subst. apply is_sskl__tophole, is_sskl__arrow;
+      apply is_sskl_pskl_to_bskl_syn; assumption.
+  - apply is_sskl__hole.
+  - apply IHghost_of. inversion Hlc; subst; assumption.
+  - apply IHghost_of. apply lc_body_pskl_wrt_pskl;
+      [ apply lc_body_pskl_all_syn_1; exact Hlc | apply lc_pskl_hole ].
+Qed.
+
 Lemma d_pat_base_safe_tc_gen : forall Γ e A,
     d_wf_denv Γ -> is_base_term e -> d_typing mode_ti Γ e (ptyp_to_btyp_syn A) ->
     forall Γ' B, ctx_refines Γ' Γ -> gpat mode_tc Γ' e B.
@@ -1541,7 +1561,7 @@ Proof.
   - (* unit *)
     destruct (ghost_of_total (le_n (size_pskl (ptyp_to_pskl ptyp_unit)))
                 (lc_pskl_ptyp_to_pskl lc_ptyp_unit)) as [Q HQ].
-    exists Q. split.
+    exists Q. split; [ | split; [ exact (is_sskl_ghost_of HQ (lc_pskl_ptyp_to_pskl lc_ptyp_unit)) | ] ].
     + eapply d_pat__sub with (P := ptyp_to_pskl ptyp_unit); [ apply is_base_term__unit | apply d_pat__unit | ].
       eapply (ghost_of_infer HQ (lc_pskl_ptyp_to_pskl lc_ptyp_unit));
         [ reflexivity | apply cov_of; apply d_wf_ptyp__unit ].
@@ -1566,7 +1586,7 @@ Proof.
     + (* kept: x : typ A0 in Γ' *)
       destruct (ghost_of_total (le_n (size_pskl (ptyp_to_pskl A0)))
                   (lc_pskl_ptyp_to_pskl HlcA0)) as [Q HQ].
-      exists Q. split.
+      exists Q. split; [ | split; [ exact (is_sskl_ghost_of HQ (lc_pskl_ptyp_to_pskl HlcA0)) | ] ].
       * eapply d_pat__sub with (P := ptyp_to_pskl A0);
           [ apply is_base_term__var
           | apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ] | ].
@@ -1588,7 +1608,7 @@ Proof.
           | exact HQ
           | apply hole_safe_u_of_ptyp; exact HlcA0 ].
     + (* refined: x : □ in Γ' — the bare ghost fills everything *)
-      exists bskl_hole. split.
+      exists bskl_hole. split; [ | split; [ apply is_sskl__hole | ] ].
       * eapply d_pat__sub with (P := pskl_hole);
           [ apply is_base_term__var
           | apply d_pat__var with (d := dbind_skl pskl_hole) (P := pskl_hole);
@@ -1603,7 +1623,7 @@ Proof.
     assert (HlcA0 : lc_ptyp A0) by (eapply d_wf_ptyp_lc; exact HwfA0).
     destruct (ghost_of_total (le_n (size_pskl (ptyp_to_pskl A0)))
                 (lc_pskl_ptyp_to_pskl HlcA0)) as [Q HQ].
-    exists Q. split.
+    exists Q. split; [ | split; [ exact (is_sskl_ghost_of HQ (lc_pskl_ptyp_to_pskl HlcA0)) | ] ].
     + eapply d_pat__sub with (P := ptyp_to_pskl A0);
         [ apply is_base_term__anno
         | apply d_pat__anno; eapply d_wf_ptyp_ctx_refines; [ exact HwfA0 | exact Hcr ] | ].
@@ -2053,7 +2073,7 @@ Proof.
        [d_pat__freeze] lifts; safety reuses the IH's (syn-keyed) TI fill after
        inverting the freeze typing back to [Γt ⊢ti e ⦂ syn A1]. *)
     destruct (IHHty Hwf Γ' Hcr) as [Q0 [Hinf [Hsskl Hfill]]].
-    exists Q0. split.
+    exists Q0. split; [ | split; [ exact Hsskl | ] ].
     + rewrite <- (is_sskl_syn_roundtrip Hsskl). apply d_pat__freeze.
       rewrite (is_sskl_syn_roundtrip Hsskl). exact Hinf.
     + intros Γext Γt A1 Hcw Hcrt Hwft HA.
@@ -2149,7 +2169,7 @@ Theorem d_pat_safety : forall Γ e B0,
                    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B).
 Proof.
   intros Γ e B0 Hty Hwf.
-  destruct (d_pat_total_gen Hty Hwf (ctx_refines_refl Γ)) as [Q [HQ Hsafe]].
+  destruct (d_pat_total_gen Hty Hwf (ctx_refines_refl Γ)) as [Q [HQ [_ Hsafe]]].
   exists Q. split; [ exact HQ | ].
   intros A HA.
   exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A). split;
