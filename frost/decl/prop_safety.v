@@ -1980,73 +1980,6 @@ Proof.
           | apply same_tvar_map_subst_var ].
 Qed.
 
-(* ===================================================================== *)
-(*  Plan C: canonical safe witness via PRINCIPALITY (declarative [≼]).      *)
-(*                                                                         *)
-(*  [d_precise P Q] ("P ≼ Q") is the declarative skeleton precision (paper  *)
-(*  [\precise]; the algo [a_precise] minus the flex-metavar rules, which    *)
-(*  have no declarative counterpart): [P] has [Q]'s quantifiers but more    *)
-(*  universal ghosts / fewer monotypes.  The ≼-LEAST (most ghosty / most    *)
-(*  general) inference is the canonical safe witness — it is determined by   *)
-(*  [e] (up to ≼), hence stable under fresh tvar binders, which is what the  *)
-(*  [forall] case needs.  [d_pat_safety] stays existential (weakens at end). *)
-(* ===================================================================== *)
-Inductive d_precise : bskl -> bskl -> Prop :=
-| d_precise__unit : d_precise bskl_unit bskl_unit
-| d_precise__var : forall X, d_precise (bskl_var_f X) (bskl_var_f X)
-| d_precise__hole : d_precise bskl_hole bskl_hole
-| d_precise__hole_mono : forall Q, guarded_bskl Q -> d_precise bskl_hole Q
-| d_precise__arrow : forall P1 P2 Q1 Q2,
-    d_precise P1 Q1 -> d_precise P2 Q2 ->
-    d_precise (bskl_arrow P1 P2) (bskl_arrow Q1 Q2)
-| d_precise__all : forall L P Q,
-    (forall X, X `notin` L ->
-       d_precise (open_bskl_wrt_bskl P (bskl_var_f X)) (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    d_precise (bskl_all_syn P) (bskl_all_syn Q)
-| d_precise__tophole_l : forall P Q, d_precise P Q -> d_precise (bskl_tophole P) Q
-| d_precise__tophole : forall P Q, d_precise P Q -> d_precise (bskl_tophole P) (bskl_tophole Q).
-
-Notation "P ≼ Q" := (d_precise P Q) (at level 70) : type_scope.
-
-(** Synthesised skeletons are [≼]-reflexive ([d_precise]'s rules mirror
-    [is_sskl]'s constructors exactly). *)
-Lemma is_sskl_precise_refl : forall Q, is_sskl Q -> Q ≼ Q.
-Proof.
-  intros Q H. induction H.
-  - apply d_precise__unit.
-  - apply d_precise__var.
-  - apply d_precise__arrow; assumption.
-  - apply d_precise__all with (L := L). intros X HX. auto.
-  - apply d_precise__hole.
-  - apply d_precise__tophole. assumption.
-Qed.
-
-(** The canonical safe witness: a [≼]-least skeleton inference for [e]. *)
-Definition is_principal (m : mode) (Γ : list (atom * dbind)) (e : exp) (Q : bskl) : Prop :=
-  Γ ⊢[ m ] e ⇨ Q /\ (forall Q', Γ ⊢[ m ] e ⇨ Q' -> Q ≼ Q').
-
-(** STRONG existential: every well-typed term has a principal ([≼]-least)
-    inference.  Proved by induction on the typing; the [forall] case is the
-    clean down-transfer (a principal witness over [(X::Γ')] is principal over
-    [Γ'] — any [Γ']-inference weakens to an [(X::Γ')]-inference, and [X∉fv e]
-    lets the witness drop the binder).  This is the lemma that replaces the
-    weak existential. *)
-Lemma d_pat_principal : forall m Γ e B,
-    Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
-    forall Γ', ctx_refines Γ' Γ -> exists Q, is_principal m Γ' e Q.
-Proof.
-Admitted.
-
-(** Bridge: a principal ([≼]-least, hence most-ghosty) tc-inference fills every
-    checking type — for each [A0] with [e ⦂ inh A0] there is an inference tuned
-    to [A0], the principal [Q] is [≼] below it, and [≼]-monotonicity of the
-    fill ([□]/[⫯] fill anything) transports the refinement to [Q].  Gives the
-    [gpat] fill without any per-instance freshness reasoning. *)
-Lemma gpat_of_principal : forall Γ' e Q B,
-    is_principal mode_tc Γ' e Q -> gpat mode_tc Γ' e B.
-Proof.
-Admitted.
-
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
@@ -2079,21 +2012,53 @@ Proof.
     + intros Γext Γt A1 Hcw Hcrt Hwft HA.
       apply d_typing_freeze_inv in HA.
       exact (Hfill Γext Γt A1 Hcw Hcrt Hwft HA).
-  - (* forall: the principal ([≼]-least) inference is the canonical safe
-       witness — determined by [e] (up to ≼), hence X-independent — and it
-       fills every checking type ([gpat_of_principal]).  Obtained from the
-       strong existential [d_pat_principal]. *)
-    assert (Hforall : Γ ⊢[ mode_tc ] e ⦂ btyp_all_inh (ptyp_to_btyp_inh A))
-      by (apply d_typing__forall with (L := L); [ exact H | exact H0 ]).
-    destruct (d_pat_principal Hforall Hwf Hcr) as [Q Hprin].
-    eapply gpat_of_principal; exact Hprin.
+  - (* forall: a value generalised at [∀].  Its skeleton inference is the same
+       [is_sskl] witness as at the body type (no [∀] rule in [d_pat]), and the
+       [∀]-prefixed checking types are peeled by the [abs_check_fill] machinery.
+       To be closed via the same [is_sskl] route as [abs] (below). *)
+    admit.
   - (* abs: λ in mode [m].  At TC the fill is the (Qed) [abs_check_fill], but
        [d_pat__abs_check] needs the body to infer a SYN/principal skeleton
        [pskl_to_bskl_syn P], whereas the IH ([gpat tc]) only yields the body's
        SAFE (ghostified) skeleton — a distinct, more concrete inference not yet
        available (needs a principal-body-skeleton lemma).  At FN the domain is
        forced [inh]. *)
-    admit.
+    destruct m.
+    + (* ti *) admit.
+    + (* tc: the body's safe witness is [is_sskl] ⇒ syn-paintable
+         ([is_sskl_syn_roundtrip]) ⇒ feeds [d_pat__abs_check]; the fill is the
+         (Qed) [abs_check_fill]. *)
+      pick fresh x0 for
+        (L `union` dom Γ `union` dom Γ' `union` fvar_in_exp e `union` ftvar_in_exp e).
+      destruct (H2 x0 ltac:(fsetdec)
+                  ltac:(apply d_wf_denv__typ;
+                          [ exact Hwf | fsetdec
+                          | match goal with HA : _ ⊢ₚ _ |- _ => exact HA end ])
+                  ((x0 ~ dbind_skl pskl_hole) ++ Γ')
+                  ltac:(apply ctxr_cons; [ apply dbr_typ_hole | exact Hcr ]))
+        as [Qb [Hinfb [Hssklb Hfillb]]].
+      exists (bskl_tophole (bskl_arrow bskl_hole Qb)). split; [ | split ].
+      * (* inference: body's [is_sskl] witness lifts to a syn body via roundtrip;
+           the per-[x] body inference comes from the [x0] one by [d_pat_rename_var]. *)
+        rewrite <- (is_sskl_syn_roundtrip Hssklb) at 1.
+        apply d_pat__abs_check with
+          (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e)
+          (P := bskl_to_pskl Qb).
+        intros x Hx. rewrite (is_sskl_syn_roundtrip Hssklb).
+        replace (open_exp_wrt_exp e (exp_var_f x))
+          with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+          by (symmetry; apply subst_exp_in_exp_intro; fsetdec).
+        eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_skl pskl_hole);
+          [ exact Hinfb | reflexivity | discriminate | simpl_env; fsetdec ].
+      * (* is_sskl *)
+        apply is_sskl__tophole, is_sskl__arrow; [ apply is_sskl__hole | exact Hssklb ].
+      * (* fill via abs_check_fill *)
+        intros Γext Γt A1 Hcw Hcrt Hwft HA.
+        eapply abs_check_fill with (Qb := Qb)
+          (L_b := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e);
+          [ | exact Hcw | exact Hcrt | exact Hwft | exact HA ].
+        admit.
+    + (* fn *) admit.
   - (* abs_anno: annotated λ; analogous to [abs] with [d_pat__abs_anno_check]
        / [abs_check_fill] on the annotated domain. *)
     admit.
