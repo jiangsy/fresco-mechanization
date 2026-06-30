@@ -102,11 +102,11 @@ Proof.
   apply d_sub_weakening. simpl. exact H.
 Qed.
 
-Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Δs Δi Q P,
-    (Γ1 ++ Γ3) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
-    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Δ Q P,
+    (Γ1 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ P ->
+    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ P.
 Proof.
-  intros Γ1 Γ2 Γ3 Δs Δi Q P H.
+  intros Γ1 Γ2 Γ3 Δ Q P H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_refine_syn__unit.
@@ -118,10 +118,9 @@ Proof.
     eapply (H0 X ltac:(fsetdec) Γ1 Γ3). reflexivity.
   - apply d_refine_syn__hole. apply d_wf_pskl_weakening. assumption.
   - apply d_refine_syn__tophole_remove; auto.
-  - (* [tophole_fill] now extends the syn context [Δs], not [Γ], so the
-       weakened [Γ] threads unchanged through the premise. *)
+  - (* [tophole_fill] now PREPENDS the bound var to [Γ]; weaken at [X::Γ1]. *)
     apply d_refine_syn__tophole_fill with (L := L `union` dom (Γ1 ++ Γ3)). intros X HX.
-    eapply (H0 X ltac:(fsetdec) Γ1 Γ3). reflexivity.
+    eapply (H0 X ltac:(fsetdec) ((X ~ dbind_tvar) ++ Γ1) Γ3). simpl_env. reflexivity.
   - apply d_refine_syn__tophole_keep; [ assumption | auto ].
 Qed.
 
@@ -305,9 +304,9 @@ Proof.
 Qed.
 
 Lemma d_refine_syn_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall Δs Δi Q P, Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P -> Γ' ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+    ctx_weaken Γ Γ' -> forall Δ Q P, Γ ⨟ Δ ⊢ᵣ Q ⊳ P -> Γ' ⨟ Δ ⊢ᵣ Q ⊳ P.
 Proof.
-  induction 1; intros Δs Δi Q P Hr; [ assumption | ].
+  induction 1; intros Δ Q P Hr; [ assumption | ].
   apply IHctx_weaken. apply d_refine_syn_weakening. exact Hr.
 Qed.
 

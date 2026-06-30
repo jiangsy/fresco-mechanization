@@ -17,7 +17,7 @@ Require Import src.frost.predicates.
 Set Implicit Arguments.
 
 (* All [⨟]-prefixed judgments keep their middle context slot at level 74
-   (not 75): the three-context refinement [Γ ⨟ Δs ⨟ Δi ⊢ᵣ …] needs its
+   (not 75): the single-Δ refinement [Γ ⨟ Δ ⊢ᵣ …] needs its
    inner slots below the notation level to avoid self-recursion, and
    camlp5 requires every notation sharing the [_ ⨟ _] prefix to agree on
    that slot's level.  Context slots only ever hold [Γ]/[Δ] built from
@@ -35,8 +35,8 @@ Reserved Notation "Ψ ⨟ Γ ⊨ C ≈ B"
 Reserved Notation "Ψ ⨟ Γ ⊢[ M ] C ⊑ B"
   (at level 75, Γ at level 74, M at level 0, C at level 74, B at level 74,
    no associativity).
-Reserved Notation "Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P"
-  (at level 75, Δs at level 74, Δi at level 74,
+Reserved Notation "Γ ⨟ Δ ⊢ᵣ Q ⊳ P"
+  (at level 75, Δ at level 74,
    Q at level 74, P at level 74, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊨ₛ R ≈ Q"
   (at level 75, Γ at level 74, R at level 74, Q at level 74, no associativity).
@@ -418,63 +418,50 @@ where "Γ ⊢ A ≤ B" := (d_shallow_sub Γ A B) : type_scope.
      | Γ         |     ✓       |      ✓       |        ✓           |
      | Δs (syn)  |     ✓       |      ✓       |        ✗           |
      | Δi (inh)  |     ✓       |      ✗       |        ✗           | *)
-Inductive d_refine_syn : list (atom * dbind) -> list atom -> list atom -> bskl -> bskl -> Prop :=
-(* WT: LHS is always an inherited skeleton. I'm not sure if it's worth
-mentioning as a predicate. *)
-| d_refine_syn__unit : forall Γ Δs Δi,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ bskl_unit ⊳ bskl_unit
-| d_refine_syn__var : forall Γ Δs Δi X,
-    (* Paper [declarative.tex]: [Γ,Δi ∋ α].  A plain occurrence is an inherited
-       (Δi) or context (Γ) tvar — NEVER a synthesised (Δs) one: Δs vars are
-       usable only inside ghost-fills (the [hole] rule's [⊢ₚₛ] scope), as the
-       paper notes ("can be used when filling ghosts, unlike [Δi]"). *)
-    List.In X Δi \/ binds X dbind_tvar Γ ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_var_f X) ⊳ (bskl_var_f X)
-| d_refine_syn__arrow : forall Γ Δs Δi Q1 Q2 P1 P2,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q1 ⊳ P1 ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q2 ⊳ P2 ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2)
-| d_refine_syn__all : forall L Γ Δs Δi Q P,
-    (* Paper ∀-rule (declarative.tex): inh{∀α.P} ◁syn inh{∀α.}bid{Q} —
-       the quantifier is inherited on both sides (the input is the
-       inherited painting of the same skeleton fed by [d_*__app]); the
-       bound var joins the *inherited* context [Δi]. *)
+(** Paper [declarative.tex, 0dd3488 "update refinement"]: the refinement now has
+    a SINGLE context [Δ] (the INHERITED ∀-vars).  Synthesised ∀-vars (from
+    [tophole_fill]) live in [Γ].  [Γ ∣ Δ ⊢ inh{P} ⤳ bid{Q}].  Well-formedness of
+    both sides is a SEPARATE precondition (the old D4 "preserves wf" is gone). *)
+Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Prop :=
+| d_refine_syn__unit : forall Γ Δ,
+    Γ ⨟ Δ ⊢ᵣ bskl_unit ⊳ bskl_unit
+| d_refine_syn__var : forall Γ Δ X,
+    (* Paper: [Γ,Δ ∋ α] — an inherited (Δ) or context (Γ) tvar. *)
+    List.In X Δ \/ binds X dbind_tvar Γ ->
+    Γ ⨟ Δ ⊢ᵣ (bskl_var_f X) ⊳ (bskl_var_f X)
+| d_refine_syn__arrow : forall Γ Δ Q1 Q2 P1 P2,
+    Γ ⨟ Δ ⊢ᵣ Q1 ⊳ P1 ->
+    Γ ⨟ Δ ⊢ᵣ Q2 ⊳ P2 ->
+    Γ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2)
+| d_refine_syn__all : forall L Γ Δ Q P,
+    (* Inherited ∀: the bound var joins [Δ]. *)
     (forall X, X `notin` L ->
-       Γ ⨟ Δs ⨟ (X :: Δi) ⊢ᵣ
+       Γ ⨟ (X :: Δ) ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f X)) ⊳
          (open_bskl_wrt_bskl P (bskl_var_f X))) ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P)
-| d_refine_syn__hole : forall Γ Δs Δi P,
-    (* [□ ◁syn syn{Q}]: clear [Δi] so the filling cannot use inherited
-       ∀-bound vars; keep [Δs] (syn-quantifier vars *can* fill ghosts).
-       So the fill is checked by [d_wf_pskl] with scope set [Ψ := Δs]. *)
-    Δs ⨟ Γ ⊢ₚₛ P ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
-| d_refine_syn__tophole_remove : forall Γ Δs Δi Q P,
-    (* [⫯.inh{P} ◁syn bid{Q}]: remove the universal ghost.  Clear [Δi]
-       (inherited vars unusable below a ghost), but KEEP [Δs]: the body
-       is promoted to the same synthesised-quantifier scope, so prior
-       syn-vars stay available. *)
-    Γ ⨟ Δs ⨟ nil ⊢ᵣ Q ⊳ P ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole Q) ⊳ P
-| d_refine_syn__tophole_fill : forall L Γ Δs Δi Q P,
-    (* [⫯.inh{P} ◁syn syn{∀α.}bid{Q}]: fill the universal ghost with a
-       concrete synthesised quantifier; α is ADDED to the *syn* context
-       [Δs] (so consecutive synthesised quantifiers accumulate and may
-       fill ghosts), while [Δi] is cleared. *)
+    Γ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh P)
+| d_refine_syn__hole : forall Γ Δ P,
+    (* [□ ⤳ syn{Q}]: the fill is well-formed under [Γ] alone (synthesised vars
+       are in [Γ]); [Δ] is cleared so inherited vars cannot fill ghosts. *)
+    nil ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
+| d_refine_syn__tophole_remove : forall Γ Δ Q P,
+    (* [⫯.inh{P} ⤳ bid{Q}]: remove the universal ghost; keep [Δ]. *)
+    Γ ⨟ Δ ⊢ᵣ Q ⊳ P ->
+    Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ P
+| d_refine_syn__tophole_fill : forall L Γ Δ Q P,
+    (* [⫯.inh{P} ⤳ syn{∀α.}bid{Q}]: fill the ghost with a synthesised quantifier;
+       α is added to [Γ] (usable when filling ghosts), keep [Δ]. *)
     (forall X, X `notin` L ->
-       Γ ⨟ (X :: Δs) ⨟ nil ⊢ᵣ
+       ((X ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣ
          (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl P (bskl_var_f X))) ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P)
-| d_refine_syn__tophole_keep : forall Γ Δs Δi Q P,
-    (* [⫯.inh{P} ◁syn ⫯.bid{Q}]: keep the universal ghost; the output
-       under the ghost must be guarded to preserve well-formedness.
-       This is a genuine universal-ghost boundary, so clear BOTH [Δs]
-       and [Δi]. *)
+    Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P)
+| d_refine_syn__tophole_keep : forall Γ Δ Q P,
+    (* [⫯.inh{P} ⤳ ⫯.bid{Q}]: keep the universal ghost; [Q] guarded; keep [Δ]. *)
     guarded_bskl P ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ Q ⊳ P ->
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P)
-where "Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P" := (d_refine_syn Γ Δs Δi Q P) : type_scope.
+    Γ ⨟ Δ ⊢ᵣ Q ⊳ P ->
+    Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P)
+where "Γ ⨟ Δ ⊢ᵣ Q ⊳ P" := (d_refine_syn Γ Δ Q P) : type_scope.
 
 (* The latest paper keeps only the coloured refinement relation
    [Γ ⊢ inh{P} ◁syn bid{Q}] (the uncoloured [◁] is just its colour
@@ -703,7 +690,7 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        INFERRED ([⇨]) in [FN] mode, not typed — d_pat is self-contained
        skeleton inference.  [P'] is the fill output (the arg skeleton). *)
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q1 ->
+    Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q1 ->
     Γ ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow Q1 Q2) ->
     Γ ⊢[ m ] (exp_app e1 e2) ⇨ Q2
 | d_pat__abs_check : forall L Γ e P,
@@ -776,7 +763,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        same [inh A].  (Previously the function domain was an arbitrary [Barg]
        with erasure [A], not justified by the [inh A] refinement output.) *)
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
+    Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) ->
     Γ ⊢[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
     Γ ⊢[ m ] (exp_app e1 e2) ⦂ B2
@@ -886,7 +873,7 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        [btyp_to_bskl B1]) and the function premise; the argument is checked at
        the inherited colouring of the same domain. *)
     Γ ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn P) ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
+    Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (btyp_to_bskl B1) ->
     Γ ⊢ˢ[ (mode_fn m) ] e1 ⦂ (btyp_arrow B1 B2) ->
     Γ ⊢ˢ[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
     Γ ⊢ˢ[ m ] (exp_app e1 e2) ⦂ B2

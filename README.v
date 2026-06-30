@@ -66,9 +66,9 @@ Print Assumptions d_sd_typing_complete.
 (** In-progress properties — stated and [Check]ed, but still depend on admits
     (so no [Print Assumptions] yet). *)
 
-(* Paper Lemma D4 (declarative.tex:1386 — refinement preserves wf):
-     Ψ ⨟ Γ ⊢ᵣ Q ⊳ P  →  d_wf_pskl Ψ Γ (bskl_to_pskl P)        [Admitted] *)
-Check d_refine_preserves_wf.
+(* Paper Lemma D4 ("refinement preserves wf") was REMOVED upstream: the
+   declarative refinement judgment now takes well-formedness as a PRECONDITION
+   (single-Δ form [Γ ⨟ Δ ⊢ᵣ Q ⊳ P]), so there is no derived-wf lemma to Check. *)
 
 (* Typing / pattern-synthesis preserve well-formedness (mutual):
      (Γ ⊢[ m ] e ⦂ B → d_wf_btyp Γ B)  ∧  (Γ ⊢[ m ] e ⇨ Q → d_wf_pskl ∅ Γ Q) *)

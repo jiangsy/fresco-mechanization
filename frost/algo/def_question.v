@@ -93,7 +93,7 @@ Definition msubst_compose (ζ θ1 : metasubst) : metasubst :=
 
 (* The inherited-refinement side condition [Θ ⊢ inh(θ P₀) ▷syn out]. *)
 Definition a_fillsyn (Θ : aenv) (θ : metasubst) (P0 : pskl) (out : bskl) : Prop :=
-  ⌊ Θ ⌋ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ out.
+  ⌊ Θ ⌋ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ out.
 
 (* ===================================================================== *)
 (*  Consistency  (paper: Questions of consistency).                       *)

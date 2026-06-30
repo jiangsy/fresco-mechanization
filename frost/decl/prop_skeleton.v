@@ -27,56 +27,10 @@ Set Implicit Arguments.
    rules (remove / fill-with-∀α / keep), so the output is not uniquely a
    [bskl_tophole].  Invert [d_refine_syn] directly where needed. *)
 
-(** Refinement preserves well-formedness (paper "Refinement preserves
-    well-formedness", declarative.tex).  The two skeleton-scope contexts
-    of refinement — [Δs] (syn-quantifier vars) and [Δi] (inh-quantifier
-    vars) — collapse, on the colour-erased [pskl] output, into the single
-    [d_wf_pskl] scope set [Ψ := Δs ++ Δi] (colours do not affect skeleton
-    well-formedness, so both kinds of ∀-bound var live in the one [Ψ]).
-    The three-context refinement (which clears [Δs] under a kept [TopHole]
-    and [Δi] at [Hole]-fills) is exactly what guarantees the colour-erased
-    output is [d_wf_pskl]; with the old "syn var dumped into [Γ]"
-    encoding this lemma was false (e.g. [⫯.(□→unit)] refined to
-    [∀^syn α.⫯.(α→unit)], which is not well-formed).
-
-    Each [TopHole] / [Hole] rule clears some context, so its premise's
-    IH yields wf at a [Ψ] that is a *subset* of the one the conclusion
-    needs; we close the gap with [d_wf_pskl_Psi_mono] (monotone in [Ψ]). *)
-Lemma d_refine_preserves_wf : forall Γ Δs Δi Q P,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
-    (Δs ++ Δi) ⨟ Γ ⊢ₚₛ (bskl_to_pskl P).
-Proof.
-  intros Γ Δs Δi Q P H. induction H; simpl.
-  - (* unit *) constructor.
-  - (* var *) constructor.
-    destruct H as [HI | HG].
-    + left. apply in_or_app; auto.
-    + right; auto.
-  - (* arrow *) constructor; auto.
-  - (* all (inh): bound var joins Δi; wf Ψ gains it under the binder.
-       [d_wf_pskl_Psi_mono] leaves the wf premise first, the [Ψ ⊆ Ψ'] last. *)
-    inst_cofinites_for d_wf_pskl__all. intros X HX.
-    rewrite <- bskl_to_pskl_open.
-    apply d_wf_pskl_Psi_mono with (Ψ := Δs ++ (X :: Δi)); [ apply H0; auto | ].
-    intros Y HY. simpl. rewrite in_app_iff in *. simpl in HY |- *. tauto.
-  - (* hole: fill is wf with Ψ := Δs; weaken to Δs ++ Δi *)
-    rewrite bskl_to_pskl_pskl_to_bskl_syn.
-    apply d_wf_pskl_Psi_mono with (Ψ := Δs); [ assumption | ].
-    intros Y HY. rewrite in_app_iff. tauto.
-  - (* tophole_remove: keeps Δs, clears Δi; IH gives Ψ := Δs ++ nil *)
-    apply d_wf_pskl_Psi_mono with (Ψ := Δs ++ nil); [ assumption | ].
-    intros Y HY. rewrite in_app_iff in *. simpl in HY. tauto.
-  - (* tophole_fill: output ∀^syn; body wf with Ψ := (X :: Δs) ++ nil *)
-    inst_cofinites_for d_wf_pskl__all. intros X HX.
-    rewrite <- bskl_to_pskl_open.
-    apply d_wf_pskl_Psi_mono with (Ψ := (X :: Δs) ++ nil); [ apply H0; auto | ].
-    intros Y HY. simpl. rewrite in_app_iff in *. simpl in HY |- *. tauto.
-  - (* tophole_keep: output ⫯; clears both; guarded + wf-under-nil *)
-    apply d_wf_pskl__tophole.
-    + apply guarded_bskl_to_pskl; auto.
-    + apply d_wf_pskl_Psi_mono with (Ψ := nil ++ nil); [ assumption | ].
-      intros Y HY. inversion HY.
-Qed.
+(** NB the headline lemma "Refinement preserves well-formedness" (the old D4)
+    was DELETED upstream (declarative.tex 0dd3488): with the single-[Δ]
+    refinement, well-formedness of both sides is a SEPARATE precondition of the
+    judgement, not a derived property. *)
 
 (** A well-scoped type's skeleton is a well-formed [pskl].  ([ptyp_to_pskl]
     images are ghost-free, so a scope-coverage premise lets the [∀] case
@@ -110,12 +64,13 @@ Qed.
     polytypes, not the fill itself — see [d_pat_safety].) *)
 Lemma d_refine_syn_hole_fills : forall A,
     lc_ptyp A ->
-    forall Γ Δs Δi,
-      (forall X, X `in` ftvar_in_ptyp A -> List.In X Δs \/ binds X dbind_tvar Γ) ->
-      Γ ⨟ Δs ⨟ Δi ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A)).
+    forall Γ Δ,
+      (forall X, X `in` ftvar_in_ptyp A -> binds X dbind_tvar Γ) ->
+      Γ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A)).
 Proof.
-  intros A Hlc Γ Δs Δi Hcov.
-  apply d_refine_syn__hole. eapply d_wf_pskl_of_ptyp; eassumption.
+  intros A Hlc Γ Δ Hcov.
+  apply d_refine_syn__hole. apply d_wf_pskl_of_ptyp with (Ψ := nil);
+    [ exact Hlc | intros X HX; right; apply Hcov; assumption ].
 Qed.
 
 (** A universal ghost over a hole [⫯.□] also refines any well-scoped type
@@ -124,11 +79,11 @@ Qed.
     safety: a ghost-rich skeleton refines every checking type. *)
 Lemma d_refine_syn_tophole_hole_fills : forall A,
     lc_ptyp A ->
-    forall Γ Δs Δi,
+    forall Γ Δ,
       (forall X, X `in` ftvar_in_ptyp A -> binds X dbind_tvar Γ) ->
-      Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole bskl_hole) ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A)).
+      Γ ⨟ Δ ⊢ᵣ (bskl_tophole bskl_hole) ⊳ (pskl_to_bskl_syn (ptyp_to_pskl A)).
 Proof.
-  intros A Hlc Γ Δs Δi Hcov.
+  intros A Hlc Γ Δ Hcov.
   apply d_refine_syn__tophole_remove.
   apply d_refine_syn_hole_fills; auto.
 Qed.
@@ -784,29 +739,11 @@ Proof.
   - inversion Hnt.
 Qed.
 
-(** Refinement is monotone in the syn-scope [Δs] (for [⫯]-free RHS). *)
-Lemma d_refine_syn_Ds_mono : forall Γ Δs Δi Q P,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
-    no_tophole_bskl P ->
-    forall Δs', (forall X, List.In X Δs -> List.In X Δs') ->
-    Γ ⨟ Δs' ⨟ Δi ⊢ᵣ Q ⊳ P.
-Proof.
-  intros Γ Δs Δi Q P H. induction H; intros Hnt Δs' Hmono.
-  - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HI | Hb];
-      [ left; assumption | right; assumption ].
-  - inversion Hnt; subst. apply d_refine_syn__arrow; auto.
-  - inversion Hnt; subst. inst_cofinites_for d_refine_syn__all. intros X HX.
-    apply H0; auto. apply no_tophole_bskl_open_rec. assumption.
-  - apply d_refine_syn__hole.
-    apply d_wf_pskl_Psi_mono with (Ψ := Δs); assumption.
-  - apply d_refine_syn__tophole_remove. apply IHd_refine_syn; auto.
-  - inversion Hnt; subst. inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
-    apply H0; auto.
-    + apply no_tophole_bskl_open_rec. assumption.
-    + intros Y HY. simpl in HY |- *. destruct HY as [HY | HY]; [ left; assumption | right; auto ].
-  - inversion Hnt.
-Qed.
+(** [d_refine_syn_Ds_mono] and [d_refine_syn_move] DELETED: with the single-[Δ]
+    refinement the synthesised ∀-vars live in [Γ] (the [tophole_fill] rule
+    prepends them directly), so there is no [Δs] to be monotone in, and no
+    "move a tvar into [Δs]" step — [ghost_of_fill_gen]'s forall_r case applies
+    its IH directly. *)
 
 (** The inh-repaint of a skeleton's erasure preserves free tvars. *)
 Lemma ftvar_inh_bskl_to_pskl : forall Q,
@@ -840,84 +777,41 @@ Proof.
     simpl in Hub. fsetdec.
 Qed.
 
-(** Move a tvar from the type context into the syn-scope [Δs] ([⫯]-free RHS).
-    Under the paper var rule (no [Δs]), the moved [X] may NOT appear at a plain
-    var position of the LHS [Q] — only inside ghosts (where [Δs] is usable via
-    the [hole] rule) — so we require [X ∉ ftvar_in_bskl Q]. *)
-Lemma d_refine_syn_move : forall Γ' Δs Δi Q P,
-    Γ' ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
-    no_tophole_bskl P ->
-    forall X Γ, Γ' = (X ~ dbind_tvar) ++ Γ ->
-    X `notin` ftvar_in_bskl Q ->
-    Γ ⨟ (X :: Δs) ⨟ Δi ⊢ᵣ Q ⊳ P.
-Proof.
-  intros Γ' Δs Δi Q P H. induction H; intros Hnt X0 Γ0 HΓ HXQ; subst.
-  - apply d_refine_syn__unit.
-  - simpl in HXQ. apply d_refine_syn__var. destruct H as [HI | Hb].
-    + left. assumption.
-    + right. apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
-      * apply binds_one_iff in Hb. destruct Hb as [HX _]. subst. exfalso. fsetdec.
-      * assumption.
-  - inversion Hnt; subst. simpl in HXQ. apply d_refine_syn__arrow.
-    + apply IHd_refine_syn1; auto; fsetdec.
-    + apply IHd_refine_syn2; auto; fsetdec.
-  - inversion Hnt; subst. simpl in HXQ. inst_cofinites_for d_refine_syn__all. intros Y HY.
-    apply H0; auto;
-      try (apply no_tophole_bskl_open_rec; assumption);
-      try (intro Hin; apply ftvar_in_bskl_open_bskl_wrt_bskl_upper in Hin;
-           simpl in Hin; fsetdec).
-  - apply d_refine_syn__hole.
-    eapply d_wf_pskl_move; [ eassumption | | reflexivity ].
-    apply no_tophole_syn_inv. assumption.
-  - simpl in HXQ. apply d_refine_syn__tophole_remove. apply IHd_refine_syn; auto.
-  - inversion Hnt; subst. simpl in HXQ. inst_cofinites_for d_refine_syn__tophole_fill. intros Y HY.
-    (* IH gives [X0 :: (Y :: Δs)]; reorder to [Y :: (X0 :: Δs)] via Ds_mono *)
-    apply d_refine_syn_Ds_mono with (Δs := X0 :: (Y :: Δs)).
-    + apply H0; auto;
-        try (apply no_tophole_bskl_open_rec; assumption);
-        try (intro Hin; apply ftvar_in_bskl_open_bskl_wrt_bskl_upper in Hin;
-             simpl in Hin; fsetdec).
-    + apply no_tophole_bskl_open_rec. assumption.
-    + intros Z HZ. simpl in HZ |- *. tauto.
-  - inversion Hnt.
-Qed.
-
-(** THE HOLE/Δi INVARIANT.  [hole_safe L P A]: [P] structurally matches the
-    type [A] (with holes), and EVERY hole in [P] faces an [A]-subterm whose
-    free vars avoid [L] (the enclosing-∀ vars).  This is the formal "ghosts
-    fill only NON-inherited-∀ positions" discipline: under refinement, a kept
-    nested ∀ routes its var into [Δi], and a hole there would be the banned
-    "ghost fills an inh-∀" — [hs_hole]'s side condition rules it out, and is
-    exactly what lets the hole case's well-formedness use [Δs ∪ Γ] (not Δi). *)
-Inductive hole_safe : list atom -> list atom -> pskl -> ptyp -> Prop :=
-| hs_hole  : forall Ds L A,
-    (forall X, X `in` ftvar_in_ptyp A -> ~ List.In X L) -> hole_safe Ds L pskl_hole A
-| hs_unit  : forall Ds L, hole_safe Ds L pskl_unit ptyp_unit
-| hs_var_f : forall Ds L X, ~ List.In X Ds -> hole_safe Ds L (pskl_var_f X) (ptyp_var_f X)
-| hs_var_b : forall Ds L n, hole_safe Ds L (pskl_var_b n) (ptyp_var_b n)
-| hs_arrow : forall Ds L P1 P2 A1 A2,
-    hole_safe Ds L P1 A1 -> hole_safe Ds L P2 A2 ->
-    hole_safe Ds L (pskl_arrow P1 P2) (ptyp_arrow A1 A2)
-| hs_all   : forall Ds L Lc P0 A0,
+(** THE HOLE/Δ INVARIANT.  [hole_safe L P A]: [P] structurally matches the type
+    [A] (with holes), and EVERY hole in [P] faces an [A]-subterm whose free vars
+    avoid [L] (the enclosing inherited-∀ vars, [Δ]).  Single context now (the
+    paper's single-[Δ] refinement): a plain var is unconstrained (the var rule is
+    [Δ∨Γ]); only holes must avoid [Δ] (the [hole] rule clears [Δ], filling under
+    [Γ]). *)
+Inductive hole_safe : list atom -> pskl -> ptyp -> Prop :=
+| hs_hole  : forall L A,
+    (forall X, X `in` ftvar_in_ptyp A -> ~ List.In X L) -> hole_safe L pskl_hole A
+| hs_unit  : forall L, hole_safe L pskl_unit ptyp_unit
+| hs_var_f : forall L X, hole_safe L (pskl_var_f X) (ptyp_var_f X)
+| hs_var_b : forall L n, hole_safe L (pskl_var_b n) (ptyp_var_b n)
+| hs_arrow : forall L P1 P2 A1 A2,
+    hole_safe L P1 A1 -> hole_safe L P2 A2 ->
+    hole_safe L (pskl_arrow P1 P2) (ptyp_arrow A1 A2)
+| hs_all   : forall L Lc P0 A0,
     (forall X, X `notin` Lc ->
-       hole_safe Ds (X :: L) (open_pskl_wrt_pskl P0 (pskl_var_f X))
-                             (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
-    hole_safe Ds L (pskl_all_syn P0) (ptyp_all A0).
+       hole_safe (X :: L) (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                          (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
+    hole_safe L (pskl_all_syn P0) (ptyp_all A0).
 
 (** CONSISTENCY→REFINEMENT CORE (the heart of [__check]): an [inh]-painted
     [hole_safe] skeleton refines the [colour]ing of its type.  By induction on
-    [A]; at a hole [hs_hole]'s condition + the coverage give [Δs ∪ Γ] (so
-    [hole_fills] applies); the ∀ case routes the var into [Δi] and recurses
-    using [colour_open] + [colour_guide_open] + [pskl_to_bskl_inh_open]. *)
+    [A]; at a hole, [hs_hole]'s [∉Δ] + the coverage give [binds Γ] (the [hole]
+    rule fills under [Γ]); a plain var uses the var rule ([Δ∨Γ]); the ∀ case
+    routes the bound var into [Δ]. *)
 Lemma refine_colour_core : forall A,
     lc_ptyp A ->
-    forall P Γ Δs Δi,
-      hole_safe Δs Δi P A ->
+    forall P Γ Δ,
+      hole_safe Δ P A ->
       (forall X, X `in` ftvar_in_ptyp A ->
-         List.In X Δs \/ List.In X Δi \/ binds X dbind_tvar Γ) ->
-      Γ ⨟ Δs ⨟ Δi ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (colour (pskl_to_bskl_inh P) A).
+         List.In X Δ \/ binds X dbind_tvar Γ) ->
+      Γ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (colour (pskl_to_bskl_inh P) A).
 Proof.
-  intros A Hlc. induction Hlc; intros P Γ Δs Δi Hhs Hcov.
+  intros A Hlc. induction Hlc; intros P Γ Δ Hhs Hcov.
   - (* unit *) inversion Hhs; subst.
     + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
       rewrite colour_hole. apply d_refine_syn_hole_fills;
@@ -927,18 +821,17 @@ Proof.
     + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
       rewrite colour_hole. apply d_refine_syn_hole_fills.
       * apply lc_ptyp_var_f.
-      * intros Y HY. destruct (Hcov Y HY) as [HS | [HI | HG]];
-          [ left; assumption | exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end | right; assumption ].
-    + simpl. apply d_refine_syn__var.
-      match goal with Hns : ~ List.In ?Z Δs |- _ =>
-        destruct (Hcov Z ltac:(simpl; fsetdec)) as [HS | [HI | HG]];
-          [ exfalso; apply Hns; exact HS | left; exact HI | right; exact HG ] end.
+      * intros Y HY. destruct (Hcov Y HY) as [HI | HG];
+          [ exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end
+          | assumption ].
+    + simpl. apply d_refine_syn__var. apply Hcov. simpl. fsetdec.
   - (* arrow *) inversion Hhs; subst.
     + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
       rewrite colour_hole. apply d_refine_syn_hole_fills.
       * apply lc_ptyp_arrow; assumption.
-      * intros Y HY. destruct (Hcov Y HY) as [HS | [HI | HG]];
-          [ left; assumption | exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end | right; assumption ].
+      * intros Y HY. destruct (Hcov Y HY) as [HI | HG];
+          [ exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end
+          | assumption ].
     + simpl. apply d_refine_syn__arrow;
         [ apply IHHlc1 | apply IHHlc2 ]; try assumption;
         intros Y HY; apply Hcov; simpl; fsetdec.
@@ -946,8 +839,9 @@ Proof.
     + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
       rewrite colour_hole. apply d_refine_syn_hole_fills.
       * pick fresh X; apply (lc_ptyp_all_exists X); auto.
-      * intros Y HY. destruct (Hcov Y HY) as [HS | [HI | HG]];
-          [ left; assumption | exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end | right; assumption ].
+      * intros Y HY. destruct (Hcov Y HY) as [HI | HG];
+          [ exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end
+          | assumption ].
     + simpl. inst_cofinites_for d_refine_syn__all. intros X HX.
       rewrite <- colour_open.
       rewrite <- (colour_guide_open _ (pskl_to_bskl_inh P0) X).
@@ -955,9 +849,9 @@ Proof.
       apply H0; auto.
       intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
       simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
-      * apply AtomSetImpl.singleton_1 in HY. subst. right. left. simpl. left. reflexivity.
-      * destruct (Hcov Y HY) as [HS | [HI | HG]];
-          [ left; assumption | right; left; simpl; right; assumption | right; right; assumption ].
+      * apply AtomSetImpl.singleton_1 in HY. subst. left. simpl. left. reflexivity.
+      * destruct (Hcov Y HY) as [HI | HG];
+          [ left; simpl; right; assumption | right; assumption ].
 Qed.
 
 (** [utyp]-level hole-safety, the invariant [ghost_of_fill_gen] carries (since
@@ -1098,23 +992,12 @@ Qed.
 (** TRANSPORT: hole-safety on the [utyp] [C] transfers to the checking type
     [A'] consistent with it.  This bridges [gen]'s [utyp] invariant
     [hole_safe_u] to the [hole_safe] that [refine_colour_core] consumes. *)
-(** [Δs] is a [list atom]; bridge its [List.In] membership to the [fold_right]
-    set form that [gather_atoms] (hence fresh-var [notin]) produces. *)
-Lemma list_atom_notin_fold : forall (X : atom) (L : list atom),
-    X `notin` List.fold_right add empty L -> ~ List.In X L.
-Proof.
-  induction L as [|a L IH]; simpl; intros Hni HIn.
-  - inversion HIn.
-  - destruct HIn as [Heq | HIn]; [ subst; fsetdec | apply IH; [ fsetdec | assumption ] ].
-Qed.
-
 Lemma hole_safe_u_transport : forall La Pa C,
     hole_safe_u La Pa C ->
-    forall Ds Δ Γ B A', Δ ⨟ Γ ⊨ C ≈ B -> B = ptyp_to_btyp_inh A' ->
-    (forall X, X `in` ftvar_in_pskl Pa -> ~ List.In X Ds) ->
-    hole_safe Ds La Pa A'.
+    forall Δ Γ B A', Δ ⨟ Γ ⊨ C ≈ B -> B = ptyp_to_btyp_inh A' ->
+    hole_safe La Pa A'.
 Proof.
-  intros La Pa C H. induction H; intros Ds Δ Γ B A' Hd Heq Hdis.
+  intros La Pa C H. induction H; intros Δ Γ B A' Hd Heq.
   - (* hsu_hole *) apply hs_hole. intros Y HY.
     assert (Hsub : ftvar_in_ptyp A' [<=] ftvar_in_utyp C)
       by (eapply d_consis_ftvar; [ exact Hd | exact Heq ]).
@@ -1122,36 +1005,23 @@ Proof.
   - (* hsu_unit *) revert Heq. inversion Hd; subst; intros Heq.
     destruct A'; simpl in Heq; try discriminate. apply hs_unit.
   - (* hsu_var_f *) revert Heq. inversion Hd; subst; intros Heq.
-    destruct A'; simpl in Heq; try discriminate. inversion Heq; subst.
-    apply hs_var_f. apply Hdis. simpl. fsetdec.
+    destruct A'; simpl in Heq; try discriminate. inversion Heq; subst. apply hs_var_f.
   - (* hsu_var_b *) inversion Hd.
   - (* hsu_arrow *) revert Heq. inversion Hd; subst; intros Heq.
     destruct A'; simpl in Heq; try discriminate. inversion Heq; subst.
-    apply hs_arrow;
-      [ eapply IHhole_safe_u1 | eapply IHhole_safe_u2 ]; eauto;
-      intros Y HY; apply Hdis; simpl; fsetdec.
+    apply hs_arrow; [ eapply IHhole_safe_u1 | eapply IHhole_safe_u2 ]; eauto.
   - (* hsu_all_syn *) revert Heq. inversion Hd; subst; intros Heq;
       destruct A'; simpl in Heq; try discriminate; inversion Heq; subst.
     match goal with Hsc : forall _ : atom, _ -> d_consis _ _ _ _ |- _ =>
-      apply hs_all with (Lc := Lc \u L0 \u List.fold_right add empty Ds); intros X HX;
+      apply hs_all with (Lc := Lc \u L0); intros X HX;
       eapply H0; [ fsetdec | apply Hsc; fsetdec
-                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity
-                 | intros Y HY; apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY;
-                   simpl in HY; apply AtomSetImpl.union_1 in HY; destruct HY as [HYx | HYp];
-                   [ apply AtomSetImpl.singleton_1 in HYx; subst Y;
-                     apply list_atom_notin_fold; fsetdec
-                   | apply Hdis; simpl; fsetdec ] ] end.
+                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity ] end.
   - (* hsu_all_etag *) revert Heq. inversion Hd; subst; intros Heq;
       destruct A'; simpl in Heq; try discriminate; inversion Heq; subst.
     match goal with Hsc : forall _ : atom, _ -> d_consis _ _ _ _ |- _ =>
-      apply hs_all with (Lc := Lc \u L0 \u List.fold_right add empty Ds); intros X HX;
+      apply hs_all with (Lc := Lc \u L0); intros X HX;
       eapply H0; [ fsetdec | apply Hsc; fsetdec
-                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity
-                 | intros Y HY; apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY;
-                   simpl in HY; apply AtomSetImpl.union_1 in HY; destruct HY as [HYx | HYp];
-                   [ apply AtomSetImpl.singleton_1 in HYx; subst Y;
-                     apply list_atom_notin_fold; fsetdec
-                   | apply Hdis; simpl; fsetdec ] ] end.
+                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity ] end.
 Qed.
 
 (** [tophole_safe P0 A]: a single top ghost [⫯] over a [hole_safe] core [P0],
@@ -1161,12 +1031,14 @@ Qed.
     shape [bskl_to_pskl Q] takes for a non-□ ghost [Q] (one top [⫯], syn-painted
     — hence [hole_safe], no nested [⫯] — below). *)
 Inductive tophole_safe : list atom -> pskl -> ptyp -> Prop :=
-| ths_leaf : forall Ds P0 A,
-    (forall A0, A <> ptyp_all A0) -> hole_safe Ds nil P0 A -> tophole_safe Ds P0 A
-| ths_all  : forall Ds L P0 A0,
+| ths_leaf : forall Δ P0 A,
+    (forall A0, A <> ptyp_all A0) -> hole_safe Δ P0 A -> tophole_safe Δ P0 A
+| ths_all  : forall Δ L P0 A0,
+    (* The ∀-var goes into [Γ] (the [tophole_fill] rule), not into [Δ], so [Δ]
+       (the inherited context) is unchanged through the peel. *)
     (forall X, X `notin` L ->
-       tophole_safe (X :: Ds) P0 (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
-    tophole_safe Ds P0 (ptyp_all A0).
+       tophole_safe Δ P0 (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
+    tophole_safe Δ P0 (ptyp_all A0).
 
 (** [colour] of a [⫯]-guide against a non-∀ type peeks past the [⫯] (provided
     the peeled guide isn't itself a [⫯]). *)
@@ -1186,48 +1058,49 @@ Qed.
     recursion on the body. *)
 Lemma refine_colour_tophole : forall A,
     lc_ptyp A ->
-    forall P0 Γ Δs Δi,
-      tophole_safe Δs P0 A ->
+    forall P0 Γ Δ,
+      tophole_safe Δ P0 A ->
       (forall X, X `in` ftvar_in_ptyp A ->
-         List.In X Δs \/ binds X dbind_tvar Γ) ->
-      Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole (pskl_to_bskl_inh P0))
-                     ⊳ (colour (bskl_tophole (pskl_to_bskl_inh P0)) A).
+         List.In X Δ \/ binds X dbind_tvar Γ) ->
+      Γ ⨟ Δ ⊢ᵣ (bskl_tophole (pskl_to_bskl_inh P0))
+               ⊳ (colour (bskl_tophole (pskl_to_bskl_inh P0)) A).
 Proof.
-  intros A Hlc. induction Hlc; intros P0 Γ Δs Δi Hts Hcov.
+  intros A Hlc. induction Hlc; intros P0 Γ Δ Hts Hcov.
   - (* unit *) inversion Hts; subst.
-    match goal with Hhs : hole_safe _ nil P0 ptyp_unit |- _ =>
+    match goal with Hhs : hole_safe _ P0 ptyp_unit |- _ =>
       assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
         by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
     rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
     apply d_refine_syn__tophole_remove.
     apply refine_colour_core; [ apply lc_ptyp_unit | assumption | intros Y HY; simpl in HY; fsetdec ].
   - (* var X *) inversion Hts; subst.
-    match goal with Hhs : hole_safe _ nil P0 (ptyp_var_f _) |- _ =>
+    match goal with Hhs : hole_safe _ P0 (ptyp_var_f _) |- _ =>
       assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
         by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
     rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
     apply d_refine_syn__tophole_remove.
-    apply refine_colour_core; [ apply lc_ptyp_var_f | assumption
-      | intros Y HY; destruct (Hcov Y HY) as [HS | HG]; [ left; assumption | right; right; assumption ] ].
+    apply refine_colour_core; [ apply lc_ptyp_var_f | assumption | exact Hcov ].
   - (* arrow *) inversion Hts; subst.
-    match goal with Hhs : hole_safe _ nil P0 (ptyp_arrow _ _) |- _ =>
+    match goal with Hhs : hole_safe _ P0 (ptyp_arrow _ _) |- _ =>
       assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
         by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
     rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
     apply d_refine_syn__tophole_remove.
-    apply refine_colour_core; [ apply lc_ptyp_arrow; assumption | assumption
-      | intros Y HY; destruct (Hcov Y HY) as [HS | HG]; [ left; assumption | right; right; assumption ] ].
+    apply refine_colour_core; [ apply lc_ptyp_arrow; assumption | assumption | exact Hcov ].
   - (* all *) inversion Hts; subst.
     + (* ths_leaf: impossible, A = ptyp_all *)
       match goal with H : forall _ : ptyp, _ |- _ => exfalso; apply (H _ eq_refl) end.
-    + (* ths_all: __tophole_fill *)
+    + (* ths_all: __tophole_fill (the ∀-var joins Γ now) *)
       simpl. inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
-      rewrite <- colour_open. apply H0.
+      rewrite <- colour_open.
+      eapply (H0 X P0 ((X ~ dbind_tvar) ++ Γ) Δ).
       * match goal with Hb : forall _ : atom, _ -> tophole_safe _ _ _ |- _ => apply Hb; auto end.
       * intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
         simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
-        -- apply AtomSetImpl.singleton_1 in HY. subst. left. simpl. left. reflexivity.
-        -- destruct (Hcov Y HY) as [HS | HG]; [ left; simpl; right; assumption | right; assumption ].
+        -- apply AtomSetImpl.singleton_1 in HY. subst Y. right.
+           apply binds_app_2. apply binds_one_3; reflexivity.
+        -- destruct (Hcov Y HY) as [HI | HG];
+             [ left; assumption | right; apply binds_app_3; assumption ].
 Qed.
 
 (** [forall_l] maintenance: from the [hsu_all] body (one [∀] stripped), the
@@ -1261,7 +1134,7 @@ Lemma check_leaf : forall Γ P C A' Δ,
     Δ ⨟ Γ ⊨ C ≈ ptyp_to_btyp_inh A' ->
     hole_safe_u nil P C ->
     d_wf_ptyp Γ A' ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (bskl_tophole (pskl_to_bskl_inh P))
+    Γ ⨟ nil ⊢ᵣ (bskl_tophole (pskl_to_bskl_inh P))
                    ⊳ (colour (bskl_tophole (pskl_to_bskl_inh P)) A').
 Proof.
   intros Γ P C A' Δ Hgb Hcons Hhsu Hwf.
@@ -1271,8 +1144,7 @@ Proof.
   - eapply d_wf_ptyp_lc_loc; eauto.
   - apply ths_leaf;
       [ exact Hnall'
-      | eapply hole_safe_u_transport;
-          [ exact Hhsu | exact Hcons | reflexivity | intros ? ?; simpl; auto ] ].
+      | eapply hole_safe_u_transport; [ exact Hhsu | exact Hcons | reflexivity ] ].
   - intros X HX. right. eapply d_wf_ptyp_ftvar; eauto.
 Qed.
 
@@ -1295,14 +1167,14 @@ Qed.
     derivation. *)
 Lemma ghost_fill_hole_case : forall Γ A',
     d_wf_ptyp Γ A' ->
-    Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl (@bskl_hole)))
+    Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl (@bskl_hole)))
                      ⊳ (colour (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) A').
 Proof.
   intros Γ A' Hwf.
   replace (pskl_to_bskl_inh (bskl_to_pskl bskl_hole)) with (@bskl_hole) by reflexivity.
   rewrite colour_hole. apply d_refine_syn_hole_fills.
   - eapply d_wf_ptyp_lc_loc; eauto.
-  - intros X HX. right. eapply d_wf_ptyp_ftvar; eauto.
+  - intros X HX. eapply d_wf_ptyp_ftvar; eauto.
 Qed.
 
 Lemma ghost_of_fill_gen : forall Δ Γ U V,
@@ -1313,7 +1185,7 @@ Lemma ghost_of_fill_gen : forall Δ Γ U V,
       pskl_subsumes P (utyp_to_pskl U) ->
       ghost_of P Q ->
       hole_safe_u nil P U ->
-      Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q))
+      Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q))
                        ⊳ (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A').
 Proof.
   intros Δ Γ U V Hsub. remember mode_tc as m eqn:Hm. revert Hm.
@@ -1349,9 +1221,7 @@ Proof.
       apply d_refine_syn__tophole_fill with (L := g `union` ftvar_in_bskl Q0).
       intros X HX.
       rewrite <- colour_open.
-      eapply d_refine_syn_move;
-        [ | apply colour_no_tophole | reflexivity
-        | simpl; rewrite ftvar_inh_bskl_to_pskl; fsetdec ].
+      (* New [tophole_fill] prepends [X] to [Γ] — exactly the IH's context; no move. *)
       match goal with
       | IH : forall _ : atom, _ -> _ -> forall _ _ _ : _, _ |- _ =>
           eapply (IH X ltac:(fsetdec) eq_refl (open_ptyp_wrt_ptyp A'0 (ptyp_var_f X)) P (bskl_tophole Q0))
@@ -1400,7 +1270,7 @@ Lemma ghost_of_fill : forall C Q Γ A',
     d_wf_ptyp Γ A' ->
     empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn C) ⊑ (ptyp_to_btyp_inh A') ->
     exists B, bskl_to_pskl B = ptyp_to_pskl A' /\
-              Γ ⨟ nil ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B.
+              Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B.
 Proof.
   intros C Q Γ A' Hlc Hg Hwfa Hsub.
   exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A'). split.
@@ -1551,13 +1421,13 @@ Proof.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
 Qed.
 
-Lemma d_refine_syn_binding_eq : forall Γ Δs Δi Q P,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+Lemma d_refine_syn_binding_eq : forall Γ Δi Q P,
+    Γ ⨟ Δi ⊢ᵣ Q ⊳ P ->
     forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
     dbind_to_pskl d = dbind_to_pskl d' ->
-    (Γ1 ++ (x ~ d') ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+    (Γ1 ++ (x ~ d') ++ Γ2) ⨟ Δi ⊢ᵣ Q ⊳ P.
 Proof.
-  intros Γ Δs Δi Q P H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
+  intros Γ Δi Q P H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
   - apply d_refine_syn__unit.
   - apply d_refine_syn__var. destruct H as [HI | Hb];
       [ left; assumption | right ].
@@ -1570,7 +1440,8 @@ Proof.
   - apply d_refine_syn__hole. eapply d_wf_pskl_binding_eq; eauto.
   - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
   - apply d_refine_syn__tophole_fill with (L := L). intros X HX.
-    eapply (H0 X HX Γ1 x0 d0 d0' Γ2); [ reflexivity | exact Hdd ].
+    eapply (H0 X HX ((X ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2);
+      [ simpl_env; reflexivity | exact Hdd ].
   - apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
 Qed.
 
@@ -1799,10 +1670,10 @@ Proof.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
 Qed.
 
-Lemma d_refine_syn_ghost_rel : forall Γt Δs Δi Q P,
-    Γt ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P -> forall Γp, ghost_rel Γp Γt -> Γp ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Lemma d_refine_syn_ghost_rel : forall Γt Δi Q P,
+    Γt ⨟ Δi ⊢ᵣ Q ⊳ P -> forall Γp, ghost_rel Γp Γt -> Γp ⨟ Δi ⊢ᵣ Q ⊳ P.
 Proof.
-  intros Γt Δs Δi Q P H. induction H; intros Γp Hgr.
+  intros Γt Δi Q P H. induction H; intros Γp Hgr.
   - apply d_refine_syn__unit.
   - apply d_refine_syn__var. destruct H as [HI | Hb];
       [ left; assumption | right; eapply ghost_rel_binds_tvar; eauto ].
@@ -1810,7 +1681,8 @@ Proof.
   - apply d_refine_syn__all with (L := L). intros X HX. eapply H0; eauto.
   - apply d_refine_syn__hole. eapply d_wf_pskl_ghost_rel; eauto.
   - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
-  - apply d_refine_syn__tophole_fill with (L := L). intros X HX. eapply H0; eauto.
+  - apply d_refine_syn__tophole_fill with (L := L). intros X HX.
+    eapply (H0 X HX ((X ~ dbind_tvar) ++ Γp)). apply gr_keep; assumption.
   - apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
 Qed.
 
@@ -1920,12 +1792,12 @@ Proof.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
 Qed.
 
-Lemma d_refine_syn_rename_var : forall Γ Δs Δi Q P,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+Lemma d_refine_syn_rename_var : forall Γ Δi Q P,
+    Γ ⨟ Δi ⊢ᵣ Q ⊳ P ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
-    (Γ1 ++ (y ~ d) ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+    (Γ1 ++ (y ~ d) ++ Γ2) ⨟ Δi ⊢ᵣ Q ⊳ P.
 Proof.
-  intros Γ Δs Δi Q P H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd; subst.
+  intros Γ Δi Q P H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd; subst.
   - apply d_refine_syn__unit.
   - apply d_refine_syn__var. destruct H as [HI | Hb];
       [ left; assumption | right ].
@@ -1936,7 +1808,8 @@ Proof.
   - apply d_refine_syn__hole. eapply d_wf_pskl_rename_var; eauto.
   - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
   - apply d_refine_syn__tophole_fill with (L := L). intros X HX.
-    eapply (H0 X HX Γ1 x0 y0 d0 Γ2); [ reflexivity | exact Hd ].
+    eapply (H0 X HX ((X ~ dbind_tvar) ++ Γ1) x0 y0 d0 Γ2);
+      [ simpl_env; reflexivity | exact Hd ].
   - apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
 Qed.
 
@@ -2257,13 +2130,13 @@ Qed.
 (** [d_refine_syn] strengthening: lookups go through the OUTPUT [P] ([__var] has
     [Q'=P'=var X']; [__hole]'s fill is on the output), so condition on
     [X ∉ ftvar P].  Forall/tophole-fill grow [Δs]/[Δi] not [Γ]. *)
-Lemma d_refine_syn_strengthen : forall Γ Δs Δi Q P,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+Lemma d_refine_syn_strengthen : forall Γ Δi Q P,
+    Γ ⨟ Δi ⊢ᵣ Q ⊳ P ->
     forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
     X `notin` ftvar_in_bskl P ->
-    (Γ1 ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+    (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣ Q ⊳ P.
 Proof.
-  intros Γ Δs Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  intros Γ Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
   - apply d_refine_syn__unit.
   - simpl in HX. apply d_refine_syn__var. destruct H as [HI | Hb];
       [ left; assumption | right ].
@@ -2278,7 +2151,8 @@ Proof.
     rewrite <- ftvar_pskl_to_bskl_syn. assumption.
   - apply d_refine_syn__tophole_remove. eapply IHd_refine_syn; eauto.
   - apply d_refine_syn__tophole_fill with (L := L `union` {{X0}}).
-    intros Z HZ. eapply (H0 Z ltac:(auto) Γ1 X0 Γ2); [ reflexivity | ].
+    intros Z HZ. eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2);
+      [ simpl_env; reflexivity | ].
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f Z)) as Hup.
     simpl in Hup. fsetdec.
   - simpl in HX. apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].

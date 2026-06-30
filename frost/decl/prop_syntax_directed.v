@@ -361,13 +361,13 @@ Qed.
    [d_refine_syn_strengthen], but substitutes the var instead of requiring it
    absent).  [Δs]/[Δi] are refinement-local ∀-vars, disjoint from the Γ-tvar
    [X0], so they are untouched. *)
-Lemma d_refine_syn_subst_unit : forall Γ Δs Δi Q P,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
+Lemma d_refine_syn_subst_unit : forall Γ Δi Q P,
+    Γ ⨟ Δi ⊢ᵣ Q ⊳ P ->
     forall Γ1 X0 Γ2, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
-    (Γ1 ++ Γ2) ⨟ Δs ⨟ Δi ⊢ᵣ
+    (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣ
       (subst_bskl_in_bskl bskl_unit X0 Q) ⊳ (subst_bskl_in_bskl bskl_unit X0 P).
 Proof.
-  intros Γ Δs Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq; subst; simpl.
+  intros Γ Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq; subst; simpl.
   - apply d_refine_syn__unit.
   - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
     + apply d_refine_syn__unit.
@@ -389,7 +389,8 @@ Proof.
     intros Z HZ.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var
       by (first [ apply lc_bskl_unit | fsetdec ]).
-    eapply (H0 Z); [ fsetdec | reflexivity ].
+    eapply (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2);
+      simpl_env; reflexivity.
   - apply d_refine_syn__tophole_keep;
       [ apply guarded_bskl_subst_unit; assumption | eapply IHd_refine_syn; reflexivity ].
 Qed.
@@ -686,10 +687,10 @@ Proof.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | apply IHd_pat_sub; assumption ].
 Qed.
 
-Lemma d_refine_syn_same_tvar : forall Γ Δs Δi Q P,
-    Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P -> forall Γ', same_tvar Γ Γ' -> Γ' ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P.
+Lemma d_refine_syn_same_tvar : forall Γ Δi Q P,
+    Γ ⨟ Δi ⊢ᵣ Q ⊳ P -> forall Γ', same_tvar Γ Γ' -> Γ' ⨟ Δi ⊢ᵣ Q ⊳ P.
 Proof.
-  intros Γ Δs Δi Q P H. induction H; intros Γ' Hst.
+  intros Γ Δi Q P H. induction H; intros Γ' Hst.
   - apply d_refine_syn__unit.
   - apply d_refine_syn__var. destruct H as [HI | Hb];
       [ left; assumption | right; apply Hst; assumption ].
@@ -697,7 +698,8 @@ Proof.
   - apply d_refine_syn__all with (L := L). intros X HX. apply H0; assumption.
   - apply d_refine_syn__hole. eapply d_wf_pskl_same_tvar; eassumption.
   - apply d_refine_syn__tophole_remove. apply IHd_refine_syn; assumption.
-  - apply d_refine_syn__tophole_fill with (L := L). intros X HX. apply H0; assumption.
+  - apply d_refine_syn__tophole_fill with (L := L). intros X HX.
+    apply (H0 X HX ((X ~ dbind_tvar) ++ Γ')). apply same_tvar_cons. assumption.
   - apply d_refine_syn__tophole_keep; [ assumption | apply IHd_refine_syn; assumption ].
 Qed.
 
