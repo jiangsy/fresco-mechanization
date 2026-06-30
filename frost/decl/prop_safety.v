@@ -2172,6 +2172,47 @@ Proof.
   - exact Htyx.
 Qed.
 
+(** [bskl_to_pskl] (skeleton erasure) commutes with the [X := unit] tvar
+    substitution — pure structural recursion. *)
+Lemma bskl_to_pskl_subst_unit : forall Q X,
+    subst_pskl_in_pskl pskl_unit X (bskl_to_pskl Q)
+    = bskl_to_pskl (subst_bskl_in_bskl bskl_unit X Q).
+Proof.
+  induction Q; intros X; simpl;
+    try reflexivity;
+    try (rewrite IHQ; reflexivity);
+    try (rewrite IHQ1, IHQ2; reflexivity).
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+Qed.
+
+(** [colour] commutes with the [X := unit] tvar substitution.  By induction on
+    the type [A]; the arrow/∀ nodes case-split on [Q]'s (tophole-peeled) head,
+    and the syn-default leaves use the painting-substitution commutes. *)
+Lemma colour_subst_unit : forall A Q X,
+    subst_bskl_in_bskl bskl_unit X (colour Q A)
+    = colour (subst_bskl_in_bskl bskl_unit X Q) (subst_ptyp_in_ptyp ptyp_unit X A).
+Proof.
+  induction A; intros Q X; simpl.
+  - reflexivity.
+  - reflexivity.
+  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct Q; simpl;
+      try (rewrite IHA1, IHA2; reflexivity);
+      try (rewrite ! pskl_to_bskl_syn_subst_unit, ! ptyp_to_pskl_subst_unit; reflexivity).
+    + match goal with |- context [ if ?b then _ else _ ] => destruct b end; simpl;
+        rewrite ! pskl_to_bskl_syn_subst_unit, ! ptyp_to_pskl_subst_unit; reflexivity.
+    + destruct Q; simpl;
+        try (rewrite IHA1, IHA2; reflexivity);
+        try (rewrite ! pskl_to_bskl_syn_subst_unit, ! ptyp_to_pskl_subst_unit; reflexivity).
+      match goal with |- context [ if ?b then _ else _ ] => destruct b end; simpl;
+        rewrite ! pskl_to_bskl_syn_subst_unit, ! ptyp_to_pskl_subst_unit; reflexivity.
+  - destruct Q; simpl;
+      try (rewrite IHA; reflexivity);
+      try (rewrite ! pskl_to_bskl_syn_subst_unit, ! ptyp_to_pskl_subst_unit; reflexivity).
+    match goal with |- context [ if ?b then _ else _ ] => destruct b end; simpl;
+      rewrite ! pskl_to_bskl_syn_subst_unit, ! ptyp_to_pskl_subst_unit; reflexivity.
+Qed.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> gpat m Γ' e B.
@@ -2204,11 +2245,48 @@ Proof.
     + intros Γt A1 Hcrt Hwft HA.
       apply d_typing_freeze_inv in HA.
       exact (Hfill Γt A1 Hcrt Hwft HA).
-  - (* forall: a value generalised at [∀].  Its skeleton inference is the same
-       [is_sskl] witness as at the body type (no [∀] rule in [d_pat]), and the
-       [∀]-prefixed checking types are peeled by the [abs_check_fill] machinery.
-       To be closed via the same [is_sskl] route as [abs] (below). *)
-    admit.
+  - (* forall: a value generalised at [∀].  The skeleton is the same [is_sskl]
+       witness as at the body (no [∀] rule in [d_pat]); we read it off the IH at a
+       fresh tvar [X] and STRENGTHEN by [X := unit] back to [Γ'].  For the fill:
+       the new refinement sends the peeled [X] into [Γ], and the checking type
+       [A0] lives in [Γt] (so [X ∉ ftvar A0]), hence [d_refine_syn_subst_unit]
+       removes [X] leaving the [colour] of [A0] unchanged. *)
+    pick fresh X for (L `union` dom Γ `union` dom Γ' `union` ftvar_in_exp e
+                        `union` ftvar_in_denv Γ' `union` ftvar_in_ptyp A).
+    pose proof (H1 X ltac:(fsetdec)
+                  ltac:(apply d_wf_denv__tvar; [ exact Hwf | fsetdec ])
+                  ((X ~ dbind_tvar) ++ Γ')
+                  ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ])) as Hgp.
+    simpl in Hgp. destruct Hgp as [QX [HinfX [HssklX HfillX]]].
+    simpl. exists (subst_bskl_in_bskl bskl_unit X QX). split; [ | split ].
+    + (* inference at [Γ'] : strengthen [(X:tvar)::Γ' ⊢ e ⇨ QX] by [X := unit] *)
+      pose proof (d_pat_subst_unit _ _ _ _ HinfX nil X Γ'
+                    ltac:(reflexivity) ltac:(apply tvar_clean_fresh; fsetdec)) as Hsg.
+      simpl in Hsg. rewrite subst_ptyp_in_exp_fresh_eq in Hsg by fsetdec. exact Hsg.
+    + (* is_sskl preserved by the substitution *)
+      apply is_sskl_subst_unit. exact HssklX.
+    + (* fill *) intros Γt A0 Hcrt Hwft HA0.
+      assert (HXGt : X `notin` dom Γt)
+        by (pose proof (ctx_refines_dom Hcrt) as Hdom; fsetdec).
+      assert (HXA0 : X `notin` ftvar_in_ptyp A0).
+      { intro Hin. rewrite <- ftvar_ptyp_to_btyp_inh in Hin.
+        apply d_typing_wf_btyp in HA0; [ | exact Hwft ].
+        apply (d_wf_btyp_ftvar HA0) in Hin.
+        apply binds_In in Hin. fsetdec. }
+      assert (HtyX : ((X ~ dbind_tvar) ++ Γt) ⊢[ mode_tc ] e ⦂ ptyp_to_btyp_inh A0).
+      { replace ((X ~ dbind_tvar) ++ Γt) with (nil ++ (X ~ dbind_tvar) ++ Γt) by reflexivity.
+        apply d_typing_weakening. exact HA0. }
+      pose proof (HfillX ((X ~ dbind_tvar) ++ Γt) A0
+                    ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcrt ])
+                    ltac:(apply d_wf_denv__tvar; [ exact Hwft | exact HXGt ])
+                    HtyX) as Hf.
+      pose proof (d_refine_syn_subst_unit _ _ _ _ Hf nil X Γt ltac:(reflexivity)) as Hfs.
+      simpl_env in Hfs.
+      rewrite colour_subst_unit in Hfs.
+      rewrite ! pskl_to_bskl_inh_subst_unit in Hfs.
+      rewrite ! bskl_to_pskl_subst_unit in Hfs.
+      rewrite subst_ptyp_in_ptyp_fresh_eq in Hfs by exact HXA0.
+      exact Hfs.
   - (* abs: λ in mode [m].  At TC the fill is the (Qed) [abs_check_fill], but
        [d_pat__abs_check] needs the body to infer a SYN/principal skeleton
        [pskl_to_bskl_syn P], whereas the IH ([gpat tc]) only yields the body's
