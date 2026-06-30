@@ -1816,6 +1816,28 @@ Admitted.
 (**  [ctx_refines]: the bound var resolves to a hole, ∀-vars live in Δs/Δi.   *)
 (** ===================================================================== *)
 
+(** [look_refines Γ1 Γ2]: the body's INFERENCE context [Γ1] vs its TYPING context
+    [Γ2].  [Γ2] is a structural refinement of [Γ1] (term bindings painted to
+    skeletons/holes) WITH extra ∀-bound tvars interspersed (from the codomain's
+    [∀]s).  Kept separate from [ctx_refines] so the wf-transport family is
+    untouched: [hole_safe] is context-free, so we only ever look up TERM vars. *)
+Inductive look_refines : list (atom * dbind) -> list (atom * dbind) -> Prop :=
+| lr_base : forall Γ1 Γ2, ctx_refines Γ1 Γ2 -> look_refines Γ1 Γ2
+| lr_tvar : forall X Γ1 Γ2,
+    look_refines Γ1 Γ2 -> X `notin` dom Γ2 -> look_refines Γ1 ((X ~ dbind_tvar) ++ Γ2).
+
+(** A NON-tvar binding in the typing context [Γ2] has a refining binding in the
+    inference context [Γ1] (the interspersed ∀-vars are skipped). *)
+Lemma look_refines_binds : forall Γ1 Γ2 z d,
+    look_refines Γ1 Γ2 -> binds z d Γ2 -> d <> dbind_tvar ->
+    exists d', binds z d' Γ1 /\ dbind_refines d' d.
+Proof.
+  intros Γ1 Γ2 z d H. induction H; intros Hb Hnt.
+  - eapply ctx_refines_binds; eauto.
+  - analyze_binds Hb;
+      solve [ exfalso; apply Hnt; reflexivity | apply IHlook_refines; assumption ].
+Qed.
+
 (** Strengthen a [Δs=nil] hole-safety to an arbitrary syn-scope [Δs], provided
     the skeleton's plain-var positions avoid [Δs] (they are old Γ-vars; [Δs]
     holds the freshly-peeled ∀-vars). *)
