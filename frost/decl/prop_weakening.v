@@ -111,8 +111,8 @@ Proof.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_refine_syn__unit.
   - apply d_refine_syn__var.
-    match goal with H : _ \/ _ |- _ => destruct H as [HS | [HI | Hb]] end;
-      [ left; assumption | right; left; assumption | right; right; analyze_binds Hb ].
+    match goal with H : _ \/ _ |- _ => destruct H as [HI | Hb] end;
+      [ left; assumption | right; analyze_binds Hb ].
   - apply d_refine_syn__arrow; auto.
   - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ3)). intros X HX.
     eapply (H0 X ltac:(fsetdec) Γ1 Γ3). reflexivity.

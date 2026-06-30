@@ -424,8 +424,11 @@ mentioning as a predicate. *)
 | d_refine_syn__unit : forall Γ Δs Δi,
     Γ ⨟ Δs ⨟ Δi ⊢ᵣ bskl_unit ⊳ bskl_unit
 | d_refine_syn__var : forall Γ Δs Δi X,
-    (* A plain occurrence may be any in-scope tvar (Γ, syn, or inh). *)
-    List.In X Δs \/ List.In X Δi \/ binds X dbind_tvar Γ ->
+    (* Paper [declarative.tex]: [Γ,Δi ∋ α].  A plain occurrence is an inherited
+       (Δi) or context (Γ) tvar — NEVER a synthesised (Δs) one: Δs vars are
+       usable only inside ghost-fills (the [hole] rule's [⊢ₚₛ] scope), as the
+       paper notes ("can be used when filling ghosts, unlike [Δi]"). *)
+    List.In X Δi \/ binds X dbind_tvar Γ ->
     Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_var_f X) ⊳ (bskl_var_f X)
 | d_refine_syn__arrow : forall Γ Δs Δi Q1 Q2 P1 P2,
     Γ ⨟ Δs ⨟ Δi ⊢ᵣ Q1 ⊳ P1 ->

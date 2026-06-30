@@ -371,8 +371,8 @@ Proof.
   - apply d_refine_syn__unit.
   - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
     + apply d_refine_syn__unit.
-    + apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-        [ left; assumption | right; left; assumption | right; right; analyze_binds Hb ].
+    + apply d_refine_syn__var. destruct H as [HI | Hb];
+        [ left; assumption | right; analyze_binds Hb ].
   - apply d_refine_syn__arrow;
       [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; reflexivity.
   - apply d_refine_syn__all with (L := L `union` dom (Γ1 ++ Γ2) `union` {{X0}}).
@@ -691,8 +691,8 @@ Lemma d_refine_syn_same_tvar : forall Γ Δs Δi Q P,
 Proof.
   intros Γ Δs Δi Q P H. induction H; intros Γ' Hst.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-      [ left; assumption | right; left; assumption | right; right; apply Hst; assumption ].
+  - apply d_refine_syn__var. destruct H as [HI | Hb];
+      [ left; assumption | right; apply Hst; assumption ].
   - apply d_refine_syn__arrow; [ apply IHd_refine_syn1 | apply IHd_refine_syn2 ]; assumption.
   - apply d_refine_syn__all with (L := L). intros X HX. apply H0; assumption.
   - apply d_refine_syn__hole. eapply d_wf_pskl_same_tvar; eassumption.

@@ -119,9 +119,9 @@ Proof.
   intros Γ Δs Δi Q P H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
   - apply d_refine_syn__unit.
   - match goal with |- context [ if ?b then _ else _ ] => destruct b end.
-    + apply d_refine_syn__var. right; right. simpl_env. auto.
-    + apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-        [ left; assumption | right; left; assumption | right; right; analyze_binds Hb ].
+    + apply d_refine_syn__var. right. simpl_env. auto.
+    + apply d_refine_syn__var. destruct H as [HI | Hb];
+        [ left; assumption | right; analyze_binds Hb ].
   - apply d_refine_syn__arrow;
       [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
   - apply d_refine_syn__all
@@ -744,8 +744,8 @@ Proof.
   intros Γ1 x d Γ2 Δs Δi Q P Hd H. remember (Γ1 ++ (x ~ d) ++ Γ2) as Γ eqn:HΓ.
   revert Γ1 HΓ. induction H; intros Γ1 HΓ; subst.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-      [ left; assumption | right; left; assumption | right; right;
+  - apply d_refine_syn__var. destruct H as [HI | Hb];
+      [ left; assumption | right;
         analyze_binds Hb; try (exfalso; congruence); auto ].
   - apply d_refine_syn__arrow; [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
   - apply d_refine_syn__all with (L := L). intros Y HY. eapply (H0 Y HY Γ1); reflexivity.
@@ -777,9 +777,9 @@ Lemma d_refine_syn_ctx_refines : forall Γ Δs Δi Q P,
 Proof.
   intros Γ Δs Δi Q P H. induction H; intros Γ' Hcr.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HS | [HI | HΓ]];
-      [ left; assumption | right; left; assumption
-      | right; right; eapply ctx_refines_binds_tvar; eauto ].
+  - apply d_refine_syn__var. destruct H as [HI | HΓ];
+      [ left; assumption
+      | right; eapply ctx_refines_binds_tvar; eauto ].
   - apply d_refine_syn__arrow; [ apply IHd_refine_syn1 | apply IHd_refine_syn2 ]; assumption.
   - apply d_refine_syn__all with (L := L). intros X HX. apply H0; assumption.
   - apply d_refine_syn__hole. eapply d_wf_pskl_ctx_refines; eauto.
@@ -1073,11 +1073,11 @@ Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
 
 (** A type's own skeleton is [hole_safe] for it (concrete refinement-refl). *)
 Lemma hole_safe_of_ptyp : forall A,
-    lc_ptyp A -> forall L, hole_safe L (ptyp_to_pskl A) A.
+    lc_ptyp A -> forall L, hole_safe nil L (ptyp_to_pskl A) A.
 Proof.
   intros A H. induction H; intros L; simpl.
   - apply hs_unit.
-  - apply hs_var_f.
+  - apply hs_var_f. apply in_nil.
   - apply hs_arrow; [ apply IHlc_ptyp1 | apply IHlc_ptyp2 ].
   - apply hs_all with (Lc := empty). intros X _.
     rewrite <- ptyp_to_pskl_open. apply H0.

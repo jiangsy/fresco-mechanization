@@ -49,8 +49,7 @@ Proof.
   intros Γ Δs Δi Q P H. induction H; simpl.
   - (* unit *) constructor.
   - (* var *) constructor.
-    destruct H as [HS | [HI | HG]].
-    + left. apply in_or_app; auto.
+    destruct H as [HI | HG].
     + left. apply in_or_app; auto.
     + right; auto.
   - (* arrow *) constructor; auto.
@@ -794,8 +793,8 @@ Lemma d_refine_syn_Ds_mono : forall Γ Δs Δi Q P,
 Proof.
   intros Γ Δs Δi Q P H. induction H; intros Hnt Δs' Hmono.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-      [ left; auto | right; left; assumption | right; right; assumption ].
+  - apply d_refine_syn__var. destruct H as [HI | Hb];
+      [ left; assumption | right; assumption ].
   - inversion Hnt; subst. apply d_refine_syn__arrow; auto.
   - inversion Hnt; subst. inst_cofinites_for d_refine_syn__all. intros X HX.
     apply H0; auto. apply no_tophole_bskl_open_rec. assumption.
@@ -809,33 +808,75 @@ Proof.
   - inversion Hnt.
 Qed.
 
-(** Move a tvar from the type context into the syn-scope [Δs] ([⫯]-free RHS). *)
+(** The inh-repaint of a skeleton's erasure preserves free tvars. *)
+Lemma ftvar_inh_bskl_to_pskl : forall Q,
+    ftvar_in_bskl (pskl_to_bskl_inh (bskl_to_pskl Q)) = ftvar_in_bskl Q.
+Proof.
+  induction Q; simpl; try reflexivity;
+    try (rewrite IHQ1, IHQ2; reflexivity); try (rewrite IHQ; reflexivity).
+Qed.
+
+(** The syn-painting preserves free tvars (local copy, used before the
+    [ftvar_pskl_to_bskl_syn] defined later). *)
+Lemma ftvar_syn_bskl_loc : forall P,
+    ftvar_in_bskl (pskl_to_bskl_syn P) = ftvar_in_pskl P.
+Proof.
+  induction P; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+Qed.
+
+(** A ghostification has the same free tvars as its source skeleton. *)
+Lemma ghost_of_ftvar : forall P Q,
+    ghost_of P Q -> ftvar_in_bskl Q [<=] ftvar_in_pskl P.
+Proof.
+  intros P Q H. induction H; simpl.
+  - fsetdec.
+  - fsetdec.
+  - rewrite ! ftvar_syn_bskl_loc. fsetdec.
+  - fsetdec.
+  - assumption.
+  - etransitivity; [ eassumption | ].
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper body pskl_hole) as Hub.
+    simpl in Hub. fsetdec.
+Qed.
+
+(** Move a tvar from the type context into the syn-scope [Δs] ([⫯]-free RHS).
+    Under the paper var rule (no [Δs]), the moved [X] may NOT appear at a plain
+    var position of the LHS [Q] — only inside ghosts (where [Δs] is usable via
+    the [hole] rule) — so we require [X ∉ ftvar_in_bskl Q]. *)
 Lemma d_refine_syn_move : forall Γ' Δs Δi Q P,
     Γ' ⨟ Δs ⨟ Δi ⊢ᵣ Q ⊳ P ->
     no_tophole_bskl P ->
     forall X Γ, Γ' = (X ~ dbind_tvar) ++ Γ ->
+    X `notin` ftvar_in_bskl Q ->
     Γ ⨟ (X :: Δs) ⨟ Δi ⊢ᵣ Q ⊳ P.
 Proof.
-  intros Γ' Δs Δi Q P H. induction H; intros Hnt X0 Γ0 HΓ; subst.
+  intros Γ' Δs Δi Q P H. induction H; intros Hnt X0 Γ0 HΓ HXQ; subst.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]].
-    + left. simpl. right. assumption.
-    + right. left. assumption.
-    + apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
-      * apply binds_one_iff in Hb. destruct Hb as [HX _]. subst.
-        left. simpl. left. reflexivity.
-      * right. right. assumption.
-  - inversion Hnt; subst. apply d_refine_syn__arrow; auto.
-  - inversion Hnt; subst. inst_cofinites_for d_refine_syn__all. intros Y HY.
-    apply H0; auto. apply no_tophole_bskl_open_rec. assumption.
+  - simpl in HXQ. apply d_refine_syn__var. destruct H as [HI | Hb].
+    + left. assumption.
+    + right. apply binds_app_1 in Hb. destruct Hb as [Hb | Hb].
+      * apply binds_one_iff in Hb. destruct Hb as [HX _]. subst. exfalso. fsetdec.
+      * assumption.
+  - inversion Hnt; subst. simpl in HXQ. apply d_refine_syn__arrow.
+    + apply IHd_refine_syn1; auto; fsetdec.
+    + apply IHd_refine_syn2; auto; fsetdec.
+  - inversion Hnt; subst. simpl in HXQ. inst_cofinites_for d_refine_syn__all. intros Y HY.
+    apply H0; auto;
+      try (apply no_tophole_bskl_open_rec; assumption);
+      try (intro Hin; apply ftvar_in_bskl_open_bskl_wrt_bskl_upper in Hin;
+           simpl in Hin; fsetdec).
   - apply d_refine_syn__hole.
     eapply d_wf_pskl_move; [ eassumption | | reflexivity ].
     apply no_tophole_syn_inv. assumption.
-  - apply d_refine_syn__tophole_remove. apply IHd_refine_syn; auto.
-  - inversion Hnt; subst. inst_cofinites_for d_refine_syn__tophole_fill. intros Y HY.
+  - simpl in HXQ. apply d_refine_syn__tophole_remove. apply IHd_refine_syn; auto.
+  - inversion Hnt; subst. simpl in HXQ. inst_cofinites_for d_refine_syn__tophole_fill. intros Y HY.
     (* IH gives [X0 :: (Y :: Δs)]; reorder to [Y :: (X0 :: Δs)] via Ds_mono *)
     apply d_refine_syn_Ds_mono with (Δs := X0 :: (Y :: Δs)).
-    + apply H0; auto. apply no_tophole_bskl_open_rec. assumption.
+    + apply H0; auto;
+        try (apply no_tophole_bskl_open_rec; assumption);
+        try (intro Hin; apply ftvar_in_bskl_open_bskl_wrt_bskl_upper in Hin;
+             simpl in Hin; fsetdec).
     + apply no_tophole_bskl_open_rec. assumption.
     + intros Z HZ. simpl in HZ |- *. tauto.
   - inversion Hnt.
@@ -848,20 +889,20 @@ Qed.
     nested ∀ routes its var into [Δi], and a hole there would be the banned
     "ghost fills an inh-∀" — [hs_hole]'s side condition rules it out, and is
     exactly what lets the hole case's well-formedness use [Δs ∪ Γ] (not Δi). *)
-Inductive hole_safe : list atom -> pskl -> ptyp -> Prop :=
-| hs_hole  : forall L A,
-    (forall X, X `in` ftvar_in_ptyp A -> ~ List.In X L) -> hole_safe L pskl_hole A
-| hs_unit  : forall L, hole_safe L pskl_unit ptyp_unit
-| hs_var_f : forall L X, hole_safe L (pskl_var_f X) (ptyp_var_f X)
-| hs_var_b : forall L n, hole_safe L (pskl_var_b n) (ptyp_var_b n)
-| hs_arrow : forall L P1 P2 A1 A2,
-    hole_safe L P1 A1 -> hole_safe L P2 A2 ->
-    hole_safe L (pskl_arrow P1 P2) (ptyp_arrow A1 A2)
-| hs_all   : forall L Lc P0 A0,
+Inductive hole_safe : list atom -> list atom -> pskl -> ptyp -> Prop :=
+| hs_hole  : forall Ds L A,
+    (forall X, X `in` ftvar_in_ptyp A -> ~ List.In X L) -> hole_safe Ds L pskl_hole A
+| hs_unit  : forall Ds L, hole_safe Ds L pskl_unit ptyp_unit
+| hs_var_f : forall Ds L X, ~ List.In X Ds -> hole_safe Ds L (pskl_var_f X) (ptyp_var_f X)
+| hs_var_b : forall Ds L n, hole_safe Ds L (pskl_var_b n) (ptyp_var_b n)
+| hs_arrow : forall Ds L P1 P2 A1 A2,
+    hole_safe Ds L P1 A1 -> hole_safe Ds L P2 A2 ->
+    hole_safe Ds L (pskl_arrow P1 P2) (ptyp_arrow A1 A2)
+| hs_all   : forall Ds L Lc P0 A0,
     (forall X, X `notin` Lc ->
-       hole_safe (X :: L) (open_pskl_wrt_pskl P0 (pskl_var_f X))
-                          (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
-    hole_safe L (pskl_all_syn P0) (ptyp_all A0).
+       hole_safe Ds (X :: L) (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                             (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
+    hole_safe Ds L (pskl_all_syn P0) (ptyp_all A0).
 
 (** CONSISTENCY→REFINEMENT CORE (the heart of [__check]): an [inh]-painted
     [hole_safe] skeleton refines the [colour]ing of its type.  By induction on
@@ -871,7 +912,7 @@ Inductive hole_safe : list atom -> pskl -> ptyp -> Prop :=
 Lemma refine_colour_core : forall A,
     lc_ptyp A ->
     forall P Γ Δs Δi,
-      hole_safe Δi P A ->
+      hole_safe Δs Δi P A ->
       (forall X, X `in` ftvar_in_ptyp A ->
          List.In X Δs \/ List.In X Δi \/ binds X dbind_tvar Γ) ->
       Γ ⨟ Δs ⨟ Δi ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (colour (pskl_to_bskl_inh P) A).
@@ -888,7 +929,10 @@ Proof.
       * apply lc_ptyp_var_f.
       * intros Y HY. destruct (Hcov Y HY) as [HS | [HI | HG]];
           [ left; assumption | exfalso; match goal with Hc : forall _ : atom, _ -> ~ List.In _ _ |- _ => eapply Hc; eauto end | right; assumption ].
-    + simpl. apply d_refine_syn__var. apply Hcov. simpl. fsetdec.
+    + simpl. apply d_refine_syn__var.
+      match goal with Hns : ~ List.In ?Z Δs |- _ =>
+        destruct (Hcov Z ltac:(simpl; fsetdec)) as [HS | [HI | HG]];
+          [ exfalso; apply Hns; exact HS | left; exact HI | right; exact HG ] end.
   - (* arrow *) inversion Hhs; subst.
     + replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
       rewrite colour_hole. apply d_refine_syn_hole_fills.
@@ -1054,12 +1098,23 @@ Qed.
 (** TRANSPORT: hole-safety on the [utyp] [C] transfers to the checking type
     [A'] consistent with it.  This bridges [gen]'s [utyp] invariant
     [hole_safe_u] to the [hole_safe] that [refine_colour_core] consumes. *)
+(** [Δs] is a [list atom]; bridge its [List.In] membership to the [fold_right]
+    set form that [gather_atoms] (hence fresh-var [notin]) produces. *)
+Lemma list_atom_notin_fold : forall (X : atom) (L : list atom),
+    X `notin` List.fold_right add empty L -> ~ List.In X L.
+Proof.
+  induction L as [|a L IH]; simpl; intros Hni HIn.
+  - inversion HIn.
+  - destruct HIn as [Heq | HIn]; [ subst; fsetdec | apply IH; [ fsetdec | assumption ] ].
+Qed.
+
 Lemma hole_safe_u_transport : forall La Pa C,
     hole_safe_u La Pa C ->
-    forall Δ Γ B A', Δ ⨟ Γ ⊨ C ≈ B -> B = ptyp_to_btyp_inh A' ->
-    hole_safe La Pa A'.
+    forall Ds Δ Γ B A', Δ ⨟ Γ ⊨ C ≈ B -> B = ptyp_to_btyp_inh A' ->
+    (forall X, X `in` ftvar_in_pskl Pa -> ~ List.In X Ds) ->
+    hole_safe Ds La Pa A'.
 Proof.
-  intros La Pa C H. induction H; intros Δ Γ B A' Hd Heq.
+  intros La Pa C H. induction H; intros Ds Δ Γ B A' Hd Heq Hdis.
   - (* hsu_hole *) apply hs_hole. intros Y HY.
     assert (Hsub : ftvar_in_ptyp A' [<=] ftvar_in_utyp C)
       by (eapply d_consis_ftvar; [ exact Hd | exact Heq ]).
@@ -1067,23 +1122,36 @@ Proof.
   - (* hsu_unit *) revert Heq. inversion Hd; subst; intros Heq.
     destruct A'; simpl in Heq; try discriminate. apply hs_unit.
   - (* hsu_var_f *) revert Heq. inversion Hd; subst; intros Heq.
-    destruct A'; simpl in Heq; try discriminate. inversion Heq; subst. apply hs_var_f.
+    destruct A'; simpl in Heq; try discriminate. inversion Heq; subst.
+    apply hs_var_f. apply Hdis. simpl. fsetdec.
   - (* hsu_var_b *) inversion Hd.
   - (* hsu_arrow *) revert Heq. inversion Hd; subst; intros Heq.
     destruct A'; simpl in Heq; try discriminate. inversion Heq; subst.
-    apply hs_arrow; [ eapply IHhole_safe_u1 | eapply IHhole_safe_u2 ]; eauto.
+    apply hs_arrow;
+      [ eapply IHhole_safe_u1 | eapply IHhole_safe_u2 ]; eauto;
+      intros Y HY; apply Hdis; simpl; fsetdec.
   - (* hsu_all_syn *) revert Heq. inversion Hd; subst; intros Heq;
       destruct A'; simpl in Heq; try discriminate; inversion Heq; subst.
     match goal with Hsc : forall _ : atom, _ -> d_consis _ _ _ _ |- _ =>
-      apply hs_all with (Lc := Lc \u L0); intros X HX;
+      apply hs_all with (Lc := Lc \u L0 \u List.fold_right add empty Ds); intros X HX;
       eapply H0; [ fsetdec | apply Hsc; fsetdec
-                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity ] end.
+                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity
+                 | intros Y HY; apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY;
+                   simpl in HY; apply AtomSetImpl.union_1 in HY; destruct HY as [HYx | HYp];
+                   [ apply AtomSetImpl.singleton_1 in HYx; subst Y;
+                     apply list_atom_notin_fold; fsetdec
+                   | apply Hdis; simpl; fsetdec ] ] end.
   - (* hsu_all_etag *) revert Heq. inversion Hd; subst; intros Heq;
       destruct A'; simpl in Heq; try discriminate; inversion Heq; subst.
     match goal with Hsc : forall _ : atom, _ -> d_consis _ _ _ _ |- _ =>
-      apply hs_all with (Lc := Lc \u L0); intros X HX;
+      apply hs_all with (Lc := Lc \u L0 \u List.fold_right add empty Ds); intros X HX;
       eapply H0; [ fsetdec | apply Hsc; fsetdec
-                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity ] end.
+                 | rewrite ptyp_to_btyp_inh_open_var; reflexivity
+                 | intros Y HY; apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY;
+                   simpl in HY; apply AtomSetImpl.union_1 in HY; destruct HY as [HYx | HYp];
+                   [ apply AtomSetImpl.singleton_1 in HYx; subst Y;
+                     apply list_atom_notin_fold; fsetdec
+                   | apply Hdis; simpl; fsetdec ] ] end.
 Qed.
 
 (** [tophole_safe P0 A]: a single top ghost [⫯] over a [hole_safe] core [P0],
@@ -1092,13 +1160,13 @@ Qed.
     ∀-stripped [A] ([ths_leaf], → [__tophole_remove]).  This is exactly the
     shape [bskl_to_pskl Q] takes for a non-□ ghost [Q] (one top [⫯], syn-painted
     — hence [hole_safe], no nested [⫯] — below). *)
-Inductive tophole_safe : pskl -> ptyp -> Prop :=
-| ths_leaf : forall P0 A,
-    (forall A0, A <> ptyp_all A0) -> hole_safe nil P0 A -> tophole_safe P0 A
-| ths_all  : forall L P0 A0,
+Inductive tophole_safe : list atom -> pskl -> ptyp -> Prop :=
+| ths_leaf : forall Ds P0 A,
+    (forall A0, A <> ptyp_all A0) -> hole_safe Ds nil P0 A -> tophole_safe Ds P0 A
+| ths_all  : forall Ds L P0 A0,
     (forall X, X `notin` L ->
-       tophole_safe P0 (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
-    tophole_safe P0 (ptyp_all A0).
+       tophole_safe (X :: Ds) P0 (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
+    tophole_safe Ds P0 (ptyp_all A0).
 
 (** [colour] of a [⫯]-guide against a non-∀ type peeks past the [⫯] (provided
     the peeled guide isn't itself a [⫯]). *)
@@ -1119,7 +1187,7 @@ Qed.
 Lemma refine_colour_tophole : forall A,
     lc_ptyp A ->
     forall P0 Γ Δs Δi,
-      tophole_safe P0 A ->
+      tophole_safe Δs P0 A ->
       (forall X, X `in` ftvar_in_ptyp A ->
          List.In X Δs \/ binds X dbind_tvar Γ) ->
       Γ ⨟ Δs ⨟ Δi ⊢ᵣ (bskl_tophole (pskl_to_bskl_inh P0))
@@ -1127,14 +1195,14 @@ Lemma refine_colour_tophole : forall A,
 Proof.
   intros A Hlc. induction Hlc; intros P0 Γ Δs Δi Hts Hcov.
   - (* unit *) inversion Hts; subst.
-    match goal with Hhs : hole_safe nil P0 ptyp_unit |- _ =>
+    match goal with Hhs : hole_safe _ nil P0 ptyp_unit |- _ =>
       assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
         by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
     rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
     apply d_refine_syn__tophole_remove.
     apply refine_colour_core; [ apply lc_ptyp_unit | assumption | intros Y HY; simpl in HY; fsetdec ].
   - (* var X *) inversion Hts; subst.
-    match goal with Hhs : hole_safe nil P0 (ptyp_var_f _) |- _ =>
+    match goal with Hhs : hole_safe _ nil P0 (ptyp_var_f _) |- _ =>
       assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
         by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
     rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
@@ -1142,7 +1210,7 @@ Proof.
     apply refine_colour_core; [ apply lc_ptyp_var_f | assumption
       | intros Y HY; destruct (Hcov Y HY) as [HS | HG]; [ left; assumption | right; right; assumption ] ].
   - (* arrow *) inversion Hts; subst.
-    match goal with Hhs : hole_safe nil P0 (ptyp_arrow _ _) |- _ =>
+    match goal with Hhs : hole_safe _ nil P0 (ptyp_arrow _ _) |- _ =>
       assert (Hntp : forall Q1, pskl_to_bskl_inh P0 <> bskl_tophole Q1)
         by (intros Q1; inversion Hhs; subst; simpl; discriminate) end.
     rewrite colour_tophole_peek by (try (intros; discriminate); exact Hntp).
@@ -1155,7 +1223,7 @@ Proof.
     + (* ths_all: __tophole_fill *)
       simpl. inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
       rewrite <- colour_open. apply H0.
-      * match goal with Hb : forall _ : atom, _ -> tophole_safe _ _ |- _ => apply Hb; auto end.
+      * match goal with Hb : forall _ : atom, _ -> tophole_safe _ _ _ |- _ => apply Hb; auto end.
       * intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
         simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
         -- apply AtomSetImpl.singleton_1 in HY. subst. left. simpl. left. reflexivity.
@@ -1203,7 +1271,8 @@ Proof.
   - eapply d_wf_ptyp_lc_loc; eauto.
   - apply ths_leaf;
       [ exact Hnall'
-      | eapply hole_safe_u_transport; [ exact Hhsu | exact Hcons | reflexivity ] ].
+      | eapply hole_safe_u_transport;
+          [ exact Hhsu | exact Hcons | reflexivity | intros ? ?; simpl; auto ] ].
   - intros X HX. right. eapply d_wf_ptyp_ftvar; eauto.
 Qed.
 
@@ -1276,9 +1345,13 @@ Proof.
         with (bskl_all_syn (colour (bskl_tophole (pskl_to_bskl_inh (bskl_to_pskl Q0))) A'0))
         by reflexivity.
       inversion Hwfa; subst.
-      inst_cofinites_for d_refine_syn__tophole_fill. intros X HX.
+      let g := gather_atoms in
+      apply d_refine_syn__tophole_fill with (L := g `union` ftvar_in_bskl Q0).
+      intros X HX.
       rewrite <- colour_open.
-      eapply d_refine_syn_move; [ | apply colour_no_tophole | reflexivity ].
+      eapply d_refine_syn_move;
+        [ | apply colour_no_tophole | reflexivity
+        | simpl; rewrite ftvar_inh_bskl_to_pskl; fsetdec ].
       match goal with
       | IH : forall _ : atom, _ -> _ -> forall _ _ _ : _, _ |- _ =>
           eapply (IH X ltac:(fsetdec) eq_refl (open_ptyp_wrt_ptyp A'0 (ptyp_var_f X)) P (bskl_tophole Q0))
@@ -1486,8 +1559,8 @@ Lemma d_refine_syn_binding_eq : forall Γ Δs Δi Q P,
 Proof.
   intros Γ Δs Δi Q P H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-      [ left; assumption | right; left; assumption | right; right ].
+  - apply d_refine_syn__var. destruct H as [HI | Hb];
+      [ left; assumption | right ].
     analyze_binds Hb;
       assert (d0' = dbind_tvar) by (destruct d0'; simpl in Hdd; (reflexivity || discriminate));
       subst d0'; auto.
@@ -1731,8 +1804,8 @@ Lemma d_refine_syn_ghost_rel : forall Γt Δs Δi Q P,
 Proof.
   intros Γt Δs Δi Q P H. induction H; intros Γp Hgr.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-      [ left; assumption | right; left; assumption | right; right; eapply ghost_rel_binds_tvar; eauto ].
+  - apply d_refine_syn__var. destruct H as [HI | Hb];
+      [ left; assumption | right; eapply ghost_rel_binds_tvar; eauto ].
   - apply d_refine_syn__arrow; [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
   - apply d_refine_syn__all with (L := L). intros X HX. eapply H0; eauto.
   - apply d_refine_syn__hole. eapply d_wf_pskl_ghost_rel; eauto.
@@ -1854,8 +1927,8 @@ Lemma d_refine_syn_rename_var : forall Γ Δs Δi Q P,
 Proof.
   intros Γ Δs Δi Q P H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd; subst.
   - apply d_refine_syn__unit.
-  - apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-      [ left; assumption | right; left; assumption | right; right ].
+  - apply d_refine_syn__var. destruct H as [HI | Hb];
+      [ left; assumption | right ].
     analyze_binds Hb; try (exfalso; congruence); auto.
   - apply d_refine_syn__arrow; [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
   - apply d_refine_syn__all with (L := L). intros X HX.
@@ -2192,8 +2265,8 @@ Lemma d_refine_syn_strengthen : forall Γ Δs Δi Q P,
 Proof.
   intros Γ Δs Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
   - apply d_refine_syn__unit.
-  - simpl in HX. apply d_refine_syn__var. destruct H as [HS | [HI | Hb]];
-      [ left; assumption | right; left; assumption | right; right ].
+  - simpl in HX. apply d_refine_syn__var. destruct H as [HI | Hb];
+      [ left; assumption | right ].
     analyze_binds Hb; try (exfalso; fsetdec); auto.
   - simpl in HX. apply d_refine_syn__arrow;
       [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
