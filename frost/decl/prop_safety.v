@@ -1809,6 +1809,94 @@ Proof.
           apply Hbp; fsetdec end.
 Admitted.
 
+(** ===================================================================== *)
+(**  d_look EXTRACTION route (the context-free [a_look] shadow): read a       *)
+(**  [hole_safe]/[tophole_safe] out of the typing+inference, then discharge   *)
+(**  via the (Qed) [refine_colour_core]/[refine_colour_tophole].  No          *)
+(**  [ctx_refines]: the bound var resolves to a hole, ∀-vars live in Δs/Δi.   *)
+(** ===================================================================== *)
+
+(** Strengthen a [Δs=nil] hole-safety to an arbitrary syn-scope [Δs], provided
+    the skeleton's plain-var positions avoid [Δs] (they are old Γ-vars; [Δs]
+    holds the freshly-peeled ∀-vars). *)
+Lemma hole_safe_Ds_strengthen : forall Ds0 Δi P A,
+    hole_safe Ds0 Δi P A ->
+    forall Δs, (forall X, X `in` ftvar_in_pskl P -> ~ List.In X Δs) ->
+    hole_safe Δs Δi P A.
+Proof.
+  intros Ds0 Δi P A H. induction H; intros Δs Hdis.
+  - apply hs_hole. assumption.
+  - apply hs_unit.
+  - apply hs_var_f. apply Hdis. simpl. fsetdec.
+  - apply hs_var_b.
+  - apply hs_arrow; [ apply IHhole_safe1 | apply IHhole_safe2 ];
+      intros Y HY; apply Hdis; simpl; fsetdec.
+  - apply hs_all with (Lc := Lc \u List.fold_right add empty Δs). intros X HX.
+    apply H0; [ fsetdec | ].
+    intros Y HY. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HYx | HYp].
+    + apply AtomSetImpl.singleton_1 in HYx. subst Y.
+      apply list_atom_notin_fold. fsetdec.
+    + apply Hdis. simpl. fsetdec.
+Qed.
+
+(** λ EXTRACTION (context-free): from the λ's checking-typing, read the ghost
+    arrow [tophole_safe] — peeling ∀s into [Δs] ([ths_all], the ∀-var is the
+    RULE's bound var, NOT a context entry), bottoming at the arrow via the body's
+    [hole_safe].  No [ctx_refines]: the only "context" is the [Δs] list. *)
+Lemma abs_tophole_extract : forall e P L_b,
+    (forall x, x `notin` L_b -> forall Γ'' A'',
+        Γ'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ ptyp_to_btyp_inh A'' ->
+        hole_safe nil nil P A'') ->
+    forall Γt Δs A',
+      (forall X, List.In X Δs -> X `notin` ftvar_in_pskl P) ->
+      Γt ⊢[ mode_tc ] (exp_abs e) ⦂ ptyp_to_btyp_inh A' ->
+      tophole_safe Δs (pskl_arrow pskl_hole P) A'.
+Proof.
+  intros e P L_b Hbody Γt Δs A' Hdis Hty.
+  remember (exp_abs e) as ee eqn:Hee.
+  remember (ptyp_to_btyp_inh A') as B0 eqn:HB0.
+  remember mode_tc as m eqn:Hm.
+  revert A' Δs Hdis Hee HB0 Hm.
+  induction Hty; intros A'0 Δs Hdis Hee HB0 Hm;
+    try discriminate Hee;
+    try (exfalso; subst;
+         match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+  - (* forall : A'0 = ∀A; the ∀-var joins [Δs] via [ths_all] *)
+    destruct A'0 as [ | n | X0 | A'a A'b | A'0 ]; simpl in HB0; try discriminate.
+    inversion HB0 as [H3].
+    apply (f_equal btyp_to_ptyp) in H3.
+    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in H3. subst A'0.
+    apply ths_all with (L := L `union` ftvar_in_pskl P `union` dom Γ). intros X HX.
+    eapply (H1 X ltac:(fsetdec) Hbody (open_ptyp_wrt_ptyp A (ptyp_var_f X)) (X :: Δs)).
+    + intros Y HY. simpl in HY. destruct HY as [HYeq | HYin];
+        [ subst Y; fsetdec | apply Hdis; assumption ].
+    + exact Hee.
+    + rewrite ptyp_to_btyp_inh_open_var. reflexivity.
+    + reflexivity.
+  - (* abs : A'0 = arrow A (btyp_to_ptyp B); [ths_leaf] + body [hole_safe] *)
+    subst m. injection Hee as Hee'; subst e0.
+    match goal with Hsk : skmod_ty _ mode_tc |- _ =>
+      inversion Hsk as [ | ? Hia | ]; subst end.
+    match goal with Hia : is_ityp (btyp_arrow _ _) |- _ =>
+      inversion Hia as [ | | ? ? Hi1 Hi2 | ]; subst end.
+    rewrite <- (is_ityp_ptyp_to_btyp_inh Hi2) in HB0.
+    change (btyp_arrow (ptyp_to_btyp_inh A) (ptyp_to_btyp_inh (btyp_to_ptyp B)))
+      with (ptyp_to_btyp_inh (ptyp_arrow A (btyp_to_ptyp B))) in HB0.
+    apply (f_equal btyp_to_ptyp) in HB0.
+    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in HB0. subst A'0.
+    apply ths_leaf; [ intros A0 Hc; discriminate | ].
+    simpl. apply hs_arrow.
+    + apply hs_hole. intros Y HY HC. inversion HC.
+    + pick fresh x for (L_b `union` L `union` dom Γ).
+      eapply hole_safe_Ds_strengthen;
+        [ eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ) (btyp_to_ptyp B)) | ].
+      * rewrite (is_ityp_ptyp_to_btyp_inh Hi2).
+        match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
+          apply Hbp; fsetdec end.
+      * intros Y HY Hin. apply (Hdis Y Hin); exact HY.
+Qed.
+
 (** FN analog of [d_pat_base_safe_tc_gen]: a base term that TI-types to
     [syn A] and is FN-subsumed to [B] has a SAFE function-mode inference.
     Two routes via [d_pat__sub]:
