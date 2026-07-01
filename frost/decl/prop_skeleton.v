@@ -1188,6 +1188,19 @@ Proof.
         [ left; assumption | right; apply binds_app_3; assumption ].
 Qed.
 
+(** A type's own skeleton is [skel_safe] for it (the synthesised/ti leaf: the
+    [ti] skeleton IS the type's skeleton). *)
+Lemma skel_safe_of_ptyp : forall A,
+    lc_ptyp A -> forall L, skel_safe L (ptyp_to_pskl A) A.
+Proof.
+  intros A H. induction H; intros L; simpl.
+  - apply sks_unit.
+  - apply sks_var_f.
+  - apply sks_arrow; [ apply IHlc_ptyp1 | apply IHlc_ptyp2 ].
+  - apply sks_all with (L := empty). intros X _.
+    rewrite <- ptyp_to_pskl_open. apply H0.
+Qed.
+
 (** [forall_l] maintenance: from the [hsu_all] body (one [∀] stripped), the
     instantiation [□]/[φ] re-establishes [hole_safe_u] at [nil] for the
     recursion — exactly [subst_intro] + [hole_safe_u_subst] + [weaken]. *)
