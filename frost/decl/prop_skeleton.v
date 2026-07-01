@@ -1103,6 +1103,91 @@ Proof.
              [ left; assumption | right; apply binds_app_3; assumption ].
 Qed.
 
+(** UNIFIED safe-skeleton predicate merging [hole_safe] (structural) and
+    [tophole_safe] (⫯-ghost): a [pskl_tophole] node absorbs a ∀-prefix
+    ([sks_top_all]) then matches structurally ([sks_top_leaf]).  This lets an
+    arrow CODOMAIN be a [⫯]-ghost (a curried λ), which flat [hole_safe] cannot
+    express.  [refine_colour_skel] below is the one tophole-aware refinement
+    engine (subsumes [refine_colour_core] + [refine_colour_tophole]). *)
+Inductive skel_safe : list atom -> pskl -> ptyp -> Prop :=
+| sks_hole  : forall Δ A,
+    (forall X, X `in` ftvar_in_ptyp A -> ~ List.In X Δ) -> skel_safe Δ pskl_hole A
+| sks_unit  : forall Δ, skel_safe Δ pskl_unit ptyp_unit
+| sks_var_f : forall Δ X, skel_safe Δ (pskl_var_f X) (ptyp_var_f X)
+| sks_arrow : forall Δ P1 P2 A1 A2,
+    skel_safe Δ P1 A1 -> skel_safe Δ P2 A2 ->
+    skel_safe Δ (pskl_arrow P1 P2) (ptyp_arrow A1 A2)
+| sks_all   : forall Δ L P0 A0,
+    (forall X, X `notin` L ->
+       skel_safe (X :: Δ) (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                          (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
+    skel_safe Δ (pskl_all_syn P0) (ptyp_all A0)
+| sks_top_leaf : forall Δ P0 A,
+    (forall A0, A <> ptyp_all A0) ->
+    (forall Q1, P0 <> pskl_tophole Q1) ->
+    skel_safe Δ P0 A ->
+    skel_safe Δ (pskl_tophole P0) A
+| sks_top_all : forall Δ L P0 A0,
+    (forall X, X `notin` L ->
+       skel_safe Δ (pskl_tophole P0) (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
+    skel_safe Δ (pskl_tophole P0) (ptyp_all A0).
+
+Lemma refine_colour_skel : forall Δ P A,
+    skel_safe Δ P A ->
+    lc_ptyp A ->
+    forall Γ, (forall X, X `in` ftvar_in_ptyp A -> List.In X Δ \/ binds X dbind_tvar Γ) ->
+      Γ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh P) ⊳ (colour (pskl_to_bskl_inh P) A).
+Proof.
+  induction 1; intros Hlc Γ Hcov.
+  - (* sks_hole *)
+    replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+    rewrite colour_hole. apply d_refine_syn_hole_fills; [ exact Hlc | ].
+    intros Y HY. destruct (Hcov Y HY) as [HI | HG];
+      [ exfalso; eapply H; eauto | assumption ].
+  - (* sks_unit *) simpl. apply d_refine_syn__unit.
+  - (* sks_var_f *) simpl. apply d_refine_syn__var. apply Hcov. simpl. fsetdec.
+  - (* sks_arrow *) simpl. inversion Hlc; subst. apply d_refine_syn__arrow;
+      [ apply IHskel_safe1 | apply IHskel_safe2 ]; try assumption;
+      intros Y HY; apply Hcov; simpl; fsetdec.
+  - (* sks_all *) simpl. inst_cofinites_for d_refine_syn__all. intros X HX.
+    rewrite <- colour_open.
+    rewrite <- (colour_guide_open _ (pskl_to_bskl_inh P0) X).
+    rewrite <- !pskl_to_bskl_inh_open.
+    assert (Hlcx : lc_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f X)))
+      by (inversion Hlc; subst; eauto).
+    apply (H0 X ltac:(fsetdec) Hlcx).
+    intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst. left. simpl. left. reflexivity.
+    + destruct (Hcov Y HY) as [HI | HG];
+        [ left; simpl; right; assumption | right; assumption ].
+  - (* sks_top_leaf : ⫯ over non-∀ ⇒ tophole_remove + recurse on P0 *)
+    replace (pskl_to_bskl_inh (pskl_tophole P0))
+      with (bskl_tophole (pskl_to_bskl_inh P0)) by reflexivity.
+    rewrite colour_tophole_peek;
+      [ apply d_refine_syn__tophole_remove; apply IHskel_safe; assumption
+      | exact H
+      | intros Q1 Hc; destruct P0; simpl in Hc; try discriminate;
+        exfalso; eapply H0; reflexivity ].
+  - (* sks_top_all : ⫯ over ∀ ⇒ tophole_fill (X→Γ) + recurse *)
+    replace (pskl_to_bskl_inh (pskl_tophole P0))
+      with (bskl_tophole (pskl_to_bskl_inh P0)) by reflexivity.
+    replace (colour (bskl_tophole (pskl_to_bskl_inh P0)) (ptyp_all A0))
+      with (bskl_all_syn (colour (bskl_tophole (pskl_to_bskl_inh P0)) A0)) by reflexivity.
+    let g := gather_atoms in
+    apply d_refine_syn__tophole_fill with (L := g).
+    intros X HX. rewrite <- colour_open.
+    assert (Hlcx : lc_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f X)))
+      by (inversion Hlc; subst; eauto).
+    apply (H0 X ltac:(fsetdec) Hlcx).
+    intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY. subst. right.
+      apply binds_app_2, binds_one_3; reflexivity.
+    + destruct (Hcov Y HY) as [HI | HG];
+        [ left; assumption | right; apply binds_app_3; assumption ].
+Qed.
+
 (** [forall_l] maintenance: from the [hsu_all] body (one [∀] stripped), the
     instantiation [□]/[φ] re-establishes [hole_safe_u] at [nil] for the
     recursion — exactly [subst_intro] + [hole_safe_u_subst] + [weaken]. *)
