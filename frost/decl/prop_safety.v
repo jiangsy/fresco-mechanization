@@ -1749,6 +1749,61 @@ Qed.
     skeleton [⫯.(□ → inh{Qb})] fills every type the λ checks against — by
     induction on that typing, peeling [∀]s ([tophole_fill]) down to the
     function base ([tophole_remove] + [arrow] + body-safety + strengthening). *)
+(** The annotation-domain skeleton [btyp_to_bskl (syn A)] erases to [A]'s skeleton. *)
+Lemma bskl_to_pskl_btyp_to_bskl_ptyp_to_btyp_syn : forall A,
+    bskl_to_pskl (btyp_to_bskl (ptyp_to_btyp_syn A)) = ptyp_to_pskl A.
+Proof.
+  induction A; simpl; try reflexivity;
+    [ rewrite IHA1, IHA2; reflexivity | rewrite IHA; reflexivity ].
+Qed.
+
+(** COVERAGE (Group B core): the tc-inferred skeleton [Q] is [skel_safe] for every
+    type the term checks against.  Induct on the CHECKING (so [∀] peels via the
+    premise IH → [sks_top_all]); the inference context [Γi] may REFINE the checking
+    context [Γc] ([abs_check] infers the body under [x:□] but it is checked under
+    [x:typ A]) — [skel_safe] is context-free so the refinement bridges them.  Fed to
+    [refine_colour_skel] this retires [abs_check_fill_structural]. *)
+Lemma tc_infer_skel_safe : forall Γc e B,
+    Γc ⊢[ mode_tc ] e ⦂ B ->
+    forall Γi Q, ctx_refines Γi Γc -> Γi ⊢[ mode_tc ] e ⇨ Q ->
+      skel_safe nil (bskl_to_pskl Q) (btyp_to_ptyp B).
+Proof.
+  intros Γc e B Hchk. remember mode_tc as m eqn:Hm.
+  induction Hchk; intros Γi Q Hcr Hinf; try discriminate Hm.
+  - (* sub (base term) *) admit.
+  - (* freeze *) admit.
+  - (* forall *) admit.
+  - (* abs : λ checks at arrow (inh A) B0; Hinf ⇒ d_pat__abs_check, Q = ⫯(□ → syn P) *)
+    subst m. inversion Hinf; subst;
+      try (match goal with Hb : is_base_term (exp_abs _) |- _ => solve [ inversion Hb ] end);
+      try (match goal with Hne : _ <> mode_tc |- _ => solve [ exfalso; apply Hne; reflexivity ] end).
+    simpl. apply sks_top_leaf;
+      [ intros ? Hc; discriminate | intros ? Hc; discriminate | ].
+    apply sks_arrow.
+    + apply sks_hole. intros X HX HC; inversion HC.
+    + pick fresh x.
+      apply (H2 x ltac:(fsetdec) eq_refl
+               ((x ~ dbind_skl pskl_hole) ++ Γi) (pskl_to_bskl_syn P));
+        [ apply ctxr_cons; [ apply dbr_typ_hole | exact Hcr ]
+        | match goal with H : forall _ : atom, _ -> _ |- _ => apply H; fsetdec end ].
+  - (* abs_anno : λ:A checks at arrow B1 B2; Hinf ⇒ d_pat__abs_anno_check *)
+    subst m. inversion Hinf; subst;
+      try (match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => solve [ inversion Hb ] end);
+      try (match goal with Hne : _ <> mode_tc |- _ => solve [ exfalso; apply Hne; reflexivity ] end).
+    simpl. apply sks_top_leaf;
+      [ intros ? Hc; discriminate | intros ? Hc; discriminate | ].
+    apply sks_arrow.
+    + (* annotated domain: its own skeleton is skel_safe *)
+      rewrite bskl_to_pskl_btyp_to_bskl_ptyp_to_btyp_syn.
+      apply skel_safe_of_ptyp. eapply d_wf_ptyp_lc_loc; eauto.
+    + pick fresh x.
+      apply (H3 x ltac:(fsetdec) eq_refl
+               ((x ~ dbind_typ B1) ++ Γi) (pskl_to_bskl_syn P));
+        [ apply ctxr_cons; [ apply dbr_refl | exact Hcr ]
+        | match goal with H : forall _ : atom, _ -> _ |- _ => apply H; fsetdec end ].
+  - (* app *) admit.
+Admitted.
+
 (** STRUCTURAL abs fill assembly (replaces the old [ctx_weaken] [abs_check_fill]).
     The body-hyp is the cofinite STRUCTURAL fill about [Qb] at [(x:□)::Γ'];
     [d_pat_total_gen] supplies it via [gpat_fill_rename].  Output over [Γt]. *)
