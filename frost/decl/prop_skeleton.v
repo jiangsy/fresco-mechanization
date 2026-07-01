@@ -1201,6 +1201,41 @@ Proof.
     rewrite <- ptyp_to_pskl_open. apply H0.
 Qed.
 
+(** BRIDGES old→new: [skel_safe] subsumes [hole_safe] (structural) and
+    [tophole_safe] (⫯-ghost).  Lets the existing base-term machinery
+    ([hole_safe_u_transport] etc.) feed the unified engine. *)
+Lemma hole_safe_skel_safe : forall Δ P A,
+    hole_safe Δ P A -> lc_ptyp A -> skel_safe Δ P A.
+Proof.
+  induction 1; intros Hlc.
+  - apply sks_hole. assumption.
+  - apply sks_unit.
+  - apply sks_var_f.
+  - inversion Hlc.
+  - inversion Hlc; subst. apply sks_arrow; [ apply IHhole_safe1 | apply IHhole_safe2 ]; assumption.
+  - apply sks_all with (L := Lc). intros X HX.
+    assert (Hlcx : lc_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f X)))
+      by (inversion Hlc; subst; eauto).
+    apply (H0 X HX Hlcx).
+Qed.
+
+Lemma tophole_safe_skel_safe : forall Δ P0 A,
+    tophole_safe Δ P0 A -> lc_ptyp A -> skel_safe Δ (pskl_tophole P0) A.
+Proof.
+  induction 1; intros Hlc.
+  - (* ths_leaf: A ≠ ∀, hole_safe Δ P0 A *)
+    apply sks_top_leaf.
+    + assumption.
+    + intros Q1 Hc; subst P0;
+        match goal with Hhs : hole_safe _ (pskl_tophole _) _ |- _ => inversion Hhs end.
+    + apply hole_safe_skel_safe; assumption.
+  - (* ths_all: A = ∀A0, Δ kept *)
+    apply sks_top_all with (L := L). intros X HX.
+    assert (Hlcx : lc_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f X)))
+      by (inversion Hlc; subst; eauto).
+    apply (H0 X HX Hlcx).
+Qed.
+
 (** [forall_l] maintenance: from the [hsu_all] body (one [∀] stripped), the
     instantiation [□]/[φ] re-establishes [hole_safe_u] at [nil] for the
     recursion — exactly [subst_intro] + [hole_safe_u_subst] + [weaken]. *)
@@ -1343,6 +1378,90 @@ Proof.
   - (* forall_l_untagged *)
     destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
     + apply ghost_fill_hole_case; assumption.
+    + simpl in Hsubs. inversion Hsubs; subst.
+      * inversion Hg.
+      * inversion Hg; subst. inversion Hhsu; subst.
+        match goal with Hs0 : pskl_subsumes ?P0 (utyp_to_pskl _) |- _ =>
+          eapply (IHHsub eq_refl A' (open_pskl_wrt_pskl P0 pskl_hole) (bskl_tophole Q0)) end;
+          [ reflexivity | exact Hwfa
+          | rewrite utyp_to_pskl_open; unfold open_pskl_wrt_pskl;
+            apply pskl_subsumes_open_rec; [ eassumption | apply pskl_subsumes__hole ]
+          | eassumption
+          | eapply hole_safe_u_open_fill; [ eassumption | apply is_ttyp_lc; eassumption ] ].
+Qed.
+
+(** The bare ghost [□] is [skel_safe] for ANY type at [Δ = nil] ([In X nil]
+    is [False], so the [sks_hole] scope side-condition is vacuous). *)
+Lemma skel_safe_hole_nil : forall A, skel_safe nil pskl_hole A.
+Proof. intros A. apply sks_hole. intros X HX HC. inversion HC. Qed.
+
+(** [ghost_of_fill_gen]'s [skel_safe] twin: the ghost [Q] of a base term's
+    principal skeleton is [skel_safe] for every checking type [A'] it subsumes
+    to.  Same [d_sub] induction + invariants as [ghost_of_fill_gen], but the
+    leaves land in [skel_safe] via the [tophole_safe]/[hole_safe] bridges
+    ([check] → [ths_leaf] + [tophole_safe_skel_safe]; [forall_r] → [sks_top_all];
+    [forall_l] → same IH re-instantiation).  Feeds the context-free
+    [refine_colour_skel] so the [∀]-peel needs no [Γ]-weakening. *)
+Lemma ghost_skel_safe : forall Δ Γ U V,
+    Δ ⨟ Γ ⊢[ mode_tc ] U ⊑ V ->
+    forall A' P Q,
+      V = ptyp_to_btyp_inh A' ->
+      d_wf_ptyp Γ A' ->
+      pskl_subsumes P (utyp_to_pskl U) ->
+      ghost_of P Q ->
+      hole_safe_u nil P U ->
+      skel_safe nil (bskl_to_pskl Q) A'.
+Proof.
+  intros Δ Γ U V Hsub. remember mode_tc as m eqn:Hm. revert Hm.
+  induction Hsub; intros Hm A' P Q Heq Hwfa Hsubs Hg Hhsu; try discriminate Hm.
+  - (* check : guarded_utyp C, guarded_btyp B, consis C ≈ B, B = inh A' *)
+    destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
+    + apply skel_safe_hole_nil.
+    + assert (Hbq : bskl_to_pskl Q0 = P).
+      { match goal with Hgu : guarded_utyp ?Uu |- _ => inversion Hgu; subst end;
+        simpl in Hsubs; inversion Hsubs; subst; inversion Hg; subst; simpl;
+        try reflexivity; rewrite ! bskl_to_pskl_pskl_to_bskl_syn; reflexivity. }
+      replace (bskl_to_pskl (bskl_tophole Q0))
+        with (pskl_tophole (bskl_to_pskl Q0)) by reflexivity.
+      rewrite Hbq.
+      apply tophole_safe_skel_safe; [ | eapply d_wf_ptyp_lc_loc; eauto ].
+      apply ths_leaf.
+      * intros A0 Hc; subst A';
+          match goal with Hgb : guarded_btyp ?BB |- _ =>
+            rewrite Heq in Hgb; inversion Hgb end.
+      * eapply hole_safe_u_transport; [ exact Hhsu | eassumption | exact Heq ].
+  - (* forall_r : V = inh (∀A'0) *)
+    destruct A' as [ | n | X | A'a A'b | A'0 ]; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
+    + apply skel_safe_hole_nil.
+    + replace (bskl_to_pskl (bskl_tophole Q0))
+        with (pskl_tophole (bskl_to_pskl Q0)) by reflexivity.
+      inversion Hwfa; subst.
+      let g := gather_atoms in apply sks_top_all with (L := g). intros X HX.
+      eapply (H1 X ltac:(fsetdec) eq_refl
+                (open_ptyp_wrt_ptyp A'0 (ptyp_var_f X)) P (bskl_tophole Q0)).
+      * rewrite ptyp_to_btyp_inh_open_var; reflexivity.
+      * match goal with Hb : forall _ : atom, _ -> d_wf_ptyp _ _ |- _ => apply Hb; fsetdec end.
+      * exact Hsubs.
+      * exact Hg.
+      * exact Hhsu.
+  - (* forall_l_tagged *)
+    destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
+    + apply skel_safe_hole_nil.
+    + simpl in Hsubs. inversion Hsubs; subst.
+      * inversion Hg.
+      * inversion Hg; subst. inversion Hhsu; subst.
+        match goal with Hs0 : pskl_subsumes ?P0 (utyp_to_pskl _) |- _ =>
+          eapply (IHHsub eq_refl A' (open_pskl_wrt_pskl P0 pskl_hole) (bskl_tophole Q0)) end;
+          [ reflexivity | exact Hwfa
+          | rewrite utyp_to_pskl_open; unfold open_pskl_wrt_pskl;
+            apply pskl_subsumes_open_rec; [ eassumption | apply pskl_subsumes__hole ]
+          | eassumption
+          | eapply hole_safe_u_open_fill; [ eassumption | apply is_ttyp_lc; eassumption ] ].
+  - (* forall_l_untagged *)
+    destruct (ghost_of_shape Hg) as [Hqsh | [Q0 Hqsh]]; subst Q.
+    + apply skel_safe_hole_nil.
     + simpl in Hsubs. inversion Hsubs; subst.
       * inversion Hg.
       * inversion Hg; subst. inversion Hhsu; subst.
