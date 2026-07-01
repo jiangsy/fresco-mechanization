@@ -1844,62 +1844,7 @@ Qed.
 (* [hole_safe_Ds_strengthen] DELETED: the Γ∣Δ refactor reverts [hole_safe] to a
    single list (the inherited-var / hole-avoidance scope; [hs_var_f] is now
    unconstrained).  The synthesised ∀-vars live in Γ, not a [Δs] list, so there
-   is no var-avoidance scope left to strengthen — [abs_tophole_extract] below
-   runs entirely at the [nil] scope. *)
-
-(** λ EXTRACTION (context-free): from the λ's checking-typing, read the ghost
-    arrow [tophole_safe].  Under the Γ∣Δ refactor the peeled ∀-vars go into Γ
-    (not a [Δs] list), so [ths_all] keeps the hole-avoidance scope FIXED — the
-    whole extraction runs at the [nil] scope: the domain hole is trivially safe
-    ([∉ nil]) and the codomain reuses the body's [hole_safe nil].  No [Δs]
-    threading, no [hole_safe_Ds_strengthen]. *)
-Lemma abs_tophole_extract : forall e P L_b,
-    (forall x, x `notin` L_b -> forall Γ'' A'',
-        Γ'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ ptyp_to_btyp_inh A'' ->
-        hole_safe nil P A'') ->
-    forall Γt A',
-      Γt ⊢[ mode_tc ] (exp_abs e) ⦂ ptyp_to_btyp_inh A' ->
-      tophole_safe nil (pskl_arrow pskl_hole P) A'.
-Proof.
-  intros e P L_b Hbody Γt A' Hty.
-  remember (exp_abs e) as ee eqn:Hee.
-  remember (ptyp_to_btyp_inh A') as B0 eqn:HB0.
-  remember mode_tc as m eqn:Hm.
-  revert A' Hee HB0 Hm.
-  induction Hty; intros A'0 Hee HB0 Hm;
-    try discriminate Hee;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
-  - (* forall : A'0 = ∀A; [ths_all] keeps the [nil] scope (∀-var → Γ) *)
-    destruct A'0 as [ | n | X0 | A'a A'b | A'0 ]; simpl in HB0; try discriminate.
-    inversion HB0 as [H3].
-    apply (f_equal btyp_to_ptyp) in H3.
-    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in H3. subst A'0.
-    apply ths_all with (L := L `union` ftvar_in_pskl P `union` dom Γ). intros X HX.
-    eapply (H1 X ltac:(fsetdec) Hbody (open_ptyp_wrt_ptyp A (ptyp_var_f X)));
-      [ exact Hee
-      | rewrite ptyp_to_btyp_inh_open_var; reflexivity
-      | reflexivity ].
-  - (* abs : A'0 = arrow A (btyp_to_ptyp B); [ths_leaf] + body [hole_safe] *)
-    subst m. injection Hee as Hee'; subst e0.
-    match goal with Hsk : skmod_ty _ mode_tc |- _ =>
-      inversion Hsk as [ | ? Hia | ]; subst end.
-    match goal with Hia : is_ityp (btyp_arrow _ _) |- _ =>
-      inversion Hia as [ | | ? ? Hi1 Hi2 | ]; subst end.
-    rewrite <- (is_ityp_ptyp_to_btyp_inh Hi2) in HB0.
-    change (btyp_arrow (ptyp_to_btyp_inh A) (ptyp_to_btyp_inh (btyp_to_ptyp B)))
-      with (ptyp_to_btyp_inh (ptyp_arrow A (btyp_to_ptyp B))) in HB0.
-    apply (f_equal btyp_to_ptyp) in HB0.
-    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in HB0. subst A'0.
-    apply ths_leaf; [ intros A0 Hc; discriminate | ].
-    simpl. apply hs_arrow.
-    + apply hs_hole. intros Y HY HC. inversion HC.
-    + pick fresh x for (L_b `union` L `union` dom Γ).
-      eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ) (btyp_to_ptyp B)).
-      rewrite (is_ityp_ptyp_to_btyp_inh Hi2).
-      match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
-        apply Hbp; fsetdec end.
-Qed.
+   is no var-avoidance scope left to strengthen. *)
 
 (** FN analog of [d_pat_base_safe_tc_gen]: a base term that TI-types to
     [syn A] and is FN-subsumed to [B] has a SAFE function-mode inference.
@@ -2043,84 +1988,6 @@ Proof.
           [ eapply d_wf_pskl_rename_tvar; [ eassumption | reflexivity | simpl_env in *; fsetdec ]
           | apply same_tvar_map_subst_var ].
 Qed.
-
-(* ===================================================================== *)
-(*  Tag (εvar) renaming.  [εvar := var] is a plain label parameter of      *)
-(*  [uskl_all_etag]/[uskl_topholeg] (lngen generated no substitution for    *)
-(*  it), so we define the relabelling [ε ↦ ε'] by hand, both on the         *)
-(*  skeleton ([rename_tag]) and on its tag set ([rename_atom_set]).  This    *)
-(*  is the LN handle the set-based tag encoding was missing: the freshness   *)
-(*  of a tag is dischargeable by renaming it (used by the safe-witness       *)
-(*  erasure-canonicity feeding the abs/forall fills).                        *)
-(* ===================================================================== *)
-Fixpoint rename_tag (ε ε' : εvar) (R : uskl) : uskl :=
-  match R with
-  | uskl_unit => uskl_unit
-  | uskl_var_b n => uskl_var_b n
-  | uskl_var_f X => uskl_var_f X
-  | uskl_arrow R1 R2 => uskl_arrow (rename_tag ε ε' R1) (rename_tag ε ε' R2)
-  | uskl_all_syn R0 => uskl_all_syn (rename_tag ε ε' R0)
-  | uskl_all_etag e R0 => uskl_all_etag (if e == ε then ε' else e) (rename_tag ε ε' R0)
-  | uskl_hole => uskl_hole
-  | uskl_tophole R0 => uskl_tophole (rename_tag ε ε' R0)
-  | uskl_holeg => uskl_holeg
-  | uskl_topholeg e R0 => uskl_topholeg (if e == ε then ε' else e) (rename_tag ε ε' R0)
-  end.
-
-Definition rename_atom_set (ε ε' : atom) (Δ : atoms) : atoms :=
-  if AtomSetImpl.mem ε Δ then add ε' (remove ε Δ) else Δ.
-
-(* ===================================================================== *)
-(*  Erasure-canonicity of safe tc-witnesses.                              *)
-(*                                                                        *)
-(*  Two safe ([gpat tc]) witnesses [Qb], [Qx] of the SAME body at         *)
-(*  α-equivalent front-extended contexts ([x0] vs [xb]) have equal        *)
-(*  [bskl_to_pskl] erasure.  This is what the abs/forall fills bottom out  *)
-(*  on (route 1): the abstraction's chosen body witness [Qb] and the       *)
-(*  per-instance witness [Qx] re-derived at the body-hyp's own [xb] must    *)
-(*  agree up to erasure for the [abs_check_fill] body-hyp to close.         *)
-(*                                                                          *)
-(*  PROOF PLAN (joint induction; α-aware — uses each witness's NATIVE fill, *)
-(*  since the fill cannot be renamed across [x0]/[xb], the [x0∈Γe] wall):   *)
-(*   1. Align the two INFERENCES to a common var by [d_pat_rename_var]      *)
-(*      ([Qb] is term-var-free, so the witness is unchanged) — legal for    *)
-(*      the inference (not the fill).                                       *)
-(*   2. Induct on the (aligned) inference; invert the other.  Heads agree   *)
-(*      (same opened body), so rules pair up:                              *)
-(*      - [abs_check]/[abs_anno_check]: erasure [tophole(arrow _ P)];       *)
-(*        recurse on the cofinite body (its own [is_sskl] body witness).    *)
-(*      - [freeze]: erasure = the [ti] skeleton, which is erasure-          *)
-(*        deterministic (syntax-directed [ti] rules).                       *)
-(*      - [sub]: [R] (the [ti] skeleton) is determined; the only split is   *)
-(*        [d_pat_sub] at tc, where [forall_l] picks [psi].  The two NATIVE  *)
-(*        fills pin [psi] to the ghost ([□], empty tags) on each side; the  *)
-(*        [rename_tag] lemma is the LN handle for the [Δ']-freshness there.  *)
-(*      - [app]: the codomain [Q2] via the function inference + refinement. *)
-(*  Erasure is tag-free ([bskl] carries no [ε]), so tag DIFFERENCES never   *)
-(*  reach the conclusion; [rename_tag] is only needed inside the [forall_l] *)
-(*  reconciliation, not in the statement.                                   *)
-(* ===================================================================== *)
-Lemma safe_tc_erasure_canon : forall Γ' e x0 xb Qb Qx,
-    x0 `notin` (fvar_in_exp e `union` dom Γ') ->
-    xb `notin` (fvar_in_exp e `union` dom Γ') ->
-    ((x0 ~ dbind_skl pskl_hole) ++ Γ') ⊢[ mode_tc ]
-       (open_exp_wrt_exp e (exp_var_f x0)) ⇨ Qb ->
-    (forall Γext Γt A, ctx_weaken ((x0 ~ dbind_skl pskl_hole) ++ Γ') Γext ->
-        ctx_refines Γext Γt -> d_wf_denv Γt ->
-        Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x0)) ⦂ (ptyp_to_btyp_inh A) ->
-        Γext ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Qb)) ⊳
-          (colour (pskl_to_bskl_inh (bskl_to_pskl Qb)) A)) ->
-    ((xb ~ dbind_skl pskl_hole) ++ Γ') ⊢[ mode_tc ]
-       (open_exp_wrt_exp e (exp_var_f xb)) ⇨ Qx ->
-    (forall Γext Γt A, ctx_weaken ((xb ~ dbind_skl pskl_hole) ++ Γ') Γext ->
-        ctx_refines Γext Γt -> d_wf_denv Γt ->
-        Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f xb)) ⦂ (ptyp_to_btyp_inh A) ->
-        Γext ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Qx)) ⊳
-          (colour (pskl_to_bskl_inh (bskl_to_pskl Qx)) A)) ->
-    bskl_to_pskl Qx = bskl_to_pskl Qb.
-Proof.
-  (* joint induction per the plan above; in progress *)
-Admitted.
 
 (** [d_wf_denv] front term-var rename: the front binding's variable is a
     placeholder (the whole sub-well-formedness lives below it). *)
