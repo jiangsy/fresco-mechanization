@@ -1772,7 +1772,30 @@ Proof.
   induction Hchk; intros Γi Q Hcr Hinf; try discriminate Hm.
   - (* sub (base term) *) admit.
   - (* freeze *) admit.
-  - (* forall *) admit.
+  - (* forall : e (value) checks at ∀; peel via sks_top_all + premise IH *)
+    inversion Hinf; subst;
+      try (match goal with Hne : _ <> mode_tc |- _ => solve [ exfalso; apply Hne; reflexivity ] end);
+      try (match goal with Hv : is_value (exp_app _ _) |- _ => solve [ inversion Hv ] end).
+    + (* sub (base value at ∀) *) admit.
+    + (* freeze value at ∀ *) admit.
+    + (* abs_check: Q = ⫯(...) — tophole absorbs the ∀ *)
+      simpl. apply sks_top_all with
+        (L := L `union` dom Γ `union` dom Γi `union` ftvar_in_ptyp A). intros X HX.
+      rewrite <- (prop_skeleton.btyp_to_ptyp_open (ptyp_to_btyp_inh A) X).
+      match goal with Hi : d_pat mode_tc _ _ ?QQ |- _ =>
+        apply (H1 X ltac:(fsetdec) eq_refl ((X ~ dbind_tvar) ++ Γi) QQ);
+          [ apply ctxr_cons; [ apply dbr_refl | exact Hcr ]
+          | rewrite_env (nil ++ (X ~ dbind_tvar) ++ Γi); apply d_pat_weakening; exact Hi ]
+      end.
+    + (* abs_anno_check: Q = ⫯(...) — same *)
+      simpl. apply sks_top_all with
+        (L := L `union` dom Γ `union` dom Γi `union` ftvar_in_ptyp A). intros X HX.
+      rewrite <- (prop_skeleton.btyp_to_ptyp_open (ptyp_to_btyp_inh A) X).
+      match goal with Hi : d_pat mode_tc _ _ ?QQ |- _ =>
+        apply (H1 X ltac:(fsetdec) eq_refl ((X ~ dbind_tvar) ++ Γi) QQ);
+          [ apply ctxr_cons; [ apply dbr_refl | exact Hcr ]
+          | rewrite_env (nil ++ (X ~ dbind_tvar) ++ Γi); apply d_pat_weakening; exact Hi ]
+      end.
   - (* abs : λ checks at arrow (inh A) B0; Hinf ⇒ d_pat__abs_check, Q = ⫯(□ → syn P) *)
     subst m. inversion Hinf; subst;
       try (match goal with Hb : is_base_term (exp_abs _) |- _ => solve [ inversion Hb ] end);
