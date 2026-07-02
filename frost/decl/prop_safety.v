@@ -51,6 +51,23 @@ Proof.
   intros Γ' Γ H. induction H; simpl; [ fsetdec | fsetdec ].
 Qed.
 
+(** [ctx_refines] up to tvar-insertion on the RIGHT (target).  This is the
+    coverage-quantifier relation for the tc [skel_safe] engine: a λ checking
+    against a ∀ peels the bound tvar into the context, so the body's checking
+    context is a plain refinement of the inference context PLUS the peeled
+    tvars.  Since [skel_safe]'s conclusion is context-free, the [crtw_tvar]
+    step is absorbed with NO change to the body coverage hypothesis. *)
+Inductive ctx_refines_tw : list (atom * dbind) -> list (atom * dbind) -> Prop :=
+| crtw_base : forall Γ' Γ, ctx_refines Γ' Γ -> ctx_refines_tw Γ' Γ
+| crtw_tvar : forall Γ' Γ X,
+    ctx_refines_tw Γ' Γ -> ctx_refines_tw Γ' ((X ~ dbind_tvar) ++ Γ)
+| crtw_cons : forall x d' d Γ' Γ,
+    dbind_refines d' d -> ctx_refines_tw Γ' Γ ->
+    ctx_refines_tw ((x ~ d') ++ Γ') ((x ~ d) ++ Γ).
+
+Lemma ctx_refines_tw_refl : forall Γ, ctx_refines_tw Γ Γ.
+Proof. intros; apply crtw_base, ctx_refines_refl. Qed.
+
 (* ===================================================================== *)
 (*  tvar-RENAMING for [d_refine_syn] (and onward [d_pat]) — the infra the  *)
 (*  [forall] case needs: the inference's fresh tvar [X0] must be α-renamed  *)
@@ -1830,6 +1847,68 @@ Admitted.
 (** STRUCTURAL abs fill assembly (replaces the old [ctx_weaken] [abs_check_fill]).
     The body-hyp is the cofinite STRUCTURAL fill about [Qb] at [(x:□)::Γ'];
     [d_pat_total_gen] supplies it via [gpat_fill_rename].  Output over [Γt]. *)
+(** STRUCTURAL abs [skel_safe] assembly (the context-free replacement for
+    [abs_check_fill_structural]'s fill).  Induct on the λ CHECKING:
+    - [forall] (A' = ∀): [sks_top_all] peels the bound tvar; the IH handles the
+      ∀-body typing at [(X:tvar)::Γt], and the peeled [X] is absorbed into the
+      outer [ctx_refines_tw] via [crtw_tvar] — the body hypothesis [Hbody] is
+      UNCHANGED (skel_safe is context-free).  This is exactly what stranded
+      [abs_check_fill_structural]'s [forall] admit.
+    - [abs] (A' = arrow): [sks_top_leaf] + [sks_arrow] (domain [sks_hole] at
+      [Δ=nil]; codomain from [Hbody] at [(x:typ A)::Γt] via [crtw_cons]). *)
+Lemma abs_check_fill_skel : forall e Qb Γ' L_b,
+    (forall x, x `notin` L_b -> forall Γt'' A'',
+        ctx_refines_tw ((x ~ dbind_skl pskl_hole) ++ Γ') Γt'' -> d_wf_denv Γt'' ->
+        Γt'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ ptyp_to_btyp_inh A'' ->
+        skel_safe nil (bskl_to_pskl Qb) A'') ->
+    forall Γt A',
+      ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+      Γt ⊢[ mode_tc ] (exp_abs e) ⦂ (ptyp_to_btyp_inh A') ->
+      skel_safe nil (pskl_tophole (pskl_arrow pskl_hole (bskl_to_pskl Qb))) A'.
+Proof.
+  intros e Qb Γ' L_b Hbody Γt A' Hcr Hwf Hty.
+  remember (exp_abs e) as ee eqn:Hee.
+  remember (ptyp_to_btyp_inh A') as B0 eqn:HB0.
+  remember mode_tc as m eqn:Hm.
+  revert A' Hcr Hwf Hee HB0 Hm.
+  induction Hty; intros A'0 Hcr Hwf Hee HB0 Hm;
+    try discriminate Hee;
+    try (exfalso; subst;
+         match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+  - (* forall : A'0 = ∀A *)
+    destruct A'0 as [ | n | X | A'a A'b | A0 ]; simpl in HB0; try discriminate.
+    injection HB0 as HB0'. apply (f_equal btyp_to_ptyp) in HB0'.
+    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in HB0'. subst A0.
+    apply sks_top_all with (L := L `union` dom Γ). intros Y HY.
+    eapply (H1 Y ltac:(fsetdec) Hbody (open_ptyp_wrt_ptyp A (ptyp_var_f Y))).
+    + apply crtw_tvar. exact Hcr.
+    + apply d_wf_denv__tvar; [ exact Hwf | fsetdec ].
+    + exact Hee.
+    + rewrite ptyp_to_btyp_inh_open_var. reflexivity.
+    + reflexivity.
+  - (* abs : A'0 = arrow A (btyp_to_ptyp B) *)
+    subst m. injection Hee as Hee'; subst e0.
+    match goal with Hsk : skmod_ty _ mode_tc |- _ =>
+      inversion Hsk as [ | ? Hia | ]; subst end.
+    match goal with Hia : is_ityp (btyp_arrow _ _) |- _ =>
+      inversion Hia as [ | | ? ? Hi1 Hi2 | ]; subst end.
+    rewrite <- (is_ityp_ptyp_to_btyp_inh Hi2) in HB0.
+    change (btyp_arrow (ptyp_to_btyp_inh A) (ptyp_to_btyp_inh (btyp_to_ptyp B)))
+      with (ptyp_to_btyp_inh (ptyp_arrow A (btyp_to_ptyp B))) in HB0.
+    apply (f_equal btyp_to_ptyp) in HB0.
+    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in HB0. subst A'0.
+    apply sks_top_leaf; [ intros ? Hc; discriminate | intros ? Hc; discriminate | ].
+    apply sks_arrow.
+    + apply sks_hole. intros ? ? HC; inversion HC.
+    + pick fresh x for (L_b `union` L `union` dom Γ).
+      eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ) (btyp_to_ptyp B)).
+      * apply crtw_cons; [ apply dbr_typ_hole | exact Hcr ].
+      * apply d_wf_denv__typ; [ exact Hwf | fsetdec | assumption ].
+      * rewrite (is_ityp_ptyp_to_btyp_inh Hi2).
+        match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
+          apply Hbp; fsetdec end.
+Qed.
+
 Lemma abs_check_fill_structural : forall e Qb Γ' L_b,
     (forall x, x `notin` L_b -> forall Γt'' A'',
         ctx_refines ((x ~ dbind_skl pskl_hole) ++ Γ') Γt'' -> d_wf_denv Γt'' ->
