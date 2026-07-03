@@ -551,6 +551,56 @@ Proof.
       * eapply IH; [ exact Htw | exact Hwf0 | exact HXc | simpl_env in *; fsetdec ].
 Qed.
 
+(** [ctx_refines_tw] only grows the domain (inserts tvars). *)
+Lemma ctx_refines_tw_dom_sub : forall Γ' Γ, ctx_refines_tw Γ' Γ -> dom Γ' [<=] dom Γ.
+Proof.
+  intros Γ' Γ H. induction H; simpl.
+  - apply ctx_refines_dom in H. fsetdec.
+  - fsetdec.
+  - fsetdec.
+Qed.
+
+(** Relabel a term-variable name [y→x] in a context (types are unchanged — term
+    vars never occur in types). *)
+Definition rename_var_denv (y x : atom) (Γ : list (atom * dbind)) :=
+  List.map (fun p => (if fst p == y then x else fst p, snd p)) Γ.
+
+(** [ctx_refines_tw] survives relabelling the front bound var [y→x] of [Γ'L]
+    (structural: no types touched; [x∉dom Γ] avoids a new clash, [uniq] gives the
+    inserted tvars ≠ [y]). *)
+Lemma ctx_refines_tw_rename_var : forall Γ'L Γ,
+    ctx_refines_tw Γ'L Γ -> forall y dr Γ'r, Γ'L = (y ~ dr) ++ Γ'r ->
+    uniq Γ -> forall xt, xt `notin` dom Γ ->
+    ctx_refines_tw ((xt ~ dr) ++ Γ'r) (rename_var_denv y xt Γ).
+Proof.
+  intros Γ'L Γ H. induction H; intros y dr Γ'r Heq Huniq xt Hx; subst.
+  - (* crtw_base : ctx_refines ((y~dr)::Γ'r) Γ *)
+    inversion H as [ | z0 d0' d0 Γ0' Γ0 Hdr Hcr0 Heqa Heqb ]; subst.
+    assert (Hyd : y `notin` dom Γ0) by (inversion Huniq; subst; assumption).
+    unfold rename_var_denv. simpl. destruct (y == y) as [ _ | n ]; [ | contradiction n; reflexivity ].
+    replace (List.map (fun p => (if fst p == y then xt else fst p, snd p)) Γ0) with Γ0.
+    + apply crtw_base. apply ctxr_cons; [ exact Hdr | exact Hcr0 ].
+    + clear - Hyd. induction Γ0 as [ | [w dw] Γ0' IHg ]; simpl; [ reflexivity | ].
+      destruct (w == y); [ subst; simpl in Hyd; fsetdec | ].
+      rewrite <- IHg by (simpl in Hyd; fsetdec). reflexivity.
+  - (* crtw_tvar : Γ = (X~tvar)::Γ0 *)
+    assert (HZy : X <> y).
+    { intro; subst X. inversion Huniq; subst.
+      apply ctx_refines_tw_dom_sub in H. simpl in H. fsetdec. }
+    unfold rename_var_denv. simpl. destruct (X == y) as [ e | _ ]; [ contradiction | ].
+    apply crtw_tvar. eapply IHctx_refines_tw;
+      [ reflexivity | inversion Huniq; subst; assumption | simpl in Hx; fsetdec ].
+  - (* crtw_cons : ((y~dr)::Γ'r) = ((x0~d')::Γ'0) ⇒ x0=y, front of Γ is (y~d) *)
+    injection Heq as Hy Hd Hreq. subst.
+    assert (Hyd : y `notin` dom Γ) by (inversion Huniq; subst; assumption).
+    unfold rename_var_denv. simpl. destruct (y == y) as [ _ | n ]; [ | contradiction n; reflexivity ].
+    replace (List.map (fun p => (if fst p == y then xt else fst p, snd p)) Γ) with Γ.
+    + apply crtw_cons; [ assumption | assumption ].
+    + clear - Hyd. induction Γ as [ | [w dw] Γ0' IHg ]; simpl; [ reflexivity | ].
+      destruct (w == y); [ subst; simpl in Hyd; fsetdec | ].
+      rewrite <- IHg by (simpl in Hyd; fsetdec). reflexivity.
+Qed.
+
 Lemma d_wf_ptyp_rename_tvar : forall Γ A,
     Γ ⊢ₚ A -> forall Γ1 Γ2 X0 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
     Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
