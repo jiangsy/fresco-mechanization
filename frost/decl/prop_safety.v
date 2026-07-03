@@ -2163,6 +2163,66 @@ Qed.
     at the front and [y ∉ Γt0] (refinement preserves [dom]), so relabelling
     [y → x] cannot collide.  Uses [d_typing_rename_var] + [d_refine_syn_rename_var]
     (refinement reads only tvars, so its rename has no freshness premise). *)
+(** [skel_safe] is tvar-equivariant (rename a tvar [Z] to a fresh [W]).  This is
+    the ingredient that lets [gpat_skel_rename] handle the name-clash case where
+    the fixed bound var collides with a [ctx_refines_tw]-inserted tvar. *)
+Lemma skel_safe_rename_tvar : forall Δ P A,
+    skel_safe Δ P A -> forall Z W,
+    ~ List.In W Δ -> W `notin` ftvar_in_ptyp A ->
+    skel_safe (List.map (fun a => if a == Z then W else a) Δ)
+              (subst_pskl_in_pskl (pskl_var_f W) Z P)
+              (subst_ptyp_in_ptyp (ptyp_var_f W) Z A).
+Proof.
+  induction 1; intros Z W HWΔ HWA; simpl in *.
+  - (* sks_hole *)
+    apply sks_hole. intros X HX HInX.
+    assert (HXu : X `in` (ftvar_in_ptyp (ptyp_var_f W) `union` remove Z (ftvar_in_ptyp A)))
+      by (eapply ftvar_in_ptyp_subst_ptyp_in_ptyp_upper; exact HX).
+    simpl in HXu.
+    apply List.in_map_iff in HInX. destruct HInX as [a [Ha HaΔ]].
+    destruct (a == Z) as [Heqa | Hnea].
+    + (* a = Z ⇒ X = W ; both branches contradict *)
+      subst a. destruct (Z == Z) as [_ | Hc]; [ | contradiction Hc; reflexivity ].
+      subst X.
+      destruct (AtomSetImpl.mem Z (ftvar_in_ptyp A)) eqn:Hmem.
+      * apply AtomSetImpl.mem_2 in Hmem. exact (H Z Hmem HaΔ).
+      * assert (Z `notin` ftvar_in_ptyp A) by (intro c; apply AtomSetImpl.mem_1 in c; congruence).
+        rewrite subst_ptyp_in_ptyp_fresh_eq in HX by assumption. exact (HWA HX).
+    + (* a ≠ Z ⇒ X = a ∈ Δ, and X ∈ ftvar A ⇒ ~In X Δ *)
+      assert (Hxeq : X = a) by (rewrite <- Ha; destruct (a == Z); [ contradiction | reflexivity ]). subst a.
+      assert (Hxa : X `in` ftvar_in_ptyp A).
+      { apply AtomSetImpl.union_1 in HXu. destruct HXu as [HXu | HXu].
+        - apply AtomSetImpl.singleton_1 in HXu. subst X. contradiction (HWΔ HaΔ).
+        - eapply AtomSetImpl.remove_3; exact HXu. }
+      exact (H X Hxa HaΔ).
+  - (* sks_unit *) apply sks_unit.
+  - (* sks_var_f *) destruct (X == Z); apply sks_var_f.
+  - (* sks_arrow *) apply sks_arrow; [ apply IHskel_safe1 | apply IHskel_safe2 ];
+      solve [ assumption | fsetdec ].
+  - (* sks_all *) apply sks_all with (L := L `union` {{Z}} `union` {{W}}). intros X HX.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var by (first [ fsetdec | apply lc_pskl_var_f ]).
+    rewrite subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var by (first [ fsetdec | apply lc_ptyp_var_f ]).
+    replace (X :: List.map (fun a => if a == Z then W else a) Δ)
+      with (List.map (fun a => if a == Z then W else a) (X :: Δ))
+      by (simpl; destruct (X == Z); [ fsetdec | reflexivity ]).
+    apply H0; [ fsetdec | simpl; intro c; destruct c; [ fsetdec | contradiction ] | ].
+    intro Hin. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in Hin. simpl in Hin.
+    apply AtomSetImpl.union_1 in Hin. destruct Hin as [Hin | Hin];
+      [ apply AtomSetImpl.singleton_1 in Hin; subst; fsetdec | apply HWA; exact Hin ].
+  - (* sks_top_leaf *) apply sks_top_leaf.
+    + intros A0 Hc. destruct A; simpl in Hc;
+        solve [ discriminate | destruct (_ == _); discriminate | eapply H; reflexivity ].
+    + intros Q1 Hc. destruct P0; simpl in Hc;
+        solve [ discriminate | destruct (_ == _); discriminate | eapply H0; reflexivity ].
+    + apply IHskel_safe; assumption.
+  - (* sks_top_all *) apply sks_top_all with (L := L `union` {{Z}} `union` {{W}}). intros X HX.
+    rewrite subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var by (first [ fsetdec | apply lc_ptyp_var_f ]).
+    apply H0; [ fsetdec | assumption | ].
+    intro Hin. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in Hin. simpl in Hin.
+    apply AtomSetImpl.union_1 in Hin. destruct Hin as [Hin | Hin];
+      [ apply AtomSetImpl.singleton_1 in Hin; subst; fsetdec | apply HWA; exact Hin ].
+Qed.
+
 Lemma gpat_fill_rename : forall e Γ' Q x,
     x `notin` (fvar_in_exp e `union` dom Γ') ->
     (forall Γt A, ctx_refines ((x ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
@@ -2196,8 +2256,6 @@ Proof.
   - exact Htyx.
 Qed.
 
-(** [bskl_to_pskl] (skeleton erasure) commutes with the [X := unit] tvar
-    substitution — pure structural recursion. *)
 Lemma bskl_to_pskl_subst_unit : forall Q X,
     subst_pskl_in_pskl pskl_unit X (bskl_to_pskl Q)
     = bskl_to_pskl (subst_bskl_in_bskl bskl_unit X Q).
