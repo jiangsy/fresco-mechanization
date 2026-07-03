@@ -477,6 +477,80 @@ Proof.
     rewrite (subst_pskl_in_pskl_fresh_eq _ _ _ (Hs _ _ Hb)). assumption.
 Qed.
 
+(** Well-formed skeleton scoping ([ptyp] analogue [d_wf_ptyp_ftvar]). *)
+Lemma d_wf_pskl_ftvar : forall Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P ->
+    forall X, X `in` ftvar_in_pskl P -> List.In X Ψ \/ binds X dbind_tvar Γ.
+Proof.
+  intros Ψ Γ P H. induction H; intros Y HY; simpl in HY.
+  - fsetdec.
+  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
+  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY];
+      [ apply IHd_wf_pskl1 | apply IHd_wf_pskl2 ]; assumption.
+  - pick fresh X for (L `union` ftvar_in_pskl P `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f X)))
+      by (eapply ftvar_in_pskl_open_pskl_wrt_pskl_lower; eassumption).
+    specialize (H0 X ltac:(auto) Y HYo).
+    destruct H0 as [HIn | HB]; [ | right; assumption ].
+    simpl in HIn. destruct HIn as [Heq | HIn]; [ subst Y; solve [ exfalso; fsetdec ] | left; assumption ].
+  - fsetdec.
+  - apply IHd_wf_pskl in HY. destruct HY as [HIn | HB]; [ inversion HIn | right; exact HB ].
+Qed.
+
+(** On a well-formed context with [X ∉ dom], the tvar-substitution [X := W] is
+    the identity (no binding's type references an unbound [X]).  This is what
+    makes [ctx_refines_tw_rename_tvar] leave the refined bindings untouched. *)
+Lemma map_subst_var_dbind_wf : forall Γ,
+    d_wf_denv Γ -> forall X W, X `notin` dom Γ ->
+    map (subst_var_dbind X W) Γ = Γ.
+Proof.
+  intros Γ H. induction H; intros X0 W Hnotin; simpl in *.
+  - reflexivity.
+  - rewrite IHd_wf_denv by fsetdec. reflexivity.
+  - rewrite IHd_wf_denv by fsetdec. f_equal. f_equal. simpl. f_equal.
+    apply subst_ptyp_in_ptyp_fresh_eq. intro c.
+    assert (Hb : binds X0 dbind_tvar Γ) by (eapply d_wf_ptyp_ftvar; [ eassumption | exact c ]).
+    apply binds_In in Hb. fsetdec.
+  - rewrite IHd_wf_denv by fsetdec. f_equal. f_equal. simpl. f_equal.
+    apply subst_pskl_in_pskl_fresh_eq. intro c.
+    assert (Hb : List.In X0 (@nil atom) \/ binds X0 dbind_tvar Γ)
+      by (eapply d_wf_pskl_ftvar; [ eassumption | exact c ]).
+    destruct Hb as [Hc | Hc]; [ inversion Hc | apply binds_In in Hc; fsetdec ].
+Qed.
+
+(** [ctx_refines_tw] survives renaming a [ctx_refines_tw]-inserted tvar [X→W]:
+    the refined bindings come from [Γ'] (wf, [X∉dom Γ']) so the subst leaves them
+    fixed ([map_subst_var_dbind_wf]); only the inserted [X]-tvar is relabelled. *)
+Lemma ctx_refines_tw_rename_tvar : forall Γ1 Γ' X W Γ2,
+    ctx_refines_tw Γ' (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) ->
+    d_wf_denv Γ' -> X `notin` dom Γ' ->
+    W `notin` dom (Γ1 ++ (X ~ dbind_tvar) ++ Γ2) ->
+    ctx_refines_tw Γ' (map (subst_var_dbind X W) Γ1 ++ (W ~ dbind_tvar) ++ Γ2).
+Proof.
+  induction Γ1 as [ | [z d] Γ1' IH ]; intros Γ' X W Γ2 Hcr Hwf HXΓ' HW; simpl_env in *.
+  - (* Γ1 = nil : front is (X ~ tvar) *)
+    inversion Hcr as [ Γ'b Γb Hbase | Γ'v Γv Zv Htw | zc d'c dc Γ'c Γ0c Hdr Htw ]; subst.
+    + apply ctx_refines_dom in Hbase. exfalso. simpl in Hbase. fsetdec.
+    + apply crtw_tvar. assumption.
+    + exfalso. simpl in HXΓ'. fsetdec.
+  - (* Γ1 = (z ~ d) :: Γ1' : front is (z ~ d), X in the tail *)
+    inversion Hcr as [ Γ'b Γb Hbase | Γ'v Γv Zv Htw | zc d'c dc Γ'c Γ0c Hdr Htw ]; subst.
+    + apply ctx_refines_dom in Hbase. exfalso.
+      assert (X `in` dom Γ') by (rewrite Hbase; simpl_env; fsetdec). fsetdec.
+    + simpl. apply crtw_tvar.
+      eapply IH; [ exact Htw | exact Hwf | exact HXΓ' | simpl_env in *; fsetdec ].
+    + assert (Hwf0 : d_wf_denv Γ'c) by (inversion Hwf; assumption).
+      assert (HXc : X `notin` dom Γ'c) by (simpl in HXΓ'; fsetdec).
+      simpl. apply crtw_cons.
+      * destruct Hdr as [ dd | AA ].
+        -- assert (Hsd : subst_var_dbind X W dd = dd).
+           { pose proof (@map_subst_var_dbind_wf (z ~ dd ++ Γ'c) Hwf X W HXΓ') as Hm.
+             simpl in Hm. congruence. }
+           rewrite Hsd. apply dbr_refl.
+        -- simpl. apply dbr_typ_hole.
+      * eapply IH; [ exact Htw | exact Hwf0 | exact HXc | simpl_env in *; fsetdec ].
+Qed.
+
 Lemma d_wf_ptyp_rename_tvar : forall Γ A,
     Γ ⊢ₚ A -> forall Γ1 Γ2 X0 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
     Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
