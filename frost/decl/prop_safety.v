@@ -565,6 +565,57 @@ Qed.
 Definition rename_var_denv (y x : atom) (Γ : list (atom * dbind)) :=
   List.map (fun p => (if fst p == y then x else fst p, snd p)) Γ.
 
+(** A non-[y] binding survives the term-var relabel. *)
+Lemma binds_rename_var : forall z d y xt Γ,
+    binds z d Γ -> z <> y -> binds z d (rename_var_denv y xt Γ).
+Proof.
+  intros z d y xt Γ Hb Hzy. unfold rename_var_denv, binds in *.
+  apply (List.in_map (fun p => (if fst p == y then xt else fst p, snd p))) in Hb.
+  simpl in Hb. destruct (z == y) as [ Heq | _ ]; [ contradiction | exact Hb ].
+Qed.
+
+(** [d_wf_ptyp]/[d_wf_pskl] survive the term-var relabel when [y] is not free in
+    the type (which holds when [y] is bound as a non-tvar — types reference only
+    tvars). *)
+Lemma d_wf_ptyp_relabel_var : forall Γ A,
+    d_wf_ptyp Γ A -> forall y xt, y `notin` ftvar_in_ptyp A ->
+    d_wf_ptyp (rename_var_denv y xt Γ) A.
+Proof.
+  intros Γ A H. induction H; intros y0 xt Hy; simpl in Hy.
+  - apply d_wf_ptyp__unit.
+  - apply d_wf_ptyp__var. apply binds_rename_var; [ assumption | fsetdec ].
+  - apply d_wf_ptyp__arrow; [ apply IHd_wf_ptyp1 | apply IHd_wf_ptyp2 ]; fsetdec.
+  - apply d_wf_ptyp__all with (L := L `union` {{y0}}). intros X HX.
+    replace ((X ~ dbind_tvar) ++ rename_var_denv y0 xt Γ)
+      with (rename_var_denv y0 xt ((X ~ dbind_tvar) ++ Γ))
+      by (unfold rename_var_denv; simpl; destruct (X == y0); [ fsetdec | reflexivity ]).
+    apply H0; [ fsetdec | ].
+    intro Hin. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in Hin. simpl in Hin.
+    apply AtomSetImpl.union_1 in Hin. destruct Hin as [Hin | Hin];
+      [ apply AtomSetImpl.singleton_1 in Hin; subst; fsetdec | apply Hy; exact Hin ].
+Qed.
+
+Lemma d_wf_pskl_relabel_var : forall Ψ Γ P,
+    Ψ ⨟ Γ ⊢ₚₛ P -> forall y xt, y `notin` ftvar_in_pskl P ->
+    Ψ ⨟ (rename_var_denv y xt Γ) ⊢ₚₛ P.
+Proof.
+  intros Ψ Γ P H. induction H; intros y0 xt Hy; simpl in Hy.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. destruct H as [ HΨ | Hb ]; [ left; assumption | ].
+    right. apply binds_rename_var; [ assumption | fsetdec ].
+  - apply d_wf_pskl__arrow; [ apply IHd_wf_pskl1 | apply IHd_wf_pskl2 ]; fsetdec.
+  - apply d_wf_pskl__all with (L := L `union` {{y0}}). intros X HX.
+    replace ((X ~ dbind_tvar) ++ rename_var_denv y0 xt Γ)
+      with (rename_var_denv y0 xt ((X ~ dbind_tvar) ++ Γ))
+      by (unfold rename_var_denv; simpl; destruct (X == y0); [ fsetdec | reflexivity ]).
+    apply H0; [ fsetdec | ].
+    intro Hin. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in Hin. simpl in Hin.
+    apply AtomSetImpl.union_1 in Hin. destruct Hin as [Hin | Hin];
+      [ apply AtomSetImpl.singleton_1 in Hin; subst; fsetdec | apply Hy; exact Hin ].
+  - apply d_wf_pskl__hole.
+  - apply d_wf_pskl__tophole; [ assumption | apply IHd_wf_pskl; assumption ].
+Qed.
+
 (** [ctx_refines_tw] survives relabelling the front bound var [y→x] of [Γ'L]
     (structural: no types touched; [x∉dom Γ] avoids a new clash, [uniq] gives the
     inserted tvars ≠ [y]). *)
@@ -599,6 +650,61 @@ Proof.
     + clear - Hyd. induction Γ as [ | [w dw] Γ0' IHg ]; simpl; [ reflexivity | ].
       destruct (w == y); [ subst; simpl in Hyd; fsetdec | ].
       rewrite <- IHg by (simpl in Hyd; fsetdec). reflexivity.
+Qed.
+
+Lemma dom_rename_var_sub : forall y xt Γ,
+    dom (rename_var_denv y xt Γ) [<=] dom Γ `union` {{xt}}.
+Proof.
+  intros y xt Γ. induction Γ as [ | [w dw] Γ' IH ]; unfold rename_var_denv in *; simpl;
+    [ fsetdec | destruct (w == y); simpl; fsetdec ].
+Qed.
+
+Lemma rename_var_notin : forall y xt Γ, y `notin` dom Γ -> rename_var_denv y xt Γ = Γ.
+Proof.
+  intros y xt Γ. induction Γ as [ | [w dw] Γ' IH ]; intros Hy; [ reflexivity | ].
+  unfold rename_var_denv in *. simpl in *.
+  destruct (w == y) as [ Heq | Hne ]; [ subst; fsetdec | ].
+  f_equal. apply IH. fsetdec.
+Qed.
+
+Lemma dom_rename_var_notin : forall y xt Γ,
+    y `notin` dom Γ -> dom (rename_var_denv y xt Γ) [=] dom Γ.
+Proof. intros y xt Γ H. rewrite (@rename_var_notin y xt Γ H). reflexivity. Qed.
+
+(** [d_wf_denv] survives relabelling a non-tvar bound var [y0→xt] ([xt] fresh):
+    types reference only tvars, so they are untouched ([d_wf_*_relabel_var]). *)
+Lemma d_wf_denv_rename_var : forall Γ,
+    d_wf_denv Γ -> forall y0 xt, xt `notin` dom Γ -> ~ binds y0 dbind_tvar Γ ->
+    d_wf_denv (rename_var_denv y0 xt Γ).
+Proof.
+  intros Γ H. induction H; intros y0 xt Hx Hyt; unfold rename_var_denv in *; simpl in *.
+  - apply d_wf_denv__nil.
+  - (* tvar *)
+    destruct (X == y0) as [ Heq | Hne ].
+    + subst. exfalso. apply Hyt. unfold binds. simpl. left. reflexivity.
+    + apply d_wf_denv__tvar.
+      * apply IHd_wf_denv; [ fsetdec | intro Hb; apply Hyt; unfold binds; simpl; right; exact Hb ].
+      * pose proof (dom_rename_var_sub y0 xt Γ) as Hsub. fsetdec.
+  - (* typ A *)
+    assert (Hyf : y0 `notin` ftvar_in_ptyp A).
+    { intro c. apply Hyt. unfold binds; simpl; right. eapply d_wf_ptyp_ftvar; [ eassumption | exact c ]. }
+    apply d_wf_denv__typ.
+    + apply IHd_wf_denv; [ fsetdec | intro Hb; apply Hyt; unfold binds; simpl; right; exact Hb ].
+    + destruct (x == y0) as [ Heqx | Hnex ];
+      [ subst; pose proof (@dom_rename_var_notin y0 xt Γ ltac:(assumption)) as Hrnd; fsetdec
+      | pose proof (dom_rename_var_sub y0 xt Γ) as Hsub; fsetdec ].
+    + apply d_wf_ptyp_relabel_var; assumption.
+  - (* skl P *)
+    assert (Hyf : y0 `notin` ftvar_in_pskl P).
+    { intro c. assert (Hdisj : List.In y0 (@nil atom) \/ binds y0 dbind_tvar Γ)
+        by (eapply d_wf_pskl_ftvar; [ eassumption | exact c ]).
+      destruct Hdisj as [Hc | Hc]; [ inversion Hc | apply Hyt; unfold binds; simpl; right; exact Hc ]. }
+    apply d_wf_denv__skl.
+    + apply IHd_wf_denv; [ fsetdec | intro Hb; apply Hyt; unfold binds; simpl; right; exact Hb ].
+    + destruct (x == y0) as [ Heqx | Hnex ];
+      [ subst; pose proof (@dom_rename_var_notin y0 xt Γ ltac:(assumption)) as Hrnd; fsetdec
+      | pose proof (dom_rename_var_sub y0 xt Γ) as Hsub; fsetdec ].
+    + apply d_wf_pskl_relabel_var; assumption.
 Qed.
 
 Lemma d_wf_ptyp_rename_tvar : forall Γ A,
