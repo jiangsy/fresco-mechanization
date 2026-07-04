@@ -2486,6 +2486,230 @@ Proof.
   - exact Htyx.
 Qed.
 
+(** Forward lookup through [ctx_refines_tw] (inserted tvars only add fresh
+    names). *)
+Lemma ctx_refines_tw_binds_fwd : forall Γ' Γ x d',
+    ctx_refines_tw Γ' Γ -> binds x d' Γ' ->
+    exists d, binds x d Γ /\ dbind_refines d' d.
+Proof.
+  intros Γ' Γ x d' H. induction H; intros Hb.
+  - eapply ctx_refines_binds_fwd; eauto.
+  - destruct (IHctx_refines_tw Hb) as [d [Hbd Hr]].
+    exists d. split; [ apply binds_app_3; assumption | assumption ].
+  - analyze_binds Hb.
+    + exists d. split; [ apply binds_app_iff; left; apply binds_one_iff; auto | assumption ].
+    + destruct (IHctx_refines_tw BindsTac) as [d0 [Hbd Hr]].
+      exists d0. split; [ apply binds_app_iff; right; assumption | assumption ].
+Qed.
+
+Lemma rename_var_denv_mid : forall Γa y xt d Γb,
+    y `notin` dom Γa -> y `notin` dom Γb ->
+    rename_var_denv y xt (Γa ++ (y ~ d) ++ Γb) = Γa ++ (xt ~ d) ++ Γb.
+Proof.
+  induction Γa as [ | [w dw] Γa' IH ]; intros y xt d Γb Ha Hb; simpl_env in *.
+  - unfold rename_var_denv. simpl. destruct (y == y) as [ _ | n ]; [ | contradiction n; reflexivity ].
+    f_equal. change (List.map (fun p : atom * dbind => (if fst p == y then xt else fst p, snd p)) Γb)
+      with (rename_var_denv y xt Γb). apply rename_var_notin. exact Hb.
+  - unfold rename_var_denv. simpl. destruct (w == y) as [ Heq | Hne ]; [ subst; simpl in Ha; fsetdec | ].
+    f_equal. change (List.map (fun p : atom * dbind => (if fst p == y then xt else fst p, snd p))
+                       (Γa' ++ (y ~ d) ++ Γb))
+      with (rename_var_denv y xt (Γa' ++ (y ~ d) ++ Γb)).
+    apply IH; [ simpl in Ha; fsetdec | exact Hb ].
+Qed.
+
+(** The bound-var rename [y→x] of the skel-coverage, in the non-clash case
+    [x∉dom Γt]: split [Γt] at [y] ([binds_split]), rename the typing
+    ([d_typing_rename_var]) and the context/wf ([ctx_refines_tw_rename_var],
+    [d_wf_denv_rename_var]), then apply the [x]-coverage. *)
+Lemma gpat_skel_rename_clean : forall e Γ' Q x,
+    x `notin` (fvar_in_exp e `union` dom Γ') -> d_wf_denv Γ' ->
+    (forall Γt A, ctx_refines_tw ((x ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+       Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ (ptyp_to_btyp_inh A) ->
+       skel_safe nil (bskl_to_pskl Q) A) ->
+    forall y, y `notin` (fvar_in_exp e `union` dom Γ') ->
+      forall Γt A, ctx_refines_tw ((y ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+        x `notin` dom Γt ->
+        Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh A) ->
+        skel_safe nil (bskl_to_pskl Q) A.
+Proof.
+  intros e Γ' Q x Hx Hwf' Hcov y Hy Γt A Hcr Hwf Hxt Hty.
+  assert (Hby : binds y (dbind_skl pskl_hole) ((y ~ dbind_skl pskl_hole) ++ Γ'))
+    by (apply binds_app_iff; left; apply binds_one_iff; auto).
+  destruct (@ctx_refines_tw_binds_fwd _ _ _ _ Hcr Hby) as [dt [Hbt Hdrt]].
+  assert (Hntv : dt <> dbind_tvar) by (inversion Hdrt; discriminate).
+  assert (Huniq : uniq Γt) by (eapply d_wf_denv_uniq; exact Hwf).
+  destruct (binds_split _ _ _ _ Hbt) as [Γb [Γa Hsplit]]. subst Γt.
+  assert (Hyd : y `notin` dom (Γa ++ Γb)) by solve_uniq.
+  assert (Hmid : rename_var_denv y x (Γa ++ (y ~ dt) ++ Γb) = Γa ++ (x ~ dt) ++ Γb)
+    by (apply rename_var_denv_mid; solve_uniq).
+  assert (Htyx : (Γa ++ (x ~ dt) ++ Γb) ⊢[ mode_tc ]
+                   (open_exp_wrt_exp e (exp_var_f x)) ⦂ (ptyp_to_btyp_inh A)).
+  { replace (open_exp_wrt_exp e (exp_var_f x))
+      with (subst_exp_in_exp (exp_var_f x) y (open_exp_wrt_exp e (exp_var_f y)))
+      by (symmetry; apply subst_exp_in_exp_intro; fsetdec).
+    eapply d_typing_rename_var with (x := y) (Γ1 := Γa) (Γ2 := Γb);
+      [ exact Hty | reflexivity | exact Hntv | exact Hyd ]. }
+  eapply Hcov with (Γt := Γa ++ (x ~ dt) ++ Γb).
+  - rewrite <- Hmid. eapply ctx_refines_tw_rename_var;
+      [ exact Hcr | reflexivity | exact Huniq | exact Hxt ].
+  - rewrite <- Hmid. apply d_wf_denv_rename_var; [ exact Hwf | exact Hxt | ].
+    intro Hb. assert (Heq : dt = dbind_tvar)
+      by (eapply binds_unique; [ exact Hbt | exact Hb | exact Huniq ]).
+    apply Hntv; exact Heq.
+  - exact Htyx.
+Qed.
+
+(** [x → w][w → x] on a type is the identity when [w] is fresh. *)
+Lemma ptyp_rename_rename : forall A x w,
+    w `notin` ftvar_in_ptyp A ->
+    subst_ptyp_in_ptyp (ptyp_var_f x) w (subst_ptyp_in_ptyp (ptyp_var_f w) x A) = A.
+Proof.
+  induction A as [ | n | X | A1 IHA1 A2 IHA2 | A0 IHA0 ]; intros x w Hw; simpl in Hw |- *.
+  - reflexivity.
+  - reflexivity.
+  - (* var_f *) default_simp.
+  - rewrite IHA1 by fsetdec; rewrite IHA2 by fsetdec; reflexivity.
+  - rewrite IHA0 by fsetdec; reflexivity.
+Qed.
+
+(** [bskl_to_pskl] preserves free type variables (it only erases colours). *)
+Lemma ftvar_in_pskl_bskl_to_pskl : forall Q,
+    ftvar_in_pskl (bskl_to_pskl Q) [=] ftvar_in_bskl Q.
+Proof.
+  induction Q; simpl; try reflexivity;
+    try (rewrite IHQ1, IHQ2; reflexivity);
+    try (rewrite IHQ; reflexivity).
+Qed.
+
+(** A suffix of a wf context is wf. *)
+Lemma d_wf_denv_app_r : forall Γa Γb,
+    d_wf_denv (Γa ++ Γb) -> d_wf_denv Γb.
+Proof.
+  induction Γa as [ | [z d] Γa' IH ]; intros Γb H; simpl_env in *.
+  - exact H.
+  - inversion H; subst; apply IH; assumption.
+Qed.
+
+(** The tvar in the middle of a wf context is [tvar_clean] for the suffix
+    (its suffix bindings predate it, so cannot mention it). *)
+Lemma tvar_clean_mid : forall Γa X Γb,
+    d_wf_denv (Γa ++ (X ~ dbind_tvar) ++ Γb) -> tvar_clean X Γb.
+Proof.
+  intros Γa X Γb Hwf.
+  assert (Hwfb : d_wf_denv ((X ~ dbind_tvar) ++ Γb))
+    by (eapply d_wf_denv_app_r; exact Hwf).
+  inversion Hwfb as [ | Γ0 X0 HwfΓb HXdom Heq | | ]; subst.
+  split; intros z T Hb.
+  - assert (Hwfd : d_wf_ptyp Γb T) by (eapply d_wf_denv_binds_typ; [ exact HwfΓb | exact Hb ]).
+    intro Hin. apply (d_wf_ptyp_ftvar Hwfd) in Hin. apply binds_In in Hin. contradiction.
+  - assert (Hwfd : nil ⨟ Γb ⊢ₚₛ T) by (eapply d_wf_denv_binds_skl; [ exact HwfΓb | exact Hb ]).
+    intro Hin. apply (d_wf_pskl_ftvar Hwfd) in Hin. destruct Hin as [ HImp | Hbtv ];
+      [ inversion HImp | apply binds_In in Hbtv; contradiction ].
+Qed.
+
+(** The extra names a [ctx_refines_tw] adds beyond its source are all tvars. *)
+Lemma ctx_refines_tw_extra_tvar : forall Γs Γt z d,
+    ctx_refines_tw Γs Γt -> binds z d Γt -> z `notin` dom Γs -> d = dbind_tvar.
+Proof.
+  intros Γs Γt z d H. revert z d. induction H; intros z dz Hb Hz.
+  - (* crtw_base *) exfalso. apply binds_In in Hb.
+    assert (Hdom : dom Γ' [=] dom Γ) by (apply ctx_refines_dom; exact H). fsetdec.
+  - (* crtw_tvar : Γt = (X~tvar)::Γ *)
+    analyze_binds Hb; try reflexivity;
+      eapply IHctx_refines_tw; [ exact BindsTac | exact Hz ].
+  - (* crtw_cons : Γs=(x~d')::Γ', Γt=(x~d0)::Γ *)
+    simpl_env in Hz. analyze_binds Hb; try (exfalso; fsetdec);
+      eapply IHctx_refines_tw; [ exact BindsTac | simpl_env; fsetdec ].
+Qed.
+
+(** LN rename of the gpat body coverage from bound var [x] to any fresh [y],
+    over [ctx_refines_tw] (which inserts tvars).  The clean case (x ∉ dom Γt)
+    is [gpat_skel_rename_clean]; the clash case (x is a tw-inserted tvar in Γt)
+    renames that tvar out via the standard tvar-equivariance machinery. *)
+Lemma gpat_skel_rename : forall e Γ' Q x,
+    x `notin` (fvar_in_exp e `union` ftvar_in_exp e `union` dom Γ') -> d_wf_denv Γ' ->
+    (forall Γt A, ctx_refines_tw ((x ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+       Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ (ptyp_to_btyp_inh A) ->
+       skel_safe nil (bskl_to_pskl Q) A) ->
+    forall y, y `notin` (fvar_in_exp e `union` ftvar_in_exp e `union` dom Γ') ->
+      forall Γt A, ctx_refines_tw ((y ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+        Γt ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh A) ->
+        skel_safe nil (bskl_to_pskl Q) A.
+Proof.
+  intros e Γ' Q x Hx Hwf' Hcov y Hy Γt A Hcr Hwf Hty.
+  destruct (x == y) as [ Hxy | Hxy ].
+  { subst y. eapply Hcov; eauto. }
+  destruct (AtomSetImpl.mem x (dom Γt)) eqn:Hmem.
+  2:{ (* no clash *)
+      assert (Hnotin : x `notin` dom Γt)
+        by (intro Hc; apply AtomSetImpl.mem_1 in Hc; rewrite Hc in Hmem; discriminate).
+      eapply gpat_skel_rename_clean with (e := e) (Γ' := Γ') (Q := Q) (x := x) (y := y);
+        [ clear - Hx; fsetdec
+        | exact Hwf'
+        | intros Γt0 A0 Hcr0 Hwf0 Hty0; eapply Hcov; eauto
+        | clear - Hy; fsetdec
+        | exact Hcr | exact Hwf | exact Hnotin | exact Hty ]. }
+  (* clash: x ∈ dom Γt, x ≠ y ⇒ x is a tw-inserted tvar *)
+  apply AtomSetImpl.mem_2 in Hmem.
+  apply binds_In_inv in Hmem. destruct Hmem as [dx Hbx].
+  assert (Hxsrc : x `notin` dom ((y ~ dbind_skl pskl_hole) ++ Γ')).
+  { simpl_env. clear - Hx Hxy. fsetdec. }
+  assert (Hdx : dx = dbind_tvar)
+    by (eapply ctx_refines_tw_extra_tvar; [ exact Hcr | exact Hbx | exact Hxsrc ]). subst dx.
+  assert (Huniq : uniq Γt) by (eapply d_wf_denv_uniq; exact Hwf).
+  destruct (binds_split _ _ _ _ Hbx) as [Γb [Γa Hsplit]]. subst Γt.
+  pick fresh w for
+    (dom (Γa ++ (x ~ dbind_tvar) ++ Γb) `union` ftvar_in_ptyp A
+       `union` singleton x `union` singleton y `union` dom Γ'
+       `union` ftvar_in_exp e `union` ftvar_in_bskl Q).
+  set (Γt' := map (subst_var_dbind x w) Γa ++ (w ~ dbind_tvar) ++ Γb).
+  (* renamed typing *)
+  assert (Htyw : Γt' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f y))
+                   ⦂ ptyp_to_btyp_inh (subst_ptyp_in_ptyp (ptyp_var_f w) x A)).
+  { unfold Γt'. rewrite <- ptyp_to_btyp_inh_subst_var.
+    assert (Hfe : x `notin` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f y))).
+    { pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f y)) as Hsub.
+      simpl in Hsub. clear - Hsub Hx. fsetdec. }
+    rewrite <- (subst_ptyp_in_exp_fresh_eq (open_exp_wrt_exp e (exp_var_f y)) (ptyp_var_f w) x Hfe).
+    eapply d_typing_rename_tvar with (Γ1 := Γa) (Γ2 := Γb) (X0 := x) (Y := w);
+      [ exact Hty | reflexivity | clear - Fr; fsetdec | eapply tvar_clean_mid; exact Hwf ]. }
+  (* renamed wf *)
+  assert (Hwfw : d_wf_denv Γt').
+  { unfold Γt'. eapply d_wf_denv_rename_tvar with (Γ1 := Γa) (Γ2 := Γb) (X0 := x);
+      [ exact Hwf | reflexivity | clear - Fr; fsetdec ]. }
+  (* renamed ctx_refines_tw *)
+  assert (Hcrw : ctx_refines_tw ((y ~ dbind_skl pskl_hole) ++ Γ') Γt').
+  { unfold Γt'.
+    assert (Hwfsrc : d_wf_denv ((y ~ dbind_skl pskl_hole) ++ Γ')).
+    { apply d_wf_denv__skl; [ exact Hwf' | clear - Hy; fsetdec | apply d_wf_pskl__hole ]. }
+    eapply ctx_refines_tw_rename_tvar;
+      [ exact Hcr | exact Hwfsrc | exact Hxsrc | clear - Fr; fsetdec ]. }
+  (* x renamed away *)
+  assert (Hxnot : x `notin` dom Γt').
+  { unfold Γt'. simpl_env.
+    assert (HxΓa : x `notin` dom Γa) by solve_uniq.
+    assert (HxΓb : x `notin` dom Γb) by solve_uniq.
+    clear - HxΓa HxΓb Fr. fsetdec. }
+  assert (Hskw : skel_safe nil (bskl_to_pskl Q) (subst_ptyp_in_ptyp (ptyp_var_f w) x A)).
+  { eapply gpat_skel_rename_clean with (e := e) (Γ' := Γ') (Q := Q) (x := x) (y := y);
+      [ clear - Hx; fsetdec
+      | exact Hwf'
+      | intros Γt0 A0 Hcr0 Hwf0 Hty0; eapply Hcov; eauto
+      | clear - Hy; fsetdec
+      | exact Hcrw | exact Hwfw | exact Hxnot | exact Htyw ]. }
+  (* rename w → x back (skel_safe is context-free, w ∉ ftvar Q, (A[x→w])[w→x]=A) *)
+  assert (Hxnf : x `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp (ptyp_var_f w) x A)).
+  { intro Hin. apply ftvar_in_ptyp_subst_ptyp_in_ptyp_upper in Hin. simpl in Hin.
+    assert (x <> w) by (clear - Fr; fsetdec). clear - Hin H. fsetdec. }
+  pose proof (@skel_safe_rename_tvar nil (bskl_to_pskl Q)
+                (subst_ptyp_in_ptyp (ptyp_var_f w) x A) Hskw w x
+                ltac:(simpl; auto) Hxnf) as Hback. simpl in Hback.
+  rewrite subst_pskl_in_pskl_fresh_eq in Hback
+    by (rewrite ftvar_in_pskl_bskl_to_pskl; clear - Fr; fsetdec).
+  rewrite ptyp_rename_rename in Hback by (clear - Fr; fsetdec).
+  exact Hback.
+Qed.
+
 Lemma bskl_to_pskl_subst_unit : forall Q X,
     subst_pskl_in_pskl pskl_unit X (bskl_to_pskl Q)
     = bskl_to_pskl (subst_bskl_in_bskl bskl_unit X Q).
