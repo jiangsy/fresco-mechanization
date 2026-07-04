@@ -2037,6 +2037,13 @@ Proof.
     [ rewrite IHA1, IHA2; reflexivity | rewrite IHA; reflexivity ].
 Qed.
 
+Lemma btyp_to_bskl_ptyp_to_btyp_syn_eq : forall A,
+    btyp_to_bskl (ptyp_to_btyp_syn A) = pskl_to_bskl_syn (ptyp_to_pskl A).
+Proof.
+  induction A; simpl; try reflexivity;
+    [ rewrite IHA1, IHA2; reflexivity | rewrite IHA; reflexivity ].
+Qed.
+
 (** STRUCTURAL abs [skel_safe] assembly (the context-free λ [skel_safe] engine
     feeding [d_pat_total_gen]'s abs-tc case).  Induct on the λ CHECKING:
     - [forall] (A' = ∀): [sks_top_all] peels the bound tvar; the IH handles the
@@ -2133,6 +2140,104 @@ Proof.
       eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ) A'b).
       * apply crtw_cons; [ apply dbr_typ_hole | exact Hcr ].
       * apply d_wf_denv__typ; [ exact Hwf | fsetdec | assumption ].
+      * rewrite <- HB0b.
+        match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
+          apply Hbp; fsetdec end.
+Qed.
+
+(** Annotated-λ (TC) analog of [abs_check_fill_skel]: the domain skeleton is the
+    ANNOTATION's own pskl ([skel_safe_of_ptyp]) rather than a hole. *)
+Lemma abs_anno_check_fill_skel : forall Ann e Qb Γ' L_b,
+    lc_ptyp Ann ->
+    (forall x, x `notin` L_b -> forall Γt'' A'',
+        ctx_refines_tw ((x ~ dbind_typ Ann) ++ Γ') Γt'' -> d_wf_denv Γt'' ->
+        Γt'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ ptyp_to_btyp_inh A'' ->
+        skel_safe nil (bskl_to_pskl Qb) A'') ->
+    forall Γt A',
+      ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+      Γt ⊢[ mode_tc ] (exp_abs_anno Ann e) ⦂ (ptyp_to_btyp_inh A') ->
+      skel_safe nil (pskl_tophole (pskl_arrow (ptyp_to_pskl Ann) (bskl_to_pskl Qb))) A'.
+Proof.
+  intros Ann e Qb Γ' L_b HlcAnn Hbody Γt A' Hcr Hwf Hty.
+  remember (exp_abs_anno Ann e) as ee eqn:Hee.
+  remember (ptyp_to_btyp_inh A') as B0 eqn:HB0.
+  remember mode_tc as m eqn:Hm.
+  revert A' Hcr Hwf Hee HB0 Hm.
+  induction Hty; intros A'0 Hcr Hwf Hee HB0 Hm;
+    try discriminate Hee;
+    try (exfalso; subst;
+         match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end).
+  - (* forall : A'0 = ∀A *)
+    destruct A'0 as [ | n | X | A'a A'b | A0 ]; simpl in HB0; try discriminate.
+    injection HB0 as HB0'. apply (f_equal btyp_to_ptyp) in HB0'.
+    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in HB0'. subst A0.
+    apply sks_top_all with (L := L `union` dom Γ). intros Y HY.
+    eapply (H1 Y ltac:(fsetdec) Hbody (open_ptyp_wrt_ptyp A (ptyp_var_f Y))).
+    + apply crtw_tvar. exact Hcr.
+    + apply d_wf_denv__tvar; [ exact Hwf | fsetdec ].
+    + exact Hee.
+    + rewrite ptyp_to_btyp_inh_open_var. reflexivity.
+    + reflexivity.
+  - (* abs_anno : the ott encoding substitutes [A := btyp_to_ptyp B1], so after
+       [subst Ann] the annotation is [btyp_to_ptyp B1] throughout. *)
+    subst m. injection Hee as HeeA Hee_e. subst e0. subst Ann.
+    match goal with Hsk : skmod_ty _ mode_tc |- _ =>
+      inversion Hsk as [ | ? Hia | ]; subst end.
+    match goal with Hia : is_ityp (btyp_arrow _ _) |- _ =>
+      inversion Hia as [ | | ? ? Hi1 Hi2 | ]; subst end.
+    rewrite <- (is_ityp_ptyp_to_btyp_inh Hi1) in HB0.
+    rewrite <- (is_ityp_ptyp_to_btyp_inh Hi2) in HB0.
+    change (btyp_arrow (ptyp_to_btyp_inh (btyp_to_ptyp B1))
+                       (ptyp_to_btyp_inh (btyp_to_ptyp B2)))
+      with (ptyp_to_btyp_inh (ptyp_arrow (btyp_to_ptyp B1) (btyp_to_ptyp B2))) in HB0.
+    apply (f_equal btyp_to_ptyp) in HB0.
+    rewrite ! btyp_to_ptyp_ptyp_to_btyp_inh in HB0. subst A'0.
+    apply sks_top_leaf; [ intros ? Hc; discriminate | intros ? Hc; discriminate | ].
+    apply sks_arrow.
+    + apply skel_safe_of_ptyp. exact HlcAnn.
+    + pick fresh x for (L_b `union` L `union` dom Γ).
+      eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ) (btyp_to_ptyp B2)).
+      * apply crtw_cons; [ apply dbr_refl | exact Hcr ].
+      * apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ].
+      * rewrite (is_ityp_ptyp_to_btyp_inh Hi2).
+        match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
+          apply Hbp; fsetdec end.
+Qed.
+
+(** Annotated-λ (TI-synthesis) analog: [d_pat__abs_anno] gives [bskl_arrow
+    (btyp_to_bskl B1) Qb]; the domain skeleton is the annotation's pskl. *)
+Lemma abs_anno_ti_fill_skel : forall Ann e Qb Γ' L_b,
+    lc_ptyp Ann ->
+    (forall x, x `notin` L_b -> forall Γt'' A'',
+        ctx_refines_tw ((x ~ dbind_typ Ann) ++ Γ') Γt'' -> d_wf_denv Γt'' ->
+        Γt'' ⊢[ mode_ti ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ ptyp_to_btyp_syn A'' ->
+        skel_safe nil (bskl_to_pskl Qb) A'') ->
+    forall Γt A',
+      ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+      Γt ⊢[ mode_ti ] (exp_abs_anno Ann e) ⦂ (ptyp_to_btyp_syn A') ->
+      skel_safe nil (pskl_arrow (ptyp_to_pskl Ann) (bskl_to_pskl Qb)) A'.
+Proof.
+  intros Ann e Qb Γ' L_b HlcAnn Hbody Γt A' Hcr Hwf Hty.
+  remember (exp_abs_anno Ann e) as ee eqn:Hee.
+  remember (ptyp_to_btyp_syn A') as B0 eqn:HB0.
+  remember mode_ti as m eqn:Hm.
+  revert A' Hcr Hwf Hee HB0 Hm.
+  induction Hty; intros A'0 Hcr Hwf Hee HB0 Hm;
+    try discriminate Hee; try discriminate Hm;
+    try (exfalso; subst;
+         match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end).
+  - (* abs_anno (ti) *)
+    subst m. injection Hee as HeeA Hee_e. subst e0. subst Ann. subst.
+    destruct A'0 as [ | n | X | A'a A'b | A0 ]; simpl in HB0; try discriminate HB0.
+    injection HB0 as HB0a HB0b.
+    apply (f_equal btyp_to_ptyp) in HB0a.
+    rewrite btyp_to_ptyp_ptyp_to_btyp_syn in HB0a. subst A'a.
+    apply sks_arrow.
+    + apply skel_safe_of_ptyp. exact HlcAnn.
+    + pick fresh x for (L_b `union` L `union` dom Γ).
+      eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ) A'b).
+      * apply crtw_cons; [ apply dbr_refl | exact Hcr ].
+      * apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ].
       * rewrite <- HB0b.
         match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
           apply Hbp; fsetdec end.
@@ -2413,22 +2518,23 @@ Qed.
     [x∉dom Γt]: split [Γt] at [y] ([binds_split]), rename the typing
     ([d_typing_rename_var]) and the context/wf ([ctx_refines_tw_rename_var],
     [d_wf_denv_rename_var]), then apply the [x]-coverage. *)
-Lemma gpat_skel_rename_clean : forall (m : mode) (paint : ptyp -> btyp) e Γ' Q x,
+Lemma gpat_skel_rename_clean : forall (m : mode) (paint : ptyp -> btyp) (db : dbind) e Γ' Q x,
+    db <> dbind_tvar ->
     x `notin` (fvar_in_exp e `union` dom Γ') -> d_wf_denv Γ' ->
-    (forall Γt A, ctx_refines_tw ((x ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+    (forall Γt A, ctx_refines_tw ((x ~ db) ++ Γ') Γt -> d_wf_denv Γt ->
        Γt ⊢[ m ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ (paint A) ->
        skel_safe nil (bskl_to_pskl Q) A) ->
     forall y, y `notin` (fvar_in_exp e `union` dom Γ') ->
-      forall Γt A, ctx_refines_tw ((y ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+      forall Γt A, ctx_refines_tw ((y ~ db) ++ Γ') Γt -> d_wf_denv Γt ->
         x `notin` dom Γt ->
         Γt ⊢[ m ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ (paint A) ->
         skel_safe nil (bskl_to_pskl Q) A.
 Proof.
-  intros m paint e Γ' Q x Hx Hwf' Hcov y Hy Γt A Hcr Hwf Hxt Hty.
-  assert (Hby : binds y (dbind_skl pskl_hole) ((y ~ dbind_skl pskl_hole) ++ Γ'))
+  intros m paint db e Γ' Q x Hdbntv Hx Hwf' Hcov y Hy Γt A Hcr Hwf Hxt Hty.
+  assert (Hby : binds y db ((y ~ db) ++ Γ'))
     by (apply binds_app_iff; left; apply binds_one_iff; auto).
   destruct (@ctx_refines_tw_binds_fwd _ _ _ _ Hcr Hby) as [dt [Hbt Hdrt]].
-  assert (Hntv : dt <> dbind_tvar) by (inversion Hdrt; discriminate).
+  assert (Hntv : dt <> dbind_tvar) by (inversion Hdrt; subst; [ exact Hdbntv | discriminate ]).
   assert (Huniq : uniq Γt) by (eapply d_wf_denv_uniq; exact Hwf).
   destruct (binds_split _ _ _ _ Hbt) as [Γb [Γa Hsplit]]. subst Γt.
   assert (Hyd : y `notin` dom (Γa ++ Γb)) by solve_uniq.
@@ -2518,29 +2624,32 @@ Qed.
     over [ctx_refines_tw] (which inserts tvars).  The clean case (x ∉ dom Γt)
     is [gpat_skel_rename_clean]; the clash case (x is a tw-inserted tvar in Γt)
     renames that tvar out via the standard tvar-equivariance machinery. *)
-Lemma gpat_skel_rename : forall (m : mode) (paint : ptyp -> btyp),
+Lemma gpat_skel_rename : forall (m : mode) (paint : ptyp -> btyp) (db : dbind),
     (forall A x0 y0, subst_btyp_in_btyp (btyp_var_f y0) x0 (paint A)
                      = paint (subst_ptyp_in_ptyp (ptyp_var_f y0) x0 A)) ->
+    db <> dbind_tvar ->
     forall e Γ' Q x,
     x `notin` (fvar_in_exp e `union` ftvar_in_exp e `union` dom Γ') -> d_wf_denv Γ' ->
-    (forall Γt A, ctx_refines_tw ((x ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+    (forall y0, y0 `notin` dom Γ' -> d_wf_denv ((y0 ~ db) ++ Γ')) ->
+    (forall Γt A, ctx_refines_tw ((x ~ db) ++ Γ') Γt -> d_wf_denv Γt ->
        Γt ⊢[ m ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ (paint A) ->
        skel_safe nil (bskl_to_pskl Q) A) ->
     forall y, y `notin` (fvar_in_exp e `union` ftvar_in_exp e `union` dom Γ') ->
-      forall Γt A, ctx_refines_tw ((y ~ dbind_skl pskl_hole) ++ Γ') Γt -> d_wf_denv Γt ->
+      forall Γt A, ctx_refines_tw ((y ~ db) ++ Γ') Γt -> d_wf_denv Γt ->
         Γt ⊢[ m ] (open_exp_wrt_exp e (exp_var_f y)) ⦂ (paint A) ->
         skel_safe nil (bskl_to_pskl Q) A.
 Proof.
-  intros m paint Hpaint e Γ' Q x Hx Hwf' Hcov y Hy Γt A Hcr Hwf Hty.
+  intros m paint db Hpaint Hdbntv e Γ' Q x Hx Hwf' Hdbwf Hcov y Hy Γt A Hcr Hwf Hty.
   destruct (x == y) as [ Hxy | Hxy ].
   { subst y. eapply Hcov; eauto. }
   destruct (AtomSetImpl.mem x (dom Γt)) eqn:Hmem.
   2:{ (* no clash *)
       assert (Hnotin : x `notin` dom Γt)
         by (intro Hc; apply AtomSetImpl.mem_1 in Hc; rewrite Hc in Hmem; discriminate).
-      eapply gpat_skel_rename_clean with (m := m) (paint := paint)
+      eapply gpat_skel_rename_clean with (m := m) (paint := paint) (db := db)
         (e := e) (Γ' := Γ') (Q := Q) (x := x) (y := y);
-        [ clear - Hx; fsetdec
+        [ exact Hdbntv
+        | clear - Hx; fsetdec
         | exact Hwf'
         | intros Γt0 A0 Hcr0 Hwf0 Hty0; eapply Hcov; eauto
         | clear - Hy; fsetdec
@@ -2548,7 +2657,7 @@ Proof.
   (* clash: x ∈ dom Γt, x ≠ y ⇒ x is a tw-inserted tvar *)
   apply AtomSetImpl.mem_2 in Hmem.
   apply binds_In_inv in Hmem. destruct Hmem as [dx Hbx].
-  assert (Hxsrc : x `notin` dom ((y ~ dbind_skl pskl_hole) ++ Γ')).
+  assert (Hxsrc : x `notin` dom ((y ~ db) ++ Γ')).
   { simpl_env. clear - Hx Hxy. fsetdec. }
   assert (Hdx : dx = dbind_tvar)
     by (eapply ctx_refines_tw_extra_tvar; [ exact Hcr | exact Hbx | exact Hxsrc ]). subst dx.
@@ -2574,10 +2683,10 @@ Proof.
   { unfold Γt'. eapply d_wf_denv_rename_tvar with (Γ1 := Γa) (Γ2 := Γb) (X0 := x);
       [ exact Hwf | reflexivity | clear - Fr; fsetdec ]. }
   (* renamed ctx_refines_tw *)
-  assert (Hcrw : ctx_refines_tw ((y ~ dbind_skl pskl_hole) ++ Γ') Γt').
+  assert (Hcrw : ctx_refines_tw ((y ~ db) ++ Γ') Γt').
   { unfold Γt'.
-    assert (Hwfsrc : d_wf_denv ((y ~ dbind_skl pskl_hole) ++ Γ')).
-    { apply d_wf_denv__skl; [ exact Hwf' | clear - Hy; fsetdec | apply d_wf_pskl__hole ]. }
+    assert (Hwfsrc : d_wf_denv ((y ~ db) ++ Γ')).
+    { apply Hdbwf; clear - Hy; fsetdec. }
     eapply ctx_refines_tw_rename_tvar;
       [ exact Hcr | exact Hwfsrc | exact Hxsrc | clear - Fr; fsetdec ]. }
   (* x renamed away *)
@@ -2587,9 +2696,10 @@ Proof.
     assert (HxΓb : x `notin` dom Γb) by solve_uniq.
     clear - HxΓa HxΓb Fr. fsetdec. }
   assert (Hskw : skel_safe nil (bskl_to_pskl Q) (subst_ptyp_in_ptyp (ptyp_var_f w) x A)).
-  { eapply gpat_skel_rename_clean with (m := m) (paint := paint)
+  { eapply gpat_skel_rename_clean with (m := m) (paint := paint) (db := db)
       (e := e) (Γ' := Γ') (Q := Q) (x := x) (y := y);
-      [ clear - Hx; fsetdec
+      [ exact Hdbntv
+      | clear - Hx; fsetdec
       | exact Hwf'
       | intros Γt0 A0 Hcr0 Hwf0 Hty0; eapply Hcov; eauto
       | clear - Hy; fsetdec
@@ -2827,9 +2937,12 @@ Proof.
           [ | exact Hcrt | exact Hwft | exact HA ].
         intros x Hx.
         eapply gpat_skel_rename with (m := mode_ti) (paint := ptyp_to_btyp_syn)
-          (e := e) (Γ' := Γ') (Q := Qb) (x := x0) (y := x);
+          (db := dbind_skl pskl_hole) (e := e) (Γ' := Γ') (Q := Qb) (x := x0) (y := x);
           [ apply ptyp_to_btyp_syn_subst_var
-          | clear - Fr; simpl; fsetdec | exact Hwf' | exact Hfillb | clear - Hx; fsetdec ].
+          | discriminate
+          | clear - Fr; simpl; fsetdec | exact Hwf'
+          | intros y0 Hy0; apply d_wf_denv__skl; [ exact Hwf' | exact Hy0 | apply d_wf_pskl__hole ]
+          | exact Hfillb | clear - Hx; fsetdec ].
     + (* tc: the body's safe witness is [is_sskl] ⇒ syn-paintable
          ([is_sskl_syn_roundtrip]) ⇒ feeds [d_pat__abs_check]; the fill is the
          (Qed) [abs_check_fill]. *)
@@ -2871,13 +2984,105 @@ Proof.
           [ | exact Hcrt | exact Hwft | exact HA ].
         intros x Hx.
         eapply gpat_skel_rename with (m := mode_tc) (paint := ptyp_to_btyp_inh)
-          (e := e) (Γ' := Γ') (Q := Qb) (x := x0) (y := x);
+          (db := dbind_skl pskl_hole) (e := e) (Γ' := Γ') (Q := Qb) (x := x0) (y := x);
           [ apply ptyp_to_btyp_inh_subst_var
-          | clear - Fr; simpl; fsetdec | exact Hwf' | exact Hfillb | clear - Hx; fsetdec ].
+          | discriminate
+          | clear - Fr; simpl; fsetdec | exact Hwf'
+          | intros y0 Hy0; apply d_wf_denv__skl; [ exact Hwf' | exact Hy0 | apply d_wf_pskl__hole ]
+          | exact Hfillb | clear - Hx; fsetdec ].
     + (* fn *) admit.
-  - (* abs_anno: annotated λ; analogous to [abs] with [d_pat__abs_anno_check]
-       / [abs_check_fill] on the annotated domain. *)
-    admit.
+  - (* abs_anno: annotated λ; like [abs] but the domain skeleton is the
+       annotation's own pskl ([abs_anno_*_fill_skel]). *)
+    destruct m.
+    + (* ti: SYNTHESISE [bskl_arrow (btyp_to_bskl B1) Qb]; [is_styp] forces
+         [B1 = syn A]. *)
+      match goal with Hsk : skmod_ty _ mode_ti |- _ =>
+        inversion Hsk as [ ? Hsty | | ] end.
+      assert (HB1 : B1 = ptyp_to_btyp_syn A)
+        by (rewrite <- H0; symmetry; apply ptyp_to_btyp_syn_btyp_to_ptyp;
+            apply is_styp_is_syn; eapply is_styp_arrow_l; exact Hsty).
+      pick fresh x0 for
+        (L `union` dom Γ `union` dom Γ' `union` fvar_in_exp e `union` ftvar_in_exp e).
+      destruct (H3 x0 ltac:(fsetdec)
+                  ltac:(apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ])
+                  ((x0 ~ dbind_typ A) ++ Γ')
+                  ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ])
+                  ltac:(apply d_wf_denv__typ; [ exact Hwf' | fsetdec
+                        | eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ] ]))
+        as [Qb [Hinfb [Hssklb Hfillb]]].
+      exists (bskl_arrow (btyp_to_bskl B1) Qb). split; [ | split ].
+      * apply d_pat__abs_anno with (L := L `union` {{x0}} `union` dom Γ
+                                          `union` dom Γ' `union` fvar_in_exp e) (B := B1).
+        -- discriminate.
+        -- eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ].
+        -- exact H0.
+        -- intros x Hx.
+           replace (open_exp_wrt_exp e (exp_var_f x))
+             with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+             by (symmetry; apply subst_exp_in_exp_intro; fsetdec).
+           eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_typ A);
+             [ exact Hinfb | reflexivity | discriminate | simpl_env; fsetdec ].
+      * rewrite HB1, btyp_to_bskl_ptyp_to_btyp_syn_eq.
+        apply is_sskl__arrow;
+          [ apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl;
+            eapply d_wf_ptyp_lc_loc; exact H | exact Hssklb ].
+      * intros Γt A1 Hcrt Hwft HA.
+        simpl. rewrite HB1, bskl_to_pskl_btyp_to_bskl_ptyp_to_btyp_syn.
+        eapply abs_anno_ti_fill_skel with (Ann := A) (Qb := Qb) (Γ' := Γ')
+          (L_b := L `union` {{x0}} `union` dom Γ `union` dom Γ'
+                    `union` fvar_in_exp e `union` ftvar_in_exp e);
+          [ eapply d_wf_ptyp_lc_loc; exact H | | exact Hcrt | exact Hwft | exact HA ].
+        intros x Hx.
+        eapply gpat_skel_rename with (m := mode_ti) (paint := ptyp_to_btyp_syn)
+          (db := dbind_typ A) (e := e) (Γ' := Γ') (Q := Qb) (x := x0) (y := x);
+          [ apply ptyp_to_btyp_syn_subst_var
+          | discriminate
+          | clear - Fr; simpl; fsetdec | exact Hwf'
+          | intros y0 Hy0; apply d_wf_denv__typ;
+              [ exact Hwf' | exact Hy0 | eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ] ]
+          | exact Hfillb | clear - Hx; fsetdec ].
+    + (* tc *)
+      pick fresh x0 for
+        (L `union` dom Γ `union` dom Γ' `union` fvar_in_exp e `union` ftvar_in_exp e).
+      destruct (H3 x0 ltac:(fsetdec)
+                  ltac:(apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ])
+                  ((x0 ~ dbind_typ A) ++ Γ')
+                  ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ])
+                  ltac:(apply d_wf_denv__typ; [ exact Hwf' | fsetdec
+                        | eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ] ]))
+        as [Qb [Hinfb [Hssklb Hfillb]]].
+      exists (bskl_tophole (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) Qb)).
+      split; [ | split ].
+      * rewrite <- (is_sskl_syn_roundtrip Hssklb) at 1.
+        apply d_pat__abs_anno_check with
+          (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e).
+        -- eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ].
+        -- intros x Hx. rewrite (is_sskl_syn_roundtrip Hssklb).
+           replace (open_exp_wrt_exp e (exp_var_f x))
+             with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+             by (symmetry; apply subst_exp_in_exp_intro; fsetdec).
+           eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_typ A);
+             [ exact Hinfb | reflexivity | discriminate | simpl_env; fsetdec ].
+      * apply is_sskl__tophole, is_sskl__arrow; [ | exact Hssklb ].
+        rewrite btyp_to_bskl_ptyp_to_btyp_syn_eq.
+        apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl.
+        eapply d_wf_ptyp_lc_loc; exact H.
+      * intros Γt A1 Hcrt Hwft HA.
+        simpl. rewrite bskl_to_pskl_btyp_to_bskl_ptyp_to_btyp_syn.
+        eapply abs_anno_check_fill_skel with (Ann := A) (Qb := Qb) (Γ' := Γ')
+          (L_b := L `union` {{x0}} `union` dom Γ `union` dom Γ'
+                    `union` fvar_in_exp e `union` ftvar_in_exp e);
+          [ eapply d_wf_ptyp_lc_loc; exact H | | exact Hcrt | exact Hwft | exact HA ].
+        intros x Hx.
+        eapply gpat_skel_rename with (m := mode_tc) (paint := ptyp_to_btyp_inh)
+          (db := dbind_typ A) (e := e) (Γ' := Γ') (Q := Qb) (x := x0) (y := x);
+          [ apply ptyp_to_btyp_inh_subst_var
+          | discriminate
+          | clear - Fr; simpl; fsetdec | exact Hwf'
+          | intros y0 Hy0; apply d_wf_denv__typ;
+              [ exact Hwf' | exact Hy0 | eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ] ]
+          | exact Hfillb | clear - Hx; fsetdec ].
+    + (* fn *) admit.
   - (* app: [d_pat__app] infers the function arrow and threads the refined
        argument; safety follows from the codomain's [safe_skel]. *)
     admit.
