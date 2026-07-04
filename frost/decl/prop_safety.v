@@ -1290,18 +1290,21 @@ Qed.
       [inh{skel arg}] (so [d_pat__app] can thread it), and whose codomain
       [Qc] is [safe_skel] for the codomain type — recursively. *)
 
-Fixpoint safe_skel (Γ : list (atom * dbind)) (m : mode) (Q : bskl) (B : btyp)
-  : Prop :=
+(** Consistent with the algorithmic [a_pat]/[a_looksub]: an fn skeleton is an
+    ARROW whose domain is the concrete (structure-preserving) painting of the
+    argument type ([a_pat__abs] emits [pskl_arrow P Q]; [app] needs the concrete
+    domain to fill the arg), and whose ti/tc LEAVES are the hole-tolerant
+    [skel_safe] (the declarative shadow of [a_looksub]'s absent/vacuous matching
+    — this is what legitimately absorbs a [□]-typed result).  Context-free. *)
+Fixpoint safe_skel (m : mode) (Q : bskl) (B : btyp) : Prop :=
   match m with
-  | mode_ti => bskl_to_pskl Q = ptyp_to_pskl (btyp_to_ptyp B)
-  | mode_tc =>
-      exists B', bskl_to_pskl B' = ptyp_to_pskl (btyp_to_ptyp B)
-                 /\ Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B'
+  | mode_ti => skel_safe nil Q (btyp_to_ptyp B)
+  | mode_tc => skel_safe nil Q (btyp_to_ptyp B)
   | mode_fn m' =>
       exists Barg B0 Qc,
         B = btyp_arrow Barg B0
         /\ Q = bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl (btyp_to_ptyp Barg))) Qc
-        /\ safe_skel Γ m' Qc B0
+        /\ safe_skel m' Qc B0
   end.
 
 (** Generalized safe-inference predicate (declarative context precision): the
@@ -1311,7 +1314,7 @@ Fixpoint safe_skel (Γ : list (atom * dbind)) (m : mode) (Q : bskl) (B : btyp)
 Definition gpat (m : mode) (Γ : list (atom * dbind)) (e : exp) (B : btyp)
   : Prop :=
   match m with
-  | mode_fn _ => exists Q, Γ ⊢[ m ] e ⇨ Q /\ safe_skel Γ m Q B
+  | mode_fn _ => exists Q, Γ ⊢[ m ] e ⇨ Q /\ safe_skel m Q B
   | mode_ti =>
       (* The TI inference is a SYNTHESISED skeleton ([is_sskl] — the syn-painting
          of its erasure, [is_sskl_syn_roundtrip]); this lets [freeze] lift it via
@@ -1700,7 +1703,7 @@ Lemma safe_fn_skel : forall m Ψ Γ U B,
     Ψ ⨟ Γ ⊢[ m ] U ⊑ B ->
     exists Q,
       empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl U))) ⊑ Q
-      /\ safe_skel Γ m Q B.
+      /\ safe_skel m Q B.
 Proof.
   intros m Ψ Γ U B HwfU HwfB Hsub. revert HwfU HwfB. induction Hsub; intros HwfU HwfB.
   - (* infer (TI) *)
@@ -1712,7 +1715,12 @@ Proof.
             | intros X HX; rewrite ftvar_pskl_to_bskl_syn, ftvar_utyp_to_pskl in HX;
               eapply d_wf_utyp_ftvar; [ exact HwfU | exact HX ] ]
         | apply is_sskl_pskl_to_bskl_syn, lc_pskl_utyp_to_pskl, (d_wf_utyp_lc HwfU) ].
-    + simpl. rewrite bskl_to_pskl_pskl_to_bskl_syn. apply (d_consis_skel H).
+    + simpl.
+      assert (Heq : bskl_to_pskl (pskl_to_bskl_syn (utyp_to_pskl C))
+                    = ptyp_to_pskl (btyp_to_ptyp B))
+        by (rewrite bskl_to_pskl_pskl_to_bskl_syn; apply (d_consis_skel H)).
+      rewrite Heq. apply skel_safe_of_ptyp.
+      apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfB.
   - (* check (TC) *)
     assert (Hlc : lc_utyp C) by (apply (d_wf_utyp_lc HwfU)).
     destruct (ghost_of_total (le_n (size_pskl (utyp_to_pskl C))) (lc_pskl_utyp_to_pskl Hlc))
@@ -1724,11 +1732,10 @@ Proof.
     + simpl.
       assert (Hs : Ψ ⨟ Γ ⊢[ mode_tc ] C ⊑ (ptyp_to_btyp_inh (btyp_to_ptyp B)))
         by (rewrite (is_ityp_ptyp_to_btyp_inh H2); apply d_sub__check; assumption).
-      pose proof (ghost_of_fill_gen Hs eq_refl
-                    ltac:(apply d_wf_ptyp_of_btyp_inh; rewrite (is_ityp_ptyp_to_btyp_inh H2); exact HwfB)
-                    (pskl_subsumes_refl (utyp_to_pskl C)) HQ (hole_safe_u_of_utyp Hlc nil)) as Href.
-      exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) (btyp_to_ptyp B)).
-      split; [ apply colour_erasure | exact Href ].
+      eapply ghost_skel_safe with (A' := btyp_to_ptyp B) (P := utyp_to_pskl C);
+        [ exact Hs | reflexivity
+        | apply d_wf_ptyp_of_btyp_inh; rewrite (is_ityp_ptyp_to_btyp_inh H2); exact HwfB
+        | apply pskl_subsumes_refl | exact HQ | apply hole_safe_u_of_utyp; exact Hlc ].
   - (* forall_r (TC) *)
     assert (Hlc : lc_utyp C) by (apply (d_wf_utyp_lc HwfU)).
     destruct (ghost_of_total (le_n (size_pskl (utyp_to_pskl C))) (lc_pskl_utyp_to_pskl Hlc))
@@ -1740,11 +1747,10 @@ Proof.
     + simpl.
       assert (Hs : Ψ ⨟ Γ ⊢[ mode_tc ] C ⊑ (ptyp_to_btyp_inh (btyp_to_ptyp (btyp_all_inh B))))
         by (rewrite (is_ityp_ptyp_to_btyp_inh H); apply d_sub__forall_r with (L := L); assumption).
-      pose proof (ghost_of_fill_gen Hs eq_refl
-                    ltac:(apply d_wf_ptyp_of_btyp_inh; rewrite (is_ityp_ptyp_to_btyp_inh H); exact HwfB)
-                    (pskl_subsumes_refl (utyp_to_pskl C)) HQ (hole_safe_u_of_utyp Hlc nil)) as Href.
-      exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) (btyp_to_ptyp (btyp_all_inh B))).
-      split; [ apply colour_erasure | exact Href ].
+      eapply ghost_skel_safe with (A' := btyp_to_ptyp (btyp_all_inh B)) (P := utyp_to_pskl C);
+        [ exact Hs | reflexivity
+        | apply d_wf_ptyp_of_btyp_inh; rewrite (is_ityp_ptyp_to_btyp_inh H); exact HwfB
+        | apply pskl_subsumes_refl | exact HQ | apply hole_safe_u_of_utyp; exact Hlc ].
   - (* arg (FN m) *)
     inversion HwfU; subst. inversion HwfB; subst.
     match goal with
@@ -1926,7 +1932,7 @@ Proof. induction P; simpl; congruence. Qed.
     The driving [uskl_hole ⊑ inh{P0}] is then one [d_pat_sub__ghost]. *)
 Lemma safe_skel_hole_fill : forall m Γ B,
     skmod_ty B m -> d_wf_btyp Γ B ->
-    exists P0, nil ⨟ Γ ⊢ₚₛ P0 /\ safe_skel Γ m (pskl_to_bskl_inh P0) B.
+    exists P0, nil ⨟ Γ ⊢ₚₛ P0 /\ safe_skel m (pskl_to_bskl_inh P0) B.
 Proof.
   intros m Γ B Hsk. induction Hsk; intros HwfB.
   - (* ti: is_styp B — paint the whole skeleton (erasure matches) *)
@@ -1935,15 +1941,11 @@ Proof.
         [ apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfB
         | intros X HX; right; rewrite ftvar_btyp_to_ptyp in HX;
           eapply d_wf_btyp_ftvar; [ exact HwfB | exact HX ] ].
-    + simpl. rewrite bskl_to_pskl_pskl_to_bskl_inh. reflexivity.
-  - (* tc: is_ityp B — [pskl_hole], filled by [d_refine_syn_hole_fills] *)
+    + simpl. rewrite bskl_to_pskl_pskl_to_bskl_inh. apply skel_safe_of_ptyp.
+      apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfB.
+  - (* tc: is_ityp B — bare hole [□] absorbs the type ([sks_hole]) *)
     exists pskl_hole. split; [ apply d_wf_pskl__hole | ].
-    simpl. exists (pskl_to_bskl_syn (ptyp_to_pskl (btyp_to_ptyp B))). split.
-    + rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
-    + simpl. apply d_refine_syn_hole_fills;
-        [ apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfB
-        | intros X HX; rewrite ftvar_btyp_to_ptyp in HX;
-          eapply d_wf_btyp_ftvar; [ exact HwfB | exact HX ] ].
+    simpl. apply skel_safe_hole_nil.
   - (* fn: arrow — rigid [inh] domain, recurse on the result *)
     inversion HwfB; subst.
     destruct (IHHsk ltac:(assumption)) as [P0' [HwfP0' Hsafe']].
