@@ -145,12 +145,12 @@ Proof.
   - (* __sub at mode_ti: only d_sub__infer; compose the inner consistency. *)
     match goal with H : empty ⨟ _ ⊢[ mode_ti ] _ ⊑ B |- _ =>
       rename H into Hsub end.
-    inversion Hsub as [ Δ0 Γ0 C0 B0 Hcons0 Hstyp0 HΔ0 | | | | | ]; subst;
+    inversion Hsub as [ Ψ0 Γ0 C0 B0 Hcons0 Hstyp0 HΨ0 | | | | | ]; subst;
       try congruence.
     edestruct IHHtyp as [Hstyp1 [Δt Hcons1]]; auto.
     split; [ exact Hstyp0 | ].
     (* Hcons1 : Δt ⊨ ptyp_to_utyp_syn A ≈ ptyp_to_btyp_syn A0  (inner syn type)
-       Hcons0 : Δ0 ⊨ ptyp_to_utyp_syn A0 ≈ B                  (sub premise, infer)
+       Hcons0 : Ψ0 ⊨ ptyp_to_utyp_syn A0 ≈ B                  (sub premise, infer)
        compose at the common middle [A0]. *)
     edestruct d_consis_compose as [Δc [_ Hc]].
     + exact Hcons1.
@@ -337,13 +337,13 @@ Proof.
   - (* nil *) exact Hsub.
   - (* skip x : sp = x::l, sp' = x::l' *)
     simpl in Hsub |- *.
-    inversion Hsub as [ | | | Δ0 Δ1 Δ2 Γ0 m0 C1 C2 B1 B2 Hcons Hrest HΔ | | ]; subst.
-    apply d_sub__arg with (Ψ1 := Δ1) (Ψ2 := Δ2);
+    inversion Hsub as [ | | | Ψ0 Ψ1 Ψ2 Γ0 m0 C1 C2 B1 B2 Hcons Hrest HΔ | | ]; subst.
+    apply d_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ exact Hcons | apply IHHperm; exact Hrest | exact HΔ ].
   - (* swap x y : sp = y::x::l, sp' = x::y::l *)
     simpl in Hsub |- *.
-    inversion Hsub as [ | | | Δ0 Δy Δyr Γ0 m0 Cy C2 By B2 Hcy Hyr HΔyr | | ]; subst.
-    inversion Hyr as [ | | | Δ0' Δx Δl Γ0' m0' Cx C2' Bx B2' Hcx Hl HΔl | | ]; subst.
+    inversion Hsub as [ | | | Ψ0 Δy Δyr Γ0 m0 Cy C2 By B2 Hcy Hyr HΔyr | | ]; subst.
+    inversion Hyr as [ | | | Ψ0' Δx Δl Γ0' m0' Cx C2' Bx B2' Hcx Hl HΔl | | ]; subst.
     apply d_sub__arg with (Ψ1 := Δx) (Ψ2 := (Δy `union` Δl));
       [ exact Hcx
       | apply d_sub__arg with (Ψ1 := Δy) (Ψ2 := Δl);
@@ -445,14 +445,14 @@ Proof. destruct n; intros m H; [ lia | exists (mode_fn_n n m); reflexivity ]. Qe
     untagged [∀]-left rule. *)
 Lemma d_sub_fn_all_syn_inv : forall Δ Γ m C B,
     Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⊑ B ->
-    exists Δ' ph,
-      AtomSetImpl.inter Δ' Δ [=] empty /\ d_tags Δ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
-      (Δ `union` Δ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C ph) ⊑ B.
+    exists Ψ' ph,
+      AtomSetImpl.inter Ψ' Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
+      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C ph) ⊑ B.
 Proof.
   intros Δ Γ m C B Hsub.
-  inversion Hsub as [ | | | | | Δ0 Δ' Γ0 m0 C0 ph B0 Hm Hfresh Htags Hwfph Httyp Hpre ];
+  inversion Hsub as [ | | | | | Ψ0 Ψ' Γ0 m0 C0 ph B0 Hm Hfresh Htags Hwfph Httyp Hpre ];
     subst.
-  exists Δ', ph.
+  exists Ψ', ph.
   split; [ exact Hfresh | ]. split; [ exact Htags | ].
   split; [ exact Hwfph | ]. split; [ exact Httyp | exact Hpre ].
 Qed.
@@ -461,14 +461,14 @@ Qed.
 Lemma d_sub_fnn_all_syn_inv : forall n m Δ Γ C B,
     1 <= n ->
     Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⊑ B ->
-    exists Δ' ph,
-      AtomSetImpl.inter Δ' Δ [=] empty /\ d_tags Δ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
-      (Δ `union` Δ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C ph) ⊑ B.
+    exists Ψ' ph,
+      AtomSetImpl.inter Ψ' Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
+      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C ph) ⊑ B.
 Proof.
   intros n m Δ Γ C B Hpos Hsub.
   destruct (mode_fn_n_ge1_fn m Hpos) as [m' Hm']. rewrite Hm' in Hsub.
-  apply d_sub_fn_all_syn_inv in Hsub as [Δ' [ph [Hf [Ht [Hw [Hi Hp]]]]]].
-  exists Δ', ph. rewrite Hm'.
+  apply d_sub_fn_all_syn_inv in Hsub as [Ψ' [ph [Hf [Ht [Hw [Hi Hp]]]]]].
+  exists Ψ', ph. rewrite Hm'.
   split; [ exact Hf | ]. split; [ exact Ht | ].
   split; [ exact Hw | ]. split; [ exact Hi | exact Hp ].
 Qed.
@@ -500,7 +500,7 @@ Proof.
   - assert (Hle : length sp = length sp') by (apply Permutation_length; assumption).
     assert (Hpos' : 1 <= length sp') by (rewrite <- Hle; exact Hpos).
     simpl in Hsub.
-    apply d_sub_fnn_all_syn_inv in Hsub as [Δ' [ph [Hf [Ht [Hw [Hi Hp]]]]]];
+    apply d_sub_fnn_all_syn_inv in Hsub as [Ψ' [ph [Hf [Ht [Hw [Hi Hp]]]]]];
       [ | exact Hpos ].
     unfold open_utyp_wrt_utyp in Hp.
     rewrite open_utyp_all_syn_n_rec in Hp. simpl in Hp.
@@ -518,7 +518,7 @@ Proof.
     rewrite List.map_length in Hp.
     rewrite spine_btyp_map_fst in Hp.
     (* reconstruct y's outer forall_l *)
-    simpl. apply d_sub__forall_l_untagged with (Ψ' := Δ') (ph := ph).
+    simpl. apply d_sub__forall_l_untagged with (Ψ' := Ψ') (ph := ph).
     + destruct (mode_fn_n_ge1_fn m Hpos') as [m'' Hm'']. rewrite Hm''. discriminate.
     + exact Hf.
     + exact Ht.

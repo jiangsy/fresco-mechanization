@@ -250,7 +250,7 @@ Proof.
   - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
       [ apply d_tags__unit | apply d_tags__var ]; assumption.
   - eapply d_tags__arrow; [ eassumption | eassumption | assumption | assumption ].
-  - apply d_tags__all_etag with (L := L `union` {{X}}) (Δ0 := Δ0).
+  - apply d_tags__all_etag with (L := L `union` {{X}}) (Ψ0 := Ψ0).
     + intros Z HZ.
       erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
         by (solve [ fsetdec | apply lc_utyp_unit ]).
@@ -632,7 +632,7 @@ Proof.
   - apply d_pat_consis__unit; assumption.
   - apply d_pat_consis__var; [ assumption | apply Hst; assumption ].
   - eapply d_pat_consis__arrow; [ apply IHd_pat_consis1 | apply IHd_pat_consis2 | eassumption ]; assumption.
-  - apply d_pat_consis__forall_inh_tagged with (L := L) (Δ0 := Δ0); [ | assumption ].
+  - apply d_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0); [ | assumption ].
     intros X HX. apply H0; [ assumption | apply same_tvar_cons; assumption ].
   - apply d_pat_consis__forall_inh_untagged with (L := L). intros X HX.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
@@ -641,7 +641,7 @@ Proof.
   - apply d_pat_consis__forall_syn with (L := L). intros X HX.
     apply H0; [ assumption | apply same_tvar_cons; assumption ].
   - apply d_pat_consis__ghostg; assumption.
-  - apply d_pat_consis__topholeg with (Δ0 := Δ0);
+  - apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
       [ apply IHd_pat_consis; assumption | eassumption ].
   - apply d_pat_consis__hole; [ assumption | eapply d_wf_pskl_same_tvar; eassumption ].
   - apply d_pat_consis__tophole; apply IHd_pat_consis; assumption.

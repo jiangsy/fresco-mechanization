@@ -329,8 +329,8 @@ Proof.
   - apply d_tags_skl__unit; (assumption || fsetdec).
   - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
       apply d_tags_skl__var; (assumption || fsetdec).
-  - apply d_tags_skl__arrow with (Δ1 := Δ1) (Δ2 := Δ2); assumption.
-  - apply d_tags_skl__all_etag with (L := L `union` {{X}}) (Δ0 := Δ0); [ | assumption | assumption ].
+  - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
+  - apply d_tags_skl__all_etag with (L := L `union` {{X}}) (Ψ0 := Ψ0); [ | assumption | assumption ].
     intros Z HZ.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec. auto.
   - apply d_tags_skl__all_syn with (L := L `union` {{X}}). intros Z HZ.
@@ -338,7 +338,7 @@ Proof.
   - apply d_tags_skl__hole; (assumption || fsetdec).
   - apply d_tags_skl__tophole; assumption.
   - apply d_tags_skl__holeg; (assumption || fsetdec).
-  - apply d_tags_skl__topholeg with (Δ0 := Δ0); assumption.
+  - apply d_tags_skl__topholeg with (Ψ0 := Ψ0); assumption.
 Qed.
 
 Lemma guarded_uskl_subst_var : forall R X Y,
@@ -396,7 +396,7 @@ Proof.
       | eapply (IHd_pat_consis2 Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr ]
       | (eassumption || fsetdec) ].
   - simpl. apply d_pat_consis__forall_inh_tagged
-      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}) (Δ0 := Δ0).
+      with (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` {{X0}} `union` {{Y}}) (Ψ0 := Ψ0).
     2: assumption.
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_var_f); try fsetdec.
@@ -421,7 +421,7 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_var_f); try fsetdec.
     exact (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ2 X0 Y ltac:(simpl_env; reflexivity) ltac:(simpl_env in *; fsetdec)).
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - simpl. apply d_pat_consis__topholeg with (Δ0 := Δ0);
+  - simpl. apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
       [ eapply (IHd_pat_consis Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr ] | eassumption ].
   - simpl. rewrite pskl_to_bskl_inh_subst_var.
     apply d_pat_consis__hole; [ (assumption || fsetdec)
@@ -1584,7 +1584,7 @@ Proof.
   intros C Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov; simpl.
   - apply d_pat_consis__unit; fsetdec.
   - apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
-  - apply d_pat_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+  - apply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ apply IHHlc1 | apply IHHlc2 | fsetdec ];
       intros Y HY; apply Hcov; simpl; fsetdec.
   - inst_cofinites_for d_pat_consis__forall_inh_untagged. intros X HX.
@@ -1625,7 +1625,7 @@ Proof.
   intros C H. induction H; simpl.
   - apply d_tags_skl__unit; fsetdec.
   - apply d_tags_skl__var; fsetdec.
-  - apply d_tags_skl__arrow with (Δ1 := empty) (Δ2 := empty);
+  - apply d_tags_skl__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ assumption | assumption | fsetdec | fsetdec ].
   - inst_cofinites_for d_tags_skl__all_syn. intros X HX.
     rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open.
@@ -1645,7 +1645,7 @@ Proof.
   intros C Γ H. revert Γ. induction H; intros Γ Hcov; simpl.
   - apply d_pat_consis__unit; fsetdec.
   - apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
-  - apply d_pat_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+  - apply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ apply IHlc_utyp1 | apply IHlc_utyp2 | fsetdec ];
       intros Y HY; apply Hcov; simpl; fsetdec.
   - inst_cofinites_for d_pat_consis__forall_inh_untagged. intros X HX.
@@ -1759,22 +1759,22 @@ Qed.
 
 (** Skeleton subtyping respects set-equality of its tag context. *)
 Lemma d_pat_sub_eq_tags : forall m Δ Γ R Q,
-    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q -> forall Δ', Δ [=] Δ' -> Δ' ⨟ Γ ⊢ₛ[ m ] R ⊑ Q.
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q -> forall Ψ', Δ [=] Ψ' -> Ψ' ⨟ Γ ⊢ₛ[ m ] R ⊑ Q.
 Proof.
   intros m Δ Γ R Q H. induction H; intros Δ'' Heq.
   - apply d_pat_sub__infer; [ fsetdec | assumption | assumption ].
   - apply d_pat_sub__univ_ghost_r;
       [ fsetdec | assumption | assumption | assumption | assumption ].
   - eapply d_pat_sub__arg; [ eassumption | eassumption | fsetdec ].
-  - (* [Δ']/[psi] are constructor existentials, NOT fixed by the conclusion —
-       a bare eapply leaves them as set-evars and [fsetdec] on [inter ?Δ' Δ'']
-       loops.  Recover the derivation's actual [Δ']/[psi] from [d_tags_skl]. *)
+  - (* [Ψ']/[psi] are constructor existentials, NOT fixed by the conclusion —
+       a bare eapply leaves them as set-evars and [fsetdec] on [inter ?Ψ' Δ'']
+       loops.  Recover the derivation's actual [Ψ']/[psi] from [d_tags_skl]. *)
     match goal with Htags : d_tags_skl ?D ?S |- _ =>
-      eapply d_pat_sub__forall_l_tagged with (Δ' := D) (psi := S) end;
+      eapply d_pat_sub__forall_l_tagged with (Ψ' := D) (psi := S) end;
       [ assumption | fsetdec | eassumption | assumption | assumption
       | apply IHd_pat_sub; fsetdec ].
   - match goal with Htags : d_tags_skl ?D ?S |- _ =>
-      eapply d_pat_sub__forall_l_untagged with (Δ' := D) (psi := S) end;
+      eapply d_pat_sub__forall_l_untagged with (Ψ' := D) (psi := S) end;
       [ assumption | fsetdec | eassumption | assumption | assumption
       | apply IHd_pat_sub; fsetdec ].
   - apply d_pat_sub__ghost; [ fsetdec | assumption ].
@@ -1850,7 +1850,7 @@ Proof.
       destruct (IHHsub HC2 HB2) as [Qc [HscQc HsafeQc]];
       assert (Hsk1 : utyp_to_pskl C1 = ptyp_to_pskl (btyp_to_ptyp B1)) by (apply (d_consis_skel H));
       exists (bskl_arrow (pskl_to_bskl_inh (utyp_to_pskl C1)) Qc); split;
-      [ simpl; eapply d_pat_sub__arg with (Δ1 := empty) (Δ2 := empty);
+      [ simpl; eapply d_pat_sub__arg with (Ψ1 := empty) (Ψ2 := empty);
           [ apply consis_syn_inh_u;
               [ apply (d_wf_utyp_lc HC1)
               | intros X HX; eapply d_wf_utyp_ftvar; [ exact HC1 | exact HX ] ]
@@ -1875,7 +1875,7 @@ Proof.
     destruct (IHHsub HwfO HwfB) as [Q [Hsc Hsafe]].
     exists Q. split; [ | exact Hsafe ].
     simpl. eapply d_pat_sub__forall_l_untagged
-      with (psi := bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))) (Δ' := empty);
+      with (psi := bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))) (Ψ' := empty);
       [ assumption | fsetdec
       | apply d_tags_skl_syn_erase; exact Hlcph
       | eapply d_wf_uskl_syn_erase;
@@ -1898,7 +1898,7 @@ Proof.
     destruct (IHHsub HwfO HwfB) as [Q [Hsc Hsafe]].
     exists Q. split; [ | exact Hsafe ].
     simpl. eapply d_pat_sub__forall_l_untagged
-      with (psi := bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))) (Δ' := empty);
+      with (psi := bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))) (Ψ' := empty);
       [ assumption | fsetdec
       | apply d_tags_skl_syn_erase; exact Hlcph
       | eapply d_wf_uskl_syn_erase;

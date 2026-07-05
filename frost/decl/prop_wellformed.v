@@ -154,7 +154,7 @@ Proof.
   - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
       apply d_tags__var; assumption.
   - eapply d_tags__arrow; [ eassumption | eassumption | assumption | assumption ].
-  - inst_cofinites_for d_tags__all_etag Δ0 := Δ0; [ | assumption | assumption ].
+  - inst_cofinites_for d_tags__all_etag Ψ0 := Ψ0; [ | assumption | assumption ].
     intros Z HZ.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply lc_utyp_var_f ]).

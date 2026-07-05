@@ -138,7 +138,7 @@ Proof.
       [ eapply IHd_pat_consis1; reflexivity
       | eapply IHd_pat_consis2; reflexivity
       | eassumption ].
-  - apply d_pat_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ3)) (Δ0 := Δ0);
+  - apply d_pat_consis__forall_inh_tagged with (L := L `union` dom (Γ1 ++ Γ3)) (Ψ0 := Ψ0);
       [ intros Z HZ; rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3);
         eapply (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ3); simpl; reflexivity
       | eassumption ].
@@ -152,7 +152,7 @@ Proof.
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     eapply (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ3). simpl. reflexivity.
   - apply d_pat_consis__ghostg. assumption.
-  - apply d_pat_consis__topholeg with (Δ0 := Δ0);
+  - apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
       [ eapply IHd_pat_consis; reflexivity | eassumption ].
   - apply d_pat_consis__hole; [ assumption | apply d_wf_pskl_weakening; assumption ].
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; reflexivity.

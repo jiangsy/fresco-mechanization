@@ -195,7 +195,7 @@ Proof.
   intros P Hlc. induction Hlc; intros Γ Hcov; simpl.
   - (* unit *) apply d_pat_consis__unit. fsetdec.
   - (* var_f X *) apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
-  - (* arrow *) apply d_pat_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+  - (* arrow *) apply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ apply IHHlc1 | apply IHHlc2 | fsetdec ]; intros Y HY; apply Hcov; simpl; fsetdec.
   - (* all_syn: syn-painting → bskl_all_syn, matched by __forall_syn *)
     inst_cofinites_for d_pat_consis__forall_syn. intros X HX.
@@ -228,7 +228,7 @@ Proof.
   - apply d_pat_consis__unit. fsetdec.
   - apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
   - inversion Hlc; subst.
-    apply d_pat_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+    apply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ apply IHghc1 | apply IHghc2 | fsetdec ]; try assumption;
       intros Y HY; apply Hcov; simpl; fsetdec.
   - (* all *) inversion Hlc; subst.
@@ -359,7 +359,7 @@ Proof.
       [ assumption | assumption | exact Hempty | intros Y HY; apply Hcov; simpl; assumption ].
   - (* all: forall_l(HoleG) then IH on the instantiated body *)
     inversion Hlc; subst. inversion Hghc; subst.
-    eapply d_pat_sub__forall_l_untagged with (Δ' := empty) (psi := uskl_holeg);
+    eapply d_pat_sub__forall_l_untagged with (Ψ' := empty) (psi := uskl_holeg);
       [ discriminate | fsetdec | apply d_tags_skl__holeg; fsetdec
       | apply d_wf_uskl__holeg | apply is_tskl__holeg | ].
     apply IHHg.
@@ -1552,7 +1552,7 @@ Proof.
       subst d0'; auto.
   - eapply d_pat_consis__arrow;
       [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | eassumption ]; eauto.
-  - apply d_pat_consis__forall_inh_tagged with (L := L) (Δ0 := Δ0);
+  - apply d_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0);
       [ intros Z HZ;
         rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2);
         eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ]
@@ -1567,7 +1567,7 @@ Proof.
     rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
     eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
   - apply d_pat_consis__ghostg. assumption.
-  - apply d_pat_consis__topholeg with (Δ0 := Δ0);
+  - apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
       [ eapply IHd_pat_consis; eauto | eassumption ].
   - apply d_pat_consis__hole; [ assumption | eapply d_wf_pskl_binding_eq; eauto ].
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
@@ -1849,7 +1849,7 @@ Proof.
   - apply d_pat_consis__var; [ assumption | eapply ghost_rel_binds_tvar; eauto ].
   - eapply d_pat_consis__arrow;
       [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | eassumption ]; eauto.
-  - apply d_pat_consis__forall_inh_tagged with (L := L) (Δ0 := Δ0);
+  - apply d_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0);
       [ intros Z HZ; eapply H0; [ exact HZ | apply gr_keep; exact Hgr ] | eassumption ].
   - apply d_pat_consis__forall_inh_untagged with (L := L). intros Z HZ.
     eapply H0; [ exact HZ | apply gr_keep; exact Hgr ].
@@ -1858,7 +1858,7 @@ Proof.
   - apply d_pat_consis__forall_syn with (L := L). intros Z HZ.
     eapply H0; [ exact HZ | apply gr_keep; exact Hgr ].
   - apply d_pat_consis__ghostg. assumption.
-  - apply d_pat_consis__topholeg with (Δ0 := Δ0);
+  - apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
       [ eapply IHd_pat_consis; eauto | eassumption ].
   - apply d_pat_consis__hole; [ assumption | eapply d_wf_pskl_ghost_rel; eauto ].
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
@@ -1965,7 +1965,7 @@ Proof.
   - apply d_pat_consis__unit; (assumption || fsetdec).
   - apply d_pat_consis__var; [ (assumption || fsetdec) | ]; match goal with Hb : binds _ _ _ |- _ => analyze_binds Hb end; try (exfalso; congruence); auto.
   - eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | (eassumption || fsetdec) ]; eauto.
-  - apply d_pat_consis__forall_inh_tagged with (L := L) (Δ0 := Δ0). 2: assumption. intros Z HZ.
+  - apply d_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0). 2: assumption. intros Z HZ.
     rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
     eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 y0 d0 Γ2); [ simpl_env; reflexivity | exact Hd ].
   - apply d_pat_consis__forall_inh_untagged with (L := L). intros Z HZ.
@@ -1978,7 +1978,7 @@ Proof.
     rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
     eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 y0 d0 Γ2); [ simpl_env; reflexivity | exact Hd ].
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - apply d_pat_consis__topholeg with (Δ0 := Δ0);
+  - apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
       [ eapply IHd_pat_consis; eauto | eassumption ].
   - apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_rename_var; eauto.
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
@@ -2310,7 +2310,7 @@ Proof.
   - simpl in HX. apply d_pat_consis__var; [ (assumption || fsetdec) | ]; match goal with Hb : binds _ _ _ |- _ => analyze_binds Hb end; try (exfalso; fsetdec); auto.
   - simpl in HX. eapply d_pat_consis__arrow;
       [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | (eassumption || fsetdec) ]; eauto.
-  - simpl in HX. apply d_pat_consis__forall_inh_tagged with (L := L `union` {{X0}}) (Δ0 := Δ0). 2: assumption.
+  - simpl in HX. apply d_pat_consis__forall_inh_tagged with (L := L `union` {{X0}}) (Ψ0 := Ψ0). 2: assumption.
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
     eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); [ simpl_env; reflexivity | ].
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Z)) as Hup.
@@ -2331,7 +2331,7 @@ Proof.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Z)) as Hup.
     simpl in Hup. fsetdec.
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - simpl in HX. apply d_pat_consis__topholeg with (Δ0 := Δ0);
+  - simpl in HX. apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
       [ eapply IHd_pat_consis; eauto | eassumption ].
   - apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_strengthen; eauto.
     rewrite <- ftvar_pskl_to_bskl_inh. assumption.
@@ -2568,8 +2568,8 @@ Proof.
   - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
       [ apply d_tags_skl__unit; (assumption || fsetdec)
       | apply d_tags_skl__var; (assumption || fsetdec) ].
-  - apply d_tags_skl__arrow with (Δ1 := Δ1) (Δ2 := Δ2); assumption.
-  - apply d_tags_skl__all_etag with (L := L `union` {{X}}) (Δ0 := Δ0); [ | assumption | assumption ]. intros Y HY.
+  - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
+  - apply d_tags_skl__all_etag with (L := L `union` {{X}}) (Ψ0 := Ψ0); [ | assumption | assumption ]. intros Y HY.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - apply d_tags_skl__all_syn with (L := L `union` {{X}}). intros Y HY.
@@ -2578,7 +2578,7 @@ Proof.
   - apply d_tags_skl__hole; (assumption || fsetdec).
   - apply d_tags_skl__tophole; assumption.
   - apply d_tags_skl__holeg; (assumption || fsetdec).
-  - apply d_tags_skl__topholeg with (Δ0 := Δ0); assumption.
+  - apply d_tags_skl__topholeg with (Ψ0 := Ψ0); assumption.
 Qed.
 
 Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
@@ -2593,7 +2593,7 @@ Proof.
     + apply d_pat_consis__unit; (assumption || fsetdec).
     + apply d_pat_consis__var; [ (assumption || fsetdec) | ]; match goal with Hb : binds _ _ _ |- _ => analyze_binds Hb end; auto.
   - simpl. eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | (eassumption || fsetdec) ]; eauto.
-  - simpl. apply d_pat_consis__forall_inh_tagged with (L := L `union` {{X0}}) (Δ0 := Δ0). 2: assumption.
+  - simpl. apply d_pat_consis__forall_inh_tagged with (L := L `union` {{X0}}) (Ψ0 := Ψ0). 2: assumption.
     intros Z HZ. rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; try (apply lc_uskl_unit); try fsetdec.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
@@ -2614,7 +2614,7 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); simpl_env; reflexivity.
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - simpl. apply d_pat_consis__topholeg with (Δ0 := Δ0);
+  - simpl. apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
       [ eapply IHd_pat_consis; eauto | eassumption ].
   - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_subst_unit; eauto.
   - simpl. apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
@@ -2673,7 +2673,7 @@ Proof.
   intros Q Γ Hs. generalize dependent Γ. induction Hs; intros Γ Hwf; simpl.
   - apply d_pat_consis__unit; (assumption || fsetdec).
   - apply d_pat_consis__var; [ fsetdec | apply Hwf; simpl; fsetdec ].
-  - apply d_pat_consis__arrow with (Δ1 := empty) (Δ2 := empty);
+  - apply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ apply IHHs1 | apply IHHs2 | fsetdec ]; intros X HX; apply Hwf; simpl; fsetdec.
   - apply d_pat_consis__forall_syn with (L := L `union` dom Γ).
     intros X HX. rewrite <- bskl_to_uskl_open. apply H0; [ fsetdec | ].
@@ -2977,7 +2977,7 @@ Proof.
   (* Paper-faithful: instantiate the ∀ with the tagged ghost [HoleG]; the
      bound variable becomes [uskl_holeg], matched against [bskl_hole] by
      [GhostG]. *)
-  eapply d_pat_sub__forall_l_untagged with (Δ' := empty) (psi := uskl_holeg).
+  eapply d_pat_sub__forall_l_untagged with (Ψ' := empty) (psi := uskl_holeg).
   - discriminate.
   - fsetdec.
   - apply d_tags_skl__holeg; fsetdec.
