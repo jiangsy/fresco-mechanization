@@ -71,6 +71,12 @@ Proof.
   - congruence.
 Qed.
 
+(** The skeleton of a bidirectional type's coercion agrees with the skeleton of
+    its erasure (both drop colours structurally). *)
+Lemma bskl_to_pskl_btyp_to_bskl : forall B,
+    bskl_to_pskl (btyp_to_bskl B) = ptyp_to_pskl (btyp_to_ptyp B).
+Proof. induction B; simpl; congruence. Qed.
+
 (** A variable that types in ANY mode is [typ]-bound in the context.  Needed to
     recover a [Γt] binding from a checking derivation whose last rule may be
     [sub], [freeze] (impossible for a bare var), or [forall] (a value checked
@@ -1359,9 +1365,14 @@ Fixpoint safe_skel (m : mode) (Q : bskl) (B : btyp) : Prop :=
   | mode_ti => skel_safe nil Q (btyp_to_ptyp B)
   | mode_tc => skel_safe nil Q (btyp_to_ptyp B)
   | mode_fn m' =>
-      exists Barg B0 Qc,
+      exists Barg B0 Sarg Qc,
         B = btyp_arrow Barg B0
-        /\ Q = bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl (btyp_to_ptyp Barg))) Qc
+        (* the domain skeleton [Sarg] is whatever the inference produces — the
+           inh-painting for a base function ([safe_fn_skel]) or the annotation's
+           own colours for an annotated λ ([abs_anno]); either way it is SAFE for
+           the domain type (no bare holes hiding polymorphism). *)
+        /\ Q = bskl_arrow Sarg Qc
+        /\ skel_safe nil (bskl_to_pskl Sarg) (btyp_to_ptyp Barg)
         /\ safe_skel m' Qc B0
   end.
 
@@ -1835,7 +1846,7 @@ Proof.
     inversion HwfU; subst. inversion HwfB; subst.
     match goal with
     | HC1 : d_wf_utyp Γ C1, HC2 : d_wf_utyp Γ C2,
-      _ : d_wf_btyp Γ B1, HB2 : d_wf_btyp Γ B2 |- _ =>
+      HB1w : d_wf_btyp Γ B1, HB2 : d_wf_btyp Γ B2 |- _ =>
       destruct (IHHsub HC2 HB2) as [Qc [HscQc HsafeQc]];
       assert (Hsk1 : utyp_to_pskl C1 = ptyp_to_pskl (btyp_to_ptyp B1)) by (apply (d_consis_skel H));
       exists (bskl_arrow (pskl_to_bskl_inh (utyp_to_pskl C1)) Qc); split;
@@ -1844,8 +1855,13 @@ Proof.
               [ apply (d_wf_utyp_lc HC1)
               | intros X HX; eapply d_wf_utyp_ftvar; [ exact HC1 | exact HX ] ]
           | exact HscQc | fsetdec ]
-      | simpl; exists B1, B2, Qc;
-        split; [ reflexivity | split; [ rewrite Hsk1; reflexivity | exact HsafeQc ] ] ]
+      | simpl; exists B1, B2, (pskl_to_bskl_inh (utyp_to_pskl C1)), Qc;
+        split; [ reflexivity
+        | split; [ reflexivity
+        | split; [ rewrite bskl_to_pskl_pskl_to_bskl_inh, Hsk1;
+                   apply skel_safe_of_ptyp; apply lc_ptyp_btyp_to_ptyp;
+                   eapply d_wf_btyp_lc; exact HB1w
+                 | exact HsafeQc ] ] ] ]
     end.
   - (* forall_l_tagged: the (erased) forall is all_syn; instantiate with syn-erase(skel ph) *)
     assert (Hlcph : lc_utyp ph)
@@ -2068,8 +2084,13 @@ Proof.
             | intros X HX; right; rewrite ftvar_btyp_to_ptyp in HX;
               match goal with H : Γ ⊢ᵦ B1 |- _ => eapply d_wf_btyp_ftvar; [ exact H | exact HX ] end ]
         | exact HwfP0' ].
-    + simpl. exists B1, B2, (pskl_to_bskl_inh P0').
-      split; [ reflexivity | split; [ reflexivity | exact Hsafe' ] ].
+    + simpl. exists B1, B2, (pskl_to_bskl_inh (ptyp_to_pskl (btyp_to_ptyp B1))), (pskl_to_bskl_inh P0').
+      split; [ reflexivity
+      | split; [ reflexivity
+      | split; [ rewrite bskl_to_pskl_pskl_to_bskl_inh; apply skel_safe_of_ptyp;
+                 apply lc_ptyp_btyp_to_ptyp;
+                 match goal with H : Γ ⊢ᵦ B1 |- _ => eapply d_wf_btyp_lc; exact H end
+               | exact Hsafe' ] ] ].
 Qed.
 
 (** GENERAL binder rename for typing (mirrors [d_pat_rename_var]): renaming the
@@ -3174,12 +3195,16 @@ Proof.
            eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_skl (ptyp_to_pskl A));
              [ exact HinfQc | reflexivity | discriminate | simpl_env; clear - Fr; fsetdec ].
       * (* safe_skel (fn m0) : the peeled arrow with concrete [inh] domain *)
-        simpl. exists (ptyp_to_btyp_inh A), B, Qc.
+        simpl. exists (ptyp_to_btyp_inh A), B, (pskl_to_bskl_inh (ptyp_to_pskl A)), Qc.
         split; [ reflexivity | ].
-        split; [ rewrite btyp_to_ptyp_ptyp_to_btyp_inh; reflexivity | exact HsafeQc ].
+        split; [ reflexivity | ].
+        split; [ rewrite bskl_to_pskl_pskl_to_bskl_inh, btyp_to_ptyp_ptyp_to_btyp_inh;
+                 apply skel_safe_of_ptyp; eapply d_wf_ptyp_lc;
+                 eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ]
+               | exact HsafeQc ].
   - (* abs_anno: annotated λ; like [abs] but the domain skeleton is the
        annotation's own pskl ([abs_anno_*_fill_skel]). *)
-    destruct m.
+    destruct m as [ | | m0 ].
     + (* ti: SYNTHESISE [bskl_arrow (btyp_to_bskl B1) Qb]; [is_styp] forces
          [B1 = syn A]. *)
       match goal with Hsk : skmod_ty _ mode_ti |- _ =>
@@ -3268,7 +3293,63 @@ Proof.
           | intros y0 Hy0; apply d_wf_denv__typ;
               [ exact Hwf' | exact Hy0 | eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ] ]
           | exact Hfillb | clear - Hx; fsetdec ].
-    + (* fn *) admit.
+    + (* fn m0: the annotation [A] already gives the concrete domain, so the body
+         runs at [x0 : typ A] ([dbr_refl]) and the inferred arrow keeps the
+         annotation's own domain skeleton [btyp_to_bskl B1] — which is [skel_safe]
+         for [B1].  Codomain safety from the body [gpat] as in the [abs] case. *)
+      assert (HpA : Γ ⊢ₚ A) by assumption.
+      assert (HskB2 : skmod_ty B2 m0)
+        by (match goal with Hsk : skmod_ty (btyp_arrow B1 B2) (mode_fn _) |- _ =>
+              inversion Hsk; assumption end).
+      assert (HwfA' : d_wf_ptyp Γ' A) by (eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ]).
+      pick fresh x0 for
+        (L `union` dom Γ `union` dom Γ' `union` fvar_in_exp e `union` ftvar_in_exp e).
+      assert (Hwftb : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ))
+        by (apply d_wf_denv__typ; [ exact Hwf | clear - Fr; fsetdec | exact HpA ]).
+      pose proof (H3 x0 ltac:(clear - Fr; fsetdec) Hwftb
+                    ((x0 ~ dbind_typ A) ++ Γ')
+                    ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ])
+                    ltac:(apply d_wf_denv__typ; [ exact Hwf' | clear - Fr; fsetdec | exact HwfA' ]))
+        as Hbody.
+      assert (Hex : exists Qc,
+                 ((x0 ~ dbind_typ A) ++ Γ') ⊢[ m0 ] (open_exp_wrt_exp e (exp_var_f x0)) ⇨ Qc
+                 /\ safe_skel m0 Qc B2).
+      { destruct m0.
+        - destruct Hbody as [Qc [Hinf [Hssk Hcov]]].
+          assert (Hstyp : is_styp B2) by (inversion HskB2; assumption).
+          exists Qc. split; [ exact Hinf | ]. simpl.
+          eapply (Hcov ((x0 ~ dbind_typ A) ++ Γ) (btyp_to_ptyp B2));
+            [ apply crtw_cons; [ apply dbr_refl | apply crtw_base; exact Hcr ]
+            | exact Hwftb
+            | rewrite (ptyp_to_btyp_syn_btyp_to_ptyp (is_styp_is_syn Hstyp));
+              apply H2; clear - Fr; fsetdec ].
+        - destruct Hbody as [Qc [Hinf [Hssk Hcov]]].
+          assert (Hityp : is_ityp B2) by (inversion HskB2; assumption).
+          exists Qc. split; [ exact Hinf | ]. simpl.
+          eapply (Hcov ((x0 ~ dbind_typ A) ++ Γ) (btyp_to_ptyp B2));
+            [ apply crtw_cons; [ apply dbr_refl | apply crtw_base; exact Hcr ]
+            | exact Hwftb
+            | rewrite (is_ityp_ptyp_to_btyp_inh Hityp); apply H2; clear - Fr; fsetdec ].
+        - exact Hbody. }
+      destruct Hex as [Qc [HinfQc HsafeQc]].
+      exists (bskl_arrow (btyp_to_bskl B1) Qc). split.
+      * apply d_pat__abs_anno with
+          (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (B := B1).
+        -- discriminate.
+        -- exact HwfA'.
+        -- exact H0.
+        -- intros x Hx.
+           replace (open_exp_wrt_exp e (exp_var_f x))
+             with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+             by (symmetry; apply subst_exp_in_exp_intro; clear - Fr Hx; fsetdec).
+           eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_typ A);
+             [ exact HinfQc | reflexivity | discriminate | simpl_env; clear - Fr; fsetdec ].
+      * simpl. exists B1, B2, (btyp_to_bskl B1), Qc.
+        split; [ reflexivity | ].
+        split; [ reflexivity | ].
+        split; [ rewrite bskl_to_pskl_btyp_to_bskl; apply skel_safe_of_ptyp;
+                 rewrite H0; eapply d_wf_ptyp_lc; exact HpA
+               | exact HsafeQc ].
   - (* app: [d_pat__app] infers the function arrow and threads the refined
        argument; safety follows from the codomain's [safe_skel]. *)
     admit.
