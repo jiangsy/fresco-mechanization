@@ -22,14 +22,16 @@ Set Implicit Arguments.
    camlp5 requires every notation sharing the [_ ⨟ _] prefix to agree on
    that slot's level.  Context slots only ever hold [Γ]/[Δ] built from
    [++]/[::]/[~] (all ≤ 60), so level 74 is ample. *)
-Reserved Notation "Ψ ⨟ Γ ⊢ₚₛ P"
-  (at level 75, Γ at level 74, P at level 75, no associativity).
+(* Convention (paper-faithful): the ∀-scope context [Δ] comes AFTER [Γ]
+   ([Γ ⨟ Δ ⊢ …]); the tag context [Ψ] comes BEFORE [Γ] ([Ψ ⨟ Γ ⊢ …]). *)
+Reserved Notation "Γ ⨟ Δ ⊢ₚₛ P"
+  (at level 75, Δ at level 74, P at level 75, no associativity).
 Reserved Notation "Γ ⊢ᵦ B"
   (at level 75, B at level 75, no associativity).
 Reserved Notation "Δ ⨟ Γ ⊢ᵤ C"
   (at level 75, Γ at level 74, C at level 75, no associativity).
-Reserved Notation "Δ ⨟ Γ ⊢ᵤₛ R"
-  (at level 75, Γ at level 74, R at level 75, no associativity).
+Reserved Notation "Γ ⨟ Δ ⊢ᵤₛ R"
+  (at level 75, Δ at level 74, R at level 75, no associativity).
 Reserved Notation "Ψ ⨟ Γ ⊨ C ≈ B"
   (at level 75, Γ at level 74, C at level 74, B at level 74, no associativity).
 Reserved Notation "Ψ ⨟ Γ ⊢[ M ] C ⊑ B"
@@ -38,9 +40,9 @@ Reserved Notation "Ψ ⨟ Γ ⊢[ M ] C ⊑ B"
 Reserved Notation "Γ ⨟ Δ ⊢ᵣ Q ⊳ P"
   (at level 75, Δ at level 74,
    Q at level 74, P at level 74, no associativity).
-Reserved Notation "Δ ⨟ Γ ⊨ₛ R ≈ Q"
+Reserved Notation "Ψ ⨟ Γ ⊨ₛ R ≈ Q"
   (at level 75, Γ at level 74, R at level 74, Q at level 74, no associativity).
-Reserved Notation "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q"
+Reserved Notation "Ψ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q"
   (at level 75, Γ at level 74, M at level 0, R at level 74, Q at level 74,
    no associativity).
 
@@ -118,75 +120,68 @@ Inductive d_wf_utyp : list (atom * dbind) -> utyp -> Prop :=
     Γ ⊢ᵤ (utyp_all_etag ε C)
 where "Γ ⊢ᵤ C" := (d_wf_utyp Γ C) : type_scope.
 
-(* Check failed,
-     critical mismatches
-         (1) d_wf_pskl__var, where paper can only use vars in Γ
-         (2) d_wf_pskl__all, where paper extends both Ψ and Γ with X
-         (3) d_wf_pskl__tophole, where paper use Γ \ Ψ *)
-(* Todo : rename Ψ to Δ and change notation to Γ | Δ ⊢ ...  *)
-Inductive d_wf_pskl : list atom -> list (atom * dbind) -> pskl -> Prop :=
-| d_wf_pskl__unit : forall Ψ Γ,
-    Ψ ⨟ Γ ⊢ₚₛ pskl_unit
-| d_wf_pskl__var : forall Ψ Γ X,
-    List.In X Ψ \/ binds X dbind_tvar Γ ->
-    Ψ ⨟ Γ ⊢ₚₛ (pskl_var_f X)
-| d_wf_pskl__arrow : forall Ψ Γ P1 P2,
-    Ψ ⨟ Γ ⊢ₚₛ P1 ->
-    Ψ ⨟ Γ ⊢ₚₛ P2 ->
-    Ψ ⨟ Γ ⊢ₚₛ (pskl_arrow P1 P2)
-| d_wf_pskl__all : forall L Ψ Γ P,
+(* Skeleton well-formedness [Γ ⨟ Δ ⊢ₚₛ P] (declarative.tex:1300).  [Δ] is the
+   ∀-scope context (paper's [Δ], the inherited-∀ vars), kept SEPARATE from the
+   tvar context [Γ]; the two carry different types so a var occurrence consults
+   either.  This is the paper's [Γ∣Δ] presentation with [Δ] as a separate set
+   (∀-vars go to [Δ]; the [⫯] rule clears [Δ], matching [Γ\Δ]). *)
+Inductive d_wf_pskl : list (atom * dbind) -> list atom -> pskl -> Prop :=
+| d_wf_pskl__unit : forall Γ Δ,
+    Γ ⨟ Δ ⊢ₚₛ pskl_unit
+| d_wf_pskl__var : forall Γ Δ X,
+    List.In X Δ \/ binds X dbind_tvar Γ ->
+    Γ ⨟ Δ ⊢ₚₛ (pskl_var_f X)
+| d_wf_pskl__arrow : forall Γ Δ P1 P2,
+    Γ ⨟ Δ ⊢ₚₛ P1 ->
+    Γ ⨟ Δ ⊢ₚₛ P2 ->
+    Γ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2)
+| d_wf_pskl__all : forall L Γ Δ P,
     (forall X, X `notin` L ->
-       (X :: Ψ) ⨟ Γ ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f X))) ->
-    Ψ ⨟ Γ ⊢ₚₛ (pskl_all_syn P)
-| d_wf_pskl__hole : forall Ψ Γ,
-    Ψ ⨟ Γ ⊢ₚₛ pskl_hole
-| d_wf_pskl__tophole : forall Ψ Γ P,
-    (* Paper [⫯.P] rule (declarative.tex): the scope set [Ψ] (paper's [Δ])
-       is cleared in the PREMISE, but the conclusion holds under an
-       ARBITRARY [Ψ] — matching [d_wf_uskl__tophole].  (The old [nil]
-       conclusion wrongly rejected [∀α.⫯.P].) *)
+       Γ ⨟ (X :: Δ) ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f X))) ->
+    Γ ⨟ Δ ⊢ₚₛ (pskl_all_syn P)
+| d_wf_pskl__hole : forall Γ Δ,
+    Γ ⨟ Δ ⊢ₚₛ pskl_hole
+| d_wf_pskl__tophole : forall Γ Δ P,
+    (* Paper [⫯.P] rule: [Δ] is cleared in the PREMISE (matching [Γ\Δ] since the
+       ∀-vars are exactly [Δ]); the conclusion holds under an ARBITRARY [Δ]. *)
     guarded_pskl P ->
-    (* Cirt *)
-    nil ⨟ Γ ⊢ₚₛ P ->
-    Ψ ⨟ Γ ⊢ₚₛ (pskl_tophole P)
-where "Ψ ⨟ Γ ⊢ₚₛ P" := (d_wf_pskl Ψ Γ P) : type_scope.
+    Γ ⨟ nil ⊢ₚₛ P ->
+    Γ ⨟ Δ ⊢ₚₛ (pskl_tophole P)
+where "Γ ⨟ Δ ⊢ₚₛ P" := (d_wf_pskl Γ Δ P) : type_scope.
 
-(* Todo: critical why we don't have a d_wf_bskl, and where is d_wf_pskl used? *)
-
-(* Check failed, same set of problems as d_wf_pskl *)
-Inductive d_wf_uskl : list atom -> list (atom * dbind) -> uskl -> Prop :=
-| d_wf_uskl__unit : forall Ψ Γ,
-    Ψ ⨟ Γ ⊢ᵤₛ uskl_unit
-| d_wf_uskl__var : forall Ψ Γ X,
-    List.In X Ψ \/ binds X dbind_tvar Γ ->
-    Ψ ⨟ Γ ⊢ᵤₛ (uskl_var_f X)
-| d_wf_uskl__arrow : forall Ψ Γ R1 R2,
-    Ψ ⨟ Γ ⊢ᵤₛ R1 ->
-    Ψ ⨟ Γ ⊢ᵤₛ R2 ->
-    Ψ ⨟ Γ ⊢ᵤₛ (uskl_arrow R1 R2)
-| d_wf_uskl__all_syn : forall L Ψ Γ R,
+Inductive d_wf_uskl : list (atom * dbind) -> list atom -> uskl -> Prop :=
+| d_wf_uskl__unit : forall Γ Δ,
+    Γ ⨟ Δ ⊢ᵤₛ uskl_unit
+| d_wf_uskl__var : forall Γ Δ X,
+    List.In X Δ \/ binds X dbind_tvar Γ ->
+    Γ ⨟ Δ ⊢ᵤₛ (uskl_var_f X)
+| d_wf_uskl__arrow : forall Γ Δ R1 R2,
+    Γ ⨟ Δ ⊢ᵤₛ R1 ->
+    Γ ⨟ Δ ⊢ᵤₛ R2 ->
+    Γ ⨟ Δ ⊢ᵤₛ (uskl_arrow R1 R2)
+| d_wf_uskl__all_syn : forall L Γ Δ R,
     (forall X, X `notin` L ->
-       (X :: Ψ) ⨟ Γ ⊢ᵤₛ
+       Γ ⨟ (X :: Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f X))) ->
-    Ψ ⨟ Γ ⊢ᵤₛ (uskl_all_syn R)
-| d_wf_uskl__all_etag : forall L Ψ Γ ε R,
+    Γ ⨟ Δ ⊢ᵤₛ (uskl_all_syn R)
+| d_wf_uskl__all_etag : forall L Γ Δ ε R,
     (forall X, X `notin` L ->
-       (X :: Ψ) ⨟ Γ ⊢ᵤₛ
+       Γ ⨟ (X :: Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f X))) ->
-    Ψ ⨟ Γ ⊢ᵤₛ (uskl_all_etag ε R)
-| d_wf_uskl__hole : forall Ψ Γ,
-    Ψ ⨟ Γ ⊢ᵤₛ uskl_hole
-| d_wf_uskl__tophole : forall Ψ Γ R,
+    Γ ⨟ Δ ⊢ᵤₛ (uskl_all_etag ε R)
+| d_wf_uskl__hole : forall Γ Δ,
+    Γ ⨟ Δ ⊢ᵤₛ uskl_hole
+| d_wf_uskl__tophole : forall Γ Δ R,
     guarded_uskl R ->
-    nil ⨟ Γ ⊢ᵤₛ R ->
-    Ψ ⨟ Γ ⊢ᵤₛ (uskl_tophole R)
-| d_wf_uskl__holeg : forall Ψ Γ,
-    Ψ ⨟ Γ ⊢ᵤₛ uskl_holeg
-| d_wf_uskl__topholeg : forall Ψ Γ ε R,
+    Γ ⨟ nil ⊢ᵤₛ R ->
+    Γ ⨟ Δ ⊢ᵤₛ (uskl_tophole R)
+| d_wf_uskl__holeg : forall Γ Δ,
+    Γ ⨟ Δ ⊢ᵤₛ uskl_holeg
+| d_wf_uskl__topholeg : forall Γ Δ ε R,
     guarded_uskl R ->
-    nil ⨟ Γ ⊢ᵤₛ R ->
-    Ψ ⨟ Γ ⊢ᵤₛ (uskl_topholeg ε R)
-where "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R) : type_scope.
+    Γ ⨟ nil ⊢ᵤₛ R ->
+    Γ ⨟ Δ ⊢ᵤₛ (uskl_topholeg ε R)
+where "Γ ⨟ Δ ⊢ᵤₛ R" := (d_wf_uskl Γ Δ R) : type_scope.
 
 (* ===================================================================== *)
 (*  Tag relation  [tags{Δ}{φ}]  (paper notation [φ # Δ], declarative.tex) *)
@@ -407,7 +402,7 @@ Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Pro
     (* [□ ⤳ syn{Q}]: the fill is well-formed under [Γ] alone (synthesised vars
        are in [Γ]); [Δ] is cleared so inherited vars cannot fill ghosts. *)
     (* Critical: Missing the ftv condition! *)
-    nil ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ nil ⊢ₚₛ P ->
     Γ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
 | d_refine_syn__tophole_remove : forall Γ Δ Q P,
     (* [⫯.inh{P} ⤳ bid{Q}]: remove the universal ghost; keep [Δ]. *)
@@ -480,7 +475,7 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     Δ ⨟ Γ ⊨ₛ (uskl_topholeg ε R) ≈ (bskl_tophole Q)
 | d_pat_consis__hole : forall Δ Γ P,
     Δ [=] empty ->
-    d_wf_pskl nil Γ P ->
+    d_wf_pskl Γ nil P ->
     Δ ⨟ Γ ⊨ₛ uskl_hole ≈ (pskl_to_bskl_inh P)
 | d_pat_consis__tophole : forall Δ Γ R Q,
     (* Paper [UnivGhost]: TopHole ≈ TopHole. *)
@@ -499,7 +494,7 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
        dropped against a plain inherited RHS. *)
     Δ ⨟ Γ ⊨ₛ R ≈ Q ->
     Δ ⨟ Γ ⊨ₛ (uskl_tophole R) ≈ Q
-where "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q) : type_scope.
+where "Ψ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Ψ Γ R Q) : type_scope.
 
 (* Check failed, one missing case *)
 (* Todo: replace Δ by Ψ *)
@@ -531,11 +526,11 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Δ ⨟ Γ ⊢ₛ[ mode_fn m ] (uskl_arrow R1 R2) ⊑ (bskl_arrow Q1 Q2)
 | d_pat_sub__forall_l_tagged : forall Δ Δ' Γ m ε R psi Q,
     (* Paper [ForallL] (tagged head).  [Ψ' fresh] = [list_disjoint];
-       well-scopedness is [nil ⨟ Γ ⊢ᵤₛ ψ] (S1: scope, not tags). *)
+       well-scopedness is [Γ ⨟ nil ⊢ᵤₛ ψ] (S1: scope, not tags). *)
     m <> mode_ti ->
     AtomSetImpl.inter Δ' Δ [=] empty ->
     d_tags_skl Δ' psi ->             (* tags{Δ'}{ψ} : skeleton-tag relation *)
-    nil ⨟ Γ ⊢ᵤₛ psi ->
+    Γ ⨟ nil ⊢ᵤₛ psi ->
     is_tskl psi ->
     (Δ `union` Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_etag ε R) ⊑ Q
@@ -543,7 +538,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     m <> mode_ti ->
     AtomSetImpl.inter Δ' Δ [=] empty ->
     d_tags_skl Δ' psi ->
-    nil ⨟ Γ ⊢ᵤₛ psi ->
+    Γ ⨟ nil ⊢ᵤₛ psi ->
     is_tskl psi ->
     (Δ `union` Δ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_syn R) ⊑ Q
@@ -551,7 +546,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}]. *)
     (* Todo: lift Δ quantification above *)
     forall Δ, Δ [=] empty ->
-    d_wf_pskl nil Γ P ->
+    d_wf_pskl Γ nil P ->
     Δ ⨟ Γ ⊢ₛ[ m ] uskl_hole ⊑ (pskl_to_bskl_inh P)
 | d_pat_sub__univ_ghost_l : forall m Δ Γ R Q,
     (* Paper [UnivGhostL]: drop a [TopHole] on the LHS (any [M ≠ TI]). *)
@@ -570,7 +565,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_topholeg ε R) ⊑ Q
 (* Todo: critical mismatch, UnivGhostL case when delta is empty is missing, i.e., LHS is usk_tophole R *)
-where "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Δ Γ R Q) : type_scope.
+where "Ψ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Ψ Γ R Q) : type_scope.
 
 (* ===================================================================== *)
 (*  Typing and pattern inference                                          *)
@@ -620,7 +615,7 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
    body through their [safe_skel] construction. *)
 | d_pat__abs : forall L Γ m e P Q,
     m <> mode_tc ->
-    nil ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ nil ⊢ₚₛ P ->
     (forall x, x `notin` L ->
        ((x ~ dbind_skl P) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->

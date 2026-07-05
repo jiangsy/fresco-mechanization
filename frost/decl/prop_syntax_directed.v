@@ -579,7 +579,7 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_same_tvar : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P -> forall Γ', same_tvar Γ Γ' -> Ψ ⨟ Γ' ⊢ₚₛ P.
+    Γ ⨟ Ψ ⊢ₚₛ P -> forall Γ', same_tvar Γ Γ' -> Γ' ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ' Hst.
   - apply d_wf_pskl__unit.
@@ -592,7 +592,7 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_same_tvar : forall Ψ Γ R,
-    Ψ ⨟ Γ ⊢ᵤₛ R -> forall Γ', same_tvar Γ Γ' -> Ψ ⨟ Γ' ⊢ᵤₛ R.
+    Γ ⨟ Ψ ⊢ᵤₛ R -> forall Γ', same_tvar Γ Γ' -> Γ' ⨟ Ψ ⊢ᵤₛ R.
 Proof.
   intros Ψ Γ R H. induction H; intros Γ' Hst.
   - apply d_wf_uskl__unit.

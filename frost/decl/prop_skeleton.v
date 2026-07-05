@@ -39,7 +39,7 @@ Lemma d_wf_pskl_of_ptyp : forall A,
     lc_ptyp A ->
     forall Γ Ψ,
       (forall X, X `in` ftvar_in_ptyp A -> List.In X Ψ \/ binds X dbind_tvar Γ) ->
-      Ψ ⨟ Γ ⊢ₚₛ (ptyp_to_pskl A).
+      Γ ⨟ Ψ ⊢ₚₛ (ptyp_to_pskl A).
 Proof.
   intros A Hlc. induction Hlc; intros Γ Ψ Hcov; simpl.
   - apply d_wf_pskl__unit.
@@ -512,7 +512,7 @@ Qed.
 (** Hence a well-formed type's skeleton is a well-formed [pskl] (any scope). *)
 Lemma d_wf_pskl_of_wf_ptyp : forall Γ A,
     d_wf_ptyp Γ A ->
-    forall Ψ, Ψ ⨟ Γ ⊢ₚₛ (ptyp_to_pskl A).
+    forall Ψ, Γ ⨟ Ψ ⊢ₚₛ (ptyp_to_pskl A).
 Proof.
   intros Γ A H Ψ. apply d_wf_pskl_of_ptyp.
   - eapply d_wf_ptyp_lc_loc; eassumption.
@@ -717,10 +717,10 @@ Qed.
 (** Move a tvar from the type context into the [pskl] scope set [Ψ] (valid
     for [⫯]-free skeletons — a [⫯] would clear [Ψ]). *)
 Lemma d_wf_pskl_move : forall Ψ Γ' P,
-    Ψ ⨟ Γ' ⊢ₚₛ P ->
+    Γ' ⨟ Ψ ⊢ₚₛ P ->
     no_tophole_pskl P ->
     forall X Γ, Γ' = (X ~ dbind_tvar) ++ Γ ->
-    (X :: Ψ) ⨟ Γ ⊢ₚₛ P.
+    Γ ⨟ (X :: Ψ) ⊢ₚₛ P.
 Proof.
   intros Ψ Γ' P H. induction H; intros Hnt X0 Γ0 HΓ; subst.
   - apply d_wf_pskl__unit.
@@ -732,7 +732,7 @@ Proof.
       * right. assumption.
   - inversion Hnt; subst. apply d_wf_pskl__arrow; auto.
   - inversion Hnt; subst. inst_cofinites_for d_wf_pskl__all. intros Y HY.
-    apply d_wf_pskl_Psi_mono with (Ψ := X0 :: (Y :: Ψ)).
+    apply d_wf_pskl_Psi_mono with (Ψ := X0 :: (Y :: Δ)).
     + apply H0; auto. apply no_tophole_pskl_open_rec. assumption.
     + intros Z HZ. simpl in *. tauto.
   - apply d_wf_pskl__hole.
@@ -1508,7 +1508,7 @@ Qed.
 Lemma d_pat_preserves_skel_wf : forall Γ e Q,
     Γ ⊢[ mode_tc ] e ⇨ Q ->
     d_wf_denv Γ ->
-    nil ⨟ Γ ⊢ₚₛ Q.
+    Γ ⨟ nil ⊢ₚₛ Q.
 Proof.
   intros Γ e Q H _.
   apply (proj2 d_typing_pat_preserves_wf) with (m := mode_tc) (e := e); auto.
@@ -1521,10 +1521,10 @@ Qed.
     binding (to one with the same skeleton view) is invariant. *)
 
 Lemma d_wf_pskl_binding_eq : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Ψ ⊢ₚₛ P ->
     forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
     dbind_to_pskl d = dbind_to_pskl d' ->
-    Ψ ⨟ (Γ1 ++ (x ~ d') ++ Γ2) ⊢ₚₛ P.
+    (Γ1 ++ (x ~ d') ++ Γ2) ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
   - apply d_wf_pskl__unit.
@@ -1595,10 +1595,10 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_binding_eq : forall Ψ Γ R,
-    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    Γ ⨟ Ψ ⊢ᵤₛ R ->
     forall Γ1 x d d' Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 ->
     dbind_to_pskl d = dbind_to_pskl d' ->
-    Ψ ⨟ (Γ1 ++ (x ~ d') ++ Γ2) ⊢ᵤₛ R.
+    (Γ1 ++ (x ~ d') ++ Γ2) ⨟ Ψ ⊢ᵤₛ R.
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 x0 d0 d0' Γ2 Heq Hdd; subst.
   - apply d_wf_uskl__unit.
@@ -1802,7 +1802,7 @@ Qed.
     Mirrors the [binding_eq] cascade; var cases via [ghost_rel_binds_tvar],
     Γ-growing cofinite cases via [gr_keep]. *)
 Lemma d_wf_pskl_ghost_rel : forall Ψ Γt P,
-    Ψ ⨟ Γt ⊢ₚₛ P -> forall Γp, ghost_rel Γp Γt -> Ψ ⨟ Γp ⊢ₚₛ P.
+    Γt ⨟ Ψ ⊢ₚₛ P -> forall Γp, ghost_rel Γp Γt -> Γp ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Ψ Γt P H. induction H; intros Γp Hgr.
   - apply d_wf_pskl__unit.
@@ -1826,7 +1826,7 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_ghost_rel : forall Ψ Γt R,
-    Ψ ⨟ Γt ⊢ᵤₛ R -> forall Γp, ghost_rel Γp Γt -> Ψ ⨟ Γp ⊢ᵤₛ R.
+    Γt ⨟ Ψ ⊢ᵤₛ R -> forall Γp, ghost_rel Γp Γt -> Γp ⨟ Ψ ⊢ᵤₛ R.
 Proof.
   intros Ψ Γt R H. induction H; intros Γp Hgr.
   - apply d_wf_uskl__unit.
@@ -1910,9 +1910,9 @@ Qed.
     after splicing [y~d] into the middle).  Backbone of [d_pat_rename_var], itself
     needed for [d_pat__abs_check]'s cofinite-uniform witness in [d_pat_total]. *)
 Lemma d_wf_pskl_rename_var : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Ψ ⊢ₚₛ P ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
-    Ψ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢ₚₛ P.
+    (Γ1 ++ (y ~ d) ++ Γ2) ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd; subst.
   - apply d_wf_pskl__unit.
@@ -1939,9 +1939,9 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_rename_var : forall Ψ Γ R,
-    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    Γ ⨟ Ψ ⊢ᵤₛ R ->
     forall Γ1 x y d Γ2, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
-    Ψ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢ᵤₛ R.
+    (Γ1 ++ (y ~ d) ++ Γ2) ⨟ Ψ ⊢ᵤₛ R.
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 x0 y0 d0 Γ2 Heq Hd; subst.
   - apply d_wf_uskl__unit.
@@ -2237,10 +2237,10 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_strengthen : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Ψ ⊢ₚₛ P ->
     forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
     X `notin` ftvar_in_pskl P ->
-    Ψ ⨟ (Γ1 ++ Γ2) ⊢ₚₛ P.
+    (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
   - apply d_wf_pskl__unit.
@@ -2256,10 +2256,10 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_strengthen : forall Ψ Γ R,
-    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    Γ ⨟ Ψ ⊢ᵤₛ R ->
     forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
     X `notin` ftvar_in_uskl R ->
-    Ψ ⨟ (Γ1 ++ Γ2) ⊢ᵤₛ R.
+    (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ R.
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
   - apply d_wf_uskl__unit.
@@ -2459,9 +2459,9 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_subst_unit : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Ψ ⊢ₚₛ P ->
     forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
-    Ψ ⨟ (Γ1 ++ Γ2) ⊢ₚₛ (subst_pskl_in_pskl pskl_unit X P).
+    (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ (subst_pskl_in_pskl pskl_unit X P).
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_wf_pskl__unit.
@@ -2480,9 +2480,9 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
-    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    Γ ⨟ Ψ ⊢ᵤₛ R ->
     forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
-    Ψ ⨟ (Γ1 ++ Γ2) ⊢ᵤₛ (subst_bskl_in_uskl uskl_unit X R).
+    (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_bskl_in_uskl uskl_unit X R).
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_wf_uskl__unit.

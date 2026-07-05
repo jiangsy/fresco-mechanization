@@ -156,10 +156,10 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_rename_tvar : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Ψ ⊢ₚₛ P ->
     forall Γ1 Γ2 X0 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
     Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-    Ψ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ₚₛ (subst_pskl_in_pskl (pskl_var_f Y) X0 P).
+    (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⨟ Ψ ⊢ₚₛ (subst_pskl_in_pskl (pskl_var_f Y) X0 P).
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
   - apply d_wf_pskl__unit.
@@ -351,10 +351,10 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_rename_tvar : forall Ψ Γ R,
-    Ψ ⨟ Γ ⊢ᵤₛ R ->
+    Γ ⨟ Ψ ⊢ᵤₛ R ->
     forall Γ1 Γ2 X0 Y, Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
     Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-    Ψ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ᵤₛ (subst_bskl_in_uskl (uskl_var_f Y) X0 R).
+    (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_bskl_in_uskl (uskl_var_f Y) X0 R).
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst.
   - apply d_wf_uskl__unit.
@@ -530,7 +530,7 @@ Qed.
 
 (** Well-formed skeleton scoping ([ptyp] analogue [d_wf_ptyp_ftvar]). *)
 Lemma d_wf_pskl_ftvar : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Ψ ⊢ₚₛ P ->
     forall X, X `in` ftvar_in_pskl P -> List.In X Ψ \/ binds X dbind_tvar Γ.
 Proof.
   intros Ψ Γ P H. induction H; intros Y HY; simpl in HY.
@@ -606,7 +606,7 @@ Proof.
               [X→W] subst on the target is the identity and [dbr_typ_skl] applies. *)
            assert (HXAA : X `notin` ftvar_in_ptyp AA).
            { intro Hin. rewrite <- ftvar_ptyp_to_pskl in Hin.
-             assert (Hwfp : d_wf_pskl nil Γ'c (ptyp_to_pskl AA))
+             assert (Hwfp : d_wf_pskl Γ'c nil (ptyp_to_pskl AA))
                by (inversion Hwf; subst; assumption).
              apply (d_wf_pskl_ftvar Hwfp) in Hin.
              destruct Hin as [ Himp | Hb ];
@@ -660,8 +660,8 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_relabel_var : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P -> forall y xt, y `notin` ftvar_in_pskl P ->
-    Ψ ⨟ (rename_var_denv y xt Γ) ⊢ₚₛ P.
+    Γ ⨟ Ψ ⊢ₚₛ P -> forall y xt, y `notin` ftvar_in_pskl P ->
+    (rename_var_denv y xt Γ) ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros y0 xt Hy; simpl in Hy.
   - apply d_wf_pskl__unit.
@@ -1051,7 +1051,7 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_strengthen_nontvar : forall Γ1 x d Γ2 Ψ P,
-    d <> dbind_tvar -> Ψ ⨟ (Γ1 ++ (x ~ d) ++ Γ2) ⊢ₚₛ P -> Ψ ⨟ (Γ1 ++ Γ2) ⊢ₚₛ P.
+    d <> dbind_tvar -> (Γ1 ++ (x ~ d) ++ Γ2) ⨟ Ψ ⊢ₚₛ P -> (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Γ1 x d Γ2 Ψ P Hd H. remember (Γ1 ++ (x ~ d) ++ Γ2) as Γ eqn:HΓ.
   revert Γ1 HΓ. induction H; intros Γ1 HΓ; subst.
@@ -1089,7 +1089,7 @@ Qed.
     inference context [Γext]).  Both judgements read [Γ] only through TVAR
     lookups, which [ctx_refines] preserves ([ctx_refines_binds_tvar]). *)
 Lemma d_wf_pskl_ctx_refines : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P -> forall Γ', ctx_refines Γ' Γ -> Ψ ⨟ Γ' ⊢ₚₛ P.
+    Γ ⨟ Ψ ⊢ₚₛ P -> forall Γ', ctx_refines Γ' Γ -> Γ' ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ' Hcr.
   - apply d_wf_pskl__unit.
@@ -1688,7 +1688,7 @@ Qed.
 Lemma d_wf_uskl_syn_erase : forall C, lc_utyp C ->
     forall Ψ Γ,
       (forall X, X `in` ftvar_in_utyp C -> List.In X Ψ \/ binds X dbind_tvar Γ) ->
-      Ψ ⨟ Γ ⊢ᵤₛ (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl C))).
+      Γ ⨟ Ψ ⊢ᵤₛ (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl C))).
 Proof.
   intros C Hlc. induction Hlc; intros Ψ Γ Hcov; simpl.
   - apply d_wf_uskl__unit.
@@ -2059,7 +2059,7 @@ Proof. induction P; simpl; congruence. Qed.
     The driving [uskl_hole ⊑ inh{P0}] is then one [d_pat_sub__ghost]. *)
 Lemma safe_skel_hole_fill : forall m Γ B,
     mod_comp_ty B m -> d_wf_btyp Γ B ->
-    exists P0, nil ⨟ Γ ⊢ₚₛ P0 /\ safe_skel m (pskl_to_bskl_inh P0) B.
+    exists P0, Γ ⨟ nil ⊢ₚₛ P0 /\ safe_skel m (pskl_to_bskl_inh P0) B.
 Proof.
   intros m Γ B Hsk. induction Hsk; intros HwfB.
   - (* ti: is_styp B — paint the whole skeleton (erasure matches) *)
@@ -2743,7 +2743,7 @@ Proof.
   split; intros z T Hb.
   - assert (Hwfd : d_wf_ptyp Γb T) by (eapply d_wf_denv_binds_typ; [ exact HwfΓb | exact Hb ]).
     intro Hin. apply (d_wf_ptyp_ftvar Hwfd) in Hin. apply binds_In in Hin. contradiction.
-  - assert (Hwfd : nil ⨟ Γb ⊢ₚₛ T) by (eapply d_wf_denv_binds_skl; [ exact HwfΓb | exact Hb ]).
+  - assert (Hwfd : Γb ⨟ nil ⊢ₚₛ T) by (eapply d_wf_denv_binds_skl; [ exact HwfΓb | exact Hb ]).
     intro Hin. apply (d_wf_pskl_ftvar Hwfd) in Hin. destruct Hin as [ HImp | Hbtv ];
       [ inversion HImp | apply binds_In in Hbtv; contradiction ].
 Qed.
@@ -3142,7 +3142,7 @@ Proof.
          so the raw body typing IS the required painting derivation. *)
       assert (HpA : Γ ⊢ₚ A) by assumption.
       assert (HskB : mod_comp_ty B m0) by (match goal with Hsk : mod_comp_ty _ (mode_fn _) |- _ => inversion Hsk; assumption end).
-      assert (HwfPA : nil ⨟ Γ' ⊢ₚₛ (ptyp_to_pskl A)).
+      assert (HwfPA : Γ' ⨟ nil ⊢ₚₛ (ptyp_to_pskl A)).
       { apply d_wf_pskl_of_ptyp;
           [ eapply d_wf_ptyp_lc; eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ]
           | intros X HX; right;

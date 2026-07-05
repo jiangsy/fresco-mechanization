@@ -31,7 +31,7 @@ Inductive d_wf_denv : list (atom * dbind) -> Prop :=
 | d_wf_denv__skl : forall Γ x P,
     d_wf_denv Γ ->
     x `notin` dom Γ ->
-    d_wf_pskl nil Γ P ->
+    d_wf_pskl Γ nil P ->
     d_wf_denv ((x ~ dbind_skl P) ++ Γ).
 
 
@@ -79,9 +79,9 @@ Qed.
     [d_refine_preserves_wf] to bridge a premise whose cleared context
     yields a [Ψ ⊆] the one the conclusion needs. *)
 Lemma d_wf_pskl_Psi_mono : forall Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P ->
+    Γ ⨟ Ψ ⊢ₚₛ P ->
     forall Ψ', (forall X, List.In X Ψ -> List.In X Ψ') ->
-    Ψ' ⨟ Γ ⊢ₚₛ P.
+    Γ ⨟ Ψ' ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros Ψ' Hmono.
   - constructor.
@@ -94,8 +94,8 @@ Proof.
 Qed.
 
 Lemma d_wf_pskl_weakening : forall Γ1 Γ2 Γ3 Ψ P,
-    Ψ ⨟ (Γ1 ++ Γ3) ⊢ₚₛ P ->
-    Ψ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₚₛ P.
+    (Γ1 ++ Γ3) ⨟ Ψ ⊢ₚₛ P ->
+    (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Γ1 Γ2 Γ3 Ψ P H. dependent induction H.
   - constructor.
@@ -112,8 +112,8 @@ Proof.
 Qed.
 
 Lemma d_wf_uskl_weakening : forall Γ1 Γ2 Γ3 Ψ R,
-    Ψ ⨟ (Γ1 ++ Γ3) ⊢ᵤₛ R ->
-    Ψ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ᵤₛ R.
+    (Γ1 ++ Γ3) ⨟ Ψ ⊢ᵤₛ R ->
+    (Γ1 ++ Γ2 ++ Γ3) ⨟ Ψ ⊢ᵤₛ R.
 Proof.
   intros Γ1 Γ2 Γ3 Ψ R H. dependent induction H.
   - constructor.
@@ -221,7 +221,7 @@ Lemma d_wf_ptyp_cons : forall x d Γ A,
 Proof. intros. apply (d_wf_ptyp_weakening nil (x ~ d) Γ). simpl. auto. Qed.
 
 Lemma d_wf_pskl_cons : forall x d Ψ Γ P,
-    Ψ ⨟ Γ ⊢ₚₛ P -> Ψ ⨟ ((x ~ d) ++ Γ) ⊢ₚₛ P.
+    Γ ⨟ Ψ ⊢ₚₛ P -> ((x ~ d) ++ Γ) ⨟ Ψ ⊢ₚₛ P.
 Proof. intros. apply (d_wf_pskl_weakening nil (x ~ d) Γ). simpl. auto. Qed.
 
 (** Bindings recorded in a well-formed context are well-formed there (the
@@ -236,7 +236,7 @@ Proof.
 Qed.
 
 Lemma d_wf_denv_binds_skl : forall x P Γ,
-    d_wf_denv Γ -> binds x (dbind_skl P) Γ -> nil ⨟ Γ ⊢ₚₛ P.
+    d_wf_denv Γ -> binds x (dbind_skl P) Γ -> Γ ⨟ nil ⊢ₚₛ P.
 Proof.
   intros x P Γ Hwf. induction Hwf; intros Hb; try solve [ inversion Hb ];
     analyze_binds Hb;
@@ -754,6 +754,6 @@ Qed.
 
 Lemma d_typing_pat_preserves_wf :
   (forall m Γ e B, d_typing m Γ e B -> d_wf_btyp Γ B) /\
-  (forall m Γ e Q, d_pat m Γ e Q -> d_wf_pskl nil Γ Q).
+  (forall m Γ e Q, d_pat m Γ e Q -> d_wf_pskl Γ nil Q).
 Proof.
 Admitted.
