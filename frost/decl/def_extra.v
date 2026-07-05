@@ -118,6 +118,12 @@ Inductive d_wf_utyp : list (atom * dbind) -> utyp -> Prop :=
     Γ ⊢ᵤ (utyp_all_etag ε C)
 where "Γ ⊢ᵤ C" := (d_wf_utyp Γ C) : type_scope.
 
+(* Check failed,
+     critical mismatches
+         (1) d_wf_pskl__var, where paper can only use vars in Γ
+         (2) d_wf_pskl__all, where paper extends both Ψ and Γ with X
+         (3) d_wf_pskl__tophole, where paper use Γ \ Ψ *)
+(* Todo : rename Ψ to Δ and change notation to Γ | Δ ⊢ ...  *)
 Inductive d_wf_pskl : list atom -> list (atom * dbind) -> pskl -> Prop :=
 | d_wf_pskl__unit : forall Ψ Γ,
     Ψ ⨟ Γ ⊢ₚₛ pskl_unit
@@ -140,18 +146,14 @@ Inductive d_wf_pskl : list atom -> list (atom * dbind) -> pskl -> Prop :=
        ARBITRARY [Ψ] — matching [d_wf_uskl__tophole].  (The old [nil]
        conclusion wrongly rejected [∀α.⫯.P].) *)
     guarded_pskl P ->
+    (* Cirt *)
     nil ⨟ Γ ⊢ₚₛ P ->
     Ψ ⨟ Γ ⊢ₚₛ (pskl_tophole P)
 where "Ψ ⨟ Γ ⊢ₚₛ P" := (d_wf_pskl Ψ Γ P) : type_scope.
 
-(* WT: With d_tags_skl defined blow, we should remove Δ here but add Ψ
-as in d_wf_pskl.
+(* Todo: critical why we don't have a d_wf_bskl, and where is d_wf_pskl used? *)
 
-Done (WT review): the tag context is dropped; the first context is now
-the skeleton-scope context [Ψ] (type variables bound by ∀ *within* the
-skeleton), exactly as in [d_wf_pskl] — [Ψ] is cleared at every
-[uskl_tophole], and the var rule consults [Ψ] or [Γ].  Linear tag
-content is checked separately by [d_tags_skl] below. *)
+(* Check failed, same set of problems as d_wf_pskl *)
 Inductive d_wf_uskl : list atom -> list (atom * dbind) -> uskl -> Prop :=
 | d_wf_uskl__unit : forall Ψ Γ,
     Ψ ⨟ Γ ⊢ᵤₛ uskl_unit
@@ -178,7 +180,6 @@ Inductive d_wf_uskl : list atom -> list (atom * dbind) -> uskl -> Prop :=
     guarded_uskl R ->
     nil ⨟ Γ ⊢ᵤₛ R ->
     Ψ ⨟ Γ ⊢ᵤₛ (uskl_tophole R)
-(* Dotted ghosts: same well-formedness as the plain Hole / TopHole. *)
 | d_wf_uskl__holeg : forall Ψ Γ,
     Ψ ⨟ Γ ⊢ᵤₛ uskl_holeg
 | d_wf_uskl__topholeg : forall Ψ Γ ε R,
@@ -198,17 +199,7 @@ where "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R) : type_scope.
 (*  type context. *)
 (* ===================================================================== *)
 
-(** Tag context is a SET ([atoms]), matching the paper ("a tag context Ψ
-    is a set of tags", declarative.tex:799).  The paper's disjoint union
-    [Ψ⊎Ψ'] (declarative.tex:826, the linear [tags] relation) is set union
-    with a disjointness side-condition; the plain [Ψ,Ψ'] elsewhere is plain
-    set union.  This is what makes [d_sub]'s [forall_l] reconstruct work:
-    a set can be recovered by difference, an ordered list cannot. *)
-(** Context-building rules carry their output set [Δ] up to set-equality
-    [=], so the relation ranges over set-equivalence classes (Coq's [atoms]
-    is not extensional: [empty] and [empty ∪ empty] are [=] but not
-    convertible).  This makes the morphism [Δ [=] Δ' → … Δ … → … Δ' …]
-    provable while keeping inversions one-case-per-type. *)
+(* Check fully passed *)
 Inductive d_tags : atoms -> utyp -> Prop :=
 | d_tags__unit : forall Δ,
     Δ [=] empty ->
@@ -232,6 +223,10 @@ Inductive d_tags : atoms -> utyp -> Prop :=
 (** Skeleton analog [tags{Δ}{ψ}] (declarative.tex, skeleton subtyping).
     Same as [d_tags] plus the two ghost cases: a [hole] carries no tags,
     and a universal ghost [⫯ψ] carries exactly the tags of its body. *)
+(* Check partially passed. in paper, d_tags_skl is only defined for tskl, 
+    i think we can remove some cases, 
+    for example, d_tags_skl__all_syn, d_tags_skl__hole, d_tags_skl__tophole
+    but it shall be fine to have them *)
 Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__unit : forall Δ, Δ [=] empty -> d_tags_skl Δ uskl_unit
 | d_tags_skl__var : forall Δ X, Δ [=] empty -> d_tags_skl Δ (uskl_var_f X)
@@ -260,7 +255,9 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
 (* Tagged ghosts (declarative.tex:1698,1704): HoleG carries no tags;
    TopHoletag{ε}.ψ adds its own ε on top of the tags of its body —
    [tags{Ψ⊎{ε}}{TopHoletag{ε}.ψ}], exactly mirroring [all_etag]. *)
-| d_tags_skl__holeg : forall Δ, Δ [=] empty -> d_tags_skl Δ uskl_holeg
+| d_tags_skl__holeg : forall Δ, 
+    Δ [=] empty -> 
+    d_tags_skl Δ uskl_holeg
 | d_tags_skl__topholeg : forall Δ Δ0 ε R,
     d_tags_skl Δ0 R ->
     ε `notin` Δ0 ->
@@ -271,6 +268,7 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
 (*  Type consistency and subtyping                                        *)
 (* ===================================================================== *)
 
+(* Check fully passed *)
 Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
 | d_consis__unit : forall Ψ Γ,
     Ψ [=] empty ->
@@ -319,6 +317,7 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
     Ψ ⨟ Γ ⊨ (utyp_all_syn C) ≈ (btyp_all_syn B)
 where "Ψ ⨟ Γ ⊨ C ≈ B" := (d_consis Ψ Γ C B) : type_scope.
 
+(* Check fully passed *)
 Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
 | d_sub__infer : forall Ψ Γ C B,
     empty ⨟ Γ ⊨ C ≈ B ->
@@ -339,6 +338,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
        Ψ ⨟ ((X ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⊑
          (open_btyp_wrt_btyp B (btyp_var_f X))) ->
     Ψ ⨟ Γ ⊢[ mode_tc ] C ⊑ (btyp_all_inh B)
+(* Todo: rename d_sub__arg to d_sub__arrow *)
 | d_sub__arg : forall Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
     Ψ1 ⨟ Γ ⊨ C1 ≈ B1 ->
     Ψ2 ⨟ Γ ⊢[ m ] C2 ⊑ B2 ->
@@ -356,26 +356,12 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     m <> mode_ti ->
     AtomSetImpl.inter Ψ' Ψ [=] empty ->
     d_tags Ψ' ph ->
-    Γ ⊢ᵤ ph ->   (* WT: no Ψ' *)
+    Γ ⊢ᵤ ph ->
     is_ttyp ph ->
     (Ψ `union` Ψ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⊑ B ->
     Ψ ⨟ Γ ⊢[ m ] (utyp_all_syn C) ⊑ B
 where "Ψ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Ψ Γ C B) : type_scope.
 
-(* [d_shallow_sub] — the PAPER's shallow polymorphic subtyping relation
-   [Γ ⊢ A ≤ B] (declarative.tex), restricted to MONOTYPE instantiation
-   (Bruno's margin note).  This is the COMPLETENESS target for the check-mode
-   subtyping [⊑]:  [Γ ⊢ A ≤ B  →  ∅ ⨟ Γ ⊢[mode_tc] syn{A} ⊑ inh{B}].
-
-   Exactly the paper's rules: [refl] (the [≡]/α-equivalence base — in this
-   locally-nameless encoding α-equivalence is syntactic equality, so it is
-   reflexivity at a well-formed type), [forall_r] (prenex skolemisation,
-   [≤∀R]), and [forall_l] ([≤∀L]; the paper guesses an arbitrary type, the
-   monotype restriction here is Bruno's completeness variant).  As in the
-   paper there is NO arrow rule: the relation only instantiates / skolemises
-   top-level quantifiers, with α-equivalence at the matrix — and at [mode_tc]
-   the [⊑] arrow rule [SubCheck] is precisely consistency = structural
-   identity, already covered by [refl]. *)
 Reserved Notation "Γ ⊢ A ≤ B"
   (at level 75, A at level 74, B at level 74, no associativity).
 Inductive d_shallow_sub : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
@@ -397,31 +383,8 @@ where "Γ ⊢ A ≤ B" := (d_shallow_sub Γ A B) : type_scope.
 (*  Skeleton refinement, consistency, and subtyping                       *)
 (* ===================================================================== *)
 
-(* Output is [bskl] (bidirectional), not [pskl]: the paper's refinement
-   produces bidirectional skeletons [bid{Q}], e.g. the ∀-rule outputs an
-   inherited [inh{∀α.}bid{Q}] (declarative.tex), which [pskl] (which has
-   only [pskl_all_syn]) cannot express.  Filling a ghost [□] still yields
-   a synthesised skeleton, encoded as a [pskl] coerced via
-   [pskl_to_bskl_syn]. *)
-(* Two skeleton-scope contexts beyond the existing tvar context [Γ]:
-     - [Δs] : tvars bound by *synthesised* quantifiers seen so far in the
-              skeleton (those introduced by filling a universal ghost
-              [TopHole] with a concrete [∀^syn]);
-     - [Δi] : tvars bound by *inherited* quantifiers ([∀^inh]) seen so far.
-   The two are tracked separately because they have different scope
-   discipline (see the [Hole] / [TopHole] rules below).  Earlier this
-   was a single context [Ψ] plus dumping the syn-quantifier var into
-   [Γ]; that let an inner body refer to an *outside* syn quantifier
-   (e.g. refining [⫯.(□→unit)] to [∀^syn α.⫯.(α→unit)], which is NOT
-   [d_wf_pskl]), breaking [d_refine_preserves_wf].  Clearing-profile:
-     | context  | as var occ. | fills [Hole] | survives [TopHole] |
-     | Γ         |     ✓       |      ✓       |        ✓           |
-     | Δs (syn)  |     ✓       |      ✓       |        ✗           |
-     | Δi (inh)  |     ✓       |      ✗       |        ✗           | *)
-(** Paper [declarative.tex, 0dd3488 "update refinement"]: the refinement now has
-    a SINGLE context [Δ] (the INHERITED ∀-vars).  Synthesised ∀-vars (from
-    [tophole_fill]) live in [Γ].  [Γ ∣ Δ ⊢ inh{P} ⤳ bid{Q}].  Well-formedness of
-    both sides is a SEPARATE precondition (the old D4 "preserves wf" is gone). *)
+(* Check failed! critical mismatch in almost all rules *)
+(* Todo: we should not use P for RHS in all the rules, P is reserverd for pskl, but RHS is also a bskl here *)
 Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Prop :=
 | d_refine_syn__unit : forall Γ Δ,
     Γ ⨟ Δ ⊢ᵣ bskl_unit ⊳ bskl_unit
@@ -430,11 +393,13 @@ Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Pro
     List.In X Δ \/ binds X dbind_tvar Γ ->
     Γ ⨟ Δ ⊢ᵣ (bskl_var_f X) ⊳ (bskl_var_f X)
 | d_refine_syn__arrow : forall Γ Δ Q1 Q2 P1 P2,
+    (* Critical: Q1 -> Q2 is full inh *)
     Γ ⨟ Δ ⊢ᵣ Q1 ⊳ P1 ->
     Γ ⨟ Δ ⊢ᵣ Q2 ⊳ P2 ->
     Γ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2)
 | d_refine_syn__all : forall L Γ Δ Q P,
     (* Inherited ∀: the bound var joins [Δ]. *)
+    (* Critical: Q is full inh, not just the top-level binder! *)
     (forall X, X `notin` L ->
        Γ ⨟ (X :: Δ) ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f X)) ⊳
@@ -443,37 +408,28 @@ Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Pro
 | d_refine_syn__hole : forall Γ Δ P,
     (* [□ ⤳ syn{Q}]: the fill is well-formed under [Γ] alone (synthesised vars
        are in [Γ]); [Δ] is cleared so inherited vars cannot fill ghosts. *)
+    (* Critical: Missing the ftv condition! *)
     nil ⨟ Γ ⊢ₚₛ P ->
     Γ ⨟ Δ ⊢ᵣ bskl_hole ⊳ (pskl_to_bskl_syn P)
 | d_refine_syn__tophole_remove : forall Γ Δ Q P,
     (* [⫯.inh{P} ⤳ bid{Q}]: remove the universal ghost; keep [Δ]. *)
+    (* Critical: Q is inh! *)
     Γ ⨟ Δ ⊢ᵣ Q ⊳ P ->
     Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ P
 | d_refine_syn__tophole_fill : forall L Γ Δ Q P,
-    (* [⫯.inh{P} ⤳ syn{∀α.}bid{Q}]: fill the ghost with a synthesised quantifier;
-       α is added to [Γ] (usable when filling ghosts), keep [Δ]. *)
+    (* Critical: Q is inh! *)
     (forall X, X `notin` L ->
        ((X ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣ
          (bskl_tophole Q) ⊳ (open_bskl_wrt_bskl P (bskl_var_f X))) ->
     Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_all_syn P)
 | d_refine_syn__tophole_keep : forall Γ Δ Q P,
-    (* [⫯.inh{P} ⤳ ⫯.bid{Q}]: keep the universal ghost; [Q] guarded; keep [Δ]. *)
+    (* Critical: Q is inh! *)
     guarded_bskl P ->
     Γ ⨟ Δ ⊢ᵣ Q ⊳ P ->
     Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P)
 where "Γ ⨟ Δ ⊢ᵣ Q ⊳ P" := (d_refine_syn Γ Δ Q P) : type_scope.
 
-(* The latest paper keeps only the coloured refinement relation
-   [Γ ⊢ inh{P} ◁syn bid{Q}] (the uncoloured [◁] is just its colour
-   erasure).  The former uncoloured [d_refine] ([▸]) is therefore
-   dropped; [d_refine_syn] ([⊳]) above is the single refinement
-   relation.  (declarative.tex, "only keep the coloured refinement
-   relation".) *)
-(* WT: In the lastest draft I mentioned the uncoloured version is
-defined by ignoring colours. I used the uncoloured version when
-defining valid and safe skeletons. I would need to spend more time on
-these definitions, so we can ignore it for now. *)
-
+(* Check mostly passed, one mismatch identified, but mostly paper duplication *)
 Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_consis__unit : forall Δ Γ,
     Δ [=] empty ->
@@ -485,7 +441,6 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_consis__arrow : forall Δ Δ1 Δ2 Γ R1 R2 Q1 Q2,
     Δ1 ⨟ Γ ⊨ₛ R1 ≈ Q1 ->
     Δ2 ⨟ Γ ⊨ₛ R2 ≈ Q2 ->
-    (* tag contexts combine by (non-disjoint) set union (WT review). *)
     Δ [=] Δ1 `union` Δ2 ->
     Δ ⨟ Γ ⊨ₛ (uskl_arrow R1 R2) ≈ (bskl_arrow Q1 Q2)
 | d_pat_consis__forall_inh_tagged : forall L Δ Δ0 Γ ε R Q,
@@ -527,9 +482,6 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     Δ ⨟ Γ ⊨ₛ (uskl_topholeg ε R) ≈ (bskl_tophole Q)
 | d_pat_consis__hole : forall Δ Γ P,
     Δ [=] empty ->
-    (* Paper [Ghost]: a [Hole] matches any *inherited* skeleton [inh{P}]
-       (WT: "RHS should just be P?" — the RHS is the inherited painting
-       of the pattern skeleton, not the synthesised one). *)
     d_wf_pskl nil Γ P ->
     Δ ⨟ Γ ⊨ₛ uskl_hole ≈ (pskl_to_bskl_inh P)
 | d_pat_consis__tophole : forall Δ Γ R Q,
@@ -551,20 +503,8 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     Δ ⨟ Γ ⊨ₛ (uskl_tophole R) ≈ Q
 where "Δ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Δ Γ R Q) : type_scope.
 
-(* Reworked (WT review) against the current paper looksub figure
-   (declarative.tex, [patsub]).  [d_pat_sub] is used only as a premise of
-   [d_pat__sub] (the Sub rule of skeleton inference, paper [Sub] in
-   fig:decl-skeleton-inference).  No proof reasons about its *content*
-   (how skeleton subtyping behaves); the only consumer is the structural
-   [d_pat_sub_weakening], reached transitively from D1's [app] case via
-   [d_pat_ctx_weaken].  Its content-level consumers — Validity / Safety of
-   skeleton inference ([d_pat_validity] / [d_pat_safety]) — are still open.
-   The tagged-ghost constructors
-   ([uskl_holeg]/[uskl_topholeg]) are now in the AST ([uskl] only — the
-   paper's unresolved skeleton [S], declarative.tex:1638), so the paper
-   rules [GhostG] ([HoleG ⊑ Hole]) and [UnivGhostL] ([TopHoletag{δ}.S ⊑ P])
-   are encoded below (and the matching consistency rules [GhostG]/
-   [UnivGhostG] on [d_pat_consis]). *)
+(* Check failed, one missing case *)
+(* Todo: replace Δ by Ψ *)
 Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_sub__infer : forall Δ Γ R Q,
     (* Paper [Infer]: synthesise by consistency, dropping tags. *)
@@ -577,6 +517,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        the checking rule produces a [TopHole] on the RHS, requires BOTH
        [R] and the synthesised body [Q] guarded, and [Q] synthesised
        ([is_sskl]) — answering WT's "shouldn't Q be synthesised?". *)
+    (* Todo: lift Δ quantification above *)
     forall Δ,
     Δ [=] empty ->
     guarded_uskl R ->
@@ -610,6 +551,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_all_syn R) ⊑ Q
 | d_pat_sub__ghost : forall m Γ P,
     (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}]. *)
+    (* Todo: lift Δ quantification above *)
     forall Δ, Δ [=] empty ->
     d_wf_pskl nil Γ P ->
     Δ ⨟ Γ ⊢ₛ[ m ] uskl_hole ⊑ (pskl_to_bskl_inh P)
@@ -629,6 +571,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     m <> mode_ti ->
     Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
     Δ ⨟ Γ ⊢ₛ[ m ] (uskl_topholeg ε R) ⊑ Q
+(* Todo: critical mismatch, UnivGhostL case when delta is empty is missing, i.e., LHS is usk_tophole R *)
 where "Δ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Δ Γ R Q) : type_scope.
 
 (* ===================================================================== *)
@@ -650,14 +593,16 @@ Reserved Notation "Γ ⊢ˢ[ M ] e ⦂ A"
 (** Skeleton inference [d_pat] ([⇨]) is SELF-CONTAINED — no [d_typing] premises
     (the paper's P-App infers the function, declarative.tex:1560) — so it is
     defined standalone, BEFORE [d_typing], rather than mutually. *)
+(* Check fully passed *)
+(* Todo : check if d_pat has skmod_sk satisfied, and i think we didn't even have skmod_sk defined *)
 Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__unit : forall Γ,
     Γ ⊢[ mode_ti ] exp_unit ⇨ bskl_unit
-| d_pat__var : forall Γ x P d,
+| d_pat__var : forall Γ x (P : pskl) d,
     binds x d Γ ->
     dbind_to_pskl d = Some P ->
     Γ ⊢[ mode_ti ] (exp_var_f x) ⇨ (pskl_to_bskl_syn P)
-| d_pat__anno : forall Γ e A,
+| d_pat__anno : forall Γ e (A : ptyp),
     Γ ⊢ₚ A ->
     Γ ⊢[ mode_ti ] (exp_anno e A) ⇨ (pskl_to_bskl_syn (ptyp_to_pskl A))
 | d_pat__sub : forall Γ m e P Q,
@@ -708,6 +653,7 @@ where "Γ ⊢[ M ] e ⇨ P" := (d_pat M Γ e P) : type_scope.
 
 (** Typing [d_typing] ([⦂]) uses [d_pat] in [App] (it infers the argument's
     skeleton), so it is defined after [d_pat]. *)
+(* Check fully passed *)
 Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_typing__unit : forall Γ,
     Γ ⊢[ mode_ti ] exp_unit ⦂ btyp_unit
@@ -719,6 +665,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     Γ ⊢[ mode_ti ] (exp_anno e A) ⦂ (ptyp_to_btyp_syn A)
 | d_typing__sub : forall Γ m e A B,
     is_base_term e ->
+    (* Todo: not urgent, replace A with btyp B1 and use is_styp B1 *)
     Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
     empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
     Γ ⊢[ m ] e ⦂ B
@@ -772,27 +719,6 @@ where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope.
 (* ===================================================================== *)
 (*  Syntax-directed declarative typing  (paper Fig. syntax-directed)      *)
 (* ===================================================================== *)
-
-(** The syntax-directed system [d_sd_typing] is the paper's [sdtylab]: it folds
-    the standalone type-abstraction rule [dtylab{Forall}] into the lambda
-    rules.  Concretely [sdtylab{AbsCheck}] / [sdtylab{AbsAnnoCheck}] type a
-    checked lambda directly at a polymorphic function type
-    [inh{∀ᾱ.}inh{A} → inh{B}], consuming the whole [∀ᾱ] prefix at once; there
-    is no free-standing [Forall] rule.
-
-    The [∀ᾱ] telescope is encoded by two auxiliary judgments [sd_poly_abs]
-    (for [λx.M]) and [sd_poly_abs_anno] (for [λxᴬ.M]), each mutually defined
-    with [d_sd_typing]: a [__step] peels one inherited [∀] (binding a fresh tvar,
-    paper's [ᾱ]) and a [__base] is the [ᾱ = ·] arrow whose body checks.  This
-    is exactly "[Forall] repeated, then [Abs]/[AbsAnno]" — the relationship the
-    soundness/completeness proofs make precise.
-
-    We keep [d_sd_typing]'s non-checking [Abs]/[AbsAnno] restricted to [M ≠ TC]
-    (paper [sdtylab{Abs}]/[sdtylab{AbsAnno}]); the [TC] lambda goes through the
-    [_check] rules.  Equivalence with the full declarative [d_typing] (which is
-    [dtylab]: general [Forall] + general [Abs], the latter mechanised as the
-    [abs] / [abs_check] mode split) is [d_sd_typing_sound] / [d_sd_typing_complete]
-    below. *)
 
 Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_sd_typing__unit : forall Γ,
@@ -878,12 +804,3 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     Γ ⊢ˢ[ mode_tc ] e2 ⦂ (ptyp_to_btyp_inh (btyp_to_ptyp B1)) ->
     Γ ⊢ˢ[ m ] (exp_app e1 e2) ⦂ B2
 where "Γ ⊢ˢ[ M ] e ⦂ A" := (d_sd_typing M Γ e A) : type_scope.
-
-(* WT: Other comments:
-1. In the paper I have \skmod[\N]{\M}{P} as well-formedness conditions
-for typing and skinfer judgements. I'm not sure if we want them to be
-part of the definitions, but we should at least prove that they are
-preserved. I mentioned this because in d_pat, some of the requirements
-of colours are not mentioned explicitly, but can be guaranteed from
-\skmod.
-*)
