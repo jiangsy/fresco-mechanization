@@ -275,13 +275,13 @@ Proof.
   - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
 Qed.
 
-Lemma skmod_ty_rename_tvar : forall B m X0 Y,
-    skmod_ty B m -> skmod_ty (subst_btyp_in_btyp (btyp_var_f Y) X0 B) m.
+Lemma mod_comp_ty_rename_tvar : forall B m X0 Y,
+    mod_comp_ty B m -> mod_comp_ty (subst_btyp_in_btyp (btyp_var_f Y) X0 B) m.
 Proof.
   intros B m X0 Y H. induction H.
-  - apply skmod_ty__ti. apply is_styp_rename_tvar. assumption.
-  - apply skmod_ty__tc. apply is_ityp_rename_tvar. assumption.
-  - simpl. apply skmod_ty__fn. assumption.
+  - apply mod_comp_ty__ti. apply is_styp_rename_tvar. assumption.
+  - apply mod_comp_ty__tc. apply is_ityp_rename_tvar. assumption.
+  - simpl. apply mod_comp_ty__fn. assumption.
 Qed.
 
 Lemma bskl_to_uskl_subst_var : forall Q X Y,
@@ -935,7 +935,7 @@ Proof.
       (A := subst_ptyp_in_ptyp (ptyp_var_f Y) X0 A) (B := subst_btyp_in_btyp (btyp_var_f Y) X0 B).
     + eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
     + rewrite <- ptyp_to_btyp_inh_subst_var.
-      apply skmod_ty_rename_tvar with (B := btyp_arrow (ptyp_to_btyp_inh A) B). assumption.
+      apply mod_comp_ty_rename_tvar with (B := btyp_arrow (ptyp_to_btyp_inh A) B). assumption.
     + intros z Hz.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
       rewrite_env (((z ~ subst_var_dbind X0 Y (dbind_typ A)) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
@@ -950,7 +950,7 @@ Proof.
       (B1 := subst_btyp_in_btyp (btyp_var_f Y) X0 B1) (B2 := subst_btyp_in_btyp (btyp_var_f Y) X0 B2).
     + eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
     + symmetry. apply btyp_to_ptyp_subst_var.
-    + apply skmod_ty_rename_tvar with (B := btyp_arrow B1 B2). assumption.
+    + apply mod_comp_ty_rename_tvar with (B := btyp_arrow B1 B2). assumption.
     + intros z Hz.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
       rewrite_env (((z ~ subst_var_dbind X0 Y (dbind_typ (btyp_to_ptyp B1))) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
@@ -2058,7 +2058,7 @@ Proof. induction P; simpl; congruence. Qed.
     (the bare ghost, filled by [d_refine_syn_hole_fills]), arrow at FN nodes.
     The driving [uskl_hole ⊑ inh{P0}] is then one [d_pat_sub__ghost]. *)
 Lemma safe_skel_hole_fill : forall m Γ B,
-    skmod_ty B m -> d_wf_btyp Γ B ->
+    mod_comp_ty B m -> d_wf_btyp Γ B ->
     exists P0, nil ⨟ Γ ⊢ₚₛ P0 /\ safe_skel m (pskl_to_bskl_inh P0) B.
 Proof.
   intros m Γ B Hsk. induction Hsk; intros HwfB.
@@ -2219,7 +2219,7 @@ Proof.
     + reflexivity.
   - (* abs : A'0 = arrow A (btyp_to_ptyp B) *)
     subst m. injection Hee as Hee'; subst e0.
-    match goal with Hsk : skmod_ty _ mode_tc |- _ =>
+    match goal with Hsk : mod_comp_ty _ mode_tc |- _ =>
       inversion Hsk as [ | ? Hia | ]; subst end.
     match goal with Hia : is_ityp (btyp_arrow _ _) |- _ =>
       inversion Hia as [ | | ? ? Hi1 Hi2 | ]; subst end.
@@ -2315,7 +2315,7 @@ Proof.
   - (* abs_anno : the ott encoding substitutes [A := btyp_to_ptyp B1], so after
        [subst Ann] the annotation is [btyp_to_ptyp B1] throughout. *)
     subst m. injection Hee as HeeA Hee_e. subst e0. subst Ann.
-    match goal with Hsk : skmod_ty _ mode_tc |- _ =>
+    match goal with Hsk : mod_comp_ty _ mode_tc |- _ =>
       inversion Hsk as [ | ? Hia | ]; subst end.
     match goal with Hia : is_ityp (btyp_arrow _ _) |- _ =>
       inversion Hia as [ | | ? ? Hi1 Hi2 | ]; subst end.
@@ -2468,7 +2468,7 @@ Proof.
         | rewrite Hpsk; apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ]
         | exact Hsc ].
     + (* refined: x : □ in Γ' — HOLE fill route *)
-      assert (Hskmod : skmod_ty B (mode_fn m0)) by (eapply d_sub_skmod; exact Hsub).
+      assert (Hskmod : mod_comp_ty B (mode_fn m0)) by (eapply d_sub_skmod; exact Hsub).
       destruct (safe_skel_hole_fill Hskmod HwfB') as [P0 [HwfP0 Hsafe0]].
       exists (pskl_to_bskl_inh P0). split; [ | exact Hsafe0 ].
       eapply d_pat__sub with (P := pskl_hole);
@@ -3138,10 +3138,10 @@ Proof.
          keeps its polymorphism-preserving [inh] domain — matching the
          algorithmic [a_pat__abs]/[a_split].  The codomain safety [safe_skel m0
          Qc B] comes straight from the body [gpat] at [fn], or (at [ti]/[tc])
-         from its coverage at the real body context — [skmod_ty B m0] paints [B]
+         from its coverage at the real body context — [mod_comp_ty B m0] paints [B]
          so the raw body typing IS the required painting derivation. *)
       assert (HpA : Γ ⊢ₚ A) by assumption.
-      assert (HskB : skmod_ty B m0) by (match goal with Hsk : skmod_ty _ (mode_fn _) |- _ => inversion Hsk; assumption end).
+      assert (HskB : mod_comp_ty B m0) by (match goal with Hsk : mod_comp_ty _ (mode_fn _) |- _ => inversion Hsk; assumption end).
       assert (HwfPA : nil ⨟ Γ' ⊢ₚₛ (ptyp_to_pskl A)).
       { apply d_wf_pskl_of_ptyp;
           [ eapply d_wf_ptyp_lc; eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ]
@@ -3207,7 +3207,7 @@ Proof.
     destruct m as [ | | m0 ].
     + (* ti: SYNTHESISE [bskl_arrow (btyp_to_bskl B1) Qb]; [is_styp] forces
          [B1 = syn A]. *)
-      match goal with Hsk : skmod_ty _ mode_ti |- _ =>
+      match goal with Hsk : mod_comp_ty _ mode_ti |- _ =>
         inversion Hsk as [ ? Hsty | | ] end.
       assert (HB1 : B1 = ptyp_to_btyp_syn A)
         by (rewrite <- H0; symmetry; apply ptyp_to_btyp_syn_btyp_to_ptyp;
@@ -3298,8 +3298,8 @@ Proof.
          annotation's own domain skeleton [btyp_to_bskl B1] — which is [skel_safe]
          for [B1].  Codomain safety from the body [gpat] as in the [abs] case. *)
       assert (HpA : Γ ⊢ₚ A) by assumption.
-      assert (HskB2 : skmod_ty B2 m0)
-        by (match goal with Hsk : skmod_ty (btyp_arrow B1 B2) (mode_fn _) |- _ =>
+      assert (HskB2 : mod_comp_ty B2 m0)
+        by (match goal with Hsk : mod_comp_ty (btyp_arrow B1 B2) (mode_fn _) |- _ =>
               inversion Hsk; assumption end).
       assert (HwfA' : d_wf_ptyp Γ' A) by (eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ]).
       pick fresh x0 for

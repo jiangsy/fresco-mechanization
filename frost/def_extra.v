@@ -161,9 +161,22 @@ Inductive mode_skl_compat : mode -> pskl -> Prop :=
     is unconstrained / bidirectional).  Implicitly required of every typing
     judgement; embedded as a premise on each rule's conclusion mode+type.
     (Distinct from the colourless, unused [mode_typ_compat] above.) *)
-Inductive skmod_ty : btyp -> mode -> Prop :=
-| skmod_ty__ti : forall B, is_styp B -> skmod_ty B mode_ti
-| skmod_ty__tc : forall B, is_ityp B -> skmod_ty B mode_tc
-| skmod_ty__fn : forall m B1 B2,
-    skmod_ty B2 m ->
-    skmod_ty (btyp_arrow B1 B2) (mode_fn m).
+Inductive mod_comp_ty : btyp -> mode -> Prop :=
+| mod_comp_ty__ti : forall B, is_styp B -> mod_comp_ty B mode_ti
+| mod_comp_ty__tc : forall B, is_ityp B -> mod_comp_ty B mode_tc
+| mod_comp_ty__fn : forall m B1 B2,
+    mod_comp_ty B2 m ->
+    mod_comp_ty (btyp_arrow B1 B2) (mode_fn m).
+
+(** Paper's [skmod{SK}{bid P}{M}] (declarative.tex:1535): the coloured
+    mode/skeleton compatibility for skeleton inference.  Like [mod_comp_ty],
+    but the only difference (declarative.tex:1553) is that CHECK mode also
+    requires a SYNTHESISED skeleton [is_sskl] (ghosts [□]/[⫯] count as
+    synthesised), rather than an inherited one.  The inferred skeleton [Q] of
+    [Γ ⊢[M] e ⇨ Q] is always [mod_comp_sk Q M] (see [d_pat_mod_comp_sk]). *)
+Inductive mod_comp_sk : bskl -> mode -> Prop :=
+| mod_comp_sk__ti : forall Q, is_sskl Q -> mod_comp_sk Q mode_ti
+| mod_comp_sk__tc : forall Q, is_sskl Q -> mod_comp_sk Q mode_tc
+| mod_comp_sk__fn : forall m Q1 Q2,
+    mod_comp_sk Q2 m ->
+    mod_comp_sk (bskl_arrow Q1 Q2) (mode_fn m).

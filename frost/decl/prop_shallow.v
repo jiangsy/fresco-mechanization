@@ -209,7 +209,7 @@ Proof.
        needs.  The inversion equation [B1 = inh (erase B1)] rewrites the
        skmod premise to the [inh]-domain form. *)
     match goal with
-    | Heq : ?b = ptyp_to_btyp_inh _, Hsk : skmod_ty (btyp_arrow ?b _) _ |- _ =>
+    | Heq : ?b = ptyp_to_btyp_inh _, Hsk : mod_comp_ty (btyp_arrow ?b _) _ |- _ =>
         rewrite Heq in Hsk
     end.
     match goal with

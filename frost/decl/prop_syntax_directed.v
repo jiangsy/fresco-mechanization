@@ -28,12 +28,12 @@ Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.decl.prop_stability.
 
-(* Inversions of the colour predicates / [skmod_ty] at [tc]. *)
+(* Inversions of the colour predicates / [mod_comp_ty] at [tc]. *)
 Lemma is_ityp_arrow_l : forall B1 B2, is_ityp (btyp_arrow B1 B2) -> is_ityp B1.
 Proof. intros B1 B2 H. inversion H; assumption. Qed.
 Lemma is_ityp_arrow_r : forall B1 B2, is_ityp (btyp_arrow B1 B2) -> is_ityp B2.
 Proof. intros B1 B2 H. inversion H; assumption. Qed.
-Lemma skmod_ty_tc_inv : forall B, skmod_ty B mode_tc -> is_ityp B.
+Lemma mod_comp_ty_tc_inv : forall B, mod_comp_ty B mode_tc -> is_ityp B.
 Proof. intros B H. inversion H; subst; assumption. Qed.
 
 (* ===================================================================== *)
@@ -57,12 +57,12 @@ Proof.
     + apply is_value__abs.
     + intros X HX. rewrite Hrt. apply H1; assumption.
   - (* abs_check_base (ᾱ = ·): the standalone check rule was removed from
-       d_typing, so use the GENERAL d_typing__abs at [tc].  Its [skmod_ty]
+       d_typing, so use the GENERAL d_typing__abs at [tc].  Its [mod_comp_ty]
        premise at [tc] is [is_ityp (inh A → B)] — domain inherited (lc [A] from
        [Γ⊢ₚA]), codomain inherited by the rule's [is_ityp B]. *)
     apply d_typing__abs with (L := L) (A := A);
       [ assumption
-      | apply skmod_ty__tc; apply is_ityp__arrow;
+      | apply mod_comp_ty__tc; apply is_ityp__arrow;
           [ apply is_ityp_paint; eapply d_wf_ptyp_lc; eassumption | assumption ]
       | assumption ].
   - (* abs_anno_check_step: as abs_check_step, over the annotated lambda. *)
@@ -75,7 +75,7 @@ Proof.
     apply d_typing__abs_anno with (L := L) (A := A) (B1 := ptyp_to_btyp_inh A).
     + assumption.
     + apply btyp_to_ptyp_ptyp_to_btyp_inh.
-    + apply skmod_ty__tc; apply is_ityp__arrow;
+    + apply mod_comp_ty__tc; apply is_ityp__arrow;
         [ apply is_ityp_paint; eapply d_wf_ptyp_lc; eassumption | assumption ].
     + assumption.
   - (* abs (m ≠ tc) *)
@@ -882,15 +882,15 @@ Proof.
         [ simpl_env; reflexivity | assumption ].
 Qed.
 
-(* [skmod_ty] is the colour/mode discipline on the type only; it depends on the
+(* [mod_comp_ty] is the colour/mode discipline on the type only; it depends on the
    type via [is_styp] / [is_ityp], both preserved by [X0 := unit]. *)
-Lemma skmod_ty_subst_unit : forall B m X0,
-    skmod_ty B m -> skmod_ty (subst_btyp_in_btyp btyp_unit X0 B) m.
+Lemma mod_comp_ty_subst_unit : forall B m X0,
+    mod_comp_ty B m -> mod_comp_ty (subst_btyp_in_btyp btyp_unit X0 B) m.
 Proof.
   intros B m X0 H. induction H.
-  - apply skmod_ty__ti. apply is_styp_subst_unit. assumption.
-  - apply skmod_ty__tc. apply is_ityp_subst_unit. assumption.
-  - simpl. apply skmod_ty__fn. assumption.
+  - apply mod_comp_ty__ti. apply is_styp_subst_unit. assumption.
+  - apply mod_comp_ty__tc. apply is_ityp_subst_unit. assumption.
+  - simpl. apply mod_comp_ty__fn. assumption.
 Qed.
 
 Lemma d_sd_typing_subst_unit : forall m Γ e B,
@@ -970,7 +970,7 @@ Proof.
       change (btyp_arrow (subst_btyp_in_btyp btyp_unit X0 (ptyp_to_btyp_inh A))
                          (subst_btyp_in_btyp btyp_unit X0 B))
         with (subst_btyp_in_btyp btyp_unit X0 (btyp_arrow (ptyp_to_btyp_inh A) B)).
-      apply skmod_ty_subst_unit. assumption.
+      apply mod_comp_ty_subst_unit. assumption.
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind X0 (dbind_typ A)) ++ map (subst_unit_dbind X0) Γ1) ++ Γ2).
@@ -983,7 +983,7 @@ Proof.
     + assumption.
     + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
     + symmetry. apply btyp_to_ptyp_subst_unit.
-    + pose proof (skmod_ty_subst_unit (btyp_arrow B1 B2) m X0 H2) as Hsk. simpl in Hsk. exact Hsk.
+    + pose proof (mod_comp_ty_subst_unit (btyp_arrow B1 B2) m X0 H2) as Hsk. simpl in Hsk. exact Hsk.
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind X0 (dbind_typ (btyp_to_ptyp B1))) ++ map (subst_unit_dbind X0) Γ1) ++ Γ2).
@@ -1179,7 +1179,7 @@ Ltac base_term_admissible_tac IH Γ B X0 Hbt :=
       (* [is_ityp (btyp_all_inh B)] by renaming the [X0]-instance subtyping. *)
       assert (Hia : is_ityp (btyp_all_inh B));
       [ apply is_ityp__all with (L := {{X0}} `union` ftvar_in_btyp B); intros Y HY;
-        pose proof (is_ityp_rename_tvar X0 Y (skmod_ty_tc_inv _ (d_sub_skmod Hs0))) as Hir;
+        pose proof (is_ityp_rename_tvar X0 Y (mod_comp_ty_tc_inv _ (d_sub_skmod Hs0))) as Hir;
         rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec;
         exact Hir
       | ];
@@ -1239,7 +1239,7 @@ Proof.
       specialize (Hbnd _ Hin). fsetdec. }
     assert (Hia : is_ityp (btyp_all_inh B)).
     { apply is_ityp__all with (L := {{X0}} `union` ftvar_in_btyp B). intros Y HY.
-      pose proof (is_ityp_rename_tvar X0 Y (skmod_ty_tc_inv _ (d_sub_skmod H1))) as Hir.
+      pose proof (is_ityp_rename_tvar X0 Y (mod_comp_ty_tc_inv _ (d_sub_skmod H1))) as Hir.
       rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec.
       exact Hir. }
     apply d_sd_typing__sub with (A := A).
@@ -1288,7 +1288,7 @@ Proof.
       specialize (Hbnd _ Hin). fsetdec. }
     assert (Hia : is_ityp (btyp_all_inh B)).
     { apply is_ityp__all with (L := {{X0}} `union` ftvar_in_btyp B). intros Y HY.
-      pose proof (is_ityp_rename_tvar X0 Y (skmod_ty_tc_inv _ (d_sub_skmod H2))) as Hir.
+      pose proof (is_ityp_rename_tvar X0 Y (mod_comp_ty_tc_inv _ (d_sub_skmod H2))) as Hir.
       rewrite <- (subst_btyp_in_btyp_intro X0 B (btyp_var_f Y)) in Hir by fsetdec.
       exact Hir. }
     apply d_sd_typing__sub with (A := A0).
@@ -1333,7 +1333,7 @@ Proof.
     + apply d_sd_typing__abs_check_base with (L := L);
         [ assumption
         | apply is_ityp_arrow_r with (B1 := ptyp_to_btyp_inh A);
-          apply skmod_ty_tc_inv; assumption
+          apply mod_comp_ty_tc_inv; assumption
         | assumption ].
     + apply d_sd_typing__abs with (L := L);
         [ discriminate | assumption | assumption | assumption ].
@@ -1344,7 +1344,7 @@ Proof.
     destruct m as [ | | m' ].
     + apply d_sd_typing__abs_anno with (L := L) (B1 := B1);
         [ discriminate | assumption | assumption | assumption | assumption ].
-    + assert (Hia : is_ityp (btyp_arrow B1 B2)) by (apply skmod_ty_tc_inv; assumption).
+    + assert (Hia : is_ityp (btyp_arrow B1 B2)) by (apply mod_comp_ty_tc_inv; assumption).
       assert (HB1 : ptyp_to_btyp_inh A = B1).
       { pose proof (is_ityp_ptyp_to_btyp_inh (is_ityp_arrow_l _ _ Hia)) as HR.
         rewrite H0 in HR. exact HR. }
