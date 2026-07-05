@@ -139,28 +139,11 @@ Inductive is_value : exp -> Prop :=
 (*  Mode-compatibility predicates                                         *)
 (* ===================================================================== *)
 
-(** Paper's M |-_TY A. *)
-Inductive mode_typ_compat : mode -> ptyp -> Prop :=
-| mode_typ_compat__ti : forall A, lc_ptyp A -> mode_typ_compat mode_ti A
-| mode_typ_compat__tc : forall A, lc_ptyp A -> mode_typ_compat mode_tc A
-| mode_typ_compat__fn : forall m A1 A2,
-    mode_typ_compat m A2 ->
-    mode_typ_compat (mode_fn m) (ptyp_arrow A1 A2).
-
-(** Paper's M |-_SK P. Both TI and TC require synthesised skletons. *)
-Inductive mode_skl_compat : mode -> pskl -> Prop :=
-| mode_skl_compat__ti : forall P, lc_pskl P -> mode_skl_compat mode_ti P
-| mode_skl_compat__tc : forall P, lc_pskl P -> mode_skl_compat mode_tc P
-| mode_skl_compat__fn : forall m P1 P2,
-    mode_skl_compat m P2 ->
-    mode_skl_compat (mode_fn m) (pskl_arrow P1 P2).
-
 (** Paper's [skmod{TY}{bid A}{M}] (declarative.tex:415-434): the COLOURED
     mode/type well-formedness — synthesised at [TI], inherited at [TC], and a
     function type whose result is [M]-compatible at [FN M] (the argument colour
     is unconstrained / bidirectional).  Implicitly required of every typing
-    judgement; embedded as a premise on each rule's conclusion mode+type.
-    (Distinct from the colourless, unused [mode_typ_compat] above.) *)
+    judgement; embedded as a premise on each rule's conclusion mode+type. *)
 Inductive mod_comp_ty : btyp -> mode -> Prop :=
 | mod_comp_ty__ti : forall B, is_styp B -> mod_comp_ty B mode_ti
 | mod_comp_ty__tc : forall B, is_ityp B -> mod_comp_ty B mode_tc

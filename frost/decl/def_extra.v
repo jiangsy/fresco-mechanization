@@ -325,8 +325,6 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     Ψ [=] empty ->
     Ψ ⨟ Γ ⊢[ mode_ti ] C ⊑ B
 | d_sub__check : forall Ψ Γ C B,
-    (* WT: I modified this case in the new draft to require both C and
-    B to be guarded. *)
     guarded_utyp C ->
     guarded_btyp B ->
     Ψ ⨟ Γ ⊨ C ≈ B ->
@@ -429,7 +427,7 @@ Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Pro
     Γ ⨟ Δ ⊢ᵣ (bskl_tophole Q) ⊳ (bskl_tophole P)
 where "Γ ⨟ Δ ⊢ᵣ Q ⊳ P" := (d_refine_syn Γ Δ Q P) : type_scope.
 
-(* Check mostly passed, one mismatch identified, but mostly paper duplication *)
+(* Check passed *)
 Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
 | d_pat_consis__unit : forall Δ Γ,
     Δ [=] empty ->
@@ -613,6 +611,13 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__freeze : forall Γ e P,
     Γ ⊢[ mode_ti ] e ⇨ (pskl_to_bskl_syn P) ->
     Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ (pskl_to_bskl_syn P)
+(* AUDIT [mod_comp_sk]: [d_pat] does NOT give [mod_comp_sk] for [abs]/[abs_anno]
+   at [ti] with a POLY domain (result skeleton [inh{P}] is not synthesised),
+   exactly as [d_typing] needed [mod_comp_ty] embedded.  The faithful fix is to
+   embed [mod_comp_sk (bskl_arrow (pskl_to_bskl_inh P) Q) m] here (and the
+   [btyp_to_bskl B] analog on [abs_anno]).  Deferred to the [d_pat_safety] redo,
+   where the [d_pat_total_gen] abs [fn]-cases must thread [mod_comp_sk] of the
+   body through their [safe_skel] construction. *)
 | d_pat__abs : forall L Γ m e P Q,
     m <> mode_tc ->
     nil ⨟ Γ ⊢ₚₛ P ->
