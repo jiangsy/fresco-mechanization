@@ -3105,6 +3105,47 @@ Proof.
     inversion Hb; assumption.
 Qed.
 
+(** DIRECTED safety, keyed by an EXPECTED skeleton [P0] threaded from the enclosing
+    application (mirrors the algorithm's expected-skeleton parameter, but flex-free
+    and via the declarative refinement [⊳]).  [inh P0 ⊳ Q] ties the expected input
+    to the produced skeleton [Q]; the third conjunct is the paper's coverage
+    (declarative.tex:1996).  This composes for [d_pat__app] where the plain
+    [gpat]/[safe_skel] could not: the enclosing app's expected codomain [P0] is
+    threaded as [e1]'s expected codomain ([arrow Qf P0]), so [e1]'s refinement
+    yields BOTH the domain match ([inh Qf ⊳ Q1]) and the app's codomain condition
+    ([inh P0 ⊳ Q2]) — no codomain-skeleton recursion, no flex vars. *)
+Definition gpat_dir (m : mode) (Γ : list (atom * dbind)) (P0 : pskl) (e : exp) : Prop :=
+  exists Q, Γ ⊢[ m ] e ⇨ Q
+    /\ Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Q
+    /\ (forall Γt A, ctx_refines_tw Γ Γt -> d_wf_denv Γt ->
+          Γt ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) -> skel_safe nil (bskl_to_pskl Q) A).
+
+(** The threaded arrow refinement splits into domain + codomain refinements — the
+    step that lets the [d_pat__app] domain match and codomain condition both come
+    from [e1]'s single directed refinement. *)
+Lemma gpat_dir_app_split : forall Γ' Qf P0 Q1 Q2,
+    Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (pskl_arrow Qf P0)) ⊳ (bskl_arrow Q1 Q2) ->
+    Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Qf) ⊳ Q1 /\ Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Q2.
+Proof.
+  intros Γ' Qf P0 Q1 Q2 H. simpl in H. inversion H; subst. split; assumption.
+Qed.
+
+(** Core [d_pat__app] composition from the [gpat_dir] ingredients: given the arg's
+    [syn Qf] inference, [inh Qf ⊳ Q1] (domain match), the function's [arrow Q1 Q2]
+    inference, and the threaded codomain refinement [inh P0 ⊳ Q2], the application
+    infers [Q2] and carries the directed condition. *)
+Lemma gpat_dir_app_compose : forall Γ' m e1 e2 P0 Qf Q1 Q2,
+    Γ' ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn Qf) ->
+    Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Qf) ⊳ Q1 ->
+    Γ' ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow Q1 Q2) ->
+    Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Q2 ->
+    Γ' ⊢[ m ] (exp_app e1 e2) ⇨ Q2
+    /\ Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Q2.
+Proof.
+  intros Γ' m e1 e2 P0 Qf Q1 Q2 Hinf2 Href1 Hinf1 Hrefcod. split; [ | exact Hrefcod ].
+  eapply d_pat__app; [ exact Hinf2 | exact Href1 | exact Hinf1 ].
+Qed.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' -> gpat m Γ' e B.
