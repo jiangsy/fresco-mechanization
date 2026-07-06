@@ -2702,6 +2702,83 @@ Proof.
           eapply d_pat_sub_eq_tags; [ exact Hsc | fsetdec ] ].
 Qed.
 
+(** DIRECTED [safe_fn_skel]: for a CONCRETE function source [U] (a base term's
+    ti-type erasure) subtyping to [BB1→BB2] at FN mode, and an argument pattern
+    [Parg] safe for the domain [BB1], produce the skeleton subtyping whose FIRST
+    domain is DIRECTED to [colour (inh Parg) BB1] (so the app's [inh Parg ⊳ Q1]
+    match closes by [refine_colour_skel]).  The [∀]-instantiations ([forall_l])
+    pass through unchanged (the domain [BB1] is reached after them); the codomain
+    is delegated to the undirected [safe_fn_skel_gen].  The domain consistency
+    [syn(skel C1) ≈ colour(inh Parg) BB1] is [consis_syn_colour_skel] once
+    [skel C1 = skel BB1] ([d_consis_skel]). *)
+Lemma safe_fn_skel_dir : forall mm Γ U BB1 BB2 Parg Ψ0,
+    d_wf_utyp Γ U -> d_wf_btyp Γ (btyp_arrow BB1 BB2) ->
+    Ψ0 ⨟ Γ ⊢[ mode_fn mm ] U ⊑ (btyp_arrow BB1 BB2) ->
+    skel_safe nil Parg (btyp_to_ptyp BB1) ->
+    (forall X, X `in` ftvar_in_pskl Parg -> binds X dbind_tvar Γ) ->
+    exists Qc,
+      empty ⨟ Γ ⊢ₛ[ mode_fn mm ] (bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl U)))
+                                 ⊑ (bskl_arrow (colour (pskl_to_bskl_inh Parg) (btyp_to_ptyp BB1)) Qc)
+      /\ safe_skel mm Qc BB2.
+Proof.
+  intros mm Γ U BB1 BB2 Parg Ψ0 HwfU HwfB Hsub.
+  remember (mode_fn mm) as fm eqn:Hfm.
+  remember (btyp_arrow BB1 BB2) as Barr eqn:HBarr.
+  revert mm BB1 BB2 Hfm HBarr HwfU HwfB.
+  induction Hsub; intros mm BB1 BB2 Hfm HBarr HwfU HwfB Hsafe Hcov;
+    try discriminate Hfm.
+  - (* arg: [utyp_arrow C1 C2 ⊑ arrow BB1 BB2] — DIRECT the domain to [colour]. *)
+    injection Hfm as Hmeq. injection HBarr as HBeq1 HBeq2. subst m BB1 BB2.
+    inversion HwfU as [ | | ? CC1 CC2 HwfC1 HwfC2 | | ]; subst.
+    inversion HwfB as [ | | ? BB1w BB2w HwfBB1 HwfBB2 | | ]; subst.
+    assert (Hskeq : utyp_to_pskl C1 = ptyp_to_pskl (btyp_to_ptyp B1)) by (apply (d_consis_skel H)).
+    destruct (safe_fn_skel_gen HwfC2 HwfBB2 Hsub
+                 (hole_safe_u_of_utyp (d_wf_utyp_lc HwfC2) nil)) as [Qc [HscQc HsafeQc]].
+    exists Qc. split; [ | exact HsafeQc ].
+    simpl. eapply d_pat_sub__arg with (Ψ1 := empty) (Ψ2 := empty);
+      [ | exact HscQc | fsetdec ].
+    rewrite Hskeq. apply consis_syn_colour_skel with (Δ := nil);
+      [ exact Hsafe
+      | apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfBB1
+      | intros X HX; inversion HX
+      | intros X HX; rewrite ftvar_btyp_to_ptyp in HX;
+        eapply d_wf_btyp_ftvar; [ exact HwfBB1 | exact HX ] ].
+  - (* forall_l_tagged: instantiate the ∀ with [ph], recurse (domain unchanged). *)
+    subst m.
+    assert (Hlcph : lc_utyp ph) by (apply (d_wf_utyp_lc H2)).
+    assert (HwfO : Γ ⊢ᵤ (open_utyp_wrt_utyp C ph)).
+    { inversion HwfU; subst. eapply d_wf_utyp_open; [ eassumption | exact H2 ]. }
+    destruct (IHHsub mm BB1 BB2 eq_refl HBarr HwfO HwfB Hsafe Hcov) as [Qc [Hsc Hsafe2]].
+    exists Qc. split; [ | exact Hsafe2 ].
+    simpl. eapply d_pat_sub__forall_l_untagged
+      with (psi := bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))) (Ψ' := empty);
+      [ assumption | fsetdec
+      | apply d_tags_skl_syn_erase; exact Hlcph
+      | eapply d_wf_uskl_syn_erase;
+          [ exact Hlcph
+          | intros X HX; right; eapply d_wf_utyp_ftvar; [ exact H2 | exact HX ] ]
+      | apply is_tskl_syn_erase; exact Hlcph
+      | rewrite <- uskl_syn_open; rewrite <- utyp_to_pskl_open;
+        eapply d_pat_sub_eq_tags; [ exact Hsc | fsetdec ] ].
+  - (* forall_l_untagged: same. *)
+    subst m.
+    assert (Hlcph : lc_utyp ph) by (apply (d_wf_utyp_lc H2)).
+    assert (HwfO : Γ ⊢ᵤ (open_utyp_wrt_utyp C ph)).
+    { inversion HwfU; subst. eapply d_wf_utyp_open; [ eassumption | exact H2 ]. }
+    destruct (IHHsub mm BB1 BB2 eq_refl HBarr HwfO HwfB Hsafe Hcov) as [Qc [Hsc Hsafe2]].
+    exists Qc. split; [ | exact Hsafe2 ].
+    simpl. eapply d_pat_sub__forall_l_untagged
+      with (psi := bskl_to_uskl (pskl_to_bskl_syn (utyp_to_pskl ph))) (Ψ' := empty);
+      [ assumption | fsetdec
+      | apply d_tags_skl_syn_erase; exact Hlcph
+      | eapply d_wf_uskl_syn_erase;
+          [ exact Hlcph
+          | intros X HX; right; eapply d_wf_utyp_ftvar; [ exact H2 | exact HX ] ]
+      | apply is_tskl_syn_erase; exact Hlcph
+      | rewrite <- uskl_syn_open; rewrite <- utyp_to_pskl_open;
+        eapply d_pat_sub_eq_tags; [ exact Hsc | fsetdec ] ].
+Qed.
+
 (** GENERAL binder rename for typing (mirrors [d_pat_rename_var]): renaming the
     context binder [x ↦ y] (and [x ↦ y] in the term) preserves [⦂].  The [sub]
     case goes through [d_sub_rename_var] (the subtyping ignores the relabeled
