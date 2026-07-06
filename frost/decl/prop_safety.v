@@ -3583,6 +3583,76 @@ Proof.
   eapply d_pat__app; [ exact Hinf2 | exact Href1 | exact Hinf1 ].
 Qed.
 
+(** APP coverage bricks (the compound-term analog of [abs_ti_fill_skel]): the
+    application's safety over EVERY checking type reduces — by inverting the
+    application typing, which can ONLY be [d_typing__app] ([exp_app] is not a base
+    term, so no subsumption) — to the FUNCTION's codomain coverage.  The inversion
+    pins the checking type [A] to the function's inferred codomain [B2t], so a
+    universal codomain coverage on [e1] discharges the universal app coverage.
+    This isolates the remaining app-case obligation to [d_pat_fn_dir] supplying
+    that codomain coverage (+ the directed domain inference). *)
+Lemma app_fill_skel_tc : forall e1 e2 Q2 Γ',
+    (forall Γt B1t B2t, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+        Γt ⊢[ mode_fn mode_tc ] e1 ⦂ (btyp_arrow B1t B2t) ->
+        skel_safe nil (bskl_to_pskl Q2) (btyp_to_ptyp B2t)) ->
+    forall Γt A, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+      Γt ⊢[ mode_tc ] (exp_app e1 e2) ⦂ (ptyp_to_btyp_inh A) ->
+      skel_safe nil (bskl_to_pskl Q2) A.
+Proof.
+  intros e1 e2 Q2 Γ' Hcod Γt A Hcr Hwf Hty.
+  inversion Hty; subst;
+    try (match goal with Hb : is_base_term (exp_app _ _) |- _ => inversion Hb end);
+    try (match goal with Hv : is_value (exp_app _ _) |- _ => inversion Hv end).
+  match goal with
+  | He1 : _ ⊢[ mode_fn mode_tc ] e1 ⦂ (btyp_arrow ?B1t ?B2t) |- _ =>
+      rewrite <- (btyp_to_ptyp_ptyp_to_btyp_inh A);
+      eapply Hcod; [ exact Hcr | exact Hwf | exact He1 ]
+  end.
+Qed.
+
+Lemma app_fill_skel_ti : forall e1 e2 Q2 Γ',
+    (forall Γt B1t B2t, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+        Γt ⊢[ mode_fn mode_ti ] e1 ⦂ (btyp_arrow B1t B2t) ->
+        skel_safe nil (bskl_to_pskl Q2) (btyp_to_ptyp B2t)) ->
+    forall Γt A, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+      Γt ⊢[ mode_ti ] (exp_app e1 e2) ⦂ (ptyp_to_btyp_syn A) ->
+      skel_safe nil (bskl_to_pskl Q2) A.
+Proof.
+  intros e1 e2 Q2 Γ' Hcod Γt A Hcr Hwf Hty.
+  inversion Hty; subst;
+    try (match goal with Hb : is_base_term (exp_app _ _) |- _ => inversion Hb end);
+    try (match goal with Hv : is_value (exp_app _ _) |- _ => inversion Hv end).
+  match goal with
+  | He1 : _ ⊢[ mode_fn mode_ti ] e1 ⦂ (btyp_arrow ?B1t ?B2t) |- _ =>
+      rewrite <- (btyp_to_ptyp_ptyp_to_btyp_syn A);
+      eapply Hcod; [ exact Hcr | exact Hwf | exact He1 ]
+  end.
+Qed.
+
+(** DIRECTED function producer (the app-case core).  Given a function [e1 : B1→B2]
+    at [fn m] and an ARGUMENT PATTERN [Parg] safe for the domain [B1], re-infer [e1]
+    with its domain skeleton [Q1] DIRECTED to match [Parg] (so [inh Parg ⊳ Q1] holds
+    by [refine_colour_skel] — [Q1 = colour (inh Parg) B1]), together with:
+    - [is_sskl Q2] and [safe_skel m Q2 B2] (feed the fn-mode app [gpat]);
+    - a UNIVERSAL codomain coverage on [Q2] (feeds [app_fill_skel_*] for the ti/tc
+      app [gpat], the [abs_ti_fill_skel] analog for applications).
+    This is what makes the domain flexible per-application without flex vars: the
+    function's own [d_pat_sub] paints the domain to the argument via
+    [consis_syn_colour].  PROOF still open — the remaining app-case obligation. *)
+Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
+    Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
+    forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' ->
+    forall Parg, skel_safe nil Parg (btyp_to_ptyp B1) ->
+    exists Q1 Q2,
+      Γ' ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow Q1 Q2)
+      /\ Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ Q1
+      /\ is_sskl Q2
+      /\ safe_skel m Q2 B2
+      /\ (forall Γt B1t B2t, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+            Γt ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1t B2t) ->
+            skel_safe nil (bskl_to_pskl Q2) (btyp_to_ptyp B2t)).
+Admitted.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' -> gpat m Γ' e B.
@@ -3973,18 +4043,30 @@ Proof.
         split; [ rewrite bskl_to_pskl_btyp_to_bskl; apply skel_safe_of_ptyp;
                  rewrite H0; eapply d_wf_ptyp_lc; exact HpA
                | exact HsafeQc ].
-  - (* app: [d_pat__app] infers the function arrow [Γ' ⊢ e1 ⇨ arrow Sarg Qcc]
-       and threads the refined argument; the codomain safety is [Hcod :
-       safe_skel m Qcc B0] directly.  The remaining core obligation is the
-       DOMAIN ALIGNMENT [Γ' ⨟ nil ⊢ᵣ inh (bskl_to_pskl Q2c) ⊳ Sarg]: the
-       argument's INFERRED [is_sskl] skeleton [Q2c] (possibly hole-rich) must
-       refine to the function's INDEPENDENTLY-inferred domain [Sarg].  This is
-       NOT a corollary of the existing safety lemmas — e.g. an argument
-       inferring [□] cannot refine to an inherited-poly [Sarg] ([□ ⊳ Q] only
-       yields [syn{Q}]).  It needs a dedicated lemma relating two same-type
-       safe skeletons (arg holes ↔ function-domain synthesised fills). *)
-    admit.
-Admitted.
+  - (* app: the argument's SYNTHESISED pattern [Parg] (from [IHHty2] + coverage at
+       [Γt = Γ]) DIRECTS the function's domain via [d_pat_fn_dir]; the domain match
+       [inh Parg ⊳ Q1] and the codomain coverage both come from there, and the ti/tc
+       app coverage reduces via [app_fill_skel_*]. *)
+    destruct (IHHty2 Hwf Γ' Hcr Hwf') as [Qa [Hinf2 [HssklQa Hcov2]]].
+    assert (Hinf2' : Γ' ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn (bskl_to_pskl Qa)))
+      by (rewrite (is_sskl_syn_roundtrip HssklQa); exact Hinf2).
+    assert (Hsafe_arg : skel_safe nil (bskl_to_pskl Qa) (btyp_to_ptyp B1))
+      by (eapply (Hcov2 Γ (btyp_to_ptyp B1)); [ apply crtw_base; exact Hcr | exact Hwf | exact Hty2 ]).
+    destruct (@d_pat_fn_dir Γ m e1 B1 B2 Hty1 Hwf Γ' Hcr Hwf' (bskl_to_pskl Qa) Hsafe_arg)
+      as [Q1 [Q2 [Hinf1 [Href1 [HssklQ2 [Hsafe2 Hcod2]]]]]].
+    assert (Happ : Γ' ⊢[ m ] (exp_app e1 e2) ⇨ Q2)
+      by (eapply d_pat__app; [ exact Hinf2' | exact Href1 | exact Hinf1 ]).
+    destruct m as [ | | m0 ].
+    + (* ti *) exists Q2. split; [ exact Happ | split; [ exact HssklQ2 | ] ].
+      intros Γt A Hcrt Hwft HA.
+      eapply app_fill_skel_ti; [ | exact Hcrt | exact Hwft | exact HA ].
+      intros Γt' B1t B2t Hcrt' Hwft' He1t. eapply Hcod2; [ exact Hcrt' | exact Hwft' | exact He1t ].
+    + (* tc *) exists Q2. split; [ exact Happ | split; [ exact HssklQ2 | ] ].
+      intros Γt A Hcrt Hwft HA.
+      eapply app_fill_skel_tc; [ | exact Hcrt | exact Hwft | exact HA ].
+      intros Γt' B1t B2t Hcrt' Hwft' He1t. eapply Hcod2; [ exact Hcrt' | exact Hwft' | exact He1t ].
+    + (* fn *) exists Q2. split; [ exact Happ | exact Hsafe2 ].
+Qed.
 
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
