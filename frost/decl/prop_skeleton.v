@@ -351,8 +351,9 @@ Proof.
         [ apply ghc__arrow; assumption | apply lc_pskl_arrow; assumption | assumption ].
   - (* hole: R is uskl_hole (Ghost) or uskl_holeg (GhostG) *) inversion Hghc; subst.
     + change bskl_hole with (pskl_to_bskl_inh pskl_hole).
-      apply d_pat_sub__ghost; [ exact Hempty | apply d_wf_pskl__hole ].
-    + apply d_pat_sub__ghostg. exact Hempty.
+      apply d_pat_sub__ghost;
+        [ exact Hempty | apply d_wf_pskl__hole | apply mod_comp_sk__tc; apply is_sskl__hole ].
+    + apply d_pat_sub__ghostg; [ exact Hempty | apply mod_comp_sk__tc; apply is_sskl__hole ].
   - (* tophole *) inversion Hlc; subst. inversion Hghc; subst.
     apply d_pat_sub__univ_ghost_l; [ discriminate | ].
     apply IHHg;
@@ -1632,9 +1633,9 @@ Proof.
   - eapply d_pat_sub__forall_l_untagged;
       [ assumption | eassumption | eassumption | eapply d_wf_uskl_binding_eq; eauto
       | assumption | eapply IHd_pat_sub; eauto ].
-  - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_binding_eq; eauto ].
+  - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_binding_eq; eauto | assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
-  - apply d_pat_sub__ghostg. assumption.
+  - apply d_pat_sub__ghostg; assumption.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
 Qed.
 
@@ -1688,12 +1689,12 @@ Proof.
       [ assumption | eapply IHd_pat; eauto | eapply d_pat_sub_binding_eq; eauto ].
   - apply d_pat__freeze. eapply IHd_pat; eauto.
   - apply d_pat__abs with (L := L `union` dom (Γ1 ++ (x0 ~ d0') ++ Γ2)) (P := P);
-      [ assumption | eapply d_wf_pskl_binding_eq; eauto | ].
+      [ assumption | eapply d_wf_pskl_binding_eq; eauto | assumption | ].
     intros y Hy. rewrite_env (((y ~ dbind_skl P) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
     match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
       eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hdd ].
   - apply d_pat__abs_anno with (L := L `union` dom (Γ1 ++ (x0 ~ d0') ++ Γ2)) (B := B);
-      [ assumption | eapply d_wf_ptyp_binding_eq; eauto | reflexivity | ].
+      [ assumption | eapply d_wf_ptyp_binding_eq; eauto | reflexivity | assumption | ].
     intros y Hy. rewrite_env (((y ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
     match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
       eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hdd ].
@@ -1881,9 +1882,9 @@ Proof.
   - eapply d_pat_sub__forall_l_untagged;
       [ assumption | eassumption | eassumption | eapply d_wf_uskl_ghost_rel; eauto
       | assumption | eapply IHd_pat_sub; eauto ].
-  - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_ghost_rel; eauto ].
+  - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_ghost_rel; eauto | assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
-  - apply d_pat_sub__ghostg. assumption.
+  - apply d_pat_sub__ghostg; assumption.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
 Qed.
 
@@ -2003,7 +2004,7 @@ Proof.
   - eapply d_pat_sub__forall_l_untagged;
       [ assumption | eassumption | eassumption | eapply d_wf_uskl_rename_var; eauto
       | assumption | eapply IHd_pat_sub; eauto ].
-  - apply d_pat_sub__ghost; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_rename_var; eauto.
+  - apply d_pat_sub__ghost; [ (assumption || fsetdec) | eapply d_wf_pskl_rename_var; eauto | assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
   - apply d_pat_sub__ghostg; (assumption || fsetdec).
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
@@ -2075,14 +2076,14 @@ Proof.
       | eapply IHd_pat; eauto | eapply d_pat_sub_rename_var; eauto ].
   - simpl. apply d_pat__freeze. eapply IHd_pat; eauto.
   - simpl. apply d_pat__abs with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (P := P);
-      [ assumption | eapply d_wf_pskl_rename_var; eauto | ].
+      [ assumption | eapply d_wf_pskl_rename_var; eauto | assumption | ].
     intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
       by (solve [ apply lc_exp_var_f | fsetdec ]).
     rewrite_env (((z ~ dbind_skl P) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
     match goal with IH : forall _ : atom, _ -> forall _ _ _ _ _, _ |- _ =>
       eapply IH end; [ fsetdec | simpl_env; reflexivity | exact Hd | simpl_env in *; fsetdec ].
   - simpl. apply d_pat__abs_anno with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2)) (B := B);
-      [ assumption | eapply d_wf_ptyp_rename_var; eauto | reflexivity | ].
+      [ assumption | eapply d_wf_ptyp_rename_var; eauto | reflexivity | assumption | ].
     intros z Hz. rewrite subst_exp_in_exp_open_exp_wrt_exp_var
       by (solve [ apply lc_exp_var_f | fsetdec ]).
     rewrite_env (((z ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
@@ -2148,15 +2149,15 @@ Proof.
   - (* freeze *) apply d_pat__freeze. eapply IHd_pat; eauto.
   - (* abs *) apply d_pat__abs with
       (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (P := P);
-      [ assumption | assumption | ].
-    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
-    eapply H2; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
-               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
-  - (* abs_anno *) apply d_pat__abs_anno with
-      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A) (B := B);
       [ assumption | assumption | assumption | ].
     intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
     eapply H3; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
+               | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
+  - (* abs_anno *) apply d_pat__abs_anno with
+      (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (A := A) (B := B);
+      [ assumption | assumption | assumption | assumption | ].
+    intros w Hw. rewrite subst_exp_in_exp_open_exp_wrt_exp_var; try fsetdec; try apply lc_exp_var_f.
+    eapply H4; [ fsetdec | apply uniq_push; [ exact Huniq | fsetdec ]
                | apply binds_app_3; exact Hbx | apply binds_app_3; exact Hby ].
   - (* app *) eapply d_pat__app;
       [ eapply IHd_pat1; eauto | exact H0 | eapply IHd_pat2; eauto ].
@@ -2532,6 +2533,17 @@ Proof.
   - apply is_sskl__tophole; assumption.
 Qed.
 
+(** [mod_comp_sk] is preserved under [unit]-substitution: [unit] is [is_sskl]
+    and substitution respects the arrow spine. *)
+Lemma mod_comp_sk_subst_unit : forall S m X,
+    mod_comp_sk S m -> mod_comp_sk (subst_bskl_in_bskl bskl_unit X S) m.
+Proof.
+  intros S m X H. induction H; simpl.
+  - apply mod_comp_sk__ti; apply is_sskl_subst_unit; assumption.
+  - apply mod_comp_sk__tc; apply is_sskl_subst_unit; assumption.
+  - apply mod_comp_sk__fn; assumption.
+Qed.
+
 Lemma is_tskl_subst_unit : forall R X,
     is_tskl R -> is_tskl (subst_bskl_in_uskl uskl_unit X R).
 Proof.
@@ -2655,7 +2667,10 @@ Proof.
       | eapply d_wf_uskl_subst_unit; eauto | apply is_tskl_subst_unit; assumption | ].
     rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_unit).
     eapply IHd_pat_sub; eauto.
-  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_sub__ghost; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_subst_unit; eauto.
+  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_sub__ghost;
+      [ (assumption || fsetdec)
+      | eapply d_wf_pskl_subst_unit; eauto
+      | rewrite <- pskl_to_bskl_inh_subst_unit; apply mod_comp_sk_subst_unit; assumption ].
   - simpl. apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eauto ].
   - apply d_pat_sub__ghostg; (assumption || fsetdec).
   - simpl. apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eauto ].
@@ -2983,5 +2998,5 @@ Proof.
   - apply d_tags_skl__holeg; fsetdec.
   - apply d_wf_uskl__holeg.
   - apply is_tskl__holeg.
-  - simpl. apply d_pat_sub__ghostg. fsetdec.
+  - simpl. apply d_pat_sub__ghostg; [ fsetdec | apply mod_comp_sk__tc; apply is_sskl__hole ].
 Qed.

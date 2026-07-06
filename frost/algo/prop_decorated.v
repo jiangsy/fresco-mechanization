@@ -103,9 +103,10 @@ Proof.
     admit.
   - (* ForallL → d_pat_sub__forall_l_*; blocked on a_tag_support placeholder. *)
     admit.
-  - (* GhostG → d_pat_sub__ghostg.  Closes. *)
+  - (* GhostG → d_pat_sub__ghostg. *)
     exists bskl_hole. split; [ reflexivity | ].
-    rewrite Ψtoδ_empty. apply d_pat_sub__ghostg. fsetdec.
+    rewrite Ψtoδ_empty. apply d_pat_sub__ghostg;
+      [ fsetdec | admit (* [mod_comp_sk □ M]: needs [M ≠ fn] from [a_subtag] (scaffold) *) ].
   - (* UnivGhostL → d_pat_sub__univ_ghost_l.  Closes (RHS unchanged). *)
     destruct IHa_subtag as [Q' [Heq Hd]]. exists Q'. split; [ assumption | ].
     apply d_pat_sub__univ_ghost_l; assumption.

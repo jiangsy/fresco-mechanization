@@ -681,7 +681,7 @@ Proof.
   - eapply d_pat_sub__forall_l_untagged;
       [ eassumption | eassumption | eassumption
       | eapply d_wf_uskl_same_tvar; eassumption | assumption | apply IHd_pat_sub; assumption ].
-  - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_same_tvar; eassumption ].
+  - apply d_pat_sub__ghost; [ assumption | eapply d_wf_pskl_same_tvar; eassumption | assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | apply IHd_pat_sub; assumption ].
   - apply d_pat_sub__ghostg; assumption.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | apply IHd_pat_sub; assumption ].
@@ -829,11 +829,15 @@ Proof.
     + eapply d_wf_pskl_same_tvar;
         [ eapply d_wf_pskl_subst_unit; [ eassumption | reflexivity ]
         | apply same_tvar_map_subst_unit ].
+    + (* [mod_comp_sk] preserved under [X0 := unit]. *)
+      pose proof (mod_comp_sk_subst_unit X0 H1) as Hm.
+      cbn [subst_bskl_in_bskl] in Hm.
+      rewrite pskl_to_bskl_inh_subst_unit in Hm. exact Hm.
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind X0 (dbind_skl P)) ++ map (subst_unit_dbind X0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H2 x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) X0 Γ2);
+      eapply (H3 x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) X0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno (cofinite) *)
     rewrite btyp_to_bskl_subst_unit.
@@ -841,11 +845,15 @@ Proof.
     + assumption.
     + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
     + symmetry. apply btyp_to_ptyp_subst_unit.
+    + (* [mod_comp_sk] preserved under [X0 := unit]. *)
+      pose proof (mod_comp_sk_subst_unit X0 H2) as Hm.
+      cbn [subst_bskl_in_bskl] in Hm.
+      rewrite btyp_to_bskl_subst_unit in Hm. exact Hm.
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_unit | fsetdec ]).
       rewrite_env (((x ~ subst_unit_dbind X0 (dbind_typ (btyp_to_ptyp B))) ++ map (subst_unit_dbind X0) Γ1) ++ Γ2).
       rewrite map_subst_unit_dbind_cons.
-      eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) X0 Γ2);
+      eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) X0 Γ2);
         [ simpl_env; reflexivity | assumption ].
   - (* app *)
     eapply d_pat__app.

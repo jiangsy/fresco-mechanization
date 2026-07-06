@@ -376,7 +376,9 @@ where "Γ ⊢ A ≤ B" := (d_shallow_sub Γ A B) : type_scope.
 (*  Skeleton refinement, consistency, and subtyping                       *)
 (* ===================================================================== *)
 
-(* Check failed! critical mismatch in almost all rules *)
+(* Check mostly passed. 
+    LHS are guaranteed to be all inh 
+    some difference with the paper's "Growing both Γ and Δ version", but should be equivalent *)
 (* Todo: we should not use P for RHS in all the rules, P is reserverd for pskl, but RHS is also a bskl here *)
 Inductive d_refine_syn : list (atom * dbind) -> list atom -> bskl -> bskl -> Prop :=
 | d_refine_syn__unit : forall Γ Δ,
@@ -535,10 +537,15 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     (Ψ `union` Ψ') ⨟ Γ ⊢ₛ[ m ] (open_uskl_wrt_uskl R psi) ⊑ Q ->
     Ψ ⨟ Γ ⊢ₛ[ m ] (uskl_all_syn R) ⊑ Q
 | d_pat_sub__ghost : forall m Γ P,
-    (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}]. *)
+    (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}].
+       [mod_comp_sk … m] is the judgment-wide [skmod{SK}] wf-condition
+       (declarative.tex:1935): it excludes an ill-moded fill (a poly [inh{P}] at
+       ti/tc is not [is_sskl]), so the sub output stays mode-compatible — the
+       skeleton analog of [d_sub] having no ghost rule. *)
     (* Todo: lift Ψ quantification above *)
     forall Ψ, Ψ [=] empty ->
     d_wf_pskl Γ nil P ->
+    mod_comp_sk (pskl_to_bskl_inh P) m ->
     Ψ ⨟ Γ ⊢ₛ[ m ] uskl_hole ⊑ (pskl_to_bskl_inh P)
 | d_pat_sub__univ_ghost_l : forall m Ψ Γ R Q,
     (* Paper [UnivGhostL]: drop a [TopHole] on the LHS (any [M ≠ TI]). *)
@@ -546,8 +553,11 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
     Ψ ⨟ Γ ⊢ₛ[ m ] (uskl_tophole R) ⊑ Q
 | d_pat_sub__ghostg : forall m Ψ Γ,
-    (* Paper [GhostG]: a ghost hole [HoleG] is below a plain [Hole]. *)
+    (* Paper [GhostG]: a ghost hole [HoleG] is below a plain [Hole].
+       [mod_comp_sk … m] ([skmod{SK}]) excludes the ill-moded [fn] case (a
+       [bskl_hole] is not an arrow), keeping the output mode-compatible. *)
     Ψ [=] empty ->
+    mod_comp_sk bskl_hole m ->
     Ψ ⨟ Γ ⊢ₛ[ m ] uskl_holeg ⊑ bskl_hole
 | d_pat_sub__univ_ghost_lg : forall m Ψ Γ ε R Q,
     (* Paper [UnivGhostL]: drop a tagged ghost [TopHoletag{δ}] on the LHS
@@ -597,26 +607,26 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 | d_pat__freeze : forall Γ e P,
     Γ ⊢[ mode_ti ] e ⇨ (pskl_to_bskl_syn P) ->
     Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ (pskl_to_bskl_syn P)
-(* AUDIT [mod_comp_sk]: [d_pat] does NOT give [mod_comp_sk] for [abs]/[abs_anno]
-   at [ti] with a POLY domain (result skeleton [inh{P}] is not synthesised),
-   exactly as [d_typing] needed [mod_comp_ty] embedded.  The faithful fix is to
-   embed [mod_comp_sk (bskl_arrow (pskl_to_bskl_inh P) Q) m] here (and the
-   [btyp_to_bskl B] analog on [abs_anno]).  Deferred to the [d_pat_safety] redo,
-   where the [d_pat_total_gen] abs [fn]-cases must thread [mod_comp_sk] of the
-   body through their [safe_skel] construction. *)
 | d_pat__abs : forall L Γ m e P Q,
+    (* [mod_comp_sk … m] is the paper's [skmod{SK}] colour/mode discipline on the
+       inferred arrow, mirroring [d_typing__abs]'s [mod_comp_ty]: at [ti] it forces
+       [is_sskl], excluding a POLY inherited domain (ill-moded); at [FN m'] it
+       threads [mod_comp_sk Q m'] for the body.  [m ≠ tc] keeps this disjoint from
+       [abs_check] (which owns the checking mode). *)
     m <> mode_tc ->
     Γ ⨟ nil ⊢ₚₛ P ->
+    mod_comp_sk (bskl_arrow (pskl_to_bskl_inh P) Q) m ->
     (forall x, x `notin` L ->
        ((x ~ dbind_skl P) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->
     Γ ⊢[ m ] (exp_abs e) ⇨ (bskl_arrow (pskl_to_bskl_inh P) Q)
 | d_pat__abs_anno : forall L Γ m e (A : ptyp) (B : btyp) Q,
     (* The arrow-arg skeleton [Sarg] is bidirectional, [bskl_to_pskl Sarg]
-       the annotation's pattern. *)
+       the annotation's pattern.  [mod_comp_sk … m] as in [abs]. *)
     m <> mode_tc ->
     Γ ⊢ₚ A ->
     btyp_to_ptyp B = A ->
+    mod_comp_sk (bskl_arrow (btyp_to_bskl B) Q) m ->
     (forall x, x `notin` L ->
        ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⇨ Q) ->

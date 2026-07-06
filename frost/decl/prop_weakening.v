@@ -189,9 +189,9 @@ Proof.
     + apply d_wf_uskl_weakening; eassumption.
     + assumption.
     + eapply IHd_pat_sub; reflexivity.
-  - apply d_pat_sub__ghost; [ assumption | apply d_wf_pskl_weakening; assumption ].
+  - apply d_pat_sub__ghost; [ assumption | apply d_wf_pskl_weakening; assumption | assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; reflexivity ].
-  - apply d_pat_sub__ghostg. assumption.
+  - apply d_pat_sub__ghostg; assumption.
   - apply d_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; reflexivity ].
 Qed.
 
@@ -223,10 +223,10 @@ Proof.
       [ exact H | apply IHd_pat; reflexivity | apply d_pat_sub_weakening; exact H1 ].
   - apply d_pat__freeze. apply IHd_pat; reflexivity.
   - apply d_pat__abs with (L := L `union` dom (Γ1 ++ Γ3)) (P := P);
-      [ exact H | apply d_wf_pskl_weakening; assumption | ].
+      [ exact H | apply d_wf_pskl_weakening; assumption | assumption | ].
     intros x Hx. rewrite_env (((x ~ dbind_skl P) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
   - apply d_pat__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (B := B);
-      [ exact H | apply d_wf_ptyp_weakening; assumption | reflexivity | ].
+      [ exact H | apply d_wf_ptyp_weakening; assumption | reflexivity | assumption | ].
     intros x Hx. rewrite_env (((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
   - eapply d_pat__app;
       [ wk_dir e2 | apply d_refine_syn_weakening; eassumption | wk_dir e1 ].

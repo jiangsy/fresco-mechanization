@@ -364,6 +364,17 @@ Proof.
   - pick fresh X. apply (lc_utyp_all_etag_exists X). apply H0. auto.
 Qed.
 
+Lemma d_wf_pskl_lc : forall Γ Δ P, Γ ⨟ Δ ⊢ₚₛ P -> lc_pskl P.
+Proof.
+  intros Γ Δ P H. induction H.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh X. apply (lc_pskl_all_syn_exists X). apply H0. auto.
+  - constructor.
+  - constructor; assumption.
+Qed.
+
 Lemma d_wf_utyp_ftvar : forall Γ C,
     d_wf_utyp Γ C ->
     forall X, X `in` ftvar_in_utyp C -> binds X dbind_tvar Γ.

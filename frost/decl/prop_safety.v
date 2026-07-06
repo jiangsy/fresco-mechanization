@@ -307,6 +307,17 @@ Proof.
   - apply is_sskl__tophole; assumption.
 Qed.
 
+(** [mod_comp_sk] is preserved under tvar-renaming: a variable is [is_sskl]
+    and substitution respects the arrow spine. *)
+Lemma mod_comp_sk_subst_var : forall S m X Y,
+    mod_comp_sk S m -> mod_comp_sk (subst_bskl_in_bskl (bskl_var_f Y) X S) m.
+Proof.
+  intros S m X Y H. induction H; simpl.
+  - apply mod_comp_sk__ti; apply is_sskl_subst_var; assumption.
+  - apply mod_comp_sk__tc; apply is_sskl_subst_var; assumption.
+  - apply mod_comp_sk__fn; assumption.
+Qed.
+
 Lemma is_tskl_subst_var : forall R X Y,
     is_tskl R -> is_tskl (subst_bskl_in_uskl (uskl_var_f Y) X R).
 Proof.
@@ -467,7 +478,9 @@ Proof.
     rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl; try (apply lc_uskl_var_f).
     eapply (IHd_pat_sub Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr ].
   - simpl. rewrite pskl_to_bskl_inh_subst_var. apply d_pat_sub__ghost;
-      [ (assumption || fsetdec) | eapply d_wf_pskl_rename_tvar; [ eassumption | reflexivity | exact Hfr ] ].
+      [ (assumption || fsetdec)
+      | eapply d_wf_pskl_rename_tvar; [ eassumption | reflexivity | exact Hfr ]
+      | rewrite <- pskl_to_bskl_inh_subst_var; apply mod_comp_sk_subst_var; assumption ].
   - simpl. apply d_pat_sub__univ_ghost_l;
       [ assumption | eapply (IHd_pat_sub Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr ] ].
   - apply d_pat_sub__ghostg; (assumption || fsetdec).
@@ -833,22 +846,30 @@ Proof.
     + eapply d_wf_pskl_same_tvar;
         [ eapply d_wf_pskl_rename_tvar; [ exact H0 | reflexivity | exact Hfr ]
         | apply same_tvar_map_subst_var ].
+    + (* [mod_comp_sk] preserved under [X0 := Y]. *)
+      pose proof (mod_comp_sk_subst_var X0 Y H1) as Hm.
+      cbn [subst_bskl_in_bskl] in Hm.
+      rewrite pskl_to_bskl_inh_subst_var in Hm. exact Hm.
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
       rewrite_env (((x ~ subst_var_dbind X0 Y (dbind_skl P)) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
       rewrite map_subst_var_dbind_cons.
-      eapply (H2 x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) Γ2 X0 Y);
+      eapply (H3 x ltac:(fsetdec) ((x ~ dbind_skl P) ++ Γ1) Γ2 X0 Y);
         [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
   - rewrite btyp_to_bskl_subst_var.
     eapply d_pat__abs_anno with (L := L `union` {{X0}} `union` {{Y}} `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2)).
     + assumption.
     + eapply d_wf_ptyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
     + symmetry. apply btyp_to_ptyp_subst_var.
+    + (* [mod_comp_sk] preserved under [X0 := Y]. *)
+      pose proof (mod_comp_sk_subst_var X0 Y H2) as Hm.
+      cbn [subst_bskl_in_bskl] in Hm.
+      rewrite btyp_to_bskl_subst_var in Hm. exact Hm.
     + intros x Hx.
       rewrite subst_ptyp_in_exp_open_exp_wrt_exp_var by (first [ apply lc_ptyp_var_f | fsetdec ]).
       rewrite_env (((x ~ subst_var_dbind X0 Y (dbind_typ (btyp_to_ptyp B))) ++ map (subst_var_dbind X0 Y) Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
       rewrite map_subst_var_dbind_cons.
-      eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) Γ2 X0 Y);
+      eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B)) ++ Γ1) Γ2 X0 Y);
         [ simpl_env; reflexivity | simpl_env in *; fsetdec | exact Hclean ].
   - eapply d_pat__app.
     + rewrite <- pskl_to_bskl_syn_subst_var.
@@ -1777,9 +1798,9 @@ Proof.
       eapply d_pat_sub__forall_l_untagged with (Ψ' := D) (psi := S) end;
       [ assumption | fsetdec | eassumption | assumption | assumption
       | apply IHd_pat_sub; fsetdec ].
-  - apply d_pat_sub__ghost; [ fsetdec | assumption ].
+  - apply d_pat_sub__ghost; [ fsetdec | assumption | assumption ].
   - apply d_pat_sub__univ_ghost_l; [ assumption | apply IHd_pat_sub; exact Heq ].
-  - apply d_pat_sub__ghostg; fsetdec.
+  - apply d_pat_sub__ghostg; [ fsetdec | assumption ].
   - apply d_pat_sub__univ_ghost_lg; [ assumption | apply IHd_pat_sub; exact Heq ].
 Qed.
 
@@ -2059,24 +2080,24 @@ Proof. induction P; simpl; congruence. Qed.
     The driving [uskl_hole ⊑ inh{P0}] is then one [d_pat_sub__ghost]. *)
 Lemma safe_skel_hole_fill : forall m Γ B,
     mod_comp_ty B m -> d_wf_btyp Γ B ->
-    exists P0, Γ ⨟ nil ⊢ₚₛ P0 /\ safe_skel m (pskl_to_bskl_inh P0) B.
+    exists P0, Γ ⨟ nil ⊢ₚₛ P0 /\ safe_skel m (pskl_to_bskl_inh P0) B
+               /\ mod_comp_sk (pskl_to_bskl_inh P0) m.
 Proof.
   intros m Γ B Hsk. induction Hsk; intros HwfB.
-  - (* ti: is_styp B — paint the whole skeleton (erasure matches) *)
-    exists (ptyp_to_pskl (btyp_to_ptyp B)). split.
-    + apply d_wf_pskl_of_ptyp;
-        [ apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfB
-        | intros X HX; right; rewrite ftvar_btyp_to_ptyp in HX;
-          eapply d_wf_btyp_ftvar; [ exact HwfB | exact HX ] ].
-    + simpl. rewrite bskl_to_pskl_pskl_to_bskl_inh. apply skel_safe_of_ptyp.
-      apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfB.
+  - (* ti: fill with a bare hole [□].  [skmod{SK}] requires a SYNTHESISED leaf,
+       and [inh □ = □] is [is_sskl] (a full inh-painted polytype would not be) —
+       [□] is safe for any type ([sks_hole]). *)
+    exists pskl_hole. split; [ apply d_wf_pskl__hole | split ].
+    + simpl. apply skel_safe_hole_nil.
+    + apply mod_comp_sk__ti; apply is_sskl__hole.
   - (* tc: is_ityp B — bare hole [□] absorbs the type ([sks_hole]) *)
-    exists pskl_hole. split; [ apply d_wf_pskl__hole | ].
-    simpl. apply skel_safe_hole_nil.
+    exists pskl_hole. split; [ apply d_wf_pskl__hole | split ].
+    + simpl. apply skel_safe_hole_nil.
+    + apply mod_comp_sk__tc; apply is_sskl__hole.
   - (* fn: arrow — rigid [inh] domain, recurse on the result *)
     inversion HwfB; subst.
-    destruct (IHHsk ltac:(assumption)) as [P0' [HwfP0' Hsafe']].
-    exists (pskl_arrow (ptyp_to_pskl (btyp_to_ptyp B1)) P0'). split.
+    destruct (IHHsk ltac:(assumption)) as [P0' [HwfP0' [Hsafe' Hmcs']]].
+    exists (pskl_arrow (ptyp_to_pskl (btyp_to_ptyp B1)) P0'). split; [ | split ].
     + apply d_wf_pskl__arrow;
         [ apply d_wf_pskl_of_ptyp;
             [ apply lc_ptyp_btyp_to_ptyp;
@@ -2091,6 +2112,8 @@ Proof.
                  apply lc_ptyp_btyp_to_ptyp;
                  match goal with H : Γ ⊢ᵦ B1 |- _ => eapply d_wf_btyp_lc; exact H end
                | exact Hsafe' ] ] ].
+    + (* [mod_comp_sk (inh (arrow …)) (fn m)] via [__fn] on the recursive result *)
+      simpl. apply mod_comp_sk__fn. exact Hmcs'.
 Qed.
 
 (** GENERAL binder rename for typing (mirrors [d_pat_rename_var]): renaming the
@@ -2469,14 +2492,14 @@ Proof.
         | exact Hsc ].
     + (* refined: x : □ in Γ' — HOLE fill route *)
       assert (Hskmod : mod_comp_ty B (mode_fn m0)) by (eapply d_sub_skmod; exact Hsub).
-      destruct (safe_skel_hole_fill Hskmod HwfB') as [P0 [HwfP0 Hsafe0]].
+      destruct (safe_skel_hole_fill Hskmod HwfB') as [P0 [HwfP0 [Hsafe0 Hmcs0]]].
       exists (pskl_to_bskl_inh P0). split; [ | exact Hsafe0 ].
       eapply d_pat__sub with (P := pskl_hole);
         [ apply is_base_term__var
         | apply d_pat__var with (d := dbind_skl pskl_hole) (P := pskl_hole);
             [ exact Hb' | reflexivity ]
         | change (bskl_to_uskl (pskl_to_bskl_syn pskl_hole)) with uskl_hole;
-          apply d_pat_sub__ghost; [ fsetdec | exact HwfP0 ] ].
+          apply d_pat_sub__ghost; [ fsetdec | exact HwfP0 | exact Hmcs0 ] ].
     + (* painted: x : skl (ptyp_to_pskl A0) in Γ' — same SYN route as kept (the
          concrete skeleton [ptyp_to_pskl A0] is the syn inference of [A0]). *)
       exists Qsyn. split; [ | exact Hsafe ].
@@ -2975,6 +2998,69 @@ Proof.
       rewrite ! pskl_to_bskl_syn_subst_unit, ! ptyp_to_pskl_subst_unit; reflexivity.
 Qed.
 
+(** Skeleton subtyping's output is mode-compatible ([skmod{SK}]) — the skeleton
+    analog of [d_sub_skmod].  The two ghost rules carry [mod_comp_sk] explicitly
+    (the [skmod{SK}] wf-condition); every other rule yields it structurally. *)
+Lemma d_pat_sub_skmod : forall m Ψ Γ R Q,
+    Ψ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q -> mod_comp_sk Q m.
+Proof.
+  intros m Ψ Γ R Q H. induction H.
+  - apply mod_comp_sk__ti; assumption.
+  - apply mod_comp_sk__tc; apply is_sskl__tophole; assumption.
+  - apply mod_comp_sk__fn; assumption.
+  - assumption.
+  - assumption.
+  - assumption.
+  - assumption.
+  - assumption.
+  - assumption.
+Qed.
+
+(** Skeleton inference's output is mode-compatible ([skmod{SK}] as a wf-condition
+    on [d_pat], declarative.tex:1935) — the skeleton analog of
+    [d_typing_mod_comp_ty].  [abs]/[abs_anno] carry [mod_comp_sk] explicitly; the
+    [sub] case goes through [d_pat_sub_skmod] (as [d_typing__sub] does through
+    [d_sub_skmod]); the rest is structural. *)
+Lemma d_pat_mod_comp_sk : forall m Γ e Q,
+    Γ ⊢[ m ] e ⇨ Q -> d_wf_denv Γ -> mod_comp_sk Q m.
+Proof.
+  intros m Γ e Q H. induction H; intros Hwf.
+  - (* unit *) apply mod_comp_sk__ti; apply is_sskl__unit.
+  - (* var *) apply mod_comp_sk__ti; apply is_sskl_pskl_to_bskl_syn.
+    destruct d; simpl in H0; try discriminate; inversion H0; subst.
+    + apply lc_pskl_ptyp_to_pskl; eapply d_wf_ptyp_lc;
+        eapply d_wf_denv_binds_typ; [ exact Hwf | exact H ].
+    + eapply d_wf_pskl_lc; eapply d_wf_denv_binds_skl; [ exact Hwf | exact H ].
+  - (* anno *) apply mod_comp_sk__ti; apply is_sskl_pskl_to_bskl_syn.
+    apply lc_pskl_ptyp_to_pskl; eapply d_wf_ptyp_lc; exact H.
+  - (* sub *) eapply d_pat_sub_skmod; eassumption.
+  - (* freeze *) apply mod_comp_sk__tc.
+    assert (Hti : mod_comp_sk (pskl_to_bskl_syn P) mode_ti) by (apply IHd_pat; assumption).
+    inversion Hti; assumption.
+  - (* abs *) assumption.
+  - (* abs_anno *) assumption.
+  - (* app *)
+    assert (Hf : mod_comp_sk (bskl_arrow Q1 Q2) (mode_fn m)) by (apply IHd_pat2; assumption).
+    inversion Hf; subst; assumption.
+  - (* abs_check *) apply mod_comp_sk__tc, is_sskl__tophole, is_sskl__arrow;
+      [ apply is_sskl__hole | ].
+    pick fresh x for (L `union` dom Γ).
+    assert (Hb : mod_comp_sk (pskl_to_bskl_syn P) mode_tc)
+      by (apply (H0 x); [ fsetdec
+                        | apply d_wf_denv__skl; [ exact Hwf | fsetdec | apply d_wf_pskl__hole ] ]).
+    inversion Hb; assumption.
+  - (* abs_anno_check *) apply mod_comp_sk__tc, is_sskl__tophole, is_sskl__arrow;
+      [ rewrite btyp_to_bskl_ptyp_to_btyp_syn_eq;
+        apply is_sskl_pskl_to_bskl_syn; apply lc_pskl_ptyp_to_pskl;
+        eapply d_wf_ptyp_lc; exact H
+      | ].
+    pick fresh x for (L `union` dom Γ).
+    assert (Hb : mod_comp_sk (pskl_to_bskl_syn P) mode_tc)
+      by (apply (H1 x); [ fsetdec
+                        | apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ] ]).
+    inversion Hb; assumption.
+Qed.
+
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' -> gpat m Γ' e B.
@@ -3062,6 +3148,10 @@ Proof.
           (P := pskl_hole).
         -- discriminate.
         -- apply d_wf_pskl__hole.
+        -- (* [mod_comp_sk … ti] = [is_sskl] of the arrow. *)
+           apply mod_comp_sk__ti.
+           replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+           apply is_sskl__arrow; [ apply is_sskl__hole | exact Hssklb ].
         -- intros x Hx.
            replace (open_exp_wrt_exp e (exp_var_f x))
              with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
@@ -3188,6 +3278,8 @@ Proof.
           (P := ptyp_to_pskl A).
         -- discriminate.
         -- exact HwfPA.
+        -- (* [mod_comp_sk (arrow (inh A) Qc) (fn m0)] via the body's [skmod{SK}] *)
+           apply mod_comp_sk__fn. eapply d_pat_mod_comp_sk; [ exact HinfQc | exact Hwfb ].
         -- intros x Hx.
            replace (open_exp_wrt_exp e (exp_var_f x))
              with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
@@ -3227,6 +3319,11 @@ Proof.
         -- discriminate.
         -- eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ].
         -- exact H0.
+        -- (* [mod_comp_sk … ti] = [is_sskl] of the arrow (same as the gpat conjunct). *)
+           apply mod_comp_sk__ti. rewrite HB1, btyp_to_bskl_ptyp_to_btyp_syn_eq.
+           apply is_sskl__arrow;
+             [ apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl;
+               eapply d_wf_ptyp_lc_loc; exact H | exact Hssklb ].
         -- intros x Hx.
            replace (open_exp_wrt_exp e (exp_var_f x))
              with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
@@ -3338,6 +3435,10 @@ Proof.
         -- discriminate.
         -- exact HwfA'.
         -- exact H0.
+        -- (* [mod_comp_sk (arrow (btyp_to_bskl B1) Qc) (fn m0)] via the body's [skmod{SK}] *)
+           apply mod_comp_sk__fn. eapply d_pat_mod_comp_sk;
+             [ exact HinfQc
+             | apply d_wf_denv__typ; [ exact Hwf' | clear - Fr; fsetdec | exact HwfA' ] ].
         -- intros x Hx.
            replace (open_exp_wrt_exp e (exp_var_f x))
              with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
