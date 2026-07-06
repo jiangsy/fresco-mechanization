@@ -3451,8 +3451,16 @@ Proof.
         split; [ rewrite bskl_to_pskl_btyp_to_bskl; apply skel_safe_of_ptyp;
                  rewrite H0; eapply d_wf_ptyp_lc; exact HpA
                | exact HsafeQc ].
-  - (* app: [d_pat__app] infers the function arrow and threads the refined
-       argument; safety follows from the codomain's [safe_skel]. *)
+  - (* app: [d_pat__app] infers the function arrow [Γ' ⊢ e1 ⇨ arrow Sarg Qcc]
+       and threads the refined argument; the codomain safety is [Hcod :
+       safe_skel m Qcc B0] directly.  The remaining core obligation is the
+       DOMAIN ALIGNMENT [Γ' ⨟ nil ⊢ᵣ inh (bskl_to_pskl Q2c) ⊳ Sarg]: the
+       argument's INFERRED [is_sskl] skeleton [Q2c] (possibly hole-rich) must
+       refine to the function's INDEPENDENTLY-inferred domain [Sarg].  This is
+       NOT a corollary of the existing safety lemmas — e.g. an argument
+       inferring [□] cannot refine to an inherited-poly [Sarg] ([□ ⊳ Q] only
+       yields [syn{Q}]).  It needs a dedicated lemma relating two same-type
+       safe skeletons (arg holes ↔ function-domain synthesised fills). *)
     admit.
 Admitted.
 
