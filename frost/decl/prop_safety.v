@@ -1832,6 +1832,104 @@ Proof.
       * apply binds_app_3. apply Hcov. assumption.
 Qed.
 
+(** [colour] peels a leading tophole in the GUIDE for a non-∀ type: the guide
+    only steers ∀-colours and arrow-heads, so at a non-∀ type a tophole guide
+    behaves like its stripped guide (provided the stripped guide is itself not a
+    tophole, so a single peel suffices). *)
+Lemma colour_tophole_nonall : forall A Q0,
+    (forall A0, A <> ptyp_all A0) ->
+    (forall Q1, Q0 <> bskl_tophole Q1) ->
+    colour (bskl_tophole Q0) A = colour Q0 A.
+Proof.
+  intros A Q0 HnA HnQ. destruct A; simpl; try reflexivity.
+  - (* arrow *) destruct Q0; simpl; try reflexivity. exfalso; eapply HnQ; reflexivity.
+  - (* all *) exfalso; eapply HnA; reflexivity.
+Qed.
+
+(** [consis_syn_colour] generalised from [hole_safe] to [skel_safe] (tophole-
+    tolerant): the argument pattern's coverage skeleton (which may carry ⫯ ghosts
+    from a checked-λ argument) is still consistent with the inh-painted [colour].
+    The two extra cases: [sks_top_leaf] peels the ⫯ via [colour_tophole_nonall]
+    and recurses; [sks_top_all] gives an [all_syn] [colour] ⇒ [forall_syn]. *)
+Lemma consis_syn_colour_skel : forall C Parg Δ Γ,
+    skel_safe Δ Parg C ->
+    lc_ptyp C ->
+    (forall X, List.In X Δ -> binds X dbind_tvar Γ) ->
+    (forall X, X `in` ftvar_in_ptyp C -> binds X dbind_tvar Γ) ->
+    empty ⨟ Γ ⊨ₛ (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl C)))
+                ≈ (colour (pskl_to_bskl_inh Parg) C).
+Proof.
+  intros C Parg Δ Γ Hss. revert Γ.
+  induction Hss; intros Γ Hlc HΔcov Hcov.
+  - (* sks_hole: [Parg = □], [colour □ C = syn C] ⇒ reflexivity. *)
+    replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+    rewrite colour_hole. apply d_pat_consis_refl.
+    + apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl; assumption.
+    + intros X HX. rewrite ftvar_pskl_to_bskl_syn, ftvar_ptyp_to_pskl in HX. apply Hcov; assumption.
+  - (* sks_unit *) simpl. apply d_pat_consis__unit; fsetdec.
+  - (* sks_var_f *) simpl. apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
+  - (* sks_arrow *) simpl. inversion Hlc; subst.
+    apply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ apply IHHss1 | apply IHHss2 | fsetdec ];
+      solve [ assumption | exact HΔcov | intros Y HY; apply Hcov; simpl; fsetdec ].
+  - (* sks_all: [Parg = all_syn P0] ⇒ [colour] gives [all_inh] ⇒ [forall_inh]. *)
+    simpl. inversion Hlc; subst.
+    inst_cofinites_for d_pat_consis__forall_inh_untagged. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open, <- ptyp_to_pskl_open.
+    rewrite <- colour_open.
+    rewrite <- (colour_guide_open _ (pskl_to_bskl_inh P0) X).
+    rewrite <- pskl_to_bskl_inh_open.
+    apply H0.
+    + fsetdec.
+    + match goal with H : forall X, lc_ptyp _ |- _ => apply H end.
+    + intros X0 HIn0. simpl in HIn0. destruct HIn0 as [Heq | HIn0];
+        [ subst X0; apply binds_app_2, binds_one_3; reflexivity
+        | apply binds_app_3; apply HΔcov; assumption ].
+    + intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+      simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+      * apply AtomSetImpl.singleton_1 in HY. subst. apply binds_app_2, binds_one_3; reflexivity.
+      * apply binds_app_3. apply Hcov. assumption.
+  - (* sks_top_leaf: [Parg = ⫯P0], [A] non-∀ ⇒ peel the ⫯ from the guide. *)
+    simpl (pskl_to_bskl_inh _).
+    rewrite colour_tophole_nonall;
+      [ | exact H | intros Q1 Hc;
+          destruct P0; simpl in Hc; try discriminate; eapply H0; reflexivity ].
+    apply IHHss; assumption.
+  - (* sks_top_all: [Parg = ⫯P0], [A = ∀A0] ⇒ [colour] gives [all_syn] ⇒ [forall_syn].
+       The skeleton [⫯P0] and [Δ] stay FIXED across the ∀-opening (only the type
+       opens); the guide is X-free so [colour_open] alone moves the [open] out. *)
+    simpl (pskl_to_bskl_inh _). simpl (colour _ _). inversion Hlc; subst.
+    inst_cofinites_for d_pat_consis__forall_syn. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open, <- ptyp_to_pskl_open.
+    rewrite <- colour_open.
+    change (bskl_tophole (pskl_to_bskl_inh P0)) with (pskl_to_bskl_inh (pskl_tophole P0)).
+    apply H0.
+    + fsetdec.
+    + match goal with H : forall X, lc_ptyp _ |- _ => apply H end.
+    + intros X0 HIn0. apply binds_app_3; apply HΔcov; assumption.
+    + intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+      simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+      * apply AtomSetImpl.singleton_1 in HY. subst. apply binds_app_2, binds_one_3; reflexivity.
+      * apply binds_app_3. apply Hcov. assumption.
+Qed.
+
+(** A [skel_safe] skeleton's free tvars are among the type's (its leaves are
+    holes / matching vars / peeled binders). *)
+Lemma skel_safe_ftvar : forall Δ P A,
+    skel_safe Δ P A -> ftvar_in_pskl P [<=] ftvar_in_ptyp A.
+Proof.
+  induction 1; simpl; try fsetdec.
+  - (* sks_all *) pick fresh X for (L `union` ftvar_in_pskl P0 `union` ftvar_in_ptyp A0).
+    specialize (H0 X ltac:(fsetdec)).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P0 (pskl_var_f X)) as Hlow.
+    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f X)) as Hup. simpl in Hup.
+    clear - H0 Hlow Hup Fr. fsetdec.
+  - (* sks_top_all *) pick fresh X for (L `union` ftvar_in_pskl P0 `union` ftvar_in_ptyp A0).
+    specialize (H0 X ltac:(fsetdec)). simpl in H0.
+    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f X)) as Hup. simpl in Hup.
+    clear - H0 Hup Fr. fsetdec.
+Qed.
+
 (** The syn-erasure of any (lc) utyp's skeleton is a tagged skeleton (every
     forall erases to the synthesised [all_syn], now in [is_tskl]), carries no
     instantiation tags, and is consistent with the inh-painting.  These are the
@@ -3643,14 +3741,16 @@ Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' ->
     forall Parg, skel_safe nil Parg (btyp_to_ptyp B1) ->
-    exists Q1 Q2,
-      Γ' ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow Q1 Q2)
-      /\ Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ Q1
-      /\ is_sskl Q2
-      /\ safe_skel m Q2 B2
-      /\ (forall Γt B1t B2t, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
-            Γt ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1t B2t) ->
-            skel_safe nil (bskl_to_pskl Q2) (btyp_to_ptyp B2t)).
+    exists Q2,
+      Γ' ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow (colour (pskl_to_bskl_inh Parg) (btyp_to_ptyp B1)) Q2)
+      /\ Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ (colour (pskl_to_bskl_inh Parg) (btyp_to_ptyp B1))
+      /\ (match m with
+          | mode_fn _ => safe_skel m Q2 B2
+          | _ => is_sskl Q2 /\
+                 (forall Γt B1t B2t, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+                    Γt ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1t B2t) ->
+                    skel_safe nil (bskl_to_pskl Q2) (btyp_to_ptyp B2t))
+          end).
 Admitted.
 
 Lemma d_pat_total_gen : forall m Γ e B,
@@ -4053,19 +4153,21 @@ Proof.
     assert (Hsafe_arg : skel_safe nil (bskl_to_pskl Qa) (btyp_to_ptyp B1))
       by (eapply (Hcov2 Γ (btyp_to_ptyp B1)); [ apply crtw_base; exact Hcr | exact Hwf | exact Hty2 ]).
     destruct (@d_pat_fn_dir Γ m e1 B1 B2 Hty1 Hwf Γ' Hcr Hwf' (bskl_to_pskl Qa) Hsafe_arg)
-      as [Q1 [Q2 [Hinf1 [Href1 [HssklQ2 [Hsafe2 Hcod2]]]]]].
+      as [Q2 [Hinf1 [Href1 Hrest]]].
     assert (Happ : Γ' ⊢[ m ] (exp_app e1 e2) ⇨ Q2)
       by (eapply d_pat__app; [ exact Hinf2' | exact Href1 | exact Hinf1 ]).
     destruct m as [ | | m0 ].
-    + (* ti *) exists Q2. split; [ exact Happ | split; [ exact HssklQ2 | ] ].
+    + (* ti *) destruct Hrest as [HssklQ2 Hcod2].
+      exists Q2. split; [ exact Happ | split; [ exact HssklQ2 | ] ].
       intros Γt A Hcrt Hwft HA.
       eapply app_fill_skel_ti; [ | exact Hcrt | exact Hwft | exact HA ].
       intros Γt' B1t B2t Hcrt' Hwft' He1t. eapply Hcod2; [ exact Hcrt' | exact Hwft' | exact He1t ].
-    + (* tc *) exists Q2. split; [ exact Happ | split; [ exact HssklQ2 | ] ].
+    + (* tc *) destruct Hrest as [HssklQ2 Hcod2].
+      exists Q2. split; [ exact Happ | split; [ exact HssklQ2 | ] ].
       intros Γt A Hcrt Hwft HA.
       eapply app_fill_skel_tc; [ | exact Hcrt | exact Hwft | exact HA ].
       intros Γt' B1t B2t Hcrt' Hwft' He1t. eapply Hcod2; [ exact Hcrt' | exact Hwft' | exact He1t ].
-    + (* fn *) exists Q2. split; [ exact Happ | exact Hsafe2 ].
+    + (* fn *) exists Q2. split; [ exact Happ | exact Hrest ].
 Qed.
 
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
