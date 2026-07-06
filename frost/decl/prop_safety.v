@@ -3828,6 +3828,78 @@ Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
                     Γt ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1t B2t) ->
                     skel_safe nil (bskl_to_pskl Q2) (btyp_to_ptyp B2t))
           end).
+Proof.
+  intros Γ m e1 B1 B2 Hty.
+  remember (mode_fn m) as fm eqn:Hfm.
+  remember (btyp_arrow B1 B2) as Barr eqn:HBarr.
+  revert m B1 B2 Hfm HBarr.
+  induction Hty; intros mm BB1 BB2 Hfm HBarr Hwf Γ' Hcr Hwf' Parg Hsafe;
+    try discriminate Hfm.
+  - (* sub: base term subsumed to the arrow.  Directed inference via
+       [safe_fn_skel_dir]; FN-mode safety is its [safe_skel] output. *)
+    subst m. subst B.
+    assert (HwfsynB : d_wf_btyp Γ (ptyp_to_btyp_syn A))
+      by (eapply d_typing_wf_btyp; [ exact Hty | exact Hwf ]).
+    assert (HwfA : d_wf_ptyp Γ A).
+    { apply d_wf_ptyp_of_lc_ftvar;
+        [ apply lc_ptyp_of_lc_btyp_syn; eapply d_wf_btyp_lc; exact HwfsynB
+        | intros X HX; eapply d_wf_btyp_ftvar;
+            [ exact HwfsynB | rewrite prop_wellformed.ftvar_ptyp_to_btyp_syn; exact HX ] ]. }
+    assert (HwfU : Γ ⊢ᵤ (ptyp_to_utyp_syn A)) by (apply d_wf_utyp_painting_syn; exact HwfA).
+    assert (HwfB : d_wf_btyp Γ (btyp_arrow BB1 BB2)) by (eapply d_sub_wf; [ exact H0 | exact HwfU ]).
+    assert (HwfBB1 : d_wf_btyp Γ BB1) by (inversion HwfB; assumption).
+    assert (HwfA' : d_wf_ptyp Γ' A) by (eapply d_wf_ptyp_ctx_refines; [ exact HwfA | exact Hcr ]).
+    assert (HwfU' : Γ' ⊢ᵤ (ptyp_to_utyp_syn A)) by (apply d_wf_utyp_painting_syn; exact HwfA').
+    assert (HwfB' : d_wf_btyp Γ' (btyp_arrow BB1 BB2)).
+    { apply d_wf_btyp_of_lc_ftvar;
+        [ eapply d_wf_btyp_lc; exact HwfB
+        | intros X HX; eapply ctx_refines_binds_tvar;
+            [ exact Hcr | eapply d_wf_btyp_ftvar; [ exact HwfB | exact HX ] ] ]. }
+    assert (Hsub' : empty ⨟ Γ' ⊢[ mode_fn mm ] (ptyp_to_utyp_syn A) ⊑ (btyp_arrow BB1 BB2))
+      by (eapply d_sub_ctx_refines; [ exact H0 | exact Hcr ]).
+    assert (HcovP : forall X, X `in` ftvar_in_pskl Parg -> binds X dbind_tvar Γ').
+    { intros X HX. pose proof (skel_safe_ftvar Hsafe HX) as HXt.
+      rewrite ftvar_btyp_to_ptyp in HXt. eapply ctx_refines_binds_tvar;
+        [ exact Hcr | eapply d_wf_btyp_ftvar; [ exact HwfBB1 | exact HXt ] ]. }
+    destruct (safe_fn_skel_dir HwfU' HwfB' Hsub' Hsafe HcovP) as [Qc [Hsc Hsafe_cod]].
+    rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hsc.
+    assert (Href : Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg)
+                     ⊳ (colour (pskl_to_bskl_inh Parg) (btyp_to_ptyp BB1))).
+    { apply refine_colour_skel with (Δ := nil);
+        [ exact Hsafe
+        | apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfBB1
+        | intros X HX; right; rewrite ftvar_btyp_to_ptyp in HX;
+          eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_btyp_ftvar; [ exact HwfBB1 | exact HX ] ] ]. }
+    exists Qc. split; [ | split; [ exact Href | ] ].
+    + (* inference: [e ⇨ arrow (colour…) Qc] via [d_pat__sub] + the primary skeleton *)
+      pose proof (d_typing_ti_primary Hty) as Hpri. simpl in Hpri.
+      rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hpri.
+      destruct H.
+      * (* unit *) eapply d_pat__sub with (P := ptyp_to_pskl A);
+          [ apply is_base_term__unit | rewrite Hpri; apply d_pat__unit | exact Hsc ].
+      * (* var x *) destruct Hpri as [A0 [Hbnd Hpsk]].
+        destruct (@ctx_refines_binds Γ' Γ x (dbind_typ A0) Hcr Hbnd) as [d' [Hb' Hdr]].
+        inversion Hdr as [ | Pv Av Hss ]; subst.
+        -- (* kept: x : typ A0 in Γ' *)
+           eapply d_pat__sub with (P := ptyp_to_pskl A);
+             [ apply is_base_term__var
+             | rewrite Hpsk; apply d_pat__var with (d := dbind_typ A0); [ exact Hb' | reflexivity ]
+             | exact Hsc ].
+        -- (* dbr: x : skl Pv — partial-source directed inference *) admit.
+      * (* anno e0 A0 *)
+        assert (HwfA0 : d_wf_ptyp Γ A0) by (eapply d_typing_anno_wf; [ exact Hty | exact Hwf ]).
+        eapply d_pat__sub with (P := ptyp_to_pskl A);
+          [ apply is_base_term__anno
+          | rewrite Hpri; apply d_pat__anno; eapply d_wf_ptyp_ctx_refines; [ exact HwfA0 | exact Hcr ]
+          | exact Hsc ].
+    + (* safety by mode *)
+      destruct mm as [ | | m0 ].
+      * (* ti *) admit.
+      * (* tc *) admit.
+      * (* fn *) exact Hsafe_cod.
+  - (* abs *) admit.
+  - (* abs_anno *) admit.
+  - (* app: curried application in function position *) admit.
 Admitted.
 
 Lemma d_pat_total_gen : forall m Γ e B,
