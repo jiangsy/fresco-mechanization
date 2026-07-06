@@ -1618,6 +1618,50 @@ Proof.
     + apply binds_app_3. apply Hcov. assumption.
 Qed.
 
+(** ARGUMENT-MATCHED domain: a type's syn-erasure is consistent with the
+    [colour]-fill of ANY [hole_safe] argument pattern [Parg] — not just the inh
+    painting ([consis_syn_inh]).  This is what lets [d_pat__app] thread an
+    argument's refinement regardless of its painting: [consis]'s
+    [forall_inh]/[forall_syn] follow [colour]'s guide (inh where [Parg] has an
+    all_syn ∀, syn where [Parg] has a hole), and the hole case reduces to
+    reflexivity ([colour □ = syn]).  Dissolves the [□-arg ⊳ inh-domain] clash in
+    the [d_pat_total_gen] app case, with no flex vars. *)
+Lemma consis_syn_colour : forall C Parg Γ,
+    hole_safe nil Parg C ->
+    lc_ptyp C ->
+    (forall X, X `in` ftvar_in_ptyp C -> binds X dbind_tvar Γ) ->
+    empty ⨟ Γ ⊨ₛ (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl C)))
+                ≈ (colour (pskl_to_bskl_inh Parg) C).
+Proof.
+  intros C Parg Γ Hhs. revert Γ. induction Hhs; intros Γ Hlc Hcov.
+  - (* hs_hole: [Parg = □], [colour □ C = syn C] ⇒ reflexivity. *)
+    replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+    rewrite colour_hole. apply d_pat_consis_refl.
+    + apply is_sskl_pskl_to_bskl_syn, lc_pskl_ptyp_to_pskl; assumption.
+    + intros X HX. rewrite ftvar_pskl_to_bskl_syn, ftvar_ptyp_to_pskl in HX. apply Hcov; assumption.
+  - (* hs_unit *) simpl. apply d_pat_consis__unit; fsetdec.
+  - (* hs_var_f *) simpl. apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
+  - (* hs_var_b *) inversion Hlc.
+  - (* hs_arrow *) simpl. inversion Hlc; subst.
+    apply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ apply IHHhs1 | apply IHHhs2 | fsetdec ]; try assumption;
+      intros Y HY; apply Hcov; simpl; fsetdec.
+  - (* hs_all: [Parg = all_syn P0] ⇒ [colour] gives an [all_inh] ⇒ [forall_inh]. *)
+    simpl. inversion Hlc; subst.
+    inst_cofinites_for d_pat_consis__forall_inh_untagged. intros X HX.
+    rewrite <- bskl_to_uskl_open, <- pskl_to_bskl_syn_open, <- ptyp_to_pskl_open.
+    rewrite <- colour_open.
+    rewrite <- (colour_guide_open _ (pskl_to_bskl_inh P0) X).
+    rewrite <- pskl_to_bskl_inh_open.
+    apply H0.
+    + fsetdec.
+    + match goal with H : forall X, lc_ptyp _ |- _ => apply H end.
+    + intros Y HY. apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+      simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+      * apply AtomSetImpl.singleton_1 in HY. subst. apply binds_app_2, binds_one_3; reflexivity.
+      * apply binds_app_3. apply Hcov. assumption.
+Qed.
+
 (** The syn-erasure of any (lc) utyp's skeleton is a tagged skeleton (every
     forall erases to the synthesised [all_syn], now in [is_tskl]), carries no
     instantiation tags, and is consistent with the inh-painting.  These are the
