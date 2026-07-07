@@ -3107,6 +3107,79 @@ Proof.
           apply Hbp; fsetdec end.
 Qed.
 
+(** part2 codomain-coverage fill for an ANNOTATED λ at [fn ti]: invert the
+    fn-mode typing (annotation pins the domain, so the body runs at [x : typ Ann]
+    with [dbr_refl]) and delegate to the body's coverage.  The [ti] variant needs
+    [is_styp B2] (from [mod_comp_ty … (fn ti)]) to align [ptyp_to_btyp_syn]. *)
+Lemma abs_anno_fn_cod_fill_ti : forall Ann e Qc Γ' L_b,
+    (forall x, x `notin` L_b -> forall Γt'' A'',
+        ctx_refines_tw ((x ~ dbind_typ Ann) ++ Γ') Γt'' -> d_wf_denv Γt'' ->
+        Γt'' ⊢[ mode_ti ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ ptyp_to_btyp_syn A'' ->
+        skel_safe nil (bskl_to_pskl Qc) A'') ->
+    forall Γt B1t B2t,
+      ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+      Γt ⊢[ mode_fn mode_ti ] (exp_abs_anno Ann e) ⦂ (btyp_arrow B1t B2t) ->
+      skel_safe nil (bskl_to_pskl Qc) (btyp_to_ptyp B2t).
+Proof.
+  intros Ann e Qc Γ' L_b Hbody Γt B1t B2t Hcr Hwf Hty.
+  remember (exp_abs_anno Ann e) as ee eqn:Hee.
+  remember (mode_fn mode_ti) as m eqn:Hm.
+  remember (btyp_arrow B1t B2t) as B0 eqn:HB0.
+  revert B1t B2t Hcr Hwf Hee HB0 Hm.
+  induction Hty; intros B1t' B2t' Hcr Hwf Hee HB0 Hm;
+    try discriminate Hee; try discriminate Hm;
+    try (exfalso; subst;
+         match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end).
+  - (* abs_anno *)
+    subst m. injection Hee as HeeA Hee_e. subst e0. subst Ann.
+    injection HB0 as HB0a HB0b. rewrite <- HB0b.
+    assert (Hstyp : is_styp B2)
+      by (match goal with Hsk : mod_comp_ty (btyp_arrow _ _) (mode_fn mode_ti) |- _ =>
+            inversion Hsk; subst;
+            match goal with Hs : mod_comp_ty _ mode_ti |- _ => inversion Hs; assumption end end).
+    pick fresh x for (L_b `union` L `union` dom Γ).
+    eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ) (btyp_to_ptyp B2)).
+    + apply crtw_cons; [ apply dbr_refl | exact Hcr ].
+    + apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ].
+    + rewrite (ptyp_to_btyp_syn_btyp_to_ptyp (is_styp_is_syn Hstyp)).
+      match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ => apply Hbp; fsetdec end.
+Qed.
+
+(** [tc] variant of [abs_anno_fn_cod_fill_ti]: body at [tc], [is_ityp B2]. *)
+Lemma abs_anno_fn_cod_fill_tc : forall Ann e Qc Γ' L_b,
+    (forall x, x `notin` L_b -> forall Γt'' A'',
+        ctx_refines_tw ((x ~ dbind_typ Ann) ++ Γ') Γt'' -> d_wf_denv Γt'' ->
+        Γt'' ⊢[ mode_tc ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ ptyp_to_btyp_inh A'' ->
+        skel_safe nil (bskl_to_pskl Qc) A'') ->
+    forall Γt B1t B2t,
+      ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+      Γt ⊢[ mode_fn mode_tc ] (exp_abs_anno Ann e) ⦂ (btyp_arrow B1t B2t) ->
+      skel_safe nil (bskl_to_pskl Qc) (btyp_to_ptyp B2t).
+Proof.
+  intros Ann e Qc Γ' L_b Hbody Γt B1t B2t Hcr Hwf Hty.
+  remember (exp_abs_anno Ann e) as ee eqn:Hee.
+  remember (mode_fn mode_tc) as m eqn:Hm.
+  remember (btyp_arrow B1t B2t) as B0 eqn:HB0.
+  revert B1t B2t Hcr Hwf Hee HB0 Hm.
+  induction Hty; intros B1t' B2t' Hcr Hwf Hee HB0 Hm;
+    try discriminate Hee; try discriminate Hm;
+    try (exfalso; subst;
+         match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end).
+  - (* abs_anno *)
+    subst m. injection Hee as HeeA Hee_e. subst e0. subst Ann.
+    injection HB0 as HB0a HB0b. rewrite <- HB0b.
+    assert (Hityp : is_ityp B2)
+      by (match goal with Hsk : mod_comp_ty (btyp_arrow _ _) (mode_fn mode_tc) |- _ =>
+            inversion Hsk; subst;
+            match goal with Hs : mod_comp_ty _ mode_tc |- _ => inversion Hs; assumption end end).
+    pick fresh x for (L_b `union` L `union` dom Γ).
+    eapply (Hbody x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ) (btyp_to_ptyp B2)).
+    + apply crtw_cons; [ apply dbr_refl | exact Hcr ].
+    + apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ].
+    + rewrite (is_ityp_ptyp_to_btyp_inh Hityp).
+      match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ => apply Hbp; fsetdec end.
+Qed.
+
 
 (** ===================================================================== *)
 (**  d_look EXTRACTION route (the context-free [a_look] shadow): read a       *)
@@ -4491,9 +4564,17 @@ Proof.
       - (* ti *)
         destruct (proj1 (H3 x0 ltac:(clear - Fr; fsetdec) Hwftb
                            ((x0 ~ dbind_typ A) ++ Γ')
-                           ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ]) Hwfb')) as [Qc [Hinf [Hssk _]]].
+                           ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ]) Hwfb')) as [Qc [Hinf [Hssk Hcov]]].
         exists (btyp_to_bskl B1), Qc.
-        split; [ | split; [ exact Href | split; [ exact Hssk | admit ] ] ].
+        split; [ | split; [ exact Href | split; [ exact Hssk
+          | eapply abs_anno_fn_cod_fill_ti with (Ann := A) (Qc := Qc) (Γ' := Γ')
+              (L_b := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e `union` ftvar_in_exp e);
+            intros xx Hxx;
+            eapply gpat_skel_rename with (m := mode_ti) (paint := ptyp_to_btyp_syn)
+              (db := dbind_typ A) (e := e) (Γ' := Γ') (Q := Qc) (x := x0) (y := xx);
+              [ apply ptyp_to_btyp_syn_subst_var | discriminate | clear - Fr; simpl; fsetdec | exact Hwf'
+              | intros y0 Hy0; apply d_wf_denv__typ; [ exact Hwf' | exact Hy0 | exact HwfA' ]
+              | exact Hcov | clear - Hxx; fsetdec ] ] ] ].
         apply d_pat__abs_anno with (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (B := B1).
         + discriminate.
         + exact HwfA'.
@@ -4507,9 +4588,17 @@ Proof.
       - (* tc *)
         destruct (proj1 (H3 x0 ltac:(clear - Fr; fsetdec) Hwftb
                            ((x0 ~ dbind_typ A) ++ Γ')
-                           ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ]) Hwfb')) as [Qc [Hinf [Hssk _]]].
+                           ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ]) Hwfb')) as [Qc [Hinf [Hssk Hcov]]].
         exists (btyp_to_bskl B1), Qc.
-        split; [ | split; [ exact Href | split; [ exact Hssk | admit ] ] ].
+        split; [ | split; [ exact Href | split; [ exact Hssk
+          | eapply abs_anno_fn_cod_fill_tc with (Ann := A) (Qc := Qc) (Γ' := Γ')
+              (L_b := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e `union` ftvar_in_exp e);
+            intros xx Hxx;
+            eapply gpat_skel_rename with (m := mode_tc) (paint := ptyp_to_btyp_inh)
+              (db := dbind_typ A) (e := e) (Γ' := Γ') (Q := Qc) (x := x0) (y := xx);
+              [ apply ptyp_to_btyp_inh_subst_var | discriminate | clear - Fr; simpl; fsetdec | exact Hwf'
+              | intros y0 Hy0; apply d_wf_denv__typ; [ exact Hwf' | exact Hy0 | exact HwfA' ]
+              | exact Hcov | clear - Hxx; fsetdec ] ] ] ].
         apply d_pat__abs_anno with (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (B := B1).
         + discriminate.
         + exact HwfA'.
