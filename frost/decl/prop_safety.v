@@ -3845,6 +3845,62 @@ Qed.
     This is what makes the domain flexible per-application without flex vars: the
     function's own [d_pat_sub] paints the domain to the argument via
     [consis_syn_colour].  PROOF still open — the remaining app-case obligation. *)
+
+(** Structural removal of ALL [tophole] ghosts from a skeleton (the [λ]'s domain
+    can't carry a [⫯], so the abs case binds the ⫯-STRIPPED argument pattern). *)
+Fixpoint strip_tophole (P : pskl) : pskl :=
+  match P with
+  | pskl_tophole P0 => strip_tophole P0
+  | pskl_arrow P1 P2 => pskl_arrow (strip_tophole P1) (strip_tophole P2)
+  | pskl_all_syn P0 => pskl_all_syn (strip_tophole P0)
+  | _ => P
+  end.
+
+Lemma strip_tophole_open_rec : forall P X k,
+    strip_tophole (open_pskl_wrt_pskl_rec k (pskl_var_f X) P)
+    = open_pskl_wrt_pskl_rec k (pskl_var_f X) (strip_tophole P).
+Proof.
+  induction P; intros X k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+  - rewrite IHP1, IHP2; reflexivity.
+  - rewrite IHP; reflexivity.
+  - rewrite IHP; reflexivity.
+Qed.
+
+Lemma strip_tophole_open : forall P X,
+    strip_tophole (open_pskl_wrt_pskl P (pskl_var_f X))
+    = open_pskl_wrt_pskl (strip_tophole P) (pskl_var_f X).
+Proof. intros. unfold open_pskl_wrt_pskl. apply strip_tophole_open_rec. Qed.
+
+Lemma strip_tophole_ftvar : forall P, ftvar_in_pskl (strip_tophole P) [<=] ftvar_in_pskl P.
+Proof. induction P; simpl; fsetdec. Qed.
+
+(** The argument pattern's inh-painting refines to the inh-painting of its
+    ⫯-STRIPPED form: [⫯]'s are removed by [tophole_remove], the rest by the
+    inh-reflexive structure ([□ ⤳ syn{□}=□], var/unit/arrow/∀ structural). *)
+Lemma refine_inh_strip : forall Parg Γ Δ,
+    lc_pskl Parg ->
+    (forall X, X `in` ftvar_in_pskl Parg -> List.In X Δ \/ binds X dbind_tvar Γ) ->
+    Γ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ (pskl_to_bskl_inh (strip_tophole Parg)).
+Proof.
+  intros Parg Γ Δ Hlc. revert Δ. induction Hlc; intros Δ Hcov; simpl.
+  - (* unit *) apply d_refine_syn__unit.
+  - (* var_f *) apply d_refine_syn__var. apply Hcov; simpl; fsetdec.
+  - (* arrow *) apply d_refine_syn__arrow;
+      [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; simpl; fsetdec.
+  - (* all_syn *) inst_cofinites_for d_refine_syn__all. intros X HX.
+    rewrite <- ! pskl_to_bskl_inh_open. rewrite <- strip_tophole_open.
+    apply H0.
+    intros Y HY. apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
+    simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    + apply AtomSetImpl.singleton_1 in HY; subst; left; simpl; left; reflexivity.
+    + destruct (Hcov Y HY) as [HD | HG]; [ left; simpl; right; exact HD | right; exact HG ].
+  - (* hole *) change (@bskl_hole) with (pskl_to_bskl_syn pskl_hole).
+    apply d_refine_syn__hole. apply d_wf_pskl__hole.
+  - (* tophole *) apply d_refine_syn__tophole_remove. apply IHHlc.
+    intros Y HY; apply Hcov; simpl; assumption.
+Qed.
+
 Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' ->
