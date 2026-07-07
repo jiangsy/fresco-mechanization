@@ -1367,16 +1367,16 @@ Qed.
     Inverting [d_typing__sub] (the only fn rule for a base term) identifies the
     ti-type with the principal arrow ([d_typing_ti_primary] + injectivity), then
     the [d_sub__arg] domain/codomain split gives the codomain subtyping. *)
-Lemma d_typing_base_fn_cod_sub : forall Γ e C1 C2 Bc1 Bc2,
+Lemma d_typing_base_fn_cod_sub : forall m Γ e C1 C2 Bc1 Bc2,
     d_wf_denv Γ -> base_principal e Γ (ptyp_arrow C1 C2) ->
-    d_typing (mode_fn mode_tc) Γ e (btyp_arrow Bc1 Bc2) ->
-    exists Ψc, Ψc ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn C2) ⊑ Bc2.
+    d_typing (mode_fn m) Γ e (btyp_arrow Bc1 Bc2) ->
+    exists Ψc, Ψc ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn C2) ⊑ Bc2.
 Proof.
-  intros Γ e C1 C2 Bc1 Bc2 Hwf Hbp Hfn.
+  intros m Γ e C1 C2 Bc1 Bc2 Hwf Hbp Hfn.
   inversion Hfn; subst; try (inversion Hbp; fail).
   match goal with
   | Hti : d_typing mode_ti Γ e (ptyp_to_btyp_syn ?Ae),
-    Hsub : empty ⨟ Γ ⊢[ mode_fn mode_tc ] (ptyp_to_utyp_syn ?Ae) ⊑ btyp_arrow Bc1 Bc2 |- _ =>
+    Hsub : empty ⨟ Γ ⊢[ mode_fn m ] (ptyp_to_utyp_syn ?Ae) ⊑ btyp_arrow Bc1 Bc2 |- _ =>
       assert (HAe : Ae = ptyp_arrow C1 C2);
       [ apply ptyp_to_pskl_inj;
         pose proof (d_typing_ti_primary Hti) as Hp; inversion Hbp; subst; simpl in Hp;
@@ -1388,7 +1388,7 @@ Proof.
             rewrite Hskx; reflexivity
         | (* anno *) rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hp; rewrite Hp; reflexivity ]
       | subst Ae; simpl in Hsub; inversion Hsub; subst;
-        match goal with H : _ ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn C2) ⊑ Bc2 |- _ =>
+        match goal with H : _ ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn C2) ⊑ Bc2 |- _ =>
           eexists; exact H end ]
   end.
 Qed.
@@ -3912,7 +3912,69 @@ Proof.
                       skel_safe nil (bskl_to_pskl Qc) (btyp_to_ptyp B2t))
             end)).
     { destruct mm as [ | | m0 ].
-      - (* ti *) admit.
+      - (* ti: codomain is [syn(skel A2)] (infer); the coverage collapses because
+           at [ti] the checking codomain [B2t] has [skel B2t = skel A2]. *)
+        destruct A as [ | n | X | A1 A2 | A0 ]; simpl in Hsub';
+          try solve [ exfalso; inversion Hsub' ];
+          [ | (* ∀ : poly source *) admit ].
+        assert (HwfA1' : d_wf_ptyp Γ' A1) by (inversion HwfA'; assumption).
+        assert (HwfA2' : d_wf_ptyp Γ' A2) by (inversion HwfA'; assumption).
+        assert (HlcA2 : lc_pskl (ptyp_to_pskl A2))
+          by (apply lc_pskl_ptyp_to_pskl; eapply d_wf_ptyp_lc; exact HwfA2').
+        assert (HcovA2 : forall Y, Y `in` ftvar_in_pskl (ptyp_to_pskl A2) -> binds Y dbind_tvar Γ').
+        { intros Y HY. rewrite ftvar_ptyp_to_pskl in HY. eapply d_wf_ptyp_ftvar; [ exact HwfA2' | exact HY ]. }
+        inversion Hsub'; subst.
+        exists (pskl_to_bskl_syn (ptyp_to_pskl A2)). split.
+        + (* subtyping: directed domain + syn codomain (infer) *)
+          simpl. eapply d_pat_sub__arg with (Ψ1 := empty) (Ψ2 := empty);
+            [ | apply d_pat_sub__infer;
+                [ fsetdec
+                | apply d_pat_consis_refl_pskl; [ exact HlcA2 | exact HcovA2 ]
+                | apply is_sskl_pskl_to_bskl_syn; exact HlcA2 ]
+            | fsetdec ].
+          match goal with Hcons : _ ⨟ _ ⊨ (ptyp_to_utyp_syn A1) ≈ BB1 |- _ =>
+            assert (Hskeq1 : utyp_to_pskl (ptyp_to_utyp_syn A1) = ptyp_to_pskl (btyp_to_ptyp BB1))
+              by (apply (d_consis_skel Hcons)) end.
+          rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hskeq1.
+          rewrite Hskeq1. apply consis_syn_colour_skel with (Δ := nil);
+            [ exact Hsafe
+            | apply lc_ptyp_btyp_to_ptyp; eapply d_wf_btyp_lc; exact HwfBB1
+            | intros Y HY; inversion HY
+            | intros Y HY; rewrite ftvar_btyp_to_ptyp in HY;
+              eapply ctx_refines_binds_tvar; [ exact Hcr | eapply d_wf_btyp_ftvar; [ exact HwfBB1 | exact HY ] ] ].
+        + split.
+          * (* is_sskl *) apply is_sskl_pskl_to_bskl_syn; exact HlcA2.
+          * (* coverage: [skel B2t = skel A2] ⟹ [skel_safe (skel A2) B2t] *)
+            intros Γt B1t B2t Hcrt Hwft He.
+            assert (Hbp_t : base_principal e Γt (ptyp_arrow A1 A2)).
+            { destruct H.
+              - (* unit *) exfalso. pose proof (d_typing_ti_primary Hty) as Hp.
+                rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hp. discriminate Hp.
+              - (* var x *) destruct (d_typing_ti_primary Hty) as [Ax [Hbx Hskx]].
+                rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hskx.
+                assert (Axeq : Ax = ptyp_arrow A1 A2) by (apply ptyp_to_pskl_inj; symmetry; exact Hskx).
+                subst Ax.
+                destruct (@ctx_refines_binds Γ' Γ x (dbind_typ (ptyp_arrow A1 A2)) Hcr Hbx) as [d' [Hb' Hdr]].
+                inversion Hdr as [ | Pv Av Hss ]; subst.
+                + (* kept *) destruct (@ctx_refines_tw_binds_fwd _ _ x (dbind_typ (ptyp_arrow A1 A2)) Hcrt Hb')
+                    as [dt [Hbt Hdrt]]. inversion Hdrt; subst. apply bp_var. exact Hbt.
+                + (* dbr *) admit.
+              - (* anno *)
+                assert (Hp : ptyp_to_pskl (btyp_to_ptyp (ptyp_to_btyp_syn (ptyp_arrow A1 A2))) = ptyp_to_pskl A)
+                  by (exact (d_typing_ti_primary Hty)).
+                rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hp.
+                assert (Aeq : A = ptyp_arrow A1 A2) by (apply ptyp_to_pskl_inj; symmetry; exact Hp).
+                subst A. apply bp_anno. }
+            destruct (d_typing_base_fn_cod_sub Hwft Hbp_t He) as [Ψc Hcod_t].
+            assert (Hskeq2 : ptyp_to_pskl A2 = ptyp_to_pskl (btyp_to_ptyp B2t)).
+            { inversion Hcod_t; subst;
+                try (exfalso; match goal with Hne : mode_ti <> mode_ti |- _ => apply Hne; reflexivity end);
+                match goal with Hc : _ ⨟ _ ⊨ (ptyp_to_utyp_syn A2) ≈ B2t |- _ =>
+                  pose proof (d_consis_skel Hc) as Hce; rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hce; exact Hce end. }
+            rewrite bskl_to_pskl_pskl_to_bskl_syn. rewrite Hskeq2.
+            apply skel_safe_of_ptyp. apply lc_ptyp_btyp_to_ptyp.
+            assert (Hwfarr : d_wf_btyp Γt (btyp_arrow B1t B2t)) by (eapply d_typing_wf_btyp; [ exact He | exact Hwft ]).
+            inversion Hwfarr; eapply d_wf_btyp_lc; eassumption.
       - (* tc: codomain is a GHOST [ghost_of(skel A2)] — the source must be a
            concrete arrow [A = A1→A2] (poly [∀] admitted). *)
         destruct A as [ | n | X | A1 A2 | A0 ]; simpl in Hsub';
