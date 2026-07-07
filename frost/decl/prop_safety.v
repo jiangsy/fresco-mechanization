@@ -4007,6 +4007,79 @@ Proof.
   - (* sks_top_all : ∀ is not mono *) inversion Hmono.
 Qed.
 
+Lemma btyp_to_bskl_open_rec : forall B X k,
+    btyp_to_bskl (open_btyp_wrt_btyp_rec k (btyp_var_f X) B)
+    = open_bskl_wrt_bskl_rec k (bskl_var_f X) (btyp_to_bskl B).
+Proof.
+  induction B; intros X k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+  - rewrite IHB1, IHB2; reflexivity.
+  - rewrite IHB; reflexivity.
+  - rewrite IHB; reflexivity.
+Qed.
+Lemma btyp_to_bskl_open : forall B X,
+    btyp_to_bskl (open_btyp_wrt_btyp B (btyp_var_f X))
+    = open_bskl_wrt_bskl (btyp_to_bskl B) (bskl_var_f X).
+Proof. intros. unfold open_btyp_wrt_btyp, open_bskl_wrt_bskl. apply btyp_to_bskl_open_rec. Qed.
+
+(** The refine-strip enabler (general [Δ], strong induction on [size_pskl]).  From
+    the refinement [inh Parg ⊳ btyp_to_bskl (inh A)] conclude [hole_safe Δ (strip
+    Parg) A].  This binds BOTH the abs inference domain (from [Href]) and the abs
+    coverage domain (from the arg constraint at [Γt]).  [tophole_fill]/[tophole_keep]
+    are excluded because [inh A] is all-inh; the [hole] case's scope condition comes
+    from the refinement's own [wf] premise ([ftvar A ⊆ dom Γ], disjoint from [Δ]). *)
+Lemma strip_hole_safe_refine_aux : forall n Parg Γ Δ A,
+    size_pskl Parg <= n ->
+    (forall X, List.In X Δ -> X `notin` dom Γ) ->
+    Γ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A)) ->
+    hole_safe Δ (strip_tophole Parg) A.
+Proof.
+  induction n; intros Parg Γ Δ A Hsize Hdisj Href;
+    [ destruct Parg; simpl in Hsize; lia | ].
+  destruct Parg; simpl in Href, Hsize.
+  - (* unit *) destruct A; simpl in Href; inversion Href; subst; simpl. apply hs_unit.
+  - (* var_b *) inversion Href.
+  - (* var_f *) destruct A; simpl in Href; inversion Href; subst; simpl. apply hs_var_f.
+  - (* arrow *) destruct A; simpl in Href; inversion Href; subst; simpl.
+    apply hs_arrow;
+      [ eapply IHn; [ lia | exact Hdisj | eassumption ]
+      | eapply IHn; [ lia | exact Hdisj | eassumption ] ].
+  - (* all_syn : forall — strong IH at (open P0 X) *)
+    destruct A; simpl in Href; inversion Href; subst; simpl.
+    apply hs_all with (Lc := L `union` dom Γ). intros X HX.
+    rewrite <- strip_tophole_open.
+    eapply IHn with (Γ := Γ).
+    + rewrite size_pskl_open_pskl_wrt_pskl_var. lia.
+    + intros Y HY. simpl in HY. destruct HY as [HY | HY];
+        [ subst; clear - HX; fsetdec | apply Hdisj; exact HY ].
+    + rewrite pskl_to_bskl_inh_open, ptyp_to_btyp_inh_open.
+      change (ptyp_to_btyp_inh (ptyp_var_f X)) with (btyp_var_f X).
+      rewrite btyp_to_bskl_open.
+      match goal with H : forall X0 : atom, X0 `notin` ?LL -> _ |- _ =>
+        apply (H X ltac:(clear - HX; fsetdec)) end.
+  - (* hole *) simpl. inversion Href; subst. apply hs_hole. intros Y HY HInY.
+    assert (HYP : Y `in` ftvar_in_pskl P)
+      by (rewrite <- (ftvar_pskl_to_bskl_syn P), H, ftvar_btyp_to_bskl,
+                  ftvar_ptyp_to_btyp_inh; exact HY).
+    destruct (d_wf_pskl_ftvar H2 HYP) as [Hf | Hb];
+      [ inversion Hf | apply (Hdisj Y HInY); eapply binds_In; exact Hb ].
+  - (* tophole *) inversion Href; subst.
+    + (* tophole_remove *) simpl. eapply IHn; [ lia | exact Hdisj | eassumption ].
+    + (* tophole_fill : RHS all_syn vs all-inh — impossible *)
+      destruct A; simpl in *; discriminate.
+    + (* tophole_keep : RHS tophole — impossible *)
+      destruct A; simpl in *; discriminate.
+Qed.
+
+Lemma strip_hole_safe_refine : forall Parg Γ A,
+    Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A)) ->
+    hole_safe nil (strip_tophole Parg) A.
+Proof.
+  intros Parg Γ A Href.
+  eapply strip_hole_safe_refine_aux with (Γ := Γ) (n := size_pskl Parg);
+    [ lia | intros X HX; inversion HX | exact Href ].
+Qed.
+
 Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' ->
