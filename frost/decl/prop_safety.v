@@ -4039,6 +4039,46 @@ Proof. intros. unfold open_pskl_wrt_pskl. apply strip_tophole_open_rec. Qed.
 Lemma strip_tophole_ftvar : forall P, ftvar_in_pskl (strip_tophole P) [<=] ftvar_in_pskl P.
 Proof. induction P; simpl; fsetdec. Qed.
 
+(** LHS of a refinement is locally-closed and its free tvars are scoped
+    ([Δ] or [Γ]'s tvars).  Recover [lc]/scope of the argument pattern from the
+    domain-match hypothesis so [refine_inh_strip] applies. *)
+Lemma d_refine_syn_lc_l : forall Γ Δ Q P, Γ ⨟ Δ ⊢ᵣ Q ⊳ P -> lc_bskl Q.
+Proof.
+  induction 1.
+  - apply lc_bskl_unit.
+  - apply lc_bskl_var_f.
+  - apply lc_bskl_arrow; assumption.
+  - pick fresh X. apply (lc_bskl_all_inh_exists X). apply H0; clear - Fr; fsetdec.
+  - apply lc_bskl_hole.
+  - apply lc_bskl_tophole; assumption.
+  - pick fresh X. apply (H0 X); clear - Fr; fsetdec.
+  - apply lc_bskl_tophole; assumption.
+Qed.
+
+Lemma d_refine_syn_ftvar_l : forall Γ Δ Q P, Γ ⨟ Δ ⊢ᵣ Q ⊳ P ->
+    forall X, X `in` ftvar_in_bskl Q -> List.In X Δ \/ binds X dbind_tvar Γ.
+Proof.
+  induction 1; intros Y HY; simpl in HY.
+  - fsetdec.
+  - apply AtomSetImpl.singleton_1 in HY; subst; assumption.
+  - apply AtomSetImpl.union_1 in HY; destruct HY as [HY | HY];
+      [ apply IHd_refine_syn1 | apply IHd_refine_syn2 ]; assumption.
+  - pick fresh X for (L `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f X)))
+      by (eapply ftvar_in_bskl_open_bskl_wrt_bskl_lower; exact HY).
+    destruct (H0 X ltac:(clear - Fr; fsetdec) Y HYo) as [Hin | Hb];
+      [ simpl in Hin; destruct Hin as [Heq | Hin];
+          [ subst; clear - Fr; fsetdec | left; exact Hin ]
+      | right; exact Hb ].
+  - fsetdec.
+  - apply IHd_refine_syn; exact HY.
+  - pick fresh X for (L `union` singleton Y).
+    destruct (H0 X ltac:(clear - Fr; fsetdec) Y HY) as [Hin | Hb];
+      [ left; exact Hin | apply binds_cons_1 in Hb;
+        destruct Hb as [ [Heq _] | Hb ]; [ subst; clear - Fr; fsetdec | right; exact Hb ] ].
+  - apply IHd_refine_syn; exact HY.
+Qed.
+
 (** The argument pattern's inh-painting refines to the inh-painting of its
     ⫯-STRIPPED form: [⫯]'s are removed by [tophole_remove], the rest by the
     inh-reflexive structure ([□ ⤳ syn{□}=□], var/unit/arrow/∀ structural). *)
