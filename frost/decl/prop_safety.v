@@ -2895,6 +2895,19 @@ Proof.
     [ rewrite IHA1, IHA2; reflexivity | rewrite IHA; reflexivity ].
 Qed.
 
+(** Painting identity (inh version): the λ's concrete domain [inh(ptyp_to_pskl A)]
+    is EXACTLY the colour-preserving skeleton [btyp_to_bskl] of its [btyp] domain
+    [ptyp_to_btyp_inh A].  This is what lets the abs case of the directed producer
+    infer the concrete domain [btyp_to_bskl B1] (for [B1 = inh A]) rather than the
+    argument's (possibly ghosted) pattern — the arg's ghostness then only appears
+    in the SEPARATE refinement [inh Parg ⊳ btyp_to_bskl B1] (ghost ⊳ concrete). *)
+Lemma btyp_to_bskl_ptyp_to_btyp_inh_eq : forall A,
+    btyp_to_bskl (ptyp_to_btyp_inh A) = pskl_to_bskl_inh (ptyp_to_pskl A).
+Proof.
+  induction A; simpl; try reflexivity;
+    [ rewrite IHA1, IHA2; reflexivity | rewrite IHA; reflexivity ].
+Qed.
+
 (** STRUCTURAL abs [skel_safe] assembly (the context-free λ [skel_safe] engine
     feeding [d_pat_total_gen]'s abs-tc case).  Induct on the λ CHECKING:
     - [forall] (A' = ∀): [sks_top_all] peels the bound tvar; the IH handles the
@@ -3901,6 +3914,26 @@ Proof.
     intros Y HY; apply Hcov; simpl; assumption.
 Qed.
 
+(** The abs-case BINDING enabler: for a MONO domain [A], a safe skeleton's
+    ⫯-stripped form is [hole_safe] for it — so the λ can bind [x : skl(strip Parg)]
+    ([dbr_typ_safe]).  The only blocking [skel_safe] cases ([sks_all]/[sks_top_all])
+    require [A = ∀], excluded by [mono_ptyp].  ([sks_hole]'s scope premise is exactly
+    [hs_hole]'s; [sks_top_leaf] strips to its content.)  The poly domain is handled
+    separately (frozen arg ⟹ [Parg = ptyp_to_pskl A], [hole_safe_of_ptyp]). *)
+Lemma strip_hole_safe_mono : forall Δ P A,
+    skel_safe Δ P A -> mono_ptyp A -> hole_safe Δ (strip_tophole P) A.
+Proof.
+  intros Δ P A H. induction H; intros Hmono; simpl.
+  - (* sks_hole *) apply hs_hole. assumption.
+  - (* sks_unit *) apply hs_unit.
+  - (* sks_var_f *) apply hs_var_f.
+  - (* sks_arrow *) inversion Hmono; subst.
+    apply hs_arrow; [ apply IHskel_safe1 | apply IHskel_safe2 ]; assumption.
+  - (* sks_all : ∀ is not mono *) inversion Hmono.
+  - (* sks_top_leaf *) apply IHskel_safe. assumption.
+  - (* sks_top_all : ∀ is not mono *) inversion Hmono.
+Qed.
+
 Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' ->
@@ -4133,16 +4166,29 @@ Admitted.
 
 Lemma d_pat_total_gen : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B -> d_wf_denv Γ ->
-    forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' -> gpat m Γ' e B.
+    forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' ->
+    gpat m Γ' e B
+    /\ (forall m0 B1 B2, m = mode_fn m0 -> B = btyp_arrow B1 B2 ->
+          forall Parg, Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ (btyp_to_bskl B1) ->
+          exists Q1 Q2,
+            Γ' ⊢[ mode_fn m0 ] e ⇨ (bskl_arrow Q1 Q2)
+            /\ Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ Q1
+            /\ (match m0 with
+                | mode_fn _ => safe_skel m0 Q2 B2
+                | _ => is_sskl Q2 /\
+                       (forall Γt B1t B2t, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
+                          Γt ⊢[ mode_fn m0 ] e ⦂ (btyp_arrow B1t B2t) ->
+                          skel_safe nil (bskl_to_pskl Q2) (btyp_to_ptyp B2t))
+                end)).
 Proof.
   intros m Γ e B Hty. induction Hty; intros Hwf Γ' Hcr Hwf'.
-  - (* unit *) eapply d_pat_base_safe_gen;
+  - split; [ | intros ? ? ? Hm; discriminate Hm ]. (* unit *) eapply d_pat_base_safe_gen;
       [ exact Hwf | apply is_base_term__unit | apply d_typing__unit | exact Hcr ].
-  - (* var *) eapply d_pat_base_safe_gen;
+  - split; [ | intros ? ? ? Hm; discriminate Hm ]. (* var *) eapply d_pat_base_safe_gen;
       [ exact Hwf | apply is_base_term__var | eapply d_typing__var; eauto | exact Hcr ].
-  - (* anno *) eapply d_pat_base_safe_gen;
+  - split; [ | intros ? ? ? Hm; discriminate Hm ]. (* anno *) eapply d_pat_base_safe_gen;
       [ exact Hwf | apply is_base_term__anno | apply d_typing__anno; eassumption | exact Hcr ].
-  - (* sub *) destruct m.
+  - split; [ | admit ]. (* sub *) destruct m.
     + (* ti: subsumed base term still synthesises (skeleton determined) *)
       eapply d_pat_base_safe_gen;
         [ exact Hwf | eassumption | eapply d_typing__sub; eassumption | exact Hcr ].
@@ -4153,17 +4199,17 @@ Proof.
          anno) via [safe_fn_skel], or the [□]-fill route via [safe_skel_hole_fill],
          assembled in [d_pat_base_safe_fn_gen]. *)
       eapply d_pat_base_safe_fn_gen; [ exact Hwf | eassumption | eassumption | eassumption | exact Hcr ].
-  - (* freeze: the inner TI inference is [is_sskl] ⇒ a syn-painting that
+  - split; [ | intros ? ? ? Hm; discriminate Hm ]. (* freeze: the inner TI inference is [is_sskl] ⇒ a syn-painting that
        [d_pat__freeze] lifts; safety reuses the IH's (syn-keyed) TI fill after
        inverting the freeze typing back to [Γt ⊢ti e ⦂ syn A1]. *)
-    destruct (IHHty Hwf Γ' Hcr Hwf') as [Q0 [Hinf [Hsskl Hfill]]].
+    destruct (proj1 (IHHty Hwf Γ' Hcr Hwf')) as [Q0 [Hinf [Hsskl Hfill]]].
     exists Q0. split; [ | split; [ exact Hsskl | ] ].
     + rewrite <- (is_sskl_syn_roundtrip Hsskl). apply d_pat__freeze.
       rewrite (is_sskl_syn_roundtrip Hsskl). exact Hinf.
     + intros Γt A1 Hcrt Hwft HA.
       apply d_typing_freeze_inv in HA.
       exact (Hfill Γt A1 Hcrt Hwft HA).
-  - (* forall: a value generalised at [∀].  The skeleton is the same [is_sskl]
+  - split; [ | intros ? ? ? Hm; discriminate Hm ]. (* forall: a value generalised at [∀].  The skeleton is the same [is_sskl]
        witness as at the body (no [∀] rule in [d_pat]); we read it off the IH at a
        fresh tvar [X] and STRENGTHEN by [X := unit] back to [Γ'].  For the fill:
        the new refinement sends the peeled [X] into [Γ], and the checking type
@@ -4175,8 +4221,8 @@ Proof.
                   ltac:(apply d_wf_denv__tvar; [ exact Hwf | fsetdec ])
                   ((X ~ dbind_tvar) ++ Γ')
                   ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ])
-                  ltac:(apply d_wf_denv__tvar; [ exact Hwf' | fsetdec ])) as Hgp.
-    simpl in Hgp. destruct Hgp as [QX [HinfX [HssklX HfillX]]].
+                  ltac:(apply d_wf_denv__tvar; [ exact Hwf' | fsetdec ])) as Hgp0.
+    destruct Hgp0 as [Hgp _]. simpl in Hgp. destruct Hgp as [QX [HinfX [HssklX HfillX]]].
     simpl. exists (subst_bskl_in_bskl bskl_unit X QX). split; [ | split ].
     + (* inference at [Γ'] : strengthen [(X:tvar)::Γ' ⊢ e ⇨ QX] by [X := unit] *)
       pose proof (d_pat_subst_unit _ _ _ _ HinfX nil X Γ'
@@ -4191,7 +4237,71 @@ Proof.
       rewrite <- bskl_to_pskl_subst_unit.
       apply (@skel_safe_forall_cover e Γ' X QX
                ltac:(clear - Fr; fsetdec) Hwf' HfillX Γt A0 Hcrt Hwft HA0).
-  - (* abs: λ in mode [m].  At TC the fill is the (Qed) [abs_check_fill], but
+  - split.
+    2:{ (* part2: DIRECTED producer for a λ.  Concrete domain [inh(ptyp_to_pskl A)] =
+           [btyp_to_bskl B1]; domain-match IS the refinement hypothesis [Href]; body
+           inference from the body-IH ([proj1]); ti/tc universal coverage deferred. *)
+      intros m0 B1 B2 Hm HB Parg Href. subst m.
+      injection HB as HB1 HB2. subst B1. subst B2.
+      assert (HpA : Γ ⊢ₚ A) by assumption.
+      assert (HwfPA : Γ' ⨟ nil ⊢ₚₛ (ptyp_to_pskl A)).
+      { apply d_wf_pskl_of_ptyp;
+          [ eapply d_wf_ptyp_lc; eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ]
+          | intros X HX; right;
+            eapply d_wf_ptyp_ftvar; [ eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ] | exact HX ] ]. }
+      assert (Hdm : Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ (pskl_to_bskl_inh (ptyp_to_pskl A)))
+        by (rewrite <- btyp_to_bskl_ptyp_to_btyp_inh_eq; exact Href).
+      pick fresh x0 for (L `union` dom Γ `union` dom Γ' `union` fvar_in_exp e `union` ftvar_in_exp e).
+      assert (Hcrb : ctx_refines ((x0 ~ dbind_skl (ptyp_to_pskl A)) ++ Γ') ((x0 ~ dbind_typ A) ++ Γ))
+        by (apply ctxr_cons; [ apply dbr_typ_skl; eapply d_wf_ptyp_lc; exact HpA | exact Hcr ]).
+      assert (Hwfb : d_wf_denv ((x0 ~ dbind_skl (ptyp_to_pskl A)) ++ Γ'))
+        by (apply d_wf_denv__skl; [ exact Hwf' | clear - Fr; fsetdec | exact HwfPA ]).
+      assert (Hwftb : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ))
+        by (apply d_wf_denv__typ; [ exact Hwf | clear - Fr; fsetdec | exact HpA ]).
+      destruct m0 as [ | | m0' ].
+      - (* ti *)
+        destruct (proj1 (H2 x0 ltac:(clear - Fr; fsetdec) Hwftb
+                           ((x0 ~ dbind_skl (ptyp_to_pskl A)) ++ Γ') Hcrb Hwfb)) as [Qc [Hinf [Hssk _]]].
+        exists (pskl_to_bskl_inh (ptyp_to_pskl A)), Qc.
+        split; [ | split; [ exact Hdm | split; [ exact Hssk | admit ] ] ].
+        apply d_pat__abs with (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (P := ptyp_to_pskl A).
+        + discriminate.
+        + exact HwfPA.
+        + apply mod_comp_sk__fn. eapply d_pat_mod_comp_sk; [ exact Hinf | exact Hwfb ].
+        + intros x Hx.
+          replace (open_exp_wrt_exp e (exp_var_f x)) with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+            by (symmetry; apply subst_exp_in_exp_intro; clear - Fr Hx; fsetdec).
+          eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_skl (ptyp_to_pskl A));
+            [ exact Hinf | reflexivity | discriminate | simpl_env; clear - Fr; fsetdec ].
+      - (* tc *)
+        destruct (proj1 (H2 x0 ltac:(clear - Fr; fsetdec) Hwftb
+                           ((x0 ~ dbind_skl (ptyp_to_pskl A)) ++ Γ') Hcrb Hwfb)) as [Qc [Hinf [Hssk _]]].
+        exists (pskl_to_bskl_inh (ptyp_to_pskl A)), Qc.
+        split; [ | split; [ exact Hdm | split; [ exact Hssk | admit ] ] ].
+        apply d_pat__abs with (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (P := ptyp_to_pskl A).
+        + discriminate.
+        + exact HwfPA.
+        + apply mod_comp_sk__fn. eapply d_pat_mod_comp_sk; [ exact Hinf | exact Hwfb ].
+        + intros x Hx.
+          replace (open_exp_wrt_exp e (exp_var_f x)) with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+            by (symmetry; apply subst_exp_in_exp_intro; clear - Fr Hx; fsetdec).
+          eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_skl (ptyp_to_pskl A));
+            [ exact Hinf | reflexivity | discriminate | simpl_env; clear - Fr; fsetdec ].
+      - (* fn m0' : body gpat already carries safe_skel *)
+        destruct (proj1 (H2 x0 ltac:(clear - Fr; fsetdec) Hwftb
+                           ((x0 ~ dbind_skl (ptyp_to_pskl A)) ++ Γ') Hcrb Hwfb)) as [Qc [Hinf Hsafe]].
+        exists (pskl_to_bskl_inh (ptyp_to_pskl A)), Qc.
+        split; [ | split; [ exact Hdm | exact Hsafe ] ].
+        apply d_pat__abs with (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (P := ptyp_to_pskl A).
+        + discriminate.
+        + exact HwfPA.
+        + apply mod_comp_sk__fn. eapply d_pat_mod_comp_sk; [ exact Hinf | exact Hwfb ].
+        + intros x Hx.
+          replace (open_exp_wrt_exp e (exp_var_f x)) with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+            by (symmetry; apply subst_exp_in_exp_intro; clear - Fr Hx; fsetdec).
+          eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_skl (ptyp_to_pskl A));
+            [ exact Hinf | reflexivity | discriminate | simpl_env; clear - Fr; fsetdec ]. }
+    (* abs: λ in mode [m].  At TC the fill is the (Qed) [abs_check_fill], but
        [d_pat__abs_check] needs the body to infer a SYN/principal skeleton
        [pskl_to_bskl_syn P], whereas the IH ([gpat tc]) only yields the body's
        SAFE (ghostified) skeleton — a distinct, more concrete inference not yet
@@ -4210,7 +4320,7 @@ Proof.
                   ((x0 ~ dbind_skl pskl_hole) ++ Γ')
                   ltac:(apply ctxr_cons; [ apply dbr_typ_hole | exact Hcr ])
                   ltac:(apply d_wf_denv__skl; [ exact Hwf' | fsetdec | apply d_wf_pskl__hole ]))
-        as [Qb [Hinfb [Hssklb Hfillb]]].
+        as [[Qb [Hinfb [Hssklb Hfillb]]] _].
       exists (bskl_arrow (pskl_to_bskl_inh pskl_hole) Qb). split; [ | split ].
       * (* inference: [d_pat__abs] with [P := □] *)
         apply d_pat__abs with
@@ -4258,7 +4368,7 @@ Proof.
                   ((x0 ~ dbind_skl pskl_hole) ++ Γ')
                   ltac:(apply ctxr_cons; [ apply dbr_typ_hole | exact Hcr ])
                   ltac:(apply d_wf_denv__skl; [ exact Hwf' | fsetdec | apply d_wf_pskl__hole ]))
-        as [Qb [Hinfb [Hssklb Hfillb]]].
+        as [[Qb [Hinfb [Hssklb Hfillb]]] _].
       exists (bskl_tophole (bskl_arrow bskl_hole Qb)). split; [ | split ].
       * (* inference: body's [is_sskl] witness lifts to a syn body via roundtrip;
            the per-[x] body inference comes from the [x0] one by [d_pat_rename_var]. *)
@@ -4316,7 +4426,8 @@ Proof.
       assert (Hwftb : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ))
         by (apply d_wf_denv__typ; [ exact Hwf | clear - Fr; fsetdec | exact HpA ]).
       pose proof (H2 x0 ltac:(clear - Fr; fsetdec) Hwftb
-                    ((x0 ~ dbind_skl (ptyp_to_pskl A)) ++ Γ') Hcrb Hwfb) as Hbody.
+                    ((x0 ~ dbind_skl (ptyp_to_pskl A)) ++ Γ') Hcrb Hwfb) as Hbody0.
+      destruct Hbody0 as [Hbody _].
       assert (Hex : exists Qc,
                  ((x0 ~ dbind_skl (ptyp_to_pskl A)) ++ Γ')
                    ⊢[ m0 ] (open_exp_wrt_exp e (exp_var_f x0)) ⇨ Qc
@@ -4364,7 +4475,68 @@ Proof.
                  apply skel_safe_of_ptyp; eapply d_wf_ptyp_lc;
                  eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ]
                | exact HsafeQc ].
-  - (* abs_anno: annotated λ; like [abs] but the domain skeleton is the
+  - split.
+    2:{ (* part2: annotated λ.  Domain [btyp_to_bskl B1] IS the refinement RHS ⟹ match = Href
+           directly; binding [x : typ A] ([dbr_refl]); body inference from body-IH [H3]. *)
+      intros m0 BB1 BB2 Hm HB Parg Href. subst m.
+      injection HB as HB1 HB2. subst BB1. subst BB2.
+      assert (HpA : Γ ⊢ₚ A) by assumption.
+      assert (HwfA' : d_wf_ptyp Γ' A) by (eapply d_wf_ptyp_ctx_refines; [ exact HpA | exact Hcr ]).
+      pick fresh x0 for (L `union` dom Γ `union` dom Γ' `union` fvar_in_exp e `union` ftvar_in_exp e).
+      assert (Hwftb : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ))
+        by (apply d_wf_denv__typ; [ exact Hwf | clear - Fr; fsetdec | exact HpA ]).
+      assert (Hwfb' : d_wf_denv ((x0 ~ dbind_typ A) ++ Γ'))
+        by (apply d_wf_denv__typ; [ exact Hwf' | clear - Fr; fsetdec | exact HwfA' ]).
+      destruct m0 as [ | | m0' ].
+      - (* ti *)
+        destruct (proj1 (H3 x0 ltac:(clear - Fr; fsetdec) Hwftb
+                           ((x0 ~ dbind_typ A) ++ Γ')
+                           ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ]) Hwfb')) as [Qc [Hinf [Hssk _]]].
+        exists (btyp_to_bskl B1), Qc.
+        split; [ | split; [ exact Href | split; [ exact Hssk | admit ] ] ].
+        apply d_pat__abs_anno with (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (B := B1).
+        + discriminate.
+        + exact HwfA'.
+        + exact H0.
+        + apply mod_comp_sk__fn. eapply d_pat_mod_comp_sk; [ exact Hinf | exact Hwfb' ].
+        + intros x Hx.
+          replace (open_exp_wrt_exp e (exp_var_f x)) with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+            by (symmetry; apply subst_exp_in_exp_intro; clear - Fr Hx; fsetdec).
+          eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_typ A);
+            [ exact Hinf | reflexivity | discriminate | simpl_env; clear - Fr; fsetdec ].
+      - (* tc *)
+        destruct (proj1 (H3 x0 ltac:(clear - Fr; fsetdec) Hwftb
+                           ((x0 ~ dbind_typ A) ++ Γ')
+                           ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ]) Hwfb')) as [Qc [Hinf [Hssk _]]].
+        exists (btyp_to_bskl B1), Qc.
+        split; [ | split; [ exact Href | split; [ exact Hssk | admit ] ] ].
+        apply d_pat__abs_anno with (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (B := B1).
+        + discriminate.
+        + exact HwfA'.
+        + exact H0.
+        + apply mod_comp_sk__fn. eapply d_pat_mod_comp_sk; [ exact Hinf | exact Hwfb' ].
+        + intros x Hx.
+          replace (open_exp_wrt_exp e (exp_var_f x)) with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+            by (symmetry; apply subst_exp_in_exp_intro; clear - Fr Hx; fsetdec).
+          eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_typ A);
+            [ exact Hinf | reflexivity | discriminate | simpl_env; clear - Fr; fsetdec ].
+      - (* fn m0' *)
+        destruct (proj1 (H3 x0 ltac:(clear - Fr; fsetdec) Hwftb
+                           ((x0 ~ dbind_typ A) ++ Γ')
+                           ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ]) Hwfb')) as [Qc [Hinf Hsafe]].
+        exists (btyp_to_bskl B1), Qc.
+        split; [ | split; [ exact Href | exact Hsafe ] ].
+        apply d_pat__abs_anno with (L := L `union` {{x0}} `union` dom Γ `union` dom Γ' `union` fvar_in_exp e) (B := B1).
+        + discriminate.
+        + exact HwfA'.
+        + exact H0.
+        + apply mod_comp_sk__fn. eapply d_pat_mod_comp_sk; [ exact Hinf | exact Hwfb' ].
+        + intros x Hx.
+          replace (open_exp_wrt_exp e (exp_var_f x)) with (subst_exp_in_exp (exp_var_f x) x0 (open_exp_wrt_exp e (exp_var_f x0)))
+            by (symmetry; apply subst_exp_in_exp_intro; clear - Fr Hx; fsetdec).
+          eapply d_pat_rename_var with (Γ1 := nil) (x := x0) (d := dbind_typ A);
+            [ exact Hinf | reflexivity | discriminate | simpl_env; clear - Fr; fsetdec ]. }
+    (* abs_anno: annotated λ; like [abs] but the domain skeleton is the
        annotation's own pskl ([abs_anno_*_fill_skel]). *)
     destruct m as [ | | m0 ].
     + (* ti: SYNTHESISE [bskl_arrow (btyp_to_bskl B1) Qb]; [is_styp] forces
@@ -4382,7 +4554,7 @@ Proof.
                   ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ])
                   ltac:(apply d_wf_denv__typ; [ exact Hwf' | fsetdec
                         | eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ] ]))
-        as [Qb [Hinfb [Hssklb Hfillb]]].
+        as [[Qb [Hinfb [Hssklb Hfillb]]] _].
       exists (bskl_arrow (btyp_to_bskl B1) Qb). split; [ | split ].
       * apply d_pat__abs_anno with (L := L `union` {{x0}} `union` dom Γ
                                           `union` dom Γ' `union` fvar_in_exp e) (B := B1).
@@ -4428,7 +4600,7 @@ Proof.
                   ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ])
                   ltac:(apply d_wf_denv__typ; [ exact Hwf' | fsetdec
                         | eapply d_wf_ptyp_ctx_refines; [ exact H | exact Hcr ] ]))
-        as [Qb [Hinfb [Hssklb Hfillb]]].
+        as [[Qb [Hinfb [Hssklb Hfillb]]] _].
       exists (bskl_tophole (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) Qb)).
       split; [ | split ].
       * rewrite <- (is_sskl_syn_roundtrip Hssklb) at 1.
@@ -4477,7 +4649,7 @@ Proof.
                     ((x0 ~ dbind_typ A) ++ Γ')
                     ltac:(apply ctxr_cons; [ apply dbr_refl | exact Hcr ])
                     ltac:(apply d_wf_denv__typ; [ exact Hwf' | clear - Fr; fsetdec | exact HwfA' ]))
-        as Hbody.
+        as Hbody0. destruct Hbody0 as [Hbody _].
       assert (Hex : exists Qc,
                  ((x0 ~ dbind_typ A) ++ Γ') ⊢[ m0 ] (open_exp_wrt_exp e (exp_var_f x0)) ⇨ Qc
                  /\ safe_skel m0 Qc B2).
@@ -4521,11 +4693,11 @@ Proof.
         split; [ rewrite bskl_to_pskl_btyp_to_bskl; apply skel_safe_of_ptyp;
                  rewrite H0; eapply d_wf_ptyp_lc; exact HpA
                | exact HsafeQc ].
-  - (* app: the argument's SYNTHESISED pattern [Parg] (from [IHHty2] + coverage at
+  - split; [ | admit ]. (* app: the argument's SYNTHESISED pattern [Parg] (from [IHHty2] + coverage at
        [Γt = Γ]) DIRECTS the function's domain via [d_pat_fn_dir]; the domain match
        [inh Parg ⊳ Q1] and the codomain coverage both come from there, and the ti/tc
        app coverage reduces via [app_fill_skel_*]. *)
-    destruct (IHHty2 Hwf Γ' Hcr Hwf') as [Qa [Hinf2 [HssklQa Hcov2]]].
+    destruct (proj1 (IHHty2 Hwf Γ' Hcr Hwf')) as [Qa [Hinf2 [HssklQa Hcov2]]].
     assert (Hinf2' : Γ' ⊢[ mode_tc ] e2 ⇨ (pskl_to_bskl_syn (bskl_to_pskl Qa)))
       by (rewrite (is_sskl_syn_roundtrip HssklQa); exact Hinf2).
     assert (Hsafe_arg : skel_safe nil (bskl_to_pskl Qa) (btyp_to_ptyp B1))
@@ -4546,7 +4718,7 @@ Proof.
       eapply app_fill_skel_tc; [ | exact Hcrt | exact Hwft | exact HA ].
       intros Γt' B1t B2t Hcrt' Hwft' He1t. eapply Hcod2; [ exact Hcrt' | exact Hwft' | exact He1t ].
     + (* fn *) exists Q2. split; [ exact Happ | exact Hrest ].
-Qed.
+Admitted.
 
 (** Paper "Safety of skeleton inference" (declarative.tex:1950): for a
     well-typed [M] there *exists* an inference [Γ ⊢ti M ⇨ Q] whose [Q] is
@@ -4615,7 +4787,7 @@ Theorem d_pat_safety : forall Γ e B0,
                    Γ ⨟ nil ⊢ᵣ (pskl_to_bskl_inh (bskl_to_pskl Q)) ⊳ B).
 Proof.
   intros Γ e B0 Hty Hwf.
-  destruct (d_pat_total_gen Hty Hwf (ctx_refines_refl Γ) Hwf) as [Q [HQ [_ Hsafe]]].
+  destruct (proj1 (d_pat_total_gen Hty Hwf (ctx_refines_refl Γ) Hwf)) as [Q [HQ [_ Hsafe]]].
   exists Q. split; [ exact HQ | ].
   intros A HA.
   exists (colour (pskl_to_bskl_inh (bskl_to_pskl Q)) A). split; [ apply colour_erasure | ].
