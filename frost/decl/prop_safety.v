@@ -3849,9 +3849,9 @@ Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' ->
     forall Parg, skel_safe nil Parg (btyp_to_ptyp B1) ->
-    exists Q2,
-      Γ' ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow (colour (pskl_to_bskl_inh Parg) (btyp_to_ptyp B1)) Q2)
-      /\ Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ (colour (pskl_to_bskl_inh Parg) (btyp_to_ptyp B1))
+    exists Q1 Q2,
+      Γ' ⊢[ mode_fn m ] e1 ⇨ (bskl_arrow Q1 Q2)
+      /\ Γ' ⨟ nil ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ Q1
       /\ (match m with
           | mode_fn _ => safe_skel m Q2 B2
           | _ => is_sskl Q2 /\
@@ -4047,7 +4047,8 @@ Proof.
         rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hsc.
         exists Qc. split; [ exact Hsc | exact Hsafe_cod ]. }
     destruct Hex as [Qc [Hsc Hsafety]].
-    exists Qc. split; [ | split; [ exact Href | exact Hsafety ] ].
+    exists (colour (pskl_to_bskl_inh Parg) (btyp_to_ptyp BB1)), Qc.
+    split; [ | split; [ exact Href | exact Hsafety ] ].
     (* inference: [e ⇨ arrow (colour…) Qc] via [d_pat__sub] + the primary skeleton *)
     pose proof (d_typing_ti_primary Hty) as Hpri. simpl in Hpri.
     rewrite btyp_to_ptyp_ptyp_to_btyp_syn in Hpri.
@@ -4474,7 +4475,7 @@ Proof.
     assert (Hsafe_arg : skel_safe nil (bskl_to_pskl Qa) (btyp_to_ptyp B1))
       by (eapply (Hcov2 Γ (btyp_to_ptyp B1)); [ apply crtw_base; exact Hcr | exact Hwf | exact Hty2 ]).
     destruct (@d_pat_fn_dir Γ m e1 B1 B2 Hty1 Hwf Γ' Hcr Hwf' (bskl_to_pskl Qa) Hsafe_arg)
-      as [Q2 [Hinf1 [Href1 Hrest]]].
+      as [Q1 [Q2 [Hinf1 [Href1 Hrest]]]].
     assert (Happ : Γ' ⊢[ m ] (exp_app e1 e2) ⇨ Q2)
       by (eapply d_pat__app; [ exact Hinf2' | exact Href1 | exact Hinf1 ]).
     destruct m as [ | | m0 ].
