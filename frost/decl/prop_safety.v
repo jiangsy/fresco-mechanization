@@ -4369,6 +4369,28 @@ Proof.
     match goal with H : forall X0, lc_ptyp _ |- _ => apply H end.
 Qed.
 
+(* A [hole_safe] skeleton over a lc, well-scoped type is well-formed. *)
+Lemma hole_safe_wf_pskl : forall Δ P A Γ,
+    hole_safe Δ P A -> lc_ptyp A ->
+    (forall X, X `in` ftvar_in_ptyp A -> List.In X Δ \/ binds X dbind_tvar Γ) ->
+    Γ ⨟ Δ ⊢ₚₛ P.
+Proof.
+  intros Δ P A Γ H. revert Γ. induction H; intros Γ Hlc Hsc.
+  - apply d_wf_pskl__hole.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. apply Hsc. simpl. fsetdec.
+  - inversion Hlc.
+  - inversion Hlc; subst. apply d_wf_pskl__arrow;
+      [ apply IHhole_safe1 | apply IHhole_safe2 ]; try assumption;
+      intros X HX; apply Hsc; simpl; fsetdec.
+  - inversion Hlc; subst. apply d_wf_pskl__all with (L := Lc `union` dom Γ). intros X HX.
+    apply H0; [ clear - HX; fsetdec | match goal with H : forall X0, lc_ptyp _ |- _ => apply H end | ].
+    intros Y HY. eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY.
+    apply AtomSetImpl.union_1 in HY; destruct HY as [HY | HY];
+      first [ simpl in HY; apply AtomSetImpl.singleton_1 in HY; subst; left; simpl; left; reflexivity
+            | destruct (Hsc Y HY) as [Hin | Hb]; [ left; simpl; right; exact Hin | right; exact Hb ] ].
+Qed.
+
 
 Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
