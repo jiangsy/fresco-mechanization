@@ -282,7 +282,7 @@ Fixpoint uskl_to_bskl (R : uskl) : bskl :=
   (* dotted ghosts erase to their plain counterparts (HoleG ~ Hole,
      TopHoleG ~ TopHole) on the resolved/bidirectional side. *)
   | uskl_holeg => bskl_hole
-  | uskl_topholeg _ R0 => bskl_tophole (uskl_to_bskl R0)
+  | uskl_topholeg R0 => bskl_tophole (uskl_to_bskl R0)
   end.
 
 Coercion uskl_to_bskl : uskl >-> bskl.

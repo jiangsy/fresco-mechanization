@@ -54,12 +54,12 @@ Inductive is_tskl : uskl -> Prop :=
     (forall X, X `notin` L ->
        is_tskl (open_uskl_wrt_uskl R (uskl_var_f X))) ->
     is_tskl (uskl_all_syn R)
-(* Paper tagged skeleton ψ (declarative.tex:1633) carries the GHOSTS [HoleG]
-   / [TopHoletag{ε}], NOT plain [Hole] / [TopHole] (those live only in the
-   unresolved skeleton S / the bid RHS).  So [is_tskl] admits the ghost
-   holes; the tagged universal ghost mirrors [all_etag]. *)
+(* Paper decorated skeleton ψ (declarative.tex, grammar fig) carries the
+   DOTTED GHOSTS [HoleG] / [TopHoleG], NOT plain [Hole] / [TopHole] (those
+   live only in the unresolved skeleton S / the bid RHS).  So [is_tskl]
+   admits the dotted ghost holes; the dotted universal ghost is UNTAGGED. *)
 | is_tskl__holeg    : is_tskl uskl_holeg
-| is_tskl__topholeg : forall ε R, is_tskl R -> is_tskl (uskl_topholeg ε R).
+| is_tskl__topholeg : forall R, is_tskl R -> is_tskl (uskl_topholeg R).
 
 (* ===================================================================== *)
 (*  Colour-discipline predicates                                          *)

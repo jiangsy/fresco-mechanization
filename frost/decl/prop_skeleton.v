@@ -1568,8 +1568,7 @@ Proof.
     rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (x0 ~ d0') ++ Γ2).
     eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 d0 d0' Γ2); [ simpl_env; reflexivity | exact Hdd ].
   - apply d_pat_consis__ghostg. assumption.
-  - apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
-      [ eapply IHd_pat_consis; eauto | eassumption ].
+  - apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
   - apply d_pat_consis__hole; [ assumption | eapply d_wf_pskl_binding_eq; eauto ].
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
   - apply d_pat_consis__tophole_inh with (L := L). intros Z HZ.
@@ -1859,8 +1858,7 @@ Proof.
   - apply d_pat_consis__forall_syn with (L := L). intros Z HZ.
     eapply H0; [ exact HZ | apply gr_keep; exact Hgr ].
   - apply d_pat_consis__ghostg. assumption.
-  - apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
-      [ eapply IHd_pat_consis; eauto | eassumption ].
+  - apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
   - apply d_pat_consis__hole; [ assumption | eapply d_wf_pskl_ghost_rel; eauto ].
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
   - apply d_pat_consis__tophole_inh with (L := L). intros Z HZ.
@@ -1979,8 +1977,7 @@ Proof.
     rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (y0 ~ d0) ++ Γ2).
     eapply (H0 Z HZ ((Z ~ dbind_tvar) ++ Γ1) x0 y0 d0 Γ2); [ simpl_env; reflexivity | exact Hd ].
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
-      [ eapply IHd_pat_consis; eauto | eassumption ].
+  - apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
   - apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_rename_var; eauto.
   - apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
   - apply d_pat_consis__tophole_inh with (L := L). intros Z HZ.
@@ -2332,8 +2329,7 @@ Proof.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Z)) as Hup.
     simpl in Hup. fsetdec.
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - simpl in HX. apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
-      [ eapply IHd_pat_consis; eauto | eassumption ].
+  - simpl in HX. apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
   - apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_strengthen; eauto.
     rewrite <- ftvar_pskl_to_bskl_inh. assumption.
   - simpl in HX. apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
@@ -2590,7 +2586,7 @@ Proof.
   - apply d_tags_skl__hole; (assumption || fsetdec).
   - apply d_tags_skl__tophole; assumption.
   - apply d_tags_skl__holeg; (assumption || fsetdec).
-  - apply d_tags_skl__topholeg with (Ψ0 := Ψ0); assumption.
+  - apply d_tags_skl__topholeg; assumption.
 Qed.
 
 Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
@@ -2626,8 +2622,7 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2); simpl_env; reflexivity.
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - simpl. apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
-      [ eapply IHd_pat_consis; eauto | eassumption ].
+  - simpl. apply d_pat_consis__topholeg. eapply IHd_pat_consis; eauto.
   - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__hole; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_subst_unit; eauto.
   - simpl. apply d_pat_consis__tophole. eapply IHd_pat_consis; eauto.
   - simpl. apply d_pat_consis__tophole_inh with (L := L `union` {{X0}}).

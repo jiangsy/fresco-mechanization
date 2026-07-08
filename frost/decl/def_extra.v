@@ -177,10 +177,10 @@ Inductive d_wf_uskl : list (atom * dbind) -> list atom -> uskl -> Prop :=
     Γ ⨟ Δ ⊢ᵤₛ (uskl_tophole R)
 | d_wf_uskl__holeg : forall Γ Δ,
     Γ ⨟ Δ ⊢ᵤₛ uskl_holeg
-| d_wf_uskl__topholeg : forall Γ Δ ε R,
+| d_wf_uskl__topholeg : forall Γ Δ R,
     guarded_uskl R ->
     Γ ⨟ nil ⊢ᵤₛ R ->
-    Γ ⨟ Δ ⊢ᵤₛ (uskl_topholeg ε R)
+    Γ ⨟ Δ ⊢ᵤₛ (uskl_topholeg R)
 where "Γ ⨟ Δ ⊢ᵤₛ R" := (d_wf_uskl Γ Δ R) : type_scope.
 
 (* ===================================================================== *)
@@ -247,17 +247,16 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__tophole : forall Ψ R,
     d_tags_skl Ψ R ->
     d_tags_skl Ψ (uskl_tophole R)
-(* Tagged ghosts (declarative.tex:1698,1704): HoleG carries no tags;
-   TopHoletag{ε}.ψ adds its own ε on top of the tags of its body —
-   [tags{Ψ⊎{ε}}{TopHoletag{ε}.ψ}], exactly mirroring [all_etag]. *)
-| d_tags_skl__holeg : forall Ψ, 
-    Ψ [=] empty -> 
+(* Dotted ghosts (declarative.tex, uniqueness fig): HoleG carries no
+   tags; the DOTTED universal ghost TopHoleG.ψ carries EXACTLY its body's
+   tags [tags{Ψ}{TopHoleG.ψ}] (no ε of its own — unlike [all_etag]),
+   mirroring the plain [tophole]. *)
+| d_tags_skl__holeg : forall Ψ,
+    Ψ [=] empty ->
     d_tags_skl Ψ uskl_holeg
-| d_tags_skl__topholeg : forall Ψ Ψ0 ε R,
-    d_tags_skl Ψ0 R ->
-    ε `notin` Ψ0 ->
-    Ψ [=] add ε Ψ0 ->
-    d_tags_skl Ψ (uskl_topholeg ε R).
+| d_tags_skl__topholeg : forall Ψ R,
+    d_tags_skl Ψ R ->
+    d_tags_skl Ψ (uskl_topholeg R).
 
 (* ===================================================================== *)
 (*  Type consistency and subtyping                                        *)
@@ -462,13 +461,12 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     (* Paper [GhostG] (declarative.tex eqlab): a ghost hole [HoleG] is
        consistent with a plain [Hole]. *)
     Ψ ⨟ Γ ⊨ₛ uskl_holeg ≈ bskl_hole
-| d_pat_consis__topholeg : forall Ψ Ψ0 Γ ε R Q,
-    (* Paper [UnivGhostG]: [TopHoletag{δ}.S ~ TopHole.P] from [S ~ P],
-       adding the ghost's tag δ — [typconsis[Ψ,δ]] from [typconsis[Ψ]].
-       Mirrors [forall_inh_tagged]'s [Ψ [=] add ε Ψ0]. *)
-    Ψ0 ⨟ Γ ⊨ₛ R ≈ Q ->
-    Ψ [=] add ε Ψ0 ->
-    Ψ ⨟ Γ ⊨ₛ (uskl_topholeg ε R) ≈ (bskl_tophole Q)
+| d_pat_consis__topholeg : forall Ψ Γ R Q,
+    (* Paper [UnivGhostG] (dotted): [TopHoleG.S ~ TopHole.P] from [S ~ P],
+       tags UNCHANGED — [typconsis[Ψ]] from [typconsis[Ψ]] (no added tag,
+       unlike the old tagged version). *)
+    Ψ ⨟ Γ ⊨ₛ R ≈ Q ->
+    Ψ ⨟ Γ ⊨ₛ (uskl_topholeg R) ≈ (bskl_tophole Q)
 | d_pat_consis__hole : forall Ψ Γ P,
     Ψ [=] empty ->
     d_wf_pskl Γ nil P ->
@@ -559,13 +557,13 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ [=] empty ->
     mod_comp_sk bskl_hole m ->
     Ψ ⨟ Γ ⊢ₛ[ m ] uskl_holeg ⊑ bskl_hole
-| d_pat_sub__univ_ghost_lg : forall m Ψ Γ ε R Q,
-    (* Paper [UnivGhostL]: drop a tagged ghost [TopHoletag{δ}] on the LHS
-       (any [M ≠ TI]).  Unlike consistency, subtyping leaves [Ψ] unchanged
-       — [patsub[M][Ψ]] from [patsub[M][Ψ]] (declarative.tex UnivGhostL). *)
+| d_pat_sub__univ_ghost_lg : forall m Ψ Γ R Q,
+    (* Paper [UnivGhostLG] (dotted): drop a dotted ghost [TopHoleG] on the
+       LHS (any [M ≠ TI]).  [Ψ] unchanged — [patsub[M][Ψ]] from
+       [patsub[M][Ψ]] (declarative.tex UnivGhostLG). *)
     m <> mode_ti ->
     Ψ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
-    Ψ ⨟ Γ ⊢ₛ[ m ] (uskl_topholeg ε R) ⊑ Q
+    Ψ ⨟ Γ ⊢ₛ[ m ] (uskl_topholeg R) ⊑ Q
 where "Ψ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Ψ Γ R Q) : type_scope.
 
 (* ===================================================================== *)

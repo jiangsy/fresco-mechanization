@@ -69,10 +69,10 @@ Proof.
     destruct IHa_consistag as [Q' [Heq Hd]].
     exists (bskl_tophole Q'). split; [ simpl; rewrite Heq; reflexivity | ].
     apply d_pat_consis__tophole. assumption.
-  - (* UnivGhostG → d_pat_consis__topholeg.  Closes. *)
+  - (* UnivGhostG → d_pat_consis__topholeg (dotted, tags unchanged).  Closes. *)
     destruct IHa_consistag as [Q' [Heq Hd]].
     exists (bskl_tophole Q'). split; [ simpl; rewrite Heq; reflexivity | ].
-    eapply d_pat_consis__topholeg; [ eassumption | unfold Ψtoδ; fsetdec ].
+    apply d_pat_consis__topholeg. assumption.
   - (* UnivGhost1 → d_pat_consis__tophole_inh.  Witness bskl_all_inh + binder. *)
     admit.
   - (* UnivGhost2 → d_pat_consis__tophole_drop.  Closes. *)

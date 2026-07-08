@@ -409,7 +409,7 @@ Proof.
   - apply d_tags_skl__hole; (assumption || fsetdec).
   - apply d_tags_skl__tophole; assumption.
   - apply d_tags_skl__holeg; (assumption || fsetdec).
-  - apply d_tags_skl__topholeg with (Ψ0 := Ψ0); assumption.
+  - apply d_tags_skl__topholeg; assumption.
 Qed.
 
 Lemma guarded_uskl_subst_var : forall R X Y,
@@ -492,8 +492,8 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_var_f); try fsetdec.
     exact (H0 Z ltac:(fsetdec) ((Z ~ dbind_tvar) ++ Γ1) Γ2 X0 Y ltac:(simpl_env; reflexivity) ltac:(simpl_env in *; fsetdec)).
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
-  - simpl. apply d_pat_consis__topholeg with (Ψ0 := Ψ0);
-      [ eapply (IHd_pat_consis Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr ] | eassumption ].
+  - simpl. apply d_pat_consis__topholeg.
+    eapply (IHd_pat_consis Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr ].
   - simpl. rewrite pskl_to_bskl_inh_subst_var.
     apply d_pat_consis__hole; [ (assumption || fsetdec)
       | eapply d_wf_pskl_rename_tvar; [ eassumption | reflexivity | exact Hfr ] ].

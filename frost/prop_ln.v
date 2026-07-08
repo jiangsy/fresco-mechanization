@@ -158,7 +158,7 @@ Fixpoint close_uskl_wrt_uskl_rec (n1 : nat) (Xus1 : usklvar) (R1 : uskl) {struct
     | uskl_hole => uskl_hole
     | uskl_tophole R2 => uskl_tophole (close_uskl_wrt_uskl_rec n1 Xus1 R2)
     | uskl_holeg => uskl_holeg
-    | uskl_topholeg ε1 R2 => uskl_topholeg ε1 (close_uskl_wrt_uskl_rec n1 Xus1 R2)
+    | uskl_topholeg R2 => uskl_topholeg (close_uskl_wrt_uskl_rec n1 Xus1 R2)
   end.
 
 Definition close_uskl_wrt_uskl Xus1 R1 := close_uskl_wrt_uskl_rec 0 Xus1 R1.
@@ -258,7 +258,7 @@ Fixpoint size_uskl (R1 : uskl) {struct R1} : nat :=
     | uskl_hole => 1
     | uskl_tophole R2 => 1 + (size_uskl R2)
     | uskl_holeg => 1
-    | uskl_topholeg ε1 R2 => 1 + (size_uskl R2)
+    | uskl_topholeg R2 => 1 + (size_uskl R2)
   end.
 
 Fixpoint size_exp (e1 : exp) {struct e1} : nat :=
@@ -440,9 +440,9 @@ Inductive degree_uskl_wrt_uskl : nat -> uskl -> Prop :=
     degree_uskl_wrt_uskl n1 (uskl_tophole R1)
   | degree_wrt_uskl_uskl_holeg : forall n1,
     degree_uskl_wrt_uskl n1 (uskl_holeg)
-  | degree_wrt_uskl_uskl_topholeg : forall n1 ε1 R1,
+  | degree_wrt_uskl_uskl_topholeg : forall n1 R1,
     degree_uskl_wrt_uskl n1 R1 ->
-    degree_uskl_wrt_uskl n1 (uskl_topholeg ε1 R1).
+    degree_uskl_wrt_uskl n1 (uskl_topholeg R1).
 
 Scheme degree_uskl_wrt_uskl_ind' := Induction for degree_uskl_wrt_uskl Sort Prop.
 
@@ -698,9 +698,9 @@ Inductive lc_set_uskl : uskl -> Set :=
     lc_set_uskl (uskl_tophole R1)
   | lc_set_uskl_holeg :
     lc_set_uskl (uskl_holeg)
-  | lc_set_uskl_topholeg : forall ε1 R1,
+  | lc_set_uskl_topholeg : forall R1,
     lc_set_uskl R1 ->
-    lc_set_uskl (uskl_topholeg ε1 R1).
+    lc_set_uskl (uskl_topholeg R1).
 Scheme lc_uskl_ind' := Induction for lc_uskl Sort Prop.
 
 Combined Scheme lc_uskl_mutind from lc_uskl_ind'.

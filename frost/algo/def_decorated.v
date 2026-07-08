@@ -46,7 +46,7 @@ Fixpoint uskl_to_pskl (R : uskl) : pskl :=
   | uskl_hole => pskl_hole
   | uskl_tophole R0 => pskl_tophole (uskl_to_pskl R0)
   | uskl_holeg => pskl_hole
-  | uskl_topholeg _ R0 => pskl_tophole (uskl_to_pskl R0)
+  | uskl_topholeg R0 => pskl_tophole (uskl_to_pskl R0)
   end.
 
 (* [a_tag_support Θ NM Ψ ψ] — paper [\tagsupp] (decorated-algosub.tex:99).
@@ -90,12 +90,12 @@ Inductive a_consistag : pskl -> atoms -> aenv -> uskl -> pskl -> aenv -> Prop :=
 | a_consistag__univ_ghost : forall Θ0 Θ1 P0 R Q Ψ,         (* UnivGhost *)
     Θ0 ⊢ᶜ[ P0 | Ψ ] R ⤳ Q ⊣ Θ1 ->
     Θ0 ⊢ᶜ[ (pskl_tophole P0) | Ψ ] (uskl_tophole R) ⤳ (pskl_tophole Q) ⊣ Θ1
-| a_consistag__univ_ghostg : forall Θ0 Θ1 P0 ε R Q Ψ,      (* UnivGhostG *)
-    (* Tagged ghost: like [forall_inh], the ghost tag [ε] is added to the
-       output [Ψ] (declarative [d_pat_consis__topholeg]: [Ψ,δ] from [Ψ]). *)
+| a_consistag__univ_ghostg : forall Θ0 Θ1 P0 R Q Ψ,        (* UnivGhostG *)
+    (* Dotted ghost: tags UNCHANGED (declarative [d_pat_consis__topholeg]:
+       [Ψ] from [Ψ], no added tag — mirrors [univ_ghost]). *)
     Θ0 ⊢ᶜ[ P0 | Ψ ] R ⤳ Q ⊣ Θ1 ->
-    Θ0 ⊢ᶜ[ (pskl_tophole P0) | (singleton ε `union` Ψ) ]
-      (uskl_topholeg ε R) ⤳ (pskl_tophole Q) ⊣ Θ1
+    Θ0 ⊢ᶜ[ (pskl_tophole P0) | Ψ ]
+      (uskl_topholeg R) ⤳ (pskl_tophole Q) ⊣ Θ1
 | a_consistag__univ_ghost1 : forall L Θ0 Θ1 P0 R Q Ψ,      (* UnivGhost1 *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0) ⊢ᶜ[ (open_pskl_wrt_pskl P0 (pskl_var_f α)) | Ψ ]
@@ -157,10 +157,10 @@ Inductive a_subtag : a_sub_mode -> mode -> pskl -> atoms -> aenv -> uskl -> pskl
     M <> mode_ti ->
     a_subtag a_sub_mode_sk M P0 Ψ Θ0 R Q Θ1 ->
     a_subtag a_sub_mode_sk M P0 Ψ Θ0 (uskl_tophole R) Q Θ1
-| a_subtag__univ_ghost_lg : forall M Θ0 Θ1 P0 ε R Q Ψ,     (* UnivGhostL (tagged) *)
-    (* Tagged ghost on the LHS; subtyping leaves [Ψ] unchanged
+| a_subtag__univ_ghost_lg : forall M Θ0 Θ1 P0 R Q Ψ,       (* UnivGhostLG (dotted) *)
+    (* Dotted ghost on the LHS; subtyping leaves [Ψ] unchanged
        (declarative [d_pat_sub__univ_ghost_lg]: [Ψ] from [Ψ]). *)
     M <> mode_ti ->
     a_subtag a_sub_mode_sk M P0 Ψ Θ0 R Q Θ1 ->
-    a_subtag a_sub_mode_sk M P0 Ψ Θ0 (uskl_topholeg ε R) Q Θ1
+    a_subtag a_sub_mode_sk M P0 Ψ Θ0 (uskl_topholeg R) Q Θ1
 where "Θ0 ⊢ˢ[ NM | M | P0 | Ψ ] S ⤳ Q ⊣ Θ1" := (a_subtag NM M P0 Ψ Θ0 S Q Θ1) : type_scope.
