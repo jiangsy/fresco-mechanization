@@ -187,25 +187,10 @@ Inductive a_cstr : Set :=
 | a_cstr_eq : pskl -> a_cstr.
 Definition a_cstrs : Set := list a_cstr.
 
-(* [refresh(P) = (Ξ; P')] (paper algorithmic.tex:1165):
-   [refresh(P) = (β̄; [β̄/ᾱ̂]P)] where [ᾱ̂ = ffv(P)] — RENAME [P]'s free FLEXIBLE
-   variables to fresh ones [β̄], recording them in [Ξ].  Models the renaming as
-   one fresh-substitution per step.
-   NB (Finding F14): the previous ∀-stripping encoding modelled the WRONG
-   operation (refresh does not touch ∀-structure) and was degenerate ([Ξ]
-   always nil).  Distinguishing flex from rigid free variables needs [Θ], which
-   the uncoloured [a_looksub] does not thread; this relation therefore renames
-   an arbitrary free variable per step (an over-approximation) — the
-   [Θ]-restricted, terminating faithful version is deferred.  The paper itself
-   flags refresh as provisional ("perhaps I don't need refresh", alg.tex:1204). *)
-Inductive a_refresh : pskl -> aenv -> pskl -> Prop :=
-| a_refresh__base : forall P,
-    a_refresh P nil P
-| a_refresh__rename : forall P α β Ξ P',
-    α `in` ftvar_in_pskl P ->
-    β `notin` ftvar_in_pskl P ->
-    a_refresh (subst_pskl_in_pskl (pskl_var_f β) α P) Ξ P' ->
-    a_refresh P ((β ~ abind_flex_mono) ++ Ξ) P'.
+(* NB: [refresh] REMOVED (paper algorithmic.tex, 2026-07: WT "I don't need
+   refresh").  The look Var rules now emit the constraint directly on [P] with
+   an empty fresh-var context, matching the paper's [\lslab{Var}] /
+   [\lelab{Var}]. *)
 
 Reserved Notation "P ≼[ α , m ] P' ⤳ Ξ ⨾ C"
   (at level 75, α at level 0, m at level 0, P' at level 74, Ξ at level 0,
@@ -217,9 +202,8 @@ Reserved Notation "P ∼[ α ] P' ⤳ Ξ ⨾ C"
 (* Constraint collection: [P ≤_m P' ⤳^α Ξ; C] and [P ~ P' ⤳^α Ξ; C], where
    [α] is the flexible variable being solved for. *)
 Inductive a_looksub : atom -> mode -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
-| a_looksub__var : forall α m P Ξ P',           (* LS-Var *)
-    a_refresh P Ξ P' ->
-    (pskl_var_f α) ≼[ α , m ] P ⤳ Ξ ⨾ (a_cstr_sub m P' :: nil)
+| a_looksub__var : forall α m P,                (* LS-Var *)
+    (pskl_var_f α) ≼[ α , m ] P ⤳ nil ⨾ (a_cstr_sub m P :: nil)
 | a_looksub__absent : forall α m P P',           (* LS-Absent *)
     α `notin` ftvar_in_pskl P ->
     P ≼[ α , m ] P' ⤳ nil ⨾ nil
@@ -248,9 +232,8 @@ Inductive a_looksub : atom -> mode -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
     (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
 
 with a_lookeq : atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
-| a_lookeq__var : forall α P Ξ P',               (* LE-Var *)
-    a_refresh P Ξ P' ->
-    (pskl_var_f α) ∼[ α ] P ⤳ Ξ ⨾ (a_cstr_eq P' :: nil)
+| a_lookeq__var : forall α P,                    (* LE-Var *)
+    (pskl_var_f α) ∼[ α ] P ⤳ nil ⨾ (a_cstr_eq P :: nil)
 | a_lookeq__absent : forall α P P',              (* LE-Absent *)
     α `notin` ftvar_in_pskl P ->
     P ∼[ α ] P' ⤳ nil ⨾ nil

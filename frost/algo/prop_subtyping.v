@@ -99,9 +99,9 @@ Proof.
   destruct a_look_absent_empty as [Hsub_abs Heq_abs].
   apply a_looksub_lookeq_mutind.
   - (* LS-Var *)
-    intros α m P Ξ P' Href β Q Hbne Hlc Hnotin.
-    rewrite subst_pskl_in_pskl_fresh_eq by (simpl; fsetdec).
-    apply a_looksub__var; assumption.
+    intros α m P β Q Hbne Hlc Hnotin.
+    rewrite subst_pskl_in_pskl_fresh_eq with (Xps1 := β) by (simpl; clear - Hbne; fsetdec).
+    apply a_looksub__var.
   - (* LS-Absent *)
     intros α m P P' Hnf β Q Hbne Hlc Hnotin.
     apply a_looksub__absent.
@@ -143,9 +143,9 @@ Proof.
     intros α m P P' Ξ C Hpr IHpr β Q Hbne Hlc Hnotin. simpl.
     apply a_looksub__univ_ghost_l. apply IHpr; assumption.
   - (* LE-Var *)
-    intros α P Ξ P' Href β Q Hbne Hlc Hnotin.
-    rewrite subst_pskl_in_pskl_fresh_eq by (simpl; fsetdec).
-    apply a_lookeq__var; assumption.
+    intros α P β Q Hbne Hlc Hnotin.
+    rewrite subst_pskl_in_pskl_fresh_eq with (Xps1 := β) by (simpl; clear - Hbne; fsetdec).
+    apply a_lookeq__var.
   - (* LE-Absent *)
     intros α P P' Hnf β Q Hbne Hlc Hnotin.
     apply a_lookeq__absent.
