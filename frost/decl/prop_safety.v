@@ -4353,6 +4353,22 @@ Proof.
     + (* tophole_keep : RHS tophole *) destruct A; simpl in *; discriminate.
 Qed.
 
+(* Var-case enabler for context precision: a hole-tolerant [P] that [hole_safe]-
+   matches a (lc) type is [pskl_le] its full skeleton. *)
+Lemma hole_safe_pskl_le : forall Δ P A,
+    hole_safe Δ P A -> lc_ptyp A -> pskl_le P (ptyp_to_pskl A).
+Proof.
+  induction 1; intros Hlc; simpl.
+  - apply ple_hole.
+  - apply ple_unit.
+  - apply ple_var_f.
+  - inversion Hlc.
+  - inversion Hlc; subst. apply ple_arrow; [ apply IHhole_safe1 | apply IHhole_safe2 ]; assumption.
+  - inversion Hlc; subst. apply ple_all with (L := Lc). intros X HX.
+    rewrite <- ptyp_to_pskl_open. apply H0; [ exact HX | ].
+    match goal with H : forall X0, lc_ptyp _ |- _ => apply H end.
+Qed.
+
 
 Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
