@@ -4198,6 +4198,162 @@ Proof.
     [ lia | intros X HX; inversion HX | exact Href ].
 Qed.
 
+(* ===== Context precision transport (the app-case core) — see scratch validation ===== *)
+Inductive pskl_le : pskl -> pskl -> Prop :=
+| ple_hole   : forall P, pskl_le pskl_hole P
+| ple_unit   : pskl_le pskl_unit pskl_unit
+| ple_var_f  : forall X, pskl_le (pskl_var_f X) (pskl_var_f X)
+| ple_arrow  : forall P1 P2 Q1 Q2,
+    pskl_le P1 Q1 -> pskl_le P2 Q2 -> pskl_le (pskl_arrow P1 P2) (pskl_arrow Q1 Q2)
+| ple_all    : forall L P0 Q0,
+    (forall X, X `notin` L ->
+       pskl_le (open_pskl_wrt_pskl P0 (pskl_var_f X))
+               (open_pskl_wrt_pskl Q0 (pskl_var_f X))) ->
+    pskl_le (pskl_all_syn P0) (pskl_all_syn Q0)
+| ple_tophole : forall P0 Q0, pskl_le P0 Q0 -> pskl_le (pskl_tophole P0) (pskl_tophole Q0).
+
+(* Every free tvar of the type is either fresh for Δ (came from a hole) or appears
+   in the skeleton.  So an all-hole skeleton forces the whole type's tvars ∉ Δ. *)
+Lemma skel_safe_ftvar_scope : forall Δ P A, skel_safe Δ P A ->
+    forall X, X `in` ftvar_in_ptyp A -> ~ List.In X Δ \/ X `in` ftvar_in_pskl P.
+Proof.
+  induction 1; intros Y HY; simpl in HY.
+  - left. apply H. exact HY.
+  - fsetdec.
+  - right. simpl. exact HY.
+  - apply AtomSetImpl.union_1 in HY; destruct HY as [HY | HY];
+      [ destruct (IHskel_safe1 _ HY) | destruct (IHskel_safe2 _ HY) ];
+      solve [ left; assumption | right; simpl; fsetdec ].
+  - (* sks_all *) pick fresh X for (L `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f X)))
+      by (eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower; exact HY).
+    destruct (H0 X ltac:(clear - Fr; fsetdec) Y HYo) as [Hd | Hp].
+    + left. intros HIn. apply Hd. simpl. right. exact HIn.
+    + right. simpl. eapply ftvar_in_pskl_open_pskl_wrt_pskl_upper in Hp.
+      apply AtomSetImpl.union_1 in Hp; destruct Hp as [Hp | Hp];
+        [ simpl in Hp; apply AtomSetImpl.singleton_1 in Hp; subst; clear - Fr; fsetdec | exact Hp ].
+  - destruct (IHskel_safe _ HY); [ left; assumption | right; simpl; fsetdec ].
+  - (* sks_top_all *) pick fresh X for (L `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f X)))
+      by (eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower; exact HY).
+    destruct (H0 X ltac:(clear - Fr; fsetdec) Y HYo) as [Hd | Hp];
+      [ left; exact Hd | right; exact Hp ].
+Qed.
+
+(* A [⫯] over a [∀]-skeleton never matches any (finite) type: the ∀-nesting bottoms
+   out at a non-∀ leaf, where [all_syn] cannot match.  Kills the exotic sks_top_all
+   sub-case where the argument pattern's tophole content is itself an [all_syn]. *)
+Lemma skel_safe_tophole_all_syn_false_aux : forall m A Δ P,
+    size_ptyp A <= m -> skel_safe Δ (pskl_tophole (pskl_all_syn P)) A -> False.
+Proof.
+  induction m; intros A Δ P Hsize Hss; [ destruct A; simpl in Hsize; lia | ].
+  inversion Hss; subst.
+  - (* sks_top_leaf: A ≠ ∀, but skel_safe (all_syn P) A forces A = ∀ *)
+    match goal with H : skel_safe _ (pskl_all_syn _) _ |- _ => inversion H; subst end.
+    match goal with H : forall A0, ?A <> ptyp_all A0 |- _ => apply (H _ eq_refl) end.
+  - (* sks_top_all: A = ∀A0, recurse on the peeled body *)
+    pick fresh X.
+    eapply IHm; [ | match goal with H : forall X0, X0 `notin` _ -> _ |- _ => apply (H X ltac:(clear - Fr; fsetdec)) end ].
+    rewrite size_ptyp_open_ptyp_wrt_ptyp_var. simpl in Hsize. lia.
+Qed.
+Lemma skel_safe_tophole_all_syn_false : forall A Δ P,
+    skel_safe Δ (pskl_tophole (pskl_all_syn P)) A -> False.
+Proof. intros A Δ P. apply (@skel_safe_tophole_all_syn_false_aux (size_ptyp A) A Δ P ltac:(lia)). Qed.
+
+Lemma skel_safe_tophole_tophole_false_aux : forall m A Δ P,
+    size_ptyp A <= m -> skel_safe Δ (pskl_tophole (pskl_tophole P)) A -> False.
+Proof.
+  induction m; intros A Δ P Hsize Hss; [ destruct A; simpl in Hsize; lia | ].
+  inversion Hss; subst.
+  - match goal with H : forall Q1, pskl_tophole _ <> pskl_tophole Q1 |- _ => apply (H _ eq_refl) end.
+  - pick fresh X.
+    eapply IHm; [ | match goal with H : forall X0, X0 `notin` _ -> _ |- _ => apply (H X ltac:(clear - Fr; fsetdec)) end ].
+    rewrite size_ptyp_open_ptyp_wrt_ptyp_var. simpl in Hsize. lia.
+Qed.
+Lemma skel_safe_tophole_tophole_false : forall A Δ P,
+    skel_safe Δ (pskl_tophole (pskl_tophole P)) A -> False.
+Proof. intros A Δ P. apply (@skel_safe_tophole_tophole_false_aux (size_ptyp A) A Δ P ltac:(lia)). Qed.
+
+(* TRANSPORT: precision + arg refinement (about the concrete Γt pattern [Pt]) +
+   the arg's own safety (about the abstract Γ' pattern [Qa]) give [hole_safe] of the
+   STRIPPED abstract pattern.  The refinement's tophole_fill/keep are excluded (RHS
+   is all-inh); at [sks_top_all] the refinement inversion is either an [all] (recurse)
+   or [arrow ⊳ all_inh] (no rule → vacuous) — that is the flex/tophole-over-∀ vacuity.
+   [skel_safe] supplies the hole-scope where [Qa] holes out a Δ-var. *)
+Lemma transport_aux : forall n Pt Qa Γ Δ A,
+    size_pskl Pt <= n ->
+    (forall X, List.In X Δ -> X `notin` dom Γ) ->
+    pskl_le Qa Pt ->
+    skel_safe Δ Qa A ->
+    Γ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh Pt) ⊳ (btyp_to_bskl (ptyp_to_btyp_inh A)) ->
+    hole_safe Δ (strip_tophole Qa) A.
+Proof.
+  induction n; intros Pt Qa Γ Δ A Hsize Hdisj Hle Hss Href;
+    [ destruct Pt; simpl in Hsize; lia | ].
+  destruct Pt as [ | nb | Xv | Pt1 Pt2 | Pt0 | | Pt0 ]; simpl in Href, Hsize.
+  - (* unit *) destruct A; simpl in Href; inversion Href; subst.
+    inversion Hle; subst; simpl; [ apply hs_hole; intros X HX HIn; simpl in HX; fsetdec | apply hs_unit ].
+  - (* var_b *) inversion Href.
+  - (* var_f *) destruct A; simpl in Href; inversion Href; subst.
+    inversion Hle; subst; simpl.
+    + (* Qa hole : scope from skel_safe *)
+      apply hs_hole; inversion Hss; subst; assumption.
+    + apply hs_var_f.
+  - (* arrow *) destruct A; simpl in Href; inversion Href; subst.
+    inversion Hle; subst; simpl.
+    + (* Qa hole *) apply hs_hole; inversion Hss; subst; assumption.
+    + (* Qa arrow *) inversion Hss; subst.
+      apply hs_arrow; [ eapply (IHn Pt1); [ lia | exact Hdisj | eassumption | eassumption | eassumption ]
+                      | eapply (IHn Pt2); [ lia | exact Hdisj | eassumption | eassumption | eassumption ] ].
+  - (* all_syn *) destruct A; simpl in Href; inversion Href; subst.
+    inversion Hle; subst; simpl.
+    + (* Qa hole *) apply hs_hole; inversion Hss; subst; assumption.
+    + (* Qa all_syn *) inversion Hss; subst.
+      apply hs_all with (Lc := L `union` L0 `union` L1 `union` dom Γ). intros X HX.
+      rewrite <- strip_tophole_open.
+      eapply (IHn (open_pskl_wrt_pskl Pt0 (pskl_var_f X))) with (Γ := Γ).
+      * rewrite size_pskl_open_pskl_wrt_pskl_var. lia.
+      * intros Y HY. simpl in HY. destruct HY as [HY | HY]; [ subst; clear - HX; fsetdec | apply Hdisj; exact HY ].
+      * match goal with H : forall X0, X0 `notin` ?LL -> pskl_le _ _ |- _ => apply (H X ltac:(clear - HX; fsetdec)) end.
+      * match goal with H : forall X0, X0 `notin` ?LL -> skel_safe _ _ _ |- _ => apply (H X ltac:(clear - HX; fsetdec)) end.
+      * rewrite pskl_to_bskl_inh_open, ptyp_to_btyp_inh_open.
+        change (ptyp_to_btyp_inh (ptyp_var_f X)) with (btyp_var_f X).
+        rewrite btyp_to_bskl_open.
+        match goal with H : forall X0 : atom, X0 `notin` ?LL -> _ |- _ => apply (H X ltac:(clear - HX; fsetdec)) end.
+  - (* hole *) inversion Hle; subst; simpl.
+    apply hs_hole. inversion Href; subst.
+    intros Y HY HIn.
+    assert (HYP : Y `in` ftvar_in_pskl P)
+      by (rewrite <- (ftvar_pskl_to_bskl_syn P), H, ftvar_btyp_to_bskl,
+                  ftvar_ptyp_to_btyp_inh; exact HY).
+    destruct (d_wf_pskl_ftvar H2 HYP) as [Hf | Hb];
+      [ inversion Hf | apply (Hdisj Y HIn); eapply binds_In; exact Hb ].
+  - (* tophole *) inversion Href; subst.
+    + (* tophole_remove *) inversion Hle; subst; simpl.
+      * (* Qa hole *) apply hs_hole; inversion Hss; subst; assumption.
+      * (* Qa tophole *) inversion Hle; subst; clear Hle. inversion Hss; subst.
+        -- (* sks_top_leaf: skel_safe Δ Qa0 A available *)
+           eapply (IHn Pt0); [ lia | exact Hdisj | eassumption | eassumption | eassumption ].
+        -- (* sks_top_all: A = ptyp_all A0.  The refinement is [inh Pt0 ⊳ bskl_all_inh …];
+              destruct Pt0 — arrow/unit/var/hole ⊳ all_inh has NO rule (VACUOUS, the flex/
+              bare-λ-over-∀ case), leaving only the exotic all_syn/tophole content. *)
+           destruct Pt0; simpl in *;
+             try (match goal with Hr : _ ⨟ _ ⊢ᵣ _ ⊳ (bskl_all_inh _) |- _ => solve [ inversion Hr ] end);
+             match goal with
+             | Hp : pskl_le _ (pskl_all_syn _) |- _ => inversion Hp; subst
+             | Hp : pskl_le _ (pskl_tophole _) |- _ => inversion Hp; subst
+             | Hp : pskl_le _ pskl_hole |- _ => inversion Hp; subst
+             end; simpl;
+             try (apply hs_hole; intros X HX HIn;
+                  destruct (@skel_safe_ftvar_scope _ _ _ Hss X HX) as [Hd | Hp];
+                  [ exact (Hd HIn) | simpl in Hp; fsetdec ]);
+             try (exfalso; eapply skel_safe_tophole_all_syn_false; exact Hss);
+             try (exfalso; eapply skel_safe_tophole_tophole_false; exact Hss).
+    + (* tophole_fill : RHS all_syn vs all-inh *) destruct A; simpl in *; discriminate.
+    + (* tophole_keep : RHS tophole *) destruct A; simpl in *; discriminate.
+Qed.
+
+
 Lemma d_pat_fn_dir : forall Γ m e1 B1 B2,
     Γ ⊢[ mode_fn m ] e1 ⦂ (btyp_arrow B1 B2) -> d_wf_denv Γ ->
     forall Γ', ctx_refines Γ' Γ -> d_wf_denv Γ' ->
