@@ -4198,6 +4198,111 @@ Proof.
     [ lia | intros X HX; inversion HX | exact Href ].
 Qed.
 
+Lemma in_list_of_list : forall (Δ : list atom) X,
+    List.In X Δ -> X `in` AtomSetProperties.of_list Δ.
+Proof.
+  intros Δ X HIn. apply AtomSetProperties.of_list_1.
+  apply SetoidList.InA_alt. exists X. split; [ reflexivity | exact HIn ].
+Qed.
+
+(** [Δ]-monotonicity of pattern well-formedness: enlarging the inherited-tvar
+    list [Δ] preserves [d_wf_pskl] (the [tophole] premise is [Δ]-independent). *)
+Lemma d_wf_pskl_Delta_weaken : forall Γ P Δ1 Δ2,
+    Γ ⨟ Δ1 ⊢ₚₛ P -> (forall X, List.In X Δ1 -> List.In X Δ2) -> Γ ⨟ Δ2 ⊢ₚₛ P.
+Proof.
+  intros Γ P Δ1 Δ2 H. revert Δ2. induction H; intros Δ2 Hincl.
+  - apply d_wf_pskl__unit.
+  - apply d_wf_pskl__var. destruct H as [Hin | Hb]; [ left; apply Hincl; exact Hin | right; exact Hb ].
+  - apply d_wf_pskl__arrow; [ apply IHd_wf_pskl1 | apply IHd_wf_pskl2 ]; exact Hincl.
+  - apply d_wf_pskl__all with (L := L). intros X HX. apply H0; [ exact HX | ].
+    intros Y HY. simpl in HY |- *. destruct HY as [HY | HY]; [ left; exact HY | right; apply Hincl; exact HY ].
+  - apply d_wf_pskl__hole.
+  - apply d_wf_pskl__tophole; [ exact H | exact H0 ].
+Qed.
+
+(** BRIDGE refine → skel_safe: a WELL-FORMED argument pattern that refines to a
+    concrete-type skeleton is [skel_safe] for that type.  Well-formedness is
+    load-bearing: [d_wf_pskl__tophole] forces a [⫯]'s child to be [guarded]
+    (unit/var/arrow), so no stacked topholes arise — the [tophole_remove] case
+    then always lands in [sks_top_leaf] over a concrete type (never a [∀]).
+    This is the converse companion of [refine_colour_skel] and the entry point
+    for the base-term directed producer on the [⊳]-refinement interface. *)
+Lemma refine_skel_safe : forall Parg Γ Δ B,
+    (forall X, List.In X Δ -> ~ binds X dbind_tvar Γ) ->
+    Γ ⨟ Δ ⊢ₚₛ Parg ->
+    Γ ⨟ Δ ⊢ᵣ (pskl_to_bskl_inh Parg) ⊳ (btyp_to_bskl B) ->
+    skel_safe Δ Parg (btyp_to_ptyp B).
+Proof.
+  intros Parg Γ Δ B Hdisj Hwf Href.
+  remember (pskl_to_bskl_inh Parg) as Q eqn:HQ.
+  remember (btyp_to_bskl B) as P eqn:HP.
+  revert Parg B Hdisj Hwf HQ HP.
+  induction Href; intros Parg BB Hdisj Hwf HQ HP.
+  - (* unit *) destruct Parg; simpl in HQ; try discriminate.
+    destruct BB; simpl in HP; try discriminate. apply sks_unit.
+  - (* var *) destruct Parg; simpl in HQ; try discriminate.
+    injection HQ as HQ; subst.
+    destruct BB; simpl in HP; try discriminate. injection HP as HP; subst. apply sks_var_f.
+  - (* arrow *) destruct Parg; simpl in HQ; try discriminate.
+    injection HQ as HQa HQb; subst.
+    destruct BB; simpl in HP; try discriminate. injection HP as HPa HPb; subst.
+    inversion Hwf; subst.
+    simpl. apply sks_arrow; [ eapply IHHref1 | eapply IHHref2 ]; eauto.
+  - (* all *)
+    destruct Parg; simpl in HQ; try discriminate.
+    injection HQ as HQ.
+    inversion Hwf as [ | | | L1 ? ? ? Hwfb | | ]; subst.
+    destruct BB; simpl in HP; try discriminate;
+      injection HP as HP; subst; simpl;
+      (apply sks_all with (L := L `union` L1 `union` dom Γ); intros X HX;
+       rewrite <- prop_skeleton.btyp_to_ptyp_open;
+       eapply (H0 X ltac:(clear - HX; fsetdec));
+       [ intros Y HY; simpl in HY; destruct HY as [HY | HY];
+         [ subst Y; intro Hb; assert (X `in` dom Γ) by (eapply binds_In; exact Hb);
+           clear - HX H1; fsetdec
+         | apply Hdisj; exact HY ]
+       | apply Hwfb; clear - HX; fsetdec
+       | rewrite pskl_to_bskl_inh_open; reflexivity
+       | rewrite btyp_to_bskl_open; reflexivity ]).
+  - (* hole *)
+    destruct Parg; simpl in HQ; try discriminate.
+    apply sks_hole. intros X HX. rewrite ftvar_btyp_to_ptyp in HX.
+    assert (HXP : X `in` ftvar_in_pskl P).
+    { rewrite <- ftvar_pskl_to_bskl_syn.
+      rewrite HP. rewrite ftvar_btyp_to_bskl. exact HX. }
+    destruct (d_wf_pskl_ftvar H HXP) as [Hin | Hb]; [ inversion Hin | ].
+    intro HInD. eapply Hdisj; [ exact HInD | exact Hb ].
+  - (* tophole_remove: wf forces the child guarded (concrete), excluding ∀/stacked ⫯ *)
+    destruct Parg; simpl in HQ; try discriminate.
+    injection HQ as HQ. subst.
+    inversion Hwf as [ | | | | | ? ? ? Hguard Hwf0 ]; subst.
+    assert (Hrec : skel_safe Δ Parg (btyp_to_ptyp BB)).
+    { eapply IHHref; eauto. eapply d_wf_pskl_Delta_weaken; [ exact Hwf0 | intros ? HIn; inversion HIn ]. }
+    apply sks_top_leaf.
+    + intros A0 Hc. rewrite Hc in Hrec. inversion Hguard; subst; inversion Hrec.
+    + intros Q1 Hc. inversion Hguard; subst; discriminate.
+    + exact Hrec.
+  - (* tophole_fill: RHS all_syn ⇒ B = btyp_all_syn B0 ⇒ sks_top_all *)
+    destruct BB; simpl in HP; try discriminate.
+    injection HP as HP.
+    destruct Parg; simpl in HQ; try discriminate.
+    injection HQ as HQ. subst. simpl.
+    apply sks_top_all with (L := L `union` dom Γ `union` AtomSetProperties.of_list Δ). intros X HX.
+    rewrite <- prop_skeleton.btyp_to_ptyp_open.
+    eapply (H0 X ltac:(clear - HX; fsetdec));
+      [ intros Y HYin Hb;
+        apply binds_app_1 in Hb; destruct Hb as [Hb | Hb];
+        [ apply binds_one_iff in Hb; destruct Hb as [HYX _]; subst Y;
+          apply in_list_of_list in HYin; clear - HX HYin; fsetdec
+        | eapply Hdisj; [ exact HYin | exact Hb ] ]
+      | apply d_wf_pskl_weakening with (Γ1 := nil) (Γ2 := (X ~ dbind_tvar)) (Γ3 := Γ);
+        simpl; exact Hwf
+      | reflexivity
+      | rewrite btyp_to_bskl_open; reflexivity ].
+  - (* tophole_keep: RHS is a tophole; btyp_to_bskl is never a tophole *)
+    destruct BB; simpl in HP; try discriminate.
+Qed.
+
 (* ===== Context precision transport (the app-case core) — see scratch validation ===== *)
 Inductive pskl_le : pskl -> pskl -> Prop :=
 | ple_hole   : forall P, pskl_le pskl_hole P
