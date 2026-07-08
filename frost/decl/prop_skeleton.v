@@ -1133,6 +1133,50 @@ Inductive skel_safe : list atom -> pskl -> ptyp -> Prop :=
        skel_safe Δ (pskl_tophole P0) (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ->
     skel_safe Δ (pskl_tophole P0) (ptyp_all A0).
 
+(** The dotted witness [pskl_to_tskl P] is a decorated skeleton ([is_tskl]) —
+    ghost holes become DOTTED (holeg/topholeg), which [is_tskl] admits.  This is
+    the instantiation witness for a poly source ∀ in the pattern producer. *)
+Lemma pskl_to_tskl_is_tskl : forall P, lc_pskl P -> is_tskl (pskl_to_tskl P).
+Proof.
+  induction 1; simpl.
+  - apply is_tskl__unit.
+  - apply is_tskl__var.
+  - apply is_tskl__arrow; assumption.
+  - apply is_tskl__all_syn with (L := empty). intros X _.
+    change (uskl_var_f X) with (pskl_to_tskl (pskl_var_f X)).
+    rewrite <- pskl_to_tskl_open. apply H0.
+  - apply is_tskl__holeg.
+  - apply is_tskl__topholeg; assumption.
+Qed.
+
+(** The dotted witness is CONSISTENT with the inh-painting of the same pskl —
+    the [d_pat_sub__arg] domain obligation.  Ghost holes match via the dotted
+    rules ([ghostg] for □, [topholeg] for ⫯). *)
+Lemma pskl_to_tskl_consis_inh : forall P Γ,
+    lc_pskl P ->
+    (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
+    empty ⨟ Γ ⊨ₛ (pskl_to_tskl P) ≈ (pskl_to_bskl_inh P).
+Proof.
+  intros P Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov; simpl.
+  - apply d_pat_consis__unit. fsetdec.
+  - apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
+  - eapply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ apply IHHlc1; intros X HX; apply Hcov; simpl; fsetdec
+      | apply IHHlc2; intros X HX; apply Hcov; simpl; fsetdec
+      | fsetdec ].
+  - eapply d_pat_consis__forall_inh_untagged with (L := dom Γ). intros X HX.
+    change (uskl_var_f X) with (pskl_to_tskl (pskl_var_f X)).
+    rewrite <- pskl_to_tskl_open.
+    rewrite <- pskl_to_bskl_inh_open.
+    apply H0.
+    + intros Y HY. rewrite ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
+      simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+      * apply AtomSetImpl.singleton_1 in HY. subst. apply binds_app_2, binds_one_3; reflexivity.
+      * apply binds_app_3. apply Hcov. exact HY.
+  - apply d_pat_consis__ghostg. fsetdec.
+  - apply d_pat_consis__topholeg. apply IHHlc; intros X HX; apply Hcov; simpl; exact HX.
+Qed.
+
 Lemma refine_colour_skel : forall Δ P A,
     skel_safe Δ P A ->
     lc_ptyp A ->
