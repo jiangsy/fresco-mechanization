@@ -4450,6 +4450,87 @@ Proof.
   eapply subst_pskl_val_inj; [ exact Heq | exact Hocc ].
 Qed.
 
+(** lc gives degree at ANY index (iterate [degree_S] up from [degree_of_lc]). *)
+Lemma degree_pskl_any : forall i a, lc_pskl a -> degree_pskl_wrt_pskl i a.
+Proof. induction i; intros a Ha;
+  [ apply degree_pskl_wrt_pskl_of_lc_pskl; auto | apply degree_pskl_wrt_pskl_S; auto ]. Qed.
+
+(** ADJACENT-index open commutation under lngen's DECREMENT convention: opening at
+    [k] then [S k] collapses to opening at [k] twice (the naive [i<>j] swap is FALSE
+    here — opening at [i] decrements [var_b n] for [n>i]).  Both fillers must be lc. *)
+Lemma open_pskl_adj : forall P a b k,
+    lc_pskl a -> lc_pskl b ->
+    open_pskl_wrt_pskl_rec k a (open_pskl_wrt_pskl_rec (S k) b P) =
+    open_pskl_wrt_pskl_rec k b (open_pskl_wrt_pskl_rec k a P).
+Proof.
+  induction P; intros a b k Ha Hb; simpl; default_simp;
+    try (rewrite (open_pskl_wrt_pskl_rec_degree_pskl_wrt_pskl a) by (apply degree_pskl_any; exact Ha));
+    try (rewrite (open_pskl_wrt_pskl_rec_degree_pskl_wrt_pskl b) by (apply degree_pskl_any; exact Hb));
+    try reflexivity; try (exfalso; lia); try (f_equal; lia).
+Qed.
+
+(** THE ∀-poly codomain coverage lemma.  If a type [A']'s skeleton is [S]
+    instantiated at [V] ([ptyp_to_pskl A' = open S V]), then [S] instantiated at [□]
+    ([open S □]) is [skel_safe] for [A'] — at the [□] (the ∀-var) leaves coverage is
+    VACUOUS ([sks_hole] at [nil]-scoped Δ, guarded by [V]'s ftvars avoiding Δ); at
+    concrete leaves the skeletons match.  This is what lets the codomain-only /
+    nested-∀ producer cover EVERY instantiation [B2t] with a single [□]-carrying
+    pattern (unlike [safe_fn_skel_dir], whose [Qc] is the full concrete skeleton
+    matched to one target).  The [pskl_all_syn] case uses [open_pskl_adj] to line up
+    the fresh-var open (index 0) with the shifted [□]/[V] slot (index 1). *)
+Lemma skel_safe_open_hole_n : forall n S Δ V A',
+    size_pskl S <= n ->
+    lc_ptyp A' -> lc_pskl V ->
+    ptyp_to_pskl A' = open_pskl_wrt_pskl S V ->
+    (forall X, X `in` ftvar_in_pskl V -> ~ List.In X Δ) ->
+    skel_safe Δ (open_pskl_wrt_pskl S pskl_hole) A'.
+Proof.
+  induction n; intros S Δ V A' Hsz Hlc HlcV Heq Hsc.
+  { destruct S; simpl in Hsz; lia. }
+  destruct S as [ | n0 | X0 | S1 S2 | S0 | | S0 ]; unfold open_pskl_wrt_pskl in *; simpl in Heq |- *.
+  - (* unit *) destruct A'; simpl in Heq; try discriminate; try (inversion Hlc; fail). apply sks_unit.
+  - (* var_b n0 : n0=0 is the ∀-var slot ⇒ □ (vacuous); n0>0 contradicts lc A' *)
+    destruct (lt_eq_lt_dec n0 0) as [[?|?]|?]; simpl in Heq |- *.
+    + lia.
+    + subst n0. apply sks_hole. intros X HX.
+      apply Hsc. rewrite <- Heq. rewrite ftvar_ptyp_to_pskl. exact HX.
+    + exfalso. destruct A'; simpl in Heq; try discriminate; inversion Hlc.
+  - (* var_f X0 *) destruct A'; simpl in Heq; try discriminate; try (inversion Hlc; fail).
+    inversion Heq; subst. apply sks_var_f.
+  - (* arrow *) destruct A' as [ | | | A1 A2 | ]; simpl in Heq; try discriminate; try (inversion Hlc; fail).
+    inversion Heq as [ [Heq1 Heq2] ]. inversion Hlc; subst.
+    apply sks_arrow;
+      [ eapply IHn with (V := V); [ simpl in Hsz; lia | assumption | assumption | exact Heq1 | exact Hsc ]
+      | eapply IHn with (V := V); [ simpl in Hsz; lia | assumption | assumption | exact Heq2 | exact Hsc ] ].
+  - (* all_syn *) destruct A' as [ | | | | A'0 ]; simpl in Heq; try discriminate; try (inversion Hlc; fail).
+    inversion Heq as [ Heq0 ]. inversion Hlc; subst.
+    apply sks_all with (L := ftvar_in_pskl V \u ftvar_in_pskl S0).
+    intros X HX. unfold open_pskl_wrt_pskl.
+    assert (HXV : X `notin` ftvar_in_pskl V) by (clear - HX; fsetdec).
+    replace (open_pskl_wrt_pskl_rec 0 (pskl_var_f X) (open_pskl_wrt_pskl_rec 1 pskl_hole S0))
+       with (open_pskl_wrt_pskl_rec 0 pskl_hole (open_pskl_wrt_pskl_rec 0 (pskl_var_f X) S0))
+       by (rewrite <- open_pskl_adj; [ reflexivity | apply lc_pskl_var_f | apply lc_pskl_hole ]).
+    eapply IHn with (V := V) (Δ := X :: Δ).
+    + rewrite size_pskl_open_pskl_wrt_pskl_rec_var. simpl in Hsz. lia.
+    + match goal with Hb : forall _ : usklvar, lc_ptyp _ |- _ => apply (Hb X) end.
+    + assumption.
+    + rewrite ptyp_to_pskl_open. rewrite Heq0. unfold open_pskl_wrt_pskl.
+      apply open_pskl_adj; [ apply lc_pskl_var_f | assumption ].
+    + intros Y HY Hin. simpl in Hin. destruct Hin as [ Heqp | Hin ].
+      * subst Y. apply HXV. exact HY.
+      * eapply Hsc; [ exact HY | exact Hin ].
+  - (* hole : no ptyp has skeleton [□] *) exfalso. destruct A'; simpl in Heq; discriminate.
+  - (* tophole : no ptyp has skeleton [⫯] *) exfalso. destruct A'; simpl in Heq; discriminate.
+Qed.
+
+Lemma skel_safe_open_hole : forall S Δ V A',
+    lc_ptyp A' -> lc_pskl V ->
+    ptyp_to_pskl A' = open_pskl_wrt_pskl S V ->
+    (forall X, X `in` ftvar_in_pskl V -> ~ List.In X Δ) ->
+    skel_safe Δ (open_pskl_wrt_pskl S pskl_hole) A'.
+Proof. intros S Δ V A' Hlc HlcV Heq Hsc.
+  eapply skel_safe_open_hole_n; [ apply le_n | exact Hlc | exact HlcV | exact Heq | exact Hsc ]. Qed.
+
 (** [skel_safe] at [nil] depends on the covered type ONLY through its skeleton:
     if [A] and [A'] have the same skeleton (and [A'] is lc) then [skel_safe nil P A]
     transfers to [A'].  Lets the ∀-poly coverage move [skel_safe P BB2] to
