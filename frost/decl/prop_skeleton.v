@@ -1177,6 +1177,36 @@ Proof.
   - apply d_pat_consis__topholeg. apply IHHlc; intros X HX; apply Hcov; simpl; exact HX.
 Qed.
 
+(** SYN analogue of [pskl_to_tskl_consis_inh]: the dotted witness is consistent
+    with the SYN-painting of the same pskl.  Identical proof, [forall_syn] and
+    [pskl_to_bskl_syn] in place of the inh versions.  This is the codomain-infer
+    obligation when a domain-linked ∀-var is instantiated at [pskl_to_tskl Parg]
+    and the produced codomain leaf is [pskl_to_bskl_syn Parg]. *)
+Lemma pskl_to_tskl_consis_syn : forall P Γ,
+    lc_pskl P ->
+    (forall X, X `in` ftvar_in_pskl P -> binds X dbind_tvar Γ) ->
+    empty ⨟ Γ ⊨ₛ (pskl_to_tskl P) ≈ (pskl_to_bskl_syn P).
+Proof.
+  intros P Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov; simpl.
+  - apply d_pat_consis__unit. fsetdec.
+  - apply d_pat_consis__var; [ fsetdec | apply Hcov; simpl; fsetdec ].
+  - eapply d_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ apply IHHlc1; intros X HX; apply Hcov; simpl; fsetdec
+      | apply IHHlc2; intros X HX; apply Hcov; simpl; fsetdec
+      | fsetdec ].
+  - eapply d_pat_consis__forall_syn with (L := dom Γ). intros X HX.
+    change (uskl_var_f X) with (pskl_to_tskl (pskl_var_f X)).
+    rewrite <- pskl_to_tskl_open.
+    rewrite <- pskl_to_bskl_syn_open.
+    apply H0.
+    + intros Y HY. rewrite ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
+      simpl in HY. apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+      * apply AtomSetImpl.singleton_1 in HY. subst. apply binds_app_2, binds_one_3; reflexivity.
+      * apply binds_app_3. apply Hcov. exact HY.
+  - apply d_pat_consis__ghostg. fsetdec.
+  - apply d_pat_consis__topholeg. apply IHHlc; intros X HX; apply Hcov; simpl; exact HX.
+Qed.
+
 Lemma refine_colour_skel : forall Δ P A,
     skel_safe Δ P A ->
     lc_ptyp A ->
