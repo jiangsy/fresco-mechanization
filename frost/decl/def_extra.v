@@ -215,13 +215,13 @@ Inductive d_tags : atoms -> utyp -> Prop :=
     Ψ [=] add ε Ψ0 ->
     d_tags Ψ (utyp_all_etag ε C).
 
-(** Skeleton analog [tags{Ψ}{ψ}] (declarative.tex, skeleton subtyping).
-    Same as [d_tags] plus the two ghost cases: a [hole] carries no tags,
-    and a universal ghost [⫯ψ] carries exactly the tags of its body. *)
-(* Check partially passed. in paper, d_tags_skl is only defined for tskl, 
-    i think we can remove some cases, 
-    for example, d_tags_skl__all_syn, d_tags_skl__hole, d_tags_skl__tophole
-    but it shall be fine to have them *)
+(** Skeleton analog [tags{Ψ}{ψ}] (declarative.tex:1822).  Defined EXACTLY on
+    the paper's decorated-skeleton grammar
+    [ψ ::= 1 | α | ψ→ψ | ∀^ε α.ψ | HoleG | TopHoleG.ψ] (declarative.tex:1796):
+    every quantifier is tagged; the only ghosts are the DOTTED ones.  A [HoleG]
+    carries no tags; a dotted universal ghost [TopHoleG.ψ] carries exactly its
+    body's tags (no ε of its own — unlike [all_etag]).  Plain [hole]/[tophole]
+    and the untagged [all_syn] are NOT in ψ and have no case here. *)
 Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__unit : forall Ψ, Ψ [=] empty -> d_tags_skl Ψ uskl_unit
 | d_tags_skl__var : forall Ψ X, Ψ [=] empty -> d_tags_skl Ψ (uskl_var_f X)
@@ -237,20 +237,6 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
     ε `notin` Ψ0 ->
     Ψ [=] add ε Ψ0 ->
     d_tags_skl Ψ (uskl_all_etag ε R)
-(* The tag-elided synthesised forall [all_syn] carries no instantiation tag of
-   its own, so its tags are exactly its body's. *)
-| d_tags_skl__all_syn : forall L Ψ R,
-    (forall X, X `notin` L ->
-       d_tags_skl Ψ (open_uskl_wrt_uskl R (uskl_var_f X))) ->
-    d_tags_skl Ψ (uskl_all_syn R)
-| d_tags_skl__hole : forall Ψ, Ψ [=] empty -> d_tags_skl Ψ uskl_hole
-| d_tags_skl__tophole : forall Ψ R,
-    d_tags_skl Ψ R ->
-    d_tags_skl Ψ (uskl_tophole R)
-(* Dotted ghosts (declarative.tex, uniqueness fig): HoleG carries no
-   tags; the DOTTED universal ghost TopHoleG.ψ carries EXACTLY its body's
-   tags [tags{Ψ}{TopHoleG.ψ}] (no ε of its own — unlike [all_etag]),
-   mirroring the plain [tophole]. *)
 | d_tags_skl__holeg : forall Ψ,
     Ψ [=] empty ->
     d_tags_skl Ψ uskl_holeg
@@ -570,11 +556,6 @@ where "Ψ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Ψ Γ R Q) : type_scope.
 (*  Typing and pattern inference                                          *)
 (* ===================================================================== *)
 
-Inductive is_base_term : exp -> Prop :=
-| is_base_term__unit : is_base_term exp_unit
-| is_base_term__var  : forall x, is_base_term (exp_var_f x)
-| is_base_term__anno : forall e A, is_base_term (exp_anno e A).
-
 Reserved Notation "Γ ⊢[ M ] e ⦂ A"
   (at level 100, M at level 0, e at level 75, A at level 75, no associativity).
 Reserved Notation "Γ ⊢[ M ] e ⇨ P"
@@ -588,20 +569,21 @@ Reserved Notation "Γ ⊢ˢ[ M ] e ⦂ A"
 (* Check fully passed *)
 (* Todo : check if d_pat has skmod_sk satisfied, and i think we didn't even have skmod_sk defined *)
 Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
-| d_pat__unit : forall Γ,
-    Γ ⊢[ mode_ti ] exp_unit ⇨ bskl_unit
-| d_pat__var : forall Γ x (P : pskl) d,
+(* Paper P-Unit/P-Var/P-Anno (declarative.tex:1634-1653): the skeleton
+   subtyping judgement is EMBEDDED in the three base rules at every mode —
+   there is no standalone P-Sub rule and no base-term restriction. *)
+| d_pat__unit : forall Γ m Q,
+    empty ⨟ Γ ⊢ₛ[ m ] uskl_unit ⊑ Q ->
+    Γ ⊢[ m ] exp_unit ⇨ Q
+| d_pat__var : forall Γ m x (P : pskl) d Q,
     binds x d Γ ->
     dbind_to_pskl d = Some P ->
-    Γ ⊢[ mode_ti ] (exp_var_f x) ⇨ (pskl_to_bskl_syn P)
-| d_pat__anno : forall Γ e (A : ptyp),
-    Γ ⊢ₚ A ->
-    Γ ⊢[ mode_ti ] (exp_anno e A) ⇨ (pskl_to_bskl_syn (ptyp_to_pskl A))
-| d_pat__sub : forall Γ m e P Q,
-    is_base_term e ->
-    Γ ⊢[ mode_ti ] e ⇨ (pskl_to_bskl_syn P) ->
     empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⊑ Q ->
-    Γ ⊢[ m ] e ⇨ Q
+    Γ ⊢[ m ] (exp_var_f x) ⇨ Q
+| d_pat__anno : forall Γ m e (A : ptyp) Q,
+    Γ ⊢ₚ A ->
+    empty ⨟ Γ ⊢ₛ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) ⊑ Q ->
+    Γ ⊢[ m ] (exp_anno e A) ⇨ Q
 | d_pat__freeze : forall Γ e P,
     Γ ⊢[ mode_ti ] e ⇨ (pskl_to_bskl_syn P) ->
     Γ ⊢[ mode_tc ] (exp_freeze e) ⇨ (pskl_to_bskl_syn P)

@@ -475,6 +475,31 @@ order `a_morepoly`, skeleton splitting `a_skel_split`, type equivalence
 
 Session-by-session closure log. Most recent first.
 
+## 2026-07-10 — RE-MECH restart against the finalized paper (branch `re-mech`)
+
+Paper finalized (merge `8dfafca`); clean restart per the three-step plan:
+(1) decl defs synced with the paper — inconsistencies flagged in
+[`docs/REPORT-remech-decl-sync.md`](docs/REPORT-remech-decl-sync.md); fixes:
+`is_tskl` untagged-∀ case removed (ψ requires every quantifier tagged),
+`d_tags_skl` restricted to ψ's grammar, `d_pat` restructured to the paper's
+embedded-subtyping P-Unit/P-Var/P-Anno (no `d_pat__sub` / `is_base_term`).
+(2) `frost/algo/def_extra.v` REWRITTEN from `full-algo-spec.tex`: new
+`Δ₁∣Δ₂` tracking in `a_consis`, no `refresh`, `□`-RHS Vacuous rules,
+GhostLF/GhostL solve rules with `⊤.` outputs, `∀ᾱ.A₀`-input
+AbsCheck/AbsAnnoCheck (step/base), Freeze with type input, `a_guess` =
+paper's `guess[N]`, `a_sub_flex` (ex-`a_broom`), `Assign-UnivGhost-Id`.
+(3) proofs to be redone bottom-up following the paper's appendices
+(consistency-proofs → subtyping-proofs → proofs → full-decl-proofs); the
+pre-sync proof files were moved to `*.v.legacy` (git-tracked, out of the
+build) for incremental rebasing: all old `algo/*` except the new
+`def_extra.v`, decl `prop_{weakening,annotation,skeleton,safety,stability,
+syntax_directed,renaming,general_subsumption}`, and `README.v`.
+**Build 🟢 GREEN** (`make coq`) on: def layer + decl defs + decl
+`prop_basic`/`prop_wellformed`/`prop_shallow` + new algo defs.
+NEXT: `algo/def_decorated.v` (decorated-algosub.tex: `a_subtag`,
+`a_consistag`, tag-solving `solvetag*`, erasure `uskl→pskl`), then the
+☺️-marked leaf lemmas of `consistency-proofs.tex` §Lemmas-for-Subtyping.
+
 ## 2026-06-19 — Algorithmic DEFINITIONS made faithful (Units 1–5; branch `mech-algo-defs-faithful`)
 
 Goal: make every algorithmic *definition* paper-faithful (proofs stay
