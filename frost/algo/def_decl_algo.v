@@ -54,11 +54,11 @@ Definition a_binds_tvar (X : atom) (Θ : aenv) : Prop :=
 (*  Skeleton well-formedness over Θ  (decl [Γ ⨟ Δ ⊢ₚₛ P])                *)
 (* ===================================================================== *)
 
-Inductive ad_wf_pskl : aenv -> list atom -> pskl -> Prop :=
+Inductive ad_wf_pskl : aenv -> atoms -> pskl -> Prop :=
 | ad_wf_pskl__unit : forall Θ Δ,
     Θ ⨟ Δ ⊢ₚₛᵃ pskl_unit
 | ad_wf_pskl__var : forall Θ Δ X,
-    List.In X Δ \/ a_binds_tvar X Θ ->
+    X `in` Δ \/ a_binds_tvar X Θ ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f X)
 | ad_wf_pskl__arrow : forall Θ Δ P1 P2,
     Θ ⨟ Δ ⊢ₚₛᵃ P1 ->
@@ -66,13 +66,13 @@ Inductive ad_wf_pskl : aenv -> list atom -> pskl -> Prop :=
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2)
 | ad_wf_pskl__all : forall L Θ Δ P,
     (forall X, X `notin` L ->
-       Θ ⨟ (X :: Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f X))) ->
+       Θ ⨟ (add X Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f X))) ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P)
 | ad_wf_pskl__hole : forall Θ Δ,
     Θ ⨟ Δ ⊢ₚₛᵃ pskl_hole
 | ad_wf_pskl__tophole : forall Θ Δ P,
     guarded_pskl P ->
-    Θ ⨟ nil ⊢ₚₛᵃ P ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P)
 where "Θ ⨟ Δ ⊢ₚₛᵃ P" := (ad_wf_pskl Θ Δ P) : type_scope.
 
@@ -126,7 +126,7 @@ Inductive ad_pat_consis : atoms -> aenv -> uskl -> bskl -> Prop :=
     Ψ ⨟ Θ ⊨ₛᵃ (uskl_topholeg R) ≈ (bskl_tophole Q)
 | ad_pat_consis__hole : forall Ψ Θ P,
     Ψ [=] empty ->
-    Θ ⨟ nil ⊢ₚₛᵃ P ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
     Ψ ⨟ Θ ⊨ₛᵃ uskl_hole ≈ (pskl_to_bskl_inh P)
 | ad_pat_consis__tophole : forall Ψ Θ R Q,
     Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q ->
@@ -154,11 +154,11 @@ where "Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q" := (ad_pat_consis Ψ Θ R Q) : type_scope.
 (*  Skeleton refinement over Θ, coloured  (decl [Γ ⨟ Δ ⊢ᵣ Q ⊳ P] + flex)  *)
 (* ===================================================================== *)
 
-Inductive ad_refine_syn : aenv -> list atom -> bskl -> bskl -> Prop :=
+Inductive ad_refine_syn : aenv -> atoms -> bskl -> bskl -> Prop :=
 | ad_refine_syn__unit : forall Θ Δ,
     Θ ⨟ Δ ⊢ᵣᵃ bskl_unit ⊳ bskl_unit
 | ad_refine_syn__var : forall Θ Δ X,
-    List.In X Δ \/ a_binds_tvar X Θ ->
+    X `in` Δ \/ a_binds_tvar X Θ ->
     Θ ⨟ Δ ⊢ᵣᵃ (bskl_var_f X) ⊳ (bskl_var_f X)
 | ad_refine_syn__arrow : forall Θ Δ Q1 Q2 P1 P2,
     Θ ⨟ Δ ⊢ᵣᵃ Q1 ⊳ P1 ->
@@ -166,12 +166,12 @@ Inductive ad_refine_syn : aenv -> list atom -> bskl -> bskl -> Prop :=
     Θ ⨟ Δ ⊢ᵣᵃ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow P1 P2)
 | ad_refine_syn__all : forall L Θ Δ Q P,
     (forall X, X `notin` L ->
-       Θ ⨟ (X :: Δ) ⊢ᵣᵃ
+       Θ ⨟ (add X Δ) ⊢ᵣᵃ
          (open_bskl_wrt_bskl Q (bskl_var_f X)) ⊳
          (open_bskl_wrt_bskl P (bskl_var_f X))) ->
     Θ ⨟ Δ ⊢ᵣᵃ (bskl_all_inh Q) ⊳ (bskl_all_inh P)
 | ad_refine_syn__hole : forall Θ Δ P,
-    Θ ⨟ nil ⊢ₚₛᵃ P ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
     Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ (pskl_to_bskl_syn P)
 | ad_refine_syn__tophole_remove : forall Θ Δ Q P,
     Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P ->
@@ -201,11 +201,11 @@ where "Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P" := (ad_refine_syn Θ Δ Q P) : type_scope.
 (*  colour-ignoring reading of the refinement rules, + flex lookups)       *)
 (* ===================================================================== *)
 
-Inductive ad_refine_pskl : aenv -> list atom -> pskl -> pskl -> Prop :=
+Inductive ad_refine_pskl : aenv -> atoms -> pskl -> pskl -> Prop :=
 | ad_refine_pskl__unit : forall Θ Δ,
     Θ ⨟ Δ ⊢ᵣₚᵃ pskl_unit ⊳ pskl_unit
 | ad_refine_pskl__var : forall Θ Δ X,
-    List.In X Δ \/ a_binds_tvar X Θ ->
+    X `in` Δ \/ a_binds_tvar X Θ ->
     Θ ⨟ Δ ⊢ᵣₚᵃ (pskl_var_f X) ⊳ (pskl_var_f X)
 | ad_refine_pskl__arrow : forall Θ Δ P1 P2 Q1 Q2,
     Θ ⨟ Δ ⊢ᵣₚᵃ P1 ⊳ Q1 ->
@@ -213,12 +213,12 @@ Inductive ad_refine_pskl : aenv -> list atom -> pskl -> pskl -> Prop :=
     Θ ⨟ Δ ⊢ᵣₚᵃ (pskl_arrow P1 P2) ⊳ (pskl_arrow Q1 Q2)
 | ad_refine_pskl__all : forall L Θ Δ P Q,
     (forall X, X `notin` L ->
-       Θ ⨟ (X :: Δ) ⊢ᵣₚᵃ
+       Θ ⨟ (add X Δ) ⊢ᵣₚᵃ
          (open_pskl_wrt_pskl P (pskl_var_f X)) ⊳
          (open_pskl_wrt_pskl Q (pskl_var_f X))) ->
     Θ ⨟ Δ ⊢ᵣₚᵃ (pskl_all_syn P) ⊳ (pskl_all_syn Q)
 | ad_refine_pskl__hole : forall Θ Δ Q,
-    Θ ⨟ nil ⊢ₚₛᵃ Q ->
+    Θ ⨟ empty ⊢ₚₛᵃ Q ->
     Θ ⨟ Δ ⊢ᵣₚᵃ pskl_hole ⊳ Q
 | ad_refine_pskl__tophole_remove : forall Θ Δ P Q,
     Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->

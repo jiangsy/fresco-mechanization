@@ -75,6 +75,22 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-11 (b) — meta/decl-algo layer, first Qed, ⊴-algebra, notations
+
+- `algo/def_meta.v` (metasubstitutions, `a_tyequiv`, `a_inc`/`⊴`) and
+  `algo/def_decl_algo.v` (decl judgments over Θ with flex lookups:
+  `⊢ₚₛᵃ`/`⊨ₛᵃ`/`⊢ᵣᵃ`/`⊢ᵣₚᵃ`, Δ as `atoms` to align with `a_consis`).
+- **First lemma Qed**: `a_consis_decorate` = paper "Decorating algorithmic
+  consistency" (`algo/prop_decorate.v`), with the `pskl→uskl` embedding kit.
+- `algo/prop_inc.v`: ⊴-algebra — `msubst_*_id`, `a_suffix_app`,
+  `a_inc_refl_gen` ⇒ `a_isub_refl`, `a_isub_weaken_suffix` (all Qed).
+- Notation retrofit of `def_decorated.v`/`def_decl_algo.v` (ground rule 1);
+  ground rules 1–3 added to CLAUDE.md.
+- NEXT: `a_isub_trans` (composition of identity incs — needed by every
+  multi-premise case), `a_unify`/`a_assign` soundness (paper
+  thm:sound-consistency parts 2–3), then "Soundness of decorated
+  consistency" (Δ₁/Δ₂-generalized, per the paper's proof sketch).
+
 ## 2026-07-11 — def_decorated.v + clean PROGRESS
 
 `algo/def_decorated.v` written from `appendices/decorated-algosub.tex`:
