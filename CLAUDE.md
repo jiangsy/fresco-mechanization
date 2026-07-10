@@ -176,6 +176,14 @@ before changing any of them.
 - File naming: `def_*.v` for definitions, `prop_*.v` for properties /
   metatheorems. `decl/` is flat (one `prop_*.v` per topic); pick the
   matching file by topic.
+- **Never change the paper's definitions or lemma statements, and follow the
+  paper's proof steps.**  Mechanize the statement exactly as the paper gives
+  it.  If a paper PROOF STEP has a problem but the original statement is
+  still provable (with your own repair), continue the proof with the repair
+  and DOCUMENT the problem (comment at the lemma + PROGRESS.md entry).  If
+  the STATEMENT itself is genuinely false — you have a concrete
+  counter-example — STOP and flag it to the user; do not weaken or "fix" the
+  statement.
 - **Use notations as much as possible — in BOTH rule definitions and lemma
   statements — and keep them consistent with the paper's judgment forms.**
   Every judgment `Inductive` should be bound to a paper-shaped notation via
