@@ -37,14 +37,14 @@ excluded from the build); mine them when re-proving.
 | Algorithmic skeleton inference (fig:alg-skeleton-inference) | `a_pat` | 🟢 |
 | Algorithmic type inference (fig:alg-type-inference) | `a_typing` | 🟢 ∀ᾱ.A₀ AbsCheck (step/base), typed Freeze |
 | Erasure ⌊·⌋, decorated subtyping/consistency, tag solving (app:decorated-algosub) | `algo/def_decorated.v` (`uskl_to_pskl`, `a_subtag`, `a_consistag`, `a_solvetag(_sub/_eq)`) | 🟢 |
-| Metasubstitutions θ : Θ ⇒ Θ' (app:metasubstitutions) | — | ⬜ TODO (`algo/def_meta.v` redo; legacy reference exists) |
-| Decl judgments in algo contexts (app:decl-in-algo-context) | — | ⬜ TODO (FlexMono/FlexL/FlexR decl-over-Θ rules) |
+| Metasubstitutions θ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`) | 🟢 |
+| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo/def_decl_algo.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules) | 🟡 consistency/refinement layer done; subtyping/typing layer TODO |
 
 ## Theorems / lemmas (bottom-up order; ⬜ = to prove, per paper appendix)
 
 **B. consistency-proofs.tex** (§Consistency)
 - ⬜ Soundness of decorated consistency
-- ⬜ Decorating algorithmic consistency; Consistency decoration
+- ✅ Decorating algorithmic consistency (`a_consis_decorate`, `algo/prop_decorate.v`); ⬜ Consistency decoration
 - ⬜ Consistency constraint decoration for variables
 - ⬜ Completeness of consistency constraint collection & solving (+ for variables)
 - ⬜ Soundness of Consistency (Lemma soundConsistency, 3 parts: consis / unifyvar / assignvar)
