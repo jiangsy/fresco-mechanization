@@ -176,11 +176,14 @@ before changing any of them.
 - File naming: `def_*.v` for definitions, `prop_*.v` for properties /
   metatheorems. `decl/` is flat (one `prop_*.v` per topic); pick the
   matching file by topic.
-- **Use the codebase's Coq notations in lemma statements**, especially
-  for paper-corresponding lemmas. See [`decl/notations.v`](frost/decl/notations.v)
+- **Use notations as much as possible — in BOTH rule definitions and lemma
+  statements — and keep them consistent with the paper's judgment forms.**
+  Every judgment `Inductive` should be bound to a paper-shaped notation via
+  a `where`-clause and its rules written in that notation; lemma statements
+  use the notations too. See [`decl/notations.v`](frost/decl/notations.v)
   for the legend (`Γ ⊢[ M ] e ⇒ A` for `d_typing`, `Δ ⨟ Γ ⊨ T ≈ A`
-  for `d_consis`, etc.). The "gen" relations and `d_wf_typ` have no
-  dedicated notation — application form is fine for them.
+  for `d_consis`, etc.). Only relations with no paper counterpart may use
+  application form.
 - Tactic style follows the reference repo — `eauto`-driven, with
   hammer-derived scripts simplified before commit.
 - Comments document **why** an encoding is the way it is, not what
