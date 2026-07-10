@@ -768,3 +768,101 @@ Lemma d_typing_pat_preserves_wf :
   (forall m Γ e Q, d_pat m Γ e Q -> d_wf_pskl Γ nil Q).
 Proof.
 Admitted.
+
+(** * Well-formedness consequences used by variable head-factoring.
+
+    The [d_wf_denv] context invariant carries [x ∉ dom Γ] at every
+    extension and [d_wf_ptyp Γ A] at every term binding, so it yields
+    both [uniq Γ] (needed to identify a variable's binding under the
+    [d_typing__var] inversion) and the binding's well-formedness
+    (needed by the consistency-transitivity steps). *)
+Lemma d_wf_denv_uniq : forall Γ, d_wf_denv Γ -> uniq Γ.
+Proof. intros Γ H; induction H; auto. Qed.
+
+(** A term binding's type is well-formed in the full context (the
+    invariant records it over the tail; weaken back up). *)
+Lemma d_wf_denv_binds_ptyp : forall Γ x A,
+    d_wf_denv Γ ->
+    binds x (dbind_typ A) Γ ->
+    d_wf_ptyp Γ A.
+Proof.
+  intros Γ x A Hwf. induction Hwf; intros Hb.
+  - inversion Hb.
+  - analyze_binds Hb.
+    rewrite_env (nil ++ (X ~ dbind_tvar) ++ Γ).
+    apply d_wf_ptyp_weakening. simpl. apply IHHwf; assumption.
+  - analyze_binds Hb.
+    + assert (A = A0) by congruence. subst A0.
+      rewrite_env (nil ++ (x0 ~ dbind_typ A) ++ Γ).
+      apply d_wf_ptyp_weakening. simpl. exact H0.
+    + rewrite_env (nil ++ (x0 ~ dbind_typ A0) ++ Γ).
+      apply d_wf_ptyp_weakening. simpl. apply IHHwf; assumption.
+  - analyze_binds Hb.
+    rewrite_env (nil ++ (x0 ~ dbind_skl P) ++ Γ).
+    apply d_wf_ptyp_weakening. simpl. apply IHHwf; assumption.
+Qed.
+
+(** Consistency is reflexive on the synthesised painting: a
+    well-formed [A] synthesises a [btyp] consistent with the
+    [utyp] painting of the same [A] (empty tag context). *)
+Lemma d_consis_syn_refl : forall Γ A,
+    d_wf_ptyp Γ A ->
+    empty ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ ptyp_to_btyp_syn A.
+Proof.
+  intros Γ A Hwf. induction Hwf; simpl.
+  - apply d_consis__unit; reflexivity.
+  - apply d_consis__var; [ exact H | reflexivity ].
+  - apply d_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ exact IHHwf1 | exact IHHwf2 | fsetdec ].
+  - apply d_consis__forall_syn with (L := L). intros X HX.
+    specialize (H0 X HX).
+    rewrite ptyp_to_utyp_syn_open in H0.
+    rewrite ptyp_to_btyp_syn_open in H0.
+    simpl in H0. exact H0.
+Qed.
+
+(** Structural converse of [d_consis_syn_refl]: a synthesised painting is
+    consistent ONLY with its own [btyp] synthesis.  Holds because the
+    target is forced [is_styp] (synthesised) — that excludes the
+    [d_consis__forall_inh_*] rules (whose RHS is inherited) and the tagged
+    rules (whose LHS is [utyp_all_etag], never produced by a painting), so
+    consistency collapses to structural congruence.  This is what makes a
+    variable's [mode_ti] type EXACTLY its binding painting, hence the
+    extracted [d_sub] lands at the empty tag context demanded by
+    [d_typing__sub]. *)
+Lemma d_consis_paint_syn_eq : forall B,
+    is_styp B ->
+    forall Δ Γ A, Δ ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B -> B = ptyp_to_btyp_syn A.
+Proof.
+  intros B Hstyp. induction Hstyp; intros Δ Γ A Hc.
+  - (* unit *) destruct A; simpl in Hc; inversion Hc; subst; reflexivity.
+  - (* var *) destruct A; simpl in Hc; inversion Hc; subst; reflexivity.
+  - (* arrow *)
+    destruct A; simpl in Hc; inversion Hc; subst.
+    simpl. f_equal; [ eapply IHHstyp1 | eapply IHHstyp2 ]; eassumption.
+  - (* all_syn *)
+    destruct A; simpl in Hc; inversion Hc; subst.
+    simpl. f_equal.
+    pick fresh X for (L `union` L0 `union` ftvar_in_btyp B `union` ftvar_in_ptyp A).
+    specialize (H5 X ltac:(auto)).
+    replace (utyp_var_f X) with (ptyp_to_utyp_syn (ptyp_var_f X)) in H5 by reflexivity.
+    rewrite <- ptyp_to_utyp_syn_open in H5.
+    specialize (H0 X ltac:(auto) Δ ((X ~ dbind_tvar) ++ Γ)
+                  (open_ptyp_wrt_ptyp A (ptyp_var_f X)) H5).
+    rewrite ptyp_to_btyp_syn_open in H0. simpl in H0.
+    apply open_btyp_wrt_btyp_inj with (Xbt1 := X).
+    + fsetdec.
+    + match goal with |- context [ ftvar_in_btyp (ptyp_to_btyp_syn ?A0) ] =>
+        rewrite (ftvar_ptyp_to_btyp_syn A0) end. fsetdec.
+    + exact H0.
+Qed.
+
+(** Well-formed plain types are locally closed. *)
+Lemma d_wf_ptyp_lc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
+Proof.
+  intros Γ A H. induction H.
+  - apply lc_ptyp_unit.
+  - apply lc_ptyp_var_f.
+  - apply lc_ptyp_arrow; assumption.
+  - pick fresh X. apply (lc_ptyp_all_exists X). auto.
+Qed.

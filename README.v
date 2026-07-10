@@ -17,16 +17,28 @@ Require Import src.frost.algo.prop_completeness.
 (** Finished properties — each [Check] is paired with its [Print Assumptions]
     (all "Closed under the global context"). *)
 
-(* Paper Lemma 3.1 (General subsumption):
-     d_wf_denv Γ  →  Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A
-       →  ∅ ⨟ Γ ⊢[ m ] ptyp_to_utyp_syn A ⊑ B  →  Γ ⊢[ m ] e ⦂ B *)
+(* General subsumption ("Removed base terms" rework): on [d_typing] the
+   unrestricted [Sub] is a RULE, so general subsumption is trivial there; the
+   PROOF OBLIGATION lives on the syntax-directed system [d_sd_typing] (no [Sub]
+   rule), and the equivalence transports it back.
+
+   Syntax-directed general subsumption (the headline):
+     d_wf_denv Γ  →  Γ ⊢ˢ[ mode_ti ] e ⦂ ptyp_to_btyp_syn A
+       →  ∅ ⨟ Γ ⊢[ m ] ptyp_to_utyp_syn A ⊑ B  →  Γ ⊢ˢ[ m ] e ⦂ B *)
+Check d_sd_typing_general_subsumption.
+Print Assumptions d_sd_typing_general_subsumption.
+
+(* Generalised general subsumption, FN^n spine, syntax-directed (headline):
+     Γ ⊢ˢ[ m₁ ] e ⦂ Bfull  →  ctx_weaken Γ Γ'  →  is_fn_n n m₁
+       →  btyp_spine n Bfull A B Bres  →  ∅ ⨟ Γ' ⊢[ M ] btyp_to_utyp_syn A ⊑ B
+       →  Γ' ⊢ˢ[ mode_fn_n_subst m₁ M ] e ⦂ Bres *)
+Check d_sd_typing_general_subsumption_spine.
+Print Assumptions d_sd_typing_general_subsumption_spine.
+
+(* [d_typing]-side corollaries: [Sub] as a one-step rule, and the FN^n spine
+   transported through the equivalence. *)
 Check d_typing_general_subsumption.
 Print Assumptions d_typing_general_subsumption.
-
-(* Paper Lemma B.5 (Generalised general subsumption, FN^n spine):
-     Γ ⊢[ m₁ ] e ⦂ Bfull  →  ctx_weaken Γ Γ'  →  is_fn_n n m₁
-       →  btyp_spine n Bfull A B Bres  →  ∅ ⨟ Γ' ⊢[ M ] btyp_to_utyp_syn A ⊑ B
-       →  Γ' ⊢[ mode_fn_n_subst m₁ M ] e ⦂ Bres *)
 Check d_typing_general_subsumption_spine.
 Print Assumptions d_typing_general_subsumption_spine.
 
@@ -57,9 +69,11 @@ Check d_sd_typing_sound.
 Print Assumptions d_sd_typing_sound.
 
 (* Syntax-directed system equivalence — completeness (syntax-directed.tex);
-   the base-term ∀-admissibility [dtylab{Forall}] is discharged by the
-   [X := unit] type-substitution strengthening:
-     d_typing M Γ e A  →  d_sd_typing M Γ e A *)
+   the [Sub] case is the sd-side general subsumption, the base rules use
+   reflexive [ti]-subtyping (whence [d_wf_denv]), and the base-term
+   ∀-admissibility [dtylab{Forall}] is discharged by the [X := unit]
+   type-substitution strengthening:
+     d_typing M Γ e A  →  d_wf_denv Γ  →  d_sd_typing M Γ e A *)
 Check d_sd_typing_complete.
 Print Assumptions d_sd_typing_complete.
 

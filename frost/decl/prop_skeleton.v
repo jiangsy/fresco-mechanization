@@ -2261,7 +2261,7 @@ Proof.
     + apply d_typing__var; exact H.
   - (* anno *) apply d_typing__anno. eapply IHd_typing; eauto.
   - (* sub *) eapply d_typing__sub;
-      [ apply is_base_subst_var; exact H | eapply IHd_typing; eauto | exact H1 ].
+      [ eapply IHd_typing; eauto | exact H0 ].
   - (* freeze *) apply d_typing__freeze. eapply IHd_typing; eauto.
   - (* forall *) apply d_typing__forall with
       (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ);
@@ -2955,11 +2955,12 @@ Proof.
   - (* var *) exists A. split; [ assumption | ].
     rewrite btyp_to_ptyp_ptyp_to_btyp_syn. reflexivity.
   - (* anno *) rewrite btyp_to_ptyp_ptyp_to_btyp_syn. reflexivity.
-  - (* sub : e is a base term, the ti premise gives [match e ...] in terms of
-       [A], and the ti-subsumption ([d_sub__infer], the only ti case) forces
+  - (* sub : the ti premise gives [match e ...] in terms of [A], and the
+       ti-subsumption ([d_sub__infer], the only ti case) forces
        [ptyp_to_pskl (btyp_to_ptyp B) = ptyp_to_pskl A] via consistency. *)
-    inversion H1; subst; try (exfalso; congruence).
-    pose proof (d_consis_skel H2) as Hba.
+    inversion H0; subst; try (exfalso; congruence).
+    match goal with Hc : empty ⨟ _ ⊨ ptyp_to_utyp_syn _ ≈ _ |- _ =>
+      pose proof (d_consis_skel Hc) as Hba end.
     rewrite utyp_to_pskl_ptyp_to_utyp_syn in Hba.
     (* Hba : ptyp_to_pskl A = ptyp_to_pskl (btyp_to_ptyp B) *)
     specialize (IHd_typing eq_refl).

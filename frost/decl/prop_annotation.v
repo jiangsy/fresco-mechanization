@@ -108,8 +108,7 @@ Proof.
   - (* unit *) apply d_typing__unit.
   - (* var *) apply d_typing__var; assumption.
   - (* anno *) apply d_typing__anno; assumption.
-  - (* sub *) eapply d_typing__sub;
-      [ apply is_base_term_erase; assumption | eassumption | eassumption ].
+  - (* sub *) eapply d_typing__sub; [ eassumption | eassumption ].
   - (* freeze *) apply d_typing__freeze; assumption.
   - (* forall *) apply d_typing__forall with (L := L);
       [ apply is_value_erase; assumption | assumption ].
@@ -142,6 +141,12 @@ Admitted.
 Lemma freeze_no_infer : forall Γ e B,
     Γ ⊢[ mode_ti ] (exp_freeze e) ⦂ B -> False.
 Proof.
-  intros Γ e B H. dependent destruction H.
-  match goal with Hb : is_base_term (exp_freeze _) |- _ => inversion Hb end.
+  (* With the unrestricted [Sub], the [ti] inversion has a [sub] case whose
+     premise re-types the same [freeze] at [ti] — an induction, not a single
+     inversion. *)
+  intros Γ e B H.
+  remember (exp_freeze e) as ef eqn:Hef. remember mode_ti as m0 eqn:Hm0.
+  revert Hef Hm0. induction H; intros Hef Hm0;
+    try discriminate Hef; try discriminate Hm0.
+  apply IHd_typing; [ exact Hef | reflexivity ].
 Qed.

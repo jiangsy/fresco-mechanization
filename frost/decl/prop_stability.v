@@ -17,105 +17,14 @@ Require Import src.frost.decl.prop_basic.
 Require Import src.frost.decl.prop_wellformed.
 Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.decl.prop_skeleton.
+Require Import src.frost.decl.prop_syntax_directed.
 
 Set Implicit Arguments.
 
-(** * Well-formedness consequences used by variable head-factoring.
+(* (The well-formedness consequences block — [d_wf_denv_uniq], [d_wf_denv_binds_ptyp],
+   [d_consis_syn_refl], [d_consis_paint_syn_eq], [d_wf_ptyp_lc] — moved to
+   [prop_wellformed], where the syntax-directed equivalence can also use it.) *)
 
-    The [d_wf_denv] context invariant carries [x ∉ dom Γ] at every
-    extension and [d_wf_ptyp Γ A] at every term binding, so it yields
-    both [uniq Γ] (needed to identify a variable's binding under the
-    [d_typing__var] inversion) and the binding's well-formedness
-    (needed by the consistency-transitivity steps). *)
-Lemma d_wf_denv_uniq : forall Γ, d_wf_denv Γ -> uniq Γ.
-Proof. intros Γ H; induction H; auto. Qed.
-
-(** A term binding's type is well-formed in the full context (the
-    invariant records it over the tail; weaken back up). *)
-Lemma d_wf_denv_binds_ptyp : forall Γ x A,
-    d_wf_denv Γ ->
-    binds x (dbind_typ A) Γ ->
-    d_wf_ptyp Γ A.
-Proof.
-  intros Γ x A Hwf. induction Hwf; intros Hb.
-  - inversion Hb.
-  - analyze_binds Hb.
-    rewrite_env (nil ++ (X ~ dbind_tvar) ++ Γ).
-    apply d_wf_ptyp_weakening. simpl. apply IHHwf; assumption.
-  - analyze_binds Hb.
-    + assert (A = A0) by congruence. subst A0.
-      rewrite_env (nil ++ (x0 ~ dbind_typ A) ++ Γ).
-      apply d_wf_ptyp_weakening. simpl. exact H0.
-    + rewrite_env (nil ++ (x0 ~ dbind_typ A0) ++ Γ).
-      apply d_wf_ptyp_weakening. simpl. apply IHHwf; assumption.
-  - analyze_binds Hb.
-    rewrite_env (nil ++ (x0 ~ dbind_skl P) ++ Γ).
-    apply d_wf_ptyp_weakening. simpl. apply IHHwf; assumption.
-Qed.
-
-(** Consistency is reflexive on the synthesised painting: a
-    well-formed [A] synthesises a [btyp] consistent with the
-    [utyp] painting of the same [A] (empty tag context). *)
-Lemma d_consis_syn_refl : forall Γ A,
-    d_wf_ptyp Γ A ->
-    empty ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ ptyp_to_btyp_syn A.
-Proof.
-  intros Γ A Hwf. induction Hwf; simpl.
-  - apply d_consis__unit; reflexivity.
-  - apply d_consis__var; [ exact H | reflexivity ].
-  - apply d_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
-      [ exact IHHwf1 | exact IHHwf2 | fsetdec ].
-  - apply d_consis__forall_syn with (L := L). intros X HX.
-    specialize (H0 X HX).
-    rewrite ptyp_to_utyp_syn_open in H0.
-    rewrite ptyp_to_btyp_syn_open in H0.
-    simpl in H0. exact H0.
-Qed.
-
-(** Structural converse of [d_consis_syn_refl]: a synthesised painting is
-    consistent ONLY with its own [btyp] synthesis.  Holds because the
-    target is forced [is_styp] (synthesised) — that excludes the
-    [d_consis__forall_inh_*] rules (whose RHS is inherited) and the tagged
-    rules (whose LHS is [utyp_all_etag], never produced by a painting), so
-    consistency collapses to structural congruence.  This is what makes a
-    variable's [mode_ti] type EXACTLY its binding painting, hence the
-    extracted [d_sub] lands at the empty tag context demanded by
-    [d_typing__sub]. *)
-Lemma d_consis_paint_syn_eq : forall B,
-    is_styp B ->
-    forall Δ Γ A, Δ ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B -> B = ptyp_to_btyp_syn A.
-Proof.
-  intros B Hstyp. induction Hstyp; intros Δ Γ A Hc.
-  - (* unit *) destruct A; simpl in Hc; inversion Hc; subst; reflexivity.
-  - (* var *) destruct A; simpl in Hc; inversion Hc; subst; reflexivity.
-  - (* arrow *)
-    destruct A; simpl in Hc; inversion Hc; subst.
-    simpl. f_equal; [ eapply IHHstyp1 | eapply IHHstyp2 ]; eassumption.
-  - (* all_syn *)
-    destruct A; simpl in Hc; inversion Hc; subst.
-    simpl. f_equal.
-    pick fresh X for (L `union` L0 `union` ftvar_in_btyp B `union` ftvar_in_ptyp A).
-    specialize (H5 X ltac:(auto)).
-    replace (utyp_var_f X) with (ptyp_to_utyp_syn (ptyp_var_f X)) in H5 by reflexivity.
-    rewrite <- ptyp_to_utyp_syn_open in H5.
-    specialize (H0 X ltac:(auto) Δ ((X ~ dbind_tvar) ++ Γ)
-                  (open_ptyp_wrt_ptyp A (ptyp_var_f X)) H5).
-    rewrite ptyp_to_btyp_syn_open in H0. simpl in H0.
-    apply open_btyp_wrt_btyp_inj with (Xbt1 := X).
-    + fsetdec.
-    + pose proof (ftvar_ptyp_to_btyp_syn A). fsetdec.
-    + exact H0.
-Qed.
-
-(** Well-formed plain types are locally closed. *)
-Lemma d_wf_ptyp_lc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
-Proof.
-  intros Γ A H. induction H.
-  - apply lc_ptyp_unit.
-  - apply lc_ptyp_var_f.
-  - apply lc_ptyp_arrow; assumption.
-  - pick fresh X. apply (lc_ptyp_all_exists X). auto.
-Qed.
 
 (** A [mode_ti] typing of a variable [x : A] synthesises a synthesised
     type [B1] that is consistent with the painting of [x]'s binding.
@@ -177,7 +86,7 @@ Proof.
     destruct (@d_typing_var_ti_consis Γ x A (ptyp_to_btyp_syn A0) Hwf Hb Htyp)
       as [Hstyp1 [Δt Hcons1]].
     edestruct (@d_consis_sub_trans (mode_fn m) empty Γ (ptyp_to_utyp_syn A0) B
-                 H0 (ptyp_to_btyp_syn A0) (ptyp_to_utyp_syn A) Δt) as [Δ [_ Hgoal]].
+                 H (ptyp_to_btyp_syn A0) (ptyp_to_utyp_syn A) Δt) as [Δ [_ Hgoal]].
     + rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity.
     + apply is_styp_is_syn; exact Hstyp1.
     + exact Hcons1.
@@ -246,12 +155,32 @@ Proof.
     [ exact Hpat | exact Href | exact Hhead | exact Hchk ].
 Qed.
 
-(** Head-generic spine INVERSION: a curried application factors into a
+(** [btyp_spine] over a curried arrow: peel exactly the [Bargs] prefix. *)
+Lemma btyp_spine_curry : forall Bargs Bt Bnew,
+    is_styp Bt ->
+    btyp_spine (length Bargs) (curry_btyp Bargs Bt) Bt Bnew (curry_btyp Bargs Bnew).
+Proof.
+  induction Bargs; intros; simpl;
+    [ apply btyp_spine__tail; assumption | apply btyp_spine__arrow; auto ].
+Qed.
+
+Lemma is_fn_n_mode_fn_n : forall k, is_fn_n k (mode_fn_n k mode_ti).
+Proof. induction k; simpl; [ apply is_fn_n__ti | apply is_fn_n__fn; assumption ]. Qed.
+
+Lemma mode_fn_n_subst_fn_n : forall k m,
+    mode_fn_n_subst (mode_fn_n k mode_ti) m = mode_fn_n k m.
+Proof. induction k; intros m; simpl; [ reflexivity | rewrite IHk; reflexivity ]. Qed.
+
+(** Head-generic spine INVERSION: a typing of the curried application yields a
     head typed at the [k]-fold function mode against the curried arrow,
-    plus per-argument evidence.  Works for an arbitrary head [f] because
-    [exp_app _ _] is neither [is_base_term] nor [is_value], so only
-    [d_typing__app] can fire. *)
+    plus per-argument evidence.  With the base-term restriction removed,
+    [d_typing__sub] CAN fire on an application: its [ti] premise re-types the
+    same application (handled by an inner induction on the derivation) and the
+    subsumption is pushed under the head's curried arrow by the
+    (equivalence-derived) [FN^n] spine general subsumption — whence the
+    [d_wf_denv Γ] premise. *)
 Lemma d_typing_app_spine_inv : forall args Γ f m R',
+    d_wf_denv Γ ->
     Γ ⊢[ m ] curry_exp f args ⦂ R' ->
     exists Bargs,
       length Bargs = length args /\
@@ -259,28 +188,44 @@ Lemma d_typing_app_spine_inv : forall args Γ f m R',
       Forall2 (arg_ok Γ) Bargs (List.map snd args).
 Proof.
   intro args. induction args as [ | a init IHinit ] using rev_ind;
-    intros Γ f m R' Htyp.
+    intros Γ f m R' Hwf Htyp.
   - (* empty spine: [curry_exp f [] = f] *)
     exists nil. simpl. repeat split; [ exact Htyp | constructor ].
   - (* snoc: [exp_app (curry_exp f init) (snd a)] *)
     rewrite curry_exp_snoc in Htyp.
-    inversion Htyp; subst;
-      try (exfalso;
-           match goal with
-           | Hv : is_value (exp_app _ _) |- _ => inversion Hv
-           | Hb : is_base_term (exp_app _ _) |- _ => inversion Hb
-           end).
-    (* surviving [__app] case: head [H6], arg evidence [P], [Barg]. *)
-    edestruct (IHinit Γ f (mode_fn m) (btyp_arrow B1 R')) as [Bi [Hlen [Hhd Hfa]]];
-      [ eassumption | ].
-    exists (Bi ++ B1 :: nil). repeat split.
-    + rewrite !app_length. simpl. rewrite Hlen. reflexivity.
-    + rewrite curry_btyp_snoc.
-      rewrite mode_fn_n_fn in Hhd.
-      rewrite app_length, Nat.add_1_r. simpl. exact Hhd.
-    + rewrite List.map_app. simpl. apply Forall2_app; [ exact Hfa | ].
-      constructor; [ | constructor ].
-      eexists; repeat split; eassumption.
+    remember (exp_app (curry_exp f init) (snd a)) as ea eqn:Hea.
+    revert Hwf Hea. induction Htyp; intros Hwf Hea;
+      try discriminate Hea;
+      try (exfalso; subst;
+           match goal with Hv : is_value (exp_app _ _) |- _ => inversion Hv end).
+    + (* __sub: recurse into the [ti] premise (same application), then push
+         the subsumption through the curried head type. *)
+      subst e.
+      destruct (IHHtyp Hwf eq_refl) as [Bargs [Hlen [Hhead Hall]]].
+      assert (Hst : is_styp (ptyp_to_btyp_syn A)).
+      { apply is_styp_ptyp_to_btyp_syn, lc_ptyp_of_lc_utyp_syn.
+        eapply d_sub_lc_l. eassumption. }
+      exists Bargs. split; [ exact Hlen | split; [ | exact Hall ] ].
+      rewrite <- Hlen. rewrite <- Hlen in Hhead.
+      rewrite <- (mode_fn_n_subst_fn_n (length Bargs) m).
+      eapply d_typing_general_subsumption_spine;
+        [ exact Hwf
+        | exact Hhead
+        | apply is_fn_n_mode_fn_n
+        | apply btyp_spine_curry; exact Hst
+        | rewrite btyp_to_utyp_syn_ptyp_to_btyp_syn; eassumption ].
+    + (* __app *)
+      injection Hea; intros; subst.
+      edestruct (IHinit Γ f (mode_fn m) (btyp_arrow B1 B2)) as [Bi [Hlen [Hhd Hfa]]];
+        [ exact Hwf | eassumption | ].
+      exists (Bi ++ B1 :: nil). repeat split.
+      * rewrite !app_length. simpl. rewrite Hlen. reflexivity.
+      * rewrite curry_btyp_snoc.
+        rewrite mode_fn_n_fn in Hhd.
+        rewrite app_length, Nat.add_1_r. simpl. exact Hhd.
+      * rewrite List.map_app. simpl. apply Forall2_app; [ exact Hfa | ].
+        constructor; [ | constructor ].
+        eexists; repeat split; eassumption.
 Qed.
 
 (** Head-generic spine REASSEMBLY (the converse). *)
@@ -648,7 +593,7 @@ Proof.
     assert (Hpos' : 1 <= length args') by (rewrite <- (Permutation_length Hperm); exact Hpos).
     (* x's head: extract the empty-[Δ] subtyping from the binding painting *)
     destruct (mode_fn_n_ge1_fn m Hpos) as [mfx Hmfx]. rewrite Hmfx in Hheadx.
-    inversion Hheadx as [ | | | Γ0 m0 e0 B1 B2 Hbt Hti Hsub | | | | | ]; subst;
+    inversion Hheadx as [ | | | Γ0 m0 e0 B1 B2 Hti Hsub | | | | | ]; subst;
       try discriminate.
     destruct (@d_typing_var_ti_consis Γ x (ptyp_forall_prefix n (curry_ptyp args R))
                 (ptyp_to_btyp_syn B1) Hwf Hbx Hti) as [Hstyp1 [Δt Hcons1]].
@@ -687,7 +632,6 @@ Proof.
     rewrite (spine_btyp_curry args' Bargs' R' ltac:(lia)) in Hsub'.
     eapply d_typing__sub with
       (A := ptyp_forall_prefix n (curry_ptyp args' R)).
-    + apply is_base_term__var.
     + apply d_typing__var. exact Hby.
     + exact Hsub'.
 Qed.
@@ -733,7 +677,8 @@ Lemma d_typing_order_irrel : forall Γ m n x y args args' R R',
 Proof.
   intros Γ m n x y args args' R R' Hwf Hperm Hbx Hby Htyp.
   (* Factor [x]'s curried application into head typing + per-arg evidence. *)
-  apply d_typing_app_spine_inv in Htyp as [Bargs [Hlen [Hheadx Hallx]]].
+  destruct (@d_typing_app_spine_inv args Γ (exp_var_f x) m R' Hwf Htyp)
+    as [Bargs [Hlen [Hheadx Hallx]]].
   (* Permute the head subsumption and transport the argument evidence. *)
   destruct (@d_typing_var_head_perm Γ m n x y args args' Bargs R R'
               Hwf Hperm Hbx Hby Hheadx Hallx)

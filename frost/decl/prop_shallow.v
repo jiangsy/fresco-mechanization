@@ -194,6 +194,41 @@ Proof.
     apply IHHmono1 in Heq1. apply IHHmono2 in Heq2. subst. reflexivity.
 Qed.
 
+(* GENERALISED over the result type: with the base-term restriction removed,
+   [__sub] can retype an annotated lambda (through its [ti] synthesis) and
+   [__forall] can generalise it, so the proof is an induction, not a single
+   inversion.  The mono domain is still FORCED: any [btyp] erasing to a
+   monotype [A] is [inh A] ([mono_btyp_to_ptyp_inv]), whatever the mode. *)
+Lemma mono_lambda_anno_redundant_gen : forall m Γ ea B,
+    Γ ⊢[ m ] ea ⦂ B ->
+    forall A e, ea = exp_abs_anno A e ->
+    mono_ptyp A ->
+    Γ ⊢[ m ] (exp_abs e) ⦂ B.
+Proof.
+  intros m Γ ea B Hty. induction Hty; intros A0 e0 Heq Hmono;
+    try discriminate Heq.
+  - (* __sub: drop the annotation in the [ti] synthesis, re-subsume. *)
+    subst e.
+    eapply d_typing__sub;
+      [ eapply IHHty; [ reflexivity | exact Hmono ] | eassumption ].
+  - (* __forall: the annotated lambda is a value; so is the bare one. *)
+    subst e.
+    apply d_typing__forall with (L := L); [ apply is_value__abs | ].
+    intros X HX. eapply H1; [ exact HX | reflexivity | exact Hmono ].
+  - (* __abs_anno: the domain [B1] erases to the mono [A0], hence is [inh A0];
+       the body premise is exactly [d_typing__abs]'s. *)
+    injection Heq; intros; subst.
+    (* [subst] consumed the erasure equation: the annotation is now
+       [btyp_to_ptyp B1] everywhere.  The mono inverse pins [B1] to the
+       inherited painting of its own erasure. *)
+    assert (HB1 : B1 = ptyp_to_btyp_inh (btyp_to_ptyp B1))
+      by (apply mono_btyp_to_ptyp_inv; [ exact Hmono | reflexivity ]).
+    match goal with Hmc : mod_comp_ty (btyp_arrow B1 _) _ |- _ =>
+      rewrite HB1 in Hmc end.
+    rewrite HB1.
+    eapply d_typing__abs; eassumption.
+Qed.
+
 (* For a monotype annotation [A], the lambda's domain is forced to [inh A]
    (= [mono_btyp_to_ptyp_inv]); stating it that way avoids the erasure equation. *)
 Theorem mono_lambda_anno_redundant : forall m Γ A e B2,
@@ -202,18 +237,6 @@ Theorem mono_lambda_anno_redundant : forall m Γ A e B2,
     Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B2).
 Proof.
   intros m Γ A e B2 Hmono Hty.
-  dependent destruction Hty.
-  - (* [__sub] case is vacuous: [exp_abs_anno] is not a base term *)
-    match goal with H : is_base_term (exp_abs_anno _ _) |- _ => inversion H end.
-  - (* [__abs_anno] case: the [⊑] premises are exactly what [d_typing__abs]
-       needs.  The inversion equation [B1 = inh (erase B1)] rewrites the
-       skmod premise to the [inh]-domain form. *)
-    match goal with
-    | Heq : ?b = ptyp_to_btyp_inh _, Hsk : mod_comp_ty (btyp_arrow ?b _) _ |- _ =>
-        rewrite Heq in Hsk
-    end.
-    match goal with
-    | Hbody : forall x, x `notin` ?L0 -> _ |- _ =>
-        apply d_typing__abs with (L := L0) (A := btyp_to_ptyp B1) (B := B2)
-    end; assumption.
+  eapply mono_lambda_anno_redundant_gen;
+    [ exact Hty | reflexivity | exact Hmono ].
 Qed.

@@ -7,7 +7,52 @@ Coordination file for the Phase 2 + Phase 3 push. Two sections:
 
 **Spec:** [`docs/superpowers/specs/2026-05-10-frost-phase23-design.md`](../docs/superpowers/specs/2026-05-10-frost-phase23-design.md)
 
-## Status (current — 2026-06-14 **D1 General Subsumption FULLY CLOSED**)
+## Status (current — 2026-07-10 **"Removed base terms" paper rework mechanized**)
+
+**Build:** 🟢 GREEN (`make coq`); all 9 `Print Assumptions` in `README.v` report
+"Closed under the global context".
+
+Paper rework (commits `a2a5d96` "Removed base terms" + `8b3b2aa`
+"syntax-directed") mechanized:
+
+- **`d_typing__sub` relaxed to ANY term** (base-term restriction removed;
+  `is_base_term` stays only for `d_pat`, whose `Sub` the paper keeps
+  base-restricted).
+- **`d_sd_typing` has NO `Sub` rule**: the subtyping premise is embedded in
+  the three base rules `__unit` / `__var` / `__anno` (no `is_base_term`
+  predicate).
+- **General subsumption's proof obligation moved to the sd side**:
+  `d_sd_typing_general_subsumption(_spine)` (in `prop_general_subsumption.v`,
+  ported from the old `d_typing` spine induction — the old `sub` case became
+  the three embedded-rule cases, the tail-gens re-target
+  `__abs_check_base` / `__abs_check_step`).  On `d_typing` general subsumption
+  is now the `Sub` rule; the FN^n spine corollary is transported through the
+  equivalence (`prop_syntax_directed.v`).
+- **Equivalence reworked**: `d_sd_typing_sound` (embedded rule = base rule +
+  `Sub`); `d_sd_typing_complete` gains a `d_wf_denv Γ` premise (the base rules
+  need reflexive `ti`-subtyping via `d_consis_syn_refl`; the `Sub` case is the
+  sd general subsumption).  `forall`-admissibility base cases re-wrap the
+  embedded subtyping with `d_sub__forall_r` (same `X:=unit` strengthening).
+- **New infrastructure**: `d_sd_typing_weakening(_mid)` / `d_sd_typing_ctx_weaken`
+  (`prop_weakening.v`); the wf-consequences block (`d_wf_denv_uniq`,
+  `d_wf_denv_binds_ptyp`, `d_consis_syn_refl`, `d_consis_paint_syn_eq`,
+  `d_wf_ptyp_lc`) moved `prop_stability.v` → `prop_wellformed.v` so
+  `prop_stability` can import `prop_syntax_directed`.
+- **Order irrelevance survives**: `d_typing_app_spine_inv` gains `d_wf_denv` and
+  an inner derivation-induction; its NEW `Sub`-on-application case composes via
+  the equivalence-derived FN^n spine.  `mono_lambda_anno_redundant` generalised
+  (`_gen`) over the result type; `freeze_no_infer` is now an induction.
+- **prop_safety (not artifact-reachable)**: base-term routes kept verbatim;
+  the genuinely-NEW non-base `Sub` cases are admitted with comments
+  (`abs_check_fill_skel`, `abs_anno_check_fill_skel`, `abs{,_anno}_fn_cod_fill_{ti,tc}`,
+  `app_fill_skel_tc`, `d_pat_fn_dir`, `d_pat_total_gen`); the `ti`-mode cases
+  were CLOSED via the paint-consistency pin (`d_consis_paint_syn_eq` +
+  `ptyp_to_btyp_syn_inj`).
+- **Artifact synced**: `paper/artifact/fresco` regenerated from
+  `mechanization/frost` (subset; `src.frost` → `src.fresco`), README.v/.md
+  updated to the sd-side headline statements.
+
+## Status (2026-06-14 **D1 General Subsumption FULLY CLOSED**)
 
 **Build:** 🟢 GREEN (`make NJOBS=8 coq`). **`Print Assumptions d_typing_general_subsumption` → "Closed under the global context"** — zero admits, zero axioms (`README.v` line 36).
 

@@ -254,7 +254,7 @@ Proof.
   - apply d_typing__var. analyze_binds H.
   - apply d_typing__anno. apply IHd_typing; reflexivity.
   - apply d_typing__sub with (A := A);
-      [ exact H | apply IHd_typing; reflexivity | apply d_sub_weakening; exact H1 ].
+      [ apply IHd_typing; reflexivity | apply d_sub_weakening; exact H0 ].
   - apply d_typing__freeze. apply IHd_typing; reflexivity.
   - apply d_typing__forall with (L := L `union` dom (Γ1 ++ Γ3)); [ exact H | ].
     intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
@@ -357,4 +357,57 @@ Lemma d_sub_ctx_weaken : forall Γ Γ',
 Proof.
   induction 1; intros m Δ C B Hs; [ assumption | ].
   apply IHctx_weaken. apply d_sub_weakening. exact Hs.
+Qed.
+
+(** [d_sd_typing] weakening — mirrors [d_typing_weakening_mid].  The embedded
+    subtyping premises of [__unit]/[__var]/[__anno] weaken by
+    [d_sub_weakening]; everything else is the same cofinite replay. *)
+Lemma d_sd_typing_weakening_mid : forall Γ2 m Γ e B,
+    Γ ⊢ˢ[ m ] e ⦂ B ->
+    forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ[ m ] e ⦂ B.
+Proof.
+  intros Γ2 m Γ e B H. induction H; intros Γ1 Γ3 Heq; subst Γ.
+  - apply d_sd_typing__unit. apply d_sub_weakening; assumption.
+  - apply d_sd_typing__var with (A := A);
+      [ analyze_binds H | apply d_sub_weakening; assumption ].
+  - eapply d_sd_typing__anno;
+      [ apply IHd_sd_typing; reflexivity | apply d_sub_weakening; assumption ].
+  - apply d_sd_typing__freeze. apply IHd_sd_typing; reflexivity.
+  - apply d_sd_typing__abs_check_step with (L := L `union` dom (Γ1 ++ Γ3));
+      [ assumption | ].
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_sd_typing__abs_check_base with (L := L `union` dom (Γ1 ++ Γ3));
+      [ apply d_wf_ptyp_weakening; assumption | assumption | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_sd_typing__abs_anno_check_step with (L := L `union` dom (Γ1 ++ Γ3));
+      [ assumption | ].
+    intros X HX. rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_sd_typing__abs_anno_check_base with (L := L `union` dom (Γ1 ++ Γ3));
+      [ apply d_wf_ptyp_weakening; assumption | assumption | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_sd_typing__abs with (L := L `union` dom (Γ1 ++ Γ3)) (A := A);
+      [ assumption | apply d_wf_ptyp_weakening; assumption | assumption | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - apply d_sd_typing__abs_anno with (L := L `union` dom (Γ1 ++ Γ3)) (A := A) (B1 := B1);
+      [ assumption | apply d_wf_ptyp_weakening; assumption | assumption | assumption | ].
+    intros x Hx. rewrite_env (((x ~ dbind_typ A) ++ Γ1) ++ Γ2 ++ Γ3). wk_cof.
+  - eapply d_sd_typing__app;
+      [ eapply d_pat_weakening_mid; [ eassumption | reflexivity ]
+      | apply d_refine_syn_weakening; eassumption
+      | apply IHd_sd_typing1; reflexivity
+      | apply IHd_sd_typing2; reflexivity ].
+Qed.
+
+Lemma d_sd_typing_weakening : forall Γ1 Γ2 Γ3 m e B,
+    (Γ1 ++ Γ3) ⊢ˢ[ m ] e ⦂ B ->
+    (Γ1 ++ Γ2 ++ Γ3) ⊢ˢ[ m ] e ⦂ B.
+Proof.
+  intros. eapply d_sd_typing_weakening_mid; [ eassumption | reflexivity ].
+Qed.
+
+Lemma d_sd_typing_ctx_weaken : forall Γ Γ',
+    ctx_weaken Γ Γ' -> forall m e B, Γ ⊢ˢ[ m ] e ⦂ B -> Γ' ⊢ˢ[ m ] e ⦂ B.
+Proof.
+  induction 1; intros m e B Hty; [ assumption | ].
+  apply IHctx_weaken. apply d_sd_typing_weakening. exact Hty.
 Qed.

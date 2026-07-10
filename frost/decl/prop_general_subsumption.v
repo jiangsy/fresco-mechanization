@@ -2,8 +2,11 @@
     [utyp]/[btyp] split syntax.  Self-contained: the consistency-composition
     and tag-refinement machinery (formerly [prop_subsumption_aux.v]),
     Consistency-Subtyping Transitivity, the [FN^n] spine transitivity, and the
-    headline [d_typing_general_subsumption] ("Closed under the global
-    context"). *)
+    headline [d_sd_typing_general_subsumption] ("Closed under the global
+    context").  Since the base-term restriction on [d_typing__sub] was removed
+    (the paper's "Removed base terms" rework), general subsumption is a RULE of
+    [d_typing]; the proof obligation lives on the SYNTAX-DIRECTED side
+    [d_sd_typing], which has no [Sub] rule. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
@@ -1375,7 +1378,7 @@ Proof.
   - inversion Hfn; subst. simpl. apply mod_comp_ty__fn. eapply IHHsp; eassumption.
 Qed.
 
-Lemma d_typing_abs_tail_gen : forall L0 e A Bbody M Bnew Γ',
+Lemma d_sd_typing_abs_tail_gen : forall L0 e A Bbody M Bnew Γ',
     mono_ptyp A ->
     is_styp Bbody ->
     d_wf_ptyp Γ' A ->
@@ -1383,10 +1386,10 @@ Lemma d_typing_abs_tail_gen : forall L0 e A Bbody M Bnew Γ',
        ctx_weaken Γ' Γ'' ->
        x `notin` (L0 `union` dom Γ'') ->
        empty ⨟ ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] (btyp_to_utyp_syn Bbody) ⊑ B'' ->
-       ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] open_exp_wrt_exp e (exp_var_f x) ⦂ B'') ->
+       ((x ~ dbind_typ A) ++ Γ'') ⊢ˢ[ M' ] open_exp_wrt_exp e (exp_var_f x) ⦂ B'') ->
     empty ⨟ Γ' ⊢[ M ]
       (utyp_arrow (btyp_to_utyp_syn (ptyp_to_btyp_inh A)) (btyp_to_utyp_syn Bbody)) ⊑ Bnew ->
-    Γ' ⊢[ M ] exp_abs e ⦂ Bnew.
+    Γ' ⊢ˢ[ M ] exp_abs e ⦂ Bnew.
 Proof.
   intros L0 e A Bbody M Bnew Γ' Hmono Hstyp Hwf Hbody Hsub.
   remember (utyp_arrow (btyp_to_utyp_syn (ptyp_to_btyp_inh A))
@@ -1398,7 +1401,8 @@ Proof.
     subst. dependent destruction H.
     rename B1 into Bn1. rename B2 into Bn2.
     pose proof (consis_mono_arg H Hmono) as HBn1. subst Bn1.
-    apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    apply d_sd_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    + discriminate.
     + assumption.
     + apply mod_comp_ty__ti. assumption.
     + intros xv Hxv.
@@ -1406,9 +1410,10 @@ Proof.
       apply d_sub_weakening_head.
       apply d_sub__infer; [ | exact (is_styp_arrow_r H2) | reflexivity ].
       eapply d_consis_equiv; [ | eassumption ]. fsetdec.
-  - (* check (M = tc): mirror infer; the body's tc-subtyping comes from the
-       body consistency via [d_consis_syn_sub_tc] (which handles the ∀-target
-       internally by bound-variable instantiation). *)
+  - (* check (M = tc): the checked lambda is [__abs_check_base] (the ᾱ = ·
+       arrow); the body's tc-subtyping comes from the body consistency via
+       [d_consis_syn_sub_tc] (which handles the ∀-target internally by
+       bound-variable instantiation). *)
     subst. dependent destruction H1.
     rename B1 into Bn1. rename B2 into Bn2.
     match goal with
@@ -1416,9 +1421,9 @@ Proof.
         pose proof (consis_mono_arg Harg Hmono) as HBn1
     end. subst Bn1.
     match goal with Hit : is_ityp (btyp_arrow _ Bn2) |- _ => inversion Hit; subst end.
-    apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    apply d_sd_typing__abs_check_base with (L := L0 `union` dom Γ).
     + assumption.
-    + apply mod_comp_ty__tc. apply is_ityp__arrow; assumption.
+    + assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
@@ -1426,13 +1431,11 @@ Proof.
         [ match goal with Hit : is_ityp Bn2 |- _ => exact Hit end
         | match goal with Hbc : _ ⨟ _ ⊨ btyp_to_utyp_syn Bbody ≈ Bn2 |- _ =>
             eapply d_consis_equiv; [ | exact Hbc ]; fsetdec end ].
-  - (* forall_r (M = tc): generalise via d_typing__forall, recurse. *)
+  - (* forall_r (M = tc): the folded ∀-peel [__abs_check_step], recurse. *)
     subst.
-    pose proof (is_ityp_ptyp_to_btyp_inh H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
-    rewrite <- Hrt.
-    apply d_typing__forall with (L := L `union` L0 `union` dom Γ) (A := btyp_to_ptyp B).
-    + apply is_value__abs.
-    + intros X HX. rewrite Hrt.
+    apply d_sd_typing__abs_check_step with (L := L `union` L0 `union` dom Γ).
+    + assumption.
+    + intros X HX.
       eapply (H1 X ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
       * apply d_wf_ptyp_ctx_weaken with (Γ := Γ);
           [ apply ctx_weaken_app_front | assumption ].
@@ -1442,7 +1445,8 @@ Proof.
   - (* arg (M = fn m'): the result is already a subtyping (at Ψ2 [=] empty). *)
     subst. injection HC; intros; subst.
     pose proof (consis_mono_arg H Hmono) as HBn1. subst B1.
-    apply d_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    apply d_sd_typing__abs with (L := L0 `union` dom Γ) (A := A).
+    + discriminate.
     + assumption.
     + apply mod_comp_ty__fn.
       match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⊑ B2 |- _ =>
@@ -1459,7 +1463,7 @@ Qed.
     ([is_styp], erasing to the annotation [A]) instead of the mono [inh A].
     The rebuilt argument [Bn1] (from the arg consistency) is a valid argument
     because consistency preserves erasure ([d_consis_btyp_erase]). *)
-Lemma d_typing_abs_anno_tail_gen : forall L0 e A Barg Bbody M Bnew Γ',
+Lemma d_sd_typing_abs_anno_tail_gen : forall L0 e A Barg Bbody M Bnew Γ',
     is_styp Barg ->
     btyp_to_ptyp Barg = A ->
     is_styp Bbody ->
@@ -1468,10 +1472,10 @@ Lemma d_typing_abs_anno_tail_gen : forall L0 e A Barg Bbody M Bnew Γ',
        ctx_weaken Γ' Γ'' ->
        x `notin` (L0 `union` dom Γ'') ->
        empty ⨟ ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] (btyp_to_utyp_syn Bbody) ⊑ B'' ->
-       ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] open_exp_wrt_exp e (exp_var_f x) ⦂ B'') ->
+       ((x ~ dbind_typ A) ++ Γ'') ⊢ˢ[ M' ] open_exp_wrt_exp e (exp_var_f x) ⦂ B'') ->
     empty ⨟ Γ' ⊢[ M ]
       (utyp_arrow (btyp_to_utyp_syn Barg) (btyp_to_utyp_syn Bbody)) ⊑ Bnew ->
-    Γ' ⊢[ M ] exp_abs_anno A e ⦂ Bnew.
+    Γ' ⊢ˢ[ M ] exp_abs_anno A e ⦂ Bnew.
 Proof.
   intros L0 e A Barg Bbody M Bnew Γ' HsBarg HBargA Hstyp Hwf Hbody Hsub. subst A.
   remember (utyp_arrow (btyp_to_utyp_syn Barg) (btyp_to_utyp_syn Bbody)) as Clhs eqn:HC.
@@ -1484,7 +1488,8 @@ Proof.
     { pose proof (d_consis_btyp_erase H) as He.
       rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
       symmetry. exact He. }
-    apply d_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := Bn1).
+    apply d_sd_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := Bn1).
+    + discriminate.
     + assumption.
     + exact Herase.
     + apply mod_comp_ty__ti; assumption.
@@ -1502,10 +1507,12 @@ Proof.
       rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
       symmetry. exact He. }
     match goal with Hit : is_ityp (btyp_arrow _ Bn2) |- _ => inversion Hit; subst end.
-    apply d_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := Bn1).
+    assert (HBn1 : Bn1 = ptyp_to_btyp_inh (btyp_to_ptyp Barg)).
+    { rewrite <- Herase. symmetry. apply is_ityp_ptyp_to_btyp_inh. assumption. }
+    rewrite HBn1.
+    apply d_sd_typing__abs_anno_check_base with (L := L0 `union` dom Γ).
     + assumption.
-    + exact Herase.
-    + apply mod_comp_ty__tc. apply is_ityp__arrow; assumption.
+    + assumption.
     + intros xv Hxv.
       eapply (Hbody Γ xv mode_tc Bn2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
@@ -1513,13 +1520,11 @@ Proof.
         [ match goal with Hit : is_ityp Bn2 |- _ => exact Hit end
         | match goal with Hbc : _ ⨟ _ ⊨ btyp_to_utyp_syn Bbody ≈ Bn2 |- _ =>
             eapply d_consis_equiv; [ | exact Hbc ]; fsetdec end ].
-  - (* forall_r (M = tc) *)
+  - (* forall_r (M = tc): the folded ∀-peel [__abs_anno_check_step]. *)
     subst.
-    pose proof (is_ityp_ptyp_to_btyp_inh H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
-    rewrite <- Hrt.
-    apply d_typing__forall with (L := L `union` L0 `union` dom Γ) (A := btyp_to_ptyp B).
-    + apply is_value__abs_anno.
-    + intros X HX. rewrite Hrt.
+    apply d_sd_typing__abs_anno_check_step with (L := L `union` L0 `union` dom Γ).
+    + assumption.
+    + intros X HX.
       eapply (H1 X ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
       * apply d_wf_ptyp_ctx_weaken with (Γ := Γ);
           [ apply ctx_weaken_app_front | assumption ].
@@ -1532,7 +1537,8 @@ Proof.
     { pose proof (d_consis_btyp_erase H) as He.
       rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
       symmetry. exact He. }
-    apply d_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := B1).
+    apply d_sd_typing__abs_anno with (L := L0 `union` dom Γ) (B1 := B1).
+    + discriminate.
     + assumption.
     + exact Herase.
     + apply mod_comp_ty__fn.
@@ -1661,62 +1667,70 @@ Proof.
   rewrite utyp_etags_paint in Hle. fsetdec.
 Qed.
 
-(** Generalised General Subsumption (paper, syntax-directed.tex:287): the
-    headline.  Over PLAIN typing; subtypes only the synthesised result of
-    the [FN^n] spine, keeping the arguments fixed.  D1 (general subsumption)
-    is the [n = 0] corollary. *)
-Lemma d_typing_general_subsumption_spine : forall m1 Γ e Bfull,
-    Γ ⊢[ m1 ] e ⦂ Bfull ->
+(** Generalised General Subsumption for the SYNTAX-DIRECTED system (the
+    headline).  With the base-term restriction removed, [d_typing] has the
+    unrestricted [Sub] RULE, so its general subsumption is trivial; the proof
+    obligation moved here: [d_sd_typing] has no [Sub] rule, and the [FN^n]
+    spine subsumption must be proved ADMISSIBLE.  Subtypes only the
+    synthesised result of the [FN^n] spine, keeping the arguments fixed.
+    Completeness of the syntax-directed system consumes this lemma. *)
+Lemma d_sd_typing_general_subsumption_spine : forall m1 Γ e Bfull,
+    Γ ⊢ˢ[ m1 ] e ⦂ Bfull ->
     forall Γ',
       ctx_weaken Γ Γ' ->
       forall n A M B Bres,
         is_fn_n n m1 ->
         btyp_spine n Bfull A B Bres ->
         empty ⨟ Γ' ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
-        Γ' ⊢[ mode_fn_n_subst m1 M ] e ⦂ Bres.
+        Γ' ⊢ˢ[ mode_fn_n_subst m1 M ] e ⦂ Bres.
 Proof.
   intros m1 Γ e Bfull Hty.
   induction Hty; intros Γ' Hcw n A0 M0 B0 Bres Hfn Hspine Htail.
-  - (* unit *)
-    inversion Hfn; subst. dependent destruction Hspine. simpl.
-    apply d_typing__sub with (A := ptyp_unit).
-    + apply is_base_term__unit.
-    + apply d_typing__unit.
-    + exact Htail.
-  - (* var: binds preserved under [ctx_weaken]. *)
-    inversion Hfn; subst. dependent destruction Hspine. simpl.
-    apply d_typing__sub with (A := A).
-    + apply is_base_term__var.
-    + apply d_typing__var. eapply binds_ctx_weaken; eassumption.
-    + replace (ptyp_to_utyp_syn A) with (btyp_to_utyp_syn (ptyp_to_btyp_syn A));
-        [ exact Htail
-        | rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity ].
-  - (* anno: the checked subderivation is weakened. *)
-    inversion Hfn; subst. dependent destruction Hspine. simpl.
-    apply d_typing__sub with (A := A).
-    + apply is_base_term__anno.
-    + apply d_typing__anno. eapply d_typing_ctx_weaken; eassumption.
-    + replace (ptyp_to_utyp_syn A) with (btyp_to_utyp_syn (ptyp_to_btyp_syn A));
-        [ exact Htail
-        | rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity ].
-  - (* sub: [e] infers [B1] at [ti]; the subsumption [empty ⊢[m1] paint B1 ⊑
-       Bfull] (weakened to Γ') composes with the [Bfull]-spine via
-       [d_sub_trans_spine] into [Ψ' ⊢[mode_fn_n_subst m1 M0] paint B1 ⊑ Bres].
-       [Ψ'] is forced EMPTY by [d_sub_paint_lhs_empty] (paint LHS has no
-       ε-tags), so [d_typing__sub] re-emits [e ⦂ Bres] directly. *)
-    apply d_typing__sub with (A := A).
-    + assumption.
-    + eapply d_typing_ctx_weaken; [ exact Hcw | exact Hty ].
+  - (* unit: the embedded subtyping composes with the [Bfull]-spine via
+       [d_sub_trans_spine]; the tag context is forced EMPTY by
+       [d_sub_paint_lhs_empty] (paint LHS has no ε-tags), so [__unit]
+       re-emits directly. *)
+    apply d_sd_typing__unit.
+    pose proof (d_sub_ctx_weaken Hcw H) as Hs0'.
+    edestruct (d_sub_trans_spine Hs0' Hfn Hspine Htail) as [Δ'' [_ HΔ'']].
+    pose proof HΔ'' as HΔ''b.
+    replace (ptyp_to_utyp_syn ptyp_unit)
+      with (btyp_to_utyp_syn (ptyp_to_btyp_syn ptyp_unit)) in HΔ''b
+      by (rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity).
+    apply d_sub_equiv with (Δ := Δ'');
+      [ eapply d_sub_paint_lhs_empty; exact HΔ''b | exact HΔ'' ].
+  - (* var: as [unit]; [binds] survives [ctx_weaken]. *)
+    apply d_sd_typing__var with (A := A).
+    + eapply binds_ctx_weaken; eassumption.
     + pose proof (d_sub_ctx_weaken Hcw H0) as Hs0'.
       edestruct (d_sub_trans_spine Hs0' Hfn Hspine Htail) as [Δ'' [_ HΔ'']].
       pose proof HΔ'' as HΔ''b.
-      replace (ptyp_to_utyp_syn A) with (btyp_to_utyp_syn (ptyp_to_btyp_syn A)) in HΔ''b
+      replace (ptyp_to_utyp_syn A)
+        with (btyp_to_utyp_syn (ptyp_to_btyp_syn A)) in HΔ''b
+        by (rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity).
+      apply d_sub_equiv with (Δ := Δ'');
+        [ eapply d_sub_paint_lhs_empty; exact HΔ''b | exact HΔ'' ].
+  - (* anno: as [var]; the checked subderivation is weakened. *)
+    eapply d_sd_typing__anno.
+    + eapply d_sd_typing_ctx_weaken; eassumption.
+    + match goal with Hs : empty ⨟ _ ⊢[ _ ] ptyp_to_utyp_syn _ ⊑ _ |- _ =>
+        pose proof (d_sub_ctx_weaken Hcw Hs) as Hs0' end.
+      edestruct (d_sub_trans_spine Hs0' Hfn Hspine Htail) as [Δ'' [_ HΔ'']].
+      pose proof HΔ'' as HΔ''b.
+      replace (ptyp_to_utyp_syn A)
+        with (btyp_to_utyp_syn (ptyp_to_btyp_syn A)) in HΔ''b
         by (rewrite <- ptyp_to_utyp_syn_btyp_to_ptyp, btyp_to_ptyp_ptyp_to_btyp_syn; reflexivity).
       apply d_sub_equiv with (Δ := Δ'');
         [ eapply d_sub_paint_lhs_empty; exact HΔ''b | exact HΔ'' ].
   - (* freeze (tc): excluded. *)
     inversion Hfn.
-  - (* forall (tc): excluded. *)
+  - (* abs_check_step (tc): excluded. *)
+    inversion Hfn.
+  - (* abs_check_base (tc): excluded. *)
+    inversion Hfn.
+  - (* abs_anno_check_step (tc): excluded. *)
+    inversion Hfn.
+  - (* abs_anno_check_base (tc): excluded. *)
     inversion Hfn.
   - (* abs: split on the spine. *)
     assert (Hskm : mod_comp_ty Bres (mode_fn_n_subst m M0))
@@ -1724,13 +1738,13 @@ Proof.
     dependent destruction Hspine.
     + (* __tail (n=0): generalisation helper. *)
       inversion Hfn; subst. simpl.
-      eapply d_typing_abs_tail_gen with (L0 := L) (Bbody := B).
+      eapply d_sd_typing_abs_tail_gen with (L0 := L) (Bbody := B).
       * apply is_styp_ptyp_to_btyp_inh_mono.
         match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_l Hs) end.
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_r Hs) end.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros Γ'' x M' B'' Hcw'' Hfr Hsb.
-        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ'')).
+        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ'')).
         -- apply ctx_weaken_cons. eapply ctx_weaken_trans; [ exact Hcw | exact Hcw'' ].
         -- apply is_fn_n__ti.
         -- apply btyp_spine__tail.
@@ -1740,11 +1754,12 @@ Proof.
     + (* __arrow (n>0): keep [inh A] fixed, recurse on the body via the
          context-general IH (insert under the binder [x:A]). *)
       dependent destruction Hfn. simpl.
-      apply d_typing__abs with (L := L `union` dom Γ') (A := A).
+      apply d_sd_typing__abs with (L := L `union` dom Γ') (A := A).
+      * discriminate.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * exact Hskm.
       * intros x Hx.
-        eapply (H2 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
+        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
         -- apply ctx_weaken_cons. exact Hcw.
         -- eassumption.
         -- eassumption.
@@ -1755,13 +1770,13 @@ Proof.
     dependent destruction Hspine.
     + (* __tail (n=0): abs_anno generalisation helper. *)
       inversion Hfn; subst. simpl.
-      eapply d_typing_abs_anno_tail_gen with (L0 := L) (Barg := B1) (Bbody := B2).
+      eapply d_sd_typing_abs_anno_tail_gen with (L0 := L) (Barg := B1) (Bbody := B2).
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_l Hs) end.
       * reflexivity.
       * match goal with Hs : is_styp (btyp_arrow _ _) |- _ => exact (is_styp_arrow_r Hs) end.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
       * intros Γ'' x M' B'' Hcw'' Hfr Hsb.
-        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ'')).
+        eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ (btyp_to_ptyp B1)) ++ Γ'')).
         -- apply ctx_weaken_cons. eapply ctx_weaken_trans; [ exact Hcw | exact Hcw'' ].
         -- apply is_fn_n__ti.
         -- apply btyp_spine__tail.
@@ -1770,19 +1785,20 @@ Proof.
       * exact Htail.
     + (* __arrow (n>0). *)
       dependent destruction Hfn. simpl.
-      apply d_typing__abs_anno with (L := L `union` dom Γ') (A := A) (B1 := B1).
+      apply d_sd_typing__abs_anno with (L := L `union` dom Γ') (A := A) (B1 := B1).
+      * discriminate.
       * eapply d_wf_ptyp_ctx_weaken; eassumption.
-      * exact H0.
+      * eassumption.
       * exact Hskm.
       * intros x Hx.
-        eapply (H3 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
+        eapply (H4 x ltac:(fsetdec) ((x ~ dbind_typ A) ++ Γ')).
         -- apply ctx_weaken_cons. exact Hcw.
         -- eassumption.
         -- eassumption.
         -- apply d_sub_weakening_head with (Γ' := (x ~ dbind_typ A)). exact Htail.
   - (* app: thread the spine through [e1] via the IH; weaken the side
        premises ([d_pat], [d_refine_syn], [e2]) by [ctx_weaken]. *)
-    eapply d_typing__app.
+    eapply d_sd_typing__app.
     + eapply d_pat_ctx_weaken; eassumption.
     + eapply d_refine_syn_ctx_weaken; eassumption.
     + eapply IHHty1.
@@ -1790,17 +1806,19 @@ Proof.
       * apply is_fn_n__fn. exact Hfn.
       * apply btyp_spine__arrow. exact Hspine.
       * exact Htail.
-    + eapply d_typing_ctx_weaken; eassumption.
+    + eapply d_sd_typing_ctx_weaken; eassumption.
 Qed.
 
-(** D1, paper Lemma 3.1: ordinary general subsumption.  The paper's
-    premise is a synthesized painting [syn{A}], so the native statement
-    quantifies the plain type [A] and uses both paintings explicitly. *)
-Theorem d_typing_general_subsumption : forall Γ e A B m,
+(** General subsumption for the syntax-directed system (paper Lemma
+    "general subsumption"; on [d_typing] this is now just the [Sub] rule).
+    The paper's premise is a synthesized painting [syn{A}], so the native
+    statement quantifies the plain type [A] and uses both paintings
+    explicitly. *)
+Theorem d_sd_typing_general_subsumption : forall Γ e A B m,
     d_wf_denv Γ ->
-    Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
+    Γ ⊢ˢ[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
     empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
-    Γ ⊢[ m ] e ⦂ B.
+    Γ ⊢ˢ[ m ] e ⦂ B.
 Proof.
   (* The n=0 corollary of the spine lemma: the [FN^0] spine is the tail, so
      [e : syn{A}] subsumes to [B] through [empty ⊢[m] syn{A} ⊑ B] directly. *)
@@ -1810,7 +1828,7 @@ Proof.
        its source [ptyp_to_utyp_syn A] locally closed. *)
     apply is_styp_ptyp_to_btyp_syn, lc_ptyp_of_lc_utyp_syn.
     eapply d_sub_lc_l. exact Hsub. }
-  eapply (d_typing_general_subsumption_spine Hty (ctx_weaken_refl Γ)
+  eapply (d_sd_typing_general_subsumption_spine Hty (ctx_weaken_refl Γ)
             (n := 0) (A := ptyp_to_btyp_syn A) (M := m) (B := B) (Bres := B)).
   - apply is_fn_n__ti.
   - apply btyp_spine__tail. exact Hst.

@@ -1018,8 +1018,7 @@ Proof.
     rewrite <- ptyp_to_btyp_inh_subst_var.
     eapply (IHd_typing Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr | exact Hclean ].
   - eapply d_typing__sub;
-      [ apply is_base_term_subst_ptyp; assumption
-      | rewrite <- ptyp_to_btyp_syn_subst_var;
+      [ rewrite <- ptyp_to_btyp_syn_subst_var;
         eapply (IHd_typing Γ1 Γ2 X0 Y); [ reflexivity | exact Hfr | exact Hclean ]
       | rewrite <- ptyp_to_utyp_syn_subst_var;
         eapply d_sub_same_tvar;
@@ -2909,11 +2908,7 @@ Proof.
         -- apply binds_app_3; simpl; auto.
   - simpl. apply d_typing__anno. eapply IHd_typing; eauto.
   - simpl. apply d_typing__sub with (A := A);
-      [ match goal with Hbe : is_base_term _ |- _ =>
-          inversion Hbe; subst; simpl;
-          try (match goal with |- context [ if ?b then _ else _ ] => destruct b end);
-          constructor end
-      | eapply IHd_typing; eauto | eapply d_sub_rename_var; eauto ].
+      [ eapply IHd_typing; eauto | eapply d_sub_rename_var; eauto ].
   - simpl. apply d_typing__freeze. eapply IHd_typing; eauto.
   - (* forall: term unchanged under the binder (type opens, not the term) *)
     apply d_typing__forall with (L := L `union` singleton x0 `union` dom (Γ1 ++ Γ2));
@@ -2999,9 +2994,13 @@ Proof.
   remember mode_tc as m eqn:Hm.
   revert A' Hcr Hwf Hee HB0 Hm.
   induction Hty; intros A'0 Hcr Hwf Hee HB0 Hm;
-    try discriminate Hee;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+    try discriminate Hee.
+  - (* sub (NEW with the unrestricted [Sub], "Removed base terms" rework): a λ
+       re-typed at [tc] by subsuming its [ti] mono-arrow synthesis into
+       [inh A'].  Discharging it needs the arrow-consistency inversion of the
+       [tc]-subtyping to rebuild the body check from the [ti] body — deferred
+       (safety file; not artifact-reachable). *)
+    admit.
   - (* forall : A'0 = ∀A *)
     destruct A'0 as [ | n | X | A'a A'b | A0 ]; simpl in HB0; try discriminate.
     injection HB0 as HB0'. apply (f_equal btyp_to_ptyp) in HB0'.
@@ -3034,7 +3033,7 @@ Proof.
       * rewrite (is_ityp_ptyp_to_btyp_inh Hi2).
         match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
           apply Hbp; fsetdec end.
-Qed.
+Admitted. (* one admit: the NEW unrestricted-[Sub] λ case above *)
 
 (** TI-synthesis analog of [abs_check_fill_skel]: a λ that SYNTHESISES an arrow
     ([d_pat__abs] gives [bskl_arrow bskl_hole Qb]).  Simpler — the ti inference
@@ -3057,9 +3056,19 @@ Proof.
   remember mode_ti as m eqn:Hm.
   revert A' Hcr Hwf Hee HB0 Hm.
   induction Hty; intros A'0 Hcr Hwf Hee HB0 Hm;
-    try discriminate Hee; try discriminate Hm;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+    try discriminate Hee; try discriminate Hm.
+  - (* sub at [mode_ti] is [Infer] = paint-to-paint consistency, which PINS
+       the subsumed type to the synthesis ([d_consis_paint_syn_eq]); recurse. *)
+    subst.
+    match goal with Hs : empty ⨟ _ ⊢[ mode_ti ] ptyp_to_utyp_syn _ ⊑ _ |- _ =>
+      inversion Hs; subst; try (exfalso; congruence) end.
+    match goal with
+    | Hst : is_styp (ptyp_to_btyp_syn A'0),
+      Hc : _ ⨟ _ ⊨ ptyp_to_utyp_syn ?AA ≈ ptyp_to_btyp_syn A'0 |- _ =>
+        pose proof (@d_consis_paint_syn_eq (ptyp_to_btyp_syn A'0) Hst _ _ AA Hc) as Hpin
+    end.
+    apply ptyp_to_btyp_syn_inj in Hpin. subst A'0.
+    apply (IHHty Hbody A); try reflexivity; assumption.
   - (* abs : the only [exp_abs] at [mode_ti] *)
     subst m. injection Hee as Hee'; subst e0.
     destruct A'0 as [ | n | X | A'a A'b | A0 ]; simpl in HB0; try discriminate HB0.
@@ -3094,9 +3103,12 @@ Proof.
   remember mode_tc as m eqn:Hm.
   revert A' Hcr Hwf Hee HB0 Hm.
   induction Hty; intros A'0 Hcr Hwf Hee HB0 Hm;
-    try discriminate Hee;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end).
+    try discriminate Hee.
+  - (* sub (NEW with the unrestricted [Sub], "Removed base terms" rework): an
+       annotated λ re-typed at [tc] by subsuming its [ti] synthesis — needs the
+       arrow-consistency inversion of the [tc]-subtyping; deferred (safety
+       file; not artifact-reachable). *)
+    admit.
   - (* forall : A'0 = ∀A *)
     destruct A'0 as [ | n | X | A'a A'b | A0 ]; simpl in HB0; try discriminate.
     injection HB0 as HB0'. apply (f_equal btyp_to_ptyp) in HB0'.
@@ -3132,7 +3144,7 @@ Proof.
       * rewrite (is_ityp_ptyp_to_btyp_inh Hi2).
         match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ =>
           apply Hbp; fsetdec end.
-Qed.
+Admitted. (* one admit: the NEW unrestricted-[Sub] annotated-λ case above *)
 
 (** Annotated-λ (TI-synthesis) analog: [d_pat__abs_anno] gives [bskl_arrow
     (btyp_to_bskl B1) Qb]; the domain skeleton is the annotation's pskl. *)
@@ -3153,9 +3165,19 @@ Proof.
   remember mode_ti as m eqn:Hm.
   revert A' Hcr Hwf Hee HB0 Hm.
   induction Hty; intros A'0 Hcr Hwf Hee HB0 Hm;
-    try discriminate Hee; try discriminate Hm;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end).
+    try discriminate Hee; try discriminate Hm.
+  - (* sub at [mode_ti] is [Infer] = paint-to-paint consistency, which PINS
+       the subsumed type to the synthesis ([d_consis_paint_syn_eq]); recurse. *)
+    subst.
+    match goal with Hs : empty ⨟ _ ⊢[ mode_ti ] ptyp_to_utyp_syn _ ⊑ _ |- _ =>
+      inversion Hs; subst; try (exfalso; congruence) end.
+    match goal with
+    | Hst : is_styp (ptyp_to_btyp_syn A'0),
+      Hc : _ ⨟ _ ⊨ ptyp_to_utyp_syn ?AA ≈ ptyp_to_btyp_syn A'0 |- _ =>
+        pose proof (@d_consis_paint_syn_eq (ptyp_to_btyp_syn A'0) Hst _ _ AA Hc) as Hpin
+    end.
+    apply ptyp_to_btyp_syn_inj in Hpin. subst A'0.
+    apply (IHHty Hbody A); try reflexivity; assumption.
   - (* abs_anno (ti) *)
     subst m. injection Hee as HeeA Hee_e. subst e0. subst Ann. subst.
     destruct A'0 as [ | n | X | A'a A'b | A0 ]; simpl in HB0; try discriminate HB0.
@@ -3193,9 +3215,11 @@ Proof.
   remember (btyp_arrow B1t B2t) as B0 eqn:HB0.
   revert B1t B2t Hcr Hwf Hee HB0 Hm.
   induction Hty; intros B1t' B2t' Hcr Hwf Hee HB0 Hm;
-    try discriminate Hee; try discriminate Hm;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end).
+    try discriminate Hee; try discriminate Hm.
+  - (* sub (NEW with the unrestricted [Sub]): an annotated λ subsumed at
+       [fn ti] — needs the [d_sub__arg] inversion to re-align the codomain;
+       deferred (safety file; not artifact-reachable). *)
+    admit.
   - (* abs_anno *)
     subst m. injection Hee as HeeA Hee_e. subst e0. subst Ann.
     injection HB0 as HB0a HB0b. rewrite <- HB0b.
@@ -3209,7 +3233,7 @@ Proof.
     + apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ].
     + rewrite (ptyp_to_btyp_syn_btyp_to_ptyp (is_styp_is_syn Hstyp)).
       match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ => apply Hbp; fsetdec end.
-Qed.
+Admitted. (* one admit: the NEW unrestricted-[Sub] fn-mode case above *)
 
 (** [tc] variant of [abs_anno_fn_cod_fill_ti]: body at [tc], [is_ityp B2]. *)
 Lemma abs_anno_fn_cod_fill_tc : forall Ann e Qc Γ' L_b,
@@ -3228,9 +3252,11 @@ Proof.
   remember (btyp_arrow B1t B2t) as B0 eqn:HB0.
   revert B1t B2t Hcr Hwf Hee HB0 Hm.
   induction Hty; intros B1t' B2t' Hcr Hwf Hee HB0 Hm;
-    try discriminate Hee; try discriminate Hm;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs_anno _ _) |- _ => inversion Hb end).
+    try discriminate Hee; try discriminate Hm.
+  - (* sub (NEW with the unrestricted [Sub]): an annotated λ subsumed at
+       [fn ti] — needs the [d_sub__arg] inversion to re-align the codomain;
+       deferred (safety file; not artifact-reachable). *)
+    admit.
   - (* abs_anno *)
     subst m. injection Hee as HeeA Hee_e. subst e0. subst Ann.
     injection HB0 as HB0a HB0b. rewrite <- HB0b.
@@ -3244,7 +3270,7 @@ Proof.
     + apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ].
     + rewrite (is_ityp_ptyp_to_btyp_inh Hityp).
       match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ => apply Hbp; fsetdec end.
-Qed.
+Admitted. (* one admit: the NEW unrestricted-[Sub] fn-mode case above *)
 
 (** UNANNOTATED-λ codomain fill (ti).  Like [abs_anno_fn_cod_fill_ti] but the body
     variable is [dbind_skl P] (an inferred, hole-carrying domain), so the body's
@@ -3268,9 +3294,11 @@ Proof.
   remember (btyp_arrow B1t B2t) as B0 eqn:HB0.
   revert B1t B2t Hcr Hwf Hbind Hee HB0 Hm.
   induction Hty; intros B1t' B2t' Hcr Hwf Hbind Hee HB0 Hm;
-    try discriminate Hee; try discriminate Hm;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+    try discriminate Hee; try discriminate Hm.
+  - (* sub (NEW with the unrestricted [Sub]): a λ subsumed at [fn _] — needs
+       the [d_sub__arg] inversion to re-align the codomain; deferred (safety
+       file; not artifact-reachable). *)
+    admit.
   - (* abs *)
     subst m. injection Hee as Hee_e. subst e0.
     injection HB0 as HB0a HB0b. rewrite <- HB0b.
@@ -3285,7 +3313,7 @@ Proof.
     + apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ].
     + rewrite (ptyp_to_btyp_syn_btyp_to_ptyp (is_styp_is_syn Hstyp)).
       match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ => apply Hbp; fsetdec end.
-Qed.
+Admitted. (* one admit: the NEW unrestricted-[Sub] fn-mode case above *)
 
 (** [tc] variant of [abs_fn_cod_fill_ti]. *)
 Lemma abs_fn_cod_fill_tc : forall P e Qc Γ' L_b,
@@ -3305,9 +3333,11 @@ Proof.
   remember (btyp_arrow B1t B2t) as B0 eqn:HB0.
   revert B1t B2t Hcr Hwf Hbind Hee HB0 Hm.
   induction Hty; intros B1t' B2t' Hcr Hwf Hbind Hee HB0 Hm;
-    try discriminate Hee; try discriminate Hm;
-    try (exfalso; subst;
-         match goal with Hb : is_base_term (exp_abs _) |- _ => inversion Hb end).
+    try discriminate Hee; try discriminate Hm.
+  - (* sub (NEW with the unrestricted [Sub]): a λ subsumed at [fn _] — needs
+       the [d_sub__arg] inversion to re-align the codomain; deferred (safety
+       file; not artifact-reachable). *)
+    admit.
   - (* abs *)
     subst m. injection Hee as Hee_e. subst e0.
     injection HB0 as HB0a HB0b. rewrite <- HB0b.
@@ -3322,7 +3352,7 @@ Proof.
     + apply d_wf_denv__typ; [ exact Hwf | fsetdec | exact H ].
     + rewrite (is_ityp_ptyp_to_btyp_inh Hityp).
       match goal with Hbp : forall _ : atom, _ -> _ ⊢[ _ ] _ ⦂ _ |- _ => apply Hbp; fsetdec end.
-Qed.
+Admitted. (* one admit: the NEW unrestricted-[Sub] fn-mode case above *)
 
 
 (** ===================================================================== *)
@@ -3444,15 +3474,29 @@ Proof.
   rewrite !btyp_to_ptyp_ptyp_to_btyp_inh in H. exact H.
 Qed.
 
+(** A frozen term has NO inference-mode typing: [freeze] only checks, and the
+    (unrestricted) [Sub]'s own premise re-types the same [freeze] at [ti] —
+    an induction, mirroring [freeze_no_infer] in [prop_annotation]. *)
+Lemma d_typing_freeze_no_ti : forall Γ e B,
+    Γ ⊢[ mode_ti ] (exp_freeze e) ⦂ B -> False.
+Proof.
+  intros Γ e B H.
+  remember (exp_freeze e) as ef eqn:Hef. remember mode_ti as m0 eqn:Hm0.
+  revert Hef Hm0. induction H; intros Hef Hm0;
+    try discriminate Hef; try discriminate Hm0.
+  apply IHd_typing; [ exact Hef | reflexivity ].
+Qed.
+
 (** Inversion of a frozen term's checking type: [freeze e] checks at [inh A]
     exactly when [e] synthesises [syn A].  The [sub] / [forall] cases are
-    impossible ([freeze _] is neither a base term nor a value). *)
+    impossible ([freeze _] has no [ti] typing / is not a value). *)
 Lemma d_typing_freeze_inv : forall Γ e A,
     Γ ⊢[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A) ->
     Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A).
 Proof.
   intros Γ e A H. inversion H; subst;
-    try (match goal with Hb : is_base_term (exp_freeze _) |- _ => inversion Hb end);
+    try (match goal with Hti : _ ⊢[ mode_ti ] exp_freeze _ ⦂ _ |- _ =>
+           exfalso; eapply d_typing_freeze_no_ti; exact Hti end);
     try (match goal with Hv : is_value (exp_freeze _) |- _ => inversion Hv end).
   match goal with
   | Heq : ptyp_to_btyp_inh _ = ptyp_to_btyp_inh _ |- _ =>
@@ -4037,14 +4081,17 @@ Lemma app_fill_skel_tc : forall e1 e2 Q2 Γ',
 Proof.
   intros e1 e2 Q2 Γ' Hcod Γt A Hcr Hwf Hty.
   inversion Hty; subst;
-    try (match goal with Hb : is_base_term (exp_app _ _) |- _ => inversion Hb end);
     try (match goal with Hv : is_value (exp_app _ _) |- _ => inversion Hv end).
-  match goal with
-  | He1 : _ ⊢[ mode_fn mode_tc ] e1 ⦂ (btyp_arrow ?B1t ?B2t) |- _ =>
-      rewrite <- (btyp_to_ptyp_ptyp_to_btyp_inh A);
-      eapply Hcod; [ exact Hcr | exact Hwf | exact He1 ]
-  end.
-Qed.
+  - (* sub (NEW with the unrestricted [Sub]): the application is re-typed at
+       [tc] by subsuming its [ti] synthesis; relating the two checking types
+       through the [tc]-subtyping is deferred (safety file). *)
+    admit.
+  - match goal with
+    | He1 : _ ⊢[ mode_fn mode_tc ] e1 ⦂ (btyp_arrow ?B1t ?B2t) |- _ =>
+        rewrite <- (btyp_to_ptyp_ptyp_to_btyp_inh A);
+        eapply Hcod; [ exact Hcr | exact Hwf | exact He1 ]
+    end.
+Admitted. (* one admit: the NEW unrestricted-[Sub] case above *)
 
 Lemma app_fill_skel_ti : forall e1 e2 Q2 Γ',
     (forall Γt B1t B2t, ctx_refines_tw Γ' Γt -> d_wf_denv Γt ->
@@ -4055,14 +4102,33 @@ Lemma app_fill_skel_ti : forall e1 e2 Q2 Γ',
       skel_safe nil (bskl_to_pskl Q2) A.
 Proof.
   intros e1 e2 Q2 Γ' Hcod Γt A Hcr Hwf Hty.
-  inversion Hty; subst;
-    try (match goal with Hb : is_base_term (exp_app _ _) |- _ => inversion Hb end);
-    try (match goal with Hv : is_value (exp_app _ _) |- _ => inversion Hv end).
-  match goal with
-  | He1 : _ ⊢[ mode_fn mode_ti ] e1 ⦂ (btyp_arrow ?B1t ?B2t) |- _ =>
-      rewrite <- (btyp_to_ptyp_ptyp_to_btyp_syn A);
-      eapply Hcod; [ exact Hcr | exact Hwf | exact He1 ]
-  end.
+  remember (exp_app e1 e2) as ea eqn:Hea.
+  remember (ptyp_to_btyp_syn A) as B0 eqn:HB0.
+  remember mode_ti as m0 eqn:Hm0.
+  revert A Hcr Hwf Hea HB0 Hm0.
+  induction Hty; intros A0' Hcr Hwf Hea HB0 Hm0;
+    try discriminate Hea; try discriminate Hm0.
+  - (* sub at [mode_ti] is [Infer] = paint-to-paint consistency, which PINS
+       the subsumed type to the synthesis; recurse. *)
+    subst.
+    match goal with Hs : empty ⨟ _ ⊢[ mode_ti ] ptyp_to_utyp_syn _ ⊑ _ |- _ =>
+      inversion Hs; subst; try (exfalso; congruence) end.
+    match goal with
+    | Hst : is_styp (ptyp_to_btyp_syn A0'),
+      Hc : _ ⨟ _ ⊨ ptyp_to_utyp_syn ?AA ≈ ptyp_to_btyp_syn A0' |- _ =>
+        pose proof (@d_consis_paint_syn_eq (ptyp_to_btyp_syn A0') Hst _ _ AA Hc) as Hpin
+    end.
+    apply ptyp_to_btyp_syn_inj in Hpin. subst A0'.
+    apply (IHHty Hcod A); try reflexivity; assumption.
+  - (* app *)
+    subst. injection Hea; intros; subst.
+    match goal with
+    | He1 : _ ⊢[ mode_fn mode_ti ] e1 ⦂ (btyp_arrow ?B1t ?B2t) |- _ =>
+        rewrite <- (btyp_to_ptyp_ptyp_to_btyp_syn A0');
+        eapply Hcod; [ exact Hcr | exact Hwf | ]
+    end.
+    match goal with
+    | He1 : _ ⊢[ mode_fn mode_ti ] e1 ⦂ (btyp_arrow _ _) |- _ => exact He1 end.
 Qed.
 
 (** DIRECTED function producer (the app-case core).  Given a function [e1 : B1→B2]
@@ -5163,8 +5229,16 @@ Proof.
   revert m B1 B2 Hfm HBarr.
   induction Hty; intros mm BB1 BB2 Hfm HBarr Hwf Γ' Hcr Hwf' Parg Hsafe;
     try discriminate Hfm.
-  - (* sub: base term subsumed to the arrow.  Directed inference via
-       [safe_fn_skel_dir]; FN-mode safety is its [safe_skel] output. *)
+  - (* sub: term subsumed to the arrow.  Directed inference via
+       [safe_fn_skel_dir]; FN-mode safety is its [safe_skel] output.
+       NEW GAP (unrestricted [Sub], "Removed base terms" rework): [e] need
+       not be a base term any more; the body below runs the original
+       base-term reasoning ([base_principal] dispatch), so the general case
+       is admitted here (this lemma is the already-open app-case obligation,
+       ending in [Admitted]). *)
+    rename H into Hsubprem.
+    assert (H : is_base_term e) by admit.
+    rename Hsubprem into H0.
     subst m. subst B.
     assert (HwfsynB : d_wf_btyp Γ (ptyp_to_btyp_syn A))
       by (eapply d_typing_wf_btyp; [ exact Hty | exact Hwf ]).
@@ -5397,7 +5471,13 @@ Proof.
       [ exact Hwf | apply is_base_term__var | eapply d_typing__var; eauto | exact Hcr ].
   - split; [ | intros ? ? ? Hm; discriminate Hm ]. (* anno *) eapply d_pat_base_safe_gen;
       [ exact Hwf | apply is_base_term__anno | apply d_typing__anno; eassumption | exact Hcr ].
-  - split; [ | admit ]. (* sub *) destruct m.
+  - split; [ | admit ]. (* sub *)
+    (* NEW GAP (unrestricted [Sub], "Removed base terms" rework): [e] need not
+       be a base term; the base-term routes below are kept verbatim and the
+       general case is admitted (this lemma already carries the open abs-fn /
+       abs_anno-fn / app admits). *)
+    assert (Hbase : is_base_term e) by admit.
+    destruct m.
     + (* ti: subsumed base term still synthesises (skeleton determined) *)
       eapply d_pat_base_safe_gen;
         [ exact Hwf | eassumption | eapply d_typing__sub; eassumption | exact Hcr ].

@@ -663,7 +663,9 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
     Γ ⊢[ mode_ti ] (exp_anno e A) ⦂ (ptyp_to_btyp_syn A)
 | d_typing__sub : forall Γ m e A B,
-    is_base_term e ->
+    (* Paper [Sub] (declarative.tex): applies to ANY term [M] — the base-term
+       restriction was removed (commit "Removed base terms"); general
+       subsumption is admissible, so the unrestricted rule is equivalent. *)
     (* Todo: not urgent, replace A with btyp B1 and use is_styp B1 *)
     Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
     empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
@@ -720,22 +722,21 @@ where "Γ ⊢[ M ] e ⦂ A" := (d_typing M Γ e A) : type_scope.
 (* ===================================================================== *)
 
 Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
-| d_sd_typing__unit : forall Γ,
-    Γ ⊢ˢ[ mode_ti ] exp_unit ⦂ btyp_unit
-| d_sd_typing__var : forall Γ x A,
+(* Paper [sdtylab{Unit}]/[sdtylab{Var}]/[sdtylab{Anno}]: the standalone
+   [dtylab{Sub}] was removed and its subtyping premise is EMBEDDED into the
+   three base rules (declarative.tex, "we incorporate Sub into the three base
+   rules"), so the system is syntax-directed with no [is_base_term] predicate. *)
+| d_sd_typing__unit : forall Γ m B,
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn ptyp_unit) ⊑ B ->
+    Γ ⊢ˢ[ m ] exp_unit ⦂ B
+| d_sd_typing__var : forall Γ m x A B,
     binds x (dbind_typ A) Γ ->
-    Γ ⊢ˢ[ mode_ti ] (exp_var_f x) ⦂ (ptyp_to_btyp_syn A)
-| d_sd_typing__anno : forall Γ e A,
-    Γ ⊢ˢ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
-    Γ ⊢ˢ[ mode_ti ] (exp_anno e A) ⦂ (ptyp_to_btyp_syn A)
-| d_sd_typing__sub : forall Γ m e A B,
-    (* Mirrors [d_typing__sub]: the [ti] premise is a synthesised painting
-       [syn{A}] and the subsumption runs from the [utyp]-painting of the same
-       [A], so soundness/completeness against [d_typing] are by-construction. *)
-    is_base_term e ->
-    Γ ⊢ˢ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
     empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
-    Γ ⊢ˢ[ m ] e ⦂ B
+    Γ ⊢ˢ[ m ] (exp_var_f x) ⦂ B
+| d_sd_typing__anno : forall Γ m e A B,
+    Γ ⊢ˢ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) ->
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    Γ ⊢ˢ[ m ] (exp_anno e A) ⦂ B
 | d_sd_typing__freeze : forall Γ e A,
     (* Paper [Freeze]: TI [syn{A}] ⇒ TC [inh{A}]. *)
     Γ ⊢ˢ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) ->
