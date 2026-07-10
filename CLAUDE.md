@@ -184,6 +184,12 @@ before changing any of them.
   the STATEMENT itself is genuinely false — you have a concrete
   counter-example — STOP and flag it to the user; do not weaken or "fix" the
   statement.
+- **Compilation must always end in reasonable time.**  If a proof compiles
+  slowly, IDENTIFY the culprit first (time individual tactics /
+  `Set Ltac Profiling`) instead of waiting out long builds.  The usual (not
+  only) causes are `fsetdec` on a large context — scope it with
+  `clear - <needed hyps>; fsetdec` — and unbounded `eauto`; prefer bounded
+  depth (`eauto 4`) and explicit lemma application on hot paths.
 - **Use notations as much as possible — in BOTH rule definitions and lemma
   statements — and keep them consistent with the paper's judgment forms.**
   Every judgment `Inductive` should be bound to a paper-shaped notation via
