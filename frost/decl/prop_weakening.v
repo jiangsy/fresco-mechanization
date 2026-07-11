@@ -215,11 +215,13 @@ Lemma d_pat_weakening_mid : forall Γ2 m Γ e Q,
     forall Γ1 Γ3, Γ = Γ1 ++ Γ3 -> (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] e ⇨ Q.
 Proof.
   intros Γ2 m Γ e Q H. induction H; intros Γ1 Γ3 Heq; subst.
-  - apply d_pat__unit.
-  - apply d_pat__var with (d := d); [ analyze_binds H | exact H0 ].
-  - apply d_pat__anno. apply d_wf_ptyp_weakening; assumption.
-  - apply d_pat__sub with (P := P);
-      [ exact H | apply IHd_pat; reflexivity | apply d_pat_sub_weakening; exact H1 ].
+  (* Paper P-Unit/P-Var/P-Anno now embed the skeleton-subtyping premise. *)
+  - apply d_pat__unit. apply d_pat_sub_weakening; assumption.
+  - apply d_pat__var with (d := d) (P := P);
+      [ analyze_binds H | exact H0 | apply d_pat_sub_weakening; exact H1 ].
+  - apply d_pat__anno;
+      [ apply d_wf_ptyp_weakening; assumption
+      | apply d_pat_sub_weakening; assumption ].
   - apply d_pat__freeze. apply IHd_pat; reflexivity.
   - apply d_pat__abs with (L := L `union` dom (Γ1 ++ Γ3)) (P := P);
       [ exact H | apply d_wf_pskl_weakening; assumption | assumption | ].

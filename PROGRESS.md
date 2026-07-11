@@ -69,9 +69,10 @@ excluded from the build); mine them when re-proving.
 - ⬜ Theorems: Soundness / Completeness+optimality of type inference
 - ⬜ Theorems: Soundness / Completeness+optimality of skeleton inference
 
-**A. full-decl-proofs.tex** (declarative metatheory; large parts exist as `.legacy` to rebase)
-- ⬜ Soundness/Completeness of syntax-directed rules (legacy: `prop_syntax_directed.v.legacy`)
-- ⬜ General subsumption; Consistency-Subtyping Transitivity; Subtyping Transitivity; Function Subtyping; Generalised General Subsumption (legacy: `prop_general_subsumption.v.legacy`, D1/D12 were Closed pre-restart)
+**A. full-decl-proofs.tex** (declarative metatheory — REBASED onto the synced defs)
+- ✅ Soundness/Completeness of syntax-directed rules (`d_sd_typing_sound` / `d_sd_typing_complete`, `prop_syntax_directed.v`, 0 admits)
+- ✅ General subsumption; Consistency-Subtyping Transitivity; Subtyping Transitivity; Function Subtyping; Generalised General Subsumption (`prop_general_subsumption.v` D1/D12 + spine, 0 admits; `Print Assumptions` audited in `README.v`)
+- Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
 

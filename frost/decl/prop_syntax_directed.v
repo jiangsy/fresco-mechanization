@@ -527,18 +527,13 @@ Proof.
   - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
 Qed.
 
-(* [is_value] / [is_base_term] are stable under any [ptyp]-substitution. *)
+(* [is_value] is stable under any [ptyp]-substitution. *)
 Lemma is_value_subst_ptyp : forall A X e,
     is_value e -> is_value (subst_ptyp_in_exp A X e).
 Proof.
   intros A X e H. induction H; simpl; constructor; assumption.
 Qed.
 
-Lemma is_base_term_subst_ptyp : forall A X e,
-    is_base_term e -> is_base_term (subst_ptyp_in_exp A X e).
-Proof.
-  intros A X e H. induction H; simpl; constructor.
-Qed.
 
 
 (* ===================================================================== *)
@@ -804,27 +799,42 @@ Lemma d_pat_subst_unit : forall m Γ e R,
       (subst_ptyp_in_exp ptyp_unit X0 e) ⇨ (subst_bskl_in_bskl bskl_unit X0 R).
 Proof.
   intros m Γ e R H. induction H; intros Γ1 X0 Γ2 Heq Hclean; subst; simpl.
-  - apply d_pat__unit.
-  - (* var: lookup survives, painted output repaints. *)
-    rewrite pskl_to_bskl_syn_subst_unit.
+  - (* unit: embedded [d_pat_sub] over [Γ1++Γ2] → swap to mapped context. *)
+    apply d_pat__unit.
+    change uskl_unit with (subst_bskl_in_uskl uskl_unit X0 uskl_unit).
+    eapply d_pat_sub_same_tvar;
+      [ eapply d_pat_sub_subst_unit; [ eassumption | reflexivity ]
+      | apply same_tvar_map_subst_unit ].
+  - (* var: lookup survives; embedded sub premise as in unit. *)
     destruct d as [ | A | P0 ]; simpl in H0.
     + discriminate.
-    + injection H0 as H0. subst P. rewrite ptyp_to_pskl_subst_unit.
+    + injection H0 as H0. subst P.
       assert (Hb : binds x (dbind_typ A) (Γ1 ++ Γ2)) by (analyze_binds H).
-      eapply d_pat__var;
-        [ apply binds_typ_subst_unit_dbind; eassumption | reflexivity ].
+      eapply d_pat__var with (d := dbind_typ (subst_ptyp_in_ptyp ptyp_unit X0 A));
+        [ apply binds_typ_subst_unit_dbind; eassumption
+        | reflexivity | ].
+      rewrite <- ptyp_to_pskl_subst_unit.
+      rewrite <- pskl_to_bskl_syn_subst_unit.
+      rewrite <- bskl_to_uskl_subst_unit.
+      eapply d_pat_sub_same_tvar;
+        [ eapply d_pat_sub_subst_unit; [ eassumption | reflexivity ]
+        | apply same_tvar_map_subst_unit ].
     + injection H0 as H0. subst P.
       assert (Hb : binds x (dbind_skl P0) (Γ1 ++ Γ2)) by (analyze_binds H).
-      eapply d_pat__var;
-        [ apply binds_skl_subst_unit_dbind; eassumption | reflexivity ].
-  - (* anno *)
-    rewrite pskl_to_bskl_syn_subst_unit. rewrite ptyp_to_pskl_subst_unit.
-    apply d_pat__anno. eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
-  - (* sub: embedded [d_pat_sub] over [Γ1++Γ2] → swap to mapped context. *)
-    eapply d_pat__sub.
-    + apply is_base_term_subst_ptyp. assumption.
-    + rewrite <- pskl_to_bskl_syn_subst_unit. eapply IHd_pat; [ reflexivity | assumption ].
-    + rewrite <- pskl_to_bskl_syn_subst_unit. rewrite <- bskl_to_uskl_subst_unit.
+      eapply d_pat__var with (d := dbind_skl (subst_pskl_in_pskl pskl_unit X0 P0));
+        [ apply binds_skl_subst_unit_dbind; eassumption
+        | reflexivity | ].
+      rewrite <- pskl_to_bskl_syn_subst_unit.
+      rewrite <- bskl_to_uskl_subst_unit.
+      eapply d_pat_sub_same_tvar;
+        [ eapply d_pat_sub_subst_unit; [ eassumption | reflexivity ]
+        | apply same_tvar_map_subst_unit ].
+  - (* anno: embedded sub premise as in unit. *)
+    apply d_pat__anno.
+    + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
+    + rewrite <- ptyp_to_pskl_subst_unit.
+      rewrite <- pskl_to_bskl_syn_subst_unit.
+      rewrite <- bskl_to_uskl_subst_unit.
       eapply d_pat_sub_same_tvar;
         [ eapply d_pat_sub_subst_unit; [ eassumption | reflexivity ]
         | apply same_tvar_map_subst_unit ].
