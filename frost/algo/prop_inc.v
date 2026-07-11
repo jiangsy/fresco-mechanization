@@ -142,9 +142,11 @@ Qed.
 (** [Θ ⊴ Θ] — reflexivity of information increase. *)
 Lemma a_isub_refl : forall Θ, Θ ⊴ Θ.
 Proof.
-  intros Θ. destruct (a_inc_refl_gen Θ (Ξ0 := nil)) as [θ [Hid Hinc]];
-    [ constructor | ].
-  exists θ. simpl in Hinc. auto.
+  intros Θ. split.
+  - destruct (a_inc_refl_gen Θ (Ξ0 := nil)) as [θ [Hid Hinc]];
+      [ constructor | ].
+    exists θ. simpl in Hinc. auto.
+  - auto.
 Qed.
 
 (** [Θ ⊴ Ξ ++ Θ] — the target may grow by a fresh flexible suffix. *)
@@ -152,8 +154,10 @@ Lemma a_isub_weaken_suffix : forall Θ Ξ,
   a_suffix Ξ ->
   Θ ⊴ (Ξ ++ Θ).
 Proof.
-  intros Θ Ξ HΞ. destruct (a_inc_refl_gen Θ (Ξ0 := Ξ)) as [θ [Hid Hinc]]; auto.
-  exists θ. auto.
+  intros Θ Ξ HΞ. split.
+  - destruct (a_inc_refl_gen Θ (Ξ0 := Ξ)) as [θ [Hid Hinc]]; auto.
+    exists θ. auto.
+  - intros α τ Hb. unfold binds; apply in_or_app; auto.
 Qed.
 
 (* ===================================================================== *)
@@ -452,8 +456,10 @@ Qed.
 Lemma a_isub_trans : forall Θ0 Θ1 Θ2,
   Θ0 ⊴ Θ1 -> Θ1 ⊴ Θ2 -> Θ0 ⊴ Θ2.
 Proof.
-  intros * [θ1 [Hid1 H1]] [θ2 [Hid2 H2]].
-  destruct (a_inc_trans H1 Hid1 H2 Hid2) as [θ [Hid Hinc]].
-  exists θ; auto.
+  intros * [[θ1 [Hid1 H1]] Hd1] [[θ2 [Hid2 H2]] Hd2].
+  split.
+  - destruct (a_inc_trans H1 Hid1 H2 Hid2) as [θ [Hid Hinc]].
+    exists θ; auto.
+  - auto.
 Qed.
 

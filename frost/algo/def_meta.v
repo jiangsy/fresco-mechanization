@@ -127,9 +127,18 @@ Inductive a_inc : aenv -> metasubst -> aenv -> Prop :=
     ((α ~ abind_tvar) ++ Θ) ≤[ θ ] (Ξ ++ (α ~ abind_tvar) ++ Θ')
 where "Θ ≤[ θ ] Θ'" := (a_inc Θ θ Θ') : type_scope.
 
-(** [Θ ⊴ Θ'] (paper [⊑{Θ}{Θ'}], identity-metasubstitution shorthand). *)
+(** [Θ ⊴ Θ'] (paper [⊑{Θ}{Θ'}], identity-metasubstitution shorthand).
+
+    Besides an identity witness for the figure's rules, this carries the
+    paper's PROSE characterization of identity metasubstitutions
+    (algorithmic.tex:135): "all entries of flexible variables in Θ are
+    preserved in Θ'" — in particular a definition [α̂:=τ], once made, is
+    never rewritten (the algorithm only adds definitions).  This component
+    is what makes the FlexL/FlexR lookup rules stable under [⊴]. *)
 Definition a_isub (Θ Θ' : aenv) : Prop :=
-  exists θ, is_id_msubst θ /\ Θ ≤[ θ ] Θ'.
+  (exists θ, is_id_msubst θ /\ Θ ≤[ θ ] Θ') /\
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+               binds α (abind_flex_mono_def τ) Θ').
 
 Notation "Θ ⊴ Θ'" := (a_isub Θ Θ')
   (at level 75, no associativity) : type_scope.
