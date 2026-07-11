@@ -42,13 +42,7 @@ Definition ptyp_to_bskl_syn (A : ptyp) : bskl :=
 Definition ptyp_to_uskl_syn (A : ptyp) : uskl :=
   bskl_to_uskl (ptyp_to_bskl_syn A).
 
-(** A type-variable occurrence in [Θ]: rigid, or a flexible declaration /
-    definition (an occurrence of a defined [α̂] is still a variable; its
-    definition is retrieved by the lookup rules where needed). *)
-Definition a_binds_tvar (X : atom) (Θ : aenv) : Prop :=
-  binds X abind_tvar Θ \/
-  binds X abind_flex_mono Θ \/
-  (exists τ, binds X (abind_flex_mono_def τ) Θ).
+(* [a_binds_tvar] now lives in algo/def_extra.v (shared with a_wf_ptyp). *)
 
 (* ===================================================================== *)
 (*  Skeleton well-formedness over Θ  (decl [Γ ⨟ Δ ⊢ₚₛ P])                *)

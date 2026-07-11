@@ -105,6 +105,10 @@ Inductive a_inc : aenv -> metasubst -> aenv -> Prop :=
     ((α ~ abind_flex_mono) ++ Θ) ≤[ (α, τ) :: θ ] Θ'
 | a_inc__flex_def : forall Θ θ Θ' α τ τ',        (* Θ,α̂:=τ ⊑[θ,τ'/α̂] Θ', τ' ≡ θτ *)
     Θ ≤[ θ ] Θ' ->
+    (* the paper's prose side-condition on θ (algorithmic.tex:123): every
+       image is a well-formed monotype in the target *)
+    a_wf_ptyp Θ' τ' ->
+    mono_ptyp τ' ->
     Θ' ⊢ τ' ≡ᵗ (msubst_ptyp θ τ) ->
     ((α ~ abind_flex_mono_def τ) ++ Θ) ≤[ (α, τ') :: θ ] Θ'
 | a_inc__var : forall Θ θ Θ' Ξ x A,              (* Θ,x:A ⊑[θ] Θ',x:θA,Ξ (type entry) *)

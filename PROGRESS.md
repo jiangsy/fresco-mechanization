@@ -86,8 +86,17 @@ excluded from the build); mine them when re-proving.
   `a_inc_refl_gen` ⇒ `a_isub_refl`, `a_isub_weaken_suffix` (all Qed).
 - Notation retrofit of `def_decorated.v`/`def_decl_algo.v` (ground rule 1);
   ground rules 1–3 added to CLAUDE.md.
-- NEXT: `a_isub_trans` (composition of identity incs — needed by every
-  multi-premise case), `a_unify`/`a_assign` soundness (paper
+- `a_wf_ptyp`/`a_wf_pskl` made REAL scoping judgments (`a_binds_tvar` moved
+  to `algo/def_extra.v`); `a_inc__flex_def` gained the paper-PROSE side
+  condition (θ maps to well-formed monotypes in the target,
+  algorithmic.tex:123) — this is what makes identity increases keep
+  flexible variables and defined-variable transport provable.
+- Transport + transitivity Qed (`prop_inc.v`): `a_inc_binds_tvar/_flex/
+  _flex_def`, `a_inc_binds_tvarish`, `a_tyequiv_weaken`, `a_tyequiv_isub`
+  (stability of ≡), `a_inc_strengthen_suffix_src`, `a_inc_suffix_target`,
+  `a_inc_trans` ⇒ `a_isub_trans`.
+- NEXT: stability of `ad_pat_consis`/`ad_refine_*` under ⊴ (uses the
+  transport kit), `a_unify`/`a_assign` soundness (paper
   thm:sound-consistency parts 2–3), then "Soundness of decorated
   consistency" (Δ₁/Δ₂-generalized, per the paper's proof sketch).
 

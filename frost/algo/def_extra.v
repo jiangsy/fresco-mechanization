@@ -74,18 +74,53 @@ Inductive a_wf_aenv : aenv -> Prop :=
     a `notin` dom Θ ->
     a_wf_aenv ((a ~ b) ++ Θ).
 
-(* Well-scopedness placeholders: the restart tracks local closure only; the
-   context-sensitive strengthening (flex vars bound in [Θ], defs in scope)
-   is introduced with the wf metatheory when the paper's proofs need it. *)
+(** A type-variable occurrence in [Θ]: rigid, or a flexible declaration /
+    definition (an occurrence of a defined [α̂] is still a variable; its
+    definition is retrieved by lookup rules where needed). *)
+Definition a_binds_tvar (X : atom) (Θ : aenv) : Prop :=
+  binds X abind_tvar Θ \/
+  binds X abind_flex_mono Θ \/
+  (exists τ, binds X (abind_flex_mono_def τ) Θ).
+
+(* Well-scopedness of types / skeletons under [Θ].  This is what the paper's
+   implicit "all inputs are well-formed" and the explicit [Θ0,Ξ ⊢ P1] premise
+   of ForallL mean; crucially, [a_inc]'s flex rule checks the solving monotype
+   here, which is what forces identity information-increases to KEEP flexible
+   variables in the target (stability of variable lookups depends on it). *)
 Inductive a_wf_ptyp : aenv -> ptyp -> Prop :=
-| a_wf_ptyp__decl : forall Θ A,
-    lc_ptyp A ->
-    a_wf_ptyp Θ A.
+| a_wf_ptyp__unit : forall Θ,
+    a_wf_ptyp Θ ptyp_unit
+| a_wf_ptyp__var : forall Θ X,
+    a_binds_tvar X Θ ->
+    a_wf_ptyp Θ (ptyp_var_f X)
+| a_wf_ptyp__arrow : forall Θ A1 A2,
+    a_wf_ptyp Θ A1 ->
+    a_wf_ptyp Θ A2 ->
+    a_wf_ptyp Θ (ptyp_arrow A1 A2)
+| a_wf_ptyp__all : forall L Θ A,
+    (forall X, X `notin` L ->
+       a_wf_ptyp ((X ~ abind_tvar) ++ Θ) (open_ptyp_wrt_ptyp A (ptyp_var_f X))) ->
+    a_wf_ptyp Θ (ptyp_all A).
 
 Inductive a_wf_pskl : aenv -> pskl -> Prop :=
-| a_wf_pskl__decl : forall Θ P,
-    lc_pskl P ->
-    a_wf_pskl Θ P.
+| a_wf_pskl__unit : forall Θ,
+    a_wf_pskl Θ pskl_unit
+| a_wf_pskl__var : forall Θ X,
+    a_binds_tvar X Θ ->
+    a_wf_pskl Θ (pskl_var_f X)
+| a_wf_pskl__arrow : forall Θ P1 P2,
+    a_wf_pskl Θ P1 ->
+    a_wf_pskl Θ P2 ->
+    a_wf_pskl Θ (pskl_arrow P1 P2)
+| a_wf_pskl__all : forall L Θ P,
+    (forall X, X `notin` L ->
+       a_wf_pskl ((X ~ abind_tvar) ++ Θ) (open_pskl_wrt_pskl P (pskl_var_f X))) ->
+    a_wf_pskl Θ (pskl_all_syn P)
+| a_wf_pskl__hole : forall Θ,
+    a_wf_pskl Θ pskl_hole
+| a_wf_pskl__tophole : forall Θ P,
+    a_wf_pskl Θ P ->
+    a_wf_pskl Θ (pskl_tophole P).
 
 (* ===================================================================== *)
 (*  Mode/input-skeleton compatibility  skmod[TY] / skmod[SK]              *)
