@@ -180,7 +180,9 @@ before changing any of them.
   paper's proof steps.**  Mechanize the statement exactly as the paper gives
   it.  If a paper PROOF STEP has a problem but the original statement is
   still provable (with your own repair), continue the proof with the repair
-  and DOCUMENT the problem (comment at the lemma + PROGRESS.md entry).  If
+  and DOCUMENT the problem: a `[paper-gap]` comment at the lemma AND an
+  entry in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) (the canonical
+  registry of everything the paper's authors should see).  If
   the STATEMENT itself is genuinely false — you have a concrete
   counter-example — STOP and flag it to the user; do not weaken or "fix" the
   statement.

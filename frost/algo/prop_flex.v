@@ -19,6 +19,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_stability.
+Require Import src.frost.algo.prop_decorate.
 
 Set Implicit Arguments.
 
@@ -358,4 +359,112 @@ Proof.
   - constructor.
   - apply a_decls_app; auto.
   - pick fresh X. eauto.
+Qed.
+
+
+(* ===================================================================== *)
+(*  Embedding/open commutation (local; coercions.v lacks these two)       *)
+(* ===================================================================== *)
+
+Lemma ptyp_to_pskl_open_rec : forall A1 A2 k,
+  ptyp_to_pskl (open_ptyp_wrt_ptyp_rec k A2 A1)
+  = open_pskl_wrt_pskl_rec k (ptyp_to_pskl A2) (ptyp_to_pskl A1).
+Proof.
+  induction A1; intros; simpl; f_equal; auto.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+Qed.
+
+Lemma pskl_to_bskl_syn_open_rec : forall P1 P2 k,
+  pskl_to_bskl_syn (open_pskl_wrt_pskl_rec k P2 P1)
+  = open_bskl_wrt_bskl_rec k (pskl_to_bskl_syn P2) (pskl_to_bskl_syn P1).
+Proof.
+  induction P1; intros; simpl; f_equal; auto.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+Qed.
+
+Lemma ptyp_to_bskl_syn_open_var : forall A X,
+  ptyp_to_bskl_syn (open_ptyp_wrt_ptyp A (ptyp_var_f X))
+  = open_bskl_wrt_bskl (ptyp_to_bskl_syn A) (bskl_var_f X).
+Proof.
+  intros. unfold ptyp_to_bskl_syn, open_ptyp_wrt_ptyp, open_bskl_wrt_bskl.
+  rewrite ptyp_to_pskl_open_rec. rewrite pskl_to_bskl_syn_open_rec.
+  reflexivity.
+Qed.
+
+Lemma a_binds_tvar_weaken_cons : forall α (e : list (atom * abind)) Θ,
+  a_binds_tvar α Θ ->
+  a_binds_tvar α (e ++ Θ).
+Proof.
+  intros. rewrite_env (nil ++ e ++ Θ). apply a_binds_tvar_weaken_mid; auto.
+Qed.
+
+(* ===================================================================== *)
+(*  guessMono is consistent with its input skeleton                        *)
+(*  (the declarative content of Assign-SolveM's definition)               *)
+(* ===================================================================== *)
+
+Lemma a_guess_mono_consis : forall Θ P βs τ,
+  a_guess_mono Θ P βs τ ->
+  forall Θ1,
+  (forall X, X `in` ftvar_in_pskl P -> a_binds_tvar X Θ1) ->
+  (forall γ, binds γ abind_flex_mono βs -> a_binds_tvar γ Θ1) ->
+  ad_pat_consis empty Θ1 (pskl_to_uskl P) (ptyp_to_bskl_syn τ).
+Proof.
+  intros * H;
+    induction H as [ Θ α | Θ P Ξ A Hg IH | Θ α | Θ
+                   | Θ P Q Ξ1 Ξ2 A B Hg1 IH1 Hg2 IH2
+                   | L Θ P Ξ A Hg IH ];
+    intros Θ1 Hvars Hβs.
+  - (* hole ↦ fresh flexible variable *)
+    replace (ptyp_to_bskl_syn (ptyp_var_f α))
+      with (pskl_to_bskl_inh (pskl_var_f α)) by reflexivity.
+    replace (pskl_to_uskl pskl_hole) with uskl_hole by reflexivity.
+    apply ad_pat_consis__hole; [ fsetdec | ].
+    apply ad_wf_pskl__var. right. apply Hβs.
+    unfold binds; left; reflexivity.
+  - (* ⊤.P : the universal ghost is dropped *)
+    replace (pskl_to_uskl (pskl_tophole P))
+      with (uskl_tophole (pskl_to_uskl P)) by reflexivity.
+    apply ad_pat_consis__tophole_drop. auto.
+  - (* variable *)
+    replace (pskl_to_uskl (pskl_var_f α))
+      with (uskl_var_f α) by reflexivity.
+    replace (ptyp_to_bskl_syn (ptyp_var_f α))
+      with (bskl_var_f α) by reflexivity.
+    apply ad_pat_consis__var; [ fsetdec | ].
+    apply Hvars. simpl. fsetdec.
+  - (* unit *)
+    replace (pskl_to_uskl pskl_unit) with uskl_unit by reflexivity.
+    replace (ptyp_to_bskl_syn ptyp_unit) with bskl_unit by reflexivity.
+    apply ad_pat_consis__unit. fsetdec.
+  - (* arrow *)
+    replace (pskl_to_uskl (pskl_arrow P Q))
+      with (uskl_arrow (pskl_to_uskl P) (pskl_to_uskl Q)) by reflexivity.
+    replace (ptyp_to_bskl_syn (ptyp_arrow A B))
+      with (bskl_arrow (ptyp_to_bskl_syn A) (ptyp_to_bskl_syn B))
+      by reflexivity.
+    apply ad_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ apply IH1 | apply IH2 | fsetdec ].
+    + intros X HX. apply Hvars. simpl. fsetdec.
+    + intros γ Hb. apply Hβs. unfold binds in *. apply in_or_app; auto.
+    + intros X HX. apply Hvars. simpl. fsetdec.
+    + intros γ Hb. apply Hβs. unfold binds in *. apply in_or_app; auto.
+  - (* forall: synthesised quantifier on both sides *)
+    replace (pskl_to_uskl (pskl_all_syn P))
+      with (uskl_all_syn (pskl_to_uskl P)) by reflexivity.
+    replace (ptyp_to_bskl_syn (ptyp_all A))
+      with (bskl_all_syn (ptyp_to_bskl_syn A)) by reflexivity.
+    apply ad_pat_consis__forall_syn with (L := L `union` dom Θ1).
+    intros X HX.
+    rewrite <- pskl_to_uskl_open_var.
+    rewrite <- ptyp_to_bskl_syn_open_var.
+    apply IH; [ fsetdec | | ].
+    + intros Y HY.
+      apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
+      simpl in HY.
+      destruct (AtomSetImpl.union_1 HY) as [HY' | HY'].
+      * apply AtomSetImpl.singleton_1 in HY'; subst.
+        left. unfold binds; left; reflexivity.
+      * apply a_binds_tvar_weaken_cons; auto.
+    + intros γ Hb. apply a_binds_tvar_weaken_cons; auto.
 Qed.
