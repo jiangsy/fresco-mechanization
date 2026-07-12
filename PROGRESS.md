@@ -77,7 +77,25 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-13 — flexible-variable soundness complete (thm:sound-consistency 2–3)
+## 2026-07-12 (c) — refine metatheory + benchmark acceptance tests
+
+`algo/prop_refine.v` (all Qed): refine weakening/Δ-monotonicity,
+`ad_refine_syn_refl_inh` / `ad_refine_pskl_refl`, and
+`ad_pat_consis_refl_erase` (the GhostR subsidiary induction) — the W3
+reflexivity inputs of the appendix-B soundness proof.
+
+`algo/test_examples.v`: ENCODING CHECK per user request — the appendix
+benchmark examples (fig:comparison-table-QL/-new) mechanized as full
+algorithmic derivations `Θlib ⊢ₐ[TI;□] e ⦂ B ⊣ Θ'` with concrete result
+types/contexts.  Covered: A1, A2, A4, A5, A10a, A10b, C2, E2b (Int/Bool
+as rigid tvars, Int×Bool Church-encoded — the paper's "Ch." column).
+Deferred rows (List-based, pair-constructor, freeze): encoding works,
+derivations are just large — see the file header.  NEXT still: appendix
+B part 1 (`aconsis` soundness main induction; needs W2
+`ad_refine_*_fold_def` + extending `a_unify_sound` with refine-shaped
+conclusions), then Soundness of decorated consistency.
+
+## 2026-07-12 (b) — flexible-variable soundness complete (thm:sound-consistency 2–3)
 
 `algo/prop_flex.v` (1056 lines, all Qed): `a_unify_sound` and
 `a_assign_sound` with their full support stack — ⊴ cons-congruences and
