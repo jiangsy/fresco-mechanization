@@ -420,6 +420,218 @@ Proof.
     apply IHad_pat_consis; auto using mono_ptyp_to_bskl_syn.
 Qed.
 
+(* ===================================================================== *)
+(*  Fill-hygienic refinement (internal scaffolding)                       *)
+(*                                                                        *)
+(*  The ∀-cases of the part-1 main induction must move the opened binder  *)
+(*  from the algorithmic context (where the ForallInh/ForallSyn premises  *)
+(*  bind it rigid) to the refinement judgment's Δ (where the declarative  *)
+(*  __all rule wants it).  A naive strip of the [α ~ tvar] entry is       *)
+(*  unsound in general — a ghost FILL could mention α — but the           *)
+(*  consistency rules' side conditions (Ghost: Δ2 ∩ ftv(P0) = ∅;          *)
+(*  GhostR: Δ1 ∩ ftv(P) = ∅) guarantee fills avoid the Δ-variables.       *)
+(*  The paper glosses this as "by definition of refinement".  We make it  *)
+(*  formal with a variant judgment carrying a set [F] forbidden in ghost  *)
+(*  fills: only the hole rules gain a side condition; [F := Δ1 ∪ Δ2] in   *)
+(*  the induction; [*_forget] recovers the real judgments at the end.     *)
+(* ===================================================================== *)
+
+Inductive ad_refine_syn_f (F : atoms) : aenv -> atoms -> bskl -> bskl -> Prop :=
+| ad_refine_syn_f__unit : forall Θ Δ,
+    ad_refine_syn_f F Θ Δ bskl_unit bskl_unit
+| ad_refine_syn_f__var : forall Θ Δ X,
+    X `in` Δ \/ a_binds_tvar X Θ ->
+    ad_refine_syn_f F Θ Δ (bskl_var_f X) (bskl_var_f X)
+| ad_refine_syn_f__arrow : forall Θ Δ Q1 Q2 P1 P2,
+    ad_refine_syn_f F Θ Δ Q1 P1 ->
+    ad_refine_syn_f F Θ Δ Q2 P2 ->
+    ad_refine_syn_f F Θ Δ (bskl_arrow Q1 Q2) (bskl_arrow P1 P2)
+| ad_refine_syn_f__all : forall L Θ Δ Q P,
+    (forall X, X `notin` L ->
+       ad_refine_syn_f F Θ (add X Δ)
+         (open_bskl_wrt_bskl Q (bskl_var_f X))
+         (open_bskl_wrt_bskl P (bskl_var_f X))) ->
+    ad_refine_syn_f F Θ Δ (bskl_all_inh Q) (bskl_all_inh P)
+| ad_refine_syn_f__hole : forall Θ Δ P,
+    AtomSetImpl.inter F (ftvar_in_pskl P) [=] empty ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
+    ad_refine_syn_f F Θ Δ bskl_hole (pskl_to_bskl_syn P)
+| ad_refine_syn_f__tophole_remove : forall Θ Δ Q P,
+    ad_refine_syn_f F Θ Δ Q P ->
+    ad_refine_syn_f F Θ Δ (bskl_tophole Q) P
+| ad_refine_syn_f__tophole_fill : forall L Θ Δ Q P,
+    (forall X, X `notin` L ->
+       ad_refine_syn_f F ((X ~ abind_tvar) ++ Θ) Δ
+         (bskl_tophole Q) (open_bskl_wrt_bskl P (bskl_var_f X))) ->
+    ad_refine_syn_f F Θ Δ (bskl_tophole Q) (bskl_all_syn P)
+| ad_refine_syn_f__tophole_keep : forall Θ Δ Q P,
+    guarded_bskl P ->
+    ad_refine_syn_f F Θ Δ Q P ->
+    ad_refine_syn_f F Θ Δ (bskl_tophole Q) (bskl_tophole P)
+| ad_refine_syn_f__flex_l : forall Θ Δ α τ Q,
+    binds α (abind_flex_mono_def τ) Θ ->
+    ad_refine_syn_f F Θ Δ (ptyp_to_bskl_syn τ) Q ->
+    ad_refine_syn_f F Θ Δ (bskl_var_f α) Q
+| ad_refine_syn_f__flex_r : forall Θ Δ α τ P,
+    binds α (abind_flex_mono_def τ) Θ ->
+    ad_refine_syn_f F Θ Δ P (ptyp_to_bskl_syn τ) ->
+    ad_refine_syn_f F Θ Δ P (bskl_var_f α).
+
+Inductive ad_refine_pskl_f (F : atoms) : aenv -> atoms -> pskl -> pskl -> Prop :=
+| ad_refine_pskl_f__unit : forall Θ Δ,
+    ad_refine_pskl_f F Θ Δ pskl_unit pskl_unit
+| ad_refine_pskl_f__var : forall Θ Δ X,
+    X `in` Δ \/ a_binds_tvar X Θ ->
+    ad_refine_pskl_f F Θ Δ (pskl_var_f X) (pskl_var_f X)
+| ad_refine_pskl_f__arrow : forall Θ Δ P1 P2 Q1 Q2,
+    ad_refine_pskl_f F Θ Δ P1 Q1 ->
+    ad_refine_pskl_f F Θ Δ P2 Q2 ->
+    ad_refine_pskl_f F Θ Δ (pskl_arrow P1 P2) (pskl_arrow Q1 Q2)
+| ad_refine_pskl_f__all : forall L Θ Δ P Q,
+    (forall X, X `notin` L ->
+       ad_refine_pskl_f F Θ (add X Δ)
+         (open_pskl_wrt_pskl P (pskl_var_f X))
+         (open_pskl_wrt_pskl Q (pskl_var_f X))) ->
+    ad_refine_pskl_f F Θ Δ (pskl_all_syn P) (pskl_all_syn Q)
+| ad_refine_pskl_f__hole : forall Θ Δ Q,
+    AtomSetImpl.inter F (ftvar_in_pskl Q) [=] empty ->
+    Θ ⨟ empty ⊢ₚₛᵃ Q ->
+    ad_refine_pskl_f F Θ Δ pskl_hole Q
+| ad_refine_pskl_f__tophole_remove : forall Θ Δ P Q,
+    ad_refine_pskl_f F Θ Δ P Q ->
+    ad_refine_pskl_f F Θ Δ (pskl_tophole P) Q
+| ad_refine_pskl_f__tophole_fill : forall L Θ Δ P Q,
+    (forall X, X `notin` L ->
+       ad_refine_pskl_f F ((X ~ abind_tvar) ++ Θ) Δ
+         (pskl_tophole P) (open_pskl_wrt_pskl Q (pskl_var_f X))) ->
+    ad_refine_pskl_f F Θ Δ (pskl_tophole P) (pskl_all_syn Q)
+| ad_refine_pskl_f__tophole_keep : forall Θ Δ P Q,
+    guarded_pskl Q ->
+    ad_refine_pskl_f F Θ Δ P Q ->
+    ad_refine_pskl_f F Θ Δ (pskl_tophole P) (pskl_tophole Q)
+| ad_refine_pskl_f__flex_l : forall Θ Δ α τ Q,
+    binds α (abind_flex_mono_def τ) Θ ->
+    ad_refine_pskl_f F Θ Δ (ptyp_to_pskl τ) Q ->
+    ad_refine_pskl_f F Θ Δ (pskl_var_f α) Q
+| ad_refine_pskl_f__flex_r : forall Θ Δ α τ P,
+    binds α (abind_flex_mono_def τ) Θ ->
+    ad_refine_pskl_f F Θ Δ P (ptyp_to_pskl τ) ->
+    ad_refine_pskl_f F Θ Δ P (pskl_var_f α).
+
+(** Forgetting the hygiene set recovers the declarative judgments. *)
+Lemma ad_refine_syn_f_forget : forall F Θ Δ Q P,
+  ad_refine_syn_f F Θ Δ Q P ->
+  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P.
+Proof.
+  intros * H; induction H; eauto using ad_refine_syn.
+Qed.
+
+Lemma ad_refine_pskl_f_forget : forall F Θ Δ P Q,
+  ad_refine_pskl_f F Θ Δ P Q ->
+  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+Proof.
+  intros * H; induction H; eauto using ad_refine_pskl.
+Qed.
+
+(** Skeleton wf survives removing a rigid entry the skeleton avoids. *)
+Lemma ad_wf_pskl_strip_tvar : forall Θ1 α Θ2 Δ P,
+  ad_wf_pskl (Θ1 ++ (α ~ abind_tvar) ++ Θ2) Δ P ->
+  α `notin` ftvar_in_pskl P ->
+  ad_wf_pskl (Θ1 ++ Θ2) Δ P.
+Proof.
+  intros * H.
+  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ2) as Θfull eqn:HeqΘ.
+  revert Θ1 HeqΘ.
+  induction H; intros Θ1 ->; intros Hfr; simpl in Hfr.
+  - apply ad_wf_pskl__unit.
+  - apply ad_wf_pskl__var.
+    destruct H as [HΔ | Htv]; [ left; auto | right ].
+    eapply a_binds_tvar_strip_mid; eauto;
+      try (intro Hc; inversion Hc; subst; fsetdec);
+      try (intros τ0 Hc; inversion Hc).
+  - apply ad_wf_pskl__arrow; [ apply IHad_wf_pskl1 | apply IHad_wf_pskl2 ];
+      auto.
+  - apply ad_wf_pskl__all with (L := L `union` singleton α).
+    intros X HX. apply H0; auto.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                  P (pskl_var_f X)) as Hup.
+    simpl in Hup. fsetdec.
+  - apply ad_wf_pskl__hole.
+  - apply ad_wf_pskl__tophole; auto.
+Qed.
+
+(** THE transfer lemmas: with the opened binder [α] recorded in both the
+    hygiene set and Δ, its rigid entry can be dropped from the context —
+    the fills avoid it (hygiene), the variable occurrences use Δ, and
+    context definitions cannot mention it (they sit below it). *)
+Lemma ad_refine_syn_f_strip : forall F Θ1 α Θ2 Δ Q P,
+  ad_refine_syn_f F (Θ1 ++ (α ~ abind_tvar) ++ Θ2) Δ Q P ->
+  α `in` F ->
+  α `in` Δ ->
+  ad_refine_syn_f F (Θ1 ++ Θ2) Δ Q P.
+Proof.
+  intros * H.
+  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ2) as Θfull eqn:HeqΘ.
+  revert Θ1 HeqΘ.
+  induction H; intros Θ1 ->; intros HαF HαΔ.
+  - apply ad_refine_syn_f__unit.
+  - apply ad_refine_syn_f__var.
+    destruct H as [HΔ | Htv]; [ left; auto | ].
+    destruct (eq_var X α) as [->|Hne]; [ left; auto | right ].
+    eapply a_binds_tvar_strip_mid; eauto;
+      try (intro Hc; inversion Hc; subst; congruence);
+      try (intros τ0 Hc; inversion Hc).
+  - apply ad_refine_syn_f__arrow; auto.
+  - apply ad_refine_syn_f__all with (L := L).
+    intros X HX. apply H0; auto; try fsetdec.
+  - apply ad_refine_syn_f__hole; auto.
+    apply ad_wf_pskl_strip_tvar with (α := α); auto.
+    clear - H HαF; fsetdec.
+  - apply ad_refine_syn_f__tophole_remove; auto.
+  - apply ad_refine_syn_f__tophole_fill with (L := L).
+    intros X HX.
+    apply (H0 X HX ((X ~ abind_tvar) ++ Θ1)); auto.
+  - apply ad_refine_syn_f__tophole_keep; auto.
+  - eapply ad_refine_syn_f__flex_l;
+      [ eapply binds_strip_mid; eauto; intro Hc; inversion Hc | auto ].
+  - eapply ad_refine_syn_f__flex_r;
+      [ eapply binds_strip_mid; eauto; intro Hc; inversion Hc | auto ].
+Qed.
+
+Lemma ad_refine_pskl_f_strip : forall F Θ1 α Θ2 Δ P Q,
+  ad_refine_pskl_f F (Θ1 ++ (α ~ abind_tvar) ++ Θ2) Δ P Q ->
+  α `in` F ->
+  α `in` Δ ->
+  ad_refine_pskl_f F (Θ1 ++ Θ2) Δ P Q.
+Proof.
+  intros * H.
+  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ2) as Θfull eqn:HeqΘ.
+  revert Θ1 HeqΘ.
+  induction H; intros Θ1 ->; intros HαF HαΔ.
+  - apply ad_refine_pskl_f__unit.
+  - apply ad_refine_pskl_f__var.
+    destruct H as [HΔ | Htv]; [ left; auto | ].
+    destruct (eq_var X α) as [->|Hne]; [ left; auto | right ].
+    eapply a_binds_tvar_strip_mid; eauto;
+      try (intro Hc; inversion Hc; subst; congruence);
+      try (intros τ0 Hc; inversion Hc).
+  - apply ad_refine_pskl_f__arrow; auto.
+  - apply ad_refine_pskl_f__all with (L := L).
+    intros X HX. apply H0; auto; try fsetdec.
+  - apply ad_refine_pskl_f__hole; auto.
+    apply ad_wf_pskl_strip_tvar with (α := α); auto.
+    clear - H HαF; fsetdec.
+  - apply ad_refine_pskl_f__tophole_remove; auto.
+  - apply ad_refine_pskl_f__tophole_fill with (L := L).
+    intros X HX.
+    apply (H0 X HX ((X ~ abind_tvar) ++ Θ1)); auto.
+  - apply ad_refine_pskl_f__tophole_keep; auto.
+  - eapply ad_refine_pskl_f__flex_l;
+      [ eapply binds_strip_mid; eauto; intro Hc; inversion Hc | auto ].
+  - eapply ad_refine_pskl_f__flex_r;
+      [ eapply binds_strip_mid; eauto; intro Hc; inversion Hc | auto ].
+Qed.
+
 Lemma ad_pat_consis_refine_pskl_mono : forall Ψ Θ S Q,
   ad_pat_consis Ψ Θ S Q ->
   a_wf_aenv Θ ->
