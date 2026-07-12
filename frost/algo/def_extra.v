@@ -199,8 +199,9 @@ Definition a_non_flex (Θ : aenv) (P : pskl) : Prop :=
   lc_pskl P /\ ~ a_flex Θ P.
 
 (* ===================================================================== *)
-(*  guessMono  (full-algo-spec.tex:479-491)                               *)
-(*  [guessMono P = (Ξ; A)]: fill each ghost with a fresh flexible          *)
+(*  guess^TY  (full-algo-spec.tex:479-491; the LaTeX source writes the     *)
+(*  \guessMono macro, which renders as guess^TY — macro.tex:1505)          *)
+(*  [guess^TY(P) = (Ξ; A)]: fill each ghost with a fresh flexible          *)
 (*  variable, drop universal ghosts.  [guess[SK] P = (·; P)] is [a_guess]. *)
 (*  NB: freshness of the generated [Ξ] is not carried by the relation;     *)
 (*  proofs needing it add an explicit freshness premise (paper: "fresh").  *)
@@ -226,8 +227,8 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
          (open_ptyp_wrt_ptyp A (ptyp_var_f α))) ->
     a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all A).
 
-(** [guess[N]{Q} = (Ξ'; Q')] (full-algo-spec.tex:1000): [guess[SK]] is the
-    identity; [guess[TY]] is [guessMono] read back into [pskl]. *)
+(** [guess^N(Q) = (Ξ'; Q')] (full-algo-spec.tex:1000): [guess^SK] is the
+    identity; [guess^TY] is [a_guess_mono] read back into [pskl]. *)
 Inductive a_guess : a_sub_mode -> pskl -> aenv -> pskl -> Prop :=
 | a_guess__sk : forall Q,
     a_guess a_sub_mode_sk Q nil Q
@@ -492,7 +493,7 @@ where "Θ ⊲ A ≈ᵘ B ⊣ Θ'" := (a_unify Θ A B Θ') : type_scope.
 
 (* [a_assign].  NB: the paper's [Assign-Assign] premise is written
    [unify(α̂[τ/β̂])(P[τ/β̂])] over [Θ0,Ξ], but [P] is a general skeleton (only
-   monotype-ified in [Assign-SolveM] via [guessMono]), so monotype-level
+   monotype-ified in [Assign-SolveM] via [guess^TY]), so monotype-level
    [unify] does not apply; we read it as CONTINUING the assignment on
    [P[τ/β̂]] with the [Θ0 | Ξ] split ([α̂ ≠ β̂] makes [α̂[τ/β̂] = α̂]). *)
 Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=

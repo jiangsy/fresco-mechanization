@@ -36,7 +36,8 @@ refuted — none so far)}.
 - Where: fig:alg-consistency `Assign-SolveM` (full-algo-spec.tex:1744);
   `Θ ⊢ ctx` (full-algo-spec.tex:224) and the entry grammar `α̂ := τ`
   (algorithmic.tex:61-65).
-- `guessMono` keeps universal quantifiers (`guessMono(∀α.P) = (β̄; ∀α.P')`),
+- `guess^TY` (the LaTeX source's `\guessMono`, macro.tex:1505) keeps
+  universal quantifiers (`guess^TY(∀α.P) = (β̄; ∀α.P')`),
   so `Assign-SolveM` may define `α̂ := ∀…` even though the entry grammar and
   `Θ ⊢ ctx` say definitions are monotypes `τ`.  Reachable e.g. from
   consistency `FlexL/FlexR` with a `∀`-shaped non-flex side.  Not yet

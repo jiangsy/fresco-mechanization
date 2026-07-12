@@ -337,7 +337,7 @@ Proof.
   intros * [[θ [Hid Hinc]] _] Hb. eauto using a_inc_binds_flex.
 Qed.
 
-(** [guessMono] emits a declaration-only fresh suffix. *)
+(** [guess^TY] emits a declaration-only fresh suffix. *)
 Lemma a_decls_app : forall Ξ1 Ξ2,
   a_decls Ξ1 -> a_decls Ξ2 -> a_decls (Ξ1 ++ Ξ2).
 Proof.
@@ -399,7 +399,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  guessMono is consistent with its input skeleton                        *)
+(*  guess^TY is consistent with its input skeleton                         *)
 (*  (the declarative content of Assign-SolveM's definition)               *)
 (* ===================================================================== *)
 
@@ -886,7 +886,7 @@ Proof.
       apply ad_pat_consis__tophole_drop.
       apply ad_pat_consis__var; [ fsetdec | ].
       right; left. unfold binds; left; reflexivity.
-  - (* Assign-SolveM : α̂ := guessMono(P) with fresh βs *)
+  - (* Assign-SolveM : α̂ := guess^TY(P) with fresh βs *)
     assert (Hβsd : a_decls βs) by (eapply a_guess_mono_decls; eauto).
     assert (Hle : (Ξ ++ (α ~ abind_flex_mono) ++ Θ0) ⊴
                   ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)).
