@@ -203,9 +203,12 @@ before changing any of them.
 - Comments document **why** an encoding is the way it is, not what
   the rule says (the paper says that). Cite paper rule names when a
   Coq constructor is non-obvious.
-- **Use `Admitted`, not `Axiom`.** Every `Admitted` carries a
-  comment explaining what's missing (research gap, paper-flagged,
-  re-encoding gap, etc.). [`PROGRESS.md`](PROGRESS.md) classifies them.
+- **The active build carries ZERO `Admitted` (and no `Axiom`).**  A lemma
+  that cannot be finished is ABORTED: delete it and leave a short
+  `RESTART NOTE` comment at its location (what it claimed, why it was
+  dropped, what a re-proof needs), plus a [`PROGRESS.md`](PROGRESS.md)
+  entry.  Work-in-progress admits may exist only in the working tree,
+  never in a commit.
 
 ## Common practices
 
