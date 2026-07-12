@@ -77,6 +77,21 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-12 (e) — fill-hygienic refinement scaffolding (∀-case crux 1)
+
+`ad_refine_syn_f` / `ad_refine_pskl_f` in prop_consis_sound.v: the
+refinement judgments with a set F forbidden in ghost fills (only the
+hole rules gain a side condition), plus `*_f_strip` (drop the opened
+ForallInh/ForallSyn binder's rigid entry from Θ given it is in F and Δ
+— the paper's implicit "by definition of refinement" strengthening;
+fills avoid it by hygiene, variable occurrences use Δ, definitions sit
+below it), `*_f_forget`, and `ad_wf_pskl_strip_tvar`.  The main
+induction will run primed with F := Δ1 ∪ Δ2.  REMAINING for part 1:
+primed copies of refl/Δ-mono/⊴-stability; tvar-rename lemmas for
+`ad_pat_consis`/`ad_refine_*_f` (crux 2: the ∀-cases' per-α coloured
+witness — close the witness at one fresh α, rename per instance); then
+the 14-case induction.
+
 ## 2026-07-12 (d) — appendix B part 1 support layer (prop_consis_sound.v)
 
 The pieces the flex cases of the aconsis-soundness main induction need
