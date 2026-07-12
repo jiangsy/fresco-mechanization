@@ -78,6 +78,8 @@ refuted — none so far)}.
   Δ1 ∪ Δ2", using these completions plus Assign-SkipRigid's occurs
   condition and the positional fact that Δ-binders sit above all
   flexible entries).
+
+## Resolved definition-sync findings (step 1 of the restart)
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the
 `is_tskl` untagged-∀ fix (A1), whose downstream effect invalidated the
 pre-restart `pskl_to_tskl` decorated witnesses (prop_safety machinery).
