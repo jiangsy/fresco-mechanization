@@ -77,6 +77,19 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-12 (f) — renaming layer + primed ports: part-1 prelude COMPLETE
+
+Crux 2 resolved (5ea381c, ba14da5, 8e0b350): `ad_pat_consis_rename_tvar`
+(binder's Θ-entry, mid-position), `ad_refine_{syn,pskl}_f_rename`
+(Δ-side, `add Y (remove α Δ)`; fills invariant since α is in the
+hygiene set), `ad_wf_pskl_rename_tvar`, subst/ftv-vs-embedding
+equations.  Primed ports: `_f_delta_mono`, `_f_refl(_inh)`, `_f_isub`,
+and `ad_pat_consis_refine_{syn,pskl}_f_mono` (hygiene inherited from
+the painted side + definitions — the paper's no-flex-depends-on-Δ
+problem invariant).  Every ingredient of the part-1 main induction is
+now Qed; NEXT session: the 14-case induction itself (assembly recipe
+in memory note remech-aconsis-main-induction-crux).
+
 ## 2026-07-12 (e) — fill-hygienic refinement scaffolding (∀-case crux 1)
 
 `ad_refine_syn_f` / `ad_refine_pskl_f` in prop_consis_sound.v: the
