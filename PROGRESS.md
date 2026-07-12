@@ -76,6 +76,16 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-12 — decl restoration complete (except prop_safety)
+
+`prop_stability` (incl. `d_typing_order_irrel`, 0 admits) and
+`prop_annotation` (1 pre-existing app-case admit) restored;
+`prop_skeleton` gained the repaired `subst_var` family.  The only decl file
+still `.legacy` is `prop_safety` — the skeleton-safety development whose
+`pskl_to_tskl` decorated witnesses are invalidated by sync fix A1; it gets
+the paper-faithful redo.  Build 🟢, 7/7 flagship `Print Assumptions`
+Closed.
+
 ## 2026-07-11 (b) — meta/decl-algo layer, first Qed, ⊴-algebra, notations
 
 - `algo/def_meta.v` (metasubstitutions, `a_tyequiv`, `a_inc`/`⊴`) and
