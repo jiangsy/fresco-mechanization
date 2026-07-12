@@ -66,13 +66,7 @@ Inductive a_suffix : aenv -> Prop :=
     a_suffix_binding b ->
     a_suffix ((a ~ b) ++ Ξ).
 
-(** Context well-formedness [Θ ⊢ ctx] (paper app:decl-in-algo-context). *)
-Inductive a_wf_aenv : aenv -> Prop :=
-| a_wf_aenv__nil : a_wf_aenv nil
-| a_wf_aenv__cons : forall a b Θ,
-    a_wf_aenv Θ ->
-    a `notin` dom Θ ->
-    a_wf_aenv ((a ~ b) ++ Θ).
+(* [Θ ⊢ ctx] is defined below, after the wf judgments its entries need. *)
 
 (** A type-variable occurrence in [Θ]: rigid, or a flexible declaration /
     definition (an occurrence of a defined [α̂] is still a variable; its
@@ -121,6 +115,38 @@ Inductive a_wf_pskl : aenv -> pskl -> Prop :=
 | a_wf_pskl__tophole : forall Θ P,
     a_wf_pskl Θ P ->
     a_wf_pskl Θ (pskl_tophole P).
+
+(** Context well-formedness [Θ ⊢ ctx] (full-algo-spec.tex:224): each
+    definition's body is a well-formed monotype in its tail, each term
+    variable's skeleton is well-formed in its tail; atom freshness is the
+    paper's ambient Barendregt convention, made explicit. *)
+Inductive a_wf_aenv : aenv -> Prop :=
+| a_wf_aenv__nil :
+    a_wf_aenv nil
+| a_wf_aenv__flex : forall α Θ,
+    α `notin` dom Θ ->
+    a_wf_aenv Θ ->
+    a_wf_aenv ((α ~ abind_flex_mono) ++ Θ)
+| a_wf_aenv__flex_def : forall α τ Θ,
+    α `notin` dom Θ ->
+    a_wf_ptyp Θ τ ->
+    mono_ptyp τ ->
+    a_wf_aenv Θ ->
+    a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ Θ)
+| a_wf_aenv__var : forall x P Θ,
+    x `notin` dom Θ ->
+    a_wf_pskl Θ P ->
+    a_wf_aenv Θ ->
+    a_wf_aenv ((x ~ abind_var_skl P) ++ Θ)
+| a_wf_aenv__var_typ : forall x A Θ,
+    x `notin` dom Θ ->
+    a_wf_ptyp Θ A ->
+    a_wf_aenv Θ ->
+    a_wf_aenv ((x ~ abind_var_typ A) ++ Θ)
+| a_wf_aenv__tvar : forall α Θ,
+    α `notin` dom Θ ->
+    a_wf_aenv Θ ->
+    a_wf_aenv ((α ~ abind_tvar) ++ Θ).
 
 (* ===================================================================== *)
 (*  Mode/input-skeleton compatibility  skmod[TY] / skmod[SK]              *)
