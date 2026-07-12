@@ -94,38 +94,11 @@ Proof.
   destruct (ptyp_is_mono A); eauto using is_value.
 Qed.
 
-(** Headline: erasing monotype lambda annotations preserves typing. *)
-Theorem erase_lam_mono_typing : forall Γ m e B,
-    Γ ⊢[ m ] e ⦂ B ->
-    Γ ⊢[ m ] (erase_lam_mono e) ⦂ B.
-Proof.
-  intros Γ m e B Hty. induction Hty; simpl.
-  - (* unit *) apply d_typing__unit.
-  - (* var *) apply d_typing__var; assumption.
-  - (* anno *) apply d_typing__anno; assumption.
-  - (* sub *) eapply d_typing__sub; [ eassumption | eassumption ].
-  - (* freeze *) apply d_typing__freeze; assumption.
-  - (* forall *) apply d_typing__forall with (L := L);
-      [ apply is_value_erase; assumption | assumption ].
-  - (* abs *) apply d_typing__abs with (L := L) (A := A) (B := B);
-      try assumption.
-    intros x Hx. rewrite <- erase_lam_mono_var. auto.
-  - (* abs_anno *) destruct (ptyp_is_mono A) eqn:Hmono.
-    + (* mono annotation: drop it, recover via d_typing__abs *)
-      assert (Hm : mono_ptyp A) by (apply ptyp_is_mono_sound;
-        [ eapply d_wf_ptyp_lc_loc; eassumption | assumption ]).
-      assert (HB1 : B1 = ptyp_to_btyp_inh A)
-        by (apply mono_btyp_to_ptyp_inv; assumption).
-      subst B1.
-      apply d_typing__abs with (L := L) (A := A) (B := B2); try assumption.
-      intros x Hx. rewrite <- erase_lam_mono_var. auto.
-    + (* non-monotype annotation: keep it *)
-      apply d_typing__abs_anno with (L := L) (A := A) (B1 := B1) (B2 := B2);
-        try assumption.
-      intros x Hx. rewrite <- erase_lam_mono_var. auto.
-  - (* app: routes through skeleton inference [d_pat]; see [erase_lam_mono_pat] *)
-    admit.
-Admitted.
+(* RESTART NOTE: the pre-restart [erase_lam_mono_typing] ("erasing monotype
+   lambda annotations preserves typing") lived here with an admitted [app]
+   case (needs bespoke skeleton lemmas).  Dropped per the no-admits policy —
+   see prop_annotation.v history / PROGRESS.md; re-prove it with the
+   paper-faithful skeleton machinery if the claim returns to the paper. *)
 
 (** Why ascriptions are NOT erased: [freeze e] has NO inference-mode typing,
     so an ascription [(e : A)] is the only way to give a [freeze] term a [ti]

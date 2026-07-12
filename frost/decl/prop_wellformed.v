@@ -763,11 +763,10 @@ Proof.
     inversion Hf; subst. assumption.
 Qed.
 
-Lemma d_typing_pat_preserves_wf :
-  (forall m Γ e B, d_typing m Γ e B -> d_wf_btyp Γ B) /\
-  (forall m Γ e Q, d_pat m Γ e Q -> d_wf_pskl Γ nil Q).
-Proof.
-Admitted.
+(* RESTART NOTE: the pre-restart scaffold [d_typing_pat_preserves_wf]
+   (typing/skeleton-inference outputs are well-formed) was an admitted stub
+   with no users; dropped per the no-admits policy.  Re-prove on demand when
+   the paper's proofs need output well-formedness. *)
 
 (** * Well-formedness consequences used by variable head-factoring.
 
