@@ -1327,3 +1327,199 @@ Proof.
     apply IHad_pat_consis; auto.
     rewrite ftvar_in_bskl_ptyp_syn. eauto.
 Qed.
+
+
+(* --------------------------------------------------------------------- *)
+(*  Θ-side renaming of the fill-hygienic judgments (ForallSyn/UnivGhost1  *)
+(*  cases: the tophole_fill-shaped components keep the binder rigid in    *)
+(*  the context, so the per-instance transport renames the Θ entry).      *)
+(* --------------------------------------------------------------------- *)
+
+Lemma ad_refine_syn_f_rename_ctx : forall F Θ1 α Θ0 Δ Q P Y,
+  ad_refine_syn_f F (Θ1 ++ (α ~ abind_tvar) ++ Θ0) Δ Q P ->
+  α `notin` dom (Θ1 ++ Θ0) ->
+  α `notin` Δ ->
+  Y `notin` F ->
+  (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
+     α `notin` ftvar_in_ptyp τ) ->
+  ad_refine_syn_f F (Θ1 ++ (Y ~ abind_tvar) ++ Θ0) Δ
+    (subst_bskl_in_bskl (bskl_var_f Y) α Q)
+    (subst_bskl_in_bskl (bskl_var_f Y) α P).
+Proof.
+  intros * H.
+  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
+  revert Θ1 HeqΘ.
+  induction H; intros Θ1 ->; intros Hdom HαΔ HYF Hdefs; simpl.
+  - (* unit *)
+    apply ad_refine_syn_f__unit.
+  - (* var *)
+    destruct_var_eqs.
+    + apply ad_refine_syn_f__var. right.
+      unfold a_binds_tvar. left.
+      unfold binds. apply in_or_app. right. left. reflexivity.
+    + apply ad_refine_syn_f__var.
+      destruct H as [HΔ | Htv]; [ left; auto | right ].
+      apply (@a_binds_tvar_insert_mid X Θ1 (Y ~ abind_tvar) Θ0).
+      eapply a_binds_tvar_strip_mid; eauto;
+        try (intro Hc; inversion Hc; subst; congruence);
+        try (intros τ0 Hc; inversion Hc).
+  - (* arrow *)
+    apply ad_refine_syn_f__arrow; auto.
+  - (* all *)
+    apply ad_refine_syn_f__all with (L := L `union` singleton α).
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+  - (* hole *)
+    rewrite subst_var_bskl_syn.
+    apply ad_refine_syn_f__hole.
+    + pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                    P (pskl_var_f Y) α) as Hup.
+      simpl in Hup. clear - H HYF Hup. fsetdec.
+    + apply ad_wf_pskl_rename_tvar; auto.
+  - (* tophole_remove *)
+    apply ad_refine_syn_f__tophole_remove; auto.
+  - (* tophole_fill *)
+    apply ad_refine_syn_f__tophole_fill
+      with (L := L `union` singleton α).
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+    replace (bskl_tophole (subst_bskl_in_bskl (bskl_var_f Y) α Q))
+      with (subst_bskl_in_bskl (bskl_var_f Y) α (bskl_tophole Q))
+      by reflexivity.
+    apply (H0 X ltac:(auto) ((X ~ abind_tvar) ++ Θ1)); auto.
+    all: try (simpl; repeat rewrite dom_app in *; fsetdec).
+    all: intros β τ Hb;
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eauto ].
+  - (* tophole_keep *)
+    apply ad_refine_syn_f__tophole_keep;
+      auto using guarded_bskl_subst_var.
+  - (* flex_l *)
+    assert (Hb' : binds α0 (abind_flex_mono_def τ) (Θ1 ++ Θ0)).
+    { eapply binds_strip_mid; eauto. intro Hc; inversion Hc. }
+    assert (Hαne : α0 <> α).
+    { intro; subst. apply binds_In in Hb'. fsetdec. }
+    assert (Hfr : α `notin` ftvar_in_bskl (ptyp_to_bskl_syn τ)).
+    { rewrite ftvar_in_bskl_ptyp_syn. eauto. }
+    destruct_var_eqs.
+    apply ad_refine_syn_f__flex_l with (τ := τ);
+      [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
+                 Θ1 (Y ~ abind_tvar) Θ0); auto | ].
+    rewrite <- (subst_bskl_in_bskl_fresh_eq
+                  (ptyp_to_bskl_syn τ) (bskl_var_f Y) α Hfr).
+    auto.
+  - (* flex_r *)
+    assert (Hb' : binds α0 (abind_flex_mono_def τ) (Θ1 ++ Θ0)).
+    { eapply binds_strip_mid; eauto. intro Hc; inversion Hc. }
+    assert (Hαne : α0 <> α).
+    { intro; subst. apply binds_In in Hb'. fsetdec. }
+    assert (Hfr : α `notin` ftvar_in_bskl (ptyp_to_bskl_syn τ)).
+    { rewrite ftvar_in_bskl_ptyp_syn. eauto. }
+    destruct_var_eqs.
+    apply ad_refine_syn_f__flex_r with (τ := τ);
+      [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
+                 Θ1 (Y ~ abind_tvar) Θ0); auto | ].
+    rewrite <- (subst_bskl_in_bskl_fresh_eq
+                  (ptyp_to_bskl_syn τ) (bskl_var_f Y) α Hfr).
+    auto.
+Qed.
+
+Lemma ad_refine_pskl_f_rename_ctx : forall F Θ1 α Θ0 Δ P Q Y,
+  ad_refine_pskl_f F (Θ1 ++ (α ~ abind_tvar) ++ Θ0) Δ P Q ->
+  α `notin` dom (Θ1 ++ Θ0) ->
+  α `notin` Δ ->
+  Y `notin` F ->
+  (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
+     α `notin` ftvar_in_ptyp τ) ->
+  ad_refine_pskl_f F (Θ1 ++ (Y ~ abind_tvar) ++ Θ0) Δ
+    (subst_pskl_in_pskl (pskl_var_f Y) α P)
+    (subst_pskl_in_pskl (pskl_var_f Y) α Q).
+Proof.
+  intros * H.
+  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
+  revert Θ1 HeqΘ.
+  induction H; intros Θ1 ->; intros Hdom HαΔ HYF Hdefs; simpl.
+  - (* unit *)
+    apply ad_refine_pskl_f__unit.
+  - (* var *)
+    destruct_var_eqs.
+    + apply ad_refine_pskl_f__var. right.
+      unfold a_binds_tvar. left.
+      unfold binds. apply in_or_app. right. left. reflexivity.
+    + apply ad_refine_pskl_f__var.
+      destruct H as [HΔ | Htv]; [ left; auto | right ].
+      apply (@a_binds_tvar_insert_mid X Θ1 (Y ~ abind_tvar) Θ0).
+      eapply a_binds_tvar_strip_mid; eauto;
+        try (intro Hc; inversion Hc; subst; congruence);
+        try (intros τ0 Hc; inversion Hc).
+  - (* arrow *)
+    apply ad_refine_pskl_f__arrow; auto.
+  - (* all *)
+    apply ad_refine_pskl_f__all with (L := L `union` singleton α).
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      auto using lc_pskl_var_f.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      auto using lc_pskl_var_f.
+  - (* hole *)
+    apply ad_refine_pskl_f__hole.
+    + pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                    Q (pskl_var_f Y) α) as Hup.
+      simpl in Hup. clear - H HYF Hup. fsetdec.
+    + apply ad_wf_pskl_rename_tvar; auto.
+  - (* tophole_remove *)
+    apply ad_refine_pskl_f__tophole_remove; auto.
+  - (* tophole_fill *)
+    apply ad_refine_pskl_f__tophole_fill
+      with (L := L `union` singleton α).
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      auto using lc_pskl_var_f.
+    replace (pskl_tophole (subst_pskl_in_pskl (pskl_var_f Y) α P))
+      with (subst_pskl_in_pskl (pskl_var_f Y) α (pskl_tophole P))
+      by reflexivity.
+    apply (H0 X ltac:(auto) ((X ~ abind_tvar) ++ Θ1)); auto.
+    all: try (simpl; repeat rewrite dom_app in *; fsetdec).
+    all: intros β τ Hb;
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eauto ].
+  - (* tophole_keep *)
+    apply ad_refine_pskl_f__tophole_keep;
+      auto using guarded_pskl_subst_var.
+  - (* flex_l *)
+    assert (Hb' : binds α0 (abind_flex_mono_def τ) (Θ1 ++ Θ0)).
+    { eapply binds_strip_mid; eauto. intro Hc; inversion Hc. }
+    assert (Hαne : α0 <> α).
+    { intro; subst. apply binds_In in Hb'. fsetdec. }
+    assert (Hfr : α `notin` ftvar_in_pskl (ptyp_to_pskl τ)).
+    { rewrite ftvar_in_ptyp_to_pskl. eauto. }
+    destruct_var_eqs.
+    apply ad_refine_pskl_f__flex_l with (τ := τ);
+      [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
+                 Θ1 (Y ~ abind_tvar) Θ0); auto | ].
+    rewrite <- (subst_pskl_in_pskl_fresh_eq
+                  (ptyp_to_pskl τ) (pskl_var_f Y) α Hfr).
+    auto.
+  - (* flex_r *)
+    assert (Hb' : binds α0 (abind_flex_mono_def τ) (Θ1 ++ Θ0)).
+    { eapply binds_strip_mid; eauto. intro Hc; inversion Hc. }
+    assert (Hαne : α0 <> α).
+    { intro; subst. apply binds_In in Hb'. fsetdec. }
+    assert (Hfr : α `notin` ftvar_in_pskl (ptyp_to_pskl τ)).
+    { rewrite ftvar_in_ptyp_to_pskl. eauto. }
+    destruct_var_eqs.
+    apply ad_refine_pskl_f__flex_r with (τ := τ);
+      [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
+                 Θ1 (Y ~ abind_tvar) Θ0); auto | ].
+    rewrite <- (subst_pskl_in_pskl_fresh_eq
+                  (ptyp_to_pskl τ) (pskl_var_f Y) α Hfr).
+    auto.
+Qed.
