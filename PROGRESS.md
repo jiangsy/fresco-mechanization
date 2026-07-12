@@ -77,6 +77,22 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-13 — unifyvar/assignvar prose-completions IMPLEMENTED (user-directed)
+
+Per the user's design call (used-name set, not full-context visibility;
+cofinite quantification a la the worklist mechanization's
+a_wl_red__sub_arrow2 does not fit because the created names escape into
+the output context): `a_flex_tvar` premises on `a_unify__flex_l/_flex_r`;
+`a_assign` now carries a used-name set F accumulated by the
+entry-walking rules, with `Assign-SolveM` requiring `uniq β̄` and
+`dom β̄` fresh from `F ∪ {α̂} ∪ dom(Ξ,Θ0)`.  Paper-shaped judgment =
+the F=∅ notation, so the consis rules and decorated defs are textually
+unchanged.  Full build green (a_assign_sound generalized over F; two
+test sites discharge the new premises).  REMAINING before the part-1
+main induction: the invariant-preservation package (no_flex_dep +
+flex_above_free positional invariant + preservation through
+unify/assign) — design recorded in memory.
+
 ## 2026-07-12 (g) — Θ-side renames + a finding on the part-1 invariant
 
 `ad_refine_{syn,pskl}_f_rename_ctx` (7cc630b): the ForallSyn/UnivGhost1
