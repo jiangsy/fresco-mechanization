@@ -1116,6 +1116,89 @@ Proof.
     auto.
 Qed.
 
+(* --------------------------------------------------------------------- *)
+(*  Reflexivity and ⊴-stability of the fill-hygienic judgments             *)
+(*  (ports of prop_refine / prop_stability; hole fills are trivial or     *)
+(*   carried verbatim)                                                    *)
+(* --------------------------------------------------------------------- *)
+
+Lemma ad_refine_syn_f_refl_inh : forall F Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  ad_refine_syn_f F Θ Δ (pskl_to_bskl_inh P) (pskl_to_bskl_inh P).
+Proof.
+  intros F Θ Δ P H; induction H; simpl.
+  - apply ad_refine_syn_f__unit.
+  - apply ad_refine_syn_f__var; auto.
+  - apply ad_refine_syn_f__arrow; auto.
+  - apply ad_refine_syn_f__all with (L := L).
+    intros X HX.
+    repeat rewrite <- pskl_to_bskl_inh_open. auto.
+  - replace (pskl_to_bskl_inh pskl_hole)
+      with (pskl_to_bskl_syn pskl_hole) at 2 by reflexivity.
+    apply ad_refine_syn_f__hole;
+      [ simpl; fsetdec | apply ad_wf_pskl__hole ].
+  - apply ad_refine_syn_f__tophole_keep;
+      auto using guarded_pskl_to_bskl_inh.
+    apply ad_refine_syn_f_delta_mono with (Δ0 := empty); auto.
+    fsetdec.
+Qed.
+
+Lemma ad_refine_pskl_f_refl : forall F Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  ad_refine_pskl_f F Θ Δ P P.
+Proof.
+  intros F Θ Δ P H; induction H; simpl.
+  - apply ad_refine_pskl_f__unit.
+  - apply ad_refine_pskl_f__var; auto.
+  - apply ad_refine_pskl_f__arrow; auto.
+  - apply ad_refine_pskl_f__all with (L := L). auto.
+  - apply ad_refine_pskl_f__hole;
+      [ simpl; fsetdec | apply ad_wf_pskl__hole ].
+  - apply ad_refine_pskl_f__tophole_keep; auto.
+    apply ad_refine_pskl_f_delta_mono with (Δ0 := empty); auto.
+    fsetdec.
+Qed.
+
+Lemma ad_refine_syn_f_isub : forall F Θ Δ Q P,
+  ad_refine_syn_f F Θ Δ Q P ->
+  forall Θ', Θ ⊴ Θ' ->
+  ad_refine_syn_f F Θ' Δ Q P.
+Proof.
+  intros F Θ Δ Q P H; induction H; intros Θ' Hle.
+  - apply ad_refine_syn_f__unit.
+  - apply ad_refine_syn_f__var.
+    destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
+  - apply ad_refine_syn_f__arrow; auto.
+  - eapply ad_refine_syn_f__all with (L := L); eauto.
+  - apply ad_refine_syn_f__hole; eauto using ad_wf_pskl_isub.
+  - apply ad_refine_syn_f__tophole_remove; auto.
+  - eapply ad_refine_syn_f__tophole_fill with (L := L).
+    intros X HX. eauto using a_isub_cons_tvar.
+  - apply ad_refine_syn_f__tophole_keep; auto.
+  - eapply ad_refine_syn_f__flex_l; eauto using a_isub_binds_flex_def.
+  - eapply ad_refine_syn_f__flex_r; eauto using a_isub_binds_flex_def.
+Qed.
+
+Lemma ad_refine_pskl_f_isub : forall F Θ Δ P Q,
+  ad_refine_pskl_f F Θ Δ P Q ->
+  forall Θ', Θ ⊴ Θ' ->
+  ad_refine_pskl_f F Θ' Δ P Q.
+Proof.
+  intros F Θ Δ P Q H; induction H; intros Θ' Hle.
+  - apply ad_refine_pskl_f__unit.
+  - apply ad_refine_pskl_f__var.
+    destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
+  - apply ad_refine_pskl_f__arrow; auto.
+  - eapply ad_refine_pskl_f__all with (L := L); eauto.
+  - apply ad_refine_pskl_f__hole; eauto using ad_wf_pskl_isub.
+  - apply ad_refine_pskl_f__tophole_remove; auto.
+  - eapply ad_refine_pskl_f__tophole_fill with (L := L).
+    intros X HX. eauto using a_isub_cons_tvar.
+  - apply ad_refine_pskl_f__tophole_keep; auto.
+  - eapply ad_refine_pskl_f__flex_l; eauto using a_isub_binds_flex_def.
+  - eapply ad_refine_pskl_f__flex_r; eauto using a_isub_binds_flex_def.
+Qed.
+
 Lemma ad_pat_consis_refine_pskl_mono : forall Ψ Θ S Q,
   ad_pat_consis Ψ Θ S Q ->
   a_wf_aenv Θ ->
@@ -1150,4 +1233,97 @@ Proof.
     unfold ptyp_to_bskl_syn in IHad_pat_consis.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in IHad_pat_consis.
     exact IHad_pat_consis.
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  Fill-hygienic variants of the consis→refine lemmas (flex cases of     *)
+(*  the main induction).  The hygiene condition is inherited from the     *)
+(*  painted side and the context's definitions (the problem invariant:    *)
+(*  no flexible variable depends on Δ1/Δ2).                               *)
+(* --------------------------------------------------------------------- *)
+
+Lemma ad_pat_consis_refine_syn_f_mono : forall Ψ Θ S Q,
+  ad_pat_consis Ψ Θ S Q ->
+  a_wf_aenv Θ ->
+  mono_bskl Q ->
+  forall F Δ,
+  AtomSetImpl.inter F (ftvar_in_bskl Q) [=] empty ->
+  (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+     AtomSetImpl.inter F (ftvar_in_ptyp τ) [=] empty) ->
+  ad_refine_syn_f F Θ Δ (pskl_to_bskl_inh (uskl_to_pskl S)) Q.
+Proof.
+  intros Ψ Θ S Q H Hwf; induction H; intros HmQ F Δ HFQ HFdefs; simpl;
+    try solve [ inversion HmQ ].
+  - (* unit *)
+    apply ad_refine_syn_f__unit.
+  - (* var (rigid) *)
+    apply ad_refine_syn_f__var; auto.
+  - (* arrow *)
+    inversion HmQ; subst.
+    simpl in HFQ.
+    apply ad_refine_syn_f__arrow;
+      [ apply IHad_pat_consis1 | apply IHad_pat_consis2 ];
+      auto; clear - HFQ; fsetdec.
+  - (* hole *)
+    rewrite <- (mono_bskl_inh_syn P HmQ).
+    apply ad_refine_syn_f__hole; auto.
+    rewrite <- ftvar_in_bskl_inh. exact HFQ.
+  - (* tophole_drop *)
+    apply ad_refine_syn_f__tophole_remove; auto.
+  - (* flex_l *)
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    apply ad_refine_syn_f__flex_l with (τ := τ); [ exact H | ].
+    specialize (IHad_pat_consis Hwf HmQ F Δ HFQ HFdefs).
+    rewrite uskl_to_pskl_ptyp in IHad_pat_consis.
+    rewrite (mono_inh_eq_syn Hmτ) in IHad_pat_consis.
+    exact IHad_pat_consis.
+  - (* flex_r *)
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    apply ad_refine_syn_f__flex_r with (τ := τ); [ exact H | ].
+    apply IHad_pat_consis; auto using mono_ptyp_to_bskl_syn.
+    rewrite ftvar_in_bskl_ptyp_syn. eauto.
+Qed.
+
+Lemma ad_pat_consis_refine_pskl_f_mono : forall Ψ Θ S Q,
+  ad_pat_consis Ψ Θ S Q ->
+  a_wf_aenv Θ ->
+  mono_bskl Q ->
+  forall F Δ,
+  AtomSetImpl.inter F (ftvar_in_bskl Q) [=] empty ->
+  (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+     AtomSetImpl.inter F (ftvar_in_ptyp τ) [=] empty) ->
+  ad_refine_pskl_f F Θ Δ (uskl_to_pskl S) (bskl_to_pskl Q).
+Proof.
+  intros Ψ Θ S Q H Hwf; induction H; intros HmQ F Δ HFQ HFdefs; simpl;
+    try solve [ inversion HmQ ].
+  - (* unit *)
+    apply ad_refine_pskl_f__unit.
+  - (* var (rigid) *)
+    apply ad_refine_pskl_f__var; auto.
+  - (* arrow *)
+    inversion HmQ; subst.
+    simpl in HFQ.
+    apply ad_refine_pskl_f__arrow;
+      [ apply IHad_pat_consis1 | apply IHad_pat_consis2 ];
+      auto; clear - HFQ; fsetdec.
+  - (* hole *)
+    rewrite bskl_to_pskl_pskl_to_bskl_inh.
+    apply ad_refine_pskl_f__hole; auto.
+    rewrite <- ftvar_in_bskl_inh. exact HFQ.
+  - (* tophole_drop *)
+    apply ad_refine_pskl_f__tophole_remove; auto.
+  - (* flex_l *)
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    apply ad_refine_pskl_f__flex_l with (τ := τ); [ exact H | ].
+    specialize (IHad_pat_consis Hwf HmQ F Δ HFQ HFdefs).
+    rewrite uskl_to_pskl_ptyp in IHad_pat_consis.
+    exact IHad_pat_consis.
+  - (* flex_r *)
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    apply ad_refine_pskl_f__flex_r with (τ := τ); [ exact H | ].
+    specialize (IHad_pat_consis Hwf (mono_ptyp_to_bskl_syn Hmτ) F Δ).
+    unfold ptyp_to_bskl_syn in IHad_pat_consis at 2.
+    rewrite bskl_to_pskl_pskl_to_bskl_syn in IHad_pat_consis.
+    apply IHad_pat_consis; auto.
+    rewrite ftvar_in_bskl_ptyp_syn. eauto.
 Qed.
