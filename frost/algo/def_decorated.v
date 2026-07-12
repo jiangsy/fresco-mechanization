@@ -111,17 +111,17 @@ Inductive a_consistag :
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] (uskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ0
 | a_consistag__flex : forall Δ1 Δ2 Ψ Θ0 Θ1 α β,               (* Flex *)
-    a_unify Θ0 (ptyp_var_f α) (ptyp_var_f β) Θ1 ->
+    Θ0 ⊲ (ptyp_var_f α) ≈ᵘ (ptyp_var_f β) ⊣ Θ1 ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f β) | Ψ ] (uskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ1
 | a_consistag__flex_l : forall Δ1 Δ2 Ψ Θ0 Θ1 α P0,            (* FlexL *)
     a_non_flex Θ0 P0 ->
-    a_assign Θ0 nil α P0 Θ1 ->
+    Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] (uskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ1
 | a_consistag__flex_r : forall Δ1 Δ2 Ψ Θ0 Θ1 α S,             (* FlexR *)
     a_non_flex Θ0 ⌊ S ⌋ˢ ->
-    a_assign Θ0 nil α ⌊ S ⌋ˢ Θ1 ->
+    Θ0 ⊲[ nil ] α ≔ ⌊ S ⌋ˢ ⊣ Θ1 ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] S ≈ (pskl_var_f α) ⊣ Θ1
 (* — decorated rules (fig:decorated-alg-consistency) — *)

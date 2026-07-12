@@ -183,7 +183,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_unify_sound : forall Θ0 A B Θ1,
-  a_unify Θ0 A B Θ1 ->
+  Θ0 ⊲ A ≈ᵘ B ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   mono_ptyp A ->
   mono_ptyp B ->
@@ -870,7 +870,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_assign_sound : forall Θ0 Ξ α P Θ1,
-  a_assign Θ0 Ξ α P Θ1 ->
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (forall X, X `in` ftvar_in_pskl P -> a_binds_tvar X (Ξ ++ Θ0)) ->

@@ -83,7 +83,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
-  a_consis Δ1 Δ2 Θ0 P0 P Q Θ1 ->
+  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
   Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ≈ Q ⊣ Θ1.
 Proof.
   intros * Hc; induction Hc; simpl.
