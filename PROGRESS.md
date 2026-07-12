@@ -45,6 +45,7 @@ excluded from the build); mine them when re-proving.
 **B. consistency-proofs.tex** (§Consistency)
 - ⬜ Soundness of decorated consistency
 - ✅ Decorating algorithmic consistency (`a_consis_decorate`, `algo/prop_decorate.v`); ⬜ Consistency decoration
+- ✅ Soundness of Consistency parts 2–3 (`a_unify_sound` / `a_assign_sound`, `algo/prop_flex.v` — the unifyvar/assignvar halves of thm:sound-consistency); ⬜ part 1 (the aconsis main induction)
 - ⬜ Consistency constraint decoration for variables
 - ⬜ Completeness of consistency constraint collection & solving (+ for variables)
 - ⬜ Soundness of Consistency (Lemma soundConsistency, 3 parts: consis / unifyvar / assignvar)
@@ -75,6 +76,18 @@ excluded from the build); mine them when re-proving.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-07-13 — flexible-variable soundness complete (thm:sound-consistency 2–3)
+
+`algo/prop_flex.v` (1056 lines, all Qed): `a_unify_sound` and
+`a_assign_sound` with their full support stack — ⊴ cons-congruences and
+prefix machinery for the `Θ₀∣Ξ` split, definition-unfolding/folding
+(`a_tyequiv_subst_def`, `ad_pat_consis_fold_def`), `a_guess_mono_consis`,
+binds-monotone weakening of the Θ-level judgments, and the wf bookkeeping
+(`a_wf_aenv_strip_mid/_move_decl/_mid_def_inv`).  Also
+`docs/PAPER-GAPS.md` (canonical paper-flagged findings registry; rule 2
+points there).  NEXT: appendix B part 1 — the `aconsis` soundness main
+induction, then Soundness of decorated consistency.
 
 ## 2026-07-12 — decl restoration complete (except prop_safety)
 
