@@ -32,18 +32,19 @@ refuted — none so far)}.
   (algo/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
-## WATCH — Assign-SolveM can store a polymorphic definition
-- Where: fig:alg-consistency `Assign-SolveM` (full-algo-spec.tex:1744);
-  `Θ ⊢ ctx` (full-algo-spec.tex:224) and the entry grammar `α̂ := τ`
-  (algorithmic.tex:61-65).
-- `guess^TY` (the LaTeX source's `\guessMono`, macro.tex:1505) keeps
-  universal quantifiers (`guess^TY(∀α.P) = (β̄; ∀α.P')`),
-  so `Assign-SolveM` may define `α̂ := ∀…` even though the entry grammar and
-  `Θ ⊢ ctx` say definitions are monotypes `τ`.  Reachable e.g. from
-  consistency `FlexL/FlexR` with a `∀`-shaped non-flex side.  Not yet
-  confirmed to break any lemma (the mech's `abind_flex_mono_def` stores any
-  `ptyp`, and `a_assign` soundness does not conclude `Θ ⊢ ctx`); if a proof
-  ever needs `Θ ⊢ ctx` preservation across `assignvar`, this becomes a GAP.
+## RESOLVED (was WATCH) — Assign-SolveM and polymorphic definitions
+- Where: fig:alg-consistency `Assign-SolveM` (full-algo-spec.tex:1744).
+- Earlier concern: `guess^TY` keeps universal quantifiers, so the rule
+  seemed able to define `α̂ := ∀…` against the entry grammar `α̂ := τ`.
+- Resolution (user-pointed): the rule binds the result to the SORTED
+  monotype metavariable `τ` — under the paper's metavariable convention the
+  premise `guess^TY(P) = (β̄; τ)` only matches when the result IS a
+  monotype (hence Solve-M).  On a polytype result no assignvar rule
+  applies and the algorithm fails, which is correct: a monomorphic `α̂` has
+  no polytype solution.  The MECH rule was the unfaithful one (missing the
+  mono constraint); fixed by adding `mono_ptyp τ` to `a_assign__solve_m`.
+  Consequently every stored definition is a monotype and `Θ ⊢ ctx` is
+  preservable across the algorithm.
 
 ## Resolved definition-sync findings (step 1 of the restart)
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the

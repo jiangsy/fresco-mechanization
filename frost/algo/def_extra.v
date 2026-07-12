@@ -503,6 +503,10 @@ Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_assign__solve_m : forall Θ0 Ξ α P βs τ,               (* Assign-SolveM *)
     α `notin` ftvar_in_pskl P ->
     a_guess_mono Θ0 P βs τ ->
+    (* the paper binds the result to the SORTED metavariable τ: the rule
+       applies only when guess^TY returns a monotype (hence Solve-M);
+       otherwise assignvar fails — a monomorphic α̂ has no polytype solution *)
+    mono_ptyp τ ->
     ((α ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
       ⊣ ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)
 | a_assign__assign : forall Θ0 Θ1 Ξ α β τ P,              (* Assign-Assign *)
