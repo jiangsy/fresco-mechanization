@@ -869,8 +869,8 @@ Qed.
 (*  the assigned skeleton is consistent with the variable in Θ1.          *)
 (* ===================================================================== *)
 
-Lemma a_assign_sound : forall Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_sound : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (forall X, X `in` ftvar_in_pskl P -> a_binds_tvar X (Ξ ++ Θ0)) ->

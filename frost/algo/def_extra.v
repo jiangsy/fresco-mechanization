@@ -28,9 +28,9 @@ Reserved Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'"
    Q at level 0, Θ' at level 0, no associativity).
 Reserved Notation "Θ ⊲ A ≈ᵘ B ⊣ Θ'"
   (at level 70, A at level 0, B at level 0, Θ' at level 0, no associativity).
-Reserved Notation "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'"
-  (at level 70, Ξ at level 0, α at level 0, P at level 0, Θ' at level 0,
-   no associativity).
+Reserved Notation "Θ ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ'"
+  (at level 70, F at level 0, Ξ at level 0, α at level 0, P at level 0,
+   Θ' at level 0, no associativity).
 Reserved Notation "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'"
   (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0,
    no associativity).
@@ -197,6 +197,12 @@ Inductive a_flex : aenv -> pskl -> Prop :=
 
 Definition a_non_flex (Θ : aenv) (P : pskl) : Prop :=
   lc_pskl P /\ ~ a_flex Θ P.
+
+(* [α̂ ∈ Θ] as a flexible variable — the paper's hatted metavariable
+   convention, made explicit where a rule's variable must be hatted. *)
+Definition a_flex_tvar (Θ : aenv) (α : atom) : Prop :=
+  binds α abind_flex_mono Θ \/
+  (exists τ, binds α (abind_flex_mono_def τ) Θ).
 
 (* ===================================================================== *)
 (*  guess^TY  (full-algo-spec.tex:479-491; the LaTeX source writes the     *)
@@ -469,10 +475,13 @@ Inductive a_unify : aenv -> ptyp -> ptyp -> aenv -> Prop :=
     Θ0 ⊲ (ptyp_var_f α) ≈ᵘ (ptyp_var_f α) ⊣ Θ0
 | a_unify__flex_l : forall Θ0 α β,                         (* Flex-Flex-L *)
     α <> β ->
+    (* hatted payload (paper metavariable convention, cf. PAPER-GAPS) *)
+    a_flex_tvar Θ0 β ->
     ((α ~ abind_flex_mono) ++ Θ0) ⊲ (ptyp_var_f α) ≈ᵘ (ptyp_var_f β)
       ⊣ ((α ~ abind_flex_mono_def (ptyp_var_f β)) ++ Θ0)
 | a_unify__flex_r : forall Θ0 α β,                         (* Flex-Flex-R *)
     α <> β ->
+    a_flex_tvar Θ0 α ->
     ((β ~ abind_flex_mono) ++ Θ0) ⊲ (ptyp_var_f α) ≈ᵘ (ptyp_var_f β)
       ⊣ ((β ~ abind_flex_mono_def (ptyp_var_f α)) ++ Θ0)
 | a_unify__flex_assign : forall Θ0 Θ1 γ τ A B,             (* Flex-Flex-Assign *)
@@ -495,48 +504,63 @@ where "Θ ⊲ A ≈ᵘ B ⊣ Θ'" := (a_unify Θ A B Θ') : type_scope.
    [unify(α̂[τ/β̂])(P[τ/β̂])] over [Θ0,Ξ], but [P] is a general skeleton (only
    monotype-ified in [Assign-SolveM] via [guess^TY]), so monotype-level
    [unify] does not apply; we read it as CONTINUING the assignment on
-   [P[τ/β̂]] with the [Θ0 | Ξ] split ([α̂ ≠ β̂] makes [α̂[τ/β̂] = α̂]). *)
-Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
-| a_assign__univ_ghost_id : forall Θ0 α,                  (* Assign-UnivGhost-Id *)
-    ((α ~ abind_flex_mono) ++ Θ0) ⊲[ nil ] α ≔ (pskl_tophole (pskl_var_f α))
+   [P[τ/β̂]] with the [Θ0 | Ξ] split ([α̂ ≠ β̂] makes [α̂[τ/β̂] = α̂]).
+
+   Prose-completion (PAPER-GAPS): the paper's "fresh β̄" in Assign-SolveM
+   means globally fresh, but the solve node only sees its local tail.  The
+   judgment therefore carries a USED-NAME set [F], accumulated by the rules
+   that walk past an entry, so the freshness side condition is local: at
+   the solve node, [F ∪ {α̂} ∪ dom(Ξ,Θ0)] covers the original context.
+   The paper-shaped form (F = ∅ at the root) is the notation below. *)
+Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
+| a_assign__univ_ghost_id : forall F Θ0 α,                (* Assign-UnivGhost-Id *)
+    ((α ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ nil ] α ≔ (pskl_tophole (pskl_var_f α))
       ⊣ ((α ~ abind_flex_mono) ++ Θ0)
-| a_assign__solve_m : forall Θ0 Ξ α P βs τ,               (* Assign-SolveM *)
+| a_assign__solve_m : forall F Θ0 Ξ α P βs τ,             (* Assign-SolveM *)
     α `notin` ftvar_in_pskl P ->
     a_guess_mono Θ0 P βs τ ->
     (* the paper binds the result to the SORTED metavariable τ: the rule
        applies only when guess^TY returns a monotype (hence Solve-M);
        otherwise assignvar fails — a monomorphic α̂ has no polytype solution *)
     mono_ptyp τ ->
-    ((α ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
+    (* the paper's "fresh β̄" (prose-completion, cf. PAPER-GAPS) *)
+    uniq βs ->
+    (forall γ, γ `in` dom βs ->
+       γ `notin` (F `union` add α (dom (Ξ ++ Θ0)))) ->
+    ((α ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)
-| a_assign__assign : forall Θ0 Θ1 Ξ α β τ P,              (* Assign-Assign *)
-    Θ0 ⊲[ Ξ ] α ≔ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ⊣ Θ1 ->
-    ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ Ξ ] α ≔ P
+| a_assign__assign : forall F Θ0 Θ1 Ξ α β τ P,            (* Assign-Assign *)
+    Θ0 ⊲[ (add β F) ][ Ξ ] α ≔ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ⊣ Θ1 ->
+    ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((β ~ abind_flex_mono_def τ) ++ Θ1)
-| a_assign__depend : forall Θ0 Θ1 Ξ α β P,                (* Assign-Depend *)
+| a_assign__depend : forall F Θ0 Θ1 Ξ α β P,              (* Assign-Depend *)
     α <> β ->
     β `in` ftvar_in_pskl P ->
-    Θ0 ⊲[ (β ~ abind_flex_mono) ++ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ Θ1
-| a_assign__skip : forall Θ0 Θ1 Ξ α β P,                  (* Assign-Skip *)
+    Θ0 ⊲[ F ][ (β ~ abind_flex_mono) ++ Ξ ] α ≔ P ⊣ Θ1 ->
+    ((β ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1
+| a_assign__skip : forall F Θ0 Θ1 Ξ α β P,                (* Assign-Skip *)
     α <> β ->
     β `notin` ftvar_in_pskl P ->
-    Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
+    Θ0 ⊲[ (add β F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
+    ((β ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((β ~ abind_flex_mono) ++ Θ1)
-| a_assign__skip_rigid : forall Θ0 Θ1 Ξ α β P,            (* Assign-SkipRigid *)
+| a_assign__skip_rigid : forall F Θ0 Θ1 Ξ α β P,          (* Assign-SkipRigid *)
     β `notin` ftvar_in_pskl P ->
-    Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((β ~ abind_tvar) ++ Θ0) ⊲[ Ξ ] α ≔ P ⊣ ((β ~ abind_tvar) ++ Θ1)
-| a_assign__skip_tm_var : forall Θ0 Θ1 Ξ α x Q P,         (* Assign-SkipTmVar *)
-    Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((x ~ abind_var_typ Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
+    Θ0 ⊲[ (add β F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
+    ((β ~ abind_tvar) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P ⊣ ((β ~ abind_tvar) ++ Θ1)
+| a_assign__skip_tm_var : forall F Θ0 Θ1 Ξ α x Q P,       (* Assign-SkipTmVar *)
+    Θ0 ⊲[ (add x F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
+    ((x ~ abind_var_typ Q) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((x ~ abind_var_typ Q) ++ Θ1)
-| a_assign__skip_tm_skl : forall Θ0 Θ1 Ξ α x Q P,         (* Assign-SkipTmVar (skl) *)
-    Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
-    ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
+| a_assign__skip_tm_skl : forall F Θ0 Θ1 Ξ α x Q P,       (* Assign-SkipTmVar (skl) *)
+    Θ0 ⊲[ (add x F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
+    ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((x ~ abind_var_skl Q) ++ Θ1)
-where "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'" := (a_assign Θ Ξ α P Θ') : type_scope.
+where "Θ ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ'" := (a_assign F Θ Ξ α P Θ') : type_scope.
+
+(* Paper-shaped form: no used names yet at the root. *)
+Notation "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'" := (a_assign empty Θ Ξ α P Θ')
+  (at level 70, Ξ at level 0, α at level 0, P at level 0, Θ' at level 0).
 
 (* ===================================================================== *)
 (*  Algorithmic consistency  [Θ0 ⊢[Δ1|Δ2][P0] P ~ Q ⊣ Θ1]                 *)

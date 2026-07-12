@@ -46,7 +46,7 @@ refuted — none so far)}.
   Consequently every stored definition is a monotype and `Θ ⊢ ctx` is
   preservable across the algorithm.
 
-## PROSE-COMPLETION (in progress) — unifyvar's hatted subjects carry the no-Δ-dependence invariant
+## PROSE-COMPLETION — unifyvar's hatted subjects + guess^TY freshness carry the no-Δ-dependence invariant
 - Where: fig:alg-consistency `Flex-Flex-L`/`Flex-Flex-R`
   (full-algo-spec.tex:1683-…); mech `a_unify__flex_l/_flex_r`
   (algo/def_extra.v).  Found while assembling thm:sound-consistency
@@ -62,13 +62,22 @@ refuted — none so far)}.
   opened Δ-binder) could flow to a leaf and be captured as a definition
   `β̂ := X` bound ABOVE `β̂` — ill-scoped, and breaking the invariant.
   The mech rules were the unfaithful ones (payload side unconstrained).
-- Mech completion (mirrors the Assign-SolveM sorted-τ resolution): add
-  flex-boundedness premises for the payload side to
-  `a_unify__flex_l/_flex_r`.  Also required for invariant preservation:
-  guess^TY's `β̄` freshness (the paper's "fresh"; the mech relation
-  carries no freshness — completing `a_assign__solve_m` with the dom-
-  freshness side condition), and the positional fact that Δ-binders sit
-  above all flexible entries (maintained by the occurs checks).
+- Mech completion (IMPLEMENTED; mirrors the Assign-SolveM sorted-τ
+  resolution): `a_flex_tvar` premises on the payload side of
+  `a_unify__flex_l/_flex_r`.  For guess^TY's `β̄` freshness (the paper's
+  "fresh" is GLOBAL, but the solve node only sees its local tail —
+  and the created names escape into the output context, so they cannot
+  be cofinitely quantified the way continuation-passing formulations
+  do, cf. worklist `a_wl_red__sub_arrow2`): `a_assign` now carries a
+  USED-NAME set `F` accumulated by the entry-walking rules, and
+  `Assign-SolveM` requires `uniq β̄` and `dom β̄` fresh from
+  `F ∪ {α̂} ∪ dom(Ξ,Θ0)` — which at the solve node covers exactly the
+  original context.  The paper-shaped judgment is the `F = ∅` notation
+  `Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'`.  Still to prove: the invariant-preservation
+  lemmas (unify/assign preserve "no flexible definition mentions
+  Δ1 ∪ Δ2", using these completions plus Assign-SkipRigid's occurs
+  condition and the positional fact that Δ-binders sit above all
+  flexible entries).
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the
 `is_tskl` untagged-∀ fix (A1), whose downstream effect invalidated the
 pre-restart `pskl_to_tskl` decorated witnesses (prop_safety machinery).

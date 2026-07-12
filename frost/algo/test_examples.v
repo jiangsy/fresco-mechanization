@@ -449,7 +449,8 @@ Proof.
       eapply a_consis__arrow
         with (Θ1 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono) ++ Θlib).
       * apply a_consis__flex. apply a_unify__flex_id. crush_binds.
-      * apply a_consis__flex. apply a_unify__flex_l. exact Hfafb.
+      * apply a_consis__flex. apply a_unify__flex_l;
+          [ exact Hfafb | left; crush_binds ].
 Qed.
 
 (* ===================================================================== *)
@@ -552,7 +553,8 @@ Proof.
           with (Θ1 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono)
                       ++ (x ~ abind_var_typ σ_id) ++ Θlib).
         { apply a_consis__flex. apply a_unify__flex_id. crush_binds. }
-        { apply a_consis__flex. apply a_unify__flex_l. exact Hfafb. }
+        { apply a_consis__flex. apply a_unify__flex_l;
+          [ exact Hfafb | left; crush_binds ]. }
 Qed.
 
 (* ===================================================================== *)
