@@ -560,6 +560,285 @@ Proof.
   - apply ad_wf_pskl__tophole; auto.
 Qed.
 
+(* ===================================================================== *)
+(*  Renaming the opened binder (∀-case crux 2: the coloured witness is    *)
+(*  obtained at ONE fresh variable and transported to every cofinite      *)
+(*  instance).  Helper layer: embeddings vs substitution / free vars.     *)
+(* ===================================================================== *)
+
+Lemma binds_insert_mid : forall (b : abind) y Θ1 (e : list (atom * abind)) Θ0,
+  binds y b (Θ1 ++ Θ0) ->
+  binds y b (Θ1 ++ e ++ Θ0).
+Proof.
+  intros * Hb; unfold binds in *.
+  apply in_app_or in Hb; apply in_or_app.
+  destruct Hb; auto. right; apply in_or_app; auto.
+Qed.
+
+Lemma a_binds_tvar_insert_mid : forall y Θ1 (e : list (atom * abind)) Θ0,
+  a_binds_tvar y (Θ1 ++ Θ0) ->
+  a_binds_tvar y (Θ1 ++ e ++ Θ0).
+Proof.
+  intros * [Hb | [Hb | [τ Hb]]];
+    [ left | right; left | right; right; exists τ ];
+    auto using binds_insert_mid.
+Qed.
+
+(** Free variables of the paintings/readings are those of the skeleton. *)
+Lemma ftvar_in_bskl_syn : forall P,
+  ftvar_in_bskl (pskl_to_bskl_syn P) [=] ftvar_in_pskl P.
+Proof.
+  induction P; simpl; try fsetdec.
+Qed.
+
+Lemma ftvar_in_bskl_inh : forall P,
+  ftvar_in_bskl (pskl_to_bskl_inh P) [=] ftvar_in_pskl P.
+Proof.
+  induction P; simpl; try fsetdec.
+Qed.
+
+Lemma ftvar_in_uskl_pskl : forall P,
+  ftvar_in_uskl (pskl_to_uskl P) [=] ftvar_in_pskl P.
+Proof.
+  induction P; simpl; try fsetdec.
+Qed.
+
+(** Variable renaming commutes with the paintings. *)
+Lemma subst_var_bskl_syn : forall P α X,
+  subst_bskl_in_bskl (bskl_var_f X) α (pskl_to_bskl_syn P)
+  = pskl_to_bskl_syn (subst_pskl_in_pskl (pskl_var_f X) α P).
+Proof.
+  induction P; intros; simpl; f_equal; auto.
+  destruct (eq_var Xps α); reflexivity.
+Qed.
+
+Lemma subst_var_bskl_inh : forall P α X,
+  subst_bskl_in_bskl (bskl_var_f X) α (pskl_to_bskl_inh P)
+  = pskl_to_bskl_inh (subst_pskl_in_pskl (pskl_var_f X) α P).
+Proof.
+  induction P; intros; simpl; f_equal; auto.
+  destruct (eq_var Xps α); reflexivity.
+Qed.
+
+Lemma subst_var_uskl : forall P α X,
+  subst_bskl_in_uskl (uskl_var_f X) α (pskl_to_uskl P)
+  = pskl_to_uskl (subst_pskl_in_pskl (pskl_var_f X) α P).
+Proof.
+  induction P; intros; simpl; f_equal; auto.
+  destruct (eq_var Xps α); reflexivity.
+Qed.
+
+(** Guardedness survives variable renaming. *)
+Lemma guarded_pskl_subst_var : forall P α Y,
+  guarded_pskl P ->
+  guarded_pskl (subst_pskl_in_pskl (pskl_var_f Y) α P).
+Proof.
+  intros * H; inversion H; subst; simpl.
+  - constructor.
+  - match goal with |- context [ if ?t then _ else _ ] => destruct t end;
+      constructor.
+  - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
+Qed.
+
+(** Renaming a rigid context entry in skeleton well-formedness. *)
+Lemma ad_wf_pskl_rename_tvar : forall Θ1 α Θ0 Δ P Y,
+  ad_wf_pskl (Θ1 ++ (α ~ abind_tvar) ++ Θ0) Δ P ->
+  α `notin` Δ ->
+  ad_wf_pskl (Θ1 ++ (Y ~ abind_tvar) ++ Θ0) Δ
+    (subst_pskl_in_pskl (pskl_var_f Y) α P).
+Proof.
+  intros * H.
+  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
+  revert Θ1 HeqΘ.
+  induction H; intros Θ1 ->; intros HαΔ; simpl.
+  - apply ad_wf_pskl__unit.
+  - match goal with |- context [ if ?t then _ else _ ] =>
+      destruct t as [->|Hne] end.
+    + apply ad_wf_pskl__var. right.
+      unfold a_binds_tvar. left.
+      unfold binds. apply in_or_app. right. left. reflexivity.
+    + apply ad_wf_pskl__var.
+      destruct H as [HΔ | Htv]; [ left; auto | right ].
+      apply (@a_binds_tvar_insert_mid X Θ1 (Y ~ abind_tvar) Θ0).
+      eapply a_binds_tvar_strip_mid; eauto;
+        try (intro Hc; inversion Hc; subst; congruence);
+        try (intros τ0 Hc; inversion Hc).
+  - apply ad_wf_pskl__arrow; auto.
+  - apply ad_wf_pskl__all with (L := L `union` singleton α).
+    intros Z HZ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var; auto.
+  - apply ad_wf_pskl__hole.
+  - apply ad_wf_pskl__tophole;
+      [ apply guarded_pskl_subst_var; auto
+      | apply IHad_wf_pskl; auto; fsetdec ].
+Qed.
+
+Lemma ftvar_in_uskl_ptyp_syn : forall A,
+  ftvar_in_uskl (ptyp_to_uskl_syn A) [=] ftvar_in_ptyp A.
+Proof.
+  intros. rewrite <- pskl_to_uskl_ptyp.
+  rewrite ftvar_in_uskl_pskl. apply ftvar_in_ptyp_to_pskl.
+Qed.
+
+Lemma ftvar_in_bskl_ptyp_syn : forall A,
+  ftvar_in_bskl (ptyp_to_bskl_syn A) [=] ftvar_in_ptyp A.
+Proof.
+  intros. unfold ptyp_to_bskl_syn.
+  rewrite ftvar_in_bskl_syn. apply ftvar_in_ptyp_to_pskl.
+Qed.
+
+(** Case-split every renaming decision in the goal; contradictory
+    branches close by congruence. *)
+Ltac destruct_var_eqs :=
+  repeat match goal with
+  | |- context [ if ?t then _ else _ ] => destruct t
+  end; subst; try congruence.
+
+(** Renaming the opened binder in Θ-level skeleton consistency. *)
+Lemma ad_pat_consis_rename_tvar : forall Ψ Θ1 α Θ0 S Q Y,
+  ad_pat_consis Ψ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) S Q ->
+  α `notin` dom (Θ1 ++ Θ0) ->
+  (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
+     α `notin` ftvar_in_ptyp τ) ->
+  ad_pat_consis Ψ (Θ1 ++ (Y ~ abind_tvar) ++ Θ0)
+    (subst_bskl_in_uskl (uskl_var_f Y) α S)
+    (subst_bskl_in_bskl (bskl_var_f Y) α Q).
+Proof.
+  intros * H.
+  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
+  revert Θ1 HeqΘ.
+  induction H; intros Θ1 ->; intros Hdom Hdefs; simpl.
+  - (* unit *)
+    apply ad_pat_consis__unit; auto.
+  - (* var *)
+    destruct_var_eqs.
+    + apply ad_pat_consis__var; auto.
+      unfold a_binds_tvar. left.
+      unfold binds. apply in_or_app. right. left. reflexivity.
+    + apply ad_pat_consis__var; auto.
+      apply (@a_binds_tvar_insert_mid X Θ1 (Y ~ abind_tvar) Θ0).
+      eapply a_binds_tvar_strip_mid; eauto;
+        try (intro Hc; inversion Hc; subst; congruence);
+        try (intros τ0 Hc; inversion Hc).
+  - (* arrow *)
+    eapply ad_pat_consis__arrow; eauto.
+  - (* forall_inh_tagged *)
+    eapply ad_pat_consis__forall_inh_tagged
+      with (L := L `union` singleton α); eauto.
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      auto using lc_uskl_var_f.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+    assert (HXL : X `notin` L) by fsetdec.
+    apply (H0 X HXL ((X ~ abind_tvar) ++ Θ1)); auto.
+    all: try (simpl; repeat rewrite dom_app in *; fsetdec).
+    all: intros β τ Hb;
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eauto ].
+  - (* forall_inh_untagged *)
+    eapply ad_pat_consis__forall_inh_untagged
+      with (L := L `union` singleton α); eauto.
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      auto using lc_uskl_var_f.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+    assert (HXL : X `notin` L) by fsetdec.
+    apply (H0 X HXL ((X ~ abind_tvar) ++ Θ1)); auto.
+    all: try (simpl; repeat rewrite dom_app in *; fsetdec).
+    all: intros β τ Hb;
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eauto ].
+  - (* forall_syn_tagged *)
+    eapply ad_pat_consis__forall_syn_tagged
+      with (L := L `union` singleton α); eauto.
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      auto using lc_uskl_var_f.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+    assert (HXL : X `notin` L) by fsetdec.
+    apply (H0 X HXL ((X ~ abind_tvar) ++ Θ1)); auto.
+    all: try (simpl; repeat rewrite dom_app in *; fsetdec).
+    all: intros β τ Hb;
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eauto ].
+  - (* forall_syn *)
+    eapply ad_pat_consis__forall_syn
+      with (L := L `union` singleton α); eauto.
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      auto using lc_uskl_var_f.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+    assert (HXL : X `notin` L) by fsetdec.
+    apply (H0 X HXL ((X ~ abind_tvar) ++ Θ1)); auto.
+    all: try (simpl; repeat rewrite dom_app in *; fsetdec).
+    all: intros β τ Hb;
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eauto ].
+  - (* ghostg *)
+    apply ad_pat_consis__ghostg; auto.
+  - (* topholeg *)
+    apply ad_pat_consis__topholeg; auto.
+  - (* hole *)
+    rewrite subst_var_bskl_inh.
+    apply ad_pat_consis__hole; auto.
+    apply ad_wf_pskl_rename_tvar; auto.
+  - (* tophole *)
+    apply ad_pat_consis__tophole; auto.
+  - (* tophole_inh *)
+    apply ad_pat_consis__tophole_inh
+      with (L := L `union` singleton α).
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+    assert (HXL : X `notin` L) by fsetdec.
+    apply (H0 X HXL ((X ~ abind_tvar) ++ Θ1)); auto.
+    all: try (simpl; repeat rewrite dom_app in *; fsetdec).
+    all: intros β τ Hb;
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | eauto ].
+  - (* tophole_drop *)
+    apply ad_pat_consis__tophole_drop; auto.
+  - (* flex_l *)
+    assert (Hb' : binds α0 (abind_flex_mono_def τ) (Θ1 ++ Θ0)).
+    { eapply binds_strip_mid; eauto. intro Hc; inversion Hc. }
+    assert (Hαne : α0 <> α).
+    { intro; subst. apply binds_In in Hb'. fsetdec. }
+    assert (Hfr : α `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ)).
+    { rewrite ftvar_in_uskl_ptyp_syn. eauto. }
+    destruct_var_eqs.
+    eapply ad_pat_consis__flex_l
+      with (τ := τ);
+      [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
+                 Θ1 (Y ~ abind_tvar) Θ0); auto | ].
+    rewrite <- (subst_bskl_in_uskl_fresh_eq
+                  (ptyp_to_uskl_syn τ) (uskl_var_f Y) α Hfr).
+    auto.
+  - (* flex_r *)
+    assert (Hb' : binds α0 (abind_flex_mono_def τ) (Θ1 ++ Θ0)).
+    { eapply binds_strip_mid; eauto. intro Hc; inversion Hc. }
+    assert (Hαne : α0 <> α).
+    { intro; subst. apply binds_In in Hb'. fsetdec. }
+    assert (Hfr : α `notin` ftvar_in_bskl (ptyp_to_bskl_syn τ)).
+    { rewrite ftvar_in_bskl_ptyp_syn. eauto. }
+    destruct_var_eqs.
+    eapply ad_pat_consis__flex_r
+      with (τ := τ);
+      [ apply (@binds_insert_mid (abind_flex_mono_def τ) α0
+                 Θ1 (Y ~ abind_tvar) Θ0); auto | ].
+    rewrite <- (subst_bskl_in_bskl_fresh_eq
+                  (ptyp_to_bskl_syn τ) (bskl_var_f Y) α Hfr).
+    auto.
+Qed.
+
 (** THE transfer lemmas: with the opened binder [α] recorded in both the
     hygiene set and Δ, its rigid entry can be dropped from the context —
     the fills avoid it (hygiene), the variable occurrences use Δ, and
