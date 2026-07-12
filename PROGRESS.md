@@ -77,6 +77,25 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-12 (d) — appendix B part 1 support layer (prop_consis_sound.v)
+
+The pieces the flex cases of the aconsis-soundness main induction need
+(all Qed): `a_unify_sound_consis` (part 2 restated declaratively — the
+paper's Flex case reading; subjects are always variables by
+`a_unify_var_inv`, so the conclusion is stated over any binds-monotone
+extension Θ' of the output with the subjects tvar-ish, which is how the
+skip cases re-assemble the context — NO definition folding needed),
+`ad_pat_consis_refine_syn_mono` / `_refine_pskl_mono` (consistency at a
+monotype painting implies both refinement components — the paper's
+"flex vars don't depend on Δ" steps for Flex/FlexL/FlexR),
+`ad_pat_consis_fold_def_q_mono` (Q-side definition folding at
+monotypes), plus mono-painting equations and `a_wf_aenv_binds_def_mono`.
+NEXT: the 14-case main induction (statement: ⊴ ∧ ∃ coloured witness Q̃
+with ⌊Q̃⌋ = Q, consis (syn P ≈ Q̃), refine-syn (inh P0 ⊳ Q̃), refine-pskl
+(P ⊳ Q) — the paper's `bid Q` colouring is built inductively:
+ForallInh paints the binder inh, ForallSyn syn), using prop_stability's
+⊴-transport and prop_refine's reflexivity lemmas.
+
 ## 2026-07-12 (c) — refine metatheory + benchmark acceptance tests
 
 `algo/prop_refine.v` (all Qed): refine weakening/Δ-monotonicity,
