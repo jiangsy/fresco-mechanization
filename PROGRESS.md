@@ -77,6 +77,25 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-12 (g) — Θ-side renames + a finding on the part-1 invariant
+
+`ad_refine_{syn,pskl}_f_rename_ctx` (7cc630b): the ForallSyn/UnivGhost1
+cases build tophole_fill-shaped components with the binder kept rigid in
+Θ, so their per-instance transport renames the Θ entry (mid-position).
+
+FINDING (docs/PAPER-GAPS.md, new PROSE-COMPLETION entry): the part-1
+augmented solution's "no flexible variable depends on Δ1/Δ2" invariant
+is preserved by assignvar via Assign-SkipRigid's occurs condition, but
+by unifyvar ONLY via the paper's hatted-metavariable convention —
+Flex-Flex-Skip' has no occurs condition, so the mech's unconstrained
+`a_unify__flex_l/_flex_r` admit derivations that capture a rigid bound
+above the defined variable (ill-scoped `β̂ := X`).  Mech completion
+plan (same category as the Assign-SolveM sorted-τ fix): flex-bound
+premises on the payload side of flex_l/flex_r; guess^TY β̄-freshness on
+Assign-SolveM; then the invariant-preservation lemmas for unify/assign,
+and the main statement gains `Δ1∪Δ2 ⊆ Θ0-rigids` + the no-dep premise/
+conclusion pair.  THEN the 14-case induction.
+
 ## 2026-07-12 (f) — renaming layer + primed ports: part-1 prelude COMPLETE
 
 Crux 2 resolved (5ea381c, ba14da5, 8e0b350): `ad_pat_consis_rename_tvar`

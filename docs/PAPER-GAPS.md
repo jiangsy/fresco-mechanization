@@ -46,7 +46,29 @@ refuted — none so far)}.
   Consequently every stored definition is a monotype and `Θ ⊢ ctx` is
   preservable across the algorithm.
 
-## Resolved definition-sync findings (step 1 of the restart)
+## PROSE-COMPLETION (in progress) — unifyvar's hatted subjects carry the no-Δ-dependence invariant
+- Where: fig:alg-consistency `Flex-Flex-L`/`Flex-Flex-R`
+  (full-algo-spec.tex:1683-…); mech `a_unify__flex_l/_flex_r`
+  (algo/def_extra.v).  Found while assembling thm:sound-consistency
+  part 1 (consistency-proofs.tex, "Soundness of Consistency").
+- The augmented solution in the part-1 proof requires that "no flexible
+  variables in Θ depend on variables in Δ1 and Δ2", and the proof needs
+  this invariant PRESERVED by every unifyvar/assignvar step.  For
+  assignvar, `Assign-SkipRigid`'s occurs condition (`β ∉ ftv(P)`) does
+  the work.  For unifyvar, preservation rests entirely on the paper's
+  METAVARIABLE CONVENTION: the subjects `α̂, β̂` are hatted, i.e.
+  flexible variables — `Flex-Flex-Skip'` has no occurs condition, so
+  without the convention a rigid variable (skipped earlier, e.g. an
+  opened Δ-binder) could flow to a leaf and be captured as a definition
+  `β̂ := X` bound ABOVE `β̂` — ill-scoped, and breaking the invariant.
+  The mech rules were the unfaithful ones (payload side unconstrained).
+- Mech completion (mirrors the Assign-SolveM sorted-τ resolution): add
+  flex-boundedness premises for the payload side to
+  `a_unify__flex_l/_flex_r`.  Also required for invariant preservation:
+  guess^TY's `β̄` freshness (the paper's "fresh"; the mech relation
+  carries no freshness — completing `a_assign__solve_m` with the dom-
+  freshness side condition), and the positional fact that Δ-binders sit
+  above all flexible entries (maintained by the occurs checks).
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the
 `is_tskl` untagged-∀ fix (A1), whose downstream effect invalidated the
 pre-restart `pskl_to_tskl` decorated witnesses (prop_safety machinery).
