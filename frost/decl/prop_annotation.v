@@ -94,11 +94,6 @@ Proof.
   destruct (ptyp_is_mono A); eauto using is_value.
 Qed.
 
-Lemma is_base_term_erase : forall e, is_base_term e -> is_base_term (erase_lam_mono e).
-Proof.
-  intros e H. induction H; simpl; eauto using is_base_term.
-Qed.
-
 (** Headline: erasing monotype lambda annotations preserves typing. *)
 Theorem erase_lam_mono_typing : forall Γ m e B,
     Γ ⊢[ m ] e ⦂ B ->
