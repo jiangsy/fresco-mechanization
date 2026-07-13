@@ -2081,3 +2081,80 @@ Proof.
         by (apply (faf_head Hfaf); exact Hne).
       clear - Hhd Hdom. fsetdec.
 Qed.
+
+
+(* ===================================================================== *)
+(*  Helpers for the main induction                                        *)
+(* ===================================================================== *)
+
+(** Erasure commutes with closing a free variable. *)
+Lemma bskl_to_pskl_close_rec : forall Q α k,
+  bskl_to_pskl (close_bskl_wrt_bskl_rec k α Q)
+  = close_pskl_wrt_pskl_rec k α (bskl_to_pskl Q).
+Proof.
+  induction Q; intros; simpl; f_equal; auto;
+    repeat match goal with
+    | |- context [ if ?t then _ else _ ] => destruct t
+    | |- context [ lt_ge_dec ?a ?b ] => destruct (lt_ge_dec a b)
+    end; reflexivity.
+Qed.
+
+Lemma bskl_to_pskl_close : forall Q α,
+  bskl_to_pskl (close_bskl_wrt_bskl α Q)
+  = close_pskl_wrt_pskl α (bskl_to_pskl Q).
+Proof. intros; apply bskl_to_pskl_close_rec. Qed.
+
+(** The subject of an assignment is bound (as a flexible or defined
+    variable) in the output context. *)
+Lemma a_assign_subject_binds : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_binds_tvar α Θ1.
+Proof.
+  intros * H; induction H;
+    try solve
+      [ right; left; unfold binds; left; reflexivity
+      | right; right; exists τ; unfold binds; left; reflexivity
+      | exact IHa_assign
+      | destruct IHa_assign as [Hb | [Hb | [τ0 Hb]]];
+        [ left | right; left | right; right; exists τ0 ];
+        unfold binds; right; auto ].
+Qed.
+
+(** Moving a variable from Δ into the context as a rigid (the skeleton
+    well-formedness reassociation used to open ∀-binders). *)
+Lemma ad_wf_pskl_reassoc : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall α,
+  ((α ~ abind_tvar) ++ Θ) ⨟ (remove α Δ) ⊢ₚₛᵃ P.
+Proof.
+  intros Θ Δ P H; induction H; intros α0; simpl.
+  - apply ad_wf_pskl__unit.
+  - apply ad_wf_pskl__var.
+    destruct H as [HΔ | Htv].
+    + destruct (X == α0) as [->|Hne].
+      * right. left. unfold binds; left; reflexivity.
+      * left. fsetdec.
+    + right. apply (@a_binds_tvar_weaken_cons X (α0 ~ abind_tvar) Θ). exact Htv.
+  - apply ad_wf_pskl__arrow; [ apply (IHad_wf_pskl1 α0) | apply (IHad_wf_pskl2 α0) ].
+  - apply ad_wf_pskl__all with (L := L `union` singleton α0).
+    intros X HX.
+    assert (HXL : X `notin` L) by fsetdec.
+    eapply ad_wf_pskl_delta_mono; [ apply (H0 X HXL α0) | ].
+    fsetdec.
+  - apply ad_wf_pskl__hole.
+  - apply ad_wf_pskl__tophole; auto.
+    eapply ad_wf_pskl_delta_mono; [ apply (IHad_wf_pskl α0) | ].
+    fsetdec.
+Qed.
+
+(** Rigid membership of the two auxiliary contexts extends when a fresh
+    binder is opened. *)
+Lemma delta_rigids_open : forall Δ Θ α,
+  (forall X, X `in` Δ -> binds X abind_tvar Θ) ->
+  (forall X, X `in` (add α Δ) -> binds X abind_tvar ((α ~ abind_tvar) ++ Θ)).
+Proof.
+  intros * H X HX.
+  destruct (X == α) as [->|Hne].
+  - unfold binds; left; reflexivity.
+  - unfold binds; right. apply H. fsetdec.
+Qed.
