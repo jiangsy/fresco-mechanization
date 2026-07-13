@@ -3612,3 +3612,192 @@ Proof.
     eapply ad_refine_syn_f_forget; exact Hrs.
   - eapply ad_refine_pskl_f_forget; exact Hrp.
 Qed.
+
+
+(* ===================================================================== *)
+(*  Soundness of DECORATED consistency (lemma:sound-decorated-consistency) *)
+(*  The parallel of [a_consis_sound_aux] over the tagged/decorated        *)
+(*  algorithmic consistency judgment [a_consistag], threading the tag     *)
+(*  context Ψ into the declarative consistency component.                 *)
+(* ===================================================================== *)
+
+(** Erasure preserves free variables. *)
+Lemma ftvar_in_pskl_uskl_to_pskl : forall S,
+  ftvar_in_pskl (uskl_to_pskl S) [=] ftvar_in_uskl S.
+Proof. induction S; simpl; fsetdec. Qed.
+
+(** [ad_pat_consis] is congruent in the tag context. *)
+Lemma ad_pat_consis_psi_cong : forall Ψ Θ S Q,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
+  forall Ψ', Ψ [=] Ψ' ->
+  Ψ' ⨟ Θ ⊨ₛᵃ S ≈ Q.
+Proof.
+  intros Ψ Θ S Q H; induction H; intros Ψ' Heq;
+    econstructor; eauto; fsetdec.
+Qed.
+
+Lemma a_consistag_sound_aux : forall Δ1 Δ2 P0 Ψ Θ0 S Q Θ1,
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ≈ Q ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  lc_uskl S ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl S) ->
+  (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
+  no_flex_dep (Δ1 `union` Δ2) Θ0 -> flex_above_free (Δ1 `union` Δ2) Θ0 ->
+  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  no_flex_dep (Δ1 `union` Δ2) Θ1 /\ flex_above_free (Δ1 `union` Δ2) Θ1 /\
+  (exists Qt, bskl_to_pskl Qt = Q /\
+     Ψ ⨟ Θ1 ⊨ₛᵃ S ≈ Qt /\
+     ad_refine_syn_f Δ1 Θ1 Δ1 (pskl_to_bskl_inh P0) Qt) /\
+  ad_refine_pskl_f Δ2 Θ1 Δ2 (uskl_to_pskl S) Q.
+Proof.
+  intros * Hc; induction Hc;
+    intros Hwf HlcS HwfP0 HwfS Hrig Hnfd Hfaf.
+  - (* Ghost *)
+    split; [ apply a_isub_refl | ].
+    split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
+    split.
+    + exists (pskl_to_bskl_inh P0).
+      split; [ apply bskl_to_pskl_pskl_to_bskl_inh | ].
+      split.
+      * apply ad_pat_consis__hole; [ fsetdec | exact HwfP0 ].
+      * apply ad_refine_syn_f_refl_inh.
+        eapply ad_wf_pskl_delta_mono; [ exact HwfP0 | fsetdec ].
+    + apply ad_refine_pskl_f__hole; [ exact H | exact HwfP0 ].
+  - (* Unit *)
+    split; [ apply a_isub_refl | ].
+    split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
+    split.
+    + exists bskl_unit. split; [ reflexivity | ].
+      split; [ apply ad_pat_consis__unit; fsetdec | apply ad_refine_syn_f__unit ].
+    + apply ad_refine_pskl_f__unit.
+  - (* Rigid *)
+    split; [ apply a_isub_refl | ].
+    split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
+    split.
+    + exists (bskl_var_f α). split; [ reflexivity | ].
+      split.
+      * apply ad_pat_consis__var; [ fsetdec | left; exact H ].
+      * apply ad_refine_syn_f__var. right; left; exact H.
+    + apply ad_refine_pskl_f__var. right; left; exact H.
+  - (* Flex *) admit.
+  - (* FlexL *) admit.
+  - (* FlexR *) admit.
+  - (* GhostG *)
+    split; [ apply a_isub_refl | ].
+    split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
+    split.
+    + exists bskl_hole. split; [ reflexivity | ].
+      split.
+      * apply ad_pat_consis__ghostg. fsetdec.
+      * replace (@bskl_hole) with (pskl_to_bskl_syn pskl_hole) by reflexivity.
+        apply ad_refine_syn_f__hole; [ simpl; fsetdec | apply ad_wf_pskl__hole ].
+    + apply ad_refine_pskl_f__hole; [ simpl; fsetdec | apply ad_wf_pskl__hole ].
+  - (* Arrow *)
+    simpl in HwfP0, HwfS. inversion HlcS; subst.
+    inversion HwfP0 as [ | | Θa Δa P0a' P0b' HwfP0a HwfP0b | | | ]; subst.
+    inversion HwfS as [ | | Θb Δb S1p S2p HwfS1 HwfS2 | | | ]; subst.
+    destruct IHHc1
+      as [Hle1 [Hwf1 [Hnfd1 [Hfaf1 [[Qt1 [HeQt1 [Hcons1 Hrs1]]] Hrp1]]]]]; auto.
+    destruct IHHc2
+      as [Hle2 [Hwf2 [Hnfd2 [Hfaf2 [[Qt2 [HeQt2 [Hcons2 Hrs2]]] Hrp2]]]]]; auto.
+    { eapply ad_wf_pskl_isub; eauto. }
+    { eapply ad_wf_pskl_isub; eauto. }
+    { intros X HX. eapply a_isub_binds_tvar; eauto. }
+    split; [ eapply a_isub_trans; eauto | ].
+    split; [ exact Hwf2 | ]. split; [ exact Hnfd2 | ]. split; [ exact Hfaf2 | ].
+    split.
+    + exists (bskl_arrow Qt1 Qt2). split.
+      { simpl. rewrite HeQt1, HeQt2. reflexivity. }
+      split.
+      * simpl. apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+          [ eapply ad_pat_consis_isub; eauto | exact Hcons2 | exact H ].
+      * simpl. apply ad_refine_syn_f__arrow;
+          [ eapply ad_refine_syn_f_isub; eauto | exact Hrs2 ].
+    + simpl. apply ad_refine_pskl_f__arrow;
+        [ eapply ad_refine_pskl_f_isub; eauto | exact Hrp2 ].
+  - (* ForallInh tagged *) admit.
+  - (* ForallInh untagged *) admit.
+  - (* ForallSyn tagged *) admit.
+  - (* ForallSyn untagged *) admit.
+  - (* UnivGhost *)
+    simpl in HwfP0, HwfS.
+    inversion HlcS; subst.
+    inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' Heqa ]; subst.
+    inversion HwfS as [ | | | | | Θb Δb Sp Hgs Hwfs Heqb ]; subst.
+    destruct IHHc
+      as [Hle [Hwf1 [Hnfd1 [Hfaf1 [[Qt [HeQt [Hcons Hrs]]] Hrp]]]]]; auto.
+    split; [ exact Hle | ]. split; [ exact Hwf1 | ].
+    split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
+    split.
+    + exists (bskl_tophole Qt). split.
+      { simpl. rewrite HeQt. reflexivity. }
+      split.
+      * simpl. apply ad_pat_consis__tophole. exact Hcons.
+      * simpl. apply ad_refine_syn_f__tophole_keep; [ | exact Hrs ].
+        eapply ad_refine_syn_f_guarded_r;
+          [ exact Hwf1 | exact Hrs | apply guarded_pskl_to_bskl_inh; exact Hg0 ].
+    + simpl. apply ad_refine_pskl_f__tophole_keep; [ | exact Hrp ].
+      eapply ad_refine_pskl_f_guarded_r; [ exact Hwf1 | exact Hrp | exact Hgs ].
+  - (* UnivGhostG *)
+    simpl in HwfP0, HwfS.
+    inversion HlcS; subst.
+    inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' Heqa ]; subst.
+    inversion HwfS as [ | | | | | Θb Δb Sp Hgs Hwfs Heqb ]; subst.
+    destruct IHHc
+      as [Hle [Hwf1 [Hnfd1 [Hfaf1 [[Qt [HeQt [Hcons Hrs]]] Hrp]]]]]; auto.
+    split; [ exact Hle | ]. split; [ exact Hwf1 | ].
+    split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
+    split.
+    + exists (bskl_tophole Qt). split.
+      { simpl. rewrite HeQt. reflexivity. }
+      split.
+      * simpl. apply ad_pat_consis__topholeg. exact Hcons.
+      * simpl. apply ad_refine_syn_f__tophole_keep; [ | exact Hrs ].
+        eapply ad_refine_syn_f_guarded_r;
+          [ exact Hwf1 | exact Hrs | apply guarded_pskl_to_bskl_inh; exact Hg0 ].
+    + simpl. apply ad_refine_pskl_f__tophole_keep; [ | exact Hrp ].
+      eapply ad_refine_pskl_f_guarded_r; [ exact Hwf1 | exact Hrp | exact Hgs ].
+  - (* UnivGhost1 *) admit.
+  - (* UnivGhost2 *)
+    simpl in HwfS. inversion HlcS; subst.
+    inversion HwfS as [ | | | | | Θb Δb Sp Hgs Hwfs Heqb ]; subst.
+    destruct IHHc
+      as [Hle [Hwf1 [Hnfd1 [Hfaf1 [[Qt [HeQt [Hcons Hrs]]] Hrp]]]]]; auto.
+    split; [ exact Hle | ]. split; [ exact Hwf1 | ].
+    split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
+    split.
+    + exists Qt. split; [ exact HeQt | ].
+      split; [ simpl; apply ad_pat_consis__tophole_drop; exact Hcons | exact Hrs ].
+    + simpl. apply ad_refine_pskl_f__tophole_remove. exact Hrp.
+  - (* GhostR *)
+    split; [ apply a_isub_refl | ].
+    split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
+    split.
+    + exists (pskl_to_bskl_syn (uskl_to_pskl S)).
+      split; [ apply bskl_to_pskl_pskl_to_bskl_syn | ].
+      split.
+      * apply ad_pat_consis_psi_cong with (Ψ := empty); [ | symmetry; exact H0 ].
+        apply ad_pat_consis_refl_erase; [ exact HlcS | ].
+        intros X HX.
+        assert (HX' : X `in` ftvar_in_pskl (uskl_to_pskl S))
+          by (rewrite ftvar_in_pskl_uskl_to_pskl; exact HX).
+        destruct (ad_wf_pskl_ftv_tvarish HwfS HX') as [HΔ | Ht];
+          [ clear - HΔ; fsetdec | exact Ht ].
+      * replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
+        apply ad_refine_syn_f__hole; [ exact H | exact HwfS ].
+    + apply ad_refine_pskl_f_refl.
+      eapply ad_wf_pskl_delta_mono; [ exact HwfS | fsetdec ].
+  - (* UnivGhostR *)
+    simpl in HwfP0.
+    inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' Heqa ]; subst.
+    destruct IHHc
+      as [Hle [Hwf1 [Hnfd1 [Hfaf1 [[Qt [HeQt [Hcons Hrs]]] Hrp]]]]]; auto.
+    split; [ exact Hle | ]. split; [ exact Hwf1 | ].
+    split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
+    split.
+    + exists Qt. split; [ exact HeQt | ].
+      split; [ exact Hcons | ].
+      apply ad_refine_syn_f__tophole_remove. exact Hrs.
+    + exact Hrp.
+Admitted.
