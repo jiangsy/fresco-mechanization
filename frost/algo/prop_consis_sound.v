@@ -1612,6 +1612,52 @@ Proof.
     clear - Hβ Hfr. fsetdec.
 Qed.
 
+(** Strip a shared rigid head from an identity information-increase.
+    The target's shared [(α, tvar)] head forces the a_inc suffix to be
+    empty (its entries are flexible, never rigid), so the increase holds
+    at the tails. *)
+Lemma a_isub_strip_tvar : forall α Θ0 Θ1,
+  ((α ~ abind_tvar) ++ Θ0) ⊴ ((α ~ abind_tvar) ++ Θ1) ->
+  Θ0 ⊴ Θ1.
+Proof.
+  intros α Θ0 Θ1 [[θ [Hid Hinc]] Hdef].
+  destruct (a_inc_tvar_inv Hinc) as [Ξ [Θ2 [Heq [Hsuf Hinc']]]].
+  destruct Ξ as [ | [γ b] Ξ' ]; simpl in Heq.
+  - assert (HΘ : Θ2 = Θ1) by (injection Heq; auto). subst Θ2.
+    split.
+    + exists θ. auto.
+    + intros β τ Hb.
+      assert (Hb1 : binds β (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ1))
+        by (apply Hdef; unfold binds; right; exact Hb).
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb1) as [[? Heq2] | Hb'];
+        [ discriminate | exact Hb' ].
+  - inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
+    inversion Heq; subst. inversion Hbind.
+Qed.
+
+(** Strip a shared rigid binder from the problem invariants. *)
+Lemma no_flex_dep_strip : forall α Δ Θ,
+  no_flex_dep (add α Δ) ((α ~ abind_tvar) ++ Θ) ->
+  no_flex_dep Δ Θ.
+Proof.
+  intros α Δ Θ H β τ Hb.
+  assert (Hb1 : binds β (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ))
+    by (unfold binds; right; exact Hb).
+  pose proof (H β τ Hb1) as Hh. clear - Hh. fsetdec.
+Qed.
+
+Lemma faf_strip : forall α Δ Θ,
+  flex_above_free (add α Δ) ((α ~ abind_tvar) ++ Θ) ->
+  flex_above_free Δ Θ.
+Proof.
+  intros α Δ Θ H Θ1 β b Θ2 Heq Hne.
+  assert (Heq' : (α ~ abind_tvar) ++ Θ
+               = ((α ~ abind_tvar) ++ Θ1) ++ (β, b) :: Θ2)
+    by (subst; simpl; reflexivity).
+  pose proof (H ((α ~ abind_tvar) ++ Θ1) β b Θ2 Heq' Hne) as Hh.
+  clear - Hh. fsetdec.
+Qed.
+
 (** Definitions in a well-formed context are scoped by it. *)
 Lemma a_wf_aenv_def_ftv_dom : forall Θ β τ,
   a_wf_aenv Θ ->
@@ -2150,13 +2196,14 @@ Qed.
 (** Rigid membership of the two auxiliary contexts extends when a fresh
     binder is opened. *)
 Lemma delta_rigids_open : forall Δ Θ α,
-  (forall X, X `in` Δ -> binds X abind_tvar Θ) ->
-  (forall X, X `in` (add α Δ) -> binds X abind_tvar ((α ~ abind_tvar) ++ Θ)).
+  (forall X, X `in` Δ -> a_binds_tvar X Θ) ->
+  (forall X, X `in` (add α Δ) -> a_binds_tvar X ((α ~ abind_tvar) ++ Θ)).
 Proof.
   intros * H X HX.
   destruct (X == α) as [->|Hne].
-  - unfold binds; left; reflexivity.
-  - unfold binds; right. apply H. fsetdec.
+  - left. unfold binds; left; reflexivity.
+  - apply (@a_binds_tvar_weaken_cons X (α ~ abind_tvar) Θ).
+    apply H. fsetdec.
 Qed.
 
 
