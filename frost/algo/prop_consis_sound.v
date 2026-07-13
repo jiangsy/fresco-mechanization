@@ -2158,3 +2158,139 @@ Proof.
   - unfold binds; left; reflexivity.
   - unfold binds; right. apply H. fsetdec.
 Qed.
+
+
+(** F-monotonicity: a proof forbidding MORE names in ghost fills is a
+    proof forbidding fewer (fills avoiding the larger set avoid the
+    smaller). *)
+Lemma ad_refine_syn_f_fmono : forall F F' Θ Δ Q P,
+  F [<=] F' ->
+  ad_refine_syn_f F' Θ Δ Q P ->
+  ad_refine_syn_f F Θ Δ Q P.
+Proof.
+  intros F F' Θ Δ Q P Hsub H; revert F Hsub; induction H; intros F Hsub;
+    eauto using ad_refine_syn_f.
+  - apply ad_refine_syn_f__hole; auto. clear - H Hsub. fsetdec.
+Qed.
+
+Lemma ad_refine_pskl_f_fmono : forall F F' Θ Δ P Q,
+  F [<=] F' ->
+  ad_refine_pskl_f F' Θ Δ P Q ->
+  ad_refine_pskl_f F Θ Δ P Q.
+Proof.
+  intros F F' Θ Δ P Q Hsub H; revert F Hsub; induction H; intros F Hsub;
+    eauto using ad_refine_pskl_f.
+  - apply ad_refine_pskl_f__hole; auto. clear - H Hsub. fsetdec.
+Qed.
+
+(** [a_wf_ptyp] transports along [⊴] (only positive tvar-ish lookups). *)
+Lemma a_wf_ptyp_isub : forall Θ A,
+  a_wf_ptyp Θ A ->
+  forall Θ', Θ ⊴ Θ' ->
+  a_wf_ptyp Θ' A.
+Proof.
+  intros Θ A H; induction H; intros Θ' Hle; eauto using a_wf_ptyp.
+  - apply a_wf_ptyp__var. eapply a_isub_binds_tvarish; eauto.
+  - apply a_wf_ptyp__all with (L := L `union` dom Θ'). intros X HX.
+    apply H0; auto. apply a_isub_cons_tvar; auto.
+Qed.
+
+
+(** Algorithmic skeleton well-formedness transports along [⊴]. *)
+Lemma a_wf_pskl_isub : forall Θ P,
+  a_wf_pskl Θ P ->
+  forall Θ', Θ ⊴ Θ' ->
+  a_wf_pskl Θ' P.
+Proof.
+  intros Θ P H; induction H; intros Θ' Hle; eauto using a_wf_pskl.
+  - apply a_wf_pskl__var. eapply a_isub_binds_tvarish; eauto.
+  - apply a_wf_pskl__all with (L := L `union` dom Θ'). intros X HX.
+    apply H0; auto. apply a_isub_cons_tvar; auto.
+Qed.
+
+(** Clean inversions of context well-formedness. *)
+Lemma a_wf_aenv_flex_inv : forall α Θ,
+  a_wf_aenv ((α ~ abind_flex_mono) ++ Θ) ->
+  α `notin` dom Θ /\ a_wf_aenv Θ.
+Proof. intros * H; inversion H; subst; auto. Qed.
+
+Lemma a_wf_aenv_flex_def_inv : forall α τ Θ,
+  a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ Θ) ->
+  α `notin` dom Θ /\ a_wf_ptyp Θ τ /\ mono_ptyp τ /\ a_wf_aenv Θ.
+Proof. intros * H; inversion H; subst; auto. Qed.
+
+Lemma a_wf_aenv_tvar_inv : forall α Θ,
+  a_wf_aenv ((α ~ abind_tvar) ++ Θ) ->
+  α `notin` dom Θ /\ a_wf_aenv Θ.
+Proof. intros * H; inversion H; subst; auto. Qed.
+
+Lemma a_wf_aenv_var_typ_inv : forall x Q Θ,
+  a_wf_aenv ((x ~ abind_var_typ Q) ++ Θ) ->
+  x `notin` dom Θ /\ a_wf_ptyp Θ Q /\ a_wf_aenv Θ.
+Proof. intros * H; inversion H; subst; auto. Qed.
+
+Lemma a_wf_aenv_var_skl_inv : forall x Q Θ,
+  a_wf_aenv ((x ~ abind_var_skl Q) ++ Θ) ->
+  x `notin` dom Θ /\ a_wf_pskl Θ Q /\ a_wf_aenv Θ.
+Proof. intros * H; inversion H; subst; auto. Qed.
+
+(** [a_unify] preserves context well-formedness (the only mutation is
+    turning a flexible variable into a definition by a hatted, hence
+    well-formed and monotype, payload). *)
+Lemma a_unify_preserves_wf : forall Θ0 A B Θ1,
+  Θ0 ⊲ A ≈ᵘ B ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  mono_ptyp A ->
+  mono_ptyp B ->
+  a_wf_aenv Θ1.
+Proof.
+  intros * Hu; induction Hu; intros Hwf HmA HmB.
+  - (* Flex-Flex-Id *) exact Hwf.
+  - (* Flex-Flex-L : α̂ := β̂ *)
+    apply a_wf_aenv_flex_inv in Hwf. destruct Hwf as [Hfr Hwf0].
+    apply a_wf_aenv__flex_def; auto.
+    apply a_wf_ptyp__var.
+    destruct H0 as [Hb | [τ Hb]];
+      [ right; left | right; right; exists τ ]; auto.
+  - (* Flex-Flex-R : β̂ := α̂ *)
+    apply a_wf_aenv_flex_inv in Hwf. destruct Hwf as [Hfr Hwf0].
+    apply a_wf_aenv__flex_def; auto.
+    apply a_wf_ptyp__var.
+    destruct H0 as [Hb | [τ Hb]];
+      [ right; left | right; right; exists τ ]; auto.
+  - (* Flex-Flex-Assign *)
+    apply a_wf_aenv_flex_def_inv in Hwf.
+    destruct Hwf as [Hfr [Hwfτ [Hmτ Hwf0]]].
+    assert (Hdom : dom Θ1 [=] dom Θ0) by (eapply a_unify_dom; eauto).
+    assert (Hle : Θ0 ⊴ Θ1)
+      by (destruct (a_unify_sound Hu Hwf0 (@mono_ptyp_subst A τ γ HmA Hmτ)
+                      (@mono_ptyp_subst B τ γ HmB Hmτ)) as [Hi _]; exact Hi).
+    apply a_wf_aenv__flex_def; auto.
+    + rewrite Hdom; auto.
+    + eapply a_wf_ptyp_isub; eauto.
+    + apply IHHu; auto using mono_ptyp_subst.
+  - (* Flex-Flex-Skip *)
+    apply a_wf_aenv_flex_inv in Hwf. destruct Hwf as [Hfr Hwf0].
+    assert (Hdom : dom Θ1 [=] dom Θ0) by (eapply a_unify_dom; eauto).
+    apply a_wf_aenv__flex; auto.
+    rewrite Hdom; auto.
+  - (* Flex-Flex-Skip' *)
+    assert (Hdom : dom Θ1 [=] dom Θ0) by (eapply a_unify_dom; eauto).
+    destruct H as [-> | [[Q ->] | [Q ->]]].
+    + apply a_wf_aenv_tvar_inv in Hwf. destruct Hwf as [Hfr Hwf0].
+      apply a_wf_aenv__tvar; auto. rewrite Hdom; auto.
+    + apply a_wf_aenv_var_typ_inv in Hwf.
+      destruct Hwf as [Hfr [Hwfp Hwf0]].
+      assert (Hle : Θ0 ⊴ Θ1)
+        by (destruct (a_unify_sound Hu Hwf0 HmA HmB) as [Hi _]; exact Hi).
+      apply a_wf_aenv__var_typ; auto.
+      * rewrite Hdom; auto.
+      * eapply a_wf_ptyp_isub; eauto.
+    + apply a_wf_aenv_var_skl_inv in Hwf.
+      destruct Hwf as [Hfr [Hwfp Hwf0]].
+      assert (Hle : Θ0 ⊴ Θ1)
+        by (destruct (a_unify_sound Hu Hwf0 HmA HmB) as [Hi _]; exact Hi).
+      apply a_wf_aenv__var; auto.
+      * rewrite Hdom; auto.
+      * eapply a_wf_pskl_isub; eauto.
+Qed.
