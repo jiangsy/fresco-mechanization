@@ -13,6 +13,8 @@ Require Import src.frost.decl.prop_syntax_directed.
 Require Import src.frost.decl.prop_general_subsumption.
 Require Import src.frost.algo.prop_decorate.
 Require Import src.frost.algo.prop_inc.
+Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_consis_sound.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -25,12 +27,6 @@ Check d_sd_typing_sound :
 (* Lemma [Completeness of Syntax-Directed Rule] (lemma:typing-syn-completeness) *)
 Check d_sd_typing_complete.
 
-(* Lemma [General subsumption] (on the syntax-directed side + d_typing corollary) *)
-Check d_sd_typing_general_subsumption.
-Check d_typing_general_subsumption.
-Check d_sd_typing_general_subsumption_spine.
-Check d_typing_general_subsumption_spine.
-
 (* ===================================================================== *)
 (*  consistency-proofs.tex (appendix B)                                   *)
 (* ===================================================================== *)
@@ -38,6 +34,16 @@ Check d_typing_general_subsumption_spine.
 (* Lemma [Decorating algorithmic consistency]
    (lemma:decorating-algorithmic-consistency) *)
 Check a_consis_decorate.
+
+(* Lemma [Soundness of consistency] (thm:sound-consistency), parts 2 & 3:
+   variable unification and assignment. *)
+Check a_unify_sound.
+Check a_assign_sound.
+
+(* Lemma [Soundness of consistency] (thm:sound-consistency), part 1:
+   the main consistency induction (paper-shaped corollary, Δ-contexts
+   empty).  The full statement is [a_consis_sound] in prop_consis_sound. *)
+Check a_consis_sound.
 
 (* Information-increase algebra (the paper's "stability" infrastructure) *)
 Check a_isub_refl.
@@ -55,3 +61,6 @@ Print Assumptions d_typing_general_subsumption.
 Print Assumptions d_sd_typing_general_subsumption_spine.
 Print Assumptions a_consis_decorate.
 Print Assumptions a_isub_trans.
+Print Assumptions a_unify_sound.
+Print Assumptions a_assign_sound.
+Print Assumptions a_consis_sound.

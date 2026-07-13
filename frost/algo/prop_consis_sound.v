@@ -3579,3 +3579,36 @@ Proof.
       apply ad_refine_syn_f__tophole_remove. exact Hrs.
     + exact Hrp.
 Qed.
+
+
+(** Paper-shaped statement (thm:sound-consistency, part 1): with the
+    auxiliary Δ-contexts empty, a consistency run is an identity
+    increase whose output is a coloured skeleton consistent with the
+    synthesised painting of the input and a valid refinement of both
+    inputs.  (The fill-hygiene set is discharged by [*_f_forget].) *)
+Corollary a_consis_sound : forall Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ P0 ] P ≈ Q ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  Θ0 ⊴ Θ1 /\
+  (exists Qt, bskl_to_pskl Qt = Q /\
+     empty ⨟ Θ1 ⊨ₛᵃ (pskl_to_uskl P) ≈ Qt /\
+     Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt) /\
+  Θ1 ⨟ empty ⊢ᵣₚᵃ P ⊳ Q.
+Proof.
+  intros * Hc Hwf HwfP0 HwfP.
+  destruct (a_consis_sound_aux Hc Hwf HwfP0 HwfP
+              ltac:(intros X HX; clear - HX; fsetdec)
+              ltac:(intros β τ Hb; apply inter_empty_pointwise;
+                    intros X HX; clear - HX; fsetdec)
+              ltac:(intros Θa β b Θb Heq Hne;
+                    apply inter_empty_pointwise;
+                    intros X HX; clear - HX; fsetdec))
+    as [Hle [Hwf1 [Hnfd [Hfaf [[Qt [HeQt [Hcons Hrs]]] Hrp]]]]].
+  split; [ exact Hle | ].
+  split.
+  - exists Qt. split; [ exact HeQt | ]. split; [ exact Hcons | ].
+    eapply ad_refine_syn_f_forget; exact Hrs.
+  - eapply ad_refine_pskl_f_forget; exact Hrp.
+Qed.
