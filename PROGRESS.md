@@ -77,6 +77,18 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-13 (g) — decorated-consistency soundness 12/18 (WIP)
+
+`a_consistag_sound_aux` (lemma:sound-decorated-consistency): the
+parallel of the main induction over the tagged judgment `a_consistag`
+(18 rules), threading the tag context Ψ into the declarative
+consistency component.  12 cases Qed — the 10 structural ones plus
+Flex/FlexL (structurally identical to the ordinary versions).  New
+helpers `ftvar_in_pskl_uskl_to_pskl`, `ad_pat_consis_psi_cong`.
+Admitted (6, with real subtleties recorded in memory): FlexR (a_assign
+only sees the tag-erased ⌊S⌋ˢ) and the 5 ∀-cases (tag threading in the
+binder).  Templates: the ordinary flex/∀ cases in a_consis_sound_aux.
+
 ## 2026-07-13 (f) — aconsis-soundness main induction COMPLETE (thm:sound-consistency part 1)
 
 `a_consis_sound_aux` (all 14 cases Qed, axiom-free — "Closed under the
