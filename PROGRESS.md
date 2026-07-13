@@ -77,6 +77,22 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-13 (d) — main-induction infrastructure COMPLETE
+
+`a_assign_preserves_wf` (0d7333a) — the last wf-preservation blocker
+(the Arrow case of the main induction chains `a_wf_aenv Θ1`) — plus its
+support (mono_ptyp_wf, a_wf_aenv_uniq, a_guess_mono_flex_binds,
+a_wf_aenv_prepend_flex/_strip_prefix, a_assign_new_avoids_F +
+a_assign_notin) and `ad_wf_pskl_ftv_tvarish` (247e0e7).  Every
+supporting lemma of the aconsis-soundness main induction is now Qed.
+
+Worked out the full ∀-case assembly on paper (ForallInh step-by-step,
+recorded in memory `remech-aconsis-main-induction-crux` with the
+finalized lemma statement).  What remains is: 3 small "strip a shared
+rigid head" lemmas (`a_isub_strip_tvar` via a_inc_tvar_inv + uniqueness,
+`no_flex_dep_strip`, `faf_strip`) and the 14-case assembly itself —
+transcription against the recorded recipe, no new design.
+
 ## 2026-07-13 (c) — main-induction prelude: helpers + wf transport/preservation
 
 Toward the aconsis-soundness main induction (all Qed, prop_consis_sound.v):
