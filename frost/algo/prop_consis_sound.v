@@ -3142,7 +3142,120 @@ Proof.
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
                ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
-  - (* ForallSyn *) admit.
+  - (* ForallSyn : ∀α.P ≈ ∀α.Q against input ⊤.P0 *)
+    simpl in HwfP0, HwfP.
+    inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
+    inversion HwfP as [ | | | L1 Θb Δb Pa Hbody1 Heqb | | ]; subst.
+    pick fresh α for
+      (L `union` L1 `union` dom Θ0 `union` dom Θ1
+       `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
+       `union` Δ1 `union` Δ2).
+    assert (HαL : α `notin` L) by auto.
+    assert (HwfΘα : a_wf_aenv ((α ~ abind_tvar) ++ Θ0))
+      by (apply a_wf_aenv__tvar; auto).
+    assert (HwfP0α : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+                       ⊢ₚₛᵃ (pskl_tophole P0)).
+    { apply ad_wf_pskl__tophole; auto.
+      eapply ad_wf_pskl_weaken; [ | exact Hwf0c ].
+      intros y b Hb. unfold binds; right; exact Hb. }
+    assert (HwfPα : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+                       ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f α))).
+    { eapply ad_wf_pskl_delta_mono;
+        [ apply (ad_wf_pskl_reassoc (Hbody1 α ltac:(auto)) α)
+        | clear; fsetdec ]. }
+    assert (Hrigα : forall X, X `in` (Δ1 `union` add α Δ2) ->
+                    binds X abind_tvar ((α ~ abind_tvar) ++ Θ0)).
+    { intros X HX. destruct (X == α) as [->|Hne].
+      - unfold binds; left; reflexivity.
+      - unfold binds; right. apply Hrig. clear - HX Hne. fsetdec. }
+    assert (Hnfdα : no_flex_dep (Δ1 `union` add α Δ2)
+                      ((α ~ abind_tvar) ++ Θ0)).
+    { apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
+        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]. }
+    assert (Hfafα : flex_above_free (Δ1 `union` add α Δ2)
+                      ((α ~ abind_tvar) ++ Θ0)).
+    { apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
+        [ clear; fsetdec | apply faf_open_tvar; auto ]. }
+    destruct (H0 α HαL HwfΘα HwfP0α HwfPα Hrigα Hnfdα Hfafα)
+      as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
+    assert (Hwf1 : a_wf_aenv Θ1)
+      by (apply a_wf_aenv_tvar_inv in Hwfα; tauto).
+    assert (Hα1 : α `notin` dom Θ1) by auto.
+    assert (Hdefsα : forall β τ, binds β (abind_flex_mono_def τ) Θ1 ->
+                     α `notin` ftvar_in_ptyp τ).
+    { intros β τ Hb.
+      pose proof (@a_wf_aenv_def_ftv_dom Θ1 β τ Hwf1 Hb) as Hsc.
+      clear - Hsc Hα1. fsetdec. }
+    split; [ eapply a_isub_strip_tvar; eauto | ].
+    split; [ exact Hwf1 | ].
+    split.
+    { apply no_flex_dep_strip with (α := α).
+      apply no_flex_dep_cong with (Δ := Δ1 `union` add α Δ2);
+        [ clear; fsetdec | exact Hnfdα1 ]. }
+    split.
+    { apply faf_strip with (α := α).
+      apply faf_cong with (Δ := Δ1 `union` add α Δ2);
+        [ clear; fsetdec | exact Hfafα1 ]. }
+    split.
+    + exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
+      { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
+        rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
+          [ reflexivity | clear - Fr; fsetdec ]. }
+      split.
+      * simpl. apply ad_pat_consis__forall_syn
+          with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl P).
+        intros X HX.
+        rewrite (subst_bskl_in_uskl_intro α (pskl_to_uskl P) (uskl_var_f X));
+          [ | rewrite ftvar_in_uskl_pskl; clear - Fr; fsetdec ].
+        rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
+                   (bskl_var_f X));
+          [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
+        rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
+        change ((X ~ abind_tvar) ++ Θ1)
+          with (nil ++ (X ~ abind_tvar) ++ Θ1).
+        eapply ad_pat_consis_rename_tvar;
+          [ | exact Hα1 | exact Hdefsα ].
+        rewrite <- pskl_to_uskl_open_var. exact Hconsα.
+      * (* refine_syn : ⊤.(inh P0) ⊳ ∀.Qt' via tophole_fill + rename_ctx *)
+        change (pskl_to_bskl_inh (pskl_tophole P0))
+          with (bskl_tophole (pskl_to_bskl_inh P0)).
+        apply ad_refine_syn_f__tophole_fill
+          with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl P0
+                     `union` Δ1 `union` Δ2).
+        intros X HX.
+        rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qtα)
+                   (bskl_var_f X));
+          [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
+        rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
+        replace (bskl_tophole (pskl_to_bskl_inh P0))
+          with (subst_bskl_in_bskl (bskl_var_f X) α
+                  (bskl_tophole (pskl_to_bskl_inh P0)))
+          by (simpl; rewrite subst_var_bskl_inh;
+              rewrite subst_pskl_in_pskl_fresh_eq;
+              [ reflexivity | clear - Fr; fsetdec ]).
+        eapply ad_refine_syn_f_rename_ctx with (Θ1 := nil);
+          [ change (nil ++ (α ~ abind_tvar) ++ Θ1)
+              with ((α ~ abind_tvar) ++ Θ1); exact Hrsα
+          | simpl; exact Hα1 | clear - Fr; fsetdec | clear - HX; fsetdec
+          | exact Hdefsα ].
+    + (* refine_pskl : ∀.P ⊳ ∀.Q, Δ2 side *)
+      simpl. apply ad_refine_pskl_f__all
+        with (L := dom Θ1 `union` singleton α
+                   `union` ftvar_in_pskl P `union` ftvar_in_pskl Q).
+      intros X HX.
+      rewrite (subst_pskl_in_pskl_intro α P (pskl_var_f X));
+        [ | clear - Fr; fsetdec ].
+      rewrite (subst_pskl_in_pskl_intro α Q (pskl_var_f X));
+        [ | clear - Fr; fsetdec ].
+      eapply ad_refine_pskl_f_fmono with (F' := add α Δ2);
+        [ clear; fsetdec | ].
+      eapply ad_refine_pskl_f_delta_mono;
+        [ | instantiate (1 := add X (remove α (add α Δ2)));
+            clear - Fr; fsetdec ].
+      apply ad_refine_pskl_f_rename;
+        [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
+      exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
+               ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
   - (* UnivGhost : ⊤.P ≈ ⊤.Q against input ⊤.P0 *)
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' ]; subst.
