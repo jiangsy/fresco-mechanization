@@ -77,6 +77,19 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-13 (e) — aconsis-soundness main induction: 11/14 cases proved
+
+`a_consis_sound_aux` (prop_consis_sound.v): statement finalized; 11 of
+14 cases Qed and committed — Ghost, Unit, Rigid, Arrow, UnivGhost,
+UnivGhost2, UnivGhostR, GhostR, Flex, FlexL, FlexR.  The flex cases
+needed several new lemmas (unify symmetry + subjects-are-flexible,
+assign-subject-is-flexible, exact rigid transport, lc- and
+guardedness-preservation of refinement).  The 3 ∀-cases (ForallInh,
+ForallSyn, UnivGhost1) are admitted; ForallInh is ~95% drafted (saved
+to scratchpad) — only a refinement-side embedding-form rewrite in its
+synth component is still being worked out.  Partial commits per user
+direction (admits are WIP; no case is false).
+
 ## 2026-07-13 (d) — main-induction infrastructure COMPLETE
 
 `a_assign_preserves_wf` (0d7333a) — the last wf-preservation blocker
