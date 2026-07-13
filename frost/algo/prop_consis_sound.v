@@ -2698,6 +2698,21 @@ Proof.
     + eapply a_wf_pskl_isub; eauto.
 Qed.
 
+(** Rigid bindings are preserved exactly along [⊴]. *)
+Lemma a_isub_binds_tvar : forall Θ Θ' α,
+  Θ ⊴ Θ' -> binds α abind_tvar Θ -> binds α abind_tvar Θ'.
+Proof.
+  intros Θ Θ' α [[θ [Hid Hinc]] _] Hb.
+  eapply a_inc_binds_tvar; eauto.
+Qed.
+
+(** A well-formed skeleton is locally closed. *)
+Lemma ad_wf_pskl_lc : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P -> lc_pskl P.
+Proof.
+  intros Θ Δ P H; induction H; eauto using lc_pskl.
+Qed.
+
 (* ===================================================================== *)
 (*  Soundness of consistency, part 1 (thm:sound-consistency)              *)
 (* ===================================================================== *)
@@ -2707,7 +2722,7 @@ Lemma a_consis_sound_aux : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-  (forall X, X `in` (Δ1 `union` Δ2) -> a_binds_tvar X Θ0) ->
+  (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
   no_flex_dep (Δ1 `union` Δ2) Θ0 ->
   flex_above_free (Δ1 `union` Δ2) Θ0 ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
@@ -2756,7 +2771,7 @@ Proof.
       as [Hle2 [Hwf2 [Hnfd2 [Hfaf2 [[Qt2 [HeQt2 [Hcons2 Hrs2]]] Hrp2]]]]]; auto.
     { eapply ad_wf_pskl_isub; eauto. }
     { eapply ad_wf_pskl_isub; eauto. }
-    { intros X HX. eapply a_isub_binds_tvarish; eauto. }
+    { intros X HX. eapply a_isub_binds_tvar; eauto. }
     split; [ eapply a_isub_trans; eauto | ].
     split; [ exact Hwf2 | ]. split; [ exact Hnfd2 | ]. split; [ exact Hfaf2 | ].
     split.
@@ -2794,7 +2809,14 @@ Proof.
     + exists (pskl_to_bskl_syn P).
       split; [ apply bskl_to_pskl_pskl_to_bskl_syn | ].
       split.
-      * admit.
+      * replace (pskl_to_bskl_syn P)
+          with (pskl_to_bskl_syn (uskl_to_pskl (pskl_to_uskl P)))
+          by (rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
+        apply ad_pat_consis_refl_erase.
+        { apply pskl_to_uskl_lc. eapply ad_wf_pskl_lc; eauto. }
+        { intros X HX. rewrite ftvar_in_uskl_pskl in HX.
+          destruct (ad_wf_pskl_ftv_tvarish HwfP HX) as [HΔ | Htv];
+            [ clear - HΔ; fsetdec | exact Htv ]. }
       * replace (pskl_to_bskl_inh pskl_hole) with bskl_hole by reflexivity.
         apply ad_refine_syn_f__hole; [ exact H | exact HwfP ].
     + apply ad_refine_pskl_f_refl.
