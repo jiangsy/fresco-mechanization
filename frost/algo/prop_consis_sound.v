@@ -2434,6 +2434,28 @@ Proof.
   destruct (a_assign_new_avoids_F Ha Hin) as [Hd | HF]; auto.
 Qed.
 
+(** Free variables of a well-formed skeleton are tvar-ish or in Δ. *)
+Lemma ad_wf_pskl_ftv_tvarish : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall X, X `in` ftvar_in_pskl P -> X `in` Δ \/ a_binds_tvar X Θ.
+Proof.
+  intros Θ Δ P H; induction H; intros Y HY; simpl in HY.
+  - fsetdec.
+  - assert (Y = X) by fsetdec. subst. auto.
+  - destruct (AtomSetImpl.union_1 HY); auto.
+  - pick fresh Z for (L `union` ftvar_in_pskl P `union` Δ `union` {{Y}}
+                        `union` dom Θ).
+    assert (HZL : Z `notin` L) by fsetdec.
+    assert (HY' : Y `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f Z))).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f Z)).
+      fsetdec. }
+    destruct (H0 Z HZL Y HY') as [HΔ | Htv].
+    + left. assert (Y <> Z) by fsetdec. clear - HΔ H1. fsetdec.
+    + auto.
+  - fsetdec.
+  - destruct (IHad_wf_pskl Y HY) as [HΔ | Htv]; [ fsetdec | auto ].
+Qed.
+
 (** [a_assign] preserves context well-formedness.  Mirrors
     [a_assign_sound]'s visibility threading; the output is the input
     with a fresh flexible-variable block and one monotype definition
