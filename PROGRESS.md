@@ -77,6 +77,20 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-13 (f) — aconsis-soundness main induction COMPLETE (thm:sound-consistency part 1)
+
+`a_consis_sound_aux` (all 14 cases Qed, axiom-free — "Closed under the
+global context") + the paper-shaped corollary `a_consis_sound`
+(Δ-contexts empty, forgets the fill-hygiene scaffolding via `*_f_forget`
+to land the plain `⊢ᵣᵃ`/`⊢ᵣₚᵃ` refinements).  The 3 ∀-cases used the
+strip→rename→fmono / rename_ctx assembly; the flex cases needed
+`a_unify_sym` + `a_unify_subjects_flex`, `a_assign_subject_flex`,
+`a_isub_binds_tvar`, and lc-/guardedness-preservation of refinement.
+README.v indexes a_unify_sound / a_assign_sound / a_consis_sound (all
+three flagships of thm:sound-consistency, parts 1–3).  Statements use
+the paper-shaped notations.  NEXT in appendix B: Soundness of DECORATED
+consistency (composes a_consis_decorate with these), then completeness.
+
 ## 2026-07-13 (e) — aconsis-soundness main induction: 11/14 cases proved
 
 `a_consis_sound_aux` (prop_consis_sound.v): statement finalized; 11 of
