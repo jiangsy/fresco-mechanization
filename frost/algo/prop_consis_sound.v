@@ -1549,6 +1549,20 @@ Definition flex_above_free (Δ : atoms) (Θ : aenv) : Prop :=
   b <> abind_tvar ->
   AtomSetImpl.inter Δ (add β (dom Θ2)) [=] empty.
 
+Lemma no_flex_dep_cong : forall Δ Δ' Θ,
+  Δ [=] Δ' -> no_flex_dep Δ Θ -> no_flex_dep Δ' Θ.
+Proof.
+  intros Δ Δ' Θ Heq H β τ Hb. pose proof (H β τ Hb) as Hh.
+  clear - Heq Hh. fsetdec.
+Qed.
+
+Lemma faf_cong : forall Δ Δ' Θ,
+  Δ [=] Δ' -> flex_above_free Δ Θ -> flex_above_free Δ' Θ.
+Proof.
+  intros Δ Δ' Θ Heq H Θ1 β b Θ2 Hsp Hne.
+  pose proof (H Θ1 β b Θ2 Hsp Hne) as Hh. clear - Heq Hh. fsetdec.
+Qed.
+
 Lemma no_flex_dep_tail : forall Δ (c : atom) (b : abind) Θ,
   no_flex_dep Δ ((c ~ b) ++ Θ) ->
   no_flex_dep Δ Θ.
