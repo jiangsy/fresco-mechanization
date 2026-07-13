@@ -2881,6 +2881,69 @@ Proof.
   intros Θ Δ P H; induction H; eauto using lc_pskl.
 Qed.
 
+(** The synthesised painting preserves local closure. *)
+Lemma pskl_to_bskl_syn_lc : forall P,
+  lc_pskl P -> lc_bskl (pskl_to_bskl_syn P).
+Proof.
+  intros P H; induction H; simpl;
+    try (now eauto using lc_bskl);
+    (apply lc_bskl_all_syn; intros X;
+     rewrite <- pskl_to_bskl_syn_open; now auto).
+Qed.
+
+(** Refinement outputs are locally closed. *)
+Lemma ad_refine_pskl_f_lc_r : forall F Θ Δ P Q,
+  ad_refine_pskl_f F Θ Δ P Q -> lc_pskl Q.
+Proof.
+  intros F Θ Δ P Q H; induction H;
+    try (now eauto using lc_pskl);
+    try (now (eapply ad_wf_pskl_lc; eauto));
+    (pick fresh X; apply (lc_pskl_all_syn_exists X); auto).
+Qed.
+
+Lemma ad_refine_syn_f_lc_r : forall F Θ Δ Q P,
+  ad_refine_syn_f F Θ Δ Q P -> lc_bskl P.
+Proof.
+  intros F Θ Δ Q P H; induction H;
+    try (now eauto using lc_bskl);
+    try (now (apply pskl_to_bskl_syn_lc; eapply ad_wf_pskl_lc; eauto));
+    (pick fresh X; apply (lc_bskl_all_syn_exists X); auto).
+Qed.
+
+(** Refinement with a guarded left side yields a guarded right side. *)
+Lemma ad_refine_pskl_f_guarded_r : forall F Θ Δ P Q,
+  a_wf_aenv Θ ->
+  ad_refine_pskl_f F Θ Δ P Q ->
+  guarded_pskl P ->
+  guarded_pskl Q.
+Proof.
+  intros F Θ Δ P Q Hwf H; induction H; intros Hg;
+    try solve [ inversion Hg ].
+  - apply guarded_pskl__unit.
+  - apply guarded_pskl__var.
+  - apply guarded_pskl__arrow; eapply ad_refine_pskl_f_lc_r; eauto.
+  - assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    apply IHad_refine_pskl_f; auto. apply mono_ptyp_to_pskl_guarded; auto.
+  - apply guarded_pskl__var.
+Qed.
+
+Lemma ad_refine_syn_f_guarded_r : forall F Θ Δ Q P,
+  a_wf_aenv Θ ->
+  ad_refine_syn_f F Θ Δ Q P ->
+  guarded_bskl Q ->
+  guarded_bskl P.
+Proof.
+  intros F Θ Δ Q P Hwf H; induction H; intros Hg;
+    try solve [ inversion Hg ].
+  - apply guarded_bskl__unit.
+  - apply guarded_bskl__var.
+  - apply guarded_bskl__arrow; eapply ad_refine_syn_f_lc_r; eauto.
+  - assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    apply IHad_refine_syn_f; auto.
+    apply mono_bskl_guarded, mono_ptyp_to_bskl_syn; auto.
+  - apply guarded_bskl__var.
+Qed.
+
 (* ===================================================================== *)
 (*  Soundness of consistency, part 1 (thm:sound-consistency)              *)
 (* ===================================================================== *)
@@ -2954,7 +3017,24 @@ Proof.
         [ eapply ad_refine_pskl_f_isub; eauto | exact Hrp2 ].
   - (* ForallInh *) admit.
   - (* ForallSyn *) admit.
-  - (* UnivGhost *) admit.
+  - (* UnivGhost : ⊤.P ≈ ⊤.Q against input ⊤.P0 *)
+    simpl in HwfP0, HwfP.
+    inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' ]; subst.
+    inversion HwfP as [ | | | | | Θb Δb P' Hg' Hwf' ]; subst.
+    destruct IHHc
+      as [Hle [Hwf1 [Hnfd1 [Hfaf1 [[Qt [HeQt [Hcons Hrs]]] Hrp]]]]]; auto.
+    split; [ exact Hle | ]. split; [ exact Hwf1 | ].
+    split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
+    split.
+    + exists (bskl_tophole Qt). split.
+      { simpl. rewrite HeQt. reflexivity. }
+      split.
+      * simpl. apply ad_pat_consis__tophole. exact Hcons.
+      * simpl. apply ad_refine_syn_f__tophole_keep; [ | exact Hrs ].
+        eapply ad_refine_syn_f_guarded_r;
+          [ exact Hwf1 | exact Hrs | apply guarded_pskl_to_bskl_inh; exact Hg0 ].
+    + simpl. apply ad_refine_pskl_f__tophole_keep; [ | exact Hrp ].
+      eapply ad_refine_pskl_f_guarded_r; [ exact Hwf1 | exact Hrp | exact Hg' ].
   - (* UnivGhost1 *) admit.
   - (* UnivGhost2 *)
     simpl in HwfP.
