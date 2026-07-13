@@ -77,6 +77,24 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-13 (c) — main-induction prelude: helpers + wf transport/preservation
+
+Toward the aconsis-soundness main induction (all Qed, prop_consis_sound.v):
+close/erasure commutation (`bskl_to_pskl_close`), `a_assign_subject_binds`,
+`ad_wf_pskl_reassoc` (move a Δ-var into the context as a rigid, to open
+∀-binders in well-formed skeletons), F-monotonicity of the hygienic
+refine judgments, `a_wf_ptyp_isub` / `a_wf_pskl_isub` (wf transport along
+⊴), the `a_wf_aenv` inversion lemmas, and `a_unify_preserves_wf`.
+
+Refined the statement design (recorded in memory
+`remech-aconsis-main-induction-crux`): the two refinement components use
+LOCAL F (F=Δ1 for the synth component, F=Δ2 for the pskl component — NOT
+Δ1∪Δ2, which breaks Ghost's comp-4 hole side condition); the ∀-case
+assembly is strip → rename → F-weaken in that order; and `a_wf_aenv Θ1`
+must be a conclusion because the Arrow case chains it into the second
+sub-derivation's IH.  REMAINING: `a_assign_preserves_wf` (the Ξ-split +
+βs-block + new-def reconstruction) then the 14-case induction itself.
+
 ## 2026-07-13 (b) — invariant-preservation package COMPLETE
 
 `no_flex_dep` / `flex_above_free` (Δ-names sit above and differ from
