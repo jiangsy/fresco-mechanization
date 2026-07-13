@@ -77,6 +77,19 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-13 (b) — invariant-preservation package COMPLETE
+
+`no_flex_dep` / `flex_above_free` (Δ-names sit above and differ from
+every non-rigid entry) with their split/extension algebra and the two
+preservation theorems `a_assign_preserves_inv` / `a_unify_preserves_inv`
+(cbd8152): Assign-SkipRigid's occurs condition discharges each
+Δ-variable as its entry is walked, the positional invariant makes every
+Δ-variable walked by the time Assign-SolveM fires, and the used-name
+freshness keeps the guessed names off Δ; unifyvar's only new
+definitions are its hatted, Δ-free subjects.  Every prerequisite of the
+part-1 main induction (statement, 14 cases) is now Qed — next session
+runs the induction itself.
+
 ## 2026-07-13 — unifyvar/assignvar prose-completions IMPLEMENTED (user-directed)
 
 Per the user's design call (used-name set, not full-context visibility;
