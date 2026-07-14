@@ -38,9 +38,6 @@ Set Implicit Arguments.
 (*  Composition, and the algebra of [msubst_lookup]                       *)
 (* ===================================================================== *)
 
-Definition msubst_compose (ζ θ : metasubst) : metasubst :=
-  List.map (fun e => (fst e, msubst_ptyp ζ (snd e))) θ.
-
 Lemma dom_msubst_compose : forall ζ θ,
   dom (msubst_compose ζ θ) [=] dom θ.
 Proof.

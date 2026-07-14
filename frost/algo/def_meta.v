@@ -83,6 +83,13 @@ Fixpoint msubst_bskl (θ : metasubst) (Q : bskl) : bskl :=
   | bskl_tophole Q0 => bskl_tophole (msubst_bskl θ Q0)
   end.
 
+(** Composition of metasubstitutions, [ζ ∘ θ].  A metasubstitution is a finite
+    MAP (algorithmic.tex:123), so composition is pointwise on the domain:
+    (ζ ∘ θ)(α) = ζ(θ(α)).  Its action law — and the side condition that law
+    needs — is [msubst_ptyp_compose] in algo/prop_compose.v. *)
+Definition msubst_compose (ζ θ : metasubst) : metasubst :=
+  List.map (fun e => (fst e, msubst_ptyp ζ (snd e))) θ.
+
 (** The identity metasubstitution ι maps each flexible variable to itself. *)
 Definition is_id_entry (e : atom * ptyp) : Prop :=
   snd e = ptyp_var_f (fst e).
