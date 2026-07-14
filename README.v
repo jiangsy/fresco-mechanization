@@ -15,6 +15,8 @@ Require Import src.frost.algo.prop_decorate.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_consis_sound.
+Require Import src.frost.algo.prop_mono_bridge.
+Require Import src.frost.algo.test_unify_regression.
 Require Import src.frost.algo.prop_precise.
 
 (* ===================================================================== *)
@@ -36,10 +38,27 @@ Check d_sd_typing_complete.
    (lemma:decorating-algorithmic-consistency) *)
 Check a_consis_decorate.
 
-(* Lemma [Soundness of consistency] (thm:sound-consistency), parts 2 & 3:
-   variable unification and assignment. *)
+(* Lemma [Soundness of consistency] (thm:sound-consistency): the MUTUAL
+   soundness bundle over [a_unify] + [a_consis] — the corrected
+   [Flex-Flex-Assign] recurses into consistency, so the two judgments are
+   mutually inductive and (exactly as the paper organises its own proof,
+   consistency-proofs.tex:1562) their soundness is one mutual induction.
+   [a_assign] stays below the cycle (parts 2 & 3 packaged below). *)
+Check a_unify_consis_sound.
 Check a_unify_sound.
 Check a_assign_sound.
+
+(* The BRIDGE both ways (algo/prop_mono_bridge.v): on monotypes,
+   consistency's join + the input's refinement yield a type EQUIVALENCE,
+   and conversely a type equivalence yields consistency of the paintings —
+   what the corrected [Flex-Flex-Assign] produces and consumes. *)
+Check consis_refine_mono_tyequiv.
+Check tyequiv_mono_consis.
+Check consis_mono_trans.
+
+(* REGRESSION (algo/test_unify_regression.v): the instance the pre-fix
+   [a_unify] was machine-checked to be STUCK on now succeeds. *)
+Check a_unify_succeeds_on_arrow_definition.
 
 (* Lemma [Soundness of decorated consistency]
    (lemma:sound-decorated-consistency): the main induction, over the
@@ -77,8 +96,11 @@ Print Assumptions d_typing_general_subsumption.
 Print Assumptions d_sd_typing_general_subsumption_spine.
 Print Assumptions a_consis_decorate.
 Print Assumptions a_isub_trans.
+Print Assumptions a_unify_consis_sound.
 Print Assumptions a_unify_sound.
 Print Assumptions a_assign_sound.
+Print Assumptions tyequiv_mono_consis.
+Print Assumptions a_unify_succeeds_on_arrow_definition.
 Print Assumptions a_consistag_sound_aux.
 Print Assumptions ad_precise_preserves_refine.
 Print Assumptions a_consis_sound.

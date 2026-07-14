@@ -183,92 +183,12 @@ Qed.
 (*  Soundness of variable unification (thm:sound-consistency part 2)      *)
 (* ===================================================================== *)
 
-Lemma a_unify_sound : forall Θ0 A B Θ1,
-  Θ0 ⊲ A ≈ᵘ B ⊣ Θ1 ->
-  a_wf_aenv Θ0 ->
-  mono_ptyp A ->
-  mono_ptyp B ->
-  Θ0 ⊴ Θ1 /\ dom Θ1 [=] dom Θ0 /\ (Θ1 ⊢ A ≡ᵗ B).
-Proof.
-  intros * Hu; induction Hu; intros Hctx HmA HmB.
-  - (* Flex-Flex-Id *)
-    split; [ apply a_isub_refl | split; [ fsetdec | ] ].
-    apply a_tyequiv__refl. constructor.
-  - (* Flex-Flex-L : α̂ := β̂ *)
-    split; [ | split; [ simpl; fsetdec | ] ].
-    + split.
-      * destruct (a_inc_refl_gen Θ0
-          (Ξ0 := (α ~ abind_flex_mono_def (ptyp_var_f β))))
-          as [θ0 [Hid0 Hinc0]].
-        { apply (a_suffix__cons α (b := abind_flex_mono_def (ptyp_var_f β)));
-            constructor. }
-        exists ((α, ptyp_var_f α) :: θ0). split.
-        { constructor; auto. unfold is_id_entry; reflexivity. }
-        apply a_inc__flex; auto;
-          try (apply a_wf_ptyp__var; right; right;
-               exists (ptyp_var_f β); unfold binds; left; reflexivity);
-          try constructor.
-      * intros γ τ0 Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-          [ discriminate | ].
-        simpl. unfold binds. right. auto.
-    + apply a_tyequiv__flex_def. unfold binds; left; reflexivity.
-  - (* Flex-Flex-R : β̂ := α̂ *)
-    split; [ | split; [ simpl; fsetdec | ] ].
-    + split.
-      * destruct (a_inc_refl_gen Θ0
-          (Ξ0 := (β ~ abind_flex_mono_def (ptyp_var_f α))))
-          as [θ0 [Hid0 Hinc0]].
-        { apply (a_suffix__cons β (b := abind_flex_mono_def (ptyp_var_f α)));
-            constructor. }
-        exists ((β, ptyp_var_f β) :: θ0). split.
-        { constructor; auto. unfold is_id_entry; reflexivity. }
-        apply a_inc__flex; auto;
-          try (apply a_wf_ptyp__var; right; right;
-               exists (ptyp_var_f α); unfold binds; left; reflexivity);
-          try constructor.
-      * intros γ τ0 Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-          [ discriminate | ].
-        simpl. unfold binds. right. auto.
-    + apply a_tyequiv__sym.
-      apply a_tyequiv__flex_def. unfold binds; left; reflexivity.
-  - (* Flex-Flex-Assign *)
-    inversion Hctx; subst.
-    match goal with
-    | Hmτ : mono_ptyp τ |- _ =>
-      destruct IHHu as [Hle [Hdom Heq1]]; auto using mono_ptyp_subst
-    end.
-    assert (Hlcτ : lc_ptyp τ) by (apply mono_ptyp_lc; assumption).
-    assert (Hbγ : binds γ (abind_flex_mono_def τ)
-                    ((γ ~ abind_flex_mono_def τ) ++ Θ1))
-      by (unfold binds; left; reflexivity).
-    split; [ | split ].
-    + apply a_isub_cons_flex_def; auto.
-    + simpl. fsetdec.
-    + eapply a_tyequiv__trans.
-      { eapply a_tyequiv_subst_def; eauto. }
-      eapply a_tyequiv__trans.
-      { apply a_tyequiv_weaken_cons. exact Heq1. }
-      apply a_tyequiv__sym.
-      eapply a_tyequiv_subst_def; eauto.
-  - (* Flex-Flex-Skip (flexible γ̂, absent from the subjects) *)
-    inversion Hctx; subst.
-    destruct IHHu as [Hle [Hdom Heq1]]; auto.
-    split; [ | split ].
-    + apply a_isub_cons_flex; auto.
-    + simpl. fsetdec.
-    + apply a_tyequiv_weaken_cons; auto.
-  - (* Flex-Flex-Skip' (rigid / term-var entry) *)
-    destruct H as [Hb | [[Q Hb] | [Q Hb]]]; subst;
-      inversion Hctx; subst;
-      destruct IHHu as [Hle [Hdom Heq1]]; auto;
-      (split; [ | split; [ simpl; fsetdec
-                         | apply a_tyequiv_weaken_cons; auto ] ]).
-    + apply a_isub_cons_tvar; auto.
-    + apply a_isub_cons_var_typ; auto.
-    + apply a_isub_cons_var_skl; auto.
-Qed.
+(* [a_unify_sound] MOVED to prop_consis_sound.v: with the corrected
+   [Flex-Flex-Assign] (whose premise is CONSISTENCY, not [unifyvar]),
+   [a_unify] and [a_consis] are MUTUALLY inductive, so their soundness is one
+   mutual induction ([a_unify_consis_mutind]).  That is also how the paper
+   organises its own proof (consistency-proofs.tex:1562). *)
+
 
 (* ===================================================================== *)
 (*  Source-prefix machinery for assignvar (the [Θ0 | Ξ] split): flexible  *)
