@@ -32,6 +32,41 @@ refuted — none so far)}.
   (algo/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
+## FALSE (⚠ NEEDS AUTHOR DECISION) — refinement is not transitive; GhostForall captures its own ∀-variable
+- Where: fig. of refinement, `declarative.tex:1505-1510` (the GhostForall
+  rule); the consequence hits `lemma:precision-preserves-refinement`
+  (full-algo-spec.tex:716) and hence the whole completeness/optimality
+  development, which rests on it.
+- Machine-checked artifact: `frost/algo/cex_refine_not_transitive.v` —
+  `ad_refine_syn_not_transitive` is Qed and axiom-free.
+- The GhostForall rule binds `α` in `Γ` but deliberately KEEPS `Δ`
+  (the paper's own inline comment: "It's fine to keep Δ since we already
+  required well-formedness separately").  But `Δ` is exactly what the Ghost
+  rule tests (`Δ ∩ ftv(syn{Q}) = ∅`).  So a ghost nested UNDER a GhostForall
+  may be filled with the very `α` that GhostForall binds — `α` is in `Γ`,
+  not in `Δ`, so the side condition does not forbid it.  Witness:
+
+      □ ⊳ syn(⊤.(□→□))              (Ghost; the fill is well-formed)
+      ⊤.(□→□) ⊳ ∀α. ⊤.(α→α)         (GhostForall, then two Ghost fills at α)
+      but NOT  □ ⊳ ∀α. ⊤.(α→α)
+
+  The last step fails because the Ghost rule may only produce a WELL-FORMED
+  skeleton, and `∀α. ⊤.(α→α)` is not one: skeleton well-formedness binds a
+  quantifier's variable in `Δ`, while a `⊤`-ghost's body must be well-formed
+  at the EMPTY `Δ`.  Hence transitivity — and precision-preserves-refinement
+  — fail.
+- The MECH rule is FAITHFUL here (`ad_refine_syn__tophole_fill` puts `α` in
+  the context and leaves `Δ` alone), so this is a paper-level problem, not an
+  encoding slip.  (Unrelated minor discrepancy: mech's `ad_refine_syn__all`
+  adds the variable only to `Δ`, where the paper adds it to both `Δ` and `Γ`.)
+- LIKELY FIX (needs the authors): make GhostForall extend `Δ` as well as `Γ`
+  (`Δ,α ⨟ Γ,α`), exactly as the ∀-rule does.  The Ghost rule's side condition
+  then forbids the capture and the second step above becomes underivable.
+  This is the same "inherited variables must not fill ghosts" discipline that
+  the soundness proof had to carry explicitly as the fill-hygiene set `F`
+  (`ad_refine_syn_f`) — evidence the constraint genuinely belongs in the rule.
+- STATUS: completeness of consistency is BLOCKED pending this decision.
+
 ## MECH-BUG (fixed) — decorated FlexR had an over-general subject
 - Where: fig:decorated-alg-consistency (decorated-algosub.tex:237-238); mech
   `a_consistag__flex_r` (algo/def_decorated.v).  Found while closing the
