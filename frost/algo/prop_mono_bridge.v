@@ -382,23 +382,219 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  REMAINING: [consis_mono_trans] — consistency is TRANSITIVE on monotype *)
-(*  paintings — and then the CONVERSE bridge                                *)
+(*  THE CONVERSE BRIDGE                                                     *)
 (*                                                                          *)
 (*      tyequiv_mono_consis :  A ≡ᵗ B  ⟹  syn{A} ≈ syn{B}                   *)
 (*                                                                          *)
-(*  which [a_unify_sound_consis] needs (part 2's solution is stated as       *)
-(*  declarative CONSISTENCY, while the mutual induction produces a type      *)
-(*  EQUIVALENCE).  Its ≡-induction needs refl / sym / trans of consistency:  *)
-(*  refl and sym are proved above; TRANS is not.                             *)
+(*  which the mutual soundness bundle needs (part 2's solution is stated    *)
+(*  as declarative CONSISTENCY, while the mutual induction produces a type  *)
+(*  EQUIVALENCE).                                                           *)
 (*                                                                          *)
-(*  Shape (mapped, not landed — it is plumbing, not mathematics): OUTER      *)
-(*  induction on the SECOND derivation; INNER induction on the FIRST to peel *)
-(*  [flex_l] (which unfolds the SUBJECT while the right stands still);       *)
-(*  [flex_r] unfolds the JOIN and falls to the outer IH.  Exactly the shape  *)
-(*  of [ad_refine_syn_trans] in prop_precise.v.  The fiddly part is keeping  *)
-(*  BOTH derivations''' indices as variables across the two inductions:          *)
-(*  [syn{A}] is not a variable, so the subject must be carried as [Sa] with  *)
-(*  [Sa = syn{A}] on the side, and the join [remember]ed.  Beware: a bare    *)
-(*  [subst] silently eats that side equation.                                *)
+(*  Organisation: instead of proving transitivity of consistency by the     *)
+(*  two-derivation nested induction (the shape of [ad_refine_syn_trans]),   *)
+(*  we prove a BIDIRECTIONAL TRANSPORT along [≡ᵗ] — for [A ≡ᵗ B], a         *)
+(*  consistency derivation whose subject is [syn{B}] can be re-subjected    *)
+(*  to [syn{A}] and vice versa.  Its [trans] case is function composition,  *)
+(*  and only two small single-side-equation inner inductions remain (the    *)
+(*  subject-unfolding of a definition, and the arrow congruence).           *)
+(*  [consis_mono_trans] then falls out as a corollary via the forward       *)
+(*  bridge's [consis_mono_join].                                            *)
 (* ===================================================================== *)
+
+(** [≡ᵗ] preserves monotype-ness and ftv-visibility (both directions).
+    Needed because [trans] passes through an arbitrary middle type. *)
+Lemma a_tyequiv_mono_vis : forall Θ A B,
+  Θ ⊢ A ≡ᵗ B ->
+  a_wf_aenv Θ ->
+  ((mono_ptyp A /\ (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ)) ->
+   (mono_ptyp B /\ (forall X, X `in` ftvar_in_ptyp B -> a_binds_tvar X Θ))) /\
+  ((mono_ptyp B /\ (forall X, X `in` ftvar_in_ptyp B -> a_binds_tvar X Θ)) ->
+   (mono_ptyp A /\ (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ))).
+Proof.
+  intros * Heq Hwf; induction Heq; split; intros [Hm Hv];
+    try solve [ split; assumption ]; try tauto.
+  - (* flex_def, forward : α ↦ τ *)
+    split.
+    + eapply a_wf_aenv_binds_def_mono; eauto.
+    + intros X HX.
+      eapply a_wf_ptyp_ftv_tvarish;
+        [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact HX ].
+  - (* flex_def, backward : τ ↦ α *)
+    split; [ apply mono_ptyp__var | ].
+    intros X HX. simpl in HX.
+    assert (X = α) by (clear - HX; fsetdec). subst.
+    right; right; exists τ; assumption.
+  - (* arrow, forward *)
+    inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
+    destruct (IHHeq1 Hwf) as [IH1 _]. destruct (IHHeq2 Hwf) as [IH2 _].
+    destruct (IH1 (conj Hm1
+        (fun X HX => Hv X (AtomSetImpl.union_2 _ HX)))) as [HmB1 HvB1].
+    destruct (IH2 (conj Hm2
+        (fun X HX => Hv X (AtomSetImpl.union_3 _ HX)))) as [HmB2 HvB2].
+    split; [ apply mono_ptyp__arrow; auto | ].
+    intros X HX; simpl in HX.
+    destruct (AtomSetImpl.union_1 HX); auto.
+  - (* arrow, backward *)
+    inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
+    destruct (IHHeq1 Hwf) as [_ IH1]. destruct (IHHeq2 Hwf) as [_ IH2].
+    destruct (IH1 (conj Hm1
+        (fun X HX => Hv X (AtomSetImpl.union_2 _ HX)))) as [HmA1 HvA1].
+    destruct (IH2 (conj Hm2
+        (fun X HX => Hv X (AtomSetImpl.union_3 _ HX)))) as [HmA2 HvA2].
+    split; [ apply mono_ptyp__arrow; auto | ].
+    intros X HX; simpl in HX.
+    destruct (AtomSetImpl.union_1 HX); auto.
+  - (* all, forward : a monotype is never a ∀ *)
+    inversion Hm.
+  - (* all, backward *)
+    inversion Hm.
+Qed.
+
+(** Unfold a DEFINED subject variable inside a consistency derivation:
+    only [var] / [flex_l] / [flex_r] can have subject [γ̂], and each is
+    absorbed by a lookup rule on the other side. *)
+Lemma consis_unfold_def_subject : forall Ψ Θ S Qt,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  a_wf_aenv Θ ->
+  forall γ τ, S = uskl_var_f γ ->
+  binds γ (abind_flex_mono_def τ) Θ ->
+  Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn τ) ≈ Qt.
+Proof.
+  intros * Hc Hwf; induction Hc; intros γ0 τ0 HeqS Hb;
+    try discriminate HeqS.
+  - (* var : the join is the same variable; fold it with [flex_r] *)
+    inversion HeqS; subst.
+    eapply ad_pat_consis__flex_r; [ exact Hb | ].
+    eapply consis_psi_cong_local;
+      [ apply consis_mono_refl | clear - H; fsetdec ].
+    + eapply a_wf_aenv_binds_def_mono; eauto.
+    + intros Y HY.
+      eapply a_wf_ptyp_ftv_tvarish;
+        [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact HY ].
+  - (* flex_l : the same definition was already unfolded *)
+    inversion HeqS; subst.
+    assert (Huniq : uniq Θ) by (apply a_wf_aenv_uniq_local; auto).
+    assert (Heqτ : abind_flex_mono_def τ = abind_flex_mono_def τ0)
+      by (eapply binds_unique; eauto).
+    inversion Heqτ; subst.
+    exact Hc.
+  - (* flex_r : the JOIN unfolds; the subject is untouched *)
+    eapply ad_pat_consis__flex_r; [ eassumption | ].
+    eapply IHHc; eauto.
+Qed.
+
+(** Transport an arrow subject componentwise: only [arrow] / [flex_r] can
+    have an arrow subject, and the transport is generic in the two
+    component transports. *)
+Lemma consis_arrow_subject_transport : forall Ψ Θ S Qt,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  forall S1 S2 T1 T2,
+  S = uskl_arrow S1 S2 ->
+  (forall Ψ' Q', Ψ' ⨟ Θ ⊨ₛᵃ S1 ≈ Q' -> Ψ' ⨟ Θ ⊨ₛᵃ T1 ≈ Q') ->
+  (forall Ψ' Q', Ψ' ⨟ Θ ⊨ₛᵃ S2 ≈ Q' -> Ψ' ⨟ Θ ⊨ₛᵃ T2 ≈ Q') ->
+  Ψ ⨟ Θ ⊨ₛᵃ (uskl_arrow T1 T2) ≈ Qt.
+Proof.
+  intros * Hc; induction Hc; intros S1' S2' T1 T2 HeqS Htr1 Htr2;
+    try discriminate HeqS.
+  - (* arrow *)
+    inversion HeqS; subst.
+    eapply ad_pat_consis__arrow; [ apply Htr1 | apply Htr2 | ]; eauto.
+  - (* flex_r *)
+    eapply ad_pat_consis__flex_r; [ eassumption | ].
+    eapply IHHc; eauto.
+Qed.
+
+(** THE TRANSPORT.  For [A ≡ᵗ B] on monotypes, consistency derivations can
+    be re-subjected between [syn{A}] and [syn{B}], in BOTH directions (the
+    two directions are proved simultaneously so that [sym] just swaps and
+    [trans] just composes). *)
+Lemma tyequiv_mono_consis_transport : forall Θ A B,
+  Θ ⊢ A ≡ᵗ B ->
+  a_wf_aenv Θ ->
+  mono_ptyp A ->
+  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  (forall Ψ Qt, Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn B) ≈ Qt ->
+     Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ Qt) /\
+  (forall Ψ Qt, Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ Qt ->
+     Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn B) ≈ Qt).
+Proof.
+  intros Θ A B Heq Hwf; induction Heq; intros Hm Hv.
+  - (* refl *)
+    split; intros Ψ Qt Hc; exact Hc.
+  - (* sym : swap the IH's directions *)
+    destruct (a_tyequiv_mono_vis Heq Hwf) as [_ Hback].
+    destruct (Hback (conj Hm Hv)) as [HmA HvA].
+    destruct (IHHeq Hwf HmA HvA) as [Hd1 Hd2].
+    split; [ exact Hd2 | exact Hd1 ].
+  - (* trans : compose *)
+    destruct (a_tyequiv_mono_vis Heq1 Hwf) as [Hfwd _].
+    destruct (Hfwd (conj Hm Hv)) as [HmB HvB].
+    destruct (IHHeq1 Hwf Hm Hv) as [H1l H1r].
+    destruct (IHHeq2 Hwf HmB HvB) as [H2l H2r].
+    split; intros Ψ Qt Hc; [ apply H1l, H2l, Hc | apply H2r, H1r, Hc ].
+  - (* flex_def : α̂ ≡ τ with α̂ := τ *)
+    split; intros Ψ Qt Hc.
+    + (* fold : one lookup rule *)
+      unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn; simpl.
+      eapply ad_pat_consis__flex_l; [ eassumption | exact Hc ].
+    + (* unfold : peel the subject's lookup *)
+      eapply consis_unfold_def_subject;
+        [ exact Hc | exact Hwf | | eassumption ].
+      unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn; simpl; reflexivity.
+  - (* arrow : componentwise transport *)
+    inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
+    assert (Hv1 : forall X, X `in` ftvar_in_ptyp A1 -> a_binds_tvar X Θ)
+      by (intros X HX; apply Hv; fsetdec).
+    assert (Hv2 : forall X, X `in` ftvar_in_ptyp A2 -> a_binds_tvar X Θ)
+      by (intros X HX; apply Hv; fsetdec).
+    destruct (IHHeq1 Hwf Hm1 Hv1) as [H1l H1r].
+    destruct (IHHeq2 Hwf Hm2 Hv2) as [H2l H2r].
+    split; intros Ψ Qt Hc.
+    + eapply consis_arrow_subject_transport with (T1 := ptyp_to_uskl_syn A1);
+        [ exact Hc | | exact H1l | exact H2l ].
+      unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn; simpl; reflexivity.
+    + eapply consis_arrow_subject_transport with (T1 := ptyp_to_uskl_syn B1);
+        [ exact Hc | | exact H1r | exact H2r ].
+      unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn; simpl; reflexivity.
+  - (* all : a monotype is never a ∀ *)
+    inversion Hm.
+Qed.
+
+(** THE CONVERSE BRIDGE.  [A ≡ᵗ B] on monotypes yields consistency of the
+    two syn paintings: transport [B]'s reflexivity derivation. *)
+Theorem tyequiv_mono_consis : forall Θ A B,
+  Θ ⊢ A ≡ᵗ B ->
+  a_wf_aenv Θ ->
+  mono_ptyp A ->
+  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ (ptyp_to_bskl_syn B).
+Proof.
+  intros * Heq Hwf Hm Hv.
+  destruct (a_tyequiv_mono_vis Heq Hwf) as [Hfwd _].
+  destruct (Hfwd (conj Hm Hv)) as [HmB HvB].
+  destruct (tyequiv_mono_consis_transport Heq Hwf Hm Hv) as [Hd1 _].
+  apply Hd1.
+  apply consis_mono_refl; auto.
+Qed.
+
+(** Transitivity of consistency on monotype paintings — recorded for the
+    paper's account: the forward bridge extracts [A ≡ᵗ B] from the first
+    derivation, and the transport re-subjects the second. *)
+Corollary consis_mono_trans : forall Θ A B C,
+  a_wf_aenv Θ ->
+  mono_ptyp A -> mono_ptyp B ->
+  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ (ptyp_to_bskl_syn B) ->
+  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn B) ≈ (ptyp_to_bskl_syn C) ->
+  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ (ptyp_to_bskl_syn C).
+Proof.
+  intros * Hwf HmA HmB HvA Hc1 Hc2.
+  destruct (consis_mono_join Hc1 Hwf (A := A) eq_refl HmA)
+    as [B' [HmB' [HeqB' HeqAB']]].
+  assert (HBB' : B' = B)
+    by (apply ptyp_to_bskl_syn_inj; auto;
+        unfold ptyp_to_bskl_syn; rewrite <- HeqB'; reflexivity).
+  subst B'.
+  destruct (tyequiv_mono_consis_transport HeqAB' Hwf HmA HvA) as [Hd1 _].
+  apply Hd1. exact Hc2.
+Qed.

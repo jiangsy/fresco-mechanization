@@ -42,7 +42,7 @@ refuted — none so far)}.
   (algo/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
-## MECH-BUG (⚠ OPEN) — `Flex-Flex-Assign` must recurse into CONSISTENCY, not into `unifyvar`
+## MECH-BUG (FIXED 2026-07-14) — `Flex-Flex-Assign` must recurse into CONSISTENCY, not into `unifyvar`
 - Where: full-algo-spec.tex:1707 (`Flex-Flex-Assign`), :1754 (`Assign-Assign`),
   :393 / algorithmic.tex:330 (skeleton splitting); mech `a_unify__flex_assign`
   (algo/def_extra.v:487).
@@ -72,15 +72,16 @@ refuted — none so far)}.
 - THE BUG: mech `a_unify__flex_assign` recurses into `a_unify` (the var-only
   `unifyvar`) where the paper recurses into CONSISTENCY.  So the mechanized
   algorithm gets STUCK the moment a definition is a non-variable monotype —
-  machine-checked in `frost/algo/cex_unify_stuck.v`
-  (`a_unify_stuck_on_arrow_definition`, Qed, axiom-free): with
-  `Θ₀ = (α̂ ≔ unit → unit), β̂` it cannot unify α̂ with β̂, though a solution
-  plainly exists.  A definition CAN be an arrow — that is what `Assign-SolveM`
+  machine-checked at the time (`a_unify_stuck_on_arrow_definition`, Qed,
+  axiom-free): with `Θ₀ = (α̂ ≔ unit → unit), β̂` it could not unify α̂ with β̂,
+  though a solution plainly exists.  That instance is now the SUCCESS
+  regression test `frost/algo/test_unify_regression.v`
+  (`a_unify_succeeds_on_arrow_definition`).  A definition CAN be an arrow — that is what `Assign-SolveM`
   produces via `guess^TY`.
 - NB `a_unify_var_inv` ("every derivable `a_unify` has VARIABLE subjects",
   prop_consis_sound.v) reads like a theorem but is a SYMPTOM of this bug.
-- FIX (open; NOT yet done — it is a real restructure).  The premise becomes, with
-  the output existential and both Δs empty (per the shorthand above):
+- FIX (IMPLEMENTED, algo/def_extra.v).  The premise became, with the output
+  existential and both Δs empty (per the shorthand above):
 
       a_unify__flex_assign : forall Θ0 Θ1 γ τ A B Q,
         a_consis empty empty Θ0
@@ -90,15 +91,34 @@ refuted — none so far)}.
         ((γ ~ abind_flex_mono_def τ) ++ Θ0) ⊲ A ≈ᵘ B
           ⊣ ((γ ~ abind_flex_mono_def τ) ++ Θ1)
 
-  and likewise for `a_assign`'s Assign-Assign.  So `a_consis`, `a_unify` and
-  `a_assign` become MUTUALLY inductive: consistency's Flex rule already calls
-  `a_unify`; now `a_unify` and `a_assign` call back into consistency.
-  Consequence: the soundness proofs (`a_unify_sound`, `a_assign_sound`,
-  `a_consis_sound_aux`, `a_consistag_sound_aux`) all become MUTUAL inductions.
-  Their STATEMENTS are unchanged — only the induction principle is.
-- STATUS: soundness as it stands is fine (it only inspects derivations that
-  exist), but it is proved about a judgment that is too weak.  Completeness is
-  blocked until this is fixed.
+  (plus the used-name set `F` — see the PROSE-COMPLETION entry below: the
+  cycle forces `F` through `a_unify` and `a_consis` as well).  So `a_unify`
+  and `a_consis` are MUTUALLY inductive — a 2-WAY mutual, not the paper's
+  3-way: the mech reads `Assign-Assign` as CONTINUING the assignment (see the
+  note at `a_assign` in algo/def_extra.v), so `a_assign` stays BELOW the
+  cycle and its lemmas enter the mutual soundness proof as black boxes.
+  `a_unify`'s subjects became ATOMS (the paper's hatted `unifyvar{α̂}{β̂}`).
+- CONSEQUENCES, all landed (algo/prop_consis_sound.v, prop_mono_bridge.v):
+  - `a_unify_consis_sound`: ONE mutual induction (Combined Scheme, 6+14
+    cases) proving parts 1+2 of thm:sound-consistency together, exactly how
+    the paper organises its own proof (consistency-proofs.tex:1562).  The
+    invariant-preservation conjuncts are generalized over the protected Δ
+    (Flex-Flex-Assign's consistency premise runs at `Δ₁ = Δ₂ = ∅`).
+  - Part 2's conclusion is now a type EQUIVALENCE `Θ₁ ⊢ α̂ ≡ᵗ β̂`.  The
+    Flex-Flex-Assign case recovers it from consistency's join + the input's
+    refinement via the monotype BRIDGE (`consis_refine_mono_tyequiv`), and
+    part 1's Flex case converts it back to declarative consistency via the
+    CONVERSE bridge (`tyequiv_mono_consis`) — both in prop_mono_bridge.v.
+  - `a_consistag_sound_aux` (decorated, Appendix B) stays a PLAIN induction
+    above the bundle: `a_consistag` is not in the recursion cycle (its flex
+    rules take `a_unify`/`a_assign` derivations as opaque premises).
+  - DELETED as artifacts of the bug: `a_unify_var_inv` (vacuous — subjects
+    are atoms), `a_unify_dom` (now FALSE: unification can GROW the context
+    via consistency → Assign-SolveM; part-2 soundness only claims an
+    information increase), `a_unify_sym` (consistency is subject/input
+    asymmetric; symmetry now comes from `a_tyequiv__sym`).
+- STATUS: fixed; `make coq` green, zero admits, all flagships axiom-free
+  (README.v).  Completeness is unblocked.
 
 ## MECH-BUG (fixed) — metasubstitution was a SEQUENTIAL fold, but the paper says "finite map"
 - Where: algorithmic.tex:123 — "A metasubstitution `Θ ⊑[θ] Θ'` is a finite **MAP**
@@ -274,12 +294,23 @@ refuted — none so far)}.
   USED-NAME set `F` accumulated by the entry-walking rules, and
   `Assign-SolveM` requires `uniq β̄` and `dom β̄` fresh from
   `F ∪ {α̂} ∪ dom(Ξ,Θ0)` — which at the solve node covers exactly the
-  original context.  The paper-shaped judgment is the `F = ∅` notation
-  `Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'`.  Still to prove: the invariant-preservation
-  lemmas (unify/assign preserve "no flexible definition mentions
-  Δ1 ∪ Δ2", using these completions plus Assign-SkipRigid's occurs
-  condition and the positional fact that Δ-binders sit above all
-  flexible entries).
+  original context.  The paper-shaped judgments are the `F = ∅` notations.
+- EXTENDED to the mutual cycle (2026-07-14): with `Flex-Flex-Assign`
+  recursing into consistency, a solve node can fire deep inside a
+  consistency premise, BELOW entries that `a_unify`'s skip rules walked
+  past — and below the Δ-binders walked past by `Flex-Flex-Skip'`.  Those
+  names can only reach the solve node through `F`, so `a_unify` and
+  `a_consis` now carry the used-name set too (their skip/assign rules
+  accumulate the walked head; all other rules pass `F` through).  Without
+  it, `a_guess_mono__hole` may pick a walked head's name and re-attaching
+  that head breaks context well-formedness — i.e. wf-preservation (and Δ-
+  invariant preservation) would be FALSE for the mutual definitions.
+  The invariant-preservation lemmas are now PROVED as conjuncts of the
+  mutual soundness bundle `a_unify_consis_sound`
+  (algo/prop_consis_sound.v): new names avoid `F`; no-flex-dep +
+  flex-above-free + domain bookkeeping are preserved for every protected
+  Δ with `Δ ⊆ F ∪ dom Θ₀`, using Assign-SkipRigid's occurs condition and
+  the positional fact that Δ-binders sit above all flexible entries.
 
 ## Resolved definition-sync findings (step 1 of the restart)
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the

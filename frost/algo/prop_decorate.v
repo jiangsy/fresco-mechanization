@@ -71,11 +71,17 @@ Qed.
 (*  then aconsistag[Δ1|Δ2][P0][·]{Θ0}{P}{Q}{Θ1}.                          *)
 (* ===================================================================== *)
 
-Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+(* Generalized over the used-name set [F] so the induction's indices stay
+   VARIABLES (a bare [induction] on the [F = ∅] instance would capture the
+   goal's [Ψ = ∅] literal).  [a_consis]'s own premises all share the root's
+   [F], and the decorated rules store the paper-shaped [F = ∅] premises, so
+   Leibniz [F = empty] transports through every case. *)
+Lemma a_consis_decorate_gen : forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+  F = empty ->
   Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ≈ Q ⊣ Θ1.
 Proof.
-  intros * Hc; induction Hc; simpl.
+  intros * Hc; induction Hc; intros HF; subst; simpl.
   - (* Ghost *)
     apply a_consistag__ghost; auto. fsetdec.
   - (* Unit *)
@@ -112,4 +118,12 @@ Proof.
   - (* UnivGhostR *)
     apply a_consistag__univ_ghost_r; auto using pskl_to_uskl_guarded;
       try rewrite uskl_to_pskl_pskl_to_uskl; auto.
+Qed.
+
+(** The paper-shaped instance (no used names at the root). *)
+Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ≈ Q ⊣ Θ1.
+Proof.
+  intros * Hc; eapply a_consis_decorate_gen; eauto.
 Qed.
