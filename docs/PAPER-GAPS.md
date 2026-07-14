@@ -469,6 +469,87 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   Δ with `Δ ⊆ F ∪ dom Θ₀`, using Assign-SkipRigid's occurs condition and
   the positional fact that Δ-binders sit above all flexible entries.
 
+## GAP — `thm:complete-consistency`: the three induction subjects DO NOT COMBINE
+
+Full analysis, with per-edge verification and the measure that works:
+[DESIGN-completeness-measure.md](DESIGN-completeness-measure.md).
+
+The lemma is proved "by mutual induction for the three parts", but each part
+declares a DIFFERENT induction subject: §1 (consistency) on the DECLARATIVE
+consistency derivation; §2 (unification) on the CONTEXT `Θ₀`; §3 (assignment)
+on the PAIR `Θ₀ ∣ Ξ` (consistency-proofs.tex:2257, :2277, :2420).  A
+mechanization needs ONE well-founded order, and BOTH obvious candidates are
+dead — with witnesses:
+
+* **No context measure can be outermost.**  `Arrow`'s SECOND premise runs at the
+  OUTPUT context `Θ₁` of the first, and `Assign-SolveM` can have extended it with
+  fresh flexible variables AND made a definition.  Witness: `Θ₀ = (α̂)`, input
+  `(◇→unit)→unit`, subject `α̂→unit` ⇒ `Θ₁ = (α̂ ≔ β̂→unit), (β̂)`.  Any weight goes
+  up.  (`ForallInh`/`ForallSyn`/`UnivGhost1` break `|Θ₀|` more cheaply, `+1` rigid.)
+
+* **No declarative-derivation measure can be outermost either** — and it does not
+  merely fail to shrink, it can GROW.  At `Assign-Assign` the derivation handed to
+  the consistency IH is the paper's REFLEXIVITY derivation on `θ(α̂[τ/β̂])`
+  (:2510-2515).  Witness: `Θ₀ = (β̂≔unit),(α̂)`, `P = ◇→unit`,
+  `θα̂ = (unit→unit)→unit` — caller's derivation is 3 nodes, callee's is 5.  The
+  mechanism is `Ghost`: it absorbs an arbitrarily large `Q` in ONE node, so the
+  assignment node's derivation is bounded by the GHOST-RIDDEN `P` while the
+  spawned consistency node's is bounded by the FULLY-SOLVED `θα̂`.
+
+  **Corollary: §1's "induction on the declarative consistency derivation" is not
+  a well-founded induction as written** — `UnivGhostR` (:2570-2572) recurses with
+  the LITERALLY IDENTICAL derivation.
+
+The two failures land on DISJOINT edge sets, so no lexicographic combination of
+them in either order works.
+
+RESOLUTION (not a paper error, just an unstated measure).  Induct on
+`V` = the size of the skeletons **as the SOLUTION sees them** — pushed through the
+solution's `θ`, then through the target `Θ`'s own definitions.  `V` strictly
+decreases on all 11 consistency-internal edges and is EXACTLY CONSTANT on all 4
+cross-edges and both back-edges, which is what lets `|Θ₀|` carry the second
+lexicographic component.  The back-edges `X ↦ X[τ/γ̂]` only unfold a definition
+THE SOLUTION HAD ALREADY UNFOLDED, so `V` cannot see them; the consistency rules
+decompose, so `V` cannot miss those; and the context growth is simply not measured.
+
+PREREQUISITE: `≡ᵗ` is NOT size-preserving (`a_tyequiv__flex_def` gives `α ≡ᵗ τ` for
+ANY `τ`), and `≡ᵗ` is exactly what `a_inc_equiv` uses.  So `V` is not even a
+well-defined natural number until the skeletons are put in a total-unfolding normal
+form.
+
+## GAP — `thm:complete-consistency` §1: the flexible cases are ONE SENTENCE, hiding two obligations
+
+consistency-proofs.tex:2568-2569 — "The cases where `P` or `P₀` is a flexible
+variable are handled by the other two parts of the lemma" — is the ENTIRE treatment
+of `Flex`, `FlexL`, `FlexR`.  Two things are missing:
+
+* **Constructing the callee's solution.**  A consistency solution gives
+  `Θ ⊢ syn θS ≈ bid Q` AND `Δ₁ ⊢ inh θP₀ ⊳ Q`.  The unification/assignment problem
+  needs `Θ ⊢ θα̂ ≈ θβ̂` / `Θ ⊢ θP₀ ≈ θα̂` — a DIFFERENT judgment, between the TWO
+  INPUTS, with `Q` eliminated.  That needs the BRIDGE (consistency-into-`Q` plus
+  refinement-of-`Q` ⟹ a relation between the two inputs) — the same bridge
+  soundness already required.  The paper never invokes it here.
+* **Recovering PRECISION.**  §1's conclusion demands `Δ₁,Δ₂ ⊢ θ₁P₁ ⊑ Q`, and for
+  these three rules the algorithmic output is `P₁ = α̂`.  The §2/§3 IHs produce NO
+  precision statement at all (:2266-2270, :2412-2416).  So `Θ ⊢ θ₁α̂ ⊑ Q` must be
+  proved separately — it is NOT "handled by the other two parts".
+
+## GAP — `thm:complete-consistency` §3 never proves the assignment walk is not STUCK
+
+§3's skip cases are dismissed as "Our goal follows from IH and context weakening"
+(:2557-2558).  But `Assign-Skip`/`Assign-SkipRigid` carry `β̂ ∉ ftv(P)`, and there
+is NO RULE AT ALL for a RIGID head `β ∈ ftv(P)`.  Completeness must therefore PROVE
+the walk never reaches such a head — the escape/scope check, the classic hard step
+in DK-style completeness.  It is true and provable (`a_inc` peels the rigid `β`
+before it reaches `α̂`, so `θα̂` is well-formed BELOW `β`; whereas `β ∈ ftv(P)` forces
+`β ∈ ftv(θP)` since `θ` cannot erase a rigid variable, and consistency against the
+MONOTYPE `θα̂` then forces `β ∈ ftv(θα̂)` — contradiction).  The paper does not do it.
+
+Likewise `Assign-SolveM` (:2430-2461) silently assumes BOTH of its premises: the
+occurs check `α̂ ∉ ftv(P)`, and that `guess^TY(P)` succeeds AND returns a MONOTYPE
+(`a_guess_mono` has no `all` case; `a_assign__solve_m` additionally premises
+`mono_ptyp τ`).  Both follow from the solution; neither is proved.
+
 ## Resolved definition-sync findings (step 1 of the restart)
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the
 `is_tskl` untagged-∀ fix (A1), whose downstream effect invalidated the

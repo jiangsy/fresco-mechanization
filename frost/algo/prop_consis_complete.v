@@ -69,8 +69,12 @@ Definition a_consis_optimal
 (*  2.  Unification of flexible variables                                 *)
 (* ===================================================================== *)
 
+(** The paper's [α̂]/[β̂] are HATTED — flexible, defined or not.  [α `in` dom Θ0]
+    would also admit RIGID and TERM variables, which [unifyvar] does not take.
+    All four [a_unify] rules now carry [a_flex_tvar] explicitly (the hatted
+    prose-completion, docs/PAPER-GAPS.md), so the problem must say so too. *)
 Definition a_unify_problem (Θ0 : aenv) (α β : atom) : Prop :=
-  a_wf_aenv Θ0 /\ α `in` dom Θ0 /\ β `in` dom Θ0.
+  a_wf_aenv Θ0 /\ a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β.
 
 Definition a_unify_solution
     (Θ0 : aenv) (α β : atom) (θ1 : metasubst) (Θ1 : aenv) : Prop :=
@@ -89,9 +93,24 @@ Definition a_unify_optimal
 (*  3.  Assignment of a flexible variable                                 *)
 (* ===================================================================== *)
 
+(** NB [P] is well-formed in [Ξ ++ Θ0], NOT in [Θ0].  [Assign-Depend] MOVES
+    flexible variables out of [Θ0] into [Ξ] while [P] keeps mentioning them —
+    its premise is literally [β ∈ ftv(P)] — so at a recursive assignment node
+    [P]'s free variables are spread across both.  The soundness side already
+    has this right ([assign_sound_concl] asks for [(Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P]).
+    The two readings coincide only at the top-level call, where [Ξ = nil], which
+    is why the bug was invisible.  Same for [a_non_flex].
+
+    [dom Ξ ⊆ ftv(P)] is the paper's own invariant on [Ξ] — "Ξ only contains
+    declarations of flexible variables APPEARING IN P" (full-algo-spec.tex:1508-1509)
+    — which [a_decls Ξ] alone does not express ([a_decls] says only "every entry
+    is an undefined flexible variable").  [Assign-Depend] maintains it.
+
+    The subject is HATTED, as in [a_unify_problem] above. *)
 Definition a_assign_problem (Θ0 : aenv) (Ξ : aenv) (α : atom) (P : pskl) : Prop :=
-  a_wf_aenv (Ξ ++ Θ0) /\ α `in` dom Θ0 /\
-  a_wf_pskl Θ0 P /\ a_non_flex Θ0 P /\ a_decls Ξ.
+  a_wf_aenv (Ξ ++ Θ0) /\ a_flex_tvar Θ0 α /\
+  a_wf_pskl (Ξ ++ Θ0) P /\ a_non_flex (Ξ ++ Θ0) P /\
+  a_decls Ξ /\ dom Ξ [<=] ftvar_in_pskl P.
 
 Definition a_assign_solution
     (Θ0 Ξ : aenv) (α : atom) (P : pskl) (θ1 : metasubst) (Θ1 : aenv) : Prop :=
