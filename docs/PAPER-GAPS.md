@@ -11,6 +11,16 @@ PROSE-COMPLETION (figure rule completed from the paper's own prose),
 WATCH (tension spotted, not yet confirmed to matter), FALSE (statement
 refuted — none so far)}.
 
+> **See also [WF-SIDE-CONDITIONS.md](WF-SIDE-CONDITIONS.md).**  The paper
+> systematically states well-formedness (and sometimes a further judgment) as an
+> EXTERNAL requirement in prose — "we require well-formedness of both …", "we
+> already required well-formedness separately", "as usual, all inputs are
+> well-formed" — and its rules then omit the side conditions well-formedness
+> would supply.  A Coq `Inductive` has no such notion, so each of these becomes a
+> proof obligation, either as a rule premise or as a hypothesis on every lemma.
+> Several judgments looked broken until that condition was restored.  **Check
+> that file before concluding a lemma is unprovable.**
+
 ## PROSE-COMPLETION — `⊑`'s flex-def rule lacks the θ-image side-condition
 - Where: fig:information-increase (full-algo-spec.tex:30-35); mech
   `a_inc__flex_def` (algo/def_meta.v).

@@ -28,6 +28,8 @@ point to the same content.
 | [`README.v`](README.v) | Compilable paper-to-Coq theorem index. Has `Check` statements for every paper-claim theorem + `Print Assumptions` for D1 / D12. Run via `make coq`. |
 | [`Makefile`](Makefile) | ott + lngen + coq pipeline; `coq` / `quick` / `clean` / `sync-paper-refs` targets |
 | [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `paper/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
+| [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
+| [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
 | [`docs/HANDOFF-typ-all-plain-refactor.md`](docs/HANDOFF-typ-all-plain-refactor.md) | Historical hand-off doc from the 2026-05-15 typ_all_plain removal pass |
 | [`../paper/sections/`](../paper/sections/) | Authoritative paper source (mechanize against `declarative.tex`, `syntax-directed.tex`, `algorithmic.tex`, `proofs.tex` only — `*-old.tex` and `*-quantifier-rows.tex` are abandoned drafts) |
 
@@ -186,6 +188,19 @@ before changing any of them.
   the STATEMENT itself is genuinely false — you have a concrete
   counter-example — STOP and flag it to the user; do not weaken or "fix" the
   statement.
+- **Before concluding a statement is false, check the paper's EXTERNAL
+  well-formedness conditions** — see
+  [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md).  The paper
+  repeatedly requires well-formedness (and sometimes a further judgment) in
+  *prose*, outside the rules — "we require well-formedness of both …", "we
+  already required well-formedness separately", "as usual, all inputs are
+  well-formed" — and its rules then legitimately omit side conditions that
+  well-formedness supplies.  A Coq `Inductive` has no such notion, so each is a
+  proof obligation: put it EITHER on the rule as a premise (try this first; it
+  is less bookkeeping) OR, if it fails to transport through the structural
+  lemmas — especially a `strip`, which removes a context entry — as a hypothesis
+  on every lemma over the judgment.  Refinement looked refuted until this was
+  restored.
 - **Compilation must always end in reasonable time.**  If a proof compiles
   slowly, IDENTIFY the culprit first (time individual tactics /
   `Set Ltac Profiling`) instead of waiting out long builds.  The usual (not
