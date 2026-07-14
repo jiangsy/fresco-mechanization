@@ -96,9 +96,22 @@ refuted — none so far)}.
   Consequence: the soundness proofs (`a_unify_sound`, `a_assign_sound`,
   `a_consis_sound_aux`, `a_consistag_sound_aux`) all become MUTUAL inductions.
   Their STATEMENTS are unchanged — only the induction principle is.
-- STATUS: soundness as it stands is fine (it only inspects derivations that
-  exist), but it is proved about a judgment that is too weak.  Completeness is
-  blocked until this is fixed.
+- STATUS: definitions FIXED and compiling on branch `remech-mutual-consis-unify`
+  (commit 0f324de, BUILD RED — proof layer untouched).  `re-mech` is green and does
+  NOT contain it.  **See [RESTART-mutual-consis-unify.md](RESTART-mutual-consis-unify.md).**
+  Also fixed there: `a_split__flex` (full-algo-spec.tex:393), whose premise input is
+  an ARROW and so could NEVER have been `unifyvar` — forcing it through `a_unify` is
+  what made `a_unify` take general monotypes instead of the paper's hatted variables.
+- The refactor was PARKED because it invalidates STATEMENTS, not just proofs:
+  `a_unify_var_inv` becomes vacuous (subjects are atoms now), and `a_unify_dom`
+  (`dom Θ₁ [=] dom Θ₀`) becomes **FALSE** — unification can now GROW the context
+  (consistency → FlexL/FlexR → `a_assign` → `Assign-SolveM` → fresh `β̄`).  That is
+  CORRECT: part-2 soundness only claims an information increase, which permits
+  growth.  Restarting needs `a_consis_sound_aux` restored as a direct induction
+  (recover from `d6ba637^`) and made MUTUAL with `a_unify_sound`.
+- Soundness as it stands is fine (it only inspects derivations that exist), but it
+  is proved about a judgment that is too weak.  Completeness is blocked until this
+  is fixed.
 
 ## MECH-BUG (fixed) — metasubstitution was a SEQUENTIAL fold, but the paper says "finite map"
 - Where: algorithmic.tex:123 — "A metasubstitution `Θ ⊑[θ] Θ'` is a finite **MAP**
