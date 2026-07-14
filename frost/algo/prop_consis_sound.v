@@ -268,20 +268,12 @@ Qed.
 (* ===================================================================== *)
 
 (** Unification subjects are always variables. *)
-Lemma a_unify_var_inv : forall Θ0 A B Θ1,
-  Θ0 ⊲ A ≈ᵘ B ⊣ Θ1 ->
-  (exists α, A = ptyp_var_f α) /\ (exists β, B = ptyp_var_f β).
-Proof.
-  intros * Hu; induction Hu;
-    try solve [ split; eauto ]; try solve [ exact IHHu ].
-  - (* flex_assign: a substituted non-variable stays a non-variable *)
-    destruct IHHu as [[α' HA] [β' HB]].
-    split.
-    + destruct A as [ | n | X | A1 A2 | A0 ]; simpl in HA;
-        try discriminate HA; eauto.
-    + destruct B as [ | n | X | B1 B2 | B0 ]; simpl in HB;
-        try discriminate HB; eauto.
-Qed.
+(* [a_unify_var_inv] DELETED.  It said "every derivable [a_unify] has VARIABLE
+   subjects" — which read like a theorem but was a SYMPTOM of the bug: the old
+   [Flex-Flex-Assign] recursed into [a_unify], so a substituted non-variable
+   subject had nowhere to go.  [a_unify]'s subjects are now ATOMS (the paper's
+   hatted [unifyvar{α̂}{β̂}]), so the statement is vacuous. *)
+
 
 (** Part 2, declaratively: the output context equates the two variables
     as skeleton consistency — over any binds-monotone extension [Θ']
@@ -2042,12 +2034,13 @@ Qed.
 
 
 (** Unification preserves the domain (no names are created). *)
-Lemma a_unify_dom : forall Θ0 A B Θ1,
-  Θ0 ⊲ A ≈ᵘ B ⊣ Θ1 ->
-  dom Θ1 [=] dom Θ0.
-Proof.
-  intros * H; induction H; simpl; try fsetdec.
-Qed.
+(* [a_unify_dom] DELETED — it is now FALSE.  It said unification preserves the
+   context DOMAIN ([dom Θ1 [=] dom Θ0]).  With [Flex-Flex-Assign] recursing into
+   CONSISTENCY, unification can GROW the context: consistency → FlexL/FlexR →
+   [a_assign] → [Assign-SolveM] → fresh [β̄] from [guess^TY].  That is CORRECT —
+   the paper's part-2 soundness only claims an information INCREASE
+   ([⊑{Θ₀}{Θ₁}]), which permits growth.  Uses of it are reworked onto ⊴. *)
+
 
 (** Preservation of the problem invariants by variable unification:
     the only new definitions are the (hatted, Δ-free) subjects. *)

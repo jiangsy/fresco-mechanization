@@ -579,6 +579,12 @@ Inductive a_unify : aenv -> atom -> atom -> aenv -> Prop :=
        (consistency-proofs.tex:1562: "by mutual induction on the algorithmic
        consistency derivation together with the two auxiliary judgements of
        variable unification and assignment"). *)
+    (* hatted subjects (paper metavariable convention, cf. PAPER-GAPS — the same
+       prose-completion already applied to Flex-Flex-L/R's payload).  The other
+       rules derive this from their own shape or their IH; this one cannot, since
+       its premise is a CONSISTENCY derivation. *)
+    a_flex_tvar ((γ ~ abind_flex_mono_def τ) ++ Θ0) α ->
+    a_flex_tvar ((γ ~ abind_flex_mono_def τ) ++ Θ0) β ->
     Θ0 ⊢ₐ[ empty | empty
          | (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f β))) ]
       (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))) ≈ Q ⊣ Θ1 ->
