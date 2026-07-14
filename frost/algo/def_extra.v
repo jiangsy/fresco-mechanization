@@ -475,11 +475,21 @@ where "P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract NM α m P P' Ξ Q) : 
 (*  [P]; Ghost/GhostR restrict the output fill against them so [Q] is a    *)
 (*  valid refinement of both inputs.                                       *)
 (* ===================================================================== *)
-(* [a_assign].  NB: the paper's [Assign-Assign] premise is written
-   [unify(α̂[τ/β̂])(P[τ/β̂])] over [Θ0,Ξ], but [P] is a general skeleton (only
-   monotype-ified in [Assign-SolveM] via [guess^TY]), so monotype-level
-   [unify] does not apply; we read it as CONTINUING the assignment on
-   [P[τ/β̂]] with the [Θ0 | Ξ] split ([α̂ ≠ β̂] makes [α̂[τ/β̂] = α̂]).
+(* [a_assign].  NB [paper-gap, deliberate deviation]: the paper's
+   [Assign-Assign] premise [unify(α̂[τ/β̂])(P[τ/β̂])] over the MERGED context
+   [Θ0,Ξ] is the two-slot ∼ form, i.e. CONSISTENCY of subject
+   [α̂[τ/β̂] = α̂] against input [P[τ/β̂]] with the output dropped
+   (full-algo-spec.tex:1440-1442; the Appendix-B case expands it exactly
+   so and appeals to "the IH of consistency",
+   consistency-proofs.tex:1709-1745) — the paper's soundness proof is
+   therefore a 3-WAY mutual induction.  The mech instead CONTINUES the
+   assignment on [P[τ/β̂]] keeping the [Θ0 | Ξ] split, so [a_assign] stays
+   OUT of the a_unify/a_consis recursion cycle and its metatheory remains
+   plain inductions.  Believed equivalent (the paper's premise re-enters
+   assignvar via FlexL over [Ξ ++ Θ0], re-hoisting [Ξ] via Assign-Depend);
+   no known incompleteness, but faithfulness of THIS ONE RULE is unproved.
+   With [F] now threaded through consistency, the paper-exact 3-way mutual
+   is implementable if that flag is ever to be closed.
 
    Prose-completion (PAPER-GAPS): the paper's "fresh β̄" in Assign-SolveM
    means globally fresh, but the solve node only sees its local tail.  The
