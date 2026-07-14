@@ -42,44 +42,49 @@ refuted — none so far)}.
   (algo/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
-## FALSE / MISSING JUDGMENT (⚠ NEEDS AUTHORS) — the general `unify` judgment is USED but NEVER DEFINED
-- Where: full-algo-spec.tex.  The paper has TWO unification judgments, and the
-  macros make the distinction explicit (macro.tex:1233, 1254):
-
-      `\unifyvar{α̂}{β̂}`  renders  `α̂ ≃ β̂`   — BOXED at :1679, WITH rules
-      `\unify{A}{B}`      renders  `A ∼ B`    — used in THREE rule premises,
-                                                but NEVER boxed and NEVER given
-                                                any rules
-
-- The three uses of the undefined `unify`:
-  - :1707 `Flex-Flex-Assign` — premise `unify{α̂[τ/γ̂]}{β̂[τ/γ̂]}`, concluding
-    `unifyvar{α̂}{β̂}`.  It DROPS from `unifyvar` into the general judgment
-    precisely because substituting a definition may turn a variable subject into
-    an arbitrary monotype.  General `unify` is what was meant to handle that.
-  - :1754 `Assign-Assign` — same shape (the mech already flagged this one in a
-    comment on `a_assign` and worked around it).
-  - :393  skeleton splitting — `unify{α̂}{β̂ → γ̂}`, i.e. unifying a flexible
-    variable with an ARROW.  This one cannot be read as `unifyvar` at all.
-- CONSEQUENCE, machine-checked: `frost/algo/cex_unify_stuck.v`,
-  `a_unify_stuck_on_arrow_definition` (Qed, axiom-free).  The mech collapsed the
-  two judgments into one var-only `a_unify`.  With `Θ₀ = (α̂ ≔ unit → unit), β̂`
-  the algorithm CANNOT unify `α̂` with `β̂` — `Flex-Flex-Assign` is the only
-  applicable rule, and it substitutes the definition into the subject, which is
-  then no longer a variable and no rule matches.  Yet a solution plainly exists
-  (send both to `unit → unit`).  A definition CAN be an arrow: that is exactly
-  what `Assign-SolveM` produces via `guess^TY`.
-- So COMPLETENESS OF CONSISTENCY IS FALSE as the system stands, and it fails at
-  part 2 (unification), not in some deep corner.
+## MECH-BUG (⚠ OPEN) — `Flex-Flex-Assign` must recurse into CONSISTENCY, not into `unifyvar`
+- Where: full-algo-spec.tex:1707 (`Flex-Flex-Assign`), :1754 (`Assign-Assign`),
+  :393 / algorithmic.tex:330 (skeleton splitting); mech `a_unify__flex_assign`
+  (algo/def_extra.v:487).
+- NOTATION (this tripped me up first time round — recorded so it does not again).
+  The paper uses TWO relation macros that both render `∼`:
+      `\unify{A}{B}`   → `A ∼ B`   (macro.tex:1234)
+      `\aconsis[…]{…}` → `Θ ⊢_{P₀} P ∼ Q ⊣ Θ'`, whose relation is `\consis`,
+                          and `\consis` is `\mathrel{\sim}` (macro.tex:1271)
+  **They are the SAME symbol: `\unify{A}{B}` inside `\mov{Θ₀}{…}{Θ₁}` IS the
+  algorithmic CONSISTENCY judgment**, written with the generic `\mov` wrapper
+  rather than the `\aconsis` macro.  It is NOT a separate unification judgment,
+  and it is NOT missing.  Read it as: *consistency of SUBJECT `A` against INPUT
+  `B`* — which is exactly how `unifyvar{α̂}{β̂}` relates to the Flex rule's
+  conclusion `aconsis[β̂]{Θ₀}{α̂}{α̂}{Θ₁}` (subject α̂, input β̂).
+- Under that reading all three sites make sense, and only that reading does:
+  - Flex-Flex-Assign, when γ̂ IS a subject: substituting turns the subject into
+    the monotype τ, and consistency's **FlexR** then assigns `β̂ ≔ τ`.
+  - Assign-Assign: subject α̂ against a general SKELETON `P` — only consistency
+    takes a skeleton argument at all; **FlexL** assigns `α̂ ≔ P`.
+  - Skeleton splitting: subject α̂ against the ARROW `β̂ → γ̂` — **FlexL** again.
+    This one cannot be `unifyvar` under any reading.
+- THE BUG: mech `a_unify__flex_assign` recurses into `a_unify` (the var-only
+  `unifyvar`) where the paper recurses into CONSISTENCY.  So the mechanized
+  algorithm gets STUCK the moment a definition is a non-variable monotype —
+  machine-checked in `frost/algo/cex_unify_stuck.v`
+  (`a_unify_stuck_on_arrow_definition`, Qed, axiom-free): with
+  `Θ₀ = (α̂ ≔ unit → unit), β̂` it cannot unify α̂ with β̂, though a solution
+  plainly exists.  A definition CAN be an arrow — that is what `Assign-SolveM`
+  produces via `guess^TY`.
 - NB `a_unify_var_inv` ("every derivable `a_unify` has VARIABLE subjects",
-  prop_consis_sound.v) reads like a theorem but is really a SYMPTOM of the
-  missing rules.
-- FIX (needs the authors): define the general monotype `unify` judgment
-  (structural rules for `unit` / var / arrow, plus assignment of a flexible
-  variable to a monotype with an occurs check), and let `Flex-Flex-Assign`,
-  `Assign-Assign` and skeleton-splitting call IT.  Then mechanize it as a
-  judgment SEPARATE from `a_unify`.
-- STATUS: completeness of consistency is BLOCKED pending this.  Soundness is
-  unaffected (it only ever inspects derivations that exist).
+  prop_consis_sound.v) reads like a theorem but is a SYMPTOM of this bug.
+- FIX (open; NOT yet done — it is a real restructure).  `a_consis`, `a_unify` and
+  `a_assign` become MUTUALLY inductive: `a_consis`'s Flex rule already calls
+  `a_unify`, and `a_unify`'s Flex-Flex-Assign (and `a_assign`'s Assign-Assign)
+  must call back into `a_consis`.  Consequence: the soundness proofs
+  (`a_unify_sound`, `a_assign_sound`, `a_consis_sound_aux`,
+  `a_consistag_sound_aux`) all become MUTUAL inductions.  Open design point: the
+  paper omits `Δ₁∣Δ₂` on the `unify` premise, so what the recursive consistency
+  call should carry there needs deciding.
+- STATUS: soundness as it stands is fine (it only inspects derivations that
+  exist), but it is proved about a judgment that is too weak.  Completeness is
+  blocked until this is fixed.
 
 ## MECH-BUG (fixed) — metasubstitution was a SEQUENTIAL fold, but the paper says "finite map"
 - Where: algorithmic.tex:123 — "A metasubstitution `Θ ⊑[θ] Θ'` is a finite **MAP**

@@ -1,35 +1,38 @@
-(** COUNTEREXAMPLE: [a_unify] gets STUCK when a subject is defined to a
-    NON-VARIABLE monotype — so completeness of consistency fails as it stands.
+(** COUNTEREXAMPLE: the mechanized [a_unify] gets STUCK when a subject is
+    defined to a NON-VARIABLE monotype.  This is a MECH BUG, not a paper gap.
 
-    ROOT CAUSE (paper).  The paper has TWO unification judgments:
+    ROOT CAUSE.  [Flex-Flex-Assign] (full-algo-spec.tex:1707) reads
 
-      unifyvar{α̂}{β̂}   rendered  α̂ ≃ β̂   -- BOXED, with rules
-                                             (full-algo-spec.tex:1679)
-      unify{A}{B}      rendered  A ∼ B    -- used in THREE rule premises,
-                                             but NEVER boxed and NEVER given
-                                             any rules
-
-    `\unify` is used at full-algo-spec.tex:393 (skeleton splitting, where it
-    unifies a flexible variable with an ARROW: `unify{α̂}{β̂ → γ̂}`), :1707
-    (Flex-Flex-Assign), and :1754 (Assign-Assign).  Its premise in
-    Flex-Flex-Assign is
-
-        Θ₀ ⊢ unify{α̂[τ/γ̂]}{β̂[τ/γ̂]} ⊣ Θ₁
+        Θ₀ ⊢ α̂[τ/γ̂] ∼ β̂[τ/γ̂] ⊣ Θ₁
         --------------------------------------------
         Θ₀, γ̂ ≔ τ ⊢ unifyvar{α̂}{β̂} ⊣ Θ₁, γ̂ ≔ τ
 
-    — note the premise DROPS from `unifyvar` into the general `unify`, precisely
-    because substituting a definition may turn a variable subject into an
-    arbitrary monotype.  General `unify` is what is supposed to handle that.
-    It is never defined.
+    and that premise's `∼` is the CONSISTENCY relation, not unification:
+    `\unify{A}{B}` renders `A ∼ B` (macro.tex:1234), and `\aconsis`'s relation is
+    `\consis` = `\mathrel{\sim}` (macro.tex:1271) — the SAME symbol.  So the
+    premise is *consistency of SUBJECT α̂[τ/γ̂] against INPUT β̂[τ/γ̂]*, exactly as
+    `unifyvar{α̂}{β̂}` corresponds to the Flex rule's conclusion
+    `aconsis[β̂]{Θ₀}{α̂}{α̂}{Θ₁}` (subject α̂, input β̂).
 
-    The mechanization collapsed the two into a single var-only [a_unify].  Hence
-    [a_unify_var_inv] (every derivable [a_unify] has VARIABLE subjects) — which
-    reads like a theorem but is really a symptom of the missing rules.  The
-    algorithm therefore gets stuck exactly where the general judgment was needed.
+    The rule drops from `unifyvar` into CONSISTENCY precisely because
+    substituting the definition can turn a variable subject into an arbitrary
+    monotype — and consistency handles that, via FlexR.
 
-    Below: with  Θ₀ = (α̂ ≔ unit → unit), β̂  the algorithm cannot unify α̂ with β̂,
-    although a solution plainly exists (send both to unit → unit). *)
+    THE BUG: [a_unify__flex_assign] (algo/def_extra.v) recurses into [a_unify]
+    instead.  [a_unify] has only var-var rules, so the algorithm has nowhere to
+    go.  ([a_unify_var_inv] — "every derivable [a_unify] has VARIABLE subjects" —
+    reads like a theorem but is a SYMPTOM of this.)
+
+    Below: with  Θ₀ = (α̂ ≔ unit → unit), β̂  the mechanized algorithm cannot unify
+    α̂ with β̂, although a solution plainly exists (send both to unit → unit), and
+    the PAPER's rule would succeed: substituting gives the subject unit → unit,
+    and consistency's FlexR assigns  β̂ ≔ unit → unit.
+
+    A definition CAN be an arrow: that is exactly what [Assign-SolveM] produces
+    via [guess^TY].
+
+    FIX (open): [a_consis] / [a_unify] / [a_assign] must become MUTUALLY
+    inductive.  See docs/PAPER-GAPS.md. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
