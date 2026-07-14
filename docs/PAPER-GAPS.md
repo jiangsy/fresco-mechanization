@@ -123,6 +123,160 @@ refuted — none so far)}.
 - STATUS: fixed; `make coq` green, zero admits, all flagships axiom-free
   (README.v).  Completeness is unblocked.
 
+## MECH-BUG (FIXED 2026-07-14) — `Assign-Assign` must recurse into CONSISTENCY too (the OTHER back-edge)
+
+Exactly the same bug as the `Flex-Flex-Assign` entry above, on the other
+auxiliary judgment, and missed the first time round.  The paper's two-slot
+`∼` is the OUTPUT-SUPPRESSED CONSISTENCY abbreviation
+(full-algo-spec.tex:1440-1442), so `Assign-Assign`'s premise
+`unify(α̂[τ/β̂])(P[τ/β̂])` over `Θ₀,Ξ` is CONSISTENCY, not a continued
+assignment.  The paper expands it exactly so and appeals to "the IH of
+consistency" (consistency-proofs.tex:1720-1724).  That is why its soundness
+proof is a **3-way** mutual induction, "together with the two auxiliary
+judgements of variable unification and assignment" (:1562) — the mech had
+`a_assign` outside the cycle entirely.
+
+The reference implementation confirms it: BOTH `U-Flex-Flex-Assign`
+(type.ml:316-321) and `U-Assign-Assign` (type.ml:358-363) call `join_sk` —
+the consistency/join function — not `join_var`/`assign`.
+
+`a_assign` is now the first motive of the `a_assign`/`a_unify`/`a_consis`
+mutual block, and soundness is the 28-case `a_assign_unify_consis_sound`.
+Four further encoding bugs fell out of the fix:
+
+* **`β̂ = α̂` IS REACHABLE — do NOT premise `α̂ ≠ β̂`, and substitute BOTH
+  slots.**  It is tempting to argue that an assignment's subject must be an
+  UNDEFINED flex var, so `α̂ ≠ β̂` by uniqueness, so the subject stays the bare
+  variable `α̂`.  That is FALSE.  *Nothing* requires the subject to be
+  undefined: neither `a_consis__flex_l` nor the implementation's `U-FlexL`
+  (`| p0, MFlex alpha -> assign alpha p0 [] theta`, type.ml:182-185) guards on
+  it.  So a DEFINED `α̂` can be the subject, the walk then reaches `α̂`'s OWN
+  definition, and the rule must fire with `β̂ = α̂` — whereupon the subject
+  `α̂[τ/α̂]` is the MONOTYPE `τ`, not a variable.  With `α̂ ≠ β̂` premised, NO
+  rule fires and assignvar is STUCK, exactly as the old `unifyvar` reading was
+  stuck on an arrow-valued definition.  The implementation computes precisely
+  this (`subst_var (MFlex alpha) tau beta` with `beta = alpha` reduces to
+  `tau`).  Machine-checked both ways:
+  `a_assign_succeeds_on_own_definition`, algo/test_unify_regression.v.
+
+* **PROSE-COMPLETION: `Assign-Assign` needs a HATTED-SUBJECT premise.**  Before
+  the fix, "the subject of an assignment is flexible" was *derivable* — every
+  rule either matched `α ~ abind_flex_mono` or inherited it from the `a_assign`
+  IH.  With an opaque consistency premise that argument dies, and worse:
+  `a_consis__rigid` accepts a var subject for a RIGID `α`, so the rule would
+  admit a degenerate "assign a rigid type variable" derivation.  The paper
+  excludes this only through the hatted-metavariable convention (`α̂`).  Added
+  `a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ0) α` — the same
+  prose-completion `Flex-Flex-Assign` already carried, for the same stated
+  reason.  It **must** be on the CONCLUSION's context: on `Ξ ++ Θ0` it is FALSE
+  in exactly the `β̂ = α̂` case above.
+
+* **`Assign-Depend` REVERSED Ξ.**  The paper's premise suffix is `β̂,Ξ`
+  (consistency-proofs.tex:1763) and the implementation does
+  `assign alpha p (xi @ [hd]) theta` — both put `β̂` at the `Θ₀`-adjacent end.
+  The mech consed at the head.  Inert on its own (every `Ξ` entry is an
+  undefined flex var, so their relative order carries no information) but fatal
+  for the fix above, whose premise context is literally `Ξ ++ Θ0`.  Now
+  tail-appends.
+
+* **`Flex-Flex-Id` was stricter than the paper.**  Paper premise is
+  `α̂ ∈ dom(Θ₀)` (implementation: `is_in_dom_`, type.ml:302) — flexible,
+  DEFINED or not.  The mech demanded `binds α abind_flex_mono`.  No derivation
+  was lost (a defined `α̂` routes through `Flex-Flex-Assign`, whose premise
+  degenerates to the consistency `τ ≈ τ`), but the rule was not the paper's.
+  Now `a_flex_tvar Θ0 α`.
+
+Gotcha worth recording: `nonflex(P)` is **head-level** — "P is not ITSELF a
+flexible variable", NOT "P contains no flexible variables".  The
+implementation encodes it as match-arm ORDER.  Read it the other way and
+`FlexL` looks inapplicable to `γ̂ → unit`, and the whole "the premise is
+consistency" reading looks broken.
+
+## IMPLEMENTATION DISCREPANCY (report to WT) — `U-Flex-Flex-Assign` has its `join_sk` slots SWAPPED
+
+Found while auditing the mech against `paper/artifact/implementation/lib/type.ml`.
+**No mech change — we follow the paper.  This is a note about the artifact.**
+
+`join_sk p0 p` takes the INPUT `P₀` first and the SUBJECT `P` second.  This is
+pinned three ways: the arm `| Ghost, p -> rule "U-GhostR"` versus
+`| p, Ghost -> rule "U-Ghost"` (and `GhostR` is the rule whose *input* is `□`);
+the arm `| MFlex alpha, p -> rule "U-FlexR"; assign alpha p [] theta` (and
+`FlexR` is the rule whose *input* is `α̂` and which assigns `α̂ := P`, the
+subject — the code assigns the second argument); and the `\aconsis` macro
+itself (macro.tex:1002 renders `#3 ⊢ #4 ∼ #5 ⊣ #6`, and the abbreviation at
+full-algo-spec.tex:1440-1442 writes `\aconsis{Θ₀}{P}{P₀}{Θ₁}`, so LEFT of `∼`
+is the subject).
+
+`U-Assign-Assign` respects this — `join_sk (subst_var p tau beta)
+(subst_var (MFlex alpha) tau beta)` puts the flex var in the subject slot,
+matching the paper.  But `U-Flex-Flex-Assign` (type.ml:319-320) does
+
+```ocaml
+join_sk (subst_var (MFlex alpha) tau gamma) (subst_var (MFlex beta) tau gamma) theta
+```
+
+i.e. INPUT `α̂[τ/γ̂]`, SUBJECT `β̂[τ/γ̂]` — whereas the paper's
+`\unify{α̂[τ/γ̂]}{β̂[τ/γ̂]}` means subject `α̂`, input `β̂`.  **The implementation
+is internally inconsistent about its own convention**, which is the strongest
+evidence that this is a slip in one of the two sites, and the paper says which.
+
+BENIGN, but for a subtler reason than "both sides are monotypes".  Algorithmic
+consistency is **mirror-symmetric** under the swap `(P₀ ↔ P, Δ₁ ↔ Δ₂)`: all 14
+rules pair up (`Ghost`↔`GhostR`, `ForallSyn`↔`UnivGhost1`,
+`UnivGhost2`↔`UnivGhostR`, `FlexL`↔`FlexR` — which even produce the *same*
+output `α̂`; `Unit`/`Rigid`/`Arrow`/`ForallInh`/`UnivGhost`/`Flex` self-mirror),
+and the side conditions swap `Δ₁`/`Δ₂` in exactly the right direction.  The one
+residue is that `Flex` outputs the *subject's* variable, so `Q` can change.  At
+`Flex-Flex-Assign`, however, `Δ₁ = Δ₂ = ∅` and the output `Q` is DISCARDED — so
+both caveats vanish precisely there.
+
+Status: **argued, not proved.**  See the DEFERRED entry below.
+
+## DEFERRED — `a_consis_sym` (would turn the above from argued-benign into proved-benign)
+
+Archived at `algo/prop_symmetry.v.deferred` (OUT of the build; the Makefile
+globs `*.v`).  **Do not un-archive as-is: the file HANGS** (90s+ of CPU at 98%
+without terminating).
+
+Intended statement:
+
+```coq
+Theorem a_consis_sym : forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+  exists Q', Θ0 ⊢ₐ[ F ][ Δ2 | Δ1 | P ] P0 ≈ Q' ⊣ Θ1.
+```
+(mutually with `a_unify_sym`; `a_assign` needs no symmetry and no IH, since
+`FlexL` and `FlexR` carry the *same* assign premise and re-use it as a black
+box.  `Θ₁` is expected to be preserved; only `Q` may differ, and only at `Flex`.)
+
+TWO REASONS IT STALLED, both worth knowing before anyone retries:
+
+1. **The hang.**  `swap_ptyp_subst` contains
+   `repeat match goal with |- context [ if ?t then _ else _ ] => destruct t end`.
+   `destruct t` does NOT eliminate that `if`: `subst_ptyp_in_ptyp`'s scrutinee
+   elaborates to `@eq_dec ptypvar EqDec_eq_of_X ...`, which a plain `destruct`
+   does not abstract, so the `if` survives, the `match` fires again, and
+   `repeat` loops forever.  The working form is
+   `destruct (@eq_dec ptypvar EqDec_eq_of_X x y)`.  (Same gotcha bites
+   `subst_pskl_in_pskl`; recorded in prop_flex.v.)  The file also has ~10
+   UNSCOPED `fsetdec` calls, which are minutes-slow in this codebase.
+
+2. **The design, which is the real obstacle.**  The output must be
+   EXISTENTIALLY quantified, and that collides with cofinite quantification: in
+   `ForallInh` the IH yields some `Q'_α` for each fresh `α ∉ L`, but the
+   conclusion needs a SINGLE `Q'` with `open Q' α` for every `α`.  You cannot
+   just pick one.  The archived attempt reached for a 960-line atom-swapping /
+   equivariance library to get around this.  **That is not how this codebase
+   solves it.**  The precedent is `d_consis_compose` (see
+   [[frost-compose-tags-witness]]): it dissolved exactly this
+   "different witness per fresh variable" blocker by making the output an
+   EXPLICIT WITNESS FUNCTION of the inputs — invariant under opening a variable
+   — instead of an existential.  Retry that way; it should be a fraction of the
+   size and need no equivariance machinery at all.
+
+Priority: LOW.  It changes nothing in our mechanization — our rules already
+follow the paper.  It only upgrades our verdict on someone else's code.
+
 ## MECH-BUG (fixed) — metasubstitution was a SEQUENTIAL fold, but the paper says "finite map"
 - Where: algorithmic.tex:123 — "A metasubstitution `Θ ⊑[θ] Θ'` is a finite **MAP**
   θ from flexible variables in Θ to well-formed monotypes in Θ'."  A finite map is
@@ -309,7 +463,7 @@ refuted — none so far)}.
   that head breaks context well-formedness — i.e. wf-preservation (and Δ-
   invariant preservation) would be FALSE for the mutual definitions.
   The invariant-preservation lemmas are now PROVED as conjuncts of the
-  mutual soundness bundle `a_unify_consis_sound`
+  mutual soundness bundle `a_assign_unify_consis_sound`
   (algo/prop_consis_sound.v): new names avoid `F`; no-flex-dep +
   flex-above-free + domain bookkeeping are preserved for every protected
   Δ with `Δ ⊆ F ∪ dom Θ₀`, using Assign-SkipRigid's occurs condition and
