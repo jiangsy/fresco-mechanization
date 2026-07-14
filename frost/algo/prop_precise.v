@@ -82,6 +82,23 @@ Proof.
   apply pskl_to_bskl_syn_close_rec.
 Qed.
 
+(** Colour erasure commutes with opening. *)
+Lemma bskl_to_pskl_open_rec : forall Q V k,
+  bskl_to_pskl (open_bskl_wrt_bskl_rec k V Q)
+  = open_pskl_wrt_pskl_rec k (bskl_to_pskl V) (bskl_to_pskl Q).
+Proof.
+  induction Q; intros; simpl; f_equal; auto.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+Qed.
+
+Lemma bskl_to_pskl_open : forall Q X,
+  bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f X))
+  = open_pskl_wrt_pskl (bskl_to_pskl Q) (pskl_var_f X).
+Proof.
+  intros. unfold open_bskl_wrt_bskl, open_pskl_wrt_pskl.
+  apply bskl_to_pskl_open_rec.
+Qed.
+
 (** Guardedness transfers back across the synthesised painting (the
     local-closure side conditions come from the skeleton's own wf). *)
 Lemma guarded_pskl_of_bskl_syn : forall P,
@@ -372,4 +389,208 @@ Proof.
   rewrite ftvar_pskl_to_bskl_syn in Hdf.
   eapply ad_wf_pskl_delta_shrink; [ exact HwfB | ].
   intros X HXΔ HXG. exfalso. clear - HXΔ HXG Hdf. fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  TRANSITIVITY of refinement, under the paper's external wf condition.   *)
+(*                                                                         *)
+(*  Refinement is NOT transitive outright (cex_refine_not_transitive.v).   *)
+(*  It IS transitive once the result is required to be well-formed — which *)
+(*  declarative.tex:1427 requires of every refinement judgment anyway.      *)
+(*                                                                         *)
+(*  Structure: OUTER induction on the second derivation; INNER induction on *)
+(*  the first, to peel the left-hand administrative rules [tophole_remove]  *)
+(*  and [flex_l] (which shrink the left skeleton while the right stands     *)
+(*  still).  Every case whose left side is a GHOST is discharged by         *)
+(*  [ad_refine_syn_syn_l_wf] — that is what the crux is for.                *)
+(* ===================================================================== *)
+
+(** The left-hand administrative rules, packaged: whatever a syn painting
+    refines to, a ghost refines to as well (given the result is well-formed). *)
+Lemma ad_refine_syn_hole_l : forall Θ Δ F Qr,
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_syn F) ⊳ Qr ->
+  a_wf_aenv Θ ->
+  (forall X, X `in` Δ -> X `notin` dom Θ) ->
+  Θ ⨟ empty ⊢ₚₛᵃ F ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Qr) ->
+  Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Qr.
+Proof.
+  intros Θ Δ F Qr Href Hwf Hdisj HwfF HwfQr.
+  destruct (ad_refine_syn_syn_l_wf Href Hwf Hdisj HwfF HwfQr) as [G [-> HwfG]].
+  apply ad_refine_syn__hole. exact HwfG.
+Qed.
+
+Lemma ad_refine_syn_trans : forall Θ Δ Qm Qr,
+  Θ ⨟ Δ ⊢ᵣᵃ Qm ⊳ Qr ->
+  a_wf_aenv Θ ->
+  (forall X, X `in` Δ -> X `notin` dom Θ) ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Qr) ->
+  forall Sl,
+  Θ ⨟ Δ ⊢ᵣᵃ Sl ⊳ Qm ->
+  Θ ⨟ Δ ⊢ᵣᵃ Sl ⊳ Qr.
+Proof.
+  intros Θ Δ Qm Qr Hr.
+  induction Hr; intros Hwf Hdisj HwfQr Sl Hp.
+  - (* unit : Qm = Qr = unit *) exact Hp.
+  - (* var *) exact Hp.
+  - (* arrow *)
+    rename Q1 into Qa. rename Q2 into Qb. rename P1 into Pa. rename P2 into Pb.
+    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_arrow Qa Qb) ⊳ (bskl_arrow Pa Pb))
+      by (apply ad_refine_syn__arrow; assumption).
+    remember (bskl_arrow Qa Qb) as M eqn:HM. revert HM.
+    induction Hp; intros HM; try discriminate.
+    + inversion HM; subst. simpl in HwfQr.
+      inversion HwfQr as [ | | Θw Δw Pw1 Pw2 Hw1 Hw2 | | | ]; subst.
+      apply ad_refine_syn__arrow; [ apply IHHr1 | apply IHHr2 ]; auto.
+    + eapply ad_refine_syn_hole_l with (F := P);
+        [ exact Hrr | exact Hwf | exact Hdisj | eassumption
+        | exact HwfQr ].
+    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + eapply ad_refine_syn__flex_l;
+        [ eassumption | ]. apply IHHp; auto.
+  - (* all : ∀^inh Q ⊳ ∀^inh P *)
+    rename Q into Qb. rename P into Pb.
+    remember (bskl_all_inh Qb) as M eqn:HM. revert HM.
+    induction Hp; intros HM; try discriminate;
+      [ | destruct P; simpl in HM; discriminate | | ].
+    + (* ∀ ⊳ ∀ *)
+      inversion HM; subst. simpl in HwfQr.
+      inversion HwfQr as [ | | | L2 Θw Δw Pw Hbody | | ]; subst.
+      apply ad_refine_syn__all
+        with (L := L `union` L0 `union` L2 `union` dom Θ `union` Δ).
+      intros X HX.
+      apply H0 with (X := X); auto.
+      { intros Y HY.
+        destruct (Y == X) as [->|Hne]; [ clear - HX; fsetdec | ].
+        apply Hdisj. clear - HY Hne. fsetdec. }
+      { rewrite bskl_to_pskl_open. apply Hbody. clear - HX; fsetdec. }
+    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
+  - (* hole : Qm = □, Qr = syn P *)
+    rename P into Pf.
+    remember (@bskl_hole) as M eqn:HM. revert HM.
+    induction Hp; intros HM; try discriminate.
+    + (* □ ⊳ □ : the fill of Hp must itself be a ghost *)
+      destruct P; simpl in HM; try discriminate.
+      apply ad_refine_syn__hole. assumption.
+    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
+  - (* tophole_remove : Qm = ⊤.Q, Qr from Q ⊳ Qr *)
+    rename Q into Qb. rename P into Pb.
+    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_tophole Qb) ⊳ Pb)
+      by (apply ad_refine_syn__tophole_remove; assumption).
+    remember (bskl_tophole Qb) as M eqn:HM. revert HM.
+    induction Hp; intros HM; try discriminate.
+    + eapply ad_refine_syn_hole_l with (F := P);
+        [ exact Hrr | exact Hwf | exact Hdisj | eassumption
+        | exact HwfQr ].
+    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + (* tophole_keep on the left : peel both *)
+      inversion HM; subst.
+      apply ad_refine_syn__tophole_remove. apply IHHr; auto.
+    + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
+  - (* tophole_fill : ⊤.Q ⊳ ∀^syn P *)
+    rename Q into Qb. rename P into Pb.
+    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_tophole Qb) ⊳ (bskl_all_syn Pb))
+      by (eapply ad_refine_syn__tophole_fill with (L := L); assumption).
+    remember (bskl_tophole Qb) as M eqn:HM. revert HM.
+    induction Hp; intros HM; try discriminate.
+    + eapply ad_refine_syn_hole_l with (F := P);
+        [ exact Hrr | exact Hwf | exact Hdisj | eassumption
+        | exact HwfQr ].
+    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + (* tophole_keep on the left : rebuild the ∀ *)
+      inversion HM; subst.
+      simpl in HwfQr.
+      inversion HwfQr as [ | | | L2 Θw Δw Pw Hbody | | ]; subst.
+      apply ad_refine_syn__tophole_fill
+        with (L := L `union` L2 `union` dom Θ `union` Δ).
+      intros X HX.
+      apply H0 with (X := X); auto.
+      { apply a_wf_aenv__tvar; auto. }
+      { intros Y HY. simpl.
+        assert (HYX : Y <> X) by (clear - HY HX; fsetdec).
+        assert (HYΘ : Y `notin` dom Θ) by (apply Hdisj; exact HY).
+        clear - HYX HYΘ. fsetdec. }
+      { rewrite bskl_to_pskl_open.
+        eapply ad_wf_pskl_delta_mono;
+          [ apply (ad_wf_pskl_reassoc
+                     (Hbody X ltac:(clear - HX; fsetdec)) X)
+          | clear; fsetdec ]. }
+      { eapply ad_refine_syn_weaken;
+          [ apply ad_refine_syn__tophole_keep; eassumption
+          | intros y b Hb; unfold binds; right; exact Hb ]. }
+    + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
+  - (* tophole_keep : ⊤.Q ⊳ ⊤.P *)
+    rename Q into Qb. rename P into Pb.
+    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_tophole Qb) ⊳ (bskl_tophole Pb))
+      by (apply ad_refine_syn__tophole_keep; assumption).
+    remember (bskl_tophole Qb) as M eqn:HM. revert HM.
+    induction Hp; intros HM; try discriminate.
+    + eapply ad_refine_syn_hole_l with (F := P);
+        [ exact Hrr | exact Hwf | exact Hdisj | eassumption
+        | exact HwfQr ].
+    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + inversion HM; subst.
+      simpl in HwfQr.
+      inversion HwfQr as [ | | | | | Θw Δw Pw Hg Hwb ]; subst.
+      apply ad_refine_syn__tophole_keep; [ assumption | ].
+      apply IHHr; auto.
+      eapply ad_wf_pskl_delta_mono; [ exact Hwb | clear; fsetdec ].
+    + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
+  - (* flex_l : Qm = α̂ with α̂ := τ *)
+    assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_var_f α) ⊳ Q)
+      by (eapply ad_refine_syn__flex_l; eassumption).
+    remember (bskl_var_f α) as M eqn:HM. revert HM.
+    induction Hp; intros HM; try discriminate.
+    + (* var ⊳ var : rebuild the lookup *)
+      inversion HM; subst.
+      eapply ad_refine_syn__flex_l; eassumption.
+    + eapply ad_refine_syn_hole_l with (F := P);
+        [ exact Hrr | exact Hwf | exact Hdisj | eassumption
+        | exact HwfQr ].
+    + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
+    + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
+    + (* flex_r on the left : the two definitions coincide *)
+      inversion HM; subst.
+      match goal with
+      | Hb1 : binds ?a (abind_flex_mono_def ?t1) Θ,
+        Hb2 : binds ?a (abind_flex_mono_def ?t2) Θ |- _ =>
+          assert (Heqτ : t1 = t2) by
+            (pose proof (a_wf_aenv_uniq Hwf) as Hu;
+             pose proof (binds_unique _ _ _ _ _ Hb1 Hb2 Hu) as He;
+             inversion He; reflexivity)
+      end.
+      subst.
+      apply IHHr; auto.
+  - (* flex_r : Qr = α̂ with α̂ := τ; recurse into the definition *)
+    eapply ad_refine_syn__flex_r; [ eassumption | ].
+    apply IHHr; auto.
+    unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn.
+    apply a_wf_ptyp_to_wf_pskl.
+    eapply a_wf_aenv_binds_def_wf; [ exact Hwf | eassumption ].
+Qed.
+
+(* ===================================================================== *)
+(*  lemma:precision-preserves-refinement (full-algo-spec.tex:716)          *)
+(*                                                                         *)
+(*  "If Θ ⊢ P ⊑ Q and Θ ⊢ inh{Q} ⊳ bid{A}, then Θ ⊢ inh{P} ⊳ bid{A}."      *)
+(*                                                                         *)
+(*  Precision is DEFINED as refinement between the two inherited paintings, *)
+(*  so this is an instance of transitivity — available exactly because the   *)
+(*  result is required to be well-formed, which declarative.tex:1427         *)
+(*  requires of every refinement judgment anyway.                            *)
+(* ===================================================================== *)
+
+Corollary ad_precise_preserves_refine : forall Θ Δ P Q A,
+  Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ Q ->
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh Q) ⊳ A ->
+  a_wf_aenv Θ ->
+  (forall X, X `in` Δ -> X `notin` dom Θ) ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl A) ->
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ A.
+Proof.
+  intros Θ Δ P Q A Hprec Href Hwf Hdisj HwfA.
+  eapply ad_refine_syn_trans;
+    [ exact Href | exact Hwf | exact Hdisj | exact HwfA | exact Hprec ].
 Qed.
