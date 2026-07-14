@@ -26,6 +26,7 @@ Require Import src.frost.predicates.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.prop_skeleton.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decorated.
@@ -153,16 +154,222 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  STOP — the next step is BLOCKED by a counterexample.                   *)
+(*  Refinement lands in a SYNTHESISED painting (shape only).               *)
 (*                                                                         *)
-(*  [lemma:precision-preserves-refinement] (full-algo-spec.tex:716) is an   *)
-(*  instance of TRANSITIVITY of [ad_refine_syn].  Refinement is NOT         *)
-(*  transitive: see [cex_refine_not_transitive.v], where                    *)
-(*  [ad_refine_syn_not_transitive] is proved (Qed, axiom-free).  The paper's *)
-(*  GhostForall rule lets a ghost be filled with the very ∀-variable that   *)
-(*  rule binds, because it extends Γ but not Δ — and Δ is what the Ghost    *)
-(*  rule's side condition tests.  The resulting skeleton is not             *)
-(*  well-formed, so a ghost cannot refine to it.                            *)
-(*                                                                         *)
-(*  Flagged to the authors; the completeness development waits on the fix.  *)
+(*  NB no well-formedness here — and none is derivable: refinement does NOT *)
+(*  preserve well-formedness (cex_refine_not_transitive.v).  That is why    *)
+(*  well-formedness is carried by the STATEMENTS below rather than by the   *)
+(*  rules, exactly as the paper's GhostForall comment intends ("we already  *)
+(*  required well-formedness separately").                                  *)
 (* ===================================================================== *)
+
+Lemma ad_refine_syn_syn_l : forall Θ Δ Qb B,
+  Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ B ->
+  forall P, Qb = pskl_to_bskl_syn P ->
+  exists P', B = pskl_to_bskl_syn P'.
+Proof.
+  intros Θ Δ Qb B Href; induction Href; intros P0 Heq.
+  - (* unit *) exists pskl_unit. reflexivity.
+  - (* var *) exists (pskl_var_f X). reflexivity.
+  - (* arrow *)
+    destruct P0 as [ | | | Pa Pb | | | ]; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    destruct (IHHref1 _ eq_refl) as [Pa' ->].
+    destruct (IHHref2 _ eq_refl) as [Pb' ->].
+    exists (pskl_arrow Pa' Pb'). reflexivity.
+  - (* all : a syn painting is never [bskl_all_inh] *)
+    destruct P0; simpl in Heq; discriminate.
+  - (* hole : the fill IS a syn painting *)
+    exists P. reflexivity.
+  - (* tophole_remove *)
+    destruct P0 as [ | | | | | | Pt ]; simpl in Heq; try discriminate.
+    inversion Heq; subst. exact (IHHref _ eq_refl).
+  - (* tophole_fill : close the body over the fresh variable *)
+    destruct P0 as [ | | | | | | Pt ]; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    pick fresh X for (L `union` dom Θ `union` ftvar_in_bskl P).
+    destruct (H0 X ltac:(auto) (pskl_tophole Pt) eq_refl) as [RX HeqRX].
+    exists (pskl_all_syn (close_pskl_wrt_pskl X RX)).
+    simpl. rewrite pskl_to_bskl_syn_close. rewrite <- HeqRX.
+    rewrite close_bskl_wrt_bskl_open_bskl_wrt_bskl;
+      [ reflexivity | clear - Fr; fsetdec ].
+  - (* tophole_keep *)
+    destruct P0 as [ | | | | | | Pt ]; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    destruct (IHHref _ eq_refl) as [R ->].
+    exists (pskl_tophole R). reflexivity.
+  - (* flex_l : [ptyp_to_bskl_syn] IS a syn painting, by definition *)
+    exact (IHHref (ptyp_to_pskl τ) eq_refl).
+  - (* flex_r : the result is a bare variable *)
+    exists (pskl_var_f α). reflexivity.
+Qed.
+
+(* ===================================================================== *)
+(*  The Δ-discipline: Δ holds the refinement-local ∀-variables, which are   *)
+(*  fresh for Θ.  Two consequences we need to re-apply the Ghost rule,      *)
+(*  whose fill must be well-formed at the EMPTY Δ.                          *)
+(* ===================================================================== *)
+
+(** Δ-variables the skeleton does not mention may be dropped. *)
+Lemma ad_wf_pskl_delta_shrink : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall Δ', (forall X, X `in` Δ -> X `in` ftvar_in_pskl P -> X `in` Δ') ->
+  Θ ⨟ Δ' ⊢ₚₛᵃ P.
+Proof.
+  intros Θ Δ P H; induction H; intros Δ' Hkeep.
+  - apply ad_wf_pskl__unit.
+  - apply ad_wf_pskl__var.
+    destruct H as [HΔ | Htv]; [ left; apply Hkeep; auto; simpl; fsetdec
+                             | right; exact Htv ].
+  - apply ad_wf_pskl__arrow;
+      [ apply IHad_wf_pskl1 | apply IHad_wf_pskl2 ];
+      intros X HX HP; apply Hkeep; auto; simpl; fsetdec.
+  - apply ad_wf_pskl__all with (L := L `union` ftvar_in_pskl P).
+    intros X HX. apply H0; auto.
+    intros Y HY HP.
+    destruct (Y == X) as [->|Hne]; [ clear; fsetdec | ].
+    assert (HYΔ : Y `in` Δ) by (clear - HY Hne; fsetdec).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f X)) as Hup.
+    simpl in Hup.
+    assert (HYP : Y `in` ftvar_in_pskl P)
+      by (assert (Y `in` (singleton X `union` ftvar_in_pskl P))
+            by (clear - HP Hup; fsetdec);
+          clear - H1 Hne; fsetdec).
+    assert (Y `in` Δ') by (apply Hkeep; auto).
+    clear - H1; fsetdec.
+  - apply ad_wf_pskl__hole.
+  - apply ad_wf_pskl__tophole; [ exact H | exact H0 ].
+Qed.
+
+(** A skeleton well-formed at the EMPTY Δ mentions only Θ-variables; so if
+    Δ is disjoint from Θ (the ∀-variables are refinement-local), it is
+    Δ-free. *)
+Lemma ad_wf_pskl_empty_delta_free : forall Θ Δ P,
+  Θ ⨟ empty ⊢ₚₛᵃ P ->
+  (forall X, X `in` Δ -> X `notin` dom Θ) ->
+  AtomSetImpl.inter Δ (ftvar_in_pskl P) [=] empty.
+Proof.
+  intros Θ Δ P Hwf Hdisj.
+  apply inter_empty_pointwise. intros X HXΔ.
+  intro HXP.
+  destruct (ad_wf_pskl_ftv_tvarish Hwf HXP) as [Hemp | Htv];
+    [ clear - Hemp; fsetdec | ].
+  apply (Hdisj X HXΔ).
+  destruct Htv as [Hb | [Hb | [τ Hb]]]; apply binds_In in Hb; exact Hb.
+Qed.
+
+(** With a SYNTHESISED painting on the left the [all] rule can never fire (a
+    syn painting has no [bskl_all_inh]), so Δ never grows: Δ-freeness
+    propagates across the refinement. *)
+Lemma ad_refine_syn_syn_delta_free : forall Θ Δ Qb B,
+  Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ B ->
+  a_wf_aenv Θ ->
+  forall F, Qb = pskl_to_bskl_syn F ->
+  (forall X, X `in` Δ -> X `notin` dom Θ) ->
+  AtomSetImpl.inter Δ (ftvar_in_bskl Qb) [=] empty ->
+  AtomSetImpl.inter Δ (ftvar_in_bskl B) [=] empty.
+Proof.
+  intros Θ Δ Qb B Href; induction Href; intros Hwf F Heq Hdisj Hfree.
+  - (* unit *) simpl. clear; fsetdec.
+  - (* var *) exact Hfree.
+  - (* arrow *)
+    destruct F as [ | | | Fa Fb | | | ]; simpl in Heq; try discriminate.
+    inversion Heq; subst. simpl in Hfree |- *.
+    apply inter_empty_pointwise. intros X HX.
+    assert (H1 : X `notin` ftvar_in_bskl (pskl_to_bskl_syn Fa)
+                 `union` ftvar_in_bskl (pskl_to_bskl_syn Fb))
+      by (clear - HX Hfree; fsetdec).
+    assert (Ha := IHHref1 Hwf Fa eq_refl Hdisj
+             ltac:(apply inter_empty_pointwise; intros Y HY;
+                   clear - HY Hfree; fsetdec)).
+    assert (Hb := IHHref2 Hwf Fb eq_refl Hdisj
+             ltac:(apply inter_empty_pointwise; intros Y HY;
+                   clear - HY Hfree; fsetdec)).
+    clear - HX Ha Hb. fsetdec.
+  - (* all : impossible — a syn painting is never [bskl_all_inh] *)
+    destruct F; simpl in Heq; discriminate.
+  - (* hole : the fill is wf at the EMPTY Δ, hence Δ-free *)
+    rewrite ftvar_pskl_to_bskl_syn.
+    eapply ad_wf_pskl_empty_delta_free; [ exact H | exact Hdisj ].
+  - (* tophole_remove *)
+    destruct F as [ | | | | | | Ft ]; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    eapply IHHref; [ exact Hwf | reflexivity | exact Hdisj
+                   | simpl in Hfree; exact Hfree ].
+  - (* tophole_fill : the bound variable is fresh, and gets closed over *)
+    destruct F as [ | | | | | | Ft ]; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    pick fresh X for (L `union` Δ `union` dom Θ `union` ftvar_in_bskl P).
+    assert (HdisjX : forall Y, Y `in` Δ ->
+                     Y `notin` dom ((X ~ abind_tvar) ++ Θ)).
+    { intros Y HY. simpl.
+      assert (HYX : Y <> X) by (clear - HY Fr; fsetdec).
+      assert (HYΘ : Y `notin` dom Θ) by (apply Hdisj; exact HY).
+      clear - HYX HYΘ. fsetdec. }
+    assert (Hsub : AtomSetImpl.inter Δ
+                     (ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f X)))
+                   [=] empty).
+    { eapply (H0 X ltac:(auto) ltac:(apply a_wf_aenv__tvar; auto)
+                (pskl_tophole Ft) eq_refl HdisjX).
+      simpl in Hfree |- *. exact Hfree. }
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower P (bskl_var_f X))
+      as Hlow.
+    simpl.
+    apply inter_empty_pointwise. intros Y HY HYP.
+    assert (HYo : Y `in` ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f X)))
+      by (clear - HYP Hlow; fsetdec).
+    clear - HY HYo Hsub. fsetdec.
+  - (* tophole_keep *)
+    destruct F as [ | | | | | | Ft ]; simpl in Heq; try discriminate.
+    inversion Heq; subst. simpl.
+    eapply IHHref; [ exact Hwf | reflexivity | exact Hdisj
+                   | simpl in Hfree; exact Hfree ].
+  - (* flex_l : the definition's painting IS a syn painting; it is wf in Θ,
+       hence (Δ being fresh for Θ) Δ-free *)
+    eapply IHHref; [ exact Hwf | reflexivity | exact Hdisj | ].
+    unfold ptyp_to_bskl_syn. rewrite ftvar_pskl_to_bskl_syn.
+    eapply ad_wf_pskl_empty_delta_free; [ | exact Hdisj ].
+    apply a_wf_ptyp_to_wf_pskl.
+    eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ].
+  - (* flex_r : the result is a bare variable, BOUND in Θ — and Δ is fresh
+       for Θ, so it is not a Δ-variable *)
+    simpl. apply inter_empty_pointwise. intros Y HY HYα.
+    assert (HeqY : Y = α) by (clear - HYα; fsetdec). subst.
+    apply (Hdisj α HY). apply binds_In in H. exact H.
+Qed.
+
+(* ===================================================================== *)
+(*  THE CRUX, in the shape the Ghost rule needs.                           *)
+(*                                                                         *)
+(*  To re-apply [ad_refine_syn__hole] after a further refinement step we    *)
+(*  need the new fill to be a syn painting of a skeleton well-formed at the *)
+(*  EMPTY Δ.  Refinement does NOT give us that (it does not preserve        *)
+(*  well-formedness at all — cex_refine_not_transitive.v).  So we ASSUME    *)
+(*  well-formedness of the result — the paper's "we already required        *)
+(*  well-formedness separately" — and recover the empty-Δ form from the     *)
+(*  Δ-discipline: Δ holds refinement-local ∀-variables, fresh for Θ, and    *)
+(*  a syn-headed refinement never grows Δ, so the result stays Δ-free.      *)
+(* ===================================================================== *)
+
+Lemma ad_refine_syn_syn_l_wf : forall Θ Δ F B,
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_syn F) ⊳ B ->
+  a_wf_aenv Θ ->
+  (forall X, X `in` Δ -> X `notin` dom Θ) ->
+  Θ ⨟ empty ⊢ₚₛᵃ F ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl B) ->
+  exists G, B = pskl_to_bskl_syn G /\ Θ ⨟ empty ⊢ₚₛᵃ G.
+Proof.
+  intros Θ Δ F B Href Hwf Hdisj HwfF HwfB.
+  destruct (ad_refine_syn_syn_l Href F eq_refl) as [G HeqG].
+  exists G. split; [ exact HeqG | ].
+  assert (Hdf : AtomSetImpl.inter Δ (ftvar_in_bskl B) [=] empty).
+  { eapply ad_refine_syn_syn_delta_free;
+      [ exact Href | exact Hwf | reflexivity | exact Hdisj | ].
+    rewrite ftvar_pskl_to_bskl_syn.
+    eapply ad_wf_pskl_empty_delta_free; [ exact HwfF | exact Hdisj ]. }
+  subst B.
+  rewrite bskl_to_pskl_pskl_to_bskl_syn in HwfB.
+  rewrite ftvar_pskl_to_bskl_syn in Hdf.
+  eapply ad_wf_pskl_delta_shrink; [ exact HwfB | ].
+  intros X HXΔ HXG. exfalso. clear - HXΔ HXG Hdf. fsetdec.
+Qed.

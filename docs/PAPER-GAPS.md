@@ -32,7 +32,7 @@ refuted — none so far)}.
   (algo/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
-## FALSE (⚠ NEEDS AUTHOR DECISION) — refinement is not transitive; GhostForall captures its own ∀-variable
+## RESOLVED (was FALSE) — refinement does not preserve wf; wf is carried by the STATEMENTS
 - Where: fig. of refinement, `declarative.tex:1505-1510` (the GhostForall
   rule); the consequence hits `lemma:precision-preserves-refinement`
   (full-algo-spec.tex:716) and hence the whole completeness/optimality
@@ -65,7 +65,24 @@ refuted — none so far)}.
   This is the same "inherited variables must not fill ghosts" discipline that
   the soundness proof had to carry explicitly as the fill-hygiene set `F`
   (`ad_refine_syn_f`) — evidence the constraint genuinely belongs in the rule.
-- STATUS: completeness of consistency is BLOCKED pending this decision.
+- RESOLUTION (user-directed, and what the paper's comment actually says): do NOT
+  add the premise to the rule.  The declarative rules stay verbatim; instead the
+  METATHEORY carries well-formedness — a "solution" is a derivation *whose types
+  are well-formed*, so the capturing derivation above is simply not a solution
+  (its output is well-formed in NO context, `Pres_not_wf`).  Threading wf into
+  the rules was tried and rejected: it does not survive `ad_refine_*_f_strip`
+  (a ⊤-ghost body may mention a context rigid α that the strip removes, and
+  α ∈ Δ does not rescue it because ⊤-ghost bodies are checked at the EMPTY Δ).
+- MECHANIZED (algo/prop_precise.v, all Qed + axiom-free): `ad_refine_syn_syn_l`
+  (a syn-headed refinement lands in a syn painting — shape only, no wf),
+  `ad_wf_pskl_delta_shrink`, `ad_wf_pskl_empty_delta_free`,
+  `ad_refine_syn_syn_delta_free` (a syn-headed refinement never fires the `all`
+  rule, so Δ never grows and Δ-freeness propagates), and the crux
+  `ad_refine_syn_syn_l_wf`: ASSUMING the result is well-formed, it is a syn
+  painting of a skeleton well-formed at the EMPTY Δ — exactly what re-applying
+  the Ghost rule needs.
+- NEXT: the main induction for lemma:precision-preserves-refinement, then the
+  metasubstitution-composition algebra, then completeness.
 
 ## MECH-BUG (fixed) — decorated FlexR had an over-general subject
 - Where: fig:decorated-alg-consistency (decorated-algosub.tex:237-238); mech
