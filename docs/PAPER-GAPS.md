@@ -32,6 +32,35 @@ refuted — none so far)}.
   (algo/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
+## MECH-BUG (fixed) — decorated FlexR had an over-general subject
+- Where: fig:decorated-alg-consistency (decorated-algosub.tex:237-238); mech
+  `a_consistag__flex_r` (algo/def_decorated.v).  Found while closing the
+  FlexR case of lemma:sound-decorated-consistency.
+- The paper says the flexible-variable rules "are inherited unchanged" from
+  fig:alg-consistency, whose FlexR subject is a PLAIN skeleton `P`
+  (`a_consis__flex_r`, algo/def_extra.v:630).  Read into the decorated
+  system, its subject is therefore the embedding `pskl_to_uskl P` — a
+  decorated skeleton with no tags and no dotted ghosts, exactly as
+  `a_consis_decorate` produces.  The MECH rule instead took an ARBITRARY
+  unresolved skeleton `S` with the premises stated on the erasure
+  (`a_non_flex Θ0 ⌊S⌋ˢ`, `Θ0 ⊲[·] α ≔ ⌊S⌋ˢ ⊣ Θ1`) — strictly more
+  derivations than the paper's rule.
+- The over-general rule makes the soundness lemma FALSE.  Counter-example:
+  take `S = ●` (a DOTTED hole, `uskl_holeg`).  Then `⌊S⌋ˢ = □`, which is
+  non-flex and assignable (`guess^TY(□)` is a fresh monovar), so the mech
+  FlexR fires and yields `Θ0 ⊢ᵗ[…|α̂|·] ● ≈ α̂ ⊣ Θ1`.  Soundness would then
+  demand `· ⨟ Θ1 ⊨ ● ≈ α̂`; but the only consistency rule with a dotted hole
+  on the left (`GhostG`) forces the right-hand side to be `□` itself, while
+  `α̂` is defined to a monotype — unprovable.  The paper's rule never
+  produces this, because `●` is not in the image of `pskl_to_uskl`.
+- Fix (IMPLEMENTED): `a_consistag__flex_r` now quantifies a plain skeleton
+  `P`, keeps the ordinary premises on `P`, and states the subject as
+  `pskl_to_uskl P` — mirroring `a_consistag__flex_l` (whose subject
+  `uskl_var_f α` is likewise the embedding of the ordinary `pskl_var_f α`).
+  `pskl_to_uskl` moved from prop_decorate.v into def_decorated.v so the rule
+  can mention it.  The FlexR soundness case then mirrors the ordinary one
+  verbatim, and `a_consis_decorate`'s FlexR case gets simpler.
+
 ## RESOLVED (was WATCH) — Assign-SolveM and polymorphic definitions
 - Where: fig:alg-consistency `Assign-SolveM` (full-algo-spec.tex:1744).
 - Earlier concern: `guess^TY` keeps universal quantifiers, so the rule

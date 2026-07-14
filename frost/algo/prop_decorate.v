@@ -25,17 +25,6 @@ Set Implicit Arguments.
 (*  Plain skeletons as (untagged) unresolved skeletons                    *)
 (* ===================================================================== *)
 
-Fixpoint pskl_to_uskl (P : pskl) : uskl :=
-  match P with
-  | pskl_unit => uskl_unit
-  | pskl_var_b n => uskl_var_b n
-  | pskl_var_f X => uskl_var_f X
-  | pskl_arrow P1 P2 => uskl_arrow (pskl_to_uskl P1) (pskl_to_uskl P2)
-  | pskl_all_syn P0 => uskl_all_syn (pskl_to_uskl P0)
-  | pskl_hole => uskl_hole
-  | pskl_tophole P0 => uskl_tophole (pskl_to_uskl P0)
-  end.
-
 Lemma pskl_to_uskl_open_rec : forall P Q k,
   pskl_to_uskl (open_pskl_wrt_pskl_rec k Q P)
   = open_uskl_wrt_uskl_rec k (pskl_to_uskl Q) (pskl_to_uskl P).

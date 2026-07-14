@@ -57,6 +57,20 @@ Fixpoint uskl_to_pskl (S : uskl) : pskl :=
 
 Notation "⌊ S ⌋ˢ" := (uskl_to_pskl S) (at level 0, S at level 99).
 
+(** Plain skeletons as (untagged) unresolved skeletons: the embedding used
+    by the flexible-variable rules, which are inherited unchanged from the
+    ordinary algorithmic consistency (their subjects are plain skeletons). *)
+Fixpoint pskl_to_uskl (P : pskl) : uskl :=
+  match P with
+  | pskl_unit => uskl_unit
+  | pskl_var_b n => uskl_var_b n
+  | pskl_var_f X => uskl_var_f X
+  | pskl_arrow P1 P2 => uskl_arrow (pskl_to_uskl P1) (pskl_to_uskl P2)
+  | pskl_all_syn P0 => uskl_all_syn (pskl_to_uskl P0)
+  | pskl_hole => uskl_hole
+  | pskl_tophole P0 => uskl_tophole (pskl_to_uskl P0)
+  end.
+
 (** Ghost-free unresolved skeletons: no ghosts of any kind.  Used for (i) the
     [N = TY] instantiation candidates (decorated TYPES φ, once combined with
     [is_tskl]) and (ii) the dotted-ghost-freeness side condition of the
@@ -119,11 +133,11 @@ Inductive a_consistag :
     Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] (uskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ1
-| a_consistag__flex_r : forall Δ1 Δ2 Ψ Θ0 Θ1 α S,             (* FlexR *)
-    a_non_flex Θ0 ⌊ S ⌋ˢ ->
-    Θ0 ⊲[ nil ] α ≔ ⌊ S ⌋ˢ ⊣ Θ1 ->
+| a_consistag__flex_r : forall Δ1 Δ2 Ψ Θ0 Θ1 α P,            (* FlexR *)
+    a_non_flex Θ0 P ->
+    Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 ->
     Ψ [=] empty ->
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] S ≈ (pskl_var_f α) ⊣ Θ1
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] (pskl_to_uskl P) ≈ (pskl_var_f α) ⊣ Θ1
 (* — decorated rules (fig:decorated-alg-consistency) — *)
 | a_consistag__ghostg : forall Δ1 Δ2 Ψ Θ0,                    (* GhostG *)
     Ψ [=] empty ->

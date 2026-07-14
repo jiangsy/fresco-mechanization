@@ -40,9 +40,14 @@ Check a_consis_decorate.
 Check a_unify_sound.
 Check a_assign_sound.
 
+(* Lemma [Soundness of decorated consistency]
+   (lemma:sound-decorated-consistency): the main induction, over the
+   tagged/decorated consistency judgment, threading the tag context Ψ. *)
+Check a_consistag_sound_aux.
+
 (* Lemma [Soundness of consistency] (thm:sound-consistency), part 1:
-   the main consistency induction (paper-shaped corollary, Δ-contexts
-   empty).  The full statement is [a_consis_sound] in prop_consis_sound. *)
+   the paper-shaped corollary (Δ-contexts empty).  The ordinary
+   induction is DERIVED from the decorated one via [a_consis_decorate]. *)
 Check a_consis_sound.
 
 (* Information-increase algebra (the paper's "stability" infrastructure) *)
@@ -63,4 +68,5 @@ Print Assumptions a_consis_decorate.
 Print Assumptions a_isub_trans.
 Print Assumptions a_unify_sound.
 Print Assumptions a_assign_sound.
+Print Assumptions a_consistag_sound_aux.
 Print Assumptions a_consis_sound.
