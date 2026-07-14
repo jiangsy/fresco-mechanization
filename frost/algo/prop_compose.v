@@ -351,3 +351,194 @@ Proof.
       | apply a_inc_cons_tvar; exact Hinc ].
   Unshelve. all: eauto.
 Qed.
+
+(* ===================================================================== *)
+(*  A definition's free variables live STRICTLY BELOW it.                 *)
+(*  This is exactly what [a_wf_aenv__flex_def] says: it carries            *)
+(*  [a_wf_ptyp Θ τ] on the TAIL.  It is what makes entries ABOVE a         *)
+(*  definition unable to interfere with it — and hence what makes the      *)
+(*  composite well behaved.  (With the old SEQUENTIAL msubst this was      *)
+(*  silently false, which is why the fold computed the wrong composite.)   *)
+(* ===================================================================== *)
+
+Lemma a_wf_aenv_def_ftv_dom : forall Θ β τ,
+  a_wf_aenv Θ ->
+  binds β (abind_flex_mono_def τ) Θ ->
+  forall X, X `in` ftvar_in_ptyp τ -> X `in` dom Θ.
+Proof.
+  intros Θ β τ Hwf; induction Hwf; intros Hb X HX; simpl in *.
+  - inversion Hb.
+  - (* flex *)
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+      [ discriminate | ].
+    assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    clear - Hd; fsetdec.
+  - (* flex_def : the definition's type is well-formed in the TAIL *)
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'].
+    + inversion Heqb; subst.
+      assert (Hbt : a_binds_tvar X Θ) by (eapply a_wf_ptyp_ftv_tvarish; eauto).
+      assert (Hd : X `in` dom Θ).
+      { destruct Hbt as [Hbb | [Hbb | [τd Hbb]]];
+          apply binds_In in Hbb; exact Hbb. }
+      clear - Hd; fsetdec.
+    + assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+      clear - Hd; fsetdec.
+  - (* var_skl *)
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+      [ discriminate | ].
+    assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    clear - Hd; fsetdec.
+  - (* var_typ *)
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+      [ discriminate | ].
+    assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    clear - Hd; fsetdec.
+  - (* tvar *)
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+      [ discriminate | ].
+    assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    clear - Hd; fsetdec.
+Qed.
+
+(** Consequently an entry ABOVE a definition never occurs free in it. *)
+Lemma a_wf_aenv_head_notin_def_ftv : forall α0 b Θ' β τ,
+  a_wf_aenv ((α0 ~ b) ++ Θ') ->
+  binds β (abind_flex_mono_def τ) Θ' ->
+  α0 `notin` ftvar_in_ptyp τ.
+Proof.
+  intros α0 b Θ' β τ Hwf Hb HX.
+  assert (Hnd : α0 `notin` dom Θ' /\ a_wf_aenv Θ')
+    by (inversion Hwf; subst; auto).
+  destruct Hnd as [Hnd Hwf'].
+  apply Hnd. eapply a_wf_aenv_def_ftv_dom; eauto.
+Qed.
+
+(** Two metasubstitutions agreeing on a type's free variables act alike. *)
+Lemma msubst_ptyp_agree : forall ζ ζ' A,
+  (forall X, X `in` ftvar_in_ptyp A -> msubst_lookup ζ X = msubst_lookup ζ' X) ->
+  msubst_ptyp ζ A = msubst_ptyp ζ' A.
+Proof.
+  intros ζ ζ' A; induction A; intros Hag; simpl.
+  - reflexivity.
+  - reflexivity.
+  - (* NB do NOT [f_equal] here: both sides are [msubst_lookup _ _], and
+       [f_equal] would demand [ζ = ζ'] *)
+    apply Hag. simpl. fsetdec.
+  - f_equal; [ apply IHA1 | apply IHA2 ];
+      intros X HX; apply Hag; simpl; fsetdec.
+  - f_equal. apply IHA. intros X HX; apply Hag; simpl; fsetdec.
+Qed.
+
+(** An entry the type does not mention may be dropped. *)
+Lemma msubst_ptyp_cons_notin : forall α0 τ0 ζ A,
+  α0 `notin` ftvar_in_ptyp A ->
+  msubst_ptyp ((α0, τ0) :: ζ) A = msubst_ptyp ζ A.
+Proof.
+  intros α0 τ0 ζ A HA.
+  apply msubst_ptyp_agree. intros X HX. simpl.
+  destruct (X == α0) as [->|Hne]; [ exfalso; auto | reflexivity ].
+Qed.
+
+(* ===================================================================== *)
+(*  A metasubstitution respects definitions, hence type equivalence        *)
+(* ===================================================================== *)
+
+(** A definition's own variable is not free in it. *)
+Lemma a_wf_aenv_def_head_fresh : forall α τ Θ,
+  a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ Θ) ->
+  α `notin` ftvar_in_ptyp τ.
+Proof.
+  intros α τ Θ Hwf HX.
+  inversion Hwf as [ | | α' τ' Θ'' Hnd Hwp Hm Hwa | | | ]; subst.
+  apply Hnd.
+  eapply a_wf_ptyp_ftv_tvarish in HX; [ | exact Hwp ].
+  destruct HX as [Hb | [Hb | [τd Hb]]]; apply binds_In in Hb; exact Hb.
+Qed.
+
+(** ζ maps a defined variable and its definition to equivalent types.  The
+    entries ABOVE the definition drop out — that is what "definitions live
+    strictly below" buys. *)
+Lemma a_inc_lookup_def : forall Θ1 ζ Θ,
+  Θ1 ≤[ ζ ] Θ ->
+  a_wf_aenv Θ1 ->
+  forall α τ, binds α (abind_flex_mono_def τ) Θ1 ->
+  Θ ⊢ (msubst_lookup ζ α) ≡ᵗ (msubst_ptyp ζ τ).
+Proof.
+  intros Θ1 ζ Θ Hinc; induction Hinc; intros Hwf α0 τ0 Hb; simpl.
+  - inversion Hb.
+  - (* flex head : α0 is below it, so the head entry drops out *)
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+      [ discriminate | ].
+    assert (Hfr : α `notin` ftvar_in_ptyp τ0)
+      by (eapply a_wf_aenv_head_notin_def_ftv; eauto).
+    rewrite msubst_ptyp_cons_notin by exact Hfr.
+    destruct (α0 == α) as [->|Hne].
+    { exfalso. apply binds_In in Hb'.
+      inversion Hwf as [ | αh Θh Hnd Hwa | | | | ]; subst.
+      clear - Hb' Hnd. fsetdec. }
+    apply IHHinc; [ inversion Hwf; auto | exact Hb' ].
+  - (* flex_def head *)
+    assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heqb] | Hb'].
+    + (* the head IS the definition : this is exactly the rule's premise *)
+      inversion Heqb; subst.
+      assert (Hfr : α `notin` ftvar_in_ptyp τ)
+        by (eapply a_wf_aenv_def_head_fresh; exact Hwf).
+      rewrite msubst_ptyp_cons_notin by exact Hfr.
+      destruct (α == α) as [_|Hc]; [ | congruence ].
+      assumption.
+    + assert (Hfr : α `notin` ftvar_in_ptyp τ0)
+        by (eapply a_wf_aenv_head_notin_def_ftv; eauto).
+      rewrite msubst_ptyp_cons_notin by exact Hfr.
+      destruct (α0 == α) as [->|Hne].
+      { exfalso. apply binds_In in Hb'.
+        inversion Hwf as [ | | αh τh Θh Hnd Hwp Hm Hwa | | | ]; subst.
+        clear - Hb' Hnd. fsetdec. }
+      apply IHHinc; [ exact Hwf' | exact Hb' ].
+  - (* var_skl / var_typ / tvar heads : weaken into the grown target *)
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+      [ discriminate | ].
+    eapply a_tyequiv_weaken;
+      [ intros y b Hby; unfold binds in *;
+        apply in_or_app; right; simpl; right; exact Hby
+      | apply IHHinc; [ inversion Hwf; auto | exact Hb' ] ].
+  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+      [ discriminate | ].
+    eapply a_tyequiv_weaken;
+      [ intros y b Hby; unfold binds in *;
+        apply in_or_app; right; simpl; right; exact Hby
+      | apply IHHinc; [ inversion Hwf; auto | exact Hb' ] ].
+  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+      [ discriminate | ].
+    eapply a_tyequiv_weaken;
+      [ intros y b Hby; unfold binds in *;
+        apply in_or_app; right; simpl; right; exact Hby
+      | apply IHHinc; [ inversion Hwf; auto | exact Hb' ] ].
+Qed.
+
+Lemma a_tyequiv_msubst : forall Θ1 A B,
+  Θ1 ⊢ A ≡ᵗ B ->
+  a_wf_aenv Θ1 ->
+  forall ζ Θ, Θ1 ≤[ ζ ] Θ ->
+  Θ ⊢ (msubst_ptyp ζ A) ≡ᵗ (msubst_ptyp ζ B).
+Proof.
+  intros Θ1 A B Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
+  - apply a_tyequiv__refl. eapply msubst_ptyp_lc; eauto.
+  - apply a_tyequiv__sym. auto.
+  - eapply a_tyequiv__trans; [ apply IHHeq1 | apply IHHeq2 ]; auto.
+  - (* the definition-lookup rule *)
+    eapply a_inc_lookup_def; eauto.
+  - apply a_tyequiv__arrow; auto.
+  - apply a_tyequiv__all
+      with (L := L `union` dom ζ `union` dom Θt `union` dom Θ).
+    intros X HX.
+    (* NB [a_tyequiv__all] does NOT extend the context, unlike [a_wf_ptyp__all] *)
+    assert (HeqA : msubst_ptyp ζ (open_ptyp_wrt_ptyp A (ptyp_var_f X))
+                   = open_ptyp_wrt_ptyp (msubst_ptyp ζ A) (ptyp_var_f X))
+      by (eapply msubst_ptyp_open; [ exact Hinc | clear - HX; fsetdec ]).
+    assert (HeqB : msubst_ptyp ζ (open_ptyp_wrt_ptyp B (ptyp_var_f X))
+                   = open_ptyp_wrt_ptyp (msubst_ptyp ζ B) (ptyp_var_f X))
+      by (eapply msubst_ptyp_open; [ exact Hinc | clear - HX; fsetdec ]).
+    rewrite <- HeqA, <- HeqB.
+    apply H0; [ clear - HX; fsetdec | exact Hwf | exact Hinc ].
+Qed.
