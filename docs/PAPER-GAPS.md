@@ -46,17 +46,22 @@ refuted — none so far)}.
 - Where: full-algo-spec.tex:1707 (`Flex-Flex-Assign`), :1754 (`Assign-Assign`),
   :393 / algorithmic.tex:330 (skeleton splitting); mech `a_unify__flex_assign`
   (algo/def_extra.v:487).
-- NOTATION (this tripped me up first time round — recorded so it does not again).
-  The paper uses TWO relation macros that both render `∼`:
-      `\unify{A}{B}`   → `A ∼ B`   (macro.tex:1234)
-      `\aconsis[…]{…}` → `Θ ⊢_{P₀} P ∼ Q ⊣ Θ'`, whose relation is `\consis`,
-                          and `\consis` is `\mathrel{\sim}` (macro.tex:1271)
-  **They are the SAME symbol: `\unify{A}{B}` inside `\mov{Θ₀}{…}{Θ₁}` IS the
-  algorithmic CONSISTENCY judgment**, written with the generic `\mov` wrapper
-  rather than the `\aconsis` macro.  It is NOT a separate unification judgment,
-  and it is NOT missing.  Read it as: *consistency of SUBJECT `A` against INPUT
-  `B`* — which is exactly how `unifyvar{α̂}{β̂}` relates to the Flex rule's
-  conclusion `aconsis[β̂]{Θ₀}{α̂}{α̂}{Θ₁}` (subject α̂, input β̂).
+- NOTATION — **the paper says this outright**, full-algo-spec.tex:1440-1442:
+
+      "We write  Θ₀ ⊢ P ∼ P₀ ⊣ Θ₁  for  Θ₀ ⊢[P₀] P ∼ Q ⊣ Θ₁
+       WHEN THE OUTPUT Q IS NOT USED."
+
+  So the two-slot form `Θ₀ ⊢ A ∼ B ⊣ Θ₁` IS the CONSISTENCY judgment with the
+  output dropped: **SUBJECT `A`, INPUT `B`, output existentially quantified**.
+  (Consistency "takes two skeletons P and P₀ as input, checks their consistency,
+  and calculates their JOIN Q as output" — :1436-1438.  That is why it is a
+  4-place relation.)  The macros agree: `\unify{A}{B}` renders `A ∼ B`
+  (macro.tex:1234) and `\aconsis`'s relation is `\consis` = `\mathrel{\sim}`
+  (macro.tex:1271) — the same symbol.
+  It is NOT a separate unification judgment, and it is NOT missing.
+  Consistent with the Flex rule, whose premise `unifyvar{α̂}{β̂}` sits under the
+  conclusion `aconsis[β̂]{Θ₀}{α̂}{α̂}{Θ₁}` — subject α̂, input β̂.
+  And `Δ₁∣Δ₂` are omitted on that premise, which per :1472-1473 means BOTH EMPTY.
 - Under that reading all three sites make sense, and only that reading does:
   - Flex-Flex-Assign, when γ̂ IS a subject: substituting turns the subject into
     the monotype τ, and consistency's **FlexR** then assigns `β̂ ≔ τ`.
@@ -74,14 +79,23 @@ refuted — none so far)}.
   produces via `guess^TY`.
 - NB `a_unify_var_inv` ("every derivable `a_unify` has VARIABLE subjects",
   prop_consis_sound.v) reads like a theorem but is a SYMPTOM of this bug.
-- FIX (open; NOT yet done — it is a real restructure).  `a_consis`, `a_unify` and
-  `a_assign` become MUTUALLY inductive: `a_consis`'s Flex rule already calls
-  `a_unify`, and `a_unify`'s Flex-Flex-Assign (and `a_assign`'s Assign-Assign)
-  must call back into `a_consis`.  Consequence: the soundness proofs
-  (`a_unify_sound`, `a_assign_sound`, `a_consis_sound_aux`,
-  `a_consistag_sound_aux`) all become MUTUAL inductions.  Open design point: the
-  paper omits `Δ₁∣Δ₂` on the `unify` premise, so what the recursive consistency
-  call should carry there needs deciding.
+- FIX (open; NOT yet done — it is a real restructure).  The premise becomes, with
+  the output existential and both Δs empty (per the shorthand above):
+
+      a_unify__flex_assign : forall Θ0 Θ1 γ τ A B Q,
+        a_consis empty empty Θ0
+          (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ B))   (* INPUT   = B[τ/γ] *)
+          (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ A))   (* SUBJECT = A[τ/γ] *)
+          Q Θ1 ->
+        ((γ ~ abind_flex_mono_def τ) ++ Θ0) ⊲ A ≈ᵘ B
+          ⊣ ((γ ~ abind_flex_mono_def τ) ++ Θ1)
+
+  and likewise for `a_assign`'s Assign-Assign.  So `a_consis`, `a_unify` and
+  `a_assign` become MUTUALLY inductive: consistency's Flex rule already calls
+  `a_unify`; now `a_unify` and `a_assign` call back into consistency.
+  Consequence: the soundness proofs (`a_unify_sound`, `a_assign_sound`,
+  `a_consis_sound_aux`, `a_consistag_sound_aux`) all become MUTUAL inductions.
+  Their STATEMENTS are unchanged — only the induction principle is.
 - STATUS: soundness as it stands is fine (it only inspects derivations that
   exist), but it is proved about a judgment that is too weak.  Completeness is
   blocked until this is fixed.
