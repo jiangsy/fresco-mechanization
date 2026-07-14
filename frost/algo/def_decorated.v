@@ -125,7 +125,7 @@ Inductive a_consistag :
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] (uskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ0
 | a_consistag__flex : forall Δ1 Δ2 Ψ Θ0 Θ1 α β,               (* Flex *)
-    Θ0 ⊲ (ptyp_var_f α) ≈ᵘ (ptyp_var_f β) ⊣ Θ1 ->
+    Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f β) | Ψ ] (uskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ1
 | a_consistag__flex_l : forall Δ1 Δ2 Ψ Θ0 Θ1 α P0,            (* FlexL *)
