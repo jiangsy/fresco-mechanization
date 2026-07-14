@@ -37,24 +37,31 @@ Proof.
   destruct (eq_var Xps α); subst; auto.
 Qed.
 
+(** The identity metasubstitution looks every variable up to itself. *)
+Lemma msubst_lookup_id : forall θ X,
+  is_id_msubst θ ->
+  msubst_lookup θ X = ptyp_var_f X.
+Proof.
+  induction θ as [ | [α τ] θ' IH ]; intros X Hid; simpl; auto.
+  inversion Hid as [ | ? ? He Hid' ]; subst.
+  unfold is_id_entry in He; simpl in He; subst.
+  destruct (X == α) as [->|Hne]; [ reflexivity | apply IH; exact Hid' ].
+Qed.
+
 Lemma msubst_ptyp_id : forall θ A,
   is_id_msubst θ ->
   msubst_ptyp θ A = A.
 Proof.
-  induction θ as [ | [α τ] θ' IH ]; intros A Hid; simpl; auto.
-  inversion Hid as [ | ? ? He Hid' ]; subst.
-  unfold is_id_entry in He; simpl in He; subst.
-  rewrite subst_ptyp_in_ptyp_self. auto.
+  intros θ A Hid; induction A; simpl; f_equal; auto.
+  apply msubst_lookup_id; exact Hid.
 Qed.
 
 Lemma msubst_pskl_id : forall θ P,
   is_id_msubst θ ->
   msubst_pskl θ P = P.
 Proof.
-  induction θ as [ | [α τ] θ' IH ]; intros P Hid; simpl; auto.
-  inversion Hid as [ | ? ? He Hid' ]; subst.
-  unfold is_id_entry in He; simpl in He; subst.
-  rewrite subst_pskl_in_pskl_self. auto.
+  intros θ P Hid; induction P; simpl; f_equal; auto.
+  rewrite msubst_lookup_id by exact Hid. reflexivity.
 Qed.
 
 (* ===================================================================== *)

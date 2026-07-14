@@ -22,29 +22,65 @@ Set Implicit Arguments.
 
 Definition metasubst : Set := list (atom * ptyp).
 
-Fixpoint msubst_ptyp (θ : metasubst) (A : ptyp) : ptyp :=
+(** [paper-gap / MECH-BUG fixed]  The paper (algorithmic.tex:123) says a
+    metasubstitution IS "a finite MAP θ from flexible variables in Θ to
+    well-formed monotypes in Θ'" — i.e. a SIMULTANEOUS substitution.  These were
+    previously encoded as a SEQUENTIAL fold
+    ([msubst ((α,τ)::θ) A = msubst θ (A[τ/α])]), which is a different function:
+    the fold lets a LATER entry rewrite inside an EARLIER entry's image.  E.g.
+    for the (legal) [θ = α ↦ β̂, β̂ ↦ unit] the fold sends [α ↦ unit] where the
+    map sends [α ↦ β̂].  The two coincide on IDENTITY metasubstitutions (each
+    [α ↦ α] substitution is a no-op), which is all the algorithm ever produces —
+    which is why nothing depended on the difference.  But composition [ζ ∘ θ] and
+    hence COMPLETENESS need general θ, and there the fold is simply the wrong
+    function.  So: recurse on the TYPE and look each free variable up. *)
+
+Fixpoint msubst_lookup (θ : metasubst) (X : atom) : ptyp :=
   match θ with
-  | nil => A
-  | (α, τ) :: θ' => msubst_ptyp θ' (subst_ptyp_in_ptyp τ α A)
+  | nil => ptyp_var_f X
+  | (Y, τ) :: θ' => if X == Y then τ else msubst_lookup θ' X
+  end.
+
+Fixpoint msubst_ptyp (θ : metasubst) (A : ptyp) : ptyp :=
+  match A with
+  | ptyp_unit => ptyp_unit
+  | ptyp_var_b n => ptyp_var_b n
+  | ptyp_var_f X => msubst_lookup θ X
+  | ptyp_arrow A1 A2 => ptyp_arrow (msubst_ptyp θ A1) (msubst_ptyp θ A2)
+  | ptyp_all A0 => ptyp_all (msubst_ptyp θ A0)
   end.
 
 Fixpoint msubst_pskl (θ : metasubst) (P : pskl) : pskl :=
-  match θ with
-  | nil => P
-  | (α, τ) :: θ' => msubst_pskl θ' (subst_pskl_in_pskl (ptyp_to_pskl τ) α P)
+  match P with
+  | pskl_unit => pskl_unit
+  | pskl_var_b n => pskl_var_b n
+  | pskl_var_f X => ptyp_to_pskl (msubst_lookup θ X)
+  | pskl_arrow P1 P2 => pskl_arrow (msubst_pskl θ P1) (msubst_pskl θ P2)
+  | pskl_all_syn P0 => pskl_all_syn (msubst_pskl θ P0)
+  | pskl_hole => pskl_hole
+  | pskl_tophole P0 => pskl_tophole (msubst_pskl θ P0)
   end.
 
 Fixpoint msubst_btyp (θ : metasubst) (B : btyp) : btyp :=
-  match θ with
-  | nil => B
-  | (α, τ) :: θ' => msubst_btyp θ' (subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α B)
+  match B with
+  | btyp_unit => btyp_unit
+  | btyp_var_b n => btyp_var_b n
+  | btyp_var_f X => ptyp_to_btyp_syn (msubst_lookup θ X)
+  | btyp_arrow B1 B2 => btyp_arrow (msubst_btyp θ B1) (msubst_btyp θ B2)
+  | btyp_all_syn B0 => btyp_all_syn (msubst_btyp θ B0)
+  | btyp_all_inh B0 => btyp_all_inh (msubst_btyp θ B0)
   end.
 
 Fixpoint msubst_bskl (θ : metasubst) (Q : bskl) : bskl :=
-  match θ with
-  | nil => Q
-  | (α, τ) :: θ' =>
-      msubst_bskl θ' (subst_bskl_in_bskl (pskl_to_bskl_syn (ptyp_to_pskl τ)) α Q)
+  match Q with
+  | bskl_unit => bskl_unit
+  | bskl_var_b n => bskl_var_b n
+  | bskl_var_f X => pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup θ X))
+  | bskl_arrow Q1 Q2 => bskl_arrow (msubst_bskl θ Q1) (msubst_bskl θ Q2)
+  | bskl_all_syn Q0 => bskl_all_syn (msubst_bskl θ Q0)
+  | bskl_all_inh Q0 => bskl_all_inh (msubst_bskl θ Q0)
+  | bskl_hole => bskl_hole
+  | bskl_tophole Q0 => bskl_tophole (msubst_bskl θ Q0)
   end.
 
 (** The identity metasubstitution ι maps each flexible variable to itself. *)

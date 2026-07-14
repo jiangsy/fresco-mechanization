@@ -42,6 +42,27 @@ refuted — none so far)}.
   (algo/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
+## MECH-BUG (fixed) — metasubstitution was a SEQUENTIAL fold, but the paper says "finite map"
+- Where: algorithmic.tex:123 — "A metasubstitution `Θ ⊑[θ] Θ'` is a finite **MAP**
+  θ from flexible variables in Θ to well-formed monotypes in Θ'."  A finite map is
+  a SIMULTANEOUS substitution.  Mech `msubst_ptyp` / `_pskl` / `_btyp` / `_bskl`
+  (algo/def_meta.v) instead encoded a SEQUENTIAL fold:
+  `msubst ((α,τ)::θ) A = msubst θ (A[τ/α])`.
+- These are DIFFERENT functions: the fold lets a LATER entry rewrite inside an
+  EARLIER entry's image.  Take the (perfectly legal) `θ = [α ↦ β̂, β̂ ↦ unit]` — the
+  fold sends `α ↦ unit`, the map sends `α ↦ β̂`.
+- Why it never bit: the two coincide on IDENTITY metasubstitutions (each `α ↦ α`
+  substitution is a no-op), and *"our algorithms always give identity
+  metasubstitutions"* (algorithmic.tex:140).  Every existing use goes through
+  `msubst_ptyp_id` / `msubst_pskl_id`, so nothing depended on the difference.
+- Why it matters NOW: completeness/optimality is stated up to `θ ≡ ζ ∘ θ₁`, so it
+  needs GENERAL metasubstitutions and their COMPOSITION.  Composition is pointwise
+  (`(ζ∘θ)(α) = ζ(θ(α))`), and its action law `msubst (ζ∘θ) A = msubst ζ (msubst θ A)`
+  is simply FALSE for the fold — the fold's later-entry interference breaks it.
+- Fix (IMPLEMENTED): all four `msubst_*` now recurse on the TYPE and look each free
+  variable up in θ (`msubst_lookup`), i.e. they are finite maps, as the paper says.
+  Only the two `_id` lemmas needed re-proving; `make coq` green, zero admits.
+
 ## GAP — `lemma:precision-preserves-refinement` is stated with NO PROOF, and is FALSE without the external wf condition
 - Where: full-algo-spec.tex:716-721.  The lemma is asserted bare — `\begin{lemma}
   … \end{lemma}` followed straight by the next `\begin{definition}`.  There is no
