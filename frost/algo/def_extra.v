@@ -475,28 +475,42 @@ where "P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract NM α m P P' Ξ Q) : 
 (*  [P]; Ghost/GhostR restrict the output fill against them so [Q] is a    *)
 (*  valid refinement of both inputs.                                       *)
 (* ===================================================================== *)
-(* [a_assign].  NB [paper-gap, deliberate deviation]: the paper's
-   [Assign-Assign] premise [unify(α̂[τ/β̂])(P[τ/β̂])] over the MERGED context
-   [Θ0,Ξ] is the two-slot ∼ form, i.e. CONSISTENCY of subject
-   [α̂[τ/β̂] = α̂] against input [P[τ/β̂]] with the output dropped
-   (full-algo-spec.tex:1440-1442; the Appendix-B case expands it exactly
-   so and appeals to "the IH of consistency",
-   consistency-proofs.tex:1709-1745) — the paper's soundness proof is
-   therefore a 3-WAY mutual induction.  The mech instead CONTINUES the
-   assignment on [P[τ/β̂]] keeping the [Θ0 | Ξ] split, so [a_assign] stays
-   OUT of the a_unify/a_consis recursion cycle and its metatheory remains
-   plain inductions.  Believed equivalent (the paper's premise re-enters
-   assignvar via FlexL over [Ξ ++ Θ0], re-hoisting [Ξ] via Assign-Depend);
-   no known incompleteness, but faithfulness of THIS ONE RULE is unproved.
-   With [F] now threaded through consistency, the paper-exact 3-way mutual
-   is implementable if that flag is ever to be closed.
+(* ===================================================================== *)
+(*  Flexible-variable machinery (fig:alg-consistency, lower boxes).       *)
+(*  [a_assign Θ0 Ξ α̂ P Θ1] = [Θ0 | Ξ ⊲ α̂ := P ⊣ Θ1];                      *)
+(*  [a_unify Θ0 α̂ β̂ Θ1]    = [Θ0 ⊲ α̂ ≈ β̂ ⊣ Θ1];                          *)
+(*  [a_consis ...]          = algorithmic consistency (above).            *)
+(*  Rules recurse on the list HEAD (the paper's rightmost entry).          *)
+(* ===================================================================== *)
 
-   Prose-completion (PAPER-GAPS): the paper's "fresh β̄" in Assign-SolveM
-   means globally fresh, but the solve node only sees its local tail.  The
-   judgment therefore carries a USED-NAME set [F], accumulated by the rules
-   that walk past an entry, so the freshness side condition is local: at
-   the solve node, [F ∪ {α̂} ∪ dom(Ξ,Θ0)] covers the original context.
-   The paper-shaped form (F = ∅ at the root) is the notation below. *)
+(* All THREE judgments are MUTUALLY inductive — the recursion cycle is
+
+     consis --Flex-------------> unify
+     consis --FlexL / FlexR----> assign
+     unify  --Flex-Flex-Assign-> consis     (premise is the two-slot [∼])
+     assign --Assign-Assign----> consis     (premise is the two-slot [∼])
+
+   Both back-edges are the paper's OUTPUT-SUPPRESSED consistency abbreviation
+   (full-algo-spec.tex:1440-1442: "we write [Θ₀ ⊢ P ∼ P₀ ⊣ Θ₁] for
+   [Θ₀ ⊢[P₀] P ∼ Q ⊣ Θ₁] when the output [Q] is not used"), i.e. the LEFT slot
+   is the SUBJECT and the RIGHT slot is the INPUT [P₀].  The paper's own proofs
+   expand them exactly so and appeal to "the IH of consistency"
+   (consistency-proofs.tex:1636-1643 for Flex-Flex-Assign, :1720-1724 for
+   Assign-Assign), which is why its soundness proof is a 3-WAY mutual induction
+   "on the algorithmic consistency derivation together with the two auxiliary
+   judgements of variable unification and assignment" (:1562).  The reference
+   implementation agrees: both [U-Flex-Flex-Assign] and [U-Assign-Assign] call
+   [join_sk] — the consistency/join function — not [join_var] / [assign]
+   (paper/artifact/implementation/lib/type.ml:316-321, :358-363).
+
+   Prose-completion (PAPER-GAPS): all three judgments carry the USED-NAME set
+   [F].  The paper's "fresh β̄" in Assign-SolveM is GLOBALLY fresh, but a solve
+   node only sees its local tail; with the mutual cycle it can fire deep inside
+   a consistency premise, BELOW entries that the skip rules have walked past —
+   so those entries' names must reach the solve node through [F].  Without this,
+   a walked head [γ] could collide with a guessed name and re-attaching it would
+   break context well-formedness.  The paper-shaped judgments are the [F = ∅]
+   notations below. *)
 Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_assign__univ_ghost_id : forall F Θ0 α,                (* Assign-UnivGhost-Id *)
     ((α ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ nil ] α ≔ (pskl_tophole (pskl_var_f α))
@@ -506,7 +520,8 @@ Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
     a_guess_mono Θ0 P βs τ ->
     (* the paper binds the result to the SORTED metavariable τ: the rule
        applies only when guess^TY returns a monotype (hence Solve-M);
-       otherwise assignvar fails — a monomorphic α̂ has no polytype solution *)
+       otherwise assignvar fails — a monomorphic α̂ has no polytype solution.
+       Mirrors the implementation's [if not (is_mono tau) then raise]. *)
     mono_ptyp τ ->
     (* the paper's "fresh β̄" (prose-completion, cf. PAPER-GAPS) *)
     uniq βs ->
@@ -514,14 +529,56 @@ Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
        γ `notin` (F `union` add α (dom (Ξ ++ Θ0)))) ->
     ((α ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)
-| a_assign__assign : forall F Θ0 Θ1 Ξ α β τ P,            (* Assign-Assign *)
-    Θ0 ⊲[ (add β F) ][ Ξ ] α ≔ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ⊣ Θ1 ->
+| a_assign__assign : forall F Θ0 Θ1 Ξ α β τ P Q,          (* Assign-Assign *)
+    (* The premise is CONSISTENCY over the MERGED context [Θ₀,Ξ = Ξ ++ Θ0],
+       with subject [α̂[τ/β̂]] and input [P[τ/β̂]], output dropped.  [Δ₁∣Δ₂] are
+       omitted in the paper, which per full-algo-spec.tex:1472-1473 means BOTH
+       EMPTY.
+
+       The premise ABSORBS [Ξ] into the context and resets the pending suffix:
+       consistency has no [Ξ] slot, and its FlexL rule restarts the assignment
+       with [| ·].  The implementation does exactly this —
+       [join_sk (subst p) (subst α̂) (xi @ theta)], type.ml:358-363.
+
+       BOTH SIDES ARE SUBSTITUTED, and [α̂ = β̂] is REACHABLE — do NOT add an
+       [α̂ ≠ β̂] premise and do NOT simplify the subject to [pskl_var_f α].
+       Nothing requires an assignment's subject to be an UNDEFINED flex var:
+       neither [a_consis__flex_l] nor the implementation's [U-FlexL]
+       ([| p0, MFlex alpha -> assign alpha p0 [] theta], type.ml:182-185) guards
+       on it.  So a DEFINED [α̂] can be the subject, the walk then reaches [α̂]'s
+       OWN definition, and this rule must fire with [β̂ = α̂] — whereupon the
+       subject [α̂[τ/α̂]] is [τ], not a variable.  (Witness: [Θ = α̂ ≔ unit→unit],
+       subject [α̂], input [unit→unit]: FlexL, then the walk hits the head
+       [α̂ ≔ τ].  With [α̂ ≠ β̂] premised, NO rule fires and assignvar is stuck.)
+       The implementation computes exactly this — [subst_var (MFlex alpha) tau
+       beta] with [beta = alpha] reduces to [tau].  For [α̂ ≠ β̂] the subject
+       reduces back to [pskl_var_f α] by one [eq_var] split. *)
+    (* HATTED SUBJECT (paper metavariable convention, cf. PAPER-GAPS — the same
+       prose-completion [a_unify__flex_assign] already carries, for the same
+       reason).  Every OTHER [a_assign] rule derives "α̂ is flexible" from its own
+       shape (Assign-UnivGhost-Id / Assign-SolveM match on [α ~ abind_flex_mono])
+       or from its [a_assign] IH; this one cannot, since its premise is a
+       CONSISTENCY derivation.  Without it the rule is WRONG, not merely weak:
+       consistency's [Rigid] rule accepts a var subject for a RIGID [α], so the
+       assignment would be allowed to target a rigid type variable.  Stated on
+       the CONCLUSION's context, which is what covers the [β̂ = α̂] case (there
+       [α̂] IS the head binding, so it is not in [Θ0] at all). *)
+    a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ0) α ->
+    (Ξ ++ Θ0) ⊢ₐ[ (add β F) ][ empty | empty
+         | (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ]
+      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ≈ Q ⊣ Θ1 ->
     ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((β ~ abind_flex_mono_def τ) ++ Θ1)
 | a_assign__depend : forall F Θ0 Θ1 Ξ α β P,              (* Assign-Depend *)
+    (* [Ξ] grows at its TAIL (the paper's [Θ₀ | β̂,Ξ]; the implementation's
+       [assign alpha p (xi @ [hd]) theta]).  Consing at the head instead would
+       REVERSE the dependency block relative to [Θ₀,Ξ,β̄,α̂≔τ] in Assign-SolveM
+       — inert on its own (every [Ξ] entry is an undefined flex var, so their
+       relative order carries no information) but wrong for Assign-Assign,
+       whose premise context is literally [Ξ ++ Θ0]. *)
     α <> β ->
     β `in` ftvar_in_pskl P ->
-    Θ0 ⊲[ F ][ (β ~ abind_flex_mono) ++ Ξ ] α ≔ P ⊣ Θ1 ->
+    Θ0 ⊲[ F ][ Ξ ++ (β ~ abind_flex_mono) ] α ≔ P ⊣ Θ1 ->
     ((β ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1
 | a_assign__skip : forall F Θ0 Θ1 Ξ α β P,                (* Assign-Skip *)
     α <> β ->
@@ -541,33 +598,8 @@ Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
     Θ0 ⊲[ (add x F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
     ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((x ~ abind_var_skl Q) ++ Θ1)
-where "Θ ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ'" := (a_assign F Θ Ξ α P Θ') : type_scope.
-(* Paper-shaped form: no used names yet at the root. *)
-Notation "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'" := (a_assign empty Θ Ξ α P Θ')
-  (at level 70, Ξ at level 0, α at level 0, P at level 0, Θ' at level 0).
 
-(* ===================================================================== *)
-(*  Flexible-variable machinery (fig:alg-consistency, lower boxes).       *)
-(*  [a_unify Θ0 α̂ β̂ Θ1] = [Θ0 ⊲ α̂ ≈ β̂ ⊣ Θ1];                              *)
-(*  [a_assign Θ0 Ξ α̂ P Θ1] = [Θ0 | Ξ ⊲ α̂ := P ⊣ Θ1].                      *)
-(*  Rules recurse on the list HEAD (the paper's rightmost entry).          *)
-(* ===================================================================== *)
-
-(* [a_unify] and [a_consis] are MUTUALLY inductive: consistency's Flex rule
-   calls [a_unify], and [a_unify]'s Flex-Flex-Assign calls back into
-   consistency (see the [paper-gap] note on that rule).
-
-   Prose-completion (PAPER-GAPS, same entry as [a_assign]'s [F]): both
-   judgments carry the USED-NAME set [F].  The paper's "fresh β̄" in
-   Assign-SolveM is GLOBALLY fresh; with the mutual cycle, a solve node can
-   now fire deep inside a consistency premise of [Flex-Flex-Assign], BELOW
-   entries that [a_unify]'s skip rules have walked past — so those entries'
-   names (and the Δ-binders walked past by [Flex-Flex-Skip']) must reach the
-   solve node through [F], exactly as [a_assign]'s own skip rules already
-   thread it.  Without this, the walked head [γ] could collide with a
-   guessed name and re-attaching it would break context well-formedness.
-   The paper-shaped judgments are the [F = ∅] notations below. *)
-Inductive a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
+with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
 (* NB the SUBJECTS are atoms.  The paper's [unifyvar{α̂}{β̂}] has HATTED
    metavariables, i.e. its subjects are always flexible VARIABLES; taking
    general monotypes here was what forced the (now deleted) [a_unify_var_inv].
@@ -575,7 +607,14 @@ Inductive a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
    arbitrary monotype — and that is exactly why its premise drops into
    CONSISTENCY, which takes skeletons. *)
 | a_unify__flex_id : forall F Θ0 α,                        (* Flex-Flex-Id *)
-    binds α abind_flex_mono Θ0 ->
+    (* The paper's premise is [α̂ ∈ dom(Θ₀)] — the hatted metavariable means
+       "a flexible variable", DEFINED or NOT (the implementation's guard is
+       [is_in_dom_ alpha theta], type.ml:302).  Demanding [abind_flex_mono]
+       here would be gratuitously strict: a DEFINED [α̂] would have to route
+       through Flex-Flex-Assign instead (whose premise degenerates to the
+       consistency [τ ≈ τ]), so no derivation is lost either way — but the
+       rule would not be the paper's. *)
+    a_flex_tvar Θ0 α ->
     Θ0 ⊲[ F ] α ≈ᵘ α ⊣ Θ0
 | a_unify__flex_l : forall F Θ0 α β,                       (* Flex-Flex-L *)
     α <> β ->
@@ -700,11 +739,14 @@ with a_consis : atoms -> atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv 
     a_non_flex Θ0 P ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_tophole P0) ] P ≈ Q ⊣ Θ1
-where "Θ ⊲[ F ] α ≈ᵘ β ⊣ Θ'" := (a_unify F Θ α β Θ') : type_scope
+where "Θ ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ'" := (a_assign F Θ Ξ α P Θ') : type_scope
+and "Θ ⊲[ F ] α ≈ᵘ β ⊣ Θ'" := (a_unify F Θ α β Θ') : type_scope
 and "Θ ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" :=
   (a_consis F Δ1 Δ2 Θ P0 P Q Θ') : type_scope.
 
-(* Paper-shaped forms: no used names yet at the root (cf. [a_assign]). *)
+(* Paper-shaped forms: no used names yet at the root. *)
+Notation "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'" := (a_assign empty Θ Ξ α P Θ')
+  (at level 70, Ξ at level 0, α at level 0, P at level 0, Θ' at level 0).
 Notation "Θ ⊲ α ≈ᵘ β ⊣ Θ'" := (a_unify empty Θ α β Θ')
   (at level 70, α at level 0, β at level 0, Θ' at level 0).
 Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" :=
