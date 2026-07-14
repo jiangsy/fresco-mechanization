@@ -42,6 +42,38 @@ refuted — none so far)}.
   (algo/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
+## GAP — `lemma:precision-preserves-refinement` is stated with NO PROOF, and is FALSE without the external wf condition
+- Where: full-algo-spec.tex:716-721.  The lemma is asserted bare — `\begin{lemma}
+  … \end{lemma}` followed straight by the next `\begin{definition}`.  There is no
+  `\begin{proof}`, here or anywhere else in the appendices.
+- It is the key lemma under completeness/optimality of consistency AND of type
+  inference, so it carries a lot of weight for something never proved.
+- Writing the proof is what exposed the entry below: **the lemma is false unless
+  the refinement judgment's external well-formedness condition
+  (declarative.tex:1427) is carried**.  Precision is DEFINED as
+  `Θ ⊢ inh{P} ⊳ inh{Q}`, so the lemma is an instance of transitivity of
+  refinement — and refinement is not transitive on the bare rules
+  (`algo/cex_refine_not_transitive.v`).  An unwritten proof hid that.
+- MECHANIZED (algo/prop_precise.v, Qed + axiom-free): `ad_refine_syn_trans`
+  (general transitivity, given the result is well-formed) and
+  `ad_precise_preserves_refine` (the paper's lemma, a direct corollary).
+- Proof shape, for the authors: OUTER induction on the second derivation, INNER
+  induction on the first to peel the left-hand administrative rules
+  (`tophole_remove` / `flex_l`, which shrink the left skeleton while the right
+  stands still).  Every case whose left side is a ghost needs the crux: *assuming
+  the result is well-formed*, whatever a syn painting refines to is a syn painting
+  of a skeleton well-formed at the EMPTY Δ — which is what re-applying the Ghost
+  rule requires.
+- RELATED, also unproved but TRUE (algorithmic.tex:537): "Since `inh{Q}` is
+  inherited, the refinement relation cannot fill Q with more quantifiers, but can
+  only fill with monotypes and remove universal ghosts."  This holds because
+  `tophole_fill`'s right-hand side is `syn{∀…}` — a SYNTHESISED quantifier — so
+  the rule cannot fire against an INHERITED painting.  It is the exact dual of the
+  fact our proof turns on (a SYN painting on the LEFT can never fire the `all`
+  rule, hence Δ never grows).  The paper could cite it to shorten its own proof;
+  our `ad_refine_syn_trans` is strictly stronger (general transitivity) and so has
+  to handle `tophole_fill` rather than rule it out.
+
 ## RESOLVED (was FALSE) — refinement does not preserve wf; wf is carried by the STATEMENTS
 - Where: fig. of refinement, `declarative.tex:1505-1510` (the GhostForall
   rule); the consequence hits `lemma:precision-preserves-refinement`
