@@ -39,12 +39,16 @@ Check d_sd_typing_complete.
 Check a_consis_decorate.
 
 (* Lemma [Soundness of consistency] (thm:sound-consistency): the MUTUAL
-   soundness bundle over [a_unify] + [a_consis] — the corrected
-   [Flex-Flex-Assign] recurses into consistency, so the two judgments are
-   mutually inductive and (exactly as the paper organises its own proof,
-   consistency-proofs.tex:1562) their soundness is one mutual induction.
-   [a_assign] stays below the cycle (parts 2 & 3 packaged below). *)
-Check a_unify_consis_sound.
+   soundness bundle over [a_assign] + [a_unify] + [a_consis].  BOTH auxiliary
+   judgments drop back into consistency — the paper's two-slot [∼] is the
+   OUTPUT-SUPPRESSED CONSISTENCY abbreviation (full-algo-spec.tex:1440-1442),
+   so [Flex-Flex-Assign] AND [Assign-Assign] both recurse into it (the
+   reference implementation agrees: both call [join_sk], type.ml:316-321,
+   :358-363).  All three are therefore one SCC, and their soundness is ONE
+   3-WAY mutual induction — exactly as the paper organises its own proof
+   ("together with the two auxiliary judgements of variable unification and
+   assignment", consistency-proofs.tex:1562).  Parts 2 & 3 packaged below. *)
+Check a_assign_unify_consis_sound.
 Check a_unify_sound.
 Check a_assign_sound.
 
@@ -96,7 +100,7 @@ Print Assumptions d_typing_general_subsumption.
 Print Assumptions d_sd_typing_general_subsumption_spine.
 Print Assumptions a_consis_decorate.
 Print Assumptions a_isub_trans.
-Print Assumptions a_unify_consis_sound.
+Print Assumptions a_assign_unify_consis_sound.
 Print Assumptions a_unify_sound.
 Print Assumptions a_assign_sound.
 Print Assumptions tyequiv_mono_consis.

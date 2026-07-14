@@ -1674,278 +1674,11 @@ Proof.
     [ inversion H0; subst; discriminate Heq | auto ].
 Qed.
 
-(** Preservation of the problem invariants by assignment.  The occurs
-    condition of Assign-SkipRigid discharges each Δ-variable as its
-    entry is walked; the positional invariant makes every Δ-variable
-    walked by the time Assign-SolveM fires; the used-name freshness
-    keeps the guessed names off Δ. *)
-Lemma a_assign_preserves_inv : forall F Θ0 Ξ α P Θ1 Δ,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
-  no_flex_dep Δ (Ξ ++ Θ0) ->
-  flex_above_free Δ Θ0 ->
-  AtomSetImpl.inter Δ (dom Ξ) [=] empty ->
-  Δ [<=] (F `union` dom Θ0 `union` dom Ξ) ->
-  (forall X, X `in` Δ -> X `notin` dom Θ0 -> X `notin` ftvar_in_pskl P) ->
-  no_flex_dep Δ Θ1 /\
-  flex_above_free Δ Θ1 /\
-  (forall X, X `in` Δ -> X `in` dom Θ1 -> X `in` (dom Ξ `union` dom Θ0)).
-Proof.
-  intros * Ha; induction Ha; intros Hnd Hfaf HΔΞ Hcov HP.
-  - (* Assign-UnivGhost-Id *)
-    split; [ exact Hnd | split; [ exact Hfaf | ] ].
-    intros X _ HX. clear - HX. fsetdec.
-  - (* Assign-SolveM *)
-    assert (Hhd : AtomSetImpl.inter Δ (add α (dom Θ0)) [=] empty)
-      by (apply (faf_head Hfaf); discriminate).
-    assert (Hft : forall X, X `in` Δ -> X `notin` ftvar_in_pskl P).
-    { intros X HXΔ. apply HP; auto. simpl.
-      assert (X `notin` add α (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-      auto. }
-    assert (HβΔ : forall X, X `in` Δ -> X `notin` dom βs).
-    { intros X HXΔ HXβ.
-      assert (HXfr := H3 X HXβ).
-      assert (HXcov := Hcov X HXΔ).
-      simpl in HXcov. repeat rewrite dom_app in *.
-      clear - HXfr HXcov. fsetdec. }
-    assert (Hτ : AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty).
-    { apply inter_empty_pointwise. intros X HXΔ HXτ.
-      pose proof (a_guess_mono_ftv H0 HXτ) as Hin.
-      assert (X `notin` ftvar_in_pskl P) by (apply Hft; auto).
-      assert (X `notin` dom βs) by (apply HβΔ; auto).
-      clear - Hin H4 H5. fsetdec. }
-    assert (Hβsd : a_decls βs) by (eapply a_guess_mono_decls; eauto).
-    split; [ | split ].
-    + (* no_flex_dep *)
-      intros β' τ' Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'].
-      { inversion Heq; subst; exact Hτ. }
-      apply in_app_or in Hb'. destruct Hb' as [Hbβ | HbΞΘ].
-      { exfalso. eapply a_decls_no_def; eauto. }
-      apply (Hnd β' τ').
-      unfold binds. apply in_app_or in HbΞΘ. apply in_or_app.
-      destruct HbΞΘ as [HbΞ | HbΘ]; [ auto | ].
-      right. right. exact HbΘ.
-    + (* flex_above_free *)
-      apply faf_cons.
-      { intros _. repeat rewrite dom_app.
-        apply inter_empty_pointwise. intros X HXΔ HXin.
-        assert (X `notin` add α (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-        assert (X `notin` dom βs) by auto.
-        assert (X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
-        clear - HXin H4 H5 H6. fsetdec. }
-      apply faf_app.
-      { apply inter_empty_pointwise. intros X HXΔ. auto. }
-      { rewrite dom_app. apply inter_empty_pointwise.
-        intros X HXΔ HXin.
-        assert (X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
-        assert (X `notin` add α (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-        clear - HXin H4 H5. fsetdec. }
-      apply faf_app.
-      { exact HΔΞ. }
-      { apply inter_empty_pointwise. intros X HXΔ HXin.
-        clear - Hhd HXΔ HXin. fsetdec. }
-      eapply faf_tail; eauto.
-    + (* dom bookkeeping *)
-      intros X HXΔ HXd.
-      simpl in HXd. repeat rewrite dom_app in HXd.
-      assert (X `notin` dom βs) by auto.
-      assert (X `notin` add α (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-      simpl. clear - HXd H4 H5. fsetdec.
-  - (* Assign-Assign *)
-    assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
-      by (apply (faf_head Hfaf); discriminate).
-    assert (Hτ0 : AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty).
-    { apply (Hnd β τ). unfold binds.
-      apply in_or_app. right. left. reflexivity. }
-    destruct IHHa as [IH1 [IH2 IH3]].
-    { intros β' τ' Hb. apply (Hnd β' τ').
-      apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
-               (β ~ abind_flex_mono_def τ) Θ0). exact Hb. }
-    { eapply faf_tail; eauto. }
-    { exact HΔΞ. }
-    { intros X HX. assert (HXc := Hcov X HX).
-      simpl in HXc. clear - HXc. fsetdec. }
-    { intros X HXΔ HXd.
-      assert (HXP : X `notin` ftvar_in_pskl P).
-      { apply HP; auto. simpl.
-        assert (X `notin` add β (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-        auto. }
-      assert (HXτ : X `notin` ftvar_in_ptyp τ)
-        by (clear - Hτ0 HXΔ; fsetdec).
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                    P (ptyp_to_pskl τ) β) as Hup.
-      pose proof (ftvar_in_ptyp_to_pskl τ) as Hτp.
-      intro HXin.
-      assert (HXsub : X `in` (ftvar_in_pskl (ptyp_to_pskl τ)
-                        `union` remove β (ftvar_in_pskl P)))
-        by (clear - HXin Hup; fsetdec).
-      clear - HXsub Hτp HXτ HXP. fsetdec. }
-    split; [ | split ].
-    + intros β' τ' Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-        [ inversion Heq; subst; exact Hτ0
-        | exact (IH1 β' τ' Hb') ].
-    + apply faf_cons; [ | exact IH2 ].
-      intros _. apply inter_empty_pointwise.
-      intros X HXΔ HXin.
-      assert (Hβ : X `notin` add β (dom Θ0))
-        by (clear - Hhd HXΔ; fsetdec).
-      assert (HΘ1 : X `notin` dom Θ1).
-      { intro HXd. specialize (IH3 X HXΔ HXd).
-        assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
-        clear - IH3 HXΞ Hβ. fsetdec. }
-      clear - HXin Hβ HΘ1. fsetdec.
-    + intros X HXΔ HXd. simpl in HXd.
-      assert (Hnex : X <> β)
-        by (intro; subst; clear - Hhd HXΔ; fsetdec).
-      assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-      specialize (IH3 X HXΔ HXd1). simpl.
-      clear - IH3. fsetdec.
-  - (* Assign-Depend *)
-    assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
-      by (apply (faf_head Hfaf); discriminate).
-    destruct IHHa as [IH1 [IH2 IH3]].
-    { intros β' τ' Hb. apply (Hnd β' τ').
-      apply binds_permute_mid. exact Hb. }
-    { eapply faf_tail; eauto. }
-    { simpl. apply inter_empty_pointwise. intros X HXΔ HXin.
-      assert (HXβ : X `notin` add β (dom Θ0))
-        by (clear - Hhd HXΔ; fsetdec).
-      assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
-      clear - HXin HXβ HXΞ. fsetdec. }
-    { intros X HX. assert (HXc := Hcov X HX).
-      simpl in *. clear - HXc. fsetdec. }
-    { intros X HXΔ HXd. apply HP; auto. simpl.
-      assert (X `notin` add β (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-      auto. }
-    split; [ exact IH1 | split; [ exact IH2 | ] ].
-    intros X HXΔ HXd.
-    specialize (IH3 X HXΔ HXd). simpl in IH3. simpl.
-    clear - IH3. fsetdec.
-  - (* Assign-Skip *)
-    assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
-      by (apply (faf_head Hfaf); discriminate).
-    destruct IHHa as [IH1 [IH2 IH3]].
-    { intros β' τ' Hb. apply (Hnd β' τ').
-      apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
-               (β ~ abind_flex_mono) Θ0). exact Hb. }
-    { eapply faf_tail; eauto. }
-    { exact HΔΞ. }
-    { intros X HX. assert (HXc := Hcov X HX).
-      simpl in HXc. clear - HXc. fsetdec. }
-    { intros X HXΔ HXd. apply HP; auto. simpl.
-      assert (X `notin` add β (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-      auto. }
-    split; [ | split ].
-    + intros β' τ' Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-        [ discriminate | exact (IH1 β' τ' Hb') ].
-    + apply faf_cons; [ | exact IH2 ].
-      intros _. apply inter_empty_pointwise.
-      intros X HXΔ HXin.
-      assert (Hβ : X `notin` add β (dom Θ0))
-        by (clear - Hhd HXΔ; fsetdec).
-      assert (HΘ1 : X `notin` dom Θ1).
-      { intro HXd. specialize (IH3 X HXΔ HXd).
-        assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
-        clear - IH3 HXΞ Hβ. fsetdec. }
-      clear - HXin Hβ HΘ1. fsetdec.
-    + intros X HXΔ HXd. simpl in HXd.
-      assert (Hnex : X <> β)
-        by (intro; subst; clear - Hhd HXΔ; fsetdec).
-      assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-      specialize (IH3 X HXΔ HXd1). simpl.
-      clear - IH3. fsetdec.
-  - (* Assign-SkipRigid *)
-    destruct IHHa as [IH1 [IH2 IH3]].
-    { intros β' τ' Hb. apply (Hnd β' τ').
-      apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
-               (β ~ abind_tvar) Θ0). exact Hb. }
-    { eapply faf_tail; eauto. }
-    { exact HΔΞ. }
-    { intros X HX. assert (HXc := Hcov X HX).
-      simpl in HXc. clear - HXc. fsetdec. }
-    { intros X HXΔ HXd.
-      destruct (eq_var X β) as [->|Hne]; [ exact H | ].
-      apply HP; auto; simpl; auto. }
-    split; [ | split ].
-    + intros β' τ' Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-        [ discriminate | exact (IH1 β' τ' Hb') ].
-    + apply faf_cons; [ intros Hne; congruence | exact IH2 ].
-    + intros X HXΔ HXd. simpl in HXd. simpl.
-      destruct (eq_var X β) as [->|Hne]; [ fsetdec | ].
-      assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hne; fsetdec).
-      specialize (IH3 X HXΔ HXd1). clear - IH3. fsetdec.
-  - (* Assign-SkipTmVar *)
-    assert (Hhd : AtomSetImpl.inter Δ (add x (dom Θ0)) [=] empty)
-      by (apply (faf_head Hfaf); discriminate).
-    destruct IHHa as [IH1 [IH2 IH3]].
-    { intros β' τ' Hb. apply (Hnd β' τ').
-      apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
-               (x ~ abind_var_typ Q) Θ0). exact Hb. }
-    { eapply faf_tail; eauto. }
-    { exact HΔΞ. }
-    { intros X HX. assert (HXc := Hcov X HX).
-      simpl in HXc. clear - HXc. fsetdec. }
-    { intros X HXΔ HXd. apply HP; auto. simpl.
-      assert (X `notin` add x (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-      auto. }
-    split; [ | split ].
-    + intros β' τ' Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-        [ discriminate | exact (IH1 β' τ' Hb') ].
-    + apply faf_cons; [ | exact IH2 ].
-      intros _. apply inter_empty_pointwise.
-      intros X HXΔ HXin.
-      assert (Hx : X `notin` add x (dom Θ0))
-        by (clear - Hhd HXΔ; fsetdec).
-      assert (HΘ1 : X `notin` dom Θ1).
-      { intro HXd. specialize (IH3 X HXΔ HXd).
-        assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
-        clear - IH3 HXΞ Hx. fsetdec. }
-      clear - HXin Hx HΘ1. fsetdec.
-    + intros X HXΔ HXd. simpl in HXd.
-      assert (Hnex : X <> x)
-        by (intro; subst; clear - Hhd HXΔ; fsetdec).
-      assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-      specialize (IH3 X HXΔ HXd1). simpl.
-      clear - IH3. fsetdec.
-  - (* Assign-SkipTmVar (skl) *)
-    assert (Hhd : AtomSetImpl.inter Δ (add x (dom Θ0)) [=] empty)
-      by (apply (faf_head Hfaf); discriminate).
-    destruct IHHa as [IH1 [IH2 IH3]].
-    { intros β' τ' Hb. apply (Hnd β' τ').
-      apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
-               (x ~ abind_var_skl Q) Θ0). exact Hb. }
-    { eapply faf_tail; eauto. }
-    { exact HΔΞ. }
-    { intros X HX. assert (HXc := Hcov X HX).
-      simpl in HXc. clear - HXc. fsetdec. }
-    { intros X HXΔ HXd. apply HP; auto. simpl.
-      assert (X `notin` add x (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
-      auto. }
-    split; [ | split ].
-    + intros β' τ' Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-        [ discriminate | exact (IH1 β' τ' Hb') ].
-    + apply faf_cons; [ | exact IH2 ].
-      intros _. apply inter_empty_pointwise.
-      intros X HXΔ HXin.
-      assert (Hx : X `notin` add x (dom Θ0))
-        by (clear - Hhd HXΔ; fsetdec).
-      assert (HΘ1 : X `notin` dom Θ1).
-      { intro HXd. specialize (IH3 X HXΔ HXd).
-        assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
-        clear - IH3 HXΞ Hx. fsetdec. }
-      clear - HXin Hx HΘ1. fsetdec.
-    + intros X HXΔ HXd. simpl in HXd.
-      assert (Hnex : X <> x)
-        by (intro; subst; clear - Hhd HXΔ; fsetdec).
-      assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-      specialize (IH3 X HXΔ HXd1). simpl.
-      clear - IH3. fsetdec.
-Qed.
+(* [a_assign_preserves_inv] is now the ∀Δ-generalized 5th CONJUNCT of the
+   bundle's ASSIGN motive: with the corrected Assign-Assign the proof recurses
+   into CONSISTENCY, so it cannot be a standalone induction on [a_assign] any
+   more.  Re-exported from the bundle under its original name (with the
+   [a_decls] / wf hypotheses the motive carries). *)
 
 
 (** Unification preserves the domain (no names are created). *)
@@ -1984,21 +1717,9 @@ Lemma bskl_to_pskl_close : forall Q α,
   = close_pskl_wrt_pskl α (bskl_to_pskl Q).
 Proof. intros; apply bskl_to_pskl_close_rec. Qed.
 
-(** The subject of an assignment is bound (as a flexible or defined
-    variable) in the output context. *)
-Lemma a_assign_subject_binds : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
-  a_binds_tvar α Θ1.
-Proof.
-  intros * H; induction H;
-    try solve
-      [ right; left; unfold binds; left; reflexivity
-      | right; right; exists τ; unfold binds; left; reflexivity
-      | exact IHa_assign
-      | destruct IHa_assign as [Hb | [Hb | [τ0 Hb]]];
-        [ left | right; left | right; right; exists τ0 ];
-        unfold binds; right; auto ].
-Qed.
+(* [a_assign_subject_binds] MOVED below the bundle: it needs NO induction any
+   more — the increase conjunct plus [a_assign_subject_flex] and
+   [a_isub_binds_tvarish] give it directly. *)
 
 (** Moving a variable from Δ into the context as a rigid (the skeleton
     well-formedness reassociation used to open ∀-binders). *)
@@ -2169,63 +1890,11 @@ Proof.
       * intros γ' Hγ'2. apply Hfresh. simpl. fsetdec.
 Qed.
 
-(** Every variable in an assignment's output is either already present
-    or freshly generated (hence outside the used-name set [F]). *)
-Lemma a_assign_new_avoids_F : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
-  forall γ, γ `in` dom Θ1 ->
-  γ `in` dom (Ξ ++ Θ0) \/ γ `notin` F.
-Proof.
-  intros * H; induction H; intros γ Hγ;
-    repeat rewrite dom_app in *; simpl in *.
-  - (* UnivGhost-Id *) left. fsetdec.
-  - (* SolveM *)
-    destruct (AtomSetImpl.union_1 Hγ) as [Hα | Hrest];
-      [ left; fsetdec | ].
-    destruct (AtomSetImpl.union_1 Hrest) as [Hβs | Hqt];
-      [ | left; fsetdec ].
-    right. pose proof (H3 γ Hβs) as Hh. clear - Hh. fsetdec.
-  - (* Assign *)
-    destruct (AtomSetImpl.union_1 Hγ) as [Hβ | Hrest].
-    + left. fsetdec.
-    + destruct (IHa_assign γ Hrest) as [Hin | Hout];
-        [ left; repeat rewrite dom_app in *; fsetdec
-        | right; clear - Hout; fsetdec ].
-  - (* Depend *)
-    destruct (IHa_assign γ Hγ) as [Hin | Hout];
-      [ left; repeat rewrite dom_app in *; simpl in *; fsetdec
-      | right; auto ].
-  - (* Skip *)
-    destruct (AtomSetImpl.union_1 Hγ) as [Hβ | Hrest].
-    + left. fsetdec.
-    + destruct (IHa_assign γ Hrest) as [Hin | Hout];
-        [ left; repeat rewrite dom_app in *; fsetdec
-        | right; clear - Hout; fsetdec ].
-  - (* SkipRigid *)
-    destruct (AtomSetImpl.union_1 Hγ) as [Hβ | Hrest].
-    + left. fsetdec.
-    + destruct (IHa_assign γ Hrest) as [Hin | Hout];
-        [ left; repeat rewrite dom_app in *; fsetdec | right; auto ].
-  - (* SkipTmVar *)
-    destruct (AtomSetImpl.union_1 Hγ) as [Hx | Hrest].
-    + left. fsetdec.
-    + destruct (IHa_assign γ Hrest) as [Hin | Hout];
-        [ left; repeat rewrite dom_app in *; fsetdec | right; auto ].
-  - (* SkipTmVar skl *)
-    destruct (AtomSetImpl.union_1 Hγ) as [Hx | Hrest].
-    + left. fsetdec.
-    + destruct (IHa_assign γ Hrest) as [Hin | Hout];
-        [ left; repeat rewrite dom_app in *; fsetdec | right; auto ].
-Qed.
+(* [a_assign_new_avoids_F] is now the 4th CONJUNCT of the bundle's ASSIGN
+   motive, re-exported below. *)
 
-(** Assignment never drops an entry: the domain only grows. *)
-Lemma a_assign_dom_mono : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
-  dom (Ξ ++ Θ0) [<=] dom Θ1.
-Proof.
-  intros * H; induction H;
-    repeat rewrite dom_app in *; simpl in *; fsetdec.
-Qed.
+(* [a_assign_dom_mono] is now the 3rd CONJUNCT of the bundle's ASSIGN
+   motive, re-exported below. *)
 
 (** A visible monotype's skeleton is well-formed (no quantifiers, no
     ghosts — only the var leaves need discharging). *)
@@ -2274,15 +1943,8 @@ Proof. intros * H; inversion H; subst; auto. Qed.
    proof recurses into consistency, so it cannot be a standalone induction
    on [a_unify] any more. *)
 
-(** Contrapositive of [a_assign_new_avoids_F]: a name in [F] and fresh
-    from the input stays fresh in the output. *)
-Corollary a_assign_notin : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
-  forall β, β `in` F -> β `notin` dom (Ξ ++ Θ0) -> β `notin` dom Θ1.
-Proof.
-  intros * Ha β HβF Hβd Hin.
-  destruct (a_assign_new_avoids_F Ha Hin) as [Hd | HF]; auto.
-Qed.
+(* [a_assign_notin] is a corollary of [a_assign_new_avoids_F]; both are now
+   conjuncts of the bundle's ASSIGN motive and re-exported below. *)
 
 (** Free variables of a well-formed skeleton are tvar-ish or in Δ. *)
 Lemma ad_wf_pskl_ftv_tvarish : forall Θ Δ P,
@@ -2306,200 +1968,10 @@ Proof.
   - destruct (IHad_wf_pskl Y HY) as [HΔ | Htv]; [ fsetdec | auto ].
 Qed.
 
-(** [a_assign] preserves context well-formedness.  Mirrors
-    [a_assign_sound]'s visibility threading; the output is the input
-    with a fresh flexible-variable block and one monotype definition
-    prepended (SolveM), or an entry re-attached (skip cases). *)
-Lemma a_assign_preserves_wf : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
-  a_decls Ξ ->
-  a_wf_aenv (Ξ ++ Θ0) ->
-  (forall X, X `in` ftvar_in_pskl P -> a_binds_tvar X (Ξ ++ Θ0)) ->
-  a_wf_aenv Θ1.
-Proof.
-  intros * Ha; induction Ha; intros Hdecl Hwf Hvis.
-  - (* Assign-UnivGhost-Id *)
-    simpl in Hwf. exact Hwf.
-  - (* Assign-SolveM *)
-    assert (Huniq : uniq (Ξ ++ (α ~ abind_flex_mono) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hαd : α `notin` dom (Ξ ++ Θ0))
-      by (repeat rewrite dom_app in *; solve_uniq).
-    assert (Hβsfr : forall γ, γ `in` dom βs -> γ `notin` dom (Ξ ++ Θ0)).
-    { intros γ Hγ. pose proof (H3 γ Hγ) as Hh.
-      repeat rewrite dom_app in *. clear - Hh. fsetdec. }
-    assert (Hβswf : a_wf_aenv (βs ++ Ξ ++ Θ0)).
-    { apply a_wf_aenv_prepend_flex;
-        [ intros γ b Hb; eapply a_guess_mono_flex_binds; eauto
-        | exact H2
-        | intros γ Hγ;
-          (assert (Hf : γ `notin` dom (Ξ ++ Θ0)) by (apply Hβsfr; auto));
-          repeat rewrite dom_app in *; clear - Hf; fsetdec
-        | exact HwfΞΘ ]. }
-    assert (Hαβs : α `notin` dom βs).
-    { intro Hin. pose proof (H3 α Hin) as Hh. clear - Hh. fsetdec. }
-    apply a_wf_aenv__flex_def; [ | | exact H1 | exact Hβswf ].
-    { repeat rewrite dom_app in *. clear - Hαd Hαβs. fsetdec. }
-    apply mono_ptyp_wf; auto.
-    intros X HX.
-    pose proof (a_guess_mono_ftv H0 HX) as Hin.
-      destruct (AtomSetImpl.union_1 Hin) as [HXP | HXβs].
-      * assert (HXα : X <> α) by (intro; subst; auto).
-        assert (Htv : a_binds_tvar X (Ξ ++ Θ0)).
-        { eapply a_binds_tvar_strip_mid with
-            (c := α) (b := abind_flex_mono);
-            [ apply Hvis; auto
-            | intro Hc; inversion Hc; congruence
-            | intro Hc; inversion Hc; congruence
-            | intros τ0 Hc; inversion Hc; congruence ]. }
-        destruct Htv as [Hb | [Hb | [τ0 Hb]]];
-          [ left | right; left | right; right; exists τ0 ];
-          unfold binds; apply in_or_app; right; exact Hb.
-      * right; left. unfold binds; apply in_or_app; left.
-        apply binds_In_inv in HXβs. destruct HXβs as [b Hb].
-        assert (Hbf : b = abind_flex_mono)
-          by (eapply a_guess_mono_flex_binds; eauto). subst. exact Hb.
-  - (* Assign-Assign *)
-    assert (Hτ : a_wf_ptyp Θ0 τ /\ mono_ptyp τ)
-      by (eapply a_wf_aenv_mid_def_inv; eauto).
-    destruct Hτ as [Hτwf Hτm].
-    assert (Huniq : uniq (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hβd : β `notin` dom (Ξ ++ Θ0))
-      by (repeat rewrite dom_app in *; solve_uniq).
-    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hvis' : forall X, X `in` ftvar_in_pskl
-                      (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ->
-                    a_binds_tvar X (Ξ ++ Θ0)).
-    { intros X HX.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                    P (ptyp_to_pskl τ) β) as Hup.
-      assert (HX' : X `in` (ftvar_in_pskl (ptyp_to_pskl τ)
-                            `union` remove β (ftvar_in_pskl P)))
-        by (clear - HX Hup; fsetdec).
-      destruct (AtomSetImpl.union_1 HX') as [HXτ | HXP].
-      - rewrite ftvar_in_ptyp_to_pskl in HXτ.
-        assert (Htv : a_binds_tvar X Θ0)
-          by (eapply a_wf_ptyp_ftv_tvarish; eauto).
-        destruct Htv as [Hb | [Hb | [τ0 Hb]]];
-          [ left | right; left | right; right; exists τ0 ];
-          unfold binds; apply in_or_app; right; exact Hb.
-      - assert (HXβ : X <> β) by (clear - HXP; fsetdec).
-        assert (HXP' : X `in` ftvar_in_pskl P) by (clear - HXP; fsetdec).
-        eapply a_binds_tvar_strip_mid with
-          (c := β) (b := abind_flex_mono_def τ);
-          [ apply Hvis; auto
-          | intro Hc; inversion Hc; congruence
-          | intro Hc; inversion Hc; congruence
-          | intros τ0 Hc; inversion Hc; congruence ]. }
-    assert (Hwf1 : a_wf_aenv Θ1) by (apply IHHa; auto).
-    assert (Hβ1 : β `notin` dom Θ1)
-      by (eapply a_assign_notin; eauto; clear - Hβd; fsetdec).
-    assert (Hle : Θ0 ⊴ Θ1)
-      by (destruct (a_assign_sound Ha Hdecl HwfΞΘ Hvis') as [Hi _];
-          eapply a_isub_strengthen_decls_src; eauto).
-    apply a_wf_aenv__flex_def; auto.
-    eapply a_wf_ptyp_isub; eauto.
-  - (* Assign-Depend *)
-    apply IHHa; auto.
-    { apply (a_decls__cons β); auto. }
-    { eapply a_wf_aenv_move_decl; eauto. }
-    { intros X HX.
-      apply (a_binds_tvar_permute_mid Ξ (β ~ abind_flex_mono) Θ0); auto. }
-  - (* Assign-Skip *)
-    assert (Huniq : uniq (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hβd : β `notin` dom (Ξ ++ Θ0))
-      by (repeat rewrite dom_app in *; solve_uniq).
-    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hvis' : forall X, X `in` ftvar_in_pskl P ->
-                    a_binds_tvar X (Ξ ++ Θ0)).
-    { intros X HX.
-      assert (HXβ : X <> β) by (intro; subst; auto).
-      eapply a_binds_tvar_strip_mid with (c := β) (b := abind_flex_mono);
-        [ apply Hvis; auto
-        | intro Hc; inversion Hc; congruence
-        | intro Hc; inversion Hc; congruence
-        | intros τ0 Hc; inversion Hc; congruence ]. }
-    assert (Hwf1 : a_wf_aenv Θ1) by (apply IHHa; auto).
-    apply a_wf_aenv__flex; auto.
-    eapply a_assign_notin; eauto; clear - Hβd; fsetdec.
-  - (* Assign-SkipRigid *)
-    assert (Huniq : uniq (Ξ ++ (β ~ abind_tvar) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hβd : β `notin` dom (Ξ ++ Θ0))
-      by (repeat rewrite dom_app in *; solve_uniq).
-    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hvis' : forall X, X `in` ftvar_in_pskl P ->
-                    a_binds_tvar X (Ξ ++ Θ0)).
-    { intros X HX.
-      assert (HXβ : X <> β) by (intro; subst; auto).
-      eapply a_binds_tvar_strip_mid with (c := β) (b := abind_tvar);
-        [ apply Hvis; auto
-        | intro Hc; inversion Hc; congruence
-        | intro Hc; inversion Hc; congruence
-        | intros τ0 Hc; inversion Hc; congruence ]. }
-    assert (Hwf1 : a_wf_aenv Θ1) by (apply IHHa; auto).
-    apply a_wf_aenv__tvar; auto.
-    eapply a_assign_notin; eauto; clear - Hβd; fsetdec.
-  - (* Assign-SkipTmVar (typ) *)
-    assert (Huniq : uniq (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hxd : x `notin` dom (Ξ ++ Θ0))
-      by (repeat rewrite dom_app in *; solve_uniq).
-    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hxwf : a_wf_aenv ((x ~ abind_var_typ Q) ++ Θ0))
-      by (eapply a_wf_aenv_strip_prefix; eauto).
-    apply a_wf_aenv_var_typ_inv in Hxwf.
-    destruct Hxwf as [_ [HQwf _]].
-    assert (Hvis' : forall X, X `in` ftvar_in_pskl P ->
-                    a_binds_tvar X (Ξ ++ Θ0)).
-    { intros X HX.
-      eapply a_binds_tvar_strip_mid with (c := x) (b := abind_var_typ Q);
-        [ apply Hvis; auto
-        | intro Hc; inversion Hc
-        | intro Hc; inversion Hc
-        | intros τ0 Hc; inversion Hc ]. }
-    assert (Hwf1 : a_wf_aenv Θ1) by (apply IHHa; auto).
-    assert (Hle : Θ0 ⊴ Θ1)
-      by (destruct (a_assign_sound Ha Hdecl HwfΞΘ Hvis') as [Hi _];
-          eapply a_isub_strengthen_decls_src; eauto).
-    apply a_wf_aenv__var_typ; auto.
-    + eapply a_assign_notin; eauto; clear - Hxd; fsetdec.
-    + eapply a_wf_ptyp_isub; eauto.
-  - (* Assign-SkipTmVar (skl) *)
-    assert (Huniq : uniq (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hxd : x `notin` dom (Ξ ++ Θ0))
-      by (repeat rewrite dom_app in *; solve_uniq).
-    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hxwf : a_wf_aenv ((x ~ abind_var_skl Q) ++ Θ0))
-      by (eapply a_wf_aenv_strip_prefix; eauto).
-    apply a_wf_aenv_var_skl_inv in Hxwf.
-    destruct Hxwf as [_ [HQwf _]].
-    assert (Hvis' : forall X, X `in` ftvar_in_pskl P ->
-                    a_binds_tvar X (Ξ ++ Θ0)).
-    { intros X HX.
-      eapply a_binds_tvar_strip_mid with (c := x) (b := abind_var_skl Q);
-        [ apply Hvis; auto
-        | intro Hc; inversion Hc
-        | intro Hc; inversion Hc
-        | intros τ0 Hc; inversion Hc ]. }
-    assert (Hwf1 : a_wf_aenv Θ1) by (apply IHHa; auto).
-    assert (Hle : Θ0 ⊴ Θ1)
-      by (destruct (a_assign_sound Ha Hdecl HwfΞΘ Hvis') as [Hi _];
-          eapply a_isub_strengthen_decls_src; eauto).
-    apply a_wf_aenv__var; auto.
-    + eapply a_assign_notin; eauto; clear - Hxd; fsetdec.
-    + eapply a_wf_pskl_isub; eauto.
-Qed.
+(* [a_assign_preserves_wf] is now the 2nd CONJUNCT of the ASSIGN motive of
+   the mutual bundle [a_assign_unify_consis_sound] below (Assign-Assign's
+   premise is a CONSISTENCY derivation, so there is no [a_assign] IH for it).
+   Re-exported from the bundle under its original name. *)
 
 (** Monotype skeletons are locally closed and guarded. *)
 Lemma mono_ptyp_to_pskl_lc : forall τ,
@@ -2556,7 +2028,8 @@ Lemma a_unify_subjects_flex : forall F Θ0 α β Θ1,
   a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β.
 Proof.
   intros F Θ0 α β Θ1 Hwf Hu; induction Hu.
-  - (* flex_id *) split; left; auto.
+  - (* flex_id : the rule's premise IS the flexibility (defined or not) *)
+    split; assumption.
   - (* flex_l : (α~flex)++Θ0 *)
     split; [ left; unfold binds; left; reflexivity | ].
     apply a_flex_tvar_weaken_cons; [ auto | ].
@@ -2614,7 +2087,26 @@ Proof.
   destruct H as [H | [τ H]]; [ left | right; exists τ ]; auto.
 Qed.
 
-(** The subject of an assignment is flexible in the input context. *)
+(** Flexibility survives an arbitrary context PREFIX ([binds] is plain
+    membership, so no freshness side condition is needed — contrast
+    [a_flex_tvar_weaken_cons], which asks for one it does not use). *)
+Lemma a_flex_tvar_weaken_prefix : forall α Ξ Θ,
+  a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
+Proof.
+  intros * [Hb | [τ Hb]]; [ left | right; exists τ ];
+    unfold binds in *; apply in_or_app; right; exact Hb.
+Qed.
+
+(** The subject of an assignment is flexible in the input context.
+
+    Still a STANDALONE induction after the mutual refactor: no case needs an
+    [a_consis] IH.  Assign-Assign reads its conclusion straight off the HATTED
+    SUBJECT premise (which is exactly why that premise exists — with an opaque
+    consistency premise the old "derive it from the [a_assign] IH" argument
+    dies, and [a_consis__rigid] would otherwise admit a RIGID subject).  And
+    Assign-Depend gets SIMPLER: the suffix now grows at the tail, so the
+    context is already associated the right way and [a_flex_tvar_permute_mid]
+    is no longer needed — plain [app_assoc] does it. *)
 Lemma a_assign_subject_flex : forall F Θ0 Ξ α P Θ1,
   Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
   a_flex_tvar (Ξ ++ Θ0) α.
@@ -2624,11 +2116,10 @@ Proof.
     left. simpl. unfold binds; left; reflexivity.
   - (* SolveM *)
     left. unfold binds. apply in_or_app. right. left. reflexivity.
-  - (* Assign *)
-    apply a_flex_tvar_insert_mid; auto.
-  - (* Depend *)
-    apply a_flex_tvar_permute_mid with (e := (β ~ abind_flex_mono)).
-    exact IHa_assign.
+  - (* Assign : from the hatted-subject premise, not from an IH *)
+    apply a_flex_tvar_weaken_prefix. assumption.
+  - (* Depend : tail-append ⇒ just reassociate *)
+    simpl_env in IHa_assign. exact IHa_assign.
   - (* Skip *)
     apply a_flex_tvar_insert_mid; auto.
   - (* SkipRigid *)
@@ -2720,6 +2211,253 @@ Qed.
 
 
 (* ===================================================================== *)
+(*  The two SUBSIDIARY INDUCTIONS that Assign-Assign's soundness needs     *)
+(*  (consistency-proofs.tex:1742-1753).  Assign-Assign's premise is a      *)
+(*  CONSISTENCY derivation, so the [a_assign] IH hands back a JOIN [Q]     *)
+(*  rather than the variable [α̂] the conclusion asks for.  The paper       *)
+(*  eliminates [Q] in two steps:                                           *)
+(*                                                                         *)
+(*    (h)  from  inh(P[τ/β̂]) ⊳ˢʸⁿ Q  and  α̂[τ/β̂] ≈ Q                       *)
+(*         conclude  P[τ/β̂] ≈ α̂[τ/β̂]                                       *)
+(*    (i)  fold the definition β̂ ≔ τ back in, on BOTH sides.               *)
+(*                                                                         *)
+(*  Step (h) splits into [refine_inh_mono_consis] (the refinement side —   *)
+(*  the join is a MONOTYPE painting, because the subject [α̂[τ/β̂]] is one,  *)
+(*  which kills every quantifier/tophole refinement rule) and the Q-SIDE   *)
+(*  transport of consistency along [≡ᵗ] (the mirror of                     *)
+(*  [tyequiv_mono_consis_transport], prop_mono_bridge.v — the subject-side *)
+(*  one — which the [Flex-Flex-Assign] case uses).  Step (i) is            *)
+(*  [ad_pat_consis_fold_def] (left) + [ad_pat_consis_fold_def_q_mono]      *)
+(*  (right); both already exist.                                           *)
+(* ===================================================================== *)
+
+(** A monotype PAINTING is colour-blind: syn = inh (colours differ only at
+    quantifiers, and a monotype has none).  Companion of [mono_bskl_inh_syn]. *)
+Lemma mono_bskl_syn_inh : forall P,
+  mono_bskl (pskl_to_bskl_syn P) ->
+  pskl_to_bskl_syn P = pskl_to_bskl_inh P.
+Proof.
+  induction P; intros Hm; simpl in *; try reflexivity;
+    inversion Hm; subst; f_equal; auto.
+Qed.
+
+(** Substituting a monotype for a variable commutes with the skeleton
+    embedding, on a variable.  (The [α̂ = β̂] branch is REACHABLE — there the
+    subject of Assign-Assign is the monotype [τ], not a variable.) *)
+Lemma subst_pskl_var_ptyp : forall τ β α,
+  subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)
+  = ptyp_to_pskl (subst_ptyp_in_ptyp τ β (ptyp_var_f α)).
+Proof.
+  intros. simpl. destruct (eq_var α β); simpl; reflexivity.
+Qed.
+
+(** SUBSIDIARY INDUCTION #1 (the refinement half of the paper's step (h)):
+    if the inherited painting of [P0] refines to a join that is a MONOTYPE
+    painting, then [⌊P0⌋] is CONSISTENT with that join.  The monotype
+    hypothesis is what makes this true: it rules out ForallInh /
+    TopholeFill / TopholeKeep (whose outputs are quantifiers or topholes),
+    and it forces the ghost-hole fill [pskl_to_bskl_syn P] to be
+    colour-blind, so consistency's [hole] rule — which produces the
+    INHERITED painting — matches it. *)
+Lemma refine_inh_mono_consis : forall Θ Δ Qb Qt,
+  Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ Qt ->
+  a_wf_aenv Θ ->
+  mono_bskl Qt ->
+  forall P0, Qb = pskl_to_bskl_inh P0 ->
+  (forall X, X `in` Δ -> a_binds_tvar X Θ) ->
+  empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl P0) ≈ Qt.
+Proof.
+  intros Θ Δ Qb Qt Hr Hwf; induction Hr; intros Hm P0 Heq Hrig.
+  - (* unit *)
+    destruct P0; simpl in Heq; try discriminate.
+    simpl. apply ad_pat_consis__unit. fsetdec.
+  - (* var *)
+    destruct P0; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    simpl. apply ad_pat_consis__var; [ fsetdec | ].
+    destruct H as [HΔ | Ht]; [ apply Hrig; auto | exact Ht ].
+  - (* arrow *)
+    destruct P0; simpl in Heq; try discriminate.
+    inversion Heq; subst. inversion Hm; subst.
+    simpl. apply ad_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ apply IHHr1 | apply IHHr2 | fsetdec ]; auto.
+  - (* all : the join would be a quantifier, never a monotype *)
+    inversion Hm.
+  - (* hole : the ghost fill is colour-blind here *)
+    destruct P0; simpl in Heq; try discriminate.
+    simpl. rewrite (mono_bskl_syn_inh _ Hm).
+    apply ad_pat_consis__hole; [ fsetdec | exact H ].
+  - (* tophole_remove *)
+    destruct P0; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    simpl. apply ad_pat_consis__tophole_drop. apply IHHr; auto.
+  - (* tophole_fill : the join would be a quantifier *)
+    inversion Hm.
+  - (* tophole_keep : the join would be a tophole *)
+    inversion Hm.
+  - (* flex_l : the input is a DEFINED flexible variable *)
+    destruct P0; simpl in Heq; try discriminate.
+    inversion Heq; subst.
+    assert (Hmt : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    simpl. eapply ad_pat_consis__flex_l; [ exact H | ].
+    rewrite <- ptyp_to_uskl_syn_eq.
+    apply IHHr; auto.
+    unfold ptyp_to_bskl_syn. rewrite mono_inh_eq_syn; auto.
+  - (* flex_r : the join is a DEFINED flexible variable *)
+    assert (Hmt : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    eapply ad_pat_consis__flex_r; [ exact H | ].
+    apply IHHr; auto.
+    apply mono_ptyp_to_bskl_syn; auto.
+Qed.
+
+(** Unfold a DEFINED variable sitting in the JOIN position.  The mirror of
+    [consis_unfold_def_subject] (prop_mono_bridge.v): only [var] / [hole] /
+    [tophole_drop] / [flex_l] / [flex_r] can have join [γ̂]. *)
+Lemma consis_unfold_def_join : forall Ψ Θ S Qt,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  a_wf_aenv Θ ->
+  forall γ τ, Qt = bskl_var_f γ ->
+  binds γ (abind_flex_mono_def τ) Θ ->
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn τ).
+Proof.
+  intros * Hc Hwf; induction Hc; intros γ0 τ0 HeqQ Hb;
+    try discriminate HeqQ.
+  - (* var : the subject is the same variable; unfold it with [flex_l] *)
+    inversion HeqQ; subst.
+    assert (Hmτ : mono_ptyp τ0) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    eapply ad_pat_consis__flex_l; [ exact Hb | ].
+    eapply consis_psi_cong_local;
+      [ apply consis_mono_refl | clear - H; fsetdec ]; auto.
+    intros X HX. eapply a_wf_ptyp_ftv_tvarish;
+      [ eapply a_wf_aenv_binds_def_wf; eauto | exact HX ].
+  - (* hole : the ghost fill IS the variable *)
+    destruct P; simpl in HeqQ; try discriminate.
+    inversion HeqQ; subst.
+    assert (Hmτ : mono_ptyp τ0) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    rewrite <- (mono_inh_eq_syn Hmτ).
+    apply ad_pat_consis__hole; [ exact H | ].
+    apply ad_wf_pskl_mono_ptyp; [ exact Hmτ | ].
+    eapply a_wf_aenv_binds_def_wf; eauto.
+  - (* tophole_drop *)
+    apply ad_pat_consis__tophole_drop. eapply IHHc; eauto.
+  - (* flex_l *)
+    eapply ad_pat_consis__flex_l; [ eassumption | ]. eapply IHHc; eauto.
+  - (* flex_r : the join's own definition is the one we are unfolding *)
+    inversion HeqQ; subst.
+    assert (Heqτ : τ = τ0)
+      by (assert (Hu : uniq Θ) by (apply a_wf_aenv_uniq; auto);
+          pose proof (binds_unique _ _ _ _ _ H Hb Hu) as He;
+          inversion He; reflexivity).
+    subst. exact Hc.
+Qed.
+
+(** Congruence of the JOIN at an arrow.  Mirror of
+    [consis_arrow_subject_transport]; the [hole] case is why the components
+    must be given as concrete MONOTYPES rather than opaque transports (the
+    rebuilt ghost fill has to be a well-formed skeleton). *)
+Lemma consis_arrow_join_transport : forall Ψ Θ S Qt,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  a_wf_aenv Θ ->
+  forall B1 B2 A1 A2,
+  Qt = ptyp_to_bskl_syn (ptyp_arrow B1 B2) ->
+  mono_ptyp A1 -> mono_ptyp A2 ->
+  (forall X, X `in` ftvar_in_ptyp (ptyp_arrow A1 A2) -> a_binds_tvar X Θ) ->
+  (forall Ψ' S', Ψ' ⨟ Θ ⊨ₛᵃ S' ≈ (ptyp_to_bskl_syn B1) ->
+                 Ψ' ⨟ Θ ⊨ₛᵃ S' ≈ (ptyp_to_bskl_syn A1)) ->
+  (forall Ψ' S', Ψ' ⨟ Θ ⊨ₛᵃ S' ≈ (ptyp_to_bskl_syn B2) ->
+                 Ψ' ⨟ Θ ⊨ₛᵃ S' ≈ (ptyp_to_bskl_syn A2)) ->
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn (ptyp_arrow A1 A2)).
+Proof.
+  intros Ψ Θ S Qt Hc Hwf; induction Hc;
+    intros B1 B2 A1 A2 HeqQ HmA1 HmA2 Hvis Ht1 Ht2;
+    unfold ptyp_to_bskl_syn in HeqQ; simpl in HeqQ; try discriminate HeqQ.
+  - (* arrow *)
+    inversion HeqQ; subst.
+    unfold ptyp_to_bskl_syn; simpl.
+    apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2).
+    { apply Ht1; unfold ptyp_to_bskl_syn; assumption. }
+    { apply Ht2; unfold ptyp_to_bskl_syn; assumption. }
+    { assumption. }
+  - (* hole : rebuild the fill at the transported monotype *)
+    assert (Hma : mono_ptyp (ptyp_arrow A1 A2))
+      by (apply mono_ptyp__arrow; auto).
+    rewrite <- (mono_inh_eq_syn Hma).
+    apply ad_pat_consis__hole; [ exact H | ].
+    apply mono_ptyp_wf_pskl; [ exact Hma | exact Hvis ].
+  - (* tophole_drop *)
+    apply ad_pat_consis__tophole_drop.
+    apply (IHHc Hwf B1 B2 A1 A2 HeqQ HmA1 HmA2 Hvis Ht1 Ht2).
+  - (* flex_l *)
+    eapply ad_pat_consis__flex_l; [ eassumption | ].
+    apply (IHHc Hwf B1 B2 A1 A2 HeqQ HmA1 HmA2 Hvis Ht1 Ht2).
+Qed.
+
+(** SUBSIDIARY INDUCTION #2 (the JOIN-side transport): for [A ≡ᵗ B] on
+    monotypes, a consistency derivation whose JOIN is [syn{B}] can be
+    re-joined at [syn{A}], and vice versa.  Both directions at once, so
+    [sym] swaps and [trans] composes.  The exact mirror of
+    [tyequiv_mono_consis_transport] (which transports the SUBJECT). *)
+Lemma tyequiv_mono_consis_transport_q : forall Θ A B,
+  Θ ⊢ A ≡ᵗ B ->
+  a_wf_aenv Θ ->
+  mono_ptyp A ->
+  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  (forall Ψ S, Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn B) ->
+               Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn A)) /\
+  (forall Ψ S, Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn A) ->
+               Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn B)).
+Proof.
+  intros Θ A B Heq Hwf; induction Heq; intros Hm Hv.
+  - (* refl *)
+    split; intros Ψ S Hc; exact Hc.
+  - (* sym : swap the IH's directions *)
+    destruct (a_tyequiv_mono_vis Heq Hwf) as [_ Hback].
+    destruct (Hback (conj Hm Hv)) as [HmA HvA].
+    destruct (IHHeq Hwf HmA HvA) as [Hd1 Hd2].
+    split; [ exact Hd2 | exact Hd1 ].
+  - (* trans : compose *)
+    destruct (a_tyequiv_mono_vis Heq1 Hwf) as [Hfwd _].
+    destruct (Hfwd (conj Hm Hv)) as [HmB HvB].
+    destruct (IHHeq1 Hwf Hm Hv) as [H1l H1r].
+    destruct (IHHeq2 Hwf HmB HvB) as [H2l H2r].
+    split; intros Ψ S Hc; [ apply H1l, H2l, Hc | apply H2r, H1r, Hc ].
+  - (* flex_def : α̂ ≡ τ with α̂ ≔ τ *)
+    split; intros Ψ S Hc.
+    + (* fold the join back to the variable : one lookup rule *)
+      unfold ptyp_to_bskl_syn; simpl.
+      eapply ad_pat_consis__flex_r; [ eassumption | exact Hc ].
+    + (* unfold the join's definition *)
+      eapply consis_unfold_def_join;
+        [ exact Hc | exact Hwf | | eassumption ].
+      unfold ptyp_to_bskl_syn; simpl; reflexivity.
+  - (* arrow : componentwise *)
+    inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
+    assert (Hv1 : forall X, X `in` ftvar_in_ptyp A1 -> a_binds_tvar X Θ)
+      by (intros X HX; apply Hv; fsetdec).
+    assert (Hv2 : forall X, X `in` ftvar_in_ptyp A2 -> a_binds_tvar X Θ)
+      by (intros X HX; apply Hv; fsetdec).
+    destruct (a_tyequiv_mono_vis Heq1 Hwf) as [Hf1 _].
+    destruct (Hf1 (conj Hm1 Hv1)) as [HmB1 HvB1].
+    destruct (a_tyequiv_mono_vis Heq2 Hwf) as [Hf2 _].
+    destruct (Hf2 (conj Hm2 Hv2)) as [HmB2 HvB2].
+    destruct (IHHeq1 Hwf Hm1 Hv1) as [H1l H1r].
+    destruct (IHHeq2 Hwf Hm2 Hv2) as [H2l H2r].
+    split; intros Ψ S Hc.
+    + eapply consis_arrow_join_transport with (B1 := B1) (B2 := B2);
+        [ exact Hc | exact Hwf | reflexivity | exact Hm1 | exact Hm2
+        | | exact H1l | exact H2l ].
+      intros X HX; simpl in HX.
+      destruct (AtomSetImpl.union_1 HX); [ apply Hv1 | apply Hv2 ]; auto.
+    + eapply consis_arrow_join_transport with (B1 := A1) (B2 := A2);
+        [ exact Hc | exact Hwf | reflexivity | exact HmB1 | exact HmB2
+        | | exact H1r | exact H2r ].
+      intros X HX; simpl in HX.
+      destruct (AtomSetImpl.union_1 HX); [ apply HvB1 | apply HvB2 ]; auto.
+  - (* all : a monotype is never a ∀ *)
+    inversion Hm.
+Qed.
+
+(* ===================================================================== *)
 (*  THE MUTUAL SOUNDNESS BUNDLE (thm:sound-consistency parts 1+2)          *)
 (*                                                                          *)
 (*  [a_unify] and [a_consis] are mutually inductive (the corrected          *)
@@ -2742,9 +2480,11 @@ Qed.
 (*      unification: the type EQUIVALENCE Θ1 ⊢ α ≡ᵗ β)                      *)
 (* ===================================================================== *)
 
-Scheme a_unify_mutind := Induction for a_unify Sort Prop
-  with a_consis_mutind := Induction for a_consis Sort Prop.
-Combined Scheme a_unify_consis_mutind from a_unify_mutind, a_consis_mutind.
+Scheme a_assign_mind := Induction for a_assign Sort Prop
+  with a_unify_mind  := Induction for a_unify  Sort Prop
+  with a_consis_mind := Induction for a_consis Sort Prop.
+Combined Scheme a_assign_unify_consis_mutind
+  from a_assign_mind, a_unify_mind, a_consis_mind.
 
 (** Conclusions of the two motives (hypotheses live in [*_concl] below). *)
 Definition unify_sound_post (F : atoms) (Θ0 : aenv) (α β : atom)
@@ -2788,19 +2528,785 @@ Definition consis_sound_concl (F Δ1 Δ2 : atoms) (Θ0 : aenv)
   flex_above_free (Δ1 `union` Δ2) Θ0 ->
   consis_sound_post F Δ1 Δ2 Θ0 P0 P Q Θ1.
 
-Theorem a_unify_consis_sound :
+(** The ASSIGN motive.  [Ξ] is the pending suffix, so every context slot is
+    the MERGED [Ξ ++ Θ0] (which is exactly the context of Assign-Assign's
+    consistency premise).  Conjuncts 1-5 mirror the other two motives;
+    conjunct 6 is the paper's part-3 solution: the assigned skeleton is
+    declaratively consistent with the subject VARIABLE in the output.
+
+    The wf hypothesis is the FULL [⨟ ∅ ⊢ₚₛᵃ P], not the old "every free
+    variable is tvar-ish": the consistency IH of Assign-Assign needs
+    [⨟ ∅ ⊢ₚₛᵃ] on BOTH slots, and [ad_wf_pskl__tophole] demands
+    [guarded_pskl] — strictly stronger than visibility.  Every [a_assign]
+    call site (consistency's FlexL/FlexR and their decorated twins) has it. *)
+Definition assign_sound_post (F : atoms) (Θ0 Ξ : aenv) (α : atom)
+    (P : pskl) (Θ1 : aenv) : Prop :=
+  (Ξ ++ Θ0) ⊴ Θ1 /\ a_wf_aenv Θ1 /\ dom (Ξ ++ Θ0) [<=] dom Θ1 /\
+  (forall γ, γ `in` dom Θ1 -> γ `in` dom (Ξ ++ Θ0) \/ γ `notin` F) /\
+  (forall Δ,
+     no_flex_dep Δ (Ξ ++ Θ0) -> flex_above_free Δ Θ0 ->
+     AtomSetImpl.inter Δ (dom Ξ) [=] empty ->
+     Δ [<=] (F `union` dom Θ0 `union` dom Ξ) ->
+     (forall X, X `in` Δ -> X `notin` dom Θ0 -> X `notin` ftvar_in_pskl P) ->
+     no_flex_dep Δ Θ1 /\ flex_above_free Δ Θ1 /\
+     (forall X, X `in` Δ -> X `in` dom Θ1 -> X `in` (dom Ξ `union` dom Θ0))) /\
+  ad_pat_consis empty Θ1 (pskl_to_uskl P) (bskl_var_f α).
+
+Definition assign_sound_concl (F : atoms) (Θ0 Ξ : aenv) (α : atom)
+    (P : pskl) (Θ1 : aenv) : Prop :=
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  assign_sound_post F Θ0 Ξ α P Θ1.
+
+Theorem a_assign_unify_consis_sound :
+  (forall F Θ0 Ξ α P Θ1,
+     Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 -> assign_sound_concl F Θ0 Ξ α P Θ1) /\
   (forall F Θ0 α β Θ1,
      Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 -> unify_sound_concl F Θ0 α β Θ1) /\
   (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
      Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
      consis_sound_concl F Δ1 Δ2 Θ0 P0 P Q Θ1).
 Proof.
-  apply (a_unify_consis_mutind
+  apply (a_assign_unify_consis_mutind
+           (fun F Θ0 Ξ α P Θ1 _ => assign_sound_concl F Θ0 Ξ α P Θ1)
            (fun F Θ0 α β Θ1 _ => unify_sound_concl F Θ0 α β Θ1)
            (fun F Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
               consis_sound_concl F Δ1 Δ2 Θ0 P0 P Q Θ1));
-    unfold unify_sound_concl, consis_sound_concl,
-           unify_sound_post, consis_sound_post.
+    unfold assign_sound_concl, unify_sound_concl, consis_sound_concl,
+           assign_sound_post, unify_sound_post, consis_sound_post.
+  - (* Assign-UnivGhost-Id *)
+    intros F Θ0 α Hdecl Hwf HwfP.
+    split; [ apply a_isub_refl | ].
+    split; [ exact Hwf | ].
+    split; [ simpl; clear; fsetdec | ].
+    split; [ intros γ Hγ; left; exact Hγ | ].
+    split.
+    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
+      split; [ exact Hnd | ]. split; [ exact Hfaf | ].
+      intros X _ HX. simpl in HX. simpl. clear - HX. fsetdec. }
+    replace (pskl_to_uskl (pskl_tophole (pskl_var_f α)))
+      with (uskl_tophole (uskl_var_f α)) by reflexivity.
+    apply ad_pat_consis__tophole_drop.
+    apply ad_pat_consis__var; [ clear; fsetdec | ].
+    right; left. unfold binds; left; reflexivity.
+
+  - (* Assign-SolveM *)
+    intros F Θ0 Ξ α P βs τ Hαn Hg Hmτ Huβs Hfr Hdecl Hwf HwfP.
+    assert (Hvis : forall X, X `in` ftvar_in_pskl P ->
+                   a_binds_tvar X (Ξ ++ (α ~ abind_flex_mono) ++ Θ0)).
+    { intros X HX. destruct (ad_wf_pskl_ftv_tvarish HwfP HX) as [HΔ | Ht];
+        [ clear - HΔ; fsetdec | exact Ht ]. }
+    assert (Hβsd : a_decls βs) by (eapply a_guess_mono_decls; eauto).
+    assert (Huniq : uniq (Ξ ++ (α ~ abind_flex_mono) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (Hαd : α `notin` dom (Ξ ++ Θ0))
+      by (repeat rewrite dom_app in *; solve_uniq).
+    assert (Hle : (Ξ ++ (α ~ abind_flex_mono) ++ Θ0) ⊴
+                  ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)).
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb. right; left.
+        unfold binds. apply in_or_app; right.
+        apply in_or_app; right. apply in_or_app; left. exact Hb. }
+      apply a_isub_prepend_decls_src;
+        [ apply (a_decls__cons α); constructor
+        | intros γ Hb;
+          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+          [ subst; right; right; exists τ; unfold binds;
+            apply in_or_app; left; left; reflexivity
+          | inversion Hb' ]
+        | ].
+      assert (Hs1 : Θ0 ⊴ ((βs ++ Ξ) ++ Θ0)).
+      { apply a_isub_weaken_suffix.
+        apply a_suffix_app; auto using a_decls_suffix. }
+      first [ rewrite <- app_assoc in Hs1 | rewrite app_assoc in Hs1 ].
+      apply a_isub_target_weaken with (Ξ := (α ~ abind_flex_mono_def τ))
+        in Hs1; auto.
+      apply (a_suffix__cons α (b := abind_flex_mono_def τ)); constructor. }
+    assert (Hβsfr : forall γ, γ `in` dom βs -> γ `notin` dom (Ξ ++ Θ0)).
+    { intros γ Hγ. pose proof (Hfr γ Hγ) as Hh.
+      repeat rewrite dom_app in *. clear - Hh. fsetdec. }
+    assert (Hβswf : a_wf_aenv (βs ++ Ξ ++ Θ0)).
+    { apply a_wf_aenv_prepend_flex;
+        [ intros γ b Hb; eapply a_guess_mono_flex_binds; eauto
+        | exact Huβs
+        | intros γ Hγ;
+          (assert (Hf : γ `notin` dom (Ξ ++ Θ0)) by (apply Hβsfr; auto));
+          repeat rewrite dom_app in *; clear - Hf; fsetdec
+        | exact HwfΞΘ ]. }
+    assert (Hαβs : α `notin` dom βs).
+    { intro Hin. pose proof (Hfr α Hin) as Hh. clear - Hh. fsetdec. }
+    assert (Hwf1 : a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)).
+    { apply a_wf_aenv__flex_def; [ | | exact Hmτ | exact Hβswf ].
+      { repeat rewrite dom_app in *. clear - Hαd Hαβs. fsetdec. }
+      apply mono_ptyp_wf; auto.
+      intros X HX.
+      pose proof (a_guess_mono_ftv Hg HX) as Hin.
+      destruct (AtomSetImpl.union_1 Hin) as [HXP | HXβs].
+      - assert (HXα : X <> α) by (intro; subst; auto).
+        assert (Htv : a_binds_tvar X (Ξ ++ Θ0)).
+        { eapply a_binds_tvar_strip_mid with
+            (c := α) (b := abind_flex_mono);
+            [ apply Hvis; auto
+            | intro Hc; inversion Hc; congruence
+            | intro Hc; inversion Hc; congruence
+            | intros τ0 Hc; inversion Hc; congruence ]. }
+        destruct Htv as [Hb | [Hb | [τ0 Hb]]];
+          [ left | right; left | right; right; exists τ0 ];
+          unfold binds; apply in_or_app; right; exact Hb.
+      - right; left. unfold binds; apply in_or_app; left.
+        apply binds_In_inv in HXβs. destruct HXβs as [b Hb].
+        assert (Hbf : b = abind_flex_mono)
+          by (eapply a_guess_mono_flex_binds; eauto). subst. exact Hb. }
+    split; [ exact Hle | ].
+    split; [ exact Hwf1 | ].
+    split.
+    { clear. repeat rewrite dom_app. simpl. fsetdec. }
+    split.
+    { intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
+      destruct (AtomSetImpl.union_1 Hγ) as [Hα | Hrest];
+        [ left; clear - Hα; fsetdec | ].
+      destruct (AtomSetImpl.union_1 Hrest) as [Hβs | Hqt];
+        [ | left; clear - Hqt; fsetdec ].
+      right. pose proof (Hfr γ Hβs) as Hh. clear - Hh. fsetdec. }
+    split.
+    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
+      assert (Hhd : AtomSetImpl.inter Δ (add α (dom Θ0)) [=] empty)
+        by (apply (faf_head Hfaf); discriminate).
+      assert (Hft : forall X, X `in` Δ -> X `notin` ftvar_in_pskl P).
+      { intros X HXΔ. apply HP; auto. simpl.
+        assert (X `notin` add α (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
+        auto. }
+      assert (HβΔ : forall X, X `in` Δ -> X `notin` dom βs).
+      { intros X HXΔ HXβ.
+        assert (HXfr := Hfr X HXβ).
+        assert (HXcov := Hcov X HXΔ).
+        simpl in HXcov. repeat rewrite dom_app in *.
+        clear - HXfr HXcov. fsetdec. }
+      assert (Hτ : AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty).
+      { apply inter_empty_pointwise. intros X HXΔ HXτ.
+        pose proof (a_guess_mono_ftv Hg HXτ) as Hin.
+        assert (HnP : X `notin` ftvar_in_pskl P) by (apply Hft; auto).
+        assert (Hnβ : X `notin` dom βs) by (apply HβΔ; auto).
+        clear - Hin HnP Hnβ. fsetdec. }
+      split; [ | split ].
+      + intros β' τ' Hb.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'].
+        { inversion Heq; subst; exact Hτ. }
+        apply in_app_or in Hb'. destruct Hb' as [Hbβ | HbΞΘ].
+        { exfalso. eapply a_decls_no_def; eauto. }
+        apply (Hnd β' τ').
+        unfold binds. apply in_app_or in HbΞΘ. apply in_or_app.
+        destruct HbΞΘ as [HbΞ | HbΘ]; [ auto | ].
+        right. right. exact HbΘ.
+      + apply faf_cons.
+        { intros _. repeat rewrite dom_app.
+          apply inter_empty_pointwise. intros X HXΔ HXin.
+          assert (Hn1 : X `notin` add α (dom Θ0))
+            by (clear - Hhd HXΔ; fsetdec).
+          assert (Hn2 : X `notin` dom βs) by auto.
+          assert (Hn3 : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
+          clear - HXin Hn1 Hn2 Hn3. fsetdec. }
+        apply faf_app.
+        { apply inter_empty_pointwise. intros X HXΔ. auto. }
+        { rewrite dom_app. apply inter_empty_pointwise.
+          intros X HXΔ HXin.
+          assert (Hn3 : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
+          assert (Hn1 : X `notin` add α (dom Θ0))
+            by (clear - Hhd HXΔ; fsetdec).
+          clear - HXin Hn1 Hn3. fsetdec. }
+        apply faf_app.
+        { exact HΔΞ. }
+        { apply inter_empty_pointwise. intros X HXΔ HXin.
+          clear - Hhd HXΔ HXin. fsetdec. }
+        eapply faf_tail; eauto.
+      + intros X HXΔ HXd.
+        simpl in HXd. repeat rewrite dom_app in HXd.
+        assert (Hn2 : X `notin` dom βs) by auto.
+        assert (Hn1 : X `notin` add α (dom Θ0))
+          by (clear - Hhd HXΔ; fsetdec).
+        simpl. clear - HXd Hn1 Hn2. fsetdec. }
+    apply ad_pat_consis__flex_r with (τ := τ);
+      [ unfold binds; left; reflexivity | ].
+    eapply a_guess_mono_consis; eauto.
+    { intros X HX. eapply a_isub_binds_tvarish; eauto. }
+    { intros γ Hb. right; left.
+      unfold binds. apply in_or_app; right.
+      apply in_or_app; left. exact Hb. }
+
+  - (* Assign-Assign : the premise is a CONSISTENCY derivation, so the join
+       [Q] must be eliminated — see the two subsidiary inductions above. *)
+    intros F Θ0 Θ1 Ξ α β τ P Q Hfl Hc IHc Hdecl Hwf HwfP.
+    assert (Hτ : a_wf_ptyp Θ0 τ /\ mono_ptyp τ)
+      by (eapply a_wf_aenv_mid_def_inv; eauto).
+    destruct Hτ as [Hτwf Hτm].
+    assert (Hlcτ : lc_ptyp τ) by (eapply a_wf_ptyp_lc; eauto).
+    assert (Huniq : uniq (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Hβd : β `notin` dom (Ξ ++ Θ0))
+      by (repeat rewrite dom_app in *; solve_uniq).
+    assert (Hβd0 : β `notin` dom Θ0)
+      by (repeat rewrite dom_app in *; clear - Hβd; fsetdec).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (Hbβ : binds β (abind_flex_mono_def τ)
+                    (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ0))
+      by (unfold binds; apply in_or_app; right; left; reflexivity).
+    (* [τ] avoids [β̂] (it is well-formed strictly below it) *)
+    assert (Hτfv : forall X, X `in` ftvar_in_ptyp τ -> X `in` dom Θ0).
+    { intros X HX.
+      assert (Htv : a_binds_tvar X Θ0)
+        by (eapply a_wf_ptyp_ftv_tvarish; eauto).
+      destruct Htv as [Hb | [Hb | [τ0 Hb]]]; eapply binds_In; eauto. }
+    assert (Hβτ : β `notin` ftvar_in_ptyp τ)
+      by (intro Hin; apply Hβd0; apply Hτfv; exact Hin).
+    (* the SUBSTITUTED SUBJECT is a monotype *)
+    assert (Hmsub : mono_ptyp (subst_ptyp_in_ptyp τ β (ptyp_var_f α)))
+      by (apply mono_ptyp_subst; [ constructor | exact Hτm ]).
+    assert (Hsubvis : forall X,
+        X `in` ftvar_in_ptyp (subst_ptyp_in_ptyp τ β (ptyp_var_f α)) ->
+        a_binds_tvar X (Ξ ++ Θ0)).
+    { intros X HX.
+      pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
+                    (ptyp_var_f α) τ β) as Hup.
+      assert (HX' : X `in` (ftvar_in_ptyp τ `union`
+                            remove β (ftvar_in_ptyp (ptyp_var_f α))))
+        by (clear - HX Hup; fsetdec).
+      destruct (AtomSetImpl.union_1 HX') as [Hτ | Hα].
+      - assert (Htv : a_binds_tvar X Θ0)
+          by (eapply a_wf_ptyp_ftv_tvarish; eauto).
+        destruct Htv as [Hb | [Hb | [τ0 Hb]]];
+          [ left | right; left | right; right; exists τ0 ];
+          unfold binds; apply in_or_app; right; exact Hb.
+      - simpl in Hα.
+        assert (HXα : X = α) by (clear - Hα; fsetdec).
+        assert (HXβ : X <> β) by (clear - Hα; fsetdec).
+        subst X.
+        destruct Hfl as [Hb | [τ' Hb]];
+          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx ?] | Hb'];
+          try solve [ exfalso; apply HXβ; exact Heqx ];
+          [ right; left | right; right; exists τ' ];
+          unfold binds; apply in_or_app; right; exact Hb'. }
+    (* the two well-formedness obligations of the consistency IH *)
+    assert (HwfP0 : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
+                      (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)).
+    { eapply ad_wf_pskl_strip_mid with (c := β) (b := abind_flex_mono_def τ).
+      - apply ad_wf_pskl_mono_subst; auto.
+      - pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                      P (ptyp_to_pskl τ) β) as Hup.
+        rewrite ftvar_in_ptyp_to_pskl in Hup.
+        clear - Hup Hβτ. fsetdec. }
+    assert (HwfS : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
+                     (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))).
+    { rewrite subst_pskl_var_ptyp.
+      apply mono_ptyp_wf_pskl; [ exact Hmsub | exact Hsubvis ]. }
+    destruct (IHc HwfΞΘ HwfP0 HwfS
+                ltac:(intros X HX; exfalso; clear - HX; fsetdec)
+                ltac:(intros β' τ' _; clear; fsetdec)
+                ltac:(intros Θa βa ba Θb Heq Hne; clear; fsetdec))
+      as [Hle [Hwf1 [Hdom [Hnew [Hinv [[Qt [HeQt [HconsQ Hrs]]] Hrp]]]]]].
+    assert (Hβ1 : β `notin` dom Θ1).
+    { intro Hin. destruct (Hnew β Hin) as [Hd | HF];
+        [ exact (Hβd Hd) | apply HF; clear; fsetdec ]. }
+    assert (Hle0 : Θ0 ⊴ Θ1)
+      by (eapply a_isub_strengthen_decls_src; eauto).
+    assert (HleF : ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊴
+                   ((β ~ abind_flex_mono_def τ) ++ Θ1))
+      by (apply a_isub_cons_flex_def; auto).
+    assert (Hwf1' : a_wf_aenv ((β ~ abind_flex_mono_def τ) ++ Θ1)).
+    { apply a_wf_aenv__flex_def; auto.
+      eapply a_wf_ptyp_isub; eauto. }
+    assert (Hbβ1 : binds β (abind_flex_mono_def τ)
+                     ((β ~ abind_flex_mono_def τ) ++ Θ1))
+      by (unfold binds; left; reflexivity).
+    (* 1. increase *)
+    split.
+    { apply a_isub_prepend_decls_src; [ exact Hdecl | | exact HleF ].
+      intros γ Hb.
+      apply a_binds_tvar_weaken_cons.
+      eapply a_isub_binds_flex; [ exact Hle | ].
+      unfold binds; apply in_or_app; left; exact Hb. }
+    (* 2. well-formedness *)
+    split; [ exact Hwf1' | ].
+    (* 3. domain *)
+    split.
+    { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
+    (* 4. new names avoid F *)
+    split.
+    { clear - Hnew.
+      intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
+      destruct (AtomSetImpl.union_1 Hγ) as [Hβ' | Hrest];
+        [ left; clear - Hβ'; fsetdec | ].
+      destruct (Hnew γ Hrest) as [Hin | Hout];
+        [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
+        | right; clear - Hout; fsetdec ]. }
+    (* 5. the ∀Δ invariant *)
+    split.
+    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
+      assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
+        by (apply (faf_head Hfaf); discriminate).
+      assert (Hτ0 : AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty)
+        by (apply (Hnd β τ); exact Hbβ).
+      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
+      { intros β' τ' Hb. apply (Hnd β' τ').
+        apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
+                 (β ~ abind_flex_mono_def τ) Θ0). exact Hb. }
+      { apply faf_app.
+        - exact HΔΞ.
+        - clear - Hhd. fsetdec.
+        - eapply faf_tail; eauto. }
+      { intros X HX. assert (HXc := Hcov X HX).
+        simpl in HXc. repeat rewrite dom_app. clear - HXc. fsetdec. }
+      { intros X HXΔ HXd.
+        repeat rewrite dom_app in HXd.
+        assert (HXβ : X <> β) by (intro; subst; clear - Hhd HXΔ; fsetdec).
+        assert (HXΘ0 : X `notin` dom Θ0) by (clear - HXd; fsetdec).
+        assert (HXτ : X `notin` ftvar_in_ptyp τ)
+          by (clear - Hτ0 HXΔ; fsetdec).
+        assert (HXP : X `notin` ftvar_in_pskl P).
+        { apply HP;
+            [ exact HXΔ | simpl; clear - HXβ HXΘ0; fsetdec ]. }
+        assert (HXsub : X `notin` ftvar_in_pskl
+                          (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)).
+        { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                        P (ptyp_to_pskl τ) β) as Hup.
+          rewrite ftvar_in_ptyp_to_pskl in Hup.
+          clear - Hup HXτ HXP. fsetdec. }
+        assert (HXα : X <> α).
+        { intro; subst X.
+          destruct Hfl as [Hb | [τ' Hb]];
+            destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx ?] | Hb'];
+            [ apply HXβ; exact Heqx | | apply HXβ; exact Heqx | ];
+            apply HXΘ0; eapply binds_In; eauto. }
+        assert (HXv : X `notin` ftvar_in_pskl
+                        (subst_pskl_in_pskl (ptyp_to_pskl τ) β
+                           (pskl_var_f α))).
+        { rewrite subst_pskl_var_ptyp. rewrite ftvar_in_ptyp_to_pskl.
+          pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
+                        (ptyp_var_f α) τ β) as Hup.
+          simpl in Hup. clear - Hup HXτ HXα. fsetdec. }
+        clear - HXsub HXv. fsetdec. }
+      split; [ | split ].
+      + intros β' τ' Hb.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+          [ inversion Heq; subst; exact Hτ0 | exact (IH1 β' τ' Hb') ].
+      + apply faf_cons; [ | exact IH2 ].
+        intros _. apply inter_empty_pointwise.
+        intros X HXΔ HXin.
+        assert (Hβ' : X `notin` add β (dom Θ0))
+          by (clear - Hhd HXΔ; fsetdec).
+        assert (HΘ1 : X `notin` dom Θ1).
+        { intro HXd. specialize (IH3 X HXΔ HXd).
+          rewrite dom_app in IH3.
+          assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
+          clear - IH3 HXΞ Hβ'. fsetdec. }
+        clear - HXin Hβ' HΘ1. fsetdec.
+      + intros X HXΔ HXd. simpl in HXd.
+        assert (Hnex : X <> β)
+          by (intro; subst; clear - Hhd HXΔ; fsetdec).
+        assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
+        specialize (IH3 X HXΔ HXd1).
+        rewrite dom_app in IH3. simpl. clear - IH3. fsetdec. }
+    (* 6. the augmented solution: eliminate the join [Q] *)
+    (* (a) the join is a monotype painting, ≡ᵗ-equal to the subject *)
+    rewrite subst_pskl_var_ptyp in HconsQ.
+    rewrite ptyp_to_uskl_syn_eq in HconsQ.
+    destruct (consis_mono_join HconsQ Hwf1
+                (A := subst_ptyp_in_ptyp τ β (ptyp_var_f α))
+                eq_refl Hmsub)
+      as [C [HmC [HeqC HeqmC]]].
+    (* (b) the refinement side: ⌊P[τ/β̂]⌋ ≈ Q  (subsidiary induction #1) *)
+    assert (Hc0 : empty ⨟ Θ1 ⊨ₛᵃ
+                    (pskl_to_uskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P))
+                    ≈ Qt).
+    { eapply refine_inh_mono_consis;
+        [ eapply ad_refine_syn_f_forget; exact Hrs
+        | exact Hwf1
+        | rewrite HeqC; apply mono_ptyp_to_bskl_syn; exact HmC
+        | reflexivity
+        | intros X HX; exfalso; clear - HX; fsetdec ]. }
+    (* (c) fold the definition on the SUBJECT side *)
+    assert (Hc1 : empty ⨟ ((β ~ abind_flex_mono_def τ) ++ Θ1) ⊨ₛᵃ
+                    (pskl_to_uskl P) ≈ Qt).
+    { eapply ad_pat_consis_fold_def with
+        (β := β) (τ := τ)
+        (S' := pskl_to_uskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P));
+        [ apply ad_pat_consis_weaken_cons; exact Hc0
+        | exact Hbβ1
+        | exact Hτm
+        | apply pskl_to_uskl_subst ]. }
+    (* (d) fold the definition on the JOIN side (subsidiary induction #2) *)
+    assert (Hbα1 : a_binds_tvar α ((β ~ abind_flex_mono_def τ) ++ Θ1)).
+    { eapply a_isub_binds_tvarish; [ exact HleF | ].
+      destruct Hfl as [Hb | [τ' Hb]];
+        [ right; left | right; right; exists τ' ]; exact Hb. }
+    assert (Heqα : ((β ~ abind_flex_mono_def τ) ++ Θ1) ⊢
+                     (ptyp_var_f α) ≡ᵗ C).
+    { eapply a_tyequiv__trans.
+      - eapply a_tyequiv_subst_def;
+          [ exact Hbβ1 | apply mono_ptyp__var | exact Hlcτ ].
+      - apply a_tyequiv_weaken_cons. exact HeqmC. }
+    destruct (tyequiv_mono_consis_transport_q Heqα Hwf1'
+                (mono_ptyp__var α)
+                ltac:(intros X HX; simpl in HX;
+                      assert (X = α) by (clear - HX; fsetdec); subst;
+                      exact Hbα1))
+      as [Hq _].
+    replace (bskl_var_f α) with (ptyp_to_bskl_syn (ptyp_var_f α))
+      by reflexivity.
+    apply Hq. rewrite <- HeqC. exact Hc1.
+
+  - (* Assign-Depend : the pending suffix grows at the TAIL, so the IH's
+       context is LITERALLY the conclusion's, re-associated. *)
+    intros F Θ0 Θ1 Ξ α β P Hne Hβin Ha IHa Hdecl Hwf HwfP.
+    assert (Hdecl' : a_decls (Ξ ++ (β ~ abind_flex_mono)))
+      by (apply a_decls_app;
+          [ exact Hdecl | apply (a_decls__cons β); apply a_decls__nil ]).
+    destruct (IHa Hdecl'
+                ltac:(simpl_env; exact Hwf)
+                ltac:(simpl_env; exact HwfP))
+      as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
+    simpl_env in Hle.
+    split; [ exact Hle | ].
+    split; [ exact Hwf1 | ].
+    split.
+    { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
+    split.
+    { clear - Hnew.
+      intros γ Hγ. destruct (Hnew γ Hγ) as [Hin | Hout];
+        [ left; repeat rewrite dom_app in *; simpl in *;
+          clear - Hin; fsetdec
+        | right; exact Hout ]. }
+    split.
+    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
+      assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
+        by (apply (faf_head Hfaf); discriminate).
+      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
+      { simpl_env. exact Hnd. }
+      { eapply faf_tail; eauto. }
+      { repeat rewrite dom_app; simpl.
+        apply inter_empty_pointwise. intros X HXΔ HXin.
+        assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
+        assert (HXβ : X `notin` add β (dom Θ0))
+          by (clear - Hhd HXΔ; fsetdec).
+        clear - HXin HXΞ HXβ. fsetdec. }
+      { intros X HX. assert (HXc := Hcov X HX).
+        repeat rewrite dom_app in *; simpl in *. clear - HXc. fsetdec. }
+      { intros X HXΔ HXd. apply HP;
+          [ exact HXΔ | simpl; clear - Hhd HXΔ HXd; fsetdec ]. }
+      split; [ exact IH1 | split; [ exact IH2 | ] ].
+      intros X HXΔ HXd.
+      specialize (IH3 X HXΔ HXd).
+      repeat rewrite dom_app in *; simpl in *. clear - IH3. fsetdec. }
+    exact Hcons.
+
+  - (* Assign-Skip *)
+    intros F Θ0 Θ1 Ξ α β P Hne Hβn Ha IHa Hdecl Hwf HwfP.
+    assert (Huniq : uniq (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Hβd : β `notin` dom (Ξ ++ Θ0))
+      by (repeat rewrite dom_app in *; solve_uniq).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
+      by (eapply ad_wf_pskl_strip_mid; eauto).
+    destruct (IHa Hdecl HwfΞΘ HwfP')
+      as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
+    assert (Hβ1 : β `notin` dom Θ1).
+    { intro Hin. destruct (Hnew β Hin) as [Hd | HF];
+        [ exact (Hβd Hd) | apply HF; clear; fsetdec ]. }
+    split.
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb.
+        apply a_binds_tvar_weaken_cons.
+        eapply a_isub_binds_flex; [ exact Hle | ].
+        unfold binds; apply in_or_app; left; exact Hb. }
+      apply a_isub_cons_flex.
+      eapply a_isub_strengthen_decls_src; eauto. }
+    split; [ apply a_wf_aenv__flex; auto | ].
+    split.
+    { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
+    split.
+    { clear - Hnew.
+      intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
+      destruct (AtomSetImpl.union_1 Hγ) as [Hβ' | Hrest];
+        [ left; clear - Hβ'; fsetdec | ].
+      destruct (Hnew γ Hrest) as [Hin | Hout];
+        [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
+        | right; clear - Hout; fsetdec ]. }
+    split.
+    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
+      assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
+        by (apply (faf_head Hfaf); discriminate).
+      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
+      { intros β' τ' Hb. apply (Hnd β' τ').
+        apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
+                 (β ~ abind_flex_mono) Θ0). exact Hb. }
+      { eapply faf_tail; eauto. }
+      { exact HΔΞ. }
+      { intros X HX. assert (HXc := Hcov X HX).
+        simpl in HXc. clear - HXc. fsetdec. }
+      { intros X HXΔ HXd. apply HP; auto. simpl.
+        assert (X `notin` add β (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
+        auto. }
+      split; [ | split ].
+      + intros β' τ' Hb.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+          [ discriminate | exact (IH1 β' τ' Hb') ].
+      + apply faf_cons; [ | exact IH2 ].
+        intros _. apply inter_empty_pointwise.
+        intros X HXΔ HXin.
+        assert (Hβ' : X `notin` add β (dom Θ0))
+          by (clear - Hhd HXΔ; fsetdec).
+        assert (HΘ1 : X `notin` dom Θ1).
+        { intro HXd. specialize (IH3 X HXΔ HXd).
+          assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
+          clear - IH3 HXΞ Hβ'. fsetdec. }
+        clear - HXin Hβ' HΘ1. fsetdec.
+      + intros X HXΔ HXd. simpl in HXd.
+        assert (Hnex : X <> β)
+          by (intro; subst; clear - Hhd HXΔ; fsetdec).
+        assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
+        specialize (IH3 X HXΔ HXd1). simpl.
+        clear - IH3. fsetdec. }
+    apply ad_pat_consis_weaken_cons. exact Hcons.
+
+  - (* Assign-SkipRigid *)
+    intros F Θ0 Θ1 Ξ α β P Hβn Ha IHa Hdecl Hwf HwfP.
+    assert (Huniq : uniq (Ξ ++ (β ~ abind_tvar) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Hβd : β `notin` dom (Ξ ++ Θ0))
+      by (repeat rewrite dom_app in *; solve_uniq).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
+      by (eapply ad_wf_pskl_strip_mid; eauto).
+    destruct (IHa Hdecl HwfΞΘ HwfP')
+      as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
+    assert (Hβ1 : β `notin` dom Θ1).
+    { intro Hin. destruct (Hnew β Hin) as [Hd | HF];
+        [ exact (Hβd Hd) | apply HF; clear; fsetdec ]. }
+    split.
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb.
+        apply a_binds_tvar_weaken_cons.
+        eapply a_isub_binds_flex; [ exact Hle | ].
+        unfold binds; apply in_or_app; left; exact Hb. }
+      apply a_isub_cons_tvar.
+      eapply a_isub_strengthen_decls_src; eauto. }
+    split; [ apply a_wf_aenv__tvar; auto | ].
+    split.
+    { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
+    split.
+    { clear - Hnew.
+      intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
+      destruct (AtomSetImpl.union_1 Hγ) as [Hβ' | Hrest];
+        [ left; clear - Hβ'; fsetdec | ].
+      destruct (Hnew γ Hrest) as [Hin | Hout];
+        [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
+        | right; clear - Hout; fsetdec ]. }
+    split.
+    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
+      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
+      { intros β' τ' Hb. apply (Hnd β' τ').
+        apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
+                 (β ~ abind_tvar) Θ0). exact Hb. }
+      { eapply faf_tail; eauto. }
+      { exact HΔΞ. }
+      { intros X HX. assert (HXc := Hcov X HX).
+        simpl in HXc. clear - HXc. fsetdec. }
+      { intros X HXΔ HXd.
+        destruct (eq_var X β) as [->|Hnex]; [ exact Hβn | ].
+        apply HP; auto; simpl; auto. }
+      split; [ | split ].
+      + intros β' τ' Hb.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+          [ discriminate | exact (IH1 β' τ' Hb') ].
+      + apply faf_cons; [ intros Hne; congruence | exact IH2 ].
+      + intros X HXΔ HXd. simpl in HXd. simpl.
+        destruct (eq_var X β) as [->|Hnex]; [ clear; fsetdec | ].
+        assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
+        specialize (IH3 X HXΔ HXd1). clear - IH3. fsetdec. }
+    apply ad_pat_consis_weaken_cons. exact Hcons.
+
+  - (* Assign-SkipTmVar (typ) *)
+    intros F Θ0 Θ1 Ξ α x Q P Ha IHa Hdecl Hwf HwfP.
+    assert (Huniq : uniq (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Hxd : x `notin` dom (Ξ ++ Θ0))
+      by (repeat rewrite dom_app in *; solve_uniq).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (Hxwf : a_wf_aenv ((x ~ abind_var_typ Q) ++ Θ0))
+      by (eapply a_wf_aenv_strip_prefix; eauto).
+    apply a_wf_aenv_var_typ_inv in Hxwf.
+    destruct Hxwf as [_ [HQwf _]].
+    (* a TERM variable cannot occur in a well-formed SKELETON *)
+    assert (Hxn : x `notin` ftvar_in_pskl P).
+    { intro Hin.
+      destruct (ad_wf_pskl_ftv_tvarish HwfP Hin) as [HΔ | Ht];
+        [ clear - HΔ; fsetdec | ].
+      assert (Hbx : binds x (abind_var_typ Q)
+                      (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0))
+        by (unfold binds; apply in_or_app; right; left; reflexivity).
+      destruct Ht as [Hb | [Hb | [τ0 Hb]]];
+        pose proof (binds_unique _ _ _ _ _ Hb Hbx Huniq) as He;
+        discriminate He. }
+    assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
+      by (eapply ad_wf_pskl_strip_mid; eauto).
+    destruct (IHa Hdecl HwfΞΘ HwfP')
+      as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
+    assert (Hx1 : x `notin` dom Θ1).
+    { intro Hin. destruct (Hnew x Hin) as [Hd | HF];
+        [ exact (Hxd Hd) | apply HF; clear; fsetdec ]. }
+    assert (Hle0 : Θ0 ⊴ Θ1)
+      by (eapply a_isub_strengthen_decls_src; eauto).
+    split.
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb.
+        apply a_binds_tvar_weaken_cons.
+        eapply a_isub_binds_flex; [ exact Hle | ].
+        unfold binds; apply in_or_app; left; exact Hb. }
+      apply a_isub_cons_var_typ. exact Hle0. }
+    split.
+    { apply a_wf_aenv__var_typ; auto.
+      eapply a_wf_ptyp_isub; eauto. }
+    split.
+    { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
+    split.
+    { clear - Hnew.
+      intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
+      destruct (AtomSetImpl.union_1 Hγ) as [Hx' | Hrest];
+        [ left; clear - Hx'; fsetdec | ].
+      destruct (Hnew γ Hrest) as [Hin | Hout];
+        [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
+        | right; clear - Hout; fsetdec ]. }
+    split.
+    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
+      assert (Hhd : AtomSetImpl.inter Δ (add x (dom Θ0)) [=] empty)
+        by (apply (faf_head Hfaf); discriminate).
+      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
+      { intros β' τ' Hb. apply (Hnd β' τ').
+        apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
+                 (x ~ abind_var_typ Q) Θ0). exact Hb. }
+      { eapply faf_tail; eauto. }
+      { exact HΔΞ. }
+      { intros X HX. assert (HXc := Hcov X HX).
+        simpl in HXc. clear - HXc. fsetdec. }
+      { intros X HXΔ HXd. apply HP; auto. simpl.
+        assert (X `notin` add x (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
+        auto. }
+      split; [ | split ].
+      + intros β' τ' Hb.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+          [ discriminate | exact (IH1 β' τ' Hb') ].
+      + apply faf_cons; [ | exact IH2 ].
+        intros _. apply inter_empty_pointwise.
+        intros X HXΔ HXin.
+        assert (Hx' : X `notin` add x (dom Θ0))
+          by (clear - Hhd HXΔ; fsetdec).
+        assert (HΘ1 : X `notin` dom Θ1).
+        { intro HXd. specialize (IH3 X HXΔ HXd).
+          assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
+          clear - IH3 HXΞ Hx'. fsetdec. }
+        clear - HXin Hx' HΘ1. fsetdec.
+      + intros X HXΔ HXd. simpl in HXd.
+        assert (Hnex : X <> x)
+          by (intro; subst; clear - Hhd HXΔ; fsetdec).
+        assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
+        specialize (IH3 X HXΔ HXd1). simpl.
+        clear - IH3. fsetdec. }
+    apply ad_pat_consis_weaken_cons. exact Hcons.
+
+  - (* Assign-SkipTmVar (skl) *)
+    intros F Θ0 Θ1 Ξ α x Q P Ha IHa Hdecl Hwf HwfP.
+    assert (Huniq : uniq (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Hxd : x `notin` dom (Ξ ++ Θ0))
+      by (repeat rewrite dom_app in *; solve_uniq).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (Hxwf : a_wf_aenv ((x ~ abind_var_skl Q) ++ Θ0))
+      by (eapply a_wf_aenv_strip_prefix; eauto).
+    apply a_wf_aenv_var_skl_inv in Hxwf.
+    destruct Hxwf as [_ [HQwf _]].
+    assert (Hxn : x `notin` ftvar_in_pskl P).
+    { intro Hin.
+      destruct (ad_wf_pskl_ftv_tvarish HwfP Hin) as [HΔ | Ht];
+        [ clear - HΔ; fsetdec | ].
+      assert (Hbx : binds x (abind_var_skl Q)
+                      (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
+        by (unfold binds; apply in_or_app; right; left; reflexivity).
+      destruct Ht as [Hb | [Hb | [τ0 Hb]]];
+        pose proof (binds_unique _ _ _ _ _ Hb Hbx Huniq) as He;
+        discriminate He. }
+    assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
+      by (eapply ad_wf_pskl_strip_mid; eauto).
+    destruct (IHa Hdecl HwfΞΘ HwfP')
+      as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
+    assert (Hx1 : x `notin` dom Θ1).
+    { intro Hin. destruct (Hnew x Hin) as [Hd | HF];
+        [ exact (Hxd Hd) | apply HF; clear; fsetdec ]. }
+    assert (Hle0 : Θ0 ⊴ Θ1)
+      by (eapply a_isub_strengthen_decls_src; eauto).
+    split.
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb.
+        apply a_binds_tvar_weaken_cons.
+        eapply a_isub_binds_flex; [ exact Hle | ].
+        unfold binds; apply in_or_app; left; exact Hb. }
+      apply a_isub_cons_var_skl. exact Hle0. }
+    split.
+    { apply a_wf_aenv__var; auto.
+      eapply a_wf_pskl_isub; eauto. }
+    split.
+    { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
+    split.
+    { clear - Hnew.
+      intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
+      destruct (AtomSetImpl.union_1 Hγ) as [Hx' | Hrest];
+        [ left; clear - Hx'; fsetdec | ].
+      destruct (Hnew γ Hrest) as [Hin | Hout];
+        [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
+        | right; clear - Hout; fsetdec ]. }
+    split.
+    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
+      assert (Hhd : AtomSetImpl.inter Δ (add x (dom Θ0)) [=] empty)
+        by (apply (faf_head Hfaf); discriminate).
+      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
+      { intros β' τ' Hb. apply (Hnd β' τ').
+        apply (@binds_insert_mid (abind_flex_mono_def τ') β' Ξ
+                 (x ~ abind_var_skl Q) Θ0). exact Hb. }
+      { eapply faf_tail; eauto. }
+      { exact HΔΞ. }
+      { intros X HX. assert (HXc := Hcov X HX).
+        simpl in HXc. clear - HXc. fsetdec. }
+      { intros X HXΔ HXd. apply HP; auto. simpl.
+        assert (X `notin` add x (dom Θ0)) by (clear - Hhd HXΔ; fsetdec).
+        auto. }
+      split; [ | split ].
+      + intros β' τ' Hb.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+          [ discriminate | exact (IH1 β' τ' Hb') ].
+      + apply faf_cons; [ | exact IH2 ].
+        intros _. apply inter_empty_pointwise.
+        intros X HXΔ HXin.
+        assert (Hx' : X `notin` add x (dom Θ0))
+          by (clear - Hhd HXΔ; fsetdec).
+        assert (HΘ1 : X `notin` dom Θ1).
+        { intro HXd. specialize (IH3 X HXΔ HXd).
+          assert (HXΞ : X `notin` dom Ξ) by (clear - HΔΞ HXΔ; fsetdec).
+          clear - IH3 HXΞ Hx'. fsetdec. }
+        clear - HXin Hx' HΘ1. fsetdec.
+      + intros X HXΔ HXd. simpl in HXd.
+        assert (Hnex : X <> x)
+          by (intro; subst; clear - Hhd HXΔ; fsetdec).
+        assert (HXd1 : X `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
+        specialize (IH3 X HXΔ HXd1). simpl.
+        clear - IH3. fsetdec. }
+    apply ad_pat_consis_weaken_cons. exact Hcons.
   - (* U-Flex-Flex-Id *)
     intros F Θ0 α Hb Hwf.
     split; [ apply a_isub_refl | ].
@@ -3799,16 +4305,11 @@ Proof.
         { rewrite ftvar_in_bskl_ptyp_syn. simpl. clear - HαnΔ. fsetdec. }
         { intros γ τ Hb. eapply (Hnfd1 γ τ) in Hb. clear - Hb. fsetdec. }
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
-  - (* C-FlexL : assign α̂ := P0 (the input skeleton) *)
-    intros F Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
-    assert (Hvis : forall X, X `in` ftvar_in_pskl P0 -> a_binds_tvar X Θ0).
-    { intros X HX. destruct (ad_wf_pskl_ftv_tvarish HwfP0 HX) as [HΔ | Ht];
-        [ clear - HΔ; fsetdec | exact Ht ]. }
-    destruct (a_assign_sound Hassign a_decls__nil Hwf Hvis) as [Hle Hcons].
-    simpl in Hle.
-    assert (Hwf1 : a_wf_aenv Θ1)
-      by (eapply a_assign_preserves_wf;
-          [ exact Hassign | apply a_decls__nil | exact Hwf | exact Hvis ]).
+  - (* C-FlexL : assign α̂ := P0 (the input skeleton).  MUTUAL case: the
+       [a_assign] premise is handled by the bundle's ASSIGN motive. *)
+    intros F Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    destruct (IHassign a_decls__nil Hwf HwfP0)
+      as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
     assert (Hfα : a_flex_tvar Θ0 α)
       by (pose proof (a_assign_subject_flex Hassign) as Hf; simpl in Hf;
           exact Hf).
@@ -3817,36 +4318,32 @@ Proof.
         eapply faf_flex_notin; try exact Hfaf; try exact Hb; discriminate. }
     assert (HΔdom : Δ1 `union` Δ2 [<=] dom Θ0).
     { intros X HX. apply binds_In with (a := abind_tvar). apply Hrig; auto. }
+    assert (Hbα1 : a_binds_tvar α Θ1).
+    { eapply a_isub_binds_tvarish; [ exact Hle | ].
+      destruct Hfα as [Hb | [τ Hb]];
+        [ right; left | right; right; exists τ ]; exact Hb. }
     assert (Hinv12 : no_flex_dep (Δ1 `union` Δ2) Θ1 /\
                      flex_above_free (Δ1 `union` Δ2) Θ1).
-    { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) Hassign
-                  ltac:(simpl; exact Hnfd) Hfaf
-                  ltac:(simpl; clear; fsetdec)
-                  ltac:(simpl; rewrite <- HΔdom; clear; fsetdec)
-                  ltac:(intros X HX Hnd0; exfalso; apply Hnd0;
-                        apply HΔdom; exact HX))
-        as [Hnd [Hfaf' _]].
+    { destruct (Hinv (Δ1 `union` Δ2)) as [Hnd [Hfaf' _]].
+      { exact Hnfd. }
+      { exact Hfaf. }
+      { simpl. clear. fsetdec. }
+      { simpl. clear - HΔdom. fsetdec. }
+      { intros X HX Hnd0. exfalso. apply Hnd0. apply HΔdom. exact HX. }
       split; assumption. }
     destruct Hinv12 as [Hnfd1 Hfaf1].
-    assert (Hbα1 : a_binds_tvar α Θ1)
-      by (eapply a_assign_subject_binds; eauto).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
-    split.
-    { pose proof (a_assign_dom_mono Hassign) as Hd. simpl in Hd. exact Hd. }
-    split.
-    { intros x Hx.
-      destruct (a_assign_new_avoids_F Hassign Hx) as [Hin | Hout];
-        [ left; simpl in Hin; exact Hin | right; exact Hout ]. }
+    split; [ exact Hdom | ].
+    split; [ exact Hnew | ].
     split.
     { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      destruct (a_assign_preserves_inv (Δ := Δ) Hassign
-                  ltac:(simpl; exact HndΔ) HfaΔ
-                  ltac:(simpl; clear; fsetdec)
-                  ltac:(simpl; clear - HcovΔ; fsetdec)
-                  ltac:(intros X HX HXd;
-                        pose proof (Hft X HX HXd) as Hf0;
-                        clear - Hf0; fsetdec))
-        as [Hnd' [Hfa' Hbk']].
+      destruct (Hinv Δ) as [Hnd' [Hfa' Hbk']].
+      { exact HndΔ. }
+      { exact HfaΔ. }
+      { simpl. clear. fsetdec. }
+      { simpl. clear - HcovΔ. fsetdec. }
+      { intros X HX HXd. pose proof (Hft X HX HXd) as Hf0.
+        clear - Hf0. fsetdec. }
       split; [ exact Hnd' | ]. split; [ exact Hfa' | ].
       intros X HX HXd.
       pose proof (Hbk' X HX HXd) as HX0. simpl in HX0.
@@ -3863,16 +4360,11 @@ Proof.
         { simpl. clear - HαnΔ. fsetdec. }
         { intros γ τ Hb. eapply (Hnfd1 γ τ) in Hb. clear - Hb. fsetdec. }
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
-  - (* C-FlexR : assign α̂ := P (the subject skeleton), output var α̂ *)
-    intros F Δ1 Δ2 Θ0 Θ1 α P Hnf Hassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
-    assert (Hvis : forall X, X `in` ftvar_in_pskl P -> a_binds_tvar X Θ0).
-    { intros X HX. destruct (ad_wf_pskl_ftv_tvarish HwfP HX) as [HΔ | Ht];
-        [ clear - HΔ; fsetdec | exact Ht ]. }
-    destruct (a_assign_sound Hassign a_decls__nil Hwf Hvis) as [Hle Hcons].
-    simpl in Hle.
-    assert (Hwf1 : a_wf_aenv Θ1)
-      by (eapply a_assign_preserves_wf;
-          [ exact Hassign | apply a_decls__nil | exact Hwf | exact Hvis ]).
+  - (* C-FlexR : assign α̂ := P (the subject skeleton), output var α̂.
+       MUTUAL case: the [a_assign] premise is the bundle's ASSIGN motive. *)
+    intros F Δ1 Δ2 Θ0 Θ1 α P Hnf Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    destruct (IHassign a_decls__nil Hwf HwfP)
+      as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
     assert (Hfα : a_flex_tvar Θ0 α)
       by (pose proof (a_assign_subject_flex Hassign) as Hf; simpl in Hf;
           exact Hf).
@@ -3881,36 +4373,32 @@ Proof.
         eapply faf_flex_notin; try exact Hfaf; try exact Hb; discriminate. }
     assert (HΔdom : Δ1 `union` Δ2 [<=] dom Θ0).
     { intros X HX. apply binds_In with (a := abind_tvar). apply Hrig; auto. }
+    assert (Hbα1 : a_binds_tvar α Θ1).
+    { eapply a_isub_binds_tvarish; [ exact Hle | ].
+      destruct Hfα as [Hb | [τ Hb]];
+        [ right; left | right; right; exists τ ]; exact Hb. }
     assert (Hinv12 : no_flex_dep (Δ1 `union` Δ2) Θ1 /\
                      flex_above_free (Δ1 `union` Δ2) Θ1).
-    { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) Hassign
-                  ltac:(simpl; exact Hnfd) Hfaf
-                  ltac:(simpl; clear; fsetdec)
-                  ltac:(simpl; rewrite <- HΔdom; clear; fsetdec)
-                  ltac:(intros X HX Hnd0; exfalso; apply Hnd0;
-                        apply HΔdom; exact HX))
-        as [Hnd [Hfaf' _]].
+    { destruct (Hinv (Δ1 `union` Δ2)) as [Hnd [Hfaf' _]].
+      { exact Hnfd. }
+      { exact Hfaf. }
+      { simpl. clear. fsetdec. }
+      { simpl. clear - HΔdom. fsetdec. }
+      { intros X HX Hnd0. exfalso. apply Hnd0. apply HΔdom. exact HX. }
       split; assumption. }
     destruct Hinv12 as [Hnfd1 Hfaf1].
-    assert (Hbα1 : a_binds_tvar α Θ1)
-      by (eapply a_assign_subject_binds; eauto).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
-    split.
-    { pose proof (a_assign_dom_mono Hassign) as Hd. simpl in Hd. exact Hd. }
-    split.
-    { intros x Hx.
-      destruct (a_assign_new_avoids_F Hassign Hx) as [Hin | Hout];
-        [ left; simpl in Hin; exact Hin | right; exact Hout ]. }
+    split; [ exact Hdom | ].
+    split; [ exact Hnew | ].
     split.
     { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      destruct (a_assign_preserves_inv (Δ := Δ) Hassign
-                  ltac:(simpl; exact HndΔ) HfaΔ
-                  ltac:(simpl; clear; fsetdec)
-                  ltac:(simpl; clear - HcovΔ; fsetdec)
-                  ltac:(intros X HX HXd;
-                        pose proof (Hft X HX HXd) as Hf0;
-                        clear - Hf0; fsetdec))
-        as [Hnd' [Hfa' Hbk']].
+      destruct (Hinv Δ) as [Hnd' [Hfa' Hbk']].
+      { exact HndΔ. }
+      { exact HfaΔ. }
+      { simpl. clear. fsetdec. }
+      { simpl. clear - HcovΔ. fsetdec. }
+      { intros X HX HXd. pose proof (Hft X HX HXd) as Hf0.
+        clear - Hf0. fsetdec. }
       split; [ exact Hnd' | ]. split; [ exact Hfa' | ].
       intros X HX HXd.
       pose proof (Hbk' X HX HXd) as HX0. simpl in HX0.
@@ -3975,6 +4463,123 @@ Proof.
     + exact Hrp.
 Qed.
 
+(* ===================================================================== *)
+(*  The [a_assign] lemmas, RE-EXPORTED from the bundle under their         *)
+(*  original names.  Each used to be a standalone induction; now that      *)
+(*  Assign-Assign's premise is a CONSISTENCY derivation they are conjuncts *)
+(*  of the bundle's ASSIGN motive.  The only change to their statements is *)
+(*  the wf hypothesis (full [⨟ ∅ ⊢ₚₛᵃ P] instead of the old visibility     *)
+(*  side condition) — every call site has it.                             *)
+(* ===================================================================== *)
+
+(** Soundness of assignment (thm:sound-consistency part 3):
+    [Θ₀ | Ξ ⊲ α̂ ≔ P ⊣ Θ₁] gives [(Ξ ++ Θ₀) ⊴ Θ₁] and, declaratively, the
+    assigned skeleton is consistent with the variable in [Θ₁]. *)
+Lemma a_assign_sound : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  (Ξ ++ Θ0) ⊴ Θ1 /\
+  ad_pat_consis empty Θ1 (pskl_to_uskl P) (bskl_var_f α).
+Proof.
+  intros * Ha Hdecl Hwf HwfP.
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+    as [Hle [_ [_ [_ [_ Hcons]]]]].
+  split; assumption.
+Qed.
+
+(** [a_assign] preserves context well-formedness. *)
+Lemma a_assign_preserves_wf : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  a_wf_aenv Θ1.
+Proof.
+  intros * Ha Hdecl Hwf HwfP.
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+    as [_ [Hwf1 _]]. exact Hwf1.
+Qed.
+
+(** Assignment never drops an entry: the domain only grows. *)
+Lemma a_assign_dom_mono : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  dom (Ξ ++ Θ0) [<=] dom Θ1.
+Proof.
+  intros * Ha Hdecl Hwf HwfP.
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+    as [_ [_ [Hdom _]]]. exact Hdom.
+Qed.
+
+(** Every variable in an assignment's output is either already present or
+    freshly generated (hence outside the used-name set [F]). *)
+Lemma a_assign_new_avoids_F : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  forall γ, γ `in` dom Θ1 ->
+  γ `in` dom (Ξ ++ Θ0) \/ γ `notin` F.
+Proof.
+  intros * Ha Hdecl Hwf HwfP.
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+    as [_ [_ [_ [Hnew _]]]]. exact Hnew.
+Qed.
+
+(** Contrapositive: a name in [F] and fresh from the input stays fresh. *)
+Corollary a_assign_notin : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  forall β, β `in` F -> β `notin` dom (Ξ ++ Θ0) -> β `notin` dom Θ1.
+Proof.
+  intros * Ha Hdecl Hwf HwfP β HβF Hβd Hin.
+  destruct (a_assign_new_avoids_F Ha Hdecl Hwf HwfP Hin) as [Hd | HF]; auto.
+Qed.
+
+(** Preservation of the problem invariants by assignment, at any protected Δ. *)
+Lemma a_assign_preserves_inv : forall F Θ0 Ξ α P Θ1 Δ,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  no_flex_dep Δ (Ξ ++ Θ0) ->
+  flex_above_free Δ Θ0 ->
+  AtomSetImpl.inter Δ (dom Ξ) [=] empty ->
+  Δ [<=] (F `union` dom Θ0 `union` dom Ξ) ->
+  (forall X, X `in` Δ -> X `notin` dom Θ0 -> X `notin` ftvar_in_pskl P) ->
+  no_flex_dep Δ Θ1 /\
+  flex_above_free Δ Θ1 /\
+  (forall X, X `in` Δ -> X `in` dom Θ1 -> X `in` (dom Ξ `union` dom Θ0)).
+Proof.
+  intros * Ha Hdecl Hwf HwfP.
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+    as [_ [_ [_ [_ [Hinv _]]]]]. apply (Hinv Δ).
+Qed.
+
+(** The subject of an assignment is bound (as a flexible or defined variable)
+    in the output context.  NO induction: the increase conjunct transports the
+    input flexibility of the subject ([a_assign_subject_flex]) forward. *)
+Lemma a_assign_subject_binds : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  a_binds_tvar α Θ1.
+Proof.
+  intros * Ha Hdecl Hwf HwfP.
+  destruct (a_assign_sound Ha Hdecl Hwf HwfP) as [Hle _].
+  eapply a_isub_binds_tvarish; [ exact Hle | ].
+  destruct (a_assign_subject_flex Ha) as [Hb | [τ Hb]];
+    [ right; left | right; right; exists τ ]; exact Hb.
+Qed.
+
+
 (** Part 2, packaged (thm:sound-consistency part 2, paper reading). *)
 Corollary a_unify_sound : forall F Θ0 α β Θ1,
   Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
@@ -3982,7 +4587,7 @@ Corollary a_unify_sound : forall F Θ0 α β Θ1,
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ (Θ1 ⊢ (ptyp_var_f α) ≡ᵗ (ptyp_var_f β)).
 Proof.
   intros * Hu Hwf.
-  destruct (proj1 a_unify_consis_sound _ _ _ _ _ Hu Hwf)
+  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ Hu Hwf)
     as [Hle [Hwf1 [_ [_ [_ Heq]]]]]; auto.
 Qed.
 
@@ -3997,7 +4602,7 @@ Corollary a_unify_preserves_inv : forall F Θ0 α β Θ1 Δ,
   no_flex_dep Δ Θ1 /\ flex_above_free Δ Θ1.
 Proof.
   intros * Hu Hwf Hnd Hfa Hcov.
-  destruct (proj1 a_unify_consis_sound _ _ _ _ _ Hu Hwf)
+  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ Hu Hwf)
     as [_ [_ [_ [_ [Hinv _]]]]].
   destruct (Hinv Δ Hnd Hfa Hcov) as [Hnd1 [Hfa1 _]]; auto.
 Qed.
@@ -4131,11 +4736,11 @@ Proof.
     assert (Hvis : forall X, X `in` ftvar_in_pskl P0 -> a_binds_tvar X Θ0).
     { intros X HX. destruct (ad_wf_pskl_ftv_tvarish HwfP0 HX) as [HΔ | Ht];
         [ clear - HΔ; fsetdec | exact Ht ]. }
-    destruct (a_assign_sound H0 a_decls__nil Hwf Hvis) as [Hle Hcons].
+    destruct (a_assign_sound H0 a_decls__nil Hwf HwfP0) as [Hle Hcons].
     simpl in Hle.
     assert (Hwf1 : a_wf_aenv Θ1)
       by (eapply a_assign_preserves_wf;
-          [ exact H0 | apply a_decls__nil | exact Hwf | exact Hvis ]).
+          [ exact H0 | apply a_decls__nil | exact Hwf | exact HwfP0 ]).
     assert (Hfα : a_flex_tvar Θ0 α)
       by (pose proof (a_assign_subject_flex H0) as Hf; simpl in Hf; exact Hf).
     assert (HαnΔ : α `notin` (Δ1 `union` Δ2)).
@@ -4146,6 +4751,7 @@ Proof.
     assert (Hinv : no_flex_dep (Δ1 `union` Δ2) Θ1 /\
                    flex_above_free (Δ1 `union` Δ2) Θ1).
     { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) H0
+                  a_decls__nil Hwf HwfP0
                   ltac:(simpl; exact Hnfd) Hfaf
                   ltac:(simpl; fsetdec)
                   ltac:(simpl; rewrite <- HΔdom; fsetdec)
@@ -4154,7 +4760,9 @@ Proof.
         as [Hnd [Hfaf' _]].
       split; assumption. }
     destruct Hinv as [Hnfd1 Hfaf1].
-    assert (Hbα1 : a_binds_tvar α Θ1) by (eapply a_assign_subject_binds; eauto).
+    assert (Hbα1 : a_binds_tvar α Θ1)
+      by (eapply a_assign_subject_binds;
+          [ exact H0 | apply a_decls__nil | exact Hwf | exact HwfP0 ]).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
     split.
@@ -4174,11 +4782,11 @@ Proof.
     assert (Hvis : forall X, X `in` ftvar_in_pskl P -> a_binds_tvar X Θ0).
     { intros X HX. destruct (ad_wf_pskl_ftv_tvarish HwfS HX) as [HΔ | Ht];
         [ clear - HΔ; fsetdec | exact Ht ]. }
-    destruct (a_assign_sound H0 a_decls__nil Hwf Hvis) as [Hle Hcons].
+    destruct (a_assign_sound H0 a_decls__nil Hwf HwfS) as [Hle Hcons].
     simpl in Hle.
     assert (Hwf1 : a_wf_aenv Θ1)
       by (eapply a_assign_preserves_wf;
-          [ exact H0 | apply a_decls__nil | exact Hwf | exact Hvis ]).
+          [ exact H0 | apply a_decls__nil | exact Hwf | exact HwfS ]).
     assert (Hfα : a_flex_tvar Θ0 α)
       by (pose proof (a_assign_subject_flex H0) as Hf; simpl in Hf; exact Hf).
     assert (HαnΔ : α `notin` (Δ1 `union` Δ2)).
@@ -4189,6 +4797,7 @@ Proof.
     assert (Hinv : no_flex_dep (Δ1 `union` Δ2) Θ1 /\
                    flex_above_free (Δ1 `union` Δ2) Θ1).
     { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) H0
+                  a_decls__nil Hwf HwfS
                   ltac:(simpl; exact Hnfd) Hfaf
                   ltac:(simpl; fsetdec)
                   ltac:(simpl; rewrite <- HΔdom; fsetdec)
@@ -4197,7 +4806,9 @@ Proof.
         as [Hnd [Hfaf' _]].
       split; assumption. }
     destruct Hinv as [Hnfd1 Hfaf1].
-    assert (Hbα1 : a_binds_tvar α Θ1) by (eapply a_assign_subject_binds; eauto).
+    assert (Hbα1 : a_binds_tvar α Θ1)
+      by (eapply a_assign_subject_binds;
+          [ exact H0 | apply a_decls__nil | exact Hwf | exact HwfS ]).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
     split.
