@@ -92,3 +92,47 @@ Proof.
     + apply mono_ptyp__arrow; apply mono_ptyp__unit.
     + apply a_wf_aenv__flex; [ simpl; fsetdec | apply a_wf_aenv__nil ].
 Qed.
+
+
+(* ===================================================================== *)
+(*  REGRESSION TEST for the corrected [Assign-Assign]  (the SAME bug class *)
+(*  as above, on the OTHER back-edge into consistency).                    *)
+(*                                                                         *)
+(*  The pre-fix [a_assign__assign] recursed into [a_assign] instead of      *)
+(*  dropping into CONSISTENCY over the merged context [Ξ ++ Θ0].  Fixing    *)
+(*  that exposed a second, subtler trap: it is tempting to premise the rule *)
+(*  on [α̂ ≠ β̂] and keep the subject a bare variable, on the theory that a   *)
+(*  subject must be an UNDEFINED flex var to be assignable.  IT NEED NOT BE.*)
+(*  Nothing enforces that — neither [a_consis__flex_l] nor the reference    *)
+(*  implementation's [U-FlexL] ([| p0, MFlex alpha -> assign alpha p0 []],  *)
+(*  type.ml:182-185) guards on it.  So a DEFINED α̂ can be the subject, the  *)
+(*  walk then reaches α̂'s OWN definition, and the rule must fire with       *)
+(*  β̂ = α̂ — whereupon the subject [α̂[τ/α̂]] is the MONOTYPE τ, not a var.    *)
+(*  With an [α̂ ≠ β̂] premise NO rule fires and assignvar is STUCK, exactly   *)
+(*  as the old [unifyvar] reading was stuck above.                          *)
+(*                                                                         *)
+(*  The implementation computes precisely this: [subst_var (MFlex alpha)    *)
+(*  tau beta] with [beta = alpha] reduces to [tau] (type.ml:358-363).       *)
+(*                                                                         *)
+(*  Below: the previously-stuck state DERIVES.                             *)
+(* ===================================================================== *)
+
+Theorem a_assign_succeeds_on_own_definition : forall (a : atom),
+  ((a ~ abind_flex_mono_def Tarr) ++ nil)
+    ⊲[ nil ] a ≔ (pskl_arrow pskl_unit pskl_unit)
+  ⊣ ((a ~ abind_flex_mono_def Tarr) ++ nil).
+Proof.
+  intros a.
+  apply (@a_assign__assign empty nil nil nil a a Tarr
+           (pskl_arrow pskl_unit pskl_unit) (pskl_arrow pskl_unit pskl_unit)).
+  - (* HATTED SUBJECT: α̂ IS the head binding here — which is why this premise
+       must be stated on the CONCLUSION's context.  On [Ξ ++ Θ0] it would be
+       FALSE in exactly this case. *)
+    unfold a_flex_tvar. right. exists Tarr. unfold binds. left. reflexivity.
+  - simpl.
+    replace (if a == a then pskl_arrow pskl_unit pskl_unit else pskl_var_f a)
+      with (pskl_arrow pskl_unit pskl_unit)
+      by (destruct (a == a); congruence).
+    (* the subject is now the MONOTYPE τ = unit → unit, NOT a variable *)
+    eapply a_consis__arrow; apply a_consis__unit.
+Qed.

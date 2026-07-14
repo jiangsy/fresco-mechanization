@@ -448,9 +448,11 @@ Proof.
       eexists.
       eapply a_consis__arrow
         with (Θ1 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono) ++ Θlib).
-      * apply a_consis__flex. apply a_unify__flex_id. crush_binds.
+      * apply a_consis__flex. apply a_unify__flex_id.
+        (* [a_unify__flex_id]'s premise is now [a_flex_tvar] (was [binds]) *)
+        unfold a_flex_tvar. left. crush_binds.
       * apply a_consis__flex. apply a_unify__flex_l;
-          [ exact Hfafb | left; crush_binds ].
+          [ exact Hfafb | unfold a_flex_tvar; left; crush_binds ].
 Qed.
 
 (* ===================================================================== *)
@@ -552,9 +554,11 @@ Proof.
         eapply a_consis__arrow
           with (Θ1 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono)
                       ++ (x ~ abind_var_typ σ_id) ++ Θlib).
-        { apply a_consis__flex. apply a_unify__flex_id. crush_binds. }
+        { apply a_consis__flex. apply a_unify__flex_id.
+          (* [a_unify__flex_id]'s premise is now [a_flex_tvar] (was [binds]) *)
+          unfold a_flex_tvar. left. crush_binds. }
         { apply a_consis__flex. apply a_unify__flex_l;
-          [ exact Hfafb | left; crush_binds ]. }
+          [ exact Hfafb | unfold a_flex_tvar; left; crush_binds ]. }
 Qed.
 
 (* ===================================================================== *)
