@@ -798,6 +798,173 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  6b.  ≡ᵗ CONTEXT-STRENGTHENING (for Flex-Flex-Skip')                     *)
+(*                                                                        *)
+(*  When a competing solution's target GROWS across a rigid/term binding   *)
+(*  (Flex-Flex-Skip'), the [≡ᵗ] equality [Θ ⊢ A ≡ᵗ B] must be strengthened *)
+(*  to the sub-target [Θt] over which both endpoints are wf.  This is NOT  *)
+(*  a bare structural strip (≡ᵗ's trans can route through intermediates    *)
+(*  mentioning the dropped binding); it goes through the normal form       *)
+(*  [⇓ᵗ] (prop_normal.v): [⇓] is [≡ᵗ]-invariant [a_tyequiv_downarrow],     *)
+(*  [⇓] ignores entries above a suffix [downarrow_app_agree_ptyp], and     *)
+(*  every wf MONOtype is [≡ᵗ] to its own normal form                       *)
+(*  [a_tyequiv_to_downarrow_mono].  The endpoints here are the increment   *)
+(*  images [msubst_lookup ρ α/β] — MONOtypes — so no [∀]-binder case ever  *)
+(*  arises.                                                                *)
+(* ===================================================================== *)
+
+(** Entries ABOVE a suffix do not change the normal form of a type whose free
+    variables all live in the suffix. *)
+Lemma downarrow_app_agree_ptyp : forall Θp Θs A,
+  uniq (Θp ++ Θs) ->
+  ftvar_in_ptyp A [<=] dom Θs ->
+  ⇓ᵗ[ Θp ++ Θs ] A = ⇓ᵗ[ Θs ] A.
+Proof.
+  intros Θp Θs A Hu; induction A; intros Hsub; simpl in *.
+  - reflexivity.
+  - reflexivity.
+  - apply aenv_msubst_lookup_app; [ exact Hu | clear - Hsub; fsetdec ].
+  - f_equal; [ apply IHA1 | apply IHA2 ]; clear - Hsub; fsetdec.
+  - f_equal; apply IHA; clear - Hsub; fsetdec.
+Qed.
+
+(** A wf type's free variables live in the context's domain. *)
+Lemma a_wf_ptyp_ftv_dom : forall Θ A,
+  a_wf_ptyp Θ A -> ftvar_in_ptyp A [<=] dom Θ.
+Proof.
+  intros Θ A H X HX.
+  apply (a_wf_ptyp_ftv_tvarish H) in HX.
+  destruct HX as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb; exact Hb.
+Qed.
+
+(** [aenv_msubst] on a flex / flex-def head (reflexivity, exposing the cons so
+    that [msubst_lookup_cons_eq]/[_neq] can fire). *)
+Lemma aenv_msubst_flex_head : forall α Θ,
+  aenv_msubst ((α ~ abind_flex_mono) ++ Θ) = (α, ptyp_var_f α) :: aenv_msubst Θ.
+Proof. reflexivity. Qed.
+
+Lemma aenv_msubst_flex_def_head : forall α τ Θ,
+  aenv_msubst ((α ~ abind_flex_mono_def τ) ++ Θ)
+    = (α, ⇓ᵗ[ Θ ] τ) :: aenv_msubst Θ.
+Proof. reflexivity. Qed.
+
+(** Given the var-leaf equivalence, every wf MONOtype is [≡ᵗ] its normal form. *)
+Lemma mono_downarrow_from_var : forall Θ,
+  (forall X, a_binds_tvar X Θ -> Θ ⊢ (ptyp_var_f X) ≡ᵗ ⇓ᵗ[Θ] (ptyp_var_f X)) ->
+  forall τ, a_wf_ptyp Θ τ -> mono_ptyp τ -> Θ ⊢ τ ≡ᵗ ⇓ᵗ[Θ] τ.
+Proof.
+  intros Θ Hvar τ Hwfτ Hmono; revert Hwfτ; induction Hmono; intros Hwfτ.
+  - simpl. apply a_tyequiv__refl. constructor.
+  - apply Hvar. inversion Hwfτ; subst. auto.
+  - inversion Hwfτ; subst. simpl.
+    apply a_tyequiv__arrow; [ apply IHHmono1 | apply IHHmono2 ]; auto.
+Qed.
+
+(** Every wf MONOtype is [≡ᵗ]-equivalent to its own normal form. *)
+Lemma a_tyequiv_to_downarrow_mono : forall Θ,
+  a_wf_aenv Θ ->
+  forall τ, a_wf_ptyp Θ τ -> mono_ptyp τ -> Θ ⊢ τ ≡ᵗ ⇓ᵗ[Θ] τ.
+Proof.
+  intros Θ Hwf; induction Hwf as
+    [ | α Θ' Hnd Hwf IH
+      | α σ Θ' Hnd Hwpσ Hmσ Hwf IH
+      | x P Θ' Hnd Hwp Hwf IH
+      | x A0 Θ' Hnd Hwp Hwf IH
+      | α Θ' Hnd Hwf IH ];
+    apply mono_downarrow_from_var; intros X HX.
+  - (* nil: no tvar binding *)
+    exfalso. destruct HX as [Hb | [Hb | [t Hb]]]; inversion Hb.
+  - (* head = undefined flex α *)
+    cbn [msubst_ptyp]. rewrite aenv_msubst_flex_head.
+    destruct (X == α) as [Heq | Hne].
+    + subst X. rewrite msubst_lookup_cons_eq. apply a_tyequiv__refl. constructor.
+    + rewrite msubst_lookup_cons_neq by auto.
+      assert (HbΘ' : a_binds_tvar X Θ').
+      { destruct HX as [Hb | [Hb | [t Hb]]];
+          [ left | right; left | right; right; exists t ];
+          (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq _] | Hb'];
+           [ congruence | exact Hb' ]). }
+      apply a_tyequiv_weaken_cons.
+      apply (IH (ptyp_var_f X)); [ apply a_wf_ptyp__var; exact HbΘ' | constructor ].
+  - (* head = definition α := σ *)
+    cbn [msubst_ptyp]. rewrite aenv_msubst_flex_def_head.
+    destruct (X == α) as [Heq | Hne].
+    + subst X. rewrite msubst_lookup_cons_eq.
+      eapply a_tyequiv__trans.
+      * apply a_tyequiv__flex_def. unfold binds; simpl; left; reflexivity.
+      * apply a_tyequiv_weaken_cons. apply (IH σ Hwpσ Hmσ).
+    + rewrite msubst_lookup_cons_neq by auto.
+      assert (HbΘ' : a_binds_tvar X Θ').
+      { destruct HX as [Hb | [Hb | [t Hb]]];
+          [ left | right; left | right; right; exists t ];
+          (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq _] | Hb'];
+           [ congruence | exact Hb' ]). }
+      apply a_tyequiv_weaken_cons.
+      apply (IH (ptyp_var_f X)); [ apply a_wf_ptyp__var; exact HbΘ' | constructor ].
+  - (* head = term skeleton x : P (⇓ drops it) *)
+    assert (HbΘ' : a_binds_tvar X Θ').
+    { destruct HX as [Hb | [Hb | [t Hb]]];
+        [ left | right; left | right; right; exists t ];
+        (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
+         [ discriminate | exact Hb' ]). }
+    change (⇓ᵗ[ (x ~ abind_var_skl P) ++ Θ' ] (ptyp_var_f X))
+      with (⇓ᵗ[ Θ' ] (ptyp_var_f X)).
+    apply a_tyequiv_weaken_cons.
+    apply (IH (ptyp_var_f X)); [ apply a_wf_ptyp__var; exact HbΘ' | constructor ].
+  - (* head = term type x : A0 (⇓ drops it) *)
+    assert (HbΘ' : a_binds_tvar X Θ').
+    { destruct HX as [Hb | [Hb | [t Hb]]];
+        [ left | right; left | right; right; exists t ];
+        (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
+         [ discriminate | exact Hb' ]). }
+    change (⇓ᵗ[ (x ~ abind_var_typ A0) ++ Θ' ] (ptyp_var_f X))
+      with (⇓ᵗ[ Θ' ] (ptyp_var_f X)).
+    apply a_tyequiv_weaken_cons.
+    apply (IH (ptyp_var_f X)); [ apply a_wf_ptyp__var; exact HbΘ' | constructor ].
+  - (* head = rigid α (⇓ drops it) *)
+    change (⇓ᵗ[ (α ~ abind_tvar) ++ Θ' ] (ptyp_var_f X))
+      with (⇓ᵗ[ Θ' ] (ptyp_var_f X)).
+    destruct (X == α) as [Heq | Hne].
+    + subst X. cbn [msubst_ptyp]. rewrite aenv_msubst_notin by auto.
+      apply a_tyequiv__refl. constructor.
+    + assert (HbΘ' : a_binds_tvar X Θ').
+      { destruct HX as [Hb | [Hb | [t Hb]]];
+          [ left | right; left | right; right; exists t ];
+          (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq _] | Hb'];
+           [ congruence | exact Hb' ]). }
+      apply a_tyequiv_weaken_cons.
+      apply (IH (ptyp_var_f X)); [ apply a_wf_ptyp__var; exact HbΘ' | constructor ].
+Qed.
+
+(** THE ≡ᵗ STRENGTHENING.  Strip a middle binding [c~b] and an [a_decls]-free
+    prefix [Ξ] off both sides of a MONOtype equivalence whose endpoints are wf
+    in the tail [Θt]. *)
+Lemma a_tyequiv_strengthen_mono_mid : forall Ξ c b Θt A B,
+  a_wf_aenv (Ξ ++ (c ~ b) ++ Θt) ->
+  a_wf_ptyp Θt A -> mono_ptyp A ->
+  a_wf_ptyp Θt B -> mono_ptyp B ->
+  (Ξ ++ (c ~ b) ++ Θt) ⊢ A ≡ᵗ B ->
+  Θt ⊢ A ≡ᵗ B.
+Proof.
+  intros Ξ c b Θt A B Hwf HwfA HmA HwfB HmB Heq.
+  rewrite <- app_assoc in Hwf, Heq.
+  assert (Hwft : a_wf_aenv Θt) by (apply a_wf_aenv_strip_prefix_local in Hwf; exact Hwf).
+  assert (Huniq : uniq ((Ξ ++ (c ~ b)) ++ Θt)) by (apply a_wf_aenv_uniq; exact Hwf).
+  pose proof (a_tyequiv_downarrow Hwf Heq) as Hd.
+  assert (HdA : ⇓ᵗ[ (Ξ ++ (c ~ b)) ++ Θt ] A = ⇓ᵗ[ Θt ] A)
+    by (apply downarrow_app_agree_ptyp;
+        [ exact Huniq | apply a_wf_ptyp_ftv_dom; exact HwfA ]).
+  assert (HdB : ⇓ᵗ[ (Ξ ++ (c ~ b)) ++ Θt ] B = ⇓ᵗ[ Θt ] B)
+    by (apply downarrow_app_agree_ptyp;
+        [ exact Huniq | apply a_wf_ptyp_ftv_dom; exact HwfB ]).
+  rewrite HdA, HdB in Hd.
+  eapply a_tyequiv__trans;
+    [ apply (a_tyequiv_to_downarrow_mono Hwft HwfA HmA) | ].
+  rewrite Hd. apply a_tyequiv__sym.
+  apply (a_tyequiv_to_downarrow_mono Hwft HwfB HmB).
+Qed.
+
+(* ===================================================================== *)
 (*  7.  THE 28-CASE MUTUAL OPTIMALITY BUNDLE                               *)
 (*                                                                        *)
 (*  Same shape as the green soundness bundle [a_assign_unify_consis_sound]  *)
