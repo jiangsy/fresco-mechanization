@@ -309,7 +309,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   (declarative.tex:1427) is carried**.  Precision is DEFINED as
   `Θ ⊢ inh{P} ⊳ inh{Q}`, so the lemma is an instance of transitivity of
   refinement — and refinement is not transitive on the bare rules
-  (`algo/cex_refine_not_transitive.v`).  An unwritten proof hid that.
+  (`algo/cex/cex_refine_not_transitive.v`).  An unwritten proof hid that.
 - MECHANIZED (algo/prop_precise.v, Qed + axiom-free): `ad_refine_syn_trans`
   (general transitivity, given the result is well-formed) and
   `ad_precise_preserves_refine` (the paper's lemma, a direct corollary).
@@ -335,7 +335,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   rule); the consequence hits `lemma:precision-preserves-refinement`
   (full-algo-spec.tex:716) and hence the whole completeness/optimality
   development, which rests on it.
-- Machine-checked artifact: `frost/algo/cex_refine_not_transitive.v` —
+- Machine-checked artifact: `frost/algo/cex/cex_refine_not_transitive.v` —
   `ad_refine_syn_not_transitive` is Qed and axiom-free.
 - The GhostForall rule binds `α` in `Γ` but deliberately KEEPS `Δ`
   (the paper's own inline comment: "It's fine to keep Δ since we already
@@ -471,9 +471,15 @@ follow the paper.  It only upgrades our verdict on someone else's code.
 
 ## FALSE — `thm:complete-consistency` optimality (parts 2/3): flex migration below term binders defeats the factoring
 
-**Status: FALSE — machine-checked counterexample, axiom-free
-(`algo/cex_assign_optimal_syn_middle.v`, 2026-07-15).  Work on the affected
-cases is STOPPED pending a paper-level decision.**
+**Status: FALSE against the paper's rules; MECH HAS ADOPTED THE FIX
+(2026-07-15, same day).  The counterexample is machine-checked, axiom-free
+(`algo/cex/cex_assign_optimal_syn_middle.v`, now stated against a local copy
+`a_inc_syn` of the original rules).  The mechanized `a_inc`/`a_inc_equiv`
+(def_meta.v) now use GMM-style SEMANTIC ENTRIES — binder middles up to
+`≡ᵗ`/`≡ˢ` (new skeleton equivalence `a_pskl_tyequiv`) — and the same instance
+then factors (`cex_zeta_semantic`).  THE PAPER MUST ADOPT THE RULE BELOW
+(draft note: sections/appendices/optimality-cex.tex, commented-out \input
+after the lemma).**
 
 The OPTIMALITY half of `thm:complete-consistency` part 3 (assignment) is
 false as stated; part 2 (unification) inherits the falsity through

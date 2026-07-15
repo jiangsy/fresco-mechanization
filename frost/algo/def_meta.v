@@ -1,8 +1,8 @@
 (** Metasubstitutions (information increase), paper app:metasubstitutions
     (fig:information-increase-and-equivalence), and the aenv↔denv bridges.
 
-    A metasubstitution θ is a finite map from flexible variables to
-    monotypes; [a_inc Θ θ Θ'] is the paper's [Θ ⊑[θ] Θ'].  The algorithms
+    A metasubstitution ρ is a finite map from flexible variables to
+    monotypes; [a_inc Θ ρ Θ'] is the paper's [Θ ⊑[θ] Θ'].  The algorithms
     always produce identity metasubstitutions ι (every entry [α̂ ↦ α̂]). *)
 
 Require Import Coq.Lists.List.
@@ -23,10 +23,10 @@ Set Implicit Arguments.
 Definition metasubst : Set := list (atom * ptyp).
 
 (** [paper-gap / MECH-BUG fixed]  The paper (algorithmic.tex:123) says a
-    metasubstitution IS "a finite MAP θ from flexible variables in Θ to
+    metasubstitution IS "a finite MAP ρ from flexible variables in Θ to
     well-formed monotypes in Θ'" — i.e. a SIMULTANEOUS substitution.  These were
     previously encoded as a SEQUENTIAL fold
-    ([msubst ((α,τ)::θ) A = msubst θ (A[τ/α])]), which is a different function:
+    ([msubst ((α,τ)::ρ) A = msubst ρ' (A[τ/α])]), which is a different function:
     the fold lets a LATER entry rewrite inside an EARLIER entry's image.  E.g.
     for the (legal) [θ = α ↦ β̂, β̂ ↦ unit] the fold sends [α ↦ unit] where the
     map sends [α ↦ β̂].  The two coincide on IDENTITY metasubstitutions (each
@@ -35,67 +35,67 @@ Definition metasubst : Set := list (atom * ptyp).
     hence COMPLETENESS need general θ, and there the fold is simply the wrong
     function.  So: recurse on the TYPE and look each free variable up. *)
 
-Fixpoint msubst_lookup (θ : metasubst) (X : atom) : ptyp :=
-  match θ with
+Fixpoint msubst_lookup (ρ : metasubst) (X : atom) : ptyp :=
+  match ρ with
   | nil => ptyp_var_f X
-  | (Y, τ) :: θ' => if X == Y then τ else msubst_lookup θ' X
+  | (Y, τ) :: ρ' => if X == Y then τ else msubst_lookup ρ' X
   end.
 
-Fixpoint msubst_ptyp (θ : metasubst) (A : ptyp) : ptyp :=
+Fixpoint msubst_ptyp (ρ : metasubst) (A : ptyp) : ptyp :=
   match A with
   | ptyp_unit => ptyp_unit
   | ptyp_var_b n => ptyp_var_b n
-  | ptyp_var_f X => msubst_lookup θ X
-  | ptyp_arrow A1 A2 => ptyp_arrow (msubst_ptyp θ A1) (msubst_ptyp θ A2)
-  | ptyp_all A0 => ptyp_all (msubst_ptyp θ A0)
+  | ptyp_var_f X => msubst_lookup ρ X
+  | ptyp_arrow A1 A2 => ptyp_arrow (msubst_ptyp ρ A1) (msubst_ptyp ρ A2)
+  | ptyp_all A0 => ptyp_all (msubst_ptyp ρ A0)
   end.
 
-Fixpoint msubst_pskl (θ : metasubst) (P : pskl) : pskl :=
+Fixpoint msubst_pskl (ρ : metasubst) (P : pskl) : pskl :=
   match P with
   | pskl_unit => pskl_unit
   | pskl_var_b n => pskl_var_b n
-  | pskl_var_f X => ptyp_to_pskl (msubst_lookup θ X)
-  | pskl_arrow P1 P2 => pskl_arrow (msubst_pskl θ P1) (msubst_pskl θ P2)
-  | pskl_all_syn P0 => pskl_all_syn (msubst_pskl θ P0)
+  | pskl_var_f X => ptyp_to_pskl (msubst_lookup ρ X)
+  | pskl_arrow P1 P2 => pskl_arrow (msubst_pskl ρ P1) (msubst_pskl ρ P2)
+  | pskl_all_syn P0 => pskl_all_syn (msubst_pskl ρ P0)
   | pskl_hole => pskl_hole
-  | pskl_tophole P0 => pskl_tophole (msubst_pskl θ P0)
+  | pskl_tophole P0 => pskl_tophole (msubst_pskl ρ P0)
   end.
 
-Fixpoint msubst_btyp (θ : metasubst) (B : btyp) : btyp :=
+Fixpoint msubst_btyp (ρ : metasubst) (B : btyp) : btyp :=
   match B with
   | btyp_unit => btyp_unit
   | btyp_var_b n => btyp_var_b n
-  | btyp_var_f X => ptyp_to_btyp_syn (msubst_lookup θ X)
-  | btyp_arrow B1 B2 => btyp_arrow (msubst_btyp θ B1) (msubst_btyp θ B2)
-  | btyp_all_syn B0 => btyp_all_syn (msubst_btyp θ B0)
-  | btyp_all_inh B0 => btyp_all_inh (msubst_btyp θ B0)
+  | btyp_var_f X => ptyp_to_btyp_syn (msubst_lookup ρ X)
+  | btyp_arrow B1 B2 => btyp_arrow (msubst_btyp ρ B1) (msubst_btyp ρ B2)
+  | btyp_all_syn B0 => btyp_all_syn (msubst_btyp ρ B0)
+  | btyp_all_inh B0 => btyp_all_inh (msubst_btyp ρ B0)
   end.
 
-Fixpoint msubst_bskl (θ : metasubst) (Q : bskl) : bskl :=
+Fixpoint msubst_bskl (ρ : metasubst) (Q : bskl) : bskl :=
   match Q with
   | bskl_unit => bskl_unit
   | bskl_var_b n => bskl_var_b n
-  | bskl_var_f X => pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup θ X))
-  | bskl_arrow Q1 Q2 => bskl_arrow (msubst_bskl θ Q1) (msubst_bskl θ Q2)
-  | bskl_all_syn Q0 => bskl_all_syn (msubst_bskl θ Q0)
-  | bskl_all_inh Q0 => bskl_all_inh (msubst_bskl θ Q0)
+  | bskl_var_f X => pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup ρ X))
+  | bskl_arrow Q1 Q2 => bskl_arrow (msubst_bskl ρ Q1) (msubst_bskl ρ Q2)
+  | bskl_all_syn Q0 => bskl_all_syn (msubst_bskl ρ Q0)
+  | bskl_all_inh Q0 => bskl_all_inh (msubst_bskl ρ Q0)
   | bskl_hole => bskl_hole
-  | bskl_tophole Q0 => bskl_tophole (msubst_bskl θ Q0)
+  | bskl_tophole Q0 => bskl_tophole (msubst_bskl ρ Q0)
   end.
 
 (** Composition of metasubstitutions, [ζ ∘ θ].  A metasubstitution is a finite
     MAP (algorithmic.tex:123), so composition is pointwise on the domain:
-    (ζ ∘ θ)(α) = ζ(θ(α)).  Its action law — and the side condition that law
+    (ζ ∘ ρ)(α) = ζ(θ(α)).  Its action law — and the side condition that law
     needs — is [msubst_ptyp_compose] in algo/prop_compose.v. *)
-Definition msubst_compose (ζ θ : metasubst) : metasubst :=
-  List.map (fun e => (fst e, msubst_ptyp ζ (snd e))) θ.
+Definition msubst_compose (ζ ρ : metasubst) : metasubst :=
+  List.map (fun e => (fst e, msubst_ptyp ζ (snd e))) ρ.
 
 (** The identity metasubstitution ι maps each flexible variable to itself. *)
 Definition is_id_entry (e : atom * ptyp) : Prop :=
   snd e = ptyp_var_f (fst e).
 
-Definition is_id_msubst (θ : metasubst) : Prop :=
-  Forall is_id_entry θ.
+Definition is_id_msubst (ρ : metasubst) : Prop :=
+  Forall is_id_entry ρ.
 
 (* ===================================================================== *)
 (*  Type equivalence in algorithmic contexts  [Θ ⊢ A ≡ B]                 *)
@@ -132,43 +132,97 @@ Inductive a_tyequiv : aenv -> ptyp -> ptyp -> Prop :=
 where "Θ ⊢ A ≡ᵗ B" := (a_tyequiv Θ A B) : type_scope.
 
 (* ===================================================================== *)
+(*  Skeleton equivalence  [Θ ⊢ P ≡ˢ Q]  — the [a_tyequiv] equational      *)
+(*  theory lifted to skeletons: definitions of flexible variables unfold,  *)
+(*  ghosts are inert (related only by congruence/reflexivity).             *)
+(*                                                                        *)
+(*  Introduced for the GMM-STYLE SEMANTIC ENTRIES of information increase *)
+(*  (see [a_inc] below): GundryMM10 §3.1 preserve context entries UP TO    *)
+(*  the equational theory (Δ ⊩ δ⟦vD⟧, i.e. δα ≡ δτ for a definition),     *)
+(*  never syntactically.  The previous SYNTACTIC middles [x : θP] made     *)
+(*  the optimality half of thm:complete-consistency FALSE                  *)
+(*  (machine-checked: algo/cex/cex_assign_optimal_syn_middle.v).               *)
+(* ===================================================================== *)
+
+Reserved Notation "Θ ⊢ P ≡ˢ Q"
+  (at level 75, P at level 74, Q at level 74, no associativity).
+Inductive a_pskl_tyequiv : aenv -> pskl -> pskl -> Prop :=
+| a_pskl_tyequiv__refl : forall Θ P,
+    lc_pskl P ->
+    Θ ⊢ P ≡ˢ P
+| a_pskl_tyequiv__sym : forall Θ P Q,
+    Θ ⊢ P ≡ˢ Q ->
+    Θ ⊢ Q ≡ˢ P
+| a_pskl_tyequiv__trans : forall Θ P Q R,
+    Θ ⊢ P ≡ˢ Q ->
+    Θ ⊢ Q ≡ˢ R ->
+    Θ ⊢ P ≡ˢ R
+(* retrieve a flexible variable's definition *)
+| a_pskl_tyequiv__flex_def : forall Θ α τ,
+    binds α (abind_flex_mono_def τ) Θ ->
+    Θ ⊢ (pskl_var_f α) ≡ˢ (ptyp_to_pskl τ)
+| a_pskl_tyequiv__arrow : forall Θ P1 P2 Q1 Q2,
+    Θ ⊢ P1 ≡ˢ Q1 ->
+    Θ ⊢ P2 ≡ˢ Q2 ->
+    Θ ⊢ (pskl_arrow P1 P2) ≡ˢ (pskl_arrow Q1 Q2)
+| a_pskl_tyequiv__all : forall L Θ P Q,
+    (forall X, X `notin` L ->
+       Θ ⊢ (open_pskl_wrt_pskl P (pskl_var_f X)) ≡ˢ
+           (open_pskl_wrt_pskl Q (pskl_var_f X))) ->
+    Θ ⊢ (pskl_all_syn P) ≡ˢ (pskl_all_syn Q)
+| a_pskl_tyequiv__tophole : forall Θ P Q,
+    Θ ⊢ P ≡ˢ Q ->
+    Θ ⊢ (pskl_tophole P) ≡ˢ (pskl_tophole Q)
+where "Θ ⊢ P ≡ˢ Q" := (a_pskl_tyequiv Θ P Q) : type_scope.
+
+(* ===================================================================== *)
 (*  Information increase  [Θ ⊑[θ] Θ']  (fig:information-increase)          *)
 (* ===================================================================== *)
 
-Reserved Notation "Θ ≤[ θ ] Θ'"
-  (at level 75, θ at level 0, Θ' at level 74, no associativity).
+Reserved Notation "Θ ≤[ ρ ] Θ'"
+  (at level 75, ρ at level 0, Θ' at level 74, no associativity).
 Inductive a_inc : aenv -> metasubst -> aenv -> Prop :=
 | a_inc__empty : forall Ξ,                       (* · ⊑[ι] Ξ *)
     a_suffix Ξ ->
     nil ≤[ nil ] Ξ
-| a_inc__flex : forall Θ θ Θ' α τ,               (* Θ,α̂ ⊑[θ,τ/α̂] Θ' *)
-    Θ ≤[ θ ] Θ' ->
+| a_inc__flex : forall Θ ρ Θ' α τ,               (* Θ,α̂ ⊑[θ,τ/α̂] Θ' *)
+    Θ ≤[ ρ ] Θ' ->
     a_wf_ptyp Θ' τ ->
     mono_ptyp τ ->
-    ((α ~ abind_flex_mono) ++ Θ) ≤[ (α, τ) :: θ ] Θ'
-| a_inc__flex_def : forall Θ θ Θ' α τ τ',        (* Θ,α̂:=τ ⊑[θ,τ'/α̂] Θ', τ' ≡ θτ *)
-    Θ ≤[ θ ] Θ' ->
-    (* the paper's prose side-condition on θ (algorithmic.tex:123): every
+    ((α ~ abind_flex_mono) ++ Θ) ≤[ (α, τ) :: ρ ] Θ'
+| a_inc__flex_def : forall Θ ρ Θ' α τ τ',        (* Θ,α̂:=τ ⊑[θ,τ'/α̂] Θ', τ' ≡ θτ *)
+    Θ ≤[ ρ ] Θ' ->
+    (* the paper's prose side-condition on ρ (algorithmic.tex:123): every
        image is a well-formed monotype in the target *)
     a_wf_ptyp Θ' τ' ->
     mono_ptyp τ' ->
-    Θ' ⊢ τ' ≡ᵗ (msubst_ptyp θ τ) ->
-    ((α ~ abind_flex_mono_def τ) ++ Θ) ≤[ (α, τ') :: θ ] Θ'
-| a_inc__var : forall Θ θ Θ' Ξ x A,              (* Θ,x:A ⊑[θ] Θ',x:θA,Ξ (type entry) *)
-    Θ ≤[ θ ] Θ' ->
+    Θ' ⊢ τ' ≡ᵗ (msubst_ptyp ρ τ) ->
+    ((α ~ abind_flex_mono_def τ) ++ Θ) ≤[ (α, τ') :: ρ ] Θ'
+(* SEMANTIC ENTRIES for the two binder cases (GundryMM10 §3.1; 2026-07-15).
+   The target's binding is preserved UP TO THE EQUATIONAL THEORY, not
+   syntactically: [Θ' ⊢ A' ≡ᵗ θA] instead of [A' = θA].  With syntactic
+   middles the optimality half of thm:complete-consistency is FALSE — the
+   assignment walk moves a flexible below a term binder (forced by wf of the
+   deposited definition), and a competing solution may then use scope that
+   exists only above it (machine-checked counterexample:
+   algo/cex/cex_assign_optimal_syn_middle.v). *)
+| a_inc__var : forall Θ ρ Θ' Ξ x A A',           (* Θ,x:A ⊑[θ] Θ',x:A'≡θA,Ξ (type entry) *)
+    Θ ≤[ ρ ] Θ' ->
+    Θ' ⊢ A' ≡ᵗ (msubst_ptyp ρ A) ->
     a_suffix Ξ ->
-    ((x ~ abind_var_typ A) ++ Θ) ≤[ θ ]
-      (Ξ ++ (x ~ abind_var_typ (msubst_ptyp θ A)) ++ Θ')
-| a_inc__var_skl : forall Θ θ Θ' Ξ x P,          (* Θ,x:P ⊑[θ] Θ',x:θP,Ξ (skeleton entry) *)
-    Θ ≤[ θ ] Θ' ->
+    ((x ~ abind_var_typ A) ++ Θ) ≤[ ρ ]
+      (Ξ ++ (x ~ abind_var_typ A') ++ Θ')
+| a_inc__var_skl : forall Θ ρ Θ' Ξ x P P',       (* Θ,x:P ⊑[θ] Θ',x:P'≡θP,Ξ (skeleton entry) *)
+    Θ ≤[ ρ ] Θ' ->
+    Θ' ⊢ P' ≡ˢ (msubst_pskl ρ P) ->
     a_suffix Ξ ->
-    ((x ~ abind_var_skl P) ++ Θ) ≤[ θ ]
-      (Ξ ++ (x ~ abind_var_skl (msubst_pskl θ P)) ++ Θ')
-| a_inc__tvar : forall Θ θ Θ' Ξ α,               (* Θ,α ⊑[θ] Θ',α,Ξ *)
-    Θ ≤[ θ ] Θ' ->
+    ((x ~ abind_var_skl P) ++ Θ) ≤[ ρ ]
+      (Ξ ++ (x ~ abind_var_skl P') ++ Θ')
+| a_inc__tvar : forall Θ ρ Θ' Ξ α,               (* Θ,α ⊑[θ] Θ',α,Ξ *)
+    Θ ≤[ ρ ] Θ' ->
     a_suffix Ξ ->
-    ((α ~ abind_tvar) ++ Θ) ≤[ θ ] (Ξ ++ (α ~ abind_tvar) ++ Θ')
-where "Θ ≤[ θ ] Θ'" := (a_inc Θ θ Θ') : type_scope.
+    ((α ~ abind_tvar) ++ Θ) ≤[ ρ ] (Ξ ++ (α ~ abind_tvar) ++ Θ')
+where "Θ ≤[ ρ ] Θ'" := (a_inc Θ ρ Θ') : type_scope.
 
 (** [Θ ⊴ Θ'] (paper [⊑{Θ}{Θ'}], identity-metasubstitution shorthand).
 
@@ -179,7 +233,7 @@ where "Θ ≤[ θ ] Θ'" := (a_inc Θ θ Θ') : type_scope.
     never rewritten (the algorithm only adds definitions).  This component
     is what makes the FlexL/FlexR lookup rules stable under [⊴]. *)
 Definition a_isub (Θ Θ' : aenv) : Prop :=
-  (exists θ, is_id_msubst θ /\ Θ ≤[ θ ] Θ') /\
+  (exists ρ, is_id_msubst ρ /\ Θ ≤[ ρ ] Θ') /\
   (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
                binds α (abind_flex_mono_def τ) Θ').
 
@@ -192,27 +246,30 @@ Inductive a_inc_equiv : aenv -> metasubst -> metasubst -> aenv -> Prop :=
 | a_inc_equiv__empty : forall Ξ,
     a_suffix Ξ ->
     a_inc_equiv nil nil nil Ξ
-| a_inc_equiv__flex : forall Θ θ1 θ2 Θ' α τ1 τ2,
-    a_inc_equiv Θ θ1 θ2 Θ' ->
+| a_inc_equiv__flex : forall Θ ρ1 ρ2 Θ' α τ1 τ2,
+    a_inc_equiv Θ ρ1 ρ2 Θ' ->
     Θ' ⊢ τ1 ≡ᵗ τ2 ->
-    a_inc_equiv ((α ~ abind_flex_mono) ++ Θ) ((α, τ1) :: θ1) ((α, τ2) :: θ2) Θ'
-| a_inc_equiv__flex_def : forall Θ θ1 θ2 Θ' α τ τ1 τ2,
-    a_inc_equiv Θ θ1 θ2 Θ' ->
+    a_inc_equiv ((α ~ abind_flex_mono) ++ Θ) ((α, τ1) :: ρ1) ((α, τ2) :: ρ2) Θ'
+| a_inc_equiv__flex_def : forall Θ ρ1 ρ2 Θ' α τ τ1 τ2,
+    a_inc_equiv Θ ρ1 ρ2 Θ' ->
     Θ' ⊢ τ1 ≡ᵗ τ2 ->
-    Θ' ⊢ τ1 ≡ᵗ (msubst_ptyp θ1 τ) ->
-    a_inc_equiv ((α ~ abind_flex_mono_def τ) ++ Θ) ((α, τ1) :: θ1) ((α, τ2) :: θ2) Θ'
-| a_inc_equiv__var : forall Θ θ1 θ2 Θ' Ξ x A,
-    a_inc_equiv Θ θ1 θ2 Θ' ->
+    Θ' ⊢ τ1 ≡ᵗ (msubst_ptyp ρ1 τ) ->
+    a_inc_equiv ((α ~ abind_flex_mono_def τ) ++ Θ) ((α, τ1) :: ρ1) ((α, τ2) :: ρ2) Θ'
+(* semantic entries, mirroring [a_inc__var]/[a_inc__var_skl] above *)
+| a_inc_equiv__var : forall Θ ρ1 ρ2 Θ' Ξ x A A',
+    a_inc_equiv Θ ρ1 ρ2 Θ' ->
+    Θ' ⊢ A' ≡ᵗ (msubst_ptyp ρ1 A) ->
     a_suffix Ξ ->
-    a_inc_equiv ((x ~ abind_var_typ A) ++ Θ) θ1 θ2
-                (Ξ ++ (x ~ abind_var_typ (msubst_ptyp θ1 A)) ++ Θ')
-| a_inc_equiv__var_skl : forall Θ θ1 θ2 Θ' Ξ x P,
-    a_inc_equiv Θ θ1 θ2 Θ' ->
+    a_inc_equiv ((x ~ abind_var_typ A) ++ Θ) ρ1 ρ2
+                (Ξ ++ (x ~ abind_var_typ A') ++ Θ')
+| a_inc_equiv__var_skl : forall Θ ρ1 ρ2 Θ' Ξ x P P',
+    a_inc_equiv Θ ρ1 ρ2 Θ' ->
+    Θ' ⊢ P' ≡ˢ (msubst_pskl ρ1 P) ->
     a_suffix Ξ ->
-    a_inc_equiv ((x ~ abind_var_skl P) ++ Θ) θ1 θ2
-                (Ξ ++ (x ~ abind_var_skl (msubst_pskl θ1 P)) ++ Θ')
-| a_inc_equiv__tvar : forall Θ θ1 θ2 Θ' Ξ α,
-    a_inc_equiv Θ θ1 θ2 Θ' ->
+    a_inc_equiv ((x ~ abind_var_skl P) ++ Θ) ρ1 ρ2
+                (Ξ ++ (x ~ abind_var_skl P') ++ Θ')
+| a_inc_equiv__tvar : forall Θ ρ1 ρ2 Θ' Ξ α,
+    a_inc_equiv Θ ρ1 ρ2 Θ' ->
     a_suffix Ξ ->
-    a_inc_equiv ((α ~ abind_tvar) ++ Θ) θ1 θ2
+    a_inc_equiv ((α ~ abind_tvar) ++ Θ) ρ1 ρ2
                 (Ξ ++ (α ~ abind_tvar) ++ Θ').

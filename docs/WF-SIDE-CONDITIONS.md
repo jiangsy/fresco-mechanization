@@ -46,7 +46,7 @@ GhostForall binds:
     but NOT  □ ⊳ ∀α. ⊤.(α→α)
 
 Refinement is therefore **not transitive** — machine-checked in
-`algo/cex_refine_not_transitive.v` (`ad_refine_syn_not_transitive`, Qed,
+`algo/cex/cex_refine_not_transitive.v` (`ad_refine_syn_not_transitive`, Qed,
 axiom-free) — which kills `lemma:precision-preserves-refinement`
 (full-algo-spec.tex:716) and with it completeness.
 

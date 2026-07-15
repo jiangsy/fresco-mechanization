@@ -1,0 +1,365 @@
+(** COUNTEREXAMPLE (historical, machine-checked): with the ORIGINAL
+    SYNTACTIC-MIDDLE information increase, the OPTIMALITY half of
+    [thm:complete-consistency] (part 3, assignment; part 2 through
+    Flex-Flex-Skip') is FALSE.
+
+    ------------------------------------------------------------------------
+    STATUS.  Found 2026-07-15; the mechanization has since ADOPTED the fix —
+    GMM-style SEMANTIC ENTRIES (GundryMM10 §3.1: an increase preserves each
+    entry up to the equational theory, never syntactically) — in [a_inc]'s
+    var/var_skl rules (algo/def_meta.v).  This file keeps the refutation
+    against a LOCAL COPY of the original rules ([a_inc_syn] below), plus the
+    positive twin: under the adopted semantic rules the very same instance
+    DOES factor ([cex_zeta_semantic]).  The paper still states the syntactic
+    rules (algorithmic.tex:91-121) — see the flagged note after
+    thm:complete-consistency (sections/appendices/optimality-cex.tex) and
+    docs/PAPER-GAPS.md.
+
+    ------------------------------------------------------------------------
+    THE PROBLEM.  Two ingredients of the original definitions conspire:
+
+    1. FLEX MIGRATION.  [Assign-Depend] places a payload flexible [X̂] into
+       the pending suffix [Ξ]; [Assign-SkipTmVar] threads [Ξ] BELOW walked
+       term binders; [Assign-SolveM] deposits it at the subject's position.
+       The migration is FORCED by wf: the deposited definition mentions [X̂].
+
+    2. SYNTACTIC MIDDLES + POSITIONAL WF: the original var rule
+
+           Θ ⊑[θ] Θ'
+           --------------------------------
+           Θ,x:P ⊑[θ] Θ',x:θP,Ξ
+
+       pins the target's binder payload to the syntactic [θP], and flex
+       images must be well-formed in the POSITIONAL REMAINDER.
+
+    A competing solution may solve [X̂] with a name [δ̂] it allocates ABOVE
+    the walked binder [y] (legal at [X̂]'s ORIGINAL position); the factoring
+    must then reproduce a binder payload mentioning [δ̂] — [ζX̂ = δ̂]
+    SYNTACTICALLY — while [X̂] sits BELOW [y] in [Θ₁], out of [δ̂]'s scope.
+
+    THE INSTANCE (five distinct atoms c, X, y, α, δ):
+
+      Θ₀ = c : X̂→(),  X̂,  y : (),  α̂          P = X̂→()     (assign α̂ ≔ P)
+      Θ₁ = c : X̂→(),  y : (),  α̂ ≔ X̂→(),  X̂             (X̂ moved below y)
+      θ  = [δ̂/X̂, ()→()/α̂]   into   Θ = c : δ̂→(),  δ̂ ≔ (),  y : ()
+
+    Under [a_inc_syn] no ζ exists ([cex_no_zeta_syn]); under the adopted
+    semantic [a_inc], ζ = [()→()/α̂, ()/X̂] factors, using the depth-legal
+    representative [()] of [δ̂]'s ≡ᵗ-class ([cex_zeta_semantic]).
+
+    Everything below is Qed and axiom-free. *)
+
+Require Import Coq.Lists.List.
+Require Import Metalib.Metatheory.
+
+Require Import src.frost.notations.
+Require Import src.frost.coercions.
+Require Import src.frost.predicates.
+Require Import src.frost.decl.def_extra.
+Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_meta.
+Require Import src.frost.algo.def_decorated.
+Require Import src.frost.algo.def_decl_algo.
+Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_consis_complete.
+
+Set Implicit Arguments.
+
+(* ===================================================================== *)
+(*  The ORIGINAL, syntactic-middle information increase (local copy).     *)
+(*  Identical to [a_inc] except the var/var_skl middles.                  *)
+(* ===================================================================== *)
+
+Inductive a_inc_syn : aenv -> metasubst -> aenv -> Prop :=
+| a_inc_syn__empty : forall Ξ,
+    a_suffix Ξ ->
+    a_inc_syn nil nil Ξ
+| a_inc_syn__flex : forall Θ ρ Θ' α τ,
+    a_inc_syn Θ ρ Θ' ->
+    a_wf_ptyp Θ' τ ->
+    mono_ptyp τ ->
+    a_inc_syn ((α ~ abind_flex_mono) ++ Θ) ((α, τ) :: ρ) Θ'
+| a_inc_syn__flex_def : forall Θ ρ Θ' α τ τ',
+    a_inc_syn Θ ρ Θ' ->
+    a_wf_ptyp Θ' τ' ->
+    mono_ptyp τ' ->
+    Θ' ⊢ τ' ≡ᵗ (msubst_ptyp ρ τ) ->
+    a_inc_syn ((α ~ abind_flex_mono_def τ) ++ Θ) ((α, τ') :: ρ) Θ'
+| a_inc_syn__var : forall Θ ρ Θ' Ξ x A,
+    a_inc_syn Θ ρ Θ' ->
+    a_suffix Ξ ->
+    a_inc_syn ((x ~ abind_var_typ A) ++ Θ) ρ
+      (Ξ ++ (x ~ abind_var_typ (msubst_ptyp ρ A)) ++ Θ')
+| a_inc_syn__var_skl : forall Θ ρ Θ' Ξ x P,
+    a_inc_syn Θ ρ Θ' ->
+    a_suffix Ξ ->
+    a_inc_syn ((x ~ abind_var_skl P) ++ Θ) ρ
+      (Ξ ++ (x ~ abind_var_skl (msubst_pskl ρ P)) ++ Θ')
+| a_inc_syn__tvar : forall Θ ρ Θ' Ξ α,
+    a_inc_syn Θ ρ Θ' ->
+    a_suffix Ξ ->
+    a_inc_syn ((α ~ abind_tvar) ++ Θ) ρ (Ξ ++ (α ~ abind_tvar) ++ Θ').
+
+Section Cex.
+
+(* Five distinct names. *)
+Variables c X y alpha delta : atom.
+Hypothesis Hd1 : c <> X.    Hypothesis Hd2 : c <> y.
+Hypothesis Hd3 : c <> alpha.  Hypothesis Hd4 : c <> delta.
+Hypothesis Hd5 : X <> y.    Hypothesis Hd6 : X <> alpha.
+Hypothesis Hd7 : X <> delta.  Hypothesis Hd8 : y <> alpha.
+Hypothesis Hd9 : y <> delta.  Hypothesis Hd10 : alpha <> delta.
+
+(* The assignment payload P = X̂ → () and its guess. *)
+Definition Pc : pskl := pskl_arrow (pskl_var_f X) pskl_unit.
+Definition tauP : ptyp := ptyp_arrow (ptyp_var_f X) ptyp_unit.
+
+(* The input context  Θ₀ = c : X̂→(), X̂, y : (), α̂. *)
+Definition Th0 : aenv :=
+  (c ~ abind_var_typ tauP) ++
+  (X ~ abind_flex_mono) ++
+  (y ~ abind_var_typ ptyp_unit) ++
+  (alpha ~ abind_flex_mono) ++ nil.
+
+(* The algorithm's output  Θ₁ = c : X̂→(), y : (), α̂ ≔ X̂→(), X̂. *)
+Definition Th1 : aenv :=
+  (c ~ abind_var_typ tauP) ++
+  (y ~ abind_var_typ ptyp_unit) ++
+  (alpha ~ abind_flex_mono_def tauP) ++
+  (X ~ abind_flex_mono) ++ nil.
+
+(* The competing solution:  θ = [δ̂/X̂, ()→()/α̂]  into
+   Θ = c : δ̂→(), δ̂ ≔ (), y : (). *)
+Definition th : metasubst :=
+  (X, ptyp_var_f delta) :: (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: nil.
+Definition Th : aenv :=
+  (c ~ abind_var_typ (ptyp_arrow (ptyp_var_f delta) ptyp_unit)) ++
+  (delta ~ abind_flex_mono_def ptyp_unit) ++
+  (y ~ abind_var_typ ptyp_unit) ++ nil.
+
+(* ------------------------------------------------------------------ *)
+(*  1. The algorithm's run:  Θ₀ ⊲[∅][·] α̂ ≔ P ⊣ Θ₁  (unchanged rules).  *)
+(* ------------------------------------------------------------------ *)
+
+Lemma cex_run : Th0 ⊲[ empty ][ nil ] alpha ≔ Pc ⊣ Th1.
+Proof.
+  unfold Th0, Th1.
+  apply a_assign__skip_tm_var.
+  apply a_assign__depend;
+    [ auto | unfold Pc; simpl; clear; fsetdec | ].
+  simpl. apply a_assign__skip_tm_var.
+  change (((alpha ~ abind_flex_mono) ++ nil)
+            ⊲[ add y (add c empty) ][ (X ~ abind_flex_mono) ] alpha ≔ Pc
+            ⊣ ((alpha ~ abind_flex_mono_def tauP) ++ nil ++ (X ~ abind_flex_mono) ++ nil)).
+  apply a_assign__solve_m.
+  - unfold Pc; simpl. clear - Hd6. fsetdec.
+  - unfold Pc, tauP.
+    change (@nil (atom * abind)) with (@nil (atom * abind) ++ @nil (atom * abind)).
+    apply a_guess_mono__arrow;
+      [ apply a_guess_mono__var | apply a_guess_mono__unit ].
+  - unfold tauP. apply mono_ptyp__arrow;
+      [ apply mono_ptyp__var | apply mono_ptyp__unit ].
+  - constructor.
+  - intros γ Hγ. simpl in Hγ. exfalso. clear - Hγ. fsetdec.
+Qed.
+
+(* ------------------------------------------------------------------ *)
+(*  2. The competing solution is genuine: wf target + join.             *)
+(* ------------------------------------------------------------------ *)
+
+Lemma cex_wfTh : a_wf_aenv Th.
+Proof.
+  unfold Th.
+  apply a_wf_aenv__var_typ; simpl.
+  { clear - Hd2 Hd4. fsetdec. }
+  { apply a_wf_ptyp__arrow;
+      [ apply a_wf_ptyp__var; right; right; exists ptyp_unit;
+        unfold binds; left; reflexivity
+      | apply a_wf_ptyp__unit ]. }
+  apply a_wf_aenv__flex_def; simpl.
+  { clear - Hd9. fsetdec. }
+  { apply a_wf_ptyp__unit. }
+  { apply mono_ptyp__unit. }
+  apply a_wf_aenv__var_typ; simpl.
+  { clear. fsetdec. }
+  { apply a_wf_ptyp__unit. }
+  apply a_wf_aenv__nil.
+Qed.
+
+Lemma cex_join :
+  empty ⨟ Th ⊨ₛᵃ (pskl_to_uskl (msubst_pskl th Pc))
+              ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha))).
+Proof.
+  unfold Pc, th. simpl.
+  destruct (X == X) as [_|]; [ | contradiction ].
+  destruct (alpha == X) as [Heq|_]; [ exfalso; auto | ].
+  destruct (alpha == alpha) as [_|]; [ | contradiction ].
+  simpl.
+  apply ad_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty).
+  - apply ad_pat_consis__flex_l with (τ := ptyp_unit).
+    + unfold Th, binds; simpl. right. left. reflexivity.
+    + apply ad_pat_consis__unit. clear; fsetdec.
+  - apply ad_pat_consis__unit. clear; fsetdec.
+  - clear; fsetdec.
+Qed.
+
+(* ------------------------------------------------------------------ *)
+(*  3. The competing increment, in the ORIGINAL syntactic relation.     *)
+(* ------------------------------------------------------------------ *)
+
+Lemma cex_msubst_th_tauP :
+  msubst_ptyp th tauP = ptyp_arrow (ptyp_var_f delta) ptyp_unit.
+Proof.
+  unfold th, tauP. simpl.
+  destruct (X == X); [ reflexivity | contradiction ].
+Qed.
+
+Lemma cex_inc_syn : a_inc_syn (nil ++ Th0) th Th.
+Proof.
+  simpl. unfold Th0, Th.
+  assert (D : a_inc_syn
+              ((c ~ abind_var_typ tauP) ++
+               (X ~ abind_flex_mono) ++
+               (y ~ abind_var_typ ptyp_unit) ++
+               (alpha ~ abind_flex_mono) ++ nil)
+              th
+              (nil ++
+               (c ~ abind_var_typ (msubst_ptyp th tauP)) ++
+               (delta ~ abind_flex_mono_def ptyp_unit) ++
+               (y ~ abind_var_typ ptyp_unit) ++ nil)).
+  2:{ rewrite cex_msubst_th_tauP in D. exact D. }
+  apply a_inc_syn__var; [ | constructor ].
+  (* X̂ ↦ δ̂ : in scope HERE (above y) *)
+  unfold th. apply a_inc_syn__flex.
+  2:{ apply a_wf_ptyp__var. right. right. exists ptyp_unit.
+      unfold binds; simpl. left. reflexivity. }
+  2:{ apply mono_ptyp__var. }
+  replace ((delta, abind_flex_mono_def ptyp_unit)
+             :: (y ~ abind_var_typ ptyp_unit) ++ nil)
+    with ((delta ~ abind_flex_mono_def ptyp_unit) ++
+          (y ~ abind_var_typ
+                 (msubst_ptyp ((alpha, ptyp_arrow ptyp_unit ptyp_unit) :: nil)
+                              ptyp_unit)) ++ nil)
+    by reflexivity.
+  apply a_inc_syn__var.
+  2:{ apply a_suffix__cons; constructor. }
+  apply a_inc_syn__flex.
+  2:{ apply a_wf_ptyp__arrow; apply a_wf_ptyp__unit. }
+  2:{ apply mono_ptyp__arrow; apply mono_ptyp__unit. }
+  apply a_inc_syn__empty. constructor.
+Qed.
+
+(* ------------------------------------------------------------------ *)
+(*  4. NO SYNTACTIC FACTORING EXISTS:  ¬ ∃ζ, a_inc_syn Θ₁ ζ Θ.          *)
+(* ------------------------------------------------------------------ *)
+
+Lemma cex_no_zeta_syn : forall ζ, ~ a_inc_syn Th1 ζ Th.
+Proof.
+  intros ζ Hζ. unfold Th1, Th in Hζ.
+  inversion Hζ; subst.
+  (* c's middle : Ξ must be nil, and it forces ζX̂ = δ̂ *)
+  destruct Ξ as [ | [ac bc] Ξ' ].
+  2:{ simpl in H4. inversion H4; subst.
+      inversion H5 as [ | ? ? ? Hs' Hb ]; subst. inversion Hb. }
+  simpl in H4. inversion H4. subst Θ'.
+  (* y-split of the tail increment *)
+  inversion H3; subst.
+  destruct Ξ as [ | e1 Xi1 ].
+  { simpl in H8. inversion H8. }
+  destruct Xi1 as [ | e2 Xi2 ].
+  2:{ simpl in H8. inversion H8; subst.
+      match goal with
+      | Hx : Xi2 ++ (y, abind_var_typ ptyp_unit) :: _ = nil |- _ =>
+          destruct Xi2; simpl in Hx; inversion Hx
+      | Hx : _ :: _ = nil |- _ => inversion Hx
+      | Hx : nil = _ :: _ |- _ => inversion Hx
+      | Hx : Xi2 ++ _ :: _ = _ |- _ =>
+          destruct Xi2; simpl in Hx; inversion Hx
+      end. }
+  simpl in H8. inversion H8; subst.
+  (* α̂-def entry against the EMPTY remainder *)
+  inversion H7; subst.
+  simpl in H0.
+  destruct (X == alpha) as [Heq | _]; [ exfalso; apply Hd6; exact Heq | ].
+  (* X̂'s entry against the EMPTY remainder *)
+  inversion H6; subst.
+  simpl in H0.
+  destruct (X == X) as [_ | Hne]; [ | contradiction ].
+  match goal with
+  | Heqτ : _ = ptyp_var_f delta |- _ => rewrite Heqτ in *
+  end.
+  assert (Hin : delta `in` ftvar_in_ptyp (ptyp_var_f delta))
+    by (simpl; fsetdec).
+  match goal with
+  | Hwfδ : a_wf_ptyp nil (ptyp_var_f delta) |- _ =>
+      pose proof (a_wf_ptyp_ftv_tvarish Hwfδ Hin) as Hbt
+  end.
+  destruct Hbt as [Hb | [Hb | [t Hb]]]; inversion Hb.
+Qed.
+
+(* ------------------------------------------------------------------ *)
+(*  5. THE ADOPTED SEMANTIC RULE DISSOLVES IT: the same instance         *)
+(*     factors through  ζ = [()→()/α̂, ()/X̂]  — the binder middle is     *)
+(*     matched up to ≡ᵗ (δ̂→() ≡ᵗ ()→() since δ̂ ≔ ()).                   *)
+(* ------------------------------------------------------------------ *)
+
+Definition zeta_sem : metasubst :=
+  (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: (X, ptyp_unit) :: nil.
+
+Lemma cex_zeta_semantic : Th1 ≤[ zeta_sem ] Th.
+Proof.
+  unfold Th1, Th, zeta_sem.
+  (* c : middle  δ̂→()  ≡ᵗ  ζ(X̂→()) = ()→()  over the remainder *)
+  eapply a_inc__var with (Ξ := nil)
+           (A' := ptyp_arrow (ptyp_var_f delta) ptyp_unit);
+    [ | | constructor ].
+  2:{ unfold tauP. simpl.
+      destruct (X == alpha) as [Heq|_]; [ exfalso; auto | ].
+      destruct (X == X) as [_|]; [ | contradiction ].
+      apply a_tyequiv__arrow;
+        [ | apply a_tyequiv__refl; constructor ].
+      apply a_tyequiv__flex_def.
+      unfold binds; simpl. left. reflexivity. }
+  (* y : middle () ≡ᵗ () under the suffix δ̂≔() *)
+  eapply a_inc__var with (Ξ := (delta ~ abind_flex_mono_def ptyp_unit))
+           (A' := ptyp_unit).
+  2:{ simpl. apply a_tyequiv__refl. constructor. }
+  2:{ apply a_suffix__cons; constructor. }
+  (* α̂ ≔ X̂→() : image ()→(), and ζ(X̂→()) = ()→() *)
+  apply a_inc__flex_def.
+  2:{ apply a_wf_ptyp__arrow; apply a_wf_ptyp__unit. }
+  2:{ apply mono_ptyp__arrow; apply mono_ptyp__unit. }
+  2:{ unfold tauP. simpl.
+      destruct (X == alpha) as [Heq|_]; [ exfalso; auto | ].
+      destruct (X == X) as [_|]; [ | contradiction ].
+      apply a_tyequiv__refl. constructor; constructor. }
+  (* X̂ : image () *)
+  apply a_inc__flex.
+  2:{ apply a_wf_ptyp__unit. }
+  2:{ apply mono_ptyp__unit. }
+  apply a_inc__empty. constructor.
+Qed.
+
+(* ------------------------------------------------------------------ *)
+(*  6. THE PACKAGED REFUTATION of syntactic-middle optimality: the      *)
+(*     algorithm runs, (θ; Θ) is a genuine competing solution (wf +      *)
+(*     join + syntactic increment), and no syntactic factoring exists.  *)
+(* ------------------------------------------------------------------ *)
+
+Theorem cex_syn_middle_optimality_false :
+  Th0 ⊲[ empty ][ nil ] alpha ≔ Pc ⊣ Th1 /\
+  a_inc_syn (nil ++ Th0) th Th /\
+  a_wf_aenv Th /\
+  (empty ⨟ Th ⊨ₛᵃ (pskl_to_uskl (msubst_pskl th Pc))
+              ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha)))) /\
+  (forall ζ, ~ a_inc_syn Th1 ζ Th).
+Proof.
+  repeat split.
+  - exact cex_run.
+  - exact cex_inc_syn.
+  - exact cex_wfTh.
+  - exact cex_join.
+  - exact cex_no_zeta_syn.
+Qed.
+
+End Cex.

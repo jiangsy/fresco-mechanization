@@ -83,10 +83,10 @@ Qed.
 (*  Target weakening of information increase, and ⊴ cons congruences      *)
 (* ===================================================================== *)
 
-Lemma a_inc_target_weaken : forall Θ θ Θ' Ξ,
-  Θ ≤[ θ ] Θ' ->
+Lemma a_inc_target_weaken : forall Θ ρ Θ' Ξ,
+  Θ ≤[ ρ ] Θ' ->
   a_suffix Ξ ->
-  Θ ≤[ θ ] (Ξ ++ Θ').
+  Θ ≤[ ρ ] (Ξ ++ Θ').
 Proof.
   intros * Hinc; revert Ξ; induction Hinc; intros Ξ0 HΞ0.
   - apply a_inc__empty. apply a_suffix_app; auto.
@@ -111,8 +111,8 @@ Lemma a_isub_cons_flex : forall Θ Θ' γ,
   Θ ⊴ Θ' ->
   ((γ ~ abind_flex_mono) ++ Θ) ⊴ ((γ ~ abind_flex_mono) ++ Θ').
 Proof.
-  intros * [[θ [Hid Hinc]] Hd]. split.
-  - exists ((γ, ptyp_var_f γ) :: θ). split.
+  intros * [[ρ [Hid Hinc]] Hd]. split.
+  - exists ((γ, ptyp_var_f γ) :: ρ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc__flex.
     + apply a_inc_target_weaken; auto.
@@ -130,8 +130,8 @@ Lemma a_isub_cons_flex_def : forall Θ Θ' γ τ,
   lc_ptyp τ ->
   ((γ ~ abind_flex_mono_def τ) ++ Θ) ⊴ ((γ ~ abind_flex_mono_def τ) ++ Θ').
 Proof.
-  intros * [[θ [Hid Hinc]] Hd] Hlc. split.
-  - exists ((γ, ptyp_var_f γ) :: θ). split.
+  intros * [[ρ [Hid Hinc]] Hd] Hlc. split.
+  - exists ((γ, ptyp_var_f γ) :: ρ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc__flex_def.
     + apply a_inc_target_weaken; auto.
@@ -149,14 +149,15 @@ Qed.
 
 Lemma a_isub_cons_var_typ : forall Θ Θ' x A,
   Θ ⊴ Θ' ->
+  lc_ptyp A ->
   ((x ~ abind_var_typ A) ++ Θ) ⊴ ((x ~ abind_var_typ A) ++ Θ').
 Proof.
-  intros * [[θ [Hid Hinc]] Hd]. split.
-  - exists θ. split; auto.
+  intros * [[ρ [Hid Hinc]] Hd] Hlc. split.
+  - exists ρ. split; auto.
     replace ((x ~ abind_var_typ A) ++ Θ')
-      with (nil ++ (x ~ abind_var_typ (msubst_ptyp θ A)) ++ Θ')
-      by (simpl; rewrite msubst_ptyp_id; auto).
-    apply a_inc__var; auto. constructor.
+      with (nil ++ (x ~ abind_var_typ A) ++ Θ') by reflexivity.
+    apply a_inc__var; auto; [ | constructor ].
+    rewrite msubst_ptyp_id; auto. apply a_tyequiv__refl; auto.
   - intros α τ0 Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
       [ discriminate | ].
@@ -165,14 +166,15 @@ Qed.
 
 Lemma a_isub_cons_var_skl : forall Θ Θ' x P,
   Θ ⊴ Θ' ->
+  lc_pskl P ->
   ((x ~ abind_var_skl P) ++ Θ) ⊴ ((x ~ abind_var_skl P) ++ Θ').
 Proof.
-  intros * [[θ [Hid Hinc]] Hd]. split.
-  - exists θ. split; auto.
+  intros * [[ρ [Hid Hinc]] Hd] Hlc. split.
+  - exists ρ. split; auto.
     replace ((x ~ abind_var_skl P) ++ Θ')
-      with (nil ++ (x ~ abind_var_skl (msubst_pskl θ P)) ++ Θ')
-      by (simpl; rewrite msubst_pskl_id; auto).
-    apply a_inc__var_skl; auto. constructor.
+      with (nil ++ (x ~ abind_var_skl P) ++ Θ') by reflexivity.
+    apply a_inc__var_skl; auto; [ | constructor ].
+    rewrite msubst_pskl_id; auto. apply a_pskl_tyequiv__refl; auto.
   - intros α τ0 Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
       [ discriminate | ].
@@ -201,6 +203,29 @@ Proof.
   intros * H; induction H; auto.
 Qed.
 
+Lemma a_wf_pskl_lc : forall Θ P, a_wf_pskl Θ P -> lc_pskl P.
+Proof.
+  intros * H; induction H; auto.
+Qed.
+
+(** Well-formed contexts have locally closed binding payloads — the bridge
+    that feeds [lc_aenv]-hypothesised reflexivity ([a_isub_refl] below). *)
+Lemma a_wf_aenv_lc_aenv : forall Θ, a_wf_aenv Θ -> lc_aenv Θ.
+Proof.
+  intros Θ H; induction H; constructor; simpl; auto.
+  - eapply a_wf_pskl_lc; eauto.
+  - eapply a_wf_ptyp_lc; eauto.
+Qed.
+
+#[export] Hint Resolve a_wf_aenv_lc_aenv : core.
+
+(** The unconditional [a_isub_refl] of the syntactic-middle era, restored
+    for well-formed contexts. *)
+Lemma a_isub_refl : forall Θ, a_wf_aenv Θ -> Θ ⊴ Θ.
+Proof.
+  intros Θ Hwf. apply a_isub_refl_lc; auto.
+Qed.
+
 (** Declaration-only suffixes (the paper's "Ξ only contains declarations
     of flexible variables"). *)
 Inductive a_decls : aenv -> Prop :=
@@ -215,10 +240,10 @@ Proof.
   apply (a_suffix__cons γ (b := abind_flex_mono)); auto; constructor.
 Qed.
 
-Lemma a_inc_prepend_flex_src : forall Θ θ Θ' γ,
-  Θ ≤[ θ ] Θ' ->
+Lemma a_inc_prepend_flex_src : forall Θ ρ Θ' γ,
+  Θ ≤[ ρ ] Θ' ->
   a_binds_tvar γ Θ' ->
-  ((γ ~ abind_flex_mono) ++ Θ) ≤[ (γ, ptyp_var_f γ) :: θ ] Θ'.
+  ((γ ~ abind_flex_mono) ++ Θ) ≤[ (γ, ptyp_var_f γ) :: ρ ] Θ'.
 Proof.
   intros * Hinc Hb.
   apply a_inc__flex; auto;
@@ -237,9 +262,9 @@ Proof.
   assert (Hle' : (Ξ' ++ Θ) ⊴ Θ').
   { apply IH; auto;
       try (intros γ0 Hb0; apply Hvis; unfold binds; right; auto). }
-  destruct Hle' as [[θ [Hid Hinc]] Hd].
+  destruct Hle' as [[ρ [Hid Hinc]] Hd].
   split.
-  - exists ((γ, ptyp_var_f γ) :: θ). split.
+  - exists ((γ, ptyp_var_f γ) :: ρ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc_prepend_flex_src; auto;
       try (apply Hvis; unfold binds; left; reflexivity).
@@ -255,7 +280,7 @@ Lemma a_isub_binds_flex : forall Θ Θ' γ,
   binds γ abind_flex_mono Θ ->
   a_binds_tvar γ Θ'.
 Proof.
-  intros * [[θ [Hid Hinc]] _] Hb. eauto using a_inc_binds_flex.
+  intros * [[ρ [Hid Hinc]] _] Hb. eauto using a_inc_binds_flex.
 Qed.
 
 (** [guess^TY] emits a declaration-only fresh suffix. *)
@@ -538,8 +563,8 @@ Lemma a_isub_target_weaken : forall Θ Θ' Ξ,
   a_suffix Ξ ->
   Θ ⊴ (Ξ ++ Θ').
 Proof.
-  intros * [[θ [Hid Hinc]] Hd] HΞ. split.
-  - exists θ. eauto using a_inc_target_weaken.
+  intros * [[ρ [Hid Hinc]] Hd] HΞ. split.
+  - exists ρ. eauto using a_inc_target_weaken.
   - intros α τ0 Hb. unfold binds; apply in_or_app; right. apply Hd; auto.
 Qed.
 
@@ -548,10 +573,10 @@ Lemma a_isub_strengthen_decls_src : forall Ξ Θ Θ',
   (Ξ ++ Θ) ⊴ Θ' ->
   Θ ⊴ Θ'.
 Proof.
-  intros * Hdecl [[θ [Hid Hinc]] Hd]. split.
-  - edestruct a_inc_strengthen_suffix_src as [θ' [Hid' Hinc']];
+  intros * Hdecl [[ρ [Hid Hinc]] Hd]. split.
+  - edestruct a_inc_strengthen_suffix_src as [ρ' [Hid' Hinc']];
       [ eapply a_decls_suffix; eauto | exact Hinc | ].
-    exists θ'. auto.
+    exists ρ'. auto.
   - intros α τ0 Hb. apply Hd.
     unfold binds in *; apply in_or_app; auto.
 Qed.

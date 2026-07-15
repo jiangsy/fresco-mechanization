@@ -2577,7 +2577,7 @@ Proof.
            assign_sound_post, unify_sound_post, consis_sound_post.
   - (* Assign-UnivGhost-Id *)
     intros F Θ0 α Hdecl Hwf HwfP.
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ simpl; clear; fsetdec | ].
     split; [ intros γ Hγ; left; exact Hγ | ].
@@ -2619,7 +2619,9 @@ Proof.
           | inversion Hb' ]
         | ].
       assert (Hs1 : Θ0 ⊴ ((βs ++ Ξ) ++ Θ0)).
-      { apply a_isub_weaken_suffix.
+      { pose proof (a_wf_aenv_lc_aenv HwfΞΘ) as Hlca.
+        apply lc_aenv_app_inv in Hlca as [_ Hlc0].
+        apply a_isub_weaken_suffix; [ exact Hlc0 | ].
         apply a_suffix_app; auto using a_decls_suffix. }
       first [ rewrite <- app_assoc in Hs1 | rewrite app_assoc in Hs1 ].
       apply a_isub_target_weaken with (Ξ := (α ~ abind_flex_mono_def τ))
@@ -3169,7 +3171,7 @@ Proof.
         apply a_binds_tvar_weaken_cons.
         eapply a_isub_binds_flex; [ exact Hle | ].
         unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_var_typ. exact Hle0. }
+      apply a_isub_cons_var_typ; [ exact Hle0 | eapply a_wf_ptyp_lc; exact HQwf ]. }
     split.
     { apply a_wf_aenv__var_typ; auto.
       eapply a_wf_ptyp_isub; eauto. }
@@ -3257,7 +3259,7 @@ Proof.
         apply a_binds_tvar_weaken_cons.
         eapply a_isub_binds_flex; [ exact Hle | ].
         unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_var_skl. exact Hle0. }
+      apply a_isub_cons_var_skl; [ exact Hle0 | eapply a_wf_pskl_lc; exact HQwf ]. }
     split.
     { apply a_wf_aenv__var; auto.
       eapply a_wf_pskl_isub; eauto. }
@@ -3309,7 +3311,7 @@ Proof.
     apply ad_pat_consis_weaken_cons. exact Hcons.
   - (* U-Flex-Flex-Id *)
     intros F Θ0 α Hb Hwf.
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
     split; [ intros x Hx; left; exact Hx | ].
@@ -3329,8 +3331,9 @@ Proof.
       by (destruct Hfβ as [Hb | [τ Hb]]; apply binds_In in Hb; auto).
     split.
     { split.
-      - destruct (a_inc_refl_gen Θ0
-          (Ξ0 := (α ~ abind_flex_mono_def (ptyp_var_f β))))
+      - destruct (a_inc_refl_gen
+          (Ξ0 := (α ~ abind_flex_mono_def (ptyp_var_f β)))
+          (a_wf_aenv_lc_aenv Hwf0))
           as [θ0 [Hid0 Hinc0]].
         { apply (a_suffix__cons α (b := abind_flex_mono_def (ptyp_var_f β)));
             constructor. }
@@ -3377,8 +3380,9 @@ Proof.
       by (destruct Hfα as [Hb | [τ Hb]]; apply binds_In in Hb; auto).
     split.
     { split.
-      - destruct (a_inc_refl_gen Θ0
-          (Ξ0 := (β ~ abind_flex_mono_def (ptyp_var_f α))))
+      - destruct (a_inc_refl_gen
+          (Ξ0 := (β ~ abind_flex_mono_def (ptyp_var_f α)))
+          (a_wf_aenv_lc_aenv Hwf0))
           as [θ0 [Hid0 Hinc0]].
         { apply (a_suffix__cons β (b := abind_flex_mono_def (ptyp_var_f α)));
             constructor. }
@@ -3591,8 +3595,12 @@ Proof.
     split.
     { destruct Hb as [-> | [[Qb ->] | [Qb ->]]];
         [ apply a_isub_cons_tvar; auto
-        | apply a_isub_cons_var_typ; auto
-        | apply a_isub_cons_var_skl; auto ]. }
+        | apply a_isub_cons_var_typ; auto;
+          apply a_wf_aenv_var_typ_inv in Hwf; destruct Hwf as [_ [HQwf _]];
+          eapply a_wf_ptyp_lc; exact HQwf
+        | apply a_isub_cons_var_skl; auto;
+          apply a_wf_aenv_var_skl_inv in Hwf; destruct Hwf as [_ [HQwf _]];
+          eapply a_wf_pskl_lc; exact HQwf ]. }
     split.
     { destruct Hb as [-> | [[Qb ->] | [Qb ->]]].
       - apply a_wf_aenv__tvar; auto.
@@ -3638,7 +3646,7 @@ Proof.
     apply a_tyequiv_weaken_cons. exact Heq1.
   - (* C-Ghost *)
     intros F Δ1 Δ2 Θ0 P0 Hint Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
     split; [ intros x Hx; left; exact Hx | ].
@@ -3656,7 +3664,7 @@ Proof.
     + apply ad_refine_pskl_f__hole; [ exact Hint | exact HwfP0 ].
   - (* C-Unit *)
     intros F Δ1 Δ2 Θ0 Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
     split; [ intros x Hx; left; exact Hx | ].
@@ -3671,7 +3679,7 @@ Proof.
     + apply ad_refine_pskl_f__unit.
   - (* C-Rigid *)
     intros F Δ1 Δ2 Θ0 α Hbind Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
     split; [ intros x Hx; left; exact Hx | ].
@@ -4420,7 +4428,7 @@ Proof.
       { intros γ τ Hb. eapply (Hnfd1 γ τ) in Hb. clear - Hb. fsetdec. }
   - (* C-GhostR *)
     intros F Δ1 Δ2 Θ0 P Hint Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
     split; [ intros x Hx; left; exact Hx | ].
@@ -4657,7 +4665,7 @@ Proof.
   intros * Hc; induction Hc;
     intros Hwf HlcS HwfP0 HwfS Hrig Hnfd Hfaf.
   - (* Ghost *)
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
     split.
     + exists (pskl_to_bskl_inh P0).
@@ -4668,14 +4676,14 @@ Proof.
         eapply ad_wf_pskl_delta_mono; [ exact HwfP0 | fsetdec ].
     + apply ad_refine_pskl_f__hole; [ exact H | exact HwfP0 ].
   - (* Unit *)
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
     split.
     + exists bskl_unit. split; [ reflexivity | ].
       split; [ apply ad_pat_consis__unit; fsetdec | apply ad_refine_syn_f__unit ].
     + apply ad_refine_pskl_f__unit.
   - (* Rigid *)
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
     split.
     + exists (bskl_var_f α). split; [ reflexivity | ].
@@ -4824,7 +4832,7 @@ Proof.
       { simpl. clear - HαnΔ. fsetdec. }
       { intros γ τ Hb. eapply (Hnfd1 γ τ) in Hb. clear - Hb. fsetdec. }
   - (* GhostG *)
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
     split.
     + exists bskl_hole. split; [ reflexivity | ].
@@ -5510,7 +5518,7 @@ Proof.
       split; [ simpl; apply ad_pat_consis__tophole_drop; exact Hcons | exact Hrs ].
     + simpl. apply ad_refine_pskl_f__tophole_remove. exact Hrp.
   - (* GhostR *)
-    split; [ apply a_isub_refl | ].
+    split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].
     split.
     + exists (pskl_to_bskl_syn (uskl_to_pskl S)).
