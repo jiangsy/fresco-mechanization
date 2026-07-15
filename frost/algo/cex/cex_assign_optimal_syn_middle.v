@@ -37,6 +37,15 @@
     must then reproduce a binder payload mentioning [δ̂] — [ζX̂ = δ̂]
     SYNTACTICALLY — while [X̂] sits BELOW [y] in [Θ₁], out of [δ̂]'s scope.
 
+    PROVENANCE.  The syntactic rules are faithful to Gundry's THESIS
+    (Gundry13, Fig. 2.4 — term middles [x : θσ], positional remainder,
+    term-variable localities), not to the MSFP paper's per-entry SEMANTIC
+    ≼ (GundryMM10 §3.1).  The thesis's own unification moves metavariables
+    past term entries (inst-depend/inst-skip-tm, Fig. 2.5), so the same
+    configuration arises in plain HM, and its generality proof (Lemma 2.6,
+    App. D.1) does not treat those cases — the gap predates this paper.
+    See the paper note (sections/appendices/optimality-cex.tex).
+
     THE INSTANCE (five distinct atoms c, X, y, α, δ):
 
       Θ₀ = c : X̂→(),  X̂,  y : (),  α̂          P = X̂→()     (assign α̂ ≔ P)

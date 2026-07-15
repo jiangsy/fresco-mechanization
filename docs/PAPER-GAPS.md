@@ -513,6 +513,19 @@ well-formed.  No `ζ` exists.  (Note: GMM, from whom the information-increase
 device is borrowed, compare context-entry payloads up to EQUIVALENCE, not
 syntax; their minimality theorem does not face this.)
 
+**Provenance (2026-07-15, verified against both sources):** the syntactic rule is
+faithful to **Gundry's thesis** (Gundry13, Fig. 2.4: term middles `x : θσ`,
+recursion on the stripped remainder, term variables separate localities) — NOT
+to the MSFP paper's base relation, whose `≼` is per-entry SEMANTIC
+(GundryMM10 §3.1, `Δ ⊩ δ⟦vD⟧`).  The thesis also moves metavariables past term
+entries (`inst-depend`/`inst-skip-tm`, Fig. 2.5), so the analogous instance is
+constructible in plain HM (`Θ0 = …, γ̂, y:σy, α̂, x:α̂`; solve `γ̂ ≡ α̂→1`), and the
+thesis's own generality proof (Lemma 2.6, App. D.1) covers only "some of the
+more interesting cases" — the term-walk cases are dispatched by "θ can be
+rearranged", a definition-swap that is only valid against the SEMANTIC relation
+(it is MSFP Lemma 10's "ψ ≡ θ" step).  So the gap predates this paper; the
+repair below applies to the thesis's formulation as well.
+
 **Candidate fix (authors' call, not applied):** make information increase's
 binder middles ≡ᵗ-tolerant, GMM-style:
 
