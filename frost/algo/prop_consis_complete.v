@@ -841,11 +841,20 @@ Proof.
               blocked on building ζ from guess^TY's monotype + occurs check. *)
   - admit. (* TODO[optimality]: Assign-Assign; consistency sub-IH (back-edge);
               true; blocked on threading the sub-node solution + glue. *)
-  - admit. (* TODO[optimality]: Assign-Depend; FLEX walk, Ξ grows at tail; true.
-              Target Θ UNCHANGED (flex/suffix don't extend it), so NO join-strip.
-              Peel via a_inc_mid_strip_flex (prop_inc_strengthen.v); factoring
-              still needs an a_inc_equiv MID-INSERT (flex ≡ᵗ obligation is refl,
-              cf. Flex-Flex-Skip) — the peel's a_inc_equiv counterpart. *)
+  - (* Assign-Depend : the pending suffix grows at the TAIL, so the merged
+       context [Ξ ++ (β~flex) ++ Θ0] and the target Θ1 are LITERALLY the
+       IH's, re-associated.  Direct from the IH; no mid-insert needed. *)
+    intros F Θ0 Θ1 Ξ α β P Hne Hβin Ha IHa.
+    unfold assign_optimal_post in *.
+    intros Hdecl Hwf HwfP θ1 θ Θ Hid Hinc1 Hinc Hwfth Hjoin.
+    assert (Hdecl' : a_decls (Ξ ++ (β ~ abind_flex_mono)))
+      by (apply a_decls_app;
+          [ exact Hdecl | apply (a_decls__cons β); apply a_decls__nil ]).
+    rewrite <- app_assoc in Hwf, HwfP, Hinc1, Hinc.
+    destruct (IHa Hdecl' Hwf HwfP θ1 θ Θ Hid Hinc1 Hinc Hwfth Hjoin)
+      as [ζ [Hζ Hie]].
+    exists ζ. split; [ exact Hζ | ].
+    rewrite app_assoc in Hie. exact Hie.
   - admit. (* TODO[optimality]: Assign-Skip; FLEX walk (β sandwiched Ξ++[β]++Θ0).
               Same as Depend: a_inc_mid_strip_flex peels the competing ρ; β∉ftv P
               so the join transfers to the sub-node over the SAME Θ; factoring
