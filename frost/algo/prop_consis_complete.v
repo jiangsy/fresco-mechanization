@@ -791,9 +791,37 @@ Proof.
     intros F Θ0 α Hfa. unfold unify_optimal_post.
     intros Hwf _ _ θ1 θ Θ Hid Hinc1 Hinc Heq.
     exists θ. apply (opt_axiom_factor Hwf Hid Hinc1 Hinc).
-  - admit. (* TODO[optimality]: Flex-Flex-L (α̂:=β̂); Θ1 adds a definition; true;
-              blocked on the ζ that records β̂'s solution. *)
-  - admit. (* TODO[optimality]: Flex-Flex-R (β̂:=α̂); symmetric to L; true. *)
+  - (* Flex-Flex-L : α̂ := β̂.  ζ := θ; the head flex-image [τ] plays the role of
+       the definition's image, and the competing equality [θα̂ ≡ θβ̂] is exactly
+       the [flex_def] side condition.  The factoring collapses (θ1 identity). *)
+    intros F Θ0 α β Hne Hfβ.
+    unfold unify_optimal_post.
+    intros Hwf Hfα' Hfβ' θ1 θ Θ Hid Hinc1 Hinc Heq.
+    assert (Hβα : β <> α) by auto.
+    inversion Hinc as [ | Θs θs Θt αs τ Hinc' Hwfτ Hmτ [Heqα Heqθ] Heqt | | | | ];
+      subst.
+    exists ((α, τ) :: θs). split.
+    + apply a_inc__flex_def; auto.
+      rewrite msubst_lookup_cons_eq in Heq.
+      rewrite (msubst_lookup_cons_neq τ θs Hβα) in Heq.
+      exact Heq.
+    + rewrite (msubst_compose_is_id_r Hwf Hid Hinc1 Hinc).
+      apply a_inc_equiv_refl; exact Hinc.
+  - (* Flex-Flex-R : β̂ := α̂.  Symmetric to L; the [flex_def] side condition is
+       the competing equality read the other way, so it closes by [sym]. *)
+    intros F Θ0 α β Hne Hfα.
+    unfold unify_optimal_post.
+    intros Hwf Hfα' Hfβ' θ1 θ Θ Hid Hinc1 Hinc Heq.
+    assert (Hαβ : α <> β) by auto.
+    inversion Hinc as [ | Θs θs Θt βs τ Hinc' Hwfτ Hmτ [Heqβ Heqθ] Heqt | | | | ];
+      subst.
+    exists ((β, τ) :: θs). split.
+    + apply a_inc__flex_def; auto.
+      rewrite msubst_lookup_cons_eq in Heq.
+      rewrite (msubst_lookup_cons_neq τ θs Hαβ) in Heq.
+      apply a_tyequiv__sym; exact Heq.
+    + rewrite (msubst_compose_is_id_r Hwf Hid Hinc1 Hinc).
+      apply a_inc_equiv_refl; exact Hinc.
   - admit. (* TODO[optimality]: Flex-Flex-Assign; consistency sub-IH (back-edge);
               true; blocked on the bridge + glue. *)
   - admit. (* TODO[optimality]: Flex-Flex-Skip; walk; true; sub-IH. *)
