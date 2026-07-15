@@ -9,7 +9,7 @@ counter-example) stops the work and is flagged to the user.
 Each entry: status ∈ {GAP (confirmed proof-step problem, repaired),
 PROSE-COMPLETION (figure rule completed from the paper's own prose),
 WATCH (tension spotted, not yet confirmed to matter), FALSE (statement
-refuted — none so far)}.
+refuted — one so far, see below)}.
 
 > **See also [WF-SIDE-CONDITIONS.md](WF-SIDE-CONDITIONS.md).**  The paper
 > systematically states well-formedness (and sometimes a further judgment) as an
@@ -468,6 +468,58 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   flex-above-free + domain bookkeeping are preserved for every protected
   Δ with `Δ ⊆ F ∪ dom Θ₀`, using Assign-SkipRigid's occurs condition and
   the positional fact that Δ-binders sit above all flexible entries.
+
+## FALSE — `thm:complete-consistency` optimality (parts 2/3): flex migration below term binders defeats the factoring
+
+**Status: FALSE — machine-checked counterexample, axiom-free
+(`algo/cex_assign_optimal_syn_middle.v`, 2026-07-15).  Work on the affected
+cases is STOPPED pending a paper-level decision.**
+
+The OPTIMALITY half of `thm:complete-consistency` part 3 (assignment) is
+false as stated; part 2 (unification) inherits the falsity through
+`Flex-Flex-Skip'` for contexts with term binders.
+
+Two paper ingredients conspire:
+
+1. **Flex migration.**  `Assign-Depend` moves a payload flexible `X̂` into the
+   pending suffix `Ξ`; `Assign-SkipTmVar` threads `Ξ` below walked term
+   binders; `Assign-SolveM` deposits it at the subject's position.  The
+   migration is FORCED by well-formedness: the deposited definition
+   `α̂ ≔ guessᵀᵞ(P)` mentions `X̂`, so `X̂` must end up below it.
+
+2. **Syntactic middles + positional wf in information increase**
+   (algorithmic.tex:91-121).  The var rule `Θ,x:P ⊑[θ] Θ',x:θP,Ξ` pins the
+   target's binder payload to the SYNTACTIC `θP`, and the flex rule demands
+   each image be well-formed in the POSITIONAL remainder of the target.
+
+Instance (5 atoms; `assignvar α̂ ≔ X̂→()`):
+
+    Θ₀ = c : X̂→(), X̂, y : (), α̂
+    algorithm:  Θ₁ = c : X̂→(), y : (), α̂ ≔ X̂→(), X̂     (X̂ migrated below y)
+    competing:  θ = [δ̂/X̂, ()→()/α̂]  into  Θ = c : δ̂→(), δ̂ ≔ (), y : ()
+
+The competing solution is valid (increment ✓, `a_wf_aenv Θ` ✓, join
+`θP ≈ θα̂` ✓ — `δ̂` unfolds to `()`), and `δ̂` is in scope at `X̂`'s ORIGINAL
+position (above `y`).  Any factoring `ζ : Θ₁ ⊑ Θ` must reproduce `c`'s payload
+`δ̂→()`, forcing `ζX̂ = δ̂` syntactically — but `X̂`'s entry in `Θ₁` is consumed
+against the target remainder BELOW `y` (here: empty), where `δ̂` is not
+well-formed.  No `ζ` exists.  (Note: GMM, from whom the information-increase
+device is borrowed, compare context-entry payloads up to EQUIVALENCE, not
+syntax; their minimality theorem does not face this.)
+
+**Candidate fix (authors' call, not applied):** make information increase's
+binder middles ≡ᵗ-tolerant, GMM-style:
+
+    Θ ⊑[θ] Θ'    Θ' ⊢ P' ≡ θP
+    --------------------------------
+    Θ,x:P ⊑[θ] Θ',x:P',Ξ
+
+Then `ζ` may use a depth-legal representative of `δ̂`'s ≡ᵗ-class (here `()`)
+and the counterexample dissolves; the soundness development only ever uses the
+middle up to ≡ᵗ, so it survives.  Affected mech cases (marked FALSE in
+`algo/prop_consis_complete.v`): Assign-SkipTmVar (typ/skl) and
+Flex-Flex-Skip' (var_typ/var_skl branches).  All other optimality cases are
+unaffected (their walks carry no type payload, or none that can migrate).
 
 ## GAP — `thm:complete-consistency`: the three induction subjects DO NOT COMBINE
 
