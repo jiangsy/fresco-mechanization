@@ -697,6 +697,102 @@ Proof.
       match goal with H : a_suffix_binding (abind_var_skl _) |- _ => inversion H end.
 Qed.
 
+(** ===================================================================
+    MID-INSERT for [a_inc_equiv] (the Assign-Skip FLEX-walk crux).
+
+    Assign-Skip drops the walked flexible [β] from the target, so its
+    factoring must SPLICE [β] back into both metasubstitutions of the
+    sub-node's [a_inc_equiv], between the pending-declaration prefix [Ξ]
+    and [Θ0].  Splicing a matching flexible pair preserves [a_inc_equiv];
+    the [Ξ]-prefix is peeled off both metasubstitutions (its length is
+    [dom Ξ], all-flexible), and its heads re-consed.  The peel needs the
+    two metasubstitutions to have DISTINCT keys, which follows from
+    source uniqueness. *)
+
+(** An [a_inc_equiv]'s metasubstitutions inherit the source's key
+    distinctness (each flexible entry is source-fresh; the term/rigid
+    entries leave the metasubstitution untouched). *)
+Lemma a_inc_equiv_uniq_l : forall E ρ σ Θ,
+  a_inc_equiv E ρ σ Θ -> uniq E -> uniq ρ.
+Proof.
+  intros E ρ σ Θ Hie; induction Hie; intros Hu; simpl in *.
+  - constructor.
+  - destruct_uniq. constructor; [ apply IHHie; solve_uniq | ].
+    destruct (prop_normal.a_inc_equiv_dom Hie) as [Hd _]. fsetdec.
+  - destruct_uniq. constructor; [ apply IHHie; solve_uniq | ].
+    destruct (prop_normal.a_inc_equiv_dom Hie) as [Hd _]. fsetdec.
+  - apply IHHie. solve_uniq.
+  - apply IHHie. solve_uniq.
+  - apply IHHie. solve_uniq.
+Qed.
+
+Lemma a_inc_equiv_uniq_r : forall E ρ σ Θ,
+  a_inc_equiv E ρ σ Θ -> uniq E -> uniq σ.
+Proof.
+  intros E ρ σ Θ Hie; induction Hie; intros Hu; simpl in *.
+  - constructor.
+  - destruct_uniq. constructor; [ apply IHHie; solve_uniq | ].
+    destruct (prop_normal.a_inc_equiv_dom Hie) as [_ Hd]. fsetdec.
+  - destruct_uniq. constructor; [ apply IHHie; solve_uniq | ].
+    destruct (prop_normal.a_inc_equiv_dom Hie) as [_ Hd]. fsetdec.
+  - apply IHHie. solve_uniq.
+  - apply IHHie. solve_uniq.
+  - apply IHHie. solve_uniq.
+Qed.
+
+(** A metasubstitution with empty domain is [nil] ([dom nil] on the RHS is
+    cross-type-opaque to [fsetdec], hence the membership detour). *)
+Lemma metasubst_dom_empty : forall (r : metasubst),
+  dom r [=] empty -> r = nil.
+Proof.
+  destruct r as [ | [a t] r' ]; intros H; [ reflexivity | exfalso ].
+  assert (Ha : a `in` dom ((a, t) :: r')) by (simpl; fsetdec).
+  rewrite H in Ha. clear - Ha. fsetdec.
+Qed.
+
+Lemma a_inc_equiv_mid_insert_flex :
+  forall Ξ β Θ0 Θ ρ1 ρ2 σ1 σ2 τ1 τ2,
+  a_decls Ξ ->
+  uniq (Ξ ++ Θ0) ->
+  dom ρ1 [=] dom Ξ ->
+  dom σ1 [=] dom Ξ ->
+  Θ ⊢ τ1 ≡ᵗ τ2 ->
+  a_inc_equiv (Ξ ++ Θ0) (ρ1 ++ ρ2) (σ1 ++ σ2) Θ ->
+  a_inc_equiv (Ξ ++ (β ~ abind_flex_mono) ++ Θ0)
+              (ρ1 ++ (β, τ1) :: ρ2) (σ1 ++ (β, τ2) :: σ2) Θ.
+Proof.
+  induction Ξ as [ | [a bnd] Ξ' IH ];
+    intros β Θ0 Θ ρ1 ρ2 σ1 σ2 τ1 τ2 Hdec Huq Hdρ Hdσ Heqτ Hie.
+  - rewrite dom_nil in Hdρ, Hdσ.
+    apply metasubst_dom_empty in Hdρ; apply metasubst_dom_empty in Hdσ; subst.
+    simpl in Hie |- *.
+    apply a_inc_equiv__flex; [ exact Hie | exact Heqτ ].
+  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+    assert (Huρ : uniq (ρ1 ++ ρ2))
+      by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
+    assert (Huσ : uniq (σ1 ++ σ2))
+      by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
+    assert (HaΞ : a `notin` dom Ξ') by (clear - Huq; simpl_env in Huq; solve_uniq).
+    assert (Huq' : uniq (Ξ' ++ Θ0)) by (clear - Huq; simpl_env in Huq; solve_uniq).
+    destruct ρ1 as [ | [ar tr] ρ1' ];
+      [ exfalso; rewrite dom_nil in Hdρ;
+        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ')) by (simpl; fsetdec);
+        rewrite <- Hdρ in Hin; clear - Hin; fsetdec | ].
+    destruct σ1 as [ | [asg ts] σ1' ];
+      [ exfalso; rewrite dom_nil in Hdσ;
+        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ')) by (simpl; fsetdec);
+        rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
+    assert (Harρ : ar `notin` dom ρ1') by (clear - Huρ; simpl_env in Huρ; solve_uniq).
+    assert (Hasσ : asg `notin` dom σ1') by (clear - Huσ; simpl_env in Huσ; solve_uniq).
+    simpl in Hie.
+    inversion Hie as [ | S q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
+    simpl_env in Hdρ; simpl_env in Hdσ.
+    simpl. apply a_inc_equiv__flex; [ | exact Hequ ].
+    apply IH; auto.
+    + clear - Hdρ Harρ HaΞ. simpl_env in *. fsetdec.
+    + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
+Qed.
+
 (** A unique middle binding forces the two flanking decompositions to agree
     (Metalib [uniq_mid], spelled with explicit arguments). *)
 Lemma aenv_mid_split : forall (E1 : aenv) x b1 F1 E2 b2 F2,
@@ -1384,21 +1480,25 @@ Proof.
     rewrite app_assoc in Hie. exact Hie.
   - admit. (* TODO[optimality]: Assign-Skip; FLEX walk (β sandwiched Ξ++[β]++Θ0).
               Unlike Depend (now CLOSED, direct re-association) the target Θ1 SHRINKS
-              (β dropped), so this is the genuine mid-insert case.  Plan (verified
-              sound on paper): a_inc_mid_strip_flex peels the competing ρ = ρ1++(β,τ)::ρ2
-              (dom ρ1 = dom Ξ, Θ0 ≤[ρ2] Θ, (Ξ++Θ0) ≤[ρ1++ρ2] Θ); β∉ftv P + α≠β
-              transfer the join UNCHANGED over the SAME Θ (msubst/lookup are lookup-
-              based, dropping the β entry is invisible); the sub id-witness w comes
-              from a_assign_sound (Ξ++Θ0 ⊴ Θ1); sub-IH gives ζ' with Θ1 ≤[ζ'] Θ and
-              a_inc_equiv (Ξ++Θ0) (ρ1++ρ2) (compose ζ' w) Θ; reconstruct ζ := (β,τ)::ζ'
-              (a_inc__flex, τ wf/mono from the strip) and the factoring via an
-              a_inc_equiv MID-INSERT lemma [a_inc_equiv_mid_insert_flex] (still TO
-              BUILD; requires a_decls Ξ — a flex_def in Ξ mentioning β would break the
-              flex_def ≡ᵗ-obligation under insertion — plus threading the ≤-hyps for
-              the per-Ξ-head domain-disjointness).  Key algebra:
-              compose ((β,τ)::ζ') ρ1 = compose ζ' w with (β,τ) mid-inserted at |Ξ|
-              (ρ1 id ⟹ its β-image is `β ⟹ lookup ((β,τ)::ζ') β = τ).  NO ≡ᵗ/join
-              strengthening; NO term-binding obstacle (β is flex, no type content). *)
+              (β dropped), so this is the genuine mid-insert case.  The MID-INSERT
+              LEMMA [a_inc_equiv_mid_insert_flex] IS NOW BUILT (above, Qed,
+              axiom-free; uses the new [a_inc_equiv_uniq_l]/[_r]).  Remaining wiring
+              (pure list/compose algebra, no new metatheory):
+              (1) [a_inc_mid_strip_flex Hdecl Hinc] peels ρ = ρa ++ (β,τ) :: ρb
+                  (dom ρa = dom Ξ, Θ0 ≤[ρb] Θ, (Ξ++Θ0) ≤[ρa++ρb] Θ); τ = lookup ρ β,
+                  its wf/mono from [a_inc_lookup_wf]/[a_inc_lookup_mono] on Hinc.
+              (2) join transfer: β∉ftv P (rule premise) ⟹ msubst_pskl ρ P =
+                  msubst_pskl (ρa++ρb) P (msubst_pskl_agree); α≠β ⟹ lookup drop;
+                  feeds the sub-node join UNCHANGED over the SAME Θ.
+              (3) sub id-witness w from [a_assign_sound] (Ξ++Θ0 ⊴ Θ1); strip Hinc1
+                  to ρ1 = ρ1a ++ (β,`β) :: ρ1b (id), and [is_id_inc_unique] gives
+                  w = ρ1a ++ ρ1b, so compose ζ' w = compose ζ' ρ1a ++ compose ζ' ρ1b.
+              (4) sub-IH ⟹ ζ', Θ1 ≤[ζ'] Θ, a_inc_equiv (Ξ++Θ0) (ρa++ρb) (compose ζ' w) Θ.
+              (5) ζ := (β,τ)::ζ'.  Conj1 by [a_inc__flex].  Conj2: rewrite
+                  compose ((β,τ)::ζ') ρ1 = compose ζ' ρ1a ++ (β,τ)::compose ζ' ρ1b
+                  (via [msubst_compose_cons_l_id] on the ρ1a/ρ1b halves, lookup=τ at β),
+                  then apply [a_inc_equiv_mid_insert_flex] to (4) with dom ρa =
+                  dom (compose ζ' ρ1a) = dom Ξ and τ ≡ᵗ τ refl. *)
   - admit. (* TODO[optimality]: Assign-SkipRigid; RIGID walk. Here the competing
               target GROWS: (β~tvar ++ Θ0) ≤[ρ] Θ inverts (a_inc_tvar_inv) to
               Θ = Ξ ++ (β~tvar) ++ Θ' with Θ0 ≤[ρ] Θ'. The join is over Θ but the
