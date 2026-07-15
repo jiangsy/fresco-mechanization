@@ -1010,6 +1010,34 @@ Proof.
   apply tyequiv_mono_refine_syn; auto.
 Qed.
 
+(** Colour erasure commutes with metasubstitution. *)
+Lemma bskl_to_pskl_msubst_bskl : forall θ Q,
+  bskl_to_pskl (msubst_bskl θ Q) = msubst_pskl θ (bskl_to_pskl Q).
+Proof.
+  intros θ Q; induction Q; simpl; try reflexivity.
+  - rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
+  - rewrite IHQ1, IHQ2. reflexivity.
+  - rewrite IHQ. reflexivity.
+  - rewrite IHQ. reflexivity.
+  - rewrite IHQ. reflexivity.
+Qed.
+
+(** A join whose SUBJECT is the ghost hole forces the target painting to be
+    fully INHERITED: it is invariant under erase-then-reinherit.  (The only
+    two rules that can conclude [uskl_hole ≈ Qb] are [__hole], whose target is
+    an [inh] painting, and [__flex_r], whose target is a defined-flex variable
+    — both fixed points of [inh ∘ erase].) *)
+Lemma consis_hole_target_inh : forall Ψ Θ Qb,
+  Ψ ⨟ Θ ⊨ₛᵃ uskl_hole ≈ Qb ->
+  pskl_to_bskl_inh (bskl_to_pskl Qb) = Qb.
+Proof.
+  intros Ψ Θ Qb H.
+  remember uskl_hole as S eqn:HS.
+  induction H; try discriminate HS.
+  - rewrite bskl_to_pskl_pskl_to_bskl_inh. reflexivity.
+  - reflexivity.
+Qed.
+
 (* ===================================================================== *)
 (*  7.  THE 28-CASE MUTUAL OPTIMALITY BUNDLE                               *)
 (*                                                                        *)
@@ -1201,8 +1229,23 @@ Proof.
               matching ζ built + the a_inc_equiv re-established (it is ≡ᵗ-tolerant).
               The b = tvar sub-case is CLEAN and closes with the new strengthening. *)
   (* ================= a_consis (14) ================= *)
-  - admit. (* TODO[optimality]: C-Ghost; axiom, Θ1=Θ0; opt_axiom_factor for the
-              factoring + precision from the hole (Δ2∩ftv=∅); true. *)
+  - (* C-Ghost : axiom, Θ1=Θ0.  ζ:=θ (opt_axiom_factor).  The SUBJECT is the
+       ghost hole, so the competing join forces the target Qb to be inherited
+       (consis_hole_target_inh); the precision goal then collapses to the
+       competing Δ₁-refinement of the INPUT P0 (Hrs), Δ-weakened. *)
+    intros F Δ1 Δ2 Θ0 P0 Hint. unfold consis_optimal_post.
+    intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf θ1 θ Θ Qt Qb
+           Hid Hinc1 HeqQt Hinc Hwfth Hjoin Hrs Hrp.
+    exists θ.
+    destruct (opt_axiom_factor Hwf Hid Hinc1 Hinc) as [Hout Hfact].
+    split; [ exact Hout | ]. split; [ exact Hfact | ].
+    replace (pskl_to_uskl (msubst_pskl θ pskl_hole)) with uskl_hole in Hjoin
+      by reflexivity.
+    pose proof (consis_hole_target_inh Hjoin) as Hqinh.
+    unfold ad_precise. rewrite Hqinh.
+    rewrite bskl_to_pskl_msubst_bskl, HeqQt.
+    apply ad_refine_syn_delta_mono with (Δ0 := Δ1); [ | clear; fsetdec ].
+    apply ad_refine_syn_f_forget in Hrs. exact Hrs.
   - (* C-Unit : axiom, Θ1=Θ0.  ζ:=θ (opt_axiom_factor); precision from the unit
        join via consis_precise_mono_join. *)
     intros F Δ1 Δ2 Θ0. unfold consis_optimal_post.
