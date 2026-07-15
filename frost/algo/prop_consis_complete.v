@@ -30,6 +30,7 @@ Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_decorate.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
+Require Import src.frost.algo.prop_consis_sound.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_precise.
 
@@ -125,3 +126,82 @@ Definition a_assign_optimal
     exists ζ,
       Θ1 ≤[ ζ ] Θ /\
       a_inc_equiv (Ξ ++ Θ0) θ (msubst_compose ζ θ1) Θ.
+
+(* ===================================================================== *)
+(*  4.  AUGMENTED optimality motives (for the mutual induction)           *)
+(*                                                                        *)
+(*  The three top-level [_optimal] definitions above are the UNAUGMENTED  *)
+(*  statements of [thm:complete-consistency]'s optimality half.  The      *)
+(*  induction, however, must run on the AUGMENTED problem                 *)
+(*  (Δ₁;Δ₂;Ψ;Θ₀;P₀;S) of consistency-proofs.tex:2230-2242 — a Δ-indexed   *)
+(*  pair of refinements plus the [no_flex_dep]/[flex_above_free] side      *)
+(*  conditions that [consis_sound_post] (algo/prop_consis_sound.v:2501)    *)
+(*  already carries.  So we keep the unaugmented definitions as the        *)
+(*  top-level corollaries and state the induction against these AUGMENTED  *)
+(*  [*_optimal_post] motives — mirroring exactly the shape of the green    *)
+(*  soundness bundle [a_assign_unify_consis_sound].                        *)
+(*                                                                         *)
+(*  Design (docs/DESIGN-completeness-measure.md §6, §7.2): optimality is    *)
+(*  proved by induction on the ALGORITHMIC derivation (which the theorem   *)
+(*  is HANDED), so it needs no well-founded measure — that is confined to  *)
+(*  the orthogonal EXISTENCE half.  Given the derivation Θ0 → Θ1 together  *)
+(*  with the algorithm's own solution substitution [θ1] (Θ0 ≤[θ1] Θ1) and  *)
+(*  ANY competing solution [θ] into [Θ], the motive produces the factoring *)
+(*  [ζ]: Θ1 ≤[ζ] Θ, [θ ≡ ζ∘θ1], and — for consistency — a PRECISION        *)
+(*  statement [ζQ ⊑ Qb] (⊑ = ad_precise, algo/prop_precise.v).  The         *)
+(*  top-level corollary converts precision back to the refinement [⊳] via   *)
+(*  [ad_precise_preserves_refine].                                         *)
+(*                                                                         *)
+(*  These are the INDUCTION targets only — pure [Prop]s, stated (not yet    *)
+(*  proved) as the scaffolding the 28-case [a_assign_unify_consis_mutind]   *)
+(*  bundle would discharge, exactly as [consis_sound_concl] et al. do for   *)
+(*  soundness.  The competing-solution hypotheses mirror [consis_sound_post]*)
+(*  verbatim (join [⊨ₛᵃ] + Δ₁-refinement [ad_refine_syn_f] + Δ₂-refinement  *)
+(*  [ad_refine_pskl_f]) so that a sub-node's SOUNDNESS output feeds a        *)
+(*  sub-node's OPTIMALITY input unchanged.                                  *)
+(* ===================================================================== *)
+
+Definition unify_optimal_post (F : atoms) (Θ0 : aenv) (α β : atom)
+    (Θ1 : aenv) : Prop :=
+  a_wf_aenv Θ0 -> a_flex_tvar Θ0 α -> a_flex_tvar Θ0 β ->
+  forall θ1 θ Θ,
+    Θ0 ≤[ θ1 ] Θ1 ->
+    Θ0 ≤[ θ ] Θ ->
+    Θ ⊢ (msubst_lookup θ α) ≡ᵗ (msubst_lookup θ β) ->
+    exists ζ,
+      Θ1 ≤[ ζ ] Θ /\
+      a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ.
+
+Definition assign_optimal_post (F : atoms) (Θ0 Ξ : aenv) (α : atom)
+    (P : pskl) (Θ1 : aenv) : Prop :=
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  forall θ1 θ Θ,
+    (Ξ ++ Θ0) ≤[ θ1 ] Θ1 ->
+    (Ξ ++ Θ0) ≤[ θ ] Θ ->
+    empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ P))
+                 ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup θ α))) ->
+    exists ζ,
+      Θ1 ≤[ ζ ] Θ /\
+      a_inc_equiv (Ξ ++ Θ0) θ (msubst_compose ζ θ1) Θ.
+
+Definition consis_optimal_post (F Δ1 Δ2 : atoms) (Θ0 : aenv)
+    (P0 P Q : pskl) (Θ1 : aenv) : Prop :=
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
+  no_flex_dep (Δ1 `union` Δ2) Θ0 ->
+  flex_above_free (Δ1 `union` Δ2) Θ0 ->
+  forall θ1 θ Θ Qt Qb,
+    Θ0 ≤[ θ1 ] Θ1 ->
+    bskl_to_pskl Qt = Q ->
+    Θ0 ≤[ θ ] Θ ->
+    empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ P)) ≈ Qb ->
+    ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl θ P0)) Qb ->
+    ad_refine_pskl_f Δ2 Θ Δ2 (msubst_pskl θ P) (bskl_to_pskl Qb) ->
+    exists ζ,
+      Θ1 ≤[ ζ ] Θ /\
+      a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ /\
+      Θ ⨟ (Δ1 `union` Δ2) ⊢ₚᵣᵃ (msubst_bskl ζ Qt) ⊑ (bskl_to_pskl Qb).
