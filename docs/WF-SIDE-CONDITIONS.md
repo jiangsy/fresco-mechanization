@@ -127,6 +127,33 @@ auxiliary contexts exist at all. Route **B**, already done.
 
 ---
 
+## 6. Solution target — wf of the increment's TARGET context. **[optimality; via (B)]**
+
+> algorithmic.tex:89 — the increment is "a finite map θ from flexible variables
+> in Θ to **well-formed monotypes in Θ′**" — so the target context Θ′ of any
+> solution is **well-formed by construction**.
+
+The mechanized increment `Θ ≤[θ] Θ′` (`a_inc`) does **not** enforce this: its
+`a_inc__empty` / `a_suffix` base cases can rest on ill-formed definitions, and
+`a_wf_aenv Θ′` is **not** derivable from `Θ ≤[θ] Θ′` alone. So the wf of a
+solution's target is an external side condition, carried on the statements
+(route **B**), not a weakening.
+
+**Where it lands (`algo/prop_consis_complete.v`).** Each of
+`a_{consis,unify,assign}_solution` gains a final conjunct `a_wf_aenv Θ1` (the
+target), and each `*_optimal_post` induction motive gains a hypothesis
+`a_wf_aenv Θ` on the *competing* solution's target. The top-level corollaries
+thread it straight from the competing solution's own new conjunct.
+
+**Machine-checked necessity (C-Unit).** Inverting the competing join
+`empty ⨟ Θ ⊨ₛᵃ uskl_unit ≈ Qb` produces a `flex_r` branch in which Θ holds a
+defined flex `α ≔ τ` and `Qb = bskl_var_f α`; the residual goal
+`pskl_unit ⊑ pskl_var_f α` is dischargeable **only** by `consis_mono_join`,
+which requires `a_wf_aenv Θ`. Without the side condition the case is stuck.
+(Validated 2026-07-15, `[paper-gap]`.)
+
+---
+
 ## Rule of thumb
 
 When a metatheory lemma over one of these judgments looks **structurally

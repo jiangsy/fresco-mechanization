@@ -47,14 +47,38 @@ Set Implicit Arguments.
 Definition a_consis_problem (Θ0 : aenv) (P0 P : pskl) : Prop :=
   a_wf_aenv Θ0 /\ a_wf_pskl Θ0 P0 /\ a_wf_pskl Θ0 P.
 
+(* ---------------------------------------------------------------------- *)
+(*  EXTERNAL-WF SIDE CONDITION on the solution target (validated 2026-07-15, *)
+(*  [paper-gap]; docs/WF-SIDE-CONDITIONS.md, Solution target).               *)
+(*                                                                          *)
+(*  Each solution's target context Θ1 REQUIRES [a_wf_aenv Θ1].  This is the  *)
+(*  paper's meaning of a solution: full-algo-spec.tex / algorithmic.tex:89  *)
+(*  defines the increment as a finite map θ from flexible variables in Θ    *)
+(*  to WELL-FORMED MONOTYPES IN Θ' — so the ambient target Θ' is a          *)
+(*  well-formed context BY CONSTRUCTION.  The mechanized [a_inc] does not    *)
+(*  enforce it ([a_inc__empty]/[a_suffix] base can rest on ill-formed defs), *)
+(*  so it must be carried on the solution.  It is an external side          *)
+(*  condition, NOT a weakening.                                             *)
+(*                                                                          *)
+(*  MACHINE-CHECKED NECESSITY (C-Unit counterexample).  Inverting the        *)
+(*  competing join [empty ⨟ Θ ⊨ₛᵃ uskl_unit ≈ Qb] yields a [flex_r] branch  *)
+(*  (Θ has a defined flex α ≔ τ, Qb = bskl_var_f α), residual goal          *)
+(*  [pskl_unit ⊑ pskl_var_f α], dischargeable ONLY with [consis_mono_join]   *)
+(*  — which needs [a_wf_aenv Θ].  And [a_wf_aenv Θ] is not otherwise         *)
+(*  derivable from [a_inc].  So the wf of the (competing) solution target is  *)
+(*  load-bearing; the corresponding motive hypotheses discharge it from      *)
+(*  each competing solution's own new wf conjunct.                           *)
+(* ---------------------------------------------------------------------- *)
+
 (** A solution is a tuple (Θ₀ ⊑[θ₁] Θ₁; P₁) such that the substituted input is
     consistent with P₁, and P₁ is a refinement of the substituted input
-    skeleton. *)
+    skeleton.  Its target Θ₁ is well-formed (external-wf side condition). *)
 Definition a_consis_solution
     (Θ0 : aenv) (P0 P : pskl) (θ1 : metasubst) (Θ1 : aenv) (P1 : bskl) : Prop :=
   Θ0 ≤[ θ1 ] Θ1 /\
   empty ⨟ Θ1 ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ1 P)) ≈ P1 /\
-  Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ1 P0)) ⊳ P1.
+  Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ1 P0)) ⊳ P1 /\
+  a_wf_aenv Θ1.
 
 (** The solution is OPTIMAL if every other solution factors through it: there is
     a ζ carrying Θ₁ to the other target, with θ ≡ ζ∘θ₁, and the algorithm's
@@ -80,10 +104,12 @@ Definition a_consis_optimal
 Definition a_unify_problem (Θ0 : aenv) (α β : atom) : Prop :=
   a_wf_aenv Θ0 /\ a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β.
 
+(** External-wf side condition on the target Θ1 (see the block above). *)
 Definition a_unify_solution
     (Θ0 : aenv) (α β : atom) (θ1 : metasubst) (Θ1 : aenv) : Prop :=
   Θ0 ≤[ θ1 ] Θ1 /\
-  Θ1 ⊢ (msubst_lookup θ1 α) ≡ᵗ (msubst_lookup θ1 β).
+  Θ1 ⊢ (msubst_lookup θ1 α) ≡ᵗ (msubst_lookup θ1 β) /\
+  a_wf_aenv Θ1.
 
 Definition a_unify_optimal
     (Θ0 : aenv) (α β : atom) (θ1 : metasubst) (Θ1 : aenv) : Prop :=
@@ -117,11 +143,13 @@ Definition a_assign_problem (Θ0 : aenv) (Ξ : aenv) (α : atom) (P : pskl) : Pr
   a_wf_pskl (Ξ ++ Θ0) P /\ a_non_flex (Ξ ++ Θ0) P /\
   a_decls Ξ /\ dom Ξ [<=] ftvar_in_pskl P.
 
+(** External-wf side condition on the target Θ1 (see the block above). *)
 Definition a_assign_solution
     (Θ0 Ξ : aenv) (α : atom) (P : pskl) (θ1 : metasubst) (Θ1 : aenv) : Prop :=
   (Ξ ++ Θ0) ≤[ θ1 ] Θ1 /\
   empty ⨟ Θ1 ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ1 P))
-                ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup θ1 α))).
+                ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup θ1 α))) /\
+  a_wf_aenv Θ1.
 
 Definition a_assign_optimal
     (Θ0 Ξ : aenv) (α : atom) (P : pskl) (θ1 : metasubst) (Θ1 : aenv) : Prop :=
@@ -192,6 +220,7 @@ Definition unify_optimal_post (F : atoms) (Θ0 : aenv) (α β : atom)
     is_id_msubst θ1 ->
     Θ0 ≤[ θ1 ] Θ1 ->
     Θ0 ≤[ θ ] Θ ->
+    a_wf_aenv Θ ->  (* external-wf side condition on the competing solution's target *)
     Θ ⊢ (msubst_lookup θ α) ≡ᵗ (msubst_lookup θ β) ->
     exists ζ,
       Θ1 ≤[ ζ ] Θ /\
@@ -206,6 +235,7 @@ Definition assign_optimal_post (F : atoms) (Θ0 Ξ : aenv) (α : atom)
     is_id_msubst θ1 ->
     (Ξ ++ Θ0) ≤[ θ1 ] Θ1 ->
     (Ξ ++ Θ0) ≤[ θ ] Θ ->
+    a_wf_aenv Θ ->  (* external-wf side condition on the competing solution's target *)
     empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ P))
                  ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup θ α))) ->
     exists ζ,
@@ -225,6 +255,7 @@ Definition consis_optimal_post (F Δ1 Δ2 : atoms) (Θ0 : aenv)
     Θ0 ≤[ θ1 ] Θ1 ->
     bskl_to_pskl Qt = Q ->
     Θ0 ≤[ θ ] Θ ->
+    a_wf_aenv Θ ->  (* external-wf side condition on the competing solution's target *)
     empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ P)) ≈ Qb ->
     ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl θ P0)) Qb ->
     ad_refine_pskl_f Δ2 Θ Δ2 (msubst_pskl θ P) (bskl_to_pskl Qb) ->
@@ -818,14 +849,14 @@ Proof.
   (* ================= a_unify (6) ================= *)
   - (* Flex-Flex-Id : Θ1 = Θ0, pure identity-node factoring *)
     intros F Θ0 α Hfa. unfold unify_optimal_post.
-    intros Hwf _ _ θ1 θ Θ Hid Hinc1 Hinc Heq.
+    intros Hwf _ _ θ1 θ Θ Hid Hinc1 Hinc Hwfth Heq.
     exists θ. apply (opt_axiom_factor Hwf Hid Hinc1 Hinc).
   - (* Flex-Flex-L : α̂ := β̂.  ζ := θ; the head flex-image [τ] plays the role of
        the definition's image, and the competing equality [θα̂ ≡ θβ̂] is exactly
        the [flex_def] side condition.  The factoring collapses (θ1 identity). *)
     intros F Θ0 α β Hne Hfβ.
     unfold unify_optimal_post.
-    intros Hwf Hfα' Hfβ' θ1 θ Θ Hid Hinc1 Hinc Heq.
+    intros Hwf Hfα' Hfβ' θ1 θ Θ Hid Hinc1 Hinc Hwfth Heq.
     assert (Hβα : β <> α) by auto.
     inversion Hinc as [ | Θs θs Θt αs τ Hinc' Hwfτ Hmτ [Heqα Heqθ] Heqt | | | | ];
       subst.
@@ -840,7 +871,7 @@ Proof.
        the competing equality read the other way, so it closes by [sym]. *)
     intros F Θ0 α β Hne Hfα.
     unfold unify_optimal_post.
-    intros Hwf Hfα' Hfβ' θ1 θ Θ Hid Hinc1 Hinc Heq.
+    intros Hwf Hfα' Hfβ' θ1 θ Θ Hid Hinc1 Hinc Hwfth Heq.
     assert (Hαβ : α <> β) by auto.
     inversion Hinc as [ | Θs θs Θt βs τ Hinc' Hwfτ Hmτ [Heqβ Heqθ] Heqt | | | | ];
       subst.
@@ -858,7 +889,7 @@ Proof.
        inverted conclusion-witness equals by id-uniqueness), then re-cons γ̂. *)
     intros F Θ0 Θ1 γ α β Hγα Hγβ Hu IHu.
     unfold unify_optimal_post.
-    intros Hwf Hfα Hfβ θ1 θ Θ Hid Hinc1 Hinc Heq.
+    intros Hwf Hfα Hfβ θ1 θ Θ Hid Hinc1 Hinc Hwfth Heq.
     inversion Hwf as [ | γh Θh Hnd Hwf0 | | | | ]; subst.
     destruct (a_unify_subjects_flex Hwf0 Hu) as [Hfα0 Hfβ0].
     assert (Hαγ : α <> γ) by auto.
@@ -874,7 +905,7 @@ Proof.
       by (pose proof (a_inc_dom_sub Hincp) as Hs; clear - Hs Hnd; fsetdec).
     rewrite (msubst_lookup_cons_neq τγ θs Hαγ) in Heq.
     rewrite (msubst_lookup_cons_neq τγ θs Hβγ) in Heq.
-    destruct (IHu Hwf0 Hfα0 Hfβ0 θp θs Θ Hid1s Hincw Hincs Heq)
+    destruct (IHu Hwf0 Hfα0 Hfβ0 θp θs Θ Hid1s Hincw Hincs Hwfth Heq)
       as [ζ' [Hζ' Hie']].
     exists ((γ, τγ) :: ζ'). split.
     + apply a_inc__flex; auto.
@@ -939,7 +970,7 @@ Lemma a_unify_optimal_thm : forall F Θ0 α β Θ1,
 Proof.
   intros F Θ0 α β Θ1 Hu Hwf Hfa Hfb θ1 Hinc1.
   unfold a_unify_optimal. intros Hid θ Θ Hsol.
-  destruct Hsol as [Hinc Heq].
+  destruct Hsol as [Hinc [Heq Hwfth]].
   destruct a_assign_unify_consis_optimal as [_ [Hunify _]].
   eapply (Hunify _ _ _ _ _ Hu); eauto.
 Qed.
@@ -952,7 +983,7 @@ Lemma a_assign_optimal_thm : forall F Θ0 Ξ α P Θ1,
 Proof.
   intros F Θ0 Ξ α P Θ1 Ha Hdecl Hwf HwfP θ1 Hinc1.
   unfold a_assign_optimal. intros Hid θ Θ Hsol.
-  destruct Hsol as [Hinc Hjoin].
+  destruct Hsol as [Hinc [Hjoin Hwfth]].
   destruct a_assign_unify_consis_optimal as [Hassign _].
   eapply (Hassign _ _ _ _ _ _ Ha); eauto.
 Qed.
