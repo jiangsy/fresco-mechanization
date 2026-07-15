@@ -832,10 +832,11 @@ Proof.
            (fun F Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
               consis_optimal_post F Δ1 Δ2 Θ0 P0 P Q Θ1)).
   (* ================= a_assign (8) ================= *)
-  - (* Assign-UnivGhost-Id *)
-    admit. (* TODO[optimality]: identity node (Θ1=Θ0); factoring ζ:=θ via
-              opt_axiom_factor, but source is (Ξ++Θ0); true; blocked on the
-              Ξ=nil reconciliation at this leaf. *)
+  - (* Assign-UnivGhost-Id : identity leaf, Ξ=nil, so Θ1 = source; ζ:=ρ. *)
+    intros F Θ0 α. unfold assign_optimal_post.
+    intros Hdecl Hwf HwfP ρ1 ρ Θ Hid Hinc1 Hinc Hwfth Hjoin.
+    simpl_env in *. exists ρ.
+    apply (opt_axiom_factor Hwf Hid Hinc1 Hinc).
   - admit. (* TODO[optimality]: Assign-SolveM; the guessed β̄ extends Θ1; true;
               blocked on building ζ from guess^TY's monotype + occurs check. *)
   - admit. (* TODO[optimality]: Assign-Assign; consistency sub-IH (back-edge);
