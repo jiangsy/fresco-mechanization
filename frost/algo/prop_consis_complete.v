@@ -812,6 +812,190 @@ Proof.
   induction ρ1 as [ | e ρ1' IH ]; simpl; [ reflexivity | rewrite IH; reflexivity ].
 Qed.
 
+(* ===================================================================== *)
+(*  CONTEXT-STRENGTHENING for the join (ad_pat_consis) and skeleton-wf     *)
+(*  (ad_wf_pskl) judgments — the SkipRigid / SkipTmVar walk cases move    *)
+(*  the competing join from the grown target down to the sub-target.       *)
+(* ===================================================================== *)
+
+Lemma a_binds_tvar_strengthen : forall X Θ Θ',
+  a_binds_tvar X Θ -> uniq Θ ->
+  (forall x b, binds x b Θ' -> binds x b Θ) ->
+  X `in` dom Θ' -> a_binds_tvar X Θ'.
+Proof.
+  intros X Θ Θ' Hbt Hu Hsub Hin.
+  apply binds_In_inv in Hin as [b' Hb'].
+  pose proof (Hsub _ _ Hb') as HbΘ.
+  destruct Hbt as [Hb | [Hb | [τ Hb]]];
+    pose proof (binds_unique _ _ _ _ _ HbΘ Hb Hu) as ->;
+    [ left | right; left | right; right; exists τ ]; exact Hb'.
+Qed.
+
+Lemma ad_wf_pskl_strengthen : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall Θ', uniq Θ ->
+  (forall x, x `in` Δ -> x `notin` dom Θ) ->
+  (forall x b, binds x b Θ' -> binds x b Θ) ->
+  (forall X, X `in` ftvar_in_pskl P -> X `in` Δ \/ X `in` dom Θ') ->
+  Θ' ⨟ Δ ⊢ₚₛᵃ P.
+Proof.
+  intros Θ Δ P H; induction H; intros Θ' Hu Hdisj Hsub Hsc.
+  - apply ad_wf_pskl__unit.
+  - apply ad_wf_pskl__var.
+    assert (HXin : X `in` ftvar_in_pskl (pskl_var_f X)) by (simpl; fsetdec).
+    destruct (Hsc X HXin) as [HΔ | Hd]; [ left; exact HΔ | ].
+    destruct H as [HΔ | Htv]; [ left; exact HΔ | ].
+    right. eapply a_binds_tvar_strengthen; eauto.
+  - apply ad_wf_pskl__arrow.
+    + apply IHad_wf_pskl1; auto. intros X HX. apply Hsc. simpl. fsetdec.
+    + apply IHad_wf_pskl2; auto. intros X HX. apply Hsc. simpl. fsetdec.
+  - apply ad_wf_pskl__all with (L := L `union` dom Θ `union` dom Θ' `union` Δ).
+    intros X HX. apply H0.
+    + clear - HX; fsetdec.
+    + exact Hu.
+    + assert (HxnΘ : X `notin` dom Θ) by (clear - HX; fsetdec).
+      intros y Hy. destruct (y == X) as [-> | Hyne];
+        [ exact HxnΘ | apply Hdisj; clear - Hy Hyne; fsetdec ].
+    + exact Hsub.
+    + intros Y HY.
+      destruct (Y == X) as [-> | Hne]; [ left; clear; fsetdec | ].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f X)) as Hup.
+      assert (HYP : Y `in` ftvar_in_pskl P) by (simpl in Hup; clear - HY Hup Hne; fsetdec).
+      destruct (Hsc Y HYP) as [HΔ | Hd]; [ left; clear - HΔ; fsetdec | right; exact Hd ].
+  - apply ad_wf_pskl__hole.
+  - apply ad_wf_pskl__tophole; [ exact H | ].
+    apply IHad_wf_pskl; auto.
+    + intros y Hy; clear - Hy; fsetdec.
+    + intros X HX. right.
+      pose proof (ad_wf_pskl_ftv_tvarish H0 HX) as Htv.
+      assert (HxΘ : X `in` dom Θ).
+      { destruct Htv as [He | Ht]; [ clear - He; fsetdec | ].
+        destruct Ht as [Hb|[Hb|[τ Hb]]]; apply binds_In in Hb; exact Hb. }
+      assert (HXtop : X `in` ftvar_in_pskl (pskl_tophole P)) by (simpl; exact HX).
+      destruct (Hsc X HXtop) as [HΔ | Hd]; [ | exact Hd ].
+      exfalso. apply (Hdisj X HΔ). exact HxΘ.
+Qed.
+
+Lemma binds_strengthen : forall (X:atom) (b:abind) (Θ Θ':aenv),
+  binds X b Θ -> uniq Θ ->
+  (forall x b0, binds x b0 Θ' -> binds x b0 Θ) ->
+  X `in` dom Θ' -> binds X b Θ'.
+Proof.
+  intros X b Θ Θ' Hb Hu Hsub Hin.
+  apply binds_In_inv in Hin as [b' Hb'].
+  pose proof (Hsub _ _ Hb') as HbΘ.
+  pose proof (binds_unique _ _ _ _ _ HbΘ Hb Hu) as ->. exact Hb'.
+Qed.
+
+Lemma binds_sub_cons : forall (e:aenv) Θ Θ',
+  (forall x b, binds x b Θ' -> binds x b Θ) ->
+  forall x b, binds x b (e ++ Θ') -> binds x b (e ++ Θ).
+Proof.
+  intros e Θ Θ' Hsub x b Hb.
+  apply binds_app_1 in Hb. destruct Hb as [H1 | H2];
+    [ apply binds_app_2 | apply binds_app_3; apply Hsub ]; assumption.
+Qed.
+
+Ltac str_forall H0 Hu Hwf' Hsub HscS HscQ Rr Qq X HX openU openB :=
+  apply H0;
+  [ clear - HX; fsetdec
+  | simpl_env; apply uniq_push; [ exact Hu | clear - HX; fsetdec ]
+  | apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ]
+  | apply binds_sub_cons with (e := (X ~ abind_tvar)); exact Hsub
+  | intros Y HY;
+    pose proof (openU Rr (uskl_var_f X)) as HupU; simpl in HupU;
+    destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ];
+    simpl; apply AtomSetImpl.add_2; apply HscS; clear - HY HupU Hne; fsetdec
+  | intros Y HY;
+    pose proof (openB Qq (bskl_var_f X)) as HupB; simpl in HupB;
+    destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ];
+    simpl; apply AtomSetImpl.add_2; apply HscQ; clear - HY HupB Hne; fsetdec ].
+
+Lemma ad_pat_consis_strengthen : forall Ψ Θ S Q,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
+  forall Θ', uniq Θ -> a_wf_aenv Θ' ->
+  (forall x b, binds x b Θ' -> binds x b Θ) ->
+  (forall X, X `in` ftvar_in_uskl S -> X `in` dom Θ') ->
+  (forall X, X `in` ftvar_in_bskl Q -> X `in` dom Θ') ->
+  Ψ ⨟ Θ' ⊨ₛᵃ S ≈ Q.
+Proof.
+  intros Ψ Θ S Q H; induction H;
+    intros Θ' Hu Hwf' Hsub HscS HscQ; simpl in *.
+  - apply ad_pat_consis__unit; auto.
+  - apply ad_pat_consis__var; [ assumption | ].
+    eapply a_binds_tvar_strengthen;
+      [ eassumption | exact Hu | exact Hsub | apply HscS; fsetdec ].
+  - eapply ad_pat_consis__arrow; [ | | exact H1 ].
+    + apply IHad_pat_consis1; auto; intros X HX;
+        solve [ apply HscS; fsetdec | apply HscQ; fsetdec ].
+    + apply IHad_pat_consis2; auto; intros X HX;
+        solve [ apply HscS; fsetdec | apply HscQ; fsetdec ].
+  - eapply ad_pat_consis__forall_inh_tagged
+      with (L := L `union` dom Θ `union` dom Θ'); [ | exact H1 ].
+    intros X HX.
+    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q X HX
+      ftvar_in_uskl_open_uskl_wrt_uskl_upper ftvar_in_bskl_open_bskl_wrt_bskl_upper.
+  - eapply ad_pat_consis__forall_inh_untagged
+      with (L := L `union` dom Θ `union` dom Θ').
+    intros X HX.
+    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q X HX
+      ftvar_in_uskl_open_uskl_wrt_uskl_upper ftvar_in_bskl_open_bskl_wrt_bskl_upper.
+  - eapply ad_pat_consis__forall_syn_tagged
+      with (L := L `union` dom Θ `union` dom Θ').
+    intros X HX.
+    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q X HX
+      ftvar_in_uskl_open_uskl_wrt_uskl_upper ftvar_in_bskl_open_bskl_wrt_bskl_upper.
+  - eapply ad_pat_consis__forall_syn
+      with (L := L `union` dom Θ `union` dom Θ').
+    intros X HX.
+    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q X HX
+      ftvar_in_uskl_open_uskl_wrt_uskl_upper ftvar_in_bskl_open_bskl_wrt_bskl_upper.
+  - apply ad_pat_consis__ghostg; auto.
+  - apply ad_pat_consis__topholeg. apply IHad_pat_consis; auto.
+  - apply ad_pat_consis__hole; auto.
+    eapply ad_wf_pskl_strengthen; [ exact H0 | exact Hu | intros y Hy; clear - Hy; fsetdec | exact Hsub | ].
+    intros X HX. right. apply HscQ.
+    pose proof (ftvar_in_bskl_inh P) as Hb. clear - HX Hb. fsetdec.
+  - apply ad_pat_consis__tophole. apply IHad_pat_consis; auto.
+  - eapply ad_pat_consis__tophole_inh
+      with (L := L `union` dom Θ `union` dom Θ').
+    intros X HX.
+    apply H0.
+    + clear - HX; fsetdec.
+    + simpl_env; apply uniq_push; [ exact Hu | clear - HX; fsetdec ].
+    + apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ].
+    + apply binds_sub_cons with (e := (X ~ abind_tvar)); exact Hsub.
+    + intros Y HY. simpl in HY. simpl.
+      apply AtomSetImpl.add_2. apply HscS; exact HY.
+    + intros Y HY.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f X)) as HupB;
+        simpl in HupB.
+      destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ].
+      simpl. apply AtomSetImpl.add_2. apply HscQ; clear - HY HupB Hne; fsetdec.
+  - apply ad_pat_consis__tophole_drop. apply IHad_pat_consis; auto.
+  - eapply ad_pat_consis__flex_l.
+    + eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscS; fsetdec ].
+    + apply IHad_pat_consis; auto.
+      intros X HX.
+      assert (Hbd' : binds α (abind_flex_mono_def τ) Θ')
+        by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscS; fsetdec ]).
+      assert (Hwfτ : a_wf_ptyp Θ' τ) by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hbd' ]).
+      pose proof (a_wf_ptyp_ftv_dom' Hwfτ) as Hftv.
+      pose proof (ftvar_in_uskl_ptyp_syn τ) as Hco.
+      clear - HX Hftv Hco. fsetdec.
+  - eapply ad_pat_consis__flex_r.
+    + eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscQ; fsetdec ].
+    + apply IHad_pat_consis; auto.
+      intros X HX.
+      assert (Hbd' : binds α (abind_flex_mono_def τ) Θ')
+        by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscQ; fsetdec ]).
+      assert (Hwfτ : a_wf_ptyp Θ' τ) by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hbd' ]).
+      pose proof (a_wf_ptyp_ftv_dom' Hwfτ) as Hftv.
+      pose proof (ftvar_in_bskl_ptyp_syn τ) as Hco.
+      clear - HX Hftv Hco. fsetdec.
+Qed.
+
+
 (** A unique middle binding forces the two flanking decompositions to agree
     (Metalib [uniq_mid], spelled with explicit arguments). *)
 Lemma aenv_mid_split : forall (E1 : aenv) x b1 F1 E2 b2 F2,
