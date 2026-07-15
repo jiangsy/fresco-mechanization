@@ -1023,18 +1023,45 @@ Proof.
     exists ζ. split; [ exact Hζ | ].
     rewrite app_assoc in Hie. exact Hie.
   - admit. (* TODO[optimality]: Assign-Skip; FLEX walk (β sandwiched Ξ++[β]++Θ0).
-              Same as Depend: a_inc_mid_strip_flex peels the competing ρ; β∉ftv P
-              so the join transfers to the sub-node over the SAME Θ; factoring
-              needs the a_inc_equiv mid-insert. NO ≡ᵗ/join strengthening. *)
+              Unlike Depend (now CLOSED, direct re-association) the target Θ1 SHRINKS
+              (β dropped), so this is the genuine mid-insert case.  Plan (verified
+              sound on paper): a_inc_mid_strip_flex peels the competing θ = ρ1++(β,τ)::ρ2
+              (dom ρ1 = dom Ξ, Θ0 ≤[ρ2] Θ, (Ξ++Θ0) ≤[ρ1++ρ2] Θ); β∉ftv P + α≠β
+              transfer the join UNCHANGED over the SAME Θ (msubst/lookup are lookup-
+              based, dropping the β entry is invisible); the sub id-witness w comes
+              from a_assign_sound (Ξ++Θ0 ⊴ Θ1); sub-IH gives ζ' with Θ1 ≤[ζ'] Θ and
+              a_inc_equiv (Ξ++Θ0) (ρ1++ρ2) (compose ζ' w) Θ; reconstruct ζ := (β,τ)::ζ'
+              (a_inc__flex, τ wf/mono from the strip) and the factoring via an
+              a_inc_equiv MID-INSERT lemma [a_inc_equiv_mid_insert_flex] (still TO
+              BUILD; requires a_decls Ξ — a flex_def in Ξ mentioning β would break the
+              flex_def ≡ᵗ-obligation under insertion — plus threading the ≤-hyps for
+              the per-Ξ-head domain-disjointness).  Key algebra:
+              compose ((β,τ)::ζ') θ1 = compose ζ' w with (β,τ) mid-inserted at |Ξ|
+              (θ1 id ⟹ its β-image is `β ⟹ lookup ((β,τ)::ζ') β = τ).  NO ≡ᵗ/join
+              strengthening; NO term-binding obstacle (β is flex, no type content). *)
   - admit. (* TODO[optimality]: Assign-SkipRigid; RIGID walk. Here the competing
               target GROWS: (β~tvar ++ Θ0) ≤[ρ] Θ inverts (a_inc_tvar_inv) to
               Θ = Ξ ++ (β~tvar) ++ Θ' with Θ0 ≤[ρ] Θ'. The join is over Θ but the
               sub-node needs it over Θ' => NEEDS a ⊨ₛᵃ (join) CONTEXT-STRENGTHENING
               lemma (SECOND infrastructure need, not the ≡ᵗ one). *)
-  - admit. (* TODO[optimality]: Assign-SkipTmVar(typ); term-var walk. Like
-              SkipRigid: a_inc_var_inv inserts a suffix+entry into the competing
-              target => needs the same ⊨ₛᵃ join-strengthening. *)
-  - admit. (* TODO[optimality]: Assign-SkipTmVar(skl); as SkipTmVar(typ). *)
+  - admit. (* TODO[optimality]: Assign-SkipTmVar(typ); term-var walk. a_inc_var_inv
+              inverts (x~var_typ Q ++ Θ0) ≤[ρ] Θ to Θ = Ξ ++ (x~var_typ (msubst ρ Q))
+              ++ Θ' with Θ0 ≤[ρ] Θ', so it needs ⊨ₛᵃ join-strengthening (as SkipRigid).
+              *** OBSTACLE (found 2026-07-15, not in the original plan) ***: the
+              factoring conjunct Θ1' ≤[ζ] Θ must reproduce Θ's term-binding middle,
+              i.e. exhibit ζ with msubst ζ Q = msubst ρ Q SYNTACTICALLY (a_inc__var
+              forces the target middle to be msubst ζ Q).  The sub-IH's ζ' only gives
+              msubst ζ' Q ≡ᵗ msubst ρ Q (via the a_inc_equiv factoring, θ1' id), NOT
+              syntactic equality: ζ'(flex) may be a DIFFERENT representative of the
+              same ≡ᵗ-class (e.g. a Θ'-defined flex whose def is msubst ρ Q's value).
+              So ζ := ζ' does not close the increment.  A syntactically-matching ζ
+              exists (the value is a wf monotype in Θ') but must be BUILT and the
+              a_inc_equiv re-established with it (a_inc_equiv is ≡ᵗ-tolerant, so it
+              survives) — this is real extra work, not a one-liner.  Same wrinkle in
+              Flex-Flex-Skip' (unify) below for its var_typ/var_skl sub-cases.  The
+              b=tvar / SkipRigid case is CLEAN (no type content to reproduce). *)
+  - admit. (* TODO[optimality]: Assign-SkipTmVar(skl); as SkipTmVar(typ) — same
+              syntactic-middle obstacle on the skeleton binding. *)
   (* ================= a_unify (6) ================= *)
   - (* Flex-Flex-Id : Θ1 = Θ0, pure identity-node factoring *)
     intros F Θ0 α Hfa. unfold unify_optimal_post.
@@ -1113,12 +1140,20 @@ Proof.
   - admit. (* TODO[optimality]: Flex-Flex-Skip' (a_unify__skip_other, b rigid/term).
               The competing target GROWS: ((c~b)++Θ0) ≤[ρ] Θ inverts to
               Θ = Ξ ++ (c~b) ++ Θ' with Θ0 ≤[ρ] Θ'; the ≡ᵗ equality Heq is over Θ
-              but the sub-node needs it over Θ' => NEEDS ≡ᵗ CONTEXT-STRENGTHENING
-              (Blocker-2a). Endpoints (msubst_lookup ρ α/β) ARE wf in Θ'. NB the
-              strip must cross a general a_suffix Ξ whose flex_def images can
-              mention c — a bare structural induction on ≡ᵗ fails (trans routes
-              through intermediate types mentioning c); it needs the normal-form/
-              confluence characterization of ≡ᵗ. Not yet built. *)
+              but the sub-node needs it over Θ'.
+              ≡ᵗ CONTEXT-STRENGTHENING is now BUILT and axiom-free:
+              [a_tyequiv_strengthen_mono_mid] (§6b above) — the endpoints
+              msubst_lookup ρ α/β are wf MONOtypes in Θ', so the normal-form route
+              (a_tyequiv_downarrow / downarrow_app_agree_ptyp / a_tyequiv_to_
+              downarrow_mono) discharges the strengthening.  This CLOSES the ≡ᵗ side
+              for all three sub-cases (b = tvar / var_typ / var_skl).
+              *** REMAINING OBSTACLE (found 2026-07-15): for b = var_typ Q / var_skl Q
+              the FACTORING conjunct ((c~b)++Θ1) ≤[ζ] Θ must reproduce Θ's middle
+              term-binding type SYNTACTICALLY (msubst ζ Q = msubst ρ Q), which the
+              sub-IH's ζ' only gives up to ≡ᵗ.  See the detailed note on
+              Assign-SkipTmVar(typ) above — same wrinkle; needs a syntactically-
+              matching ζ built + the a_inc_equiv re-established (it is ≡ᵗ-tolerant).
+              The b = tvar sub-case is CLEAN and closes with the new strengthening. *)
   (* ================= a_consis (14) ================= *)
   - admit. (* TODO[optimality]: C-Ghost; axiom, Θ1=Θ0; opt_axiom_factor for the
               factoring + precision from the hole (Δ2∩ftv=∅); true. *)
