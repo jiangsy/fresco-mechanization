@@ -841,12 +841,24 @@ Proof.
               blocked on building ζ from guess^TY's monotype + occurs check. *)
   - admit. (* TODO[optimality]: Assign-Assign; consistency sub-IH (back-edge);
               true; blocked on threading the sub-node solution + glue. *)
-  - admit. (* TODO[optimality]: Assign-Depend; walk, Ξ grows at tail; true;
-              blocked on sub-IH context bookkeeping. *)
-  - admit. (* TODO[optimality]: Assign-Skip; walk; true; blocked on sub-IH. *)
-  - admit. (* TODO[optimality]: Assign-SkipRigid; walk; true; blocked on sub-IH. *)
-  - admit. (* TODO[optimality]: Assign-SkipTmVar(typ); walk; true; sub-IH. *)
-  - admit. (* TODO[optimality]: Assign-SkipTmVar(skl); walk; true; sub-IH. *)
+  - admit. (* TODO[optimality]: Assign-Depend; FLEX walk, Ξ grows at tail; true.
+              Target Θ UNCHANGED (flex/suffix don't extend it), so NO join-strip.
+              Peel via a_inc_mid_strip_flex (prop_inc_strengthen.v); factoring
+              still needs an a_inc_equiv MID-INSERT (flex ≡ᵗ obligation is refl,
+              cf. Flex-Flex-Skip) — the peel's a_inc_equiv counterpart. *)
+  - admit. (* TODO[optimality]: Assign-Skip; FLEX walk (β sandwiched Ξ++[β]++Θ0).
+              Same as Depend: a_inc_mid_strip_flex peels the competing ρ; β∉ftv P
+              so the join transfers to the sub-node over the SAME Θ; factoring
+              needs the a_inc_equiv mid-insert. NO ≡ᵗ/join strengthening. *)
+  - admit. (* TODO[optimality]: Assign-SkipRigid; RIGID walk. Here the competing
+              target GROWS: (β~tvar ++ Θ0) ≤[ρ] Θ inverts (a_inc_tvar_inv) to
+              Θ = Ξ ++ (β~tvar) ++ Θ' with Θ0 ≤[ρ] Θ'. The join is over Θ but the
+              sub-node needs it over Θ' => NEEDS a ⊨ₛᵃ (join) CONTEXT-STRENGTHENING
+              lemma (SECOND infrastructure need, not the ≡ᵗ one). *)
+  - admit. (* TODO[optimality]: Assign-SkipTmVar(typ); term-var walk. Like
+              SkipRigid: a_inc_var_inv inserts a suffix+entry into the competing
+              target => needs the same ⊨ₛᵃ join-strengthening. *)
+  - admit. (* TODO[optimality]: Assign-SkipTmVar(skl); as SkipTmVar(typ). *)
   (* ================= a_unify (6) ================= *)
   - (* Flex-Flex-Id : Θ1 = Θ0, pure identity-node factoring *)
     intros F Θ0 α Hfa. unfold unify_optimal_post.
@@ -922,7 +934,15 @@ Proof.
       rewrite Heqc.
       apply a_inc_equiv__flex; [ exact Hie' | ].
       apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτ.
-  - admit. (* TODO[optimality]: Flex-Flex-Skip'; walk; true; sub-IH. *)
+  - admit. (* TODO[optimality]: Flex-Flex-Skip' (a_unify__skip_other, b rigid/term).
+              The competing target GROWS: ((c~b)++Θ0) ≤[ρ] Θ inverts to
+              Θ = Ξ ++ (c~b) ++ Θ' with Θ0 ≤[ρ] Θ'; the ≡ᵗ equality Heq is over Θ
+              but the sub-node needs it over Θ' => NEEDS ≡ᵗ CONTEXT-STRENGTHENING
+              (Blocker-2a). Endpoints (msubst_lookup ρ α/β) ARE wf in Θ'. NB the
+              strip must cross a general a_suffix Ξ whose flex_def images can
+              mention c — a bare structural induction on ≡ᵗ fails (trans routes
+              through intermediate types mentioning c); it needs the normal-form/
+              confluence characterization of ≡ᵗ. Not yet built. *)
   (* ================= a_consis (14) ================= *)
   - admit. (* TODO[optimality]: C-Ghost; axiom, Θ1=Θ0; opt_axiom_factor for the
               factoring + precision from the hole (Δ2∩ftv=∅); true. *)
