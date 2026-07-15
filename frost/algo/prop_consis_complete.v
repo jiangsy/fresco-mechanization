@@ -35,6 +35,7 @@ Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_precise_recover.
+Require Import src.frost.algo.prop_mono_bridge.
 
 Set Implicit Arguments.
 
@@ -964,6 +965,28 @@ Proof.
   apply (a_tyequiv_to_downarrow_mono Hwft HwfB HmB).
 Qed.
 
+(** The BRIDGE, generalised over the refinement's ghost context [Δ].  The
+    packaged [consis_refine_mono_tyequiv] (prop_mono_bridge.v) fixes [Δ] to
+    [empty]; the consistency optimality nodes present the competing
+    Δ₁-refinement over a NON-empty [Δ], but [refine_mono_join] (the only place
+    [Δ] is touched) is already [Δ]-agnostic, so the generalisation is free. *)
+Lemma consis_refine_mono_tyequiv_gen : forall Θ Δ A B Qt,
+  a_wf_aenv Θ ->
+  mono_ptyp A -> mono_ptyp B ->
+  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ Qt ->
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh (ptyp_to_pskl B)) ⊳ Qt ->
+  Θ ⊢ A ≡ᵗ B.
+Proof.
+  intros Θ Δ A B Qt Hwf HmA HmB Hc Hr.
+  rewrite (ptyp_to_bskl_inh_syn_eq HmB) in Hr.
+  destruct (consis_mono_join Hc Hwf (A := A) eq_refl HmA) as [C [HmC [HeqC HeA]]].
+  destruct (refine_mono_join Hr Hwf (B := B) eq_refl HmB) as [C' [HmC' [HeqC' HeB]]].
+  assert (HCC : C = C')
+    by (apply ptyp_to_bskl_syn_inj; auto; rewrite <- HeqC, <- HeqC'; reflexivity).
+  subst C'.
+  eapply a_tyequiv__trans; [ exact HeA | apply a_tyequiv__sym; exact HeB ].
+Qed.
+
 (* ===================================================================== *)
 (*  7.  THE 28-CASE MUTUAL OPTIMALITY BUNDLE                               *)
 (*                                                                        *)
@@ -1170,8 +1193,39 @@ Proof.
               degenerates to congruence; true. *)
   - admit. (* TODO[optimality]: C-UnivGhost1; STRUCTURAL (rigid α); glue; true. *)
   - admit. (* TODO[optimality]: C-UnivGhost2; STRUCTURAL; glue; true. *)
-  - admit. (* TODO[optimality]: C-Flex; MUTUAL (unify sub-IH) + precision via
-              consis_precise_via_join; true; blocked on plumbing the sub-IH. *)
+  - (* C-Flex : subjects α̂, β̂ equated by unification.  The competing join +
+       Δ₁-refinement force [θα̂ ≡ θβ̂] (the bridge), feeding the unify sub-IH for
+       the increment + factoring; the precision conjunct is [via_join]. *)
+    intros F Δ1 Δ2 Θ0 Θ1 α β Hu IHu.
+    unfold unify_optimal_post in IHu. unfold consis_optimal_post.
+    intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf θ1 θ Θ Qt Qb
+           Hid Hinc1 HeqQt Hinc Hwfth Hjoin Hrs Hrp.
+    destruct (a_unify_subjects_flex Hwf Hu) as [Hfα Hfβ].
+    destruct a_assign_unify_consis_sound as [_ [Hsnd_u _]].
+    destruct (Hsnd_u _ _ _ _ _ Hu Hwf) as [Hle [Hwf1 _]].
+    assert (Hmα : mono_ptyp (msubst_lookup θ α)) by (eapply a_inc_lookup_mono; exact Hinc).
+    assert (Hmβ : mono_ptyp (msubst_lookup θ β)) by (eapply a_inc_lookup_mono; exact Hinc).
+    assert (Heqαβ : Θ ⊢ (msubst_lookup θ α) ≡ᵗ (msubst_lookup θ β)).
+    { eapply consis_refine_mono_tyequiv_gen with (Qt := Qb);
+        [ exact Hwfth | exact Hmα | exact Hmβ | | ].
+      - replace (msubst_pskl θ (pskl_var_f α))
+          with (ptyp_to_pskl (msubst_lookup θ α)) in Hjoin by reflexivity.
+        rewrite pskl_to_uskl_ptyp in Hjoin. exact Hjoin.
+      - apply ad_refine_syn_f_forget in Hrs. exact Hrs. }
+    destruct (IHu Hwf Hfα Hfβ θ1 θ Θ Hid Hinc1 Hinc Hwfth Heqαβ) as [ζ [Hζ Hie]].
+    assert (Hbα1 : a_binds_tvar α Θ1).
+    { eapply a_isub_binds_tvarish; [ exact Hle | ].
+      destruct Hfα as [Hb | [τ Hb]];
+        [ right; left | right; right; exists τ ]; exact Hb. }
+    exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
+    destruct Qt; simpl in HeqQt; try discriminate.
+    inversion HeqQt; subst. clear HeqQt.
+    eapply consis_precise_via_join;
+      [ exact Hwfth | exact Hfα | exact Hinc | exact Hbα1 | exact Hζ
+      | exact Hwf1 | exact Hie
+      | eapply a_inc_flex_dom; [ exact Hinc1 | exact Hwf | exact Hfα ]
+      | apply msubst_lookup_id; exact Hid
+      | exact Hjoin ].
   - admit. (* TODO[optimality]: C-FlexL; MUTUAL (assign sub-IH) + precision via
               consis_precise_via_join; true. *)
   - admit. (* TODO[optimality]: C-FlexR; MUTUAL (assign sub-IH) + precision via
