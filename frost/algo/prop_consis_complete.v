@@ -258,6 +258,15 @@ Definition consis_optimal_post (F Δ1 Δ2 : atoms) (Θ0 : aenv)
     bskl_to_pskl Qt = Q ->
     Θ0 ≤[ θ ] Θ ->
     a_wf_aenv Θ ->  (* external-wf side condition on the competing solution's target *)
+    (* The paper's AUGMENTED-SOLUTION side condition (consistency-proofs.tex
+       :2239-2240): "no flexible variables in Θ depend on variables in Δ1 and
+       Δ2" — on the COMPETING target Θ, in addition to the problem-side
+       [no_flex_dep _ Θ0] above.  NOT derivable from the problem side (a
+       competing increment may define a flexible with a Δ-mentioning image);
+       load-bearing for the Δ-growing structural cases (C-ForallInh/Syn,
+       C-UnivGhost1), whose outer precision reassembly strips the opened
+       rigid α out of the sub-node's context. *)
+    no_flex_dep (Δ1 `union` Δ2) Θ ->
     empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ P)) ≈ Qb ->
     ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl θ P0)) Qb ->
     ad_refine_pskl_f Δ2 Θ Δ2 (msubst_pskl θ P) (bskl_to_pskl Qb) ->
@@ -1052,11 +1061,27 @@ Qed.
 (*                                                                          *)
 (*  WORK-IN-PROGRESS.  Per the relaxed rule for this bundle, cases not yet   *)
 (*  finished are [admit]-ed with an honest per-case marker (rule name +      *)
-(*  what remains).  Every admitted goal is TRUE (it mirrors the             *)
-(*  corresponding green soundness case plus the ζ-construction), just not    *)
-(*  yet mechanized.  Print Assumptions therefore lists the admit axiom      *)
-(*  until they are closed.  The GLUE and all factoring helpers above are     *)
-(*  fully Qed'd and axiom-free.                                             *)
+(*  what remains).  Print Assumptions lists the admit axiom until they are   *)
+(*  closed.  The GLUE and all factoring helpers above are fully Qed'd and    *)
+(*  axiom-free.                                                              *)
+(*                                                                           *)
+(*  *** FALSITY (machine-checked 2026-07-15,                                 *)
+(*      algo/cex_assign_optimal_syn_middle.v) ***                            *)
+(*  The a_assign CONJUNCT of this theorem is FALSE AS STATED — hence so is   *)
+(*  the paper's [thm:complete-consistency] optimality half (part 3, and      *)
+(*  part 2 through Flex-Flex-Skip').  Root cause: [Assign-Depend] +          *)
+(*  [Assign-SkipTmVar] + [Assign-SolveM] MIGRATE a payload flexible below    *)
+(*  walked term binders (forced by wf: the deposited definition mentions     *)
+(*  it), while information increase (algorithmic.tex:91-121) demands the     *)
+(*  reconstructed target's binder payloads SYNTACTICALLY (x:θP) and images   *)
+(*  well-formed in the POSITIONAL remainder.  A competing solution may       *)
+(*  solve the migrated flexible with a name allocated ABOVE the binder —     *)
+(*  legal at its ORIGINAL position — and then no factoring ζ exists.         *)
+(*  The affected cases below (Assign-SkipTmVar typ/skl; Flex-Flex-Skip'      *)
+(*  var_typ/var_skl branches) are UNPROVABLE, not unfinished.  Candidate     *)
+(*  paper fix (GMM-style): ≡ᵗ-tolerant middles in the var/var_skl rules of   *)
+(*  information increase — see the cex file header.  FLAGGED; awaiting a     *)
+(*  paper-level decision before any rule change.                             *)
 (* ===================================================================== *)
 
 Theorem a_assign_unify_consis_optimal :
@@ -1118,24 +1143,22 @@ Proof.
               Θ = Ξ ++ (β~tvar) ++ Θ' with Θ0 ≤[ρ] Θ'. The join is over Θ but the
               sub-node needs it over Θ' => NEEDS a ⊨ₛᵃ (join) CONTEXT-STRENGTHENING
               lemma (SECOND infrastructure need, not the ≡ᵗ one). *)
-  - admit. (* TODO[optimality]: Assign-SkipTmVar(typ); term-var walk. a_inc_var_inv
-              inverts (x~var_typ Q ++ Θ0) ≤[ρ] Θ to Θ = Ξ ++ (x~var_typ (msubst ρ Q))
-              ++ Θ' with Θ0 ≤[ρ] Θ', so it needs ⊨ₛᵃ join-strengthening (as SkipRigid).
-              *** OBSTACLE (found 2026-07-15, not in the original plan) ***: the
-              factoring conjunct Θ1' ≤[ζ] Θ must reproduce Θ's term-binding middle,
-              i.e. exhibit ζ with msubst ζ Q = msubst ρ Q SYNTACTICALLY (a_inc__var
-              forces the target middle to be msubst ζ Q).  The sub-IH's ζ' only gives
-              msubst ζ' Q ≡ᵗ msubst ρ Q (via the a_inc_equiv factoring, θ1' id), NOT
-              syntactic equality: ζ'(flex) may be a DIFFERENT representative of the
-              same ≡ᵗ-class (e.g. a Θ'-defined flex whose def is msubst ρ Q's value).
-              So ζ := ζ' does not close the increment.  A syntactically-matching ζ
-              exists (the value is a wf monotype in Θ') but must be BUILT and the
-              a_inc_equiv re-established with it (a_inc_equiv is ≡ᵗ-tolerant, so it
-              survives) — this is real extra work, not a one-liner.  Same wrinkle in
-              Flex-Flex-Skip' (unify) below for its var_typ/var_skl sub-cases.  The
-              b=tvar / SkipRigid case is CLEAN (no type content to reproduce). *)
-  - admit. (* TODO[optimality]: Assign-SkipTmVar(skl); as SkipTmVar(typ) — same
-              syntactic-middle obstacle on the skeleton binding. *)
+  - admit. (* *** FALSE AS STATED — DO NOT ATTEMPT ***  Assign-SkipTmVar(typ).
+              Machine-checked counterexample: algo/cex_assign_optimal_syn_middle.v
+              (2026-07-15, axiom-free).  The 2026-07-15 "syntactic middle" obstacle
+              is not extra work but an UNPROVABILITY: when the walk MIGRATES a
+              payload flexible below this binder (Depend→SkipTmVar→SolveM deposit,
+              forced by wf of the deposited definition), a competing solution may
+              solve that flexible with a name allocated ABOVE the binder; the
+              factoring ζ must then reproduce the binder middle msubst ρ Q
+              SYNTACTICALLY at a depth where that name is out of scope.  No ζ
+              exists.  (A ζ-override construction repairing ζ' up to ≡ᵗ was built
+              and DISCARDED — its wf-at-depth premise is exactly what fails.)
+              Blocked on a PAPER-LEVEL decision; candidate fix = ≡ᵗ-tolerant
+              middles in a_inc's var/var_skl rules (see cex file header), under
+              which this case reduces to the ⊨ₛᵃ join-strengthening + ζ := ζ'. *)
+  - admit. (* *** FALSE AS STATED *** Assign-SkipTmVar(skl); same counterexample
+              shape on the skeleton binding (cex_assign_optimal_syn_middle.v). *)
   (* ================= a_unify (6) ================= *)
   - (* Flex-Flex-Id : Θ1 = Θ0, pure identity-node factoring *)
     intros F Θ0 α Hfa. unfold unify_optimal_post.
@@ -1211,23 +1234,19 @@ Proof.
       rewrite Heqc.
       apply a_inc_equiv__flex; [ exact Hie' | ].
       apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτ.
-  - admit. (* TODO[optimality]: Flex-Flex-Skip' (a_unify__skip_other, b rigid/term).
-              The competing target GROWS: ((c~b)++Θ0) ≤[ρ] Θ inverts to
-              Θ = Ξ ++ (c~b) ++ Θ' with Θ0 ≤[ρ] Θ'; the ≡ᵗ equality Heq is over Θ
-              but the sub-node needs it over Θ'.
-              ≡ᵗ CONTEXT-STRENGTHENING is now BUILT and axiom-free:
-              [a_tyequiv_strengthen_mono_mid] (§6b above) — the endpoints
-              msubst_lookup ρ α/β are wf MONOtypes in Θ', so the normal-form route
-              (a_tyequiv_downarrow / downarrow_app_agree_ptyp / a_tyequiv_to_
-              downarrow_mono) discharges the strengthening.  This CLOSES the ≡ᵗ side
-              for all three sub-cases (b = tvar / var_typ / var_skl).
-              *** REMAINING OBSTACLE (found 2026-07-15): for b = var_typ Q / var_skl Q
-              the FACTORING conjunct ((c~b)++Θ1) ≤[ζ] Θ must reproduce Θ's middle
-              term-binding type SYNTACTICALLY (msubst ζ Q = msubst ρ Q), which the
-              sub-IH's ζ' only gives up to ≡ᵗ.  See the detailed note on
-              Assign-SkipTmVar(typ) above — same wrinkle; needs a syntactically-
-              matching ζ built + the a_inc_equiv re-established (it is ≡ᵗ-tolerant).
-              The b = tvar sub-case is CLEAN and closes with the new strengthening. *)
+  - admit. (* Flex-Flex-Skip' (a_unify__skip_other).  MIXED STATUS:
+              * b = tvar : TRUE and closable — peel via a_inc_tvar_inv, strengthen
+                the ≡ᵗ equality with [a_tyequiv_strengthen_mono_mid] (§6b, BUILT,
+                axiom-free), sub-IH, rebuild via a_inc__tvar/a_inc_equiv__tvar.
+              * b = var_typ Q / var_skl Q : *** FALSE AS STATED *** — the
+                Assign-SkipTmVar counterexample (algo/cex_assign_optimal_syn_
+                middle.v) transports through the back edge (flex_assign → consis
+                → FlexL → assignvar can migrate a flexible free in Q below an
+                inner binder); the factoring must reproduce this binder's middle
+                msubst ρ Q syntactically at the wrong depth.  Blocked on the same
+                paper-level decision as Assign-SkipTmVar.
+              The case cannot be partially closed (one constructor covers all
+              three b-shapes), so it stays admitted with this marker. *)
   (* ================= a_consis (14) ================= *)
   - (* C-Ghost : axiom, Θ1=Θ0.  ζ:=θ (opt_axiom_factor).  The SUBJECT is the
        ghost hole, so the competing join forces the target Qb to be inherited
@@ -1235,7 +1254,7 @@ Proof.
        competing Δ₁-refinement of the INPUT P0 (Hrs), Δ-weakened. *)
     intros F Δ1 Δ2 Θ0 P0 Hint. unfold consis_optimal_post.
     intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf θ1 θ Θ Qt Qb
-           Hid Hinc1 HeqQt Hinc Hwfth Hjoin Hrs Hrp.
+           Hid Hinc1 HeqQt Hinc Hwfth Hnfdc Hjoin Hrs Hrp.
     exists θ.
     destruct (opt_axiom_factor Hwf Hid Hinc1 Hinc) as [Hout Hfact].
     split; [ exact Hout | ]. split; [ exact Hfact | ].
@@ -1250,7 +1269,7 @@ Proof.
        join via consis_precise_mono_join. *)
     intros F Δ1 Δ2 Θ0. unfold consis_optimal_post.
     intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf θ1 θ Θ Qt Qb
-           Hid Hinc1 HeqQt Hinc Hwfth Hjoin Hrs Hrp.
+           Hid Hinc1 HeqQt Hinc Hwfth Hnfdc Hjoin Hrs Hrp.
     exists θ.
     destruct (opt_axiom_factor Hwf Hid Hinc1 Hinc) as [Hout Hfact].
     split; [ exact Hout | ]. split; [ exact Hfact | ].
@@ -1264,7 +1283,7 @@ Proof.
        (α∉dom θ); ζ:=θ; precision by consis_precise_mono_join at A:=`α. *)
     intros F Δ1 Δ2 Θ0 α Hbind. unfold consis_optimal_post.
     intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf θ1 θ Θ Qt Qb
-           Hid Hinc1 HeqQt Hinc Hwfth Hjoin Hrs Hrp.
+           Hid Hinc1 HeqQt Hinc Hwfth Hnfdc Hjoin Hrs Hrp.
     exists θ.
     destruct (opt_axiom_factor Hwf Hid Hinc1 Hinc) as [Hout Hfact].
     split; [ exact Hout | ]. split; [ exact Hfact | ].
@@ -1291,19 +1310,20 @@ Proof.
               the sub-node solutions (soundness output -> optimality input) and
               discharging the glue's wf + flex-dom side conditions. *)
   - admit. (* TODO[optimality]: C-ForallInh; STRUCTURAL, Δ GROWS by the opened α.
-              glue with the cofinite α-extended ζ.  BLOCKED on the paper's
-              no_flex_dep-on-Θ side condition (consistency-proofs.tex:2239-2240):
-              reconstructing the OUTER precision [Θ ⨟ (Δ1∪Δ2) ⊢ᵣ ζQt ⊑ Qb] at the
-              grown Δ needs [no_flex_dep (Δ∪{α}) (Θ,α)] on the COMPETING target,
-              which the current motive does NOT carry (only on Θ0).  Real motive
-              change + a re-derivation lemma; escalated, DO NOT add here. *)
-  - admit. (* TODO[optimality]: C-ForallSyn; STRUCTURAL, Δ2 GROWS; glue; same
-              no_flex_dep-on-Θ wall as C-ForallInh (paper :2239-2240). *)
+              glue with the cofinite α-extended ζ.  The paper's no_flex_dep-on-Θ
+              side condition (consistency-proofs.tex:2239-2240) is NOW IN THE
+              MOTIVE ([no_flex_dep (Δ1∪Δ2) Θ], 2026-07-15); the sub-node's
+              [no_flex_dep (add α _) ((α~tvar)++Θ)] is derivable from it + α
+              fresh + wf.  Remaining work: cofinite inversion of the competing
+              join/refinements, sub-solution assembly, and the outer precision
+              reassembly (context-strip of the opened rigid α + rename). *)
+  - admit. (* TODO[optimality]: C-ForallSyn; STRUCTURAL, Δ2 GROWS; glue; as
+              C-ForallInh (no_flex_dep-on-Θ now in the motive). *)
   - admit. (* TODO[optimality]: C-UnivGhost; STRUCTURAL (single sub-node, Δ fixed);
               glue degenerates to congruence.  Should not hit the no_flex_dep wall
               (no Δ growth); blocked only on the glue assembly. *)
-  - admit. (* TODO[optimality]: C-UnivGhost1; STRUCTURAL, Δ1 GROWS by α; glue;
-              no_flex_dep-on-Θ wall (paper :2239-2240). *)
+  - admit. (* TODO[optimality]: C-UnivGhost1; STRUCTURAL, Δ1 GROWS by α; glue; as
+              C-ForallInh (no_flex_dep-on-Θ now in the motive). *)
   - admit. (* TODO[optimality]: C-UnivGhost2; STRUCTURAL (single sub-node, Δ fixed);
               glue; blocked on assembly (no Δ growth). *)
   - (* C-Flex : subjects α̂, β̂ equated by unification.  The competing join +
@@ -1312,7 +1332,7 @@ Proof.
     intros F Δ1 Δ2 Θ0 Θ1 α β Hu IHu.
     unfold unify_optimal_post in IHu. unfold consis_optimal_post.
     intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf θ1 θ Θ Qt Qb
-           Hid Hinc1 HeqQt Hinc Hwfth Hjoin Hrs Hrp.
+           Hid Hinc1 HeqQt Hinc Hwfth Hnfdc Hjoin Hrs Hrp.
     destruct (a_unify_subjects_flex Hwf Hu) as [Hfα Hfβ].
     destruct a_assign_unify_consis_sound as [_ [Hsnd_u _]].
     destruct (Hsnd_u _ _ _ _ _ Hu Hwf) as [Hle [Hwf1 _]].
