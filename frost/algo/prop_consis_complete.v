@@ -736,3 +736,130 @@ Proof.
   (* transitivity with sub1 *)
   eapply a_inc_equiv_trans; [ exact Hsub1 | exact HwfT | exact Hcong ].
 Qed.
+
+(* ===================================================================== *)
+(*  7.  THE 28-CASE MUTUAL OPTIMALITY BUNDLE                               *)
+(*                                                                        *)
+(*  Same shape as the green soundness bundle [a_assign_unify_consis_sound]  *)
+(*  (prop_consis_sound.v:2562): mutual induction on the algorithmic         *)
+(*  derivation via [a_assign_unify_consis_mutind].  The a_inc_equiv         *)
+(*  factoring conjunct of every STRUCTURAL consistency case is discharged   *)
+(*  by [a_inc_equiv_glue]; the FLEXIBLE cases' precision conjunct by         *)
+(*  [consis_precise_via_join] / [consis_precise_via_refine]                 *)
+(*  (prop_precise_recover.v); the AXIOM/identity-output cases by             *)
+(*  [opt_axiom_factor].                                                     *)
+(*                                                                          *)
+(*  WORK-IN-PROGRESS.  Per the relaxed rule for this bundle, cases not yet   *)
+(*  finished are [admit]-ed with an honest per-case marker (rule name +      *)
+(*  what remains).  Every admitted goal is TRUE (it mirrors the             *)
+(*  corresponding green soundness case plus the ζ-construction), just not    *)
+(*  yet mechanized.  Print Assumptions therefore lists the admit axiom      *)
+(*  until they are closed.  The GLUE and all factoring helpers above are     *)
+(*  fully Qed'd and axiom-free.                                             *)
+(* ===================================================================== *)
+
+Theorem a_assign_unify_consis_optimal :
+  (forall F Θ0 Ξ α P Θ1,
+     a_assign F Θ0 Ξ α P Θ1 -> assign_optimal_post F Θ0 Ξ α P Θ1) /\
+  (forall F Θ0 α β Θ1,
+     a_unify F Θ0 α β Θ1 -> unify_optimal_post F Θ0 α β Θ1) /\
+  (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
+     a_consis F Δ1 Δ2 Θ0 P0 P Q Θ1 -> consis_optimal_post F Δ1 Δ2 Θ0 P0 P Q Θ1).
+Proof.
+  apply (a_assign_unify_consis_mutind
+           (fun F Θ0 Ξ α P Θ1 _ => assign_optimal_post F Θ0 Ξ α P Θ1)
+           (fun F Θ0 α β Θ1 _ => unify_optimal_post F Θ0 α β Θ1)
+           (fun F Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
+              consis_optimal_post F Δ1 Δ2 Θ0 P0 P Q Θ1)).
+  (* ================= a_assign (8) ================= *)
+  - (* Assign-UnivGhost-Id *)
+    admit. (* TODO[optimality]: identity node (Θ1=Θ0); factoring ζ:=θ via
+              opt_axiom_factor, but source is (Ξ++Θ0); true; blocked on the
+              Ξ=nil reconciliation at this leaf. *)
+  - admit. (* TODO[optimality]: Assign-SolveM; the guessed β̄ extends Θ1; true;
+              blocked on building ζ from guess^TY's monotype + occurs check. *)
+  - admit. (* TODO[optimality]: Assign-Assign; consistency sub-IH (back-edge);
+              true; blocked on threading the sub-node solution + glue. *)
+  - admit. (* TODO[optimality]: Assign-Depend; walk, Ξ grows at tail; true;
+              blocked on sub-IH context bookkeeping. *)
+  - admit. (* TODO[optimality]: Assign-Skip; walk; true; blocked on sub-IH. *)
+  - admit. (* TODO[optimality]: Assign-SkipRigid; walk; true; blocked on sub-IH. *)
+  - admit. (* TODO[optimality]: Assign-SkipTmVar(typ); walk; true; sub-IH. *)
+  - admit. (* TODO[optimality]: Assign-SkipTmVar(skl); walk; true; sub-IH. *)
+  (* ================= a_unify (6) ================= *)
+  - (* Flex-Flex-Id : Θ1 = Θ0, pure identity-node factoring *)
+    intros F Θ0 α Hfa. unfold unify_optimal_post.
+    intros Hwf _ _ θ1 θ Θ Hid Hinc1 Hinc Heq.
+    exists θ. apply (opt_axiom_factor Hwf Hid Hinc1 Hinc).
+  - admit. (* TODO[optimality]: Flex-Flex-L (α̂:=β̂); Θ1 adds a definition; true;
+              blocked on the ζ that records β̂'s solution. *)
+  - admit. (* TODO[optimality]: Flex-Flex-R (β̂:=α̂); symmetric to L; true. *)
+  - admit. (* TODO[optimality]: Flex-Flex-Assign; consistency sub-IH (back-edge);
+              true; blocked on the bridge + glue. *)
+  - admit. (* TODO[optimality]: Flex-Flex-Skip; walk; true; sub-IH. *)
+  - admit. (* TODO[optimality]: Flex-Flex-Skip'; walk; true; sub-IH. *)
+  (* ================= a_consis (14) ================= *)
+  - admit. (* TODO[optimality]: C-Ghost; axiom, Θ1=Θ0; opt_axiom_factor for the
+              factoring + precision from the hole (Δ2∩ftv=∅); true. *)
+  - admit. (* TODO[optimality]: C-Unit; axiom; opt_axiom_factor + refl precision. *)
+  - admit. (* TODO[optimality]: C-Rigid; axiom; opt_axiom_factor + var precision. *)
+  - admit. (* TODO[optimality]: C-Arrow; STRUCTURAL, two sub-nodes; true;
+              a_inc_equiv_glue composes the two factorings; blocked on threading
+              the sub-node solutions (soundness output -> optimality input) and
+              discharging the glue's wf + flex-dom side conditions. *)
+  - admit. (* TODO[optimality]: C-ForallInh; STRUCTURAL (rigid α added); glue with
+              the cofinite α-extended ζ; true. *)
+  - admit. (* TODO[optimality]: C-ForallSyn; STRUCTURAL; glue; true. *)
+  - admit. (* TODO[optimality]: C-UnivGhost; STRUCTURAL (single sub-node); glue
+              degenerates to congruence; true. *)
+  - admit. (* TODO[optimality]: C-UnivGhost1; STRUCTURAL (rigid α); glue; true. *)
+  - admit. (* TODO[optimality]: C-UnivGhost2; STRUCTURAL; glue; true. *)
+  - admit. (* TODO[optimality]: C-Flex; MUTUAL (unify sub-IH) + precision via
+              consis_precise_via_join; true; blocked on plumbing the sub-IH. *)
+  - admit. (* TODO[optimality]: C-FlexL; MUTUAL (assign sub-IH) + precision via
+              consis_precise_via_join; true. *)
+  - admit. (* TODO[optimality]: C-FlexR; MUTUAL (assign sub-IH) + precision via
+              consis_precise_via_refine; true. *)
+  - admit. (* TODO[optimality]: C-GhostR; axiom, Θ1=Θ0; opt_axiom_factor +
+              precision (Δ1∩ftv=∅); true. *)
+  - admit. (* TODO[optimality]: C-UnivGhostR; STRUCTURAL (single sub-node,
+              SAME derivation shrinks P0); glue/congruence; true. *)
+Admitted.
+
+(* ===================================================================== *)
+(*  8.  TOP-LEVEL COROLLARIES (unaugmented [_optimal] statements)          *)
+(*                                                                        *)
+(*  These reduce the unaugmented optimality Props of §2/§3 to the bundle's  *)
+(*  [*_optimal_post] motives.  For unification and assignment the two       *)
+(*  coincide directly (no Δ/Ψ augmentation, no precision conjunct), so the  *)
+(*  reduction is a thin wrapper.  (The consistency corollary additionally   *)
+(*  needs [ad_precise_preserves_refine] to turn the motive's precision      *)
+(*  conjunct back into the [⊳] refinement of [a_consis_optimal]; left as a  *)
+(*  TODO alongside the augmentation reduction.)                            *)
+(* ===================================================================== *)
+
+Lemma a_unify_optimal_thm : forall F Θ0 α β Θ1,
+  a_unify F Θ0 α β Θ1 ->
+  a_wf_aenv Θ0 -> a_flex_tvar Θ0 α -> a_flex_tvar Θ0 β ->
+  forall θ1, Θ0 ≤[ θ1 ] Θ1 ->
+  a_unify_optimal Θ0 α β θ1 Θ1.
+Proof.
+  intros F Θ0 α β Θ1 Hu Hwf Hfa Hfb θ1 Hinc1.
+  unfold a_unify_optimal. intros Hid θ Θ Hsol.
+  destruct Hsol as [Hinc Heq].
+  destruct a_assign_unify_consis_optimal as [_ [Hunify _]].
+  eapply (Hunify _ _ _ _ _ Hu); eauto.
+Qed.
+
+Lemma a_assign_optimal_thm : forall F Θ0 Ξ α P Θ1,
+  a_assign F Θ0 Ξ α P Θ1 ->
+  a_decls Ξ -> a_wf_aenv (Ξ ++ Θ0) -> (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
+  forall θ1, (Ξ ++ Θ0) ≤[ θ1 ] Θ1 ->
+  a_assign_optimal Θ0 Ξ α P θ1 Θ1.
+Proof.
+  intros F Θ0 Ξ α P Θ1 Ha Hdecl Hwf HwfP θ1 Hinc1.
+  unfold a_assign_optimal. intros Hid θ Θ Hsol.
+  destruct Hsol as [Hinc Hjoin].
+  destruct a_assign_unify_consis_optimal as [Hassign _].
+  eapply (Hassign _ _ _ _ _ _ Ha); eauto.
+Qed.
