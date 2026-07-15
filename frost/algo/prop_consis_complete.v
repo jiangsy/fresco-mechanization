@@ -812,6 +812,30 @@ Proof.
   induction ρ1 as [ | e ρ1' IH ]; simpl; [ reflexivity | rewrite IH; reflexivity ].
 Qed.
 
+(** Peel a declaration-only (all-flexible) PREFIX off a competing increment:
+    the [Ξ]-part of [ρ] has domain [dom Ξ] and the tail increment survives.
+    (Mirror of [a_inc_mid_strip_flex] for a prefix rather than a mid.  This is
+    the first step of the Assign-SkipRigid / SkipTmVar walk-case decomposition;
+    the remaining wiring is blocked on the walked-past middle's competing
+    suffix [Ξv] — see [remech-optimality-bundle-progress] memory.) *)
+Lemma a_inc_strip_decls_prefix : forall Ξ E ρ Θ,
+  a_decls Ξ ->
+  (Ξ ++ E) ≤[ ρ ] Θ ->
+  exists ρ1 ρ2, ρ = ρ1 ++ ρ2 /\ dom ρ1 [=] dom Ξ /\ E ≤[ ρ2 ] Θ.
+Proof.
+  induction Ξ as [ | [a b] Ξ' IH ]; intros E ρ Θ Hdec Hinc.
+  - exists (@nil (atom * ptyp)), ρ. simpl.
+    split; [ reflexivity | split; [ clear; fsetdec | exact Hinc ] ].
+  - inversion Hdec as [ | γ Ξ'' Hdec' [Heq HeqΞ] ]; subst.
+    simpl in Hinc.
+    inversion Hinc as [ | Θs ρs Θt αs τ Hinc' Hwfτ Hmτ [Heqα Heqρ] Heqt | | | | ];
+      subst.
+    destruct (IH E ρs Θ Hdec' Hinc') as [ρ1 [ρ2 [Heqr [Hdom Hincr]]]].
+    exists ((a, τ) :: ρ1), ρ2. simpl.
+    split; [ rewrite Heqr; reflexivity
+           | split; [ rewrite Hdom; clear; fsetdec | exact Hincr ] ].
+Qed.
+
 (* ===================================================================== *)
 (*  CONTEXT-STRENGTHENING for the join (ad_pat_consis) and skeleton-wf     *)
 (*  (ad_wf_pskl) judgments — the SkipRigid / SkipTmVar walk cases move    *)
