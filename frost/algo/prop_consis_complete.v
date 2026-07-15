@@ -1290,13 +1290,22 @@ Proof.
               a_inc_equiv_glue composes the two factorings; blocked on threading
               the sub-node solutions (soundness output -> optimality input) and
               discharging the glue's wf + flex-dom side conditions. *)
-  - admit. (* TODO[optimality]: C-ForallInh; STRUCTURAL (rigid α added); glue with
-              the cofinite α-extended ζ; true. *)
-  - admit. (* TODO[optimality]: C-ForallSyn; STRUCTURAL; glue; true. *)
-  - admit. (* TODO[optimality]: C-UnivGhost; STRUCTURAL (single sub-node); glue
-              degenerates to congruence; true. *)
-  - admit. (* TODO[optimality]: C-UnivGhost1; STRUCTURAL (rigid α); glue; true. *)
-  - admit. (* TODO[optimality]: C-UnivGhost2; STRUCTURAL; glue; true. *)
+  - admit. (* TODO[optimality]: C-ForallInh; STRUCTURAL, Δ GROWS by the opened α.
+              glue with the cofinite α-extended ζ.  BLOCKED on the paper's
+              no_flex_dep-on-Θ side condition (consistency-proofs.tex:2239-2240):
+              reconstructing the OUTER precision [Θ ⨟ (Δ1∪Δ2) ⊢ᵣ ζQt ⊑ Qb] at the
+              grown Δ needs [no_flex_dep (Δ∪{α}) (Θ,α)] on the COMPETING target,
+              which the current motive does NOT carry (only on Θ0).  Real motive
+              change + a re-derivation lemma; escalated, DO NOT add here. *)
+  - admit. (* TODO[optimality]: C-ForallSyn; STRUCTURAL, Δ2 GROWS; glue; same
+              no_flex_dep-on-Θ wall as C-ForallInh (paper :2239-2240). *)
+  - admit. (* TODO[optimality]: C-UnivGhost; STRUCTURAL (single sub-node, Δ fixed);
+              glue degenerates to congruence.  Should not hit the no_flex_dep wall
+              (no Δ growth); blocked only on the glue assembly. *)
+  - admit. (* TODO[optimality]: C-UnivGhost1; STRUCTURAL, Δ1 GROWS by α; glue;
+              no_flex_dep-on-Θ wall (paper :2239-2240). *)
+  - admit. (* TODO[optimality]: C-UnivGhost2; STRUCTURAL (single sub-node, Δ fixed);
+              glue; blocked on assembly (no Δ growth). *)
   - (* C-Flex : subjects α̂, β̂ equated by unification.  The competing join +
        Δ₁-refinement force [θα̂ ≡ θβ̂] (the bridge), feeding the unify sub-IH for
        the increment + factoring; the precision conjunct is [via_join]. *)
@@ -1330,14 +1339,39 @@ Proof.
       | eapply a_inc_flex_dom; [ exact Hinc1 | exact Hwf | exact Hfα ]
       | apply msubst_lookup_id; exact Hid
       | exact Hjoin ].
-  - admit. (* TODO[optimality]: C-FlexL; MUTUAL (assign sub-IH) + precision via
-              consis_precise_via_join; true. *)
-  - admit. (* TODO[optimality]: C-FlexR; MUTUAL (assign sub-IH) + precision via
-              consis_precise_via_refine; true. *)
-  - admit. (* TODO[optimality]: C-GhostR; axiom, Θ1=Θ0; opt_axiom_factor +
-              precision (Δ1∩ftv=∅); true. *)
-  - admit. (* TODO[optimality]: C-UnivGhostR; STRUCTURAL (single sub-node,
-              SAME derivation shrinks P0); glue/congruence; true. *)
+  - admit. (* TODO[optimality]: C-FlexL; precision conjunct closes via
+              consis_precise_via_join (subject α̂, as C-Flex) + a_binds_tvar α Θ1
+              from the soundness bundle.  BLOCKED on the increment+factoring: the
+              assign sub-IH (assign_optimal_post) demands its competing-join
+              hypothesis  [uskl(θP0) ≈ syn(θα̂)]  which must be RECONSTRUCTED from
+              this node's consis hyps (Hjoin: uskl(θα̂)≈Qb ; Hrs: inh{θP0}⊳Qb).
+              That reconstruction needs a refine→consis bridge (only the mono
+              direction [ad_pat_consis_refine_syn_f_mono] exists — it goes
+              consis→refine) PLUS extraction of a monotype view of the assigned
+              skeleton P0 (θP0 mono because α̂ is flex_mono).  Real missing infra,
+              not assembly. (2026-07-15) *)
+  - admit. (* TODO[optimality]: C-FlexR; precision conjunct closes via
+              consis_precise_via_refine (input α̂, off the competing Δ₁-refine).
+              BLOCKED, same wall as C-FlexL: the assign sub-IH needs its
+              competing-join  [uskl(θP) ≈ syn(θα̂)]  rebuilt from Hjoin/Hrs, which
+              additionally requires TARGET transport of consistency along θα̂ ≡ C
+              (only SUBJECT transport [tyequiv_mono_consis_transport] exists).
+              Real missing infra. (2026-07-15) *)
+  - admit. (* TODO[optimality]: C-GhostR; axiom, Θ1=Θ0; opt_axiom_factor gives
+              the increment+factoring (ζ:=θ).  BLOCKED on precision
+              [inh{θP} ⊳ inh{bskl_to_pskl Qb}].  Unlike C-Ghost the SUBJECT P
+              (not the input) drives it, and P may be POLYMORPHIC, so:
+              (a) the mono join/refine recovery does not apply; and
+              (b) the natural bridge [ad_refine_pskl → ad_precise] on Hrp FAILS —
+                  ad_refine_pskl's hole rule [pskl_hole ⊳ Q] would need
+                  [bskl_hole ⊳ inh{Q}] but ad_refine_syn's hole rule only yields
+                  [bskl_hole ⊳ SYN{Q}]; the ∀-rule conversely forces inh on the
+                  right.  Needs the full refine machinery (trans + a re-inherit
+                  lemma), or a non-mono consis→refine bridge.  (2026-07-15) *)
+  - admit. (* TODO[optimality]: C-UnivGhostR; STRUCTURAL (single sub-node, Δ fixed,
+              SAME derivation shrinks P0); glue/congruence.  No Δ growth, so the
+              no_flex_dep wall should not bite; blocked on the glue assembly + the
+              GhostR-style precision re-inheritance for the tophole. *)
 Admitted.
 
 (* ===================================================================== *)
