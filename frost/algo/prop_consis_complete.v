@@ -331,6 +331,35 @@ Proof.
     eapply IHHinc; eauto.
 Qed.
 
+(** An IDENTITY increment is determined by its SOURCE alone: two id-increments
+    out of the same [Θ0] are equal as lists (the target is irrelevant — every
+    image is the identity, and both track [Θ0]'s flexibles in the same order).
+    This is what lets a sub-node's soundness [⊴]-witness stand in for the
+    algorithm's own id-witness on the walk cases. *)
+Lemma is_id_inc_unique : forall Θ0 θ1 Θ1,
+  Θ0 ≤[ θ1 ] Θ1 -> is_id_msubst θ1 ->
+  forall θ2 Θ2, Θ0 ≤[ θ2 ] Θ2 -> is_id_msubst θ2 -> θ1 = θ2.
+Proof.
+  intros Θ0 θ1 Θ1 Hinc1; induction Hinc1; intros Hid1 θ2 Θ2 Hinc2 Hid2.
+  - inversion Hinc2; subst; reflexivity.
+  - apply is_id_msubst_inv in Hid1 as [Heq1 Hid1']; subst.
+    inversion Hinc2 as [ | Θa θa Θb αa τa Hinca Hwfa Hma [Heqα Heqθ2] Heqt
+                       | | | | ]; subst.
+    apply is_id_msubst_inv in Hid2 as [Heq2 Hid2']; subst.
+    f_equal. eapply IHHinc1; eauto.
+  - apply is_id_msubst_inv in Hid1 as [Heq1 Hid1']; subst.
+    inversion Hinc2 as [ | | Θa θa Θb αa τd τa Hinca Hwfa Hma Heqda [Heqα Heqθ2] Heqt
+                       | | | ]; subst.
+    apply is_id_msubst_inv in Hid2 as [Heq2 Hid2']; subst.
+    f_equal. eapply IHHinc1; eauto.
+  - inversion Hinc2 as [ | | | Θa θa Θb Ξa xa Aa Hinca Hsa Heqsrc Heqt | | ]; subst.
+    eapply IHHinc1; eauto.
+  - inversion Hinc2 as [ | | | | Θa θa Θb Ξa xa Pa Hinca Hsa Heqsrc Heqt | ]; subst.
+    eapply IHHinc1; eauto.
+  - inversion Hinc2 as [ | | | | | Θa θa Θb Ξa αa Hinca Hsa Heqsrc Heqt ]; subst.
+    eapply IHHinc1; eauto.
+Qed.
+
 (** The complete AXIOM-node factoring: at a node that leaves the context
     unchanged ([Θ1 = Θ0]) the competing solution's own substitution [θ]
     serves as the factoring [ζ]. *)
@@ -824,7 +853,43 @@ Proof.
       apply a_inc_equiv_refl; exact Hinc.
   - admit. (* TODO[optimality]: Flex-Flex-Assign; consistency sub-IH (back-edge);
               true; blocked on the bridge + glue. *)
-  - admit. (* TODO[optimality]: Flex-Flex-Skip; walk; true; sub-IH. *)
+  - (* Flex-Flex-Skip : head flex γ̂ skipped (γ≠α,β).  Peel γ̂ off the competing
+       θ = (γ,τγ)::θs, run the sub-IH with the soundness ⊴-witness (which the
+       inverted conclusion-witness equals by id-uniqueness), then re-cons γ̂. *)
+    intros F Θ0 Θ1 γ α β Hγα Hγβ Hu IHu.
+    unfold unify_optimal_post.
+    intros Hwf Hfα Hfβ θ1 θ Θ Hid Hinc1 Hinc Heq.
+    inversion Hwf as [ | γh Θh Hnd Hwf0 | | | | ]; subst.
+    destruct (a_unify_subjects_flex Hwf0 Hu) as [Hfα0 Hfβ0].
+    assert (Hαγ : α <> γ) by auto.
+    assert (Hβγ : β <> γ) by auto.
+    inversion Hinc as [ | Θs θs Θt γs τγ Hincs Hwfτ Hmτ [Heqγ Heqθ] Heqt
+                      | | | | ]; subst.
+    inversion Hinc1 as [ | Θp θp Θq γp τp Hincp Hwfp Hmp [Heqγ1 Heqθ1] Heqt1
+                       | | | | ]; subst.
+    apply is_id_msubst_inv in Hid as [Heqτp Hid1s]; subst.
+    destruct (a_unify_sound Hu Hwf0) as [[[w [Hidw Hincw]] _] [Hwf1 _]].
+    assert (Hw : θp = w) by (eapply is_id_inc_unique; eauto). subst w.
+    assert (Hγw : γ `notin` dom θp)
+      by (pose proof (a_inc_dom_sub Hincp) as Hs; clear - Hs Hnd; fsetdec).
+    rewrite (msubst_lookup_cons_neq τγ θs Hαγ) in Heq.
+    rewrite (msubst_lookup_cons_neq τγ θs Hβγ) in Heq.
+    destruct (IHu Hwf0 Hfα0 Hfβ0 θp θs Θ Hid1s Hincw Hincs Heq)
+      as [ζ' [Hζ' Hie']].
+    exists ((γ, τγ) :: ζ'). split.
+    + apply a_inc__flex; auto.
+    + assert (Heqc : msubst_compose ((γ, τγ) :: ζ') ((γ, ptyp_var_f γ) :: θp)
+                     = (γ, τγ) :: msubst_compose ζ' θp).
+      { change (msubst_compose ((γ, τγ) :: ζ') ((γ, ptyp_var_f γ) :: θp))
+          with ((γ, msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
+                :: msubst_compose ((γ, τγ) :: ζ') θp).
+        rewrite (msubst_compose_cons_l_id τγ ζ' Hid1s Hγw).
+        change (msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
+          with (msubst_lookup ((γ, τγ) :: ζ') γ).
+        rewrite msubst_lookup_cons_eq. reflexivity. }
+      rewrite Heqc.
+      apply a_inc_equiv__flex; [ exact Hie' | ].
+      apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτ.
   - admit. (* TODO[optimality]: Flex-Flex-Skip'; walk; true; sub-IH. *)
   (* ================= a_consis (14) ================= *)
   - admit. (* TODO[optimality]: C-Ghost; axiom, Θ1=Θ0; opt_axiom_factor for the
