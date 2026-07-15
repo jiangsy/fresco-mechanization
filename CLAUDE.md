@@ -220,12 +220,22 @@ before changing any of them.
 - Comments document **why** an encoding is the way it is, not what
   the rule says (the paper says that). Cite paper rule names when a
   Coq constructor is non-obvious.
-- **The active build carries ZERO `Admitted` (and no `Axiom`).**  A lemma
-  that cannot be finished is ABORTED: delete it and leave a short
-  `RESTART NOTE` comment at its location (what it claimed, why it was
-  dropped, what a re-proof needs), plus a [`PROGRESS.md`](PROGRESS.md)
-  entry.  Work-in-progress admits may exist only in the working tree,
-  never in a commit.
+- **Never commit a KNOWN-FALSE proof; that is the real rule.**  The
+  default remains ZERO `Admitted` / `Axiom`: a standalone lemma that
+  cannot be finished is ABORTED — delete it, leave a short `RESTART
+  NOTE` comment (what it claimed, why dropped, what a re-proof needs),
+  plus a [`PROGRESS.md`](PROGRESS.md) entry.  **Exception (2026-07-15):**
+  for a large INCREMENTAL mutual bundle (e.g. the completeness
+  optimality / existence bundles), `Admitted` MAY be committed on
+  individual cases that are TRUE and merely unfinished, so the bundle's
+  structure + glue + closed cases stay durable instead of all-or-nothing.
+  Each such admit must be marked honestly — `Admitted. (* TODO[..]:
+  <case>; true; blocked on <reason> *)` — and the file must still
+  `coqc`-compile.  What stays FORBIDDEN: admitting a case you suspect is
+  FALSE, or a MOTIVE you think mis-stated → STOP and report a
+  counterexample (a hard falsehood; abort/restart applies).  Standalone
+  helper lemmas are still fully `Qed`'d; the relaxation is for the
+  monolithic bundle's cases only.
 
 ## Common practices
 
