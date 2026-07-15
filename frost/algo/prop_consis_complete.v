@@ -59,6 +59,7 @@ Definition a_consis_solution
     output is at least as PRECISE as the other one's. *)
 Definition a_consis_optimal
     (Θ0 : aenv) (P0 P : pskl) (θ1 : metasubst) (Θ1 : aenv) (P1 : bskl) : Prop :=
+  is_id_msubst θ1 ->
   forall θ Θ Q,
     a_consis_solution Θ0 P0 P θ Θ Q ->
     exists ζ,
@@ -84,6 +85,7 @@ Definition a_unify_solution
 
 Definition a_unify_optimal
     (Θ0 : aenv) (α β : atom) (θ1 : metasubst) (Θ1 : aenv) : Prop :=
+  is_id_msubst θ1 ->
   forall θ Θ,
     a_unify_solution Θ0 α β θ Θ ->
     exists ζ,
@@ -121,6 +123,7 @@ Definition a_assign_solution
 
 Definition a_assign_optimal
     (Θ0 Ξ : aenv) (α : atom) (P : pskl) (θ1 : metasubst) (Θ1 : aenv) : Prop :=
+  is_id_msubst θ1 ->
   forall θ Θ,
     a_assign_solution Θ0 Ξ α P θ Θ ->
     exists ζ,
@@ -152,6 +155,25 @@ Definition a_assign_optimal
 (*  top-level corollary converts precision back to the refinement [⊳] via   *)
 (*  [ad_precise_preserves_refine].                                         *)
 (*                                                                         *)
+(*  MOTIVE CORRECTION (validated 2026-07-15, [paper-gap]).  Each motive     *)
+(*  and each top-level [_optimal] definition now REQUIRES [is_id_msubst θ1]. *)
+(*  Without it the statements are FALSE — a concrete counterexample:         *)
+(*                                                                          *)
+(*    Θ0 = α̂,β̂,γ̂ (all flexible);  θ1 = [γ̂/α̂, γ̂/β̂, γ̂/γ̂]  (a valid, NON-    *)
+(*    identity increment Θ0 ≤[θ1] Θ0);  competing θ = [Int/α̂, Bool/β̂, …].   *)
+(*    An axiom node (e.g. Ghost/Unit) has Θ1 = Θ0, so it must exhibit ζ with *)
+(*    a_inc_equiv Θ0 θ (ζ∘θ1) Θ.  But (ζ∘θ1)α̂ = ζγ̂ = (ζ∘θ1)β̂, forcing      *)
+(*    Θ ⊢ Int ≡ᵗ ζγ̂ ≡ᵗ Bool, i.e. Int ≡ᵗ Bool — impossible.  So NO ζ works. *)
+(*                                                                          *)
+(*  The paper (consistency-proofs.tex:2246) produces θ1 EXISTENTIALLY as the *)
+(*  algorithm's OWN solution, which is the identity metasubstitution ι       *)
+(*  (a_isub / [DESIGN-completeness-measure.md §7.3 L10]): the algorithm only  *)
+(*  ADDS definitions, never rewrites an existing flexible, so [Θ0 ⊴ Θ1] and  *)
+(*  its witness θ1 satisfy [is_id_msubst θ1].  Requiring it here is exactly   *)
+(*  the a_isub identity witness [prop_precise_recover.v] discharges, and it   *)
+(*  is what makes [msubst_compose ζ θ1] collapse to [ζ] (see the helper       *)
+(*  [msubst_compose_is_id_r] at the foot of this file).                      *)
+(*                                                                          *)
 (*  These are the INDUCTION targets only — pure [Prop]s, stated (not yet    *)
 (*  proved) as the scaffolding the 28-case [a_assign_unify_consis_mutind]   *)
 (*  bundle would discharge, exactly as [consis_sound_concl] et al. do for   *)
@@ -165,6 +187,7 @@ Definition unify_optimal_post (F : atoms) (Θ0 : aenv) (α β : atom)
     (Θ1 : aenv) : Prop :=
   a_wf_aenv Θ0 -> a_flex_tvar Θ0 α -> a_flex_tvar Θ0 β ->
   forall θ1 θ Θ,
+    is_id_msubst θ1 ->
     Θ0 ≤[ θ1 ] Θ1 ->
     Θ0 ≤[ θ ] Θ ->
     Θ ⊢ (msubst_lookup θ α) ≡ᵗ (msubst_lookup θ β) ->
@@ -178,6 +201,7 @@ Definition assign_optimal_post (F : atoms) (Θ0 Ξ : aenv) (α : atom)
   a_wf_aenv (Ξ ++ Θ0) ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
   forall θ1 θ Θ,
+    is_id_msubst θ1 ->
     (Ξ ++ Θ0) ≤[ θ1 ] Θ1 ->
     (Ξ ++ Θ0) ≤[ θ ] Θ ->
     empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ P))
@@ -195,6 +219,7 @@ Definition consis_optimal_post (F Δ1 Δ2 : atoms) (Θ0 : aenv)
   no_flex_dep (Δ1 `union` Δ2) Θ0 ->
   flex_above_free (Δ1 `union` Δ2) Θ0 ->
   forall θ1 θ Θ Qt Qb,
+    is_id_msubst θ1 ->
     Θ0 ≤[ θ1 ] Θ1 ->
     bskl_to_pskl Qt = Q ->
     Θ0 ≤[ θ ] Θ ->
@@ -205,3 +230,117 @@ Definition consis_optimal_post (F Δ1 Δ2 : atoms) (Θ0 : aenv)
       Θ1 ≤[ ζ ] Θ /\
       a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ /\
       Θ ⨟ (Δ1 `union` Δ2) ⊢ₚᵣᵃ (msubst_bskl ζ Qt) ⊑ (bskl_to_pskl Qb).
+
+(* ===================================================================== *)
+(*  5.  REUSABLE FACTORING HELPERS (standalone, for the [OPT] bundle)      *)
+(*                                                                        *)
+(*  The (OPT) bundle's factoring conjunct is                              *)
+(*    a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ.                           *)
+(*  For the AXIOM/identity-output nodes (Ghost/GhostG/Unit/Rigid/GhostR)  *)
+(*  the algorithm leaves the context unchanged (Θ1 = Θ0) and the natural  *)
+(*  choice is ζ := θ, whereupon [msubst_compose θ θ1] must collapse to θ  *)
+(*  — which needs [is_id_msubst θ1] (the corrected motive hypothesis).    *)
+(*  These lemmas isolate that collapse.                                    *)
+(* ===================================================================== *)
+
+(** Reflexivity of metasubstitution equivalence: every increment is
+    equivalent to itself (each flexible image is [≡ᵗ]-reflexive). *)
+Lemma a_inc_equiv_refl : forall Θ0 θ Θ,
+  Θ0 ≤[ θ ] Θ ->
+  a_inc_equiv Θ0 θ θ Θ.
+Proof.
+  intros Θ0 θ Θ H; induction H.
+  - apply a_inc_equiv__empty; auto.
+  - apply a_inc_equiv__flex; auto.
+    apply a_tyequiv__refl. apply mono_ptyp_lc; auto.
+  - apply a_inc_equiv__flex_def; auto.
+    apply a_tyequiv__refl. apply mono_ptyp_lc; auto.
+  - apply a_inc_equiv__var; auto.
+  - apply a_inc_equiv__var_skl; auto.
+  - apply a_inc_equiv__tvar; auto.
+Qed.
+
+(** [dom θ ⊆ dom Θ0] for any increment [Θ0 ≤[θ] Θ]. *)
+Lemma a_inc_dom_sub : forall Θ0 θ Θ,
+  Θ0 ≤[ θ ] Θ ->
+  dom θ [<=] dom Θ0.
+Proof.
+  intros Θ0 θ Θ H X HX.
+  destruct (a_inc_dom_flex H HX) as [Hb | [τ Hb]]; apply binds_In in Hb; exact Hb.
+Qed.
+
+(** Prepending an entry outside the RIGHT (identity) multiplicand's domain
+    does not change the composition. *)
+Lemma msubst_compose_cons_l_id : forall α τ ζ θ1,
+  is_id_msubst θ1 ->
+  α `notin` dom θ1 ->
+  msubst_compose ((α, τ) :: ζ) θ1 = msubst_compose ζ θ1.
+Proof.
+  induction θ1 as [ | [β b] θ1' IH ]; intros Hid Hni; simpl; auto.
+  apply is_id_msubst_inv in Hid as [Heq Hid']; subst.
+  simpl in Hni. simpl.
+  rewrite IH by (first [ exact Hid' | clear - Hni; fsetdec ]).
+  destruct (β == α) as [->|Hne]; [ exfalso; clear - Hni; fsetdec | reflexivity ].
+Qed.
+
+(** When [θ1] is an IDENTITY increment on the same source, composing any
+    increment [θ] with it on the right is the identity: [θ ∘ θ1 = θ] as
+    lists.  Both increments track [Θ0]'s flexibles in the same order. *)
+Lemma msubst_compose_is_id_r : forall Θ0 θ1 Θ1 θ Θ,
+  a_wf_aenv Θ0 ->
+  is_id_msubst θ1 ->
+  Θ0 ≤[ θ1 ] Θ1 ->
+  Θ0 ≤[ θ ] Θ ->
+  msubst_compose θ θ1 = θ.
+Proof.
+  intros Θ0 θ1 Θ1 θ Θ Hwf Hid Hinc1 Hinc; revert θ1 Θ1 Hid Hinc1.
+  induction Hinc; intros θ1 Θ1 Hid Hinc1.
+  - (* source nil : θ1 = nil *)
+    inversion Hinc1; subst. reflexivity.
+  - (* flex α *)
+    inversion Hwf as [ | αh Θh Hnd Hwa | | | | ]; subst.
+    inversion Hinc1 as [ | Θa θa Θb αa τa Hi1 Hw1 Hm1 | | | | ]; subst.
+    apply is_id_msubst_inv in Hid as [Heqτ Hid']; subst.
+    simpl. destruct (α == α) as [_ | Hne]; [ | contradiction ].
+    assert (Hnid : α `notin` dom θa)
+      by (pose proof (a_inc_dom_sub Hi1) as Hs; clear - Hs Hnd; fsetdec).
+    rewrite (msubst_compose_cons_l_id _ _ Hid' Hnid).
+    rewrite (IHHinc Hwa _ _ Hid' Hi1). reflexivity.
+  - (* flex_def α := τ *)
+    inversion Hwf as [ | | αh τh Θh Hnd Hwp Hm Hwa | | | ]; subst.
+    inversion Hinc1 as [ | | Θa θa Θb αa τd τa He1 Hw1 Hm1 Heq1 | | | ]; subst.
+    apply is_id_msubst_inv in Hid as [Heqτ Hid']; subst.
+    simpl. destruct (α == α) as [_ | Hne]; [ | contradiction ].
+    assert (Hnid : α `notin` dom θa)
+      by (pose proof (a_inc_dom_sub He1) as Hs; clear - Hs Hnd; fsetdec).
+    rewrite (msubst_compose_cons_l_id _ _ Hid' Hnid).
+    rewrite (IHHinc Hwa _ _ Hid' He1). reflexivity.
+  - (* var typ *)
+    inversion Hwf as [ | | | | xh Ah Θh Hnd Hwp Hwa | ]; subst.
+    inversion Hinc1 as [ | | | Θa θa Θb Ξa xa Aa Hi1 Hs1 | | ]; subst.
+    eapply IHHinc; eauto.
+  - (* var skl *)
+    inversion Hwf as [ | | | xh Ph Θh Hnd Hwp Hwa | | ]; subst.
+    inversion Hinc1 as [ | | | | Θa θa Θb Ξa xa Pa Hi1 Hs1 | ]; subst.
+    eapply IHHinc; eauto.
+  - (* tvar *)
+    inversion Hwf as [ | | | | | αh Θh Hnd Hwa ]; subst.
+    inversion Hinc1 as [ | | | | | Θa θa Θb Ξa αa Hi1 Hs1 ]; subst.
+    eapply IHHinc; eauto.
+Qed.
+
+(** The complete AXIOM-node factoring: at a node that leaves the context
+    unchanged ([Θ1 = Θ0]) the competing solution's own substitution [θ]
+    serves as the factoring [ζ]. *)
+Lemma opt_axiom_factor : forall Θ0 θ1 θ Θ,
+  a_wf_aenv Θ0 ->
+  is_id_msubst θ1 ->
+  Θ0 ≤[ θ1 ] Θ0 ->
+  Θ0 ≤[ θ ] Θ ->
+  Θ0 ≤[ θ ] Θ /\ a_inc_equiv Θ0 θ (msubst_compose θ θ1) Θ.
+Proof.
+  intros Θ0 θ1 θ Θ Hwf Hid Hinc1 Hinc.
+  split; [ exact Hinc | ].
+  rewrite (msubst_compose_is_id_r Hwf Hid Hinc1 Hinc).
+  apply a_inc_equiv_refl; exact Hinc.
+Qed.
