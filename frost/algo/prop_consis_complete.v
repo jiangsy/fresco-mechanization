@@ -22,6 +22,7 @@ Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.prop_basic.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decorated.
@@ -837,6 +838,121 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  DOWNARROW-NORMALIZATION FOUNDATIONS (GMM Lemma 2.6 factoring).          *)
+(*  The optimality walk cases build the factoring by replacing each         *)
+(*  competing (mono) image by its ⇓ᵗ[Θ] normal form (unfolds Θ flex_defs;   *)
+(*  e.g. ⇓[Th]δ̂=() in algo/cex/cex_assign_optimal_syn_middle.v).  ⇓ᵗ[Θ]      *)
+(*  preserves mono and wf-in-Θ on monotypes (the only images normalized).   *)
+(* ===================================================================== *)
+
+(* msubst preserves mono when every image is mono. *)
+Lemma msubst_ptyp_mono_pointwise : forall ζ A,
+  (forall Y, mono_ptyp (msubst_lookup ζ Y)) ->
+  mono_ptyp A ->
+  mono_ptyp (msubst_ptyp ζ A).
+Proof.
+  intros ζ A Himg Hm; induction Hm; simpl.
+  - apply mono_ptyp__unit.
+  - apply Himg.
+  - apply mono_ptyp__arrow; auto.
+Qed.
+
+(* Every image of the downarrow metasubst is a monotype. *)
+Lemma aenv_msubst_image_mono : forall Θ,
+  a_wf_aenv Θ ->
+  forall X, mono_ptyp (msubst_lookup (aenv_msubst Θ) X).
+Proof.
+  intros Θ Hwf; induction Hwf; intros X; simpl.
+  - apply mono_ptyp__var.
+  - (* flex_mono β *) destruct (X == α) as [-> | Hne];
+      [ apply mono_ptyp__var | apply IHHwf ].
+  - (* flex_mono_def β ≔ τ *) destruct (X == α) as [-> | Hne].
+    + apply msubst_ptyp_mono_pointwise; [ apply IHHwf | exact H1 ].
+    + apply IHHwf.
+  - (* var_skl *) apply IHHwf.
+  - (* var_typ *) apply IHHwf.
+  - (* tvar *) apply IHHwf.
+Qed.
+
+(* wf-preservation of msubst on a MONOTYPE (no ∀-case). *)
+Lemma a_wf_ptyp_msubst_mono : forall Θ ζ A,
+  mono_ptyp A -> a_wf_ptyp Θ A ->
+  (forall Y, a_binds_tvar Y Θ -> a_wf_ptyp Θ (msubst_lookup ζ Y)) ->
+  a_wf_ptyp Θ (msubst_ptyp ζ A).
+Proof.
+  intros Θ ζ A Hm; induction Hm; intros Hwa Himg; simpl.
+  - apply a_wf_ptyp__unit.
+  - inversion Hwa; subst. apply Himg; assumption.
+  - inversion Hwa; subst. apply a_wf_ptyp__arrow; auto.
+Qed.
+
+Ltac wk := eapply a_wf_ptyp_weaken;
+  [ intros ? ? Hb; unfold binds; simpl; right; exact Hb | ].
+
+(* Every downarrow image (of a type var of Θ) is wf in Θ. *)
+Lemma aenv_msubst_image_wf : forall Θ,
+  a_wf_aenv Θ ->
+  forall Y, a_binds_tvar Y Θ ->
+  a_wf_ptyp Θ (msubst_lookup (aenv_msubst Θ) Y).
+Proof.
+  intros Θ Hwf; induction Hwf; intros Y Hbt; simpl.
+  - destruct Hbt as [Hb|[Hb|[t Hb]]]; inversion Hb.
+  - (* flex_mono α *) destruct (Y == α) as [-> | Hne].
+    + apply a_wf_ptyp__var. right; left. unfold binds; left; reflexivity.
+    + wk. apply IHHwf.
+      destruct Hbt as [Hb|[Hb|[t Hb]]];
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He ?]|Hb'];
+        try (exfalso; apply Hne; exact He);
+        [ left | right;left | right;right;exists t ]; exact Hb'.
+  - (* flex_mono_def α ≔ τ *) destruct (Y == α) as [-> | Hne].
+    + wk. apply a_wf_ptyp_msubst_mono; [ exact H1 | exact H0 | ].
+      intros Z Hz. apply IHHwf; exact Hz.
+    + wk. apply IHHwf.
+      destruct Hbt as [Hb|[Hb|[t Hb]]];
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He ?]|Hb'];
+        try (exfalso; apply Hne; exact He);
+        [ left | right;left | right;right;exists t ]; exact Hb'.
+  - (* var_skl *) wk. apply IHHwf.
+    destruct Hbt as [Hb|[Hb|[t Hb]]];
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He Hc]|Hb'];
+      try discriminate; [ left | right;left | right;right;exists t ]; exact Hb'.
+  - (* var_typ *) wk. apply IHHwf.
+    destruct Hbt as [Hb|[Hb|[t Hb]]];
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He Hc]|Hb'];
+      try discriminate; [ left | right;left | right;right;exists t ]; exact Hb'.
+  - (* tvar α *) destruct (Y == α) as [-> | Hne].
+    + rewrite msubst_lookup_notin.
+      * apply a_wf_ptyp__var. left. unfold binds; left; reflexivity.
+      * pose proof (dom_aenv_msubst Θ). simpl.
+        assert (α `notin` dom Θ) by exact H. clear - H0 H1. fsetdec.
+    + wk. apply IHHwf.
+      destruct Hbt as [Hb|[Hb|[t Hb]]];
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He ?]|Hb'];
+        try (exfalso; apply Hne; exact He);
+        [ left | right;left | right;right;exists t ]; exact Hb'.
+Qed.
+
+(* TOP-LEVEL downarrow preservation on a monotype. *)
+Lemma mono_downarrow : forall Θ τ,
+  a_wf_aenv Θ -> a_wf_ptyp Θ τ -> mono_ptyp τ ->
+  mono_ptyp (⇓ᵗ[ Θ ] τ).
+Proof.
+  intros Θ τ Hwf Hwp Hm.
+  apply msubst_ptyp_mono_pointwise; [ | exact Hm ].
+  intros Y. apply aenv_msubst_image_mono; exact Hwf.
+Qed.
+
+Lemma a_wf_ptyp_downarrow_mono : forall Θ τ,
+  a_wf_aenv Θ -> a_wf_ptyp Θ τ -> mono_ptyp τ ->
+  a_wf_ptyp Θ (⇓ᵗ[ Θ ] τ).
+Proof.
+  intros Θ τ Hwf Hwp Hm.
+  apply a_wf_ptyp_msubst_mono; [ exact Hm | exact Hwp | ].
+  intros Y Hy. apply aenv_msubst_image_wf; assumption.
+Qed.
+
+
+(* ===================================================================== *)
 (*  CONTEXT-STRENGTHENING for the join (ad_pat_consis) and skeleton-wf     *)
 (*  (ad_wf_pskl) judgments — the SkipRigid / SkipTmVar walk cases move    *)
 (*  the competing join from the grown target down to the sub-target.       *)
@@ -1635,6 +1751,207 @@ Proof.
   - reflexivity.
 Qed.
 
+(** Metasubstitution preserves guarded skeleton shape.  The only interesting
+    leaf is a flexible variable: every image of an information increase is a
+    monotype, hence guarded. *)
+Lemma guarded_pskl_msubst_inc : forall Θ0 ρ Θ P,
+  Θ0 ≤[ ρ ] Θ ->
+  guarded_pskl P ->
+  guarded_pskl (msubst_pskl ρ P).
+Proof.
+  intros Θ0 ρ Θ P Hinc Hg. inversion Hg; subst; simpl.
+  - apply guarded_pskl__unit.
+  - apply mono_ptyp_to_pskl_guarded. eapply a_inc_lookup_mono; eauto.
+  - apply guarded_pskl__arrow;
+      eapply msubst_pskl_lc; eauto.
+Qed.
+
+(** A guarded consistency subject has a guarded target.  Stated with an
+    explicit local-closure premise on the target so the Arrow case needs no
+    separate regularity development.  A left-side defined-flex lookup recurs
+    on its definition; a right-side lookup lands at a guarded variable. *)
+Lemma ad_pat_consis_guarded_r : forall Ψ Θ S Q,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
+  a_wf_aenv Θ ->
+  forall P,
+    S = pskl_to_uskl P ->
+    guarded_pskl P ->
+    lc_bskl Q ->
+    guarded_bskl Q.
+Proof.
+  intros Ψ Θ S Q Hc Hwf; induction Hc; intros P0 HeqS Hg Hlc;
+    try solve [ destruct P0; simpl in HeqS; try discriminate;
+                inversion Hg ].
+  - destruct P0; simpl in HeqS; try discriminate.
+    apply guarded_bskl__unit.
+  - destruct P0; simpl in HeqS; try discriminate.
+    apply guarded_bskl__var.
+  - destruct P0; simpl in HeqS; try discriminate.
+    inversion Hlc; subst. apply guarded_bskl__arrow; assumption.
+  - (* flex_l *)
+    destruct P0; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    apply IHHc with (P := ptyp_to_pskl τ); auto.
+    + symmetry. apply ptyp_to_uskl_syn_eq.
+    + apply mono_ptyp_to_pskl_guarded.
+      eapply a_wf_aenv_binds_def_mono; eauto.
+  - (* flex_r *) apply guarded_bskl__var.
+Qed.
+
+(** If a tophole subject is refined to a guarded target, the tophole must have
+    been removed.  Target-side flexible aliases are peeled recursively and
+    folded back after the removal. *)
+Lemma ad_refine_syn_f_tophole_guarded_inv : forall F Θ Δ Q R,
+  a_wf_aenv Θ ->
+  ad_refine_syn_f F Θ Δ (bskl_tophole Q) R ->
+  guarded_bskl R ->
+  ad_refine_syn_f F Θ Δ Q R.
+Proof.
+  intros F Θ Δ Q R Hwf Hr.
+  remember (bskl_tophole Q) as Qt eqn:HeqQt.
+  induction Hr; intros Hg; try discriminate HeqQt.
+  - inversion HeqQt; subst. exact Hr.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion HeqQt; subst.
+    eapply ad_refine_syn_f__flex_r; [ exact H | ].
+    apply IHHr; [ exact Hwf | reflexivity | ].
+    apply mono_bskl_guarded, mono_ptyp_to_bskl_syn.
+    eapply a_wf_aenv_binds_def_mono; eauto.
+Qed.
+
+Lemma ad_refine_pskl_f_tophole_guarded_inv : forall F Θ Δ P Q,
+  a_wf_aenv Θ ->
+  ad_refine_pskl_f F Θ Δ (pskl_tophole P) Q ->
+  guarded_pskl Q ->
+  ad_refine_pskl_f F Θ Δ P Q.
+Proof.
+  intros F Θ Δ P Q Hwf Hr.
+  remember (pskl_tophole P) as Pt eqn:HeqPt.
+  induction Hr; intros Hg; try discriminate HeqPt.
+  - inversion HeqPt; subst. exact Hr.
+  - inversion Hg.
+  - inversion Hg.
+  - inversion HeqPt; subst.
+    eapply ad_refine_pskl_f__flex_r; [ exact H | ].
+    apply IHHr; [ exact Hwf | reflexivity | ].
+    apply mono_ptyp_to_pskl_guarded.
+    eapply a_wf_aenv_binds_def_mono; eauto.
+Qed.
+
+(** A consistency derivation from a tophole to a guarded target must use the
+    tophole-dropping path.  As above, a target-side defined-flex alias is
+    unfolded recursively and folded back afterwards. *)
+Lemma ad_pat_consis_tophole_guarded_inv : forall Ψ Θ P Q,
+  a_wf_aenv Θ ->
+  Ψ ⨟ Θ ⊨ₛᵃ (uskl_tophole (pskl_to_uskl P)) ≈ Q ->
+  guarded_pskl P ->
+  guarded_bskl Q ->
+  Ψ ⨟ Θ ⊨ₛᵃ (pskl_to_uskl P) ≈ Q.
+Proof.
+  intros Ψ Θ P Q Hwf Hc.
+  remember (uskl_tophole (pskl_to_uskl P)) as S eqn:HeqS.
+  induction Hc; intros HgP HgQ; try discriminate HeqS.
+  - inversion HgQ.
+  - inversion HgQ.
+  - inversion HeqS; subst. exact Hc.
+  - inversion HeqS; subst.
+    eapply ad_pat_consis__flex_r; [ exact H | ].
+    apply IHHc; [ exact Hwf | reflexivity | exact HgP | ].
+    apply mono_bskl_guarded, mono_ptyp_to_bskl_syn.
+    eapply a_wf_aenv_binds_def_mono; eauto.
+Qed.
+
+Lemma ad_refine_syn_f_tophole_keep_inv : forall F Θ Δ P Q,
+  a_wf_aenv Θ ->
+  guarded_bskl P ->
+  ad_refine_syn_f F Θ Δ (bskl_tophole P) (bskl_tophole Q) ->
+  ad_refine_syn_f F Θ Δ P Q.
+Proof.
+  intros F Θ Δ P Q Hwf Hg Hr.
+  inversion Hr; subst; try discriminate.
+  - match goal with
+    | Hsub : ad_refine_syn_f _ _ _ P (bskl_tophole Q) |- _ =>
+        pose proof (ad_refine_syn_f_guarded_r Hwf Hsub Hg) as Hbad;
+        inversion Hbad
+    end.
+  - assumption.
+Qed.
+
+Lemma ad_refine_pskl_f_tophole_keep_inv : forall F Θ Δ P Q,
+  a_wf_aenv Θ ->
+  guarded_pskl P ->
+  ad_refine_pskl_f F Θ Δ (pskl_tophole P) (pskl_tophole Q) ->
+  ad_refine_pskl_f F Θ Δ P Q.
+Proof.
+  intros F Θ Δ P Q Hwf Hg Hr.
+  inversion Hr; subst; try discriminate.
+  - match goal with
+    | Hsub : ad_refine_pskl_f _ _ _ P (pskl_tophole Q) |- _ =>
+        pose proof (ad_refine_pskl_f_guarded_r Hwf Hsub Hg) as Hbad;
+        inversion Hbad
+    end.
+  - assumption.
+Qed.
+
+(** Joint inversion of the three competing-solution judgments at a universal
+    ghost.  Looking only at the join leaves [tophole_inh], whose premise keeps
+    the wrapper.  The inherited refinement rules that case out: a guarded
+    body cannot refine to an inherited quantifier.  The surviving cases are
+    exactly keeping the tophole on all three judgments or dropping it on all
+    three judgments. *)
+Lemma consis_tophole_solution_inv : forall F1 F2 Δ1 Δ2 Θ P0 P Qb,
+  a_wf_aenv Θ ->
+  guarded_pskl P0 -> guarded_pskl P ->
+  empty ⨟ Θ ⊨ₛᵃ (uskl_tophole (pskl_to_uskl P)) ≈ Qb ->
+  ad_refine_syn_f F1 Θ Δ1 (bskl_tophole (pskl_to_bskl_inh P0)) Qb ->
+  ad_refine_pskl_f F2 Θ Δ2 (pskl_tophole P) (bskl_to_pskl Qb) ->
+  (exists Q,
+      Qb = bskl_tophole Q /\
+      empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl P) ≈ Q /\
+      ad_refine_syn_f F1 Θ Δ1 (pskl_to_bskl_inh P0) Q /\
+      ad_refine_pskl_f F2 Θ Δ2 P (bskl_to_pskl Q))
+  \/
+  (empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl P) ≈ Qb /\
+   ad_refine_syn_f F1 Θ Δ1 (pskl_to_bskl_inh P0) Qb /\
+   ad_refine_pskl_f F2 Θ Δ2 P (bskl_to_pskl Qb)).
+Proof.
+  intros F1 F2 Δ1 Δ2 Θ P0 P Qb Hwf Hg0 Hg Hc Hrs Hrp.
+  remember (uskl_tophole (pskl_to_uskl P)) as S eqn:HeqS.
+  induction Hc; try discriminate HeqS.
+  - (* tophole kept *)
+    inversion HeqS; subst. left. exists Q. repeat split; auto.
+    + eapply ad_refine_syn_f_tophole_keep_inv; eauto using guarded_pskl_to_bskl_inh.
+    + simpl in Hrp. eapply ad_refine_pskl_f_tophole_keep_inv; eauto.
+  - (* tophole_inh: incompatible with the inherited refinement from a
+       guarded body *)
+    inversion Hrs; subst; try discriminate.
+    pose proof (ad_refine_syn_f_guarded_r Hwf H4
+                  (guarded_pskl_to_bskl_inh Hg0)) as Hbad.
+    inversion Hbad.
+  - (* tophole dropped *)
+    inversion HeqS; subst. right.
+    assert (HlcQ : lc_bskl Q) by (eapply ad_refine_syn_f_lc_r; eauto).
+    assert (HgQ : guarded_bskl Q)
+      by (eapply ad_pat_consis_guarded_r; eauto; reflexivity).
+    repeat split; auto.
+    + eapply ad_refine_syn_f_tophole_guarded_inv; eauto.
+    + eapply ad_refine_pskl_f_tophole_guarded_inv; eauto.
+      apply guarded_bskl_to_pskl; exact HgQ.
+  - (* target-side defined flexible: its variable target is guarded, so all
+       three derivations take their dropping paths *)
+    inversion HeqS; subst. right.
+    assert (HgQ : guarded_bskl (bskl_var_f α)) by constructor.
+    repeat split.
+    + eapply ad_pat_consis_tophole_guarded_inv;
+        [ exact Hwf | | exact Hg | exact HgQ ].
+      eapply ad_pat_consis__flex_r; [ exact H | exact Hc ].
+    + eapply ad_refine_syn_f_tophole_guarded_inv;
+        [ exact Hwf | exact Hrs | exact HgQ ].
+    + eapply ad_refine_pskl_f_tophole_guarded_inv;
+        [ exact Hwf | exact Hrp | constructor ].
+Qed.
+
 (* ===================================================================== *)
 (*  7.  THE 28-CASE MUTUAL OPTIMALITY BUNDLE                               *)
 (*                                                                        *)
@@ -2051,13 +2368,85 @@ Proof.
               reassembly (context-strip of the opened rigid α + rename). *)
   - admit. (* TODO[optimality]: C-ForallSyn; STRUCTURAL, Δ2 GROWS; glue; as
               C-ForallInh (no_flex_dep-on-Θ now in the motive). *)
-  - admit. (* TODO[optimality]: C-UnivGhost; STRUCTURAL (single sub-node, Δ fixed);
-              glue degenerates to congruence.  Should not hit the no_flex_dep wall
-              (no Δ growth); blocked only on the glue assembly. *)
+  - (* C-UnivGhost.  Jointly invert the competing join and its two refinement
+       witnesses.  The apparent [tophole_inh] branch is impossible; the two
+       surviving branches either keep or drop the wrapper uniformly. *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hc IHc.
+    unfold consis_optimal_post in *.
+    intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf ρ1 ρ Θ Qt Qb
+           Hid Hinc1 HeqQt Hinc Hwfth Hnfdc Hjoin Hrs Hrp.
+    assert (Hg0 : guarded_pskl P0) by (inversion HwfP0; assumption).
+    assert (Hg : guarded_pskl P) by (inversion HwfP; assumption).
+    assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0) by (inversion HwfP0; assumption).
+    assert (HwfP' : Θ0 ⨟ empty ⊢ₚₛᵃ P) by (inversion HwfP; assumption).
+    assert (Hg0ρ : guarded_pskl (msubst_pskl ρ P0))
+      by (eapply guarded_pskl_msubst_inc; eauto).
+    assert (Hgρ : guarded_pskl (msubst_pskl ρ P))
+      by (eapply guarded_pskl_msubst_inc; eauto).
+    change (empty ⨟ Θ ⊨ₛᵃ
+              (uskl_tophole (pskl_to_uskl (msubst_pskl ρ P))) ≈ Qb) in Hjoin.
+    change (ad_refine_syn_f Δ1 Θ Δ1
+              (bskl_tophole (pskl_to_bskl_inh (msubst_pskl ρ P0))) Qb) in Hrs.
+    change (ad_refine_pskl_f Δ2 Θ Δ2
+              (pskl_tophole (msubst_pskl ρ P)) (bskl_to_pskl Qb)) in Hrp.
+    destruct Qt as [|n|X|Qt1 Qt2|Qt|Qt| |Qt];
+      simpl in HeqQt; try discriminate.
+    inversion HeqQt; subst Q.
+    destruct (consis_tophole_solution_inv Hwfth Hg0ρ Hgρ Hjoin Hrs Hrp)
+      as [[Qb' [-> [Hjoin' [Hrs' Hrp']]]] | [Hjoin' [Hrs' Hrp']]].
+    + destruct (IHc Hwf HwfP0' HwfP' Hrig Hnfd Hfaf
+                   ρ1 ρ Θ Qt Qb' Hid Hinc1 eq_refl Hinc Hwfth Hnfdc
+                   Hjoin' Hrs' Hrp')
+        as [ζ [Hζ [Hie Hprec]]].
+      exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
+      unfold ad_precise in *. simpl.
+      apply ad_refine_syn__tophole_keep; [ | exact Hprec ].
+      apply guarded_pskl_to_bskl_inh, guarded_bskl_to_pskl.
+      eapply ad_pat_consis_guarded_r;
+        [ exact Hjoin' | exact Hwfth | reflexivity | exact Hgρ | ].
+      eapply ad_refine_syn_f_lc_r; exact Hrs'.
+    + destruct (IHc Hwf HwfP0' HwfP' Hrig Hnfd Hfaf
+                   ρ1 ρ Θ Qt Qb Hid Hinc1 eq_refl Hinc Hwfth Hnfdc
+                   Hjoin' Hrs' Hrp')
+        as [ζ [Hζ [Hie Hprec]]].
+      exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
+      unfold ad_precise in *. simpl.
+      apply ad_refine_syn__tophole_remove. exact Hprec.
   - admit. (* TODO[optimality]: C-UnivGhost1; STRUCTURAL, Δ1 GROWS by α; glue; as
               C-ForallInh (no_flex_dep-on-Θ now in the motive). *)
-  - admit. (* TODO[optimality]: C-UnivGhost2; STRUCTURAL (single sub-node, Δ fixed);
-              glue; blocked on assembly (no Δ growth). *)
+  - (* C-UnivGhost2.  The guarded input refinement makes the competing target
+       guarded, so both the join and the subject refinement must drop the
+       universal-ghost wrapper before applying the sub-IH. *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg0 Hnf Hc IHc.
+    unfold consis_optimal_post in *.
+    intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf ρ1 ρ Θ Qt Qb
+           Hid Hinc1 HeqQt Hinc Hwfth Hnfdc Hjoin Hrs Hrp.
+    assert (Hg : guarded_pskl P) by (inversion HwfP; assumption).
+    assert (HwfP' : Θ0 ⨟ empty ⊢ₚₛᵃ P) by (inversion HwfP; assumption).
+    assert (Hg0ρ : guarded_pskl (msubst_pskl ρ P0))
+      by (eapply guarded_pskl_msubst_inc; eauto).
+    assert (Hgρ : guarded_pskl (msubst_pskl ρ P))
+      by (eapply guarded_pskl_msubst_inc; eauto).
+    assert (HgQb : guarded_bskl Qb).
+    { eapply ad_refine_syn_f_guarded_r;
+        [ exact Hwfth | exact Hrs | ].
+      apply guarded_pskl_to_bskl_inh. exact Hg0ρ. }
+    change (empty ⨟ Θ ⊨ₛᵃ
+              (uskl_tophole (pskl_to_uskl (msubst_pskl ρ P))) ≈ Qb) in Hjoin.
+    assert (Hjoin' : empty ⨟ Θ ⊨ₛᵃ
+              (pskl_to_uskl (msubst_pskl ρ P)) ≈ Qb)
+      by (eapply ad_pat_consis_tophole_guarded_inv; eauto).
+    change (ad_refine_pskl_f Δ2 Θ Δ2
+              (pskl_tophole (msubst_pskl ρ P)) (bskl_to_pskl Qb)) in Hrp.
+    assert (Hrp' : ad_refine_pskl_f Δ2 Θ Δ2
+              (msubst_pskl ρ P) (bskl_to_pskl Qb)).
+    { eapply ad_refine_pskl_f_tophole_guarded_inv; eauto.
+      apply guarded_bskl_to_pskl. exact HgQb. }
+    destruct (IHc Hwf HwfP0 HwfP' Hrig Hnfd Hfaf
+                 ρ1 ρ Θ Qt Qb Hid Hinc1 HeqQt Hinc Hwfth Hnfdc
+                 Hjoin' Hrs Hrp')
+      as [ζ [Hζ [Hie Hprec]]].
+    exists ζ. repeat split; assumption.
   - (* C-Flex : subjects α̂, β̂ equated by unification.  The competing join +
        Δ₁-refinement force [ρα̂ ≡ ρβ̂] (the bridge), feeding the unify sub-IH for
        the increment + factoring; the precision conjunct is [via_join]. *)
@@ -2120,10 +2509,29 @@ Proof.
                   [bskl_hole ⊳ SYN{Q}]; the ∀-rule conversely forces inh on the
                   right.  Needs the full refine machinery (trans + a re-inherit
                   lemma), or a non-mono consis→refine bridge.  (2026-07-15) *)
-  - admit. (* TODO[optimality]: C-UnivGhostR; STRUCTURAL (single sub-node, Δ fixed,
-              SAME derivation shrinks P0); glue/congruence.  No Δ growth, so the
-              no_flex_dep wall should not bite; blocked on the glue assembly + the
-              GhostR-style precision re-inheritance for the tophole. *)
+  - (* C-UnivGhostR.  Here the subject is already guarded, so its competing
+       join has a guarded target.  The tophole on the input refinement can
+       therefore only be removed; the sub-IH then has exactly the outer goal. *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hc IHc.
+    unfold consis_optimal_post in *.
+    intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf ρ1 ρ Θ Qt Qb
+           Hid Hinc1 HeqQt Hinc Hwfth Hnfdc Hjoin Hrs Hrp.
+    assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0) by (inversion HwfP0; assumption).
+    assert (Hgρ : guarded_pskl (msubst_pskl ρ P))
+      by (eapply guarded_pskl_msubst_inc; eauto).
+    assert (HlcQb : lc_bskl Qb) by (eapply ad_refine_syn_f_lc_r; eauto).
+    assert (HgQb : guarded_bskl Qb)
+      by (eapply ad_pat_consis_guarded_r; eauto; reflexivity).
+    change (ad_refine_syn_f Δ1 Θ Δ1
+              (bskl_tophole (pskl_to_bskl_inh (msubst_pskl ρ P0))) Qb) in Hrs.
+    assert (Hrs' : ad_refine_syn_f Δ1 Θ Δ1
+              (pskl_to_bskl_inh (msubst_pskl ρ P0)) Qb)
+      by (eapply ad_refine_syn_f_tophole_guarded_inv; eauto).
+    destruct (IHc Hwf HwfP0' HwfP Hrig Hnfd Hfaf
+                 ρ1 ρ Θ Qt Qb Hid Hinc1 HeqQt Hinc Hwfth Hnfdc
+                 Hjoin Hrs' Hrp)
+      as [ζ [Hζ [Hie Hprec]]].
+    exists ζ. repeat split; assumption.
 Admitted.
 
 (* ===================================================================== *)
