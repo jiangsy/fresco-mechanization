@@ -20,6 +20,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
+Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
@@ -987,6 +988,28 @@ Proof.
   eapply a_tyequiv__trans; [ exact HeA | apply a_tyequiv__sym; exact HeB ].
 Qed.
 
+(** Monotype precision recovery, for the AXIOM nodes (Unit/Rigid) whose
+    algorithmic output is a CONCRETE monotype painting rather than a flexible
+    [α̂].  Same [consis_mono_join] core as [consis_precise_core], but the subject
+    is the raw painting [ptyp_to_pskl A] instead of [msubst_bskl ζ α̂]. *)
+Lemma consis_precise_mono_join : forall Θ Δ A Qb,
+  a_wf_aenv Θ ->
+  mono_ptyp A ->
+  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ Qb ->
+  Θ ⨟ Δ ⊢ₚᵣᵃ (ptyp_to_pskl A) ⊑ (bskl_to_pskl Qb).
+Proof.
+  intros Θ Δ A Qb Hwf HmA Hvis Hjoin.
+  destruct (consis_mono_join Hjoin Hwf (A := A) eq_refl HmA) as [C [HmC [HQb Heq]]].
+  unfold ad_precise.
+  rewrite (ptyp_to_bskl_inh_syn_eq HmA).
+  subst Qb.
+  replace (bskl_to_pskl (ptyp_to_bskl_syn C)) with (ptyp_to_pskl C).
+  2:{ unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity. }
+  rewrite (ptyp_to_bskl_inh_syn_eq HmC).
+  apply tyequiv_mono_refine_syn; auto.
+Qed.
+
 (* ===================================================================== *)
 (*  7.  THE 28-CASE MUTUAL OPTIMALITY BUNDLE                               *)
 (*                                                                        *)
@@ -1180,8 +1203,46 @@ Proof.
   (* ================= a_consis (14) ================= *)
   - admit. (* TODO[optimality]: C-Ghost; axiom, Θ1=Θ0; opt_axiom_factor for the
               factoring + precision from the hole (Δ2∩ftv=∅); true. *)
-  - admit. (* TODO[optimality]: C-Unit; axiom; opt_axiom_factor + refl precision. *)
-  - admit. (* TODO[optimality]: C-Rigid; axiom; opt_axiom_factor + var precision. *)
+  - (* C-Unit : axiom, Θ1=Θ0.  ζ:=θ (opt_axiom_factor); precision from the unit
+       join via consis_precise_mono_join. *)
+    intros F Δ1 Δ2 Θ0. unfold consis_optimal_post.
+    intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf θ1 θ Θ Qt Qb
+           Hid Hinc1 HeqQt Hinc Hwfth Hjoin Hrs Hrp.
+    exists θ.
+    destruct (opt_axiom_factor Hwf Hid Hinc1 Hinc) as [Hout Hfact].
+    split; [ exact Hout | ]. split; [ exact Hfact | ].
+    destruct Qt; simpl in HeqQt; try discriminate. clear HeqQt.
+    cbn [msubst_bskl bskl_to_pskl].
+    apply consis_precise_mono_join with (A := ptyp_unit);
+      [ exact Hwfth | apply mono_ptyp__unit
+      | intros X HX; simpl in HX; clear - HX; fsetdec
+      | exact Hjoin ].
+  - (* C-Rigid : axiom, Θ1=Θ0.  Subject α is a RIGID tvar, so θ fixes it
+       (α∉dom θ); ζ:=θ; precision by consis_precise_mono_join at A:=`α. *)
+    intros F Δ1 Δ2 Θ0 α Hbind. unfold consis_optimal_post.
+    intros Hwf HwfP0 HwfP Hrig Hnfd Hfaf θ1 θ Θ Qt Qb
+           Hid Hinc1 HeqQt Hinc Hwfth Hjoin Hrs Hrp.
+    exists θ.
+    destruct (opt_axiom_factor Hwf Hid Hinc1 Hinc) as [Hout Hfact].
+    split; [ exact Hout | ]. split; [ exact Hfact | ].
+    assert (Hαnθ : α `notin` dom θ).
+    { intros Hin. pose proof (a_wf_aenv_uniq Hwf) as Hu.
+      destruct (a_inc_dom_flex Hinc Hin) as [Hb | [τ Hb]];
+        pose proof (binds_unique _ _ _ _ _ Hbind Hb Hu) as Hcon; discriminate. }
+    assert (Hbtα : binds α abind_tvar Θ) by (eapply a_inc_binds_tvar; eauto).
+    destruct Qt; simpl in HeqQt; try discriminate.
+    inversion HeqQt; subst. clear HeqQt.
+    cbn [msubst_bskl]. rewrite bskl_to_pskl_pskl_to_bskl_syn.
+    rewrite (msubst_lookup_notin θ Hαnθ).
+    apply consis_precise_mono_join with (A := ptyp_var_f α);
+      [ exact Hwfth | apply mono_ptyp__var
+      | intros X HX; simpl in HX;
+        assert (HXα : X = α) by (clear - HX; fsetdec); subst X; left; exact Hbtα
+      | ].
+    replace (msubst_pskl θ (pskl_var_f α))
+      with (ptyp_to_pskl (msubst_lookup θ α)) in Hjoin by reflexivity.
+    rewrite (msubst_lookup_notin θ Hαnθ) in Hjoin.
+    rewrite pskl_to_uskl_ptyp in Hjoin. exact Hjoin.
   - admit. (* TODO[optimality]: C-Arrow; STRUCTURAL, two sub-nodes; true;
               a_inc_equiv_glue composes the two factorings; blocked on threading
               the sub-node solutions (soundness output -> optimality input) and
