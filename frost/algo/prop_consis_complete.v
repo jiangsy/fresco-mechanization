@@ -37,6 +37,7 @@ Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_precise_recover.
 Require Import src.frost.algo.prop_mono_bridge.
+Require Import src.frost.algo.prop_inc_strengthen.
 
 Set Implicit Arguments.
 
@@ -793,6 +794,24 @@ Proof.
     + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
+(** Looking up a variable other than the mid-inserted key ignores that entry. *)
+Lemma msubst_lookup_mid_drop : forall ρa β τ ρb X,
+  X <> β ->
+  msubst_lookup (ρa ++ (β, τ) :: ρb) X = msubst_lookup (ρa ++ ρb) X.
+Proof.
+  induction ρa as [ | [a t] ρa' IH ]; intros β τ ρb X Hne; simpl.
+  - destruct (X == β) as [-> | _]; [ contradiction | reflexivity ].
+  - destruct (X == a) as [-> | _]; [ reflexivity | apply IH; exact Hne ].
+Qed.
+
+(** Composition distributes over an append of the RIGHT multiplicand. *)
+Lemma msubst_compose_app : forall ζ ρ1 ρ2,
+  msubst_compose ζ (ρ1 ++ ρ2) = msubst_compose ζ ρ1 ++ msubst_compose ζ ρ2.
+Proof.
+  intros ζ ρ1 ρ2. unfold msubst_compose.
+  induction ρ1 as [ | e ρ1' IH ]; simpl; [ reflexivity | rewrite IH; reflexivity ].
+Qed.
+
 (** A unique middle binding forces the two flanking decompositions to agree
     (Metalib [uniq_mid], spelled with explicit arguments). *)
 Lemma aenv_mid_split : forall (E1 : aenv) x b1 F1 E2 b2 F2,
@@ -1478,27 +1497,96 @@ Proof.
       as [ζ [Hζ Hie]].
     exists ζ. split; [ exact Hζ | ].
     rewrite app_assoc in Hie. exact Hie.
-  - admit. (* TODO[optimality]: Assign-Skip; FLEX walk (β sandwiched Ξ++[β]++Θ0).
-              Unlike Depend (now CLOSED, direct re-association) the target Θ1 SHRINKS
-              (β dropped), so this is the genuine mid-insert case.  The MID-INSERT
-              LEMMA [a_inc_equiv_mid_insert_flex] IS NOW BUILT (above, Qed,
-              axiom-free; uses the new [a_inc_equiv_uniq_l]/[_r]).  Remaining wiring
-              (pure list/compose algebra, no new metatheory):
-              (1) [a_inc_mid_strip_flex Hdecl Hinc] peels ρ = ρa ++ (β,τ) :: ρb
-                  (dom ρa = dom Ξ, Θ0 ≤[ρb] Θ, (Ξ++Θ0) ≤[ρa++ρb] Θ); τ = lookup ρ β,
-                  its wf/mono from [a_inc_lookup_wf]/[a_inc_lookup_mono] on Hinc.
-              (2) join transfer: β∉ftv P (rule premise) ⟹ msubst_pskl ρ P =
-                  msubst_pskl (ρa++ρb) P (msubst_pskl_agree); α≠β ⟹ lookup drop;
-                  feeds the sub-node join UNCHANGED over the SAME Θ.
-              (3) sub id-witness w from [a_assign_sound] (Ξ++Θ0 ⊴ Θ1); strip Hinc1
-                  to ρ1 = ρ1a ++ (β,`β) :: ρ1b (id), and [is_id_inc_unique] gives
-                  w = ρ1a ++ ρ1b, so compose ζ' w = compose ζ' ρ1a ++ compose ζ' ρ1b.
-              (4) sub-IH ⟹ ζ', Θ1 ≤[ζ'] Θ, a_inc_equiv (Ξ++Θ0) (ρa++ρb) (compose ζ' w) Θ.
-              (5) ζ := (β,τ)::ζ'.  Conj1 by [a_inc__flex].  Conj2: rewrite
-                  compose ((β,τ)::ζ') ρ1 = compose ζ' ρ1a ++ (β,τ)::compose ζ' ρ1b
-                  (via [msubst_compose_cons_l_id] on the ρ1a/ρ1b halves, lookup=τ at β),
-                  then apply [a_inc_equiv_mid_insert_flex] to (4) with dom ρa =
-                  dom (compose ζ' ρ1a) = dom Ξ and τ ≡ᵗ τ refl. *)
+  - (* Assign-Skip : β sandwiched Ξ ++ [β] ++ Θ0; target Θ1 SHRINKS (β dropped),
+       the genuine mid-insert case (closed 2026-07-15 via
+       [a_inc_equiv_mid_insert_flex]). *)
+    intros F Θ0 Θ1 Ξ α β P Hne Hβin Ha IHa.
+    unfold assign_optimal_post in *.
+    intros Hdecl Hwf HwfP ρ1 ρ Θ Hid Hinc1 Hinc Hwfth Hjoin.
+    assert (Hwf' : a_wf_aenv (Ξ ++ Θ0)) by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
+      by (eapply ad_wf_pskl_strip_mid; [ exact HwfP | exact Hβin ]).
+    assert (Huqf : uniq (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Huq' : uniq (Ξ ++ Θ0)) by (apply a_wf_aenv_uniq; exact Hwf').
+    assert (HβΞ : β `notin` dom Ξ) by (clear - Huqf; simpl_env in Huqf; solve_uniq).
+    (* peel the competing ρ and the identity ρ1 at β *)
+    destruct (a_inc_mid_strip_flex β Θ0 Hdecl Hinc)
+      as [ρa [τ [ρb [Heqρ [Hdρa [Hincb Hincab]]]]]].
+    destruct (a_inc_mid_strip_flex β Θ0 Hdecl Hinc1)
+      as [ρ1a [τβ [ρ1b [Heqρ1 [Hdρ1a [Hinc1b Hinc1ab]]]]]].
+    (* ρ1a, ρ1b are identity; τβ = β̂ *)
+    rewrite Heqρ1 in Hid.
+    apply Forall_app in Hid as [Hida Hidtail].
+    pose proof (Forall_inv Hidtail) as Heβ.
+    pose proof (Forall_inv_tail Hidtail) as Hidb.
+    unfold is_id_entry in Heβ; simpl in Heβ; subst τβ.
+    assert (Hidab : is_id_msubst (ρ1a ++ ρ1b))
+      by (apply Forall_app; split; assumption).
+    (* τ = lookup ρ β, well-formed monotype *)
+    assert (Hβρa : β `notin` dom ρa) by (rewrite Hdρa; exact HβΞ).
+    assert (Hlkβ : msubst_lookup ρ β = τ)
+      by (rewrite Heqρ; rewrite msubst_lookup_app_notin by exact Hβρa;
+          apply msubst_lookup_cons_eq).
+    assert (Hmτ : mono_ptyp τ)
+      by (rewrite <- Hlkβ; eapply a_inc_lookup_mono; exact Hinc).
+    assert (Hbtβ : a_binds_tvar β (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
+      by (right; left; unfold binds; apply in_or_app; right; left; reflexivity).
+    assert (Hwfτ : a_wf_ptyp Θ τ)
+      by (rewrite <- Hlkβ;
+          eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf | exact Hbtβ ]).
+    (* sub id-witness w = ρ1a ++ ρ1b *)
+    destruct (a_assign_sound Ha Hdecl Hwf' HwfP') as [[[w [Hidw Hincw]] _] _].
+    assert (Hweq : w = ρ1a ++ ρ1b)
+      by (eapply is_id_inc_unique;
+          [ exact Hincw | exact Hidw | exact Hinc1ab | exact Hidab ]).
+    (* transfer the competing join to the β-dropped increment ρa ++ ρb *)
+    assert (Hlkα : msubst_lookup (ρa ++ ρb) α = msubst_lookup ρ α)
+      by (rewrite Heqρ; symmetry; apply msubst_lookup_mid_drop; exact Hne).
+    assert (HeqP : msubst_pskl (ρa ++ ρb) P = msubst_pskl ρ P).
+    { rewrite Heqρ. apply msubst_pskl_agree. intros X HX.
+      symmetry. apply msubst_lookup_mid_drop.
+      clear - HX Hβin. intro; subst X; contradiction. }
+    assert (HjoinSub : empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl (ρa ++ ρb) P))
+              ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup (ρa ++ ρb) α))))
+      by (rewrite HeqP, Hlkα; exact Hjoin).
+    destruct (IHa Hdecl Hwf' HwfP' w (ρa ++ ρb) Θ
+                  Hidw Hincw Hincab Hwfth HjoinSub)
+      as [ζ' [Hζ' Hie']].
+    (* rebuild ζ := (β, τ) :: ζ' *)
+    exists ((β, τ) :: ζ'). split.
+    + apply a_inc__flex; [ exact Hζ' | exact Hwfτ | exact Hmτ ].
+    + (* factoring, via the mid-insert lemma *)
+      assert (HβΘ0 : β `notin` dom Θ0)
+        by (clear - Huqf; simpl_env in Huqf; solve_uniq).
+      assert (Hβρ1a : β `notin` dom ρ1a) by (rewrite Hdρ1a; exact HβΞ).
+      assert (Hβρ1b : β `notin` dom ρ1b).
+      { assert (Hd1b : dom (ρ1a ++ ρ1b) [<=] dom (Ξ ++ Θ0))
+          by (eapply a_inc_dom_sub; exact Hinc1ab).
+        clear - Hd1b HβΞ HβΘ0 Hdρ1a. simpl_env in *. fsetdec. }
+      (* compose ((β,τ)::ζ') ρ1 = compose ζ' ρ1a ++ (β,τ) :: compose ζ' ρ1b *)
+      assert (Hcz : msubst_compose ((β, τ) :: ζ') ρ1
+                    = msubst_compose ζ' ρ1a ++ (β, τ) :: msubst_compose ζ' ρ1b).
+      { rewrite Heqρ1. rewrite msubst_compose_app.
+        change (msubst_compose ((β, τ) :: ζ')
+                  ((β, ptyp_var_f β) :: ρ1b))
+          with ((β, msubst_ptyp ((β, τ) :: ζ') (ptyp_var_f β))
+                :: msubst_compose ((β, τ) :: ζ') ρ1b).
+        change (msubst_ptyp ((β, τ) :: ζ') (ptyp_var_f β))
+          with (msubst_lookup ((β, τ) :: ζ') β).
+        rewrite msubst_lookup_cons_eq.
+        rewrite (msubst_compose_cons_l_id τ ζ' Hida Hβρ1a).
+        rewrite (msubst_compose_cons_l_id τ ζ' Hidb Hβρ1b).
+        reflexivity. }
+      rewrite Hcz.
+      (* compose ζ' w = compose ζ' ρ1a ++ compose ζ' ρ1b *)
+      rewrite Hweq in Hie'. rewrite msubst_compose_app in Hie'.
+      rewrite Heqρ.
+      apply a_inc_equiv_mid_insert_flex;
+        [ exact Hdecl | exact Huq' | exact Hdρa
+        | rewrite dom_msubst_compose; exact Hdρ1a
+        | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτ
+        | exact Hie' ].
   - admit. (* TODO[optimality]: Assign-SkipRigid; RIGID walk. Here the competing
               target GROWS: (β~tvar ++ Θ0) ≤[ρ] Θ inverts (a_inc_tvar_inv) to
               Θ = Ξ ++ (β~tvar) ++ Θ' with Θ0 ≤[ρ] Θ'. The join is over Θ but the
