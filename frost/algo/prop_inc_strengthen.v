@@ -50,16 +50,16 @@ Proof.
   induction Ξ as [ | [a b] Ξ' IH ]; intros β Θ0 ρ Θ Hdec Hinc.
   - (* Ξ = nil : head is the mid flex β itself *)
     simpl in Hinc.
-    inversion Hinc as [ | Θs θs Θt βs τ Hinc' Hwfτ Hmτ [Heqβ Heqθ] Heqt
+    inversion Hinc as [ | Θs ρs Θt βs τ Hinc' Hwfτ Hmτ [Heqβ Heqρ] Heqt
                       | | | | ]; subst.
-    exists (@nil (atom * ptyp)), τ, θs. simpl.
+    exists (@nil (atom * ptyp)), τ, ρs. simpl.
     split; [ reflexivity | ].
     split; [ clear; fsetdec | ].
     split; [ exact Hinc' | exact Hinc' ].
   - (* Ξ = (a ~ flex) ++ Ξ' : peel the head flex a, recurse *)
     inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     simpl in Hinc.
-    inversion Hinc as [ | Θs θs Θt as' τ Hinc' Hwfτ Hmτ [Heqa Heqθ] Heqt
+    inversion Hinc as [ | Θs ρs Θt as' τ Hinc' Hwfτ Hmτ [Heqa Heqρ] Heqt
                       | | | | ]; subst.
     destruct (IH _ _ _ _ Hdec' Hinc')
       as [ρ1 [τ2 [ρ2 [Heqρ [Hdom [Hinc2 Hrec]]]]]].
