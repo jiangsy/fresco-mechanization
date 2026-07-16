@@ -2264,6 +2264,97 @@ Proof.
 Qed.
 
 
+(* The join is invariant under ⇓-normalizing the SUBJECT, when the RHS is a
+   monotype (mono C prunes every ∀/tophole_inh case, exactly as in
+   join_pskl_downarrow_mono_scoped).  This transfers the assign-node join
+   (subject msubst ρ P, RHS syn(mono ρα)) onto the ⇓-normalized subject, which
+   O2 shows is scoped to the sub-target Θ'. *)
+Lemma consis_downarrow_subject : forall Ψ Θ S Q,
+  ad_pat_consis Ψ Θ S Q ->
+  a_wf_aenv Θ ->
+  forall S0 C,
+    S = pskl_to_uskl S0 ->
+    Q = ptyp_to_bskl_syn C -> mono_ptyp C ->
+    ad_pat_consis Ψ Θ (pskl_to_uskl (⇓ˢ[ Θ ] S0)) Q.
+Proof.
+  intros Ψ Θ S Q Hc Hwf; induction Hc;
+    intros S0 C0 HeqS HeqC HmC0;
+    unfold ptyp_to_bskl_syn in *.
+  - (* unit *)
+    destruct S0; simpl in HeqS; try discriminate.
+    simpl. apply ad_pat_consis__unit; assumption.
+  - (* var X : uniform ⇓(var X) ≡ var X route (covers tvar/flex_mono/flex_def) *)
+    destruct S0 as [ | | Xp | | | | ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    destruct C0 as [ | | Xc | | ]; simpl in HeqC; try discriminate.
+    inversion HeqC; subst.
+    simpl.
+    replace (ptyp_to_pskl (msubst_lookup (aenv_msubst Θ) Xc))
+       with (ptyp_to_pskl (⇓ᵗ[ Θ ] (ptyp_var_f Xc))) by reflexivity.
+    assert (Hwfx : a_wf_ptyp Θ (ptyp_var_f Xc)) by (apply a_wf_ptyp__var; exact H0).
+    assert (Hmono_x : mono_ptyp (⇓ᵗ[ Θ ] (ptyp_var_f Xc)))
+      by (apply mono_downarrow; [ exact Hwf | exact Hwfx | apply mono_ptyp__var ]).
+    assert (Hwf_x : a_wf_ptyp Θ (⇓ᵗ[ Θ ] (ptyp_var_f Xc)))
+      by (apply a_wf_ptyp_downarrow_mono; [ exact Hwf | exact Hwfx | apply mono_ptyp__var ]).
+    assert (Hvis : forall Y, Y `in` ftvar_in_ptyp (⇓ᵗ[ Θ ] (ptyp_var_f Xc)) ->
+                   a_binds_tvar Y Θ)
+      by (intros Y HY; eapply a_wf_ptyp_ftv_tvarish; [ exact Hwf_x | exact HY ]).
+    assert (Heqd : Θ ⊢ (⇓ᵗ[ Θ ] (ptyp_var_f Xc)) ≡ᵗ (ptyp_var_f Xc)).
+    { apply a_tyequiv__sym.
+      apply a_tyequiv_to_downarrow_mono;
+        [ exact Hwf | exact Hwfx | apply mono_ptyp__var ]. }
+    destruct (tyequiv_mono_consis_transport_q Heqd Hwf Hmono_x Hvis) as [_ Hfwd].
+    rewrite ptyp_to_uskl_syn_eq.
+    change (bskl_var_f Xc) with (ptyp_to_bskl_syn (ptyp_var_f Xc)).
+    apply Hfwd.
+    eapply ad_pat_consis_psi_cong;
+      [ apply consis_mono_refl; [ exact Hmono_x | exact Hvis ]
+      | fsetdec ].
+  - (* arrow *)
+    destruct S0 as [ | | | S01 S02 | | | ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    destruct C0 as [ | | | C1 C2 | ]; simpl in HeqC; try discriminate.
+    inversion HeqC; subst.
+    inversion HmC0 as [ | | ? ? HmC1 HmC2 ]; subst.
+    simpl.
+    apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+      [ apply (IHHc1 Hwf S01 C1 eq_refl eq_refl HmC1)
+      | apply (IHHc2 Hwf S02 C2 eq_refl eq_refl HmC2)
+      | exact H ].
+  - (* forall_inh_tagged *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* forall_inh_untagged *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* forall_syn_tagged *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* forall_syn *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* ghostg *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* topholeg *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* hole *)
+    destruct S0; simpl in HeqS; try discriminate.
+    simpl. apply ad_pat_consis__hole; [ exact H | exact H0 ].
+  - (* tophole *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* tophole_inh *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* tophole_drop *)
+    destruct S0 as [ | | | | | | S0t ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    simpl. apply ad_pat_consis__tophole_drop.
+    apply (IHHc Hwf S0t C0 eq_refl eq_refl HmC0).
+  - (* flex_l : subject is a defined flexible *)
+    destruct S0 as [ | | Xv | | | | ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    simpl.
+    assert (Hlk : msubst_lookup (aenv_msubst Θ) Xv = ⇓ᵗ[ Θ ] τ)
+      by (apply aenv_msubst_lookup_def; assumption).
+    rewrite Hlk.
+    rewrite <- msubst_pskl_ptyp_to_pskl.
+    apply (IHHc Hwf (ptyp_to_pskl τ) C0
+             (eq_sym (ptyp_to_uskl_syn_eq τ)) eq_refl HmC0).
+  - (* flex_r : join is a defined flexible *)
+    destruct C0; simpl in HeqC; try discriminate.
+    inversion HeqC; subst.
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    apply ad_pat_consis__flex_r with (τ := τ); [ exact H | ].
+    apply (IHHc Hwf S0 τ eq_refl eq_refl Hmτ).
+Qed.
+
 Theorem a_assign_unify_consis_optimal :
   (forall F Θ0 Ξ α P Θ1,
      a_assign F Θ0 Ξ α P Θ1 -> assign_optimal_post F Θ0 Ξ α P Θ1) /\
