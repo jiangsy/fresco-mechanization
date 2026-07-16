@@ -1835,12 +1835,7 @@ Proof.
       intros X HX; apply Hvis; fsetdec.
 Qed.
 
-(** Context well-formedness gives uniqueness of the domain. *)
-Lemma a_wf_aenv_uniq : forall Θ,
-  a_wf_aenv Θ -> uniq Θ.
-Proof.
-  intros Θ H; induction H; solve_uniq.
-Qed.
+(* [a_wf_aenv_uniq] relocated to prop_flex.v (pure base lemma needed by prop_metasubst). *)
 
 (** Every binding produced by guess^TY is a plain flexible variable. *)
 Lemma a_guess_mono_flex_binds : forall Θ P βs τ,
@@ -1978,13 +1973,7 @@ Lemma mono_ptyp_to_pskl_lc : forall τ,
   mono_ptyp τ -> lc_pskl (ptyp_to_pskl τ).
 Proof. induction 1; simpl; auto using lc_pskl. Qed.
 
-Lemma mono_ptyp_to_pskl_guarded : forall τ,
-  mono_ptyp τ -> guarded_pskl (ptyp_to_pskl τ).
-Proof.
-  destruct 1 as [ | X | A1 A2 ]; simpl;
-    [ apply guarded_pskl__unit | apply guarded_pskl__var
-    | apply guarded_pskl__arrow; apply mono_ptyp_to_pskl_lc; auto ].
-Qed.
+(* [mono_ptyp_to_pskl_guarded] relocated to prop_flex.v (pure base lemma needed by prop_metasubst). *)
 
 Lemma mono_bskl_lc : forall Q,
   mono_bskl Q -> lc_bskl Q.

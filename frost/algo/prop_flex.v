@@ -949,3 +949,11 @@ Qed.
 (*  the 3-motive bundle [a_assign_unify_consis_sound] (prop_consis_sound) *)
 (*  and is re-exported from there under its original name.                *)
 (* ===================================================================== *)
+
+(* --- relocated from prop_consis_sound.v (pure base lemma needed by the
+   metasubst layer prop_metasubst.v, which must not import consistency) --- *)
+Lemma a_wf_aenv_uniq : forall Θ,
+  a_wf_aenv Θ -> uniq Θ.
+Proof.
+  intros Θ H; induction H; solve_uniq.
+Qed.
