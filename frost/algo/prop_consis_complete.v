@@ -2122,6 +2122,43 @@ Proof.
     eapply IH; [ exact Hdec' | exact Hid' | exact Hinc' ].
 Qed.
 
+Lemma aenv_msubst_dom_inv : forall Θ X,
+  X `in` dom (aenv_msubst Θ) -> a_flex_tvar Θ X.
+Proof.
+  induction Θ as [ | [a b] Θ' IH ]; intros X HX; simpl in HX.
+  - clear - HX; fsetdec.
+  - assert (Hstep : forall Y, a_flex_tvar Θ' Y -> a_flex_tvar ((a, b) :: Θ') Y).
+    { intros Y [Hb | [τ Hb]]; [ left | right; exists τ ];
+        unfold binds; simpl; right; exact Hb. }
+    destruct b; simpl in HX.
+    + apply Hstep. apply IH. exact HX.
+    + apply Hstep. apply IH. exact HX.
+    + apply Hstep. apply IH. exact HX.
+    + destruct (X == a) as [-> | Hne].
+      * left. unfold binds; simpl; left; reflexivity.
+      * apply Hstep. apply IH. clear - HX Hne; fsetdec.
+    + destruct (X == a) as [-> | Hne].
+      * right. eexists. unfold binds; simpl; left; reflexivity.
+      * apply Hstep. apply IH. clear - HX Hne; fsetdec.
+Qed.
+
+Lemma msubst_pskl_ftv_lower : forall ρ P X,
+  X `in` ftvar_in_pskl P ->
+  ftvar_in_ptyp (msubst_lookup ρ X) [<=] ftvar_in_pskl (msubst_pskl ρ P).
+Proof.
+  induction P as [ | n | Y | Pa IHa Pb IHb | Pall IHall | | Pt IHt ];
+    intros X HX; simpl in HX |- *.
+  - clear - HX; fsetdec.
+  - clear - HX; fsetdec.
+  - assert (X = Y) by (clear - HX; fsetdec); subst.
+    rewrite ftvar_in_ptyp_to_pskl. clear; fsetdec.
+  - apply AtomSetImpl.union_1 in HX; destruct HX as [HXa | HXb];
+      [ pose proof (IHa X HXa) | pose proof (IHb X HXb) ]; clear - H; fsetdec.
+  - pose proof (IHall X HX). clear - H; fsetdec.
+  - clear - HX; fsetdec.
+  - pose proof (IHt X HX). clear - H; fsetdec.
+Qed.
+
 (** THE ≡ᵗ STRENGTHENING.  Strip a middle binding [c~b] and an [a_decls]-free
     prefix [Ξ] off both sides of a MONOtype equivalence whose endpoints are wf
     in the tail [Θt]. *)
