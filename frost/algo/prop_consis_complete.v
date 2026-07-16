@@ -1795,9 +1795,26 @@ Proof.
                   (uskl_tophole(uskl P)≈syn B -> uskl P≈syn B) is provably FALSE —
                   P can be pskl_hole (hole refines to ANY target incl. a tophole via
                   ad_refine_pskl_f__hole), and then uskl_hole ≈ bskl_tophole(..) has
-                  no derivation.  ⟹ to finish, restructure the bridge to induct on
+                  no derivation.  ==> to finish, restructure the bridge to induct on
                   the JOIN with hole/ghost/tophole subject shapes handled up front
-                  (the paper's shape), rather than a strip helper on refine-induction. *)
+                  (the paper's shape), rather than a strip helper on refine-induction.
+                  VALIDATED (2026-07-16, scratchpad join_precise_wip.v): inducting on
+                  the JOIN, the precision lemma
+                    [join_precise] Psi|Th |= S ~ Qb -> a_wf_aenv Th -> S=pskl_to_uskl A
+                       -> Qb=pskl_to_bskl_syn B -> Th|empty |-ps B ->
+                       Th|D |-r (inh A) |> (inh B)
+                  closes 8/10 cases CLEANLY, incl. every ghost/tophole one the
+                  refine-induction could not: impossible join subjects/targets
+                  (etag/holeg/all_inh) auto-die by `destruct A/B; discriminate`;
+                  hole = inh_erase_syn_rigid (fill rigid) then __hole; tophole =
+                  __tophole_keep, guardedness from wf B; tophole_drop = __tophole_remove;
+                  flex_l/flex_r = output flex + IH on the def-unfold (mono_inh_eq_syn);
+                  unit/var/arrow trivial.  ONLY forall_syn open: it needs the SAME
+                  Thr/Thj context-decoupling as the old bridge (the join extends Th by
+                  X~tvar but output __all keeps Th + grows D) and raises a hole-under-forall
+                  question (a hole fill may reference the bound tvar, wf over Thj|empty
+                  but not Thr|empty).  So join-induction is the right frame; join_precise
+                  is the reusable precision core for the full completeness rewrite (Opt B). *)
   - (* C-UnivGhostR.  Here the subject is already guarded, so its competing
        join has a guarded target.  The tophole on the input refinement can
        therefore only be removed; the sub-IH then has exactly the outer goal. *)
