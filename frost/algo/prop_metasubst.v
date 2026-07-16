@@ -1376,24 +1376,36 @@ Qed.
    images are ⇓ᵗ[Θ]-collapsed while the target Θt is kept.  Makes the metasubst
    equal ⇓ρ = compose(aenv_msubst Θ)ρ, matching the ⇓-normalized join subject
    (consis_downarrow_subject).  The ρb′-vs-⇓ρb′ reconciliation. *)
-Lemma a_inc_self_downarrow : forall Θ0 ρ Θt,
+(* Bundled self-downarrow.  One induction proves BOTH the a_inc reconstruction
+   with the ⇓-composed metasubst AND its a_inc_equiv twin: they share the entire
+   6-case skeleton (wf inversions, the ⇓-agrees-on-suffix rewrite [Hdd], and the
+   Θpre-extension plumbing for the inert middles); only the per-case tails differ.
+   [a_inc_self_downarrow] / [a_inc_equiv_self_downarrow] are its projections. *)
+Lemma a_inc_self_downarrow_bundle : forall Θ0 ρ Θt,
   Θ0 ≤[ ρ ] Θt ->
   forall Θpre,
   a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
-  Θ0 ≤[ msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ] Θt.
+  Θ0 ≤[ msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ] Θt
+  /\ a_inc_equiv Θ0 ρ (msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ) Θt.
 Proof.
   intros Θ0 ρ Θt Hinc; induction Hinc; intros Θpre HwfW Huq Hwf0.
-  - (* empty *) simpl. apply a_inc__empty; assumption.
+  - (* empty *)
+    split; [ apply a_inc__empty | apply a_inc_equiv__empty ]; assumption.
   - (* flex α τ : target Θ' unchanged, Θpre unchanged *)
     simpl.
     inversion Hwf0 as [ | α0 Θ0x Hnd0 Hwf0' | | | | ]; subst.
     assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
     assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ = ⇓ᵗ[ Θ' ] τ)
       by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
-    apply a_inc__flex.
-    + eapply IHHinc; [ exact HwfW | exact Huq | exact Hwf0' ].
-    + rewrite Hdd. apply a_wf_ptyp_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
-    + rewrite Hdd. apply mono_downarrow; [ exact HwfΘ' | exact H | exact H0 ].
+    destruct (IHHinc Θpre HwfW Huq Hwf0') as [IHa IHe].
+    split.
+    + apply a_inc__flex.
+      * exact IHa.
+      * rewrite Hdd. apply a_wf_ptyp_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
+      * rewrite Hdd. apply mono_downarrow; [ exact HwfΘ' | exact H | exact H0 ].
+    + apply a_inc_equiv__flex.
+      * exact IHe.
+      * rewrite Hdd. apply a_tyequiv_to_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
   - (* flex_def α ≔ τ : image τ', premise τ'≡msubst ρ τ *)
     simpl.
     inversion Hwf0 as [ | | α0 τ0 Θ0x Hnd0 Hwpτ0 Hmτ0 Hwf0' | | | ]; subst.
@@ -1401,74 +1413,114 @@ Proof.
     assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ' = ⇓ᵗ[ Θ' ] τ')
       by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
     assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
-    apply a_inc__flex_def.
-    + eapply IHHinc; [ exact HwfW | exact Huq | exact Hwf0' ].
-    + rewrite Hdd. apply a_wf_ptyp_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
-    + rewrite Hdd. apply mono_downarrow; [ exact HwfΘ' | exact H | exact H0 ].
-    + eapply a_tyequiv__trans.
-      * apply a_tyequiv__sym.
-        eapply msubst_downarrow_tyequiv;
-          [ reflexivity | exact Huq | exact HwfΘ' | exact H ].
-      * eapply a_tyequiv__trans; [ exact H1 | ].
-        apply a_tyequiv__sym.
-        eapply msubst_compose_downarrow_tyequiv;
-          [ reflexivity | exact Huq | exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
-        -- intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
-           destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
-             [ right; left | right; right; exists t0 ]; exact Hb.
-        -- eapply a_wf_ptyp_lc; exact Hwpτ0.
+    destruct (IHHinc Θpre HwfW Huq Hwf0') as [IHa IHe].
+    split.
+    + apply a_inc__flex_def.
+      * exact IHa.
+      * rewrite Hdd. apply a_wf_ptyp_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
+      * rewrite Hdd. apply mono_downarrow; [ exact HwfΘ' | exact H | exact H0 ].
+      * eapply a_tyequiv__trans.
+        -- apply a_tyequiv__sym.
+           eapply msubst_downarrow_tyequiv;
+             [ reflexivity | exact Huq | exact HwfΘ' | exact H ].
+        -- eapply a_tyequiv__trans; [ exact H1 | ].
+           apply a_tyequiv__sym.
+           eapply msubst_compose_downarrow_tyequiv;
+             [ reflexivity | exact Huq | exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+           ++ intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
+              destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
+                [ right; left | right; right; exists t0 ]; exact Hb.
+           ++ eapply a_wf_ptyp_lc; exact Hwpτ0.
+    + apply a_inc_equiv__flex_def.
+      * exact IHe.
+      * rewrite Hdd. apply a_tyequiv_to_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
+      * exact H1.
   - (* var A : ρ unchanged, target Ξ++(x~var A')++Θ' *)
     inversion Hwf0 as [ | | | | x0 A0 Θ0x Hnd0 HwpA Hwf0' | ]; subst.
     assert (HwfΘ' : a_wf_aenv Θ').
     { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_typ A')).
       simpl_env. simpl_env in HwfW. exact HwfW. }
     assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
-    apply a_inc__var; [ | | exact H0 ].
-    + replace (Θpre ++ Ξ ++ x ~ abind_var_typ A' ++ Θ')
+    assert (HW' : a_wf_aenv ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ'))
+      by (simpl_env; simpl_env in HwfW; exact HwfW).
+    assert (HU' : uniq ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ'))
+      by (simpl_env; simpl_env in Huq; exact Huq).
+    destruct (IHHinc (Θpre ++ Ξ ++ (x ~ abind_var_typ A')) HW' HU' Hwf0') as [IHa IHe].
+    split.
+    + apply a_inc__var; [ | | exact H0 ].
+      * replace (Θpre ++ Ξ ++ x ~ abind_var_typ A' ++ Θ')
+           with ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ') by (simpl_env; reflexivity).
+        exact IHa.
+      * eapply a_tyequiv__trans; [ exact H | ].
+        apply a_tyequiv__sym.
+        eapply msubst_compose_downarrow_tyequiv with
+          (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_typ A'));
+          [ simpl_env; reflexivity | simpl_env; simpl_env in Huq; exact Huq
+          | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+        -- intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
+           destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
+             [ right; left | right; right; exists t0 ]; exact Hb.
+        -- eapply a_wf_ptyp_lc; exact HwpA.
+    + apply a_inc_equiv__var; [ | exact H | exact H0 ].
+      replace (Θpre ++ Ξ ++ x ~ abind_var_typ A' ++ Θ')
          with ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ') by (simpl_env; reflexivity).
-      eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_typ A'));
-        [ simpl_env; simpl_env in HwfW; exact HwfW
-        | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
-    + eapply a_tyequiv__trans; [ exact H | ].
-      apply a_tyequiv__sym.
-      eapply msubst_compose_downarrow_tyequiv with
-        (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_typ A'));
-        [ simpl_env; reflexivity | simpl_env; simpl_env in Huq; exact Huq
-        | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
-      * intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
-        destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
-          [ right; left | right; right; exists t0 ]; exact Hb.
-      * eapply a_wf_ptyp_lc; exact HwpA.
+      exact IHe.
   - (* var_skl P : ρ unchanged, target Ξ++(x~var_skl P')++Θ' *)
     inversion Hwf0 as [ | | | x0 P0 Θ0x Hnd0 HwpP Hwf0' | | ]; subst.
     assert (HwfΘ' : a_wf_aenv Θ').
     { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_skl P')).
       simpl_env. simpl_env in HwfW. exact HwfW. }
     assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
-    apply a_inc__var_skl; [ | | exact H0 ].
-    + replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
+    assert (HW' : a_wf_aenv ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ'))
+      by (simpl_env; simpl_env in HwfW; exact HwfW).
+    assert (HU' : uniq ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ'))
+      by (simpl_env; simpl_env in Huq; exact Huq).
+    destruct (IHHinc (Θpre ++ Ξ ++ (x ~ abind_var_skl P')) HW' HU' Hwf0') as [IHa IHe].
+    split.
+    + apply a_inc__var_skl; [ | | exact H0 ].
+      * replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
+           with ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') by (simpl_env; reflexivity).
+        exact IHa.
+      * eapply a_pskl_tyequiv__trans; [ exact H | ].
+        apply a_pskl_tyequiv__sym.
+        eapply msubst_pskl_compose_downarrow_tyequiv with
+          (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_skl P'));
+          [ simpl_env; reflexivity | simpl_env; simpl_env in Huq; exact Huq
+          | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+        -- intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
+           destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
+             [ right; left | right; right; exists t0 ]; exact Hb.
+        -- eapply a_wf_pskl_lc; exact HwpP.
+    + apply a_inc_equiv__var_skl; [ | exact H | exact H0 ].
+      replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
          with ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') by (simpl_env; reflexivity).
-      eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_skl P'));
-        [ simpl_env; simpl_env in HwfW; exact HwfW
-        | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
-    + eapply a_pskl_tyequiv__trans; [ exact H | ].
-      apply a_pskl_tyequiv__sym.
-      eapply msubst_pskl_compose_downarrow_tyequiv with
-        (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_skl P'));
-        [ simpl_env; reflexivity | simpl_env; simpl_env in Huq; exact Huq
-        | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
-      * intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
-        destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
-          [ right; left | right; right; exists t0 ]; exact Hb.
-      * eapply a_wf_pskl_lc; exact HwpP.
+      exact IHe.
   - (* tvar α : target Ξ++(α~tvar)++Θ' *)
     inversion Hwf0 as [ | | | | | α0 Θ0x Hnd0 Hwf0' ]; subst.
-    apply a_inc__tvar; [ | exact H ].
-    replace (Θpre ++ Ξ ++ α ~ abind_tvar ++ Θ')
-       with ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ') by (simpl_env; reflexivity).
-    eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (α ~ abind_tvar));
-      [ simpl_env; simpl_env in HwfW; exact HwfW
-      | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
+    assert (HW' : a_wf_aenv ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ'))
+      by (simpl_env; simpl_env in HwfW; exact HwfW).
+    assert (HU' : uniq ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ'))
+      by (simpl_env; simpl_env in Huq; exact Huq).
+    destruct (IHHinc (Θpre ++ Ξ ++ (α ~ abind_tvar)) HW' HU' Hwf0') as [IHa IHe].
+    split.
+    + apply a_inc__tvar; [ | exact H ].
+      replace (Θpre ++ Ξ ++ α ~ abind_tvar ++ Θ')
+         with ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ') by (simpl_env; reflexivity).
+      exact IHa.
+    + apply a_inc_equiv__tvar; [ | exact H ].
+      replace (Θpre ++ Ξ ++ α ~ abind_tvar ++ Θ')
+         with ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ') by (simpl_env; reflexivity).
+      exact IHe.
+Qed.
+
+Lemma a_inc_self_downarrow : forall Θ0 ρ Θt,
+  Θ0 ≤[ ρ ] Θt ->
+  forall Θpre,
+  a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
+  Θ0 ≤[ msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ] Θt.
+Proof.
+  intros Θ0 ρ Θt Hinc Θpre HwfW Huq Hwf0.
+  exact (proj1 (a_inc_self_downarrow_bundle Hinc Θpre HwfW Huq Hwf0)).
 Qed.
 
 (* a_inc_equiv twin of a_inc_self_downarrow: an increment is ≡-equivalent to its
@@ -1479,52 +1531,8 @@ Lemma a_inc_equiv_self_downarrow : forall Θ0 ρ Θt,
   a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
   a_inc_equiv Θ0 ρ (msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ) Θt.
 Proof.
-  intros Θ0 ρ Θt Hinc; induction Hinc; intros Θpre HwfW Huq Hwf0.
-  - simpl. apply a_inc_equiv__empty; assumption.
-  - simpl.
-    inversion Hwf0 as [ | α0 Θ0x Hnd0 Hwf0' | | | | ]; subst.
-    assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
-    assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ = ⇓ᵗ[ Θ' ] τ)
-      by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
-    apply a_inc_equiv__flex.
-    + eapply IHHinc; [ exact HwfW | exact Huq | exact Hwf0' ].
-    + rewrite Hdd. apply a_tyequiv_to_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
-  - simpl.
-    inversion Hwf0 as [ | | α0 τ0 Θ0x Hnd0 Hwpτ0 Hmτ0 Hwf0' | | | ]; subst.
-    assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
-    assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ' = ⇓ᵗ[ Θ' ] τ')
-      by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
-    apply a_inc_equiv__flex_def.
-    + eapply IHHinc; [ exact HwfW | exact Huq | exact Hwf0' ].
-    + rewrite Hdd. apply a_tyequiv_to_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
-    + exact H1.
-  - inversion Hwf0 as [ | | | | x0 A0 Θ0x Hnd0 HwpA Hwf0' | ]; subst.
-    assert (HwfΘ' : a_wf_aenv Θ').
-    { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_typ A')).
-      simpl_env. simpl_env in HwfW. exact HwfW. }
-    apply a_inc_equiv__var; [ | exact H | exact H0 ].
-    replace (Θpre ++ Ξ ++ x ~ abind_var_typ A' ++ Θ')
-       with ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ') by (simpl_env; reflexivity).
-    eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_typ A'));
-      [ simpl_env; simpl_env in HwfW; exact HwfW
-      | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
-  - inversion Hwf0 as [ | | | x0 P0 Θ0x Hnd0 HwpP Hwf0' | | ]; subst.
-    assert (HwfΘ' : a_wf_aenv Θ').
-    { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_skl P')).
-      simpl_env. simpl_env in HwfW. exact HwfW. }
-    apply a_inc_equiv__var_skl; [ | exact H | exact H0 ].
-    replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
-       with ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') by (simpl_env; reflexivity).
-    eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_skl P'));
-      [ simpl_env; simpl_env in HwfW; exact HwfW
-      | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
-  - inversion Hwf0 as [ | | | | | α0 Θ0x Hnd0 Hwf0' ]; subst.
-    apply a_inc_equiv__tvar; [ | exact H ].
-    replace (Θpre ++ Ξ ++ α ~ abind_tvar ++ Θ')
-       with ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ') by (simpl_env; reflexivity).
-    eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (α ~ abind_tvar));
-      [ simpl_env; simpl_env in HwfW; exact HwfW
-      | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
+  intros Θ0 ρ Θt Hinc Θpre HwfW Huq Hwf0.
+  exact (proj2 (a_inc_self_downarrow_bundle Hinc Θpre HwfW Huq Hwf0)).
 Qed.
 
 (* Strip a term-var middle (x:Q) from an ID increment, dropping it from both
