@@ -1803,6 +1803,45 @@ Proof.
       apply (IH (ptyp_var_f X)); [ apply a_wf_ptyp__var; exact HbΘ' | constructor ].
 Qed.
 
+(* Poly generalization of a_tyequiv_to_downarrow_mono: any wf type (incl. ∀) is
+   ≡ᵗ its downarrow.  Needed for a_inc_self_downarrow's var/flex_def middle
+   re-proof, where the middle type may be a polytype. *)
+Lemma a_tyequiv_to_downarrow : forall Θ A,
+  a_wf_ptyp Θ A -> a_wf_aenv Θ -> Θ ⊢ A ≡ᵗ (⇓ᵗ[ Θ ] A).
+Proof.
+  intros Θ A Hwp; induction Hwp; intros Hwf.
+  - simpl. apply a_tyequiv__refl. constructor.
+  - apply a_tyequiv_to_downarrow_mono;
+      [ exact Hwf | apply a_wf_ptyp__var; assumption | constructor ].
+  - simpl. apply a_tyequiv__arrow; [ apply IHHwp1 | apply IHHwp2 ]; exact Hwf.
+  - simpl. apply a_tyequiv__all with (L := L `union` dom Θ). intros X HX.
+    assert (HxΘ : X `notin` dom Θ) by (clear - HX; fsetdec).
+    assert (Hwfx : a_wf_aenv ((X ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ exact HxΘ | exact Hwf ]).
+    specialize (H0 X ltac:(clear - HX; fsetdec) Hwfx).
+    assert (Hcomm : ⇓ᵗ[ (X ~ abind_tvar) ++ Θ ] (open_ptyp_wrt_ptyp A (ptyp_var_f X))
+                    = open_ptyp_wrt_ptyp (⇓ᵗ[ Θ ] A) (ptyp_var_f X)).
+    { replace (aenv_msubst ((X ~ abind_tvar) ++ Θ)) with (aenv_msubst Θ)
+        by (symmetry; apply aenv_msubst_tvar).
+      apply msubst_ptyp_open_lc;
+        [ apply aenv_msubst_lc; exact Hwf
+        | rewrite dom_aenv_msubst; exact HxΘ ]. }
+    rewrite Hcomm in H0.
+    eapply a_tyequiv_strengthen_tvar_cons; [ exact H0 | reflexivity ].
+Qed.
+
+(* The middle-≡ adjustment for a_inc_self_downarrow: msubst ρ A ≡ its ⇓-composed
+   form, when msubst ρ A is wf in the (suffix) sub-target Θt of Θ. *)
+Lemma msubst_downarrow_tyequiv : forall Θ Θpre Θt B,
+  Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θt ->
+  a_wf_ptyp Θt B ->
+  Θt ⊢ B ≡ᵗ (⇓ᵗ[ Θ ] B).
+Proof.
+  intros Θ Θpre Θt B HeqΘ Huq Hwfaenv HwfB. subst Θ.
+  rewrite (downarrow_app_agree_ptyp Θpre Θt B Huq (a_wf_ptyp_ftv_dom HwfB)).
+  apply a_tyequiv_to_downarrow; [ exact HwfB | exact Hwfaenv ].
+Qed.
+
 (** THE ≡ᵗ STRENGTHENING.  Strip a middle binding [c~b] and an [a_decls]-free
     prefix [Ξ] off both sides of a MONOtype equivalence whose endpoints are wf
     in the tail [Θt]. *)
