@@ -951,6 +951,158 @@ Proof.
   intros Y Hy. apply aenv_msubst_image_wf; assumption.
 Qed.
 
+(* ---- downarrow SCOPING + the join-grounding crux (GMM Lemma 2.6, step 2) ---- *)
+(*  ⇓ᵗ[Θ] of a type stays inside any def-closed set containing its ftv; and    *)
+(*  (THE CRUX) a mono-join uskl(S) ≈ syn(mono C) forces ⇓ˢ[Θ]S scoped to any    *)
+(*  def-closed D that scopes C — so the walked payload downarrows into the      *)
+(*  sub-target.  Holes contribute no ftv; the ∀/inh cases cannot fire (C mono). *)
+
+Lemma msubst_ptyp_ftv : forall ζ A X,
+  X `in` ftvar_in_ptyp (msubst_ptyp ζ A) ->
+  exists Y, Y `in` ftvar_in_ptyp A /\ X `in` ftvar_in_ptyp (msubst_lookup ζ Y).
+Proof.
+  intros ζ A; induction A as [ | n | Z | A1 IHA1 A2 IHA2 | A0 IHA0 ];
+    intros X HX; simpl in *.
+  - clear - HX; fsetdec.
+  - clear - HX; fsetdec.
+  - exists Z. split; [ fsetdec | exact HX ].
+  - apply AtomSetImpl.union_1 in HX. destruct HX as [H1 | H2].
+    + destruct (IHA1 X H1) as [Y [HY1 HY2]]. exists Y; split; [ fsetdec | exact HY2 ].
+    + destruct (IHA2 X H2) as [Y [HY1 HY2]]. exists Y; split; [ fsetdec | exact HY2 ].
+  - destruct (IHA0 X HX) as [Y [HY1 HY2]]. exists Y; split; [ fsetdec | exact HY2 ].
+Qed.
+
+(* Every downarrow image of a var in a def-closed set D stays in D. *)
+Lemma aenv_msubst_image_ftv_closed : forall Θ,
+  a_wf_aenv Θ ->
+  forall D,
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ -> α `in` D -> ftvar_in_ptyp τ [<=] D) ->
+  forall X, X `in` D ->
+  ftvar_in_ptyp (msubst_lookup (aenv_msubst Θ) X) [<=] D.
+Proof.
+  intros Θ Hwf; induction Hwf; intros D Hcl X HXD; simpl.
+  - (* nil *) clear - HXD; fsetdec.
+  - (* flex_mono α *) destruct (X == α) as [-> | Hne].
+    + simpl. clear - HXD; fsetdec.
+    + apply IHHwf; [ | exact HXD ].
+      intros β σ Hb Hβ. eapply Hcl; [ unfold binds; right; exact Hb | exact Hβ ].
+  - (* flex_mono_def α ≔ τ *) destruct (X == α) as [-> | Hne].
+    + (* image = msubst (aenv_msubst Θ) τ ; ftv τ ⊆ D by closure *)
+      assert (Hτ : ftvar_in_ptyp τ [<=] D)
+        by (eapply Hcl; [ unfold binds; left; reflexivity | exact HXD ]).
+      intros Z HZ.
+      destruct (msubst_ptyp_ftv _ _ HZ) as [W [HW1 HW2]].
+      assert (HWD : W `in` D) by (clear - Hτ HW1; fsetdec).
+      assert (Hsub : ftvar_in_ptyp (msubst_lookup (aenv_msubst Θ) W) [<=] D).
+      { apply IHHwf; [ | exact HWD ].
+        intros β σ Hb Hβ. eapply Hcl; [ unfold binds; right; exact Hb | exact Hβ ]. }
+      clear - HW2 Hsub. fsetdec.
+    + apply IHHwf; [ | exact HXD ].
+      intros β σ Hb Hβ. eapply Hcl; [ unfold binds; right; exact Hb | exact Hβ ].
+  - (* var_skl *) apply IHHwf; [ | exact HXD ].
+    intros β σ Hb Hβ.
+    eapply Hcl; [ unfold binds; right; exact Hb | exact Hβ ].
+  - (* var_typ *) apply IHHwf; [ | exact HXD ].
+    intros β σ Hb Hβ.
+    eapply Hcl; [ unfold binds; right; exact Hb | exact Hβ ].
+  - (* tvar α *) destruct (X == α) as [-> | Hne].
+    + rewrite msubst_lookup_notin.
+      * simpl. clear - HXD; fsetdec.
+      * pose proof (dom_aenv_msubst Θ). assert (α `notin` dom Θ) by exact H.
+        clear - H0 H1; fsetdec.
+    + apply IHHwf; [ | exact HXD ].
+      intros β σ Hb Hβ.
+      eapply Hcl; [ unfold binds; right; exact Hb | exact Hβ ].
+Qed.
+
+Lemma downarrow_ftv_closed : forall Θ A D,
+  a_wf_aenv Θ ->
+  ftvar_in_ptyp A [<=] D ->
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ -> α `in` D -> ftvar_in_ptyp τ [<=] D) ->
+  ftvar_in_ptyp (⇓ᵗ[ Θ ] A) [<=] D.
+Proof.
+  intros Θ A D Hwf HA Hcl X HX.
+  destruct (msubst_ptyp_ftv _ _ HX) as [Y [HY1 HY2]].
+  assert (HYD : Y `in` D) by (clear - HA HY1; fsetdec).
+  eapply (aenv_msubst_image_ftv_closed Hwf Hcl HYD); exact HY2.
+Qed.
+
+Lemma join_pskl_downarrow_mono_scoped : forall Ψ Θ S Q,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
+  a_wf_aenv Θ ->
+  forall S0 C D,
+    S = pskl_to_uskl S0 ->
+    Q = ptyp_to_bskl_syn C -> mono_ptyp C ->
+    (forall α τ, binds α (abind_flex_mono_def τ) Θ -> α `in` D -> ftvar_in_ptyp τ [<=] D) ->
+    ftvar_in_ptyp C [<=] D ->
+    ftvar_in_pskl (⇓ˢ[ Θ ] S0) [<=] D.
+Proof.
+  intros Ψ Θ S Q Hc Hwf; induction Hc;
+    intros S0 C0 D HeqS HeqC HmC0 Hcl HCD;
+    unfold ptyp_to_bskl_syn in *.
+  - (* unit *)
+    destruct S0; simpl in HeqS; try discriminate.
+    simpl. clear; fsetdec.
+  - (* var *)
+    destruct S0; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    destruct C0; simpl in HeqC; try discriminate.
+    inversion HeqC; subst.
+    simpl. rewrite ftvar_in_ptyp_to_pskl.
+    match goal with
+    | |- context[msubst_lookup ?r ?X] =>
+        replace (msubst_lookup r X) with (⇓ᵗ[ Θ ] (ptyp_var_f X)) by reflexivity
+    end.
+    apply downarrow_ftv_closed;
+      [ exact Hwf | simpl; clear - HCD; simpl in HCD; fsetdec | exact Hcl ].
+  - (* arrow *)
+    destruct S0 as [ | n | X | S01 S02 | S0a | | S0b ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    destruct C0 as [ | | | C1 C2 | ]; simpl in HeqC; try discriminate.
+    inversion HeqC; subst.
+    inversion HmC0 as [ | | ? ? HmC1 HmC2 ]; subst.
+    simpl. intros Z HZ.
+    apply AtomSetImpl.union_1 in HZ. destruct HZ as [HZl | HZr].
+    + apply (IHHc1 Hwf S01 C1 D eq_refl eq_refl HmC1 Hcl
+               ltac:(clear - HCD; simpl in HCD; fsetdec) Z HZl).
+    + apply (IHHc2 Hwf S02 C2 D eq_refl eq_refl HmC2 Hcl
+               ltac:(clear - HCD; simpl in HCD; fsetdec) Z HZr).
+  - (* forall_inh_tagged *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* forall_inh_untagged *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* forall_syn_tagged *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* forall_syn *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* ghostg *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* topholeg *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* hole : subject is a ghost hole, ⇓ contributes no ftv *)
+    destruct S0; simpl in HeqS; try discriminate.
+    simpl. clear; fsetdec.
+  - (* tophole *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* tophole_inh *) destruct HmC0; simpl in HeqC; discriminate.
+  - (* tophole_drop *)
+    destruct S0 as [ | | | | | | S0t ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    simpl. apply (IHHc Hwf S0t C0 D eq_refl eq_refl HmC0 Hcl HCD).
+  - (* flex_l : subject is a defined flexible *)
+    destruct S0 as [ | | Xv | | | | ]; simpl in HeqS; try discriminate.
+    inversion HeqS; subst.
+    simpl.
+    assert (Hlk : msubst_lookup (aenv_msubst Θ) Xv = ⇓ᵗ[ Θ ] τ)
+      by (apply aenv_msubst_lookup_def; assumption).
+    rewrite Hlk.
+    rewrite <- msubst_pskl_ptyp_to_pskl.
+    apply (IHHc Hwf (ptyp_to_pskl τ) C0 D
+             (eq_sym (ptyp_to_uskl_syn_eq τ)) eq_refl HmC0 Hcl HCD).
+  - (* flex_r : join is a defined flexible *)
+    destruct C0; simpl in HeqC; try discriminate.
+    inversion HeqC; subst.
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    assert (Hτcl : ftvar_in_ptyp τ [<=] D).
+    { eapply Hcl; [ exact H | ].
+      clear - HCD; simpl in HCD; fsetdec. }
+    apply (IHHc Hwf S0 τ D eq_refl eq_refl Hmτ Hcl Hτcl).
+Qed.
+
+
 
 (* ===================================================================== *)
 (*  CONTEXT-STRENGTHENING for the join (ad_pat_consis) and skeleton-wf     *)
