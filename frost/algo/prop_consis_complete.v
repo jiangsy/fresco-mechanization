@@ -1784,14 +1784,20 @@ Proof.
                   pskl_to_uskl_open_var / pskl_to_bskl_syn_open); FLEX_L
                   (consis_unfold_def_subject) and FLEX_R (consis_unfold_def_join),
                   both + mono_inh_eq_syn + pskl_to_uskl_ptyp.
-                3/10 REMAINING — tophole_remove / tophole_fill / tophole_keep:
-                  the residue is NESTED-tophole + syn-painting interplay.  __tophole
-                  (target bskl_tophole, i.e. Q=pskl_tophole Q0') gives sub-join
-                  uskl P ≈ syn Q0' but IHHr wants uskl P ≈ syn{Q}=bskl_tophole(syn
-                  Q0') — a mismatch that forces P itself to be a tophole (Hr: P ⊳
-                  pskl_tophole Q0' is derivable only by __tophole_keep).  Needs a
-                  tophole-strip/normalize helper (cf. ad_pat_consis_tophole_guarded_inv,
-                  which needs guardedness the inner subject lacks).  ~80 more lines. *)
+                3/10 REMAINING — tophole_remove / tophole_fill / tophole_keep.
+                  PAPER'S STRUCTURE (consistency-proofs.tex:2564): the optimality
+                  proof inducts on the DECLARATIVE CONSISTENCY (join) derivation,
+                  NOT the refinement, and peels the subject special-cases FIRST
+                  (:2572-2578): P0=Hole -> GhostR; P0=TopHole.P0' & P guarded ->
+                  UnivGhostR (recurse on P0'); then the main induction "assumes the
+                  above three special cases already handled".  My refine-induction
+                  bridge cannot reach this: a subject-tophole STRIP lemma
+                  (uskl_tophole(uskl P)≈syn B -> uskl P≈syn B) is provably FALSE —
+                  P can be pskl_hole (hole refines to ANY target incl. a tophole via
+                  ad_refine_pskl_f__hole), and then uskl_hole ≈ bskl_tophole(..) has
+                  no derivation.  ⟹ to finish, restructure the bridge to induct on
+                  the JOIN with hole/ghost/tophole subject shapes handled up front
+                  (the paper's shape), rather than a strip helper on refine-induction. *)
   - (* C-UnivGhostR.  Here the subject is already guarded, so its competing
        join has a guarded target.  The tophole on the input refinement can
        therefore only be removed; the sub-IH then has exactly the outer goal. *)
