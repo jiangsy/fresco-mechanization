@@ -1768,26 +1768,30 @@ Proof.
                   Θr ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh A) ⊳ (pskl_to_bskl_inh B).
               (in C-GhostR: A=msubst ρ P, B=bskl_to_pskl Qb, Θr=Θj=Θ, the
               syn-painting hyp Qb=syn{B} from inverting Hrs's [bskl_hole ⊳ Qb]).
-              Induct on Hr (revert Θj).  STATUS of the 10 cases:
-                DONE (compile): unit; var (refine's own X∈Δ∨tvar premise); arrow
-                  (invert Hj __arrow + psi_cong to reset Ψ=empty); hole
-                  (consis_hole_target_inh forces the fill rigid ⟹ inh=syn ⟹
-                  ad_refine_syn__hole, wf from the refine's own hole premise —
-                  DEFUSES the old hole-rule obstacle); flex_l/flex_r __var
-                  subcase (Q=var α, a_binds_tvar's flex-def disjunct) and
-                  __flex_l/_r subcase (unfold τ via binds_unique+injection —
-                  NOT subst, which drops τ — feed IHHr, mono_inh_eq_syn).
-                REMAINING:
-                - flex_l/flex_r have a THIRD join subcase: ad_pat_consis__flex_r
-                  ALSO fires on a var SUBJECT (target-side def unfold, Q=var β),
-                  needing an intermediate join reconstruction (refold β).
-                - forall_syn: invert Hj __forall_syn (cofinite); recurse under a
-                  fresh X with Θj:=(X~tvar)++Θj (side conditions transport);
-                  rebuild via ad_refine_syn__all + pskl_to_bskl_inh_open.
-                - tophole_remove/fill/keep: invert Hj (__tophole / __tophole_inh
-                  killed since bskl_all_inh≠syn / __tophole_drop) and reconcile
-                  refine-side vs join-side tophole placement.  ~200 more lines;
-                  needs an interactive prover (many flex/tophole cross-subcases). *)
+              REFINEMENT (2026-07-16): the flex-def side condition is the reverse
+              inclusion Θr ⊆ Θj (binds x b Θr -> binds x b Θj), which lets the flex
+              cases avoid ALL case-splitting via consis_unfold_def_subject /
+              consis_unfold_def_join (unfold the flex-def var in the join
+              subject/target directly).  Induct on Hr (revert Θj).  STATUS:
+                7/10 DONE (compile, scratchpad bridge_ghostr_wip.v):
+                  unit; var (refine's own X∈Δ∨tvar premise); arrow (invert Hj
+                  __arrow + ad_pat_consis_psi_cong to reset Ψ=empty); hole
+                  (consis_hole_target_inh ⟹ fill rigid ⟹ ad_refine_syn__hole —
+                  DEFUSES the old hole-rule obstacle); FORALL_SYN (invert Hj, grab
+                  the cofinite premise by RENAME before pick-fresh, apply
+                  ad_refine_syn__all with L from `match type of Hsub`, recurse with
+                  Θj:=(X~tvar)++Θj + binds_cons_3, pskl_to_bskl_inh_open /
+                  pskl_to_uskl_open_var / pskl_to_bskl_syn_open); FLEX_L
+                  (consis_unfold_def_subject) and FLEX_R (consis_unfold_def_join),
+                  both + mono_inh_eq_syn + pskl_to_uskl_ptyp.
+                3/10 REMAINING — tophole_remove / tophole_fill / tophole_keep:
+                  the residue is NESTED-tophole + syn-painting interplay.  __tophole
+                  (target bskl_tophole, i.e. Q=pskl_tophole Q0') gives sub-join
+                  uskl P ≈ syn Q0' but IHHr wants uskl P ≈ syn{Q}=bskl_tophole(syn
+                  Q0') — a mismatch that forces P itself to be a tophole (Hr: P ⊳
+                  pskl_tophole Q0' is derivable only by __tophole_keep).  Needs a
+                  tophole-strip/normalize helper (cf. ad_pat_consis_tophole_guarded_inv,
+                  which needs guardedness the inner subject lacks).  ~80 more lines. *)
   - (* C-UnivGhostR.  Here the subject is already guarded, so its competing
        join has a guarded target.  The tophole on the input refinement can
        therefore only be removed; the sub-IH then has exactly the outer goal. *)
