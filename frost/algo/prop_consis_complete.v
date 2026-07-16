@@ -2033,6 +2033,62 @@ Proof.
       | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
 Qed.
 
+(* a_inc_equiv twin of a_inc_self_downarrow: an increment is ≡-equivalent to its
+   own downarrow.  Used to adjust the factoring's competing metasubst ⇓ρ→ρ. *)
+Lemma a_inc_equiv_self_downarrow : forall Θ0 ρ Θt,
+  Θ0 ≤[ ρ ] Θt ->
+  forall Θpre,
+  a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
+  a_inc_equiv Θ0 ρ (msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ) Θt.
+Proof.
+  intros Θ0 ρ Θt Hinc; induction Hinc; intros Θpre HwfW Huq Hwf0.
+  - simpl. apply a_inc_equiv__empty; assumption.
+  - simpl.
+    inversion Hwf0 as [ | α0 Θ0x Hnd0 Hwf0' | | | | ]; subst.
+    assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
+    assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ = ⇓ᵗ[ Θ' ] τ)
+      by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
+    apply a_inc_equiv__flex.
+    + eapply IHHinc; [ exact HwfW | exact Huq | exact Hwf0' ].
+    + rewrite Hdd. apply a_tyequiv_to_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
+  - simpl.
+    inversion Hwf0 as [ | | α0 τ0 Θ0x Hnd0 Hwpτ0 Hmτ0 Hwf0' | | | ]; subst.
+    assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
+    assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ' = ⇓ᵗ[ Θ' ] τ')
+      by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
+    apply a_inc_equiv__flex_def.
+    + eapply IHHinc; [ exact HwfW | exact Huq | exact Hwf0' ].
+    + rewrite Hdd. apply a_tyequiv_to_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
+    + exact H1.
+  - inversion Hwf0 as [ | | | | x0 A0 Θ0x Hnd0 HwpA Hwf0' | ]; subst.
+    assert (HwfΘ' : a_wf_aenv Θ').
+    { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_typ A')).
+      simpl_env. simpl_env in HwfW. exact HwfW. }
+    apply a_inc_equiv__var; [ | exact H | exact H0 ].
+    replace (Θpre ++ Ξ ++ x ~ abind_var_typ A' ++ Θ')
+       with ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ') by (simpl_env; reflexivity).
+    eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_typ A'));
+      [ simpl_env; simpl_env in HwfW; exact HwfW
+      | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
+  - inversion Hwf0 as [ | | | x0 P0 Θ0x Hnd0 HwpP Hwf0' | | ]; subst.
+    assert (HwfΘ' : a_wf_aenv Θ').
+    { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_skl P')).
+      simpl_env. simpl_env in HwfW. exact HwfW. }
+    apply a_inc_equiv__var_skl; [ | exact H | exact H0 ].
+    replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
+       with ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') by (simpl_env; reflexivity).
+    eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_skl P'));
+      [ simpl_env; simpl_env in HwfW; exact HwfW
+      | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
+  - inversion Hwf0 as [ | | | | | α0 Θ0x Hnd0 Hwf0' ]; subst.
+    apply a_inc_equiv__tvar; [ | exact H ].
+    replace (Θpre ++ Ξ ++ α ~ abind_tvar ++ Θ')
+       with ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ') by (simpl_env; reflexivity).
+    eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (α ~ abind_tvar));
+      [ simpl_env; simpl_env in HwfW; exact HwfW
+      | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
+Qed.
+
 (** THE ≡ᵗ STRENGTHENING.  Strip a middle binding [c~b] and an [a_decls]-free
     prefix [Ξ] off both sides of a MONOtype equivalence whose endpoints are wf
     in the tail [Θt]. *)
