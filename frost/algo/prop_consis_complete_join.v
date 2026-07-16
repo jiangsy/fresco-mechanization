@@ -25,6 +25,7 @@ Require Import src.frost.algo.prop_decorate.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_mono_bridge.
+Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_consis_sound.
 Require Import src.frost.algo.prop_consis_complete.
 
@@ -64,15 +65,23 @@ Proof.
      with assignment).  Precision comes from the join-induction IH (cf.
      join_precise); factoring from opt_axiom_factor (axiom nodes) / the glue
      (structural) / the assign+unify completeness (flex).  WIP: honest admits. *)
-  - admit. (* unit *)
+  - (* unit.  Needs input-P0 analysis via Hrs (P0 ∈ {unit,hole,tophole,flex}):
+       P0=unit → a_consis__unit; P0=hole → a_consis__ghost_r;
+       P0=tophole → a_consis__univ_ghost_r; P0=flex → a_consis__flex_l.
+       The subject P is likewise unit or a flexible (FlexL). *)
+    admit.
   - admit. (* var (rigid) *)
   - admit. (* arrow *)
-  - admit. (* forall_inh_tagged *)
+  - (* forall_inh_tagged : subject uskl_all_etag ∉ range(pskl_to_uskl) *)
+    destruct (msubst_pskl ρ PP); simpl in HeqS; discriminate.
   - admit. (* forall_inh_untagged *)
-  - admit. (* forall_syn_tagged *)
+  - (* forall_syn_tagged : subject uskl_all_etag ∉ range(pskl_to_uskl) *)
+    destruct (msubst_pskl ρ PP); simpl in HeqS; discriminate.
   - admit. (* forall_syn *)
-  - admit. (* ghostg *)
-  - admit. (* topholeg *)
+  - (* ghostg : subject uskl_holeg ∉ range(pskl_to_uskl) *)
+    destruct (msubst_pskl ρ PP); simpl in HeqS; discriminate.
+  - (* topholeg : subject uskl_topholeg ∉ range(pskl_to_uskl) *)
+    destruct (msubst_pskl ρ PP); simpl in HeqS; discriminate.
   - admit. (* hole *)
   - admit. (* tophole *)
   - admit. (* tophole_inh *)
