@@ -1752,14 +1752,32 @@ Proof.
   - admit. (* TODO[optimality]: C-GhostR; axiom, Θ1=Θ0; opt_axiom_factor gives
               the increment+factoring (ζ:=ρ).  BLOCKED on precision
               [inh{ρP} ⊳ inh{bskl_to_pskl Qb}].  Unlike C-Ghost the SUBJECT P
-              (not the input) drives it, and P may be POLYMORPHIC, so:
-              (a) the mono join/refine recovery does not apply; and
-              (b) the natural bridge [ad_refine_pskl → ad_precise] on Hrp FAILS —
-                  ad_refine_pskl's hole rule [pskl_hole ⊳ Q] would need
-                  [bskl_hole ⊳ inh{Q}] but ad_refine_syn's hole rule only yields
-                  [bskl_hole ⊳ SYN{Q}]; the ∀-rule conversely forces inh on the
-                  right.  Needs the full refine machinery (trans + a re-inherit
-                  lemma), or a non-mono consis→refine bridge.  (2026-07-15) *)
+              (not the input) drives it, and P may be POLYMORPHIC.
+              PLAN (2026-07-16, WIP in scratchpad bridge_ghostr_wip.v): the
+              missing infra is the non-mono re-inherit bridge
+                [bridge] ad_refine_pskl_f F Θ Δ A B ->  a_wf_aenv Θ ->
+                         empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl A) ≈ (pskl_to_bskl_syn B) ->
+                         Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh A) ⊳ (pskl_to_bskl_inh B)
+              (in C-GhostR: A=msubst ρ P, B=bskl_to_pskl Qb; the syn-painting
+              hypothesis Qb=syn{B} comes from inverting Hrs's [bskl_hole ⊳ Qb]
+              via ad_refine_syn_f__hole).  Induct on the refine [Hr]; carry &
+              split the join [Hj].  STATUS of the 10 cases:
+                DONE (compile): unit, var, arrow (invert Hj __arrow + psi_cong
+                  to reset Ψ=empty), hole (consis_hole_target_inh forces the
+                  fill rigid so inh=syn, then ad_refine_syn__hole).
+                MAPPED, not yet closed:
+                - flex_l/flex_r: [inversion Hj] yields TWO join sub-cases —
+                  ad_pat_consis__var (Q=var α, goal var⊳var via a_binds_tvar's
+                  3rd/flex-def disjunct) AND ad_pat_consis__flex_l/_r (unfold α's
+                  mono def τ; feed IHHr, then ad_refine_syn__flex_l/_r with
+                  inh{ptyp_to_pskl τ}=ptyp_to_bskl_syn τ by mono).
+                - forall_syn: invert Hj __forall_syn (cofinite); recurse under a
+                  fresh X via H0; rebuild with ad_refine_syn__all + inh/open
+                  commute (pskl_to_bskl_inh_open).
+                - tophole_remove / tophole_fill / tophole_keep: THE CRUX — invert
+                  Hj (tophole subject: __tophole / __tophole_inh(killed, target
+                  bskl_all_inh ≠ syn) / __tophole_drop) and reconcile the
+                  refine-side vs join-side tophole placement.  ~250 lines total. *)
   - (* C-UnivGhostR.  Here the subject is already guarded, so its competing
        join has a guarded target.  The tophole on the input refinement can
        therefore only be removed; the sub-IH then has exactly the outer goal. *)
