@@ -540,6 +540,38 @@ middle up to ≡ᵗ, so it survives.  Affected mech cases (marked FALSE in
 Flex-Flex-Skip' (var_typ/var_skl branches).  All other optimality cases are
 unaffected (their walks carry no type payload, or none that can migrate).
 
+**UPDATE (2026-07-16): Assign-SkipTmVar(typ) is now CLOSED under the adopted
+semantic rule** (`skip_tm_var_case`, Qed, axiom-free, `algo/prop_consis_complete.v`;
+optimality bundle admits 13→12).  The factoring is the GMM Lemma 2.6 construction
+in full: `a_inc_self_downarrow` + `a_inc_downarrow_prefix` land the competing
+increment at `ρ_sub = ⇓ρ = compose(aenv_msubst Θ) ρ` over the sub-target `Θ'`
+(below the walked binder); `consis_downarrow_subject` (the join is invariant under
+⇓-normalizing the subject when the RHS is monotype) plus the O2 grounding
+`join_pskl_downarrow_mono_scoped` transfer the competing join to `Θ'`; the sub-IH
+runs; and `a_inc_equiv_mid_insert_var` + `a_inc_equiv_self_downarrow` +
+`a_inc_equiv_trans` rebuild the factoring over the original `ρ`.  SkipTmVar(skl)
+and SkipRigid are the pskl/tvar mirrors (pending).
+
+**NEW (minor) unstated-invariant gap — `dom Ξ ⊆ ftv P`.**  The optimality induction
+needs, at every node, that the pending declarations `Ξ` all occur in the assigned
+skeleton `P` (`dom Ξ ⊆ ftvar_in_pskl P`).  It is used to ground each pending decl's
+competing image into the sub-target `Θ'` (O2 only reaches decls appearing in `P`);
+a decl `Y ∉ ftv P` is unconstrained by the join and its ⇓-image can escape `Θ'`,
+i.e. the SAME flex-migration phenomenon (a genuine counterexample, not just a proof
+obstacle).  This is NOT a free invariant of the `a_assign` judgment — `Assign-SolveM`
+takes `Ξ` as an input.  But it IS an invariant of every REACHABLE derivation: the
+top-level `assignvar` starts with `Ξ = nil`; `Ξ` grows only via `Assign-Depend`,
+whose premise is literally `β̂ ∈ ftv P` (def_extra.v); the skip/solve rules keep
+`Ξ` and `P`.  So a config with a dangling `Y ∈ Ξ, Y ∉ ftv P` is unreachable from
+the top.  The mechanization threads `dom Ξ ⊆ ftv P` through `assign_optimal_post`
+and `a_assign_optimal_thm`, maintaining it across the closed rules
+(UnivGhost-Id/Depend/Skip) and instantiating it vacuously at the corollary's
+`Ξ = nil` — so the TOP-LEVEL optimality statement is unchanged and unweakened.  The
+paper's assignment optimality, if stated over general `Θ₀ ∣ Ξ` (it is —
+consistency-proofs.tex:2420) and inducted without this invariant, has the same
+unstated-invariant gap; it should carry `dom Ξ ⊆ ftv P` (or be stated at the
+top-level `Ξ = ·`, where it is vacuous).
+
 ## GAP — `thm:complete-consistency`: the three induction subjects DO NOT COMBINE
 
 Full analysis, with per-edge verification and the measure that works:
