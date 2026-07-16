@@ -2089,6 +2089,39 @@ Proof.
       | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
 Qed.
 
+(* Strip a term-var middle (x:Q) from an ID increment, dropping it from both
+   source and target (id ⟹ no suffix added, so Ξv=nil, A'=Q).  The id-side
+   plumbing of the SkipTmVar walk case: recovers the (Ξ++Θ0) id-increment. *)
+Lemma a_inc_var_mid_strip_id : forall Ξ x Q Θ0 ρ Θ1,
+  a_decls Ξ ->
+  is_id_msubst ρ ->
+  (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0) ≤[ ρ ] ((x ~ abind_var_typ Q) ++ Θ1) ->
+  (Ξ ++ Θ0) ≤[ ρ ] Θ1.
+Proof.
+  induction Ξ as [ | [a b] Ξ' IH ]; intros x Q Θ0 ρ Θ1 Hdec Hid Hinc.
+  - simpl in Hinc.
+    destruct (a_inc_var_inv Hinc) as [Ξv [A' [Θ2 [Heqt [Heqv [Hsuf Hinc']]]]]].
+    destruct Ξv as [ | [z bz] Ξv' ].
+    + simpl in Heqt. inversion Heqt; subst. exact Hinc'.
+    + exfalso. simpl in Heqt. inversion Heqt; subst.
+      inversion Hsuf as [ | z0 b0 Ξ0 Hsuf0 Hsb ]; subst.
+      inversion Hsb.
+  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+    simpl in Hinc.
+    inversion Hinc as [ | Θs ρs Θts aa τ Hinc' Hwfτ Hmτ | | | | ]; subst.
+    apply is_id_msubst_inv in Hid as [Heqτ Hid']; subst.
+    apply a_inc__flex; [ | | apply mono_ptyp__var ].
+    2:{ apply a_wf_ptyp__var.
+        inversion Hwfτ as [ | Θw Xw Hbt | | ]; subst.
+        eapply a_binds_tvar_strip_mid with
+          (c := x) (b := abind_var_typ Q) (Ξ := (@nil (atom * abind)));
+          [ simpl; exact Hbt
+          | intro Hc; inversion Hc
+          | intro Hc; inversion Hc
+          | intros ? Hc; inversion Hc ]. }
+    eapply IH; [ exact Hdec' | exact Hid' | exact Hinc' ].
+Qed.
+
 (** THE ≡ᵗ STRENGTHENING.  Strip a middle binding [c~b] and an [a_decls]-free
     prefix [Ξ] off both sides of a MONOtype equivalence whose endpoints are wf
     in the tail [Θt]. *)
@@ -2441,20 +2474,20 @@ Qed.
 (* Normalize the decls-prefix images of a competing a_inc into a sub-target Θ'
    (below the walked binder): the Θ0-part increment is already into Θ' and the
    Ξ-prefix flex images ⇓-collapse into Θ' once they are join-grounded. *)
-Lemma a_inc_downarrow_prefix : forall Ξ ρa T Θ0 ρb Θ Θ',
+Lemma a_inc_downarrow_prefix : forall Ξ ρa T Θ0 ρb σb Θ Θ',
   a_decls Ξ ->
   (Ξ ++ T) ≤[ ρa ++ ρb ] Θ ->
   uniq (Ξ ++ T) ->
   dom ρa [=] dom Ξ ->
-  Θ0 ≤[ ρb ] Θ' ->
+  Θ0 ≤[ σb ] Θ' ->
   a_wf_aenv Θ -> uniq Θ ->
   (forall x c, binds x c Θ' -> binds x c Θ) ->
   (forall X, X `in` dom ρa ->
      ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa X)) [<=] dom Θ') ->
-  (Ξ ++ Θ0) ≤[ (msubst_compose (aenv_msubst Θ) ρa) ++ ρb ] Θ'.
+  (Ξ ++ Θ0) ≤[ (msubst_compose (aenv_msubst Θ) ρa) ++ σb ] Θ'.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ];
-    intros ρa T Θ0 ρb Θ Θ' Hdec Hinc Huq Hdom Hincb Hwf Huqt Hsub Hgr.
+    intros ρa T Θ0 ρb σb Θ Θ' Hdec Hinc Huq Hdom Hincb Hwf Huqt Hsub Hgr.
   - rewrite dom_nil in Hdom.
     destruct ρa as [ | [c t] ρa' ];
       [ simpl; exact Hincb
