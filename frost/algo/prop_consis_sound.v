@@ -2087,15 +2087,9 @@ Proof.
   destruct H as [H | [τ H]]; [ left | right; exists τ ]; auto.
 Qed.
 
-(** Flexibility survives an arbitrary context PREFIX ([binds] is plain
-    membership, so no freshness side condition is needed — contrast
-    [a_flex_tvar_weaken_cons], which asks for one it does not use). *)
-Lemma a_flex_tvar_weaken_prefix : forall α Ξ Θ,
-  a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
-Proof.
-  intros * [Hb | [τ Hb]]; [ left | right; exists τ ];
-    unfold binds in *; apply in_or_app; right; exact Hb.
-Qed.
+(* [a_flex_tvar_weaken_prefix] relocated to prop_inc.v (pure metasubst-base
+   lemma; it was the only symbol prop_inc_strengthen borrowed from here, which
+   created a prop_inc_strengthen -> prop_consis_sound import cycle). *)
 
 (** The subject of an assignment is flexible in the input context.
 
@@ -2480,11 +2474,9 @@ Qed.
 (*      unification: the type EQUIVALENCE Θ1 ⊢ α ≡ᵗ β)                      *)
 (* ===================================================================== *)
 
-Scheme a_assign_mind := Induction for a_assign Sort Prop
-  with a_unify_mind  := Induction for a_unify  Sort Prop
-  with a_consis_mind := Induction for a_consis Sort Prop.
-Combined Scheme a_assign_unify_consis_mutind
-  from a_assign_mind, a_unify_mind, a_consis_mind.
+(* [a_assign_unify_consis_mutind] (+ the per-judgment Induction schemes)
+   relocated to def_extra.v, next to the inductives, so prop_inc_strengthen can
+   use it without importing this file (cycle break). *)
 
 (** Conclusions of the two motives (hypotheses live in [*_concl] below). *)
 Definition unify_sound_post (F : atoms) (Θ0 : aenv) (α β : atom)

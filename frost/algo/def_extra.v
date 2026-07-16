@@ -744,6 +744,16 @@ and "Θ ⊲[ F ] α ≈ᵘ β ⊣ Θ'" := (a_unify F Θ α β Θ') : type_scope
 and "Θ ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" :=
   (a_consis F Δ1 Δ2 Θ P0 P Q Θ') : type_scope.
 
+(* Mutual induction scheme for the algorithmic judgments.  Kept next to the
+   inductives (it needs only them) so the metasubst-layer flex-preservation
+   bundle in prop_inc_strengthen can use it WITHOUT importing prop_consis_sound
+   (which would create a prop_inc_strengthen -> prop_consis_sound cycle). *)
+Scheme a_assign_mind := Induction for a_assign Sort Prop
+  with a_unify_mind  := Induction for a_unify  Sort Prop
+  with a_consis_mind := Induction for a_consis Sort Prop.
+Combined Scheme a_assign_unify_consis_mutind
+  from a_assign_mind, a_unify_mind, a_consis_mind.
+
 (* Paper-shaped forms: no used names yet at the root. *)
 Notation "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'" := (a_assign empty Θ Ξ α P Θ')
   (at level 70, Ξ at level 0, α at level 0, P at level 0, Θ' at level 0).

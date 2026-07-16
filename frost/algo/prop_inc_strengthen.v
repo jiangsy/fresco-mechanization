@@ -29,7 +29,6 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_compose.
 Require Import src.frost.algo.prop_normal.
-Require Import src.frost.algo.prop_consis_sound.
 
 Set Implicit Arguments.
 

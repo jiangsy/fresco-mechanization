@@ -290,6 +290,17 @@ Proof.
     auto using binds_weaken_mid.
 Qed.
 
+(** Flexibility survives an arbitrary context PREFIX ([binds] is plain
+    membership, so no freshness side condition is needed — contrast
+    [a_flex_tvar_weaken_cons], which asks for one it does not use).
+    (Relocated here from prop_consis_sound to break an import cycle.) *)
+Lemma a_flex_tvar_weaken_prefix : forall α Ξ Θ,
+  a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
+Proof.
+  intros * [Hb | [τ Hb]]; [ left | right; exists τ ];
+    unfold binds in *; apply in_or_app; right; exact Hb.
+Qed.
+
 (** [a_tyequiv] uses its context only through positive [binds] lookups, so it
     is monotone in the context. *)
 Lemma a_tyequiv_weaken : forall Θ Θ' A B,
