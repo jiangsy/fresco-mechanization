@@ -2155,10 +2155,10 @@ Qed.
 (* Normalize the decls-prefix images of a competing a_inc into a sub-target Θ'
    (below the walked binder): the Θ0-part increment is already into Θ' and the
    Ξ-prefix flex images ⇓-collapse into Θ' once they are join-grounded. *)
-Lemma a_inc_downarrow_prefix : forall Ξ ρa Θ0 ρb Θ Θ',
+Lemma a_inc_downarrow_prefix : forall Ξ ρa T Θ0 ρb Θ Θ',
   a_decls Ξ ->
-  (Ξ ++ Θ0) ≤[ ρa ++ ρb ] Θ ->
-  uniq (Ξ ++ Θ0) ->
+  (Ξ ++ T) ≤[ ρa ++ ρb ] Θ ->
+  uniq (Ξ ++ T) ->
   dom ρa [=] dom Ξ ->
   Θ0 ≤[ ρb ] Θ' ->
   a_wf_aenv Θ -> uniq Θ ->
@@ -2168,7 +2168,7 @@ Lemma a_inc_downarrow_prefix : forall Ξ ρa Θ0 ρb Θ Θ',
   (Ξ ++ Θ0) ≤[ (msubst_compose (aenv_msubst Θ) ρa) ++ ρb ] Θ'.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ];
-    intros ρa Θ0 ρb Θ Θ' Hdec Hinc Huq Hdom Hincb Hwf Huqt Hsub Hgr.
+    intros ρa T Θ0 ρb Θ Θ' Hdec Hinc Huq Hdom Hincb Hwf Huqt Hsub Hgr.
   - rewrite dom_nil in Hdom.
     destruct ρa as [ | [c t] ρa' ];
       [ simpl; exact Hincb
@@ -2181,10 +2181,10 @@ Proof.
         assert (a `in` dom ((a~abind_flex_mono)++Ξ')) by (simpl; fsetdec);
         rewrite <- Hdom in H; clear - H; fsetdec | ].
     simpl in Hinc.
-    inversion Hinc as [ | S ρs T aa τ0 Hinc' Hwfτ Hmτ | | | | ]; subst.
+    inversion Hinc as [ | S ρs Tt aa τ0 Hinc' Hwfτ Hmτ | | | | ]; subst.
     simpl.
-    assert (Huq' : uniq (Ξ' ++ Θ0)) by (clear - Huq; simpl_env in Huq; solve_uniq).
-    assert (HanΞΘ : c `notin` dom (Ξ' ++ Θ0))
+    assert (Huq' : uniq (Ξ' ++ T)) by (clear - Huq; simpl_env in Huq; solve_uniq).
+    assert (HanΞΘ : c `notin` dom (Ξ' ++ T))
       by (clear - Huq; simpl_env in Huq; solve_uniq).
     assert (Hanρa : c `notin` dom ρa').
     { pose proof (a_inc_dom_sub Hinc') as Hs.
@@ -2214,6 +2214,53 @@ Proof.
         pose proof (Hgr X HXin) as Hg.
         rewrite (msubst_lookup_cons_neq t ρa' Hne) in Hg.
         exact Hg.
+Qed.
+
+Lemma a_inc_equiv_mid_insert_var :
+  forall Ξ x Θ0 Θ' Ξv ρ1 ρ2 σ1 σ2 A A',
+  a_decls Ξ ->
+  uniq (Ξ ++ Θ0) ->
+  dom ρ1 [=] dom Ξ ->
+  dom σ1 [=] dom Ξ ->
+  Θ' ⊢ A' ≡ᵗ (msubst_ptyp ρ2 A) ->
+  a_suffix Ξv ->
+  a_inc_equiv (Ξ ++ Θ0) (ρ1 ++ ρ2) (σ1 ++ σ2) Θ' ->
+  a_inc_equiv (Ξ ++ (x ~ abind_var_typ A) ++ Θ0)
+              (ρ1 ++ ρ2) (σ1 ++ σ2)
+              (Ξv ++ (x ~ abind_var_typ A') ++ Θ').
+Proof.
+  induction Ξ as [ | [a bnd] Ξ' IH ];
+    intros x Θ0 Θ' Ξv ρ1 ρ2 σ1 σ2 A A' Hdec Huq Hdρ Hdσ Heqm Hsuf Hie.
+  - rewrite dom_nil in Hdρ, Hdσ.
+    apply metasubst_dom_empty in Hdρ; apply metasubst_dom_empty in Hdσ; subst.
+    simpl in Hie |- *.
+    apply a_inc_equiv__var; [ exact Hie | exact Heqm | exact Hsuf ].
+  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+    assert (Huρ : uniq (ρ1 ++ ρ2))
+      by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
+    assert (Huσ : uniq (σ1 ++ σ2))
+      by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
+    assert (HaΞ : a `notin` dom Ξ') by (clear - Huq; simpl_env in Huq; solve_uniq).
+    assert (Huq' : uniq (Ξ' ++ Θ0)) by (clear - Huq; simpl_env in Huq; solve_uniq).
+    destruct ρ1 as [ | [ar tr] ρ1' ];
+      [ exfalso; rewrite dom_nil in Hdρ;
+        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ')) by (simpl; fsetdec);
+        rewrite <- Hdρ in Hin; clear - Hin; fsetdec | ].
+    destruct σ1 as [ | [asg ts] σ1' ];
+      [ exfalso; rewrite dom_nil in Hdσ;
+        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ')) by (simpl; fsetdec);
+        rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
+    assert (Harρ : ar `notin` dom ρ1') by (clear - Huρ; simpl_env in Huρ; solve_uniq).
+    assert (Hasσ : asg `notin` dom σ1') by (clear - Huσ; simpl_env in Huσ; solve_uniq).
+    simpl in Hie.
+    inversion Hie as [ | S q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
+    simpl_env in Hdρ; simpl_env in Hdσ.
+    simpl. apply a_inc_equiv__flex.
+    2:{ apply a_tyequiv_weaken with (Θ := Θ');
+        [ intros y b Hb; simpl_env; auto | exact Hequ ]. }
+    apply IH; auto.
+    + clear - Hdρ Harρ HaΞ. simpl_env in *. fsetdec.
+    + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
 
