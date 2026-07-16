@@ -2137,6 +2137,86 @@ Qed.
 (*  docs/PAPER-GAPS.md + sections/appendices/optimality-cex.tex.             *)
 (* ===================================================================== *)
 
+(* --- Assembly infrastructure for the SkipTmVar/SkipRigid walk cases --- *)
+(* A monotype whose free type variables are all tvar-ish in Θ is well-formed
+   there — used to place a ⇓-normalized image in a sub-target. *)
+Lemma mono_ftv_wf : forall Θ τ,
+  mono_ptyp τ ->
+  (forall X, X `in` ftvar_in_ptyp τ -> a_binds_tvar X Θ) ->
+  a_wf_ptyp Θ τ.
+Proof.
+  intros Θ τ Hm; induction Hm; intros Hftv; simpl in *.
+  - apply a_wf_ptyp__unit.
+  - apply a_wf_ptyp__var. apply Hftv. fsetdec.
+  - apply a_wf_ptyp__arrow;
+      [ apply IHHm1 | apply IHHm2 ]; intros X HX; apply Hftv; fsetdec.
+Qed.
+
+(* Normalize the decls-prefix images of a competing a_inc into a sub-target Θ'
+   (below the walked binder): the Θ0-part increment is already into Θ' and the
+   Ξ-prefix flex images ⇓-collapse into Θ' once they are join-grounded. *)
+Lemma a_inc_downarrow_prefix : forall Ξ ρa Θ0 ρb Θ Θ',
+  a_decls Ξ ->
+  (Ξ ++ Θ0) ≤[ ρa ++ ρb ] Θ ->
+  uniq (Ξ ++ Θ0) ->
+  dom ρa [=] dom Ξ ->
+  Θ0 ≤[ ρb ] Θ' ->
+  a_wf_aenv Θ -> uniq Θ ->
+  (forall x c, binds x c Θ' -> binds x c Θ) ->
+  (forall X, X `in` dom ρa ->
+     ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa X)) [<=] dom Θ') ->
+  (Ξ ++ Θ0) ≤[ (msubst_compose (aenv_msubst Θ) ρa) ++ ρb ] Θ'.
+Proof.
+  induction Ξ as [ | [a b] Ξ' IH ];
+    intros ρa Θ0 ρb Θ Θ' Hdec Hinc Huq Hdom Hincb Hwf Huqt Hsub Hgr.
+  - rewrite dom_nil in Hdom.
+    destruct ρa as [ | [c t] ρa' ];
+      [ simpl; exact Hincb
+      | exfalso; simpl in Hdom;
+        assert (c `in` dom ((c,t)::ρa')) by (simpl; fsetdec);
+        rewrite Hdom in H; clear - H; fsetdec ].
+  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+    destruct ρa as [ | [c t] ρa' ];
+      [ exfalso; simpl in Hdom;
+        assert (a `in` dom ((a~abind_flex_mono)++Ξ')) by (simpl; fsetdec);
+        rewrite <- Hdom in H; clear - H; fsetdec | ].
+    simpl in Hinc.
+    inversion Hinc as [ | S ρs T aa τ0 Hinc' Hwfτ Hmτ | | | | ]; subst.
+    simpl.
+    assert (Huq' : uniq (Ξ' ++ Θ0)) by (clear - Huq; simpl_env in Huq; solve_uniq).
+    assert (HanΞΘ : c `notin` dom (Ξ' ++ Θ0))
+      by (clear - Huq; simpl_env in Huq; solve_uniq).
+    assert (Hanρa : c `notin` dom ρa').
+    { pose proof (a_inc_dom_sub Hinc') as Hs.
+      clear - Hs HanΞΘ. repeat rewrite dom_app in *. fsetdec. }
+    assert (Hlkc : msubst_lookup ((c, t) :: ρa') c = t)
+      by (simpl; destruct (c == c); [ reflexivity | contradiction ]).
+    assert (Hgrc : ftvar_in_ptyp (⇓ᵗ[ Θ ] t) [<=] dom Θ').
+    { pose proof (Hgr c ltac:(simpl; clear; fsetdec)) as Hg.
+      rewrite Hlkc in Hg. exact Hg. }
+    assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ ] t)).
+    { apply mono_ftv_wf; [ apply mono_downarrow; auto | ].
+      intros X HX.
+      assert (HXd : X `in` dom Θ') by (clear - Hgrc HX; fsetdec).
+      eapply a_binds_tvar_strengthen;
+        [ | exact Huqt | exact Hsub | exact HXd ].
+      eapply a_wf_ptyp_ftv_tvarish;
+        [ apply a_wf_ptyp_downarrow_mono; eauto | exact HX ]. }
+    apply a_inc__flex; [ | exact Hwfd | apply mono_downarrow; auto ].
+    eapply IH; [ exact Hdec' | exact Hinc' | exact Huq' | | exact Hincb
+               | exact Hwf | exact Huqt | exact Hsub | ].
+    + clear - Hdom Hanρa HanΞΘ. simpl in Hdom.
+      repeat rewrite dom_app in *. fsetdec.
+    + intros X HX. destruct (X == c) as [-> | Hne].
+      * exfalso. clear - HX Hanρa. fsetdec.
+      * assert (HXin : X `in` dom ((c, t) :: ρa'))
+          by (simpl; clear - HX; fsetdec).
+        pose proof (Hgr X HXin) as Hg.
+        rewrite (msubst_lookup_cons_neq t ρa' Hne) in Hg.
+        exact Hg.
+Qed.
+
+
 Theorem a_assign_unify_consis_optimal :
   (forall F Θ0 Ξ α P Θ1,
      a_assign F Θ0 Ξ α P Θ1 -> assign_optimal_post F Θ0 Ξ α P Θ1) /\
