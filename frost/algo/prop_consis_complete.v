@@ -1754,30 +1754,40 @@ Proof.
               [inh{ρP} ⊳ inh{bskl_to_pskl Qb}].  Unlike C-Ghost the SUBJECT P
               (not the input) drives it, and P may be POLYMORPHIC.
               PLAN (2026-07-16, WIP in scratchpad bridge_ghostr_wip.v): the
-              missing infra is the non-mono re-inherit bridge
-                [bridge] ad_refine_pskl_f F Θ Δ A B ->  a_wf_aenv Θ ->
-                         empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl A) ≈ (pskl_to_bskl_syn B) ->
-                         Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh A) ⊳ (pskl_to_bskl_inh B)
-              (in C-GhostR: A=msubst ρ P, B=bskl_to_pskl Qb; the syn-painting
-              hypothesis Qb=syn{B} comes from inverting Hrs's [bskl_hole ⊳ Qb]
-              via ad_refine_syn_f__hole).  Induct on the refine [Hr]; carry &
-              split the join [Hj].  STATUS of the 10 cases:
-                DONE (compile): unit, var, arrow (invert Hj __arrow + psi_cong
-                  to reset Ψ=empty), hole (consis_hole_target_inh forces the
-                  fill rigid so inh=syn, then ad_refine_syn__hole).
-                MAPPED, not yet closed:
-                - flex_l/flex_r: [inversion Hj] yields TWO join sub-cases —
-                  ad_pat_consis__var (Q=var α, goal var⊳var via a_binds_tvar's
-                  3rd/flex-def disjunct) AND ad_pat_consis__flex_l/_r (unfold α's
-                  mono def τ; feed IHHr, then ad_refine_syn__flex_l/_r with
-                  inh{ptyp_to_pskl τ}=ptyp_to_bskl_syn τ by mono).
+              missing infra is the non-mono re-inherit bridge.  KEY INSIGHT: the
+              refine keeps Θ fixed and tracks bound vars in Δ, but the JOIN grows
+              Θ by (X~tvar) at each ∀ — so the statement must DECOUPLE the refine
+              context Θr from the join context Θj (Θj extends Θr by tvars, adds no
+              flex-defs).  This makes the ∀ recursion go through and holds
+              trivially (Θj=Θr) at the top level:
+                [bridge] forall F Θr Θj Δ A B,
+                  ad_refine_pskl_f F Θr Δ A B -> a_wf_aenv Θr -> a_wf_aenv Θj ->
+                  (forall α τ, binds α (flex_mono_def τ) Θj ->
+                               binds α (flex_mono_def τ) Θr) ->
+                  empty ⨟ Θj ⊨ₛᵃ (pskl_to_uskl A) ≈ (pskl_to_bskl_syn B) ->
+                  Θr ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh A) ⊳ (pskl_to_bskl_inh B).
+              (in C-GhostR: A=msubst ρ P, B=bskl_to_pskl Qb, Θr=Θj=Θ, the
+              syn-painting hyp Qb=syn{B} from inverting Hrs's [bskl_hole ⊳ Qb]).
+              Induct on Hr (revert Θj).  STATUS of the 10 cases:
+                DONE (compile): unit; var (refine's own X∈Δ∨tvar premise); arrow
+                  (invert Hj __arrow + psi_cong to reset Ψ=empty); hole
+                  (consis_hole_target_inh forces the fill rigid ⟹ inh=syn ⟹
+                  ad_refine_syn__hole, wf from the refine's own hole premise —
+                  DEFUSES the old hole-rule obstacle); flex_l/flex_r __var
+                  subcase (Q=var α, a_binds_tvar's flex-def disjunct) and
+                  __flex_l/_r subcase (unfold τ via binds_unique+injection —
+                  NOT subst, which drops τ — feed IHHr, mono_inh_eq_syn).
+                REMAINING:
+                - flex_l/flex_r have a THIRD join subcase: ad_pat_consis__flex_r
+                  ALSO fires on a var SUBJECT (target-side def unfold, Q=var β),
+                  needing an intermediate join reconstruction (refold β).
                 - forall_syn: invert Hj __forall_syn (cofinite); recurse under a
-                  fresh X via H0; rebuild with ad_refine_syn__all + inh/open
-                  commute (pskl_to_bskl_inh_open).
-                - tophole_remove / tophole_fill / tophole_keep: THE CRUX — invert
-                  Hj (tophole subject: __tophole / __tophole_inh(killed, target
-                  bskl_all_inh ≠ syn) / __tophole_drop) and reconcile the
-                  refine-side vs join-side tophole placement.  ~250 lines total. *)
+                  fresh X with Θj:=(X~tvar)++Θj (side conditions transport);
+                  rebuild via ad_refine_syn__all + pskl_to_bskl_inh_open.
+                - tophole_remove/fill/keep: invert Hj (__tophole / __tophole_inh
+                  killed since bskl_all_inh≠syn / __tophole_drop) and reconcile
+                  refine-side vs join-side tophole placement.  ~200 more lines;
+                  needs an interactive prover (many flex/tophole cross-subcases). *)
   - (* C-UnivGhostR.  Here the subject is already guarded, so its competing
        join has a guarded target.  The tophole on the input refinement can
        therefore only be removed; the sub-IH then has exactly the outer goal. *)
