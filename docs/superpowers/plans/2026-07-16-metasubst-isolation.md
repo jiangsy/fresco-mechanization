@@ -358,6 +358,35 @@ git commit -m "$(printf '%s\n' '[mech][docs] metasubst isolation complete: full 
 
 ---
 
+## Execution outcome (2026-07-16)
+
+- **Task 1** — DONE (commit 10d5860). Cycle broken: `Scheme`/`Combined Scheme
+  a_assign_unify_consis_mutind` → `def_extra.v`; `a_flex_tvar_weaken_prefix`
+  → `prop_inc.v`. `prop_inc_strengthen` now imports no consis file.
+- **Tasks 2–4** — DONE (commit 037097c). `prop_metasubst.v` created (1790 lines,
+  0 admits, consis-free): 72 lemmas (a_inc_equiv / ⇓ / msubst basics).
+  `prop_consis_complete.v` = optimality defs + consis↔metasubst bridge + flagship
+  only (admit=12, unchanged). Also relocated `a_wf_aenv_uniq` → `prop_flex.v`
+  and dropped a duplicate `mono_ptyp_to_pskl_guarded` from `prop_consis_sound`.
+- **Task 5** — NO-OP. Premise false: only two mid-insert lemmas exist
+  (`a_inc_equiv_mid_insert_flex`, `_var`); no `_skl`/`_tvar` variants. The two
+  are structurally different (flex binder + metasubst mid-entry vs. inert var
+  binder + target-aenv suffix growth) and each is used once; merging would force
+  an artificial disjunction, not remove duplication.
+- **Task 6** — ALREADY SATISFIED. `msubst_downarrow_tyequiv` is already the single
+  primitive; both `msubst_compose_downarrow_tyequiv` and its pskl mirror invoke
+  it. The ptyp/pskl split cannot collapse further — `pskl` carries holes (□) not
+  in the image of `ptyp_to_pskl`, so the pskl induction is not derivable from the
+  ptyp one.
+- **Task 7** — DONE (commit dd11f87). `a_inc_self_downarrow_bundle` proves the
+  a_inc + a_inc_equiv conjunction by one 6-case induction; the two originals are
+  `proj1`/`proj2` wrappers (call sites unchanged). All three Closed; build green.
+- **Task 8** — DONE. Full `make coq` green; `skip_tm_var_case`,
+  `a_inc_self_downarrow`, `consis_downarrow_subject`, and the bundle/projections
+  all Closed under the global context; flagship corollaries depend only on the
+  pre-existing admitted `a_assign_unify_consis_optimal` (no new axioms);
+  `prop_consis_complete` admit count 12 throughout.
+
 ## Self-review notes
 
 - **Spec coverage:** layering (Task 2 imports enforce it), §A/§B/§C partition (Tasks 2–4), bridge stays (verified in Tasks 3–4 Step 3 notes), generalizations 1–3 (Tasks 5–7), cycle fix (Task 1 — moved first, per the transitive-dep finding), incremental green-per-commit (every task Steps compile the chain + check admit=12). All covered.
