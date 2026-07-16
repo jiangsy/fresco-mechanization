@@ -1842,6 +1842,197 @@ Proof.
   apply a_tyequiv_to_downarrow; [ exact HwfB | exact Hwfaenv ].
 Qed.
 
+Lemma a_wf_aenv_app_r : forall Θp Θs,
+  a_wf_aenv (Θp ++ Θs) -> a_wf_aenv Θs.
+Proof.
+  induction Θp as [ | [a b] Θp' IH ]; intros Θs Hwf; simpl in Hwf.
+  - exact Hwf.
+  - inversion Hwf; subst; apply IH; assumption.
+Qed.
+
+Lemma msubst_compose_downarrow_tyequiv : forall Θ Θpre Θt ρ A,
+  Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θ -> a_wf_aenv Θt ->
+  msubst_lc ρ ->
+  (forall X, X `in` dom ρ -> a_wf_ptyp Θt (msubst_lookup ρ X)) ->
+  lc_ptyp A ->
+  Θt ⊢ (msubst_ptyp (msubst_compose (aenv_msubst Θ) ρ) A) ≡ᵗ (msubst_ptyp ρ A).
+Proof.
+  intros Θ Θpre Θt ρ A HeqΘ Huq HwfΘ Hwft Hlcρ Himg Hlc;
+    revert Θpre Θt HeqΘ Huq Hwft Himg.
+  induction Hlc; intros Θpre Θt HeqΘ Huq Hwft Himg; simpl.
+  - apply a_tyequiv__refl. constructor.
+  - (* var X *)
+    destruct (AtomSetProperties.In_dec Xpt (dom ρ)) as [Hin | Hni].
+    + rewrite msubst_lookup_compose by (left; exact Hin).
+      apply a_tyequiv__sym.
+      eapply msubst_downarrow_tyequiv;
+        [ exact HeqΘ | exact Huq | exact Hwft | apply Himg; exact Hin ].
+    + rewrite (msubst_lookup_notin ρ Hni).
+      assert (Hnic : Xpt `notin` dom (msubst_compose (aenv_msubst Θ) ρ)).
+      { rewrite dom_msubst_compose. exact Hni. }
+      rewrite (msubst_lookup_notin _ Hnic).
+      apply a_tyequiv__refl. constructor.
+  - apply a_tyequiv__arrow;
+      [ apply (IHHlc1 Θpre Θt HeqΘ Huq Hwft Himg)
+      | apply (IHHlc2 Θpre Θt HeqΘ Huq Hwft Himg) ].
+  - apply a_tyequiv__all
+      with (L := dom ρ `union` dom Θt `union` dom Θpre
+                 `union` dom (msubst_compose (aenv_msubst Θ) ρ)).
+    intros X HX.
+    rewrite <- (@msubst_ptyp_open_lc (msubst_compose (aenv_msubst Θ) ρ) A X);
+      [ | intros Y; destruct (AtomSetProperties.In_dec Y (dom ρ)) as [Hyi | Hyn];
+          [ rewrite msubst_lookup_compose by (left; exact Hyi);
+            apply msubst_ptyp_lc_lc; [ apply aenv_msubst_lc; exact HwfΘ | apply Hlcρ ]
+          | assert (Hync : Y `notin` dom (msubst_compose (aenv_msubst Θ) ρ))
+              by (rewrite dom_msubst_compose; exact Hyn);
+            rewrite (msubst_lookup_notin _ Hync); apply lc_ptyp_var_f ]
+        | clear - HX; fsetdec ].
+    rewrite <- (@msubst_ptyp_open_lc ρ A X); [ | exact Hlcρ | clear - HX; fsetdec ].
+    apply (H0 X Θpre Θt HeqΘ Huq Hwft Himg).
+Qed.
+
+(* pskl mirror of msubst_compose_downarrow_tyequiv (var_skl middle adjustment). *)
+Lemma msubst_pskl_compose_downarrow_tyequiv : forall Θ Θpre Θt ρ P,
+  Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θ -> a_wf_aenv Θt ->
+  msubst_lc ρ ->
+  (forall X, X `in` dom ρ -> a_wf_ptyp Θt (msubst_lookup ρ X)) ->
+  lc_pskl P ->
+  Θt ⊢ (msubst_pskl (msubst_compose (aenv_msubst Θ) ρ) P) ≡ˢ (msubst_pskl ρ P).
+Proof.
+  intros Θ Θpre Θt ρ P HeqΘ Huq HwfΘ Hwft Hlcρ Himg Hlc;
+    revert Θpre Θt HeqΘ Huq Hwft Himg.
+  induction Hlc; intros Θpre Θt HeqΘ Huq Hwft Himg; simpl.
+  - apply a_pskl_tyequiv__refl. constructor.
+  - destruct (AtomSetProperties.In_dec Xps (dom ρ)) as [Hin | Hni].
+    + rewrite msubst_lookup_compose by (left; exact Hin).
+      apply a_tyequiv_pskl. apply a_tyequiv__sym.
+      eapply msubst_downarrow_tyequiv;
+        [ exact HeqΘ | exact Huq | exact Hwft | apply Himg; exact Hin ].
+    + rewrite (msubst_lookup_notin ρ Hni).
+      assert (Hnic : Xps `notin` dom (msubst_compose (aenv_msubst Θ) ρ))
+        by (rewrite dom_msubst_compose; exact Hni).
+      rewrite (msubst_lookup_notin _ Hnic).
+      apply a_pskl_tyequiv__refl. constructor.
+  - apply a_pskl_tyequiv__arrow;
+      [ apply (IHHlc1 Θpre Θt HeqΘ Huq Hwft Himg)
+      | apply (IHHlc2 Θpre Θt HeqΘ Huq Hwft Himg) ].
+  - apply a_pskl_tyequiv__all
+      with (L := dom ρ `union` dom Θt `union` dom Θpre
+                 `union` dom (msubst_compose (aenv_msubst Θ) ρ)).
+    intros X HX.
+    rewrite <- (@msubst_pskl_open_lc_local (msubst_compose (aenv_msubst Θ) ρ) P1 X);
+      [ | intros Y; destruct (AtomSetProperties.In_dec Y (dom ρ)) as [Hyi | Hyn];
+          [ rewrite msubst_lookup_compose by (left; exact Hyi);
+            apply msubst_ptyp_lc_lc; [ apply aenv_msubst_lc; exact HwfΘ | apply Hlcρ ]
+          | assert (Hync : Y `notin` dom (msubst_compose (aenv_msubst Θ) ρ))
+              by (rewrite dom_msubst_compose; exact Hyn);
+            rewrite (msubst_lookup_notin _ Hync); apply lc_ptyp_var_f ]
+        | clear - HX; fsetdec ].
+    rewrite <- (@msubst_pskl_open_lc_local ρ P1 X); [ | exact Hlcρ | clear - HX; fsetdec ].
+    apply (H0 X Θpre Θt HeqΘ Huq Hwft Himg).
+  - apply a_pskl_tyequiv__refl. constructor.
+  - apply a_pskl_tyequiv__tophole. apply (IHHlc Θpre Θt HeqΘ Huq Hwft Himg).
+Qed.
+
+(* Normalize an a_inc by its own (suffix-of-Θ) target's flex_defs: the metasubst
+   images are ⇓ᵗ[Θ]-collapsed while the target Θt is kept.  Makes the metasubst
+   equal ⇓ρ = compose(aenv_msubst Θ)ρ, matching the ⇓-normalized join subject
+   (consis_downarrow_subject).  The ρb′-vs-⇓ρb′ reconciliation. *)
+Lemma a_inc_self_downarrow : forall Θ0 ρ Θt,
+  Θ0 ≤[ ρ ] Θt ->
+  forall Θpre,
+  a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
+  Θ0 ≤[ msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ] Θt.
+Proof.
+  intros Θ0 ρ Θt Hinc; induction Hinc; intros Θpre HwfW Huq Hwf0.
+  - (* empty *) simpl. apply a_inc__empty; assumption.
+  - (* flex α τ : target Θ' unchanged, Θpre unchanged *)
+    simpl.
+    inversion Hwf0 as [ | α0 Θ0x Hnd0 Hwf0' | | | | ]; subst.
+    assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
+    assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ = ⇓ᵗ[ Θ' ] τ)
+      by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
+    apply a_inc__flex.
+    + eapply IHHinc; [ exact HwfW | exact Huq | exact Hwf0' ].
+    + rewrite Hdd. apply a_wf_ptyp_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
+    + rewrite Hdd. apply mono_downarrow; [ exact HwfΘ' | exact H | exact H0 ].
+  - (* flex_def α ≔ τ : image τ', premise τ'≡msubst ρ τ *)
+    simpl.
+    inversion Hwf0 as [ | | α0 τ0 Θ0x Hnd0 Hwpτ0 Hmτ0 Hwf0' | | | ]; subst.
+    assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
+    assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ' = ⇓ᵗ[ Θ' ] τ')
+      by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
+    assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
+    apply a_inc__flex_def.
+    + eapply IHHinc; [ exact HwfW | exact Huq | exact Hwf0' ].
+    + rewrite Hdd. apply a_wf_ptyp_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
+    + rewrite Hdd. apply mono_downarrow; [ exact HwfΘ' | exact H | exact H0 ].
+    + eapply a_tyequiv__trans.
+      * apply a_tyequiv__sym.
+        eapply msubst_downarrow_tyequiv;
+          [ reflexivity | exact Huq | exact HwfΘ' | exact H ].
+      * eapply a_tyequiv__trans; [ exact H1 | ].
+        apply a_tyequiv__sym.
+        eapply msubst_compose_downarrow_tyequiv;
+          [ reflexivity | exact Huq | exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+        -- intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
+           destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
+             [ right; left | right; right; exists t0 ]; exact Hb.
+        -- eapply a_wf_ptyp_lc; exact Hwpτ0.
+  - (* var A : ρ unchanged, target Ξ++(x~var A')++Θ' *)
+    inversion Hwf0 as [ | | | | x0 A0 Θ0x Hnd0 HwpA Hwf0' | ]; subst.
+    assert (HwfΘ' : a_wf_aenv Θ').
+    { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_typ A')).
+      simpl_env. simpl_env in HwfW. exact HwfW. }
+    assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
+    apply a_inc__var; [ | | exact H0 ].
+    + replace (Θpre ++ Ξ ++ x ~ abind_var_typ A' ++ Θ')
+         with ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ') by (simpl_env; reflexivity).
+      eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_typ A'));
+        [ simpl_env; simpl_env in HwfW; exact HwfW
+        | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
+    + eapply a_tyequiv__trans; [ exact H | ].
+      apply a_tyequiv__sym.
+      eapply msubst_compose_downarrow_tyequiv with
+        (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_typ A'));
+        [ simpl_env; reflexivity | simpl_env; simpl_env in Huq; exact Huq
+        | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+      * intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
+        destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
+          [ right; left | right; right; exists t0 ]; exact Hb.
+      * eapply a_wf_ptyp_lc; exact HwpA.
+  - (* var_skl P : ρ unchanged, target Ξ++(x~var_skl P')++Θ' *)
+    inversion Hwf0 as [ | | | x0 P0 Θ0x Hnd0 HwpP Hwf0' | | ]; subst.
+    assert (HwfΘ' : a_wf_aenv Θ').
+    { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_skl P')).
+      simpl_env. simpl_env in HwfW. exact HwfW. }
+    assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
+    apply a_inc__var_skl; [ | | exact H0 ].
+    + replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
+         with ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') by (simpl_env; reflexivity).
+      eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_skl P'));
+        [ simpl_env; simpl_env in HwfW; exact HwfW
+        | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
+    + eapply a_pskl_tyequiv__trans; [ exact H | ].
+      apply a_pskl_tyequiv__sym.
+      eapply msubst_pskl_compose_downarrow_tyequiv with
+        (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_skl P'));
+        [ simpl_env; reflexivity | simpl_env; simpl_env in Huq; exact Huq
+        | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+      * intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
+        destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
+          [ right; left | right; right; exists t0 ]; exact Hb.
+      * eapply a_wf_pskl_lc; exact HwpP.
+  - (* tvar α : target Ξ++(α~tvar)++Θ' *)
+    inversion Hwf0 as [ | | | | | α0 Θ0x Hnd0 Hwf0' ]; subst.
+    apply a_inc__tvar; [ | exact H ].
+    replace (Θpre ++ Ξ ++ α ~ abind_tvar ++ Θ')
+       with ((Θpre ++ Ξ ++ α ~ abind_tvar) ++ Θ') by (simpl_env; reflexivity).
+    eapply IHHinc with (Θpre := Θpre ++ Ξ ++ (α ~ abind_tvar));
+      [ simpl_env; simpl_env in HwfW; exact HwfW
+      | simpl_env; simpl_env in Huq; exact Huq | exact Hwf0' ].
+Qed.
+
 (** THE ≡ᵗ STRENGTHENING.  Strip a middle binding [c~b] and an [a_decls]-free
     prefix [Ξ] off both sides of a MONOtype equivalence whose endpoints are wf
     in the tail [Θt]. *)
