@@ -2159,6 +2159,30 @@ Proof.
   - pose proof (IHt X HX). clear - H; fsetdec.
 Qed.
 
+Lemma a_assign_subject_flex_local : forall F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  a_flex_tvar Θ0 α.
+Proof.
+  intros F Θ0 Ξ α P Θ1 H; induction H.
+  - left. unfold binds; simpl; left; reflexivity.
+  - left. unfold binds; simpl; left; reflexivity.
+  - exact H.
+  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
+  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
+  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
+  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
+  - apply a_flex_tvar_weaken_prefix. exact IHa_assign.
+Qed.
+
+Lemma msubst_lookup_app_in : forall ζ1 ζ2 X,
+  X `in` dom ζ1 -> msubst_lookup (ζ1 ++ ζ2) X = msubst_lookup ζ1 X.
+Proof.
+  induction ζ1 as [ | [a t] ζ1' IH ]; intros ζ2 X HX; simpl in *.
+  - clear - HX; fsetdec.
+  - destruct (X == a) as [-> | Hne];
+      [ reflexivity | apply IH; clear - HX Hne; fsetdec ].
+Qed.
+
 (** THE ≡ᵗ STRENGTHENING.  Strip a middle binding [c~b] and an [a_decls]-free
     prefix [Ξ] off both sides of a MONOtype equivalence whose endpoints are wf
     in the tail [Θt]. *)
