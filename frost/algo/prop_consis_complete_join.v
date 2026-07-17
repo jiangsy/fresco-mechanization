@@ -956,6 +956,407 @@ Proof.
       apply Hr. exact Hc'.
 Qed.
 
+(** Reflexivity of fill-hygienic refinement on a monotype's syn painting. *)
+Lemma ad_refine_syn_f_mono_refl : forall F Θ Δ τ,
+  mono_ptyp τ ->
+  a_wf_ptyp Θ τ ->
+  ad_refine_syn_f F Θ Δ (ptyp_to_bskl_syn τ) (ptyp_to_bskl_syn τ).
+Proof.
+  intros F Θ Δ τ Hm Hwf.
+  rewrite <- (mono_inh_eq_syn Hm).
+  apply ad_refine_syn_f_refl_inh.
+  apply ad_wf_pskl_mono_ptyp; assumption.
+Qed.
+
+(** Reflexivity of the uncoloured fill-hygienic refinement on a monotype. *)
+Lemma ad_refine_pskl_f_mono_refl : forall F Θ Δ τ,
+  mono_ptyp τ ->
+  a_wf_ptyp Θ τ ->
+  ad_refine_pskl_f F Θ Δ (ptyp_to_pskl τ) (ptyp_to_pskl τ).
+Proof.
+  intros F Θ Δ τ Hm Hwf.
+  apply ad_refine_pskl_f_refl.
+  apply ad_wf_pskl_mono_ptyp; assumption.
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  The ≡ˢ-SOURCE TRANSPORTS of the two refinement judgments — the        *)
+(*  companions of [skl_tyequiv_consis_transport] for C-Arrow's (g)/(i)    *)
+(*  premises and Assign-Assign.  Same architecture: per-source-shape      *)
+(*  helpers (each chasing the [flex_r] target chains), then the main      *)
+(*  induction on [≡ˢ].                                                    *)
+(* --------------------------------------------------------------------- *)
+
+(** Unfold a DEFINED source variable inside a Δ1-refinement: only [var] /
+    [flex_l] / [flex_r] can have source [γ̂]. *)
+Lemma ad_refine_syn_f_unfold_def_source : forall F Θ Δ S Qt,
+  ad_refine_syn_f F Θ Δ S Qt ->
+  a_wf_aenv Θ ->
+  forall γ τ, S = bskl_var_f γ ->
+  binds γ (abind_flex_mono_def τ) Θ ->
+  ad_refine_syn_f F Θ Δ (ptyp_to_bskl_syn τ) Qt.
+Proof.
+  intros F Θ Δ S Qt Hr Hwf; induction Hr; intros γ0 τ0 HeqS Hb;
+    try discriminate HeqS.
+  - (* var : the target is the same variable; fold it with [flex_r] *)
+    inversion HeqS; subst.
+    eapply ad_refine_syn_f__flex_r; [ exact Hb | ].
+    apply ad_refine_syn_f_mono_refl;
+      [ eapply a_wf_aenv_binds_def_mono; eauto
+      | eapply a_wf_aenv_binds_def_wf; eauto ].
+  - (* flex_l : the unfolding is the derivation's own *)
+    inversion HeqS; subst.
+    pose proof (binds_unique _ _ _ _ _ H Hb (a_wf_aenv_uniq Hwf)) as Heqd.
+    inversion Heqd; subst.
+    exact Hr.
+  - (* flex_r : the target unfolds; recurse and re-wrap *)
+    eapply ad_refine_syn_f__flex_r; [ eassumption | ].
+    eapply IHHr; eauto.
+Qed.
+
+(** Transport an arrow source componentwise. *)
+Lemma ad_refine_syn_f_arrow_source_transport : forall F Θ Δ S Qt,
+  ad_refine_syn_f F Θ Δ S Qt ->
+  forall S1 S2 T1 T2,
+  S = bskl_arrow S1 S2 ->
+  (forall Qt', ad_refine_syn_f F Θ Δ S1 Qt' ->
+               ad_refine_syn_f F Θ Δ T1 Qt') ->
+  (forall Qt', ad_refine_syn_f F Θ Δ S2 Qt' ->
+               ad_refine_syn_f F Θ Δ T2 Qt') ->
+  ad_refine_syn_f F Θ Δ (bskl_arrow T1 T2) Qt.
+Proof.
+  intros F Θ Δ S Qt Hr; induction Hr; intros S1' S2' T1 T2 HeqS Htr1 Htr2;
+    try discriminate HeqS.
+  - (* arrow *)
+    inversion HeqS; subst.
+    apply ad_refine_syn_f__arrow; [ apply Htr1 | apply Htr2 ]; assumption.
+  - (* flex_r *)
+    eapply ad_refine_syn_f__flex_r; [ eassumption | ].
+    eapply IHHr; eauto.
+Qed.
+
+(** Transport an inherited-∀ source componentwise (the [__all] premise
+    grows Δ, so the component transport is Δ-generalized). *)
+Lemma ad_refine_syn_f_forall_source_transport : forall F Θ Δ S Qt,
+  ad_refine_syn_f F Θ Δ S Qt ->
+  forall S0 T0 L0,
+  S = bskl_all_inh S0 ->
+  (forall X, X `notin` L0 -> forall Δ' Qt',
+     ad_refine_syn_f F Θ Δ'
+       (open_bskl_wrt_bskl S0 (bskl_var_f X)) Qt' ->
+     ad_refine_syn_f F Θ Δ'
+       (open_bskl_wrt_bskl T0 (bskl_var_f X)) Qt') ->
+  ad_refine_syn_f F Θ Δ (bskl_all_inh T0) Qt.
+Proof.
+  intros F Θ Δ S Qt Hr; induction Hr; intros S0 T0 L0 HeqS Htr;
+    try discriminate HeqS.
+  - (* all *)
+    inversion HeqS; subst.
+    apply ad_refine_syn_f__all with (L := L `union` L0).
+    intros X HX.
+    apply Htr; [ clear - HX; fsetdec | ].
+    apply H; clear - HX; fsetdec.
+  - (* flex_r *)
+    eapply ad_refine_syn_f__flex_r; [ eassumption | ].
+    eapply IHHr; eauto.
+Qed.
+
+(** Transport a ⊤◇ source componentwise.  Context-generalized: the
+    [tophole_fill] premise keeps the SAME source under an extended Θ. *)
+Lemma ad_refine_syn_f_tophole_source_transport : forall F Θ Δ S Qt,
+  ad_refine_syn_f F Θ Δ S Qt ->
+  a_wf_aenv Θ ->
+  forall S0 T0,
+  S = bskl_tophole S0 ->
+  (forall Θ' Qt',
+     a_wf_aenv Θ' ->
+     (forall x b, binds x b Θ -> binds x b Θ') ->
+     ad_refine_syn_f F Θ' Δ S0 Qt' ->
+     ad_refine_syn_f F Θ' Δ T0 Qt') ->
+  ad_refine_syn_f F Θ Δ (bskl_tophole T0) Qt.
+Proof.
+  intros F Θ Δ S Qt Hr; induction Hr; intros HwfΘ S0 T0 HeqS Htr;
+    try discriminate HeqS.
+  - (* tophole_remove *)
+    inversion HeqS; subst.
+    apply ad_refine_syn_f__tophole_remove.
+    apply (Htr Θ); [ exact HwfΘ | intros x b Hb; exact Hb | exact Hr ].
+  - (* tophole_fill : same source, extended context *)
+    inversion HeqS; subst.
+    apply ad_refine_syn_f__tophole_fill with (L := L `union` dom Θ).
+    intros X HX.
+    assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact HwfΘ ]).
+    apply (H0 X ltac:(clear - HX; fsetdec) HwfX S0 T0 eq_refl).
+    intros Θ' Qt' Hwf' Hincl' Hr'.
+    apply (Htr Θ' Qt' Hwf'); [ | exact Hr' ].
+    intros x b Hb. apply Hincl'. apply binds_cons_3. exact Hb.
+  - (* tophole_keep *)
+    inversion HeqS; subst.
+    apply ad_refine_syn_f__tophole_keep; [ exact H | ].
+    apply (Htr Θ); [ exact HwfΘ | intros x b Hb; exact Hb | exact Hr ].
+  - (* flex_r *)
+    eapply ad_refine_syn_f__flex_r; [ eassumption | ].
+    eapply IHHr; eauto.
+Qed.
+
+(** THE SYN TRANSPORT: for [Θ ⊢ A ≡ˢ B], Δ1-refinements re-source between
+    [inh A] and [inh B], in both directions, in any conservative
+    extension. *)
+Lemma skl_tyequiv_refine_syn_f_transport : forall Θ A B,
+  Θ ⊢ A ≡ˢ B ->
+  forall Θ',
+  a_wf_aenv Θ' ->
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  (forall F Δ Qt,
+     ad_refine_syn_f F Θ' Δ (pskl_to_bskl_inh A) Qt ->
+     ad_refine_syn_f F Θ' Δ (pskl_to_bskl_inh B) Qt) /\
+  (forall F Δ Qt,
+     ad_refine_syn_f F Θ' Δ (pskl_to_bskl_inh B) Qt ->
+     ad_refine_syn_f F Θ' Δ (pskl_to_bskl_inh A) Qt).
+Proof.
+  intros Θ A B Heq; induction Heq; intros Θ' Hwf' Hincl.
+  - (* refl *) split; intros F Δ Qt Hr; exact Hr.
+  - (* sym *)
+    destruct (IHHeq Θ' Hwf' Hincl) as [Hd1 Hd2].
+    split; [ exact Hd2 | exact Hd1 ].
+  - (* trans *)
+    destruct (IHHeq1 Θ' Hwf' Hincl) as [H1l H1r].
+    destruct (IHHeq2 Θ' Hwf' Hincl) as [H2l H2r].
+    split; intros F Δ Qt Hr;
+      [ apply H2l, H1l, Hr | apply H1r, H2r, Hr ].
+  - (* flex_def *)
+    assert (HbΘ' : binds α (abind_flex_mono_def τ) Θ')
+      by (apply Hincl; exact H).
+    assert (Hmτ : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf' | exact HbΘ' ]).
+    split; intros F Δ Qt Hr.
+    + (* unfold : the source's own definition *)
+      rewrite (mono_inh_eq_syn Hmτ).
+      eapply ad_refine_syn_f_unfold_def_source;
+        [ exact Hr | exact Hwf' | reflexivity | exact HbΘ' ].
+    + (* fold : one lookup rule *)
+      simpl.
+      eapply ad_refine_syn_f__flex_l; [ exact HbΘ' | ].
+      rewrite (mono_inh_eq_syn Hmτ) in Hr. exact Hr.
+  - (* arrow *)
+    destruct (IHHeq1 Θ' Hwf' Hincl) as [H1l H1r].
+    destruct (IHHeq2 Θ' Hwf' Hincl) as [H2l H2r].
+    split; intros F Δ Qt Hr; simpl in Hr |- *.
+    + eapply ad_refine_syn_f_arrow_source_transport;
+        [ exact Hr | reflexivity | apply H1l | apply H2l ].
+    + eapply ad_refine_syn_f_arrow_source_transport;
+        [ exact Hr | reflexivity | apply H1r | apply H2r ].
+  - (* all *)
+    split; intros F Δ Qt Hr; simpl in Hr |- *.
+    + eapply ad_refine_syn_f_forall_source_transport with (L0 := L);
+        [ exact Hr | reflexivity | ].
+      intros X HX Δ' Qt' Hr'.
+      destruct (H0 X ltac:(clear - HX; fsetdec) Θ' Hwf' Hincl) as [Hl _].
+      rewrite <- pskl_to_bskl_inh_open in Hr'.
+      rewrite <- pskl_to_bskl_inh_open.
+      apply Hl. exact Hr'.
+    + eapply ad_refine_syn_f_forall_source_transport with (L0 := L);
+        [ exact Hr | reflexivity | ].
+      intros X HX Δ' Qt' Hr'.
+      destruct (H0 X ltac:(clear - HX; fsetdec) Θ' Hwf' Hincl) as [_ Hrr].
+      rewrite <- pskl_to_bskl_inh_open in Hr'.
+      rewrite <- pskl_to_bskl_inh_open.
+      apply Hrr. exact Hr'.
+  - (* tophole *)
+    split; intros F Δ Qt Hr; simpl in Hr |- *.
+    + eapply ad_refine_syn_f_tophole_source_transport;
+        [ exact Hr | exact Hwf' | reflexivity | ].
+      intros Θ'' Qt' Hwf'' Hincl' Hr'.
+      destruct (IHHeq Θ'' Hwf''
+                  (fun x b Hb => Hincl' x b (Hincl x b Hb))) as [Hl _].
+      apply Hl. exact Hr'.
+    + eapply ad_refine_syn_f_tophole_source_transport;
+        [ exact Hr | exact Hwf' | reflexivity | ].
+      intros Θ'' Qt' Hwf'' Hincl' Hr'.
+      destruct (IHHeq Θ'' Hwf''
+                  (fun x b Hb => Hincl' x b (Hincl x b Hb))) as [_ Hrr].
+      apply Hrr. exact Hr'.
+Qed.
+
+(** Unfold a DEFINED source variable inside a Δ2-refinement. *)
+Lemma ad_refine_pskl_f_unfold_def_source : forall F Θ Δ S Qt,
+  ad_refine_pskl_f F Θ Δ S Qt ->
+  a_wf_aenv Θ ->
+  forall γ τ, S = pskl_var_f γ ->
+  binds γ (abind_flex_mono_def τ) Θ ->
+  ad_refine_pskl_f F Θ Δ (ptyp_to_pskl τ) Qt.
+Proof.
+  intros F Θ Δ S Qt Hr Hwf; induction Hr; intros γ0 τ0 HeqS Hb;
+    try discriminate HeqS.
+  - (* var *)
+    inversion HeqS; subst.
+    eapply ad_refine_pskl_f__flex_r; [ exact Hb | ].
+    apply ad_refine_pskl_f_mono_refl;
+      [ eapply a_wf_aenv_binds_def_mono; eauto
+      | eapply a_wf_aenv_binds_def_wf; eauto ].
+  - (* flex_l *)
+    inversion HeqS; subst.
+    pose proof (binds_unique _ _ _ _ _ H Hb (a_wf_aenv_uniq Hwf)) as Heqd.
+    inversion Heqd; subst.
+    exact Hr.
+  - (* flex_r *)
+    eapply ad_refine_pskl_f__flex_r; [ eassumption | ].
+    eapply IHHr; eauto.
+Qed.
+
+(** Transport an arrow source componentwise (uncoloured). *)
+Lemma ad_refine_pskl_f_arrow_source_transport : forall F Θ Δ S Qt,
+  ad_refine_pskl_f F Θ Δ S Qt ->
+  forall S1 S2 T1 T2,
+  S = pskl_arrow S1 S2 ->
+  (forall Qt', ad_refine_pskl_f F Θ Δ S1 Qt' ->
+               ad_refine_pskl_f F Θ Δ T1 Qt') ->
+  (forall Qt', ad_refine_pskl_f F Θ Δ S2 Qt' ->
+               ad_refine_pskl_f F Θ Δ T2 Qt') ->
+  ad_refine_pskl_f F Θ Δ (pskl_arrow T1 T2) Qt.
+Proof.
+  intros F Θ Δ S Qt Hr; induction Hr; intros S1' S2' T1 T2 HeqS Htr1 Htr2;
+    try discriminate HeqS.
+  - (* arrow *)
+    inversion HeqS; subst.
+    apply ad_refine_pskl_f__arrow; [ apply Htr1 | apply Htr2 ]; assumption.
+  - (* flex_r *)
+    eapply ad_refine_pskl_f__flex_r; [ eassumption | ].
+    eapply IHHr; eauto.
+Qed.
+
+(** Transport a ∀-syn source componentwise (uncoloured; Δ grows). *)
+Lemma ad_refine_pskl_f_forall_source_transport : forall F Θ Δ S Qt,
+  ad_refine_pskl_f F Θ Δ S Qt ->
+  forall S0 T0 L0,
+  S = pskl_all_syn S0 ->
+  (forall X, X `notin` L0 -> forall Δ' Qt',
+     ad_refine_pskl_f F Θ Δ'
+       (open_pskl_wrt_pskl S0 (pskl_var_f X)) Qt' ->
+     ad_refine_pskl_f F Θ Δ'
+       (open_pskl_wrt_pskl T0 (pskl_var_f X)) Qt') ->
+  ad_refine_pskl_f F Θ Δ (pskl_all_syn T0) Qt.
+Proof.
+  intros F Θ Δ S Qt Hr; induction Hr; intros S0 T0 L0 HeqS Htr;
+    try discriminate HeqS.
+  - (* all *)
+    inversion HeqS; subst.
+    apply ad_refine_pskl_f__all with (L := L `union` L0).
+    intros X HX.
+    apply Htr; [ clear - HX; fsetdec | ].
+    apply H; clear - HX; fsetdec.
+  - (* flex_r *)
+    eapply ad_refine_pskl_f__flex_r; [ eassumption | ].
+    eapply IHHr; eauto.
+Qed.
+
+(** Transport a ⊤◇ source componentwise (uncoloured; context-generalized
+    for [tophole_fill]). *)
+Lemma ad_refine_pskl_f_tophole_source_transport : forall F Θ Δ S Qt,
+  ad_refine_pskl_f F Θ Δ S Qt ->
+  a_wf_aenv Θ ->
+  forall S0 T0,
+  S = pskl_tophole S0 ->
+  (forall Θ' Qt',
+     a_wf_aenv Θ' ->
+     (forall x b, binds x b Θ -> binds x b Θ') ->
+     ad_refine_pskl_f F Θ' Δ S0 Qt' ->
+     ad_refine_pskl_f F Θ' Δ T0 Qt') ->
+  ad_refine_pskl_f F Θ Δ (pskl_tophole T0) Qt.
+Proof.
+  intros F Θ Δ S Qt Hr; induction Hr; intros HwfΘ S0 T0 HeqS Htr;
+    try discriminate HeqS.
+  - (* tophole_remove *)
+    inversion HeqS; subst.
+    apply ad_refine_pskl_f__tophole_remove.
+    apply (Htr Θ); [ exact HwfΘ | intros x b Hb; exact Hb | exact Hr ].
+  - (* tophole_fill *)
+    inversion HeqS; subst.
+    apply ad_refine_pskl_f__tophole_fill with (L := L `union` dom Θ).
+    intros X HX.
+    assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact HwfΘ ]).
+    apply (H0 X ltac:(clear - HX; fsetdec) HwfX S0 T0 eq_refl).
+    intros Θ' Qt' Hwf' Hincl' Hr'.
+    apply (Htr Θ' Qt' Hwf'); [ | exact Hr' ].
+    intros x b Hb. apply Hincl'. apply binds_cons_3. exact Hb.
+  - (* tophole_keep *)
+    inversion HeqS; subst.
+    apply ad_refine_pskl_f__tophole_keep; [ exact H | ].
+    apply (Htr Θ); [ exact HwfΘ | intros x b Hb; exact Hb | exact Hr ].
+  - (* flex_r *)
+    eapply ad_refine_pskl_f__flex_r; [ eassumption | ].
+    eapply IHHr; eauto.
+Qed.
+
+(** THE PSKL TRANSPORT: for [Θ ⊢ A ≡ˢ B], Δ2-refinements re-source between
+    [A] and [B], in both directions, in any conservative extension. *)
+Lemma skl_tyequiv_refine_pskl_f_transport : forall Θ A B,
+  Θ ⊢ A ≡ˢ B ->
+  forall Θ',
+  a_wf_aenv Θ' ->
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  (forall F Δ Qt,
+     ad_refine_pskl_f F Θ' Δ A Qt ->
+     ad_refine_pskl_f F Θ' Δ B Qt) /\
+  (forall F Δ Qt,
+     ad_refine_pskl_f F Θ' Δ B Qt ->
+     ad_refine_pskl_f F Θ' Δ A Qt).
+Proof.
+  intros Θ A B Heq; induction Heq; intros Θ' Hwf' Hincl.
+  - (* refl *) split; intros F Δ Qt Hr; exact Hr.
+  - (* sym *)
+    destruct (IHHeq Θ' Hwf' Hincl) as [Hd1 Hd2].
+    split; [ exact Hd2 | exact Hd1 ].
+  - (* trans *)
+    destruct (IHHeq1 Θ' Hwf' Hincl) as [H1l H1r].
+    destruct (IHHeq2 Θ' Hwf' Hincl) as [H2l H2r].
+    split; intros F Δ Qt Hr;
+      [ apply H2l, H1l, Hr | apply H1r, H2r, Hr ].
+  - (* flex_def *)
+    assert (HbΘ' : binds α (abind_flex_mono_def τ) Θ')
+      by (apply Hincl; exact H).
+    split; intros F Δ Qt Hr.
+    + eapply ad_refine_pskl_f_unfold_def_source;
+        [ exact Hr | exact Hwf' | reflexivity | exact HbΘ' ].
+    + eapply ad_refine_pskl_f__flex_l; [ exact HbΘ' | exact Hr ].
+  - (* arrow *)
+    destruct (IHHeq1 Θ' Hwf' Hincl) as [H1l H1r].
+    destruct (IHHeq2 Θ' Hwf' Hincl) as [H2l H2r].
+    split; intros F Δ Qt Hr.
+    + eapply ad_refine_pskl_f_arrow_source_transport;
+        [ exact Hr | reflexivity | apply H1l | apply H2l ].
+    + eapply ad_refine_pskl_f_arrow_source_transport;
+        [ exact Hr | reflexivity | apply H1r | apply H2r ].
+  - (* all *)
+    split; intros F Δ Qt Hr.
+    + eapply ad_refine_pskl_f_forall_source_transport with (L0 := L);
+        [ exact Hr | reflexivity | ].
+      intros X HX Δ' Qt' Hr'.
+      destruct (H0 X ltac:(clear - HX; fsetdec) Θ' Hwf' Hincl) as [Hl _].
+      apply Hl. exact Hr'.
+    + eapply ad_refine_pskl_f_forall_source_transport with (L0 := L);
+        [ exact Hr | reflexivity | ].
+      intros X HX Δ' Qt' Hr'.
+      destruct (H0 X ltac:(clear - HX; fsetdec) Θ' Hwf' Hincl) as [_ Hrr].
+      apply Hrr. exact Hr'.
+  - (* tophole *)
+    split; intros F Δ Qt Hr.
+    + eapply ad_refine_pskl_f_tophole_source_transport;
+        [ exact Hr | exact Hwf' | reflexivity | ].
+      intros Θ'' Qt' Hwf'' Hincl' Hr'.
+      destruct (IHHeq Θ'' Hwf''
+                  (fun x b Hb => Hincl' x b (Hincl x b Hb))) as [Hl _].
+      apply Hl. exact Hr'.
+    + eapply ad_refine_pskl_f_tophole_source_transport;
+        [ exact Hr | exact Hwf' | reflexivity | ].
+      intros Θ'' Qt' Hwf'' Hincl' Hr'.
+      destruct (IHHeq Θ'' Hwf''
+                  (fun x b Hb => Hincl' x b (Hincl x b Hb))) as [_ Hrr].
+      apply Hrr. exact Hr'.
+Qed.
+
 (** An inherited quantifier never refines to a guarded skeleton (the target
     of every rule applicable to an [all_inh] source is an [all_inh] or a
     defined flexible whose unfolding is a monotype painting — itself guarded,
@@ -975,18 +1376,6 @@ Proof.
     apply IHHr; [ exact Hwf | exact HeqS | ].
     apply mono_bskl_guarded, mono_ptyp_to_bskl_syn.
     eapply a_wf_aenv_binds_def_mono; eauto.
-Qed.
-
-(** Reflexivity of fill-hygienic refinement on a monotype's syn painting. *)
-Lemma ad_refine_syn_f_mono_refl : forall F Θ Δ τ,
-  mono_ptyp τ ->
-  a_wf_ptyp Θ τ ->
-  ad_refine_syn_f F Θ Δ (ptyp_to_bskl_syn τ) (ptyp_to_bskl_syn τ).
-Proof.
-  intros F Θ Δ τ Hm Hwf.
-  rewrite <- (mono_inh_eq_syn Hm).
-  apply ad_refine_syn_f_refl_inh.
-  apply ad_wf_pskl_mono_ptyp; assumption.
 Qed.
 
 (** Target-side definition unfolding for the fill-hygienic Δ1-refinement:
@@ -1036,17 +1425,6 @@ Proof.
     pose proof (binds_unique _ _ _ _ _ H Hbα (a_wf_aenv_uniq Hwf)) as Heq.
     inversion Heq; subst τ0.
     exact Hr.
-Qed.
-
-(** Reflexivity of the uncoloured fill-hygienic refinement on a monotype. *)
-Lemma ad_refine_pskl_f_mono_refl : forall F Θ Δ τ,
-  mono_ptyp τ ->
-  a_wf_ptyp Θ τ ->
-  ad_refine_pskl_f F Θ Δ (ptyp_to_pskl τ) (ptyp_to_pskl τ).
-Proof.
-  intros F Θ Δ τ Hm Hwf.
-  apply ad_refine_pskl_f_refl.
-  apply ad_wf_pskl_mono_ptyp; assumption.
 Qed.
 
 (** Uncoloured version of the target-side definition unfolding. *)
