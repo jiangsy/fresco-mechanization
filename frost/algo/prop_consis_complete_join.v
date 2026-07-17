@@ -789,6 +789,173 @@ Proof.
       [ exact Hj | exact Hwf | reflexivity | apply Hincl; exact H ].
 Qed.
 
+(* --------------------------------------------------------------------- *)
+(*  The ≡ˢ-SUBJECT TRANSPORT of the join (general skeletons).             *)
+(*                                                                        *)
+(*  This is the step the paper's C-Arrow glosses as `the right-component  *)
+(*  premises can be rewritten with θ₁` (:2744) and Assign-Assign's        *)
+(*  soundness needed as the ≡ˢ-subject transport: a join is invariant     *)
+(*  under replacing its subject by an ≡ˢ-equivalent skeleton (the         *)
+(*  equational theory only unfolds flexible definitions and is a          *)
+(*  congruence elsewhere).  Mirrors [tyequiv_mono_consis_transport],      *)
+(*  which covers only monotype subjects.                                  *)
+(* --------------------------------------------------------------------- *)
+
+(** Transport a ∀-syn subject componentwise: only [forall_inh_untagged] /
+    [forall_syn] / [flex_r] can have an [all_syn] subject. *)
+Lemma consis_forall_subject_transport : forall Ψ Θ S Qt,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  forall S0 T0 L0,
+  S = uskl_all_syn S0 ->
+  (forall X, X `notin` L0 -> forall Ψ' Q',
+     Ψ' ⨟ ((X ~ abind_tvar) ++ Θ) ⊨ₛᵃ
+       (open_uskl_wrt_uskl S0 (uskl_var_f X)) ≈ Q' ->
+     Ψ' ⨟ ((X ~ abind_tvar) ++ Θ) ⊨ₛᵃ
+       (open_uskl_wrt_uskl T0 (uskl_var_f X)) ≈ Q') ->
+  Ψ ⨟ Θ ⊨ₛᵃ (uskl_all_syn T0) ≈ Qt.
+Proof.
+  intros Ψ Θ S Qt Hc; induction Hc; intros S0 T0 L0 HeqS Htr;
+    try discriminate HeqS.
+  - (* forall_inh_untagged *)
+    inversion HeqS; subst.
+    apply ad_pat_consis__forall_inh_untagged with (L := L `union` L0).
+    intros X HX.
+    apply Htr; [ clear - HX; fsetdec | ].
+    apply H; clear - HX; fsetdec.
+  - (* forall_syn *)
+    inversion HeqS; subst.
+    apply ad_pat_consis__forall_syn with (L := L `union` L0).
+    intros X HX.
+    apply Htr; [ clear - HX; fsetdec | ].
+    apply H; clear - HX; fsetdec.
+  - (* flex_r *)
+    eapply ad_pat_consis__flex_r; [ eassumption | ].
+    eapply IHHc; eauto.
+Qed.
+
+(** Transport a ⊤◇ subject componentwise.  The component transport is
+    context-generalized because [tophole_inh] keeps the SAME subject under
+    an extended context. *)
+Lemma consis_tophole_subject_transport : forall Ψ Θ S Qt,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  a_wf_aenv Θ ->
+  forall S0 T0,
+  S = uskl_tophole S0 ->
+  (forall Θ' Ψ' Q',
+     a_wf_aenv Θ' ->
+     (forall x b, binds x b Θ -> binds x b Θ') ->
+     Ψ' ⨟ Θ' ⊨ₛᵃ S0 ≈ Q' -> Ψ' ⨟ Θ' ⊨ₛᵃ T0 ≈ Q') ->
+  Ψ ⨟ Θ ⊨ₛᵃ (uskl_tophole T0) ≈ Qt.
+Proof.
+  intros Ψ Θ S Qt Hc; induction Hc; intros HwfΘ S0 T0 HeqS Htr;
+    try discriminate HeqS.
+  - (* tophole *)
+    inversion HeqS; subst.
+    apply ad_pat_consis__tophole.
+    apply (Htr Θ); [ exact HwfΘ | intros x b Hb; exact Hb | exact Hc ].
+  - (* tophole_inh : same subject, extended context *)
+    inversion HeqS; subst.
+    apply ad_pat_consis__tophole_inh with (L := L `union` dom Θ).
+    intros X HX.
+    assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact HwfΘ ]).
+    apply (H0 X ltac:(clear - HX; fsetdec) HwfX S0 T0 eq_refl).
+    intros Θ' Ψ' Q' Hwf' Hincl' Hc'.
+    apply (Htr Θ' Ψ' Q' Hwf'); [ | exact Hc' ].
+    intros x b Hb. apply Hincl'. apply binds_cons_3. exact Hb.
+  - (* tophole_drop *)
+    inversion HeqS; subst.
+    apply ad_pat_consis__tophole_drop.
+    apply (Htr Θ); [ exact HwfΘ | intros x b Hb; exact Hb | exact Hc ].
+  - (* flex_r *)
+    eapply ad_pat_consis__flex_r; [ eassumption | ].
+    eapply IHHc; eauto.
+Qed.
+
+(** THE TRANSPORT: for [Θ ⊢ A ≡ˢ B], joins re-subject between [⌊A⌋] and
+    [⌊B⌋] in BOTH directions, in any conservative extension [Θ'] of the
+    equivalence's context (the generality the ∀/⊤◇ congruences need). *)
+Lemma skl_tyequiv_consis_transport : forall Θ A B,
+  Θ ⊢ A ≡ˢ B ->
+  forall Θ',
+  a_wf_aenv Θ' ->
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  (forall Ψ Qt, Ψ ⨟ Θ' ⊨ₛᵃ (pskl_to_uskl A) ≈ Qt ->
+                Ψ ⨟ Θ' ⊨ₛᵃ (pskl_to_uskl B) ≈ Qt) /\
+  (forall Ψ Qt, Ψ ⨟ Θ' ⊨ₛᵃ (pskl_to_uskl B) ≈ Qt ->
+                Ψ ⨟ Θ' ⊨ₛᵃ (pskl_to_uskl A) ≈ Qt).
+Proof.
+  intros Θ A B Heq; induction Heq; intros Θ' Hwf' Hincl.
+  - (* refl *) split; intros Ψ Qt Hc; exact Hc.
+  - (* sym : swap *)
+    destruct (IHHeq Θ' Hwf' Hincl) as [Hd1 Hd2].
+    split; [ exact Hd2 | exact Hd1 ].
+  - (* trans : compose *)
+    destruct (IHHeq1 Θ' Hwf' Hincl) as [H1l H1r].
+    destruct (IHHeq2 Θ' Hwf' Hincl) as [H2l H2r].
+    split; intros Ψ Qt Hc; [ apply H2l, H1l, Hc | apply H1r, H2r, Hc ].
+  - (* flex_def : α̂ ≡ˢ ⌊τ⌋ with α̂ ≔ τ *)
+    split; intros Ψ Qt Hc.
+    + (* unfold the subject definition *)
+      rewrite pskl_to_uskl_ptyp.
+      eapply consis_unfold_def_subject;
+        [ exact Hc | exact Hwf' | reflexivity | apply Hincl; exact H ].
+    + (* fold : one lookup rule *)
+      simpl.
+      eapply ad_pat_consis__flex_l; [ apply Hincl; exact H | ].
+      rewrite pskl_to_uskl_ptyp in Hc. exact Hc.
+  - (* arrow : componentwise *)
+    destruct (IHHeq1 Θ' Hwf' Hincl) as [H1l H1r].
+    destruct (IHHeq2 Θ' Hwf' Hincl) as [H2l H2r].
+    split; intros Ψ Qt Hc; simpl in Hc |- *.
+    + eapply consis_arrow_subject_transport;
+        [ exact Hc | reflexivity | exact H1l | exact H2l ].
+    + eapply consis_arrow_subject_transport;
+        [ exact Hc | reflexivity | exact H1r | exact H2r ].
+  - (* all : componentwise, under a fresh rigid open *)
+    split; intros Ψ Qt Hc; simpl in Hc |- *.
+    + eapply consis_forall_subject_transport with (L0 := L `union` dom Θ');
+        [ exact Hc | reflexivity | ].
+      intros X HX Ψ' Q' Hc'.
+      assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ'))
+        by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ]).
+      assert (HinclX : forall x b, binds x b Θ ->
+                binds x b ((X ~ abind_tvar) ++ Θ'))
+        by (intros x b Hb; apply binds_cons_3; apply Hincl; exact Hb).
+      destruct (H0 X ltac:(clear - HX; fsetdec)
+                  ((X ~ abind_tvar) ++ Θ') HwfX HinclX) as [Hl _].
+      rewrite <- pskl_to_uskl_open_var in Hc'.
+      rewrite <- pskl_to_uskl_open_var.
+      apply Hl. exact Hc'.
+    + eapply consis_forall_subject_transport with (L0 := L `union` dom Θ');
+        [ exact Hc | reflexivity | ].
+      intros X HX Ψ' Q' Hc'.
+      assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ'))
+        by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ]).
+      assert (HinclX : forall x b, binds x b Θ ->
+                binds x b ((X ~ abind_tvar) ++ Θ'))
+        by (intros x b Hb; apply binds_cons_3; apply Hincl; exact Hb).
+      destruct (H0 X ltac:(clear - HX; fsetdec)
+                  ((X ~ abind_tvar) ++ Θ') HwfX HinclX) as [_ Hr].
+      rewrite <- pskl_to_uskl_open_var in Hc'.
+      rewrite <- pskl_to_uskl_open_var.
+      apply Hr. exact Hc'.
+  - (* tophole : componentwise, context-generalized *)
+    split; intros Ψ Qt Hc; simpl in Hc |- *.
+    + eapply consis_tophole_subject_transport;
+        [ exact Hc | exact Hwf' | reflexivity | ].
+      intros Θ'' Ψ' Q' Hwf'' Hincl' Hc'.
+      destruct (IHHeq Θ'' Hwf''
+                  (fun x b Hb => Hincl' x b (Hincl x b Hb))) as [Hl _].
+      apply Hl. exact Hc'.
+    + eapply consis_tophole_subject_transport;
+        [ exact Hc | exact Hwf' | reflexivity | ].
+      intros Θ'' Ψ' Q' Hwf'' Hincl' Hc'.
+      destruct (IHHeq Θ'' Hwf''
+                  (fun x b Hb => Hincl' x b (Hincl x b Hb))) as [_ Hr].
+      apply Hr. exact Hc'.
+Qed.
+
 (** An inherited quantifier never refines to a guarded skeleton (the target
     of every rule applicable to an [all_inh] source is an [all_inh] or a
     defined flexible whose unfolding is a monotype painting — itself guarded,
