@@ -4605,15 +4605,10 @@ Proof.
         with (uskl_to_pskl (pskl_to_uskl (msubst_pskl ρ (pskl_var_f α))))
         by (rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
       eapply ad_pat_consis_refine_pskl_f_mono;
-        [ | exact Hwfth
+        [ exact Hjrefl | exact Hwfth
         | apply mono_ptyp_to_bskl_syn; exact HmC
         | clear; fsetdec
-        | intros β τ Hb; clear; fsetdec ].
-      cbn [msubst_pskl].
-      rewrite pskl_to_uskl_ptyp.
-      eapply ad_pat_consis_psi_cong;
-        [ apply consis_mono_refl; [ exact HmC | exact HvisC ]
-        | clear; fsetdec ]. }
+        | intros β τ Hb; clear; fsetdec ]. }
     (* the measure : V exactly constant, n drops by one *)
     assert (Hlt : mu_lt
         (mu_consis Θ (ρa ++ ρb)
@@ -4623,11 +4618,13 @@ Proof.
         (mu_assign Θ ρ α P Ξ ((γ, abind_flex_mono_def τdef) :: Θ0'))).
     { unfold mu_consis, mu_assign. apply mu_lt_intro. right. split.
       - unfold V_consis, V_assign.
-        rewrite (Vpskl_backedge P Hwfth Heqτγ').
-        rewrite (Vpskl_backedge (pskl_var_f α) Hwfth Heqτγ').
+        erewrite Vpskl_backedge; [ | exact Hwfth | exact Heqτγ' ].
+        erewrite Vpskl_backedge; [ | exact Hwfth | exact Heqτγ' ].
         unfold Vpskl, Vvar.
-        rewrite <- (Hreo P). rewrite <- (Hreo (pskl_var_f α)).
-        cbn [msubst_pskl]. lia.
+        rewrite <- !Hreo.
+        cbn [msubst_pskl].
+        rewrite msubst_pskl_ptyp_to_pskl.
+        rewrite size_ptyp_to_pskl. lia.
       - left. rewrite length_app. simpl. lia. }
     destruct (IH _ Hlt) as [HcIH _].
     destruct (HcIH (add γ F) empty empty (Ξ ++ Θ0')
@@ -4645,7 +4642,7 @@ Proof.
                 Hjsub Hrssub Hrpsub)
       as [Q' [Θ1' [Hc Hopt']]].
     exists ((γ ~ abind_flex_mono_def τdef) ++ Θ1'). split.
-    { apply a_assign__assign; [ exact Hfα | exact Hc ]. }
+    { eapply a_assign__assign; [ exact Hfα | exact Hc ]. }
     (* ---- optimality ---- *)
     intros ρ1 Hid Hinc1.
     destruct (a_inc_mid_strip_flex_def γ τdef Θ0' Hdecl Hinc1)
@@ -4668,7 +4665,8 @@ Proof.
       by (eapply is_id_inc_unique;
           [ exact Hincw | exact Hidw | exact Hinc1ab | exact Hidab ]).
     subst w.
-    destruct (Hopt' (ρ1a ++ ρ1b) Hidab Hincw) as [ζ' [Hζ' Hie']].
+    destruct (Hopt' (ρ1a ++ ρ1b) Hidab Hincw)
+      as [ζ' [Hζ' [Hie' Hprec']]].
     (* the final ζ re-conses the dropped (γ, τγ) entry *)
     assert (Hγρ1a : γ `notin` dom ρ1a)
       by (rewrite Hdρ1a; clear - Huqf; simpl_env in Huqf; solve_uniq).
