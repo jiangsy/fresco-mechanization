@@ -648,6 +648,15 @@ before it reaches `α̂`, so `θα̂` is well-formed BELOW `β`; whereas `β ∈
 `β ∈ ftv(θP)` since `θ` cannot erase a rigid variable, and consistency against the
 MONOTYPE `θα̂` then forces `β ∈ ftv(θα̂)` — contradiction).  The paper does not do it.
 
+*Status (2026-07-17, 47bcc36):* the stuck-check is MACHINE-CHECKED in
+`algo/prop_consis_complete_join.v` (`assign_complete_step`, rigid-head case,
+`γ ∈ ftv(P)` sub-path).  Ingredient (i) is `a_inc_strip_decls_prefix` +
+`a_inc_tvar_inv` (the competing increment peels `γ`, so `θα̂` is wf in the
+truncated target); ingredient (ii) is the new scoped join ftv-survival
+`ad_pat_consis_rigid_ftv_rev_scoped` (the definition side condition holds only
+for definitions reachable from the truncated target's scope — the blanket
+version is false, definitions above `γ` may mention it).
+
 Likewise `Assign-SolveM` (:2430-2461) silently assumes BOTH of its premises: the
 occurs check `α̂ ∉ ftv(P)`, and that `guess^TY(P)` succeeds AND returns a MONOTYPE
 (`a_guess_mono` has no `all` case; `a_assign__solve_m` additionally premises
