@@ -407,6 +407,209 @@ Proof.
     apply (Hdefs _ _ H).
 Qed.
 
+(** Well-formedness of a metasubstitution image: the solution's images are
+    wf in the target, rigid occurrences stay put.  Δ-variables must avoid
+    the substitution's domain (locally-opened binders are chosen fresh). *)
+Lemma ad_wf_pskl_msubst_inc : forall Θ0 ρ Θ Δ P,
+  Θ0 ≤[ ρ ] Θ ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ Δ ⊢ₚₛᵃ P ->
+  (forall X, X `in` Δ -> X `notin` dom ρ) ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (msubst_pskl ρ P).
+Proof.
+  intros Θ0 ρ Θ Δ P Hinc Hwf0 Hwf; induction Hwf; intros HΔ; simpl.
+  - apply ad_wf_pskl__unit.
+  - (* var : rigid occurrences stay; flexibles map to wf target types *)
+    destruct H as [HXΔ | Hbt].
+    + rewrite (msubst_lookup_notin ρ (HΔ _ HXΔ)). simpl.
+      apply ad_wf_pskl__var; left; exact HXΔ.
+    + apply a_wf_ptyp_to_wf_pskl.
+      eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0 | exact Hbt ].
+  - apply ad_wf_pskl__arrow;
+      [ apply IHHwf1 | apply IHHwf2 ]; try assumption.
+  - (* all : open with a binder fresh from the substitution *)
+    assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; eauto).
+    apply ad_wf_pskl__all with (L := L `union` dom ρ).
+    intros X HX.
+    rewrite <- msubst_pskl_open_lc_local;
+      [ | exact Hlcρ | clear - HX; fsetdec ].
+    apply H0; [ clear - HX; fsetdec | exact Hinc | exact Hwf0 | ].
+    intros Y HY.
+    destruct (Y == X) as [-> | Hne].
+    + clear - HX; fsetdec.
+    + apply HΔ. clear - HY Hne; fsetdec.
+  - apply ad_wf_pskl__hole.
+  - (* tophole : the body is guarded and closed under Δ = ∅ *)
+    apply ad_wf_pskl__tophole.
+    + eapply guarded_pskl_msubst_inc; eauto.
+    + apply IHHwf; [ exact Hinc | exact Hwf0 | ].
+      intros Y HY. exfalso. clear - HY. fsetdec.
+Qed.
+
+(** The non-mono RE-INHERIT bridge (the OPT C-GhostR plan,
+    prop_consis_complete.v:1752): an uncoloured refinement [A ⊳ B] whose two
+    sides are JOINED at the syn painting re-inherits to the coloured
+    refinement of the inh paintings.  [Θr] is the refinement context; [Θj]
+    the join context, which extends [Θr] by rigid opens only (at the top
+    level Θj = Θr).  The wf of [A] supplies guardedness of ⊤◇-bodies, which
+    is what forces the join to strip/keep wrappers in lockstep with the
+    refinement. *)
+Lemma refine_join_reinherit : forall F Θr Δ A B,
+  ad_refine_pskl_f F Θr Δ A B ->
+  forall Θj,
+  a_wf_aenv Θr ->
+  a_wf_aenv Θj ->
+  (forall x b, binds x b Θr -> binds x b Θj) ->
+  Θr ⨟ Δ ⊢ₚₛᵃ A ->
+  empty ⨟ Θj ⊨ₛᵃ (pskl_to_uskl A) ≈ (pskl_to_bskl_syn B) ->
+  Θr ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh A) ⊳ (pskl_to_bskl_inh B).
+Proof.
+  intros F Θr Δ A B Hr.
+  induction Hr; intros Θj Hwfr Hwf Hincl HwfA Hj; simpl in Hj |- *.
+  - (* unit *) apply ad_refine_syn__unit.
+  - (* var *) apply ad_refine_syn__var; exact H.
+  - (* arrow *)
+    inversion HwfA; subst.
+    inversion Hj; subst.
+    apply ad_refine_syn__arrow;
+      [ eapply IHHr1 | eapply IHHr2 ]; try eassumption;
+      (eapply ad_pat_consis_psi_cong; [ eassumption | fsetdec ]).
+  - (* all (forall_syn) *)
+    inversion HwfA; subst.
+    inversion Hj; subst.
+    match goal with
+    | Hn : forall _, _ -> ad_pat_consis _ _ _ _ |- _ => rename Hn into Hsub
+    end.
+    match goal with
+    | Hn : forall _, _ -> ad_wf_pskl _ _ _ |- _ => rename Hn into Hwfb
+    end.
+    simpl.
+    match type of Hsub with
+    | forall _, _ `notin` ?LL -> _ =>
+        match type of Hwfb with
+        | forall _, _ `notin` ?LW -> _ =>
+            apply ad_refine_syn__all with
+              (L := L `union` LL `union` LW `union` dom Θ `union` dom Θj
+                    `union` ftvar_in_pskl P `union` ftvar_in_pskl Q)
+        end
+    end.
+    intros X HX.
+    rewrite <- pskl_to_bskl_inh_open, <- pskl_to_bskl_inh_open.
+    apply (H0 X ltac:(clear - HX; fsetdec) ((X ~ abind_tvar) ++ Θj) Hwfr).
+    + apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf ].
+    + intros x b Hb. apply binds_cons_3. apply Hincl; exact Hb.
+    + apply Hwfb. clear - HX; fsetdec.
+    + rewrite pskl_to_uskl_open_var, pskl_to_bskl_syn_open.
+      apply Hsub. clear - HX; fsetdec.
+  - (* hole : the join forces the fill to be inh-invariant *)
+    pose proof (consis_hole_target_inh Hj) as Hqi.
+    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hqi.
+    rewrite Hqi. apply ad_refine_syn__hole; exact H0.
+  - (* tophole_remove : the join strips its subject ⊤◇ in lockstep *)
+    assert (HgP : guarded_pskl P) by (inversion HwfA; assumption).
+    assert (HwfP : Θ ⨟ empty ⊢ₚₛᵃ P) by (inversion HwfA; assumption).
+    assert (HwfPΔ : Θ ⨟ Δ ⊢ₚₛᵃ P)
+      by (eapply ad_wf_pskl_delta_mono; [ exact HwfP | clear; fsetdec ]).
+    apply ad_refine_syn__tophole_remove.
+    apply (IHHr Θj Hwfr Hwf Hincl HwfPΔ).
+    (* the join: ⊤◇⌊P⌋ ≈ syn Q must strip the subject wrapper *)
+    inversion Hj; subst.
+    + (* __tophole : the target would be a ⊤◇ — but the guarded [P]
+         refines to it, contradiction *)
+      exfalso.
+      match goal with
+      | HeqQ : pskl_to_bskl_syn Q = bskl_tophole _ |- _ =>
+          destruct Q; simpl in HeqQ; try discriminate
+      | HeqQ : bskl_tophole _ = pskl_to_bskl_syn Q |- _ =>
+          destruct Q; simpl in HeqQ; try discriminate
+      end.
+      pose proof (ad_refine_pskl_f_guarded_r Hwfr Hr HgP) as Hbad.
+      inversion Hbad.
+    + (* __tophole_inh : a syn painting is never an inherited ∀ *)
+      exfalso.
+      match goal with
+      | HeqQ : pskl_to_bskl_syn Q = bskl_all_inh _ |- _ =>
+          destruct Q; simpl in HeqQ; discriminate
+      | HeqQ : bskl_all_inh _ = pskl_to_bskl_syn Q |- _ =>
+          destruct Q; simpl in HeqQ; discriminate
+      end.
+    + (* __tophole_drop : exactly the stripped join *)
+      assumption.
+    + (* __flex_r : a defined-flex target is guarded; strip via the
+         guarded inversion *)
+      match goal with
+      | HeqQ : pskl_to_bskl_syn Q = bskl_var_f _ |- _ =>
+          destruct Q; simpl in HeqQ; try discriminate;
+          inversion HeqQ; subst
+      | HeqQ : bskl_var_f _ = pskl_to_bskl_syn Q |- _ =>
+          destruct Q; simpl in HeqQ; try discriminate;
+          inversion HeqQ; subst
+      end.
+      eapply ad_pat_consis_tophole_guarded_inv;
+        [ exact Hwf | | exact HgP | apply guarded_bskl__var ].
+      eapply ad_pat_consis__flex_r; eassumption.
+  - (* tophole_fill : VACUOUS — no join matches a ⊤◇ subject against a
+       ∀-syn target *)
+    exfalso.
+    assert (HgP : guarded_pskl P) by (inversion HwfA; assumption).
+    pick fresh X for (L `union` dom Θ).
+    assert (HlcQX : lc_pskl (open_pskl_wrt_pskl Q (pskl_var_f X)))
+      by (eapply ad_refine_pskl_f_lc_r; apply H; clear - Fr; fsetdec).
+    assert (HlcQ : lc_bskl (pskl_to_bskl_syn (pskl_all_syn Q))).
+    { apply pskl_to_bskl_syn_lc.
+      apply (lc_pskl_all_syn_exists X). exact HlcQX. }
+    inversion Hj; subst.
+    (* only __tophole_drop survives the target shape; its stripped subject
+       is guarded against a ∀-syn target *)
+    match goal with
+    | Hdrop : _ ⨟ _ ⊨ₛᵃ (pskl_to_uskl P) ≈ _ |- _ =>
+        pose proof (ad_pat_consis_guarded_r Hdrop Hwf eq_refl HgP HlcQ)
+          as Hbad
+    end.
+    inversion Hbad.
+  - (* tophole_keep : the join keeps (or cannot drop) the wrapper *)
+    assert (HgP : guarded_pskl P) by (inversion HwfA; assumption).
+    assert (HwfP : Θ ⨟ empty ⊢ₚₛᵃ P) by (inversion HwfA; assumption).
+    assert (HwfPΔ : Θ ⨟ Δ ⊢ₚₛᵃ P)
+      by (eapply ad_wf_pskl_delta_mono; [ exact HwfP | clear; fsetdec ]).
+    apply ad_refine_syn__tophole_keep;
+      [ apply guarded_pskl_to_bskl_inh; exact H | ].
+    apply (IHHr Θj Hwfr Hwf Hincl HwfPΔ).
+    inversion Hj; subst.
+    + (* __tophole : both wrappers strip *) assumption.
+    + (* __tophole_drop : the guarded stripped subject cannot join a ⊤◇ *)
+      exfalso.
+      assert (HlcQt : lc_bskl (bskl_tophole (pskl_to_bskl_syn Q))).
+      { apply lc_bskl_tophole. apply pskl_to_bskl_syn_lc.
+        eapply ad_refine_pskl_f_lc_r; exact Hr. }
+      match goal with
+      | Hdrop : _ ⨟ _ ⊨ₛᵃ (pskl_to_uskl P) ≈ _ |- _ =>
+          pose proof (ad_pat_consis_guarded_r Hdrop Hwf eq_refl HgP HlcQt)
+            as Hbad
+      end.
+      inversion Hbad.
+  - (* flex_l : unfold α̂ in the output and in the join SUBJECT *)
+    assert (Hmτ : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwfr | exact H ]).
+    apply ad_refine_syn__flex_l with (τ := τ); [ exact H | ].
+    rewrite <- (mono_inh_eq_syn Hmτ).
+    eapply IHHr; try eassumption.
+    + apply a_wf_ptyp_to_wf_pskl.
+      eapply a_wf_aenv_binds_def_wf; [ exact Hwfr | exact H ].
+    + rewrite pskl_to_uskl_ptyp.
+      eapply consis_unfold_def_subject;
+        [ exact Hj | exact Hwf | reflexivity | apply Hincl; exact H ].
+  - (* flex_r : unfold α̂ in the output and in the join TARGET *)
+    assert (Hmτ : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwfr | exact H ]).
+    apply ad_refine_syn__flex_r with (τ := τ); [ exact H | ].
+    rewrite <- (mono_inh_eq_syn Hmτ).
+    eapply IHHr; try eassumption.
+    unfold ptyp_to_bskl_syn.
+    eapply consis_unfold_def_join;
+      [ exact Hj | exact Hwf | reflexivity | apply Hincl; exact H ].
+Qed.
+
 (** An inherited quantifier never refines to a guarded skeleton (the target
     of every rule applicable to an [all_inh] source is an [all_inh] or a
     defined flexible whose unfolding is a monotype painting — itself guarded,
@@ -2096,12 +2299,84 @@ Proof.
       | exact Hrs ]. }
   (* ---- Layer 0c: P0 = ◇ : C-GhostR ---------------------------------- *)
   destruct (pskl_eq_dec P0 pskl_hole) as [-> | HneP0hole].
-  { (* axiom node [a_consis__ghost_r]; the side condition
-       [Δ1 ∩ ftv(P) = ∅] needs the rigid-ftv survival of the subject
-       through the competing join against the Δ1-hygiene of the hole fill
-       in Hrs; precision collapses to Hrs as in the CLOSED OPT C-Ghost.
-       TRUE; the ftv-survival lemma is not yet mechanized. *)
-    admit. }
+  { (* axiom node [a_consis__ghost_r].  The side condition
+       [Δ1 ∩ ftv(P) = ∅] is the mirror rigid-ftv chase, through the JOIN
+       ([ad_pat_consis_rigid_ftv_rev]) against the Δ1-hygiene of the hole
+       fill in Hrs; precision re-inherits the Δ2-refinement through the
+       join by [refine_join_reinherit]. *)
+    assert (Hjoin' : empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl ρ P)) ≈ Qb)
+      by (eapply consis_psi_cong_local; [ exact Hjoin | exact HΨ ]).
+    change (ad_refine_syn_f Δ1 Θ Δ1 bskl_hole Qb) in Hrs.
+    (* Qb is a syn-painting fixed point (its refinement source is ◇) *)
+    assert (HQb : pskl_to_bskl_syn (bskl_to_pskl Qb) = Qb).
+    { inversion Hrs; subst.
+      - rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
+      - simpl. reflexivity. }
+    (* the ftv chase for the GhostR side condition *)
+    assert (Hside : forall X, X `in` Δ1 -> X `notin` ftvar_in_pskl P).
+    { intros X HinΔ1 HinP.
+      assert (HbX0 : binds X abind_tvar Θ0)
+        by (apply Hrig; clear - HinΔ1; fsetdec).
+      assert (HbX : binds X abind_tvar Θ)
+        by (eapply a_inc_binds_tvar; eauto).
+      assert (HXnd : X `notin` dom ρ)
+        by (eapply a_inc_tvar_notin_dom; eauto).
+      assert (Hdefs : forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+                                  X `notin` ftvar_in_ptyp τ).
+      { intros β τ Hb. pose proof (Hnfdth _ _ Hb) as Hd.
+        clear - Hd HinΔ1. fsetdec. }
+      assert (HninQb : X `notin` ftvar_in_bskl Qb).
+      { inversion Hrs; subst.
+        - (* hole : the Δ1-hygiene of the fill *)
+          match goal with
+          | Hint : AtomSetImpl.inter Δ1 (ftvar_in_pskl ?Pf) [=] empty |- _ =>
+              pose proof (ftvar_in_bskl_syn Pf) as Hfe;
+              clear - Hint HinΔ1 Hfe; fsetdec
+          end.
+        - (* flex_r : Qb is a defined flexible, never the rigid X *)
+          simpl.
+          match goal with
+          | Hbr : binds ?α0 (abind_flex_mono_def _) Θ |- _ =>
+              assert (Hne : X <> α0)
+                by (intro Heq; subst;
+                    pose proof (binds_unique _ _ _ _ _ HbX Hbr
+                                  (a_wf_aenv_uniq Hwfth)) as Hcon;
+                    discriminate)
+          end.
+          clear - Hne; fsetdec. }
+      assert (HinθP : X `in` ftvar_in_pskl (msubst_pskl ρ P))
+        by (apply msubst_pskl_ftv_keep; assumption).
+      assert (HninS : X `notin`
+                ftvar_in_uskl (pskl_to_uskl (msubst_pskl ρ P))).
+      { eapply ad_pat_consis_rigid_ftv_rev;
+          [ exact Hwfth | exact HbX | exact Hdefs | exact Hjoin'
+          | exact HninQb ]. }
+      pose proof (ftvar_in_uskl_pskl (msubst_pskl ρ P)) as Hfe2.
+      clear - HninS HinθP Hfe2. fsetdec. }
+    exists P, Θ0. split.
+    { apply a_consis__ghost_r.
+      apply inter_empty_pointwise. exact Hside. }
+    intros ρ1 Hid Hinc1. exists ρ.
+    destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
+    split; [ exact Hout | ]. split; [ exact Hfact | ].
+    (* precision by the re-inherit bridge (subset goal second, AFTER the
+       bridge instantiates the Δ) *)
+    assert (HwfθP : Θ ⨟ Δ2 ⊢ₚₛᵃ (msubst_pskl ρ P)).
+    { eapply ad_wf_pskl_delta_mono;
+        [ eapply ad_wf_pskl_msubst_inc;
+            [ exact Hinc | exact Hwf0 | exact HwfP
+            | intros X HX; exfalso; clear - HX; fsetdec ]
+        | clear; fsetdec ]. }
+    unfold ad_precise.
+    rewrite bskl_to_pskl_msubst_bskl.
+    rewrite bskl_to_pskl_pskl_to_bskl_syn.
+    eapply ad_refine_syn_delta_mono;
+      [ eapply refine_join_reinherit with (Θj := Θ);
+          [ exact Hrp | exact Hwfth | exact Hwfth
+          | intros x b Hb; exact Hb
+          | exact HwfθP
+          | rewrite HQb; exact Hjoin' ]
+      | clear; fsetdec ]. }
   (* ---- Layer 0d: P0 = ⊤◇.P0', P guarded : C-UnivGhostR -------------- *)
   assert (Hthdec : (exists P0', P0 = pskl_tophole P0') \/
                    (forall P0', P0 <> pskl_tophole P0')).
@@ -2149,7 +2424,7 @@ Proof.
   eapply (consis_complete_core Hjoin);
     try eassumption; try reflexivity.
   intros P0'' Heq0 Hg. exact (Hnth P0'' Heq0).
-Admitted.
+Qed.
 
 (* ===================================================================== *)
 (*  §4  The bundle, by well-founded induction on μ                        *)
