@@ -42,7 +42,7 @@ Definition ptyp_to_uskl_syn (A : ptyp) : uskl :=
 
 (* [a_binds_tvar] now lives in algo/def_extra.v (shared with a_wf_ptyp). *)
 
-(* [ad_wf_pskl] now lives in algo/def_extra.v (needed by ForallL's
+(* [a_wf_pskl] now lives in algo/def_extra.v (needed by ForallL's
    disciplined instantiation premise). *)
 
 (* ===================================================================== *)

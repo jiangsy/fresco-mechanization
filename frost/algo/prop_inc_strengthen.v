@@ -365,11 +365,11 @@ Proof.
   destruct HX as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb; exact Hb.
 Qed.
 
-Lemma a_wf_pskl_ftv_dom' : forall Θ P,
-  a_wf_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
+Lemma a_scope_pskl_ftv_dom' : forall Θ P,
+  a_scope_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
 Proof.
   intros Θ P H X HX.
-  apply (a_wf_pskl_ftv_tvarish H) in HX.
+  apply (a_scope_pskl_ftv_tvarish H) in HX.
   destruct HX as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb; exact Hb.
 Qed.
 
@@ -398,7 +398,7 @@ Proof.
     try solve [ pose proof (IHHwf Hb') as Hs; simpl; clear - Hs; fsetdec ].
   (* var_skl head : P is wf in the tail *)
   injection Heq2 as Heq2. subst.
-  pose proof (a_wf_pskl_ftv_dom' H0) as Hs. simpl. clear - Hs. fsetdec.
+  pose proof (a_scope_pskl_ftv_dom' H0) as Hs. simpl. clear - Hs. fsetdec.
 Qed.
 
 (* ===================================================================== *)

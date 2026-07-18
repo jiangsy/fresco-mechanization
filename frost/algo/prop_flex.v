@@ -203,7 +203,7 @@ Proof.
   intros * H; induction H; auto.
 Qed.
 
-Lemma a_wf_pskl_lc : forall Θ P, a_wf_pskl Θ P -> lc_pskl P.
+Lemma a_scope_pskl_lc : forall Θ P, a_scope_pskl Θ P -> lc_pskl P.
 Proof.
   intros * H; induction H; auto.
 Qed.
@@ -213,7 +213,7 @@ Qed.
 Lemma a_wf_aenv_lc_aenv : forall Θ, a_wf_aenv Θ -> lc_aenv Θ.
 Proof.
   intros Θ H; induction H; constructor; simpl; auto.
-  - eapply a_wf_pskl_lc; eauto.
+  - eapply a_scope_pskl_lc; eauto.
   - eapply a_wf_ptyp_lc; eauto.
 Qed.
 
@@ -366,7 +366,7 @@ Proof.
       with (pskl_to_bskl_inh (pskl_var_f α)) by reflexivity.
     replace (pskl_to_uskl pskl_hole) with uskl_hole by reflexivity.
     apply ad_pat_consis__hole; [ fsetdec | ].
-    apply ad_wf_pskl__var. right. apply Hβs.
+    apply a_wf_pskl__var. right. apply Hβs.
     unfold binds; left; reflexivity.
   - (* ⊤.P : the universal ghost is dropped *)
     replace (pskl_to_uskl (pskl_tophole P))
@@ -715,14 +715,14 @@ Qed.
 (*  extraction helpers for assignvar                                       *)
 (* ===================================================================== *)
 
-Lemma ad_wf_pskl_weaken : forall Θ Θ' Δ P,
+Lemma a_wf_pskl_weaken : forall Θ Θ' Δ P,
   (forall x b, binds x b Θ -> binds x b Θ') ->
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   Θ' ⨟ Δ ⊢ₚₛᵃ P.
 Proof.
   intros * Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon;
-    eauto using ad_wf_pskl;
-    try (apply ad_wf_pskl__var;
+    eauto using a_wf_pskl;
+    try (apply a_wf_pskl__var;
          destruct H as [HΔ | [Hb | [Hb | [τ Hb]]]];
          [ left | right; left | right; right; left
          | right; right; right; exists τ ]; auto).
@@ -766,7 +766,7 @@ Proof.
       | unfold binds; right; apply Hmon; auto ].
   - apply ad_pat_consis__ghostg; auto.
   - apply ad_pat_consis__topholeg; auto.
-  - apply ad_pat_consis__hole; eauto using ad_wf_pskl_weaken.
+  - apply ad_pat_consis__hole; eauto using a_wf_pskl_weaken.
   - apply ad_pat_consis__tophole; auto.
   - eapply ad_pat_consis__tophole_inh with (L := L); eauto.
     intros X HX. apply H0; auto.
@@ -816,9 +816,9 @@ Qed.
 (* ===================================================================== *)
 
 (** Skeleton wf survives removing ANY entry the skeleton avoids.
-    Generalises [ad_wf_pskl_strip_tvar] (which only drops [abind_tvar]);
+    Generalises [a_wf_pskl_strip_tvar] (which only drops [abind_tvar]);
     [a_assign__skip] drops a *flex* binding. *)
-Lemma ad_wf_pskl_strip_mid : forall Θ1 c b Θ2 Δ P,
+Lemma a_wf_pskl_strip_mid : forall Θ1 c b Θ2 Δ P,
   (Θ1 ++ (c ~ b) ++ Θ2) ⨟ Δ ⊢ₚₛᵃ P ->
   c `notin` ftvar_in_pskl P ->
   (Θ1 ++ Θ2) ⨟ Δ ⊢ₚₛᵃ P.
@@ -827,22 +827,22 @@ Proof.
   remember (Θ1 ++ (c ~ b) ++ Θ2) as Θfull eqn:HeqΘ.
   revert Θ1 HeqΘ.
   induction H; intros Θ1 ->; intros Hfr; simpl in Hfr.
-  - apply ad_wf_pskl__unit.
-  - apply ad_wf_pskl__var.
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var.
     destruct H as [HΔ | Htv]; [ left; auto | right ].
     assert (Hne : X <> c) by (clear - Hfr; fsetdec).
     eapply a_binds_tvar_strip_mid; eauto;
       try (intro Hc; inversion Hc; subst; congruence);
       try (intros τ0 Hc; inversion Hc; subst; congruence).
-  - apply ad_wf_pskl__arrow; [ apply IHad_wf_pskl1 | apply IHad_wf_pskl2 ];
+  - apply a_wf_pskl__arrow; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
       auto.
-  - apply ad_wf_pskl__all with (L := L `union` singleton c).
+  - apply a_wf_pskl__all with (L := L `union` singleton c).
     intros X HX. apply H0; auto.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                   P (pskl_var_f X)) as Hup.
     simpl in Hup. clear - Hup Hfr HX. fsetdec.
-  - apply ad_wf_pskl__hole.
-  - apply ad_wf_pskl__tophole; auto.
+  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__tophole; auto.
 Qed.
 
 (** A monotype's skeleton is guarded / locally closed.  (Duplicated from
@@ -876,16 +876,16 @@ Proof.
 Qed.
 
 (** A well-formed monotype's skeleton is a well-formed skeleton, in any [Δ]. *)
-Lemma ad_wf_pskl_mono_ptyp : forall Θ Δ τ,
+Lemma a_wf_pskl_mono_ptyp : forall Θ Δ τ,
   mono_ptyp τ ->
   a_wf_ptyp Θ τ ->
   Θ ⨟ Δ ⊢ₚₛᵃ (ptyp_to_pskl τ).
 Proof.
   intros Θ Δ τ Hm; revert Δ; induction Hm; intros Δ Hwf; simpl;
     inversion Hwf; subst.
-  - apply ad_wf_pskl__unit.
-  - apply ad_wf_pskl__var. right; auto.
-  - apply ad_wf_pskl__arrow; auto.
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var. right; auto.
+  - apply a_wf_pskl__arrow; auto.
 Qed.
 
 (** A defined flexible variable's definition is well-formed in the whole
@@ -913,8 +913,8 @@ Qed.
 
 (** FORWARD monotype substitution: folding a defined flexible variable's
     definition INTO a well-formed skeleton keeps it well-formed.  (The BACK
-    direction is [ad_wf_pskl_mono_subst_back] in [prop_consis_sound].) *)
-Lemma ad_wf_pskl_mono_subst : forall Θ β τ Δ P,
+    direction is [a_wf_pskl_mono_subst_back] in [prop_consis_sound].) *)
+Lemma a_wf_pskl_mono_subst : forall Θ β τ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   a_wf_aenv Θ ->
   binds β (abind_flex_mono_def τ) Θ ->
@@ -922,22 +922,22 @@ Lemma ad_wf_pskl_mono_subst : forall Θ β τ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
 Proof.
   intros Θ β τ Δ P H; induction H; intros Hwfenv Hb Hm; simpl.
-  - apply ad_wf_pskl__unit.
+  - apply a_wf_pskl__unit.
   - (* NB: the scrutinee of [subst_pskl_in_pskl] lives at [ptypvar], so the
        [eq_dec] instance must be given at that type for [destruct] to
        abstract the [if] in the goal. *)
     destruct (@eq_dec ptypvar EqDec_eq_of_X X β) as [Heq | Hne].
-    + subst. apply ad_wf_pskl_mono_ptyp; auto.
+    + subst. apply a_wf_pskl_mono_ptyp; auto.
       eapply a_wf_aenv_binds_def_wf; eauto.
-    + apply ad_wf_pskl__var; auto.
-  - apply ad_wf_pskl__arrow; auto.
-  - apply ad_wf_pskl__all with (L := L `union` singleton β).
+    + apply a_wf_pskl__var; auto.
+  - apply a_wf_pskl__arrow; auto.
+  - apply a_wf_pskl__all with (L := L `union` singleton β).
     intros X HX.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - HX; fsetdec | apply mono_ptyp_to_pskl_lc; auto ].
     apply H0; auto.
-  - apply ad_wf_pskl__hole.
-  - apply ad_wf_pskl__tophole;
+  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__tophole;
       [ apply guarded_pskl_mono_subst; auto | auto ].
 Qed.
 

@@ -125,18 +125,18 @@ Qed.
 
 (** Well-formedness of a monotype's skeleton is preserved when a
     definition is folded back. *)
-Lemma ad_wf_pskl_mono_subst_back : forall Θ γ τ B,
+Lemma a_wf_pskl_mono_subst_back : forall Θ γ τ B,
   binds γ (abind_flex_mono_def τ) Θ ->
   mono_ptyp B ->
-  ad_wf_pskl Θ empty (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ B)) ->
-  ad_wf_pskl Θ empty (ptyp_to_pskl B).
+  a_wf_pskl Θ empty (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ B)) ->
+  a_wf_pskl Θ empty (ptyp_to_pskl B).
 Proof.
   intros * Hb HmB; induction HmB; intros Hwf; simpl in *.
-  - apply ad_wf_pskl__unit.
+  - apply a_wf_pskl__unit.
   - destruct (eq_var X γ) as [->|Hne].
-    + apply ad_wf_pskl__var. right. right; right; exists τ; auto.
+    + apply a_wf_pskl__var. right. right; right; exists τ; auto.
     + exact Hwf.
-  - inversion Hwf; subst. apply ad_wf_pskl__arrow; auto.
+  - inversion Hwf; subst. apply a_wf_pskl__arrow; auto.
 Qed.
 
 (** Folding a flexible variable's definition on the PAINTED side of a
@@ -213,7 +213,7 @@ Proof.
     replace (ptyp_to_bskl_syn ptyp_unit)
       with (pskl_to_bskl_inh (ptyp_to_pskl ptyp_unit)) by reflexivity.
     apply ad_pat_consis__hole; auto.
-    apply ad_wf_pskl_mono_subst_back with (γ := γ) (τ := τ); auto.
+    apply a_wf_pskl_mono_subst_back with (γ := γ) (τ := τ); auto.
     rewrite <- HP; auto.
   - (* hole / B var *)
     destruct (eq_var XB γ) as [->|Hne].
@@ -238,7 +238,7 @@ Proof.
       rewrite bskl_to_pskl_pskl_to_bskl_syn in HeqQ. exact HeqQ. }
     rewrite <- (mono_inh_eq_syn HmB).
     apply ad_pat_consis__hole; auto.
-    apply ad_wf_pskl_mono_subst_back with (γ := γ) (τ := τ); auto.
+    apply a_wf_pskl_mono_subst_back with (γ := γ) (τ := τ); auto.
     rewrite <- HP; auto.
   - (* tophole / B var *)
     destruct (eq_var XB γ) as [->|Hne];
@@ -441,30 +441,30 @@ Proof.
 Qed.
 
 (** Skeleton wf survives removing a rigid entry the skeleton avoids. *)
-Lemma ad_wf_pskl_strip_tvar : forall Θ1 α Θ2 Δ P,
-  ad_wf_pskl (Θ1 ++ (α ~ abind_tvar) ++ Θ2) Δ P ->
+Lemma a_wf_pskl_strip_tvar : forall Θ1 α Θ2 Δ P,
+  a_wf_pskl (Θ1 ++ (α ~ abind_tvar) ++ Θ2) Δ P ->
   α `notin` ftvar_in_pskl P ->
-  ad_wf_pskl (Θ1 ++ Θ2) Δ P.
+  a_wf_pskl (Θ1 ++ Θ2) Δ P.
 Proof.
   intros * H.
   remember (Θ1 ++ (α ~ abind_tvar) ++ Θ2) as Θfull eqn:HeqΘ.
   revert Θ1 HeqΘ.
   induction H; intros Θ1 ->; intros Hfr; simpl in Hfr.
-  - apply ad_wf_pskl__unit.
-  - apply ad_wf_pskl__var.
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var.
     destruct H as [HΔ | Htv]; [ left; auto | right ].
     eapply a_binds_tvar_strip_mid; eauto;
       try (intro Hc; inversion Hc; subst; fsetdec);
       try (intros τ0 Hc; inversion Hc).
-  - apply ad_wf_pskl__arrow; [ apply IHad_wf_pskl1 | apply IHad_wf_pskl2 ];
+  - apply a_wf_pskl__arrow; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
       auto.
-  - apply ad_wf_pskl__all with (L := L `union` singleton α).
+  - apply a_wf_pskl__all with (L := L `union` singleton α).
     intros X HX. apply H0; auto.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                   P (pskl_var_f X)) as Hup.
     simpl in Hup. fsetdec.
-  - apply ad_wf_pskl__hole.
-  - apply ad_wf_pskl__tophole; auto.
+  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__tophole; auto.
 Qed.
 
 (* ===================================================================== *)
@@ -548,36 +548,36 @@ Proof.
 Qed.
 
 (** Renaming a rigid context entry in skeleton well-formedness. *)
-Lemma ad_wf_pskl_rename_tvar : forall Θ1 α Θ0 Δ P Y,
-  ad_wf_pskl (Θ1 ++ (α ~ abind_tvar) ++ Θ0) Δ P ->
+Lemma a_wf_pskl_rename_tvar : forall Θ1 α Θ0 Δ P Y,
+  a_wf_pskl (Θ1 ++ (α ~ abind_tvar) ++ Θ0) Δ P ->
   α `notin` Δ ->
-  ad_wf_pskl (Θ1 ++ (Y ~ abind_tvar) ++ Θ0) Δ
+  a_wf_pskl (Θ1 ++ (Y ~ abind_tvar) ++ Θ0) Δ
     (subst_pskl_in_pskl (pskl_var_f Y) α P).
 Proof.
   intros * H.
   remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
   revert Θ1 HeqΘ.
   induction H; intros Θ1 ->; intros HαΔ; simpl.
-  - apply ad_wf_pskl__unit.
+  - apply a_wf_pskl__unit.
   - match goal with |- context [ if ?t then _ else _ ] =>
       destruct t as [->|Hne] end.
-    + apply ad_wf_pskl__var. right.
+    + apply a_wf_pskl__var. right.
       unfold a_binds_tvar. left.
       unfold binds. apply in_or_app. right. left. reflexivity.
-    + apply ad_wf_pskl__var.
+    + apply a_wf_pskl__var.
       destruct H as [HΔ | Htv]; [ left; auto | right ].
       apply (@a_binds_tvar_insert_mid X Θ1 (Y ~ abind_tvar) Θ0).
       eapply a_binds_tvar_strip_mid; eauto;
         try (intro Hc; inversion Hc; subst; congruence);
         try (intros τ0 Hc; inversion Hc).
-  - apply ad_wf_pskl__arrow; auto.
-  - apply ad_wf_pskl__all with (L := L `union` singleton α).
+  - apply a_wf_pskl__arrow; auto.
+  - apply a_wf_pskl__all with (L := L `union` singleton α).
     intros Z HZ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var; auto.
-  - apply ad_wf_pskl__hole.
-  - apply ad_wf_pskl__tophole;
+  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__tophole;
       [ apply guarded_pskl_subst_var; auto
-      | apply IHad_wf_pskl; auto; fsetdec ].
+      | apply IHa_wf_pskl; auto; fsetdec ].
 Qed.
 
 Lemma ftvar_in_uskl_ptyp_syn : forall A,
@@ -696,7 +696,7 @@ Proof.
   - (* hole *)
     rewrite subst_var_bskl_inh.
     apply ad_pat_consis__hole; auto.
-    apply ad_wf_pskl_rename_tvar; auto.
+    apply a_wf_pskl_rename_tvar; auto.
   - (* tophole *)
     apply ad_pat_consis__tophole; auto.
   - (* tophole_inh *)
@@ -771,7 +771,7 @@ Proof.
   - apply ad_refine_syn_f__all with (L := L).
     intros X HX. apply H0; auto; try fsetdec.
   - apply ad_refine_syn_f__hole; auto.
-    apply ad_wf_pskl_strip_tvar with (α := α); auto.
+    apply a_wf_pskl_strip_tvar with (α := α); auto.
     clear - H HαF; fsetdec.
   - apply ad_refine_syn_f__tophole_remove; auto.
   - apply ad_refine_syn_f__tophole_fill with (L := L).
@@ -805,7 +805,7 @@ Proof.
   - apply ad_refine_pskl_f__all with (L := L).
     intros X HX. apply H0; auto; try fsetdec.
   - apply ad_refine_pskl_f__hole; auto.
-    apply ad_wf_pskl_strip_tvar with (α := α); auto.
+    apply a_wf_pskl_strip_tvar with (α := α); auto.
     clear - H HαF; fsetdec.
   - apply ad_refine_pskl_f__tophole_remove; auto.
   - apply ad_refine_pskl_f__tophole_fill with (L := L).
@@ -1043,7 +1043,7 @@ Proof.
   - replace (pskl_to_bskl_inh pskl_hole)
       with (pskl_to_bskl_syn pskl_hole) at 2 by reflexivity.
     apply ad_refine_syn_f__hole;
-      [ simpl; fsetdec | apply ad_wf_pskl__hole ].
+      [ simpl; fsetdec | apply a_wf_pskl__hole ].
   - apply ad_refine_syn_f__tophole_keep;
       auto using guarded_pskl_to_bskl_inh.
     apply ad_refine_syn_f_delta_mono with (Δ0 := empty); auto.
@@ -1060,7 +1060,7 @@ Proof.
   - apply ad_refine_pskl_f__arrow; auto.
   - apply ad_refine_pskl_f__all with (L := L). auto.
   - apply ad_refine_pskl_f__hole;
-      [ simpl; fsetdec | apply ad_wf_pskl__hole ].
+      [ simpl; fsetdec | apply a_wf_pskl__hole ].
   - apply ad_refine_pskl_f__tophole_keep; auto.
     apply ad_refine_pskl_f_delta_mono with (Δ0 := empty); auto.
     fsetdec.
@@ -1077,7 +1077,7 @@ Proof.
     destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
   - apply ad_refine_syn_f__arrow; auto.
   - eapply ad_refine_syn_f__all with (L := L); eauto.
-  - apply ad_refine_syn_f__hole; eauto using ad_wf_pskl_isub.
+  - apply ad_refine_syn_f__hole; eauto using a_wf_pskl_isub.
   - apply ad_refine_syn_f__tophole_remove; auto.
   - eapply ad_refine_syn_f__tophole_fill with (L := L).
     intros X HX. eauto using a_isub_cons_tvar.
@@ -1097,7 +1097,7 @@ Proof.
     destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
   - apply ad_refine_pskl_f__arrow; auto.
   - eapply ad_refine_pskl_f__all with (L := L); eauto.
-  - apply ad_refine_pskl_f__hole; eauto using ad_wf_pskl_isub.
+  - apply ad_refine_pskl_f__hole; eauto using a_wf_pskl_isub.
   - apply ad_refine_pskl_f__tophole_remove; auto.
   - eapply ad_refine_pskl_f__tophole_fill with (L := L).
     intros X HX. eauto using a_isub_cons_tvar.
@@ -1286,7 +1286,7 @@ Proof.
     + pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
                     P (pskl_var_f Y) α) as Hup.
       simpl in Hup. clear - H HYF Hup. fsetdec.
-    + apply ad_wf_pskl_rename_tvar; auto.
+    + apply a_wf_pskl_rename_tvar; auto.
   - (* tophole_remove *)
     apply ad_refine_syn_f__tophole_remove; auto.
   - (* tophole_fill *)
@@ -1380,7 +1380,7 @@ Proof.
     + pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
                     Q (pskl_var_f Y) α) as Hup.
       simpl in Hup. clear - H HYF Hup. fsetdec.
-    + apply ad_wf_pskl_rename_tvar; auto.
+    + apply a_wf_pskl_rename_tvar; auto.
   - (* tophole_remove *)
     apply ad_refine_pskl_f__tophole_remove; auto.
   - (* tophole_fill *)
@@ -1723,28 +1723,28 @@ Proof. intros; apply bskl_to_pskl_close_rec. Qed.
 
 (** Moving a variable from Δ into the context as a rigid (the skeleton
     well-formedness reassociation used to open ∀-binders). *)
-Lemma ad_wf_pskl_reassoc : forall Θ Δ P,
+Lemma a_wf_pskl_reassoc : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   forall α,
   ((α ~ abind_tvar) ++ Θ) ⨟ (remove α Δ) ⊢ₚₛᵃ P.
 Proof.
   intros Θ Δ P H; induction H; intros α0; simpl.
-  - apply ad_wf_pskl__unit.
-  - apply ad_wf_pskl__var.
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var.
     destruct H as [HΔ | Htv].
     + destruct (X == α0) as [->|Hne].
       * right. left. unfold binds; left; reflexivity.
       * left. fsetdec.
     + right. apply (@a_binds_tvar_weaken_cons X (α0 ~ abind_tvar) Θ). exact Htv.
-  - apply ad_wf_pskl__arrow; [ apply (IHad_wf_pskl1 α0) | apply (IHad_wf_pskl2 α0) ].
-  - apply ad_wf_pskl__all with (L := L `union` singleton α0).
+  - apply a_wf_pskl__arrow; [ apply (IHa_wf_pskl1 α0) | apply (IHa_wf_pskl2 α0) ].
+  - apply a_wf_pskl__all with (L := L `union` singleton α0).
     intros X HX.
     assert (HXL : X `notin` L) by fsetdec.
-    eapply ad_wf_pskl_delta_mono; [ apply (H0 X HXL α0) | ].
+    eapply a_wf_pskl_delta_mono; [ apply (H0 X HXL α0) | ].
     fsetdec.
-  - apply ad_wf_pskl__hole.
-  - apply ad_wf_pskl__tophole; auto.
-    eapply ad_wf_pskl_delta_mono; [ apply (IHad_wf_pskl α0) | ].
+  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__tophole; auto.
+    eapply a_wf_pskl_delta_mono; [ apply (IHa_wf_pskl α0) | ].
     fsetdec.
 Qed.
 
@@ -1810,14 +1810,14 @@ Proof.
 Qed.
 
 (** Algorithmic skeleton well-formedness transports along [⊴]. *)
-Lemma a_wf_pskl_isub : forall Θ P,
-  a_wf_pskl Θ P ->
+Lemma a_scope_pskl_isub : forall Θ P,
+  a_scope_pskl Θ P ->
   forall Θ', Θ ⊴ Θ' ->
-  a_wf_pskl Θ' P.
+  a_scope_pskl Θ' P.
 Proof.
-  intros Θ P H; induction H; intros Θ' Hle; eauto using a_wf_pskl.
-  - apply a_wf_pskl__var. eapply a_isub_binds_tvarish; eauto.
-  - apply a_wf_pskl__all with (L := L `union` dom Θ'). intros X HX.
+  intros Θ P H; induction H; intros Θ' Hle; eauto using a_scope_pskl.
+  - apply a_scope_pskl__var. eapply a_isub_binds_tvarish; eauto.
+  - apply a_scope_pskl__all with (L := L `union` dom Θ'). intros X HX.
     apply H0; auto. apply a_isub_cons_tvar; auto.
 Qed.
 
@@ -1899,9 +1899,9 @@ Lemma mono_ptyp_wf_pskl : forall Θ τ,
   Θ ⨟ empty ⊢ₚₛᵃ (ptyp_to_pskl τ).
 Proof.
   intros Θ τ H; induction H; intros Hvis; simpl in *.
-  - apply ad_wf_pskl__unit.
-  - apply ad_wf_pskl__var. right. apply Hvis. fsetdec.
-  - apply ad_wf_pskl__arrow;
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var. right. apply Hvis. fsetdec.
+  - apply a_wf_pskl__arrow;
       [ apply IHmono_ptyp1 | apply IHmono_ptyp2 ];
       intros X HX; apply Hvis; fsetdec.
 Qed.
@@ -1930,7 +1930,7 @@ Proof. intros * H; inversion H; subst; auto. Qed.
 
 Lemma a_wf_aenv_var_skl_inv : forall x Q Θ,
   a_wf_aenv ((x ~ abind_var_skl Q) ++ Θ) ->
-  x `notin` dom Θ /\ a_wf_pskl Θ Q /\ a_wf_aenv Θ.
+  x `notin` dom Θ /\ a_scope_pskl Θ Q /\ a_wf_aenv Θ.
 Proof. intros * H; inversion H; subst; auto. Qed.
 
 (* [a_unify_preserves_wf] is now a CONJUNCT of the mutual soundness bundle
@@ -1942,7 +1942,7 @@ Proof. intros * H; inversion H; subst; auto. Qed.
    conjuncts of the bundle's ASSIGN motive and re-exported below. *)
 
 (** Free variables of a well-formed skeleton are tvar-ish or in Δ. *)
-Lemma ad_wf_pskl_ftv_tvarish : forall Θ Δ P,
+Lemma a_wf_pskl_ftv_tvarish : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   forall X, X `in` ftvar_in_pskl P -> X `in` Δ \/ a_binds_tvar X Θ.
 Proof.
@@ -1960,7 +1960,7 @@ Proof.
     + left. assert (Y <> Z) by fsetdec. clear - HΔ H1. fsetdec.
     + auto.
   - fsetdec.
-  - destruct (IHad_wf_pskl Y HY) as [HΔ | Htv]; [ fsetdec | auto ].
+  - destruct (IHa_wf_pskl Y HY) as [HΔ | Htv]; [ fsetdec | auto ].
 Qed.
 
 (* [a_assign_preserves_wf] is now the 2nd CONJUNCT of the ASSIGN motive of
@@ -2122,7 +2122,7 @@ Proof.
 Qed.
 
 (** A well-formed skeleton is locally closed. *)
-Lemma ad_wf_pskl_lc : forall Θ Δ P,
+Lemma a_wf_pskl_lc : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P -> lc_pskl P.
 Proof.
   intros Θ Δ P H; induction H; eauto using lc_pskl.
@@ -2144,7 +2144,7 @@ Lemma ad_refine_pskl_f_lc_r : forall F Θ Δ P Q,
 Proof.
   intros F Θ Δ P Q H; induction H;
     try (now eauto using lc_pskl);
-    try (now (eapply ad_wf_pskl_lc; eauto));
+    try (now (eapply a_wf_pskl_lc; eauto));
     (pick fresh X; apply (lc_pskl_all_syn_exists X); auto).
 Qed.
 
@@ -2153,7 +2153,7 @@ Lemma ad_refine_syn_f_lc_r : forall F Θ Δ Q P,
 Proof.
   intros F Θ Δ Q P H; induction H;
     try (now eauto using lc_bskl);
-    try (now (apply pskl_to_bskl_syn_lc; eapply ad_wf_pskl_lc; eauto));
+    try (now (apply pskl_to_bskl_syn_lc; eapply a_wf_pskl_lc; eauto));
     (pick fresh X; apply (lc_bskl_all_syn_exists X); auto).
 Qed.
 
@@ -2319,7 +2319,7 @@ Proof.
     assert (Hmτ : mono_ptyp τ0) by (eapply a_wf_aenv_binds_def_mono; eauto).
     rewrite <- (mono_inh_eq_syn Hmτ).
     apply ad_pat_consis__hole; [ exact H | ].
-    apply ad_wf_pskl_mono_ptyp; [ exact Hmτ | ].
+    apply a_wf_pskl_mono_ptyp; [ exact Hmτ | ].
     eapply a_wf_aenv_binds_def_wf; eauto.
   - (* tophole_drop *)
     apply ad_pat_consis__tophole_drop. eapply IHHc; eauto.
@@ -2517,7 +2517,7 @@ Definition consis_sound_concl (F Δ1 Δ2 : atoms) (Θ0 : aenv)
 
     The wf hypothesis is the FULL [⨟ ∅ ⊢ₚₛᵃ P], not the old "every free
     variable is tvar-ish": the consistency IH of Assign-Assign needs
-    [⨟ ∅ ⊢ₚₛᵃ] on BOTH slots, and [ad_wf_pskl__tophole] demands
+    [⨟ ∅ ⊢ₚₛᵃ] on BOTH slots, and [a_wf_pskl__tophole] demands
     [guarded_pskl] — strictly stronger than visibility.  Every [a_assign]
     call site (consistency's FlexL/FlexR and their decorated twins) has it. *)
 Definition assign_sound_post (F : atoms) (Θ0 Ξ : aenv) (α : atom)
@@ -2576,7 +2576,7 @@ Proof.
     intros F Θ0 Ξ α P βs τ Hαn Hg Hmτ Huβs Hfr Hdecl Hwf HwfP.
     assert (Hvis : forall X, X `in` ftvar_in_pskl P ->
                    a_binds_tvar X (Ξ ++ (α ~ abind_flex_mono) ++ Θ0)).
-    { intros X HX. destruct (ad_wf_pskl_ftv_tvarish HwfP HX) as [HΔ | Ht];
+    { intros X HX. destruct (a_wf_pskl_ftv_tvarish HwfP HX) as [HΔ | Ht];
         [ clear - HΔ; fsetdec | exact Ht ]. }
     assert (Hβsd : a_decls βs) by (eapply a_guess_mono_decls; eauto).
     assert (Huniq : uniq (Ξ ++ (α ~ abind_flex_mono) ++ Θ0))
@@ -2775,8 +2775,8 @@ Proof.
     (* the two well-formedness obligations of the consistency IH *)
     assert (HwfP0 : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ
                       (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)).
-    { eapply ad_wf_pskl_strip_mid with (c := β) (b := abind_flex_mono_def τ).
-      - apply ad_wf_pskl_mono_subst; auto.
+    { eapply a_wf_pskl_strip_mid with (c := β) (b := abind_flex_mono_def τ).
+      - apply a_wf_pskl_mono_subst; auto.
       - pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
                       P (ptyp_to_pskl τ) β) as Hup.
         rewrite ftvar_in_ptyp_to_pskl in Hup.
@@ -2994,7 +2994,7 @@ Proof.
     assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
-      by (eapply ad_wf_pskl_strip_mid; eauto).
+      by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IHa Hdecl HwfΞΘ HwfP')
       as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
     assert (Hβ1 : β `notin` dom Θ1).
@@ -3065,7 +3065,7 @@ Proof.
     assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
-      by (eapply ad_wf_pskl_strip_mid; eauto).
+      by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IHa Hdecl HwfΞΘ HwfP')
       as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
     assert (Hβ1 : β `notin` dom Θ1).
@@ -3129,7 +3129,7 @@ Proof.
     (* a TERM variable cannot occur in a well-formed SKELETON *)
     assert (Hxn : x `notin` ftvar_in_pskl P).
     { intro Hin.
-      destruct (ad_wf_pskl_ftv_tvarish HwfP Hin) as [HΔ | Ht];
+      destruct (a_wf_pskl_ftv_tvarish HwfP Hin) as [HΔ | Ht];
         [ clear - HΔ; fsetdec | ].
       assert (Hbx : binds x (abind_var_typ Q)
                       (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0))
@@ -3138,7 +3138,7 @@ Proof.
         pose proof (binds_unique _ _ _ _ _ Hb Hbx Huniq) as He;
         discriminate He. }
     assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
-      by (eapply ad_wf_pskl_strip_mid; eauto).
+      by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IHa Hdecl HwfΞΘ HwfP')
       as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
     assert (Hx1 : x `notin` dom Θ1).
@@ -3217,7 +3217,7 @@ Proof.
     destruct Hxwf as [_ [HQwf _]].
     assert (Hxn : x `notin` ftvar_in_pskl P).
     { intro Hin.
-      destruct (ad_wf_pskl_ftv_tvarish HwfP Hin) as [HΔ | Ht];
+      destruct (a_wf_pskl_ftv_tvarish HwfP Hin) as [HΔ | Ht];
         [ clear - HΔ; fsetdec | ].
       assert (Hbx : binds x (abind_var_skl Q)
                       (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
@@ -3226,7 +3226,7 @@ Proof.
         pose proof (binds_unique _ _ _ _ _ Hb Hbx Huniq) as He;
         discriminate He. }
     assert (HwfP' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P)
-      by (eapply ad_wf_pskl_strip_mid; eauto).
+      by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IHa Hdecl HwfΞΘ HwfP')
       as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
     assert (Hx1 : x `notin` dom Θ1).
@@ -3240,10 +3240,10 @@ Proof.
         apply a_binds_tvar_weaken_cons.
         eapply a_isub_binds_flex; [ exact Hle | ].
         unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_var_skl; [ exact Hle0 | eapply a_wf_pskl_lc; exact HQwf ]. }
+      apply a_isub_cons_var_skl; [ exact Hle0 | eapply a_scope_pskl_lc; exact HQwf ]. }
     split.
     { apply a_wf_aenv__var; auto.
-      eapply a_wf_pskl_isub; eauto. }
+      eapply a_scope_pskl_isub; eauto. }
     split.
     { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
     split.
@@ -3581,7 +3581,7 @@ Proof.
           eapply a_wf_ptyp_lc; exact HQwf
         | apply a_isub_cons_var_skl; auto;
           apply a_wf_aenv_var_skl_inv in Hwf; destruct Hwf as [_ [HQwf _]];
-          eapply a_wf_pskl_lc; exact HQwf ]. }
+          eapply a_scope_pskl_lc; exact HQwf ]. }
     split.
     { destruct Hb as [-> | [[Qb ->] | [Qb ->]]].
       - apply a_wf_aenv__tvar; auto.
@@ -3589,7 +3589,7 @@ Proof.
         apply a_wf_ptyp_isub with (Θ := Θ0); auto.
         apply a_wf_aenv_var_typ_inv in Hwf; tauto.
       - apply a_wf_aenv__var; auto.
-        apply a_wf_pskl_isub with (Θ := Θ0); auto.
+        apply a_scope_pskl_isub with (Θ := Θ0); auto.
         apply a_wf_aenv_var_skl_inv in Hwf; tauto. }
     split; [ simpl; clear - Hdom; fsetdec | ].
     split.
@@ -3641,7 +3641,7 @@ Proof.
       split.
       * apply ad_pat_consis__hole; [ fsetdec | exact HwfP0 ].
       * apply ad_refine_syn_f_refl_inh.
-        eapply ad_wf_pskl_delta_mono; [ exact HwfP0 | fsetdec ].
+        eapply a_wf_pskl_delta_mono; [ exact HwfP0 | fsetdec ].
     + apply ad_refine_pskl_f__hole; [ exact Hint | exact HwfP0 ].
   - (* C-Unit *)
     intros F Δ1 Δ2 Θ0 Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
@@ -3697,8 +3697,8 @@ Proof.
     destruct (IH2 Hwf1) as
         [Hle2 [Hwf2 [Hdom2 [Hnew2 [Hinv2 [[Qt2 [HeQt2 [Hcons2 Hrs2]]] Hrp2]]]]]];
       auto.
-    { eapply ad_wf_pskl_isub; eauto. }
-    { eapply ad_wf_pskl_isub; eauto. }
+    { eapply a_wf_pskl_isub; eauto. }
+    { eapply a_wf_pskl_isub; eauto. }
     split; [ eapply a_isub_trans; eauto | ].
     split; [ exact Hwf2 | ].
     split; [ clear - Hdom1 Hdom2; fsetdec | ].
@@ -3746,12 +3746,12 @@ Proof.
     { intros α Hα.
       apply (IH α ltac:(clear - Hα; fsetdec)).
       - apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
-      - eapply ad_wf_pskl_delta_mono;
-          [ apply (ad_wf_pskl_reassoc
+      - eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc
                      (Hbody0 α ltac:(clear - Hα; fsetdec)) α)
           | clear; fsetdec ].
-      - eapply ad_wf_pskl_delta_mono;
-          [ apply (ad_wf_pskl_reassoc
+      - eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc
                      (Hbody1 α ltac:(clear - Hα; fsetdec)) α)
           | clear; fsetdec ].
       - intros X HX. destruct (X == α) as [->|Hne].
@@ -3904,11 +3904,11 @@ Proof.
     { intros α Hα.
       apply (IH α ltac:(clear - Hα; fsetdec)).
       - apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
-      - apply ad_wf_pskl__tophole; auto.
-        eapply ad_wf_pskl_weaken; [ | exact Hwf0c ].
+      - apply a_wf_pskl__tophole; auto.
+        eapply a_wf_pskl_weaken; [ | exact Hwf0c ].
         intros y b Hb. unfold binds; right; exact Hb.
-      - eapply ad_wf_pskl_delta_mono;
-          [ apply (ad_wf_pskl_reassoc
+      - eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc
                      (Hbody1 α ltac:(clear - Hα; fsetdec)) α)
           | clear; fsetdec ].
       - intros X HX. destruct (X == α) as [->|Hne].
@@ -4084,12 +4084,12 @@ Proof.
     { intros α Hα.
       apply (IH α ltac:(clear - Hα; fsetdec)).
       - apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
-      - eapply ad_wf_pskl_delta_mono;
-          [ apply (ad_wf_pskl_reassoc
+      - eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc
                      (Hbody0 α ltac:(clear - Hα; fsetdec)) α)
           | clear; fsetdec ].
-      - apply ad_wf_pskl__tophole; auto.
-        eapply ad_wf_pskl_weaken; [ | exact Hwf' ].
+      - apply a_wf_pskl__tophole; auto.
+        eapply a_wf_pskl_weaken; [ | exact Hwf' ].
         intros y b Hb. unfold binds; right; exact Hb.
       - intros X HX. destruct (X == α) as [->|Hne].
         + unfold binds; left; reflexivity.
@@ -4425,14 +4425,14 @@ Proof.
           with (pskl_to_bskl_syn (uskl_to_pskl (pskl_to_uskl P)))
           by (rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
         apply ad_pat_consis_refl_erase.
-        { apply pskl_to_uskl_lc. eapply ad_wf_pskl_lc; eauto. }
+        { apply pskl_to_uskl_lc. eapply a_wf_pskl_lc; eauto. }
         { intros X HX. rewrite ftvar_in_uskl_pskl in HX.
-          destruct (ad_wf_pskl_ftv_tvarish HwfP HX) as [HΔ | Htv];
+          destruct (a_wf_pskl_ftv_tvarish HwfP HX) as [HΔ | Htv];
             [ clear - HΔ; fsetdec | exact Htv ]. }
       * replace (pskl_to_bskl_inh pskl_hole) with bskl_hole by reflexivity.
         apply ad_refine_syn_f__hole; [ exact Hint | exact HwfP ].
     + apply ad_refine_pskl_f_refl.
-      eapply ad_wf_pskl_delta_mono; [ exact HwfP | fsetdec ].
+      eapply a_wf_pskl_delta_mono; [ exact HwfP | fsetdec ].
   - (* C-UnivGhostR *)
     intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0.
@@ -4654,7 +4654,7 @@ Proof.
       split.
       * apply ad_pat_consis__hole; [ fsetdec | exact HwfP0 ].
       * apply ad_refine_syn_f_refl_inh.
-        eapply ad_wf_pskl_delta_mono; [ exact HwfP0 | fsetdec ].
+        eapply a_wf_pskl_delta_mono; [ exact HwfP0 | fsetdec ].
     + apply ad_refine_pskl_f__hole; [ exact H | exact HwfP0 ].
   - (* Unit *)
     split; [ apply a_isub_refl; try assumption; auto | ].
@@ -4723,7 +4723,7 @@ Proof.
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
   - (* FlexL : decorated *)
     assert (Hvis : forall X, X `in` ftvar_in_pskl P0 -> a_binds_tvar X Θ0).
-    { intros X HX. destruct (ad_wf_pskl_ftv_tvarish HwfP0 HX) as [HΔ | Ht];
+    { intros X HX. destruct (a_wf_pskl_ftv_tvarish HwfP0 HX) as [HΔ | Ht];
         [ clear - HΔ; fsetdec | exact Ht ]. }
     destruct (a_assign_sound H0 a_decls__nil Hwf HwfP0) as [Hle Hcons].
     simpl in Hle.
@@ -4769,7 +4769,7 @@ Proof.
   - (* FlexR : decorated (subject [pskl_to_uskl P], mirrors ordinary FlexR) *)
     rewrite uskl_to_pskl_pskl_to_uskl in HwfS.
     assert (Hvis : forall X, X `in` ftvar_in_pskl P -> a_binds_tvar X Θ0).
-    { intros X HX. destruct (ad_wf_pskl_ftv_tvarish HwfS HX) as [HΔ | Ht];
+    { intros X HX. destruct (a_wf_pskl_ftv_tvarish HwfS HX) as [HΔ | Ht];
         [ clear - HΔ; fsetdec | exact Ht ]. }
     destruct (a_assign_sound H0 a_decls__nil Hwf HwfS) as [Hle Hcons].
     simpl in Hle.
@@ -4820,8 +4820,8 @@ Proof.
       split.
       * apply ad_pat_consis__ghostg. fsetdec.
       * replace (@bskl_hole) with (pskl_to_bskl_syn pskl_hole) by reflexivity.
-        apply ad_refine_syn_f__hole; [ simpl; fsetdec | apply ad_wf_pskl__hole ].
-    + apply ad_refine_pskl_f__hole; [ simpl; fsetdec | apply ad_wf_pskl__hole ].
+        apply ad_refine_syn_f__hole; [ simpl; fsetdec | apply a_wf_pskl__hole ].
+    + apply ad_refine_pskl_f__hole; [ simpl; fsetdec | apply a_wf_pskl__hole ].
   - (* Arrow *)
     simpl in HwfP0, HwfS. inversion HlcS; subst.
     inversion HwfP0 as [ | | Θa Δa P0a' P0b' HwfP0a HwfP0b | | | ]; subst.
@@ -4830,8 +4830,8 @@ Proof.
       as [Hle1 [Hwf1 [Hnfd1 [Hfaf1 [[Qt1 [HeQt1 [Hcons1 Hrs1]]] Hrp1]]]]]; auto.
     destruct IHHc2
       as [Hle2 [Hwf2 [Hnfd2 [Hfaf2 [[Qt2 [HeQt2 [Hcons2 Hrs2]]] Hrp2]]]]]; auto.
-    { eapply ad_wf_pskl_isub; eauto. }
-    { eapply ad_wf_pskl_isub; eauto. }
+    { eapply a_wf_pskl_isub; eauto. }
+    { eapply a_wf_pskl_isub; eauto. }
     { intros X HX. eapply a_isub_binds_tvar; eauto. }
     split; [ eapply a_isub_trans; eauto | ].
     split; [ exact Hwf2 | ]. split; [ exact Hnfd2 | ]. split; [ exact Hfaf2 | ].
@@ -4862,14 +4862,14 @@ Proof.
       by (apply HlcSbody).
     assert (HwfP0α : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                        ⊢ₚₛᵃ (open_pskl_wrt_pskl P0 (pskl_var_f α))).
-    { eapply ad_wf_pskl_delta_mono;
-        [ apply (ad_wf_pskl_reassoc (Hbody0 α ltac:(auto)) α)
+    { eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc (Hbody0 α ltac:(auto)) α)
         | clear; fsetdec ]. }
     assert (HwfSα : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                    ⊢ₚₛᵃ (uskl_to_pskl (open_uskl_wrt_uskl S (uskl_var_f α)))).
     { rewrite uskl_to_pskl_open.
-      eapply ad_wf_pskl_delta_mono;
-        [ apply (ad_wf_pskl_reassoc (HbodyS α ltac:(auto)) α)
+      eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc (HbodyS α ltac:(auto)) α)
         | clear; fsetdec ]. }
     assert (Hrigα : forall X, X `in` (add α Δ1 `union` add α Δ2) ->
                     binds X abind_tvar ((α ~ abind_tvar) ++ Θ0)).
@@ -4985,14 +4985,14 @@ Proof.
       by (apply HlcSbody).
     assert (HwfP0α : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                        ⊢ₚₛᵃ (open_pskl_wrt_pskl P0 (pskl_var_f α))).
-    { eapply ad_wf_pskl_delta_mono;
-        [ apply (ad_wf_pskl_reassoc (Hbody0 α ltac:(auto)) α)
+    { eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc (Hbody0 α ltac:(auto)) α)
         | clear; fsetdec ]. }
     assert (HwfSα : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                    ⊢ₚₛᵃ (uskl_to_pskl (open_uskl_wrt_uskl S (uskl_var_f α)))).
     { rewrite uskl_to_pskl_open.
-      eapply ad_wf_pskl_delta_mono;
-        [ apply (ad_wf_pskl_reassoc (HbodyS α ltac:(auto)) α)
+      eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc (HbodyS α ltac:(auto)) α)
         | clear; fsetdec ]. }
     assert (Hrigα : forall X, X `in` (add α Δ1 `union` add α Δ2) ->
                     binds X abind_tvar ((α ~ abind_tvar) ++ Θ0)).
@@ -5106,14 +5106,14 @@ Proof.
       by (apply HlcSbody).
     assert (HwfP0α : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                        ⊢ₚₛᵃ (pskl_tophole P0)).
-    { apply ad_wf_pskl__tophole; auto.
-      eapply ad_wf_pskl_weaken; [ | exact Hwf0c ].
+    { apply a_wf_pskl__tophole; auto.
+      eapply a_wf_pskl_weaken; [ | exact Hwf0c ].
       intros y b Hb. unfold binds; right; exact Hb. }
     assert (HwfSα : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                    ⊢ₚₛᵃ (uskl_to_pskl (open_uskl_wrt_uskl S (uskl_var_f α)))).
     { rewrite uskl_to_pskl_open.
-      eapply ad_wf_pskl_delta_mono;
-        [ apply (ad_wf_pskl_reassoc (HbodyS α ltac:(auto)) α)
+      eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc (HbodyS α ltac:(auto)) α)
         | clear; fsetdec ]. }
     assert (Hrigα : forall X, X `in` (Δ1 `union` add α Δ2) ->
                     binds X abind_tvar ((α ~ abind_tvar) ++ Θ0)).
@@ -5226,14 +5226,14 @@ Proof.
       by (apply HlcSbody).
     assert (HwfP0α : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                        ⊢ₚₛᵃ (pskl_tophole P0)).
-    { apply ad_wf_pskl__tophole; auto.
-      eapply ad_wf_pskl_weaken; [ | exact Hwf0c ].
+    { apply a_wf_pskl__tophole; auto.
+      eapply a_wf_pskl_weaken; [ | exact Hwf0c ].
       intros y b Hb. unfold binds; right; exact Hb. }
     assert (HwfSα : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                    ⊢ₚₛᵃ (uskl_to_pskl (open_uskl_wrt_uskl S (uskl_var_f α)))).
     { rewrite uskl_to_pskl_open.
-      eapply ad_wf_pskl_delta_mono;
-        [ apply (ad_wf_pskl_reassoc (HbodyS α ltac:(auto)) α)
+      eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc (HbodyS α ltac:(auto)) α)
         | clear; fsetdec ]. }
     assert (Hrigα : forall X, X `in` (Δ1 `union` add α Δ2) ->
                     binds X abind_tvar ((α ~ abind_tvar) ++ Θ0)).
@@ -5380,13 +5380,13 @@ Proof.
       by (apply a_wf_aenv__tvar; auto).
     assert (HwfP0α : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                        ⊢ₚₛᵃ (open_pskl_wrt_pskl P0 (pskl_var_f α))).
-    { eapply ad_wf_pskl_delta_mono;
-        [ apply (ad_wf_pskl_reassoc (Hbody0 α ltac:(auto)) α)
+    { eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc (Hbody0 α ltac:(auto)) α)
         | clear; fsetdec ]. }
     assert (HwfSα : ((α ~ abind_tvar) ++ Θ0) ⨟ empty
                    ⊢ₚₛᵃ (uskl_to_pskl (uskl_tophole S))).
-    { simpl. apply ad_wf_pskl__tophole; [ exact HgS | ].
-      eapply ad_wf_pskl_weaken; [ | exact HwfSbody ].
+    { simpl. apply a_wf_pskl__tophole; [ exact HgS | ].
+      eapply a_wf_pskl_weaken; [ | exact HwfSbody ].
       intros y b Hb. unfold binds; right; exact Hb. }
     assert (Hrigα : forall X, X `in` (add α Δ1 `union` Δ2) ->
                     binds X abind_tvar ((α ~ abind_tvar) ++ Θ0)).
@@ -5510,12 +5510,12 @@ Proof.
         intros X HX.
         assert (HX' : X `in` ftvar_in_pskl (uskl_to_pskl S))
           by (rewrite ftvar_in_pskl_uskl_to_pskl; exact HX).
-        destruct (ad_wf_pskl_ftv_tvarish HwfS HX') as [HΔ | Ht];
+        destruct (a_wf_pskl_ftv_tvarish HwfS HX') as [HΔ | Ht];
           [ clear - HΔ; fsetdec | exact Ht ].
       * replace (pskl_to_bskl_inh pskl_hole) with (@bskl_hole) by reflexivity.
         apply ad_refine_syn_f__hole; [ exact H | exact HwfS ].
     + apply ad_refine_pskl_f_refl.
-      eapply ad_wf_pskl_delta_mono; [ exact HwfS | fsetdec ].
+      eapply a_wf_pskl_delta_mono; [ exact HwfS | fsetdec ].
   - (* UnivGhostR *)
     simpl in HwfP0.
     inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' Heqa ]; subst.
@@ -5560,7 +5560,7 @@ Corollary a_consis_sound_aux : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
 Proof.
   intros * Hc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
   assert (HlcS : lc_uskl (pskl_to_uskl P))
-    by (apply pskl_to_uskl_lc; eapply ad_wf_pskl_lc; eauto).
+    by (apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto).
   assert (HwfS : Θ0 ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl (pskl_to_uskl P)))
     by (rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP).
   destruct (a_consistag_sound_aux (a_consis_decorate Hc) Hwf HlcS

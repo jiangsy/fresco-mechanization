@@ -7,7 +7,7 @@
     under information increase, because its only context-sensitive rules are
     variable visibility ([a_isub_binds_tvarish]), definition lookups
     ([a_isub_binds_flex_def]), rigid-binder extension ([a_isub_cons_tvar]),
-    and skeleton well-formedness ([ad_wf_pskl_isub]). *)
+    and skeleton well-formedness ([a_wf_pskl_isub]). *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -91,9 +91,9 @@ Proof.
     intros α Hα. eauto using a_isub_cons_tvar.
   - apply ad_pat_sub__univ_ghost_r; eauto using ad_pat_consis_isub.
   - eapply ad_pat_sub__arrow; eauto using ad_pat_consis_isub.
-  - eapply ad_pat_sub__forall_l_tagged; eauto using ad_wf_pskl_isub.
-  - eapply ad_pat_sub__forall_l_untagged; eauto using ad_wf_pskl_isub.
-  - apply ad_pat_sub__ghost; eauto using ad_wf_pskl_isub.
+  - eapply ad_pat_sub__forall_l_tagged; eauto using a_wf_pskl_isub.
+  - eapply ad_pat_sub__forall_l_untagged; eauto using a_wf_pskl_isub.
+  - apply ad_pat_sub__ghost; eauto using a_wf_pskl_isub.
   - apply ad_pat_sub__ghostg; auto.
   - apply ad_pat_sub__univ_ghost_l; auto.
   - apply ad_pat_sub__univ_ghost_lg; auto.
@@ -141,9 +141,9 @@ Proof.
       | unfold binds; right; apply Hmon; auto ].
   - apply ad_pat_sub__univ_ghost_r; eauto using ad_pat_consis_weaken.
   - eapply ad_pat_sub__arrow; eauto using ad_pat_consis_weaken.
-  - eapply ad_pat_sub__forall_l_tagged; eauto using ad_wf_pskl_weaken.
-  - eapply ad_pat_sub__forall_l_untagged; eauto using ad_wf_pskl_weaken.
-  - apply ad_pat_sub__ghost; eauto using ad_wf_pskl_weaken.
+  - eapply ad_pat_sub__forall_l_tagged; eauto using a_wf_pskl_weaken.
+  - eapply ad_pat_sub__forall_l_untagged; eauto using a_wf_pskl_weaken.
+  - apply ad_pat_sub__ghost; eauto using a_wf_pskl_weaken.
   - apply ad_pat_sub__ghostg; auto.
   - apply ad_pat_sub__univ_ghost_l; auto.
   - apply ad_pat_sub__univ_ghost_lg; auto.

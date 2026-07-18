@@ -36,15 +36,15 @@ Qed.
 
 (** Δ-monotonicity: enlarging the ∀-scope set preserves well-formedness
     (occurrences only ever TEST membership positively). *)
-Lemma ad_wf_pskl_delta_mono : forall Θ Δ0 P,
+Lemma a_wf_pskl_delta_mono : forall Θ Δ0 P,
   Θ ⨟ Δ0 ⊢ₚₛᵃ P ->
   forall Δ, Δ0 [<=] Δ ->
   Θ ⨟ Δ ⊢ₚₛᵃ P.
 Proof.
-  intros Θ Δ0 P H; induction H; intros Δ' Hsub; eauto using ad_wf_pskl.
-  - apply ad_wf_pskl__var.
+  intros Θ Δ0 P H; induction H; intros Δ' Hsub; eauto using a_wf_pskl.
+  - apply a_wf_pskl__var.
     destruct H as [HΔ | Htv]; [ left; fsetdec | auto ].
-  - apply ad_wf_pskl__all with (L := L).
+  - apply a_wf_pskl__all with (L := L).
     intros X HX. apply H0; auto. fsetdec.
 Qed.
 
@@ -82,7 +82,7 @@ Proof.
   - apply ad_refine_syn__arrow; auto.
   - eapply ad_refine_syn__all with (L := L); eauto.
   - apply ad_refine_syn__hole.
-    eapply ad_wf_pskl_weaken; eauto.
+    eapply a_wf_pskl_weaken; eauto.
   - apply ad_refine_syn__tophole_remove; auto.
   - eapply ad_refine_syn__tophole_fill with (L := L).
     intros X HX. apply H0; auto.
@@ -110,7 +110,7 @@ Proof.
   - apply ad_refine_pskl__arrow; auto.
   - eapply ad_refine_pskl__all with (L := L); eauto.
   - apply ad_refine_pskl__hole.
-    eapply ad_wf_pskl_weaken; eauto.
+    eapply a_wf_pskl_weaken; eauto.
   - apply ad_refine_pskl__tophole_remove; auto.
   - eapply ad_refine_pskl__tophole_fill with (L := L).
     intros X HX. apply H0; auto.
@@ -168,7 +168,7 @@ Proof.
     repeat rewrite <- pskl_to_bskl_inh_open. auto.
   - replace (pskl_to_bskl_inh pskl_hole)
       with (pskl_to_bskl_syn pskl_hole) at 2 by reflexivity.
-    apply ad_refine_syn__hole. apply ad_wf_pskl__hole.
+    apply ad_refine_syn__hole. apply a_wf_pskl__hole.
   - apply ad_refine_syn__tophole_keep;
       auto using guarded_pskl_to_bskl_inh.
     eapply ad_refine_syn_delta_mono; eauto. fsetdec.
@@ -183,7 +183,7 @@ Proof.
   - apply ad_refine_pskl__var; auto.
   - apply ad_refine_pskl__arrow; auto.
   - apply ad_refine_pskl__all with (L := L). auto.
-  - apply ad_refine_pskl__hole. apply ad_wf_pskl__hole.
+  - apply ad_refine_pskl__hole. apply a_wf_pskl__hole.
   - apply ad_refine_pskl__tophole_keep; auto.
     eapply ad_refine_pskl_delta_mono; eauto. fsetdec.
 Qed.
@@ -247,7 +247,7 @@ Proof.
     + apply a_binds_tvar_weaken_cons; auto.
   - (* hole ↦ □ : the RHS is the inherited painting of □ *)
     replace bskl_hole with (pskl_to_bskl_inh pskl_hole) by reflexivity.
-    apply ad_pat_consis__hole; [ fsetdec | apply ad_wf_pskl__hole ].
+    apply ad_pat_consis__hole; [ fsetdec | apply a_wf_pskl__hole ].
   - (* tophole ↦ ⊤ *)
     apply ad_pat_consis__tophole. auto.
   - (* holeg ↦ □ *)

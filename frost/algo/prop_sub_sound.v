@@ -169,13 +169,13 @@ Proof.
     assert (Hvis : forall X, X `in` ftvar_in_uskl S -> a_binds_tvar X Θ0).
     { intros X HX.
       rewrite <- ftvar_in_pskl_uskl_to_pskl in HX.
-      destruct (ad_wf_pskl_ftv_tvarish HwfS HX) as [HΔ | Ht];
+      destruct (a_wf_pskl_ftv_tvarish HwfS HX) as [HΔ | Ht];
         [ exfalso; clear - HΔ; fsetdec | exact Ht ]. }
     split.
     + apply ad_pat_sub__infer;
         [ exact HΨ
         | apply ad_pat_consis_refl_erase; assumption
-        | apply is_sskl_pskl_to_bskl_syn; eauto using ad_wf_pskl_lc ].
+        | apply is_sskl_pskl_to_bskl_syn; eauto using a_wf_pskl_lc ].
     + (* P0 = ◇ : the fill is the hole rule *)
       simpl. apply ad_refine_syn_f__hole;
         [ clear; fsetdec | exact HwfS ].
@@ -205,21 +205,21 @@ Proof.
     assert (Hvis : forall X, X `in` ftvar_in_uskl S -> a_binds_tvar X Θ0).
     { intros X HX.
       rewrite <- ftvar_in_pskl_uskl_to_pskl in HX.
-      destruct (ad_wf_pskl_ftv_tvarish HwfS HX) as [HΔ | Ht];
+      destruct (a_wf_pskl_ftv_tvarish HwfS HX) as [HΔ | Ht];
         [ exfalso; clear - HΔ; fsetdec | exact Ht ]. }
     assert (Hg : guarded_pskl ⌊ S ⌋ˢ) by (apply guarded_uskl_to_pskl; auto).
     split.
     + apply ad_pat_sub__univ_ghost_r;
         [ exact HΨ | exact HgS
         | apply guarded_pskl_to_bskl_syn; exact Hg
-        | apply is_sskl_pskl_to_bskl_syn; eauto using ad_wf_pskl_lc
+        | apply is_sskl_pskl_to_bskl_syn; eauto using a_wf_pskl_lc
         | apply ad_pat_consis_refl_erase; assumption ].
     + (* P0 = ◇ : hole rule against the syn painting of ⊤◇⌊S⌋ *)
       simpl.
       change (bskl_tophole (pskl_to_bskl_syn ⌊ S ⌋ˢ))
         with (pskl_to_bskl_syn (pskl_tophole ⌊ S ⌋ˢ)).
       apply ad_refine_syn_f__hole; [ clear; fsetdec | ].
-      apply ad_wf_pskl__tophole; [ exact Hg | exact HwfS ].
+      apply a_wf_pskl__tophole; [ exact Hg | exact HwfS ].
 
   - (* Arrow : a_consistag_sound_aux on the consistency premise (Δs = ∅),
        ⊴-transport its conclusions to Θ2, IH on the sub-premise. *)
@@ -247,9 +247,9 @@ Proof.
                       intros X HX; clear - HX; fsetdec))
       as [Hle1 [Hwf1 [_ [_ [[Qt1 [HeQt1 [Hcons1 Hfill1]]] _]]]]].
     assert (HwfP0b1 : Θ1 ⨟ empty ⊢ₚₛᵃ P0b)
-      by (eapply ad_wf_pskl_isub; eauto).
+      by (eapply a_wf_pskl_isub; eauto).
     assert (HwfS21 : Θ1 ⨟ empty ⊢ₚₛᵃ ⌊ S2 ⌋ˢ)
-      by (eapply ad_wf_pskl_isub; eauto).
+      by (eapply a_wf_pskl_isub; eauto).
     destruct (IH Hwf1 HlcS2 HwfP0b1 HwfS21 HmodB)
       as [Hle2 [Hwf2 [Qt2 [HeQt2 [Hsub2 Hfill2]]]]].
     split; [ eapply a_isub_trans; eauto | ].
@@ -267,7 +267,7 @@ Proof.
        a_decls of the extract), strip the ⊴ over the decls prefix
        (a_isub_strengthen_decls_src), conclude with
        ad_pat_sub__forall_l_tagged (scope premise via
-       a_wf_pskl → ad_wf_pskl conversion + ⊴-transport). *)
+       a_scope_pskl → a_wf_pskl conversion + ⊴-transport). *)
     intros L NM M P0 Ψ Ψg Θ0 Θ1 ε S Q Ξ P1 ψg
       Hneq Hgor Hex Huq HwfP1 Hint Hsort Herase Hprem IH
       Hwf Hlc HwfP0 HwfS Hmod.
@@ -300,7 +300,7 @@ Proof.
       simpl in Hmod. exact Hmod.
     + simpl. change bskl_hole with (pskl_to_bskl_syn pskl_hole).
       apply ad_refine_syn_f__hole;
-        [ clear; fsetdec | apply ad_wf_pskl__hole ].
+        [ clear; fsetdec | apply a_wf_pskl__hole ].
 
   - (* UnivGhostL (SK) : drop the subject's ⊤◇ *)
     intros M Ψ Θ0 Θ1 P0 S Q Hne Hprem IH Hwf HlcS HwfP0 HwfS Hmod.
@@ -399,10 +399,10 @@ Proof.
         [ right; right; exists τab; exact Hbα0' | inversion Hb' ]. }
     (* transported hypotheses for the IH *)
     assert (HwfP0' : Θ' ⨟ empty ⊢ₚₛᵃ P0)
-      by (eapply ad_wf_pskl_isub; eauto).
+      by (eapply a_wf_pskl_isub; eauto).
     assert (Hwfarr : Θ' ⨟ empty ⊢ₚₛᵃ ⌊ uskl_arrow (uskl_var_f α)
                                         (uskl_var_f β) ⌋ˢ).
-    { simpl. apply ad_wf_pskl__arrow; apply ad_wf_pskl__var;
+    { simpl. apply a_wf_pskl__arrow; apply a_wf_pskl__var;
         right; right; left;
         (unfold Θ'; unfold binds; apply in_or_app; right; simpl;
          right; auto). }
@@ -442,7 +442,7 @@ Proof.
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
-      by (eapply ad_wf_pskl_strip_mid; eauto).
+      by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IH Hwf' Hdecl HwfP0' Hmod)
       as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
     assert (Hlift : Θ1 ⊴ ((β ~ abind_flex_mono) ++ Θ1)).
@@ -467,7 +467,7 @@ Proof.
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
-      by (eapply ad_wf_pskl_strip_mid; eauto).
+      by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IH Hwf' Hdecl HwfP0' Hmod)
       as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
     split.

@@ -110,25 +110,25 @@ Inductive a_wf_ptyp : aenv -> ptyp -> Prop :=
        a_wf_ptyp ((X ~ abind_tvar) ++ Θ) (open_ptyp_wrt_ptyp A (ptyp_var_f X))) ->
     a_wf_ptyp Θ (ptyp_all A).
 
-Inductive a_wf_pskl : aenv -> pskl -> Prop :=
-| a_wf_pskl__unit : forall Θ,
-    a_wf_pskl Θ pskl_unit
-| a_wf_pskl__var : forall Θ X,
+Inductive a_scope_pskl : aenv -> pskl -> Prop :=
+| a_scope_pskl__unit : forall Θ,
+    a_scope_pskl Θ pskl_unit
+| a_scope_pskl__var : forall Θ X,
     a_binds_tvar X Θ ->
-    a_wf_pskl Θ (pskl_var_f X)
-| a_wf_pskl__arrow : forall Θ P1 P2,
-    a_wf_pskl Θ P1 ->
-    a_wf_pskl Θ P2 ->
-    a_wf_pskl Θ (pskl_arrow P1 P2)
-| a_wf_pskl__all : forall L Θ P,
+    a_scope_pskl Θ (pskl_var_f X)
+| a_scope_pskl__arrow : forall Θ P1 P2,
+    a_scope_pskl Θ P1 ->
+    a_scope_pskl Θ P2 ->
+    a_scope_pskl Θ (pskl_arrow P1 P2)
+| a_scope_pskl__all : forall L Θ P,
     (forall X, X `notin` L ->
-       a_wf_pskl ((X ~ abind_tvar) ++ Θ) (open_pskl_wrt_pskl P (pskl_var_f X))) ->
-    a_wf_pskl Θ (pskl_all_syn P)
-| a_wf_pskl__hole : forall Θ,
-    a_wf_pskl Θ pskl_hole
-| a_wf_pskl__tophole : forall Θ P,
-    a_wf_pskl Θ P ->
-    a_wf_pskl Θ (pskl_tophole P).
+       a_scope_pskl ((X ~ abind_tvar) ++ Θ) (open_pskl_wrt_pskl P (pskl_var_f X))) ->
+    a_scope_pskl Θ (pskl_all_syn P)
+| a_scope_pskl__hole : forall Θ,
+    a_scope_pskl Θ pskl_hole
+| a_scope_pskl__tophole : forall Θ P,
+    a_scope_pskl Θ P ->
+    a_scope_pskl Θ (pskl_tophole P).
 
 (** Context well-formedness [Θ ⊢ ctx] (full-algo-spec.tex:224): each
     definition's body is a well-formed monotype in its tail, each term
@@ -149,7 +149,7 @@ Inductive a_wf_aenv : aenv -> Prop :=
     a_wf_aenv ((α ~ abind_flex_mono_def τ) ++ Θ)
 | a_wf_aenv__var : forall x P Θ,
     x `notin` dom Θ ->
-    a_wf_pskl Θ P ->
+    a_scope_pskl Θ P ->
     a_wf_aenv Θ ->
     a_wf_aenv ((x ~ abind_var_skl P) ++ Θ)
 | a_wf_aenv__var_typ : forall x A Θ,
@@ -211,27 +211,27 @@ Reserved Notation "Θ ⨟ Δ ⊢ₚₛᵃ P"
 (*  Skeleton well-formedness over Θ  (decl [Γ ⨟ Δ ⊢ₚₛ P])                *)
 (* ===================================================================== *)
 
-Inductive ad_wf_pskl : aenv -> atoms -> pskl -> Prop :=
-| ad_wf_pskl__unit : forall Θ Δ,
+Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
+| a_wf_pskl__unit : forall Θ Δ,
     Θ ⨟ Δ ⊢ₚₛᵃ pskl_unit
-| ad_wf_pskl__var : forall Θ Δ X,
+| a_wf_pskl__var : forall Θ Δ X,
     X `in` Δ \/ a_binds_tvar X Θ ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f X)
-| ad_wf_pskl__arrow : forall Θ Δ P1 P2,
+| a_wf_pskl__arrow : forall Θ Δ P1 P2,
     Θ ⨟ Δ ⊢ₚₛᵃ P1 ->
     Θ ⨟ Δ ⊢ₚₛᵃ P2 ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2)
-| ad_wf_pskl__all : forall L Θ Δ P,
+| a_wf_pskl__all : forall L Θ Δ P,
     (forall X, X `notin` L ->
        Θ ⨟ (add X Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f X))) ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P)
-| ad_wf_pskl__hole : forall Θ Δ,
+| a_wf_pskl__hole : forall Θ Δ,
     Θ ⨟ Δ ⊢ₚₛᵃ pskl_hole
-| ad_wf_pskl__tophole : forall Θ Δ P,
+| a_wf_pskl__tophole : forall Θ Δ P,
     guarded_pskl P ->
     Θ ⨟ empty ⊢ₚₛᵃ P ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P)
-where "Θ ⨟ Δ ⊢ₚₛᵃ P" := (ad_wf_pskl Θ Δ P) : type_scope.
+where "Θ ⨟ Δ ⊢ₚₛᵃ P" := (a_wf_pskl Θ Δ P) : type_scope.
 
 (* [α̂ ∈ Θ] as a flexible variable — the paper's hatted metavariable
    convention, made explicit where a rule's variable must be hatted. *)
@@ -841,7 +841,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
        re-attaching Ξ needs the freshness stated. *)
     uniq (Ξ ++ Θ0) ->
     (* the paper's [Θ₀,Ξ ⊢ P₁] is its DISCIPLINED skeleton wf (there is no
-       weak judgment in the paper; [a_wf_pskl]'s scoping-only reading is the
+       weak judgment in the paper; [a_scope_pskl]'s scoping-only reading is the
        mech/impl liberalism, WF-SIDE-CONDITIONS.md) — the instantiation must
        not smuggle a binder into a ⊤◇-body (∀α.⊤◇.(α→α) is wf nowhere). *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->

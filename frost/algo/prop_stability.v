@@ -58,15 +58,15 @@ Qed.
 (*  Stability of the Θ-level declarative judgments                        *)
 (* ===================================================================== *)
 
-Lemma ad_wf_pskl_isub : forall Θ Δ P,
+Lemma a_wf_pskl_isub : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   forall Θ', Θ ⊴ Θ' ->
   Θ' ⨟ Δ ⊢ₚₛᵃ P.
 Proof.
   intros Θ Δ P H; induction H; intros Θ' Hle;
-    eauto using ad_wf_pskl.
+    eauto using a_wf_pskl.
   - (* var *)
-    apply ad_wf_pskl__var.
+    apply a_wf_pskl__var.
     destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
 Qed.
 
@@ -89,7 +89,7 @@ Proof.
     intros X HX. eauto using a_isub_cons_tvar.
   - apply ad_pat_consis__ghostg; auto.
   - apply ad_pat_consis__topholeg; auto.
-  - apply ad_pat_consis__hole; eauto using ad_wf_pskl_isub.
+  - apply ad_pat_consis__hole; eauto using a_wf_pskl_isub.
   - apply ad_pat_consis__tophole; auto.
   - eapply ad_pat_consis__tophole_inh with (L := L); eauto.
     intros X HX. eauto using a_isub_cons_tvar.
@@ -109,7 +109,7 @@ Proof.
     destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
   - apply ad_refine_syn__arrow; auto.
   - eapply ad_refine_syn__all with (L := L); eauto.
-  - apply ad_refine_syn__hole; eauto using ad_wf_pskl_isub.
+  - apply ad_refine_syn__hole; eauto using a_wf_pskl_isub.
   - apply ad_refine_syn__tophole_remove; auto.
   - eapply ad_refine_syn__tophole_fill with (L := L).
     intros X HX. eauto using a_isub_cons_tvar.
@@ -129,7 +129,7 @@ Proof.
     destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
   - apply ad_refine_pskl__arrow; auto.
   - eapply ad_refine_pskl__all with (L := L); eauto.
-  - apply ad_refine_pskl__hole; eauto using ad_wf_pskl_isub.
+  - apply ad_refine_pskl__hole; eauto using a_wf_pskl_isub.
   - apply ad_refine_pskl__tophole_remove; auto.
   - eapply ad_refine_pskl__tophole_fill with (L := L).
     intros X HX. eauto using a_isub_cons_tvar.

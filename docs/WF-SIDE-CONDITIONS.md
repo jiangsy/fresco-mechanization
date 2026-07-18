@@ -70,8 +70,8 @@ premise is not transportable and the soundness proof's ∀-cases break.
 | lemma | content |
 |---|---|
 | `ad_refine_syn_syn_l` | a syn-headed refinement lands in a syn painting — **shape only**; no wf is derivable and none is needed |
-| `ad_wf_pskl_delta_shrink` | Δ-variables the skeleton does not mention may be dropped |
-| `ad_wf_pskl_empty_delta_free` | wf at the empty Δ ⇒ Δ-free (Δ is fresh for Θ) |
+| `a_wf_pskl_delta_shrink` | Δ-variables the skeleton does not mention may be dropped |
+| `a_wf_pskl_empty_delta_free` | wf at the empty Δ ⇒ Δ-free (Δ is fresh for Θ) |
 | `ad_refine_syn_syn_delta_free` | a syn LHS never fires the `all` rule, so Δ never grows and Δ-freeness propagates |
 | `ad_refine_syn_syn_l_wf` | **the crux**: *assuming* the result is well-formed, it is a syn painting of a skeleton well-formed at the EMPTY Δ — precisely what re-applying the Ghost rule needs |
 
@@ -169,25 +169,25 @@ This is the well-formedness analogue of the colour/mode discipline: the conditio
 that makes the bad derivation impossible usually lives *outside* the rule.
 
 
-## `a_wf_pskl` is SCOPING-ONLY (registered 2026-07-18; audit follow-up)
+## `a_scope_pskl` (né `a_wf_pskl`) is SCOPING-ONLY (registered 2026-07-18; audit follow-up)
 
-`a_wf_pskl` (algo/def_extra.v:113) deliberately takes the weak reading: single
+`a_scope_pskl` (algo/def_extra.v:113) deliberately takes the weak reading: single
 context Θ, ∀ binds a plain `abind_tvar`, `pskl_tophole` recurses with no
 guardedness and no empty-Δ clearing.  `∀α.⊤◇.(α→α)` PASSES it while the
-paper-faithful two-context judgment (`ad_wf_pskl`, def_decl_algo.v:51 — the
+paper-faithful two-context judgment (`a_wf_pskl`, now algo/def_extra.v — the
 one whose ⊤◇-discipline rescued the refine-non-transitivity counterexample,
 §1 above) rejects it.  The reference implementation's `is_wf_` independently
 takes the same weak reading, so the algorithmic RELATION matches the artifact.
 WHY: the disciplined judgment does not transport through the algorithm's
 context surgery (walk strips/re-attachments, instantiation substitution) —
 putting it on rules would break preservation; the discipline is instead
-carried in STATEMENTS as `ad_wf_pskl` hypotheses (route B), as
+carried in STATEMENTS as `a_wf_pskl` hypotheses (route B), as
 prop_sub_sound.v's bundle does.  Load-bearing premise site of the weak
 judgment: `a_wf_aenv__var` (x:P entries).
 
 EXCEPTION (2026-07-18): ForallL's instantiation premise is now the
 DISCIPLINED judgment — `(Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛᵃ P1` on `a_sub__forall_l` and
-both `a_subtag__forall_l_*` (`ad_wf_pskl` moved to def_extra.v for this).
+both `a_subtag__forall_l_*` (`a_wf_pskl` moved to def_extra.v for this).
 Rationale: the paper's `Θ0,Ξ ⊢ P1` there IS its disciplined skeleton wf
 (the paper has no weak judgment); the premise is consumed locally by the
 rule, so the transport objection to rule-side placement does not apply;
@@ -195,7 +195,7 @@ and soundness's ForallL case needs it (`ad_pat_sub__forall_l` demands the
 disciplined wf of the witness — the weak→disciplined conversion is FALSE
 by the `∀α.⊤◇.(α→α)` example).  RULE OF THUMB elsewhere still: if a lemma
 needs discipline on a premise that IS threaded through context surgery, do
-NOT strengthen the rule — carry `ad_wf_pskl` as an external hypothesis.
+NOT strengthen the rule — carry `a_wf_pskl` as an external hypothesis.
 
 ## `a_tags_sort` is CONTEXT-FREE (registered 2026-07-18; DESIGN-subtyping D3)
 

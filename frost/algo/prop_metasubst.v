@@ -303,7 +303,7 @@ Qed.
 
 (** The skeleton mirror. *)
 Lemma a_inc_equiv_msubst_pskl : forall P Θ0 ρ1 ρ2 Θ,
-  a_wf_pskl Θ0 P ->
+  a_scope_pskl Θ0 P ->
   a_inc_equiv Θ0 ρ1 ρ2 Θ ->
   a_wf_aenv Θ0 ->
   msubst_lc ρ1 -> msubst_lc ρ2 ->
@@ -363,14 +363,14 @@ Lemma msubst_compose_id_pskl : forall Θ0 ρ1 Θ1 ζ Θ2 P,
   is_id_msubst ρ1 ->
   Θ0 ≤[ ρ1 ] Θ1 ->
   Θ1 ≤[ ζ ] Θ2 ->
-  a_wf_pskl Θ0 P ->
+  a_scope_pskl Θ0 P ->
   msubst_pskl (msubst_compose ζ ρ1) P = msubst_pskl ζ P.
 Proof.
   intros Θ0 ρ1 Θ1 ζ Θ2 P Hwf0 Hwf1 Hid Hinc1 Hζ HP.
   rewrite msubst_pskl_compose;
     [ rewrite (msubst_pskl_id (ρ:=ρ1) P Hid); reflexivity | ].
   intros X HX.
-  destruct (a_wf_pskl_ftv_tvarish HP HX) as [Hrig | [Hflex | [τ Hdef]]].
+  destruct (a_scope_pskl_ftv_tvarish HP HX) as [Hrig | [Hflex | [τ Hdef]]].
   - right. intros Hin.
     apply (a_inc_dom_flex Hζ) in Hin.
     assert (Hbt1 : binds X abind_tvar Θ1)
@@ -1028,7 +1028,7 @@ Proof.
     { apply msubst_pskl_compose. intros X HX.
       eapply a_inc_compose_vis;
         [ exact Hρ | exact Hib1' | exact Hwa | exact Hwf1t
-        | eapply a_wf_pskl_ftv_tvarish; eauto ]. }
+        | eapply a_scope_pskl_ftv_tvarish; eauto ]. }
     rewrite HP.
     eapply a_pskl_tyequiv__trans; [ exact Heqve | ].
     eapply a_pskl_tyequiv_msubst; [ exact H | exact Hwf1t | exact Hib1' ].
@@ -1490,7 +1490,7 @@ Proof.
         -- intros X HX. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
            destruct (a_inc_dom_flex Hinc HX) as [Hb | [t0 Hb]];
              [ right; left | right; right; exists t0 ]; exact Hb.
-        -- eapply a_wf_pskl_lc; exact HwpP.
+        -- eapply a_scope_pskl_lc; exact HwpP.
     + apply a_inc_equiv__var_skl; [ | exact H | exact H0 ].
       replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
          with ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') by (simpl_env; reflexivity).

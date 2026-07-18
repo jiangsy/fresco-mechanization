@@ -79,23 +79,23 @@ Ltac crush_btvar :=
         | right; left; solve [ crush_binds ]
         | right; right; eexists; solve [ crush_binds ] ].
 
-(** [a_wf_pskl Θ P] on concrete syntax. *)
+(** [a_scope_pskl Θ P] on concrete syntax. *)
 Ltac crush_wf :=
-  repeat (first [ apply a_wf_pskl__arrow
-                | apply a_wf_pskl__unit
-                | apply a_wf_pskl__hole
-                | apply a_wf_pskl__tophole
-                | apply a_wf_pskl__var; crush_btvar
-                | eapply a_wf_pskl__all with (L := {});
+  repeat (first [ apply a_scope_pskl__arrow
+                | apply a_scope_pskl__unit
+                | apply a_scope_pskl__hole
+                | apply a_scope_pskl__tophole
+                | apply a_scope_pskl__var; crush_btvar
+                | eapply a_scope_pskl__all with (L := {});
                   intros ? _; simpl_open
                 (* disciplined twin (ForallL's instantiation premise) *)
-                | apply ad_wf_pskl__arrow
-                | apply ad_wf_pskl__unit
-                | apply ad_wf_pskl__hole
-                | apply ad_wf_pskl__tophole; [ crush_lc | ]
-                | apply ad_wf_pskl__var;
+                | apply a_wf_pskl__arrow
+                | apply a_wf_pskl__unit
+                | apply a_wf_pskl__hole
+                | apply a_wf_pskl__tophole; [ crush_lc | ]
+                | apply a_wf_pskl__var;
                   first [ left; fsetdec | right; crush_btvar ]
-                | eapply ad_wf_pskl__all with (L := {});
+                | eapply a_wf_pskl__all with (L := {});
                   intros ? _; simpl_open ]).
 
 Section BenchmarkExamples.
@@ -175,7 +175,7 @@ Proof.
     + apply a_solve_cstr__empty.
     + apply a_guess__sk.
   - crush_uniq.
-  - apply ad_wf_pskl__hole.
+  - apply a_wf_pskl__hole.
   - simpl_open. apply a_sub__univ_ghost_r. crush_lc.
 Qed.
 

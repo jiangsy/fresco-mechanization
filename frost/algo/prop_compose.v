@@ -98,8 +98,8 @@ Lemma a_wf_aenv_uniq_local : forall Θ, a_wf_aenv Θ -> uniq Θ.
 Proof. intros Θ H; induction H; solve_uniq. Qed.
 
 (** The skeleton mirror of [a_wf_ptyp_ftv_tvarish]. *)
-Lemma a_wf_pskl_ftv_tvarish : forall Θ P X,
-  a_wf_pskl Θ P ->
+Lemma a_scope_pskl_ftv_tvarish : forall Θ P X,
+  a_scope_pskl Θ P ->
   X `in` ftvar_in_pskl P ->
   a_binds_tvar X Θ.
 Proof.
@@ -862,7 +862,7 @@ Proof.
     { apply msubst_pskl_compose. intros X HX.
       eapply a_inc_compose_vis;
         [ exact Hinc1 | exact Hinc2'' | exact Hwa | exact Hwf1t
-        | eapply a_wf_pskl_ftv_tvarish; eauto ]. }
+        | eapply a_scope_pskl_ftv_tvarish; eauto ]. }
     rewrite HP.
     eapply a_pskl_tyequiv__trans; [ exact Heq2 | ].
     eapply a_pskl_tyequiv_msubst; [ exact H | exact Hwf1t | exact Hinc2'' ].

@@ -59,9 +59,9 @@ Definition Pfill : pskl := pskl_tophole (pskl_arrow pskl_hole pskl_hole).
 
 Lemma Pfill_wf : forall Θ, Θ ⨟ empty ⊢ₚₛᵃ Pfill.
 Proof.
-  intros. apply ad_wf_pskl__tophole.
+  intros. apply a_wf_pskl__tophole.
   - apply guarded_pskl__arrow; constructor.
-  - apply ad_wf_pskl__arrow; apply ad_wf_pskl__hole.
+  - apply a_wf_pskl__arrow; apply a_wf_pskl__hole.
 Qed.
 
 (* Step 1: □ ⊳ syn(⊤.(□→□))   by the ghost rule. *)
@@ -84,7 +84,7 @@ Proof.
   - apply ad_refine_syn__arrow;
       (replace (bskl_var_f X) with (pskl_to_bskl_syn (pskl_var_f X)) by reflexivity;
        apply ad_refine_syn__hole;
-       apply ad_wf_pskl__var; right; left; unfold binds; left; reflexivity).
+       apply a_wf_pskl__var; right; left; unfold binds; left; reflexivity).
 Qed.
 
 (* Bres IS a syn painting -- of Pres. *)
@@ -124,7 +124,7 @@ Proof.
   induction H; try discriminate.
   - exists P. split; [ reflexivity | assumption ].
   - exists (pskl_var_f α). split; [ reflexivity | ].
-    apply ad_wf_pskl__var. right. right. right. exists τ. exact H.
+    apply a_wf_pskl__var. right. right. right. exists τ. exact H.
 Qed.
 
 Lemma no_hole_to_Bres : forall Θ Δ, ~ (Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Bres).
@@ -148,8 +148,8 @@ Qed.
    but NOT
      □ ⊳ ∀X.⊤.(X→X)              (no_hole_to_Bres)
    because the ghost rule can only produce a WELL-FORMED skeleton, and
-   ∀X.⊤.(X→X) is not one: [ad_wf_pskl__all] binds X in Δ, whereas
-   [ad_wf_pskl__tophole] requires its body to be well-formed at the EMPTY Δ.
+   ∀X.⊤.(X→X) is not one: [a_wf_pskl__all] binds X in Δ, whereas
+   [a_wf_pskl__tophole] requires its body to be well-formed at the EMPTY Δ.
    Refinement's [tophole_fill], by contrast, binds X in the CONTEXT. *)
 Theorem ad_refine_syn_not_transitive :
   ~ (forall Θ Δ Q1 Q2 Q3,

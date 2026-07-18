@@ -589,14 +589,14 @@ Lemma a_inc_equiv_downarrow_pskl : forall Θ0 θ1 θ2 Θ P,
   a_inc_equiv Θ0 θ1 θ2 Θ ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ ->
-  a_wf_pskl Θ0 P ->
+  a_scope_pskl Θ0 P ->
   ⇓ˢ[Θ] (msubst_pskl θ1 P) = ⇓ˢ[Θ] (msubst_pskl θ2 P).
 Proof.
   intros Θ0 θ1 θ2 Θ P Hie Hwf0 Hwf HP.
   apply msubst_pskl_outer_ext. intros X HX.
   apply a_tyequiv_downarrow; [ exact Hwf | ].
   eapply a_inc_equiv_lookup;
-    [ exact Hie | exact Hwf0 | eapply a_wf_pskl_ftv_tvarish; eauto ].
+    [ exact Hie | exact Hwf0 | eapply a_scope_pskl_ftv_tvarish; eauto ].
 Qed.
 
 (** The size corollaries (M1) hands to the measure. *)
@@ -614,7 +614,7 @@ Corollary a_inc_equiv_downarrow_pskl_size : forall Θ0 θ1 θ2 Θ P,
   a_inc_equiv Θ0 θ1 θ2 Θ ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ ->
-  a_wf_pskl Θ0 P ->
+  a_scope_pskl Θ0 P ->
   size_pskl (⇓ˢ[Θ] (msubst_pskl θ1 P)) = size_pskl (⇓ˢ[Θ] (msubst_pskl θ2 P)).
 Proof.
   intros. erewrite a_inc_equiv_downarrow_pskl by eauto. reflexivity.

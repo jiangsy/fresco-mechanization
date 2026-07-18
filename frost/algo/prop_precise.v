@@ -127,23 +127,23 @@ Qed.
 
 (** A monotype's skeleton is a well-formed skeleton.  Stated in VISIBILITY
     form: [a_wf_ptyp] puts a quantifier's variable in the CONTEXT, whereas
-    [ad_wf_pskl] puts it in the Δ-slot, so a direct transfer would have to
+    [a_wf_pskl] puts it in the Δ-slot, so a direct transfer would have to
     move a context entry into Δ — which is unsound in general (the ghost
     rules demand an EMPTY Δ).  Quantifying over the free variables instead
     sidesteps the mismatch; [ptyp_to_pskl] images carry no ghosts, so this
     is exactly what is needed. *)
-Lemma a_wf_pskl_of_ptyp_vis : forall A Θ Δ,
+Lemma a_scope_pskl_of_ptyp_vis : forall A Θ Δ,
   lc_ptyp A ->
   (forall X, X `in` ftvar_in_ptyp A -> X `in` Δ \/ a_binds_tvar X Θ) ->
   Θ ⨟ Δ ⊢ₚₛᵃ (ptyp_to_pskl A).
 Proof.
   intros A Θ Δ Hlc; revert Δ; induction Hlc; intros Δ Hvis; simpl.
-  - apply ad_wf_pskl__unit.
-  - apply ad_wf_pskl__var. apply Hvis. simpl. fsetdec.
-  - apply ad_wf_pskl__arrow;
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var. apply Hvis. simpl. fsetdec.
+  - apply a_wf_pskl__arrow;
       [ apply IHHlc1 | apply IHHlc2 ];
       intros X HX; apply Hvis; simpl; fsetdec.
-  - apply ad_wf_pskl__all with (L := ftvar_in_ptyp A).
+  - apply a_wf_pskl__all with (L := ftvar_in_ptyp A).
     intros X HX.
     rewrite <- ptyp_to_pskl_open.
     apply H0.
@@ -165,7 +165,7 @@ Lemma a_wf_ptyp_to_wf_pskl : forall Θ Δ A,
   a_wf_ptyp Θ A ->
   Θ ⨟ Δ ⊢ₚₛᵃ (ptyp_to_pskl A).
 Proof.
-  intros Θ Δ A H. apply a_wf_pskl_of_ptyp_vis.
+  intros Θ Δ A H. apply a_scope_pskl_of_ptyp_vis.
   - eapply a_wf_ptyp_lc; eauto.
   - intros X HX. right. eapply a_wf_ptyp_ftv_tvarish; eauto.
 Qed.
@@ -228,20 +228,20 @@ Qed.
 (* ===================================================================== *)
 
 (** Δ-variables the skeleton does not mention may be dropped. *)
-Lemma ad_wf_pskl_delta_shrink : forall Θ Δ P,
+Lemma a_wf_pskl_delta_shrink : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   forall Δ', (forall X, X `in` Δ -> X `in` ftvar_in_pskl P -> X `in` Δ') ->
   Θ ⨟ Δ' ⊢ₚₛᵃ P.
 Proof.
   intros Θ Δ P H; induction H; intros Δ' Hkeep.
-  - apply ad_wf_pskl__unit.
-  - apply ad_wf_pskl__var.
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var.
     destruct H as [HΔ | Htv]; [ left; apply Hkeep; auto; simpl; fsetdec
                              | right; exact Htv ].
-  - apply ad_wf_pskl__arrow;
-      [ apply IHad_wf_pskl1 | apply IHad_wf_pskl2 ];
+  - apply a_wf_pskl__arrow;
+      [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
       intros X HX HP; apply Hkeep; auto; simpl; fsetdec.
-  - apply ad_wf_pskl__all with (L := L `union` ftvar_in_pskl P).
+  - apply a_wf_pskl__all with (L := L `union` ftvar_in_pskl P).
     intros X HX. apply H0; auto.
     intros Y HY HP.
     destruct (Y == X) as [->|Hne]; [ clear; fsetdec | ].
@@ -254,14 +254,14 @@ Proof.
           clear - H1 Hne; fsetdec).
     assert (Y `in` Δ') by (apply Hkeep; auto).
     clear - H1; fsetdec.
-  - apply ad_wf_pskl__hole.
-  - apply ad_wf_pskl__tophole; [ exact H | exact H0 ].
+  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__tophole; [ exact H | exact H0 ].
 Qed.
 
 (** A skeleton well-formed at the EMPTY Δ mentions only Θ-variables; so if
     Δ is disjoint from Θ (the ∀-variables are refinement-local), it is
     Δ-free. *)
-Lemma ad_wf_pskl_empty_delta_free : forall Θ Δ P,
+Lemma a_wf_pskl_empty_delta_free : forall Θ Δ P,
   Θ ⨟ empty ⊢ₚₛᵃ P ->
   (forall X, X `in` Δ -> X `notin` dom Θ) ->
   AtomSetImpl.inter Δ (ftvar_in_pskl P) [=] empty.
@@ -269,7 +269,7 @@ Proof.
   intros Θ Δ P Hwf Hdisj.
   apply inter_empty_pointwise. intros X HXΔ.
   intro HXP.
-  destruct (ad_wf_pskl_ftv_tvarish Hwf HXP) as [Hemp | Htv];
+  destruct (a_wf_pskl_ftv_tvarish Hwf HXP) as [Hemp | Htv];
     [ clear - Hemp; fsetdec | ].
   apply (Hdisj X HXΔ).
   destruct Htv as [Hb | [Hb | [τ Hb]]]; apply binds_In in Hb; exact Hb.
@@ -307,7 +307,7 @@ Proof.
     destruct F; simpl in Heq; discriminate.
   - (* hole : the fill is wf at the EMPTY Δ, hence Δ-free *)
     rewrite ftvar_pskl_to_bskl_syn.
-    eapply ad_wf_pskl_empty_delta_free; [ exact H | exact Hdisj ].
+    eapply a_wf_pskl_empty_delta_free; [ exact H | exact Hdisj ].
   - (* tophole_remove *)
     destruct F as [ | | | | | | Ft ]; simpl in Heq; try discriminate.
     inversion Heq; subst.
@@ -345,7 +345,7 @@ Proof.
        hence (Δ being fresh for Θ) Δ-free *)
     eapply IHHref; [ exact Hwf | reflexivity | exact Hdisj | ].
     unfold ptyp_to_bskl_syn. rewrite ftvar_pskl_to_bskl_syn.
-    eapply ad_wf_pskl_empty_delta_free; [ | exact Hdisj ].
+    eapply a_wf_pskl_empty_delta_free; [ | exact Hdisj ].
     apply a_wf_ptyp_to_wf_pskl.
     eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ].
   - (* flex_r : the result is a bare variable, BOUND in Θ — and Δ is fresh
@@ -383,11 +383,11 @@ Proof.
   { eapply ad_refine_syn_syn_delta_free;
       [ exact Href | exact Hwf | reflexivity | exact Hdisj | ].
     rewrite ftvar_pskl_to_bskl_syn.
-    eapply ad_wf_pskl_empty_delta_free; [ exact HwfF | exact Hdisj ]. }
+    eapply a_wf_pskl_empty_delta_free; [ exact HwfF | exact Hdisj ]. }
   subst B.
   rewrite bskl_to_pskl_pskl_to_bskl_syn in HwfB.
   rewrite ftvar_pskl_to_bskl_syn in Hdf.
-  eapply ad_wf_pskl_delta_shrink; [ exact HwfB | ].
+  eapply a_wf_pskl_delta_shrink; [ exact HwfB | ].
   intros X HXΔ HXG. exfalso. clear - HXΔ HXG Hdf. fsetdec.
 Qed.
 
@@ -513,8 +513,8 @@ Proof.
         assert (HYΘ : Y `notin` dom Θ) by (apply Hdisj; exact HY).
         clear - HYX HYΘ. fsetdec. }
       { rewrite bskl_to_pskl_open.
-        eapply ad_wf_pskl_delta_mono;
-          [ apply (ad_wf_pskl_reassoc
+        eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc
                      (Hbody X ltac:(clear - HX; fsetdec)) X)
           | clear; fsetdec ]. }
       { eapply ad_refine_syn_weaken;
@@ -536,7 +536,7 @@ Proof.
       inversion HwfQr as [ | | | | | Θw Δw Pw Hg Hwb ]; subst.
       apply ad_refine_syn__tophole_keep; [ assumption | ].
       apply IHHr; auto.
-      eapply ad_wf_pskl_delta_mono; [ exact Hwb | clear; fsetdec ].
+      eapply a_wf_pskl_delta_mono; [ exact Hwb | clear; fsetdec ].
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
   - (* flex_l : Qm = α̂ with α̂ := τ *)
     assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_var_f α) ⊳ Q)
