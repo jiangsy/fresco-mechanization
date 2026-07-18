@@ -237,8 +237,9 @@ has only two conditions, and the same capture transplants to it: at `TI`,
 `(P0=◇, P=∀X.◇, Q=syn ∀X.X)` passes `typsub`-Infer + the `P0`-fill, yet the
 required optimality conclusion `θ(∀X.◇) ⊑ ∀X.X` is underivable (⊑'s hole
 rule forbids capture) — thm:complete-subtyping as literally stated is
-(conjecturally — machine-check as a cex file before finalizing the motive)
-false on it.  Repair: state the subtyping theorems against
+false on it (hand-derivation in docs/PAPER-GAPS.md — no cex file needed:
+the mech follows the paper's proof-level statements here, so nothing rests
+on the refutation being formal).  Repair: state the subtyping theorems against
 refinement-valid solutions (add `Θ ⊢ θ⌊S⌋ ⋈ Q`-style subject data to the
 solution/motive, threading it through the induction exactly as
 consistency's augmented statement does); soundness already yields the

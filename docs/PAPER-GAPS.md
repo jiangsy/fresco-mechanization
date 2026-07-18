@@ -662,6 +662,39 @@ occurs check `α̂ ∉ ftv(P)`, and that `guess^TY(P)` succeeds AND returns a MO
 (`a_guess_mono` has no `all` case; `a_assign__solve_m` additionally premises
 `mono_ptyp τ`).  Both follow from the solution; neither is proved.
 
+## GAP — the SOLUTION notions: the active 2-condition definitions admit binder-capturing fills
+
+*(2026-07-18, found while mapping the subtyping proofs; DESIGN-subtyping.md §3.1.)*
+
+The completeness proof for consistency AUGMENTS the definition of a solution
+to THREE conditions — join, `P0`-fill at Δ₁, and the subject-side refinement
+`skctx[Δ2]{Θ} θ⌊S⌋ ⋈ Q` (consistency-proofs.tex:2230-2242) — and the
+standalone 2-condition Definition of consistency solutions is commented out
+in algorithmic.tex.  The third condition is NOT derivable from the other
+two: on `(P0 = ∀X.X, P = ∀X.◇, Q = ∀X.X)` the join and the fill hold (the
+capturing `X` sits at a concrete position of `P0`, so the fill premise never
+inspects it; the join's hole rule checks the fill's well-formedness over the
+binder-EXTENDED context), the subject refinement fails, and the algorithm is
+stuck (its Ghost rule carries `Δ2 ∩ ftv(fill) = ∅`, and the ∀-step puts the
+binder in both Δs — by design, so that soundness outputs refine both
+inputs).  So completeness against the 2-condition notion is false; the
+mechanization states it against the paper's own augmented (3-condition)
+notion.
+
+The subtyping-solution Definition (algorithmic.tex:1423-1437) is ACTIVE and
+2-condition, and the same capture transplants: at `TI`,
+`(P0 = ◇, P = ∀X.◇, Q = syn ∀X.X)` passes the `typsub`-Infer premise and the
+`P0`-fill, yet the optimality conclusion demands `θ(∀X.◇) ⊑ ∀X.X`, which the
+precision rules forbid (the hole rule's `Δ ∩ ftv ψ = ∅`).  The subtyping
+proofs' appeals to thm:complete-consistency ("(θ;Q) is a solution to the
+consistency problem") silently assume the augmented notion.  SUGGESTED FIX:
+add the subject-side refinement `Θ ⊢ θ⌊S⌋ ⋈ Q` to the definitions of
+solutions (both consistency and subtyping); soundness already establishes it
+for every algorithmic output, so the theorems still characterize the
+algorithm exactly.  The mechanization proceeds with the augmented notion;
+no machine-checked counterexample was made (the mech never diverges from the
+paper's PROOF-level statements here — unlike the optimality-cex case).
+
 ## Resolved definition-sync findings (step 1 of the restart)
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the
 `is_tskl` untagged-∀ fix (A1), whose downstream effect invalidated the
