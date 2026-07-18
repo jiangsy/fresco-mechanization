@@ -807,6 +807,10 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
        a_extract NM α M (open_pskl_wrt_pskl P (pskl_var_f α)) P0 Ξ P1) ->
+    (* prose-completion (PAPER-GAPS): the paper's "fresh" Ξ — [a_lookeq]'s
+       LE-FlexR and [a_guess_mono]'s hole rule pick arbitrary names, so
+       re-attaching Ξ needs the freshness stated. *)
+    uniq (Ξ ++ Θ0) ->
     a_wf_pskl (Ξ ++ Θ0) P1 ->
     a_sub NM M P0 (Ξ ++ Θ0) (open_pskl_wrt_pskl P P1) Q Θ1 ->
     a_sub NM M P0 Θ0 (pskl_all_syn P) Q Θ1

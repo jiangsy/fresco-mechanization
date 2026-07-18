@@ -262,6 +262,7 @@ Inductive a_subtag :
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
        a_extract NM α M ⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
+    uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     a_wf_pskl (Ξ ++ Θ0) P1 ->
     AtomSetImpl.inter Ψg Ψ [=] empty ->                       (* Ψg fresh *)
     a_tags_sort NM Ψg ψg ->                                   (* Θ,Ξ ⊢^N tags{Ψg}{ψg} *)
@@ -274,6 +275,7 @@ Inductive a_subtag :
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
        a_extract NM α M ⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
+    uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     a_wf_pskl (Ξ ++ Θ0) P1 ->
     AtomSetImpl.inter Ψg Ψ [=] empty ->
     a_tags_sort NM Ψg ψg ->
