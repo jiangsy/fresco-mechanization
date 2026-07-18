@@ -1178,3 +1178,64 @@ Proof.
         [ exact IHad_pat_sub | ].
       rewrite ftvar_in_uskl_ptyp_to_uskl_syn. eauto.
 Qed.
+
+(** THE SUFFIX DRIVER: discard a trailing (fresh, well-formed) suffix Ξ
+    from an [ad_pat_sub] judgment whose subjects do not mention it — the
+    paper's "context strengthening for unused variables in Ξ", proved by
+    iterating the substitution strips head-first (the head entry is never
+    mentioned by any other entry, since definitions scope to tails). *)
+Lemma ad_pat_sub_strip_suffix : forall Ξ NM M Ψ Θ S Q,
+  a_suffix Ξ ->
+  a_wf_aenv (Ξ ++ Θ) ->
+  (forall γ, γ `in` dom Ξ ->
+     γ `notin` (ftvar_in_uskl S `union` ftvar_in_bskl Q)) ->
+  Ψ ⨟ (Ξ ++ Θ) ⊢ₛᵃ[ NM | M ] S ⊑ Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] S ⊑ Q.
+Proof.
+  induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
+  inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
+  assert (Hβfv : β `notin` (ftvar_in_uskl S `union` ftvar_in_bskl Q))
+    by (apply Hfv; simpl; fsetdec).
+  inversion Hbind; subst.
+  - (* undefined head *)
+    inversion Hwf as [ | ? ? Hβd Hwf' | | | | ]; subst.
+    assert (Hstr : Ψ ⨟ (Ξ' ++ Θ) ⊢ₛᵃ[ NM | M ]
+                     (subst_bskl_in_uskl uskl_unit β S)
+                   ⊑ (subst_bskl_in_bskl bskl_unit β Q)).
+    { eapply ad_pat_sub_subst_flex with (Θ1 := nil);
+        [ exact H | simpl_env; reflexivity | simpl; exact Hβd
+        | intros γ τ Hb; simpl in Hb;
+          assert (Hsc : ftvar_in_ptyp τ [<=] dom (Ξ' ++ Θ))
+            by (eapply a_wf_aenv_def_ftv_dom; eauto);
+          clear - Hsc Hβd; fsetdec ]. }
+    rewrite subst_bskl_in_uskl_fresh_eq in Hstr;
+      [ | clear - Hβfv; fsetdec ].
+    rewrite subst_bskl_in_bskl_fresh_eq in Hstr;
+      [ | clear - Hβfv; fsetdec ].
+    apply IH; auto.
+    intros γ Hγ. apply Hfv. simpl. clear - Hγ. fsetdec.
+  - (* defined head *)
+    inversion Hwf as [ | | ? τ0' ? Hβd Hwfτ Hmono Hwf' | | | ]; subst.
+    assert (Hfrτ : β `notin` ftvar_in_ptyp A).
+    { intro HX.
+      pose proof (a_wf_ptyp_ftv_tvarish Hwfτ HX) as Ht.
+      destruct Ht as [Hb | [Hb | [τ1 Hb]]]; apply binds_In in Hb;
+        clear - Hb Hβd; fsetdec. }
+    assert (Hstr : Ψ ⨟ (Ξ' ++ Θ) ⊢ₛᵃ[ NM | M ]
+                     (subst_bskl_in_uskl (ptyp_to_uskl_syn A) β S)
+                   ⊑ (subst_bskl_in_bskl (ptyp_to_bskl_syn A) β Q)).
+    { eapply ad_pat_sub_subst_flex_def with (Θ1 := nil);
+        [ exact H | simpl_env; reflexivity | simpl; exact Hβd
+        | exact Hmono | exact Hfrτ
+        | intros X HX; eapply a_wf_ptyp_ftv_tvarish; eauto
+        | intros γ τ Hb; simpl in Hb;
+          assert (Hsc : ftvar_in_ptyp τ [<=] dom (Ξ' ++ Θ))
+            by (eapply a_wf_aenv_def_ftv_dom; eauto);
+          clear - Hsc Hβd; fsetdec ]. }
+    rewrite subst_bskl_in_uskl_fresh_eq in Hstr;
+      [ | clear - Hβfv; fsetdec ].
+    rewrite subst_bskl_in_bskl_fresh_eq in Hstr;
+      [ | clear - Hβfv; fsetdec ].
+    apply IH; auto.
+    intros γ Hγ. apply Hfv. simpl. clear - Hγ. fsetdec.
+Qed.
