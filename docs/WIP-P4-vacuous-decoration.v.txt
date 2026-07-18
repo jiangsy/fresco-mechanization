@@ -1,0 +1,102 @@
+(* ===================================================================== *)
+(*  §6  Vacuous subtyping decoration (lemma:vacuous-subtyping-decoration) *)
+(*                                                                        *)
+(*  With input skeleton [◇] the run solves no tags and is determined by   *)
+(*  the source's ERASURE alone: any two lc sources with equal erasure     *)
+(*  give the same run.  Stronger than (and directly implies) the paper's  *)
+(*  ρ-threaded statement, since both sides erase equally.                 *)
+(* ===================================================================== *)
+
+Lemma a_subtag_vacuous_erasure : forall NM M P0 Ψ Θ0 T1 Q Θ1,
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T1 ⊑ Q ⊣ Θ1 ->
+  P0 = pskl_hole ->
+  forall T2, lc_uskl T2 -> ⌊ T2 ⌋ˢ = ⌊ T1 ⌋ˢ ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T2 ⊑ Q ⊣ Θ1.
+Proof.
+  intros NM M P0 Ψ Θ0 T1 Q Θ1 H.
+  induction H; intros HP0 T2 HlcT2 Herase; subst; try discriminate HP0.
+  - (* Infer : output is ⌊S⌋ = ⌊T2⌋ *)
+    rewrite <- Herase. apply a_subtag__infer; assumption.
+  - (* UnivGhostR : source guarded, output tophole ⌊S⌋ *)
+    (* ⌊T2⌋ = ⌊S⌋ guarded ⇒ T2 top ∈ {unit,var,arrow} ⇒ T2 guarded *)
+    assert (HgT2 : guarded_uskl T2).
+    { inversion H; subst; simpl in Herase;
+        destruct T2; simpl in Herase; inversion Herase; subst;
+        inversion HlcT2; subst; constructor; assumption. }
+    rewrite <- Herase. apply a_subtag__univ_ghost_r; assumption.
+  - (* ForallL tagged *)
+    destruct T2; simpl in Herase; inversion Herase; subst;
+      match goal with H : lc_uskl _ |- _ => inversion H; subst end.
+    + (* T2 = all_syn S2 → forall_l_untagged *)
+      eapply a_subtag__forall_l_untagged with (Ξ := Ξ) (P1 := P1)
+        (Ψg := Ψg) (ψg := ψg);
+        try assumption.
+      * intros α Hα. rewrite <- H10.
+        match goal with He : uskl_to_pskl _ = uskl_to_pskl S |- _ =>
+          rewrite <- He end. auto.
+      * eapply IHa_subtag; [ reflexivity | | ].
+        { apply lc_body_uskl_wrt_uskl;
+            [ eapply lc_body_uskl_all_syn_1; eauto | eapply is_tskl_lc;
+              inversion H3; eauto ]. }
+        rewrite ! uskl_to_pskl_open_var_gen; f_equal; assumption.
+    + (* T2 = all_etag ε2 S2 → forall_l_tagged *)
+      eapply a_subtag__forall_l_tagged with (Ξ := Ξ) (P1 := P1)
+        (Ψg := Ψg) (ψg := ψg);
+        try assumption.
+      * intros α Hα. rewrite <- H10.
+        match goal with He : uskl_to_pskl _ = uskl_to_pskl S |- _ =>
+          rewrite <- He end. auto.
+      * eapply IHa_subtag; [ reflexivity | | ].
+        { apply lc_body_uskl_wrt_uskl;
+            [ eapply lc_body_uskl_all_etag_2; eauto | eapply is_tskl_lc;
+              inversion H3; eauto ]. }
+        rewrite ! uskl_to_pskl_open_var_gen; f_equal; assumption.
+  - (* ForallL untagged : symmetric *)
+    destruct T2; simpl in Herase; inversion Herase; subst;
+      match goal with H : lc_uskl _ |- _ => inversion H; subst end.
+    + eapply a_subtag__forall_l_untagged with (Ξ := Ξ) (P1 := P1)
+        (Ψg := Ψg) (ψg := ψg); try assumption.
+      * intros α Hα. rewrite <- H10.
+        match goal with He : uskl_to_pskl _ = uskl_to_pskl S |- _ =>
+          rewrite <- He end. auto.
+      * eapply IHa_subtag; [ reflexivity | | ].
+        { apply lc_body_uskl_wrt_uskl;
+            [ eapply lc_body_uskl_all_syn_1; eauto | eapply is_tskl_lc;
+              inversion H3; eauto ]. }
+        rewrite ! uskl_to_pskl_open_var_gen; f_equal; assumption.
+    + eapply a_subtag__forall_l_tagged with (Ξ := Ξ) (P1 := P1)
+        (Ψg := Ψg) (ψg := ψg); try assumption.
+      * intros α Hα. rewrite <- H10.
+        match goal with He : uskl_to_pskl _ = uskl_to_pskl S |- _ =>
+          rewrite <- He end. auto.
+      * eapply IHa_subtag; [ reflexivity | | ].
+        { apply lc_body_uskl_wrt_uskl;
+            [ eapply lc_body_uskl_all_etag_2; eauto | eapply is_tskl_lc;
+              inversion H3; eauto ]. }
+        rewrite ! uskl_to_pskl_open_var_gen; f_equal; assumption.
+  - (* Ghost : source hole, output P0=hole *)
+    destruct T2; simpl in Herase; inversion Herase; subst.
+    + apply a_subtag__ghost; assumption.
+    + apply a_subtag__ghostg; assumption.
+  - (* GhostG : source holeg, output hole *)
+    destruct T2; simpl in Herase; inversion Herase; subst.
+    + apply a_subtag__ghost; [ assumption ].
+    + apply a_subtag__ghostg; assumption.
+  - (* UnivGhostL : source tophole S *)
+    destruct T2; simpl in Herase; inversion Herase; subst;
+      match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
+    + apply a_subtag__univ_ghost_l; [ assumption | ].
+      eapply IHa_subtag; [ reflexivity | assumption | assumption ].
+    + apply a_subtag__univ_ghost_lg; [ assumption | ].
+      eapply IHa_subtag; [ reflexivity | assumption | assumption ].
+  - (* UnivGhostLG : source topholeg S *)
+    destruct T2; simpl in Herase; inversion Herase; subst;
+      match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
+    + apply a_subtag__univ_ghost_l; [ assumption | ].
+      eapply IHa_subtag; [ reflexivity | assumption | assumption ].
+    + apply a_subtag__univ_ghost_lg; [ assumption | ].
+      eapply IHa_subtag; [ reflexivity | assumption | assumption ].
+  - (* FlexMono : source var α ⇒ T2 = var α *)
+    destruct T2; simpl in Herase; inversion Herase; subst.
+    apply a_subtag__flex_mono; assumption.
+Qed.
