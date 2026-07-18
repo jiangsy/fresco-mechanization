@@ -268,13 +268,163 @@ Proof.
     intros Ψ Θ0 Θ1 T B HgT HgB Hc Hwf HlcT HwfB HwfT Hmod Hgf.
     admit.
 
-  - (* ForallR (TY) : re-attach the rigid head.
-       ADMIT [true]: the L8-style head re-attachment (crib the ForallInh
-       case of [a_consistag_sound_aux]): strip the ⊴ across the
-       (α~tvar)-cons, rebuild the fill and the subtyping with
-       [ad_pat_sub__forall_r], discharging the binder by renaming. *)
-    intros L Ψ Θ0 Θ1 Ξ S B Hsuf Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
-    admit.
+  - (* ForallR (TY) : open the binder, run the body, strip the trailing
+       suffix, and re-attach the rigid head (crib: a_consistag_sound_aux's
+       ForallInh; the fill re-attaches via the ghost-free strip+rename). *)
+    intros L Ψ Θ0 Θ1 Ξ S B Hsuf Huq Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
+    assert (HgfB : pskl_ghost_free B)
+      by (specialize (Hgf eq_refl); simpl in Hgf; exact Hgf).
+    simpl in HwfP0.
+    inversion HwfP0 as [ | | | L0 Θz Δz Pz Hbody Heqz | | ]; subst.
+    destruct (atom_fresh
+                (L `union` L0 `union` dom Θ0 `union` dom Θ1 `union` dom Ξ
+                   `union` ftvar_in_pskl B `union` ftvar_in_uskl S))
+      as [α Fr].
+    destruct (IH α ltac:(clear - Fr; fsetdec)
+                (ltac:(apply a_wf_aenv__tvar;
+                         [ clear - Fr; fsetdec | exact Hwf ]))
+                HlcS
+                (ltac:(eapply a_wf_pskl_delta_mono;
+                         [ apply (a_wf_pskl_reassoc
+                                    (Hbody α ltac:(clear - Fr; fsetdec)) α)
+                         | clear; fsetdec ]))
+                (ltac:(eapply a_wf_pskl_weaken;
+                         [ intros x b Hb; unfold binds in *;
+                           simpl; right; exact Hb
+                         | exact HwfS ]))
+                ltac:(intro HSK; discriminate HSK)
+                (ltac:(intro He; unfold open_pskl_wrt_pskl;
+                       apply pskl_ghost_free_open_rec; exact HgfB)))
+      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+    assert (HuqT : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
+      by (apply a_wf_aenv_uniq_local; exact Hwf1).
+    assert (HαΘ1 : α `notin` dom Θ1)
+      by (clear - HuqT; simpl_env in HuqT; destruct_uniq;
+          unfold disjoint in *; simpl_env in *; fsetdec).
+    assert (HαΞ : α `notin` dom Ξ)
+      by (clear - HuqT; simpl_env in HuqT; destruct_uniq;
+          unfold disjoint in *; simpl_env in *; fsetdec).
+    assert (Hwf1' : a_wf_aenv Θ1)
+      by (eapply a_wf_aenv_strip_prefix_suffix_local; exact Hwf1).
+    (* scoping chains for the suffix-strip freshness *)
+    assert (HS : ftvar_in_uskl S [<=] dom Θ0).
+    { intros Z HZ. rewrite <- ftvar_in_pskl_uskl_to_pskl in HZ.
+      destruct (a_wf_pskl_ftv_tvarish HwfS HZ) as [HΔ | Ht];
+        [ exfalso; clear - HΔ; fsetdec | ].
+      destruct Ht as [Hb | [Hb | [τ Hb]]]; eapply binds_In; eauto. }
+    assert (HB : ftvar_in_pskl B [<=] dom Θ0).
+    { intros Z HZ.
+      destruct (a_wf_pskl_ftv_tvarish HwfP0 ltac:(simpl; exact HZ))
+        as [HΔ | Ht]; [ exfalso; clear - HΔ; fsetdec | ].
+      destruct Ht as [Hb | [Hb | [τ Hb]]]; eapply binds_In; eauto. }
+    assert (HQt : ftvar_in_bskl Qt [<=]
+                    (ftvar_in_pskl B `union` singleton α)).
+    { intros Z HZ.
+      rewrite <- (ftvar_in_pskl_bskl_to_pskl Qt) in HZ.
+      rewrite HeQt in HZ.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                    B (pskl_var_f α)) as Hup.
+      simpl in Hup. clear - HZ Hup. fsetdec. }
+    assert (Hfresh : forall γ, γ `in` dom Ξ ->
+              γ `notin` (ftvar_in_uskl S `union` ftvar_in_bskl Qt)).
+    { intros γ Hγ.
+      assert (HγΘ0 : γ `notin` dom Θ0)
+        by (clear - Huq Hγ; destruct_uniq; unfold disjoint in *; fsetdec).
+      assert (Hγα : γ <> α) by (intros ->; clear - HαΞ Hγ; fsetdec).
+      clear - HγΘ0 Hγα HS HQt HB. fsetdec. }
+    (* the suffix-stripped subtyping, X-independent *)
+    assert (Hsub1 : Ψ ⨟ ((α ~ abind_tvar) ++ Θ1)
+                      ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] S ⊑ Qt).
+    { eapply ad_pat_sub_strip_suffix with (Ξ := Ξ);
+        [ exact Hsuf
+        | simpl_env; simpl_env in Hwf1; exact Hwf1
+        | exact Hfresh
+        | simpl_env; simpl_env in Hsub; exact Hsub ]. }
+    (* defs of Θ1 do not mention α *)
+    assert (Hdefs1 : forall β τ, binds β (abind_flex_mono_def τ) Θ1 ->
+              α `notin` ftvar_in_ptyp τ).
+    { intros β τ Hb.
+      assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ1)
+        by (eapply a_wf_aenv_def_ftv_dom; eauto).
+      clear - Hsc HαΘ1. fsetdec. }
+    split.
+    { eapply a_isub_strip_tvar_mid with (Ξ := Ξ);
+        [ exact HuqT | exact Huq | clear - Fr; fsetdec | exact Hle ]. }
+    split; [ exact Hwf1' | ].
+    exists (bskl_all_inh (close_bskl_wrt_bskl α Qt)).
+    split.
+    { simpl. rewrite bskl_to_pskl_close. rewrite HeQt.
+      rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
+        [ reflexivity | clear - Fr; fsetdec ]. }
+    split.
+    + apply ad_pat_sub__forall_r
+        with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl B
+                     `union` ftvar_in_uskl S `union` ftvar_in_bskl Qt).
+      intros X HX.
+      rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qt)
+                 (bskl_var_f X));
+        [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
+      rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
+      rewrite <- (subst_bskl_in_uskl_fresh_eq S (uskl_var_f X) α)
+        at 1;
+        [ | clear - Fr; fsetdec ].
+      change ((X ~ abind_tvar) ++ Θ1)
+        with (nil ++ (X ~ abind_tvar) ++ Θ1).
+      apply ad_pat_sub_rename_tvar;
+        [ simpl_env; exact Hsub1
+        | simpl; exact HαΘ1
+        | simpl; exact Hdefs1 ].
+    + change (pskl_to_bskl_inh (pskl_all_syn B))
+        with (bskl_all_inh (pskl_to_bskl_inh B)).
+      apply ad_refine_syn_f__all
+        with (L := dom Θ1 `union` dom Ξ `union` singleton α
+                     `union` ftvar_in_pskl B `union` ftvar_in_bskl Qt).
+      intros X HX.
+      rewrite <- pskl_to_bskl_inh_open.
+      rewrite (subst_bskl_in_bskl_intro α (close_bskl_wrt_bskl α Qt)
+                 (bskl_var_f X));
+        [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
+      rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
+      assert (Hfr0 : α `notin` ftvar_in_pskl B) by (clear - Fr; fsetdec).
+      rewrite (subst_pskl_in_pskl_intro α B (pskl_var_f X) Hfr0).
+      rewrite <- subst_var_bskl_inh.
+      eapply ad_refine_syn_f_delta_mono;
+        [ eapply ad_refine_syn_f_ghost_free_strip_rename;
+            [ simpl_env; simpl_env in Hfill; exact Hfill
+            | reflexivity
+            | apply pskl_to_bskl_inh_ghost_free;
+              unfold open_pskl_wrt_pskl;
+              apply pskl_ghost_free_open_rec; exact HgfB
+            | simpl_env; simpl_env in Hwf1; exact Hwf1
+            | simpl_env; exact HuqT
+            | intros Z HZ;
+              assert (HZin : Z `in` (ftvar_in_pskl (open_pskl_wrt_pskl
+                                       B (pskl_var_f α))
+                                     `union` ftvar_in_bskl Qt))
+                by (rewrite <- (ftvar_in_pskl_bskl_to_pskl
+                                  (pskl_to_bskl_inh
+                                     (open_pskl_wrt_pskl B (pskl_var_f α))))
+                      in HZ;
+                    rewrite bskl_to_pskl_pskl_to_bskl_inh in HZ;
+                    clear - HZ; fsetdec);
+              pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                            B (pskl_var_f α)) as Hup;
+              simpl in Hup;
+              assert (HZB : Z `in` (ftvar_in_pskl B `union` singleton α
+                                    `union` ftvar_in_bskl Qt))
+                by (clear - HZin Hup; fsetdec);
+              assert (HγΘ0 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ0)
+                by (clear - Huq; intros γ Hγ; destruct_uniq;
+                    unfold disjoint in *; fsetdec);
+              intro HZΞ;
+              assert (HZα : Z <> α) by (intros ->; clear - HαΞ HZΞ; fsetdec);
+              assert (HZQt : Z `in` ftvar_in_bskl Qt ->
+                        Z `in` (ftvar_in_pskl B `union` singleton α))
+                by (intros HZq; apply HQt; exact HZq);
+              assert (HZBd : Z `in` ftvar_in_pskl B)
+                by (clear - HZB HZα HZQt; fsetdec);
+              specialize (HγΘ0 Z HZΞ); apply HγΘ0; apply HB; exact HZBd ]
+        | clear - HX; fsetdec ].
 
   - (* UnivGhostR (SK) : axis — output ⊤◇⌊S⌋, context unchanged *)
     intros Ψ Θ0 S HgS HΨ Hwf HlcS HwfP0 HwfS Hmod Hgf.
