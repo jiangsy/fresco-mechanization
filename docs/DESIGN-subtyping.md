@@ -240,7 +240,7 @@ thm:complete-subtyping (generalized)
 
 | paper use | mech lemma | file |
 |---|---|---|
-| thm:complete-consistency (4 case families) | `a_consis_complete_thm`, `consis_complete`, `complete_mu` | prop_consis_complete_join.v |
+| thm:complete-consistency (4 case families) | `a_consis_complete_thm`, `consis_complete`, `complete_mu` | prop_consis_complete.v |
 | sound-decorated-consistency | `a_consistag_sound_aux` (decorated), `a_consis_sound(_aux)` | prop_consis_sound.v |
 | decorating-algorithmic-consistency | `a_consis_decorate(_gen)` — the *template* for L-A | prop_decorate.v |
 

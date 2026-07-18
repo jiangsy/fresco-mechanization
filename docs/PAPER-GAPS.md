@@ -649,7 +649,7 @@ before it reaches `α̂`, so `θα̂` is well-formed BELOW `β`; whereas `β ∈
 MONOTYPE `θα̂` then forces `β ∈ ftv(θα̂)` — contradiction).  The paper does not do it.
 
 *Status (2026-07-17, 47bcc36):* the stuck-check is MACHINE-CHECKED in
-`algo/prop_consis_complete_join.v` (`assign_complete_step`, rigid-head case,
+`algo/prop_consis_complete.v` (`assign_complete_step`, rigid-head case,
 `γ ∈ ftv(P)` sub-path).  Ingredient (i) is `a_inc_strip_decls_prefix` +
 `a_inc_tvar_inv` (the competing increment peels `γ`, so `θα̂` is wf in the
 truncated target); ingredient (ii) is the new scoped join ftv-survival

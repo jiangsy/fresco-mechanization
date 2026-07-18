@@ -76,8 +76,36 @@ Set Implicit Arguments.
 (** EXISTENCE for [thm:complete-consistency] — the well-founded-measure half.
 
     If a consistency / unification / assignment problem HAS a solution, the
-    algorithm PRODUCES a derivation.  This half cannot induct on a derivation it
-    does not yet have, so it runs on the WELL-FOUNDED MEASURE
+    algorithm PRODUCES a derivation.  The hypothesis is a declarative
+    (solution-side) derivation, and the paper's "mutual induction for the three
+    parts" inducts on it in part 1.  A mutual IH is only usable BELOW the
+    current point, so every appeal needs a witness derivation that is a
+    subderivation of the hypothesis (structural induction) or strictly smaller
+    (size induction).
+
+    WHERE THE DIRECT SUBDERIVATION IS LOST — on three edges the witness handed
+    to the callee is not carved out of the caller's derivation at all:
+
+      - Assign-Assign (assign → consis): the algorithm substitutes the head
+        definition β̂ ≔ τ into the subject and re-runs consistency on the
+        SUBSTITUTED problem.  No premise of the caller's derivation is about
+        that judgment; its witness must be SYNTHESIZED FROM THE SOLUTION
+        (reflexivity at the solved θ(α̂[τ/β̂])).
+      - UnivGhostR (consis → consis): the premise reuses the caller's
+        derivation IDENTICALLY (the ⊤◇ is peeled from the problem, not from
+        the derivation).
+      - Flex-Flex-Assign (unify → assign): the witness is only transported
+        across ≡ᵗ, i.e. rebuilt, not extracted.
+
+    WHY THE PAPER'S MEASURE ALSO FAILS — a synthesized witness could still be
+    fine if it were smaller, but it is not: in Assign-Assign the caller's Ghost
+    node absorbs an arbitrary Q in ONE node, which the solved type spells back
+    out, so the new witness is strictly LARGER (§3.2 witness: 3 nodes → 5); and
+    ≡ᵗ-transport is not size-preserving.  Falling back to context size fails on
+    a DISJOINT edge: Arrow's second premise runs in a context GROWN by guess
+    (§3.1).  Hence no lexicographic combination of |derivation| and context
+    size is well-founded (design doc §3), and the proof instead runs on the
+    WELL-FOUNDED MEASURE
 
         μ = (V, n, t, k)   lexicographic on ℕ⁴
 
@@ -436,7 +464,7 @@ Qed.
     OPTIMALITY bundle ([a_assign_unify_consis_optimal], Admitted) together
     with the problem/solution/optimality definitions it was stated against.
     That development is SUPERSEDED: completeness AND optimality are proved
-    together by the μ-measure bundle in algo/prop_consis_complete_join.v
+    together by the μ-measure bundle in algo/prop_consis_complete.v
     ([complete_mu], [a_consis_complete_thm] — all Qed, axiom-free), whose
     fused statement is the paper's (full-algo-spec.tex:1476-1519).  The
     Admitted bundle, its corollaries, the problem/solution definitions, and
@@ -874,7 +902,7 @@ Qed.
    (subject msubst ρ P, RHS syn(mono ρα)) onto the ⇓-normalized subject,
    which [join_pskl_downarrow_mono_scoped] shows is scoped to the
    sub-target Θ'.  (Consumed by the ⇓-truncation walk cases of the
-   μ-bundle in prop_consis_complete_join.v.) *)
+   μ-bundle in prop_consis_complete.v.) *)
 Lemma consis_downarrow_subject : forall Ψ Θ S Q,
   ad_pat_consis Ψ Θ S Q ->
   a_wf_aenv Θ ->
