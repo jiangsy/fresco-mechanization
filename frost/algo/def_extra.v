@@ -815,6 +815,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     a_sub a_sub_mode_ty mode_tc B Θ0 A B Θ1
 | a_sub__forall_r : forall L Θ0 Θ1 Ξ A B,                     (* ForallR *)
     a_suffix Ξ ->
+    uniq (Ξ ++ Θ0) ->                                          (* Barendregt: the run's new names avoid the input (prose-completion) *)
     (forall α, α `notin` L ->
        a_sub a_sub_mode_ty mode_tc (open_pskl_wrt_pskl B (pskl_var_f α))
          ((α ~ abind_tvar) ++ Θ0) A (open_pskl_wrt_pskl B (pskl_var_f α))

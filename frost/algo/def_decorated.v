@@ -238,6 +238,7 @@ Inductive a_subtag :
     Θ0 ⊢ᵗ[ a_sub_mode_ty | mode_tc | B | Ψ ] T ⊑ B ⊣ Θ1
 | a_subtag__forall_r : forall L Ψ Θ0 Θ1 Ξ S B,                (* ForallR *)
     a_suffix Ξ ->
+    uniq (Ξ ++ Θ0) ->                                          (* Barendregt (prose-completion) *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ᵗ[ a_sub_mode_ty | mode_tc

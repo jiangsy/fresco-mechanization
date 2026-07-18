@@ -223,6 +223,7 @@ Proof.
   apply a_sub__forall_r with (L := dom Θ) (Ξ := nil)
     (B := pskl_arrow (pskl_var_b 0) (pskl_var_b 0)).
   { constructor. }
+  { crush_uniq. }
   intros α Hα. simpl_open.
   eapply a_sub__forall_l with (L := {}) (Ξ := nil) (P1 := pskl_var_f α).
   - discriminate.
@@ -726,6 +727,7 @@ Proof.
           (B := ptyp_to_pskl
                   (ptyp_arrow (ptyp_arrow tInt (ptyp_arrow tBool b0)) b0)).
         { constructor. }
+        { crush_uniq. }
         intros α Hα. simpl_open.
         eapply a_sub__forall_l
           with (L := singleton aInt `union` singleton aBool
@@ -778,6 +780,7 @@ Proof.
                 `union` singleton x) (Ξ := nil)
           (B := pskl_arrow (pskl_var_b 0) (pskl_var_b 0)).
         { constructor. }
+        { crush_uniq. }
         intros α Hα. simpl_open.
         eapply a_sub__forall_l with (L := {}) (Ξ := nil)
           (P1 := pskl_var_f α).
