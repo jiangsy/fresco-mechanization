@@ -203,3 +203,92 @@ Qed.
    list.  The forward split above is what the main decoration proof
    consumes; the join is deferred until a call site fixes its shape. *)
 
+
+(* ===================================================================== *)
+(*  §4  Erasure commutes with decorated substitution                     *)
+(* ===================================================================== *)
+
+Lemma uskl_to_pskl_subst : forall ψ ψg β,
+  ⌊ subst_bskl_in_uskl ψg β ψ ⌋ˢ
+  = subst_pskl_in_pskl ⌊ ψg ⌋ˢ β ⌊ ψ ⌋ˢ.
+Proof.
+  induction ψ; intros ψg β; simpl; try (f_equal; auto; fail).
+  match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    reflexivity.
+Qed.
+
+(* ===================================================================== *)
+(*  §5  The ρ metasubstitution (rigid vars → decorated skeletons)         *)
+(*                                                                        *)
+(*  The paper's ρ, applied to a decorated skeleton, and its erased        *)
+(*  counterpart applied to the plain erasure.  Represented as iterated    *)
+(*  single substitutions; freshness of the domain against the range is    *)
+(*  maintained at every use so iterated = simultaneous.                   *)
+(* ===================================================================== *)
+
+Fixpoint msubst_uskl (ρ : list (atom * uskl)) (T : uskl) : uskl :=
+  match ρ with
+  | nil => T
+  | (β, ψg) :: ρ' => subst_bskl_in_uskl ψg β (msubst_uskl ρ' T)
+  end.
+
+Fixpoint msubst_pskl_named (ρ : list (atom * pskl)) (P : pskl) : pskl :=
+  match ρ with
+  | nil => P
+  | (β, Pg) :: ρ' => subst_pskl_in_pskl Pg β (msubst_pskl_named ρ' P)
+  end.
+
+Definition erase_msubst (ρ : list (atom * uskl)) : list (atom * pskl) :=
+  map (fun ψg => uskl_to_pskl ψg) ρ.
+
+(** Erasure commutes with the metasubstitution. *)
+Lemma uskl_to_pskl_msubst : forall ρ T,
+  ⌊ msubst_uskl ρ T ⌋ˢ = msubst_pskl_named (erase_msubst ρ) ⌊ T ⌋ˢ.
+Proof.
+  induction ρ as [ | [β ψg] ρ' IH ]; intros T; simpl; [ reflexivity | ].
+  rewrite uskl_to_pskl_subst. rewrite IH. reflexivity.
+Qed.
+
+(** A variable outside the domain is untouched. *)
+Lemma msubst_uskl_var_notin : forall ρ β,
+  β `notin` dom ρ ->
+  msubst_uskl ρ (uskl_var_f β) = uskl_var_f β.
+Proof.
+  induction ρ as [ | [γ ψg] ρ' IH ]; intros β Hβ; simpl; [ reflexivity | ].
+  rewrite IH; [ | simpl in Hβ; clear - Hβ; fsetdec ].
+  simpl.
+  match goal with |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne] end;
+    [ simpl in Hβ; exfalso; clear - Hβ; fsetdec | reflexivity ].
+Qed.
+
+(** Local closure of every range skeleton lets ρ commute with opening. *)
+Definition msubst_lc (ρ : list (atom * uskl)) : Prop :=
+  forall β ψg, binds β ψg ρ -> lc_uskl ψg.
+
+Lemma msubst_uskl_open_comm : forall ρ T X,
+  msubst_lc ρ ->
+  X `notin` dom ρ ->
+  (forall β ψg, binds β ψg ρ -> X `notin` ftvar_in_uskl ψg) ->
+  msubst_uskl ρ (open_uskl_wrt_uskl T (uskl_var_f X))
+  = open_uskl_wrt_uskl (msubst_uskl ρ T) (uskl_var_f X).
+Proof.
+  induction ρ as [ | [γ ψg] ρ' IH ]; intros T X Hlc Hdom Hftv;
+    simpl; [ reflexivity | ].
+  assert (Hlcγ : lc_uskl ψg)
+    by (eapply Hlc; unfold binds; simpl; left; reflexivity).
+  assert (Hlc' : msubst_lc ρ')
+    by (intros b p Hb; eapply Hlc; unfold binds; simpl; right; exact Hb).
+  assert (Hdom' : X `notin` dom ρ')
+    by (simpl in Hdom; clear - Hdom; fsetdec).
+  assert (Hftv' : forall b p, binds b p ρ' -> X `notin` ftvar_in_uskl p)
+    by (intros b p Hb; eapply Hftv; unfold binds; simpl; right; exact Hb).
+  rewrite (IH T X Hlc' Hdom' Hftv').
+  rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcγ ].
+  f_equal.
+  assert (HXγ : X <> γ) by (simpl in Hdom; clear - Hdom; fsetdec).
+  assert (HXf : X `notin` ftvar_in_uskl ψg)
+    by (eapply Hftv; unfold binds; simpl; left; reflexivity).
+  simpl.
+  match goal with |- context [ if ?e then _ else _ ] => destruct e as [-> | _] end;
+    [ contradiction | reflexivity ].
+Qed.
