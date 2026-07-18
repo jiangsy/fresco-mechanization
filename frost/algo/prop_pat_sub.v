@@ -1413,3 +1413,255 @@ Proof.
     { exfalso. inversion Heqp. }
     exact Hbw.
 Qed.
+
+(* ===================================================================== *)
+(*  §5  Ghost-free fills (the TY axis)                                    *)
+(*                                                                        *)
+(*  On the TY axis P0 is a TYPE — hole- and ⊤◇-free (the paper's          *)
+(*  implicit "P0 ranges over types"; registered as an external side       *)
+(*  condition).  A fill whose SOURCE is ghost-free never uses the hole /  *)
+(*  ⊤◇ rules, so it consults the context only through variable            *)
+(*  visibility and definition lookups — so it can be strengthened (the   *)
+(*  trailing Ξ dropped) and its opened binder renamed into a Δ-slot,     *)
+(*  with no F-hygiene at all: what ForallR's fill re-attachment needs.   *)
+(* ===================================================================== *)
+
+Fixpoint pskl_ghost_free (P : pskl) : Prop :=
+  match P with
+  | pskl_unit => True
+  | pskl_var_b _ => True
+  | pskl_var_f _ => True
+  | pskl_arrow P1 P2 => pskl_ghost_free P1 /\ pskl_ghost_free P2
+  | pskl_all_syn P0 => pskl_ghost_free P0
+  | pskl_hole => False
+  | pskl_tophole _ => False
+  end.
+
+Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
+  match Q with
+  | bskl_unit => True
+  | bskl_var_b _ => True
+  | bskl_var_f _ => True
+  | bskl_arrow Q1 Q2 => bskl_ghost_free Q1 /\ bskl_ghost_free Q2
+  | bskl_all_syn Q0 => bskl_ghost_free Q0
+  | bskl_all_inh Q0 => bskl_ghost_free Q0
+  | bskl_hole => False
+  | bskl_tophole _ => False
+  end.
+
+Lemma pskl_to_bskl_inh_ghost_free : forall P,
+  pskl_ghost_free P ->
+  bskl_ghost_free (pskl_to_bskl_inh P).
+Proof. induction P; simpl; intuition. Qed.
+
+Lemma pskl_ghost_free_open_rec : forall P X k,
+  pskl_ghost_free P ->
+  pskl_ghost_free (open_pskl_wrt_pskl_rec k (pskl_var_f X) P).
+Proof.
+  induction P; intros X k Hg; simpl in *; intuition.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
+Qed.
+
+Lemma bskl_ghost_free_open_rec : forall Q X k,
+  bskl_ghost_free Q ->
+  bskl_ghost_free (open_bskl_wrt_bskl_rec k (bskl_var_f X) Q).
+Proof.
+  induction Q; intros X k Hg; simpl in *; intuition.
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
+Qed.
+
+Lemma mono_ptyp_to_bskl_syn_ghost_free : forall τ,
+  mono_ptyp τ -> bskl_ghost_free (ptyp_to_bskl_syn τ).
+Proof. induction 1; simpl; intuition. Qed.
+
+(** Well-formedness survives dropping an [a_suffix]-and-rigid prefix. *)
+Lemma a_wf_aenv_strip_prefix_suffix_local : forall Ξ α Θ,
+  a_wf_aenv (Ξ ++ (α ~ abind_tvar) ++ Θ) ->
+  a_wf_aenv Θ.
+Proof.
+  induction Ξ as [ | [γ b] Ξ' IH ]; intros α Θ Hwf; simpl_env in *.
+  - inversion Hwf; subst; assumption.
+  - inversion Hwf; subst; simpl_env in *; eapply IH; eassumption.
+Qed.
+
+(** Strengthening + renaming for ghost-free-source fills: drop the
+    trailing suffix Ξ and rename the shared rigid binder into a Δ-slot
+    (the two transports ForallR's fill re-attachment needs, fused so the
+    induction runs once). *)
+Lemma ad_refine_syn_f_ghost_free_strip_rename : forall F Θfull Δ Q P,
+  ad_refine_syn_f F Θfull Δ Q P ->
+  forall Ξ α Θ1 Y,
+  Θfull = Ξ ++ (α ~ abind_tvar) ++ Θ1 ->
+  bskl_ghost_free Q ->
+  a_wf_aenv Θfull ->
+  uniq Θfull ->
+  (forall X, X `in` (ftvar_in_bskl Q `union` ftvar_in_bskl P) ->
+     X `notin` dom Ξ) ->
+  ad_refine_syn_f F Θ1 (add Y (remove α Δ))
+    (subst_bskl_in_bskl (bskl_var_f Y) α Q)
+    (subst_bskl_in_bskl (bskl_var_f Y) α P).
+Proof.
+  intros F Θfull Δ Q P H; induction H;
+    intros Ξ0 α0 Θt Y Heqc Hg Hwf Huq Hfv; subst; simpl in *.
+  - apply ad_refine_syn_f__unit.
+  - repeat match goal with
+           | |- context [ if ?e then _ else _ ] => destruct e
+           end; try contradiction.
+    + apply ad_refine_syn_f__var. left. clear; fsetdec.
+    + apply ad_refine_syn_f__var.
+      destruct H as [HΔ | Hbt];
+        [ left; match goal with Hne : X <> α0 |- _ =>
+                  clear - HΔ Hne; fsetdec end | right ].
+      match goal with Hne : X <> α0 |- _ =>
+        assert (HXΞ : X `notin` dom Ξ0) by (apply Hfv; clear; fsetdec);
+        destruct Hbt as [Hb | [Hb | [τ Hb]]];
+          [ left | right; left | right; right; exists τ ];
+          (eapply binds_strip_mid in Hb;
+             [ | intro He; inversion He; subst; exact (Hne eq_refl) ];
+           unfold binds in Hb; apply in_app_or in Hb;
+           destruct Hb as [Hb | Hb];
+             [ exfalso; apply HXΞ; eapply binds_In; exact Hb | exact Hb ])
+      end.
+  - destruct Hg as [Hg1 Hg2].
+    apply ad_refine_syn_f__arrow;
+      [ eapply IHad_refine_syn_f1 | eapply IHad_refine_syn_f2 ];
+      eauto; intros X HX; apply Hfv; clear - HX; fsetdec.
+  - apply ad_refine_syn_f__all
+      with (L := L `union` {{α0}} `union` {{Y}} `union` dom (Ξ0 ++ Θt)
+                   `union` ftvar_in_bskl Q `union` ftvar_in_bskl P).
+    intros X HX.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      [ | intro He; subst; clear - HX; fsetdec | apply lc_bskl_var_f ].
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      [ | intro He; subst; clear - HX; fsetdec | apply lc_bskl_var_f ].
+    eapply ad_refine_syn_f_delta_mono;
+      [ eapply (H0 X ltac:(clear - HX; fsetdec) Ξ0 α0 Θt Y);
+        [ reflexivity
+        | apply bskl_ghost_free_open_rec; assumption
+        | assumption
+        | assumption
+        | intros Z HZ;
+          pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper
+                        Q (bskl_var_f X)) as Hup1;
+          pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper
+                        P (bskl_var_f X)) as Hup2;
+          simpl in Hup1, Hup2;
+          assert (HZQP : Z `in` (ftvar_in_bskl Q `union` ftvar_in_bskl P)
+                         \/ Z `in` singleton X)
+            by (clear - HZ Hup1 Hup2; fsetdec);
+          destruct HZQP as [HZQP | HZX];
+            [ apply Hfv; clear - HZQP; fsetdec
+            | assert (HZeq : Z = X) by (clear - HZX; fsetdec);
+              subst Z; clear - HX; simpl_env in *; fsetdec ] ]
+      | clear - HX; fsetdec ].
+  - destruct Hg.
+  - destruct Hg.
+  - destruct Hg.
+  - destruct Hg.
+  - (* flex_l *)
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
+    end.
+    + exfalso.
+      assert (Hα0Ξ : α0 `notin` dom Ξ0)
+        by (clear - Huq; simpl_env in Huq; destruct_uniq;
+            unfold disjoint in *; simpl_env in *; fsetdec).
+      assert (Hα0Θ : α0 `notin` dom Θt)
+        by (clear - Huq; simpl_env in Huq; destruct_uniq;
+            unfold disjoint in *; simpl_env in *; fsetdec).
+      match goal with
+      | Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
+          unfold binds in Hb; apply in_app_or in Hb;
+          destruct Hb as [Hb | Hb];
+            [ apply binds_In in Hb; clear - Hb Hα0Ξ; fsetdec | ];
+          destruct Hb as [Heqp | Hb];
+            [ inversion Heqp
+            | apply binds_In in Hb; clear - Hb Hα0Θ; fsetdec ]
+      end.
+    + assert (HaΞ : α `notin` dom Ξ0)
+        by (apply Hfv; clear; fsetdec).
+      match goal with
+      | HbX : binds α (abind_flex_mono_def τ) _ |- _ =>
+          unfold binds in HbX; apply in_app_or in HbX;
+          destruct HbX as [Hbb | Hbb];
+            [ exfalso; apply HaΞ; eapply binds_In; exact Hbb | ];
+          destruct Hbb as [Heqp | Hbb];
+            [ inversion Heqp; subst; exact (Hne eq_refl) | ]
+      end.
+      assert (HwfΘt : a_wf_aenv Θt)
+        by (eapply a_wf_aenv_strip_prefix_suffix_local; simpl_env in *; eauto).
+      assert (Hτsc : ftvar_in_ptyp τ [<=] dom Θt)
+        by (eapply a_wf_aenv_def_ftv_dom; eauto).
+      assert (Hα0Θt : α0 `notin` dom Θt)
+        by (clear - Huq; simpl_env in Huq; destruct_uniq;
+            unfold disjoint in *; simpl_env in *; fsetdec).
+      eapply ad_refine_syn_f__flex_l; [ exact Hbb | ].
+      rewrite <- (subst_bskl_in_bskl_fresh_eq
+                    (ptyp_to_bskl_syn τ) (bskl_var_f Y) α0).
+      2:{ rewrite ftvar_in_bskl_ptyp_to_bskl_syn.
+          clear - Hτsc Hα0Θt. fsetdec. }
+      eapply IHad_refine_syn_f; eauto.
+      * apply mono_ptyp_to_bskl_syn_ghost_free.
+        eapply a_wf_aenv_binds_def_mono; [ exact HwfΘt | exact Hbb ].
+      * intros Z HZ.
+        rewrite ftvar_in_bskl_ptyp_to_bskl_syn in HZ.
+        assert (HZfv : Z `in` ftvar_in_ptyp τ \/ Z `in` ftvar_in_bskl Q)
+          by (clear - HZ; fsetdec).
+        destruct HZfv as [HZτ | HZQ];
+          [ | apply Hfv; clear - HZQ; fsetdec ].
+        assert (HZΘt : Z `in` dom Θt) by (clear - Hτsc HZτ; fsetdec).
+        clear - Huq HZΘt. simpl_env in Huq. destruct_uniq.
+        unfold disjoint in *. simpl_env in *. fsetdec.
+  - (* flex_r *)
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
+    end.
+    + exfalso.
+      assert (Hα0Ξ : α0 `notin` dom Ξ0)
+        by (clear - Huq; simpl_env in Huq; destruct_uniq;
+            unfold disjoint in *; simpl_env in *; fsetdec).
+      assert (Hα0Θ : α0 `notin` dom Θt)
+        by (clear - Huq; simpl_env in Huq; destruct_uniq;
+            unfold disjoint in *; simpl_env in *; fsetdec).
+      match goal with
+      | Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
+          unfold binds in Hb; apply in_app_or in Hb;
+          destruct Hb as [Hb | Hb];
+            [ apply binds_In in Hb; clear - Hb Hα0Ξ; fsetdec | ];
+          destruct Hb as [Heqp | Hb];
+            [ inversion Heqp
+            | apply binds_In in Hb; clear - Hb Hα0Θ; fsetdec ]
+      end.
+    + assert (HaΞ : α `notin` dom Ξ0)
+        by (apply Hfv; clear; fsetdec).
+      match goal with
+      | HbX : binds α (abind_flex_mono_def τ) _ |- _ =>
+          unfold binds in HbX; apply in_app_or in HbX;
+          destruct HbX as [Hbb | Hbb];
+            [ exfalso; apply HaΞ; eapply binds_In; exact Hbb | ];
+          destruct Hbb as [Heqp | Hbb];
+            [ inversion Heqp; subst; exact (Hne eq_refl) | ]
+      end.
+      assert (HwfΘt : a_wf_aenv Θt)
+        by (eapply a_wf_aenv_strip_prefix_suffix_local; simpl_env in *; eauto).
+      assert (Hτsc : ftvar_in_ptyp τ [<=] dom Θt)
+        by (eapply a_wf_aenv_def_ftv_dom; eauto).
+      assert (Hα0Θt : α0 `notin` dom Θt)
+        by (clear - Huq; simpl_env in Huq; destruct_uniq;
+            unfold disjoint in *; simpl_env in *; fsetdec).
+      eapply ad_refine_syn_f__flex_r; [ exact Hbb | ].
+      rewrite <- (subst_bskl_in_bskl_fresh_eq
+                    (ptyp_to_bskl_syn τ) (bskl_var_f Y) α0).
+      2:{ rewrite ftvar_in_bskl_ptyp_to_bskl_syn.
+          clear - Hτsc Hα0Θt. fsetdec. }
+      eapply IHad_refine_syn_f; eauto.
+      intros Z HZ.
+      rewrite ftvar_in_bskl_ptyp_to_bskl_syn in HZ.
+      assert (HZfv : Z `in` ftvar_in_ptyp τ \/ Z `in` ftvar_in_bskl P)
+        by (clear - HZ; fsetdec).
+      destruct HZfv as [HZτ | HZP];
+        [ | apply Hfv; clear - HZP; fsetdec ].
+      assert (HZΘt : Z `in` dom Θt) by (clear - Hτsc HZτ; fsetdec).
+      clear - Huq HZΘt. simpl_env in Huq. destruct_uniq.
+      unfold disjoint in *. simpl_env in *. fsetdec.
+Qed.
