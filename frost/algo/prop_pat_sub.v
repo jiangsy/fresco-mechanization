@@ -1239,3 +1239,123 @@ Proof.
     apply IH; auto.
     intros γ Hγ. apply Hfv. simpl. clear - Hγ. fsetdec.
 Qed.
+
+(** Renaming the opened rigid binder in [ad_pat_sub] (mirror of
+    [ad_pat_consis_rename_tvar]; the tag/guardedness closures come from
+    the [_mono] pack at [τ := ptyp_var_f Y]). *)
+Lemma ad_pat_sub_rename_tvar : forall NM M Ψ Θ1 α Θ0 S Q Y,
+  Ψ ⨟ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⊢ₛᵃ[ NM | M ] S ⊑ Q ->
+  α `notin` dom (Θ1 ++ Θ0) ->
+  (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
+     α `notin` ftvar_in_ptyp τ) ->
+  Ψ ⨟ (Θ1 ++ (Y ~ abind_tvar) ++ Θ0) ⊢ₛᵃ[ NM | M ]
+      (subst_bskl_in_uskl (uskl_var_f Y) α S)
+    ⊑ (subst_bskl_in_bskl (bskl_var_f Y) α Q).
+Proof.
+  intros * H.
+  remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
+  revert Θ1 HeqΘ.
+  induction H; intros Θ1 ->; intros Hdom Hdefs; simpl.
+  - apply ad_pat_sub__infer; auto.
+    + apply ad_pat_consis_rename_tvar; auto.
+    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+      apply is_sskl_subst_mono; auto using mono_ptyp.
+  - rewrite subst_var_bskl_inh.
+    apply ad_pat_sub__check.
+    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      apply guarded_uskl_subst_mono; auto using mono_ptyp.
+    + apply guarded_pskl_subst; auto using guarded_pskl__var, lc_pskl_var_f.
+    + rewrite <- subst_var_bskl_inh.
+      apply ad_pat_consis_rename_tvar; auto.
+  - apply ad_pat_sub__forall_r with (L := L `union` singleton α).
+    intros X HX.
+    assert (Hαx : α <> X) by fsetdec.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      auto using lc_bskl_var_f.
+    assert (HXL : X `notin` L) by fsetdec.
+    apply (H0 X HXL ((X ~ abind_tvar) ++ Θ1));
+      [ simpl_env; reflexivity
+      | simpl; repeat rewrite dom_app in *; fsetdec
+      | intros β τ Hb;
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+        [ discriminate | eauto ] ].
+  - apply ad_pat_sub__univ_ghost_r; auto.
+    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      apply guarded_uskl_subst_mono; auto using mono_ptyp.
+    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+      apply guarded_bskl_subst_mono; auto using mono_ptyp.
+    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+      apply is_sskl_subst_mono; auto using mono_ptyp.
+    + apply ad_pat_consis_rename_tvar; auto.
+  - specialize (IHad_pat_sub Θ1 ltac:(reflexivity) Hdom Hdefs).
+    eapply ad_pat_sub__arrow.
+    + eapply ad_pat_consis_rename_tvar; eauto.
+    + exact IHad_pat_sub.
+    + eassumption.
+  - specialize (IHad_pat_sub Θ1 ltac:(reflexivity) Hdom Hdefs).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub;
+      [ | apply lc_uskl_var_f ].
+    eapply ad_pat_sub__forall_l_tagged.
+    5: exact IHad_pat_sub.
+    + assumption.
+    + eassumption.
+    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      apply a_tags_sort_subst_mono;
+        [ assumption | apply mono_ptyp__var ].
+    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      rewrite uskl_to_pskl_subst_mono. simpl.
+      apply a_wf_pskl_rename_tvar;
+        first [ assumption | clear; fsetdec ].
+  - specialize (IHad_pat_sub Θ1 ltac:(reflexivity) Hdom Hdefs).
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in IHad_pat_sub;
+      [ | apply lc_uskl_var_f ].
+    eapply ad_pat_sub__forall_l_untagged.
+    5: exact IHad_pat_sub.
+    + assumption.
+    + eassumption.
+    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      apply a_tags_sort_subst_mono;
+        [ assumption | apply mono_ptyp__var ].
+    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      rewrite uskl_to_pskl_subst_mono. simpl.
+      apply a_wf_pskl_rename_tvar;
+        first [ assumption | clear; fsetdec ].
+  - rewrite subst_var_bskl_inh.
+    apply ad_pat_sub__ghost; auto.
+    + apply a_wf_pskl_rename_tvar; [ assumption | clear; fsetdec ].
+    + rewrite <- subst_var_bskl_inh.
+      change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+      apply mod_comp_sk_subst_mono; auto using mono_ptyp.
+  - apply ad_pat_sub__ghostg; auto.
+  - apply ad_pat_sub__univ_ghost_l; auto.
+  - apply ad_pat_sub__univ_ghost_lg; auto.
+  - match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
+    end.
+    + (* the subject flex cannot be the renamed rigid *)
+      exfalso.
+      match goal with
+      | Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
+          unfold binds in Hb; apply in_app_or in Hb;
+          destruct Hb as [Hb | Hb];
+          [ apply binds_In in Hb; simpl_env in *; fsetdec | ];
+          apply in_app_or in Hb; destruct Hb as [Hb | Hb];
+          [ destruct Hb as [Heq | Habs]; [ inversion Heq | inversion Habs ]
+          | apply binds_In in Hb; simpl_env in *; fsetdec ]
+      end.
+    + match goal with
+      | Hb0 : binds ?a (abind_flex_mono_def _) (_ ++ _ ++ _) |- _ =>
+          assert (Hb' : binds a (abind_flex_mono_def τ) (Θ1 ++ Θ0))
+            by (eapply binds_strip_mid;
+                [ exact Hb0 | intro He; inversion He ])
+      end.
+      eapply ad_pat_sub__flex_mono.
+      { unfold binds in Hb' |- *. apply in_app_or in Hb'.
+        apply in_or_app.
+        destruct Hb' as [Hb' | Hb'];
+          [ left; exact Hb' | right; simpl; right; exact Hb' ]. }
+      specialize (IHad_pat_sub Θ1 ltac:(reflexivity) Hdom Hdefs).
+      rewrite subst_bskl_in_uskl_fresh_eq in IHad_pat_sub;
+        [ exact IHad_pat_sub | ].
+      rewrite ftvar_in_uskl_ptyp_syn. eauto.
+Qed.
