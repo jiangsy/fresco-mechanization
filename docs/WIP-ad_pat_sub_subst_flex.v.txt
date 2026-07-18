@@ -1,0 +1,135 @@
+
+(** Ghost-freeness survives the unit substitution. *)
+Lemma uskl_ghost_free_subst_unit : forall ψ β,
+  uskl_ghost_free ψ ->
+  uskl_ghost_free (subst_bskl_in_uskl uskl_unit β ψ).
+Proof.
+  intros ψ β H; induction H; simpl.
+  - apply uskl_ghost_free__unit.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      [ apply uskl_ghost_free__unit | apply uskl_ghost_free__var ].
+  - apply uskl_ghost_free__arrow; auto.
+  - apply uskl_ghost_free__all_etag with (L := L `union` {{β}}).
+    intros X HX.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ auto | intro He; subst; clear - HX; fsetdec | apply lc_uskl_unit ].
+  - apply uskl_ghost_free__all_syn with (L := L `union` {{β}}).
+    intros X HX.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ auto | intro He; subst; clear - HX; fsetdec | apply lc_uskl_unit ].
+Qed.
+
+(** Tag-sorting survives the unit substitution. *)
+Lemma a_tags_sort_subst_unit : forall NM Ψ' ψ β,
+  a_tags_sort NM Ψ' ψ ->
+  a_tags_sort NM Ψ' (subst_bskl_in_uskl uskl_unit β ψ).
+Proof.
+  intros NM Ψ' ψ β H; destruct H.
+  - apply a_tags_sort__sk;
+      [ apply is_tskl_subst_unit; assumption
+      | apply d_tags_skl_subst_unit; assumption ].
+  - apply a_tags_sort__ty;
+      [ apply is_tskl_subst_unit; assumption
+      | apply d_tags_skl_subst_unit; assumption
+      | apply uskl_ghost_free_subst_unit; assumption ].
+Qed.
+
+(** STRIP an undefined flexible mid entry from [ad_pat_sub] by
+    substituting unit — the ForallL witnesses are rewritten too, which is
+    exactly why this is provable where naive strengthening is not. *)
+Lemma ad_pat_sub_subst_flex : forall NM M Ψ Θ S Q,
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] S ⊑ Q ->
+  forall Θ1 β Θ2,
+  Θ = Θ1 ++ (β ~ abind_flex_mono) ++ Θ2 ->
+  β `notin` dom (Θ1 ++ Θ2) ->
+  (forall γ τ, binds γ (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
+     β `notin` ftvar_in_ptyp τ) ->
+  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ[ NM | M ] (subst_bskl_in_uskl uskl_unit β S)
+                              ⊑ (subst_bskl_in_bskl bskl_unit β Q).
+Proof.
+  intros NM M Ψ Θ S Q H; induction H;
+    intros Θ1 β Θ2 Heqc Hfr Hdefs; subst; simpl.
+  - apply ad_pat_sub__infer;
+      [ assumption
+      | eapply ad_pat_consis_subst_flex; eauto
+      | apply is_sskl_subst_unit; assumption ].
+  - rewrite pskl_to_bskl_inh_subst_unit.
+    apply ad_pat_sub__check;
+      [ apply guarded_uskl_subst_unit; assumption
+      | apply guarded_pskl_subst_unit; assumption | ].
+    rewrite <- pskl_to_bskl_inh_subst_unit.
+    eapply ad_pat_consis_subst_flex; eauto.
+  - apply ad_pat_sub__forall_r
+      with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)).
+    intros X HX.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      [ | intro He; subst; clear - HX; fsetdec | apply lc_bskl_unit ].
+    match goal with
+    | IH : forall X, X `notin` L -> forall Θ1 : list _, _ |- _ =>
+        specialize (IH X ltac:(clear - HX; fsetdec)
+                      ((X ~ abind_tvar) ++ Θ1) β Θ2);
+        simpl_env in IH; simpl_env; apply IH
+    end;
+      [ reflexivity
+      | clear - Hfr HX; simpl_env in *; fsetdec
+      | intros γ τ Hb;
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
+        [ discriminate | eauto ] ].
+  - apply ad_pat_sub__univ_ghost_r;
+      [ assumption
+      | apply guarded_uskl_subst_unit; assumption
+      | apply guarded_bskl_subst_unit; assumption
+      | apply is_sskl_subst_unit; assumption
+      | eapply ad_pat_consis_subst_flex; eauto ].
+  - eapply ad_pat_sub__arrow;
+      [ eapply ad_pat_consis_subst_flex; eauto | eauto | assumption ].
+  - rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in *;
+      [ | apply lc_uskl_unit ].
+    eapply ad_pat_sub__forall_l_tagged;
+      [ assumption
+      | eassumption
+      | apply a_tags_sort_subst_unit; eassumption
+      | rewrite uskl_to_pskl_subst_unit;
+        eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
+          [ eassumption | reflexivity | exact Hfr | clear; fsetdec
+          | apply guarded_pskl__unit | apply a_wf_pskl__unit ]
+      | eauto ].
+  - rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl in *;
+      [ | apply lc_uskl_unit ].
+    eapply ad_pat_sub__forall_l_untagged;
+      [ assumption
+      | eassumption
+      | apply a_tags_sort_subst_unit; eassumption
+      | rewrite uskl_to_pskl_subst_unit;
+        eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
+          [ eassumption | reflexivity | exact Hfr | clear; fsetdec
+          | apply guarded_pskl__unit | apply a_wf_pskl__unit ]
+      | eauto ].
+  - rewrite pskl_to_bskl_inh_subst_unit.
+    apply ad_pat_sub__ghost;
+      [ assumption
+      | eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
+          [ eassumption | reflexivity | exact Hfr | clear; fsetdec
+          | apply guarded_pskl__unit | apply a_wf_pskl__unit ]
+      | rewrite <- pskl_to_bskl_inh_subst_unit;
+        apply mod_comp_sk_subst_unit; assumption ].
+  - apply ad_pat_sub__ghostg; [ assumption | ].
+    change bskl_hole with (subst_bskl_in_bskl bskl_unit β bskl_hole).
+    apply mod_comp_sk_subst_unit; assumption.
+  - apply ad_pat_sub__univ_ghost_l; [ assumption | eauto ].
+  - apply ad_pat_sub__univ_ghost_lg; [ assumption | eauto ].
+  - match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
+    end.
+    + exfalso. eapply binds_mid_flex_absurd; eauto.
+    + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
+      { eapply binds_strip_mid; eauto.
+        intro He; inversion He; subst; exact (Hne eq_refl). }
+      eapply ad_pat_sub__flex_mono; [ exact Hb' | ].
+      match goal with
+      | IH : forall Θ1 : list _, _ |- _ =>
+          specialize (IH Θ1 β Θ2 ltac:(reflexivity) Hfr Hdefs)
+      end.
+      rewrite subst_bskl_in_uskl_fresh_eq in *; [ auto | ].
+      rewrite ftvar_in_uskl_ptyp_to_uskl_syn. eauto.
+Qed.
