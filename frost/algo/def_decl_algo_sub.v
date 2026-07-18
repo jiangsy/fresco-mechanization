@@ -1,0 +1,182 @@
+(** DECLARATIVE SUBTYPING IN ALGORITHMIC CONTEXTS + PARTIAL PRECISION.
+
+    The two judgments the subtyping soundness/completeness proofs are stated
+    against (docs/DESIGN-subtyping.md §1.2, D1/D4):
+
+    - [ad_pat_sub]: the paper's all-in-one declarative subtyping
+      [typsub^N_M[Ψ] Θ ⊢ syn S ⊑ bid Q] (fig:decl-subtyping-all,
+      full-decl-spec.tex:33-121) transplanted to algorithmic contexts, with
+      the single flexible-variable rule the paper adds there — [FlexMono]
+      (fig:declarative-in-algo-context, full-algo-spec.tex:170-176; LHS
+      flexible in FUNCTION mode only; targets' flexibles are reached through
+      the consistency premises' own FlexR).  The transplant mirrors the
+      SETTLED formulations of the mech's [d_pat_sub] (decl/def_extra.v:479 —
+      the WT-reviewed skeleton side: [is_sskl]/guardedness on
+      Infer/UnivGhostR, [mod_comp_sk] on Ghost/GhostG, the scope premise on
+      ForallL) and, for the TY-only rules Check/ForallR absent from
+      [d_pat_sub], the fused appendix figure directly.  The N-indexed tag
+      premise of ForallL is [a_tags_sort] (def_decorated.v:96), exactly as in
+      the decorated algorithmic system [a_subtag].
+
+    - [ad_partial_precise]: partial precision [Θ ⨟ Δ ⊢ P ⊑ᵖ[Ψ] ψ]
+      (subtyping-proofs.tex:1561-1637), the completeness-only refinement of
+      precision: quantifiers of ψ whose tags are NOT in Ψ may be matched by
+      ghosts in P.  Its definition "corresponds one to one to the definition
+      of refinement in algorithmic contexts" (tex:1552-1554), so it mirrors
+      [ad_refine_pskl] (def_decl_algo.v:198) — including the placements the
+      mech settled there for the paper's external wf side conditions
+      (docs/WF-SIDE-CONDITIONS.md): the var rule carries the
+      [Δ ∨ a_binds_tvar] visibility disjunction, the ∀-rule extends only Δ
+      (the rigid binder is picked cofinitely), tophole_fill extends Θ.
+      Targets ψ are decorated skeletons, so their quantifiers are always
+      tagged ([uskl_all_etag]; [is_tskl] has no [all_syn] constructor) and
+      their ghosts dotted — the subject-hole rule is the only rule matching
+      a dotted ghost. *)
+
+Require Import Coq.Lists.List.
+Require Import Metalib.Metatheory.
+
+Require Import src.frost.notations.
+Require Import src.frost.coercions.
+Require Import src.frost.predicates.
+Require Import src.frost.decl.def_extra.
+Require Import src.frost.decl.notations.
+Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_decl_algo.
+Require Import src.frost.algo.def_decorated.
+
+Set Implicit Arguments.
+
+(* ===================================================================== *)
+(*  All-in-one declarative subtyping over Θ                               *)
+(*  [Ψ ⨟ Θ ⊢ₛᵃ[ N | M ] S ⊑ Q]  (fig:decl-subtyping-all + FlexMono)       *)
+(* ===================================================================== *)
+
+Reserved Notation "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⊑ Q"
+  (at level 75, Θ at level 74, NM at level 0, M at level 0,
+   R at level 74, Q at level 74, no associativity).
+
+Inductive ad_pat_sub :
+  a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
+| ad_pat_sub__infer : forall NM Ψ Θ R Q,                      (* Infer *)
+    Ψ [=] empty ->
+    empty ⨟ Θ ⊨ₛᵃ R ≈ Q ->
+    is_sskl Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_ti ] R ⊑ Q
+| ad_pat_sub__check : forall Ψ Θ T B,                         (* Check (TY) *)
+    guarded_uskl T ->
+    guarded_pskl B ->
+    Ψ ⨟ Θ ⊨ₛᵃ T ≈ (pskl_to_bskl_inh B) ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] T ⊑ (pskl_to_bskl_inh B)
+| ad_pat_sub__forall_r : forall L Ψ Θ T B,                    (* ForallR (TY) *)
+    (forall α, α `notin` L ->
+       Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ]
+         T ⊑ (open_bskl_wrt_bskl B (bskl_var_f α))) ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] T ⊑ (bskl_all_inh B)
+| ad_pat_sub__univ_ghost_r : forall Ψ Θ R Q,                  (* UnivGhostR (SK) *)
+    Ψ [=] empty ->
+    guarded_uskl R ->
+    guarded_bskl Q ->
+    is_sskl Q ->
+    empty ⨟ Θ ⊨ₛᵃ R ≈ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | mode_tc ] R ⊑ (bskl_tophole Q)
+| ad_pat_sub__arrow : forall NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2,      (* Arrow *)
+    Ψ1 ⨟ Θ ⊨ₛᵃ R1 ≈ Q1 ->
+    Ψ2 ⨟ Θ ⊢ₛᵃ[ NM | M ] R2 ⊑ Q2 ->
+    Ψ [=] Ψ1 `union` Ψ2 ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (uskl_arrow R1 R2) ⊑ (bskl_arrow Q1 Q2)
+| ad_pat_sub__forall_l_tagged : forall NM Ψ Ψ' Θ M ε R ψ Q,   (* ForallL, δ=ε *)
+    M <> mode_ti ->
+    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    a_tags_sort NM Ψ' ψ ->
+    Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
+    (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⊑ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] (uskl_all_etag ε R) ⊑ Q
+| ad_pat_sub__forall_l_untagged : forall NM Ψ Ψ' Θ M R ψ Q,   (* ForallL, δ=· *)
+    M <> mode_ti ->
+    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    a_tags_sort NM Ψ' ψ ->
+    Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
+    (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⊑ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] (uskl_all_syn R) ⊑ Q
+| ad_pat_sub__ghost : forall Ψ Θ M P,                         (* Ghost (SK) *)
+    Ψ [=] empty ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
+    mod_comp_sk (pskl_to_bskl_inh P) M ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] uskl_hole ⊑ (pskl_to_bskl_inh P)
+| ad_pat_sub__ghostg : forall Ψ Θ M,                          (* GhostG (SK) *)
+    Ψ [=] empty ->
+    mod_comp_sk bskl_hole M ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] uskl_holeg ⊑ bskl_hole
+| ad_pat_sub__univ_ghost_l : forall Ψ Θ M R Q,                (* UnivGhostL (SK) *)
+    M <> mode_ti ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] R ⊑ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (uskl_tophole R) ⊑ Q
+| ad_pat_sub__univ_ghost_lg : forall Ψ Θ M R Q,               (* UnivGhostLG (SK) *)
+    M <> mode_ti ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] R ⊑ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (uskl_topholeg R) ⊑ Q
+(* — the algorithmic-context lookup rule (fig:declarative-in-algo-context) — *)
+| ad_pat_sub__flex_mono : forall NM Ψ Θ M α τ Q,              (* FlexMono *)
+    binds α (abind_flex_mono_def τ) Θ ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (ptyp_to_uskl_syn τ) ⊑ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (uskl_var_f α) ⊑ Q
+where "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⊑ Q" :=
+  (ad_pat_sub NM M Ψ Θ R Q) : type_scope.
+
+(* ===================================================================== *)
+(*  Partial precision  [Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ]                              *)
+(*  (subtyping-proofs.tex:1561-1637; the ad_refine_pskl mirror with tags) *)
+(* ===================================================================== *)
+
+Reserved Notation "Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ"
+  (at level 75, Δ at level 74, P at level 74, Ψ at level 0, ψ at level 74,
+   no associativity).
+
+Inductive ad_partial_precise :
+  aenv -> atoms -> atoms -> pskl -> uskl -> Prop :=
+| ad_ppre__unit : forall Θ Δ Ψ,
+    Ψ [=] empty ->
+    Θ ⨟ Δ ⊢ pskl_unit ⊑ᵖ[ Ψ ] uskl_unit
+| ad_ppre__var : forall Θ Δ Ψ X,
+    Ψ [=] empty ->
+    X `in` Δ \/ a_binds_tvar X Θ ->
+    Θ ⨟ Δ ⊢ (pskl_var_f X) ⊑ᵖ[ Ψ ] (uskl_var_f X)
+| ad_ppre__arrow : forall Θ Δ Ψ Ψ1 Ψ2 P1 P2 ψ1 ψ2,
+    Θ ⨟ Δ ⊢ P1 ⊑ᵖ[ Ψ1 ] ψ1 ->
+    Θ ⨟ Δ ⊢ P2 ⊑ᵖ[ Ψ2 ] ψ2 ->
+    Ψ [=] Ψ1 `union` Ψ2 ->
+    Θ ⨟ Δ ⊢ (pskl_arrow P1 P2) ⊑ᵖ[ Ψ ] (uskl_arrow ψ1 ψ2)
+| ad_ppre__forall : forall L Θ Δ Ψ Ψ0 ε P ψ,
+    (forall X, X `notin` L ->
+       Θ ⨟ (add X Δ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f X))
+         ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f X))) ->
+    Ψ [=] add ε Ψ0 ->
+    Θ ⨟ Δ ⊢ (pskl_all_syn P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ)
+| ad_ppre__hole : forall Θ Δ Ψ ψ,
+    Ψ [=] empty ->
+    AtomSetImpl.inter Δ (ftvar_in_uskl ψ) [=] empty ->
+    Θ ⨟ Δ ⊢ pskl_hole ⊑ᵖ[ Ψ ] ψ
+| ad_ppre__tophole_remove : forall Θ Δ Ψ P ψ,
+    Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+    Θ ⨟ Δ ⊢ (pskl_tophole P) ⊑ᵖ[ Ψ ] ψ
+| ad_ppre__tophole_fill : forall L Θ Δ Ψ P ψ,
+    (forall X, X `notin` L ->
+       ((X ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ (pskl_tophole P)
+         ⊑ᵖ[ Ψ ] (open_uskl_wrt_uskl ψ (uskl_var_f X))) ->
+    forall ε,
+    Θ ⨟ Δ ⊢ (pskl_tophole P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ)
+| ad_ppre__tophole_keep : forall Θ Δ Ψ P ψ,
+    Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+    Θ ⨟ Δ ⊢ (pskl_tophole P) ⊑ᵖ[ Ψ ] (uskl_topholeg ψ)
+(* — flexible-variable lookups (fig:declarative-in-algo-context style) — *)
+| ad_ppre__flex_l : forall Θ Δ Ψ α τ ψ,
+    binds α (abind_flex_mono_def τ) Θ ->
+    Θ ⨟ Δ ⊢ (ptyp_to_pskl τ) ⊑ᵖ[ Ψ ] ψ ->
+    Θ ⨟ Δ ⊢ (pskl_var_f α) ⊑ᵖ[ Ψ ] ψ
+| ad_ppre__flex_r : forall Θ Δ Ψ α τ P,
+    binds α (abind_flex_mono_def τ) Θ ->
+    Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] (ptyp_to_uskl_syn τ) ->
+    Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] (uskl_var_f α)
+where "Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ" :=
+  (ad_partial_precise Θ Δ Ψ P ψ) : type_scope.
