@@ -828,12 +828,19 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
    [FlexMono] and discard [Ξ]. *)
 with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_sub_flex__solve : forall NM M P0 Θ0 Θ1 Ξ α0 α β A,        (* Flex-Solve *)
+    (* prose-completion: the deposited α̂,β̂ are fresh (Barendregt) *)
+    α <> β ->
+    α `notin` add α0 (dom (Ξ ++ Θ0)) ->
+    β `notin` add α0 (dom (Ξ ++ Θ0)) ->
     a_sub NM (mode_fn M) P0
       (Ξ ++ (α0 ~ abind_flex_mono_def (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
           ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0)
       (pskl_arrow (pskl_var_f α) (pskl_var_f β)) A Θ1 ->
     a_sub_flex NM M P0 ((α0 ~ abind_flex_mono) ++ Θ0) Ξ α0 A Θ1
 | a_sub_flex__assign : forall NM M P0 Θ0 Θ1 Ξ α β τ A,        (* Flex-Assign *)
+    (* prose-completion: the walked definition re-attaches above the
+       continuation's output (Barendregt: β survives no deeper generation) *)
+    β `notin` dom Θ1 ->
     a_sub_flex NM M (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0) Θ0 Ξ α A Θ1 ->
     a_sub_flex NM M P0 ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α A
       ((β ~ abind_flex_mono_def τ) ++ Θ1)
@@ -845,11 +852,13 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
 | a_sub_flex__skip : forall NM M P0 Θ0 Θ1 Ξ α β A,            (* Flex-Skip *)
     α <> β ->
     β `notin` ftvar_in_pskl P0 ->
+    β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
     a_sub_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A
       ((β ~ abind_flex_mono) ++ Θ1)
 | a_sub_flex__skip_rigid : forall NM M P0 Θ0 Θ1 Ξ α β A,      (* Flex-SkipRigid *)
     β `notin` ftvar_in_pskl P0 ->
+    β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
     a_sub_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1).
 
