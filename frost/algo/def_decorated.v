@@ -346,6 +346,7 @@ with a_subtag_flex :
     a_subtag_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A
       ((β ~ abind_flex_mono) ++ Θ1)
 | a_subtag_flex__skip_rigid : forall NM M P0 Θ0 Θ1 Ξ α β A,   (* Flex-SkipRigid *)
+    α <> β ->                               (* prose-completion (Barendregt) *)
     β `notin` ftvar_in_pskl P0 ->
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->

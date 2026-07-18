@@ -1725,3 +1725,158 @@ Proof.
   - inversion HeqP; subst; reflexivity.
   - inversion HeqP; subst; reflexivity.
 Qed.
+
+(** Ghost-freeness survives substitution by a monotype painting. *)
+Lemma pskl_ghost_free_subst_mono : forall P τ β,
+  pskl_ghost_free P -> mono_ptyp τ ->
+  pskl_ghost_free (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
+Proof.
+  induction P; intros τ β Hg Hm; simpl in *; intuition.
+  match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    [ | simpl; auto ].
+  clear - Hm. induction Hm; simpl; intuition.
+Qed.
+
+(** FOLD a definition back into a fill's source: if the τ-image of Q0
+    fills to Qt, then Q0 itself does — every β̂-node of Q0 caps its
+    τ-subtree with [flex_l], rebuilt from the case's own premises.
+    (Flex-Assign's re-entry premise speaks about the substituted input;
+    its conclusion about the original.) *)
+Lemma ad_refine_syn_f_fold_def_source : forall F Θ Δ Qs Qt,
+  ad_refine_syn_f F Θ Δ Qs Qt ->
+  forall β τ Q0,
+  binds β (abind_flex_mono_def τ) Θ ->
+  mono_ptyp τ ->
+  Qs = subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q0 ->
+  ad_refine_syn_f F Θ Δ Q0 Qt.
+Proof.
+  intros F Θ Δ Qs Qt H; induction H;
+    intros β τ0 Q0 Hb Hm HeqQs;
+    destruct Q0; simpl in HeqQs;
+    try match goal with
+        | Hif : context [ if ?e then _ else _ ] |- _ =>
+            let He := fresh "Hne" in destruct e as [-> | He]
+        end;
+    try discriminate HeqQs.
+  - (* unit / Q0 = unit *) apply ad_refine_syn_f__unit.
+  - (* unit / Q0 = var β, τ = unit *)
+    eapply ad_refine_syn_f__flex_l; [ exact Hb | ].
+    rewrite <- HeqQs. apply ad_refine_syn_f__unit.
+  - (* var / Q0 = var β, τ = var *)
+    eapply ad_refine_syn_f__flex_l; [ exact Hb | ].
+    rewrite <- HeqQs. apply ad_refine_syn_f__var; assumption.
+  - (* var / Q0 = var x ≠ β *)
+    inversion HeqQs; subst. apply ad_refine_syn_f__var; assumption.
+  - (* arrow / Q0 = var β, τ arrow *)
+    eapply ad_refine_syn_f__flex_l; [ exact Hb | ].
+    rewrite <- HeqQs. apply ad_refine_syn_f__arrow; assumption.
+  - (* arrow / Q0 = arrow *)
+    inversion HeqQs; subst.
+    apply ad_refine_syn_f__arrow;
+      [ eapply IHad_refine_syn_f1; eauto
+      | eapply IHad_refine_syn_f2; eauto ].
+  - (* all_inh / Q0 = var β : a monotype painting is never a ∀ *)
+    destruct τ0; simpl in HeqQs; discriminate.
+  - (* all_inh / Q0 = all_inh *)
+    inversion HeqQs; subst.
+    apply ad_refine_syn_f__all with (L := L `union` {{β}}).
+    intros X HX.
+    match goal with
+    | IH : forall X, X `notin` L -> _ |- _ =>
+        eapply (IH X ltac:(clear - HX; fsetdec))
+    end; [ exact Hb | exact Hm | ].
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      [ reflexivity
+      | intro He; subst; clear - HX; fsetdec
+      | apply mono_ptyp_to_bskl_syn_lc; exact Hm ].
+  - (* hole / Q0 = var β *)
+    destruct τ0; simpl in HeqQs; discriminate.
+  - (* hole / Q0 = hole *)
+    apply ad_refine_syn_f__hole; assumption.
+  - (* tophole_remove / Q0 = var β *)
+    destruct τ0; simpl in HeqQs; discriminate.
+  - (* tophole_remove / Q0 = tophole *)
+    inversion HeqQs; subst.
+    apply ad_refine_syn_f__tophole_remove.
+    eapply IHad_refine_syn_f; eauto.
+  - (* tophole_fill / Q0 = var β *)
+    destruct τ0; simpl in HeqQs; discriminate.
+  - (* tophole_fill / Q0 = tophole *)
+    inversion HeqQs; subst.
+    apply ad_refine_syn_f__tophole_fill with (L := L `union` {{β}}).
+    intros X HX.
+    match goal with
+    | IH : forall X, X `notin` L -> _ |- _ =>
+        eapply (IH X ltac:(clear - HX; fsetdec))
+    end; [ | exact Hm | simpl; reflexivity ].
+    unfold binds. simpl. right. exact Hb.
+  - (* tophole_keep / Q0 = var β *)
+    destruct τ0; simpl in HeqQs; discriminate.
+  - (* tophole_keep / Q0 = tophole *)
+    inversion HeqQs; subst.
+    apply ad_refine_syn_f__tophole_keep; [ assumption | ].
+    eapply IHad_refine_syn_f; eauto.
+  - (* flex_l / Q0 = var β : cap with the rebuilt lookup *)
+    eapply ad_refine_syn_f__flex_l; [ exact Hb | ].
+    rewrite <- HeqQs.
+    eapply ad_refine_syn_f__flex_l; eassumption.
+  - (* flex_l / Q0 = var x ≠ β : rebuild *)
+    inversion HeqQs; subst.
+    eapply ad_refine_syn_f__flex_l; eassumption.
+  (* flex_r : the source is a rule variable — every Q0 shape survives;
+     fold under the target lookup uniformly. *)
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+  - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
+      eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
+      simpl;
+      try match goal with
+          | |- context [ if ?e then _ else _ ] => destruct e
+          end; congruence.
+Qed.
