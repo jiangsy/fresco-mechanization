@@ -701,18 +701,20 @@ See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the
 pre-restart `pskl_to_tskl` decorated witnesses (prop_safety machinery).
 
 
-## Soundness ForallR: "context strengthening for unused variables in Ξ" is not a lemma (2026-07-18)
+## Soundness ForallR: the strengthening step is TRUE but needs the substitution generalization (2026-07-18)
 
 `subtyping-proofs.tex` (lemma:sound-decorated-subtyping, ForallR case,
 ~:1293-1314) discards the trailing suffix Ξ with "Since Ξ is fresh for S and
-B, by context strengthening for unused variables in Ξ".  Conclusion-only
-strengthening is FALSE for the declarative subtyping judgment: a ForallL
-instantiation witness inside the derivation may mention a Ξ-variable that the
-conclusion (S, B) does not expose — the same failure the decl layer already
-hit for `d_sub` (decl/prop_syntax_directed.v NOTE, with `ph = X` as the
-counterexample witness).
+B, by context strengthening for unused variables in Ξ".  The strengthening
+STATEMENT is true — but it is not provable by direct induction on the
+derivation: a ForallL instantiation witness may mention a Ξ-variable the
+conclusion (S, B) does not expose, so the conclusion-only freshness motive
+does not propagate to the premises.  The decl layer hit the same for
+`d_sub` (decl/prop_syntax_directed.v NOTE — its "is FALSE" refers to the
+induction motive, not the theorem).
 
-Mech repair (decl-style): substitute the stripped variables away, rewriting
+Mech route (decl-style): the inductive generalization is SUBSTITUTION —
+substitute the stripped variables away, rewriting
 witnesses too — unit for an undefined flex entry, its own definition
 painting for a defined one, iterating head-first over Ξ (defs scope to
 tails, so the head entry is never mentioned elsewhere).  Foundations in
@@ -722,5 +724,6 @@ inductions and the suffix driver are the remaining pieces (the decl cribs
 are `d_pat_consis_subst_unit` / `d_pat_sub_subst_unit`,
 decl/prop_skeleton.v:268/313).
 
-Paper fix: state the strengthening step as the substitution lemma (or add
-witness-scoping to the ForallL rule's prose side conditions).
+Paper note: the step is correct; a footnote that the strengthening lemma is
+proved via witness-rewriting substitution (not direct induction) would make
+the appendix self-contained.
