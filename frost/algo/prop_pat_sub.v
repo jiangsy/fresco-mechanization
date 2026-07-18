@@ -1665,3 +1665,63 @@ Proof.
       clear - Huq HZΘt. simpl_env in Huq. destruct_uniq.
       unfold disjoint in *. simpl_env in *. fsetdec.
 Qed.
+
+(** INVERSION: a ghost-free-source fill whose target erases back to the
+    source is the inh painting itself — "the run lands on B" (the Check
+    case of subtyping soundness).  The flex rules cannot escape: a
+    variable's erasure pins the target variable node syntactically. *)
+Lemma ad_refine_syn_f_ghost_free_erasure_inv : forall F Θ Δ Qsrc Ptgt,
+  ad_refine_syn_f F Θ Δ Qsrc Ptgt ->
+  forall B,
+  Qsrc = pskl_to_bskl_inh B ->
+  pskl_ghost_free B ->
+  bskl_to_pskl Ptgt = B ->
+  Ptgt = pskl_to_bskl_inh B.
+Proof.
+  intros F Θ Δ Qsrc Ptgt H; induction H; intros B HeqQ Hg HeqP;
+    destruct B; simpl in HeqQ; inversion HeqQ; subst; simpl in *.
+  - (* unit *) reflexivity.
+  - (* var *) reflexivity.
+  - (* arrow *)
+    destruct Hg as [Hg1 Hg2].
+    inversion HeqP.
+    f_equal;
+      [ apply (IHad_refine_syn_f1 (bskl_to_pskl P1))
+      | apply (IHad_refine_syn_f2 (bskl_to_pskl P2)) ];
+      auto; congruence.
+  - (* all_inh *)
+    inversion HeqP.
+    match goal with
+    | Heq2 : bskl_to_pskl P = _ |- _ => rewrite <- Heq2 in H0, H, Hg
+    end.
+    f_equal.
+    destruct (atom_fresh
+                (L `union` ftvar_in_bskl P
+                   `union` ftvar_in_bskl
+                       (pskl_to_bskl_inh (bskl_to_pskl P))))
+      as [X Fr].
+    apply open_bskl_wrt_bskl_inj with (Xbs1 := X);
+      [ clear - Fr; fsetdec | clear - Fr; fsetdec | ].
+    rewrite <- pskl_to_bskl_inh_open.
+    apply H0; [ clear - Fr; fsetdec | | | ].
+    + symmetry. apply pskl_to_bskl_inh_open.
+    + unfold open_pskl_wrt_pskl. apply pskl_ghost_free_open_rec.
+      exact Hg.
+    + rewrite bskl_to_pskl_open. reflexivity.
+  - (* hole : B would be a ghost *) destruct Hg.
+  - (* tophole_remove *) destruct Hg.
+  - (* tophole_fill *) destruct Hg.
+  - (* tophole_keep *) destruct Hg.
+  - (* flex_l : the source variable pins the target *)
+    destruct Q; simpl in HeqP; inversion HeqP; subst; reflexivity.
+  - (* flex_r : Qsrc is a rule variable, so every B-shape survives the
+       top-level destruct; the erasure equation discriminates all but the
+       variable one. *)
+    inversion HeqP; subst; reflexivity.
+  - inversion HeqP; subst; reflexivity.
+  - inversion HeqP; subst; reflexivity.
+  - inversion HeqP; subst; reflexivity.
+  - inversion HeqP; subst; reflexivity.
+  - inversion HeqP; subst; reflexivity.
+  - inversion HeqP; subst; reflexivity.
+Qed.

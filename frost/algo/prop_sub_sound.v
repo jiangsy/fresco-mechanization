@@ -260,13 +260,29 @@ Proof.
       simpl. apply ad_refine_syn_f__hole;
         [ clear; fsetdec | exact HwfS ].
 
-  - (* Check (TY) : the consistency run must land on B itself.
-       ADMIT [true]: needs the re-inherit transport of the run's output
-       join onto the inh painting of B ([refine_join_reinherit]) plus the
-       output-equals-input argument for a concrete B (both sides of the
-       decorated run are guarded types).  See DESIGN-subtyping.md §2.1. *)
+  - (* Check (TY) : the run lands on B itself — B is ghost-free (a
+       type), so the fill conjunct of the consistency run pins its output
+       to the inh painting ([ad_refine_syn_f_ghost_free_erasure_inv]). *)
     intros Ψ Θ0 Θ1 T B HgT HgB Hc Hwf HlcT HwfB HwfT Hmod Hgf.
-    admit.
+    specialize (Hgf eq_refl).
+    destruct (a_consistag_sound_aux Hc Hwf HlcT HwfB HwfT
+                ltac:(intros X HX; clear - HX; fsetdec)
+                ltac:(intros β τ Hb; apply inter_empty_pointwise;
+                      intros X HX; clear - HX; fsetdec)
+                ltac:(intros Θa β b Θb Heq Hne;
+                      apply inter_empty_pointwise;
+                      intros X HX; clear - HX; fsetdec))
+      as [Hle [Hwf1 [_ [_ [[Qt [HeQt [Hcons Hfill]]] _]]]]].
+    assert (HQt : Qt = pskl_to_bskl_inh B)
+      by (eapply ad_refine_syn_f_ghost_free_erasure_inv; eauto).
+    subst Qt.
+    split; [ exact Hle | ].
+    split; [ exact Hwf1 | ].
+    exists (pskl_to_bskl_inh B).
+    split; [ apply bskl_to_pskl_pskl_to_bskl_inh | ].
+    split.
+    + apply ad_pat_sub__check; [ exact HgT | exact HgB | exact Hcons ].
+    + exact Hfill.
 
   - (* ForallR (TY) : open the binder, run the body, strip the trailing
        suffix, and re-attach the rigid head (crib: a_consistag_sound_aux's
