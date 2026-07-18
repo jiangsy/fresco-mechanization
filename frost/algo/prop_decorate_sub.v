@@ -131,3 +131,75 @@ Proof.
     + simpl. rewrite He0. reflexivity.
     + intros Hg. simpl in Hg. contradiction.
 Qed.
+
+(* ===================================================================== *)
+(*  §3  Constraint-solving concatenation (lemma:solvetag-concat)          *)
+(*                                                                        *)
+(*  Solvable constraint lists are eq-prefixed with at most a single sub   *)
+(*  at the tail; splitting/joining a solve at a list append splits/joins  *)
+(*  the solved tag set.                                                   *)
+(* ===================================================================== *)
+
+Lemma a_solvetag_split : forall C1 C2 ψ Ψ,
+  (C1 ++ C2) ⊩ᵗ ψ ⤳ Ψ ->
+  exists Ψ1 Ψ2,
+    C1 ⊩ᵗ ψ ⤳ Ψ1 /\ C2 ⊩ᵗ ψ ⤳ Ψ2 /\ Ψ [=] Ψ1 `union` Ψ2.
+Proof.
+  induction C1 as [ | c C1' IH ]; intros C2 ψ Ψ Hs; simpl in Hs.
+  - exists empty, Ψ. repeat apply conj;
+      [ apply a_solvetag__empty; fsetdec | exact Hs | fsetdec ].
+  - destruct c as [ M Q | Q ].
+    + (* sub head : inversion unifies C1' ++ C2 = nil *)
+      inversion Hs as [ | M0 Q0 ψ0 Ψ0 Hsub Hnil | ]; subst.
+      symmetry in H0. apply app_eq_nil in H0. destruct H0 as [-> ->].
+      exists Ψ, empty. repeat apply conj;
+        [ apply a_solvetag__sub; exact Hsub
+        | apply a_solvetag__empty; fsetdec | fsetdec ].
+    + (* eq head *)
+      inversion Hs as [ | | Q0 C0 ψ0 Ψall Ψa Ψb Heqp Hrest HΨ ]; subst.
+      destruct (IH C2 ψ Ψb Hrest) as [Ψ1 [Ψ2 [Hs1 [Hs2 HΨe]]]].
+      exists (Ψa `union` Ψ1), Ψ2. repeat apply conj.
+      * eapply a_solvetag__eq; [ exact Heqp | exact Hs1 | fsetdec ].
+      * exact Hs2.
+      * clear - HΨ HΨe. fsetdec.
+Qed.
+
+Scheme a_solvetag_sub_mut := Induction for a_solvetag_sub Sort Prop
+  with a_solvetag_eq_mut := Induction for a_solvetag_eq Sort Prop.
+Combined Scheme a_solvetag_sub_eq_mutind
+  from a_solvetag_sub_mut, a_solvetag_eq_mut.
+
+Lemma a_solvetag_sub_eq_psi_cong :
+  (forall ψ M Q Ψ, ψ ≼ᵗ[ M ] Q ⤳ Ψ ->
+     forall Ψ', Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] Q ⤳ Ψ') /\
+  (forall ψ Q Ψ, ψ ∼ᵗ Q ⤳ Ψ ->
+     forall Ψ', Ψ [=] Ψ' -> ψ ∼ᵗ Q ⤳ Ψ').
+Proof.
+  apply (a_solvetag_sub_eq_mutind
+           (fun ψ M Q Ψ _ => forall Ψ', Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] Q ⤳ Ψ')
+           (fun ψ Q Ψ _ => forall Ψ', Ψ [=] Ψ' -> ψ ∼ᵗ Q ⤳ Ψ'));
+    intros; try (econstructor; eauto; fsetdec).
+Qed.
+
+Lemma a_solvetag_sub_psi_cong : forall ψ M Q Ψ Ψ',
+  ψ ≼ᵗ[ M ] Q ⤳ Ψ -> Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] Q ⤳ Ψ'.
+Proof. intros; eapply (proj1 a_solvetag_sub_eq_psi_cong); eauto. Qed.
+
+Lemma a_solvetag_eq_psi_cong : forall ψ Q Ψ Ψ',
+  ψ ∼ᵗ Q ⤳ Ψ -> Ψ [=] Ψ' -> ψ ∼ᵗ Q ⤳ Ψ'.
+Proof. intros; eapply (proj2 a_solvetag_sub_eq_psi_cong); eauto. Qed.
+
+Lemma a_solvetag_psi_cong : forall C ψ Ψ Ψ',
+  C ⊩ᵗ ψ ⤳ Ψ -> Ψ [=] Ψ' -> C ⊩ᵗ ψ ⤳ Ψ'.
+Proof.
+  intros C ψ Ψ Ψ' Hs; revert Ψ'; induction Hs; intros Ψ' Heq.
+  - apply a_solvetag__empty. fsetdec.
+  - apply a_solvetag__sub. eapply a_solvetag_sub_psi_cong; eauto.
+  - eapply a_solvetag__eq; [ exact H | exact Hs | clear - Heq H0; fsetdec ].
+Qed.
+
+(* NB: the paper's converse (join) direction is only sound when the
+   left list is eq-only — a sub constraint solves only as a singleton
+   list.  The forward split above is what the main decoration proof
+   consumes; the join is deferred until a call site fixes its shape. *)
+
