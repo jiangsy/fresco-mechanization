@@ -34,6 +34,7 @@ Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_decorate.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_compose.
+Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_consis_sound.
 Require Import src.frost.algo.prop_consis_complete.
@@ -87,6 +88,28 @@ Lemma guarded_pskl_to_bskl_syn : forall P,
 Proof.
   intros P H; inversion H; simpl; constructor;
     auto using lc_pskl_to_bskl_syn.
+Qed.
+
+(** A declaration-only prefix preserves context well-formedness (decls
+    carry no payload; freshness comes from the uniq hypothesis). *)
+Lemma a_wf_aenv_prepend_decls : forall Ξ Θ,
+  a_decls Ξ ->
+  uniq Ξ ->
+  (forall γ, γ `in` dom Ξ -> γ `notin` dom Θ) ->
+  a_wf_aenv Θ ->
+  a_wf_aenv (Ξ ++ Θ).
+Proof.
+  induction Ξ as [ | [γ b] Ξ' IH ]; intros Θ Hdecl Huq Hfr Hwf;
+    [ exact Hwf | ].
+  inversion Hdecl; subst.
+  simpl_env. apply a_wf_aenv__flex.
+  - simpl_env. 
+    assert (HγΘ : γ `notin` dom Θ)
+      by (apply Hfr; simpl; fsetdec).
+    clear - Huq HγΘ. simpl_env in *. solve_uniq.
+  - apply IH; auto.
+    + clear - Huq. solve_uniq.
+    + intros γ0 Hγ0. apply Hfr. simpl. fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -310,14 +333,88 @@ Proof.
     split; [ | exact Hfill ].
     eapply ad_pat_sub_psi_cong; [ exact Hsub | clear - HΨ; fsetdec ].
 
-  - (* Flex-Solve : deposit α̂0 := α̂→β̂ and recurse on the arrow.
-       ADMIT [true]: build the ⊴ for the deposited definition exactly as
-       plain SolveM soundness does (a_isub_prepend_decls_src +
-       a_isub_target_weaken, prop_consis_sound.v:2588-2610), then
-       ad_pat_sub__flex_mono off the IH's arrow subtyping (its subject IS
-       ptyp_to_uskl_syn (α→β)). *)
+  - (* Flex-Solve : deposit α̂0 := α̂→β̂ and recurse on the arrow.  The
+       source lifts into the deposited context by a ⊴ (suffix-weaken the
+       core, then re-prepend α̂0 and Ξ as declarations), so every
+       hypothesis transports by ⊴-stability and the conclusion is
+       FlexMono off the IH's arrow subtyping. *)
     intros NM M P0 Θ0 Θ1 Ξ α0 α β A Hne Hαf Hβf Hprem IH Hwf Hdecl HwfP0 Hmod.
-    admit.
+    set (τab := ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)).
+    set (Θmid := (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0).
+    set (Θ' := Ξ ++ (α0 ~ abind_flex_mono_def τab) ++ Θmid).
+    assert (Huq : uniq (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Hwf0 : a_wf_aenv Θ0).
+    { eapply a_wf_aenv_app_r with (Θp := Ξ ++ (α0 ~ abind_flex_mono)).
+      simpl_env. exact Hwf. }
+    assert (Hbα : binds α abind_flex_mono Θmid)
+      by (unfold Θmid; unfold binds; simpl; right; left; reflexivity).
+    assert (Hbβ : binds β abind_flex_mono Θmid)
+      by (unfold Θmid; unfold binds; simpl; left; reflexivity).
+    assert (Hwfmid : a_wf_aenv Θmid).
+    { unfold Θmid. apply a_wf_aenv__flex.
+      { simpl. clear - Hβf Hne. simpl_env in *. fsetdec. }
+      apply a_wf_aenv__flex;
+        [ clear - Hαf; simpl_env in *; fsetdec | exact Hwf0 ]. }
+    assert (Hwfdef : a_wf_aenv ((α0 ~ abind_flex_mono_def τab) ++ Θmid)).
+    { apply a_wf_aenv__flex_def.
+      - unfold Θmid. simpl. clear - Hαf Hβf Huq. simpl_env in *. solve_uniq.
+      - apply a_wf_ptyp__arrow; apply a_wf_ptyp__var;
+          [ right; left; exact Hbα | right; left; exact Hbβ ].
+      - repeat constructor.
+      - exact Hwfmid. }
+    assert (HwfΘ' : a_wf_aenv Θ').
+    { unfold Θ'. apply a_wf_aenv_prepend_decls; auto.
+      - clear - Huq. solve_uniq.
+      - intros γ Hγ. unfold Θmid. simpl_env.
+        clear - Huq Hαf Hβf Hγ. destruct_uniq.
+        unfold disjoint in *. simpl_env in *. fsetdec. }
+    (* the source lifts into Θ' *)
+    assert (Hbase : Θ0 ⊴ Θ').
+    { unfold Θ', Θmid.
+      replace (Ξ ++ (α0 ~ abind_flex_mono_def τab)
+                 ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0)
+        with ((Ξ ++ (α0 ~ abind_flex_mono_def τab)
+                 ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono)) ++ Θ0)
+        by (simpl_env; reflexivity).
+      apply a_isub_weaken_suffix;
+        [ apply a_wf_aenv_lc_aenv; exact Hwf0 | ].
+      apply a_suffix_app; [ auto using a_decls_suffix | ].
+      apply (a_suffix__cons α0);
+        [ apply (a_suffix__cons β);
+            [ apply (a_suffix__cons α);
+                [ apply a_suffix__nil | constructor ]
+            | constructor ]
+        | constructor ]. }
+    assert (Hbα0' : binds α0 (abind_flex_mono_def τab) Θ').
+    { unfold Θ'. unfold binds. apply in_or_app. right. left. reflexivity. }
+    assert (Hlift : (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0) ⊴ Θ').
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb. right; left.
+        unfold Θ'. unfold binds. apply in_or_app. left. exact Hb. }
+      apply a_isub_prepend_decls_src;
+        [ apply (a_decls__cons α0); apply a_decls__nil | | exact Hbase ].
+      intros γ Hb.
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> _] | Hb'];
+        [ right; right; exists τab; exact Hbα0' | inversion Hb' ]. }
+    (* transported hypotheses for the IH *)
+    assert (HwfP0' : Θ' ⨟ empty ⊢ₚₛᵃ P0)
+      by (eapply ad_wf_pskl_isub; eauto).
+    assert (Hwfarr : Θ' ⨟ empty ⊢ₚₛᵃ ⌊ uskl_arrow (uskl_var_f α)
+                                        (uskl_var_f β) ⌋ˢ).
+    { simpl. apply ad_wf_pskl__arrow; apply ad_wf_pskl__var;
+        right; right; left;
+        (unfold Θ'; unfold binds; apply in_or_app; right; simpl;
+         right; auto). }
+    destruct (IH HwfΘ' ltac:(repeat constructor) HwfP0' Hwfarr Hmod)
+      as [Hle' [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+    split. { eapply a_isub_trans; [ exact Hlift | exact Hle' ]. }
+    split; [ exact Hwf1 | ].
+    exists Qt. split; [ exact HeQt | ].
+    split; [ | exact Hfill ].
+    eapply ad_pat_sub__flex_mono with (τ := τab).
+    + destruct Hle' as [_ Hdefs]. apply Hdefs. exact Hbα0'.
+    + exact Hsub.
 
   - (* Flex-Assign : substitute the walked definition into P0.
        ADMIT [true]: needs the fold-def transports on the fill and the
