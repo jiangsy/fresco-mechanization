@@ -699,3 +699,28 @@ paper's PROOF-level statements here — unlike the optimality-cex case).
 See [REPORT-remech-decl-sync.md](REPORT-remech-decl-sync.md) — notably the
 `is_tskl` untagged-∀ fix (A1), whose downstream effect invalidated the
 pre-restart `pskl_to_tskl` decorated witnesses (prop_safety machinery).
+
+
+## Soundness ForallR: "context strengthening for unused variables in Ξ" is not a lemma (2026-07-18)
+
+`subtyping-proofs.tex` (lemma:sound-decorated-subtyping, ForallR case,
+~:1293-1314) discards the trailing suffix Ξ with "Since Ξ is fresh for S and
+B, by context strengthening for unused variables in Ξ".  Conclusion-only
+strengthening is FALSE for the declarative subtyping judgment: a ForallL
+instantiation witness inside the derivation may mention a Ξ-variable that the
+conclusion (S, B) does not expose — the same failure the decl layer already
+hit for `d_sub` (decl/prop_syntax_directed.v NOTE, with `ph = X` as the
+counterexample witness).
+
+Mech repair (decl-style): substitute the stripped variables away, rewriting
+witnesses too — unit for an undefined flex entry, its own definition
+painting for a defined one, iterating head-first over Ξ (defs scope to
+tails, so the head entry is never mentioned elsewhere).  Foundations in
+algo/prop_pat_sub.v §4 (`guarded_pskl_subst`, `a_wf_pskl_subst_ctx`,
+`uskl_to_pskl_subst_unit`); the `ad_pat_consis`/`ad_pat_sub` strip
+inductions and the suffix driver are the remaining pieces (the decl cribs
+are `d_pat_consis_subst_unit` / `d_pat_sub_subst_unit`,
+decl/prop_skeleton.v:268/313).
+
+Paper fix: state the strengthening step as the substitution lemma (or add
+witness-scoping to the ForallL rule's prose side conditions).

@@ -26,6 +26,7 @@ Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
+Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_consis_sound.
 
 Set Implicit Arguments.
@@ -175,4 +176,93 @@ Proof.
   - apply ad_ppre__tophole_keep; auto.
   - eapply ad_ppre__flex_l; eauto.
   - eapply ad_ppre__flex_r; eauto.
+Qed.
+
+(* ===================================================================== *)
+(*  §4  Suffix-strip foundations                                          *)
+(*                                                                        *)
+(*  ForallR's soundness case must discard the trailing suffix Ξ the body  *)
+(*  run deposits above the binder.  The paper says "by context            *)
+(*  strengthening for unused variables in Ξ" — but conclusion-only        *)
+(*  strengthening is FALSE for ad_pat_sub (a ForallL witness may mention  *)
+(*  a Ξ-variable the conclusion does not expose), exactly as the decl     *)
+(*  layer discovered for d_sub (prop_syntax_directed.v NOTE).  The        *)
+(*  repair is the decl route: SUBSTITUTE the stripped variable away       *)
+(*  (unit for undefined flex, its own definition for defined flex),       *)
+(*  rewriting witnesses too.  This section holds the substituend-generic  *)
+(*  foundations; the ad_pat_consis/ad_pat_sub strip inductions build on   *)
+(*  them.                                                                 *)
+(* ===================================================================== *)
+
+(** Guardedness survives substitution by a guarded, lc substituend
+    (unit and monotype paintings are both guarded). *)
+Lemma guarded_pskl_subst : forall P Q X,
+  guarded_pskl P ->
+  guarded_pskl Q ->
+  lc_pskl Q ->
+  guarded_pskl (subst_pskl_in_pskl Q X P).
+Proof.
+  intros P Q X H HgQ HlcQ. induction H; simpl.
+  - apply guarded_pskl__unit.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      [ exact HgQ | apply guarded_pskl__var ].
+  - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; auto.
+Qed.
+
+(** Substituting a context (flex) entry away preserves disciplined wf:
+    the mid entry is dropped; the substituend must be well-formed at the
+    EMPTY Δ (so ⊤◇-bodies stay disciplined) and guarded (so ⊤◇-bodies
+    stay guarded). *)
+Lemma a_wf_pskl_subst_ctx : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall Θ1 β b Θ2 Q,
+  Θ = Θ1 ++ (β ~ b) ++ Θ2 ->
+  β `notin` dom (Θ1 ++ Θ2) ->
+  β `notin` Δ ->
+  guarded_pskl Q ->
+  (Θ1 ++ Θ2) ⨟ empty ⊢ₚₛᵃ Q ->
+  (Θ1 ++ Θ2) ⨟ Δ ⊢ₚₛᵃ subst_pskl_in_pskl Q β P.
+Proof.
+  intros Θ Δ P H; induction H;
+    intros Θ1 β b0 Θ2 Q0 Heqc Hfr HfrΔ HgQ HwfQ; subst; simpl.
+  - apply a_wf_pskl__unit.
+  - match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
+    end.
+    + eapply a_wf_pskl_delta_mono; [ exact HwfQ | clear; fsetdec ].
+    + apply a_wf_pskl__var.
+      destruct H as [HΔ | Ht]; [ left; exact HΔ | right ].
+      apply a_binds_tvar_strip_mid with (c := β) (b := b0);
+        [ exact Ht
+        | intro He; inversion He; subst; exact (Hne eq_refl)
+        | intro He; inversion He; subst; exact (Hne eq_refl)
+        | intros τ0 He; inversion He; subst; exact (Hne eq_refl) ].
+  - apply a_wf_pskl__arrow; eauto.
+  - apply a_wf_pskl__all
+      with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2) `union` Δ).
+    intros Y HY.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | intro He; subst; clear - HY; fsetdec
+        | eapply a_wf_pskl_lc; eauto ].
+    match goal with
+    | IH : forall X, X `notin` L -> _ |- _ => eapply IH
+    end; eauto.
+  - apply a_wf_pskl__hole.
+  - apply a_wf_pskl__tophole.
+    + apply guarded_pskl_subst; auto. eapply a_wf_pskl_lc; eauto.
+    + match goal with
+      | IH : context [ _ ⨟ _ ⊢ₚₛᵃ subst_pskl_in_pskl _ _ _ ] |- _ =>
+          eapply IH
+      end; eauto; try (clear; fsetdec).
+Qed.
+
+(** Erasure commutes with the unit substitution. *)
+Lemma uskl_to_pskl_subst_unit : forall S β,
+  ⌊ subst_bskl_in_uskl uskl_unit β S ⌋ˢ
+  = subst_pskl_in_pskl pskl_unit β ⌊ S ⌋ˢ.
+Proof.
+  induction S; intros; simpl; try (f_equal; auto; fail).
+  repeat match goal with
+         | |- context [ if ?e then _ else _ ] => destruct e
+         end; try reflexivity; try contradiction.
 Qed.
