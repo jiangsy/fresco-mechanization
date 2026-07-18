@@ -211,15 +211,43 @@ thm:complete-subtyping (generalized)
 | sound-decorated-consistency | `a_consistag_sound_aux` (decorated), `a_consis_sound(_aux)` | prop_consis_sound.v |
 | decorating-algorithmic-consistency | `a_consis_decorate(_gen)` — the *template* for L-A | prop_decorate.v |
 
-**Interface friction to plan for:** the mech consistency-completeness demands
-a third premise the paper's solution definition omits —
-`ad_refine_pskl_f ∅ Θ ∅ (θP) Qb` (subject-side refinement).  The subtyping
-call sites only carry the fill of `P0`.  Either (a) prove once
-"a declarative join's output refines its subject"
-(`ad_pat_consis → ad_refine_pskl_f` for wf subjects — plausible small
-induction; check against WF-SIDE-CONDITIONS discipline first), or (b) thread
-the extra conjunct through the subtyping solution invariant.  Decide before
-stating the completeness motive.
+**Interface friction — RESOLVED (2026-07-18): the third premise is the
+PAPER'S OWN, and the subtyping solution notion needs the same repair.**
+The mech consistency-completeness demands `ad_refine_pskl_f ∅ Θ ∅ (θP) Qb`
+(subject-side refinement).  This is *not* a mech artifact: the paper's proof
+opens by **augmenting the definition of a solution** to require three
+conditions — the join, the `P0`-fill at Δ₁, **and**
+`skctx[Δ2]{Θ} θ⌊S⌋ ⋈ Q` (consistency-proofs.tex:2230-2242) — and the
+standalone 2-condition Definition of consistency solutions is *commented
+out* in algorithmic.tex.  So `a_consis_complete_thm` is faithful to the
+paper's proof-level statement.
+
+Deriving the third condition from the other two is **FALSE**:
+`(P0 = ∀X.X, P = ∀X.◇, Q = ∀X.X)` satisfies join + fill (the join's hole
+rule checks the fill's wf over the *binder-extended* Θ, and the fill's `X`
+sits at a concrete — not hole — position of `P0`), but the subject
+refinement fails (`ad_refine_pskl`'s hole rule demands
+`Θ ⨟ ∅ ⊢ₚₛᵃ fill`), and the algorithm is stuck on it (`a_consis__ghost`
+carries `Δ2 ∩ ftv(fill) = ∅`, and the ∀-step puts the binder in both Δs) —
+so completeness against the 2-condition notion is genuinely false.
+
+**Consequence for the assembled subtyping theorem ([paper-gap], flag to
+WT):** the ACTIVE subtyping-solution Definition (algorithmic.tex:1423-1437)
+has only two conditions, and the same capture transplants to it: at `TI`,
+`(P0=◇, P=∀X.◇, Q=syn ∀X.X)` passes `typsub`-Infer + the `P0`-fill, yet the
+required optimality conclusion `θ(∀X.◇) ⊑ ∀X.X` is underivable (⊑'s hole
+rule forbids capture) — thm:complete-subtyping as literally stated is
+(conjecturally — machine-check as a cex file before finalizing the motive)
+false on it.  Repair: state the subtyping theorems against
+refinement-valid solutions (add `Θ ⊢ θ⌊S⌋ ⋈ Q`-style subject data to the
+solution/motive, threading it through the induction exactly as
+consistency's augmented statement does); soundness already yields the
+condition for every algorithmic output (`a_consis_sound`'s
+`⊢ᵣₚᵃ` conjunct), so the pair still characterizes the algorithm exactly:
+it succeeds iff a valid solution exists and is ⊑-optimal among valid
+solutions.  A restricted derivation lemma (join ⇒ subject refinement for
+**hole-free** subjects — the TY-mode call sites) is true and avoids
+threading at Check.
 
 ### 3.2 Kits (used pervasively; all Qed)
 

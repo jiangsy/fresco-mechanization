@@ -24,6 +24,7 @@ Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.prop_inc.
+Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_consis_sound.
 
@@ -117,4 +118,61 @@ Proof.
   - apply ad_ppre__tophole_keep; auto.
   - eapply ad_ppre__flex_l; eauto using a_isub_binds_flex_def.
   - eapply ad_ppre__flex_r; eauto using a_isub_binds_flex_def.
+Qed.
+
+(* ===================================================================== *)
+(*  §3  Context weakening (binds-monotone)                                *)
+(* ===================================================================== *)
+
+Lemma ad_pat_sub_weaken : forall NM M Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⊑ Q ->
+  forall Θ',
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  Ψ ⨟ Θ' ⊢ₛᵃ[ NM | M ] R ⊑ Q.
+Proof.
+  intros NM M Ψ Θ R Q H; induction H; intros Θ' Hmon.
+  - apply ad_pat_sub__infer; eauto using ad_pat_consis_weaken.
+  - apply ad_pat_sub__check; eauto using ad_pat_consis_weaken.
+  - eapply ad_pat_sub__forall_r with (L := L).
+    intros α Hα. apply H0; auto.
+    intros x b Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
+      [ unfold binds; left; reflexivity
+      | unfold binds; right; apply Hmon; auto ].
+  - apply ad_pat_sub__univ_ghost_r; eauto using ad_pat_consis_weaken.
+  - eapply ad_pat_sub__arrow; eauto using ad_pat_consis_weaken.
+  - eapply ad_pat_sub__forall_l_tagged; eauto using ad_wf_pskl_weaken.
+  - eapply ad_pat_sub__forall_l_untagged; eauto using ad_wf_pskl_weaken.
+  - apply ad_pat_sub__ghost; eauto using ad_wf_pskl_weaken.
+  - apply ad_pat_sub__ghostg; auto.
+  - apply ad_pat_sub__univ_ghost_l; auto.
+  - apply ad_pat_sub__univ_ghost_lg; auto.
+  - eapply ad_pat_sub__flex_mono; eauto.
+Qed.
+
+Lemma ad_partial_precise_weaken : forall Θ Δ Ψ P ψ,
+  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  forall Θ',
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  Θ' ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ.
+Proof.
+  intros Θ Δ Ψ P ψ H; induction H; intros Θ' Hmon.
+  - apply ad_ppre__unit; auto.
+  - apply ad_ppre__var; auto.
+    destruct H0 as [HΔ | [Hb | [Hb | [τ Hb]]]];
+      [ left | right; left | right; right; left
+      | right; right; right; exists τ ]; auto.
+  - eapply ad_ppre__arrow; eauto.
+  - eapply ad_ppre__forall with (L := L); eauto.
+  - apply ad_ppre__hole; auto.
+  - apply ad_ppre__tophole_remove; auto.
+  - eapply ad_ppre__tophole_fill with (L := L).
+    intros X HX. apply H0; auto.
+    intros x b Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
+      [ unfold binds; left; reflexivity
+      | unfold binds; right; apply Hmon; auto ].
+  - apply ad_ppre__tophole_keep; auto.
+  - eapply ad_ppre__flex_l; eauto.
+  - eapply ad_ppre__flex_r; eauto.
 Qed.
