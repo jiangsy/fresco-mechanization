@@ -204,6 +204,35 @@ Inductive a_flex : aenv -> pskl -> Prop :=
 Definition a_non_flex (Θ : aenv) (P : pskl) : Prop :=
   lc_pskl P /\ ~ a_flex Θ P.
 
+Reserved Notation "Θ ⨟ Δ ⊢ₚₛᵃ P"
+  (at level 75, Δ at level 74, P at level 75, no associativity).
+
+(* ===================================================================== *)
+(*  Skeleton well-formedness over Θ  (decl [Γ ⨟ Δ ⊢ₚₛ P])                *)
+(* ===================================================================== *)
+
+Inductive ad_wf_pskl : aenv -> atoms -> pskl -> Prop :=
+| ad_wf_pskl__unit : forall Θ Δ,
+    Θ ⨟ Δ ⊢ₚₛᵃ pskl_unit
+| ad_wf_pskl__var : forall Θ Δ X,
+    X `in` Δ \/ a_binds_tvar X Θ ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f X)
+| ad_wf_pskl__arrow : forall Θ Δ P1 P2,
+    Θ ⨟ Δ ⊢ₚₛᵃ P1 ->
+    Θ ⨟ Δ ⊢ₚₛᵃ P2 ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2)
+| ad_wf_pskl__all : forall L Θ Δ P,
+    (forall X, X `notin` L ->
+       Θ ⨟ (add X Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f X))) ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P)
+| ad_wf_pskl__hole : forall Θ Δ,
+    Θ ⨟ Δ ⊢ₚₛᵃ pskl_hole
+| ad_wf_pskl__tophole : forall Θ Δ P,
+    guarded_pskl P ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P)
+where "Θ ⨟ Δ ⊢ₚₛᵃ P" := (ad_wf_pskl Θ Δ P) : type_scope.
+
 (* [α̂ ∈ Θ] as a flexible variable — the paper's hatted metavariable
    convention, made explicit where a rule's variable must be hatted. *)
 Definition a_flex_tvar (Θ : aenv) (α : atom) : Prop :=
@@ -811,7 +840,11 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
        LE-FlexR and [a_guess_mono]'s hole rule pick arbitrary names, so
        re-attaching Ξ needs the freshness stated. *)
     uniq (Ξ ++ Θ0) ->
-    a_wf_pskl (Ξ ++ Θ0) P1 ->
+    (* the paper's [Θ₀,Ξ ⊢ P₁] is its DISCIPLINED skeleton wf (there is no
+       weak judgment in the paper; [a_wf_pskl]'s scoping-only reading is the
+       mech/impl liberalism, WF-SIDE-CONDITIONS.md) — the instantiation must
+       not smuggle a binder into a ⊤◇-body (∀α.⊤◇.(α→α) is wf nowhere). *)
+    (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->
     a_sub NM M P0 (Ξ ++ Θ0) (open_pskl_wrt_pskl P P1) Q Θ1 ->
     a_sub NM M P0 Θ0 (pskl_all_syn P) Q Θ1
 | a_sub__ghost : forall M Θ0 P0,                              (* Ghost *)

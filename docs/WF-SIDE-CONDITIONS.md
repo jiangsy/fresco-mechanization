@@ -182,19 +182,27 @@ WHY: the disciplined judgment does not transport through the algorithm's
 context surgery (walk strips/re-attachments, instantiation substitution) —
 putting it on rules would break preservation; the discipline is instead
 carried in STATEMENTS as `ad_wf_pskl` hypotheses (route B), as
-prop_sub_sound.v's bundle does.  Load-bearing premise sites of the weak
-judgment: `a_wf_aenv__var` (x:P entries) and ForallL's `a_wf_pskl (Ξ++Θ0) P1`
-(both `a_sub__forall_l` and `a_subtag__forall_l_*`).  RULE OF THUMB: if a
-subtyping lemma needs ForallL's instantiation to exclude shapes like
-`∀α.⊤◇.(α→α)`, do NOT try to strengthen the rule — carry `ad_wf_pskl` as an
-external hypothesis.
+prop_sub_sound.v's bundle does.  Load-bearing premise site of the weak
+judgment: `a_wf_aenv__var` (x:P entries).
+
+EXCEPTION (2026-07-18): ForallL's instantiation premise is now the
+DISCIPLINED judgment — `(Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛᵃ P1` on `a_sub__forall_l` and
+both `a_subtag__forall_l_*` (`ad_wf_pskl` moved to def_extra.v for this).
+Rationale: the paper's `Θ0,Ξ ⊢ P1` there IS its disciplined skeleton wf
+(the paper has no weak judgment); the premise is consumed locally by the
+rule, so the transport objection to rule-side placement does not apply;
+and soundness's ForallL case needs it (`ad_pat_sub__forall_l` demands the
+disciplined wf of the witness — the weak→disciplined conversion is FALSE
+by the `∀α.⊤◇.(α→α)` example).  RULE OF THUMB elsewhere still: if a lemma
+needs discipline on a premise that IS threaded through context surgery, do
+NOT strengthen the rule — carry `ad_wf_pskl` as an external hypothesis.
 
 ## `a_tags_sort` is CONTEXT-FREE (registered 2026-07-18; DESIGN-subtyping D3)
 
 The paper's `Θ ⊢^N tags{Ψ}{ψ}` (full-decl-spec.tex:105-118) carries a context
 and scope-wf of ψ.  `a_tags_sort` (algo/def_decorated.v:96) drops the context:
 purely syntactic (`is_tskl` + `d_tags_skl`, ghost-freeness at TY); the scope
-half is restored at each call site ON THE ERASURE (`a_wf_pskl (Ξ++Θ0) P1` in
+half is restored at each call site ON THE ERASURE (`(Ξ++Θ0) ⨟ ∅ ⊢ₚₛᵃ P1` in
 the decorated ForallL; `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ψ⌋` in `ad_pat_sub`'s ForallL).  This is
 the D3 decision of DESIGN-subtyping.md §1.2, now registered: statements
 needing the paper's full judgment take `a_tags_sort NM Ψ ψ ∧ (scope premise

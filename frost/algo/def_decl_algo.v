@@ -27,8 +27,6 @@ Set Implicit Arguments.
 
 (* Same level discipline as decl/def_extra.v: middle slots of ⨟-judgments at
    level 74. *)
-Reserved Notation "Θ ⨟ Δ ⊢ₚₛᵃ P"
-  (at level 75, Δ at level 74, P at level 75, no associativity).
 Reserved Notation "Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q"
   (at level 75, Θ at level 74, R at level 74, Q at level 74, no associativity).
 Reserved Notation "Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P"
@@ -44,31 +42,8 @@ Definition ptyp_to_uskl_syn (A : ptyp) : uskl :=
 
 (* [a_binds_tvar] now lives in algo/def_extra.v (shared with a_wf_ptyp). *)
 
-(* ===================================================================== *)
-(*  Skeleton well-formedness over Θ  (decl [Γ ⨟ Δ ⊢ₚₛ P])                *)
-(* ===================================================================== *)
-
-Inductive ad_wf_pskl : aenv -> atoms -> pskl -> Prop :=
-| ad_wf_pskl__unit : forall Θ Δ,
-    Θ ⨟ Δ ⊢ₚₛᵃ pskl_unit
-| ad_wf_pskl__var : forall Θ Δ X,
-    X `in` Δ \/ a_binds_tvar X Θ ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f X)
-| ad_wf_pskl__arrow : forall Θ Δ P1 P2,
-    Θ ⨟ Δ ⊢ₚₛᵃ P1 ->
-    Θ ⨟ Δ ⊢ₚₛᵃ P2 ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2)
-| ad_wf_pskl__all : forall L Θ Δ P,
-    (forall X, X `notin` L ->
-       Θ ⨟ (add X Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f X))) ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P)
-| ad_wf_pskl__hole : forall Θ Δ,
-    Θ ⨟ Δ ⊢ₚₛᵃ pskl_hole
-| ad_wf_pskl__tophole : forall Θ Δ P,
-    guarded_pskl P ->
-    Θ ⨟ empty ⊢ₚₛᵃ P ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P)
-where "Θ ⨟ Δ ⊢ₚₛᵃ P" := (ad_wf_pskl Θ Δ P) : type_scope.
+(* [ad_wf_pskl] now lives in algo/def_extra.v (needed by ForallL's
+   disciplined instantiation premise). *)
 
 (* ===================================================================== *)
 (*  Skeleton consistency over Θ  (decl [Ψ ⨟ Γ ⊨ₛ S ≈ Q] + FlexL/FlexR)    *)
