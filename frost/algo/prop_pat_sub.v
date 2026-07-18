@@ -1359,3 +1359,57 @@ Proof.
         [ exact IHad_pat_sub | ].
       rewrite ftvar_in_uskl_ptyp_syn. eauto.
 Qed.
+
+(** Unique mid-split of a uniq environment at a shared key. *)
+Lemma app_mid_uniq_split : forall (Ξ : aenv) Ξ' Θ Θ' α (b b' : abind),
+  uniq (Ξ ++ (α ~ b) ++ Θ) ->
+  Ξ ++ (α ~ b) ++ Θ = Ξ' ++ (α ~ b') ++ Θ' ->
+  Ξ = Ξ' /\ b = b' /\ Θ = Θ'.
+Proof.
+  induction Ξ as [ | [γ c] Ξ2 IH ]; intros Ξ' Θ Θ' α b b' Huq Heq.
+  - destruct Ξ' as [ | [γ' c'] Ξ'' ].
+    + simpl in Heq. inversion Heq; subst. auto.
+    + simpl in Heq. inversion Heq; subst.
+      exfalso.
+      inversion Huq; subst.
+      simpl_env in *. fsetdec.
+  - destruct Ξ' as [ | [γ' c'] Ξ'' ].
+    + simpl in Heq. inversion Heq; subst.
+      exfalso.
+      inversion Huq; subst.
+      simpl_env in *. fsetdec.
+    + simpl in Heq. inversion Heq; subst.
+      inversion Huq; subst.
+      destruct (IH Ξ'' Θ Θ' α b b' H1 H2) as [E1 [E2 E3]]; subst.
+      auto.
+Qed.
+
+(** Strip the shared rigid binder — and the Barendregt suffix above it —
+    from an information increase (the ⊴-half of soundness's ForallR). *)
+Lemma a_isub_strip_tvar_mid : forall α Ξ Θ0 Θ1,
+  uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
+  uniq (Ξ ++ Θ0) ->
+  α `notin` dom Θ0 ->
+  ((α ~ abind_tvar) ++ Θ0) ⊴ (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
+  Θ0 ⊴ Θ1.
+Proof.
+  intros α Ξ Θ0 Θ1 Huq HuqΞ Hα [[ρ [Hid Hinc]] Hdef].
+  destruct (a_inc_tvar_inv Hinc) as [Ξ' [Θ2 [Heq [Hsuf Hinc']]]].
+  destruct (app_mid_uniq_split _ _ _ _ _ _ _ Huq Heq) as [<- [_ <-]].
+  split.
+  - exists ρ. split; [ exact Hid | exact Hinc' ].
+  - intros β τ Hb.
+    assert (HβΘ0 : β `in` dom Θ0) by (eapply binds_In; eauto).
+    assert (Hbw : binds β (abind_flex_mono_def τ)
+                    (Ξ ++ (α ~ abind_tvar) ++ Θ1))
+      by (apply Hdef; unfold binds; right; exact Hb).
+    unfold binds in Hbw. apply in_app_or in Hbw.
+    destruct Hbw as [Hbw | Hbw].
+    { exfalso.
+      assert (HβΞ : β `in` dom Ξ) by (eapply binds_In; exact Hbw).
+      clear - HuqΞ HβΘ0 HβΞ.
+      destruct_uniq. unfold disjoint in *. fsetdec. }
+    simpl in Hbw. destruct Hbw as [Heqp | Hbw].
+    { exfalso. inversion Heqp. }
+    exact Hbw.
+Qed.
