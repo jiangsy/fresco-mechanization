@@ -70,7 +70,6 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.prop_flex.
-Require Import src.frost.algo.prop_consis_complete.
 
 Set Implicit Arguments.
 

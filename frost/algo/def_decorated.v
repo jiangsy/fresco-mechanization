@@ -296,9 +296,46 @@ Inductive a_subtag :
     Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] S ⊑ Q ⊣ Θ1 ->
     Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_topholeg S) ⊑ Q ⊣ Θ1
 | a_subtag__flex_mono : forall NM M P0 Ψ Θ0 Θ1 α A,           (* FlexMono (unchanged) *)
-    a_sub_flex NM M P0 Θ0 nil α A Θ1 ->
+    a_subtag_flex NM M P0 Θ0 nil α A Θ1 ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ NM | (mode_fn M) | P0 | Ψ ] (uskl_var_f α) ⊑ A ⊣ Θ1
+
+(* The decorated flexible-variable walk.  The paper shows no rules for it —
+   the walk is "inherited unchanged" with empty tag contexts — but its
+   Flex-Solve/Flex-Assign premises re-enter DECORATED subtyping (the
+   soundness proof recurses on them: lemma:sound-decorated-flex-subtyping's
+   Flex-Solve case reads its premise as [asubtag],
+   subtyping-proofs.tex:1119-1135), so the decorated system must be
+   self-contained: mirroring [a_sub_flex] with the plain [a_sub] premise
+   would leave the decorated soundness induction without a subderivation.
+   All re-entries carry the empty tag context. *)
+with a_subtag_flex :
+  a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
+| a_subtag_flex__solve : forall NM M P0 Θ0 Θ1 Ξ α0 α β A,     (* Flex-Solve *)
+    (Ξ ++ (α0 ~ abind_flex_mono_def (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
+        ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0)
+      ⊢ᵗ[ NM | (mode_fn M) | P0 | empty ]
+      (uskl_arrow (uskl_var_f α) (uskl_var_f β)) ⊑ A ⊣ Θ1 ->
+    a_subtag_flex NM M P0 ((α0 ~ abind_flex_mono) ++ Θ0) Ξ α0 A Θ1
+| a_subtag_flex__assign : forall NM M P0 Θ0 Θ1 Ξ α β τ A,     (* Flex-Assign *)
+    a_subtag_flex NM M (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0) Θ0 Ξ α A Θ1 ->
+    a_subtag_flex NM M P0 ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α A
+      ((β ~ abind_flex_mono_def τ) ++ Θ1)
+| a_subtag_flex__depend : forall NM M P0 Θ0 Θ1 Ξ α β A,       (* Flex-Depend *)
+    α <> β ->
+    β `in` ftvar_in_pskl P0 ->
+    a_subtag_flex NM M P0 Θ0 ((β ~ abind_flex_mono) ++ Ξ) α A Θ1 ->
+    a_subtag_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A Θ1
+| a_subtag_flex__skip : forall NM M P0 Θ0 Θ1 Ξ α β A,         (* Flex-Skip *)
+    α <> β ->
+    β `notin` ftvar_in_pskl P0 ->
+    a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
+    a_subtag_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A
+      ((β ~ abind_flex_mono) ++ Θ1)
+| a_subtag_flex__skip_rigid : forall NM M P0 Θ0 Θ1 Ξ α β A,   (* Flex-SkipRigid *)
+    β `notin` ftvar_in_pskl P0 ->
+    a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
+    a_subtag_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1)
 where "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] S ⊑ Q ⊣ Θ'" :=
   (a_subtag NM M P0 Ψ Θ S Q Θ') : type_scope.
 

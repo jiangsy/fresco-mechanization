@@ -142,6 +142,39 @@ constructors; the `_f`-hygiene conjuncts discharge by `*_f_forget`.  The
 ForallR case re-attaches a rigid head — the L8-style head-preservation lemma
 pattern from `prop_consis_rename.v` applies.
 
+**Definition fix (2026-07-18): the decorated flex walk.**  `a_subtag`'s
+FlexMono premise originally re-entered the *plain* `a_sub_flex` (whose
+premises re-enter plain `a_sub`), which leaves L-B's flex case without a
+decorated subderivation to recurse on.  The paper's decorated system is
+self-contained — `lemma:sound-decorated-flex-subtyping`'s Flex-Solve premise
+is an `asubtag` (tex:1119-1135); the figure merely omits the walk as
+"trivial".  Fixed: `a_subtag_flex` is now mutual with `a_subtag`
+(def_decorated.v), mirroring `a_sub_flex` with the Flex-Solve re-entry at
+decorated `Ψ = ∅`.  It stays a SEPARATE mutual judgment (not extra
+`a_subtag` cases): the walk carries the `Θ0 ∣ Ξ` split and an atom subject,
+and folding it into the main judgment would let the walk's recursive
+occurrences re-match the FlexMono entry and discard `Ξ` (the documented
+`a_sub_flex` hazard).
+
+**L-B statement shape** (mirror `a_consistag_sound_aux`):
+```
+a_subtag_sound_aux :  Θ0 ⊢ᵗ[NM|M|P0|Ψ] S ⊑ Q ⊣ Θ1 ->
+  a_wf_aenv Θ0 -> lc_uskl S -> Θ0 ⨟ ∅ ⊢ₚₛᵃ P0 -> Θ0 ⨟ ∅ ⊢ₚₛᵃ ⌊S⌋ ->
+  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  (exists Qt, bskl_to_pskl Qt = Q /\
+     Ψ ⨟ Θ1 ⊢ₛᵃ[NM|M] S ⊑ Qt /\
+     ad_refine_syn_f ∅ Θ1 ∅ (pskl_to_bskl_inh P0) Qt)
+```
+mutual (via `Scheme`) with the flex conclusion at `(Ξ ++ Θ0) ⊴ Θ1` and
+subject `uskl_var_f α`.  Case notes: Flex-Solve builds the ⊴ for the
+deposited `α̂0 := α̂→β̂` exactly as plain `a_assign_sound`'s SolveM case does
+(`a_isub_prepend_decls_src` + target-weaken, prop_consis_sound.v:2588-2610),
+and its `ad_pat_sub` conclusion is `ad_pat_sub__flex_mono` off the IH's
+arrow subtyping (`ptyp_to_uskl_syn (α→β)` is definitionally the premise
+subject).  Flex-Assign needs a fold-def transport on the fill conclusion
+(the `[τ/β̂]`-fold family; `ad_refine_syn_f_unfold_def_source` is the
+unfold direction — the fold direction may need writing).
+
 L-A is the hard half of soundness and is ~all-greenfield: it needs the first
 real metatheory of `a_looksub`/`a_solve_*`/`a_extract` (§3 gap list) plus the
 tag-solving accounting (`a_solvetag_sub`, `a_solvetag`).  The paper's own
