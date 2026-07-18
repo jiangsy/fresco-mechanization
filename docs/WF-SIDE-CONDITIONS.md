@@ -169,33 +169,56 @@ This is the well-formedness analogue of the colour/mode discipline: the conditio
 that makes the bad derivation impossible usually lives *outside* the rule.
 
 
-## `a_scope_pskl` (né `a_wf_pskl`) is SCOPING-ONLY (registered 2026-07-18; audit follow-up)
+## Skeleton wf in the algo layer: `a_wf_pskl` (disciplined) vs `a_scope_pskl` (scoping-only)
+   (registered 2026-07-18; renamed same day — the disciplined judgment now owns the `wf` name)
 
-`a_scope_pskl` (algo/def_extra.v:113) deliberately takes the weak reading: single
-context Θ, ∀ binds a plain `abind_tvar`, `pskl_tophole` recurses with no
-guardedness and no empty-Δ clearing.  `∀α.⊤◇.(α→α)` PASSES it while the
-paper-faithful two-context judgment (`a_wf_pskl`, now algo/def_extra.v — the
-one whose ⊤◇-discipline rescued the refine-non-transitivity counterexample,
-§1 above) rejects it.  The reference implementation's `is_wf_` independently
-takes the same weak reading, so the algorithmic RELATION matches the artifact.
-WHY: the disciplined judgment does not transport through the algorithm's
-context surgery (walk strips/re-attachments, instantiation substitution) —
-putting it on rules would break preservation; the discipline is instead
-carried in STATEMENTS as `a_wf_pskl` hypotheses (route B), as
-prop_sub_sound.v's bundle does.  Load-bearing premise site of the weak
-judgment: `a_wf_aenv__var` (x:P entries).
+The algo layer has TWO skeleton judgments, both in algo/def_extra.v:
 
-EXCEPTION (2026-07-18): ForallL's instantiation premise is now the
-DISCIPLINED judgment — `(Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛᵃ P1` on `a_sub__forall_l` and
-both `a_subtag__forall_l_*` (`a_wf_pskl` moved to def_extra.v for this).
-Rationale: the paper's `Θ0,Ξ ⊢ P1` there IS its disciplined skeleton wf
-(the paper has no weak judgment); the premise is consumed locally by the
-rule, so the transport objection to rule-side placement does not apply;
-and soundness's ForallL case needs it (`ad_pat_sub__forall_l` demands the
-disciplined wf of the witness — the weak→disciplined conversion is FALSE
-by the `∀α.⊤◇.(α→α)` example).  RULE OF THUMB elsewhere still: if a lemma
-needs discipline on a premise that IS threaded through context surgery, do
-NOT strengthen the rule — carry `a_wf_pskl` as an external hypothesis.
+- **`a_wf_pskl` (`Θ ⨟ Δ ⊢ₚₛᵃ P`) — THE paper's skeleton wf** (ex-`ad_wf_pskl`,
+  moved up from def_decl_algo.v).  Two contexts: ∀ binds its variable in Δ,
+  and a `⊤◇`-body must be guarded and well-formed at the EMPTY Δ.  This is the
+  ⊤◇-discipline that rescued the refine-non-transitivity counterexample (§1):
+  `∀α.⊤◇.(α→α)` is well-formed in NO context.  Whenever the paper writes
+  skeleton wf, it means this judgment — the paper has no weak variant.
+
+- **`a_scope_pskl` (algo/def_extra.v:113) — scoping only.**  Single context Θ,
+  ∀ binds a plain `abind_tvar` into Θ, `pskl_tophole` merely recurses (no
+  guardedness, no Δ-clearing).  `∀α.⊤◇.(α→α)` PASSES it.  The reference
+  implementation's `is_wf_` takes the same weak reading.
+
+**Where each sits.**
+
+- ForallL's instantiation premise is the DISCIPLINED `(Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛᵃ P1`
+  (on `a_sub__forall_l` and both `a_subtag__forall_l_*`; commit a68fc84).
+  Rationale: the paper's `Θ0,Ξ ⊢ P1` there IS its disciplined wf; the premise
+  is consumed locally by the rule, so the usual transport objection to
+  rule-side placement does not apply; and soundness's ForallL case NEEDS it —
+  `ad_pat_sub__forall_l`'s scope premise is disciplined, and the
+  weak→disciplined conversion is FALSE by the `∀α.⊤◇.(α→α)` example.
+
+- Statement-side hypotheses (soundness/completeness motives) all use the
+  disciplined `a_wf_pskl` (route B), as prop_sub_sound.v's bundle does.
+  Transport kit exists: `a_wf_pskl_isub` / `_weaken` / `_delta_mono` /
+  `_mono_subst` / `_msubst_inc` / `_subst_tvar` / `_open`.
+
+- `a_scope_pskl`'s ONLY remaining rule site is `a_wf_aenv__var` (x:P context
+  entries).  This is NOT load-bearing discipline — entry wf is only ever
+  consumed for scoping facts (ftv ⊆ dom, freshness).  We do not fundamentally
+  need the weak judgment: entries never sit under a ∀-binder, so for the
+  shapes the algorithm actually stores the two judgments agree, and
+  disciplined entry-wf would transport (`a_wf_pskl_isub`, `_msubst_inc`).
+  It survives for (a) cost — strengthening `a_wf_aenv__var` reopens every
+  a_wf_aenv construction/preservation site (notably the a_pat push sites,
+  where "split/guess outputs are disciplined" would become a new lemma pack)
+  across the Qed consistency corpus, for zero current benefit; and (b) impl
+  parity with `is_wf_`.  QUEUED CLEANUP: strengthen `a_wf_aenv__var` to
+  `Θ ⨟ ∅ ⊢ₚₛᵃ P`, prove the split/guess-discipline pack, delete
+  `a_scope_pskl`.  Do it when a_pat metatheory is mechanized anyway.
+
+**Rule of thumb** (unchanged): a premise consumed locally by its rule (like
+ForallL's) may be disciplined at the rule; a condition threaded through the
+walk's context surgery must be carried as an external `a_wf_pskl` statement
+hypothesis instead — the `strip` lemmas are what kill the rule route (§1).
 
 ## `a_tags_sort` is CONTEXT-FREE (registered 2026-07-18; DESIGN-subtyping D3)
 

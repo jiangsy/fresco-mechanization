@@ -39,6 +39,7 @@ Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_consis_sound.
 Require Import src.frost.algo.prop_consis_complete.
 Require Import src.frost.algo.prop_pat_sub.
+Require Import src.frost.algo.prop_looksub.
 
 Set Implicit Arguments.
 
@@ -110,6 +111,83 @@ Proof.
   - apply IH; auto.
     + clear - Huq. solve_uniq.
     + intros γ0 Hγ0. apply Hfr. simpl. fsetdec.
+Qed.
+
+(** Decorated skeletons are locally closed ([is_tskl] is cofinite at its
+    binder). *)
+Lemma is_tskl_lc : forall ψ,
+  is_tskl ψ ->
+  lc_uskl ψ.
+Proof.
+  intros ψ H; induction H; try (constructor; auto; fail).
+  destruct (atom_fresh L) as [X HX].
+  eapply lc_uskl_all_etag_exists; eauto.
+Qed.
+
+(** Substituting a well-formed skeleton for a Δ-variable preserves
+    (disciplined) well-formedness.  The ⊤◇ case is where the freshness
+    hypothesis earns its keep: a ⊤◇-body is well-formed at the EMPTY Δ,
+    so it cannot mention X and the substitution is the identity there. *)
+Lemma a_wf_pskl_subst_tvar : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall X Q Δ0,
+  Δ0 [=] AtomSetImpl.remove X Δ ->
+  X `notin` dom Θ ->
+  Θ ⨟ Δ0 ⊢ₚₛᵃ Q ->
+  Θ ⨟ Δ0 ⊢ₚₛᵃ subst_pskl_in_pskl Q X P.
+Proof.
+  intros Θ Δ P H; induction H;
+    intros X0 Q0 Δ0 Heq Hfr HwfQ; simpl.
+  - apply a_wf_pskl__unit.
+  - match goal with
+    | |- context [if ?e then _ else _] => destruct e as [-> | Hne]
+    end.
+    + exact HwfQ.
+    + apply a_wf_pskl__var.
+      destruct H as [HΔ | Ht];
+        [ left; clear - HΔ Hne Heq; fsetdec | right; exact Ht ].
+  - apply a_wf_pskl__arrow; eauto.
+  - apply a_wf_pskl__all
+      with (L := L `union` {{X0}} `union` dom Θ `union` Δ0).
+    intros Y HY.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | let He := fresh in intro He; subst; clear - HY; fsetdec
+        | eapply a_wf_pskl_lc; eauto ].
+    match goal with
+    | IH : forall X, X `notin` L -> _ |- _ => eapply IH
+    end;
+      [ clear - HY; fsetdec
+      | clear - HY Heq; fsetdec
+      | exact Hfr
+      | eapply a_wf_pskl_delta_mono; [ exact HwfQ | clear; fsetdec ] ].
+  - apply a_wf_pskl__hole.
+  - assert (HX : X0 `notin` ftvar_in_pskl P).
+    { intro HXin.
+      destruct (a_wf_pskl_ftv_tvarish H0 HXin) as [HΔ | Ht];
+        [ clear - HΔ; fsetdec | ].
+      apply Hfr.
+      destruct Ht as [Hb | [Hb | [τ Hb]]]; eapply binds_In; eauto. }
+    rewrite subst_pskl_in_pskl_fresh_eq; [ | exact HX ].
+    apply a_wf_pskl__tophole; auto.
+Qed.
+
+(** Opening a ∀-body with a well-formed skeleton: the binder's Δ-slot is
+    traded for the substituend's own well-formedness. *)
+Lemma a_wf_pskl_open : forall L Θ Δ P Q,
+  (forall X, X `notin` L ->
+     Θ ⨟ (add X Δ) ⊢ₚₛᵃ open_pskl_wrt_pskl P (pskl_var_f X)) ->
+  Θ ⨟ Δ ⊢ₚₛᵃ Q ->
+  Θ ⨟ Δ ⊢ₚₛᵃ open_pskl_wrt_pskl P Q.
+Proof.
+  intros L Θ Δ P Q Hbody HwfQ.
+  destruct (atom_fresh (L `union` dom Θ `union` Δ
+                          `union` ftvar_in_pskl P)) as [X HX].
+  rewrite (subst_pskl_in_pskl_intro X); [ | clear - HX; fsetdec ].
+  eapply a_wf_pskl_subst_tvar with (Δ := add X Δ);
+    [ apply Hbody; clear - HX; fsetdec
+    | clear - HX; fsetdec
+    | clear - HX; fsetdec
+    | exact HwfQ ].
 Qed.
 
 (* ===================================================================== *)
@@ -262,22 +340,96 @@ Proof.
     + simpl. apply ad_refine_syn_f__arrow;
         [ eapply ad_refine_syn_f_isub; eauto | exact Hfill2 ].
 
-  - (* ForallL (tagged) : instantiate with the decorated candidate.
-       ADMIT [true]: IH at (Ξ ++ Θ0) (wf from the new uniq premise +
-       a_decls of the extract), strip the ⊴ over the decls prefix
-       (a_isub_strengthen_decls_src), conclude with
-       ad_pat_sub__forall_l_tagged (scope premise via
-       a_scope_pskl → a_wf_pskl conversion + ⊴-transport). *)
+  - (* ForallL (tagged) : instantiate with the decorated candidate ψg.
+       IH at (Ξ ++ Θ0); strip the ⊴ over the decls prefix; conclude with
+       ad_pat_sub__forall_l_tagged (its disciplined scope premise now
+       comes straight off the rule, ⊴-transported). *)
     intros L NM M P0 Ψ Ψg Θ0 Θ1 ε S Q Ξ P1 ψg
       Hneq Hgor Hex Huq HwfP1 Hint Hsort Herase Hprem IH
       Hwf Hlc HwfP0 HwfS Hmod.
-    admit.
+    destruct (atom_fresh L) as [α Hα].
+    assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
+    { apply a_wf_aenv_prepend_decls; auto.
+      - clear - Huq. solve_uniq.
+      - intros γ Hγ. clear - Huq Hγ. destruct_uniq.
+        unfold disjoint in *. fsetdec. }
+    assert (Hlcψ : lc_uskl ψg)
+      by (apply is_tskl_lc; inversion Hsort; auto).
+    assert (HlcSψ : lc_uskl (open_uskl_wrt_uskl S ψg)).
+    { apply lc_body_uskl_wrt_uskl; [ | exact Hlcψ ].
+      eapply lc_body_uskl_all_etag_2. exact Hlc. }
+    assert (Hmono : forall x (b : abind),
+               binds x b Θ0 -> binds x b (Ξ ++ Θ0))
+      by (intros x b Hb; unfold binds in *; apply in_or_app; auto).
+    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+      by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
+    assert (HwfSψ : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ ⌊ open_uskl_wrt_uskl S ψg ⌋ˢ).
+    { unfold open_uskl_wrt_uskl. rewrite uskl_to_pskl_open_rec.
+      rewrite Herase.
+      change (open_pskl_wrt_pskl_rec 0 P1 ⌊ S ⌋ˢ)
+        with (open_pskl_wrt_pskl ⌊ S ⌋ˢ P1).
+      simpl in HwfS. inversion HwfS; subst.
+      match goal with
+      | Hbody : forall X, X `notin` ?L0 -> _ ⨟ _ ⊢ₚₛᵃ _ |- _ =>
+          apply a_wf_pskl_open with (L := L0);
+            [ intros X HX;
+              eapply a_wf_pskl_weaken; [ exact Hmono | apply Hbody; auto ]
+            | exact HwfP1 ]
+      end. }
+    destruct (IH HwfΞΘ HlcSψ HwfP0' HwfSψ Hmod)
+      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+    split; [ eapply a_isub_strengthen_decls_src; eauto | ].
+    split; [ exact Hwf1 | ].
+    exists Qt. split; [ exact HeQt | ].
+    split; [ | exact Hfill ].
+    apply ad_pat_sub__forall_l_tagged with (Ψ' := Ψg) (ψ := ψg);
+      [ exact Hneq | exact Hint | exact Hsort | | exact Hsub ].
+    rewrite Herase. eapply a_wf_pskl_isub; eauto.
 
-  - (* ForallL (untagged) : same as tagged. ADMIT [true]. *)
+  - (* ForallL (untagged) : same as tagged. *)
     intros L NM M P0 Ψ Ψg Θ0 Θ1 S Q Ξ P1 ψg
       Hneq Hgor Hex Huq HwfP1 Hint Hsort Herase Hprem IH
       Hwf Hlc HwfP0 HwfS Hmod.
-    admit.
+    destruct (atom_fresh L) as [α Hα].
+    assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
+    { apply a_wf_aenv_prepend_decls; auto.
+      - clear - Huq. solve_uniq.
+      - intros γ Hγ. clear - Huq Hγ. destruct_uniq.
+        unfold disjoint in *. fsetdec. }
+    assert (Hlcψ : lc_uskl ψg)
+      by (apply is_tskl_lc; inversion Hsort; auto).
+    assert (HlcSψ : lc_uskl (open_uskl_wrt_uskl S ψg)).
+    { apply lc_body_uskl_wrt_uskl; [ | exact Hlcψ ].
+      eapply lc_body_uskl_all_syn_1. exact Hlc. }
+    assert (Hmono : forall x (b : abind),
+               binds x b Θ0 -> binds x b (Ξ ++ Θ0))
+      by (intros x b Hb; unfold binds in *; apply in_or_app; auto).
+    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+      by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
+    assert (HwfSψ : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ ⌊ open_uskl_wrt_uskl S ψg ⌋ˢ).
+    { unfold open_uskl_wrt_uskl. rewrite uskl_to_pskl_open_rec.
+      rewrite Herase.
+      change (open_pskl_wrt_pskl_rec 0 P1 ⌊ S ⌋ˢ)
+        with (open_pskl_wrt_pskl ⌊ S ⌋ˢ P1).
+      simpl in HwfS. inversion HwfS; subst.
+      match goal with
+      | Hbody : forall X, X `notin` ?L0 -> _ ⨟ _ ⊢ₚₛᵃ _ |- _ =>
+          apply a_wf_pskl_open with (L := L0);
+            [ intros X HX;
+              eapply a_wf_pskl_weaken; [ exact Hmono | apply Hbody; auto ]
+            | exact HwfP1 ]
+      end. }
+    destruct (IH HwfΞΘ HlcSψ HwfP0' HwfSψ Hmod)
+      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+    split; [ eapply a_isub_strengthen_decls_src; eauto | ].
+    split; [ exact Hwf1 | ].
+    exists Qt. split; [ exact HeQt | ].
+    split; [ | exact Hfill ].
+    apply ad_pat_sub__forall_l_untagged with (Ψ' := Ψg) (ψ := ψg);
+      [ exact Hneq | exact Hint | exact Hsort | | exact Hsub ].
+    rewrite Herase. eapply a_wf_pskl_isub; eauto.
 
   - (* Ghost (SK) : ◇ below the input P0 *)
     intros M Ψ Θ0 P0 HΨ Hwf HlcS HwfP0 HwfS Hmod.
