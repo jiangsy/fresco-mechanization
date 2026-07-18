@@ -822,10 +822,12 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     a_sub a_sub_mode_sk M P0 Θ0 (pskl_tophole P) Q Θ1
 
 (* Flexible-variable subtyping [Θ | Ξ ⊢[N][FN M][P0] α̂ ⊑ Q ⊣ Θ'] (paper
-   fig:alg-subtyping, second box).  [Flex-Assign] is read as the auxiliary
-   judgment's continuation keeping the [Θ0 | Ξ] split ([α̂ ≠ β̂] makes
-   [α̂[τ/β̂] = α̂]); merging [Θ0,Ξ] and re-entering [a_sub] would re-fire
-   [FlexMono] and discard [Ξ]. *)
+   fig:alg-subtyping, second box).  [Flex-Assign] merges [Θ0,Ξ] and
+   re-enters the MAIN judgment with the substituted subject [α̂[τ/β̂]],
+   exactly as the paper and the reference implementation do (audit F1):
+   for β̂ = α̂ the subject becomes the monotype τ; for β̂ ≠ α̂ the re-entry
+   re-fires [FlexMono] over the merged context, which terminates because
+   the consumed definition is gone. *)
 with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_sub_flex__solve : forall NM M P0 Θ0 Θ1 Ξ α0 α β A,        (* Flex-Solve *)
     (* prose-completion: the deposited α̂,β̂ are fresh (Barendregt) *)
@@ -838,16 +840,24 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
       (pskl_arrow (pskl_var_f α) (pskl_var_f β)) A Θ1 ->
     a_sub_flex NM M P0 ((α0 ~ abind_flex_mono) ++ Θ0) Ξ α0 A Θ1
 | a_sub_flex__assign : forall NM M P0 Θ0 Θ1 Ξ α β τ A,        (* Flex-Assign *)
-    (* prose-completion: the walked definition re-attaches above the
-       continuation's output (Barendregt: β survives no deeper generation) *)
+    (* Paper (full-algo-spec.tex:888-894): MERGE [Θ0,Ξ] and re-enter the
+       MAIN judgment with the substituted subject [α̂[τ/β̂]] — for β̂ = α̂ the
+       subject becomes the monotype τ (the audit's F1: the subject may BE
+       defined, exactly as in the fixed a_assign β̂=α̂ case; the impl does
+       this verbatim, type.ml:1021-1027).  Prose-completion: the walked
+       definition re-attaches above the output (Barendregt). *)
     β `notin` dom Θ1 ->
-    a_sub_flex NM M (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0) Θ0 Ξ α A Θ1 ->
+    a_sub NM (mode_fn M) (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
+      (Ξ ++ Θ0)
+      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) A Θ1 ->
     a_sub_flex NM M P0 ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α A
       ((β ~ abind_flex_mono_def τ) ++ Θ1)
 | a_sub_flex__depend : forall NM M P0 Θ0 Θ1 Ξ α β A,          (* Flex-Depend *)
     α <> β ->
     β `in` ftvar_in_pskl P0 ->
-    a_sub_flex NM M P0 Θ0 ((β ~ abind_flex_mono) ++ Ξ) α A Θ1 ->
+    (* β̂ joins the suffix at the Θ0-adjacent END (paper [β̂,Ξ],
+       full-algo-spec.tex:896-902; audit F4 — mirror a_assign__depend). *)
+    a_sub_flex NM M P0 Θ0 (Ξ ++ (β ~ abind_flex_mono)) α A Θ1 ->
     a_sub_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A Θ1
 | a_sub_flex__skip : forall NM M P0 Θ0 Θ1 Ξ α β A,            (* Flex-Skip *)
     α <> β ->

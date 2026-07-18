@@ -424,53 +424,16 @@ Proof.
     intros NM M P0 Θ0 Θ1 Ξ α β τ A Hβ1 Hprem IH Hwf Hdecl HwfP0 Hmod.
     admit.
 
-  - (* Flex-Depend : move the dependent head into Ξ — pure re-association. *)
+  - (* Flex-Depend : β̂ joins the suffix at the Θ0-adjacent end, so the
+       premise context is the conclusion's up to associativity. *)
     intros NM M P0 Θ0 Θ1 Ξ α β A Hne Hin Hprem IH Hwf Hdecl HwfP0 Hmod.
-    assert (Hbmon : forall x b,
-              binds x b (Ξ ++ (β ~ abind_flex_mono) ++ Θ0) ->
-              binds x b (((β ~ abind_flex_mono) ++ Ξ) ++ Θ0)).
-    { intros x b Hb. unfold binds in *.
-      apply in_app_or in Hb. apply in_or_app.
-      destruct Hb as [Hb | Hb]; [ | simpl in Hb;
-        destruct Hb as [Hb | Hb] ].
-      - left. simpl. right. exact Hb.
-      - left. simpl. left. exact Hb.
-      - right. exact Hb. }
-    assert (Hbmon' : forall x b,
-              binds x b (((β ~ abind_flex_mono) ++ Ξ) ++ Θ0) ->
-              binds x b (Ξ ++ (β ~ abind_flex_mono) ++ Θ0)).
-    { intros x b Hb. unfold binds in *.
-      apply in_app_or in Hb. apply in_or_app.
-      destruct Hb as [Hb | Hb].
-      - simpl in Hb. destruct Hb as [Hb | Hb];
-          [ right; simpl; left; exact Hb | left; exact Hb ].
-      - right. simpl. right. exact Hb. }
-    assert (Hwfp : a_wf_aenv (((β ~ abind_flex_mono) ++ Ξ) ++ Θ0)).
-    { simpl_env. apply a_wf_aenv__flex.
-      - assert (Huq : uniq (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
-          by (apply a_wf_aenv_uniq; exact Hwf).
-        clear - Huq. simpl_env in *. solve_uniq.
-      - eapply a_wf_aenv_strip_mid; eauto. }
-    assert (HwfP0p : (((β ~ abind_flex_mono) ++ Ξ) ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
-      by (eapply ad_wf_pskl_weaken; [ exact Hbmon | exact HwfP0 ]).
-    destruct (IH Hwfp
-                ltac:(apply (a_decls__cons β); exact Hdecl)
-                HwfP0p Hmod)
+    assert (Hdecl' : a_decls (Ξ ++ (β ~ abind_flex_mono)))
+      by (apply a_decls_app;
+          [ exact Hdecl | apply (a_decls__cons β); apply a_decls__nil ]).
+    destruct (IH ltac:(simpl_env; simpl_env in Hwf; exact Hwf) Hdecl'
+                ltac:(simpl_env; simpl_env in HwfP0; exact HwfP0) Hmod)
       as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
-    split.
-    { apply a_isub_prepend_decls_src; auto.
-      { intros γ Hb.
-        eapply a_isub_binds_flex; [ exact Hle | ].
-        apply Hbmon. unfold binds. apply in_or_app; left; exact Hb. }
-      apply a_isub_prepend_decls_src;
-        [ apply (a_decls__cons β); apply a_decls__nil | | ].
-      { intros γ Hb.
-        eapply a_isub_binds_flex; [ exact Hle | ].
-        apply Hbmon. unfold binds. apply in_or_app; right; simpl.
-        destruct Hb as [Hb | []]; left; exact Hb. }
-      eapply a_isub_strengthen_decls_src;
-        [ apply (a_decls__cons β); exact Hdecl | ].
-      simpl_env in Hle. exact Hle. }
+    split; [ simpl_env in Hle; simpl_env; exact Hle | ].
     split; [ exact Hwf1 | ].
     exists Qt. auto.
 

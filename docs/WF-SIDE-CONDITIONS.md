@@ -167,3 +167,35 @@ unprovable**, before suspecting the calculus:
 
 This is the well-formedness analogue of the colour/mode discipline: the condition
 that makes the bad derivation impossible usually lives *outside* the rule.
+
+
+## `a_wf_pskl` is SCOPING-ONLY (registered 2026-07-18; audit follow-up)
+
+`a_wf_pskl` (algo/def_extra.v:113) deliberately takes the weak reading: single
+context Θ, ∀ binds a plain `abind_tvar`, `pskl_tophole` recurses with no
+guardedness and no empty-Δ clearing.  `∀α.⊤◇.(α→α)` PASSES it while the
+paper-faithful two-context judgment (`ad_wf_pskl`, def_decl_algo.v:51 — the
+one whose ⊤◇-discipline rescued the refine-non-transitivity counterexample,
+§1 above) rejects it.  The reference implementation's `is_wf_` independently
+takes the same weak reading, so the algorithmic RELATION matches the artifact.
+WHY: the disciplined judgment does not transport through the algorithm's
+context surgery (walk strips/re-attachments, instantiation substitution) —
+putting it on rules would break preservation; the discipline is instead
+carried in STATEMENTS as `ad_wf_pskl` hypotheses (route B), as
+prop_sub_sound.v's bundle does.  Load-bearing premise sites of the weak
+judgment: `a_wf_aenv__var` (x:P entries) and ForallL's `a_wf_pskl (Ξ++Θ0) P1`
+(both `a_sub__forall_l` and `a_subtag__forall_l_*`).  RULE OF THUMB: if a
+subtyping lemma needs ForallL's instantiation to exclude shapes like
+`∀α.⊤◇.(α→α)`, do NOT try to strengthen the rule — carry `ad_wf_pskl` as an
+external hypothesis.
+
+## `a_tags_sort` is CONTEXT-FREE (registered 2026-07-18; DESIGN-subtyping D3)
+
+The paper's `Θ ⊢^N tags{Ψ}{ψ}` (full-decl-spec.tex:105-118) carries a context
+and scope-wf of ψ.  `a_tags_sort` (algo/def_decorated.v:96) drops the context:
+purely syntactic (`is_tskl` + `d_tags_skl`, ghost-freeness at TY); the scope
+half is restored at each call site ON THE ERASURE (`a_wf_pskl (Ξ++Θ0) P1` in
+the decorated ForallL; `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ψ⌋` in `ad_pat_sub`'s ForallL).  This is
+the D3 decision of DESIGN-subtyping.md §1.2, now registered: statements
+needing the paper's full judgment take `a_tags_sort NM Ψ ψ ∧ (scope premise
+of the call site)` as the decomposition.

@@ -323,14 +323,19 @@ with a_subtag_flex :
       (uskl_arrow (uskl_var_f α) (uskl_var_f β)) ⊑ A ⊣ Θ1 ->
     a_subtag_flex NM M P0 ((α0 ~ abind_flex_mono) ++ Θ0) Ξ α0 A Θ1
 | a_subtag_flex__assign : forall NM M P0 Θ0 Θ1 Ξ α β τ A,     (* Flex-Assign *)
+    (* merge + re-enter the MAIN decorated judgment with the substituted
+       subject (paper full-algo-spec.tex:888-894; audit F1) *)
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
-    a_subtag_flex NM M (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0) Θ0 Ξ α A Θ1 ->
+    (Ξ ++ Θ0) ⊢ᵗ[ NM | (mode_fn M)
+                 | (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0) | empty ]
+      (pskl_to_uskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)))
+      ⊑ A ⊣ Θ1 ->
     a_subtag_flex NM M P0 ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α A
       ((β ~ abind_flex_mono_def τ) ++ Θ1)
 | a_subtag_flex__depend : forall NM M P0 Θ0 Θ1 Ξ α β A,       (* Flex-Depend *)
     α <> β ->
     β `in` ftvar_in_pskl P0 ->
-    a_subtag_flex NM M P0 Θ0 ((β ~ abind_flex_mono) ++ Ξ) α A Θ1 ->
+    a_subtag_flex NM M P0 Θ0 (Ξ ++ (β ~ abind_flex_mono)) α A Θ1 ->
     a_subtag_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α A Θ1
 | a_subtag_flex__skip : forall NM M P0 Θ0 Θ1 Ξ α β A,         (* Flex-Skip *)
     α <> β ->
