@@ -12,6 +12,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
+Require Import src.frost.prop_ln.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.prop_basic.
@@ -70,3 +71,60 @@ Proof.
   apply a_decls_app;
     [ eapply a_looksub_decls; eauto | eapply a_guess_decls; eauto ].
 Qed.
+
+(* ===================================================================== *)
+(*  §2  Free variables of the collected constraints                       *)
+(*                                                                        *)
+(*  Every variable in a collected constraint comes from the RHS being     *)
+(*  compared against, or is one of the freshly-generated flexibles in Ξ   *)
+(*  (LE-FlexR).  Needed for freshness bookkeeping when re-attaching Ξ.     *)
+(* ===================================================================== *)
+
+Definition ftvar_in_cstr (c : a_cstr) : atoms :=
+  match c with
+  | a_cstr_sub _ P => ftvar_in_pskl P
+  | a_cstr_eq P     => ftvar_in_pskl P
+  end.
+
+Fixpoint ftvar_in_cstrs (C : a_cstrs) : atoms :=
+  match C with
+  | nil     => empty
+  | c :: C' => ftvar_in_cstr c `union` ftvar_in_cstrs C'
+  end.
+
+Lemma ftvar_in_cstrs_app : forall C1 C2,
+  ftvar_in_cstrs (C1 ++ C2) [=] ftvar_in_cstrs C1 `union` ftvar_in_cstrs C2.
+Proof. induction C1; intros; simpl; [ fsetdec | rewrite IHC1; fsetdec ]. Qed.
+
+Lemma a_looksub_lookeq_ftv :
+  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+     ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ) /\
+  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+     ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ).
+Proof.
+  apply (a_looksub_lookeq_mutind
+           (fun α m P P' Ξ C _ =>
+              ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ)
+           (fun α P P' Ξ C _ =>
+              ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ));
+    intros;
+    try rewrite ftvar_in_cstrs_app; try rewrite dom_app;
+    simpl in *;
+    try solve [ fsetdec ].
+  all: (* cofinite cases: fresh β (fresh for C too), IH + open ftv upper *)
+    match goal with
+    | IH : forall a, a `notin` ?L -> _ |- ftvar_in_cstrs ?C [<=] _ =>
+        pick fresh β for (L `union` ftvar_in_cstrs C);
+        specialize (IH β ltac:(auto))
+    end;
+    try match goal with
+    | H : _ [<=] ftvar_in_pskl (open_pskl_wrt_pskl ?B _) `union` _ |- _ =>
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β))
+    end;
+    simpl in *; fsetdec.
+Qed.
+
+Lemma a_looksub_ftv : forall α m P P' Ξ C,
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+  ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ.
+Proof. intros; eapply (proj1 a_looksub_lookeq_ftv); eauto. Qed.
