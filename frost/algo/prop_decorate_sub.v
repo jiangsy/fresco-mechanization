@@ -515,6 +515,28 @@ Proof.
   - specialize (IH _ _ Hb). clear - IH; fsetdec.
 Qed.
 
+(** ρ distributes over every skeleton constructor (iterated subst). *)
+Lemma msubst_uskl_arrow : forall ρ a b,
+  msubst_uskl ρ (uskl_arrow a b)
+  = uskl_arrow (msubst_uskl ρ a) (msubst_uskl ρ b).
+Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
+
+Lemma msubst_uskl_tophole : forall ρ a,
+  msubst_uskl ρ (uskl_tophole a) = uskl_tophole (msubst_uskl ρ a).
+Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
+
+Lemma msubst_uskl_topholeg : forall ρ a,
+  msubst_uskl ρ (uskl_topholeg a) = uskl_topholeg (msubst_uskl ρ a).
+Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
+
+Lemma msubst_uskl_all_syn : forall ρ a,
+  msubst_uskl ρ (uskl_all_syn a) = uskl_all_syn (msubst_uskl ρ a).
+Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
+
+Lemma msubst_uskl_all_etag : forall ρ ε a,
+  msubst_uskl ρ (uskl_all_etag ε a) = uskl_all_etag ε (msubst_uskl ρ a).
+Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
+
 Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
   ψ ∼ᵗ P0 ⤳ Ψa ->
   forall Δ1 Δ2 Ψ Θ0 Q Θ1 ρ,
@@ -534,12 +556,36 @@ Proof.
     eapply a_consistag_psi_cong; [ exact Hcons | clear - H; fsetdec ].
   - (* SEq-Vacuous : P0 = ◇, run erasure-determined *)
     admit.
-  - (* SEq-Arrow : invert, IH each part *)
-    admit.
+  - (* SEq-Arrow : invert the consistency arrow, IH each part *)
+    rewrite msubst_uskl_arrow.
+    simpl in Hcons. rewrite msubst_uskl_arrow in Hcons.
+    inversion Hcons; subst.
+    match goal with
+    | Hc1 : _ ⊢ᵗ[ _ | _ | ?p1 | ?Ψi1 ] _ ≈ _ ⊣ ?Θm,
+      Hc2 : ?Θm ⊢ᵗ[ _ | _ | ?p2 | ?Ψi2 ] _ ≈ _ ⊣ _,
+      HΨi : _ [=] union ?Ψi1 ?Ψi2 |- _ =>
+        eapply a_consistag__arrow with
+          (Ψ1 := Ψi1 `union` Ψ1) (Ψ2 := Ψi2 `union` Ψ2) (Θ1 := Θm);
+        [ eapply IHa_solvetag_eq1; [ exact Hlcρ | exact Hc1 ]
+        | eapply IHa_solvetag_eq2; [ exact Hlcρ | exact Hc2 ]
+        | clear - HΨi H1; fsetdec ]
+    end.
   - (* SEq-ForallInh : open fresh rigid, IH (ρ unchanged) *)
     admit.
-  - (* SEq-UnivGhostG *)
-    admit.
+  - (* SEq-UnivGhostG : invert UnivGhost, IH the inner *)
+    rewrite msubst_uskl_topholeg.
+    simpl in Hcons. rewrite msubst_uskl_tophole in Hcons.
+    inversion Hcons; subst;
+      try (match goal with Hg : guarded_pskl (pskl_tophole _) |- _ =>
+             solve [ inversion Hg ] end);
+      try (match goal with Hg : guarded_uskl (uskl_tophole _) |- _ =>
+             solve [ inversion Hg ] end).
+    match goal with
+    | Hc : _ ⊢ᵗ[ _ | _ | _ | _ ]
+             (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ≈ _ ⊣ _ |- _ =>
+        apply a_consistag__univ_ghostg;
+        eapply IHa_solvetag_eq; [ exact Hlcρ | exact Hc ]
+    end.
   - (* SEq-ForallSyn *)
     admit.
   - (* SEq-UnivGhostR *)
