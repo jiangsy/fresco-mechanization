@@ -1775,3 +1775,209 @@ Proof.
       [ | clear - Hemp; fsetdec ].
     rewrite <- HeqT. apply a_subtag__flex_mono; assumption.
 Qed.
+
+(* ===================================================================== *)
+(*  §12  Consistency decoration (lemma:consistency-decoration,            *)
+(*  consistency-proofs.tex:88-600) — the subst-level layer: a decorated   *)
+(*  consistency run on S[⌊ψa⌋/α] replays on S[ψa/α], additionally         *)
+(*  solving ψa's tags Ψa as computed by the solvetag run on the           *)
+(*  constraints collected at α's occurrences.                             *)
+(* ===================================================================== *)
+
+(** A ghost-free, quantifier-free decoration is its own strip. *)
+Lemma strip_id_ghost_free_no_all_syn : forall ψ,
+  uskl_ghost_free ψ ->
+  no_all_syn_uskl (pskl_to_uskl (uskl_to_pskl ψ)) ->
+  pskl_to_uskl (uskl_to_pskl ψ) = ψ.
+Proof.
+  intros ψ Hgf; induction Hgf; intros Hnas; simpl in *.
+  - reflexivity.
+  - reflexivity.
+  - inversion Hnas; subst. rewrite IHHgf1, IHHgf2; auto.
+  - inversion Hnas.
+  - inversion Hnas.
+Qed.
+
+(** [no_all_syn] descends to a substituted-in subterm at an occurring
+    variable. *)
+Lemma no_all_syn_subst_inv : forall S T α,
+  α `in` ftvar_in_uskl S ->
+  no_all_syn_uskl (subst_bskl_in_uskl T α S) ->
+  no_all_syn_uskl T.
+Proof.
+  induction S; intros T α Hin Hnas; simpl in *;
+    try solve [ exfalso; fsetdec ];
+    try solve [ inversion Hnas ].
+  - (* var_f *)
+    revert Hnas.
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
+    end; intro Hnas; [ exact Hnas | exfalso; fsetdec ].
+  - (* arrow *)
+    inversion Hnas; subst.
+    destruct (AtomSetImpl.union_1 Hin);
+      [ eapply IHS1 | eapply IHS2 ]; eauto.
+  - (* tophole *)
+    inversion Hnas; subst. eapply IHS; eauto.
+  - (* topholeg *)
+    inversion Hnas; subst. eapply IHS; eauto.
+Qed.
+
+Lemma a_consistag_decoration : forall α P P0 Ξc C,
+  P ∼[ α ] P0 ⤳ Ξc ⨾ C ->
+  forall S ψa Ψa Δ1 Δ2 Ψ Θ0 Q Θ1,
+    C ⊩ᵗ ψa ⤳ Ψa ->
+    ⌊ S ⌋ˢ = P ->
+    α `notin` ftvar_in_uskl ψa ->
+    lc_uskl ψa ->
+    lc_uskl S ->
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ]
+      (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S) ≈ Q ⊣ Θ1 ->
+    a_wf_aenv Θ0 ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+    Θ0 ⨟ empty
+      ⊢ₚₛᵃ ⌊ subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S ⌋ˢ ->
+    (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
+    no_flex_dep (Δ1 `union` Δ2) Θ0 ->
+    flex_above_free (Δ1 `union` Δ2) Θ0 ->
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | (Ψ `union` Ψa) ]
+      (subst_bskl_in_uskl ψa α S) ≈ Q ⊣ Θ1.
+Proof.
+  intros α P P0 Ξc C Hlook; induction Hlook;
+    intros S ψa Ψa Δ1 Δ2 Ψc Θ0 Qc Θ1
+      Hst HeS Hαψ Hlcψ HlcS Hcons Hwf HwfP0 HwfSub Hrig Hnfd Hfaf.
+  - (* LE-Var : S = α; the decoration-var lemma at ρ = nil *)
+    destruct S; simpl in HeS; inversion HeS; subst;
+      try solve [ inversion HlcS ].
+    simpl in Hcons, HwfSub |- *.
+    revert Hcons HwfSub.
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hne];
+        [ | exfalso; congruence ]
+    end.
+    intros Hcons HwfSub.
+    inversion Hst; subst.
+    match goal with
+    | Hone : ψa ∼ᵗ P ⤳ ?Ψ1x, Hnil : nil ⊩ᵗ ψa ⤳ ?Ψ2x,
+      HΨs : Ψa [=] union ?Ψ1x ?Ψ2x |- _ =>
+        inversion Hnil; subst;
+        eapply a_consistag_psi_cong with (Ψ := Ψc `union` Ψ1x);
+        [ | match goal with He2 : ?Ψ2x [=] empty |- _ =>
+              clear - HΨs He2; fsetdec end ]
+    end.
+    change ψa with (msubst_uskl nil ψa).
+    eapply a_consistag_decoration_var;
+      [ eassumption
+      | intros γ g Hb; inversion Hb
+      | simpl; exact Hcons
+      | exact Hwf
+      | simpl;
+        apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+      | exact HwfP0
+      | simpl; exact HwfSub
+      | exact Hrig | exact Hnfd | exact Hfaf ].
+  - (* LE-Absent : α does not occur — both substitutions are the identity *)
+    assert (HαS : α `notin` ftvar_in_uskl S).
+    { rewrite <- (ftvar_in_pskl_uskl_to_pskl S). rewrite HeS. assumption. }
+    rewrite subst_bskl_in_uskl_fresh_eq in Hcons; [ | exact HαS ].
+    rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαS ].
+    inversion Hst; subst.
+    eapply a_consistag_psi_cong; [ exact Hcons | ].
+    match goal with He : Ψa [=] empty |- _ => clear - He; fsetdec end.
+  - (* LE-Vacuous : P0 = ◇; the run is erasure-determined *)
+    inversion Hst; subst.
+    eapply a_consistag_psi_cong with (Ψ := Ψc);
+      [ | match goal with He : Ψa [=] empty |- _ =>
+            clear - He; fsetdec end ].
+    eapply a_consistag_vacuous_erasure;
+      [ exact Hcons | reflexivity
+      | rewrite ! uskl_to_pskl_subst;
+        rewrite uskl_to_pskl_pskl_to_uskl; reflexivity ].
+  - (* LE-FlexR : the input is a flexible variable; ψa is ghost-free and
+       the assigned subject is quantifier-free, so ψa is its own strip *)
+    inversion Hst; subst.
+    match goal with
+    | Hone : ψa ∼ᵗ _ ⤳ ?Ψ1x, Hnil : nil ⊩ᵗ ψa ⤳ ?Ψ2x,
+      HΨs : Ψa [=] union ?Ψ1x ?Ψ2x |- _ =>
+        inversion Hnil; subst;
+        inversion Hone; subst
+    end.
+    + (* solvetag Var : ψa is a variable — its strip is itself *)
+      simpl in Hcons |- *.
+      eapply a_consistag_psi_cong; [ exact Hcons | ].
+      match goal with
+      | He1 : ?A [=] empty, He2 : ?B [=] empty, HΨs : Ψa [=] union ?A ?B |- _ =>
+          clear - He1 He2 HΨs; fsetdec
+      end.
+    + (* solvetag FlexR : ψa ghost-free; the subject is quantifier-free *)
+      assert (Hnas : no_all_syn_uskl
+                       (subst_bskl_in_uskl
+                          (pskl_to_uskl (uskl_to_pskl ψa)) α S)).
+      { eapply a_consistag_flexvar_subject_no_all_syn;
+          [ exact Hcons | exact Hwf | exact HwfSub ]. }
+      assert (Hid : pskl_to_uskl (uskl_to_pskl ψa) = ψa).
+      { apply strip_id_ghost_free_no_all_syn; [ assumption | ].
+        eapply no_all_syn_subst_inv; [ | exact Hnas ].
+        rewrite <- (ftvar_in_pskl_uskl_to_pskl S).
+        assumption. }
+      rewrite Hid in Hcons.
+      eapply a_consistag_psi_cong; [ exact Hcons | ].
+      match goal with
+      | He1 : ?A [=] empty, He2 : ?B [=] empty, HΨs : Ψa [=] union ?A ?B |- _ =>
+          clear - He1 He2 HΨs; fsetdec
+      end.
+  - (* LE-Arrow : split the solvetag run; the premise is an Arrow node *)
+    destruct S; simpl in HeS; inversion HeS; subst;
+      try solve [ inversion HlcS ].
+    simpl in Hcons |- *.
+    inversion HlcS; subst.
+    destruct (a_solvetag_split _ _ Hst) as [Ψa1 [Ψa2 [Hst1 [Hst2 HΨs]]]].
+    simpl in HwfSub.
+    apply a_wf_pskl_arrow_inv in HwfSub as [HwfSub1 HwfSub2].
+    inversion Hcons; subst.
+    match goal with
+    | Hc1 : _ ⊢ᵗ[ _ | _ | ?P0a | ?Ψ1 ] _ ≈ _ ⊣ ?Θm,
+      Hc2 : ?Θm ⊢ᵗ[ _ | _ | ?P0b | ?Ψ2 ] _ ≈ _ ⊣ _,
+      HΨc : _ [=] union ?Ψ1 ?Ψ2 |- _ =>
+        apply a_wf_pskl_arrow_inv in HwfP0 as [HwfP0a HwfP0b];
+        destruct (a_consistag_sound_aux Hc1 Hwf
+                    ltac:(apply subst_bskl_in_uskl_lc_uskl;
+                          [ assumption
+                          | apply pskl_to_uskl_lc;
+                            apply lc_uskl_to_pskl_local; assumption ])
+                    HwfP0a HwfSub1 Hrig Hnfd Hfaf)
+          as [Hle [HwfΘm [HnfdΘm [HfafΘm _]]]];
+        eapply a_consistag__arrow
+          with (Ψ1 := Ψ1 `union` Ψa1) (Ψ2 := Ψ2 `union` Ψa2) (Θ1 := Θm);
+        [ eapply IHHlook1;
+          [ exact Hst1 | reflexivity | exact Hαψ | exact Hlcψ | assumption
+          | exact Hc1 | exact Hwf | exact HwfP0a | exact HwfSub1
+          | exact Hrig | exact Hnfd | exact Hfaf ]
+        | eapply IHHlook2;
+          [ exact Hst2 | reflexivity | exact Hαψ | exact Hlcψ | assumption
+          | exact Hc2 | exact HwfΘm
+          | eapply a_wf_pskl_isub; [ exact HwfP0b | exact Hle ]
+          | eapply a_wf_pskl_isub; [ exact HwfSub2 | exact Hle ]
+          | intros X HX; eapply a_isub_binds_tvar;
+              [ exact Hle | apply Hrig; exact HX ]
+          | exact HnfdΘm | exact HfafΘm ]
+        | match goal with HΨc2 : _ [=] union _ _ |- _ =>
+            clear - HΨc HΨs; fsetdec end ]
+    end.
+  (* REMAINING (all TRUE, structural mirrors with recipes already used in
+     a_consistag_decoration_var — honest incremental admits, next session):
+     - LE-ForallInh  : S ∈ {all_syn S', all_etag ε S'}; invert the premise's
+       forall_inh_(un)tagged; per fresh β (∉ {α} ∪ ftv ψa ∪ Δ-recipe sets):
+       subst/open commute (subst_bskl_in_uskl_open_uskl_wrt_uskl_var), IH,
+       rebuild with the Δ-extension wf recipes (crib §8's ForallInh).
+     - LE-ForallSyn  : same at input ⊤◇ (wf reassociates directly).
+     - LE-UnivGhost  : S ∈ {tophole, topholeg}; invert univ_ghost(g); IH.
+     - LE-UnivGhost1 : subject fixed ⊤-headed, target ∀ opens; invert
+       univ_ghost1; per-α IH (Δ1-extension recipe).
+     - LE-UnivGhost2 : subject ⊤◇.S' vs guarded target; invert univ_ghost2
+       (topholeg-subject subcase dies: univ_ghostg pins P0 = ⊤◇, guarded
+       absurd); IH; rebuild (a_non_flex transports via subst-erasure).
+     - LE-UnivGhostR : target ⊤◇.P'; invert univ_ghost_r (guarded subject +
+       non-flex; the guarded-subject transport = guarded_msubst_decorate's
+       single-subst analog); IH; rebuild. *)
+Admitted.
