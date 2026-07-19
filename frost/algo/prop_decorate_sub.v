@@ -24,6 +24,7 @@ Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.prop_consis_sound.
+Require Import src.frost.algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 
 Set Implicit Arguments.
@@ -537,6 +538,14 @@ Lemma msubst_uskl_all_etag : forall ρ ε a,
   msubst_uskl ρ (uskl_all_etag ε a) = uskl_all_etag ε (msubst_uskl ρ a).
 Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
+(** strip = pskl_to_uskl ∘ uskl_to_pskl commutes with opening. *)
+Lemma strip_open : forall ψ β,
+  pskl_to_uskl (uskl_to_pskl (open_uskl_wrt_uskl ψ (uskl_var_f β)))
+  = open_uskl_wrt_uskl (pskl_to_uskl (uskl_to_pskl ψ)) (uskl_var_f β).
+Proof.
+  intros. rewrite uskl_to_pskl_open. rewrite pskl_to_uskl_open_var. reflexivity.
+Qed.
+
 Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
   ψ ∼ᵗ P0 ⤳ Ψa ->
   forall Δ1 Δ2 Ψ Θ0 Q Θ1 ρ,
@@ -570,8 +579,26 @@ Proof.
         | eapply IHa_solvetag_eq2; [ exact Hlcρ | exact Hc2 ]
         | clear - HΨi H1; fsetdec ]
     end.
-  - (* SEq-ForallInh : open fresh rigid, IH (ρ unchanged) *)
-    admit.
+  - (* SEq-ForallInh : open a fresh rigid on both sides; ρ unchanged.
+       H0 = the IH; H8 = the inverted (untagged) consistency body. *)
+    rewrite msubst_uskl_all_etag.
+    simpl in Hcons. rewrite msubst_uskl_all_syn in Hcons.
+    inversion Hcons; subst.
+    eapply a_consistag__forall_inh_tagged
+      with (Ψ0 := Ψc `union` Ψ0) (ε := ε)
+           (L := L0 `union` L `union` dom ρ `union` msubst_ftv ρ);
+      [ intros β Hβ | clear - H1; fsetdec ].
+    assert (Hβρ : β `notin` dom ρ) by (clear - Hβ; fsetdec).
+    assert (Hβf : forall γ ψg, binds γ ψg ρ -> β `notin` ftvar_in_uskl ψg).
+    { intros γ ψg Hb. pose proof (msubst_ftv_binds _ _ _ Hb) as Hsc.
+      clear - Hβ Hsc. fsetdec. }
+    rewrite <- (@msubst_uskl_open_comm ρ ψ β Hlcρ Hβρ Hβf).
+    eapply (H0 β ltac:(clear - Hβ; fsetdec)); [ exact Hlcρ | ].
+    rewrite strip_open.
+    specialize (H8 β ltac:(clear - Hβ; fsetdec)).
+    rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
+                  Hlcρ Hβρ Hβf) in H8.
+    exact H8.
   - (* SEq-UnivGhostG : invert UnivGhost, IH the inner *)
     rewrite msubst_uskl_topholeg.
     simpl in Hcons. rewrite msubst_uskl_tophole in Hcons.
@@ -586,8 +613,26 @@ Proof.
         apply a_consistag__univ_ghostg;
         eapply IHa_solvetag_eq; [ exact Hlcρ | exact Hc ]
     end.
-  - (* SEq-ForallSyn *)
-    admit.
+  - (* SEq-ForallSyn : as ForallInh but input ⊤◇, tag pass-through *)
+    rewrite msubst_uskl_all_etag.
+    simpl in Hcons. rewrite msubst_uskl_all_syn in Hcons.
+    inversion Hcons; subst;
+      try (match goal with Hg : guarded_uskl (uskl_all_syn _) |- _ =>
+             solve [ inversion Hg ] end).
+    eapply a_consistag__forall_syn_tagged
+      with (ε := ε) (L := L0 `union` L `union` dom ρ `union` msubst_ftv ρ);
+      intros β Hβ.
+    assert (Hβρ : β `notin` dom ρ) by (clear - Hβ; fsetdec).
+    assert (Hβf : forall γ ψg, binds γ ψg ρ -> β `notin` ftvar_in_uskl ψg).
+    { intros γ ψg Hb. pose proof (msubst_ftv_binds _ _ _ Hb) as Hsc.
+      clear - Hβ Hsc. fsetdec. }
+    rewrite <- (@msubst_uskl_open_comm ρ ψ β Hlcρ Hβρ Hβf).
+    eapply (H0 β ltac:(clear - Hβ; fsetdec)); [ exact Hlcρ | ].
+    rewrite strip_open.
+    specialize (H7 β ltac:(clear - Hβ; fsetdec)).
+    rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
+                  Hlcρ Hβρ Hβf) in H7.
+    exact H7.
   - (* SEq-UnivGhostR *)
     admit.
   - (* SEq-FlexR : P0 = var α, ghost-free ψ *)
