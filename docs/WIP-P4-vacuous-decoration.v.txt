@@ -1,3 +1,13 @@
+(* general erasure/open commute (open with an arbitrary skeleton) *)
+Lemma uskl_to_pskl_open_gen : forall S ψg,
+  ⌊ open_uskl_wrt_uskl S ψg ⌋ˢ
+  = open_pskl_wrt_pskl ⌊ S ⌋ˢ ⌊ ψg ⌋ˢ.
+Proof.
+  intros. unfold open_uskl_wrt_uskl, open_pskl_wrt_pskl.
+  generalize 0. induction S; intros k; simpl; try (f_equal; auto; fail).
+  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
+Qed.
+
 (* ===================================================================== *)
 (*  §6  Vacuous subtyping decoration (lemma:vacuous-subtyping-decoration) *)
 (*                                                                        *)
@@ -17,6 +27,8 @@ Proof.
   induction H; intros HP0 T2 HlcT2 Herase; subst; try discriminate HP0.
   - (* Infer : output is ⌊S⌋ = ⌊T2⌋ *)
     rewrite <- Herase. apply a_subtag__infer; assumption.
+  - (* Check : P0 = B = ◇, but guarded_pskl ◇ is absurd *)
+    match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
   - (* UnivGhostR : source guarded, output tophole ⌊S⌋ *)
     (* ⌊T2⌋ = ⌊S⌋ guarded ⇒ T2 top ∈ {unit,var,arrow} ⇒ T2 guarded *)
     assert (HgT2 : guarded_uskl T2).
@@ -31,49 +43,73 @@ Proof.
       eapply a_subtag__forall_l_untagged with (Ξ := Ξ) (P1 := P1)
         (Ψg := Ψg) (ψg := ψg);
         try assumption.
-      * intros α Hα. rewrite <- H10.
-        match goal with He : uskl_to_pskl _ = uskl_to_pskl S |- _ =>
-          rewrite <- He end. auto.
+      * intros α Hα.
+        match goal with
+        | Hext : forall α, α `notin` ?L -> a_extract _ _ _ _ _ _ _ |- _ =>
+            specialize (Hext α Hα)
+        end.
+        match goal with He : uskl_to_pskl ?s2 = uskl_to_pskl _ |- _ =>
+          rewrite <- ! uskl_to_pskl_open in *;
+          rewrite He in *; exact Hext
+        end.
       * eapply IHa_subtag; [ reflexivity | | ].
         { apply lc_body_uskl_wrt_uskl;
             [ eapply lc_body_uskl_all_syn_1; eauto | eapply is_tskl_lc;
               inversion H3; eauto ]. }
-        rewrite ! uskl_to_pskl_open_var_gen; f_equal; assumption.
+        rewrite ! uskl_to_pskl_open_gen; f_equal; [ | reflexivity ]; assumption.
     + (* T2 = all_etag ε2 S2 → forall_l_tagged *)
       eapply a_subtag__forall_l_tagged with (Ξ := Ξ) (P1 := P1)
         (Ψg := Ψg) (ψg := ψg);
         try assumption.
-      * intros α Hα. rewrite <- H10.
-        match goal with He : uskl_to_pskl _ = uskl_to_pskl S |- _ =>
-          rewrite <- He end. auto.
+      * intros α Hα.
+        match goal with
+        | Hext : forall α, α `notin` ?L -> a_extract _ _ _ _ _ _ _ |- _ =>
+            specialize (Hext α Hα)
+        end.
+        match goal with He : uskl_to_pskl ?s2 = uskl_to_pskl _ |- _ =>
+          rewrite <- ! uskl_to_pskl_open in *;
+          rewrite He in *; exact Hext
+        end.
       * eapply IHa_subtag; [ reflexivity | | ].
         { apply lc_body_uskl_wrt_uskl;
             [ eapply lc_body_uskl_all_etag_2; eauto | eapply is_tskl_lc;
               inversion H3; eauto ]. }
-        rewrite ! uskl_to_pskl_open_var_gen; f_equal; assumption.
+        rewrite ! uskl_to_pskl_open_gen; f_equal; [ | reflexivity ]; assumption.
   - (* ForallL untagged : symmetric *)
     destruct T2; simpl in Herase; inversion Herase; subst;
       match goal with H : lc_uskl _ |- _ => inversion H; subst end.
     + eapply a_subtag__forall_l_untagged with (Ξ := Ξ) (P1 := P1)
         (Ψg := Ψg) (ψg := ψg); try assumption.
-      * intros α Hα. rewrite <- H10.
-        match goal with He : uskl_to_pskl _ = uskl_to_pskl S |- _ =>
-          rewrite <- He end. auto.
+      * intros α Hα.
+        match goal with
+        | Hext : forall α, α `notin` ?L -> a_extract _ _ _ _ _ _ _ |- _ =>
+            specialize (Hext α Hα)
+        end.
+        match goal with He : uskl_to_pskl ?s2 = uskl_to_pskl _ |- _ =>
+          rewrite <- ! uskl_to_pskl_open in *;
+          rewrite He in *; exact Hext
+        end.
       * eapply IHa_subtag; [ reflexivity | | ].
         { apply lc_body_uskl_wrt_uskl;
             [ eapply lc_body_uskl_all_syn_1; eauto | eapply is_tskl_lc;
               inversion H3; eauto ]. }
-        rewrite ! uskl_to_pskl_open_var_gen; f_equal; assumption.
+        rewrite ! uskl_to_pskl_open_gen; f_equal; [ | reflexivity ]; assumption.
     + eapply a_subtag__forall_l_tagged with (Ξ := Ξ) (P1 := P1)
         (Ψg := Ψg) (ψg := ψg); try assumption.
-      * intros α Hα. rewrite <- H10.
-        match goal with He : uskl_to_pskl _ = uskl_to_pskl S |- _ =>
-          rewrite <- He end. auto.
+      * intros α Hα.
+        match goal with
+        | Hext : forall α, α `notin` ?L -> a_extract _ _ _ _ _ _ _ |- _ =>
+            specialize (Hext α Hα)
+        end.
+        match goal with He : uskl_to_pskl ?s2 = uskl_to_pskl _ |- _ =>
+          rewrite <- ! uskl_to_pskl_open in *;
+          rewrite He in *; exact Hext
+        end.
       * eapply IHa_subtag; [ reflexivity | | ].
         { apply lc_body_uskl_wrt_uskl;
             [ eapply lc_body_uskl_all_etag_2; eauto | eapply is_tskl_lc;
               inversion H3; eauto ]. }
-        rewrite ! uskl_to_pskl_open_var_gen; f_equal; assumption.
+        rewrite ! uskl_to_pskl_open_gen; f_equal; [ | reflexivity ]; assumption.
   - (* Ghost : source hole, output P0=hole *)
     destruct T2; simpl in Herase; inversion Herase; subst.
     + apply a_subtag__ghost; assumption.
