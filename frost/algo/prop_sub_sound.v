@@ -515,11 +515,19 @@ Proof.
        IH at (Ξ ++ Θ0); strip the ⊴ over the decls prefix; conclude with
        ad_pat_sub__forall_l_tagged (its disciplined scope premise now
        comes straight off the rule, ⊴-transported). *)
-    intros L NM M P0 Ψ Ψg Θ0 Θ1 ε S Q Ξ P1 ψg
-      Hneq Hgor Hex Huq HwfP1 Hint Hsort Herase Hprem IH
+    intros L NM M P0 Ψ Θ0 Θ1 ε S Q Ξ P1
+      Hneq Hgor Hex Huq HwfP1 Hfam IHfam
       Hwf Hlc HwfP0 HwfS Hmod Hgf.
     destruct (atom_fresh L) as [α Hα].
     assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
+    (* pick a fresh decoration of P1 to instantiate the cofinite family *)
+    assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
+    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1 (L `union` Ψ))
+      as [Ψg [ψg [Hint0 [Hsort Herase]]]].
+    assert (Hint : AtomSetImpl.inter Ψg Ψ [=] empty)
+      by (clear - Hint0; fsetdec).
+    assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
+    assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
     assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
     { apply a_wf_aenv_prepend_decls; auto.
       - clear - Huq. solve_uniq.
@@ -559,11 +567,19 @@ Proof.
     rewrite Herase. eapply a_wf_pskl_isub; eauto.
 
   - (* ForallL (untagged) : same as tagged. *)
-    intros L NM M P0 Ψ Ψg Θ0 Θ1 S Q Ξ P1 ψg
-      Hneq Hgor Hex Huq HwfP1 Hint Hsort Herase Hprem IH
+    intros L NM M P0 Ψ Θ0 Θ1 S Q Ξ P1
+      Hneq Hgor Hex Huq HwfP1 Hfam IHfam
       Hwf Hlc HwfP0 HwfS Hmod Hgf.
     destruct (atom_fresh L) as [α Hα].
     assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
+    (* pick a fresh decoration of P1 to instantiate the cofinite family *)
+    assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
+    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1 (L `union` Ψ))
+      as [Ψg [ψg [Hint0 [Hsort Herase]]]].
+    assert (Hint : AtomSetImpl.inter Ψg Ψ [=] empty)
+      by (clear - Hint0; fsetdec).
+    assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
+    assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
     assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
     { apply a_wf_aenv_prepend_decls; auto.
       - clear - Huq. solve_uniq.

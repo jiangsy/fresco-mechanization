@@ -258,31 +258,44 @@ Inductive a_subtag :
     Ψ [=] Ψ1 `union` Ψ2 ->
     Θ0 ⊢ᵗ[ NM | (mode_fn M) | (pskl_arrow P0a P0b) | Ψ ]
       (uskl_arrow S1 S2) ⊑ (pskl_arrow Q1 Q2) ⊣ Θ2
-| a_subtag__forall_l_tagged : forall L NM M P0 Ψ Ψg Θ0 Θ1 ε S Q Ξ P1 ψg,
+(* The paper's [Ψg fresh] (decorated-algosub.tex:92) is prose-completed
+   COFINITELY: the recursive premise holds for EVERY sufficiently fresh
+   retagging (Ψg, ψg) of P1 — the tag analog of cofinite binder
+   quantification (derivations are generic in the inert tag names).  The
+   specific-pack completion [inter Ψg Ψ [=] empty] is too weak: the
+   decoration lemmas (subtyping-proofs.tex:176-963) invert this node and
+   rebuild it at an ENLARGED tag context Ψ ∪ Ψa, needing Ψg # Ψa — a
+   freshness no inversion of a specific pack can supply (hazard noted in
+   docs/DESIGN-subtyping.md §4.2).  Consumers recover a specific pack by
+   instantiating at a decoration of P1 avoiding L ∪ Ψ
+   ([pskl_decorate_exists]). *)
+| a_subtag__forall_l_tagged : forall L NM M P0 Ψ Θ0 Θ1 ε S Q Ξ P1,
     M <> mode_ti ->                                           (* ForallL, δ=ε *)
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
        a_extract NM α M ⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->                              (* DISCIPLINED wf (paper) *)
-    AtomSetImpl.inter Ψg Ψ [=] empty ->                       (* Ψg fresh *)
-    a_tags_sort NM Ψg ψg ->                                   (* Θ,Ξ ⊢^N tags{Ψg}{ψg} *)
-    ⌊ ψg ⌋ˢ = P1 ->                                           (* ⌊ψg⌋ = P1 *)
-    (Ξ ++ Θ0) ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψg) ]
-      (open_uskl_wrt_uskl S ψg) ⊑ Q ⊣ Θ1 ->
+    (forall Ψg ψg,                                            (* Ψg fresh (cofinite) *)
+       AtomSetImpl.inter Ψg L [=] empty ->
+       a_tags_sort NM Ψg ψg ->                                (* Θ,Ξ ⊢^N tags{Ψg}{ψg} *)
+       ⌊ ψg ⌋ˢ = P1 ->                                        (* ⌊ψg⌋ = P1 *)
+       (Ξ ++ Θ0) ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψg) ]
+         (open_uskl_wrt_uskl S ψg) ⊑ Q ⊣ Θ1) ->
     Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] (uskl_all_etag ε S) ⊑ Q ⊣ Θ1
-| a_subtag__forall_l_untagged : forall L NM M P0 Ψ Ψg Θ0 Θ1 S Q Ξ P1 ψg,
+| a_subtag__forall_l_untagged : forall L NM M P0 Ψ Θ0 Θ1 S Q Ξ P1,
     M <> mode_ti ->                                           (* ForallL, δ=· *)
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
        a_extract NM α M ⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->                              (* DISCIPLINED wf (paper) *)
-    AtomSetImpl.inter Ψg Ψ [=] empty ->
-    a_tags_sort NM Ψg ψg ->
-    ⌊ ψg ⌋ˢ = P1 ->
-    (Ξ ++ Θ0) ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψg) ]
-      (open_uskl_wrt_uskl S ψg) ⊑ Q ⊣ Θ1 ->
+    (forall Ψg ψg,                                            (* Ψg fresh (cofinite) *)
+       AtomSetImpl.inter Ψg L [=] empty ->
+       a_tags_sort NM Ψg ψg ->
+       ⌊ ψg ⌋ˢ = P1 ->
+       (Ξ ++ Θ0) ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψg) ]
+         (open_uskl_wrt_uskl S ψg) ⊑ Q ⊣ Θ1) ->
     Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] (uskl_all_syn S) ⊑ Q ⊣ Θ1
 | a_subtag__ghost : forall M Ψ Θ0 P0,                         (* Ghost (unchanged) *)
     Ψ [=] empty ->

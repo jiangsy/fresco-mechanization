@@ -31,109 +31,9 @@ Require Import src.frost.algo.prop_pat_sub.
 
 Set Implicit Arguments.
 
-(* ===================================================================== *)
-(*  §1  Erasure commutes with close                                       *)
-(* ===================================================================== *)
-
-Lemma uskl_to_pskl_close_rec : forall ψ X k,
-  uskl_to_pskl (close_uskl_wrt_uskl_rec k X ψ)
-  = close_pskl_wrt_pskl_rec k X (uskl_to_pskl ψ).
-Proof.
-  induction ψ; intros X k; simpl; try (f_equal; auto; fail).
-  - destruct (lt_ge_dec n k); reflexivity.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
-      reflexivity.
-Qed.
-
-Lemma uskl_to_pskl_close : forall ψ X,
-  ⌊ close_uskl_wrt_uskl X ψ ⌋ˢ = close_pskl_wrt_pskl X ⌊ ψ ⌋ˢ.
-Proof.
-  intros. unfold close_uskl_wrt_uskl, close_pskl_wrt_pskl.
-  apply uskl_to_pskl_close_rec.
-Qed.
-
-(* ===================================================================== *)
-(*  §2  Look decoration (lemma:look-decoration)                           *)
-(*                                                                        *)
-(*  Every locally-closed skeleton [Q] admits a decoration [ψ]: a fresh    *)
-(*  tag on every quantifier, ghosts turned dotted.  Stated with an        *)
-(*  avoid-set [L] so sibling subtrees get disjoint tags (the arrow rule   *)
-(*  of [d_tags_skl] needs [Ψ1 ∩ Ψ2 = ∅]).                                 *)
-(* ===================================================================== *)
-
-Lemma pskl_decorate_exists : forall Q,
-  lc_pskl Q ->
-  forall L, exists Ψ ψ,
-    AtomSetImpl.inter Ψ L [=] empty /\
-    is_tskl ψ /\
-    d_tags_skl Ψ ψ /\
-    ⌊ ψ ⌋ˢ = Q /\
-    (pskl_ghost_free Q -> uskl_ghost_free ψ).
-Proof.
-  intros Q Hlc; induction Hlc; intros L.
-  - (* unit *)
-    exists empty, uskl_unit. repeat apply conj;
-      [ fsetdec | apply is_tskl__unit | apply d_tags_skl__unit; fsetdec
-      | reflexivity | intros _; apply uskl_ghost_free__unit ].
-  - (* var *)
-    exists empty, (uskl_var_f Xps). repeat apply conj;
-      [ fsetdec | apply is_tskl__var | apply d_tags_skl__var; fsetdec
-      | reflexivity | intros _; apply uskl_ghost_free__var ].
-  - (* arrow *)
-    destruct (IHHlc1 L) as [Ψ1 [ψ1 [Hd1 [Ht1 [Hg1 [He1 Hgf1]]]]]].
-    destruct (IHHlc2 (L `union` Ψ1))
-      as [Ψ2 [ψ2 [Hd2 [Ht2 [Hg2 [He2 Hgf2]]]]]].
-    exists (Ψ1 `union` Ψ2), (uskl_arrow ψ1 ψ2). repeat apply conj.
-    + clear - Hd1 Hd2. fsetdec.
-    + apply is_tskl__arrow; assumption.
-    + apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-        [ assumption | assumption | clear - Hd2; fsetdec | fsetdec ].
-    + simpl. rewrite He1, He2. reflexivity.
-    + intros Hg. simpl in Hg. destruct Hg as [Hga Hgb].
-      apply uskl_ghost_free__arrow; [ apply Hgf1; auto | apply Hgf2; auto ].
-  - (* all_syn → all_etag ε *)
-    destruct (atom_fresh (L `union` ftvar_in_pskl P1)) as [X0 FrX].
-    destruct (H0 X0 (L `union` singleton X0))
-      as [Ψ0 [ψ0 [Hd0 [Ht0 [Hg0 [He0 Hgf0]]]]]].
-    destruct (atom_fresh (L `union` Ψ0)) as [ε Frε].
-    exists (add ε Ψ0), (uskl_all_etag ε (close_uskl_wrt_uskl X0 ψ0)).
-    repeat apply conj.
-    + clear - Hd0 Frε. fsetdec.
-    + apply is_tskl__all_etag with (L := singleton X0).
-      intros Y HY.
-      rewrite <- subst_bskl_in_uskl_spec.
-      change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
-      apply is_tskl_subst_mono; [ exact Ht0 | apply mono_ptyp__var ].
-    + apply d_tags_skl__all_etag with (L := singleton X0) (Ψ0 := Ψ0);
-        [ | clear - Frε; fsetdec | fsetdec ].
-      intros Y HY.
-      rewrite <- subst_bskl_in_uskl_spec.
-      change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
-      apply d_tags_skl_subst_mono; [ exact Hg0 | apply mono_ptyp__var ].
-    + simpl. rewrite uskl_to_pskl_close. rewrite He0.
-      rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-        [ reflexivity | clear - FrX; fsetdec ].
-    + intros Hg. simpl in Hg.
-      apply uskl_ghost_free__all_etag with (L := singleton X0).
-      intros Y HY.
-      rewrite <- subst_bskl_in_uskl_spec.
-      change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
-      apply uskl_ghost_free_subst_mono; [ | apply mono_ptyp__var ].
-      apply Hgf0. unfold open_pskl_wrt_pskl. apply pskl_ghost_free_open_rec.
-      exact Hg.
-  - (* hole → holeg *)
-    exists empty, uskl_holeg. repeat apply conj;
-      [ fsetdec | apply is_tskl__holeg | apply d_tags_skl__holeg; fsetdec
-      | reflexivity | intros Hg; simpl in Hg; contradiction ].
-  - (* tophole → topholeg *)
-    destruct (IHHlc L) as [Ψ0 [ψ0 [Hd0 [Ht0 [Hg0 [He0 Hgf0]]]]]].
-    exists Ψ0, (uskl_topholeg ψ0). repeat apply conj.
-    + exact Hd0.
-    + apply is_tskl__topholeg; assumption.
-    + apply d_tags_skl__topholeg; assumption.
-    + simpl. rewrite He0. reflexivity.
-    + intros Hg. simpl in Hg. contradiction.
-Qed.
+(* §1-§2 (uskl_to_pskl_close, pskl_decorate_exists, is_tskl_lc) moved to
+   prop_pat_sub.v §7 so prop_sub_sound can pick decorations when
+   instantiating the cofinite ForallL tag premise. *)
 
 (* ===================================================================== *)
 (*  §3  Constraint-solving concatenation (lemma:solvetag-concat)          *)
@@ -314,13 +214,6 @@ Qed.
 (*  ρ-threaded statement, since both sides erase equally.                 *)
 (* ===================================================================== *)
 
-Lemma is_tskl_lc : forall ψ, is_tskl ψ -> lc_uskl ψ.
-Proof.
-  intros ψ H; induction H; try (constructor; auto; fail).
-  destruct (atom_fresh L) as [X HX].
-  eapply lc_uskl_all_etag_exists; eauto.
-Qed.
-
 Lemma a_subtag_vacuous_erasure : forall NM M P0 Ψ Θ0 T1 Q Θ1,
   Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T1 ⊑ Q ⊣ Θ1 ->
   P0 = pskl_hole ->
@@ -340,92 +233,101 @@ Proof.
         destruct T2; simpl in Herase; inversion Herase; subst;
         inversion HlcT2; subst; constructor; assumption. }
     rewrite <- Herase. apply a_subtag__univ_ghost_r; assumption.
-  - (* ForallL tagged : reconstruct on T2 (shape decides tagged/untagged) *)
+  - (* ForallL tagged : reconstruct on T2 (shape decides tagged/untagged);
+       the cofinite tag family maps through the family IH pointwise. *)
     destruct T2; simpl in Herase; inversion Herase; subst;
       match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
-    + (* T2 = all_syn *) eapply a_subtag__forall_l_untagged with
-        (L := L) (Ξ := Ξ) (Ψg := Ψg) (ψg := ψg) (P1 := ⌊ ψg ⌋ˢ).
-      * exact H.
-      * right; reflexivity.
+    + eapply a_subtag__forall_l_untagged with (L := L) (Ξ := Ξ) (P1 := P1);
+        [ exact H | right; reflexivity | | exact H2 | exact H3 | ].
       * intros α Hα.
-        replace (⌊ open_uskl_wrt_uskl T2 (uskl_var_f α) ⌋ˢ)
-          with (⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ)
-          by (rewrite ! uskl_to_pskl_open; rewrite H8; reflexivity).
+        match goal with
+        | Hb : ⌊ ?T2b ⌋ˢ = ⌊ ?Sb ⌋ˢ
+          |- a_extract _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
+            replace (⌊ open_uskl_wrt_uskl T2b (uskl_var_f α) ⌋ˢ)
+              with (⌊ open_uskl_wrt_uskl Sb (uskl_var_f α) ⌋ˢ)
+              by (rewrite ! uskl_to_pskl_open; rewrite Hb; reflexivity)
+        end.
         apply H1; exact Hα.
-      * exact H2.
-      * exact H3.
-      * exact H4.
-      * exact H5.
-      * reflexivity.
-      * eapply IHa_subtag.
-        -- reflexivity.
+      * intros Ψg ψg Hfr Hsort Hera.
+        match goal with
+        | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
+            eapply (IHfam Ψg ψg Hfr Hsort Hera eq_refl)
+        end.
         -- apply lc_body_uskl_wrt_uskl;
              [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_etag_2
-             | apply is_tskl_lc; inversion H5; assumption ].
-        -- rewrite ! uskl_to_pskl_open_gen. rewrite H8. reflexivity.
-    + (* T2 = all_etag *) eapply a_subtag__forall_l_tagged with
-        (L := L) (Ξ := Ξ) (Ψg := Ψg) (ψg := ψg) (P1 := ⌊ ψg ⌋ˢ).
-      * exact H.
-      * right; reflexivity.
+             | apply is_tskl_lc; inversion Hsort; assumption ].
+        -- rewrite ! uskl_to_pskl_open_gen.
+           match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
+           reflexivity.
+    + eapply a_subtag__forall_l_tagged with (L := L) (Ξ := Ξ) (P1 := P1);
+        [ exact H | right; reflexivity | | exact H2 | exact H3 | ].
       * intros α Hα.
-        replace (⌊ open_uskl_wrt_uskl T2 (uskl_var_f α) ⌋ˢ)
-          with (⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ)
-          by (rewrite ! uskl_to_pskl_open; rewrite H8; reflexivity).
+        match goal with
+        | Hb : ⌊ ?T2b ⌋ˢ = ⌊ ?Sb ⌋ˢ
+          |- a_extract _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
+            replace (⌊ open_uskl_wrt_uskl T2b (uskl_var_f α) ⌋ˢ)
+              with (⌊ open_uskl_wrt_uskl Sb (uskl_var_f α) ⌋ˢ)
+              by (rewrite ! uskl_to_pskl_open; rewrite Hb; reflexivity)
+        end.
         apply H1; exact Hα.
-      * exact H2.
-      * exact H3.
-      * exact H4.
-      * exact H5.
-      * reflexivity.
-      * eapply IHa_subtag.
-        -- reflexivity.
+      * intros Ψg ψg Hfr Hsort Hera.
+        match goal with
+        | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
+            eapply (IHfam Ψg ψg Hfr Hsort Hera eq_refl)
+        end.
         -- apply lc_body_uskl_wrt_uskl;
              [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_etag_2
-             | apply is_tskl_lc; inversion H5; assumption ].
-        -- rewrite ! uskl_to_pskl_open_gen. rewrite H8. reflexivity.
+             | apply is_tskl_lc; inversion Hsort; assumption ].
+        -- rewrite ! uskl_to_pskl_open_gen.
+           match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
+           reflexivity.
   - (* ForallL untagged : identical reconstruction *)
     destruct T2; simpl in Herase; inversion Herase; subst;
       match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
-    + eapply a_subtag__forall_l_untagged with
-        (L := L) (Ξ := Ξ) (Ψg := Ψg) (ψg := ψg) (P1 := ⌊ ψg ⌋ˢ).
-      * exact H.
-      * right; reflexivity.
+    + eapply a_subtag__forall_l_untagged with (L := L) (Ξ := Ξ) (P1 := P1);
+        [ exact H | right; reflexivity | | exact H2 | exact H3 | ].
       * intros α Hα.
-        replace (⌊ open_uskl_wrt_uskl T2 (uskl_var_f α) ⌋ˢ)
-          with (⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ)
-          by (rewrite ! uskl_to_pskl_open; rewrite H8; reflexivity).
+        match goal with
+        | Hb : ⌊ ?T2b ⌋ˢ = ⌊ ?Sb ⌋ˢ
+          |- a_extract _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
+            replace (⌊ open_uskl_wrt_uskl T2b (uskl_var_f α) ⌋ˢ)
+              with (⌊ open_uskl_wrt_uskl Sb (uskl_var_f α) ⌋ˢ)
+              by (rewrite ! uskl_to_pskl_open; rewrite Hb; reflexivity)
+        end.
         apply H1; exact Hα.
-      * exact H2.
-      * exact H3.
-      * exact H4.
-      * exact H5.
-      * reflexivity.
-      * eapply IHa_subtag.
-        -- reflexivity.
+      * intros Ψg ψg Hfr Hsort Hera.
+        match goal with
+        | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
+            eapply (IHfam Ψg ψg Hfr Hsort Hera eq_refl)
+        end.
         -- apply lc_body_uskl_wrt_uskl;
              [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_etag_2
-             | apply is_tskl_lc; inversion H5; assumption ].
-        -- rewrite ! uskl_to_pskl_open_gen. rewrite H8. reflexivity.
-    + eapply a_subtag__forall_l_tagged with
-        (L := L) (Ξ := Ξ) (Ψg := Ψg) (ψg := ψg) (P1 := ⌊ ψg ⌋ˢ).
-      * exact H.
-      * right; reflexivity.
+             | apply is_tskl_lc; inversion Hsort; assumption ].
+        -- rewrite ! uskl_to_pskl_open_gen.
+           match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
+           reflexivity.
+    + eapply a_subtag__forall_l_tagged with (L := L) (Ξ := Ξ) (P1 := P1);
+        [ exact H | right; reflexivity | | exact H2 | exact H3 | ].
       * intros α Hα.
-        replace (⌊ open_uskl_wrt_uskl T2 (uskl_var_f α) ⌋ˢ)
-          with (⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ)
-          by (rewrite ! uskl_to_pskl_open; rewrite H8; reflexivity).
+        match goal with
+        | Hb : ⌊ ?T2b ⌋ˢ = ⌊ ?Sb ⌋ˢ
+          |- a_extract _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
+            replace (⌊ open_uskl_wrt_uskl T2b (uskl_var_f α) ⌋ˢ)
+              with (⌊ open_uskl_wrt_uskl Sb (uskl_var_f α) ⌋ˢ)
+              by (rewrite ! uskl_to_pskl_open; rewrite Hb; reflexivity)
+        end.
         apply H1; exact Hα.
-      * exact H2.
-      * exact H3.
-      * exact H4.
-      * exact H5.
-      * reflexivity.
-      * eapply IHa_subtag.
-        -- reflexivity.
+      * intros Ψg ψg Hfr Hsort Hera.
+        match goal with
+        | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
+            eapply (IHfam Ψg ψg Hfr Hsort Hera eq_refl)
+        end.
         -- apply lc_body_uskl_wrt_uskl;
              [ eauto using lc_body_uskl_all_syn_1, lc_body_uskl_all_etag_2
-             | apply is_tskl_lc; inversion H5; assumption ].
-        -- rewrite ! uskl_to_pskl_open_gen. rewrite H8. reflexivity.
+             | apply is_tskl_lc; inversion Hsort; assumption ].
+        -- rewrite ! uskl_to_pskl_open_gen.
+           match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
+           reflexivity.
   - (* Ghost : source hole, output P0=hole *)
     destruct T2; simpl in Herase; inversion Herase; subst.
     + apply a_subtag__ghost; assumption.
@@ -1052,18 +954,22 @@ Proof.
   - (* Arrow *) eapply a_subtag__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ eassumption | eassumption
       | match goal with Ho : _ [=] union Ψ1 Ψ2 |- _ => clear - Ho Heq; fsetdec end ].
-  - (* ForallL, δ=ε *)
-    eapply a_subtag__forall_l_tagged with (Ψg := Ψg) (Ξ := Ξ) (P1 := P1) (ψg := ψg);
+  - (* ForallL, δ=ε : the family maps through the family IH pointwise *)
+    eapply a_subtag__forall_l_tagged with (L := L) (Ξ := Ξ) (P1 := P1);
       try eassumption.
-    + match goal with Ho : AtomSetImpl.inter Ψg _ [=] empty |- _ =>
-        clear - Ho Heq; fsetdec end.
-    + match goal with IH : forall Ψ0, _ |- _ => eapply IH; clear - Heq; fsetdec end.
+    intros Ψg ψg Hfr Hsort Hera.
+    match goal with
+    | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
+        eapply (IHfam Ψg ψg Hfr Hsort Hera); clear - Heq; fsetdec
+    end.
   - (* ForallL, δ=· *)
-    eapply a_subtag__forall_l_untagged with (Ψg := Ψg) (Ξ := Ξ) (P1 := P1) (ψg := ψg);
+    eapply a_subtag__forall_l_untagged with (L := L) (Ξ := Ξ) (P1 := P1);
       try eassumption.
-    + match goal with Ho : AtomSetImpl.inter Ψg _ [=] empty |- _ =>
-        clear - Ho Heq; fsetdec end.
-    + match goal with IH : forall Ψ0, _ |- _ => eapply IH; clear - Heq; fsetdec end.
+    intros Ψg ψg Hfr Hsort Hera.
+    match goal with
+    | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
+        eapply (IHfam Ψg ψg Hfr Hsort Hera); clear - Heq; fsetdec
+    end.
   - (* Ghost *) apply a_subtag__ghost; clear - H Heq; fsetdec.
   - (* GhostG *) apply a_subtag__ghostg; clear - H Heq; fsetdec.
   - (* UnivGhostL *) apply a_subtag__univ_ghost_l; [ assumption | ].

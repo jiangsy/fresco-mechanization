@@ -1880,3 +1880,149 @@ Proof.
           | |- context [ if ?e then _ else _ ] => destruct e
           end; congruence.
 Qed.
+
+(* ===================================================================== *)
+(*  §7  Look decoration (lemma:look-decoration) and tags-sort existence   *)
+(*                                                                        *)
+(*  Every locally-closed skeleton [Q] admits a decoration [ψ]: a fresh    *)
+(*  tag on every quantifier, ghosts turned dotted.  Stated with an        *)
+(*  avoid-set [L] so sibling subtrees get disjoint tags (the arrow rule   *)
+(*  of [d_tags_skl] needs [Ψ1 ∩ Ψ2 = ∅]) and so consumers can discharge   *)
+(*  the cofinite tag-freshness premise of [a_subtag__forall_l_*].         *)
+(*  (Moved here from prop_decorate_sub.v so prop_sub_sound can pick       *)
+(*  decorations when instantiating the cofinite ForallL premise.)         *)
+(* ===================================================================== *)
+
+Lemma uskl_to_pskl_close_rec : forall ψ X k,
+  uskl_to_pskl (close_uskl_wrt_uskl_rec k X ψ)
+  = close_pskl_wrt_pskl_rec k X (uskl_to_pskl ψ).
+Proof.
+  induction ψ; intros X k; simpl; try (f_equal; auto; fail).
+  - destruct (lt_ge_dec n k); reflexivity.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      reflexivity.
+Qed.
+
+Lemma uskl_to_pskl_close : forall ψ X,
+  ⌊ close_uskl_wrt_uskl X ψ ⌋ˢ = close_pskl_wrt_pskl X ⌊ ψ ⌋ˢ.
+Proof.
+  intros. unfold close_uskl_wrt_uskl, close_pskl_wrt_pskl.
+  apply uskl_to_pskl_close_rec.
+Qed.
+
+Lemma is_tskl_lc : forall ψ, is_tskl ψ -> lc_uskl ψ.
+Proof.
+  intros ψ H; induction H; try (constructor; auto; fail).
+  destruct (atom_fresh L) as [X HX].
+  eapply lc_uskl_all_etag_exists; eauto.
+Qed.
+
+Lemma pskl_decorate_exists : forall Q,
+  lc_pskl Q ->
+  forall L, exists Ψ ψ,
+    AtomSetImpl.inter Ψ L [=] empty /\
+    is_tskl ψ /\
+    d_tags_skl Ψ ψ /\
+    ⌊ ψ ⌋ˢ = Q /\
+    (pskl_ghost_free Q -> uskl_ghost_free ψ).
+Proof.
+  intros Q Hlc; induction Hlc; intros L.
+  - (* unit *)
+    exists empty, uskl_unit. repeat apply conj;
+      [ fsetdec | apply is_tskl__unit | apply d_tags_skl__unit; fsetdec
+      | reflexivity | intros _; apply uskl_ghost_free__unit ].
+  - (* var *)
+    exists empty, (uskl_var_f Xps). repeat apply conj;
+      [ fsetdec | apply is_tskl__var | apply d_tags_skl__var; fsetdec
+      | reflexivity | intros _; apply uskl_ghost_free__var ].
+  - (* arrow *)
+    destruct (IHHlc1 L) as [Ψ1 [ψ1 [Hd1 [Ht1 [Hg1 [He1 Hgf1]]]]]].
+    destruct (IHHlc2 (L `union` Ψ1))
+      as [Ψ2 [ψ2 [Hd2 [Ht2 [Hg2 [He2 Hgf2]]]]]].
+    exists (Ψ1 `union` Ψ2), (uskl_arrow ψ1 ψ2). repeat apply conj.
+    + clear - Hd1 Hd2. fsetdec.
+    + apply is_tskl__arrow; assumption.
+    + apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+        [ assumption | assumption | clear - Hd2; fsetdec | fsetdec ].
+    + simpl. rewrite He1, He2. reflexivity.
+    + intros Hg. simpl in Hg. destruct Hg as [Hga Hgb].
+      apply uskl_ghost_free__arrow; [ apply Hgf1; auto | apply Hgf2; auto ].
+  - (* all_syn → all_etag ε *)
+    destruct (atom_fresh (L `union` ftvar_in_pskl P1)) as [X0 FrX].
+    destruct (H0 X0 (L `union` singleton X0))
+      as [Ψ0 [ψ0 [Hd0 [Ht0 [Hg0 [He0 Hgf0]]]]]].
+    destruct (atom_fresh (L `union` Ψ0)) as [ε Frε].
+    exists (add ε Ψ0), (uskl_all_etag ε (close_uskl_wrt_uskl X0 ψ0)).
+    repeat apply conj.
+    + clear - Hd0 Frε. fsetdec.
+    + apply is_tskl__all_etag with (L := singleton X0).
+      intros Y HY.
+      rewrite <- subst_bskl_in_uskl_spec.
+      change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      apply is_tskl_subst_mono; [ exact Ht0 | apply mono_ptyp__var ].
+    + apply d_tags_skl__all_etag with (L := singleton X0) (Ψ0 := Ψ0);
+        [ | clear - Frε; fsetdec | fsetdec ].
+      intros Y HY.
+      rewrite <- subst_bskl_in_uskl_spec.
+      change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      apply d_tags_skl_subst_mono; [ exact Hg0 | apply mono_ptyp__var ].
+    + simpl. rewrite uskl_to_pskl_close. rewrite He0.
+      rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
+        [ reflexivity | clear - FrX; fsetdec ].
+    + intros Hg. simpl in Hg.
+      apply uskl_ghost_free__all_etag with (L := singleton X0).
+      intros Y HY.
+      rewrite <- subst_bskl_in_uskl_spec.
+      change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+      apply uskl_ghost_free_subst_mono; [ | apply mono_ptyp__var ].
+      apply Hgf0. unfold open_pskl_wrt_pskl. apply pskl_ghost_free_open_rec.
+      exact Hg.
+  - (* hole → holeg *)
+    exists empty, uskl_holeg. repeat apply conj;
+      [ fsetdec | apply is_tskl__holeg | apply d_tags_skl__holeg; fsetdec
+      | reflexivity | intros Hg; simpl in Hg; contradiction ].
+  - (* tophole → topholeg *)
+    destruct (IHHlc L) as [Ψ0 [ψ0 [Hd0 [Ht0 [Hg0 [He0 Hgf0]]]]]].
+    exists Ψ0, (uskl_topholeg ψ0). repeat apply conj.
+    + exact Hd0.
+    + apply is_tskl__topholeg; assumption.
+    + apply d_tags_skl__topholeg; assumption.
+    + simpl. rewrite He0. reflexivity.
+    + intros Hg. simpl in Hg. contradiction.
+Qed.
+
+(** [ptyp]s have no ghosts, so [guess^TY] outputs are ghost-free. *)
+Lemma ptyp_to_pskl_ghost_free : forall A, pskl_ghost_free (ptyp_to_pskl A).
+Proof. induction A; simpl; auto. Qed.
+
+Lemma a_extract_ty_ghost_free : forall α M P P0 Ξ P1,
+  a_extract a_sub_mode_ty α M P P0 Ξ P1 ->
+  pskl_ghost_free P1.
+Proof.
+  intros * Hex; inversion Hex; subst.
+  match goal with
+  | Hg : a_guess a_sub_mode_ty _ _ _ |- _ => inversion Hg; subst
+  end.
+  apply ptyp_to_pskl_ghost_free.
+Qed.
+
+(** Existence of a fresh [a_tags_sort]-sorted decoration of an extract
+    output — what consumers instantiate the cofinite ForallL premise with.
+    The TY case needs the output ghost-free, which [guess^TY] guarantees. *)
+Lemma a_tags_sort_decorate_exists : forall NM α M P P0 Ξ P1,
+  a_extract NM α M P P0 Ξ P1 ->
+  lc_pskl P1 ->
+  forall L, exists Ψg ψg,
+    AtomSetImpl.inter Ψg L [=] empty /\
+    a_tags_sort NM Ψg ψg /\
+    ⌊ ψg ⌋ˢ = P1.
+Proof.
+  intros NM α M P P0 Ξ P1 Hex Hlc L.
+  destruct (pskl_decorate_exists Hlc L)
+    as [Ψg [ψg [Hint [Htskl [Hdtags [Herase Hgf]]]]]].
+  exists Ψg, ψg. repeat apply conj; [ exact Hint | | exact Herase ].
+  destruct NM.
+  - apply a_tags_sort__ty; [ exact Htskl | exact Hdtags | ].
+    apply Hgf. eapply a_extract_ty_ghost_free; eauto.
+  - apply a_tags_sort__sk; [ exact Htskl | exact Hdtags ].
+Qed.
