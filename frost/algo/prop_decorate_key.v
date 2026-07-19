@@ -834,4 +834,341 @@ Proof.
             end
           | clear; fsetdec ].
 
-Admitted.
+  - (* Ghost : source ◇ *)
+    destruct S0; simpl in HeqT;
+      try discriminate HeqT;
+      try solve [ inversion HlcS0 ].
+    + (* S0 = var *)
+      revert HeqT.
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
+      end; intro HeqT; [ | discriminate HeqT ].
+      simpl in HD.
+      inversion HD; subst.
+      * (* LS-Var : decoration-var at ρ = nil *)
+        inversion Hst; subst.
+        simpl.
+        match goal with
+        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
+            [ | exfalso; congruence ]
+        end.
+        change ψa with (msubst_uskl nil ψa).
+        eapply a_subtag_decoration_var;
+          [ apply a_subtag__ghost; assumption
+          | simpl; exact HeqT
+          | eassumption
+          | intros γ g Hb; inversion Hb
+          | exact Hlcψ
+          | exact Hwf
+          | rewrite HeqT;
+            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+          | exact HwfP0
+          | exact HwfT
+          | exact Hmod ].
+      * (* LS-Absent : the looked variable occurs *)
+        match goal with
+        | Ha : αv `notin` ftvar_in_pskl (pskl_var_f αv) |- _ =>
+            simpl in Ha; exfalso; clear - Ha; fsetdec
+        end.
+      * (* LS-Vacuous : P0 = ◇, erasure-determined *)
+        inversion Hst; subst.
+        simpl.
+        match goal with
+        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
+            [ | exfalso; congruence ]
+        end.
+        eapply a_subtag_psi_cong with (Ψ := Ψ);
+          [ | match goal with He : Ψa [=] empty |- _ =>
+                clear - He; fsetdec end ].
+        eapply a_subtag_vacuous_erasure;
+          [ apply a_subtag__ghost; assumption
+          | reflexivity
+          | exact Hlcψ
+          | rewrite HeqT; rewrite uskl_to_pskl_pskl_to_uskl; reflexivity ].
+      * (* LS-Check : the source is the looked variable *)
+        match goal with
+        | Hne : pskl_var_f αv <> pskl_var_f αv |- _ => congruence
+        end.
+      * (* LS-ForallR : SK ∀-input at TC contradicts the mode discipline *)
+        specialize (Hmod eq_refl). simpl in Hmod.
+        inversion Hmod; subst.
+        match goal with
+        | Hs : is_sskl (bskl_all_inh _) |- _ => inversion Hs
+        end.
+    + (* S0 = ◇ : nothing to decorate *)
+      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ HD
+                  ltac:(simpl; clear; fsetdec)) as [-> ->].
+      inversion Hst; subst.
+      simpl.
+      eapply a_subtag_psi_cong with (Ψ := Ψ);
+        [ apply a_subtag__ghost; assumption
+        | match goal with He : Ψa [=] empty |- _ =>
+            clear - He; fsetdec end ].
+  - (* GhostG : source ◇̇ *)
+    destruct S0; simpl in HeqT;
+      try discriminate HeqT;
+      try solve [ inversion HlcS0 ].
+    + (* S0 = var : the strip is never dotted *)
+      revert HeqT.
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
+      end; intro HeqT;
+      [ exfalso; eapply pskl_to_uskl_not_holeg; symmetry; exact HeqT
+      | discriminate HeqT ].
+    + (* S0 = ◇̇ : P0 = ◇ is pinned by the rule *)
+      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ HD
+                  ltac:(simpl; clear; fsetdec)) as [-> ->].
+      inversion Hst; subst.
+      simpl.
+      eapply a_subtag_psi_cong with (Ψ := Ψ);
+        [ apply a_subtag__ghostg; assumption
+        | match goal with He : Ψa [=] empty |- _ =>
+            clear - He; fsetdec end ].
+  - (* UnivGhostL : source ⊤◇.S̄ *)
+    destruct S0; simpl in HeqT;
+      try discriminate HeqT;
+      try solve [ inversion HlcS0 ].
+    + (* S0 = var *)
+      revert HeqT HwfT.
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
+      end; intros HeqT HwfT; [ | discriminate HeqT ].
+      simpl in HD.
+      inversion HD; subst.
+      * (* LS-Var : decoration-var at ρ = nil *)
+        inversion Hst; subst.
+        simpl.
+        match goal with
+        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
+            [ | exfalso; congruence ]
+        end.
+        change ψa with (msubst_uskl nil ψa).
+        eapply a_subtag_decoration_var;
+          [ apply a_subtag__univ_ghost_l; eassumption
+          | simpl; exact HeqT
+          | eassumption
+          | intros γ g Hb; inversion Hb
+          | exact Hlcψ
+          | exact Hwf
+          | rewrite HeqT;
+            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+          | exact HwfP0
+          | exact HwfT
+          | exact Hmod ].
+      * (* LS-Absent : the looked variable occurs *)
+        match goal with
+        | Ha : αv `notin` ftvar_in_pskl (pskl_var_f αv) |- _ =>
+            simpl in Ha; exfalso; clear - Ha; fsetdec
+        end.
+      * (* LS-Vacuous : P0 = ◇, erasure-determined *)
+        inversion Hst; subst.
+        simpl.
+        match goal with
+        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
+            [ | exfalso; congruence ]
+        end.
+        eapply a_subtag_psi_cong with (Ψ := Ψ);
+          [ | match goal with He : Ψa [=] empty |- _ =>
+                clear - He; fsetdec end ].
+        eapply a_subtag_vacuous_erasure;
+          [ apply a_subtag__univ_ghost_l; eassumption
+          | reflexivity
+          | exact Hlcψ
+          | rewrite HeqT; rewrite uskl_to_pskl_pskl_to_uskl; reflexivity ].
+      * (* LS-Check : the source is the looked variable *)
+        match goal with
+        | Hne : pskl_var_f αv <> pskl_var_f αv |- _ => congruence
+        end.
+      * (* LS-ForallR : SK ∀-input at TC contradicts the mode discipline *)
+        specialize (Hmod eq_refl). simpl in Hmod.
+        inversion Hmod; subst.
+        match goal with
+        | Hs : is_sskl (bskl_all_inh _) |- _ => inversion Hs
+        end.
+    + (* S0 = ⊤◇.S0 *)
+      inversion HeqT; subst. clear HeqT.
+      inversion HlcS0; subst.
+      simpl in HD.
+      inversion HD; subst.
+      * (* LS-Absent *)
+        assert (HαS : αv `notin` ftvar_in_uskl (uskl_tophole S0)).
+        { rewrite <- (ftvar_in_pskl_uskl_to_pskl (uskl_tophole S0)).
+          assumption. }
+        assert (HαS' : αv `notin` ftvar_in_uskl S0)
+          by (simpl in HαS; exact HαS).
+        inversion Hst; subst.
+        simpl. rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαS' ].
+        match goal with
+        | Hs' : _ ⊢ᵗ[ _ | _ | _ | _ ]
+                  (subst_bskl_in_uskl _ _ _) ⊑ _ ⊣ _ |- _ =>
+            rewrite subst_bskl_in_uskl_fresh_eq in Hs'; [ | exact HαS' ]
+        end.
+        eapply a_subtag_psi_cong with (Ψ := Ψ);
+          [ apply a_subtag__univ_ghost_l; eassumption
+          | match goal with He : Ψa [=] empty |- _ =>
+              clear - He; fsetdec end ].
+      * (* LS-Vacuous : P0 = ◇, erasure-determined *)
+        inversion Hst; subst.
+        eapply a_subtag_psi_cong with (Ψ := Ψ);
+          [ | match goal with He : Ψa [=] empty |- _ =>
+                clear - He; fsetdec end ].
+        eapply a_subtag_vacuous_erasure;
+          [ apply a_subtag__univ_ghost_l; eassumption
+          | reflexivity
+          | apply subst_bskl_in_uskl_lc_uskl; assumption
+          | apply erase_swap_subst ].
+      * (* LS-Check : a ⊤-headed source is not guarded *)
+        match goal with
+        | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
+        end.
+      * (* LS-ForallR : SK ∀-input at TC contradicts the mode discipline *)
+        specialize (Hmod eq_refl). simpl in Hmod.
+        inversion Hmod; subst.
+        match goal with
+        | Hs : is_sskl (bskl_all_inh _) |- _ => inversion Hs
+        end.
+      * (* LS-UnivGhostL : the structural mirror *)
+        simpl.
+        apply a_subtag__univ_ghost_l; [ assumption | ].
+        match goal with
+        | IH : forall S1 : uskl, _ |- _ =>
+            eapply IH;
+              [ reflexivity | eassumption | exact Hst | exact Hαψ
+              | exact HαP0 | exact Hlcψ | assumption
+              | exact Hwf | exact HwfP0
+              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT;
+                exact HwfT
+              | exact Hmod ]
+        end.
+  - (* UnivGhostLG : source ⊤◇̇.S̄ *)
+    destruct S0; simpl in HeqT;
+      try discriminate HeqT;
+      try solve [ inversion HlcS0 ].
+    + (* S0 = var : the strip is never dotted *)
+      revert HeqT.
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
+      end; intro HeqT;
+      [ exfalso; eapply pskl_to_uskl_not_topholeg; symmetry; exact HeqT
+      | discriminate HeqT ].
+    + (* S0 = ⊤◇̇.S0 *)
+      inversion HeqT; subst. clear HeqT.
+      inversion HlcS0; subst.
+      simpl in HD.
+      inversion HD; subst.
+      * (* LS-Absent *)
+        assert (HαS : αv `notin` ftvar_in_uskl (uskl_topholeg S0)).
+        { rewrite <- (ftvar_in_pskl_uskl_to_pskl (uskl_topholeg S0)).
+          assumption. }
+        assert (HαS' : αv `notin` ftvar_in_uskl S0)
+          by (simpl in HαS; exact HαS).
+        inversion Hst; subst.
+        simpl. rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαS' ].
+        match goal with
+        | Hs' : _ ⊢ᵗ[ _ | _ | _ | _ ]
+                  (subst_bskl_in_uskl _ _ _) ⊑ _ ⊣ _ |- _ =>
+            rewrite subst_bskl_in_uskl_fresh_eq in Hs'; [ | exact HαS' ]
+        end.
+        eapply a_subtag_psi_cong with (Ψ := Ψ);
+          [ apply a_subtag__univ_ghost_lg; eassumption
+          | match goal with He : Ψa [=] empty |- _ =>
+              clear - He; fsetdec end ].
+      * (* LS-Vacuous : P0 = ◇, erasure-determined *)
+        inversion Hst; subst.
+        eapply a_subtag_psi_cong with (Ψ := Ψ);
+          [ | match goal with He : Ψa [=] empty |- _ =>
+                clear - He; fsetdec end ].
+        eapply a_subtag_vacuous_erasure;
+          [ apply a_subtag__univ_ghost_lg; eassumption
+          | reflexivity
+          | apply subst_bskl_in_uskl_lc_uskl; assumption
+          | apply erase_swap_subst ].
+      * (* LS-Check : a ⊤-headed source is not guarded *)
+        match goal with
+        | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
+        end.
+      * (* LS-ForallR : SK ∀-input at TC contradicts the mode discipline *)
+        specialize (Hmod eq_refl). simpl in Hmod.
+        inversion Hmod; subst.
+        match goal with
+        | Hs : is_sskl (bskl_all_inh _) |- _ => inversion Hs
+        end.
+      * (* LS-UnivGhostL : the structural mirror *)
+        simpl.
+        apply a_subtag__univ_ghost_lg; [ assumption | ].
+        match goal with
+        | IH : forall S1 : uskl, _ |- _ =>
+            eapply IH;
+              [ reflexivity | eassumption | exact Hst | exact Hαψ
+              | exact HαP0 | exact Hlcψ | assumption
+              | exact Hwf | exact HwfP0
+              | simpl in HwfT; apply a_wf_pskl_tophole_inv in HwfT;
+                exact HwfT
+              | exact Hmod ]
+        end.
+  - (* FlexMono : source α̂₀ *)
+    destruct S0; simpl in HeqT;
+      try discriminate HeqT;
+      try solve [ inversion HlcS0 ].
+    revert HeqT.
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
+    end; intro HeqT.
+    + (* eq : the strip is the flexible variable — decoration-var *)
+      simpl in HD.
+      inversion HD; subst.
+      * (* LS-Var *)
+        inversion Hst; subst.
+        simpl.
+        match goal with
+        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
+            [ | exfalso; congruence ]
+        end.
+        change ψa with (msubst_uskl nil ψa).
+        eapply a_subtag_decoration_var;
+          [ apply a_subtag__flex_mono; eassumption
+          | simpl; exact HeqT
+          | eassumption
+          | intros γ g Hb; inversion Hb
+          | exact Hlcψ
+          | exact Hwf
+          | rewrite HeqT;
+            apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ
+          | exact HwfP0
+          | exact HwfT
+          | exact Hmod ].
+      * (* LS-Absent : the looked variable occurs *)
+        match goal with
+        | Ha : αv `notin` ftvar_in_pskl (pskl_var_f αv) |- _ =>
+            simpl in Ha; exfalso; clear - Ha; fsetdec
+        end.
+      * (* LS-Vacuous : P0 = ◇, erasure-determined *)
+        inversion Hst; subst.
+        simpl.
+        match goal with
+        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
+            [ | exfalso; congruence ]
+        end.
+        eapply a_subtag_psi_cong with (Ψ := Ψ);
+          [ | match goal with He : Ψa [=] empty |- _ =>
+                clear - He; fsetdec end ].
+        eapply a_subtag_vacuous_erasure;
+          [ apply a_subtag__flex_mono; eassumption
+          | reflexivity
+          | exact Hlcψ
+          | rewrite HeqT; rewrite uskl_to_pskl_pskl_to_uskl; reflexivity ].
+    + (* neq : the subject is an untouched variable *)
+      inversion HeqT; subst.
+      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ HD
+                  ltac:(simpl; clear - Hc; fsetdec)) as [-> ->].
+      inversion Hst; subst.
+      simpl.
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [Habs | _];
+          [ exfalso; congruence | ]
+      end.
+      eapply a_subtag_psi_cong with (Ψ := Ψ);
+        [ apply a_subtag__flex_mono; eassumption
+        | match goal with He : Ψa [=] empty |- _ =>
+            clear - He; fsetdec end ].
+Qed.
