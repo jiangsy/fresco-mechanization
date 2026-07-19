@@ -488,3 +488,62 @@ Qed.
 (* a_subtag/a_subtag_flex Ψ-congruence deferred until the subtyping-
    decoration-var lemma needs it (the mutual solve tactic needs per-case
    handling for flex_mono/forall_l; built when consumed). *)
+
+(* ===================================================================== *)
+(*  §8  Consistency decoration for variables (lemma:consistency-          *)
+(*  decoration-var, consistency-proofs.tex:606)                          *)
+(*                                                                        *)
+(*  Induction on the decorated constraint-solving (EQ) derivation.  The   *)
+(*  ∀-cases open a FRESH RIGID on both sides, so ρ is NOT extended — it    *)
+(*  just commutes with the opening (msubst_uskl_open_comm).               *)
+(*                                                                        *)
+(*  WIP bundle — easy cases (unit/var) Qed via psi_cong; the structural   *)
+(*  ∀/arrow/ghost/flex cases are honest admits (true, unfinished).        *)
+(* ===================================================================== *)
+
+(** The free type variables of ρ's range (a finite avoid-set). *)
+Definition msubst_ftv (ρ : list (atom * uskl)) : atoms :=
+  fold_right (fun p acc => ftvar_in_uskl (snd p) `union` acc) empty ρ.
+
+Lemma msubst_ftv_binds : forall ρ β ψg,
+  binds β ψg ρ -> ftvar_in_uskl ψg [<=] msubst_ftv ρ.
+Proof.
+  induction ρ as [ | [γ g] ρ' IH ]; intros β ψg Hb; simpl in *;
+    [ inversion Hb | ].
+  destruct Hb as [Heq | Hb].
+  - inversion Heq; subst. clear; fsetdec.
+  - specialize (IH _ _ Hb). clear - IH; fsetdec.
+Qed.
+
+Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
+  ψ ∼ᵗ P0 ⤳ Ψa ->
+  forall Δ1 Δ2 Ψ Θ0 Q Θ1 ρ,
+    msubst_lc ρ ->
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ]
+      (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ≈ Q ⊣ Θ1 ->
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | (Ψ `union` Ψa) ]
+      (msubst_uskl ρ ψ) ≈ Q ⊣ Θ1.
+Proof.
+  intros ψ P0 Ψa H; induction H;
+    intros Δ1 Δ2 Ψc Θ0 Qc Θ1 ρ Hlcρ Hcons.
+  - (* SEq-Unit : ψ = unit, strip = unit, sources identical *)
+    simpl in Hcons |- *.
+    eapply a_consistag_psi_cong; [ exact Hcons | clear - H; fsetdec ].
+  - (* SEq-Var : ψ = var X, strip = var X, sources identical *)
+    simpl in Hcons |- *.
+    eapply a_consistag_psi_cong; [ exact Hcons | clear - H; fsetdec ].
+  - (* SEq-Vacuous : P0 = ◇, run erasure-determined *)
+    admit.
+  - (* SEq-Arrow : invert, IH each part *)
+    admit.
+  - (* SEq-ForallInh : open fresh rigid, IH (ρ unchanged) *)
+    admit.
+  - (* SEq-UnivGhostG *)
+    admit.
+  - (* SEq-ForallSyn *)
+    admit.
+  - (* SEq-UnivGhostR *)
+    admit.
+  - (* SEq-FlexR : P0 = var α, ghost-free ψ *)
+    admit.
+Admitted.
