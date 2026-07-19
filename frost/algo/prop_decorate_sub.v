@@ -546,6 +546,34 @@ Proof.
   intros. rewrite uskl_to_pskl_open. rewrite pskl_to_uskl_open_var. reflexivity.
 Qed.
 
+(** With input ◇ the consistency run is determined by the source's erasure
+    (analogue of a_subtag_vacuous_erasure). *)
+Lemma a_consistag_vacuous_erasure : forall Δ1 Δ2 P0 Ψ Θ0 T1 Q Θ1,
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T1 ≈ Q ⊣ Θ1 ->
+  P0 = pskl_hole ->
+  forall T2, uskl_to_pskl T2 = uskl_to_pskl T1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T2 ≈ Q ⊣ Θ1.
+Proof.
+  intros Δ1 Δ2 P0 Ψ Θ0 T1 Q Θ1 H;
+    induction H; intros HP0 T2 Herase; subst; try discriminate HP0.
+  - (* Ghost : T1 = ◇, output ◇ *)
+    destruct T2; simpl in Herase; inversion Herase; subst;
+      [ apply a_consistag__ghost; [ simpl; clear; fsetdec | assumption ]
+      | apply a_consistag__ghostg; assumption ].
+  - (* FlexL : T1 = var α, so T2 = var α *)
+    destruct T2; simpl in Herase; inversion Herase; subst.
+    eapply a_consistag__flex_l; eassumption.
+  - (* GhostG : T1 = holeg, output ◇ *)
+    destruct T2; simpl in Herase; inversion Herase; subst;
+      [ apply a_consistag__ghost; [ simpl; clear; fsetdec | assumption ]
+      | apply a_consistag__ghostg; assumption ].
+  - (* UnivGhost2 : guarded_pskl ◇ is absurd *)
+    match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+  - (* GhostR : output ⌊S⌋; reconstruct with T2 (same erasure) *)
+    rewrite <- Herase.
+    apply a_consistag__ghost_r; [ rewrite Herase; assumption | assumption ].
+Qed.
+
 Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
   ψ ∼ᵗ P0 ⤳ Ψa ->
   forall Δ1 Δ2 Ψ Θ0 Q Θ1 ρ,
@@ -563,8 +591,13 @@ Proof.
   - (* SEq-Var : ψ = var X, strip = var X, sources identical *)
     simpl in Hcons |- *.
     eapply a_consistag_psi_cong; [ exact Hcons | clear - H; fsetdec ].
-  - (* SEq-Vacuous : P0 = ◇, run erasure-determined *)
-    admit.
+  - (* SEq-Vacuous : P0 = ◇, both sources erase equally *)
+    eapply a_consistag_psi_cong;
+      [ eapply a_consistag_vacuous_erasure;
+          [ exact Hcons | reflexivity | ]
+      | clear - H; fsetdec ].
+    rewrite ! uskl_to_pskl_msubst. f_equal.
+    rewrite uskl_to_pskl_pskl_to_uskl. reflexivity.
   - (* SEq-Arrow : invert the consistency arrow, IH each part *)
     rewrite msubst_uskl_arrow.
     simpl in Hcons. rewrite msubst_uskl_arrow in Hcons.
