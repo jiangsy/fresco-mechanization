@@ -3866,7 +3866,7 @@ Proof.
           [ clear; fsetdec | ].
         eapply ad_refine_syn_f_delta_mono;
           [ | instantiate (1 := add X (remove α (add α Δ1)));
-              clear - Fr; fsetdec ].
+              clear Fr; fsetdec ].
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
@@ -3883,7 +3883,7 @@ Proof.
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
         [ | instantiate (1 := add X (remove α (add α Δ2)));
-            clear - Fr; fsetdec ].
+            clear Fr; fsetdec ].
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
@@ -4037,7 +4037,7 @@ Proof.
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
         [ | instantiate (1 := add X (remove α (add α Δ2)));
-            clear - Fr; fsetdec ].
+            clear Fr; fsetdec ].
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
@@ -4205,7 +4205,7 @@ Proof.
           [ clear; fsetdec | ].
         eapply ad_refine_syn_f_delta_mono;
           [ | instantiate (1 := add X (remove α (add α Δ1)));
-              clear - Fr; fsetdec ].
+              clear Fr; fsetdec ].
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
@@ -4942,7 +4942,7 @@ Proof.
           [ clear; fsetdec | ].
         eapply ad_refine_syn_f_delta_mono;
           [ | instantiate (1 := add X (remove α (add α Δ1)));
-              clear - Fr; fsetdec ].
+              clear Fr; fsetdec ].
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
@@ -4963,7 +4963,7 @@ Proof.
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
         [ | instantiate (1 := add X (remove α (add α Δ2)));
-            clear - Fr; fsetdec ].
+            clear Fr; fsetdec ].
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα'
@@ -5063,7 +5063,7 @@ Proof.
           [ clear; fsetdec | ].
         eapply ad_refine_syn_f_delta_mono;
           [ | instantiate (1 := add X (remove α (add α Δ1)));
-              clear - Fr; fsetdec ].
+              clear Fr; fsetdec ].
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
@@ -5084,7 +5084,7 @@ Proof.
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
         [ | instantiate (1 := add X (remove α (add α Δ2)));
-            clear - Fr; fsetdec ].
+            clear Fr; fsetdec ].
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα'
@@ -5204,7 +5204,7 @@ Proof.
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
         [ | instantiate (1 := add X (remove α (add α Δ2)));
-            clear - Fr; fsetdec ].
+            clear Fr; fsetdec ].
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα'
@@ -5324,7 +5324,7 @@ Proof.
         [ clear; fsetdec | ].
       eapply ad_refine_pskl_f_delta_mono;
         [ | instantiate (1 := add X (remove α (add α Δ2)));
-            clear - Fr; fsetdec ].
+            clear Fr; fsetdec ].
       apply ad_refine_pskl_f_rename;
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα'
@@ -5459,7 +5459,7 @@ Proof.
           [ clear; fsetdec | ].
         eapply ad_refine_syn_f_delta_mono;
           [ | instantiate (1 := add X (remove α (add α Δ1)));
-              clear - Fr; fsetdec ].
+              clear Fr; fsetdec ].
         apply ad_refine_syn_f_rename;
           [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
         exact (ad_refine_syn_f_strip nil Θ1 Hrsα
