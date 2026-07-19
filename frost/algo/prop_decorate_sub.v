@@ -24,6 +24,8 @@ Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.prop_consis_sound.
+Require Import src.frost.algo.prop_refine.
+Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 
@@ -582,6 +584,30 @@ Proof.
     try (constructor; apply lc_uskl_of_pskl; assumption).
 Qed.
 
+(** ρ preserves local closure. *)
+Lemma msubst_uskl_lc : forall ρ T,
+  msubst_lc ρ -> lc_uskl T -> lc_uskl (msubst_uskl ρ T).
+Proof.
+  induction ρ as [ | [β ψg] ρ' IH ]; intros T Hlc HT; simpl; [ exact HT | ].
+  apply subst_bskl_in_uskl_lc_uskl.
+  - apply IH; [ | exact HT ].
+    intros b p Hb; eapply Hlc; unfold binds; simpl; right; exact Hb.
+  - eapply Hlc; unfold binds; simpl; left; reflexivity.
+Qed.
+
+(** A unit/variable-headed EQ run solves no tags. *)
+Lemma a_solvetag_eq_atom_empty : forall ψ P0 Ψ,
+  ψ ∼ᵗ P0 ⤳ Ψ ->
+  (ψ = uskl_unit \/ exists X, ψ = uskl_var_f X) ->
+  Ψ [=] empty.
+Proof.
+  intros ψ P0 Ψ H; induction H; intros Hshape;
+    try (destruct Hshape as [Hd | [X0 Hd]]; discriminate Hd);
+    try assumption.
+  - (* UnivGhostR : same subject, recurse *)
+    apply IHa_solvetag_eq; exact Hshape.
+Qed.
+
 (** With input ◇ the consistency run is determined by the source's erasure
     (analogue of a_subtag_vacuous_erasure). *)
 Lemma a_consistag_vacuous_erasure : forall Δ1 Δ2 P0 Ψ Θ0 T1 Q Θ1,
@@ -610,17 +636,162 @@ Proof.
     apply a_consistag__ghost_r; [ rewrite Herase; assumption | assumption ].
 Qed.
 
+(* ===================================================================== *)
+(*  §8.5  Monotype-shape lemmas for the SEq-FlexR decoration case         *)
+(*                                                                        *)
+(*  FlexR decorates a run whose RHS is a flexible (monotype) variable α̂.  *)
+(*  The subject's erasure is assigned to α̂, so it must be a monotype — in  *)
+(*  particular quantifier-free.  Every [abind_flex_mono_def τ] carries a   *)
+(*  monotype [τ] BY WELL-FORMEDNESS (def_extra.v:147; Assign-SolveM's     *)
+(*  guess is checked mono — type.ml:351), so the monotype fact is a wf     *)
+(*  lookup, not consistency reasoning; the existing [a_assign_sound] gives *)
+(*  a decorated pattern-consistency against α̂ that we read off below.      *)
+(* ===================================================================== *)
+
+Inductive no_all_syn_pskl : pskl -> Prop :=
+| nas_pskl__unit    : no_all_syn_pskl pskl_unit
+| nas_pskl__var_b   : forall n, no_all_syn_pskl (pskl_var_b n)
+| nas_pskl__var_f   : forall X, no_all_syn_pskl (pskl_var_f X)
+| nas_pskl__arrow   : forall P1 P2,
+    no_all_syn_pskl P1 -> no_all_syn_pskl P2 -> no_all_syn_pskl (pskl_arrow P1 P2)
+| nas_pskl__hole    : no_all_syn_pskl pskl_hole
+| nas_pskl__tophole : forall P, no_all_syn_pskl P -> no_all_syn_pskl (pskl_tophole P).
+
+Inductive no_all_syn_uskl : uskl -> Prop :=
+| nas_uskl__unit     : no_all_syn_uskl uskl_unit
+| nas_uskl__var_b    : forall n, no_all_syn_uskl (uskl_var_b n)
+| nas_uskl__var_f    : forall X, no_all_syn_uskl (uskl_var_f X)
+| nas_uskl__arrow    : forall R1 R2,
+    no_all_syn_uskl R1 -> no_all_syn_uskl R2 -> no_all_syn_uskl (uskl_arrow R1 R2)
+| nas_uskl__hole     : no_all_syn_uskl uskl_hole
+| nas_uskl__holeg    : no_all_syn_uskl uskl_holeg
+| nas_uskl__tophole  : forall R, no_all_syn_uskl R -> no_all_syn_uskl (uskl_tophole R)
+| nas_uskl__topholeg : forall R, no_all_syn_uskl R -> no_all_syn_uskl (uskl_topholeg R).
+
+Lemma no_all_syn_pskl_to_uskl : forall P,
+  no_all_syn_pskl P -> no_all_syn_uskl (pskl_to_uskl P).
+Proof. induction 1; simpl; constructor; auto. Qed.
+
+(** A pattern-consistency run against a monotype RHS reads a quantifier-free
+    subject: erasure of a flex-var assignment can only remove tags that are
+    not there.  Def-variable lookups use [a_wf_aenv_binds_def_mono]. *)
+Lemma ad_pat_consis_mono_no_all_syn : forall Ψ Θ S B,
+  Ψ ⨟ Θ ⊨ₛᵃ S ≈ B ->
+  a_wf_aenv Θ ->
+  mono_bskl B ->
+  no_all_syn_uskl S.
+Proof.
+  intros Ψ Θ S B H; induction H; intros Hwf Hmono;
+    try solve [ inversion Hmono ];
+    try solve [ constructor ].
+  - (* arrow *)
+    inversion Hmono; subst.
+    constructor; [ apply IHad_pat_consis1 | apply IHad_pat_consis2 ]; auto.
+  - (* tophole_drop *)
+    constructor. apply IHad_pat_consis; auto.
+  - (* flex_r : RHS is a def variable; its def is a monotype (wf) *)
+    apply IHad_pat_consis; [ exact Hwf | ].
+    apply mono_ptyp_to_bskl_syn.
+    eapply a_wf_aenv_binds_def_mono; [ exact Hwf | eassumption ].
+Qed.
+
+(** Canonical form: a ghost-free [ψ] whose stripped image (under [ρ]) carries
+    no [all_syn] has no ε-tags either, so [ρ] applied to [ψ] and to its strip
+    coincide.  (The tags live only on quantifiers; no quantifier survives.) *)
+Lemma msubst_ghostfree_eq_strip : forall ρ ψ,
+  uskl_ghost_free ψ ->
+  no_all_syn_uskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ->
+  msubst_uskl ρ ψ = msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)).
+Proof.
+  intros ρ ψ H; induction H; intros Hnas.
+  - (* unit *) reflexivity.
+  - (* var *) reflexivity.
+  - (* arrow *)
+    simpl. rewrite ! msubst_uskl_arrow.
+    simpl in Hnas. rewrite msubst_uskl_arrow in Hnas. inversion Hnas; subst.
+    erewrite IHuskl_ghost_free1 by eassumption.
+    erewrite IHuskl_ghost_free2 by eassumption.
+    reflexivity.
+  - (* all_etag : strip is an all_syn, contradicting no_all_syn *)
+    simpl in Hnas. rewrite msubst_uskl_all_syn in Hnas. inversion Hnas.
+  - (* all_syn : likewise *)
+    simpl in Hnas. rewrite msubst_uskl_all_syn in Hnas. inversion Hnas.
+Qed.
+
+(** A decorated-consistency run against a flexible-variable input reads a
+    quantifier-free subject.  The flex-var rules that fire (rigid/flex/flexl/
+    ghost) leave a variable or hole; FlexR assigns the subject's erasure to
+    α̂, so [a_assign_sound] exposes it as pattern-consistent with the monotype
+    α̂ — quantifier-free by the previous lemma. *)
+Lemma a_consistag_flexvar_subject_no_all_syn : forall Δ1 Δ2 α Ψ Θ0 S Q Θ1,
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] S ≈ Q ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl S) ->
+  no_all_syn_uskl S.
+Proof.
+  intros Δ1 Δ2 α Ψ Θ0 S Q Θ1 H.
+  remember (pskl_var_f α) as P0 eqn:HP0. revert HP0.
+  induction H; intros HP0 Hwf HwfS;
+    try discriminate HP0; try solve [ constructor ].
+  - (* flex_r : subject is [pskl_to_uskl P], with P assigned to α̂ *)
+    rewrite uskl_to_pskl_pskl_to_uskl in HwfS.
+    match goal with
+    | Hass : a_assign _ _ _ _ _ _ |- _ =>
+        eapply ad_pat_consis_mono_no_all_syn;
+          [ eapply (proj2 (a_assign_sound Hass ltac:(constructor) Hwf HwfS))
+          | eapply (a_assign_preserves_wf Hass ltac:(constructor) Hwf HwfS)
+          | constructor ]
+    end.
+  - (* univ_ghost2 : subject ⫯S; recurse on the inner S (same var input) *)
+    constructor.
+    simpl in HwfS. inversion HwfS; subst.
+    eapply IHa_consistag;
+      [ first [ eassumption | reflexivity ] | exact Hwf | eassumption ].
+Qed.
+
+Lemma lc_uskl_arrow_inv : forall A B,
+  lc_uskl (uskl_arrow A B) -> lc_uskl A /\ lc_uskl B.
+Proof. intros A B H; inversion H; auto. Qed.
+
+Lemma a_wf_pskl_arrow_inv : forall Θ Δ P1 P2,
+  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2) -> Θ ⨟ Δ ⊢ₚₛᵃ P1 /\ Θ ⨟ Δ ⊢ₚₛᵃ P2.
+Proof. intros * H; inversion H; auto. Qed.
+
+Lemma a_wf_pskl_tophole_inv : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P) -> Θ ⨟ empty ⊢ₚₛᵃ P.
+Proof. intros * H; inversion H; auto. Qed.
+
+Lemma lc_uskl_tophole_inv : forall A,
+  lc_uskl (uskl_tophole A) -> lc_uskl A.
+Proof. intros A H; inversion H; auto. Qed.
+
+Lemma lc_uskl_topholeg_inv : forall A,
+  lc_uskl (uskl_topholeg A) -> lc_uskl A.
+Proof. intros A H; inversion H; auto. Qed.
+
 Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
   ψ ∼ᵗ P0 ⤳ Ψa ->
   forall Δ1 Δ2 Ψ Θ0 Q Θ1 ρ,
     msubst_lc ρ ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ]
       (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ≈ Q ⊣ Θ1 ->
+    (* external well-formedness (paper's prose side conditions): only the
+       FlexR leaf consumes them, threaded through the induction — the arrow
+       case gets its mid-context invariants from [a_consistag_sound_aux] and
+       weakens the right run's wf across [Θ0 ⊴ Θm] ([a_wf_pskl_isub],
+       [a_isub_binds_tvar]); the ∀-cases extend Δ/Θ by a fresh rigid. *)
+    a_wf_aenv Θ0 ->
+    lc_uskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)))) ->
+    (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
+    no_flex_dep (Δ1 `union` Δ2) Θ0 ->
+    flex_above_free (Δ1 `union` Δ2) Θ0 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | (Ψ `union` Ψa) ]
       (msubst_uskl ρ ψ) ≈ Q ⊣ Θ1.
 Proof.
   intros ψ P0 Ψa H; induction H;
-    intros Δ1 Δ2 Ψc Θ0 Qc Θ1 ρ Hlcρ Hcons.
+    intros Δ1 Δ2 Ψc Θ0 Qc Θ1 ρ Hlcρ Hcons Hwf HlcS HwfP0 HwfS Hrig Hnfd Hfaf.
   - (* SEq-Unit : ψ = unit, strip = unit, sources identical *)
     simpl in Hcons |- *.
     eapply a_consistag_psi_cong; [ exact Hcons | clear - H; fsetdec ].
@@ -634,42 +805,104 @@ Proof.
       | clear - H; fsetdec ].
     rewrite ! uskl_to_pskl_msubst. f_equal.
     rewrite uskl_to_pskl_pskl_to_uskl. reflexivity.
-  - (* SEq-Arrow : invert the consistency arrow, IH each part *)
+  - (* SEq-Arrow : invert the consistency arrow, IH each part; thread wf
+       (mid-context Θm's invariants from a_consistag_sound_aux on the left run). *)
+    simpl in HlcS. rewrite msubst_uskl_arrow in HlcS.
+    apply lc_uskl_arrow_inv in HlcS as [HlcS1 HlcS2].
+    simpl in HwfS. rewrite msubst_uskl_arrow in HwfS. simpl in HwfS.
+    apply a_wf_pskl_arrow_inv in HwfS as [HwfS1 HwfS2].
+    apply a_wf_pskl_arrow_inv in HwfP0 as [HwfP1 HwfP2].
     rewrite msubst_uskl_arrow.
     simpl in Hcons. rewrite msubst_uskl_arrow in Hcons.
-    inversion Hcons; subst.
-    match goal with
-    | Hc1 : _ ⊢ᵗ[ _ | _ | ?p1 | ?Ψi1 ] _ ≈ _ ⊣ ?Θm,
-      Hc2 : ?Θm ⊢ᵗ[ _ | _ | ?p2 | ?Ψi2 ] _ ≈ _ ⊣ _,
+    inversion Hcons; subst. clear Hcons.
+    lazymatch goal with
+    | Hc1 : _ ⊢ᵗ[ _ | _ | _ | ?Ψi1 ] _ ≈ _ ⊣ ?Θm,
+      Hc2 : ?Θm ⊢ᵗ[ _ | _ | _ | ?Ψi2 ] _ ≈ _ ⊣ _,
       HΨi : _ [=] union ?Ψi1 ?Ψi2 |- _ =>
+        destruct (a_consistag_sound_aux Hc1 Hwf HlcS1 HwfP1 HwfS1 Hrig Hnfd Hfaf)
+          as [Hle [HwfΘm [HnfdΘm [HfafΘm _]]]];
         eapply a_consistag__arrow with
           (Ψ1 := Ψi1 `union` Ψ1) (Ψ2 := Ψi2 `union` Ψ2) (Θ1 := Θm);
-        [ eapply IHa_solvetag_eq1; [ exact Hlcρ | exact Hc1 ]
-        | eapply IHa_solvetag_eq2; [ exact Hlcρ | exact Hc2 ]
+        [ eapply IHa_solvetag_eq1;
+            [ exact Hlcρ | exact Hc1 | exact Hwf | exact HlcS1 | exact HwfP1
+            | exact HwfS1 | exact Hrig | exact Hnfd | exact Hfaf ]
+        | eapply IHa_solvetag_eq2;
+            [ exact Hlcρ | exact Hc2 | exact HwfΘm | exact HlcS2
+            | eapply a_wf_pskl_isub; [ exact HwfP2 | exact Hle ]
+            | eapply a_wf_pskl_isub; [ exact HwfS2 | exact Hle ]
+            | intros X HX; eapply a_isub_binds_tvar; [ exact Hle | apply Hrig; exact HX ]
+            | exact HnfdΘm | exact HfafΘm ]
         | clear - HΨi H1; fsetdec ]
     end.
-  - (* SEq-ForallInh : open a fresh rigid on both sides; ρ unchanged.
-       H0 = the IH; H8 = the inverted (untagged) consistency body. *)
+  - (* SEq-ForallInh : open a fresh rigid; build the extended wf hyps as in
+       a_consistag_sound_aux's ForallInh case, then IH the opened body. *)
     rewrite msubst_uskl_all_etag.
     simpl in Hcons. rewrite msubst_uskl_all_syn in Hcons.
     inversion Hcons; subst.
+    match goal with
+    | Hc : forall a, a `notin` _ -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+        rename Hc into Hcbody
+    end.
+    simpl in HlcS. rewrite msubst_uskl_all_syn in HlcS. inversion HlcS; subst.
+    match goal with Hb : forall _, lc_uskl _ |- _ => rename Hb into HlcSbody end.
+    inversion HwfP0 as [ | | | LP Θa Δa P0a Hbody0 Heqa | | ]; subst.
+    simpl in HwfS. rewrite msubst_uskl_all_syn in HwfS. simpl in HwfS.
+    inversion HwfS as [ | | | LS ΘbS ΔbS SbS HbodyS HeqS | | ]; subst.
     eapply a_consistag__forall_inh_tagged
       with (Ψ0 := Ψc `union` Ψ0) (ε := ε)
-           (L := L0 `union` L `union` dom ρ `union` msubst_ftv ρ);
+           (L := LP `union` LS `union` L `union` L0 `union` dom ρ
+                 `union` msubst_ftv ρ `union` dom Θ0);
       [ intros β Hβ | clear - H1; fsetdec ].
     assert (Hβρ : β `notin` dom ρ) by (clear - Hβ; fsetdec).
     assert (Hβf : forall γ ψg, binds γ ψg ρ -> β `notin` ftvar_in_uskl ψg).
     { intros γ ψg Hb. pose proof (msubst_ftv_binds _ _ _ Hb) as Hsc.
       clear - Hβ Hsc. fsetdec. }
+    assert (HβΘ : β `notin` dom Θ0) by (clear - Hβ; fsetdec).
     rewrite <- (@msubst_uskl_open_comm ρ ψ β Hlcρ Hβρ Hβf).
-    eapply (H0 β ltac:(clear - Hβ; fsetdec)); [ exact Hlcρ | ].
-    rewrite strip_open.
-    specialize (H8 β ltac:(clear - Hβ; fsetdec)).
-    rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
-                  Hlcρ Hβρ Hβf) in H8.
-    exact H8.
-  - (* SEq-UnivGhostG : invert UnivGhost, IH the inner *)
+    eapply (H0 β ltac:(clear - Hβ; fsetdec));
+      [ exact Hlcρ
+      | (* consistency premise *)
+        rewrite strip_open;
+        pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as Hcβ;
+        rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
+                      Hlcρ Hβρ Hβf) in Hcβ;
+        exact Hcβ
+      | apply a_wf_aenv__tvar; [ exact HβΘ | exact Hwf ]
+      | (* lc of opened subject *)
+        rewrite strip_open;
+        rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
+                   Hlcρ Hβρ Hβf);
+        apply HlcSbody
+      | (* wf of opened input *)
+        eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc (Hbody0 β ltac:(clear - Hβ; fsetdec)) β)
+          | clear; fsetdec ]
+      | (* wf of opened subject-erasure *)
+        rewrite strip_open;
+        rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
+                   Hlcρ Hβρ Hβf);
+        rewrite uskl_to_pskl_open;
+        eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+          | clear; fsetdec ]
+      | (* Hrig *)
+        intros X HX; destruct (X == β) as [ -> | Hne ];
+          [ unfold binds; left; reflexivity
+          | unfold binds; right; apply Hrig; clear - HX Hne; fsetdec ]
+      | (* Hnfd *)
+        apply no_flex_dep_cong with (Δ := add β (Δ1 `union` Δ2));
+          [ clear; fsetdec
+          | apply no_flex_dep_open_tvar; [ exact Hwf | exact Hnfd | exact HβΘ ] ]
+      | (* Hfaf *)
+        apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
+          [ clear; fsetdec | apply faf_open_tvar; [ exact Hfaf | exact HβΘ ] ] ].
+  - (* SEq-UnivGhostG : invert UnivGhost, IH the inner (same context) *)
     rewrite msubst_uskl_topholeg.
+    simpl in HlcS. rewrite msubst_uskl_tophole in HlcS.
+    apply lc_uskl_tophole_inv in HlcS.
+    simpl in HwfS. rewrite msubst_uskl_tophole in HwfS. simpl in HwfS.
+    apply a_wf_pskl_tophole_inv in HwfS.
+    apply a_wf_pskl_tophole_inv in HwfP0.
     simpl in Hcons. rewrite msubst_uskl_tophole in Hcons.
     inversion Hcons; subst;
       try (match goal with Hg : guarded_pskl (pskl_tophole _) |- _ =>
@@ -680,32 +913,115 @@ Proof.
     | Hc : _ ⊢ᵗ[ _ | _ | _ | _ ]
              (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ≈ _ ⊣ _ |- _ =>
         apply a_consistag__univ_ghostg;
-        eapply IHa_solvetag_eq; [ exact Hlcρ | exact Hc ]
+        eapply IHa_solvetag_eq;
+          [ exact Hlcρ | exact Hc | exact Hwf | exact HlcS | exact HwfP0
+          | exact HwfS | exact Hrig | exact Hnfd | exact Hfaf ]
     end.
-  - (* SEq-ForallSyn : as ForallInh but input ⊤◇, tag pass-through *)
+  - (* SEq-ForallSyn : as ForallInh but input ⊤◇ (unchanged across opening,
+       so its wf reassociates directly), tag pass-through. *)
     rewrite msubst_uskl_all_etag.
     simpl in Hcons. rewrite msubst_uskl_all_syn in Hcons.
     inversion Hcons; subst;
       try (match goal with Hg : guarded_uskl (uskl_all_syn _) |- _ =>
              solve [ inversion Hg ] end).
+    match goal with
+    | Hc : forall a, a `notin` _ -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+        rename Hc into Hcbody
+    end.
+    simpl in HlcS. rewrite msubst_uskl_all_syn in HlcS. inversion HlcS; subst.
+    match goal with Hb : forall _, lc_uskl _ |- _ => rename Hb into HlcSbody end.
+    simpl in HwfS. rewrite msubst_uskl_all_syn in HwfS. simpl in HwfS.
+    inversion HwfS as [ | | | LS ΘbS ΔbS SbS HbodyS HeqS | | ]; subst.
     eapply a_consistag__forall_syn_tagged
-      with (ε := ε) (L := L0 `union` L `union` dom ρ `union` msubst_ftv ρ);
+      with (ε := ε) (L := LS `union` L `union` L0 `union` dom ρ
+                          `union` msubst_ftv ρ `union` dom Θ0);
       intros β Hβ.
     assert (Hβρ : β `notin` dom ρ) by (clear - Hβ; fsetdec).
     assert (Hβf : forall γ ψg, binds γ ψg ρ -> β `notin` ftvar_in_uskl ψg).
     { intros γ ψg Hb. pose proof (msubst_ftv_binds _ _ _ Hb) as Hsc.
       clear - Hβ Hsc. fsetdec. }
+    assert (HβΘ : β `notin` dom Θ0) by (clear - Hβ; fsetdec).
     rewrite <- (@msubst_uskl_open_comm ρ ψ β Hlcρ Hβρ Hβf).
-    eapply (H0 β ltac:(clear - Hβ; fsetdec)); [ exact Hlcρ | ].
-    rewrite strip_open.
-    specialize (H7 β ltac:(clear - Hβ; fsetdec)).
-    rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
-                  Hlcρ Hβρ Hβf) in H7.
-    exact H7.
-  - (* SEq-UnivGhostR : reflection helpers (below) are ready; the
-       unit/var sub-cases need the inner-solvetag Ψ=∅ inversion wired and
-       the arrow sub-case its invert+IH+reconstruct.  Honest admit. *)
-    admit.
-  - (* SEq-FlexR : P0 = var α, ghost-free ψ *)
-    admit.
-Admitted.
+    eapply (H0 β ltac:(clear - Hβ; fsetdec));
+      [ exact Hlcρ
+      | rewrite strip_open;
+        pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as Hcβ;
+        rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
+                      Hlcρ Hβρ Hβf) in Hcβ;
+        exact Hcβ
+      | apply a_wf_aenv__tvar; [ exact HβΘ | exact Hwf ]
+      | rewrite strip_open;
+        rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
+                   Hlcρ Hβρ Hβf);
+        apply HlcSbody
+      | (* input ⊤◇ is unchanged: reassociate its wf under the fresh rigid *)
+        eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc HwfP0 β) | clear; fsetdec ]
+      | rewrite strip_open;
+        rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
+                   Hlcρ Hβρ Hβf);
+        rewrite uskl_to_pskl_open;
+        eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+          | clear; fsetdec ]
+      | intros X HX; destruct (X == β) as [ -> | Hne ];
+          [ unfold binds; left; reflexivity
+          | unfold binds; right; apply Hrig; clear - HX Hne; fsetdec ]
+      | apply no_flex_dep_cong with (Δ := add β (Δ1 `union` Δ2));
+          [ clear; fsetdec
+          | apply no_flex_dep_open_tvar; [ exact Hwf | exact Hnfd | exact HβΘ ] ]
+      | apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
+          [ clear; fsetdec | apply faf_open_tvar; [ exact Hfaf | exact HβΘ ] ] ].
+  - (* SEq-UnivGhostR : ψ is guarded (unit/var/arrow).  For unit/var the
+       source is unchanged (Ψa=∅, psi_cong); for arrow, peel the ⫯ off the
+       input (invert with UnivGhostR), IH the arrow, then re-attach ⫯. *)
+    destruct ψ; simpl in H; try solve [ inversion H ]; simpl in Hcons.
+    + (* unit *)
+      eapply a_consistag_psi_cong; [ exact Hcons | ].
+      assert (Hemp : Ψ [=] empty)
+        by (eapply a_solvetag_eq_atom_empty; [ exact H0 | left; reflexivity ]).
+      clear - Hemp; fsetdec.
+    + (* var_f X *)
+      eapply a_consistag_psi_cong; [ exact Hcons | ].
+      assert (Hemp : Ψ [=] empty)
+        by (eapply a_solvetag_eq_atom_empty; [ exact H0 | right; eauto ]).
+      clear - Hemp; fsetdec.
+    + (* arrow *)
+      inversion H; subst.
+      assert (Hml1 : lc_uskl (msubst_uskl ρ ψ1))
+        by (apply msubst_uskl_lc; [ exact Hlcρ | apply lc_uskl_of_pskl; assumption ]).
+      assert (Hml2 : lc_uskl (msubst_uskl ρ ψ2))
+        by (apply msubst_uskl_lc; [ exact Hlcρ | apply lc_uskl_of_pskl; assumption ]).
+      apply a_wf_pskl_tophole_inv in HwfP0.
+      rewrite msubst_uskl_arrow in Hcons.
+      inversion Hcons; subst.
+      apply a_consistag__univ_ghost_r.
+      * rewrite msubst_uskl_arrow. constructor; assumption.
+      * rewrite msubst_uskl_arrow; unfold a_non_flex; simpl; split;
+          [ constructor; apply lc_uskl_to_pskl_local; assumption
+          | intro Hf; inversion Hf ].
+      * eapply IHa_solvetag_eq;
+          [ exact Hlcρ
+          | simpl; rewrite msubst_uskl_arrow; eassumption
+          | exact Hwf | exact HlcS | exact HwfP0 | exact HwfS
+          | exact Hrig | exact Hnfd | exact Hfaf ].
+  - (* SEq-FlexR : P0 = var α̂, ghost-free ψ, Ψa = ∅.  Paper (consistency-
+       proofs.tex:893-915): α̂ is a monotype, so erasure removes tags that are
+       not there and ρ(ψ) = ρ(erase ψ).  The subject of [Hcons] carries no
+       [all_syn] (a_consistag_flexvar_subject_no_all_syn, via a_assign_sound),
+       so ρ(ψ) coincides with ρ(erase ψ) (msubst_ghostfree_eq_strip); then
+       psi_cong absorbs the empty Ψa. *)
+    (* CRUX (paper: "α̂ is a monotype"): the subject of Hcons carries no
+       [all_syn] (a_consistag_flexvar_subject_no_all_syn via a_assign_sound;
+       def is mono BY well-formedness), so ρ(ψ) = ρ(erase ψ) and psi_cong
+       absorbs the empty Ψa. *)
+    assert (Hnas : no_all_syn_uskl
+                     (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))))
+      by (eapply a_consistag_flexvar_subject_no_all_syn;
+            [ exact Hcons | exact Hwf | exact HwfS ]).
+    assert (Heq : msubst_uskl ρ ψ
+                  = msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)))
+      by (apply msubst_ghostfree_eq_strip; [ exact H | exact Hnas ]).
+    rewrite Heq.
+    eapply a_consistag_psi_cong; [ exact Hcons | clear - H0; fsetdec ].
+Qed.
