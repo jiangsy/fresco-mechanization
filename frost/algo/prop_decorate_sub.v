@@ -2618,3 +2618,68 @@ Proof.
     destruct (HL1 β Hβ) as [C' [Hlk' Hst']].
     exists C'. split; [ apply a_looksub__univ_ghost_l; exact Hlk' | exact Hst' ].
 Qed.
+
+(** Constraints collected against ◇ solve nothing: only [sub _ ◇] and
+    empty lists can be collected, and a ◇-target solvetag run is empty. *)
+Lemma a_looksub_lookeq_hole_cstrs :
+  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C -> P' = pskl_hole ->
+     forall ψa Ψa, C ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty) /\
+  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C -> P' = pskl_hole ->
+     forall ψa Ψa, C ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty).
+Proof.
+  apply (a_looksub_lookeq_mutind
+           (fun α m P P' Ξ C _ => P' = pskl_hole ->
+              forall ψa Ψa, C ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty)
+           (fun α P P' Ξ C _ => P' = pskl_hole ->
+              forall ψa Ψa, C ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty));
+    intros; subst; try discriminate;
+    (* empty collections *)
+    try solve [ match goal with
+                | Hst : nil ⊩ᵗ _ ⤳ _ |- _ => inversion Hst; subst; assumption
+                end ];
+    (* guarded ◇ side conditions *)
+    try solve [ match goal with
+                | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
+                end ];
+    (* singleton sub deposit *)
+    try solve [ match goal with
+                | Hst : (a_cstr_sub _ pskl_hole :: nil) ⊩ᵗ _ ⤳ _ |- _ =>
+                    inversion Hst; subst;
+                    eapply a_solvetag_sub_hole_empty; eassumption
+                end ];
+    (* singleton eq deposit *)
+    try solve [ match goal with
+                | Hst : (a_cstr_eq pskl_hole :: nil) ⊩ᵗ _ ⤳ _ |- _ =>
+                    inversion Hst; subst;
+                    match goal with
+                    | Hnil : nil ⊩ᵗ _ ⤳ ?B, Hone : _ ∼ᵗ pskl_hole ⤳ ?A,
+                      HU : _ [=] union ?A ?B |- _ =>
+                        inversion Hnil; subst;
+                        pose proof ((proj2 a_solvetag_sub_eq_hole_empty)
+                                      _ _ _ Hone eq_refl) as He1;
+                        match goal with
+                        | He2 : ?B0 [=] empty |- _ =>
+                            clear - He1 He2 HU; fsetdec
+                        end
+                    end
+                end ];
+    (* cofinite recursions *)
+    try solve [ match goal with
+                | IH : forall β, β `notin` ?L -> _ |- _ =>
+                    destruct (atom_fresh L) as [β0 Hβ0];
+                    eapply (IH β0 Hβ0 eq_refl); eassumption
+                end ];
+    (* direct recursions *)
+    try solve [ match goal with
+                | IH : ?P = pskl_hole -> _ |- _ =>
+                    eapply IH; [ reflexivity | eassumption ]
+                end ].
+Qed.
+
+Lemma a_looksub_hole_solvetag_empty : forall α m P Ξ C ψa Ψa,
+  P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ C ->
+  C ⊩ᵗ ψa ⤳ Ψa ->
+  Ψa [=] empty.
+Proof.
+  intros; eapply (proj1 a_looksub_lookeq_hole_cstrs); eauto.
+Qed.
