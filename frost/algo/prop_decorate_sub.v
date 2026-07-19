@@ -2547,3 +2547,74 @@ Proof.
               | exact Hrig | exact Hnfd | exact Hfaf ]
         end.
 Qed.
+
+(* ===================================================================== *)
+(*  §13  Target-opening transport for constraint collection              *)
+(*                                                                        *)
+(*  A look run against a ∀-target transports to the opened target with    *)
+(*  possibly different constraints solving the SAME tags — the mechanized *)
+(*  form of the paper's WLOG ForallR-first reordering (tex:824).  The     *)
+(*  constraint list is existential per fresh variable (the KEY lemma's    *)
+(*  ForallR case quantifies it per opened premise), so no uniformity      *)
+(*  across the family is needed; inside the forall_l case uniformity is   *)
+(*  recovered by source-side renaming (a_looksub_subst_stable).           *)
+(* ===================================================================== *)
+
+Lemma a_looksub_open_target : forall A B α Ξ C ψa Ψa,
+  A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C ->
+  C ⊩ᵗ ψa ⤳ Ψa ->
+  exists L, forall β, β `notin` L ->
+    exists C',
+      A ≼[ α , mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C' /\
+      C' ⊩ᵗ ψa ⤳ Ψa.
+Proof.
+  intros A B α Ξ C ψa Ψa Hlk.
+  remember (pskl_all_syn B) as T eqn:HT.
+  remember mode_tc as M eqn:HM.
+  revert B HT. induction Hlk; intros B0 HT Hst; subst; try discriminate HT.
+  - (* LS-Var : the deposit opens with the target *)
+    inversion Hst; subst.
+    exists empty. intros β _.
+    exists (a_cstr_sub mode_tc (open_pskl_wrt_pskl B0 (pskl_var_f β)) :: nil).
+    split; [ apply a_looksub__var | ].
+    apply a_solvetag__sub.
+    apply a_solvetag_sub_all_syn_open. assumption.
+  - (* LS-Absent : nothing collected either way *)
+    exists empty. intros β _.
+    exists nil. split; [ apply a_looksub__absent; assumption | exact Hst ].
+  - (* LS-Check : a guarded ∀ is absurd *)
+    match goal with Hg : guarded_pskl (pskl_all_syn _) |- _ =>
+      inversion Hg end.
+  - (* LS-ForallR : the family is exactly what is needed *)
+    inversion HT; subst.
+    exists L. intros β Hβ.
+    exists C. split; [ auto | exact Hst ].
+  - (* LS-ForallL : one fresh instance, renamed across the family *)
+    destruct (atom_fresh (L `union` singleton α `union` ftvar_in_pskl P))
+      as [β0 Hβ0].
+    destruct (H0 β0 ltac:(clear - Hβ0; fsetdec) eq_refl _ eq_refl Hst)
+      as [L1 HL1].
+    exists (L1 `union` L `union` singleton α `union` singleton β0
+            `union` ftvar_in_pskl P).
+    intros β Hβ.
+    destruct (HL1 β ltac:(clear - Hβ; fsetdec)) as [C' [Hlk' Hst']].
+    exists C'. split; [ | exact Hst' ].
+    apply a_looksub__forall_l
+      with (L := L `union` singleton α `union` singleton β0
+                 `union` ftvar_in_pskl P `union` singleton β).
+    intros β' Hβ'.
+    (* rename the source opener β0 → β' via substitution stability *)
+    replace (open_pskl_wrt_pskl P (pskl_var_f β'))
+      with (subst_pskl_in_pskl (pskl_var_f β') β0
+              (open_pskl_wrt_pskl P (pskl_var_f β0)))
+      by (symmetry; apply subst_pskl_in_pskl_intro;
+          clear - Hβ0; fsetdec).
+    apply a_looksub_subst_stable;
+      [ exact Hlk' | clear - Hβ0; fsetdec
+      | simpl; clear - Hβ'; fsetdec | constructor ].
+  - (* LS-UnivGhostL : peel the source ⊤◇ *)
+    destruct (IHHlk eq_refl _ eq_refl Hst) as [L1 HL1].
+    exists L1. intros β Hβ.
+    destruct (HL1 β Hβ) as [C' [Hlk' Hst']].
+    exists C'. split; [ apply a_looksub__univ_ghost_l; exact Hlk' | exact Hst' ].
+Qed.
