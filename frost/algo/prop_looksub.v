@@ -20,6 +20,8 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_solve_sub.
+Require Import src.frost.algo.prop_consis_sound.
 
 Set Implicit Arguments.
 
@@ -128,3 +130,281 @@ Lemma a_looksub_ftv : forall α m P P' Ξ C,
   P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
   ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ.
 Proof. intros; eapply (proj1 a_looksub_lookeq_ftv); eauto. Qed.
+
+(* ===================================================================== *)
+(*  §3  Look freshness (lemma:look-output-fresh, subtyping-proofs:522)    *)
+(*                                                                        *)
+(*  The extract output's free variables come from the input skeleton      *)
+(*  [P0] and the collected/guessed flexibles [Ξ] only — in particular     *)
+(*  the looked-for variable α (or any variable fresh for [P0] and [Ξ])    *)
+(*  does not survive into the instantiation candidate.                    *)
+(* ===================================================================== *)
+
+Lemma a_solve_cstr_ftv : forall Θ C P P',
+  Θ ⊩ C ⨾ P ⤳ P' ->
+  ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_cstrs C.
+Proof.
+  intros Θ C P P' H; induction H; simpl.
+  - fsetdec.
+  - pose proof (a_solve_sub_ftv H). simpl. fsetdec.
+  - pose proof ((proj2 a_solve_sub_eq_ftv) _ _ _ _ H). clear - H1 IHa_solve_cstr. fsetdec.
+Qed.
+
+Lemma ptyp_to_pskl_ftv : forall A,
+  ftvar_in_pskl (ptyp_to_pskl A) [<=] ftvar_in_ptyp A.
+Proof. induction A; simpl; fsetdec. Qed.
+
+Lemma a_extract_output_fresh : forall NM α M P P0 Ξ P1 γ,
+  P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
+  γ `notin` ftvar_in_pskl P0 ->
+  γ `notin` dom Ξ ->
+  γ `notin` ftvar_in_pskl P1.
+Proof.
+  intros * Hex Hγ0 HγΞ. inversion Hex; subst.
+  simpl_env in HγΞ.
+  match goal with
+  | Hlk : _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ , Hsc : _ ⊩ _ ⨾ _ ⤳ _ |- _ =>
+      pose proof (a_looksub_ftv Hlk) as Hb1;
+      pose proof (a_solve_cstr_ftv Hsc) as Hb2
+  end.
+  match goal with
+  | Hg : a_guess _ _ _ _ |- _ => inversion Hg; subst
+  end.
+  - (* SK : output = solve output *)
+    simpl in Hb2. clear - Hb1 Hb2 Hγ0 HγΞ. fsetdec.
+  - (* TY : output = guessed monotype *)
+    match goal with
+    | Hgm : a_guess_mono _ _ _ _ |- _ =>
+        pose proof (a_guess_mono_ftv Hgm) as Hb3
+    end.
+    pose proof (ptyp_to_pskl_ftv A) as Hb4.
+    simpl in Hb2. clear - Hb1 Hb2 Hb3 Hb4 Hγ0 HγΞ. fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  §4  Stability of constraint collection under substitution             *)
+(*  (lemma:constraint-collection-stable-substitution, tex:504-520,        *)
+(*  forward direction).  Substituting an α-free [Q] for β ≠ α preserves   *)
+(*  the collected constraints; when the substitution destroys a           *)
+(*  guardedness side condition the source has become α-free, so the       *)
+(*  derivation switches to the Absent rule (the paper's remark).          *)
+(* ===================================================================== *)
+
+(** An α-free source collects nothing. *)
+Lemma a_looksub_lookeq_absent_nil :
+  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+     α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil) /\
+  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+     α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil).
+Proof.
+  apply (a_looksub_lookeq_mutind
+           (fun α m P P' Ξ C _ =>
+              α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil)
+           (fun α P P' Ξ C _ =>
+              α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil));
+    intros; simpl in *;
+    try solve [ auto ];
+    try solve [ exfalso; fsetdec ];
+    try match goal with
+        | IH1 : _ -> ?Ξ1 = nil /\ ?C1 = nil,
+          IH2 : _ -> ?Ξ2 = nil /\ ?C2 = nil
+          |- ?Ξ1 ++ ?Ξ2 = nil /\ ?C1 ++ ?C2 = nil =>
+            destruct IH1 as [-> ->]; [ fsetdec | ];
+            destruct IH2 as [-> ->]; [ fsetdec | ];
+            auto
+        end;
+    try match goal with
+        | Hn : ?a `notin` ftvar_in_pskl ?Px ,
+          IH : forall β, β `notin` ?L -> _ |- _ =>
+            pick fresh β for (L `union` singleton a);
+            apply (IH β ltac:(auto));
+            match goal with
+            | |- _ `notin` ftvar_in_pskl (open_pskl_wrt_pskl ?Pb _) =>
+                pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                              Pb (pskl_var_f β));
+                simpl in *; fsetdec
+            end
+        end;
+    (* target-cofinite rules : the source is unchanged *)
+    try match goal with
+        | IH : forall β, β `notin` ?L -> _ |- _ =>
+            pick fresh β for L;
+            apply (IH β ltac:(auto)); assumption
+        end.
+Qed.
+
+Lemma guarded_pskl_subst : forall A Q β,
+  guarded_pskl A ->
+  lc_pskl Q ->
+  A <> pskl_var_f β ->
+  guarded_pskl (subst_pskl_in_pskl Q β A).
+Proof.
+  intros A Q β Hg Hlc Hne; inversion Hg; subst; simpl.
+  - constructor.
+  - match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e
+    end; [ exfalso; congruence | constructor ].
+  - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
+Qed.
+
+Lemma a_looksub_lookeq_subst_stable :
+  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+     forall β Q, β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
+     (subst_pskl_in_pskl Q β P) ≼[ α , m ] P' ⤳ Ξ ⨾ C) /\
+  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+     forall β Q, β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
+     (subst_pskl_in_pskl Q β P) ∼[ α ] P' ⤳ Ξ ⨾ C).
+Proof.
+  apply (a_looksub_lookeq_mutind
+           (fun α m P P' Ξ C _ =>
+              forall β Q, β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
+              (subst_pskl_in_pskl Q β P) ≼[ α , m ] P' ⤳ Ξ ⨾ C)
+           (fun α P P' Ξ C _ =>
+              forall β Q, β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
+              (subst_pskl_in_pskl Q β P) ∼[ α ] P' ⤳ Ξ ⨾ C));
+    intros; simpl.
+  - (* LS-Var *)
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e
+    end; [ exfalso; congruence | apply a_looksub__var ].
+  - (* LS-Absent *)
+    apply a_looksub__absent.
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P Q β).
+    fsetdec.
+  - (* LS-Vacuous *)
+    apply a_looksub__vacuous.
+  - (* LS-Check : switch to Absent when the source was the substituted var *)
+    match goal with Hg : guarded_pskl A |- _ => inversion Hg; subst end;
+      simpl.
+    + (* unit *)
+      apply a_looksub__check;
+        [ intro Hc; discriminate Hc | constructor | assumption | auto ].
+    + (* var X *)
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
+      end.
+      * (* X = β : the source became α-free — switch to Absent *)
+        match goal with
+        | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
+            destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ Hl)
+              as [-> ->]; [ simpl; fsetdec | ]
+        end.
+        apply a_looksub__absent. assumption.
+      * apply a_looksub__check;
+          [ assumption | constructor | assumption | auto ].
+    + (* arrow *)
+      apply a_looksub__check;
+        [ intro Hc; discriminate Hc
+        | constructor; apply subst_pskl_in_pskl_lc_pskl; auto
+        | assumption
+        | match goal with
+          | IH : forall (b : atom) (q : pskl), _ |- _ =>
+              let HI := fresh "HI" in
+              pose proof (IH _ _ ltac:(eassumption) ltac:(eassumption)
+                            ltac:(eassumption)) as HI;
+              simpl in HI; exact HI
+          end ].
+  - (* LS-ForallR *)
+    apply a_looksub__forall_r with (L := L). intros γ Hγ. auto.
+  - (* LS-Arrow *)
+    apply a_looksub__arrow; auto.
+  - (* LS-ForallL *)
+    apply a_looksub__forall_l
+      with (L := L `union` singleton β `union` ftvar_in_pskl Q).
+    intros γ Hγ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hγ; fsetdec | assumption ].
+    auto.
+  - (* LS-UnivGhostL *)
+    apply a_looksub__univ_ghost_l. auto.
+  - (* LE-Var *)
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e
+    end; [ exfalso; congruence | apply a_lookeq__var ].
+  - (* LE-Absent *)
+    apply a_lookeq__absent.
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P Q β).
+    fsetdec.
+  - (* LE-Vacuous *)
+    apply a_lookeq__vacuous.
+  - (* LE-FlexR *)
+    apply a_lookeq__flex_r.
+    + intro Hc. destruct P; simpl in Hc; try discriminate Hc.
+      revert Hc.
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
+      end; intro Hc.
+      * (* X = β : then α ∈ ftv (var β) forces α = β, contradiction *)
+        simpl in *. fsetdec.
+      * inversion Hc; subst. congruence.
+    + match goal with
+      | |- _ `in` ftvar_in_pskl (subst_pskl_in_pskl ?Qx ?bx ?Px) =>
+          pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Px Qx bx)
+      end.
+      fsetdec.
+  - (* LE-Arrow *)
+    apply a_lookeq__arrow; auto.
+  - (* LE-ForallInh *)
+    apply a_lookeq__forall_inh
+      with (L := L `union` singleton β `union` ftvar_in_pskl Q).
+    intros γ Hγ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hγ; fsetdec | assumption ].
+    auto.
+  - (* LE-ForallSyn *)
+    apply a_lookeq__forall_syn
+      with (L := L `union` singleton β `union` ftvar_in_pskl Q).
+    intros γ Hγ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hγ; fsetdec | assumption ].
+    auto.
+  - (* LE-UnivGhost *)
+    apply a_lookeq__univ_ghost. auto.
+  - (* LE-UnivGhost1 *)
+    apply a_lookeq__univ_ghost1 with (L := L). intros γ Hγ.
+    match goal with
+    | IH : forall b : atom, _ |- _ =>
+        let HI := fresh "HI" in
+        pose proof (IH γ Hγ _ _ ltac:(eassumption) ltac:(eassumption)
+                      ltac:(eassumption)) as HI;
+        simpl in HI; exact HI
+    end.
+  - (* LE-UnivGhost2 *)
+    apply a_lookeq__univ_ghost2; auto.
+  - (* LE-UnivGhostR : switch to Absent when the source was β *)
+    match goal with Hg : guarded_pskl P |- _ => inversion Hg; subst end;
+      simpl.
+    + (* unit *)
+      apply a_lookeq__univ_ghost_r;
+        [ intro Hc; discriminate Hc | constructor | auto ].
+    + (* var X *)
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
+      end.
+      * (* X = β : the source became α-free — switch to Absent *)
+        match goal with
+        | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
+            destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ Hl)
+              as [-> ->]; [ simpl; fsetdec | ]
+        end.
+        apply a_lookeq__absent. assumption.
+      * apply a_lookeq__univ_ghost_r;
+          [ assumption | constructor | auto ].
+    + (* arrow *)
+      apply a_lookeq__univ_ghost_r;
+        [ intro Hc; discriminate Hc
+        | constructor; apply subst_pskl_in_pskl_lc_pskl; auto
+        | match goal with
+          | IH : forall (b : atom) (q : pskl), _ |- _ =>
+              let HI := fresh "HI" in
+              pose proof (IH _ _ ltac:(eassumption) ltac:(eassumption)
+                            ltac:(eassumption)) as HI;
+              simpl in HI; exact HI
+          end ].
+Qed.
+
+Lemma a_looksub_subst_stable : forall α m P P' Ξ C β Q,
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+  β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
+  (subst_pskl_in_pskl Q β P) ≼[ α , m ] P' ⤳ Ξ ⨾ C.
+Proof. intros; eapply (proj1 a_looksub_lookeq_subst_stable); eauto. Qed.
