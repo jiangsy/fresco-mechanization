@@ -1025,3 +1025,50 @@ Proof.
     rewrite Heq.
     eapply a_consistag_psi_cong; [ exact Hcons | clear - H0; fsetdec ].
 Qed.
+
+(* ===================================================================== *)
+(*  §9  Ψ-congruence for decorated subtyping (prerequisite for            *)
+(*  subtyping-decoration-var).  The tag context threads through every     *)
+(*  a_subtag rule via [=]-premises, so it respects set equality.  The     *)
+(*  flex-walk (a_subtag_flex) carries no Ψ, so a single induction on      *)
+(*  a_subtag suffices; the Check case defers to a_consistag_psi_cong.     *)
+(* ===================================================================== *)
+
+Lemma a_subtag_psi_cong : forall NM M P0 Ψ Θ0 S Q Θ1,
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] S ⊑ Q ⊣ Θ1 ->
+  forall Ψ', Ψ [=] Ψ' ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ' ] S ⊑ Q ⊣ Θ1.
+Proof.
+  intros NM M P0 Ψ Θ0 S Q Θ1 H; induction H; intros Ψ' Heq.
+  - (* Infer *) apply a_subtag__infer; clear - H Heq; fsetdec.
+  - (* Check *) apply a_subtag__check; try assumption.
+    eapply a_consistag_psi_cong; [ eassumption | exact Heq ].
+  - (* ForallR *) eapply a_subtag__forall_r; try eassumption.
+    intros α Hα.
+    match goal with
+    | IH : forall a, a `notin` ?L -> forall Ψ0, _ |- _ => eapply IH; [ exact Hα | exact Heq ]
+    end.
+  - (* UnivGhostR *) apply a_subtag__univ_ghost_r; [ assumption | clear - H0 Heq; fsetdec ].
+  - (* Arrow *) eapply a_subtag__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+      [ eassumption | eassumption
+      | match goal with Ho : _ [=] union Ψ1 Ψ2 |- _ => clear - Ho Heq; fsetdec end ].
+  - (* ForallL, δ=ε *)
+    eapply a_subtag__forall_l_tagged with (Ψg := Ψg) (Ξ := Ξ) (P1 := P1) (ψg := ψg);
+      try eassumption.
+    + match goal with Ho : AtomSetImpl.inter Ψg _ [=] empty |- _ =>
+        clear - Ho Heq; fsetdec end.
+    + match goal with IH : forall Ψ0, _ |- _ => eapply IH; clear - Heq; fsetdec end.
+  - (* ForallL, δ=· *)
+    eapply a_subtag__forall_l_untagged with (Ψg := Ψg) (Ξ := Ξ) (P1 := P1) (ψg := ψg);
+      try eassumption.
+    + match goal with Ho : AtomSetImpl.inter Ψg _ [=] empty |- _ =>
+        clear - Ho Heq; fsetdec end.
+    + match goal with IH : forall Ψ0, _ |- _ => eapply IH; clear - Heq; fsetdec end.
+  - (* Ghost *) apply a_subtag__ghost; clear - H Heq; fsetdec.
+  - (* GhostG *) apply a_subtag__ghostg; clear - H Heq; fsetdec.
+  - (* UnivGhostL *) apply a_subtag__univ_ghost_l; [ assumption | ].
+    match goal with IH : forall Ψ0, _ |- _ => eapply IH; exact Heq end.
+  - (* UnivGhostLG *) apply a_subtag__univ_ghost_lg; [ assumption | ].
+    match goal with IH : forall Ψ0, _ |- _ => eapply IH; exact Heq end.
+  - (* FlexMono *) apply a_subtag__flex_mono; [ eassumption | clear - H0 Heq; fsetdec ].
+Qed.
