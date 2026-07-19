@@ -408,3 +408,183 @@ Lemma a_looksub_subst_stable : forall α m P P' Ξ C β Q,
   β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
   (subst_pskl_in_pskl Q β P) ≼[ α , m ] P' ⤳ Ξ ⨾ C.
 Proof. intros; eapply (proj1 a_looksub_lookeq_subst_stable); eauto. Qed.
+
+(* ===================================================================== *)
+(*  §5  Renaming the looked-for variable                                  *)
+(*                                                                        *)
+(*  Collected constraints mention only input residuals, never the looked  *)
+(*  variable itself, so the look run is stable under renaming it — the    *)
+(*  Barendregt device that keeps the KEY decoration's substitution        *)
+(*  variable clear of guessed flexible names.                             *)
+(* ===================================================================== *)
+
+Lemma ftv_subst_var_in : forall P α α',
+  α `in` ftvar_in_pskl P ->
+  α' `in` ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f α') α P).
+Proof.
+  induction P; intros α α' Hin; simpl in *;
+    try solve [ exfalso; fsetdec ].
+  - match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
+    end; simpl; [ fsetdec | exfalso; fsetdec ].
+  - destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P1)) as [Hi | Hni];
+      [ pose proof (IHP1 _ α' Hi) | ];
+      destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P2)) as [Hi2 | Hni2];
+      try pose proof (IHP2 _ α' Hi2); try fsetdec.
+  - eauto.
+  - eauto.
+Qed.
+
+Lemma a_looksub_lookeq_rename_var :
+  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+     forall α', α' `notin` ftvar_in_pskl P ->
+     (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ C) /\
+  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+     forall α', α' `notin` ftvar_in_pskl P ->
+     (subst_pskl_in_pskl (pskl_var_f α') α P) ∼[ α' ] P' ⤳ Ξ ⨾ C).
+Proof.
+  apply (a_looksub_lookeq_mutind
+           (fun α m P P' Ξ C _ =>
+              forall α', α' `notin` ftvar_in_pskl P ->
+              (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ C)
+           (fun α P P' Ξ C _ =>
+              forall α', α' `notin` ftvar_in_pskl P ->
+              (subst_pskl_in_pskl (pskl_var_f α') α P) ∼[ α' ] P' ⤳ Ξ ⨾ C));
+    intros; simpl.
+  - (* LS-Var *)
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hne];
+        [ | exfalso; congruence ]
+    end.
+    apply a_looksub__var.
+  - (* LS-Absent *)
+    rewrite subst_pskl_in_pskl_fresh_eq; [ | assumption ].
+    apply a_looksub__absent. assumption.
+  - (* LS-Vacuous *)
+    apply a_looksub__vacuous.
+  - (* LS-Check *)
+    apply a_looksub__check.
+    + intro Hc. destruct A; simpl in Hc; try discriminate Hc.
+      revert Hc.
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
+      end; intro Hc; [ congruence | ].
+      inversion Hc; subst. simpl in *. fsetdec.
+    + apply guarded_pskl_subst_var; assumption.
+    + assumption.
+    + auto.
+  - (* LS-ForallR *)
+    apply a_looksub__forall_r with (L := L). intros γ Hγ. auto.
+  - (* LS-Arrow *)
+    apply a_looksub__arrow;
+      [ match goal with IH : forall a, a `notin` _ -> _ |- _ => idtac end | ];
+      simpl in *;
+      [ match goal with
+        | IH : context [ _ ∼[ _ ] _ ⤳ _ ⨾ _ ] |- _ => apply IH; fsetdec
+        end
+      | match goal with
+        | IH : context [ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ ] |- _ => apply IH; fsetdec
+        end ].
+  - (* LS-ForallL *)
+    apply a_looksub__forall_l
+      with (L := L `union` singleton α `union` singleton α').
+    intros γ Hγ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hγ; fsetdec | constructor ].
+    match goal with
+    | IH : forall β, β `notin` _ -> _ |- _ =>
+        apply IH; [ clear - Hγ; fsetdec | ]
+    end.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)).
+    simpl in *. fsetdec.
+  - (* LS-UnivGhostL *)
+    apply a_looksub__univ_ghost_l. auto.
+  - (* LE-Var *)
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hne];
+        [ | exfalso; congruence ]
+    end.
+    apply a_lookeq__var.
+  - (* LE-Absent *)
+    rewrite subst_pskl_in_pskl_fresh_eq; [ | assumption ].
+    apply a_lookeq__absent. assumption.
+  - (* LE-Vacuous *)
+    apply a_lookeq__vacuous.
+  - (* LE-FlexR *)
+    apply a_lookeq__flex_r.
+    + intro Hc. destruct P; simpl in Hc; try discriminate Hc.
+      match goal with
+      | Hin : α `in` ftvar_in_pskl (pskl_var_f ?X) |- _ =>
+          simpl in Hin;
+          assert (HXα : X = α) by (clear - Hin; fsetdec);
+          subst; congruence
+      end.
+    + apply ftv_subst_var_in. assumption.
+  - (* LE-Arrow *)
+    apply a_lookeq__arrow; simpl in *;
+      match goal with
+      | IH1 : context [ subst_pskl_in_pskl _ _ ?Pa ∼[ _ ] ?Qa ⤳ _ ⨾ _ ] ,
+        IH2 : context [ subst_pskl_in_pskl _ _ ?Pb ∼[ _ ] ?Qb ⤳ _ ⨾ _ ] |- _ =>
+          idtac
+      end;
+      [ match goal with
+        | IH : forall a, a `notin` ftvar_in_pskl ?Px -> _ |-
+            (subst_pskl_in_pskl _ _ ?Px) ∼[ _ ] _ ⤳ _ ⨾ _ =>
+            apply IH; fsetdec
+        end
+      | match goal with
+        | IH : forall a, a `notin` ftvar_in_pskl ?Px -> _ |-
+            (subst_pskl_in_pskl _ _ ?Px) ∼[ _ ] _ ⤳ _ ⨾ _ =>
+            apply IH; fsetdec
+        end ].
+  - (* LE-ForallInh *)
+    apply a_lookeq__forall_inh
+      with (L := L `union` singleton α `union` singleton α').
+    intros γ Hγ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hγ; fsetdec | constructor ].
+    match goal with
+    | IH : forall β, β `notin` _ -> _ |- _ =>
+        apply IH; [ clear - Hγ; fsetdec | ]
+    end.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)).
+    simpl in *. fsetdec.
+  - (* LE-ForallSyn *)
+    apply a_lookeq__forall_syn
+      with (L := L `union` singleton α `union` singleton α').
+    intros γ Hγ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hγ; fsetdec | constructor ].
+    match goal with
+    | IH : forall β, β `notin` _ -> _ |- _ =>
+        apply IH; [ clear - Hγ; fsetdec | ]
+    end.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)).
+    simpl in *. fsetdec.
+  - (* LE-UnivGhost *)
+    apply a_lookeq__univ_ghost. simpl in *. auto.
+  - (* LE-UnivGhost1 *)
+    apply a_lookeq__univ_ghost1 with (L := L). intros γ Hγ.
+    match goal with
+    | IH : forall β, β `notin` _ -> forall a, _ |- _ =>
+        specialize (IH γ Hγ α' ltac:(assumption)); simpl in IH; exact IH
+    end.
+  - (* LE-UnivGhost2 *)
+    apply a_lookeq__univ_ghost2; [ assumption | ]. simpl in *. auto.
+  - (* LE-UnivGhostR *)
+    apply a_lookeq__univ_ghost_r.
+    + intro Hc. destruct P; simpl in Hc; try discriminate Hc.
+      revert Hc.
+      match goal with
+      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
+      end; intro Hc; [ congruence | ].
+      inversion Hc; subst. simpl in *. fsetdec.
+    + apply guarded_pskl_subst_var; assumption.
+    + auto.
+Qed.
+
+Lemma a_looksub_rename_var : forall α m P P' Ξ C α',
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+  α' `notin` ftvar_in_pskl P ->
+  (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ C.
+Proof. intros; eapply (proj1 a_looksub_lookeq_rename_var); eauto. Qed.
