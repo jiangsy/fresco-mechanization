@@ -1823,6 +1823,103 @@ Proof.
     inversion Hnas; subst. eapply IHS; eauto.
 Qed.
 
+(** Constraints collected against a flexible-variable input solve nothing,
+    and the decoration coincides with its strip on the substituted subject:
+    the solvetag run pins ψa to a variable or a ghost-free skeleton, and
+    the (monotype) assigned subject is quantifier-free. *)
+Lemma flexvar_decoration_swap : forall α P α0 Ξ C,
+  P ∼[ α ] (pskl_var_f α0) ⤳ Ξ ⨾ C ->
+  forall S ψa Ψa,
+    ⌊ S ⌋ˢ = P ->
+    C ⊩ᵗ ψa ⤳ Ψa ->
+    no_all_syn_uskl
+      (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S) ->
+    Ψa [=] empty /\
+    subst_bskl_in_uskl ψa α S
+    = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S.
+Proof.
+  intros α P α0 Ξ C Hlk.
+  remember (pskl_var_f α0) as Ptgt eqn:HPt.
+  induction Hlk; intros S0 ψa Ψa HeS Hst Hnas; try discriminate HPt.
+  - (* LE-Var : S0 = α; the single eq constraint pins ψa *)
+    assert (HS : S0 = uskl_var_f α).
+    { destruct S0; simpl in HeS; try discriminate; congruence. }
+    subst S0. simpl in Hnas |- *.
+    revert Hnas.
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hne];
+        [ | exfalso; congruence ]
+    end.
+    intro Hnas.
+    inversion Hst; subst.
+    match goal with
+    | Hone : ψa ∼ᵗ _ ⤳ _ |- _ => inversion Hone; subst
+    end.
+    all: match goal with
+         | Hnil : nil ⊩ᵗ _ ⤳ _ |- _ => inversion Hnil; subst
+         end.
+    all: split.
+    all: try solve [ match goal with
+                     | He1 : ?A0 [=] empty, He2 : ?B0 [=] empty,
+                       HU : _ [=] union ?A0 ?B0 |- _ =>
+                         clear - He1 He2 HU; fsetdec
+                     end ].
+    all: try solve [ simpl; reflexivity ].
+    all: match goal with
+         | Hgf : uskl_ghost_free _ |- _ =>
+             rewrite (strip_id_ghost_free_no_all_syn Hgf Hnas); reflexivity
+         end.
+  - (* LE-Absent : both substitutions are the identity *)
+    assert (HαS : α `notin` ftvar_in_uskl S0).
+    { rewrite <- (ftvar_in_pskl_uskl_to_pskl S0). rewrite HeS. assumption. }
+    inversion Hst; subst.
+    split; [ assumption | ].
+    rewrite ! subst_bskl_in_uskl_fresh_eq; auto.
+  - (* LE-FlexR : the eq constraint on the fresh flexible pins ψa *)
+    assert (HαS : α `in` ftvar_in_uskl S0).
+    { rewrite <- (ftvar_in_pskl_uskl_to_pskl S0). rewrite HeS. assumption. }
+    inversion Hst; subst.
+    match goal with
+    | Hone : ψa ∼ᵗ _ ⤳ _ |- _ => inversion Hone; subst
+    end.
+    all: match goal with
+         | Hnil : nil ⊩ᵗ _ ⤳ _ |- _ => inversion Hnil; subst
+         end.
+    all: split.
+    all: try solve [ match goal with
+                     | He1 : ?A0 [=] empty, He2 : ?B0 [=] empty,
+                       HU : _ [=] union ?A0 ?B0 |- _ =>
+                         clear - He1 He2 HU; fsetdec
+                     end ].
+    all: try solve [ simpl; reflexivity ].
+    all: pose proof (@no_all_syn_subst_inv S0
+                       (pskl_to_uskl (uskl_to_pskl ψa)) α HαS Hnas) as Hnas'.
+    all: match goal with
+         | Hgf : uskl_ghost_free _ |- _ =>
+             pose proof (strip_id_ghost_free_no_all_syn Hgf Hnas') as Hid
+         end.
+    all: rewrite Hid; reflexivity.
+  - (* LE-UnivGhost2 : peel the source ⊤◇/⊤◇̇ and recurse *)
+    destruct S0; simpl in HeS; try discriminate HeS;
+      inversion HeS; subst.
+    + (* tophole *)
+      simpl in Hnas. inversion Hnas; subst.
+      match goal with
+      | Hin : no_all_syn_uskl (subst_bskl_in_uskl _ _ ?S1) |- _ =>
+          destruct (IHHlk eq_refl S1 ψa Ψa ltac:(reflexivity) Hst Hin)
+            as [HΨ Heq]
+      end.
+      split; [ exact HΨ | simpl; rewrite Heq; reflexivity ].
+    + (* topholeg *)
+      simpl in Hnas. inversion Hnas; subst.
+      match goal with
+      | Hin : no_all_syn_uskl (subst_bskl_in_uskl _ _ ?S1) |- _ =>
+          destruct (IHHlk eq_refl S1 ψa Ψa ltac:(reflexivity) Hst Hin)
+            as [HΨ Heq]
+      end.
+      split; [ exact HΨ | simpl; rewrite Heq; reflexivity ].
+Qed.
+
 Lemma a_consistag_decoration : forall α P P0 Ξc C,
   P ∼[ α ] P0 ⤳ Ξc ⨾ C ->
   forall S ψa Ψa Δ1 Δ2 Ψ Θ0 Q Θ1,
@@ -1964,20 +2061,489 @@ Proof.
         | match goal with HΨc2 : _ [=] union _ _ |- _ =>
             clear - HΨc HΨs; fsetdec end ]
     end.
-  (* REMAINING (all TRUE, structural mirrors with recipes already used in
-     a_consistag_decoration_var — honest incremental admits, next session):
-     - LE-ForallInh  : S ∈ {all_syn S', all_etag ε S'}; invert the premise's
-       forall_inh_(un)tagged; per fresh β (∉ {α} ∪ ftv ψa ∪ Δ-recipe sets):
-       subst/open commute (subst_bskl_in_uskl_open_uskl_wrt_uskl_var), IH,
-       rebuild with the Δ-extension wf recipes (crib §8's ForallInh).
-     - LE-ForallSyn  : same at input ⊤◇ (wf reassociates directly).
-     - LE-UnivGhost  : S ∈ {tophole, topholeg}; invert univ_ghost(g); IH.
-     - LE-UnivGhost1 : subject fixed ⊤-headed, target ∀ opens; invert
-       univ_ghost1; per-α IH (Δ1-extension recipe).
-     - LE-UnivGhost2 : subject ⊤◇.S' vs guarded target; invert univ_ghost2
-       (topholeg-subject subcase dies: univ_ghostg pins P0 = ⊤◇, guarded
-       absurd); IH; rebuild (a_non_flex transports via subst-erasure).
-     - LE-UnivGhostR : target ⊤◇.P'; invert univ_ghost_r (guarded subject +
-       non-flex; the guarded-subject transport = guarded_msubst_decorate's
-       single-subst analog); IH; rebuild. *)
-Admitted.
+  - (* LE-ForallInh : ∀-headed sources; open a fresh rigid on both sides *)
+    assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
+      by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
+    destruct S; simpl in HeS; inversion HeS; subst;
+      try solve [ inversion HlcS ].
+    + (* S = all_syn S' *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      match goal with
+      | Hb : forall X : usklvar, lc_uskl _ |- _ => rename Hb into HlcSbody
+      end.
+      simpl in HwfSub.
+      inversion HwfSub as [ | | | LS ΘS ΔS SbS HbodyS HeqS' | | ]; subst.
+      inversion HwfP0 as [ | | | LP ΘP ΔP P0b HbodyP HeqP' | | ]; subst.
+      inversion Hcons; subst.
+      match goal with
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+          rename Hcb into Hcbody; rename L1 into Lc
+      end.
+      eapply a_consistag__forall_inh_untagged
+        with (L := L `union` Lc `union` LS `union` LP
+                   `union` singleton α `union` ftvar_in_uskl ψa
+                   `union` ftvar_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
+                   `union` dom Θ0).
+      intros β Hβ.
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ | clear - Hβ; fsetdec | exact Hlcψ ].
+      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var in HcI;
+        [ | clear - Hβ; fsetdec | exact Hlcstrip ].
+      match goal with
+      | IH : forall b : atom, _ |- _ =>
+          solve
+            [ eapply (IH β ltac:(clear - Hβ; fsetdec));
+              [ exact Hst
+              | apply uskl_to_pskl_open
+              | exact Hαψ
+              | exact Hlcψ
+              | apply HlcSbody
+              | exact HcI
+              | apply a_wf_aenv__tvar;
+                  [ clear - Hβ; fsetdec | exact Hwf ]
+              | eapply a_wf_pskl_delta_mono;
+                  [ apply (a_wf_pskl_reassoc
+                             (HbodyP β ltac:(clear - Hβ; fsetdec)) β)
+                  | clear; fsetdec ]
+              | rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+                  [ | clear - Hβ; fsetdec | exact Hlcstrip ];
+                rewrite uskl_to_pskl_open;
+                eapply a_wf_pskl_delta_mono;
+                  [ apply (a_wf_pskl_reassoc
+                             (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+                  | clear; fsetdec ]
+              | intros X HX; destruct (X == β) as [ -> | Hne ];
+                  [ unfold binds; left; reflexivity
+                  | unfold binds; right; apply Hrig;
+                    clear - HX Hne; fsetdec ]
+              | apply no_flex_dep_cong with (Δ := add β (Δ1 `union` Δ2));
+                  [ clear; fsetdec
+                  | apply no_flex_dep_open_tvar;
+                      [ exact Hwf | exact Hnfd | clear - Hβ; fsetdec ] ]
+              | apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
+                  [ clear; fsetdec
+                  | apply faf_open_tvar;
+                      [ exact Hfaf | clear - Hβ; fsetdec ] ] ] ]
+      end.
+    + (* S = all_etag ε S' *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      match goal with
+      | Hb : forall X : usklvar, lc_uskl _ |- _ => rename Hb into HlcSbody
+      end.
+      simpl in HwfSub.
+      inversion HwfSub as [ | | | LS ΘS ΔS SbS HbodyS HeqS' | | ]; subst.
+      inversion HwfP0 as [ | | | LP ΘP ΔP P0b HbodyP HeqP' | | ]; subst.
+      inversion Hcons; subst.
+      match goal with
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+          rename Hcb into Hcbody; rename L1 into Lc
+      end.
+      match goal with
+      | HΨe : Ψc [=] add ?εx ?Ψ0x |- _ => rename HΨe into HΨc
+      end.
+      eapply a_consistag__forall_inh_tagged
+        with (Ψ0 := Ψ0 `union` Ψa)
+             (L := L `union` Lc `union` LS `union` LP
+                   `union` singleton α `union` ftvar_in_uskl ψa
+                   `union` ftvar_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
+                   `union` dom Θ0);
+        [ intros β Hβ | clear - HΨc; fsetdec ].
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ | clear - Hβ; fsetdec | exact Hlcψ ].
+      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var in HcI;
+        [ | clear - Hβ; fsetdec | exact Hlcstrip ].
+      match goal with
+      | IH : forall b : atom, _ |- _ =>
+          solve
+            [ eapply (IH β ltac:(clear - Hβ; fsetdec));
+              [ exact Hst
+              | apply uskl_to_pskl_open
+              | exact Hαψ
+              | exact Hlcψ
+              | apply HlcSbody
+              | exact HcI
+              | apply a_wf_aenv__tvar;
+                  [ clear - Hβ; fsetdec | exact Hwf ]
+              | eapply a_wf_pskl_delta_mono;
+                  [ apply (a_wf_pskl_reassoc
+                             (HbodyP β ltac:(clear - Hβ; fsetdec)) β)
+                  | clear; fsetdec ]
+              | rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+                  [ | clear - Hβ; fsetdec | exact Hlcstrip ];
+                rewrite uskl_to_pskl_open;
+                eapply a_wf_pskl_delta_mono;
+                  [ apply (a_wf_pskl_reassoc
+                             (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+                  | clear; fsetdec ]
+              | intros X HX; destruct (X == β) as [ -> | Hne ];
+                  [ unfold binds; left; reflexivity
+                  | unfold binds; right; apply Hrig;
+                    clear - HX Hne; fsetdec ]
+              | apply no_flex_dep_cong with (Δ := add β (Δ1 `union` Δ2));
+                  [ clear; fsetdec
+                  | apply no_flex_dep_open_tvar;
+                      [ exact Hwf | exact Hnfd | clear - Hβ; fsetdec ] ]
+              | apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
+                  [ clear; fsetdec
+                  | apply faf_open_tvar;
+                      [ exact Hfaf | clear - Hβ; fsetdec ] ] ] ]
+      end.
+  - (* LE-ForallSyn : ∀-headed source, ⊤◇ input (unchanged across opening) *)
+    assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
+      by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
+    destruct S; simpl in HeS; inversion HeS; subst;
+      try solve [ inversion HlcS ].
+    + (* S = all_syn S' *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      match goal with
+      | Hb : forall X : usklvar, lc_uskl _ |- _ => rename Hb into HlcSbody
+      end.
+      simpl in HwfSub.
+      inversion HwfSub as [ | | | LS ΘS ΔS SbS HbodyS HeqS' | | ]; subst.
+      inversion Hcons; subst;
+        try (match goal with Hg : guarded_uskl (uskl_all_syn _) |- _ =>
+               solve [ inversion Hg ] end);
+        try (match goal with Hg : guarded_uskl (uskl_all_etag _ _) |- _ =>
+               solve [ inversion Hg ] end).
+      match goal with
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+          rename Hcb into Hcbody; rename L1 into Lc
+      end.
+      eapply a_consistag__forall_syn_untagged
+        with (L := L `union` Lc `union` LS
+                   `union` singleton α `union` ftvar_in_uskl ψa
+                   `union` ftvar_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
+                   `union` dom Θ0).
+      intros β Hβ.
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ | clear - Hβ; fsetdec | exact Hlcψ ].
+      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var in HcI;
+        [ | clear - Hβ; fsetdec | exact Hlcstrip ].
+      match goal with
+      | IH : forall b : atom, _ |- _ =>
+          solve
+            [ eapply (IH β ltac:(clear - Hβ; fsetdec));
+              [ exact Hst
+              | apply uskl_to_pskl_open
+              | exact Hαψ
+              | exact Hlcψ
+              | apply HlcSbody
+              | exact HcI
+              | apply a_wf_aenv__tvar;
+                  [ clear - Hβ; fsetdec | exact Hwf ]
+              | eapply a_wf_pskl_delta_mono;
+                  [ apply (a_wf_pskl_reassoc HwfP0 β) | clear; fsetdec ]
+              | rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+                  [ | clear - Hβ; fsetdec | exact Hlcstrip ];
+                rewrite uskl_to_pskl_open;
+                eapply a_wf_pskl_delta_mono;
+                  [ apply (a_wf_pskl_reassoc
+                             (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+                  | clear; fsetdec ]
+              | intros X HX; destruct (X == β) as [ -> | Hne ];
+                  [ unfold binds; left; reflexivity
+                  | unfold binds; right; apply Hrig;
+                    clear - HX Hne; fsetdec ]
+              | apply no_flex_dep_cong with (Δ := add β (Δ1 `union` Δ2));
+                  [ clear; fsetdec
+                  | apply no_flex_dep_open_tvar;
+                      [ exact Hwf | exact Hnfd | clear - Hβ; fsetdec ] ]
+              | apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
+                  [ clear; fsetdec
+                  | apply faf_open_tvar;
+                      [ exact Hfaf | clear - Hβ; fsetdec ] ] ] ]
+      end.
+    + (* S = all_etag ε S' *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      match goal with
+      | Hb : forall X : usklvar, lc_uskl _ |- _ => rename Hb into HlcSbody
+      end.
+      simpl in HwfSub.
+      inversion HwfSub as [ | | | LS ΘS ΔS SbS HbodyS HeqS' | | ]; subst.
+      inversion Hcons; subst;
+        try (match goal with Hg : guarded_uskl (uskl_all_etag _ _) |- _ =>
+               solve [ inversion Hg ] end).
+      match goal with
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+          rename Hcb into Hcbody; rename L1 into Lc
+      end.
+      eapply a_consistag__forall_syn_tagged
+        with (L := L `union` Lc `union` LS
+                   `union` singleton α `union` ftvar_in_uskl ψa
+                   `union` ftvar_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
+                   `union` dom Θ0).
+      intros β Hβ.
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ | clear - Hβ; fsetdec | exact Hlcψ ].
+      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var in HcI;
+        [ | clear - Hβ; fsetdec | exact Hlcstrip ].
+      match goal with
+      | IH : forall b : atom, _ |- _ =>
+          solve
+            [ eapply (IH β ltac:(clear - Hβ; fsetdec));
+              [ exact Hst
+              | apply uskl_to_pskl_open
+              | exact Hαψ
+              | exact Hlcψ
+              | apply HlcSbody
+              | exact HcI
+              | apply a_wf_aenv__tvar;
+                  [ clear - Hβ; fsetdec | exact Hwf ]
+              | eapply a_wf_pskl_delta_mono;
+                  [ apply (a_wf_pskl_reassoc HwfP0 β) | clear; fsetdec ]
+              | rewrite <- subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+                  [ | clear - Hβ; fsetdec | exact Hlcstrip ];
+                rewrite uskl_to_pskl_open;
+                eapply a_wf_pskl_delta_mono;
+                  [ apply (a_wf_pskl_reassoc
+                             (HbodyS β ltac:(clear - Hβ; fsetdec)) β)
+                  | clear; fsetdec ]
+              | intros X HX; destruct (X == β) as [ -> | Hne ];
+                  [ unfold binds; left; reflexivity
+                  | unfold binds; right; apply Hrig;
+                    clear - HX Hne; fsetdec ]
+              | apply no_flex_dep_cong with (Δ := add β (Δ1 `union` Δ2));
+                  [ clear; fsetdec
+                  | apply no_flex_dep_open_tvar;
+                      [ exact Hwf | exact Hnfd | clear - Hβ; fsetdec ] ]
+              | apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
+                  [ clear; fsetdec
+                  | apply faf_open_tvar;
+                      [ exact Hfaf | clear - Hβ; fsetdec ] ] ] ]
+      end.
+  - (* LE-UnivGhost : ⊤◇-headed source and input; peel both *)
+    destruct S; simpl in HeS; inversion HeS; subst;
+      try solve [ inversion HlcS ].
+    + (* S = tophole S' *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      simpl in HwfSub.
+      apply a_wf_pskl_tophole_inv in HwfSub.
+      apply a_wf_pskl_tophole_inv in HwfP0.
+      inversion Hcons; subst;
+        try (match goal with Hg : guarded_pskl (pskl_tophole _) |- _ =>
+               solve [ inversion Hg ] end);
+        try (match goal with Hg : guarded_uskl (uskl_tophole _) |- _ =>
+               solve [ inversion Hg ] end).
+      apply a_consistag__univ_ghost.
+      match goal with
+      | IH : forall S0 : uskl, _ |- _ =>
+          eapply IH;
+            [ exact Hst | reflexivity | exact Hαψ | exact Hlcψ | assumption
+            | eassumption | exact Hwf | exact HwfP0 | exact HwfSub
+            | exact Hrig | exact Hnfd | exact Hfaf ]
+      end.
+    + (* S = topholeg S' *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      simpl in HwfSub.
+      apply a_wf_pskl_tophole_inv in HwfSub.
+      apply a_wf_pskl_tophole_inv in HwfP0.
+      inversion Hcons; subst;
+        try (match goal with
+             | Hg : guarded_uskl (uskl_topholeg _) |- _ =>
+                 solve [ inversion Hg ] end).
+      apply a_consistag__univ_ghostg.
+      match goal with
+      | IH : forall S0 : uskl, _ |- _ =>
+          eapply IH;
+            [ exact Hst | reflexivity | exact Hαψ | exact Hlcψ | assumption
+            | eassumption | exact Hwf | exact HwfP0 | exact HwfSub
+            | exact Hrig | exact Hnfd | exact Hfaf ]
+      end.
+  - (* LE-UnivGhost1 : ⊤-headed source fixed, ∀-input opens *)
+    destruct S; simpl in HeS; inversion HeS; subst;
+      try solve [ inversion HlcS ].
+    + (* S = tophole S' *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      simpl in HwfSub.
+      inversion HwfP0 as [ | | | LP ΘP ΔP P0b HbodyP HeqP' | | ]; subst.
+      inversion Hcons; subst;
+        try (match goal with Hg : guarded_uskl (uskl_tophole _) |- _ =>
+               solve [ inversion Hg ] end);
+        try (match goal with Hg : guarded_pskl (pskl_all_syn _) |- _ =>
+               solve [ inversion Hg ] end).
+      match goal with
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+          rename Hcb into Hcbody; rename L1 into Lc
+      end.
+      eapply a_consistag__univ_ghost1
+        with (L := L `union` Lc `union` LP
+                   `union` singleton α `union` ftvar_in_uskl ψa
+                   `union` ftvar_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
+                   `union` dom Θ0).
+      intros β Hβ.
+      pose proof (Hcbody β ltac:(clear - Hβ; fsetdec)) as HcI.
+      change (uskl_tophole (subst_bskl_in_uskl ψa α S))
+        with (subst_bskl_in_uskl ψa α (uskl_tophole S)).
+      eapply (H0 β ltac:(clear - Hβ; fsetdec)).
+      { exact Hst. }
+      { reflexivity. }
+      { exact Hαψ. }
+      { exact Hlcψ. }
+      { assumption. }
+      { exact HcI. }
+      { apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf ]. }
+      { eapply a_wf_pskl_delta_mono;
+          [ apply (a_wf_pskl_reassoc
+                     (HbodyP β ltac:(clear - Hβ; fsetdec)) β)
+          | clear; fsetdec ]. }
+      { eapply a_wf_pskl_weaken;
+          [ intros x b Hb; unfold binds; simpl; right; exact Hb
+          | exact HwfSub ]. }
+      { intros X HX; destruct (X == β) as [ -> | Hne ];
+          [ unfold binds; left; reflexivity
+          | unfold binds; right; apply Hrig;
+            clear - HX Hne; fsetdec ]. }
+      { apply no_flex_dep_cong with (Δ := add β (Δ1 `union` Δ2));
+          [ clear; fsetdec
+          | apply no_flex_dep_open_tvar;
+              [ exact Hwf | exact Hnfd | clear - Hβ; fsetdec ] ]. }
+      { apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
+          [ clear; fsetdec
+          | apply faf_open_tvar;
+              [ exact Hfaf | clear - Hβ; fsetdec ] ]. }
+    + (* S = topholeg S' : no rule pairs ⊤◇̇ with a ∀ input *)
+      simpl in Hcons.
+      inversion Hcons.
+  - (* LE-UnivGhost2 : peel the source ⊤◇ against a guarded input.  The
+       input P' may itself be a flexible variable, in which case the whole
+       ⊤-headed subject is assigned and the decoration swap applies. *)
+    destruct S; simpl in HeS; inversion HeS; subst;
+      try solve [ inversion HlcS ].
+    + (* S = tophole S' *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      simpl in HwfSub.
+      pose proof HwfSub as HwfSubT.
+      apply a_wf_pskl_tophole_inv in HwfSub.
+      pose proof Hcons as HconsSaved.
+      inversion Hcons; subst;
+        try (match goal with
+             | Hg : guarded_pskl (pskl_tophole _) |- _ =>
+                 solve [ inversion Hg ] end);
+        try (match goal with
+             | Hg : guarded_pskl (pskl_all_syn _) |- _ =>
+                 solve [ inversion Hg ] end);
+        try (match goal with
+             | Hg : guarded_pskl pskl_hole |- _ =>
+                 solve [ inversion Hg ] end);
+        try (match goal with
+             | Hg : guarded_uskl (uskl_tophole _) |- _ =>
+                 solve [ inversion Hg ] end).
+      * (* FlexR assignment of the ⊤-headed subject to the flexible input *)
+        assert (Hnas : no_all_syn_uskl
+                         (uskl_tophole
+                            (subst_bskl_in_uskl
+                               (pskl_to_uskl (uskl_to_pskl ψa)) α S)))
+          by (eapply a_consistag_flexvar_subject_no_all_syn;
+                [ exact HconsSaved | exact Hwf | exact HwfSubT ]).
+        assert (Hnas' : no_all_syn_uskl
+                          (subst_bskl_in_uskl
+                             (pskl_to_uskl (uskl_to_pskl ψa)) α S))
+          by (inversion Hnas; assumption).
+        destruct (flexvar_decoration_swap Hlook S eq_refl Hst Hnas')
+          as [HΨa Heqs].
+        rewrite Heqs.
+        eapply a_consistag_psi_cong; [ exact HconsSaved | ].
+        clear - HΨa. fsetdec.
+      * (* the mirror UnivGhost2 *)
+        apply a_consistag__univ_ghost2; [ assumption | assumption | ].
+        match goal with
+        | IH : forall S0 : uskl, _ |- _ =>
+            eapply IH;
+              [ exact Hst | reflexivity | exact Hαψ | exact Hlcψ | assumption
+              | eassumption | exact Hwf | exact HwfP0 | exact HwfSub
+              | exact Hrig | exact Hnfd | exact Hfaf ]
+        end.
+    + (* S = topholeg S' : UnivGhostG pins a ⊤◇ input (never guarded), and
+         a FlexR assignment cannot produce a dotted ghost *)
+      simpl in Hcons.
+      inversion Hcons; subst;
+        try (match goal with
+             | Hg : guarded_pskl (pskl_tophole _) |- _ =>
+                 solve [ inversion Hg ] end);
+        try (match goal with
+             | Hg : guarded_pskl (pskl_all_syn _) |- _ =>
+                 solve [ inversion Hg ] end);
+        try (match goal with
+             | Hg : guarded_pskl pskl_hole |- _ =>
+                 solve [ inversion Hg ] end);
+        try (match goal with
+             | He : pskl_to_uskl ?Px = uskl_topholeg _ |- _ =>
+                 solve [ destruct Px; simpl in He; discriminate He ] end).
+  - (* LE-UnivGhostR : guarded source, ⊤◇ input peeled on the right *)
+    destruct S; simpl in HeS; inversion HeS; subst;
+      try solve [ inversion HlcS ];
+      try solve [ match goal with Hg : guarded_pskl _ |- _ =>
+                    inversion Hg end ].
+    + (* S = unit : α-free, both substitutions are the identity *)
+      match goal with
+      | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
+          destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ Hl)
+            as [-> ->]; [ simpl; clear; fsetdec | ]
+      end.
+      inversion Hst; subst.
+      eapply a_consistag_psi_cong; [ exact Hcons | ].
+      match goal with He : Ψa [=] empty |- _ => clear - He; fsetdec end.
+    + (* S = var X (X ≠ α since ⌊S⌋ = P ≠ var α) : α-free *)
+      match goal with
+      | Hne : pskl_var_f ?X <> pskl_var_f α |- _ =>
+          assert (HαX : α `notin` ftvar_in_uskl (uskl_var_f X))
+            by (simpl; intro Hin; apply Hne; f_equal; fsetdec)
+      end.
+      match goal with
+      | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
+          destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ Hl)
+            as [-> ->];
+          [ simpl in HαX |- *; clear - HαX; fsetdec | ]
+      end.
+      inversion Hst; subst.
+      rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαX ].
+      rewrite subst_bskl_in_uskl_fresh_eq in Hcons; [ | exact HαX ].
+      eapply a_consistag_psi_cong; [ exact Hcons | ].
+      match goal with He : Ψa [=] empty |- _ => clear - He; fsetdec end.
+    + (* S = arrow S1 S2 *)
+      simpl in Hcons |- *.
+      inversion HlcS; subst.
+      simpl in HwfSub.
+      inversion Hcons; subst;
+        try (match goal with
+             | Hnf : a_non_flex _ (pskl_tophole _) |- _ =>
+                 solve [ destruct Hnf as [_ Hnf]; exfalso; apply Hnf;
+                         constructor ] end).
+      match goal with
+      | Hin : _ ⊢ᵗ[ _ | _ | _ | _ ]
+                (uskl_arrow (subst_bskl_in_uskl _ _ _)
+                            (subst_bskl_in_uskl _ _ _)) ≈ _ ⊣ _ |- _ =>
+          idtac
+      end.
+      apply a_consistag__univ_ghost_r.
+      * constructor;
+          apply subst_bskl_in_uskl_lc_uskl; assumption.
+      * simpl. unfold a_non_flex. split.
+        -- constructor; apply lc_uskl_to_pskl_local;
+             apply subst_bskl_in_uskl_lc_uskl; assumption.
+        -- intro Hf; inversion Hf.
+      * change (uskl_arrow (subst_bskl_in_uskl ψa α S1)
+                           (subst_bskl_in_uskl ψa α S2))
+          with (subst_bskl_in_uskl ψa α (uskl_arrow S1 S2)).
+        apply a_wf_pskl_tophole_inv in HwfP0.
+        match goal with
+        | IH : forall S0 : uskl, _ |- _ =>
+            eapply IH;
+              [ exact Hst | reflexivity | exact Hαψ | exact Hlcψ | exact HlcS
+              | simpl; eassumption | exact Hwf | exact HwfP0
+              | simpl; exact HwfSub
+              | exact Hrig | exact Hnfd | exact Hfaf ]
+        end.
+Qed.
