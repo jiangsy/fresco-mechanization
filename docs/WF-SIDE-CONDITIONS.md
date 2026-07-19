@@ -230,3 +230,20 @@ the decorated ForallL; `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ψ⌋` in `ad_pat_sub`'s Fora
 the D3 decision of DESIGN-subtyping.md §1.2, now registered: statements
 needing the paper's full judgment take `a_tags_sort NM Ψ ψ ∧ (scope premise
 of the call site)` as the decomposition.
+
+## Mode discipline on the DECORATION lemmas (registered 2026-07-20)
+
+The L-A decoration lemmas (`a_subtag_decoration_var`, `a_consistag_decoration`,
+KEY `a_subtag_decoration`, MAIN `a_sub_decorate` — algo/prop_decorate_sub.v,
+prop_decorate_key.v) all carry the external hypothesis
+
+    NM = SK  ->  mod_comp_sk (pskl_to_bskl_inh P0) M
+
+(`Hmod`).  This is the paper's implicit "the inputs are mode-compatible"
+(skmod[SK], algorithmic.tex:239-244) restored in the STATEMENTS, not the
+rules: without it the lemmas are FALSE at the ◇̇-vs-∀X.◇ corner — an SK-mode
+∀-target at TC would let a dotted ghost decorate against a universal the
+mode discipline forecloses at every real call site (`inh` paints `all_inh`,
+`is_sskl` rejects).  It threads through the walk (Flex-Assign transports it
+by `pskl_to_bskl_inh_subst_mono` + `mod_comp_sk_subst_mono`), so per §1's
+rule of thumb it must live in the statements.

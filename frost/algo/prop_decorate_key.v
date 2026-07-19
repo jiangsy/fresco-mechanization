@@ -18,6 +18,9 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
+Require Import src.frost.algo.prop_inc.
+Require Import src.frost.algo.prop_metasubst.
+Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_consis_sound.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
@@ -1171,4 +1174,465 @@ Proof.
         [ apply a_subtag__flex_mono; eassumption
         | match goal with He : Ψa [=] empty |- _ =>
             clear - He; fsetdec end ].
+Qed.
+
+(* ===================================================================== *)
+(*  §15  Decorating constraint solving                                    *)
+(*  (lemma:decorate-constraint-solving, subtyping-proofs.tex:95-127)      *)
+(*                                                                        *)
+(*  HONEST ADMIT (true; the paper's "straightforward induction" hides    *)
+(*  real content).  Design worked out (see the memory note):             *)
+(*  - relate each intermediate solve-skeleton P to the final decoration  *)
+(*    ψa by an inductive [dec_ext P ψa Ψrem] (ψa extends P; Ψrem = ψa's  *)
+(*    tags at P's ◇-positions), with a ghost-free skip constructor at    *)
+(*    ⊤◇-positions the TY guess drops and a flex-forget constructor at   *)
+(*    positions the final resolves to a variable;                        *)
+(*  - anchor at the OUTPUT: [a_guess NM Ps Ξ' P1 → ⌊ψa⌋=P1 → is_tskl →   *)
+(*    dec_ext Ps ψa ∅] (SK: erasure-refl; TY: guess_mono induction);     *)
+(*  - walk the constraint list BACKWARD: from [solve_eq P Q P'] and      *)
+(*    [dec_ext P' ψa Ψ'] produce the solvetag [ψa ∼ᵗ Q ⤳ Ψi] and        *)
+(*    [dec_ext P ψa Ψ₀] with Ψ₀ ⊆ Ψ' ∪ Ψi and Ψ' ⊆ Ψ₀; chain to ◇       *)
+(*    where de-hole pins Ψ₀ [=] Ψa (via d_tags_skl/utags), so the        *)
+(*    accumulated solvetag output covers Ψa exactly (≤ by tags-bound);   *)
+(*  - the per-family uniformity of cofinite solvetag outputs is          *)
+(*    resolved by a canonical output [utags ψ \ Ψ'] EXCEPT under the     *)
+(*    skip constructor (whose solvetag legitimately solves less); the    *)
+(*    remaining engineering is a per-node output function that records   *)
+(*    the skip positions.                                                *)
+(* ===================================================================== *)
+
+Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
+  P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
+  forall Ψa ψa,
+    a_tags_sort NM Ψa ψa ->
+    ⌊ ψa ⌋ˢ = P1 ->
+    exists Ξc C,
+      P ≼[ αv , M ] P0 ⤳ Ξc ⨾ C /\
+      C ⊩ᵗ ψa ⤳ Ψa.
+Admitted.
+
+(* ===================================================================== *)
+(*  §16  MAIN: decorating algorithmic subtyping                           *)
+(*  (lemma:decorating-algorithmic-subtyping, subtyping-proofs.tex:1019)   *)
+(* ===================================================================== *)
+
+Scheme a_sub_mut := Induction for a_sub Sort Prop
+  with a_sub_flex_mut := Induction for a_sub_flex Sort Prop.
+Combined Scheme a_sub_sub_flex_mutind from a_sub_mut, a_sub_flex_mut.
+
+Definition sub_decorate_concl NM M P0 Θ0 P Q Θ1 : Prop :=
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
+
+Definition sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1 : Prop :=
+  a_decls Ξw ->
+  a_wf_aenv (Ξw ++ Θ0) ->
+  (Ξw ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_binds_tvar αf (Ξw ++ Θ0) ->
+  (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) (mode_fn M)) ->
+  a_subtag_flex NM M P0 Θ0 Ξw αf Q Θ1.
+
+(** ADMIT SURFACE (why this ends in [Admitted]): every case is closed at
+    Qed-level EXCEPT [Check] (a single [admit]), which is blocked on the
+    definitional twin mismatch audit-F2 — the plain [a_sub__check] uses
+    [a_consis_chk] (existential output) while the decorated
+    [a_subtag__check] pins the output to [B]; reconciling them is a
+    definition-level change (see the in-case note).  The ForallL case
+    additionally consumes [a_extract_decorate] (§15, Admitted), a true
+    statement per the paper's decorate-constraint-solving lemma. *)
+Theorem a_sub_decorate_bundle :
+  (forall NM M P0 Θ0 P Q Θ1,
+     a_sub NM M P0 Θ0 P Q Θ1 ->
+     sub_decorate_concl NM M P0 Θ0 P Q Θ1) /\
+  (forall NM M P0 Θ0 Ξw αf Q Θ1,
+     a_sub_flex NM M P0 Θ0 Ξw αf Q Θ1 ->
+     sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1).
+Proof.
+  apply (a_sub_sub_flex_mutind
+           (fun NM M P0 Θ0 P Q Θ1 _ =>
+              sub_decorate_concl NM M P0 Θ0 P Q Θ1)
+           (fun NM M P0 Θ0 Ξw αf Q Θ1 _ =>
+              sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1));
+    unfold sub_decorate_concl, sub_flex_decorate_concl.
+  - (* Infer *)
+    intros NM P Θ0 Hwf HwfP0 HwfP Hmod.
+    replace P with (⌊ pskl_to_uskl P ⌋ˢ) at 2
+      by apply uskl_to_pskl_pskl_to_uskl.
+    apply a_subtag__infer. fsetdec.
+  - (* Check : AUDIT-F2 — the decorated Check pins the consistency output
+       to B while the plain Check discards it (a_consis_chk's ∃Q).  The
+       queued harmonization ("consistency output on a ghost-free input is
+       the input", flagged 0f22a34) is what discharges this; false for
+       flexible-variable inputs (the output is the unified subject), so
+       the twin must be reconciled at the definition level.  ADMIT. *)
+    intros Θ0 Θ1 A B HgA HgB Hchk Hwf HwfP0 HwfP Hmod.
+    admit.
+  - (* ForallR *)
+    intros L Θ0 Θ1 Ξ A B Hsuf Huq Hfam IHfam Hwf HwfP0 HwfP Hmod.
+    inversion HwfP0 as [ | | | LP ΘP ΔP BP HbodyP HeqP | | ]; subst.
+    eapply a_subtag__forall_r
+      with (L := L `union` LP `union` dom Θ0);
+      [ exact Hsuf | exact Huq | ].
+    intros α Hα.
+    eapply (IHfam α ltac:(clear - Hα; fsetdec)).
+    { apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]. }
+    { eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc
+                   (HbodyP α ltac:(clear - Hα; fsetdec)) α)
+        | clear; fsetdec ]. }
+    { eapply a_wf_pskl_weaken;
+        [ intros x b Hb; unfold binds; simpl; right; exact Hb
+        | exact HwfP ]. }
+    { intros Hsk; discriminate Hsk. }
+  - (* UnivGhostR *)
+    intros Θ0 P Hg Hwf HwfP0 HwfP Hmod.
+    replace (pskl_tophole P)
+      with (pskl_tophole ⌊ pskl_to_uskl P ⌋ˢ)
+      by (rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
+    apply a_subtag__univ_ghost_r;
+      [ apply pskl_to_uskl_guarded; exact Hg | fsetdec ].
+  - (* FlexMono *)
+    intros NM M P0 Θ0 Θ1 α A Hflex IHflex Hwf HwfP0 HwfP Hmod.
+    simpl.
+    apply a_subtag__flex_mono; [ | fsetdec ].
+    apply IHflex.
+    { constructor. }
+    { simpl. exact Hwf. }
+    { simpl. exact HwfP0. }
+    { simpl.
+      destruct (a_wf_pskl_ftv_tvarish HwfP (X := α)
+                  ltac:(simpl; clear; fsetdec))
+        as [HΔx | Htx];
+        [ exfalso; clear - HΔx; fsetdec | exact Htx ]. }
+    { exact Hmod. }
+  - (* Arrow *)
+    intros NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hs2 IH2 Hwf HwfP0 HwfP Hmod.
+    apply a_wf_pskl_arrow_inv in HwfP0 as [HwfP0a HwfP0b].
+    apply a_wf_pskl_arrow_inv in HwfP as [HwfP1 HwfP2].
+    pose proof (a_consis_decorate Hc) as Hct.
+    destruct (a_consistag_sound_aux Hct Hwf
+                ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
+                HwfP0a
+                ltac:(rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP1)
+                (@rig_empty _) (@no_flex_dep_empty _) (@faf_empty _))
+      as [Hle [HwfΘm _]].
+    simpl.
+    eapply a_subtag__arrow with (Ψ1 := empty) (Ψ2 := empty) (Θ1 := Θ1);
+      [ exact Hct
+      | apply IH2;
+        [ exact HwfΘm
+        | eapply a_wf_pskl_isub; [ exact HwfP0b | exact Hle ]
+        | eapply a_wf_pskl_isub; [ exact HwfP2 | exact Hle ]
+        | intros Hsk; specialize (Hmod Hsk); simpl in Hmod;
+          inversion Hmod; subst; assumption ]
+      | fsetdec ].
+  - (* ForallL : look-decoration + decorate-constraint-solving + KEY *)
+    intros L NM M P0 Θ0 Θ1 P Q Ξ P1 Hne Hgor Hex Huq HwfP1 Hsub IHsub
+      Hwf HwfP0 HwfP Hmod.
+    assert (Hdecls : a_decls Ξ)
+      by (destruct (atom_fresh L) as [α0 Hα0];
+          eapply a_extract_decls; eauto).
+    assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
+    { apply a_wf_aenv_prepend_decls; auto.
+      - clear - Huq. solve_uniq.
+      - intros γ Hγ. clear - Huq Hγ. destruct_uniq.
+        unfold disjoint in *. fsetdec. }
+    assert (Hmono : forall x (b : abind),
+               binds x b Θ0 -> binds x b (Ξ ++ Θ0))
+      by (intros x b Hb; unfold binds in *; apply in_or_app; auto).
+    assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+      by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
+    assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
+    simpl.
+    eapply a_subtag__forall_l_untagged
+      with (L := L `union` dom Ξ `union` dom Θ0
+                 `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+                 `union` ftvar_in_pskl P1)
+           (Ξ := Ξ) (P1 := P1);
+      [ exact Hne | exact Hgor | | exact Huq | exact HwfP1 | ].
+    { intros α Hα.
+      replace (⌊ open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α) ⌋ˢ)
+        with (open_pskl_wrt_pskl P (pskl_var_f α))
+        by (rewrite uskl_to_pskl_open;
+            rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
+      apply Hex. clear - Hα. fsetdec. }
+    intros Ψg ψg Hfr Hsort Hera.
+    assert (Hlcg : lc_uskl ψg)
+      by (apply is_tskl_lc; inversion Hsort; assumption).
+    destruct (atom_fresh
+                (L `union` dom Ξ `union` dom Θ0
+                 `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+                 `union` ftvar_in_pskl P1)) as [α Hα].
+    destruct (a_extract_decorate (Hex α ltac:(clear - Hα; fsetdec))
+                Hsort Hera) as [Ξc [C [HDlk Hst]]].
+    assert (Hαg : α `notin` ftvar_in_uskl ψg).
+    { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg). rewrite Hera.
+      clear - Hα. fsetdec. }
+    assert (HeqSubj :
+        pskl_to_uskl (open_pskl_wrt_pskl P P1)
+        = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψg)) α
+            (open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α))).
+    { rewrite pskl_to_uskl_open.
+      rewrite (subst_bskl_in_uskl_intro α);
+        [ | rewrite <- (ftvar_in_pskl_uskl_to_pskl (pskl_to_uskl P));
+            rewrite uskl_to_pskl_pskl_to_uskl; clear - Hα; fsetdec ].
+      rewrite Hera. reflexivity. }
+    assert (HDsrc :
+        ⌊ open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α) ⌋ˢ
+        ≼[ α , M ] P0 ⤳ Ξc ⨾ C).
+    { replace (⌊ open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α) ⌋ˢ)
+        with (open_pskl_wrt_pskl P (pskl_var_f α))
+        by (rewrite uskl_to_pskl_open;
+            rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
+      exact HDlk. }
+    assert (Hresult :
+        subst_bskl_in_uskl ψg α
+          (open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α))
+        = open_uskl_wrt_uskl (pskl_to_uskl P) ψg).
+    { symmetry. apply subst_bskl_in_uskl_intro.
+      rewrite <- (ftvar_in_pskl_uskl_to_pskl (pskl_to_uskl P)).
+      rewrite uskl_to_pskl_pskl_to_uskl. clear - Hα. fsetdec. }
+    assert (HwfOpen : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ open_pskl_wrt_pskl P P1).
+    { inversion HwfP as [ | | | LP ΘP ΔP PP HbodyP HeqP | | ]; subst.
+      eapply a_wf_pskl_open with (L := LP);
+        [ intros X HX; eapply a_wf_pskl_weaken;
+          [ exact Hmono | apply HbodyP; auto ]
+        | exact HwfP1 ]. }
+    rewrite <- Hresult.
+    eapply a_subtag_psi_cong;
+      [ eapply a_subtag_decoration;
+        [ apply IHsub;
+          [ exact HwfΞΘ
+          | exact HwfP0'
+          | exact HwfOpen
+          | exact Hmod ]
+        | exact HeqSubj
+        | exact HDsrc
+        | exact Hst
+        | exact Hαg
+        | clear - Hα; fsetdec
+        | exact Hlcg
+        | apply lc_body_uskl_wrt_uskl;
+          [ eapply lc_body_uskl_all_syn_1;
+            change (uskl_all_syn (pskl_to_uskl P))
+              with (pskl_to_uskl (pskl_all_syn P));
+            apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; exact HwfP
+          | constructor ]
+        | exact HwfΞΘ
+        | exact HwfP0'
+        | rewrite uskl_to_pskl_pskl_to_uskl; exact HwfOpen
+        | exact Hmod ]
+      | clear; fsetdec ].
+  - (* Ghost *)
+    intros M Θ0 P0 Hwf HwfP0 HwfP Hmod.
+    simpl. apply a_subtag__ghost. fsetdec.
+  - (* UnivGhostL *)
+    intros M Θ0 Θ1 P0 P Q Hne Hs IH Hwf HwfP0 HwfP Hmod.
+    simpl.
+    apply a_subtag__univ_ghost_l; [ exact Hne | ].
+    apply IH;
+      [ exact Hwf | exact HwfP0
+      | apply a_wf_pskl_tophole_inv in HwfP;
+        eapply a_wf_pskl_delta_mono; [ exact HwfP | clear; fsetdec ]
+      | exact Hmod ].
+  - (* Flex-Solve : deposit α̂0 := α̂→β̂ and recurse on the arrow; the
+       hypotheses lift into the deposited context by ⊴ (mirrors the
+       corresponding a_subtag_sound_bundle case). *)
+    intros NM M P0 Θ0 Θ1 Ξw α0 α β A Hne Hα Hβ Hs IH
+      Hsuf HwfΞ HwfP0 Hαb Hmod.
+    set (τab := ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)).
+    set (Θmid := (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0).
+    set (Θ' := Ξw ++ (α0 ~ abind_flex_mono_def τab) ++ Θmid).
+    assert (Huq : uniq (Ξw ++ (α0 ~ abind_flex_mono) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact HwfΞ).
+    assert (Hwf0 : a_wf_aenv Θ0).
+    { eapply a_wf_aenv_app_r with (Θp := Ξw ++ (α0 ~ abind_flex_mono)).
+      simpl_env. exact HwfΞ. }
+    assert (Hbα : binds α abind_flex_mono Θmid)
+      by (unfold Θmid; unfold binds; simpl; right; left; reflexivity).
+    assert (Hbβ : binds β abind_flex_mono Θmid)
+      by (unfold Θmid; unfold binds; simpl; left; reflexivity).
+    assert (Hwfmid : a_wf_aenv Θmid).
+    { unfold Θmid. apply a_wf_aenv__flex.
+      { simpl. clear - Hβ Hne. simpl_env in *. fsetdec. }
+      apply a_wf_aenv__flex;
+        [ clear - Hα; simpl_env in *; fsetdec | exact Hwf0 ]. }
+    assert (Hwfdef : a_wf_aenv ((α0 ~ abind_flex_mono_def τab) ++ Θmid)).
+    { apply a_wf_aenv__flex_def.
+      - unfold Θmid. simpl. clear - Hα Hβ Huq. simpl_env in *. solve_uniq.
+      - apply a_wf_ptyp__arrow; apply a_wf_ptyp__var;
+          [ right; left; exact Hbα | right; left; exact Hbβ ].
+      - repeat constructor.
+      - exact Hwfmid. }
+    assert (HwfΘ' : a_wf_aenv Θ').
+    { unfold Θ'. apply a_wf_aenv_prepend_decls; auto.
+      - clear - Huq. solve_uniq.
+      - intros γ Hγ. unfold Θmid. simpl_env.
+        clear - Huq Hα Hβ Hγ. destruct_uniq.
+        unfold disjoint in *. simpl_env in *. fsetdec. }
+    assert (Hbase : Θ0 ⊴ Θ').
+    { unfold Θ', Θmid.
+      replace (Ξw ++ (α0 ~ abind_flex_mono_def τab)
+                 ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0)
+        with ((Ξw ++ (α0 ~ abind_flex_mono_def τab)
+                 ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono)) ++ Θ0)
+        by (simpl_env; reflexivity).
+      apply a_isub_weaken_suffix;
+        [ apply a_wf_aenv_lc_aenv; exact Hwf0 | ].
+      apply a_suffix_app; [ auto using a_decls_suffix | ].
+      apply (a_suffix__cons α0);
+        [ apply (a_suffix__cons β);
+            [ apply (a_suffix__cons α);
+                [ apply a_suffix__nil | constructor ]
+            | constructor ]
+        | constructor ]. }
+    assert (Hbα0' : binds α0 (abind_flex_mono_def τab) Θ').
+    { unfold Θ'. unfold binds. apply in_or_app. right. left. reflexivity. }
+    assert (Hlift : (Ξw ++ (α0 ~ abind_flex_mono) ++ Θ0) ⊴ Θ').
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb. right; left.
+        unfold Θ'. unfold binds. apply in_or_app. left. exact Hb. }
+      apply a_isub_prepend_decls_src;
+        [ apply (a_decls__cons α0); apply a_decls__nil | | exact Hbase ].
+      intros γ Hb.
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> _] | Hb'];
+        [ right; right; exists τab; exact Hbα0' | inversion Hb' ]. }
+    assert (HwfP0' : Θ' ⨟ empty ⊢ₚₛᵃ P0)
+      by (eapply a_wf_pskl_isub; eauto).
+    assert (Hwfarr : Θ' ⨟ empty ⊢ₚₛᵃ
+                       pskl_arrow (pskl_var_f α) (pskl_var_f β)).
+    { apply a_wf_pskl__arrow; apply a_wf_pskl__var;
+        right; right; left;
+        (unfold Θ'; unfold binds; apply in_or_app; right; simpl;
+         right; auto). }
+    eapply a_subtag_flex__solve;
+      [ exact Hne | exact Hα | exact Hβ | ].
+    exact (IH HwfΘ' HwfP0' Hwfarr Hmod).
+  - (* Flex-Assign : merge and re-enter the decorated MAIN judgment with
+       the substituted subject (audit F1; mirrors the sound-bundle case's
+       hypothesis transport). *)
+    intros NM M P0 Θ0 Θ1 Ξw α β τ A Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod.
+    assert (Hwfcons : a_wf_aenv ((β ~ abind_flex_mono_def τ) ++ Θ0))
+      by (eapply a_wf_aenv_strip_prefix; eauto).
+    inversion Hwfcons as [ | | βz τz Θz HβΘ0 Hwfτ Hm Hwf0 | | | ]; subst.
+    assert (HβΞΘ0 : β `notin` dom (Ξw ++ Θ0)).
+    { pose proof (a_wf_aenv_uniq HwfΞ) as Huq.
+      clear - Huq. simpl_env in Huq. destruct_uniq.
+      unfold disjoint in *. simpl_env in *. fsetdec. }
+    assert (HwfΞΘ0 : a_wf_aenv (Ξw ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (Hwfpaint : (Ξw ++ Θ0) ⨟ empty ⊢ₚₛᵃ ptyp_to_pskl τ).
+    { apply a_scope_pskl_of_ptyp_vis;
+        [ apply mono_ptyp_lc; exact Hm | ].
+      intros X HX. right.
+      pose proof (a_wf_ptyp_ftv_tvarish Hwfτ HX) as Ht.
+      destruct Ht as [Hb | [Hb | [τ1 Hb]]];
+        [ left | right; left | right; right; exists τ1 ];
+        unfold binds in *; apply in_or_app; auto. }
+    assert (HwfP0' : (Ξw ++ Θ0) ⨟ empty ⊢ₚₛᵃ
+              subst_pskl_in_pskl (ptyp_to_pskl τ) β P0).
+    { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
+        [ exact HwfP0 | reflexivity | exact HβΞΘ0 | clear; fsetdec
+        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
+    assert (Hwfvarsub : (Ξw ++ Θ0) ⨟ empty ⊢ₚₛᵃ
+              subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)).
+    { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
+        [ apply a_wf_pskl__var; right; exact Hαb
+        | reflexivity | exact HβΞΘ0 | clear; fsetdec
+        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
+    apply a_subtag_flex__assign; [ exact Hβ1 | ].
+    apply (IH HwfΞΘ0 HwfP0' Hwfvarsub).
+    intro HSK; specialize (Hmod HSK).
+    rewrite <- pskl_to_bskl_inh_subst_mono;
+      [ apply mod_comp_sk_subst_mono; [ exact Hmod | exact Hm ]
+      | exact Hm ].
+  - (* Flex-Depend : β̂ joins the suffix at the Θ0-adjacent end; the
+       premise context is the conclusion's up to associativity. *)
+    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hin Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod.
+    apply a_subtag_flex__depend; [ exact Hne | exact Hin | ].
+    apply IH.
+    { apply a_decls_app;
+        [ exact Hsuf | apply (a_decls__cons β); apply a_decls__nil ]. }
+    { simpl_env. simpl_env in HwfΞ. exact HwfΞ. }
+    { simpl_env. simpl_env in HwfP0. exact HwfP0. }
+    { simpl_env. simpl_env in Hαb. exact Hαb. }
+    { exact Hmod. }
+  - (* Flex-Skip : strip the walked entry (P0 avoids it) and re-cons it
+       on the output. *)
+    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hnin Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod.
+    apply a_subtag_flex__skip;
+      [ exact Hne | exact Hnin | exact Hβ1 | ].
+    apply IH.
+    { exact Hsuf. }
+    { eapply a_wf_aenv_strip_mid; eauto. }
+    { eapply a_wf_pskl_strip_mid; eauto. }
+    { eapply a_binds_tvar_strip_mid;
+        [ exact Hαb
+        | intro He; inversion He; subst; exact (Hne eq_refl)
+        | intro He; inversion He; subst; exact (Hne eq_refl)
+        | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]. }
+    { exact Hmod. }
+  - (* Flex-SkipRigid : as Flex-Skip with a rigid head. *)
+    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hnin Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod.
+    apply a_subtag_flex__skip_rigid;
+      [ exact Hne | exact Hnin | exact Hβ1 | ].
+    apply IH.
+    { exact Hsuf. }
+    { eapply a_wf_aenv_strip_mid; eauto. }
+    { eapply a_wf_pskl_strip_mid; eauto. }
+    { eapply a_binds_tvar_strip_mid;
+        [ exact Hαb
+        | intro He; inversion He; subst; exact (Hne eq_refl)
+        | intro He; inversion He; subst; exact (Hne eq_refl)
+        | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]. }
+    { exact Hmod. }
+Admitted.
+
+(** The paper-shaped corollary. *)
+Lemma a_sub_decorate : forall NM M P0 Θ0 P Q Θ1,
+  a_sub NM M P0 Θ0 P Q Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
+Proof.
+  intros. eapply (proj1 a_sub_decorate_bundle); eauto.
+Qed.
+
+(* ===================================================================== *)
+(*  §17  thm:sound-subtyping = L-A ∘ L-B                                  *)
+(*                                                                        *)
+(*  An algorithmic subtyping run yields a (refinement-valid) solution to  *)
+(*  its subtyping problem: the output context extends the input, the      *)
+(*  input skeleton fills into the output, and the declarative typsub      *)
+(*  holds in the output context.  Stated against refinement-valid         *)
+(*  solutions per docs/PAPER-GAPS.md (the 2-condition solution notion is  *)
+(*  false under capture; soundness yields the refinement conjunct).       *)
+(* ===================================================================== *)
+
+Theorem a_sub_sound_thm : forall NM M P0 Θ0 P Q Θ1,
+  a_sub NM M P0 Θ0 P Q Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
+  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->
+  Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
+  exists Qt,
+    bskl_to_pskl Qt = Q /\
+    (empty ⨟ Θ1 ⊢ₛᵃ[ NM | M ] (pskl_to_uskl P) ⊑ Qt) /\
+    ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt.
+Proof.
+  intros NM M P0 Θ0 P Q Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
+  pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod) as Htag.
+  exact ((proj1 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
+           Hwf
+           ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
+           HwfP0
+           ltac:(rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP)
+           Hmod Hgf).
 Qed.

@@ -727,3 +727,24 @@ decl/prop_skeleton.v:268/313).
 Paper note: the step is correct; a footnote that the strengthening lemma is
 proved via witness-rewriting substitution (not direct induction) would make
 the appendix self-contained.
+
+
+## Decorated ForallL: the ∃-decoration is a cofinite tag FAMILY (prose-completion, 2026-07-19)
+
+`subtyping-proofs.tex`'s decorated ForallL (and lemma:subtyping-decoration's
+use of it) picks ONE decoration ψ of the guessed instantiation P1 ("let ψ be
+a decorated skeleton with ⌊ψ⌋ = P1 ...") and treats its choice as
+WLOG-irrelevant.  The mech's `a_subtag__forall_l_{tagged,untagged}`
+(algo/def_decorated.v) instead quantifies the premise over EVERY sorted
+decoration whose tag names avoid the rule's cofinite set L:
+
+    forall Ψg ψg, inter Ψg L [=] empty -> a_tags_sort NM Ψg ψg ->
+      ⌊ψg⌋ˢ = P1 -> subderivation @ (Ψ ∪ Ψg)
+
+— the tag analog of cofinite binder quantification.  Consumers pick a
+witness via `pskl_decorate_exists` / `a_tags_sort_decorate_exists`
+(algo/prop_pat_sub.v §7).  This is an ENCODING device, not a semantic
+strengthening: with a decoration-renaming lemma the single-witness rule is
+equivalent (renaming lets any consumer move to fresh tag names); the family
+form just avoids proving that renaming.  Paper needs no change beyond
+reading "let ψ be" as "for any fresh ψ".
