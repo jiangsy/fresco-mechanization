@@ -463,43 +463,28 @@ Lemma a_consistag_psi_cong : forall Δ1 Δ2 P0 Ψ Θ0 S Q Θ1,
   forall Ψ', Ψ [=] Ψ' ->
   Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ' ] S ≈ Q ⊣ Θ1.
 Proof.
-  intros Δ1 Δ2 P0 Ψ Θ0 S Q Θ1 H; induction H; intros Ψ' Heq;
-    try (econstructor; eauto; fsetdec).
+  intros Δ1 Δ2 P0 Ψ Θ0 S Q Θ1 H; induction H; intros Ψ' Heq; econstructor;
+    solve
+      [ eassumption
+      | (match goal with
+         | IH : forall Ψ0 : atoms, _ [=] Ψ0 -> _ |- _ =>
+             eapply IH; eassumption
+         end)
+      | (intros;
+         match goal with
+         | IH : forall α : atom, α `notin` _ ->
+                  forall Ψ0, _ [=] Ψ0 -> _ |- _ =>
+             eapply IH; [ eassumption | eassumption ]
+         end)
+      | fsetdec ].
 Qed.
 
-Scheme a_subtag_mut2 := Induction for a_subtag Sort Prop
-  with a_subtag_flex_mut2 := Induction for a_subtag_flex Sort Prop.
-Combined Scheme a_subtag_flex_mutind2
-  from a_subtag_mut2, a_subtag_flex_mut2.
 
-Lemma a_subtag_flex_psi_cong :
-  (forall NM M P0 Ψ Θ0 S Q Θ1,
-     Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] S ⊑ Q ⊣ Θ1 ->
-     forall Ψ', Ψ [=] Ψ' ->
-     Θ0 ⊢ᵗ[ NM | M | P0 | Ψ' ] S ⊑ Q ⊣ Θ1) /\
-  (forall NM M P0 Θ0 Ξ α A Θ1,
-     a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 -> True).
-Proof.
-  apply a_subtag_flex_mutind2; intros; auto;
-    try (econstructor; solve [ eauto | fsetdec ]).
-  - (* ForallL tagged : recursive premise at Ψ ∪ Ψg *)
-    eapply a_subtag__forall_l_tagged;
-      [ eassumption | | eassumption | eassumption
-      | match goal with IH : forall Ψ'', _ |- _ =>
-          apply IH end
-      | ];
-      [ clear - i0; fsetdec | clear - H0; fsetdec ].
-  - (* ForallL untagged *)
-    eapply a_subtag__forall_l_untagged;
-      [ eassumption | | eassumption | eassumption
-      | match goal with IH : forall Ψ'', _ |- _ =>
-          apply IH end
-      | ];
-      [ clear - i0; fsetdec | clear - H0; fsetdec ].
-Qed.
 
-Lemma a_subtag_psi_cong : forall NM M P0 Ψ Θ0 S Q Θ1,
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] S ⊑ Q ⊣ Θ1 ->
-  forall Ψ', Ψ [=] Ψ' ->
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ' ] S ⊑ Q ⊣ Θ1.
-Proof. apply a_subtag_flex_psi_cong. Qed.
+
+
+
+
+(* a_subtag/a_subtag_flex Ψ-congruence deferred until the subtyping-
+   decoration-var lemma needs it (the mutual solve tactic needs per-case
+   handling for flex_mono/forall_l; built when consumed). *)
