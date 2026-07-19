@@ -150,3 +150,42 @@ Lemma a_solve_sub_guarded : forall Θ m P Q P',
   Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
   lc_pskl P -> lc_pskl Q -> guarded_pskl P -> guarded_pskl P'.
 Proof. intros; eapply (proj1 a_solve_sub_eq_guarded); eauto. Qed.
+
+(** Solving introduces no new free variables: the solution's variables come
+    from the problem.  (Freshness of look/solve outputs relies on this.)  The
+    binder cases use the standard open ftv bounds + a fresh witness. *)
+Lemma a_solve_sub_eq_ftv :
+  (forall Θ m P Q P', Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+     ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q) /\
+  (forall Θ P Q P', Θ ⊢ₑ P ∼ Q ⤳ P' ->
+     ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q).
+Proof.
+  apply a_solve_sub_eq_mutind; intros; simpl in *;
+    try solve [ fsetdec ].
+  all: (* binder cases: fresh β (fresh for the output too), IH + open bounds *)
+    match goal with
+    | IH : forall a, a `notin` ?L -> _ |- ftvar_in_pskl ?out [<=] _ =>
+        pick fresh β for (L `union` ftvar_in_pskl out);
+        specialize (IH β ltac:(auto))
+    end;
+    (* output body: lower bound (only when the output is opened) *)
+    try match goal with
+    | H : ftvar_in_pskl (open_pskl_wrt_pskl ?A _) [<=] _ |- _ =>
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower A (pskl_var_f β))
+    end;
+    (* input bodies: upper bounds (either side of the union) *)
+    try match goal with
+    | H : _ [<=] ftvar_in_pskl (open_pskl_wrt_pskl ?B _) `union` _ |- _ =>
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β))
+    end;
+    try match goal with
+    | H : _ [<=] _ `union` ftvar_in_pskl (open_pskl_wrt_pskl ?C _) |- _ =>
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper C (pskl_var_f β))
+    end;
+    simpl in *; fsetdec.
+Qed.
+
+Lemma a_solve_sub_ftv : forall Θ m P Q P',
+  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+  ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q.
+Proof. intros; eapply (proj1 a_solve_sub_eq_ftv); eauto. Qed.
