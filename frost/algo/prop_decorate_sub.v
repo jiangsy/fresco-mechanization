@@ -2683,3 +2683,48 @@ Lemma a_looksub_hole_solvetag_empty : forall α m P Ξ C ψa Ψa,
 Proof.
   intros; eapply (proj1 a_looksub_lookeq_hole_cstrs); eauto.
 Qed.
+
+(** Single-substitution analogs of the §11 helpers. *)
+Lemma erase_swap_subst : forall ψa α S,
+  ⌊ subst_bskl_in_uskl ψa α S ⌋ˢ
+  = ⌊ subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S ⌋ˢ.
+Proof.
+  intros. rewrite ! uskl_to_pskl_subst.
+  rewrite uskl_to_pskl_pskl_to_uskl. reflexivity.
+Qed.
+
+Lemma pskl_to_uskl_lc_inv : forall P,
+  lc_uskl (pskl_to_uskl P) -> lc_pskl P.
+Proof.
+  intros P H.
+  rewrite <- (uskl_to_pskl_pskl_to_uskl P).
+  apply lc_uskl_to_pskl_local. exact H.
+Qed.
+
+Lemma pskl_to_uskl_guarded_inv : forall P,
+  guarded_uskl (pskl_to_uskl P) -> guarded_pskl P.
+Proof.
+  intros P Hg; destruct P; simpl in Hg; inversion Hg; subst;
+    constructor; apply pskl_to_uskl_lc_inv; assumption.
+Qed.
+
+Lemma guarded_subst_decorate : forall ψa α S,
+  lc_uskl ψa ->
+  lc_uskl S ->
+  guarded_uskl (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S) ->
+  guarded_uskl (subst_bskl_in_uskl ψa α S).
+Proof.
+  intros ψa α S Hlcψ HlcS Hg. destruct S; simpl in Hg |- *;
+    try exact Hg; try solve [ inversion Hg ].
+  - (* var *)
+    revert Hg.
+    match goal with
+    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
+    end; intro Hg; [ | exact Hg ].
+    apply guarded_uskl_of_pskl.
+    apply guarded_uskl_to_pskl_fwd in Hg.
+    rewrite uskl_to_pskl_pskl_to_uskl in Hg. exact Hg.
+  - (* arrow *)
+    inversion HlcS; subst.
+    constructor; apply subst_bskl_in_uskl_lc_uskl; assumption.
+Qed.
