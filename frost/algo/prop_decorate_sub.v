@@ -546,6 +546,42 @@ Proof.
   intros. rewrite uskl_to_pskl_open. rewrite pskl_to_uskl_open_var. reflexivity.
 Qed.
 
+Lemma lc_uskl_to_pskl_local : forall S, lc_uskl S -> lc_pskl (uskl_to_pskl S).
+Proof.
+  intros S H; induction H; simpl;
+    try (constructor; auto; fail);
+    constructor; intros X; rewrite <- uskl_to_pskl_open; auto.
+Qed.
+
+(** Reflection of local closure / guardedness through the erasure. *)
+Lemma degree_uskl_of_pskl : forall T k,
+  degree_pskl_wrt_pskl k (uskl_to_pskl T) -> degree_uskl_wrt_uskl k T.
+Proof.
+  induction T; intros k Hd; simpl in Hd; inversion Hd; subst;
+    constructor; auto.
+Qed.
+
+Lemma lc_uskl_of_pskl : forall T,
+  lc_pskl (uskl_to_pskl T) -> lc_uskl T.
+Proof.
+  intros T H. apply lc_uskl_of_degree. apply degree_uskl_of_pskl.
+  apply degree_pskl_wrt_pskl_of_lc_pskl. exact H.
+Qed.
+
+Lemma guarded_uskl_to_pskl_fwd : forall T,
+  guarded_uskl T -> guarded_pskl (uskl_to_pskl T).
+Proof.
+  intros T H; inversion H; simpl; constructor;
+    apply lc_uskl_to_pskl_local; assumption.
+Qed.
+
+Lemma guarded_uskl_of_pskl : forall T,
+  guarded_pskl (uskl_to_pskl T) -> guarded_uskl T.
+Proof.
+  destruct T; simpl; intros H; inversion H; subst;
+    try (constructor; apply lc_uskl_of_pskl; assumption).
+Qed.
+
 (** With input ◇ the consistency run is determined by the source's erasure
     (analogue of a_subtag_vacuous_erasure). *)
 Lemma a_consistag_vacuous_erasure : forall Δ1 Δ2 P0 Ψ Θ0 T1 Q Θ1,
@@ -666,7 +702,9 @@ Proof.
     rewrite <- (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                   Hlcρ Hβρ Hβf) in H7.
     exact H7.
-  - (* SEq-UnivGhostR *)
+  - (* SEq-UnivGhostR : reflection helpers (below) are ready; the
+       unit/var sub-cases need the inner-solvetag Ψ=∅ inversion wired and
+       the arrow sub-case its invert+IH+reconstruct.  Honest admit. *)
     admit.
   - (* SEq-FlexR : P0 = var α, ghost-free ψ *)
     admit.
