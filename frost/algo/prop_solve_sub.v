@@ -113,3 +113,40 @@ Proof. intros; eapply (proj1 a_solve_sub_eq_lc); eauto. Qed.
 Lemma a_solve_eq_lc : forall Θ P Q P',
   Θ ⊢ₑ P ∼ Q ⤳ P' -> lc_pskl P -> lc_pskl Q -> lc_pskl P'.
 Proof. intros; eapply (proj2 a_solve_sub_eq_lc); eauto. Qed.
+
+(** Solving a GUARDED subject yields a guarded solution: a guarded LHS only
+    matches rules whose output is again guarded (no ghost/tophole/∀ can be
+    introduced on the left).  Needed for the tophole cases of output
+    well-formedness. *)
+Lemma a_solve_sub_eq_guarded :
+  (forall Θ m P Q P', Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+     lc_pskl P -> lc_pskl Q -> guarded_pskl P -> guarded_pskl P') /\
+  (forall Θ P Q P', Θ ⊢ₑ P ∼ Q ⤳ P' ->
+     lc_pskl P -> lc_pskl Q -> guarded_pskl P -> guarded_pskl P').
+Proof.
+  apply a_solve_sub_eq_mutind; intros;
+    (* a non-guarded subject makes the case vacuous *)
+    try solve [ match goal with H : guarded_pskl _ |- _ => inversion H end ];
+    (* peel lc of the arrow / tophole subject/rhs *)
+    repeat match goal with
+    | H : lc_pskl (pskl_arrow _ _) |- _ => apply lc_pskl_arrow_inv in H; destruct H
+    | H : lc_pskl (pskl_tophole _) |- _ => apply lc_pskl_tophole_inv in H
+    end;
+    try solve
+      [ assumption
+      | eauto
+      | constructor; eauto using a_solve_sub_lc, a_solve_eq_lc ].
+  - (* SS-ForallR : guarded LHS [A] carried through the ∀-RHS opening *)
+    pick fresh β for L.
+    match goal with
+    | HQ : lc_pskl (pskl_all_syn _),
+      IH : forall a, a `notin` L -> _ -> _ -> _ -> _ |- _ =>
+        eapply IH;
+          [ auto | assumption | apply (lc_pskl_all_syn_inv HQ) | assumption ]
+    end.
+Qed.
+
+Lemma a_solve_sub_guarded : forall Θ m P Q P',
+  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+  lc_pskl P -> lc_pskl Q -> guarded_pskl P -> guarded_pskl P'.
+Proof. intros; eapply (proj1 a_solve_sub_eq_guarded); eauto. Qed.
