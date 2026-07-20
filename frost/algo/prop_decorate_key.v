@@ -1513,6 +1513,18 @@ Proof.
       first [ apply uskl_ghost_free_subst_var; assumption | assumption ].
 Qed.
 
+(** A tag reading witnesses that its subject is a decorated skeleton. *)
+Lemma d_tags_skl_is_tskl : forall Ψ ψ, d_tags_skl Ψ ψ -> is_tskl ψ.
+Proof.
+  intros Ψ ψ H; induction H.
+  - apply is_tskl__unit.
+  - apply is_tskl__var.
+  - apply is_tskl__arrow; assumption.
+  - apply is_tskl__all_etag with (L := L); assumption.
+  - apply is_tskl__holeg.
+  - apply is_tskl__topholeg; assumption.
+Qed.
+
 (** COVERAGE: if ψa extends [Q] with remaining tags [Ψ'] (at Q's ◇-holes),
     the decorated solvetag [ψa ∼ᵗ Q] collects exactly the COMPLEMENT [Ψi], so
     [Ψ' ∪ Ψi] is all of ψa's tags.  Threads [d_tags_skl Ψtot ψa] and inverts it
@@ -1585,40 +1597,81 @@ Admitted.
 
 (** BACKWARD STEP (eq): peel one [eq Q] constraint, collecting its solvetag
     contribution [Ψi] and re-growing the remaining-tag set. *)
-Lemma dec_ext_solve_eq_step : forall Θ P Q P' ψa Ψ',
+Lemma dec_ext_solve_eq_step : forall Θ P Q P' ψa Ψ' Ψtot,
   Θ ⊢ₑ P ∼ Q ⤳ P' ->
   dec_ext P' ψa Ψ' ->
+  d_tags_skl Ψtot ψa ->
   exists Ψi, ψa ∼ᵗ Q ⤳ Ψi /\ dec_ext P ψa (Ψ' `union` Ψi).
+Proof.
+  intros Θ P Q P' ψa Ψ' Ψtot Hs; revert Ψ' Ψtot;
+    induction Hs; intros Ψ' Ψtot Hdec Hdt.
+  - (* unit : P=Q=P'=unit *)
+    inversion Hdec; subst.
+    + exists empty. split; [ apply a_solvetag_eq__unit; fsetdec | ].
+      apply dec_ext__unit; fsetdec.
+    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
+      apply dec_ext__flex_forget; fsetdec.
+  - (* var : P=P'=var X ; Q arbitrary *)
+    inversion Hdec; subst.
+    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
+      apply dec_ext__var; fsetdec.
+    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
+      apply dec_ext__flex_forget; fsetdec.
+  - (* flex_r : P non-flex, Q=var α, P'=var α ; ψa is a var *)
+    inversion Hdec; subst.
+    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
+      apply dec_ext__flex_forget; fsetdec.
+    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
+      apply dec_ext__flex_forget; fsetdec.
+  - (* hole_l : P=◇, P'=Q ; the coverage sub-lemma at the (ghost-free) target *)
+    destruct (dec_ext_to_solvetag_eq Hdec Hdt) as [Ψi [Hst HeqΨ]].
+    exists Ψi. split; [ exact Hst | ].
+    apply dec_ext__hole;
+      [ eapply d_tags_skl_is_tskl; exact Hdt
+      | eapply d_tags_skl_psi_cong; [ exact Hdt | exact HeqΨ ] ].
+  - (* hole_r : Q=◇, P'=P ; SEq-Vacuous *)
+    exists empty. split; [ apply a_solvetag_eq__vacuous; fsetdec | ].
+    eapply dec_ext_psi_cong; [ exact Hdec | fsetdec ].
+  - (* arrow *) admit.
+  - (* forall *) admit.
+  - (* tophole_both *) admit.
+  - (* tophole_l_all *) admit.
+  - (* tophole_l_guarded *) admit.
+  - (* all_l_tophole *) admit.
+  - (* tophole_r_guarded *) admit.
 Admitted.
 
 (** BACKWARD STEP (sub): the terminal [sub m Q] constraint. *)
-Lemma dec_ext_solve_sub_step : forall Θ m P Q P' ψa Ψ',
+Lemma dec_ext_solve_sub_step : forall Θ m P Q P' ψa Ψ' Ψtot,
   Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
   dec_ext P' ψa Ψ' ->
+  d_tags_skl Ψtot ψa ->
   exists Ψi, ψa ≼ᵗ[ m ] Q ⤳ Ψi /\ dec_ext P ψa (Ψ' `union` Ψi).
 Admitted.
 
 (** ASSEMBLY: walking the whole constraint list back from the post-solve
     skeleton [Q] to the start [P], the decorated solvetag collects [Ψc] and
     [dec_ext] re-grows the remaining tags by exactly [Ψc]. *)
-Lemma solve_cstr_decorate : forall Θ C P Q ψa Ψpost,
+Lemma solve_cstr_decorate : forall Θ C P Q ψa Ψpost Ψtot,
   Θ ⊩ C ⨾ P ⤳ Q ->
   dec_ext Q ψa Ψpost ->
+  d_tags_skl Ψtot ψa ->
   exists Ψc, C ⊩ᵗ ψa ⤳ Ψc /\ dec_ext P ψa (Ψpost `union` Ψc).
 Proof.
-  intros Θ C P Q ψa Ψpost Hsolve; induction Hsolve; intros Hdec.
+  intros Θ C P Q ψa Ψpost Ψtot Hsolve Hdec Hdt; revert Ψpost Hdec;
+    induction Hsolve; intros Ψpost Hdec.
   - (* empty : C = nil, Q = P *)
     exists empty. split.
     + apply a_solvetag__empty; fsetdec.
     + eapply dec_ext_psi_cong; [ exact Hdec | fsetdec ].
   - (* sub : C = [sub m Q0] ; the whole solve output is P' *)
-    destruct (dec_ext_solve_sub_step H Hdec) as [Ψi [Hst Hdec']].
+    destruct (dec_ext_solve_sub_step H Hdec Hdt) as [Ψi [Hst Hdec']].
     exists Ψi. split.
     + apply a_solvetag__sub; exact Hst.
     + eapply dec_ext_psi_cong; [ exact Hdec' | fsetdec ].
   - (* eq : C = eq Q0 :: C' ; solve_eq then recurse *)
-    destruct (IHHsolve Hdec) as [Ψc' [Hstc Hdec'']].
-    destruct (dec_ext_solve_eq_step H Hdec'') as [Ψi [Hste Hdec''']].
+    destruct (IHHsolve _ Hdec) as [Ψc' [Hstc Hdec'']].
+    destruct (dec_ext_solve_eq_step H Hdec'' Hdt) as [Ψi [Hste Hdec''']].
     exists (Ψi `union` Ψc'). split.
     + eapply a_solvetag__eq; [ exact Hste | exact Hstc | fsetdec ].
     + eapply dec_ext_psi_cong; [ exact Hdec''' | fsetdec ].
@@ -1639,8 +1692,8 @@ Proof.
   eexists; eexists; split; [ exact H | ].
   assert (Hanchor : dec_ext Q ψa empty)
     by (eapply dec_ext_guess_anchor; [ exact H1 | exact Htags | reflexivity ]).
-  destruct (solve_cstr_decorate H0 Hanchor) as [Ψc [Hstag Hhole]].
   assert (Hda : d_tags_skl Ψa ψa) by (inversion Htags; assumption).
+  destruct (solve_cstr_decorate H0 Hanchor Hda) as [Ψc [Hstag Hhole]].
   inversion Hhole; subst.
   - (* hole : the walked-out tags are exactly [d_tags_skl ψa] = Ψa *)
     eapply a_solvetag_psi_cong; [ exact Hstag | ].
