@@ -1246,7 +1246,10 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
     dec_ext (pskl_all_syn P0) (uskl_all_etag ε ψ0) Ψ
 | dec_ext__skip_tophole : forall P0 ψ Ψ,     (* TY guess dropped P's ⊤◇ *)
     dec_ext P0 ψ Ψ ->
-    dec_ext (pskl_tophole P0) ψ Ψ.
+    dec_ext (pskl_tophole P0) ψ Ψ
+| dec_ext__topholeg : forall P0 ψ0 Ψ,        (* SK keeps ⊤◇ ; ψ = ⊤◇̇.ψ0 *)
+    dec_ext P0 ψ0 Ψ ->
+    dec_ext (pskl_tophole P0) (uskl_topholeg ψ0) Ψ.
 
 (** [d_tags_skl] respects set-equality of the tag context. *)
 Lemma d_tags_skl_psi_cong : forall Ψ Ψ' ψ,
@@ -1280,6 +1283,7 @@ Proof.
         exact (IH X HX Ψ' Heq)
     end.
   - apply dec_ext__skip_tophole. apply IHdec_ext. exact Heq.
+  - apply dec_ext__topholeg. apply IHdec_ext. exact Heq.
 Qed.
 
 (** Determinism of the tag reading (up to set-equality). *)
@@ -1311,6 +1315,71 @@ Proof.
   - (* topholeg *) apply IHd_tags_skl; assumption.
 Qed.
 
+(** SK anchor / self-extension: a decorated skeleton extends its own erasure
+    with no remaining tags. *)
+Lemma dec_ext_erase_refl : forall ψ,
+  is_tskl ψ ->
+  dec_ext (uskl_to_pskl ψ) ψ empty.
+Proof.
+  intros ψ H; induction H; simpl.
+  - apply dec_ext__unit; fsetdec.
+  - apply dec_ext__var; fsetdec.
+  - eapply dec_ext__arrow; [ exact IHis_tskl1 | exact IHis_tskl2 | fsetdec ].
+  - apply dec_ext__all with (L := L). intros X HX.
+    rewrite <- uskl_to_pskl_open.
+    match goal with
+    | IH : forall X, X `notin` L -> dec_ext _ _ empty |- _ =>
+        exact (IH X ltac:(clear - HX; fsetdec))
+    end.
+  - apply dec_ext__hole; [ apply is_tskl__holeg | apply d_tags_skl__holeg; fsetdec ].
+  - apply dec_ext__topholeg. exact IHis_tskl.
+Qed.
+
+(** TY anchor: the [a_guess_mono] output painting's decoration extends the
+    pre-guess skeleton (◇ ↦ fresh var, ⊤◇ dropped). *)
+Lemma dec_ext_guess_mono_anchor : forall Θ Q Ξ' A ψa,
+  a_guess_mono Θ Q Ξ' A ->
+  is_tskl ψa ->
+  uskl_ghost_free ψa ->
+  ⌊ ψa ⌋ˢ = ptyp_to_pskl A ->
+  dec_ext Q ψa empty.
+Proof.
+  intros Θ Q Ξ' A ψa Hg; revert ψa; induction Hg; intros ψa Histk Hgf Hera.
+  - (* hole ↦ fresh α̂ : A = var α *)
+    destruct ψa; simpl in Hera; try discriminate Hera.
+    apply dec_ext__hole; [ exact Histk | apply d_tags_skl__var; fsetdec ].
+  - (* tophole P ↦ guess P : drop the ⊤◇ *)
+    apply dec_ext__skip_tophole. apply IHHg; assumption.
+  - (* var α ↦ var α *)
+    destruct ψa; simpl in Hera; try discriminate Hera.
+    inversion Hera; subst. apply dec_ext__var; fsetdec.
+  - (* unit ↦ unit *)
+    destruct ψa; simpl in Hera; try discriminate Hera.
+    apply dec_ext__unit; fsetdec.
+  - (* arrow ↦ arrow *)
+    destruct ψa; simpl in Hera; try discriminate Hera.
+    inversion Hera; subst.
+    inversion Histk; subst. inversion Hgf; subst.
+    eapply dec_ext__arrow; [ apply IHHg1 | apply IHHg2 | fsetdec ]; assumption.
+  - (* forall P ↦ all A0 : the ghost-free [is_tskl] ∀-decoration is [all_etag] *)
+    destruct ψa; simpl in Hera; try discriminate Hera;
+      try (inversion Histk; fail).          (* kill the non-[is_tskl] all_syn survivor *)
+    injection Hera as Hera0.
+    inversion Histk; subst. inversion Hgf; subst.
+    match goal with
+    | Hib : forall X, X `notin` ?Li -> is_tskl (open_uskl_wrt_uskl ?bd _),
+      Hgb : forall X, X `notin` ?Lg -> uskl_ghost_free (open_uskl_wrt_uskl ?bd _)
+      |- _ =>
+        apply dec_ext__all with (L := L `union` Li `union` Lg); intros X HX;
+        apply (H0 X ltac:(clear - HX; fsetdec)
+                 (open_uskl_wrt_uskl bd (uskl_var_f X)));
+          [ apply Hib; clear - HX; fsetdec
+          | apply Hgb; clear - HX; fsetdec
+          | rewrite uskl_to_pskl_open; rewrite Hera0;
+            rewrite <- ptyp_to_pskl_open; reflexivity ]
+    end.
+Qed.
+
 (** ANCHOR: a decoration of the guess output extends the pre-guess skeleton,
     with NO remaining tags — the guess places untagged fresh flex vars at
     every ◇, so all of ψa's tags sit in the structure of [Q]. *)
@@ -1319,7 +1388,15 @@ Lemma dec_ext_guess_anchor : forall NM Q Ξ' Q' Ψa ψa,
   a_tags_sort NM Ψa ψa ->
   ⌊ ψa ⌋ˢ = Q' ->
   dec_ext Q ψa empty.
-Admitted.
+Proof.
+  intros NM Q Ξ' Q' Ψa ψa Hg Htags Hera; inversion Hg; subst.
+  - (* SK : Q' = Q ; subst already rewrote Q to ⌊ψa⌋ˢ *)
+    inversion Htags; subst.
+    apply dec_ext_erase_refl; assumption.
+  - (* TY : Q' = ptyp_to_pskl A *)
+    inversion Htags; subst.
+    eapply dec_ext_guess_mono_anchor; eauto.
+Qed.
 
 (** BACKWARD STEP (eq): peel one [eq Q] constraint, collecting its solvetag
     contribution [Ψi] and re-growing the remaining-tag set. *)
