@@ -2125,9 +2125,19 @@ Lemma a_look_ghost_free :
   (forall α P P0 Ξ C, P ∼[ α ] P0 ⤳ Ξ ⨾ C ->
      pskl_ghost_free P0 -> List.Forall a_cstr_gf C).
 Proof.
-  (* True: targets are sub-skeletons of the ghost-free source (⊤◇-target cases
-     vacuous by ghost-freeness); a 20-case mutual induction, to be filled. *)
-Admitted.
+  apply a_looksub_lookeq_mutind; intros; simpl in *;
+    try contradiction;                                       (* ⊤◇-target: gf=False *)
+    try (apply List.Forall_nil; fail);                       (* nil constraints *)
+    try (apply List.Forall_app; split; [ apply H | apply H0 ]; tauto);  (* arrow *)
+    try (repeat apply List.Forall_cons;
+         solve [ assumption | exact I | apply List.Forall_nil ]);  (* [sub/eq _] *)
+    try (apply H; assumption);                               (* same-target recursion *)
+    try (match goal with IH : forall β, β `notin` ?LL -> _ |- _ =>  (* cofinite *)
+           destruct (atom_fresh LL) as [β Hβ];
+           apply (IH β Hβ);
+           solve [ assumption | apply pskl_ghost_free_open_rec; assumption ]
+         end).
+Qed.
 
 (** ASSEMBLY: walk the constraint list, threading [no_top] of the solve skeleton
     and ghost-freeness of the targets; [dec_ext] re-grows toward P with COVERAGE
