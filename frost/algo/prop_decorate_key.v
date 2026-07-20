@@ -1947,8 +1947,41 @@ Proof.
   - (* univ_ghost_l : P=⊤◇, no_top False *) simpl in Hnt; contradiction.
   - (* vacuous : Q=◇, ghost_free False *) simpl in Hgf; contradiction.
   - (* check : guarded P, guarded Q, solve_eq P∼Q⤳P' *) admit.
-  - (* forall_r : Q=∀B *) admit.
-  - (* arrow *) admit.
+  - (* forall_r : Q=∀B ; subject A fixed, rename target β0 ⤳ β *)
+    simpl in Hgf.
+    destruct (atom_fresh (L `union` ftvar_in_pskl B `union` ftvar_in_uskl ψ))
+      as [β0 Hβ0].
+    destruct (H0 β0 ltac:(clear - Hβ0; fsetdec) _ _ _ Hdec Hdt Hnt
+                ltac:(apply pskl_ghost_free_open_rec; exact Hgf))
+              as [Ψi0 [Ψp0 [Hst0 [Hd0 Hu0]]]].
+    exists Ψi0, Ψp0; split.
+    + apply a_solvetag_sub__forall_r with
+        (L := ftvar_in_pskl B `union` ftvar_in_uskl ψ `union` singleton β0).
+      intros β Hβ.
+      rewrite <- (subst_bskl_in_uskl_fresh_eq ψ (uskl_var_f β) β0
+                   ltac:(clear - Hβ0; fsetdec)).
+      rewrite (subst_pskl_in_pskl_intro β0 B (pskl_var_f β)
+                 ltac:(clear - Hβ0; fsetdec)).
+      exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hst0 β0 β).
+    + split; [ exact Hd0 | exact Hu0 ].
+  - (* arrow : domain via eq_step, codomain via sub IH *)
+    simpl in Hnt, Hgf; destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2].
+    inversion Hdec; subst.
+    + (* arrow ψ1 ψ2 *)
+      inversion Hdt; subst.
+      edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
+        [ exact H | eassumption | eassumption | exact Hnt1 | exact Hgf1 | ].
+      edestruct IHHs as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
+        [ eassumption | eassumption | exact Hnt2 | exact Hgf2 | ].
+      exists (Ψi1 `union` Ψi2), (Ψp1 `union` Ψp2); split;
+        [ eapply a_solvetag_sub__arrow; [ exact Hst1 | exact Hst2 | reflexivity ]
+        | split; [ eapply dec_ext__arrow; [ exact Hd1 | exact Hd2 | reflexivity ]
+                 | match goal with Heq : Ψ' [=] _ `union` _ |- _ =>
+                     clear - Heq Hu1 Hu2; fsetdec end ] ].
+    + (* flex_forget *)
+      exists empty, empty; split;
+        [ apply a_solvetag_sub__var; fsetdec
+        | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* ghost_l_fn *) admit.
   - (* ghost_l : P=◇, Q=B guarded ghost-free, P'=⊤◇B *) admit.
 Admitted.
