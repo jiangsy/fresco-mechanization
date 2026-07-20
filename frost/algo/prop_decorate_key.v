@@ -1365,6 +1365,95 @@ Proof.
   - apply is_tskl__topholeg; assumption.
 Qed.
 
+(** SOUNDNESS (paper coverage, direction ⊆): a decorated solvetag collects
+    only tags that ψ actually carries.  Mutual over ≼ᵗ / ∼ᵗ. *)
+Lemma a_solvetag_sub_eq_sound :
+  (forall ψ M Q Ψ, ψ ≼ᵗ[ M ] Q ⤳ Ψ ->
+     forall Ψtot, d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot) /\
+  (forall ψ Q Ψ, ψ ∼ᵗ Q ⤳ Ψ ->
+     forall Ψtot, d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot).
+Proof.
+  apply a_solvetag_sub_eq_mutind.
+  - (* SSub-Var *) intros X M Q Ψ He Ψtot Hdt; clear - He; fsetdec.
+  - (* SSub-ForallL : subject all_etag ε ψ *)
+    intros L ε ψ M Q Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
+    match goal with
+    | Hb : forall X, X `notin` ?L1 -> d_tags_skl ?Ψ0 _,
+      Heq : Ψtot [=] add ?e ?Ψ0 |- _ =>
+        destruct (atom_fresh (L `union` L1)) as [β Hβ];
+        pose proof (IH β ltac:(clear - Hβ; fsetdec) Ψ0
+                      (Hb β ltac:(clear - Hβ; fsetdec))) as Hs;
+        clear - Hs Heq; fsetdec
+    end.
+  - (* SSub-UnivGhostLG : subject topholeg ψ *)
+    intros ψ M Q Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
+    match goal with Hd : d_tags_skl ?T ψ |- _ => exact (IH T Hd) end.
+  - (* SSub-Vacuous *) intros ψ M Ψ He Ψtot Hdt; clear - He; fsetdec.
+  - (* SSub-Check *) intros ψ B Ψ Hgψ HgB Hprem IH Ψtot Hdt; exact (IH Ψtot Hdt).
+  - (* SSub-ForallR *) intros L ψ B Ψ Hprem IH Ψtot Hdt;
+      destruct (atom_fresh L) as [β Hβ]; exact (IH β ltac:(clear - Hβ; fsetdec) Ψtot Hdt).
+  - (* SSub-Arrow : subject arrow ψ1 ψ2 *)
+    intros ψ1 ψ2 M Q1 Q2 Ψ Ψ1 Ψ2 Hp1 IH1 Hp2 IH2 He Ψtot Hdt; inversion Hdt; subst.
+    match goal with
+    | Ha : d_tags_skl ?T1 ψ1, Hbb : d_tags_skl ?T2 ψ2 |- _ =>
+        pose proof (IH1 T1 Ha); pose proof (IH2 T2 Hbb)
+    end.
+    match goal with Heq : Ψtot [=] _ |- _ => clear - He Heq H H0; fsetdec end.
+  - (* SEq-Unit *) intros Ψ He Ψtot Hdt; clear - He; fsetdec.
+  - (* SEq-Var *) intros X Q Ψ He Ψtot Hdt; clear - He; fsetdec.
+  - (* SEq-Vacuous *) intros ψ Ψ He Ψtot Hdt; clear - He; fsetdec.
+  - (* SEq-Arrow *) intros ψ1 ψ2 Q1 Q2 Ψ Ψ1 Ψ2 Hp1 IH1 Hp2 IH2 He Ψtot Hdt;
+      inversion Hdt; subst.
+    match goal with
+    | Ha : d_tags_skl ?T1 ψ1, Hbb : d_tags_skl ?T2 ψ2 |- _ =>
+        pose proof (IH1 T1 Ha); pose proof (IH2 T2 Hbb)
+    end.
+    match goal with Heq : Ψtot [=] _ |- _ => clear - He Heq H H0; fsetdec end.
+  - (* SEq-ForallInh : subject all_etag ε ψ, Ψ = add ε Ψ0 *)
+    intros L ε ψ Q Ψ Ψ0 Hprem IH He Ψtot Hdt; inversion Hdt; subst.
+    match goal with
+    | Hb : forall X, X `notin` ?L1 -> d_tags_skl ?Ψt0 _,
+      Heq : Ψtot [=] add ?e ?Ψt0 |- _ =>
+        destruct (atom_fresh (L `union` L1)) as [β Hβ];
+        pose proof (IH β ltac:(clear - Hβ; fsetdec) Ψt0
+                      (Hb β ltac:(clear - Hβ; fsetdec))) as Hs;
+        clear - Hs Heq He; fsetdec
+    end.
+  - (* SEq-UnivGhostG : subject topholeg ψ *)
+    intros ψ Q Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
+    match goal with Hd : d_tags_skl ?T ψ |- _ => exact (IH T Hd) end.
+  - (* SEq-ForallSyn : subject all_etag ε ψ *)
+    intros L ε ψ Q Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
+    match goal with
+    | Hb : forall X, X `notin` ?L1 -> d_tags_skl ?Ψt0 _,
+      Heq : Ψtot [=] add ?e ?Ψt0 |- _ =>
+        destruct (atom_fresh (L `union` L1)) as [β Hβ];
+        pose proof (IH β ltac:(clear - Hβ; fsetdec) Ψt0
+                      (Hb β ltac:(clear - Hβ; fsetdec))) as Hs;
+        clear - Hs Heq; fsetdec
+    end.
+  - (* SEq-UnivGhostR : subject ψ, target ⊤◇Q *)
+    intros ψ Q Ψ Hg Hprem IH Ψtot Hdt; exact (IH Ψtot Hdt).
+  - (* SEq-FlexR *) intros ψ α Ψ Hgf He Ψtot Hdt; clear - He; fsetdec.
+Qed.
+
+(** The list-level solvetag collects only ψ's tags (per-constraint ⊆ + union). *)
+Lemma a_solvetag_sound : forall C ψ Ψ Ψtot,
+  C ⊩ᵗ ψ ⤳ Ψ -> d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot.
+Proof.
+  intros C ψ Ψ Ψtot Hc; revert Ψtot; induction Hc; intros Ψtot Hdt.
+  - (* empty *) match goal with He : _ [=] empty |- _ => clear - He; fsetdec end.
+  - (* sub *) match goal with H : _ ≼ᵗ[ _ ] _ ⤳ _ |- _ =>
+      pose proof ((proj1 a_solvetag_sub_eq_sound) _ _ _ _ H Ψtot Hdt) end; fsetdec.
+  - (* eq *)
+    match goal with
+    | Hs : _ ∼ᵗ _ ⤳ ?Ψ1, He : _ [=] union ?Ψ1 ?Ψ2 |- _ =>
+        pose proof ((proj2 a_solvetag_sub_eq_sound) _ _ _ Hs Ψtot Hdt) as Hae;
+        pose proof (IHHc Ψtot Hdt) as Hai;
+        clear - He Hae Hai; fsetdec
+    end.
+Qed.
+
 Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
   P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
   forall Ψa ψa,
