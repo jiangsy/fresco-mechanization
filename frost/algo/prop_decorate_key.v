@@ -1894,6 +1894,15 @@ Proof.
   - (* tophole_r_guarded : Q=⊤◇ *) simpl in Hgf; contradiction.
 Qed.
 
+(** At a ◇-hole, dec_ext's remaining tags are exactly all of ψ's tags. *)
+Lemma dec_ext_hole_tags : forall ψ Ψp Ψtot,
+  dec_ext pskl_hole ψ Ψp -> d_tags_skl Ψtot ψ -> Ψp [=] Ψtot.
+Proof.
+  intros ψ Ψp Ψtot H Hdt; inversion H; subst.
+  - eapply d_tags_skl_det; eassumption.
+  - inversion Hdt; subst; fsetdec.
+Qed.
+
 (** A decoration of a guarded skeleton is guarded (unit/var/arrow). *)
 Lemma dec_ext_guarded_uskl : forall P ψ Ψ,
   dec_ext P ψ Ψ -> guarded_pskl P -> is_tskl ψ -> guarded_uskl ψ.
@@ -2003,7 +2012,70 @@ Proof.
       exists empty, empty; split;
         [ apply a_solvetag_sub__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
-  - (* ghost_l_fn *) admit.
+  - (* ghost_l_fn : ◇≼[fn m](arrow Q1 Q2)⤳⊤◇(arrow P1' P2') *)
+    simpl in Hgf; destruct Hgf as [Hgf1 Hgf2].
+    inversion Hdec; subst.
+    + (* skip_tophole : dec_ext (arrow P1' P2') ψ Ψ' *)
+      match goal with Hde : dec_ext (pskl_arrow P1' P2') ψ Ψ' |- _ =>
+        inversion Hde; subst end.
+      * (* ψ = arrow ψ1 ψ2 *)
+        inversion Hdt; subst.
+        edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
+          [ exact H | eassumption | eassumption | exact I | exact Hgf1 | ].
+        edestruct IHHs as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
+          [ eassumption | eassumption | exact I | exact Hgf2 | ].
+        match goal with Ha : d_tags_skl _ ψ1, Hb : d_tags_skl _ ψ2 |- _ =>
+          pose proof (dec_ext_hole_tags Hd1 Ha) as He1;
+          pose proof (dec_ext_hole_tags Hd2 Hb) as He2 end.
+        exists (Ψi1 `union` Ψi2), Ψtot; split;
+          [ eapply a_solvetag_sub__arrow; [ exact Hst1 | exact Hst2 | reflexivity ]
+          | split;
+            [ apply dec_ext__hole; [ eapply d_tags_skl_is_tskl; exact Hdt | exact Hdt ]
+            | match goal with Heqt : Ψtot [=] _, Heqp : Ψ' [=] _ `union` _ |- _ =>
+                clear - Heqt Heqp He1 He2 Hu1 Hu2; fsetdec end ] ].
+      * (* ψ = var (flex_forget under skip) *)
+        exists empty, empty; split;
+          [ apply a_solvetag_sub__var; fsetdec
+          | split; [ apply dec_ext__hole;
+                       [ eapply d_tags_skl_is_tskl; exact Hdt
+                       | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
+                   | inversion Hdt; subst; fsetdec ] ].
+    + (* topholeg : ψ = ⊤◇̇ψ0, dec_ext (arrow P1' P2') ψ0 *)
+      inversion Hdt; subst.
+      match goal with Hde : dec_ext (pskl_arrow P1' P2') ?p0 Ψ',
+                      Hd0t : d_tags_skl Ψtot ?p0 |- _ =>
+        inversion Hde; subst end.
+      * (* ψ0 = arrow ψ1 ψ2 *)
+        match goal with Hd0t : d_tags_skl Ψtot (uskl_arrow _ _) |- _ =>
+          inversion Hd0t; subst end.
+        edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
+          [ exact H | eassumption | eassumption | exact I | exact Hgf1 | ].
+        edestruct IHHs as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
+          [ eassumption | eassumption | exact I | exact Hgf2 | ].
+        match goal with Ha : d_tags_skl _ ψ1, Hb : d_tags_skl _ ψ2 |- _ =>
+          pose proof (dec_ext_hole_tags Hd1 Ha) as He1;
+          pose proof (dec_ext_hole_tags Hd2 Hb) as He2 end.
+        exists (Ψi1 `union` Ψi2), Ψtot; split;
+          [ apply a_solvetag_sub__univ_ghost_lg;
+            eapply a_solvetag_sub__arrow; [ exact Hst1 | exact Hst2 | reflexivity ]
+          | split;
+            [ apply dec_ext__hole; [ eapply d_tags_skl_is_tskl; exact Hdt | exact Hdt ]
+            | match goal with Heqt : Ψtot [=] _, Heqp : Ψ' [=] _ `union` _ |- _ =>
+                clear - Heqt Heqp He1 He2 Hu1 Hu2; fsetdec end ] ].
+      * (* ψ0 = var *)
+        exists empty, empty; split;
+          [ apply a_solvetag_sub__univ_ghost_lg; apply a_solvetag_sub__var; fsetdec
+          | split; [ apply dec_ext__hole;
+                       [ eapply d_tags_skl_is_tskl; exact Hdt
+                       | apply d_tags_skl__topholeg; apply d_tags_skl__var; fsetdec ]
+                   | fsetdec ] ].
+    + (* flex_forget : ψ = var *)
+      exists empty, empty; split;
+        [ apply a_solvetag_sub__var; fsetdec
+        | split; [ apply dec_ext__hole;
+                     [ eapply d_tags_skl_is_tskl; exact Hdt
+                     | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
+                 | inversion Hdt; subst; fsetdec ] ].
   - (* ghost_l : ◇ ≼[tc] B ⤳ ⊤◇B, guarded B = H ; Hgf : ghost_free B *)
     inversion Hdec; subst.
     + (* skip_tophole : dec_ext B ψ Ψ' *)
@@ -2038,7 +2110,7 @@ Proof.
                      [ eapply d_tags_skl_is_tskl; exact Hdt
                      | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
                  | inversion Hdt; subst; fsetdec ] ].
-Admitted.
+Qed.
 
 (** Every constraint target is ghost-free. *)
 Definition a_cstr_gf (c : a_cstr) : Prop :=
