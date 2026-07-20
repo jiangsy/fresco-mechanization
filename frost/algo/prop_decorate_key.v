@@ -1454,6 +1454,31 @@ Proof.
     end.
 Qed.
 
+(** SELF-SOLVETAG (paper coverage, base shape): a decorated skeleton solves
+    against its OWN erasure, collecting EXACTLY its tags.  This is the SK
+    guess (⌊ψ⌋=Q, identity) case and the set-membership coverage anchor —
+    no ⊤◇ frontier (topholeg aligns with ⊤◇ via SEq-UnivGhostG) and no ε
+    double-count (add ε handled by SEq-ForallInh). *)
+Lemma solvetag_eq_self : forall Ψ ψ,
+  d_tags_skl Ψ ψ -> ψ ∼ᵗ ⌊ ψ ⌋ˢ ⤳ Ψ.
+Proof.
+  intros Ψ ψ H; induction H; simpl.
+  - apply a_solvetag_eq__unit; assumption.
+  - apply a_solvetag_eq__var; assumption.
+  - eapply a_solvetag_eq__arrow;
+      [ exact IHd_tags_skl1 | exact IHd_tags_skl2 | assumption ].
+  - (* all_etag ε R : target ∀⌊R⌋, Ψ = add ε Ψ0 *)
+    eapply a_solvetag_eq__forall_inh with (L := L) (Ψ0 := Ψ0); [ | assumption ].
+    intros β Hβ. rewrite <- uskl_to_pskl_open.
+    match goal with
+    | IH : forall X, X `notin` L -> _ ∼ᵗ _ ⤳ Ψ0 |- _ =>
+        exact (IH β Hβ)
+    end.
+  - (* holeg : erasure is ◇ *) apply a_solvetag_eq__vacuous; assumption.
+  - (* topholeg R : erasure ⊤◇⌊R⌋ *)
+    apply a_solvetag_eq__univ_ghostg; exact IHd_tags_skl.
+Qed.
+
 Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
   P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
   forall Ψa ψa,
