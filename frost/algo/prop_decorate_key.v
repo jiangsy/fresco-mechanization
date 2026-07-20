@@ -1603,8 +1603,8 @@ Lemma dec_ext_solve_eq_step : forall Θ P Q P' ψa Ψ' Ψtot,
   d_tags_skl Ψtot ψa ->
   exists Ψi, ψa ∼ᵗ Q ⤳ Ψi /\ dec_ext P ψa (Ψ' `union` Ψi).
 Proof.
-  intros Θ P Q P' ψa Ψ' Ψtot Hs; revert Ψ' Ψtot;
-    induction Hs; intros Ψ' Ψtot Hdec Hdt.
+  intros Θ P Q P' ψa Ψ' Ψtot Hs; revert ψa Ψ' Ψtot;
+    induction Hs; intros ψa Ψ' Ψtot Hdec Hdt.
   - (* unit : P=Q=P'=unit *)
     inversion Hdec; subst.
     + exists empty. split; [ apply a_solvetag_eq__unit; fsetdec | ].
@@ -1632,7 +1632,21 @@ Proof.
   - (* hole_r : Q=◇, P'=P ; SEq-Vacuous *)
     exists empty. split; [ apply a_solvetag_eq__vacuous; fsetdec | ].
     eapply dec_ext_psi_cong; [ exact Hdec | fsetdec ].
-  - (* arrow *) admit.
+  - (* arrow : P=P1→P2, Q=Q1→Q2, P'=P1'→P2' *)
+    inversion Hdec; subst.
+    + (* ψa = uskl_arrow ψ1 ψ2 *)
+      inversion Hdt; subst.
+      match goal with
+      | Ha : d_tags_skl ?T1 ψ1, Hb : d_tags_skl ?T2 ψ2 |- _ =>
+          destruct (IHHs1 _ _ _ H1 Ha) as [Ψi1 [Hst1 Hde1]];
+          destruct (IHHs2 _ _ _ H2 Hb) as [Ψi2 [Hst2 Hde2]]
+      end.
+      exists (Ψi1 `union` Ψi2). split.
+      * eapply a_solvetag_eq__arrow; [ exact Hst1 | exact Hst2 | fsetdec ].
+      * eapply dec_ext__arrow; [ exact Hde1 | exact Hde2 | fsetdec ].
+    + (* flex_forget : ψa = var *)
+      exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
+      apply dec_ext__flex_forget; fsetdec.
   - (* forall *) admit.
   - (* tophole_both *) admit.
   - (* tophole_l_all *) admit.
