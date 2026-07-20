@@ -1894,6 +1894,156 @@ Proof.
   - (* tophole_r_guarded : Q=⊤◇ *) simpl in Hgf; contradiction.
 Qed.
 
+(** FORWARD STEP (sub): the terminal [sub m Q] constraint (Q ghost-free). *)
+Lemma dec_ext_solve_sub_step : forall Θ m P Q P' ψ Ψ' Ψtot,
+  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+  dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
+  pskl_no_top P -> pskl_ghost_free Q ->
+  exists Ψi Ψp, ψ ≼ᵗ[ m ] Q ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
+Proof.
+  intros Θ m P Q P' ψ Ψ' Ψtot Hs; revert ψ Ψ' Ψtot;
+    induction Hs; intros ψ Ψ' Ψtot Hdec Hdt Hnt Hgf.
+  - (* var : P=P'=var X *)
+    inversion Hdec; subst;
+      (exists empty, empty; split;
+        [ apply a_solvetag_sub__var; fsetdec
+        | split; [ solve [ apply dec_ext__var; fsetdec
+                         | apply dec_ext__flex_forget; fsetdec ] | fsetdec ] ]).
+  - (* forall_l : subject ∀P, output ∀P' *)
+    simpl in Hnt. inversion Hdec; subst.
+    + (* all_etag ε ψ0 *)
+      inversion Hdt; subst.
+      destruct (atom_fresh (L `union` L0 `union` L1 `union` ftvar_in_uskl ψ0
+                  `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
+                  `union` ftvar_in_pskl Q)) as [X0 HX0].
+      destruct (H0 X0 ltac:(clear - HX0; fsetdec) _ _ _
+                  (H2 X0 ltac:(clear - HX0; fsetdec))
+                  (H4 X0 ltac:(clear - HX0; fsetdec))
+                  ltac:(apply (proj1 (pskl_no_top_open_rec P X0 0)); exact Hnt)
+                  Hgf)
+                as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
+      exists Ψi0, Ψp0; split.
+      * apply a_solvetag_sub__forall_l with
+          (L := ftvar_in_uskl ψ0 `union` singleton X0). intros β Hβ.
+        rewrite (subst_bskl_in_uskl_intro X0 ψ0 (uskl_var_f β)
+                   ltac:(clear - HX0; fsetdec)).
+        rewrite <- (subst_pskl_in_pskl_fresh_eq Q (pskl_var_f β) X0
+                     ltac:(clear - HX0; fsetdec)).
+        exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hs0 X0 β).
+      * split.
+        -- apply dec_ext__all with
+             (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl P `union` singleton X0).
+           intros Z HZ.
+           rewrite (subst_pskl_in_pskl_intro X0 P (pskl_var_f Z)
+                      ltac:(clear - HX0; fsetdec)).
+           rewrite (subst_bskl_in_uskl_intro X0 ψ0 (uskl_var_f Z)
+                      ltac:(clear - HX0; fsetdec)).
+           exact (dec_ext_rename_var Hd0 X0 Z).
+        -- clear - Hu0; fsetdec.
+    + (* flex_forget *)
+      exists empty, empty; split;
+        [ apply a_solvetag_sub__var; fsetdec
+        | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
+  - (* univ_ghost_l : P=⊤◇, no_top False *) simpl in Hnt; contradiction.
+  - (* vacuous : Q=◇, ghost_free False *) simpl in Hgf; contradiction.
+  - (* check : guarded P, guarded Q, solve_eq P∼Q⤳P' *) admit.
+  - (* forall_r : Q=∀B *) admit.
+  - (* arrow *) admit.
+  - (* ghost_l_fn *) admit.
+  - (* ghost_l : P=◇, Q=B guarded ghost-free, P'=⊤◇B *) admit.
+Admitted.
+
+(** Every constraint target is ghost-free. *)
+Definition a_cstr_gf (c : a_cstr) : Prop :=
+  match c with
+  | a_cstr_sub _ Q => pskl_ghost_free Q
+  | a_cstr_eq Q => pskl_ghost_free Q
+  end.
+
+Lemma a_look_ghost_free :
+  (forall α m P P0 Ξ C, P ≼[ α , m ] P0 ⤳ Ξ ⨾ C ->
+     pskl_ghost_free P0 -> List.Forall a_cstr_gf C) /\
+  (forall α P P0 Ξ C, P ∼[ α ] P0 ⤳ Ξ ⨾ C ->
+     pskl_ghost_free P0 -> List.Forall a_cstr_gf C).
+Proof.
+  (* True: targets are sub-skeletons of the ghost-free source (⊤◇-target cases
+     vacuous by ghost-freeness); a 20-case mutual induction, to be filled. *)
+Admitted.
+
+(** ASSEMBLY: walk the constraint list, threading [no_top] of the solve skeleton
+    and ghost-freeness of the targets; [dec_ext] re-grows toward P with COVERAGE
+    Ψp ⊆ Ψpost ∪ Ψc. *)
+Lemma solve_cstr_decorate : forall Θ C P Q ψ Ψpost Ψtot,
+  Θ ⊩ C ⨾ P ⤳ Q ->
+  dec_ext Q ψ Ψpost -> d_tags_skl Ψtot ψ ->
+  pskl_no_top P -> List.Forall a_cstr_gf C ->
+  exists Ψc Ψp, C ⊩ᵗ ψ ⤳ Ψc /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψpost `union` Ψc.
+Proof.
+  intros Θ C P Q ψ Ψpost Ψtot Hsolve Hdec Hdt; revert Ψpost Hdec;
+    induction Hsolve; intros Ψpost Hdec Hnt Hgfc.
+  - (* empty *) exists empty, Ψpost; split;
+      [ apply a_solvetag__empty; fsetdec | split; [ exact Hdec | fsetdec ] ].
+  - (* sub *)
+    inversion Hgfc as [ | ? ? Hgf0 ]; subst; simpl in Hgf0.
+    destruct (dec_ext_solve_sub_step H Hdec Hdt Hnt Hgf0)
+      as [Ψi [Ψp [Hs [Hd Hu]]]].
+    exists Ψi, Ψp; split;
+      [ apply a_solvetag__sub; exact Hs | split; [ exact Hd | exact Hu ] ].
+  - (* eq *)
+    inversion Hgfc as [ | ? ? Hgf0 HgfC ]; subst; simpl in Hgf0.
+    destruct (IHHsolve Ψpost Hdec
+                ltac:(eapply solve_eq_no_top; [ exact H | exact Hnt | exact Hgf0 ])
+                HgfC)
+              as [Ψc' [Ψp'' [Hstc [Hd'' Hu'']]]].
+    destruct (dec_ext_solve_eq_step H Hd'' Hdt Hnt Hgf0)
+      as [Ψi [Ψp [Hste [Hd Hu]]]].
+    exists (Ψi `union` Ψc'), Ψp; split;
+      [ eapply a_solvetag__eq; [ exact Hste | exact Hstc | reflexivity ]
+      | split; [ exact Hd | clear - Hu Hu''; fsetdec ] ].
+Qed.
+
+(** COVERAGE-based a_extract_decorate (paper subtyping-proofs.tex:110-127),
+    proved from the ⊆ set-membership machinery.  Requires [pskl_ghost_free P0]
+    (the extract's source is a type); wiring this into MAIN needs the side
+    condition threaded through the a_sub_decorate mutual (integration TODO).
+    Residual admits it rests on: a_look_ghost_free + dec_ext_solve_sub_step's
+    check/forall_r/arrow/ghost_l/ghost_l_fn cases. *)
+Lemma a_extract_decorate_cov : forall NM αv M P P0 Ξ P1,
+  P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
+  pskl_ghost_free P0 ->
+  forall Ψa ψa,
+    a_tags_sort NM Ψa ψa ->
+    ⌊ ψa ⌋ˢ = P1 ->
+    exists Ξc C,
+      P ≼[ αv , M ] P0 ⤳ Ξc ⨾ C /\
+      C ⊩ᵗ ψa ⤳ Ψa.
+Proof.
+  intros NM αv M P P0 Ξ P1 Hext Hgf0 Ψa ψa Htags Hera.
+  inversion Hext; subst.
+  (* H : look ;  H0 : solve C □ Q ;  H1 : guess (output ⌊ψa⌋ˢ) *)
+  eexists; eexists; split; [ exact H | ].
+  assert (Hda : d_tags_skl Ψa ψa) by (inversion Htags; assumption).
+  assert (Hanchor : dec_ext Q ψa empty)
+    by (eapply dec_ext_guess_anchor; [ exact H1 | exact Htags | reflexivity ]).
+  assert (Hgfc : List.Forall a_cstr_gf C)
+    by (eapply (proj1 a_look_ghost_free); [ exact H | exact Hgf0 ]).
+  destruct (solve_cstr_decorate H0 Hanchor Hda ltac:(exact I) Hgfc)
+    as [Ψc [Ψp [Hstag [Hhole Hsub]]]].
+  (* dec_ext □ ψa Ψp pins Ψp = d_tags = Ψa; soundness gives Ψc ⊆ Ψa; squeeze *)
+  assert (Hsnd : Ψc [<=] Ψa) by (eapply a_solvetag_sound; [ exact Hstag | exact Hda ]).
+  inversion Hhole; subst.
+  - (* dec_ext__hole : Ψp = d_tags ψa = Ψa *)
+    match goal with Hdtag : d_tags_skl _ ψa |- _ =>
+      pose proof (d_tags_skl_det Hda Hdtag) as Hdet end.
+    eapply a_solvetag_psi_cong; [ exact Hstag | clear - Hsub Hsnd Hdet; fsetdec ].
+  - (* dec_ext__flex_forget : ψa a bare var ⇒ Ψa = ∅ *)
+    eapply a_solvetag_psi_cong; [ exact Hstag | ].
+    inversion Hda; subst;
+      match goal with He : Ψa [=] empty |- _ => clear - Hsnd He; fsetdec end.
+Qed.
+
+(** MAIN wrapper: a_extract_decorate_cov modulo the ghost-free side condition
+    (threading it through a_sub_decorate is the remaining integration step). *)
 Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
   P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
   forall Ψa ψa,
@@ -1902,8 +2052,7 @@ Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
     exists Ξc C,
       P ≼[ αv , M ] P0 ⤳ Ξc ⨾ C /\
       C ⊩ᵗ ψa ⤳ Ψa.
-Admitted.  (* paper's set-membership coverage (subtyping-proofs.tex:110-127);
-   the dec_ext backward-walk was removed (2026-07-20h) — see §15 header. *)
+Admitted.
 
 (* ===================================================================== *)
 (*  §16  MAIN: decorating algorithmic subtyping                           *)
