@@ -1709,16 +1709,16 @@ Proof.
   - rewrite (IHP X (S k)); tauto.
 Qed.
 
-(** No ⊤◇ is created solving against a ghost-free target. *)
+(** No ⊤◇ is created solving against a ⊤◇-free target. *)
 Lemma solve_eq_no_top : forall Θ P Q P',
-  Θ ⊢ₑ P ∼ Q ⤳ P' -> pskl_no_top P -> pskl_ghost_free Q -> pskl_no_top P'.
+  Θ ⊢ₑ P ∼ Q ⤳ P' -> pskl_no_top P -> pskl_no_top Q -> pskl_no_top P'.
 Proof.
   intros Θ P Q P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
   - (* unit *) exact I.
   - (* var *) exact I.
   - (* flex_r *) exact I.
-  - (* hole_l : P'=Q *) apply pskl_ghost_free_no_top; assumption.
-  - (* hole_r : Q=◇, ghost_free ◇ = False *) contradiction.
+  - (* hole_l : P'=Q *) exact Hgf.
+  - (* hole_r : Q=◇, P'=P *) exact Hnt.
   - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
       split; [ apply IHa_solve_eq1 | apply IHa_solve_eq2 ]; assumption.
   - (* forall *)
@@ -1729,7 +1729,7 @@ Proof.
     | IH : forall X, X `notin` L -> _ -> _ -> pskl_no_top _ |- _ =>
         apply (IH β ltac:(clear - Hβ; fsetdec));
         [ apply (proj1 (pskl_no_top_open_rec P β 0)); exact Hnt
-        | apply pskl_ghost_free_open_rec; exact Hgf ]
+        | apply (proj1 (pskl_no_top_open_rec Q β 0)); exact Hgf ]
     end.
   - (* tophole_both : P=⊤◇, no_top False *) contradiction.
   - (* tophole_l_all : P=⊤◇ *) contradiction.
@@ -1738,16 +1738,20 @@ Proof.
   - (* tophole_r_guarded : Q=⊤◇ *) contradiction.
 Qed.
 
-(** COVERAGE (set-membership, ⊆): matching ψ against a GHOST-FREE target Q
-    collects a Ψi such that ψ's full tags Ψtot ⊆ Ψ' ∪ Ψi (Ψ' = tags at Q's
-    ◇-holes).  Ghost-freeness makes hole/skip_tophole/topholeg VACUOUS (no ◇/⊤◇
-    in a type target — no ⊤◇∀ wall); ⊆ absorbs the re-collected ∀-tag ε. *)
+(** COVERAGE (set-membership, ⊆): matching ψ against a NO-⊤◇ target Q (⊤◇-free,
+    ◇ ALLOWED) collects a Ψi such that ψ's full tags Ψtot ⊆ Ψ' ∪ Ψi.  [no_top]
+    makes skip_tophole/topholeg VACUOUS (no ⊤◇ — no ⊤◇∀ wall) while the ◇-hole is
+    a real SEq-Vacuous; ⊆ absorbs the re-collected ∀-tag ε.  [no_top] (not
+    [ghost_free]) so this covers the SK arrow-to-◇ against-skeleton too. *)
 Lemma dec_ext_cover_eq : forall Q ψ Ψ' Ψtot,
-  dec_ext Q ψ Ψ' -> d_tags_skl Ψtot ψ -> pskl_ghost_free Q ->
+  dec_ext Q ψ Ψ' -> d_tags_skl Ψtot ψ -> pskl_no_top Q ->
   exists Ψi, ψ ∼ᵗ Q ⤳ Ψi /\ Ψtot [<=] Ψ' `union` Ψi.
 Proof.
   intros Q ψ Ψ' Ψtot H; revert Ψtot; induction H; intros Ψtot Hdt Hgf.
-  - (* hole : ghost_free ◇ = False *) simpl in Hgf; contradiction.
+  - (* hole : Q=◇, no_top ◇ = True ; SEq-Vacuous, Ψ' = d_tags ψ = Ψtot *)
+    exists empty. split; [ apply a_solvetag_eq__vacuous; fsetdec | ].
+    match goal with Hh : d_tags_skl ?W ψ |- Ψtot [<=] union ?W empty =>
+      pose proof (d_tags_skl_det Hh Hdt) as Hd; clear - Hd; fsetdec end.
   - (* unit *) exists empty. split; [ apply a_solvetag_eq__unit; fsetdec | ].
     inversion Hdt; subst; fsetdec.
   - (* var *) exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
@@ -1767,12 +1771,12 @@ Proof.
     match goal with
     | Hb : forall X, X `notin` ?L1 -> d_tags_skl ?Ψt0 _,
       Heq : Ψtot [=] add ?e ?Ψt0,
-      IH : forall X, X `notin` ?Lh -> forall Ψ2, _ -> pskl_ghost_free _ -> _ |- _ =>
+      IH : forall X, X `notin` ?Lh -> forall Ψ2, _ -> pskl_no_top _ -> _ |- _ =>
         destruct (atom_fresh (L `union` L1 `union` ftvar_in_uskl ψ0
                     `union` ftvar_in_pskl P0)) as [X0 HX0];
         destruct (IH X0 ltac:(clear - HX0; fsetdec) Ψt0
                     (Hb X0 ltac:(clear - HX0; fsetdec))
-                    ltac:(apply pskl_ghost_free_open_rec; exact Hgf))
+                    ltac:(apply (proj1 (pskl_no_top_open_rec P0 X0 0)); exact Hgf))
                   as [Ψi0 [Hs0 Hsub0]];
         exists (add ε Ψi0); split;
         [ eapply a_solvetag_eq__forall_inh with
@@ -1800,7 +1804,7 @@ Qed.
 Lemma dec_ext_solve_eq_step : forall Θ P Q P' ψ Ψ' Ψtot,
   Θ ⊢ₑ P ∼ Q ⤳ P' ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
-  pskl_no_top P -> pskl_ghost_free Q ->
+  pskl_no_top P -> pskl_no_top Q ->
   exists Ψi Ψp, ψ ∼ᵗ Q ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
   intros Θ P Q P' ψ Ψ' Ψtot Hs; revert ψ Ψ' Ψtot;
@@ -1828,7 +1832,10 @@ Proof.
     exists Ψi, Ψtot; split; [ exact Hsi | split;
       [ apply dec_ext__hole; [ eapply d_tags_skl_is_tskl; exact Hdt | exact Hdt ]
       | exact Hsub ] ].
-  - (* hole_r : Q=◇, ghost_free ◇ = False *) simpl in Hgf; contradiction.
+  - (* hole_r : Q=◇, P'=P ; SEq-Vacuous *)
+    exists empty, Ψ'; split;
+      [ apply a_solvetag_eq__vacuous; fsetdec
+      | split; [ exact Hdec | fsetdec ] ].
   - (* arrow *)
     simpl in Hnt, Hgf; destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2].
     inversion Hdec; subst.
@@ -1858,7 +1865,7 @@ Proof.
                   (H2 X0 ltac:(clear - HX0; fsetdec))
                   (H4 X0 ltac:(clear - HX0; fsetdec))
                   ltac:(apply (proj1 (pskl_no_top_open_rec P X0 0)); exact Hnt)
-                  ltac:(apply pskl_ghost_free_open_rec; exact Hgf))
+                  ltac:(apply (proj1 (pskl_no_top_open_rec _ _ _)); exact Hgf))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists (add ε Ψi0), Ψp0; split.
       * (* solvetag : SEq-ForallInh, rename X0 ⤳ β *)
@@ -1919,7 +1926,7 @@ Qed.
 Lemma dec_ext_solve_sub_step : forall Θ m P Q P' ψ Ψ' Ψtot,
   Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
-  pskl_no_top P -> pskl_ghost_free Q ->
+  pskl_no_top P -> pskl_no_top Q ->
   exists Ψi Ψp, ψ ≼ᵗ[ m ] Q ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
   intros Θ m P Q P' ψ Ψ' Ψtot Hs; revert ψ Ψ' Ψtot;
@@ -1966,7 +1973,10 @@ Proof.
         [ apply a_solvetag_sub__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* univ_ghost_l : P=⊤◇, no_top False *) simpl in Hnt; contradiction.
-  - (* vacuous : Q=◇, ghost_free False *) simpl in Hgf; contradiction.
+  - (* vacuous : Q=◇, P'=P ; SSub-Vacuous *)
+    exists empty, Ψ'; split;
+      [ apply a_solvetag_sub__vacuous; fsetdec
+      | split; [ exact Hdec | fsetdec ] ].
   - (* check : guarded P (H), guarded Q (H0), solve_eq (H1) → eq_step + SSub-Check *)
     edestruct dec_ext_solve_eq_step as [Ψi [Ψp [Hste [Hdp Hup]]]];
       [ exact H1 | exact Hdec | exact Hdt | exact Hnt | exact Hgf | ].
@@ -1982,7 +1992,7 @@ Proof.
     destruct (atom_fresh (L `union` ftvar_in_pskl B `union` ftvar_in_uskl ψ))
       as [β0 Hβ0].
     destruct (H0 β0 ltac:(clear - Hβ0; fsetdec) _ _ _ Hdec Hdt Hnt
-                ltac:(apply pskl_ghost_free_open_rec; exact Hgf))
+                ltac:(apply (proj1 (pskl_no_top_open_rec _ _ _)); exact Hgf))
               as [Ψi0 [Ψp0 [Hst0 [Hd0 Hu0]]]].
     exists Ψi0, Ψp0; split.
     + apply a_solvetag_sub__forall_r with
@@ -2115,15 +2125,15 @@ Qed.
 (** Every constraint target is ghost-free. *)
 Definition a_cstr_gf (c : a_cstr) : Prop :=
   match c with
-  | a_cstr_sub _ Q => pskl_ghost_free Q
-  | a_cstr_eq Q => pskl_ghost_free Q
+  | a_cstr_sub _ Q => pskl_no_top Q
+  | a_cstr_eq Q => pskl_no_top Q
   end.
 
 Lemma a_look_ghost_free :
   (forall α m P P0 Ξ C, P ≼[ α , m ] P0 ⤳ Ξ ⨾ C ->
-     pskl_ghost_free P0 -> List.Forall a_cstr_gf C) /\
+     pskl_no_top P0 -> List.Forall a_cstr_gf C) /\
   (forall α P P0 Ξ C, P ∼[ α ] P0 ⤳ Ξ ⨾ C ->
-     pskl_ghost_free P0 -> List.Forall a_cstr_gf C).
+     pskl_no_top P0 -> List.Forall a_cstr_gf C).
 Proof.
   apply a_looksub_lookeq_mutind; intros; simpl in *;
     try contradiction;                                       (* ⊤◇-target: gf=False *)
@@ -2135,7 +2145,7 @@ Proof.
     try (match goal with IH : forall β, β `notin` ?LL -> _ |- _ =>  (* cofinite *)
            destruct (atom_fresh LL) as [β Hβ];
            apply (IH β Hβ);
-           solve [ assumption | apply pskl_ghost_free_open_rec; assumption ]
+           solve [ assumption | apply (proj1 (pskl_no_top_open_rec _ _ _)); assumption ]
          end).
 Qed.
 
@@ -2179,7 +2189,7 @@ Qed.
     check/forall_r/arrow/ghost_l/ghost_l_fn cases. *)
 Lemma a_extract_decorate_cov : forall NM αv M P P0 Ξ P1,
   P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
-  pskl_ghost_free P0 ->
+  pskl_no_top P0 ->
   forall Ψa ψa,
     a_tags_sort NM Ψa ψa ->
     ⌊ ψa ⌋ˢ = P1 ->
