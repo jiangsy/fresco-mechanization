@@ -1647,7 +1647,18 @@ Proof.
     + (* flex_forget : ψa = var *)
       exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
       apply dec_ext__flex_forget; fsetdec.
-  - (* forall *) admit.
+  - (* forall : P=∀P₀, Q=∀Q₀, P'=∀P₀'.
+       FALSE-AS-STATED for the all_etag subject (see below): [all_etag ε ψ0 ∼ᵗ
+       ∀Q₀] fires only via SEq-ForallInh, whose output [add ε Ψ0] CONTAINS the
+       ∀-tag ε; but the conclusion [dec_ext (∀P₀)(all_etag ε ψ0)(Ψ'∪Ψi)] forces
+       (via the sole constructor dec_ext__all) the body remaining to contain ε,
+       and ε ∉ d_tags(open ψ0) — dec_ext remaining ⊆ subject tags.  The [Ψ'∪Ψi]
+       growth identity double-counts a ∀-tag already accounted in P'.  This is
+       the ε-re-collection frontier: the incremental dec_ext↔solvetag bridge is
+       incompatible with idempotent re-collection of ∀-tags.  The faithful route
+       is the paper's set-membership coverage (subtyping-proofs.tex:110-127),
+       not this per-step Ψ-arithmetic. *)
+    admit.
   - (* tophole_both *) admit.
   - (* tophole_l_all *) admit.
   - (* tophole_l_guarded *) admit.
