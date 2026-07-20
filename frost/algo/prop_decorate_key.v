@@ -1709,6 +1709,17 @@ Proof.
   - rewrite (IHP X (S k)); tauto.
 Qed.
 
+(** [no_top] survives substitution of a ⊤◇-free skeleton (e.g. a monotype). *)
+Lemma pskl_no_top_subst : forall P Q β,
+  pskl_no_top P -> pskl_no_top Q -> pskl_no_top (subst_pskl_in_pskl Q β P).
+Proof.
+  induction P; intros Q β HP HQ; simpl in *; try exact I; try contradiction.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      [ exact HQ | exact I ].
+  - destruct HP as [HP1 HP2]; split; [ apply IHP1 | apply IHP2 ]; assumption.
+  - apply IHP; assumption.
+Qed.
+
 (** No ⊤◇ is created solving against a ⊤◇-free target. *)
 Lemma solve_eq_no_top : forall Θ P Q P',
   Θ ⊢ₑ P ∼ Q ⤳ P' -> pskl_no_top P -> pskl_no_top Q -> pskl_no_top P'.
@@ -2221,18 +2232,6 @@ Proof.
       match goal with He : Ψa [=] empty |- _ => clear - Hsnd He; fsetdec end.
 Qed.
 
-(** MAIN wrapper: a_extract_decorate_cov modulo the ghost-free side condition
-    (threading it through a_sub_decorate is the remaining integration step). *)
-Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
-  P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
-  forall Ψa ψa,
-    a_tags_sort NM Ψa ψa ->
-    ⌊ ψa ⌋ˢ = P1 ->
-    exists Ξc C,
-      P ≼[ αv , M ] P0 ⤳ Ξc ⨾ C /\
-      C ⊩ᵗ ψa ⤳ Ψa.
-Admitted.
-
 (* ===================================================================== *)
 (*  §16  MAIN: decorating algorithmic subtyping                           *)
 (*  (lemma:decorating-algorithmic-subtyping, subtyping-proofs.tex:1019)   *)
@@ -2247,6 +2246,7 @@ Definition sub_decorate_concl NM M P0 Θ0 P Q Θ1 : Prop :=
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
+  pskl_no_top P0 ->
   Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
 
 Definition sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1 : Prop :=
@@ -2255,6 +2255,7 @@ Definition sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1 : Prop :=
   (Ξw ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
   a_binds_tvar αf (Ξw ++ Θ0) ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) (mode_fn M)) ->
+  pskl_no_top P0 ->
   a_subtag_flex NM M P0 Θ0 Ξw αf Q Θ1.
 
 (** ADMIT SURFACE (why this ends in [Admitted]): every case is closed at
@@ -2280,7 +2281,7 @@ Proof.
               sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1));
     unfold sub_decorate_concl, sub_flex_decorate_concl.
   - (* Infer *)
-    intros NM P Θ0 Hwf HwfP0 HwfP Hmod.
+    intros NM P Θ0 Hwf HwfP0 HwfP Hmod Hnt0.
     replace P with (⌊ pskl_to_uskl P ⌋ˢ) at 2
       by apply uskl_to_pskl_pskl_to_uskl.
     apply a_subtag__infer. fsetdec.
@@ -2288,14 +2289,14 @@ Proof.
        pins the consistency output to [B] (it existentialises it, matching the
        plain [a_consis_chk] and the paper's "output not used / ≡ B"
        convention), so we simply decorate the plain consistency premise. *)
-    intros Θ0 Θ1 A B HgA HgB Hchk Hwf HwfP0 HwfP Hmod.
+    intros Θ0 Θ1 A B HgA HgB Hchk Hwf HwfP0 HwfP Hmod Hnt0.
     destruct Hchk as [Q Hcns].
     eapply a_subtag__check;
       [ apply pskl_to_uskl_guarded; exact HgA
       | exact HgB
       | exact (a_consis_decorate Hcns) ].
   - (* ForallR *)
-    intros L Θ0 Θ1 Ξ A B Hsuf Huq Hfam IHfam Hwf HwfP0 HwfP Hmod.
+    intros L Θ0 Θ1 Ξ A B Hsuf Huq Hfam IHfam Hwf HwfP0 HwfP Hmod Hnt0.
     inversion HwfP0 as [ | | | LP ΘP ΔP BP HbodyP HeqP | | ]; subst.
     eapply a_subtag__forall_r
       with (L := L `union` LP `union` dom Θ0);
@@ -2311,15 +2312,16 @@ Proof.
         [ intros x b Hb; unfold binds; simpl; right; exact Hb
         | exact HwfP ]. }
     { intros Hsk; discriminate Hsk. }
+    { apply (proj1 (pskl_no_top_open_rec B α 0)); simpl in Hnt0; exact Hnt0. }
   - (* UnivGhostR *)
-    intros Θ0 P Hg Hwf HwfP0 HwfP Hmod.
+    intros Θ0 P Hg Hwf HwfP0 HwfP Hmod Hnt0.
     replace (pskl_tophole P)
       with (pskl_tophole ⌊ pskl_to_uskl P ⌋ˢ)
       by (rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
     apply a_subtag__univ_ghost_r;
       [ apply pskl_to_uskl_guarded; exact Hg | fsetdec ].
   - (* FlexMono *)
-    intros NM M P0 Θ0 Θ1 α A Hflex IHflex Hwf HwfP0 HwfP Hmod.
+    intros NM M P0 Θ0 Θ1 α A Hflex IHflex Hwf HwfP0 HwfP Hmod Hnt0.
     simpl.
     apply a_subtag__flex_mono; [ | fsetdec ].
     apply IHflex.
@@ -2332,8 +2334,9 @@ Proof.
         as [HΔx | Htx];
         [ exfalso; clear - HΔx; fsetdec | exact Htx ]. }
     { exact Hmod. }
+    { simpl. exact Hnt0. }
   - (* Arrow *)
-    intros NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hs2 IH2 Hwf HwfP0 HwfP Hmod.
+    intros NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hs2 IH2 Hwf HwfP0 HwfP Hmod Hnt0.
     apply a_wf_pskl_arrow_inv in HwfP0 as [HwfP0a HwfP0b].
     apply a_wf_pskl_arrow_inv in HwfP as [HwfP1 HwfP2].
     pose proof (a_consis_decorate Hc) as Hct.
@@ -2351,11 +2354,12 @@ Proof.
         | eapply a_wf_pskl_isub; [ exact HwfP0b | exact Hle ]
         | eapply a_wf_pskl_isub; [ exact HwfP2 | exact Hle ]
         | intros Hsk; specialize (Hmod Hsk); simpl in Hmod;
-          inversion Hmod; subst; assumption ]
+          inversion Hmod; subst; assumption
+        | simpl in Hnt0; tauto ]
       | fsetdec ].
   - (* ForallL : look-decoration + decorate-constraint-solving + KEY *)
     intros L NM M P0 Θ0 Θ1 P Q Ξ P1 Hne Hgor Hex Huq HwfP1 Hsub IHsub
-      Hwf HwfP0 HwfP Hmod.
+      Hwf HwfP0 HwfP Hmod Hnt0.
     assert (Hdecls : a_decls Ξ)
       by (destruct (atom_fresh L) as [α0 Hα0];
           eapply a_extract_decls; eauto).
@@ -2390,8 +2394,8 @@ Proof.
                 (L `union` dom Ξ `union` dom Θ0
                  `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
                  `union` ftvar_in_pskl P1)) as [α Hα].
-    destruct (a_extract_decorate (Hex α ltac:(clear - Hα; fsetdec))
-                Hsort Hera) as [Ξc [C [HDlk Hst]]].
+    destruct (a_extract_decorate_cov (Hex α ltac:(clear - Hα; fsetdec))
+                Hnt0 Hsort Hera) as [Ξc [C [HDlk Hst]]].
     assert (Hαg : α `notin` ftvar_in_uskl ψg).
     { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg). rewrite Hera.
       clear - Hα. fsetdec. }
@@ -2432,7 +2436,8 @@ Proof.
           [ exact HwfΞΘ
           | exact HwfP0'
           | exact HwfOpen
-          | exact Hmod ]
+          | exact Hmod
+          | exact Hnt0 ]
         | exact HeqSubj
         | exact HDsrc
         | exact Hst
@@ -2451,22 +2456,23 @@ Proof.
         | exact Hmod ]
       | clear; fsetdec ].
   - (* Ghost *)
-    intros M Θ0 P0 Hwf HwfP0 HwfP Hmod.
+    intros M Θ0 P0 Hwf HwfP0 HwfP Hmod Hnt0.
     simpl. apply a_subtag__ghost. fsetdec.
   - (* UnivGhostL *)
-    intros M Θ0 Θ1 P0 P Q Hne Hs IH Hwf HwfP0 HwfP Hmod.
+    intros M Θ0 Θ1 P0 P Q Hne Hs IH Hwf HwfP0 HwfP Hmod Hnt0.
     simpl.
     apply a_subtag__univ_ghost_l; [ exact Hne | ].
     apply IH;
       [ exact Hwf | exact HwfP0
       | apply a_wf_pskl_tophole_inv in HwfP;
         eapply a_wf_pskl_delta_mono; [ exact HwfP | clear; fsetdec ]
-      | exact Hmod ].
+      | exact Hmod
+      | exact Hnt0 ].
   - (* Flex-Solve : deposit α̂0 := α̂→β̂ and recurse on the arrow; the
        hypotheses lift into the deposited context by ⊴ (mirrors the
        corresponding a_subtag_sound_bundle case). *)
     intros NM M P0 Θ0 Θ1 Ξw α0 α β A Hne Hα Hβ Hs IH
-      Hsuf HwfΞ HwfP0 Hαb Hmod.
+      Hsuf HwfΞ HwfP0 Hαb Hmod Hnt0.
     set (τab := ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)).
     set (Θmid := (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0).
     set (Θ' := Ξw ++ (α0 ~ abind_flex_mono_def τab) ++ Θmid).
@@ -2534,11 +2540,11 @@ Proof.
          right; auto). }
     eapply a_subtag_flex__solve;
       [ exact Hne | exact Hα | exact Hβ | ].
-    exact (IH HwfΘ' HwfP0' Hwfarr Hmod).
+    exact (IH HwfΘ' HwfP0' Hwfarr Hmod Hnt0).
   - (* Flex-Assign : merge and re-enter the decorated MAIN judgment with
        the substituted subject (audit F1; mirrors the sound-bundle case's
        hypothesis transport). *)
-    intros NM M P0 Θ0 Θ1 Ξw α β τ A Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod.
+    intros NM M P0 Θ0 Θ1 Ξw α β τ A Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod Hnt0.
     assert (Hwfcons : a_wf_aenv ((β ~ abind_flex_mono_def τ) ++ Θ0))
       by (eapply a_wf_aenv_strip_prefix; eauto).
     inversion Hwfcons as [ | | βz τz Θz HβΘ0 Hwfτ Hm Hwf0 | | | ]; subst.
@@ -2568,14 +2574,17 @@ Proof.
         | reflexivity | exact HβΞΘ0 | clear; fsetdec
         | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint ]. }
     apply a_subtag_flex__assign; [ exact Hβ1 | ].
-    apply (IH HwfΞΘ0 HwfP0' Hwfvarsub).
-    intro HSK; specialize (Hmod HSK).
-    rewrite <- pskl_to_bskl_inh_subst_mono;
-      [ apply mod_comp_sk_subst_mono; [ exact Hmod | exact Hm ]
-      | exact Hm ].
+    apply (IH HwfΞΘ0 HwfP0' Hwfvarsub);
+      [ intro HSK; specialize (Hmod HSK);
+        rewrite <- pskl_to_bskl_inh_subst_mono;
+          [ apply mod_comp_sk_subst_mono; [ exact Hmod | exact Hm ]
+          | exact Hm ]
+      | apply pskl_no_top_subst;
+          [ exact Hnt0
+          | apply pskl_ghost_free_no_top; apply ptyp_to_pskl_ghost_free ] ].
   - (* Flex-Depend : β̂ joins the suffix at the Θ0-adjacent end; the
        premise context is the conclusion's up to associativity. *)
-    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hin Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod.
+    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hin Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod Hnt0.
     apply a_subtag_flex__depend; [ exact Hne | exact Hin | ].
     apply IH.
     { apply a_decls_app;
@@ -2584,9 +2593,10 @@ Proof.
     { simpl_env. simpl_env in HwfP0. exact HwfP0. }
     { simpl_env. simpl_env in Hαb. exact Hαb. }
     { exact Hmod. }
+    { exact Hnt0. }
   - (* Flex-Skip : strip the walked entry (P0 avoids it) and re-cons it
        on the output. *)
-    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hnin Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod.
+    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hnin Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod Hnt0.
     apply a_subtag_flex__skip;
       [ exact Hne | exact Hnin | exact Hβ1 | ].
     apply IH.
@@ -2599,8 +2609,9 @@ Proof.
         | intro He; inversion He; subst; exact (Hne eq_refl)
         | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]. }
     { exact Hmod. }
+    { exact Hnt0. }
   - (* Flex-SkipRigid : as Flex-Skip with a rigid head. *)
-    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hnin Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod.
+    intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hnin Hβ1 Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod Hnt0.
     apply a_subtag_flex__skip_rigid;
       [ exact Hne | exact Hnin | exact Hβ1 | ].
     apply IH.
@@ -2613,6 +2624,7 @@ Proof.
         | intro He; inversion He; subst; exact (Hne eq_refl)
         | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]. }
     { exact Hmod. }
+    { exact Hnt0. }
 Qed.
 
 (** The paper-shaped corollary. *)
@@ -2622,6 +2634,7 @@ Lemma a_sub_decorate : forall NM M P0 Θ0 P Q Θ1,
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
+  pskl_no_top P0 ->
   Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
 Proof.
   intros. eapply (proj1 a_sub_decorate_bundle); eauto.
@@ -2652,11 +2665,20 @@ Theorem a_sub_sound_thm : forall NM M P0 Θ0 P Q Θ1,
     ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt.
 Proof.
   intros NM M P0 Θ0 P Q Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
-  pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod) as Htag.
+  assert (Hnt0 : pskl_no_top P0).
+  { destruct NM.
+    - (* TY : from ghost-freeness of the against-type *)
+      apply pskl_ghost_free_no_top; apply Hgf; reflexivity.
+    - (* SK : mod_comp_sk forces inh P0 = ◇ (M=ti/tc ⟹ P0=◇, no_top ✓) or
+         arrow-chain (M=fn), whose DOMAINS mod_comp_sk leaves unconstrained —
+         so no_top P0 is NOT derivable here for M=fn (the "arguments are types"
+         fact is not captured by mod_comp_sk). *)
+      specialize (Hmod eq_refl); admit. }
+  pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod Hnt0) as Htag.
   exact ((proj1 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
            Hwf
            ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
            HwfP0
            ltac:(rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP)
            Hmod Hgf).
-Qed.
+Admitted.
