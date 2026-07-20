@@ -1180,79 +1180,23 @@ Qed.
 (*  §15  Decorating constraint solving                                    *)
 (*  (lemma:decorate-constraint-solving, subtyping-proofs.tex:95-127)      *)
 (*                                                                        *)
-(*  HONEST ADMIT (true; the paper's "straightforward induction" hides    *)
-(*  real content).  Design worked out (see the memory note):             *)
-(*  - relate each intermediate solve-skeleton P to the final decoration  *)
-(*    ψa by an inductive [dec_ext P ψa Ψrem] (ψa extends P; Ψrem = ψa's  *)
-(*    tags at P's ◇-positions), with a ghost-free skip constructor at    *)
-(*    ⊤◇-positions the TY guess drops and a flex-forget constructor at   *)
-(*    positions the final resolves to a variable;                        *)
-(*  - anchor at the OUTPUT: [a_guess NM Ps Ξ' P1 → ⌊ψa⌋=P1 → is_tskl →   *)
-(*    dec_ext Ps ψa ∅] (SK: erasure-refl; TY: guess_mono induction);     *)
-(*  - walk the constraint list BACKWARD: from [solve_eq P Q P'] and      *)
-(*    [dec_ext P' ψa Ψ'] produce the solvetag [ψa ∼ᵗ Q ⤳ Ψi] and        *)
-(*    [dec_ext P ψa Ψ₀] with Ψ₀ ⊆ Ψ' ∪ Ψi and Ψ' ⊆ Ψ₀; chain to ◇       *)
-(*    where de-hole pins Ψ₀ [=] Ψa (via d_tags_skl/utags), so the        *)
-(*    accumulated solvetag output covers Ψa exactly (≤ by tags-bound);   *)
-(*  - the per-family uniformity of cofinite solvetag outputs is          *)
-(*    resolved by a canonical output [utags ψ \ Ψ'] EXCEPT under the     *)
-(*    skip constructor (whose solvetag legitimately solves less); the    *)
-(*    remaining engineering is a per-node output function that records   *)
-(*    the skip positions.                                                *)
+(*  a_extract_decorate is Admitted, to be proved the PAPER's way:         *)
+(*  induction on the constraint solving [solve C □ Ps], building          *)
+(*  [solvetag C ψa Ψa] by matching ψa against the (ghost-free, for TY)    *)
+(*  CONSTRAINT TARGETS, and observing tag/ghost PROVENANCE — every tagged *)
+(*  quantifier of ψa comes from a quantifier of Ps, every dotted ghost    *)
+(*  (SK) from a ghost of Ps.  Coverage is SET MEMBERSHIP (Ψa = ⋃ per-     *)
+(*  constraint contributions), NOT a per-step growth identity — so the    *)
+(*  idempotent re-collection of ∀-tags is harmless, and the ⊤◇ ghosts     *)
+(*  the solve introduces (SS-GhostL) carry no tag and never appear as     *)
+(*  solvetag targets.  The removed dec_ext backward-walk (2026-07-20h)    *)
+(*  matched ψa against the ⊤◇-bearing solve OUTPUT and used a per-step    *)
+(*  Ψ-identity — two structural falsities (⊤◇∀, ε-re-collection).         *)
+(*                                                                        *)
+(*  Reusable helpers below (kept from the walk): d_tags_skl congruence /  *)
+(*  determinism / is_tskl, guarded+ghost-free skeleton-var rename, and    *)
+(*  a_solvetag_sub_eq_rename_var (the ∀-case output uniformity).          *)
 (* ===================================================================== *)
-
-(* --------------------------------------------------------------------- *)
-(*  SCAFFOLDING for a_extract_decorate (dec_ext + backward walk).          *)
-(*                                                                         *)
-(*  [dec_ext P ψ Ψrem]: the decorated skeleton ψ (a decoration of the      *)
-(*  guess of P) EXTENDS the plain solve-skeleton P; Ψrem is the subset of  *)
-(*  ψ's tags located at P's ◇-holes (the tags not yet accounted for by P's *)
-(*  own structure).  As the plain solve walks □ → … → Q FORWARD, the tags  *)
-(*  migrate from Ψrem into P's structure; walking BACKWARD (Q → … → □) each *)
-(*  constraint contributes its solvetag tags and re-grows Ψrem.  The TY    *)
-(*  guess fills ◇ with a fresh flex var (untagged) and DROPS ⊤◇ — hence    *)
-(*  the [skip_tophole] constructor and the empty base at the anchor.       *)
-(*                                                                         *)
-(*  STATUS: the inductive + the three deep helpers are DESIGN SKETCHES     *)
-(*  (Admitted); the ASSEMBLY (solve_cstr_decorate, a_extract_decorate) is  *)
-(*  proved FROM them.  NEXT: (i) validate/repair the dec_ext constructors  *)
-(*  against the guess (SK-identity vs TY hole-fill/⊤◇-drop; the flex-forget *)
-(*  case is subsumed by [dec_ext__hole] since a guessed α̂ is untagged);    *)
-(*  (ii) discharge dec_ext_guess_anchor (structural on the guess), the two *)
-(*  step lemmas (structural on solve_eq/solve_sub, mirroring the solvetag  *)
-(*  rules), and d_tags_skl_det.                                            *)
-(* --------------------------------------------------------------------- *)
-
-Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
-| dec_ext__hole : forall ψ Ψ,               (* P = ◇ : every tag of ψ remains *)
-    is_tskl ψ ->
-    d_tags_skl Ψ ψ ->
-    dec_ext pskl_hole ψ Ψ
-| dec_ext__unit : forall Ψ,
-    Ψ [=] empty ->
-    dec_ext pskl_unit uskl_unit Ψ
-| dec_ext__var : forall X Ψ,
-    Ψ [=] empty ->
-    dec_ext (pskl_var_f X) (uskl_var_f X) Ψ
-| dec_ext__arrow : forall P1 P2 ψ1 ψ2 Ψ Ψ1 Ψ2,
-    dec_ext P1 ψ1 Ψ1 ->
-    dec_ext P2 ψ2 Ψ2 ->
-    Ψ [=] Ψ1 `union` Ψ2 ->
-    dec_ext (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Ψ
-| dec_ext__all : forall L P0 ψ0 ε Ψ,         (* P's ∀ ; ε accounted, not remaining *)
-    (forall X, X `notin` L ->
-       dec_ext (open_pskl_wrt_pskl P0 (pskl_var_f X))
-               (open_uskl_wrt_uskl ψ0 (uskl_var_f X)) Ψ) ->
-    dec_ext (pskl_all_syn P0) (uskl_all_etag ε ψ0) Ψ
-| dec_ext__skip_tophole : forall P0 ψ Ψ,     (* TY guess dropped P's ⊤◇ *)
-    dec_ext P0 ψ Ψ ->
-    dec_ext (pskl_tophole P0) ψ Ψ
-| dec_ext__topholeg : forall P0 ψ0 Ψ,        (* SK keeps ⊤◇ ; ψ = ⊤◇̇.ψ0 *)
-    dec_ext P0 ψ0 Ψ ->
-    dec_ext (pskl_tophole P0) (uskl_topholeg ψ0) Ψ
-| dec_ext__flex_forget : forall P α Ψ,       (* P resolved to flex α̂ (untagged) *)
-    Ψ [=] empty ->
-    dec_ext P (uskl_var_f α) Ψ.
 
 (** [d_tags_skl] respects set-equality of the tag context. *)
 Lemma d_tags_skl_psi_cong : forall Ψ Ψ' ψ,
@@ -1267,27 +1211,6 @@ Proof.
       [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
   - apply d_tags_skl__holeg; fsetdec.
   - apply d_tags_skl__topholeg; apply IHd_tags_skl; exact Heq.
-Qed.
-
-(** [dec_ext] respects set-equality of the remaining-tag context. *)
-Lemma dec_ext_psi_cong : forall P ψ Ψ Ψ',
-  dec_ext P ψ Ψ -> Ψ [=] Ψ' -> dec_ext P ψ Ψ'.
-Proof.
-  intros P ψ Ψ Ψ' H; revert Ψ'; induction H; intros Ψ' Heq.
-  - apply dec_ext__hole;
-      [ assumption | eapply d_tags_skl_psi_cong; [ exact H0 | exact Heq ] ].
-  - apply dec_ext__unit; fsetdec.
-  - apply dec_ext__var; fsetdec.
-  - eapply dec_ext__arrow;
-      [ exact H | exact H0 | clear - H1 Heq; fsetdec ].
-  - apply dec_ext__all with (L := L). intros X HX.
-    match goal with
-    | IH : forall X, X `notin` L -> forall Ψ0, _ -> dec_ext _ _ Ψ0 |- _ =>
-        exact (IH X HX Ψ' Heq)
-    end.
-  - apply dec_ext__skip_tophole. apply IHdec_ext. exact Heq.
-  - apply dec_ext__topholeg. apply IHdec_ext. exact Heq.
-  - apply dec_ext__flex_forget; fsetdec.
 Qed.
 
 (** Determinism of the tag reading (up to set-equality). *)
@@ -1317,89 +1240,6 @@ Proof.
     fsetdec.
   - (* holeg *) fsetdec.
   - (* topholeg *) apply IHd_tags_skl; assumption.
-Qed.
-
-(** SK anchor / self-extension: a decorated skeleton extends its own erasure
-    with no remaining tags. *)
-Lemma dec_ext_erase_refl : forall ψ,
-  is_tskl ψ ->
-  dec_ext (uskl_to_pskl ψ) ψ empty.
-Proof.
-  intros ψ H; induction H; simpl.
-  - apply dec_ext__unit; fsetdec.
-  - apply dec_ext__var; fsetdec.
-  - eapply dec_ext__arrow; [ exact IHis_tskl1 | exact IHis_tskl2 | fsetdec ].
-  - apply dec_ext__all with (L := L). intros X HX.
-    rewrite <- uskl_to_pskl_open.
-    match goal with
-    | IH : forall X, X `notin` L -> dec_ext _ _ empty |- _ =>
-        exact (IH X ltac:(clear - HX; fsetdec))
-    end.
-  - apply dec_ext__hole; [ apply is_tskl__holeg | apply d_tags_skl__holeg; fsetdec ].
-  - apply dec_ext__topholeg. exact IHis_tskl.
-Qed.
-
-(** TY anchor: the [a_guess_mono] output painting's decoration extends the
-    pre-guess skeleton (◇ ↦ fresh var, ⊤◇ dropped). *)
-Lemma dec_ext_guess_mono_anchor : forall Θ Q Ξ' A ψa,
-  a_guess_mono Θ Q Ξ' A ->
-  is_tskl ψa ->
-  uskl_ghost_free ψa ->
-  ⌊ ψa ⌋ˢ = ptyp_to_pskl A ->
-  dec_ext Q ψa empty.
-Proof.
-  intros Θ Q Ξ' A ψa Hg; revert ψa; induction Hg; intros ψa Histk Hgf Hera.
-  - (* hole ↦ fresh α̂ : A = var α *)
-    destruct ψa; simpl in Hera; try discriminate Hera.
-    apply dec_ext__hole; [ exact Histk | apply d_tags_skl__var; fsetdec ].
-  - (* tophole P ↦ guess P : drop the ⊤◇ *)
-    apply dec_ext__skip_tophole. apply IHHg; assumption.
-  - (* var α ↦ var α *)
-    destruct ψa; simpl in Hera; try discriminate Hera.
-    inversion Hera; subst. apply dec_ext__var; fsetdec.
-  - (* unit ↦ unit *)
-    destruct ψa; simpl in Hera; try discriminate Hera.
-    apply dec_ext__unit; fsetdec.
-  - (* arrow ↦ arrow *)
-    destruct ψa; simpl in Hera; try discriminate Hera.
-    inversion Hera; subst.
-    inversion Histk; subst. inversion Hgf; subst.
-    eapply dec_ext__arrow; [ apply IHHg1 | apply IHHg2 | fsetdec ]; assumption.
-  - (* forall P ↦ all A0 : the ghost-free [is_tskl] ∀-decoration is [all_etag] *)
-    destruct ψa; simpl in Hera; try discriminate Hera;
-      try (inversion Histk; fail).          (* kill the non-[is_tskl] all_syn survivor *)
-    injection Hera as Hera0.
-    inversion Histk; subst. inversion Hgf; subst.
-    match goal with
-    | Hib : forall X, X `notin` ?Li -> is_tskl (open_uskl_wrt_uskl ?bd _),
-      Hgb : forall X, X `notin` ?Lg -> uskl_ghost_free (open_uskl_wrt_uskl ?bd _)
-      |- _ =>
-        apply dec_ext__all with (L := L `union` Li `union` Lg); intros X HX;
-        apply (H0 X ltac:(clear - HX; fsetdec)
-                 (open_uskl_wrt_uskl bd (uskl_var_f X)));
-          [ apply Hib; clear - HX; fsetdec
-          | apply Hgb; clear - HX; fsetdec
-          | rewrite uskl_to_pskl_open; rewrite Hera0;
-            rewrite <- ptyp_to_pskl_open; reflexivity ]
-    end.
-Qed.
-
-(** ANCHOR: a decoration of the guess output extends the pre-guess skeleton,
-    with NO remaining tags — the guess places untagged fresh flex vars at
-    every ◇, so all of ψa's tags sit in the structure of [Q]. *)
-Lemma dec_ext_guess_anchor : forall NM Q Ξ' Q' Ψa ψa,
-  a_guess NM Q Ξ' Q' ->
-  a_tags_sort NM Ψa ψa ->
-  ⌊ ψa ⌋ˢ = Q' ->
-  dec_ext Q ψa empty.
-Proof.
-  intros NM Q Ξ' Q' Ψa ψa Hg Htags Hera; inversion Hg; subst.
-  - (* SK : Q' = Q ; subst already rewrote Q to ⌊ψa⌋ˢ *)
-    inversion Htags; subst.
-    apply dec_ext_erase_refl; assumption.
-  - (* TY : Q' = ptyp_to_pskl A *)
-    inversion Htags; subst.
-    eapply dec_ext_guess_mono_anchor; eauto.
 Qed.
 
 (** Guardedness / ghost-freeness survive a skeleton-variable rename. *)
@@ -1525,183 +1365,6 @@ Proof.
   - apply is_tskl__topholeg; assumption.
 Qed.
 
-(** COVERAGE: if ψa extends [Q] with remaining tags [Ψ'] (at Q's ◇-holes),
-    the decorated solvetag [ψa ∼ᵗ Q] collects exactly the COMPLEMENT [Ψi], so
-    [Ψ' ∪ Ψi] is all of ψa's tags.  Threads [d_tags_skl Ψtot ψa] and inverts it
-    in the arrow/∀/topholeg cases to split [Ψtot]; the conclusion is set-algebra
-    ([dec_ext__arrow] carries no disjointness). *)
-Lemma dec_ext_to_solvetag_eq : forall Q ψa Ψ' Ψtot,
-  dec_ext Q ψa Ψ' ->
-  d_tags_skl Ψtot ψa ->
-  exists Ψi, ψa ∼ᵗ Q ⤳ Ψi /\ Ψtot [=] Ψ' `union` Ψi.
-Proof.
-  intros Q ψa Ψ' Ψtot Hdec; revert Ψtot; induction Hdec; intros Ψtot Hdt.
-  - (* hole : Q = ◇ ; SEq-Vacuous, all of ψa's tags remain *)
-    exists empty. split; [ apply a_solvetag_eq__vacuous; fsetdec | ].
-    match goal with
-    | Hd : d_tags_skl ?Ψx _ |- Ψtot [=] union ?Ψx _ =>
-        pose proof (d_tags_skl_det Hdt Hd) as He; clear - He; fsetdec
-    end.
-  - (* unit *)
-    exists empty. split; [ apply a_solvetag_eq__unit; fsetdec | ].
-    inversion Hdt; subst; fsetdec.
-  - (* var *)
-    exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
-    inversion Hdt; subst; fsetdec.
-  - (* arrow : split Ψtot via the d_tags arrow inversion, recurse *)
-    inversion Hdt as [ | | Ψt Ψt1 Ψt2 R1 R2 Hdt1 Hdt2 Hdisj HeqΨt | | | ]; subst.
-    destruct (IHHdec1 _ Hdt1) as [Ψi1 [Hs1 He1]].
-    destruct (IHHdec2 _ Hdt2) as [Ψi2 [Hs2 He2]].
-    exists (Ψi1 `union` Ψi2). split.
-    + eapply a_solvetag_eq__arrow; [ exact Hs1 | exact Hs2 | fsetdec ].
-    + clear - H HeqΨt He1 He2. fsetdec.
-  - (* all_etag : Q = ∀ ; SEq-ForallInh, one canonical Ψ0 transported by rename *)
-    inversion Hdt; subst.
-    match goal with
-    | Hbody : forall X, X `notin` ?L1 -> d_tags_skl ?Ψt0 (open_uskl_wrt_uskl ψ0 _),
-      IH : forall X, X `notin` ?Lh -> forall Ψt, _ -> _,
-      HΨeq : Ψtot [=] add ε ?Ψt0 |- _ =>
-        destruct (atom_fresh (L `union` L1 `union` ftvar_in_uskl ψ0
-                    `union` ftvar_in_pskl P0)) as [X0 HX0];
-        destruct (IH X0 ltac:(clear - HX0; fsetdec) Ψt0
-                    (Hbody X0 ltac:(clear - HX0; fsetdec))) as [Ψi0 [Hs0 He0]];
-        exists (add ε Ψi0); split;
-        [ eapply a_solvetag_eq__forall_inh with
-            (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P0
-                  `union` singleton X0)
-            (Ψ0 := Ψi0); [ | reflexivity ];
-          intros β Hβ;
-          rewrite (subst_bskl_in_uskl_intro X0 ψ0 (uskl_var_f β)
-                     ltac:(clear - HX0; fsetdec));
-          rewrite (subst_pskl_in_pskl_intro X0 P0 (pskl_var_f β)
-                     ltac:(clear - HX0; fsetdec));
-          exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 X0 β)
-        | clear - He0 HΨeq; fsetdec ]
-    end.
-  - (* skip_tophole : Q = ⊤◇Q0 (TY guess-drop).  Lift ψa ∼ᵗ Q0 (IH) to
-       ψa ∼ᵗ ⊤◇Q0.  Guarded/var heads are immediate (SEq-UnivGhostR / SEq-Var);
-       the ∀-head (all_etag) needs the ⊤◇-over-∀ solvetag lift — a genuine
-       structural frontier (SEq-ForallSyn's premise re-wraps the ∀ target). *)
-    admit.
-  - (* topholeg : Q = ⊤◇Q0, ψ = ⊤◇̇ψ0 ; SEq-UnivGhostG *)
-    inversion Hdt; subst.
-    match goal with
-    | Hd : d_tags_skl Ψtot ?p, IH : forall Ψt, d_tags_skl Ψt ?p -> _ |- _ =>
-        destruct (IH _ Hd) as [Ψi [Hs He]]
-    end.
-    exists Ψi. split; [ apply a_solvetag_eq__univ_ghostg; exact Hs | exact He ].
-  - (* flex_forget : ψ = var α ; SEq-Var, no tags *)
-    exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
-    inversion Hdt; subst; fsetdec.
-Admitted.
-
-(** BACKWARD STEP (eq): peel one [eq Q] constraint, collecting its solvetag
-    contribution [Ψi] and re-growing the remaining-tag set. *)
-Lemma dec_ext_solve_eq_step : forall Θ P Q P' ψa Ψ' Ψtot,
-  Θ ⊢ₑ P ∼ Q ⤳ P' ->
-  dec_ext P' ψa Ψ' ->
-  d_tags_skl Ψtot ψa ->
-  exists Ψi, ψa ∼ᵗ Q ⤳ Ψi /\ dec_ext P ψa (Ψ' `union` Ψi).
-Proof.
-  intros Θ P Q P' ψa Ψ' Ψtot Hs; revert ψa Ψ' Ψtot;
-    induction Hs; intros ψa Ψ' Ψtot Hdec Hdt.
-  - (* unit : P=Q=P'=unit *)
-    inversion Hdec; subst.
-    + exists empty. split; [ apply a_solvetag_eq__unit; fsetdec | ].
-      apply dec_ext__unit; fsetdec.
-    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
-      apply dec_ext__flex_forget; fsetdec.
-  - (* var : P=P'=var X ; Q arbitrary *)
-    inversion Hdec; subst.
-    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
-      apply dec_ext__var; fsetdec.
-    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
-      apply dec_ext__flex_forget; fsetdec.
-  - (* flex_r : P non-flex, Q=var α, P'=var α ; ψa is a var *)
-    inversion Hdec; subst.
-    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
-      apply dec_ext__flex_forget; fsetdec.
-    + exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
-      apply dec_ext__flex_forget; fsetdec.
-  - (* hole_l : P=◇, P'=Q ; the coverage sub-lemma at the (ghost-free) target *)
-    destruct (dec_ext_to_solvetag_eq Hdec Hdt) as [Ψi [Hst HeqΨ]].
-    exists Ψi. split; [ exact Hst | ].
-    apply dec_ext__hole;
-      [ eapply d_tags_skl_is_tskl; exact Hdt
-      | eapply d_tags_skl_psi_cong; [ exact Hdt | exact HeqΨ ] ].
-  - (* hole_r : Q=◇, P'=P ; SEq-Vacuous *)
-    exists empty. split; [ apply a_solvetag_eq__vacuous; fsetdec | ].
-    eapply dec_ext_psi_cong; [ exact Hdec | fsetdec ].
-  - (* arrow : P=P1→P2, Q=Q1→Q2, P'=P1'→P2' *)
-    inversion Hdec; subst.
-    + (* ψa = uskl_arrow ψ1 ψ2 *)
-      inversion Hdt; subst.
-      match goal with
-      | Ha : d_tags_skl ?T1 ψ1, Hb : d_tags_skl ?T2 ψ2 |- _ =>
-          destruct (IHHs1 _ _ _ H1 Ha) as [Ψi1 [Hst1 Hde1]];
-          destruct (IHHs2 _ _ _ H2 Hb) as [Ψi2 [Hst2 Hde2]]
-      end.
-      exists (Ψi1 `union` Ψi2). split.
-      * eapply a_solvetag_eq__arrow; [ exact Hst1 | exact Hst2 | fsetdec ].
-      * eapply dec_ext__arrow; [ exact Hde1 | exact Hde2 | fsetdec ].
-    + (* flex_forget : ψa = var *)
-      exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
-      apply dec_ext__flex_forget; fsetdec.
-  - (* forall : P=∀P₀, Q=∀Q₀, P'=∀P₀'.
-       FALSE-AS-STATED for the all_etag subject (see below): [all_etag ε ψ0 ∼ᵗ
-       ∀Q₀] fires only via SEq-ForallInh, whose output [add ε Ψ0] CONTAINS the
-       ∀-tag ε; but the conclusion [dec_ext (∀P₀)(all_etag ε ψ0)(Ψ'∪Ψi)] forces
-       (via the sole constructor dec_ext__all) the body remaining to contain ε,
-       and ε ∉ d_tags(open ψ0) — dec_ext remaining ⊆ subject tags.  The [Ψ'∪Ψi]
-       growth identity double-counts a ∀-tag already accounted in P'.  This is
-       the ε-re-collection frontier: the incremental dec_ext↔solvetag bridge is
-       incompatible with idempotent re-collection of ∀-tags.  The faithful route
-       is the paper's set-membership coverage (subtyping-proofs.tex:110-127),
-       not this per-step Ψ-arithmetic. *)
-    admit.
-  - (* tophole_both *) admit.
-  - (* tophole_l_all *) admit.
-  - (* tophole_l_guarded *) admit.
-  - (* all_l_tophole *) admit.
-  - (* tophole_r_guarded *) admit.
-Admitted.
-
-(** BACKWARD STEP (sub): the terminal [sub m Q] constraint. *)
-Lemma dec_ext_solve_sub_step : forall Θ m P Q P' ψa Ψ' Ψtot,
-  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
-  dec_ext P' ψa Ψ' ->
-  d_tags_skl Ψtot ψa ->
-  exists Ψi, ψa ≼ᵗ[ m ] Q ⤳ Ψi /\ dec_ext P ψa (Ψ' `union` Ψi).
-Admitted.
-
-(** ASSEMBLY: walking the whole constraint list back from the post-solve
-    skeleton [Q] to the start [P], the decorated solvetag collects [Ψc] and
-    [dec_ext] re-grows the remaining tags by exactly [Ψc]. *)
-Lemma solve_cstr_decorate : forall Θ C P Q ψa Ψpost Ψtot,
-  Θ ⊩ C ⨾ P ⤳ Q ->
-  dec_ext Q ψa Ψpost ->
-  d_tags_skl Ψtot ψa ->
-  exists Ψc, C ⊩ᵗ ψa ⤳ Ψc /\ dec_ext P ψa (Ψpost `union` Ψc).
-Proof.
-  intros Θ C P Q ψa Ψpost Ψtot Hsolve Hdec Hdt; revert Ψpost Hdec;
-    induction Hsolve; intros Ψpost Hdec.
-  - (* empty : C = nil, Q = P *)
-    exists empty. split.
-    + apply a_solvetag__empty; fsetdec.
-    + eapply dec_ext_psi_cong; [ exact Hdec | fsetdec ].
-  - (* sub : C = [sub m Q0] ; the whole solve output is P' *)
-    destruct (dec_ext_solve_sub_step H Hdec Hdt) as [Ψi [Hst Hdec']].
-    exists Ψi. split.
-    + apply a_solvetag__sub; exact Hst.
-    + eapply dec_ext_psi_cong; [ exact Hdec' | fsetdec ].
-  - (* eq : C = eq Q0 :: C' ; solve_eq then recurse *)
-    destruct (IHHsolve _ Hdec) as [Ψc' [Hstc Hdec'']].
-    destruct (dec_ext_solve_eq_step H Hdec'' Hdt) as [Ψi [Hste Hdec''']].
-    exists (Ψi `union` Ψc'). split.
-    + eapply a_solvetag__eq; [ exact Hste | exact Hstc | fsetdec ].
-    + eapply dec_ext_psi_cong; [ exact Hdec''' | fsetdec ].
-Qed.
-
 Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
   P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
   forall Ψa ψa,
@@ -1710,26 +1373,8 @@ Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
     exists Ξc C,
       P ≼[ αv , M ] P0 ⤳ Ξc ⨾ C /\
       C ⊩ᵗ ψa ⤳ Ψa.
-Proof.
-  intros NM αv M P P0 Ξ P1 Hext Ψa ψa Htags Hera.
-  inversion Hext; subst.
-  (* H : look ;  H0 : solve ;  H1 : guess (output ⌊ψa⌋ˢ) *)
-  eexists; eexists; split; [ exact H | ].
-  assert (Hanchor : dec_ext Q ψa empty)
-    by (eapply dec_ext_guess_anchor; [ exact H1 | exact Htags | reflexivity ]).
-  assert (Hda : d_tags_skl Ψa ψa) by (inversion Htags; assumption).
-  destruct (solve_cstr_decorate H0 Hanchor Hda) as [Ψc [Hstag Hhole]].
-  inversion Hhole; subst.
-  - (* hole : the walked-out tags are exactly [d_tags_skl ψa] = Ψa *)
-    eapply a_solvetag_psi_cong; [ exact Hstag | ].
-    match goal with
-    | Hdtag : d_tags_skl _ ψa |- _ =>
-        pose proof (d_tags_skl_det Hda Hdtag) as He; clear - He; fsetdec
-    end.
-  - (* flex_forget : ψa is a bare var, so both sides are empty *)
-    eapply a_solvetag_psi_cong; [ exact Hstag | ].
-    inversion Hda; fsetdec.
-Qed.
+Admitted.  (* paper's set-membership coverage (subtyping-proofs.tex:110-127);
+   the dec_ext backward-walk was removed (2026-07-20h) — see §15 header. *)
 
 (* ===================================================================== *)
 (*  §16  MAIN: decorating algorithmic subtyping                           *)
