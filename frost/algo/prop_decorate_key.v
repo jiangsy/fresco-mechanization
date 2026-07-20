@@ -1623,6 +1623,68 @@ Proof.
     eapply dec_ext_guess_mono_anchor; eauto.
 Qed.
 
+(** Skeleton-variable rename lemmas (for the ∀ case's cofinite reconstruction). *)
+Lemma is_tskl_rename_var : forall ψ X Y,
+  is_tskl ψ -> is_tskl (subst_bskl_in_uskl (uskl_var_f Y) X ψ).
+Proof.
+  intros ψ X Y H; induction H; simpl.
+  - apply is_tskl__unit.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply is_tskl__var.
+  - apply is_tskl__arrow; assumption.
+  - apply is_tskl__all_etag with (L := L `union` singleton X); intros Z HZ.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - HZ; fsetdec | apply lc_uskl_var_f ].
+    match goal with IH : forall X, X `notin` L -> _ |- _ =>
+      apply (IH Z ltac:(clear - HZ; fsetdec)) end.
+  - apply is_tskl__holeg.
+  - apply is_tskl__topholeg; assumption.
+Qed.
+
+Lemma d_tags_skl_rename_var : forall Ψ ψ X Y,
+  d_tags_skl Ψ ψ -> d_tags_skl Ψ (subst_bskl_in_uskl (uskl_var_f Y) X ψ).
+Proof.
+  intros Ψ ψ X Y H; induction H; simpl.
+  - apply d_tags_skl__unit; assumption.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply d_tags_skl__var; assumption.
+  - eapply d_tags_skl__arrow;
+      [ apply IHd_tags_skl1 | apply IHd_tags_skl2 | assumption | assumption ].
+  - eapply d_tags_skl__all_etag with (L := L `union` singleton X) (Ψ0 := Ψ0);
+      [ intros Z HZ | assumption | assumption ].
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - HZ; fsetdec | apply lc_uskl_var_f ].
+    match goal with IH : forall X, X `notin` L -> _ |- _ =>
+      apply (IH Z ltac:(clear - HZ; fsetdec)) end.
+  - apply d_tags_skl__holeg; assumption.
+  - apply d_tags_skl__topholeg; assumption.
+Qed.
+
+Lemma dec_ext_rename_var : forall P ψ Ψ,
+  dec_ext P ψ Ψ ->
+  forall X Y, dec_ext (subst_pskl_in_pskl (pskl_var_f Y) X P)
+                      (subst_bskl_in_uskl (uskl_var_f Y) X ψ) Ψ.
+Proof.
+  intros P ψ Ψ H; induction H; intros Xr Yr; simpl.
+  - apply dec_ext__hole; [ apply is_tskl_rename_var; assumption
+                         | apply d_tags_skl_rename_var; assumption ].
+  - apply dec_ext__unit; assumption.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply dec_ext__var; assumption.
+  - eapply dec_ext__arrow; [ apply IHdec_ext1 | apply IHdec_ext2 | assumption ].
+  - apply dec_ext__all with (L := L `union` singleton Xr); intros Z HZ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - HZ; fsetdec | apply lc_pskl_var_f ].
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - HZ; fsetdec | apply lc_uskl_var_f ].
+    match goal with IH : forall a, a `notin` L -> forall b c, _ |- _ =>
+      apply (IH Z ltac:(clear - HZ; fsetdec)) end.
+  - apply dec_ext__skip_tophole; apply IHdec_ext.
+  - apply dec_ext__topholeg; apply IHdec_ext.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply dec_ext__flex_forget; assumption.
+Qed.
+
 (** [pskl_no_top P]: P has no universal ghost ⊤◇ anywhere (holes ◇ ALLOWED,
     unlike [pskl_ghost_free]).  The extract's threaded solve-skeleton starts □
     and is filled only from ghost-free targets, so it never grows a ⊤◇ during
