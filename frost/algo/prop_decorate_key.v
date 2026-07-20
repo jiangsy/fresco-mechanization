@@ -1402,6 +1402,117 @@ Proof.
     eapply dec_ext_guess_mono_anchor; eauto.
 Qed.
 
+(** Guardedness / ghost-freeness survive a skeleton-variable rename. *)
+Lemma guarded_uskl_subst_var : forall ψ X Y,
+  guarded_uskl ψ -> guarded_uskl (subst_bskl_in_uskl (uskl_var_f Y) X ψ).
+Proof.
+  intros ψ X Y H; inversion H; subst; simpl.
+  - apply guarded_uskl__unit.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply guarded_uskl__var.
+  - apply guarded_uskl__arrow;
+      apply subst_bskl_in_uskl_lc_uskl; auto; apply lc_uskl_var_f.
+Qed.
+
+Lemma uskl_ghost_free_subst_var : forall ψ X Y,
+  uskl_ghost_free ψ ->
+  uskl_ghost_free (subst_bskl_in_uskl (uskl_var_f Y) X ψ).
+Proof.
+  intros ψ X Y H; induction H; simpl.
+  - apply uskl_ghost_free__unit.
+  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply uskl_ghost_free__var.
+  - apply uskl_ghost_free__arrow; assumption.
+  - apply uskl_ghost_free__all_etag with (L := L `union` singleton X);
+      intros Z HZ;
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ apply H0; clear - HZ; fsetdec
+        | clear - HZ; fsetdec | apply lc_uskl_var_f ].
+  - apply uskl_ghost_free__all_syn with (L := L `union` singleton X);
+      intros Z HZ;
+      rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+        [ apply H0; clear - HZ; fsetdec
+        | clear - HZ; fsetdec | apply lc_uskl_var_f ].
+Qed.
+
+(** [solvetag] is invariant under a simultaneous skeleton-variable rename of
+    subject and target (the tags are ε-markers, untouched). *)
+Lemma a_solvetag_sub_eq_rename_var :
+  (forall ψ M Q Ψ, ψ ≼ᵗ[ M ] Q ⤳ Ψ ->
+     forall X Y, (subst_bskl_in_uskl (uskl_var_f Y) X ψ) ≼ᵗ[ M ]
+                 (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ) /\
+  (forall ψ Q Ψ, ψ ∼ᵗ Q ⤳ Ψ ->
+     forall X Y, (subst_bskl_in_uskl (uskl_var_f Y) X ψ) ∼ᵗ
+                 (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ).
+Proof.
+  apply (a_solvetag_sub_eq_mutind
+           (fun ψ M Q Ψ _ => forall X Y,
+              (subst_bskl_in_uskl (uskl_var_f Y) X ψ) ≼ᵗ[ M ]
+              (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ)
+           (fun ψ Q Ψ _ => forall X Y,
+              (subst_bskl_in_uskl (uskl_var_f Y) X ψ) ∼ᵗ
+              (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ));
+    intros; simpl.
+  - (* SSub-Var *)
+    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply a_solvetag_sub__var; assumption.
+  - (* SSub-ForallL *)
+    apply a_solvetag_sub__forall_l with (L := L `union` singleton X); intros β Hβ.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ].
+    match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
+  - (* SSub-UnivGhostLG *)
+    apply a_solvetag_sub__univ_ghost_lg; auto.
+  - (* SSub-Vacuous *)
+    apply a_solvetag_sub__vacuous; assumption.
+  - (* SSub-Check *)
+    apply a_solvetag_sub__check;
+      [ apply guarded_uskl_subst_var; assumption
+      | apply guarded_pskl_subst_var; assumption | auto ].
+  - (* SSub-ForallR *)
+    apply a_solvetag_sub__forall_r with (L := L `union` singleton X); intros β Hβ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ].
+    match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
+  - (* SSub-Arrow *)
+    eapply a_solvetag_sub__arrow; [ auto | auto | eassumption ].
+  - (* SEq-Unit *)
+    apply a_solvetag_eq__unit; assumption.
+  - (* SEq-Var *)
+    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply a_solvetag_eq__var; assumption.
+  - (* SEq-Vacuous *)
+    apply a_solvetag_eq__vacuous; assumption.
+  - (* SEq-Arrow *)
+    eapply a_solvetag_eq__arrow; [ auto | auto | eassumption ].
+  - (* SEq-ForallInh *)
+    eapply a_solvetag_eq__forall_inh with (L := L `union` singleton X);
+      [ intros β Hβ;
+        rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+          [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ];
+        rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+          [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ];
+        match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end
+      | eassumption ].
+  - (* SEq-UnivGhostG *)
+    apply a_solvetag_eq__univ_ghostg; auto.
+  - (* SEq-ForallSyn *)
+    apply a_solvetag_eq__forall_syn with (L := L `union` singleton X); intros β Hβ.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - Hβ; fsetdec | apply lc_uskl_var_f ].
+    match goal with IH : forall b, _ |- _ =>
+      specialize (IH β ltac:(clear - Hβ; fsetdec) X Y); simpl in IH; exact IH end.
+  - (* SEq-UnivGhostR *)
+    apply a_solvetag_eq__univ_ghost_r;
+      [ rewrite uskl_to_pskl_subst; simpl;
+        apply guarded_pskl_subst_var; assumption
+      | auto ].
+  - (* SEq-FlexR : the target var may itself be renamed *)
+    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      apply a_solvetag_eq__flex_r;
+      first [ apply uskl_ghost_free_subst_var; assumption | assumption ].
+Qed.
+
 (** COVERAGE: if ψa extends [Q] with remaining tags [Ψ'] (at Q's ◇-holes),
     the decorated solvetag [ψa ∼ᵗ Q] collects exactly the COMPLEMENT [Ψi], so
     [Ψ' ∪ Ψi] is all of ψa's tags.  Threads [d_tags_skl Ψtot ψa] and inverts it
@@ -1432,8 +1543,29 @@ Proof.
     exists (Ψi1 `union` Ψi2). split.
     + eapply a_solvetag_eq__arrow; [ exact Hs1 | exact Hs2 | fsetdec ].
     + clear - H HeqΨt He1 He2. fsetdec.
-  - (* all_etag : Q = ∀ ; SEq-ForallInh (cofinite Ψ0) *)
-    admit.
+  - (* all_etag : Q = ∀ ; SEq-ForallInh, one canonical Ψ0 transported by rename *)
+    inversion Hdt; subst.
+    match goal with
+    | Hbody : forall X, X `notin` ?L1 -> d_tags_skl ?Ψt0 (open_uskl_wrt_uskl ψ0 _),
+      IH : forall X, X `notin` ?Lh -> forall Ψt, _ -> _,
+      HΨeq : Ψtot [=] add ε ?Ψt0 |- _ =>
+        destruct (atom_fresh (L `union` L1 `union` ftvar_in_uskl ψ0
+                    `union` ftvar_in_pskl P0)) as [X0 HX0];
+        destruct (IH X0 ltac:(clear - HX0; fsetdec) Ψt0
+                    (Hbody X0 ltac:(clear - HX0; fsetdec))) as [Ψi0 [Hs0 He0]];
+        exists (add ε Ψi0); split;
+        [ eapply a_solvetag_eq__forall_inh with
+            (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P0
+                  `union` singleton X0)
+            (Ψ0 := Ψi0); [ | reflexivity ];
+          intros β Hβ;
+          rewrite (subst_bskl_in_uskl_intro X0 ψ0 (uskl_var_f β)
+                     ltac:(clear - HX0; fsetdec));
+          rewrite (subst_pskl_in_pskl_intro X0 P0 (pskl_var_f β)
+                     ltac:(clear - HX0; fsetdec));
+          exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 X0 β)
+        | clear - He0 HΨeq; fsetdec ]
+    end.
   - (* skip_tophole : Q = ⊤◇Q0, guess dropped it ; SEq-UnivGhostR *)
     admit.
   - (* topholeg : Q = ⊤◇Q0, ψ = ⊤◇̇ψ0 ; SEq-UnivGhostG *)
