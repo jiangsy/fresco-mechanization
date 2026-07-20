@@ -1894,6 +1894,18 @@ Proof.
   - (* tophole_r_guarded : Q=⊤◇ *) simpl in Hgf; contradiction.
 Qed.
 
+(** A decoration of a guarded skeleton is guarded (unit/var/arrow). *)
+Lemma dec_ext_guarded_uskl : forall P ψ Ψ,
+  dec_ext P ψ Ψ -> guarded_pskl P -> is_tskl ψ -> guarded_uskl ψ.
+Proof.
+  intros P ψ Ψ H Hg Hik; inversion H; subst; try (inversion Hg; fail).
+  - apply guarded_uskl__unit.
+  - apply guarded_uskl__var.
+  - apply is_tskl_lc in Hik; inversion Hik; subst;
+      apply guarded_uskl__arrow; assumption.
+  - apply guarded_uskl__var.
+Qed.
+
 (** FORWARD STEP (sub): the terminal [sub m Q] constraint (Q ghost-free). *)
 Lemma dec_ext_solve_sub_step : forall Θ m P Q P' ψ Ψ' Ψtot,
   Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
@@ -1946,7 +1958,16 @@ Proof.
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* univ_ghost_l : P=⊤◇, no_top False *) simpl in Hnt; contradiction.
   - (* vacuous : Q=◇, ghost_free False *) simpl in Hgf; contradiction.
-  - (* check : guarded P, guarded Q, solve_eq P∼Q⤳P' *) admit.
+  - (* check : guarded P (H), guarded Q (H0), solve_eq (H1) → eq_step + SSub-Check *)
+    edestruct dec_ext_solve_eq_step as [Ψi [Ψp [Hste [Hdp Hup]]]];
+      [ exact H1 | exact Hdec | exact Hdt | exact Hnt | exact Hgf | ].
+    exists Ψi, Ψp; split;
+      [ apply a_solvetag_sub__check;
+          [ eapply dec_ext_guarded_uskl;
+              [ exact Hdp | assumption | eapply d_tags_skl_is_tskl; exact Hdt ]
+          | assumption
+          | exact Hste ]
+      | split; [ exact Hdp | exact Hup ] ].
   - (* forall_r : Q=∀B ; subject A fixed, rename target β0 ⤳ β *)
     simpl in Hgf.
     destruct (atom_fresh (L `union` ftvar_in_pskl B `union` ftvar_in_uskl ψ))
