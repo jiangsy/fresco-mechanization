@@ -1566,7 +1566,10 @@ Proof.
           exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 X0 β)
         | clear - He0 HΨeq; fsetdec ]
     end.
-  - (* skip_tophole : Q = ⊤◇Q0, guess dropped it ; SEq-UnivGhostR *)
+  - (* skip_tophole : Q = ⊤◇Q0 (TY guess-drop).  Lift ψa ∼ᵗ Q0 (IH) to
+       ψa ∼ᵗ ⊤◇Q0.  Guarded/var heads are immediate (SEq-UnivGhostR / SEq-Var);
+       the ∀-head (all_etag) needs the ⊤◇-over-∀ solvetag lift — a genuine
+       structural frontier (SEq-ForallSyn's premise re-wraps the ∀ target). *)
     admit.
   - (* topholeg : Q = ⊤◇Q0, ψ = ⊤◇̇ψ0 ; SEq-UnivGhostG *)
     inversion Hdt; subst.
