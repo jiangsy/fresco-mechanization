@@ -1793,6 +1793,107 @@ Proof.
       | inversion Hdt; subst; fsetdec ].
 Qed.
 
+(** FORWARD STEP (eq): one [eq Q] constraint (Q ghost-free), threaded through
+    [solve_eq P ∼ Q ⤳ P'].  Produces the per-constraint solvetag [ψ ∼ᵗ Q ⤳ Ψi]
+    and re-relates ψ to the pre-step P with COVERAGE [Ψp ⊆ Ψ' ∪ Ψi] (⊆, set
+    membership).  Tophole cases are vacuous ([no_top P] / [ghost_free Q]). *)
+Lemma dec_ext_solve_eq_step : forall Θ P Q P' ψ Ψ' Ψtot,
+  Θ ⊢ₑ P ∼ Q ⤳ P' ->
+  dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
+  pskl_no_top P -> pskl_ghost_free Q ->
+  exists Ψi Ψp, ψ ∼ᵗ Q ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
+Proof.
+  intros Θ P Q P' ψ Ψ' Ψtot Hs; revert ψ Ψ' Ψtot;
+    induction Hs; intros ψ Ψ' Ψtot Hdec Hdt Hnt Hgf.
+  - (* unit *) inversion Hdec; subst.
+    + exists empty, empty; split;
+        [ apply a_solvetag_eq__unit; fsetdec
+        | split; [ apply dec_ext__unit; fsetdec | fsetdec ] ].
+    + exists empty, empty; split;
+        [ apply a_solvetag_eq__var; fsetdec
+        | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
+  - (* var : P=P'=var X, Q arbitrary ghost-free *) inversion Hdec; subst.
+    + exists empty, empty; split;
+        [ apply a_solvetag_eq__var; fsetdec
+        | split; [ apply dec_ext__var; fsetdec | fsetdec ] ].
+    + exists empty, empty; split;
+        [ apply a_solvetag_eq__var; fsetdec
+        | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
+  - (* flex_r : Q=var α, P'=var α *) inversion Hdec; subst;
+      (exists empty, empty; split;
+        [ apply a_solvetag_eq__var; fsetdec
+        | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ]).
+  - (* hole_l : P=◇, P'=Q ; the coverage sub-lemma *)
+    destruct (dec_ext_cover_eq Hdec Hdt Hgf) as [Ψi [Hsi Hsub]].
+    exists Ψi, Ψtot; split; [ exact Hsi | split;
+      [ apply dec_ext__hole; [ eapply d_tags_skl_is_tskl; exact Hdt | exact Hdt ]
+      | exact Hsub ] ].
+  - (* hole_r : Q=◇, ghost_free ◇ = False *) simpl in Hgf; contradiction.
+  - (* arrow *)
+    simpl in Hnt, Hgf; destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2].
+    inversion Hdec; subst.
+    + (* ψ = arrow ψ1 ψ2 *)
+      inversion Hdt; subst.
+      edestruct IHHs1 as [Ψi1 [Ψp1 [Hsa [Hd1 Hu1]]]];
+        [ eassumption | eassumption | exact Hnt1 | exact Hgf1 | ].
+      edestruct IHHs2 as [Ψi2 [Ψp2 [Hsb [Hd2 Hu2]]]];
+        [ eassumption | eassumption | exact Hnt2 | exact Hgf2 | ].
+      exists (Ψi1 `union` Ψi2), (Ψp1 `union` Ψp2); split;
+        [ eapply a_solvetag_eq__arrow; [ exact Hsa | exact Hsb | fsetdec ]
+        | split; [ eapply dec_ext__arrow; [ exact Hd1 | exact Hd2 | fsetdec ]
+                 | match goal with Heq : Ψ' [=] _ `union` _ |- _ =>
+                     clear - Heq Hu1 Hu2; fsetdec end ] ].
+    + (* flex_forget *)
+      exists empty, empty; split;
+        [ apply a_solvetag_eq__var; fsetdec
+        | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
+  - (* forall : P=∀P0, Q=∀Q0, P'=∀P0' *)
+    simpl in Hnt, Hgf. inversion Hdec; subst.
+    + (* ψ = all_etag ε ψ0 ; bodies P Q P', IH = H0, dec_ext cofin = H2,
+         d_tags cofin = H4 (tag set Ψ0) *)
+      inversion Hdt; subst.
+      destruct (atom_fresh (L `union` L0 `union` L1 `union` ftvar_in_uskl ψ0
+                  `union` ftvar_in_pskl P `union` ftvar_in_pskl Q)) as [X0 HX0].
+      destruct (H0 X0 ltac:(clear - HX0; fsetdec) _ _ _
+                  (H2 X0 ltac:(clear - HX0; fsetdec))
+                  (H4 X0 ltac:(clear - HX0; fsetdec))
+                  ltac:(apply (proj1 (pskl_no_top_open_rec P X0 0)); exact Hnt)
+                  ltac:(apply pskl_ghost_free_open_rec; exact Hgf))
+                as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
+      exists (add ε Ψi0), Ψp0; split.
+      * (* solvetag : SEq-ForallInh, rename X0 ⤳ β *)
+        eapply a_solvetag_eq__forall_inh with
+          (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
+                `union` singleton X0) (Ψ0 := Ψi0); [ | reflexivity ].
+        intros β Hβ.
+        rewrite (subst_bskl_in_uskl_intro X0 ψ0 (uskl_var_f β)
+                   ltac:(clear - HX0; fsetdec)).
+        rewrite (subst_pskl_in_pskl_intro X0 Q (pskl_var_f β)
+                   ltac:(clear - HX0; fsetdec)).
+        exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 X0 β).
+      * split.
+        -- (* dec_ext : dec_ext__all, rename X0 ⤳ Z *)
+           apply dec_ext__all with
+             (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
+                   `union` singleton X0).
+           intros Z HZ.
+           rewrite (subst_pskl_in_pskl_intro X0 P (pskl_var_f Z)
+                      ltac:(clear - HX0; fsetdec)).
+           rewrite (subst_bskl_in_uskl_intro X0 ψ0 (uskl_var_f Z)
+                      ltac:(clear - HX0; fsetdec)).
+           exact (dec_ext_rename_var Hd0 X0 Z).
+        -- clear - Hu0; fsetdec.
+    + (* flex_forget *)
+      exists empty, empty; split;
+        [ apply a_solvetag_eq__var; fsetdec
+        | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
+  - (* tophole_both : P=⊤◇ *) simpl in Hnt; contradiction.
+  - (* tophole_l_all : P=⊤◇ *) simpl in Hnt; contradiction.
+  - (* tophole_l_guarded : P=⊤◇ *) simpl in Hnt; contradiction.
+  - (* all_l_tophole : Q=⊤◇ *) simpl in Hgf; contradiction.
+  - (* tophole_r_guarded : Q=⊤◇ *) simpl in Hgf; contradiction.
+Qed.
+
 Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
   P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
   forall Ψa ψa,
