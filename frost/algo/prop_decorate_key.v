@@ -1248,15 +1248,68 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
     dec_ext P0 ψ Ψ ->
     dec_ext (pskl_tophole P0) ψ Ψ.
 
+(** [d_tags_skl] respects set-equality of the tag context. *)
+Lemma d_tags_skl_psi_cong : forall Ψ Ψ' ψ,
+  d_tags_skl Ψ ψ -> Ψ [=] Ψ' -> d_tags_skl Ψ' ψ.
+Proof.
+  intros Ψ Ψ' ψ H; revert Ψ'; induction H; intros Ψ' Heq.
+  - apply d_tags_skl__unit; fsetdec.
+  - apply d_tags_skl__var; fsetdec.
+  - eapply d_tags_skl__arrow;
+      [ exact H | exact H0 | exact H1 | clear - H2 Heq; fsetdec ].
+  - eapply d_tags_skl__all_etag;
+      [ exact H | exact H1 | clear - H2 Heq; fsetdec ].
+  - apply d_tags_skl__holeg; fsetdec.
+  - apply d_tags_skl__topholeg; apply IHd_tags_skl; exact Heq.
+Qed.
+
 (** [dec_ext] respects set-equality of the remaining-tag context. *)
 Lemma dec_ext_psi_cong : forall P ψ Ψ Ψ',
   dec_ext P ψ Ψ -> Ψ [=] Ψ' -> dec_ext P ψ Ψ'.
-Admitted.
+Proof.
+  intros P ψ Ψ Ψ' H; revert Ψ'; induction H; intros Ψ' Heq.
+  - apply dec_ext__hole;
+      [ assumption | eapply d_tags_skl_psi_cong; [ exact H0 | exact Heq ] ].
+  - apply dec_ext__unit; fsetdec.
+  - apply dec_ext__var; fsetdec.
+  - eapply dec_ext__arrow;
+      [ exact H | exact H0 | clear - H1 Heq; fsetdec ].
+  - apply dec_ext__all with (L := L). intros X HX.
+    match goal with
+    | IH : forall X, X `notin` L -> forall Ψ0, _ -> dec_ext _ _ Ψ0 |- _ =>
+        exact (IH X HX Ψ' Heq)
+    end.
+  - apply dec_ext__skip_tophole. apply IHdec_ext. exact Heq.
+Qed.
 
 (** Determinism of the tag reading (up to set-equality). *)
-Lemma d_tags_skl_det : forall Ψ1 Ψ2 ψ,
-  d_tags_skl Ψ1 ψ -> d_tags_skl Ψ2 ψ -> Ψ1 [=] Ψ2.
-Admitted.
+Lemma d_tags_skl_det : forall Ψ1 Ψ' ψ,
+  d_tags_skl Ψ1 ψ -> d_tags_skl Ψ' ψ -> Ψ1 [=] Ψ'.
+Proof.
+  intros Ψ1 Ψ' ψ H; revert Ψ'; induction H; intros Ψ' HB; inversion HB; subst.
+  - (* unit *) fsetdec.
+  - (* var *) fsetdec.
+  - (* arrow : pin the second derivation's components via [Ψ'] union eqn *)
+    match goal with
+    | Hd1 : d_tags_skl ?Ψa R1, Hd2 : d_tags_skl ?Ψb R2,
+      _ : Ψ' [=] union ?Ψa ?Ψb |- _ =>
+        pose proof (IHd_tags_skl1 _ Hd1) as He1;
+        pose proof (IHd_tags_skl2 _ Hd2) as He2
+    end.
+    fsetdec.
+  - (* all_etag : match the IH by shape; pin the second body via [Ψ']=add ε _ *)
+    match goal with
+    | HIH : forall X, X `notin` ?La -> forall Ψx, d_tags_skl Ψx _ -> _ [=] Ψx,
+      Hbody : forall X, X `notin` ?Lb -> d_tags_skl ?Ψb _,
+      _ : Ψ' [=] add ε ?Ψb |- _ =>
+        destruct (atom_fresh (La `union` Lb)) as [X HX];
+        pose proof (HIH X ltac:(clear - HX; fsetdec)
+                      Ψb (Hbody X ltac:(clear - HX; fsetdec))) as He
+    end.
+    fsetdec.
+  - (* holeg *) fsetdec.
+  - (* topholeg *) apply IHd_tags_skl; assumption.
+Qed.
 
 (** ANCHOR: a decoration of the guess output extends the pre-guess skeleton,
     with NO remaining tags — the guess places untagged fresh flex vars at
