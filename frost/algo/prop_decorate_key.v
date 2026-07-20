@@ -2004,7 +2004,40 @@ Proof.
         [ apply a_solvetag_sub__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* ghost_l_fn *) admit.
-  - (* ghost_l : P=◇, Q=B guarded ghost-free, P'=⊤◇B *) admit.
+  - (* ghost_l : ◇ ≼[tc] B ⤳ ⊤◇B, guarded B = H ; Hgf : ghost_free B *)
+    inversion Hdec; subst.
+    + (* skip_tophole : dec_ext B ψ Ψ' *)
+      match goal with Hde : dec_ext B ψ Ψ' |- _ =>
+        destruct (dec_ext_cover_eq Hde Hdt Hgf) as [Ψi [Hsi Hsub]];
+        exists Ψi, Ψtot; split;
+          [ apply a_solvetag_sub__check;
+              [ eapply dec_ext_guarded_uskl;
+                  [ exact Hde | exact H | eapply d_tags_skl_is_tskl; exact Hdt ]
+              | exact H | exact Hsi ]
+          | split; [ apply dec_ext__hole;
+                       [ eapply d_tags_skl_is_tskl; exact Hdt | exact Hdt ]
+                   | exact Hsub ] ]
+      end.
+    + (* topholeg : ψ = ⊤◇̇ψ0, dec_ext B ψ0 Ψ' *)
+      inversion Hdt; subst.
+      match goal with Hde : dec_ext B ?p0 Ψ', Hd0 : d_tags_skl Ψtot ?p0 |- _ =>
+        destruct (dec_ext_cover_eq Hde Hd0 Hgf) as [Ψi [Hsi Hsub]];
+        exists Ψi, Ψtot; split;
+          [ apply a_solvetag_sub__univ_ghost_lg; apply a_solvetag_sub__check;
+              [ eapply dec_ext_guarded_uskl;
+                  [ exact Hde | exact H | eapply d_tags_skl_is_tskl; exact Hd0 ]
+              | exact H | exact Hsi ]
+          | split; [ apply dec_ext__hole;
+                       [ eapply d_tags_skl_is_tskl; exact Hdt | exact Hdt ]
+                   | exact Hsub ] ]
+      end.
+    + (* flex_forget : ψ = var *)
+      exists empty, empty; split;
+        [ apply a_solvetag_sub__var; fsetdec
+        | split; [ apply dec_ext__hole;
+                     [ eapply d_tags_skl_is_tskl; exact Hdt
+                     | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
+                 | inversion Hdt; subst; fsetdec ] ].
 Admitted.
 
 (** Every constraint target is ghost-free. *)
