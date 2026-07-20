@@ -1623,6 +1623,59 @@ Proof.
     eapply dec_ext_guess_mono_anchor; eauto.
 Qed.
 
+(** [pskl_no_top P]: P has no universal ghost ⊤◇ anywhere (holes ◇ ALLOWED,
+    unlike [pskl_ghost_free]).  The extract's threaded solve-skeleton starts □
+    and is filled only from ghost-free targets, so it never grows a ⊤◇ during
+    eq-processing — this excludes the [tophole_l_*] solve_eq cases. *)
+Fixpoint pskl_no_top (P : pskl) : Prop :=
+  match P with
+  | pskl_tophole _ => False
+  | pskl_arrow P1 P2 => pskl_no_top P1 /\ pskl_no_top P2
+  | pskl_all_syn P0 => pskl_no_top P0
+  | _ => True
+  end.
+
+Lemma pskl_ghost_free_no_top : forall P, pskl_ghost_free P -> pskl_no_top P.
+Proof. induction P; simpl; intuition. Qed.
+
+Lemma pskl_no_top_open_rec : forall P X k,
+  pskl_no_top P <-> pskl_no_top (open_pskl_wrt_pskl_rec k (pskl_var_f X) P).
+Proof.
+  induction P; intros X k; simpl; try tauto.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; tauto.
+  - rewrite (IHP1 X k), (IHP2 X k); tauto.
+  - rewrite (IHP X (S k)); tauto.
+Qed.
+
+(** No ⊤◇ is created solving against a ghost-free target. *)
+Lemma solve_eq_no_top : forall Θ P Q P',
+  Θ ⊢ₑ P ∼ Q ⤳ P' -> pskl_no_top P -> pskl_ghost_free Q -> pskl_no_top P'.
+Proof.
+  intros Θ P Q P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
+  - (* unit *) exact I.
+  - (* var *) exact I.
+  - (* flex_r *) exact I.
+  - (* hole_l : P'=Q *) apply pskl_ghost_free_no_top; assumption.
+  - (* hole_r : Q=◇, ghost_free ◇ = False *) contradiction.
+  - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
+      split; [ apply IHa_solve_eq1 | apply IHa_solve_eq2 ]; assumption.
+  - (* forall *)
+    destruct (atom_fresh (L `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
+                `union` ftvar_in_pskl Q)) as [β Hβ].
+    apply (proj2 (pskl_no_top_open_rec P' β 0)).
+    match goal with
+    | IH : forall X, X `notin` L -> _ -> _ -> pskl_no_top _ |- _ =>
+        apply (IH β ltac:(clear - Hβ; fsetdec));
+        [ apply (proj1 (pskl_no_top_open_rec P β 0)); exact Hnt
+        | apply pskl_ghost_free_open_rec; exact Hgf ]
+    end.
+  - (* tophole_both : P=⊤◇, no_top False *) contradiction.
+  - (* tophole_l_all : P=⊤◇ *) contradiction.
+  - (* tophole_l_guarded : P=⊤◇ *) contradiction.
+  - (* all_l_tophole : Q=⊤◇, ghost_free False *) contradiction.
+  - (* tophole_r_guarded : Q=⊤◇ *) contradiction.
+Qed.
+
 (** COVERAGE (set-membership, ⊆): matching ψ against a GHOST-FREE target Q
     collects a Ψi such that ψ's full tags Ψtot ⊆ Ψ' ∪ Ψi (Ψ' = tags at Q's
     ◇-holes).  Ghost-freeness makes hole/skip_tophole/topholeg VACUOUS (no ◇/⊤◇
