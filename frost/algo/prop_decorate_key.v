@@ -1250,8 +1250,7 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
 | dec_ext__topholeg : forall P0 ψ0 Ψ,        (* SK keeps ⊤◇ ; ψ = ⊤◇̇.ψ0 *)
     dec_ext P0 ψ0 Ψ ->
     dec_ext (pskl_tophole P0) (uskl_topholeg ψ0) Ψ
-| dec_ext__flex_forget : forall P α Ψ,       (* a guarded P resolved to flex α̂ *)
-    guarded_pskl P ->
+| dec_ext__flex_forget : forall P α Ψ,       (* P resolved to flex α̂ (untagged) *)
     Ψ [=] empty ->
     dec_ext P (uskl_var_f α) Ψ.
 
@@ -1288,7 +1287,7 @@ Proof.
     end.
   - apply dec_ext__skip_tophole. apply IHdec_ext. exact Heq.
   - apply dec_ext__topholeg. apply IHdec_ext. exact Heq.
-  - apply dec_ext__flex_forget; [ assumption | fsetdec ].
+  - apply dec_ext__flex_forget; fsetdec.
 Qed.
 
 (** Determinism of the tag reading (up to set-equality). *)
@@ -1460,16 +1459,17 @@ Proof.
   assert (Hanchor : dec_ext Q ψa empty)
     by (eapply dec_ext_guess_anchor; [ exact H1 | exact Htags | reflexivity ]).
   destruct (solve_cstr_decorate H0 Hanchor) as [Ψc [Hstag Hhole]].
-  inversion Hhole; subst;
-    (* the flex_forget case is absurd at ◇ (guarded_pskl pskl_hole) *)
-    try (match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end).
-  match goal with
-  | Hdtag : d_tags_skl ?Ψx ψa |- _ =>
-      assert (Hda : d_tags_skl Ψa ψa) by (inversion Htags; assumption);
-      assert (HΨ : Ψa [=] Ψx)
-        by (pose proof (d_tags_skl_det Hda Hdtag) as He; clear - He; fsetdec);
-      eapply a_solvetag_psi_cong; [ exact Hstag | clear - HΨ; fsetdec ]
-  end.
+  assert (Hda : d_tags_skl Ψa ψa) by (inversion Htags; assumption).
+  inversion Hhole; subst.
+  - (* hole : the walked-out tags are exactly [d_tags_skl ψa] = Ψa *)
+    eapply a_solvetag_psi_cong; [ exact Hstag | ].
+    match goal with
+    | Hdtag : d_tags_skl _ ψa |- _ =>
+        pose proof (d_tags_skl_det Hda Hdtag) as He; clear - He; fsetdec
+    end.
+  - (* flex_forget : ψa is a bare var, so both sides are empty *)
+    eapply a_solvetag_psi_cong; [ exact Hstag | ].
+    inversion Hda; fsetdec.
 Qed.
 
 (* ===================================================================== *)
