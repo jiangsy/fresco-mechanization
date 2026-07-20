@@ -1249,7 +1249,11 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
     dec_ext (pskl_tophole P0) ψ Ψ
 | dec_ext__topholeg : forall P0 ψ0 Ψ,        (* SK keeps ⊤◇ ; ψ = ⊤◇̇.ψ0 *)
     dec_ext P0 ψ0 Ψ ->
-    dec_ext (pskl_tophole P0) (uskl_topholeg ψ0) Ψ.
+    dec_ext (pskl_tophole P0) (uskl_topholeg ψ0) Ψ
+| dec_ext__flex_forget : forall P α Ψ,       (* a guarded P resolved to flex α̂ *)
+    guarded_pskl P ->
+    Ψ [=] empty ->
+    dec_ext P (uskl_var_f α) Ψ.
 
 (** [d_tags_skl] respects set-equality of the tag context. *)
 Lemma d_tags_skl_psi_cong : forall Ψ Ψ' ψ,
@@ -1284,6 +1288,7 @@ Proof.
     end.
   - apply dec_ext__skip_tophole. apply IHdec_ext. exact Heq.
   - apply dec_ext__topholeg. apply IHdec_ext. exact Heq.
+  - apply dec_ext__flex_forget; [ assumption | fsetdec ].
 Qed.
 
 (** Determinism of the tag reading (up to set-equality). *)
@@ -1455,7 +1460,9 @@ Proof.
   assert (Hanchor : dec_ext Q ψa empty)
     by (eapply dec_ext_guess_anchor; [ exact H1 | exact Htags | reflexivity ]).
   destruct (solve_cstr_decorate H0 Hanchor) as [Ψc [Hstag Hhole]].
-  inversion Hhole; subst.
+  inversion Hhole; subst;
+    (* the flex_forget case is absurd at ◇ (guarded_pskl pskl_hole) *)
+    try (match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end).
   match goal with
   | Hdtag : d_tags_skl ?Ψx ψa |- _ =>
       assert (Hda : d_tags_skl Ψa ψa) by (inversion Htags; assumption);
