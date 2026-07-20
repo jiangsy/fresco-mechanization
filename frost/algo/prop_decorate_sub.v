@@ -946,7 +946,7 @@ Lemma a_subtag_psi_cong : forall NM M P0 Ψ Θ0 S Q Θ1,
 Proof.
   intros NM M P0 Ψ Θ0 S Q Θ1 H; induction H; intros Ψ' Heq.
   - (* Infer *) apply a_subtag__infer; clear - H Heq; fsetdec.
-  - (* Check *) apply a_subtag__check; try assumption.
+  - (* Check *) eapply a_subtag__check; try assumption.
     eapply a_consistag_psi_cong; [ eassumption | exact Heq ].
   - (* ForallR *) eapply a_subtag__forall_r; try eassumption.
     intros α Hα.
@@ -1301,7 +1301,7 @@ Proof.
     inversion Hst; subst; simpl in *.
     + (* solvetag Var : ψf is a variable; the two sources coincide *)
       eapply a_subtag_psi_cong with (Ψ := Ψ);
-        [ apply a_subtag__check; assumption
+        [ eapply a_subtag__check; eassumption
         | match goal with He : Ψa [=] empty |- _ =>
             clear - He; fsetdec end ].
     + (* solvetag ForallL : the stripped subject is ∀-headed, not guarded *)
@@ -1313,7 +1313,7 @@ Proof.
     + (* solvetag Vacuous : P0 = ◇, but the Check target is guarded *)
       match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
     + (* solvetag Check : decorate the consistency premise *)
-      apply a_subtag__check.
+      eapply a_subtag__check.
       * apply guarded_msubst_decorate;
           [ exact Hlcρ | exact Hlcψ | assumption ].
       * assumption.

@@ -121,7 +121,7 @@ Proof.
       inversion Hst; subst.
       change ψa with (msubst_uskl nil ψa).
       eapply a_subtag_decoration_var;
-        [ apply a_subtag__check; eassumption
+        [ eapply a_subtag__check; eassumption
         | reflexivity
         | eassumption
         | intros γ g Hb; inversion Hb
@@ -141,13 +141,13 @@ Proof.
       end.
       inversion Hst; subst.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
-        [ apply a_subtag__check; assumption
+        [ eapply a_subtag__check; eassumption
         | match goal with He : Ψa [=] empty |- _ =>
             clear - He; fsetdec end ].
     + (* LS-Vacuous : the Check target is guarded, not ◇ *)
       match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
     + (* LS-Check : decorate the consistency premise *)
-      apply a_subtag__check.
+      eapply a_subtag__check.
       * apply guarded_subst_decorate; assumption.
       * assumption.
       * eapply a_consistag_decoration;
@@ -1262,14 +1262,16 @@ Proof.
     replace P with (⌊ pskl_to_uskl P ⌋ˢ) at 2
       by apply uskl_to_pskl_pskl_to_uskl.
     apply a_subtag__infer. fsetdec.
-  - (* Check : AUDIT-F2 — the decorated Check pins the consistency output
-       to B while the plain Check discards it (a_consis_chk's ∃Q).  The
-       queued harmonization ("consistency output on a ghost-free input is
-       the input", flagged 0f22a34) is what discharges this; false for
-       flexible-variable inputs (the output is the unified subject), so
-       the twin must be reconciled at the definition level.  ADMIT. *)
+  - (* Check : audit-F2 CLOSED — the decorated [a_subtag__check] no longer
+       pins the consistency output to [B] (it existentialises it, matching the
+       plain [a_consis_chk] and the paper's "output not used / ≡ B"
+       convention), so we simply decorate the plain consistency premise. *)
     intros Θ0 Θ1 A B HgA HgB Hchk Hwf HwfP0 HwfP Hmod.
-    admit.
+    destruct Hchk as [Q Hcns].
+    eapply a_subtag__check;
+      [ apply pskl_to_uskl_guarded; exact HgA
+      | exact HgB
+      | exact (a_consis_decorate Hcns) ].
   - (* ForallR *)
     intros L Θ0 Θ1 Ξ A B Hsuf Huq Hfam IHfam Hwf HwfP0 HwfP Hmod.
     inversion HwfP0 as [ | | | LP ΘP ΔP BP HbodyP HeqP | | ]; subst.
@@ -1589,7 +1591,7 @@ Proof.
         | intro He; inversion He; subst; exact (Hne eq_refl)
         | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]. }
     { exact Hmod. }
-Admitted.
+Qed.
 
 (** The paper-shaped corollary. *)
 Lemma a_sub_decorate : forall NM M P0 Θ0 P Q Θ1,

@@ -231,10 +231,15 @@ Inductive a_subtag :
 | a_subtag__infer : forall NM Ψ Θ0 S,                         (* Infer *)
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ NM | mode_ti | pskl_hole | Ψ ] S ⊑ ⌊ S ⌋ˢ ⊣ Θ0
-| a_subtag__check : forall Ψ Θ0 Θ1 T B,                       (* Check *)
+| a_subtag__check : forall Ψ Θ0 Θ1 T B Q,                     (* Check *)
     guarded_uskl T ->
     guarded_pskl B ->
-    Θ0 ⊢ᵗ[ empty | empty | B | Ψ ] T ≈ B ⊣ Θ1 ->
+    Θ0 ⊢ᵗ[ empty | empty | B | Ψ ] T ≈ Q ⊣ Θ1 ->
+    (* The consistency output [Q] is NOT used (paper full-algo-spec.tex:1441:
+       "when the output Q is not used"); when the target [B] is a type it is
+       a type EQUIVALENT to [B] (:1444), not literally [B].  Pinning it to [B]
+       is unsound for a flexible subject [α̂] (all three witnesses — paper
+       [FlexL]:1655, [a_consis__flex_l], impl [U-FlexL]:182 — output [α̂]). *)
     Θ0 ⊢ᵗ[ a_sub_mode_ty | mode_tc | B | Ψ ] T ⊑ B ⊣ Θ1
 | a_subtag__forall_r : forall L Ψ Θ0 Θ1 Ξ S B,                (* ForallR *)
     a_suffix Ξ ->

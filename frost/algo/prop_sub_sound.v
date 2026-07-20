@@ -191,6 +191,195 @@ Proof.
     | exact HwfQ ].
 Qed.
 
+(** audit-F2 bridge helpers.  A consistency judgement whose output is an
+    inh-painting-shaped skeleton transports its subject down to the exact
+    inh-painting, peeling the subject's leading [⊤◇]/flex nodes.  These handle
+    the ARROW and ∀ structural cases of [ad_pat_consis_refine_inh_gen]. *)
+
+Lemma consis_transport_arrow : forall Ψ Θ' T P1 P2 B1 B2,
+  Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (bskl_arrow P1 P2) ->
+  Θ' ⨟ empty ⊢ₚₛᵃ (pskl_arrow B1 B2) ->
+  (forall Ψ' T', Ψ' ⨟ Θ' ⊨ₛᵃ T' ≈ P1 ->
+     Ψ' ⨟ Θ' ⊨ₛᵃ T' ≈ (pskl_to_bskl_inh B1)) ->
+  (forall Ψ' T', Ψ' ⨟ Θ' ⊨ₛᵃ T' ≈ P2 ->
+     Ψ' ⨟ Θ' ⊨ₛᵃ T' ≈ (pskl_to_bskl_inh B2)) ->
+  Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (pskl_to_bskl_inh (pskl_arrow B1 B2)).
+Proof.
+  intros Ψ Θ' T P1 P2 B1 B2 Hc HwfB HR1 HR2.
+  remember (bskl_arrow P1 P2) as Qout eqn:HQ.
+  induction Hc; try discriminate HQ.
+  - (* arrow *) inversion HQ; subst. simpl.
+    apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+      [ apply HR1; assumption | apply HR2; assumption | assumption ].
+  - (* hole : uskl_hole ≈ any inh painting via the wf target *)
+    apply ad_pat_consis__hole; [ assumption | exact HwfB ].
+  - (* tophole_drop *) apply ad_pat_consis__tophole_drop. apply IHHc; assumption.
+  - (* flex_l *) eapply ad_pat_consis__flex_l; [ eassumption | ].
+    apply IHHc; assumption.
+Qed.
+
+Lemma consis_transport_all : forall Ψ Θ' T P0 B0 L,
+  Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (bskl_all_inh P0) ->
+  Θ' ⨟ empty ⊢ₚₛᵃ (pskl_all_syn B0) ->
+  (forall X, X `notin` L ->
+     forall Ψ' T',
+       Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊨ₛᵃ
+         T' ≈ (open_bskl_wrt_bskl P0 (bskl_var_f X)) ->
+       Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊨ₛᵃ
+         T' ≈ (pskl_to_bskl_inh (open_pskl_wrt_pskl B0 (pskl_var_f X)))) ->
+  Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (pskl_to_bskl_inh (pskl_all_syn B0)).
+Proof.
+  intros Ψ Θ' T P0 B0 L Hc HwfB Htr.
+  remember (bskl_all_inh P0) as Qout eqn:HQ.
+  induction Hc; try discriminate HQ.
+  - (* forall_inh_tagged : T = uskl_all_etag ε R *)
+    inversion HQ; subst.
+    eapply ad_pat_consis__forall_inh_tagged with (Ψ0 := Ψ0)
+      (L := L `union` L0); [ | assumption ].
+    intros X HX.
+    rewrite <- pskl_to_bskl_inh_open.
+    apply Htr; [ clear - HX; fsetdec | ].
+    match goal with
+    | Hbody : forall X, X `notin` ?L1 -> _ |- _ =>
+        apply (Hbody X ltac:(clear - HX; fsetdec))
+    end.
+  - (* forall_inh_untagged : T = uskl_all_syn R *)
+    inversion HQ; subst.
+    apply ad_pat_consis__forall_inh_untagged with (L := L `union` L0).
+    intros X HX.
+    rewrite <- pskl_to_bskl_inh_open.
+    apply Htr; [ clear - HX; fsetdec | ].
+    match goal with
+    | Hbody : forall X, X `notin` ?L1 -> _ |- _ =>
+        apply (Hbody X ltac:(clear - HX; fsetdec))
+    end.
+  - (* hole *) apply ad_pat_consis__hole; [ assumption | exact HwfB ].
+  - (* tophole_inh : T = uskl_tophole R *)
+    inversion HQ; subst.
+    apply ad_pat_consis__tophole_inh with (L := L `union` L0).
+    intros X HX.
+    rewrite <- pskl_to_bskl_inh_open.
+    apply Htr; [ clear - HX; fsetdec | ].
+    match goal with
+    | Hbody : forall X, X `notin` ?L1 -> _ |- _ =>
+        apply (Hbody X ltac:(clear - HX; fsetdec))
+    end.
+  - (* tophole_drop *) apply ad_pat_consis__tophole_drop. apply IHHc; assumption.
+  - (* flex_l *) eapply ad_pat_consis__flex_l; [ eassumption | ].
+    apply IHHc; assumption.
+Qed.
+
+(** audit-F2 bridge: the declarative consistency output transports from any
+    fill [Qt] of a well-formed ghost-free painting [inh B] back to [inh B]
+    itself.  Machine-checked form of the paper's "when either input is a type
+    annotation A, the output Q is a type EQUIVALENT to A"
+    (full-algo-spec.tex:1444): a flexible subject yields output [α̂ ≔ B ≡ B] and
+    the fill conjunct lets us fold it back to [B].  Induction on the
+    consistency derivation, threading the fill; ghost-free + wf on [B] exclude
+    the fill's ghost/flex-def source rules. *)
+Lemma ad_pat_consis_refine_inh_gen : forall Θ Δ Src Qt,
+  ad_refine_syn_f empty Θ Δ Src Qt ->
+  forall Bsrc, Src = pskl_to_bskl_inh Bsrc ->
+  pskl_ghost_free Bsrc ->
+  forall Θ',
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  (forall X, X `in` Δ -> a_binds_tvar X Θ') ->
+  a_wf_aenv Θ' ->
+  Θ' ⨟ empty ⊢ₚₛᵃ Bsrc ->
+  forall Ψ T, Ψ ⨟ Θ' ⊨ₛᵃ T ≈ Qt -> Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (pskl_to_bskl_inh Bsrc).
+Proof.
+  intros Θ Δ Src Qt Hfill.
+  induction Hfill; intros Bsrc HeqSrc Hgf Θ' Hmon Hrig Hwf' HwfB Ψ T Hc.
+  - (* unit *)
+    destruct Bsrc; simpl in HeqSrc; try discriminate HeqSrc. exact Hc.
+  - (* var *)
+    destruct Bsrc; simpl in HeqSrc; try discriminate HeqSrc.
+    inversion HeqSrc; subst. exact Hc.
+  - (* arrow *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc.
+    inversion HeqSrc; subst. destruct Hgf as [Hgf1 Hgf2].
+    pose proof HwfB as HwfBc. simpl in HwfBc.
+    inversion HwfBc as [ | | Θz Δz P1z P2z HwfB1 HwfB2 | | | ]; subst.
+    eapply consis_transport_arrow with (B1 := Bsrc1) (B2 := Bsrc2);
+      [ exact Hc | exact HwfB
+      | intros Ψ' T' HT'; eapply IHHfill1;
+          [ reflexivity | exact Hgf1 | exact Hmon | exact Hrig
+          | exact Hwf' | exact HwfB1 | exact HT' ]
+      | intros Ψ' T' HT'; eapply IHHfill2;
+          [ reflexivity | exact Hgf2 | exact Hmon | exact Hrig
+          | exact Hwf' | exact HwfB2 | exact HT' ] ].
+  - (* all *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc.
+    inversion HeqSrc; subst.
+    pose proof HwfB as HwfBc. simpl in HwfBc.
+    inversion HwfBc as [ | | | Lwf Θz Δz Bz Hbody Heqz | | ]; subst.
+    eapply consis_transport_all with (B0 := Bsrc)
+      (L := L `union` Lwf `union` dom Θ' `union` ftvar_in_pskl Bsrc);
+      [ exact Hc | exact HwfB | ].
+    intros X HX Ψ0 T0 HT0.
+    match goal with
+    | IH : forall X0, X0 `notin` ?L0 ->
+             forall Bsrc0, _ = pskl_to_bskl_inh Bsrc0 -> _ |- _ =>
+        eapply (IH X ltac:(clear - HX; fsetdec)
+                  (open_pskl_wrt_pskl Bsrc (pskl_var_f X)))
+    end;
+      [ symmetry; apply pskl_to_bskl_inh_open
+      | unfold open_pskl_wrt_pskl; apply pskl_ghost_free_open_rec; exact Hgf
+      | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
+      | intros Y HY; destruct (Y == X) as [-> | Hne];
+          [ left; unfold binds; simpl; left; reflexivity
+          | apply a_binds_tvar_weaken_cons; apply Hrig;
+            clear - HY Hne; fsetdec ]
+      | apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ]
+      | eapply a_wf_pskl_delta_to_tvar;
+          [ apply Hbody; clear - HX; fsetdec | clear; fsetdec ]
+      | exact HT0 ].
+  - (* hole : source ghost, excluded *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_remove *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_fill *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* tophole_keep *)
+    destruct Bsrc; simpl in HeqSrc, Hgf; try discriminate HeqSrc; contradiction.
+  - (* flex_l : source is a defined flex var *)
+    assert (Hbα' : binds α (abind_flex_mono_def τ) Θ') by (apply Hmon; exact H).
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    assert (Hwfτ : a_wf_ptyp Θ' τ) by (eapply a_wf_aenv_binds_def_wf; eauto).
+    rewrite <- HeqSrc.
+    eapply ad_pat_consis__flex_r; [ exact Hbα' | ].
+    rewrite <- (mono_inh_eq_syn Hmτ).
+    eapply (IHHfill (ptyp_to_pskl τ));
+      [ symmetry; apply (mono_inh_eq_syn Hmτ)
+      | apply ptyp_to_pskl_ghost_free
+      | exact Hmon | exact Hrig | exact Hwf'
+      | apply a_wf_pskl_mono_ptyp; [ exact Hmτ | exact Hwfτ ]
+      | exact Hc ].
+  - (* flex_r : output is a defined flex var; unfold the consistency *)
+    assert (Hbα' : binds α (abind_flex_mono_def τ) Θ') by (apply Hmon; exact H).
+    assert (Hunf : Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (ptyp_to_bskl_syn τ))
+      by (eapply consis_unfold_def_join;
+            [ exact Hc | exact Hwf' | reflexivity | exact Hbα' ]).
+    eapply IHHfill with (Bsrc := Bsrc) (Θ' := Θ');
+      [ exact HeqSrc | exact Hgf | exact Hmon | exact Hrig
+      | exact Hwf' | exact HwfB | exact Hunf ].
+Qed.
+
+Lemma ad_pat_consis_refine_inh_target : forall Ψ Θ T Qt,
+  Ψ ⨟ Θ ⊨ₛᵃ T ≈ Qt ->
+  a_wf_aenv Θ ->
+  forall B,
+  Θ ⨟ empty ⊢ₚₛᵃ B ->
+  pskl_ghost_free B ->
+  ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh B) Qt ->
+  Ψ ⨟ Θ ⊨ₛᵃ T ≈ (pskl_to_bskl_inh B).
+Proof.
+  intros Ψ Θ T Qt Hc Hwf B HwfB Hgf Href.
+  eapply ad_pat_consis_refine_inh_gen with (Θ := Θ) (Δ := empty) (Bsrc := B);
+    [ exact Href | reflexivity | exact Hgf
+    | auto | intros X HX; clear - HX; fsetdec | exact Hwf | exact HwfB | exact Hc ].
+Qed.
+
 (* ===================================================================== *)
 (*  §2  The mutual soundness statement                                    *)
 (* ===================================================================== *)
@@ -262,10 +451,14 @@ Proof.
       simpl. apply ad_refine_syn_f__hole;
         [ clear; fsetdec | exact HwfS ].
 
-  - (* Check (TY) : the run lands on B itself — B is ghost-free (a
-       type), so the fill conjunct of the consistency run pins its output
-       to the inh painting ([ad_refine_syn_f_ghost_free_erasure_inv]). *)
-    intros Ψ Θ0 Θ1 T B HgT HgB Hc Hwf HlcT HwfB HwfT Hmod Hgf.
+  - (* Check (TY) : audit-F2 — the consistency output [Q] is NOT literally [B]
+       (for a flexible subject [α̂] it is the flex variable, ≡ B; paper
+       full-algo-spec.tex:1441/1655, impl [U-FlexL]).  But [B] is a
+       well-formed ghost-free type, so the fill conjunct
+       [ad_refine_syn_f _ (inh B) Qt] forces the declarative consistency to
+       transport from output [Qt] to [inh B] ([ad_pat_consis_refine_inh_target]),
+       recovering the paper's "output ≡ B" reading. *)
+    intros Ψ Θ0 Θ1 T B Q HgT HgB Hc Hwf HlcT HwfB HwfT Hmod Hgf.
     specialize (Hgf eq_refl).
     destruct (a_consistag_sound_aux Hc Hwf HlcT HwfB HwfT
                 ltac:(intros X HX; clear - HX; fsetdec)
@@ -275,16 +468,18 @@ Proof.
                       apply inter_empty_pointwise;
                       intros X HX; clear - HX; fsetdec))
       as [Hle [Hwf1 [_ [_ [[Qt [HeQt [Hcons Hfill]]] _]]]]].
-    assert (HQt : Qt = pskl_to_bskl_inh B)
-      by (eapply ad_refine_syn_f_ghost_free_erasure_inv; eauto).
-    subst Qt.
+    assert (HwfB1 : Θ1 ⨟ empty ⊢ₚₛᵃ B)
+      by (eapply a_wf_pskl_isub; [ exact HwfB | exact Hle ]).
+    assert (Hcons' : Ψ ⨟ Θ1 ⊨ₛᵃ T ≈ (pskl_to_bskl_inh B))
+      by (eapply ad_pat_consis_refine_inh_target;
+            [ exact Hcons | exact Hwf1 | exact HwfB1 | exact Hgf | exact Hfill ]).
     split; [ exact Hle | ].
     split; [ exact Hwf1 | ].
     exists (pskl_to_bskl_inh B).
     split; [ apply bskl_to_pskl_pskl_to_bskl_inh | ].
     split.
-    + apply ad_pat_sub__check; [ exact HgT | exact HgB | exact Hcons ].
-    + exact Hfill.
+    + apply ad_pat_sub__check; [ exact HgT | exact HgB | exact Hcons' ].
+    + apply ad_refine_syn_f_refl_inh; exact HwfB1.
 
   - (* ForallR (TY) : open the binder, run the body, strip the trailing
        suffix, and re-attach the rigid head (crib: a_consistag_sound_aux's
