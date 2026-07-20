@@ -1402,6 +1402,52 @@ Proof.
     eapply dec_ext_guess_mono_anchor; eauto.
 Qed.
 
+(** COVERAGE: if ψa extends [Q] with remaining tags [Ψ'] (at Q's ◇-holes),
+    the decorated solvetag [ψa ∼ᵗ Q] collects exactly the COMPLEMENT [Ψi], so
+    [Ψ' ∪ Ψi] is all of ψa's tags.  Threads [d_tags_skl Ψtot ψa] and inverts it
+    in the arrow/∀/topholeg cases to split [Ψtot]; the conclusion is set-algebra
+    ([dec_ext__arrow] carries no disjointness). *)
+Lemma dec_ext_to_solvetag_eq : forall Q ψa Ψ' Ψtot,
+  dec_ext Q ψa Ψ' ->
+  d_tags_skl Ψtot ψa ->
+  exists Ψi, ψa ∼ᵗ Q ⤳ Ψi /\ Ψtot [=] Ψ' `union` Ψi.
+Proof.
+  intros Q ψa Ψ' Ψtot Hdec; revert Ψtot; induction Hdec; intros Ψtot Hdt.
+  - (* hole : Q = ◇ ; SEq-Vacuous, all of ψa's tags remain *)
+    exists empty. split; [ apply a_solvetag_eq__vacuous; fsetdec | ].
+    match goal with
+    | Hd : d_tags_skl ?Ψx _ |- Ψtot [=] union ?Ψx _ =>
+        pose proof (d_tags_skl_det Hdt Hd) as He; clear - He; fsetdec
+    end.
+  - (* unit *)
+    exists empty. split; [ apply a_solvetag_eq__unit; fsetdec | ].
+    inversion Hdt; subst; fsetdec.
+  - (* var *)
+    exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
+    inversion Hdt; subst; fsetdec.
+  - (* arrow : split Ψtot via the d_tags arrow inversion, recurse *)
+    inversion Hdt as [ | | Ψt Ψt1 Ψt2 R1 R2 Hdt1 Hdt2 Hdisj HeqΨt | | | ]; subst.
+    destruct (IHHdec1 _ Hdt1) as [Ψi1 [Hs1 He1]].
+    destruct (IHHdec2 _ Hdt2) as [Ψi2 [Hs2 He2]].
+    exists (Ψi1 `union` Ψi2). split.
+    + eapply a_solvetag_eq__arrow; [ exact Hs1 | exact Hs2 | fsetdec ].
+    + clear - H HeqΨt He1 He2. fsetdec.
+  - (* all_etag : Q = ∀ ; SEq-ForallInh (cofinite Ψ0) *)
+    admit.
+  - (* skip_tophole : Q = ⊤◇Q0, guess dropped it ; SEq-UnivGhostR *)
+    admit.
+  - (* topholeg : Q = ⊤◇Q0, ψ = ⊤◇̇ψ0 ; SEq-UnivGhostG *)
+    inversion Hdt; subst.
+    match goal with
+    | Hd : d_tags_skl Ψtot ?p, IH : forall Ψt, d_tags_skl Ψt ?p -> _ |- _ =>
+        destruct (IH _ Hd) as [Ψi [Hs He]]
+    end.
+    exists Ψi. split; [ apply a_solvetag_eq__univ_ghostg; exact Hs | exact He ].
+  - (* flex_forget : ψ = var α ; SEq-Var, no tags *)
+    exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
+    inversion Hdt; subst; fsetdec.
+Admitted.
+
 (** BACKWARD STEP (eq): peel one [eq Q] constraint, collecting its solvetag
     contribution [Ψi] and re-growing the remaining-tag set. *)
 Lemma dec_ext_solve_eq_step : forall Θ P Q P' ψa Ψ',
