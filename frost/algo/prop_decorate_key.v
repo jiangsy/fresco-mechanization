@@ -3396,7 +3396,7 @@ Theorem a_sub_sound_thm : forall NM M P0 Θ0 P Q Θ1,
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
-  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->   (* L-B refinement only; L-A derives its own *)
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* paper's [P0 :ty M]; L-A derives top_guarded from wf *)
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   exists Qt,
     bskl_to_pskl Qt = Q /\

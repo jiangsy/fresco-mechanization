@@ -384,6 +384,55 @@ Qed.
 (*  §2  The mutual soundness statement                                    *)
 (* ===================================================================== *)
 
+(** L-B threads the paper's [a_ty_mode_compat M P0] (:ty) instead of
+    [ghost_free P0]: a TC input IS a type (⟹ ghost_free where the refinement
+    needs it), an FN input is an arrow whose codomain recurses (the domain
+    goes to consistency via WF, not ghost-freeness), a TI input is ◇. *)
+Lemma a_ty_mode_compat_tc_ghost_free : forall P,
+  a_ty_mode_compat mode_tc P -> pskl_ghost_free P.
+Proof. intros P H; inversion H; subst; apply ptyp_to_pskl_ghost_free. Qed.
+
+Lemma subst_ptyp_to_pskl_comm : forall A τ β,
+  subst_pskl_in_pskl (ptyp_to_pskl τ) β (ptyp_to_pskl A)
+    = ptyp_to_pskl (subst_ptyp_in_ptyp τ β A).
+Proof.
+  induction A; intros τ β; simpl; try solve [ f_equal; auto ];
+    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    reflexivity.
+Qed.
+
+Lemma a_ty_mode_compat_subst_mono : forall M P τ β,
+  a_ty_mode_compat M P -> mono_ptyp τ ->
+  a_ty_mode_compat M (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
+Proof.
+  intros M P τ β H Hm; induction H; simpl.
+  - apply a_ty_mode_compat__ti.
+  - rewrite subst_ptyp_to_pskl_comm; apply a_ty_mode_compat__tc.
+  - apply a_ty_mode_compat__fn; assumption.
+Qed.
+
+(** A ghost-free skeleton IS a type skeleton, hence TC-compatible — the reverse
+    of [a_ty_mode_compat_tc_ghost_free], for re-entering TC recursions (ForallR). *)
+Lemma pskl_ghost_free_ptyp : forall P,
+  pskl_ghost_free P -> exists A, P = ptyp_to_pskl A.
+Proof.
+  induction P; simpl; intros H.
+  - exists ptyp_unit; reflexivity.
+  - match goal with |- exists A, pskl_var_b ?n = _ => exists (ptyp_var_b n) end; reflexivity.
+  - match goal with |- exists A, pskl_var_f ?v = _ => exists (ptyp_var_f v) end; reflexivity.
+  - destruct H as [H1 H2]; destruct (IHP1 H1) as [A1 ->];
+      destruct (IHP2 H2) as [A2 ->]; exists (ptyp_arrow A1 A2); reflexivity.
+  - destruct (IHP H) as [A ->]; exists (ptyp_all A); reflexivity.
+  - contradiction.
+  - contradiction.
+Qed.
+
+Lemma pskl_ghost_free_ty_mode_compat_tc : forall P,
+  pskl_ghost_free P -> a_ty_mode_compat mode_tc P.
+Proof.
+  intros P H; destruct (pskl_ghost_free_ptyp _ H) as [A ->]; apply a_ty_mode_compat__tc.
+Qed.
+
 (** The subtyping conclusion (paper: ⊴, the fill of [P0], and the
     declarative subtyping of the subject, at the OUTPUT context). *)
 Definition subtag_sound_concl
@@ -394,7 +443,7 @@ Definition subtag_sound_concl
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ S ⌋ˢ ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
-  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   (exists Qt, bskl_to_pskl Qt = Q /\
      Ψ ⨟ Θ1 ⊢ₛᵃ[ NM | M ] S ⊑ Qt /\
@@ -410,7 +459,7 @@ Definition subtag_flex_sound_concl
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
   a_binds_tvar α (Ξ ++ Θ0) ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) (mode_fn M)) ->
-  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
   (Ξ ++ Θ0) ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   (exists Qt, bskl_to_pskl Qt = A /\
      empty ⨟ Θ1 ⊢ₛᵃ[ NM | mode_fn M ] (uskl_var_f α) ⊑ Qt /\
@@ -472,7 +521,8 @@ Proof.
       by (eapply a_wf_pskl_isub; [ exact HwfB | exact Hle ]).
     assert (Hcons' : Ψ ⨟ Θ1 ⊨ₛᵃ T ≈ (pskl_to_bskl_inh B))
       by (eapply ad_pat_consis_refine_inh_target;
-            [ exact Hcons | exact Hwf1 | exact HwfB1 | exact Hgf | exact Hfill ]).
+            [ exact Hcons | exact Hwf1 | exact HwfB1
+            | apply a_ty_mode_compat_tc_ghost_free; exact Hgf | exact Hfill ]).
     split; [ exact Hle | ].
     split; [ exact Hwf1 | ].
     exists (pskl_to_bskl_inh B).
@@ -486,7 +536,8 @@ Proof.
        ForallInh; the fill re-attaches via the ghost-free strip+rename). *)
     intros L Ψ Θ0 Θ1 Ξ S B Hsuf Huq Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
     assert (HgfB : pskl_ghost_free B)
-      by (specialize (Hgf eq_refl); simpl in Hgf; exact Hgf).
+      by (specialize (Hgf eq_refl);
+          apply a_ty_mode_compat_tc_ghost_free in Hgf; simpl in Hgf; exact Hgf).
     simpl in HwfP0.
     inversion HwfP0 as [ | | | L0 Θz Δz Pz Hbody Heqz | | ]; subst.
     destruct (atom_fresh
@@ -506,7 +557,8 @@ Proof.
                            simpl; right; exact Hb
                          | exact HwfS ]))
                 ltac:(intro HSK; discriminate HSK)
-                (ltac:(intro He; unfold open_pskl_wrt_pskl;
+                (ltac:(intro He; apply pskl_ghost_free_ty_mode_compat_tc;
+                       unfold open_pskl_wrt_pskl;
                        apply pskl_ghost_free_open_rec; exact HgfB)))
       as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
     assert (HuqT : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
@@ -694,7 +746,7 @@ Proof.
                 ltac:(intro HSK; specialize (Hmod HSK); simpl in Hmod;
                       inversion Hmod; subst; assumption)
                 ltac:(intro HNMe; specialize (Hgf HNMe);
-                      simpl in Hgf; tauto))
+                      inversion Hgf; subst; assumption))
       as [Hle2 [Hwf2 [Qt2 [HeQt2 [Hsub2 Hfill2]]]]].
     split; [ eapply a_isub_trans; eauto | ].
     split; [ exact Hwf2 | ].
@@ -1000,7 +1052,7 @@ Proof.
                             [ exact Hmod | exact Hm ]
                         | exact Hm ])
                 ltac:(intro HTY; specialize (Hgf HTY);
-                      apply pskl_ghost_free_subst_mono;
+                      apply a_ty_mode_compat_subst_mono;
                         [ exact Hgf | exact Hm ]))
       as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
     assert (Hle0 : Θ0 ⊴ Θ1)
