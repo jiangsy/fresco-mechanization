@@ -1519,6 +1519,31 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
     Ψ [=] empty ->
     dec_ext P (uskl_var_f α) Ψ.
 
+(** [cov_ext]: the FAITHFUL (skip-free) extension — like [dec_ext] but with NO
+    [skip_tophole].  A ⊤◇ is matched ONLY by a dotted ghost [topholeg] (the SK
+    case).  The coverage lemma below is UNCONDITIONAL on [cov_ext] (no ghost-
+    free / no-⊤◇ side condition, no ⊤◇∀ wall — exactly the paper's provenance:
+    a dotted ghost in ψ comes from a ghost in the skeleton).  The [dec_ext]
+    inputs at the constraint TARGETS are faithful (TY targets ghost-free ⟹ no
+    ⊤◇; SK targets ⊤◇ ⟹ ψ dotted), so they inject into [cov_ext]. *)
+Inductive cov_ext : pskl -> uskl -> atoms -> Prop :=
+| cov_ext__hole : forall ψ Ψ,
+    is_tskl ψ -> d_tags_skl Ψ ψ -> cov_ext pskl_hole ψ Ψ
+| cov_ext__unit : forall Ψ, Ψ [=] empty -> cov_ext pskl_unit uskl_unit Ψ
+| cov_ext__var : forall X Ψ, Ψ [=] empty -> cov_ext (pskl_var_f X) (uskl_var_f X) Ψ
+| cov_ext__arrow : forall P1 P2 ψ1 ψ2 Ψ Ψ1 Ψ2,
+    cov_ext P1 ψ1 Ψ1 -> cov_ext P2 ψ2 Ψ2 -> Ψ [=] Ψ1 `union` Ψ2 ->
+    cov_ext (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Ψ
+| cov_ext__all : forall L P0 ψ0 ε Ψ,
+    (forall X, X `notin` L ->
+       cov_ext (open_pskl_wrt_pskl P0 (pskl_var_f X))
+               (open_uskl_wrt_uskl ψ0 (uskl_var_f X)) Ψ) ->
+    cov_ext (pskl_all_syn P0) (uskl_all_etag ε ψ0) Ψ
+| cov_ext__topholeg : forall P0 ψ0 Ψ,
+    cov_ext P0 ψ0 Ψ -> cov_ext (pskl_tophole P0) (uskl_topholeg ψ0) Ψ
+| cov_ext__flex_forget : forall P α Ψ,
+    Ψ [=] empty -> cov_ext P (uskl_var_f α) Ψ.
+
 (** [dec_ext] respects set-equality of the remaining-tag context. *)
 Lemma dec_ext_psi_cong : forall P ψ Ψ Ψ',
   dec_ext P ψ Ψ -> Ψ [=] Ψ' -> dec_ext P ψ Ψ'.
@@ -1754,12 +1779,34 @@ Qed.
     makes skip_tophole/topholeg VACUOUS (no ⊤◇ — no ⊤◇∀ wall) while the ◇-hole is
     a real SEq-Vacuous; ⊆ absorbs the re-collected ∀-tag ε.  [no_top] (not
     [ghost_free]) so this covers the SK arrow-to-◇ against-skeleton too. *)
+(** A ⊤◇-free [dec_ext] input injects into the faithful [cov_ext] (no skip). *)
+Lemma dec_ext_no_top_cov : forall Q ψ Ψ,
+  dec_ext Q ψ Ψ -> pskl_no_top Q -> cov_ext Q ψ Ψ.
+Proof.
+  intros Q ψ Ψ H; induction H; intros Hnt; simpl in Hnt.
+  - (* hole *) apply cov_ext__hole; assumption.
+  - (* unit *) apply cov_ext__unit; assumption.
+  - (* var *) apply cov_ext__var; assumption.
+  - (* arrow *) destruct Hnt as [Hnt1 Hnt2];
+      eapply cov_ext__arrow;
+      [ apply IHdec_ext1; exact Hnt1 | apply IHdec_ext2; exact Hnt2 | assumption ].
+  - (* all *) apply cov_ext__all with (L := L); intros X HX;
+      match goal with IH : forall X, X `notin` L -> _ -> cov_ext _ _ _ |- _ =>
+        apply (IH X HX); apply (proj1 (pskl_no_top_open_rec P0 X 0)); exact Hnt end.
+  - (* skip_tophole : Q=⊤◇, no_top ⊤◇ = False *) contradiction.
+  - (* topholeg : Q=⊤◇, no_top ⊤◇ = False *) contradiction.
+  - (* flex_forget *) apply cov_ext__flex_forget; assumption.
+Qed.
+
+(** COVERAGE (unconditional, on the faithful [cov_ext]): a ⊤◇ target is matched
+    by a dotted ghost [topholeg] (SEq-UnivGhostG) — the paper's provenance, with
+    NO ⊤◇∀ wall and NO side condition on Q. *)
 Lemma dec_ext_cover_eq : forall Q ψ Ψ' Ψtot,
-  dec_ext Q ψ Ψ' -> d_tags_skl Ψtot ψ -> pskl_no_top Q ->
+  cov_ext Q ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi, ψ ∼ᵗ Q ⤳ Ψi /\ Ψtot [<=] Ψ' `union` Ψi.
 Proof.
-  intros Q ψ Ψ' Ψtot H; revert Ψtot; induction H; intros Ψtot Hdt Hgf.
-  - (* hole : Q=◇, no_top ◇ = True ; SEq-Vacuous, Ψ' = d_tags ψ = Ψtot *)
+  intros Q ψ Ψ' Ψtot H; revert Ψtot; induction H; intros Ψtot Hdt.
+  - (* hole : SEq-Vacuous, Ψ' = d_tags ψ = Ψtot *)
     exists empty. split; [ apply a_solvetag_eq__vacuous; fsetdec | ].
     match goal with Hh : d_tags_skl ?W ψ |- Ψtot [<=] union ?W empty =>
       pose proof (d_tags_skl_det Hh Hdt) as Hd; clear - Hd; fsetdec end.
@@ -1768,26 +1815,25 @@ Proof.
   - (* var *) exists empty. split; [ apply a_solvetag_eq__var; fsetdec | ].
     inversion Hdt; subst; fsetdec.
   - (* arrow *)
-    simpl in Hgf; destruct Hgf as [Hg1 Hg2]; inversion Hdt; subst.
+    inversion Hdt; subst.
     match goal with
     | Ha : d_tags_skl ?T1 ψ1, Hbb : d_tags_skl ?T2 ψ2, Heq : Ψtot [=] _ |- _ =>
-        destruct (IHdec_ext1 T1 Ha Hg1) as [Ψi1 [Hs1 Hsub1]];
-        destruct (IHdec_ext2 T2 Hbb Hg2) as [Ψi2 [Hs2 Hsub2]];
+        destruct (IHcov_ext1 T1 Ha) as [Ψi1 [Hs1 Hsub1]];
+        destruct (IHcov_ext2 T2 Hbb) as [Ψi2 [Hs2 Hsub2]];
         exists (Ψi1 `union` Ψi2); split;
         [ eapply a_solvetag_eq__arrow; [ exact Hs1 | exact Hs2 | fsetdec ]
         | clear - H1 Heq Hsub1 Hsub2; fsetdec ]
     end.
   - (* all : Q=∀P0, ψ=all_etag ε ψ0, Ψtot=add ε Ψt0 *)
-    simpl in Hgf; inversion Hdt; subst.
+    inversion Hdt; subst.
     match goal with
     | Hb : forall X, X `notin` ?L1 -> d_tags_skl ?Ψt0 _,
       Heq : Ψtot [=] add ?e ?Ψt0,
-      IH : forall X, X `notin` ?Lh -> forall Ψ2, _ -> pskl_no_top _ -> _ |- _ =>
+      IH : forall X, X `notin` ?Lh -> forall Ψ2, _ -> _ |- _ =>
         destruct (atom_fresh (L `union` L1 `union` ftvar_in_uskl ψ0
                     `union` ftvar_in_pskl P0)) as [X0 HX0];
         destruct (IH X0 ltac:(clear - HX0; fsetdec) Ψt0
-                    (Hb X0 ltac:(clear - HX0; fsetdec))
-                    ltac:(apply (proj1 (pskl_no_top_open_rec P0 X0 0)); exact Hgf))
+                    (Hb X0 ltac:(clear - HX0; fsetdec)))
                   as [Ψi0 [Hs0 Hsub0]];
         exists (add ε Ψi0); split;
         [ eapply a_solvetag_eq__forall_inh with
@@ -1801,8 +1847,11 @@ Proof.
           exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 X0 β)
         | clear - Heq Hsub0; fsetdec ]
     end.
-  - (* skip_tophole : ghost_free ⊤◇ = False *) simpl in Hgf; contradiction.
-  - (* topholeg : ghost_free ⊤◇ = False *) simpl in Hgf; contradiction.
+  - (* topholeg : Q=⊤◇P0, ψ=⊤◇̇ψ0 ; SEq-UnivGhostG *)
+    inversion Hdt; subst.
+    match goal with Hd0 : d_tags_skl Ψtot ?p0 |- _ =>
+      destruct (IHcov_ext Ψtot Hd0) as [Ψi [Hs Hsub]] end.
+    exists Ψi. split; [ apply a_solvetag_eq__univ_ghostg; exact Hs | exact Hsub ].
   - (* flex_forget : ψ = var *) exists empty. split;
       [ apply a_solvetag_eq__var; fsetdec
       | inversion Hdt; subst; fsetdec ].
@@ -1839,7 +1888,7 @@ Proof.
         [ apply a_solvetag_eq__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ]).
   - (* hole_l : P=◇, P'=Q ; the coverage sub-lemma *)
-    destruct (dec_ext_cover_eq Hdec Hdt Hgf) as [Ψi [Hsi Hsub]].
+    destruct (dec_ext_cover_eq (dec_ext_no_top_cov Hdec Hgf) Hdt) as [Ψi [Hsi Hsub]].
     exists Ψi, Ψtot; split; [ exact Hsi | split;
       [ apply dec_ext__hole; [ eapply d_tags_skl_is_tskl; exact Hdt | exact Hdt ]
       | exact Hsub ] ].
@@ -2101,7 +2150,7 @@ Proof.
     inversion Hdec; subst.
     + (* skip_tophole : dec_ext B ψ Ψ' *)
       match goal with Hde : dec_ext B ψ Ψ' |- _ =>
-        destruct (dec_ext_cover_eq Hde Hdt Hgf) as [Ψi [Hsi Hsub]];
+        destruct (dec_ext_cover_eq (dec_ext_no_top_cov Hde Hgf) Hdt) as [Ψi [Hsi Hsub]];
         exists Ψi, Ψtot; split;
           [ apply a_solvetag_sub__check;
               [ eapply dec_ext_guarded_uskl;
@@ -2114,7 +2163,7 @@ Proof.
     + (* topholeg : ψ = ⊤◇̇ψ0, dec_ext B ψ0 Ψ' *)
       inversion Hdt; subst.
       match goal with Hde : dec_ext B ?p0 Ψ', Hd0 : d_tags_skl Ψtot ?p0 |- _ =>
-        destruct (dec_ext_cover_eq Hde Hd0 Hgf) as [Ψi [Hsi Hsub]];
+        destruct (dec_ext_cover_eq (dec_ext_no_top_cov Hde Hgf) Hd0) as [Ψi [Hsi Hsub]];
         exists Ψi, Ψtot; split;
           [ apply a_solvetag_sub__univ_ghost_lg; apply a_solvetag_sub__check;
               [ eapply dec_ext_guarded_uskl;
