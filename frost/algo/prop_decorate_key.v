@@ -1668,6 +1668,40 @@ Proof.
     split; [ apply guarded_pskl_head; assumption | assumption ].
 Qed.
 
+(** ghost-free (no ghosts at all) ⟹ top-guarded (no ⊤◇ to check). *)
+Lemma pskl_ghost_free_top_guarded : forall P, pskl_ghost_free P -> pskl_top_guarded P.
+Proof. induction P; simpl; intuition. Qed.
+
+(** [pskl_top_guarded] survives monotype substitution (a mono has no ∀/⊤◇, so
+    it keeps guarded heads and creates no new ⊤◇) — for the Flex-Assign case. *)
+Lemma pskl_guarded_head_ptyp_mono : forall τ,
+  mono_ptyp τ -> pskl_guarded_head (ptyp_to_pskl τ).
+Proof. intros τ Hm; induction Hm; simpl; exact I. Qed.
+
+Lemma pskl_guarded_head_subst_mono : forall P τ β,
+  pskl_guarded_head P -> mono_ptyp τ ->
+  pskl_guarded_head (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
+Proof.
+  intros P τ β Hg Hm; destruct P; simpl in Hg |- *; try contradiction; try exact I.
+  match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    [ apply pskl_guarded_head_ptyp_mono; exact Hm | exact I ].
+Qed.
+
+Lemma pskl_top_guarded_subst_mono : forall P τ β,
+  pskl_top_guarded P -> mono_ptyp τ ->
+  pskl_top_guarded (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
+Proof.
+  induction P; intros τ β Hg Hm; simpl in Hg |- *; try exact I.
+  - (* var_f : β↦τ or itself, both top_guarded *)
+    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      [ apply pskl_ghost_free_top_guarded; apply ptyp_to_pskl_ghost_free
+      | exact I ].
+  - (* arrow *) destruct Hg as [Hg1 Hg2]; split; [ apply IHP1 | apply IHP2 ]; assumption.
+  - (* all *) apply IHP; assumption.
+  - (* tophole *) destruct Hg as [Hgh Ht]; split;
+      [ apply pskl_guarded_head_subst_mono; assumption | apply IHP; assumption ].
+Qed.
+
 (** TY anchor: the [a_guess_mono] output painting's decoration extends the
     pre-guess skeleton (◇ ↦ fresh var, ⊤◇ dropped onto a guarded remainder —
     supplied by [pskl_top_guarded] of the solve output). *)
@@ -2898,7 +2932,7 @@ Qed.
     (docs/WF-SIDE-CONDITIONS.md); it is vacuous in SK mode. *)
 Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
   P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
-  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->
+  (NM = a_sub_mode_ty -> pskl_top_guarded P0) ->
   forall Ψa ψa,
     a_tags_sort NM Ψa ψa ->
     ⌊ ψa ⌋ˢ = P1 ->
@@ -2906,17 +2940,17 @@ Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
       P ≼[ αv , M ] P0 ⤳ Ξc ⨾ C /\
       C ⊩ᵗ ψa ⤳ Ψa.
 Proof.
-  intros NM αv M P P0 Ξ P1 Hext Hgf0 Ψa ψa Htags Hera.
+  intros NM αv M P P0 Ξ P1 Hext Htg0 Ψa ψa Htags Hera.
   inversion Hext; subst.
   (* H : look ;  H0 : solve C □ Q ;  H1 : guess (output ⌊ψa⌋ˢ) *)
   eexists; eexists; split; [ exact H | ].
   assert (Hda : d_tags_skl Ψa ψa) by (inversion Htags; assumption).
   assert (Htg : NM = a_sub_mode_ty -> pskl_top_guarded Q).
-  { intros Hty. specialize (Hgf0 Hty).
-    eapply solve_cstr_top_guarded;
+  { intros Hty. specialize (Htg0 Hty).
+    eapply solve_cstr_top_guarded_tg;
       [ exact H0 | exact I
-      | eapply (proj1 a_look_no_top);
-          [ exact H | apply pskl_ghost_free_no_top; exact Hgf0 ] ]. }
+      | eapply (proj1 a_look_top_guarded);
+          [ exact H | exact Htg0 ] ]. }
   assert (Hanchor : dec_ext Q ψa empty)
     by (eapply dec_ext_guess_anchor;
         [ exact H1 | exact Htg | exact Htags | reflexivity ]).
@@ -2949,7 +2983,7 @@ Definition sub_decorate_concl NM M P0 Θ0 P Q Θ1 : Prop :=
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
-  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->
+  (NM = a_sub_mode_ty -> pskl_top_guarded P0) ->
   Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
 
 Definition sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1 : Prop :=
@@ -2958,7 +2992,7 @@ Definition sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1 : Prop :=
   (Ξw ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
   a_binds_tvar αf (Ξw ++ Θ0) ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) (mode_fn M)) ->
-  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->
+  (NM = a_sub_mode_ty -> pskl_top_guarded P0) ->
   a_subtag_flex NM M P0 Θ0 Ξw αf Q Θ1.
 
 (** MAIN (lemma:decorating-algorithmic-subtyping) — fully Qed.  The side
@@ -3013,7 +3047,7 @@ Proof.
         | exact HwfP ]. }
     { intros Hsk; discriminate Hsk. }
     { intros Hty; specialize (Hgf0 Hty); simpl in Hgf0.
-      unfold open_pskl_wrt_pskl; apply pskl_ghost_free_open_rec; exact Hgf0. }
+      unfold open_pskl_wrt_pskl; apply (proj1 (pskl_top_guarded_open_rec _ _ _)); exact Hgf0. }
   - (* UnivGhostR *)
     intros Θ0 P Hg Hwf HwfP0 HwfP Hmod Hgf0.
     replace (pskl_tophole P)
@@ -3281,7 +3315,7 @@ Proof.
           [ apply mod_comp_sk_subst_mono; [ exact Hmod | exact Hm ]
           | exact Hm ]
       | intros Hty; specialize (Hgf0 Hty);
-        apply pskl_ghost_free_subst_mono; [ exact Hgf0 | exact Hm ] ].
+        apply pskl_top_guarded_subst_mono; [ exact Hgf0 | exact Hm ] ].
   - (* Flex-Depend : β̂ joins the suffix at the Θ0-adjacent end; the
        premise context is the conclusion's up to associativity. *)
     intros NM M P0 Θ0 Θ1 Ξw α β A Hne Hin Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod Hgf0.
@@ -3328,16 +3362,21 @@ Proof.
 Qed.
 
 (** The paper-shaped corollary. *)
+(** L-A corollary: NO TY side condition — [pskl_top_guarded P0] is DERIVED
+    from the wf hypothesis [HwfP0] ([a_wf_pskl__tophole] admits ⊤◇ only over a
+    guarded body), exactly as the paper's [thm:sound-subtyping] carries no P0
+    condition beyond well-formedness. *)
 Lemma a_sub_decorate : forall NM M P0 Θ0 P Q Θ1,
   a_sub NM M P0 Θ0 P Q Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
-  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->
   Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
 Proof.
-  intros. eapply (proj1 a_sub_decorate_bundle); eauto.
+  intros NM M P0 Θ0 P Q Θ1 Hrun Hwf HwfP0 HwfP Hmod.
+  eapply (proj1 a_sub_decorate_bundle); try eassumption.
+  intros _; eapply a_wf_pskl_top_guarded; exact HwfP0.
 Qed.
 
 (* ===================================================================== *)
@@ -3357,7 +3396,7 @@ Theorem a_sub_sound_thm : forall NM M P0 Θ0 P Q Θ1,
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
-  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->
+  (NM = a_sub_mode_ty -> pskl_ghost_free P0) ->   (* L-B refinement only; L-A derives its own *)
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   exists Qt,
     bskl_to_pskl Qt = Q /\
@@ -3365,7 +3404,7 @@ Theorem a_sub_sound_thm : forall NM M P0 Θ0 P Q Θ1,
     ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt.
 Proof.
   intros NM M P0 Θ0 P Q Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
-  pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod Hgf) as Htag.
+  pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod) as Htag.
   exact ((proj1 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
            Hwf
            ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
