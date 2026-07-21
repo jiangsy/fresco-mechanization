@@ -129,7 +129,7 @@ Proof.
 Qed.
 
 Lemma a_inc_dom_flex : forall Θ ρ Θ',
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   forall X, X `in` dom ρ -> a_flex_tvar Θ X.
 Proof.
   intros Θ ρ Θ' H; induction H; intros X HX; simpl in HX.
@@ -151,7 +151,7 @@ Proof.
 Qed.
 
 Lemma a_inc_flex_dom : forall Θ ρ Θ',
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   a_wf_aenv Θ ->
   forall X, a_flex_tvar Θ X -> X `in` dom ρ.
 Proof.
@@ -191,7 +191,7 @@ Qed.
 
 (** A RIGID variable of the source stays rigid, hence misses ζ's domain. *)
 Lemma a_inc_tvar_notin_dom : forall Θ1 ζ Θ X,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
   binds X abind_tvar Θ1 ->
   X `notin` dom ζ.
@@ -205,8 +205,8 @@ Qed.
 
 (** THE visibility side condition, discharged for a source-well-formed type. *)
 Lemma a_inc_compose_vis : forall Θ0 ρ Θ1 ζ Θ,
-  Θ0 ≤[ ρ ] Θ1 ->
-  Θ1 ≤[ ζ ] Θ ->
+  ρ ∷ Θ0 ⊑ Θ1 ->
+  ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ1 ->
   forall X, a_binds_tvar X Θ0 ->
@@ -227,7 +227,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_inc_lookup_lc : forall Θ1 ζ Θ X,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   lc_ptyp (msubst_lookup ζ X).
 Proof.
   intros Θ1 ζ Θ X H; revert X; induction H; intros X; simpl;
@@ -238,7 +238,7 @@ Proof.
 Qed.
 
 Lemma a_inc_lookup_mono : forall Θ1 ζ Θ X,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   mono_ptyp (msubst_lookup ζ X).
 Proof.
   intros Θ1 ζ Θ X H; revert X; induction H; intros X; simpl;
@@ -249,7 +249,7 @@ Proof.
 Qed.
 
 Lemma a_inc_lookup_wf : forall Θ1 ζ Θ X,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
   a_binds_tvar X Θ1 ->
   a_wf_ptyp Θ (msubst_lookup ζ X).
@@ -290,7 +290,7 @@ Qed.
 (** [msubst] commutes with opening: its images are locally closed, so opening
     cannot reach inside them. *)
 Lemma msubst_ptyp_open_rec : forall Θ1 ζ Θ A V k,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   msubst_ptyp ζ (open_ptyp_wrt_ptyp_rec k V A)
   = open_ptyp_wrt_ptyp_rec k (msubst_ptyp ζ V) (msubst_ptyp ζ A).
 Proof.
@@ -305,7 +305,7 @@ Proof.
 Qed.
 
 Lemma msubst_ptyp_open : forall Θ1 ζ Θ A X,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   X `notin` dom ζ ->
   msubst_ptyp ζ (open_ptyp_wrt_ptyp A (ptyp_var_f X))
   = open_ptyp_wrt_ptyp (msubst_ptyp ζ A) (ptyp_var_f X).
@@ -317,7 +317,7 @@ Proof.
 Qed.
 
 Lemma msubst_ptyp_lc : forall Θ1 ζ Θ A,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   lc_ptyp A ->
   lc_ptyp (msubst_ptyp ζ A).
 Proof.
@@ -334,8 +334,8 @@ Qed.
 
 (** An increase extends by a fresh rigid on both sides. *)
 Lemma a_inc_cons_tvar : forall Θ1 ζ Θ X,
-  Θ1 ≤[ ζ ] Θ ->
-  ((X ~ abind_tvar) ++ Θ1) ≤[ ζ ] ((X ~ abind_tvar) ++ Θ).
+  ζ ∷ Θ1 ⊑ Θ ->
+  ζ ∷ ((X ~ abind_tvar) ++ Θ1) ⊑ ((X ~ abind_tvar) ++ Θ).
 Proof.
   intros Θ1 ζ Θ X Hinc.
   change ((X ~ abind_tvar) ++ Θ)
@@ -344,7 +344,7 @@ Proof.
 Qed.
 
 Lemma mono_ptyp_msubst : forall Θ1 ζ Θ A,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   mono_ptyp A ->
   mono_ptyp (msubst_ptyp ζ A).
 Proof.
@@ -357,7 +357,7 @@ Qed.
 Lemma a_wf_ptyp_msubst : forall Θ1 A,
   a_wf_ptyp Θ1 A ->
   a_wf_aenv Θ1 ->
-  forall ζ Θ, Θ1 ≤[ ζ ] Θ ->
+  forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
   a_wf_ptyp Θ (msubst_ptyp ζ A).
 Proof.
   intros Θ1 A Hwa; induction Hwa; intros Hwf ζ Θt Hinc; simpl.
@@ -487,7 +487,7 @@ Qed.
     entries ABOVE the definition drop out — that is what "definitions live
     strictly below" buys. *)
 Lemma a_inc_lookup_def : forall Θ1 ζ Θ,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
   forall α τ, binds α (abind_flex_mono_def τ) Θ1 ->
   Θ ⊢ (msubst_lookup ζ α) ≡ᵗ (msubst_ptyp ζ τ).
@@ -547,7 +547,7 @@ Qed.
 Lemma a_tyequiv_msubst : forall Θ1 A B,
   Θ1 ⊢ A ≡ᵗ B ->
   a_wf_aenv Θ1 ->
-  forall ζ Θ, Θ1 ≤[ ζ ] Θ ->
+  forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
   Θ ⊢ (msubst_ptyp ζ A) ≡ᵗ (msubst_ptyp ζ B).
 Proof.
   intros Θ1 A B Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
@@ -623,7 +623,7 @@ Proof.
 Qed.
 
 Lemma msubst_pskl_open_rec : forall Θ1 ζ Θ P V k,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   msubst_pskl ζ (open_pskl_wrt_pskl_rec k V P)
   = open_pskl_wrt_pskl_rec k (msubst_pskl ζ V) (msubst_pskl ζ P).
 Proof.
@@ -639,7 +639,7 @@ Proof.
 Qed.
 
 Lemma msubst_pskl_open : forall Θ1 ζ Θ P X,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   X `notin` dom ζ ->
   msubst_pskl ζ (open_pskl_wrt_pskl P (pskl_var_f X))
   = open_pskl_wrt_pskl (msubst_pskl ζ P) (pskl_var_f X).
@@ -651,7 +651,7 @@ Proof.
 Qed.
 
 Lemma msubst_pskl_lc : forall Θ1 ζ Θ P,
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   lc_pskl P ->
   lc_pskl (msubst_pskl ζ P).
 Proof.
@@ -668,7 +668,7 @@ Qed.
 Lemma a_pskl_tyequiv_msubst : forall Θ1 P Q,
   Θ1 ⊢ P ≡ˢ Q ->
   a_wf_aenv Θ1 ->
-  forall ζ Θ, Θ1 ≤[ ζ ] Θ ->
+  forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
   Θ ⊢ (msubst_pskl ζ P) ≡ˢ (msubst_pskl ζ Q).
 Proof.
   intros Θ1 P Q Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
@@ -713,9 +713,9 @@ Qed.
     that target is in turn increased, ζ splits along Ξ. *)
 Lemma a_inc_peel_suffix : forall Ξ Θ ζ Θ',
   a_suffix Ξ ->
-  (Ξ ++ Θ) ≤[ ζ ] Θ' ->
+  ζ ∷ (Ξ ++ Θ) ⊑ Θ' ->
   exists ζ1 ζ2,
-    ζ = ζ1 ++ ζ2 /\ dom ζ1 [=] dom Ξ /\ Θ ≤[ ζ2 ] Θ'.
+    ζ = ζ1 ++ ζ2 /\ dom ζ1 [=] dom Ξ /\ ζ2 ∷ Θ ⊑ Θ'.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ]; intros Θ ζ Θ' Hsuf Hinc.
   - exists nil, ζ. simpl in *.
@@ -738,7 +738,7 @@ Qed.
 
 (** ρ's images live in ρ's target. *)
 Lemma a_inc_entry_ftv : forall Θs ρ Θt,
-  Θs ≤[ ρ ] Θt ->
+  ρ ∷ Θs ⊑ Θt ->
   forall β τ, List.In (β, τ) ρ ->
   forall X, X `in` ftvar_in_ptyp τ -> X `in` dom Θt.
 Proof.
@@ -760,7 +760,7 @@ Qed.
 
 (** Hence ζ and its Ξ-peeled part act alike on ρ's images. *)
 Lemma msubst_compose_peel : forall Θs ρ Θt ζ1 ζ2,
-  Θs ≤[ ρ ] Θt ->
+  ρ ∷ Θs ⊑ Θt ->
   (forall X, X `in` dom ζ1 -> X `notin` dom Θt) ->
   msubst_compose (ζ1 ++ ζ2) ρ = msubst_compose ζ2 ρ.
 Proof.
@@ -778,15 +778,15 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_inc_compose : forall Θ0 ρ Θ1,
-  Θ0 ≤[ ρ ] Θ1 ->
+  ρ ∷ Θ0 ⊑ Θ1 ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ1 ->
-  forall ζ Θ, Θ1 ≤[ ζ ] Θ ->
-  Θ0 ≤[ msubst_compose ζ ρ ] Θ.
+  forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
+  msubst_compose ζ ρ ∷ Θ0 ⊑ Θ.
 Proof.
   intros Θ0 ρ Θ1 Hinc1; induction Hinc1;
     intros Hwf0 Hwf1 ζ Θt Hinc2.
-  - (* · ≤[ι] Ξ : the target of an all-flexible source is all-flexible *)
+  - (* ι ∷ · ⊑ Ξ : the target of an all-flexible source is all-flexible *)
     simpl. apply a_inc__empty. eapply a_inc_suffix_target; eauto.
   - (* flexible *)
     inversion Hwf0 as [ | αh Θh Hnd Hwa | | | | ]; subst.
@@ -811,7 +811,7 @@ Proof.
        semantic middles, then rebuild *)
     inversion Hwf0 as [ | | | | xh Ah Θh Hnd Hwp Hwa | ]; subst.
     assert (Hpeel : exists ζ1 ζ2, ζ = ζ1 ++ ζ2 /\ dom ζ1 [=] dom Ξ /\
-              ((x ~ abind_var_typ A') ++ Θ') ≤[ ζ2 ] Θt)
+              ζ2 ∷ ((x ~ abind_var_typ A') ++ Θ') ⊑ Θt)
       by (eapply a_inc_peel_suffix; [ eassumption | exact Hinc2 ]).
     destruct Hpeel as [ζ1 [ζ2 [-> [Hd Hinc2']]]].
     assert (Hu1 : uniq (Ξ ++ (x ~ abind_var_typ A') ++ Θ'))
@@ -840,7 +840,7 @@ Proof.
   - (* term variable (skeleton) : same shape, on skeletons *)
     inversion Hwf0 as [ | | | xh Ph Θh Hnd Hwp Hwa | | ]; subst.
     assert (Hpeel : exists ζ1 ζ2, ζ = ζ1 ++ ζ2 /\ dom ζ1 [=] dom Ξ /\
-              ((x ~ abind_var_skl P') ++ Θ') ≤[ ζ2 ] Θt)
+              ζ2 ∷ ((x ~ abind_var_skl P') ++ Θ') ⊑ Θt)
       by (eapply a_inc_peel_suffix; [ eassumption | exact Hinc2 ]).
     destruct Hpeel as [ζ1 [ζ2 [-> [Hd Hinc2']]]].
     assert (Hu1 : uniq (Ξ ++ (x ~ abind_var_skl P') ++ Θ'))
@@ -869,7 +869,7 @@ Proof.
   - (* rigid *)
     inversion Hwf0 as [ | | | | | αh Θh Hnd Hwa ]; subst.
     assert (Hpeel : exists ζ1 ζ2, ζ = ζ1 ++ ζ2 /\ dom ζ1 [=] dom Ξ /\
-              ((α ~ abind_tvar) ++ Θ') ≤[ ζ2 ] Θt)
+              ζ2 ∷ ((α ~ abind_tvar) ++ Θ') ⊑ Θt)
       by (eapply a_inc_peel_suffix; [ eassumption | exact Hinc2 ]).
     destruct Hpeel as [ζ1 [ζ2 [-> [Hd Hinc2']]]].
     assert (Hu1 : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ'))

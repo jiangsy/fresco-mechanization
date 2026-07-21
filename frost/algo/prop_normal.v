@@ -441,7 +441,7 @@ Qed.
 (** The [a_inc]-shaped packaging: the [≡ᵗ] premise comes straight out of the
     information increase at a DEFINED head. *)
 Lemma a_inc_flex_def_tyequiv : forall Θ0 Θ θ0 γ τ τ',
-  ((γ ~ abind_flex_mono_def τ) ++ Θ0) ≤[ (γ, τ') :: θ0 ] Θ ->
+  (γ, τ') :: θ0 ∷ ((γ ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
   Θ ⊢ τ' ≡ᵗ (msubst_ptyp θ0 τ).
 Proof.
   intros Θ0 Θ θ0 γ τ τ' Hinc. inversion Hinc; subst. assumption.
@@ -449,7 +449,7 @@ Qed.
 
 Corollary a_inc_downarrow_subst_ptyp : forall Θ0 Θ θ0 γ τ τ' A,
   a_wf_aenv Θ ->
-  ((γ ~ abind_flex_mono_def τ) ++ Θ0) ≤[ (γ, τ') :: θ0 ] Θ ->
+  (γ, τ') :: θ0 ∷ ((γ ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
   ⇓ᵗ[Θ] (msubst_ptyp θ0 (subst_ptyp_in_ptyp τ γ A))
   = ⇓ᵗ[Θ] (msubst_ptyp ((γ, τ') :: θ0) A).
 Proof.
@@ -459,7 +459,7 @@ Qed.
 
 Corollary a_inc_downarrow_subst_pskl : forall Θ0 Θ θ0 γ τ τ' P,
   a_wf_aenv Θ ->
-  ((γ ~ abind_flex_mono_def τ) ++ Θ0) ≤[ (γ, τ') :: θ0 ] Θ ->
+  (γ, τ') :: θ0 ∷ ((γ ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
   ⇓ˢ[Θ] (msubst_pskl θ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) γ P))
   = ⇓ˢ[Θ] (msubst_pskl ((γ, τ') :: θ0) P).
 Proof.

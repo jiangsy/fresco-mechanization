@@ -722,7 +722,7 @@ Proof.
         unfold σ_poly; simpl ptyp_to_pskl.
         apply a_sub__arrow with (Θ1 := (x ~ abind_var_typ σ_id) ++ Θlib).
         { apply consis_sigid_tophole. }
-        (* codomain: skel σ_prodIB ⊑[TC; skel σ_prodIB] itself *)
+        (* codomain: skel σ_prodIB ⩽[TC; skel σ_prodIB] itself *)
         apply a_sub__forall_r with (L := dom Θlib `union` singleton aInt `union` singleton fa `union` singleton fb `union` singleton x) (Ξ := nil)
           (B := ptyp_to_pskl
                   (ptyp_arrow (ptyp_arrow tInt (ptyp_arrow tBool b0)) b0)).

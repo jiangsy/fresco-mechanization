@@ -2,8 +2,8 @@
     subtyping, subtyping-proofs.tex:32-58) — the R-B enabler of
     thm:sound-subtyping (docs/DESIGN-subtyping.md §2.2, phase P4).
 
-    An algorithmic subtyping run [Θ0 ⊢ₐ[N|M|P0] P ⊑ Q ⊣ Θ1] can be
-    replayed as a DECORATED run [Θ0 ⊢ᵗ[N|M|P0|∅] ⌊P⌋ᵘ ⊑ Q ⊣ Θ1] whose
+    An algorithmic subtyping run [Θ0 ⊢ₐ[N|M|P0] P ⩽ Q ⊣ Θ1] can be
+    replayed as a DECORATED run [Θ0 ⊢ᵗ[N|M|P0|∅] ⌊P⌋ᵘ ⩽˙ Q ⊣ Θ1] whose
     ForallL instantiations use decorated skeletons whose tags the run
     solves.  This file builds the auxiliary lemmas bottom-up. *)
 
@@ -218,10 +218,10 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_subtag_vacuous_erasure : forall NM M P0 Ψ Θ0 T1 Q Θ1,
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T1 ⊑ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T1 ⩽˙ Q ⊣ Θ1 ->
   P0 = pskl_hole ->
   forall T2, lc_uskl T2 -> ⌊ T2 ⌋ˢ = ⌊ T1 ⌋ˢ ->
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T2 ⊑ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T2 ⩽˙ Q ⊣ Θ1.
 Proof.
   intros NM M P0 Ψ Θ0 T1 Q Θ1 H.
   induction H; intros HP0 T2 HlcT2 Herase; subst; try discriminate HP0.
@@ -367,9 +367,9 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_consistag_psi_cong : forall Δ1 Δ2 P0 Ψ Θ0 S Q Θ1,
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ≈ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ1 ->
   forall Ψ', Ψ [=] Ψ' ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ' ] S ≈ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ' ] S ∼˙ Q ⊣ Θ1.
 Proof.
   intros Δ1 Δ2 P0 Ψ Θ0 S Q Θ1 H; induction H; intros Ψ' Heq; econstructor;
     solve
@@ -516,10 +516,10 @@ Qed.
 (** With input ◇ the consistency run is determined by the source's erasure
     (analogue of a_subtag_vacuous_erasure). *)
 Lemma a_consistag_vacuous_erasure : forall Δ1 Δ2 P0 Ψ Θ0 T1 Q Θ1,
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T1 ≈ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T1 ∼˙ Q ⊣ Θ1 ->
   P0 = pskl_hole ->
   forall T2, uskl_to_pskl T2 = uskl_to_pskl T1 ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T2 ≈ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T2 ∼˙ Q ⊣ Θ1.
 Proof.
   intros Δ1 Δ2 P0 Ψ Θ0 T1 Q Θ1 H;
     induction H; intros HP0 T2 Herase; subst; try discriminate HP0.
@@ -581,7 +581,7 @@ Proof. induction 1; simpl; constructor; auto. Qed.
     subject: erasure of a flex-var assignment can only remove tags that are
     not there.  Def-variable lookups use [a_wf_aenv_binds_def_mono]. *)
 Lemma ad_pat_consis_mono_no_all_syn : forall Ψ Θ S B,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ B ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ B ->
   a_wf_aenv Θ ->
   mono_bskl B ->
   no_all_syn_uskl S.
@@ -629,7 +629,7 @@ Qed.
     α̂, so [a_assign_sound] exposes it as pattern-consistent with the monotype
     α̂ — quantifier-free by the previous lemma. *)
 Lemma a_consistag_flexvar_subject_no_all_syn : forall Δ1 Δ2 α Ψ Θ0 S Q Θ1,
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] S ≈ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] S ∼˙ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl S) ->
   no_all_syn_uskl S.
@@ -679,7 +679,7 @@ Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
   forall Δ1 Δ2 Ψ Θ0 Q Θ1 ρ,
     msubst_lc ρ ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ]
-      (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ≈ Q ⊣ Θ1 ->
+      (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ∼˙ Q ⊣ Θ1 ->
     (* external well-formedness (paper's prose side conditions): only the
        FlexR leaf consumes them, threaded through the induction — the arrow
        case gets its mid-context invariants from [a_consistag_sound_aux] and
@@ -693,7 +693,7 @@ Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
     no_flex_dep (Δ1 `union` Δ2) Θ0 ->
     flex_above_free (Δ1 `union` Δ2) Θ0 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | (Ψ `union` Ψa) ]
-      (msubst_uskl ρ ψ) ≈ Q ⊣ Θ1.
+      (msubst_uskl ρ ψ) ∼˙ Q ⊣ Θ1.
 Proof.
   intros ψ P0 Ψa H; induction H;
     intros Δ1 Δ2 Ψc Θ0 Qc Θ1 ρ Hlcρ Hcons Hwf HlcS HwfP0 HwfS Hrig Hnfd Hfaf.
@@ -721,8 +721,8 @@ Proof.
     simpl in Hcons. rewrite msubst_uskl_arrow in Hcons.
     inversion Hcons; subst. clear Hcons.
     lazymatch goal with
-    | Hc1 : _ ⊢ᵗ[ _ | _ | _ | ?Ψi1 ] _ ≈ _ ⊣ ?Θm,
-      Hc2 : ?Θm ⊢ᵗ[ _ | _ | _ | ?Ψi2 ] _ ≈ _ ⊣ _,
+    | Hc1 : _ ⊢ᵗ[ _ | _ | _ | ?Ψi1 ] _ ∼˙ _ ⊣ ?Θm,
+      Hc2 : ?Θm ⊢ᵗ[ _ | _ | _ | ?Ψi2 ] _ ∼˙ _ ⊣ _,
       HΨi : _ [=] union ?Ψi1 ?Ψi2 |- _ =>
         destruct (a_consistag_sound_aux Hc1 Hwf HlcS1 HwfP1 HwfS1 Hrig Hnfd Hfaf)
           as [Hle [HwfΘm [HnfdΘm [HfafΘm _]]]];
@@ -745,7 +745,7 @@ Proof.
     simpl in Hcons. rewrite msubst_uskl_all_syn in Hcons.
     inversion Hcons; subst.
     match goal with
-    | Hc : forall a, a `notin` _ -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+    | Hc : forall a, a `notin` _ -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
         rename Hc into Hcbody
     end.
     simpl in HlcS. rewrite msubst_uskl_all_syn in HlcS. inversion HlcS; subst.
@@ -816,7 +816,7 @@ Proof.
              solve [ inversion Hg ] end).
     match goal with
     | Hc : _ ⊢ᵗ[ _ | _ | _ | _ ]
-             (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ≈ _ ⊣ _ |- _ =>
+             (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ∼˙ _ ⊣ _ |- _ =>
         apply a_consistag__univ_ghostg;
         eapply IHa_solvetag_eq;
           [ exact Hlcρ | exact Hc | exact Hwf | exact HlcS | exact HwfP0
@@ -830,7 +830,7 @@ Proof.
       try (match goal with Hg : guarded_uskl (uskl_all_syn _) |- _ =>
              solve [ inversion Hg ] end).
     match goal with
-    | Hc : forall a, a `notin` _ -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+    | Hc : forall a, a `notin` _ -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
         rename Hc into Hcbody
     end.
     simpl in HlcS. rewrite msubst_uskl_all_syn in HlcS. inversion HlcS; subst.
@@ -940,9 +940,9 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_subtag_psi_cong : forall NM M P0 Ψ Θ0 S Q Θ1,
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] S ⊑ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ1 ->
   forall Ψ', Ψ [=] Ψ' ->
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ' ] S ⊑ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ' ] S ⩽˙ Q ⊣ Θ1.
 Proof.
   intros NM M P0 Ψ Θ0 S Q Θ1 H; induction H; intros Ψ' Heq.
   - (* Infer *) apply a_subtag__infer; clear - H Heq; fsetdec.
@@ -1274,7 +1274,7 @@ Proof.
 Qed.
 
 Lemma a_subtag_decoration_var : forall NM M P0 Ψ Θ0 T Q Θ1,
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T ⊑ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T ⩽˙ Q ⊣ Θ1 ->
   forall ψ Ψa ρ,
     T = msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)) ->
     ψ ≼ᵗ[ M ] P0 ⤳ Ψa ->
@@ -1285,7 +1285,7 @@ Lemma a_subtag_decoration_var : forall NM M P0 Ψ Θ0 T Q Θ1,
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ T ⌋ˢ ->
     (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
-    Θ0 ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψa) ] (msubst_uskl ρ ψ) ⊑ Q ⊣ Θ1.
+    Θ0 ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψa) ] (msubst_uskl ρ ψ) ⩽˙ Q ⊣ Θ1.
 Proof.
   intros NM M P0 Ψ Θ0 T Q Θ1 Hsub.
   induction Hsub;
@@ -1384,8 +1384,8 @@ Proof.
       apply a_wf_pskl_arrow_inv in HwfP0 as [HwfP0a HwfP0b].
       rewrite msubst_uskl_arrow.
       match goal with
-      | Hc1 : _ ⊢ᵗ[ _ | _ | ?P0a | ?Ψ1 ] _ ≈ ?Q1 ⊣ ?Θm,
-        Hs2 : ?Θm ⊢ᵗ[ _ | _ | ?P0b | ?Ψ2 ] _ ⊑ ?Q2 ⊣ _,
+      | Hc1 : _ ⊢ᵗ[ _ | _ | ?P0a | ?Ψ1 ] _ ∼˙ ?Q1 ⊣ ?Θm,
+        Hs2 : ?Θm ⊢ᵗ[ _ | _ | ?P0b | ?Ψ2 ] _ ⩽˙ ?Q2 ⊣ _,
         HΨ : _ [=] union ?Ψ1 ?Ψ2,
         Hst1 : _ ∼ᵗ ?P0a ⤳ ?Ψa1,
         Hst2 : _ ≼ᵗ[ _ ] ?P0b ⤳ ?Ψa2,
@@ -1453,7 +1453,7 @@ Proof.
       inversion Hst; subst.
       * (* Vacuous : P0 = ◇; the run is erasure-determined *)
         assert (Hnode : Θ0 ⊢ᵗ[ NM | M | pskl_hole | Ψ ]
-                          (uskl_all_syn S) ⊑ Q ⊣ Θ1)
+                          (uskl_all_syn S) ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1591,7 +1591,7 @@ Proof.
       * (* Vacuous : P0 = ◇; erasure-determined *)
         assert (Hnode : Θ0 ⊢ᵗ[ NM | M | pskl_hole | Ψ ]
                           (uskl_all_syn
-                             (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⊑ Q ⊣ Θ1)
+                             (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1687,7 +1687,7 @@ Proof.
       * (* Vacuous : erasure-determined *)
         assert (Hnode : Θ0 ⊢ᵗ[ a_sub_mode_sk | M | pskl_hole | Ψ ]
                           (uskl_tophole
-                             (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⊑ Q ⊣ Θ1)
+                             (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⩽˙ Q ⊣ Θ1)
           by (apply a_subtag__univ_ghost_l; assumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ | match goal with He : Ψa [=] empty |- _ =>
@@ -1726,7 +1726,7 @@ Proof.
       * (* Vacuous : erasure-determined *)
         assert (Hnode : Θ0 ⊢ᵗ[ a_sub_mode_sk | M | pskl_hole | Ψ ]
                           (uskl_tophole
-                             (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⊑ Q ⊣ Θ1)
+                             (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⩽˙ Q ⊣ Θ1)
           by (apply a_subtag__univ_ghost_l; assumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ | match goal with He : Ψa [=] empty |- _ =>
@@ -1929,7 +1929,7 @@ Lemma a_consistag_decoration : forall α P P0 Ξc C,
     lc_uskl ψa ->
     lc_uskl S ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ]
-      (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S) ≈ Q ⊣ Θ1 ->
+      (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S) ∼˙ Q ⊣ Θ1 ->
     a_wf_aenv Θ0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
     Θ0 ⨟ empty
@@ -1938,7 +1938,7 @@ Lemma a_consistag_decoration : forall α P P0 Ξc C,
     no_flex_dep (Δ1 `union` Δ2) Θ0 ->
     flex_above_free (Δ1 `union` Δ2) Θ0 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | (Ψ `union` Ψa) ]
-      (subst_bskl_in_uskl ψa α S) ≈ Q ⊣ Θ1.
+      (subst_bskl_in_uskl ψa α S) ∼˙ Q ⊣ Θ1.
 Proof.
   intros α P P0 Ξc C Hlook; induction Hlook;
     intros S ψa Ψa Δ1 Δ2 Ψc Θ0 Qc Θ1
@@ -2033,8 +2033,8 @@ Proof.
     apply a_wf_pskl_arrow_inv in HwfSub as [HwfSub1 HwfSub2].
     inversion Hcons; subst.
     match goal with
-    | Hc1 : _ ⊢ᵗ[ _ | _ | ?P0a | ?Ψ1 ] _ ≈ _ ⊣ ?Θm,
-      Hc2 : ?Θm ⊢ᵗ[ _ | _ | ?P0b | ?Ψ2 ] _ ≈ _ ⊣ _,
+    | Hc1 : _ ⊢ᵗ[ _ | _ | ?P0a | ?Ψ1 ] _ ∼˙ _ ⊣ ?Θm,
+      Hc2 : ?Θm ⊢ᵗ[ _ | _ | ?P0b | ?Ψ2 ] _ ∼˙ _ ⊣ _,
       HΨc : _ [=] union ?Ψ1 ?Ψ2 |- _ =>
         apply a_wf_pskl_arrow_inv in HwfP0 as [HwfP0a HwfP0b];
         destruct (a_consistag_sound_aux Hc1 Hwf
@@ -2077,7 +2077,7 @@ Proof.
       inversion HwfP0 as [ | | | LP ΘP ΔP P0b HbodyP HeqP' | | ]; subst.
       inversion Hcons; subst.
       match goal with
-      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
           rename Hcb into Hcbody; rename L1 into Lc
       end.
       eapply a_consistag__forall_inh_untagged
@@ -2138,7 +2138,7 @@ Proof.
       inversion HwfP0 as [ | | | LP ΘP ΔP P0b HbodyP HeqP' | | ]; subst.
       inversion Hcons; subst.
       match goal with
-      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
           rename Hcb into Hcbody; rename L1 into Lc
       end.
       match goal with
@@ -2211,7 +2211,7 @@ Proof.
         try (match goal with Hg : guarded_uskl (uskl_all_etag _ _) |- _ =>
                solve [ inversion Hg ] end).
       match goal with
-      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
           rename Hcb into Hcbody; rename L1 into Lc
       end.
       eapply a_consistag__forall_syn_untagged
@@ -2271,7 +2271,7 @@ Proof.
         try (match goal with Hg : guarded_uskl (uskl_all_etag _ _) |- _ =>
                solve [ inversion Hg ] end).
       match goal with
-      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
           rename Hcb into Hcbody; rename L1 into Lc
       end.
       eapply a_consistag__forall_syn_tagged
@@ -2373,7 +2373,7 @@ Proof.
         try (match goal with Hg : guarded_pskl (pskl_all_syn _) |- _ =>
                solve [ inversion Hg ] end).
       match goal with
-      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+      | Hcb : forall a, a `notin` ?L1 -> _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
           rename Hcb into Hcbody; rename L1 into Lc
       end.
       eapply a_consistag__univ_ghost1
@@ -2524,7 +2524,7 @@ Proof.
       match goal with
       | Hin : _ ⊢ᵗ[ _ | _ | _ | _ ]
                 (uskl_arrow (subst_bskl_in_uskl _ _ _)
-                            (subst_bskl_in_uskl _ _ _)) ≈ _ ⊣ _ |- _ =>
+                            (subst_bskl_in_uskl _ _ _)) ∼˙ _ ⊣ _ |- _ =>
           idtac
       end.
       apply a_consistag__univ_ghost_r.

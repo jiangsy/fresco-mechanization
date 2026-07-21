@@ -121,7 +121,7 @@ Proof. intros; apply Forall_app; auto. Qed.
 Lemma a_inc_refl_gen : forall Θ Ξ0,
   lc_aenv Θ ->
   a_suffix Ξ0 ->
-  exists ρ, is_id_msubst ρ /\ Θ ≤[ ρ ] (Ξ0 ++ Θ).
+  exists ρ, is_id_msubst ρ /\ ρ ∷ Θ ⊑ (Ξ0 ++ Θ).
 Proof.
   induction Θ as [ | [a b] Θ0 IH ]; intros Ξ0 Hlc HΞ.
   - exists nil. split; [ constructor | ].
@@ -223,7 +223,7 @@ Qed.
 
 (** The target of an increase from an all-flexible source is all-flexible. *)
 Lemma a_inc_suffix_target : forall Θ ρ Θ',
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   a_suffix Θ ->
   a_suffix Θ'.
 Proof.
@@ -235,8 +235,8 @@ Qed.
 (** Peeling an all-flexible prefix of the source keeps the target. *)
 Lemma a_inc_strengthen_suffix_src : forall Ξ Θ ρ Θ',
   a_suffix Ξ ->
-  (Ξ ++ Θ) ≤[ ρ ] Θ' ->
-  exists ρ', (is_id_msubst ρ -> is_id_msubst ρ') /\ Θ ≤[ ρ' ] Θ'.
+  ρ ∷ (Ξ ++ Θ) ⊑ Θ' ->
+  exists ρ', (is_id_msubst ρ -> is_id_msubst ρ') /\ ρ' ∷ Θ ⊑ Θ'.
 Proof.
   intros Ξ; induction Ξ as [ | [a b] Ξ' IH ]; intros Θ ρ Θ' Hsuf Hinc.
   - exists ρ. auto.
@@ -244,7 +244,7 @@ Proof.
     inversion Hb; subst; simpl in Hinc;
       inversion Hinc; subst;
       match goal with
-      | H : (Ξ' ++ Θ) ≤[ _ ] Θ' |- _ =>
+      | H : _ ∷ (Ξ' ++ Θ) ⊑ Θ' |- _ =>
           destruct (IH _ _ _ Hsuf' H) as [ρ' [Hid' Hinc']]
       end;
       exists ρ'; split; auto;
@@ -253,24 +253,24 @@ Qed.
 
 (** Head inversions: rigid and term-variable entries are carried over. *)
 Lemma a_inc_tvar_inv : forall α Θ ρ Θ',
-  ((α ~ abind_tvar) ++ Θ) ≤[ ρ ] Θ' ->
-  exists Ξ Θ2, Θ' = Ξ ++ (α ~ abind_tvar) ++ Θ2 /\ a_suffix Ξ /\ Θ ≤[ ρ ] Θ2.
+  ρ ∷ ((α ~ abind_tvar) ++ Θ) ⊑ Θ' ->
+  exists Ξ Θ2, Θ' = Ξ ++ (α ~ abind_tvar) ++ Θ2 /\ a_suffix Ξ /\ ρ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 6. Qed.
 
 Lemma a_inc_var_inv : forall x A Θ ρ Θ',
-  ((x ~ abind_var_typ A) ++ Θ) ≤[ ρ ] Θ' ->
+  ρ ∷ ((x ~ abind_var_typ A) ++ Θ) ⊑ Θ' ->
   exists Ξ A' Θ2,
     Θ' = Ξ ++ (x ~ abind_var_typ A') ++ Θ2 /\
     (Θ2 ⊢ A' ≡ᵗ (msubst_ptyp ρ A)) /\
-    a_suffix Ξ /\ Θ ≤[ ρ ] Θ2.
+    a_suffix Ξ /\ ρ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 8. Qed.
 
 Lemma a_inc_var_skl_inv : forall x P Θ ρ Θ',
-  ((x ~ abind_var_skl P) ++ Θ) ≤[ ρ ] Θ' ->
+  ρ ∷ ((x ~ abind_var_skl P) ++ Θ) ⊑ Θ' ->
   exists Ξ P' Θ2,
     Θ' = Ξ ++ (x ~ abind_var_skl P') ++ Θ2 /\
     (Θ2 ⊢ P' ≡ˢ (msubst_pskl ρ P)) /\
-    a_suffix Ξ /\ Θ ≤[ ρ ] Θ2.
+    a_suffix Ξ /\ ρ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 8. Qed.
 
 Lemma binds_weaken_mid : forall (b : abind) x Ξ (e : list (atom * abind)) Θ,
@@ -313,7 +313,7 @@ Qed.
 
 (** Rigid variables survive any increase. *)
 Lemma a_inc_binds_tvar : forall Θ ρ Θ' α,
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   binds α abind_tvar Θ ->
   binds α abind_tvar Θ'.
 Proof.
@@ -341,7 +341,7 @@ Qed.
     tvar-ish entry): the flex rule's well-formedness premise applied to the
     identity image [α̂]. *)
 Lemma a_inc_binds_flex : forall Θ ρ Θ' α,
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   is_id_msubst ρ ->
   binds α abind_flex_mono Θ ->
   a_binds_tvar α Θ'.
@@ -368,7 +368,7 @@ Qed.
 (** Defined flexible variables survive an identity increase, and the target
     still equates them with their old definition. *)
 Lemma a_inc_binds_flex_def : forall Θ ρ Θ' α τ0,
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   is_id_msubst ρ ->
   binds α (abind_flex_mono_def τ0) Θ ->
   a_binds_tvar α Θ' /\ Θ' ⊢ (ptyp_var_f α) ≡ᵗ τ0.
@@ -409,7 +409,7 @@ Qed.
 
 (** A tvar-ish occurrence survives an identity increase. *)
 Lemma a_inc_binds_tvarish : forall Θ ρ Θ' α,
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   is_id_msubst ρ ->
   a_binds_tvar α Θ ->
   a_binds_tvar α Θ'.
@@ -422,7 +422,7 @@ Qed.
 
 (** Stability of type equivalence under identity increases. *)
 Lemma a_tyequiv_isub : forall Θ ρ Θ' A B,
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   is_id_msubst ρ ->
   Θ ⊢ A ≡ᵗ B ->
   Θ' ⊢ A ≡ᵗ B.
@@ -462,7 +462,7 @@ Qed.
 
 (** Stability of skeleton equivalence under identity increases. *)
 Lemma a_pskl_tyequiv_isub : forall Θ ρ Θ' P Q,
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   is_id_msubst ρ ->
   Θ ⊢ P ≡ˢ Q ->
   Θ' ⊢ P ≡ˢ Q.
@@ -484,12 +484,12 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_inc_trans : forall Θ0 ρ1 Θ1,
-  Θ0 ≤[ ρ1 ] Θ1 ->
+  ρ1 ∷ Θ0 ⊑ Θ1 ->
   is_id_msubst ρ1 ->
   forall ρ2 Θ2,
-  Θ1 ≤[ ρ2 ] Θ2 ->
+  ρ2 ∷ Θ1 ⊑ Θ2 ->
   is_id_msubst ρ2 ->
-  exists ρ, is_id_msubst ρ /\ Θ0 ≤[ ρ ] Θ2.
+  exists ρ, is_id_msubst ρ /\ ρ ∷ Θ0 ⊑ Θ2.
 Proof.
   intros Θ0 ρ1 Θ1 Hinc1;
     induction Hinc1 as

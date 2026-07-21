@@ -31,7 +31,7 @@ Set Implicit Arguments.
 (** Reflexivity of metasubstitution equivalence: every increment is
     equivalent to itself (each flexible image is [≡ᵗ]-reflexive). *)
 Lemma a_inc_equiv_refl : forall Θ0 ρ Θ,
-  Θ0 ≤[ ρ ] Θ ->
+  ρ ∷ Θ0 ⊑ Θ ->
   a_inc_equiv Θ0 ρ ρ Θ.
 Proof.
   intros Θ0 ρ Θ H; induction H.
@@ -45,9 +45,9 @@ Proof.
   - apply a_inc_equiv__tvar; auto.
 Qed.
 
-(** [dom ρ ⊆ dom Θ0] for any increment [Θ0 ≤[ρ] Θ]. *)
+(** [dom ρ ⊆ dom Θ0] for any increment [ρ ∷ Θ0 ⊑ Θ]. *)
 Lemma a_inc_dom_sub : forall Θ0 ρ Θ,
-  Θ0 ≤[ ρ ] Θ ->
+  ρ ∷ Θ0 ⊑ Θ ->
   dom ρ [<=] dom Θ0.
 Proof.
   intros Θ0 ρ Θ H X HX.
@@ -74,8 +74,8 @@ Qed.
 Lemma msubst_compose_is_id_r : forall Θ0 ρ1 Θ1 ρ Θ,
   a_wf_aenv Θ0 ->
   is_id_msubst ρ1 ->
-  Θ0 ≤[ ρ1 ] Θ1 ->
-  Θ0 ≤[ ρ ] Θ ->
+  ρ1 ∷ Θ0 ⊑ Θ1 ->
+  ρ ∷ Θ0 ⊑ Θ ->
   msubst_compose ρ ρ1 = ρ.
 Proof.
   intros Θ0 ρ1 Θ1 ρ Θ Hwf Hid Hinc1 Hinc; revert ρ1 Θ1 Hid Hinc1.
@@ -120,8 +120,8 @@ Qed.
     This is what lets a sub-node's soundness [⊴]-witness stand in for the
     algorithm's own id-witness on the walk cases. *)
 Lemma is_id_inc_unique : forall Θ0 ρ1 Θ1,
-  Θ0 ≤[ ρ1 ] Θ1 -> is_id_msubst ρ1 ->
-  forall ρ2 Θ2, Θ0 ≤[ ρ2 ] Θ2 -> is_id_msubst ρ2 -> ρ1 = ρ2.
+  ρ1 ∷ Θ0 ⊑ Θ1 -> is_id_msubst ρ1 ->
+  forall ρ2 Θ2, ρ2 ∷ Θ0 ⊑ Θ2 -> is_id_msubst ρ2 -> ρ1 = ρ2.
 Proof.
   intros Θ0 ρ1 Θ1 Hinc1; induction Hinc1; intros Hid1 ρ2 Θ2 Hinc2 Hid2.
   - inversion Hinc2; subst; reflexivity.
@@ -149,9 +149,9 @@ Qed.
 Lemma opt_axiom_factor : forall Θ0 ρ1 ρ Θ,
   a_wf_aenv Θ0 ->
   is_id_msubst ρ1 ->
-  Θ0 ≤[ ρ1 ] Θ0 ->
-  Θ0 ≤[ ρ ] Θ ->
-  Θ0 ≤[ ρ ] Θ /\ a_inc_equiv Θ0 ρ (msubst_compose ρ ρ1) Θ.
+  ρ1 ∷ Θ0 ⊑ Θ0 ->
+  ρ ∷ Θ0 ⊑ Θ ->
+  ρ ∷ Θ0 ⊑ Θ /\ a_inc_equiv Θ0 ρ (msubst_compose ρ ρ1) Θ.
 Proof.
   intros Θ0 ρ1 ρ Θ Hwf Hid Hinc1 Hinc.
   split; [ exact Hinc | ].
@@ -212,7 +212,7 @@ Qed.
 
 (** An [a_inc]'s images are locally closed (they are monotypes). *)
 Lemma a_inc_msubst_lc : forall Θ0 ρ Θ,
-  Θ0 ≤[ ρ ] Θ -> msubst_lc ρ.
+  ρ ∷ Θ0 ⊑ Θ -> msubst_lc ρ.
 Proof.
   intros Θ0 ρ Θ Hinc X. apply mono_ptyp_lc.
   eapply a_inc_lookup_mono; exact Hinc.
@@ -336,8 +336,8 @@ Qed.
 Lemma msubst_compose_id_ptyp : forall Θ0 ρ1 Θ1 ζ Θ2 A,
   a_wf_aenv Θ0 -> a_wf_aenv Θ1 ->
   is_id_msubst ρ1 ->
-  Θ0 ≤[ ρ1 ] Θ1 ->
-  Θ1 ≤[ ζ ] Θ2 ->
+  ρ1 ∷ Θ0 ⊑ Θ1 ->
+  ζ ∷ Θ1 ⊑ Θ2 ->
   a_wf_ptyp Θ0 A ->
   msubst_ptyp (msubst_compose ζ ρ1) A = msubst_ptyp ζ A.
 Proof.
@@ -361,8 +361,8 @@ Qed.
 Lemma msubst_compose_id_pskl : forall Θ0 ρ1 Θ1 ζ Θ2 P,
   a_wf_aenv Θ0 -> a_wf_aenv Θ1 ->
   is_id_msubst ρ1 ->
-  Θ0 ≤[ ρ1 ] Θ1 ->
-  Θ1 ≤[ ζ ] Θ2 ->
+  ρ1 ∷ Θ0 ⊑ Θ1 ->
+  ζ ∷ Θ1 ⊑ Θ2 ->
   a_scope_pskl Θ0 P ->
   msubst_pskl (msubst_compose ζ ρ1) P = msubst_pskl ζ P.
 Proof.
@@ -389,8 +389,8 @@ Qed.
 Lemma a_inc_id_mid_strip : forall c b Θ0 ρ1 Θ1,
   (b = abind_tvar \/
    (exists Q, b = abind_var_typ Q) \/ (exists Q, b = abind_var_skl Q)) ->
-  ((c ~ b) ++ Θ0) ≤[ ρ1 ] ((c ~ b) ++ Θ1) ->
-  Θ0 ≤[ ρ1 ] Θ1.
+  ρ1 ∷ ((c ~ b) ++ Θ0) ⊑ ((c ~ b) ++ Θ1) ->
+  ρ1 ∷ Θ0 ⊑ Θ1.
 Proof.
   intros c b Θ0 ρ1 Θ1 Hb Hinc.
   destruct Hb as [-> | [[Q ->] | [Q ->]]].
@@ -521,8 +521,8 @@ Qed.
     suffix [Ξv] — see [remech-optimality-bundle-progress] memory.) *)
 Lemma a_inc_strip_decls_prefix : forall Ξ E ρ Θ,
   a_decls Ξ ->
-  (Ξ ++ E) ≤[ ρ ] Θ ->
-  exists ρ1 ρ2, ρ = ρ1 ++ ρ2 /\ dom ρ1 [=] dom Ξ /\ E ≤[ ρ2 ] Θ.
+  ρ ∷ (Ξ ++ E) ⊑ Θ ->
+  exists ρ1 ρ2, ρ = ρ1 ++ ρ2 /\ dom ρ1 [=] dom Ξ /\ ρ2 ∷ E ⊑ Θ.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ]; intros E ρ Θ Hdec Hinc.
   - exists (@nil (atom * ptyp)), ρ. simpl.
@@ -795,10 +795,10 @@ Qed.
 Lemma a_inc_equiv_inc_peel_suffix : forall Ξ Θ ρ1 ρ2 Θ',
   a_suffix Ξ ->
   a_inc_equiv (Ξ ++ Θ) ρ1 ρ2 Θ' ->
-  (Ξ ++ Θ) ≤[ ρ1 ] Θ' ->
-  (Ξ ++ Θ) ≤[ ρ2 ] Θ' ->
+  ρ1 ∷ (Ξ ++ Θ) ⊑ Θ' ->
+  ρ2 ∷ (Ξ ++ Θ) ⊑ Θ' ->
   exists ρ1b ρ2b,
-    a_inc_equiv Θ ρ1b ρ2b Θ' /\ Θ ≤[ ρ1b ] Θ' /\ Θ ≤[ ρ2b ] Θ'
+    a_inc_equiv Θ ρ1b ρ2b Θ' /\ ρ1b ∷ Θ ⊑ Θ' /\ ρ2b ∷ Θ ⊑ Θ'
     /\ (exists p1, ρ1 = p1 ++ ρ1b /\ dom p1 [=] dom Ξ)
     /\ (exists p2, ρ2 = p2 ++ ρ2b /\ dom p2 [=] dom Ξ).
 Proof.
@@ -904,12 +904,12 @@ Qed.
     ([a_inc_equiv_inc_peel_suffix]) and realign the three target
     decompositions at the unique term-variable via [aenv_mid_split]. *)
 Lemma a_inc_equiv_compose : forall Θ0 ρ Θmid,
-  Θ0 ≤[ ρ ] Θmid ->
+  ρ ∷ Θ0 ⊑ Θmid ->
   a_wf_aenv Θ0 -> a_wf_aenv Θmid ->
   forall ρ1 ρ2 Θ,
   a_wf_aenv Θ ->
   a_inc_equiv Θmid ρ1 ρ2 Θ ->
-  Θmid ≤[ ρ1 ] Θ -> Θmid ≤[ ρ2 ] Θ ->
+  ρ1 ∷ Θmid ⊑ Θ -> ρ2 ∷ Θmid ⊑ Θ ->
   a_inc_equiv Θ0 (msubst_compose ρ1 ρ) (msubst_compose ρ2 ρ) Θ.
 Proof.
   intros Θ0 ρ Θmid Hρ; induction Hρ;
@@ -1097,10 +1097,10 @@ Lemma a_inc_equiv_glue : forall Θ0 Θmid Θfin Θ ρ ρ1a ρ1b ζ1 ζ2,
   a_wf_aenv Θ0 -> a_wf_aenv Θmid -> a_wf_aenv Θfin -> a_wf_aenv Θ ->
   is_id_msubst ρ1a -> is_id_msubst ρ1b ->
   (forall α, α `in` dom ρ1a -> α `in` dom ρ1b) ->
-  Θ0 ≤[ ρ1a ] Θmid ->
-  Θmid ≤[ ρ1b ] Θfin ->
-  Θmid ≤[ ζ1 ] Θ ->
-  Θfin ≤[ ζ2 ] Θ ->
+  ρ1a ∷ Θ0 ⊑ Θmid ->
+  ρ1b ∷ Θmid ⊑ Θfin ->
+  ζ1 ∷ Θmid ⊑ Θ ->
+  ζ2 ∷ Θfin ⊑ Θ ->
   a_inc_equiv Θ0 ρ (msubst_compose ζ1 ρ1a) Θ ->
   a_inc_equiv Θmid ζ1 (msubst_compose ζ2 ρ1b) Θ ->
   a_inc_equiv Θ0 ρ (msubst_compose ζ2 ρ1a) Θ.
@@ -1108,7 +1108,7 @@ Proof.
   intros Θ0 Θmid Θfin Θ ρ ρ1a ρ1b ζ1 ζ2
          Hwf0 Hwfm Hwff HwfT Hida Hidb Hdom Ha Hb Hζ1 Hζ2 Hsub1 Hsub2.
   (* the second increment through Θfin *)
-  assert (Hζ2b : Θmid ≤[ msubst_compose ζ2 ρ1b ] Θ)
+  assert (Hζ2b : msubst_compose ζ2 ρ1b ∷ Θmid ⊑ Θ)
     by (eapply a_inc_compose; [ exact Hb | exact Hwfm | exact Hwff | exact Hζ2 ]).
   (* congruence: push σ = ρ1a onto sub2 *)
   pose proof (a_inc_equiv_compose Ha Hwf0 Hwfm HwfT Hsub2 Hζ1 Hζ2b) as Hcong.
@@ -1382,10 +1382,10 @@ Qed.
    Θpre-extension plumbing for the inert middles); only the per-case tails differ.
    [a_inc_self_downarrow] / [a_inc_equiv_self_downarrow] are its projections. *)
 Lemma a_inc_self_downarrow_bundle : forall Θ0 ρ Θt,
-  Θ0 ≤[ ρ ] Θt ->
+  ρ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
   a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
-  Θ0 ≤[ msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ] Θt
+  msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ∷ Θ0 ⊑ Θt
   /\ a_inc_equiv Θ0 ρ (msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ) Θt.
 Proof.
   intros Θ0 ρ Θt Hinc; induction Hinc; intros Θpre HwfW Huq Hwf0.
@@ -1514,10 +1514,10 @@ Proof.
 Qed.
 
 Lemma a_inc_self_downarrow : forall Θ0 ρ Θt,
-  Θ0 ≤[ ρ ] Θt ->
+  ρ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
   a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
-  Θ0 ≤[ msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ] Θt.
+  msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ∷ Θ0 ⊑ Θt.
 Proof.
   intros Θ0 ρ Θt Hinc Θpre HwfW Huq Hwf0.
   exact (proj1 (a_inc_self_downarrow_bundle Hinc Θpre HwfW Huq Hwf0)).
@@ -1526,7 +1526,7 @@ Qed.
 (* a_inc_equiv twin of a_inc_self_downarrow: an increment is ≡-equivalent to its
    own downarrow.  Used to adjust the factoring's competing metasubst ⇓ρ→ρ. *)
 Lemma a_inc_equiv_self_downarrow : forall Θ0 ρ Θt,
-  Θ0 ≤[ ρ ] Θt ->
+  ρ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
   a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
   a_inc_equiv Θ0 ρ (msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ) Θt.
@@ -1541,8 +1541,8 @@ Qed.
 Lemma a_inc_var_mid_strip_id : forall Ξ x Q Θ0 ρ Θ1,
   a_decls Ξ ->
   is_id_msubst ρ ->
-  (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0) ≤[ ρ ] ((x ~ abind_var_typ Q) ++ Θ1) ->
-  (Ξ ++ Θ0) ≤[ ρ ] Θ1.
+  ρ ∷ (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0) ⊑ ((x ~ abind_var_typ Q) ++ Θ1) ->
+  ρ ∷ (Ξ ++ Θ0) ⊑ Θ1.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ]; intros x Q Θ0 ρ Θ1 Hdec Hid Hinc.
   - simpl in Hinc.
@@ -1661,7 +1661,7 @@ Qed.
     leaf is a flexible variable: every image of an information increase is a
     monotype, hence guarded. *)
 Lemma guarded_pskl_msubst_inc : forall Θ0 ρ Θ P,
-  Θ0 ≤[ ρ ] Θ ->
+  ρ ∷ Θ0 ⊑ Θ ->
   guarded_pskl P ->
   guarded_pskl (msubst_pskl ρ P).
 Proof.
@@ -1691,15 +1691,15 @@ Qed.
    Ξ-prefix flex images ⇓-collapse into Θ' once they are join-grounded. *)
 Lemma a_inc_downarrow_prefix : forall Ξ ρa T Θ0 ρb σb Θ Θ',
   a_decls Ξ ->
-  (Ξ ++ T) ≤[ ρa ++ ρb ] Θ ->
+  ρa ++ ρb ∷ (Ξ ++ T) ⊑ Θ ->
   uniq (Ξ ++ T) ->
   dom ρa [=] dom Ξ ->
-  Θ0 ≤[ σb ] Θ' ->
+  σb ∷ Θ0 ⊑ Θ' ->
   a_wf_aenv Θ -> uniq Θ ->
   (forall x c, binds x c Θ' -> binds x c Θ) ->
   (forall X, X `in` dom ρa ->
      ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa X)) [<=] dom Θ') ->
-  (Ξ ++ Θ0) ≤[ (msubst_compose (aenv_msubst Θ) ρa) ++ σb ] Θ'.
+  (msubst_compose (aenv_msubst Θ) ρa) ++ σb ∷ (Ξ ++ Θ0) ⊑ Θ'.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ];
     intros ρa T Θ0 ρb σb Θ Θ' Hdec Hinc Huq Hdom Hincb Hwf Huqt Hsub Hgr.

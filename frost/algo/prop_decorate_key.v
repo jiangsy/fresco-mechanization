@@ -76,7 +76,7 @@ Lemma pskl_to_uskl_not_topholeg : forall P ψ,
 Proof. destruct P; simpl; discriminate. Qed.
 
 Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 T Q Θ1,
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T ⊑ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T ⩽˙ Q ⊣ Θ1 ->
   forall S0 ψa Ψa αv Ξc C,
     T = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv S0 ->
     ⌊ S0 ⌋ˢ ≼[ αv , M ] P0 ⤳ Ξc ⨾ C ->
@@ -90,7 +90,7 @@ Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 T Q Θ1,
     Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ T ⌋ˢ ->
     (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
     Θ0 ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψa) ]
-      (subst_bskl_in_uskl ψa αv S0) ⊑ Q ⊣ Θ1.
+      (subst_bskl_in_uskl ψa αv S0) ⩽˙ Q ⊣ Θ1.
 Proof.
   intros NM M P0 Ψ Θ0 T Q Θ1 Hsub.
   induction Hsub;
@@ -136,7 +136,7 @@ Proof.
       { rewrite <- (ftvar_in_pskl_uskl_to_pskl S0). assumption. }
       rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαS ].
       match goal with
-      | Hg1 : guarded_uskl _, Hc : _ ⊢ᵗ[ _ | _ | _ | _ ] _ ≈ _ ⊣ _ |- _ =>
+      | Hg1 : guarded_uskl _, Hc : _ ⊢ᵗ[ _ | _ | _ | _ ] _ ∼˙ _ ⊣ _ |- _ =>
           rewrite subst_bskl_in_uskl_fresh_eq in Hg1, Hc; try exact HαS
       end.
       inversion Hst; subst.
@@ -270,8 +270,8 @@ Proof.
       destruct (a_solvetag_split _ _ Hst) as [Ψa1 [Ψa2 [Hst1 [Hst2 HΨs]]]].
       simpl.
       match goal with
-      | Hc1 : _ ⊢ᵗ[ _ | _ | ?P0a | ?Ψ1 ] _ ≈ ?Q1 ⊣ ?Θm,
-        Hs2 : ?Θm ⊢ᵗ[ _ | _ | ?P0b | ?Ψ2 ] _ ⊑ ?Q2 ⊣ _,
+      | Hc1 : _ ⊢ᵗ[ _ | _ | ?P0a | ?Ψ1 ] _ ∼˙ ?Q1 ⊣ ?Θm,
+        Hs2 : ?Θm ⊢ᵗ[ _ | _ | ?P0b | ?Ψ2 ] _ ⩽˙ ?Q2 ⊣ _,
         HΨc : _ [=] union ?Ψ1 ?Ψ2 |- _ =>
           destruct (a_consistag_sound_aux Hc1 Hwf
                       ltac:(apply subst_bskl_in_uskl_lc_uskl;
@@ -346,7 +346,7 @@ Proof.
                           (uskl_all_etag ε0
                              (subst_bskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv S0))
-                          ⊑ Q ⊣ Θ1)
+                          ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_tagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         rewrite subst_bskl_in_uskl_fresh_eq in Hnode; [ | exact HαS' ].
@@ -361,7 +361,7 @@ Proof.
                           (uskl_all_etag ε0
                              (subst_bskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv S0))
-                          ⊑ Q ⊣ Θ1)
+                          ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_tagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         inversion Hst; subst.
@@ -630,7 +630,7 @@ Proof.
                           (uskl_all_syn
                              (subst_bskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv S0))
-                          ⊑ Q ⊣ Θ1)
+                          ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         rewrite subst_bskl_in_uskl_fresh_eq in Hnode; [ | exact HαS' ].
@@ -645,7 +645,7 @@ Proof.
                           (uskl_all_syn
                              (subst_bskl_in_uskl
                                 (pskl_to_uskl (uskl_to_pskl ψa)) αv S0))
-                          ⊑ Q ⊣ Θ1)
+                          ⩽˙ Q ⊣ Θ1)
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         inversion Hst; subst.
@@ -1003,7 +1003,7 @@ Proof.
         simpl. rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαS' ].
         match goal with
         | Hs' : _ ⊢ᵗ[ _ | _ | _ | _ ]
-                  (subst_bskl_in_uskl _ _ _) ⊑ _ ⊣ _ |- _ =>
+                  (subst_bskl_in_uskl _ _ _) ⩽˙ _ ⊣ _ |- _ =>
             rewrite subst_bskl_in_uskl_fresh_eq in Hs'; [ | exact HαS' ]
         end.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -1069,7 +1069,7 @@ Proof.
         simpl. rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαS' ].
         match goal with
         | Hs' : _ ⊢ᵗ[ _ | _ | _ | _ ]
-                  (subst_bskl_in_uskl _ _ _) ⊑ _ ⊣ _ |- _ =>
+                  (subst_bskl_in_uskl _ _ _) ⩽˙ _ ⊣ _ |- _ =>
             rewrite subst_bskl_in_uskl_fresh_eq in Hs'; [ | exact HαS' ]
         end.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
@@ -2984,7 +2984,7 @@ Definition sub_decorate_concl NM M P0 Θ0 P Q Θ1 : Prop :=
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
   (NM = a_sub_mode_ty -> pskl_top_guarded P0) ->
-  Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⩽˙ Q ⊣ Θ1.
 
 Definition sub_flex_decorate_concl NM M P0 Θ0 Ξw αf Q Θ1 : Prop :=
   a_decls Ξw ->
@@ -3384,7 +3384,7 @@ Lemma a_sub_decorate : forall NM M P0 Θ0 P Q Θ1,
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
-  Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⩽˙ Q ⊣ Θ1.
 Proof.
   intros NM M P0 Θ0 P Q Θ1 Hrun Hwf HwfP0 HwfP Hmod.
   eapply (proj1 a_sub_decorate_bundle); try eassumption.
@@ -3413,7 +3413,7 @@ Theorem a_sub_sound_thm : forall NM M P0 Θ0 P Q Θ1,
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   exists Qt,
     bskl_to_pskl Qt = Q /\
-    (empty ⨟ Θ1 ⊢ₛᵃ[ NM | M ] (pskl_to_uskl P) ⊑ Qt) /\
+    (empty ⨟ Θ1 ⊢ₛᵃ[ NM | M ] (pskl_to_uskl P) ⩽ Qt) /\
     ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt.
 Proof.
   intros NM M P0 Θ0 P Q Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.

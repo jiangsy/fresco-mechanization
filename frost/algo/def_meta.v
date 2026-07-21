@@ -224,13 +224,6 @@ Inductive a_inc : aenv -> metasubst -> aenv -> Prop :=
     ρ ∷ ((α ~ abind_tvar) ++ Θ) ⊑ (Ξ ++ (α ~ abind_tvar) ++ Θ')
 where "ρ ∷ Θ ⊑ Θ'" := (a_inc Θ ρ Θ') : type_scope.
 
-(** Deprecated pre-paper-sync notation alias (parse-only): information
-    increase now prints [θ ∷ Θ ⊑ Θ'] (paper); old [Θ ≤[ρ] Θ'] still parses
-    until swept. *)
-Notation "Θ ≤[ ρ ] Θ'" := (a_inc Θ ρ Θ')
-  (at level 75, ρ at level 0, Θ' at level 74, no associativity, only parsing)
-  : type_scope.
-
 (** [Θ ⊴ Θ'] (paper [⊑{Θ}{Θ'}], identity-metasubstitution shorthand).
 
     Besides an identity witness for the figure's rules, this carries the
@@ -240,7 +233,7 @@ Notation "Θ ≤[ ρ ] Θ'" := (a_inc Θ ρ Θ')
     never rewritten (the algorithm only adds definitions).  This component
     is what makes the FlexL/FlexR lookup rules stable under [⊴]. *)
 Definition a_isub (Θ Θ' : aenv) : Prop :=
-  (exists ρ, is_id_msubst ρ /\ Θ ≤[ ρ ] Θ') /\
+  (exists ρ, is_id_msubst ρ /\ ρ ∷ Θ ⊑ Θ') /\
   (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
                binds α (abind_flex_mono_def τ) Θ').
 

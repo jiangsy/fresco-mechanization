@@ -266,10 +266,10 @@ Proof.
 Qed.
 
 Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
-    Δ ⨟ Γ ⊨ₛ R ≈ Q ->
+    Δ ⨟ Γ ⊢ₛ R ∼ Q ->
     forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
-    Δ ⨟ (Γ1 ++ Γ2) ⊨ₛ
-      (subst_bskl_in_uskl uskl_unit X R) ≈ (subst_bskl_in_bskl bskl_unit X Q).
+    Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ
+      (subst_bskl_in_uskl uskl_unit X R) ∼ (subst_bskl_in_bskl bskl_unit X Q).
 Proof.
   intros Δ Γ R Q H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_pat_consis__unit; (assumption || fsetdec).
@@ -311,10 +311,10 @@ Proof.
 Qed.
 
 Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
-    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q ->
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⩽ Q ->
     forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
     Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ[ m ]
-      (subst_bskl_in_uskl uskl_unit X R) ⊑ (subst_bskl_in_bskl bskl_unit X Q).
+      (subst_bskl_in_uskl uskl_unit X R) ⩽ (subst_bskl_in_bskl bskl_unit X Q).
 Proof.
   intros Δ Γ m R Q H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_pat_sub__infer; [ (assumption || fsetdec) | eapply d_pat_consis_subst_unit; eauto | apply is_sskl_subst_unit; assumption ].

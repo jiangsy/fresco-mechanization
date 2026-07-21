@@ -552,23 +552,6 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ ⨟ Γ ⊢ₛ[ m ] (uskl_topholeg R) ⩽ Q
 where "Ψ ⨟ Γ ⊢ₛ[ M ] R ⩽ Q" := (d_pat_sub M Ψ Γ R Q) : type_scope.
 
-(** Deprecated pre-paper-sync glyph aliases (parse-only): the printing forms
-    above now match the paper (subtyping [⩽], consistency [∼], turnstile [⊢]).
-    These keep existing proof scripts (old glyphs [⊑]/[≈]/[⊨]) compiling until
-    they are swept. Remove once the sweep is complete. *)
-Notation "Ψ ⨟ Γ ⊨ C ≈ B" := (d_consis Ψ Γ C B)
-  (at level 75, Γ at level 74, C at level 74, B at level 74,
-   no associativity, only parsing) : type_scope.
-Notation "Ψ ⨟ Γ ⊢[ M ] C ⊑ B" := (d_sub M Ψ Γ C B)
-  (at level 75, Γ at level 74, M at level 0, C at level 74, B at level 74,
-   no associativity, only parsing) : type_scope.
-Notation "Ψ ⨟ Γ ⊨ₛ R ≈ Q" := (d_pat_consis Ψ Γ R Q)
-  (at level 75, Γ at level 74, R at level 74, Q at level 74,
-   no associativity, only parsing) : type_scope.
-Notation "Ψ ⨟ Γ ⊢ₛ[ M ] R ⊑ Q" := (d_pat_sub M Ψ Γ R Q)
-  (at level 75, Γ at level 74, M at level 0, R at level 74, Q at level 74,
-   no associativity, only parsing) : type_scope.
-
 (* ===================================================================== *)
 (*  Typing and pattern inference                                          *)
 (* ===================================================================== *)

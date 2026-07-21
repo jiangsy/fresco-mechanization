@@ -93,7 +93,7 @@ Lemma a_assign_unify_consis_dom_mono :
   (forall F Θ0 α β Θ1,
      Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 -> dom Θ0 [<=] dom Θ1) /\
   (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 -> dom Θ0 [<=] dom Θ1).
+     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 -> dom Θ0 [<=] dom Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
            (fun F Θ0 Ξ α P Θ1 _ => dom (Ξ ++ Θ0) [<=] dom Θ1)
@@ -124,7 +124,7 @@ Lemma a_assign_unify_consis_tvar_prefix :
      forall Ξr Θt, Θi = Ξr ++ Θt -> tvar_prefix Ξr ->
      exists Θt', Θo = Ξr ++ Θt') /\
   (forall F Δ1 Δ2 Θi P0 P Q Θo,
-     Θi ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θo ->
+     Θi ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θo ->
      forall Ξr Θt, Θi = Ξr ++ Θt -> tvar_prefix Ξr ->
      exists Θt', Θo = Ξr ++ Θt').
 Proof.
@@ -248,11 +248,11 @@ Lemma a_assign_unify_consis_compat :
      forall F', (forall γ, γ `in` F' -> γ `in` F \/ γ `notin` dom Θ1) ->
      Θ0 ⊲[ F' ] α ≈ᵘ β ⊣ Θ1) /\
   (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
      forall F' Δ1' Δ2',
        (forall γ, γ `in` F' -> γ `in` F \/ γ `notin` dom Θ1) ->
        Δ1 [=] Δ1' -> Δ2 [=] Δ2' ->
-       Θ0 ⊢ₐ[ F' ][ Δ1' | Δ2' | P0 ] P ≈ Q ⊣ Θ1).
+       Θ0 ⊢ₐ[ F' ][ Δ1' | Δ2' | P0 ] P ∼ Q ⊣ Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
            (fun F Θ0 Ξ α P Θ1 _ =>
@@ -265,7 +265,7 @@ Proof.
               forall F' Δ1' Δ2',
               (forall γ, γ `in` F' -> γ `in` F \/ γ `notin` dom Θ1) ->
               Δ1 [=] Δ1' -> Δ2 [=] Δ2' ->
-              Θ0 ⊢ₐ[ F' ][ Δ1' | Δ2' | P0 ] P ≈ Q ⊣ Θ1)).
+              Θ0 ⊢ₐ[ F' ][ Δ1' | Δ2' | P0 ] P ∼ Q ⊣ Θ1)).
   - (* univ_ghost_id *)
     intros F Θ0 α F' Hcond. apply a_assign__univ_ghost_id.
   - (* solve_m *)
@@ -478,7 +478,7 @@ Lemma a_assign_unify_subject_flex :
   (forall F Θ0 α β Θ1,
      Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 -> a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β) /\
   (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 -> True).
+     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 -> True).
 Proof.
   apply (a_assign_unify_consis_mutind
            (fun F Θ0 Ξ α P Θ1 _ => a_flex_tvar (Ξ ++ Θ0) α)
@@ -557,7 +557,7 @@ Lemma a_assign_unify_consis_uniq_fprotect :
      uniq Θ1 /\
      (forall γ, γ `in` F -> γ `in` dom Θ1 -> γ `in` dom Θ0)) /\
   (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
      uniq Θ0 ->
      uniq Θ1 /\
      (forall γ, γ `in` F -> γ `in` dom Θ1 -> γ `in` dom Θ0)).
@@ -1096,7 +1096,7 @@ Lemma a_assign_unify_consis_rename_tvar : forall (α Y : atom),
        (Ξr ++ (Y ~ abind_tvar) ++ Θb) ⊲[ F ] s1 ≈ᵘ s2
          ⊣ (Ξr ++ (Y ~ abind_tvar) ++ Θt)) /\
   (forall F Δ1 Δ2 Θi P0 P Q Θo,
-     Θi ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θo ->
+     Θi ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θo ->
      forall Ξr Θb, Θi = Ξr ++ (α ~ abind_tvar) ++ Θb ->
      tvar_prefix Ξr ->
      uniq Θi ->
@@ -1113,7 +1113,7 @@ Lemma a_assign_unify_consis_rename_tvar : forall (α Y : atom),
          ⊢ₐ[ F ][ (rn_set Y α Δ1) | (rn_set Y α Δ2)
          | (subst_pskl_in_pskl (pskl_var_f Y) α P0) ]
          (subst_pskl_in_pskl (pskl_var_f Y) α P)
-         ≈ (subst_pskl_in_pskl (pskl_var_f Y) α Q)
+         ∼ (subst_pskl_in_pskl (pskl_var_f Y) α Q)
          ⊣ (Ξr ++ (Y ~ abind_tvar) ++ Θt)).
 Proof.
   intros α Y.
@@ -1159,7 +1159,7 @@ Proof.
                   ⊢ₐ[ F ][ (rn_set Y α Δ1) | (rn_set Y α Δ2)
                   | (subst_pskl_in_pskl (pskl_var_f Y) α P0) ]
                   (subst_pskl_in_pskl (pskl_var_f Y) α P)
-                  ≈ (subst_pskl_in_pskl (pskl_var_f Y) α Q)
+                  ∼ (subst_pskl_in_pskl (pskl_var_f Y) α Q)
                   ⊣ (Ξr ++ (Y ~ abind_tvar) ++ Θt))).
   - (* univ_ghost_id : flex head, vacuous under the all-rigid split *)
     intros F Θ0 s Ξr Θb Heq Htv Hu HYi HYo HYP Hsα HsY. rn_vacuous.

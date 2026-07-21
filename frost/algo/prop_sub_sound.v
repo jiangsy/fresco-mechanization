@@ -197,13 +197,13 @@ Qed.
     the ARROW and ∀ structural cases of [ad_pat_consis_refine_inh_gen]. *)
 
 Lemma consis_transport_arrow : forall Ψ Θ' T P1 P2 B1 B2,
-  Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (bskl_arrow P1 P2) ->
+  Ψ ⨟ Θ' ⊢ₛᵃ T ∼ (bskl_arrow P1 P2) ->
   Θ' ⨟ empty ⊢ₚₛᵃ (pskl_arrow B1 B2) ->
-  (forall Ψ' T', Ψ' ⨟ Θ' ⊨ₛᵃ T' ≈ P1 ->
-     Ψ' ⨟ Θ' ⊨ₛᵃ T' ≈ (pskl_to_bskl_inh B1)) ->
-  (forall Ψ' T', Ψ' ⨟ Θ' ⊨ₛᵃ T' ≈ P2 ->
-     Ψ' ⨟ Θ' ⊨ₛᵃ T' ≈ (pskl_to_bskl_inh B2)) ->
-  Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (pskl_to_bskl_inh (pskl_arrow B1 B2)).
+  (forall Ψ' T', Ψ' ⨟ Θ' ⊢ₛᵃ T' ∼ P1 ->
+     Ψ' ⨟ Θ' ⊢ₛᵃ T' ∼ (pskl_to_bskl_inh B1)) ->
+  (forall Ψ' T', Ψ' ⨟ Θ' ⊢ₛᵃ T' ∼ P2 ->
+     Ψ' ⨟ Θ' ⊢ₛᵃ T' ∼ (pskl_to_bskl_inh B2)) ->
+  Ψ ⨟ Θ' ⊢ₛᵃ T ∼ (pskl_to_bskl_inh (pskl_arrow B1 B2)).
 Proof.
   intros Ψ Θ' T P1 P2 B1 B2 Hc HwfB HR1 HR2.
   remember (bskl_arrow P1 P2) as Qout eqn:HQ.
@@ -211,7 +211,7 @@ Proof.
   - (* arrow *) inversion HQ; subst. simpl.
     apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ apply HR1; assumption | apply HR2; assumption | assumption ].
-  - (* hole : uskl_hole ≈ any inh painting via the wf target *)
+  - (* hole : uskl_hole ∼ any inh painting via the wf target *)
     apply ad_pat_consis__hole; [ assumption | exact HwfB ].
   - (* tophole_drop *) apply ad_pat_consis__tophole_drop. apply IHHc; assumption.
   - (* flex_l *) eapply ad_pat_consis__flex_l; [ eassumption | ].
@@ -219,15 +219,15 @@ Proof.
 Qed.
 
 Lemma consis_transport_all : forall Ψ Θ' T P0 B0 L,
-  Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (bskl_all_inh P0) ->
+  Ψ ⨟ Θ' ⊢ₛᵃ T ∼ (bskl_all_inh P0) ->
   Θ' ⨟ empty ⊢ₚₛᵃ (pskl_all_syn B0) ->
   (forall X, X `notin` L ->
      forall Ψ' T',
-       Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊨ₛᵃ
-         T' ≈ (open_bskl_wrt_bskl P0 (bskl_var_f X)) ->
-       Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊨ₛᵃ
-         T' ≈ (pskl_to_bskl_inh (open_pskl_wrt_pskl B0 (pskl_var_f X)))) ->
-  Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (pskl_to_bskl_inh (pskl_all_syn B0)).
+       Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊢ₛᵃ
+         T' ∼ (open_bskl_wrt_bskl P0 (bskl_var_f X)) ->
+       Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊢ₛᵃ
+         T' ∼ (pskl_to_bskl_inh (open_pskl_wrt_pskl B0 (pskl_var_f X)))) ->
+  Ψ ⨟ Θ' ⊢ₛᵃ T ∼ (pskl_to_bskl_inh (pskl_all_syn B0)).
 Proof.
   intros Ψ Θ' T P0 B0 L Hc HwfB Htr.
   remember (bskl_all_inh P0) as Qout eqn:HQ.
@@ -286,7 +286,7 @@ Lemma ad_pat_consis_refine_inh_gen : forall Θ Δ Src Qt,
   (forall X, X `in` Δ -> a_binds_tvar X Θ') ->
   a_wf_aenv Θ' ->
   Θ' ⨟ empty ⊢ₚₛᵃ Bsrc ->
-  forall Ψ T, Ψ ⨟ Θ' ⊨ₛᵃ T ≈ Qt -> Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (pskl_to_bskl_inh Bsrc).
+  forall Ψ T, Ψ ⨟ Θ' ⊢ₛᵃ T ∼ Qt -> Ψ ⨟ Θ' ⊢ₛᵃ T ∼ (pskl_to_bskl_inh Bsrc).
 Proof.
   intros Θ Δ Src Qt Hfill.
   induction Hfill; intros Bsrc HeqSrc Hgf Θ' Hmon Hrig Hwf' HwfB Ψ T Hc.
@@ -357,7 +357,7 @@ Proof.
       | exact Hc ].
   - (* flex_r : output is a defined flex var; unfold the consistency *)
     assert (Hbα' : binds α (abind_flex_mono_def τ) Θ') by (apply Hmon; exact H).
-    assert (Hunf : Ψ ⨟ Θ' ⊨ₛᵃ T ≈ (ptyp_to_bskl_syn τ))
+    assert (Hunf : Ψ ⨟ Θ' ⊢ₛᵃ T ∼ (ptyp_to_bskl_syn τ))
       by (eapply consis_unfold_def_join;
             [ exact Hc | exact Hwf' | reflexivity | exact Hbα' ]).
     eapply IHHfill with (Bsrc := Bsrc) (Θ' := Θ');
@@ -366,13 +366,13 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_refine_inh_target : forall Ψ Θ T Qt,
-  Ψ ⨟ Θ ⊨ₛᵃ T ≈ Qt ->
+  Ψ ⨟ Θ ⊢ₛᵃ T ∼ Qt ->
   a_wf_aenv Θ ->
   forall B,
   Θ ⨟ empty ⊢ₚₛᵃ B ->
   pskl_ghost_free B ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh B) Qt ->
-  Ψ ⨟ Θ ⊨ₛᵃ T ≈ (pskl_to_bskl_inh B).
+  Ψ ⨟ Θ ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B).
 Proof.
   intros Ψ Θ T Qt Hc Hwf B HwfB Hgf Href.
   eapply ad_pat_consis_refine_inh_gen with (Θ := Θ) (Δ := empty) (Bsrc := B);
@@ -446,7 +446,7 @@ Definition subtag_sound_concl
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   (exists Qt, bskl_to_pskl Qt = Q /\
-     Ψ ⨟ Θ1 ⊢ₛᵃ[ NM | M ] S ⊑ Qt /\
+     Ψ ⨟ Θ1 ⊢ₛᵃ[ NM | M ] S ⩽ Qt /\
      ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt).
 
 (** The flexible-walk conclusion (paper lemma:sound-decorated-flex-subtyping:
@@ -462,12 +462,12 @@ Definition subtag_flex_sound_concl
   (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
   (Ξ ++ Θ0) ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   (exists Qt, bskl_to_pskl Qt = A /\
-     empty ⨟ Θ1 ⊢ₛᵃ[ NM | mode_fn M ] (uskl_var_f α) ⊑ Qt /\
+     empty ⨟ Θ1 ⊢ₛᵃ[ NM | mode_fn M ] (uskl_var_f α) ⩽ Qt /\
      ad_refine_syn_f empty Θ1 empty (pskl_to_bskl_inh P0) Qt).
 
 Theorem a_subtag_sound_bundle :
   (forall NM M P0 Ψ Θ0 S Q Θ1,
-     Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] S ⊑ Q ⊣ Θ1 ->
+     Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ1 ->
      subtag_sound_concl NM M P0 Ψ Θ0 S Q Θ1) /\
   (forall NM M P0 Θ0 Ξ α A Θ1,
      a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
@@ -519,7 +519,7 @@ Proof.
       as [Hle [Hwf1 [_ [_ [[Qt [HeQt [Hcons Hfill]]] _]]]]].
     assert (HwfB1 : Θ1 ⨟ empty ⊢ₚₛᵃ B)
       by (eapply a_wf_pskl_isub; [ exact HwfB | exact Hle ]).
-    assert (Hcons' : Ψ ⨟ Θ1 ⊨ₛᵃ T ≈ (pskl_to_bskl_inh B))
+    assert (Hcons' : Ψ ⨟ Θ1 ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B))
       by (eapply ad_pat_consis_refine_inh_target;
             [ exact Hcons | exact Hwf1 | exact HwfB1
             | apply a_ty_mode_compat_tc_ghost_free; exact Hgf | exact Hfill ]).
@@ -599,7 +599,7 @@ Proof.
       clear - HγΘ0 Hγα HS HQt HB. fsetdec. }
     (* the suffix-stripped subtyping, X-independent *)
     assert (Hsub1 : Ψ ⨟ ((α ~ abind_tvar) ++ Θ1)
-                      ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] S ⊑ Qt).
+                      ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] S ⩽ Qt).
     { eapply ad_pat_sub_strip_suffix with (Ξ := Ξ);
         [ exact Hsuf
         | simpl_env; simpl_env in Hwf1; exact Hwf1
@@ -1078,7 +1078,7 @@ Proof.
                         ⊢ₛᵃ[ NM | mode_fn M ]
                         (pskl_to_uskl
                            (subst_pskl_in_pskl (ptyp_to_pskl τ) β
-                              (pskl_var_f α))) ⊑ Qt).
+                              (pskl_var_f α))) ⩽ Qt).
       { eapply ad_pat_sub_weaken; [ exact Hsub | ].
         intros x b Hb. unfold binds in *. simpl. right. exact Hb. }
       simpl in Hsub'.

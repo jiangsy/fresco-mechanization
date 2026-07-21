@@ -221,13 +221,6 @@ Inductive a_consistag :
 where "Θ ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ'" :=
   (a_consistag Δ1 Δ2 P0 Ψ Θ S Q Θ') : type_scope.
 
-(** Deprecated pre-paper-sync glyph alias (parse-only): decorated consistency
-    now prints [∼˙] (paper's dotted [∼̇], spacing dot); old [≈] still parses. *)
-Notation "Θ ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ≈ Q ⊣ Θ'" := (a_consistag Δ1 Δ2 P0 Ψ Θ S Q Θ')
-  (at level 70, Δ1 at level 0, Δ2 at level 0, P0 at level 0, Ψ at level 0,
-   S at level 0, Q at level 0, Θ' at level 0, no associativity, only parsing)
-  : type_scope.
-
 (* ===================================================================== *)
 (*  Decorated algorithmic subtyping                                        *)
 (*  [Θ0 ⊢ᵗ[N|M|P0|Ψ] S ⩽˙ Q ⊣ Θ1]  (fig:decorated-alg-subtyping)           *)
@@ -378,13 +371,6 @@ with a_subtag_flex :
     a_subtag_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1)
 where "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ'" :=
   (a_subtag NM M P0 Ψ Θ S Q Θ') : type_scope.
-
-(** Deprecated pre-paper-sync glyph alias (parse-only): decorated subtyping
-    now prints [⩽˙] (paper's dotted [⩽̇], spacing dot); old [⊑] still parses. *)
-Notation "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] S ⊑ Q ⊣ Θ'" := (a_subtag NM M P0 Ψ Θ S Q Θ')
-  (at level 70, NM at level 0, M at level 0, P0 at level 0, Ψ at level 0,
-   S at level 0, Q at level 0, Θ' at level 0, no associativity, only parsing)
-  : type_scope.
 
 (* ===================================================================== *)
 (*  Decorated tag solving  (fig:decorated-tag-solving)                    *)

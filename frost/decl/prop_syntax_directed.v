@@ -126,10 +126,10 @@ Proof.
 Qed.
 
 Lemma d_consis_strengthen : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
+    Δ ⨟ Γ ⊢ C ∼ B ->
     forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
     X `notin` ftvar_in_utyp C ->
-    Δ ⨟ (Γ1 ++ Γ2) ⊨ C ≈ B.
+    Δ ⨟ (Γ1 ++ Γ2) ⊢ C ∼ B.
 Proof.
   intros Δ Γ C B H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
   - apply d_consis__unit; assumption.
@@ -298,11 +298,11 @@ Qed.
    not tvars); [Γ] loses the substituted tvar; types are substituted.  Consis
    premises go through [d_consis_subst_tvar] with [ph := utyp_unit]. *)
 Lemma d_sub_subst_unit : forall m Ψ Γ C B,
-    Ψ ⨟ Γ ⊢[ m ] C ⊑ B ->
+    Ψ ⨟ Γ ⊢[ m ] C ⩽ B ->
     forall Γ1 Γ2 X0,
       Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
       Ψ ⨟ (Γ1 ++ Γ2) ⊢[ m ]
-        (subst_utyp_in_utyp utyp_unit X0 C) ⊑ (subst_btyp_in_btyp btyp_unit X0 B).
+        (subst_utyp_in_utyp utyp_unit X0 C) ⩽ (subst_btyp_in_btyp btyp_unit X0 B).
 Proof.
   intros m Ψ Γ C B H. induction H; intros Γ1 Γ2 X0 Heq; subst; simpl.
   - (* infer *)
@@ -615,7 +615,7 @@ Proof.
 Qed.
 
 Lemma d_consis_same_tvar : forall Ψ Γ C B,
-    Ψ ⨟ Γ ⊨ C ≈ B -> forall Γ', same_tvar Γ Γ' -> Ψ ⨟ Γ' ⊨ C ≈ B.
+    Ψ ⨟ Γ ⊢ C ∼ B -> forall Γ', same_tvar Γ Γ' -> Ψ ⨟ Γ' ⊢ C ∼ B.
 Proof.
   intros Ψ Γ C B H. induction H; intros Γ' Hst.
   - apply d_consis__unit; assumption.
@@ -632,7 +632,7 @@ Proof.
 Qed.
 
 Lemma d_pat_consis_same_tvar : forall Δ Γ R Q,
-    Δ ⨟ Γ ⊨ₛ R ≈ Q -> forall Γ', same_tvar Γ Γ' -> Δ ⨟ Γ' ⊨ₛ R ≈ Q.
+    Δ ⨟ Γ ⊢ₛ R ∼ Q -> forall Γ', same_tvar Γ Γ' -> Δ ⨟ Γ' ⊢ₛ R ∼ Q.
 Proof.
   intros Δ Γ R Q H. induction H; intros Γ' Hst.
   - apply d_pat_consis__unit; assumption.
@@ -656,7 +656,7 @@ Proof.
 Qed.
 
 Lemma d_sub_same_tvar : forall m Ψ Γ C B,
-    Ψ ⨟ Γ ⊢[ m ] C ⊑ B -> forall Γ', same_tvar Γ Γ' -> Ψ ⨟ Γ' ⊢[ m ] C ⊑ B.
+    Ψ ⨟ Γ ⊢[ m ] C ⩽ B -> forall Γ', same_tvar Γ Γ' -> Ψ ⨟ Γ' ⊢[ m ] C ⩽ B.
 Proof.
   intros m Ψ Γ C B H. induction H; intros Γ' Hst.
   - apply d_sub__infer; [ eapply d_consis_same_tvar; eassumption | assumption | assumption ].
@@ -673,7 +673,7 @@ Proof.
 Qed.
 
 Lemma d_pat_sub_same_tvar : forall m Δ Γ R Q,
-    Δ ⨟ Γ ⊢ₛ[ m ] R ⊑ Q -> forall Γ', same_tvar Γ Γ' -> Δ ⨟ Γ' ⊢ₛ[ m ] R ⊑ Q.
+    Δ ⨟ Γ ⊢ₛ[ m ] R ⩽ Q -> forall Γ', same_tvar Γ Γ' -> Δ ⨟ Γ' ⊢ₛ[ m ] R ⩽ Q.
 Proof.
   intros m Δ Γ R Q H. induction H; intros Γ' Hst.
   - apply d_pat_sub__infer; [ assumption | eapply d_pat_consis_same_tvar; eassumption | assumption ].
@@ -1121,7 +1121,7 @@ Qed.
 (* Consistency only relates types with the same free variables (it never
    instantiates), so [B]'s ftvars are bounded by [C]'s. *)
 Lemma d_consis_ftvar_gen : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B -> ftvar_in_btyp B [<=] ftvar_in_utyp C.
+    Δ ⨟ Γ ⊢ C ∼ B -> ftvar_in_btyp B [<=] ftvar_in_utyp C.
 Proof.
   intros Δ Γ C B H. induction H; simpl; try fsetdec.
   - (* forall_inh_tagged *)
@@ -1175,7 +1175,7 @@ Proof.
     pick fresh X0 for (L `union` dom Γ `union` ftvar_in_btyp B).
     pose proof (IH X0 ltac:(fsetdec)) as IH0. inversion IH0; subst.
     match goal with
-    | Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn ptyp_unit ⊑ _ |- _ =>
+    | Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn ptyp_unit ⩽ _ |- _ =>
         rename Hs into Hs0
     end.
     assert (Hia : is_ityp (btyp_all_inh B)).
@@ -1198,7 +1198,7 @@ Proof.
     pose proof (IH X0 ltac:(fsetdec)) as IH0. inversion IH0; subst.
     match goal with
     | Hb : binds _ (dbind_typ _) ((X0 ~ dbind_tvar) ++ Γ),
-      Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn _ ⊑ _ |- _ =>
+      Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn _ ⩽ _ |- _ =>
         rename Hb into Hb0; rename Hs into Hs0
     end.
     match goal with
@@ -1242,7 +1242,7 @@ Proof.
     pose proof (IH X0 ltac:(fsetdec)) as IH0. inversion IH0; subst.
     match goal with
     | Hp : d_sd_typing mode_tc ((X0 ~ dbind_tvar) ++ Γ) e (ptyp_to_btyp_inh A),
-      Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn A ⊑ _ |- _ =>
+      Hs : empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn A ⩽ _ |- _ =>
         rename Hp into Hp0; rename Hs into Hs0
     end.
     assert (HX0A : X0 `notin` ftvar_in_ptyp A) by (simpl in Fr; fsetdec).
@@ -1277,7 +1277,7 @@ Qed.
 (* ===================================================================== *)
 
 (** Completeness needs [d_wf_denv Γ]: the embedded base rules demand a
-    REFLEXIVE [ti]-subtyping [syn{A} ⊑ syn{A}] ([d_sub__infer] over
+    REFLEXIVE [ti]-subtyping [syn{A} ⩽ syn{A}] ([d_sub__infer] over
     [d_consis_syn_refl]), which requires the binding / annotation type
     well-formed; and the [Sub] case consumes the sd-side general
     subsumption. *)
@@ -1367,7 +1367,7 @@ Qed.
 (** On [d_typing], general subsumption is now the (unrestricted) [Sub] RULE. *)
 Corollary d_typing_general_subsumption : forall Γ e A B m,
     Γ ⊢[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
-    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⩽ B ->
     Γ ⊢[ m ] e ⦂ B.
 Proof. intros. eapply d_typing__sub; eassumption. Qed.
 
@@ -1379,7 +1379,7 @@ Corollary d_typing_general_subsumption_spine : forall m1 Γ e Bfull,
     forall n A M B Bres,
       is_fn_n n m1 ->
       btyp_spine n Bfull A B Bres ->
-      empty ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
+      empty ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⩽ B ->
       Γ ⊢[ mode_fn_n_subst m1 M ] e ⦂ Bres.
 Proof.
   intros m1 Γ e Bfull Hwf Hty n A M B Bres Hfn Hspine Htail.

@@ -119,12 +119,6 @@ Inductive ad_pat_consis : atoms -> aenv -> uskl -> bskl -> Prop :=
     Ψ ⨟ Θ ⊢ₛᵃ S ∼ (bskl_var_f α)
 where "Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q" := (ad_pat_consis Ψ Θ R Q) : type_scope.
 
-(** Deprecated pre-paper-sync glyph alias (parse-only): prints [⊢ₛᵃ … ∼]
-    (paper); old [⊨ₛᵃ … ≈] still parses until swept. *)
-Notation "Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q" := (ad_pat_consis Ψ Θ R Q)
-  (at level 75, Θ at level 74, R at level 74, Q at level 74,
-   no associativity, only parsing) : type_scope.
-
 (* ===================================================================== *)
 (*  Skeleton refinement over Θ, coloured  (decl [Γ ⨟ Δ ⊢ᵣ Q ⊳ P] + flex)  *)
 (* ===================================================================== *)

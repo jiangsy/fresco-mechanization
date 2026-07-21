@@ -140,8 +140,8 @@ Proof.
 Qed.
 
 (** Folding a flexible variable's definition on the PAINTED side of a
-    consistency derivation, at a monotype: if [S ≈ syn(B[τ/γ̂])] and
-    [γ̂ := τ ∈ Θ], then [S ≈ syn B] (rule FlexR reintroduces [γ̂]).
+    consistency derivation, at a monotype: if [S ∼ syn(B[τ/γ̂])] and
+    [γ̂ := τ ∈ Θ], then [S ∼ syn B] (rule FlexR reintroduces [γ̂]).
     Mirror of [ad_pat_consis_fold_def]. *)
 Lemma ad_pat_consis_fold_def_q_mono : forall Θ γ τ Ψ S Q',
   ad_pat_consis Ψ Θ S Q' ->
@@ -2200,8 +2200,8 @@ Qed.
 (*  rather than the variable [α̂] the conclusion asks for.  The paper       *)
 (*  eliminates [Q] in two steps:                                           *)
 (*                                                                         *)
-(*    (h)  from  inh(P[τ/β̂]) ⊳ˢʸⁿ Q  and  α̂[τ/β̂] ≈ Q                       *)
-(*         conclude  P[τ/β̂] ≈ α̂[τ/β̂]                                       *)
+(*    (h)  from  inh(P[τ/β̂]) ⊳ˢʸⁿ Q  and  α̂[τ/β̂] ∼ Q                       *)
+(*         conclude  P[τ/β̂] ∼ α̂[τ/β̂]                                       *)
 (*    (i)  fold the definition β̂ ≔ τ back in, on BOTH sides.               *)
 (*                                                                         *)
 (*  Step (h) splits into [refine_inh_mono_consis] (the refinement side —   *)
@@ -2248,7 +2248,7 @@ Lemma refine_inh_mono_consis : forall Θ Δ Qb Qt,
   mono_bskl Qt ->
   forall P0, Qb = pskl_to_bskl_inh P0 ->
   (forall X, X `in` Δ -> a_binds_tvar X Θ) ->
-  empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl P0) ≈ Qt.
+  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl P0) ∼ Qt.
 Proof.
   intros Θ Δ Qb Qt Hr Hwf; induction Hr; intros Hm P0 Heq Hrig.
   - (* unit *)
@@ -2297,11 +2297,11 @@ Qed.
     [consis_unfold_def_subject] (prop_mono_bridge.v): only [var] / [hole] /
     [tophole_drop] / [flex_l] / [flex_r] can have join [γ̂]. *)
 Lemma consis_unfold_def_join : forall Ψ Θ S Qt,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Qt ->
   a_wf_aenv Θ ->
   forall γ τ, Qt = bskl_var_f γ ->
   binds γ (abind_flex_mono_def τ) Θ ->
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn τ).
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ (ptyp_to_bskl_syn τ).
 Proof.
   intros * Hc Hwf; induction Hc; intros γ0 τ0 HeqQ Hb;
     try discriminate HeqQ.
@@ -2339,17 +2339,17 @@ Qed.
     must be given as concrete MONOTYPES rather than opaque transports (the
     rebuilt ghost fill has to be a well-formed skeleton). *)
 Lemma consis_arrow_join_transport : forall Ψ Θ S Qt,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Qt ->
   a_wf_aenv Θ ->
   forall B1 B2 A1 A2,
   Qt = ptyp_to_bskl_syn (ptyp_arrow B1 B2) ->
   mono_ptyp A1 -> mono_ptyp A2 ->
   (forall X, X `in` ftvar_in_ptyp (ptyp_arrow A1 A2) -> a_binds_tvar X Θ) ->
-  (forall Ψ' S', Ψ' ⨟ Θ ⊨ₛᵃ S' ≈ (ptyp_to_bskl_syn B1) ->
-                 Ψ' ⨟ Θ ⊨ₛᵃ S' ≈ (ptyp_to_bskl_syn A1)) ->
-  (forall Ψ' S', Ψ' ⨟ Θ ⊨ₛᵃ S' ≈ (ptyp_to_bskl_syn B2) ->
-                 Ψ' ⨟ Θ ⊨ₛᵃ S' ≈ (ptyp_to_bskl_syn A2)) ->
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn (ptyp_arrow A1 A2)).
+  (forall Ψ' S', Ψ' ⨟ Θ ⊢ₛᵃ S' ∼ (ptyp_to_bskl_syn B1) ->
+                 Ψ' ⨟ Θ ⊢ₛᵃ S' ∼ (ptyp_to_bskl_syn A1)) ->
+  (forall Ψ' S', Ψ' ⨟ Θ ⊢ₛᵃ S' ∼ (ptyp_to_bskl_syn B2) ->
+                 Ψ' ⨟ Θ ⊢ₛᵃ S' ∼ (ptyp_to_bskl_syn A2)) ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ (ptyp_to_bskl_syn (ptyp_arrow A1 A2)).
 Proof.
   intros Ψ Θ S Qt Hc Hwf; induction Hc;
     intros B1 B2 A1 A2 HeqQ HmA1 HmA2 Hvis Ht1 Ht2;
@@ -2385,10 +2385,10 @@ Lemma tyequiv_mono_consis_transport_q : forall Θ A B,
   a_wf_aenv Θ ->
   mono_ptyp A ->
   (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
-  (forall Ψ S, Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn B) ->
-               Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn A)) /\
-  (forall Ψ S, Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn A) ->
-               Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn B)).
+  (forall Ψ S, Ψ ⨟ Θ ⊢ₛᵃ S ∼ (ptyp_to_bskl_syn B) ->
+               Ψ ⨟ Θ ⊢ₛᵃ S ∼ (ptyp_to_bskl_syn A)) /\
+  (forall Ψ S, Ψ ⨟ Θ ⊢ₛᵃ S ∼ (ptyp_to_bskl_syn A) ->
+               Ψ ⨟ Θ ⊢ₛᵃ S ∼ (ptyp_to_bskl_syn B)).
 Proof.
   intros Θ A B Heq Hwf; induction Heq; intros Hm Hv.
   - (* refl *)
@@ -2546,7 +2546,7 @@ Theorem a_assign_unify_consis_sound :
   (forall F Θ0 α β Θ1,
      Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 -> unify_sound_concl F Θ0 α β Θ1) /\
   (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
      consis_sound_concl F Δ1 Δ2 Θ0 P0 P Q Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
@@ -2900,10 +2900,10 @@ Proof.
                 (A := subst_ptyp_in_ptyp τ β (ptyp_var_f α))
                 eq_refl Hmsub)
       as [C [HmC [HeqC HeqmC]]].
-    (* (b) the refinement side: ⌊P[τ/β̂]⌋ ≈ Q  (subsidiary induction #1) *)
-    assert (Hc0 : empty ⨟ Θ1 ⊨ₛᵃ
+    (* (b) the refinement side: ⌊P[τ/β̂]⌋ ∼ Q  (subsidiary induction #1) *)
+    assert (Hc0 : empty ⨟ Θ1 ⊢ₛᵃ
                     (pskl_to_uskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P))
-                    ≈ Qt).
+                    ∼ Qt).
     { eapply refine_inh_mono_consis;
         [ eapply ad_refine_syn_f_forget; exact Hrs
         | exact Hwf1
@@ -2911,8 +2911,8 @@ Proof.
         | reflexivity
         | intros X HX; exfalso; clear - HX; fsetdec ]. }
     (* (c) fold the definition on the SUBJECT side *)
-    assert (Hc1 : empty ⨟ ((β ~ abind_flex_mono_def τ) ++ Θ1) ⊨ₛᵃ
-                    (pskl_to_uskl P) ≈ Qt).
+    assert (Hc1 : empty ⨟ ((β ~ abind_flex_mono_def τ) ++ Θ1) ⊢ₛᵃ
+                    (pskl_to_uskl P) ∼ Qt).
     { eapply ad_pat_consis_fold_def with
         (β := β) (τ := τ)
         (S' := pskl_to_uskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P));
@@ -3730,7 +3730,7 @@ Proof.
           [ eapply ad_refine_syn_f_isub; eauto | exact Hrs2 ].
     + simpl. apply ad_refine_pskl_f__arrow;
         [ eapply ad_refine_pskl_f_isub; eauto | exact Hrp2 ].
-  - (* C-ForallInh : ∀α.P ≈ ∀α.Q against input ∀α.P0 *)
+  - (* C-ForallInh : ∀α.P ∼ ∀α.Q against input ∀α.P0 *)
     intros L F Δ1 Δ2 Θ0 Θ1 P0 P Q Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | L0 Θa Δa P0a Hbody0 Heqa | | ]; subst.
@@ -3888,7 +3888,7 @@ Proof.
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
                ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
-  - (* C-ForallSyn : ∀α.P ≈ ∀α.Q against input ⊤.P0 *)
+  - (* C-ForallSyn : ∀α.P ∼ ∀α.Q against input ⊤.P0 *)
     intros L F Δ1 Δ2 Θ0 Θ1 P0 P Q Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
@@ -4042,7 +4042,7 @@ Proof.
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
                ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
-  - (* C-UnivGhost : ⊤.P ≈ ⊤.Q against input ⊤.P0 *)
+  - (* C-UnivGhost : ⊤.P ∼ ⊤.Q against input ⊤.P0 *)
     intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' ]; subst.
@@ -4068,7 +4068,7 @@ Proof.
     + simpl. apply ad_refine_pskl_f__tophole_keep; [ | exact Hrp ].
       eapply ad_refine_pskl_f_guarded_r;
         [ exact Hwf1 | exact Hrp | exact Hg' ].
-  - (* C-UnivGhost1 : ⊤.P ≈ ∀α.Q against input ∀α.P0 *)
+  - (* C-UnivGhost1 : ⊤.P ∼ ∀α.Q against input ∀α.P0 *)
     intros L F Δ1 Δ2 Θ0 Θ1 P0 P Q Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | L0 Θa Δa P0a Hbody0 Heqa | | ]; subst.
@@ -4620,16 +4620,16 @@ Qed.
 
 (** [ad_pat_consis] is congruent in the tag context. *)
 Lemma ad_pat_consis_psi_cong : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
   forall Ψ', Ψ [=] Ψ' ->
-  Ψ' ⨟ Θ ⊨ₛᵃ S ≈ Q.
+  Ψ' ⨟ Θ ⊢ₛᵃ S ∼ Q.
 Proof.
   intros Ψ Θ S Q H; induction H; intros Ψ' Heq;
     econstructor; eauto; fsetdec.
 Qed.
 
 Lemma a_consistag_sound_aux : forall Δ1 Δ2 P0 Ψ Θ0 S Q Θ1,
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ≈ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   lc_uskl S ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -4639,7 +4639,7 @@ Lemma a_consistag_sound_aux : forall Δ1 Δ2 P0 Ψ Θ0 S Q Θ1,
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   no_flex_dep (Δ1 `union` Δ2) Θ1 /\ flex_above_free (Δ1 `union` Δ2) Θ1 /\
   (exists Qt, bskl_to_pskl Qt = Q /\
-     Ψ ⨟ Θ1 ⊨ₛᵃ S ≈ Qt /\
+     Ψ ⨟ Θ1 ⊢ₛᵃ S ∼ Qt /\
      ad_refine_syn_f Δ1 Θ1 Δ1 (pskl_to_bskl_inh P0) Qt) /\
   ad_refine_pskl_f Δ2 Θ1 Δ2 (uskl_to_pskl S) Q.
 Proof.
@@ -5544,7 +5544,7 @@ Qed.
 (* ===================================================================== *)
 
 Corollary a_consis_sound_aux : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
@@ -5554,7 +5554,7 @@ Corollary a_consis_sound_aux : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   no_flex_dep (Δ1 `union` Δ2) Θ1 /\ flex_above_free (Δ1 `union` Δ2) Θ1 /\
   (exists Qt, bskl_to_pskl Qt = Q /\
-     empty ⨟ Θ1 ⊨ₛᵃ (pskl_to_uskl P) ≈ Qt /\
+     empty ⨟ Θ1 ⊢ₛᵃ (pskl_to_uskl P) ∼ Qt /\
      ad_refine_syn_f Δ1 Θ1 Δ1 (pskl_to_bskl_inh P0) Qt) /\
   ad_refine_pskl_f Δ2 Θ1 Δ2 P Q.
 Proof.
@@ -5579,13 +5579,13 @@ Qed.
     synthesised painting of the input and a valid refinement of both
     inputs.  (The fill-hygiene set is discharged by [*_f_forget].) *)
 Corollary a_consis_sound : forall Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ P0 ] P ≈ Q ⊣ Θ1 ->
+  Θ0 ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
   Θ0 ⊴ Θ1 /\
   (exists Qt, bskl_to_pskl Qt = Q /\
-     empty ⨟ Θ1 ⊨ₛᵃ (pskl_to_uskl P) ≈ Qt /\
+     empty ⨟ Θ1 ⊢ₛᵃ (pskl_to_uskl P) ∼ Qt /\
      Θ1 ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0) ⊳ Qt) /\
   Θ1 ⨟ empty ⊢ᵣₚᵃ P ⊳ Q.
 Proof.

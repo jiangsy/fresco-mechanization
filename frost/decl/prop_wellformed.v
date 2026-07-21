@@ -169,7 +169,7 @@ Qed.
     composition lemmas go through. *)
 
 Lemma d_consis_equiv : forall Δ Δo Γ C B,
-    Δ [=] Δo -> Δ ⨟ Γ ⊨ C ≈ B -> Δo ⨟ Γ ⊨ C ≈ B.
+    Δ [=] Δo -> Δ ⨟ Γ ⊢ C ∼ B -> Δo ⨟ Γ ⊢ C ∼ B.
 Proof.
   intros Δ Δo Γ C B Heq H. revert Δo Heq. induction H; intros Δo Heq.
   - apply d_consis__unit. fsetdec.
@@ -185,7 +185,7 @@ Proof.
 Qed.
 
 Lemma d_sub_equiv : forall m Δ Δo Γ C B,
-    Δ [=] Δo -> Δ ⨟ Γ ⊢[ m ] C ⊑ B -> Δo ⨟ Γ ⊢[ m ] C ⊑ B.
+    Δ [=] Δo -> Δ ⨟ Γ ⊢[ m ] C ⩽ B -> Δo ⨟ Γ ⊢[ m ] C ⩽ B.
 Proof.
   intros m Δ Δo Γ C B Heq H. revert Δo Heq. induction H; intros Δo Heq.
   - apply d_sub__infer; [ assumption | assumption | fsetdec ].
@@ -594,22 +594,22 @@ Qed.
 (** * Consistency / subtyping preserve well-formedness (utyp ⇒ btyp). *)
 
 Lemma d_consis_wf : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
+    Δ ⨟ Γ ⊢ C ∼ B -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
 Proof.
   intros Δ Γ C B H. induction H; intros Hwf.
   - apply d_wf_btyp__unit.
   - apply d_wf_btyp__var. assumption.
   - inversion Hwf; subst. apply d_wf_btyp__arrow; auto.
-  - (* forall_inh_tagged: utyp_all_etag ε C ≈ btyp_all_inh B *)
+  - (* forall_inh_tagged: utyp_all_etag ε C ∼ btyp_all_inh B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
     intros X HX. apply H0; auto.
-  - (* forall_inh_untagged: utyp_all_syn C ≈ btyp_all_inh B *)
+  - (* forall_inh_untagged: utyp_all_syn C ∼ btyp_all_inh B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
     intros X HX. apply H0; auto.
-  - (* forall_syn_tagged: utyp_all_etag ε C ≈ btyp_all_syn B *)
+  - (* forall_syn_tagged: utyp_all_etag ε C ∼ btyp_all_syn B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
     intros X HX. apply H0; auto.
-  - (* forall_syn: utyp_all_syn C ≈ btyp_all_syn B *)
+  - (* forall_syn: utyp_all_syn C ∼ btyp_all_syn B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
     intros X HX. apply H0; auto.
 Qed.
@@ -634,24 +634,24 @@ Proof.
 Qed.
 
 Lemma d_sub_wf : forall m Δ Γ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⊑ B -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
+    Δ ⨟ Γ ⊢[ m ] C ⩽ B -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
 Proof.
   intros m Δ Γ C B H. induction H; intros Hwf.
   - (* infer *) eapply d_consis_wf; eassumption.
   - (* check *) eapply d_consis_wf; eassumption.
-  - (* forall_r: C ⊑ btyp_all_inh B *)
+  - (* forall_r: C ⩽ btyp_all_inh B *)
     inst_cofinites_for d_wf_btyp__all_inh. intros X HX.
     apply H1; auto. apply d_wf_utyp_weakening with (Γ1 := nil). simpl. assumption.
-  - (* arg: utyp_arrow C1 C2 ⊑ btyp_arrow B1 B2 *)
+  - (* arg: utyp_arrow C1 C2 ⩽ btyp_arrow B1 B2 *)
     inversion Hwf; subst. apply d_wf_btyp__arrow.
     + eapply d_consis_wf; eassumption.
     + apply IHd_sub; assumption.
-  - (* forall_l_tagged: utyp_all_etag ε C ⊑ B; recurse on opened body *)
+  - (* forall_l_tagged: utyp_all_etag ε C ⩽ B; recurse on opened body *)
     inversion Hwf; subst. apply IHd_sub.
     pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C).
     rewrite (subst_utyp_in_utyp_intro X) by auto.
     apply d_wf_utyp_subst_tvar; auto.
-  - (* forall_l_untagged: utyp_all_syn C ⊑ B *)
+  - (* forall_l_untagged: utyp_all_syn C ⩽ B *)
     inversion Hwf; subst. apply IHd_sub.
     pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C).
     rewrite (subst_utyp_in_utyp_intro X) by auto.
@@ -717,7 +717,7 @@ Qed.
 (** Subtyping preserves the colour/mode discipline [skmod{TY}]: its RHS colour
     matches its mode (the [sub]/[app] typing rules read their result colour off
     a subtyping / a function arrow, so this feeds [d_typing_skmod]). *)
-Lemma d_sub_skmod : forall m Ψ Γ C B, Ψ ⨟ Γ ⊢[ m ] C ⊑ B -> mod_comp_ty B m.
+Lemma d_sub_skmod : forall m Ψ Γ C B, Ψ ⨟ Γ ⊢[ m ] C ⩽ B -> mod_comp_ty B m.
 Proof.
   intros m Ψ Γ C B H. induction H.
   - apply mod_comp_ty__ti; assumption.
@@ -806,7 +806,7 @@ Qed.
     [utyp] painting of the same [A] (empty tag context). *)
 Lemma d_consis_syn_refl : forall Γ A,
     d_wf_ptyp Γ A ->
-    empty ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ ptyp_to_btyp_syn A.
+    empty ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ ptyp_to_btyp_syn A.
 Proof.
   intros Γ A Hwf. induction Hwf; simpl.
   - apply d_consis__unit; reflexivity.
@@ -831,7 +831,7 @@ Qed.
     [d_typing__sub]. *)
 Lemma d_consis_paint_syn_eq : forall B,
     is_styp B ->
-    forall Δ Γ A, Δ ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B -> B = ptyp_to_btyp_syn A.
+    forall Δ Γ A, Δ ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B -> B = ptyp_to_btyp_syn A.
 Proof.
   intros B Hstyp. induction Hstyp; intros Δ Γ A Hc.
   - (* unit *) destruct A; simpl in Hc; inversion Hc; subst; reflexivity.

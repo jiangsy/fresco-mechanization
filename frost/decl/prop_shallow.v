@@ -1,10 +1,10 @@
-(** Frost — completeness of check-mode subtyping [⊑] against the reference
+(** Frost — completeness of check-mode subtyping [⩽] against the reference
     shallow polymorphic subtyping [d_shallow_sub_mono] ([≤ₘ⟨n⟩]).
 
     Headline (Bruno's margin note, declarative.tex): the FN-depth-indexed
-    reference relation is a lower bound on [⊑]'s expressive power, i.e.
+    reference relation is a lower bound on [⩽]'s expressive power, i.e.
 
-      Γ ⊢ A ≤ₘ⟨n⟩ B  →  ∅ ⨟ Γ ⊢[mode_fn^n mode_tc] syn{A} ⊑ inh{B}.
+      Γ ⊢ A ≤ₘ⟨n⟩ B  →  ∅ ⨟ Γ ⊢[mode_fn^n mode_tc] syn{A} ⩽ inh{B}.
 
     See [decl/def_extra.v] for the design of [d_shallow_sub_mono]. *)
 
@@ -61,11 +61,11 @@ Proof.
     rewrite <- ptyp_to_btyp_inh_open. eauto.
 Qed.
 
-(** ** Reflexivity of [⊑] across the syn/inh painting (the [refl] case). *)
+(** ** Reflexivity of [⩽] across the syn/inh painting (the [refl] case). *)
 
-(* Consistency is reflexive across the paint: [syn{A} ≈ inh{A}] for any [A]. *)
+(* Consistency is reflexive across the paint: [syn{A} ∼ inh{A}] for any [A]. *)
 Lemma d_consis_refl_paint : forall Γ A,
-    Γ ⊢ₚ A -> empty ⨟ Γ ⊨ (ptyp_to_utyp_syn A) ≈ (ptyp_to_btyp_inh A).
+    Γ ⊢ₚ A -> empty ⨟ Γ ⊢ (ptyp_to_utyp_syn A) ∼ (ptyp_to_btyp_inh A).
 Proof.
   intros Γ A Hwf. induction Hwf; simpl.
   - apply d_consis__unit. fsetdec.
@@ -77,11 +77,11 @@ Proof.
     rewrite <- ptyp_to_utyp_syn_open. rewrite <- ptyp_to_btyp_inh_open. eauto.
 Qed.
 
-(* Subtyping is reflexive across the paint at [mode_tc]: [syn{A} ⊑[tc] inh{A}].
+(* Subtyping is reflexive across the paint at [mode_tc]: [syn{A} ⩽[tc] inh{A}].
    Guarded leaves close by [SubCheck] + consistency-refl; a top-level [∀]
    peels by [SubForallR] then [SubForallL] (instantiated by the bound var). *)
 Lemma d_sub_refl_paint : forall Γ A,
-    Γ ⊢ₚ A -> empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⊑ (ptyp_to_btyp_inh A).
+    Γ ⊢ₚ A -> empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A).
 Proof.
   intros Γ A Hwf.
   induction Hwf as [ Γ | Γ X Hbnd | Γ A1 A2 Hwf1 IH1 Hwf2 IH2 | L Γ A0 Hwf0 IH0 ];
@@ -123,24 +123,24 @@ Proof.
         apply IH0. clear - HX. fsetdec.
 Qed.
 
-(* At [mode_tc] the RHS of [⊑] is always inherited (is_ityp). *)
+(* At [mode_tc] the RHS of [⩽] is always inherited (is_ityp). *)
 Lemma d_sub_tc_is_ityp : forall Ψ Γ C B,
-    Ψ ⨟ Γ ⊢[ mode_tc ] C ⊑ B -> is_ityp B.
+    Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ B -> is_ityp B.
 Proof.
   intros Ψ Γ C B H. dependent induction H; eauto.
 Qed.
 
-(** ** Completeness of [⊑] against the paper's shallow subtyping.
+(** ** Completeness of [⩽] against the paper's shallow subtyping.
 
-      Γ ⊢ A ≤ B  →  ∅ ⨟ Γ ⊢[mode_tc] syn{A} ⊑ inh{B}.
+      Γ ⊢ A ≤ B  →  ∅ ⨟ Γ ⊢[mode_tc] syn{A} ⩽ inh{B}.
 
-    Each reference rule maps to the matching [⊑] rule: [refl] ↦
+    Each reference rule maps to the matching [⩽] rule: [refl] ↦
     [d_sub_refl_paint]; [forall_r] ↦ [SubForallR] ([is_ityp] from the IH via
     [d_sub_tc_is_ityp]); [forall_l] ↦ [SubForallL] (the monotype paint is a
     tag-free [is_ttyp]). *)
 Theorem d_shallow_sub_complete : forall Γ A B,
     Γ ⊢ A ≤ B ->
-    empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⊑ (ptyp_to_btyp_inh B).
+    empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh B).
 Proof.
   intros Γ A B Hsub. induction Hsub; simpl in *.
   - (* refl *)
@@ -171,7 +171,7 @@ Qed.
 (** ** Only polytypes need to be annotated (annotation-level property).
 
     NB. This is a DIFFERENT property from "no guessing of polytypes": that one
-    is about instantiations inside SUBTYPING derivations (the [⊑] [forall_l]
+    is about instantiations inside SUBTYPING derivations (the [⩽] [forall_l]
     guesses), whereas this one is about the USER-WRITTEN annotations on terms.
     They are not equivalent.
 

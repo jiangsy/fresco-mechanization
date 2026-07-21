@@ -77,9 +77,9 @@ Qed.
    [F], and the decorated rules store the paper-shaped [F = ∅] premises, so
    Leibniz [F = empty] transports through every case. *)
 Lemma a_consis_decorate_gen : forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
   F = empty ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ≈ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ Q ⊣ Θ1.
 Proof.
   intros * Hc; induction Hc; intros HF; subst; simpl.
   - (* Ghost *)
@@ -122,8 +122,8 @@ Qed.
 
 (** The paper-shaped instance (no used names at the root). *)
 Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ≈ Q ⊣ Θ1.
+  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ Q ⊣ Θ1.
 Proof.
   intros * Hc; eapply a_consis_decorate_gen; eauto.
 Qed.

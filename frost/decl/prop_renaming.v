@@ -61,13 +61,13 @@ Qed.
 
 (** [d_consis] is closed under tvar renaming (Δ is etag-only, untouched). *)
 Lemma d_consis_rename_tvar : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
+    Δ ⨟ Γ ⊢ C ∼ B ->
     forall Γ1 Γ2 X0 Y,
       Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
       Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-      Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊨
+      Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢
          (subst_utyp_in_utyp (utyp_var_f Y) X0 C)
-         ≈ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
+         ∼ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
 Proof.
   intros Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
   - apply d_consis__unit. assumption.
@@ -167,13 +167,13 @@ Qed.
 (** [d_sub] is closed under tvar renaming ([Δ] is etag-only, untouched);
     closes the cofinite-uniform [forall_r] case of the transitivity lemmas. *)
 Lemma d_sub_rename_tvar : forall m Δ Γ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
+    Δ ⨟ Γ ⊢[ m ] C ⩽ B ->
     forall Γ1 Γ2 X0 Y,
       Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
       Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
       Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢[ m ]
          (subst_utyp_in_utyp (utyp_var_f Y) X0 C)
-         ⊑ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
+         ⩽ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
 Proof.
   intros m Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
   - (* infer *)
@@ -247,9 +247,9 @@ Proof.
 Qed.
 
 Lemma d_consis_rename_var : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
+    Δ ⨟ Γ ⊢ C ∼ B ->
     forall Γ1 x d Γ2 y, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
-    Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊨ C ≈ B.
+    Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢ C ∼ B.
 Proof.
   intros Δ Γ C B H. induction H; intros Γ1 x0 d0 Γ2 y0 Heq Hd; subst.
   - apply d_consis__unit. assumption.
@@ -277,9 +277,9 @@ Proof.
 Qed.
 
 Lemma d_sub_rename_var : forall m Δ Γ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
+    Δ ⨟ Γ ⊢[ m ] C ⩽ B ->
     forall Γ1 x d Γ2 y, Γ = Γ1 ++ (x ~ d) ++ Γ2 -> d <> dbind_tvar ->
-    Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢[ m ] C ⊑ B.
+    Δ ⨟ (Γ1 ++ (y ~ d) ++ Γ2) ⊢[ m ] C ⩽ B.
 Proof.
   intros m Δ Γ C B H. induction H; intros Γ1 x0 d0 Γ2 y0 Heq Hd; subst.
   - apply d_sub__infer;

@@ -71,9 +71,9 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_isub : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
   forall Θ', Θ ⊴ Θ' ->
-  Ψ ⨟ Θ' ⊨ₛᵃ S ≈ Q.
+  Ψ ⨟ Θ' ⊢ₛᵃ S ∼ Q.
 Proof.
   intros Ψ Θ S Q H; induction H; intros Θ' Hle.
   - apply ad_pat_consis__unit; auto.

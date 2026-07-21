@@ -796,19 +796,6 @@ Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ'" :=
 Notation "Θ ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ'" := (a_consis empty empty empty Θ P0 P Q Θ')
   (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0).
 
-(** Deprecated pre-paper-sync glyph aliases (parse-only): algorithmic
-    consistency now prints [∼] (paper), matching a_lookeq/a_solve_eq. Old
-    [≈] proof scripts still parse until swept; remove after the sweep. *)
-Notation "Θ ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" := (a_consis F Δ1 Δ2 Θ P0 P Q Θ')
-  (at level 70, F at level 0, Δ1 at level 0, Δ2 at level 0, P0 at level 0,
-   P at level 0, Q at level 0, Θ' at level 0, only parsing) : type_scope.
-Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" := (a_consis empty Δ1 Δ2 Θ P0 P Q Θ')
-  (at level 70, Δ1 at level 0, Δ2 at level 0, P0 at level 0,
-   P at level 0, Q at level 0, Θ' at level 0, only parsing) : type_scope.
-Notation "Θ ⊢ₐ[ P0 ] P ≈ Q ⊣ Θ'" := (a_consis empty empty empty Θ P0 P Q Θ')
-  (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0,
-   only parsing) : type_scope.
-
 (* [aconsis{Θ0}{P}{P0}{Θ1}]: output-suppressed abbreviation (paper). *)
 Definition a_consis_chk (Θ0 : aenv) (P P0 : pskl) (Θ1 : aenv) : Prop :=
   exists Q, Θ0 ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ1.
@@ -940,12 +927,6 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
     Θ0 ⊲ (pskl_var_f α) ▹ (pskl_var_f β) ⇢ (pskl_var_f γ) ⊣ Θ1
 where "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'" := (a_split Θ P0 P Q Θ') : type_scope
   and "Θ ⊢ₐ[ N | m | P0 ] P ⩽ Q ⊣ Θ'" := (a_sub N m P0 Θ P Q Θ').
-
-(** Deprecated pre-paper-sync glyph alias (parse-only): algorithmic subtyping
-    now prints [⩽] (paper); the old [⊑ᴬ] form still parses until swept. *)
-Notation "Θ ⊢ₐ[ N | m | P0 ] P ⊑ᴬ Q ⊣ Θ'" := (a_sub N m P0 Θ P Q Θ')
-  (at level 70, N at level 0, m at level 0, P0 at level 0, P at level 0,
-   Q at level 0, Θ' at level 0, only parsing) : type_scope.
 
 (* ===================================================================== *)
 (*  Algorithmic skeleton inference  [Θ ⊢[M][P0] M ⇨ P ⊣ Θ']               *)

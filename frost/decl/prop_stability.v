@@ -36,7 +36,7 @@ Lemma d_typing_var_ti_consis : forall Γ x A B1,
     d_wf_denv Γ ->
     binds x (dbind_typ A) Γ ->
     Γ ⊢[ mode_ti ] (exp_var_f x) ⦂ B1 ->
-    is_styp B1 /\ exists Δt, Δt ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B1.
+    is_styp B1 /\ exists Δt, Δt ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B1.
 Proof.
   intros Γ x A B1 Hwf Hb Htyp.
   assert (Huniq : uniq Γ) by (apply d_wf_denv_uniq; exact Hwf).
@@ -52,14 +52,14 @@ Proof.
     + apply is_styp_ptyp_to_btyp_syn; eapply d_wf_ptyp_lc; eauto.
     + exists empty. apply d_consis_syn_refl; exact Hwfa.
   - (* __sub at mode_ti: only d_sub__infer; compose the inner consistency. *)
-    match goal with H : empty ⨟ _ ⊢[ mode_ti ] _ ⊑ B |- _ =>
+    match goal with H : empty ⨟ _ ⊢[ mode_ti ] _ ⩽ B |- _ =>
       rename H into Hsub end.
     inversion Hsub as [ Ψ0 Γ0 C0 B0 Hcons0 Hstyp0 HΨ0 | | | | | ]; subst;
       try congruence.
     edestruct IHHtyp as [Hstyp1 [Δt Hcons1]]; auto.
     split; [ exact Hstyp0 | ].
-    (* Hcons1 : Δt ⊨ ptyp_to_utyp_syn A ≈ ptyp_to_btyp_syn A0  (inner syn type)
-       Hcons0 : Ψ0 ⊨ ptyp_to_utyp_syn A0 ≈ B                  (sub premise, infer)
+    (* Hcons1 : Δt ⊢ ptyp_to_utyp_syn A ∼ ptyp_to_btyp_syn A0  (inner syn type)
+       Hcons0 : Ψ0 ⊢ ptyp_to_utyp_syn A0 ∼ B                  (sub premise, infer)
        compose at the common middle [A0]. *)
     edestruct d_consis_compose as [Δc [_ Hc]].
     + exact Hcons1.
@@ -76,13 +76,13 @@ Lemma d_typing_var_fn_factor : forall Γ x A B m,
     d_wf_denv Γ ->
     binds x (dbind_typ A) Γ ->
     Γ ⊢[ mode_fn m ] (exp_var_f x) ⦂ B ->
-    exists Δ, Δ ⨟ Γ ⊢[ mode_fn m ] ptyp_to_utyp_syn A ⊑ B.
+    exists Δ, Δ ⨟ Γ ⊢[ mode_fn m ] ptyp_to_utyp_syn A ⩽ B.
 Proof.
   intros Γ x A B m Hwf Hb Htyp.
   remember (exp_var_f x) as e. remember (mode_fn m) as mf.
   induction Htyp; subst; try discriminate; try congruence.
   - (* __sub: inner [Γ ⊢[ti] x ⦂ B1] (= Htyp), outer
-       [empty ⊢[fn m] paint B1 ⊑ B2] (= H0). *)
+       [empty ⊢[fn m] paint B1 ⩽ B2] (= H0). *)
     destruct (@d_typing_var_ti_consis Γ x A (ptyp_to_btyp_syn A0) Hwf Hb Htyp)
       as [Hstyp1 [Δt Hcons1]].
     edestruct (@d_consis_sub_trans (mode_fn m) empty Γ (ptyp_to_utyp_syn A0) B
@@ -275,8 +275,8 @@ Definition spine_btyp (Rb : btyp) (sp : list (utyp * btyp)) : btyp :=
 Lemma d_sub_arrow_spine_perm : forall sp sp',
     Permutation sp sp' ->
     forall Δ Γ Rt Rb m,
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] spine_utyp Rt sp ⊑ spine_btyp Rb sp ->
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] spine_utyp Rt sp' ⊑ spine_btyp Rb sp'.
+      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] spine_utyp Rt sp ⩽ spine_btyp Rb sp ->
+      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] spine_utyp Rt sp' ⩽ spine_btyp Rb sp'.
 Proof.
   intros sp sp' Hperm. induction Hperm; intros Δ Γ Rt Rb m Hsub.
   - (* nil *) exact Hsub.
@@ -389,10 +389,10 @@ Proof. destruct n; intros m H; [ lia | exists (mode_fn_n n m); reflexivity ]. Qe
 (** At a function mode, a [utyp_all_syn] LHS can only be subtyped via the
     untagged [∀]-left rule. *)
 Lemma d_sub_fn_all_syn_inv : forall Δ Γ m C B,
-    Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⊑ B ->
+    Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⩽ B ->
     exists Ψ' ph,
       AtomSetImpl.inter Ψ' Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
-      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C ph) ⊑ B.
+      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C ph) ⩽ B.
 Proof.
   intros Δ Γ m C B Hsub.
   inversion Hsub as [ | | | | | Ψ0 Ψ' Γ0 m0 C0 ph B0 Hm Hfresh Htags Hwfph Httyp Hpre ];
@@ -405,10 +405,10 @@ Qed.
 (** Same, at the [k]-fold function mode. *)
 Lemma d_sub_fnn_all_syn_inv : forall n m Δ Γ C B,
     1 <= n ->
-    Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⊑ B ->
+    Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⩽ B ->
     exists Ψ' ph,
       AtomSetImpl.inter Ψ' Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
-      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C ph) ⊑ B.
+      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C ph) ⩽ B.
 Proof.
   intros n m Δ Γ C B Hpos Hsub.
   destruct (mode_fn_n_ge1_fn m Hpos) as [m' Hm']. rewrite Hm' in Hsub.
@@ -437,8 +437,8 @@ Lemma d_sub_prefix_spine_perm : forall j sp sp',
     Permutation sp sp' ->
     1 <= length sp ->
     forall Δ Γ Rt Rb m,
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] (utyp_all_syn_n j (spine_utyp Rt sp)) ⊑ spine_btyp Rb sp ->
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] (utyp_all_syn_n j (spine_utyp Rt sp')) ⊑ spine_btyp Rb sp'.
+      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] (utyp_all_syn_n j (spine_utyp Rt sp)) ⩽ spine_btyp Rb sp ->
+      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] (utyp_all_syn_n j (spine_utyp Rt sp')) ⩽ spine_btyp Rb sp'.
 Proof.
   induction j as [ | j IHj ]; intros sp sp' Hperm Hpos Δ Γ Rt Rb m Hsub.
   - simpl in Hsub |- *. eapply d_sub_arrow_spine_perm; eassumption.
@@ -543,7 +543,7 @@ Qed.
       [d_typing__sub] fires, giving an EMPTY-[Δ] subtyping out of [x]'s
       [mode_ti] type.  That type is EXACTLY the binding painting
       ([d_consis_paint_syn_eq] applied to [d_typing_var_ti_consis]), so the
-      subtyping is [∅ ⊢ ptyp_to_utyp_syn (∀ⁿ.curry args R) ⊑ curry_btyp Bargs R'].
+      subtyping is [∅ ⊢ ptyp_to_utyp_syn (∀ⁿ.curry args R) ⩽ curry_btyp Bargs R'].
       Re-express it in [spine]/[utyp_all_syn_n] form ([paint_forall_prefix],
       [paint_curry_spine], [spine_btyp_curry]) and permute via
       [d_sub_prefix_spine_perm] — which strips the [∀]-prefix reusing the

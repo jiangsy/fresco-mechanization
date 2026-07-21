@@ -19,8 +19,8 @@ Set Implicit Arguments.
     [subtyping/prop_basics.v]). *)
 
 Lemma d_consis_weakening : forall Γ1 Γ2 Γ3 Δ C B,
-    Δ ⨟ (Γ1 ++ Γ3) ⊨ C ≈ B ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊨ C ≈ B.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢ C ∼ B ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ C ∼ B.
 Proof.
   intros Γ1 Γ2 Γ3 Δ C B H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -51,8 +51,8 @@ Proof.
 Qed.
 
 Lemma d_consis_weakening_head : forall Γ Γ' Δ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
-    Δ ⨟ (Γ' ++ Γ) ⊨ C ≈ B.
+    Δ ⨟ Γ ⊢ C ∼ B ->
+    Δ ⨟ (Γ' ++ Γ) ⊢ C ∼ B.
 Proof.
   intros Γ Γ' Δ C B H.
   rewrite_env (nil ++ Γ' ++ Γ).
@@ -60,8 +60,8 @@ Proof.
 Qed.
 
 Lemma d_sub_weakening : forall Γ1 Γ2 Γ3 m Δ C B,
-    Δ ⨟ (Γ1 ++ Γ3) ⊢[ m ] C ⊑ B ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] C ⊑ B.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢[ m ] C ⩽ B ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢[ m ] C ⩽ B.
 Proof.
   intros Γ1 Γ2 Γ3 m Δ C B H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -94,8 +94,8 @@ Proof.
 Qed.
 
 Lemma d_sub_weakening_head : forall Γ Γ' m Δ C B,
-    Δ ⨟ Γ ⊢[ m ] C ⊑ B ->
-    Δ ⨟ (Γ' ++ Γ) ⊢[ m ] C ⊑ B.
+    Δ ⨟ Γ ⊢[ m ] C ⩽ B ->
+    Δ ⨟ (Γ' ++ Γ) ⊢[ m ] C ⩽ B.
 Proof.
   intros Γ Γ' m Δ C B H.
   rewrite_env (nil ++ Γ' ++ Γ).
@@ -126,8 +126,8 @@ Qed.
 
 
 Lemma d_pat_consis_weakening : forall Γ1 Γ2 Γ3 Δ R Q,
-    Δ ⨟ (Γ1 ++ Γ3) ⊨ₛ R ≈ Q ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊨ₛ R ≈ Q.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢ₛ R ∼ Q ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ R ∼ Q.
 Proof.
   intros Γ1 Γ2 Γ3 Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
@@ -162,8 +162,8 @@ Proof.
 Qed.
 
 Lemma d_pat_sub_weakening : forall Γ1 Γ2 Γ3 m Δ R Q,
-    Δ ⨟ (Γ1 ++ Γ3) ⊢ₛ[ m ] R ⊑ Q ->
-    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ[ m ] R ⊑ Q.
+    Δ ⨟ (Γ1 ++ Γ3) ⊢ₛ[ m ] R ⩽ Q ->
+    Δ ⨟ (Γ1 ++ Γ2 ++ Γ3) ⊢ₛ[ m ] R ⩽ Q.
 Proof.
   intros Γ1 Γ2 Γ3 m Δ R Q H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.

@@ -1,13 +1,32 @@
-# Notation improvement pass — proposal
+# Notation improvement pass — proposal + status
 
 Goal: (1) stay close to the paper's notation, (2) use notation as much as
 possible, (3) use custom scopes to reduce collisions.
 
-Status: **survey + proposal**. Big judgments analysed below; small operations
-(§4) are catalogued for later, no rush.
+Status: **big-judgment relation symbols DONE and merged** (see §1/§5); small
+operations (§4) catalogued for later, no rush.
 
 Paper macro source: `paper/macro.tex`. Rendered forms below use the paper's
 actual glyphs.
+
+## IMPLEMENTED (build green, axiom-free flagships intact)
+
+Every big-judgment relation symbol now matches the paper, in both the
+definitions AND the proof source (no aliases remain):
+
+- subtyping `d_sub` / `d_pat_sub` / `a_sub` / `ad_pat_sub`: `⊑`/`⊑ᴬ` → **`⩽`**
+- consistency `d_consis` / `d_pat_consis` / `a_consis` / `ad_pat_consis`:
+  `≈` → **`∼`**, decl turnstile `⊨` → **`⊢`**
+- decorated `a_subtag` / `a_consistag`: `⊑`/`≈` → **`⩽˙` / `∼˙`** (paper's
+  dotted `⩽̇`/`∼̇`, using the SPACING dot U+02D9 — never a combining diacritic)
+- information increase `a_inc`: `Θ ≤[ρ] Θ'` → **`ρ ∷ Θ ⊑ Θ'`** (paper `\inc`;
+  `⊑` was freed by the `⩽` move). ~190 proof sites reordered.
+- removed duplicate `d_wf_utyp` (`⊢ᵤₜ`) / `d_wf_uskl` notations.
+
+Preserved (correctly NOT swept): precision `⊑ᵖ` / `⊢ₚᵣᵃ … ⊑` (paper `⪯`-family),
+unification `≈ᵘ`, and info-increase `⊑` in prose.
+
+NOT yet done (deliberately): §3 custom scope, §4 small-operation notations.
 
 ---
 

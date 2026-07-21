@@ -5,7 +5,7 @@
     (unlike Flex-Flex-Skip's clean head-flex).  [a_inc_peel_suffix] only peels
     an all-flex suffix; here we need to peel the suffix AND the mid flex binding
     together, then RE-INSERT the suffix over the smaller tail — producing the
-    sub-node's competing increment [(Ξ ++ Θ0) ≤[ρ1 ++ ρ2] Θ].
+    sub-node's competing increment [ρ1 ++ ρ2 ∷ (Ξ ++ Θ0) ⊑ Θ].
 
     The suffix here is [a_decls Ξ] (every entry an UNDEFINED flexible), the
     algorithm's own invariant on the pending suffix (full-algo-spec.tex:1508).
@@ -34,19 +34,19 @@ Set Implicit Arguments.
 
 (** MID-STRIP of a flexible binding sandwiched under an [a_decls] suffix.
     Peels the suffix Ξ and the mid flex [β] off a competing increment
-    [(Ξ ++ β̂ ++ Θ0) ≤[ρ] Θ], returning
+    [ρ ∷ (Ξ ++ β̂ ++ Θ0) ⊑ Θ], returning
       - the split [ρ = ρ1 ++ (β,τ) :: ρ2] (ρ1 = the Ξ-part, dom ρ1 = dom Ξ),
-      - the tail increment [Θ0 ≤[ρ2] Θ], and
-      - the RE-INSERTED increment [(Ξ ++ Θ0) ≤[ρ1 ++ ρ2] Θ] with β dropped.
+      - the tail increment [ρ2 ∷ Θ0 ⊑ Θ], and
+      - the RE-INSERTED increment [ρ1 ++ ρ2 ∷ (Ξ ++ Θ0) ⊑ Θ] with β dropped.
     The target [Θ] is UNCHANGED (flex/suffix entries do not extend it). *)
 Lemma a_inc_mid_strip_flex : forall Ξ β Θ0 ρ Θ,
   a_decls Ξ ->
-  (Ξ ++ (β ~ abind_flex_mono) ++ Θ0) ≤[ ρ ] Θ ->
+  ρ ∷ (Ξ ++ (β ~ abind_flex_mono) ++ Θ0) ⊑ Θ ->
   exists ρ1 τ ρ2,
     ρ = ρ1 ++ (β, τ) :: ρ2 /\
     dom ρ1 [=] dom Ξ /\
-    Θ0 ≤[ ρ2 ] Θ /\
-    (Ξ ++ Θ0) ≤[ ρ1 ++ ρ2 ] Θ.
+    ρ2 ∷ Θ0 ⊑ Θ /\
+    ρ1 ++ ρ2 ∷ (Ξ ++ Θ0) ⊑ Θ.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ]; intros β Θ0 ρ Θ Hdec Hinc.
   - (* Ξ = nil : head is the mid flex β itself *)
@@ -117,7 +117,7 @@ Lemma a_assign_unify_consis_flex_preserve :
      Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
      forall γ, a_flex_tvar Θ0 γ -> a_flex_tvar Θ1 γ) /\
   (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
      forall γ, a_flex_tvar Θ0 γ -> a_flex_tvar Θ1 γ).
 Proof.
   apply (a_assign_unify_consis_mutind

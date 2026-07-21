@@ -124,12 +124,6 @@ Inductive ad_pat_sub :
 where "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q" :=
   (ad_pat_sub NM M Ψ Θ R Q) : type_scope.
 
-(** Deprecated pre-paper-sync glyph alias (parse-only): prints [⊢ₛᵃ[…] … ⩽]
-    (paper); old [⊑] still parses until swept. *)
-Notation "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⊑ Q" := (ad_pat_sub NM M Ψ Θ R Q)
-  (at level 75, Θ at level 74, NM at level 0, M at level 0,
-   R at level 74, Q at level 74, no associativity, only parsing) : type_scope.
-
 (* ===================================================================== *)
 (*  Partial precision  [Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ]                              *)
 (*  (subtyping-proofs.tex:1561-1637; the ad_refine_pskl mirror with tags) *)

@@ -139,9 +139,9 @@ Ltac binder_ih IHn HszA HH HH0 AA X :=
 Lemma d_consis_compose_strong : forall n A,
     size_ptyp A < n ->
     forall Δa Δb Γ C B,
-    Δa ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A ->
-    Δb ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B ->
-    (Δa `union` Δb) [<=] (compose_tags C B) /\ (compose_tags C B) ⨟ Γ ⊨ C ≈ B.
+    Δa ⨟ Γ ⊢ C ∼ ptyp_to_btyp_syn A ->
+    Δb ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B ->
+    (Δa `union` Δb) [<=] (compose_tags C B) /\ (compose_tags C B) ⨟ Γ ⊢ C ∼ B.
 Proof.
   induction n; intros A Hsz Δa Δb Γ C B H1 H2.
   - lia.
@@ -195,9 +195,9 @@ Proof.
 Qed.
 
 Lemma d_consis_compose : forall Δa Δb Γ C A B,
-    Δa ⨟ Γ ⊨ C ≈ ptyp_to_btyp_syn A ->
-    Δb ⨟ Γ ⊨ ptyp_to_utyp_syn A ≈ B ->
-    exists Δc, (Δa `union` Δb) [<=] Δc /\ Δc ⨟ Γ ⊨ C ≈ B.
+    Δa ⨟ Γ ⊢ C ∼ ptyp_to_btyp_syn A ->
+    Δb ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B ->
+    exists Δc, (Δa `union` Δb) [<=] Δc /\ Δc ⨟ Γ ⊢ C ∼ B.
 Proof.
   intros Δa Δb Γ C A B H1 H2.
   exists (compose_tags C B).
@@ -314,9 +314,9 @@ Qed.
     target ⟹ empty output (the [mode_ti] infer base demands the empty set). *)
 Lemma d_consis_compose_syn_nil_l : forall Δa Δb Γ C B2 B,
     is_syn B2 -> is_syn B ->
-    Δa ⨟ Γ ⊨ C ≈ B2 ->
-    Δb ⨟ Γ ⊨ (btyp_to_utyp_syn B2) ≈ B ->
-    empty ⨟ Γ ⊨ C ≈ B.
+    Δa ⨟ Γ ⊢ C ∼ B2 ->
+    Δb ⨟ Γ ⊢ (btyp_to_utyp_syn B2) ∼ B ->
+    empty ⨟ Γ ⊢ C ∼ B.
 Proof.
   intros Δa Δb Γ C B2 B Hsyn2 HsynB Hc Hd.
   rewrite <- (ptyp_to_btyp_syn_btyp_to_ptyp Hsyn2) in Hc.
@@ -328,7 +328,7 @@ Qed.
 
 (** A consistency derivation's [utyp] side is locally closed. *)
 Lemma d_consis_lc_utyp : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B -> lc_utyp C.
+    Δ ⨟ Γ ⊢ C ∼ B -> lc_utyp C.
 Proof.
   intros Δ Γ C B H. induction H.
   - apply lc_utyp_unit.
@@ -345,7 +345,7 @@ Qed.
     ([unit]/[var]/[arrow]) erasure leaves no room for a forall on the LHS. *)
 Lemma d_consis_guarded_lhs : forall Δ Γ Csrc C,
     guarded_utyp C ->
-    Δ ⨟ Γ ⊨ Csrc ≈ (utyp_to_btyp C) ->
+    Δ ⨟ Γ ⊢ Csrc ∼ (utyp_to_btyp C) ->
     guarded_utyp Csrc.
 Proof.
   intros Δ Γ Csrc C Hg Hc.
@@ -421,7 +421,7 @@ Qed.
     Holds at ANY tag context — a [mono] source carries no [etag], so the
     arrow recursion threads through whatever [Δ] the split produced. *)
 Lemma d_consis_mono_determines : forall Δ Γ A B,
-    Δ ⨟ Γ ⊨ (ptyp_to_utyp_syn A) ≈ B ->
+    Δ ⨟ Γ ⊢ (ptyp_to_utyp_syn A) ∼ B ->
     mono_ptyp A ->
     B = ptyp_to_btyp_syn A.
 Proof.
@@ -441,7 +441,7 @@ Proof. intros B1 B2 H. inversion H; subst; assumption. Qed.
 
 (** A subtyping's source is locally closed (the standard lngen fact: the
     [forall_l] instantiation case goes through the degree-inversion lemma). *)
-Lemma d_sub_lc_l : forall m Δ Γ C B, Δ ⨟ Γ ⊢[ m ] C ⊑ B -> lc_utyp C.
+Lemma d_sub_lc_l : forall m Δ Γ C B, Δ ⨟ Γ ⊢[ m ] C ⩽ B -> lc_utyp C.
 Proof.
   intros m Δ Γ C B H. induction H.
   - eapply d_consis_lc_utyp; eassumption.
@@ -473,7 +473,7 @@ Qed.
 (** The (mono) inherited argument of an abstraction is pinned by the arg
     consistency: the painted [inh A] is consistent only with [inh A]. *)
 Lemma consis_mono_arg : forall Δ Γ A B,
-    Δ ⨟ Γ ⊨ (btyp_to_utyp_syn (ptyp_to_btyp_inh A)) ≈ B ->
+    Δ ⨟ Γ ⊢ (btyp_to_utyp_syn (ptyp_to_btyp_inh A)) ∼ B ->
     mono_ptyp A ->
     B = ptyp_to_btyp_inh A.
 Proof.
@@ -487,7 +487,7 @@ Qed.
 (** Consistency preserves erasure: the source and target erase to the same
     plain [ptyp] (the ∀ cases close via [open_ptyp_wrt_ptyp_inj]). *)
 Lemma d_consis_btyp_erase : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B -> btyp_to_ptyp (utyp_to_btyp C) = btyp_to_ptyp B.
+    Δ ⨟ Γ ⊢ C ∼ B -> btyp_to_ptyp (utyp_to_btyp C) = btyp_to_ptyp B.
 Proof.
   intros Δ Γ C B H.
   induction H; simpl; try reflexivity; try (f_equal; assumption).
@@ -534,7 +534,7 @@ Qed.
 Lemma d_consis_ttyp_refl : forall Γ ph,
     Γ ⊢ᵤ ph ->
     is_ttyp ph ->
-    empty ⨟ Γ ⊨ ph ≈ (utyp_to_btyp ph).
+    empty ⨟ Γ ⊢ ph ∼ (utyp_to_btyp ph).
 Proof.
   intros Γ ph Hwf. induction Hwf; intros Htt; simpl.
   - apply d_consis__unit. reflexivity.
@@ -605,8 +605,8 @@ Proof.
 Qed.
 
 Lemma d_consis_erase_tags : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
-    exists Ψ', Ψ' ⨟ Γ ⊨ (btyp_to_utyp_syn (utyp_to_btyp C)) ≈ B.
+    Δ ⨟ Γ ⊢ C ∼ B ->
+    exists Ψ', Ψ' ⨟ Γ ⊢ (btyp_to_utyp_syn (utyp_to_btyp C)) ∼ B.
 Proof.
   intros Δ Γ C B H. induction H.
   - (* unit *) exists empty. apply d_consis__unit. reflexivity.
@@ -680,9 +680,9 @@ Qed.
 Lemma d_consis_trans_mid_nil : forall Ψ1 Ψ2 Γ T Cmid B,
     lc_utyp Cmid ->
     is_syn B ->
-    Ψ1 ⨟ Γ ⊨ T ≈ (utyp_to_btyp Cmid) ->
-    Ψ2 ⨟ Γ ⊨ Cmid ≈ B ->
-    empty ⨟ Γ ⊨ T ≈ B.
+    Ψ1 ⨟ Γ ⊢ T ∼ (utyp_to_btyp Cmid) ->
+    Ψ2 ⨟ Γ ⊢ Cmid ∼ B ->
+    empty ⨟ Γ ⊢ T ∼ B.
 Proof.
   intros Ψ1 Ψ2 Γ T Cmid B Hlc Hsyn HT HCmid.
   destruct (d_consis_erase_tags HCmid) as [Ψ2' Herase].
@@ -698,17 +698,17 @@ Qed.
     tvar [X0] by a tagged type [ph] on the unresolved side, and by its
     bidirectional image [utyp_to_btyp ph] on the bidirectional side,
     preserves consistency WITHOUT adding tags — the variable occurrences
-    become [ph ≈ utyp_to_btyp ph], which is tag-free ([d_consis_ttyp_refl]).
+    become [ph ∼ utyp_to_btyp ph], which is tag-free ([d_consis_ttyp_refl]).
     Structure mirrors [d_consis_rename_tvar] (var→var); the only changes are the
     [X0]-case (use the base fact) and the [lc]/wf side-conditions for [ph]. *)
 Lemma d_consis_subst_tvar : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
+    Δ ⨟ Γ ⊢ C ∼ B ->
     forall Γ1 Γ2 X0 ph,
       Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
       (Γ1 ++ Γ2) ⊢ᵤ ph ->
       is_ttyp ph ->
-      Δ ⨟ (Γ1 ++ Γ2) ⊨ (subst_utyp_in_utyp ph X0 C)
-                      ≈ (subst_btyp_in_btyp (utyp_to_btyp ph) X0 B).
+      Δ ⨟ (Γ1 ++ Γ2) ⊢ (subst_utyp_in_utyp ph X0 C)
+                      ∼ (subst_btyp_in_btyp (utyp_to_btyp ph) X0 B).
 Proof.
   intros Δ Γ C B H. induction H; intros Γ1 Γ2 X0 ph Heq Hwf Htt; subst; simpl.
   - apply d_consis__unit. assumption.
@@ -897,7 +897,7 @@ Qed.
     bidirectional target: same shape, painting fully syn (tag-free), so [T]'s
     tags trivially dominate. *)
 Lemma consis_refines_paint : forall Δ Γ T B_A,
-    Δ ⨟ Γ ⊨ T ≈ B_A ->
+    Δ ⨟ Γ ⊢ T ∼ B_A ->
     utyp_tag_refines T (btyp_to_utyp_syn B_A).
 Proof.
   intros Δ Γ T B_A H. induction H; simpl.
@@ -925,7 +925,7 @@ Qed.
     canonical (linearity-free) tag witness.  This is the lower link of the
     bound chain [Ψ2 ⊆ compose_tags Cmid B]. *)
 Lemma d_consis_ctx_subset_compose : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B ->
+    Δ ⨟ Γ ⊢ C ∼ B ->
     Δ [<=] compose_tags C B.
 Proof.
   intros Δ Γ C B H. induction H; simpl.
@@ -947,14 +947,14 @@ Proof.
 Qed.
 
 (** Source-swap with the [compose_tags] witness: if [T] refines [Cmid] (same
-    shape, tags ⊇) and [Cmid ≈ B], then [T ≈ B] holds at the canonical
+    shape, tags ⊇) and [Cmid ∼ B], then [T ∼ B] holds at the canonical
     context [compose_tags T B].  The witness is UNIFORM (opening-invariant via
     [compose_tags_open]), so the ∀ cases avoid the cofinite per-X existential.
     No [d_tags], no linearity. *)
 Lemma refines_consis_swap : forall Δ Γ Cmid B,
-    Δ ⨟ Γ ⊨ Cmid ≈ B ->
+    Δ ⨟ Γ ⊢ Cmid ∼ B ->
     forall T, utyp_tag_refines T Cmid ->
-      (compose_tags T B) ⨟ Γ ⊨ T ≈ B.
+      (compose_tags T B) ⨟ Γ ⊢ T ∼ B.
 Proof.
   intros Δ Γ Cmid B H. induction H; intros T Href.
   - inversion Href; subst. simpl. apply d_consis__unit. reflexivity.
@@ -965,7 +965,7 @@ Proof.
     inversion Href; subst. simpl.
     eapply d_consis__forall_inh_tagged with (L := L) (Ψ0 := compose_tags T0 B); [ | reflexivity ].
     intros X HX.
-    match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+    match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
       rewrite <- (compose_tags_open Tb Bb X X) end.
     apply (H0 X HX). apply utyp_tag_refines_open. assumption.
   - (* forall_inh_untagged: Cmid = utyp_all_syn C, B = btyp_all_inh; T tagged or syn *)
@@ -973,20 +973,20 @@ Proof.
     + (* T = utyp_all_etag ε T0 (extra tag) *)
       eapply d_consis__forall_inh_tagged with (L := L) (Ψ0 := compose_tags T0 B); [ | reflexivity ].
       intros X HX.
-      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
         rewrite <- (compose_tags_open Tb Bb X X) end.
       apply (H0 X HX). apply utyp_tag_refines_open. assumption.
     + (* T = utyp_all_syn T0 *)
       apply d_consis__forall_inh_untagged with (L := L).
       intros X HX.
-      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
         rewrite <- (compose_tags_open Tb Bb X X) end.
       apply (H0 X HX). apply utyp_tag_refines_open. assumption.
   - (* forall_syn_tagged: Cmid = utyp_all_etag ε C, B = btyp_all_syn; T = utyp_all_etag ε T0 *)
     inversion Href; subst. simpl.
     apply d_consis__forall_syn_tagged with (L := L).
     intros X HX.
-    match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+    match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
       rewrite <- (compose_tags_open Tb Bb X X) end.
     apply (H0 X HX). apply utyp_tag_refines_open. assumption.
   - (* forall_syn: Cmid = utyp_all_syn C, B = btyp_all_syn; T tagged or syn *)
@@ -994,13 +994,13 @@ Proof.
     + (* T = utyp_all_etag ε T0 *)
       apply d_consis__forall_syn_tagged with (L := L).
       intros X HX.
-      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
         rewrite <- (compose_tags_open Tb Bb X X) end.
       apply (H0 X HX). apply utyp_tag_refines_open. assumption.
     + (* T = utyp_all_syn T0 *)
       apply d_consis__forall_syn with (L := L).
       intros X HX.
-      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊨ _ ≈ _ =>
+      match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
         rewrite <- (compose_tags_open Tb Bb X X) end.
       apply (H0 X HX). apply utyp_tag_refines_open. assumption.
 Qed.
@@ -1011,16 +1011,16 @@ Qed.
     existing list-typed tag context. *)
 (** ** Consistency-Subtyping Transitivity (paper B.3 / Lemma 3 dependency).
 
-    [_mid] is the erase-form (middle carried as [T ≈ utyp_to_btyp Cmid]),
+    [_mid] is the erase-form (middle carried as [T ∼ utyp_to_btyp Cmid]),
     which survives [forall_l] instantiation; [d_consis_sub_trans] is the
     paint-form corollary used downstream. *)
 
 Lemma d_consis_sub_trans_mid : forall M Ψ2 Γ Cmid B,
-    Ψ2 ⨟ Γ ⊢[ M ] Cmid ⊑ B ->
+    Ψ2 ⨟ Γ ⊢[ M ] Cmid ⩽ B ->
     forall Ψ1 T,
-      Ψ1 ⨟ Γ ⊨ T ≈ (utyp_to_btyp Cmid) ->
+      Ψ1 ⨟ Γ ⊢ T ∼ (utyp_to_btyp Cmid) ->
       utyp_tag_refines T Cmid ->
-      exists Δ, Ψ2 [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] T ⊑ B.
+      exists Δ, Ψ2 [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] T ⩽ B.
 Proof.
   intros M Ψ2 Γ Cmid B Hsub.
   induction Hsub; intros Ψ0 T Hcons Href.
@@ -1163,12 +1163,12 @@ Qed.
     premise — and the conclusion context contains it ([Δb ⊆ Δ]).  The
     paper's [·]-statement is the [Δb = ∅] corollary. *)
 Lemma d_consis_sub_trans : forall M Δb Γ C B,
-    Δb ⨟ Γ ⊢[ M ] C ⊑ B ->
+    Δb ⨟ Γ ⊢[ M ] C ⩽ B ->
     forall B_A T Δt,
       C = btyp_to_utyp_syn B_A ->
       is_syn B_A ->
-      Δt ⨟ Γ ⊨ T ≈ B_A ->
-      exists Δ, Δb [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] T ⊑ B.
+      Δt ⨟ Γ ⊢ T ∼ B_A ->
+      exists Δ, Δb [<=] Δ /\ Δ ⨟ Γ ⊢[ M ] T ⩽ B.
 Proof.
   (* The [forall_l] case is the tag-encoding wall; it is dissolved by the
      erase-form generalisation [d_consis_sub_trans_mid], which threads tagged
@@ -1222,12 +1222,12 @@ Inductive btyp_spine : nat -> btyp -> btyp -> btyp -> btyp -> Prop :=
     Ψ'" line, discharged here by [fsetdec]).  [check]/[forall_r] are
     excluded by [is_fn_n]. *)
 Lemma d_sub_trans_spine : forall m1 Δ Γ T Bfull,
-    Δ ⨟ Γ ⊢[ m1 ] T ⊑ Bfull ->
+    Δ ⨟ Γ ⊢[ m1 ] T ⩽ Bfull ->
     forall n A M B Bres,
       is_fn_n n m1 ->
       btyp_spine n Bfull A B Bres ->
-      empty ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
-      exists Ψ', Δ [<=] Ψ' /\ Ψ' ⨟ Γ ⊢[ mode_fn_n_subst m1 M ] T ⊑ Bres.
+      empty ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn A) ⩽ B ->
+      exists Ψ', Δ [<=] Ψ' /\ Ψ' ⨟ Γ ⊢[ mode_fn_n_subst m1 M ] T ⩽ Bres.
 Proof.
   intros m1 Δ Γ T Bfull Hsub.
   induction Hsub; intros n A0 M0 B0 Bres Hfn Hspine Htail.
@@ -1292,7 +1292,7 @@ Qed.
     drives the [check] case of the abstraction tail helpers. *)
 
 Lemma consis_guarded_btyp_lhs : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B -> guarded_btyp B -> guarded_utyp C.
+    Δ ⨟ Γ ⊢ C ∼ B -> guarded_btyp B -> guarded_utyp C.
 Proof.
   intros Δ Γ C B Hc Hg.
   inversion Hc; subst; try (inversion Hg; fail).
@@ -1310,8 +1310,8 @@ Qed.
     which must thread arbitrary tagged witnesses). *)
 Lemma d_consis_syn_sub_tc : forall Bn, is_ityp Bn ->
     forall Δ Γ B',
-      Δ ⨟ Γ ⊨ (btyp_to_utyp_syn B') ≈ Bn ->
-      Δ ⨟ Γ ⊢[ mode_tc ] (btyp_to_utyp_syn B') ⊑ Bn.
+      Δ ⨟ Γ ⊢ (btyp_to_utyp_syn B') ∼ Bn ->
+      Δ ⨟ Γ ⊢[ mode_tc ] (btyp_to_utyp_syn B') ⩽ Bn.
 Proof.
   intros Bn Hityp.
   induction Hityp; intros Δ Γ B' Hcons.
@@ -1333,7 +1333,7 @@ Proof.
     destruct B'; simpl in Hcons; try solve [ inversion Hcons ];
       dependent destruction Hcons;
       match goal with
-      | Hc : forall X0, X0 `notin` ?L1 -> _ ⨟ _ ⊨ _ ≈ _ |- _ =>
+      | Hc : forall X0, X0 `notin` ?L1 -> _ ⨟ _ ⊢ _ ∼ _ |- _ =>
           apply d_sub__forall_r with (L := L `union` L1 `union` dom Γ);
           [ apply is_ityp__all with (L := L); assumption | ];
           intros X HX;
@@ -1385,10 +1385,10 @@ Lemma d_sd_typing_abs_tail_gen : forall L0 e A Bbody M Bnew Γ',
     (forall Γ'' x M' B'',
        ctx_weaken Γ' Γ'' ->
        x `notin` (L0 `union` dom Γ'') ->
-       empty ⨟ ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] (btyp_to_utyp_syn Bbody) ⊑ B'' ->
+       empty ⨟ ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] (btyp_to_utyp_syn Bbody) ⩽ B'' ->
        ((x ~ dbind_typ A) ++ Γ'') ⊢ˢ[ M' ] open_exp_wrt_exp e (exp_var_f x) ⦂ B'') ->
     empty ⨟ Γ' ⊢[ M ]
-      (utyp_arrow (btyp_to_utyp_syn (ptyp_to_btyp_inh A)) (btyp_to_utyp_syn Bbody)) ⊑ Bnew ->
+      (utyp_arrow (btyp_to_utyp_syn (ptyp_to_btyp_inh A)) (btyp_to_utyp_syn Bbody)) ⩽ Bnew ->
     Γ' ⊢ˢ[ M ] exp_abs e ⦂ Bnew.
 Proof.
   intros L0 e A Bbody M Bnew Γ' Hmono Hstyp Hwf Hbody Hsub.
@@ -1417,7 +1417,7 @@ Proof.
     subst. dependent destruction H1.
     rename B1 into Bn1. rename B2 into Bn2.
     match goal with
-    | Harg : _ ⨟ _ ⊨ btyp_to_utyp_syn (ptyp_to_btyp_inh A) ≈ Bn1 |- _ =>
+    | Harg : _ ⨟ _ ⊢ btyp_to_utyp_syn (ptyp_to_btyp_inh A) ∼ Bn1 |- _ =>
         pose proof (consis_mono_arg Harg Hmono) as HBn1
     end. subst Bn1.
     match goal with Hit : is_ityp (btyp_arrow _ Bn2) |- _ => inversion Hit; subst end.
@@ -1429,7 +1429,7 @@ Proof.
       apply d_sub_weakening_head.
       eapply d_consis_syn_sub_tc;
         [ match goal with Hit : is_ityp Bn2 |- _ => exact Hit end
-        | match goal with Hbc : _ ⨟ _ ⊨ btyp_to_utyp_syn Bbody ≈ Bn2 |- _ =>
+        | match goal with Hbc : _ ⨟ _ ⊢ btyp_to_utyp_syn Bbody ∼ Bn2 |- _ =>
             eapply d_consis_equiv; [ | exact Hbc ]; fsetdec end ].
   - (* forall_r (M = tc): the folded ∀-peel [__abs_check_step], recurse. *)
     subst.
@@ -1449,12 +1449,12 @@ Proof.
     + discriminate.
     + assumption.
     + apply mod_comp_ty__fn.
-      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⊑ B2 |- _ =>
+      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⩽ B2 |- _ =>
         exact (d_sub_skmod Hs) end.
     + intros xv Hxv.
       eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
-      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⊑ B2 |- _ =>
+      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⩽ B2 |- _ =>
         eapply d_sub_equiv; [ | exact Hs ] end.
       fsetdec.
 Qed.
@@ -1471,10 +1471,10 @@ Lemma d_sd_typing_abs_anno_tail_gen : forall L0 e A Barg Bbody M Bnew Γ',
     (forall Γ'' x M' B'',
        ctx_weaken Γ' Γ'' ->
        x `notin` (L0 `union` dom Γ'') ->
-       empty ⨟ ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] (btyp_to_utyp_syn Bbody) ⊑ B'' ->
+       empty ⨟ ((x ~ dbind_typ A) ++ Γ'') ⊢[ M' ] (btyp_to_utyp_syn Bbody) ⩽ B'' ->
        ((x ~ dbind_typ A) ++ Γ'') ⊢ˢ[ M' ] open_exp_wrt_exp e (exp_var_f x) ⦂ B'') ->
     empty ⨟ Γ' ⊢[ M ]
-      (utyp_arrow (btyp_to_utyp_syn Barg) (btyp_to_utyp_syn Bbody)) ⊑ Bnew ->
+      (utyp_arrow (btyp_to_utyp_syn Barg) (btyp_to_utyp_syn Bbody)) ⩽ Bnew ->
     Γ' ⊢ˢ[ M ] exp_abs_anno A e ⦂ Bnew.
 Proof.
   intros L0 e A Barg Bbody M Bnew Γ' HsBarg HBargA Hstyp Hwf Hbody Hsub. subst A.
@@ -1502,7 +1502,7 @@ Proof.
     subst. dependent destruction H1.
     rename B1 into Bn1. rename B2 into Bn2.
     assert (Herase : btyp_to_ptyp Bn1 = btyp_to_ptyp Barg).
-    { match goal with Harg : _ ⨟ _ ⊨ btyp_to_utyp_syn Barg ≈ Bn1 |- _ =>
+    { match goal with Harg : _ ⨟ _ ⊢ btyp_to_utyp_syn Barg ∼ Bn1 |- _ =>
         pose proof (d_consis_btyp_erase Harg) as He end.
       rewrite (utyp_to_btyp_btyp_to_utyp_syn (is_styp_is_syn HsBarg)) in He.
       symmetry. exact He. }
@@ -1518,7 +1518,7 @@ Proof.
       apply d_sub_weakening_head.
       eapply d_consis_syn_sub_tc;
         [ match goal with Hit : is_ityp Bn2 |- _ => exact Hit end
-        | match goal with Hbc : _ ⨟ _ ⊨ btyp_to_utyp_syn Bbody ≈ Bn2 |- _ =>
+        | match goal with Hbc : _ ⨟ _ ⊢ btyp_to_utyp_syn Bbody ∼ Bn2 |- _ =>
             eapply d_consis_equiv; [ | exact Hbc ]; fsetdec end ].
   - (* forall_r (M = tc): the folded ∀-peel [__abs_anno_check_step]. *)
     subst.
@@ -1542,12 +1542,12 @@ Proof.
     + assumption.
     + exact Herase.
     + apply mod_comp_ty__fn.
-      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⊑ B2 |- _ =>
+      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⩽ B2 |- _ =>
         exact (d_sub_skmod Hs) end.
     + intros xv Hxv.
       eapply (Hbody Γ xv m B2 (ctx_weaken_refl Γ) ltac:(fsetdec)).
       apply d_sub_weakening_head.
-      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⊑ B2 |- _ =>
+      match goal with Hs : _ ⨟ _ ⊢[ _ ] btyp_to_utyp_syn Bbody ⩽ B2 |- _ =>
         eapply d_sub_equiv; [ | exact Hs ] end.
       fsetdec.
 Qed.
@@ -1618,7 +1618,7 @@ Qed.
 
 (** A consistency's tag context is bounded by the LHS's own ε-tags. *)
 Lemma d_consis_ctx_subset_etags : forall Δ Γ C B,
-    Δ ⨟ Γ ⊨ C ≈ B -> Δ [<=] utyp_etags C.
+    Δ ⨟ Γ ⊢ C ∼ B -> Δ [<=] utyp_etags C.
 Proof.
   intros Δ Γ C B H. induction H; simpl;
     try (pick fresh X for (L `union` ftvar_in_utyp C);
@@ -1632,7 +1632,7 @@ Qed.
     (via [d_tags_etags] + [utyp_etags_open_le]) and are disjoint from the
     conclusion [Δ] (the rule's freshness side-condition). *)
 Lemma d_sub_ctx_subset_etags : forall M Δ Γ C B,
-    Δ ⨟ Γ ⊢[ M ] C ⊑ B -> Δ [<=] utyp_etags C.
+    Δ ⨟ Γ ⊢[ M ] C ⩽ B -> Δ [<=] utyp_etags C.
 Proof.
   intros M Δ Γ C B H. induction H; simpl.
   - (* infer *) fsetdec.
@@ -1642,7 +1642,7 @@ Proof.
     match goal with IH : forall _, _ `notin` _ -> _ [<=] _ |- _ =>
       apply (IH X); fsetdec end.
   - (* arg *)
-    match goal with Hc : _ ⨟ _ ⊨ C1 ≈ _ |- _ =>
+    match goal with Hc : _ ⨟ _ ⊢ C1 ∼ _ |- _ =>
       pose proof (d_consis_ctx_subset_etags Hc) as Hetag end.
     fsetdec.
   - (* forall_l_tagged: Ψ' = utyp_etags ph (d_tags_etags), disjoint from Δ (H0). *)
@@ -1660,7 +1660,7 @@ Qed.
     them.  This is what lets [d_sub_trans_spine]'s grown output be re-based to
     [empty] for the subsumption rule. *)
 Lemma d_sub_paint_lhs_empty : forall M Δ Γ B B',
-    Δ ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn B) ⊑ B' -> Δ [=] empty.
+    Δ ⨟ Γ ⊢[ M ] (btyp_to_utyp_syn B) ⩽ B' -> Δ [=] empty.
 Proof.
   intros M Δ Γ B B' H.
   pose proof (d_sub_ctx_subset_etags H) as Hle.
@@ -1681,7 +1681,7 @@ Lemma d_sd_typing_general_subsumption_spine : forall m1 Γ e Bfull,
       forall n A M B Bres,
         is_fn_n n m1 ->
         btyp_spine n Bfull A B Bres ->
-        empty ⨟ Γ' ⊢[ M ] (btyp_to_utyp_syn A) ⊑ B ->
+        empty ⨟ Γ' ⊢[ M ] (btyp_to_utyp_syn A) ⩽ B ->
         Γ' ⊢ˢ[ mode_fn_n_subst m1 M ] e ⦂ Bres.
 Proof.
   intros m1 Γ e Bfull Hty.
@@ -1713,7 +1713,7 @@ Proof.
   - (* anno: as [var]; the checked subderivation is weakened. *)
     eapply d_sd_typing__anno.
     + eapply d_sd_typing_ctx_weaken; eassumption.
-    + match goal with Hs : empty ⨟ _ ⊢[ _ ] ptyp_to_utyp_syn _ ⊑ _ |- _ =>
+    + match goal with Hs : empty ⨟ _ ⊢[ _ ] ptyp_to_utyp_syn _ ⩽ _ |- _ =>
         pose proof (d_sub_ctx_weaken Hcw Hs) as Hs0' end.
       edestruct (d_sub_trans_spine Hs0' Hfn Hspine Htail) as [Δ'' [_ HΔ'']].
       pose proof HΔ'' as HΔ''b.
@@ -1817,11 +1817,11 @@ Qed.
 Theorem d_sd_typing_general_subsumption : forall Γ e A B m,
     d_wf_denv Γ ->
     Γ ⊢ˢ[ mode_ti ] e ⦂ ptyp_to_btyp_syn A ->
-    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⊑ B ->
+    empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⩽ B ->
     Γ ⊢ˢ[ m ] e ⦂ B.
 Proof.
   (* The n=0 corollary of the spine lemma: the [FN^0] spine is the tail, so
-     [e : syn{A}] subsumes to [B] through [empty ⊢[m] syn{A} ⊑ B] directly. *)
+     [e : syn{A}] subsumes to [B] through [empty ⊢[m] syn{A} ⩽ B] directly. *)
   intros Γ e A B m Hwf Hty Hsub.
   assert (Hst : is_styp (ptyp_to_btyp_syn A)).
   { (* [syn{A}] is [is_styp]: it is [lc] because the subtyping [Hsub] forces

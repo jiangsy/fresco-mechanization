@@ -195,8 +195,8 @@ Proof.
 Qed.
 
 Lemma cex_join :
-  empty ⨟ Th ⊨ₛᵃ (pskl_to_uskl (msubst_pskl th Pc))
-              ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha))).
+  empty ⨟ Th ⊢ₛᵃ (pskl_to_uskl (msubst_pskl th Pc))
+              ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha))).
 Proof.
   unfold Pc, th. simpl.
   destruct (X == X) as [_|]; [ | contradiction ].
@@ -314,7 +314,7 @@ Qed.
 Definition zeta_sem : metasubst :=
   (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: (X, ptyp_unit) :: nil.
 
-Lemma cex_zeta_semantic : Th1 ≤[ zeta_sem ] Th.
+Lemma cex_zeta_semantic : zeta_sem ∷ Th1 ⊑ Th.
 Proof.
   unfold Th1, Th, zeta_sem.
   (* c : middle  δ̂→()  ≡ᵗ  ζ(X̂→()) = ()→()  over the remainder *)
@@ -358,8 +358,8 @@ Theorem cex_syn_middle_optimality_false :
   Th0 ⊲[ empty ][ nil ] alpha ≔ Pc ⊣ Th1 /\
   a_inc_syn (nil ++ Th0) th Th /\
   a_wf_aenv Th /\
-  (empty ⨟ Th ⊨ₛᵃ (pskl_to_uskl (msubst_pskl th Pc))
-              ≈ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha)))) /\
+  (empty ⨟ Th ⊢ₛᵃ (pskl_to_uskl (msubst_pskl th Pc))
+              ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha)))) /\
   (forall ζ, ~ a_inc_syn Th1 ζ Th).
 Proof.
   repeat split.

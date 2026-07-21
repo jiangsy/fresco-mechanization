@@ -45,7 +45,7 @@
     consistency→refinement mono lemma [ad_pat_consis_refine_syn_f_mono].
 
     NOTE ON [θ₁].  [consis_optimal_post] quantifies the algorithmic solution
-    [θ₁] universally (only [Θ₀ ≤[θ₁] Θ₁]).  The recovery genuinely needs
+    [θ₁] universally (only [θ₁ ∷ Θ₀ ⊑ Θ₁]).  The recovery genuinely needs
     [θ₁] to act as the identity on [α̂] — [msubst_lookup θ₁ α = ptyp_var_f α]
     — which is how the (OPT) proof instantiates it (the algorithm's own
     solution is the identity metasubstitution [a_isub]; DESIGN-completeness-
@@ -95,7 +95,7 @@ Lemma tyequiv_mono_refine_syn : forall Θ Δ A B,
   Θ ⨟ Δ ⊢ᵣᵃ (ptyp_to_bskl_syn A) ⊳ (ptyp_to_bskl_syn B).
 Proof.
   intros Θ Δ A B Hwf HmA HmB Heq Hvis.
-  assert (Hc : empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ (ptyp_to_bskl_syn B))
+  assert (Hc : empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn B))
     by (apply tyequiv_mono_consis; auto).
   eapply (ad_refine_syn_f_forget (F := empty)).
   replace (ptyp_to_bskl_syn A)
@@ -232,7 +232,7 @@ Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ θ θ1 ζ α Qb C,
   a_wf_aenv Θ ->
   a_flex_tvar Θ0 α ->
   a_binds_tvar α Θ1 ->
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
   a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ ->
   α `in` dom θ1 ->
@@ -262,14 +262,14 @@ Qed.
 Lemma consis_precise_via_join : forall Θ0 Θ1 Θ Δ θ θ1 ζ α Qb,
   a_wf_aenv Θ ->
   a_flex_tvar Θ0 α ->
-  Θ0 ≤[ θ ] Θ ->
+  θ ∷ Θ0 ⊑ Θ ->
   a_binds_tvar α Θ1 ->
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
   a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ ->
   α `in` dom θ1 ->
   msubst_lookup θ1 α = ptyp_var_f α ->
-  empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ (pskl_var_f α))) ≈ Qb ->
+  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl θ (pskl_var_f α))) ∼ Qb ->
   Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
   intros Θ0 Θ1 Θ Δ θ θ1 ζ α Qb
@@ -289,9 +289,9 @@ Qed.
 Lemma consis_precise_via_refine : forall Θ0 Θ1 Θ Δ Δ1 θ θ1 ζ α Qb,
   a_wf_aenv Θ ->
   a_flex_tvar Θ0 α ->
-  Θ0 ≤[ θ ] Θ ->
+  θ ∷ Θ0 ⊑ Θ ->
   a_binds_tvar α Θ1 ->
-  Θ1 ≤[ ζ ] Θ ->
+  ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
   a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ ->
   α `in` dom θ1 ->

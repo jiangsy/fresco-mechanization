@@ -4,7 +4,7 @@
     type EQUIVALENCE  [Θ ⊢ A ≡ᵗ B]  from what consistency soundness gives it:
     a coloured JOIN [Qt] with
 
-        syn{A} ≈ Qt      (declarative consistency of the SUBJECT with the join)
+        syn{A} ∼ Qt      (declarative consistency of the SUBJECT with the join)
         inh{B} ⊳ Qt      (the INPUT refines to the join)
 
     On MONOTYPES this pins A and B together: monotypes carry no ghosts, so both
@@ -118,7 +118,7 @@ Qed.
     (it unfolds the JOIN instead), so it must not be destructed along with the
     others. *)
 Lemma consis_mono_join : forall Ψ Θ S Qt,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Qt ->
   a_wf_aenv Θ ->
   forall A, S = ptyp_to_uskl_syn A -> mono_ptyp A ->
   exists C, mono_ptyp C /\ Qt = ptyp_to_bskl_syn C /\ Θ ⊢ A ≡ᵗ C.
@@ -255,7 +255,7 @@ Theorem consis_refine_mono_tyequiv : forall Θ A B Qt,
   a_wf_aenv Θ ->
   mono_ptyp A ->
   mono_ptyp B ->
-  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ Qt ->
+  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (ptyp_to_pskl B)) ⊳ Qt ->
   Θ ⊢ A ≡ᵗ B.
 Proof.
@@ -281,7 +281,7 @@ Qed.
 Lemma consis_mono_refl : forall A Θ,
   mono_ptyp A ->
   (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
-  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ (ptyp_to_bskl_syn A).
+  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A).
 Proof.
   intros A Θ Hm; unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
   induction Hm; intros Hvis; simpl.
@@ -296,11 +296,11 @@ Qed.
     a definition unfolded on the LEFT ([flex_l]) becomes one unfolded on the
     RIGHT ([flex_r]), and vice versa. *)
 Lemma consis_mono_sym : forall Ψ Θ S Qt,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Qt ->
   a_wf_aenv Θ ->
   forall A B, S = ptyp_to_uskl_syn A -> Qt = ptyp_to_bskl_syn B ->
   mono_ptyp A -> mono_ptyp B ->
-  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn B) ≈ (ptyp_to_bskl_syn A).
+  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn B) ∼ (ptyp_to_bskl_syn A).
 Proof.
   intros Ψ Θ S Qt Hc Hwf; induction Hc; intros A0 B0 HeqS HeqQ HmA0 HmB0;
     unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in *.
@@ -345,9 +345,9 @@ Qed.
 
 (** [ad_pat_consis] is congruent in the tag context. *)
 Lemma consis_psi_cong_local : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
   forall Ψ', Ψ [=] Ψ' ->
-  Ψ' ⨟ Θ ⊨ₛᵃ S ≈ Q.
+  Ψ' ⨟ Θ ⊢ₛᵃ S ∼ Q.
 Proof.
   intros Ψ Θ S Q H; induction H; intros Ψ' Heq;
     econstructor; eauto; fsetdec.
@@ -356,7 +356,7 @@ Qed.
 (** A monotype carries no TAGS, so a monotype-subject derivation has an empty
     tag context.  (Tags only ever enter through a tagged quantifier.) *)
 Lemma consis_mono_psi_empty : forall Ψ Θ S Qt,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Qt ->
   a_wf_aenv Θ ->
   forall A, S = ptyp_to_uskl_syn A -> mono_ptyp A ->
   Ψ [=] empty.
@@ -384,7 +384,7 @@ Qed.
 (* ===================================================================== *)
 (*  THE CONVERSE BRIDGE                                                     *)
 (*                                                                          *)
-(*      tyequiv_mono_consis :  A ≡ᵗ B  ⟹  syn{A} ≈ syn{B}                   *)
+(*      tyequiv_mono_consis :  A ≡ᵗ B  ⟹  syn{A} ∼ syn{B}                   *)
 (*                                                                          *)
 (*  which the mutual soundness bundle needs (part 2's solution is stated    *)
 (*  as declarative CONSISTENCY, while the mutual induction produces a type  *)
@@ -454,11 +454,11 @@ Qed.
     only [var] / [flex_l] / [flex_r] can have subject [γ̂], and each is
     absorbed by a lookup rule on the other side. *)
 Lemma consis_unfold_def_subject : forall Ψ Θ S Qt,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Qt ->
   a_wf_aenv Θ ->
   forall γ τ, S = uskl_var_f γ ->
   binds γ (abind_flex_mono_def τ) Θ ->
-  Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn τ) ≈ Qt.
+  Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn τ) ∼ Qt.
 Proof.
   intros * Hc Hwf; induction Hc; intros γ0 τ0 HeqS Hb;
     try discriminate HeqS.
@@ -487,12 +487,12 @@ Qed.
     have an arrow subject, and the transport is generic in the two
     component transports. *)
 Lemma consis_arrow_subject_transport : forall Ψ Θ S Qt,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Qt ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Qt ->
   forall S1 S2 T1 T2,
   S = uskl_arrow S1 S2 ->
-  (forall Ψ' Q', Ψ' ⨟ Θ ⊨ₛᵃ S1 ≈ Q' -> Ψ' ⨟ Θ ⊨ₛᵃ T1 ≈ Q') ->
-  (forall Ψ' Q', Ψ' ⨟ Θ ⊨ₛᵃ S2 ≈ Q' -> Ψ' ⨟ Θ ⊨ₛᵃ T2 ≈ Q') ->
-  Ψ ⨟ Θ ⊨ₛᵃ (uskl_arrow T1 T2) ≈ Qt.
+  (forall Ψ' Q', Ψ' ⨟ Θ ⊢ₛᵃ S1 ∼ Q' -> Ψ' ⨟ Θ ⊢ₛᵃ T1 ∼ Q') ->
+  (forall Ψ' Q', Ψ' ⨟ Θ ⊢ₛᵃ S2 ∼ Q' -> Ψ' ⨟ Θ ⊢ₛᵃ T2 ∼ Q') ->
+  Ψ ⨟ Θ ⊢ₛᵃ (uskl_arrow T1 T2) ∼ Qt.
 Proof.
   intros * Hc; induction Hc; intros S1' S2' T1 T2 HeqS Htr1 Htr2;
     try discriminate HeqS.
@@ -513,10 +513,10 @@ Lemma tyequiv_mono_consis_transport : forall Θ A B,
   a_wf_aenv Θ ->
   mono_ptyp A ->
   (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
-  (forall Ψ Qt, Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn B) ≈ Qt ->
-     Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ Qt) /\
-  (forall Ψ Qt, Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ Qt ->
-     Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn B) ≈ Qt).
+  (forall Ψ Qt, Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn B) ∼ Qt ->
+     Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt) /\
+  (forall Ψ Qt, Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt ->
+     Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn B) ∼ Qt).
 Proof.
   intros Θ A B Heq Hwf; induction Heq; intros Hm Hv.
   - (* refl *)
@@ -567,7 +567,7 @@ Theorem tyequiv_mono_consis : forall Θ A B,
   a_wf_aenv Θ ->
   mono_ptyp A ->
   (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
-  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ (ptyp_to_bskl_syn B).
+  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn B).
 Proof.
   intros * Heq Hwf Hm Hv.
   destruct (a_tyequiv_mono_vis Heq Hwf) as [Hfwd _].
@@ -584,9 +584,9 @@ Corollary consis_mono_trans : forall Θ A B C,
   a_wf_aenv Θ ->
   mono_ptyp A -> mono_ptyp B ->
   (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
-  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ (ptyp_to_bskl_syn B) ->
-  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn B) ≈ (ptyp_to_bskl_syn C) ->
-  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn A) ≈ (ptyp_to_bskl_syn C).
+  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn B) ->
+  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn B) ∼ (ptyp_to_bskl_syn C) ->
+  empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn C).
 Proof.
   intros * Hwf HmA HmB HvA Hc1 Hc2.
   destruct (consis_mono_join Hc1 Hwf (A := A) eq_refl HmA)

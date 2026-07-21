@@ -3,7 +3,7 @@
     information increase (dom-preserving) whose target equates the two
     subjects.  For monotypes, declarative consistency coincides with type
     equivalence under the context's definitions, so the declarative
-    conclusion is stated with [a_tyequiv]; ≈/⊳-shaped corollaries are
+    conclusion is stated with [a_tyequiv]; ∼/⊳-shaped corollaries are
     derived at their decorated-soundness use sites. *)
 
 Require Import Coq.Lists.List.
@@ -84,9 +84,9 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_inc_target_weaken : forall Θ ρ Θ' Ξ,
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   a_suffix Ξ ->
-  Θ ≤[ ρ ] (Ξ ++ Θ').
+  ρ ∷ Θ ⊑ (Ξ ++ Θ').
 Proof.
   intros * Hinc; revert Ξ; induction Hinc; intros Ξ0 HΞ0.
   - apply a_inc__empty. apply a_suffix_app; auto.
@@ -241,9 +241,9 @@ Proof.
 Qed.
 
 Lemma a_inc_prepend_flex_src : forall Θ ρ Θ' γ,
-  Θ ≤[ ρ ] Θ' ->
+  ρ ∷ Θ ⊑ Θ' ->
   a_binds_tvar γ Θ' ->
-  ((γ ~ abind_flex_mono) ++ Θ) ≤[ (γ, ptyp_var_f γ) :: ρ ] Θ'.
+  (γ, ptyp_var_f γ) :: ρ ∷ ((γ ~ abind_flex_mono) ++ Θ) ⊑ Θ'.
 Proof.
   intros * Hinc Hb.
   apply a_inc__flex; auto;
@@ -729,10 +729,10 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_weaken : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Ψ ⨟ Θ' ⊨ₛᵃ S ≈ Q.
+  Ψ ⨟ Θ' ⊢ₛᵃ S ∼ Q.
 Proof.
   intros Ψ Θ S Q H; induction H; intros Θ' Hmon.
   - apply ad_pat_consis__unit; auto.
@@ -780,8 +780,8 @@ Proof.
 Qed.
 
 Lemma ad_pat_consis_weaken_cons : forall Ψ Θ (e : list (atom * abind)) S Q,
-  Ψ ⨟ Θ ⊨ₛᵃ S ≈ Q ->
-  Ψ ⨟ (e ++ Θ) ⊨ₛᵃ S ≈ Q.
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
+  Ψ ⨟ (e ++ Θ) ⊢ₛᵃ S ∼ Q.
 Proof.
   intros. eapply ad_pat_consis_weaken; eauto;
     try (intros x b Hb; unfold binds; apply in_or_app; auto).
