@@ -2700,6 +2700,175 @@ Proof.
       [ eapply solve_eq_no_top; [ exact H | exact Hnt | exact Hnt0 ] | exact HntC ].
 Qed.
 
+(* ===================================================================== *)
+(*  [top_guarded]-INPUT propagation chain (replaces the [no_top] chain):   *)
+(*  a wf [P0] may carry ⊤◇ (over GUARDED bodies, a_wf_pskl__tophole), so   *)
+(*  the coverage anchor's [pskl_top_guarded Q] must flow from              *)
+(*  [pskl_top_guarded P0] (⟸ wf), NOT from [ghost_free]/[no_top].          *)
+(* ===================================================================== *)
+
+(** A guarded-headed subject stays guarded-headed through eq-solving. *)
+Lemma solve_eq_guarded_head_l : forall Θ P Q P',
+  Θ ⊢ₑ P ∼ Q ⤳ P' -> pskl_guarded_head P -> pskl_guarded_head P'.
+Proof.
+  intros Θ P Q P' H; induction H; intros Hg; simpl in Hg;
+    try contradiction; simpl; try exact I.
+  - (* hole_r : P'=P *) exact Hg.
+  - (* tophole_r_guarded : P guarded, P∼Q⤳P' *) apply IHa_solve_eq; exact Hg.
+Qed.
+
+(** A guarded-headed subject stays guarded-headed through sub-solving. *)
+Lemma solve_sub_guarded_head_l : forall Θ m P Q P',
+  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' -> pskl_guarded_head P -> pskl_guarded_head P'.
+Proof.
+  intros Θ m P Q P' Hs; induction Hs; intros Hg; simpl in Hg;
+    try contradiction; simpl; try exact I.
+  - (* vacuous : P'=P *) exact Hg.
+  - (* check : eq preserves *) eapply solve_eq_guarded_head_l; eassumption.
+  - (* forall_r : same subject/result, recurse *)
+    destruct (atom_fresh L) as [β Hβ].
+    match goal with IH : forall X, X `notin` L -> _ |- _ => apply (IH β Hβ); exact Hg end.
+Qed.
+
+(** [top_guarded] is preserved by eq-solving (⊤◇ over guarded stays so). *)
+Lemma solve_eq_top_guarded : forall Θ P Q P',
+  Θ ⊢ₑ P ∼ Q ⤳ P' ->
+  pskl_top_guarded P -> pskl_top_guarded Q -> pskl_top_guarded P'.
+Proof.
+  intros Θ P Q P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
+  - (* unit *) exact I.
+  - (* var *) exact I.
+  - (* flex_r *) exact I.
+  - (* hole_l : P'=Q *) exact Hgf.
+  - (* hole_r : P'=P *) exact Hnt.
+  - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
+      split; [ apply IHa_solve_eq1 | apply IHa_solve_eq2 ]; assumption.
+  - (* forall *)
+    destruct (atom_fresh (L `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
+                `union` ftvar_in_pskl Q)) as [β Hβ].
+    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
+    match goal with IH : forall X, X `notin` L -> _ -> _ -> pskl_top_guarded _ |- _ =>
+      apply (IH β ltac:(clear - Hβ; fsetdec));
+      [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt
+      | apply (proj1 (pskl_top_guarded_open_rec Q β 0)); exact Hgf ] end.
+  - (* tophole_both : ⊤◇P∼⊤◇Q⤳⊤◇P' *)
+    destruct Hnt as [HgP HtP]; destruct Hgf as [HgQ HtQ].
+    split; [ eapply solve_eq_guarded_head_l; [ eassumption | exact HgP ]
+           | apply IHa_solve_eq; assumption ].
+  - (* tophole_l_all : ⊤◇P∼∀Q⤳∀P' *)
+    destruct Hnt as [HgP HtP].
+    destruct (atom_fresh (L `union` ftvar_in_pskl P' `union` ftvar_in_pskl Q)) as [β Hβ].
+    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
+    match goal with IH : forall X, X `notin` L -> _ -> _ -> pskl_top_guarded _ |- _ =>
+      apply (IH β ltac:(clear - Hβ; fsetdec));
+      [ simpl; split; assumption
+      | apply (proj1 (pskl_top_guarded_open_rec Q β 0)); exact Hgf ] end.
+  - (* tophole_l_guarded : ⊤◇P∼(guarded Q)⤳P' *)
+    destruct Hnt as [HgP HtP]; apply IHa_solve_eq; assumption.
+  - (* all_l_tophole : ∀P∼⊤◇Q⤳∀P' *)
+    destruct Hgf as [HgQ HtQ].
+    destruct (atom_fresh (L `union` ftvar_in_pskl P' `union` ftvar_in_pskl P)) as [β Hβ].
+    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
+    match goal with IH : forall X, X `notin` L -> _ -> _ -> pskl_top_guarded _ |- _ =>
+      apply (IH β ltac:(clear - Hβ; fsetdec));
+      [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt
+      | simpl; split; assumption ] end.
+  - (* tophole_r_guarded : (guarded P)∼⊤◇Q⤳P' *)
+    destruct Hgf as [HgQ HtQ]; apply IHa_solve_eq; assumption.
+Qed.
+
+(** [top_guarded] is preserved by sub-solving. *)
+Lemma solve_sub_top_guarded_tg : forall Θ m P Q P',
+  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
+  pskl_top_guarded P -> pskl_top_guarded Q -> pskl_top_guarded P'.
+Proof.
+  intros Θ m P Q P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
+  - (* var *) exact I.
+  - (* forall_l *)
+    destruct (atom_fresh (L `union` ftvar_in_pskl P')) as [β Hβ].
+    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
+    match goal with IH : forall X, X `notin` L -> _ |- _ =>
+      apply (IH β ltac:(clear - Hβ; fsetdec));
+        [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt | exact Hgf ] end.
+  - (* univ_ghost_l : ⊤◇P ≼ Q ⤳ ⊤◇P' *)
+    destruct Hnt as [HgP HtP].
+    split; [ eapply solve_sub_guarded_head_l; [ eassumption | exact HgP ]
+           | apply IHHs; assumption ].
+  - (* vacuous : P'=P *) exact Hnt.
+  - (* check : eq preserves top_guarded *)
+    eapply solve_eq_top_guarded; [ eassumption | exact Hnt | exact Hgf ].
+  - (* forall_r *)
+    destruct (atom_fresh (L `union` ftvar_in_pskl B)) as [β Hβ].
+    match goal with IH : forall X, X `notin` L -> _ |- _ =>
+      apply (IH β ltac:(clear - Hβ; fsetdec));
+        [ exact Hnt | apply (proj1 (pskl_top_guarded_open_rec B β 0)); exact Hgf ] end.
+  - (* arrow *)
+    destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2].
+    split;
+      [ eapply solve_eq_top_guarded; [ eassumption | exact Hnt1 | exact Hgf1 ]
+      | apply IHHs; assumption ].
+  - (* ghost_l_fn : ⊤◇(arrow P1' P2') *)
+    destruct Hgf as [Hgf1 Hgf2].
+    split; [ exact I | split;
+      [ eapply solve_eq_top_guarded; [ eassumption | exact I | exact Hgf1 ]
+      | apply IHHs; [ exact I | exact Hgf2 ] ] ].
+  - (* ghost_l : ⊤◇B, B guarded *)
+    split; [ apply guarded_pskl_head; assumption | exact Hgf ].
+Qed.
+
+(** Every constraint target is [top_guarded]. *)
+Definition a_cstr_tg (c : a_cstr) : Prop :=
+  match c with
+  | a_cstr_sub _ Q => pskl_top_guarded Q
+  | a_cstr_eq Q => pskl_top_guarded Q
+  end.
+
+(** The look's targets are sub-skeletons of P0 — all [top_guarded] when P0 is. *)
+Lemma a_look_top_guarded :
+  (forall α m P P0 Ξ C, P ≼[ α , m ] P0 ⤳ Ξ ⨾ C ->
+     pskl_top_guarded P0 -> List.Forall a_cstr_tg C) /\
+  (forall α P P0 Ξ C, P ∼[ α ] P0 ⤳ Ξ ⨾ C ->
+     pskl_top_guarded P0 -> List.Forall a_cstr_tg C).
+Proof.
+  apply a_looksub_lookeq_mutind; intros; simpl in *;
+    (* split ⊤◇/arrow targets into components (fresh names, don't clobber IHs) *)
+    repeat match goal with
+           | H : pskl_top_guarded (pskl_tophole _) |- _ =>
+               let Hg := fresh "Hg" in let Ht := fresh "Ht" in destruct H as [Hg Ht]
+           | H : pskl_top_guarded (pskl_arrow _ _) |- _ =>
+               let H1 := fresh "Ha" in let H2 := fresh "Hb" in destruct H as [H1 H2]
+           end;
+    try (apply List.Forall_nil; fail);                        (* nil constraints *)
+    try (apply List.Forall_app; split; [ apply H | apply H0 ]; tauto);  (* arrow *)
+    try (repeat apply List.Forall_cons;
+         solve [ assumption | exact I | apply List.Forall_nil ]);  (* [sub/eq _] *)
+    try (apply H; assumption);                                (* same/⊤◇-strip recursion *)
+    try (match goal with IH : forall β, β `notin` ?LL -> _ |- _ =>  (* cofinite *)
+           destruct (atom_fresh LL) as [β Hβ];
+           apply (IH β Hβ);
+           solve [ assumption
+                 | apply (proj1 (pskl_top_guarded_open_rec _ _ _)); assumption
+                 | simpl; split; assumption ]  (* forall_syn: reconstruct ⊤◇ target *)
+         end).
+(* TODO(tactic): a few ⊤◇-recursion look cases remain — TRUE (structural analog
+   of the proven [a_look_no_top]); staged, NOT yet wired into a_sub_sound_thm
+   (which stays Closed via the ghost_free path).  Finish the tactic before swap. *)
+Admitted.
+
+(** The TY solve output is top-guarded (walk the constraints; ⊤◇ targets OK). *)
+Lemma solve_cstr_top_guarded_tg : forall Θ C P Q,
+  Θ ⊩ C ⨾ P ⤳ Q -> pskl_top_guarded P -> List.Forall a_cstr_tg C ->
+  pskl_top_guarded Q.
+Proof.
+  intros Θ C P Q Hs; induction Hs; intros Hnt Hntc.
+  - exact Hnt.
+  - inversion Hntc as [ | ? ? Hnt0 ]; subst; simpl in Hnt0.
+    eapply solve_sub_top_guarded_tg; [ exact H | exact Hnt | exact Hnt0 ].
+  - inversion Hntc as [ | ? ? Hnt0 HntC ]; subst; simpl in Hnt0.
+    apply IHHs;
+      [ eapply solve_eq_top_guarded; [ exact H | exact Hnt | exact Hnt0 ] | exact HntC ].
+Qed.
+
 (** ASSEMBLY: walk the constraint list — UNCONDITIONAL; [dec_ext] re-grows
     toward P with COVERAGE Ψp ⊆ Ψpost ∪ Ψc. *)
 Lemma solve_cstr_decorate : forall Θ C P Q ψ Ψpost Ψtot,
