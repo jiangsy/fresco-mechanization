@@ -1510,6 +1510,9 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
                (open_uskl_wrt_uskl ψ0 (uskl_var_f X)) Ψ) ->
     dec_ext (pskl_all_syn P0) (uskl_all_etag ε ψ0) Ψ
 | dec_ext__skip_tophole : forall P0 ψ Ψ,     (* TY guess dropped P's ⊤◇ *)
+    uskl_ghost_free ψ ->                      (* ⟵ faithful: a ⊤◇ is dropped ONLY
+                                                 in the TY case, onto a ghost-free ψ
+                                                 (the paper's guess-drop). *)
     dec_ext P0 ψ Ψ ->
     dec_ext (pskl_tophole P0) ψ Ψ
 | dec_ext__topholeg : forall P0 ψ0 Ψ,        (* SK keeps ⊤◇ ; ψ = ⊤◇̇.ψ0 *)
@@ -1560,7 +1563,7 @@ Proof.
     | IH : forall X, X `notin` L -> forall Ψ0, _ -> dec_ext _ _ Ψ0 |- _ =>
         exact (IH X HX Ψ' Heq)
     end.
-  - apply dec_ext__skip_tophole. apply IHdec_ext. exact Heq.
+  - apply dec_ext__skip_tophole; [ assumption | apply IHdec_ext; exact Heq ].
   - apply dec_ext__topholeg. apply IHdec_ext. exact Heq.
   - apply dec_ext__flex_forget; fsetdec.
 Qed.
@@ -1599,7 +1602,7 @@ Proof.
     destruct ψa; simpl in Hera; try discriminate Hera.
     apply dec_ext__hole; [ exact Histk | apply d_tags_skl__var; fsetdec ].
   - (* tophole P ↦ guess P : drop the ⊤◇ *)
-    apply dec_ext__skip_tophole. apply IHHg; assumption.
+    apply dec_ext__skip_tophole; [ exact Hgf | apply IHHg; assumption ].
   - (* var α ↦ var α *)
     destruct ψa; simpl in Hera; try discriminate Hera.
     inversion Hera; subst. apply dec_ext__var; fsetdec.
@@ -1704,7 +1707,8 @@ Proof.
       [ | clear - HZ; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall a, a `notin` L -> forall b c, _ |- _ =>
       apply (IH Z ltac:(clear - HZ; fsetdec)) end.
-  - apply dec_ext__skip_tophole; apply IHdec_ext.
+  - apply dec_ext__skip_tophole;
+      [ apply uskl_ghost_free_subst_var; assumption | apply IHdec_ext ].
   - apply dec_ext__topholeg; apply IHdec_ext.
   - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
       apply dec_ext__flex_forget; assumption.
