@@ -10,14 +10,12 @@
 Require Export src.frost.notations.
 Require Export src.frost.decl.def_extra.
 
-(** ** Well-formedness judgments. *)
+(** ** Well-formedness judgments.
 
-
-Notation "Γ ⊢ᵤₜ C" := (d_wf_utyp Γ C)
-  (at level 75, C at level 75, no associativity) : type_scope.
-
-Notation "Ψ ⨟ Γ ⊢ᵤₛ R" := (d_wf_uskl Ψ Γ R)
-  (at level 75, Γ at level 74, R at level 75, no associativity) : type_scope.
+    [d_wf_utyp] ([Γ ⊢ᵤ C]) and [d_wf_uskl] ([Γ ⨟ Δ ⊢ᵤₛ R]) are already
+    notated inline via [where] clauses in [decl/def_extra.v]; the earlier
+    duplicate declarations here ([⊢ᵤₜ], and a positional copy of [⊢ᵤₛ]) were
+    removed to avoid two glyphs for one relation. *)
 
 (** ** Shallow subtyping (separate from main d_sub). *)
 

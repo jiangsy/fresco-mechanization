@@ -176,28 +176,28 @@ Inductive a_pskl_tyequiv : aenv -> pskl -> pskl -> Prop :=
 where "Θ ⊢ P ≡ˢ Q" := (a_pskl_tyequiv Θ P Q) : type_scope.
 
 (* ===================================================================== *)
-(*  Information increase  [Θ ⊑[θ] Θ']  (fig:information-increase)          *)
+(*  Information increase  [θ ∷ Θ ⊑ Θ']  (fig:information-increase)         *)
 (* ===================================================================== *)
 
-Reserved Notation "Θ ≤[ ρ ] Θ'"
-  (at level 75, ρ at level 0, Θ' at level 74, no associativity).
+Reserved Notation "ρ ∷ Θ ⊑ Θ'"
+  (at level 75, Θ at level 74, Θ' at level 74, no associativity).
 Inductive a_inc : aenv -> metasubst -> aenv -> Prop :=
-| a_inc__empty : forall Ξ,                       (* · ⊑[ι] Ξ *)
+| a_inc__empty : forall Ξ,                       (* ι ∷ · ⊑ Ξ *)
     a_suffix Ξ ->
-    nil ≤[ nil ] Ξ
-| a_inc__flex : forall Θ ρ Θ' α τ,               (* Θ,α̂ ⊑[θ,τ/α̂] Θ' *)
-    Θ ≤[ ρ ] Θ' ->
+    nil ∷ nil ⊑ Ξ
+| a_inc__flex : forall Θ ρ Θ' α τ,               (* θ,τ/α̂ ∷ Θ,α̂ ⊑ Θ' *)
+    ρ ∷ Θ ⊑ Θ' ->
     a_wf_ptyp Θ' τ ->
     mono_ptyp τ ->
-    ((α ~ abind_flex_mono) ++ Θ) ≤[ (α, τ) :: ρ ] Θ'
-| a_inc__flex_def : forall Θ ρ Θ' α τ τ',        (* Θ,α̂:=τ ⊑[θ,τ'/α̂] Θ', τ' ≡ θτ *)
-    Θ ≤[ ρ ] Θ' ->
+    ((α, τ) :: ρ) ∷ ((α ~ abind_flex_mono) ++ Θ) ⊑ Θ'
+| a_inc__flex_def : forall Θ ρ Θ' α τ τ',        (* θ,τ'/α̂ ∷ Θ,α̂:=τ ⊑ Θ', τ' ≡ θτ *)
+    ρ ∷ Θ ⊑ Θ' ->
     (* the paper's prose side-condition on ρ (algorithmic.tex:123): every
        image is a well-formed monotype in the target *)
     a_wf_ptyp Θ' τ' ->
     mono_ptyp τ' ->
     Θ' ⊢ τ' ≡ᵗ (msubst_ptyp ρ τ) ->
-    ((α ~ abind_flex_mono_def τ) ++ Θ) ≤[ (α, τ') :: ρ ] Θ'
+    ((α, τ') :: ρ) ∷ ((α ~ abind_flex_mono_def τ) ++ Θ) ⊑ Θ'
 (* SEMANTIC ENTRIES for the two binder cases (GundryMM10 §3.1; 2026-07-15).
    The target's binding is preserved UP TO THE EQUATIONAL THEORY, not
    syntactically: [Θ' ⊢ A' ≡ᵗ θA] instead of [A' = θA].  With syntactic
@@ -206,23 +206,30 @@ Inductive a_inc : aenv -> metasubst -> aenv -> Prop :=
    deposited definition), and a competing solution may then use scope that
    exists only above it (machine-checked counterexample:
    algo/cex/cex_assign_optimal_syn_middle.v). *)
-| a_inc__var : forall Θ ρ Θ' Ξ x A A',           (* Θ,x:A ⊑[θ] Θ',x:A'≡θA,Ξ (type entry) *)
-    Θ ≤[ ρ ] Θ' ->
+| a_inc__var : forall Θ ρ Θ' Ξ x A A',           (* θ ∷ Θ,x:A ⊑ Θ',x:A'≡θA,Ξ (type entry) *)
+    ρ ∷ Θ ⊑ Θ' ->
     Θ' ⊢ A' ≡ᵗ (msubst_ptyp ρ A) ->
     a_suffix Ξ ->
-    ((x ~ abind_var_typ A) ++ Θ) ≤[ ρ ]
+    ρ ∷ ((x ~ abind_var_typ A) ++ Θ) ⊑
       (Ξ ++ (x ~ abind_var_typ A') ++ Θ')
-| a_inc__var_skl : forall Θ ρ Θ' Ξ x P P',       (* Θ,x:P ⊑[θ] Θ',x:P'≡θP,Ξ (skeleton entry) *)
-    Θ ≤[ ρ ] Θ' ->
+| a_inc__var_skl : forall Θ ρ Θ' Ξ x P P',       (* θ ∷ Θ,x:P ⊑ Θ',x:P'≡θP,Ξ (skeleton entry) *)
+    ρ ∷ Θ ⊑ Θ' ->
     Θ' ⊢ P' ≡ˢ (msubst_pskl ρ P) ->
     a_suffix Ξ ->
-    ((x ~ abind_var_skl P) ++ Θ) ≤[ ρ ]
+    ρ ∷ ((x ~ abind_var_skl P) ++ Θ) ⊑
       (Ξ ++ (x ~ abind_var_skl P') ++ Θ')
-| a_inc__tvar : forall Θ ρ Θ' Ξ α,               (* Θ,α ⊑[θ] Θ',α,Ξ *)
-    Θ ≤[ ρ ] Θ' ->
+| a_inc__tvar : forall Θ ρ Θ' Ξ α,               (* θ ∷ Θ,α ⊑ Θ',α,Ξ *)
+    ρ ∷ Θ ⊑ Θ' ->
     a_suffix Ξ ->
-    ((α ~ abind_tvar) ++ Θ) ≤[ ρ ] (Ξ ++ (α ~ abind_tvar) ++ Θ')
-where "Θ ≤[ ρ ] Θ'" := (a_inc Θ ρ Θ') : type_scope.
+    ρ ∷ ((α ~ abind_tvar) ++ Θ) ⊑ (Ξ ++ (α ~ abind_tvar) ++ Θ')
+where "ρ ∷ Θ ⊑ Θ'" := (a_inc Θ ρ Θ') : type_scope.
+
+(** Deprecated pre-paper-sync notation alias (parse-only): information
+    increase now prints [θ ∷ Θ ⊑ Θ'] (paper); old [Θ ≤[ρ] Θ'] still parses
+    until swept. *)
+Notation "Θ ≤[ ρ ] Θ'" := (a_inc Θ ρ Θ')
+  (at level 75, ρ at level 0, Θ' at level 74, no associativity, only parsing)
+  : type_scope.
 
 (** [Θ ⊴ Θ'] (paper [⊑{Θ}{Θ'}], identity-metasubstitution shorthand).
 

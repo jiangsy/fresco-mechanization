@@ -23,10 +23,10 @@ Require Import src.frost.decl.notations.
 
 Set Implicit Arguments.
 
-Reserved Notation "Θ ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'"
+Reserved Notation "Θ ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ'"
   (at level 70, F at level 0, Δ1 at level 0, Δ2 at level 0, P0 at level 0,
    P at level 0, Q at level 0, Θ' at level 0, no associativity).
-Reserved Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'"
+Reserved Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ'"
   (at level 70, Δ1 at level 0, Δ2 at level 0, P0 at level 0, P at level 0,
    Q at level 0, Θ' at level 0, no associativity).
 Reserved Notation "Θ ⊲[ F ] A ≈ᵘ B ⊣ Θ'"
@@ -40,7 +40,7 @@ Reserved Notation "Θ ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ'"
 Reserved Notation "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'"
   (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0,
    no associativity).
-Reserved Notation "Θ ⊢ₐ[ N | m | P0 ] P ⊑ᴬ Q ⊣ Θ'"
+Reserved Notation "Θ ⊢ₐ[ N | m | P0 ] P ⩽ Q ⊣ Θ'"
   (at level 70, N at level 0, m at level 0, P0 at level 0, P at level 0,
    Q at level 0, Θ' at level 0, no associativity).
 Reserved Notation "Θ ⊢ₐ[ m ; P0 ] e ⇨ Q ⊣ Θ'"
@@ -507,7 +507,7 @@ where "P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract NM α m P P' Ξ Q) : 
 (* ===================================================================== *)
 (*  Flexible-variable machinery (fig:alg-consistency, lower boxes).       *)
 (*  [a_assign Θ0 Ξ α̂ P Θ1] = [Θ0 | Ξ ⊲ α̂ := P ⊣ Θ1];                      *)
-(*  [a_unify Θ0 α̂ β̂ Θ1]    = [Θ0 ⊲ α̂ ≈ β̂ ⊣ Θ1];                          *)
+(*  [a_unify Θ0 α̂ β̂ Θ1]    = [Θ0 ⊲ α̂ ∼ β̂ ⊣ Θ1];                          *)
 (*  [a_consis ...]          = algorithmic consistency (above).            *)
 (*  Rules recurse on the list HEAD (the paper's rightmost entry).          *)
 (* ===================================================================== *)
@@ -595,7 +595,7 @@ Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
     a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ0) α ->
     (Ξ ++ Θ0) ⊢ₐ[ (add β F) ][ empty | empty
          | (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ]
-      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ≈ Q ⊣ Θ1 ->
+      (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ∼ Q ⊣ Θ1 ->
     ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((β ~ abind_flex_mono_def τ) ++ Θ1)
 | a_assign__depend : forall F Θ0 Θ1 Ξ α β P,              (* Assign-Depend *)
@@ -641,7 +641,7 @@ with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
        [is_in_dom_ alpha theta], type.ml:302).  Demanding [abind_flex_mono]
        here would be gratuitously strict: a DEFINED [α̂] would have to route
        through Flex-Flex-Assign instead (whose premise degenerates to the
-       consistency [τ ≈ τ]), so no derivation is lost either way — but the
+       consistency [τ ∼ τ]), so no derivation is lost either way — but the
        rule would not be the paper's. *)
     a_flex_tvar Θ0 α ->
     Θ0 ⊲[ F ] α ≈ᵘ α ⊣ Θ0
@@ -683,7 +683,7 @@ with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
     a_flex_tvar ((γ ~ abind_flex_mono_def τ) ++ Θ0) β ->
     Θ0 ⊢ₐ[ (add γ F) ][ empty | empty
          | (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f β))) ]
-      (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))) ≈ Q ⊣ Θ1 ->
+      (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))) ∼ Q ⊣ Θ1 ->
     ((γ ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ F ] α ≈ᵘ β
       ⊣ ((γ ~ abind_flex_mono_def τ) ++ Θ1)
 | a_unify__flex_skip : forall F Θ0 Θ1 γ α β,               (* Flex-Flex-Skip *)
@@ -701,76 +701,76 @@ with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
 with a_consis : atoms -> atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_consis__ghost : forall F Δ1 Δ2 Θ0 P0,                     (* Ghost *)
     AtomSetImpl.inter Δ2 (ftvar_in_pskl P0) [=] empty ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] pskl_hole ≈ P0 ⊣ Θ0
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] pskl_hole ∼ P0 ⊣ Θ0
 | a_consis__unit : forall F Δ1 Δ2 Θ0,                         (* Unit *)
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | pskl_unit ] pskl_unit ≈ pskl_unit ⊣ Θ0
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | pskl_unit ] pskl_unit ∼ pskl_unit ⊣ Θ0
 | a_consis__rigid : forall F Δ1 Δ2 Θ0 α,                      (* Rigid *)
     binds α abind_tvar Θ0 ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_var_f α) ] (pskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ0
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_var_f α) ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ0
 | a_consis__arrow : forall F Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2, (* Arrow *)
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0a ] P1 ≈ Q1 ⊣ Θ1 ->
-    Θ1 ⊢ₐ[ F ][ Δ1 | Δ2 | P0b ] P2 ≈ Q2 ⊣ Θ2 ->
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0a ] P1 ∼ Q1 ⊣ Θ1 ->
+    Θ1 ⊢ₐ[ F ][ Δ1 | Δ2 | P0b ] P2 ∼ Q2 ⊣ Θ2 ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_arrow P0a P0b) ]
-      (pskl_arrow P1 P2) ≈ (pskl_arrow Q1 Q2) ⊣ Θ2
+      (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2) ⊣ Θ2
 | a_consis__forall_inh : forall L F Δ1 Δ2 Θ0 Θ1 P0 P Q,       (* ForallInh: α to BOTH *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ₐ[ F ][ (add α Δ1) | (add α Δ2)
            | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
-         (open_pskl_wrt_pskl P (pskl_var_f α)) ≈
+         (open_pskl_wrt_pskl P (pskl_var_f α)) ∼
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_all_syn P0) ]
-      (pskl_all_syn P) ≈ (pskl_all_syn Q) ⊣ Θ1
+      (pskl_all_syn P) ∼ (pskl_all_syn Q) ⊣ Θ1
 | a_consis__forall_syn : forall L F Δ1 Δ2 Θ0 Θ1 P0 P Q,       (* ForallSyn: α to Δ2 *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ₐ[ F ][ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
-         (open_pskl_wrt_pskl P (pskl_var_f α)) ≈
+         (open_pskl_wrt_pskl P (pskl_var_f α)) ∼
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_tophole P0) ]
-      (pskl_all_syn P) ≈ (pskl_all_syn Q) ⊣ Θ1
+      (pskl_all_syn P) ∼ (pskl_all_syn Q) ⊣ Θ1
 | a_consis__univ_ghost : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q,         (* UnivGhost *)
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_tophole P0) ]
-      (pskl_tophole P) ≈ (pskl_tophole Q) ⊣ Θ1
+      (pskl_tophole P) ∼ (pskl_tophole Q) ⊣ Θ1
 | a_consis__univ_ghost1 : forall L F Δ1 Δ2 Θ0 Θ1 P0 P Q,      (* UnivGhost1: α to Δ1 *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ₐ[ F ][ (add α Δ1) | Δ2
            | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
-         (pskl_tophole P) ≈ (open_pskl_wrt_pskl Q (pskl_var_f α))
+         (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_all_syn P0) ]
-      (pskl_tophole P) ≈ (pskl_all_syn Q) ⊣ Θ1
+      (pskl_tophole P) ∼ (pskl_all_syn Q) ⊣ Θ1
 | a_consis__univ_ghost2 : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q,        (* UnivGhost2 *)
     guarded_pskl P0 ->
     a_non_flex Θ0 P0 ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] (pskl_tophole P) ≈ Q ⊣ Θ1
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] (pskl_tophole P) ∼ Q ⊣ Θ1
 | a_consis__flex : forall F Δ1 Δ2 Θ0 Θ1 α β,                  (* Flex *)
     Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_var_f β) ] (pskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ1
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_var_f β) ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1
 | a_consis__flex_l : forall F Δ1 Δ2 Θ0 Θ1 α P0,               (* FlexL *)
     a_non_flex Θ0 P0 ->
     Θ0 ⊲[ F ][ nil ] α ≔ P0 ⊣ Θ1 ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] (pskl_var_f α) ≈ (pskl_var_f α) ⊣ Θ1
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] (pskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1
 | a_consis__flex_r : forall F Δ1 Δ2 Θ0 Θ1 α P,                (* FlexR *)
     a_non_flex Θ0 P ->
     Θ0 ⊲[ F ][ nil ] α ≔ P ⊣ Θ1 ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_var_f α) ] P ≈ (pskl_var_f α) ⊣ Θ1
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ (pskl_var_f α) ⊣ Θ1
 | a_consis__ghost_r : forall F Δ1 Δ2 Θ0 P,                    (* GhostR *)
     AtomSetImpl.inter Δ1 (ftvar_in_pskl P) [=] empty ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | pskl_hole ] P ≈ P ⊣ Θ0
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | pskl_hole ] P ∼ P ⊣ Θ0
 | a_consis__univ_ghost_r : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q,       (* UnivGhostR *)
     guarded_pskl P ->
     a_non_flex Θ0 P ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ1 ->
-    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_tophole P0) ] P ≈ Q ⊣ Θ1
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_tophole P0) ] P ∼ Q ⊣ Θ1
 where "Θ ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ'" := (a_assign F Θ Ξ α P Θ') : type_scope
 and "Θ ⊲[ F ] α ≈ᵘ β ⊣ Θ'" := (a_unify F Θ α β Θ') : type_scope
-and "Θ ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" :=
+and "Θ ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ'" :=
   (a_consis F Δ1 Δ2 Θ P0 P Q Θ') : type_scope.
 
 (* Mutual induction scheme for the algorithmic judgments.  Kept next to the
@@ -788,20 +788,33 @@ Notation "Θ ⊲[ Ξ ] α ≔ P ⊣ Θ'" := (a_assign empty Θ Ξ α P Θ')
   (at level 70, Ξ at level 0, α at level 0, P at level 0, Θ' at level 0).
 Notation "Θ ⊲ α ≈ᵘ β ⊣ Θ'" := (a_unify empty Θ α β Θ')
   (at level 70, α at level 0, β at level 0, Θ' at level 0).
-Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" :=
+Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ'" :=
   (a_consis empty Δ1 Δ2 Θ P0 P Q Θ')
   (at level 70, Δ1 at level 0, Δ2 at level 0, P0 at level 0,
    P at level 0, Q at level 0, Θ' at level 0).
 (* Both-Δ-empty form (the paper "omit[s] them when both are empty"). *)
-Notation "Θ ⊢ₐ[ P0 ] P ≈ Q ⊣ Θ'" := (a_consis empty empty empty Θ P0 P Q Θ')
+Notation "Θ ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ'" := (a_consis empty empty empty Θ P0 P Q Θ')
   (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0).
+
+(** Deprecated pre-paper-sync glyph aliases (parse-only): algorithmic
+    consistency now prints [∼] (paper), matching a_lookeq/a_solve_eq. Old
+    [≈] proof scripts still parse until swept; remove after the sweep. *)
+Notation "Θ ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" := (a_consis F Δ1 Δ2 Θ P0 P Q Θ')
+  (at level 70, F at level 0, Δ1 at level 0, Δ2 at level 0, P0 at level 0,
+   P at level 0, Q at level 0, Θ' at level 0, only parsing) : type_scope.
+Notation "Θ ⊢ₐ[ Δ1 | Δ2 | P0 ] P ≈ Q ⊣ Θ'" := (a_consis empty Δ1 Δ2 Θ P0 P Q Θ')
+  (at level 70, Δ1 at level 0, Δ2 at level 0, P0 at level 0,
+   P at level 0, Q at level 0, Θ' at level 0, only parsing) : type_scope.
+Notation "Θ ⊢ₐ[ P0 ] P ≈ Q ⊣ Θ'" := (a_consis empty empty empty Θ P0 P Q Θ')
+  (at level 70, P0 at level 0, P at level 0, Q at level 0, Θ' at level 0,
+   only parsing) : type_scope.
 
 (* [aconsis{Θ0}{P}{P0}{Θ1}]: output-suppressed abbreviation (paper). *)
 Definition a_consis_chk (Θ0 : aenv) (P P0 : pskl) (Θ1 : aenv) : Prop :=
-  exists Q, Θ0 ⊢ₐ[ P0 ] P ≈ Q ⊣ Θ1.
+  exists Q, Θ0 ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ1.
 
 (* ===================================================================== *)
-(*  Algorithmic subtyping  [Θ0 ⊢[N][M][P0] P ⊑ Q ⊣ Θ1]                    *)
+(*  Algorithmic subtyping  [Θ0 ⊢[N][M][P0] P ⩽ Q ⊣ Θ1]                    *)
 (*  (fig:alg-subtyping) MUTUAL with the flexible-variable auxiliary        *)
 (*  judgment (second box), here [a_sub_flex]: [FlexMono] hands a bare      *)
 (*  flex LHS [α̂] to it; its [Flex-Solve] re-enters [a_sub].                *)
@@ -828,7 +841,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     a_sub_flex NM M P0 Θ0 nil α A Θ1 ->
     a_sub NM (mode_fn M) P0 Θ0 (pskl_var_f α) A Θ1
 | a_sub__arrow : forall NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2,    (* Arrow *)
-    Θ0 ⊢ₐ[ P0a ] P1 ≈ Q1 ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ P0a ] P1 ∼ Q1 ⊣ Θ1 ->
     a_sub NM M P0b Θ1 P2 Q2 Θ2 ->
     a_sub NM (mode_fn M) (pskl_arrow P0a P0b) Θ0 (pskl_arrow P1 P2)
       (pskl_arrow Q1 Q2) Θ2
@@ -855,7 +868,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     a_sub a_sub_mode_sk M P0 Θ0 P Q Θ1 ->
     a_sub a_sub_mode_sk M P0 Θ0 (pskl_tophole P) Q Θ1
 
-(* Flexible-variable subtyping [Θ | Ξ ⊢[N][FN M][P0] α̂ ⊑ Q ⊣ Θ'] (paper
+(* Flexible-variable subtyping [Θ | Ξ ⊢[N][FN M][P0] α̂ ⩽ Q ⊣ Θ'] (paper
    fig:alg-subtyping, second box).  [Flex-Assign] merges [Θ0,Ξ] and
    re-enters the MAIN judgment with the substituted subject [α̂[τ/β̂]],
    exactly as the paper and the reference implementation do (audit F1):
@@ -923,10 +936,16 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
        Consistency's FlexL then assigns [α̂ ≔ β̂ → γ̂]. *)
     ((γ ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
       ⊢ₐ[ empty | empty | (pskl_arrow (pskl_var_f β) (pskl_var_f γ)) ]
-        (pskl_var_f α) ≈ Q ⊣ Θ1 ->
+        (pskl_var_f α) ∼ Q ⊣ Θ1 ->
     Θ0 ⊲ (pskl_var_f α) ▹ (pskl_var_f β) ⇢ (pskl_var_f γ) ⊣ Θ1
 where "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'" := (a_split Θ P0 P Q Θ') : type_scope
-  and "Θ ⊢ₐ[ N | m | P0 ] P ⊑ᴬ Q ⊣ Θ'" := (a_sub N m P0 Θ P Q Θ').
+  and "Θ ⊢ₐ[ N | m | P0 ] P ⩽ Q ⊣ Θ'" := (a_sub N m P0 Θ P Q Θ').
+
+(** Deprecated pre-paper-sync glyph alias (parse-only): algorithmic subtyping
+    now prints [⩽] (paper); the old [⊑ᴬ] form still parses until swept. *)
+Notation "Θ ⊢ₐ[ N | m | P0 ] P ⊑ᴬ Q ⊣ Θ'" := (a_sub N m P0 Θ P Q Θ')
+  (at level 70, N at level 0, m at level 0, P0 at level 0, P at level 0,
+   Q at level 0, Θ' at level 0, only parsing) : type_scope.
 
 (* ===================================================================== *)
 (*  Algorithmic skeleton inference  [Θ ⊢[M][P0] M ⇨ P ⊣ Θ']               *)
@@ -934,18 +953,18 @@ where "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'" := (a_split Θ P0 P Q Θ') : type_scope
 (* ===================================================================== *)
 Inductive a_pat : mode -> aenv -> pskl -> exp -> pskl -> aenv -> Prop :=
 | a_pat__unit : forall m Θ0 Θ1 P0 P,                        (* AP-Unit *)
-    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] pskl_unit ⊑ᴬ P ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] pskl_unit ⩽ P ⊣ Θ1 ->
     Θ0 ⊢ₐ[ m ; P0 ] exp_unit ⇨ P ⊣ Θ1
 | a_pat__var : forall m Θ0 Θ1 P0 x A Q,         (* AP-Var (type-bound x) *)
     binds x (abind_var_typ A) Θ0 ->
-    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⊑ᴬ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⩽ Q ⊣ Θ1 ->
     Θ0 ⊢ₐ[ m ; P0 ] (exp_var_f x) ⇨ Q ⊣ Θ1
 | a_pat__var_skl : forall m Θ0 Θ1 P0 x P Q,     (* AP-Var (skeleton-bound x) *)
     binds x (abind_var_skl P) Θ0 ->
-    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] P ⊑ᴬ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] P ⩽ Q ⊣ Θ1 ->
     Θ0 ⊢ₐ[ m ; P0 ] (exp_var_f x) ⇨ Q ⊣ Θ1
 | a_pat__anno : forall m Θ0 Θ1 P0 e A Q,                    (* AP-Anno *)
-    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⊑ᴬ Q ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ a_sub_mode_sk | m | P0 ] (ptyp_to_pskl A) ⩽ Q ⊣ Θ1 ->
     Θ0 ⊢ₐ[ m ; P0 ] (exp_anno e A) ⇨ Q ⊣ Θ1
 | a_pat__freeze : forall Θ0 e Q Θ1,                         (* AP-Freeze *)
     Θ0 ⊢ₐ[ mode_ti ; pskl_hole ] e ⇨ Q ⊣ Θ1 ->
@@ -993,15 +1012,15 @@ where "Θ ⊢ₐ[ m ; P0 ] e ⇨ Q ⊣ Θ'" := (a_pat m Θ P0 e Q Θ').
 (* ===================================================================== *)
 Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
 | a_typing__unit : forall m Θ0 P0 A Θ1,                     (* AT-Unit *)
-    Θ0 ⊢ₐ[ a_sub_mode_ty | m | P0 ] pskl_unit ⊑ᴬ (ptyp_to_pskl A) ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ a_sub_mode_ty | m | P0 ] pskl_unit ⩽ (ptyp_to_pskl A) ⊣ Θ1 ->
     Θ0 ⊢ₐ[ m ; P0 ] exp_unit ⦂ A ⊣ Θ1
 | a_typing__var : forall m Θ0 P0 x A B Θ1,                  (* AT-Var *)
     binds x (abind_var_typ A) Θ0 ->
-    Θ0 ⊢ₐ[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⊑ᴬ (ptyp_to_pskl B) ⊣ Θ1 ->
+    Θ0 ⊢ₐ[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⩽ (ptyp_to_pskl B) ⊣ Θ1 ->
     Θ0 ⊢ₐ[ m ; P0 ] (exp_var_f x) ⦂ B ⊣ Θ1
 | a_typing__anno : forall m Θ0 P0 e A B Θ1 Θ2,              (* AT-Anno *)
     Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A) ] e ⦂ A ⊣ Θ1 ->
-    Θ1 ⊢ₐ[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⊑ᴬ (ptyp_to_pskl B) ⊣ Θ2 ->
+    Θ1 ⊢ₐ[ a_sub_mode_ty | m | P0 ] (ptyp_to_pskl A) ⩽ (ptyp_to_pskl B) ⊣ Θ2 ->
     Θ0 ⊢ₐ[ m ; P0 ] (exp_anno e A) ⦂ B ⊣ Θ2
 | a_typing__freeze : forall Θ0 e A B Θ1 Θ2,                 (* AT-Freeze *)
     (* the TC input skeleton IS the checked type [A]; the inferred [B] is

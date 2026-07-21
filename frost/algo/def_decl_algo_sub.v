@@ -4,7 +4,7 @@
     against (docs/DESIGN-subtyping.md §1.2, D1/D4):
 
     - [ad_pat_sub]: the paper's all-in-one declarative subtyping
-      [typsub^N_M[Ψ] Θ ⊢ syn S ⊑ bid Q] (fig:decl-subtyping-all,
+      [typsub^N_M[Ψ] Θ ⊢ syn S ⩽ bid Q] (fig:decl-subtyping-all,
       full-decl-spec.tex:33-121) transplanted to algorithmic contexts, with
       the single flexible-variable rule the paper adds there — [FlexMono]
       (fig:declarative-in-algo-context, full-algo-spec.tex:170-176; LHS
@@ -49,10 +49,10 @@ Set Implicit Arguments.
 
 (* ===================================================================== *)
 (*  All-in-one declarative subtyping over Θ                               *)
-(*  [Ψ ⨟ Θ ⊢ₛᵃ[ N | M ] S ⊑ Q]  (fig:decl-subtyping-all + FlexMono)       *)
+(*  [Ψ ⨟ Θ ⊢ₛᵃ[ N | M ] S ⩽ Q]  (fig:decl-subtyping-all + FlexMono)       *)
 (* ===================================================================== *)
 
-Reserved Notation "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⊑ Q"
+Reserved Notation "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q"
   (at level 75, Θ at level 74, NM at level 0, M at level 0,
    R at level 74, Q at level 74, no associativity).
 
@@ -60,69 +60,75 @@ Inductive ad_pat_sub :
   a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
 | ad_pat_sub__infer : forall NM Ψ Θ R Q,                      (* Infer *)
     Ψ [=] empty ->
-    empty ⨟ Θ ⊨ₛᵃ R ≈ Q ->
+    empty ⨟ Θ ⊢ₛᵃ R ∼ Q ->
     is_sskl Q ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_ti ] R ⊑ Q
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_ti ] R ⩽ Q
 | ad_pat_sub__check : forall Ψ Θ T B,                         (* Check (TY) *)
     guarded_uskl T ->
     guarded_pskl B ->
-    Ψ ⨟ Θ ⊨ₛᵃ T ≈ (pskl_to_bskl_inh B) ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] T ⊑ (pskl_to_bskl_inh B)
+    Ψ ⨟ Θ ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B) ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] T ⩽ (pskl_to_bskl_inh B)
 | ad_pat_sub__forall_r : forall L Ψ Θ T B,                    (* ForallR (TY) *)
     (forall α, α `notin` L ->
        Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ]
-         T ⊑ (open_bskl_wrt_bskl B (bskl_var_f α))) ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] T ⊑ (bskl_all_inh B)
+         T ⩽ (open_bskl_wrt_bskl B (bskl_var_f α))) ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_ty | mode_tc ] T ⩽ (bskl_all_inh B)
 | ad_pat_sub__univ_ghost_r : forall Ψ Θ R Q,                  (* UnivGhostR (SK) *)
     Ψ [=] empty ->
     guarded_uskl R ->
     guarded_bskl Q ->
     is_sskl Q ->
-    empty ⨟ Θ ⊨ₛᵃ R ≈ Q ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | mode_tc ] R ⊑ (bskl_tophole Q)
+    empty ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | mode_tc ] R ⩽ (bskl_tophole Q)
 | ad_pat_sub__arrow : forall NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2,      (* Arrow *)
-    Ψ1 ⨟ Θ ⊨ₛᵃ R1 ≈ Q1 ->
-    Ψ2 ⨟ Θ ⊢ₛᵃ[ NM | M ] R2 ⊑ Q2 ->
+    Ψ1 ⨟ Θ ⊢ₛᵃ R1 ∼ Q1 ->
+    Ψ2 ⨟ Θ ⊢ₛᵃ[ NM | M ] R2 ⩽ Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (uskl_arrow R1 R2) ⊑ (bskl_arrow Q1 Q2)
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2)
 | ad_pat_sub__forall_l_tagged : forall NM Ψ Ψ' Θ M ε R ψ Q,   (* ForallL, δ=ε *)
     M <> mode_ti ->
     AtomSetImpl.inter Ψ' Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
-    (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⊑ Q ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] (uskl_all_etag ε R) ⊑ Q
+    (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] (uskl_all_etag ε R) ⩽ Q
 | ad_pat_sub__forall_l_untagged : forall NM Ψ Ψ' Θ M R ψ Q,   (* ForallL, δ=· *)
     M <> mode_ti ->
     AtomSetImpl.inter Ψ' Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
-    (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⊑ Q ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] (uskl_all_syn R) ⊑ Q
+    (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] (uskl_all_syn R) ⩽ Q
 | ad_pat_sub__ghost : forall Ψ Θ M P,                         (* Ghost (SK) *)
     Ψ [=] empty ->
     Θ ⨟ empty ⊢ₚₛᵃ P ->
     mod_comp_sk (pskl_to_bskl_inh P) M ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] uskl_hole ⊑ (pskl_to_bskl_inh P)
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] uskl_hole ⩽ (pskl_to_bskl_inh P)
 | ad_pat_sub__ghostg : forall Ψ Θ M,                          (* GhostG (SK) *)
     Ψ [=] empty ->
     mod_comp_sk bskl_hole M ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] uskl_holeg ⊑ bskl_hole
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] uskl_holeg ⩽ bskl_hole
 | ad_pat_sub__univ_ghost_l : forall Ψ Θ M R Q,                (* UnivGhostL (SK) *)
     M <> mode_ti ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] R ⊑ Q ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (uskl_tophole R) ⊑ Q
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] R ⩽ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (uskl_tophole R) ⩽ Q
 | ad_pat_sub__univ_ghost_lg : forall Ψ Θ M R Q,               (* UnivGhostLG (SK) *)
     M <> mode_ti ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] R ⊑ Q ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (uskl_topholeg R) ⊑ Q
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] R ⩽ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ a_sub_mode_sk | M ] (uskl_topholeg R) ⩽ Q
 (* — the algorithmic-context lookup rule (fig:declarative-in-algo-context) — *)
 | ad_pat_sub__flex_mono : forall NM Ψ Θ M α τ Q,              (* FlexMono *)
     binds α (abind_flex_mono_def τ) Θ ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (ptyp_to_uskl_syn τ) ⊑ Q ->
-    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (uskl_var_f α) ⊑ Q
-where "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⊑ Q" :=
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (ptyp_to_uskl_syn τ) ⩽ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (uskl_var_f α) ⩽ Q
+where "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q" :=
   (ad_pat_sub NM M Ψ Θ R Q) : type_scope.
+
+(** Deprecated pre-paper-sync glyph alias (parse-only): prints [⊢ₛᵃ[…] … ⩽]
+    (paper); old [⊑] still parses until swept. *)
+Notation "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⊑ Q" := (ad_pat_sub NM M Ψ Θ R Q)
+  (at level 75, Θ at level 74, NM at level 0, M at level 0,
+   R at level 74, Q at level 74, no associativity, only parsing) : type_scope.
 
 (* ===================================================================== *)
 (*  Partial precision  [Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ]                              *)

@@ -27,7 +27,7 @@ Set Implicit Arguments.
 
 (* Same level discipline as decl/def_extra.v: middle slots of ⨟-judgments at
    level 74. *)
-Reserved Notation "Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q"
+Reserved Notation "Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q"
   (at level 75, Θ at level 74, R at level 74, Q at level 74, no associativity).
 Reserved Notation "Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P"
   (at level 75, Δ at level 74, Q at level 74, P at level 74, no associativity).
@@ -46,78 +46,84 @@ Definition ptyp_to_uskl_syn (A : ptyp) : uskl :=
    disciplined instantiation premise). *)
 
 (* ===================================================================== *)
-(*  Skeleton consistency over Θ  (decl [Ψ ⨟ Γ ⊨ₛ S ≈ Q] + FlexL/FlexR)    *)
+(*  Skeleton consistency over Θ  (decl [Ψ ⨟ Γ ⊢ₛ S ∼ Q] + FlexL/FlexR)    *)
 (* ===================================================================== *)
 
 Inductive ad_pat_consis : atoms -> aenv -> uskl -> bskl -> Prop :=
 | ad_pat_consis__unit : forall Ψ Θ,
     Ψ [=] empty ->
-    Ψ ⨟ Θ ⊨ₛᵃ uskl_unit ≈ bskl_unit
+    Ψ ⨟ Θ ⊢ₛᵃ uskl_unit ∼ bskl_unit
 | ad_pat_consis__var : forall Ψ Θ X,
     Ψ [=] empty ->
     a_binds_tvar X Θ ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_var_f X) ≈ (bskl_var_f X)
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_var_f X) ∼ (bskl_var_f X)
 | ad_pat_consis__arrow : forall Ψ Ψ1 Ψ2 Θ R1 R2 Q1 Q2,
-    Ψ1 ⨟ Θ ⊨ₛᵃ R1 ≈ Q1 ->
-    Ψ2 ⨟ Θ ⊨ₛᵃ R2 ≈ Q2 ->
+    Ψ1 ⨟ Θ ⊢ₛᵃ R1 ∼ Q1 ->
+    Ψ2 ⨟ Θ ⊢ₛᵃ R2 ∼ Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_arrow R1 R2) ≈ (bskl_arrow Q1 Q2)
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_arrow R1 R2) ∼ (bskl_arrow Q1 Q2)
 | ad_pat_consis__forall_inh_tagged : forall L Ψ Ψ0 Θ ε R Q,
     (forall X, X `notin` L ->
-       Ψ0 ⨟ ((X ~ abind_tvar) ++ Θ) ⊨ₛᵃ
-         (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
+       Ψ0 ⨟ ((X ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+         (open_uskl_wrt_uskl R (uskl_var_f X)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
     Ψ [=] add ε Ψ0 ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_all_etag ε R) ≈ (bskl_all_inh Q)
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_all_etag ε R) ∼ (bskl_all_inh Q)
 | ad_pat_consis__forall_inh_untagged : forall L Ψ Θ R Q,
     (forall X, X `notin` L ->
-       Ψ ⨟ ((X ~ abind_tvar) ++ Θ) ⊨ₛᵃ
-         (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
+       Ψ ⨟ ((X ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+         (open_uskl_wrt_uskl R (uskl_var_f X)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_all_syn R) ≈ (bskl_all_inh Q)
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_all_syn R) ∼ (bskl_all_inh Q)
 | ad_pat_consis__forall_syn_tagged : forall L Ψ Θ ε R Q,
     (forall X, X `notin` L ->
-       Ψ ⨟ ((X ~ abind_tvar) ++ Θ) ⊨ₛᵃ
-         (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
+       Ψ ⨟ ((X ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+         (open_uskl_wrt_uskl R (uskl_var_f X)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_all_etag ε R) ≈ (bskl_all_syn Q)
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_all_etag ε R) ∼ (bskl_all_syn Q)
 | ad_pat_consis__forall_syn : forall L Ψ Θ R Q,
     (forall X, X `notin` L ->
-       Ψ ⨟ ((X ~ abind_tvar) ++ Θ) ⊨ₛᵃ
-         (open_uskl_wrt_uskl R (uskl_var_f X)) ≈
+       Ψ ⨟ ((X ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+         (open_uskl_wrt_uskl R (uskl_var_f X)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_all_syn R) ≈ (bskl_all_syn Q)
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_all_syn R) ∼ (bskl_all_syn Q)
 | ad_pat_consis__ghostg : forall Ψ Θ,
     Ψ [=] empty ->
-    Ψ ⨟ Θ ⊨ₛᵃ uskl_holeg ≈ bskl_hole
+    Ψ ⨟ Θ ⊢ₛᵃ uskl_holeg ∼ bskl_hole
 | ad_pat_consis__topholeg : forall Ψ Θ R Q,
-    Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_topholeg R) ≈ (bskl_tophole Q)
+    Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_topholeg R) ∼ (bskl_tophole Q)
 | ad_pat_consis__hole : forall Ψ Θ P,
     Ψ [=] empty ->
     Θ ⨟ empty ⊢ₚₛᵃ P ->
-    Ψ ⨟ Θ ⊨ₛᵃ uskl_hole ≈ (pskl_to_bskl_inh P)
+    Ψ ⨟ Θ ⊢ₛᵃ uskl_hole ∼ (pskl_to_bskl_inh P)
 | ad_pat_consis__tophole : forall Ψ Θ R Q,
-    Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_tophole R) ≈ (bskl_tophole Q)
+    Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_tophole R) ∼ (bskl_tophole Q)
 | ad_pat_consis__tophole_inh : forall L Ψ Θ R Q,
     (forall X, X `notin` L ->
-       Ψ ⨟ ((X ~ abind_tvar) ++ Θ) ⊨ₛᵃ
-         (uskl_tophole R) ≈ (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_tophole R) ≈ (bskl_all_inh Q)
+       Ψ ⨟ ((X ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+         (uskl_tophole R) ∼ (open_bskl_wrt_bskl Q (bskl_var_f X))) ->
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_tophole R) ∼ (bskl_all_inh Q)
 | ad_pat_consis__tophole_drop : forall Ψ Θ R Q,
-    Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_tophole R) ≈ Q
+    Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_tophole R) ∼ Q
 (* — new lookup rules (paper eqlab FlexL / FlexR) — *)
 | ad_pat_consis__flex_l : forall Ψ Θ α τ Q,
     binds α (abind_flex_mono_def τ) Θ ->
-    Ψ ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl_syn τ) ≈ Q ->
-    Ψ ⨟ Θ ⊨ₛᵃ (uskl_var_f α) ≈ Q
+    Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn τ) ∼ Q ->
+    Ψ ⨟ Θ ⊢ₛᵃ (uskl_var_f α) ∼ Q
 | ad_pat_consis__flex_r : forall Ψ Θ α τ S,
     binds α (abind_flex_mono_def τ) Θ ->
-    Ψ ⨟ Θ ⊨ₛᵃ S ≈ (ptyp_to_bskl_syn τ) ->
-    Ψ ⨟ Θ ⊨ₛᵃ S ≈ (bskl_var_f α)
-where "Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q" := (ad_pat_consis Ψ Θ R Q) : type_scope.
+    Ψ ⨟ Θ ⊢ₛᵃ S ∼ (ptyp_to_bskl_syn τ) ->
+    Ψ ⨟ Θ ⊢ₛᵃ S ∼ (bskl_var_f α)
+where "Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q" := (ad_pat_consis Ψ Θ R Q) : type_scope.
+
+(** Deprecated pre-paper-sync glyph alias (parse-only): prints [⊢ₛᵃ … ∼]
+    (paper); old [⊨ₛᵃ … ≈] still parses until swept. *)
+Notation "Ψ ⨟ Θ ⊨ₛᵃ R ≈ Q" := (ad_pat_consis Ψ Θ R Q)
+  (at level 75, Θ at level 74, R at level 74, Q at level 74,
+   no associativity, only parsing) : type_scope.
 
 (* ===================================================================== *)
 (*  Skeleton refinement over Θ, coloured  (decl [Γ ⨟ Δ ⊢ᵣ Q ⊳ P] + flex)  *)
