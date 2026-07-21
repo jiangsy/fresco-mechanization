@@ -3362,21 +3362,34 @@ Proof.
 Qed.
 
 (** The paper-shaped corollary. *)
+(** The paper's [P0 :sk M] ([a_sk_mode_compat]) implies the internal
+    [mod_comp_sk] on the inhabited [bskl] — so the user-facing statements use the
+    direct [pskl] relation and the [bskl] detour stays hidden in the bundle. *)
+Lemma a_sk_mode_compat_mod_comp_sk : forall M P0,
+  a_sk_mode_compat M P0 -> mod_comp_sk (pskl_to_bskl_inh P0) M.
+Proof.
+  intros M P0 H; induction H; simpl.
+  - apply mod_comp_sk__ti; apply is_sskl__hole.
+  - apply mod_comp_sk__tc; apply is_sskl__hole.
+  - apply mod_comp_sk__fn; assumption.
+Qed.
+
 (** L-A corollary: NO TY side condition — [pskl_top_guarded P0] is DERIVED
     from the wf hypothesis [HwfP0] ([a_wf_pskl__tophole] admits ⊤◇ only over a
     guarded body), exactly as the paper's [thm:sound-subtyping] carries no P0
-    condition beyond well-formedness. *)
+    condition beyond well-formedness.  SK uses the paper's [P0 :sk M]. *)
 Lemma a_sub_decorate : forall NM M P0 Θ0 P Q Θ1,
   a_sub NM M P0 Θ0 P Q Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-  (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
   Θ0 ⊢ᵗ[ NM | M | P0 | empty ] (pskl_to_uskl P) ⊑ Q ⊣ Θ1.
 Proof.
   intros NM M P0 Θ0 P Q Θ1 Hrun Hwf HwfP0 HwfP Hmod.
   eapply (proj1 a_sub_decorate_bundle); try eassumption.
-  intros _; eapply a_wf_pskl_top_guarded; exact HwfP0.
+  - intros HSK; apply a_sk_mode_compat_mod_comp_sk; apply Hmod; exact HSK.
+  - intros _; eapply a_wf_pskl_top_guarded; exact HwfP0.
 Qed.
 
 (* ===================================================================== *)
@@ -3395,8 +3408,8 @@ Theorem a_sub_sound_thm : forall NM M P0 Θ0 P Q Θ1,
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-  (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
-  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* paper's [P0 :ty M]; L-A derives top_guarded from wf *)
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* paper's [P0 :sk M] *)
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* paper's [P0 :ty M] *)
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\
   exists Qt,
     bskl_to_pskl Qt = Q /\
@@ -3410,5 +3423,6 @@ Proof.
            ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
            HwfP0
            ltac:(rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP)
-           Hmod Hgf).
+           ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk; apply Hmod; exact HSK)
+           Hgf).
 Qed.
