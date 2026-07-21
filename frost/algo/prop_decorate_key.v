@@ -2831,12 +2831,11 @@ Lemma a_look_top_guarded :
      pskl_top_guarded P0 -> List.Forall a_cstr_tg C).
 Proof.
   apply a_looksub_lookeq_mutind; intros; simpl in *;
-    (* split ⊤◇/arrow targets into components (fresh names, don't clobber IHs) *)
+    (* [simpl] already unfolded top_guarded of ⊤◇/arrow into conjunctions;
+       split them (fresh names, don't clobber IHs) *)
     repeat match goal with
-           | H : pskl_top_guarded (pskl_tophole _) |- _ =>
+           | H : _ /\ _ |- _ =>
                let Hg := fresh "Hg" in let Ht := fresh "Ht" in destruct H as [Hg Ht]
-           | H : pskl_top_guarded (pskl_arrow _ _) |- _ =>
-               let H1 := fresh "Ha" in let H2 := fresh "Hb" in destruct H as [H1 H2]
            end;
     try (apply List.Forall_nil; fail);                        (* nil constraints *)
     try (apply List.Forall_app; split; [ apply H | apply H0 ]; tauto);  (* arrow *)
@@ -2850,10 +2849,7 @@ Proof.
                  | apply (proj1 (pskl_top_guarded_open_rec _ _ _)); assumption
                  | simpl; split; assumption ]  (* forall_syn: reconstruct ⊤◇ target *)
          end).
-(* TODO(tactic): a few ⊤◇-recursion look cases remain — TRUE (structural analog
-   of the proven [a_look_no_top]); staged, NOT yet wired into a_sub_sound_thm
-   (which stays Closed via the ghost_free path).  Finish the tactic before swap. *)
-Admitted.
+Qed.
 
 (** The TY solve output is top-guarded (walk the constraints; ⊤◇ targets OK). *)
 Lemma solve_cstr_top_guarded_tg : forall Θ C P Q,
