@@ -1649,6 +1649,25 @@ Proof.
   - rewrite (IHP X k), (pskl_guarded_head_open_rec P X k); tauto.
 Qed.
 
+(** WELL-FORMEDNESS ⟹ [pskl_top_guarded]: [a_wf_pskl__tophole] admits a ⊤◇
+    ONLY over a [guarded_pskl] body, so every ⊤◇ in a wf skeleton heads a
+    guarded body.  This is the paper's implicit source-skeleton discipline —
+    it supplies exactly what the coverage needs (no [ghost_free]/[no_top]
+    hypothesis: a ⊤◇ in [P0] is fine, it just wraps a guarded type). *)
+Lemma a_wf_pskl_top_guarded : forall Θ Δ P,
+  a_wf_pskl Θ Δ P -> pskl_top_guarded P.
+Proof.
+  intros Θ Δ P H; induction H; simpl; try exact I.
+  - (* arrow *) split; assumption.
+  - (* all : strip the fresh opener via the open_rec congruence *)
+    destruct (atom_fresh L) as [X HX].
+    apply (proj2 (pskl_top_guarded_open_rec P X 0)).
+    match goal with IH : forall X, X `notin` L -> pskl_top_guarded _ |- _ =>
+      exact (IH X HX) end.
+  - (* tophole : guarded body ⟹ guarded_head + IH *)
+    split; [ apply guarded_pskl_head; assumption | assumption ].
+Qed.
+
 (** TY anchor: the [a_guess_mono] output painting's decoration extends the
     pre-guess skeleton (◇ ↦ fresh var, ⊤◇ dropped onto a guarded remainder —
     supplied by [pskl_top_guarded] of the solve output). *)
