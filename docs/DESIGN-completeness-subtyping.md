@@ -383,6 +383,36 @@ self-contained metatheory block), OR defer until P6 pins the exact form
 `complete-look` needs — P6 may only require a restricted instance (e.g.
 hole-free `S`, or `Δ = ∅`), which could collapse (1)'s hard cases.
 
+## 5.3 P5b-ii crux — build status (2026-07-22)
+
+Decomposed crux (1) into two steps; (1a) DONE.
+
+- **(1a) `ad_pat_consis_strip_tags` — DONE** (prop_sub_complete.v, Qed,
+  axiom-free): `Ψt ⨟ Θ ⊢ₛᵃ ψa ∼ Q → ∅ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl ⌊ψa⌋ˢ) ∼ Q`.
+  Strips the decorated subject to plain (`all_etag→all_syn`,
+  `holeg→hole`, `topholeg→tophole`); tag ctx drops to ∅.  Helper
+  `strip_uskl_open` (open-commute).  GOTCHA: `strip(topholeg R) =
+  uskl_tophole(strip R)` (a plain tophole, use `__tophole`, not
+  `__topholeg`); `strip(holeg) = uskl_hole` (use `__hole` with
+  `pskl_hole`).
+- **(1b) TODO `ad_pat_consis_subject_refine`**: `∅ ⨟ Θ' ⊢ₛᵃ
+  (pskl_to_uskl Ptgt) ∼ Q` + `inh Psrc ⊳ inh Ptgt` (Psrc ghostier,
+  i.e. `Pa ⊑ ⌊ψa⌋`) → `∅ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl Psrc) ∼ Q`.  KEY
+  INSIGHT: ghost-free `Psrc` makes this trivial (`Psrc = Ptgt`), so the
+  REAL content is **holey `Psrc`** — the hole/⊤◇ cases are the point,
+  not excludable.  Structure = outer induction on the refinement
+  `inh Psrc ⊳ inh Ptgt` (destruct `Psrc`), with the Θ'/Hmon/Hrig binder
+  carriage of `ad_pat_consis_refine_inh_gen`.  BUT the existing
+  `consis_transport_arrow`/`consis_transport_all` transport the TARGET
+  (subject fixed) — (1b) needs SUBJECT-analog transport helpers (inner
+  induction on the consistency, `remember` the SUBJECT).  So ~3 new
+  subject-transport helpers + the main lemma, ≈150 lines.  Hole case:
+  `Psrc = hole` ⇒ `uskl_hole ∼ Q` needs `Q` inh-shaped OR a flex-var
+  `Q` handled by `flex_r` + `consis_unfold_def_join` (the flex def
+  unfolds to a wf paint).
+- Then crux (1) `= (1a) ; (1b)` at `Ptgt := ⌊ψa⌋`; then the general
+  subst (2) and the `ad_pat_sub` version (3) per §5.2.
+
 ## 6. Status log
 
 - 2026-07-22: doc written.  Soundness done.  Completeness = greenfield
