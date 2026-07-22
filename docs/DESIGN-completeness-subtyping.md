@@ -356,6 +356,18 @@ subject-precision lemma one level down:
    fill-hygienic refinement scaffolding (`prop_consis_sound.v:330`,
    `ad_pat_consis_refine_inh_gen`) that already moves an opened binder from
    the algo context into the refinement `Δ`.
+   **TEMPLATE (KEY): `ad_pat_consis_refine_inh_gen` (prop_sub_sound.v:280,
+   Qed) is the TARGET-side mirror of (1)** — `T ∼ Qt` + `Bsrc` refines to
+   `Qt` ⇒ `T ∼ inh Bsrc`.  (1) is the SUBJECT-side version: same induction
+   skeleton (`induction` on the refinement `inh Pa ⊳ inh ⌊ψa⌋`, `destruct`
+   the painted skeleton, `try discriminate`), reusing `consis_transport_arrow`
+   / `consis_transport_all` / `consis_unfold_def_join`, with the Θ'/Hmon/Hrig
+   binder-monotonicity carriage — transporting the LHS subject instead of the
+   RHS, and the subject's tags collapsing to ∅ (`pskl_to_uskl Pa` is
+   tag-free).  So (1) is a template-follow (~150 lines), not greenfield.
+   Output tag ctx is `∅`.  Also verify: consistency's ∀ has 4 variants
+   (forall_inh/syn × tagged/untagged) vs the refinement's 1 `__all` — the
+   precision inversion per consis-case selects the matching one.
 2. **`ad_pat_consis_precise_subst`**: the general subject substitution on
    `ad_pat_consis` — induction on the deriv, `destruct S`; structural
    sub-cases recurse, `S = α` sub-case invokes (1).
