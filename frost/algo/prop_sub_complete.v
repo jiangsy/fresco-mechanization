@@ -621,3 +621,55 @@ Proof.
       * intros X HX. right.
         eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfτ | exact HX ].
 Qed.
+
+(* ===================================================================== *)
+(*  P5b-ii — precision-substitution, foundational crux.                    *)
+(*  The paper's no-type-mismatch step is, on the consistency premises,       *)
+(*  subject-precision preserving consistency.  Built in two steps           *)
+(*  consistency.  Built in two steps (DESIGN §5.2): (1a) strip the          *)
+(*  decorated subject to plain (tags drop to ∅); (1b) transport the erased  *)
+(*  subject along the refinement — the SUBJECT-side mirror of the Qed       *)
+(*  target-side [ad_pat_consis_refine_inh_gen] (prop_sub_sound.v).          *)
+(* ===================================================================== *)
+
+(** [strip ψ := pskl_to_uskl ⌊ψ⌋ˢ] commutes with opening. *)
+Lemma strip_uskl_open : forall ψ X,
+  pskl_to_uskl (uskl_to_pskl (open_uskl_wrt_uskl ψ (uskl_var_f X)))
+  = open_uskl_wrt_uskl (pskl_to_uskl (uskl_to_pskl ψ)) (uskl_var_f X).
+Proof.
+  intros ψ X. rewrite uskl_to_pskl_open, pskl_to_uskl_open. reflexivity.
+Qed.
+
+(** (1a) Stripping the decorated subject to its plain skeleton preserves
+    consistency; the subject is then tag-free so the tag context is [∅]. *)
+Lemma ad_pat_consis_strip_tags : forall Ψt Θ ψa Q,
+  Ψt ⨟ Θ ⊢ₛᵃ ψa ∼ Q ->
+  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (uskl_to_pskl ψa)) ∼ Q.
+Proof.
+  intros Ψt Θ ψa Q H. induction H; simpl.
+  - apply ad_pat_consis__unit. reflexivity.
+  - apply ad_pat_consis__var; [ reflexivity | assumption ].
+  - eapply ad_pat_consis__arrow;
+      [ exact IHad_pat_consis1 | exact IHad_pat_consis2 | fsetdec ].
+  - eapply ad_pat_consis__forall_inh_untagged with (L := L).
+    intros X HX. rewrite <- strip_uskl_open. exact (H0 X HX).
+  - eapply ad_pat_consis__forall_inh_untagged with (L := L).
+    intros X HX. rewrite <- strip_uskl_open. exact (H0 X HX).
+  - eapply ad_pat_consis__forall_syn with (L := L).
+    intros X HX. rewrite <- strip_uskl_open. exact (H0 X HX).
+  - eapply ad_pat_consis__forall_syn with (L := L).
+    intros X HX. rewrite <- strip_uskl_open. exact (H0 X HX).
+  - change bskl_hole with (pskl_to_bskl_inh pskl_hole).
+    apply ad_pat_consis__hole; [ reflexivity | apply a_wf_pskl__hole ].
+  - (* topholeg: stripping the dotted ghost yields a plain [tophole] *)
+    apply ad_pat_consis__tophole. exact IHad_pat_consis.
+  - apply ad_pat_consis__hole; [ reflexivity | exact H0 ].
+  - apply ad_pat_consis__tophole. exact IHad_pat_consis.
+  - eapply ad_pat_consis__tophole_inh with (L := L).
+    intros X HX. specialize (H0 X HX). simpl in H0. exact H0.
+  - apply ad_pat_consis__tophole_drop. exact IHad_pat_consis.
+  - eapply ad_pat_consis__flex_l; [ exact H | ].
+    rewrite uskl_to_pskl_ptyp_to_uskl_syn, pskl_to_uskl_ptyp in IHad_pat_consis.
+    exact IHad_pat_consis.
+  - eapply ad_pat_consis__flex_r; [ exact H | exact IHad_pat_consis ].
+Qed.
