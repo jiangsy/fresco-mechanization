@@ -333,6 +333,44 @@ condition and empty-vs-general `Δ` on the precision premise are needed)
 against how P6/complete-look actually invokes it (it feeds the ForallL
 `refi` step, subtyping-proofs.tex:3416).
 
+**Full decomposition (the "straightforward" hides a ~4-lemma metatheory
+subtask — on the scale of the whole P5b-i effort).**  Traced by following
+the actual induction; each substitution lemma's `S = uskl_var α` sub-case
+is where the subject *becomes* `ψa`, and that is not an IH — it needs a
+subject-precision lemma one level down:
+
+1. **`ad_pat_consis_subject_precise`** (the base crux): `Ψt ⨟ Θ ⊢ₛᵃ ψa ∼ Q`
+   + `Θ ⨟ ∅ ⊢ₚᵣᵃ Pa ⊑ ⌊ψa⌋ˢ` ⇒ `∅ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl Pa) ∼ Q`.
+   Output tags `∅` because `pskl_to_uskl Pa` has NO `all_etag` (tag-free);
+   `Pa` is the *ghostier* skeleton (`⊳` = refine-toward-filled, so `Pa` has
+   holes where `⌊ψa⌋` is concrete), and a ghostier subject is *more*
+   consistent (holes ∼ anything).  Proof: induction on the consistency
+   `ψa ∼ Q`, inverting the precision `inh Pa ⊳ inh ⌊ψa⌋` by its known RHS
+   shape per case.  REAL WORK: the ⊤◇ / hole / ∀ interplay (≈ the L-A
+   soundness flavour); the hole sub-case needs `Q` to be an inh-painting,
+   which `ψa ∼ Q` supplies.  NOT among existing lemmas
+   (`ad_pat_consis_refine_syn_mono` etc. go consis→refinement with mono Q,
+   the wrong direction).  ~150-250 lines.  BINDER DEVICE: the ∀-cases hit
+   the Θ↔Δ tension (consis extends `Θ` with rigid `X`; precision's
+   `refine_syn__all` extends `Δ`) — generalize over `Δ` and reuse the
+   fill-hygienic refinement scaffolding (`prop_consis_sound.v:330`,
+   `ad_pat_consis_refine_inh_gen`) that already moves an opened binder from
+   the algo context into the refinement `Δ`.
+2. **`ad_pat_consis_precise_subst`**: the general subject substitution on
+   `ad_pat_consis` — induction on the deriv, `destruct S`; structural
+   sub-cases recurse, `S = α` sub-case invokes (1).
+3. **`ad_pat_sub_precise_subst`** (the P5b-ii target): induction on
+   `ad_pat_sub_n`, `destruct S`; the `∼` premises (Infer/Check/Arrow-dom)
+   invoke (2), the recursive `⩽` premises use the IH, `S = α` invokes a
+   subtyping analog of (1).  Fuel `n` preserved (rule-for-rule).
+4. (Possibly) a **subtyping subject-precise** base analog of (1) for the
+   `S = α` sub-case of (3), if it doesn't reduce to (2).
+
+RECOMMENDATION: execute (1) → (2) → (3) as its own focused pass (it is a
+self-contained metatheory block), OR defer until P6 pins the exact form
+`complete-look` needs — P6 may only require a restricted instance (e.g.
+hole-free `S`, or `Δ = ∅`), which could collapse (1)'s hard cases.
+
 ## 6. Status log
 
 - 2026-07-22: doc written.  Soundness done.  Completeness = greenfield
