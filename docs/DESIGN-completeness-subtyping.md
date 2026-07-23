@@ -413,6 +413,33 @@ Decomposed crux (1) into two steps; (1a) DONE.
 - Then crux (1) `= (1a) ; (1b)` at `Ptgt := ⌊ψa⌋`; then the general
   subst (2) and the `ad_pat_sub` version (3) per §5.2.
 
+**⭐ PIVOTAL FINDING (2026-07-23): the general (1b) — and hence
+precision-substitution — is FALSE without consumer Q-constraints.**  The
+hole sub-case needs `uskl_hole ∼ Q`; but `uskl_hole`'s only structural
+consistency rule is `__hole` (`∼ pskl_to_bskl_inh P` for `Θ'⨟∅⊢ₚₛᵃ P`).
+When `Q` embeds a flexible variable inside an arrow — e.g.
+`uskl_hole ∼ bskl_arrow (bskl_var α) Q2` with `α` a defined flex — no rule
+applies: `__hole` would need `arrow (bskl_var α) Q2 = inh P` with `P`
+well-formed, but `pskl_var α` is NOT wf for a flex `α` (flex ≠ tvar), and
+`__flex_r` only fires on a bare var target, not an arrow.  Yet
+`pskl_to_uskl P1 ∼ bskl_var α` (via `__flex_r`) IS reachable for a wf
+∀-free `P1`.  So the configuration is reachable and `uskl_hole ∼ Q` is
+underivable ⇒ (1b) is false in general.  It holds only when `Q` is
+inh-shaped / flex-free — a constraint that must come from the CONSUMER
+(the `ad_pat_sub` consistency premises: Check gives `Q = inh B`; Infer/
+Arrow give `is_sskl Q`).  **CONSEQUENCE: precision-substitution cannot be
+stated in full generality; its correct form needs P6's exact Q-shapes.
+Build P6 (complete-cc-solving / complete-look) FIRST, then state (1b)/
+precision-substitution against the Q-constraints it actually supplies.**
+This resolves the A-vs-B question: B (P6 first) is NECESSARY, not merely
+preferable.
+
+- DONE toward (1b) (committed, Qed, axiom-free): `consis_subj_transport_arrow`,
+  `consis_subj_transport_all` (subject-side transport helpers — reusable once
+  the Q-constrained (1b) statement is fixed).  The `tophole` helper needs a
+  context-polymorphic transporter (its `tophole_inh` sub-case extends the
+  context without opening the body) — build alongside the fixed (1b).
+
 ## 6. Status log
 
 - 2026-07-22: doc written.  Soundness done.  Completeness = greenfield
