@@ -447,8 +447,118 @@ CONSEQUENCES of the retraction:
   (its `tophole_inh` sub-case extends the context without opening the body)
   — a real binder issue, independent of the retracted finding.
 
+## 5.4 Step (3) architecture — tag hygiene + the ⊑ᵤ subject-precision relation
+   (worked out 2026-07-23; steps (1)+(2) are DONE and Qed)
+
+Two structural findings, both discovered by tracing step (3)'s ForallL case
+concretely.  READ BEFORE writing any step-(3) code.
+
+**Finding A — the paper's `fresh Ψ'` is GLOBAL freshness, and the plain
+fuel mirror cannot express it (hazard H4 materialized).**  In
+`ad_pat_sub_n`, ForallL's freshness is only `inter Ψ' Ψctx = ∅`.  That is
+too weak for precision-substitution: if a tag ε is shared between an
+`all_etag` node of `S` (or of a LATER instantiation `ψ''` chosen inside
+the derivation) and a tag of `ψa`, one can build a derivation where ε is
+bookkept as solved-by-`ψa` (`ε ∈ Ψa`) but the `S`/`ψ''`-node with target
+`all_inh` is FORCED to re-record ε after the substitution removes the
+`ψa` copy — the conclusion is underivable and the lemma is FALSE without
+freshness of `Ψ'` from BOTH the residual context `Ψ` and all other tags
+in the subject/derivation.  Consequences:
+- The consistency level is safe with a SYNTACTIC premise
+  `inter Ψ' (ftag_in_uskl S) = ∅` — consistency has no ForallL, so no new
+  tags appear inside a derivation.  (`ftag_in_uskl` = hand-written
+  syntactic tag collector, `frost/def_tags.v` — a LEAF module, imports
+  only `def_ott`, so it can be used by def-files without a rebuild
+  cascade.)  This is how step (2) is stated and proved.
+- The subtyping level ALSO introduces tags inside the derivation
+  (ForallL's `ψ''`), whose freshness from `Ψ'` no premise about `S`/`ψa`
+  can supply ⇒ step (3) must run over a **TAG-HYGIENIC fuel mirror**
+  `ad_pat_sub_g`: same rules as `ad_pat_sub_n` plus, on both ForallL
+  rules, `inter Ψ'' (ftag_in_uskl (subject)) = ∅` (instantiation tags
+  fresh from the subject's own tags; freshness vs the ctx is already a
+  rule premise).  Bridges: `_g → _n` trivial (drop premise); the reverse
+  `ad_pat_sub_n → ad_pat_sub_g` is a TAG-FRESHENING lemma requiring a
+  tag-renaming kit (rename ε→δ in uskl subjects + `d_tags_skl` /
+  `a_tags_sort` / `ad_pat_consis` / `ad_pat_sub_n` rename lemmas; targets
+  are `bskl` = tag-free, so targets are untouched; fuel rides along as in
+  `ad_pat_sub_n_rename_tvar`).  DEFER the freshening bridge to a
+  standalone final task: P6/P7 can run entirely over `_g`, and only the
+  paper-facing corollary P7c consumes the bridge.
+
+**Finding B — the subst-form of precision-substitution is too weak for
+its own ForallL crux; use a subject-precision RELATION ⊑ᵤ instead.**  In
+the crux (subject = `ψa` wholly) with last rule ForallL on `ψa`'s own ∀:
+the premise subject is `open ψbody ψ''` and the reconstruction (for
+`Pa = ∀.Pa0`) needs `open (paint Pa0) ψ'' ⩽ Q` — the changing part is
+the WHOLE skeleton around `ψ''`, not the positions of a substituted
+variable, so the `S[ψa/α] → S[Pa/α]` induction hypothesis does not
+apply.  (Keeping `ψ''` decorated is forced: `is_tskl` forbids `all_syn`,
+so re-instantiating with the stripped `⌊ψ''⌋` painting is not a legal
+ForallL instantiation.)  Fix: define
+
+```
+uskl_precise (⊑ᵤ) : NM -> aenv -> atoms -> atoms(*Ψrep*) -> uskl -> uskl -> Prop
+```
+- congruence rules for every uskl constructor (cofinite binders,
+  tag-preserving `all_etag`), Ψrep = union of sub-Ψreps;
+- ONE leaf rule: `a_tags_sort NM Ψ' ψ → Θ ⨟ Δ ⊢ₚᵣᵃ Pa ⊑ ⌊ψ⌋ →
+  (pskl_to_uskl Pa) ⊑ᵤ[Ψ'] ψ` — Ψrep collects the replaced parts' tags;
+- key derived lemmas: reflexivity (Ψrep = ∅), subst-compatibility
+  (`R' ⊑ᵤ R → open R' ψ'' ⊑ᵤ open R ψ''` at unchanged Ψrep — this is
+  what makes the ForallL crux go through), and
+  `S[Pa/α] ⊑ᵤ[Ψ'] S[ψa/α]` (recovering the subst-form as a special
+  case).
+
+Then:
+- **(2')** restate/reprove step (2) over ⊑ᵤ (same 15-case induction,
+  inverting ⊑ᵤ per case instead of destructing `S`; leaf case = crux
+  (1)).  Step (2) as proved (subst-form) stays as a corollary/template.
+- **(3)** `ad_pat_sub_precise_subst` over `ad_pat_sub_g` + ⊑ᵤ, premises
+  `Ψfull [=] Ψ ∪ Ψa`, `Ψa ⊆ Ψrep`, `inter Ψrep Ψ = ∅`,
+  `inter Ψrep (ftag R') = ∅`, wf of the target threaded (as in (2)).
+  Induction on the fuel-indexed derivation; congruence cases mirror (2);
+  the leaf-ForallL case reconstructs with the SAME `ψ''` and recurses
+  via subst-compat.  Two verified sub-points:
+  - the subject's own root tag ε cannot lurk in `Ψa`:
+    `ftag`-invariant on the PREMISE (`Ψfull∪Ψ'' ⊆ ftag ψbody ∪ Ψ''`)
+    + `d_tags` uniqueness (`ε ∉ tags ψbody`) + hygiene (`ε ∉ Ψ''`)
+    give `ε ∉ Ψfull ⊇ Ψa`.
+  - `Ψa∖{ε} ⊆ tags ψbody` from `Ψa ⊆ Ψ' = {ε} ∪ tags ψbody`.
+  Also needed: `ad_pat_sub_g_ftag_sub` (ctx ⊆ subject tags; ForallL case
+  needs the general-opening upper bound
+  `ftag(open R ψ) ⊆ ftag R ∪ ftag ψ`), and the TY side condition
+  `(NM = TY → Pa is a type)` for the Check/guardedness reconstruction —
+  exactly the paper's premise.
+
+**Effort estimate:** ⊑ᵤ + kit ≈ 150 lines; (2') ≈ port of (2); `_g` def +
+`g_of_n` + `g_ftag_sub` ≈ 150; (3) ≈ 400+ (leaf sub-analysis: ∀ / arrow /
+hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
+(deferred).  2–3 focused sessions.
+
 ## 6. Status log
 
+- 2026-07-23: **P5b-ii steps (1)+(2) DONE, Qed, axiom-free; consis
+  metatheory refactored out.**  New file `algo/prop_consis_precise.v`
+  (the consistency subject-precision metatheory: general tag/wf helpers,
+  crux (1a)/(1b)/(1), and NEW step (2) `ad_pat_consis_precise_subst` +
+  its kit `ftag_in_uskl_open{_rec}_var`, painting-tag-free lemmas,
+  `d_tags_skl_ftag`, `ad_pat_consis_ftag_sub` (ctx ⊆ subject tags),
+  `ad_pat_consis_precise_var_case` (the packaged crux)); moved there
+  from `prop_sub_complete.v`, which now holds only P5a + P5b-i (+ P5b-ii
+  step (3) to come).  New leaf module `frost/def_tags.v`
+  (`ftag_in_uskl`).  `make coq` green; `Print Assumptions` on
+  `ad_pat_consis_precise_subst` / `ad_partial_precise_complete` /
+  `ad_pat_sub_to_n` = Closed under the global context.  §5.4 written:
+  step (3) needs the tag-HYGIENIC mirror `ad_pat_sub_g` (paper's
+  `fresh Ψ'` is global — plain `_n` precision-substitution is FALSE
+  under tag collisions) and the ⊑ᵤ subject-precision relation (the
+  subst-form is too weak for its own ForallL crux).  NEXT: execute §5.4
+  ((⊑ᵤ + kit) → (2') → `ad_pat_sub_g` + `g_ftag_sub` → (3)), defer the
+  `_n → _g` tag-freshening bridge; THEN P6 (NB: the paper's P6a leans on
+  `complete-consistency-cc-solving-var`, consistency-proofs.tex:1182,
+  which the mech never built — consistency completeness went through the
+  μ-bundle — so P6a's Infer/Check cases must re-route through
+  `consis_complete` / `a_consis_complete_thm` or grow a `-var` wrapper).
 - 2026-07-22: doc written.  Soundness done.  Completeness = greenfield
   (inventory: no `a_sub_complete*`, no `ad_pat_sub_n`, no
   `precision_subst`; `a_consis_complete_thm` Qed; build green, 0 admits

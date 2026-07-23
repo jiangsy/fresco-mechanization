@@ -77,6 +77,32 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-23 (b) — P5b-ii step (2) Qed + consis-precision refactor + §5.4 plan
+
+Completeness-of-subtyping precision-substitution, consistency half DONE:
+
+- NEW `frost/def_tags.v` — `ftag_in_uskl`, the syntactic ε-tag collector
+  (leaf module; tags are plain atoms so lngen generates none).
+- NEW `frost/algo/prop_consis_precise.v` — the consistency
+  subject-precision metatheory, all Qed axiom-free: the general tag/wf
+  helper kit and the crux lemmas (1a)/(1b)/(1) MOVED out of
+  `prop_sub_complete.v` (which keeps P5a + P5b-i only), plus NEW
+  `ftag` kit, `d_tags_skl_ftag`, `ad_pat_consis_ftag_sub`
+  (tag ctx ⊆ subject tags), `ad_pat_consis_precise_var_case`, and the
+  step-(2) target **`ad_pat_consis_precise_subst`** — substituting the
+  more-precise `Pa` for the decorated instantiation `ψa` in a
+  consistency SUBJECT preserves consistency, tag context dropping by
+  `Ψa` (15-case induction; the paper's `fresh Ψ'` rendered as
+  disjointness from the residual ctx AND the subject's other tags).
+- Design findings (DESIGN-completeness-subtyping.md §5.4): the paper's
+  ForallL `fresh Ψ'` is GLOBAL freshness — the plain fuel mirror makes
+  step (3) FALSE under tag collisions, so (3) needs a tag-HYGIENIC
+  mirror `ad_pat_sub_g` (+ deferred renaming-based freshening bridge);
+  and the subst-form is too weak for its own ForallL crux — (3) runs
+  over a subject-precision relation ⊑ᵤ (leaf = precision-replace,
+  congruence elsewhere; subst-compatibility closes the crux).
+- `make coq` green; flagship `Print Assumptions` unchanged.
+
 ## 2026-07-13 (g) — decorated-consistency soundness 12/18 (WIP)
 
 `a_consistag_sound_aux` (lemma:sound-decorated-consistency): the
