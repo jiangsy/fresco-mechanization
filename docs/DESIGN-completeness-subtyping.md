@@ -413,32 +413,39 @@ Decomposed crux (1) into two steps; (1a) DONE.
 - Then crux (1) `= (1a) ; (1b)` at `Ptgt := ⌊ψa⌋`; then the general
   subst (2) and the `ad_pat_sub` version (3) per §5.2.
 
-**⭐ PIVOTAL FINDING (2026-07-23): the general (1b) — and hence
-precision-substitution — is FALSE without consumer Q-constraints.**  The
-hole sub-case needs `uskl_hole ∼ Q`; but `uskl_hole`'s only structural
-consistency rule is `__hole` (`∼ pskl_to_bskl_inh P` for `Θ'⨟∅⊢ₚₛᵃ P`).
-When `Q` embeds a flexible variable inside an arrow — e.g.
-`uskl_hole ∼ bskl_arrow (bskl_var α) Q2` with `α` a defined flex — no rule
-applies: `__hole` would need `arrow (bskl_var α) Q2 = inh P` with `P`
-well-formed, but `pskl_var α` is NOT wf for a flex `α` (flex ≠ tvar), and
-`__flex_r` only fires on a bare var target, not an arrow.  Yet
-`pskl_to_uskl P1 ∼ bskl_var α` (via `__flex_r`) IS reachable for a wf
-∀-free `P1`.  So the configuration is reachable and `uskl_hole ∼ Q` is
-underivable ⇒ (1b) is false in general.  It holds only when `Q` is
-inh-shaped / flex-free — a constraint that must come from the CONSUMER
-(the `ad_pat_sub` consistency premises: Check gives `Q = inh B`; Infer/
-Arrow give `is_sskl Q`).  **CONSEQUENCE: precision-substitution cannot be
-stated in full generality; its correct form needs P6's exact Q-shapes.
-Build P6 (complete-cc-solving / complete-look) FIRST, then state (1b)/
-precision-substitution against the Q-constraints it actually supplies.**
-This resolves the A-vs-B question: B (P6 first) is NECESSARY, not merely
-preferable.
+**⛔ RETRACTED (2026-07-23): the "PIVOTAL FINDING" that (1b) /
+precision-substitution is FALSE was WRONG — machine-refuted.**  The
+claimed counterexample was `uskl_hole ∼ bskl_arrow (bskl_var α) Q2` with
+`α` a defined flex, argued to be underivable because "`pskl_var α` is NOT
+wf for a flex `α` (flex ≠ tvar)".  **That premise is false in this
+codebase.**  `a_binds_tvar` (algo/def_extra.v:88-91) is a *disjunction*
+that INCLUDES defined flex vars: `binds X abind_tvar ∨ binds X
+abind_flex_mono ∨ ∃τ, binds X (abind_flex_mono_def τ)`.  So
+`a_wf_pskl__var` accepts `pskl_var α` for a flex `α`, and therefore
+`uskl_hole ∼ bskl_var α` (and `∼ bskl_arrow (bskl_var α) bskl_unit`) IS
+derivable via `__hole` with `P = pskl_var α` (resp. `pskl_arrow (pskl_var
+α) pskl_unit`).  Both machine-checked (`coqc` rc=0, scratchpad
+`cex_check.v`).  The general principle: `θ`-defined flex vars are
+monotype-defined ⇒ `a_wf_pskl`-able ⇒ `uskl_hole` stays consistent with
+them.  So the hole sub-case of (1b) is fine for flex-var targets.
+
+CONSEQUENCES of the retraction:
+- Precision-substitution is a **genuine paper lemma**
+  (`lemma:precision-substitution`, subtyping-proofs.tex:1664), stated
+  exactly in the (1b)/§5.2 form — NOT a mech-only decomposition.  It is
+  **not refuted**; status returns to "believed true, proof unfinished".
+- **This is NOT a paper gap** (nothing goes in PAPER-GAPS.md): the error
+  was a self-inflicted misreading of `a_binds_tvar`, not a paper problem.
+- P6-first is no longer *forced* by any falsity argument.  It remains a
+  reasonable engineering choice (P6 pins the exact `Q`-shapes (1b) is
+  invoked at, which can still collapse (1b)'s hard cases), but ordering is
+  now open — (1b) may well be provable in the general form after all.
 
 - DONE toward (1b) (committed, Qed, axiom-free): `consis_subj_transport_arrow`,
-  `consis_subj_transport_all` (subject-side transport helpers — reusable once
-  the Q-constrained (1b) statement is fixed).  The `tophole` helper needs a
-  context-polymorphic transporter (its `tophole_inh` sub-case extends the
-  context without opening the body) — build alongside the fixed (1b).
+  `consis_subj_transport_all` (subject-side transport helpers — still
+  reusable).  The `tophole` helper needs a context-polymorphic transporter
+  (its `tophole_inh` sub-case extends the context without opening the body)
+  — a real binder issue, independent of the retracted finding.
 
 ## 6. Status log
 
