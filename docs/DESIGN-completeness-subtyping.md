@@ -499,15 +499,38 @@ ForallL instantiation.)  Fix: define
 ```
 uskl_precise (⊑ᵤ) : NM -> aenv -> atoms -> atoms(*Ψrep*) -> uskl -> uskl -> Prop
 ```
-- congruence rules for every uskl constructor (cofinite binders,
-  tag-preserving `all_etag`), Ψrep = union of sub-Ψreps;
-- ONE leaf rule: `a_tags_sort NM Ψ' ψ → Θ ⨟ Δ ⊢ₚᵣᵃ Pa ⊑ ⌊ψ⌋ →
-  (pskl_to_uskl Pa) ⊑ᵤ[Ψ'] ψ` — Ψrep collects the replaced parts' tags;
-- key derived lemmas: reflexivity (Ψrep = ∅), subst-compatibility
-  (`R' ⊑ᵤ R → open R' ψ'' ⊑ᵤ open R ψ''` at unchanged Ψrep — this is
-  what makes the ForallL crux go through), and
-  `S[Pa/α] ⊑ᵤ[Ψ'] S[ψa/α]` (recovering the subst-form as a special
-  case).
+
+**REFINEMENT (traced 2026-07-23, late):** a monolithic leaf rule
+`paint Pa ⊑ᵤ[Ψ'] ψ` does NOT survive the subst-compatibility proof —
+substituting `[ψ''/X]` into a leaf whose precision mentions `X`
+(`paint(open Pa0 X) ⊑ᵤ open ψbody X`, the exact crux instance) yields a
+pair that is no longer painting-vs-ψ (decorated `ψ''` fragments appear
+INSIDE the erstwhile painting), and re-deriving its precision is
+precision-substitution itself — circular.  So ⊑ᵤ is a first-class
+DECORATED-precision judgment mirroring `ad_refine_syn`/`ad_partial_precise`
+on uskl pairs:
+- an explicit REFL rule for identical (lc) decorated fragments — this is
+  what the substituted `ψ''`-copies land on (var-X-vs-var-X → refl);
+- congruence rules (arrow, all_syn/all_syn, all_etag/all_etag same tag,
+  tophole, topholeg; cofinite binders extend Δ);
+- the asymmetric ghostier-LHS rules mirroring the refinement: hole-vs-R
+  (⌊R⌋ ∀-free + wf at ∅ — hence X-free, so subst-invariant ✓),
+  tophole_remove / tophole_keep / tophole_fill-mirror (RHS `all_etag`,
+  Ψrep passes through, as in `ad_ppre__tophole_fill`),
+  all_syn-vs-all_etag (THE ∀-leaf: contributes ε + body tags to Ψrep),
+  flex_l / flex_r def-unfoldings.
+- Ψrep accounting: union at congruences (NO cross-copy disjointness —
+  multiple `ψa` copies share tags), the RHS-decoration tags at the
+  asymmetric rules.
+
+Kit: reflexivity (Ψrep=∅), **subst-compatibility**
+`⊑ᵤ at (add X Δ) → [ψ''/X] both sides → ⊑ᵤ at Δ` (the ForallL crux
+enabler; provable rule-by-rule given the hole rule's X-freeness), and the
+**embedding** `a_tags_sort NM Ψ' ψ → Θ ⨟ Δ ⊢ₚᵣᵃ Pa ⊑ ⌊ψ⌋ →
+paint Pa ⊑ᵤ[Ψ'] ψ` (induction on the precision derivation, re-matching
+erasure structure to decorated structure — all_syn↔all_etag,
+tophole↔topholeg; ~150 lines).  `S[Pa/α] ⊑ᵤ[Ψ'] S[ψa/α]` then falls out
+(congruence + embedding at each α position, refl elsewhere).
 
 Then:
 - **(2')** restate/reprove step (2) over ⊑ᵤ (same 15-case induction,
