@@ -673,3 +673,50 @@ Proof.
     exact IHad_pat_consis.
   - eapply ad_pat_consis__flex_r; [ exact H | exact IHad_pat_consis ].
 Qed.
+
+(** (1b) helpers: SUBJECT-side transport (mirror of [consis_transport_arrow]
+    / [consis_transport_all], which transport the target).  Both subjects are
+    tag-free ([pskl_to_uskl _]), so the tag context is inert. *)
+Lemma consis_subj_transport_arrow : forall Ψ Θ' A1 A2 B1 B2 Q,
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_arrow A1 A2) ∼ Q ->
+  (forall Ψ1 Q1, Ψ1 ⨟ Θ' ⊢ₛᵃ A1 ∼ Q1 -> Ψ1 ⨟ Θ' ⊢ₛᵃ B1 ∼ Q1) ->
+  (forall Ψ2 Q2, Ψ2 ⨟ Θ' ⊢ₛᵃ A2 ∼ Q2 -> Ψ2 ⨟ Θ' ⊢ₛᵃ B2 ∼ Q2) ->
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_arrow B1 B2) ∼ Q.
+Proof.
+  intros Ψ Θ' A1 A2 B1 B2 Q Hc Ht1 Ht2.
+  remember (uskl_arrow A1 A2) as Ssub eqn:HS.
+  induction Hc; try discriminate HS.
+  - inversion HS; subst.
+    eapply ad_pat_consis__arrow; [ apply Ht1 | apply Ht2 | ]; eassumption.
+  - eapply ad_pat_consis__flex_r; [ eassumption | apply IHHc; assumption ].
+Qed.
+
+Lemma consis_subj_transport_all : forall Ψ Θ' A0 B0 Q L,
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_all_syn A0) ∼ Q ->
+  (forall X, X `notin` L ->
+     forall Ψ' Q',
+       Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊢ₛᵃ
+         (open_uskl_wrt_uskl A0 (uskl_var_f X)) ∼ Q' ->
+       Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊢ₛᵃ
+         (open_uskl_wrt_uskl B0 (uskl_var_f X)) ∼ Q') ->
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_all_syn B0) ∼ Q.
+Proof.
+  intros Ψ Θ' A0 B0 Q L Hc Htr.
+  remember (uskl_all_syn A0) as Ssub eqn:HS.
+  induction Hc; try discriminate HS.
+  - (* forall_inh_untagged : subject all_syn ∼ all_inh *)
+    inversion HS; subst.
+    apply ad_pat_consis__forall_inh_untagged with (L := L `union` L0).
+    intros X HX. apply Htr; [ clear - HX; fsetdec | ].
+    match goal with Hb : forall X, X `notin` ?L1 -> _ |- _ =>
+      apply (Hb X ltac:(clear - HX; fsetdec)) end.
+  - (* forall_syn : subject all_syn ∼ all_syn *)
+    inversion HS; subst.
+    apply ad_pat_consis__forall_syn with (L := L `union` L0).
+    intros X HX. apply Htr; [ clear - HX; fsetdec | ].
+    match goal with Hb : forall X, X `notin` ?L1 -> _ |- _ =>
+      apply (Hb X ltac:(clear - HX; fsetdec)) end.
+  - (* flex_r : Q = var α *)
+    eapply ad_pat_consis__flex_r; [ eassumption | apply IHHc; assumption ].
+Qed.
+
