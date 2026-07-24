@@ -692,3 +692,72 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `ad_pat_sub_precise_subst`).  NB the single non-paper hypothesis added
   so far is `a_wf_aenv Θ` on `to_n` — standard, available downstream, not
   a statement weakening.
+
+## 7. P6 plan (audited 2026-07-24; execute next)
+
+**Correction to the earlier P6 note.**  The paper's consistency-side
+lemmas (complete-consistency-cc-solving(-var), consistency-proofs.tex:921
+/1182) are about the **constraint cluster** `a_lookeq`/`a_solve_eq` —
+defined MUTUALLY with `a_looksub`/`a_solve_sub` in algo/def_extra.v
+(299-469) — NOT about the μ-bundle's `a_consis` join.  The μ-bundle
+cannot stand in for them; they must be mechanized as their own
+inductions.  P6 therefore has FIVE lemmas, in dependency order:
+
+| # | lemma | paper | conclusion judgments | induction on |
+|---|---|---|---|---|
+| P6-Cv | `a_solve_eq_complete_var` | consistency-proofs 1182 | `a_solve_eq` | the `ad_pat_consis` derivation of the ρ(ψa)-subject |
+| P6-Cs | `a_lookeq_solve_complete` | consistency-proofs 921 | `a_lookeq` + `a_solve_cstr`-per-constraint | ad_pat_consis of `(θS)[ψa/α]` |
+| P6-Sv | `a_solve_sub_complete_var` | subtyping-proofs 1697 | `a_solve_sub` | `ad_pat_sub_g` of ρ(ψa) (fuel rides) |
+| P6-Ss | `a_looksub_solve_complete` | subtyping-proofs 2203 | `a_looksub` + `a_solve_cstr` | `ad_pat_sub_g` of `(θS)[ψa/α]` |
+| P6-L | `a_extract_complete` | subtyping-proofs 2730 | `a_extract` + plain precision | wraps P6-Ss; `guess_join_witness` for TY; `ad_partial_precise_complete` upgrades ⊑ᵖ to ⊑ |
+
+Existing support (audited, all Qed): prop_looksub.v has decls/ftv/
+absent-nil/subst-stable/rename-var for `a_looksub`/`a_lookeq` +
+`a_extract_decls` + `a_extract_output_fresh`; prop_solve_sub.v has
+lc/guarded/ftv preservation for `a_solve_sub`/`a_solve_eq`.  No
+completeness lemmas exist for any of them.  `guess_join_witness`
+(prop_consis_complete.v:4627, Qed) provides exactly the P6-L TY-witness.
+
+**THE design decision to make first: representing the paper's ρ**
+("capture-avoiding substitution from rigid type variables to decorated
+skeletons", with the side condition that Pi has the SAME rigid variable
+at every ρ-substituted position).  ρ accumulates as P6-Ss's induction
+walks under ψa's own ForallLs (each declarative instantiation β ↦ ψ''
+extends ρ), while the algorithm's Pi keeps β rigid at that position.
+Candidates:
+  (a) explicit multi-substitution `list (atom * uskl)` + a subst
+      function + the position side condition as a separate predicate;
+  (b) a RELATION in the ⊑ᵤ style (the P5 lesson: relations beat
+      substitutions for these inductions): `ψsub ⊒ρ[Ψρ] ψa` — decorated
+      congruences + one replace-leaf `β ↦ ψ''` (β rigid,
+      `a_tags_sort NM Ψ'' ψ''`, wf ⌊ψ''⌋), Ψρ collecting replacement
+      tags; the Pi-position condition then couples this relation with
+      the partial-precision derivation `θPi ⊑ᵖ[Ψi] ψa` (whose var-rule
+      must be what fires at replace-leaf positions).
+Start by DRAFTING P6-Cv's statement both ways against the paper's
+Check-case usage (subtyping-proofs.tex:1770-1785, which instantiates
+ρ := ρ|premise) and pick whichever discharges that call site with less
+glue.  Expect (b).
+
+Other observations for the statements:
+- `solveeq{Pi}{P0}{Pa}` = `Θ? ⊢ₑ Pi ∼ P0 ⤳ Pa`: pick the aenv index
+  against a_solve_eq's flex_r rule (binds α abind_flex_mono) — the -var
+  lemmas run at Θ0 (the algorithm's context).
+- `solve{C}{Pi}{Pa}` in P6-Cs/Ss is per-constraint discharge —
+  `a_solve_cstr Ξc C Pi Pa` (note the CONTEXT of a_solve_cstr in
+  a_extract is Ξ, the collected fresh flexibles).
+- The `Ψi,Ψa = Ψ'` (subtyping) vs `Ψi,Ψa ⊆ Ψ'` (consistency) asymmetry
+  is real (WT's comment) — keep it.
+- P6-Sv's Check and Arrow-left cases invoke P6-Cv; P6-Ss's crux
+  (subject = the looked-for α's position) invokes P6-Sv; P6-Cs's crux
+  invokes P6-Cv.  So build order: P6-Cv → P6-Cs → P6-Sv → P6-Ss → P6-L.
+- The declarative-side judgments to induct on: `ad_pat_consis` for
+  P6-Cv/Cs (no fuel needed — no ForallL inside consistency), and
+  `ad_pat_sub_g` for P6-Sv/Ss (hygiene needed for the same reason as
+  P5b-ii: the subject carries ψa/ρ-copies whose tags must stay disjoint
+  from inner instantiations; fuel rides inertly and is what P7b's
+  measure consumes).
+- P6-L additionally needs: `a_extract`'s Ξ-freshness prose-completion
+  (already a premise on `a_sub__forall_l` — mirror it), and the
+  `⊑ᵖ → ⊑` upgrade at the END via `ad_partial_precise_complete`
+  (P5b-i, Qed) exactly as complete-look's proof does at tex:2764.
