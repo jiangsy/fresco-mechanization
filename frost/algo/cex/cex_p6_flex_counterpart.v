@@ -46,11 +46,21 @@
     Ξc = · and θa ≡ θ on ALL of Θ0, so a flexible P_0 with a θ-image that
     is "wrong" at a ρ-leaf position refutes the statement outright.
 
-    STATUS: paper-level statement problem (a missing premise or a missing
-    LE-FlexR-style repair), NOT a mech encoding slip — the mech solve rules
-    are faithful on this configuration (the solve gets stuck / loses the
-    rigid-variable information exactly as the paper's rules do).  Reported
-    via docs/PAPER-GAPS.md; P6 is blocked on the resolution.
+    STATUS: paper-level statement problem, NOT a mech encoding slip — the
+    mech solve rules are faithful on this configuration (the solve keeps /
+    loses the rigid-variable information exactly as the paper's rules do).
+    A HEAD-SHAPE premise (nonflex{P0}) does NOT repair it: the second
+    theorem below ([cex_p6_var_nonflex_insufficient], 2026-07-25) reruns
+    the refutation with P_0 = 1 → β̂ — an arrow, so nonflex{P0} holds —
+    because the -var Arrow case recurses on P_0's PIECES.  The redirected
+    repair (PAPER-GAPS addendum; DESIGN §6): extend the paper's positional
+    side condition symmetrically to the counterpart — P_0 has no flexible
+    variable at or covering any ρ-substituted position — maintained at the
+    ForallL call site by the same postdating-freshness argument; note that
+    at ρ = id (the P = α crux, the only direct paper invocation) the bad
+    configuration is already premise-unsatisfiable, so the falsity is an
+    artifact of the ρ-generalisation.  Reported via docs/PAPER-GAPS.md;
+    P6 is blocked on validating that repair.
 
     Everything below is Qed and axiom-free. *)
 

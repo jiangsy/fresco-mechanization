@@ -560,6 +560,36 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-25 (f): **the nonflex{P0} repair REFUTED at depth (mech-first
+  experiment); repair REDIRECTED to a P0-side positional condition.**
+  `cex_p6_var_nonflex_insufficient` (cex_p6_flex_counterpart.v, Qed
+  axiom-free): with `P0 = 1 → β̂` the head-shape premise holds, but the
+  -var Arrow case recurses on P0's PIECES and the flexible piece opposite
+  the ρ-leaf reproduces the (d) refutation one level down — no head-shape
+  premise survives the structural recursion.  Naming: the cex now uses
+  rigid `c` / flexible `β̂` (user rule: never reuse the lemma's α; keep
+  mech and paper letters aligned).  KEY INSIGHT for the repair: at
+  ρ = id — the `P = α` crux, the only direct paper invocation of the -var
+  lemma — the bad configuration is premise-UNSATISFIABLE (the subject is
+  ψa itself and rigid-vs-flex-image consistency fails), so the falsity is
+  an artifact of the ρ-GENERALIZATION forgetting that flexibles cannot
+  cover ρ-positions in premise sets arising from real runs.  REDIRECTED
+  REPAIR (to validate BEFORE building P6-Cv): extend the positional side
+  condition symmetrically to the counterpart — "P0 has no flexible
+  variable at or covering any ρ-substituted position" — mechanized as a
+  second leaf-freshness component alongside the existing pack (e.g.
+  `∀X ∈ Δρ, ∀β̂ ∈ flex(Θ0): β̂'s P0-position does not cover X's
+  ψa-position", concretely: a P0-side analogue of `ad_ppre_delta_var_inv`
+  giving "at a ρ-leaf, the refinement-exposed P0-piece is X, a rigid var,
+  or □" — killing the FlexR-subcase), maintained at Sv-ForallL by
+  X-postdating-P0 freshness.  Validation plan: (1) state the P0-side
+  condition relationally (couple it to uskl_rho or thread it as a
+  freshness fact like the pack); (2) re-run the two cex configurations
+  against it (both must violate it); (3) check the Cs→Cv call site (ρ=id:
+  vacuously true) and the Sv-ForallL extension step.  The implementation
+  (type.ml solve_eq) confirms context-free FlexR — the solve side cannot
+  be tightened; the invariant must exclude the configuration.  Paper notes
+  updated on remech-paper (retraction + redirected proposal).
 - 2026-07-24 (e): **SE-FlexR widened to `a_flex_tvar` (paper's
   context-free FlexR)** — the undefined-only encoding was an
   INDEPENDENT completeness falsifier (defined flexible nested in a
