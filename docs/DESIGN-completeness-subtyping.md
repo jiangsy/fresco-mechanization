@@ -560,6 +560,58 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-24: **§5.4 EXECUTED through (2') and most of (3)'s
+  infrastructure — all Qed, axiom-free** (commits b925723, 0eb95ff,
+  a3da6b7).  DONE: ⊑ᵤ (`uskl_precise`) + full kit (psi_cong, ftag_sub,
+  ftag_rep, lc_l, subst-compatibility, embedding
+  `uskl_precise_of_precise`); **(2')** `ad_pat_consis_precise_upre` via
+  `consis_split_transport` + 7 per-shape transporters; the hygienic
+  mirror `ad_pat_sub_g` (`def_decl_algo_sub_hyg.v` — NB the REVISED fuel
+  discipline: leaves at ANY fuel, UnivGhostL/LG/FlexMono NON-incrementing,
+  only Arrow/ForallR/ForallL increment, so (3) is fuel-preserving even
+  when the ghostier subject adds ⊤◇-wraps or folds flex defs; P7b's
+  measure is then lex(fuel, derivation-structure), which its
+  non-incrementing cases support since they recurse structurally);
+  `_g` helpers (g_of, g_psi_cong, g_ftag_sub, g_wrap_tophole,
+  g_fold_flex, g_concrete_target, refl_transport, hole_intro,
+  uskl_ghost_free_subst, mono_paint_guarded, uskl_precise_guarded); and
+  per-rule ⊑ᵤ-transports for **UnivGhostR / Ghost / GhostG**
+  (`ad_pat_sub_g_{ughost_r,ghost,ghostg}_transport`) — these validate the
+  whole inner-⊑ᵤ-induction pattern: congruence roots rebuild via (2') on
+  the reassembled pair, ⊤◇/flex peels recurse at the SAME fuel via
+  wrap_tophole/fold_flex, flex_r roots unfold the subject definition
+  (consis_unfold_def_subject), hole roots go through
+  hole_intro/concrete_target, refl roots through refl_transport.
+  **REMAINING for (3)** (mechanical from the validated pattern):
+  per-rule transports for **Arrow** (left premise via
+  `ad_pat_consis_precise_upre` on the sub-⊑ᵤ, right premise via the main
+  IH passed as a functional argument, per-branch splits by
+  `diff/inter Ψsup` exactly as in (2')'s arrow transporter),
+  **ForallL ×2** (the crux: pick a fresh X ∉ dom Θb, take the cofinite
+  body-⊑ᵤ at X, `uskl_precise_subst` with ψ (lc via `is_tskl_lc`),
+  rewrite both sides with `subst_bskl_in_uskl_intro`, recurse the main IH
+  at Ψsup' := Ψsup ∖ Ψ' — all six side conditions verified in §5.4's
+  worked notes; TY threads ghost-freeness via `uskl_ghost_free_subst` +
+  the tags_sort-TY ghost-free component; all_inst rebuilds the UNTAGGED
+  ForallL, cong rebuilds the same flavour; the sub-level ForallL does NOT
+  consume ε so no ε-bookkeeping), **UnivGhostL/LG** (premise-pair via
+  main-IH functional; keepg root maps LG→L), **FlexMono** (flex_r root =
+  main-IH on the premise-pair against paint τ after binds_unique), then
+  the 12-case **main assembly** `ad_pat_sub_precise_upre` (statement
+  drafted in session notes: derivation-outer induction, Infer/Check
+  direct via (2') + uskl_precise_guarded, ForallR direct via IH at the
+  same ⊑ᵤ).  PROOF-ENGINEERING RULES learned: (i) per-rule transports
+  MUST be standalone lemmas (clean contexts make Coq's auto-generated
+  hypothesis names predictable: premises H/H0/…, sub-derivations
+  Hup1/Hup2, IHs IHHup/IHHD); (ii) never let a ForallL bracket's
+  `inter Ψ' …` goal reach fsetdec with Ψ' an evar — instantiate
+  `with (Ψ' := Ψ')` (10-min hang otherwise); (iii) `repeat split` enters
+  `[=]` — use explicit `split; [ | split ]`; (iv) `destruct (x == y)`
+  may not match the `if` in a `subst`-reduced goal — use the
+  `match goal |- context [if ?e then _ else _]` destruct.  THEN: P7c-side
+  freshening bridge `_n → _g` (tag renaming, deferred), P6, P7,
+  PAPER-GAPS entries (freshness prose-completion + the ForallL
+  "straightforward induction" gap) once (3) is Qed.
 - 2026-07-23: **P5b-ii steps (1)+(2) DONE, Qed, axiom-free; consis
   metatheory refactored out.**  New file `algo/prop_consis_precise.v`
   (the consistency subject-precision metatheory: general tag/wf helpers,

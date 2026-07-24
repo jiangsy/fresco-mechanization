@@ -77,6 +77,34 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-24 — P5b-ii (2') Qed + step-(3) infrastructure Qed (⊑ᵤ track)
+
+Executed DESIGN §5.4 through (2') and most of (3)'s infrastructure, all
+Qed axiom-free (commits b925723, 0eb95ff, a3da6b7):
+
+- `prop_consis_precise.v`: the ⊑ᵤ relation `uskl_precise`
+  (refl + congruences + refinement-mirroring ghostier-LHS rules; no
+  tophole_fill mirror — ⊑-targets are inh-paintings), its kit
+  (psi_cong / ftag_sub / ftag_rep / lc_l / **subst-compatibility** /
+  **embedding** of plain precision against a decorated target), and
+  **(2') `ad_pat_consis_precise_upre`** via `consis_split_transport`
+  + 7 per-shape transporters.
+- `def_decl_algo_sub_hyg.v` (NEW): tag-hygienic fuel mirror
+  `ad_pat_sub_g` — ForallL instantiation tags fresh from the subject's
+  syntactic tags; fuel: leaves any-n, UnivGhostL/LG/FlexMono
+  non-incrementing, Arrow/ForallR/ForallL increment (makes
+  precision-substitution fuel-preserving under ⊤◇-wrapping/flex-folding).
+- `prop_sub_complete.v`: `_g` helper layer (erasure, psi_cong, ftag-sub
+  invariant, wrap_tophole, fold_flex, concrete_target, refl_transport,
+  hole_intro) + per-rule ⊑ᵤ-transports for UnivGhostR / Ghost / GhostG —
+  the inner-⊑ᵤ-induction pattern (rebuild-via-(2'), same-fuel peels,
+  flex_r subject-unfold) is validated end-to-end.
+
+Remaining for (3): Arrow / ForallL(×2, the subst-compat crux) /
+UnivGhostL(G) / FlexMono transports + the 12-case main assembly — fully
+scripted in DESIGN §6's 2026-07-24 entry (incl. the 4 proof-engineering
+rules learned).  PAPER-GAPS entries deferred until (3) is Qed.
+
 ## 2026-07-23 (b) — P5b-ii step (2) Qed + consis-precision refactor + §5.4 plan
 
 Completeness-of-subtyping precision-substitution, consistency half DONE:
