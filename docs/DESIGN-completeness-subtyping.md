@@ -560,6 +560,27 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-24 (b): **P5b-ii step (3) DONE — `ad_pat_sub_precise_upre`
+  Qed, axiom-free** (commit f5b3e72; `Print Assumptions` = Closed under
+  the global context; `make coq` green).  Precision-substitution
+  (`lemma:precision-substitution`) in ⊑ᵤ-form over the hygienic mirror,
+  FUEL-PRESERVING: all nine per-rule ⊑ᵤ-transports + the 12-case
+  assembly.  The ForallL crux went exactly as scripted (fresh
+  X ∉ dom Θb, body-⊑ᵤ, `uskl_precise_subst`, `subst_bskl_in_uskl_intro`
+  both sides, recursion at `Ψsup ∖ Ψ'`); `all_inst` rebuilds the
+  untagged ForallL with no ε-bookkeeping (sub-level ForallL does not
+  consume its tag).  PAPER-GAPS entries written (global-freshness
+  prose-completion + the two non-straightforward steps of the
+  "straightforward induction").  **P5 is now COMPLETE except two
+  deferred bridges:** (i) the subst-form corollary
+  `S[Pa/α] ⊑ᵤ S[ψa/α]` (congruence walk + embedding at α-positions —
+  build when P7b's ForallL constructs its pair); (ii) the `_n → _g`
+  tag-renaming freshening bridge (only P7c consumes it).  NEXT: **P6**
+  (`a_solve_complete_var` / `a_looksolve_complete` /
+  `a_extract_complete`) — remember the Infer/Check cases must re-route
+  through `consis_complete`/`a_consis_complete_thm` (the paper's
+  consistency-side `-var` lemma was never mechanized; the μ-bundle
+  route replaced it).
 - 2026-07-24: **§5.4 EXECUTED through (2') and most of (3)'s
   infrastructure — all Qed, axiom-free** (commits b925723, 0eb95ff,
   a3da6b7).  DONE: ⊑ᵤ (`uskl_precise`) + full kit (psi_cong, ftag_sub,

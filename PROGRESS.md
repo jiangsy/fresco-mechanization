@@ -77,6 +77,25 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-24 (b) — P5b-ii step (3) QED: precision-substitution closed
+
+**`ad_pat_sub_precise_upre` (paper `lemma:precision-substitution`) is Qed,
+axiom-free** (commit f5b3e72; `Print Assumptions` closed; `make coq`
+green) — fuel-PRESERVING precision-substitution over the tag-hygienic
+mirror, in ⊑ᵤ-form.  Completed this pass: the remaining six per-rule
+⊑ᵤ-transports (Arrow; ForallL tagged/untagged — the crux, via cofinite
+body-⊑ᵤ + `uskl_precise_subst` + `subst_bskl_in_uskl_intro` + recursion
+at `Ψsup ∖ Ψ'`; UnivGhostL/LG incl. the keepg→L root; FlexMono with the
+flex_r root via `binds_unique`) and the 12-case main assembly.  All P5
+milestones are now closed except two deferred bridges: the subst-form
+corollary (`S[Pa/α] ⊑ᵤ S[ψa/α]`, built when P7b needs it) and the
+`_n → _g` tag-renaming freshening (only P7c consumes it).  PAPER-GAPS
+gained two entries on `lemma:precision-substitution`: `fresh Ψ'` must be
+GLOBAL freshness (the local reading is false via an Arrow-split
+scenario), and the "straightforward induction" hides a motive
+generalization (⊑ᵤ) plus a fuel-accounting repair
+(non-incrementing UnivGhostL/LG/FlexMono).  NEXT: P6.
+
 ## 2026-07-24 — P5b-ii (2') Qed + step-(3) infrastructure Qed (⊑ᵤ track)
 
 Executed DESIGN §5.4 through (2') and most of (3)'s infrastructure, all
