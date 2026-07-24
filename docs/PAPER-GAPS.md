@@ -822,3 +822,45 @@ subject's syntactic tags" (`ad_pat_consis_ftag_sub`,
 `ad_pat_sub_g_ftag_sub`) to pin the residual context, and threads the
 solution target's well-formedness (external-wf reading) for the
 ghost-introduction cases.
+
+## FALSE — the -var completeness lemmas of the constraint cluster: a flexible counterpart `P0` refutes the statement (machine-checked, 2026-07-24)
+
+`lemma:complete-consistency-constraint-collection-solving-var`
+(consistency-proofs.tex:1181) and its subtyping twin
+`lemma:complete-constraint-collection-solving-var`
+(subtyping-proofs.tex:1696) are FALSE as stated.  Machine-checked
+counterexample: `algo/cex/cex_p6_flex_counterpart.v` (Qed, axiom-free,
+refuting the conclusion for EVERY `P_a`, EVERY `θ_a` with
+`inc[θ≡θ_a]{Θ0}{Θ}`, and every Δ/tag-set in the conclusion's precision).
+
+The configuration: `Θ0 = X, α̂`; `Θ = X`; `θ = [α̂ ↦ unit→unit]`;
+`ψ_a = X → unit`; `ρ = [X ↦ unit]` (so `ρ(ψ_a) = unit → unit`);
+`P_i = X → unit`; `P_0 = α̂`; `Q = unit → unit`.  Every premise holds —
+including the positional side condition ("P_i has the same rigid
+variable in the same position") and the freshness facts it stands for.
+The only applicable solve rule is FlexR, forcing `P_a = α̂`; the
+conclusion `precise[Ψi,Ψa]{θ_a P_a}{ψ_a}` then demands
+`(unit→unit) ⊑ (X → unit)` (θ ≡ θ_a pins `θ_a α̂` up to ≡, which is
+syntactic at the definition-free Θ), whose argument obligation
+`unit ⊑ X` has no derivation — X is rigid.
+
+Root cause: every case analysis in the five completeness lemmas of the
+cluster recovers `P_0`'s shape by inversion on the refinement premise
+`Θ ⊢ inh{θP_0} ⊳ Q`, silently assuming the subject exposes a matching
+constructor (or ⊤◇/□).  But the inversion also admits `P_0` = flexible
+variable, whose θ-IMAGE supplies the constructor.  The algorithm's own
+rule for flexible counterparts — LE-FlexR (fig:poly-info-extraction),
+which replaces the payload by a fresh `γ̂ ∈ Ξ_c` — is never invoked in
+either completeness appendix.  At the non-var lemmas the fresh-`γ̂`
+mechanism can repair the flexible subcase (θ_a extends to Ξ_c and may
+map `γ̂` to a ψ_a-refining monotype when ψ_a is mono-paintable; when it
+is not, the premises are vacuous — but BOTH facts need proof).  At the
+-var lemmas there is no Ξ_c and θ_a is pinned on all of Θ0, so the
+flexible subcase is not repairable in place: the statement itself needs
+a premise excluding it (e.g. `P_0` is not a flexible variable, with the
+flexible case handled at the caller via LE-FlexR before descending), or
+a rephrased conclusion.  Blocked pending the authors' intended reading;
+see also the related mech-side observation that `SE-FlexR`
+(`a_solve_eq__flex_r`) is encoded for UNDEFINED flexibles only, while
+the paper's context-free FlexR fires on any hatted variable — the same
+repair decision should settle which reading the solve fragment takes.

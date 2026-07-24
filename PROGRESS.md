@@ -77,6 +77,32 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-24 (d) — P6 BLOCKED: the -var completeness lemmas REFUTED (machine-checked)
+
+While drafting P6-Cv's statement, the Pi × P0 case grid exposed a subcase
+every paper case analysis skips: the solve counterpart `P0` can be a
+FLEXIBLE VARIABLE whose θ-image supplies the constructor that the
+refinement-premise inversion "exposes".  Concrete configuration
+(`Θ0 = X,α̂`; `θ = [α̂ ↦ unit→unit]`; `ψa = X→unit`; `ρ = [X ↦ unit]`;
+`Pi = X→unit`; `P0 = α̂`; `Q = unit→unit`) satisfies every premise of
+`lemma:complete-consistency-constraint-collection-solving-var`
+(consistency-proofs.tex:1181; same for the subtyping twin at
+subtyping-proofs.tex:1696) — including the positional side condition —
+while the conclusion is unsatisfiable: FlexR forces `Pa = α̂` and the
+precision `θa(α̂) ⊑ᵖ X→unit` fails for every `θa ≡ θ`.  Machine-checked
+Qed axiom-free: `frost/algo/cex/cex_p6_flex_counterpart.v` (refutes for
+arbitrary `Pa`, `θa`, Δ, tag set).  PAPER-GAPS entry added; DESIGN
+§6 (d) has the candidate repairs (both change statements → need
+sign-off).  LE-FlexR is never used in either completeness appendix —
+the flexible-counterpart subcase is a systematic blind spot of the
+5-lemma cluster.  Related: mech `a_solve_eq__flex_r` is narrower than
+the paper's context-free FlexR (undefined flexibles only).
+
+Statement-neutral kit delivered (Qed, prop_look_complete.v):
+`a_solve_eq_hole_subject_inv`, `uskl_rho_weaken`, `binds_mid_drop`,
+`ad_partial_precise_strengthen_tvar(_mid)`, `a_solve_eq_wf`; plus
+`a_tyequiv_def_free_eq` / `a_inc_equiv_flex_pin` in the cex file.
+
 ## 2026-07-24 (c) — P6 started: ρ-relation decided (+ corrected), leaf/freshness kit Qed
 
 New file `frost/algo/prop_look_complete.v` (all Qed, axiom-free;

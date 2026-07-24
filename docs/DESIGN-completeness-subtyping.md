@@ -560,6 +560,44 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-24 (d): **P6 BLOCKED — the -var lemmas (P6-Cv/Sv) are FALSE AS
+  STATED; machine-checked counterexample committed**
+  (`algo/cex/cex_p6_flex_counterpart.v`, Qed axiom-free; PAPER-GAPS
+  entry "FALSE — the -var completeness lemmas of the constraint
+  cluster").  While drafting P6-Cv's statement, the case grid (Pi × P0
+  shapes exposed by precision/refinement inversion) surfaced a subcase
+  every paper case analysis skips: `P0` = FLEXIBLE VARIABLE, whose
+  θ-image supplies the constructor the refinement inversion "exposes".
+  Configuration `Θ0 = X,α̂; θ = [α̂ ↦ unit→unit]; ψa = X→unit;
+  ρ = [X ↦ unit]; Pi = X→unit; P0 = α̂; Q = unit→unit` satisfies EVERY
+  premise (incl. the positional side condition / the §7 freshness pack);
+  solve is forced to `Pa = α̂` (FlexR — note the mech's SE-FlexR already
+  fires: α̂ is undefined-flex in Θ0), and the conclusion precision
+  `θa(α̂) ⊑ᵖ (X→unit)` fails for every `θa ≡ θ` (pinned image
+  `unit→unit`; `unit ⊑ᵖ X` underivable, X rigid) — refutation
+  machine-checked for arbitrary `Pa`, `θa`, Δ, and tag set.  LE-FlexR
+  (the algorithm's own fresh-`γ̂` rule for flexible counterparts) is
+  never used in either completeness appendix; at the NON-var lemmas it
+  can repair the subcase (θa extends to Ξc), at the -var lemmas it
+  cannot (Ξc = ∅, θa pinned).  STOPPED per the ground rules (never
+  mechanize a refuted statement; repairs to statements need sign-off).
+  Candidate repairs for discussion: (i) add the premise "P0 is not a
+  flexible variable" to the -var lemmas and handle flexible payloads at
+  the callers via LE-FlexR + Ξc-extension (requires proving the
+  mono-paintable/vacuity dichotomy for the flexible subcase of the
+  non-var lemmas); (ii) rephrase the -var conclusion up to a
+  Ξ-extension.  ALSO delivered this session (all Qed, statement-neutral,
+  in prop_look_complete.v): `a_solve_eq_hole_subject_inv` (subject-□
+  solve returns the target — the paper's silent `Pi = □` determinism),
+  `uskl_rho_weaken` (Θ-binds-monotone), `binds_mid_drop`,
+  `ad_partial_precise_strengthen_tvar(_mid)` (the binder cases' Θ-tvar
+  strengthening), and `a_solve_eq_wf` (Δ-uniform wf preservation for
+  a_solve_eq — discharges the paper's `Θ0 ⊢ Pa` conclusion outside the
+  -var inductions).  Related audit observation to settle WITH the
+  repair: `a_solve_eq__flex_r` demands `binds α abind_flex_mono Θ`
+  (undefined only) where the paper's context-free FlexR fires on ANY
+  hatted α̂ (full-algo-spec.tex:1374) — a defined-flex target with
+  non-var/non-□ subject is solve-stuck in the mech but not on paper.
 - 2026-07-24 (c): **P6 STARTED — ρ-representation DECIDED (+ corrected)
   and the full leaf/freshness infrastructure Qed, axiom-free** (new file
   `algo/prop_look_complete.v`; `p6_leaf_var` = Closed under the global

@@ -799,3 +799,178 @@ Proof.
   rewrite Heqm.
   apply ad_ppre__var; [ clear - HΨie HΨna HΨ'e; fsetdec | left; exact HXΔ ].
 Qed.
+
+(* ===================================================================== *)
+(*  P6-Cv support kit: solve-eq determinism on the hole subject, wf        *)
+(*  preservation for [a_solve_eq], Θ-weakening of the ρ relation, and      *)
+(*  the Θ-tvar strengthening of partial precision (for the binder cases    *)
+(*  whose IH runs at [(X~tvar)++Θ]).                                       *)
+(* ===================================================================== *)
+
+(** Solving with the hole subject returns the target verbatim (the only
+    applicable rules are SE-GhostL / SE-VacuousR / SE-FlexR).  The paper
+    uses this silently in every [P_i = □] subcase: the IH's existential
+    output IS the target. *)
+Lemma a_solve_eq_hole_subject_inv : forall Θ Q P',
+  Θ ⊢ₑ pskl_hole ∼ Q ⤳ P' ->
+  P' = Q.
+Proof.
+  intros Θ Q P' H; inversion H; subst; try reflexivity;
+    match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+Qed.
+
+(** Θ-weakening of the ρ relation (binds-monotone; the leaf's image wf
+    weakens). *)
+Lemma uskl_rho_weaken : forall NM Θ Δρ Ψρ S R,
+  uskl_rho NM Θ Δρ Ψρ S R ->
+  forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->
+  uskl_rho NM Θ' Δρ Ψρ S R.
+Proof.
+  intros NM Θ Δρ Ψρ S R H; induction H; intros Θ' Hmon.
+  - apply urho__refl; assumption.
+  - eapply urho__leaf; [ exact H | exact H0 | | exact H2 ].
+    eapply a_wf_pskl_weaken; eassumption.
+  - eapply urho__arrow; eauto.
+  - eapply urho__all_syn with (L := L); eauto.
+  - eapply urho__all_etag with (L := L); eauto.
+  - apply urho__tophole; eauto.
+  - apply urho__topholeg; eauto.
+Qed.
+
+(** Drop a mid entry a binding does not match. *)
+Lemma binds_mid_drop : forall (Θ1 Θ0 : aenv) X Y (b bmid : abind),
+  binds Y b (Θ1 ++ (X ~ bmid) ++ Θ0) ->
+  (Y = X -> b <> bmid) ->
+  binds Y b (Θ1 ++ Θ0).
+Proof.
+  intros Θ1 Θ0 X Y b bmid Hb Hne.
+  unfold binds in *.
+  apply in_app_iff in Hb; destruct Hb as [Hb | Hb].
+  - apply in_app_iff; left; exact Hb.
+  - simpl in Hb; destruct Hb as [Heq | Hb].
+    + inversion Heq; subst. exfalso. exact (Hne eq_refl eq_refl).
+    + apply in_app_iff; right; exact Hb.
+Qed.
+
+(** Partial precision does not need a rigid tvar entry the subject-side Δ
+    already covers: the binder cases' IH concludes at [(β~tvar)++Θ] and
+    must come back to [Θ] (the conclusion's context), with [β ∈ Δ]
+    re-deriving the var rule's tvar side. *)
+Lemma ad_partial_precise_strengthen_tvar_mid : forall Θfull Δ Ψ P ψ,
+  Θfull ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  forall Z Θ1 Θ0,
+  Θfull = Θ1 ++ (Z ~ abind_tvar) ++ Θ0 ->
+  Z `in` Δ ->
+  (Θ1 ++ Θ0) ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ.
+Proof.
+  intros Θfull Δ Ψ P ψ H; induction H; intros Z Θ1 Θ0 Heq HZΔ; subst.
+  - apply ad_ppre__unit; assumption.
+  - apply ad_ppre__var; [ assumption | ].
+    destruct H0 as [HΔ | [Hb | [Hb | [τ Hb]]]].
+    + left; exact HΔ.
+    + destruct (X == Z) as [HeqXZ | HneXZ];
+        [ subst; left; exact HZΔ
+        | right; left; exact (binds_remove_mid _ _ _ _ _ _ _ Hb HneXZ) ].
+    + right; right; left.
+      eapply binds_mid_drop; [ exact Hb | intros _ Habs; discriminate Habs ].
+    + right; right; right; exists τ.
+      eapply binds_mid_drop; [ exact Hb | intros _ Habs; discriminate Habs ].
+  - eapply ad_ppre__arrow;
+      [ apply (IHad_partial_precise1 Z Θ1 Θ0 eq_refl HZΔ)
+      | apply (IHad_partial_precise2 Z Θ1 Θ0 eq_refl HZΔ)
+      | assumption ].
+  - eapply ad_ppre__forall with (L := L);
+      [ intros X HX;
+        apply (H0 X HX Z Θ1 Θ0 eq_refl); clear - HZΔ; fsetdec
+      | assumption ].
+  - apply ad_ppre__hole; assumption.
+  - apply ad_ppre__tophole_remove.
+    apply (IHad_partial_precise Z Θ1 Θ0 eq_refl HZΔ).
+  - eapply ad_ppre__tophole_fill with (L := L).
+    intros X HX.
+    apply (H0 X HX Z ((X ~ abind_tvar) ++ Θ1) Θ0 eq_refl HZΔ).
+  - apply ad_ppre__tophole_keep.
+    apply (IHad_partial_precise Z Θ1 Θ0 eq_refl HZΔ).
+  - eapply ad_ppre__flex_l;
+      [ eapply binds_mid_drop;
+        [ exact H | intros _ Habs; discriminate Habs ]
+      | apply (IHad_partial_precise Z Θ1 Θ0 eq_refl HZΔ) ].
+  - eapply ad_ppre__flex_r;
+      [ eapply binds_mid_drop;
+        [ exact H | intros _ Habs; discriminate Habs ]
+      | apply (IHad_partial_precise Z Θ1 Θ0 eq_refl HZΔ) ].
+Qed.
+
+Lemma ad_partial_precise_strengthen_tvar : forall Z Θ0 Δ Ψ P ψ,
+  ((Z ~ abind_tvar) ++ Θ0) ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  Z `in` Δ ->
+  Θ0 ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ.
+Proof.
+  intros Z Θ0 Δ Ψ P ψ H HZ.
+  exact (@ad_partial_precise_strengthen_tvar_mid _ _ _ _ _ H Z nil Θ0
+           eq_refl HZ).
+Qed.
+
+(** wf preservation for [a_solve_eq] (Δ-uniform; a non-mutual induction —
+    the eq half never calls the sub half).  Discharges the paper's
+    [Θ0 ⊢ P_a] conclusion of the -var lemmas OUTSIDE their inductions. *)
+Lemma a_solve_eq_wf : forall Θ P Q P',
+  Θ ⊢ₑ P ∼ Q ⤳ P' ->
+  forall Δ,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  Θ ⨟ Δ ⊢ₚₛᵃ Q ->
+  Θ ⨟ Δ ⊢ₚₛᵃ P'.
+Proof.
+  intros Θ P Q P' H; induction H; intros Δ HwfP HwfQ.
+  - (* SE-Unit *) apply a_wf_pskl__unit.
+  - (* SE-Var *) exact HwfP.
+  - (* SE-FlexR *) exact HwfQ.
+  - (* SE-GhostL *) exact HwfQ.
+  - (* SE-VacuousR *) exact HwfP.
+  - (* SE-Arrow *)
+    inversion HwfP; subst; inversion HwfQ; subst.
+    apply a_wf_pskl__arrow; [ apply IHa_solve_eq1 | apply IHa_solve_eq2 ];
+      assumption.
+  - (* SE-Forall *)
+    inversion HwfP as [ | | | L1 ? ? ? HbP | | ]; subst.
+    inversion HwfQ as [ | | | L2 ? ? ? HbQ | | ]; subst.
+    apply a_wf_pskl__all with (L := L `union` L1 `union` L2).
+    intros X HX.
+    apply H0; solve [ clear - HX; fsetdec
+                    | apply HbP; clear - HX; fsetdec
+                    | apply HbQ; clear - HX; fsetdec ].
+  - (* SE-UnivGhost *)
+    destruct (a_wf_pskl_tophole_inv HwfP) as [HgP HwfP0].
+    destruct (a_wf_pskl_tophole_inv HwfQ) as [HgQ HwfQ0].
+    apply a_wf_pskl__tophole.
+    + eapply (proj2 a_solve_sub_eq_guarded);
+        eauto using a_wf_pskl_lc.
+    + apply IHa_solve_eq; assumption.
+  - (* SE-GhostForall *)
+    destruct (a_wf_pskl_tophole_inv HwfP) as [HgP HwfP0].
+    inversion HwfQ as [ | | | L2 ? ? ? HbQ | | ]; subst.
+    apply a_wf_pskl__all with (L := L `union` L2).
+    intros X HX.
+    apply H0;
+      solve [ clear - HX; fsetdec
+            | apply a_wf_pskl__tophole; assumption
+            | apply HbQ; clear - HX; fsetdec ].
+  - (* SE-GhostGuarded *)
+    destruct (a_wf_pskl_tophole_inv HwfP) as [HgP HwfP0].
+    apply IHa_solve_eq;
+      [ apply (a_wf_pskl_delta_mono HwfP0); clear; fsetdec | exact HwfQ ].
+  - (* SE-ForallGhost *)
+    inversion HwfP as [ | | | L1 ? ? ? HbP | | ]; subst.
+    destruct (a_wf_pskl_tophole_inv HwfQ) as [HgQ HwfQ0].
+    apply a_wf_pskl__all with (L := L `union` L1).
+    intros X HX.
+    apply H0;
+      solve [ clear - HX; fsetdec
+            | apply HbP; clear - HX; fsetdec
+            | apply a_wf_pskl__tophole; assumption ].
+  - (* SE-GuardedGhost *)
+    destruct (a_wf_pskl_tophole_inv HwfQ) as [HgQ HwfQ0].
+    apply IHa_solve_eq;
+      [ exact HwfP
+      | apply (a_wf_pskl_delta_mono HwfQ0); clear; fsetdec ].
+Qed.
