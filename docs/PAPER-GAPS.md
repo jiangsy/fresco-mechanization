@@ -748,3 +748,77 @@ strengthening: with a decoration-renaming lemma the single-witness rule is
 equivalent (renaming lets any consumer move to fresh tag names); the family
 form just avoids proving that renaming.  Paper needs no change beyond
 reading "let ψ be" as "for any fresh ψ".
+
+## PROSE-COMPLETION — `lemma:precision-substitution`'s `fresh Ψ'` must mean GLOBAL tag freshness (2026-07-24)
+
+`lemma:precision-substitution` (subtyping-proofs.tex:1664) carries the
+side condition `fresh{Ψ'}` on the instantiation's tags.  The weakest
+faithful reading of ForallL's own freshness — the instantiation's tags
+are disjoint from the current *tag context* — makes the lemma **false**:
+the tag context splits at Arrow (`Ψ = Ψ₁, Ψ₂`), so a tag `ε` of `ψa` can
+leave the context on one branch while `ψa`-copies still carry it
+syntactically on the other; a ForallL deeper in that branch may then
+legally reuse `ε` in its own instantiation `ψ''`, and one can build a
+derivation in which `ε` is consumed at a `ψa`-node while the `ψ''`-node
+faces an `all_syn` target (which records nothing).  After substituting
+`Pa` for `ψa`, the `ψ''`-ForallL still re-introduces `ε`, no remaining
+node can consume it, and every leaf forces the tag context to `∅` — the
+transported judgment is underivable.
+
+So `fresh{Ψ'}` must be read as Barendregt-style *global* freshness: fresh
+from the context AND from every tag in the subject (in particular from
+the tags of previously substituted instantiations).  The mechanization
+renders this as a tag-HYGIENIC mirror of the fuel-indexed judgment
+(`ad_pat_sub_g`, def_decl_algo_sub_hyg.v: ForallL additionally requires
+`inter Ψ' (ftag_in_uskl subject) = ∅`), over which precision-substitution
+is proved (`ad_pat_sub_precise_upre`, prop_sub_complete.v, Qed); an
+arbitrary derivation is converted once, at the completeness theorem's
+entry point, by a tag-renaming freshening lemma.  Nothing is wrong with
+the paper's statement under the intended reading — but the proof depends
+on the global reading in an essential, non-obvious way, and a reader
+formalizing the local reading gets a false lemma.
+
+## GAP (proof-step) — `lemma:precision-substitution`'s "straightforward induction" does not go through as stated; the motive must be generalized (2026-07-24)
+
+The paper proves `lemma:precision-substitution` by "a straightforward
+induction on the subtyping derivation …, observing that … replacing
+ψa with Pa would not result in any type mismatch"
+(subtyping-proofs.tex:1668-1673).  Two steps of that induction are not
+straightforward and required genuine repairs (both machine-checked,
+prop_consis_precise.v / prop_sub_complete.v, all Qed axiom-free):
+
+1. **The substitution motive is too weak for its own ForallL case.**
+   When the subject is (an occurrence of) `ψa` itself and the last rule
+   is ForallL on `ψa`'s own quantifier, the premise's subject is
+   `ψa-body[ψ''/α']` and the reconstruction needs
+   `Pa-body[ψ''/α']` — the changing part is the *whole* skeleton
+   surrounding `ψ''`, not the positions of the substituted variable, so
+   the `S[ψa/α] → S[Pa/α]` induction hypothesis does not apply (and
+   re-instantiating with the stripped `⌊ψ''⌋` is not a legal ForallL
+   instantiation, since decorated skeletons have no untagged
+   quantifier).  REPAIR: generalize the motive from single-variable
+   substitution to a *decorated subject-precision relation* ⊑ᵤ
+   (`uskl_precise`) — congruences + refinement-mirroring ghostier-side
+   rules + reflexivity — which is closed under instantiation
+   (`uskl_precise_subst`) and embeds plain precision against a decorated
+   target (`uskl_precise_of_precise`).  The subst-form is the special
+   case `S[Pa/α] ⊑ᵤ S[ψa/α]`.
+
+2. **Fuel/height preservation needs a rule-granularity accounting.**
+   The main completeness induction applies its IH to the substituted
+   premise, so precision-substitution must not increase the derivation
+   height — but the more-precise subject may carry `⊤◇`-wrappers or
+   fold flexible definitions that the original derivation lacks, forcing
+   extra UnivGhostL / FlexMono steps.  REPAIR: in the measure-carrying
+   mirror, leaves take any fuel and UnivGhostL/UnivGhostLG/FlexMono are
+   non-incrementing (only Arrow/ForallR/ForallL increment); the main
+   theorem's measure is then lex(fuel, derivation structure), which its
+   non-incrementing cases support because they recurse structurally.
+
+Also elided by "no type mismatch": the transported subject's tag
+context must drop *exactly* by the substituted instantiation's consumed
+tags — the mechanization threads the invariant "tag context ⊆ the
+subject's syntactic tags" (`ad_pat_consis_ftag_sub`,
+`ad_pat_sub_g_ftag_sub`) to pin the residual context, and threads the
+solution target's well-formedness (external-wf reading) for the
+ghost-introduction cases.
