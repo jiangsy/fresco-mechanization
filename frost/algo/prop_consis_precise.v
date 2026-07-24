@@ -2030,3 +2030,71 @@ Proof.
     apply consis_split_transport_flexvar with (τ := τ); [ exact H | ].
     apply IHHup; [ exact HΨsup | exact Hftag ].
 Qed.
+
+(* ===================================================================== *)
+(*  ⊑ᵤ kit additions for the subtyping level (step (3)).                  *)
+(* ===================================================================== *)
+
+Lemma ftag_in_uskl_open_rec_upper : forall R ψ k,
+  ftag_in_uskl (open_uskl_wrt_uskl_rec k ψ R) [<=]
+  ftag_in_uskl R `union` ftag_in_uskl ψ.
+Proof.
+  intros R ψ; induction R; intros k; simpl; try fsetdec.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; fsetdec.
+  - pose proof (IHR1 k); pose proof (IHR2 k); fsetdec.
+  - pose proof (IHR (S k)); fsetdec.
+  - pose proof (IHR (S k)); fsetdec.
+  - pose proof (IHR k); fsetdec.
+  - pose proof (IHR k); fsetdec.
+Qed.
+
+Lemma ftag_in_uskl_open_upper : forall R ψ,
+  ftag_in_uskl (open_uskl_wrt_uskl R ψ) [<=]
+  ftag_in_uskl R `union` ftag_in_uskl ψ.
+Proof.
+  intros; unfold open_uskl_wrt_uskl; apply ftag_in_uskl_open_rec_upper.
+Qed.
+
+(** The replaced tags all come from the (decorated) RHS. *)
+Lemma uskl_precise_ftag_rep : forall Θ Ψrep R' R,
+  uskl_precise Θ Ψrep R' R ->
+  Ψrep [<=] ftag_in_uskl R.
+Proof.
+  intros Θ Ψrep R' R H; induction H; simpl; try fsetdec.
+  - (* all_syn cong *)
+    pick fresh X for L.
+    pose proof (H0 X ltac:(fsetdec)) as HX.
+    pose proof (ftag_in_uskl_open_var R X); fsetdec.
+  - (* all_etag cong *)
+    pick fresh X for L.
+    pose proof (H0 X ltac:(fsetdec)) as HX.
+    pose proof (ftag_in_uskl_open_var R X); fsetdec.
+  - (* all_inst *)
+    pick fresh X for L.
+    pose proof (H0 X ltac:(fsetdec)) as HX.
+    pose proof (ftag_in_uskl_open_var R X); fsetdec.
+  - (* flex_r *)
+    pose proof (ftag_in_uskl_ptyp_syn τ); fsetdec.
+Qed.
+
+(** The ghostier side of ⊑ᵤ is locally closed. *)
+Lemma uskl_precise_lc_l : forall Θ Ψrep R' R,
+  uskl_precise Θ Ψrep R' R -> lc_uskl R'.
+Proof.
+  intros Θ Ψrep R' R Hup; induction Hup.
+  - assumption.
+  - apply lc_uskl_arrow; assumption.
+  - pick fresh X for L.
+    apply lc_uskl_all_syn_exists with (Xus1 := X). apply H0; fsetdec.
+  - pick fresh X for L.
+    apply lc_uskl_all_etag_exists with (Xus1 := X). apply H0; fsetdec.
+  - pick fresh X for L.
+    apply lc_uskl_all_syn_exists with (Xus1 := X). apply H0; fsetdec.
+  - apply lc_uskl_tophole; assumption.
+  - apply lc_uskl_topholeg; assumption.
+  - apply lc_uskl_tophole; assumption.
+  - apply lc_uskl_hole.
+  - apply lc_uskl_tophole; assumption.
+  - apply lc_uskl_var_f.
+  - assumption.
+Qed.
