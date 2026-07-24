@@ -859,8 +859,17 @@ is not, the premises are vacuous — but BOTH facts need proof).  At the
 flexible subcase is not repairable in place: the statement itself needs
 a premise excluding it (e.g. `P_0` is not a flexible variable, with the
 flexible case handled at the caller via LE-FlexR before descending), or
-a rephrased conclusion.  Blocked pending the authors' intended reading;
-see also the related mech-side observation that `SE-FlexR`
-(`a_solve_eq__flex_r`) is encoded for UNDEFINED flexibles only, while
-the paper's context-free FlexR fires on any hatted variable — the same
-repair decision should settle which reading the solve fragment takes.
+a rephrased conclusion.  Blocked pending the authors' intended reading.
+
+A related mech-side infidelity was found and FIXED in the same pass
+(independent of this refutation, which uses an UNDEFINED flexible):
+`a_solve_eq__flex_r` was encoded for undefined flexibles only
+(`binds α abind_flex_mono Θ`), while the paper's context-free FlexR
+(full-algo-spec.tex:1374) fires on any hatted variable.  A DEFINED
+flexible nested inside a structural counterpart (e.g. `P0 = unit → β̂`,
+`β̂ := unit`) made the mech solve stuck where the paper succeeds — a
+second, mech-side falsifier of the completeness statements that would
+have survived any repair of the paper-level gap.  The rule now takes
+`a_flex_tvar Θ α` (hattedness); the soundness stack is unaffected
+(restriction → relaxation; the decorated twin SEq-FlexR was already
+context-free).

@@ -427,7 +427,15 @@ with a_solve_eq : aenv -> pskl -> pskl -> pskl -> Prop :=
 | a_solve_eq__var : forall Θ X Q,                (* SE-Var + SE-FlexL *)
     Θ ⊢ₑ (pskl_var_f X) ∼ Q ⤳ (pskl_var_f X)
 | a_solve_eq__flex_r : forall Θ α P,             (* SE-FlexR *)
-    binds α abind_flex_mono Θ ->
+    (* the paper's FlexR (full-algo-spec.tex:1374) is context-free and fires
+       on ANY hatted variable — defined or not; [α̂ ∈ Θ] here is only the
+       mech's rendering of hattedness.  The earlier [binds α abind_flex_mono]
+       (undefined-only) encoding was UNFAITHFULLY narrow: a defined flexible
+       nested in a structural counterpart makes the solve stuck here but not
+       on paper, falsifying the completeness statements independently of the
+       flexible-counterpart cex (cex_p6_flex_counterpart.v).  Widened
+       2026-07-24. *)
+    a_flex_tvar Θ α ->
     a_non_flex Θ P ->
     Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ (pskl_var_f α)
 | a_solve_eq__hole_l : forall Θ Q,               (* SE-GhostL *)

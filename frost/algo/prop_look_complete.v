@@ -286,16 +286,16 @@ Qed.
 (* ===================================================================== *)
 
 (** Generic context change: the solve judgments consult Θ only through
-    [binds _ abind_flex_mono] (positively) and [a_flex] (negatively). *)
+    [a_flex_tvar] (positively) and [a_flex] (negatively). *)
 Lemma a_solve_sub_eq_ctx_change :
   (forall Θ m P Q P', Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
      forall Θ',
-     (forall α, binds α abind_flex_mono Θ -> binds α abind_flex_mono Θ') ->
+     (forall α, a_flex_tvar Θ α -> a_flex_tvar Θ' α) ->
      (forall P0, a_flex Θ' P0 -> a_flex Θ P0) ->
      Θ' ⊢ₛ P ≼[ m ] Q ⤳ P') /\
   (forall Θ P Q P', Θ ⊢ₑ P ∼ Q ⤳ P' ->
      forall Θ',
-     (forall α, binds α abind_flex_mono Θ -> binds α abind_flex_mono Θ') ->
+     (forall α, a_flex_tvar Θ α -> a_flex_tvar Θ' α) ->
      (forall P0, a_flex Θ' P0 -> a_flex Θ P0) ->
      Θ' ⊢ₑ P ∼ Q ⤳ P').
 Proof.
@@ -303,9 +303,9 @@ Proof.
     try solve [ econstructor; eauto ].
   - (* SE-FlexR *)
     match goal with
-      Hb : binds _ abind_flex_mono _,
+      Hb : a_flex_tvar _ _,
       Hnf : a_non_flex _ _,
-      Hmono : forall _ : atom, binds _ _ _ -> binds _ _ _,
+      Hmono : forall _ : atom, a_flex_tvar _ _ -> a_flex_tvar _ _,
       Hfl : forall _ : pskl, a_flex _ _ -> a_flex _ _ |- _ =>
         destruct Hnf as [Hlc Hnf'];
         apply a_solve_eq__flex_r; [ apply Hmono; exact Hb | ];
@@ -320,9 +320,12 @@ Lemma a_solve_eq_strengthen_tvar : forall β Θ0 P Q P',
 Proof.
   intros β Θ0 P Q P' H.
   eapply (proj2 a_solve_sub_eq_ctx_change); [ exact H | | ].
-  - intros α Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
-      [ discriminate Habs | exact Hb' ].
+  - intros α Hft.
+    destruct Hft as [Hb | [τ Hb]];
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
+      solve [ discriminate Habs
+            | left; exact Hb'
+            | right; exists τ; exact Hb' ].
   - intros P0 Hf; inversion Hf; subst.
     + apply a_flex__var with (α := α); unfold binds; simpl; right; auto.
     + apply a_flex__var_def with (α := α) (τ := τ);
@@ -335,9 +338,12 @@ Lemma a_solve_sub_strengthen_tvar : forall β Θ0 m P Q P',
 Proof.
   intros β Θ0 m P Q P' H.
   eapply (proj1 a_solve_sub_eq_ctx_change); [ exact H | | ].
-  - intros α Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
-      [ discriminate Habs | exact Hb' ].
+  - intros α Hft.
+    destruct Hft as [Hb | [τ Hb]];
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
+      solve [ discriminate Habs
+            | left; exact Hb'
+            | right; exists τ; exact Hb' ].
   - intros P0 Hf; inversion Hf; subst.
     + apply a_flex__var with (α := α); unfold binds; simpl; right; auto.
     + apply a_flex__var_def with (α := α) (τ := τ);
@@ -351,7 +357,9 @@ Lemma a_solve_eq_weaken_tvar : forall β Θ0 P Q P',
 Proof.
   intros β Θ0 P Q P' H.
   eapply (proj2 a_solve_sub_eq_ctx_change); [ exact H | | ].
-  - intros α Hb; unfold binds; simpl; right; exact Hb.
+  - intros α Hft.
+    destruct Hft as [Hb | [τ Hb]];
+      [ left | right; exists τ ]; unfold binds; simpl; right; exact Hb.
   - intros P0 Hf; inversion Hf; subst;
       match goal with
         Hb : binds _ _ ((_ ~ abind_tvar) ++ _) |- _ =>
@@ -446,7 +454,10 @@ Proof.
     apply a_solve_sub__ghost_l; apply guarded_pskl_rename; assumption.
   - (* SE-FlexR *)
     assert (Hne : α <> X)
-      by (apply binds_In in b; intro Heq; subst; contradiction).
+      by (match goal with Hft : a_flex_tvar _ α |- _ =>
+            destruct Hft as [Hb | [τ0 Hb]]; apply binds_In in Hb;
+            intro Heq; subst; contradiction
+          end).
     match goal with |- context [ if ?e then _ else _ ] => destruct e end;
       [ exfalso; congruence | ].
     apply a_solve_eq__flex_r;

@@ -560,6 +560,16 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-24 (e): **SE-FlexR widened to `a_flex_tvar` (paper's
+  context-free FlexR)** — the undefined-only encoding was an
+  INDEPENDENT completeness falsifier (defined flexible nested in a
+  structural counterpart: solve stuck in mech, fine on paper; survives
+  any repair of the (d) gap).  Fallout: prop_look_complete.v transport
+  helpers only; soundness stack untouched (a_sub_sound_thm still
+  Closed under the global context); make coq green.  The (d)
+  counterexample is unaffected (it uses an undefined flexible — the
+  widening does not repair it; the failure is in the conclusion
+  precision, not solve-stuckness).
 - 2026-07-24 (d): **P6 BLOCKED — the -var lemmas (P6-Cv/Sv) are FALSE AS
   STATED; machine-checked counterexample committed**
   (`algo/cex/cex_p6_flex_counterpart.v`, Qed axiom-free; PAPER-GAPS

@@ -77,6 +77,24 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-24 (e) — SE-FlexR widened to the paper's context-free reading (encoding-infidelity fix)
+
+`a_solve_eq__flex_r` demanded `binds α abind_flex_mono Θ` (UNDEFINED
+flexibles only); the paper's FlexR (full-algo-spec.tex:1374) is
+context-free — `nonflex P` is its only premise, so it fires on ANY
+hatted variable, defined or not.  The narrowness was an INDEPENDENT
+falsifier of the completeness statements (distinct from the (d)
+counterexample, which uses an undefined flexible): a defined flexible
+nested in a structural counterpart (`P0 = unit → β̂`, `β̂ := unit ∈ Θ0`)
+makes the solve stuck in the mech but succeed on paper, with all other
+premises satisfiable — and it would have survived any repair of the
+paper-level gap.  Premise widened to `a_flex_tvar Θ α`; fallout was
+confined to prop_look_complete.v's ctx-change/strengthen/weaken/rename
+helpers (adapted); the soundness stack needed ZERO edits (restriction →
+relaxation only adds derivations, and the decorated twin SEq-FlexR was
+already context-free).  Full `make coq` green; `a_sub_sound_thm` still
+Closed under the global context.
+
 ## 2026-07-24 (d) — P6 BLOCKED: the -var completeness lemmas REFUTED (machine-checked)
 
 While drafting P6-Cv's statement, the Pi × P0 case grid exposed a subcase
