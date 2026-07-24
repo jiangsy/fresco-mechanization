@@ -379,4 +379,155 @@ Proof.
   exact (cex_no_precision Hpre).
 Qed.
 
+(* ------------------------------------------------------------------ *)
+(*  THE nonflex{P0} REPAIR IS INSUFFICIENT: the same refutation         *)
+(*  reproduces one constructor down.  With                              *)
+(*      ψa = 1 → (X → 1)      P_i = 1 → (X → 1)      P_0 = 1 → β̂       *)
+(*  the counterpart P_0 is an arrow — nonflex{P_0} HOLDS — but the      *)
+(*  arrow case of the -var lemma recurses on P_0's PIECES, and the      *)
+(*  right piece is the old flexible β̂ opposite the ρ-leaf position:     *)
+(*  solving forces P_a = 1 → β̂ (SE-Arrow, then SE-FlexR), and the       *)
+(*  conclusion precision fails exactly as before.  So the repair must   *)
+(*  exclude flexible variables from ALL (ρ-leaf-opposite) positions of  *)
+(*  P_0, not just its head.                                             *)
+(* ------------------------------------------------------------------ *)
+
+Definition cexψa2 : uskl := uskl_arrow uskl_unit cexψa.
+Definition cexψsub2 : uskl := uskl_arrow uskl_unit cexψsub.
+Definition cexPi2 : pskl := pskl_arrow pskl_unit cexPi.
+Definition cexP02 : pskl := pskl_arrow pskl_unit cexP0.
+Definition cexQ2 : bskl := bskl_arrow bskl_unit cexQ.
+
+(** The repair's premise holds: P_0 is not a flexible variable. *)
+Lemma cex2_nonflex : a_non_flex cexΘ0 cexP02.
+Proof.
+  split.
+  - apply lc_pskl_arrow; [ apply lc_pskl_unit | apply lc_pskl_var_f ].
+  - intros Hf; inversion Hf.
+Qed.
+
+Lemma cex2_wf_Pi : cexΘ0 ⨟ empty ⊢ₚₛᵃ cexPi2.
+Proof. apply a_wf_pskl__arrow; [ apply a_wf_pskl__unit | apply cex_wf_Pi ]. Qed.
+
+Lemma cex2_wf_P0 : cexΘ0 ⨟ empty ⊢ₚₛᵃ cexP02.
+Proof. apply a_wf_pskl__arrow; [ apply a_wf_pskl__unit | apply cex_wf_P0 ]. Qed.
+
+Lemma cex2_tags : a_tags_sort a_sub_mode_sk empty cexψa2.
+Proof.
+  apply a_tags_sort__sk.
+  - apply is_tskl__arrow;
+      [ apply is_tskl__unit
+      | apply is_tskl__arrow; [ apply is_tskl__var | apply is_tskl__unit ] ].
+  - apply (d_tags_skl__arrow (Ψ1 := empty) (Ψ2 := empty));
+      [ apply d_tags_skl__unit; fsetdec
+      | apply (d_tags_skl__arrow (Ψ1 := empty) (Ψ2 := empty));
+        [ apply d_tags_skl__var; fsetdec
+        | apply d_tags_skl__unit; fsetdec
+        | fsetdec | fsetdec ]
+      | fsetdec | fsetdec ].
+Qed.
+
+Lemma cex2_wf_erase_psia : cexΘ ⨟ empty ⊢ₚₛᵃ ⌊ cexψa2 ⌋ˢ.
+Proof.
+  simpl.
+  apply a_wf_pskl__arrow; [ apply a_wf_pskl__unit | ].
+  apply a_wf_pskl__arrow; [ | apply a_wf_pskl__unit ].
+  apply a_wf_pskl__var; right; left.
+  unfold cexΘ, binds; simpl; left; reflexivity.
+Qed.
+
+Lemma cex2_rho :
+  uskl_rho a_sub_mode_sk cexΘ (singleton X) empty cexψsub2 cexψa2.
+Proof.
+  apply (urho__arrow (Ψ1 := empty) (Ψ2 := empty)); [ | | fsetdec ].
+  - apply urho__refl; [ apply lc_uskl_unit | fsetdec ].
+  - apply cex_rho.
+Qed.
+
+Lemma cex2_pack_shielded : X `notin` pskl_shielded_ftv cexPi2.
+Proof. simpl. fsetdec. Qed.
+
+Lemma cex2_pack_ftv_P0 : X `notin` ftvar_in_pskl cexP02.
+Proof. simpl. clear - Hne; fsetdec. Qed.
+
+Lemma cex2_precision :
+  cexΘ ⨟ (singleton X) ⊢ (msubst_pskl cexθ cexPi2) ⊑ᵖ[ empty ] cexψa2.
+Proof.
+  unfold cexPi2; cbn [msubst_pskl].
+  rewrite cex_msubst_Pi.
+  apply (ad_ppre__arrow (Ψ1 := empty) (Ψ2 := empty));
+    [ apply ad_ppre__unit; fsetdec
+    | pose proof cex_precision as Hp; rewrite cex_msubst_Pi in Hp; exact Hp
+    | fsetdec ].
+Qed.
+
+Lemma cex2_refinement :
+  cexΘ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl cexθ cexP02)) ⊳ cexQ2.
+Proof.
+  unfold cexP02; cbn [msubst_pskl].
+  rewrite cex_msubst_P0. simpl.
+  apply ad_refine_syn__arrow;
+    [ apply ad_refine_syn__unit
+    | apply ad_refine_syn__arrow; apply ad_refine_syn__unit ].
+Qed.
+
+Lemma cex2_consistency : empty ⨟ cexΘ ⊢ₛᵃ cexψsub2 ∼ cexQ2.
+Proof.
+  apply (ad_pat_consis__arrow (Ψ1 := empty) (Ψ2 := empty));
+    [ apply ad_pat_consis__unit; fsetdec
+    | apply cex_consistency
+    | fsetdec ].
+Qed.
+
+(** The solve is forced through SE-Arrow and then SE-FlexR on the piece. *)
+Lemma cex2_solve_forces_flex : forall Pa,
+  cexΘ0 ⊢ₑ cexPi2 ∼ cexP02 ⤳ Pa ->
+  Pa = pskl_arrow pskl_unit (pskl_var_f alpha).
+Proof.
+  intros Pa H.
+  inversion H; subst.
+  match goal with
+    H1 : cexΘ0 ⊢ₑ pskl_unit ∼ pskl_unit ⤳ ?P1 |- _ =>
+      inversion H1; subst
+  end.
+  match goal with
+    H2 : cexΘ0 ⊢ₑ cexPi ∼ cexP0 ⤳ ?P2 |- _ =>
+      rewrite (cex_solve_forces_flex H2)
+  end.
+  reflexivity.
+Qed.
+
+Lemma cex2_no_precision : forall Δ Ψ,
+  cexΘ ⨟ Δ ⊢ (pskl_arrow pskl_unit (pskl_arrow pskl_unit pskl_unit))
+    ⊑ᵖ[ Ψ ] cexψa2 ->
+  False.
+Proof.
+  intros Δ Ψ H.
+  inversion H; subst.
+  match goal with
+    H2 : cexΘ ⨟ Δ ⊢ (pskl_arrow pskl_unit pskl_unit) ⊑ᵖ[ _ ] cexψa |- _ =>
+      exact (cex_no_precision H2)
+  end.
+Qed.
+
+(** MAIN THEOREM (deep variant): with nonflex{P_0} satisfied, the -var
+    conclusion is still unsatisfiable — for every P_a, every θa pinned by
+    the paper's equivalence, every Δ and tag set. *)
+Theorem cex_p6_var_nonflex_insufficient : forall Pa θa Δ Ψ,
+  cexΘ0 ⊢ₑ cexPi2 ∼ cexP02 ⤳ Pa ->
+  θa ∷ cexΘ0 ⊑ cexΘ ->
+  a_inc_equiv cexΘ0 cexθ θa cexΘ ->
+  cexΘ ⨟ Δ ⊢ (msubst_pskl θa Pa) ⊑ᵖ[ Ψ ] cexψa2 ->
+  False.
+Proof.
+  intros Pa θa Δ Ψ Hsolve Hinc Hequiv Hpre.
+  rewrite (cex2_solve_forces_flex Hsolve) in Hpre.
+  simpl in Hpre.
+  pose proof (cex_equiv_pins_image Hequiv) as Himg.
+  unfold cexP0 in Himg. simpl in Himg.
+  rewrite Himg in Hpre.
+  exact (cex2_no_precision Hpre).
+Qed.
+
 End CexP6FlexCounterpart.
+

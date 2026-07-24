@@ -77,6 +77,22 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-25 — the nonflex{P0} repair REFUTED at depth (machine-checked); repair redirected
+
+Tried the proposed -var repair (a `nonflex{P0}` premise) in the mech before
+committing to it in the paper — and it fails: `cex_p6_var_nonflex_insufficient`
+(cex_p6_flex_counterpart.v, Qed axiom-free) reruns the refutation with
+`P0 = 1 → β̂` (nonflex HOLDS) — the Arrow case recurses on P0's pieces, and a
+flexible piece opposite the ρ-leaf reproduces the failure one level down.
+Key insight from the failed experiment: at ρ = identity (the P = α crux, the
+only place the paper instantiates the -var lemma directly) the configuration
+is premise-unsatisfiable — the falsity is an artifact of the ρ-generalization
+forgetting that flexible counterpart pieces cannot cover ρ-substituted
+positions.  Redirected repair (next to validate): extend the positional side
+condition to P0 — no flexible variable at or covering a ρ-position —
+maintained by the same X-postdates-everything freshness argument.
+PAPER-GAPS addendum + paper note amended (remech-paper).
+
 ## 2026-07-24 (e) — SE-FlexR widened to the paper's context-free reading (encoding-infidelity fix)
 
 `a_solve_eq__flex_r` demanded `binds α abind_flex_mono Θ` (UNDEFINED

@@ -873,3 +873,37 @@ have survived any repair of the paper-level gap.  The rule now takes
 `a_flex_tvar Θ α` (hattedness); the soundness stack is unaffected
 (restriction → relaxation; the decorated twin SEq-FlexR was already
 context-free).
+
+### Addendum (2026-07-25): the `nonflex{P0}` repair is INSUFFICIENT — refuted at depth
+
+Trying the proposed repair in the mechanization before adopting it
+falsified it: `cex_p6_var_nonflex_insufficient` (same cex file, Qed,
+axiom-free) reruns the refutation with `ψa = 1 → (X→1)`, `Pi = 1 → (X→1)`,
+`P0 = 1 → β̂` — the counterpart is an arrow, so `nonflex{P0}` HOLDS, but
+the -var lemma's Arrow case recurses on P0's PIECES and the right piece is
+the old flexible β̂ opposite the ρ-leaf position: solving is forced through
+SE-Arrow then SE-FlexR to `Pa = 1 → β̂`, and the conclusion precision fails
+one constructor down.  A head-shape premise cannot survive the structural
+recursion.
+
+Two further facts locate the real repair:
+* At the TOP of the call chain (ρ = identity, the P = α crux), the bad
+  configuration is UNSATISFIABLE: the subject there is ψa itself, and the
+  consistency/subtyping premise at the leaf position (rigid X vs the
+  flexible's unit-image) has no derivation.  The falsity is an artifact of
+  the ρ-GENERALIZATION being too coarse: it forgets that in premise sets
+  arising from actual runs, a flexible counterpart piece cannot sit at or
+  above a ρ-substituted position.
+* The implementation's `solve_eq` (type.ml) confirms the context-free
+  FlexR reading (any flexible target wins, keeping the flexible), so the
+  solve side cannot be tightened; the invariant must exclude the
+  configuration.
+
+Suggested repair (to be validated next): extend the paper's positional
+side condition symmetrically to the counterpart — "for every rigid
+variable in ψa substituted by ρ, P_i has the same rigid variable in the
+same position, and P_0 has NO FLEXIBLE VARIABLE at or covering that
+position" — maintained at the same ForallL site by the same freshness
+argument (X postdates P0, so X-positions of ψa cannot be covered by
+flexibles introduced before X).  Mechanically this is a second
+leaf-freshness component alongside the existing pack.
