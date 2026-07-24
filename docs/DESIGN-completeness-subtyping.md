@@ -560,6 +560,40 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-24 (c): **P6 STARTED — ρ-representation DECIDED (+ corrected)
+  and the full leaf/freshness infrastructure Qed, axiom-free** (new file
+  `algo/prop_look_complete.v`; `p6_leaf_var` = Closed under the global
+  context).  (1) ρ = the RELATION `uskl_rho` (refl + congruences + one
+  replace-leaf; Δρ = replaced vars, Ψρ = replacement tags, union without
+  cross-copy disjointness) — see the §7 DECISION block.  (2) **DESIGN
+  CORRECTION discovered while drafting the leaf case:** the paper's
+  positional side condition is LOAD-BEARING and not derivable from
+  Δ-membership + precision (concrete counterexamples v4/v5 in §7:
+  ⊤◇-wrapped or definition-chained leaf positions force SE-GhostForall's
+  `all_syn` output, which has no precision rule against a rigid var); it
+  is instead RECOVERED as a lemma from FRESHNESS of the replaced
+  variables (X ∈ Δ, `binds X abind_tvar Θ`, X ∉ θ-image-ftvs, X ∉
+  Θ-definition-ftvs, X ∉ `pskl_shielded_ftv` of the subject) — all of
+  which hold at the single leaf-creating call site (P6-Sv ForallL's fresh
+  binder; the `a_wf_pskl__tophole` empty-Δ-body discipline supplies the
+  shielded component).  Qed kit: `uskl_rho` + psi_cong/delta_mono/
+  ftag_sub; `pskl_shielded_ftv` + open/msubst/painting bounds;
+  `rho_fresh`; `ad_ppre_var_target_absent` + `ad_ppre_delta_var_inv` (the
+  leaf inversion: subject IS `var X`, Ψ = ∅); `msubst_lookup_ftv_avoid` /
+  `msubst_pskl_ftv_avoid` / `msubst_pskl_shielded_avoid` /
+  `msubst_pskl_var_inv`; solve-cluster `a_solve_sub_eq_ctx_change` (+
+  tvar strengthen/weaken) and `a_solve_sub_eq_rename` (rigid rename, for
+  the cofinite SE/SS-Forall reassembly from one fresh witness);
+  `a_solve_sub_eq_shielded` (output-shielded bound, for chaining the
+  pack); `is_sskl_pskl_to_bskl_syn` / `ad_refine_syn_hole_sskl` /
+  `ad_pat_consis_sskl_tags` (the P0 = □ special case).  P6-Cv STATEMENT
+  DECISION: conclude with θ ITSELF (no θa existential — every -var case
+  chooses θa := θ; the paper-shaped corollary is immediate); only
+  P6-Cs/Ss/L extend θ (over Ξc / guess-Ξ').  NEXT: the 9 per-constructor
+  `uskl_rho` inversion helpers, then P6-Cv's main induction
+  (consistency-derivation outer, relation-inversion per case, paper's
+  Pi-subcase analyses), with the ≡ˢ-precision transport NOT needed until
+  a case actually produces θa ≠ θ (expected: never, in the -var pair).
 - 2026-07-24 (b): **P5b-ii step (3) DONE — `ad_pat_sub_precise_upre`
   Qed, axiom-free** (commit f5b3e72; `Print Assumptions` = Closed under
   the global context; `make coq` green).  Precision-substitution
@@ -738,6 +772,75 @@ Start by DRAFTING P6-Cv's statement both ways against the paper's
 Check-case usage (subtyping-proofs.tex:1770-1785, which instantiates
 ρ := ρ|premise) and pick whichever discharges that call site with less
 glue.  Expect (b).
+
+**DECISION (locked 2026-07-24): (b), the relation `uskl_rho`.**  Both
+drafts pass the Check call site verbatim (sub/consis premises share the
+subject), so the discriminators are elsewhere, and all favour (b):
+1. Arrow: the paper's ρ1/ρ2 restriction exists only to make "Ψ introduced
+   by ρ" positional; a shared variable in both branches makes the
+   list-form tag set NON-positional (copies share tags — the same
+   cross-copy phenomenon P5's ⊑ᵤ met).  The relation localizes Ψρ per
+   branch by inversion; per-branch (Ψn_i, Ψna_i) are recovered
+   set-algebraically as Ψf_i∖Ψ' / Ψf_i∩Ψ' using `inter Ψρ Ψ' = ∅` +
+   `ad_pat_consis_ftag_sub` + tags-uniqueness of ψa.
+2. ForallL (P6-Sv): relation extension = one subst lemma
+   (`uskl_rho_subst`, mirror of `uskl_precise_subst`); list form = a
+   hand-rolled capture-avoiding multi-subst kit + commutation lemmas.
+3. The positional side condition ("Pi has the same rigid variable at
+   every ρ-position") is replaced by FRESHNESS facts about the replaced
+   variables — NOT by mere Δ-membership.  **Counterexample analysis
+   (2026-07-24, do not re-derive):** Δ-membership alone is INSUFFICIENT.
+   With X ∈ Δ ∩ dom Θ, precision still admits a ⊤◇-wrapped leaf position
+   via `tophole_remove` (v4: `Pi`-pos `⊤◇.ŵ`, ŵ ∈ Θ0 flex, θŵ = X — wf,
+   since the ⊤◇-body is ŵ, not X) or via def-chains (v5: θŵ = β̂,
+   `β̂ := X ∈ Θ`); then target-pos `all_syn` (P0-pos `∀γ.γ`, image
+   ψ'' = `∀^ε'γ.γ`, refinement satisfied through `all_inh`) forces
+   SE-GhostForall, whose `all_syn`-output has NO precision rule against
+   the rigid `var X` — conclusion underivable, all premises satisfied.
+   What kills v4/v5 at the REAL call site (P6-Sv ForallL, X freshly
+   opened from `Pi = ∀β.P1`): (i) X cannot occur under any ⊤◇ of P1 —
+   `a_wf_pskl__tophole` demands empty-Δ bodies (the "no binder under a
+   ⊤◇-body" discipline recorded on `a_sub__forall_l`); (ii) X postdates
+   every flex-image of θ (θ ∷ Θ0 ⊑ Θ is fixed before X is picked); (iii)
+   X postdates every definition in Θ (aenv order: `(X~tvar)++Θ`, wf
+   scopes defs to their tails).  MECHANIZATION: carry a freshness pack
+   `∀X ∈ Δρ`: `X ∈ Δ` (blocks the hole rule), `binds X abind_tvar Θ`
+   (blocks flex_r, via wf-uniq), `X ∉ msubst-image-ftv of θ`,
+   `X ∉ def-image-ftv of Θ`, `X ∉ shielded_ftv (msubst θ Pi)` — where
+   `shielded_ftv : pskl → atoms` is a NEW syntactic collector of the
+   ftvars of all ⊤◇-bodies.  The LEAF INVERSION lemma then holds:
+   `⊑ᵖ (P, var X)` + the pack ⇒ `P = pskl_var_f v` (v = X or a flex) ∧
+   `Ψ = ∅` — so `Pi`-pos is a var and SE-Var fires with θa := θ.
+   For CHAINING (a_solve_cstr threads outputs into the next constraint's
+   Pi; the arrow case threads θ1 into branch 2), the CONCLUSIONS must
+   return the pack for (θa, Pa): add `∀X∈Δρ, X ∉ msubst-ftv θa ∧
+   X ∉ shielded_ftv (msubst θa Pa)`.  Supporting kit:
+   `shielded_ftv(out) ⊆ shielded_ftv(subject) ∪ ftvar(target)` for
+   a_solve_eq/a_solve_sub (mutual, alongside the existing
+   `a_solve_sub_eq_ftv`), plus msubst/constructor distribution lemmas.
+   ⇒ [paper-gap] entries: (1) the prose side condition must be read as
+   these freshness facts — its ForallL-maintenance ("Guaranteed by the
+   fact that ρ comes from instantiation") is a genuine argument needing
+   (i)-(iii), not an observation; (2) v4/v5 document why weaker readings
+   are false.
+
+Shape of `uskl_rho` (in the new algo/prop_look_complete.v):
+`uskl_rho (NM : a_sub_mode) (Θ : aenv) : atoms(*Δρ*) -> atoms(*Ψρ*) ->
+uskl -> uskl -> Prop` — REFL (lc, Ψρ=∅; identity-ρ call sites),
+same-constructor congruences (arrow, all_syn, all_etag same-tag,
+tophole, topholeg; cofinite binders; Ψρ = union, NO cross-copy
+disjointness), and the LEAF `ψ'' ⊒ var X` with `X ∈ Δρ`,
+`a_tags_sort NM Ψ'' ψ''`, wf `⌊ψ''⌋`, `Ψρ [=] Ψ''`.  No functionality
+(same X may map to different images at different leaves — no proof step
+needs sameness).  Kit: psi_cong, ftag_sub (`ftag ψsub ⊆ Ψρ ∪ ftag ψa`
+-ish), lc, and `uskl_rho_subst` (one-sided: `[ψb/X]` on the LHS turns
+X-refl/congruence-var occurrences into leaves; RHS unchanged).
+Tag premises in the lemma statements (replacing the paper's "Ψ
+introduced by ρ" prose): `Ψfull [=] Ψn ∪ Ψna`, `Ψna ⊆ Ψ'`,
+`inter Ψn Ψ' [=] ∅`, `inter Ψρ Ψ' [=] ∅` (the paper's global
+`fresh Ψ'`), precision premise at `Ψi ⊆ Ψ'`, conclusion precision at
+`Ψi ∪ Ψna`.  a_solve_eq/a_solve_sub conclusions at Θ0 (tvar-entry
+strengthening lemma needed for the ForallInh/ForallR cases).
 
 Other observations for the statements:
 - `solveeq{Pi}{P0}{Pa}` = `Θ? ⊢ₑ Pi ∼ P0 ⤳ Pa`: pick the aenv index

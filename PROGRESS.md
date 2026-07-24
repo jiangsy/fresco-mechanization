@@ -77,6 +77,25 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-24 (c) — P6 started: ρ-relation decided (+ corrected), leaf/freshness kit Qed
+
+New file `frost/algo/prop_look_complete.v` (all Qed, axiom-free;
+`p6_leaf_var` = Closed under the global context).  The paper's ρ is the
+RELATION `uskl_rho` (refl + congruences + replace-leaf; DESIGN §7
+DECISION block).  DESIGN CORRECTION: the paper's positional side
+condition on P_i is load-bearing — counterexamples v4/v5 (DESIGN §7)
+show Δ-membership + precision alone admit ⊤◇-wrapped/def-chained leaf
+positions that break the conclusion — and is RECOVERED as the lemma
+`ad_ppre_delta_var_inv` from freshness of the replaced variables
+(Δ-membership, rigid binding, θ-image-/Θ-definition-/⊤◇-shielded-ftv
+avoidance via the new `pskl_shielded_ftv`).  Kit: solve-cluster
+ctx-change/strengthen/weaken/rename + shielded-output bound, msubst
+avoidance lemmas, `is_sskl` painting/refine-hole/consis-tags-empty
+helpers, and the packaged -var leaf case `p6_leaf_var`.  Statement
+decision: the -var lemmas conclude with θ itself (no θa existential).
+NEXT: `uskl_rho` per-constructor inversions, then P6-Cv's main
+induction (DESIGN §6 2026-07-24 (c) has the full map).
+
 ## 2026-07-24 (b) — P5b-ii step (3) QED: precision-substitution closed
 
 **`ad_pat_sub_precise_upre` (paper `lemma:precision-substitution`) is Qed,
