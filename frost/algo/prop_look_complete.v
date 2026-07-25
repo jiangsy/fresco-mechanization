@@ -166,6 +166,130 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  Inversion of [uskl_rho] BY SUBJECT SHAPE (P6-Cv/Sv consume these: the   *)
+(*  induction is on the [ad_pat_consis]/[ad_pat_sub] derivation of the      *)
+(*  ρ(ψa)-SUBJECT, so each case fixes the subject shape and reads off ψa's  *)
+(*  shape — either a matching structural congruence / reflexive copy, or a  *)
+(*  ρ-LEAF [ψa = var X] with the subject as X's image).                     *)
+(* ===================================================================== *)
+
+(** [ψa = var X] with the subject as X's ρ-image (the leaf disjunct). *)
+Definition rho_leaf (NM : a_sub_mode) (Θ : aenv) (Δρ Ψρ : atoms)
+    (S : uskl) (ψa : uskl) : Prop :=
+  exists X Ψ'', ψa = uskl_var_f X /\ X `in` Δρ /\
+    a_tags_sort NM Ψ'' S /\ Θ ⨟ empty ⊢ₚₛᵃ ⌊ S ⌋ˢ /\ Ψρ [=] Ψ''.
+
+(* [andsplit] splits ONLY [/\] goals — plain [split] would enter the
+   single-constructor [a_tags_sort] inside [rho_leaf]. *)
+Local Ltac rho_andsplit := repeat match goal with |- _ /\ _ => split end.
+Local Ltac rho_refl_tac := left; split; [ reflexivity | assumption ].
+
+Lemma uskl_rho_arrow_l_inv : forall NM Θ Δρ Ψρ S1 S2 ψa,
+  uskl_rho NM Θ Δρ Ψρ (uskl_arrow S1 S2) ψa ->
+  (ψa = uskl_arrow S1 S2 /\ Ψρ [=] empty)
+  \/ rho_leaf NM Θ Δρ Ψρ (uskl_arrow S1 S2) ψa
+  \/ (exists R1 R2 Ψ1 Ψ2, ψa = uskl_arrow R1 R2 /\
+        uskl_rho NM Θ Δρ Ψ1 S1 R1 /\ uskl_rho NM Θ Δρ Ψ2 S2 R2 /\
+        Ψρ [=] Ψ1 `union` Ψ2).
+Proof.
+  intros NM Θ Δρ Ψρ S1 S2 ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; left; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+  - right; right; exists R1, R2, Ψ1, Ψ2; rho_andsplit;
+      try reflexivity; assumption.
+Qed.
+
+Lemma uskl_rho_unit_l_inv : forall NM Θ Δρ Ψρ ψa,
+  uskl_rho NM Θ Δρ Ψρ uskl_unit ψa ->
+  (ψa = uskl_unit /\ Ψρ [=] empty) \/ rho_leaf NM Θ Δρ Ψρ uskl_unit ψa.
+Proof.
+  intros NM Θ Δρ Ψρ ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+Qed.
+
+Lemma uskl_rho_var_l_inv : forall NM Θ Δρ Ψρ Y ψa,
+  uskl_rho NM Θ Δρ Ψρ (uskl_var_f Y) ψa ->
+  (ψa = uskl_var_f Y /\ Ψρ [=] empty) \/ rho_leaf NM Θ Δρ Ψρ (uskl_var_f Y) ψa.
+Proof.
+  intros NM Θ Δρ Ψρ Y ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+Qed.
+
+Lemma uskl_rho_hole_l_inv : forall NM Θ Δρ Ψρ ψa,
+  uskl_rho NM Θ Δρ Ψρ uskl_hole ψa ->
+  (ψa = uskl_hole /\ Ψρ [=] empty) \/ rho_leaf NM Θ Δρ Ψρ uskl_hole ψa.
+Proof.
+  intros NM Θ Δρ Ψρ ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+Qed.
+
+Lemma uskl_rho_holeg_l_inv : forall NM Θ Δρ Ψρ ψa,
+  uskl_rho NM Θ Δρ Ψρ uskl_holeg ψa ->
+  (ψa = uskl_holeg /\ Ψρ [=] empty) \/ rho_leaf NM Θ Δρ Ψρ uskl_holeg ψa.
+Proof.
+  intros NM Θ Δρ Ψρ ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+Qed.
+
+Lemma uskl_rho_tophole_l_inv : forall NM Θ Δρ Ψρ S ψa,
+  uskl_rho NM Θ Δρ Ψρ (uskl_tophole S) ψa ->
+  (ψa = uskl_tophole S /\ Ψρ [=] empty)
+  \/ rho_leaf NM Θ Δρ Ψρ (uskl_tophole S) ψa
+  \/ (exists R, ψa = uskl_tophole R /\ uskl_rho NM Θ Δρ Ψρ S R).
+Proof.
+  intros NM Θ Δρ Ψρ S ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; left; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+  - right; right; exists R; split; [ reflexivity | assumption ].
+Qed.
+
+Lemma uskl_rho_topholeg_l_inv : forall NM Θ Δρ Ψρ S ψa,
+  uskl_rho NM Θ Δρ Ψρ (uskl_topholeg S) ψa ->
+  (ψa = uskl_topholeg S /\ Ψρ [=] empty)
+  \/ rho_leaf NM Θ Δρ Ψρ (uskl_topholeg S) ψa
+  \/ (exists R, ψa = uskl_topholeg R /\ uskl_rho NM Θ Δρ Ψρ S R).
+Proof.
+  intros NM Θ Δρ Ψρ S ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; left; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+  - right; right; exists R; split; [ reflexivity | assumption ].
+Qed.
+
+Lemma uskl_rho_all_syn_l_inv : forall NM Θ Δρ Ψρ S ψa,
+  uskl_rho NM Θ Δρ Ψρ (uskl_all_syn S) ψa ->
+  (ψa = uskl_all_syn S /\ Ψρ [=] empty)
+  \/ rho_leaf NM Θ Δρ Ψρ (uskl_all_syn S) ψa
+  \/ (exists L R, ψa = uskl_all_syn R /\
+        forall X, X `notin` L ->
+          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl S (uskl_var_f X))
+                              (open_uskl_wrt_uskl R (uskl_var_f X))).
+Proof.
+  intros NM Θ Δρ Ψρ S ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; left; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+  - right; right; exists L, R; split; [ reflexivity | eassumption ].
+Qed.
+
+Lemma uskl_rho_all_etag_l_inv : forall NM Θ Δρ Ψρ ε S ψa,
+  uskl_rho NM Θ Δρ Ψρ (uskl_all_etag ε S) ψa ->
+  (ψa = uskl_all_etag ε S /\ Ψρ [=] empty)
+  \/ rho_leaf NM Θ Δρ Ψρ (uskl_all_etag ε S) ψa
+  \/ (exists L R, ψa = uskl_all_etag ε R /\
+        forall X, X `notin` L ->
+          uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl S (uskl_var_f X))
+                              (open_uskl_wrt_uskl R (uskl_var_f X))).
+Proof.
+  intros NM Θ Δρ Ψρ ε S ψa H; inversion H; subst.
+  - rho_refl_tac.
+  - right; left; exists X, Ψ''; rho_andsplit; try reflexivity; assumption.
+  - right; right; exists L, R; split; [ reflexivity | eassumption ].
+Qed.
+
+(* ===================================================================== *)
 (*  Shielded free variables + the ρ-freshness pack (DESIGN §7).            *)
 (*                                                                         *)
 (*  [pskl_shielded_ftv P] collects the free type variables occurring       *)
