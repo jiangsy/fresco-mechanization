@@ -1288,3 +1288,150 @@ Proof.
         discriminate Hc
     end.
 Qed.
+
+(* ---- the Unit consistency case, as a standalone size-induction lemma ---- *)
+(*    P0 wf at empty Δ (paper's Θ0 ⊢ P0); Pi carries the binder ctx Δ.       *)
+(* Precision into the unit target carries no tags. *)
+Lemma ad_ppre_unit_tags_empty : forall Θ Δ P Ψ,
+  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] uskl_unit -> Ψ [=] empty.
+Proof.
+  intros Θ Δ P Ψ H; remember uskl_unit as u eqn:Hu.
+  induction H; try discriminate Hu; subst; auto.
+Qed.
+
+(* ==== the Unit consistency case, as a standalone lemma ==== *)
+(* P0 is well-formed at empty Δ (the paper's [Θ0 ⊢ P0]); Pi carries the
+   binder context Δ.  Strong induction on [size Pi + size P0] so the ⊤◇
+   stripping (Pi and P0 sides) recurses. *)
+Lemma a_solve_eq_cv_unit : forall n Θ0 Θ θ Δ Ψi Pi P0,
+  size_pskl Pi + size_pskl P0 <= n ->
+  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  θ ∷ Θ0 ⊑ Θ ->
+  Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] uskl_unit ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ bskl_unit ->
+  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
+             Θ ⨟ Δ ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi ] uskl_unit.
+Proof.
+  induction n; intros Θ0 Θ θ Δ Ψi Pi P0 Hn
+    HwfΘ HwfΘ0 HwfPi HwfP0 Hθ Hpre Hrefine.
+  { pose proof (size_pskl_min Pi); pose proof (size_pskl_min P0); lia. }
+  pose proof (ad_ppre_unit_tags_empty Hpre) as HΨi.
+  destruct Pi as [ | nb | X | Pi1 Pi2 | Pib | | Pi' ].
+  - (* Pi = unit *)
+    destruct P0 as [ | nb0 | α | P0a P0b | P0b | | P0' ].
+    + (* P0 = unit : SE-Unit *)
+      exists pskl_unit; split;
+        [ apply a_solve_eq__unit | simpl; apply ad_ppre__unit; exact HΨi ].
+    + (* P0 = var_b : not wf *) inversion HwfP0.
+    + (* P0 = var_f α : 3-way *)
+      inversion HwfP0; subst;
+      match goal with H : _ \/ a_binds_tvar α _ |- _ =>
+        destruct H as [Hemp | Habt] end; [ clear - Hemp; fsetdec | ].
+      destruct Habt as [Hrig | [Hfm | [τ Hfd]]].
+      * (* rigid : refinement absurd *)
+        exfalso.
+        assert (Hmid : msubst_pskl θ (pskl_var_f α) = pskl_var_f α)
+          by (eapply msubst_pskl_tvar_id; eauto).
+        rewrite Hmid in Hrefine; simpl in Hrefine.
+        eapply ad_refine_syn_rigid_var_unit_absurd;
+          [ exact HwfΘ | eapply a_inc_binds_tvar; eauto | exact Hrefine ].
+      * (* undefined flex : SE-FlexR *)
+        exists (pskl_var_f α); split.
+        -- apply a_solve_eq__flex_r;
+             [ left; exact Hfm | split; [ constructor | intros Hf; inversion Hf ] ].
+        -- eapply ad_partial_precise_psi_cong;
+             [ eapply ad_refine_inh_unit_ppre;
+                 [ exact HwfΘ | exact Hrefine | reflexivity | reflexivity ]
+             | clear - HΨi; fsetdec ].
+      * (* defined flex : SE-FlexR *)
+        exists (pskl_var_f α); split.
+        -- apply a_solve_eq__flex_r;
+             [ right; exists τ; exact Hfd
+             | split; [ constructor | intros Hf; inversion Hf ] ].
+        -- eapply ad_partial_precise_psi_cong;
+             [ eapply ad_refine_inh_unit_ppre;
+                 [ exact HwfΘ | exact Hrefine | reflexivity | reflexivity ]
+             | clear - HΨi; fsetdec ].
+    + (* P0 = arrow : refinement absurd *)
+      simpl in Hrefine; inversion Hrefine.
+    + (* P0 = all_syn : refinement absurd *)
+      simpl in Hrefine; inversion Hrefine.
+    + (* P0 = hole : SE-VacuousR *)
+      exists pskl_unit; split; [ apply a_solve_eq__hole_r | exact Hpre ].
+    + (* P0 = tophole P0' : SE-GuardedGhost (unit guarded), recurse (unit,P0') *)
+      simpl in Hrefine. inversion Hrefine; subst.
+      inversion HwfP0; subst.
+      match goal with
+      | Href' : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl θ P0') ⊳ bskl_unit,
+        HwfP0' : _ ⨟ _ ⊢ₚₛᵃ P0' |- _ =>
+        destruct (IHn Θ0 Θ θ Δ Ψi pskl_unit P0'
+                    ltac:(simpl in Hn; simpl; lia)
+                    HwfΘ HwfΘ0 HwfPi HwfP0' Hθ Hpre Href')
+          as [Pa [Hsolve Hprec]]
+      end.
+      exists Pa; split;
+        [ apply a_solve_eq__tophole_r_guarded; [ constructor | exact Hsolve ]
+        | exact Hprec ].
+  - (* Pi = var_b : not wf *) inversion HwfPi.
+  - (* Pi = var_f X : SE-Var *)
+    exists (pskl_var_f X); split; [ apply a_solve_eq__var | exact Hpre ].
+  - (* Pi = arrow : precision absurd *) simpl in Hpre; inversion Hpre.
+  - (* Pi = all_syn : precision absurd *) simpl in Hpre; inversion Hpre.
+  - (* Pi = hole : SE-GhostL, Pa := P0 *)
+    exists P0; split;
+      [ apply a_solve_eq__hole_l
+      | eapply ad_partial_precise_psi_cong;
+          [ eapply ad_refine_inh_unit_ppre;
+              [ exact HwfΘ | exact Hrefine | reflexivity | reflexivity ]
+          | clear - HΨi; fsetdec ] ].
+  - (* Pi = tophole Pi' *)
+    simpl in Hpre. inversion Hpre; subst.
+    inversion HwfPi; subst.
+    destruct P0 as [ | nb0 | α | P0a P0b | P0b | | P0' ].
+    + (* P0 = unit : GhostGuarded, recurse (Pi',unit) *)
+      match goal with
+      | Hpre' : _ ⨟ _ ⊢ msubst_pskl θ Pi' ⊑ᵖ[ _ ] uskl_unit,
+        HwfPi' : _ ⨟ _ ⊢ₚₛᵃ Pi' |- _ =>
+        destruct (IHn Θ0 Θ θ Δ Ψi Pi' pskl_unit
+                    ltac:(simpl in Hn; simpl; lia)
+                    HwfΘ HwfΘ0 HwfPi' HwfP0 Hθ Hpre' Hrefine)
+          as [Pa [Hsolve Hprec]]
+      end.
+      exists Pa; split;
+        [ apply a_solve_eq__tophole_l_guarded; [ constructor | exact Hsolve ]
+        | exact Hprec ].
+    + (* P0 = var_b *) inversion HwfP0.
+    + (* P0 = var_f α : GhostGuarded (var guarded), recurse (Pi', var α) *)
+      match goal with
+      | Hpre' : _ ⨟ _ ⊢ msubst_pskl θ Pi' ⊑ᵖ[ _ ] uskl_unit,
+        HwfPi' : _ ⨟ _ ⊢ₚₛᵃ Pi' |- _ =>
+        destruct (IHn Θ0 Θ θ Δ Ψi Pi' (pskl_var_f α)
+                    ltac:(simpl in Hn; simpl; lia)
+                    HwfΘ HwfΘ0 HwfPi' HwfP0 Hθ Hpre' Hrefine)
+          as [Pa [Hsolve Hprec]]
+      end.
+      exists Pa; split;
+        [ apply a_solve_eq__tophole_l_guarded; [ constructor | exact Hsolve ]
+        | exact Hprec ].
+    + (* P0 = arrow : refinement absurd *) simpl in Hrefine; inversion Hrefine.
+    + (* P0 = all_syn : refinement absurd *) simpl in Hrefine; inversion Hrefine.
+    + (* P0 = hole : SE-VacuousR, Pa := tophole Pi' *)
+      exists (pskl_tophole Pi'); split; [ apply a_solve_eq__hole_r | exact Hpre ].
+    + (* P0 = tophole P0' : SE-UnivGhost, recurse (Pi', P0') *)
+      simpl in Hrefine. inversion Hrefine; subst.
+      inversion HwfP0; subst.
+      match goal with
+      | Hpre' : _ ⨟ _ ⊢ msubst_pskl θ Pi' ⊑ᵖ[ _ ] uskl_unit,
+        Href' : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl θ P0') ⊳ bskl_unit,
+        HwfPi' : _ ⨟ _ ⊢ₚₛᵃ Pi',
+        HwfP0' : _ ⨟ _ ⊢ₚₛᵃ P0' |- _ =>
+        destruct (IHn Θ0 Θ θ Δ Ψi Pi' P0'
+                    ltac:(simpl in Hn; simpl; lia)
+                    HwfΘ HwfΘ0 HwfPi' HwfP0' Hθ Hpre' Href')
+          as [Pa [Hsolve Hprec]]
+      end.
+      exists (pskl_tophole Pa); split;
+        [ apply a_solve_eq__tophole_both; exact Hsolve
+        | simpl; apply ad_ppre__tophole_remove; exact Hprec ].
+Qed.
