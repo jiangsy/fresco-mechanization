@@ -942,3 +942,43 @@ Three facts settle it (all machine-checked; new file
 monotype→refinement fact (no premise); leaf cases as the paper does; the
 Arrow case handles a flexible `P0` via SolE-FlexR like the leaf case, relying
 on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
+
+## GAP (BLOCKED, repair pending) — `complete-consistency-cc-solving-var` ForallInh/ForallSyn Subcases `Pi=□` and `Pi=⊤◇.Pi'`: the Δ-bookkeeping of the IH output is broken
+
+- Where: consistency-proofs.tex, Lemma
+  `lemma:complete-consistency-constraint-collection-solving-var`
+  (:1181), cases ForallInh/ForallSyn, Subcases `P_i = □` and
+  `P_i = ⊤◇.P_i'`; mech `a_solve_eq_complete_var` (dev scratch
+  `algo/cex/p6cv_dev_tmp.v`, cases forall_inh_tagged /
+  forall_syn_tagged).  Status 2026-07-25: the mech is at 13/15 cases
+  (all others Qed-threaded); these two rows are the only blockers.
+- The paper's subcases invoke the IH at the ∀-body and conclude with the
+  ∀-precision rule, whose body obligation lives at `Δ,β | Θ,β`.  But the
+  IH's PRECISION PREMISE for `P_i = □` can only be built by the □-rule,
+  whose side condition `Δ ∩ ftv(ψ') = ∅` FAILS at `Δ,β` whenever the
+  target body `ψ'` uses its binder — so the IH can only be invoked at
+  `Δ`, and its output precision is at `Δ`, not the `Δ,β` the ∀-rule
+  needs.  The □-rule's side condition is not Δ-monotone, so the step
+  "goal follows from GhostL" silently uses an inadmissible Δ-weakening.
+  The `⊤◇` subcase (precision inverted through the fill rule, concluded
+  by SolE-GhostForall) has the same mismatch: its body precision sits at
+  `Δ | Θ,β` and must be moved to `Δ,β | Θ`.
+- The STATEMENT survives: the configurations that would break the
+  weakening are premise-unreachable.  A refinement □-fill is wf in
+  `Θ` at empty Δ (the refinement's own □-rule), hence β-free; the
+  consistency and ρ transfer that β-freeness to the □-opposite TARGET
+  subtrees.  Concretely, with `ψ' = β→1` and `P_0' = □→1` the □-fill's
+  synthesised-paint would have to be `β` itself, whose wf premise fails —
+  so a □ of `P_0` never sits opposite a β-containing subtree.  But no
+  premise of the lemma EXPOSES this fact, so the proof step needs a
+  repair, not just a rewording.
+- Repair candidates (DESIGN-completeness-subtyping.md §6(l); decision
+  pending): (1) generalize the lemma's refinement premise to a Δr that
+  carries the descent binders (keeps fills β-free by the refinement's
+  own wf discipline; touches the case-lemma kit that pins `Δr = ∅`);
+  (2) a standalone `P_i = □`-column lemma by its own consistency
+  induction with a Δr-indexed refinement premise + ftv-bound lemmas for
+  consistency (`ftv S ⊆ ftv Q ∪ dom Θ`) and ρ (`ftv ψa ⊆ ftv ψsub ∪ Δρ`);
+  (3) a positional hole-apartness premise (flex_apart-style) — 
+  dispreferred, since call sites cannot derive it across the binder
+  descent from cleanliness alone.

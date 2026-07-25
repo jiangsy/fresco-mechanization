@@ -3029,3 +3029,94 @@ Proof.
           | reflexivity | exact Hmb | exact HΔr ]
       | clear; fsetdec ].
 Qed.
+
+(* ===================================================================== *)
+(*  Arrow-case grid support (Phase C): component inversions at both-arrow *)
+(*  nodes, the mono-SUBJECT tag-emptiness lemma (the [Pi = var] rows of   *)
+(*  the CORE grids), and the [flex_apart] arrow inversion.                 *)
+(* ===================================================================== *)
+
+(** Component inversions at both-arrow nodes (names controlled by the
+    caller, unlike a raw [inversion]). *)
+Lemma ad_ppre_arrow_arrow_inv : forall Θ Δ Ψ P1 P2 ψ1 ψ2,
+  Θ ⨟ Δ ⊢ (pskl_arrow P1 P2) ⊑ᵖ[ Ψ ] (uskl_arrow ψ1 ψ2) ->
+  exists Ψ1 Ψ2, (Θ ⨟ Δ ⊢ P1 ⊑ᵖ[ Ψ1 ] ψ1) /\ (Θ ⨟ Δ ⊢ P2 ⊑ᵖ[ Ψ2 ] ψ2)
+    /\ Ψ [=] Ψ1 `union` Ψ2.
+Proof.
+  intros Θ Δ Ψ P1 P2 ψ1 ψ2 H; inversion H; subst.
+  match goal with
+  | Hp1 : Θ ⨟ Δ ⊢ P1 ⊑ᵖ[ ?A ] ψ1, Hp2 : Θ ⨟ Δ ⊢ P2 ⊑ᵖ[ ?B ] ψ2 |- _ =>
+    exists A, B; split; [ exact Hp1 | split; [ exact Hp2 | assumption ] ]
+  end.
+Qed.
+
+Lemma ad_refine_arrow_arrow_inv : forall Θ Δr L1 L2 Q1 Q2,
+  Θ ⨟ Δr ⊢ᵣᵃ (bskl_arrow L1 L2) ⊳ (bskl_arrow Q1 Q2) ->
+  (Θ ⨟ Δr ⊢ᵣᵃ L1 ⊳ Q1) /\ (Θ ⨟ Δr ⊢ᵣᵃ L2 ⊳ Q2).
+Proof.
+  intros Θ Δr L1 L2 Q1 Q2 H; inversion H; subst; split; assumption.
+Qed.
+
+(** A mono-paint SUBJECT forces an empty tag reading of the target: the
+    precision rules reachable from a paint (unit/var/arrow congruences +
+    the flex chains) only ever meet tag-free target shapes — a mono paint
+    has no ∀, so [ad_ppre__forall] (the only tag producer) cannot fire.
+    Discharges the [Pi = var] rows of the Arrow-case CORE grid
+    (Ψ' [=] ∅ ⇒ Ψa [=] ∅) and, by the ε-membership contradiction, kills
+    the [Pi = var] rows of the tagged-∀ cases. *)
+Lemma ad_ppre_mono_subject_target_tags_empty : forall Θ Δ Ψ P ψ,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  forall τ, P = ptyp_to_pskl τ -> mono_ptyp τ ->
+  forall Ψt, d_tags_skl Ψt ψ -> Ψt [=] empty.
+Proof.
+  intros Θ Δ Ψ P ψ HwfΘ H; induction H; intros τ0 HeqP Hm Ψt Hdt.
+  - (* unit *) exact (d_tags_skl_unit_inv Hdt).
+  - (* var *) exact (d_tags_skl_var_inv Hdt).
+  - (* arrow *)
+    destruct τ0; simpl in HeqP; try discriminate HeqP.
+    inversion HeqP; subst.
+    destruct (d_tags_skl_arrow_inv Hdt)
+      as (Ψt1 & Ψt2 & Hd1 & Hd2 & _ & HeqΨt).
+    assert (Hm1 : mono_ptyp τ0_1) by (inversion Hm; assumption).
+    assert (Hm2 : mono_ptyp τ0_2) by (inversion Hm; assumption).
+    pose proof (IHad_partial_precise1 HwfΘ _ eq_refl Hm1 _ Hd1) as He1.
+    pose proof (IHad_partial_precise2 HwfΘ _ eq_refl Hm2 _ Hd2) as He2.
+    clear - HeqΨt He1 He2; fsetdec.
+  - (* forall: subject all_syn is never a mono paint *)
+    destruct τ0; simpl in HeqP; try discriminate HeqP.
+    inversion Hm.
+  - (* hole: never a paint *)
+    destruct τ0; simpl in HeqP; discriminate HeqP.
+  - (* tophole_remove *)
+    destruct τ0; simpl in HeqP; discriminate HeqP.
+  - (* tophole_fill *)
+    destruct τ0; simpl in HeqP; discriminate HeqP.
+  - (* tophole_keep *)
+    destruct τ0; simpl in HeqP; discriminate HeqP.
+  - (* flex_l: chase the definition (still a mono paint) *)
+    destruct τ0; simpl in HeqP; try discriminate HeqP.
+    inversion HeqP; subst.
+    eapply IHad_partial_precise;
+      [ exact HwfΘ | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; eauto | exact Hdt ].
+  - (* flex_r: target var carries no tags *)
+    exact (d_tags_skl_var_inv Hdt).
+Qed.
+
+(** [flex_apart] inversion at a both-arrow node: the clean case distributes
+    the free-variable condition; the arrow case is direct.  (Of the other
+    constructors, none matches an arrow P0 against an arrow target.) *)
+Lemma flex_apart_arrow_inv : forall Θ0 Δρ P1 P2 ψ1 ψ2,
+  flex_apart Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) ->
+  flex_apart Θ0 Δρ P1 ψ1 /\ flex_apart Θ0 Δρ P2 ψ2.
+Proof.
+  intros Θ0 Δρ P1 P2 ψ1 ψ2 H; inversion H; subst.
+  - (* fa_clean *)
+    match goal with
+    | Hc : AtomSetImpl.inter _ _ [=] empty |- _ => simpl in Hc;
+        split; apply fa_clean; clear - Hc; fsetdec
+    end.
+  - (* fa_arrow *)
+    split; assumption.
+Qed.

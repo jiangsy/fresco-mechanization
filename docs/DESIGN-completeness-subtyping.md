@@ -560,6 +560,105 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-25 (l): **P6-Cv at 13/15 — Hsubeq weakened to the inclusion pair,
+  ARROW CASE CLOSED, both untagged-∀ cases closed (absurd); the two
+  TAGGED-∀ cases are TRUE but BLOCKED on a Δ-transfer PAPER-GAP that
+  needs a repair decision.**
+  - **Hsubeq weakening (STEP 1) done**: the statement's
+    `Ψsub [=] Ψρ ∪ Ψa` is now the pair `Ψsub ⊆ Ψρ ∪ Ψa` ∧ `Ψa ⊆ Ψsub`
+    (`Hsubeq1`/`Hsubeq2`); all 10 previously closed cases re-threaded
+    (topholeg P0=□ rows use only `Hsubeq2`, flex_l passes the pair with
+    the second component trivial).
+  - **Arrow case CLOSED** (dev scratch; kit Qed in prop_look_complete.v).
+    Structure: `uskl_rho_arrow_l_inv` → leaf (`p6cv_close_leaf`) / refl
+    (recast as congruence via `urho__refl`, lc from `is_tskl_lc`,
+    Ψρ := ∅∪∅) / congruence — both non-leaf branches funnel into an
+    inline KEY continuation.  KEY level (fixed for the whole grid):
+    `a_tags_sort_arrow_inv` branch decomposition; the branch tag-flow
+    facts `Ψ_k ⊆ Ψρ_k ∪ Ψ'_k` (`ad_pat_consis_ftag_sub` +
+    `uskl_rho_ftag_sub` + `d_tags_skl_ftag`); the solved-tag split
+    `Ψa_k := Ψ_k ∩ Ψ'_k` with `Ψa [=] Ψa1 ∪ Ψa2` (one scoped fsetdec
+    from Hsubeq1/2 + H + Hsub + Hinter + the flow facts); VACR (P0 = □ ⇒
+    `ad_refine_syn_hole_sskl` + `ad_pat_consis_sskl_tags` per branch ⇒
+    Ψa = ∅); FLEX — the repaired flexible-P0 discharge chain as one
+    assert (apart-inversion: only `fa_clean` survives, `fa_var_rigid`
+    dies by wf-uniq; `uskl_rho_clean_eq` per branch ⇒ subject = target,
+    Ψρ_k = ∅; `ad_refine_mono_paint_rhs_monoish` ⇒ monoish Q_k;
+    `ad_pat_consis_monoish_counterpart` per branch ⇒ Ψ_k = ∅ and
+    ψa_k = mono paint; rebuild `ad_pat_consis__arrow`; B2
+    `mono_paint_paint_refine_consis_ppre` closes the θβ̂-image precision).
+    CORE = inner strong induction on `size Pi + size P0` at the fixed
+    arrow target: Pi ∈ {unit, arrow-vs-∅-rules absurd, var (SE-Var +
+    NEW `ad_ppre_mono_subject_target_tags_empty` ⇒ Ψ' = ∅ ⇒ Ψa = ∅),
+    arrow (P0-grid: flex = FLEX + SE-FlexR; rigid var absurd; arrow =
+    branch main IHs with the tag split; □ = VACR + SE-VacuousR; ⊤◇ =
+    `flex_apart_tophole_p0_inv` + SE-GuardedGhost + CORE), □ (P0-grid:
+    flex = FLEX + SE-GhostL; arrow = □-precisions per branch + branch
+    main IHs + `a_solve_eq_hole_subject_inv` pins; ⊤◇ = CORE(□,P0') +
+    SE-GhostL), ⊤◇ (tophole_remove inversion only — target is an arrow —
+    then the cv_mono-style P0 grid with SE-GhostGuarded/UnivGhost/
+    VacuousR)}.  New kit (Qed, committed): `ad_ppre_arrow_arrow_inv`,
+    `ad_refine_arrow_arrow_inv` (caller-named component inversions),
+    `ad_ppre_mono_subject_target_tags_empty`, `flex_apart_arrow_inv`.
+  - **forall_inh_untagged + forall_syn CLOSED — ABSURD**: the subject
+    `uskl_all_syn` is neither tag-sorted (no `is_tskl`/`d_tags_skl`
+    all_syn constructor) nor a legal ρ-leaf image; all three ρ-inversion
+    branches die by `a_tags_sort_d_tags` inversion (same pattern as the
+    plain-ghost cases).  [The paper runs these under its ForallInh/
+    ForallSyn cases; in the mech's tag-sorted reading only the TAGGED
+    subjects survive.]
+  - **BLOCKER (needs decision) — forall_inh_tagged / forall_syn_tagged:
+    the Pi = □ and Pi = ⊤◇(tophole_fill-branch) rows.**  The ∀-row
+    (Pi = ∀.Pib) follows §6(h): precision-body from `ad_ppre__forall`
+    inversion at `Θ ⨟ add X Δ`, aenv-weaken into the IH at
+    Θx = (X~tvar)++Θ, `ad_partial_precise_strengthen_tvar` back out
+    (legal: X ∈ add X Δ), solve out via `a_solve_eq_strengthen_tvar` +
+    `a_solve_sub_eq_rename` cofinite reassembly.  But in the □/⊤◇-fill
+    rows the IH's precision PREMISE can only be built at Δ (the □-rule's
+    side condition `Δx ∩ ftv(ψR^X) = ∅` fails at Δx = add X Δ since
+    X ∈ ftv(ψR^X) in general), so the IH's OUTPUT lives at Δ (resp. at
+    (X~tvar)++Θ ⨟ Δ for the fill-branch) — and the conclusion's
+    `ad_ppre__forall` body must sit at `Θ ⨟ (add X Δ)`.  The transfer is
+    blocked precisely at `ad_ppre__hole`: its Δ-disjointness is NOT
+    Δ-monotone.  **This is a PAPER-GAP, not a falsity**: the paper's own
+    Subcases Pi=□ / Pi=⊤◇.Pi' (consistency-proofs.tex ForallInh/
+    ForallSyn) silently move the IH output from Δ to Δ,β.  The statement
+    survives because the configurations that would break the transfer
+    are premise-unreachable: a refinement □-fill is `Θ ⨟ ∅`-wf, hence
+    X-free (X ∉ dom Θ), and consistency + ρ transfer that X-freeness to
+    the □-opposite TARGET subtrees (verified concretely: ψR = β→1,
+    P0b = □→1 forces the □-fill's syn-paint to be `var X`, whose wf
+    premise fails — the bad configuration cannot arise).  Candidate
+    repairs (decide before building the two cases):
+    1. **(prefer to explore first) Δr-generalized refinement premise**:
+       change the statement's refinement slot to `Θ ⨟ Δr ⊢ᵣᵃ … ⊳ Q` with
+       Δr collecting the ∀-descent binders (side conditions
+       Δr ∩ dom Θ = ∅, Δr ⊆ Δ-ish); the binder then stays in Δr — never
+       enters Θ — so the refinement's own □-rule wf keeps fills X-free,
+       and the □-row recursion re-enters the statement without any
+       transfer.  Cost: `a_solve_eq_cv_{unit,mono,ghostg}`, Bridges A/B
+       and B2 pin `Δr [=] empty` — they need Δr-generalization or
+       call-site strengthening lemmas.
+    2. **Standalone □-column lemma**: prove the Pi = □ instance of the
+       theorem as its own consistency induction with a Δr-INDEXED
+       refinement premise, plus two new ftv-bound lemmas
+       (`ad_pat_consis`: ftv(S) ⊆ ftv(Q) ∪ dom Θ; `uskl_rho`:
+       ftv(ψa) ⊆ ftv(ψsub) ∪ Δρ) discharging each □-leaf's
+       (add X Δ)-disjointness pointwise; the main induction's □-rows and
+       the ⊤◇-fill rows call it.  No statement change, but a second
+       □-column copy of the induction.
+    3. **hole_apart positional premise** (flex_apart-style statement
+       change): dispreferred — the call sites would need to derive it
+       from cleanliness, which breaks at exactly the binder descent.
+    Plumbing needed regardless of the choice (all standard):
+    `ad_refine_syn` Δr→tvar transfer (mid-general), an
+    `ad_partial_precise` rename lemma, `a_tags_sort_all_etag_inv`,
+    `flex_apart` binder inversion + aenv-weakening + open/rename,
+    `pskl_shielded_ftv_open_upper` threading, and the
+    `Ψa' := Ψa \ {ε}` tag algebra (body-Hsubeq1 needs `ε ∈ Ψ0sub ⇒
+    ε ∈ Ψρ`, which follows from the flow fact + the target's
+    `ε ∉ Ψ0'` d_tags disjointness).
+
 - 2026-07-25 (k): **Arrow repair option (i) EXECUTED through the discharge
   kit — `flex_apart` premise added (user-approved direction), all 10 closed
   cases re-threaded, flex-subcase machinery Qed.**  User question answered:
