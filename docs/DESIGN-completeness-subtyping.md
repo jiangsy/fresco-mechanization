@@ -589,16 +589,24 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   a smaller Pi/P0.  The unit lemma's `P0 = hole` (SE-VacuousR) subcase is
   closed in dev; the rest of its grid (SE-Var / SE-GhostL+bridge / SE-Unit /
   SE-FlexR / ⊤◇-recursion) is scripted but not yet written.
-  **⚠ STATEMENT QUESTION for the author:** the paper writes `Θ0 ⊢ P0`
-  (empty Δ), and the refinement premise is at empty Δ, so `P0`'s wf should
-  be `Θ0 ⨟ empty ⊢ₚₛᵃ P0` — NOT `Θ0 ⨟ Δ ⊢ₚₛᵃ P0` as first drafted.  This
-  is load-bearing: at `Θ0 ⨟ Δ`, a `P0 = var α` could be a Δ-ONLY binder not
-  in Θ0, and SE-FlexR at Θ0 would be stuck (α ∉ Θ0-flexibles) even though
-  the refinement holds via a Θ-suffix def-flex — the case would be
-  UNPROVABLE.  With `P0` at empty Δ, `P0 = var α ⇒ a_binds_tvar α Θ0`, and
-  the 3-way (rigid ⇒ absurd / flex ⇒ FlexR) closes.  `Pi` stays at `Δ`
-  (its ∀-bound vars are real).  Verify against the ForallInh recursion
-  (P0' should stay wf at `Θ0,β ⨟ empty`).
+  **P0/Pi WF CONTEXT (SETTLED — no statement change, no side-condition).**
+  Keep both `Pi` and `P0` wf at `Θ0 ⨟ Δ`, exactly as drafted.  Two earlier
+  notes here (P0 at `Θ0 ⨟ empty`; a `∀X∈Δ, binds X abind_tvar Θ` side
+  condition) are BOTH RETRACTED — each was an artifact of forgetting that
+  the ForallInh IH grows `Θ0`.  The paper's lemma is NOT at empty Δ: it
+  carries a general Δ in the precision premise (generalised in the
+  induction, so `Δ` grows to `Δ,β`), and the Pi/P0 wf sub-premises omit Δ
+  only because the paper's `Θ0` ALSO grows (`Θ0,β`), so binder vars live in
+  the grown `Θ0`.  ForallInh extends BOTH `Θ0` and `Δ`; the mech spreads
+  this across premises: consistency extends the TARGET `Θ` (`(X~tvar)++Θ`),
+  precision extends `Δ` (`ad_ppre__forall`), and the IH extends the SOURCE
+  `Θ0` via `a_inc__tvar` (to keep `θ ∷ Θ0 ⊑ Θ`).  Reconciled by the kept
+  lemmas `ad_partial_precise_strengthen_tvar` (precision) and
+  `a_solve_eq_strengthen_tvar` (brings the SE-Forall solve output back from
+  `(β~tvar)++Θ0` to `Θ0`).  Because `Θ0` grows in lockstep, a `P0 = var β`
+  binder has `β ∈ Θ0`, so the P0=var case closes by the ordinary 3-way
+  (rigid ⇒ `ad_refine_syn_rigid_var_unit_absurd`; flex ⇒ SE-FlexR) with NO
+  Δ-side-condition.
 
 - 2026-07-25 (g): **RESOLVED — the -var cex is NOT a completeness problem;
   the whole P0-side-condition line of (d)–(f) is SUPERSEDED and REVERTED.**
