@@ -586,9 +586,13 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   leaf/structural case is cleanest as a STANDALONE size-induction lemma
   (`a_solve_eq_cv_<shape>`) that the main consistency-induction dispatches
   to — the main IH is on the consistency derivation and gives NO handle on
-  a smaller Pi/P0.  The unit lemma's `P0 = hole` (SE-VacuousR) subcase is
-  closed in dev; the rest of its grid (SE-Var / SE-GhostL+bridge / SE-Unit /
-  SE-FlexR / ⊤◇-recursion) is scripted but not yet written.
+  a smaller Pi/P0.  **UNIT CASE CLOSED** (commit 68c48eb): `a_solve_eq_cv_unit` Qed,
+  axiom-free — the full Pi×P0 grid as a standalone size-induction lemma
+  (strong induction on `size Pi + size P0` so ⊤◇-stripping on both sides
+  recurses).  This is the TEMPLATE for the other leaf cases (Var/GhostG:
+  same shape, target `var X` / `holeg` instead of `unit`, needing the
+  analog of `ad_refine_inh_unit_ppre` per target).  Validated: the empty-Δ
+  statement + the standalone-case-lemma factoring both work.
   **P0/Pi WF CONTEXT (FINAL — both at `Θ0 ⨟ empty`, no side-condition).**
   Change both wf premises to `Θ0 ⨟ empty ⊢ₚₛᵃ Pi` and
   `Θ0 ⨟ empty ⊢ₚₛᵃ P0` — the faithful rendering of the paper's `Θ0 ⊢ Pi`,
