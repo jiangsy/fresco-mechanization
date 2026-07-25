@@ -560,6 +560,46 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-25 (h): **P6-Cv INDUCTION STARTED — reusable kit landed, Qed,
+  axiom-free (commits 47947e3, a793581 on `remech`).**  The statement
+  (`a_solve_eq_complete_var`) is set up in `prop_look_complete.v` with the
+  uniform 15-case induction on the consistency derivation (dev file
+  `algo/cex/p6cv_dev_tmp.v`, UNTRACKED scratch — migrate finished pieces).
+  Committed reusable helpers (all in `prop_look_complete.v`):
+  - `p6cv_close_leaf` — closes the `rho_leaf` disjunct of EVERY case
+    uniformly (target = replaced rigid var ⇒ `Pi = var X` by the freshness
+    pack ⇒ SE-Var, `Pa := Pi`).
+  - `pskl_to_bskl_inh_{all_inh,arrow,tophole}_inv` — painting inversions;
+    the `all_inh` one forces a `pskl_all_syn` source (excludes flexible
+    `P0` in the ∀ cases — θ maps flexibles to monotypes).
+  - `ad_refine_inh_unit_ppre` — refinement→precision bridge for the `unit`
+    target (follows `flex_l` def-chains, strips ⊤◇); discharges `Pi=□` and
+    ⊤◇-`P0` unit subcases.
+  - `msubst_lookup_notin_dom`, `a_inc_dom_flex`, `msubst_pskl_tvar_id` —
+    the metasubst-domain facts (dom ρ ⊆ source flexibles; a rigid source
+    var is msubst-fixed), for the `P0 = var` FlexR/rigid split.
+  - `ad_refine_syn_rigid_var_unit_absurd` — a rigid var cannot refine into
+    unit; kills the rigid-`P0` unit subcase.
+  Kept in dev (Qed): `ad_ppre_unit_tags_empty` (unit target ⇒ Ψi=∅).
+  **STRUCTURE learned:** each of the 15 cases carries a 2-D Pi×P0 grid; the
+  ⊤◇-stripping (both Pi and P0 sides) recurses on skeleton SIZE, so each
+  leaf/structural case is cleanest as a STANDALONE size-induction lemma
+  (`a_solve_eq_cv_<shape>`) that the main consistency-induction dispatches
+  to — the main IH is on the consistency derivation and gives NO handle on
+  a smaller Pi/P0.  The unit lemma's `P0 = hole` (SE-VacuousR) subcase is
+  closed in dev; the rest of its grid (SE-Var / SE-GhostL+bridge / SE-Unit /
+  SE-FlexR / ⊤◇-recursion) is scripted but not yet written.
+  **⚠ STATEMENT QUESTION for the author:** the paper writes `Θ0 ⊢ P0`
+  (empty Δ), and the refinement premise is at empty Δ, so `P0`'s wf should
+  be `Θ0 ⨟ empty ⊢ₚₛᵃ P0` — NOT `Θ0 ⨟ Δ ⊢ₚₛᵃ P0` as first drafted.  This
+  is load-bearing: at `Θ0 ⨟ Δ`, a `P0 = var α` could be a Δ-ONLY binder not
+  in Θ0, and SE-FlexR at Θ0 would be stuck (α ∉ Θ0-flexibles) even though
+  the refinement holds via a Θ-suffix def-flex — the case would be
+  UNPROVABLE.  With `P0` at empty Δ, `P0 = var α ⇒ a_binds_tvar α Θ0`, and
+  the 3-way (rigid ⇒ absurd / flex ⇒ FlexR) closes.  `Pi` stays at `Δ`
+  (its ∀-bound vars are real).  Verify against the ForallInh recursion
+  (P0' should stay wf at `Θ0,β ⨟ empty`).
+
 - 2026-07-25 (g): **RESOLVED — the -var cex is NOT a completeness problem;
   the whole P0-side-condition line of (d)–(f) is SUPERSEDED and REVERTED.**
   Re-reading the paper's Arrow case ("We assume `P0 = P0,1→P0,2`",
