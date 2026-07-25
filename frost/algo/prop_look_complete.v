@@ -1213,3 +1213,78 @@ Proof.
     apply (IHad_refine_syn Hwf eq_refl (ptyp_to_pskl τ) Δo).
     symmetry. apply ptyp_to_bskl_inh_syn_eq; assumption.
 Qed.
+
+(* ---- a_inc / refinement facts for the P0 = variable subcases ---- *)
+
+(** The metasubstitution's domain is exactly the source's flexibles, so a
+    variable outside it looks up to itself, and a RIGID source variable is
+    fixed by [msubst]. *)
+Lemma msubst_lookup_notin_dom : forall ρ X,
+  X `notin` dom ρ ->
+  msubst_lookup ρ X = ptyp_var_f X.
+Proof.
+  induction ρ as [ | [Y τ] ρ' IH ]; intros X Hni; simpl in *; auto.
+  destruct (X == Y) as [->|Hne]; [ exfalso; auto | ].
+  apply IH. auto.
+Qed.
+
+Lemma a_inc_dom_flex : forall Θ0 ρ Θ X,
+  ρ ∷ Θ0 ⊑ Θ ->
+  X `in` dom ρ ->
+  a_flex_tvar Θ0 X.
+Proof.
+  intros Θ0 ρ Θ X Hinc; induction Hinc; intros Hin; simpl in Hin.
+  - fsetdec.
+  - destruct (X == α) as [->|Hne].
+    + left. simpl_env. auto.
+    + assert (Ht : X `in` dom ρ) by (clear - Hin Hne; fsetdec).
+      destruct (IHHinc Ht) as [Hb | [τ0 Hb]].
+      * left. apply binds_cons_3; assumption.
+      * right; exists τ0. apply binds_cons_3; assumption.
+  - destruct (X == α) as [->|Hne].
+    + right; exists τ. simpl_env. auto.
+    + assert (Ht : X `in` dom ρ) by (clear - Hin Hne; fsetdec).
+      destruct (IHHinc Ht) as [Hb | [τ0 Hb]].
+      * left. apply binds_cons_3; assumption.
+      * right; exists τ0. apply binds_cons_3; assumption.
+  - destruct (IHHinc Hin) as [Hb | [τ0 Hb]].
+    + left. apply binds_cons_3; assumption.
+    + right; exists τ0. apply binds_cons_3; assumption.
+  - destruct (IHHinc Hin) as [Hb | [τ0 Hb]].
+    + left. apply binds_cons_3; assumption.
+    + right; exists τ0. apply binds_cons_3; assumption.
+  - destruct (IHHinc Hin) as [Hb | [τ0 Hb]].
+    + left. apply binds_cons_3; assumption.
+    + right; exists τ0. apply binds_cons_3; assumption.
+Qed.
+
+Lemma msubst_pskl_tvar_id : forall Θ0 ρ Θ X,
+  a_wf_aenv Θ0 ->
+  ρ ∷ Θ0 ⊑ Θ ->
+  binds X abind_tvar Θ0 ->
+  msubst_pskl ρ (pskl_var_f X) = pskl_var_f X.
+Proof.
+  intros Θ0 ρ Θ X Hwf Hinc Hb.
+  simpl. rewrite msubst_lookup_notin_dom; [ reflexivity | ].
+  intros Hin. pose proof (a_inc_dom_flex Hinc Hin) as Hfl.
+  pose proof (a_wf_aenv_uniq Hwf) as Huniq.
+  destruct Hfl as [Hbf | [τ Hbf]];
+    pose proof (binds_unique _ _ _ _ _ Hb Hbf Huniq) as Hc; discriminate Hc.
+Qed.
+
+(** A rigid variable cannot refine into [unit] (only [flex_l] could fire,
+    but its [α] would be a defined flexible, clashing with rigidity).  Used
+    to discharge the P0 = rigid-variable subcase of the Unit case. *)
+Lemma ad_refine_syn_rigid_var_unit_absurd : forall Θ Δ X,
+  a_wf_aenv Θ ->
+  binds X abind_tvar Θ ->
+  Θ ⨟ Δ ⊢ᵣᵃ (bskl_var_f X) ⊳ bskl_unit ->
+  False.
+Proof.
+  intros Θ Δ X Hwf Hb H; inversion H; subst;
+    match goal with
+    | Hbd : binds _ (abind_flex_mono_def _) _ |- _ =>
+        pose proof (binds_unique _ _ _ _ _ Hb Hbd (a_wf_aenv_uniq Hwf)) as Hc;
+        discriminate Hc
+    end.
+Qed.
