@@ -46,21 +46,34 @@
     Ξc = · and θa ≡ θ on ALL of Θ0, so a flexible P_0 with a θ-image that
     is "wrong" at a ρ-leaf position refutes the statement outright.
 
-    STATUS: paper-level statement problem, NOT a mech encoding slip — the
-    mech solve rules are faithful on this configuration (the solve keeps /
-    loses the rigid-variable information exactly as the paper's rules do).
-    A HEAD-SHAPE premise (nonflex{P0}) does NOT repair it: the second
-    theorem below ([cex_p6_var_nonflex_insufficient], 2026-07-25) reruns
-    the refutation with P_0 = 1 → β̂ — an arrow, so nonflex{P0} holds —
-    because the -var Arrow case recurses on P_0's PIECES.  The redirected
-    repair (PAPER-GAPS addendum; DESIGN §6): extend the paper's positional
-    side condition symmetrically to the counterpart — P_0 has no flexible
-    variable at or covering any ρ-substituted position — maintained at the
-    ForallL call site by the same postdating-freshness argument; note that
-    at ρ = id (the P = α crux, the only direct paper invocation) the bad
-    configuration is already premise-unsatisfiable, so the falsity is an
-    artifact of the ρ-generalisation.  Reported via docs/PAPER-GAPS.md;
-    P6 is blocked on validating that repair.
+    STATUS (updated 2026-07-25): the isolated -var statement is false, but
+    this is NOT a completeness problem — the configuration is UNREACHABLE.
+    See [cex_p6_flex_freshened.v] for the resolution and its two Qed lemmas.
+    In brief:
+      * The cex's θ is FORCED BY ρ, not free: ρ substitutes the rigid [c]
+        away, so [ρ(ψa) = unit→unit ∼ Q] and [inh{θβ̂} ⊳ Q] (same Q) pin
+        [θβ̂ = unit→unit] — c is stripped from everything θ can see, while
+        ψa (used only for the final precision) still carries it.
+      * A run never produces this: when a flexible counterpart faces a
+        COMPOUND (arrow) subject, [a_lookeq__flex_r] (LE-FlexR) FRESHENS it
+        to a new [γ ∈ Ξ] — machine-checked in
+        [a_lookeq_arrow_subject_flex_target_freshened].  The -var lemma
+        never sees a raw Θ0-flex P_0 at an arrow node; it sees the fresh γ,
+        handled by the NON-var lemma (θ extends over Ξ, assigns γ the rigid
+        c).  A raw flex payload only ever sits opposite a LEAF
+        ([a_lookeq_flex_target_raw_subject_not_arrow]).
+      * Only the Arrow case is even reachable for a flexible P_0: θ maps
+        flexibles to MONOTYPES, so refinement can never expose a flexible
+        P_0 as a ∀/⊤◇ (ForallInh/ForallSyn/ghost cases), and leaves are
+        handled directly (SolE-Flex / the SolE-Var special case).
+    There is no flex-SPLIT rule in constraint solving and none is needed:
+    [SolE-FlexR] solves the flexible counterpart directly to β̂.
+
+    SUPERSEDED (do not pursue): the earlier "redirected repair" (a P0-side
+    positional condition [pskl_dominates_rho], DESIGN §6) — it patched an
+    isolated statement that does not need patching, and its ForallL
+    maintenance is not derivable from the local solve ([SolE-Check] bridges
+    into [SolE-FlexR]).  Reverted 2026-07-25.
 
     Everything below is Qed and axiom-free. *)
 

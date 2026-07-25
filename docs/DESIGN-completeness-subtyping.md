@@ -560,7 +560,45 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
-- 2026-07-25 (f): **the nonflex{P0} repair REFUTED at depth (mech-first
+- 2026-07-25 (g): **RESOLVED — the -var cex is NOT a completeness problem;
+  the whole P0-side-condition line of (d)–(f) is SUPERSEDED and REVERTED.**
+  Re-reading the paper's Arrow case ("We assume `P0 = P0,1→P0,2`",
+  subtyping-proofs.tex:1940 / consistency-proofs.tex:1408) plus the solve
+  rules (fig:selected-look) settled it:
+  - **Only the Arrow case can even have a flexible P0.** θ maps flexibles to
+    MONOTYPES (unit / mono-or-rigid var / arrow); refinement `inh{θP0} ⊳ Q`
+    into a ∀/⊤◇ needs a ∀/⊤◇/defined-flex source, which a monotype never is.
+    So ForallInh/ForallSyn/ghost provably have non-flex P0, and leaves are
+    handled directly (SolE-Flex / the SolE-Var ρ-var special case).
+    Machine-checked shape: `ad_refine_syn` into `bskl_all_inh` forces the
+    source to be ∀/⊤◇/defined-flex.
+  - **No flex-SPLIT rule exists in constraint solving, and none is needed.**
+    SolE-Arrow needs both sides arrows; SolE-FlexR solves the flexible
+    counterpart directly to `β̂` (kept whole). `split[α̂][β̂→γ̂]` lives only in
+    the inference/`⤳ᵐ` layer (which can introduce fresh flexibles via a
+    context move).
+  - **The cex's θ is FORCED BY ρ, not free, and the config is UNREACHABLE.**
+    ρ substitutes the rigid `c` away, so `ρ(ψa)=unit→unit ∼ Q` and
+    `inh{θβ̂} ⊳ Q` (same Q) pin `θβ̂ = unit→unit`; a run never produces this
+    because a flexible counterpart at a COMPOUND subject is FRESHENED by
+    LE-FlexR to a fresh `γ ∈ Ξ` (the non-var lemma then extends θ over Ξ and
+    assigns γ the rigid `c`). Machine-checked, Qed axiom-free, in NEW file
+    `algo/cex/cex_p6_flex_freshened.v`:
+    `a_lookeq_arrow_subject_flex_target_freshened` (arrow subject ⇒
+    freshened) and `a_lookeq_flex_target_raw_subject_not_arrow` (a raw flex
+    payload's subject is never an arrow).
+  - **REVERTED:** the `pskl_dominates_rho` relation + inversion kit + the
+    ForallL maintenance experiment (the maintenance-from-solve lemma was
+    itself false — SolE-Check bridges into SolE-FlexR). `prop_look_complete.v`
+    is back to its committed state.
+  - **P6-Cv/Sv plan (now):** ∀/⊤◇/ghost cases prove non-flex P0 from the
+    monotype→refinement fact (no premise); leaf cases as the paper; Arrow
+    case handles flexible P0 via SolE-FlexR like the leaf case, relying on
+    the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
+  The cex header (cex_p6_flex_counterpart.v) STATUS block is updated to
+  match; the `\shengyi{}` paper note (remech-paper) is updated likewise.
+
+- 2026-07-25 (f) [SUPERSEDED by (g)]: **the nonflex{P0} repair REFUTED at depth (mech-first
   experiment); repair REDIRECTED to a P0-side positional condition.**
   `cex_p6_var_nonflex_insufficient` (cex_p6_flex_counterpart.v, Qed
   axiom-free): with `P0 = 1 → β̂` the head-shape premise holds, but the
@@ -806,6 +844,22 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   a statement weakening.
 
 ## 7. P6 plan (audited 2026-07-24; execute next)
+
+> **UPDATE 2026-07-25 (read with §6 (g)).**  This plan STANDS: `uskl_rho`
+> (the ρ relation) and the Pi-side positional condition recovered via the
+> freshness pack (`ad_ppre_delta_var_inv` / `shielded_ftv`) are the committed
+> P6 infrastructure and are NOT affected by the revert — only the LATER
+> `pskl_dominates_rho` P0-side experiment (§6 (d)–(f)) was reverted.  What
+> this section did not yet account for is the flexible-`P0` subcase of the
+> Arrow case; per §6 (g) it needs NO P0-side condition. (a) ForallInh/
+> ForallSyn/ghost cases prove `P0` non-flexible for free (θ maps flexibles to
+> monotypes; refinement into a ∀/⊤◇ needs a ∀/⊤◇/defined-flex source). (b)
+> Leaf cases handle a flexible `P0` directly (SolE-Flex / SolE-Var). (c) The
+> Arrow case handles a flexible `P0` via SolE-FlexR like the leaf case,
+> relying on LE-FlexR FRESHENING (a raw Θ0-flex opposite a ρ-substituted rigid
+> var is not producible — `algo/cex/cex_p6_flex_freshened.v`). So the P6-Cv/Sv
+> statements need only the ρ/Pi machinery below, plus these flex-case
+> observations — no symmetric P0-side predicate.
 
 **Correction to the earlier P6 note.**  The paper's consistency-side
 lemmas (complete-consistency-cc-solving(-var), consistency-proofs.tex:921

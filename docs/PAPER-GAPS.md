@@ -823,7 +823,14 @@ subject's syntactic tags" (`ad_pat_consis_ftag_sub`,
 solution target's well-formedness (external-wf reading) for the
 ghost-introduction cases.
 
-## FALSE — the -var completeness lemmas of the constraint cluster: a flexible counterpart `P0` refutes the statement (machine-checked, 2026-07-24)
+## RESOLVED (isolated statement FALSE, but NOT a completeness problem) — the -var completeness lemmas: a flexible counterpart `P0` refutes the ISOLATED statement (machine-checked, 2026-07-24; resolved 2026-07-25)
+
+> **Resolution (2026-07-25):** the isolated `-var` statement is false as
+> written, but the refuting configuration is UNREACHABLE, so it is not a
+> completeness problem and needs no P0-side premise.  See the "### Resolution"
+> subsection at the end of this entry.  The earlier "Suggested repair"
+> (a P0-side positional condition) is SUPERSEDED and was reverted from the
+> mechanization.
 
 `lemma:complete-consistency-constraint-collection-solving-var`
 (consistency-proofs.tex:1181) and its subtyping twin
@@ -899,11 +906,39 @@ Two further facts locate the real repair:
   solve side cannot be tightened; the invariant must exclude the
   configuration.
 
-Suggested repair (to be validated next): extend the paper's positional
-side condition symmetrically to the counterpart — "for every rigid
-variable in ψa substituted by ρ, P_i has the same rigid variable in the
-same position, and P_0 has NO FLEXIBLE VARIABLE at or covering that
-position" — maintained at the same ForallL site by the same freshness
-argument (X postdates P0, so X-positions of ψa cannot be covered by
-flexibles introduced before X).  Mechanically this is a second
-leaf-freshness component alongside the existing pack.
+### Resolution (2026-07-25): the configuration is UNREACHABLE — no P0-side premise needed
+
+The "Suggested repair" above (a P0-side positional condition) is SUPERSEDED.
+It patched an isolated statement that does not need patching, and its ForallL
+maintenance turned out not to be derivable from the local solve (SolE-Check
+bridges the subtyping solve into SolE-FlexR). The whole `pskl_dominates_rho`
+experiment was REVERTED from the mechanization.
+
+Three facts settle it (all machine-checked; new file
+`algo/cex/cex_p6_flex_freshened.v`, Qed axiom-free):
+
+1. **Only the Arrow case can even have a flexible `P0`.** θ maps flexibles to
+   MONOTYPES (unit / mono-or-rigid var / arrow). Refinement `inh{θP0} ⊳ Q`
+   into a ∀ or ⊤◇ requires a ∀/⊤◇/defined-flex source (inversion on
+   `ad_refine_syn` into `bskl_all_inh`), which a monotype never is. So
+   ForallInh/ForallSyn/ghost provably have non-flex `P0`; leaves are handled
+   directly (SolE-Flex / the SolE-Var ρ-var special case).
+2. **No flex-SPLIT rule exists in constraint solving, and none is needed.**
+   SolE-Arrow needs both sides arrows; SolE-FlexR solves the flexible
+   counterpart directly to `β̂`. `split[α̂][β̂→γ̂]` lives only in the
+   inference/`⤳ᵐ` layer.
+3. **The cex's θ is FORCED BY ρ; the configuration is not producible.** ρ
+   substitutes the rigid `c` away, so `ρ(ψa)=unit→unit ∼ Q` and
+   `inh{θβ̂} ⊳ Q` (same Q) pin `θβ̂ = unit→unit` — c is stripped from
+   everything θ sees, while ψa (used only for the final precision) keeps it.
+   A run never emits a raw Θ0-flex payload at a compound subject: LE-FlexR
+   FRESHENS a flexible counterpart there to a fresh `γ ∈ Ξ`
+   (`a_lookeq_arrow_subject_flex_target_freshened`; and
+   `a_lookeq_flex_target_raw_subject_not_arrow`: a raw flex payload's subject
+   is never an arrow). The fresh `γ` is the NON-var lemma's job (θ extends
+   over Ξ and can assign `γ` the rigid `c`, so precision holds).
+
+**P6-Cv/Sv plan:** ∀/⊤◇/ghost cases prove non-flex `P0` from the
+monotype→refinement fact (no premise); leaf cases as the paper does; the
+Arrow case handles a flexible `P0` via SolE-FlexR like the leaf case, relying
+on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
