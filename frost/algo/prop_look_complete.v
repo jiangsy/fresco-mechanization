@@ -1109,3 +1109,107 @@ Proof.
       [ exact HwfP
       | apply (a_wf_pskl_delta_mono HwfQ0); clear; fsetdec ].
 Qed.
+
+(* ===================================================================== *)
+(*  P6-Cv induction support: the reusable leaf-disjunct closer, painting   *)
+(*  inversions, and the refinement→precision bridges.                      *)
+(* ===================================================================== *)
+
+(** Closer for the [rho_leaf] disjunct of every consistency case: the
+    target [ψa] is a replaced rigid variable [var X], the freshness pack
+    forces [Pi = var X], and SE-Var solves with [Pa := Pi].  Uniform across
+    all 15 cases of the main induction. *)
+Lemma p6cv_close_leaf :
+  forall NM Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0,
+  a_wf_aenv Θ ->
+  a_tags_sort NM Ψ' ψa ->
+  Ψi `union` Ψa [<=] Ψ' ->
+  rho_fresh Δρ Θ θ ->
+  Δρ [<=] Δ ->
+  (forall X, X `in` Δρ -> X `notin` pskl_shielded_ftv (msubst_pskl θ Pi)) ->
+  Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  rho_leaf NM Θ Δρ Ψρ ψsub ψa ->
+  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
+             Θ ⨟ Δ ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+Proof.
+  intros NM Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0
+    HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf.
+  destruct Hleaf as (X & Ψ'' & Heqψa & HXΔρ & Htagsub & Hwfsub & HΨρ).
+  subst ψa.
+  pose proof (Hfresh X HXΔρ) as (HXb & Hθav & Hdef).
+  assert (HXΔ : X `in` Δ) by (clear - Hdelta HXΔρ; fsetdec).
+  pose proof (Hshield X HXΔρ) as Hsh.
+  destruct (ad_ppre_delta_var_inv Hpre eq_refl HwfΘ HXΔ HXb Hdef Hsh)
+    as (Heqm & HΨie).
+  assert (HeqPi : Pi = pskl_var_f X)
+    by (eapply msubst_pskl_var_inv; eassumption).
+  assert (HΨ'e : Ψ' [=] empty)
+    by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags))).
+  assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).
+  exists Pi. split.
+  - rewrite HeqPi. apply a_solve_eq__var.
+  - rewrite Heqm.
+    apply ad_ppre__var; [ clear - HΨie HΨae; fsetdec | left; exact HXΔ ].
+Qed.
+
+(** Painting inversions.  An inherited painting equals a compound [bskl]
+    only for the matching [pskl] source; since [θ] maps flexibles to
+    MONOTYPES, [pskl_to_bskl_inh_all_inh_inv] is what excludes a flexible
+    [P0] in the ForallInh/ForallSyn cases (a genuine [∀]-source is forced). *)
+Lemma pskl_to_bskl_inh_all_inh_inv : forall P Q0,
+  pskl_to_bskl_inh P = bskl_all_inh Q0 ->
+  exists P0, P = pskl_all_syn P0 /\ pskl_to_bskl_inh P0 = Q0.
+Proof.
+  intros P Q0 H; destruct P; simpl in H; try discriminate.
+  inversion H; subst. exists P; split; reflexivity.
+Qed.
+
+Lemma pskl_to_bskl_inh_arrow_inv : forall P Q1 Q2,
+  pskl_to_bskl_inh P = bskl_arrow Q1 Q2 ->
+  exists P1 P2, P = pskl_arrow P1 P2 /\
+    pskl_to_bskl_inh P1 = Q1 /\ pskl_to_bskl_inh P2 = Q2.
+Proof.
+  intros P Q1 Q2 H; destruct P; simpl in H; try discriminate.
+  inversion H; subst. exists P1, P2; repeat split; reflexivity.
+Qed.
+
+Lemma pskl_to_bskl_inh_tophole_inv : forall P Q0,
+  pskl_to_bskl_inh P = bskl_tophole Q0 ->
+  exists P0, P = pskl_tophole P0 /\ pskl_to_bskl_inh P0 = Q0.
+Proof.
+  intros P Q0 H; destruct P; simpl in H; try discriminate.
+  inversion H; subst. exists P; split; reflexivity.
+Qed.
+
+(** Refinement→precision bridge for the [unit] target.  An inherited
+    painting that refines to [bskl_unit] is precise to [uskl_unit]; the
+    induction follows [flex_l] definition chains and strips ⊤◇ via
+    [tophole_remove].  Discharges the [Pi = □] and ⊤◇-[P0] subcases of the
+    Unit consistency case (conclusion: [msubst θ P0 ⊑ᵖ[∅] unit]). *)
+Lemma ad_refine_inh_unit_ppre : forall Θ Δr Lhs RHS,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ Lhs ⊳ RHS ->
+  RHS = bskl_unit ->
+  forall P' Δ, Lhs = pskl_to_bskl_inh P' ->
+  Θ ⨟ Δ ⊢ P' ⊑ᵖ[ empty ] uskl_unit.
+Proof.
+  intros Θ Δr Lhs RHS Hwf H; induction H; intros HR P' Δo Heq;
+    try discriminate HR; subst.
+  - (* unit *)
+    destruct P'; simpl in Heq; try discriminate Heq.
+    apply ad_ppre__unit. fsetdec.
+  - (* hole: RHS = pskl_to_bskl_syn P, forced = unit *)
+    destruct P'; simpl in Heq; try discriminate Heq.
+    apply ad_ppre__hole; [ fsetdec | simpl; fsetdec ].
+  - (* tophole_remove *)
+    destruct P'; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst.
+    apply ad_ppre__tophole_remove. eapply IHad_refine_syn; eauto.
+  - (* flex_l *)
+    destruct P'; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst.
+    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
+    eapply ad_ppre__flex_l; [ eassumption | ].
+    apply (IHad_refine_syn Hwf eq_refl (ptyp_to_pskl τ) Δo).
+    symmetry. apply ptyp_to_bskl_inh_syn_eq; assumption.
+Qed.
