@@ -2576,3 +2576,456 @@ Proof.
       [ exact HwfΘ | reflexivity | reflexivity
       | eapply a_wf_aenv_binds_def_mono; eauto ].
 Qed.
+
+(* ===================================================================== *)
+(*  The flexible-apartness premise (Arrow-case repair, option (i)).        *)
+(*  [flex_apart Θ0 Δρ P0 ψa]: every FLEXIBLE-variable position of the      *)
+(*  solve counterpart P0 faces a Δρ-CLEAN part of ψa (no ρ-replaced leaf   *)
+(*  below it).  This is the reachability fact the LE-FlexR freshening      *)
+(*  guarantees (cex_p6_flex_freshened.v): a raw Θ0-flex payload never      *)
+(*  sits opposite a compound covering a ρ-substituted position.  It is     *)
+(*  VACUOUS at every ρ = id call site (fa_clean with Δρ = ∅) and is        *)
+(*  maintained internally by the P6 lemma cluster only.                    *)
+(* ===================================================================== *)
+
+Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
+| fa_clean : forall P0 ψa,
+    AtomSetImpl.inter (ftvar_in_uskl ψa) Δρ [=] empty ->
+    flex_apart Θ0 Δρ P0 ψa
+| fa_unit : forall ψa, flex_apart Θ0 Δρ pskl_unit ψa
+| fa_var_rigid : forall X ψa,
+    binds X abind_tvar Θ0 ->
+    flex_apart Θ0 Δρ (pskl_var_f X) ψa
+| fa_hole : forall ψa, flex_apart Θ0 Δρ pskl_hole ψa
+| fa_tophole : forall P0 ψa,
+    flex_apart Θ0 Δρ P0 ψa ->
+    flex_apart Θ0 Δρ (pskl_tophole P0) ψa
+| fa_topholeg_t : forall P0 ψa,
+    flex_apart Θ0 Δρ P0 ψa ->
+    flex_apart Θ0 Δρ P0 (uskl_topholeg ψa)
+| fa_arrow : forall P1 P2 ψ1 ψ2,
+    flex_apart Θ0 Δρ P1 ψ1 ->
+    flex_apart Θ0 Δρ P2 ψ2 ->
+    flex_apart Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2)
+| fa_all_etag : forall L ε P0 ψ,
+    (forall X, X `notin` L ->
+       flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                        (open_uskl_wrt_uskl ψ (uskl_var_f X))) ->
+    flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_etag ε ψ)
+| fa_all_syn : forall L P0 ψ,
+    (forall X, X `notin` L ->
+       flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f X))
+                        (open_uskl_wrt_uskl ψ (uskl_var_f X))) ->
+    flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_syn ψ).
+
+(* Inversions used by the ⊤◇/⊤̇◇ congruence cases. *)
+Lemma flex_apart_topholeg_target_inv : forall Θ0 Δρ P ψ,
+  flex_apart Θ0 Δρ P (uskl_topholeg ψ) ->
+  flex_apart Θ0 Δρ P ψ.
+Proof.
+  intros Θ0 Δρ P ψ H.
+  remember (uskl_topholeg ψ) as t eqn:Heqt.
+  revert ψ Heqt; induction H; intros ψ' Heqt;
+    try discriminate Heqt; subst.
+  - apply fa_clean.
+    match goal with Hc : AtomSetImpl.inter _ _ [=] empty |- _ =>
+      simpl in Hc; exact Hc end.
+  - apply fa_unit.
+  - apply fa_var_rigid; assumption.
+  - apply fa_hole.
+  - apply fa_tophole; auto.
+  - inversion Heqt; subst; assumption.
+Qed.
+
+Lemma flex_apart_tophole_p0_inv : forall Θ0 Δρ P ψ,
+  flex_apart Θ0 Δρ (pskl_tophole P) ψ ->
+  flex_apart Θ0 Δρ P ψ.
+Proof.
+  intros Θ0 Δρ P ψ H.
+  remember (pskl_tophole P) as t eqn:Heqt.
+  revert P Heqt; induction H; intros P' Heqt;
+    try discriminate Heqt; subst.
+  - apply fa_clean; assumption.
+  - inversion Heqt; subst; assumption.
+  - apply fa_topholeg_t; auto.
+Qed.
+
+(* ===================================================================== *)
+(*  Arrow-case flex-subcase discharge (Phase B).                           *)
+(*  (B1) On a Δρ-clean target the ρ-relation degenerates to equality;      *)
+(*  (B2) a mono paint that refines the consistency counterpart is precise  *)
+(*  against the (tag-sorted) consistency subject.                          *)
+(* ===================================================================== *)
+
+Lemma uskl_rho_clean_eq : forall NM Θ Δρ Ψρ S R,
+  uskl_rho NM Θ Δρ Ψρ S R ->
+  AtomSetImpl.inter (ftvar_in_uskl R) Δρ [=] empty ->
+  S = R /\ Ψρ [=] empty.
+Proof.
+  intros NM Θ Δρ Ψρ S R H; induction H; intros Hclean.
+  - split; [ reflexivity | assumption ].
+  - (* leaf: the target variable is IN Δρ — contradiction with cleanliness *)
+    exfalso. simpl in Hclean.
+    match goal with HX : X `in` Δρ |- _ => clear - HX Hclean; fsetdec end.
+  - (* arrow *)
+    simpl in Hclean.
+    destruct IHuskl_rho1 as [-> HΨ1]; [ clear - Hclean; fsetdec | ].
+    destruct IHuskl_rho2 as [-> HΨ2]; [ clear - Hclean; fsetdec | ].
+    split; [ reflexivity | ].
+    match goal with HΨ : Ψρ [=] union _ _ |- _ =>
+      clear - HΨ HΨ1 HΨ2; fsetdec end.
+  - (* all_syn *)
+    simpl in Hclean.
+    pick fresh X for
+      (L `union` Δρ `union` ftvar_in_uskl S `union` ftvar_in_uskl R).
+    destruct (H0 X ltac:(fsetdec)) as [Heq HΨ].
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f X)).
+      simpl in *. clear - Hclean H1 Fr. fsetdec. }
+    split; [ | exact HΨ ].
+    f_equal.
+    apply open_uskl_wrt_uskl_inj with (Xus1 := X);
+      [ clear - Fr; fsetdec | clear - Fr; fsetdec | exact Heq ].
+  - (* all_etag *)
+    simpl in Hclean.
+    pick fresh X for
+      (L `union` Δρ `union` ftvar_in_uskl S `union` ftvar_in_uskl R).
+    destruct (H0 X ltac:(fsetdec)) as [Heq HΨ].
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f X)).
+      simpl in *. clear - Hclean H1 Fr. fsetdec. }
+    split; [ | exact HΨ ].
+    f_equal.
+    apply open_uskl_wrt_uskl_inj with (Xus1 := X);
+      [ clear - Fr; fsetdec | clear - Fr; fsetdec | exact Heq ].
+  - (* tophole *)
+    simpl in Hclean.
+    destruct IHuskl_rho as [-> HΨ]; [ exact Hclean | ].
+    split; [ reflexivity | exact HΨ ].
+  - (* topholeg *)
+    simpl in Hclean.
+    destruct IHuskl_rho as [-> HΨ]; [ exact Hclean | ].
+    split; [ reflexivity | exact HΨ ].
+Qed.
+
+(* Mono paints never refine into a ∀-painted RHS. *)
+Lemma ad_refine_mono_paint_allinh_rhs_absurd : forall Θ Δr L Q,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  forall Q0, Q = bskl_all_inh Q0 ->
+  forall τb, L = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  False.
+Proof.
+  intros Θ Δr L Q HwfΘ H; induction H; intros Q0' HeqQ τb HeqL Hmb;
+    try discriminate HeqQ.
+  - (* all *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* hole *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_remove *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; eauto ].
+Qed.
+
+Lemma ad_refine_mono_paint_allsyn_rhs_absurd : forall Θ Δr L Q,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  forall Q0, Q = bskl_all_syn Q0 ->
+  forall τb, L = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  False.
+Proof.
+  intros Θ Δr L Q HwfΘ H; induction H; intros Q0' HeqQ τb HeqL Hmb;
+    try discriminate HeqQ.
+  - (* hole: RHS is a syn painting — could be all_syn; LHS □ not a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_remove *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_fill *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; eauto ].
+Qed.
+
+(* Counterpart shapes reachable by refining FROM a mono paint: the
+   mono-ish bskl grammar (unit / any var / arrow). *)
+Inductive bskl_monoish : bskl -> Prop :=
+| bmi_unit : bskl_monoish bskl_unit
+| bmi_var : forall X, bskl_monoish (bskl_var_f X)
+| bmi_arrow : forall Q1 Q2,
+    bskl_monoish Q1 -> bskl_monoish Q2 ->
+    bskl_monoish (bskl_arrow Q1 Q2).
+
+Lemma bskl_monoish_paint : forall τ,
+  mono_ptyp τ -> bskl_monoish (ptyp_to_bskl_syn τ).
+Proof. intros τ Hm; induction Hm; simpl; constructor; auto. Qed.
+
+Lemma ad_refine_mono_paint_rhs_monoish : forall Θ Δr L Q,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  forall τb, L = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  bskl_monoish Q.
+Proof.
+  intros Θ Δr L Q HwfΘ H; induction H; intros τb HeqL Hmb.
+  - apply bmi_unit.
+  - apply bmi_var.
+  - (* arrow *)
+    symmetry in HeqL.
+    destruct (ptyp_to_bskl_syn_arrow_inv _ HeqL)
+      as (τ1 & τ2 & -> & Heq1 & Heq2).
+    apply bmi_arrow;
+      [ eapply IHad_refine_syn1;
+          [ exact HwfΘ | exact Heq1 | inversion Hmb; assumption ]
+      | eapply IHad_refine_syn2;
+          [ exact HwfΘ | exact Heq2 | inversion Hmb; assumption ] ].
+  - (* all: LHS all_inh, never a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* hole: LHS □, never a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_remove *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_fill *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_keep *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity | eapply a_wf_aenv_binds_def_mono; eauto ].
+  - (* flex_r *) apply bmi_var.
+Qed.
+
+(* Against a mono-ish counterpart, a tag-sorted consistency subject is
+   itself a mono paint and the derivation solves no tags. *)
+Lemma ad_pat_consis_monoish_counterpart : forall Ψs Θ ψa Q,
+  Ψs ⨟ Θ ⊢ₛᵃ ψa ∼ Q ->
+  a_wf_aenv Θ ->
+  is_tskl ψa ->
+  bskl_monoish Q ->
+  Ψs [=] empty /\
+  exists τa, mono_ptyp τa /\ ψa = ptyp_to_uskl_syn τa.
+Proof.
+  intros Ψs Θ ψa Q H; induction H; intros HwfΘ Htsk Hmi.
+  - (* unit *)
+    split; [ assumption | exists ptyp_unit; split;
+      [ apply mono_ptyp__unit | reflexivity ] ].
+  - (* var *)
+    split; [ assumption | exists (ptyp_var_f X); split;
+      [ apply mono_ptyp__var | reflexivity ] ].
+  - (* arrow *)
+    inversion Hmi; subst.
+    assert (Ht1 : is_tskl R1) by (inversion Htsk; assumption).
+    assert (Ht2 : is_tskl R2) by (inversion Htsk; assumption).
+    destruct (IHad_pat_consis1 HwfΘ Ht1 ltac:(assumption))
+      as (HΨ1 & τ1 & Hm1 & ->).
+    destruct (IHad_pat_consis2 HwfΘ Ht2 ltac:(assumption))
+      as (HΨ2 & τ2 & Hm2 & ->).
+    split.
+    + match goal with HΨ : Ψ [=] union _ _ |- _ =>
+        clear - HΨ HΨ1 HΨ2; fsetdec end.
+    + exists (ptyp_arrow τ1 τ2); split;
+        [ apply mono_ptyp__arrow; assumption | reflexivity ].
+  - (* forall_inh_tagged: Q = all_inh, not mono-ish *) inversion Hmi.
+  - (* forall_inh_untagged *) inversion Hmi.
+  - (* forall_syn_tagged *) inversion Hmi.
+  - (* forall_syn *) inversion Hmi.
+  - (* ghostg: Q = hole *) inversion Hmi.
+  - (* topholeg: Q = tophole *) inversion Hmi.
+  - (* hole: subject not a tskl *) inversion Htsk.
+  - (* tophole *) inversion Htsk.
+  - (* tophole_inh *) inversion Htsk.
+  - (* tophole_drop *) inversion Htsk.
+  - (* flex_l: subject var α (defined) — itself a mono paint *)
+    assert (Hmd : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | eassumption ]).
+    destruct (IHad_pat_consis HwfΘ
+                ltac:(apply is_tskl_mono_paint; exact Hmd) Hmi)
+      as (HΨ & _).
+    split; [ exact HΨ | ].
+    exists (ptyp_var_f α); split; [ apply mono_ptyp__var | reflexivity ].
+  - (* flex_r: unfold the counterpart definition — still mono-ish *)
+    assert (Hmd : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | eassumption ]).
+    apply IHad_pat_consis;
+      [ exact HwfΘ | exact Htsk | apply bskl_monoish_paint; exact Hmd ].
+Qed.
+(* LHS flex_l-spine chases at concrete counterpart shapes, with the
+   component/continuation obligations passed as functionals. *)
+Lemma ppre_paint_arrow_chase : forall Θ Δr L Q,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  forall Q1 Q2 (ψ1 ψ2 : uskl),
+  Q = bskl_arrow Q1 Q2 ->
+  (forall Δr' τ1, Δr' [=] empty -> mono_ptyp τ1 ->
+     Θ ⨟ Δr' ⊢ᵣᵃ (ptyp_to_bskl_syn τ1) ⊳ Q1 ->
+     forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τ1) ⊑ᵖ[ empty ] ψ1) ->
+  (forall Δr' τ2, Δr' [=] empty -> mono_ptyp τ2 ->
+     Θ ⨟ Δr' ⊢ᵣᵃ (ptyp_to_bskl_syn τ2) ⊳ Q2 ->
+     forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τ2) ⊑ᵖ[ empty ] ψ2) ->
+  forall τb, L = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  Δr [=] empty ->
+  forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (uskl_arrow ψ1 ψ2).
+Proof.
+  intros Θ Δr L Q HwfΘ H;
+    induction H; intros Q1' Q2' ψ1 ψ2 HeqQ CONT1 CONT2 τb HeqL Hmb HΔr Δo;
+    try discriminate HeqQ.
+  - (* arrow *)
+    inversion HeqQ; subst.
+    symmetry in HeqL.
+    destruct (ptyp_to_bskl_syn_arrow_inv _ HeqL)
+      as (τb1 & τb2 & -> & Heqb1 & Heqb2).
+    assert (Hm1 : mono_ptyp τb1) by (inversion Hmb; assumption).
+    assert (Hm2 : mono_ptyp τb2) by (inversion Hmb; assumption).
+    simpl.
+    apply ad_ppre__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ eapply CONT1;
+          [ exact HΔr | exact Hm1 | rewrite <- Heqb1; eassumption ]
+      | eapply CONT2;
+          [ exact HΔr | exact Hm2 | rewrite <- Heqb2; eassumption ]
+      | clear; fsetdec ].
+  - (* hole: LHS never a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_remove *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    simpl.
+    eapply ad_ppre__flex_l; [ eassumption | ].
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity | exact CONT1 | exact CONT2
+      | reflexivity | eapply a_wf_aenv_binds_def_mono; eauto | exact HΔr ].
+Qed.
+
+Lemma ppre_paint_flexvar_chase : forall Θ Δr L Q,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  forall γ τγ (ψa : uskl),
+  Q = bskl_var_f γ ->
+  binds γ (abind_flex_mono_def τγ) Θ ->
+  (forall Δr' τc, Δr' [=] empty -> mono_ptyp τc ->
+     Θ ⨟ Δr' ⊢ᵣᵃ (ptyp_to_bskl_syn τc) ⊳ (ptyp_to_bskl_syn τγ) ->
+     forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τc) ⊑ᵖ[ empty ] ψa) ->
+  forall τb, L = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  Δr [=] empty ->
+  forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] ψa.
+Proof.
+  intros Θ Δr L Q HwfΘ H;
+    induction H; intros γ τγ ψa HeqQ Hbγ CONT τb HeqL Hmb HΔr Δo;
+    try discriminate HeqQ.
+  - (* var: the counterpart variable itself *)
+    inversion HeqQ; subst.
+    symmetry in HeqL; apply ptyp_to_bskl_syn_var_inv in HeqL; subst.
+    assert (Hmγ : mono_ptyp τγ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | exact Hbγ ]).
+    assert (Hwfγ : a_wf_ptyp Θ τγ)
+      by (eapply a_wf_aenv_binds_def_wf; [ exact HwfΘ | exact Hbγ ]).
+    simpl.
+    eapply ad_ppre__flex_l; [ exact Hbγ | ].
+    eapply CONT;
+      [ exact HΔr | exact Hmγ
+      | apply ad_refine_mono_paint_refl; [ exact Hwfγ | exact Hmγ ] ].
+  - (* hole: LHS never a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_remove *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    simpl.
+    eapply ad_ppre__flex_l; [ eassumption | ].
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity | exact Hbγ | exact CONT
+      | reflexivity | eapply a_wf_aenv_binds_def_mono; eauto | exact HΔr ].
+  - (* flex_r: the same definition by uniqueness *)
+    inversion HeqQ; subst.
+    match goal with
+    | Hb2 : binds _ (abind_flex_mono_def ?t) Θ,
+      Hr0 : _ ⨟ _ ⊢ᵣᵃ _ ⊳ ptyp_to_bskl_syn ?t |- _ =>
+        pose proof (binds_unique _ _ _ _ _ Hb2 Hbγ (a_wf_aenv_uniq HwfΘ))
+          as Hcc;
+        injection Hcc; intros ->;
+        eapply CONT; [ exact HΔr | exact Hmb | exact Hr0 ]
+    end.
+Qed.
+
+(* (B2) The bridge: a mono paint refining the counterpart of a MONO-PAINT
+   consistency subject is partially precise against that subject. *)
+Lemma mono_paint_paint_refine_consis_ppre : forall Ψs Θ S Q,
+  Ψs ⨟ Θ ⊢ₛᵃ S ∼ Q ->
+  a_wf_aenv Θ ->
+  forall τa, S = ptyp_to_uskl_syn τa -> mono_ptyp τa ->
+  forall Δr τb, Δr [=] empty -> mono_ptyp τb ->
+  Θ ⨟ Δr ⊢ᵣᵃ (ptyp_to_bskl_syn τb) ⊳ Q ->
+  forall Δ, Θ ⨟ Δ ⊢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τa).
+Proof.
+  intros Ψs Θ S Q H; induction H;
+    intros HwfΘ τa HeqS Hma Δr τb HΔr Hmb Hrefine Δo.
+  - (* unit *)
+    symmetry in HeqS; apply ptyp_to_uskl_syn_unit_inv in HeqS; subst.
+    eapply ad_refine_mono_paint_lhs_ppre with (τ := ptyp_unit);
+      [ exact HwfΘ | exact HΔr | exact Hrefine | reflexivity | reflexivity
+      | exact Hmb | apply mono_ptyp__unit ].
+  - (* var *)
+    symmetry in HeqS; apply ptyp_to_uskl_syn_var_inv in HeqS; subst.
+    eapply ad_refine_mono_paint_lhs_ppre with (τ := ptyp_var_f X);
+      [ exact HwfΘ | exact HΔr | exact Hrefine | reflexivity | reflexivity
+      | exact Hmb | apply mono_ptyp__var ].
+  - (* arrow *)
+    symmetry in HeqS.
+    destruct (ptyp_to_uskl_syn_arrow_inv _ HeqS)
+      as (τa1 & τa2 & -> & Heqa1 & Heqa2).
+    assert (Hma1 : mono_ptyp τa1) by (inversion Hma; assumption).
+    assert (Hma2 : mono_ptyp τa2) by (inversion Hma; assumption).
+    subst.
+    eapply ppre_paint_arrow_chase with
+      (ψ1 := ptyp_to_uskl_syn τa1) (ψ2 := ptyp_to_uskl_syn τa2);
+      [ exact HwfΘ | exact Hrefine | reflexivity
+      | intros Δr' τ1 HΔr' Hm1 Hr1 Δ1;
+        eapply IHad_pat_consis1;
+          [ exact HwfΘ | reflexivity | exact Hma1 | exact HΔr'
+          | exact Hm1 | exact Hr1 ]
+      | intros Δr' τ2 HΔr' Hm2 Hr2 Δ2;
+        eapply IHad_pat_consis2;
+          [ exact HwfΘ | reflexivity | exact Hma2 | exact HΔr'
+          | exact Hm2 | exact Hr2 ]
+      | reflexivity | exact Hmb | exact HΔr ].
+  - (* forall_inh_tagged: subject all_etag never a mono paint *)
+    exfalso; eapply ptyp_to_uskl_syn_all_etag_absurd; symmetry; exact HeqS.
+  - (* forall_inh_untagged: subject all_syn, mono excluded *)
+    destruct τa; simpl in HeqS; try discriminate HeqS. inversion Hma.
+  - (* forall_syn_tagged *)
+    exfalso; eapply ptyp_to_uskl_syn_all_etag_absurd; symmetry; exact HeqS.
+  - (* forall_syn *)
+    destruct τa; simpl in HeqS; try discriminate HeqS. inversion Hma.
+  - (* ghostg: subject holeg never a paint *)
+    destruct τa; simpl in HeqS; discriminate HeqS.
+  - (* topholeg *)
+    destruct τa; simpl in HeqS; discriminate HeqS.
+  - (* hole *)
+    destruct τa; simpl in HeqS; discriminate HeqS.
+  - (* tophole *)
+    destruct τa; simpl in HeqS; discriminate HeqS.
+  - (* tophole_inh *)
+    destruct τa; simpl in HeqS; discriminate HeqS.
+  - (* tophole_drop *)
+    destruct τa; simpl in HeqS; discriminate HeqS.
+  - (* flex_l: subject var α (defined) *)
+    symmetry in HeqS; apply ptyp_to_uskl_syn_var_inv in HeqS; subst.
+    assert (Hmd : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | eassumption ]).
+    simpl.
+    eapply ad_ppre__flex_r; [ eassumption | ].
+    eapply IHad_pat_consis;
+      [ exact HwfΘ | reflexivity | exact Hmd | exact HΔr
+      | exact Hmb | exact Hrefine ].
+  - (* flex_r: chase the counterpart definition *)
+    eapply ad_partial_precise_psi_cong;
+      [ eapply ppre_paint_flexvar_chase;
+          [ exact HwfΘ | exact Hrefine | reflexivity | eassumption
+          | intros Δr' τc HΔr' Hmc Hrc Δc;
+            eapply IHad_pat_consis;
+              [ exact HwfΘ | exact HeqS | exact Hma | exact HΔr'
+              | exact Hmc | exact Hrc ]
+          | reflexivity | exact Hmb | exact HΔr ]
+      | clear; fsetdec ].
+Qed.

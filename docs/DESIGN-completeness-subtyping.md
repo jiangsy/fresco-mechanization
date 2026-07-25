@@ -560,6 +560,50 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-25 (k): **Arrow repair option (i) EXECUTED through the discharge
+  kit — `flex_apart` premise added (user-approved direction), all 10 closed
+  cases re-threaded, flex-subcase machinery Qed.**  User question answered:
+  the premise does NOT escape the P6 cluster — vacuous (`fa_clean`) at every
+  ρ = id call site; threaded through Cs/Sv/Ss statements internally; the one
+  real obligation is Sv-ForallL maintenance, to be discharged by the
+  collection-time freshening lemmas.  Landed (Qed, axiom-free, migrated):
+  - `flex_apart Θ0 Δρ P0 ψa` (leaf constructors for □/unit/rigid-var,
+    `fa_clean` for Δρ-clean targets, congruences incl. ⊤◇/⊤̇◇ strips and
+    cofinite ∀-pairs) + `flex_apart_{topholeg_target,tophole_p0}_inv`.
+    The cex config now VIOLATES the premise (P0 = β̂ flexible, ψa carries
+    the replaced rigid `c`); statement drafted accordingly.
+  - `uskl_rho_clean_eq` — on a Δρ-clean target the ρ-relation degenerates
+    to syntactic equality with Ψρ = ∅ (pick-fresh + `open_uskl_wrt_uskl_inj`
+    in the binder cases).
+  - `ad_refine_mono_paint_{allinh,allsyn}_rhs_absurd` (completing the
+    mono-paint RHS absurdity family), `bskl_monoish` + 
+    `ad_refine_mono_paint_rhs_monoish` (the counterpart shapes reachable
+    from a mono paint), `ad_pat_consis_monoish_counterpart` (against a
+    mono-ish counterpart a tag-sorted subject IS a mono paint and the
+    derivation solves no tags — gives Ψsub = ∅ hence Ψa = ∅, and turns
+    ψa into `ptyp_to_uskl_syn τa` so `ad_ppre_mono_tags_empty` kills Ψi).
+  - LHS flex_l-spine chases `ppre_paint_{arrow,flexvar}_chase`
+    (continuation-passing over the component obligations) and the bridge
+    **`mono_paint_paint_refine_consis_ppre`** (B2): a mono paint refining
+    the counterpart of a MONO-PAINT consistency subject is ⊑ᵖ[∅] against
+    that subject — outer induction on the consistency, Bridge A at the
+    leaves, the chases at arrow/flex_r.
+  **Remaining for the Arrow case (next): the CORE inner size-induction**
+  (⊤◇-strip recursion on `size Pi + size P0` at a fixed arrow target, with
+  the two branch main-IHs in scope), the branch TAG-SPLIT algebra
+  (Ψa_k := Ψ_k ∩ Ψ'_k; needs `ad_partial_precise_tags_sub`,
+  `ad_pat_consis_ftag_sub`, `d_tags_skl_ftag`, a new rho-tags-lower lemma),
+  and — DISCOVERED during the split analysis — **the `Hsubeq` premise must
+  weaken from the equality `Ψsub [=] Ψρ ∪ Ψa` to the inclusion pair
+  `Ψsub ⊆ Ψρ ∪ Ψa` ∧ `Ψa ⊆ Ψsub`**: cross-copy shared replacement tags
+  (one ρ-image at two leaves, consumed in one branch only) satisfy the
+  global equality but break the branch equalities; the inclusion pair is
+  branch-derivable (Ψ_k ⊆ Ψρ_k ∪ Ψ'_k via ftag_sub + rho-ftag-upper +
+  d_tags_skl_ftag) and callers derive it from the paper's ⊎ — premise
+  weakening = lemma strengthening, no caller cost.  All 10 closed cases'
+  Hsubeq uses survive the inclusion form (checked: topholeg P0=□, flex_l
+  transport, arrow-flex Ψa ⊆ Ψsub).  Then the four ∀ cases.
+
 - 2026-07-25 (j): **P6-Cv main induction at 10/15 cases; GhostG + topholeg +
   flex + plain-ghost cases CLOSED; ARROW CASE BLOCKED — the drafted
   statement's arrow/flex-P0 subcase is refuted by the standing cex.**
