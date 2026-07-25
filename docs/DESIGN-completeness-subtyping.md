@@ -560,6 +560,83 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-26 (m): **REPAIR OF THE §6(l) BLOCKER STARTED (user-approved
+  "make the repair") — architecture LOCKED, support kit Qed+committed,
+  generalized statement TYPE-CHECKED; proof rethread = next session.**
+  The repair keeps the paper's statement intact: prove
+  `a_solve_eq_complete_var_gen` (drafted, type-checked, in the dev
+  scratch) and derive the paper form as the `Θtv := []`/`S := ∅`
+  corollary.  The generalization has two coupled parts:
+  1. **Split-context refinement premise.**  `Θ = Θtv ++ Θr` (`Θtv` =
+     the ∀-descent binders, all `abind_tvar`; `Θr` = the original
+     context; similarly `Θ0 = Θtv ++ Θ0r`), and the refinement premise
+     is `Θr ⨟ Δr ⊢ᵣᵃ inh{θP0} ⊳ Q` with `Δr [=] dom Θtv` and
+     `inter Δρ (dom Θtv) = ∅`.  Binders never enter the refinement's
+     aenv, so its □-rule keeps fills wf at the ORIGINAL context — the
+     load-bearing invariant (`ad_refine_syn_ftv_rhs_bound` then bounds
+     every counterpart piece by `ftv(source) ∪ dom Θr`).  The ForallInh
+     descent extends `Θtv`/`Δr` in lockstep and the all-rule inversion
+     of the primary refinement re-enters the statement with NO
+     transfer.  Where a case needs the OLD `(Θ, ∅)` form (cv_* /
+     bridge / monoish delegations), derive it per case via
+     `ad_refine_syn_weaken` + `ad_refine_syn_delta_absorb`
+     (Δr-entries are Θ-tvars).
+  2. **Fresh-extension conclusion family.**  Conclusion:
+     `exists Pa, solve ∧ ∀S, inter S Δ = ∅ → inter S (dom Θr) = ∅ →
+     delta_def_fresh S Θ → Θ ⨟ (Δ∪S) ⊢ msubst θ Pa ⊑ᵖ[Ψi∪Ψa] ψa`.
+     The premise `Hpre` STAYS single-Δ (a ∀S-premise breaks
+     derivation-shape dispatch: different S-instances may invert by
+     different rules — verified dead end).  The □/⊤◇-fill rows fold
+     their ad_ppre__forall bodies by taking the body-IH's family at
+     `S := {X}` (X allowed: X ∉ Δ, X ∉ dom Θr) + `strengthen_tvar`
+     (X ∈ (add-X-side) Δ) + `delta_cong`.
+  **Discharge table for the family (per row of the 13 closed cases):**
+  - Pi=var rows / any row echoing a mono-paint-subject Hpre:
+    `ad_ppre_no_hole_subject_delta_mono` (paints are `pskl_no_hole`;
+    for hole-free subjects precision is fully Δ-monotone — Qed).
+  - P0=□ (VacuousR) rows: `Q` is the □-fill's syn-paint ⇒
+    `ftv Q ⊆ dom Θr` (rhs-bound at LHS `bskl_hole`) ⇒ via
+    `ad_pat_consis_ftv_bound` (tight: counterpart vars ∪ DEFINED-FLEX
+    data only — rigid tvar entries never pollute it) +
+    `uskl_rho_ftv_target_bound` ⇒ `ftv ψa ⊆ dom Θr ∪ Δρ` ⇒
+    `S ∩ ftv ψa = ∅` ⇒ `ad_partial_precise_delta_weaken_fresh`.
+  - unit/ghostg delegation rows: target ftv = ∅ ⇒ weaken_fresh.
+  - arrow rows: componentwise (branch families at the same S).
+  - FLEX/B2 rows: B2's conclusion is already ∀Δ — instantiate at Δ∪S.
+  - **var case, target `var X0` with `X0 ∈ dom Θtv` (the one NEW
+    sub-proof, reachable from the folds when ψR uses its binder):**
+    cv_var's output is opaque, so this branch must be proven directly:
+    the PRIMARY refinement forces P0's core to be `⊤◇ⁿ.(var X0)`
+    (hole-fill `var X0` is not Θr-wf; flex-chases are Θr-scoped and
+    X0-free — use rhs-bound), Hpre forces Pi's core ∈ {var X0, □}, and
+    every reachable output Pa is `⊤◇ⁿ.(var X0)`-shaped, hence
+    `pskl_no_hole` ⇒ Δ-monotone.  Budget ~100-150 lines.
+  **Remaining plumbing to write (all standard):**
+  `ad_partial_precise_rename` (X→Y on subject+target+Δ-entry; model:
+  `ad_refine_syn_f_rename`) — REQUIRED because a_solve_eq is not
+  deterministic, so the family's per-X' ∀-rule bodies must come from
+  renaming the single X-run's output precision (per-X' IH re-runs would
+  return unrelated Pa's); `rho_fresh`/`delta_def_fresh` cons-tvar
+  weakenings (inline-able); the SE-Forall/GhostForall cofinite solve
+  reassembly (close_pskl + `a_solve_eq_strengthen_tvar` +
+  `a_solve_sub_eq_rename` + `subst_pskl_in_pskl_spec`); msubst/open
+  commutation via `msubst_pskl_open_lc_local` + `a_inc_msubst_lc`
+  (both exist); the `Ψa' := Ψa \ {ε}` tag algebra (body-Hsubeq1 needs
+  `ε ∈ Ψ0sub ⇒ ε ∈ Ψρ`, from the ftag-flow fact + the target's
+  `ε ∉ Ψ0'` d_tags disjointness); the ForallSyn-case analogue of
+  `flex_apart_all_etag_forall_inv` for ⊤◇-sources (the deleted
+  `..._target_clean_inv` draft had the wrong shape — its fa_tophole
+  case meets diagonal families; re-derive from the actual grid).
+  **Landed this session (Qed, axiom-free, committed in
+  prop_look_complete.v):** `ad_partial_precise_delta_cong`,
+  `ad_partial_precise_delta_weaken_fresh`,
+  `ad_refine_syn_delta_to_tvar(_mid)`, `ad_refine_syn_delta_absorb`,
+  `ad_pat_consis_ftv_bound`, `uskl_rho_ftv_target_bound`,
+  `is_tskl/uskl_ghost_free/a_tags_sort_all_etag_inv`,
+  `flex_apart_weaken`, `flex_apart_all_etag_forall_inv`,
+  `pskl_no_hole` kit + `ad_ppre_no_hole_subject_delta_mono`,
+  `ad_refine_syn_ftv_rhs_bound`.
+
 - 2026-07-25 (l): **P6-Cv at 13/15 — Hsubeq weakened to the inclusion pair,
   ARROW CASE CLOSED, both untagged-∀ cases closed (absurd); the two
   TAGGED-∀ cases are TRUE but BLOCKED on a Δ-transfer PAPER-GAP that
