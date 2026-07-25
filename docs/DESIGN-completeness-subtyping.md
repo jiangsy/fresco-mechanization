@@ -560,6 +560,69 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-25 (j): **P6-Cv main induction at 10/15 cases; GhostG + topholeg +
+  flex + plain-ghost cases CLOSED; ARROW CASE BLOCKED — the drafted
+  statement's arrow/flex-P0 subcase is refuted by the standing cex.**
+  New Qed, axiom-free (migrated to `prop_look_complete.v`):
+  - `a_solve_eq_cv_ghostg` — the GhostG case as a standalone lemma with NO
+    size induction: a `holeg` target admits only a `□` subject and a
+    `bskl_hole` refinement RHS only a `□` source (mono paints and guarded
+    ⊤◇-bodies have no rule into them) — both sides forced to `□`, all other
+    shapes premise-absurd.  Kit: `d_tags_skl_holeg_inv`,
+    `ad_ppre_mono_paint_holeg_absurd`, `ad_refine_mono_paint_hole_rhs_absurd`.
+    Uniformity trick: `msubst θ (var v)` is ALWAYS a mono paint
+    (`a_inc_lookup_mono` covers rigid v too) — no rigid/flex split anywhere.
+  - Flex kit: `is_tskl/d_tags_skl/uskl_ghost_free/a_tags_sort_mono_paint`
+    (a mono paint is an empty-tag tag-sorted decorated skeleton).
+  - Topholeg kit: `a_tags_sort_topholeg_inv` (TY-mode vacuous via
+    ghost-free), `ad_ppre_mono_paint_topholeg_absurd`,
+    `ad_refine_mono_paint_tophole_rhs_absurd`.
+  Main-induction cases wired in the dev scratch (beyond unit/var):
+  - **ghostg** via `a_solve_eq_cv_ghostg` (+ leaf via `p6cv_close_leaf`).
+  - **hole / tophole / tophole_inh / tophole_drop** — ABSURD: ψa (and a
+    leaf's replacement image) is tag-sorted, and `is_tskl`/`d_tags_skl`
+    have no plain `hole`/`tophole` constructor; every branch of the ρ
+    inversion dies by `a_tags_sort_d_tags` inversion.  [The paper's
+    UnivGhost1/UnivGhost2 cases are vacuous in the mech's tag-sorted
+    reading; Ghost matches the paper's own "Impossible".]
+  - **flex_l** — target-switch: ψa = var α (α defined in Θ): transport the
+    precision via `ad_ppre_flexdef_target_unfold` (uses `delta_def_fresh`),
+    switch the WHOLE problem to the definition's mono paint (rho := refl,
+    tags := `a_tags_sort_mono_paint`, all tag sets ∅ since
+    `ad_ppre_mono_tags_empty` + `d_tags_skl_var_inv`), recurse via the MAIN
+    IH, fold the conclusion back with `ad_ppre__flex_r`.
+  - **flex_r** — one-liner: transport the refinement via
+    `ad_refine_flexdef_target_unfold`, main IH at the unchanged ψa.
+  - **topholeg** — the ⊤̇◇ congruence via an inline KEY continuation shared
+    by the refl and congruence ρ-branches (refl recast with `urho__refl`,
+    lc from `is_tskl_lc`).  Grid: Pi ∈ {□, ⊤◇.Pi'} (paints/guarded die);
+    P0 = □ ⇒ SE-VacuousR with Ψa=∅ from the `is_sskl` kit
+    (`ad_refine_syn_hole_sskl` + `ad_pat_consis_sskl_tags` — the paper's
+    "P0 = □ ⇒ Q synthesized ⇒ Ψa = ·" special case); P0 = ⊤◇.P0' ⇒
+    keep-inversion (remove-branch dies on guarded bodies) then main IH —
+    at (Pi', P0') with SE-UnivGhost, or at (□, P0') with
+    `a_solve_eq_hole_subject_inv` pinning the sub-output and SE-GhostL;
+    shielded-pack transported via `pskl_shielded_ftv_sub_ftv`.
+  **REMAINING 5 cases: arrow + the four ∀ cases.  ARROW IS BLOCKED on a
+  statement-level decision:** the drafted `a_solve_eq_complete_var` admits
+  `cex_p6_flex_counterpart.v`'s configuration VERBATIM (re-verified against
+  every premise incl. the new `delta_def_fresh`) — the flexible-P0-opposite-
+  a-ρ-leaf collision sits exactly in the arrow case's SE-FlexR subcase, so
+  the isolated statement is FALSE and no premise currently encodes the
+  LE-FlexR freshening that makes it unreachable (§6(g) resolved the
+  COMPLETENESS question but left the standalone-statement repair
+  unspecified).  Candidate repairs to decide: (i) a P0-side positional
+  premise ("no Θ0-flex in P0 opposite a ψa-subtree containing a ρ-leaf") —
+  the resurrected-but-reachability-flavoured dominates predicate; its Cv-
+  internal maintenance is structural, and the killer maintenance step of
+  the reverted attempt lived at Sv-ForallL/Cs, where the freshening facts
+  (`cex_p6_flex_freshened.v`) are exactly what discharges it; (ii) inline
+  Cv into Cs's induction (no standalone -var lemma; the paper's own -var
+  statement is the refuted one — already a PAPER-GAPS item); (iii) a
+  Ξ-extension conclusion — REFUTED already (the cex kills arbitrary θa).
+  The four ∀ cases are deferred until the decision, since a new premise
+  must thread through exactly their binder bookkeeping.
+
 - 2026-07-25 (i): **P6-Cv Var case CLOSED — `a_solve_eq_cv_var` Qed,
   axiom-free, via the MONO-TARGET generalization `a_solve_eq_cv_mono`**
   (both `Print Assumptions` = Closed under the global context; in

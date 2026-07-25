@@ -77,6 +77,20 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-25 (later) — P6-Cv at 10/15 cases; GhostG/topholeg/flex/ghost-absurd closed; Arrow blocked on the flex-P0 statement decision
+
+`a_solve_eq_cv_ghostg` Qed (no size induction — both sides forced to □) +
+mono-paint tags kit + topholeg kit (all migrated, axiom-free).  Main
+induction now closes ghostg, hole/tophole/tophole_inh/tophole_drop (absurd:
+tag-sorted ψa has no plain ghosts — `is_tskl` inversion), flex_l (target
+switch to the definition's paint + main IH + `ad_ppre__flex_r` fold),
+flex_r (refinement transport), topholeg (KEY continuation; `is_sskl` kit
+discharges the paper's P0=□/Ψa=∅ special case; `a_solve_eq_hole_subject_inv`
+pins the □-subject sub-output).  Remaining: arrow + 4 ∀-cases.  ARROW
+BLOCKED: the drafted statement admits `cex_p6_flex_counterpart.v` verbatim
+(re-verified incl. `delta_def_fresh`) — needs a statement-level decision
+(P0-side reachability premise vs inlining Cv into Cs); see DESIGN §6(j).
+
 ## 2026-07-25 — P6-Cv Var case CLOSED (a_solve_eq_cv_mono / a_solve_eq_cv_var); delta_def_fresh side condition
 
 `a_solve_eq_cv_var` Qed, axiom-free, as the `τ = X` instance of a MONO-target

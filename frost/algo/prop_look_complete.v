@@ -2344,3 +2344,235 @@ Proof.
   eapply a_solve_eq_cv_mono with (τ := ptyp_var_f X); eauto.
   apply mono_ptyp__var.
 Qed.
+
+(* ===================================================================== *)
+(*  GhostG case kit: a dotted-ghost target [holeg] / refinement into a    *)
+(*  bare [□] admit ONLY a [□] on the other side — mono paints and         *)
+(*  guarded shapes have no rule into them.                                 *)
+(* ===================================================================== *)
+
+Lemma d_tags_skl_holeg_inv : forall Ψ,
+  d_tags_skl Ψ uskl_holeg -> Ψ [=] empty.
+Proof. intros Ψ H; inversion H; subst; auto. Qed.
+
+Lemma ad_ppre_mono_paint_holeg_absurd : forall Θ Δ Ψ S ψ,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δ ⊢ S ⊑ᵖ[ Ψ ] ψ ->
+  ψ = uskl_holeg ->
+  forall τb, S = ptyp_to_pskl τb -> mono_ptyp τb ->
+  False.
+Proof.
+  intros Θ Δ Ψ S ψ HwfΘ H; induction H; intros Heqψ τb HeqS Hmb;
+    try discriminate Heqψ.
+  - (* hole: subject □ is never a paint *)
+    destruct τb; simpl in HeqS; discriminate HeqS.
+  - (* tophole_remove: subject ⊤◇ is never a paint *)
+    destruct τb; simpl in HeqS; discriminate HeqS.
+  - (* flex_l: unfold the definition, still a mono paint *)
+    destruct τb; simpl in HeqS; try discriminate HeqS.
+    inversion HeqS; subst.
+    eapply IHad_partial_precise;
+      [ exact HwfΘ | reflexivity | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; eauto ].
+Qed.
+
+Lemma ad_refine_mono_paint_hole_rhs_absurd : forall Θ Δr L Q,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  Q = bskl_hole ->
+  forall τb, L = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  False.
+Proof.
+  intros Θ Δr L Q HwfΘ H; induction H; intros HeqQ τb HeqL Hmb;
+    try discriminate HeqQ.
+  - (* hole: LHS □ is never a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_remove: LHS ⊤◇ is never a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; eauto ].
+Qed.
+
+(* ==== the GhostG consistency case, as a standalone lemma ==== *)
+(* No size induction: both sides are forced to [□]; every other shape is
+   premise-absurd (a ⊤◇'s guarded body dies one level down). *)
+Lemma a_solve_eq_cv_ghostg : forall Θ0 Θ θ Δ Ψi Pi P0,
+  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  θ ∷ Θ0 ⊑ Θ ->
+  Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] uskl_holeg ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ bskl_hole ->
+  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
+             Θ ⨟ Δ ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi ] uskl_holeg.
+Proof.
+  intros Θ0 Θ θ Δ Ψi Pi P0 HwfΘ HwfΘ0 HwfPi HwfP0 Hθ Hpre Hrefine.
+  assert (Habs_pre_var : forall v Ψ',
+            Θ ⨟ Δ ⊢ (msubst_pskl θ (pskl_var_f v)) ⊑ᵖ[ Ψ' ] uskl_holeg ->
+            False).
+  { intros v Ψ' Hp. simpl in Hp.
+    eapply ad_ppre_mono_paint_holeg_absurd;
+      [ exact HwfΘ | exact Hp | reflexivity | reflexivity
+      | eapply a_inc_lookup_mono; eauto ]. }
+  assert (Habs_ref_var : forall v,
+            Θ ⨟ empty ⊢ᵣᵃ
+              (pskl_to_bskl_inh (msubst_pskl θ (pskl_var_f v))) ⊳ bskl_hole ->
+            False).
+  { intros v Hr. simpl in Hr.
+    assert (Hml : mono_ptyp (msubst_lookup θ v))
+      by (eapply a_inc_lookup_mono; eauto).
+    rewrite (ptyp_to_bskl_inh_syn_eq Hml) in Hr.
+    eapply ad_refine_mono_paint_hole_rhs_absurd;
+      [ exact HwfΘ | exact Hr | reflexivity | reflexivity | exact Hml ]. }
+  destruct Pi as [ | nb | X | Pi1 Pi2 | Pib | | Pi' ].
+  - (* Pi = unit: no precision rule into holeg *)
+    simpl in Hpre. inversion Hpre.
+  - (* Pi = var_b: not wf *) inversion HwfPi.
+  - (* Pi = var: a mono paint, absurd *)
+    exfalso. eapply Habs_pre_var. exact Hpre.
+  - (* Pi = arrow: absurd *) simpl in Hpre. inversion Hpre.
+  - (* Pi = all_syn: absurd *) simpl in Hpre. inversion Hpre.
+  - (* Pi = □: the live column *)
+    destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
+    + (* P0 = unit: no refinement into □ *)
+      simpl in Hrefine. inversion Hrefine.
+    + (* P0 = var_b: not wf *) inversion HwfP0.
+    + (* P0 = var: a mono paint, absurd *)
+      exfalso. eapply Habs_ref_var. exact Hrefine.
+    + (* P0 = arrow: absurd *) simpl in Hrefine. inversion Hrefine.
+    + (* P0 = all_syn: absurd *) simpl in Hrefine. inversion Hrefine.
+    + (* P0 = □: SE-GhostL, Pa := □ *)
+      exists pskl_hole; split; [ apply a_solve_eq__hole_l | exact Hpre ].
+    + (* P0 = ⊤◇.P0': strip; the guarded body dies *)
+      simpl in Hrefine. inversion Hrefine; subst.
+      exfalso.
+      assert (HgP0' : guarded_pskl P0') by (inversion HwfP0; assumption).
+      inversion HgP0'; subst.
+      * (* unit *)
+        match goal with
+        | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl θ pskl_unit) ⊳ _
+          |- _ => simpl in Hin; inversion Hin
+        end.
+      * (* var *)
+        match goal with
+        | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl θ (pskl_var_f _)) ⊳ _
+          |- _ => eapply Habs_ref_var; exact Hin
+        end.
+      * (* arrow *)
+        match goal with
+        | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl θ (pskl_arrow _ _)) ⊳ _
+          |- _ => simpl in Hin; inversion Hin
+        end.
+  - (* Pi = ⊤◇.Pi': strip; the guarded body dies *)
+    simpl in Hpre. inversion Hpre; subst.
+    exfalso.
+    assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
+    inversion HgPi'; subst.
+    + (* unit *)
+      match goal with
+      | Hp' : _ ⨟ _ ⊢ msubst_pskl θ pskl_unit ⊑ᵖ[ _ ] _ |- _ =>
+          simpl in Hp'; inversion Hp'
+      end.
+    + (* var *)
+      match goal with
+      | Hp' : _ ⨟ _ ⊢ msubst_pskl θ (pskl_var_f _) ⊑ᵖ[ _ ] _ |- _ =>
+          eapply Habs_pre_var; exact Hp'
+      end.
+    + (* arrow *)
+      match goal with
+      | Hp' : _ ⨟ _ ⊢ msubst_pskl θ (pskl_arrow _ _) ⊑ᵖ[ _ ] _ |- _ =>
+          simpl in Hp'; inversion Hp'
+      end.
+Qed.
+
+(* ===================================================================== *)
+(*  Flex-case kit: a mono paint is a tag-sorted (empty-tag) decorated     *)
+(*  skeleton — the ψa-side payload for the flex_l target switch.          *)
+(* ===================================================================== *)
+
+Lemma is_tskl_mono_paint : forall τ,
+  mono_ptyp τ -> is_tskl (ptyp_to_uskl_syn τ).
+Proof. intros τ Hm; induction Hm; simpl; constructor; auto. Qed.
+
+Lemma d_tags_skl_mono_paint : forall τ,
+  mono_ptyp τ -> d_tags_skl empty (ptyp_to_uskl_syn τ).
+Proof.
+  intros τ Hm; induction Hm; simpl.
+  - apply d_tags_skl__unit; fsetdec.
+  - apply d_tags_skl__var; fsetdec.
+  - apply d_tags_skl__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ assumption | assumption | fsetdec | fsetdec ].
+Qed.
+
+Lemma uskl_ghost_free_mono_paint : forall τ,
+  mono_ptyp τ -> uskl_ghost_free (ptyp_to_uskl_syn τ).
+Proof. intros τ Hm; induction Hm; simpl; constructor; auto. Qed.
+
+Lemma a_tags_sort_mono_paint : forall NM τ,
+  mono_ptyp τ -> a_tags_sort NM empty (ptyp_to_uskl_syn τ).
+Proof.
+  intros NM τ Hm; destruct NM; constructor;
+    auto using is_tskl_mono_paint, d_tags_skl_mono_paint,
+               uskl_ghost_free_mono_paint.
+Qed.
+
+(* ===================================================================== *)
+(*  Topholeg case kit: component tags-sort, and the two mono-paint         *)
+(*  absurdities against dotted-⊤◇ targets / plain-⊤◇ refinement RHS.       *)
+(* ===================================================================== *)
+
+Lemma a_tags_sort_topholeg_inv : forall NM Ψ ψ,
+  a_tags_sort NM Ψ (uskl_topholeg ψ) -> a_tags_sort NM Ψ ψ.
+Proof.
+  intros NM Ψ ψ H; inversion H; subst.
+  - apply a_tags_sort__sk;
+      [ match goal with Ht : is_tskl (uskl_topholeg _) |- _ =>
+          inversion Ht; subst; assumption end
+      | match goal with Hd : d_tags_skl _ (uskl_topholeg _) |- _ =>
+          inversion Hd; subst; assumption end ].
+  - match goal with Hg : uskl_ghost_free (uskl_topholeg _) |- _ =>
+      inversion Hg end.
+Qed.
+
+Lemma ad_ppre_mono_paint_topholeg_absurd : forall Θ Δ Ψ S ψ,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δ ⊢ S ⊑ᵖ[ Ψ ] ψ ->
+  forall ψ0, ψ = uskl_topholeg ψ0 ->
+  forall τb, S = ptyp_to_pskl τb -> mono_ptyp τb ->
+  False.
+Proof.
+  intros Θ Δ Ψ S ψ HwfΘ H; induction H; intros ψ0' Heqψ τb HeqS Hmb;
+    try discriminate Heqψ.
+  - (* hole *) destruct τb; simpl in HeqS; discriminate HeqS.
+  - (* tophole_remove *) destruct τb; simpl in HeqS; discriminate HeqS.
+  - (* tophole_keep *) destruct τb; simpl in HeqS; discriminate HeqS.
+  - (* flex_l *)
+    destruct τb; simpl in HeqS; try discriminate HeqS.
+    inversion HeqS; subst.
+    eapply IHad_partial_precise;
+      [ exact HwfΘ | reflexivity | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; eauto ].
+Qed.
+
+Lemma ad_refine_mono_paint_tophole_rhs_absurd : forall Θ Δr L Q,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  forall Q0, Q = bskl_tophole Q0 ->
+  forall τb, L = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  False.
+Proof.
+  intros Θ Δr L Q HwfΘ H; induction H; intros Q0' HeqQ τb HeqL Hmb;
+    try discriminate HeqQ.
+  - (* hole *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_remove *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_keep *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; eauto ].
+Qed.
