@@ -154,6 +154,34 @@ which requires `a_wf_aenv Θ`. Without the side condition the case is stuck.
 
 ---
 
+## 7. Completeness Δ (P6) — freshness w.r.t. Θ's definition images. **[P6-Cv; via (B)]**
+
+> The `-var` completeness lemmas' precision premise `Δ ⨟ Θ ⊢ θPi ⊑ᵖ[Ψi] ψa`
+> carries a binder context Δ that the paper only ever populates with
+> instantiation binders — all introduced AFTER Θ's definitions exist. The
+> paper never states this; its rules and lemma statement leave Δ abstract.
+
+**The condition.** `delta_def_fresh Δ Θ`: every `Y ∈ Δ` avoids
+`ftvar_in_ptyp τ` for every `binds α (abind_flex_mono_def τ) Θ`
+(`algo/prop_look_complete.v`). Carried on the statements (route **B**) of
+`a_solve_eq_complete_var` and its helpers (`ad_refine_inh_hole_ppre`,
+`ad_ppre_flexdef_target_unfold`, the chain transports).
+
+**Machine-checked necessity (P6-Cv, Var case).** With `X` a defined flexible
+`X := (var Y)→1` in Θ, `Y ∈ Δ` rigid, `Pi = □` (the precision premise holds by
+the □-rule at `var X` since `X ∉ Δ`), `P0 = (□→□)` (refinement unfolds X's
+definition), every premise of the Δ-free statement holds; the forced solve
+output is `Pa = P0`, whose conclusion precision must apply the □-rule at the
+definition's paint — and its `Δ ∩ ftv` premise fails on `Y`. The Δ-free
+statement is FALSE, not merely hard.
+
+**Why it is the paper's wf.** Δ grows at exactly three points, each of which
+supplies the condition for free: ForallInh binders are picked fresh from
+`dom Θ ⊇` def-ftvs (`a_wf_aenv_def_ftv_dom`); the ρ-replaced variables carry
+it inside the `rho_fresh` pack; and the initial Δ of the P6-Cs/Sv callers is
+built from the same binder discipline. So the hypothesis is threading, never
+a real obligation.
+
 ## Rule of thumb
 
 When a metatheory lemma over one of these judgments looks **structurally

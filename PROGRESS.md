@@ -77,6 +77,21 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-25 — P6-Cv Var case CLOSED (a_solve_eq_cv_mono / a_solve_eq_cv_var); delta_def_fresh side condition
+
+`a_solve_eq_cv_var` Qed, axiom-free, as the `τ = X` instance of a MONO-target
+generalization `a_solve_eq_cv_mono` (target = painting of a mono ptyp; the
+defined-flex target chains live in an `a_def_chain` relation whose inversions
+ride the premise derivations, not the size measure).  ~25 supporting lemmas in
+`algo/prop_look_complete.v` (paint inversions, chain transports, chain-based
+subject inversions, the two refinement→precision bridges).  The P6-Cv statement
+gained the `delta_def_fresh Δ Θ` hypothesis — a NECESSARY wf-side-condition
+(Δ-free statement refuted; registered WF-SIDE-CONDITIONS §7, DESIGN
+§6(i)).  Main-induction Unit + Var cases wired and closed in the dev scratch;
+13 consistency cases remain.  Perf: two hangs diagnosed and fixed (fsetdec on
+an evar `Δr` goal at the bridge call sites → pin `with (Δr := empty)`;
+`ltac:(lia)` elaborating before its named arg pins `n` → prior assert).
+
 ## 2026-07-25 — the nonflex{P0} repair REFUTED at depth (machine-checked); repair redirected
 
 Tried the proposed -var repair (a `nonflex{P0}` premise) in the mech before

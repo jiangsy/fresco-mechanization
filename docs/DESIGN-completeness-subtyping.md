@@ -560,6 +560,69 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-25 (i): **P6-Cv Var case CLOSED — `a_solve_eq_cv_var` Qed,
+  axiom-free, via the MONO-TARGET generalization `a_solve_eq_cv_mono`**
+  (both `Print Assumptions` = Closed under the global context; in
+  `prop_look_complete.v`).  The Unit/Var/GhostG paper case's grid at a
+  variable target is richer than unit: a DEFINED-FLEX target `var X`
+  unfolds through Θ's definition chains in both premises.  Design:
+  - `a_solve_eq_cv_mono`: target = `ptyp_to_uskl_syn τ` for MONO `τ`
+    (subsumes unit `τ=1` — delegated to `a_solve_eq_cv_unit` — and var
+    `τ=X`; arrow components recurse inside).  Strong induction on
+    `size Pi + size P0` only; the target's def-chain unfolding rides the
+    PREMISE DERIVATIONS via `a_def_chain Θ τ τe` + chain-based
+    inversions, NOT the size (a size-only induction cannot step
+    flex_r-target unfolds — that was the structural crux).
+  - Kit (all Qed): paint compute/shape inversions (uskl+bskl);
+    `a_inc_lookup_mono` (θ-images mono); `a_def_chain` + mono/trans;
+    `mono_ptyp_wf_to_pskl_wf`, `ad_ppre_mono_paint_refl`,
+    `ad_refine_mono_paint_refl`; `ad_ppre_mono_tags_empty` (mono targets
+    carry no tags — replaces per-target `_tags_empty` lemmas);
+    defined-flex TARGET unfolds `ad_ppre/ad_refine_flexdef_target_unfold`
+    + chain transports (`*_chain_unfold`, `ad_ppre_chain_fold` — fold =
+    iterated `flex_r`, used to bring conclusions back to the original
+    target); chain-based SUBJECT inversions
+    (`ad_ppre_{unit,arrow,tophole}_subject_chain_inv`,
+    `ad_ppre_allsyn_subject_mono_absurd`,
+    `ad_refine_tophole_lhs_chain_inv`, `ad_refine_allinh_lhs_mono_absurd`,
+    `ad_refine_syn_rigid_var_nonvar_absurd`); Bridge A
+    `ad_refine_mono_paint_lhs_ppre` (mono-paint LHS — the θ-image of a
+    flexible counterpart — precise at ANY Δ: paints have no ghosts, so no
+    Δ-sensitive rule fires); Bridge B `ad_refine_inh_hole_ppre` (arbitrary
+    inh-painting LHS for the `Pi = □`/SE-GhostL case, threading the given
+    □-precision to ghost leaves and Δ-def-freshness to chain hops).
+  - **NEW WF-SIDE-CONDITION (statement change, registered
+    WF-SIDE-CONDITIONS §7): `delta_def_fresh Δ Θ`** — every `Y ∈ Δ`
+    avoids every definition image's ftvs.  NECESSARY: the Δ-free
+    statement is FALSE — with `X` def-flex `:= (var Y)→1`, `Y ∈ Δ` rigid,
+    `Pi = □` (precision by the □-rule at `var X`, X ∉ Δ), `P0 = (□→□)`,
+    all premises hold but the conclusion precision must pass the □-rule
+    at the definition's paint, whose Δ-disjointness fails.  Semantically
+    it is the paper's implicit wf of the Δ-extended precision context
+    (Δ's binders postdate Θ's definitions).  Maintenance is free at every
+    growth point: ForallInh binders are fresh w.r.t. `dom Θ ⊇` def-ftvs
+    (`a_wf_aenv_def_ftv_dom`); Δρ carries it inside `rho_fresh`; the
+    initial Δ at the P6-Cs call site obeys the same discipline.
+  - Main induction (`a_solve_eq_complete_var`, dev scratch): **Unit and
+    Var cases WIRED and closed** — refl branch of `uskl_rho` via
+    `a_solve_eq_cv_unit`/`_cv_var` + `d_tags_skl_{unit,var}_inv` (Ψ'=∅ ⇒
+    Ψa=∅ ⇒ psi_cong), leaf branch via `p6cv_close_leaf`.  13 cases
+    remain.  The statement gained the `delta_def_fresh Δ Θ` hypothesis.
+  - PERF gotchas (all hit, all fixed; add to the checklist): (1)
+    `fsetdec` on an EVAR set-goal AGAIN — the bridges' `Δr [=] empty`
+    subgoal ran before `?Δr` was pinned by the refinement arg ⇒
+    minutes-long unification hang; fix `eapply … with (Δr := empty)`.
+    (2) `ltac:(lia)` as an argument in a named-arg application elaborates
+    BEFORE `(n := …)` pins the evar ⇒ "Cannot find witness"; use a prior
+    `assert (Hsz : …) by lia`.  (3) a wrong-orientation `symmetry` before
+    `apply`ing a painting equation sends unification into deep conversion
+    between two reducible paintings — apply in the lemma's own
+    orientation.
+  NEXT: GhostG case (`a_solve_eq_cv_ghostg` — target `uskl_holeg`/
+  `bskl_hole`; NB `bskl_hole` is NOT a mono paint, so it is a sibling of
+  cv_unit, not a cv_mono instance), then Arrow (first case recursing into
+  the MAIN consistency IH), then flex/⊤◇/∀ cases per the build order.
+
 - 2026-07-25 (h): **P6-Cv INDUCTION STARTED — reusable kit landed, Qed,
   axiom-free (commits 47947e3, a793581 on `remech`).**  The statement
   (`a_solve_eq_complete_var`) is set up in `prop_look_complete.v` with the
