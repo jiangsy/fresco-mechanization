@@ -3886,3 +3886,156 @@ Qed.
    statement (see DESIGN §6(h)).  All call sites satisfy it: ForallInh
    binders are fresh w.r.t. dom Θ ⊇ def-ftvs (a_wf_aenv_def_ftv_dom), Δρ
    carries it in rho_fresh, and the initial Δ obeys the same discipline. *)
+
+(* ===================================================================== *)
+(*  PHASE-3 KIT — the precision RENAME (the ∀-cases' cofinite bodies come *)
+(*  from renaming the single fresh-X run: the solve is not deterministic, *)
+(*  so per-X reruns would return unrelated outputs) + the msubst/subst    *)
+(*  commutation.                                                           *)
+(* ===================================================================== *)
+
+Lemma msubst_pskl_subst_var : forall θ Q X Y,
+  X `notin` dom θ -> Y `notin` dom θ ->
+  (forall p, In p θ -> X `notin` ftvar_in_ptyp (snd p)) ->
+  subst_pskl_in_pskl (pskl_var_f Y) X (msubst_pskl θ Q)
+  = msubst_pskl θ (subst_pskl_in_pskl (pskl_var_f Y) X Q).
+Proof.
+  intros θ Q X Y HX HY Hav; induction Q; simpl;
+    try (f_equal; auto; fail).
+  (* var_f *)
+  destruct (Xps == X) as [-> | Hne].
+    + rewrite (msubst_lookup_notin_dom _ HX).
+      simpl.
+      rewrite (msubst_lookup_notin_dom _ HY).
+      default_simp.
+    + assert (Hfr : X `notin`
+                ftvar_in_pskl (ptyp_to_pskl (msubst_lookup θ Xps))).
+      { rewrite ftvar_in_pskl_ptyp_to_pskl.
+        intros Hc.
+        assert (Heq : Xps = X)
+          by (eapply msubst_lookup_ftv_avoid; [ exact Hav | exact Hc ]).
+        auto. }
+      rewrite (subst_pskl_in_pskl_fresh_eq _ _ _ Hfr).
+      reflexivity.
+Qed.
+
+(** Renaming a Δ-variable in a partial-precision derivation.  [X] is a
+    Δ-only variable (outside Θ and its definition images), [Y] globally
+    fresh; the □-rule survives because its Δ-disjointness already forces
+    X out of the local target. *)
+Lemma ad_partial_precise_rename : forall Θ Δ Ψ P ψ,
+  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  forall Xr Yr,
+  Xr `in` Δ ->
+  Xr `notin` dom Θ ->
+  Yr `notin` dom Θ -> Yr `notin` Δ ->
+  Yr `notin` ftvar_in_pskl P -> Yr `notin` ftvar_in_uskl ψ ->
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+     Xr `notin` ftvar_in_ptyp τ /\ Yr `notin` ftvar_in_ptyp τ) ->
+  Θ ⨟ (add Yr (remove Xr Δ)) ⊢
+    (subst_pskl_in_pskl (pskl_var_f Yr) Xr P)
+    ⊑ᵖ[ Ψ ] (subst_bskl_in_uskl (uskl_var_f Yr) Xr ψ).
+Proof.
+  intros Θ Δ Ψ P ψ H; induction H;
+    intros Xr Yr HXΔ HXΘ HYΘ HYΔ HYP HYψ Hdefs; simpl in *.
+  - (* unit *) apply ad_ppre__unit; assumption.
+  - (* var *)
+    destruct (eq_var X Xr) as [-> | Hne].
+    + match goal with |- context [if ?c then _ else _] =>
+        destruct c as [_ | Hc]; [ | exfalso; auto ] end.
+      apply ad_ppre__var; [ assumption | left; clear; fsetdec ].
+    + match goal with |- context [if ?c then _ else _] =>
+        destruct c as [Hc | _]; [ exfalso; auto | ] end.
+      apply ad_ppre__var; [ assumption | ].
+      match goal with Hor : _ \/ a_binds_tvar _ _ |- _ =>
+        destruct Hor as [HΔ | Hb];
+        [ left; clear - HΔ Hne; fsetdec | right; assumption ] end.
+  - (* arrow *)
+    eapply ad_ppre__arrow;
+      [ apply IHad_partial_precise1; auto
+      | apply IHad_partial_precise2; auto
+      | assumption ].
+  - (* forall *)
+    eapply ad_ppre__forall
+      with (L := L `union` singleton Xr `union` singleton Yr
+                   `union` Δ `union` dom Θ); [ | eassumption ].
+    intros Z HZ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - HZ; fsetdec | apply lc_pskl_var_f ].
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - HZ; fsetdec | apply lc_uskl_var_f ].
+    eapply ad_partial_precise_delta_cong;
+      [ apply (H0 Z ltac:(clear - HZ; fsetdec) Xr Yr);
+        [ clear - HXΔ; fsetdec
+        | exact HXΘ | exact HYΘ
+        | clear - HYΔ HZ; fsetdec
+        | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P
+                        (pskl_var_f Z)) as Hup;
+          simpl in Hup; clear - HYP HZ Hup; fsetdec
+        | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
+                        (uskl_var_f Z)) as Hup;
+          simpl in Hup; clear - HYψ HZ Hup; fsetdec
+        | exact Hdefs ]
+      | clear - HZ; fsetdec ].
+  - (* hole: X is already out of the local target *)
+    match goal with Hint : AtomSetImpl.inter _ _ [=] empty |- _ =>
+      assert (HXψ : Xr `notin` ftvar_in_uskl ψ)
+        by (clear - Hint HXΔ; fsetdec);
+      rewrite (subst_bskl_in_uskl_fresh_eq _ _ _ HXψ);
+      apply ad_ppre__hole; [ assumption | clear - Hint HYψ; fsetdec ]
+    end.
+  - (* tophole_remove *)
+    apply ad_ppre__tophole_remove.
+    apply IHad_partial_precise; auto.
+  - (* tophole_fill *)
+    eapply ad_ppre__tophole_fill
+      with (L := L `union` singleton Xr `union` singleton Yr
+                   `union` Δ `union` dom Θ).
+    intros Z HZ.
+    rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - HZ; fsetdec | apply lc_uskl_var_f ].
+    replace (pskl_tophole (subst_pskl_in_pskl (pskl_var_f Yr) Xr P))
+      with (subst_pskl_in_pskl (pskl_var_f Yr) Xr (pskl_tophole P))
+      by reflexivity.
+    apply (H0 Z ltac:(clear - HZ; fsetdec) Xr Yr).
+    + exact HXΔ.
+    + simpl. clear - HXΘ HZ; fsetdec.
+    + simpl. clear - HYΘ HZ; fsetdec.
+    + exact HYΔ.
+    + simpl. simpl in HYP. exact HYP.
+    + pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
+                    (uskl_var_f Z)) as Hup;
+      simpl in Hup; clear - HYψ HZ Hup; fsetdec.
+    + intros α τ Hb.
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | exact (Hdefs _ _ Hb') ].
+  - (* tophole_keep *)
+    apply ad_ppre__tophole_keep.
+    apply IHad_partial_precise; auto.
+  - (* flex_l *)
+    assert (Hne : α <> Xr).
+    { intros ->. apply HXΘ. eapply binds_In; eassumption. }
+    match goal with |- context [if ?c then _ else _] =>
+      destruct c as [Hc | _]; [ exfalso; auto | ] end.
+    destruct (Hdefs _ _ H) as [HXτ HYτ].
+    eapply ad_ppre__flex_l; [ eassumption | ].
+    assert (Hfr : Xr `notin` ftvar_in_pskl (ptyp_to_pskl τ))
+      by (rewrite ftvar_in_pskl_ptyp_to_pskl; exact HXτ).
+    rewrite <- (subst_pskl_in_pskl_fresh_eq
+                  (ptyp_to_pskl τ) (pskl_var_f Yr) Xr Hfr).
+    apply IHad_partial_precise; auto.
+    rewrite ftvar_in_pskl_ptyp_to_pskl. exact HYτ.
+  - (* flex_r *)
+    assert (Hne : α <> Xr).
+    { intros ->. apply HXΘ. eapply binds_In; eassumption. }
+    match goal with |- context [if ?c then _ else _] =>
+      destruct c as [Hc | _]; [ exfalso; auto | ] end.
+    destruct (Hdefs _ _ H) as [HXτ HYτ].
+    eapply ad_ppre__flex_r; [ eassumption | ].
+    assert (Hfr : Xr `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))
+      by (rewrite ftvar_in_uskl_ptyp_to_uskl_syn; exact HXτ).
+    rewrite <- (subst_bskl_in_uskl_fresh_eq
+                  (ptyp_to_uskl_syn τ) (uskl_var_f Yr) Xr Hfr).
+    apply IHad_partial_precise; auto.
+    rewrite ftvar_in_uskl_ptyp_to_uskl_syn. exact HYτ.
+Qed.

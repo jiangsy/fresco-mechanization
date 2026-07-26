@@ -560,6 +560,61 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-26 (o): **REPAIR PHASE 3a — rename machinery Qed + the tagged-∀
+  case plan COLLAPSED (no inner induction needed).**
+  - Landed Qed (dev scratch; migrate with the cases):
+    `msubst_pskl_subst_var` (msubst/subst-var commutation) and
+    `ad_partial_precise_rename` (renames a Δ-only variable Xr→Yr through
+    subject+target+Δ; premises: Xr ∈ Δ, Xr ∉ dom Θ, Yr globally fresh,
+    Xr/Yr avoid def-images; the □-rule survives because its own
+    Δ-disjointness already excludes Xr from the local target).  Proof
+    gotcha: ott's `eq_var`-ifs are NOT abstracted by `destruct (x == y)`
+    after `simpl` — destruct the goal's own scrutinee via
+    `match goal with |- context [if ?c then _ else _] => destruct c end`.
+  - **KEY DISCOVERY — the ∀-cases need NO CORE size-induction.**
+    `a_wf_pskl__tophole` demands GUARDED bodies, so `⊤◇.∀…` subjects are
+    not wf: the precision tophole_remove branch dies (guarded body vs
+    all_etag target: unit/arrow by inversion, var by the
+    mono-subject-tags-empty ε-contradiction), and the P0 = ⊤◇.P0' rows
+    die the same way on the refinement side.  (Sanity check that forced
+    this: `⊤◇.∀Z.Z ∼ ∀β.β` has NO solve derivation — GhostForall's body
+    keeps the ⊤◇ and the inner `∀Z.Z ∼ β'` is stuck — so wf-exclusion is
+    load-bearing, not a convenience.)  Surviving grid per case:
+    Pi ∈ {∀ (A), □ (B), ⊤◇-FILL (C)} × P0 ∈ {∀ (case 1) / ⊤◇-fill, □
+    (case 3)}; everything else absurd with existing kit
+    (mono-subject-tags-empty + ε ∈ Ψ'; K17 rigid-var;
+    allinh/allsyn_rhs_absurd for flex P0; paint-shape discriminations).
+  - Row recipes (all machinery now exists):
+    * Tag algebra at the case top: `Ψa' := remove ε Ψa`;
+      `Ψ0sub ⊆ Ψρ ∪ Ψ0'` via the ftag-flow at one fresh X; body-Hsubeq1
+      needs `ε ∈ Ψ0sub ⇒ ε ∈ Ψρ` from that flow + the target's
+      `ε ∉ Ψ0'` (a_tags_sort_all_etag_inv).
+    * Row B (Pi=□): solve = SE-GhostL directly; the ∀-fold's body
+      obligations are built PER (X', S) by RE-RUNNING the cofinite IH at
+      X' (legal: `a_solve_eq_hole_subject_inv` pins every run's output
+      to P0b^X', so no cross-run coherence is needed); each run's family
+      at S' := {X'} ∪ S then `strengthen_tvar` (X' ∈ Δ∪S∪{X'}) +
+      `delta_cong`.  NO rename.
+    * Rows A (Pi=∀) and C (Pi=⊤◇ via tophole_fill): ONE fresh-X IH run;
+      solve reassembled with close_pskl + `a_solve_eq_strengthen_tvar` +
+      `a_solve_sub_eq_rename` + `subst_pskl_in_pskl_spec/intro`;
+      precision bodies per (X', S): take the X-run's family at
+      S' := {X} ∪ S (allowed: X ∉ Δ, X ∉ dom Θr — THE point of the
+      repair), `strengthen_tvar` (X now in the Δ-side), then
+      `ad_partial_precise_rename` X→X' (Xr := X ∈ Δ∪S∪{X} ✓) +
+      `msubst_pskl_subst_var` + open/close-spec rewrites + `delta_cong`.
+    * The primary refinement's ∀-descent: `ad_refine_syn__all` grows Δr
+      (aenv stays Θr) — enters the IH's (Θr, add X Δr) slot directly;
+      body terms need `pskl_to_bskl_inh_open` + `msubst_pskl_open_lc_local`
+      (msubst_lc via `a_inc_msubst_lc`).
+  - OPEN QUESTION for case 3 (forall_syn_tagged) ONLY: its P0=⊤◇ row is
+    REAL via the refinement's tophole_fill, which grows the REFINEMENT's
+    aenv ((X~tvar)++Θr) — there the fills may legitimately mention the
+    binder, so the (Θtv,Θr) split cannot absorb it into Δr.  Resolve
+    when building case 3 (candidates: let the IH's Θr grow there and
+    weaken the S-conds per-row, or a case-3-specific fill analysis);
+    case 1 is unaffected.
+
 - 2026-07-26 (n): **REPAIR PHASE 2 COMPLETE — `a_solve_eq_complete_var_gen`
   is proven for all 13 previously-closed cases IN THE REPAIRED STATEMENT,
   and the paper-form statement is derived as its corollary (Qed).**  The
