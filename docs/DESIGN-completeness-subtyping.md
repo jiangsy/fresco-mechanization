@@ -560,6 +560,53 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-26 (q): **`forall_syn_tagged` UNBLOCKED — the §6(o) open question
+  resolved WITHOUT a statement change.**  The fear was that ForallSyn's
+  `P0 = ⊤◇.P0'` refinement uses `tophole_fill`, which grows the
+  refinement's aenv to `(Z~tvar)++Θr`, breaking the split's "refinement
+  at Θr" invariant.  RESOLUTION: **put the ForallSyn binder Z into the
+  Θr side of the split, not Θtv.**  The split's real invariant is
+  *"Θtv = binders the refinement does NOT see (ForallInh binders, which
+  grow Δ/precision but never the refinement); Θr = the original context
+  PLUS binders the refinement DOES see (ForallSyn binders, introduced by
+  the refinement's own tophole_fill)."*  Consequences (all checked):
+  - The IH call for ForallSyn uses `Θtv_ih := Θtv` (unchanged),
+    `Θr_ih := (Z~tvar)++Θr`, `Θ0r_ih := (Z~tvar)++Θ0r`.  Then the _gen
+    refinement premise `Θr_ih ⨟ Δr ⊢ᵣᵃ …` is literally `refb` (Z in the
+    aenv via tophole_fill; Δr = dom Θtv unchanged since tophole_fill
+    doesn't touch Δ).  NO statement change.
+  - The family premise `S ∩ dom Θr = ∅` auto-covers Z once Z ∈ dom Θr,
+    so no new freshness premise is needed.
+  - The already-proven ForallInh case still holds with a Θr that
+    contains ancestor-ForallSyn binders: `refine_primary_to_plain`
+    weakens `Θr ⊆ Θ` regardless, and the □-row's
+    `ftv ψa ⊆ dom Θr ∪ Δρ` weaken-fresh uses exactly `S ∩ dom Θr = ∅`.
+  - **Cleaner still — NO permutation needed.**  Take
+    `Θtv_ih := []`, `Θr_ih := (Z~tvar)++Θ` (= `(Z~tvar)++Θtv++Θr`),
+    `Θ0r_ih := (Z~tvar)++Θ0`, `Δr_ih := empty`.  Then
+    `Θ_ih = Θtv_ih ++ Θr_ih = (Z~tvar)++Θ` is exactly the consistency
+    rule's prepended aenv — Z stays at the FRONT, so `Hconsis`,
+    `HwfΘ_ih` (via `a_wf_aenv__tvar`), and `Hθ_ih` (via `a_inc__tvar`,
+    Ξ=[]) all hold with NO exchange lemmas.  `Htvs_ih` is vacuous (empty
+    Θtv), `Δr_ih [=] dom [] = empty`, `inter Δρ (dom []) = empty`.  The
+    refinement premise is at `Θr_ih ⨟ Δr_ih = ((Z~tvar)++Θ) ⨟ empty`:
+    obtain it from `refb` (at `(Z~tvar)++Θr ⨟ Δr`) by
+    `ad_refine_syn_weaken` (`(Z~tvar)++Θr ⊆ (Z~tvar)++Θtv++Θr` by
+    append-binds) then `ad_refine_syn_delta_absorb` to drop `Δr = dom Θtv`
+    into the aenv (its binders are the Θtv-tvars, now present in Θr_ih).
+    Both lemmas already exist.  Trade-off: the IH's tight-Θr is "given
+    up" (dom Θr_ih = add Z (dom Θ)), but the family premise correspondingly
+    tightens to `S ∩ add Z (dom Θ) = ∅`, and ForallSyn's conclusion is
+    built by aenv-grow (`ad_ppre__tophole_fill`), not Δ-transfer, so it
+    never needed the tight Θr.  Entirely LOCAL to forall_syn_tagged.
+  Remaining to implement: the case body (mirrors ForallInh's KEYF/IHX/
+  FOLD but with ForallSyn's solve rules — SS-ForallGhost
+  `a_solve_eq__all_l_tophole`, SS-GhostL, SS-UnivGhost — and P0 grid
+  `{⊤◇.P0' (tophole_fill), □ (□-fills-to-∀), flex-chain}`); the Z-into-Θr
+  permutation lemmas; the ForallSyn conclusion precision via
+  `ad_ppre__tophole_fill` (grows the aenv, NOT Δ — so NO ∀S-family
+  Δ-transfer issue here, unlike ForallInh).
+
 - 2026-07-26 (p): **REPAIR PHASE 3b — `forall_inh_tagged` (case 1) CLOSED;
   `_gen` now 14/15 (only `forall_syn_tagged` admit); dev scratch compiles
   in 19.6s.**  Built per the §6(o) recipes: KEYF continuation, ε as a
