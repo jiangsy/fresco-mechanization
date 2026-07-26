@@ -560,6 +560,42 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-26 (r): **`forall_syn_tagged` built DOWN TO its 3 Pi-rows; full
+  scratch compiles (20s, 3 clean admits).**  Done + verified (backup
+  `p6cv_working4.v`): the two `flex_apart` target-descent lemmas
+  (guarded ⊤◇-body excludes the all_syn source that blocks descent); the
+  KEYF preamble + tag algebra (simpler than ForallInh — `ε ∉ Ψ`, so
+  `Ψa ⊆ Ψ0'` is direct, no ε-split); `HψaB` from the reconstructed ρ;
+  the P0-grid absurd columns (`allsyn_rhs_absurd` + rigid K17) and the
+  `P0 = □` VacuousR column; and the `P0 = ⊤◇` column INFRASTRUCTURE — the
+  refinement transport `Hreff` (tophole_fill inversion yields BOTH the
+  `tophole_remove` goal [absurd — a guarded body cannot refine to
+  `all_syn`, killed per-shape after `inversion HgP0'`] and the
+  `tophole_fill` goal, transported by `ad_refine_syn_weaken` +
+  `ad_refine_syn_delta_absorb`) and the IHX wrapper (`Θtv_ih := nil`,
+  `Θr_ih := (X~tvar)++Θ`, `Δr_ih := empty`, `Δx` a parameter, refinement
+  passed explicitly).  Ltac gotcha: after `inversion Hrefine`, the
+  cofinite premise must be referenced by its assigned name (`H5`/`L0`),
+  not via a `_ ⨟ _ ⊢ᵣᵃ _ ⊳ _` match pattern under the binder — that
+  pattern silently fails to bind.
+  **THE REMAINING OBSTACLE (fix before the 3 rows): the family premise
+  must strengthen from `S ∩ dom Θr = ∅` to `S ∩ dom Θ = ∅`.**  The IHX's
+  `Θtv_ih := nil` makes `dom Θr_ih = dom Θ`, so the IH's family premise is
+  `S ∩ add X (dom Θ)`; the outer family only provides `S ∩ dom Θr`, gap
+  `S ∩ dom Θtv`.  Strengthening the `_gen` conclusion family premise to
+  `S ∩ dom Θ` closes it uniformly: producers still discharge it
+  (`weaken_fresh` needs only `S ∩ ftv ⊆ S ∩ (dom Θr ∪ Δρ) ⊆ S ∩
+  (dom Θ ∪ Δρ)`), ForallInh's IH provides the stronger `S ∩ add X dom Θ`
+  from its own `HS2` + `X ∉ S`, and the corollary is unaffected
+  (`Θtv = [] ⇒ dom Θ = dom Θr`).  It is an 8-site coordinated edit
+  (statement + every case's nested KEYF/IHX/FOLD family premise) + the
+  `HS2`-use re-thread.  (NOT a `dom Θtv ⊆ Δ` premise — that FAILS for
+  ForallInh's □/⊤◇ rows, where the binder enters `Θtv` but not `Δ`.)
+  Then the 3 Pi-rows: □ (GhostL, per-X' IHX rerun, `ad_ppre__tophole_fill`
+  conclusion), ∀ (ForallGhost `a_solve_eq__all_l_tophole` +
+  `a_solve_sub_eq_rename`, Δ-grow `ad_ppre__forall`), ⊤◇ (UnivGhost
+  `a_solve_eq__tophole_both`, refinement ⊤◇-strip, `ad_ppre__tophole_keep`).
+
 - 2026-07-26 (q): **`forall_syn_tagged` UNBLOCKED — the §6(o) open question
   resolved WITHOUT a statement change.**  The fear was that ForallSyn's
   `P0 = ⊤◇.P0'` refinement uses `tophole_fill`, which grows the
