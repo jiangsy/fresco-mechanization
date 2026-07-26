@@ -560,6 +560,42 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-26 (p): **REPAIR PHASE 3b — `forall_inh_tagged` (case 1) CLOSED;
+  `_gen` now 14/15 (only `forall_syn_tagged` admit); dev scratch compiles
+  in 19.6s.**  Built per the §6(o) recipes: KEYF continuation, ε as a
+  Ψ'-solved tag (`Ψa' := remove ε Ψa`), the P0-grid (only P0=∀.P0b
+  survives), the shared IHX (body-IH wrapper) + FOLD (per-instance
+  strengthen→rename→rewrite fold), and rows A (Pi=∀), B (Pi=□), C
+  (Pi=⊤◇-fill).  Two engineering findings worth keeping:
+  - **Row B (Pi=□) cannot use FOLD.**  The □-rule's target
+    `open ψR (var X)` contains X, so its precision premise is only
+    derivable at Δ (not `add X Δ`); the body-IH therefore runs with X ∉
+    its Δ-set, so `ad_partial_precise_rename` (needs `Xr ∈ Δ`) does not
+    apply.  Row B keeps the PER-X' IH rerun instead; its solve is a
+    single `a_solve_eq__hole_l` (Pa := ∀.P0b, no cofinite reassembly).
+  - **Running the giant IH under a binder hangs `destruct`.**  The same
+    `destruct (IHX …)` is instant at a row's top level but hangs inside
+    the ∀-fold body (bloated context).  Fix: `clear FOLD` (the unused
+    giant) before Row B's destruct; rows A/C run IHX at the top and FOLD.
+  New kit (Qed, scratch): `a_wf_pskl_delta_to_tvar(_mid)`,
+  `a_inc_image_ftv_dom`.  **Slowness (was >4min → 19.6s):** the case was a
+  chain of ~6 hung/slow sentences, each an instance of four patterns —
+  fsetdec-on-a-giant-union-∉ (→ `solve_notin` for notin goals,
+  `destruct_notin; fsetdec` for the rest; NEVER `first [ solve_notin |
+  fsetdec ]`), fsetdec-on-an-evar-set-goal (→ pin the `∀S` arg,
+  `apply (HqX (remove X S))`), giant-IH-`destruct`-under-binder (→ clear
+  giants), and `Set Implicit Arguments` arg-slot bugs (→ `@lemma` + supply
+  the substituend before the freshness proof).  The profiling method:
+  tight `timeout` + `coqc -time`, read the last-logged byte offset (the
+  stuck sentence is the next one), fix, iterate.
+  REMAINING: **`forall_syn_tagged`** — its P0=⊤◇.P0' refinement is
+  `tophole_fill`, which grows the REFINEMENT's aenv to `(X~tvar)++Θr`; the
+  (Θtv, Θr) split cannot absorb that binder into Δr, so it needs handling
+  distinct from case 1 (candidates: let Θr grow there and relax the
+  S-conditions per row, or a case-3-specific fill analysis).  Then migrate
+  `_gen` + the corollary to prop_look_complete.v, Print Assumptions, and
+  retire the scratch.
+
 - 2026-07-26 (o): **REPAIR PHASE 3a — rename machinery Qed + the tagged-∀
   case plan COLLAPSED (no inner induction needed).**
   - Landed Qed (dev scratch; migrate with the cases):
