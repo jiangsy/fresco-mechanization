@@ -560,6 +560,50 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-26 (n): **REPAIR PHASE 2 COMPLETE — `a_solve_eq_complete_var_gen`
+  is proven for all 13 previously-closed cases IN THE REPAIRED STATEMENT,
+  and the paper-form statement is derived as its corollary (Qed).**  The
+  scratch now holds only: `_gen` with the two tagged-∀ admits + the
+  corollary (`Θtv := []`, `Δr := ∅`, `S := ∅` — the instantiation
+  type-checks and Qeds, validating the design end-to-end).  Rethread
+  facts learned (for the ∀-case builder):
+  - The split equations `Θ = Θtv ++ Θr` / `Θ0 = Θtv ++ Θ0r` are consumed
+    by ANY `inversion …; subst` — post-subst text must write
+    `(Θtv ++ Θr)`/`(Θtv ++ Θ0r)` and pass `eq_refl eq_refl` to IH calls.
+  - Per-case preamble: `HwfΘr` via `a_wf_aenv_app_r`; the plain
+    refinement `Hrefine'` via `refine_primary_to_plain` ONLY where a
+    delegation (cv_*, Bridge B2 inside FLEX) needs `(Θ, ∅)`; all
+    structural inversions and recursion slots run on the PRIMARY form
+    directly (same rule shapes).
+  - Family discharges used per row: no_hole-Δ-monotonicity (Pi=var rows,
+    the var-case binder-side via `a_solve_eq_no_hole_p0` +
+    `ad_refine_inh_deltar_var_rhs_no_hole` + msubst-no_hole transport —
+    the mini-grid was avoided entirely); target-fresh weaken (P0=□ rows,
+    via `ad_refine_syn_ftv_rhs_bound` at the hole-LHS +
+    `consis_subject_ftv_split_bound` + `uskl_rho_ftv_target_bound`,
+    packaged per-case as `HψaB`); FLEX made Δ-UNIVERSAL (B2's conclusion
+    is ∀Δ, so the flex rows instantiate the family at `Δ ∪ S` directly);
+    recursion rows pass families through the ⊤◇/arrow folds unchanged;
+    the rigid-var absurdity at the primary uses the new
+    `ad_refine_syn_rigid_var_nonvar_absurd_sub` (binds-inclusion into Θ
+    + uniq).
+  - New kit this phase (Qed, committed): `binds_def_split`,
+    `refine_primary_to_plain`, `pskl_no_hole_open_rec_inv/_open_inv`,
+    `msubst_pskl_no_hole(_inv)`, `a_solve_eq_no_hole_p0`,
+    `ad_refine_inh_deltar_var_rhs_no_hole`,
+    `consis_subject_ftv_split_bound`,
+    `ad_refine_syn_rigid_var_nonvar_absurd_sub`, `p6cv_close_leaf_mono`
+    (Δ-monotone leaf closer).
+  REMAINING (Phase 3): the two tagged-∀ cases of `_gen`, now actually
+  provable: the ∀-row per §6(h) (aenv-weaken into the IH at
+  `Δx = add X Δ`, strengthen_tvar back); the □-row via the IH at `Δ`
+  plus its FAMILY at `S := {X}` (X ∉ Δ, X ∉ dom Θr — the whole point of
+  the repair); the fill-row likewise at the extended aenv; plus the
+  `ad_partial_precise_rename` lemma (solve non-determinism forces
+  rename-based cofinite reassembly), the SE-Forall/GhostForall solve
+  close/rename plumbing, and the `Ψa \\ {ε}` tag algebra — all specified
+  in §6(m).
+
 - 2026-07-26 (m): **REPAIR OF THE §6(l) BLOCKER STARTED (user-approved
   "make the repair") — architecture LOCKED, support kit Qed+committed,
   generalized statement TYPE-CHECKED; proof rethread = next session.**

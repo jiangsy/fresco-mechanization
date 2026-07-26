@@ -66,6 +66,7 @@ Require Import src.frost.algo.prop_consis_precise.
 Require Import src.frost.algo.prop_looksub.
 Require Import src.frost.algo.prop_solve_sub.
 Require Import src.frost.algo.prop_sub_complete.
+Require Import src.frost.algo.prop_metasubst.
 
 Set Implicit Arguments.
 
@@ -3656,3 +3657,232 @@ Proof.
       pose proof (binds_In _ _ _ _ Hb) as Hdom end.
     clear - Hdom; fsetdec.
 Qed.
+
+(* ===================================================================== *)
+(*  PHASE-2 KIT (repair, §6(m)) — no_hole solve/refine facts, the         *)
+(*  primary→plain refinement transfer, and the Δ-monotone leaf closer.    *)
+(* ===================================================================== *)
+
+(** Defined-flex bindings live in the Θr part of the split. *)
+Lemma binds_def_split : forall Θtv Θr α τ,
+  (forall x b, binds x b Θtv -> b = abind_tvar) ->
+  binds α (abind_flex_mono_def τ) (Θtv ++ Θr) ->
+  binds α (abind_flex_mono_def τ) Θr.
+Proof.
+  intros Θtv Θr α τ Htvs Hb.
+  unfold binds in *.
+  apply in_app_or in Hb; destruct Hb as [Hb | Hb]; [ | exact Hb ].
+  exfalso. pose proof (Htvs _ _ Hb) as Hc. discriminate Hc.
+Qed.
+
+(** The primary (Θr, Δr)-refinement in statement form (Θ, ∅). *)
+Lemma refine_primary_to_plain : forall Θtv Θr Δr L Q,
+  (forall x b, binds x b Θtv -> b = abind_tvar) ->
+  Δr [=] dom Θtv ->
+  Θr ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  (Θtv ++ Θr) ⨟ empty ⊢ᵣᵃ L ⊳ Q.
+Proof.
+  intros Θtv Θr Δr L Q Htvs HΔr H.
+  eapply ad_refine_syn_delta_absorb with (Δr := Δr).
+  - eapply ad_refine_syn_weaken; [ exact H | ].
+    intros x b Hb. unfold binds in *. apply in_or_app; right; exact Hb.
+  - intros Z HZ. right.
+    assert (HZd : Z `in` dom Θtv) by (clear - HZ HΔr; fsetdec).
+    apply binds_In_inv in HZd; destruct HZd as [b Hb].
+    pose proof (Htvs _ _ Hb) as Heqb; subst b.
+    unfold binds in *. apply in_or_app; left; exact Hb.
+Qed.
+
+(** no_hole is reflected by opening. *)
+Lemma pskl_no_hole_open_rec_inv : forall P V k,
+  pskl_no_hole (open_pskl_wrt_pskl_rec k V P) -> pskl_no_hole P.
+Proof.
+  induction P; intros V k H; simpl in *; auto.
+  - destruct H as [H1 H2]; split; eauto.
+  - eauto.
+  - eauto.
+Qed.
+
+Lemma pskl_no_hole_open_inv : forall P V,
+  pskl_no_hole (open_pskl_wrt_pskl P V) -> pskl_no_hole P.
+Proof.
+  intros P V H. eapply pskl_no_hole_open_rec_inv; exact H.
+Qed.
+
+(** msubst preserves and reflects no_hole (images are paints). *)
+Lemma msubst_pskl_no_hole : forall θ P,
+  pskl_no_hole P -> pskl_no_hole (msubst_pskl θ P).
+Proof.
+  intros θ; induction P; intros H; simpl in *; auto.
+  - apply ptyp_to_pskl_no_hole.
+  - destruct H; split; auto.
+Qed.
+
+Lemma msubst_pskl_no_hole_inv : forall θ P,
+  pskl_no_hole (msubst_pskl θ P) -> pskl_no_hole P.
+Proof.
+  intros θ; induction P; intros H; simpl in *; auto.
+  destruct H; split; auto.
+Qed.
+
+(** The solve output is hole-free whenever the counterpart is: holes in
+    the output only ever come from a □-counterpart (VacuousR). *)
+Lemma a_solve_eq_no_hole_p0 : forall Θ Pi P0 Pa,
+  Θ ⊢ₑ Pi ∼ P0 ⤳ Pa ->
+  pskl_no_hole P0 ->
+  pskl_no_hole Pa.
+Proof.
+  intros Θ Pi P0 Pa H; induction H; intros Hnh; simpl in *; auto.
+  - (* hole_r: the counterpart is □ — excluded *) contradiction.
+  - (* arrow *) destruct Hnh; split; auto.
+  - (* forall *)
+    pick fresh β for L.
+    apply (pskl_no_hole_open_inv P' (pskl_var_f β)).
+    apply H0; [ clear - Fr; fsetdec | ].
+    apply pskl_no_hole_open_rec; simpl; auto.
+  - (* tophole_l_all (GhostForall) *)
+    pick fresh β for L.
+    apply (pskl_no_hole_open_inv P' (pskl_var_f β)).
+    apply H0; [ clear - Fr; fsetdec | ].
+    apply pskl_no_hole_open_rec; simpl; auto.
+  - (* all_l_tophole (ForallGhost) *)
+    pick fresh β for L.
+    apply (pskl_no_hole_open_inv P' (pskl_var_f β)).
+    apply H0; [ clear - Fr; fsetdec | exact Hnh ].
+Qed.
+
+(** A refinement into a Δr-binder variable (X0 outside the refinement's
+    aenv) forces a hole-free source: the □-fill would have to BE that
+    variable, which is not Θr-wf; flex hops never reach it. *)
+Lemma ad_refine_inh_deltar_var_rhs_no_hole : forall Θr Δr L Q,
+  Θr ⨟ Δr ⊢ᵣᵃ L ⊳ Q ->
+  forall X0 P', Q = bskl_var_f X0 -> L = pskl_to_bskl_inh P' ->
+  X0 `notin` dom Θr ->
+  pskl_no_hole P'.
+Proof.
+  intros Θr Δr L Q H; induction H; intros X0 P' HeqQ HeqL HX0;
+    try discriminate HeqQ.
+  - (* var *)
+    destruct P'; simpl in HeqL; try discriminate HeqL.
+    simpl; exact I.
+  - (* hole: the fill would be the binder variable — not Θr-wf *)
+    exfalso.
+    destruct P; simpl in HeqQ; try discriminate HeqQ.
+    inversion HeqQ; subst.
+    match goal with Hwf : _ ⨟ _ ⊢ₚₛᵃ pskl_var_f _ |- _ =>
+      inversion Hwf; subst end.
+    match goal with Hor : _ \/ a_binds_tvar _ _ |- _ =>
+      destruct Hor as [Hin | [Hb | [Hb | [τ0 Hb]]]];
+      [ clear - Hin; fsetdec
+      | apply HX0; eapply binds_In; exact Hb
+      | apply HX0; eapply binds_In; exact Hb
+      | apply HX0; eapply binds_In; exact Hb ] end.
+  - (* tophole_remove *)
+    destruct P'; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    simpl. eapply IHad_refine_syn; eauto.
+  - (* flex_l: the source is a bare variable *)
+    destruct P'; simpl in HeqL; try discriminate HeqL.
+    simpl; exact I.
+  - (* flex_r: the target variable would be Θr-defined *)
+    inversion HeqQ; subst.
+    exfalso. apply HX0.
+    match goal with Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
+      eapply binds_In; exact Hb end.
+Qed.
+
+(** The consistency subject's variables under the split: counterpart
+    variables or Θr-scoped flex-definition data (the Θtv binders never
+    pollute the bound). *)
+Lemma consis_subject_ftv_split_bound : forall Ψ Θ S Q Θtv Θr,
+  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
+  Θ = Θtv ++ Θr ->
+  (forall x b, binds x b Θtv -> b = abind_tvar) ->
+  a_wf_aenv Θ ->
+  ftvar_in_uskl S [<=] ftvar_in_bskl Q `union` dom Θr.
+Proof.
+  intros Ψ Θ S Q Θtv Θr H HeqΘ Htvs Hwf.
+  assert (HwfΘr : a_wf_aenv Θr)
+    by (apply a_wf_aenv_app_r with (Θp := Θtv);
+        rewrite <- HeqΘ; exact Hwf).
+  intros x Hx.
+  destruct (ad_pat_consis_ftv_bound H Hx) as [Hin | (α & τ & Hb & Hor)].
+  - clear - Hin; fsetdec.
+  - subst Θ.
+    assert (Hbr : binds α (abind_flex_mono_def τ) Θr)
+      by (eapply binds_def_split; [ exact Htvs | exact Hb ]).
+    destruct Hor as [-> | Hτ].
+    + pose proof (binds_In _ _ _ _ Hbr) as Hd. clear - Hd; fsetdec.
+    + assert (Hd : ftvar_in_ptyp τ [<=] dom Θr)
+        by (eapply a_wf_aenv_def_ftv_dom; [ exact HwfΘr | exact Hbr ]).
+      clear - Hτ Hd; fsetdec.
+Qed.
+
+(** Rigid-variable-source refinement into a non-variable target is absurd,
+    sub-context version (the def-lookup transports along binds-inclusion
+    into the full context, where uniqueness kills it). *)
+Lemma ad_refine_syn_rigid_var_nonvar_absurd_sub : forall Θr Δr β Q,
+  Θr ⨟ Δr ⊢ᵣᵃ (bskl_var_f β) ⊳ Q ->
+  forall Θfull, (forall x b, binds x b Θr -> binds x b Θfull) ->
+  uniq Θfull ->
+  binds β abind_tvar Θfull ->
+  (forall Y, Q <> bskl_var_f Y) ->
+  False.
+Proof.
+  intros Θr Δr β Q H; inversion H; subst; intros Θfull Hmon Hu Hb Hnv.
+  - eapply Hnv; reflexivity.
+  - match goal with Hbd : binds _ (abind_flex_mono_def _) _ |- _ =>
+      pose proof (Hmon _ _ Hbd) as Hbd';
+      pose proof (binds_unique _ _ _ _ _ Hb Hbd' Hu) as Hc;
+      discriminate Hc end.
+  - eapply Hnv; reflexivity.
+Qed.
+
+(** Δ-monotone variant of the leaf closer (the target is a replaced rigid
+    variable; the var rule is Δ-positive). *)
+Lemma p6cv_close_leaf_mono :
+  forall NM Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0,
+  a_wf_aenv Θ ->
+  a_tags_sort NM Ψ' ψa ->
+  Ψi `union` Ψa [<=] Ψ' ->
+  rho_fresh Δρ Θ θ ->
+  Δρ [<=] Δ ->
+  (forall X, X `in` Δρ -> X `notin` pskl_shielded_ftv (msubst_pskl θ Pi)) ->
+  Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  rho_leaf NM Θ Δρ Ψρ ψsub ψa ->
+  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
+    forall Δ', Δ [<=] Δ' ->
+    Θ ⨟ Δ' ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+Proof.
+  intros NM Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0
+    HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf.
+  destruct Hleaf as (X & Ψ'' & Heqψa & HXΔρ & Htagsub & Hwfsub & HΨρ).
+  subst ψa.
+  pose proof (Hfresh X HXΔρ) as (HXb & Hθav & Hdef).
+  assert (HXΔ : X `in` Δ) by (clear - Hdelta HXΔρ; fsetdec).
+  pose proof (Hshield X HXΔρ) as Hsh.
+  destruct (ad_ppre_delta_var_inv Hpre eq_refl HwfΘ HXΔ HXb Hdef Hsh)
+    as (Heqm & HΨie).
+  assert (HeqPi : Pi = pskl_var_f X)
+    by (eapply msubst_pskl_var_inv; eassumption).
+  assert (HΨ'e : Ψ' [=] empty)
+    by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags))).
+  assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).
+  exists Pi. split.
+  - rewrite HeqPi. apply a_solve_eq__var.
+  - intros Δ' Hsub'.
+    rewrite Heqm.
+    apply ad_ppre__var;
+      [ clear - HΨie HΨae; fsetdec
+      | left; clear - HXΔ Hsub'; fsetdec ].
+Qed.
+
+(* [wf-side-condition] delta_def_fresh Δ Θ — the paper's implicit wf of the
+   Δ-extended precision context: Δ's binders postdate Θ's definition images.
+   Discovered NECESSARY at the Var case (P6-Cv): with a defined-flex target
+   var X whose definition mentions Y ∈ Δ, the Pi = □ subcase's conclusion
+   precision needs the □-rule at the definition's paint, whose Δ-disjointness
+   premise fails — a machine-checked counterexample against the Δ-free
+   statement (see DESIGN §6(h)).  All call sites satisfy it: ForallInh
+   binders are fresh w.r.t. dom Θ ⊇ def-ftvs (a_wf_aenv_def_ftv_dom), Δρ
+   carries it in rho_fresh, and the initial Δ obeys the same discipline. *)
