@@ -560,6 +560,84 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-27 (u): **P6-Cv CLOSED — `a_solve_eq_complete_var` is axiom-free
+  ("Closed under the global context"), zero admits.**  The three ForallSyn
+  Pi-rows all landed; `a_solve_eq_complete_var_gen` is `Qed`.  Home:
+  `frost/algo/prop_look_complete_var.v` (renamed from the cex scratch).
+  The kit that closed it:
+  - **`ad_partial_precise_rename_tvar`** (aenv-tvar Z↦W rename for
+    `ad_partial_precise`, ~60-line induction; flex cases need `Z,W∉ftv τ`,
+    supplied via `a_wf_aenv_def_ftv_dom`).  This is what builds the
+    `ad_ppre__tophole_fill` cofinite family (binder in the AENV) from the
+    SINGLE IHX instance — the missing lemma §6(t) flagged.
+  - **`pskl_no_hole P0` premise** added to `_gen` + corollary (a genuine
+    wf/scoping side-condition, consistent with the pre-existing
+    `a_solve_eq_no_hole_p0` invariant).  It gives `bskl_no_hole` for the
+    `ad_refine_syn_aenv_to_delta` transport (`inh(□)=bskl_hole`, so a
+    guarded-but-holey P0' would otherwise block moving X into Δr).  Threaded
+    through every recursive `IHHconsis`/`IHn`/`CORE`/IHX site.
+  - **⊤◇ row** (UnivGhost): wrapped IHX (Pi0:=⊤◇.Pi', P0i:=⊤◇.P0'); solve =
+    IHX output via `tophole_both` (strengthen_tvar; 3-subgoal inversion, the
+    2 extra guarded-tophole cases killed by `inversion Hg`); precision =
+    `ad_ppre__tophole_fill` + rename_tvar family (X-freshness of the fixed
+    subject via `a_solve_sub_eq_ftv` + `a_wf_pskl_ftv_dom` +
+    `msubst_pskl_ftv_avoid`).
+  - **□ row** (GhostL): solve = `a_solve_eq__hole_l` (Pa:=⊤◇.P0'); IHX with
+    Pi0:=□ (Hpre0x = `ad_ppre__hole`); same tophole_fill + rename closure.
+  - **∀ row** (ForallGhost): solve = `a_solve_eq__all_l_tophole` (RHS ⊤◇.P0'
+    KEPT & X-free ⇒ `subst_fresh_eq` on the RHS in the rename); IHX at
+    Δx:=add X Δ (X∈Δ ⇒ the Δ-var **FOLD** applies, NOT rename_tvar);
+    precision conclusion = `ad_ppre__forall` (Pa = ∀.close).
+  One ε-metavariable from a tophole_fill family member is genuinely
+  unconstrained (any ε inhabits the same family); discharged with `Unshelve;
+  exact ε` at KEYF-close.  The abandoned split-B permute lemmas
+  (`a_wf_aenv_insert_mid_tvar`, `a_inc_*_tvar_prefix`) were deleted as dead.
+  NEXT: fold into `prop_look_complete.v` proper / add to README.v index;
+  register the `pskl_no_hole P0` side-condition.
+
+- 2026-07-26 (t): **CORRECTION to §6(s): NO exchange lemmas — split-A is the
+  right recipe; ForallSyn IHX REBUILT & compiling (3 clean admits, ~20s).**
+  §6(s)'s split-B (`Θtv_ih:=Θtv`, `Θr_ih:=(X~tvar)++Θr`) is IMPOSSIBLE: H0's
+  aenv is FIXED at `(X~tvar)++Θ = (X~tvar)++Θtv++Θr` (X at FRONT), and the
+  split equation `(X~tvar)++Θ = Θtv_ih ++ Θr_ih` forces `Θtv_ih` to be a
+  PREFIX starting with X — so `Θtv_ih := Θtv` (starts with a non-X binder)
+  can never satisfy it.  The 3 exchange lemmas were built (`a_wf_aenv_
+  insert_mid_tvar`, `a_inc_{strip,build,insert}_tvar_prefix`, all Qed) but
+  are UNUSED — kept as harmless kit.
+  **Split-A (CORRECT): `Θtv_ih := (X~tvar)++Θtv`, `Θr_ih := Θr`,
+  `Θ0r_ih := Θ0r`, `Δr_ih := add X Δr`.**  The split eq `(X~tvar)++Θ =
+  ((X~tvar)++Θtv)++Θr` is VALID (X stays at front), gives the TIGHT family
+  premise `dom Θr` DIRECTLY (no `add X`, no `dom Θtv` gap), and feeds every
+  fixed-aenv premise (wf/inc/rho/precision) at `(X~tvar)++Θ` exactly as the
+  nil-approach did.  DECISIVE CONFIRMATION: the already-CLOSED
+  `forall_inh_tagged` IHX uses split-A verbatim (`((X~tvar)++Θtv) Θr Θ0r`,
+  `Δr:=add X Δr`, refinement `apply Hreff`) — ForallSyn now mirrors it.
+  The ONLY ForallSyn-specific twist is the refinement: P0=⊤◇.P0' makes
+  `Hrefine` a `tophole_fill`, so `Hrefb` = its inverted body at
+  `(X~tvar)++Θr ⨟ Δr ⊢ᵣᵃ bskl_tophole(paint P0') ⊳ open Q X`, and each row
+  moves X into Δr by `ad_refine_syn_aenv_to_delta` — which WORKS on the
+  tophole subject because `bskl_no_hole (bskl_tophole A) = bskl_no_hole A`
+  (guarded body ⇒ no hole).  Rows use the WRAPPED IHX (Pi0:=⊤◇.Pi',
+  P0i:=⊤◇.P0'): the IHX solve output IS the outer solve (strengthen_tvar,
+  no SE-rule), and the precision fill matches HF directly (no strip).
+  **THE SOLE REMAINING BLOCKER (all 3 rows): the ForallSyn precision
+  conclusion is `⊤◇.PaX ⊑ᵖ uskl_all_etag ε ψR`, closed by
+  `ad_ppre__tophole_fill` — whose cofinite premise binds X' in the AENV
+  (`(X'~tvar)++Θ`), keeps Ψ, adds NO ε (so "ε is Ψ'-only" holds).  But IHX
+  yields ONE instance at `(X~tvar)++Θ`; building the X'-family needs an
+  AENV-tvar rename of `ad_partial_precise`.  `ad_partial_precise_rename`
+  renames only Δ-vars (needs `Xr ∈ Δ`); `strengthen_tvar_mid` removes an
+  aenv-tvar only when it is ALSO in Δ; no `delta_to_tvar` promotion exists.
+  NEXT: build `ad_partial_precise_rename_tvar` (aenv-tvar Z→W rename, ~60-
+  line induction mirroring `ad_partial_precise_rename` but with the aenv as
+  `Θ1 ++ (Z~tvar) ++ Θ0`; flex cases need `Z,W ∉ ftv τ` side-conditions;
+  tophole_fill/forall push the binder with `Θ1':=(X~tvar)++Θ1`).  Then a
+  FOLD-tvar (strengthen-free: subject `msubst θ PaX` is X-free, so rename
+  only re-points the aenv-tvar + opens the target) closes the tophole_fill
+  family — the SAME kit unblocks □ (hole_l, Pa:=⊤◇.P0') and ∀
+  (all_l_tophole, P0i:=⊤◇.P0' KEPT + FOLD).  Backups: p6cv_working8_
+  splitA_rows_admit.v (clean 3-admit).
+
 - 2026-07-26 (s): **CORRECTION to §6(q)/(r): the `Θtv_ih := []` recipe is
   WRONG for the family premise — the permutation IS needed after all.**
   `Θtv_ih := []` makes `Θr_ih = (X~tvar)++Θ`, so `dom Θr_ih = dom Θ` and

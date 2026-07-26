@@ -77,6 +77,31 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-27 — P6-Cv CLOSED: `a_solve_eq_complete_var` axiom-free, 0 admits
+
+`a_solve_eq_complete_var` and `a_solve_eq_complete_var_gen` are `Qed` and
+"Closed under the global context" (`Print Assumptions`), in the new file
+`frost/algo/prop_look_complete_var.v`.  This finishes P6-Cv (the variable
+case of consistency-constraint solving completeness, consistency-proofs.tex:
+1180) — the last of the 15 consistency cases, `forall_syn_tagged`, and its
+three Pi-rows.
+
+Kit that closed it (see DESIGN-completeness-subtyping.md §6(u)):
+
+- **split-A** for the ForallSyn IH: `Θtv_ih := (X~tvar)++Θtv`, `Θr_ih := Θr`
+  (X stays at the front of the fixed IH aenv), giving the tight family
+  premise `dom Θr` — matching the already-closed `forall_inh_tagged`.
+- **`ad_partial_precise_rename_tvar`** (new): an aenv-tvar rename for
+  `ad_partial_precise`, which builds the `ad_ppre__tophole_fill` cofinite
+  family (binder in the AENV) from a single IHX instance.
+- **`pskl_no_hole P0`** side-condition on `_gen` + corollary (registered in
+  WF-SIDE-CONDITIONS.md): needed because `inh(□) = bskl_hole`, so the
+  ForallSyn refinement transport `ad_refine_syn_aenv_to_delta` (moving the
+  ∀-binder into Δr) needs `bskl_no_hole`.
+- the three rows: ⊤◇ (UnivGhost, `tophole_both` + tophole_fill/rename),
+  □ (GhostL, `hole_l` + tophole_fill/rename), ∀ (ForallGhost,
+  `all_l_tophole` + Δ-var FOLD + `ad_ppre__forall`).
+
 ## 2026-07-25 (later) — P6-Cv at 10/15 cases; GhostG/topholeg/flex/ghost-absurd closed; Arrow blocked on the flex-P0 statement decision
 
 `a_solve_eq_cv_ghostg` Qed (no size induction — both sides forced to □) +

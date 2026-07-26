@@ -275,3 +275,21 @@ mode discipline forecloses at every real call site (`inh` paints `all_inh`,
 `is_sskl` rejects).  It threads through the walk (Flex-Assign transports it
 by `pskl_to_bskl_inh_subst_mono` + `mod_comp_sk_subst_mono`), so per §1's
 rule of thumb it must live in the statements.
+
+## `pskl_no_hole P0` on P6-Cv completeness (registered 2026-07-27)
+
+`a_solve_eq_complete_var` / `a_solve_eq_complete_var_gen`
+(algo/prop_look_complete_var.v) take an EXTERNAL `pskl_no_hole P0` premise
+on the counterpart skeleton `P0`.  This is a wf/scoping side-condition the
+paper's "all inputs are well-formed / properly reconstructed" supplies: the
+skeleton being solved against comes from a declarative type (no ghost holes
+`□` in structural position).  It is load-bearing for the ForallSyn ⊤◇-column
+refinement transport: moving the fresh ∀-binder `X` from the aenv into `Δr`
+(`ad_refine_syn_aenv_to_delta`) requires `bskl_no_hole` of the subject, but
+`pskl_to_bskl_inh (pskl_hole) = bskl_hole` — so a *guarded-but-holey* `P0'`
+(e.g. `arrow □ _`) would block it and the hole's fill can reference `X`.
+The premise threads through the whole induction (every recursive
+`IHHconsis` / `IHn` / `CORE` / IHX bullet: `proj1/proj2` for arrow,
+`pskl_no_hole_open_rec` for the ∀-body).  It is consistent with the
+pre-existing `a_solve_eq_no_hole_p0` (`⊢ₑ Pi ∼ P0 ⤳ Pa → pskl_no_hole P0 →
+pskl_no_hole Pa`).  Callers in the full completeness proof must discharge it.
