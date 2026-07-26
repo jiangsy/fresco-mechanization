@@ -560,6 +560,33 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-26 (s): **CORRECTION to §6(q)/(r): the `Θtv_ih := []` recipe is
+  WRONG for the family premise — the permutation IS needed after all.**
+  `Θtv_ih := []` makes `Θr_ih = (X~tvar)++Θ`, so `dom Θr_ih = dom Θ` and
+  the IH's family premise is `S ∩ add X (dom Θ)`.  Discharging that from
+  the outer family needs `S ∩ dom Θtv = ∅`, which forced strengthening
+  the `_gen` conclusion family premise from `S ∩ dom Θr` to `S ∩ dom Θ`
+  — and that CASCADE-BREAKS the already-proven ForallInh ROW B, whose
+  per-X' fold provides `S_arg := add X' S` to the IH assuming its family
+  premise is `dom Θr` (X'-free); with `dom Θ` the premise contains X'
+  (`(add X' S) ∩ add X' (dom Θ) ⊇ {X'} ≠ ∅`).  Machine-verified: the
+  `dom Θ` change compiled through the base/absurd/flex/□ cases but died
+  at ForallInh ROW B.
+  **CORRECT fix (revert to permutation):** ForallSyn's IHX must use
+  `Θtv_ih := Θtv`, `Θr_ih := (X~tvar)++Θr`, so `dom Θr_ih = add X (dom Θr)`
+  — X'-free of Θtv, matching the outer `dom Θr` family premise with
+  `X ∉ S`; NO `dom Θ`, NO ForallInh breakage.  The cost is the
+  consistency aenv is `(X~tvar)++Θtv++Θr` (rule prepends X) while the IH
+  needs it at `Θtv++(X~tvar)++Θr` (X adjacent to Θr), same `binds` — so
+  3 exchange lemmas for a fresh mid-inserted tvar: `ad_pat_consis` (via
+  the existing binds-monotone `ad_pat_consis_weaken`, both directions),
+  `a_wf_aenv` (fresh-mid-insert), and `a_inc` (fresh-mid-insert — the
+  trickiest).  All LOCAL to forall_syn_tagged.  NEXT SESSION: prove the
+  3 exchange lemmas, redo the ForallSyn IHX with `Θtv_ih := Θtv`, then
+  the 3 Pi-rows (the □-row is already written and worked against the
+  `dom Θ` variant — re-point its IHX family plumbing to `add X (dom Θr)`).
+  State is reverted to the clean 3-admit `p6cv_working4.v` (compiles 20s).
+
 - 2026-07-26 (r): **`forall_syn_tagged` built DOWN TO its 3 Pi-rows; full
   scratch compiles (20s, 3 clean admits).**  Done + verified (backup
   `p6cv_working4.v`): the two `flex_apart` target-descent lemmas
