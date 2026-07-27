@@ -2163,12 +2163,12 @@ Lemma ad_refine_pskl_f_guarded_r : forall F Θ Δ P Q,
 Proof.
   intros F Θ Δ P Q Hwf H; induction H; intros Hg;
     try solve [ inversion Hg ].
-  - apply guarded_pskl__unit.
-  - apply guarded_pskl__var.
+  - auto with frost.
+  - auto with frost.
   - apply guarded_pskl__arrow; eapply ad_refine_pskl_f_lc_r; eauto.
   - assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     apply IHad_refine_pskl_f; auto. apply mono_ptyp_to_pskl_guarded; auto.
-  - apply guarded_pskl__var.
+  - auto with frost.
 Qed.
 
 Lemma ad_refine_syn_f_guarded_r : forall F Θ Δ Q P,
@@ -2179,13 +2179,13 @@ Lemma ad_refine_syn_f_guarded_r : forall F Θ Δ Q P,
 Proof.
   intros F Θ Δ Q P Hwf H; induction H; intros Hg;
     try solve [ inversion Hg ].
-  - apply guarded_bskl__unit.
-  - apply guarded_bskl__var.
+  - auto with frost.
+  - auto with frost.
   - apply guarded_bskl__arrow; eapply ad_refine_syn_f_lc_r; eauto.
   - assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     apply IHad_refine_syn_f; auto.
     apply mono_bskl_guarded, mono_ptyp_to_bskl_syn; auto.
-  - apply guarded_bskl__var.
+  - auto with frost.
 Qed.
 
 

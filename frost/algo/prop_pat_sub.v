@@ -210,9 +210,8 @@ Lemma guarded_pskl_subst : forall P Q X,
   guarded_pskl (subst_pskl_in_pskl Q X P).
 Proof.
   intros P Q X H HgQ HlcQ. induction H; simpl.
-  - apply guarded_pskl__unit.
-  - destruct_if;
-      [ exact HgQ | apply guarded_pskl__var ].
+  - auto with frost.
+  - destruct_if; auto with frost.
   - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; auto.
 Qed.
 
@@ -716,10 +715,9 @@ Lemma uskl_ghost_free_subst_unit : forall ψ β,
   uskl_ghost_free (subst_bskl_in_uskl uskl_unit β ψ).
 Proof.
   intros ψ β H; induction H; simpl.
-  - apply uskl_ghost_free__unit.
-  - destruct_if;
-      [ apply uskl_ghost_free__unit | apply uskl_ghost_free__var ].
-  - apply uskl_ghost_free__arrow; auto.
+  - auto with frost.
+  - destruct_if; auto with frost.
+  - auto with frost.
   - apply uskl_ghost_free__all_etag with (L := L `union` {{β}}).
     intros X HX.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
@@ -897,10 +895,8 @@ Lemma guarded_uskl_subst_mono : forall R τ β,
   guarded_uskl (subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β R).
 Proof.
   intros R τ β H Hm; destruct H; simpl.
-  - apply guarded_uskl__unit.
-  - destruct_if;
-      [ apply mono_ptyp_to_uskl_syn_guarded; assumption
-      | apply guarded_uskl__var ].
+  - auto with frost.
+  - destruct_if; auto using mono_ptyp_to_uskl_syn_guarded with frost.
   - apply guarded_uskl__arrow;
       apply subst_bskl_in_uskl_lc_uskl;
       auto using mono_ptyp_to_uskl_syn_lc.
@@ -911,10 +907,8 @@ Lemma guarded_bskl_subst_mono : forall Q τ β,
   guarded_bskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q).
 Proof.
   intros Q τ β H Hm; destruct H; simpl.
-  - apply guarded_bskl__unit.
-  - destruct_if;
-      [ apply mono_ptyp_to_bskl_syn_guarded; assumption
-      | apply guarded_bskl__var ].
+  - auto with frost.
+  - destruct_if; auto using mono_ptyp_to_bskl_syn_guarded with frost.
   - apply guarded_bskl__arrow;
       apply subst_bskl_in_bskl_lc_bskl;
       auto using mono_ptyp_to_bskl_syn_lc.
@@ -925,17 +919,16 @@ Lemma is_sskl_subst_mono : forall Q τ β,
   is_sskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q).
 Proof.
   intros Q τ β H Hm; induction H; simpl.
-  - apply is_sskl__unit.
-  - destruct_if;
-      [ apply mono_ptyp_to_bskl_syn_is_sskl; assumption | apply is_sskl__var ].
-  - apply is_sskl__arrow; auto.
+  - auto with frost.
+  - destruct_if; auto using mono_ptyp_to_bskl_syn_is_sskl with frost.
+  - auto with frost.
   - apply is_sskl__all with (L := L `union` {{β}}).
     intros X HX.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       [ auto | intro He; subst; clear - HX; fsetdec
       | apply mono_ptyp_to_bskl_syn_lc; assumption ].
-  - apply is_sskl__hole.
-  - apply is_sskl__tophole; auto.
+  - auto with frost.
+  - auto with frost.
 Qed.
 
 Lemma mod_comp_sk_subst_mono : forall S m τ β,
@@ -943,9 +936,9 @@ Lemma mod_comp_sk_subst_mono : forall S m τ β,
   mod_comp_sk (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β S) m.
 Proof.
   intros S m τ β H Hm; induction H.
-  - apply mod_comp_sk__ti; apply is_sskl_subst_mono; assumption.
-  - apply mod_comp_sk__tc; apply is_sskl_subst_mono; assumption.
-  - simpl; apply mod_comp_sk__fn; assumption.
+  - auto using is_sskl_subst_mono with frost.
+  - auto using is_sskl_subst_mono with frost.
+  - simpl; auto with frost.
 Qed.
 
 Lemma is_tskl_subst_mono : forall ψ τ β,
@@ -953,17 +946,16 @@ Lemma is_tskl_subst_mono : forall ψ τ β,
   is_tskl (subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β ψ).
 Proof.
   intros ψ τ β H Hm; induction H; simpl.
-  - apply is_tskl__unit.
-  - destruct_if;
-      [ apply mono_ptyp_to_uskl_syn_is_tskl; assumption | apply is_tskl__var ].
-  - apply is_tskl__arrow; auto.
+  - auto with frost.
+  - destruct_if; auto using mono_ptyp_to_uskl_syn_is_tskl with frost.
+  - auto with frost.
   - apply is_tskl__all_etag with (L := L `union` {{β}}).
     intros X HX.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ auto | intro He; subst; clear - HX; fsetdec
       | apply mono_ptyp_to_uskl_syn_lc; assumption ].
-  - apply is_tskl__holeg.
-  - apply is_tskl__topholeg; auto.
+  - auto with frost.
+  - auto with frost.
 Qed.
 
 Lemma d_tags_skl_subst_mono : forall Δ ψ τ β,
@@ -971,19 +963,17 @@ Lemma d_tags_skl_subst_mono : forall Δ ψ τ β,
   d_tags_skl Δ (subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β ψ).
 Proof.
   intros Δ ψ τ β H Hm; induction H; simpl.
-  - apply d_tags_skl__unit; assumption.
-  - destruct_if;
-      [ apply mono_ptyp_to_uskl_syn_tags; assumption
-      | apply d_tags_skl__var; assumption ].
-  - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
+  - auto with frost.
+  - destruct_if; auto using mono_ptyp_to_uskl_syn_tags with frost.
+  - eauto with frost.
   - apply d_tags_skl__all_etag with (L := L `union` {{β}}) (Ψ0 := Ψ0);
       [ | assumption | assumption ].
     intros Y HY.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ auto | intro He; subst; clear - HY; fsetdec
       | apply mono_ptyp_to_uskl_syn_lc; assumption ].
-  - apply d_tags_skl__holeg; assumption.
-  - apply d_tags_skl__topholeg; assumption.
+  - auto with frost.
+  - auto with frost.
 Qed.
 
 Lemma uskl_ghost_free_subst_mono : forall ψ τ β,
@@ -991,11 +981,9 @@ Lemma uskl_ghost_free_subst_mono : forall ψ τ β,
   uskl_ghost_free (subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β ψ).
 Proof.
   intros ψ τ β H Hm; induction H; simpl.
-  - apply uskl_ghost_free__unit.
-  - destruct_if;
-      [ apply mono_ptyp_to_uskl_syn_ghost_free; assumption
-      | apply uskl_ghost_free__var ].
-  - apply uskl_ghost_free__arrow; auto.
+  - auto with frost.
+  - destruct_if; auto using mono_ptyp_to_uskl_syn_ghost_free with frost.
+  - auto with frost.
   - apply uskl_ghost_free__all_etag with (L := L `union` {{β}}).
     intros X HX.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
@@ -1942,8 +1930,8 @@ Proof.
     destruct (IHHlc L) as [Ψ0 [ψ0 [Hd0 [Ht0 [Hg0 [He0 Hgf0]]]]]].
     exists Ψ0, (uskl_topholeg ψ0). repeat apply conj.
     + exact Hd0.
-    + apply is_tskl__topholeg; assumption.
-    + apply d_tags_skl__topholeg; assumption.
+    + auto with frost.
+    + auto with frost.
     + simpl. rewrite He0. reflexivity.
     + intros Hg. simpl in Hg. contradiction.
 Qed.

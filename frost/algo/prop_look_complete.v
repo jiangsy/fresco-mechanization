@@ -666,7 +666,7 @@ Proof.
     apply is_sskl_pskl_to_bskl_syn.
     eapply a_wf_pskl_lc; eassumption.
   - (* flex_r *)
-    apply is_sskl__var.
+    auto with frost.
 Qed.
 
 (** Consistency against a synthesized target solves no tags (the only
@@ -1533,7 +1533,7 @@ Lemma a_inc_lookup_mono : forall Θ0 θ Θ X,
   mono_ptyp (msubst_lookup θ X).
 Proof.
   intros Θ0 θ Θ X Hinc; induction Hinc; simpl; auto.
-  - apply mono_ptyp__var.
+  - auto with frost.
   - destruct (X == α); subst; auto.
   - destruct (X == α); subst; auto.
 Qed.
@@ -2354,7 +2354,7 @@ Lemma a_solve_eq_cv_var : forall n Θ0 Θ θ Δ Ψi X Pi P0,
 Proof.
   intros n Θ0 Θ θ Δ Ψi X Pi P0 Hn HwfΘ HwfΘ0 HwfPi HwfP0 Hθ Hdf Hpre Hrefine.
   eapply a_solve_eq_cv_mono with (τ := ptyp_var_f X); eauto.
-  apply mono_ptyp__var.
+  auto with frost.
 Qed.
 
 (* ===================================================================== *)

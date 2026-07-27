@@ -785,9 +785,9 @@ Proof.
     try solve [ destruct P0; simpl in HeqS; try discriminate;
                 inversion Hg ].
   - destruct P0; simpl in HeqS; try discriminate.
-    apply guarded_bskl__unit.
+    auto with frost.
   - destruct P0; simpl in HeqS; try discriminate.
-    apply guarded_bskl__var.
+    auto with frost.
   - destruct P0; simpl in HeqS; try discriminate.
     inversion Hlc; subst. apply guarded_bskl__arrow; assumption.
   - (* flex_l *)
@@ -8119,9 +8119,9 @@ Proof.
     + (* PP0 guarded : paper :3134-3163; subject-only strip, [univ_ghost2]. *)
       assert (Hg0 : guarded_pskl PP0).
       { destruct PP0 as [ | n0 | δ0 | Pa0 Pb0 | Pb0 | | Pt0 ].
-        - apply guarded_pskl__unit.
+        - auto with frost.
         - inversion HwfP0.
-        - apply guarded_pskl__var.
+        - auto with frost.
         - pose proof (a_wf_pskl_lc HwfP0) as Hlc0; inversion Hlc0; subst.
           apply guarded_pskl__arrow; assumption.
         - (* ∀ : an inherited quantifier never refines to the guarded Q *)
