@@ -276,38 +276,36 @@ mode discipline forecloses at every real call site (`inh` paints `all_inh`,
 by `pskl_to_bskl_inh_subst_mono` + `mod_comp_sk_subst_mono`), so per §1's
 rule of thumb it must live in the statements.
 
-## `pskl_no_hole P0` on P6-Cv completeness (registered 2026-07-27)
+## `pskl_no_hole P0` on P6-Cv completeness — **REMOVED 2026-07-27** (registered 2026-07-27; historical)
 
-`a_solve_eq_complete_var` / `a_solve_eq_complete_var_gen`
-(algo/prop_look_complete_var.v) take an EXTERNAL `pskl_no_hole P0` premise
-on the counterpart skeleton `P0`.  This is a wf/scoping side-condition the
-paper's "all inputs are well-formed / properly reconstructed" supplies: the
-skeleton being solved against comes from a declarative type (no ghost holes
-`□` in structural position).  It is load-bearing for the ForallSyn ⊤◇-column
-refinement transport: moving the fresh ∀-binder `X` from the aenv into `Δr`
-(`ad_refine_syn_aenv_to_delta`) requires `bskl_no_hole` of the subject, but
-`pskl_to_bskl_inh (pskl_hole) = bskl_hole` — so a *guarded-but-holey* `P0'`
-(e.g. `arrow □ _`) would block it and the hole's fill can reference `X`.
-The premise threads through the whole induction (every recursive
-`IHHconsis` / `IHn` / `CORE` / IHX bullet: `proj1/proj2` for arrow,
-`pskl_no_hole_open_rec` for the ∀-body).  It is consistent with the
-pre-existing `a_solve_eq_no_hole_p0` (`⊢ₑ Pi ∼ P0 ⤳ Pa → pskl_no_hole P0 →
-pskl_no_hole Pa`).  Callers in the full completeness proof must discharge it.
+**RESOLVED — the premise no longer exists.**  `a_solve_eq_complete_var` /
+`_gen` (algo/prop_look_complete_var.v) are now PREMISE-FAITHFUL to the
+paper: the mech-only `pskl_no_hole P0` side condition was removed by
+reworking the Θtv/Θr context split from the LIST equation `Θ = Θtv ++ Θr`
+to a binds-level BAG (`aenv_split`: binds-iff + dom-eq + disjointness,
+with `a_wf_aenv Θr` carried explicitly).  The premise had been an artifact
+of the list representation: the consistency rule PREPENDS the ForallSyn
+binder to Θ, so a list split could only place it in Θtv, forcing the
+aenv→Δr refinement transport (`ad_refine_syn_aenv_to_delta`) — false for
+□-sources whose fill mentions the binder.  With the bag split the binder
+joins Θr (`Θr_ih := (X~tvar)++Θr`), the tophole_fill body IS the IH's
+refinement premise verbatim, and holey `P0` flows through the recursion
+to the per-row SolE-VacuousR columns — exactly the paper's per-node
+"P0 = Hole" dispatch.  Consequently:
 
-**Deviation from the paper (audited 2026-07-27).**  The paper's lemma has NO
-such premise: its proof dispatches `P0 = □` upfront by SolE-VacuousR
-("If P0 = Hole … the goal follows by choosing Pa = Pi"), and since the same
-dispatch re-fires inside every IH call, the paper statement also covers P0
-with □ strictly BELOW a constructor (e.g. `P01 → □`).  The mech statement
-does not.  Caller obligations, in dependency order:
+1. **P6-Cs (`a_lookeq_solve_complete`) needs NO `P0 = □ ∨ pskl_no_hole`
+   disjunct** — its statement can mirror the paper's directly, with its
+   own `P0 = □` special case via LE-Vacuous as the paper does.  Same for
+   P6-Sv/Ss/L.
+2. **The accumulated-skeleton invariant below is NO LONGER REQUIRED** for
+   the completeness chain; it remains true, proved, and useful as
+   supporting kit (e.g. wherever a hole-free output is convenient).
 
-1. **P6-Cs (`a_lookeq_solve_complete`)** must take the DISJUNCTIVE premise
-   `P0 = □ ∨ pskl_no_hole P0`, dispatch the left disjunct in its own
-   `P0 = □` special case via LE-Vacuous (exactly the paper's structure —
-   the paper's `P0 = Hole` case comes BEFORE its `P = α` call of the -var
-   lemma), and pass the right disjunct through.  Same for P6-Sv/Ss/L.
-2. **The outer theorem** must establish the invariant *"every accumulated
-   flexible-variable skeleton is `□` or hole-free"*.  **INVARIANT PROVED
+The rest of this entry is kept as the record of the invariant proof and
+of the original analysis.
+
+The invariant *"every accumulated flexible-variable skeleton is `□` or
+hole-free"*:  **INVARIANT PROVED
    (2026-07-27), axiom-free, in `algo/prop_accum_no_hole.v`.**  Deep-mixed
    `P0` (□ strictly below a constructor) is NOT reachable.  Four algo-level
    results (`Print Assumptions` = Closed under the global context):
@@ -335,7 +333,9 @@ does not.  Caller obligations, in dependency order:
      cleanly.)  Support: `a_consis_out_no_hole` / `a_consis_out_no_hole_q`.
    Predicate: `pskl_hnh P := P = pskl_hole \/ pskl_no_hole P`.
 
-Note the premise is DERIVABLE from the other premises in some subcases (the
-Var-case binder side derives it from the refinement via
-`ad_refine_inh_deltar_var_rhs_no_hole`) but not in general: a
-guarded-but-holey ForallSyn body satisfies every other premise.
+Historical note: in the premise-carrying closure, hole-freeness was
+derivable from the other premises in some subcases (the Var-case binder
+side still derives it locally, via
+`ad_refine_inh_deltar_var_rhs_no_hole`) but not in general — a
+guarded-but-holey ForallSyn body satisfies every other premise; only the
+split rework, not a derivation, could remove it.

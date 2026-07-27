@@ -948,14 +948,18 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
 > **Resolution.** Repair candidate (1) below was implemented, as the
 > generalized theorem `a_solve_eq_complete_var_gen`
 > (algo/prop_look_complete_var.v): the refinement premise is carried at
-> `(Θr, Δr)` with `Θ = Θtv ++ Θr`, `Δr [=] dom Θtv` (the descent binders),
-> which keeps □-fills wf at the original context and hence binder-free; the
-> precision conclusion is strengthened to a fresh-extension family `∀S` so
-> the ∀-rows can fold their bodies.  Two side conditions surfaced:
-> `pskl_no_hole P0` (see WF-SIDE-CONDITIONS.md — the paper instead
-> VacuousR-dispatches `P0 = □` per node) and the aenv-tvar precision rename
-> `ad_partial_precise_rename_tvar` (the paper's silent "removing β as
-> necessary").  `a_solve_eq_complete_var` is Qed, axiom-free.
+> `(Θr, Δr)` with `Δr [=] dom Θtv` (the ForallInh descent binders), which
+> keeps □-fills wf away from those binders; the precision conclusion is
+> strengthened to a fresh-extension family `∀S` so the ∀-rows can fold
+> their bodies.  The split is a binds-level BAG (`aenv_split`) — an
+> earlier LIST-equation form (`Θ = Θtv ++ Θr`) forced the ForallSyn
+> binder into Θtv and with it a mech-only `pskl_no_hole P0` premise; the
+> bag form (2026-07-27) removed that premise, so the statement is
+> premise-faithful to the paper (see WF-SIDE-CONDITIONS.md, historical
+> entry).  The one genuinely-implicit paper step made explicit is the
+> aenv-tvar precision rename `ad_partial_precise_rename_tvar` (the
+> paper's silent "removing β as necessary").  `a_solve_eq_complete_var`
+> is Qed, axiom-free.
 
 - Where: consistency-proofs.tex, Lemma
   `lemma:complete-consistency-constraint-collection-solving-var`

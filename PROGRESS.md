@@ -77,6 +77,25 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-27 (later) — P6-Cv PREMISE-FREE: `pskl_no_hole P0` removed (paper-faithful statement)
+
+`a_solve_eq_complete_var` / `_gen` no longer carry the mech-only
+`pskl_no_hole P0` side condition; still `Qed` and "Closed under the global
+context".  The enabler is the **bag split** `aenv_split` (binds-iff +
+dom-eq + disjointness, `a_wf_aenv Θr` explicit) replacing the list
+equation `Θ = Θtv ++ Θr`: the equation forced the ForallSyn binder into
+Θtv (the consistency rule prepends it to Θ), hence the aenv→Δr refinement
+transport, hence the premise.  With the bag, `Θr_ih := (X~tvar)++Θr`
+makes the tophole_fill body the IH's refinement premise verbatim, and
+holey `P0` flows to the per-row SolE-VacuousR columns — the paper's
+per-node `P0 = Hole` dispatch.  §6(t)'s "split-B impossible" was an
+artifact of the equational representation.  Dead kit deleted
+(`bskl_no_hole`, `ad_refine_syn_aenv_to_delta(_mid)`); WF-SIDE-CONDITIONS
+entry flipped to REMOVED/historical; consequently P6-Cs needs no
+`P0 = □ ∨ no_hole` disjunct and the Task A accumulated-skeleton invariant
+(`prop_accum_no_hole.v`) is supporting kit rather than a requirement.
+
+
 ## 2026-07-27 — P6-Cv CLOSED: `a_solve_eq_complete_var` axiom-free, 0 admits
 
 `a_solve_eq_complete_var` and `a_solve_eq_complete_var_gen` are `Qed` and
