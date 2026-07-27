@@ -560,6 +560,21 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-27 (v): **TASK A DONE — accumulated-skeleton invariant PROVED,
+  axiom-free, in `algo/prop_accum_no_hole.v`.**  Discharges the P6-Cs
+  disjunctive premise `P0 = □ ∨ pskl_no_hole P0`; deep-mixed `P0` is NOT
+  reachable.  A1 `a_guess_hnh`, A2 `a_look_payload_hnh` (mutual), A3
+  `a_solve_cstr_hnh` (+ `_hole_start`; generalises `a_solve_eq_no_hole_p0`
+  to the sub/eq/cstr block), A4 `a_sub_a_sub_flex_no_hole_p0`.  **Key design
+  point on A4:** stated SUBJECT-FREE (`nh P0 → nh Q`) — output holes come
+  only from the counterpart, so `a_sub__forall_l` merely threads `P0` and the
+  ∀-body instantiation `open P P1` (possibly `□`-deep-mixed in `sk` mode) is
+  irrelevant to the output; `Infer`/`UnivGhostR` (`P0 = □`) fall out by
+  `pskl_no_hole □ = False`.  The disjunctive `hnh` form is needed only at the
+  solve layer (accumulator starts `□`, `SE-GhostL`/`SE-VacuousR` pass the
+  □-disjunct); a_sub/a_consis use the strict counterpart-only form.  See
+  WF-SIDE-CONDITIONS.md §"pskl_no_hole P0", item 2.  **Next: Task B (P6-Cs).**
+
 - 2026-07-27 (u): **P6-Cv CLOSED — `a_solve_eq_complete_var` is axiom-free
   ("Closed under the global context"), zero admits.**  The three ForallSyn
   Pi-rows all landed; `a_solve_eq_complete_var_gen` is `Qed`.  Home:
