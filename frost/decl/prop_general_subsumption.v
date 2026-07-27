@@ -255,7 +255,7 @@ Proof.
   - rewrite IHHsyn1, IHHsyn2; reflexivity.
   - f_equal.
     pick fresh X for (L `union` ftvar_in_btyp B).
-    apply open_btyp_wrt_btyp_inj with (Xbt1 := X).
+    apply open_btyp_wrt_btyp_inj with (α1 := X).
     + pose proof (ftvar_ptyp_to_btyp_syn (btyp_to_ptyp B)).
       pose proof (ftvar_btyp_to_ptyp B). fsetdec.
     + fsetdec.
@@ -334,10 +334,10 @@ Proof.
   - apply lc_utyp_unit.
   - apply lc_utyp_var_f.
   - apply lc_utyp_arrow; assumption.
-  - pick fresh X. apply lc_utyp_all_etag_exists with (Xut1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_utyp_all_syn_exists with (Xut1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_utyp_all_etag_exists with (Xut1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_utyp_all_syn_exists with (Xut1 := X). apply H0. fsetdec.
+  - pick fresh X. apply lc_utyp_all_etag_exists with (α1 := X). apply H0. fsetdec.
+  - pick fresh X. apply lc_utyp_all_syn_exists with (α1 := X). apply H0. fsetdec.
+  - pick fresh X. apply lc_utyp_all_etag_exists with (α1 := X). apply H0. fsetdec.
+  - pick fresh X. apply lc_utyp_all_syn_exists with (α1 := X). apply H0. fsetdec.
 Qed.
 
 
@@ -497,7 +497,7 @@ Proof.
         pick fresh X for (L `union` ftvar_in_ptyp (btyp_to_ptyp (utyp_to_btyp c))
                           `union` ftvar_in_ptyp (btyp_to_ptyp b))
     end;
-    apply open_ptyp_wrt_ptyp_inj with (Xpt1 := X);
+    apply open_ptyp_wrt_ptyp_inj with (α1 := X);
       [ fsetdec
       | fsetdec
       | match goal with

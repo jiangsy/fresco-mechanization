@@ -540,7 +540,7 @@ Proof.
   - rewrite IHis_ityp1, IHis_ityp2. reflexivity.
   - f_equal.
     pick fresh X for (L `union` ftvar_in_btyp A).
-    apply open_btyp_wrt_btyp_inj with (Xbt1 := X).
+    apply open_btyp_wrt_btyp_inj with (α1 := X).
     + rewrite ftvar_ptyp_to_btyp_inh, ftvar_btyp_to_ptyp. fsetdec.
     + fsetdec.
     + specialize (H0 X ltac:(fsetdec)).
@@ -849,7 +849,7 @@ Proof.
     specialize (H0 X ltac:(auto) Δ ((X ~ dbind_tvar) ++ Γ)
                   (open_ptyp_wrt_ptyp A (ptyp_var_f X)) H5).
     rewrite ptyp_to_btyp_syn_open in H0. simpl in H0.
-    apply open_btyp_wrt_btyp_inj with (Xbt1 := X).
+    apply open_btyp_wrt_btyp_inj with (α1 := X).
     + fsetdec.
     + match goal with |- context [ ftvar_in_btyp (ptyp_to_btyp_syn ?A0) ] =>
         rewrite (ftvar_ptyp_to_btyp_syn A0) end. fsetdec.

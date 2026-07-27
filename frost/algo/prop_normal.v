@@ -179,7 +179,7 @@ Proof.
   - apply Hlc.
   - constructor; auto.
   - pick fresh X for (dom θ).
-    apply lc_ptyp_all_exists with (Xpt1 := X).
+    apply lc_ptyp_all_exists with (α1 := X).
     erewrite <- msubst_ptyp_open_lc; [ apply H0 | exact Hlc | clear - Fr; fsetdec ].
 Qed.
 
@@ -275,7 +275,7 @@ Proof.
     pick fresh X for (L `union` dom (aenv_msubst Θ)
                         `union` ftvar_in_ptyp (⇓ᵗ[Θ] A)
                         `union` ftvar_in_ptyp (⇓ᵗ[Θ] B)).
-    apply open_ptyp_wrt_ptyp_inj with (Xpt1 := X);
+    apply open_ptyp_wrt_ptyp_inj with (α1 := X);
       [ clear - Fr; fsetdec | clear - Fr; fsetdec | ].
     rewrite <- msubst_ptyp_open_lc by (first [ exact Hlc | clear - Fr; fsetdec ]).
     rewrite <- msubst_ptyp_open_lc by (first [ exact Hlc | clear - Fr; fsetdec ]).

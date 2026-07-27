@@ -707,7 +707,7 @@ Lemma pskl_to_uskl_subst : forall P τ β,
   = subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β (pskl_to_uskl P).
 Proof.
   induction P; intros; simpl; f_equal; auto.
-  destruct (eq_var Xps β); simpl; auto using pskl_to_uskl_ptyp.
+  destruct (eq_var α β); simpl; auto using pskl_to_uskl_ptyp.
 Qed.
 
 (* ===================================================================== *)

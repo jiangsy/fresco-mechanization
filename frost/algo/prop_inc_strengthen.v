@@ -318,7 +318,7 @@ Proof.
   intros θ ζ A; induction A; intros Heq X HX; simpl in *;
     try solve [ exfalso; clear - HX; fsetdec ].
   - (* var_f *)
-    assert (HXY : X = Xpt) by (clear - HX; fsetdec). subst. exact Heq.
+    assert (HXY : X = α) by (clear - HX; fsetdec). subst. exact Heq.
   - (* arrow *)
     injection Heq as Heq1 Heq2.
     apply AtomSetImpl.union_1 in HX; destruct HX; eauto.
@@ -342,7 +342,7 @@ Proof.
   intros θ ζ P; induction P; intros Heq X HX; simpl in *;
     try solve [ exfalso; clear - HX; fsetdec ].
   - (* var_f *)
-    assert (HXY : X = Xps) by (clear - HX; fsetdec). subst.
+    assert (HXY : X = α) by (clear - HX; fsetdec). subst.
     apply ptyp_to_pskl_inj. exact Heq.
   - (* arrow *)
     injection Heq as Heq1 Heq2.

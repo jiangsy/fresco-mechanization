@@ -516,7 +516,7 @@ Lemma subst_var_bskl_syn : forall P α X,
   = pskl_to_bskl_syn (subst_pskl_in_pskl (pskl_var_f X) α P).
 Proof.
   induction P; intros; simpl; f_equal; auto.
-  destruct (eq_var Xps α); reflexivity.
+  destruct (eq_var α α0); reflexivity.
 Qed.
 
 Lemma subst_var_bskl_inh : forall P α X,
@@ -524,7 +524,7 @@ Lemma subst_var_bskl_inh : forall P α X,
   = pskl_to_bskl_inh (subst_pskl_in_pskl (pskl_var_f X) α P).
 Proof.
   induction P; intros; simpl; f_equal; auto.
-  destruct (eq_var Xps α); reflexivity.
+  destruct (eq_var α α0); reflexivity.
 Qed.
 
 Lemma subst_var_uskl : forall P α X,
@@ -532,7 +532,7 @@ Lemma subst_var_uskl : forall P α X,
   = pskl_to_uskl (subst_pskl_in_pskl (pskl_var_f X) α P).
 Proof.
   induction P; intros; simpl; f_equal; auto.
-  destruct (eq_var Xps α); reflexivity.
+  destruct (eq_var α α0); reflexivity.
 Qed.
 
 (** Guardedness survives variable renaming. *)

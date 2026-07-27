@@ -34,6 +34,14 @@ NJOBS ?= 4
 	sed -e "s/dD/Δ/g" ${SED_FLAG} $@
 	sed -e "s/dP/Ψ/g" ${SED_FLAG} $@
 	sed -e "s/eps/ε/g" ${SED_FLAG} $@
+	# Type/skeleton variables uniformly greek: the ott metavar stems
+	# (Xpt/Xbt/Xut = type vars in the 3 colours, Xps/Xbs/Xus = skeleton
+	# vars) all become α. The numeric suffix lngen appends keeps distinct
+	# vars distinct (α1, α2, …); no generated lemma mixes two stems, so
+	# this is collision-free. Hand-written lemmas that referenced a stem
+	# name are fixed manually (one-shot).
+	sed -e "s/Xpt/α/g" -e "s/Xbt/α/g" -e "s/Xut/α/g" \
+	    -e "s/Xps/α/g" -e "s/Xbs/α/g" -e "s/Xus/α/g" ${SED_FLAG} $@
 	# ctypvar = ptypvar (both are atom). Use a Notation so Coq's
 	# type-class resolution sees ctypvar and typvar as the same
 	# syntactic head — Definition aliases don't unify for typeclasses,
@@ -56,6 +64,9 @@ ott : ${OTT_OUTS}
 	sed -e "s/dD/Δ/g" ${SED_FLAG} $@
 	sed -e "s/dP/Ψ/g" ${SED_FLAG} $@
 	sed -e "s/eps/ε/g" ${SED_FLAG} $@
+	# Type/skeleton variables uniformly greek (see the def_ott.v recipe).
+	sed -e "s/Xpt/α/g" -e "s/Xbt/α/g" -e "s/Xut/α/g" \
+	    -e "s/Xps/α/g" -e "s/Xbs/α/g" -e "s/Xus/α/g" ${SED_FLAG} $@
 
 lngen : ${LNGEN_OUTS}
 

@@ -28,14 +28,14 @@ Lemma subst_ptyp_in_ptyp_self : forall α A,
   subst_ptyp_in_ptyp (ptyp_var_f α) α A = A.
 Proof.
   induction A; simpl; f_equal; auto.
-  destruct (eq_var Xpt α); subst; auto.
+  destruct (eq_var α0 α); subst; auto.
 Qed.
 
 Lemma subst_pskl_in_pskl_self : forall α P,
   subst_pskl_in_pskl (ptyp_to_pskl (ptyp_var_f α)) α P = P.
 Proof.
   induction P; simpl; f_equal; auto.
-  destruct (eq_var Xps α); subst; auto.
+  destruct (eq_var α0 α); subst; auto.
 Qed.
 
 (** The identity metasubstitution looks every variable up to itself. *)

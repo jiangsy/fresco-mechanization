@@ -85,94 +85,94 @@ Combined Scheme mode_mutrec from mode_rec'.
 (* *********************************************************************** *)
 (** * Close *)
 
-Fixpoint close_ptyp_wrt_ptyp_rec (n1 : nat) (Xpt1 : ptypvar) (A1 : ptyp) {struct A1} : ptyp :=
+Fixpoint close_ptyp_wrt_ptyp_rec (n1 : nat) (α1 : ptypvar) (A1 : ptyp) {struct A1} : ptyp :=
   match A1 with
     | ptyp_unit => ptyp_unit
-    | ptyp_var_f Xpt2 => if (Xpt1 == Xpt2) then (ptyp_var_b n1) else (ptyp_var_f Xpt2)
+    | ptyp_var_f α2 => if (α1 == α2) then (ptyp_var_b n1) else (ptyp_var_f α2)
     | ptyp_var_b n2 => if (lt_ge_dec n2 n1) then (ptyp_var_b n2) else (ptyp_var_b (S n2))
-    | ptyp_arrow A2 A3 => ptyp_arrow (close_ptyp_wrt_ptyp_rec n1 Xpt1 A2) (close_ptyp_wrt_ptyp_rec n1 Xpt1 A3)
-    | ptyp_all A2 => ptyp_all (close_ptyp_wrt_ptyp_rec (S n1) Xpt1 A2)
+    | ptyp_arrow A2 A3 => ptyp_arrow (close_ptyp_wrt_ptyp_rec n1 α1 A2) (close_ptyp_wrt_ptyp_rec n1 α1 A3)
+    | ptyp_all A2 => ptyp_all (close_ptyp_wrt_ptyp_rec (S n1) α1 A2)
   end.
 
-Definition close_ptyp_wrt_ptyp Xpt1 A1 := close_ptyp_wrt_ptyp_rec 0 Xpt1 A1.
+Definition close_ptyp_wrt_ptyp α1 A1 := close_ptyp_wrt_ptyp_rec 0 α1 A1.
 
-Fixpoint close_btyp_wrt_btyp_rec (n1 : nat) (Xbt1 : btypvar) (B1 : btyp) {struct B1} : btyp :=
+Fixpoint close_btyp_wrt_btyp_rec (n1 : nat) (α1 : btypvar) (B1 : btyp) {struct B1} : btyp :=
   match B1 with
     | btyp_unit => btyp_unit
-    | btyp_var_f Xbt2 => if (Xbt1 == Xbt2) then (btyp_var_b n1) else (btyp_var_f Xbt2)
+    | btyp_var_f α2 => if (α1 == α2) then (btyp_var_b n1) else (btyp_var_f α2)
     | btyp_var_b n2 => if (lt_ge_dec n2 n1) then (btyp_var_b n2) else (btyp_var_b (S n2))
-    | btyp_arrow B2 B3 => btyp_arrow (close_btyp_wrt_btyp_rec n1 Xbt1 B2) (close_btyp_wrt_btyp_rec n1 Xbt1 B3)
-    | btyp_all_syn B2 => btyp_all_syn (close_btyp_wrt_btyp_rec (S n1) Xbt1 B2)
-    | btyp_all_inh B2 => btyp_all_inh (close_btyp_wrt_btyp_rec (S n1) Xbt1 B2)
+    | btyp_arrow B2 B3 => btyp_arrow (close_btyp_wrt_btyp_rec n1 α1 B2) (close_btyp_wrt_btyp_rec n1 α1 B3)
+    | btyp_all_syn B2 => btyp_all_syn (close_btyp_wrt_btyp_rec (S n1) α1 B2)
+    | btyp_all_inh B2 => btyp_all_inh (close_btyp_wrt_btyp_rec (S n1) α1 B2)
   end.
 
-Definition close_btyp_wrt_btyp Xbt1 B1 := close_btyp_wrt_btyp_rec 0 Xbt1 B1.
+Definition close_btyp_wrt_btyp α1 B1 := close_btyp_wrt_btyp_rec 0 α1 B1.
 
-Fixpoint close_utyp_wrt_utyp_rec (n1 : nat) (Xut1 : utypvar) (C1 : utyp) {struct C1} : utyp :=
+Fixpoint close_utyp_wrt_utyp_rec (n1 : nat) (α1 : utypvar) (C1 : utyp) {struct C1} : utyp :=
   match C1 with
     | utyp_unit => utyp_unit
-    | utyp_var_f Xut2 => if (Xut1 == Xut2) then (utyp_var_b n1) else (utyp_var_f Xut2)
+    | utyp_var_f α2 => if (α1 == α2) then (utyp_var_b n1) else (utyp_var_f α2)
     | utyp_var_b n2 => if (lt_ge_dec n2 n1) then (utyp_var_b n2) else (utyp_var_b (S n2))
-    | utyp_arrow C2 C3 => utyp_arrow (close_utyp_wrt_utyp_rec n1 Xut1 C2) (close_utyp_wrt_utyp_rec n1 Xut1 C3)
-    | utyp_all_syn C2 => utyp_all_syn (close_utyp_wrt_utyp_rec (S n1) Xut1 C2)
-    | utyp_all_etag ε1 C2 => utyp_all_etag ε1 (close_utyp_wrt_utyp_rec (S n1) Xut1 C2)
+    | utyp_arrow C2 C3 => utyp_arrow (close_utyp_wrt_utyp_rec n1 α1 C2) (close_utyp_wrt_utyp_rec n1 α1 C3)
+    | utyp_all_syn C2 => utyp_all_syn (close_utyp_wrt_utyp_rec (S n1) α1 C2)
+    | utyp_all_etag ε1 C2 => utyp_all_etag ε1 (close_utyp_wrt_utyp_rec (S n1) α1 C2)
   end.
 
-Definition close_utyp_wrt_utyp Xut1 C1 := close_utyp_wrt_utyp_rec 0 Xut1 C1.
+Definition close_utyp_wrt_utyp α1 C1 := close_utyp_wrt_utyp_rec 0 α1 C1.
 
-Fixpoint close_pskl_wrt_pskl_rec (n1 : nat) (Xps1 : psklvar) (P1 : pskl) {struct P1} : pskl :=
+Fixpoint close_pskl_wrt_pskl_rec (n1 : nat) (α1 : psklvar) (P1 : pskl) {struct P1} : pskl :=
   match P1 with
     | pskl_unit => pskl_unit
-    | pskl_var_f Xps2 => if (Xps1 == Xps2) then (pskl_var_b n1) else (pskl_var_f Xps2)
+    | pskl_var_f α2 => if (α1 == α2) then (pskl_var_b n1) else (pskl_var_f α2)
     | pskl_var_b n2 => if (lt_ge_dec n2 n1) then (pskl_var_b n2) else (pskl_var_b (S n2))
-    | pskl_arrow P2 P3 => pskl_arrow (close_pskl_wrt_pskl_rec n1 Xps1 P2) (close_pskl_wrt_pskl_rec n1 Xps1 P3)
-    | pskl_all_syn P2 => pskl_all_syn (close_pskl_wrt_pskl_rec (S n1) Xps1 P2)
+    | pskl_arrow P2 P3 => pskl_arrow (close_pskl_wrt_pskl_rec n1 α1 P2) (close_pskl_wrt_pskl_rec n1 α1 P3)
+    | pskl_all_syn P2 => pskl_all_syn (close_pskl_wrt_pskl_rec (S n1) α1 P2)
     | pskl_hole => pskl_hole
-    | pskl_tophole P2 => pskl_tophole (close_pskl_wrt_pskl_rec n1 Xps1 P2)
+    | pskl_tophole P2 => pskl_tophole (close_pskl_wrt_pskl_rec n1 α1 P2)
   end.
 
-Definition close_pskl_wrt_pskl Xps1 P1 := close_pskl_wrt_pskl_rec 0 Xps1 P1.
+Definition close_pskl_wrt_pskl α1 P1 := close_pskl_wrt_pskl_rec 0 α1 P1.
 
-Fixpoint close_bskl_wrt_bskl_rec (n1 : nat) (Xbs1 : bsklvar) (Q1 : bskl) {struct Q1} : bskl :=
+Fixpoint close_bskl_wrt_bskl_rec (n1 : nat) (α1 : bsklvar) (Q1 : bskl) {struct Q1} : bskl :=
   match Q1 with
     | bskl_unit => bskl_unit
-    | bskl_var_f Xbs2 => if (Xbs1 == Xbs2) then (bskl_var_b n1) else (bskl_var_f Xbs2)
+    | bskl_var_f α2 => if (α1 == α2) then (bskl_var_b n1) else (bskl_var_f α2)
     | bskl_var_b n2 => if (lt_ge_dec n2 n1) then (bskl_var_b n2) else (bskl_var_b (S n2))
-    | bskl_arrow Q2 Q3 => bskl_arrow (close_bskl_wrt_bskl_rec n1 Xbs1 Q2) (close_bskl_wrt_bskl_rec n1 Xbs1 Q3)
-    | bskl_all_syn Q2 => bskl_all_syn (close_bskl_wrt_bskl_rec (S n1) Xbs1 Q2)
-    | bskl_all_inh Q2 => bskl_all_inh (close_bskl_wrt_bskl_rec (S n1) Xbs1 Q2)
+    | bskl_arrow Q2 Q3 => bskl_arrow (close_bskl_wrt_bskl_rec n1 α1 Q2) (close_bskl_wrt_bskl_rec n1 α1 Q3)
+    | bskl_all_syn Q2 => bskl_all_syn (close_bskl_wrt_bskl_rec (S n1) α1 Q2)
+    | bskl_all_inh Q2 => bskl_all_inh (close_bskl_wrt_bskl_rec (S n1) α1 Q2)
     | bskl_hole => bskl_hole
-    | bskl_tophole Q2 => bskl_tophole (close_bskl_wrt_bskl_rec n1 Xbs1 Q2)
+    | bskl_tophole Q2 => bskl_tophole (close_bskl_wrt_bskl_rec n1 α1 Q2)
   end.
 
-Definition close_bskl_wrt_bskl Xbs1 Q1 := close_bskl_wrt_bskl_rec 0 Xbs1 Q1.
+Definition close_bskl_wrt_bskl α1 Q1 := close_bskl_wrt_bskl_rec 0 α1 Q1.
 
-Fixpoint close_uskl_wrt_uskl_rec (n1 : nat) (Xus1 : usklvar) (R1 : uskl) {struct R1} : uskl :=
+Fixpoint close_uskl_wrt_uskl_rec (n1 : nat) (α1 : usklvar) (R1 : uskl) {struct R1} : uskl :=
   match R1 with
     | uskl_unit => uskl_unit
-    | uskl_var_f Xus2 => if (Xus1 == Xus2) then (uskl_var_b n1) else (uskl_var_f Xus2)
+    | uskl_var_f α2 => if (α1 == α2) then (uskl_var_b n1) else (uskl_var_f α2)
     | uskl_var_b n2 => if (lt_ge_dec n2 n1) then (uskl_var_b n2) else (uskl_var_b (S n2))
-    | uskl_arrow R2 R3 => uskl_arrow (close_uskl_wrt_uskl_rec n1 Xus1 R2) (close_uskl_wrt_uskl_rec n1 Xus1 R3)
-    | uskl_all_syn R2 => uskl_all_syn (close_uskl_wrt_uskl_rec (S n1) Xus1 R2)
-    | uskl_all_etag ε1 R2 => uskl_all_etag ε1 (close_uskl_wrt_uskl_rec (S n1) Xus1 R2)
+    | uskl_arrow R2 R3 => uskl_arrow (close_uskl_wrt_uskl_rec n1 α1 R2) (close_uskl_wrt_uskl_rec n1 α1 R3)
+    | uskl_all_syn R2 => uskl_all_syn (close_uskl_wrt_uskl_rec (S n1) α1 R2)
+    | uskl_all_etag ε1 R2 => uskl_all_etag ε1 (close_uskl_wrt_uskl_rec (S n1) α1 R2)
     | uskl_hole => uskl_hole
-    | uskl_tophole R2 => uskl_tophole (close_uskl_wrt_uskl_rec n1 Xus1 R2)
+    | uskl_tophole R2 => uskl_tophole (close_uskl_wrt_uskl_rec n1 α1 R2)
     | uskl_holeg => uskl_holeg
-    | uskl_topholeg R2 => uskl_topholeg (close_uskl_wrt_uskl_rec n1 Xus1 R2)
+    | uskl_topholeg R2 => uskl_topholeg (close_uskl_wrt_uskl_rec n1 α1 R2)
   end.
 
-Definition close_uskl_wrt_uskl Xus1 R1 := close_uskl_wrt_uskl_rec 0 Xus1 R1.
+Definition close_uskl_wrt_uskl α1 R1 := close_uskl_wrt_uskl_rec 0 α1 R1.
 
-Fixpoint close_exp_wrt_ptyp_rec (n1 : nat) (Xpt1 : ptypvar) (e1 : exp) {struct e1} : exp :=
+Fixpoint close_exp_wrt_ptyp_rec (n1 : nat) (α1 : ptypvar) (e1 : exp) {struct e1} : exp :=
   match e1 with
     | exp_unit => exp_unit
     | exp_var_f x1 => exp_var_f x1
     | exp_var_b n2 => exp_var_b n2
-    | exp_abs e2 => exp_abs (close_exp_wrt_ptyp_rec n1 Xpt1 e2)
-    | exp_abs_anno A1 e2 => exp_abs_anno (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) (close_exp_wrt_ptyp_rec n1 Xpt1 e2)
-    | exp_app e2 e3 => exp_app (close_exp_wrt_ptyp_rec n1 Xpt1 e2) (close_exp_wrt_ptyp_rec n1 Xpt1 e3)
-    | exp_anno e2 A1 => exp_anno (close_exp_wrt_ptyp_rec n1 Xpt1 e2) (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1)
-    | exp_freeze e2 => exp_freeze (close_exp_wrt_ptyp_rec n1 Xpt1 e2)
+    | exp_abs e2 => exp_abs (close_exp_wrt_ptyp_rec n1 α1 e2)
+    | exp_abs_anno A1 e2 => exp_abs_anno (close_ptyp_wrt_ptyp_rec n1 α1 A1) (close_exp_wrt_ptyp_rec n1 α1 e2)
+    | exp_app e2 e3 => exp_app (close_exp_wrt_ptyp_rec n1 α1 e2) (close_exp_wrt_ptyp_rec n1 α1 e3)
+    | exp_anno e2 A1 => exp_anno (close_exp_wrt_ptyp_rec n1 α1 e2) (close_ptyp_wrt_ptyp_rec n1 α1 A1)
+    | exp_freeze e2 => exp_freeze (close_exp_wrt_ptyp_rec n1 α1 e2)
   end.
 
 Fixpoint close_exp_wrt_exp_rec (n1 : nat) (x1 : expvar) (e1 : exp) {struct e1} : exp :=
@@ -187,7 +187,7 @@ Fixpoint close_exp_wrt_exp_rec (n1 : nat) (x1 : expvar) (e1 : exp) {struct e1} :
     | exp_freeze e2 => exp_freeze (close_exp_wrt_exp_rec n1 x1 e2)
   end.
 
-Definition close_exp_wrt_ptyp Xpt1 e1 := close_exp_wrt_ptyp_rec 0 Xpt1 e1.
+Definition close_exp_wrt_ptyp α1 e1 := close_exp_wrt_ptyp_rec 0 α1 e1.
 
 Definition close_exp_wrt_exp x1 e1 := close_exp_wrt_exp_rec 0 x1 e1.
 
@@ -198,7 +198,7 @@ Definition close_exp_wrt_exp x1 e1 := close_exp_wrt_exp_rec 0 x1 e1.
 Fixpoint size_ptyp (A1 : ptyp) {struct A1} : nat :=
   match A1 with
     | ptyp_unit => 1
-    | ptyp_var_f Xpt1 => 1
+    | ptyp_var_f α1 => 1
     | ptyp_var_b n1 => 1
     | ptyp_arrow A2 A3 => 1 + (size_ptyp A2) + (size_ptyp A3)
     | ptyp_all A2 => 1 + (size_ptyp A2)
@@ -207,7 +207,7 @@ Fixpoint size_ptyp (A1 : ptyp) {struct A1} : nat :=
 Fixpoint size_btyp (B1 : btyp) {struct B1} : nat :=
   match B1 with
     | btyp_unit => 1
-    | btyp_var_f Xbt1 => 1
+    | btyp_var_f α1 => 1
     | btyp_var_b n1 => 1
     | btyp_arrow B2 B3 => 1 + (size_btyp B2) + (size_btyp B3)
     | btyp_all_syn B2 => 1 + (size_btyp B2)
@@ -217,7 +217,7 @@ Fixpoint size_btyp (B1 : btyp) {struct B1} : nat :=
 Fixpoint size_utyp (C1 : utyp) {struct C1} : nat :=
   match C1 with
     | utyp_unit => 1
-    | utyp_var_f Xut1 => 1
+    | utyp_var_f α1 => 1
     | utyp_var_b n1 => 1
     | utyp_arrow C2 C3 => 1 + (size_utyp C2) + (size_utyp C3)
     | utyp_all_syn C2 => 1 + (size_utyp C2)
@@ -227,7 +227,7 @@ Fixpoint size_utyp (C1 : utyp) {struct C1} : nat :=
 Fixpoint size_pskl (P1 : pskl) {struct P1} : nat :=
   match P1 with
     | pskl_unit => 1
-    | pskl_var_f Xps1 => 1
+    | pskl_var_f α1 => 1
     | pskl_var_b n1 => 1
     | pskl_arrow P2 P3 => 1 + (size_pskl P2) + (size_pskl P3)
     | pskl_all_syn P2 => 1 + (size_pskl P2)
@@ -238,7 +238,7 @@ Fixpoint size_pskl (P1 : pskl) {struct P1} : nat :=
 Fixpoint size_bskl (Q1 : bskl) {struct Q1} : nat :=
   match Q1 with
     | bskl_unit => 1
-    | bskl_var_f Xbs1 => 1
+    | bskl_var_f α1 => 1
     | bskl_var_b n1 => 1
     | bskl_arrow Q2 Q3 => 1 + (size_bskl Q2) + (size_bskl Q3)
     | bskl_all_syn Q2 => 1 + (size_bskl Q2)
@@ -250,7 +250,7 @@ Fixpoint size_bskl (Q1 : bskl) {struct Q1} : nat :=
 Fixpoint size_uskl (R1 : uskl) {struct R1} : nat :=
   match R1 with
     | uskl_unit => 1
-    | uskl_var_f Xus1 => 1
+    | uskl_var_f α1 => 1
     | uskl_var_b n1 => 1
     | uskl_arrow R2 R3 => 1 + (size_uskl R2) + (size_uskl R3)
     | uskl_all_syn R2 => 1 + (size_uskl R2)
@@ -289,8 +289,8 @@ Fixpoint size_mode (m1 : mode) {struct m1} : nat :=
 Inductive degree_ptyp_wrt_ptyp : nat -> ptyp -> Prop :=
   | degree_wrt_ptyp_ptyp_unit : forall n1,
     degree_ptyp_wrt_ptyp n1 (ptyp_unit)
-  | degree_wrt_ptyp_ptyp_var_f : forall n1 Xpt1,
-    degree_ptyp_wrt_ptyp n1 (ptyp_var_f Xpt1)
+  | degree_wrt_ptyp_ptyp_var_f : forall n1 α1,
+    degree_ptyp_wrt_ptyp n1 (ptyp_var_f α1)
   | degree_wrt_ptyp_ptyp_var_b : forall n1 n2,
     lt n2 n1 ->
     degree_ptyp_wrt_ptyp n1 (ptyp_var_b n2)
@@ -311,8 +311,8 @@ Combined Scheme degree_ptyp_wrt_ptyp_mutind from degree_ptyp_wrt_ptyp_ind'.
 Inductive degree_btyp_wrt_btyp : nat -> btyp -> Prop :=
   | degree_wrt_btyp_btyp_unit : forall n1,
     degree_btyp_wrt_btyp n1 (btyp_unit)
-  | degree_wrt_btyp_btyp_var_f : forall n1 Xbt1,
-    degree_btyp_wrt_btyp n1 (btyp_var_f Xbt1)
+  | degree_wrt_btyp_btyp_var_f : forall n1 α1,
+    degree_btyp_wrt_btyp n1 (btyp_var_f α1)
   | degree_wrt_btyp_btyp_var_b : forall n1 n2,
     lt n2 n1 ->
     degree_btyp_wrt_btyp n1 (btyp_var_b n2)
@@ -336,8 +336,8 @@ Combined Scheme degree_btyp_wrt_btyp_mutind from degree_btyp_wrt_btyp_ind'.
 Inductive degree_utyp_wrt_utyp : nat -> utyp -> Prop :=
   | degree_wrt_utyp_utyp_unit : forall n1,
     degree_utyp_wrt_utyp n1 (utyp_unit)
-  | degree_wrt_utyp_utyp_var_f : forall n1 Xut1,
-    degree_utyp_wrt_utyp n1 (utyp_var_f Xut1)
+  | degree_wrt_utyp_utyp_var_f : forall n1 α1,
+    degree_utyp_wrt_utyp n1 (utyp_var_f α1)
   | degree_wrt_utyp_utyp_var_b : forall n1 n2,
     lt n2 n1 ->
     degree_utyp_wrt_utyp n1 (utyp_var_b n2)
@@ -361,8 +361,8 @@ Combined Scheme degree_utyp_wrt_utyp_mutind from degree_utyp_wrt_utyp_ind'.
 Inductive degree_pskl_wrt_pskl : nat -> pskl -> Prop :=
   | degree_wrt_pskl_pskl_unit : forall n1,
     degree_pskl_wrt_pskl n1 (pskl_unit)
-  | degree_wrt_pskl_pskl_var_f : forall n1 Xps1,
-    degree_pskl_wrt_pskl n1 (pskl_var_f Xps1)
+  | degree_wrt_pskl_pskl_var_f : forall n1 α1,
+    degree_pskl_wrt_pskl n1 (pskl_var_f α1)
   | degree_wrt_pskl_pskl_var_b : forall n1 n2,
     lt n2 n1 ->
     degree_pskl_wrt_pskl n1 (pskl_var_b n2)
@@ -388,8 +388,8 @@ Combined Scheme degree_pskl_wrt_pskl_mutind from degree_pskl_wrt_pskl_ind'.
 Inductive degree_bskl_wrt_bskl : nat -> bskl -> Prop :=
   | degree_wrt_bskl_bskl_unit : forall n1,
     degree_bskl_wrt_bskl n1 (bskl_unit)
-  | degree_wrt_bskl_bskl_var_f : forall n1 Xbs1,
-    degree_bskl_wrt_bskl n1 (bskl_var_f Xbs1)
+  | degree_wrt_bskl_bskl_var_f : forall n1 α1,
+    degree_bskl_wrt_bskl n1 (bskl_var_f α1)
   | degree_wrt_bskl_bskl_var_b : forall n1 n2,
     lt n2 n1 ->
     degree_bskl_wrt_bskl n1 (bskl_var_b n2)
@@ -418,8 +418,8 @@ Combined Scheme degree_bskl_wrt_bskl_mutind from degree_bskl_wrt_bskl_ind'.
 Inductive degree_uskl_wrt_uskl : nat -> uskl -> Prop :=
   | degree_wrt_uskl_uskl_unit : forall n1,
     degree_uskl_wrt_uskl n1 (uskl_unit)
-  | degree_wrt_uskl_uskl_var_f : forall n1 Xus1,
-    degree_uskl_wrt_uskl n1 (uskl_var_f Xus1)
+  | degree_wrt_uskl_uskl_var_f : forall n1 α1,
+    degree_uskl_wrt_uskl n1 (uskl_var_f α1)
   | degree_wrt_uskl_uskl_var_b : forall n1 n2,
     lt n2 n1 ->
     degree_uskl_wrt_uskl n1 (uskl_var_b n2)
@@ -520,14 +520,14 @@ Combined Scheme degree_exp_wrt_exp_mutind from degree_exp_wrt_exp_ind'.
 Inductive lc_set_ptyp : ptyp -> Set :=
   | lc_set_ptyp_unit :
     lc_set_ptyp (ptyp_unit)
-  | lc_set_ptyp_var_f : forall Xpt1,
-    lc_set_ptyp (ptyp_var_f Xpt1)
+  | lc_set_ptyp_var_f : forall α1,
+    lc_set_ptyp (ptyp_var_f α1)
   | lc_set_ptyp_arrow : forall A1 A2,
     lc_set_ptyp A1 ->
     lc_set_ptyp A2 ->
     lc_set_ptyp (ptyp_arrow A1 A2)
   | lc_set_ptyp_all : forall A1,
-    (forall Xpt1 : ptypvar, lc_set_ptyp (open_ptyp_wrt_ptyp A1 (ptyp_var_f Xpt1))) ->
+    (forall α1 : ptypvar, lc_set_ptyp (open_ptyp_wrt_ptyp A1 (ptyp_var_f α1))) ->
     lc_set_ptyp (ptyp_all A1).
 Scheme lc_ptyp_ind' := Induction for lc_ptyp Sort Prop.
 
@@ -548,17 +548,17 @@ Combined Scheme lc_set_ptyp_mutrec from lc_set_ptyp_rec'.
 Inductive lc_set_btyp : btyp -> Set :=
   | lc_set_btyp_unit :
     lc_set_btyp (btyp_unit)
-  | lc_set_btyp_var_f : forall Xbt1,
-    lc_set_btyp (btyp_var_f Xbt1)
+  | lc_set_btyp_var_f : forall α1,
+    lc_set_btyp (btyp_var_f α1)
   | lc_set_btyp_arrow : forall B1 B2,
     lc_set_btyp B1 ->
     lc_set_btyp B2 ->
     lc_set_btyp (btyp_arrow B1 B2)
   | lc_set_btyp_all_syn : forall B1,
-    (forall Xbt1 : btypvar, lc_set_btyp (open_btyp_wrt_btyp B1 (btyp_var_f Xbt1))) ->
+    (forall α1 : btypvar, lc_set_btyp (open_btyp_wrt_btyp B1 (btyp_var_f α1))) ->
     lc_set_btyp (btyp_all_syn B1)
   | lc_set_btyp_all_inh : forall B1,
-    (forall Xbt1 : btypvar, lc_set_btyp (open_btyp_wrt_btyp B1 (btyp_var_f Xbt1))) ->
+    (forall α1 : btypvar, lc_set_btyp (open_btyp_wrt_btyp B1 (btyp_var_f α1))) ->
     lc_set_btyp (btyp_all_inh B1).
 Scheme lc_btyp_ind' := Induction for lc_btyp Sort Prop.
 
@@ -579,17 +579,17 @@ Combined Scheme lc_set_btyp_mutrec from lc_set_btyp_rec'.
 Inductive lc_set_utyp : utyp -> Set :=
   | lc_set_utyp_unit :
     lc_set_utyp (utyp_unit)
-  | lc_set_utyp_var_f : forall Xut1,
-    lc_set_utyp (utyp_var_f Xut1)
+  | lc_set_utyp_var_f : forall α1,
+    lc_set_utyp (utyp_var_f α1)
   | lc_set_utyp_arrow : forall C1 C2,
     lc_set_utyp C1 ->
     lc_set_utyp C2 ->
     lc_set_utyp (utyp_arrow C1 C2)
   | lc_set_utyp_all_syn : forall C1,
-    (forall Xut1 : utypvar, lc_set_utyp (open_utyp_wrt_utyp C1 (utyp_var_f Xut1))) ->
+    (forall α1 : utypvar, lc_set_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1))) ->
     lc_set_utyp (utyp_all_syn C1)
   | lc_set_utyp_all_etag : forall ε1 C1,
-    (forall Xut1 : utypvar, lc_set_utyp (open_utyp_wrt_utyp C1 (utyp_var_f Xut1))) ->
+    (forall α1 : utypvar, lc_set_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1))) ->
     lc_set_utyp (utyp_all_etag ε1 C1).
 Scheme lc_utyp_ind' := Induction for lc_utyp Sort Prop.
 
@@ -610,14 +610,14 @@ Combined Scheme lc_set_utyp_mutrec from lc_set_utyp_rec'.
 Inductive lc_set_pskl : pskl -> Set :=
   | lc_set_pskl_unit :
     lc_set_pskl (pskl_unit)
-  | lc_set_pskl_var_f : forall Xps1,
-    lc_set_pskl (pskl_var_f Xps1)
+  | lc_set_pskl_var_f : forall α1,
+    lc_set_pskl (pskl_var_f α1)
   | lc_set_pskl_arrow : forall P1 P2,
     lc_set_pskl P1 ->
     lc_set_pskl P2 ->
     lc_set_pskl (pskl_arrow P1 P2)
   | lc_set_pskl_all_syn : forall P1,
-    (forall Xps1 : psklvar, lc_set_pskl (open_pskl_wrt_pskl P1 (pskl_var_f Xps1))) ->
+    (forall α1 : psklvar, lc_set_pskl (open_pskl_wrt_pskl P1 (pskl_var_f α1))) ->
     lc_set_pskl (pskl_all_syn P1)
   | lc_set_pskl_hole :
     lc_set_pskl (pskl_hole)
@@ -643,17 +643,17 @@ Combined Scheme lc_set_pskl_mutrec from lc_set_pskl_rec'.
 Inductive lc_set_bskl : bskl -> Set :=
   | lc_set_bskl_unit :
     lc_set_bskl (bskl_unit)
-  | lc_set_bskl_var_f : forall Xbs1,
-    lc_set_bskl (bskl_var_f Xbs1)
+  | lc_set_bskl_var_f : forall α1,
+    lc_set_bskl (bskl_var_f α1)
   | lc_set_bskl_arrow : forall Q1 Q2,
     lc_set_bskl Q1 ->
     lc_set_bskl Q2 ->
     lc_set_bskl (bskl_arrow Q1 Q2)
   | lc_set_bskl_all_syn : forall Q1,
-    (forall Xbs1 : bsklvar, lc_set_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1))) ->
+    (forall α1 : bsklvar, lc_set_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f α1))) ->
     lc_set_bskl (bskl_all_syn Q1)
   | lc_set_bskl_all_inh : forall Q1,
-    (forall Xbs1 : bsklvar, lc_set_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1))) ->
+    (forall α1 : bsklvar, lc_set_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f α1))) ->
     lc_set_bskl (bskl_all_inh Q1)
   | lc_set_bskl_hole :
     lc_set_bskl (bskl_hole)
@@ -679,17 +679,17 @@ Combined Scheme lc_set_bskl_mutrec from lc_set_bskl_rec'.
 Inductive lc_set_uskl : uskl -> Set :=
   | lc_set_uskl_unit :
     lc_set_uskl (uskl_unit)
-  | lc_set_uskl_var_f : forall Xus1,
-    lc_set_uskl (uskl_var_f Xus1)
+  | lc_set_uskl_var_f : forall α1,
+    lc_set_uskl (uskl_var_f α1)
   | lc_set_uskl_arrow : forall R1 R2,
     lc_set_uskl R1 ->
     lc_set_uskl R2 ->
     lc_set_uskl (uskl_arrow R1 R2)
   | lc_set_uskl_all_syn : forall R1,
-    (forall Xus1 : usklvar, lc_set_uskl (open_uskl_wrt_uskl R1 (uskl_var_f Xus1))) ->
+    (forall α1 : usklvar, lc_set_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1))) ->
     lc_set_uskl (uskl_all_syn R1)
   | lc_set_uskl_all_etag : forall ε1 R1,
-    (forall Xus1 : usklvar, lc_set_uskl (open_uskl_wrt_uskl R1 (uskl_var_f Xus1))) ->
+    (forall α1 : usklvar, lc_set_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1))) ->
     lc_set_uskl (uskl_all_etag ε1 R1)
   | lc_set_uskl_hole :
     lc_set_uskl (uskl_hole)
@@ -760,31 +760,31 @@ Combined Scheme lc_set_exp_mutrec from lc_set_exp_rec'.
 (* *********************************************************************** *)
 (** * Body *)
 
-Definition body_ptyp_wrt_ptyp A1 := forall Xpt1, lc_ptyp (open_ptyp_wrt_ptyp A1 (ptyp_var_f Xpt1)).
+Definition body_ptyp_wrt_ptyp A1 := forall α1, lc_ptyp (open_ptyp_wrt_ptyp A1 (ptyp_var_f α1)).
 
 #[export] Hint Unfold body_ptyp_wrt_ptyp : core.
 
-Definition body_btyp_wrt_btyp B1 := forall Xbt1, lc_btyp (open_btyp_wrt_btyp B1 (btyp_var_f Xbt1)).
+Definition body_btyp_wrt_btyp B1 := forall α1, lc_btyp (open_btyp_wrt_btyp B1 (btyp_var_f α1)).
 
 #[export] Hint Unfold body_btyp_wrt_btyp : core.
 
-Definition body_utyp_wrt_utyp C1 := forall Xut1, lc_utyp (open_utyp_wrt_utyp C1 (utyp_var_f Xut1)).
+Definition body_utyp_wrt_utyp C1 := forall α1, lc_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1)).
 
 #[export] Hint Unfold body_utyp_wrt_utyp : core.
 
-Definition body_pskl_wrt_pskl P1 := forall Xps1, lc_pskl (open_pskl_wrt_pskl P1 (pskl_var_f Xps1)).
+Definition body_pskl_wrt_pskl P1 := forall α1, lc_pskl (open_pskl_wrt_pskl P1 (pskl_var_f α1)).
 
 #[export] Hint Unfold body_pskl_wrt_pskl : core.
 
-Definition body_bskl_wrt_bskl Q1 := forall Xbs1, lc_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1)).
+Definition body_bskl_wrt_bskl Q1 := forall α1, lc_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f α1)).
 
 #[export] Hint Unfold body_bskl_wrt_bskl : core.
 
-Definition body_uskl_wrt_uskl R1 := forall Xus1, lc_uskl (open_uskl_wrt_uskl R1 (uskl_var_f Xus1)).
+Definition body_uskl_wrt_uskl R1 := forall α1, lc_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1)).
 
 #[export] Hint Unfold body_uskl_wrt_uskl : core.
 
-Definition body_exp_wrt_ptyp e1 := forall Xpt1, lc_exp (open_exp_wrt_ptyp e1 (ptyp_var_f Xpt1)).
+Definition body_exp_wrt_ptyp e1 := forall α1, lc_exp (open_exp_wrt_ptyp e1 (ptyp_var_f α1)).
 
 Definition body_exp_wrt_exp e1 := forall x1, lc_exp (open_exp_wrt_exp e1 (exp_var_f x1)).
 
@@ -971,8 +971,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_ptyp_close_ptyp_wrt_ptyp_rec_mutual :
-(forall A1 Xpt1 n1,
-  size_ptyp (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) = size_ptyp A1).
+(forall A1 α1 n1,
+  size_ptyp (close_ptyp_wrt_ptyp_rec n1 α1 A1) = size_ptyp A1).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -983,8 +983,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_ptyp_close_ptyp_wrt_ptyp_rec :
-forall A1 Xpt1 n1,
-  size_ptyp (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) = size_ptyp A1.
+forall A1 α1 n1,
+  size_ptyp (close_ptyp_wrt_ptyp_rec n1 α1 A1) = size_ptyp A1.
 Proof.
 pose proof size_ptyp_close_ptyp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -997,8 +997,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_btyp_close_btyp_wrt_btyp_rec_mutual :
-(forall B1 Xbt1 n1,
-  size_btyp (close_btyp_wrt_btyp_rec n1 Xbt1 B1) = size_btyp B1).
+(forall B1 α1 n1,
+  size_btyp (close_btyp_wrt_btyp_rec n1 α1 B1) = size_btyp B1).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -1009,8 +1009,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_btyp_close_btyp_wrt_btyp_rec :
-forall B1 Xbt1 n1,
-  size_btyp (close_btyp_wrt_btyp_rec n1 Xbt1 B1) = size_btyp B1.
+forall B1 α1 n1,
+  size_btyp (close_btyp_wrt_btyp_rec n1 α1 B1) = size_btyp B1.
 Proof.
 pose proof size_btyp_close_btyp_wrt_btyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -1023,8 +1023,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_utyp_close_utyp_wrt_utyp_rec_mutual :
-(forall C1 Xut1 n1,
-  size_utyp (close_utyp_wrt_utyp_rec n1 Xut1 C1) = size_utyp C1).
+(forall C1 α1 n1,
+  size_utyp (close_utyp_wrt_utyp_rec n1 α1 C1) = size_utyp C1).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -1035,8 +1035,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_utyp_close_utyp_wrt_utyp_rec :
-forall C1 Xut1 n1,
-  size_utyp (close_utyp_wrt_utyp_rec n1 Xut1 C1) = size_utyp C1.
+forall C1 α1 n1,
+  size_utyp (close_utyp_wrt_utyp_rec n1 α1 C1) = size_utyp C1.
 Proof.
 pose proof size_utyp_close_utyp_wrt_utyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -1049,8 +1049,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_pskl_close_pskl_wrt_pskl_rec_mutual :
-(forall P1 Xps1 n1,
-  size_pskl (close_pskl_wrt_pskl_rec n1 Xps1 P1) = size_pskl P1).
+(forall P1 α1 n1,
+  size_pskl (close_pskl_wrt_pskl_rec n1 α1 P1) = size_pskl P1).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -1061,8 +1061,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_pskl_close_pskl_wrt_pskl_rec :
-forall P1 Xps1 n1,
-  size_pskl (close_pskl_wrt_pskl_rec n1 Xps1 P1) = size_pskl P1.
+forall P1 α1 n1,
+  size_pskl (close_pskl_wrt_pskl_rec n1 α1 P1) = size_pskl P1.
 Proof.
 pose proof size_pskl_close_pskl_wrt_pskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -1075,8 +1075,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_bskl_close_bskl_wrt_bskl_rec_mutual :
-(forall Q1 Xbs1 n1,
-  size_bskl (close_bskl_wrt_bskl_rec n1 Xbs1 Q1) = size_bskl Q1).
+(forall Q1 α1 n1,
+  size_bskl (close_bskl_wrt_bskl_rec n1 α1 Q1) = size_bskl Q1).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -1087,8 +1087,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_bskl_close_bskl_wrt_bskl_rec :
-forall Q1 Xbs1 n1,
-  size_bskl (close_bskl_wrt_bskl_rec n1 Xbs1 Q1) = size_bskl Q1.
+forall Q1 α1 n1,
+  size_bskl (close_bskl_wrt_bskl_rec n1 α1 Q1) = size_bskl Q1.
 Proof.
 pose proof size_bskl_close_bskl_wrt_bskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -1101,8 +1101,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_uskl_close_uskl_wrt_uskl_rec_mutual :
-(forall R1 Xus1 n1,
-  size_uskl (close_uskl_wrt_uskl_rec n1 Xus1 R1) = size_uskl R1).
+(forall R1 α1 n1,
+  size_uskl (close_uskl_wrt_uskl_rec n1 α1 R1) = size_uskl R1).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -1113,8 +1113,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_uskl_close_uskl_wrt_uskl_rec :
-forall R1 Xus1 n1,
-  size_uskl (close_uskl_wrt_uskl_rec n1 Xus1 R1) = size_uskl R1.
+forall R1 α1 n1,
+  size_uskl (close_uskl_wrt_uskl_rec n1 α1 R1) = size_uskl R1.
 Proof.
 pose proof size_uskl_close_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -1127,8 +1127,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_exp_close_exp_wrt_ptyp_rec_mutual :
-(forall e1 Xpt1 n1,
-  size_exp (close_exp_wrt_ptyp_rec n1 Xpt1 e1) = size_exp e1).
+(forall e1 α1 n1,
+  size_exp (close_exp_wrt_ptyp_rec n1 α1 e1) = size_exp e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -1139,8 +1139,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_exp_close_exp_wrt_ptyp_rec :
-forall e1 Xpt1 n1,
-  size_exp (close_exp_wrt_ptyp_rec n1 Xpt1 e1) = size_exp e1.
+forall e1 α1 n1,
+  size_exp (close_exp_wrt_ptyp_rec n1 α1 e1) = size_exp e1.
 Proof.
 pose proof size_exp_close_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -1177,8 +1177,8 @@ Qed.
 (* end hide *)
 
 Lemma size_ptyp_close_ptyp_wrt_ptyp :
-forall A1 Xpt1,
-  size_ptyp (close_ptyp_wrt_ptyp Xpt1 A1) = size_ptyp A1.
+forall A1 α1,
+  size_ptyp (close_ptyp_wrt_ptyp α1 A1) = size_ptyp A1.
 Proof.
 unfold close_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -1187,8 +1187,8 @@ Qed.
 #[export] Hint Rewrite size_ptyp_close_ptyp_wrt_ptyp using solve [auto] : lngen.
 
 Lemma size_btyp_close_btyp_wrt_btyp :
-forall B1 Xbt1,
-  size_btyp (close_btyp_wrt_btyp Xbt1 B1) = size_btyp B1.
+forall B1 α1,
+  size_btyp (close_btyp_wrt_btyp α1 B1) = size_btyp B1.
 Proof.
 unfold close_btyp_wrt_btyp; default_simp.
 Qed.
@@ -1197,8 +1197,8 @@ Qed.
 #[export] Hint Rewrite size_btyp_close_btyp_wrt_btyp using solve [auto] : lngen.
 
 Lemma size_utyp_close_utyp_wrt_utyp :
-forall C1 Xut1,
-  size_utyp (close_utyp_wrt_utyp Xut1 C1) = size_utyp C1.
+forall C1 α1,
+  size_utyp (close_utyp_wrt_utyp α1 C1) = size_utyp C1.
 Proof.
 unfold close_utyp_wrt_utyp; default_simp.
 Qed.
@@ -1207,8 +1207,8 @@ Qed.
 #[export] Hint Rewrite size_utyp_close_utyp_wrt_utyp using solve [auto] : lngen.
 
 Lemma size_pskl_close_pskl_wrt_pskl :
-forall P1 Xps1,
-  size_pskl (close_pskl_wrt_pskl Xps1 P1) = size_pskl P1.
+forall P1 α1,
+  size_pskl (close_pskl_wrt_pskl α1 P1) = size_pskl P1.
 Proof.
 unfold close_pskl_wrt_pskl; default_simp.
 Qed.
@@ -1217,8 +1217,8 @@ Qed.
 #[export] Hint Rewrite size_pskl_close_pskl_wrt_pskl using solve [auto] : lngen.
 
 Lemma size_bskl_close_bskl_wrt_bskl :
-forall Q1 Xbs1,
-  size_bskl (close_bskl_wrt_bskl Xbs1 Q1) = size_bskl Q1.
+forall Q1 α1,
+  size_bskl (close_bskl_wrt_bskl α1 Q1) = size_bskl Q1.
 Proof.
 unfold close_bskl_wrt_bskl; default_simp.
 Qed.
@@ -1227,8 +1227,8 @@ Qed.
 #[export] Hint Rewrite size_bskl_close_bskl_wrt_bskl using solve [auto] : lngen.
 
 Lemma size_uskl_close_uskl_wrt_uskl :
-forall R1 Xus1,
-  size_uskl (close_uskl_wrt_uskl Xus1 R1) = size_uskl R1.
+forall R1 α1,
+  size_uskl (close_uskl_wrt_uskl α1 R1) = size_uskl R1.
 Proof.
 unfold close_uskl_wrt_uskl; default_simp.
 Qed.
@@ -1237,8 +1237,8 @@ Qed.
 #[export] Hint Rewrite size_uskl_close_uskl_wrt_uskl using solve [auto] : lngen.
 
 Lemma size_exp_close_exp_wrt_ptyp :
-forall e1 Xpt1,
-  size_exp (close_exp_wrt_ptyp Xpt1 e1) = size_exp e1.
+forall e1 α1,
+  size_exp (close_exp_wrt_ptyp α1 e1) = size_exp e1.
 Proof.
 unfold close_exp_wrt_ptyp; default_simp.
 Qed.
@@ -1531,8 +1531,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_ptyp_open_ptyp_wrt_ptyp_rec_var_mutual :
-(forall A1 Xpt1 n1,
-  size_ptyp (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A1) = size_ptyp A1).
+(forall A1 α1 n1,
+  size_ptyp (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A1) = size_ptyp A1).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -1543,8 +1543,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_ptyp_open_ptyp_wrt_ptyp_rec_var :
-forall A1 Xpt1 n1,
-  size_ptyp (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A1) = size_ptyp A1.
+forall A1 α1 n1,
+  size_ptyp (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A1) = size_ptyp A1.
 Proof.
 pose proof size_ptyp_open_ptyp_wrt_ptyp_rec_var_mutual as H; intuition eauto.
 Qed.
@@ -1557,8 +1557,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_btyp_open_btyp_wrt_btyp_rec_var_mutual :
-(forall B1 Xbt1 n1,
-  size_btyp (open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B1) = size_btyp B1).
+(forall B1 α1 n1,
+  size_btyp (open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B1) = size_btyp B1).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -1569,8 +1569,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_btyp_open_btyp_wrt_btyp_rec_var :
-forall B1 Xbt1 n1,
-  size_btyp (open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B1) = size_btyp B1.
+forall B1 α1 n1,
+  size_btyp (open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B1) = size_btyp B1.
 Proof.
 pose proof size_btyp_open_btyp_wrt_btyp_rec_var_mutual as H; intuition eauto.
 Qed.
@@ -1583,8 +1583,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_utyp_open_utyp_wrt_utyp_rec_var_mutual :
-(forall C1 Xut1 n1,
-  size_utyp (open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C1) = size_utyp C1).
+(forall C1 α1 n1,
+  size_utyp (open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C1) = size_utyp C1).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -1595,8 +1595,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_utyp_open_utyp_wrt_utyp_rec_var :
-forall C1 Xut1 n1,
-  size_utyp (open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C1) = size_utyp C1.
+forall C1 α1 n1,
+  size_utyp (open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C1) = size_utyp C1.
 Proof.
 pose proof size_utyp_open_utyp_wrt_utyp_rec_var_mutual as H; intuition eauto.
 Qed.
@@ -1609,8 +1609,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_pskl_open_pskl_wrt_pskl_rec_var_mutual :
-(forall P1 Xps1 n1,
-  size_pskl (open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P1) = size_pskl P1).
+(forall P1 α1 n1,
+  size_pskl (open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P1) = size_pskl P1).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -1621,8 +1621,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_pskl_open_pskl_wrt_pskl_rec_var :
-forall P1 Xps1 n1,
-  size_pskl (open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P1) = size_pskl P1.
+forall P1 α1 n1,
+  size_pskl (open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P1) = size_pskl P1.
 Proof.
 pose proof size_pskl_open_pskl_wrt_pskl_rec_var_mutual as H; intuition eauto.
 Qed.
@@ -1635,8 +1635,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_bskl_open_bskl_wrt_bskl_rec_var_mutual :
-(forall Q1 Xbs1 n1,
-  size_bskl (open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q1) = size_bskl Q1).
+(forall Q1 α1 n1,
+  size_bskl (open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q1) = size_bskl Q1).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -1647,8 +1647,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_bskl_open_bskl_wrt_bskl_rec_var :
-forall Q1 Xbs1 n1,
-  size_bskl (open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q1) = size_bskl Q1.
+forall Q1 α1 n1,
+  size_bskl (open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q1) = size_bskl Q1.
 Proof.
 pose proof size_bskl_open_bskl_wrt_bskl_rec_var_mutual as H; intuition eauto.
 Qed.
@@ -1661,8 +1661,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_uskl_open_uskl_wrt_uskl_rec_var_mutual :
-(forall R1 Xus1 n1,
-  size_uskl (open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R1) = size_uskl R1).
+(forall R1 α1 n1,
+  size_uskl (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1) = size_uskl R1).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -1673,8 +1673,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_uskl_open_uskl_wrt_uskl_rec_var :
-forall R1 Xus1 n1,
-  size_uskl (open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R1) = size_uskl R1.
+forall R1 α1 n1,
+  size_uskl (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1) = size_uskl R1.
 Proof.
 pose proof size_uskl_open_uskl_wrt_uskl_rec_var_mutual as H; intuition eauto.
 Qed.
@@ -1687,8 +1687,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_exp_open_exp_wrt_ptyp_rec_var_mutual :
-(forall e1 Xpt1 n1,
-  size_exp (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e1) = size_exp e1).
+(forall e1 α1 n1,
+  size_exp (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e1) = size_exp e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -1699,8 +1699,8 @@ Qed.
 (* begin hide *)
 
 Lemma size_exp_open_exp_wrt_ptyp_rec_var :
-forall e1 Xpt1 n1,
-  size_exp (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e1) = size_exp e1.
+forall e1 α1 n1,
+  size_exp (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e1) = size_exp e1.
 Proof.
 pose proof size_exp_open_exp_wrt_ptyp_rec_var_mutual as H; intuition eauto.
 Qed.
@@ -1737,8 +1737,8 @@ Qed.
 (* end hide *)
 
 Lemma size_ptyp_open_ptyp_wrt_ptyp_var :
-forall A1 Xpt1,
-  size_ptyp (open_ptyp_wrt_ptyp A1 (ptyp_var_f Xpt1)) = size_ptyp A1.
+forall A1 α1,
+  size_ptyp (open_ptyp_wrt_ptyp A1 (ptyp_var_f α1)) = size_ptyp A1.
 Proof.
 unfold open_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -1747,8 +1747,8 @@ Qed.
 #[export] Hint Rewrite size_ptyp_open_ptyp_wrt_ptyp_var using solve [auto] : lngen.
 
 Lemma size_btyp_open_btyp_wrt_btyp_var :
-forall B1 Xbt1,
-  size_btyp (open_btyp_wrt_btyp B1 (btyp_var_f Xbt1)) = size_btyp B1.
+forall B1 α1,
+  size_btyp (open_btyp_wrt_btyp B1 (btyp_var_f α1)) = size_btyp B1.
 Proof.
 unfold open_btyp_wrt_btyp; default_simp.
 Qed.
@@ -1757,8 +1757,8 @@ Qed.
 #[export] Hint Rewrite size_btyp_open_btyp_wrt_btyp_var using solve [auto] : lngen.
 
 Lemma size_utyp_open_utyp_wrt_utyp_var :
-forall C1 Xut1,
-  size_utyp (open_utyp_wrt_utyp C1 (utyp_var_f Xut1)) = size_utyp C1.
+forall C1 α1,
+  size_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1)) = size_utyp C1.
 Proof.
 unfold open_utyp_wrt_utyp; default_simp.
 Qed.
@@ -1767,8 +1767,8 @@ Qed.
 #[export] Hint Rewrite size_utyp_open_utyp_wrt_utyp_var using solve [auto] : lngen.
 
 Lemma size_pskl_open_pskl_wrt_pskl_var :
-forall P1 Xps1,
-  size_pskl (open_pskl_wrt_pskl P1 (pskl_var_f Xps1)) = size_pskl P1.
+forall P1 α1,
+  size_pskl (open_pskl_wrt_pskl P1 (pskl_var_f α1)) = size_pskl P1.
 Proof.
 unfold open_pskl_wrt_pskl; default_simp.
 Qed.
@@ -1777,8 +1777,8 @@ Qed.
 #[export] Hint Rewrite size_pskl_open_pskl_wrt_pskl_var using solve [auto] : lngen.
 
 Lemma size_bskl_open_bskl_wrt_bskl_var :
-forall Q1 Xbs1,
-  size_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1)) = size_bskl Q1.
+forall Q1 α1,
+  size_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f α1)) = size_bskl Q1.
 Proof.
 unfold open_bskl_wrt_bskl; default_simp.
 Qed.
@@ -1787,8 +1787,8 @@ Qed.
 #[export] Hint Rewrite size_bskl_open_bskl_wrt_bskl_var using solve [auto] : lngen.
 
 Lemma size_uskl_open_uskl_wrt_uskl_var :
-forall R1 Xus1,
-  size_uskl (open_uskl_wrt_uskl R1 (uskl_var_f Xus1)) = size_uskl R1.
+forall R1 α1,
+  size_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1)) = size_uskl R1.
 Proof.
 unfold open_uskl_wrt_uskl; default_simp.
 Qed.
@@ -1797,8 +1797,8 @@ Qed.
 #[export] Hint Rewrite size_uskl_open_uskl_wrt_uskl_var using solve [auto] : lngen.
 
 Lemma size_exp_open_exp_wrt_ptyp_var :
-forall e1 Xpt1,
-  size_exp (open_exp_wrt_ptyp e1 (ptyp_var_f Xpt1)) = size_exp e1.
+forall e1 α1,
+  size_exp (open_exp_wrt_ptyp e1 (ptyp_var_f α1)) = size_exp e1.
 Proof.
 unfold open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -2090,9 +2090,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp_rec_mutual :
-(forall A1 Xpt1 n1,
+(forall A1 α1 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
-  degree_ptyp_wrt_ptyp (S n1) (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1)).
+  degree_ptyp_wrt_ptyp (S n1) (close_ptyp_wrt_ptyp_rec n1 α1 A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -2103,9 +2103,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp_rec :
-forall A1 Xpt1 n1,
+forall A1 α1 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
-  degree_ptyp_wrt_ptyp (S n1) (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1).
+  degree_ptyp_wrt_ptyp (S n1) (close_ptyp_wrt_ptyp_rec n1 α1 A1).
 Proof.
 pose proof degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -2117,9 +2117,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_btyp_wrt_btyp_close_btyp_wrt_btyp_rec_mutual :
-(forall B1 Xbt1 n1,
+(forall B1 α1 n1,
   degree_btyp_wrt_btyp n1 B1 ->
-  degree_btyp_wrt_btyp (S n1) (close_btyp_wrt_btyp_rec n1 Xbt1 B1)).
+  degree_btyp_wrt_btyp (S n1) (close_btyp_wrt_btyp_rec n1 α1 B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -2130,9 +2130,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_btyp_wrt_btyp_close_btyp_wrt_btyp_rec :
-forall B1 Xbt1 n1,
+forall B1 α1 n1,
   degree_btyp_wrt_btyp n1 B1 ->
-  degree_btyp_wrt_btyp (S n1) (close_btyp_wrt_btyp_rec n1 Xbt1 B1).
+  degree_btyp_wrt_btyp (S n1) (close_btyp_wrt_btyp_rec n1 α1 B1).
 Proof.
 pose proof degree_btyp_wrt_btyp_close_btyp_wrt_btyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -2144,9 +2144,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_utyp_wrt_utyp_close_utyp_wrt_utyp_rec_mutual :
-(forall C1 Xut1 n1,
+(forall C1 α1 n1,
   degree_utyp_wrt_utyp n1 C1 ->
-  degree_utyp_wrt_utyp (S n1) (close_utyp_wrt_utyp_rec n1 Xut1 C1)).
+  degree_utyp_wrt_utyp (S n1) (close_utyp_wrt_utyp_rec n1 α1 C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -2157,9 +2157,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_utyp_wrt_utyp_close_utyp_wrt_utyp_rec :
-forall C1 Xut1 n1,
+forall C1 α1 n1,
   degree_utyp_wrt_utyp n1 C1 ->
-  degree_utyp_wrt_utyp (S n1) (close_utyp_wrt_utyp_rec n1 Xut1 C1).
+  degree_utyp_wrt_utyp (S n1) (close_utyp_wrt_utyp_rec n1 α1 C1).
 Proof.
 pose proof degree_utyp_wrt_utyp_close_utyp_wrt_utyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -2171,9 +2171,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_pskl_wrt_pskl_close_pskl_wrt_pskl_rec_mutual :
-(forall P1 Xps1 n1,
+(forall P1 α1 n1,
   degree_pskl_wrt_pskl n1 P1 ->
-  degree_pskl_wrt_pskl (S n1) (close_pskl_wrt_pskl_rec n1 Xps1 P1)).
+  degree_pskl_wrt_pskl (S n1) (close_pskl_wrt_pskl_rec n1 α1 P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -2184,9 +2184,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_pskl_wrt_pskl_close_pskl_wrt_pskl_rec :
-forall P1 Xps1 n1,
+forall P1 α1 n1,
   degree_pskl_wrt_pskl n1 P1 ->
-  degree_pskl_wrt_pskl (S n1) (close_pskl_wrt_pskl_rec n1 Xps1 P1).
+  degree_pskl_wrt_pskl (S n1) (close_pskl_wrt_pskl_rec n1 α1 P1).
 Proof.
 pose proof degree_pskl_wrt_pskl_close_pskl_wrt_pskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -2198,9 +2198,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_bskl_wrt_bskl_close_bskl_wrt_bskl_rec_mutual :
-(forall Q1 Xbs1 n1,
+(forall Q1 α1 n1,
   degree_bskl_wrt_bskl n1 Q1 ->
-  degree_bskl_wrt_bskl (S n1) (close_bskl_wrt_bskl_rec n1 Xbs1 Q1)).
+  degree_bskl_wrt_bskl (S n1) (close_bskl_wrt_bskl_rec n1 α1 Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -2211,9 +2211,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_bskl_wrt_bskl_close_bskl_wrt_bskl_rec :
-forall Q1 Xbs1 n1,
+forall Q1 α1 n1,
   degree_bskl_wrt_bskl n1 Q1 ->
-  degree_bskl_wrt_bskl (S n1) (close_bskl_wrt_bskl_rec n1 Xbs1 Q1).
+  degree_bskl_wrt_bskl (S n1) (close_bskl_wrt_bskl_rec n1 α1 Q1).
 Proof.
 pose proof degree_bskl_wrt_bskl_close_bskl_wrt_bskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -2225,9 +2225,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_uskl_wrt_uskl_close_uskl_wrt_uskl_rec_mutual :
-(forall R1 Xus1 n1,
+(forall R1 α1 n1,
   degree_uskl_wrt_uskl n1 R1 ->
-  degree_uskl_wrt_uskl (S n1) (close_uskl_wrt_uskl_rec n1 Xus1 R1)).
+  degree_uskl_wrt_uskl (S n1) (close_uskl_wrt_uskl_rec n1 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -2238,9 +2238,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_uskl_wrt_uskl_close_uskl_wrt_uskl_rec :
-forall R1 Xus1 n1,
+forall R1 α1 n1,
   degree_uskl_wrt_uskl n1 R1 ->
-  degree_uskl_wrt_uskl (S n1) (close_uskl_wrt_uskl_rec n1 Xus1 R1).
+  degree_uskl_wrt_uskl (S n1) (close_uskl_wrt_uskl_rec n1 α1 R1).
 Proof.
 pose proof degree_uskl_wrt_uskl_close_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -2252,9 +2252,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_exp_wrt_ptyp_close_exp_wrt_ptyp_rec_mutual :
-(forall e1 Xpt1 n1,
+(forall e1 α1 n1,
   degree_exp_wrt_ptyp n1 e1 ->
-  degree_exp_wrt_ptyp (S n1) (close_exp_wrt_ptyp_rec n1 Xpt1 e1)).
+  degree_exp_wrt_ptyp (S n1) (close_exp_wrt_ptyp_rec n1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -2265,9 +2265,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_exp_wrt_ptyp_close_exp_wrt_ptyp_rec :
-forall e1 Xpt1 n1,
+forall e1 α1 n1,
   degree_exp_wrt_ptyp n1 e1 ->
-  degree_exp_wrt_ptyp (S n1) (close_exp_wrt_ptyp_rec n1 Xpt1 e1).
+  degree_exp_wrt_ptyp (S n1) (close_exp_wrt_ptyp_rec n1 α1 e1).
 Proof.
 pose proof degree_exp_wrt_ptyp_close_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -2306,9 +2306,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_exp_wrt_exp_close_exp_wrt_ptyp_rec_mutual :
-(forall e1 Xpt1 n1 n2,
+(forall e1 α1 n1 n2,
   degree_exp_wrt_exp n2 e1 ->
-  degree_exp_wrt_exp n2 (close_exp_wrt_ptyp_rec n1 Xpt1 e1)).
+  degree_exp_wrt_exp n2 (close_exp_wrt_ptyp_rec n1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -2319,9 +2319,9 @@ Qed.
 (* begin hide *)
 
 Lemma degree_exp_wrt_exp_close_exp_wrt_ptyp_rec :
-forall e1 Xpt1 n1 n2,
+forall e1 α1 n1 n2,
   degree_exp_wrt_exp n2 e1 ->
-  degree_exp_wrt_exp n2 (close_exp_wrt_ptyp_rec n1 Xpt1 e1).
+  degree_exp_wrt_exp n2 (close_exp_wrt_ptyp_rec n1 α1 e1).
 Proof.
 pose proof degree_exp_wrt_exp_close_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -2358,9 +2358,9 @@ Qed.
 (* end hide *)
 
 Lemma degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp :
-forall A1 Xpt1,
+forall A1 α1,
   degree_ptyp_wrt_ptyp 0 A1 ->
-  degree_ptyp_wrt_ptyp 1 (close_ptyp_wrt_ptyp Xpt1 A1).
+  degree_ptyp_wrt_ptyp 1 (close_ptyp_wrt_ptyp α1 A1).
 Proof.
 unfold close_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -2368,9 +2368,9 @@ Qed.
 #[export] Hint Resolve degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp : lngen.
 
 Lemma degree_btyp_wrt_btyp_close_btyp_wrt_btyp :
-forall B1 Xbt1,
+forall B1 α1,
   degree_btyp_wrt_btyp 0 B1 ->
-  degree_btyp_wrt_btyp 1 (close_btyp_wrt_btyp Xbt1 B1).
+  degree_btyp_wrt_btyp 1 (close_btyp_wrt_btyp α1 B1).
 Proof.
 unfold close_btyp_wrt_btyp; default_simp.
 Qed.
@@ -2378,9 +2378,9 @@ Qed.
 #[export] Hint Resolve degree_btyp_wrt_btyp_close_btyp_wrt_btyp : lngen.
 
 Lemma degree_utyp_wrt_utyp_close_utyp_wrt_utyp :
-forall C1 Xut1,
+forall C1 α1,
   degree_utyp_wrt_utyp 0 C1 ->
-  degree_utyp_wrt_utyp 1 (close_utyp_wrt_utyp Xut1 C1).
+  degree_utyp_wrt_utyp 1 (close_utyp_wrt_utyp α1 C1).
 Proof.
 unfold close_utyp_wrt_utyp; default_simp.
 Qed.
@@ -2388,9 +2388,9 @@ Qed.
 #[export] Hint Resolve degree_utyp_wrt_utyp_close_utyp_wrt_utyp : lngen.
 
 Lemma degree_pskl_wrt_pskl_close_pskl_wrt_pskl :
-forall P1 Xps1,
+forall P1 α1,
   degree_pskl_wrt_pskl 0 P1 ->
-  degree_pskl_wrt_pskl 1 (close_pskl_wrt_pskl Xps1 P1).
+  degree_pskl_wrt_pskl 1 (close_pskl_wrt_pskl α1 P1).
 Proof.
 unfold close_pskl_wrt_pskl; default_simp.
 Qed.
@@ -2398,9 +2398,9 @@ Qed.
 #[export] Hint Resolve degree_pskl_wrt_pskl_close_pskl_wrt_pskl : lngen.
 
 Lemma degree_bskl_wrt_bskl_close_bskl_wrt_bskl :
-forall Q1 Xbs1,
+forall Q1 α1,
   degree_bskl_wrt_bskl 0 Q1 ->
-  degree_bskl_wrt_bskl 1 (close_bskl_wrt_bskl Xbs1 Q1).
+  degree_bskl_wrt_bskl 1 (close_bskl_wrt_bskl α1 Q1).
 Proof.
 unfold close_bskl_wrt_bskl; default_simp.
 Qed.
@@ -2408,9 +2408,9 @@ Qed.
 #[export] Hint Resolve degree_bskl_wrt_bskl_close_bskl_wrt_bskl : lngen.
 
 Lemma degree_uskl_wrt_uskl_close_uskl_wrt_uskl :
-forall R1 Xus1,
+forall R1 α1,
   degree_uskl_wrt_uskl 0 R1 ->
-  degree_uskl_wrt_uskl 1 (close_uskl_wrt_uskl Xus1 R1).
+  degree_uskl_wrt_uskl 1 (close_uskl_wrt_uskl α1 R1).
 Proof.
 unfold close_uskl_wrt_uskl; default_simp.
 Qed.
@@ -2418,9 +2418,9 @@ Qed.
 #[export] Hint Resolve degree_uskl_wrt_uskl_close_uskl_wrt_uskl : lngen.
 
 Lemma degree_exp_wrt_ptyp_close_exp_wrt_ptyp :
-forall e1 Xpt1,
+forall e1 α1,
   degree_exp_wrt_ptyp 0 e1 ->
-  degree_exp_wrt_ptyp 1 (close_exp_wrt_ptyp Xpt1 e1).
+  degree_exp_wrt_ptyp 1 (close_exp_wrt_ptyp α1 e1).
 Proof.
 unfold close_exp_wrt_ptyp; default_simp.
 Qed.
@@ -2438,9 +2438,9 @@ Qed.
 #[export] Hint Resolve degree_exp_wrt_ptyp_close_exp_wrt_exp : lngen.
 
 Lemma degree_exp_wrt_exp_close_exp_wrt_ptyp :
-forall e1 Xpt1 n1,
+forall e1 α1 n1,
   degree_exp_wrt_exp n1 e1 ->
-  degree_exp_wrt_exp n1 (close_exp_wrt_ptyp Xpt1 e1).
+  degree_exp_wrt_exp n1 (close_exp_wrt_ptyp α1 e1).
 Proof.
 unfold close_exp_wrt_ptyp; default_simp.
 Qed.
@@ -2460,8 +2460,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp_rec_inv_mutual :
-(forall A1 Xpt1 n1,
-  degree_ptyp_wrt_ptyp (S n1) (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) ->
+(forall A1 α1 n1,
+  degree_ptyp_wrt_ptyp (S n1) (close_ptyp_wrt_ptyp_rec n1 α1 A1) ->
   degree_ptyp_wrt_ptyp n1 A1).
 Proof.
 apply_mutual_ind ptyp_mutind;
@@ -2473,8 +2473,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp_rec_inv :
-forall A1 Xpt1 n1,
-  degree_ptyp_wrt_ptyp (S n1) (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) ->
+forall A1 α1 n1,
+  degree_ptyp_wrt_ptyp (S n1) (close_ptyp_wrt_ptyp_rec n1 α1 A1) ->
   degree_ptyp_wrt_ptyp n1 A1.
 Proof.
 pose proof degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp_rec_inv_mutual as H; intuition eauto.
@@ -2487,8 +2487,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_btyp_wrt_btyp_close_btyp_wrt_btyp_rec_inv_mutual :
-(forall B1 Xbt1 n1,
-  degree_btyp_wrt_btyp (S n1) (close_btyp_wrt_btyp_rec n1 Xbt1 B1) ->
+(forall B1 α1 n1,
+  degree_btyp_wrt_btyp (S n1) (close_btyp_wrt_btyp_rec n1 α1 B1) ->
   degree_btyp_wrt_btyp n1 B1).
 Proof.
 apply_mutual_ind btyp_mutind;
@@ -2500,8 +2500,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_btyp_wrt_btyp_close_btyp_wrt_btyp_rec_inv :
-forall B1 Xbt1 n1,
-  degree_btyp_wrt_btyp (S n1) (close_btyp_wrt_btyp_rec n1 Xbt1 B1) ->
+forall B1 α1 n1,
+  degree_btyp_wrt_btyp (S n1) (close_btyp_wrt_btyp_rec n1 α1 B1) ->
   degree_btyp_wrt_btyp n1 B1.
 Proof.
 pose proof degree_btyp_wrt_btyp_close_btyp_wrt_btyp_rec_inv_mutual as H; intuition eauto.
@@ -2514,8 +2514,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_utyp_wrt_utyp_close_utyp_wrt_utyp_rec_inv_mutual :
-(forall C1 Xut1 n1,
-  degree_utyp_wrt_utyp (S n1) (close_utyp_wrt_utyp_rec n1 Xut1 C1) ->
+(forall C1 α1 n1,
+  degree_utyp_wrt_utyp (S n1) (close_utyp_wrt_utyp_rec n1 α1 C1) ->
   degree_utyp_wrt_utyp n1 C1).
 Proof.
 apply_mutual_ind utyp_mutind;
@@ -2527,8 +2527,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_utyp_wrt_utyp_close_utyp_wrt_utyp_rec_inv :
-forall C1 Xut1 n1,
-  degree_utyp_wrt_utyp (S n1) (close_utyp_wrt_utyp_rec n1 Xut1 C1) ->
+forall C1 α1 n1,
+  degree_utyp_wrt_utyp (S n1) (close_utyp_wrt_utyp_rec n1 α1 C1) ->
   degree_utyp_wrt_utyp n1 C1.
 Proof.
 pose proof degree_utyp_wrt_utyp_close_utyp_wrt_utyp_rec_inv_mutual as H; intuition eauto.
@@ -2541,8 +2541,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_pskl_wrt_pskl_close_pskl_wrt_pskl_rec_inv_mutual :
-(forall P1 Xps1 n1,
-  degree_pskl_wrt_pskl (S n1) (close_pskl_wrt_pskl_rec n1 Xps1 P1) ->
+(forall P1 α1 n1,
+  degree_pskl_wrt_pskl (S n1) (close_pskl_wrt_pskl_rec n1 α1 P1) ->
   degree_pskl_wrt_pskl n1 P1).
 Proof.
 apply_mutual_ind pskl_mutind;
@@ -2554,8 +2554,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_pskl_wrt_pskl_close_pskl_wrt_pskl_rec_inv :
-forall P1 Xps1 n1,
-  degree_pskl_wrt_pskl (S n1) (close_pskl_wrt_pskl_rec n1 Xps1 P1) ->
+forall P1 α1 n1,
+  degree_pskl_wrt_pskl (S n1) (close_pskl_wrt_pskl_rec n1 α1 P1) ->
   degree_pskl_wrt_pskl n1 P1.
 Proof.
 pose proof degree_pskl_wrt_pskl_close_pskl_wrt_pskl_rec_inv_mutual as H; intuition eauto.
@@ -2568,8 +2568,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_bskl_wrt_bskl_close_bskl_wrt_bskl_rec_inv_mutual :
-(forall Q1 Xbs1 n1,
-  degree_bskl_wrt_bskl (S n1) (close_bskl_wrt_bskl_rec n1 Xbs1 Q1) ->
+(forall Q1 α1 n1,
+  degree_bskl_wrt_bskl (S n1) (close_bskl_wrt_bskl_rec n1 α1 Q1) ->
   degree_bskl_wrt_bskl n1 Q1).
 Proof.
 apply_mutual_ind bskl_mutind;
@@ -2581,8 +2581,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_bskl_wrt_bskl_close_bskl_wrt_bskl_rec_inv :
-forall Q1 Xbs1 n1,
-  degree_bskl_wrt_bskl (S n1) (close_bskl_wrt_bskl_rec n1 Xbs1 Q1) ->
+forall Q1 α1 n1,
+  degree_bskl_wrt_bskl (S n1) (close_bskl_wrt_bskl_rec n1 α1 Q1) ->
   degree_bskl_wrt_bskl n1 Q1.
 Proof.
 pose proof degree_bskl_wrt_bskl_close_bskl_wrt_bskl_rec_inv_mutual as H; intuition eauto.
@@ -2595,8 +2595,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_uskl_wrt_uskl_close_uskl_wrt_uskl_rec_inv_mutual :
-(forall R1 Xus1 n1,
-  degree_uskl_wrt_uskl (S n1) (close_uskl_wrt_uskl_rec n1 Xus1 R1) ->
+(forall R1 α1 n1,
+  degree_uskl_wrt_uskl (S n1) (close_uskl_wrt_uskl_rec n1 α1 R1) ->
   degree_uskl_wrt_uskl n1 R1).
 Proof.
 apply_mutual_ind uskl_mutind;
@@ -2608,8 +2608,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_uskl_wrt_uskl_close_uskl_wrt_uskl_rec_inv :
-forall R1 Xus1 n1,
-  degree_uskl_wrt_uskl (S n1) (close_uskl_wrt_uskl_rec n1 Xus1 R1) ->
+forall R1 α1 n1,
+  degree_uskl_wrt_uskl (S n1) (close_uskl_wrt_uskl_rec n1 α1 R1) ->
   degree_uskl_wrt_uskl n1 R1.
 Proof.
 pose proof degree_uskl_wrt_uskl_close_uskl_wrt_uskl_rec_inv_mutual as H; intuition eauto.
@@ -2622,8 +2622,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_exp_wrt_ptyp_close_exp_wrt_ptyp_rec_inv_mutual :
-(forall e1 Xpt1 n1,
-  degree_exp_wrt_ptyp (S n1) (close_exp_wrt_ptyp_rec n1 Xpt1 e1) ->
+(forall e1 α1 n1,
+  degree_exp_wrt_ptyp (S n1) (close_exp_wrt_ptyp_rec n1 α1 e1) ->
   degree_exp_wrt_ptyp n1 e1).
 Proof.
 apply_mutual_ind exp_mutind;
@@ -2635,8 +2635,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_exp_wrt_ptyp_close_exp_wrt_ptyp_rec_inv :
-forall e1 Xpt1 n1,
-  degree_exp_wrt_ptyp (S n1) (close_exp_wrt_ptyp_rec n1 Xpt1 e1) ->
+forall e1 α1 n1,
+  degree_exp_wrt_ptyp (S n1) (close_exp_wrt_ptyp_rec n1 α1 e1) ->
   degree_exp_wrt_ptyp n1 e1.
 Proof.
 pose proof degree_exp_wrt_ptyp_close_exp_wrt_ptyp_rec_inv_mutual as H; intuition eauto.
@@ -2676,8 +2676,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_exp_wrt_exp_close_exp_wrt_ptyp_rec_inv_mutual :
-(forall e1 Xpt1 n1 n2,
-  degree_exp_wrt_exp n2 (close_exp_wrt_ptyp_rec n1 Xpt1 e1) ->
+(forall e1 α1 n1 n2,
+  degree_exp_wrt_exp n2 (close_exp_wrt_ptyp_rec n1 α1 e1) ->
   degree_exp_wrt_exp n2 e1).
 Proof.
 apply_mutual_ind exp_mutind;
@@ -2689,8 +2689,8 @@ Qed.
 (* begin hide *)
 
 Lemma degree_exp_wrt_exp_close_exp_wrt_ptyp_rec_inv :
-forall e1 Xpt1 n1 n2,
-  degree_exp_wrt_exp n2 (close_exp_wrt_ptyp_rec n1 Xpt1 e1) ->
+forall e1 α1 n1 n2,
+  degree_exp_wrt_exp n2 (close_exp_wrt_ptyp_rec n1 α1 e1) ->
   degree_exp_wrt_exp n2 e1.
 Proof.
 pose proof degree_exp_wrt_exp_close_exp_wrt_ptyp_rec_inv_mutual as H; intuition eauto.
@@ -2728,8 +2728,8 @@ Qed.
 (* end hide *)
 
 Lemma degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp_inv :
-forall A1 Xpt1,
-  degree_ptyp_wrt_ptyp 1 (close_ptyp_wrt_ptyp Xpt1 A1) ->
+forall A1 α1,
+  degree_ptyp_wrt_ptyp 1 (close_ptyp_wrt_ptyp α1 A1) ->
   degree_ptyp_wrt_ptyp 0 A1.
 Proof.
 unfold close_ptyp_wrt_ptyp; eauto with lngen.
@@ -2738,8 +2738,8 @@ Qed.
 #[export] Hint Immediate degree_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp_inv : lngen.
 
 Lemma degree_btyp_wrt_btyp_close_btyp_wrt_btyp_inv :
-forall B1 Xbt1,
-  degree_btyp_wrt_btyp 1 (close_btyp_wrt_btyp Xbt1 B1) ->
+forall B1 α1,
+  degree_btyp_wrt_btyp 1 (close_btyp_wrt_btyp α1 B1) ->
   degree_btyp_wrt_btyp 0 B1.
 Proof.
 unfold close_btyp_wrt_btyp; eauto with lngen.
@@ -2748,8 +2748,8 @@ Qed.
 #[export] Hint Immediate degree_btyp_wrt_btyp_close_btyp_wrt_btyp_inv : lngen.
 
 Lemma degree_utyp_wrt_utyp_close_utyp_wrt_utyp_inv :
-forall C1 Xut1,
-  degree_utyp_wrt_utyp 1 (close_utyp_wrt_utyp Xut1 C1) ->
+forall C1 α1,
+  degree_utyp_wrt_utyp 1 (close_utyp_wrt_utyp α1 C1) ->
   degree_utyp_wrt_utyp 0 C1.
 Proof.
 unfold close_utyp_wrt_utyp; eauto with lngen.
@@ -2758,8 +2758,8 @@ Qed.
 #[export] Hint Immediate degree_utyp_wrt_utyp_close_utyp_wrt_utyp_inv : lngen.
 
 Lemma degree_pskl_wrt_pskl_close_pskl_wrt_pskl_inv :
-forall P1 Xps1,
-  degree_pskl_wrt_pskl 1 (close_pskl_wrt_pskl Xps1 P1) ->
+forall P1 α1,
+  degree_pskl_wrt_pskl 1 (close_pskl_wrt_pskl α1 P1) ->
   degree_pskl_wrt_pskl 0 P1.
 Proof.
 unfold close_pskl_wrt_pskl; eauto with lngen.
@@ -2768,8 +2768,8 @@ Qed.
 #[export] Hint Immediate degree_pskl_wrt_pskl_close_pskl_wrt_pskl_inv : lngen.
 
 Lemma degree_bskl_wrt_bskl_close_bskl_wrt_bskl_inv :
-forall Q1 Xbs1,
-  degree_bskl_wrt_bskl 1 (close_bskl_wrt_bskl Xbs1 Q1) ->
+forall Q1 α1,
+  degree_bskl_wrt_bskl 1 (close_bskl_wrt_bskl α1 Q1) ->
   degree_bskl_wrt_bskl 0 Q1.
 Proof.
 unfold close_bskl_wrt_bskl; eauto with lngen.
@@ -2778,8 +2778,8 @@ Qed.
 #[export] Hint Immediate degree_bskl_wrt_bskl_close_bskl_wrt_bskl_inv : lngen.
 
 Lemma degree_uskl_wrt_uskl_close_uskl_wrt_uskl_inv :
-forall R1 Xus1,
-  degree_uskl_wrt_uskl 1 (close_uskl_wrt_uskl Xus1 R1) ->
+forall R1 α1,
+  degree_uskl_wrt_uskl 1 (close_uskl_wrt_uskl α1 R1) ->
   degree_uskl_wrt_uskl 0 R1.
 Proof.
 unfold close_uskl_wrt_uskl; eauto with lngen.
@@ -2788,8 +2788,8 @@ Qed.
 #[export] Hint Immediate degree_uskl_wrt_uskl_close_uskl_wrt_uskl_inv : lngen.
 
 Lemma degree_exp_wrt_ptyp_close_exp_wrt_ptyp_inv :
-forall e1 Xpt1,
-  degree_exp_wrt_ptyp 1 (close_exp_wrt_ptyp Xpt1 e1) ->
+forall e1 α1,
+  degree_exp_wrt_ptyp 1 (close_exp_wrt_ptyp α1 e1) ->
   degree_exp_wrt_ptyp 0 e1.
 Proof.
 unfold close_exp_wrt_ptyp; eauto with lngen.
@@ -2808,8 +2808,8 @@ Qed.
 #[export] Hint Immediate degree_exp_wrt_ptyp_close_exp_wrt_exp_inv : lngen.
 
 Lemma degree_exp_wrt_exp_close_exp_wrt_ptyp_inv :
-forall e1 Xpt1 n1,
-  degree_exp_wrt_exp n1 (close_exp_wrt_ptyp Xpt1 e1) ->
+forall e1 α1 n1,
+  degree_exp_wrt_exp n1 (close_exp_wrt_ptyp α1 e1) ->
   degree_exp_wrt_exp n1 e1.
 Proof.
 unfold close_exp_wrt_ptyp; eauto with lngen.
@@ -3604,8 +3604,8 @@ Ltac default_autorewrite ::= fail.
 (* begin hide *)
 
 Lemma close_ptyp_wrt_ptyp_rec_inj_mutual :
-(forall A1 A2 Xpt1 n1,
-  close_ptyp_wrt_ptyp_rec n1 Xpt1 A1 = close_ptyp_wrt_ptyp_rec n1 Xpt1 A2 ->
+(forall A1 A2 α1 n1,
+  close_ptyp_wrt_ptyp_rec n1 α1 A1 = close_ptyp_wrt_ptyp_rec n1 α1 A2 ->
   A1 = A2).
 Proof.
 apply_mutual_ind ptyp_mutind;
@@ -3620,8 +3620,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_ptyp_wrt_ptyp_rec_inj :
-forall A1 A2 Xpt1 n1,
-  close_ptyp_wrt_ptyp_rec n1 Xpt1 A1 = close_ptyp_wrt_ptyp_rec n1 Xpt1 A2 ->
+forall A1 A2 α1 n1,
+  close_ptyp_wrt_ptyp_rec n1 α1 A1 = close_ptyp_wrt_ptyp_rec n1 α1 A2 ->
   A1 = A2.
 Proof.
 pose proof close_ptyp_wrt_ptyp_rec_inj_mutual as H; intuition eauto.
@@ -3634,8 +3634,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_btyp_wrt_btyp_rec_inj_mutual :
-(forall B1 B2 Xbt1 n1,
-  close_btyp_wrt_btyp_rec n1 Xbt1 B1 = close_btyp_wrt_btyp_rec n1 Xbt1 B2 ->
+(forall B1 B2 α1 n1,
+  close_btyp_wrt_btyp_rec n1 α1 B1 = close_btyp_wrt_btyp_rec n1 α1 B2 ->
   B1 = B2).
 Proof.
 apply_mutual_ind btyp_mutind;
@@ -3650,8 +3650,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_btyp_wrt_btyp_rec_inj :
-forall B1 B2 Xbt1 n1,
-  close_btyp_wrt_btyp_rec n1 Xbt1 B1 = close_btyp_wrt_btyp_rec n1 Xbt1 B2 ->
+forall B1 B2 α1 n1,
+  close_btyp_wrt_btyp_rec n1 α1 B1 = close_btyp_wrt_btyp_rec n1 α1 B2 ->
   B1 = B2.
 Proof.
 pose proof close_btyp_wrt_btyp_rec_inj_mutual as H; intuition eauto.
@@ -3664,8 +3664,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_utyp_wrt_utyp_rec_inj_mutual :
-(forall C1 C2 Xut1 n1,
-  close_utyp_wrt_utyp_rec n1 Xut1 C1 = close_utyp_wrt_utyp_rec n1 Xut1 C2 ->
+(forall C1 C2 α1 n1,
+  close_utyp_wrt_utyp_rec n1 α1 C1 = close_utyp_wrt_utyp_rec n1 α1 C2 ->
   C1 = C2).
 Proof.
 apply_mutual_ind utyp_mutind;
@@ -3680,8 +3680,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_utyp_wrt_utyp_rec_inj :
-forall C1 C2 Xut1 n1,
-  close_utyp_wrt_utyp_rec n1 Xut1 C1 = close_utyp_wrt_utyp_rec n1 Xut1 C2 ->
+forall C1 C2 α1 n1,
+  close_utyp_wrt_utyp_rec n1 α1 C1 = close_utyp_wrt_utyp_rec n1 α1 C2 ->
   C1 = C2.
 Proof.
 pose proof close_utyp_wrt_utyp_rec_inj_mutual as H; intuition eauto.
@@ -3694,8 +3694,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_pskl_wrt_pskl_rec_inj_mutual :
-(forall P1 P2 Xps1 n1,
-  close_pskl_wrt_pskl_rec n1 Xps1 P1 = close_pskl_wrt_pskl_rec n1 Xps1 P2 ->
+(forall P1 P2 α1 n1,
+  close_pskl_wrt_pskl_rec n1 α1 P1 = close_pskl_wrt_pskl_rec n1 α1 P2 ->
   P1 = P2).
 Proof.
 apply_mutual_ind pskl_mutind;
@@ -3710,8 +3710,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_pskl_wrt_pskl_rec_inj :
-forall P1 P2 Xps1 n1,
-  close_pskl_wrt_pskl_rec n1 Xps1 P1 = close_pskl_wrt_pskl_rec n1 Xps1 P2 ->
+forall P1 P2 α1 n1,
+  close_pskl_wrt_pskl_rec n1 α1 P1 = close_pskl_wrt_pskl_rec n1 α1 P2 ->
   P1 = P2.
 Proof.
 pose proof close_pskl_wrt_pskl_rec_inj_mutual as H; intuition eauto.
@@ -3724,8 +3724,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_bskl_wrt_bskl_rec_inj_mutual :
-(forall Q1 Q2 Xbs1 n1,
-  close_bskl_wrt_bskl_rec n1 Xbs1 Q1 = close_bskl_wrt_bskl_rec n1 Xbs1 Q2 ->
+(forall Q1 Q2 α1 n1,
+  close_bskl_wrt_bskl_rec n1 α1 Q1 = close_bskl_wrt_bskl_rec n1 α1 Q2 ->
   Q1 = Q2).
 Proof.
 apply_mutual_ind bskl_mutind;
@@ -3740,8 +3740,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_bskl_wrt_bskl_rec_inj :
-forall Q1 Q2 Xbs1 n1,
-  close_bskl_wrt_bskl_rec n1 Xbs1 Q1 = close_bskl_wrt_bskl_rec n1 Xbs1 Q2 ->
+forall Q1 Q2 α1 n1,
+  close_bskl_wrt_bskl_rec n1 α1 Q1 = close_bskl_wrt_bskl_rec n1 α1 Q2 ->
   Q1 = Q2.
 Proof.
 pose proof close_bskl_wrt_bskl_rec_inj_mutual as H; intuition eauto.
@@ -3754,8 +3754,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_uskl_wrt_uskl_rec_inj_mutual :
-(forall R1 R2 Xus1 n1,
-  close_uskl_wrt_uskl_rec n1 Xus1 R1 = close_uskl_wrt_uskl_rec n1 Xus1 R2 ->
+(forall R1 R2 α1 n1,
+  close_uskl_wrt_uskl_rec n1 α1 R1 = close_uskl_wrt_uskl_rec n1 α1 R2 ->
   R1 = R2).
 Proof.
 apply_mutual_ind uskl_mutind;
@@ -3770,8 +3770,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_uskl_wrt_uskl_rec_inj :
-forall R1 R2 Xus1 n1,
-  close_uskl_wrt_uskl_rec n1 Xus1 R1 = close_uskl_wrt_uskl_rec n1 Xus1 R2 ->
+forall R1 R2 α1 n1,
+  close_uskl_wrt_uskl_rec n1 α1 R1 = close_uskl_wrt_uskl_rec n1 α1 R2 ->
   R1 = R2.
 Proof.
 pose proof close_uskl_wrt_uskl_rec_inj_mutual as H; intuition eauto.
@@ -3784,8 +3784,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_exp_wrt_ptyp_rec_inj_mutual :
-(forall e1 e2 Xpt1 n1,
-  close_exp_wrt_ptyp_rec n1 Xpt1 e1 = close_exp_wrt_ptyp_rec n1 Xpt1 e2 ->
+(forall e1 e2 α1 n1,
+  close_exp_wrt_ptyp_rec n1 α1 e1 = close_exp_wrt_ptyp_rec n1 α1 e2 ->
   e1 = e2).
 Proof.
 apply_mutual_ind exp_mutind;
@@ -3800,8 +3800,8 @@ Qed.
 (* begin hide *)
 
 Lemma close_exp_wrt_ptyp_rec_inj :
-forall e1 e2 Xpt1 n1,
-  close_exp_wrt_ptyp_rec n1 Xpt1 e1 = close_exp_wrt_ptyp_rec n1 Xpt1 e2 ->
+forall e1 e2 α1 n1,
+  close_exp_wrt_ptyp_rec n1 α1 e1 = close_exp_wrt_ptyp_rec n1 α1 e2 ->
   e1 = e2.
 Proof.
 pose proof close_exp_wrt_ptyp_rec_inj_mutual as H; intuition eauto.
@@ -3842,8 +3842,8 @@ Qed.
 (* end hide *)
 
 Lemma close_ptyp_wrt_ptyp_inj :
-forall A1 A2 Xpt1,
-  close_ptyp_wrt_ptyp Xpt1 A1 = close_ptyp_wrt_ptyp Xpt1 A2 ->
+forall A1 A2 α1,
+  close_ptyp_wrt_ptyp α1 A1 = close_ptyp_wrt_ptyp α1 A2 ->
   A1 = A2.
 Proof.
 unfold close_ptyp_wrt_ptyp; eauto with lngen.
@@ -3852,8 +3852,8 @@ Qed.
 #[export] Hint Immediate close_ptyp_wrt_ptyp_inj : lngen.
 
 Lemma close_btyp_wrt_btyp_inj :
-forall B1 B2 Xbt1,
-  close_btyp_wrt_btyp Xbt1 B1 = close_btyp_wrt_btyp Xbt1 B2 ->
+forall B1 B2 α1,
+  close_btyp_wrt_btyp α1 B1 = close_btyp_wrt_btyp α1 B2 ->
   B1 = B2.
 Proof.
 unfold close_btyp_wrt_btyp; eauto with lngen.
@@ -3862,8 +3862,8 @@ Qed.
 #[export] Hint Immediate close_btyp_wrt_btyp_inj : lngen.
 
 Lemma close_utyp_wrt_utyp_inj :
-forall C1 C2 Xut1,
-  close_utyp_wrt_utyp Xut1 C1 = close_utyp_wrt_utyp Xut1 C2 ->
+forall C1 C2 α1,
+  close_utyp_wrt_utyp α1 C1 = close_utyp_wrt_utyp α1 C2 ->
   C1 = C2.
 Proof.
 unfold close_utyp_wrt_utyp; eauto with lngen.
@@ -3872,8 +3872,8 @@ Qed.
 #[export] Hint Immediate close_utyp_wrt_utyp_inj : lngen.
 
 Lemma close_pskl_wrt_pskl_inj :
-forall P1 P2 Xps1,
-  close_pskl_wrt_pskl Xps1 P1 = close_pskl_wrt_pskl Xps1 P2 ->
+forall P1 P2 α1,
+  close_pskl_wrt_pskl α1 P1 = close_pskl_wrt_pskl α1 P2 ->
   P1 = P2.
 Proof.
 unfold close_pskl_wrt_pskl; eauto with lngen.
@@ -3882,8 +3882,8 @@ Qed.
 #[export] Hint Immediate close_pskl_wrt_pskl_inj : lngen.
 
 Lemma close_bskl_wrt_bskl_inj :
-forall Q1 Q2 Xbs1,
-  close_bskl_wrt_bskl Xbs1 Q1 = close_bskl_wrt_bskl Xbs1 Q2 ->
+forall Q1 Q2 α1,
+  close_bskl_wrt_bskl α1 Q1 = close_bskl_wrt_bskl α1 Q2 ->
   Q1 = Q2.
 Proof.
 unfold close_bskl_wrt_bskl; eauto with lngen.
@@ -3892,8 +3892,8 @@ Qed.
 #[export] Hint Immediate close_bskl_wrt_bskl_inj : lngen.
 
 Lemma close_uskl_wrt_uskl_inj :
-forall R1 R2 Xus1,
-  close_uskl_wrt_uskl Xus1 R1 = close_uskl_wrt_uskl Xus1 R2 ->
+forall R1 R2 α1,
+  close_uskl_wrt_uskl α1 R1 = close_uskl_wrt_uskl α1 R2 ->
   R1 = R2.
 Proof.
 unfold close_uskl_wrt_uskl; eauto with lngen.
@@ -3902,8 +3902,8 @@ Qed.
 #[export] Hint Immediate close_uskl_wrt_uskl_inj : lngen.
 
 Lemma close_exp_wrt_ptyp_inj :
-forall e1 e2 Xpt1,
-  close_exp_wrt_ptyp Xpt1 e1 = close_exp_wrt_ptyp Xpt1 e2 ->
+forall e1 e2 α1,
+  close_exp_wrt_ptyp α1 e1 = close_exp_wrt_ptyp α1 e2 ->
   e1 = e2.
 Proof.
 unfold close_exp_wrt_ptyp; eauto with lngen.
@@ -3924,9 +3924,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_ptyp_wrt_ptyp_rec_open_ptyp_wrt_ptyp_rec_mutual :
-(forall A1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  close_ptyp_wrt_ptyp_rec n1 Xpt1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A1) = A1).
+(forall A1 α1 n1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  close_ptyp_wrt_ptyp_rec n1 α1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A1) = A1).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -3937,9 +3937,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_ptyp_wrt_ptyp_rec_open_ptyp_wrt_ptyp_rec :
-forall A1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  close_ptyp_wrt_ptyp_rec n1 Xpt1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A1) = A1.
+forall A1 α1 n1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  close_ptyp_wrt_ptyp_rec n1 α1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A1) = A1.
 Proof.
 pose proof close_ptyp_wrt_ptyp_rec_open_ptyp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -3952,9 +3952,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_btyp_wrt_btyp_rec_open_btyp_wrt_btyp_rec_mutual :
-(forall B1 Xbt1 n1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  close_btyp_wrt_btyp_rec n1 Xbt1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B1) = B1).
+(forall B1 α1 n1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  close_btyp_wrt_btyp_rec n1 α1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B1) = B1).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -3965,9 +3965,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_btyp_wrt_btyp_rec_open_btyp_wrt_btyp_rec :
-forall B1 Xbt1 n1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  close_btyp_wrt_btyp_rec n1 Xbt1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B1) = B1.
+forall B1 α1 n1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  close_btyp_wrt_btyp_rec n1 α1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B1) = B1.
 Proof.
 pose proof close_btyp_wrt_btyp_rec_open_btyp_wrt_btyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -3980,9 +3980,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_utyp_wrt_utyp_rec_open_utyp_wrt_utyp_rec_mutual :
-(forall C1 Xut1 n1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  close_utyp_wrt_utyp_rec n1 Xut1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C1) = C1).
+(forall C1 α1 n1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  close_utyp_wrt_utyp_rec n1 α1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C1) = C1).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -3993,9 +3993,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_utyp_wrt_utyp_rec_open_utyp_wrt_utyp_rec :
-forall C1 Xut1 n1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  close_utyp_wrt_utyp_rec n1 Xut1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C1) = C1.
+forall C1 α1 n1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  close_utyp_wrt_utyp_rec n1 α1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C1) = C1.
 Proof.
 pose proof close_utyp_wrt_utyp_rec_open_utyp_wrt_utyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -4008,9 +4008,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_pskl_wrt_pskl_rec_open_pskl_wrt_pskl_rec_mutual :
-(forall P1 Xps1 n1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  close_pskl_wrt_pskl_rec n1 Xps1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P1) = P1).
+(forall P1 α1 n1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  close_pskl_wrt_pskl_rec n1 α1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P1) = P1).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -4021,9 +4021,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_pskl_wrt_pskl_rec_open_pskl_wrt_pskl_rec :
-forall P1 Xps1 n1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  close_pskl_wrt_pskl_rec n1 Xps1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P1) = P1.
+forall P1 α1 n1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  close_pskl_wrt_pskl_rec n1 α1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P1) = P1.
 Proof.
 pose proof close_pskl_wrt_pskl_rec_open_pskl_wrt_pskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -4036,9 +4036,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_bskl_wrt_bskl_rec_open_bskl_wrt_bskl_rec_mutual :
-(forall Q1 Xbs1 n1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  close_bskl_wrt_bskl_rec n1 Xbs1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q1) = Q1).
+(forall Q1 α1 n1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  close_bskl_wrt_bskl_rec n1 α1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q1) = Q1).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -4049,9 +4049,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_bskl_wrt_bskl_rec_open_bskl_wrt_bskl_rec :
-forall Q1 Xbs1 n1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  close_bskl_wrt_bskl_rec n1 Xbs1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q1) = Q1.
+forall Q1 α1 n1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  close_bskl_wrt_bskl_rec n1 α1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q1) = Q1.
 Proof.
 pose proof close_bskl_wrt_bskl_rec_open_bskl_wrt_bskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -4064,9 +4064,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec_mutual :
-(forall R1 Xus1 n1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  close_uskl_wrt_uskl_rec n1 Xus1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R1) = R1).
+(forall R1 α1 n1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  close_uskl_wrt_uskl_rec n1 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1) = R1).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -4077,9 +4077,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec :
-forall R1 Xus1 n1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  close_uskl_wrt_uskl_rec n1 Xus1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R1) = R1.
+forall R1 α1 n1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  close_uskl_wrt_uskl_rec n1 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1) = R1.
 Proof.
 pose proof close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -4092,9 +4092,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec_mutual :
-(forall e1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  close_exp_wrt_ptyp_rec n1 Xpt1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e1) = e1).
+(forall e1 α1 n1,
+  α1 `notin` ftvar_in_exp e1 ->
+  close_exp_wrt_ptyp_rec n1 α1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e1) = e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -4105,9 +4105,9 @@ Qed.
 (* begin hide *)
 
 Lemma close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec :
-forall e1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  close_exp_wrt_ptyp_rec n1 Xpt1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e1) = e1.
+forall e1 α1 n1,
+  α1 `notin` ftvar_in_exp e1 ->
+  close_exp_wrt_ptyp_rec n1 α1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e1) = e1.
 Proof.
 pose proof close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -4146,9 +4146,9 @@ Qed.
 (* end hide *)
 
 Lemma close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp :
-forall A1 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  close_ptyp_wrt_ptyp Xpt1 (open_ptyp_wrt_ptyp A1 (ptyp_var_f Xpt1)) = A1.
+forall A1 α1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  close_ptyp_wrt_ptyp α1 (open_ptyp_wrt_ptyp A1 (ptyp_var_f α1)) = A1.
 Proof.
 unfold close_ptyp_wrt_ptyp; unfold open_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -4157,9 +4157,9 @@ Qed.
 #[export] Hint Rewrite close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp using solve [auto] : lngen.
 
 Lemma close_btyp_wrt_btyp_open_btyp_wrt_btyp :
-forall B1 Xbt1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  close_btyp_wrt_btyp Xbt1 (open_btyp_wrt_btyp B1 (btyp_var_f Xbt1)) = B1.
+forall B1 α1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  close_btyp_wrt_btyp α1 (open_btyp_wrt_btyp B1 (btyp_var_f α1)) = B1.
 Proof.
 unfold close_btyp_wrt_btyp; unfold open_btyp_wrt_btyp; default_simp.
 Qed.
@@ -4168,9 +4168,9 @@ Qed.
 #[export] Hint Rewrite close_btyp_wrt_btyp_open_btyp_wrt_btyp using solve [auto] : lngen.
 
 Lemma close_utyp_wrt_utyp_open_utyp_wrt_utyp :
-forall C1 Xut1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  close_utyp_wrt_utyp Xut1 (open_utyp_wrt_utyp C1 (utyp_var_f Xut1)) = C1.
+forall C1 α1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  close_utyp_wrt_utyp α1 (open_utyp_wrt_utyp C1 (utyp_var_f α1)) = C1.
 Proof.
 unfold close_utyp_wrt_utyp; unfold open_utyp_wrt_utyp; default_simp.
 Qed.
@@ -4179,9 +4179,9 @@ Qed.
 #[export] Hint Rewrite close_utyp_wrt_utyp_open_utyp_wrt_utyp using solve [auto] : lngen.
 
 Lemma close_pskl_wrt_pskl_open_pskl_wrt_pskl :
-forall P1 Xps1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  close_pskl_wrt_pskl Xps1 (open_pskl_wrt_pskl P1 (pskl_var_f Xps1)) = P1.
+forall P1 α1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  close_pskl_wrt_pskl α1 (open_pskl_wrt_pskl P1 (pskl_var_f α1)) = P1.
 Proof.
 unfold close_pskl_wrt_pskl; unfold open_pskl_wrt_pskl; default_simp.
 Qed.
@@ -4190,9 +4190,9 @@ Qed.
 #[export] Hint Rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl using solve [auto] : lngen.
 
 Lemma close_bskl_wrt_bskl_open_bskl_wrt_bskl :
-forall Q1 Xbs1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  close_bskl_wrt_bskl Xbs1 (open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1)) = Q1.
+forall Q1 α1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  close_bskl_wrt_bskl α1 (open_bskl_wrt_bskl Q1 (bskl_var_f α1)) = Q1.
 Proof.
 unfold close_bskl_wrt_bskl; unfold open_bskl_wrt_bskl; default_simp.
 Qed.
@@ -4201,9 +4201,9 @@ Qed.
 #[export] Hint Rewrite close_bskl_wrt_bskl_open_bskl_wrt_bskl using solve [auto] : lngen.
 
 Lemma close_uskl_wrt_uskl_open_uskl_wrt_uskl :
-forall R1 Xus1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  close_uskl_wrt_uskl Xus1 (open_uskl_wrt_uskl R1 (uskl_var_f Xus1)) = R1.
+forall R1 α1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  close_uskl_wrt_uskl α1 (open_uskl_wrt_uskl R1 (uskl_var_f α1)) = R1.
 Proof.
 unfold close_uskl_wrt_uskl; unfold open_uskl_wrt_uskl; default_simp.
 Qed.
@@ -4212,9 +4212,9 @@ Qed.
 #[export] Hint Rewrite close_uskl_wrt_uskl_open_uskl_wrt_uskl using solve [auto] : lngen.
 
 Lemma close_exp_wrt_ptyp_open_exp_wrt_ptyp :
-forall e1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  close_exp_wrt_ptyp Xpt1 (open_exp_wrt_ptyp e1 (ptyp_var_f Xpt1)) = e1.
+forall e1 α1,
+  α1 `notin` ftvar_in_exp e1 ->
+  close_exp_wrt_ptyp α1 (open_exp_wrt_ptyp e1 (ptyp_var_f α1)) = e1.
 Proof.
 unfold close_exp_wrt_ptyp; unfold open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -4236,8 +4236,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_ptyp_wrt_ptyp_rec_close_ptyp_wrt_ptyp_rec_mutual :
-(forall A1 Xpt1 n1,
-  open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) = A1).
+(forall A1 α1 n1,
+  open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) (close_ptyp_wrt_ptyp_rec n1 α1 A1) = A1).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -4248,8 +4248,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_ptyp_wrt_ptyp_rec_close_ptyp_wrt_ptyp_rec :
-forall A1 Xpt1 n1,
-  open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) = A1.
+forall A1 α1 n1,
+  open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) (close_ptyp_wrt_ptyp_rec n1 α1 A1) = A1.
 Proof.
 pose proof open_ptyp_wrt_ptyp_rec_close_ptyp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -4262,8 +4262,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_btyp_wrt_btyp_rec_close_btyp_wrt_btyp_rec_mutual :
-(forall B1 Xbt1 n1,
-  open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) (close_btyp_wrt_btyp_rec n1 Xbt1 B1) = B1).
+(forall B1 α1 n1,
+  open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) (close_btyp_wrt_btyp_rec n1 α1 B1) = B1).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -4274,8 +4274,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_btyp_wrt_btyp_rec_close_btyp_wrt_btyp_rec :
-forall B1 Xbt1 n1,
-  open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) (close_btyp_wrt_btyp_rec n1 Xbt1 B1) = B1.
+forall B1 α1 n1,
+  open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) (close_btyp_wrt_btyp_rec n1 α1 B1) = B1.
 Proof.
 pose proof open_btyp_wrt_btyp_rec_close_btyp_wrt_btyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -4288,8 +4288,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_utyp_wrt_utyp_rec_close_utyp_wrt_utyp_rec_mutual :
-(forall C1 Xut1 n1,
-  open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) (close_utyp_wrt_utyp_rec n1 Xut1 C1) = C1).
+(forall C1 α1 n1,
+  open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) (close_utyp_wrt_utyp_rec n1 α1 C1) = C1).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -4300,8 +4300,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_utyp_wrt_utyp_rec_close_utyp_wrt_utyp_rec :
-forall C1 Xut1 n1,
-  open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) (close_utyp_wrt_utyp_rec n1 Xut1 C1) = C1.
+forall C1 α1 n1,
+  open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) (close_utyp_wrt_utyp_rec n1 α1 C1) = C1.
 Proof.
 pose proof open_utyp_wrt_utyp_rec_close_utyp_wrt_utyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -4314,8 +4314,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_pskl_wrt_pskl_rec_close_pskl_wrt_pskl_rec_mutual :
-(forall P1 Xps1 n1,
-  open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) (close_pskl_wrt_pskl_rec n1 Xps1 P1) = P1).
+(forall P1 α1 n1,
+  open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) (close_pskl_wrt_pskl_rec n1 α1 P1) = P1).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -4326,8 +4326,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_pskl_wrt_pskl_rec_close_pskl_wrt_pskl_rec :
-forall P1 Xps1 n1,
-  open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) (close_pskl_wrt_pskl_rec n1 Xps1 P1) = P1.
+forall P1 α1 n1,
+  open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) (close_pskl_wrt_pskl_rec n1 α1 P1) = P1.
 Proof.
 pose proof open_pskl_wrt_pskl_rec_close_pskl_wrt_pskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -4340,8 +4340,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_bskl_wrt_bskl_rec_close_bskl_wrt_bskl_rec_mutual :
-(forall Q1 Xbs1 n1,
-  open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) (close_bskl_wrt_bskl_rec n1 Xbs1 Q1) = Q1).
+(forall Q1 α1 n1,
+  open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) (close_bskl_wrt_bskl_rec n1 α1 Q1) = Q1).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -4352,8 +4352,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_bskl_wrt_bskl_rec_close_bskl_wrt_bskl_rec :
-forall Q1 Xbs1 n1,
-  open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) (close_bskl_wrt_bskl_rec n1 Xbs1 Q1) = Q1.
+forall Q1 α1 n1,
+  open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) (close_bskl_wrt_bskl_rec n1 α1 Q1) = Q1.
 Proof.
 pose proof open_bskl_wrt_bskl_rec_close_bskl_wrt_bskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -4366,8 +4366,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_uskl_wrt_uskl_rec_close_uskl_wrt_uskl_rec_mutual :
-(forall R1 Xus1 n1,
-  open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) (close_uskl_wrt_uskl_rec n1 Xus1 R1) = R1).
+(forall R1 α1 n1,
+  open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) (close_uskl_wrt_uskl_rec n1 α1 R1) = R1).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -4378,8 +4378,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_uskl_wrt_uskl_rec_close_uskl_wrt_uskl_rec :
-forall R1 Xus1 n1,
-  open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) (close_uskl_wrt_uskl_rec n1 Xus1 R1) = R1.
+forall R1 α1 n1,
+  open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) (close_uskl_wrt_uskl_rec n1 α1 R1) = R1.
 Proof.
 pose proof open_uskl_wrt_uskl_rec_close_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -4392,8 +4392,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_exp_wrt_ptyp_rec_close_exp_wrt_ptyp_rec_mutual :
-(forall e1 Xpt1 n1,
-  open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) (close_exp_wrt_ptyp_rec n1 Xpt1 e1) = e1).
+(forall e1 α1 n1,
+  open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) (close_exp_wrt_ptyp_rec n1 α1 e1) = e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -4404,8 +4404,8 @@ Qed.
 (* begin hide *)
 
 Lemma open_exp_wrt_ptyp_rec_close_exp_wrt_ptyp_rec :
-forall e1 Xpt1 n1,
-  open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) (close_exp_wrt_ptyp_rec n1 Xpt1 e1) = e1.
+forall e1 α1 n1,
+  open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) (close_exp_wrt_ptyp_rec n1 α1 e1) = e1.
 Proof.
 pose proof open_exp_wrt_ptyp_rec_close_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -4442,8 +4442,8 @@ Qed.
 (* end hide *)
 
 Lemma open_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp :
-forall A1 Xpt1,
-  open_ptyp_wrt_ptyp (close_ptyp_wrt_ptyp Xpt1 A1) (ptyp_var_f Xpt1) = A1.
+forall A1 α1,
+  open_ptyp_wrt_ptyp (close_ptyp_wrt_ptyp α1 A1) (ptyp_var_f α1) = A1.
 Proof.
 unfold close_ptyp_wrt_ptyp; unfold open_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -4452,8 +4452,8 @@ Qed.
 #[export] Hint Rewrite open_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp using solve [auto] : lngen.
 
 Lemma open_btyp_wrt_btyp_close_btyp_wrt_btyp :
-forall B1 Xbt1,
-  open_btyp_wrt_btyp (close_btyp_wrt_btyp Xbt1 B1) (btyp_var_f Xbt1) = B1.
+forall B1 α1,
+  open_btyp_wrt_btyp (close_btyp_wrt_btyp α1 B1) (btyp_var_f α1) = B1.
 Proof.
 unfold close_btyp_wrt_btyp; unfold open_btyp_wrt_btyp; default_simp.
 Qed.
@@ -4462,8 +4462,8 @@ Qed.
 #[export] Hint Rewrite open_btyp_wrt_btyp_close_btyp_wrt_btyp using solve [auto] : lngen.
 
 Lemma open_utyp_wrt_utyp_close_utyp_wrt_utyp :
-forall C1 Xut1,
-  open_utyp_wrt_utyp (close_utyp_wrt_utyp Xut1 C1) (utyp_var_f Xut1) = C1.
+forall C1 α1,
+  open_utyp_wrt_utyp (close_utyp_wrt_utyp α1 C1) (utyp_var_f α1) = C1.
 Proof.
 unfold close_utyp_wrt_utyp; unfold open_utyp_wrt_utyp; default_simp.
 Qed.
@@ -4472,8 +4472,8 @@ Qed.
 #[export] Hint Rewrite open_utyp_wrt_utyp_close_utyp_wrt_utyp using solve [auto] : lngen.
 
 Lemma open_pskl_wrt_pskl_close_pskl_wrt_pskl :
-forall P1 Xps1,
-  open_pskl_wrt_pskl (close_pskl_wrt_pskl Xps1 P1) (pskl_var_f Xps1) = P1.
+forall P1 α1,
+  open_pskl_wrt_pskl (close_pskl_wrt_pskl α1 P1) (pskl_var_f α1) = P1.
 Proof.
 unfold close_pskl_wrt_pskl; unfold open_pskl_wrt_pskl; default_simp.
 Qed.
@@ -4482,8 +4482,8 @@ Qed.
 #[export] Hint Rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl using solve [auto] : lngen.
 
 Lemma open_bskl_wrt_bskl_close_bskl_wrt_bskl :
-forall Q1 Xbs1,
-  open_bskl_wrt_bskl (close_bskl_wrt_bskl Xbs1 Q1) (bskl_var_f Xbs1) = Q1.
+forall Q1 α1,
+  open_bskl_wrt_bskl (close_bskl_wrt_bskl α1 Q1) (bskl_var_f α1) = Q1.
 Proof.
 unfold close_bskl_wrt_bskl; unfold open_bskl_wrt_bskl; default_simp.
 Qed.
@@ -4492,8 +4492,8 @@ Qed.
 #[export] Hint Rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl using solve [auto] : lngen.
 
 Lemma open_uskl_wrt_uskl_close_uskl_wrt_uskl :
-forall R1 Xus1,
-  open_uskl_wrt_uskl (close_uskl_wrt_uskl Xus1 R1) (uskl_var_f Xus1) = R1.
+forall R1 α1,
+  open_uskl_wrt_uskl (close_uskl_wrt_uskl α1 R1) (uskl_var_f α1) = R1.
 Proof.
 unfold close_uskl_wrt_uskl; unfold open_uskl_wrt_uskl; default_simp.
 Qed.
@@ -4502,8 +4502,8 @@ Qed.
 #[export] Hint Rewrite open_uskl_wrt_uskl_close_uskl_wrt_uskl using solve [auto] : lngen.
 
 Lemma open_exp_wrt_ptyp_close_exp_wrt_ptyp :
-forall e1 Xpt1,
-  open_exp_wrt_ptyp (close_exp_wrt_ptyp Xpt1 e1) (ptyp_var_f Xpt1) = e1.
+forall e1 α1,
+  open_exp_wrt_ptyp (close_exp_wrt_ptyp α1 e1) (ptyp_var_f α1) = e1.
 Proof.
 unfold close_exp_wrt_ptyp; unfold open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -4524,10 +4524,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_ptyp_wrt_ptyp_rec_inj_mutual :
-(forall A2 A1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_ptyp A2 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A2 = open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A1 ->
+(forall A2 A1 α1 n1,
+  α1 `notin` ftvar_in_ptyp A2 ->
+  α1 `notin` ftvar_in_ptyp A1 ->
+  open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A2 = open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A1 ->
   A2 = A1).
 Proof.
 apply_mutual_ind ptyp_mutind;
@@ -4542,10 +4542,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_ptyp_wrt_ptyp_rec_inj :
-forall A2 A1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_ptyp A2 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A2 = open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A1 ->
+forall A2 A1 α1 n1,
+  α1 `notin` ftvar_in_ptyp A2 ->
+  α1 `notin` ftvar_in_ptyp A1 ->
+  open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A2 = open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A1 ->
   A2 = A1.
 Proof.
 pose proof open_ptyp_wrt_ptyp_rec_inj_mutual as H; intuition eauto.
@@ -4558,10 +4558,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_btyp_wrt_btyp_rec_inj_mutual :
-(forall B2 B1 Xbt1 n1,
-  Xbt1 `notin` ftvar_in_btyp B2 ->
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B2 = open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B1 ->
+(forall B2 B1 α1 n1,
+  α1 `notin` ftvar_in_btyp B2 ->
+  α1 `notin` ftvar_in_btyp B1 ->
+  open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B2 = open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B1 ->
   B2 = B1).
 Proof.
 apply_mutual_ind btyp_mutind;
@@ -4576,10 +4576,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_btyp_wrt_btyp_rec_inj :
-forall B2 B1 Xbt1 n1,
-  Xbt1 `notin` ftvar_in_btyp B2 ->
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B2 = open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B1 ->
+forall B2 B1 α1 n1,
+  α1 `notin` ftvar_in_btyp B2 ->
+  α1 `notin` ftvar_in_btyp B1 ->
+  open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B2 = open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B1 ->
   B2 = B1.
 Proof.
 pose proof open_btyp_wrt_btyp_rec_inj_mutual as H; intuition eauto.
@@ -4592,10 +4592,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_utyp_wrt_utyp_rec_inj_mutual :
-(forall C2 C1 Xut1 n1,
-  Xut1 `notin` ftvar_in_utyp C2 ->
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C2 = open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C1 ->
+(forall C2 C1 α1 n1,
+  α1 `notin` ftvar_in_utyp C2 ->
+  α1 `notin` ftvar_in_utyp C1 ->
+  open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C2 = open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C1 ->
   C2 = C1).
 Proof.
 apply_mutual_ind utyp_mutind;
@@ -4610,10 +4610,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_utyp_wrt_utyp_rec_inj :
-forall C2 C1 Xut1 n1,
-  Xut1 `notin` ftvar_in_utyp C2 ->
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C2 = open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C1 ->
+forall C2 C1 α1 n1,
+  α1 `notin` ftvar_in_utyp C2 ->
+  α1 `notin` ftvar_in_utyp C1 ->
+  open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C2 = open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C1 ->
   C2 = C1.
 Proof.
 pose proof open_utyp_wrt_utyp_rec_inj_mutual as H; intuition eauto.
@@ -4626,10 +4626,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_pskl_wrt_pskl_rec_inj_mutual :
-(forall P2 P1 Xps1 n1,
-  Xps1 `notin` ftvar_in_pskl P2 ->
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P2 = open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P1 ->
+(forall P2 P1 α1 n1,
+  α1 `notin` ftvar_in_pskl P2 ->
+  α1 `notin` ftvar_in_pskl P1 ->
+  open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P2 = open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P1 ->
   P2 = P1).
 Proof.
 apply_mutual_ind pskl_mutind;
@@ -4644,10 +4644,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_pskl_wrt_pskl_rec_inj :
-forall P2 P1 Xps1 n1,
-  Xps1 `notin` ftvar_in_pskl P2 ->
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P2 = open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P1 ->
+forall P2 P1 α1 n1,
+  α1 `notin` ftvar_in_pskl P2 ->
+  α1 `notin` ftvar_in_pskl P1 ->
+  open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P2 = open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P1 ->
   P2 = P1.
 Proof.
 pose proof open_pskl_wrt_pskl_rec_inj_mutual as H; intuition eauto.
@@ -4660,10 +4660,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_bskl_wrt_bskl_rec_inj_mutual :
-(forall Q2 Q1 Xbs1 n1,
-  Xbs1 `notin` ftvar_in_bskl Q2 ->
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q2 = open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q1 ->
+(forall Q2 Q1 α1 n1,
+  α1 `notin` ftvar_in_bskl Q2 ->
+  α1 `notin` ftvar_in_bskl Q1 ->
+  open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q2 = open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q1 ->
   Q2 = Q1).
 Proof.
 apply_mutual_ind bskl_mutind;
@@ -4678,10 +4678,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_bskl_wrt_bskl_rec_inj :
-forall Q2 Q1 Xbs1 n1,
-  Xbs1 `notin` ftvar_in_bskl Q2 ->
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q2 = open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q1 ->
+forall Q2 Q1 α1 n1,
+  α1 `notin` ftvar_in_bskl Q2 ->
+  α1 `notin` ftvar_in_bskl Q1 ->
+  open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q2 = open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q1 ->
   Q2 = Q1.
 Proof.
 pose proof open_bskl_wrt_bskl_rec_inj_mutual as H; intuition eauto.
@@ -4694,10 +4694,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_uskl_wrt_uskl_rec_inj_mutual :
-(forall R2 R1 Xus1 n1,
-  Xus1 `notin` ftvar_in_uskl R2 ->
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R2 = open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R1 ->
+(forall R2 R1 α1 n1,
+  α1 `notin` ftvar_in_uskl R2 ->
+  α1 `notin` ftvar_in_uskl R1 ->
+  open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R2 = open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1 ->
   R2 = R1).
 Proof.
 apply_mutual_ind uskl_mutind;
@@ -4712,10 +4712,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_uskl_wrt_uskl_rec_inj :
-forall R2 R1 Xus1 n1,
-  Xus1 `notin` ftvar_in_uskl R2 ->
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R2 = open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R1 ->
+forall R2 R1 α1 n1,
+  α1 `notin` ftvar_in_uskl R2 ->
+  α1 `notin` ftvar_in_uskl R1 ->
+  open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R2 = open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1 ->
   R2 = R1.
 Proof.
 pose proof open_uskl_wrt_uskl_rec_inj_mutual as H; intuition eauto.
@@ -4728,10 +4728,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_exp_wrt_ptyp_rec_inj_mutual :
-(forall e2 e1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e2 = open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e1 ->
+(forall e2 e1 α1 n1,
+  α1 `notin` ftvar_in_exp e2 ->
+  α1 `notin` ftvar_in_exp e1 ->
+  open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e2 = open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e1 ->
   e2 = e1).
 Proof.
 apply_mutual_ind exp_mutind;
@@ -4746,10 +4746,10 @@ Qed.
 (* begin hide *)
 
 Lemma open_exp_wrt_ptyp_rec_inj :
-forall e2 e1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e2 = open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e1 ->
+forall e2 e1 α1 n1,
+  α1 `notin` ftvar_in_exp e2 ->
+  α1 `notin` ftvar_in_exp e1 ->
+  open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e2 = open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e1 ->
   e2 = e1.
 Proof.
 pose proof open_exp_wrt_ptyp_rec_inj_mutual as H; intuition eauto.
@@ -4794,10 +4794,10 @@ Qed.
 (* end hide *)
 
 Lemma open_ptyp_wrt_ptyp_inj :
-forall A2 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A2 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  open_ptyp_wrt_ptyp A2 (ptyp_var_f Xpt1) = open_ptyp_wrt_ptyp A1 (ptyp_var_f Xpt1) ->
+forall A2 A1 α1,
+  α1 `notin` ftvar_in_ptyp A2 ->
+  α1 `notin` ftvar_in_ptyp A1 ->
+  open_ptyp_wrt_ptyp A2 (ptyp_var_f α1) = open_ptyp_wrt_ptyp A1 (ptyp_var_f α1) ->
   A2 = A1.
 Proof.
 unfold open_ptyp_wrt_ptyp; eauto with lngen.
@@ -4806,10 +4806,10 @@ Qed.
 #[export] Hint Immediate open_ptyp_wrt_ptyp_inj : lngen.
 
 Lemma open_btyp_wrt_btyp_inj :
-forall B2 B1 Xbt1,
-  Xbt1 `notin` ftvar_in_btyp B2 ->
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  open_btyp_wrt_btyp B2 (btyp_var_f Xbt1) = open_btyp_wrt_btyp B1 (btyp_var_f Xbt1) ->
+forall B2 B1 α1,
+  α1 `notin` ftvar_in_btyp B2 ->
+  α1 `notin` ftvar_in_btyp B1 ->
+  open_btyp_wrt_btyp B2 (btyp_var_f α1) = open_btyp_wrt_btyp B1 (btyp_var_f α1) ->
   B2 = B1.
 Proof.
 unfold open_btyp_wrt_btyp; eauto with lngen.
@@ -4818,10 +4818,10 @@ Qed.
 #[export] Hint Immediate open_btyp_wrt_btyp_inj : lngen.
 
 Lemma open_utyp_wrt_utyp_inj :
-forall C2 C1 Xut1,
-  Xut1 `notin` ftvar_in_utyp C2 ->
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  open_utyp_wrt_utyp C2 (utyp_var_f Xut1) = open_utyp_wrt_utyp C1 (utyp_var_f Xut1) ->
+forall C2 C1 α1,
+  α1 `notin` ftvar_in_utyp C2 ->
+  α1 `notin` ftvar_in_utyp C1 ->
+  open_utyp_wrt_utyp C2 (utyp_var_f α1) = open_utyp_wrt_utyp C1 (utyp_var_f α1) ->
   C2 = C1.
 Proof.
 unfold open_utyp_wrt_utyp; eauto with lngen.
@@ -4830,10 +4830,10 @@ Qed.
 #[export] Hint Immediate open_utyp_wrt_utyp_inj : lngen.
 
 Lemma open_pskl_wrt_pskl_inj :
-forall P2 P1 Xps1,
-  Xps1 `notin` ftvar_in_pskl P2 ->
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  open_pskl_wrt_pskl P2 (pskl_var_f Xps1) = open_pskl_wrt_pskl P1 (pskl_var_f Xps1) ->
+forall P2 P1 α1,
+  α1 `notin` ftvar_in_pskl P2 ->
+  α1 `notin` ftvar_in_pskl P1 ->
+  open_pskl_wrt_pskl P2 (pskl_var_f α1) = open_pskl_wrt_pskl P1 (pskl_var_f α1) ->
   P2 = P1.
 Proof.
 unfold open_pskl_wrt_pskl; eauto with lngen.
@@ -4842,10 +4842,10 @@ Qed.
 #[export] Hint Immediate open_pskl_wrt_pskl_inj : lngen.
 
 Lemma open_bskl_wrt_bskl_inj :
-forall Q2 Q1 Xbs1,
-  Xbs1 `notin` ftvar_in_bskl Q2 ->
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  open_bskl_wrt_bskl Q2 (bskl_var_f Xbs1) = open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1) ->
+forall Q2 Q1 α1,
+  α1 `notin` ftvar_in_bskl Q2 ->
+  α1 `notin` ftvar_in_bskl Q1 ->
+  open_bskl_wrt_bskl Q2 (bskl_var_f α1) = open_bskl_wrt_bskl Q1 (bskl_var_f α1) ->
   Q2 = Q1.
 Proof.
 unfold open_bskl_wrt_bskl; eauto with lngen.
@@ -4854,10 +4854,10 @@ Qed.
 #[export] Hint Immediate open_bskl_wrt_bskl_inj : lngen.
 
 Lemma open_uskl_wrt_uskl_inj :
-forall R2 R1 Xus1,
-  Xus1 `notin` ftvar_in_uskl R2 ->
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl R2 (uskl_var_f Xus1) = open_uskl_wrt_uskl R1 (uskl_var_f Xus1) ->
+forall R2 R1 α1,
+  α1 `notin` ftvar_in_uskl R2 ->
+  α1 `notin` ftvar_in_uskl R1 ->
+  open_uskl_wrt_uskl R2 (uskl_var_f α1) = open_uskl_wrt_uskl R1 (uskl_var_f α1) ->
   R2 = R1.
 Proof.
 unfold open_uskl_wrt_uskl; eauto with lngen.
@@ -4866,10 +4866,10 @@ Qed.
 #[export] Hint Immediate open_uskl_wrt_uskl_inj : lngen.
 
 Lemma open_exp_wrt_ptyp_inj :
-forall e2 e1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  open_exp_wrt_ptyp e2 (ptyp_var_f Xpt1) = open_exp_wrt_ptyp e1 (ptyp_var_f Xpt1) ->
+forall e2 e1 α1,
+  α1 `notin` ftvar_in_exp e2 ->
+  α1 `notin` ftvar_in_exp e1 ->
+  open_exp_wrt_ptyp e2 (ptyp_var_f α1) = open_exp_wrt_ptyp e1 (ptyp_var_f α1) ->
   e2 = e1.
 Proof.
 unfold open_exp_wrt_ptyp; eauto with lngen.
@@ -4905,7 +4905,7 @@ Lemma degree_ptyp_wrt_ptyp_of_lc_ptyp_mutual :
 Proof.
 apply_mutual_ind lc_ptyp_mutind;
 intros;
-let Xpt1 := fresh "Xpt1" in pick_fresh Xpt1;
+let α1 := fresh "α1" in pick_fresh α1;
 repeat (match goal with
           | H1 : _, H2 : _ |- _ => specialize H1 with H2
         end);
@@ -4933,7 +4933,7 @@ Lemma degree_btyp_wrt_btyp_of_lc_btyp_mutual :
 Proof.
 apply_mutual_ind lc_btyp_mutind;
 intros;
-let Xbt1 := fresh "Xbt1" in pick_fresh Xbt1;
+let α1 := fresh "α1" in pick_fresh α1;
 repeat (match goal with
           | H1 : _, H2 : _ |- _ => specialize H1 with H2
         end);
@@ -4961,7 +4961,7 @@ Lemma degree_utyp_wrt_utyp_of_lc_utyp_mutual :
 Proof.
 apply_mutual_ind lc_utyp_mutind;
 intros;
-let Xut1 := fresh "Xut1" in pick_fresh Xut1;
+let α1 := fresh "α1" in pick_fresh α1;
 repeat (match goal with
           | H1 : _, H2 : _ |- _ => specialize H1 with H2
         end);
@@ -4989,7 +4989,7 @@ Lemma degree_pskl_wrt_pskl_of_lc_pskl_mutual :
 Proof.
 apply_mutual_ind lc_pskl_mutind;
 intros;
-let Xps1 := fresh "Xps1" in pick_fresh Xps1;
+let α1 := fresh "α1" in pick_fresh α1;
 repeat (match goal with
           | H1 : _, H2 : _ |- _ => specialize H1 with H2
         end);
@@ -5017,7 +5017,7 @@ Lemma degree_bskl_wrt_bskl_of_lc_bskl_mutual :
 Proof.
 apply_mutual_ind lc_bskl_mutind;
 intros;
-let Xbs1 := fresh "Xbs1" in pick_fresh Xbs1;
+let α1 := fresh "α1" in pick_fresh α1;
 repeat (match goal with
           | H1 : _, H2 : _ |- _ => specialize H1 with H2
         end);
@@ -5045,7 +5045,7 @@ Lemma degree_uskl_wrt_uskl_of_lc_uskl_mutual :
 Proof.
 apply_mutual_ind lc_uskl_mutind;
 intros;
-let Xus1 := fresh "Xus1" in pick_fresh Xus1;
+let α1 := fresh "α1" in pick_fresh α1;
 repeat (match goal with
           | H1 : _, H2 : _ |- _ => specialize H1 with H2
         end);
@@ -5073,7 +5073,7 @@ Lemma degree_exp_wrt_ptyp_of_lc_exp_mutual :
 Proof.
 apply_mutual_ind lc_exp_mutind;
 intros;
-let Xpt1 := fresh "Xpt1" in pick_fresh Xpt1;
+let α1 := fresh "α1" in pick_fresh α1;
 let x1 := fresh "x1" in pick_fresh x1;
 repeat (match goal with
           | H1 : _, H2 : _ |- _ => specialize H1 with H2
@@ -5102,7 +5102,7 @@ Lemma degree_exp_wrt_exp_of_lc_exp_mutual :
 Proof.
 apply_mutual_ind lc_exp_mutind;
 intros;
-let Xpt1 := fresh "Xpt1" in pick_fresh Xpt1;
+let α1 := fresh "α1" in pick_fresh α1;
 let x1 := fresh "x1" in pick_fresh x1;
 repeat (match goal with
           | H1 : _, H2 : _ |- _ => specialize H1 with H2
@@ -5440,80 +5440,80 @@ Ltac mode_lc_exists_tac :=
           end).
 
 Lemma lc_ptyp_all_exists :
-forall Xpt1 A1,
-  lc_ptyp (open_ptyp_wrt_ptyp A1 (ptyp_var_f Xpt1)) ->
+forall α1 A1,
+  lc_ptyp (open_ptyp_wrt_ptyp A1 (ptyp_var_f α1)) ->
   lc_ptyp (ptyp_all A1).
 Proof.
 intros; ptyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_btyp_all_syn_exists :
-forall Xbt1 B1,
-  lc_btyp (open_btyp_wrt_btyp B1 (btyp_var_f Xbt1)) ->
+forall α1 B1,
+  lc_btyp (open_btyp_wrt_btyp B1 (btyp_var_f α1)) ->
   lc_btyp (btyp_all_syn B1).
 Proof.
 intros; btyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_btyp_all_inh_exists :
-forall Xbt1 B1,
-  lc_btyp (open_btyp_wrt_btyp B1 (btyp_var_f Xbt1)) ->
+forall α1 B1,
+  lc_btyp (open_btyp_wrt_btyp B1 (btyp_var_f α1)) ->
   lc_btyp (btyp_all_inh B1).
 Proof.
 intros; btyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_utyp_all_syn_exists :
-forall Xut1 C1,
-  lc_utyp (open_utyp_wrt_utyp C1 (utyp_var_f Xut1)) ->
+forall α1 C1,
+  lc_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1)) ->
   lc_utyp (utyp_all_syn C1).
 Proof.
 intros; utyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_utyp_all_etag_exists :
-forall Xut1 ε1 C1,
-  lc_utyp (open_utyp_wrt_utyp C1 (utyp_var_f Xut1)) ->
+forall α1 ε1 C1,
+  lc_utyp (open_utyp_wrt_utyp C1 (utyp_var_f α1)) ->
   lc_utyp (utyp_all_etag ε1 C1).
 Proof.
 intros; utyp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_pskl_all_syn_exists :
-forall Xps1 P1,
-  lc_pskl (open_pskl_wrt_pskl P1 (pskl_var_f Xps1)) ->
+forall α1 P1,
+  lc_pskl (open_pskl_wrt_pskl P1 (pskl_var_f α1)) ->
   lc_pskl (pskl_all_syn P1).
 Proof.
 intros; pskl_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_bskl_all_syn_exists :
-forall Xbs1 Q1,
-  lc_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1)) ->
+forall α1 Q1,
+  lc_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f α1)) ->
   lc_bskl (bskl_all_syn Q1).
 Proof.
 intros; bskl_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_bskl_all_inh_exists :
-forall Xbs1 Q1,
-  lc_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1)) ->
+forall α1 Q1,
+  lc_bskl (open_bskl_wrt_bskl Q1 (bskl_var_f α1)) ->
   lc_bskl (bskl_all_inh Q1).
 Proof.
 intros; bskl_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_uskl_all_syn_exists :
-forall Xus1 R1,
-  lc_uskl (open_uskl_wrt_uskl R1 (uskl_var_f Xus1)) ->
+forall α1 R1,
+  lc_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1)) ->
   lc_uskl (uskl_all_syn R1).
 Proof.
 intros; uskl_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 Lemma lc_uskl_all_etag_exists :
-forall Xus1 ε1 R1,
-  lc_uskl (open_uskl_wrt_uskl R1 (uskl_var_f Xus1)) ->
+forall α1 ε1 R1,
+  lc_uskl (open_uskl_wrt_uskl R1 (uskl_var_f α1)) ->
   lc_uskl (uskl_all_etag ε1 R1).
 Proof.
 intros; uskl_lc_exists_tac; eauto 6 with lngen.
@@ -5537,54 +5537,54 @@ intros; exp_lc_exists_tac; eauto 6 with lngen.
 Qed.
 
 #[export] Hint Extern 1 (lc_ptyp (ptyp_all _)) =>
-  let Xpt1 := fresh in
-  pick_fresh Xpt1;
-  apply (lc_ptyp_all_exists Xpt1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_ptyp_all_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_btyp (btyp_all_syn _)) =>
-  let Xbt1 := fresh in
-  pick_fresh Xbt1;
-  apply (lc_btyp_all_syn_exists Xbt1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_btyp_all_syn_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_btyp (btyp_all_inh _)) =>
-  let Xbt1 := fresh in
-  pick_fresh Xbt1;
-  apply (lc_btyp_all_inh_exists Xbt1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_btyp_all_inh_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_utyp (utyp_all_syn _)) =>
-  let Xut1 := fresh in
-  pick_fresh Xut1;
-  apply (lc_utyp_all_syn_exists Xut1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_utyp_all_syn_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_utyp (utyp_all_etag _ _)) =>
-  let Xut1 := fresh in
-  pick_fresh Xut1;
-  apply (lc_utyp_all_etag_exists Xut1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_utyp_all_etag_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_pskl (pskl_all_syn _)) =>
-  let Xps1 := fresh in
-  pick_fresh Xps1;
-  apply (lc_pskl_all_syn_exists Xps1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_pskl_all_syn_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_bskl (bskl_all_syn _)) =>
-  let Xbs1 := fresh in
-  pick_fresh Xbs1;
-  apply (lc_bskl_all_syn_exists Xbs1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_bskl_all_syn_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_bskl (bskl_all_inh _)) =>
-  let Xbs1 := fresh in
-  pick_fresh Xbs1;
-  apply (lc_bskl_all_inh_exists Xbs1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_bskl_all_inh_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_uskl (uskl_all_syn _)) =>
-  let Xus1 := fresh in
-  pick_fresh Xus1;
-  apply (lc_uskl_all_syn_exists Xus1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_uskl_all_syn_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_uskl (uskl_all_etag _ _)) =>
-  let Xus1 := fresh in
-  pick_fresh Xus1;
-  apply (lc_uskl_all_etag_exists Xus1) : core.
+  let α1 := fresh in
+  pick_fresh α1;
+  apply (lc_uskl_all_etag_exists α1) : core.
 
 #[export] Hint Extern 1 (lc_exp (exp_abs _)) =>
   let x1 := fresh in
@@ -5604,9 +5604,9 @@ forall A1 A2,
 Proof.
 unfold body_ptyp_wrt_ptyp;
 default_simp;
-let Xpt1 := fresh "x" in
-pick_fresh Xpt1;
-specialize_all Xpt1;
+let α1 := fresh "x" in
+pick_fresh α1;
+specialize_all α1;
 ptyp_lc_exists_tac;
 eauto 7 with lngen.
 Qed.
@@ -5621,9 +5621,9 @@ forall B1 B2,
 Proof.
 unfold body_btyp_wrt_btyp;
 default_simp;
-let Xbt1 := fresh "x" in
-pick_fresh Xbt1;
-specialize_all Xbt1;
+let α1 := fresh "x" in
+pick_fresh α1;
+specialize_all α1;
 btyp_lc_exists_tac;
 eauto 7 with lngen.
 Qed.
@@ -5638,9 +5638,9 @@ forall C1 C2,
 Proof.
 unfold body_utyp_wrt_utyp;
 default_simp;
-let Xut1 := fresh "x" in
-pick_fresh Xut1;
-specialize_all Xut1;
+let α1 := fresh "x" in
+pick_fresh α1;
+specialize_all α1;
 utyp_lc_exists_tac;
 eauto 7 with lngen.
 Qed.
@@ -5655,9 +5655,9 @@ forall P1 P2,
 Proof.
 unfold body_pskl_wrt_pskl;
 default_simp;
-let Xps1 := fresh "x" in
-pick_fresh Xps1;
-specialize_all Xps1;
+let α1 := fresh "x" in
+pick_fresh α1;
+specialize_all α1;
 pskl_lc_exists_tac;
 eauto 7 with lngen.
 Qed.
@@ -5672,9 +5672,9 @@ forall Q1 Q2,
 Proof.
 unfold body_bskl_wrt_bskl;
 default_simp;
-let Xbs1 := fresh "x" in
-pick_fresh Xbs1;
-specialize_all Xbs1;
+let α1 := fresh "x" in
+pick_fresh α1;
+specialize_all α1;
 bskl_lc_exists_tac;
 eauto 7 with lngen.
 Qed.
@@ -5689,9 +5689,9 @@ forall R1 R2,
 Proof.
 unfold body_uskl_wrt_uskl;
 default_simp;
-let Xus1 := fresh "x" in
-pick_fresh Xus1;
-specialize_all Xus1;
+let α1 := fresh "x" in
+pick_fresh α1;
+specialize_all α1;
 uskl_lc_exists_tac;
 eauto 7 with lngen.
 Qed.
@@ -5706,9 +5706,9 @@ forall e1 A1,
 Proof.
 unfold body_exp_wrt_ptyp;
 default_simp;
-let Xpt1 := fresh "x" in
-pick_fresh Xpt1;
-specialize_all Xpt1;
+let α1 := fresh "x" in
+pick_fresh α1;
+specialize_all α1;
 exp_lc_exists_tac;
 eauto 7 with lngen.
 Qed.
@@ -6437,10 +6437,10 @@ Ltac default_autorewrite ::= fail.
 (* begin hide *)
 
 Lemma close_ptyp_wrt_ptyp_rec_degree_ptyp_wrt_ptyp_mutual :
-(forall A1 Xpt1 n1,
+(forall A1 α1 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  close_ptyp_wrt_ptyp_rec n1 Xpt1 A1 = A1).
+  α1 `notin` ftvar_in_ptyp A1 ->
+  close_ptyp_wrt_ptyp_rec n1 α1 A1 = A1).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -6451,10 +6451,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_ptyp_wrt_ptyp_rec_degree_ptyp_wrt_ptyp :
-forall A1 Xpt1 n1,
+forall A1 α1 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  close_ptyp_wrt_ptyp_rec n1 Xpt1 A1 = A1.
+  α1 `notin` ftvar_in_ptyp A1 ->
+  close_ptyp_wrt_ptyp_rec n1 α1 A1 = A1.
 Proof.
 pose proof close_ptyp_wrt_ptyp_rec_degree_ptyp_wrt_ptyp_mutual as H; intuition eauto.
 Qed.
@@ -6467,10 +6467,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_btyp_wrt_btyp_rec_degree_btyp_wrt_btyp_mutual :
-(forall B1 Xbt1 n1,
+(forall B1 α1 n1,
   degree_btyp_wrt_btyp n1 B1 ->
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  close_btyp_wrt_btyp_rec n1 Xbt1 B1 = B1).
+  α1 `notin` ftvar_in_btyp B1 ->
+  close_btyp_wrt_btyp_rec n1 α1 B1 = B1).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -6481,10 +6481,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_btyp_wrt_btyp_rec_degree_btyp_wrt_btyp :
-forall B1 Xbt1 n1,
+forall B1 α1 n1,
   degree_btyp_wrt_btyp n1 B1 ->
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  close_btyp_wrt_btyp_rec n1 Xbt1 B1 = B1.
+  α1 `notin` ftvar_in_btyp B1 ->
+  close_btyp_wrt_btyp_rec n1 α1 B1 = B1.
 Proof.
 pose proof close_btyp_wrt_btyp_rec_degree_btyp_wrt_btyp_mutual as H; intuition eauto.
 Qed.
@@ -6497,10 +6497,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_utyp_wrt_utyp_rec_degree_utyp_wrt_utyp_mutual :
-(forall C1 Xut1 n1,
+(forall C1 α1 n1,
   degree_utyp_wrt_utyp n1 C1 ->
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  close_utyp_wrt_utyp_rec n1 Xut1 C1 = C1).
+  α1 `notin` ftvar_in_utyp C1 ->
+  close_utyp_wrt_utyp_rec n1 α1 C1 = C1).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -6511,10 +6511,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_utyp_wrt_utyp_rec_degree_utyp_wrt_utyp :
-forall C1 Xut1 n1,
+forall C1 α1 n1,
   degree_utyp_wrt_utyp n1 C1 ->
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  close_utyp_wrt_utyp_rec n1 Xut1 C1 = C1.
+  α1 `notin` ftvar_in_utyp C1 ->
+  close_utyp_wrt_utyp_rec n1 α1 C1 = C1.
 Proof.
 pose proof close_utyp_wrt_utyp_rec_degree_utyp_wrt_utyp_mutual as H; intuition eauto.
 Qed.
@@ -6527,10 +6527,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_pskl_wrt_pskl_rec_degree_pskl_wrt_pskl_mutual :
-(forall P1 Xps1 n1,
+(forall P1 α1 n1,
   degree_pskl_wrt_pskl n1 P1 ->
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  close_pskl_wrt_pskl_rec n1 Xps1 P1 = P1).
+  α1 `notin` ftvar_in_pskl P1 ->
+  close_pskl_wrt_pskl_rec n1 α1 P1 = P1).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -6541,10 +6541,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_pskl_wrt_pskl_rec_degree_pskl_wrt_pskl :
-forall P1 Xps1 n1,
+forall P1 α1 n1,
   degree_pskl_wrt_pskl n1 P1 ->
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  close_pskl_wrt_pskl_rec n1 Xps1 P1 = P1.
+  α1 `notin` ftvar_in_pskl P1 ->
+  close_pskl_wrt_pskl_rec n1 α1 P1 = P1.
 Proof.
 pose proof close_pskl_wrt_pskl_rec_degree_pskl_wrt_pskl_mutual as H; intuition eauto.
 Qed.
@@ -6557,10 +6557,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_bskl_wrt_bskl_rec_degree_bskl_wrt_bskl_mutual :
-(forall Q1 Xbs1 n1,
+(forall Q1 α1 n1,
   degree_bskl_wrt_bskl n1 Q1 ->
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  close_bskl_wrt_bskl_rec n1 Xbs1 Q1 = Q1).
+  α1 `notin` ftvar_in_bskl Q1 ->
+  close_bskl_wrt_bskl_rec n1 α1 Q1 = Q1).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -6571,10 +6571,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_bskl_wrt_bskl_rec_degree_bskl_wrt_bskl :
-forall Q1 Xbs1 n1,
+forall Q1 α1 n1,
   degree_bskl_wrt_bskl n1 Q1 ->
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  close_bskl_wrt_bskl_rec n1 Xbs1 Q1 = Q1.
+  α1 `notin` ftvar_in_bskl Q1 ->
+  close_bskl_wrt_bskl_rec n1 α1 Q1 = Q1.
 Proof.
 pose proof close_bskl_wrt_bskl_rec_degree_bskl_wrt_bskl_mutual as H; intuition eauto.
 Qed.
@@ -6587,10 +6587,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_uskl_wrt_uskl_rec_degree_uskl_wrt_uskl_mutual :
-(forall R1 Xus1 n1,
+(forall R1 α1 n1,
   degree_uskl_wrt_uskl n1 R1 ->
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  close_uskl_wrt_uskl_rec n1 Xus1 R1 = R1).
+  α1 `notin` ftvar_in_uskl R1 ->
+  close_uskl_wrt_uskl_rec n1 α1 R1 = R1).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -6601,10 +6601,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_uskl_wrt_uskl_rec_degree_uskl_wrt_uskl :
-forall R1 Xus1 n1,
+forall R1 α1 n1,
   degree_uskl_wrt_uskl n1 R1 ->
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  close_uskl_wrt_uskl_rec n1 Xus1 R1 = R1.
+  α1 `notin` ftvar_in_uskl R1 ->
+  close_uskl_wrt_uskl_rec n1 α1 R1 = R1.
 Proof.
 pose proof close_uskl_wrt_uskl_rec_degree_uskl_wrt_uskl_mutual as H; intuition eauto.
 Qed.
@@ -6617,10 +6617,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_exp_wrt_ptyp_rec_degree_exp_wrt_ptyp_mutual :
-(forall e1 Xpt1 n1,
+(forall e1 α1 n1,
   degree_exp_wrt_ptyp n1 e1 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  close_exp_wrt_ptyp_rec n1 Xpt1 e1 = e1).
+  α1 `notin` ftvar_in_exp e1 ->
+  close_exp_wrt_ptyp_rec n1 α1 e1 = e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -6631,10 +6631,10 @@ Qed.
 (* begin hide *)
 
 Lemma close_exp_wrt_ptyp_rec_degree_exp_wrt_ptyp :
-forall e1 Xpt1 n1,
+forall e1 α1 n1,
   degree_exp_wrt_ptyp n1 e1 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  close_exp_wrt_ptyp_rec n1 Xpt1 e1 = e1.
+  α1 `notin` ftvar_in_exp e1 ->
+  close_exp_wrt_ptyp_rec n1 α1 e1 = e1.
 Proof.
 pose proof close_exp_wrt_ptyp_rec_degree_exp_wrt_ptyp_mutual as H; intuition eauto.
 Qed.
@@ -6675,10 +6675,10 @@ Qed.
 (* end hide *)
 
 Lemma close_ptyp_wrt_ptyp_lc_ptyp :
-forall A1 Xpt1,
+forall A1 α1,
   lc_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  close_ptyp_wrt_ptyp Xpt1 A1 = A1.
+  α1 `notin` ftvar_in_ptyp A1 ->
+  close_ptyp_wrt_ptyp α1 A1 = A1.
 Proof.
 unfold close_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -6687,10 +6687,10 @@ Qed.
 #[export] Hint Rewrite close_ptyp_wrt_ptyp_lc_ptyp using solve [auto] : lngen.
 
 Lemma close_btyp_wrt_btyp_lc_btyp :
-forall B1 Xbt1,
+forall B1 α1,
   lc_btyp B1 ->
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  close_btyp_wrt_btyp Xbt1 B1 = B1.
+  α1 `notin` ftvar_in_btyp B1 ->
+  close_btyp_wrt_btyp α1 B1 = B1.
 Proof.
 unfold close_btyp_wrt_btyp; default_simp.
 Qed.
@@ -6699,10 +6699,10 @@ Qed.
 #[export] Hint Rewrite close_btyp_wrt_btyp_lc_btyp using solve [auto] : lngen.
 
 Lemma close_utyp_wrt_utyp_lc_utyp :
-forall C1 Xut1,
+forall C1 α1,
   lc_utyp C1 ->
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  close_utyp_wrt_utyp Xut1 C1 = C1.
+  α1 `notin` ftvar_in_utyp C1 ->
+  close_utyp_wrt_utyp α1 C1 = C1.
 Proof.
 unfold close_utyp_wrt_utyp; default_simp.
 Qed.
@@ -6711,10 +6711,10 @@ Qed.
 #[export] Hint Rewrite close_utyp_wrt_utyp_lc_utyp using solve [auto] : lngen.
 
 Lemma close_pskl_wrt_pskl_lc_pskl :
-forall P1 Xps1,
+forall P1 α1,
   lc_pskl P1 ->
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  close_pskl_wrt_pskl Xps1 P1 = P1.
+  α1 `notin` ftvar_in_pskl P1 ->
+  close_pskl_wrt_pskl α1 P1 = P1.
 Proof.
 unfold close_pskl_wrt_pskl; default_simp.
 Qed.
@@ -6723,10 +6723,10 @@ Qed.
 #[export] Hint Rewrite close_pskl_wrt_pskl_lc_pskl using solve [auto] : lngen.
 
 Lemma close_bskl_wrt_bskl_lc_bskl :
-forall Q1 Xbs1,
+forall Q1 α1,
   lc_bskl Q1 ->
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  close_bskl_wrt_bskl Xbs1 Q1 = Q1.
+  α1 `notin` ftvar_in_bskl Q1 ->
+  close_bskl_wrt_bskl α1 Q1 = Q1.
 Proof.
 unfold close_bskl_wrt_bskl; default_simp.
 Qed.
@@ -6735,10 +6735,10 @@ Qed.
 #[export] Hint Rewrite close_bskl_wrt_bskl_lc_bskl using solve [auto] : lngen.
 
 Lemma close_uskl_wrt_uskl_lc_uskl :
-forall R1 Xus1,
+forall R1 α1,
   lc_uskl R1 ->
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  close_uskl_wrt_uskl Xus1 R1 = R1.
+  α1 `notin` ftvar_in_uskl R1 ->
+  close_uskl_wrt_uskl α1 R1 = R1.
 Proof.
 unfold close_uskl_wrt_uskl; default_simp.
 Qed.
@@ -6747,10 +6747,10 @@ Qed.
 #[export] Hint Rewrite close_uskl_wrt_uskl_lc_uskl using solve [auto] : lngen.
 
 Lemma close_exp_wrt_ptyp_lc_exp :
-forall e1 Xpt1,
+forall e1 α1,
   lc_exp e1 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  close_exp_wrt_ptyp Xpt1 e1 = e1.
+  α1 `notin` ftvar_in_exp e1 ->
+  close_exp_wrt_ptyp α1 e1 = e1.
 Proof.
 unfold close_exp_wrt_ptyp; default_simp.
 Qed.
@@ -7092,8 +7092,8 @@ Ltac default_autorewrite ::= autorewrite with lngen.
 (* begin hide *)
 
 Lemma ftvar_in_ptyp_close_ptyp_wrt_ptyp_rec_mutual :
-(forall A1 Xpt1 n1,
-  ftvar_in_ptyp (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) [=] remove Xpt1 (ftvar_in_ptyp A1)).
+(forall A1 α1 n1,
+  ftvar_in_ptyp (close_ptyp_wrt_ptyp_rec n1 α1 A1) [=] remove α1 (ftvar_in_ptyp A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp; fsetdec.
@@ -7104,8 +7104,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_ptyp_close_ptyp_wrt_ptyp_rec :
-forall A1 Xpt1 n1,
-  ftvar_in_ptyp (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1) [=] remove Xpt1 (ftvar_in_ptyp A1).
+forall A1 α1 n1,
+  ftvar_in_ptyp (close_ptyp_wrt_ptyp_rec n1 α1 A1) [=] remove α1 (ftvar_in_ptyp A1).
 Proof.
 pose proof ftvar_in_ptyp_close_ptyp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -7118,8 +7118,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_btyp_close_btyp_wrt_btyp_rec_mutual :
-(forall B1 Xbt1 n1,
-  ftvar_in_btyp (close_btyp_wrt_btyp_rec n1 Xbt1 B1) [=] remove Xbt1 (ftvar_in_btyp B1)).
+(forall B1 α1 n1,
+  ftvar_in_btyp (close_btyp_wrt_btyp_rec n1 α1 B1) [=] remove α1 (ftvar_in_btyp B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp; fsetdec.
@@ -7130,8 +7130,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_btyp_close_btyp_wrt_btyp_rec :
-forall B1 Xbt1 n1,
-  ftvar_in_btyp (close_btyp_wrt_btyp_rec n1 Xbt1 B1) [=] remove Xbt1 (ftvar_in_btyp B1).
+forall B1 α1 n1,
+  ftvar_in_btyp (close_btyp_wrt_btyp_rec n1 α1 B1) [=] remove α1 (ftvar_in_btyp B1).
 Proof.
 pose proof ftvar_in_btyp_close_btyp_wrt_btyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -7144,8 +7144,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_utyp_close_utyp_wrt_utyp_rec_mutual :
-(forall C1 Xut1 n1,
-  ftvar_in_utyp (close_utyp_wrt_utyp_rec n1 Xut1 C1) [=] remove Xut1 (ftvar_in_utyp C1)).
+(forall C1 α1 n1,
+  ftvar_in_utyp (close_utyp_wrt_utyp_rec n1 α1 C1) [=] remove α1 (ftvar_in_utyp C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp; fsetdec.
@@ -7156,8 +7156,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_utyp_close_utyp_wrt_utyp_rec :
-forall C1 Xut1 n1,
-  ftvar_in_utyp (close_utyp_wrt_utyp_rec n1 Xut1 C1) [=] remove Xut1 (ftvar_in_utyp C1).
+forall C1 α1 n1,
+  ftvar_in_utyp (close_utyp_wrt_utyp_rec n1 α1 C1) [=] remove α1 (ftvar_in_utyp C1).
 Proof.
 pose proof ftvar_in_utyp_close_utyp_wrt_utyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -7170,8 +7170,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_pskl_close_pskl_wrt_pskl_rec_mutual :
-(forall P1 Xps1 n1,
-  ftvar_in_pskl (close_pskl_wrt_pskl_rec n1 Xps1 P1) [=] remove Xps1 (ftvar_in_pskl P1)).
+(forall P1 α1 n1,
+  ftvar_in_pskl (close_pskl_wrt_pskl_rec n1 α1 P1) [=] remove α1 (ftvar_in_pskl P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp; fsetdec.
@@ -7182,8 +7182,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_pskl_close_pskl_wrt_pskl_rec :
-forall P1 Xps1 n1,
-  ftvar_in_pskl (close_pskl_wrt_pskl_rec n1 Xps1 P1) [=] remove Xps1 (ftvar_in_pskl P1).
+forall P1 α1 n1,
+  ftvar_in_pskl (close_pskl_wrt_pskl_rec n1 α1 P1) [=] remove α1 (ftvar_in_pskl P1).
 Proof.
 pose proof ftvar_in_pskl_close_pskl_wrt_pskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -7196,8 +7196,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_bskl_close_bskl_wrt_bskl_rec_mutual :
-(forall Q1 Xbs1 n1,
-  ftvar_in_bskl (close_bskl_wrt_bskl_rec n1 Xbs1 Q1) [=] remove Xbs1 (ftvar_in_bskl Q1)).
+(forall Q1 α1 n1,
+  ftvar_in_bskl (close_bskl_wrt_bskl_rec n1 α1 Q1) [=] remove α1 (ftvar_in_bskl Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp; fsetdec.
@@ -7208,8 +7208,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_bskl_close_bskl_wrt_bskl_rec :
-forall Q1 Xbs1 n1,
-  ftvar_in_bskl (close_bskl_wrt_bskl_rec n1 Xbs1 Q1) [=] remove Xbs1 (ftvar_in_bskl Q1).
+forall Q1 α1 n1,
+  ftvar_in_bskl (close_bskl_wrt_bskl_rec n1 α1 Q1) [=] remove α1 (ftvar_in_bskl Q1).
 Proof.
 pose proof ftvar_in_bskl_close_bskl_wrt_bskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -7222,8 +7222,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_uskl_close_uskl_wrt_uskl_rec_mutual :
-(forall R1 Xus1 n1,
-  ftvar_in_uskl (close_uskl_wrt_uskl_rec n1 Xus1 R1) [=] remove Xus1 (ftvar_in_uskl R1)).
+(forall R1 α1 n1,
+  ftvar_in_uskl (close_uskl_wrt_uskl_rec n1 α1 R1) [=] remove α1 (ftvar_in_uskl R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -7234,8 +7234,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_uskl_close_uskl_wrt_uskl_rec :
-forall R1 Xus1 n1,
-  ftvar_in_uskl (close_uskl_wrt_uskl_rec n1 Xus1 R1) [=] remove Xus1 (ftvar_in_uskl R1).
+forall R1 α1 n1,
+  ftvar_in_uskl (close_uskl_wrt_uskl_rec n1 α1 R1) [=] remove α1 (ftvar_in_uskl R1).
 Proof.
 pose proof ftvar_in_uskl_close_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -7248,8 +7248,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_exp_close_exp_wrt_ptyp_rec_mutual :
-(forall e1 Xpt1 n1,
-  ftvar_in_exp (close_exp_wrt_ptyp_rec n1 Xpt1 e1) [=] remove Xpt1 (ftvar_in_exp e1)).
+(forall e1 α1 n1,
+  ftvar_in_exp (close_exp_wrt_ptyp_rec n1 α1 e1) [=] remove α1 (ftvar_in_exp e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -7260,8 +7260,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_exp_close_exp_wrt_ptyp_rec :
-forall e1 Xpt1 n1,
-  ftvar_in_exp (close_exp_wrt_ptyp_rec n1 Xpt1 e1) [=] remove Xpt1 (ftvar_in_exp e1).
+forall e1 α1 n1,
+  ftvar_in_exp (close_exp_wrt_ptyp_rec n1 α1 e1) [=] remove α1 (ftvar_in_exp e1).
 Proof.
 pose proof ftvar_in_exp_close_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -7300,8 +7300,8 @@ Qed.
 (* begin hide *)
 
 Lemma fvar_in_exp_close_exp_wrt_ptyp_rec_mutual :
-(forall e1 Xpt1 n1,
-  fvar_in_exp (close_exp_wrt_ptyp_rec n1 Xpt1 e1) [=] fvar_in_exp e1).
+(forall e1 α1 n1,
+  fvar_in_exp (close_exp_wrt_ptyp_rec n1 α1 e1) [=] fvar_in_exp e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -7312,8 +7312,8 @@ Qed.
 (* begin hide *)
 
 Lemma fvar_in_exp_close_exp_wrt_ptyp_rec :
-forall e1 Xpt1 n1,
-  fvar_in_exp (close_exp_wrt_ptyp_rec n1 Xpt1 e1) [=] fvar_in_exp e1.
+forall e1 α1 n1,
+  fvar_in_exp (close_exp_wrt_ptyp_rec n1 α1 e1) [=] fvar_in_exp e1.
 Proof.
 pose proof fvar_in_exp_close_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -7350,8 +7350,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_ptyp_close_ptyp_wrt_ptyp :
-forall A1 Xpt1,
-  ftvar_in_ptyp (close_ptyp_wrt_ptyp Xpt1 A1) [=] remove Xpt1 (ftvar_in_ptyp A1).
+forall A1 α1,
+  ftvar_in_ptyp (close_ptyp_wrt_ptyp α1 A1) [=] remove α1 (ftvar_in_ptyp A1).
 Proof.
 unfold close_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -7360,8 +7360,8 @@ Qed.
 #[export] Hint Rewrite ftvar_in_ptyp_close_ptyp_wrt_ptyp using solve [auto] : lngen.
 
 Lemma ftvar_in_btyp_close_btyp_wrt_btyp :
-forall B1 Xbt1,
-  ftvar_in_btyp (close_btyp_wrt_btyp Xbt1 B1) [=] remove Xbt1 (ftvar_in_btyp B1).
+forall B1 α1,
+  ftvar_in_btyp (close_btyp_wrt_btyp α1 B1) [=] remove α1 (ftvar_in_btyp B1).
 Proof.
 unfold close_btyp_wrt_btyp; default_simp.
 Qed.
@@ -7370,8 +7370,8 @@ Qed.
 #[export] Hint Rewrite ftvar_in_btyp_close_btyp_wrt_btyp using solve [auto] : lngen.
 
 Lemma ftvar_in_utyp_close_utyp_wrt_utyp :
-forall C1 Xut1,
-  ftvar_in_utyp (close_utyp_wrt_utyp Xut1 C1) [=] remove Xut1 (ftvar_in_utyp C1).
+forall C1 α1,
+  ftvar_in_utyp (close_utyp_wrt_utyp α1 C1) [=] remove α1 (ftvar_in_utyp C1).
 Proof.
 unfold close_utyp_wrt_utyp; default_simp.
 Qed.
@@ -7380,8 +7380,8 @@ Qed.
 #[export] Hint Rewrite ftvar_in_utyp_close_utyp_wrt_utyp using solve [auto] : lngen.
 
 Lemma ftvar_in_pskl_close_pskl_wrt_pskl :
-forall P1 Xps1,
-  ftvar_in_pskl (close_pskl_wrt_pskl Xps1 P1) [=] remove Xps1 (ftvar_in_pskl P1).
+forall P1 α1,
+  ftvar_in_pskl (close_pskl_wrt_pskl α1 P1) [=] remove α1 (ftvar_in_pskl P1).
 Proof.
 unfold close_pskl_wrt_pskl; default_simp.
 Qed.
@@ -7390,8 +7390,8 @@ Qed.
 #[export] Hint Rewrite ftvar_in_pskl_close_pskl_wrt_pskl using solve [auto] : lngen.
 
 Lemma ftvar_in_bskl_close_bskl_wrt_bskl :
-forall Q1 Xbs1,
-  ftvar_in_bskl (close_bskl_wrt_bskl Xbs1 Q1) [=] remove Xbs1 (ftvar_in_bskl Q1).
+forall Q1 α1,
+  ftvar_in_bskl (close_bskl_wrt_bskl α1 Q1) [=] remove α1 (ftvar_in_bskl Q1).
 Proof.
 unfold close_bskl_wrt_bskl; default_simp.
 Qed.
@@ -7400,8 +7400,8 @@ Qed.
 #[export] Hint Rewrite ftvar_in_bskl_close_bskl_wrt_bskl using solve [auto] : lngen.
 
 Lemma ftvar_in_uskl_close_uskl_wrt_uskl :
-forall R1 Xus1,
-  ftvar_in_uskl (close_uskl_wrt_uskl Xus1 R1) [=] remove Xus1 (ftvar_in_uskl R1).
+forall R1 α1,
+  ftvar_in_uskl (close_uskl_wrt_uskl α1 R1) [=] remove α1 (ftvar_in_uskl R1).
 Proof.
 unfold close_uskl_wrt_uskl; default_simp.
 Qed.
@@ -7410,8 +7410,8 @@ Qed.
 #[export] Hint Rewrite ftvar_in_uskl_close_uskl_wrt_uskl using solve [auto] : lngen.
 
 Lemma ftvar_in_exp_close_exp_wrt_ptyp :
-forall e1 Xpt1,
-  ftvar_in_exp (close_exp_wrt_ptyp Xpt1 e1) [=] remove Xpt1 (ftvar_in_exp e1).
+forall e1 α1,
+  ftvar_in_exp (close_exp_wrt_ptyp α1 e1) [=] remove α1 (ftvar_in_exp e1).
 Proof.
 unfold close_exp_wrt_ptyp; default_simp.
 Qed.
@@ -7430,8 +7430,8 @@ Qed.
 #[export] Hint Rewrite ftvar_in_exp_close_exp_wrt_exp using solve [auto] : lngen.
 
 Lemma fvar_in_exp_close_exp_wrt_ptyp :
-forall e1 Xpt1,
-  fvar_in_exp (close_exp_wrt_ptyp Xpt1 e1) [=] fvar_in_exp e1.
+forall e1 α1,
+  fvar_in_exp (close_exp_wrt_ptyp α1 e1) [=] fvar_in_exp e1.
 Proof.
 unfold close_exp_wrt_ptyp; default_simp.
 Qed.
@@ -8132,9 +8132,9 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_ptyp_subst_ptyp_in_ptyp_fresh_mutual :
-(forall A1 A2 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  ftvar_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1) [=] ftvar_in_ptyp A1).
+(forall A1 A2 α1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  ftvar_in_ptyp (subst_ptyp_in_ptyp A2 α1 A1) [=] ftvar_in_ptyp A1).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp; fsetdec.
@@ -8143,9 +8143,9 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_ptyp_subst_ptyp_in_ptyp_fresh :
-forall A1 A2 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  ftvar_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1) [=] ftvar_in_ptyp A1.
+forall A1 A2 α1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  ftvar_in_ptyp (subst_ptyp_in_ptyp A2 α1 A1) [=] ftvar_in_ptyp A1.
 Proof.
 pose proof ftvar_in_ptyp_subst_ptyp_in_ptyp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -8156,9 +8156,9 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_btyp_subst_btyp_in_btyp_fresh_mutual :
-(forall B1 B2 Xbt1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  ftvar_in_btyp (subst_btyp_in_btyp B2 Xbt1 B1) [=] ftvar_in_btyp B1).
+(forall B1 B2 α1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  ftvar_in_btyp (subst_btyp_in_btyp B2 α1 B1) [=] ftvar_in_btyp B1).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp; fsetdec.
@@ -8167,9 +8167,9 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_btyp_subst_btyp_in_btyp_fresh :
-forall B1 B2 Xbt1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  ftvar_in_btyp (subst_btyp_in_btyp B2 Xbt1 B1) [=] ftvar_in_btyp B1.
+forall B1 B2 α1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  ftvar_in_btyp (subst_btyp_in_btyp B2 α1 B1) [=] ftvar_in_btyp B1.
 Proof.
 pose proof ftvar_in_btyp_subst_btyp_in_btyp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -8180,9 +8180,9 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_utyp_subst_utyp_in_utyp_fresh_mutual :
-(forall C1 C2 Xut1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  ftvar_in_utyp (subst_utyp_in_utyp C2 Xut1 C1) [=] ftvar_in_utyp C1).
+(forall C1 C2 α1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  ftvar_in_utyp (subst_utyp_in_utyp C2 α1 C1) [=] ftvar_in_utyp C1).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp; fsetdec.
@@ -8191,9 +8191,9 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_utyp_subst_utyp_in_utyp_fresh :
-forall C1 C2 Xut1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  ftvar_in_utyp (subst_utyp_in_utyp C2 Xut1 C1) [=] ftvar_in_utyp C1.
+forall C1 C2 α1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  ftvar_in_utyp (subst_utyp_in_utyp C2 α1 C1) [=] ftvar_in_utyp C1.
 Proof.
 pose proof ftvar_in_utyp_subst_utyp_in_utyp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -8204,9 +8204,9 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_pskl_subst_pskl_in_pskl_fresh_mutual :
-(forall P1 P2 Xps1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  ftvar_in_pskl (subst_pskl_in_pskl P2 Xps1 P1) [=] ftvar_in_pskl P1).
+(forall P1 P2 α1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  ftvar_in_pskl (subst_pskl_in_pskl P2 α1 P1) [=] ftvar_in_pskl P1).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp; fsetdec.
@@ -8215,9 +8215,9 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_pskl_subst_pskl_in_pskl_fresh :
-forall P1 P2 Xps1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  ftvar_in_pskl (subst_pskl_in_pskl P2 Xps1 P1) [=] ftvar_in_pskl P1.
+forall P1 P2 α1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  ftvar_in_pskl (subst_pskl_in_pskl P2 α1 P1) [=] ftvar_in_pskl P1.
 Proof.
 pose proof ftvar_in_pskl_subst_pskl_in_pskl_fresh_mutual as H; intuition eauto.
 Qed.
@@ -8228,9 +8228,9 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_bskl_subst_bskl_in_bskl_fresh_mutual :
-(forall Q1 Q2 Xbs1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  ftvar_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1) [=] ftvar_in_bskl Q1).
+(forall Q1 Q2 α1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  ftvar_in_bskl (subst_bskl_in_bskl Q2 α1 Q1) [=] ftvar_in_bskl Q1).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp; fsetdec.
@@ -8239,9 +8239,9 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_bskl_subst_bskl_in_bskl_fresh :
-forall Q1 Q2 Xbs1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  ftvar_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1) [=] ftvar_in_bskl Q1.
+forall Q1 Q2 α1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  ftvar_in_bskl (subst_bskl_in_bskl Q2 α1 Q1) [=] ftvar_in_bskl Q1.
 Proof.
 pose proof ftvar_in_bskl_subst_bskl_in_bskl_fresh_mutual as H; intuition eauto.
 Qed.
@@ -8252,9 +8252,9 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_uskl_subst_bskl_in_uskl_fresh_mutual :
-(forall R1 R2 Xus1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  ftvar_in_uskl (subst_bskl_in_uskl R2 Xus1 R1) [=] ftvar_in_uskl R1).
+(forall R1 R2 α1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1) [=] ftvar_in_uskl R1).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -8263,9 +8263,9 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_uskl_subst_bskl_in_uskl_fresh :
-forall R1 R2 Xus1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  ftvar_in_uskl (subst_bskl_in_uskl R2 Xus1 R1) [=] ftvar_in_uskl R1.
+forall R1 R2 α1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1) [=] ftvar_in_uskl R1.
 Proof.
 pose proof ftvar_in_uskl_subst_bskl_in_uskl_fresh_mutual as H; intuition eauto.
 Qed.
@@ -8276,9 +8276,9 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_exp_subst_ptyp_in_exp_fresh_mutual :
-(forall e1 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1) [=] ftvar_in_exp e1).
+(forall e1 A1 α1,
+  α1 `notin` ftvar_in_exp e1 ->
+  ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1) [=] ftvar_in_exp e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8287,9 +8287,9 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_exp_subst_ptyp_in_exp_fresh :
-forall e1 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1) [=] ftvar_in_exp e1.
+forall e1 A1 α1,
+  α1 `notin` ftvar_in_exp e1 ->
+  ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1) [=] ftvar_in_exp e1.
 Proof.
 pose proof ftvar_in_exp_subst_ptyp_in_exp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -8300,8 +8300,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_exp_subst_exp_in_exp_fresh_mutual :
-(forall e1 A1 Xpt1,
-  fvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1) [=] fvar_in_exp e1).
+(forall e1 A1 α1,
+  fvar_in_exp (subst_ptyp_in_exp A1 α1 e1) [=] fvar_in_exp e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8310,8 +8310,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_exp_subst_exp_in_exp_fresh :
-forall e1 A1 Xpt1,
-  fvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1) [=] fvar_in_exp e1.
+forall e1 A1 α1,
+  fvar_in_exp (subst_ptyp_in_exp A1 α1 e1) [=] fvar_in_exp e1.
 Proof.
 pose proof ftvar_in_exp_subst_exp_in_exp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -8346,8 +8346,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_ptyp_subst_ptyp_in_ptyp_lower_mutual :
-(forall A1 A2 Xpt1,
-  remove Xpt1 (ftvar_in_ptyp A1) [<=] ftvar_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1)).
+(forall A1 A2 α1,
+  remove α1 (ftvar_in_ptyp A1) [<=] ftvar_in_ptyp (subst_ptyp_in_ptyp A2 α1 A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp; fsetdec.
@@ -8356,8 +8356,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_ptyp_subst_ptyp_in_ptyp_lower :
-forall A1 A2 Xpt1,
-  remove Xpt1 (ftvar_in_ptyp A1) [<=] ftvar_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1).
+forall A1 A2 α1,
+  remove α1 (ftvar_in_ptyp A1) [<=] ftvar_in_ptyp (subst_ptyp_in_ptyp A2 α1 A1).
 Proof.
 pose proof ftvar_in_ptyp_subst_ptyp_in_ptyp_lower_mutual as H; intuition eauto.
 Qed.
@@ -8367,8 +8367,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_btyp_subst_btyp_in_btyp_lower_mutual :
-(forall B1 B2 Xbt1,
-  remove Xbt1 (ftvar_in_btyp B1) [<=] ftvar_in_btyp (subst_btyp_in_btyp B2 Xbt1 B1)).
+(forall B1 B2 α1,
+  remove α1 (ftvar_in_btyp B1) [<=] ftvar_in_btyp (subst_btyp_in_btyp B2 α1 B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp; fsetdec.
@@ -8377,8 +8377,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_btyp_subst_btyp_in_btyp_lower :
-forall B1 B2 Xbt1,
-  remove Xbt1 (ftvar_in_btyp B1) [<=] ftvar_in_btyp (subst_btyp_in_btyp B2 Xbt1 B1).
+forall B1 B2 α1,
+  remove α1 (ftvar_in_btyp B1) [<=] ftvar_in_btyp (subst_btyp_in_btyp B2 α1 B1).
 Proof.
 pose proof ftvar_in_btyp_subst_btyp_in_btyp_lower_mutual as H; intuition eauto.
 Qed.
@@ -8388,8 +8388,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_utyp_subst_utyp_in_utyp_lower_mutual :
-(forall C1 C2 Xut1,
-  remove Xut1 (ftvar_in_utyp C1) [<=] ftvar_in_utyp (subst_utyp_in_utyp C2 Xut1 C1)).
+(forall C1 C2 α1,
+  remove α1 (ftvar_in_utyp C1) [<=] ftvar_in_utyp (subst_utyp_in_utyp C2 α1 C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp; fsetdec.
@@ -8398,8 +8398,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_utyp_subst_utyp_in_utyp_lower :
-forall C1 C2 Xut1,
-  remove Xut1 (ftvar_in_utyp C1) [<=] ftvar_in_utyp (subst_utyp_in_utyp C2 Xut1 C1).
+forall C1 C2 α1,
+  remove α1 (ftvar_in_utyp C1) [<=] ftvar_in_utyp (subst_utyp_in_utyp C2 α1 C1).
 Proof.
 pose proof ftvar_in_utyp_subst_utyp_in_utyp_lower_mutual as H; intuition eauto.
 Qed.
@@ -8409,8 +8409,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_pskl_subst_pskl_in_pskl_lower_mutual :
-(forall P1 P2 Xps1,
-  remove Xps1 (ftvar_in_pskl P1) [<=] ftvar_in_pskl (subst_pskl_in_pskl P2 Xps1 P1)).
+(forall P1 P2 α1,
+  remove α1 (ftvar_in_pskl P1) [<=] ftvar_in_pskl (subst_pskl_in_pskl P2 α1 P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp; fsetdec.
@@ -8419,8 +8419,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_pskl_subst_pskl_in_pskl_lower :
-forall P1 P2 Xps1,
-  remove Xps1 (ftvar_in_pskl P1) [<=] ftvar_in_pskl (subst_pskl_in_pskl P2 Xps1 P1).
+forall P1 P2 α1,
+  remove α1 (ftvar_in_pskl P1) [<=] ftvar_in_pskl (subst_pskl_in_pskl P2 α1 P1).
 Proof.
 pose proof ftvar_in_pskl_subst_pskl_in_pskl_lower_mutual as H; intuition eauto.
 Qed.
@@ -8430,8 +8430,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_bskl_subst_bskl_in_bskl_lower_mutual :
-(forall Q1 Q2 Xbs1,
-  remove Xbs1 (ftvar_in_bskl Q1) [<=] ftvar_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1)).
+(forall Q1 Q2 α1,
+  remove α1 (ftvar_in_bskl Q1) [<=] ftvar_in_bskl (subst_bskl_in_bskl Q2 α1 Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp; fsetdec.
@@ -8440,8 +8440,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_bskl_subst_bskl_in_bskl_lower :
-forall Q1 Q2 Xbs1,
-  remove Xbs1 (ftvar_in_bskl Q1) [<=] ftvar_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1).
+forall Q1 Q2 α1,
+  remove α1 (ftvar_in_bskl Q1) [<=] ftvar_in_bskl (subst_bskl_in_bskl Q2 α1 Q1).
 Proof.
 pose proof ftvar_in_bskl_subst_bskl_in_bskl_lower_mutual as H; intuition eauto.
 Qed.
@@ -8451,8 +8451,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_uskl_subst_bskl_in_uskl_lower_mutual :
-(forall R1 R2 Xus1,
-  remove Xus1 (ftvar_in_uskl R1) [<=] ftvar_in_uskl (subst_bskl_in_uskl R2 Xus1 R1)).
+(forall R1 R2 α1,
+  remove α1 (ftvar_in_uskl R1) [<=] ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -8461,8 +8461,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_uskl_subst_bskl_in_uskl_lower :
-forall R1 R2 Xus1,
-  remove Xus1 (ftvar_in_uskl R1) [<=] ftvar_in_uskl (subst_bskl_in_uskl R2 Xus1 R1).
+forall R1 R2 α1,
+  remove α1 (ftvar_in_uskl R1) [<=] ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1).
 Proof.
 pose proof ftvar_in_uskl_subst_bskl_in_uskl_lower_mutual as H; intuition eauto.
 Qed.
@@ -8472,8 +8472,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_exp_subst_ptyp_in_exp_lower_mutual :
-(forall e1 A1 Xpt1,
-  remove Xpt1 (ftvar_in_exp e1) [<=] ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1)).
+(forall e1 A1 α1,
+  remove α1 (ftvar_in_exp e1) [<=] ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8482,8 +8482,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_exp_subst_ptyp_in_exp_lower :
-forall e1 A1 Xpt1,
-  remove Xpt1 (ftvar_in_exp e1) [<=] ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1).
+forall e1 A1 α1,
+  remove α1 (ftvar_in_exp e1) [<=] ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof ftvar_in_exp_subst_ptyp_in_exp_lower_mutual as H; intuition eauto.
 Qed.
@@ -8514,8 +8514,8 @@ Qed.
 (* begin hide *)
 
 Lemma fvar_in_exp_subst_ptyp_in_exp_lower_mutual :
-(forall e1 A1 Xpt1,
-  fvar_in_exp e1 [<=] fvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1)).
+(forall e1 A1 α1,
+  fvar_in_exp e1 [<=] fvar_in_exp (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8524,8 +8524,8 @@ Qed.
 (* end hide *)
 
 Lemma fvar_in_exp_subst_ptyp_in_exp_lower :
-forall e1 A1 Xpt1,
-  fvar_in_exp e1 [<=] fvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1).
+forall e1 A1 α1,
+  fvar_in_exp e1 [<=] fvar_in_exp (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof fvar_in_exp_subst_ptyp_in_exp_lower_mutual as H; intuition eauto.
 Qed.
@@ -8556,10 +8556,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_ptyp_subst_ptyp_in_ptyp_notin_mutual :
-(forall A1 A2 Xpt1 Xpt2,
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 `notin` ftvar_in_ptyp A2 ->
-  Xpt2 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1)).
+(forall A1 A2 α1 α2,
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 `notin` ftvar_in_ptyp A2 ->
+  α2 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A2 α1 A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp; fsetdec.
@@ -8568,10 +8568,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_ptyp_subst_ptyp_in_ptyp_notin :
-forall A1 A2 Xpt1 Xpt2,
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 `notin` ftvar_in_ptyp A2 ->
-  Xpt2 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1).
+forall A1 A2 α1 α2,
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 `notin` ftvar_in_ptyp A2 ->
+  α2 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A2 α1 A1).
 Proof.
 pose proof ftvar_in_ptyp_subst_ptyp_in_ptyp_notin_mutual as H; intuition eauto.
 Qed.
@@ -8581,10 +8581,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_btyp_subst_btyp_in_btyp_notin_mutual :
-(forall B1 B2 Xbt1 Xbt2,
-  Xbt2 `notin` ftvar_in_btyp B1 ->
-  Xbt2 `notin` ftvar_in_btyp B2 ->
-  Xbt2 `notin` ftvar_in_btyp (subst_btyp_in_btyp B2 Xbt1 B1)).
+(forall B1 B2 α1 α2,
+  α2 `notin` ftvar_in_btyp B1 ->
+  α2 `notin` ftvar_in_btyp B2 ->
+  α2 `notin` ftvar_in_btyp (subst_btyp_in_btyp B2 α1 B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp; fsetdec.
@@ -8593,10 +8593,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_btyp_subst_btyp_in_btyp_notin :
-forall B1 B2 Xbt1 Xbt2,
-  Xbt2 `notin` ftvar_in_btyp B1 ->
-  Xbt2 `notin` ftvar_in_btyp B2 ->
-  Xbt2 `notin` ftvar_in_btyp (subst_btyp_in_btyp B2 Xbt1 B1).
+forall B1 B2 α1 α2,
+  α2 `notin` ftvar_in_btyp B1 ->
+  α2 `notin` ftvar_in_btyp B2 ->
+  α2 `notin` ftvar_in_btyp (subst_btyp_in_btyp B2 α1 B1).
 Proof.
 pose proof ftvar_in_btyp_subst_btyp_in_btyp_notin_mutual as H; intuition eauto.
 Qed.
@@ -8606,10 +8606,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_utyp_subst_utyp_in_utyp_notin_mutual :
-(forall C1 C2 Xut1 Xut2,
-  Xut2 `notin` ftvar_in_utyp C1 ->
-  Xut2 `notin` ftvar_in_utyp C2 ->
-  Xut2 `notin` ftvar_in_utyp (subst_utyp_in_utyp C2 Xut1 C1)).
+(forall C1 C2 α1 α2,
+  α2 `notin` ftvar_in_utyp C1 ->
+  α2 `notin` ftvar_in_utyp C2 ->
+  α2 `notin` ftvar_in_utyp (subst_utyp_in_utyp C2 α1 C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp; fsetdec.
@@ -8618,10 +8618,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_utyp_subst_utyp_in_utyp_notin :
-forall C1 C2 Xut1 Xut2,
-  Xut2 `notin` ftvar_in_utyp C1 ->
-  Xut2 `notin` ftvar_in_utyp C2 ->
-  Xut2 `notin` ftvar_in_utyp (subst_utyp_in_utyp C2 Xut1 C1).
+forall C1 C2 α1 α2,
+  α2 `notin` ftvar_in_utyp C1 ->
+  α2 `notin` ftvar_in_utyp C2 ->
+  α2 `notin` ftvar_in_utyp (subst_utyp_in_utyp C2 α1 C1).
 Proof.
 pose proof ftvar_in_utyp_subst_utyp_in_utyp_notin_mutual as H; intuition eauto.
 Qed.
@@ -8631,10 +8631,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_pskl_subst_pskl_in_pskl_notin_mutual :
-(forall P1 P2 Xps1 Xps2,
-  Xps2 `notin` ftvar_in_pskl P1 ->
-  Xps2 `notin` ftvar_in_pskl P2 ->
-  Xps2 `notin` ftvar_in_pskl (subst_pskl_in_pskl P2 Xps1 P1)).
+(forall P1 P2 α1 α2,
+  α2 `notin` ftvar_in_pskl P1 ->
+  α2 `notin` ftvar_in_pskl P2 ->
+  α2 `notin` ftvar_in_pskl (subst_pskl_in_pskl P2 α1 P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp; fsetdec.
@@ -8643,10 +8643,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_pskl_subst_pskl_in_pskl_notin :
-forall P1 P2 Xps1 Xps2,
-  Xps2 `notin` ftvar_in_pskl P1 ->
-  Xps2 `notin` ftvar_in_pskl P2 ->
-  Xps2 `notin` ftvar_in_pskl (subst_pskl_in_pskl P2 Xps1 P1).
+forall P1 P2 α1 α2,
+  α2 `notin` ftvar_in_pskl P1 ->
+  α2 `notin` ftvar_in_pskl P2 ->
+  α2 `notin` ftvar_in_pskl (subst_pskl_in_pskl P2 α1 P1).
 Proof.
 pose proof ftvar_in_pskl_subst_pskl_in_pskl_notin_mutual as H; intuition eauto.
 Qed.
@@ -8656,10 +8656,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_bskl_subst_bskl_in_bskl_notin_mutual :
-(forall Q1 Q2 Xbs1 Xbs2,
-  Xbs2 `notin` ftvar_in_bskl Q1 ->
-  Xbs2 `notin` ftvar_in_bskl Q2 ->
-  Xbs2 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1)).
+(forall Q1 Q2 α1 α2,
+  α2 `notin` ftvar_in_bskl Q1 ->
+  α2 `notin` ftvar_in_bskl Q2 ->
+  α2 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q2 α1 Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp; fsetdec.
@@ -8668,10 +8668,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_bskl_subst_bskl_in_bskl_notin :
-forall Q1 Q2 Xbs1 Xbs2,
-  Xbs2 `notin` ftvar_in_bskl Q1 ->
-  Xbs2 `notin` ftvar_in_bskl Q2 ->
-  Xbs2 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1).
+forall Q1 Q2 α1 α2,
+  α2 `notin` ftvar_in_bskl Q1 ->
+  α2 `notin` ftvar_in_bskl Q2 ->
+  α2 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q2 α1 Q1).
 Proof.
 pose proof ftvar_in_bskl_subst_bskl_in_bskl_notin_mutual as H; intuition eauto.
 Qed.
@@ -8681,10 +8681,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_uskl_subst_bskl_in_uskl_notin_mutual :
-(forall R1 R2 Xus1 Xus2,
-  Xus2 `notin` ftvar_in_uskl R1 ->
-  Xus2 `notin` ftvar_in_uskl R2 ->
-  Xus2 `notin` ftvar_in_uskl (subst_bskl_in_uskl R2 Xus1 R1)).
+(forall R1 R2 α1 α2,
+  α2 `notin` ftvar_in_uskl R1 ->
+  α2 `notin` ftvar_in_uskl R2 ->
+  α2 `notin` ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -8693,10 +8693,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_uskl_subst_bskl_in_uskl_notin :
-forall R1 R2 Xus1 Xus2,
-  Xus2 `notin` ftvar_in_uskl R1 ->
-  Xus2 `notin` ftvar_in_uskl R2 ->
-  Xus2 `notin` ftvar_in_uskl (subst_bskl_in_uskl R2 Xus1 R1).
+forall R1 R2 α1 α2,
+  α2 `notin` ftvar_in_uskl R1 ->
+  α2 `notin` ftvar_in_uskl R2 ->
+  α2 `notin` ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1).
 Proof.
 pose proof ftvar_in_uskl_subst_bskl_in_uskl_notin_mutual as H; intuition eauto.
 Qed.
@@ -8706,10 +8706,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_exp_subst_ptyp_in_exp_notin_mutual :
-(forall e1 A1 Xpt1 Xpt2,
-  Xpt2 `notin` ftvar_in_exp e1 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1)).
+(forall e1 A1 α1 α2,
+  α2 `notin` ftvar_in_exp e1 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8718,10 +8718,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_exp_subst_ptyp_in_exp_notin :
-forall e1 A1 Xpt1 Xpt2,
-  Xpt2 `notin` ftvar_in_exp e1 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1).
+forall e1 A1 α1 α2,
+  α2 `notin` ftvar_in_exp e1 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof ftvar_in_exp_subst_ptyp_in_exp_notin_mutual as H; intuition eauto.
 Qed.
@@ -8731,10 +8731,10 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_exp_subst_exp_in_exp_notin_mutual :
-(forall e1 e2 x1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  Xpt1 `notin` ftvar_in_exp (subst_exp_in_exp e2 x1 e1)).
+(forall e1 e2 x1 α1,
+  α1 `notin` ftvar_in_exp e1 ->
+  α1 `notin` ftvar_in_exp e2 ->
+  α1 `notin` ftvar_in_exp (subst_exp_in_exp e2 x1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8743,10 +8743,10 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_exp_subst_exp_in_exp_notin :
-forall e1 e2 x1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  Xpt1 `notin` ftvar_in_exp (subst_exp_in_exp e2 x1 e1).
+forall e1 e2 x1 α1,
+  α1 `notin` ftvar_in_exp e1 ->
+  α1 `notin` ftvar_in_exp e2 ->
+  α1 `notin` ftvar_in_exp (subst_exp_in_exp e2 x1 e1).
 Proof.
 pose proof ftvar_in_exp_subst_exp_in_exp_notin_mutual as H; intuition eauto.
 Qed.
@@ -8756,9 +8756,9 @@ Qed.
 (* begin hide *)
 
 Lemma fvar_in_exp_subst_ptyp_in_exp_notin_mutual :
-(forall e1 A1 Xpt1 x1,
+(forall e1 A1 α1 x1,
   x1 `notin` fvar_in_exp e1 ->
-  x1 `notin` fvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1)).
+  x1 `notin` fvar_in_exp (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8767,9 +8767,9 @@ Qed.
 (* end hide *)
 
 Lemma fvar_in_exp_subst_ptyp_in_exp_notin :
-forall e1 A1 Xpt1 x1,
+forall e1 A1 α1 x1,
   x1 `notin` fvar_in_exp e1 ->
-  x1 `notin` fvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1).
+  x1 `notin` fvar_in_exp (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof fvar_in_exp_subst_ptyp_in_exp_notin_mutual as H; intuition eauto.
 Qed.
@@ -8804,8 +8804,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_ptyp_subst_ptyp_in_ptyp_upper_mutual :
-(forall A1 A2 Xpt1,
-  ftvar_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1) [<=] ftvar_in_ptyp A2 `union` remove Xpt1 (ftvar_in_ptyp A1)).
+(forall A1 A2 α1,
+  ftvar_in_ptyp (subst_ptyp_in_ptyp A2 α1 A1) [<=] ftvar_in_ptyp A2 `union` remove α1 (ftvar_in_ptyp A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp; fsetdec.
@@ -8814,8 +8814,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_ptyp_subst_ptyp_in_ptyp_upper :
-forall A1 A2 Xpt1,
-  ftvar_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1) [<=] ftvar_in_ptyp A2 `union` remove Xpt1 (ftvar_in_ptyp A1).
+forall A1 A2 α1,
+  ftvar_in_ptyp (subst_ptyp_in_ptyp A2 α1 A1) [<=] ftvar_in_ptyp A2 `union` remove α1 (ftvar_in_ptyp A1).
 Proof.
 pose proof ftvar_in_ptyp_subst_ptyp_in_ptyp_upper_mutual as H; intuition eauto.
 Qed.
@@ -8825,8 +8825,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_btyp_subst_btyp_in_btyp_upper_mutual :
-(forall B1 B2 Xbt1,
-  ftvar_in_btyp (subst_btyp_in_btyp B2 Xbt1 B1) [<=] ftvar_in_btyp B2 `union` remove Xbt1 (ftvar_in_btyp B1)).
+(forall B1 B2 α1,
+  ftvar_in_btyp (subst_btyp_in_btyp B2 α1 B1) [<=] ftvar_in_btyp B2 `union` remove α1 (ftvar_in_btyp B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp; fsetdec.
@@ -8835,8 +8835,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_btyp_subst_btyp_in_btyp_upper :
-forall B1 B2 Xbt1,
-  ftvar_in_btyp (subst_btyp_in_btyp B2 Xbt1 B1) [<=] ftvar_in_btyp B2 `union` remove Xbt1 (ftvar_in_btyp B1).
+forall B1 B2 α1,
+  ftvar_in_btyp (subst_btyp_in_btyp B2 α1 B1) [<=] ftvar_in_btyp B2 `union` remove α1 (ftvar_in_btyp B1).
 Proof.
 pose proof ftvar_in_btyp_subst_btyp_in_btyp_upper_mutual as H; intuition eauto.
 Qed.
@@ -8846,8 +8846,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_utyp_subst_utyp_in_utyp_upper_mutual :
-(forall C1 C2 Xut1,
-  ftvar_in_utyp (subst_utyp_in_utyp C2 Xut1 C1) [<=] ftvar_in_utyp C2 `union` remove Xut1 (ftvar_in_utyp C1)).
+(forall C1 C2 α1,
+  ftvar_in_utyp (subst_utyp_in_utyp C2 α1 C1) [<=] ftvar_in_utyp C2 `union` remove α1 (ftvar_in_utyp C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp; fsetdec.
@@ -8856,8 +8856,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_utyp_subst_utyp_in_utyp_upper :
-forall C1 C2 Xut1,
-  ftvar_in_utyp (subst_utyp_in_utyp C2 Xut1 C1) [<=] ftvar_in_utyp C2 `union` remove Xut1 (ftvar_in_utyp C1).
+forall C1 C2 α1,
+  ftvar_in_utyp (subst_utyp_in_utyp C2 α1 C1) [<=] ftvar_in_utyp C2 `union` remove α1 (ftvar_in_utyp C1).
 Proof.
 pose proof ftvar_in_utyp_subst_utyp_in_utyp_upper_mutual as H; intuition eauto.
 Qed.
@@ -8867,8 +8867,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_pskl_subst_pskl_in_pskl_upper_mutual :
-(forall P1 P2 Xps1,
-  ftvar_in_pskl (subst_pskl_in_pskl P2 Xps1 P1) [<=] ftvar_in_pskl P2 `union` remove Xps1 (ftvar_in_pskl P1)).
+(forall P1 P2 α1,
+  ftvar_in_pskl (subst_pskl_in_pskl P2 α1 P1) [<=] ftvar_in_pskl P2 `union` remove α1 (ftvar_in_pskl P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp; fsetdec.
@@ -8877,8 +8877,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_pskl_subst_pskl_in_pskl_upper :
-forall P1 P2 Xps1,
-  ftvar_in_pskl (subst_pskl_in_pskl P2 Xps1 P1) [<=] ftvar_in_pskl P2 `union` remove Xps1 (ftvar_in_pskl P1).
+forall P1 P2 α1,
+  ftvar_in_pskl (subst_pskl_in_pskl P2 α1 P1) [<=] ftvar_in_pskl P2 `union` remove α1 (ftvar_in_pskl P1).
 Proof.
 pose proof ftvar_in_pskl_subst_pskl_in_pskl_upper_mutual as H; intuition eauto.
 Qed.
@@ -8888,8 +8888,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_bskl_subst_bskl_in_bskl_upper_mutual :
-(forall Q1 Q2 Xbs1,
-  ftvar_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1) [<=] ftvar_in_bskl Q2 `union` remove Xbs1 (ftvar_in_bskl Q1)).
+(forall Q1 Q2 α1,
+  ftvar_in_bskl (subst_bskl_in_bskl Q2 α1 Q1) [<=] ftvar_in_bskl Q2 `union` remove α1 (ftvar_in_bskl Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp; fsetdec.
@@ -8898,8 +8898,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_bskl_subst_bskl_in_bskl_upper :
-forall Q1 Q2 Xbs1,
-  ftvar_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1) [<=] ftvar_in_bskl Q2 `union` remove Xbs1 (ftvar_in_bskl Q1).
+forall Q1 Q2 α1,
+  ftvar_in_bskl (subst_bskl_in_bskl Q2 α1 Q1) [<=] ftvar_in_bskl Q2 `union` remove α1 (ftvar_in_bskl Q1).
 Proof.
 pose proof ftvar_in_bskl_subst_bskl_in_bskl_upper_mutual as H; intuition eauto.
 Qed.
@@ -8909,8 +8909,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_uskl_subst_bskl_in_uskl_upper_mutual :
-(forall R1 R2 Xus1,
-  ftvar_in_uskl (subst_bskl_in_uskl R2 Xus1 R1) [<=] ftvar_in_uskl R2 `union` remove Xus1 (ftvar_in_uskl R1)).
+(forall R1 R2 α1,
+  ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1) [<=] ftvar_in_uskl R2 `union` remove α1 (ftvar_in_uskl R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp; fsetdec.
@@ -8919,8 +8919,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_uskl_subst_bskl_in_uskl_upper :
-forall R1 R2 Xus1,
-  ftvar_in_uskl (subst_bskl_in_uskl R2 Xus1 R1) [<=] ftvar_in_uskl R2 `union` remove Xus1 (ftvar_in_uskl R1).
+forall R1 R2 α1,
+  ftvar_in_uskl (subst_bskl_in_uskl R2 α1 R1) [<=] ftvar_in_uskl R2 `union` remove α1 (ftvar_in_uskl R1).
 Proof.
 pose proof ftvar_in_uskl_subst_bskl_in_uskl_upper_mutual as H; intuition eauto.
 Qed.
@@ -8930,8 +8930,8 @@ Qed.
 (* begin hide *)
 
 Lemma ftvar_in_exp_subst_ptyp_in_exp_upper_mutual :
-(forall e1 A1 Xpt1,
-  ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1) [<=] ftvar_in_ptyp A1 `union` remove Xpt1 (ftvar_in_exp e1)).
+(forall e1 A1 α1,
+  ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1) [<=] ftvar_in_ptyp A1 `union` remove α1 (ftvar_in_exp e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8940,8 +8940,8 @@ Qed.
 (* end hide *)
 
 Lemma ftvar_in_exp_subst_ptyp_in_exp_upper :
-forall e1 A1 Xpt1,
-  ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1) [<=] ftvar_in_ptyp A1 `union` remove Xpt1 (ftvar_in_exp e1).
+forall e1 A1 α1,
+  ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1) [<=] ftvar_in_ptyp A1 `union` remove α1 (ftvar_in_exp e1).
 Proof.
 pose proof ftvar_in_exp_subst_ptyp_in_exp_upper_mutual as H; intuition eauto.
 Qed.
@@ -8972,8 +8972,8 @@ Qed.
 (* begin hide *)
 
 Lemma fvar_in_exp_subst_ptyp_in_exp_upper_mutual :
-(forall e1 A1 Xpt1,
-  fvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1) [<=] fvar_in_exp e1).
+(forall e1 A1 α1,
+  fvar_in_exp (subst_ptyp_in_exp A1 α1 e1) [<=] fvar_in_exp e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp; fsetdec.
@@ -8982,8 +8982,8 @@ Qed.
 (* end hide *)
 
 Lemma fvar_in_exp_subst_ptyp_in_exp_upper :
-forall e1 A1 Xpt1,
-  fvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1) [<=] fvar_in_exp e1.
+forall e1 A1 α1,
+  fvar_in_exp (subst_ptyp_in_exp A1 α1 e1) [<=] fvar_in_exp e1.
 Proof.
 pose proof fvar_in_exp_subst_ptyp_in_exp_upper_mutual as H; intuition eauto.
 Qed.
@@ -9021,11 +9021,11 @@ Ltac default_autorewrite ::= autorewrite with lngen.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp_rec_mutual :
-(forall A2 A1 Xpt1 Xpt2 n1,
+(forall A2 A1 α1 α2 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
-  Xpt1 <> Xpt2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 (close_ptyp_wrt_ptyp_rec n1 Xpt2 A2) = close_ptyp_wrt_ptyp_rec n1 Xpt2 (subst_ptyp_in_ptyp A1 Xpt1 A2)).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  subst_ptyp_in_ptyp A1 α1 (close_ptyp_wrt_ptyp_rec n1 α2 A2) = close_ptyp_wrt_ptyp_rec n1 α2 (subst_ptyp_in_ptyp A1 α1 A2)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -9034,11 +9034,11 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp_rec :
-forall A2 A1 Xpt1 Xpt2 n1,
+forall A2 A1 α1 α2 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
-  Xpt1 <> Xpt2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 (close_ptyp_wrt_ptyp_rec n1 Xpt2 A2) = close_ptyp_wrt_ptyp_rec n1 Xpt2 (subst_ptyp_in_ptyp A1 Xpt1 A2).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  subst_ptyp_in_ptyp A1 α1 (close_ptyp_wrt_ptyp_rec n1 α2 A2) = close_ptyp_wrt_ptyp_rec n1 α2 (subst_ptyp_in_ptyp A1 α1 A2).
 Proof.
 pose proof subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -9048,11 +9048,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_close_btyp_wrt_btyp_rec_mutual :
-(forall B2 B1 Xbt1 Xbt2 n1,
+(forall B2 B1 α1 α2 n1,
   degree_btyp_wrt_btyp n1 B1 ->
-  Xbt1 <> Xbt2 ->
-  Xbt2 `notin` ftvar_in_btyp B1 ->
-  subst_btyp_in_btyp B1 Xbt1 (close_btyp_wrt_btyp_rec n1 Xbt2 B2) = close_btyp_wrt_btyp_rec n1 Xbt2 (subst_btyp_in_btyp B1 Xbt1 B2)).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_btyp B1 ->
+  subst_btyp_in_btyp B1 α1 (close_btyp_wrt_btyp_rec n1 α2 B2) = close_btyp_wrt_btyp_rec n1 α2 (subst_btyp_in_btyp B1 α1 B2)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -9061,11 +9061,11 @@ Qed.
 (* end hide *)
 
 Lemma subst_btyp_in_btyp_close_btyp_wrt_btyp_rec :
-forall B2 B1 Xbt1 Xbt2 n1,
+forall B2 B1 α1 α2 n1,
   degree_btyp_wrt_btyp n1 B1 ->
-  Xbt1 <> Xbt2 ->
-  Xbt2 `notin` ftvar_in_btyp B1 ->
-  subst_btyp_in_btyp B1 Xbt1 (close_btyp_wrt_btyp_rec n1 Xbt2 B2) = close_btyp_wrt_btyp_rec n1 Xbt2 (subst_btyp_in_btyp B1 Xbt1 B2).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_btyp B1 ->
+  subst_btyp_in_btyp B1 α1 (close_btyp_wrt_btyp_rec n1 α2 B2) = close_btyp_wrt_btyp_rec n1 α2 (subst_btyp_in_btyp B1 α1 B2).
 Proof.
 pose proof subst_btyp_in_btyp_close_btyp_wrt_btyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -9075,11 +9075,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_close_utyp_wrt_utyp_rec_mutual :
-(forall C2 C1 Xut1 Xut2 n1,
+(forall C2 C1 α1 α2 n1,
   degree_utyp_wrt_utyp n1 C1 ->
-  Xut1 <> Xut2 ->
-  Xut2 `notin` ftvar_in_utyp C1 ->
-  subst_utyp_in_utyp C1 Xut1 (close_utyp_wrt_utyp_rec n1 Xut2 C2) = close_utyp_wrt_utyp_rec n1 Xut2 (subst_utyp_in_utyp C1 Xut1 C2)).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_utyp C1 ->
+  subst_utyp_in_utyp C1 α1 (close_utyp_wrt_utyp_rec n1 α2 C2) = close_utyp_wrt_utyp_rec n1 α2 (subst_utyp_in_utyp C1 α1 C2)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -9088,11 +9088,11 @@ Qed.
 (* end hide *)
 
 Lemma subst_utyp_in_utyp_close_utyp_wrt_utyp_rec :
-forall C2 C1 Xut1 Xut2 n1,
+forall C2 C1 α1 α2 n1,
   degree_utyp_wrt_utyp n1 C1 ->
-  Xut1 <> Xut2 ->
-  Xut2 `notin` ftvar_in_utyp C1 ->
-  subst_utyp_in_utyp C1 Xut1 (close_utyp_wrt_utyp_rec n1 Xut2 C2) = close_utyp_wrt_utyp_rec n1 Xut2 (subst_utyp_in_utyp C1 Xut1 C2).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_utyp C1 ->
+  subst_utyp_in_utyp C1 α1 (close_utyp_wrt_utyp_rec n1 α2 C2) = close_utyp_wrt_utyp_rec n1 α2 (subst_utyp_in_utyp C1 α1 C2).
 Proof.
 pose proof subst_utyp_in_utyp_close_utyp_wrt_utyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -9102,11 +9102,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_close_pskl_wrt_pskl_rec_mutual :
-(forall P2 P1 Xps1 Xps2 n1,
+(forall P2 P1 α1 α2 n1,
   degree_pskl_wrt_pskl n1 P1 ->
-  Xps1 <> Xps2 ->
-  Xps2 `notin` ftvar_in_pskl P1 ->
-  subst_pskl_in_pskl P1 Xps1 (close_pskl_wrt_pskl_rec n1 Xps2 P2) = close_pskl_wrt_pskl_rec n1 Xps2 (subst_pskl_in_pskl P1 Xps1 P2)).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_pskl P1 ->
+  subst_pskl_in_pskl P1 α1 (close_pskl_wrt_pskl_rec n1 α2 P2) = close_pskl_wrt_pskl_rec n1 α2 (subst_pskl_in_pskl P1 α1 P2)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -9115,11 +9115,11 @@ Qed.
 (* end hide *)
 
 Lemma subst_pskl_in_pskl_close_pskl_wrt_pskl_rec :
-forall P2 P1 Xps1 Xps2 n1,
+forall P2 P1 α1 α2 n1,
   degree_pskl_wrt_pskl n1 P1 ->
-  Xps1 <> Xps2 ->
-  Xps2 `notin` ftvar_in_pskl P1 ->
-  subst_pskl_in_pskl P1 Xps1 (close_pskl_wrt_pskl_rec n1 Xps2 P2) = close_pskl_wrt_pskl_rec n1 Xps2 (subst_pskl_in_pskl P1 Xps1 P2).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_pskl P1 ->
+  subst_pskl_in_pskl P1 α1 (close_pskl_wrt_pskl_rec n1 α2 P2) = close_pskl_wrt_pskl_rec n1 α2 (subst_pskl_in_pskl P1 α1 P2).
 Proof.
 pose proof subst_pskl_in_pskl_close_pskl_wrt_pskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -9129,11 +9129,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_close_bskl_wrt_bskl_rec_mutual :
-(forall Q2 Q1 Xbs1 Xbs2 n1,
+(forall Q2 Q1 α1 α2 n1,
   degree_bskl_wrt_bskl n1 Q1 ->
-  Xbs1 <> Xbs2 ->
-  Xbs2 `notin` ftvar_in_bskl Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 (close_bskl_wrt_bskl_rec n1 Xbs2 Q2) = close_bskl_wrt_bskl_rec n1 Xbs2 (subst_bskl_in_bskl Q1 Xbs1 Q2)).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_bskl Q1 ->
+  subst_bskl_in_bskl Q1 α1 (close_bskl_wrt_bskl_rec n1 α2 Q2) = close_bskl_wrt_bskl_rec n1 α2 (subst_bskl_in_bskl Q1 α1 Q2)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -9142,11 +9142,11 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_bskl_close_bskl_wrt_bskl_rec :
-forall Q2 Q1 Xbs1 Xbs2 n1,
+forall Q2 Q1 α1 α2 n1,
   degree_bskl_wrt_bskl n1 Q1 ->
-  Xbs1 <> Xbs2 ->
-  Xbs2 `notin` ftvar_in_bskl Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 (close_bskl_wrt_bskl_rec n1 Xbs2 Q2) = close_bskl_wrt_bskl_rec n1 Xbs2 (subst_bskl_in_bskl Q1 Xbs1 Q2).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_bskl Q1 ->
+  subst_bskl_in_bskl Q1 α1 (close_bskl_wrt_bskl_rec n1 α2 Q2) = close_bskl_wrt_bskl_rec n1 α2 (subst_bskl_in_bskl Q1 α1 Q2).
 Proof.
 pose proof subst_bskl_in_bskl_close_bskl_wrt_bskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -9156,11 +9156,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_mutual :
-(forall R2 R1 Xus1 Xus2 n1,
+(forall R2 R1 α1 α2 n1,
   degree_uskl_wrt_uskl n1 R1 ->
-  Xus1 <> Xus2 ->
-  Xus2 `notin` ftvar_in_uskl R1 ->
-  subst_bskl_in_uskl R1 Xus1 (close_uskl_wrt_uskl_rec n1 Xus2 R2) = close_uskl_wrt_uskl_rec n1 Xus2 (subst_bskl_in_uskl R1 Xus1 R2)).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_uskl R1 ->
+  subst_bskl_in_uskl R1 α1 (close_uskl_wrt_uskl_rec n1 α2 R2) = close_uskl_wrt_uskl_rec n1 α2 (subst_bskl_in_uskl R1 α1 R2)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -9169,11 +9169,11 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_rec :
-forall R2 R1 Xus1 Xus2 n1,
+forall R2 R1 α1 α2 n1,
   degree_uskl_wrt_uskl n1 R1 ->
-  Xus1 <> Xus2 ->
-  Xus2 `notin` ftvar_in_uskl R1 ->
-  subst_bskl_in_uskl R1 Xus1 (close_uskl_wrt_uskl_rec n1 Xus2 R2) = close_uskl_wrt_uskl_rec n1 Xus2 (subst_bskl_in_uskl R1 Xus1 R2).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_uskl R1 ->
+  subst_bskl_in_uskl R1 α1 (close_uskl_wrt_uskl_rec n1 α2 R2) = close_uskl_wrt_uskl_rec n1 α2 (subst_bskl_in_uskl R1 α1 R2).
 Proof.
 pose proof subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -9183,11 +9183,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_ptyp_rec_mutual :
-(forall e1 A1 Xpt1 Xpt2 n1,
+(forall e1 A1 α1 α2 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
-  Xpt1 <> Xpt2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  subst_ptyp_in_exp A1 Xpt1 (close_exp_wrt_ptyp_rec n1 Xpt2 e1) = close_exp_wrt_ptyp_rec n1 Xpt2 (subst_ptyp_in_exp A1 Xpt1 e1)).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  subst_ptyp_in_exp A1 α1 (close_exp_wrt_ptyp_rec n1 α2 e1) = close_exp_wrt_ptyp_rec n1 α2 (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -9196,11 +9196,11 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_ptyp_rec :
-forall e1 A1 Xpt1 Xpt2 n1,
+forall e1 A1 α1 α2 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
-  Xpt1 <> Xpt2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  subst_ptyp_in_exp A1 Xpt1 (close_exp_wrt_ptyp_rec n1 Xpt2 e1) = close_exp_wrt_ptyp_rec n1 Xpt2 (subst_ptyp_in_exp A1 Xpt1 e1).
+  α1 <> α2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  subst_ptyp_in_exp A1 α1 (close_exp_wrt_ptyp_rec n1 α2 e1) = close_exp_wrt_ptyp_rec n1 α2 (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_close_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -9210,8 +9210,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_exp_rec_mutual :
-(forall e1 A1 x1 Xpt1 n1,
-  subst_ptyp_in_exp A1 x1 (close_exp_wrt_exp_rec n1 Xpt1 e1) = close_exp_wrt_exp_rec n1 Xpt1 (subst_ptyp_in_exp A1 x1 e1)).
+(forall e1 A1 x1 α1 n1,
+  subst_ptyp_in_exp A1 x1 (close_exp_wrt_exp_rec n1 α1 e1) = close_exp_wrt_exp_rec n1 α1 (subst_ptyp_in_exp A1 x1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -9220,8 +9220,8 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_exp_rec :
-forall e1 A1 x1 Xpt1 n1,
-  subst_ptyp_in_exp A1 x1 (close_exp_wrt_exp_rec n1 Xpt1 e1) = close_exp_wrt_exp_rec n1 Xpt1 (subst_ptyp_in_exp A1 x1 e1).
+forall e1 A1 x1 α1 n1,
+  subst_ptyp_in_exp A1 x1 (close_exp_wrt_exp_rec n1 α1 e1) = close_exp_wrt_exp_rec n1 α1 (subst_ptyp_in_exp A1 x1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_close_exp_wrt_exp_rec_mutual as H; intuition eauto.
 Qed.
@@ -9231,10 +9231,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_exp_in_exp_close_exp_wrt_ptyp_rec_mutual :
-(forall e2 e1 Xpt1 x1 n1,
+(forall e2 e1 α1 x1 n1,
   degree_exp_wrt_ptyp n1 e1 ->
   x1 `notin` ftvar_in_exp e1 ->
-  subst_exp_in_exp e1 Xpt1 (close_exp_wrt_ptyp_rec n1 x1 e2) = close_exp_wrt_ptyp_rec n1 x1 (subst_exp_in_exp e1 Xpt1 e2)).
+  subst_exp_in_exp e1 α1 (close_exp_wrt_ptyp_rec n1 x1 e2) = close_exp_wrt_ptyp_rec n1 x1 (subst_exp_in_exp e1 α1 e2)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -9243,10 +9243,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_exp_in_exp_close_exp_wrt_ptyp_rec :
-forall e2 e1 Xpt1 x1 n1,
+forall e2 e1 α1 x1 n1,
   degree_exp_wrt_ptyp n1 e1 ->
   x1 `notin` ftvar_in_exp e1 ->
-  subst_exp_in_exp e1 Xpt1 (close_exp_wrt_ptyp_rec n1 x1 e2) = close_exp_wrt_ptyp_rec n1 x1 (subst_exp_in_exp e1 Xpt1 e2).
+  subst_exp_in_exp e1 α1 (close_exp_wrt_ptyp_rec n1 x1 e2) = close_exp_wrt_ptyp_rec n1 x1 (subst_exp_in_exp e1 α1 e2).
 Proof.
 pose proof subst_exp_in_exp_close_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -9281,10 +9281,10 @@ Qed.
 #[export] Hint Resolve subst_exp_in_exp_close_exp_wrt_exp_rec : lngen.
 
 Lemma subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp :
-forall A2 A1 Xpt1 Xpt2,
-  lc_ptyp A1 ->  Xpt1 <> Xpt2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 (close_ptyp_wrt_ptyp Xpt2 A2) = close_ptyp_wrt_ptyp Xpt2 (subst_ptyp_in_ptyp A1 Xpt1 A2).
+forall A2 A1 α1 α2,
+  lc_ptyp A1 ->  α1 <> α2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  subst_ptyp_in_ptyp A1 α1 (close_ptyp_wrt_ptyp α2 A2) = close_ptyp_wrt_ptyp α2 (subst_ptyp_in_ptyp A1 α1 A2).
 Proof.
 unfold close_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -9292,10 +9292,10 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp : lngen.
 
 Lemma subst_btyp_in_btyp_close_btyp_wrt_btyp :
-forall B2 B1 Xbt1 Xbt2,
-  lc_btyp B1 ->  Xbt1 <> Xbt2 ->
-  Xbt2 `notin` ftvar_in_btyp B1 ->
-  subst_btyp_in_btyp B1 Xbt1 (close_btyp_wrt_btyp Xbt2 B2) = close_btyp_wrt_btyp Xbt2 (subst_btyp_in_btyp B1 Xbt1 B2).
+forall B2 B1 α1 α2,
+  lc_btyp B1 ->  α1 <> α2 ->
+  α2 `notin` ftvar_in_btyp B1 ->
+  subst_btyp_in_btyp B1 α1 (close_btyp_wrt_btyp α2 B2) = close_btyp_wrt_btyp α2 (subst_btyp_in_btyp B1 α1 B2).
 Proof.
 unfold close_btyp_wrt_btyp; default_simp.
 Qed.
@@ -9303,10 +9303,10 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_close_btyp_wrt_btyp : lngen.
 
 Lemma subst_utyp_in_utyp_close_utyp_wrt_utyp :
-forall C2 C1 Xut1 Xut2,
-  lc_utyp C1 ->  Xut1 <> Xut2 ->
-  Xut2 `notin` ftvar_in_utyp C1 ->
-  subst_utyp_in_utyp C1 Xut1 (close_utyp_wrt_utyp Xut2 C2) = close_utyp_wrt_utyp Xut2 (subst_utyp_in_utyp C1 Xut1 C2).
+forall C2 C1 α1 α2,
+  lc_utyp C1 ->  α1 <> α2 ->
+  α2 `notin` ftvar_in_utyp C1 ->
+  subst_utyp_in_utyp C1 α1 (close_utyp_wrt_utyp α2 C2) = close_utyp_wrt_utyp α2 (subst_utyp_in_utyp C1 α1 C2).
 Proof.
 unfold close_utyp_wrt_utyp; default_simp.
 Qed.
@@ -9314,10 +9314,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_close_utyp_wrt_utyp : lngen.
 
 Lemma subst_pskl_in_pskl_close_pskl_wrt_pskl :
-forall P2 P1 Xps1 Xps2,
-  lc_pskl P1 ->  Xps1 <> Xps2 ->
-  Xps2 `notin` ftvar_in_pskl P1 ->
-  subst_pskl_in_pskl P1 Xps1 (close_pskl_wrt_pskl Xps2 P2) = close_pskl_wrt_pskl Xps2 (subst_pskl_in_pskl P1 Xps1 P2).
+forall P2 P1 α1 α2,
+  lc_pskl P1 ->  α1 <> α2 ->
+  α2 `notin` ftvar_in_pskl P1 ->
+  subst_pskl_in_pskl P1 α1 (close_pskl_wrt_pskl α2 P2) = close_pskl_wrt_pskl α2 (subst_pskl_in_pskl P1 α1 P2).
 Proof.
 unfold close_pskl_wrt_pskl; default_simp.
 Qed.
@@ -9325,10 +9325,10 @@ Qed.
 #[export] Hint Resolve subst_pskl_in_pskl_close_pskl_wrt_pskl : lngen.
 
 Lemma subst_bskl_in_bskl_close_bskl_wrt_bskl :
-forall Q2 Q1 Xbs1 Xbs2,
-  lc_bskl Q1 ->  Xbs1 <> Xbs2 ->
-  Xbs2 `notin` ftvar_in_bskl Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 (close_bskl_wrt_bskl Xbs2 Q2) = close_bskl_wrt_bskl Xbs2 (subst_bskl_in_bskl Q1 Xbs1 Q2).
+forall Q2 Q1 α1 α2,
+  lc_bskl Q1 ->  α1 <> α2 ->
+  α2 `notin` ftvar_in_bskl Q1 ->
+  subst_bskl_in_bskl Q1 α1 (close_bskl_wrt_bskl α2 Q2) = close_bskl_wrt_bskl α2 (subst_bskl_in_bskl Q1 α1 Q2).
 Proof.
 unfold close_bskl_wrt_bskl; default_simp.
 Qed.
@@ -9336,10 +9336,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_close_bskl_wrt_bskl : lngen.
 
 Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl :
-forall R2 R1 Xus1 Xus2,
-  lc_uskl R1 ->  Xus1 <> Xus2 ->
-  Xus2 `notin` ftvar_in_uskl R1 ->
-  subst_bskl_in_uskl R1 Xus1 (close_uskl_wrt_uskl Xus2 R2) = close_uskl_wrt_uskl Xus2 (subst_bskl_in_uskl R1 Xus1 R2).
+forall R2 R1 α1 α2,
+  lc_uskl R1 ->  α1 <> α2 ->
+  α2 `notin` ftvar_in_uskl R1 ->
+  subst_bskl_in_uskl R1 α1 (close_uskl_wrt_uskl α2 R2) = close_uskl_wrt_uskl α2 (subst_bskl_in_uskl R1 α1 R2).
 Proof.
 unfold close_uskl_wrt_uskl; default_simp.
 Qed.
@@ -9347,10 +9347,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_close_uskl_wrt_uskl : lngen.
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_ptyp :
-forall e1 A1 Xpt1 Xpt2,
-  lc_ptyp A1 ->  Xpt1 <> Xpt2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  subst_ptyp_in_exp A1 Xpt1 (close_exp_wrt_ptyp Xpt2 e1) = close_exp_wrt_ptyp Xpt2 (subst_ptyp_in_exp A1 Xpt1 e1).
+forall e1 A1 α1 α2,
+  lc_ptyp A1 ->  α1 <> α2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  subst_ptyp_in_exp A1 α1 (close_exp_wrt_ptyp α2 e1) = close_exp_wrt_ptyp α2 (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 unfold close_exp_wrt_ptyp; default_simp.
 Qed.
@@ -9358,8 +9358,8 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_exp_close_exp_wrt_ptyp : lngen.
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_exp :
-forall e1 A1 x1 Xpt1,
-  lc_ptyp A1 ->  subst_ptyp_in_exp A1 x1 (close_exp_wrt_exp Xpt1 e1) = close_exp_wrt_exp Xpt1 (subst_ptyp_in_exp A1 x1 e1).
+forall e1 A1 x1 α1,
+  lc_ptyp A1 ->  subst_ptyp_in_exp A1 x1 (close_exp_wrt_exp α1 e1) = close_exp_wrt_exp α1 (subst_ptyp_in_exp A1 x1 e1).
 Proof.
 unfold close_exp_wrt_exp; default_simp.
 Qed.
@@ -9367,9 +9367,9 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_exp_close_exp_wrt_exp : lngen.
 
 Lemma subst_exp_in_exp_close_exp_wrt_ptyp :
-forall e2 e1 Xpt1 x1,
+forall e2 e1 α1 x1,
   lc_exp e1 ->  x1 `notin` ftvar_in_exp e1 ->
-  subst_exp_in_exp e1 Xpt1 (close_exp_wrt_ptyp x1 e2) = close_exp_wrt_ptyp x1 (subst_exp_in_exp e1 Xpt1 e2).
+  subst_exp_in_exp e1 α1 (close_exp_wrt_ptyp x1 e2) = close_exp_wrt_ptyp x1 (subst_exp_in_exp e1 α1 e2).
 Proof.
 unfold close_exp_wrt_ptyp; default_simp.
 Qed.
@@ -9390,10 +9390,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_degree_ptyp_wrt_ptyp_mutual :
-(forall A1 A2 Xpt1 n1,
+(forall A1 A2 α1 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
   degree_ptyp_wrt_ptyp n1 A2 ->
-  degree_ptyp_wrt_ptyp n1 (subst_ptyp_in_ptyp A2 Xpt1 A1)).
+  degree_ptyp_wrt_ptyp n1 (subst_ptyp_in_ptyp A2 α1 A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -9402,10 +9402,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_degree_ptyp_wrt_ptyp :
-forall A1 A2 Xpt1 n1,
+forall A1 A2 α1 n1,
   degree_ptyp_wrt_ptyp n1 A1 ->
   degree_ptyp_wrt_ptyp n1 A2 ->
-  degree_ptyp_wrt_ptyp n1 (subst_ptyp_in_ptyp A2 Xpt1 A1).
+  degree_ptyp_wrt_ptyp n1 (subst_ptyp_in_ptyp A2 α1 A1).
 Proof.
 pose proof subst_ptyp_in_ptyp_degree_ptyp_wrt_ptyp_mutual as H; intuition eauto.
 Qed.
@@ -9415,10 +9415,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_degree_btyp_wrt_btyp_mutual :
-(forall B1 B2 Xbt1 n1,
+(forall B1 B2 α1 n1,
   degree_btyp_wrt_btyp n1 B1 ->
   degree_btyp_wrt_btyp n1 B2 ->
-  degree_btyp_wrt_btyp n1 (subst_btyp_in_btyp B2 Xbt1 B1)).
+  degree_btyp_wrt_btyp n1 (subst_btyp_in_btyp B2 α1 B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -9427,10 +9427,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_btyp_in_btyp_degree_btyp_wrt_btyp :
-forall B1 B2 Xbt1 n1,
+forall B1 B2 α1 n1,
   degree_btyp_wrt_btyp n1 B1 ->
   degree_btyp_wrt_btyp n1 B2 ->
-  degree_btyp_wrt_btyp n1 (subst_btyp_in_btyp B2 Xbt1 B1).
+  degree_btyp_wrt_btyp n1 (subst_btyp_in_btyp B2 α1 B1).
 Proof.
 pose proof subst_btyp_in_btyp_degree_btyp_wrt_btyp_mutual as H; intuition eauto.
 Qed.
@@ -9440,10 +9440,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_degree_utyp_wrt_utyp_mutual :
-(forall C1 C2 Xut1 n1,
+(forall C1 C2 α1 n1,
   degree_utyp_wrt_utyp n1 C1 ->
   degree_utyp_wrt_utyp n1 C2 ->
-  degree_utyp_wrt_utyp n1 (subst_utyp_in_utyp C2 Xut1 C1)).
+  degree_utyp_wrt_utyp n1 (subst_utyp_in_utyp C2 α1 C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -9452,10 +9452,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_utyp_in_utyp_degree_utyp_wrt_utyp :
-forall C1 C2 Xut1 n1,
+forall C1 C2 α1 n1,
   degree_utyp_wrt_utyp n1 C1 ->
   degree_utyp_wrt_utyp n1 C2 ->
-  degree_utyp_wrt_utyp n1 (subst_utyp_in_utyp C2 Xut1 C1).
+  degree_utyp_wrt_utyp n1 (subst_utyp_in_utyp C2 α1 C1).
 Proof.
 pose proof subst_utyp_in_utyp_degree_utyp_wrt_utyp_mutual as H; intuition eauto.
 Qed.
@@ -9465,10 +9465,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_degree_pskl_wrt_pskl_mutual :
-(forall P1 P2 Xps1 n1,
+(forall P1 P2 α1 n1,
   degree_pskl_wrt_pskl n1 P1 ->
   degree_pskl_wrt_pskl n1 P2 ->
-  degree_pskl_wrt_pskl n1 (subst_pskl_in_pskl P2 Xps1 P1)).
+  degree_pskl_wrt_pskl n1 (subst_pskl_in_pskl P2 α1 P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -9477,10 +9477,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_pskl_in_pskl_degree_pskl_wrt_pskl :
-forall P1 P2 Xps1 n1,
+forall P1 P2 α1 n1,
   degree_pskl_wrt_pskl n1 P1 ->
   degree_pskl_wrt_pskl n1 P2 ->
-  degree_pskl_wrt_pskl n1 (subst_pskl_in_pskl P2 Xps1 P1).
+  degree_pskl_wrt_pskl n1 (subst_pskl_in_pskl P2 α1 P1).
 Proof.
 pose proof subst_pskl_in_pskl_degree_pskl_wrt_pskl_mutual as H; intuition eauto.
 Qed.
@@ -9490,10 +9490,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_degree_bskl_wrt_bskl_mutual :
-(forall Q1 Q2 Xbs1 n1,
+(forall Q1 Q2 α1 n1,
   degree_bskl_wrt_bskl n1 Q1 ->
   degree_bskl_wrt_bskl n1 Q2 ->
-  degree_bskl_wrt_bskl n1 (subst_bskl_in_bskl Q2 Xbs1 Q1)).
+  degree_bskl_wrt_bskl n1 (subst_bskl_in_bskl Q2 α1 Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -9502,10 +9502,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_bskl_degree_bskl_wrt_bskl :
-forall Q1 Q2 Xbs1 n1,
+forall Q1 Q2 α1 n1,
   degree_bskl_wrt_bskl n1 Q1 ->
   degree_bskl_wrt_bskl n1 Q2 ->
-  degree_bskl_wrt_bskl n1 (subst_bskl_in_bskl Q2 Xbs1 Q1).
+  degree_bskl_wrt_bskl n1 (subst_bskl_in_bskl Q2 α1 Q1).
 Proof.
 pose proof subst_bskl_in_bskl_degree_bskl_wrt_bskl_mutual as H; intuition eauto.
 Qed.
@@ -9515,10 +9515,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_degree_uskl_wrt_uskl_mutual :
-(forall R1 R2 Xus1 n1,
+(forall R1 R2 α1 n1,
   degree_uskl_wrt_uskl n1 R1 ->
   degree_uskl_wrt_uskl n1 R2 ->
-  degree_uskl_wrt_uskl n1 (subst_bskl_in_uskl R2 Xus1 R1)).
+  degree_uskl_wrt_uskl n1 (subst_bskl_in_uskl R2 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -9527,10 +9527,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_uskl_degree_uskl_wrt_uskl :
-forall R1 R2 Xus1 n1,
+forall R1 R2 α1 n1,
   degree_uskl_wrt_uskl n1 R1 ->
   degree_uskl_wrt_uskl n1 R2 ->
-  degree_uskl_wrt_uskl n1 (subst_bskl_in_uskl R2 Xus1 R1).
+  degree_uskl_wrt_uskl n1 (subst_bskl_in_uskl R2 α1 R1).
 Proof.
 pose proof subst_bskl_in_uskl_degree_uskl_wrt_uskl_mutual as H; intuition eauto.
 Qed.
@@ -9540,10 +9540,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_degree_exp_wrt_ptyp_mutual :
-(forall e1 A1 Xpt1 n1,
+(forall e1 A1 α1 n1,
   degree_exp_wrt_ptyp n1 e1 ->
   degree_ptyp_wrt_ptyp n1 A1 ->
-  degree_exp_wrt_ptyp n1 (subst_ptyp_in_exp A1 Xpt1 e1)).
+  degree_exp_wrt_ptyp n1 (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -9552,10 +9552,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_degree_exp_wrt_ptyp :
-forall e1 A1 Xpt1 n1,
+forall e1 A1 α1 n1,
   degree_exp_wrt_ptyp n1 e1 ->
   degree_ptyp_wrt_ptyp n1 A1 ->
-  degree_exp_wrt_ptyp n1 (subst_ptyp_in_exp A1 Xpt1 e1).
+  degree_exp_wrt_ptyp n1 (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_degree_exp_wrt_ptyp_mutual as H; intuition eauto.
 Qed.
@@ -9565,9 +9565,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_degree_exp_wrt_exp_mutual :
-(forall e1 A1 Xpt1 n1,
+(forall e1 A1 α1 n1,
   degree_exp_wrt_exp n1 e1 ->
-  degree_exp_wrt_exp n1 (subst_ptyp_in_exp A1 Xpt1 e1)).
+  degree_exp_wrt_exp n1 (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -9576,9 +9576,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_degree_exp_wrt_exp :
-forall e1 A1 Xpt1 n1,
+forall e1 A1 α1 n1,
   degree_exp_wrt_exp n1 e1 ->
-  degree_exp_wrt_exp n1 (subst_ptyp_in_exp A1 Xpt1 e1).
+  degree_exp_wrt_exp n1 (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_degree_exp_wrt_exp_mutual as H; intuition eauto.
 Qed.
@@ -9638,9 +9638,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_fresh_eq_mutual :
-(forall A2 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A2 ->
-  subst_ptyp_in_ptyp A1 Xpt1 A2 = A2).
+(forall A2 A1 α1,
+  α1 `notin` ftvar_in_ptyp A2 ->
+  subst_ptyp_in_ptyp A1 α1 A2 = A2).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -9649,9 +9649,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_fresh_eq :
-forall A2 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A2 ->
-  subst_ptyp_in_ptyp A1 Xpt1 A2 = A2.
+forall A2 A1 α1,
+  α1 `notin` ftvar_in_ptyp A2 ->
+  subst_ptyp_in_ptyp A1 α1 A2 = A2.
 Proof.
 pose proof subst_ptyp_in_ptyp_fresh_eq_mutual as H; intuition eauto.
 Qed.
@@ -9662,9 +9662,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_fresh_eq_mutual :
-(forall B2 B1 Xbt1,
-  Xbt1 `notin` ftvar_in_btyp B2 ->
-  subst_btyp_in_btyp B1 Xbt1 B2 = B2).
+(forall B2 B1 α1,
+  α1 `notin` ftvar_in_btyp B2 ->
+  subst_btyp_in_btyp B1 α1 B2 = B2).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -9673,9 +9673,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_btyp_in_btyp_fresh_eq :
-forall B2 B1 Xbt1,
-  Xbt1 `notin` ftvar_in_btyp B2 ->
-  subst_btyp_in_btyp B1 Xbt1 B2 = B2.
+forall B2 B1 α1,
+  α1 `notin` ftvar_in_btyp B2 ->
+  subst_btyp_in_btyp B1 α1 B2 = B2.
 Proof.
 pose proof subst_btyp_in_btyp_fresh_eq_mutual as H; intuition eauto.
 Qed.
@@ -9686,9 +9686,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_fresh_eq_mutual :
-(forall C2 C1 Xut1,
-  Xut1 `notin` ftvar_in_utyp C2 ->
-  subst_utyp_in_utyp C1 Xut1 C2 = C2).
+(forall C2 C1 α1,
+  α1 `notin` ftvar_in_utyp C2 ->
+  subst_utyp_in_utyp C1 α1 C2 = C2).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -9697,9 +9697,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_utyp_in_utyp_fresh_eq :
-forall C2 C1 Xut1,
-  Xut1 `notin` ftvar_in_utyp C2 ->
-  subst_utyp_in_utyp C1 Xut1 C2 = C2.
+forall C2 C1 α1,
+  α1 `notin` ftvar_in_utyp C2 ->
+  subst_utyp_in_utyp C1 α1 C2 = C2.
 Proof.
 pose proof subst_utyp_in_utyp_fresh_eq_mutual as H; intuition eauto.
 Qed.
@@ -9710,9 +9710,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_fresh_eq_mutual :
-(forall P2 P1 Xps1,
-  Xps1 `notin` ftvar_in_pskl P2 ->
-  subst_pskl_in_pskl P1 Xps1 P2 = P2).
+(forall P2 P1 α1,
+  α1 `notin` ftvar_in_pskl P2 ->
+  subst_pskl_in_pskl P1 α1 P2 = P2).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -9721,9 +9721,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_pskl_in_pskl_fresh_eq :
-forall P2 P1 Xps1,
-  Xps1 `notin` ftvar_in_pskl P2 ->
-  subst_pskl_in_pskl P1 Xps1 P2 = P2.
+forall P2 P1 α1,
+  α1 `notin` ftvar_in_pskl P2 ->
+  subst_pskl_in_pskl P1 α1 P2 = P2.
 Proof.
 pose proof subst_pskl_in_pskl_fresh_eq_mutual as H; intuition eauto.
 Qed.
@@ -9734,9 +9734,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_fresh_eq_mutual :
-(forall Q2 Q1 Xbs1,
-  Xbs1 `notin` ftvar_in_bskl Q2 ->
-  subst_bskl_in_bskl Q1 Xbs1 Q2 = Q2).
+(forall Q2 Q1 α1,
+  α1 `notin` ftvar_in_bskl Q2 ->
+  subst_bskl_in_bskl Q1 α1 Q2 = Q2).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -9745,9 +9745,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_bskl_fresh_eq :
-forall Q2 Q1 Xbs1,
-  Xbs1 `notin` ftvar_in_bskl Q2 ->
-  subst_bskl_in_bskl Q1 Xbs1 Q2 = Q2.
+forall Q2 Q1 α1,
+  α1 `notin` ftvar_in_bskl Q2 ->
+  subst_bskl_in_bskl Q1 α1 Q2 = Q2.
 Proof.
 pose proof subst_bskl_in_bskl_fresh_eq_mutual as H; intuition eauto.
 Qed.
@@ -9758,9 +9758,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_fresh_eq_mutual :
-(forall R2 R1 Xus1,
-  Xus1 `notin` ftvar_in_uskl R2 ->
-  subst_bskl_in_uskl R1 Xus1 R2 = R2).
+(forall R2 R1 α1,
+  α1 `notin` ftvar_in_uskl R2 ->
+  subst_bskl_in_uskl R1 α1 R2 = R2).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -9769,9 +9769,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_uskl_fresh_eq :
-forall R2 R1 Xus1,
-  Xus1 `notin` ftvar_in_uskl R2 ->
-  subst_bskl_in_uskl R1 Xus1 R2 = R2.
+forall R2 R1 α1,
+  α1 `notin` ftvar_in_uskl R2 ->
+  subst_bskl_in_uskl R1 α1 R2 = R2.
 Proof.
 pose proof subst_bskl_in_uskl_fresh_eq_mutual as H; intuition eauto.
 Qed.
@@ -9782,9 +9782,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_fresh_eq_mutual :
-(forall e1 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  subst_ptyp_in_exp A1 Xpt1 e1 = e1).
+(forall e1 A1 α1,
+  α1 `notin` ftvar_in_exp e1 ->
+  subst_ptyp_in_exp A1 α1 e1 = e1).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -9793,9 +9793,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_fresh_eq :
-forall e1 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  subst_ptyp_in_exp A1 Xpt1 e1 = e1.
+forall e1 A1 α1,
+  α1 `notin` ftvar_in_exp e1 ->
+  subst_ptyp_in_exp A1 α1 e1 = e1.
 Proof.
 pose proof subst_ptyp_in_exp_fresh_eq_mutual as H; intuition eauto.
 Qed.
@@ -9830,9 +9830,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_fresh_same_mutual :
-(forall A2 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A1 Xpt1 A2)).
+(forall A2 A1 α1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  α1 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A1 α1 A2)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -9841,9 +9841,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_fresh_same :
-forall A2 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A1 Xpt1 A2).
+forall A2 A1 α1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  α1 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A1 α1 A2).
 Proof.
 pose proof subst_ptyp_in_ptyp_fresh_same_mutual as H; intuition eauto.
 Qed.
@@ -9853,9 +9853,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_fresh_same_mutual :
-(forall B2 B1 Xbt1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  Xbt1 `notin` ftvar_in_btyp (subst_btyp_in_btyp B1 Xbt1 B2)).
+(forall B2 B1 α1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  α1 `notin` ftvar_in_btyp (subst_btyp_in_btyp B1 α1 B2)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -9864,9 +9864,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_btyp_in_btyp_fresh_same :
-forall B2 B1 Xbt1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  Xbt1 `notin` ftvar_in_btyp (subst_btyp_in_btyp B1 Xbt1 B2).
+forall B2 B1 α1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  α1 `notin` ftvar_in_btyp (subst_btyp_in_btyp B1 α1 B2).
 Proof.
 pose proof subst_btyp_in_btyp_fresh_same_mutual as H; intuition eauto.
 Qed.
@@ -9876,9 +9876,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_fresh_same_mutual :
-(forall C2 C1 Xut1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  Xut1 `notin` ftvar_in_utyp (subst_utyp_in_utyp C1 Xut1 C2)).
+(forall C2 C1 α1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  α1 `notin` ftvar_in_utyp (subst_utyp_in_utyp C1 α1 C2)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -9887,9 +9887,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_utyp_in_utyp_fresh_same :
-forall C2 C1 Xut1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  Xut1 `notin` ftvar_in_utyp (subst_utyp_in_utyp C1 Xut1 C2).
+forall C2 C1 α1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  α1 `notin` ftvar_in_utyp (subst_utyp_in_utyp C1 α1 C2).
 Proof.
 pose proof subst_utyp_in_utyp_fresh_same_mutual as H; intuition eauto.
 Qed.
@@ -9899,9 +9899,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_fresh_same_mutual :
-(forall P2 P1 Xps1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  Xps1 `notin` ftvar_in_pskl (subst_pskl_in_pskl P1 Xps1 P2)).
+(forall P2 P1 α1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  α1 `notin` ftvar_in_pskl (subst_pskl_in_pskl P1 α1 P2)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -9910,9 +9910,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_pskl_in_pskl_fresh_same :
-forall P2 P1 Xps1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  Xps1 `notin` ftvar_in_pskl (subst_pskl_in_pskl P1 Xps1 P2).
+forall P2 P1 α1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  α1 `notin` ftvar_in_pskl (subst_pskl_in_pskl P1 α1 P2).
 Proof.
 pose proof subst_pskl_in_pskl_fresh_same_mutual as H; intuition eauto.
 Qed.
@@ -9922,9 +9922,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_fresh_same_mutual :
-(forall Q2 Q1 Xbs1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  Xbs1 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q1 Xbs1 Q2)).
+(forall Q2 Q1 α1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  α1 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q1 α1 Q2)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -9933,9 +9933,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_bskl_fresh_same :
-forall Q2 Q1 Xbs1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  Xbs1 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q1 Xbs1 Q2).
+forall Q2 Q1 α1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  α1 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q1 α1 Q2).
 Proof.
 pose proof subst_bskl_in_bskl_fresh_same_mutual as H; intuition eauto.
 Qed.
@@ -9945,9 +9945,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_fresh_same_mutual :
-(forall R2 R1 Xus1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  Xus1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 Xus1 R2)).
+(forall R2 R1 α1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  α1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 α1 R2)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -9956,9 +9956,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_uskl_fresh_same :
-forall R2 R1 Xus1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  Xus1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 Xus1 R2).
+forall R2 R1 α1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  α1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 α1 R2).
 Proof.
 pose proof subst_bskl_in_uskl_fresh_same_mutual as H; intuition eauto.
 Qed.
@@ -9968,9 +9968,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_fresh_same_mutual :
-(forall e1 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1)).
+(forall e1 A1 α1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  α1 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -9979,9 +9979,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_fresh_same :
-forall e1 A1 Xpt1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 Xpt1 e1).
+forall e1 A1 α1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  α1 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_fresh_same_mutual as H; intuition eauto.
 Qed.
@@ -10014,10 +10014,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_fresh_mutual :
-(forall A2 A1 Xpt1 Xpt2,
-  Xpt1 `notin` ftvar_in_ptyp A2 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A1 Xpt2 A2)).
+(forall A2 A1 α1 α2,
+  α1 `notin` ftvar_in_ptyp A2 ->
+  α1 `notin` ftvar_in_ptyp A1 ->
+  α1 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A1 α2 A2)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -10026,10 +10026,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_fresh :
-forall A2 A1 Xpt1 Xpt2,
-  Xpt1 `notin` ftvar_in_ptyp A2 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A1 Xpt2 A2).
+forall A2 A1 α1 α2,
+  α1 `notin` ftvar_in_ptyp A2 ->
+  α1 `notin` ftvar_in_ptyp A1 ->
+  α1 `notin` ftvar_in_ptyp (subst_ptyp_in_ptyp A1 α2 A2).
 Proof.
 pose proof subst_ptyp_in_ptyp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -10039,10 +10039,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_fresh_mutual :
-(forall B2 B1 Xbt1 Xbt2,
-  Xbt1 `notin` ftvar_in_btyp B2 ->
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  Xbt1 `notin` ftvar_in_btyp (subst_btyp_in_btyp B1 Xbt2 B2)).
+(forall B2 B1 α1 α2,
+  α1 `notin` ftvar_in_btyp B2 ->
+  α1 `notin` ftvar_in_btyp B1 ->
+  α1 `notin` ftvar_in_btyp (subst_btyp_in_btyp B1 α2 B2)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -10051,10 +10051,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_btyp_in_btyp_fresh :
-forall B2 B1 Xbt1 Xbt2,
-  Xbt1 `notin` ftvar_in_btyp B2 ->
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  Xbt1 `notin` ftvar_in_btyp (subst_btyp_in_btyp B1 Xbt2 B2).
+forall B2 B1 α1 α2,
+  α1 `notin` ftvar_in_btyp B2 ->
+  α1 `notin` ftvar_in_btyp B1 ->
+  α1 `notin` ftvar_in_btyp (subst_btyp_in_btyp B1 α2 B2).
 Proof.
 pose proof subst_btyp_in_btyp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -10064,10 +10064,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_fresh_mutual :
-(forall C2 C1 Xut1 Xut2,
-  Xut1 `notin` ftvar_in_utyp C2 ->
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  Xut1 `notin` ftvar_in_utyp (subst_utyp_in_utyp C1 Xut2 C2)).
+(forall C2 C1 α1 α2,
+  α1 `notin` ftvar_in_utyp C2 ->
+  α1 `notin` ftvar_in_utyp C1 ->
+  α1 `notin` ftvar_in_utyp (subst_utyp_in_utyp C1 α2 C2)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -10076,10 +10076,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_utyp_in_utyp_fresh :
-forall C2 C1 Xut1 Xut2,
-  Xut1 `notin` ftvar_in_utyp C2 ->
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  Xut1 `notin` ftvar_in_utyp (subst_utyp_in_utyp C1 Xut2 C2).
+forall C2 C1 α1 α2,
+  α1 `notin` ftvar_in_utyp C2 ->
+  α1 `notin` ftvar_in_utyp C1 ->
+  α1 `notin` ftvar_in_utyp (subst_utyp_in_utyp C1 α2 C2).
 Proof.
 pose proof subst_utyp_in_utyp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -10089,10 +10089,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_fresh_mutual :
-(forall P2 P1 Xps1 Xps2,
-  Xps1 `notin` ftvar_in_pskl P2 ->
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  Xps1 `notin` ftvar_in_pskl (subst_pskl_in_pskl P1 Xps2 P2)).
+(forall P2 P1 α1 α2,
+  α1 `notin` ftvar_in_pskl P2 ->
+  α1 `notin` ftvar_in_pskl P1 ->
+  α1 `notin` ftvar_in_pskl (subst_pskl_in_pskl P1 α2 P2)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -10101,10 +10101,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_pskl_in_pskl_fresh :
-forall P2 P1 Xps1 Xps2,
-  Xps1 `notin` ftvar_in_pskl P2 ->
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  Xps1 `notin` ftvar_in_pskl (subst_pskl_in_pskl P1 Xps2 P2).
+forall P2 P1 α1 α2,
+  α1 `notin` ftvar_in_pskl P2 ->
+  α1 `notin` ftvar_in_pskl P1 ->
+  α1 `notin` ftvar_in_pskl (subst_pskl_in_pskl P1 α2 P2).
 Proof.
 pose proof subst_pskl_in_pskl_fresh_mutual as H; intuition eauto.
 Qed.
@@ -10114,10 +10114,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_fresh_mutual :
-(forall Q2 Q1 Xbs1 Xbs2,
-  Xbs1 `notin` ftvar_in_bskl Q2 ->
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  Xbs1 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q1 Xbs2 Q2)).
+(forall Q2 Q1 α1 α2,
+  α1 `notin` ftvar_in_bskl Q2 ->
+  α1 `notin` ftvar_in_bskl Q1 ->
+  α1 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q1 α2 Q2)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -10126,10 +10126,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_bskl_fresh :
-forall Q2 Q1 Xbs1 Xbs2,
-  Xbs1 `notin` ftvar_in_bskl Q2 ->
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  Xbs1 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q1 Xbs2 Q2).
+forall Q2 Q1 α1 α2,
+  α1 `notin` ftvar_in_bskl Q2 ->
+  α1 `notin` ftvar_in_bskl Q1 ->
+  α1 `notin` ftvar_in_bskl (subst_bskl_in_bskl Q1 α2 Q2).
 Proof.
 pose proof subst_bskl_in_bskl_fresh_mutual as H; intuition eauto.
 Qed.
@@ -10139,10 +10139,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_fresh_mutual :
-(forall R2 R1 Xus1 Xus2,
-  Xus1 `notin` ftvar_in_uskl R2 ->
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  Xus1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 Xus2 R2)).
+(forall R2 R1 α1 α2,
+  α1 `notin` ftvar_in_uskl R2 ->
+  α1 `notin` ftvar_in_uskl R1 ->
+  α1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 α2 R2)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -10151,10 +10151,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_uskl_fresh :
-forall R2 R1 Xus1 Xus2,
-  Xus1 `notin` ftvar_in_uskl R2 ->
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  Xus1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 Xus2 R2).
+forall R2 R1 α1 α2,
+  α1 `notin` ftvar_in_uskl R2 ->
+  α1 `notin` ftvar_in_uskl R1 ->
+  α1 `notin` ftvar_in_uskl (subst_bskl_in_uskl R1 α2 R2).
 Proof.
 pose proof subst_bskl_in_uskl_fresh_mutual as H; intuition eauto.
 Qed.
@@ -10164,10 +10164,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_fresh_mutual :
-(forall e1 A1 Xpt1 Xpt2,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 Xpt2 e1)).
+(forall e1 A1 α1 α2,
+  α1 `notin` ftvar_in_exp e1 ->
+  α1 `notin` ftvar_in_ptyp A1 ->
+  α1 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 α2 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -10176,10 +10176,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_fresh :
-forall e1 A1 Xpt1 Xpt2,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  Xpt1 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 Xpt2 e1).
+forall e1 A1 α1 α2,
+  α1 `notin` ftvar_in_exp e1 ->
+  α1 `notin` ftvar_in_ptyp A1 ->
+  α1 `notin` ftvar_in_exp (subst_ptyp_in_exp A1 α2 e1).
 Proof.
 pose proof subst_ptyp_in_exp_fresh_mutual as H; intuition eauto.
 Qed.
@@ -10212,10 +10212,10 @@ Qed.
 #[export] Hint Resolve subst_exp_in_exp_fresh : lngen.
 
 Lemma subst_ptyp_in_ptyp_lc_ptyp :
-forall A1 A2 Xpt1,
+forall A1 A2 α1,
   lc_ptyp A1 ->
   lc_ptyp A2 ->
-  lc_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A1).
+  lc_ptyp (subst_ptyp_in_ptyp A2 α1 A1).
 Proof.
 default_simp.
 Qed.
@@ -10223,10 +10223,10 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_ptyp_lc_ptyp : lngen.
 
 Lemma subst_btyp_in_btyp_lc_btyp :
-forall B1 B2 Xbt1,
+forall B1 B2 α1,
   lc_btyp B1 ->
   lc_btyp B2 ->
-  lc_btyp (subst_btyp_in_btyp B2 Xbt1 B1).
+  lc_btyp (subst_btyp_in_btyp B2 α1 B1).
 Proof.
 default_simp.
 Qed.
@@ -10234,10 +10234,10 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_lc_btyp : lngen.
 
 Lemma subst_utyp_in_utyp_lc_utyp :
-forall C1 C2 Xut1,
+forall C1 C2 α1,
   lc_utyp C1 ->
   lc_utyp C2 ->
-  lc_utyp (subst_utyp_in_utyp C2 Xut1 C1).
+  lc_utyp (subst_utyp_in_utyp C2 α1 C1).
 Proof.
 default_simp.
 Qed.
@@ -10245,10 +10245,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_lc_utyp : lngen.
 
 Lemma subst_pskl_in_pskl_lc_pskl :
-forall P1 P2 Xps1,
+forall P1 P2 α1,
   lc_pskl P1 ->
   lc_pskl P2 ->
-  lc_pskl (subst_pskl_in_pskl P2 Xps1 P1).
+  lc_pskl (subst_pskl_in_pskl P2 α1 P1).
 Proof.
 default_simp.
 Qed.
@@ -10256,10 +10256,10 @@ Qed.
 #[export] Hint Resolve subst_pskl_in_pskl_lc_pskl : lngen.
 
 Lemma subst_bskl_in_bskl_lc_bskl :
-forall Q1 Q2 Xbs1,
+forall Q1 Q2 α1,
   lc_bskl Q1 ->
   lc_bskl Q2 ->
-  lc_bskl (subst_bskl_in_bskl Q2 Xbs1 Q1).
+  lc_bskl (subst_bskl_in_bskl Q2 α1 Q1).
 Proof.
 default_simp.
 Qed.
@@ -10267,10 +10267,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_lc_bskl : lngen.
 
 Lemma subst_bskl_in_uskl_lc_uskl :
-forall R1 R2 Xus1,
+forall R1 R2 α1,
   lc_uskl R1 ->
   lc_uskl R2 ->
-  lc_uskl (subst_bskl_in_uskl R2 Xus1 R1).
+  lc_uskl (subst_bskl_in_uskl R2 α1 R1).
 Proof.
 default_simp.
 Qed.
@@ -10278,10 +10278,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_lc_uskl : lngen.
 
 Lemma subst_ptyp_in_exp_lc_exp :
-forall e1 A1 Xpt1,
+forall e1 A1 α1,
   lc_exp e1 ->
   lc_ptyp A1 ->
-  lc_exp (subst_ptyp_in_exp A1 Xpt1 e1).
+  lc_exp (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 default_simp.
 Qed.
@@ -10302,9 +10302,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_rec_mutual :
-(forall A3 A1 A2 Xpt1 n1,
+(forall A3 A1 A2 α1 n1,
   lc_ptyp A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 (open_ptyp_wrt_ptyp_rec n1 A2 A3) = open_ptyp_wrt_ptyp_rec n1 (subst_ptyp_in_ptyp A1 Xpt1 A2) (subst_ptyp_in_ptyp A1 Xpt1 A3)).
+  subst_ptyp_in_ptyp A1 α1 (open_ptyp_wrt_ptyp_rec n1 A2 A3) = open_ptyp_wrt_ptyp_rec n1 (subst_ptyp_in_ptyp A1 α1 A2) (subst_ptyp_in_ptyp A1 α1 A3)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -10315,9 +10315,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_rec :
-forall A3 A1 A2 Xpt1 n1,
+forall A3 A1 A2 α1 n1,
   lc_ptyp A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 (open_ptyp_wrt_ptyp_rec n1 A2 A3) = open_ptyp_wrt_ptyp_rec n1 (subst_ptyp_in_ptyp A1 Xpt1 A2) (subst_ptyp_in_ptyp A1 Xpt1 A3).
+  subst_ptyp_in_ptyp A1 α1 (open_ptyp_wrt_ptyp_rec n1 A2 A3) = open_ptyp_wrt_ptyp_rec n1 (subst_ptyp_in_ptyp A1 α1 A2) (subst_ptyp_in_ptyp A1 α1 A3).
 Proof.
 pose proof subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -10329,9 +10329,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_open_btyp_wrt_btyp_rec_mutual :
-(forall B3 B1 B2 Xbt1 n1,
+(forall B3 B1 B2 α1 n1,
   lc_btyp B1 ->
-  subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp_rec n1 B2 B3) = open_btyp_wrt_btyp_rec n1 (subst_btyp_in_btyp B1 Xbt1 B2) (subst_btyp_in_btyp B1 Xbt1 B3)).
+  subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp_rec n1 B2 B3) = open_btyp_wrt_btyp_rec n1 (subst_btyp_in_btyp B1 α1 B2) (subst_btyp_in_btyp B1 α1 B3)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -10342,9 +10342,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_open_btyp_wrt_btyp_rec :
-forall B3 B1 B2 Xbt1 n1,
+forall B3 B1 B2 α1 n1,
   lc_btyp B1 ->
-  subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp_rec n1 B2 B3) = open_btyp_wrt_btyp_rec n1 (subst_btyp_in_btyp B1 Xbt1 B2) (subst_btyp_in_btyp B1 Xbt1 B3).
+  subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp_rec n1 B2 B3) = open_btyp_wrt_btyp_rec n1 (subst_btyp_in_btyp B1 α1 B2) (subst_btyp_in_btyp B1 α1 B3).
 Proof.
 pose proof subst_btyp_in_btyp_open_btyp_wrt_btyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -10356,9 +10356,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_open_utyp_wrt_utyp_rec_mutual :
-(forall C3 C1 C2 Xut1 n1,
+(forall C3 C1 C2 α1 n1,
   lc_utyp C1 ->
-  subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp_rec n1 C2 C3) = open_utyp_wrt_utyp_rec n1 (subst_utyp_in_utyp C1 Xut1 C2) (subst_utyp_in_utyp C1 Xut1 C3)).
+  subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp_rec n1 C2 C3) = open_utyp_wrt_utyp_rec n1 (subst_utyp_in_utyp C1 α1 C2) (subst_utyp_in_utyp C1 α1 C3)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -10369,9 +10369,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_open_utyp_wrt_utyp_rec :
-forall C3 C1 C2 Xut1 n1,
+forall C3 C1 C2 α1 n1,
   lc_utyp C1 ->
-  subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp_rec n1 C2 C3) = open_utyp_wrt_utyp_rec n1 (subst_utyp_in_utyp C1 Xut1 C2) (subst_utyp_in_utyp C1 Xut1 C3).
+  subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp_rec n1 C2 C3) = open_utyp_wrt_utyp_rec n1 (subst_utyp_in_utyp C1 α1 C2) (subst_utyp_in_utyp C1 α1 C3).
 Proof.
 pose proof subst_utyp_in_utyp_open_utyp_wrt_utyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -10383,9 +10383,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_open_pskl_wrt_pskl_rec_mutual :
-(forall P3 P1 P2 Xps1 n1,
+(forall P3 P1 P2 α1 n1,
   lc_pskl P1 ->
-  subst_pskl_in_pskl P1 Xps1 (open_pskl_wrt_pskl_rec n1 P2 P3) = open_pskl_wrt_pskl_rec n1 (subst_pskl_in_pskl P1 Xps1 P2) (subst_pskl_in_pskl P1 Xps1 P3)).
+  subst_pskl_in_pskl P1 α1 (open_pskl_wrt_pskl_rec n1 P2 P3) = open_pskl_wrt_pskl_rec n1 (subst_pskl_in_pskl P1 α1 P2) (subst_pskl_in_pskl P1 α1 P3)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -10396,9 +10396,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_open_pskl_wrt_pskl_rec :
-forall P3 P1 P2 Xps1 n1,
+forall P3 P1 P2 α1 n1,
   lc_pskl P1 ->
-  subst_pskl_in_pskl P1 Xps1 (open_pskl_wrt_pskl_rec n1 P2 P3) = open_pskl_wrt_pskl_rec n1 (subst_pskl_in_pskl P1 Xps1 P2) (subst_pskl_in_pskl P1 Xps1 P3).
+  subst_pskl_in_pskl P1 α1 (open_pskl_wrt_pskl_rec n1 P2 P3) = open_pskl_wrt_pskl_rec n1 (subst_pskl_in_pskl P1 α1 P2) (subst_pskl_in_pskl P1 α1 P3).
 Proof.
 pose proof subst_pskl_in_pskl_open_pskl_wrt_pskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -10410,9 +10410,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_open_bskl_wrt_bskl_rec_mutual :
-(forall Q3 Q1 Q2 Xbs1 n1,
+(forall Q3 Q1 Q2 α1 n1,
   lc_bskl Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl_rec n1 Q2 Q3) = open_bskl_wrt_bskl_rec n1 (subst_bskl_in_bskl Q1 Xbs1 Q2) (subst_bskl_in_bskl Q1 Xbs1 Q3)).
+  subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl_rec n1 Q2 Q3) = open_bskl_wrt_bskl_rec n1 (subst_bskl_in_bskl Q1 α1 Q2) (subst_bskl_in_bskl Q1 α1 Q3)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -10423,9 +10423,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_open_bskl_wrt_bskl_rec :
-forall Q3 Q1 Q2 Xbs1 n1,
+forall Q3 Q1 Q2 α1 n1,
   lc_bskl Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl_rec n1 Q2 Q3) = open_bskl_wrt_bskl_rec n1 (subst_bskl_in_bskl Q1 Xbs1 Q2) (subst_bskl_in_bskl Q1 Xbs1 Q3).
+  subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl_rec n1 Q2 Q3) = open_bskl_wrt_bskl_rec n1 (subst_bskl_in_bskl Q1 α1 Q2) (subst_bskl_in_bskl Q1 α1 Q3).
 Proof.
 pose proof subst_bskl_in_bskl_open_bskl_wrt_bskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -10437,9 +10437,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_open_uskl_wrt_uskl_rec_mutual :
-(forall R3 R1 R2 Xus1 n1,
+(forall R3 R1 R2 α1 n1,
   lc_uskl R1 ->
-  subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl_rec n1 R2 R3) = open_uskl_wrt_uskl_rec n1 (subst_bskl_in_uskl R1 Xus1 R2) (subst_bskl_in_uskl R1 Xus1 R3)).
+  subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 R2 R3) = open_uskl_wrt_uskl_rec n1 (subst_bskl_in_uskl R1 α1 R2) (subst_bskl_in_uskl R1 α1 R3)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -10450,9 +10450,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_open_uskl_wrt_uskl_rec :
-forall R3 R1 R2 Xus1 n1,
+forall R3 R1 R2 α1 n1,
   lc_uskl R1 ->
-  subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl_rec n1 R2 R3) = open_uskl_wrt_uskl_rec n1 (subst_bskl_in_uskl R1 Xus1 R2) (subst_bskl_in_uskl R1 Xus1 R3).
+  subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 R2 R3) = open_uskl_wrt_uskl_rec n1 (subst_bskl_in_uskl R1 α1 R2) (subst_bskl_in_uskl R1 α1 R3).
 Proof.
 pose proof subst_bskl_in_uskl_open_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -10464,9 +10464,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_ptyp_rec_mutual :
-(forall e1 A1 A2 Xpt1 n1,
+(forall e1 A1 A2 α1 n1,
   lc_ptyp A1 ->
-  subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp_rec n1 A2 e1) = open_exp_wrt_ptyp_rec n1 (subst_ptyp_in_ptyp A1 Xpt1 A2) (subst_ptyp_in_exp A1 Xpt1 e1)).
+  subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp_rec n1 A2 e1) = open_exp_wrt_ptyp_rec n1 (subst_ptyp_in_ptyp A1 α1 A2) (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -10477,9 +10477,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_ptyp_rec :
-forall e1 A1 A2 Xpt1 n1,
+forall e1 A1 A2 α1 n1,
   lc_ptyp A1 ->
-  subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp_rec n1 A2 e1) = open_exp_wrt_ptyp_rec n1 (subst_ptyp_in_ptyp A1 Xpt1 A2) (subst_ptyp_in_exp A1 Xpt1 e1).
+  subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp_rec n1 A2 e1) = open_exp_wrt_ptyp_rec n1 (subst_ptyp_in_ptyp A1 α1 A2) (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_open_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -10491,8 +10491,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_exp_rec_mutual :
-(forall e2 A1 e1 Xpt1 n1,
-  subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp_rec n1 e1 e2) = open_exp_wrt_exp_rec n1 (subst_ptyp_in_exp A1 Xpt1 e1) (subst_ptyp_in_exp A1 Xpt1 e2)).
+(forall e2 A1 e1 α1 n1,
+  subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp_rec n1 e1 e2) = open_exp_wrt_exp_rec n1 (subst_ptyp_in_exp A1 α1 e1) (subst_ptyp_in_exp A1 α1 e2)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -10503,8 +10503,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_exp_rec :
-forall e2 A1 e1 Xpt1 n1,
-  subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp_rec n1 e1 e2) = open_exp_wrt_exp_rec n1 (subst_ptyp_in_exp A1 Xpt1 e1) (subst_ptyp_in_exp A1 Xpt1 e2).
+forall e2 A1 e1 α1 n1,
+  subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp_rec n1 e1 e2) = open_exp_wrt_exp_rec n1 (subst_ptyp_in_exp A1 α1 e1) (subst_ptyp_in_exp A1 α1 e2).
 Proof.
 pose proof subst_ptyp_in_exp_open_exp_wrt_exp_rec_mutual as H; intuition eauto.
 Qed.
@@ -10568,9 +10568,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp :
-forall A3 A1 A2 Xpt1,
+forall A3 A1 A2 α1,
   lc_ptyp A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 (open_ptyp_wrt_ptyp A3 A2) = open_ptyp_wrt_ptyp (subst_ptyp_in_ptyp A1 Xpt1 A3) (subst_ptyp_in_ptyp A1 Xpt1 A2).
+  subst_ptyp_in_ptyp A1 α1 (open_ptyp_wrt_ptyp A3 A2) = open_ptyp_wrt_ptyp (subst_ptyp_in_ptyp A1 α1 A3) (subst_ptyp_in_ptyp A1 α1 A2).
 Proof.
 unfold open_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -10578,9 +10578,9 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp : lngen.
 
 Lemma subst_btyp_in_btyp_open_btyp_wrt_btyp :
-forall B3 B1 B2 Xbt1,
+forall B3 B1 B2 α1,
   lc_btyp B1 ->
-  subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp B3 B2) = open_btyp_wrt_btyp (subst_btyp_in_btyp B1 Xbt1 B3) (subst_btyp_in_btyp B1 Xbt1 B2).
+  subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp B3 B2) = open_btyp_wrt_btyp (subst_btyp_in_btyp B1 α1 B3) (subst_btyp_in_btyp B1 α1 B2).
 Proof.
 unfold open_btyp_wrt_btyp; default_simp.
 Qed.
@@ -10588,9 +10588,9 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_open_btyp_wrt_btyp : lngen.
 
 Lemma subst_utyp_in_utyp_open_utyp_wrt_utyp :
-forall C3 C1 C2 Xut1,
+forall C3 C1 C2 α1,
   lc_utyp C1 ->
-  subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp C3 C2) = open_utyp_wrt_utyp (subst_utyp_in_utyp C1 Xut1 C3) (subst_utyp_in_utyp C1 Xut1 C2).
+  subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp C3 C2) = open_utyp_wrt_utyp (subst_utyp_in_utyp C1 α1 C3) (subst_utyp_in_utyp C1 α1 C2).
 Proof.
 unfold open_utyp_wrt_utyp; default_simp.
 Qed.
@@ -10598,9 +10598,9 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_open_utyp_wrt_utyp : lngen.
 
 Lemma subst_pskl_in_pskl_open_pskl_wrt_pskl :
-forall P3 P1 P2 Xps1,
+forall P3 P1 P2 α1,
   lc_pskl P1 ->
-  subst_pskl_in_pskl P1 Xps1 (open_pskl_wrt_pskl P3 P2) = open_pskl_wrt_pskl (subst_pskl_in_pskl P1 Xps1 P3) (subst_pskl_in_pskl P1 Xps1 P2).
+  subst_pskl_in_pskl P1 α1 (open_pskl_wrt_pskl P3 P2) = open_pskl_wrt_pskl (subst_pskl_in_pskl P1 α1 P3) (subst_pskl_in_pskl P1 α1 P2).
 Proof.
 unfold open_pskl_wrt_pskl; default_simp.
 Qed.
@@ -10608,9 +10608,9 @@ Qed.
 #[export] Hint Resolve subst_pskl_in_pskl_open_pskl_wrt_pskl : lngen.
 
 Lemma subst_bskl_in_bskl_open_bskl_wrt_bskl :
-forall Q3 Q1 Q2 Xbs1,
+forall Q3 Q1 Q2 α1,
   lc_bskl Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl Q3 Q2) = open_bskl_wrt_bskl (subst_bskl_in_bskl Q1 Xbs1 Q3) (subst_bskl_in_bskl Q1 Xbs1 Q2).
+  subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl Q3 Q2) = open_bskl_wrt_bskl (subst_bskl_in_bskl Q1 α1 Q3) (subst_bskl_in_bskl Q1 α1 Q2).
 Proof.
 unfold open_bskl_wrt_bskl; default_simp.
 Qed.
@@ -10618,9 +10618,9 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_open_bskl_wrt_bskl : lngen.
 
 Lemma subst_bskl_in_uskl_open_uskl_wrt_uskl :
-forall R3 R1 R2 Xus1,
+forall R3 R1 R2 α1,
   lc_uskl R1 ->
-  subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl R3 R2) = open_uskl_wrt_uskl (subst_bskl_in_uskl R1 Xus1 R3) (subst_bskl_in_uskl R1 Xus1 R2).
+  subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R3 R2) = open_uskl_wrt_uskl (subst_bskl_in_uskl R1 α1 R3) (subst_bskl_in_uskl R1 α1 R2).
 Proof.
 unfold open_uskl_wrt_uskl; default_simp.
 Qed.
@@ -10628,9 +10628,9 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_open_uskl_wrt_uskl : lngen.
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_ptyp :
-forall e1 A1 A2 Xpt1,
+forall e1 A1 A2 α1,
   lc_ptyp A1 ->
-  subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp e1 A2) = open_exp_wrt_ptyp (subst_ptyp_in_exp A1 Xpt1 e1) (subst_ptyp_in_ptyp A1 Xpt1 A2).
+  subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp e1 A2) = open_exp_wrt_ptyp (subst_ptyp_in_exp A1 α1 e1) (subst_ptyp_in_ptyp A1 α1 A2).
 Proof.
 unfold open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -10638,8 +10638,8 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_exp_open_exp_wrt_ptyp : lngen.
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_exp :
-forall e2 A1 e1 Xpt1,
-  subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp e2 e1) = open_exp_wrt_exp (subst_ptyp_in_exp A1 Xpt1 e2) (subst_ptyp_in_exp A1 Xpt1 e1).
+forall e2 A1 e1 α1,
+  subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp e2 e1) = open_exp_wrt_exp (subst_ptyp_in_exp A1 α1 e2) (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 unfold open_exp_wrt_exp; default_simp.
 Qed.
@@ -10667,10 +10667,10 @@ Qed.
 #[export] Hint Resolve subst_exp_in_exp_open_exp_wrt_exp : lngen.
 
 Lemma subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var :
-forall A2 A1 Xpt1 Xpt2,
-  Xpt1 <> Xpt2 ->
+forall A2 A1 α1 α2,
+  α1 <> α2 ->
   lc_ptyp A1 ->
-  open_ptyp_wrt_ptyp (subst_ptyp_in_ptyp A1 Xpt1 A2) (ptyp_var_f Xpt2) = subst_ptyp_in_ptyp A1 Xpt1 (open_ptyp_wrt_ptyp A2 (ptyp_var_f Xpt2)).
+  open_ptyp_wrt_ptyp (subst_ptyp_in_ptyp A1 α1 A2) (ptyp_var_f α2) = subst_ptyp_in_ptyp A1 α1 (open_ptyp_wrt_ptyp A2 (ptyp_var_f α2)).
 Proof.
 intros; rewrite subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -10678,10 +10678,10 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var : lngen.
 
 Lemma subst_btyp_in_btyp_open_btyp_wrt_btyp_var :
-forall B2 B1 Xbt1 Xbt2,
-  Xbt1 <> Xbt2 ->
+forall B2 B1 α1 α2,
+  α1 <> α2 ->
   lc_btyp B1 ->
-  open_btyp_wrt_btyp (subst_btyp_in_btyp B1 Xbt1 B2) (btyp_var_f Xbt2) = subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp B2 (btyp_var_f Xbt2)).
+  open_btyp_wrt_btyp (subst_btyp_in_btyp B1 α1 B2) (btyp_var_f α2) = subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp B2 (btyp_var_f α2)).
 Proof.
 intros; rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp; default_simp.
 Qed.
@@ -10689,10 +10689,10 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_open_btyp_wrt_btyp_var : lngen.
 
 Lemma subst_utyp_in_utyp_open_utyp_wrt_utyp_var :
-forall C2 C1 Xut1 Xut2,
-  Xut1 <> Xut2 ->
+forall C2 C1 α1 α2,
+  α1 <> α2 ->
   lc_utyp C1 ->
-  open_utyp_wrt_utyp (subst_utyp_in_utyp C1 Xut1 C2) (utyp_var_f Xut2) = subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp C2 (utyp_var_f Xut2)).
+  open_utyp_wrt_utyp (subst_utyp_in_utyp C1 α1 C2) (utyp_var_f α2) = subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp C2 (utyp_var_f α2)).
 Proof.
 intros; rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp; default_simp.
 Qed.
@@ -10700,10 +10700,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_open_utyp_wrt_utyp_var : lngen.
 
 Lemma subst_pskl_in_pskl_open_pskl_wrt_pskl_var :
-forall P2 P1 Xps1 Xps2,
-  Xps1 <> Xps2 ->
+forall P2 P1 α1 α2,
+  α1 <> α2 ->
   lc_pskl P1 ->
-  open_pskl_wrt_pskl (subst_pskl_in_pskl P1 Xps1 P2) (pskl_var_f Xps2) = subst_pskl_in_pskl P1 Xps1 (open_pskl_wrt_pskl P2 (pskl_var_f Xps2)).
+  open_pskl_wrt_pskl (subst_pskl_in_pskl P1 α1 P2) (pskl_var_f α2) = subst_pskl_in_pskl P1 α1 (open_pskl_wrt_pskl P2 (pskl_var_f α2)).
 Proof.
 intros; rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl; default_simp.
 Qed.
@@ -10711,10 +10711,10 @@ Qed.
 #[export] Hint Resolve subst_pskl_in_pskl_open_pskl_wrt_pskl_var : lngen.
 
 Lemma subst_bskl_in_bskl_open_bskl_wrt_bskl_var :
-forall Q2 Q1 Xbs1 Xbs2,
-  Xbs1 <> Xbs2 ->
+forall Q2 Q1 α1 α2,
+  α1 <> α2 ->
   lc_bskl Q1 ->
-  open_bskl_wrt_bskl (subst_bskl_in_bskl Q1 Xbs1 Q2) (bskl_var_f Xbs2) = subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl Q2 (bskl_var_f Xbs2)).
+  open_bskl_wrt_bskl (subst_bskl_in_bskl Q1 α1 Q2) (bskl_var_f α2) = subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl Q2 (bskl_var_f α2)).
 Proof.
 intros; rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl; default_simp.
 Qed.
@@ -10722,10 +10722,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_open_bskl_wrt_bskl_var : lngen.
 
 Lemma subst_bskl_in_uskl_open_uskl_wrt_uskl_var :
-forall R2 R1 Xus1 Xus2,
-  Xus1 <> Xus2 ->
+forall R2 R1 α1 α2,
+  α1 <> α2 ->
   lc_uskl R1 ->
-  open_uskl_wrt_uskl (subst_bskl_in_uskl R1 Xus1 R2) (uskl_var_f Xus2) = subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl R2 (uskl_var_f Xus2)).
+  open_uskl_wrt_uskl (subst_bskl_in_uskl R1 α1 R2) (uskl_var_f α2) = subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)).
 Proof.
 intros; rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl; default_simp.
 Qed.
@@ -10733,10 +10733,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_open_uskl_wrt_uskl_var : lngen.
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_ptyp_var :
-forall e1 A1 Xpt1 Xpt2,
-  Xpt1 <> Xpt2 ->
+forall e1 A1 α1 α2,
+  α1 <> α2 ->
   lc_ptyp A1 ->
-  open_exp_wrt_ptyp (subst_ptyp_in_exp A1 Xpt1 e1) (ptyp_var_f Xpt2) = subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp e1 (ptyp_var_f Xpt2)).
+  open_exp_wrt_ptyp (subst_ptyp_in_exp A1 α1 e1) (ptyp_var_f α2) = subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp e1 (ptyp_var_f α2)).
 Proof.
 intros; rewrite subst_ptyp_in_exp_open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -10744,8 +10744,8 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_exp_open_exp_wrt_ptyp_var : lngen.
 
 Lemma subst_ptyp_in_exp_open_exp_wrt_exp_var :
-forall e1 A1 Xpt1 x1,
-  open_exp_wrt_exp (subst_ptyp_in_exp A1 Xpt1 e1) (exp_var_f x1) = subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp e1 (exp_var_f x1)).
+forall e1 A1 α1 x1,
+  open_exp_wrt_exp (subst_ptyp_in_exp A1 α1 e1) (exp_var_f x1) = subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp e1 (exp_var_f x1)).
 Proof.
 intros; rewrite subst_ptyp_in_exp_open_exp_wrt_exp; default_simp.
 Qed.
@@ -10753,9 +10753,9 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_exp_open_exp_wrt_exp_var : lngen.
 
 Lemma subst_exp_in_exp_open_exp_wrt_ptyp_var :
-forall e2 e1 x1 Xpt1,
+forall e2 e1 x1 α1,
   lc_exp e1 ->
-  open_exp_wrt_ptyp (subst_exp_in_exp e1 x1 e2) (ptyp_var_f Xpt1) = subst_exp_in_exp e1 x1 (open_exp_wrt_ptyp e2 (ptyp_var_f Xpt1)).
+  open_exp_wrt_ptyp (subst_exp_in_exp e1 x1 e2) (ptyp_var_f α1) = subst_exp_in_exp e1 x1 (open_exp_wrt_ptyp e2 (ptyp_var_f α1)).
 Proof.
 intros; rewrite subst_exp_in_exp_open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -10776,8 +10776,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_spec_rec_mutual :
-(forall A1 A2 Xpt1 n1,
-  subst_ptyp_in_ptyp A2 Xpt1 A1 = open_ptyp_wrt_ptyp_rec n1 A2 (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1)).
+(forall A1 A2 α1 n1,
+  subst_ptyp_in_ptyp A2 α1 A1 = open_ptyp_wrt_ptyp_rec n1 A2 (close_ptyp_wrt_ptyp_rec n1 α1 A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -10788,8 +10788,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_spec_rec :
-forall A1 A2 Xpt1 n1,
-  subst_ptyp_in_ptyp A2 Xpt1 A1 = open_ptyp_wrt_ptyp_rec n1 A2 (close_ptyp_wrt_ptyp_rec n1 Xpt1 A1).
+forall A1 A2 α1 n1,
+  subst_ptyp_in_ptyp A2 α1 A1 = open_ptyp_wrt_ptyp_rec n1 A2 (close_ptyp_wrt_ptyp_rec n1 α1 A1).
 Proof.
 pose proof subst_ptyp_in_ptyp_spec_rec_mutual as H; intuition eauto.
 Qed.
@@ -10801,8 +10801,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_spec_rec_mutual :
-(forall B1 B2 Xbt1 n1,
-  subst_btyp_in_btyp B2 Xbt1 B1 = open_btyp_wrt_btyp_rec n1 B2 (close_btyp_wrt_btyp_rec n1 Xbt1 B1)).
+(forall B1 B2 α1 n1,
+  subst_btyp_in_btyp B2 α1 B1 = open_btyp_wrt_btyp_rec n1 B2 (close_btyp_wrt_btyp_rec n1 α1 B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -10813,8 +10813,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_spec_rec :
-forall B1 B2 Xbt1 n1,
-  subst_btyp_in_btyp B2 Xbt1 B1 = open_btyp_wrt_btyp_rec n1 B2 (close_btyp_wrt_btyp_rec n1 Xbt1 B1).
+forall B1 B2 α1 n1,
+  subst_btyp_in_btyp B2 α1 B1 = open_btyp_wrt_btyp_rec n1 B2 (close_btyp_wrt_btyp_rec n1 α1 B1).
 Proof.
 pose proof subst_btyp_in_btyp_spec_rec_mutual as H; intuition eauto.
 Qed.
@@ -10826,8 +10826,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_spec_rec_mutual :
-(forall C1 C2 Xut1 n1,
-  subst_utyp_in_utyp C2 Xut1 C1 = open_utyp_wrt_utyp_rec n1 C2 (close_utyp_wrt_utyp_rec n1 Xut1 C1)).
+(forall C1 C2 α1 n1,
+  subst_utyp_in_utyp C2 α1 C1 = open_utyp_wrt_utyp_rec n1 C2 (close_utyp_wrt_utyp_rec n1 α1 C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -10838,8 +10838,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_spec_rec :
-forall C1 C2 Xut1 n1,
-  subst_utyp_in_utyp C2 Xut1 C1 = open_utyp_wrt_utyp_rec n1 C2 (close_utyp_wrt_utyp_rec n1 Xut1 C1).
+forall C1 C2 α1 n1,
+  subst_utyp_in_utyp C2 α1 C1 = open_utyp_wrt_utyp_rec n1 C2 (close_utyp_wrt_utyp_rec n1 α1 C1).
 Proof.
 pose proof subst_utyp_in_utyp_spec_rec_mutual as H; intuition eauto.
 Qed.
@@ -10851,8 +10851,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_spec_rec_mutual :
-(forall P1 P2 Xps1 n1,
-  subst_pskl_in_pskl P2 Xps1 P1 = open_pskl_wrt_pskl_rec n1 P2 (close_pskl_wrt_pskl_rec n1 Xps1 P1)).
+(forall P1 P2 α1 n1,
+  subst_pskl_in_pskl P2 α1 P1 = open_pskl_wrt_pskl_rec n1 P2 (close_pskl_wrt_pskl_rec n1 α1 P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -10863,8 +10863,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_spec_rec :
-forall P1 P2 Xps1 n1,
-  subst_pskl_in_pskl P2 Xps1 P1 = open_pskl_wrt_pskl_rec n1 P2 (close_pskl_wrt_pskl_rec n1 Xps1 P1).
+forall P1 P2 α1 n1,
+  subst_pskl_in_pskl P2 α1 P1 = open_pskl_wrt_pskl_rec n1 P2 (close_pskl_wrt_pskl_rec n1 α1 P1).
 Proof.
 pose proof subst_pskl_in_pskl_spec_rec_mutual as H; intuition eauto.
 Qed.
@@ -10876,8 +10876,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_spec_rec_mutual :
-(forall Q1 Q2 Xbs1 n1,
-  subst_bskl_in_bskl Q2 Xbs1 Q1 = open_bskl_wrt_bskl_rec n1 Q2 (close_bskl_wrt_bskl_rec n1 Xbs1 Q1)).
+(forall Q1 Q2 α1 n1,
+  subst_bskl_in_bskl Q2 α1 Q1 = open_bskl_wrt_bskl_rec n1 Q2 (close_bskl_wrt_bskl_rec n1 α1 Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -10888,8 +10888,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_spec_rec :
-forall Q1 Q2 Xbs1 n1,
-  subst_bskl_in_bskl Q2 Xbs1 Q1 = open_bskl_wrt_bskl_rec n1 Q2 (close_bskl_wrt_bskl_rec n1 Xbs1 Q1).
+forall Q1 Q2 α1 n1,
+  subst_bskl_in_bskl Q2 α1 Q1 = open_bskl_wrt_bskl_rec n1 Q2 (close_bskl_wrt_bskl_rec n1 α1 Q1).
 Proof.
 pose proof subst_bskl_in_bskl_spec_rec_mutual as H; intuition eauto.
 Qed.
@@ -10901,8 +10901,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_spec_rec_mutual :
-(forall R1 R2 Xus1 n1,
-  subst_bskl_in_uskl R2 Xus1 R1 = open_uskl_wrt_uskl_rec n1 R2 (close_uskl_wrt_uskl_rec n1 Xus1 R1)).
+(forall R1 R2 α1 n1,
+  subst_bskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl_rec n1 R2 (close_uskl_wrt_uskl_rec n1 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -10913,8 +10913,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_spec_rec :
-forall R1 R2 Xus1 n1,
-  subst_bskl_in_uskl R2 Xus1 R1 = open_uskl_wrt_uskl_rec n1 R2 (close_uskl_wrt_uskl_rec n1 Xus1 R1).
+forall R1 R2 α1 n1,
+  subst_bskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl_rec n1 R2 (close_uskl_wrt_uskl_rec n1 α1 R1).
 Proof.
 pose proof subst_bskl_in_uskl_spec_rec_mutual as H; intuition eauto.
 Qed.
@@ -10926,8 +10926,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_spec_rec_mutual :
-(forall e1 A1 Xpt1 n1,
-  subst_ptyp_in_exp A1 Xpt1 e1 = open_exp_wrt_ptyp_rec n1 A1 (close_exp_wrt_ptyp_rec n1 Xpt1 e1)).
+(forall e1 A1 α1 n1,
+  subst_ptyp_in_exp A1 α1 e1 = open_exp_wrt_ptyp_rec n1 A1 (close_exp_wrt_ptyp_rec n1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -10938,8 +10938,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_spec_rec :
-forall e1 A1 Xpt1 n1,
-  subst_ptyp_in_exp A1 Xpt1 e1 = open_exp_wrt_ptyp_rec n1 A1 (close_exp_wrt_ptyp_rec n1 Xpt1 e1).
+forall e1 A1 α1 n1,
+  subst_ptyp_in_exp A1 α1 e1 = open_exp_wrt_ptyp_rec n1 A1 (close_exp_wrt_ptyp_rec n1 α1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_spec_rec_mutual as H; intuition eauto.
 Qed.
@@ -10974,8 +10974,8 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_spec :
-forall A1 A2 Xpt1,
-  subst_ptyp_in_ptyp A2 Xpt1 A1 = open_ptyp_wrt_ptyp (close_ptyp_wrt_ptyp Xpt1 A1) A2.
+forall A1 A2 α1,
+  subst_ptyp_in_ptyp A2 α1 A1 = open_ptyp_wrt_ptyp (close_ptyp_wrt_ptyp α1 A1) A2.
 Proof.
 unfold close_ptyp_wrt_ptyp; unfold open_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -10983,8 +10983,8 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_ptyp_spec : lngen.
 
 Lemma subst_btyp_in_btyp_spec :
-forall B1 B2 Xbt1,
-  subst_btyp_in_btyp B2 Xbt1 B1 = open_btyp_wrt_btyp (close_btyp_wrt_btyp Xbt1 B1) B2.
+forall B1 B2 α1,
+  subst_btyp_in_btyp B2 α1 B1 = open_btyp_wrt_btyp (close_btyp_wrt_btyp α1 B1) B2.
 Proof.
 unfold close_btyp_wrt_btyp; unfold open_btyp_wrt_btyp; default_simp.
 Qed.
@@ -10992,8 +10992,8 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_spec : lngen.
 
 Lemma subst_utyp_in_utyp_spec :
-forall C1 C2 Xut1,
-  subst_utyp_in_utyp C2 Xut1 C1 = open_utyp_wrt_utyp (close_utyp_wrt_utyp Xut1 C1) C2.
+forall C1 C2 α1,
+  subst_utyp_in_utyp C2 α1 C1 = open_utyp_wrt_utyp (close_utyp_wrt_utyp α1 C1) C2.
 Proof.
 unfold close_utyp_wrt_utyp; unfold open_utyp_wrt_utyp; default_simp.
 Qed.
@@ -11001,8 +11001,8 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_spec : lngen.
 
 Lemma subst_pskl_in_pskl_spec :
-forall P1 P2 Xps1,
-  subst_pskl_in_pskl P2 Xps1 P1 = open_pskl_wrt_pskl (close_pskl_wrt_pskl Xps1 P1) P2.
+forall P1 P2 α1,
+  subst_pskl_in_pskl P2 α1 P1 = open_pskl_wrt_pskl (close_pskl_wrt_pskl α1 P1) P2.
 Proof.
 unfold close_pskl_wrt_pskl; unfold open_pskl_wrt_pskl; default_simp.
 Qed.
@@ -11010,8 +11010,8 @@ Qed.
 #[export] Hint Resolve subst_pskl_in_pskl_spec : lngen.
 
 Lemma subst_bskl_in_bskl_spec :
-forall Q1 Q2 Xbs1,
-  subst_bskl_in_bskl Q2 Xbs1 Q1 = open_bskl_wrt_bskl (close_bskl_wrt_bskl Xbs1 Q1) Q2.
+forall Q1 Q2 α1,
+  subst_bskl_in_bskl Q2 α1 Q1 = open_bskl_wrt_bskl (close_bskl_wrt_bskl α1 Q1) Q2.
 Proof.
 unfold close_bskl_wrt_bskl; unfold open_bskl_wrt_bskl; default_simp.
 Qed.
@@ -11019,8 +11019,8 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_spec : lngen.
 
 Lemma subst_bskl_in_uskl_spec :
-forall R1 R2 Xus1,
-  subst_bskl_in_uskl R2 Xus1 R1 = open_uskl_wrt_uskl (close_uskl_wrt_uskl Xus1 R1) R2.
+forall R1 R2 α1,
+  subst_bskl_in_uskl R2 α1 R1 = open_uskl_wrt_uskl (close_uskl_wrt_uskl α1 R1) R2.
 Proof.
 unfold close_uskl_wrt_uskl; unfold open_uskl_wrt_uskl; default_simp.
 Qed.
@@ -11028,8 +11028,8 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_spec : lngen.
 
 Lemma subst_ptyp_in_exp_spec :
-forall e1 A1 Xpt1,
-  subst_ptyp_in_exp A1 Xpt1 e1 = open_exp_wrt_ptyp (close_exp_wrt_ptyp Xpt1 e1) A1.
+forall e1 A1 α1,
+  subst_ptyp_in_exp A1 α1 e1 = open_exp_wrt_ptyp (close_exp_wrt_ptyp α1 e1) A1.
 Proof.
 unfold close_exp_wrt_ptyp; unfold open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -11048,10 +11048,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_subst_ptyp_in_ptyp_mutual :
-(forall A1 A2 A3 Xpt2 Xpt1,
-  Xpt2 `notin` ftvar_in_ptyp A2 ->
-  Xpt2 <> Xpt1 ->
-  subst_ptyp_in_ptyp A2 Xpt1 (subst_ptyp_in_ptyp A3 Xpt2 A1) = subst_ptyp_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A3) Xpt2 (subst_ptyp_in_ptyp A2 Xpt1 A1)).
+(forall A1 A2 A3 α2 α1,
+  α2 `notin` ftvar_in_ptyp A2 ->
+  α2 <> α1 ->
+  subst_ptyp_in_ptyp A2 α1 (subst_ptyp_in_ptyp A3 α2 A1) = subst_ptyp_in_ptyp (subst_ptyp_in_ptyp A2 α1 A3) α2 (subst_ptyp_in_ptyp A2 α1 A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -11060,10 +11060,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_subst_ptyp_in_ptyp :
-forall A1 A2 A3 Xpt2 Xpt1,
-  Xpt2 `notin` ftvar_in_ptyp A2 ->
-  Xpt2 <> Xpt1 ->
-  subst_ptyp_in_ptyp A2 Xpt1 (subst_ptyp_in_ptyp A3 Xpt2 A1) = subst_ptyp_in_ptyp (subst_ptyp_in_ptyp A2 Xpt1 A3) Xpt2 (subst_ptyp_in_ptyp A2 Xpt1 A1).
+forall A1 A2 A3 α2 α1,
+  α2 `notin` ftvar_in_ptyp A2 ->
+  α2 <> α1 ->
+  subst_ptyp_in_ptyp A2 α1 (subst_ptyp_in_ptyp A3 α2 A1) = subst_ptyp_in_ptyp (subst_ptyp_in_ptyp A2 α1 A3) α2 (subst_ptyp_in_ptyp A2 α1 A1).
 Proof.
 pose proof subst_ptyp_in_ptyp_subst_ptyp_in_ptyp_mutual as H; intuition eauto.
 Qed.
@@ -11073,10 +11073,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_subst_btyp_in_btyp_mutual :
-(forall B1 B2 B3 Xbt2 Xbt1,
-  Xbt2 `notin` ftvar_in_btyp B2 ->
-  Xbt2 <> Xbt1 ->
-  subst_btyp_in_btyp B2 Xbt1 (subst_btyp_in_btyp B3 Xbt2 B1) = subst_btyp_in_btyp (subst_btyp_in_btyp B2 Xbt1 B3) Xbt2 (subst_btyp_in_btyp B2 Xbt1 B1)).
+(forall B1 B2 B3 α2 α1,
+  α2 `notin` ftvar_in_btyp B2 ->
+  α2 <> α1 ->
+  subst_btyp_in_btyp B2 α1 (subst_btyp_in_btyp B3 α2 B1) = subst_btyp_in_btyp (subst_btyp_in_btyp B2 α1 B3) α2 (subst_btyp_in_btyp B2 α1 B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -11085,10 +11085,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_btyp_in_btyp_subst_btyp_in_btyp :
-forall B1 B2 B3 Xbt2 Xbt1,
-  Xbt2 `notin` ftvar_in_btyp B2 ->
-  Xbt2 <> Xbt1 ->
-  subst_btyp_in_btyp B2 Xbt1 (subst_btyp_in_btyp B3 Xbt2 B1) = subst_btyp_in_btyp (subst_btyp_in_btyp B2 Xbt1 B3) Xbt2 (subst_btyp_in_btyp B2 Xbt1 B1).
+forall B1 B2 B3 α2 α1,
+  α2 `notin` ftvar_in_btyp B2 ->
+  α2 <> α1 ->
+  subst_btyp_in_btyp B2 α1 (subst_btyp_in_btyp B3 α2 B1) = subst_btyp_in_btyp (subst_btyp_in_btyp B2 α1 B3) α2 (subst_btyp_in_btyp B2 α1 B1).
 Proof.
 pose proof subst_btyp_in_btyp_subst_btyp_in_btyp_mutual as H; intuition eauto.
 Qed.
@@ -11098,10 +11098,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_subst_utyp_in_utyp_mutual :
-(forall C1 C2 C3 Xut2 Xut1,
-  Xut2 `notin` ftvar_in_utyp C2 ->
-  Xut2 <> Xut1 ->
-  subst_utyp_in_utyp C2 Xut1 (subst_utyp_in_utyp C3 Xut2 C1) = subst_utyp_in_utyp (subst_utyp_in_utyp C2 Xut1 C3) Xut2 (subst_utyp_in_utyp C2 Xut1 C1)).
+(forall C1 C2 C3 α2 α1,
+  α2 `notin` ftvar_in_utyp C2 ->
+  α2 <> α1 ->
+  subst_utyp_in_utyp C2 α1 (subst_utyp_in_utyp C3 α2 C1) = subst_utyp_in_utyp (subst_utyp_in_utyp C2 α1 C3) α2 (subst_utyp_in_utyp C2 α1 C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -11110,10 +11110,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_utyp_in_utyp_subst_utyp_in_utyp :
-forall C1 C2 C3 Xut2 Xut1,
-  Xut2 `notin` ftvar_in_utyp C2 ->
-  Xut2 <> Xut1 ->
-  subst_utyp_in_utyp C2 Xut1 (subst_utyp_in_utyp C3 Xut2 C1) = subst_utyp_in_utyp (subst_utyp_in_utyp C2 Xut1 C3) Xut2 (subst_utyp_in_utyp C2 Xut1 C1).
+forall C1 C2 C3 α2 α1,
+  α2 `notin` ftvar_in_utyp C2 ->
+  α2 <> α1 ->
+  subst_utyp_in_utyp C2 α1 (subst_utyp_in_utyp C3 α2 C1) = subst_utyp_in_utyp (subst_utyp_in_utyp C2 α1 C3) α2 (subst_utyp_in_utyp C2 α1 C1).
 Proof.
 pose proof subst_utyp_in_utyp_subst_utyp_in_utyp_mutual as H; intuition eauto.
 Qed.
@@ -11123,10 +11123,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_subst_pskl_in_pskl_mutual :
-(forall P1 P2 P3 Xps2 Xps1,
-  Xps2 `notin` ftvar_in_pskl P2 ->
-  Xps2 <> Xps1 ->
-  subst_pskl_in_pskl P2 Xps1 (subst_pskl_in_pskl P3 Xps2 P1) = subst_pskl_in_pskl (subst_pskl_in_pskl P2 Xps1 P3) Xps2 (subst_pskl_in_pskl P2 Xps1 P1)).
+(forall P1 P2 P3 α2 α1,
+  α2 `notin` ftvar_in_pskl P2 ->
+  α2 <> α1 ->
+  subst_pskl_in_pskl P2 α1 (subst_pskl_in_pskl P3 α2 P1) = subst_pskl_in_pskl (subst_pskl_in_pskl P2 α1 P3) α2 (subst_pskl_in_pskl P2 α1 P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -11135,10 +11135,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_pskl_in_pskl_subst_pskl_in_pskl :
-forall P1 P2 P3 Xps2 Xps1,
-  Xps2 `notin` ftvar_in_pskl P2 ->
-  Xps2 <> Xps1 ->
-  subst_pskl_in_pskl P2 Xps1 (subst_pskl_in_pskl P3 Xps2 P1) = subst_pskl_in_pskl (subst_pskl_in_pskl P2 Xps1 P3) Xps2 (subst_pskl_in_pskl P2 Xps1 P1).
+forall P1 P2 P3 α2 α1,
+  α2 `notin` ftvar_in_pskl P2 ->
+  α2 <> α1 ->
+  subst_pskl_in_pskl P2 α1 (subst_pskl_in_pskl P3 α2 P1) = subst_pskl_in_pskl (subst_pskl_in_pskl P2 α1 P3) α2 (subst_pskl_in_pskl P2 α1 P1).
 Proof.
 pose proof subst_pskl_in_pskl_subst_pskl_in_pskl_mutual as H; intuition eauto.
 Qed.
@@ -11148,10 +11148,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_subst_bskl_in_bskl_mutual :
-(forall Q1 Q2 Q3 Xbs2 Xbs1,
-  Xbs2 `notin` ftvar_in_bskl Q2 ->
-  Xbs2 <> Xbs1 ->
-  subst_bskl_in_bskl Q2 Xbs1 (subst_bskl_in_bskl Q3 Xbs2 Q1) = subst_bskl_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q3) Xbs2 (subst_bskl_in_bskl Q2 Xbs1 Q1)).
+(forall Q1 Q2 Q3 α2 α1,
+  α2 `notin` ftvar_in_bskl Q2 ->
+  α2 <> α1 ->
+  subst_bskl_in_bskl Q2 α1 (subst_bskl_in_bskl Q3 α2 Q1) = subst_bskl_in_bskl (subst_bskl_in_bskl Q2 α1 Q3) α2 (subst_bskl_in_bskl Q2 α1 Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -11160,10 +11160,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_bskl_subst_bskl_in_bskl :
-forall Q1 Q2 Q3 Xbs2 Xbs1,
-  Xbs2 `notin` ftvar_in_bskl Q2 ->
-  Xbs2 <> Xbs1 ->
-  subst_bskl_in_bskl Q2 Xbs1 (subst_bskl_in_bskl Q3 Xbs2 Q1) = subst_bskl_in_bskl (subst_bskl_in_bskl Q2 Xbs1 Q3) Xbs2 (subst_bskl_in_bskl Q2 Xbs1 Q1).
+forall Q1 Q2 Q3 α2 α1,
+  α2 `notin` ftvar_in_bskl Q2 ->
+  α2 <> α1 ->
+  subst_bskl_in_bskl Q2 α1 (subst_bskl_in_bskl Q3 α2 Q1) = subst_bskl_in_bskl (subst_bskl_in_bskl Q2 α1 Q3) α2 (subst_bskl_in_bskl Q2 α1 Q1).
 Proof.
 pose proof subst_bskl_in_bskl_subst_bskl_in_bskl_mutual as H; intuition eauto.
 Qed.
@@ -11173,10 +11173,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_subst_bskl_in_uskl_mutual :
-(forall R1 R2 R3 Xus2 Xus1,
-  Xus2 `notin` ftvar_in_uskl R2 ->
-  Xus2 <> Xus1 ->
-  subst_bskl_in_uskl R2 Xus1 (subst_bskl_in_uskl R3 Xus2 R1) = subst_bskl_in_uskl (subst_bskl_in_uskl R2 Xus1 R3) Xus2 (subst_bskl_in_uskl R2 Xus1 R1)).
+(forall R1 R2 R3 α2 α1,
+  α2 `notin` ftvar_in_uskl R2 ->
+  α2 <> α1 ->
+  subst_bskl_in_uskl R2 α1 (subst_bskl_in_uskl R3 α2 R1) = subst_bskl_in_uskl (subst_bskl_in_uskl R2 α1 R3) α2 (subst_bskl_in_uskl R2 α1 R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -11185,10 +11185,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_uskl_subst_bskl_in_uskl :
-forall R1 R2 R3 Xus2 Xus1,
-  Xus2 `notin` ftvar_in_uskl R2 ->
-  Xus2 <> Xus1 ->
-  subst_bskl_in_uskl R2 Xus1 (subst_bskl_in_uskl R3 Xus2 R1) = subst_bskl_in_uskl (subst_bskl_in_uskl R2 Xus1 R3) Xus2 (subst_bskl_in_uskl R2 Xus1 R1).
+forall R1 R2 R3 α2 α1,
+  α2 `notin` ftvar_in_uskl R2 ->
+  α2 <> α1 ->
+  subst_bskl_in_uskl R2 α1 (subst_bskl_in_uskl R3 α2 R1) = subst_bskl_in_uskl (subst_bskl_in_uskl R2 α1 R3) α2 (subst_bskl_in_uskl R2 α1 R1).
 Proof.
 pose proof subst_bskl_in_uskl_subst_bskl_in_uskl_mutual as H; intuition eauto.
 Qed.
@@ -11198,10 +11198,10 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_subst_ptyp_in_exp_mutual :
-(forall e1 A1 A2 Xpt2 Xpt1,
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 <> Xpt1 ->
-  subst_ptyp_in_exp A1 Xpt1 (subst_ptyp_in_exp A2 Xpt2 e1) = subst_ptyp_in_exp (subst_ptyp_in_ptyp A1 Xpt1 A2) Xpt2 (subst_ptyp_in_exp A1 Xpt1 e1)).
+(forall e1 A1 A2 α2 α1,
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 <> α1 ->
+  subst_ptyp_in_exp A1 α1 (subst_ptyp_in_exp A2 α2 e1) = subst_ptyp_in_exp (subst_ptyp_in_ptyp A1 α1 A2) α2 (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -11210,10 +11210,10 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_subst_ptyp_in_exp :
-forall e1 A1 A2 Xpt2 Xpt1,
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 <> Xpt1 ->
-  subst_ptyp_in_exp A1 Xpt1 (subst_ptyp_in_exp A2 Xpt2 e1) = subst_ptyp_in_exp (subst_ptyp_in_ptyp A1 Xpt1 A2) Xpt2 (subst_ptyp_in_exp A1 Xpt1 e1).
+forall e1 A1 A2 α2 α1,
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 <> α1 ->
+  subst_ptyp_in_exp A1 α1 (subst_ptyp_in_exp A2 α2 e1) = subst_ptyp_in_exp (subst_ptyp_in_ptyp A1 α1 A2) α2 (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_subst_ptyp_in_exp_mutual as H; intuition eauto.
 Qed.
@@ -11223,8 +11223,8 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_subst_exp_in_exp_mutual :
-(forall e1 A1 e2 x1 Xpt1,
-  subst_ptyp_in_exp A1 Xpt1 (subst_exp_in_exp e2 x1 e1) = subst_exp_in_exp (subst_ptyp_in_exp A1 Xpt1 e2) x1 (subst_ptyp_in_exp A1 Xpt1 e1)).
+(forall e1 A1 e2 x1 α1,
+  subst_ptyp_in_exp A1 α1 (subst_exp_in_exp e2 x1 e1) = subst_exp_in_exp (subst_ptyp_in_exp A1 α1 e2) x1 (subst_ptyp_in_exp A1 α1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -11233,8 +11233,8 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_subst_exp_in_exp :
-forall e1 A1 e2 x1 Xpt1,
-  subst_ptyp_in_exp A1 Xpt1 (subst_exp_in_exp e2 x1 e1) = subst_exp_in_exp (subst_ptyp_in_exp A1 Xpt1 e2) x1 (subst_ptyp_in_exp A1 Xpt1 e1).
+forall e1 A1 e2 x1 α1,
+  subst_ptyp_in_exp A1 α1 (subst_exp_in_exp e2 x1 e1) = subst_exp_in_exp (subst_ptyp_in_exp A1 α1 e2) x1 (subst_ptyp_in_exp A1 α1 e1).
 Proof.
 pose proof subst_ptyp_in_exp_subst_exp_in_exp_mutual as H; intuition eauto.
 Qed.
@@ -11244,9 +11244,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_exp_in_exp_subst_ptyp_in_exp_mutual :
-(forall e1 e2 A1 Xpt1 x1,
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  subst_exp_in_exp e2 x1 (subst_ptyp_in_exp A1 Xpt1 e1) = subst_ptyp_in_exp A1 Xpt1 (subst_exp_in_exp e2 x1 e1)).
+(forall e1 e2 A1 α1 x1,
+  α1 `notin` ftvar_in_exp e2 ->
+  subst_exp_in_exp e2 x1 (subst_ptyp_in_exp A1 α1 e1) = subst_ptyp_in_exp A1 α1 (subst_exp_in_exp e2 x1 e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -11255,9 +11255,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_exp_in_exp_subst_ptyp_in_exp :
-forall e1 e2 A1 Xpt1 x1,
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  subst_exp_in_exp e2 x1 (subst_ptyp_in_exp A1 Xpt1 e1) = subst_ptyp_in_exp A1 Xpt1 (subst_exp_in_exp e2 x1 e1).
+forall e1 e2 A1 α1 x1,
+  α1 `notin` ftvar_in_exp e2 ->
+  subst_exp_in_exp e2 x1 (subst_ptyp_in_exp A1 α1 e1) = subst_ptyp_in_exp A1 α1 (subst_exp_in_exp e2 x1 e1).
 Proof.
 pose proof subst_exp_in_exp_subst_ptyp_in_exp_mutual as H; intuition eauto.
 Qed.
@@ -11292,12 +11292,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp_rec_open_ptyp_wrt_ptyp_rec_mutual :
-(forall A2 A1 Xpt1 Xpt2 n1,
-  Xpt2 `notin` ftvar_in_ptyp A2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 <> Xpt1 ->
+(forall A2 A1 α1 α2 n1,
+  α2 `notin` ftvar_in_ptyp A2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 <> α1 ->
   degree_ptyp_wrt_ptyp n1 A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 A2 = close_ptyp_wrt_ptyp_rec n1 Xpt2 (subst_ptyp_in_ptyp A1 Xpt1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt2) A2))).
+  subst_ptyp_in_ptyp A1 α1 A2 = close_ptyp_wrt_ptyp_rec n1 α2 (subst_ptyp_in_ptyp A1 α1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α2) A2))).
 Proof.
 apply_mutual_ind ptyp_mutrec;
 default_simp.
@@ -11308,12 +11308,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp_rec_open_ptyp_wrt_ptyp_rec :
-forall A2 A1 Xpt1 Xpt2 n1,
-  Xpt2 `notin` ftvar_in_ptyp A2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 <> Xpt1 ->
+forall A2 A1 α1 α2 n1,
+  α2 `notin` ftvar_in_ptyp A2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 <> α1 ->
   degree_ptyp_wrt_ptyp n1 A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 A2 = close_ptyp_wrt_ptyp_rec n1 Xpt2 (subst_ptyp_in_ptyp A1 Xpt1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt2) A2)).
+  subst_ptyp_in_ptyp A1 α1 A2 = close_ptyp_wrt_ptyp_rec n1 α2 (subst_ptyp_in_ptyp A1 α1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α2) A2)).
 Proof.
 pose proof subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp_rec_open_ptyp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -11325,12 +11325,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_close_btyp_wrt_btyp_rec_open_btyp_wrt_btyp_rec_mutual :
-(forall B2 B1 Xbt1 Xbt2 n1,
-  Xbt2 `notin` ftvar_in_btyp B2 ->
-  Xbt2 `notin` ftvar_in_btyp B1 ->
-  Xbt2 <> Xbt1 ->
+(forall B2 B1 α1 α2 n1,
+  α2 `notin` ftvar_in_btyp B2 ->
+  α2 `notin` ftvar_in_btyp B1 ->
+  α2 <> α1 ->
   degree_btyp_wrt_btyp n1 B1 ->
-  subst_btyp_in_btyp B1 Xbt1 B2 = close_btyp_wrt_btyp_rec n1 Xbt2 (subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt2) B2))).
+  subst_btyp_in_btyp B1 α1 B2 = close_btyp_wrt_btyp_rec n1 α2 (subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f α2) B2))).
 Proof.
 apply_mutual_ind btyp_mutrec;
 default_simp.
@@ -11341,12 +11341,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_close_btyp_wrt_btyp_rec_open_btyp_wrt_btyp_rec :
-forall B2 B1 Xbt1 Xbt2 n1,
-  Xbt2 `notin` ftvar_in_btyp B2 ->
-  Xbt2 `notin` ftvar_in_btyp B1 ->
-  Xbt2 <> Xbt1 ->
+forall B2 B1 α1 α2 n1,
+  α2 `notin` ftvar_in_btyp B2 ->
+  α2 `notin` ftvar_in_btyp B1 ->
+  α2 <> α1 ->
   degree_btyp_wrt_btyp n1 B1 ->
-  subst_btyp_in_btyp B1 Xbt1 B2 = close_btyp_wrt_btyp_rec n1 Xbt2 (subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt2) B2)).
+  subst_btyp_in_btyp B1 α1 B2 = close_btyp_wrt_btyp_rec n1 α2 (subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f α2) B2)).
 Proof.
 pose proof subst_btyp_in_btyp_close_btyp_wrt_btyp_rec_open_btyp_wrt_btyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -11358,12 +11358,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_close_utyp_wrt_utyp_rec_open_utyp_wrt_utyp_rec_mutual :
-(forall C2 C1 Xut1 Xut2 n1,
-  Xut2 `notin` ftvar_in_utyp C2 ->
-  Xut2 `notin` ftvar_in_utyp C1 ->
-  Xut2 <> Xut1 ->
+(forall C2 C1 α1 α2 n1,
+  α2 `notin` ftvar_in_utyp C2 ->
+  α2 `notin` ftvar_in_utyp C1 ->
+  α2 <> α1 ->
   degree_utyp_wrt_utyp n1 C1 ->
-  subst_utyp_in_utyp C1 Xut1 C2 = close_utyp_wrt_utyp_rec n1 Xut2 (subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut2) C2))).
+  subst_utyp_in_utyp C1 α1 C2 = close_utyp_wrt_utyp_rec n1 α2 (subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f α2) C2))).
 Proof.
 apply_mutual_ind utyp_mutrec;
 default_simp.
@@ -11374,12 +11374,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_close_utyp_wrt_utyp_rec_open_utyp_wrt_utyp_rec :
-forall C2 C1 Xut1 Xut2 n1,
-  Xut2 `notin` ftvar_in_utyp C2 ->
-  Xut2 `notin` ftvar_in_utyp C1 ->
-  Xut2 <> Xut1 ->
+forall C2 C1 α1 α2 n1,
+  α2 `notin` ftvar_in_utyp C2 ->
+  α2 `notin` ftvar_in_utyp C1 ->
+  α2 <> α1 ->
   degree_utyp_wrt_utyp n1 C1 ->
-  subst_utyp_in_utyp C1 Xut1 C2 = close_utyp_wrt_utyp_rec n1 Xut2 (subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut2) C2)).
+  subst_utyp_in_utyp C1 α1 C2 = close_utyp_wrt_utyp_rec n1 α2 (subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f α2) C2)).
 Proof.
 pose proof subst_utyp_in_utyp_close_utyp_wrt_utyp_rec_open_utyp_wrt_utyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -11391,12 +11391,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_close_pskl_wrt_pskl_rec_open_pskl_wrt_pskl_rec_mutual :
-(forall P2 P1 Xps1 Xps2 n1,
-  Xps2 `notin` ftvar_in_pskl P2 ->
-  Xps2 `notin` ftvar_in_pskl P1 ->
-  Xps2 <> Xps1 ->
+(forall P2 P1 α1 α2 n1,
+  α2 `notin` ftvar_in_pskl P2 ->
+  α2 `notin` ftvar_in_pskl P1 ->
+  α2 <> α1 ->
   degree_pskl_wrt_pskl n1 P1 ->
-  subst_pskl_in_pskl P1 Xps1 P2 = close_pskl_wrt_pskl_rec n1 Xps2 (subst_pskl_in_pskl P1 Xps1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps2) P2))).
+  subst_pskl_in_pskl P1 α1 P2 = close_pskl_wrt_pskl_rec n1 α2 (subst_pskl_in_pskl P1 α1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f α2) P2))).
 Proof.
 apply_mutual_ind pskl_mutrec;
 default_simp.
@@ -11407,12 +11407,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_close_pskl_wrt_pskl_rec_open_pskl_wrt_pskl_rec :
-forall P2 P1 Xps1 Xps2 n1,
-  Xps2 `notin` ftvar_in_pskl P2 ->
-  Xps2 `notin` ftvar_in_pskl P1 ->
-  Xps2 <> Xps1 ->
+forall P2 P1 α1 α2 n1,
+  α2 `notin` ftvar_in_pskl P2 ->
+  α2 `notin` ftvar_in_pskl P1 ->
+  α2 <> α1 ->
   degree_pskl_wrt_pskl n1 P1 ->
-  subst_pskl_in_pskl P1 Xps1 P2 = close_pskl_wrt_pskl_rec n1 Xps2 (subst_pskl_in_pskl P1 Xps1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps2) P2)).
+  subst_pskl_in_pskl P1 α1 P2 = close_pskl_wrt_pskl_rec n1 α2 (subst_pskl_in_pskl P1 α1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f α2) P2)).
 Proof.
 pose proof subst_pskl_in_pskl_close_pskl_wrt_pskl_rec_open_pskl_wrt_pskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -11424,12 +11424,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_close_bskl_wrt_bskl_rec_open_bskl_wrt_bskl_rec_mutual :
-(forall Q2 Q1 Xbs1 Xbs2 n1,
-  Xbs2 `notin` ftvar_in_bskl Q2 ->
-  Xbs2 `notin` ftvar_in_bskl Q1 ->
-  Xbs2 <> Xbs1 ->
+(forall Q2 Q1 α1 α2 n1,
+  α2 `notin` ftvar_in_bskl Q2 ->
+  α2 `notin` ftvar_in_bskl Q1 ->
+  α2 <> α1 ->
   degree_bskl_wrt_bskl n1 Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 Q2 = close_bskl_wrt_bskl_rec n1 Xbs2 (subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs2) Q2))).
+  subst_bskl_in_bskl Q1 α1 Q2 = close_bskl_wrt_bskl_rec n1 α2 (subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f α2) Q2))).
 Proof.
 apply_mutual_ind bskl_mutrec;
 default_simp.
@@ -11440,12 +11440,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_close_bskl_wrt_bskl_rec_open_bskl_wrt_bskl_rec :
-forall Q2 Q1 Xbs1 Xbs2 n1,
-  Xbs2 `notin` ftvar_in_bskl Q2 ->
-  Xbs2 `notin` ftvar_in_bskl Q1 ->
-  Xbs2 <> Xbs1 ->
+forall Q2 Q1 α1 α2 n1,
+  α2 `notin` ftvar_in_bskl Q2 ->
+  α2 `notin` ftvar_in_bskl Q1 ->
+  α2 <> α1 ->
   degree_bskl_wrt_bskl n1 Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 Q2 = close_bskl_wrt_bskl_rec n1 Xbs2 (subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs2) Q2)).
+  subst_bskl_in_bskl Q1 α1 Q2 = close_bskl_wrt_bskl_rec n1 α2 (subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f α2) Q2)).
 Proof.
 pose proof subst_bskl_in_bskl_close_bskl_wrt_bskl_rec_open_bskl_wrt_bskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -11457,12 +11457,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec_mutual :
-(forall R2 R1 Xus1 Xus2 n1,
-  Xus2 `notin` ftvar_in_uskl R2 ->
-  Xus2 `notin` ftvar_in_uskl R1 ->
-  Xus2 <> Xus1 ->
+(forall R2 R1 α1 α2 n1,
+  α2 `notin` ftvar_in_uskl R2 ->
+  α2 `notin` ftvar_in_uskl R1 ->
+  α2 <> α1 ->
   degree_uskl_wrt_uskl n1 R1 ->
-  subst_bskl_in_uskl R1 Xus1 R2 = close_uskl_wrt_uskl_rec n1 Xus2 (subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus2) R2))).
+  subst_bskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl_rec n1 α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α2) R2))).
 Proof.
 apply_mutual_ind uskl_mutrec;
 default_simp.
@@ -11473,12 +11473,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec :
-forall R2 R1 Xus1 Xus2 n1,
-  Xus2 `notin` ftvar_in_uskl R2 ->
-  Xus2 `notin` ftvar_in_uskl R1 ->
-  Xus2 <> Xus1 ->
+forall R2 R1 α1 α2 n1,
+  α2 `notin` ftvar_in_uskl R2 ->
+  α2 `notin` ftvar_in_uskl R1 ->
+  α2 <> α1 ->
   degree_uskl_wrt_uskl n1 R1 ->
-  subst_bskl_in_uskl R1 Xus1 R2 = close_uskl_wrt_uskl_rec n1 Xus2 (subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus2) R2)).
+  subst_bskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl_rec n1 α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α2) R2)).
 Proof.
 pose proof subst_bskl_in_uskl_close_uskl_wrt_uskl_rec_open_uskl_wrt_uskl_rec_mutual as H; intuition eauto.
 Qed.
@@ -11490,12 +11490,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec_mutual :
-(forall e1 A1 Xpt1 Xpt2 n1,
-  Xpt2 `notin` ftvar_in_exp e1 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 <> Xpt1 ->
+(forall e1 A1 α1 α2 n1,
+  α2 `notin` ftvar_in_exp e1 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 <> α1 ->
   degree_ptyp_wrt_ptyp n1 A1 ->
-  subst_ptyp_in_exp A1 Xpt1 e1 = close_exp_wrt_ptyp_rec n1 Xpt2 (subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt2) e1))).
+  subst_ptyp_in_exp A1 α1 e1 = close_exp_wrt_ptyp_rec n1 α2 (subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α2) e1))).
 Proof.
 apply_mutual_ind exp_mutrec;
 default_simp.
@@ -11506,12 +11506,12 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec :
-forall e1 A1 Xpt1 Xpt2 n1,
-  Xpt2 `notin` ftvar_in_exp e1 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 <> Xpt1 ->
+forall e1 A1 α1 α2 n1,
+  α2 `notin` ftvar_in_exp e1 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 <> α1 ->
   degree_ptyp_wrt_ptyp n1 A1 ->
-  subst_ptyp_in_exp A1 Xpt1 e1 = close_exp_wrt_ptyp_rec n1 Xpt2 (subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt2) e1)).
+  subst_ptyp_in_exp A1 α1 e1 = close_exp_wrt_ptyp_rec n1 α2 (subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α2) e1)).
 Proof.
 pose proof subst_ptyp_in_exp_close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -11523,9 +11523,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_exp_rec_open_exp_wrt_exp_rec_mutual :
-(forall e1 A1 Xpt1 x1 n1,
+(forall e1 A1 α1 x1 n1,
   x1 `notin` fvar_in_exp e1 ->
-  subst_ptyp_in_exp A1 Xpt1 e1 = close_exp_wrt_exp_rec n1 x1 (subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp_rec n1 (exp_var_f x1) e1))).
+  subst_ptyp_in_exp A1 α1 e1 = close_exp_wrt_exp_rec n1 x1 (subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp_rec n1 (exp_var_f x1) e1))).
 Proof.
 apply_mutual_ind exp_mutrec;
 default_simp.
@@ -11536,9 +11536,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_exp_rec_open_exp_wrt_exp_rec :
-forall e1 A1 Xpt1 x1 n1,
+forall e1 A1 α1 x1 n1,
   x1 `notin` fvar_in_exp e1 ->
-  subst_ptyp_in_exp A1 Xpt1 e1 = close_exp_wrt_exp_rec n1 x1 (subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp_rec n1 (exp_var_f x1) e1)).
+  subst_ptyp_in_exp A1 α1 e1 = close_exp_wrt_exp_rec n1 x1 (subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp_rec n1 (exp_var_f x1) e1)).
 Proof.
 pose proof subst_ptyp_in_exp_close_exp_wrt_exp_rec_open_exp_wrt_exp_rec_mutual as H; intuition eauto.
 Qed.
@@ -11550,11 +11550,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_exp_in_exp_close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec_mutual :
-(forall e2 e1 x1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
+(forall e2 e1 x1 α1 n1,
+  α1 `notin` ftvar_in_exp e2 ->
+  α1 `notin` ftvar_in_exp e1 ->
   degree_exp_wrt_ptyp n1 e1 ->
-  subst_exp_in_exp e1 x1 e2 = close_exp_wrt_ptyp_rec n1 Xpt1 (subst_exp_in_exp e1 x1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e2))).
+  subst_exp_in_exp e1 x1 e2 = close_exp_wrt_ptyp_rec n1 α1 (subst_exp_in_exp e1 x1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e2))).
 Proof.
 apply_mutual_ind exp_mutrec;
 default_simp.
@@ -11565,11 +11565,11 @@ Qed.
 (* begin hide *)
 
 Lemma subst_exp_in_exp_close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec :
-forall e2 e1 x1 Xpt1 n1,
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
+forall e2 e1 x1 α1 n1,
+  α1 `notin` ftvar_in_exp e2 ->
+  α1 `notin` ftvar_in_exp e1 ->
   degree_exp_wrt_ptyp n1 e1 ->
-  subst_exp_in_exp e1 x1 e2 = close_exp_wrt_ptyp_rec n1 Xpt1 (subst_exp_in_exp e1 x1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e2)).
+  subst_exp_in_exp e1 x1 e2 = close_exp_wrt_ptyp_rec n1 α1 (subst_exp_in_exp e1 x1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e2)).
 Proof.
 pose proof subst_exp_in_exp_close_exp_wrt_ptyp_rec_open_exp_wrt_ptyp_rec_mutual as H; intuition eauto.
 Qed.
@@ -11612,12 +11612,12 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp :
-forall A2 A1 Xpt1 Xpt2,
-  Xpt2 `notin` ftvar_in_ptyp A2 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 <> Xpt1 ->
+forall A2 A1 α1 α2,
+  α2 `notin` ftvar_in_ptyp A2 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 <> α1 ->
   lc_ptyp A1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 A2 = close_ptyp_wrt_ptyp Xpt2 (subst_ptyp_in_ptyp A1 Xpt1 (open_ptyp_wrt_ptyp A2 (ptyp_var_f Xpt2))).
+  subst_ptyp_in_ptyp A1 α1 A2 = close_ptyp_wrt_ptyp α2 (subst_ptyp_in_ptyp A1 α1 (open_ptyp_wrt_ptyp A2 (ptyp_var_f α2))).
 Proof.
 unfold close_ptyp_wrt_ptyp; unfold open_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -11625,12 +11625,12 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp : lngen.
 
 Lemma subst_btyp_in_btyp_close_btyp_wrt_btyp_open_btyp_wrt_btyp :
-forall B2 B1 Xbt1 Xbt2,
-  Xbt2 `notin` ftvar_in_btyp B2 ->
-  Xbt2 `notin` ftvar_in_btyp B1 ->
-  Xbt2 <> Xbt1 ->
+forall B2 B1 α1 α2,
+  α2 `notin` ftvar_in_btyp B2 ->
+  α2 `notin` ftvar_in_btyp B1 ->
+  α2 <> α1 ->
   lc_btyp B1 ->
-  subst_btyp_in_btyp B1 Xbt1 B2 = close_btyp_wrt_btyp Xbt2 (subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp B2 (btyp_var_f Xbt2))).
+  subst_btyp_in_btyp B1 α1 B2 = close_btyp_wrt_btyp α2 (subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp B2 (btyp_var_f α2))).
 Proof.
 unfold close_btyp_wrt_btyp; unfold open_btyp_wrt_btyp; default_simp.
 Qed.
@@ -11638,12 +11638,12 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_close_btyp_wrt_btyp_open_btyp_wrt_btyp : lngen.
 
 Lemma subst_utyp_in_utyp_close_utyp_wrt_utyp_open_utyp_wrt_utyp :
-forall C2 C1 Xut1 Xut2,
-  Xut2 `notin` ftvar_in_utyp C2 ->
-  Xut2 `notin` ftvar_in_utyp C1 ->
-  Xut2 <> Xut1 ->
+forall C2 C1 α1 α2,
+  α2 `notin` ftvar_in_utyp C2 ->
+  α2 `notin` ftvar_in_utyp C1 ->
+  α2 <> α1 ->
   lc_utyp C1 ->
-  subst_utyp_in_utyp C1 Xut1 C2 = close_utyp_wrt_utyp Xut2 (subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp C2 (utyp_var_f Xut2))).
+  subst_utyp_in_utyp C1 α1 C2 = close_utyp_wrt_utyp α2 (subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp C2 (utyp_var_f α2))).
 Proof.
 unfold close_utyp_wrt_utyp; unfold open_utyp_wrt_utyp; default_simp.
 Qed.
@@ -11651,12 +11651,12 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_close_utyp_wrt_utyp_open_utyp_wrt_utyp : lngen.
 
 Lemma subst_pskl_in_pskl_close_pskl_wrt_pskl_open_pskl_wrt_pskl :
-forall P2 P1 Xps1 Xps2,
-  Xps2 `notin` ftvar_in_pskl P2 ->
-  Xps2 `notin` ftvar_in_pskl P1 ->
-  Xps2 <> Xps1 ->
+forall P2 P1 α1 α2,
+  α2 `notin` ftvar_in_pskl P2 ->
+  α2 `notin` ftvar_in_pskl P1 ->
+  α2 <> α1 ->
   lc_pskl P1 ->
-  subst_pskl_in_pskl P1 Xps1 P2 = close_pskl_wrt_pskl Xps2 (subst_pskl_in_pskl P1 Xps1 (open_pskl_wrt_pskl P2 (pskl_var_f Xps2))).
+  subst_pskl_in_pskl P1 α1 P2 = close_pskl_wrt_pskl α2 (subst_pskl_in_pskl P1 α1 (open_pskl_wrt_pskl P2 (pskl_var_f α2))).
 Proof.
 unfold close_pskl_wrt_pskl; unfold open_pskl_wrt_pskl; default_simp.
 Qed.
@@ -11664,12 +11664,12 @@ Qed.
 #[export] Hint Resolve subst_pskl_in_pskl_close_pskl_wrt_pskl_open_pskl_wrt_pskl : lngen.
 
 Lemma subst_bskl_in_bskl_close_bskl_wrt_bskl_open_bskl_wrt_bskl :
-forall Q2 Q1 Xbs1 Xbs2,
-  Xbs2 `notin` ftvar_in_bskl Q2 ->
-  Xbs2 `notin` ftvar_in_bskl Q1 ->
-  Xbs2 <> Xbs1 ->
+forall Q2 Q1 α1 α2,
+  α2 `notin` ftvar_in_bskl Q2 ->
+  α2 `notin` ftvar_in_bskl Q1 ->
+  α2 <> α1 ->
   lc_bskl Q1 ->
-  subst_bskl_in_bskl Q1 Xbs1 Q2 = close_bskl_wrt_bskl Xbs2 (subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl Q2 (bskl_var_f Xbs2))).
+  subst_bskl_in_bskl Q1 α1 Q2 = close_bskl_wrt_bskl α2 (subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl Q2 (bskl_var_f α2))).
 Proof.
 unfold close_bskl_wrt_bskl; unfold open_bskl_wrt_bskl; default_simp.
 Qed.
@@ -11677,12 +11677,12 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_close_bskl_wrt_bskl_open_bskl_wrt_bskl : lngen.
 
 Lemma subst_bskl_in_uskl_close_uskl_wrt_uskl_open_uskl_wrt_uskl :
-forall R2 R1 Xus1 Xus2,
-  Xus2 `notin` ftvar_in_uskl R2 ->
-  Xus2 `notin` ftvar_in_uskl R1 ->
-  Xus2 <> Xus1 ->
+forall R2 R1 α1 α2,
+  α2 `notin` ftvar_in_uskl R2 ->
+  α2 `notin` ftvar_in_uskl R1 ->
+  α2 <> α1 ->
   lc_uskl R1 ->
-  subst_bskl_in_uskl R1 Xus1 R2 = close_uskl_wrt_uskl Xus2 (subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl R2 (uskl_var_f Xus2))).
+  subst_bskl_in_uskl R1 α1 R2 = close_uskl_wrt_uskl α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2))).
 Proof.
 unfold close_uskl_wrt_uskl; unfold open_uskl_wrt_uskl; default_simp.
 Qed.
@@ -11690,12 +11690,12 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_close_uskl_wrt_uskl_open_uskl_wrt_uskl : lngen.
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_ptyp_open_exp_wrt_ptyp :
-forall e1 A1 Xpt1 Xpt2,
-  Xpt2 `notin` ftvar_in_exp e1 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 ->
-  Xpt2 <> Xpt1 ->
+forall e1 A1 α1 α2,
+  α2 `notin` ftvar_in_exp e1 ->
+  α2 `notin` ftvar_in_ptyp A1 ->
+  α2 <> α1 ->
   lc_ptyp A1 ->
-  subst_ptyp_in_exp A1 Xpt1 e1 = close_exp_wrt_ptyp Xpt2 (subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp e1 (ptyp_var_f Xpt2))).
+  subst_ptyp_in_exp A1 α1 e1 = close_exp_wrt_ptyp α2 (subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp e1 (ptyp_var_f α2))).
 Proof.
 unfold close_exp_wrt_ptyp; unfold open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -11703,10 +11703,10 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_exp_close_exp_wrt_ptyp_open_exp_wrt_ptyp : lngen.
 
 Lemma subst_ptyp_in_exp_close_exp_wrt_exp_open_exp_wrt_exp :
-forall e1 A1 Xpt1 x1,
+forall e1 A1 α1 x1,
   x1 `notin` fvar_in_exp e1 ->
   lc_ptyp A1 ->
-  subst_ptyp_in_exp A1 Xpt1 e1 = close_exp_wrt_exp x1 (subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp e1 (exp_var_f x1))).
+  subst_ptyp_in_exp A1 α1 e1 = close_exp_wrt_exp x1 (subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp e1 (exp_var_f x1))).
 Proof.
 unfold close_exp_wrt_exp; unfold open_exp_wrt_exp; default_simp.
 Qed.
@@ -11714,11 +11714,11 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_exp_close_exp_wrt_exp_open_exp_wrt_exp : lngen.
 
 Lemma subst_exp_in_exp_close_exp_wrt_ptyp_open_exp_wrt_ptyp :
-forall e2 e1 x1 Xpt1,
-  Xpt1 `notin` ftvar_in_exp e2 ->
-  Xpt1 `notin` ftvar_in_exp e1 ->
+forall e2 e1 x1 α1,
+  α1 `notin` ftvar_in_exp e2 ->
+  α1 `notin` ftvar_in_exp e1 ->
   lc_exp e1 ->
-  subst_exp_in_exp e1 x1 e2 = close_exp_wrt_ptyp Xpt1 (subst_exp_in_exp e1 x1 (open_exp_wrt_ptyp e2 (ptyp_var_f Xpt1))).
+  subst_exp_in_exp e1 x1 e2 = close_exp_wrt_ptyp α1 (subst_exp_in_exp e1 x1 (open_exp_wrt_ptyp e2 (ptyp_var_f α1))).
 Proof.
 unfold close_exp_wrt_ptyp; unfold open_exp_wrt_ptyp; default_simp.
 Qed.
@@ -11739,10 +11739,10 @@ Qed.
 #[export] Hint Resolve subst_exp_in_exp_close_exp_wrt_exp_open_exp_wrt_exp : lngen.
 
 Lemma subst_ptyp_in_ptyp_ptyp_all :
-forall Xpt2 A2 A1 Xpt1,
+forall α2 A2 A1 α1,
   lc_ptyp A1 ->
-  Xpt2 `notin` ftvar_in_ptyp A1 `union` ftvar_in_ptyp A2 `union` singleton Xpt1 ->
-  subst_ptyp_in_ptyp A1 Xpt1 (ptyp_all A2) = ptyp_all (close_ptyp_wrt_ptyp Xpt2 (subst_ptyp_in_ptyp A1 Xpt1 (open_ptyp_wrt_ptyp A2 (ptyp_var_f Xpt2)))).
+  α2 `notin` ftvar_in_ptyp A1 `union` ftvar_in_ptyp A2 `union` singleton α1 ->
+  subst_ptyp_in_ptyp A1 α1 (ptyp_all A2) = ptyp_all (close_ptyp_wrt_ptyp α2 (subst_ptyp_in_ptyp A1 α1 (open_ptyp_wrt_ptyp A2 (ptyp_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11750,10 +11750,10 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_ptyp_ptyp_all : lngen.
 
 Lemma subst_btyp_in_btyp_btyp_all_syn :
-forall Xbt2 B2 B1 Xbt1,
+forall α2 B2 B1 α1,
   lc_btyp B1 ->
-  Xbt2 `notin` ftvar_in_btyp B1 `union` ftvar_in_btyp B2 `union` singleton Xbt1 ->
-  subst_btyp_in_btyp B1 Xbt1 (btyp_all_syn B2) = btyp_all_syn (close_btyp_wrt_btyp Xbt2 (subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp B2 (btyp_var_f Xbt2)))).
+  α2 `notin` ftvar_in_btyp B1 `union` ftvar_in_btyp B2 `union` singleton α1 ->
+  subst_btyp_in_btyp B1 α1 (btyp_all_syn B2) = btyp_all_syn (close_btyp_wrt_btyp α2 (subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp B2 (btyp_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11761,10 +11761,10 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_btyp_all_syn : lngen.
 
 Lemma subst_btyp_in_btyp_btyp_all_inh :
-forall Xbt2 B2 B1 Xbt1,
+forall α2 B2 B1 α1,
   lc_btyp B1 ->
-  Xbt2 `notin` ftvar_in_btyp B1 `union` ftvar_in_btyp B2 `union` singleton Xbt1 ->
-  subst_btyp_in_btyp B1 Xbt1 (btyp_all_inh B2) = btyp_all_inh (close_btyp_wrt_btyp Xbt2 (subst_btyp_in_btyp B1 Xbt1 (open_btyp_wrt_btyp B2 (btyp_var_f Xbt2)))).
+  α2 `notin` ftvar_in_btyp B1 `union` ftvar_in_btyp B2 `union` singleton α1 ->
+  subst_btyp_in_btyp B1 α1 (btyp_all_inh B2) = btyp_all_inh (close_btyp_wrt_btyp α2 (subst_btyp_in_btyp B1 α1 (open_btyp_wrt_btyp B2 (btyp_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11772,10 +11772,10 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_btyp_all_inh : lngen.
 
 Lemma subst_utyp_in_utyp_utyp_all_syn :
-forall Xut2 C2 C1 Xut1,
+forall α2 C2 C1 α1,
   lc_utyp C1 ->
-  Xut2 `notin` ftvar_in_utyp C1 `union` ftvar_in_utyp C2 `union` singleton Xut1 ->
-  subst_utyp_in_utyp C1 Xut1 (utyp_all_syn C2) = utyp_all_syn (close_utyp_wrt_utyp Xut2 (subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp C2 (utyp_var_f Xut2)))).
+  α2 `notin` ftvar_in_utyp C1 `union` ftvar_in_utyp C2 `union` singleton α1 ->
+  subst_utyp_in_utyp C1 α1 (utyp_all_syn C2) = utyp_all_syn (close_utyp_wrt_utyp α2 (subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp C2 (utyp_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11783,10 +11783,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_utyp_all_syn : lngen.
 
 Lemma subst_utyp_in_utyp_utyp_all_etag :
-forall Xut2 ε1 C2 C1 Xut1,
+forall α2 ε1 C2 C1 α1,
   lc_utyp C1 ->
-  Xut2 `notin` ftvar_in_utyp C1 `union` ftvar_in_utyp C2 `union` singleton Xut1 ->
-  subst_utyp_in_utyp C1 Xut1 (utyp_all_etag ε1 C2) = utyp_all_etag (ε1) (close_utyp_wrt_utyp Xut2 (subst_utyp_in_utyp C1 Xut1 (open_utyp_wrt_utyp C2 (utyp_var_f Xut2)))).
+  α2 `notin` ftvar_in_utyp C1 `union` ftvar_in_utyp C2 `union` singleton α1 ->
+  subst_utyp_in_utyp C1 α1 (utyp_all_etag ε1 C2) = utyp_all_etag (ε1) (close_utyp_wrt_utyp α2 (subst_utyp_in_utyp C1 α1 (open_utyp_wrt_utyp C2 (utyp_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11794,10 +11794,10 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_utyp_all_etag : lngen.
 
 Lemma subst_pskl_in_pskl_pskl_all_syn :
-forall Xps2 P2 P1 Xps1,
+forall α2 P2 P1 α1,
   lc_pskl P1 ->
-  Xps2 `notin` ftvar_in_pskl P1 `union` ftvar_in_pskl P2 `union` singleton Xps1 ->
-  subst_pskl_in_pskl P1 Xps1 (pskl_all_syn P2) = pskl_all_syn (close_pskl_wrt_pskl Xps2 (subst_pskl_in_pskl P1 Xps1 (open_pskl_wrt_pskl P2 (pskl_var_f Xps2)))).
+  α2 `notin` ftvar_in_pskl P1 `union` ftvar_in_pskl P2 `union` singleton α1 ->
+  subst_pskl_in_pskl P1 α1 (pskl_all_syn P2) = pskl_all_syn (close_pskl_wrt_pskl α2 (subst_pskl_in_pskl P1 α1 (open_pskl_wrt_pskl P2 (pskl_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11805,10 +11805,10 @@ Qed.
 #[export] Hint Resolve subst_pskl_in_pskl_pskl_all_syn : lngen.
 
 Lemma subst_bskl_in_bskl_bskl_all_syn :
-forall Xbs2 Q2 Q1 Xbs1,
+forall α2 Q2 Q1 α1,
   lc_bskl Q1 ->
-  Xbs2 `notin` ftvar_in_bskl Q1 `union` ftvar_in_bskl Q2 `union` singleton Xbs1 ->
-  subst_bskl_in_bskl Q1 Xbs1 (bskl_all_syn Q2) = bskl_all_syn (close_bskl_wrt_bskl Xbs2 (subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl Q2 (bskl_var_f Xbs2)))).
+  α2 `notin` ftvar_in_bskl Q1 `union` ftvar_in_bskl Q2 `union` singleton α1 ->
+  subst_bskl_in_bskl Q1 α1 (bskl_all_syn Q2) = bskl_all_syn (close_bskl_wrt_bskl α2 (subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl Q2 (bskl_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11816,10 +11816,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_bskl_all_syn : lngen.
 
 Lemma subst_bskl_in_bskl_bskl_all_inh :
-forall Xbs2 Q2 Q1 Xbs1,
+forall α2 Q2 Q1 α1,
   lc_bskl Q1 ->
-  Xbs2 `notin` ftvar_in_bskl Q1 `union` ftvar_in_bskl Q2 `union` singleton Xbs1 ->
-  subst_bskl_in_bskl Q1 Xbs1 (bskl_all_inh Q2) = bskl_all_inh (close_bskl_wrt_bskl Xbs2 (subst_bskl_in_bskl Q1 Xbs1 (open_bskl_wrt_bskl Q2 (bskl_var_f Xbs2)))).
+  α2 `notin` ftvar_in_bskl Q1 `union` ftvar_in_bskl Q2 `union` singleton α1 ->
+  subst_bskl_in_bskl Q1 α1 (bskl_all_inh Q2) = bskl_all_inh (close_bskl_wrt_bskl α2 (subst_bskl_in_bskl Q1 α1 (open_bskl_wrt_bskl Q2 (bskl_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11827,10 +11827,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_bskl_all_inh : lngen.
 
 Lemma subst_bskl_in_uskl_uskl_all_syn :
-forall Xus2 R2 R1 Xus1,
+forall α2 R2 R1 α1,
   lc_uskl R1 ->
-  Xus2 `notin` ftvar_in_uskl R1 `union` ftvar_in_uskl R2 `union` singleton Xus1 ->
-  subst_bskl_in_uskl R1 Xus1 (uskl_all_syn R2) = uskl_all_syn (close_uskl_wrt_uskl Xus2 (subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl R2 (uskl_var_f Xus2)))).
+  α2 `notin` ftvar_in_uskl R1 `union` ftvar_in_uskl R2 `union` singleton α1 ->
+  subst_bskl_in_uskl R1 α1 (uskl_all_syn R2) = uskl_all_syn (close_uskl_wrt_uskl α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11838,10 +11838,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_uskl_all_syn : lngen.
 
 Lemma subst_bskl_in_uskl_uskl_all_etag :
-forall Xus2 ε1 R2 R1 Xus1,
+forall α2 ε1 R2 R1 α1,
   lc_uskl R1 ->
-  Xus2 `notin` ftvar_in_uskl R1 `union` ftvar_in_uskl R2 `union` singleton Xus1 ->
-  subst_bskl_in_uskl R1 Xus1 (uskl_all_etag ε1 R2) = uskl_all_etag (ε1) (close_uskl_wrt_uskl Xus2 (subst_bskl_in_uskl R1 Xus1 (open_uskl_wrt_uskl R2 (uskl_var_f Xus2)))).
+  α2 `notin` ftvar_in_uskl R1 `union` ftvar_in_uskl R2 `union` singleton α1 ->
+  subst_bskl_in_uskl R1 α1 (uskl_all_etag ε1 R2) = uskl_all_etag (ε1) (close_uskl_wrt_uskl α2 (subst_bskl_in_uskl R1 α1 (open_uskl_wrt_uskl R2 (uskl_var_f α2)))).
 Proof.
 default_simp.
 Qed.
@@ -11849,10 +11849,10 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_uskl_all_etag : lngen.
 
 Lemma subst_ptyp_in_exp_exp_abs :
-forall x1 e1 A1 Xpt1,
+forall x1 e1 A1 α1,
   lc_ptyp A1 ->
   x1 `notin` fvar_in_exp e1 ->
-  subst_ptyp_in_exp A1 Xpt1 (exp_abs e1) = exp_abs (close_exp_wrt_exp x1 (subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp e1 (exp_var_f x1)))).
+  subst_ptyp_in_exp A1 α1 (exp_abs e1) = exp_abs (close_exp_wrt_exp x1 (subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp e1 (exp_var_f x1)))).
 Proof.
 default_simp.
 Qed.
@@ -11860,10 +11860,10 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_exp_exp_abs : lngen.
 
 Lemma subst_ptyp_in_exp_exp_abs_anno :
-forall x1 A2 e1 A1 Xpt1,
+forall x1 A2 e1 A1 α1,
   lc_ptyp A1 ->
   x1 `notin` fvar_in_exp e1 ->
-  subst_ptyp_in_exp A1 Xpt1 (exp_abs_anno A2 e1) = exp_abs_anno (subst_ptyp_in_ptyp A1 Xpt1 A2) (close_exp_wrt_exp x1 (subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_exp e1 (exp_var_f x1)))).
+  subst_ptyp_in_exp A1 α1 (exp_abs_anno A2 e1) = exp_abs_anno (subst_ptyp_in_ptyp A1 α1 A2) (close_exp_wrt_exp x1 (subst_ptyp_in_exp A1 α1 (open_exp_wrt_exp e1 (exp_var_f x1)))).
 Proof.
 default_simp.
 Qed.
@@ -11895,9 +11895,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_ptyp_intro_rec_mutual :
-(forall A1 Xpt1 A2 n1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  open_ptyp_wrt_ptyp_rec n1 A2 A1 = subst_ptyp_in_ptyp A2 Xpt1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A1)).
+(forall A1 α1 A2 n1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  open_ptyp_wrt_ptyp_rec n1 A2 A1 = subst_ptyp_in_ptyp A2 α1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A1)).
 Proof.
 apply_mutual_ind ptyp_mutind;
 default_simp.
@@ -11906,9 +11906,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_ptyp_intro_rec :
-forall A1 Xpt1 A2 n1,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  open_ptyp_wrt_ptyp_rec n1 A2 A1 = subst_ptyp_in_ptyp A2 Xpt1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) A1).
+forall A1 α1 A2 n1,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  open_ptyp_wrt_ptyp_rec n1 A2 A1 = subst_ptyp_in_ptyp A2 α1 (open_ptyp_wrt_ptyp_rec n1 (ptyp_var_f α1) A1).
 Proof.
 pose proof subst_ptyp_in_ptyp_intro_rec_mutual as H; intuition eauto.
 Qed.
@@ -11919,9 +11919,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_btyp_in_btyp_intro_rec_mutual :
-(forall B1 Xbt1 B2 n1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  open_btyp_wrt_btyp_rec n1 B2 B1 = subst_btyp_in_btyp B2 Xbt1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B1)).
+(forall B1 α1 B2 n1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  open_btyp_wrt_btyp_rec n1 B2 B1 = subst_btyp_in_btyp B2 α1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B1)).
 Proof.
 apply_mutual_ind btyp_mutind;
 default_simp.
@@ -11930,9 +11930,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_btyp_in_btyp_intro_rec :
-forall B1 Xbt1 B2 n1,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  open_btyp_wrt_btyp_rec n1 B2 B1 = subst_btyp_in_btyp B2 Xbt1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f Xbt1) B1).
+forall B1 α1 B2 n1,
+  α1 `notin` ftvar_in_btyp B1 ->
+  open_btyp_wrt_btyp_rec n1 B2 B1 = subst_btyp_in_btyp B2 α1 (open_btyp_wrt_btyp_rec n1 (btyp_var_f α1) B1).
 Proof.
 pose proof subst_btyp_in_btyp_intro_rec_mutual as H; intuition eauto.
 Qed.
@@ -11943,9 +11943,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_utyp_in_utyp_intro_rec_mutual :
-(forall C1 Xut1 C2 n1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  open_utyp_wrt_utyp_rec n1 C2 C1 = subst_utyp_in_utyp C2 Xut1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C1)).
+(forall C1 α1 C2 n1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  open_utyp_wrt_utyp_rec n1 C2 C1 = subst_utyp_in_utyp C2 α1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C1)).
 Proof.
 apply_mutual_ind utyp_mutind;
 default_simp.
@@ -11954,9 +11954,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_utyp_in_utyp_intro_rec :
-forall C1 Xut1 C2 n1,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  open_utyp_wrt_utyp_rec n1 C2 C1 = subst_utyp_in_utyp C2 Xut1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f Xut1) C1).
+forall C1 α1 C2 n1,
+  α1 `notin` ftvar_in_utyp C1 ->
+  open_utyp_wrt_utyp_rec n1 C2 C1 = subst_utyp_in_utyp C2 α1 (open_utyp_wrt_utyp_rec n1 (utyp_var_f α1) C1).
 Proof.
 pose proof subst_utyp_in_utyp_intro_rec_mutual as H; intuition eauto.
 Qed.
@@ -11967,9 +11967,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_pskl_in_pskl_intro_rec_mutual :
-(forall P1 Xps1 P2 n1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  open_pskl_wrt_pskl_rec n1 P2 P1 = subst_pskl_in_pskl P2 Xps1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P1)).
+(forall P1 α1 P2 n1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  open_pskl_wrt_pskl_rec n1 P2 P1 = subst_pskl_in_pskl P2 α1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P1)).
 Proof.
 apply_mutual_ind pskl_mutind;
 default_simp.
@@ -11978,9 +11978,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_pskl_in_pskl_intro_rec :
-forall P1 Xps1 P2 n1,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  open_pskl_wrt_pskl_rec n1 P2 P1 = subst_pskl_in_pskl P2 Xps1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f Xps1) P1).
+forall P1 α1 P2 n1,
+  α1 `notin` ftvar_in_pskl P1 ->
+  open_pskl_wrt_pskl_rec n1 P2 P1 = subst_pskl_in_pskl P2 α1 (open_pskl_wrt_pskl_rec n1 (pskl_var_f α1) P1).
 Proof.
 pose proof subst_pskl_in_pskl_intro_rec_mutual as H; intuition eauto.
 Qed.
@@ -11991,9 +11991,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_bskl_intro_rec_mutual :
-(forall Q1 Xbs1 Q2 n1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  open_bskl_wrt_bskl_rec n1 Q2 Q1 = subst_bskl_in_bskl Q2 Xbs1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q1)).
+(forall Q1 α1 Q2 n1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  open_bskl_wrt_bskl_rec n1 Q2 Q1 = subst_bskl_in_bskl Q2 α1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q1)).
 Proof.
 apply_mutual_ind bskl_mutind;
 default_simp.
@@ -12002,9 +12002,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_bskl_intro_rec :
-forall Q1 Xbs1 Q2 n1,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  open_bskl_wrt_bskl_rec n1 Q2 Q1 = subst_bskl_in_bskl Q2 Xbs1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f Xbs1) Q1).
+forall Q1 α1 Q2 n1,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  open_bskl_wrt_bskl_rec n1 Q2 Q1 = subst_bskl_in_bskl Q2 α1 (open_bskl_wrt_bskl_rec n1 (bskl_var_f α1) Q1).
 Proof.
 pose proof subst_bskl_in_bskl_intro_rec_mutual as H; intuition eauto.
 Qed.
@@ -12015,9 +12015,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_bskl_in_uskl_intro_rec_mutual :
-(forall R1 Xus1 R2 n1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl_rec n1 R2 R1 = subst_bskl_in_uskl R2 Xus1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R1)).
+(forall R1 α1 R2 n1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  open_uskl_wrt_uskl_rec n1 R2 R1 = subst_bskl_in_uskl R2 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1)).
 Proof.
 apply_mutual_ind uskl_mutind;
 default_simp.
@@ -12026,9 +12026,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_bskl_in_uskl_intro_rec :
-forall R1 Xus1 R2 n1,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl_rec n1 R2 R1 = subst_bskl_in_uskl R2 Xus1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f Xus1) R1).
+forall R1 α1 R2 n1,
+  α1 `notin` ftvar_in_uskl R1 ->
+  open_uskl_wrt_uskl_rec n1 R2 R1 = subst_bskl_in_uskl R2 α1 (open_uskl_wrt_uskl_rec n1 (uskl_var_f α1) R1).
 Proof.
 pose proof subst_bskl_in_uskl_intro_rec_mutual as H; intuition eauto.
 Qed.
@@ -12039,9 +12039,9 @@ Qed.
 (* begin hide *)
 
 Lemma subst_ptyp_in_exp_intro_rec_mutual :
-(forall e1 Xpt1 A1 n1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  open_exp_wrt_ptyp_rec n1 A1 e1 = subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e1)).
+(forall e1 α1 A1 n1,
+  α1 `notin` ftvar_in_exp e1 ->
+  open_exp_wrt_ptyp_rec n1 A1 e1 = subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e1)).
 Proof.
 apply_mutual_ind exp_mutind;
 default_simp.
@@ -12050,9 +12050,9 @@ Qed.
 (* end hide *)
 
 Lemma subst_ptyp_in_exp_intro_rec :
-forall e1 Xpt1 A1 n1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  open_exp_wrt_ptyp_rec n1 A1 e1 = subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f Xpt1) e1).
+forall e1 α1 A1 n1,
+  α1 `notin` ftvar_in_exp e1 ->
+  open_exp_wrt_ptyp_rec n1 A1 e1 = subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp_rec n1 (ptyp_var_f α1) e1).
 Proof.
 pose proof subst_ptyp_in_exp_intro_rec_mutual as H; intuition eauto.
 Qed.
@@ -12085,9 +12085,9 @@ Qed.
 #[export] Hint Rewrite subst_exp_in_exp_intro_rec using solve [auto] : lngen.
 
 Lemma subst_ptyp_in_ptyp_intro :
-forall Xpt1 A1 A2,
-  Xpt1 `notin` ftvar_in_ptyp A1 ->
-  open_ptyp_wrt_ptyp A1 A2 = subst_ptyp_in_ptyp A2 Xpt1 (open_ptyp_wrt_ptyp A1 (ptyp_var_f Xpt1)).
+forall α1 A1 A2,
+  α1 `notin` ftvar_in_ptyp A1 ->
+  open_ptyp_wrt_ptyp A1 A2 = subst_ptyp_in_ptyp A2 α1 (open_ptyp_wrt_ptyp A1 (ptyp_var_f α1)).
 Proof.
 unfold open_ptyp_wrt_ptyp; default_simp.
 Qed.
@@ -12095,9 +12095,9 @@ Qed.
 #[export] Hint Resolve subst_ptyp_in_ptyp_intro : lngen.
 
 Lemma subst_btyp_in_btyp_intro :
-forall Xbt1 B1 B2,
-  Xbt1 `notin` ftvar_in_btyp B1 ->
-  open_btyp_wrt_btyp B1 B2 = subst_btyp_in_btyp B2 Xbt1 (open_btyp_wrt_btyp B1 (btyp_var_f Xbt1)).
+forall α1 B1 B2,
+  α1 `notin` ftvar_in_btyp B1 ->
+  open_btyp_wrt_btyp B1 B2 = subst_btyp_in_btyp B2 α1 (open_btyp_wrt_btyp B1 (btyp_var_f α1)).
 Proof.
 unfold open_btyp_wrt_btyp; default_simp.
 Qed.
@@ -12105,9 +12105,9 @@ Qed.
 #[export] Hint Resolve subst_btyp_in_btyp_intro : lngen.
 
 Lemma subst_utyp_in_utyp_intro :
-forall Xut1 C1 C2,
-  Xut1 `notin` ftvar_in_utyp C1 ->
-  open_utyp_wrt_utyp C1 C2 = subst_utyp_in_utyp C2 Xut1 (open_utyp_wrt_utyp C1 (utyp_var_f Xut1)).
+forall α1 C1 C2,
+  α1 `notin` ftvar_in_utyp C1 ->
+  open_utyp_wrt_utyp C1 C2 = subst_utyp_in_utyp C2 α1 (open_utyp_wrt_utyp C1 (utyp_var_f α1)).
 Proof.
 unfold open_utyp_wrt_utyp; default_simp.
 Qed.
@@ -12115,9 +12115,9 @@ Qed.
 #[export] Hint Resolve subst_utyp_in_utyp_intro : lngen.
 
 Lemma subst_pskl_in_pskl_intro :
-forall Xps1 P1 P2,
-  Xps1 `notin` ftvar_in_pskl P1 ->
-  open_pskl_wrt_pskl P1 P2 = subst_pskl_in_pskl P2 Xps1 (open_pskl_wrt_pskl P1 (pskl_var_f Xps1)).
+forall α1 P1 P2,
+  α1 `notin` ftvar_in_pskl P1 ->
+  open_pskl_wrt_pskl P1 P2 = subst_pskl_in_pskl P2 α1 (open_pskl_wrt_pskl P1 (pskl_var_f α1)).
 Proof.
 unfold open_pskl_wrt_pskl; default_simp.
 Qed.
@@ -12125,9 +12125,9 @@ Qed.
 #[export] Hint Resolve subst_pskl_in_pskl_intro : lngen.
 
 Lemma subst_bskl_in_bskl_intro :
-forall Xbs1 Q1 Q2,
-  Xbs1 `notin` ftvar_in_bskl Q1 ->
-  open_bskl_wrt_bskl Q1 Q2 = subst_bskl_in_bskl Q2 Xbs1 (open_bskl_wrt_bskl Q1 (bskl_var_f Xbs1)).
+forall α1 Q1 Q2,
+  α1 `notin` ftvar_in_bskl Q1 ->
+  open_bskl_wrt_bskl Q1 Q2 = subst_bskl_in_bskl Q2 α1 (open_bskl_wrt_bskl Q1 (bskl_var_f α1)).
 Proof.
 unfold open_bskl_wrt_bskl; default_simp.
 Qed.
@@ -12135,9 +12135,9 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_bskl_intro : lngen.
 
 Lemma subst_bskl_in_uskl_intro :
-forall Xus1 R1 R2,
-  Xus1 `notin` ftvar_in_uskl R1 ->
-  open_uskl_wrt_uskl R1 R2 = subst_bskl_in_uskl R2 Xus1 (open_uskl_wrt_uskl R1 (uskl_var_f Xus1)).
+forall α1 R1 R2,
+  α1 `notin` ftvar_in_uskl R1 ->
+  open_uskl_wrt_uskl R1 R2 = subst_bskl_in_uskl R2 α1 (open_uskl_wrt_uskl R1 (uskl_var_f α1)).
 Proof.
 unfold open_uskl_wrt_uskl; default_simp.
 Qed.
@@ -12145,9 +12145,9 @@ Qed.
 #[export] Hint Resolve subst_bskl_in_uskl_intro : lngen.
 
 Lemma subst_ptyp_in_exp_intro :
-forall Xpt1 e1 A1,
-  Xpt1 `notin` ftvar_in_exp e1 ->
-  open_exp_wrt_ptyp e1 A1 = subst_ptyp_in_exp A1 Xpt1 (open_exp_wrt_ptyp e1 (ptyp_var_f Xpt1)).
+forall α1 e1 A1,
+  α1 `notin` ftvar_in_exp e1 ->
+  open_exp_wrt_ptyp e1 A1 = subst_ptyp_in_exp A1 α1 (open_exp_wrt_ptyp e1 (ptyp_var_f α1)).
 Proof.
 unfold open_exp_wrt_ptyp; default_simp.
 Qed.

@@ -2694,7 +2694,7 @@ Proof.
       simpl in *. clear - Hclean H1 Fr. fsetdec. }
     split; [ | exact HΨ ].
     f_equal.
-    apply open_uskl_wrt_uskl_inj with (Xus1 := X);
+    apply open_uskl_wrt_uskl_inj with (α1 := X);
       [ clear - Fr; fsetdec | clear - Fr; fsetdec | exact Heq ].
   - (* all_etag *)
     simpl in Hclean.
@@ -2705,7 +2705,7 @@ Proof.
       simpl in *. clear - Hclean H1 Fr. fsetdec. }
     split; [ | exact HΨ ].
     f_equal.
-    apply open_uskl_wrt_uskl_inj with (Xus1 := X);
+    apply open_uskl_wrt_uskl_inj with (α1 := X);
       [ clear - Fr; fsetdec | clear - Fr; fsetdec | exact Heq ].
   - (* tophole *)
     simpl in Hclean.
@@ -3913,16 +3913,16 @@ Proof.
   intros θ Q X Y HX HY Hav; induction Q; simpl;
     try (f_equal; auto; fail).
   (* var_f *)
-  destruct (Xps == X) as [-> | Hne].
+  destruct (α == X) as [-> | Hne].
     + rewrite (msubst_lookup_notin_dom _ HX).
       simpl.
       rewrite (msubst_lookup_notin_dom _ HY).
       default_simp.
     + assert (Hfr : X `notin`
-                ftvar_in_pskl (ptyp_to_pskl (msubst_lookup θ Xps))).
+                ftvar_in_pskl (ptyp_to_pskl (msubst_lookup θ α))).
       { rewrite ftvar_in_pskl_ptyp_to_pskl.
         intros Hc.
-        assert (Heq : Xps = X)
+        assert (Heq : α = X)
           by (eapply msubst_lookup_ftv_avoid; [ exact Hav | exact Hc ]).
         auto. }
       rewrite (subst_pskl_in_pskl_fresh_eq _ _ _ Hfr).

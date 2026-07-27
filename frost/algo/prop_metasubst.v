@@ -1300,13 +1300,13 @@ Proof.
   induction Hlc; intros Θpre Θt HeqΘ Huq Hwft Himg; simpl.
   - apply a_tyequiv__refl. constructor.
   - (* var X *)
-    destruct (AtomSetProperties.In_dec Xpt (dom ρ)) as [Hin | Hni].
+    destruct (AtomSetProperties.In_dec α (dom ρ)) as [Hin | Hni].
     + rewrite msubst_lookup_compose by (left; exact Hin).
       apply a_tyequiv__sym.
       eapply msubst_downarrow_tyequiv;
         [ exact HeqΘ | exact Huq | exact Hwft | apply Himg; exact Hin ].
     + rewrite (msubst_lookup_notin ρ Hni).
-      assert (Hnic : Xpt `notin` dom (msubst_compose (aenv_msubst Θ) ρ)).
+      assert (Hnic : α `notin` dom (msubst_compose (aenv_msubst Θ) ρ)).
       { rewrite dom_msubst_compose. exact Hni. }
       rewrite (msubst_lookup_notin _ Hnic).
       apply a_tyequiv__refl. constructor.
@@ -1341,13 +1341,13 @@ Proof.
     revert Θpre Θt HeqΘ Huq Hwft Himg.
   induction Hlc; intros Θpre Θt HeqΘ Huq Hwft Himg; simpl.
   - apply a_pskl_tyequiv__refl. constructor.
-  - destruct (AtomSetProperties.In_dec Xps (dom ρ)) as [Hin | Hni].
+  - destruct (AtomSetProperties.In_dec α (dom ρ)) as [Hin | Hni].
     + rewrite msubst_lookup_compose by (left; exact Hin).
       apply a_tyequiv_pskl. apply a_tyequiv__sym.
       eapply msubst_downarrow_tyequiv;
         [ exact HeqΘ | exact Huq | exact Hwft | apply Himg; exact Hin ].
     + rewrite (msubst_lookup_notin ρ Hni).
-      assert (Hnic : Xps `notin` dom (msubst_compose (aenv_msubst Θ) ρ))
+      assert (Hnic : α `notin` dom (msubst_compose (aenv_msubst Θ) ρ))
         by (rewrite dom_msubst_compose; exact Hni).
       rewrite (msubst_lookup_notin _ Hnic).
       apply a_pskl_tyequiv__refl. constructor.

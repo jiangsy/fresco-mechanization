@@ -422,7 +422,7 @@ Lemma ftv_subst_var_in : forall P α α',
   α `in` ftvar_in_pskl P ->
   α' `in` ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f α') α P).
 Proof.
-  induction P; intros α α' Hin; simpl in *;
+  induction P as [ | | γ | | | | ]; intros α α' Hin; simpl in *;
     try solve [ exfalso; fsetdec ].
   - match goal with
     | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]

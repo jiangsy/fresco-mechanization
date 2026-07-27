@@ -1800,12 +1800,12 @@ Qed.
 
 (** [no_all_syn] descends to a substituted-in subterm at an occurring
     variable. *)
-Lemma no_all_syn_subst_inv : forall S T α,
-  α `in` ftvar_in_uskl S ->
-  no_all_syn_uskl (subst_bskl_in_uskl T α S) ->
+Lemma no_all_syn_subst_inv : forall S T β,
+  β `in` ftvar_in_uskl S ->
+  no_all_syn_uskl (subst_bskl_in_uskl T β S) ->
   no_all_syn_uskl T.
 Proof.
-  induction S; intros T α Hin Hnas; simpl in *;
+  induction S; intros T β Hin Hnas; simpl in *;
     try solve [ exfalso; fsetdec ];
     try solve [ inversion Hnas ].
   - (* var_f *)

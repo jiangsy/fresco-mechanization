@@ -15,7 +15,7 @@ Notation usklvar := ptypvar.
 Inductive ptyp : Set := 
  | ptyp_unit : ptyp
  | ptyp_var_b (_:nat)
- | ptyp_var_f (Xpt:ptypvar)
+ | ptyp_var_f (α:ptypvar)
  | ptyp_arrow (A1:ptyp) (A2:ptyp)
  | ptyp_all (A:ptyp).
 
@@ -37,7 +37,7 @@ Inductive exp : Set :=
 Inductive uskl : Set := 
  | uskl_unit : uskl
  | uskl_var_b (_:nat)
- | uskl_var_f (Xus:usklvar)
+ | uskl_var_f (α:usklvar)
  | uskl_arrow (R1:uskl) (R2:uskl)
  | uskl_all_syn (R:uskl)
  | uskl_all_etag (ε:εvar) (R:uskl)
@@ -49,7 +49,7 @@ Inductive uskl : Set :=
 Inductive bskl : Set := 
  | bskl_unit : bskl
  | bskl_var_b (_:nat)
- | bskl_var_f (Xbs:bsklvar)
+ | bskl_var_f (α:bsklvar)
  | bskl_arrow (Q1:bskl) (Q2:bskl)
  | bskl_all_syn (Q:bskl)
  | bskl_all_inh (Q:bskl)
@@ -59,7 +59,7 @@ Inductive bskl : Set :=
 Inductive pskl : Set := 
  | pskl_unit : pskl
  | pskl_var_b (_:nat)
- | pskl_var_f (Xps:psklvar)
+ | pskl_var_f (α:psklvar)
  | pskl_arrow (P1:pskl) (P2:pskl)
  | pskl_all_syn (P1:pskl)
  | pskl_hole : pskl
@@ -68,7 +68,7 @@ Inductive pskl : Set :=
 Inductive utyp : Set := 
  | utyp_unit : utyp
  | utyp_var_b (_:nat)
- | utyp_var_f (Xut:utypvar)
+ | utyp_var_f (α:utypvar)
  | utyp_arrow (C1:utyp) (C2:utyp)
  | utyp_all_syn (C:utyp)
  | utyp_all_etag (ε:εvar) (C:utyp).
@@ -76,7 +76,7 @@ Inductive utyp : Set :=
 Inductive btyp : Set := 
  | btyp_unit : btyp
  | btyp_var_b (_:nat)
- | btyp_var_f (Xbt:btypvar)
+ | btyp_var_f (α:btypvar)
  | btyp_arrow (B1:btyp) (B2:btyp)
  | btyp_all_syn (B:btyp)
  | btyp_all_inh (B:btyp).
@@ -96,7 +96,7 @@ Fixpoint open_ptyp_wrt_ptyp_rec (k:nat) (A_5:ptyp) (A__6:ptyp) {struct A__6}: pt
         | inleft (right _) => A_5
         | inright _ => ptyp_var_b (nat - 1)
       end
-  | (ptyp_var_f Xpt) => ptyp_var_f Xpt
+  | (ptyp_var_f α) => ptyp_var_f α
   | (ptyp_arrow A1 A2) => ptyp_arrow (open_ptyp_wrt_ptyp_rec k A_5 A1) (open_ptyp_wrt_ptyp_rec k A_5 A2)
   | (ptyp_all A) => ptyp_all (open_ptyp_wrt_ptyp_rec (S k) A_5 A)
 end.
@@ -139,7 +139,7 @@ Fixpoint open_uskl_wrt_uskl_rec (k:nat) (R_5:uskl) (R__6:uskl) {struct R__6}: us
         | inleft (right _) => R_5
         | inright _ => uskl_var_b (nat - 1)
       end
-  | (uskl_var_f Xus) => uskl_var_f Xus
+  | (uskl_var_f α) => uskl_var_f α
   | (uskl_arrow R1 R2) => uskl_arrow (open_uskl_wrt_uskl_rec k R_5 R1) (open_uskl_wrt_uskl_rec k R_5 R2)
   | (uskl_all_syn R) => uskl_all_syn (open_uskl_wrt_uskl_rec (S k) R_5 R)
   | (uskl_all_etag ε R) => uskl_all_etag ε (open_uskl_wrt_uskl_rec (S k) R_5 R)
@@ -158,7 +158,7 @@ Fixpoint open_bskl_wrt_bskl_rec (k:nat) (Q_5:bskl) (Q__6:bskl) {struct Q__6}: bs
         | inleft (right _) => Q_5
         | inright _ => bskl_var_b (nat - 1)
       end
-  | (bskl_var_f Xbs) => bskl_var_f Xbs
+  | (bskl_var_f α) => bskl_var_f α
   | (bskl_arrow Q1 Q2) => bskl_arrow (open_bskl_wrt_bskl_rec k Q_5 Q1) (open_bskl_wrt_bskl_rec k Q_5 Q2)
   | (bskl_all_syn Q) => bskl_all_syn (open_bskl_wrt_bskl_rec (S k) Q_5 Q)
   | (bskl_all_inh Q) => bskl_all_inh (open_bskl_wrt_bskl_rec (S k) Q_5 Q)
@@ -175,7 +175,7 @@ Fixpoint open_pskl_wrt_pskl_rec (k:nat) (P_5:pskl) (P__6:pskl) {struct P__6}: ps
         | inleft (right _) => P_5
         | inright _ => pskl_var_b (nat - 1)
       end
-  | (pskl_var_f Xps) => pskl_var_f Xps
+  | (pskl_var_f α) => pskl_var_f α
   | (pskl_arrow P1 P2) => pskl_arrow (open_pskl_wrt_pskl_rec k P_5 P1) (open_pskl_wrt_pskl_rec k P_5 P2)
   | (pskl_all_syn P1) => pskl_all_syn (open_pskl_wrt_pskl_rec (S k) P_5 P1)
   | pskl_hole => pskl_hole 
@@ -191,7 +191,7 @@ Fixpoint open_utyp_wrt_utyp_rec (k:nat) (C_5:utyp) (C__6:utyp) {struct C__6}: ut
         | inleft (right _) => C_5
         | inright _ => utyp_var_b (nat - 1)
       end
-  | (utyp_var_f Xut) => utyp_var_f Xut
+  | (utyp_var_f α) => utyp_var_f α
   | (utyp_arrow C1 C2) => utyp_arrow (open_utyp_wrt_utyp_rec k C_5 C1) (open_utyp_wrt_utyp_rec k C_5 C2)
   | (utyp_all_syn C) => utyp_all_syn (open_utyp_wrt_utyp_rec (S k) C_5 C)
   | (utyp_all_etag ε C) => utyp_all_etag ε (open_utyp_wrt_utyp_rec (S k) C_5 C)
@@ -206,7 +206,7 @@ Fixpoint open_btyp_wrt_btyp_rec (k:nat) (B_5:btyp) (B__6:btyp) {struct B__6}: bt
         | inleft (right _) => B_5
         | inright _ => btyp_var_b (nat - 1)
       end
-  | (btyp_var_f Xbt) => btyp_var_f Xbt
+  | (btyp_var_f α) => btyp_var_f α
   | (btyp_arrow B1 B2) => btyp_arrow (open_btyp_wrt_btyp_rec k B_5 B1) (open_btyp_wrt_btyp_rec k B_5 B2)
   | (btyp_all_syn B) => btyp_all_syn (open_btyp_wrt_btyp_rec (S k) B_5 B)
   | (btyp_all_inh B) => btyp_all_inh (open_btyp_wrt_btyp_rec (S k) B_5 B)
@@ -235,14 +235,14 @@ Definition open_ptyp_wrt_ptyp A_5 A__6 := open_ptyp_wrt_ptyp_rec 0 A__6 A_5.
 Inductive lc_ptyp : ptyp -> Prop :=    (* defn lc_ptyp *)
  | lc_ptyp_unit : 
      (lc_ptyp ptyp_unit)
- | lc_ptyp_var_f : forall (Xpt:ptypvar),
-     (lc_ptyp (ptyp_var_f Xpt))
+ | lc_ptyp_var_f : forall (α:ptypvar),
+     (lc_ptyp (ptyp_var_f α))
  | lc_ptyp_arrow : forall (A1 A2:ptyp),
      (lc_ptyp A1) ->
      (lc_ptyp A2) ->
      (lc_ptyp (ptyp_arrow A1 A2))
  | lc_ptyp_all : forall (A:ptyp),
-      ( forall Xpt , lc_ptyp  ( open_ptyp_wrt_ptyp A (ptyp_var_f Xpt) )  )  ->
+      ( forall α , lc_ptyp  ( open_ptyp_wrt_ptyp A (ptyp_var_f α) )  )  ->
      (lc_ptyp (ptyp_all A)).
 
 (* defns LC_exp *)
@@ -274,17 +274,17 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
 Inductive lc_uskl : uskl -> Prop :=    (* defn lc_uskl *)
  | lc_uskl_unit : 
      (lc_uskl uskl_unit)
- | lc_uskl_var_f : forall (Xus:usklvar),
-     (lc_uskl (uskl_var_f Xus))
+ | lc_uskl_var_f : forall (α:usklvar),
+     (lc_uskl (uskl_var_f α))
  | lc_uskl_arrow : forall (R1 R2:uskl),
      (lc_uskl R1) ->
      (lc_uskl R2) ->
      (lc_uskl (uskl_arrow R1 R2))
  | lc_uskl_all_syn : forall (R:uskl),
-      ( forall Xus , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f Xus) )  )  ->
+      ( forall α , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f α) )  )  ->
      (lc_uskl (uskl_all_syn R))
  | lc_uskl_all_etag : forall (ε:εvar) (R:uskl),
-      ( forall Xus , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f Xus) )  )  ->
+      ( forall α , lc_uskl  ( open_uskl_wrt_uskl R (uskl_var_f α) )  )  ->
      (lc_uskl (uskl_all_etag ε R))
  | lc_uskl_hole : 
      (lc_uskl uskl_hole)
@@ -301,17 +301,17 @@ Inductive lc_uskl : uskl -> Prop :=    (* defn lc_uskl *)
 Inductive lc_bskl : bskl -> Prop :=    (* defn lc_bskl *)
  | lc_bskl_unit : 
      (lc_bskl bskl_unit)
- | lc_bskl_var_f : forall (Xbs:bsklvar),
-     (lc_bskl (bskl_var_f Xbs))
+ | lc_bskl_var_f : forall (α:bsklvar),
+     (lc_bskl (bskl_var_f α))
  | lc_bskl_arrow : forall (Q1 Q2:bskl),
      (lc_bskl Q1) ->
      (lc_bskl Q2) ->
      (lc_bskl (bskl_arrow Q1 Q2))
  | lc_bskl_all_syn : forall (Q:bskl),
-      ( forall Xbs , lc_bskl  ( open_bskl_wrt_bskl Q (bskl_var_f Xbs) )  )  ->
+      ( forall α , lc_bskl  ( open_bskl_wrt_bskl Q (bskl_var_f α) )  )  ->
      (lc_bskl (bskl_all_syn Q))
  | lc_bskl_all_inh : forall (Q:bskl),
-      ( forall Xbs , lc_bskl  ( open_bskl_wrt_bskl Q (bskl_var_f Xbs) )  )  ->
+      ( forall α , lc_bskl  ( open_bskl_wrt_bskl Q (bskl_var_f α) )  )  ->
      (lc_bskl (bskl_all_inh Q))
  | lc_bskl_hole : 
      (lc_bskl bskl_hole)
@@ -323,14 +323,14 @@ Inductive lc_bskl : bskl -> Prop :=    (* defn lc_bskl *)
 Inductive lc_pskl : pskl -> Prop :=    (* defn lc_pskl *)
  | lc_pskl_unit : 
      (lc_pskl pskl_unit)
- | lc_pskl_var_f : forall (Xps:psklvar),
-     (lc_pskl (pskl_var_f Xps))
+ | lc_pskl_var_f : forall (α:psklvar),
+     (lc_pskl (pskl_var_f α))
  | lc_pskl_arrow : forall (P1 P2:pskl),
      (lc_pskl P1) ->
      (lc_pskl P2) ->
      (lc_pskl (pskl_arrow P1 P2))
  | lc_pskl_all_syn : forall (P1:pskl),
-      ( forall Xps , lc_pskl  ( open_pskl_wrt_pskl P1 (pskl_var_f Xps) )  )  ->
+      ( forall α , lc_pskl  ( open_pskl_wrt_pskl P1 (pskl_var_f α) )  )  ->
      (lc_pskl (pskl_all_syn P1))
  | lc_pskl_hole : 
      (lc_pskl pskl_hole)
@@ -342,41 +342,41 @@ Inductive lc_pskl : pskl -> Prop :=    (* defn lc_pskl *)
 Inductive lc_utyp : utyp -> Prop :=    (* defn lc_utyp *)
  | lc_utyp_unit : 
      (lc_utyp utyp_unit)
- | lc_utyp_var_f : forall (Xut:utypvar),
-     (lc_utyp (utyp_var_f Xut))
+ | lc_utyp_var_f : forall (α:utypvar),
+     (lc_utyp (utyp_var_f α))
  | lc_utyp_arrow : forall (C1 C2:utyp),
      (lc_utyp C1) ->
      (lc_utyp C2) ->
      (lc_utyp (utyp_arrow C1 C2))
  | lc_utyp_all_syn : forall (C:utyp),
-      ( forall Xut , lc_utyp  ( open_utyp_wrt_utyp C (utyp_var_f Xut) )  )  ->
+      ( forall α , lc_utyp  ( open_utyp_wrt_utyp C (utyp_var_f α) )  )  ->
      (lc_utyp (utyp_all_syn C))
  | lc_utyp_all_etag : forall (ε:εvar) (C:utyp),
-      ( forall Xut , lc_utyp  ( open_utyp_wrt_utyp C (utyp_var_f Xut) )  )  ->
+      ( forall α , lc_utyp  ( open_utyp_wrt_utyp C (utyp_var_f α) )  )  ->
      (lc_utyp (utyp_all_etag ε C)).
 
 (* defns LC_btyp *)
 Inductive lc_btyp : btyp -> Prop :=    (* defn lc_btyp *)
  | lc_btyp_unit : 
      (lc_btyp btyp_unit)
- | lc_btyp_var_f : forall (Xbt:btypvar),
-     (lc_btyp (btyp_var_f Xbt))
+ | lc_btyp_var_f : forall (α:btypvar),
+     (lc_btyp (btyp_var_f α))
  | lc_btyp_arrow : forall (B1 B2:btyp),
      (lc_btyp B1) ->
      (lc_btyp B2) ->
      (lc_btyp (btyp_arrow B1 B2))
  | lc_btyp_all_syn : forall (B:btyp),
-      ( forall Xbt , lc_btyp  ( open_btyp_wrt_btyp B (btyp_var_f Xbt) )  )  ->
+      ( forall α , lc_btyp  ( open_btyp_wrt_btyp B (btyp_var_f α) )  )  ->
      (lc_btyp (btyp_all_syn B))
  | lc_btyp_all_inh : forall (B:btyp),
-      ( forall Xbt , lc_btyp  ( open_btyp_wrt_btyp B (btyp_var_f Xbt) )  )  ->
+      ( forall α , lc_btyp  ( open_btyp_wrt_btyp B (btyp_var_f α) )  )  ->
      (lc_btyp (btyp_all_inh B)).
 (** free variables *)
 Fixpoint ftvar_in_ptyp (A_5:ptyp) : vars :=
   match A_5 with
   | ptyp_unit => {}
   | (ptyp_var_b nat) => {}
-  | (ptyp_var_f Xpt) => {{Xpt}}
+  | (ptyp_var_f α) => {{α}}
   | (ptyp_arrow A1 A2) => (ftvar_in_ptyp A1) \u (ftvar_in_ptyp A2)
   | (ptyp_all A) => (ftvar_in_ptyp A)
 end.
@@ -397,7 +397,7 @@ Fixpoint ftvar_in_uskl (R_5:uskl) : vars :=
   match R_5 with
   | uskl_unit => {}
   | (uskl_var_b nat) => {}
-  | (uskl_var_f Xus) => {{Xus}}
+  | (uskl_var_f α) => {{α}}
   | (uskl_arrow R1 R2) => (ftvar_in_uskl R1) \u (ftvar_in_uskl R2)
   | (uskl_all_syn R) => (ftvar_in_uskl R)
   | (uskl_all_etag ε R) => (ftvar_in_uskl R)
@@ -411,7 +411,7 @@ Fixpoint ftvar_in_bskl (Q_5:bskl) : vars :=
   match Q_5 with
   | bskl_unit => {}
   | (bskl_var_b nat) => {}
-  | (bskl_var_f Xbs) => {{Xbs}}
+  | (bskl_var_f α) => {{α}}
   | (bskl_arrow Q1 Q2) => (ftvar_in_bskl Q1) \u (ftvar_in_bskl Q2)
   | (bskl_all_syn Q) => (ftvar_in_bskl Q)
   | (bskl_all_inh Q) => (ftvar_in_bskl Q)
@@ -423,7 +423,7 @@ Fixpoint ftvar_in_pskl (P_5:pskl) : vars :=
   match P_5 with
   | pskl_unit => {}
   | (pskl_var_b nat) => {}
-  | (pskl_var_f Xps) => {{Xps}}
+  | (pskl_var_f α) => {{α}}
   | (pskl_arrow P1 P2) => (ftvar_in_pskl P1) \u (ftvar_in_pskl P2)
   | (pskl_all_syn P1) => (ftvar_in_pskl P1)
   | pskl_hole => {}
@@ -434,7 +434,7 @@ Fixpoint ftvar_in_utyp (C_5:utyp) : vars :=
   match C_5 with
   | utyp_unit => {}
   | (utyp_var_b nat) => {}
-  | (utyp_var_f Xut) => {{Xut}}
+  | (utyp_var_f α) => {{α}}
   | (utyp_arrow C1 C2) => (ftvar_in_utyp C1) \u (ftvar_in_utyp C2)
   | (utyp_all_syn C) => (ftvar_in_utyp C)
   | (utyp_all_etag ε C) => (ftvar_in_utyp C)
@@ -444,7 +444,7 @@ Fixpoint ftvar_in_btyp (B_5:btyp) : vars :=
   match B_5 with
   | btyp_unit => {}
   | (btyp_var_b nat) => {}
-  | (btyp_var_f Xbt) => {{Xbt}}
+  | (btyp_var_f α) => {{α}}
   | (btyp_arrow B1 B2) => (ftvar_in_btyp B1) \u (ftvar_in_btyp B2)
   | (btyp_all_syn B) => (ftvar_in_btyp B)
   | (btyp_all_inh B) => (ftvar_in_btyp B)
@@ -463,13 +463,13 @@ Fixpoint ftvar_in_exp (e_5:exp) : vars :=
 end.
 
 (** substitutions *)
-Fixpoint subst_ptyp_in_ptyp (A_5:ptyp) (Xpt5:ptypvar) (A__6:ptyp) {struct A__6} : ptyp :=
+Fixpoint subst_ptyp_in_ptyp (A_5:ptyp) (α5:ptypvar) (A__6:ptyp) {struct A__6} : ptyp :=
   match A__6 with
   | ptyp_unit => ptyp_unit 
   | (ptyp_var_b nat) => ptyp_var_b nat
-  | (ptyp_var_f Xpt) => (if eq_var Xpt Xpt5 then A_5 else (ptyp_var_f Xpt))
-  | (ptyp_arrow A1 A2) => ptyp_arrow (subst_ptyp_in_ptyp A_5 Xpt5 A1) (subst_ptyp_in_ptyp A_5 Xpt5 A2)
-  | (ptyp_all A) => ptyp_all (subst_ptyp_in_ptyp A_5 Xpt5 A)
+  | (ptyp_var_f α) => (if eq_var α α5 then A_5 else (ptyp_var_f α))
+  | (ptyp_arrow A1 A2) => ptyp_arrow (subst_ptyp_in_ptyp A_5 α5 A1) (subst_ptyp_in_ptyp A_5 α5 A2)
+  | (ptyp_all A) => ptyp_all (subst_ptyp_in_ptyp A_5 α5 A)
 end.
 
 Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :=
@@ -484,73 +484,73 @@ Fixpoint subst_exp_in_exp (e_5:exp) (x5:expvar) (e__6:exp) {struct e__6} : exp :
   | (exp_freeze e) => exp_freeze (subst_exp_in_exp e_5 x5 e)
 end.
 
-Fixpoint subst_bskl_in_uskl (R_5:uskl) (Xus5:usklvar) (R__6:uskl) {struct R__6} : uskl :=
+Fixpoint subst_bskl_in_uskl (R_5:uskl) (α5:usklvar) (R__6:uskl) {struct R__6} : uskl :=
   match R__6 with
   | uskl_unit => uskl_unit 
   | (uskl_var_b nat) => uskl_var_b nat
-  | (uskl_var_f Xus) => (if eq_var Xus Xus5 then R_5 else (uskl_var_f Xus))
-  | (uskl_arrow R1 R2) => uskl_arrow (subst_bskl_in_uskl R_5 Xus5 R1) (subst_bskl_in_uskl R_5 Xus5 R2)
-  | (uskl_all_syn R) => uskl_all_syn (subst_bskl_in_uskl R_5 Xus5 R)
-  | (uskl_all_etag ε R) => uskl_all_etag ε (subst_bskl_in_uskl R_5 Xus5 R)
+  | (uskl_var_f α) => (if eq_var α α5 then R_5 else (uskl_var_f α))
+  | (uskl_arrow R1 R2) => uskl_arrow (subst_bskl_in_uskl R_5 α5 R1) (subst_bskl_in_uskl R_5 α5 R2)
+  | (uskl_all_syn R) => uskl_all_syn (subst_bskl_in_uskl R_5 α5 R)
+  | (uskl_all_etag ε R) => uskl_all_etag ε (subst_bskl_in_uskl R_5 α5 R)
   | uskl_hole => uskl_hole 
-  | (uskl_tophole R) => uskl_tophole (subst_bskl_in_uskl R_5 Xus5 R)
+  | (uskl_tophole R) => uskl_tophole (subst_bskl_in_uskl R_5 α5 R)
   | uskl_holeg => uskl_holeg 
-  | (uskl_topholeg R) => uskl_topholeg (subst_bskl_in_uskl R_5 Xus5 R)
+  | (uskl_topholeg R) => uskl_topholeg (subst_bskl_in_uskl R_5 α5 R)
 end.
 
-Fixpoint subst_bskl_in_bskl (Q_5:bskl) (Xbs5:bsklvar) (Q__6:bskl) {struct Q__6} : bskl :=
+Fixpoint subst_bskl_in_bskl (Q_5:bskl) (α5:bsklvar) (Q__6:bskl) {struct Q__6} : bskl :=
   match Q__6 with
   | bskl_unit => bskl_unit 
   | (bskl_var_b nat) => bskl_var_b nat
-  | (bskl_var_f Xbs) => (if eq_var Xbs Xbs5 then Q_5 else (bskl_var_f Xbs))
-  | (bskl_arrow Q1 Q2) => bskl_arrow (subst_bskl_in_bskl Q_5 Xbs5 Q1) (subst_bskl_in_bskl Q_5 Xbs5 Q2)
-  | (bskl_all_syn Q) => bskl_all_syn (subst_bskl_in_bskl Q_5 Xbs5 Q)
-  | (bskl_all_inh Q) => bskl_all_inh (subst_bskl_in_bskl Q_5 Xbs5 Q)
+  | (bskl_var_f α) => (if eq_var α α5 then Q_5 else (bskl_var_f α))
+  | (bskl_arrow Q1 Q2) => bskl_arrow (subst_bskl_in_bskl Q_5 α5 Q1) (subst_bskl_in_bskl Q_5 α5 Q2)
+  | (bskl_all_syn Q) => bskl_all_syn (subst_bskl_in_bskl Q_5 α5 Q)
+  | (bskl_all_inh Q) => bskl_all_inh (subst_bskl_in_bskl Q_5 α5 Q)
   | bskl_hole => bskl_hole 
-  | (bskl_tophole Q) => bskl_tophole (subst_bskl_in_bskl Q_5 Xbs5 Q)
+  | (bskl_tophole Q) => bskl_tophole (subst_bskl_in_bskl Q_5 α5 Q)
 end.
 
-Fixpoint subst_pskl_in_pskl (P_5:pskl) (Xps5:psklvar) (P__6:pskl) {struct P__6} : pskl :=
+Fixpoint subst_pskl_in_pskl (P_5:pskl) (α5:psklvar) (P__6:pskl) {struct P__6} : pskl :=
   match P__6 with
   | pskl_unit => pskl_unit 
   | (pskl_var_b nat) => pskl_var_b nat
-  | (pskl_var_f Xps) => (if eq_var Xps Xps5 then P_5 else (pskl_var_f Xps))
-  | (pskl_arrow P1 P2) => pskl_arrow (subst_pskl_in_pskl P_5 Xps5 P1) (subst_pskl_in_pskl P_5 Xps5 P2)
-  | (pskl_all_syn P1) => pskl_all_syn (subst_pskl_in_pskl P_5 Xps5 P1)
+  | (pskl_var_f α) => (if eq_var α α5 then P_5 else (pskl_var_f α))
+  | (pskl_arrow P1 P2) => pskl_arrow (subst_pskl_in_pskl P_5 α5 P1) (subst_pskl_in_pskl P_5 α5 P2)
+  | (pskl_all_syn P1) => pskl_all_syn (subst_pskl_in_pskl P_5 α5 P1)
   | pskl_hole => pskl_hole 
-  | (pskl_tophole P) => pskl_tophole (subst_pskl_in_pskl P_5 Xps5 P)
+  | (pskl_tophole P) => pskl_tophole (subst_pskl_in_pskl P_5 α5 P)
 end.
 
-Fixpoint subst_utyp_in_utyp (C_5:utyp) (Xut5:utypvar) (C__6:utyp) {struct C__6} : utyp :=
+Fixpoint subst_utyp_in_utyp (C_5:utyp) (α5:utypvar) (C__6:utyp) {struct C__6} : utyp :=
   match C__6 with
   | utyp_unit => utyp_unit 
   | (utyp_var_b nat) => utyp_var_b nat
-  | (utyp_var_f Xut) => (if eq_var Xut Xut5 then C_5 else (utyp_var_f Xut))
-  | (utyp_arrow C1 C2) => utyp_arrow (subst_utyp_in_utyp C_5 Xut5 C1) (subst_utyp_in_utyp C_5 Xut5 C2)
-  | (utyp_all_syn C) => utyp_all_syn (subst_utyp_in_utyp C_5 Xut5 C)
-  | (utyp_all_etag ε C) => utyp_all_etag ε (subst_utyp_in_utyp C_5 Xut5 C)
+  | (utyp_var_f α) => (if eq_var α α5 then C_5 else (utyp_var_f α))
+  | (utyp_arrow C1 C2) => utyp_arrow (subst_utyp_in_utyp C_5 α5 C1) (subst_utyp_in_utyp C_5 α5 C2)
+  | (utyp_all_syn C) => utyp_all_syn (subst_utyp_in_utyp C_5 α5 C)
+  | (utyp_all_etag ε C) => utyp_all_etag ε (subst_utyp_in_utyp C_5 α5 C)
 end.
 
-Fixpoint subst_btyp_in_btyp (B_5:btyp) (Xbt5:btypvar) (B__6:btyp) {struct B__6} : btyp :=
+Fixpoint subst_btyp_in_btyp (B_5:btyp) (α5:btypvar) (B__6:btyp) {struct B__6} : btyp :=
   match B__6 with
   | btyp_unit => btyp_unit 
   | (btyp_var_b nat) => btyp_var_b nat
-  | (btyp_var_f Xbt) => (if eq_var Xbt Xbt5 then B_5 else (btyp_var_f Xbt))
-  | (btyp_arrow B1 B2) => btyp_arrow (subst_btyp_in_btyp B_5 Xbt5 B1) (subst_btyp_in_btyp B_5 Xbt5 B2)
-  | (btyp_all_syn B) => btyp_all_syn (subst_btyp_in_btyp B_5 Xbt5 B)
-  | (btyp_all_inh B) => btyp_all_inh (subst_btyp_in_btyp B_5 Xbt5 B)
+  | (btyp_var_f α) => (if eq_var α α5 then B_5 else (btyp_var_f α))
+  | (btyp_arrow B1 B2) => btyp_arrow (subst_btyp_in_btyp B_5 α5 B1) (subst_btyp_in_btyp B_5 α5 B2)
+  | (btyp_all_syn B) => btyp_all_syn (subst_btyp_in_btyp B_5 α5 B)
+  | (btyp_all_inh B) => btyp_all_inh (subst_btyp_in_btyp B_5 α5 B)
 end.
 
-Fixpoint subst_ptyp_in_exp (A5:ptyp) (Xpt5:ptypvar) (e_5:exp) {struct e_5} : exp :=
+Fixpoint subst_ptyp_in_exp (A5:ptyp) (α5:ptypvar) (e_5:exp) {struct e_5} : exp :=
   match e_5 with
   | exp_unit => exp_unit 
   | (exp_var_b nat) => exp_var_b nat
   | (exp_var_f x) => exp_var_f x
-  | (exp_abs e) => exp_abs (subst_ptyp_in_exp A5 Xpt5 e)
-  | (exp_abs_anno A e) => exp_abs_anno (subst_ptyp_in_ptyp A5 Xpt5 A) (subst_ptyp_in_exp A5 Xpt5 e)
-  | (exp_app e1 e2) => exp_app (subst_ptyp_in_exp A5 Xpt5 e1) (subst_ptyp_in_exp A5 Xpt5 e2)
-  | (exp_anno e A) => exp_anno (subst_ptyp_in_exp A5 Xpt5 e) (subst_ptyp_in_ptyp A5 Xpt5 A)
-  | (exp_freeze e) => exp_freeze (subst_ptyp_in_exp A5 Xpt5 e)
+  | (exp_abs e) => exp_abs (subst_ptyp_in_exp A5 α5 e)
+  | (exp_abs_anno A e) => exp_abs_anno (subst_ptyp_in_ptyp A5 α5 A) (subst_ptyp_in_exp A5 α5 e)
+  | (exp_app e1 e2) => exp_app (subst_ptyp_in_exp A5 α5 e1) (subst_ptyp_in_exp A5 α5 e2)
+  | (exp_anno e A) => exp_anno (subst_ptyp_in_exp A5 α5 e) (subst_ptyp_in_ptyp A5 α5 A)
+  | (exp_freeze e) => exp_freeze (subst_ptyp_in_exp A5 α5 e)
 end.
 
 

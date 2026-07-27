@@ -326,7 +326,7 @@ Proof.
   - constructor.
   - constructor; auto.
   - pick fresh X.
-    apply lc_pskl_all_syn_exists with (Xps1 := X).
+    apply lc_pskl_all_syn_exists with (α1 := X).
     rewrite <- ptyp_to_pskl_open. auto.
 Qed.
 

@@ -1700,7 +1700,7 @@ Proof.
                    `union` ftvar_in_bskl
                        (pskl_to_bskl_inh (bskl_to_pskl P))))
       as [X Fr].
-    apply open_bskl_wrt_bskl_inj with (Xbs1 := X);
+    apply open_bskl_wrt_bskl_inj with (α1 := X);
       [ clear - Fr; fsetdec | clear - Fr; fsetdec | ].
     rewrite <- pskl_to_bskl_inh_open.
     apply H0; [ clear - Fr; fsetdec | | | ].
@@ -1932,7 +1932,7 @@ Proof.
       [ fsetdec | apply is_tskl__unit | apply d_tags_skl__unit; fsetdec
       | reflexivity | intros _; apply uskl_ghost_free__unit ].
   - (* var *)
-    exists empty, (uskl_var_f Xps). repeat apply conj;
+    exists empty, (uskl_var_f α). repeat apply conj;
       [ fsetdec | apply is_tskl__var | apply d_tags_skl__var; fsetdec
       | reflexivity | intros _; apply uskl_ghost_free__var ].
   - (* arrow *)

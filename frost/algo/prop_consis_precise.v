@@ -524,7 +524,7 @@ Proof.
       as [HΨX HeqX].
     split; [ exact HΨX | ].
     simpl. f_equal.
-    eapply open_bskl_wrt_bskl_inj with (Xbs1 := X).
+    eapply open_bskl_wrt_bskl_inj with (α1 := X).
     + rewrite ftvar_in_bskl_inh, ftvar_in_pskl_bskl_to_pskl. fsetdec.
     + fsetdec.
     + rewrite <- pskl_to_bskl_inh_open, <- bskl_to_pskl_open. exact HeqX.
@@ -2085,11 +2085,11 @@ Proof.
   - assumption.
   - apply lc_uskl_arrow; assumption.
   - pick fresh X for L.
-    apply lc_uskl_all_syn_exists with (Xus1 := X). apply H0; fsetdec.
+    apply lc_uskl_all_syn_exists with (α1 := X). apply H0; fsetdec.
   - pick fresh X for L.
-    apply lc_uskl_all_etag_exists with (Xus1 := X). apply H0; fsetdec.
+    apply lc_uskl_all_etag_exists with (α1 := X). apply H0; fsetdec.
   - pick fresh X for L.
-    apply lc_uskl_all_syn_exists with (Xus1 := X). apply H0; fsetdec.
+    apply lc_uskl_all_syn_exists with (α1 := X). apply H0; fsetdec.
   - apply lc_uskl_tophole; assumption.
   - apply lc_uskl_topholeg; assumption.
   - apply lc_uskl_tophole; assumption.

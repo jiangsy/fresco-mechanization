@@ -327,7 +327,7 @@ Proof.
   - constructor; auto.
   - (* ∀ : pick a variable outside ζ's domain and push the substitution in *)
     pick fresh X for (dom ζ).
-    apply lc_ptyp_all_exists with (Xpt1 := X).
+    apply lc_ptyp_all_exists with (α1 := X).
     erewrite <- msubst_ptyp_open;
       [ apply H0 | exact Hinc | clear - Fr; fsetdec ].
 Qed.
@@ -659,7 +659,7 @@ Proof.
   - apply lc_ptyp_to_pskl. eapply a_inc_lookup_lc; eauto.
   - (* ∀ : pick a variable outside ζ's domain and push the substitution in *)
     pick fresh X for (dom ζ).
-    apply lc_pskl_all_syn_exists with (Xps1 := X).
+    apply lc_pskl_all_syn_exists with (α1 := X).
     erewrite <- msubst_pskl_open;
       [ apply H0 | exact Hinc | clear - Fr; fsetdec ].
 Qed.
