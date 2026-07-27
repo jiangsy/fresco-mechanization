@@ -963,7 +963,7 @@ Lemma a_solve_eq_hole_subject_inv : forall Θ Q P',
   P' = Q.
 Proof.
   intros Θ Q P' H; inversion H; subst; try reflexivity;
-    match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+    inv_guarded_hole.
 Qed.
 
 (** Θ-weakening of the ρ relation (binds-monotone; the leaf's image wf

@@ -86,3 +86,13 @@ Tactic Notation "destruct_if" :=
   match goal with |- context [ if ?e then _ else _ ] => destruct e end.
 Tactic Notation "destruct_if" "as" simple_intropattern(pat) :=
   match goal with |- context [ if ?e then _ else _ ] => destruct e as pat end.
+
+(* Close a set goal from a single [_ [=] empty] hypothesis, scoping fsetdec to
+   just that hypothesis (per the `clear -` discipline).  Backtracks over the
+   candidate hypotheses. *)
+Ltac fsetdec_empty :=
+  match goal with H : _ [=] empty |- _ => clear - H; fsetdec end.
+
+(* Discharge an absurd [guarded_pskl pskl_hole] hypothesis. *)
+Ltac inv_guarded_hole :=
+  match goal with H : guarded_pskl pskl_hole |- _ => inversion H end.

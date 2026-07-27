@@ -229,7 +229,7 @@ Proof.
   - (* Infer : output is ⌊S⌋ = ⌊T2⌋ *)
     rewrite <- Herase. apply a_subtag__infer; assumption.
   - (* Check : P0 = B = ◇, but guarded_pskl ◇ is absurd *)
-    match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+    inv_guarded_hole.
   - (* UnivGhostR : source guarded, output tophole ⌊S⌋ *)
     (* ⌊T2⌋ = ⌊S⌋ guarded ⇒ T2 top ∈ {unit,var,arrow} ⇒ T2 guarded *)
     assert (HgT2 : guarded_uskl T2).
@@ -536,7 +536,7 @@ Proof.
       [ apply a_consistag__ghost; [ simpl; clear; fsetdec | assumption ]
       | apply a_consistag__ghostg; assumption ].
   - (* UnivGhost2 : guarded_pskl ◇ is absurd *)
-    match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+    inv_guarded_hole.
   - (* GhostR : output ⌊S⌋; reconstruct with T2 (same erasure) *)
     rewrite <- Herase.
     apply a_consistag__ghost_r; [ rewrite Herase; assumption | assumption ].
@@ -1060,8 +1060,7 @@ Proof.
     intros; subst; try discriminate;
     try solve [ assumption ];
     try solve [ auto ];
-    try solve [ match goal with Hg : guarded_pskl pskl_hole |- _ =>
-                  inversion Hg end ];
+    try solve [ inv_guarded_hole ];
     try match goal with
         | H : forall β, β `notin` ?L -> pskl_hole = pskl_hole -> _ |- _ =>
             destruct (atom_fresh L) as [β Hβ]; exact (H β Hβ eq_refl)
@@ -1301,8 +1300,7 @@ Proof.
     + (* solvetag Var : ψf is a variable; the two sources coincide *)
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ eapply a_subtag__check; eassumption
-        | match goal with He : Ψa [=] empty |- _ =>
-            clear - He; fsetdec end ].
+        | fsetdec_empty ].
     + (* solvetag ForallL : the stripped subject is ∀-headed, not guarded *)
       match goal with Hg : guarded_uskl (msubst_uskl _ _) |- _ =>
         rewrite msubst_uskl_all_syn in Hg; inversion Hg end.
@@ -1310,7 +1308,7 @@ Proof.
       match goal with Hg : guarded_uskl (msubst_uskl _ _) |- _ =>
         rewrite msubst_uskl_tophole in Hg; inversion Hg end.
     + (* solvetag Vacuous : P0 = ◇, but the Check target is guarded *)
-      match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+      inv_guarded_hole.
     + (* solvetag Check : decorate the consistency premise *)
       eapply a_subtag__check.
       * apply guarded_msubst_decorate;
@@ -1365,8 +1363,7 @@ Proof.
     + (* solvetag Var : sources coincide *)
       simpl in HeqT.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
-        [ | match goal with He : Ψa [=] empty |- _ =>
-              clear - He; fsetdec end ].
+        [ | fsetdec_empty ].
       rewrite <- HeqT.
       eapply a_subtag__arrow; eassumption.
     + (* solvetag ForallL : shape clash with the arrow subject *)
@@ -1456,8 +1453,7 @@ Proof.
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ exact Hnode | reflexivity
           | apply msubst_uskl_lc; assumption
@@ -1594,8 +1590,7 @@ Proof.
           by (eapply a_subtag__forall_l_untagged
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ exact Hnode | reflexivity
           | apply msubst_uskl_lc; assumption
@@ -1638,8 +1633,7 @@ Proof.
         rewrite msubst_uskl_holeg.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ apply a_subtag__ghostg; assumption
-          | match goal with He : Ψa [=] empty |- _ =>
-              clear - He; fsetdec end ].
+          | fsetdec_empty ].
       * (* solvetag Check : ◇̇ is not guarded *)
         match goal with Hg : guarded_uskl uskl_holeg |- _ =>
           inversion Hg end.
@@ -1689,8 +1683,7 @@ Proof.
                              (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⩽˙ Q ⊣ Θ1)
           by (apply a_subtag__univ_ghost_l; assumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ exact Hnode | reflexivity
           | apply msubst_uskl_lc; assumption
@@ -1728,8 +1721,7 @@ Proof.
                              (msubst_uskl ρ (pskl_to_uskl ⌊ ψf ⌋ˢ))) ⩽˙ Q ⊣ Θ1)
           by (apply a_subtag__univ_ghost_l; assumption).
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ exact Hnode | reflexivity
           | apply msubst_uskl_lc; assumption
@@ -1973,12 +1965,11 @@ Proof.
     rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαS ].
     inversion Hst; subst.
     eapply a_consistag_psi_cong; [ exact Hcons | ].
-    match goal with He : Ψa [=] empty |- _ => clear - He; fsetdec end.
+    fsetdec_empty.
   - (* LE-Vacuous : P0 = ◇; the run is erasure-determined *)
     inversion Hst; subst.
     eapply a_consistag_psi_cong with (Ψ := Ψc);
-      [ | match goal with He : Ψa [=] empty |- _ =>
-            clear - He; fsetdec end ].
+      [ | fsetdec_empty ].
     eapply a_consistag_vacuous_erasure;
       [ exact Hcons | reflexivity
       | rewrite ! uskl_to_pskl_subst;
@@ -2487,7 +2478,7 @@ Proof.
       end.
       inversion Hst; subst.
       eapply a_consistag_psi_cong; [ exact Hcons | ].
-      match goal with He : Ψa [=] empty |- _ => clear - He; fsetdec end.
+      fsetdec_empty.
     + (* S = var X (X ≠ α since ⌊S⌋ = P ≠ var α) : α-free *)
       match goal with
       | Hne : pskl_var_f ?X <> pskl_var_f α |- _ =>
@@ -2504,7 +2495,7 @@ Proof.
       rewrite subst_bskl_in_uskl_fresh_eq; [ | exact HαX ].
       rewrite subst_bskl_in_uskl_fresh_eq in Hcons; [ | exact HαX ].
       eapply a_consistag_psi_cong; [ exact Hcons | ].
-      match goal with He : Ψa [=] empty |- _ => clear - He; fsetdec end.
+      fsetdec_empty.
     + (* S = arrow S1 S2 *)
       simpl in Hcons |- *.
       inversion HlcS; subst.
@@ -2631,9 +2622,7 @@ Proof.
                 | Hst : nil ⊩ᵗ _ ⤳ _ |- _ => inversion Hst; subst; assumption
                 end ];
     (* guarded ◇ side conditions *)
-    try solve [ match goal with
-                | Hg : guarded_pskl pskl_hole |- _ => inversion Hg
-                end ];
+    try solve [ inv_guarded_hole ];
     (* singleton sub deposit *)
     try solve [ match goal with
                 | Hst : (a_cstr_sub _ pskl_hole :: nil) ⊩ᵗ _ ⤳ _ |- _ =>

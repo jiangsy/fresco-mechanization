@@ -532,7 +532,7 @@ Proof.
   - repeat destruct_if; try contradiction.
     + eapply ad_pat_consis_psi_cong;
         [ apply consis_mono_refl; assumption
-        | match goal with HΨ : _ [=] empty |- _ => clear - HΨ; fsetdec end ].
+        | fsetdec_empty ].
     + apply ad_pat_consis__var; [ assumption | ].
       match goal with Hne : X <> β |- _ =>
         eapply a_binds_tvar_strip_mid;

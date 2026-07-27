@@ -139,10 +139,9 @@ Proof.
       inversion Hst; subst.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ eapply a_subtag__check; eassumption
-        | match goal with He : Ψa [=] empty |- _ =>
-            clear - He; fsetdec end ].
+        | fsetdec_empty ].
     + (* LS-Vacuous : the Check target is guarded, not ◇ *)
-      match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+      inv_guarded_hole.
     + (* LS-Check : decorate the consistency premise *)
       eapply a_subtag__check.
       * apply guarded_subst_decorate; assumption.
@@ -247,8 +246,7 @@ Proof.
       inversion Hst; subst.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ first [ rewrite HeqT | idtac ]; eapply a_subtag__arrow; eassumption
-        | match goal with He : Ψa [=] empty |- _ =>
-            clear - He; fsetdec end ].
+        | fsetdec_empty ].
     + (* LS-Arrow : the structural pair *)
       match goal with
       | He : pskl_arrow _ _ = ⌊ ?S1 ⌋ˢ |- _ =>
@@ -347,8 +345,7 @@ Proof.
         inversion Hst; subst.
         eapply a_subtag_psi_cong;
           [ exact Hnode
-          | match goal with He : Ψa [=] empty |- _ =>
-              clear - He; fsetdec end ].
+          | fsetdec_empty ].
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         assert (Hnode : Θ0 ⊢ᵗ[ NM | M | pskl_hole | Ψ ]
                           (uskl_all_etag ε0
@@ -359,8 +356,7 @@ Proof.
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         inversion Hst; subst.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ exact Hnode | reflexivity
           | apply subst_bskl_in_uskl_lc_uskl; assumption
@@ -586,8 +582,7 @@ Proof.
         destruct_if as [_ | Hc];
             [ | exfalso; congruence ].
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ eapply a_subtag__forall_l_untagged
               with (L := L) (Ξ := Ξ) (P1 := P1); eassumption
@@ -625,8 +620,7 @@ Proof.
         inversion Hst; subst.
         eapply a_subtag_psi_cong;
           [ exact Hnode
-          | match goal with He : Ψa [=] empty |- _ =>
-              clear - He; fsetdec end ].
+          | fsetdec_empty ].
       * (* LS-Vacuous *)
         assert (Hnode : Θ0 ⊢ᵗ[ NM | M | pskl_hole | Ψ ]
                           (uskl_all_syn
@@ -637,8 +631,7 @@ Proof.
                 with (L := L) (Ξ := Ξ) (P1 := P1); eassumption).
         inversion Hst; subst.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ exact Hnode | reflexivity
           | apply subst_bskl_in_uskl_lc_uskl; assumption
@@ -862,8 +855,7 @@ Proof.
         destruct_if as [_ | Hc];
             [ | exfalso; congruence ].
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ apply a_subtag__ghost; assumption
           | reflexivity
@@ -886,8 +878,7 @@ Proof.
       simpl.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ apply a_subtag__ghost; assumption
-        | match goal with He : Ψa [=] empty |- _ =>
-            clear - He; fsetdec end ].
+        | fsetdec_empty ].
   - (* GhostG : source ◇̇ *)
     destruct S0; simpl in HeqT;
       try discriminate HeqT;
@@ -904,8 +895,7 @@ Proof.
       simpl.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ apply a_subtag__ghostg; assumption
-        | match goal with He : Ψa [=] empty |- _ =>
-            clear - He; fsetdec end ].
+        | fsetdec_empty ].
   - (* UnivGhostL : source ⊤◇.S̄ *)
     destruct S0; simpl in HeqT;
       try discriminate HeqT;
@@ -944,8 +934,7 @@ Proof.
         destruct_if as [_ | Hc];
             [ | exfalso; congruence ].
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ apply a_subtag__univ_ghost_l; eassumption
           | reflexivity
@@ -981,13 +970,11 @@ Proof.
         end.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ apply a_subtag__univ_ghost_l; eassumption
-          | match goal with He : Ψa [=] empty |- _ =>
-              clear - He; fsetdec end ].
+          | fsetdec_empty ].
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         inversion Hst; subst.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ apply a_subtag__univ_ghost_l; eassumption
           | reflexivity
@@ -1045,13 +1032,11 @@ Proof.
         end.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ apply a_subtag__univ_ghost_lg; eassumption
-          | match goal with He : Ψa [=] empty |- _ =>
-              clear - He; fsetdec end ].
+          | fsetdec_empty ].
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         inversion Hst; subst.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ apply a_subtag__univ_ghost_lg; eassumption
           | reflexivity
@@ -1118,8 +1103,7 @@ Proof.
         destruct_if as [_ | Hc];
             [ | exfalso; congruence ].
         eapply a_subtag_psi_cong with (Ψ := Ψ);
-          [ | match goal with He : Ψa [=] empty |- _ =>
-                clear - He; fsetdec end ].
+          [ | fsetdec_empty ].
         eapply a_subtag_vacuous_erasure;
           [ apply a_subtag__flex_mono; eassumption
           | reflexivity
@@ -1135,8 +1119,7 @@ Proof.
           [ exfalso; congruence | ].
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ apply a_subtag__flex_mono; eassumption
-        | match goal with He : Ψa [=] empty |- _ =>
-            clear - He; fsetdec end ].
+        | fsetdec_empty ].
 Qed.
 
 (* ===================================================================== *)
@@ -1405,7 +1388,7 @@ Lemma a_solvetag_sound : forall C ψ Ψ Ψtot,
   C ⊩ᵗ ψ ⤳ Ψ -> d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot.
 Proof.
   intros C ψ Ψ Ψtot Hc; revert Ψtot; induction Hc; intros Ψtot Hdt.
-  - (* empty *) match goal with He : _ [=] empty |- _ => clear - He; fsetdec end.
+  - (* empty *) fsetdec_empty.
   - (* sub *) match goal with H : _ ≼ᵗ[ _ ] _ ⤳ _ |- _ =>
       pose proof ((proj1 a_solvetag_sub_eq_sound) _ _ _ _ H Ψtot Hdt) end; fsetdec.
   - (* eq *)
