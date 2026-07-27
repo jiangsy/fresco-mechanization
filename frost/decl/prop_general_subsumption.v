@@ -1297,8 +1297,8 @@ Lemma consis_guarded_btyp_lhs : forall Δ Γ C B,
 Proof.
   intros Δ Γ C B Hc Hg.
   inversion Hc; subst; try (inversion Hg; fail).
-  - apply guarded_utyp__unit.
-  - apply guarded_utyp__var.
+  - auto with frost.
+  - auto with frost.
   - apply guarded_utyp__arrow; eapply d_consis_lc_utyp; eassumption.
 Qed.
 

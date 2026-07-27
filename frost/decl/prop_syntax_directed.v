@@ -206,9 +206,9 @@ Qed.
 Lemma is_ityp_subst_unit : forall B X, is_ityp B -> is_ityp (subst_btyp_in_btyp btyp_unit X B).
 Proof.
   intros B X H. induction H; simpl.
-  - apply is_ityp__unit.
-  - destruct (X0 == X); [ apply is_ityp__unit | apply is_ityp__var ].
-  - apply is_ityp__arrow; assumption.
+  - auto with frost.
+  - destruct (X0 == X); auto with frost.
+  - auto with frost.
   - apply is_ityp__all with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]). auto.
 Qed.
@@ -216,9 +216,9 @@ Qed.
 Lemma is_styp_subst_unit : forall B X, is_styp B -> is_styp (subst_btyp_in_btyp btyp_unit X B).
 Proof.
   intros B X H. induction H; simpl.
-  - apply is_styp__unit.
-  - destruct (X0 == X); [ apply is_styp__unit | apply is_styp__var ].
-  - apply is_styp__arrow; assumption.
+  - auto with frost.
+  - destruct (X0 == X); auto with frost.
+  - auto with frost.
   - apply is_styp__all with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]). auto.
 Qed.
@@ -226,8 +226,8 @@ Qed.
 Lemma guarded_btyp_subst_unit : forall B X, guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp btyp_unit X B).
 Proof.
   intros B X H. induction H; simpl.
-  - apply guarded_btyp__unit.
-  - destruct (X0 == X); [ apply guarded_btyp__unit | apply guarded_btyp__var ].
+  - auto with frost.
+  - destruct (X0 == X); auto with frost.
   - apply guarded_btyp__arrow;
       apply subst_btyp_in_btyp_lc_btyp; solve [ apply lc_btyp_unit | assumption ].
 Qed.
@@ -235,8 +235,8 @@ Qed.
 Lemma guarded_utyp_subst_unit : forall C X, guarded_utyp C -> guarded_utyp (subst_utyp_in_utyp utyp_unit X C).
 Proof.
   intros C X H. induction H; simpl.
-  - apply guarded_utyp__unit.
-  - destruct (X0 == X); [ apply guarded_utyp__unit | apply guarded_utyp__var ].
+  - auto with frost.
+  - destruct (X0 == X); auto with frost.
   - apply guarded_utyp__arrow;
       apply subst_utyp_in_utyp_lc_utyp; solve [ apply lc_utyp_unit | assumption ].
 Qed.
@@ -244,9 +244,9 @@ Qed.
 Lemma is_ttyp_subst_unit : forall C X, is_ttyp C -> is_ttyp (subst_utyp_in_utyp utyp_unit X C).
 Proof.
   intros C X H. induction H; simpl.
-  - apply is_ttyp__unit.
-  - destruct (X0 == X); [ apply is_ttyp__unit | apply is_ttyp__var ].
-  - apply is_ttyp__arrow; assumption.
+  - auto with frost.
+  - destruct (X0 == X); auto with frost.
+  - auto with frost.
   - apply is_ttyp__all_etag with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]). auto.
 Qed.
@@ -258,10 +258,9 @@ Lemma d_tags_subst_unit : forall Δ C X,
     d_tags Δ (subst_utyp_in_utyp utyp_unit X C).
 Proof.
   intros Δ C X H. induction H; simpl.
-  - apply d_tags__unit; assumption.
-  - destruct_if;
-      [ apply d_tags__unit | apply d_tags__var ]; assumption.
-  - eapply d_tags__arrow; [ eassumption | eassumption | assumption | assumption ].
+  - auto with frost.
+  - destruct_if; auto with frost.
+  - eauto with frost.
   - apply d_tags__all_etag with (L := L `union` {{X}}) (Ψ0 := Ψ0).
     + intros Z HZ.
       erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var

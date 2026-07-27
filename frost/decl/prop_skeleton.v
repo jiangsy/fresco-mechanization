@@ -123,9 +123,8 @@ Lemma guarded_pskl_subst_unit : forall P X,
     guarded_pskl P -> guarded_pskl (subst_pskl_in_pskl pskl_unit X P).
 Proof.
   intros P X H. induction H; simpl.
-  - apply guarded_pskl__unit.
-  - destruct_if;
-      [ apply guarded_pskl__unit | apply guarded_pskl__var ].
+  - auto with frost.
+  - destruct_if; auto with frost.
   - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; (assumption || apply lc_pskl_unit).
 Qed.
 
@@ -133,9 +132,8 @@ Lemma guarded_uskl_subst_unit : forall R X,
     guarded_uskl R -> guarded_uskl (subst_bskl_in_uskl uskl_unit X R).
 Proof.
   intros R X H. induction H; simpl.
-  - apply guarded_uskl__unit.
-  - destruct_if;
-      [ apply guarded_uskl__unit | apply guarded_uskl__var ].
+  - auto with frost.
+  - destruct_if; auto with frost.
   - apply guarded_uskl__arrow; apply subst_bskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_unit).
 Qed.
 
@@ -202,15 +200,14 @@ Lemma is_sskl_subst_unit : forall Q X,
     is_sskl Q -> is_sskl (subst_bskl_in_bskl bskl_unit X Q).
 Proof.
   intros Q X H. induction H; simpl.
-  - apply is_sskl__unit.
-  - destruct_if;
-      [ apply is_sskl__unit | apply is_sskl__var ].
-  - apply is_sskl__arrow; assumption.
+  - auto with frost.
+  - destruct_if; auto with frost.
+  - auto with frost.
   - apply is_sskl__all with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       try (apply lc_bskl_unit); try fsetdec. auto.
-  - apply is_sskl__hole.
-  - apply is_sskl__tophole; assumption.
+  - auto with frost.
+  - auto with frost.
 Qed.
 
 (** [mod_comp_sk] is preserved under [unit]-substitution: [unit] is [is_sskl]
@@ -219,33 +216,31 @@ Lemma mod_comp_sk_subst_unit : forall S m X,
     mod_comp_sk S m -> mod_comp_sk (subst_bskl_in_bskl bskl_unit X S) m.
 Proof.
   intros S m X H. induction H; simpl.
-  - apply mod_comp_sk__ti; apply is_sskl_subst_unit; assumption.
-  - apply mod_comp_sk__tc; apply is_sskl_subst_unit; assumption.
-  - apply mod_comp_sk__fn; assumption.
+  - auto using is_sskl_subst_unit with frost.
+  - auto using is_sskl_subst_unit with frost.
+  - auto with frost.
 Qed.
 
 Lemma is_tskl_subst_unit : forall R X,
     is_tskl R -> is_tskl (subst_bskl_in_uskl uskl_unit X R).
 Proof.
   intros R X H. induction H; simpl.
-  - apply is_tskl__unit.
-  - destruct_if;
-      [ apply is_tskl__unit | apply is_tskl__var ].
-  - apply is_tskl__arrow; assumption.
+  - auto with frost.
+  - destruct_if; auto with frost.
+  - auto with frost.
   - apply is_tskl__all_etag with (L := L `union` {{X}}). intros Y HY.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
-  - apply is_tskl__holeg.
-  - apply is_tskl__topholeg; assumption.
+  - auto with frost.
+  - auto with frost.
 Qed.
 
 Lemma guarded_bskl_subst_unit : forall Q X,
     guarded_bskl Q -> guarded_bskl (subst_bskl_in_bskl bskl_unit X Q).
 Proof.
   intros Q X H. induction H; simpl.
-  - apply guarded_bskl__unit.
-  - destruct_if;
-      [ apply guarded_bskl__unit | apply guarded_bskl__var ].
+  - auto with frost.
+  - destruct_if; auto with frost.
   - apply guarded_bskl__arrow; apply subst_bskl_in_bskl_lc_bskl; (assumption || apply lc_bskl_unit).
 Qed.
 
