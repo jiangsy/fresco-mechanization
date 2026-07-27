@@ -307,15 +307,33 @@ does not.  Caller obligations, in dependency order:
    the paper's `P0 = Hole` case comes BEFORE its `P = α` call of the -var
    lemma), and pass the right disjunct through.  Same for P6-Sv/Ss/L.
 2. **The outer theorem** must establish the invariant *"every accumulated
-   flexible-variable skeleton is `□` or hole-free"*.  Believed true:
-   accumulators start at `□`; constraint payloads are source-type paints
-   (`ptyp_to_pskl` has no □-image) or subterms of other accumulators;
-   `a_solve_eq_no_hole_p0` is the preservation half.  NOT yet proved —
-   **verify before building P6-Cs**; if deep-mixed `P0` (□ below a
-   constructor) turns out reachable, the repair is the disjunct threading
-   through the Arrow case of `_gen` (each branch dispatching its `□` by
-   VacuousR — the `VACR` tag-emptiness argument at the arrow case already
-   shows the pattern), not a statement falsity.
+   flexible-variable skeleton is `□` or hole-free"*.  **INVARIANT PROVED
+   (2026-07-27), axiom-free, in `algo/prop_accum_no_hole.v`.**  Deep-mixed
+   `P0` (□ strictly below a constructor) is NOT reachable.  Four algo-level
+   results (`Print Assumptions` = Closed under the global context):
+   - **A1 `a_guess_hnh`** — `guess^TY` returns a paint (`ptyp_to_pskl`, no
+     □-image ⇒ hole-free); `guess^SK` is the identity (preserves the
+     disjunct).
+   - **A2 `a_look_payload_hnh`** — `a_lookeq`/`a_looksub` emit □-or-hole-free
+     constraint payloads whenever the counterpart is (mutual; a □-counterpart
+     handled by LE/LS-Var emits the payload `eq(□)`, the left disjunct — it
+     need NOT go through the Vacuous rules).
+   - **A3 `a_solve_cstr_hnh`** (+ `a_solve_cstr_hole_start_hnh`, the `□`-start
+     form `a_extract` uses) — solving a constraint list from a □-or-hole-free
+     accumulator against □-or-hole-free payloads stays □-or-hole-free;
+     generalises `a_solve_eq_no_hole_p0` to the mutual sub/eq/cstr block
+     (`a_solve_{sub,eq}_hnh`, `a_solve_sub_no_hole_q`, the two `_from_subj`
+     strict halves).
+   - **A4 `a_sub_a_sub_flex_no_hole_p0`** — `a_sub`/`a_sub_flex` outputs are
+     hole-free when the counterpart `P0` is.  KEY: this is **subject-free** —
+     output holes come ONLY from the counterpart, so `a_sub__forall_l` merely
+     threads `P0` (the ∀-body instantiation `open P P1` is irrelevant to the
+     output even when `P1 = □` deep-mixes it), and `Infer`/`UnivGhostR`
+     (`P0 = □`) are excluded by `pskl_no_hole P0`.  (An earlier worry that
+     ForallL blocks a subject-carrying induction was an artifact of a
+     needless subject premise; the counterpart-only formulation closes
+     cleanly.)  Support: `a_consis_out_no_hole` / `a_consis_out_no_hole_q`.
+   Predicate: `pskl_hnh P := P = pskl_hole \/ pskl_no_hole P`.
 
 Note the premise is DERIVABLE from the other premises in some subcases (the
 Var-case binder side derives it from the refinement via
