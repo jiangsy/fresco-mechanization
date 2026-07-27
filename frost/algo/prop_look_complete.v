@@ -10,13 +10,23 @@
       P6-L   [a_extract_complete]        subtyping-proofs.tex:2729
 
     THE ρ REPRESENTATION (design locked in DESIGN §7, 2026-07-24): the
-    paper's "capture-avoiding substitution ρ from rigid type variables to
-    decorated skeletons" is mechanized as the RELATION [uskl_rho]
-    ("ψsub ⊒ρ ψa"): same-constructor congruences + a REFL rule (identity-ρ
-    call sites) + one replace-leaf [ψ'' ⊒ var X].  [Δρ] collects the
-    replaced variables, [Ψρ] the tags introduced by the replacements
-    (unions WITHOUT cross-copy disjointness — several occurrences of one
-    variable share their image's tags).
+    paper's ρ — a substitution from rigid type variables to decorated
+    skeletons, with Ψ the solved tags it introduces — is mechanized as
+    the RELATION [uskl_rho] "ψsub ⊒ρ[Δρ;Ψρ] ψa" (ψsub = ρ(ψa), Δρ = the
+    replaced variables): same-constructor congruences + a REFL rule
+    (identity-ρ call sites) + one replace-leaf [ψ'' ⊒ var X].  A relation
+    rather than a function ([list (atom * uskl)] + msubst) NOT because of
+    capture-avoidance — locally nameless + cofinite binders give that for
+    free, as for θ — but because the main inductions run on the
+    derivation over the SUBJECT ψsub, where each case needs, at its own
+    position: (i) the copy-vs-replacement-leaf split (the
+    [uskl_rho_*_l_inv] inversions); (ii) the image's tags Ψ'' AT THIS
+    OCCURRENCE — a variable replaced in both arrow branches contributes
+    its image's tags to BOTH copies, so Ψρ is a union WITHOUT cross-copy
+    disjointness and the arrow case splits it per branch only by
+    inversion; a function-form ρ has no positional reading of "the tags
+    introduced by ρ"; (iii) the paper's per-instantiation wf/tags-sort
+    premises, carried on the leaf rule.
 
     [paper-gap] The paper's positional side condition "for every rigid
     variable in ψa substituted by ρ, P_i has the same rigid variable in

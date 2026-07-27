@@ -48,9 +48,12 @@ Set Implicit Arguments.
 
 
 
-(** Moving a Δ-entry of skeleton well-formedness into the aenv as a
-    rigid tvar (mid-insertion general; the ⊤◇-body stays at empty Δ and
-    only needs binds-weakening). *)
+(** [MECH-ONLY kit] Moving a Δ-entry of skeleton well-formedness into the
+    aenv as a rigid tvar (mid-insertion general; the ⊤◇-body stays at
+    empty Δ and only needs binds-weakening).  No paper counterpart: the
+    paper writes every descent binder as "Θ,β" and never distinguishes
+    the aenv from the skeleton-scope Δ, so these transports are implicit
+    there. *)
 Lemma a_wf_pskl_delta_to_tvar_mid : forall Θfull Δ P,
   Θfull ⨟ Δ ⊢ₚₛᵃ P ->
   forall Z Θ1 Θ2 Δ', Θfull = Θ1 ++ Θ2 ->
@@ -112,7 +115,8 @@ Proof.
 Qed.
 
 (* The paper-form statement is now the COROLLARY of the generalized
-   theorem below (Θtv := [], Δr := ∅, S := ∅). *)
+   theorem below (Θtv := [], Δr := ∅, S := ∅); the paper mapping is
+   documented on the corollary [a_solve_eq_complete_var]. *)
 
 
 (* ===================================================================== *)
@@ -123,13 +127,13 @@ Qed.
 (*  binder-free; the conclusion returns a fresh-extension FAMILY of       *)
 (*  precisions, which is what lets the ForallInh/ForallSyn □- and         *)
 (*  ⊤◇-fill-rows fold their bodies at (add X Δ).  The paper's statement   *)
-(*  is the Θtv := [] / S := ∅ corollary.  Statement type-checked here;    *)
-(*  proof = next session (rethread of the 13 closed cases + the 2         *)
-(*  tagged-∀ cases per the §6(m) discharge table).                        *)
+(*  is the Θtv := [] / S := ∅ corollary.                                  *)
 (* ===================================================================== *)
 (*  ForallSyn kit: flex_apart TARGET descent through an all_etag binder    *)
 (*  (the ⊤◇-body is guarded, which excludes the all_syn source that would  *)
-(*  otherwise block the descent).                                          *)
+(*  otherwise block the descent).  [MECH-ONLY: maintenance lemmas for the  *)
+(*  mech-only flex_apart premise — the paper has no counterpart because    *)
+(*  its proof never states the FlexR-freshening reachability invariant.]   *)
 (* ===================================================================== *)
 
 (** Guarded source: descend the all_etag target one binder. *)
@@ -187,6 +191,13 @@ Qed.
 (*  what lets ForallSyn reuse the ForallInh split Θtv_ih := (X~tvar)++Θtv  *)
 (*  (keeping the family premise at dom Θr) while the refinement's binder   *)
 (*  X lands in Δr = dom Θtv_ih.                                            *)
+(*  [PAPER: this transport is the mech rendering of the ForallInh/         *)
+(*  ForallSyn closing step "our goal follows … removing β as necessary"   *)
+(*  (consistency-proofs.tex:1135-1137) — the paper removes the binder     *)
+(*  from its Θ,β refinement silently; here that removal is only sound     *)
+(*  because the source has no □ (a □-fill may mention the binder), which  *)
+(*  is exactly where the MECH-ONLY pskl_no_hole P0 premise is             *)
+(*  load-bearing.]                                                         *)
 (* ===================================================================== *)
 
 Fixpoint bskl_no_hole (Q : bskl) : Prop :=
@@ -304,6 +315,11 @@ Qed.
 (*  ForallSyn kit (4): rename a tvar Z↦W in the AENV of a precision       *)
 (*  derivation.  Needed to build the ad_ppre__tophole_fill cofinite       *)
 (*  family (binder in the aenv) from a SINGLE IHX instance.               *)
+(*  [PAPER: implicit — the paper's "removing β as necessary" α-renames    *)
+(*  the fill binder without comment; a cofinite-quantified rule needs     *)
+(*  the rename made explicit.  The solve output is NOT deterministic, so  *)
+(*  re-running the IH per family member would return unrelated Pa's —     *)
+(*  renaming the single run is the only route.]                           *)
 (* ===================================================================== *)
 
 Lemma binds_swap_mid : forall (X : atom) (b : abind) Θ1 Θ0 Z W c c',
@@ -2961,25 +2977,96 @@ Proof.
       [ exact HwfΘr | exact Hrefine | reflexivity | exact Hbdef ].
 Qed.
 
+(* ===================================================================== *)
+(*  THE PAPER STATEMENT — P6-Cv,                                          *)
+(*  [lemma:complete-consistency-constraint-collection-solving-var]        *)
+(*  (consistency-proofs.tex:1180), via _gen at Θtv := [] / Δr := ∅ /      *)
+(*  S := ∅.  Premises are annotated inline; the MECH-ONLY ones, and what  *)
+(*  callers (P6-Cs consistency-proofs.tex:993; P6-Sv subtyping-proofs     *)
+(*  .tex:1778/1965/2035) owe for them:                                    *)
+(*   1. pskl_no_hole P0 — wf side condition (WF-SIDE-CONDITIONS.md).      *)
+(*      The paper instead dispatches P0 = □ by SolE-VacuousR at every     *)
+(*      induction node; callers dispatch P0 = □ themselves (the paper's   *)
+(*      P6-Cs proof already does exactly this before its P = α call) and  *)
+(*      thread hole-freeness elsewhere (a_solve_eq_no_hole_p0 preserves   *)
+(*      it across chaining).  WHY NOT follow the paper: top-level □ is    *)
+(*      trivial (the VACR pattern in the arrow case); the □-sensitive     *)
+(*      step is binder EXIT (the paper's "removing β as necessary",       *)
+(*      PAPER-GAPS "Δ-bookkeeping"), and the two binder kinds differ.     *)
+(*      ForallInh binders: _gen keeps the refinement at (Θr, Δr), the     *)
+(*      refinement never sees them, its □-fills are wf at Θr and so       *)
+(*      CANNOT mention them — P0-holes would be unproblematic there.      *)
+(*      The ForallSyn binder: introduced by the refinement's OWN          *)
+(*      tophole_fill, i.e. INSIDE the fills' scope — a □ below it may     *)
+(*      legitimately have the binder as its fill (inh(□→1) ⊳ β→1, fill    *)
+(*      β), which falsifies the ad_refine_syn_aenv_to_delta transport     *)
+(*      the ∀-rows' IH needs; no premise placement can make those fills   *)
+(*      binder-free, so excluding the □ itself is what remains.  The      *)
+(*      paper's proof never justifies this configuration either (it does  *)
+(*      not track where fills live).  Whether the premise-free statement  *)
+(*      is provable there is OPEN — no cex known, no proof route — and    *)
+(*      the config is believed unreachable from the algorithm             *)
+(*      (accumulated skeletons are □-or-hole-free), so the premise        *)
+(*      trades only dead generality for the Qed.                          *)
+(*   2. delta_def_fresh Δ Θ — the paper's implicit wf of the Δ-extended   *)
+(*      context; machine-checked necessary; free at call sites            *)
+(*      (WF-SIDE-CONDITIONS §7: binders postdate definitions).            *)
+(*   3. flex_apart Θ0 Δρ P0 ψa — the LE-FlexR freshening invariant (a     *)
+(*      raw Θ0-flex of P0 never faces a ρ-replaced part of ψa); NOT       *)
+(*      derivable from the other premises (cex_p6_flex_freshened.v);      *)
+(*      vacuous (fa_clean) at every ρ = id call site, e.g. P6-Cs's,       *)
+(*      since Δρ = ∅ — only the P6-Sv ForallL descent maintains it.       *)
+(*   4. the rho_fresh / Δρ ⊆ Δ / shielded pack — replaces the paper's     *)
+(*      positional "Pi has the same rigid variable at every ρ-position"   *)
+(*      side condition ([paper-gap], see the prop_look_complete.v         *)
+(*      header); established at the one leaf-creating call site, P6-Sv    *)
+(*      ForallL.                                                          *)
+(*  CONCLUSION vs paper: θa is instantiated to θ itself (a strengthening  *)
+(*  — the paper's θa-inc and θ ≡ θa conjuncts become trivial); Θ0 ⊢ Pa    *)
+(*  is omitted (recover by solve-output wf preservation when P6-Cs        *)
+(*  needs it).                                                            *)
+(*  PROOF/CASE MAP (the _gen induction is on the ad_pat_consis            *)
+(*  derivation of the subject ψsub = ρ(ψa), as the paper prescribes):     *)
+(*  unit/var/ghostg ↔ Case Unit/Var/GhostG; arrow ↔ Case Arrow (+ the     *)
+(*  flexible-P0 subcase repair, DESIGN §6(g)); forall_inh_tagged ↔        *)
+(*  ForallInh; forall_syn_tagged ↔ ForallSyn; topholeg ↔ UnivGhostG;      *)
+(*  hole ↔ Ghost (impossible); tophole ↔ UnivGhost; tophole_inh ↔         *)
+(*  UnivGhost1; tophole_drop ↔ UnivGhost2; forall_inh_untagged/           *)
+(*  forall_syn ↔ the δ = · instances of C-ForallInh/C-ForallSyn (the      *)
+(*  paper's ∀^δ subject carries a POTENTIAL tag δ ::= · | ε,              *)
+(*  declarative.tex:884 — one paper rule per target = two mech            *)
+(*  constructors), absurd here since the tags-sorted target forces        *)
+(*  δ = ε; flex_l/flex_r ↔ paper C-FlexL/C-FlexR                          *)
+(*  (full-algo-spec.tex:183/190) — real paper rules, merely OMITTED from  *)
+(*  the paper proof's case list (routine definition-unfolding).  The      *)
+(*  paper's upfront special case "ψa is a ρ-replaced rigid variable" is   *)
+(*  handled per-case via the uskl_rho_*_l_inv leaf disjunct +             *)
+(*  p6cv_close_leaf_mono; its "P0 = Hole" special case is excluded by     *)
+(*  premise 1.                                                            *)
+(* ===================================================================== *)
 Theorem a_solve_eq_complete_var :
   forall NM Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
-  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> pskl_no_hole P0 ->
-  θ ∷ Θ0 ⊑ Θ ->
-  uskl_rho NM Θ Δρ Ψρ ψsub ψa ->
-  a_tags_sort NM Ψ' ψa -> Ψi `union` Ψa [<=] Ψ' ->
-  AtomSetImpl.inter Ψρ Ψ' [=] empty ->
-  rho_fresh Δρ Θ θ -> Δρ [<=] Δ ->
+  a_wf_aenv Θ -> a_wf_aenv Θ0 ->      (* paper: prose "all inputs wf" *)
+  Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->   (* Θ0 ⊢ Pi, Θ0 ⊢ P0 *)
+  pskl_no_hole P0 ->                  (* MECH-ONLY (1) *)
+  θ ∷ Θ0 ⊑ Θ ->                       (* θ : Θ0 ⊑ Θ *)
+  uskl_rho NM Θ Δρ Ψρ ψsub ψa ->      (* ρ: ψsub = ρ(ψa), Ψρ = its Ψ *)
+  a_tags_sort NM Ψ' ψa ->             (* Θ ⊢^N Ψ'{syn ψa} *)
+  Ψi `union` Ψa [<=] Ψ' ->            (* Ψi, Ψa ⊆ Ψ' *)
+  AtomSetImpl.inter Ψρ Ψ' [=] empty ->   (* the fresh{Ψ'} instance used *)
+  rho_fresh Δρ Θ θ -> Δρ [<=] Δ ->    (* MECH-ONLY (4): the ρ-freshness *)
   (forall X, X `in` Δρ -> X `notin` pskl_shielded_ftv (msubst_pskl θ Pi)) ->
-  delta_def_fresh Δ Θ ->
-  flex_apart Θ0 Δρ P0 ψa ->
-  Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
-  Ψsub [<=] Ψρ `union` Ψa ->
-  Ψa [<=] Ψsub ->
-  Ψsub ⨟ Θ ⊢ₛᵃ ψsub ∼ Q ->
+  delta_def_fresh Δ Θ ->              (* MECH-ONLY (2) *)
+  flex_apart Θ0 Δρ P0 ψa ->           (* MECH-ONLY (3) *)
+  Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->   (* Δ|Θ ⊢ θPi ⊑ᵖ[Ψi] ψa *)
+  Ψsub [<=] Ψρ `union` Ψa ->          (* the consistency index is the *)
+  Ψa [<=] Ψsub ->                     (*   paper's "Ψ,Ψa", as bounds *)
+  Ψsub ⨟ Θ ⊢ₛᵃ ψsub ∼ Q ->            (* Θ ⊨[Ψ,Ψa] syn(ρψa) ∼ Q *)
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->
-  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
+                                      (* Θ ⊢ inh(θP0) ⊳ Q *)
+  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\    (* solveeq{Pi}{P0}{Pa} *)
              Θ ⨟ Δ ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+                                      (* Δ|Θ ⊢ θPa ⊑ᵖ[Ψi,Ψa] ψa, θa := θ *)
 Proof.
   intros NM Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
   intros HwfΘ HwfΘ0 HwfPi HwfP0 HnhP0 Hθ Hrho Htags Hsub Hinter Hfresh Hdelta

@@ -293,3 +293,31 @@ The premise threads through the whole induction (every recursive
 `pskl_no_hole_open_rec` for the ∀-body).  It is consistent with the
 pre-existing `a_solve_eq_no_hole_p0` (`⊢ₑ Pi ∼ P0 ⤳ Pa → pskl_no_hole P0 →
 pskl_no_hole Pa`).  Callers in the full completeness proof must discharge it.
+
+**Deviation from the paper (audited 2026-07-27).**  The paper's lemma has NO
+such premise: its proof dispatches `P0 = □` upfront by SolE-VacuousR
+("If P0 = Hole … the goal follows by choosing Pa = Pi"), and since the same
+dispatch re-fires inside every IH call, the paper statement also covers P0
+with □ strictly BELOW a constructor (e.g. `P01 → □`).  The mech statement
+does not.  Caller obligations, in dependency order:
+
+1. **P6-Cs (`a_lookeq_solve_complete`)** must take the DISJUNCTIVE premise
+   `P0 = □ ∨ pskl_no_hole P0`, dispatch the left disjunct in its own
+   `P0 = □` special case via LE-Vacuous (exactly the paper's structure —
+   the paper's `P0 = Hole` case comes BEFORE its `P = α` call of the -var
+   lemma), and pass the right disjunct through.  Same for P6-Sv/Ss/L.
+2. **The outer theorem** must establish the invariant *"every accumulated
+   flexible-variable skeleton is `□` or hole-free"*.  Believed true:
+   accumulators start at `□`; constraint payloads are source-type paints
+   (`ptyp_to_pskl` has no □-image) or subterms of other accumulators;
+   `a_solve_eq_no_hole_p0` is the preservation half.  NOT yet proved —
+   **verify before building P6-Cs**; if deep-mixed `P0` (□ below a
+   constructor) turns out reachable, the repair is the disjunct threading
+   through the Arrow case of `_gen` (each branch dispatching its `□` by
+   VacuousR — the `VACR` tag-emptiness argument at the arrow case already
+   shows the pattern), not a statement falsity.
+
+Note the premise is DERIVABLE from the other premises in some subcases (the
+Var-case binder side derives it from the refinement via
+`ad_refine_inh_deltar_var_rhs_no_hole`) but not in general: a
+guarded-but-holey ForallSyn body satisfies every other premise.

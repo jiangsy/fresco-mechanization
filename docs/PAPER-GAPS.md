@@ -943,7 +943,19 @@ monotype→refinement fact (no premise); leaf cases as the paper does; the
 Arrow case handles a flexible `P0` via SolE-FlexR like the leaf case, relying
 on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
 
-## GAP (BLOCKED, repair pending) — `complete-consistency-cc-solving-var` ForallInh/ForallSyn Subcases `Pi=□` and `Pi=⊤◇.Pi'`: the Δ-bookkeeping of the IH output is broken
+## GAP (REPAIRED 2026-07-27 — proof-step gap; statement TRUE) — `complete-consistency-cc-solving-var` ForallInh/ForallSyn Subcases `Pi=□` and `Pi=⊤◇.Pi'`: the Δ-bookkeeping of the IH output is broken
+
+> **Resolution.** Repair candidate (1) below was implemented, as the
+> generalized theorem `a_solve_eq_complete_var_gen`
+> (algo/prop_look_complete_var.v): the refinement premise is carried at
+> `(Θr, Δr)` with `Θ = Θtv ++ Θr`, `Δr [=] dom Θtv` (the descent binders),
+> which keeps □-fills wf at the original context and hence binder-free; the
+> precision conclusion is strengthened to a fresh-extension family `∀S` so
+> the ∀-rows can fold their bodies.  Two side conditions surfaced:
+> `pskl_no_hole P0` (see WF-SIDE-CONDITIONS.md — the paper instead
+> VacuousR-dispatches `P0 = □` per node) and the aenv-tvar precision rename
+> `ad_partial_precise_rename_tvar` (the paper's silent "removing β as
+> necessary").  `a_solve_eq_complete_var` is Qed, axiom-free.
 
 - Where: consistency-proofs.tex, Lemma
   `lemma:complete-consistency-constraint-collection-solving-var`
