@@ -160,3 +160,12 @@ Inductive mod_comp_sk : bskl -> mode -> Prop :=
 | mod_comp_sk__fn : forall m Q1 Q2,
     mod_comp_sk Q2 m ->
     mod_comp_sk (bskl_arrow Q1 Q2) (mode_fn m).
+
+(* Constructor hints for the small structural shape / guardedness / mode
+   predicates: they are dispatched trivially in metatheory proofs, so
+   [eauto with frost] can discharge those cases directly.  A DEDICATED [frost]
+   hint database (not [core]) keeps existing [auto] proofs unperturbed; the
+   large relational judgments are deliberately NOT hinted (they would make
+   [eauto] explode). *)
+#[export] Hint Constructors is_ttyp is_tskl is_styp is_ityp is_sskl is_iskl
+  guarded_ptyp guarded_pskl mod_comp_ty mod_comp_sk : frost.

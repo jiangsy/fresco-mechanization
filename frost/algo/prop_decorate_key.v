@@ -1193,9 +1193,8 @@ Lemma guarded_uskl_subst_var : forall ψ X Y,
   guarded_uskl ψ -> guarded_uskl (subst_bskl_in_uskl (uskl_var_f Y) X ψ).
 Proof.
   intros ψ X Y H; inversion H; subst; simpl.
-  - apply guarded_uskl__unit.
-  - destruct_if;
-      apply guarded_uskl__var.
+  - auto with frost.
+  - destruct_if; auto with frost.
   - apply guarded_uskl__arrow;
       apply subst_bskl_in_uskl_lc_uskl; auto; apply lc_uskl_var_f.
 Qed.
@@ -1205,10 +1204,9 @@ Lemma uskl_ghost_free_subst_var : forall ψ X Y,
   uskl_ghost_free (subst_bskl_in_uskl (uskl_var_f Y) X ψ).
 Proof.
   intros ψ X Y H; induction H; simpl.
-  - apply uskl_ghost_free__unit.
-  - destruct_if;
-      apply uskl_ghost_free__var.
-  - apply uskl_ghost_free__arrow; assumption.
+  - auto with frost.
+  - destruct_if; auto with frost.
+  - auto with frost.
   - apply uskl_ghost_free__all_etag with (L := L `union` singleton X);
       intros Z HZ;
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
@@ -1302,13 +1300,7 @@ Qed.
 (** A tag reading witnesses that its subject is a decorated skeleton. *)
 Lemma d_tags_skl_is_tskl : forall Ψ ψ, d_tags_skl Ψ ψ -> is_tskl ψ.
 Proof.
-  intros Ψ ψ H; induction H.
-  - apply is_tskl__unit.
-  - apply is_tskl__var.
-  - apply is_tskl__arrow; assumption.
-  - apply is_tskl__all_etag with (L := L); assumption.
-  - apply is_tskl__holeg.
-  - apply is_tskl__topholeg; assumption.
+  intros Ψ ψ H; induction H; eauto with frost.
 Qed.
 
 (** SOUNDNESS (paper coverage, direction ⊆): a decorated solvetag collects
@@ -1483,6 +1475,8 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
     Ψ [=] empty ->
     dec_ext P (uskl_var_f α) Ψ.
 
+#[export] Hint Constructors dec_ext : frost.
+
 (** [dec_ext] respects set-equality of the remaining-tag context. *)
 Lemma dec_ext_psi_cong : forall P ψ Ψ Ψ',
   dec_ext P ψ Ψ -> Ψ [=] Ψ' -> dec_ext P ψ Ψ'.
@@ -1523,14 +1517,13 @@ Proof.
         exact (IH X ltac:(clear - HX; fsetdec))
     end.
   - apply dec_ext__hole; [ apply is_tskl__holeg | apply d_tags_skl__holeg; fsetdec ].
-  - apply dec_ext__topholeg. exact IHis_tskl.
+  - auto with frost.
 Qed.
 
 (** A guarded skeleton is locally closed. *)
 Lemma guarded_pskl_lc : forall P, guarded_pskl P -> lc_pskl P.
 Proof.
-  intros P H; inversion H; subst;
-    [ apply lc_pskl_unit | apply lc_pskl_var_f | apply lc_pskl_arrow; assumption ].
+  intros P H; inversion H; subst; auto.
 Qed.
 
 (** Head-shape predicate: the skeleton's head is unit/var/arrow (the shapes
@@ -1546,10 +1539,10 @@ Lemma lc_head_guarded : forall P,
   lc_pskl P -> pskl_guarded_head P -> guarded_pskl P.
 Proof.
   intros P Hlc Hh; destruct P; simpl in Hh; try contradiction.
-  - apply guarded_pskl__unit.
+  - auto with frost.
   - inversion Hlc.
-  - apply guarded_pskl__var.
-  - inversion Hlc; subst; apply guarded_pskl__arrow; assumption.
+  - auto with frost.
+  - inversion Hlc; subst; auto with frost.
 Qed.
 
 Lemma guarded_pskl_head : forall P, guarded_pskl P -> pskl_guarded_head P.
@@ -1604,14 +1597,14 @@ Lemma a_wf_pskl_top_guarded : forall Θ Δ P,
   a_wf_pskl Θ Δ P -> pskl_top_guarded P.
 Proof.
   intros Θ Δ P H; induction H; simpl; try exact I.
-  - (* arrow *) split; assumption.
+  - (* arrow *) auto.
   - (* all : strip the fresh opener via the open_rec congruence *)
     destruct (atom_fresh L) as [X HX].
     apply (proj2 (pskl_top_guarded_open_rec P X 0)).
     match goal with IH : forall X, X `notin` L -> pskl_top_guarded _ |- _ =>
       exact (IH X HX) end.
   - (* tophole : guarded body ⟹ guarded_head + IH *)
-    split; [ apply guarded_pskl_head; assumption | assumption ].
+    auto using guarded_pskl_head.
 Qed.
 
 (** ghost-free (no ghosts at all) ⟹ top-guarded (no ⊤◇ to check). *)
@@ -1629,8 +1622,7 @@ Lemma pskl_guarded_head_subst_mono : forall P τ β,
   pskl_guarded_head (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
 Proof.
   intros P τ β Hg Hm; destruct P; simpl in Hg |- *; try contradiction; try exact I.
-  destruct_if;
-    [ apply pskl_guarded_head_ptyp_mono; exact Hm | exact I ].
+  destruct_if; auto using pskl_guarded_head_ptyp_mono.
 Qed.
 
 Lemma pskl_top_guarded_subst_mono : forall P τ β,
@@ -1639,13 +1631,11 @@ Lemma pskl_top_guarded_subst_mono : forall P τ β,
 Proof.
   induction P; intros τ β Hg Hm; simpl in Hg |- *; try exact I.
   - (* var_f : β↦τ or itself, both top_guarded *)
-    destruct_if;
-      [ apply pskl_ghost_free_top_guarded; apply ptyp_to_pskl_ghost_free
-      | exact I ].
-  - (* arrow *) destruct Hg as [Hg1 Hg2]; split; [ apply IHP1 | apply IHP2 ]; assumption.
-  - (* all *) apply IHP; assumption.
-  - (* tophole *) destruct Hg as [Hgh Ht]; split;
-      [ apply pskl_guarded_head_subst_mono; assumption | apply IHP; assumption ].
+    destruct_if; auto using pskl_ghost_free_top_guarded, ptyp_to_pskl_ghost_free.
+  - (* arrow *) destruct Hg as [Hg1 Hg2]; auto using IHP1, IHP2.
+  - (* all *) auto using IHP.
+  - (* tophole *) destruct Hg as [Hgh Ht];
+      auto using pskl_guarded_head_subst_mono, IHP.
 Qed.
 
 (** TY anchor: the [a_guess_mono] output painting's decoration extends the
@@ -1729,36 +1719,33 @@ Lemma is_tskl_rename_var : forall ψ X Y,
   is_tskl ψ -> is_tskl (subst_bskl_in_uskl (uskl_var_f Y) X ψ).
 Proof.
   intros ψ X Y H; induction H; simpl.
-  - apply is_tskl__unit.
-  - destruct_if;
-      apply is_tskl__var.
-  - apply is_tskl__arrow; assumption.
+  - auto with frost.
+  - destruct_if; auto with frost.
+  - auto with frost.
   - apply is_tskl__all_etag with (L := L `union` singleton X); intros Z HZ.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - HZ; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall X, X `notin` L -> _ |- _ =>
       apply (IH Z ltac:(clear - HZ; fsetdec)) end.
-  - apply is_tskl__holeg.
-  - apply is_tskl__topholeg; assumption.
+  - auto with frost.
+  - auto with frost.
 Qed.
 
 Lemma d_tags_skl_rename_var : forall Ψ ψ X Y,
   d_tags_skl Ψ ψ -> d_tags_skl Ψ (subst_bskl_in_uskl (uskl_var_f Y) X ψ).
 Proof.
   intros Ψ ψ X Y H; induction H; simpl.
-  - apply d_tags_skl__unit; assumption.
-  - destruct_if;
-      apply d_tags_skl__var; assumption.
-  - eapply d_tags_skl__arrow;
-      [ apply IHd_tags_skl1 | apply IHd_tags_skl2 | assumption | assumption ].
+  - auto with frost.
+  - destruct_if; auto with frost.
+  - eauto with frost.
   - eapply d_tags_skl__all_etag with (L := L `union` singleton X) (Ψ0 := Ψ0);
       [ intros Z HZ | assumption | assumption ].
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       [ | clear - HZ; fsetdec | apply lc_uskl_var_f ].
     match goal with IH : forall X, X `notin` L -> _ |- _ =>
       apply (IH Z ltac:(clear - HZ; fsetdec)) end.
-  - apply d_tags_skl__holeg; assumption.
-  - apply d_tags_skl__topholeg; assumption.
+  - auto with frost.
+  - auto with frost.
 Qed.
 
 Lemma dec_ext_rename_var : forall P ψ Ψ,
@@ -1767,11 +1754,9 @@ Lemma dec_ext_rename_var : forall P ψ Ψ,
                       (subst_bskl_in_uskl (uskl_var_f Y) X ψ) Ψ.
 Proof.
   intros P ψ Ψ H; induction H; intros Xr Yr; simpl.
-  - apply dec_ext__hole; [ apply is_tskl_rename_var; assumption
-                         | apply d_tags_skl_rename_var; assumption ].
-  - apply dec_ext__unit; assumption.
-  - destruct_if;
-      apply dec_ext__var; assumption.
+  - auto using is_tskl_rename_var, d_tags_skl_rename_var with frost.
+  - auto with frost.
+  - destruct_if; auto with frost.
   - eapply dec_ext__arrow; [ apply IHdec_ext1 | apply IHdec_ext2 | assumption ].
   - apply dec_ext__all with (L := L `union` singleton Xr); intros Z HZ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
@@ -1791,23 +1776,13 @@ Proof.
         match goal with IH : forall a, a `notin` L -> forall b c, _ |- _ =>
           apply (IH Z ltac:(clear - HZ; fsetdec)) end
       | assumption ].
-  - destruct_if;
-      apply dec_ext__flex_forget; assumption.
+  - destruct_if; auto with frost.
 Qed.
 
 (** A [dec_ext] subject is a decorated skeleton. *)
 Lemma dec_ext_is_tskl : forall P ψ Ψ, dec_ext P ψ Ψ -> is_tskl ψ.
 Proof.
-  intros P ψ Ψ H; induction H.
-  - assumption.
-  - apply is_tskl__unit.
-  - apply is_tskl__var.
-  - apply is_tskl__arrow; assumption.
-  - apply is_tskl__all_etag with (L := L); assumption.
-  - assumption.
-  - apply is_tskl__topholeg; assumption.
-  - apply is_tskl__all_etag with (L := L); assumption.
-  - apply is_tskl__var.
+  intros P ψ Ψ H; induction H; eauto with frost.
 Qed.
 
 (** A solve_eq output against a GUARDED target has a guarded head (no rule
@@ -1817,7 +1792,7 @@ Lemma solve_eq_guarded_r_head : forall Θ P Q P',
 Proof.
   intros Θ P Q P' H; induction H; intros Hg; simpl;
     try exact I; try (inversion Hg; fail).
-  - (* hole_l : P'=Q *) inversion Hg; subst; simpl; exact I.
+  - (* hole_l : P'=Q *) inversion Hg; subst; simpl; auto.
   - (* tophole_l_guarded *) apply IHa_solve_eq; assumption.
 Qed.
 
@@ -1827,7 +1802,7 @@ Lemma solve_eq_guarded_l_head : forall Θ P Q P',
 Proof.
   intros Θ P Q P' H; induction H; intros Hg; simpl;
     try exact I; try (inversion Hg; fail).
-  - (* hole_r : P'=P *) inversion Hg; subst; simpl; exact I.
+  - (* hole_r : P'=P *) inversion Hg; subst; simpl; auto.
   - (* tophole_r_guarded *) apply IHa_solve_eq; assumption.
 Qed.
 
@@ -1838,12 +1813,12 @@ Lemma dec_ext_head_guarded_erase : forall P ψ Ψ,
   dec_ext P ψ Ψ -> pskl_guarded_head P -> guarded_pskl ⌊ ψ ⌋ˢ.
 Proof.
   intros P ψ Ψ H Hh; inversion H; subst; simpl in Hh; try contradiction; simpl.
-  - apply guarded_pskl__unit.
-  - apply guarded_pskl__var.
+  - auto with frost.
+  - auto with frost.
   - apply guarded_pskl__arrow;
       apply lc_uskl_to_pskl_local; apply is_tskl_lc;
       eapply dec_ext_is_tskl; eassumption.
-  - apply guarded_pskl__var.
+  - auto with frost.
 Qed.
 
 (** COVERAGE (unconditional — the paper's provenance, with NO side condition
@@ -2200,11 +2175,10 @@ Lemma dec_ext_guarded_uskl : forall P ψ Ψ,
   dec_ext P ψ Ψ -> guarded_pskl P -> is_tskl ψ -> guarded_uskl ψ.
 Proof.
   intros P ψ Ψ H Hg Hik; inversion H; subst; try (inversion Hg; fail).
-  - apply guarded_uskl__unit.
-  - apply guarded_uskl__var.
-  - apply is_tskl_lc in Hik; inversion Hik; subst;
-      apply guarded_uskl__arrow; assumption.
-  - apply guarded_uskl__var.
+  - auto with frost.
+  - auto with frost.
+  - apply is_tskl_lc in Hik; inversion Hik; subst; auto with frost.
+  - auto with frost.
 Qed.
 
 (** FORWARD STEP (sub): the terminal [sub m Q] constraint — UNCONDITIONAL. *)

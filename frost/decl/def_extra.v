@@ -244,6 +244,11 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
     d_tags_skl Ψ R ->
     d_tags_skl Ψ (uskl_topholeg R).
 
+(* Constructor hints for the tag-reading judgments (structural over the
+   type / skeleton shape): [eauto] discharges their constructor-dispatch
+   proofs.  The larger relational judgments below are NOT hinted. *)
+#[export] Hint Constructors d_tags d_tags_skl : frost.
+
 (* ===================================================================== *)
 (*  Type consistency and subtyping                                        *)
 (* ===================================================================== *)

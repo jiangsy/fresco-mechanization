@@ -102,3 +102,10 @@ Inductive no_forall_bskl : bskl -> Prop :=
 | no_forall_bskl__hole    : no_forall_bskl bskl_hole
 | no_forall_bskl__tophole : forall Q,
     no_forall_bskl Q -> no_forall_bskl (bskl_tophole Q).
+
+(* Constructor hints for the small structural predicates (mono / is_syn·is_inh /
+   guardedness / syn-skeleton shape): dispatched trivially in metatheory, so
+   [auto] / [eauto] handle those cases. *)
+#[export] Hint Constructors mono_ptyp mono_btyp mono_utyp is_syn is_inh
+  is_ttyp_utyp guarded_btyp guarded_utyp guarded_bskl guarded_uskl
+  is_syn_bskl no_forall_bskl : frost.

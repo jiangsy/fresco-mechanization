@@ -90,6 +90,10 @@ Inductive uskl_ghost_free : uskl -> Prop :=
        uskl_ghost_free (open_uskl_wrt_uskl S (uskl_var_f X))) ->
     uskl_ghost_free (uskl_all_syn S).
 
+(* Constructor hint (dedicated [frost] db): ghost-freeness is dispatched
+   structurally in metatheory. *)
+#[export] Hint Constructors uskl_ghost_free : frost.
+
 (** [Θ ⊢^N tags{Ψg}{ψg}] (decorated ForallL premise, decorated-algosub:93):
     for [SK], ψg is a decorated skeleton ([is_tskl] + [tags{Ψg}]); for [TY],
     ψg is a decorated TYPE — additionally ghost-free. *)
