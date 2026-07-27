@@ -16,6 +16,7 @@ Require Import Metalib.Metatheory.
 From Hammer Require Export Tactics.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
 Require Import src.frost.predicates.
@@ -713,7 +714,7 @@ Proof.
   intros Δ Γ C B H. induction H; intros Γ1 Γ2 X0 ph Heq Hwf Htt; subst; simpl.
   - apply d_consis__unit. assumption.
   - (* var: [X = X0] uses the base fact; [X <> X0] stays a variable. *)
-    match goal with |- context [ if ?d then _ else _ ] => destruct d end.
+    destruct_if.
     + eapply d_consis_equiv; [ | apply d_consis_ttyp_refl; assumption ]. fsetdec.
     + apply d_consis__var; [ analyze_binds H; auto | assumption ].
   - eapply d_consis__arrow;

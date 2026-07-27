@@ -12,6 +12,7 @@ Require Import Metalib.Metatheory.
 Require Import src.frost.notations.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.prop_ln.
 Require Import src.frost.prop_basic.
 Require Import src.frost.decl.def_extra.
@@ -241,9 +242,7 @@ Lemma guarded_pskl_subst : forall A Q β,
 Proof.
   intros A Q β Hg Hlc Hne; inversion Hg; subst; simpl.
   - constructor.
-  - match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e
-    end; [ exfalso; congruence | constructor ].
+  - destruct_if; [ exfalso; congruence | constructor ].
   - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
 Qed.
 
@@ -264,9 +263,7 @@ Proof.
               (subst_pskl_in_pskl Q β P) ∼[ α ] P' ⤳ Ξ ⨾ C));
     intros; simpl.
   - (* LS-Var *)
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e
-    end; [ exfalso; congruence | apply a_looksub__var ].
+    destruct_if; [ exfalso; congruence | apply a_looksub__var ].
   - (* LS-Absent *)
     apply a_looksub__absent.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P Q β).
@@ -280,9 +277,7 @@ Proof.
       apply a_looksub__check;
         [ intro Hc; discriminate Hc | constructor | assumption | auto ].
     + (* var X *)
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
-      end.
+      destruct_if as [-> | HneX].
       * (* X = β : the source became α-free — switch to Absent *)
         match goal with
         | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
@@ -318,9 +313,7 @@ Proof.
   - (* LS-UnivGhostL *)
     apply a_looksub__univ_ghost_l. auto.
   - (* LE-Var *)
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e
-    end; [ exfalso; congruence | apply a_lookeq__var ].
+    destruct_if; [ exfalso; congruence | apply a_lookeq__var ].
   - (* LE-Absent *)
     apply a_lookeq__absent.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P Q β).
@@ -331,9 +324,7 @@ Proof.
     apply a_lookeq__flex_r.
     + intro Hc. destruct P; simpl in Hc; try discriminate Hc.
       revert Hc.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
-      end; intro Hc.
+      destruct_if as [-> | HneX]; intro Hc.
       * (* X = β : then α ∈ ftv (var β) forces α = β, contradiction *)
         simpl in *. fsetdec.
       * inversion Hc; subst. congruence.
@@ -378,9 +369,7 @@ Proof.
       apply a_lookeq__univ_ghost_r;
         [ intro Hc; discriminate Hc | constructor | auto ].
     + (* var X *)
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
-      end.
+      destruct_if as [-> | HneX].
       * (* X = β : the source became α-free — switch to Absent *)
         match goal with
         | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
@@ -424,9 +413,7 @@ Lemma ftv_subst_var_in : forall P α α',
 Proof.
   induction P as [ | | γ | | | | ]; intros α α' Hin; simpl in *;
     try solve [ exfalso; fsetdec ].
-  - match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end; simpl; [ fsetdec | exfalso; fsetdec ].
+  - destruct_if as [-> | Hne]; simpl; [ fsetdec | exfalso; fsetdec ].
   - destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P1)) as [Hi | Hni];
       [ pose proof (IHP1 _ α' Hi) | ];
       destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P2)) as [Hi2 | Hni2];
@@ -452,10 +439,8 @@ Proof.
               (subst_pskl_in_pskl (pskl_var_f α') α P) ∼[ α' ] P' ⤳ Ξ ⨾ C));
     intros; simpl.
   - (* LS-Var *)
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hne];
-        [ | exfalso; congruence ]
-    end.
+    destruct_if as [_ | Hne];
+        [ | exfalso; congruence ].
     apply a_looksub__var.
   - (* LS-Absent *)
     rewrite subst_pskl_in_pskl_fresh_eq; [ | assumption ].
@@ -466,9 +451,7 @@ Proof.
     apply a_looksub__check.
     + intro Hc. destruct A; simpl in Hc; try discriminate Hc.
       revert Hc.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
-      end; intro Hc; [ congruence | ].
+      destruct_if as [-> | HneX]; intro Hc; [ congruence | ].
       inversion Hc; subst. simpl in *. fsetdec.
     + apply guarded_pskl_subst_var; assumption.
     + assumption.
@@ -500,10 +483,8 @@ Proof.
   - (* LS-UnivGhostL *)
     apply a_looksub__univ_ghost_l. auto.
   - (* LE-Var *)
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hne];
-        [ | exfalso; congruence ]
-    end.
+    destruct_if as [_ | Hne];
+        [ | exfalso; congruence ].
     apply a_lookeq__var.
   - (* LE-Absent *)
     rewrite subst_pskl_in_pskl_fresh_eq; [ | assumption ].
@@ -575,9 +556,7 @@ Proof.
     apply a_lookeq__univ_ghost_r.
     + intro Hc. destruct P; simpl in Hc; try discriminate Hc.
       revert Hc.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | HneX]
-      end; intro Hc; [ congruence | ].
+      destruct_if as [-> | HneX]; intro Hc; [ congruence | ].
       inversion Hc; subst. simpl in *. fsetdec.
     + apply guarded_pskl_subst_var; assumption.
     + auto.

@@ -124,7 +124,7 @@ Lemma guarded_pskl_subst_unit : forall P X,
 Proof.
   intros P X H. induction H; simpl.
   - apply guarded_pskl__unit.
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+  - destruct_if;
       [ apply guarded_pskl__unit | apply guarded_pskl__var ].
   - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; (assumption || apply lc_pskl_unit).
 Qed.
@@ -134,7 +134,7 @@ Lemma guarded_uskl_subst_unit : forall R X,
 Proof.
   intros R X H. induction H; simpl.
   - apply guarded_uskl__unit.
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+  - destruct_if;
       [ apply guarded_uskl__unit | apply guarded_uskl__var ].
   - apply guarded_uskl__arrow; apply subst_bskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_unit).
 Qed.
@@ -146,7 +146,7 @@ Lemma d_wf_pskl_subst_unit : forall Ψ Γ P,
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_wf_pskl__unit.
-  - simpl. match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+  - simpl. destruct_if.
     + apply d_wf_pskl__unit.
     + apply d_wf_pskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
       analyze_binds Hb; auto.
@@ -167,7 +167,7 @@ Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_wf_uskl__unit.
-  - simpl. match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+  - simpl. destruct_if.
     + apply d_wf_uskl__unit.
     + apply d_wf_uskl__var. destruct H as [HΨ | Hb]; [ left; assumption | right ].
       analyze_binds Hb; auto.
@@ -195,7 +195,7 @@ Lemma pskl_to_bskl_inh_subst_unit : forall P X,
 Proof.
   induction P; intros X; simpl; try reflexivity;
     try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 Lemma is_sskl_subst_unit : forall Q X,
@@ -203,7 +203,7 @@ Lemma is_sskl_subst_unit : forall Q X,
 Proof.
   intros Q X H. induction H; simpl.
   - apply is_sskl__unit.
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+  - destruct_if;
       [ apply is_sskl__unit | apply is_sskl__var ].
   - apply is_sskl__arrow; assumption.
   - apply is_sskl__all with (L := L `union` {{X}}). intros Y HY.
@@ -229,7 +229,7 @@ Lemma is_tskl_subst_unit : forall R X,
 Proof.
   intros R X H. induction H; simpl.
   - apply is_tskl__unit.
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+  - destruct_if;
       [ apply is_tskl__unit | apply is_tskl__var ].
   - apply is_tskl__arrow; assumption.
   - apply is_tskl__all_etag with (L := L `union` {{X}}). intros Y HY.
@@ -244,7 +244,7 @@ Lemma guarded_bskl_subst_unit : forall Q X,
 Proof.
   intros Q X H. induction H; simpl.
   - apply guarded_bskl__unit.
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+  - destruct_if;
       [ apply guarded_bskl__unit | apply guarded_bskl__var ].
   - apply guarded_bskl__arrow; apply subst_bskl_in_bskl_lc_bskl; (assumption || apply lc_bskl_unit).
 Qed.
@@ -254,7 +254,7 @@ Lemma d_tags_skl_subst_unit : forall Δ R X,
 Proof.
   intros Δ R X H. induction H; simpl.
   - apply d_tags_skl__unit; (assumption || fsetdec).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+  - destruct_if;
       [ apply d_tags_skl__unit; (assumption || fsetdec)
       | apply d_tags_skl__var; (assumption || fsetdec) ].
   - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
@@ -273,7 +273,7 @@ Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
 Proof.
   intros Δ Γ R Q H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_pat_consis__unit; (assumption || fsetdec).
-  - simpl. match goal with |- context [ if ?b then _ else _ ] => destruct b end.
+  - simpl. destruct_if.
     + apply d_pat_consis__unit; (assumption || fsetdec).
     + apply d_pat_consis__var; [ (assumption || fsetdec) | ]; match goal with Hb : binds _ _ _ |- _ => analyze_binds Hb end; auto.
   - simpl. eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | (eassumption || fsetdec) ]; eauto.
@@ -398,7 +398,7 @@ Lemma is_value_subst_var : forall e x y,
 Proof.
   intros e x y H. induction H; simpl;
     [ apply is_value__unit
-    | match goal with |- context [ if ?b then _ else _ ] => destruct b end;
+    | destruct_if;
       apply is_value__var
     | apply is_value__abs | apply is_value__abs_anno
     | apply is_value__anno; assumption ].
@@ -411,7 +411,7 @@ Lemma d_pat_subst_var : forall m Γ e Q,
 Proof.
   intros m Γ e Q H. induction H; intros x0 y0 d0 Huniq Hbx Hby; simpl.
   - apply d_pat__unit. exact H.
-  - (* var *) match goal with |- context [ if ?b then _ else _ ] => destruct b as [Heq | Hne] end.
+  - (* var *) destruct_if as [Heq | Hne].
     + subst x. assert (d = d0) by (eapply binds_unique; eauto). subst d.
       apply d_pat__var with (d := d0) (P := P); [ exact Hby | exact H0 | exact H1 ].
     + apply d_pat__var with (d := d) (P := P); [ exact H | exact H0 | exact H1 ].
@@ -453,7 +453,7 @@ Lemma d_typing_subst_var : forall m Γ e B,
 Proof.
   intros m Γ e B H. induction H; intros x0 y0 T Huniq Hbx Hby; simpl.
   - apply d_typing__unit.
-  - (* var *) match goal with |- context [ if ?b then _ else _ ] => destruct b as [Heq | Hne] end.
+  - (* var *) destruct_if as [Heq | Hne].
     + subst x. assert (dbind_typ A = dbind_typ T) by (eapply binds_unique; eauto).
       match goal with He : dbind_typ _ = dbind_typ _ |- _ => inversion He; subst end.
       apply d_typing__var; exact Hby.

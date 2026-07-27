@@ -151,7 +151,7 @@ Lemma d_tags_subst_tvar : forall Δ C X Y,
 Proof.
   intros Δ C X Y H. induction H; simpl.
   - apply d_tags__unit; assumption.
-  - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
+  - destruct_if;
       apply d_tags__var; assumption.
   - eapply d_tags__arrow; [ eassumption | eassumption | assumption | assumption ].
   - inst_cofinites_for d_tags__all_etag Ψ0 := Ψ0; [ | assumption | assumption ].

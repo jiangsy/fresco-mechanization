@@ -23,6 +23,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.prop_basic.
 Require Import src.frost.predicates.
@@ -258,7 +259,7 @@ Lemma d_tags_subst_unit : forall Δ C X,
 Proof.
   intros Δ C X H. induction H; simpl.
   - apply d_tags__unit; assumption.
-  - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
+  - destruct_if;
       [ apply d_tags__unit | apply d_tags__var ]; assumption.
   - eapply d_tags__arrow; [ eassumption | eassumption | assumption | assumption ].
   - apply d_tags__all_etag with (L := L `union` {{X}}) (Ψ0 := Ψ0).
@@ -279,7 +280,7 @@ Lemma d_wf_utyp_subst_unit : forall Γ C,
 Proof.
   intros Γ C H. induction H; intros Γ1 X0 Γ2 Heq; subst; simpl.
   - apply d_wf_utyp__unit.
-  - match goal with |- context [ if ?d then _ else _ ] => destruct d end;
+  - destruct_if;
       [ apply d_wf_utyp__unit | apply d_wf_utyp__var; analyze_binds H ].
   - apply d_wf_utyp__arrow; [ eapply IHd_wf_utyp1 | eapply IHd_wf_utyp2 ]; reflexivity.
   - apply d_wf_utyp__all_syn with (L := L `union` dom (Γ1 ++ Γ2) `union` {{X0}}).
@@ -365,7 +366,7 @@ Lemma pskl_to_bskl_syn_subst_unit : forall P X,
 Proof.
   induction P; intros X; simpl; try reflexivity;
     try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 (* tvar:=unit substitution for skeleton refinement (mirrors
@@ -380,7 +381,7 @@ Lemma d_refine_syn_subst_unit : forall Γ Δi Q P,
 Proof.
   intros Γ Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq; subst; simpl.
   - apply d_refine_syn__unit.
-  - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
+  - destruct_if.
     + apply d_refine_syn__unit.
     + apply d_refine_syn__var. destruct H as [HI | Hb];
         [ left; assumption | right; analyze_binds Hb ].
@@ -439,7 +440,7 @@ Lemma bskl_to_uskl_subst_unit : forall Q X,
 Proof.
   induction Q; intros X; simpl; try reflexivity;
     try (rewrite IHQ1, IHQ2; reflexivity); try (rewrite IHQ; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 (** A context is [tvar_clean] for [X0] when no term-/skl-binding carries [X0]
@@ -479,7 +480,7 @@ Lemma ptyp_to_pskl_subst_unit : forall A X,
 Proof.
   induction A; intros X; simpl; try reflexivity;
     try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 Lemma ptyp_to_btyp_syn_subst_unit : forall A X,
@@ -488,7 +489,7 @@ Lemma ptyp_to_btyp_syn_subst_unit : forall A X,
 Proof.
   induction A; intros X; simpl; try reflexivity;
     try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 Lemma ptyp_to_btyp_inh_subst_unit : forall A X,
@@ -497,7 +498,7 @@ Lemma ptyp_to_btyp_inh_subst_unit : forall A X,
 Proof.
   induction A; intros X; simpl; try reflexivity;
     try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 Lemma ptyp_to_utyp_syn_subst_unit : forall A X,
@@ -506,7 +507,7 @@ Lemma ptyp_to_utyp_syn_subst_unit : forall A X,
 Proof.
   induction A; intros X; simpl; try reflexivity;
     try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 Lemma btyp_to_bskl_subst_unit : forall B X,
@@ -515,7 +516,7 @@ Lemma btyp_to_bskl_subst_unit : forall B X,
 Proof.
   induction B; intros X; simpl; try reflexivity;
     try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 Lemma btyp_to_ptyp_subst_unit : forall B X,
@@ -524,7 +525,7 @@ Lemma btyp_to_ptyp_subst_unit : forall B X,
 Proof.
   induction B; intros X; simpl; try reflexivity;
     try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
-  - match goal with |- context [ if ?b then _ else _ ] => destruct b end; reflexivity.
+  - destruct_if; reflexivity.
 Qed.
 
 (* [is_value] is stable under any [ptyp]-substitution. *)

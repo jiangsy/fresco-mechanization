@@ -11,6 +11,7 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.prop_ln.
@@ -119,7 +120,7 @@ Lemma uskl_to_pskl_subst : forall ψ ψg β,
   = subst_pskl_in_pskl ⌊ ψg ⌋ˢ β ⌊ ψ ⌋ˢ.
 Proof.
   induction ψ; intros ψg β; simpl; try (f_equal; auto; fail).
-  match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  destruct_if;
     reflexivity.
 Qed.
 
@@ -163,7 +164,7 @@ Proof.
   induction ρ as [ | [γ ψg] ρ' IH ]; intros β Hβ; simpl; [ reflexivity | ].
   rewrite IH; [ | simpl in Hβ; clear - Hβ; fsetdec ].
   simpl.
-  match goal with |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne] end;
+  destruct_if as [-> | Hne];
     [ simpl in Hβ; exfalso; clear - Hβ; fsetdec | reflexivity ].
 Qed.
 
@@ -195,7 +196,7 @@ Proof.
   assert (HXf : X `notin` ftvar_in_uskl ψg)
     by (eapply Hftv; unfold binds; simpl; left; reflexivity).
   simpl.
-  match goal with |- context [ if ?e then _ else _ ] => destruct e as [-> | _] end;
+  destruct_if as [-> | _];
     [ contradiction | reflexivity ].
 Qed.
 (* general erasure/open commute (open with an arbitrary skeleton) *)
@@ -1079,7 +1080,7 @@ Lemma guarded_pskl_subst_var : forall B X Y,
 Proof.
   intros B X Y Hg; inversion Hg; subst; simpl.
   - constructor.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       constructor.
   - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
 Qed.
@@ -1115,9 +1116,7 @@ Proof.
     try solve [ eapply a_solvetag_sub__arrow; eauto ];
     try solve [ eapply a_solvetag_eq__arrow; eauto ];
     (* FlexR: the target variable itself may be renamed *)
-    try solve [ match goal with
-                | |- context [ if ?e then _ else _ ] => destruct e
-                end;
+    try solve [ destruct_if;
                 apply a_solvetag_eq__flex_r; assumption ];
     (* ∀-targets: push the rename under the target binder *)
     try solve [ apply a_solvetag_sub__forall_r
@@ -1810,9 +1809,7 @@ Proof.
     try solve [ inversion Hnas ].
   - (* var_f *)
     revert Hnas.
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end; intro Hnas; [ exact Hnas | exfalso; fsetdec ].
+    destruct_if as [-> | Hne]; intro Hnas; [ exact Hnas | exfalso; fsetdec ].
   - (* arrow *)
     inversion Hnas; subst.
     destruct (AtomSetImpl.union_1 Hin);
@@ -1846,10 +1843,8 @@ Proof.
     { destruct S0; simpl in HeS; try discriminate; congruence. }
     subst S0. simpl in Hnas |- *.
     revert Hnas.
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hne];
-        [ | exfalso; congruence ]
-    end.
+    destruct_if as [_ | Hne];
+        [ | exfalso; congruence ].
     intro Hnas.
     inversion Hst; subst.
     match goal with
@@ -1948,10 +1943,8 @@ Proof.
       try solve [ inversion HlcS ].
     simpl in Hcons, HwfSub |- *.
     revert Hcons HwfSub.
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hne];
-        [ | exfalso; congruence ]
-    end.
+    destruct_if as [_ | Hne];
+        [ | exfalso; congruence ].
     intros Hcons HwfSub.
     inversion Hst; subst.
     match goal with
@@ -2718,9 +2711,7 @@ Proof.
     try exact Hg; try solve [ inversion Hg ].
   - (* var *)
     revert Hg.
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end; intro Hg; [ | exact Hg ].
+    destruct_if as [-> | Hne]; intro Hg; [ | exact Hg ].
     apply guarded_uskl_of_pskl.
     apply guarded_uskl_to_pskl_fwd in Hg.
     rewrite uskl_to_pskl_pskl_to_uskl in Hg. exact Hg.

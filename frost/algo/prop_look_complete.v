@@ -49,6 +49,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.prop_basic.
@@ -531,7 +532,7 @@ Lemma guarded_pskl_rename : forall A X Y,
 Proof.
   intros A X Y Hg; inversion Hg; subst; simpl.
   - constructor.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       constructor.
   - constructor;
       (apply subst_pskl_in_pskl_lc_pskl;
@@ -555,7 +556,7 @@ Proof.
   apply a_solve_sub_eq_mutind; intros; simpl;
     (* var-subject rules: the substituted subject is still a var *)
     try solve
-      [ match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+      [ destruct_if;
         constructor
       | constructor ].
   - (* SS-ForallL *)
@@ -593,7 +594,7 @@ Proof.
             destruct Hft as [Hb | [τ0 Hb]]; apply binds_In in Hb;
             intro Heq; subst; contradiction
           end).
-    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    destruct_if;
       [ exfalso; congruence | ].
     apply a_solve_eq__flex_r;
       [ assumption | apply a_non_flex_rename; assumption ].
@@ -3951,11 +3952,9 @@ Proof.
   - (* unit *) apply ad_ppre__unit; assumption.
   - (* var *)
     destruct (eq_var X Xr) as [-> | Hne].
-    + match goal with |- context [if ?c then _ else _] =>
-        destruct c as [_ | Hc]; [ | exfalso; auto ] end.
+    + destruct_if as [_ | Hc]; [ | exfalso; auto ].
       apply ad_ppre__var; [ assumption | left; clear; fsetdec ].
-    + match goal with |- context [if ?c then _ else _] =>
-        destruct c as [Hc | _]; [ exfalso; auto | ] end.
+    + destruct_if as [Hc | _]; [ exfalso; auto | ].
       apply ad_ppre__var; [ assumption | ].
       match goal with Hor : _ \/ a_binds_tvar _ _ |- _ =>
         destruct Hor as [HΔ | Hb];
@@ -4025,8 +4024,7 @@ Proof.
   - (* flex_l *)
     assert (Hne : α <> Xr).
     { intros ->. apply HXΘ. eapply binds_In; eassumption. }
-    match goal with |- context [if ?c then _ else _] =>
-      destruct c as [Hc | _]; [ exfalso; auto | ] end.
+    destruct_if as [Hc | _]; [ exfalso; auto | ].
     destruct (Hdefs _ _ H) as [HXτ HYτ].
     eapply ad_ppre__flex_l; [ eassumption | ].
     assert (Hfr : Xr `notin` ftvar_in_pskl (ptyp_to_pskl τ))
@@ -4038,8 +4036,7 @@ Proof.
   - (* flex_r *)
     assert (Hne : α <> Xr).
     { intros ->. apply HXΘ. eapply binds_In; eassumption. }
-    match goal with |- context [if ?c then _ else _] =>
-      destruct c as [Hc | _]; [ exfalso; auto | ] end.
+    destruct_if as [Hc | _]; [ exfalso; auto | ].
     destruct (Hdefs _ _ H) as [HXτ HYτ].
     eapply ad_ppre__flex_r; [ eassumption | ].
     assert (Hfr : Xr `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))

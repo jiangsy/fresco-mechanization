@@ -77,3 +77,12 @@ Tactic Notation "inst_cofinites_for" constr(R) :=
 Tactic Notation "inst_cofinites_for" constr(R) ident(name) ":=" constr(val) :=
   let _L := gather_atoms in
   apply R with (L := _L) (name := val).
+
+(* Destruct the (boolean / decidable-equality) condition of an
+   [if _ then _ else _] appearing in the goal.  Replaces the ubiquitous
+     [match goal with |- context [ if ?e then _ else _ ] => destruct e end]
+   idiom, optionally taking an intro pattern for the two branches. *)
+Tactic Notation "destruct_if" :=
+  match goal with |- context [ if ?e then _ else _ ] => destruct e end.
+Tactic Notation "destruct_if" "as" simple_intropattern(pat) :=
+  match goal with |- context [ if ?e then _ else _ ] => destruct e as pat end.

@@ -9,6 +9,7 @@ Require Import Coq.Program.Equality.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
@@ -71,7 +72,7 @@ Lemma d_consis_rename_tvar : forall Δ Γ C B,
 Proof.
   intros Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
   - apply d_consis__unit. assumption.
-  - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
+  - destruct_if.
     + apply d_consis__var; [ auto | assumption ].
     + apply d_consis__var; [ analyze_binds H; auto | assumption ].
   - eapply d_consis__arrow.
@@ -119,7 +120,7 @@ Lemma d_wf_utyp_rename_tvar : forall Γ C,
 Proof.
   intros Γ C H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
   - apply d_wf_utyp__unit.
-  - match goal with |- context [ if ?d then _ else _ ] => destruct d end.
+  - destruct_if.
     + apply d_wf_utyp__var. auto.
     + apply d_wf_utyp__var. analyze_binds H; auto.
   - apply d_wf_utyp__arrow.

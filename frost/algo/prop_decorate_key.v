@@ -6,6 +6,7 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.prop_ln.
@@ -56,10 +57,8 @@ Proof.
   rewrite subst_bskl_in_uskl_subst_bskl_in_uskl;
     [ | assumption | auto ].
   simpl.
-  match goal with
-  | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-      [ | exfalso; congruence ]
-  end.
+  destruct_if as [_ | Hc];
+      [ | exfalso; congruence ].
   rewrite (subst_bskl_in_uskl_fresh_eq S); [ reflexivity | assumption ].
 Qed.
 
@@ -113,10 +112,8 @@ Proof.
       end.
       simpl in *.
       revert HwfT Hmod.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-          [ | exfalso; congruence ]
-      end.
+      destruct_if as [_ | Hc];
+          [ | exfalso; congruence ].
       intros HwfT Hmod.
       inversion Hst; subst.
       change ψa with (msubst_uskl nil ψa).
@@ -225,10 +222,8 @@ Proof.
       end.
       simpl in HeqT |- *.
       revert HeqT HwfT.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-          [ | exfalso; congruence ]
-      end.
+      destruct_if as [_ | Hc];
+          [ | exfalso; congruence ].
       intros HeqT HwfT.
       inversion Hst; subst.
       change ψa with (msubst_uskl nil ψa).
@@ -323,9 +318,7 @@ Proof.
       try solve [ inversion HlcS0 ].
     + (* S0 = var : the strip is never a tagged ∀ *)
       revert HeqT.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc]
-      end; intro HeqT;
+      destruct_if as [_ | Hc]; intro HeqT;
       [ exfalso; eapply pskl_to_uskl_not_etag; symmetry; exact HeqT
       | discriminate HeqT ].
     + (* S0 = all_etag ε0 S0 *)
@@ -560,18 +553,14 @@ Proof.
       try solve [ inversion HlcS0 ].
     + (* S0 = var : the strip itself is the ∀ source *)
       revert HeqT HwfT.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
-      end; intros HeqT HwfT; [ | discriminate HeqT ].
+      destruct_if as [-> | Hc]; intros HeqT HwfT; [ | discriminate HeqT ].
       simpl in HD.
       inversion HD; subst.
       * (* LS-Var : the decoration-var route *)
         inversion Hst; subst.
         simpl.
-        match goal with
-        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-            [ | exfalso; congruence ]
-        end.
+        destruct_if as [_ | Hc];
+            [ | exfalso; congruence ].
         change ψa with (msubst_uskl nil ψa).
         eapply a_subtag_decoration_var;
           [ eapply a_subtag__forall_l_untagged
@@ -594,10 +583,8 @@ Proof.
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         inversion Hst; subst.
         simpl.
-        match goal with
-        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-            [ | exfalso; congruence ]
-        end.
+        destruct_if as [_ | Hc];
+            [ | exfalso; congruence ].
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ | match goal with He : Ψa [=] empty |- _ =>
                 clear - He; fsetdec end ].
@@ -843,18 +830,14 @@ Proof.
       try solve [ inversion HlcS0 ].
     + (* S0 = var *)
       revert HeqT.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
-      end; intro HeqT; [ | discriminate HeqT ].
+      destruct_if as [-> | Hc]; intro HeqT; [ | discriminate HeqT ].
       simpl in HD.
       inversion HD; subst.
       * (* LS-Var : decoration-var at ρ = nil *)
         inversion Hst; subst.
         simpl.
-        match goal with
-        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-            [ | exfalso; congruence ]
-        end.
+        destruct_if as [_ | Hc];
+            [ | exfalso; congruence ].
         change ψa with (msubst_uskl nil ψa).
         eapply a_subtag_decoration_var;
           [ apply a_subtag__ghost; assumption
@@ -876,10 +859,8 @@ Proof.
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         inversion Hst; subst.
         simpl.
-        match goal with
-        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-            [ | exfalso; congruence ]
-        end.
+        destruct_if as [_ | Hc];
+            [ | exfalso; congruence ].
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ | match goal with He : Ψa [=] empty |- _ =>
                 clear - He; fsetdec end ].
@@ -913,9 +894,7 @@ Proof.
       try solve [ inversion HlcS0 ].
     + (* S0 = var : the strip is never dotted *)
       revert HeqT.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
-      end; intro HeqT;
+      destruct_if as [-> | Hc]; intro HeqT;
       [ exfalso; eapply pskl_to_uskl_not_holeg; symmetry; exact HeqT
       | discriminate HeqT ].
     + (* S0 = ◇̇ : P0 = ◇ is pinned by the rule *)
@@ -933,18 +912,14 @@ Proof.
       try solve [ inversion HlcS0 ].
     + (* S0 = var *)
       revert HeqT HwfT.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
-      end; intros HeqT HwfT; [ | discriminate HeqT ].
+      destruct_if as [-> | Hc]; intros HeqT HwfT; [ | discriminate HeqT ].
       simpl in HD.
       inversion HD; subst.
       * (* LS-Var : decoration-var at ρ = nil *)
         inversion Hst; subst.
         simpl.
-        match goal with
-        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-            [ | exfalso; congruence ]
-        end.
+        destruct_if as [_ | Hc];
+            [ | exfalso; congruence ].
         change ψa with (msubst_uskl nil ψa).
         eapply a_subtag_decoration_var;
           [ apply a_subtag__univ_ghost_l; eassumption
@@ -966,10 +941,8 @@ Proof.
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         inversion Hst; subst.
         simpl.
-        match goal with
-        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-            [ | exfalso; congruence ]
-        end.
+        destruct_if as [_ | Hc];
+            [ | exfalso; congruence ].
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ | match goal with He : Ψa [=] empty |- _ =>
                 clear - He; fsetdec end ].
@@ -1049,9 +1022,7 @@ Proof.
       try solve [ inversion HlcS0 ].
     + (* S0 = var : the strip is never dotted *)
       revert HeqT.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
-      end; intro HeqT;
+      destruct_if as [-> | Hc]; intro HeqT;
       [ exfalso; eapply pskl_to_uskl_not_topholeg; symmetry; exact HeqT
       | discriminate HeqT ].
     + (* S0 = ⊤◇̇.S0 *)
@@ -1114,19 +1085,15 @@ Proof.
       try discriminate HeqT;
       try solve [ inversion HlcS0 ].
     revert HeqT.
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hc]
-    end; intro HeqT.
+    destruct_if as [-> | Hc]; intro HeqT.
     + (* eq : the strip is the flexible variable — decoration-var *)
       simpl in HD.
       inversion HD; subst.
       * (* LS-Var *)
         inversion Hst; subst.
         simpl.
-        match goal with
-        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-            [ | exfalso; congruence ]
-        end.
+        destruct_if as [_ | Hc];
+            [ | exfalso; congruence ].
         change ψa with (msubst_uskl nil ψa).
         eapply a_subtag_decoration_var;
           [ apply a_subtag__flex_mono; eassumption
@@ -1148,10 +1115,8 @@ Proof.
       * (* LS-Vacuous : P0 = ◇, erasure-determined *)
         inversion Hst; subst.
         simpl.
-        match goal with
-        | |- context [ if ?e then _ else _ ] => destruct e as [_ | Hc];
-            [ | exfalso; congruence ]
-        end.
+        destruct_if as [_ | Hc];
+            [ | exfalso; congruence ].
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ | match goal with He : Ψa [=] empty |- _ =>
                 clear - He; fsetdec end ].
@@ -1166,10 +1131,8 @@ Proof.
                   ltac:(simpl; clear - Hc; fsetdec)) as [-> ->].
       inversion Hst; subst.
       simpl.
-      match goal with
-      | |- context [ if ?e then _ else _ ] => destruct e as [Habs | _];
-          [ exfalso; congruence | ]
-      end.
+      destruct_if as [Habs | _];
+          [ exfalso; congruence | ].
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ apply a_subtag__flex_mono; eassumption
         | match goal with He : Ψa [=] empty |- _ =>
@@ -1248,7 +1211,7 @@ Lemma guarded_uskl_subst_var : forall ψ X Y,
 Proof.
   intros ψ X Y H; inversion H; subst; simpl.
   - apply guarded_uskl__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       apply guarded_uskl__var.
   - apply guarded_uskl__arrow;
       apply subst_bskl_in_uskl_lc_uskl; auto; apply lc_uskl_var_f.
@@ -1260,7 +1223,7 @@ Lemma uskl_ghost_free_subst_var : forall ψ X Y,
 Proof.
   intros ψ X Y H; induction H; simpl.
   - apply uskl_ghost_free__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       apply uskl_ghost_free__var.
   - apply uskl_ghost_free__arrow; assumption.
   - apply uskl_ghost_free__all_etag with (L := L `union` singleton X);
@@ -1294,7 +1257,7 @@ Proof.
               (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ));
     intros; simpl.
   - (* SSub-Var *)
-    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    destruct_if;
       apply a_solvetag_sub__var; assumption.
   - (* SSub-ForallL *)
     apply a_solvetag_sub__forall_l with (L := L `union` singleton X); intros β Hβ.
@@ -1319,7 +1282,7 @@ Proof.
   - (* SEq-Unit *)
     apply a_solvetag_eq__unit; assumption.
   - (* SEq-Var *)
-    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    destruct_if;
       apply a_solvetag_eq__var; assumption.
   - (* SEq-Vacuous *)
     apply a_solvetag_eq__vacuous; assumption.
@@ -1348,7 +1311,7 @@ Proof.
         apply guarded_pskl_subst_var; assumption
       | auto ].
   - (* SEq-FlexR : the target var may itself be renamed *)
-    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    destruct_if;
       apply a_solvetag_eq__flex_r;
       first [ apply uskl_ghost_free_subst_var; assumption | assumption ].
 Qed.
@@ -1683,7 +1646,7 @@ Lemma pskl_guarded_head_subst_mono : forall P τ β,
   pskl_guarded_head (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
 Proof.
   intros P τ β Hg Hm; destruct P; simpl in Hg |- *; try contradiction; try exact I.
-  match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  destruct_if;
     [ apply pskl_guarded_head_ptyp_mono; exact Hm | exact I ].
 Qed.
 
@@ -1693,7 +1656,7 @@ Lemma pskl_top_guarded_subst_mono : forall P τ β,
 Proof.
   induction P; intros τ β Hg Hm; simpl in Hg |- *; try exact I.
   - (* var_f : β↦τ or itself, both top_guarded *)
-    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    destruct_if;
       [ apply pskl_ghost_free_top_guarded; apply ptyp_to_pskl_ghost_free
       | exact I ].
   - (* arrow *) destruct Hg as [Hg1 Hg2]; split; [ apply IHP1 | apply IHP2 ]; assumption.
@@ -1784,7 +1747,7 @@ Lemma is_tskl_rename_var : forall ψ X Y,
 Proof.
   intros ψ X Y H; induction H; simpl.
   - apply is_tskl__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       apply is_tskl__var.
   - apply is_tskl__arrow; assumption.
   - apply is_tskl__all_etag with (L := L `union` singleton X); intros Z HZ.
@@ -1801,7 +1764,7 @@ Lemma d_tags_skl_rename_var : forall Ψ ψ X Y,
 Proof.
   intros Ψ ψ X Y H; induction H; simpl.
   - apply d_tags_skl__unit; assumption.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       apply d_tags_skl__var; assumption.
   - eapply d_tags_skl__arrow;
       [ apply IHd_tags_skl1 | apply IHd_tags_skl2 | assumption | assumption ].
@@ -1824,7 +1787,7 @@ Proof.
   - apply dec_ext__hole; [ apply is_tskl_rename_var; assumption
                          | apply d_tags_skl_rename_var; assumption ].
   - apply dec_ext__unit; assumption.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       apply dec_ext__var; assumption.
   - eapply dec_ext__arrow; [ apply IHdec_ext1 | apply IHdec_ext2 | assumption ].
   - apply dec_ext__all with (L := L `union` singleton Xr); intros Z HZ.
@@ -1845,7 +1808,7 @@ Proof.
         match goal with IH : forall a, a `notin` L -> forall b c, _ |- _ =>
           apply (IH Z ltac:(clear - HZ; fsetdec)) end
       | assumption ].
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       apply dec_ext__flex_forget; assumption.
 Qed.
 

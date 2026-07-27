@@ -35,6 +35,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.def_tags.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
@@ -1410,9 +1411,7 @@ Proof.
     apply upre__tophole_remove; apply IHHup; assumption.
   - (* flex_l *)
     assert (Hdom : α `in` dom Θ) by (eapply binds_In; exact H).
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end; [ exfalso; clear - Hdom HX; fsetdec | ].
+    destruct_if as [-> | Hne]; [ exfalso; clear - Hdom HX; fsetdec | ].
     eapply upre__flex_l; [ exact H | ].
     assert (Hfrτ : X0 `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ)).
     { rewrite ftvar_in_uskl_ptyp_syn.
@@ -1425,9 +1424,7 @@ Proof.
     exact Hrec.
   - (* flex_r *)
     assert (Hdom : α `in` dom Θ) by (eapply binds_In; exact H).
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end; [ exfalso; clear - Hdom HX; fsetdec | ].
+    destruct_if as [-> | Hne]; [ exfalso; clear - Hdom HX; fsetdec | ].
     eapply upre__flex_r; [ exact H | ].
     assert (Hfrτ : X0 `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ)).
     { rewrite ftvar_in_uskl_ptyp_syn.

@@ -31,6 +31,7 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
@@ -894,7 +895,7 @@ Lemma subst_pskl_var_eq : forall u α,
   subst_pskl_in_pskl u α (pskl_var_f α) = u.
 Proof.
   intros. simpl.
-  match goal with |- context [ if ?t then _ else _ ] => destruct t end;
+  destruct_if;
     [ reflexivity | congruence ].
 Qed.
 
@@ -903,7 +904,7 @@ Lemma subst_pskl_var_neq : forall u α s,
   subst_pskl_in_pskl u α (pskl_var_f s) = pskl_var_f s.
 Proof.
   intros. simpl.
-  match goal with |- context [ if ?t then _ else _ ] => destruct t end;
+  destruct_if;
     [ subst; congruence | reflexivity ].
 Qed.
 
@@ -961,9 +962,7 @@ Proof.
     destruct P as [ | n | δ | | | | ]; simpl in Hfl;
       try solve [ inversion Hfl ].
     revert Hfl.
-    match goal with
-    | |- context [ if ?t then _ else _ ] => destruct t as [Heqδ | Hneδ]
-    end; intro Hfl.
+    destruct_if as [Heqδ | Hneδ]; intro Hfl.
     + (* δ = α : the image is Y, whose only entry is rigid *)
       inversion Hfl; subst.
       * assert (Hcon : abind_flex_mono = abind_tvar)
@@ -1035,7 +1034,7 @@ Lemma guarded_pskl_subst_var' : forall Y α P,
 Proof.
   intros * H; inversion H; subst; simpl.
   - constructor.
-  - match goal with |- context [ if ?t then _ else _ ] => destruct t end;
+  - destruct_if;
       constructor.
   - constructor; apply subst_pskl_in_pskl_lc_pskl;
       auto using lc_pskl_var_f.

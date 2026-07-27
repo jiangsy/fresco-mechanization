@@ -140,9 +140,7 @@ Proof.
   intros Θ Δ P H; induction H;
     intros X0 Q0 Δ0 Heq Hfr HwfQ; simpl.
   - apply a_wf_pskl__unit.
-  - match goal with
-    | |- context [if ?e then _ else _] => destruct e as [-> | Hne]
-    end.
+  - destruct_if as [-> | Hne].
     + exact HwfQ.
     + apply a_wf_pskl__var.
       destruct H as [HΔ | Ht];
@@ -397,7 +395,7 @@ Lemma subst_ptyp_to_pskl_comm : forall A τ β,
     = ptyp_to_pskl (subst_ptyp_in_ptyp τ β A).
 Proof.
   induction A; intros τ β; simpl; try solve [ f_equal; auto ];
-    match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+    destruct_if;
     reflexivity.
 Qed.
 

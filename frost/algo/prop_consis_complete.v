@@ -1572,7 +1572,7 @@ Proof.
     try solve [ reflexivity
               | rewrite IHP; reflexivity
               | rewrite IHP1, IHP2; reflexivity ].
-  match goal with |- context [ if ?t then _ else _ ] => destruct t end;
+  destruct_if;
     reflexivity.
 Qed.
 
@@ -1584,7 +1584,7 @@ Proof.
     try solve [ reflexivity
               | rewrite IHQ; reflexivity
               | rewrite IHQ1, IHQ2; reflexivity ].
-  match goal with |- context [ if ?t then _ else _ ] => destruct t end;
+  destruct_if;
     reflexivity.
 Qed.
 
@@ -1618,12 +1618,10 @@ Proof.
               | rewrite IHt; reflexivity
               | rewrite IHa, IHb; reflexivity ].
   (* var *)
-  match goal with |- context [ if ?t then _ else _ ] =>
-    destruct t as [-> | Hne] end.
+  destruct_if as [-> | Hne].
   - (* the renamed variable: off the domain on both sides *)
     rewrite (msubst_lookup_notin ζ Hαd). simpl.
-    match goal with |- context [ if ?t then _ else _ ] =>
-      destruct t as [_ | Hc]; [ | congruence ] end.
+    destruct_if as [_ | Hc]; [ | congruence ].
     cbn [msubst_pskl].
     rewrite (msubst_lookup_notin ζ HXd). reflexivity.
   - (* any other variable: the image is α-free *)
@@ -1634,8 +1632,7 @@ Proof.
       pose proof (ftvar_in_ptyp_to_pskl (msubst_lookup ζ β)) as Hfe.
       clear - Hfr Hfe. fsetdec.
     + rewrite Heq. simpl.
-      match goal with |- context [ if ?t then _ else _ ] =>
-        destruct t as [Hc | _]; [ congruence | reflexivity ] end.
+      destruct_if as [Hc | _]; [ congruence | reflexivity ].
 Qed.
 
 (** Images of an information increase are scoped by the target. *)
@@ -3966,9 +3963,7 @@ Proof.
         Θ ⊢ (msubst_ptyp ρs (subst_ptyp_in_ptyp τdef γ (ptyp_var_f δ)))
           ≡ᵗ (msubst_lookup ((γ, τγ) :: ρs) δ)).
     { intros δ Hfδ. cbn [subst_ptyp_in_ptyp].
-      match goal with
-      | |- context [if ?s then _ else _] => destruct s as [-> | Hδγ]
-      end.
+      destruct_if as [-> | Hδγ].
       - repeat split;
           [ exact Hwfτd | exact Hmτd
           | rewrite msubst_lookup_cons_eq;
@@ -6028,12 +6023,10 @@ Proof.
     assert (Hlcc1 : msubst_lc
               ((γ, msubst_ptyp (ρa ++ ρb) τdef) :: ρa ++ ρb)).
     { intros X. simpl.
-      match goal with |- context [ if ?t then _ else _ ] =>
-        destruct t end; [ exact Hlcm1 | apply Hlcθ ]. }
+      destruct_if; [ exact Hlcm1 | apply Hlcθ ]. }
     assert (Hlcc2 : msubst_lc ((γ, τγ) :: ρa ++ ρb)).
     { intros X. simpl.
-      match goal with |- context [ if ?t then _ else _ ] =>
-        destruct t end;
+      destruct_if;
         [ apply mono_ptyp_lc; exact Hmτγ | apply Hlcθ ]. }
     assert (Hartsub : forall W,
               a_scope_pskl ((γ ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0') W ->

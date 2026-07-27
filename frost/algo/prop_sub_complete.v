@@ -14,6 +14,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.prop_basic.
@@ -189,9 +190,7 @@ Proof.
   - apply ad_pat_sub_n__ghostg; auto.
   - apply ad_pat_sub_n__univ_ghost_l; auto.
   - apply ad_pat_sub_n__univ_ghost_lg; auto.
-  - match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+  - destruct_if as [-> | Hne].
     + exfalso.
       match goal with
       | Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
@@ -754,9 +753,7 @@ Lemma uskl_ghost_free_subst : forall S ψ X,
 Proof.
   intros S ψ X HS; revert X; induction HS; intros X0 Hψ Hlc; simpl.
   - apply uskl_ghost_free__unit.
-  - match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end; [ exact Hψ | apply uskl_ghost_free__var ].
+  - destruct_if as [-> | Hne]; [ exact Hψ | apply uskl_ghost_free__var ].
   - apply uskl_ghost_free__arrow; [ apply IHHS1 | apply IHHS2 ]; assumption.
   - apply uskl_ghost_free__all_etag with (L := L `union` singleton X0).
     intros Y HY.

@@ -10,6 +10,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.prop_basic.
@@ -239,12 +240,10 @@ Proof.
   - (* unit *) apply ad_ppre__unit; assumption.
   - (* var X *)
     destruct (eq_var X Z) as [-> | Hne].
-    + repeat (match goal with |- context [if ?c then _ else _] =>
-        destruct c as [_ | Hc]; [ | exfalso; apply Hc; reflexivity ] end).
+    + repeat (destruct_if as [_ | Hc]; [ | exfalso; apply Hc; reflexivity ]).
       apply ad_ppre__var; [ assumption | ].
       right. left. unfold binds; apply in_or_app; right; left; reflexivity.
-    + repeat (match goal with |- context [if ?c then _ else _] =>
-        destruct c as [Hc | _]; [ exfalso; apply Hne; exact Hc | ] end).
+    + repeat (destruct_if as [Hc | _]; [ exfalso; apply Hne; exact Hc | ]).
       apply ad_ppre__var; [ assumption | ].
       destruct H0 as [HΔ | Hbt]; [ left; exact HΔ | right ].
       destruct Hbt as [Hb | [Hb | [τ Hb]]];
@@ -327,8 +326,7 @@ Proof.
       assert (Hbz : binds Z abind_tvar (Θ1 ++ (Z ~ abind_tvar) ++ Θ0))
         by (unfold binds; apply in_or_app; right; left; reflexivity).
       pose proof (binds_unique _ _ _ _ _ H Hbz Hu) as Hc; discriminate Hc. }
-    match goal with |- context [if ?c then _ else _] =>
-      destruct c as [Hc | _]; [ exfalso; apply Hne; exact Hc | ] end.
+    destruct_if as [Hc | _]; [ exfalso; apply Hne; exact Hc | ].
     destruct (Hdefs _ _ H) as [HZτ HWτ].
     eapply ad_ppre__flex_l;
       [ eapply binds_swap_mid; [ exact H | exact Hne ] | ].
@@ -346,8 +344,7 @@ Proof.
       assert (Hbz : binds Z abind_tvar (Θ1 ++ (Z ~ abind_tvar) ++ Θ0))
         by (unfold binds; apply in_or_app; right; left; reflexivity).
       pose proof (binds_unique _ _ _ _ _ H Hbz Hu) as Hc; discriminate Hc. }
-    match goal with |- context [if ?c then _ else _] =>
-      destruct c as [Hc | _]; [ exfalso; apply Hne; exact Hc | ] end.
+    destruct_if as [Hc | _]; [ exfalso; apply Hne; exact Hc | ].
     destruct (Hdefs _ _ H) as [HZτ HWτ].
     eapply ad_ppre__flex_r;
       [ eapply binds_swap_mid; [ exact H | exact Hne ] | ].

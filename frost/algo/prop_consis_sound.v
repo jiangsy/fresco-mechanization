@@ -542,7 +542,7 @@ Lemma guarded_pskl_subst_var : forall P α Y,
 Proof.
   intros * H; inversion H; subst; simpl.
   - constructor.
-  - match goal with |- context [ if ?t then _ else _ ] => destruct t end;
+  - destruct_if;
       constructor.
   - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
 Qed.
@@ -559,8 +559,7 @@ Proof.
   revert Θ1 HeqΘ.
   induction H; intros Θ1 ->; intros HαΔ; simpl.
   - apply a_wf_pskl__unit.
-  - match goal with |- context [ if ?t then _ else _ ] =>
-      destruct t as [->|Hne] end.
+  - destruct_if as [->|Hne].
     + apply a_wf_pskl__var. right.
       unfold a_binds_tvar. left.
       unfold binds. apply in_or_app. right. left. reflexivity.
@@ -597,9 +596,7 @@ Qed.
 (** Case-split every renaming decision in the goal; contradictory
     branches close by congruence. *)
 Ltac destruct_var_eqs :=
-  repeat match goal with
-  | |- context [ if ?t then _ else _ ] => destruct t
-  end; subst; try congruence.
+  repeat destruct_if; subst; try congruence.
 
 (** Renaming the opened binder in Θ-level skeleton consistency. *)
 Lemma ad_pat_consis_rename_tvar : forall Ψ Θ1 α Θ0 S Q Y,
@@ -854,7 +851,7 @@ Lemma guarded_bskl_subst_var : forall Q α Y,
 Proof.
   intros * H; inversion H; subst; simpl.
   - constructor.
-  - match goal with |- context [ if ?t then _ else _ ] => destruct t end;
+  - destruct_if;
       constructor.
   - constructor; apply subst_bskl_in_bskl_lc_bskl;
       auto using lc_bskl_var_f.

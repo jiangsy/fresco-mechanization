@@ -13,6 +13,7 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.ltac_utils.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
 Require Import src.frost.prop_basic.
@@ -210,7 +211,7 @@ Lemma guarded_pskl_subst : forall P Q X,
 Proof.
   intros P Q X H HgQ HlcQ. induction H; simpl.
   - apply guarded_pskl__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       [ exact HgQ | apply guarded_pskl__var ].
   - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; auto.
 Qed.
@@ -232,9 +233,7 @@ Proof.
   intros Θ Δ P H; induction H;
     intros Θ1 β b0 Θ2 Q0 Heqc Hfr HfrΔ HgQ HwfQ; subst; simpl.
   - apply a_wf_pskl__unit.
-  - match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+  - destruct_if as [-> | Hne].
     + eapply a_wf_pskl_delta_mono; [ exact HwfQ | clear; fsetdec ].
     + apply a_wf_pskl__var.
       destruct H as [HΔ | Ht]; [ left; exact HΔ | right ].
@@ -268,9 +267,7 @@ Lemma uskl_to_pskl_subst_unit : forall S β,
   = subst_pskl_in_pskl pskl_unit β ⌊ S ⌋ˢ.
 Proof.
   induction S; intros; simpl; try (f_equal; auto; fail).
-  repeat match goal with
-         | |- context [ if ?e then _ else _ ] => destruct e
-         end; try reflexivity; try contradiction.
+  repeat destruct_if; try reflexivity; try contradiction.
 Qed.
 
 (** Free variables of monotype paintings. *)
@@ -322,9 +319,7 @@ Proof.
   intros Ψ Θ S Q H; induction H;
     intros Θ1 β Θ2 Heqc Hfr Hdefs; subst; simpl.
   - apply ad_pat_consis__unit; assumption.
-  - repeat match goal with
-           | |- context [ if ?e then _ else _ ] => destruct e
-           end; try contradiction.
+  - repeat destruct_if; try contradiction.
     + apply ad_pat_consis__unit; assumption.
     + apply ad_pat_consis__var; [ assumption | ].
       match goal with Hne : X <> β |- _ =>
@@ -437,7 +432,7 @@ Proof.
         [ discriminate | eauto ] ].
   - apply ad_pat_consis__tophole_drop; eauto.
   - (* flex_l *)
-    match goal with |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne] end.
+    destruct_if as [-> | Hne].
     + exfalso. eapply binds_mid_flex_absurd; eauto.
     + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
       { eapply binds_strip_mid; eauto.
@@ -450,7 +445,7 @@ Proof.
       rewrite subst_bskl_in_uskl_fresh_eq in *; [ auto | ].
       rewrite ftvar_in_uskl_ptyp_to_uskl_syn. eauto.
   - (* flex_r *)
-    match goal with |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne] end.
+    destruct_if as [-> | Hne].
     + exfalso. eapply binds_mid_flex_absurd; eauto.
     + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
       { eapply binds_strip_mid; eauto.
@@ -495,7 +490,7 @@ Proof.
   induction P; intros τ X Hm; simpl; try reflexivity;
     try (rewrite IHP1; auto; rewrite IHP2; auto; reflexivity);
     try (rewrite IHP; auto; reflexivity).
-  repeat match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  repeat destruct_if;
     try contradiction; try reflexivity.
   symmetry. apply ptyp_to_bskl_inh_syn_eq; assumption.
 Qed.
@@ -534,9 +529,7 @@ Proof.
   intros Ψ Θ S Q H; induction H;
     intros Θ1 β τ0 Θ2 Heqc Hfr Hm Hfrτ Hvis Hdefs; subst; simpl.
   - apply ad_pat_consis__unit; assumption.
-  - repeat match goal with
-           | |- context [ if ?e then _ else _ ] => destruct e
-           end; try contradiction.
+  - repeat destruct_if; try contradiction.
     + eapply ad_pat_consis_psi_cong;
         [ apply consis_mono_refl; assumption
         | match goal with HΨ : _ [=] empty |- _ => clear - HΨ; fsetdec end ].
@@ -675,9 +668,7 @@ Proof.
         [ discriminate | eauto ] ].
   - apply ad_pat_consis__tophole_drop; eauto.
   - (* flex_l *)
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+    destruct_if as [-> | Hne].
     + (* the lookup at the stripped variable dissolves *)
       assert (Heqdef : τ = τ0) by (eapply binds_mid_def_eq; eauto).
       rewrite Heqdef in *; clear Heqdef.
@@ -698,9 +689,7 @@ Proof.
       rewrite subst_bskl_in_uskl_fresh_eq in *; [ auto | ].
       rewrite ftvar_in_uskl_ptyp_to_uskl_syn. eauto.
   - (* flex_r *)
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+    destruct_if as [-> | Hne].
     + assert (Heqdef : τ = τ0) by (eapply binds_mid_def_eq; eauto).
       rewrite Heqdef in *; clear Heqdef.
       match goal with
@@ -728,7 +717,7 @@ Lemma uskl_ghost_free_subst_unit : forall ψ β,
 Proof.
   intros ψ β H; induction H; simpl.
   - apply uskl_ghost_free__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       [ apply uskl_ghost_free__unit | apply uskl_ghost_free__var ].
   - apply uskl_ghost_free__arrow; auto.
   - apply uskl_ghost_free__all_etag with (L := L `union` {{β}}).
@@ -839,9 +828,7 @@ Proof.
     apply mod_comp_sk_subst_unit; assumption.
   - apply ad_pat_sub__univ_ghost_l; [ assumption | eauto ].
   - apply ad_pat_sub__univ_ghost_lg; [ assumption | eauto ].
-  - match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+  - destruct_if as [-> | Hne].
     + exfalso. eapply binds_mid_flex_absurd; eauto.
     + assert (Hb' : binds α (abind_flex_mono_def τ) (Θ1 ++ Θ2)).
       { eapply binds_strip_mid; eauto.
@@ -911,7 +898,7 @@ Lemma guarded_uskl_subst_mono : forall R τ β,
 Proof.
   intros R τ β H Hm; destruct H; simpl.
   - apply guarded_uskl__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       [ apply mono_ptyp_to_uskl_syn_guarded; assumption
       | apply guarded_uskl__var ].
   - apply guarded_uskl__arrow;
@@ -925,7 +912,7 @@ Lemma guarded_bskl_subst_mono : forall Q τ β,
 Proof.
   intros Q τ β H Hm; destruct H; simpl.
   - apply guarded_bskl__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       [ apply mono_ptyp_to_bskl_syn_guarded; assumption
       | apply guarded_bskl__var ].
   - apply guarded_bskl__arrow;
@@ -939,7 +926,7 @@ Lemma is_sskl_subst_mono : forall Q τ β,
 Proof.
   intros Q τ β H Hm; induction H; simpl.
   - apply is_sskl__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       [ apply mono_ptyp_to_bskl_syn_is_sskl; assumption | apply is_sskl__var ].
   - apply is_sskl__arrow; auto.
   - apply is_sskl__all with (L := L `union` {{β}}).
@@ -967,7 +954,7 @@ Lemma is_tskl_subst_mono : forall ψ τ β,
 Proof.
   intros ψ τ β H Hm; induction H; simpl.
   - apply is_tskl__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       [ apply mono_ptyp_to_uskl_syn_is_tskl; assumption | apply is_tskl__var ].
   - apply is_tskl__arrow; auto.
   - apply is_tskl__all_etag with (L := L `union` {{β}}).
@@ -985,7 +972,7 @@ Lemma d_tags_skl_subst_mono : forall Δ ψ τ β,
 Proof.
   intros Δ ψ τ β H Hm; induction H; simpl.
   - apply d_tags_skl__unit; assumption.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       [ apply mono_ptyp_to_uskl_syn_tags; assumption
       | apply d_tags_skl__var; assumption ].
   - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
@@ -1005,7 +992,7 @@ Lemma uskl_ghost_free_subst_mono : forall ψ τ β,
 Proof.
   intros ψ τ β H Hm; induction H; simpl.
   - apply uskl_ghost_free__unit.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       [ apply mono_ptyp_to_uskl_syn_ghost_free; assumption
       | apply uskl_ghost_free__var ].
   - apply uskl_ghost_free__arrow; auto.
@@ -1046,9 +1033,7 @@ Lemma uskl_to_pskl_subst_mono : forall S τ β,
   = subst_pskl_in_pskl (ptyp_to_pskl τ) β ⌊ S ⌋ˢ.
 Proof.
   induction S; intros; simpl; try (f_equal; auto; fail).
-  repeat match goal with
-         | |- context [ if ?e then _ else _ ] => destruct e
-         end; try contradiction;
+  repeat destruct_if; try contradiction;
     [ apply uskl_to_pskl_ptyp_to_uskl_syn | reflexivity ].
 Qed.
 
@@ -1158,9 +1143,7 @@ Proof.
     apply mod_comp_sk_subst_mono; assumption.
   - apply ad_pat_sub__univ_ghost_l; [ assumption | eauto ].
   - apply ad_pat_sub__univ_ghost_lg; [ assumption | eauto ].
-  - match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+  - destruct_if as [-> | Hne].
     + assert (Heqdef : τ = τ0) by (eapply binds_mid_def_eq; eauto).
       rewrite Heqdef in *; clear Heqdef.
       specialize (IHad_pat_sub Θ1 β τ0 Θ2
@@ -1329,9 +1312,7 @@ Proof.
   - apply ad_pat_sub__ghostg; auto.
   - apply ad_pat_sub__univ_ghost_l; auto.
   - apply ad_pat_sub__univ_ghost_lg; auto.
-  - match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+  - destruct_if as [-> | Hne].
     + (* the subject flex cannot be the renamed rigid *)
       exfalso.
       match goal with
@@ -1504,9 +1485,7 @@ Proof.
   intros F Θfull Δ Q P H; induction H;
     intros Ξ0 α0 Θt Y Heqc Hg Hwf Huq Hfv; subst; simpl in *.
   - apply ad_refine_syn_f__unit.
-  - repeat match goal with
-           | |- context [ if ?e then _ else _ ] => destruct e
-           end; try contradiction.
+  - repeat destruct_if; try contradiction.
     + apply ad_refine_syn_f__var. left. clear; fsetdec.
     + apply ad_refine_syn_f__var.
       destruct H as [HΔ | Hbt];
@@ -1559,9 +1538,7 @@ Proof.
   - destruct Hg.
   - destruct Hg.
   - (* flex_l *)
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+    destruct_if as [-> | Hne].
     + exfalso.
       assert (Hα0Ξ : α0 `notin` dom Ξ0)
         by (clear - Huq; simpl_env in Huq; destruct_uniq;
@@ -1613,9 +1590,7 @@ Proof.
         clear - Huq HZΘt. simpl_env in Huq. destruct_uniq.
         unfold disjoint in *. simpl_env in *. fsetdec.
   - (* flex_r *)
-    match goal with
-    | |- context [ if ?e then _ else _ ] => destruct e as [-> | Hne]
-    end.
+    destruct_if as [-> | Hne].
     + exfalso.
       assert (Hα0Ξ : α0 `notin` dom Ξ0)
         by (clear - Huq; simpl_env in Huq; destruct_uniq;
@@ -1732,7 +1707,7 @@ Lemma pskl_ghost_free_subst_mono : forall P τ β,
   pskl_ghost_free (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
 Proof.
   induction P; intros τ β Hg Hm; simpl in *; intuition.
-  match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  destruct_if;
     [ | simpl; auto ].
   clear - Hm. induction Hm; simpl; intuition.
 Qed.
@@ -1828,57 +1803,39 @@ Proof.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ];
       eapply IHad_refine_syn_f; [ exact Hb | exact Hm | ];
       simpl;
-      try match goal with
-          | |- context [ if ?e then _ else _ ] => destruct e
-          end; congruence.
+      try destruct_if; congruence.
 Qed.
 
 (* ===================================================================== *)
@@ -1899,7 +1856,7 @@ Lemma uskl_to_pskl_close_rec : forall ψ X k,
 Proof.
   induction ψ; intros X k; simpl; try (f_equal; auto; fail).
   - destruct (lt_ge_dec n k); reflexivity.
-  - match goal with |- context [ if ?e then _ else _ ] => destruct e end;
+  - destruct_if;
       reflexivity.
 Qed.
 
