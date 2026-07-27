@@ -92,8 +92,9 @@ per-node `P0 = Hole` dispatch.  §6(t)'s "split-B impossible" was an
 artifact of the equational representation.  Dead kit deleted
 (`bskl_no_hole`, `ad_refine_syn_aenv_to_delta(_mid)`); WF-SIDE-CONDITIONS
 entry flipped to REMOVED/historical; consequently P6-Cs needs no
-`P0 = □ ∨ no_hole` disjunct and the Task A accumulated-skeleton invariant
-(`prop_accum_no_hole.v`) is supporting kit rather than a requirement.
+`P0 = □ ∨ no_hole` disjunct.  The Task A accumulated-skeleton invariant
+(`prop_accum_no_hole.v`) was thereby made obsolete and its file **deleted
+2026-07-27** — nothing consumed it once the premise was gone.
 
 
 ## 2026-07-27 — P6-Cv CLOSED: `a_solve_eq_complete_var` axiom-free, 0 admits

@@ -561,7 +561,10 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 ## 6. Status log
 
 - 2026-07-27 (v): **TASK A DONE — accumulated-skeleton invariant PROVED,
-  axiom-free, in `algo/prop_accum_no_hole.v`.**  Discharges the P6-Cs
+  axiom-free, in `algo/prop_accum_no_hole.v`.**  *(SUPERSEDED: the
+  `pskl_no_hole P0` premise was removed later the same day, so the
+  invariant became obsolete and its file was DELETED 2026-07-27; entry
+  kept as the record of what was proved.)*  Discharges the P6-Cs
   disjunctive premise `P0 = □ ∨ pskl_no_hole P0`; deep-mixed `P0` is NOT
   reachable.  A1 `a_guess_hnh`, A2 `a_look_payload_hnh` (mutual), A3
   `a_solve_cstr_hnh` (+ `_hole_start`; generalises `a_solve_eq_no_hole_p0`
@@ -1736,3 +1739,56 @@ Other observations for the statements:
   (already a premise on `a_sub__forall_l` — mirror it), and the
   `⊑ᵖ → ⊑` upgrade at the END via `ad_partial_precise_complete`
   (P5b-i, Qed) exactly as complete-look's proof does at tex:2764.
+
+### 7.1 P6-Cs execution note (drafted 2026-07-27, after Task A)
+
+Reconnaissance (signatures verified in-tree):
+- Induct on **`ad_pat_consis`** (`Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q`, def_decl_algo.v:52-120;
+  ctors unit/var/arrow/forall_inh_{tagged,untagged}/forall_syn{_tagged,}/
+  ghostg/topholeg/hole/tophole/tophole_inh/tophole_drop/flex_{l,r}).  NO fuel.
+- Conclusion judgments: **`a_lookeq α P P0 C Ξc`** (def_extra.v:330) and
+  **`a_solve_cstr Ξc C Pi Pa`** (def_extra.v:482).  NB: the accumulated-
+  □-or-hole-free side condition is **no longer needed** — the
+  `pskl_no_hole P0` premise was removed (see §6, 2026-07-27), so P6-Cs
+  mirrors the paper directly with no `P0 = □ ∨ pskl_no_hole P0` thread.
+  (Task A's `prop_accum_no_hole.v`, which would have discharged it, was
+  deleted accordingly.)
+- Model the STATEMENT on `a_solve_eq_complete_var` / `_gen`
+  (prop_look_complete_var.v:3047 / :480), NOT on the P5 `consis_complete`
+  driver (prop_consis_complete.v:8611, which uses `a_inc_equiv`+`msubst_compose`
+  optimality — the wrong shape here).  Reuse verbatim: `⊑ᵖ`
+  (`ad_partial_precise`, def_decl_algo_sub.v:221), `a_inc` (`∷⊑`,
+  def_meta.v:184), `a_inc_equiv` (`θ≡θa`, def_meta.v:245), `a_tags_sort`
+  (def_decorated.v:96), `ad_refine_syn` (`⊢ᵣᵃ`, def_decl_algo.v:126).
+
+**Open DESIGN DECISION to make FIRST — how to encode the subject
+`(θ S)[ψa/α]`.**  Unlike P6-Cv (whose subject `ψsub` is `uskl_rho`-related to
+a single `ψa`), the P6-Cs paper subject is `θ` painted over the DECORATED
+skeleton `S` (erase S = P) with the single flex `α ↦ ψa`.  No `erase : uskl →
+pskl` and no separate `S` currently exist.  Two candidate encodings:
+  (a) carry `S : uskl` with a NEW `uskl_erase S = P` premise and subject
+      `subst_uskl_in_uskl ψa α (msubst_uskl θ S)` — most paper-faithful but
+      needs the erase relation + its interaction lemmas with msubst/subst;
+  (b) reuse `uskl_rho` with `Δρ := {α}` and the `urho__leaf` rule mapping
+      `α ↦ ψa` (α∈Δρ, treated as the "replaced variable"), subject the
+      `uskl_rho`-image of the painted `P` — leverages ALL of P6-Cv's kit
+      (`urho__*` inversions, flex_apart, precision transport) at the cost of
+      re-reading `[ψa/α]` as a one-leaf ρ.
+  RECOMMEND (b): the P=α special case then IS `urho__leaf` at the single α,
+  and the P6-Cv call there degenerates to `urho__refl` on ψa exactly as the
+  paper says ("identity substitution, empty tag context").  Decide by drafting
+  the P=α and Arrow cases both ways against the P6-Cv corollary call site.
+- Special cases (paper order, all BEFORE the induction split): `P0=□` →
+  LE-Vacuous, `C=·`, `Pa=Pi`, `θa=θ` (uses Task-A: refinement inversion gives
+  Q synthesised ⇒ Ψa=∅); `P=α` (so S=α) → LE-Var + invoke `a_solve_eq_complete_var`
+  with identity ρ (`urho__refl`, `Δρ:=∅` ⇒ `flex_apart` via `fa_clean`,
+  `rho_fresh` trivial); `α∉ftv P` → LE-Absent, `C=·`.  Induction cases:
+  ForallInh (LE-ForallInh, β-weakening + `β∉ftv Pa`), ForallSyn (LE-ForallSyn,
+  P0=⊤◇P0' by refinement inversion since P0≠□), Arrow (LE-Arrow + sequential
+  `a_solve_cstr`, mirror `consis_complete`'s `Ψ[=]Ψ1∪Ψ2` split), UnivGhost*
+  (UnivGhost / UnivGhost1 / UnivGhost2-with-P0-case-analysis).
+- P6-Cs omits `Θ0 ⊢ Pa`-style solve-output wf that its own conclusion needs;
+  add a solve-output wf-preservation lemma (`a_solve_cstr`/`a_solve_eq`
+  preserve `Θ0,Ξc ⊢ₚₛᵃ`) when the conclusion requires it.
+- STATUS: statement NOT yet drafted in Coq; encoding decision (a)/(b) is the
+  gate.  Develop in a `cex/` scratch, migrate to prop_look_complete.v on Qed.

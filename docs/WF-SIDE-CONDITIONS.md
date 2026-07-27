@@ -298,15 +298,18 @@ to the per-row SolE-VacuousR columns — exactly the paper's per-node
    own `P0 = □` special case via LE-Vacuous as the paper does.  Same for
    P6-Sv/Ss/L.
 2. **The accumulated-skeleton invariant below is NO LONGER REQUIRED** for
-   the completeness chain; it remains true, proved, and useful as
-   supporting kit (e.g. wherever a hole-free output is convenient).
+   the completeness chain.  Its file `algo/prop_accum_no_hole.v` (Task A)
+   was **DELETED 2026-07-27** — with the premise gone nothing consumes it,
+   and it was pure supporting kit.  The description below is retained only
+   as the historical record of what was proved.
 
-The rest of this entry is kept as the record of the invariant proof and
-of the original analysis.
+The rest of this entry is kept as the record of the (now-deleted) invariant
+proof and of the original analysis.
 
 The invariant *"every accumulated flexible-variable skeleton is `□` or
 hole-free"*:  **INVARIANT PROVED
-   (2026-07-27), axiom-free, in `algo/prop_accum_no_hole.v`.**  Deep-mixed
+   (2026-07-27), axiom-free, in the since-deleted `algo/prop_accum_no_hole.v`.**
+   Deep-mixed
    `P0` (□ strictly below a constructor) is NOT reachable.  Four algo-level
    results (`Print Assumptions` = Closed under the global context):
    - **A1 `a_guess_hnh`** — `guess^TY` returns a paint (`ptyp_to_pskl`, no
