@@ -37,6 +37,14 @@
             a global "P0 flex-free ∨ ψa tag-free" is TOO STRONG (it would
             reject the legitimate arrow shape α̂→⟨⟩ against ⟨⟩→∀^ε β.…).
 
+    …and one row in the OTHER direction, which keeps the premise from being
+    too strong: a ρ-REPLACED RIGID VARIABLE ([fsh_rho_var]) is safe opposite
+    ANY payload.  With [ψa = ∀^ε β.β] and [P0 = α̂] the algorithm SUCCEEDS
+    (precision forces [Pi = ∀β.β]; SolS-ForallL then SolS-Var — the body is
+    a VARIABLE — returns [Pa = ∀β.β]); it is only a COMPOUND body like the
+    counterexample's [β→β] that sends the solve to SolE-FlexR.  See
+    [flex_shield_admits_var_body] against [flex_shield_excludes_cex].
+
     Hence [flex_shield]: positional, with the non-aligned base case
     demanding BOTH conditions.  Its rules are chosen so that every descent
     of THIS induction (arrow = both sides, Sub-ForallR = P0 only,
@@ -193,27 +201,43 @@ Inductive flex_shield (Θ0 : aenv) (Ψ' : atoms) : atoms -> pskl -> uskl -> Prop
     flex_shield Θ0 Ψ' Δρ (pskl_tophole P0) ψa
 | fsh_topholeg_r : forall Δρ P0 ψ,
     flex_shield Θ0 Ψ' Δρ P0 ψ ->
-    flex_shield Θ0 Ψ' Δρ P0 (uskl_topholeg ψ).
+    flex_shield Θ0 Ψ' Δρ P0 (uskl_topholeg ψ)
+(* A ρ-REPLACED RIGID VARIABLE is safe opposite ANY payload, flexible or
+   not — this is P6-Cv's leaf: the precision premise forces [Pi] to be that
+   very variable ([ad_ppre_delta_var_inv] + [msubst_pskl_var_inv]), SolS-Var
+   / SolE-Var keep it, and the conclusion's precision is the var rule.  So
+   no dirt reaches the payload however dirty the position is.
+   WITHOUT this rule the premise is TOO STRONG: it would reject
+   [ψa = ∀^ε β.β] against [P0 = α̂] with [Pi = ∀β.β] — where the algorithm
+   SUCCEEDS (SolS-ForallL then SolS-Var gives [Pa = ∀β.β], whose precision
+   against [∀^ε β.β] holds).  Contrast the counterexample, whose body is
+   [β→β]: a compound body sends the solve to SolE-FlexR instead, which is
+   what destroys the information. *)
+| fsh_rho_var : forall Δρ P0 α,
+    α `in` Δρ ->
+    flex_shield Θ0 Ψ' Δρ P0 (uskl_var_f α).
 
 (* ===================================================================== *)
 (*  Basic kit                                                             *)
 (* ===================================================================== *)
 
-(** Δρ is only a "dirty set" upper bound on the clean rule: antitone. *)
-Lemma flex_shield_delta_anti : forall Θ0 Ψ' Δρ P0 ψa,
+(** Δρ is a "dirty set" the clean rule bounds and the ρ-var rule inhabits,
+    so the relation is congruent — but NOT antitone — in it. *)
+Lemma flex_shield_delta_cong : forall Θ0 Ψ' Δρ P0 ψa,
   flex_shield Θ0 Ψ' Δρ P0 ψa ->
-  forall Δρ', Δρ' [<=] Δρ ->
+  forall Δρ', Δρ' [=] Δρ ->
   flex_shield Θ0 Ψ' Δρ' P0 ψa.
 Proof.
-  intros Θ0 Ψ' Δρ P0 ψa H; induction H; intros Δρ' Hsub.
-  - apply fsh_clean; [ clear - H Hsub; fsetdec | exact H0 ].
+  intros Θ0 Ψ' Δρ P0 ψa H; induction H; intros Δρ' Heq.
+  - apply fsh_clean; [ clear - H Heq; fsetdec | exact H0 ].
   - apply fsh_flexfree; exact H.
-  - apply fsh_arrow; [ apply IHflex_shield1 | apply IHflex_shield2 ]; exact Hsub.
+  - apply fsh_arrow; [ apply IHflex_shield1 | apply IHflex_shield2 ]; exact Heq.
   - apply fsh_all_l with (L := L); intros α Hα; apply H0; assumption.
   - apply fsh_all_r with (L := L) (ε := ε); intros α Hα.
-    apply H0; [ exact Hα | clear - Hsub; fsetdec ].
-  - apply fsh_tophole_l; apply IHflex_shield; exact Hsub.
-  - apply fsh_topholeg_r; apply IHflex_shield; exact Hsub.
+    apply H0; [ exact Hα | clear - Heq; fsetdec ].
+  - apply fsh_tophole_l; apply IHflex_shield; exact Heq.
+  - apply fsh_topholeg_r; apply IHflex_shield; exact Heq.
+  - apply fsh_rho_var; clear - H Heq; fsetdec.
 Qed.
 
 (** Weakening by a rigid binder (the ForallR descent runs at [Θ0, γ]). *)
@@ -230,6 +254,7 @@ Proof.
   - apply fsh_all_r with (L := L) (ε := ε); intros α Hα; apply H0; exact Hα.
   - apply fsh_tophole_l; apply IHflex_shield.
   - apply fsh_topholeg_r; apply IHflex_shield.
+  - apply fsh_rho_var; exact H.
 Qed.
 
 (** Rigid renaming.  Needed by both binder descents: the derivation's
@@ -238,15 +263,6 @@ Qed.
     [ψa] and [Δρ] untouched; on the [ψa] side it moves the Δρ-element too.
 
     [paper-gap: none — pure mech bookkeeping.] *)
-Lemma flex_shield_delta_cong : forall Θ0 Ψ' Δρ P0 ψa,
-  flex_shield Θ0 Ψ' Δρ P0 ψa ->
-  forall Δρ', Δρ' [=] Δρ ->
-  flex_shield Θ0 Ψ' Δρ' P0 ψa.
-Proof.
-  intros Θ0 Ψ' Δρ P0 ψa H Δρ' Heq.
-  eapply flex_shield_delta_anti; [ exact H | clear - Heq; fsetdec ].
-Qed.
-
 Lemma flex_shield_rename_l : forall Θ0 Ψ' Δρ P0 ψa,
   flex_shield Θ0 Ψ' Δρ P0 ψa ->
   forall α1 α2,
@@ -266,6 +282,7 @@ Proof.
     apply H0; [ exact Hα | exact H2 ].
   - simpl; apply fsh_tophole_l; apply IHflex_shield; exact H2.
   - apply fsh_topholeg_r; apply IHflex_shield; exact H2.
+  - apply fsh_rho_var; exact H.
 Qed.
 
 (** On the target side the renamed variable is a Δρ ELEMENT — the binder
@@ -322,6 +339,11 @@ Proof.
       solve [ exact Heq | exact Hα1 | exact Hα2 | exact Hα2ψ ].
   - simpl in Hα2ψ |- *. apply fsh_topholeg_r; apply IHflex_shield;
       solve [ exact Heq | exact Hα1 | exact Hα2 | exact Hα2ψ ].
+  - (* rho_var: the renamed variable may BE the ρ-replaced one *)
+    simpl.
+    match goal with |- context [if ?c then _ else _] => destruct c as [-> | Hne] end.
+    + apply fsh_rho_var; clear; fsetdec.
+    + apply fsh_rho_var. clear - H Heq Hne; fsetdec.
 Qed.
 
 Lemma flex_shield_rename_r : forall Θ0 Ψ' Δρ P0 ψa α1 α2,
@@ -393,6 +415,8 @@ Proof.
       apply H0; [ exact Hα | exact HeqP ].
   - (* tophole_l *) inversion HeqP; subst; assumption.
   - (* topholeg_r *) apply fsh_topholeg_r; apply IHflex_shield; exact HeqP.
+  - (* rho_var: the target is untouched by stripping the payload's ghost *)
+    apply fsh_rho_var; exact H.
 Qed.
 
 (** **Sub-ForallR**: [P0 = ∀.P0₀] descends, the target is kept, and the
@@ -430,6 +454,8 @@ Proof.
     apply H0; [ exact Hα | exact HeqP | exact Hγ ].
   - (* topholeg_r *)
     apply fsh_topholeg_r; apply IHflex_shield; [ exact HeqP | exact Hγ ].
+  - (* rho_var: the target is untouched by the ForallR descent *)
+    apply fsh_rho_var; exact H.
 Qed.
 
 (** **Sub-ForallL**: the target's TAGGED quantifier is instantiated, so its
@@ -492,19 +518,22 @@ Lemma flex_shield_flex_leaf : forall Θ0 Ψ' Δρ α ψa,
   a_flex_tvar Θ0 α ->
   (forall ε ψ, ψa <> uskl_all_etag ε ψ) ->
   (forall ψ, ψa <> uskl_topholeg ψ) ->
-  (ftvar_in_uskl ψa) ∩ Δρ [=] empty /\ (ftag_in_uskl ψa) ∩ Ψ' [=] empty.
+  ((ftvar_in_uskl ψa) ∩ Δρ [=] empty /\ (ftag_in_uskl ψa) ∩ Ψ' [=] empty)
+  \/ (exists α0, ψa = uskl_var_f α0 /\ α0 `in` Δρ).
 Proof.
   intros Θ0 Ψ' Δρ α ψa H.
   remember (pskl_var_f α) as P eqn:HeqP.
   revert α HeqP; induction H; intros α' HeqP Hflex Hnall Hntg;
     try discriminate HeqP.
-  - (* clean *) split; assumption.
+  - (* clean *) left; split; assumption.
   - (* flexfree: contradicts the flexibility of α *)
     exfalso; subst. apply (H α'); [ simpl; clear; fsetdec | exact Hflex ].
   - (* all_r: excluded by the shape side condition *)
     exfalso; eapply Hnall; reflexivity.
   - (* topholeg_r: likewise *)
     exfalso; eapply Hntg; reflexivity.
+  - (* rho_var: the DIRTY-but-safe row — P6-Cv's leaf closes it *)
+    right; eexists; split; [ reflexivity | exact H ].
 Qed.
 
 (** REGRESSION TEST for the repair: the premise EXCLUDES the configuration
@@ -527,10 +556,29 @@ Proof.
   rewrite (Hbody β ltac:(clear - Fr; fsetdec)) in Hd.
   destruct (flex_shield_flex_leaf Hd Hflex
               ltac:(intros ε0 ψ0 Hc; discriminate Hc)
-              ltac:(intros ψ0 Hc; discriminate Hc)) as [Hclean _].
+              ltac:(intros ψ0 Hc; discriminate Hc))
+    as [[Hclean _] | (α0 & Hc & _)]; [ | discriminate Hc ].
   cbn [ftvar_in_uskl] in Hclean.
   assert (Hin : β `in` empty) by (rewrite <- Hclean; clear; fsetdec).
   clear - Hin; fsetdec.
+Qed.
+
+(** The COUNTERPART of the exclusion test, and the reason [fsh_rho_var]
+    exists: the premise ADMITS a raw-flexible payload facing a TAGGED ∀
+    whose body is the binder itself — [ψa = ∀^ε β.β] — because there the
+    algorithm SUCCEEDS.  Precision forces [Pi = ∀β.β]; SolS-ForallL then
+    SolS-Var (the body is a VARIABLE) returns [Pa = ∀β.β], whose precision
+    against [∀^ε β.β] holds.  Only a COMPOUND body — the counterexample's
+    [β→β] — sends the solve to SolE-FlexR and destroys the information.
+    Without this row the repair premise would have been strictly stronger
+    than the truth, and unusable at such call sites. *)
+Theorem flex_shield_admits_var_body : forall Θ0 Ψ' Δρ α ε,
+  flex_shield Θ0 Ψ' Δρ (pskl_var_f α) (uskl_all_etag ε (uskl_var_b 0)).
+Proof.
+  intros Θ0 Ψ' Δρ α ε.
+  apply fsh_all_r with (L := empty) (ε := ε); intros α0 Hα0.
+  unfold open_uskl_wrt_uskl; simpl.
+  apply fsh_rho_var; clear; fsetdec.
 Qed.
 
 (* ===================================================================== *)

@@ -560,6 +560,41 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-28 (z3): **PREMISE WEAKENED — `flex_shield` as first built was TOO
+  STRONG; new row `fsh_rho_var` added (all Qed, still axiom-free).**  Prompted
+  by the "is the restriction too strong?" check.  Concrete instance the old
+  form wrongly rejected: `ψa = ∀^ε β.β`, `P0 = α̂` (raw flex), `Pi = ∀β.β` —
+  the algorithm SUCCEEDS there (precision forces `Pi = ∀β.β`; SolS-ForallL
+  then **SolS-Var**, since the body is a VARIABLE, returns `Pa = ∀β.β`, whose
+  precision against `∀^ε β.β` holds), yet no rule of the old relation
+  applied.  Only a COMPOUND body (the counterexample's `β→β`) sends the solve
+  to SolE-FlexR and destroys the information.
+  FIX: `fsh_rho_var : α ∈ Δρ -> flex_shield Θ0 Ψ' Δρ P0 (uskl_var_f α)` — a
+  ρ-replaced rigid variable is safe opposite ANY payload, because that is
+  exactly P6-Cv's LEAF (the precision premise forces Pi to be that variable
+  via `ad_ppre_delta_var_inv` + `msubst_pskl_var_inv`, SolS-Var/SolE-Var keep
+  it, and the conclusion's precision is the var rule).  Consequences:
+  `flex_shield` is congruent but NO LONGER ANTITONE in Δρ (`delta_anti`
+  replaced by a direct `delta_cong`); `flex_shield_flex_leaf`'s conclusion
+  becomes a DISJUNCTION (clean+tag-free ∨ ψa is a Δρ-var, the second
+  disjunct routing to the leaf closer).  Both tests are now in the file:
+  `flex_shield_excludes_cex` (the counterexample stays excluded) and
+  `flex_shield_admits_var_body` (the succeeding shape is admitted).
+  METHOD NOTE: check every mech-only side condition BOTH ways — that it
+  excludes the known failure AND that it admits a known success.
+
+- 2026-07-28 (z2b): **the three "impossible" cases are PAPER-CONFIRMED.**
+  The decorated subtyping judgment of the paper (`decorated-algosub.tex`,
+  rules `Var / ForallL / UnivGhostLG / Vacuous / Check / ForallR / Arrow /
+  Flex`) has NO plain-□ row, NO plain-⊤◇ row and NO untagged-∀ row: its
+  ForallL subject is `∀^ε α.ψ` (tagged) and its ghost row is the DOTTED
+  `UnivGhostLG`.  The P6-Sv proof text says so for the first of them
+  verbatim ("The Ghost case cannot occur because ψa cannot contain □",
+  subtyping-proofs.tex:1757).  The mech's `ad_pat_sub_g` carries all three
+  extra rows because its `uskl` grammar also serves the UNRESOLVED skeleton
+  R; against a decorated subject they are vacuous, discharged by `is_tskl`
+  on all three `uskl_rho` disjuncts (refl / ρ-leaf image / congruence).
+
 - 2026-07-28 (z2): **REPAIR BUILT — `frost/algo/prop_look_complete_sub_var.v`
   (new): `flex_shield` + its full descent kit, ALL Qed and axiom-free (0
   admits); the P6-Sv statement is restated with it and type-checks (main
