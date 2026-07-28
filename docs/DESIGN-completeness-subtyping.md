@@ -602,25 +602,29 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   — unprovable BY INVERSION, since its `fa_all_l` row offers a one-sided
   family where a two-sided one is wanted.  Experiment reverted (the tree is
   green); `prop_look_complete.v` is untouched pending the fix below.
-  **THE FIX (next task) — mechanical, NOT a redesign.**  ⚠️ The first
-  reading of this ("cofinite quantification cannot cross the two families")
-  was WRONG: cofinite sets are never the obstacle, because RENAMING makes
-  the choice of binder irrelevant — which is exactly how
-  `flex_shield_descend_l` / `_descend_r` already get through here.  So:
-  give `flex_apart` the same one-sided rows `flex_shield` has
-  (`fa_flexfree`, `fa_all_l`, `fa_all_r`) and re-prove
-  `flex_apart_all_etag_forall_inv` by INDUCTION; in the `fa_all_l` row,
-  instantiate the ψ-side family at a FRESH α' (so the nested cofinite sets
-  are harmless) and rename α' to the P0-side binder α — sound because α'
-  does not occur in `open P0 α`, so the rename touches only the guess, the
-  same argument `flex_shield_rename_r` makes.  Kit: `flex_apart_rename_l` /
-  `_rename_r`; the three new rows are absorbed by
-  `flex_apart_topholeg_target_inv`, `_tophole_p0_inv` and `_arrow_inv` by
-  shape, and `flex_apart_weaken` needs a "no new flexibles" side condition
-  (free at the tvar extensions it is used at) plus a
-  `flex_apart_weaken_tvar` wrapper.  Budget: rename kit ≈ 120 lines, the
-  rows + inversion repairs ≈ 80, then ForallR/ForallL on the UnivGhostLG
-  template.
+  **THE FIX (settled 2026-07-28, and the third descent is now PROVED).**
+  Do NOT patch `flex_apart` — RETIRE it in favour of `flex_shield`, which
+  supports all three descents the two inductions need:
+  `flex_shield_descend_l` (Sub-ForallR, payload only), `_descend_r`
+  (Sub-ForallL, guess only, Δρ grows) and **`_descend_both`** (consistency's
+  ForallInh, both sides) — and the third is literally the first two
+  COMPOSED (Qed, ~6 lines), so the two-sided case costs nothing extra.
+  Why `flex_apart` cannot be repaired the same way: it HAS two-sided ∀ rows,
+  and a two-sided family ties both binders to ONE variable, so a one-sided
+  descent cannot be recovered from it — for a fixed payload binder γ one
+  needs the guess family at ALL binders, while the diagonal supplies only γ.
+  ⚠️ That is a STRUCTURE mismatch, NOT a naming one: renaming aligns a pair,
+  it does not manufacture a family.  (Distinguish this from (z5)'s rule —
+  binder NAMES never block anything; binder PAIRING can.)  `flex_shield`
+  escapes it by having only one-sided rows and DERIVING the two-sided
+  descent.
+  Plan: re-state P6-Cv over `flex_shield` (its FLEX row reads the condition
+  off with `flex_shield_flex_leaf`, strictly more informative than today's
+  `flex_apart` inversion; its ForallInh row takes `_descend_both`), then
+  P6-Sv drops the `flex_apart` premise and threads only `flex_shield`.
+  Re-threading P6-Cv is mechanical (~30 sites, same facts under a new
+  name); the two-sided descent hands the IH a Δρ grown by the opened binder
+  and a Θ0 extended by it, both already universally quantified there.
 
 - 2026-07-28 (z3): **PREMISE WEAKENED — `flex_shield` as first built was TOO
   STRONG; new row `fsh_rho_var` added (all Qed, still axiom-free).**  Prompted

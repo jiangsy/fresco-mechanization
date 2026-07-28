@@ -509,6 +509,26 @@ Proof.
       eapply IHflex_shield; [ exact Heqψ | exact Hε | exact HβΔ | exact Hβ ].
 Qed.
 
+(** The TWO-SIDED descent — consistency's ForallInh opens BOTH sides at the
+    same binder — is just the two one-sided descents composed.  So the
+    two-sided row is not a separate obligation: the guess's binder joins Δρ
+    (it IS ρ-replaced from the subtyping side's point of view) and the
+    payload's binder is a fresh rigid of the context, which is exactly what
+    the two descents already deliver. *)
+Lemma flex_shield_descend_both : forall Θ0 Ψ' Δρ ε P0 ψ,
+  flex_shield Θ0 Ψ' Δρ (pskl_all_syn P0) (uskl_all_etag ε ψ) ->
+  ε `in` Ψ' ->
+  forall α, α `notin` Δρ -> α `notin` ftvar_in_uskl ψ -> α `notin` dom Θ0 ->
+  flex_shield ((α ~ abind_tvar) ++ Θ0) Ψ' (add α Δρ)
+    (open_pskl_wrt_pskl P0 (pskl_var_f α))
+    (open_uskl_wrt_uskl ψ (uskl_var_f α)).
+Proof.
+  intros Θ0 Ψ' Δρ ε P0 ψ H Hε α HαΔ Hαψ HαΘ.
+  apply flex_shield_descend_l;
+    [ eapply flex_shield_descend_r; [ exact H | exact Hε | exact HαΔ | exact Hαψ ]
+    | exact HαΘ ].
+Qed.
+
 (* ===================================================================== *)
 (*  Leaf use, and the regression test for the counterexample               *)
 (* ===================================================================== *)
@@ -1124,24 +1144,30 @@ Admitted.  (* TODO[P6-Sv]: 8 of 12 cases are CLOSED; 4 remain (Check,
     at once), and its clean row is destroyed by the ForallL descent exactly
     as [fsh_clean] would be — so neither descent can push it through.
 
-    FIX (mechanical, not a redesign): give [flex_apart] the same one-sided
-    rows [flex_shield] has — [fa_flexfree], [fa_all_l], [fa_all_r] — and
-    prove the two-sided descent P6-Cv uses
-    ([flex_apart_all_etag_forall_inv]) by INDUCTION rather than inversion,
-    exactly as [flex_shield_descend_l] / [_descend_r] are proved here.  The
-    [fa_all_l] row is where the two families have to be crossed, and the
-    crossing is a RENAMING, not a diamond: instantiate the ψ-side family at
-    a FRESH α' (so the nesting of cofinite sets is harmless), then rename
-    α' back to the P0-side binder α.  The rename is sound because α' does
-    not occur in [open P0 α] — it touches only the guess — which is the
-    same argument [flex_shield_rename_r] already makes.
-    Kit needed: [flex_apart_rename_l] / [flex_apart_rename_r] mirroring
-    [flex_shield_rename_l] / [flex_shield_rename_r], plus the three new
-    rows absorbed by the existing inversions ([flex_apart_topholeg_target_inv],
-    [_tophole_p0_inv], [_arrow_inv] take them by shape; [flex_apart_weaken]
-    needs "no new flexibles", free at the tvar extensions it is used at,
-    with a [flex_apart_weaken_tvar] wrapper).  Then ForallR/ForallL follow
-    the UnivGhostLG template.
+    FIX — do NOT patch [flex_apart]; RETIRE it in favour of [flex_shield],
+    which already supports all THREE descents:
+      - [flex_shield_descend_l]     (Sub-ForallR: payload only),
+      - [flex_shield_descend_r]     (Sub-ForallL: guess only, Δρ grows),
+      - [flex_shield_descend_both]  (consistency's ForallInh: both sides) —
+        and the third is literally the first two COMPOSED, so the two-sided
+        row costs nothing extra.
+    [flex_apart] cannot be repaired the same way: it HAS two-sided ∀ rows,
+    and a two-sided family ties the two binders to ONE variable, so a
+    one-sided descent cannot be recovered from it — for a fixed payload
+    binder γ one would need the guess family at ALL binders, whereas the
+    diagonal gives only γ.  That is a STRUCTURE mismatch, not a naming one:
+    renaming aligns a pair, it does not manufacture a family.  ([flex_shield]
+    escapes it by having only one-sided rows and DERIVING the two-sided
+    descent.)
+    So: re-state P6-Cv over [flex_shield] (its FLEX row reads the condition
+    off with [flex_shield_flex_leaf], strictly more informative than the
+    [flex_apart] inversion it does today, and its ForallInh row takes
+    [flex_shield_descend_both]); then P6-Sv drops the [flex_apart] premise
+    entirely and threads only [flex_shield], and ForallR/ForallL follow the
+    UnivGhostLG template.  Re-threading P6-Cv is mechanical (~30 sites, same
+    facts under a new name); the two-sided descent hands the IH a Δρ grown
+    by the opened binder and a Θ0 extended by it, both of which the IH
+    already quantifies over.
 
     UnivGhostLG is the TEMPLATE the remaining cases follow: a KEY assertion shared
     by the refl/congruence rows, the ρ-leaf dispatched to
