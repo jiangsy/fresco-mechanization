@@ -1965,6 +1965,70 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   so far is `a_wf_aenv Θ` on `to_n` — standard, available downstream, not
   a statement weakening.
 
+### (a3) P6-Sv CLOSED (2026-07-29) — the two remaining cases, and a SECOND statement change
+
+`a_solve_sub_complete_var` is `Qed` and axiom-free.  Two things beyond the
+`flex_shield` repair of (z)–(a2) were needed.
+
+**1. Arrow — `arrow_grid`.**  The branch algebra (tag split, P6-Cv on the
+left premise, IH on the right) is packed into a `KEY` hypothesis, so the
+lemma itself is only the case analysis on the input skeleton `Pi`: arrow /
+□ (SolS-GhostLF) / ⊤◇ / variable, with unit and ∀ refuted by the precision
+against an arrow guess.  The variable row needs no solving at all — the
+θ-image of a variable is a MONOTYPE, so `ad_ppre_mono_subject_target_tags_
+empty` makes the guess tag-free and `Ψa = ∅`.  The ⊤◇ row recurses
+STRUCTURALLY on `Pi`, no measure: well-formedness makes the ghost's body
+guarded, so the FILL/KEEP rows cannot fire.
+
+**2. Sub-ForallL — ρ absorbs the instantiation, and the CONTEXT must
+generalize.**  The rule's instantiation becomes the paper's
+`ρ_b = ρ ∘ [ψ_b/β]` (`uskl_rho_subst`), so the recursive call runs at
+`Δρ,β`.  Two consequences:
+
+- `rho_fresh` insists every ρ-replaced variable be a RIGID OF THE CONTEXT,
+  and the opened `Pi`-body must be well-formed, so the IH has to run at
+  `Θ0,β / Θ,β`.  But `ad_pat_sub_g`'s context is an INDEX, so `induction`
+  freezes it — the IH is only ever available at the original `Θ`.  FIX: the
+  derivation now lives in a smaller `Θs`, and every other premise in a `Θ`
+  related to it only by `binds`-monotonicity (`forall x b, binds x b Θs ->
+  binds x b Θ`).  At the top level `Θs = Θ` and the premise is the identity;
+  inside, each rule premise stated in the small context is weakened on the
+  spot, so all previously closed cases read unchanged.  This is the mech's
+  reading of the paper's "by weakening \refn[9] to Θ,β"
+  (subtyping-proofs.tex:2153).
+- β joins Δρ, so `Hshield` must hold for it: `β ∉ pskl_shielded_ftv (θ Pi)`.
+  That is exactly the ⊤◇-body discipline DESIGN §7 names in prose, and it is
+  now a LEMMA — `a_wf_pskl_shielded_dom`: since `a_wf_pskl__tophole` types
+  the ghost's body at the EMPTY Δ, a well-formed skeleton's shielded
+  variables all live in `dom Θ`, never in Δ.
+
+**The `Pi` grid has ONE live row** (`Pi = ∀β.P1`, the paper's).  Every other
+shape would have to solve the top-level tag ε, and ε is already in `Ψi` —
+proved, not assumed: `ε ∉ ftag R` (ρ only ADDS tags,
+`uskl_rho_ftag_target_sub`, together with `Ψρ ∩ Ψ' = ∅` and sortedness of
+ψa) and `ε ∉ ftag ψ_b` (the rule's own freshness) bound the premise's solved
+tags via `ad_pat_sub_g_ftag_sub`, giving `ε ∉ Ψsub ⊇ Ψa`, hence `ε ∈ Ψi` by
+`Ψi,Ψa = Ψ'`.  So □ (`Ψi = ∅`), ⊤◇ (both its rules), the variable row and
+the structural rows are all IMPOSSIBLE.
+
+**Rebuilding the ∀.**  The output is re-abstracted with
+`close_pskl_wrt_pskl β`, and the single instance becomes SolS-ForallL's
+cofinite family by rigid renaming (`a_solve_sub_eq_rename`), as in ForallR.
+The PRECISION needs the converse of `a_wf_pskl_delta_to_tvar_mid`, which did
+not exist: `ad_partial_precise_tvar_to_delta_mid` — a rigid binder ALREADY
+in Δ may be dropped from the aenv.  (`ad_partial_precise_strip_tvar_mid`
+cannot be used: it wants β free in NEITHER side, and here β is free in
+both.)  Then `ad_partial_precise_rename` moves β to the family's α.
+
+**Gotchas.**  `a_wf_aenv__tvar` takes the FRESHNESS first — a wrong bullet
+order surfaces as "No matching clauses for match", because `match goal`
+backtracks when its BODY fails, not its pattern.  `Ψ0` must be PINNED with
+`with (Ψ0 := …)` on `ad_ppre__forall`, or the tag side condition's `fsetdec`
+runs forever on an evar.  And Ltac cannot resolve a `rename`-introduced name
+inside a `match goal` PATTERN — match on the weakening hypothesis and bind
+the context as `?S`.
+
+
 ## 7. P6 plan (audited 2026-07-24; execute next)
 
 > **UPDATE 2026-07-25 (read with §6 (g)).**  This plan STANDS: `uskl_rho`

@@ -1009,7 +1009,19 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
   (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free).
 - **Status: FALSE as an isolated statement, and — unlike the 2026-07-25
   entry above — the standing reachability argument does NOT cover it.**
-  Work on P6-Sv is STOPPED pending a decision by the paper's authors.
+  The statement still needs a decision by the paper's authors.
+- **RESOLVED IN THE MECHANIZATION (2026-07-29), statement-side.**  The
+  algorithm is UNCHANGED; the lemma carries one extra premise,
+  `flex_shield Θ₀ Ψ' Δρ P₀ ψa` (a positional invariant: at every position
+  where a raw Θ₀-flexible faces the guess, the guess is both Δρ-clean and
+  Ψ'-tag-free — with an explicit row keeping it from being too strong, see
+  `fsh_rho_var`), plus `flex_apart_walk` (P6-Cv's own premise at every state
+  the descents can reach).  `a_solve_sub_complete_var` is now **Qed and
+  axiom-free** in `frost/algo/prop_look_complete_sub_var.v`, and
+  `flex_shield_excludes_cex` is the machine-checked regression test that the
+  premise rules out the witness below.  What the authors must decide is
+  whether the PAPER adopts this side condition (or an equivalent one) —
+  the write-up as it stands claims a statement that is false.
 
 ### The witness (ρ is the IDENTITY — this is not a ρ-encoding artefact)
 

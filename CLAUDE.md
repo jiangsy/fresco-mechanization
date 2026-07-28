@@ -17,10 +17,11 @@ point to the same content.
   in both directions (soundness `a_consis_sound` + `a_unify_sound` /
   `a_assign_sound`; completeness/optimality `a_consis_complete_thm` /
   `complete_mu`), subtyping SOUNDNESS is closed (`a_sub_sound_thm`),
-  and subtyping COMPLETENESS is in progress (P5 and the two
-  consistency-side P6 lemmas are closed; **P6-Sv is BLOCKED — the paper's
-  statement is FALSE, machine-checked in
-  `frost/algo/cex/cex_p6sv_forall_flex.v`; see docs/PAPER-GAPS.md**).
+  and subtyping COMPLETENESS is in progress (P5, both consistency-side P6
+  lemmas, and **P6-Sv** are closed; the paper's P6-Sv statement is FALSE —
+  machine-checked in `frost/algo/cex/cex_p6sv_forall_flex.v` — so what is
+  proved is a REPAIRED statement, see docs/PAPER-GAPS.md.  P6-Ss and P6-L
+  are next).
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
@@ -47,7 +48,7 @@ point to the same content.
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
 | 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness underway (P5, P6-Cv, P6-Cs closed; P6-Sv BLOCKED — statement FALSE, counterexample `frost/algo/cex/cex_p6sv_forall_flex.v`). |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness underway (P5, P6-Cv, P6-Cs, P6-Sv closed — P6-Sv as a REPAIRED statement, the paper's being FALSE per `frost/algo/cex/cex_p6sv_forall_flex.v`; P6-Ss and P6-L next). |
 
 ## Directory map
 

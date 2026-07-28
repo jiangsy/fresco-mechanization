@@ -58,8 +58,8 @@ excluded from the build); mine them when re-proving.
 - ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_decorate_key.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
 - ✅ **Theorem: Soundness of subtyping** (`a_sub_sound_thm`, `algo/prop_decorate_key.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
-- 🟡 Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — the paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  REPAIRED statement now in `frost/algo/prop_look_complete_sub_var.v` with the new positional premise `flex_shield` (kit + both descent lemmas + the cex-exclusion regression test are Qed and axiom-free; main induction still to do). See docs/PAPER-GAPS.md (final entries) and DESIGN-completeness-subtyping.md §6 (x)/(y)/(z)/(z2)
-- 🟡 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss); Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are BLOCKED behind P6-Sv (P6-Ss's crux delegates to it).  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
+- ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
+- 🟡 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss); Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are now UNBLOCKED (P6-Ss's crux delegates to P6-Sv, which is closed) and are the next front.  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
 
@@ -76,6 +76,64 @@ excluded from the build); mine them when re-proving.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-07-29 — ⭐ P6-Sv CLOSED: `a_solve_sub_complete_var` Qed, axiom-free (repaired statement)
+
+The last two cases — **Arrow** and **Sub-ForallL (tagged)** — are closed, so
+the whole 12-case induction is done and `make coq` passes with the
+mechanization still admit-free.
+
+- **Arrow** delegates its LEFT premise to P6-Cv and its RIGHT one to the IH,
+  exactly as the Check case does; the new part is `arrow_grid`, the case
+  analysis on the input skeleton `Pi` (arrow / □ = SolS-GhostLF / ⊤◇ /
+  variable, with unit and ∀ refuted by the precision against an arrow
+  guess).  The ⊤◇ row recurses STRUCTURALLY on `Pi` — no measure needed,
+  because well-formedness makes the ghost's body guarded.
+- **Sub-ForallL** absorbs the rule's instantiation into ρ, as the paper's
+  `ρ_b = ρ ∘ [ψ_b/β]` (`uskl_rho_subst`), so the recursive call runs at
+  `Δρ,β`: β is the one variable `ρ_b` replaces and ρ did not, and it is the
+  SAME β the precision premise pairs `Pi`'s binder with.  Its `Pi` grid has
+  ONE live row (`Pi = ∀β.P1`, the paper's): every other shape would have to
+  solve the top-level tag ε, and ε is already in `Ψi`.  That is proved, not
+  assumed — `ε ∉ ftag R` (ρ only ADDS tags, `uskl_rho_ftag_target_sub`) and
+  `ε ∉ ftag ψ` (the rule's own freshness) bound the premise's solved tags,
+  giving `ε ∉ Ψsub ⊇ Ψa`, hence `ε ∈ Ψi` by `Ψi,Ψa = Ψ'`.
+
+STATEMENT CHANGE beyond the `flex_shield` repair — **the context is
+generalized**.  Sub-ForallL must run the IH at `Θ,β`, but the derivation's
+own context is an INDEX of `ad_pat_sub_g` and cannot move.  So the
+derivation now lives in a smaller `Θs` and every other premise in a `Θ`
+related to it only by `binds`-monotonicity; at the top level `Θs = Θ` and
+the premise is the identity.  This is the mech's reading of the paper's "by
+weakening \refn[9] to Θ,β" (subtyping-proofs.tex:2153).  Each rule premise
+stated in the small context is weakened on the spot, so all ten previously
+closed cases read unchanged.
+
+New reusable kit (all Qed, axiom-free):
+`arrow_grid`; `uskl_rho_ftag_target_sub` / `uskl_rho_ftv_subject_bound` (the
+two missing directions of ρ's tag/ftv transports);
+`a_wf_pskl_shielded_dom` — a well-formed skeleton's ⊤◇-SHIELDED variables
+all live in `dom Θ`, never in Δ, which is exactly what lets Sub-ForallL add
+its fresh binder to Δρ (the discipline DESIGN §7 names in prose);
+`ad_ppre_guarded_all_etag_absurd`; and
+`ad_partial_precise_tvar_to_delta_mid` — the converse of
+`a_wf_pskl_delta_to_tvar_mid`: a rigid binder ALREADY in Δ may be dropped
+from the aenv.  The `strip` version in prop_look_complete_cstr.v cannot be
+used here, since it wants β free in NEITHER side and here β is free in both.
+
+Coq gotchas paid for in this pass: `a_wf_aenv__tvar` takes the FRESHNESS
+first (a wrong bullet order surfaces as "No matching clauses for match",
+because `match goal` backtracks when its BODY fails, not its pattern);
+`Ψ0` must be PINNED with `with (Ψ0 := …)` on `ad_ppre__forall`, or the tag
+side condition's `fsetdec` runs forever on an evar; and Ltac cannot resolve
+a `rename`-introduced name inside a `match goal` PATTERN — match on the
+weakening hypothesis and bind the context as `?S` instead.
+
+Cleanup: `flex_shield_admits_var_body` is deleted (it was an intermediate
+check, unused by the proof; the shape it recorded is documented in
+`fsh_rho_var`'s comment).  `flex_shield_excludes_cex` is KEPT and relabelled
+— like the `cex/` files, it is what ties the mech-only premise to the
+machine-checked counterexample.
 
 ## 2026-07-28 (later) — P6-Sv repair BUILT: `flex_shield` + descent kit, Qed and axiom-free; statement restated
 
