@@ -1274,8 +1274,32 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   whose flexible-target row recurses through the definition), and (iii)
   guardedness of the guess's erasure, transported along ρ by
   `uskl_rho_guarded_erase`.
-- Corroboration that this is an oversight rather than an intended
-  restriction: the CONSISTENCY twin
-  (`complete-consistency-cc-solving-var`, consistency-proofs.tex) spells
-  out its "Subcase `P_i = □`" in each of the corresponding cases.  The
-  subtyping write-up simply skips it.
+- **Corroboration (checked 2026-07-28, and it is decisive): the same
+  authors handle `P_i = □` FIRST in the IDENTICAL situation on the
+  consistency side.**  `complete-consistency-cc-solving-var`'s case
+  `UnivGhostG` (consistency-proofs.tex:1477-1516) has exactly this shape —
+  `ψ_a = ⊤̇◇ψ'`, a dotted universal ghost on the guess — and its subcase
+  list is:
+    1. `P_i = □` — "IH on refa and refb with input `□` … our goal follows
+       from SolEq-GhostL and choosing `P_a = ⊤◇P_0'`", i.e. precisely the
+       row the mech proves (nothing decomposed, the IH's own solve reused);
+    2. `P_i = ⊤◇P_i'`;
+    3. "the remaining non-flexible shapes are impossible by inversion on
+       the precision premise; the flexible case follows from SolEq-FlexL".
+  Were there an invariant forcing a `⊤◇` input skeleton opposite a dotted
+  ghost, subcase 1 would be dead and would have been listed as impossible
+  (as the same proof does list `Ghost`, `UnivGhost`, `UnivGhost1` and
+  `UnivGhost2`).  It is not; so the subtyping side's compressed write-up
+  ("Similar to the previous case of ForallL … It is simpler …") simply
+  dropped it.
+- To be fair to the paper's phrasing, its claim is ALMOST right: precision
+  does force the input skeleton to be GHOSTLY at a `⊤̇◇` guess — the only
+  live shapes are `□` and `⊤◇P_i'` (unit / var / arrow / ∀ are refuted, in
+  the mech by `ad_ppre_guarded_topholeg_absurd`).  It named one of the two
+  ghost shapes.
+- Side note on the same case: the paper also provides for a FLEXIBLE `P_i`
+  ("the flexible case follows from SolEq-FlexL").  In the mech that case is
+  VACUOUS — `θP_i` is then a monotype painting, and
+  `ad_ppre_mono_paint_topholeg_absurd` (already needed by P6-Cv) shows no
+  painting is precise to a dotted ghost.  Harmless over-provision, recorded
+  only so the discrepancy is not re-investigated.
