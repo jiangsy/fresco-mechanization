@@ -77,6 +77,7 @@ Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_consis_precise.  (* d_tags_skl_var_inv *)
 Require Import src.frost.algo.prop_consis_sound.    (* a_wf_pskl_lc *)
+Require Import src.frost.algo.prop_decorate_sub.    (* lc_uskl_to_pskl_local *)
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_looksub.
 Require Import src.frost.algo.prop_solve_sub.
@@ -590,6 +591,112 @@ Proof.
   - inversion Hpre.
 Qed.
 
+(** ρ transports GUARDEDNESS of the erasure from the subject to the guess.
+    The congruence rows need local closure of the guess — which is free:
+    [is_tskl] gives it ([is_tskl_lc]).  The ∀/ghost congruences are vacuous,
+    since their SUBJECT already erases to a non-guarded skeleton. *)
+Lemma uskl_rho_guarded_erase : forall NM Θ Δρ Ψρ R' R,
+  uskl_rho NM Θ Δρ Ψρ R' R ->
+  lc_uskl R ->
+  guarded_pskl ⌊ R' ⌋ˢ ->
+  guarded_pskl ⌊ R ⌋ˢ.
+Proof.
+  intros NM Θ Δρ Ψρ R' R H Hlc Hg; destruct H; cbn [uskl_to_pskl] in Hg |- *;
+    try assumption; try solve [ inversion Hg ].
+  - (* leaf: the guess is a variable *) apply guarded_pskl__var.
+  - (* arrow: both sides are arrows; lc comes from the guess *)
+    inversion Hlc; subst.
+    apply guarded_pskl__arrow; apply lc_uskl_to_pskl_local; assumption.
+Qed.
+
+(** A □ input skeleton solves to □ or to a universal ghost — the only rules
+    with a [□] left-hand side are SolS-Vacuous, SolS-GhostL and
+    SolS-GhostLF (SolS-ForallR just threads the output through). *)
+Lemma a_solve_sub_hole_output : forall Θ0 m P0 Pa,
+  Θ0 ⊢ₛ pskl_hole ≼[ m ] P0 ⤳ Pa ->
+  Pa = pskl_hole \/ exists B, Pa = pskl_tophole B.
+Proof.
+  intros Θ0 m P0 Pa H.
+  remember pskl_hole as Ph eqn:HeqP.
+  (* surviving rows: SolS-Vacuous (output = the □ input), SolS-Check (□ is
+     not guarded), SolS-ForallR (output = the body's), SolS-GhostLF and
+     SolS-GhostL (output = a ⊤◇) *)
+  induction H; try discriminate HeqP; subst;
+    solve [ left; reflexivity
+          | right; eexists; reflexivity
+          | match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end
+          | match goal with
+              IH : forall β : atom,
+                     β `notin` ?L0 -> pskl_hole = pskl_hole -> _ |- _ =>
+                pick fresh β for L0;
+                exact (IH β ltac:(clear - Fr; fsetdec) eq_refl)
+            end ].
+Qed.
+
+(** A □ subject solves no tags: the only rules with a hole subject are
+    [P-Ghost] and the target-side flexible unfolding. *)
+Lemma ad_ppre_hole_subject_tags : forall Θ Δ Ψ ψ,
+  Θ ⨟ Δ ⊢ pskl_hole ⊑ᵖ[ Ψ ] ψ ->
+  Ψ [=] empty.
+Proof.
+  intros Θ Δ Ψ ψ H.
+  remember pskl_hole as P eqn:HeqP.
+  induction H; try discriminate HeqP; subst;
+    solve [ assumption | apply IHad_partial_precise; reflexivity ].
+Qed.
+
+(** Stripping a ⊤◇ from the SUBJECT against a GUARDED guess: only
+    [P-UnivGhostRemove] applies — [Fill] and [Keep] need a ∀^ε / ⊤̇◇ guess,
+    whose erasure is not guarded — and the target-side flexible unfolding is
+    rebuilt after recursing through the (monotype) definition. *)
+Lemma ad_ppre_tophole_strip : forall Θ Δ Ψ B ψ,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δ ⊢ (pskl_tophole B) ⊑ᵖ[ Ψ ] ψ ->
+  guarded_pskl ⌊ ψ ⌋ˢ ->
+  Θ ⨟ Δ ⊢ B ⊑ᵖ[ Ψ ] ψ.
+Proof.
+  intros Θ Δ Ψ B ψ HwfΘ H.
+  remember (pskl_tophole B) as P eqn:HeqP.
+  revert B HeqP; induction H; intros B' HeqP Hg;
+    try discriminate HeqP; inversion HeqP; subst.
+  - (* remove *) assumption.
+  - (* fill: the guess is a ∀^ε, whose erasure is a ∀ — not guarded *)
+    cbn [uskl_to_pskl] in Hg; inversion Hg.
+  - (* keep: the guess is a ⊤̇◇ — likewise *)
+    cbn [uskl_to_pskl] in Hg; inversion Hg.
+  - (* flex_r: recurse through the definition, then rebuild *)
+    eapply ad_ppre__flex_r; [ eassumption | ].
+    apply (IHad_partial_precise HwfΘ B' eq_refl).
+    match goal with |- guarded_pskl ⌊ ptyp_to_uskl_syn ?τ ⌋ˢ =>
+      replace (uskl_to_pskl (ptyp_to_uskl_syn τ)) with (ptyp_to_pskl τ)
+        by (symmetry; apply uskl_to_pskl_ptyp)
+    end.
+    apply mono_ptyp_to_pskl_guarded.
+    eapply a_wf_aenv_binds_def_mono; eassumption.
+Qed.
+
+(** Lifting a precision judgment under a dotted universal ghost on the
+    TARGET.  Only the two subject shapes a □-input solve can produce are
+    needed ([a_solve_sub_hole_output]). *)
+Lemma ad_ppre_lift_topholeg : forall Θ Δ Ψ P ψ0,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ0 ->
+  Δ ∩ ftvar_in_uskl ψ0 [=] empty ->
+  guarded_pskl ⌊ ψ0 ⌋ˢ ->
+  (P = pskl_hole \/ exists B, P = pskl_tophole B) ->
+  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] (uskl_topholeg ψ0).
+Proof.
+  intros Θ Δ Ψ P ψ0 HwfΘ Hpre HΔ Hg Hshape.
+  destruct Hshape as [-> | (B & ->)].
+  - (* □ : re-apply P-Ghost; the ghost adds no free variable *)
+    apply ad_ppre__hole;
+      [ eapply ad_ppre_hole_subject_tags; exact Hpre
+      | cbn [ftvar_in_uskl]; exact HΔ ].
+  - (* ⊤◇B : strip the subject's ghost, then keep it against the ⊤̇◇ *)
+    apply ad_ppre__tophole_keep.
+    eapply ad_ppre_tophole_strip; [ exact HwfΘ | exact Hpre | exact Hg ].
+Qed.
+
 (* ===================================================================== *)
 (*  The ρ-LEAF CLOSER — used by every case of the main induction           *)
 (* ===================================================================== *)
@@ -860,19 +967,46 @@ Proof.
           [ exact HwfΘ | exact Hθ | exact Hg | exact Hpre0 ].
       - (* ∀: no precision rule reaches a ⊤̇◇ from a quantifier *)
         cbn [msubst_pskl] in Hpre0; inversion Hpre0.
-      - (* □ : the ghost row.  The precision inverts to [P-Ghost]
-           (Ψi = ∅, Δ ∩ ftv(⊤̇◇ψ0) = ∅), which rebuilds at ψ0, so the IH
-           applies unchanged and its solve IS the one we need (Pi = □ is not
-           decomposed).  What is missing is only the LIFT of the IH's
-           precision from ψ0 back to ⊤̇◇ψ0: the solve output for a □ input is
-           □ or ⊤◇B, and for ⊤◇B one must invert [⊤◇B ⊑ᵖ ψ0] to its REMOVE
-           row — the KEEP and FILL rows need ψ0 = ⊤̇◇… / ∀^ε…, which the
-           guardedness of ⌊R⌋ˢ (from [HwfSub]) forbids, but transporting that
-           guardedness along [uskl_rho] to ⌊ψ0⌋ˢ needs local closure of the
-           RHS that the ρ-relation does not currently carry.  Either add
-           [lc_uskl] to [uskl_rho]'s congruence rows, or state the lift as a
-           lemma over the solve's output shapes. *)
-        admit.
+      - (* □ : the ghost row.  [paper-gap] The paper's UnivGhostLG case says
+           "we know that P_i must have a top-level ⊤◇" (subtyping-proofs.tex
+           :2196), reading the precision premise as if only P-UnivGhostKeep
+           could target a ⊤̇◇.  But P-Ghost is TARGET-AGNOSTIC — [□ ⊑ᵖ[∅] ψ]
+           for any ψ — so a hole input is precise to a ⊤̇◇ too, and this row
+           is real.  The consistency twin's proof DOES spell out its
+           "Subcase P_i = □"; the subtyping write-up simply omits it.
+           Nothing is decomposed here (a □ input stays □), so the IH's own
+           solve is the one we need; only its precision has to be lifted
+           back under the ghost. *)
+        cbn [msubst_pskl] in Hpre0.
+        pose proof (ad_ppre_hole_subject_tags Hpre0) as HΨie.
+        (* the Δ-disjointness the IH needs, read off the SAME premise: the
+           ⊤̇◇ adds no free variable, so [P-Ghost]'s side condition at
+           [⊤̇◇ψ0] IS the one at ψ0 *)
+        assert (HΔψ0 : Δ ∩ ftvar_in_uskl ψ0 [=] empty).
+        { (* only [P-Ghost] can conclude with a ⊤̇◇ target from a □ subject:
+             the target-side flexible unfolding needs a VARIABLE target *)
+          inversion Hpre0; subst; cbn [ftvar_in_uskl] in *; assumption. }
+        assert (Hpre0' : Θ ⨟ Δ ⊢ (msubst_pskl θ pskl_hole) ⊑ᵖ[ Ψi ] ψ0)
+          by (cbn [msubst_pskl]; apply ad_ppre__hole; assumption).
+        edestruct (IHHsub Θ0 θ Δ Δρ Ψρ Ψt Ψi Ψa ψ0 pskl_hole P0
+                     HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hθ Hrho0
+                     Htags0' HwfSub' Htageq Hinter Hrhof Hdelta Hshield
+                     Hdfresh Hapart0' Hfsh0' Hpre0' HΨs1 HΨs2 Hrefine)
+          as (Pa' & Hs' & Hp').
+        exists Pa'; split; [ exact Hs' | ].
+        eapply ad_ppre_lift_topholeg;
+          [ exact HwfΘ | exact Hp' | exact HΔψ0
+          | (* the guess erases to a guarded skeleton: ρ transports it from
+               the subject, whose ⊤̇◇-body wf makes it guarded *)
+            eapply uskl_rho_guarded_erase;
+              [ exact Hrho0
+              | apply is_tskl_lc; inversion Htags0'; assumption
+              | cbn [uskl_to_pskl] in HwfSub;
+                inversion HwfSub; assumption ]
+          | (* the shape of the output, pushed through the metasubstitution *)
+            destruct (a_solve_sub_hole_output Hs') as [-> | (B & ->)];
+              [ left; reflexivity
+              | right; eexists; cbn [msubst_pskl]; reflexivity ] ].
       - (* ⊤◇Pi' : the main row — IH, then SolS-UnivGhostL *)
         assert (HwfPi' : Θ0 ⨟ empty ⊢ₚₛᵃ Pi')
           by (eapply a_wf_pskl_tophole_inv; exact HwfPi).
@@ -915,7 +1049,16 @@ Proof.
       apply KEY; assumption.
   - (* FlexMono : the subject is a defined flexible; unfold it *)
     admit.
-Admitted.  (* TODO[P6-Sv]: 6 full cases + the substance of a 7th are CLOSED.
+Admitted.  (* TODO[P6-Sv]: 7 of 12 cases are CLOSED; 5 remain (Check,
+    ForallR, Arrow, ForallL-tagged, FlexMono), each needing its own P0 × Pi
+    grid.  UnivGhostLG is the TEMPLATE they follow: a KEY assertion shared
+    by the refl/congruence rows, the ρ-leaf dispatched to
+    [a_solve_sub_complete_rho_var], a [destruct Pi] whose guarded rows are
+    refuted by [ad_ppre_guarded_topholeg_absurd], the ⊤◇ row running
+    IH + SolS-UnivGhostL + P-UnivGhostKeep, and the □ row running the IH
+    unchanged and lifting its precision back with [ad_ppre_lift_topholeg].
+
+    Previously closed: Infer, UnivGhostR,
     UnivGhostLG is done except its Pi = □ row (see the note there): its
     ρ-leaf branch goes to [a_solve_sub_complete_rho_var], and its main row
     (Pi = ⊤◇Pi') runs IH + SolS-UnivGhostL + P-UnivGhostKeep, with

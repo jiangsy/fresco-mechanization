@@ -1250,3 +1250,32 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   domain premise is consistency `τ_dom ∼ skel(arg)`, mono vs ∀ — no rule.
   Hence rejection is forced declaratively; no completeness gap here, and
   the flex-mono wall is the intended design.
+
+
+## GAP (proof-step; statement TRUE) — `complete-constraint-collection-solving-var`'s UnivGhostLG case omits the `P_i = □` subcase (2026-07-28)
+
+- Where: subtyping-proofs.tex:2196, case `UnivGhostLG` of
+  `lemma:complete-constraint-collection-solving-var`.  Mech: the `□` row of
+  the `univ_ghost_lg` case in `frost/algo/prop_look_complete_sub_var.v`
+  (now proved).
+- The paper writes "We know that `P_i` must have a top-level `⊤◇`", reading
+  the precision premise `Δ|Θ ⊢ precise[Ψi]{θP_i}{⊤̇◇ψ'}` as if only
+  `P-UnivGhostKeep` — whose subject is `⊤◇P` — could target a `⊤̇◇`.  But
+  **`P-Ghost` is target-agnostic**: `□ ⊑ᵖ[·] ψ` holds for ANY `ψ` (given its
+  Δ-disjointness side condition), so a hole input skeleton is precise to a
+  `⊤̇◇` as well, and the subcase is real.
+- Not a statement problem: the row goes through.  Nothing is decomposed (a
+  `□` input stays `□`), so the induction hypothesis's own solve is the one
+  needed; only its precision must be lifted back under the ghost.  In the
+  mech that lift is `ad_ppre_lift_topholeg`, which needs (i) the shape of a
+  `□`-input solve output (`a_solve_sub_hole_output`: `□` or `⊤◇B`), (ii)
+  stripping a `⊤◇` from the subject against a guarded guess
+  (`ad_ppre_tophole_strip`, whose FILL/KEEP rows die on guardedness and
+  whose flexible-target row recurses through the definition), and (iii)
+  guardedness of the guess's erasure, transported along ρ by
+  `uskl_rho_guarded_erase`.
+- Corroboration that this is an oversight rather than an intended
+  restriction: the CONSISTENCY twin
+  (`complete-consistency-cc-solving-var`, consistency-proofs.tex) spells
+  out its "Subcase `P_i = □`" in each of the corresponding cases.  The
+  subtyping write-up simply skips it.
