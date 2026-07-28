@@ -792,6 +792,24 @@ Proof.
     pose proof (@def_ftv_binds Θ α τ H) as Hsub. clear - Hsub Hin; fsetdec.
 Qed.
 
+(** Deciding [a_non_flex] on a GUARDED skeleton: it fails only for a
+    flexible variable. *)
+Lemma a_non_flex_guarded_dec : forall Θ0 P,
+  guarded_pskl P ->
+  a_non_flex Θ0 P \/ (exists α, P = pskl_var_f α /\ a_flex_tvar Θ0 α).
+Proof.
+  intros Θ0 P Hg; destruct Hg as [ | α | P1 P2 Hlc1 Hlc2 ].
+  - left; split; [ apply lc_pskl_unit | intros Hf; inversion Hf ].
+  - destruct (a_flex_tvar_dec Θ0 α) as [Hf | Hf];
+      [ right; exists α; split; [ reflexivity | exact Hf ]
+      | left; split;
+          [ apply lc_pskl_var_f
+          | intros Hfl; apply Hf; inversion Hfl; subst;
+            [ left | right; eexists ]; eassumption ] ].
+  - left; split;
+      [ apply lc_pskl_arrow; assumption | intros Hf; inversion Hf ].
+Qed.
+
 (* ===================================================================== *)
 (*  [flex_apart] ALONG THE WALK                                           *)
 (* ===================================================================== *)
@@ -1045,8 +1063,131 @@ Proof.
     eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
     assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
     clear - HΨae; fsetdec.
-  - (* Check (TY/TC) : delegate to P6-Cv, then dispatch on Pi *)
-    admit.
+  - (* Check (TY/TC).  The premise IS a consistency judgment, so P6-Cv
+       ([a_solve_eq_complete_var]) applies verbatim — every premise of this
+       lemma is one of its premises, with [flex_apart] read off the walk.
+       It returns the EQUALITY solve; SolS-Check then lifts it, after a
+       case analysis on Pi.  P0 is GUARDED here: [skmod{TY}] makes it a
+       type, and a ∀ is excluded because a [bskl_all_inh] target cannot be
+       the inherited painting of a GUARDED B. *)
+    assert (HgP0 : guarded_pskl P0).
+    { pose proof (HmodTY eq_refl) as Hmod.
+      inversion Hmod as [ | A HeqA | ]; subst.
+      destruct A as [ | nA | αA | A1 A2 | A0 ]; cbn [ptyp_to_pskl] in *.
+      - apply guarded_pskl__unit.
+      - inversion HwfP0.
+      - apply guarded_pskl__var.
+      - pose proof (a_wf_pskl_lc HwfP0) as Hlc; inversion Hlc; subst.
+        apply guarded_pskl__arrow; assumption.
+      - (* ∀ : its inherited painting is a [bskl_all_inh], and the target is
+           the inherited painting of a GUARDED B — which is never one *)
+        exfalso.
+        assert (HgQ : guarded_bskl (pskl_to_bskl_inh B))
+          by (apply guarded_pskl_to_bskl_inh; exact H0).
+        cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
+        (* [inversion] leaves the target as an EQUATION against
+           [pskl_to_bskl_inh B]; expose B's shape first *)
+        destruct B; cbn [pskl_to_bskl_inh] in Hrefine, HgQ;
+          try solve [ inversion HgQ ];
+          inversion Hrefine; subst;
+          solve [ (* an inherited ∀ never refines to a monotype paint *)
+                  eapply ad_refine_allinh_lhs_mono_absurd;
+                    [ exact HwfΘ | eassumption | reflexivity | reflexivity
+                    | eapply a_wf_aenv_binds_def_mono;
+                        [ exact HwfΘ | eassumption ] ] ]. }
+    (* ⚠️ the subject is the RULE's [T] here, not the statement's ψsub *)
+    destruct (@a_solve_eq_complete_var a_sub_mode_ty Θ0 Θ θ Δ Δρ Ψρ Ψt Ψi Ψa
+                Ψ T ψa (pskl_to_bskl_inh B) Pi P0
+                HwfΘ HwfΘ0 HwfPi HwfP0 Hθ Hrho Htags
+                ltac:(clear - Htageq; fsetdec) Hinter Hrhof Hdelta Hshield
+                Hdfresh (flex_apart_walk_here Hapart) Hpre HΨs1 HΨs2 H1
+                Hrefine)
+      as (Pa & Hs & Hp).
+    (* now lift the equality solve to a subtyping one, by Pi's shape *)
+    destruct Pi as [ | nPi | β | Pi1 Pi2 | Pi' | | Pi' ].
+    + (* ⟨⟩ : guarded *)
+      exists Pa; split;
+        [ apply a_solve_sub__check;
+            [ apply guarded_pskl__unit | exact HgP0 | exact Hs ]
+        | exact Hp ].
+    + inversion HwfPi.
+    + (* a variable : guarded *)
+      exists Pa; split;
+        [ apply a_solve_sub__check;
+            [ apply guarded_pskl__var | exact HgP0 | exact Hs ]
+        | exact Hp ].
+    + (* an arrow : guarded *)
+      assert (Hg : guarded_pskl (pskl_arrow Pi1 Pi2)).
+      { pose proof (a_wf_pskl_lc HwfPi) as Hlc; inversion Hlc; subst.
+        apply guarded_pskl__arrow; assumption. }
+      exists Pa; split;
+        [ apply a_solve_sub__check; [ exact Hg | exact HgP0 | exact Hs ]
+        | exact Hp ].
+    + (* ∀ : IMPOSSIBLE — precision forces a ∀-shaped GUESS, and ρ maps a ∀
+         to a ∀ (or to a variable at a leaf), never to the GUARDED subject
+         this rule requires *)
+      exfalso.
+      cbn [msubst_pskl] in Hpre.
+      inversion Hpre; subst.
+      * (* P-Forall : the guess is a ∀^ε, so ρ makes the subject one too *)
+        inversion Hrho; subst;
+          match goal with Hg : guarded_uskl _ |- _ => inversion Hg end.
+      * (* P-FlexR : the guess is a defined flexible; unfolding it leaves a
+           ∀ subject against a MONOTYPE painting *)
+        eapply ad_ppre_allsyn_subject_mono_absurd;
+          [ exact HwfΘ | eassumption | reflexivity | reflexivity
+          | eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | eassumption ] ].
+    + (* □ : SolS-GhostL wraps P0, and inversion on the equality solve gives
+         Pa = P0 *)
+      assert (HeqPa : Pa = P0)
+        by (eapply a_solve_eq_hole_subject_inv; exact Hs).
+      subst Pa.
+      exists (pskl_tophole P0); split;
+        [ apply a_solve_sub__ghost_l; exact HgP0
+        | cbn [msubst_pskl]; apply ad_ppre__tophole_remove; exact Hp ].
+    + (* ⊤◇Pi' : strip the ghost, solve the body, wrap the output.  This is
+         where the paper says "by congruence of constraint solving, we
+         ASSUME refb is derived by SolEq-GhostGuarded"
+         (subtyping-proofs.tex:1810) — the WLOG that hazard H3 predicted.
+         Mechanically both derivations must be handled, because P6-Cv
+         returns whichever it built. *)
+      assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
+      assert (HwfPi' : Θ0 ⨟ empty ⊢ₚₛᵃ Pi')
+        by (eapply a_wf_pskl_tophole_inv; exact HwfPi).
+      cbn [msubst_pskl] in Hp.
+      (* the payload is GUARDED, which kills the □-, ⊤◇- and ∀-payload rows;
+         [SolEq-FlexR] and [SolEq-GhostGuarded] remain, in that order *)
+      inversion Hs; subst; try solve [ inversion HgP0 ].
+      * (* SolEq-FlexR : the payload is a flexible and survives whole.  If
+           the ⊤◇-body is NOT itself a flexible variable, the same rule
+           applies one level down and the output is unchanged. *)
+        match goal with
+          Hflx : a_flex_tvar Θ0 ?α0 |- _ =>
+          destruct (a_non_flex_guarded_dec Θ0 HgPi') as [Hnf' | Hf'];
+          [ exists (pskl_tophole (pskl_var_f α0)); split;
+              [ apply a_solve_sub__univ_ghost_l;
+                apply a_solve_sub__check;
+                  [ exact HgPi' | exact HgP0
+                  | apply a_solve_eq__flex_r; [ exact Hflx | exact Hnf' ] ]
+              | cbn [msubst_pskl]; apply ad_ppre__tophole_remove; exact Hp ]
+          | ]
+        end.
+        (* the ⊤◇-body IS a flexible: SolEq-Var keeps IT instead, so the
+           output differs from P6-Cv's and the precision must come from the
+           INPUT premise — which needs Ψa = ∅, available by the
+           flexible-payload argument (θP0 mono ⇒ Q mono-ish ⇒ the
+           consistency solves no tag: [ad_refine_mono_paint_rhs_monoish] +
+           [ad_pat_consis_monoish_counterpart], exactly P6-Cv's own FLEX
+           row) together with [is_tskl]-preservation along [uskl_rho]. *)
+        admit.
+      * (* SolEq-GhostGuarded : the body's equality solve lifts directly *)
+        match goal with Hbody : Θ0 ⊢ₑ Pi' ∼ _ ⤳ ?Pb |- _ =>
+          exists (pskl_tophole Pb); split;
+            [ apply a_solve_sub__univ_ghost_l;
+              apply a_solve_sub__check;
+                [ exact HgPi' | exact HgP0 | exact Hbody ]
+            | cbn [msubst_pskl]; apply ad_ppre__tophole_remove; exact Hp ]
+        end.
   - (* ForallR (TY/TC).  [skmod{TY}] makes P0 a TYPE, so the refinement's
        inherited-∀ target forces P0 = ∀.P0' (every other type shape is
        GUARDED, and a guarded source refines only to a guarded target).
@@ -1478,8 +1619,19 @@ Proof.
         solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
               | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hshield
               | exact Hpre ].
-Admitted.  (* TODO[P6-Sv]: 9 of 12 cases are CLOSED; 3 remain — Check,
-    Arrow (both delegate to P6-Cv) and ForallL-tagged.
+Admitted.  (* TODO[P6-Sv]: 10 of 12 cases are CLOSED (Check up to ONE
+    sub-row); 2 remain — Arrow (delegates to P6-Cv, like Check) and
+    ForallL-tagged (the ρ-EXTENSION case: it needs a [uskl_rho] substitution
+    lemma, since the guess's binder becomes a ρ-replaced variable).
+
+    Check is done except its Pi = ⊤◇Pi' / SolEq-FlexR / flexible-body
+    sub-row — the one the paper waves through with "by congruence of
+    constraint solving, we ASSUME refb is derived by SolEq-GhostGuarded"
+    (subtyping-proofs.tex:1810, hazard H3).  Mechanically P6-Cv returns
+    whichever derivation it built, so both must be handled; only the
+    sub-row where the ⊤◇-body is ITSELF a flexible is open, and the note
+    there records what closes it (Ψa = ∅ by the flexible-payload argument,
+    plus [is_tskl]-preservation along [uskl_rho]).
 
     ForallR is closed and is the template for ForallL: [skmod{TY}] makes P0
     a TYPE, so the inherited-∀ target forces P0 = ∀.P0' (every other type
