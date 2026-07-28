@@ -1040,6 +1040,23 @@ Qed.
     themselves — with the same tag BOUND, since a binder the guess does not
     use contributes nothing. *)
 
+(** The Arrow case's TAG SPLIT.  The guess's tags are partitioned by the
+    arrow ([d_tags_skl__arrow] is a DISJOINT union), the already-solved ones
+    split with the precision, and each branch's newly-solved set is then
+    just the intersection — no choice is involved. *)
+Lemma arrow_tag_split : forall Ψt Ψt1 Ψt2 Ψi Ψi1 Ψi2 Ψa,
+  Ψt [=] Ψt1 `union` Ψt2 ->
+  Ψt1 ∩ Ψt2 [=] empty ->
+  Ψi [=] Ψi1 `union` Ψi2 ->
+  Ψi1 [<=] Ψt1 -> Ψi2 [<=] Ψt2 ->
+  Ψi `union` Ψa [=] Ψt ->
+  Ψi1 `union` (Ψa ∩ Ψt1) [=] Ψt1 /\
+  Ψi2 `union` (Ψa ∩ Ψt2) [=] Ψt2.
+Proof.
+  intros Ψt Ψt1 Ψt2 Ψi Ψi1 Ψi2 Ψa Ht Hd Hi Hs1 Hs2 Heq.
+  split; clear - Ht Hd Hi Hs1 Hs2 Heq; fsetdec.
+Qed.
+
 (** ρ preserves decoratedness: images are tags-sorted and the congruences
     keep the shape. *)
 Lemma uskl_rho_is_tskl : forall NM Θ Δρ Ψρ R' R,
@@ -1819,7 +1836,19 @@ Proof.
     eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
     assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
     clear - HΨae; fsetdec.
-  - (* Arrow : skmod forces P0 = P01→P02; left → P6-Cv, right → IH *)
+  - (* Arrow.  [skmod] forces P0 = P01→P02, the refinement splits, and the
+       ρ-relation splits (or is a leaf).  The LEFT premise is a consistency
+       judgment and goes to P6-Cv exactly as in Check; the RIGHT one is the
+       IH.  Tags split by [arrow_tag_split].
+
+       The Pi grid is: arrow (both components recurse) / □ (SolS-GhostLF,
+       both calls at input □) / ⊤◇Pi' (SolS-UnivGhostL — and NO inner
+       induction is needed, because well-formedness makes the ⊤◇-body
+       GUARDED, so Pi' is unit/var/arrow and the row reduces to the others)
+       / a flexible (SolS-Var keeps it; Ψa = ∅ by
+       [ad_ppre_mono_subject_target_tags_empty], since a flexible Pi has a
+       MONOTYPE θ-image) / unit and ∀, both impossible by inversion on the
+       precision against an arrow guess. *)
     admit.
   - (* ForallL, tagged : ε ∈ Ψi forces Pi = ∀β.P1; descend ψa *)
     admit.

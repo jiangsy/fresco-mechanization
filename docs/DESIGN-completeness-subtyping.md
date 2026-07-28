@@ -560,6 +560,32 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-29 (a2): **P6-Sv induction at 11/12 — only ARROW and
+  ForallL-tagged remain, and NEITHER needs new infrastructure.**  Closed
+  since (a1): the ρ-EXTENSION `uskl_rho_subst` (the paper's
+  `ρ_b = ρ ∘ [ψ_b/β]`) together with `uskl_rho_subst_refl`, `uskl_rho_rename`
+  and `uskl_rho_is_tskl`; and the CHECK case in full, including the sub-row
+  where hazard H3 materialised.
+  - The H3 sub-row (Pi = ⊤◇Pi' with a FLEXIBLE body): `SolEq-Var` keeps the
+    BODY's flexible rather than the payload's, so the output is ⊤◇Pi' and
+    its precision IS the input premise — modulo Ψa = ∅, which holds by the
+    flexible-payload argument (θP0 mono ⇒ Q mono-ish ⇒ the consistency
+    solves no tag), exactly P6-Cv's own FLEX row reused.
+  - **Method note that keeps paying off**: every binder-family mismatch in
+    this development dissolves the same way — instantiate at ONE fresh
+    binder, then rename.  It is now used by `flex_shield_rename_l/_r`,
+    `a_solve_sub_eq_rename` (ForallR's SolS-ForallR family),
+    `uskl_rho_rename` (the ρ-extension's ∀ rows).  See (z5).
+  - **Arrow** (next): `arrow_tag_split` (Qed) does the tag algebra; the LEFT
+    premise goes to P6-Cv as in Check, the RIGHT to the IH.  Pi grid: arrow
+    / □ (SolS-GhostLF) / ⊤◇ / flexible / unit and ∀ impossible.  NOTE: the
+    ⊤◇ row needs NO inner induction — wf makes the ⊤◇-body GUARDED, so it is
+    unit/var/arrow and reduces to the other rows.  (P6-Cv needed a size
+    induction there for unrelated reasons.)
+  - **ForallL-tagged**: `uskl_rho_subst` + `flex_shield_descend_r` + the
+    `fastep_all_r` prepend; Pi grid ∀ / ⊤◇ / □, the last two as in
+    UnivGhostLG.
+
 - 2026-07-29 (a1): **P6-Sv induction at 10/12 — ForallR, Check (bar one
   sub-row), FlexMono and UnivGhostLG all closed.**  Kit added since (z4),
   all Qed: `a_solve_sub_complete_rho_var` (the ρ-leaf closer every case
