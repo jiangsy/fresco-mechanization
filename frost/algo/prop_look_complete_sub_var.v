@@ -606,8 +606,122 @@ Theorem a_solve_sub_complete_var :
   exists Pa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
              Θ ⨟ Δ ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
-Admitted.  (* TODO[P6-Sv]: the main induction on [ad_pat_sub_g] — case map
-              above.  The statement is settled (the repair premise is proved
-              to exclude the counterexample by [flex_shield_excludes_cex])
-              and every descent it needs is Qed above; what remains is the
-              per-case work, which follows the paper's proof text. *)
+  intros n NM M Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
+  intros HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hθ Hrho Htags HwfSub
+         Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hfsh Hpre
+         HΨs1 HΨs2 Hsub Hrefine.
+  (* everything except the derivation is generalized: ForallR/ForallL both
+     extend Θ0 and Θ, ForallL grows Δρ/Δ and rewrites the tag split, and
+     Arrow splits P0/Pi/ψa — so no premise may stay fixed *)
+  revert Θ0 θ Δ Δρ Ψρ Ψ' Ψi Ψa ψa Pi P0
+         HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hθ Hrho Htags HwfSub
+         Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hfsh Hpre
+         HΨs1 HΨs2 Hrefine.
+  (* ⚠️ the lemma's [Ψ'] is re-introduced as [Ψt]: [Ψ'] is a BINDER NAME of
+     the ForallL rules, so [induction] has already claimed it *)
+  induction Hsub; intros
+    Θ0 θ Δ Δρ Ψρ Ψt Ψi Ψa ψa Pi P0
+    HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hθ Hrho Htags HwfSub
+    Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hfsh Hpre
+    HΨs1 HΨs2 Hrefine.
+  - (* Infer : M = TI, so [skmod] forces P0 = □ and SolS-Vacuous applies
+       with Pa := Pi; the rule's [Ψ = ∅] collapses the tag conclusion *)
+    assert (HP0 : P0 = pskl_hole).
+    { destruct NM;
+        [ pose proof (HmodTY eq_refl) as Hm | pose proof (HmodSK eq_refl) as Hm ];
+        inversion Hm; reflexivity. }
+    subst P0.
+    exists Pi; split; [ apply a_solve_sub__vacuous | ].
+    eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
+    assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
+    clear - HΨae; fsetdec.
+  - (* Check (TY/TC) : delegate to P6-Cv, then dispatch on Pi *)
+    admit.
+  - (* ForallR (TY/TC) : refinement gives P0 = ∀.P0'; descend P0 *)
+    admit.
+  - (* UnivGhostR (SK) : M = TC at sort SK, so [skmod] again forces P0 = □
+       and the case closes exactly like Infer *)
+    assert (HP0 : P0 = pskl_hole)
+      by (pose proof (HmodSK eq_refl) as Hm; inversion Hm; reflexivity).
+    subst P0.
+    exists Pi; split; [ apply a_solve_sub__vacuous | ].
+    eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
+    assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
+    clear - HΨae; fsetdec.
+  - (* Arrow : skmod forces P0 = P01→P02; left → P6-Cv, right → IH *)
+    admit.
+  - (* ForallL, tagged : ε ∈ Ψi forces Pi = ∀β.P1; descend ψa *)
+    admit.
+  - (* ForallL, untagged : IMPOSSIBLE.  The subject is an UNTAGGED ∀, and a
+       decorated skeleton carries a tag on EVERY quantifier ([is_tskl] has
+       only [all_etag]) — so neither ψa nor a ρ-image has this shape.  This
+       is the mech's second constructor for the paper's single ForallL rule
+       (its ∀^β1 subject has a POTENTIAL tag, declarative.tex:884); the
+       tags-sorted target forces β1 = ε, i.e. the tagged row. *)
+    exfalso.
+    assert (Htsk : is_tskl ψa) by (inversion Htags; assumption).
+    destruct (uskl_rho_all_syn_l_inv Hrho) as [[Heq _] | [Hleaf | Hcong]].
+    + subst ψa; inversion Htsk.
+    + destruct Hleaf as (α0 & Ψ'' & _ & _ & Htagsub & _ & _).
+      assert (Htsk' : is_tskl (uskl_all_syn R)) by (inversion Htagsub; assumption).
+      inversion Htsk'.
+    + destruct Hcong as (L0 & R0 & Heq & _); subst ψa; inversion Htsk.
+  - (* Ghost (SK) : IMPOSSIBLE — ψa cannot contain a plain □.
+       The subject is [uskl_hole]; [uskl_rho_hole_l_inv] leaves either
+       ψa = □ (refuted by [is_tskl], which admits only the DOTTED ⟨⟩̇) or a
+       ρ-leaf whose image □ would have to be tags-sorted (same refutation). *)
+    exfalso.
+    assert (Htsk : is_tskl ψa) by (inversion Htags; assumption).
+    destruct (uskl_rho_hole_l_inv Hrho) as [[Heq _] | Hleaf].
+    + subst ψa; inversion Htsk.
+    + destruct Hleaf as (α0 & Ψ'' & _ & _ & Htagsub & _ & _).
+      assert (Htsk' : is_tskl uskl_hole) by (inversion Htagsub; assumption).
+      inversion Htsk'.
+  - (* GhostG (SK) : the dotted ⟨⟩̇ subject.  [mod_comp_sk ⟨⟩ M] rules out
+       [FN], so M ∈ {TI, TC} and [skmod{SK}] forces P0 = □ once more *)
+    assert (HP0 : P0 = pskl_hole).
+    { pose proof (HmodSK eq_refl) as Hm; inversion Hm; subst;
+        solve [ reflexivity | inversion H0 ]. }
+    subst P0.
+    exists Pi; split; [ apply a_solve_sub__vacuous | ].
+    eapply ad_partial_precise_psi_cong; [ exact Hpre | ].
+    assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
+    clear - HΨae; fsetdec.
+  - (* UnivGhostL (SK) : IMPOSSIBLE for the same reason as Ghost — the
+       subject is a PLAIN ⊤◇, and [is_tskl] admits only the DOTTED ⊤̇◇, so
+       neither ψa itself nor a ρ-image can have this shape *)
+    exfalso.
+    assert (Htsk : is_tskl ψa) by (inversion Htags; assumption).
+    destruct (uskl_rho_tophole_l_inv Hrho) as [[Heq _] | [Hleaf | Hcong]].
+    + subst ψa; inversion Htsk.
+    + destruct Hleaf as (α0 & Ψ'' & _ & _ & Htagsub & _ & _).
+      assert (Htsk' : is_tskl (uskl_tophole R)) by (inversion Htagsub; assumption).
+      inversion Htsk'.
+    + destruct Hcong as (R0 & Heq & _); subst ψa; inversion Htsk.
+  - (* UnivGhostLG (SK) : ⊤̇◇ subject; descend ψa *)
+    admit.
+  - (* FlexMono : the subject is a defined flexible; unfold it *)
+    admit.
+Admitted.  (* TODO[P6-Sv]: 6 of 12 cases are CLOSED — Infer, UnivGhostR,
+    GhostG (all three: [skmod] forces P0 = □, so SolS-Vacuous returns Pi and
+    the rule's [Ψ = ∅] collapses the tag conclusion), and Ghost, UnivGhostL,
+    ForallL-untagged (all three IMPOSSIBLE: their subject shape — plain □,
+    plain ⊤◇, untagged ∀ — is not [is_tskl], so it is neither ψa's nor a
+    ρ-image's).
+
+    The 6 that remain are the ones that need a P0 × Pi case grid, in the
+    order they should be attempted:
+      1. UnivGhostLG — ψa = ⊤̇◇ψ0; precision inversion gives Pi = ⊤◇Pi' /
+         □ / defined-flex; the ⊤◇ row is IH + SolS-UnivGhostL + P-UnivGhostKeep.
+         Smallest grid; do it first as the template.
+      2. ForallR   — refinement inversion gives P0 = ∀.P0'; descend with
+         [flex_shield_descend_l]; strip the binder with P6-Cs's ∀-kit.
+      3. ForallL (tagged) — ε ∈ Ψi forces Pi = ∀β.P1 (the paper's argument
+         from [Ψi,Ψa = Ψ'] and ε ∉ Ψa); descend with [flex_shield_descend_r].
+      4. Check     — delegate to P6-Cv [a_solve_eq_complete_var], then the
+         four Pi-subcases guarded / □ / ∀ (impossible) / ⊤◇.
+      5. Arrow     — [flex_shield_arrow_inv]; left premise → P6-Cv, right →
+         IH; the P0-flexible row is where the repair premise pays off.
+      6. FlexMono  — unfold the definition; mirrors P6-Cv's flex_l row.
+
+    All the [flex_shield] descents these consume are Qed above. *)
