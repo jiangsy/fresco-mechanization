@@ -18,10 +18,10 @@
     ------------------------------------------------------------------------
     THE PROBLEM.  Two ingredients of the original definitions conspire:
 
-    1. FLEX MIGRATION.  [Assign-Depend] places a payload flexible [X̂] into
+    1. FLEX MIGRATION.  [Assign-Depend] places a payload flexible [α̂] into
        the pending suffix [Ξ]; [Assign-SkipTmVar] threads [Ξ] BELOW walked
        term binders; [Assign-SolveM] deposits it at the subject's position.
-       The migration is FORCED by wf: the deposited definition mentions [X̂].
+       The migration is FORCED by wf: the deposited definition mentions [α̂].
 
     2. SYNTACTIC MIDDLES + POSITIONAL WF: the original var rule
 
@@ -32,10 +32,10 @@
        pins the target's binder payload to the syntactic [θP], and flex
        images must be well-formed in the POSITIONAL REMAINDER.
 
-    A competing solution may solve [X̂] with a name [δ̂] it allocates ABOVE
-    the walked binder [y] (legal at [X̂]'s ORIGINAL position); the factoring
-    must then reproduce a binder payload mentioning [δ̂] — [ζX̂ = δ̂]
-    SYNTACTICALLY — while [X̂] sits BELOW [y] in [Θ₁], out of [δ̂]'s scope.
+    A competing solution may solve [α̂] with a name [δ̂] it allocates ABOVE
+    the walked binder [y] (legal at [α̂]'s ORIGINAL position); the factoring
+    must then reproduce a binder payload mentioning [δ̂] — [ζα̂ = δ̂]
+    SYNTACTICALLY — while [α̂] sits BELOW [y] in [Θ₁], out of [δ̂]'s scope.
 
     PROVENANCE.  The syntactic rules are faithful to Gundry's THESIS
     (Gundry13, Fig. 2.4 — term middles [x : θσ], positional remainder,
@@ -46,14 +46,14 @@
     App. D.1) does not treat those cases — the gap predates this paper.
     See the paper note (sections/appendices/optimality-cex.tex).
 
-    THE INSTANCE (five distinct atoms c, X, y, α, δ):
+    THE INSTANCE (five distinct atoms c, α, y, α, δ):
 
-      Θ₀ = c : X̂→(),  X̂,  y : (),  α̂          P = X̂→()     (assign α̂ ≔ P)
-      Θ₁ = c : X̂→(),  y : (),  α̂ ≔ X̂→(),  X̂             (X̂ moved below y)
-      θ  = [δ̂/X̂, ()→()/α̂]   into   Θ = c : δ̂→(),  δ̂ ≔ (),  y : ()
+      Θ₀ = c : α̂→(),  α̂,  y : (),  α̂          P = α̂→()     (assign α̂ ≔ P)
+      Θ₁ = c : α̂→(),  y : (),  α̂ ≔ α̂→(),  α̂             (α̂ moved below y)
+      θ  = [δ̂/α̂, ()→()/α̂]   into   Θ = c : δ̂→(),  δ̂ ≔ (),  y : ()
 
     Under [a_inc_syn] no ζ exists ([cex_no_zeta_syn]); under the adopted
-    semantic [a_inc], ζ = [()→()/α̂, ()/X̂] factors, using the depth-legal
+    semantic [a_inc], ζ = [()→()/α̂, ()/α̂] factors, using the depth-legal
     representative [()] of [δ̂]'s ≡ᵗ-class ([cex_zeta_semantic]).
 
     Everything below is Qed and axiom-free. *)
@@ -111,35 +111,35 @@ Inductive a_inc_syn : aenv -> metasubst -> aenv -> Prop :=
 Section Cex.
 
 (* Five distinct names. *)
-Variables c X y alpha delta : atom.
-Hypothesis Hd1 : c <> X.    Hypothesis Hd2 : c <> y.
+Variables c α y alpha delta : atom.
+Hypothesis Hd1 : c <> α.    Hypothesis Hd2 : c <> y.
 Hypothesis Hd3 : c <> alpha.  Hypothesis Hd4 : c <> delta.
-Hypothesis Hd5 : X <> y.    Hypothesis Hd6 : X <> alpha.
-Hypothesis Hd7 : X <> delta.  Hypothesis Hd8 : y <> alpha.
+Hypothesis Hd5 : α <> y.    Hypothesis Hd6 : α <> alpha.
+Hypothesis Hd7 : α <> delta.  Hypothesis Hd8 : y <> alpha.
 Hypothesis Hd9 : y <> delta.  Hypothesis Hd10 : alpha <> delta.
 
-(* The assignment payload P = X̂ → () and its guess. *)
-Definition Pc : pskl := pskl_arrow (pskl_var_f X) pskl_unit.
-Definition tauP : ptyp := ptyp_arrow (ptyp_var_f X) ptyp_unit.
+(* The assignment payload P = α̂ → () and its guess. *)
+Definition Pc : pskl := pskl_arrow (pskl_var_f α) pskl_unit.
+Definition tauP : ptyp := ptyp_arrow (ptyp_var_f α) ptyp_unit.
 
-(* The input context  Θ₀ = c : X̂→(), X̂, y : (), α̂. *)
+(* The input context  Θ₀ = c : α̂→(), α̂, y : (), α̂. *)
 Definition Th0 : aenv :=
   (c ~ abind_var_typ tauP) ++
-  (X ~ abind_flex_mono) ++
+  (α ~ abind_flex_mono) ++
   (y ~ abind_var_typ ptyp_unit) ++
   (alpha ~ abind_flex_mono) ++ nil.
 
-(* The algorithm's output  Θ₁ = c : X̂→(), y : (), α̂ ≔ X̂→(), X̂. *)
+(* The algorithm's output  Θ₁ = c : α̂→(), y : (), α̂ ≔ α̂→(), α̂. *)
 Definition Th1 : aenv :=
   (c ~ abind_var_typ tauP) ++
   (y ~ abind_var_typ ptyp_unit) ++
   (alpha ~ abind_flex_mono_def tauP) ++
-  (X ~ abind_flex_mono) ++ nil.
+  (α ~ abind_flex_mono) ++ nil.
 
-(* The competing solution:  θ = [δ̂/X̂, ()→()/α̂]  into
+(* The competing solution:  θ = [δ̂/α̂, ()→()/α̂]  into
    Θ = c : δ̂→(), δ̂ ≔ (), y : (). *)
 Definition th : metasubst :=
-  (X, ptyp_var_f delta) :: (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: nil.
+  (α, ptyp_var_f delta) :: (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: nil.
 Definition Th : aenv :=
   (c ~ abind_var_typ (ptyp_arrow (ptyp_var_f delta) ptyp_unit)) ++
   (delta ~ abind_flex_mono_def ptyp_unit) ++
@@ -157,8 +157,8 @@ Proof.
     [ auto | unfold Pc; simpl; clear; fsetdec | ].
   simpl. apply a_assign__skip_tm_var.
   change (((alpha ~ abind_flex_mono) ++ nil)
-            ⊲[ add y (add c empty) ][ (X ~ abind_flex_mono) ] alpha ≔ Pc
-            ⊣ ((alpha ~ abind_flex_mono_def tauP) ++ nil ++ (X ~ abind_flex_mono) ++ nil)).
+            ⊲[ add y (add c empty) ][ (α ~ abind_flex_mono) ] alpha ≔ Pc
+            ⊣ ((alpha ~ abind_flex_mono_def tauP) ++ nil ++ (α ~ abind_flex_mono) ++ nil)).
   apply a_assign__solve_m.
   - unfold Pc; simpl. clear - Hd6. fsetdec.
   - unfold Pc, tauP.
@@ -199,8 +199,8 @@ Lemma cex_join :
               ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup th alpha))).
 Proof.
   unfold Pc, th. simpl.
-  destruct (X == X) as [_|]; [ | contradiction ].
-  destruct (alpha == X) as [Heq|_]; [ exfalso; auto | ].
+  destruct (α == α) as [_|]; [ | contradiction ].
+  destruct (alpha == α) as [Heq|_]; [ exfalso; auto | ].
   destruct (alpha == alpha) as [_|]; [ | contradiction ].
   simpl.
   apply ad_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty).
@@ -219,7 +219,7 @@ Lemma cex_msubst_th_tauP :
   msubst_ptyp th tauP = ptyp_arrow (ptyp_var_f delta) ptyp_unit.
 Proof.
   unfold th, tauP. simpl.
-  destruct (X == X); [ reflexivity | contradiction ].
+  destruct (α == α); [ reflexivity | contradiction ].
 Qed.
 
 Lemma cex_inc_syn : a_inc_syn (nil ++ Th0) th Th.
@@ -227,7 +227,7 @@ Proof.
   simpl. unfold Th0, Th.
   assert (D : a_inc_syn
               ((c ~ abind_var_typ tauP) ++
-               (X ~ abind_flex_mono) ++
+               (α ~ abind_flex_mono) ++
                (y ~ abind_var_typ ptyp_unit) ++
                (alpha ~ abind_flex_mono) ++ nil)
               th
@@ -237,7 +237,7 @@ Proof.
                (y ~ abind_var_typ ptyp_unit) ++ nil)).
   2:{ rewrite cex_msubst_th_tauP in D. exact D. }
   apply a_inc_syn__var; [ | constructor ].
-  (* X̂ ↦ δ̂ : in scope HERE (above y) *)
+  (* α̂ ↦ δ̂ : in scope HERE (above y) *)
   unfold th. apply a_inc_syn__flex.
   2:{ apply a_wf_ptyp__var. right. right. exists ptyp_unit.
       unfold binds; simpl. left. reflexivity. }
@@ -265,7 +265,7 @@ Lemma cex_no_zeta_syn : forall ζ, ~ a_inc_syn Th1 ζ Th.
 Proof.
   intros ζ Hζ. unfold Th1, Th in Hζ.
   inversion Hζ; subst.
-  (* c's middle : Ξ must be nil, and it forces ζX̂ = δ̂ *)
+  (* c's middle : Ξ must be nil, and it forces ζα̂ = δ̂ *)
   destruct Ξ as [ | [ac bc] Ξ' ].
   2:{ simpl in H4. inversion H4; subst.
       inversion H5 as [ | ? ? ? Hs' Hb ]; subst. inversion Hb. }
@@ -288,11 +288,11 @@ Proof.
   (* α̂-def entry against the EMPTY remainder *)
   inversion H7; subst.
   simpl in H0.
-  destruct (X == alpha) as [Heq | _]; [ exfalso; apply Hd6; exact Heq | ].
-  (* X̂'s entry against the EMPTY remainder *)
+  destruct (α == alpha) as [Heq | _]; [ exfalso; apply Hd6; exact Heq | ].
+  (* α̂'s entry against the EMPTY remainder *)
   inversion H6; subst.
   simpl in H0.
-  destruct (X == X) as [_ | Hne]; [ | contradiction ].
+  destruct (α == α) as [_ | Hne]; [ | contradiction ].
   match goal with
   | Heqτ : _ = ptyp_var_f delta |- _ => rewrite Heqτ in *
   end.
@@ -307,23 +307,23 @@ Qed.
 
 (* ------------------------------------------------------------------ *)
 (*  5. THE ADOPTED SEMANTIC RULE DISSOLVES IT: the same instance         *)
-(*     factors through  ζ = [()→()/α̂, ()/X̂]  — the binder middle is     *)
+(*     factors through  ζ = [()→()/α̂, ()/α̂]  — the binder middle is     *)
 (*     matched up to ≡ᵗ (δ̂→() ≡ᵗ ()→() since δ̂ ≔ ()).                   *)
 (* ------------------------------------------------------------------ *)
 
 Definition zeta_sem : metasubst :=
-  (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: (X, ptyp_unit) :: nil.
+  (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: (α, ptyp_unit) :: nil.
 
 Lemma cex_zeta_semantic : zeta_sem ∷ Th1 ⊑ Th.
 Proof.
   unfold Th1, Th, zeta_sem.
-  (* c : middle  δ̂→()  ≡ᵗ  ζ(X̂→()) = ()→()  over the remainder *)
+  (* c : middle  δ̂→()  ≡ᵗ  ζ(α̂→()) = ()→()  over the remainder *)
   eapply a_inc__var with (Ξ := nil)
            (A' := ptyp_arrow (ptyp_var_f delta) ptyp_unit);
     [ | | constructor ].
   2:{ unfold tauP. simpl.
-      destruct (X == alpha) as [Heq|_]; [ exfalso; auto | ].
-      destruct (X == X) as [_|]; [ | contradiction ].
+      destruct (α == alpha) as [Heq|_]; [ exfalso; auto | ].
+      destruct (α == α) as [_|]; [ | contradiction ].
       apply a_tyequiv__arrow;
         [ | apply a_tyequiv__refl; constructor ].
       apply a_tyequiv__flex_def.
@@ -333,15 +333,15 @@ Proof.
            (A' := ptyp_unit).
   2:{ simpl. apply a_tyequiv__refl. constructor. }
   2:{ apply a_suffix__cons; constructor. }
-  (* α̂ ≔ X̂→() : image ()→(), and ζ(X̂→()) = ()→() *)
+  (* α̂ ≔ α̂→() : image ()→(), and ζ(α̂→()) = ()→() *)
   apply a_inc__flex_def.
   2:{ apply a_wf_ptyp__arrow; apply a_wf_ptyp__unit. }
   2:{ apply mono_ptyp__arrow; apply mono_ptyp__unit. }
   2:{ unfold tauP. simpl.
-      destruct (X == alpha) as [Heq|_]; [ exfalso; auto | ].
-      destruct (X == X) as [_|]; [ | contradiction ].
+      destruct (α == alpha) as [Heq|_]; [ exfalso; auto | ].
+      destruct (α == α) as [_|]; [ | contradiction ].
       apply a_tyequiv__refl. constructor; constructor. }
-  (* X̂ : image () *)
+  (* α̂ : image () *)
   apply a_inc__flex.
   2:{ apply a_wf_ptyp__unit. }
   2:{ apply mono_ptyp__unit. }

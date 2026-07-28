@@ -100,12 +100,12 @@ Set Implicit Arguments.
 (*  ≡ᵗ over a definition-free context is syntactic identity.              *)
 (* ===================================================================== *)
 
-Lemma a_tyequiv_def_free_eq : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
+Lemma a_tyequiv_def_free_eq : forall Θ A A',
+  Θ ⊢ A ≡ᵗ A' ->
   (forall α τ, ~ binds α (abind_flex_mono_def τ) Θ) ->
-  A = B.
+  A = A'.
 Proof.
-  intros Θ A B H; induction H; intros Hdf.
+  intros Θ A A' H; induction H; intros Hdf.
   - reflexivity.
   - symmetry; auto.
   - rewrite (IHa_tyequiv1 Hdf); auto.

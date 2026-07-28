@@ -45,10 +45,10 @@ Proof. intros P H; inversion H; auto. Qed.
 
 (** Solving preserves local closure. *)
 Lemma a_solve_sub_eq_lc :
-  (forall Θ m P Q P', Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
-     lc_pskl P -> lc_pskl Q -> lc_pskl P') /\
-  (forall Θ P Q P', Θ ⊢ₑ P ∼ Q ⤳ P' ->
-     lc_pskl P -> lc_pskl Q -> lc_pskl P').
+  (forall Θ m P P0 P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' ->
+     lc_pskl P -> lc_pskl P0 -> lc_pskl P') /\
+  (forall Θ P P0 P', Θ ⊢ₑ P ∼ P0 ⤳ P' ->
+     lc_pskl P -> lc_pskl P0 -> lc_pskl P').
 Proof.
   apply a_solve_sub_eq_mutind; intros;
     (* peel structured, non-binder inputs *)
@@ -66,7 +66,7 @@ Proof.
       | apply lc_pskl_tophole; eauto
       | apply lc_pskl_tophole; constructor; eauto ].
   (* remaining: binder cases (∀-input and/or ∀-output). *)
-  - (* SS-ForallL : ∀P ≼ Q ⤳ ∀P' *)
+  - (* SS-ForallL : ∀P ≼ P0 ⤳ ∀P' *)
     pick fresh β for L. apply (lc_pskl_all_syn_exists β).
     match goal with
     | HP : lc_pskl (pskl_all_syn _),
@@ -80,7 +80,7 @@ Proof.
       IH : forall a, a `notin` L -> _ -> _ -> _ |- _ =>
         eapply IH; [ auto | eassumption | apply (lc_pskl_all_syn_inv HQ) ]
     end.
-  - (* SE-Forall : ∀P ∼ ∀Q ⤳ ∀P' *)
+  - (* SE-Forall : ∀P ∼ ∀P0 ⤳ ∀P' *)
     pick fresh β for L. apply (lc_pskl_all_syn_exists β).
     match goal with
     | HP : lc_pskl (pskl_all_syn ?p), HQ : lc_pskl (pskl_all_syn ?q),
@@ -88,7 +88,7 @@ Proof.
         apply IH; [ auto | apply (lc_pskl_all_syn_inv HP)
                   | apply (lc_pskl_all_syn_inv HQ) ]
     end.
-  - (* SE-GhostForall : ⫯P ∼ ∀Q ⤳ ∀P' *)
+  - (* SE-GhostForall : ⫯P ∼ ∀P0 ⤳ ∀P' *)
     pick fresh β for L. apply (lc_pskl_all_syn_exists β).
     match goal with
     | HQ : lc_pskl (pskl_all_syn _),
@@ -96,7 +96,7 @@ Proof.
         apply IH; [ auto | apply lc_pskl_tophole; assumption
                   | apply (lc_pskl_all_syn_inv HQ) ]
     end.
-  - (* SE-ForallGhost : ∀P ∼ ⫯Q ⤳ ∀P' *)
+  - (* SE-ForallGhost : ∀P ∼ ⫯P0 ⤳ ∀P' *)
     pick fresh β for L. apply (lc_pskl_all_syn_exists β).
     match goal with
     | HP : lc_pskl (pskl_all_syn _),
@@ -106,12 +106,12 @@ Proof.
     end.
 Qed.
 
-Lemma a_solve_sub_lc : forall Θ m P Q P',
-  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' -> lc_pskl P -> lc_pskl Q -> lc_pskl P'.
+Lemma a_solve_sub_lc : forall Θ m P P0 P',
+  Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' -> lc_pskl P -> lc_pskl P0 -> lc_pskl P'.
 Proof. intros; eapply (proj1 a_solve_sub_eq_lc); eauto. Qed.
 
-Lemma a_solve_eq_lc : forall Θ P Q P',
-  Θ ⊢ₑ P ∼ Q ⤳ P' -> lc_pskl P -> lc_pskl Q -> lc_pskl P'.
+Lemma a_solve_eq_lc : forall Θ P P0 P',
+  Θ ⊢ₑ P ∼ P0 ⤳ P' -> lc_pskl P -> lc_pskl P0 -> lc_pskl P'.
 Proof. intros; eapply (proj2 a_solve_sub_eq_lc); eauto. Qed.
 
 (** Solving a GUARDED subject yields a guarded solution: a guarded LHS only
@@ -119,10 +119,10 @@ Proof. intros; eapply (proj2 a_solve_sub_eq_lc); eauto. Qed.
     introduced on the left).  Needed for the tophole cases of output
     well-formedness. *)
 Lemma a_solve_sub_eq_guarded :
-  (forall Θ m P Q P', Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
-     lc_pskl P -> lc_pskl Q -> guarded_pskl P -> guarded_pskl P') /\
-  (forall Θ P Q P', Θ ⊢ₑ P ∼ Q ⤳ P' ->
-     lc_pskl P -> lc_pskl Q -> guarded_pskl P -> guarded_pskl P').
+  (forall Θ m P P0 P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' ->
+     lc_pskl P -> lc_pskl P0 -> guarded_pskl P -> guarded_pskl P') /\
+  (forall Θ P P0 P', Θ ⊢ₑ P ∼ P0 ⤳ P' ->
+     lc_pskl P -> lc_pskl P0 -> guarded_pskl P -> guarded_pskl P').
 Proof.
   apply a_solve_sub_eq_mutind; intros;
     (* a non-guarded subject makes the case vacuous *)
@@ -146,19 +146,19 @@ Proof.
     end.
 Qed.
 
-Lemma a_solve_sub_guarded : forall Θ m P Q P',
-  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
-  lc_pskl P -> lc_pskl Q -> guarded_pskl P -> guarded_pskl P'.
+Lemma a_solve_sub_guarded : forall Θ m P P0 P',
+  Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' ->
+  lc_pskl P -> lc_pskl P0 -> guarded_pskl P -> guarded_pskl P'.
 Proof. intros; eapply (proj1 a_solve_sub_eq_guarded); eauto. Qed.
 
 (** Solving introduces no new free variables: the solution's variables come
     from the problem.  (Freshness of look/solve outputs relies on this.)  The
     binder cases use the standard open ftv bounds + a fresh witness. *)
 Lemma a_solve_sub_eq_ftv :
-  (forall Θ m P Q P', Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
-     ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q) /\
-  (forall Θ P Q P', Θ ⊢ₑ P ∼ Q ⤳ P' ->
-     ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q).
+  (forall Θ m P P0 P', Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' ->
+     ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl P0) /\
+  (forall Θ P P0 P', Θ ⊢ₑ P ∼ P0 ⤳ P' ->
+     ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl P0).
 Proof.
   apply a_solve_sub_eq_mutind; intros; simpl in *;
     try solve [ fsetdec ].
@@ -185,7 +185,7 @@ Proof.
     simpl in *; fsetdec.
 Qed.
 
-Lemma a_solve_sub_ftv : forall Θ m P Q P',
-  Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
-  ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl Q.
+Lemma a_solve_sub_ftv : forall Θ m P P0 P',
+  Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' ->
+  ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_pskl P0.
 Proof. intros; eapply (proj1 a_solve_sub_eq_ftv); eauto. Qed.

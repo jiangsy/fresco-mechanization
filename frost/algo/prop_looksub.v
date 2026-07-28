@@ -37,12 +37,12 @@ Combined Scheme a_looksub_lookeq_mutind
 (* ===================================================================== *)
 
 Lemma a_looksub_lookeq_decls :
-  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C -> a_decls Ξ) /\
-  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C -> a_decls Ξ).
+  (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 -> a_decls Ξ) /\
+  (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 -> a_decls Ξ).
 Proof.
   apply (a_looksub_lookeq_mutind
-           (fun α m P P' Ξ C _ => a_decls Ξ)
-           (fun α P P' Ξ C _ => a_decls Ξ));
+           (fun α m P P' Ξ 𝒞 _ => a_decls Ξ)
+           (fun α P P' Ξ 𝒞 _ => a_decls Ξ));
     intros; try solve [ assumption ]; try solve [ apply a_decls__nil ];
     try solve [ apply a_decls_app; assumption ];
     try solve [ destruct (atom_fresh L) as [β0 Hβ0]; eauto ].
@@ -50,27 +50,27 @@ Proof.
   econstructor; apply a_decls__nil.
 Qed.
 
-Lemma a_looksub_decls : forall α m P P' Ξ C,
-  P ≼[ α , m ] P' ⤳ Ξ ⨾ C -> a_decls Ξ.
+Lemma a_looksub_decls : forall α m P P' Ξ 𝒞,
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 -> a_decls Ξ.
 Proof. intros; eapply (proj1 a_looksub_lookeq_decls); eauto. Qed.
 
-Lemma a_lookeq_decls : forall α P P' Ξ C,
-  P ∼[ α ] P' ⤳ Ξ ⨾ C -> a_decls Ξ.
+Lemma a_lookeq_decls : forall α P P' Ξ 𝒞,
+  P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 -> a_decls Ξ.
 Proof. intros; eapply (proj2 a_looksub_lookeq_decls); eauto. Qed.
 
 (** [guess] generates only declarations ([SK]: none; [TY]: the fresh mono
     flexibles of [a_guess_mono]). *)
-Lemma a_guess_decls : forall NM Q Ξ Q',
-  a_guess NM Q Ξ Q' -> a_decls Ξ.
+Lemma a_guess_decls : forall NM P Ξ P',
+  a_guess NM P Ξ P' -> a_decls Ξ.
 Proof.
-  intros NM Q Ξ Q' H; destruct H;
+  intros NM P Ξ P' H; destruct H;
     [ apply a_decls__nil | eapply a_guess_mono_decls; eauto ].
 Qed.
 
-Lemma a_extract_decls : forall NM α m P P' Ξ Q,
-  P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q -> a_decls Ξ.
+Lemma a_extract_decls : forall NM α m P P' Ξ P0,
+  P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ P0 -> a_decls Ξ.
 Proof.
-  intros NM α m P P' Ξ Q H; destruct H.
+  intros NM α m P P' Ξ P0 H; destruct H.
   apply a_decls_app;
     [ eapply a_looksub_decls; eauto | eapply a_guess_decls; eauto ].
 Qed.
@@ -100,24 +100,24 @@ Lemma ftvar_in_cstrs_app : forall C1 C2,
 Proof. induction C1; intros; simpl; [ fsetdec | rewrite IHC1; fsetdec ]. Qed.
 
 Lemma a_looksub_lookeq_ftv :
-  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-     ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ) /\
-  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-     ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ).
+  (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+     ftvar_in_cstrs 𝒞 [<=] ftvar_in_pskl P' `union` dom Ξ) /\
+  (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+     ftvar_in_cstrs 𝒞 [<=] ftvar_in_pskl P' `union` dom Ξ).
 Proof.
   apply (a_looksub_lookeq_mutind
-           (fun α m P P' Ξ C _ =>
-              ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ)
-           (fun α P P' Ξ C _ =>
-              ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ));
+           (fun α m P P' Ξ 𝒞 _ =>
+              ftvar_in_cstrs 𝒞 [<=] ftvar_in_pskl P' `union` dom Ξ)
+           (fun α P P' Ξ 𝒞 _ =>
+              ftvar_in_cstrs 𝒞 [<=] ftvar_in_pskl P' `union` dom Ξ));
     intros;
     try rewrite ftvar_in_cstrs_app; try rewrite dom_app;
     simpl in *;
     try solve [ fsetdec ].
-  all: (* cofinite cases: fresh β (fresh for C too), IH + open ftv upper *)
+  all: (* cofinite cases: fresh β (fresh for 𝒞 too), IH + open ftv upper *)
     match goal with
-    | IH : forall a, a `notin` ?L -> _ |- ftvar_in_cstrs ?C [<=] _ =>
-        pick fresh β for (L `union` ftvar_in_cstrs C);
+    | IH : forall a, a `notin` ?L -> _ |- ftvar_in_cstrs ?𝒞 [<=] _ =>
+        pick fresh β for (L `union` ftvar_in_cstrs 𝒞);
         specialize (IH β ltac:(auto))
     end;
     try match goal with
@@ -127,9 +127,9 @@ Proof.
     simpl in *; fsetdec.
 Qed.
 
-Lemma a_looksub_ftv : forall α m P P' Ξ C,
-  P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-  ftvar_in_cstrs C [<=] ftvar_in_pskl P' `union` dom Ξ.
+Lemma a_looksub_ftv : forall α m P P' Ξ 𝒞,
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+  ftvar_in_cstrs 𝒞 [<=] ftvar_in_pskl P' `union` dom Ξ.
 Proof. intros; eapply (proj1 a_looksub_lookeq_ftv); eauto. Qed.
 
 (* ===================================================================== *)
@@ -141,11 +141,11 @@ Proof. intros; eapply (proj1 a_looksub_lookeq_ftv); eauto. Qed.
 (*  does not survive into the instantiation candidate.                    *)
 (* ===================================================================== *)
 
-Lemma a_solve_cstr_ftv : forall Θ C P P',
-  Θ ⊩ C ⨾ P ⤳ P' ->
-  ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_cstrs C.
+Lemma a_solve_cstr_ftv : forall Θ 𝒞 P P',
+  Θ ⊩ 𝒞 ⨾ P ⤳ P' ->
+  ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_cstrs 𝒞.
 Proof.
-  intros Θ C P P' H; induction H; simpl.
+  intros Θ 𝒞 P P' H; induction H; simpl.
   - fsetdec.
   - pose proof (a_solve_sub_ftv H). simpl. fsetdec.
   - pose proof ((proj2 a_solve_sub_eq_ftv) _ _ _ _ H). clear - H1 IHa_solve_cstr. fsetdec.
@@ -193,16 +193,16 @@ Qed.
 
 (** An α-free source collects nothing. *)
 Lemma a_looksub_lookeq_absent_nil :
-  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-     α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil) /\
-  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-     α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil).
+  (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+     α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil) /\
+  (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+     α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil).
 Proof.
   apply (a_looksub_lookeq_mutind
-           (fun α m P P' Ξ C _ =>
-              α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil)
-           (fun α P P' Ξ C _ =>
-              α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil));
+           (fun α m P P' Ξ 𝒞 _ =>
+              α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil)
+           (fun α P P' Ξ 𝒞 _ =>
+              α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil));
     intros; simpl in *;
     try solve [ auto ];
     try solve [ exfalso; fsetdec ];
@@ -234,39 +234,39 @@ Proof.
         end.
 Qed.
 
-Lemma guarded_pskl_subst : forall A Q β,
-  guarded_pskl A ->
-  lc_pskl Q ->
-  A <> pskl_var_f β ->
-  guarded_pskl (subst_pskl_in_pskl Q β A).
+Lemma guarded_pskl_subst : forall P P' β,
+  guarded_pskl P ->
+  lc_pskl P' ->
+  P <> pskl_var_f β ->
+  guarded_pskl (subst_pskl_in_pskl P' β P).
 Proof.
-  intros A Q β Hg Hlc Hne; inversion Hg; subst; simpl.
+  intros P P' β Hg Hlc Hne; inversion Hg; subst; simpl.
   - constructor.
   - destruct_if; [ exfalso; congruence | constructor ].
   - constructor; apply subst_pskl_in_pskl_lc_pskl; auto.
 Qed.
 
 Lemma a_looksub_lookeq_subst_stable :
-  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-     forall β Q, β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
-     (subst_pskl_in_pskl Q β P) ≼[ α , m ] P' ⤳ Ξ ⨾ C) /\
-  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-     forall β Q, β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
-     (subst_pskl_in_pskl Q β P) ∼[ α ] P' ⤳ Ξ ⨾ C).
+  (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+     forall β P0, β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+     (subst_pskl_in_pskl P0 β P) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞) /\
+  (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+     forall β P0, β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+     (subst_pskl_in_pskl P0 β P) ∼[ α ] P' ⤳ Ξ ⨾ 𝒞).
 Proof.
   apply (a_looksub_lookeq_mutind
-           (fun α m P P' Ξ C _ =>
-              forall β Q, β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
-              (subst_pskl_in_pskl Q β P) ≼[ α , m ] P' ⤳ Ξ ⨾ C)
-           (fun α P P' Ξ C _ =>
-              forall β Q, β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
-              (subst_pskl_in_pskl Q β P) ∼[ α ] P' ⤳ Ξ ⨾ C));
+           (fun α m P P' Ξ 𝒞 _ =>
+              forall β P0, β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+              (subst_pskl_in_pskl P0 β P) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞)
+           (fun α P P' Ξ 𝒞 _ =>
+              forall β P0, β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+              (subst_pskl_in_pskl P0 β P) ∼[ α ] P' ⤳ Ξ ⨾ 𝒞));
     intros; simpl.
   - (* LS-Var *)
     destruct_if; [ exfalso; congruence | apply a_looksub__var ].
   - (* LS-Absent *)
     apply a_looksub__absent.
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P Q β).
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P P0 β).
     fsetdec.
   - (* LS-Vacuous *)
     apply a_looksub__vacuous.
@@ -305,7 +305,7 @@ Proof.
     apply a_looksub__arrow; auto.
   - (* LS-ForallL *)
     apply a_looksub__forall_l
-      with (L := L `union` singleton β `union` ftvar_in_pskl Q).
+      with (L := L `union` singleton β `union` ftvar_in_pskl P0).
     intros γ Hγ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hγ; fsetdec | assumption ].
@@ -316,7 +316,7 @@ Proof.
     destruct_if; [ exfalso; congruence | apply a_lookeq__var ].
   - (* LE-Absent *)
     apply a_lookeq__absent.
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P Q β).
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P P0 β).
     fsetdec.
   - (* LE-Vacuous *)
     apply a_lookeq__vacuous.
@@ -337,14 +337,14 @@ Proof.
     apply a_lookeq__arrow; auto.
   - (* LE-ForallInh *)
     apply a_lookeq__forall_inh
-      with (L := L `union` singleton β `union` ftvar_in_pskl Q).
+      with (L := L `union` singleton β `union` ftvar_in_pskl P0).
     intros γ Hγ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hγ; fsetdec | assumption ].
     auto.
   - (* LE-ForallSyn *)
     apply a_lookeq__forall_syn
-      with (L := L `union` singleton β `union` ftvar_in_pskl Q).
+      with (L := L `union` singleton β `union` ftvar_in_pskl P0).
     intros γ Hγ.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
       [ | clear - Hγ; fsetdec | assumption ].
@@ -392,10 +392,10 @@ Proof.
           end ].
 Qed.
 
-Lemma a_looksub_subst_stable : forall α m P P' Ξ C β Q,
-  P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-  β <> α -> α `notin` ftvar_in_pskl Q -> lc_pskl Q ->
-  (subst_pskl_in_pskl Q β P) ≼[ α , m ] P' ⤳ Ξ ⨾ C.
+Lemma a_looksub_subst_stable : forall α m P P' Ξ 𝒞 β P0,
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+  β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+  (subst_pskl_in_pskl P0 β P) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞.
 Proof. intros; eapply (proj1 a_looksub_lookeq_subst_stable); eauto. Qed.
 
 (* ===================================================================== *)
@@ -423,20 +423,20 @@ Proof.
 Qed.
 
 Lemma a_looksub_lookeq_rename_var :
-  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+  (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
      forall α', α' `notin` ftvar_in_pskl P ->
-     (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ C) /\
-  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+     (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ 𝒞) /\
+  (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
      forall α', α' `notin` ftvar_in_pskl P ->
-     (subst_pskl_in_pskl (pskl_var_f α') α P) ∼[ α' ] P' ⤳ Ξ ⨾ C).
+     (subst_pskl_in_pskl (pskl_var_f α') α P) ∼[ α' ] P' ⤳ Ξ ⨾ 𝒞).
 Proof.
   apply (a_looksub_lookeq_mutind
-           (fun α m P P' Ξ C _ =>
+           (fun α m P P' Ξ 𝒞 _ =>
               forall α', α' `notin` ftvar_in_pskl P ->
-              (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ C)
-           (fun α P P' Ξ C _ =>
+              (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ 𝒞)
+           (fun α P P' Ξ 𝒞 _ =>
               forall α', α' `notin` ftvar_in_pskl P ->
-              (subst_pskl_in_pskl (pskl_var_f α') α P) ∼[ α' ] P' ⤳ Ξ ⨾ C));
+              (subst_pskl_in_pskl (pskl_var_f α') α P) ∼[ α' ] P' ⤳ Ξ ⨾ 𝒞));
     intros; simpl.
   - (* LS-Var *)
     destruct_if as [_ | Hne];
@@ -562,8 +562,8 @@ Proof.
     + auto.
 Qed.
 
-Lemma a_looksub_rename_var : forall α m P P' Ξ C α',
-  P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+Lemma a_looksub_rename_var : forall α m P P' Ξ 𝒞 α',
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
   α' `notin` ftvar_in_pskl P ->
-  (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ C.
+  (subst_pskl_in_pskl (pskl_var_f α') α P) ≼[ α' , m ] P' ⤳ Ξ ⨾ 𝒞.
 Proof. intros; eapply (proj1 a_looksub_lookeq_rename_var); eauto. Qed.

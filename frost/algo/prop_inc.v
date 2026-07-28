@@ -39,14 +39,14 @@ Proof.
 Qed.
 
 (** The identity metasubstitution looks every variable up to itself. *)
-Lemma msubst_lookup_id : forall ρ X,
+Lemma msubst_lookup_id : forall ρ α',
   is_id_msubst ρ ->
-  msubst_lookup ρ X = ptyp_var_f X.
+  msubst_lookup ρ α' = ptyp_var_f α'.
 Proof.
-  induction ρ as [ | [α τ] ρ' IH ]; intros X Hid; simpl; auto.
+  induction ρ as [ | [α τ] ρ' IH ]; intros α' Hid; simpl; auto.
   inversion Hid as [ | ? ? He Hid' ]; subst.
   unfold is_id_entry in He; simpl in He; subst.
-  destruct (X == α) as [->|Hne]; [ reflexivity | apply IH; exact Hid' ].
+  destruct (α' == α) as [->|Hne]; [ reflexivity | apply IH; exact Hid' ].
 Qed.
 
 Lemma msubst_ptyp_id : forall ρ A,
@@ -303,10 +303,10 @@ Qed.
 
 (** [a_tyequiv] uses its context only through positive [binds] lookups, so it
     is monotone in the context. *)
-Lemma a_tyequiv_weaken : forall Θ Θ' A B,
+Lemma a_tyequiv_weaken : forall Θ Θ' A A',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ ⊢ A ≡ᵗ B ->
-  Θ' ⊢ A ≡ᵗ B.
+  Θ ⊢ A ≡ᵗ A' ->
+  Θ' ⊢ A ≡ᵗ A'.
 Proof.
   intros * Hmon Heq; induction Heq; eauto using a_tyequiv.
 Qed.
@@ -421,11 +421,11 @@ Proof.
 Qed.
 
 (** Stability of type equivalence under identity increases. *)
-Lemma a_tyequiv_isub : forall Θ ρ Θ' A B,
+Lemma a_tyequiv_isub : forall Θ ρ Θ' A A',
   ρ ∷ Θ ⊑ Θ' ->
   is_id_msubst ρ ->
-  Θ ⊢ A ≡ᵗ B ->
-  Θ' ⊢ A ≡ᵗ B.
+  Θ ⊢ A ≡ᵗ A' ->
+  Θ' ⊢ A ≡ᵗ A'.
 Proof.
   intros * Hinc Hid Heq; induction Heq.
   - apply a_tyequiv__refl; auto.
@@ -446,9 +446,9 @@ Proof.
 Qed.
 
 (** Type equivalence embeds into skeleton equivalence. *)
-Lemma a_tyequiv_pskl : forall Θ A B,
-  Θ ⊢ A ≡ᵗ B ->
-  Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl B).
+Lemma a_tyequiv_pskl : forall Θ A A',
+  Θ ⊢ A ≡ᵗ A' ->
+  Θ ⊢ (ptyp_to_pskl A) ≡ˢ (ptyp_to_pskl A').
 Proof.
   intros * Heq; induction Heq; simpl.
   - apply a_pskl_tyequiv__refl. apply lc_ptyp_to_pskl; auto.
@@ -461,11 +461,11 @@ Proof.
 Qed.
 
 (** Stability of skeleton equivalence under identity increases. *)
-Lemma a_pskl_tyequiv_isub : forall Θ ρ Θ' P Q,
+Lemma a_pskl_tyequiv_isub : forall Θ ρ Θ' P P',
   ρ ∷ Θ ⊑ Θ' ->
   is_id_msubst ρ ->
-  Θ ⊢ P ≡ˢ Q ->
-  Θ' ⊢ P ≡ˢ Q.
+  Θ ⊢ P ≡ˢ P' ->
+  Θ' ⊢ P ≡ˢ P'.
 Proof.
   intros * Hinc Hid Heq; induction Heq.
   - apply a_pskl_tyequiv__refl; auto.

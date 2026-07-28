@@ -179,16 +179,16 @@ Proof. induction k; intros m; simpl; [ reflexivity | rewrite IHk; reflexivity ].
     subsumption is pushed under the head's curried arrow by the
     (equivalence-derived) [FN^n] spine general subsumption — whence the
     [d_wf_denv Γ] premise. *)
-Lemma d_typing_app_spine_inv : forall args Γ f m R',
+Lemma d_typing_app_spine_inv : forall args Γ f m B',
     d_wf_denv Γ ->
-    Γ ⊢[ m ] curry_exp f args ⦂ R' ->
+    Γ ⊢[ m ] curry_exp f args ⦂ B' ->
     exists Bargs,
       length Bargs = length args /\
-      (Γ ⊢[ mode_fn_n (length args) m ] f ⦂ curry_btyp Bargs R') /\
+      (Γ ⊢[ mode_fn_n (length args) m ] f ⦂ curry_btyp Bargs B') /\
       Forall2 (arg_ok Γ) Bargs (List.map snd args).
 Proof.
   intro args. induction args as [ | a init IHinit ] using rev_ind;
-    intros Γ f m R' Hwf Htyp.
+    intros Γ f m B' Hwf Htyp.
   - (* empty spine: [curry_exp f [] = f] *)
     exists nil. simpl. repeat split; [ exact Htyp | constructor ].
   - (* snoc: [exp_app (curry_exp f init) (snd a)] *)
@@ -229,14 +229,14 @@ Proof.
 Qed.
 
 (** Head-generic spine REASSEMBLY (the converse). *)
-Lemma d_typing_app_spine_build : forall args Γ f m R' Bargs,
+Lemma d_typing_app_spine_build : forall args Γ f m B' Bargs,
     length Bargs = length args ->
-    Γ ⊢[ mode_fn_n (length args) m ] f ⦂ curry_btyp Bargs R' ->
+    Γ ⊢[ mode_fn_n (length args) m ] f ⦂ curry_btyp Bargs B' ->
     Forall2 (arg_ok Γ) Bargs (List.map snd args) ->
-    Γ ⊢[ m ] curry_exp f args ⦂ R'.
+    Γ ⊢[ m ] curry_exp f args ⦂ B'.
 Proof.
   intro args. induction args as [ | a init IHinit ] using rev_ind;
-    intros Γ f m R' Bargs Hlen Hhead Hall.
+    intros Γ f m B' Bargs Hlen Hhead Hall.
   - (* [] *) destruct Bargs; [ simpl in Hhead; exact Hhead | inversion Hlen ].
   - (* snoc *)
     rewrite curry_exp_snoc.
@@ -245,7 +245,7 @@ Proof.
     inversion Hlast as [ | Barg e0 Btl etl Haok Htail HBl Hel ]; subst.
     inversion Htail; subst.
     apply d_typing_app_step with (Barg := Barg); [ | exact Haok ].
-    apply (IHinit Γ f (mode_fn m) (btyp_arrow Barg R') Bi).
+    apply (IHinit Γ f (mode_fn m) (btyp_arrow Barg B') Bi).
     + apply Forall2_length in Hfa. rewrite List.map_length in Hfa. exact Hfa.
     + rewrite curry_btyp_snoc in Hhead.
       rewrite app_length, Nat.add_1_r in Hhead. simpl in Hhead.
@@ -274,11 +274,11 @@ Definition spine_btyp (Rb : btyp) (sp : list (utyp * btyp)) : btyp :=
     commute the two without reproving disjointness). *)
 Lemma d_sub_arrow_spine_perm : forall sp sp',
     Permutation sp sp' ->
-    forall Δ Γ Rt Rb m,
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] spine_utyp Rt sp ⩽ spine_btyp Rb sp ->
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] spine_utyp Rt sp' ⩽ spine_btyp Rb sp'.
+    forall Δ Γ Ct Bb m,
+      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] spine_utyp Ct sp ⩽ spine_btyp Bb sp ->
+      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] spine_utyp Ct sp' ⩽ spine_btyp Bb sp'.
 Proof.
-  intros sp sp' Hperm. induction Hperm; intros Δ Γ Rt Rb m Hsub.
+  intros sp sp' Hperm. induction Hperm; intros Δ Γ Ct Bb m Hsub.
   - (* nil *) exact Hsub.
   - (* skip x : sp = x::l, sp' = x::l' *)
     simpl in Hsub |- *.
@@ -301,28 +301,28 @@ Qed.
 (** ** Support for stripping the [∀]-prefix and bridging the [paint]/[curry]
     forms to the [spine] forms used by the engine. *)
 
-Lemma spine_utyp_cons : forall Rt p sp,
-    spine_utyp Rt (p :: sp) = utyp_arrow (fst p) (spine_utyp Rt sp).
+Lemma spine_utyp_cons : forall Ct p sp,
+    spine_utyp Ct (p :: sp) = utyp_arrow (fst p) (spine_utyp Ct sp).
 Proof. reflexivity. Qed.
 
-Lemma spine_btyp_cons : forall Rb p sp,
-    spine_btyp Rb (p :: sp) = btyp_arrow (snd p) (spine_btyp Rb sp).
+Lemma spine_btyp_cons : forall Bb p sp,
+    spine_btyp Bb (p :: sp) = btyp_arrow (snd p) (spine_btyp Bb sp).
 Proof. reflexivity. Qed.
 
-Lemma curry_ptyp_cons : forall a args R,
-    curry_ptyp (a :: args) R = ptyp_arrow (fst a) (curry_ptyp args R).
+Lemma curry_ptyp_cons : forall a args A,
+    curry_ptyp (a :: args) A = ptyp_arrow (fst a) (curry_ptyp args A).
 Proof. reflexivity. Qed.
 
-Lemma curry_btyp_cons : forall b Bargs R',
-    curry_btyp (b :: Bargs) R' = btyp_arrow b (curry_btyp Bargs R').
+Lemma curry_btyp_cons : forall B Bargs B',
+    curry_btyp (B :: Bargs) B' = btyp_arrow B (curry_btyp Bargs B').
 Proof. reflexivity. Qed.
 
 Fixpoint utyp_all_syn_n (j : nat) (C : utyp) : utyp :=
   match j with O => C | S j' => utyp_all_syn (utyp_all_syn_n j' C) end.
 
-Lemma paint_forall_prefix : forall n X,
-    ptyp_to_utyp_syn (ptyp_forall_prefix n X) = utyp_all_syn_n n (ptyp_to_utyp_syn X).
-Proof. induction n; intros X; simpl; [ reflexivity | rewrite IHn; reflexivity ]. Qed.
+Lemma paint_forall_prefix : forall n A,
+    ptyp_to_utyp_syn (ptyp_forall_prefix n A) = utyp_all_syn_n n (ptyp_to_utyp_syn A).
+Proof. induction n; intros A; simpl; [ reflexivity | rewrite IHn; reflexivity ]. Qed.
 
 Lemma map_fst_combine : forall (X Y : Type) (l1 : list X) (l2 : list Y),
     length l1 = length l2 -> List.map fst (combine l1 l2) = l1.
@@ -340,44 +340,44 @@ Proof.
   rewrite IH; [ reflexivity | congruence ].
 Qed.
 
-Lemma paint_curry_spine : forall args Bargs R,
+Lemma paint_curry_spine : forall args Bargs A,
     length args = length Bargs ->
-    ptyp_to_utyp_syn (curry_ptyp args R)
-    = spine_utyp (ptyp_to_utyp_syn R)
+    ptyp_to_utyp_syn (curry_ptyp args A)
+    = spine_utyp (ptyp_to_utyp_syn A)
         (combine (List.map (fun ae => ptyp_to_utyp_syn (fst ae)) args) Bargs).
 Proof.
-  induction args as [ | a args IH ]; destruct Bargs as [ | b Bargs ]; intros R Hlen;
+  induction args as [ | a args IH ]; destruct Bargs as [ | b Bargs ]; intros A Hlen;
     try discriminate; [ reflexivity | ].
   cbn [List.map combine] in *. rewrite spine_utyp_cons, curry_ptyp_cons.
   cbn [fst snd ptyp_to_utyp_syn]. f_equal. apply IH. cbn [length] in Hlen. congruence.
 Qed.
 
-Lemma spine_btyp_curry : forall (args : list (ptyp * exp)) Bargs R',
+Lemma spine_btyp_curry : forall (args : list (ptyp * exp)) Bargs B',
     length args = length Bargs ->
-    spine_btyp R' (combine (List.map (fun ae => ptyp_to_utyp_syn (fst ae)) args) Bargs)
-    = curry_btyp Bargs R'.
+    spine_btyp B' (combine (List.map (fun ae => ptyp_to_utyp_syn (fst ae)) args) Bargs)
+    = curry_btyp Bargs B'.
 Proof.
-  induction args as [ | a args IH ]; destruct Bargs as [ | b Bargs ]; intros R' Hlen;
+  induction args as [ | a args IH ]; destruct Bargs as [ | b Bargs ]; intros B' Hlen;
     try discriminate; [ reflexivity | ].
   cbn [List.map combine] in *. rewrite spine_btyp_cons, curry_btyp_cons.
   cbn [fst snd]. f_equal. apply IH. cbn [length] in Hlen. congruence.
 Qed.
 
-Lemma open_spine_utyp_rec : forall sp k ph Rt,
-    open_utyp_wrt_utyp_rec k ph (spine_utyp Rt sp)
-    = spine_utyp (open_utyp_wrt_utyp_rec k ph Rt)
-        (List.map (fun p => (open_utyp_wrt_utyp_rec k ph (fst p), snd p)) sp).
+Lemma open_spine_utyp_rec : forall sp k C Ct,
+    open_utyp_wrt_utyp_rec k C (spine_utyp Ct sp)
+    = spine_utyp (open_utyp_wrt_utyp_rec k C Ct)
+        (List.map (fun p => (open_utyp_wrt_utyp_rec k C (fst p), snd p)) sp).
 Proof.
-  induction sp as [ | p sp IH ]; intros k ph Rt; [ reflexivity | ].
+  induction sp as [ | p sp IH ]; intros k C Ct; [ reflexivity | ].
   rewrite spine_utyp_cons. cbn [List.map]. rewrite spine_utyp_cons.
   cbn [fst snd open_utyp_wrt_utyp_rec]. f_equal. apply IH.
 Qed.
 
-Lemma open_utyp_all_syn_n_rec : forall j k ph W,
-    open_utyp_wrt_utyp_rec k ph (utyp_all_syn_n j W)
-    = utyp_all_syn_n j (open_utyp_wrt_utyp_rec (k + j) ph W).
+Lemma open_utyp_all_syn_n_rec : forall j k C C',
+    open_utyp_wrt_utyp_rec k C (utyp_all_syn_n j C')
+    = utyp_all_syn_n j (open_utyp_wrt_utyp_rec (k + j) C C').
 Proof.
-  induction j as [ | j IH ]; intros k ph W; simpl.
+  induction j as [ | j IH ]; intros k C C'; simpl.
   - rewrite Nat.add_0_r. reflexivity.
   - rewrite IH. replace (k + S j) with (S k + j) by lia. reflexivity.
 Qed.
@@ -390,14 +390,14 @@ Proof. destruct n; intros m H; [ lia | exists (mode_fn_n n m); reflexivity ]. Qe
     untagged [∀]-left rule. *)
 Lemma d_sub_fn_all_syn_inv : forall Δ Γ m C B,
     Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⩽ B ->
-    exists Ψ' ph,
-      Ψ' ∩ Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
-      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C ph) ⩽ B.
+    exists Ψ' C',
+      Ψ' ∩ Δ [=] empty /\ d_tags Ψ' C' /\ Γ ⊢ᵤ C' /\ is_ttyp C' /\
+      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C C') ⩽ B.
 Proof.
   intros Δ Γ m C B Hsub.
-  inversion Hsub as [ | | | | | Ψ0 Ψ' Γ0 m0 C0 ph B0 Hm Hfresh Htags Hwfph Httyp Hpre ];
+  inversion Hsub as [ | | | | | Ψ0 Ψ' Γ0 m0 C0 C' B0 Hm Hfresh Htags Hwfph Httyp Hpre ];
     subst.
-  exists Ψ', ph.
+  exists Ψ', C'.
   split; [ exact Hfresh | ]. split; [ exact Htags | ].
   split; [ exact Hwfph | ]. split; [ exact Httyp | exact Hpre ].
 Qed.
@@ -406,22 +406,22 @@ Qed.
 Lemma d_sub_fnn_all_syn_inv : forall n m Δ Γ C B,
     1 <= n ->
     Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⩽ B ->
-    exists Ψ' ph,
-      Ψ' ∩ Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
-      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C ph) ⩽ B.
+    exists Ψ' C',
+      Ψ' ∩ Δ [=] empty /\ d_tags Ψ' C' /\ Γ ⊢ᵤ C' /\ is_ttyp C' /\
+      (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C C') ⩽ B.
 Proof.
   intros n m Δ Γ C B Hpos Hsub.
   destruct (mode_fn_n_ge1_fn m Hpos) as [m' Hm']. rewrite Hm' in Hsub.
-  apply d_sub_fn_all_syn_inv in Hsub as [Ψ' [ph [Hf [Ht [Hw [Hi Hp]]]]]].
-  exists Ψ', ph. rewrite Hm'.
+  apply d_sub_fn_all_syn_inv in Hsub as [Ψ' [C' [Hf [Ht [Hw [Hi Hp]]]]]].
+  exists Ψ', C'. rewrite Hm'.
   split; [ exact Hf | ]. split; [ exact Ht | ].
   split; [ exact Hw | ]. split; [ exact Hi | exact Hp ].
 Qed.
 
 (** [spine_btyp] only sees the [snd] components, so it is invariant under a
     map that rewrites the [utyp] [fst]s (e.g. [∀]-instantiation). *)
-Lemma spine_btyp_map_fst : forall (h : utyp -> utyp) Rb sp,
-    spine_btyp Rb (List.map (fun p => (h (fst p), snd p)) sp) = spine_btyp Rb sp.
+Lemma spine_btyp_map_fst : forall (h : utyp -> utyp) Bb sp,
+    spine_btyp Bb (List.map (fun p => (h (fst p), snd p)) sp) = spine_btyp Bb sp.
 Proof.
   induction sp as [ | p sp IH ]; [ reflexivity | ].
   cbn [List.map]. rewrite spine_btyp_cons, spine_btyp_cons. cbn [fst snd].
@@ -436,11 +436,11 @@ Qed.
 Lemma d_sub_prefix_spine_perm : forall j sp sp',
     Permutation sp sp' ->
     1 <= length sp ->
-    forall Δ Γ Rt Rb m,
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] (utyp_all_syn_n j (spine_utyp Rt sp)) ⩽ spine_btyp Rb sp ->
-      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] (utyp_all_syn_n j (spine_utyp Rt sp')) ⩽ spine_btyp Rb sp'.
+    forall Δ Γ Ct Bb m,
+      Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] (utyp_all_syn_n j (spine_utyp Ct sp)) ⩽ spine_btyp Bb sp ->
+      Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] (utyp_all_syn_n j (spine_utyp Ct sp')) ⩽ spine_btyp Bb sp'.
 Proof.
-  induction j as [ | j IHj ]; intros sp sp' Hperm Hpos Δ Γ Rt Rb m Hsub.
+  induction j as [ | j IHj ]; intros sp sp' Hperm Hpos Δ Γ Ct Bb m Hsub.
   - simpl in Hsub |- *. eapply d_sub_arrow_spine_perm; eassumption.
   - assert (Hle : length sp = length sp') by (apply Permutation_length; assumption).
     assert (Hpos' : 1 <= length sp') by (rewrite <- Hle; exact Hpos).
@@ -450,9 +450,9 @@ Proof.
     unfold open_utyp_wrt_utyp in Hp.
     rewrite open_utyp_all_syn_n_rec in Hp. simpl in Hp.
     rewrite open_spine_utyp_rec in Hp.
-    (* Hp LHS in [map g] form, RHS still [spine_btyp Rb sp]; convert RHS to
+    (* Hp LHS in [map g] form, RHS still [spine_btyp Bb sp]; convert RHS to
        [map g] form so [IHj] (with spine [map g sp]) matches. *)
-    rewrite <- (spine_btyp_map_fst (open_utyp_wrt_utyp_rec j ph) Rb sp) in Hp.
+    rewrite <- (spine_btyp_map_fst (open_utyp_wrt_utyp_rec j ph) Bb sp) in Hp.
     rewrite <- (List.map_length
                   (fun p : utyp * btyp => (open_utyp_wrt_utyp_rec j ph (fst p), snd p)) sp)
       in Hp.
@@ -557,18 +557,18 @@ Qed.
 
     The conceptual content — set-union commutativity ⟹ argument order is
     irrelevant — lives in [d_sub_arrow_spine_perm]. *)
-Lemma d_typing_var_head_perm : forall Γ m n x y args args' Bargs R R',
+Lemma d_typing_var_head_perm : forall Γ m n x y args args' Bargs A' B',
     d_wf_denv Γ ->
     Permutation args args' ->
-    binds x (dbind_typ (ptyp_forall_prefix n (curry_ptyp args R))) Γ ->
-    binds y (dbind_typ (ptyp_forall_prefix n (curry_ptyp args' R))) Γ ->
-    Γ ⊢[ mode_fn_n (length args) m ] (exp_var_f x) ⦂ curry_btyp Bargs R' ->
+    binds x (dbind_typ (ptyp_forall_prefix n (curry_ptyp args A'))) Γ ->
+    binds y (dbind_typ (ptyp_forall_prefix n (curry_ptyp args' A'))) Γ ->
+    Γ ⊢[ mode_fn_n (length args) m ] (exp_var_f x) ⦂ curry_btyp Bargs B' ->
     Forall2 (arg_ok Γ) Bargs (List.map snd args) ->
     exists Bargs',
-      (Γ ⊢[ mode_fn_n (length args') m ] (exp_var_f y) ⦂ curry_btyp Bargs' R') /\
+      (Γ ⊢[ mode_fn_n (length args') m ] (exp_var_f y) ⦂ curry_btyp Bargs' B') /\
       Forall2 (arg_ok Γ) Bargs' (List.map snd args').
 Proof.
-  intros Γ m n x y args args' Bargs R R' Hwf Hperm Hbx Hby Hheadx Hallx.
+  intros Γ m n x y args args' Bargs A' B' Hwf Hperm Hbx Hby Hheadx Hallx.
   assert (Huniq : uniq Γ) by (apply d_wf_denv_uniq; exact Hwf).
   assert (HlenB : length Bargs = length args)
     by (apply Forall2_length in Hallx; rewrite List.map_length in Hallx; exact Hallx).
@@ -595,14 +595,14 @@ Proof.
     destruct (mode_fn_n_ge1_fn m Hpos) as [mfx Hmfx]. rewrite Hmfx in Hheadx.
     inversion Hheadx as [ | | | Γ0 m0 e0 B1 B2 Hti Hsub | | | | | ]; subst;
       try discriminate.
-    destruct (@d_typing_var_ti_consis Γ x (ptyp_forall_prefix n (curry_ptyp args R))
+    destruct (@d_typing_var_ti_consis Γ x (ptyp_forall_prefix n (curry_ptyp args A'))
                 (ptyp_to_btyp_syn B1) Hwf Hbx Hti) as [Hstyp1 [Δt Hcons1]].
     pose proof (@d_consis_paint_syn_eq (ptyp_to_btyp_syn B1) Hstyp1 Δt Γ
-                  (ptyp_forall_prefix n (curry_ptyp args R)) Hcons1) as HB1.
+                  (ptyp_forall_prefix n (curry_ptyp args A')) Hcons1) as HB1.
     apply (f_equal btyp_to_ptyp) in HB1.
     rewrite !btyp_to_ptyp_ptyp_to_btyp_syn in HB1. subst B1.
-    rewrite paint_forall_prefix, (paint_curry_spine args Bargs R ltac:(lia)) in Hsub.
-    rewrite <- (spine_btyp_curry args Bargs R' ltac:(lia)) in Hsub.
+    rewrite paint_forall_prefix, (paint_curry_spine args Bargs A' ltac:(lia)) in Hsub.
+    rewrite <- (spine_btyp_curry args Bargs B' ltac:(lia)) in Hsub.
     rewrite <- Hmfx in Hsub.
     assert (Hlensp : length (combine (List.map (fun ae => ptyp_to_utyp_syn (fst ae)) args) Bargs)
                      = length args)
@@ -621,17 +621,17 @@ Proof.
     pose proof (@d_sub_prefix_spine_perm n
                   (combine (List.map (fun ae => ptyp_to_utyp_syn (fst ae)) args) Bargs)
                   (combine (List.map (fun ae => ptyp_to_utyp_syn (fst ae)) args') Bargs')
-                  Hpermsp Hpossp empty Γ (ptyp_to_utyp_syn R) R' m Hsub) as Hsub'.
+                  Hpermsp Hpossp empty Γ (ptyp_to_utyp_syn A') B' m Hsub) as Hsub'.
     (* convert back into [y]'s binding painting / curried arrow *)
     assert (Hlensp' : length
               (combine (List.map (fun ae => ptyp_to_utyp_syn (fst ae)) args') Bargs') = length args')
       by (rewrite combine_length, List.map_length, HlenB'; apply Nat.min_id).
     rewrite Hlensp' in Hsub'.
-    rewrite <- (paint_curry_spine args' Bargs' R ltac:(lia)) in Hsub'.
+    rewrite <- (paint_curry_spine args' Bargs' A' ltac:(lia)) in Hsub'.
     rewrite <- paint_forall_prefix in Hsub'.
-    rewrite (spine_btyp_curry args' Bargs' R' ltac:(lia)) in Hsub'.
+    rewrite (spine_btyp_curry args' Bargs' B' ltac:(lia)) in Hsub'.
     eapply d_typing__sub with
-      (A := ptyp_forall_prefix n (curry_ptyp args' R)).
+      (A := ptyp_forall_prefix n (curry_ptyp args' A')).
     + apply d_typing__var. exact Hby.
     + exact Hsub'.
 Qed.
@@ -667,20 +667,20 @@ Qed.
     - INDEPENDENT OF [d_refine_preserves_wf]: the per-argument refinement
       premise [nil ⊢ᵣ … ⊳ …] inside [d_typing__app] is transported verbatim
       from [x]'s derivation to [y]'s; order-irrelevance never rebuilds it. *)
-Lemma d_typing_order_irrel : forall Γ m n x y args args' R R',
+Lemma d_typing_order_irrel : forall Γ m n x y args args' A B',
     d_wf_denv Γ ->
     Permutation args args' ->
-    binds x (dbind_typ (ptyp_forall_prefix n (curry_ptyp args R))) Γ ->
-    binds y (dbind_typ (ptyp_forall_prefix n (curry_ptyp args' R))) Γ ->
-    Γ ⊢[ m ] curry_exp (exp_var_f x) args ⦂ R' ->
-    Γ ⊢[ m ] curry_exp (exp_var_f y) args' ⦂ R'.
+    binds x (dbind_typ (ptyp_forall_prefix n (curry_ptyp args A))) Γ ->
+    binds y (dbind_typ (ptyp_forall_prefix n (curry_ptyp args' A))) Γ ->
+    Γ ⊢[ m ] curry_exp (exp_var_f x) args ⦂ B' ->
+    Γ ⊢[ m ] curry_exp (exp_var_f y) args' ⦂ B'.
 Proof.
-  intros Γ m n x y args args' R R' Hwf Hperm Hbx Hby Htyp.
+  intros Γ m n x y args args' A B' Hwf Hperm Hbx Hby Htyp.
   (* Factor [x]'s curried application into head typing + per-arg evidence. *)
-  destruct (@d_typing_app_spine_inv args Γ (exp_var_f x) m R' Hwf Htyp)
+  destruct (@d_typing_app_spine_inv args Γ (exp_var_f x) m B' Hwf Htyp)
     as [Bargs [Hlen [Hheadx Hallx]]].
   (* Permute the head subsumption and transport the argument evidence. *)
-  destruct (@d_typing_var_head_perm Γ m n x y args args' Bargs R R'
+  destruct (@d_typing_var_head_perm Γ m n x y args args' Bargs A B'
               Hwf Hperm Hbx Hby Hheadx Hallx)
     as [Bargs' [Hheady Hally']].
   (* Reassemble [y]'s curried application. *)

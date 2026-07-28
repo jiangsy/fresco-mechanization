@@ -45,12 +45,12 @@ Proof.
 Qed.
 
 (** Outside its domain a metasubstitution is the identity. *)
-Lemma msubst_lookup_notin : forall ρ X,
-  X `notin` dom ρ ->
-  msubst_lookup ρ X = ptyp_var_f X.
+Lemma msubst_lookup_notin : forall ρ α',
+  α' `notin` dom ρ ->
+  msubst_lookup ρ α' = ptyp_var_f α'.
 Proof.
-  induction ρ as [ | [α τ] ρ' IH ]; intros X HX; simpl in *; auto.
-  destruct (X == α) as [->|Hne]; [ exfalso; clear - HX; fsetdec | ].
+  induction ρ as [ | [α τ] ρ' IH ]; intros α' HX; simpl in *; auto.
+  destruct (α' == α) as [->|Hne]; [ exfalso; clear - HX; fsetdec | ].
   apply IH. clear - HX. fsetdec.
 Qed.
 
@@ -66,15 +66,15 @@ Qed.
 
 (** THE action law, at a variable.  The side condition is exactly what rules out
     a variable that ρ misses but ζ hits. *)
-Lemma msubst_lookup_compose : forall ζ ρ X,
-  (X `in` dom ρ \/ X `notin` dom ζ) ->
-  msubst_lookup (msubst_compose ζ ρ) X = msubst_ptyp ζ (msubst_lookup ρ X).
+Lemma msubst_lookup_compose : forall ζ ρ α',
+  (α' `in` dom ρ \/ α' `notin` dom ζ) ->
+  msubst_lookup (msubst_compose ζ ρ) α' = msubst_ptyp ζ (msubst_lookup ρ α').
 Proof.
-  intros ζ ρ; induction ρ as [ | [α τ] ρ' IH ]; intros X Hcond; simpl.
-  - (* ρ = · : X is untouched by ρ, so by hypothesis ζ misses it too *)
+  intros ζ ρ; induction ρ as [ | [α τ] ρ' IH ]; intros α' Hcond; simpl.
+  - (* ρ = · : α' is untouched by ρ, so by hypothesis ζ misses it too *)
     destruct Hcond as [Hin | Hni]; [ simpl in Hin; exfalso; clear - Hin; fsetdec | ].
     rewrite msubst_lookup_notin by exact Hni. reflexivity.
-  - destruct (X == α) as [->|Hne]; [ reflexivity | ].
+  - destruct (α' == α) as [->|Hne]; [ reflexivity | ].
     apply IH.
     destruct Hcond as [Hin | Hni]; [ left | right; exact Hni ].
     simpl in Hin. clear - Hin Hne. fsetdec.
@@ -98,13 +98,15 @@ Lemma a_wf_aenv_uniq_local : forall Θ, a_wf_aenv Θ -> uniq Θ.
 Proof. intros Θ H; induction H; solve_uniq. Qed.
 
 (** The skeleton mirror of [a_wf_ptyp_ftv_tvarish]. *)
-Lemma a_scope_pskl_ftv_tvarish : forall Θ P X,
+Lemma a_scope_pskl_ftv_tvarish : forall Θ P α,
   a_scope_pskl Θ P ->
-  X `in` ftvar_in_pskl P ->
-  a_binds_tvar X Θ.
+  α `in` ftvar_in_pskl P ->
+  a_binds_tvar α Θ.
 Proof.
-  intros Θ P X Hwf; revert X; induction Hwf; intros Y HY; simpl in HY.
+  intros Θ P α Hwf; revert α; induction Hwf; intros Y HY; simpl in HY.
   - exfalso. clear - HY. fsetdec.
+  (* [X] is the var rule's OWN binder ([a_scope_pskl__var], algo/def_extra.v),
+     auto-bound by [induction Hwf] — not this lemma's α ([revert α]). *)
   - assert (HeqY : Y = X) by (clear - HY; fsetdec). subst. exact H.
   - destruct (union_1 HY); auto.
   - (* ∀ : the bound variable is fresh, so it is not the one we are tracking *)
@@ -130,50 +132,50 @@ Qed.
 
 Lemma a_inc_dom_flex : forall Θ ρ Θ',
   ρ ∷ Θ ⊑ Θ' ->
-  forall X, X `in` dom ρ -> a_flex_tvar Θ X.
+  forall α', α' `in` dom ρ -> a_flex_tvar Θ α'.
 Proof.
-  intros Θ ρ Θ' H; induction H; intros X HX; simpl in HX.
+  intros Θ ρ Θ' H; induction H; intros α' HX; simpl in HX.
   - exfalso. clear - HX. fsetdec.
-  - destruct (X == α) as [->|Hne].
+  - destruct (α' == α) as [->|Hne].
     + left. unfold binds; left; reflexivity.
-    + destruct (IHa_inc X ltac:(clear - HX Hne; fsetdec)) as [Hb | [τ0 Hb]];
+    + destruct (IHa_inc α' ltac:(clear - HX Hne; fsetdec)) as [Hb | [τ0 Hb]];
         [ left | right; exists τ0 ]; unfold binds; right; exact Hb.
-  - destruct (X == α) as [->|Hne].
+  - destruct (α' == α) as [->|Hne].
     + right. exists τ. unfold binds; left; reflexivity.
-    + destruct (IHa_inc X ltac:(clear - HX Hne; fsetdec)) as [Hb | [τ0 Hb]];
+    + destruct (IHa_inc α' ltac:(clear - HX Hne; fsetdec)) as [Hb | [τ0 Hb]];
         [ left | right; exists τ0 ]; unfold binds; right; exact Hb.
-  - destruct (IHa_inc X HX) as [Hb | [τ0 Hb]];
+  - destruct (IHa_inc α' HX) as [Hb | [τ0 Hb]];
       [ left | right; exists τ0 ]; unfold binds; right; exact Hb.
-  - destruct (IHa_inc X HX) as [Hb | [τ0 Hb]];
+  - destruct (IHa_inc α' HX) as [Hb | [τ0 Hb]];
       [ left | right; exists τ0 ]; unfold binds; right; exact Hb.
-  - destruct (IHa_inc X HX) as [Hb | [τ0 Hb]];
+  - destruct (IHa_inc α' HX) as [Hb | [τ0 Hb]];
       [ left | right; exists τ0 ]; unfold binds; right; exact Hb.
 Qed.
 
 Lemma a_inc_flex_dom : forall Θ ρ Θ',
   ρ ∷ Θ ⊑ Θ' ->
   a_wf_aenv Θ ->
-  forall X, a_flex_tvar Θ X -> X `in` dom ρ.
+  forall α', a_flex_tvar Θ α' -> α' `in` dom ρ.
 Proof.
-  intros Θ ρ Θ' H; induction H; intros Hwf X Hfx; simpl.
+  intros Θ ρ Θ' H; induction H; intros Hwf α' Hfx; simpl.
   - destruct Hfx as [Hb | [τ Hb]]; inversion Hb.
   - inversion Hwf; subst.
-    destruct (X == α) as [->|Hne]; [ clear; fsetdec | ].
-    assert (Hfx' : a_flex_tvar Θ X).
+    destruct (α' == α) as [->|Hne]; [ clear; fsetdec | ].
+    assert (Hfx' : a_flex_tvar Θ α').
     { destruct Hfx as [Hb | [τ0 Hb]];
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq ?] | Hb'];
         try (exfalso; apply Hne; exact Heq);
         [ left; exact Hb' | right; exists τ0; exact Hb' ]. }
-    assert (Hd : X `in` dom ρ) by (apply IHa_inc; auto).
+    assert (Hd : α' `in` dom ρ) by (apply IHa_inc; auto).
     clear - Hd. fsetdec.
   - inversion Hwf; subst.
-    destruct (X == α) as [->|Hne]; [ clear; fsetdec | ].
-    assert (Hfx' : a_flex_tvar Θ X).
+    destruct (α' == α) as [->|Hne]; [ clear; fsetdec | ].
+    assert (Hfx' : a_flex_tvar Θ α').
     { destruct Hfx as [Hb | [τ0 Hb]];
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq ?] | Hb'];
         try (exfalso; apply Hne; exact Heq);
         [ left; exact Hb' | right; exists τ0; exact Hb' ]. }
-    assert (Hd : X `in` dom ρ) by (apply IHa_inc; auto).
+    assert (Hd : α' `in` dom ρ) by (apply IHa_inc; auto).
     clear - Hd. fsetdec.
   - inversion Hwf; subst. apply IHa_inc; auto.
     destruct Hfx as [Hb | [τ0 Hb]];
@@ -190,13 +192,13 @@ Proof.
 Qed.
 
 (** A RIGID variable of the source stays rigid, hence misses ζ's domain. *)
-Lemma a_inc_tvar_notin_dom : forall Θ1 ζ Θ X,
+Lemma a_inc_tvar_notin_dom : forall Θ1 ζ Θ α,
   ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
-  binds X abind_tvar Θ1 ->
-  X `notin` dom ζ.
+  binds α abind_tvar Θ1 ->
+  α `notin` dom ζ.
 Proof.
-  intros Θ1 ζ Θ X Hinc Hwf Hb HX.
+  intros Θ1 ζ Θ α Hinc Hwf Hb HX.
   pose proof (a_inc_dom_flex Hinc HX) as Hfx.
   pose proof (a_wf_aenv_uniq_local Hwf) as Hu.
   destruct Hfx as [Hb' | [τ Hb']];
@@ -209,10 +211,10 @@ Lemma a_inc_compose_vis : forall Θ0 ρ Θ1 ζ Θ,
   ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ1 ->
-  forall X, a_binds_tvar X Θ0 ->
-  X `in` dom ρ \/ X `notin` dom ζ.
+  forall α, a_binds_tvar α Θ0 ->
+  α `in` dom ρ \/ α `notin` dom ζ.
 Proof.
-  intros Θ0 ρ Θ1 ζ Θ Hinc1 Hinc2 Hwf0 Hwf1 X Hbt.
+  intros Θ0 ρ Θ1 ζ Θ Hinc1 Hinc2 Hwf0 Hwf1 α Hbt.
   destruct Hbt as [Hb | [Hb | [τ Hb]]].
   - (* rigid : stays rigid in Θ1, so ζ misses it *)
     right. eapply a_inc_tvar_notin_dom;
@@ -226,42 +228,42 @@ Qed.
 (*  A metasubstitution transports lc / mono / wf / ≡ into the target       *)
 (* ===================================================================== *)
 
-Lemma a_inc_lookup_lc : forall Θ1 ζ Θ X,
+Lemma a_inc_lookup_lc : forall Θ1 ζ Θ α',
   ζ ∷ Θ1 ⊑ Θ ->
-  lc_ptyp (msubst_lookup ζ X).
+  lc_ptyp (msubst_lookup ζ α').
 Proof.
-  intros Θ1 ζ Θ X H; revert X; induction H; intros X; simpl;
+  intros Θ1 ζ Θ α' H; revert α'; induction H; intros α'; simpl;
     try (apply IHa_inc).
   - constructor.
-  - destruct (X == α) as [->|Hne]; [ eapply a_wf_ptyp_lc; eauto | apply IHa_inc ].
-  - destruct (X == α) as [->|Hne]; [ eapply a_wf_ptyp_lc; eauto | apply IHa_inc ].
+  - destruct (α' == α) as [->|Hne]; [ eapply a_wf_ptyp_lc; eauto | apply IHa_inc ].
+  - destruct (α' == α) as [->|Hne]; [ eapply a_wf_ptyp_lc; eauto | apply IHa_inc ].
 Qed.
 
-Lemma a_inc_lookup_mono : forall Θ1 ζ Θ X,
+Lemma a_inc_lookup_mono : forall Θ1 ζ Θ α',
   ζ ∷ Θ1 ⊑ Θ ->
-  mono_ptyp (msubst_lookup ζ X).
+  mono_ptyp (msubst_lookup ζ α').
 Proof.
-  intros Θ1 ζ Θ X H; revert X; induction H; intros X; simpl;
+  intros Θ1 ζ Θ α' H; revert α'; induction H; intros α'; simpl;
     try (apply IHa_inc).
   - constructor.
-  - destruct (X == α) as [->|Hne]; [ assumption | apply IHa_inc ].
-  - destruct (X == α) as [->|Hne]; [ assumption | apply IHa_inc ].
+  - destruct (α' == α) as [->|Hne]; [ assumption | apply IHa_inc ].
+  - destruct (α' == α) as [->|Hne]; [ assumption | apply IHa_inc ].
 Qed.
 
-Lemma a_inc_lookup_wf : forall Θ1 ζ Θ X,
+Lemma a_inc_lookup_wf : forall Θ1 ζ Θ α',
   ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
-  a_binds_tvar X Θ1 ->
-  a_wf_ptyp Θ (msubst_lookup ζ X).
+  a_binds_tvar α' Θ1 ->
+  a_wf_ptyp Θ (msubst_lookup ζ α').
 Proof.
-  intros Θ1 ζ Θ X Hinc Hwf Hbt.
-  destruct (AtomSetProperties.In_dec X (dom ζ)) as [Hin | Hni].
+  intros Θ1 ζ Θ α' Hinc Hwf Hbt.
+  destruct (AtomSetProperties.In_dec α' (dom ζ)) as [Hin | Hni].
   - (* in ρ's domain : the image is well-formed in the target by construction *)
-    clear Hbt. revert X Hin; induction Hinc; intros X Hin; simpl in *.
+    clear Hbt. revert α' Hin; induction Hinc; intros α' Hin; simpl in *.
     + exfalso. clear - Hin. fsetdec.
-    + destruct (X == α) as [->|Hne]; [ assumption | ].
+    + destruct (α' == α) as [->|Hne]; [ assumption | ].
       apply IHHinc; [ inversion Hwf; auto | clear - Hin Hne; fsetdec ].
-    + destruct (X == α) as [->|Hne]; [ assumption | ].
+    + destruct (α' == α) as [->|Hne]; [ assumption | ].
       apply IHHinc; [ inversion Hwf; auto | clear - Hin Hne; fsetdec ].
     + (* the target grows by a suffix + one entry : weaken *)
       eapply a_wf_ptyp_weaken;
@@ -276,7 +278,7 @@ Proof.
         [ intros y b Hb; unfold binds in *;
           apply in_or_app; right; simpl; right; exact Hb
         | apply IHHinc; [ inversion Hwf; auto | exact Hin ] ].
-  - (* outside the domain : X is a RIGID of Θ1, and rigids survive *)
+  - (* outside the domain : α' is a RIGID of Θ1, and rigids survive *)
     rewrite msubst_lookup_notin by exact Hni.
     apply a_wf_ptyp__var.
     destruct Hbt as [Hb | [Hb | [τ Hb]]].
@@ -289,12 +291,12 @@ Qed.
 
 (** [msubst] commutes with opening: its images are locally closed, so opening
     cannot reach inside them. *)
-Lemma msubst_ptyp_open_rec : forall Θ1 ζ Θ A V k,
+Lemma msubst_ptyp_open_rec : forall Θ1 ζ Θ A A' k,
   ζ ∷ Θ1 ⊑ Θ ->
-  msubst_ptyp ζ (open_ptyp_wrt_ptyp_rec k V A)
-  = open_ptyp_wrt_ptyp_rec k (msubst_ptyp ζ V) (msubst_ptyp ζ A).
+  msubst_ptyp ζ (open_ptyp_wrt_ptyp_rec k A' A)
+  = open_ptyp_wrt_ptyp_rec k (msubst_ptyp ζ A') (msubst_ptyp ζ A).
 Proof.
-  intros Θ1 ζ Θ A; induction A; intros V k Hinc; simpl; f_equal; eauto.
+  intros Θ1 ζ Θ A; induction A; intros A' k Hinc; simpl; f_equal; eauto.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
   - (* a free variable's image is lc, so [open_rec] is a no-op on it *)
     symmetry.
@@ -304,15 +306,15 @@ Proof.
     eapply a_inc_lookup_lc; exact Hinc.
 Qed.
 
-Lemma msubst_ptyp_open : forall Θ1 ζ Θ A X,
+Lemma msubst_ptyp_open : forall Θ1 ζ Θ A α,
   ζ ∷ Θ1 ⊑ Θ ->
-  X `notin` dom ζ ->
-  msubst_ptyp ζ (open_ptyp_wrt_ptyp A (ptyp_var_f X))
-  = open_ptyp_wrt_ptyp (msubst_ptyp ζ A) (ptyp_var_f X).
+  α `notin` dom ζ ->
+  msubst_ptyp ζ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+  = open_ptyp_wrt_ptyp (msubst_ptyp ζ A) (ptyp_var_f α).
 Proof.
-  intros Θ1 ζ Θ A X Hinc HX.
+  intros Θ1 ζ Θ A α Hinc HX.
   unfold open_ptyp_wrt_ptyp.
-  rewrite (msubst_ptyp_open_rec A (ptyp_var_f X) 0 Hinc).
+  rewrite (msubst_ptyp_open_rec A (ptyp_var_f α) 0 Hinc).
   simpl. rewrite msubst_lookup_notin by exact HX. reflexivity.
 Qed.
 
@@ -333,13 +335,13 @@ Proof.
 Qed.
 
 (** An increase extends by a fresh rigid on both sides. *)
-Lemma a_inc_cons_tvar : forall Θ1 ζ Θ X,
+Lemma a_inc_cons_tvar : forall Θ1 ζ Θ α,
   ζ ∷ Θ1 ⊑ Θ ->
-  ζ ∷ ((X ~ abind_tvar) ++ Θ1) ⊑ ((X ~ abind_tvar) ++ Θ).
+  ζ ∷ ((α ~ abind_tvar) ++ Θ1) ⊑ ((α ~ abind_tvar) ++ Θ).
 Proof.
-  intros Θ1 ζ Θ X Hinc.
-  change ((X ~ abind_tvar) ++ Θ)
-    with (nil ++ (X ~ abind_tvar) ++ Θ).
+  intros Θ1 ζ Θ α Hinc.
+  change ((α ~ abind_tvar) ++ Θ)
+    with (nil ++ (α ~ abind_tvar) ++ Θ).
   apply a_inc__tvar; [ exact Hinc | apply a_suffix__nil ].
 Qed.
 
@@ -392,39 +394,39 @@ Qed.
 Lemma a_wf_aenv_def_ftv_dom : forall Θ β τ,
   a_wf_aenv Θ ->
   binds β (abind_flex_mono_def τ) Θ ->
-  forall X, X `in` ftvar_in_ptyp τ -> X `in` dom Θ.
+  forall α', α' `in` ftvar_in_ptyp τ -> α' `in` dom Θ.
 Proof.
-  intros Θ β τ Hwf; induction Hwf; intros Hb X HX; simpl in *.
+  intros Θ β τ Hwf; induction Hwf; intros Hb α' HX; simpl in *.
   - inversion Hb.
   - (* flex *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
       [ discriminate | ].
-    assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
     clear - Hd; fsetdec.
   - (* flex_def : the definition's type is well-formed in the TAIL *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'].
     + inversion Heqb; subst.
-      assert (Hbt : a_binds_tvar X Θ) by (eapply a_wf_ptyp_ftv_tvarish; eauto).
-      assert (Hd : X `in` dom Θ).
+      assert (Hbt : a_binds_tvar α' Θ) by (eapply a_wf_ptyp_ftv_tvarish; eauto).
+      assert (Hd : α' `in` dom Θ).
       { destruct Hbt as [Hbb | [Hbb | [τd Hbb]]];
           apply binds_In in Hbb; exact Hbb. }
       clear - Hd; fsetdec.
-    + assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    + assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
       clear - Hd; fsetdec.
   - (* var_skl *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
       [ discriminate | ].
-    assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
     clear - Hd; fsetdec.
   - (* var_typ *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
       [ discriminate | ].
-    assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
     clear - Hd; fsetdec.
   - (* tvar *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
       [ discriminate | ].
-    assert (Hd : X `in` dom Θ) by (eapply IHHwf; eauto).
+    assert (Hd : α' `in` dom Θ) by (eapply IHHwf; eauto).
     clear - Hd; fsetdec.
 Qed.
 
@@ -544,13 +546,13 @@ Proof.
       | apply IHHinc; [ inversion Hwf; auto | exact Hb' ] ].
 Qed.
 
-Lemma a_tyequiv_msubst : forall Θ1 A B,
-  Θ1 ⊢ A ≡ᵗ B ->
+Lemma a_tyequiv_msubst : forall Θ1 A A',
+  Θ1 ⊢ A ≡ᵗ A' ->
   a_wf_aenv Θ1 ->
   forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
-  Θ ⊢ (msubst_ptyp ζ A) ≡ᵗ (msubst_ptyp ζ B).
+  Θ ⊢ (msubst_ptyp ζ A) ≡ᵗ (msubst_ptyp ζ A').
 Proof.
-  intros Θ1 A B Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
+  intros Θ1 A A' Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
   - apply a_tyequiv__refl. eapply msubst_ptyp_lc; eauto.
   - apply a_tyequiv__sym. auto.
   - eapply a_tyequiv__trans; [ apply IHHeq1 | apply IHHeq2 ]; auto.
@@ -622,12 +624,12 @@ Proof.
   induction A; simpl; f_equal; auto.
 Qed.
 
-Lemma msubst_pskl_open_rec : forall Θ1 ζ Θ P V k,
+Lemma msubst_pskl_open_rec : forall Θ1 ζ Θ P P' k,
   ζ ∷ Θ1 ⊑ Θ ->
-  msubst_pskl ζ (open_pskl_wrt_pskl_rec k V P)
-  = open_pskl_wrt_pskl_rec k (msubst_pskl ζ V) (msubst_pskl ζ P).
+  msubst_pskl ζ (open_pskl_wrt_pskl_rec k P' P)
+  = open_pskl_wrt_pskl_rec k (msubst_pskl ζ P') (msubst_pskl ζ P).
 Proof.
-  intros Θ1 ζ Θ P; induction P; intros V k Hinc; simpl; f_equal; eauto.
+  intros Θ1 ζ Θ P; induction P; intros P' k Hinc; simpl; f_equal; eauto.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
   - (* a free variable's image is lc, so [open_rec] is a no-op on it *)
     symmetry.
@@ -638,15 +640,15 @@ Proof.
     eapply a_inc_lookup_lc; exact Hinc.
 Qed.
 
-Lemma msubst_pskl_open : forall Θ1 ζ Θ P X,
+Lemma msubst_pskl_open : forall Θ1 ζ Θ P α,
   ζ ∷ Θ1 ⊑ Θ ->
-  X `notin` dom ζ ->
-  msubst_pskl ζ (open_pskl_wrt_pskl P (pskl_var_f X))
-  = open_pskl_wrt_pskl (msubst_pskl ζ P) (pskl_var_f X).
+  α `notin` dom ζ ->
+  msubst_pskl ζ (open_pskl_wrt_pskl P (pskl_var_f α))
+  = open_pskl_wrt_pskl (msubst_pskl ζ P) (pskl_var_f α).
 Proof.
-  intros Θ1 ζ Θ P X Hinc HX.
+  intros Θ1 ζ Θ P α Hinc HX.
   unfold open_pskl_wrt_pskl.
-  rewrite (msubst_pskl_open_rec P (pskl_var_f X) 0 Hinc).
+  rewrite (msubst_pskl_open_rec P (pskl_var_f α) 0 Hinc).
   simpl. rewrite msubst_lookup_notin by exact HX. reflexivity.
 Qed.
 
@@ -665,13 +667,13 @@ Proof.
 Qed.
 
 (** [a_tyequiv_msubst], on skeletons. *)
-Lemma a_pskl_tyequiv_msubst : forall Θ1 P Q,
-  Θ1 ⊢ P ≡ˢ Q ->
+Lemma a_pskl_tyequiv_msubst : forall Θ1 P P',
+  Θ1 ⊢ P ≡ˢ P' ->
   a_wf_aenv Θ1 ->
   forall ζ Θ, ζ ∷ Θ1 ⊑ Θ ->
-  Θ ⊢ (msubst_pskl ζ P) ≡ˢ (msubst_pskl ζ Q).
+  Θ ⊢ (msubst_pskl ζ P) ≡ˢ (msubst_pskl ζ P').
 Proof.
-  intros Θ1 P Q Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
+  intros Θ1 P P' Heq; induction Heq; intros Hwf ζ Θt Hinc; simpl.
   - apply a_pskl_tyequiv__refl. eapply msubst_pskl_lc; eauto.
   - apply a_pskl_tyequiv__sym. auto.
   - eapply a_pskl_tyequiv__trans; [ apply IHHeq1 | apply IHHeq2 ]; auto.
@@ -700,12 +702,12 @@ Qed.
 (*  Peeling the fresh flexible suffix a binder rule adds to the target     *)
 (* ===================================================================== *)
 
-Lemma msubst_lookup_app_notin : forall ζ1 ζ2 X,
-  X `notin` dom ζ1 ->
-  msubst_lookup (ζ1 ++ ζ2) X = msubst_lookup ζ2 X.
+Lemma msubst_lookup_app_notin : forall ζ1 ζ2 α',
+  α' `notin` dom ζ1 ->
+  msubst_lookup (ζ1 ++ ζ2) α' = msubst_lookup ζ2 α'.
 Proof.
-  induction ζ1 as [ | [α τ] ζ1' IH ]; intros ζ2 X HX; simpl in *; auto.
-  destruct (X == α) as [->|Hne]; [ exfalso; clear - HX; fsetdec | ].
+  induction ζ1 as [ | [α τ] ζ1' IH ]; intros ζ2 α' HX; simpl in *; auto.
+  destruct (α' == α) as [->|Hne]; [ exfalso; clear - HX; fsetdec | ].
   apply IH. clear - HX. fsetdec.
 Qed.
 
@@ -740,7 +742,7 @@ Qed.
 Lemma a_inc_entry_ftv : forall Θs ρ Θt,
   ρ ∷ Θs ⊑ Θt ->
   forall β τ, List.In (β, τ) ρ ->
-  forall X, X `in` ftvar_in_ptyp τ -> X `in` dom Θt.
+  forall α, α `in` ftvar_in_ptyp τ -> α `in` dom Θt.
 Proof.
   intros Θs ρ Θt H; induction H; intros β τ0 Hin X HX; simpl in *.
   - inversion Hin.

@@ -56,9 +56,9 @@ Proof.
       | unfold binds; right; apply Hmon; auto ].
 Qed.
 
-Lemma a_tyequiv_weaken_cons : forall Θ (e : list (atom * abind)) A B,
-  Θ ⊢ A ≡ᵗ B ->
-  (e ++ Θ) ⊢ A ≡ᵗ B.
+Lemma a_tyequiv_weaken_cons : forall Θ (e : list (atom * abind)) A A',
+  Θ ⊢ A ≡ᵗ A' ->
+  (e ++ Θ) ⊢ A ≡ᵗ A'.
 Proof.
   intros. eapply a_tyequiv_weaken; [ | eauto ].
   intros x b Hb. unfold binds; apply in_or_app; auto.
@@ -328,9 +328,9 @@ Proof.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
 Qed.
 
-Lemma ptyp_to_bskl_syn_open_var : forall A X,
-  ptyp_to_bskl_syn (open_ptyp_wrt_ptyp A (ptyp_var_f X))
-  = open_bskl_wrt_bskl (ptyp_to_bskl_syn A) (bskl_var_f X).
+Lemma ptyp_to_bskl_syn_open_var : forall A α,
+  ptyp_to_bskl_syn (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+  = open_bskl_wrt_bskl (ptyp_to_bskl_syn A) (bskl_var_f α).
 Proof.
   intros. unfold ptyp_to_bskl_syn, open_ptyp_wrt_ptyp, open_bskl_wrt_bskl.
   rewrite ptyp_to_pskl_open_rec. rewrite pskl_to_bskl_syn_open_rec.
@@ -421,15 +421,15 @@ Qed.
 (*  (each unfolded occurrence re-wraps with the FlexL lookup rule).       *)
 (* ===================================================================== *)
 
-Lemma ad_pat_consis_fold_def : forall Θ β τ Ψ S' Q,
-  ad_pat_consis Ψ Θ S' Q ->
+Lemma ad_pat_consis_fold_def : forall Θ β τ Ψ R' Q,
+  ad_pat_consis Ψ Θ R' Q ->
   binds β (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ ->
   forall S0x,
-  S' = subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β S0x ->
+  R' = subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β S0x ->
   ad_pat_consis Ψ Θ S0x Q.
 Proof.
-  intros Θ β τ Ψ S' Q H Hb Hm.
+  intros Θ β τ Ψ R' Q H Hb Hm.
   assert (Hlcτ : lc_uskl (ptyp_to_uskl_syn τ)).
   { clear - Hm. induction Hm; unfold ptyp_to_uskl_syn in *; simpl; auto. }
   (* β̂-occurrence refolding and mono-embedding head contradictions *)
@@ -671,13 +671,16 @@ Proof.
 Qed.
 
 (** Free variables of a well-formed type are tvar-ish in the context. *)
-Lemma a_wf_ptyp_ftv_tvarish : forall Θ A X,
+Lemma a_wf_ptyp_ftv_tvarish : forall Θ A α,
   a_wf_ptyp Θ A ->
-  X `in` ftvar_in_ptyp A ->
-  a_binds_tvar X Θ.
+  α `in` ftvar_in_ptyp A ->
+  a_binds_tvar α Θ.
 Proof.
-  intros * Hwf; revert X; induction Hwf; intros Y HY; simpl in HY.
+  intros * Hwf; revert α; induction Hwf; intros Y HY; simpl in HY.
   - fsetdec.
+  (* [X] is the var rule's OWN binder ([a_wf_ptyp__var], algo/def_extra.v),
+     auto-bound by [induction Hwf] — not this lemma's α, which [revert α]
+     has just generalised away. *)
   - assert (Y = X) by fsetdec. subst. auto.
   - destruct (union_1 HY); auto.
   - pick fresh Z for (L `union` ftvar_in_ptyp A `union` {{Y}}).
@@ -728,13 +731,13 @@ Proof.
          | right; right; right; exists τ ]; auto).
 Qed.
 
-Lemma ad_pat_consis_weaken : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
+Lemma ad_pat_consis_weaken : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Ψ ⨟ Θ' ⊢ₛᵃ S ∼ Q.
+  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ Q.
 Proof.
-  intros Ψ Θ S Q H; induction H; intros Θ' Hmon.
+  intros Ψ Θ R Q H; induction H; intros Θ' Hmon.
   - apply ad_pat_consis__unit; auto.
   - apply ad_pat_consis__var; auto.
     destruct H0 as [Hb | [Hb | [τ Hb]]];
@@ -779,9 +782,9 @@ Proof.
   - eapply ad_pat_consis__flex_r; eauto.
 Qed.
 
-Lemma ad_pat_consis_weaken_cons : forall Ψ Θ (e : list (atom * abind)) S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
-  Ψ ⨟ (e ++ Θ) ⊢ₛᵃ S ∼ Q.
+Lemma ad_pat_consis_weaken_cons : forall Ψ Θ (e : list (atom * abind)) R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  Ψ ⨟ (e ++ Θ) ⊢ₛᵃ R ∼ Q.
 Proof.
   intros. eapply ad_pat_consis_weaken; eauto;
     try (intros x b Hb; unfold binds; apply in_or_app; auto).

@@ -116,8 +116,8 @@ Lemma a_assign_unify_consis_flex_preserve :
   (forall F Θ0 α β Θ1,
      Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
      forall γ, a_flex_tvar Θ0 γ -> a_flex_tvar Θ1 γ) /\
-  (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  (forall F Δ1 Δ2 Θ0 P0 P P' Θ1,
+     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
      forall γ, a_flex_tvar Θ0 γ -> a_flex_tvar Θ1 γ).
 Proof.
   apply (a_assign_unify_consis_mutind
@@ -125,7 +125,7 @@ Proof.
               forall γ, a_flex_tvar (Ξ ++ Θ0) γ -> a_flex_tvar Θ1 γ)
            (fun F Θ0 α β Θ1 _ =>
               forall γ, a_flex_tvar Θ0 γ -> a_flex_tvar Θ1 γ)
-           (fun F Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
+           (fun F Δ1 Δ2 Θ0 P0 P P' Θ1 _ =>
               forall γ, a_flex_tvar Θ0 γ -> a_flex_tvar Θ1 γ)).
   (* ---------- a_assign ---------- *)
   - (* univ_ghost_id : identity *)
@@ -139,7 +139,7 @@ Proof.
       apply in_or_app; right. apply in_or_app. apply in_app_or in Hb. exact Hb.
     + subst. right; exists τ. unfold binds; left; reflexivity.
   - (* assign : Ξ ++ (β̂≔τ) ++ Θ0  →  (β̂≔τ) ++ Θ1, premise Ξ ++ Θ0 → Θ1 *)
-    intros F Θ0 Θ1 Ξ α β τ P Q Hfα Hc IH γ Hγ.
+    intros F Θ0 Θ1 Ξ α β τ P P' Hfα Hc IH γ Hγ.
     apply a_flex_tvar_alt in Hγ; destruct Hγ as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]].
     + assert (Hγ' : a_flex_tvar Θ1 γ)
@@ -172,7 +172,7 @@ Proof.
     apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
     unfold binds in *; simpl; right; exact Hb'.
   - (* skip_tm_var *)
-    intros F Θ0 Θ1 Ξ α x Q P Ha IH γ Hγ.
+    intros F Θ0 Θ1 Ξ α x P' P Ha IH γ Hγ.
     apply a_flex_tvar_alt in Hγ; destruct Hγ as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]];
       [ | subst; inversion Hs ].
@@ -182,7 +182,7 @@ Proof.
     apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
     unfold binds in *; simpl; right; exact Hb'.
   - (* skip_tm_skl *)
-    intros F Θ0 Θ1 Ξ α x Q P Ha IH γ Hγ.
+    intros F Θ0 Θ1 Ξ α x P' P Ha IH γ Hγ.
     apply a_flex_tvar_alt in Hγ; destruct Hγ as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]];
       [ | subst; inversion Hs ].
@@ -209,7 +209,7 @@ Proof.
     + apply a_flex_tvar_alt; exists b; split; [ exact Hs | ].
       unfold binds in *; simpl; right; exact Hb'.
   - (* flex_assign : (γ̂≔τ) ++ Θ0 → (γ̂≔τ) ++ Θ1, consis premise Θ0 → Θ1 *)
-    intros F Θ0 Θ1 γ0 τ α β Q Hfα Hfβ Hc IH γ Hγ.
+    intros F Θ0 Θ1 γ0 τ α β P' Hfα Hfβ Hc IH γ Hγ.
     apply a_flex_tvar_alt in Hγ; destruct Hγ as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'].
     + subst. right; eexists. unfold binds; left; reflexivity.
@@ -247,7 +247,7 @@ Proof.
     intros F Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2 γ Hγ.
     apply IH2, IH1, Hγ.
   - (* forall_inh : cofinite, rigid head both sides *)
-    intros L F Δ1 Δ2 Θ0 Θ1 P0 P Q Hco IH γ Hγ.
+    intros L F Δ1 Δ2 Θ0 Θ1 P0 P P' Hco IH γ Hγ.
     destruct (atom_fresh L) as [X HX].
     assert (Hγ' : a_flex_tvar ((X ~ abind_tvar) ++ Θ1) γ).
     { apply (IH X HX). apply a_flex_tvar_weaken_prefix. exact Hγ. }
@@ -256,7 +256,7 @@ Proof.
       [ subst; inversion Hs | ].
     apply a_flex_tvar_alt; eauto.
   - (* forall_syn : cofinite *)
-    intros L F Δ1 Δ2 Θ0 Θ1 P0 P Q Hco IH γ Hγ.
+    intros L F Δ1 Δ2 Θ0 Θ1 P0 P P' Hco IH γ Hγ.
     destruct (atom_fresh L) as [X HX].
     assert (Hγ' : a_flex_tvar ((X ~ abind_tvar) ++ Θ1) γ).
     { apply (IH X HX). apply a_flex_tvar_weaken_prefix. exact Hγ. }
@@ -265,9 +265,9 @@ Proof.
       [ subst; inversion Hs | ].
     apply a_flex_tvar_alt; eauto.
   - (* univ_ghost : direct IH *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hc IH γ Hγ. apply IH, Hγ.
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' Hc IH γ Hγ. apply IH, Hγ.
   - (* univ_ghost1 : cofinite *)
-    intros L F Δ1 Δ2 Θ0 Θ1 P0 P Q Hco IH γ Hγ.
+    intros L F Δ1 Δ2 Θ0 Θ1 P0 P P' Hco IH γ Hγ.
     destruct (atom_fresh L) as [X HX].
     assert (Hγ' : a_flex_tvar ((X ~ abind_tvar) ++ Θ1) γ).
     { apply (IH X HX). apply a_flex_tvar_weaken_prefix. exact Hγ. }
@@ -276,7 +276,7 @@ Proof.
       [ subst; inversion Hs | ].
     apply a_flex_tvar_alt; eauto.
   - (* univ_ghost2 : direct IH *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hc IH γ Hγ. apply IH, Hγ.
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' Hg Hnf Hc IH γ Hγ. apply IH, Hγ.
   - (* flex : unify IH *)
     intros F Δ1 Δ2 Θ0 Θ1 α β Hu IH γ Hγ. apply IH, Hγ.
   - (* flex_l : assign IH at Ξ = nil *)
@@ -285,7 +285,7 @@ Proof.
     intros F Δ1 Δ2 Θ0 Θ1 α P Hnf Ha IH γ Hγ. apply IH. simpl_env. exact Hγ.
   - (* ghost_r : identity *) intros; auto.
   - (* univ_ghost_r : direct IH *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hc IH γ Hγ. apply IH, Hγ.
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' Hg Hnf Hc IH γ Hγ. apply IH, Hγ.
 Qed.
 
 (** Packaged corollaries. *)
@@ -312,13 +312,13 @@ Qed.
 
 Lemma msubst_ptyp_agree_inv : forall θ ζ A,
   msubst_ptyp θ A = msubst_ptyp ζ A ->
-  forall X, X `in` ftvar_in_ptyp A ->
-  msubst_lookup θ X = msubst_lookup ζ X.
+  forall α', α' `in` ftvar_in_ptyp A ->
+  msubst_lookup θ α' = msubst_lookup ζ α'.
 Proof.
-  intros θ ζ A; induction A; intros Heq X HX; simpl in *;
+  intros θ ζ A; induction A; intros Heq α' HX; simpl in *;
     try solve [ exfalso; clear - HX; fsetdec ].
   - (* var_f *)
-    assert (HXY : X = α) by (clear - HX; fsetdec). subst. exact Heq.
+    assert (HXY : α' = α) by (clear - HX; fsetdec). subst. exact Heq.
   - (* arrow *)
     injection Heq as Heq1 Heq2.
     apply union_1 in HX; destruct HX; eauto.
@@ -336,13 +336,13 @@ Qed.
 
 Lemma msubst_pskl_agree_inv : forall θ ζ P,
   msubst_pskl θ P = msubst_pskl ζ P ->
-  forall X, X `in` ftvar_in_pskl P ->
-  msubst_lookup θ X = msubst_lookup ζ X.
+  forall α', α' `in` ftvar_in_pskl P ->
+  msubst_lookup θ α' = msubst_lookup ζ α'.
 Proof.
-  intros θ ζ P; induction P; intros Heq X HX; simpl in *;
+  intros θ ζ P; induction P; intros Heq α' HX; simpl in *;
     try solve [ exfalso; clear - HX; fsetdec ].
   - (* var_f *)
-    assert (HXY : X = α) by (clear - HX; fsetdec). subst.
+    assert (HXY : α' = α) by (clear - HX; fsetdec). subst.
     apply ptyp_to_pskl_inj. exact Heq.
   - (* arrow *)
     injection Heq as Heq1 Heq2.

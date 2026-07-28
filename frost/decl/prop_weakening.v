@@ -102,11 +102,11 @@ Proof.
   apply d_sub_weakening. simpl. exact H.
 Qed.
 
-Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Δ Q P,
-    (Γ1 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ P ->
-    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ P.
+Lemma d_refine_syn_weakening : forall Γ1 Γ2 Γ3 Δ Q Q',
+    (Γ1 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ Q' ->
+    (Γ1 ++ Γ2 ++ Γ3) ⨟ Δ ⊢ᵣ Q ⊳ Q'.
 Proof.
-  intros Γ1 Γ2 Γ3 Δ Q P H.
+  intros Γ1 Γ2 Γ3 Δ Q Q' H.
   remember (Γ1 ++ Γ3) as Γ eqn:Heq. revert Γ1 Γ3 Heq.
   induction H; intros Γ1 Γ3 Heq; subst Γ.
   - apply d_refine_syn__unit.
@@ -305,9 +305,9 @@ Proof.
 Qed.
 
 Lemma d_refine_syn_ctx_weaken : forall Γ Γ',
-    ctx_weaken Γ Γ' -> forall Δ Q P, Γ ⨟ Δ ⊢ᵣ Q ⊳ P -> Γ' ⨟ Δ ⊢ᵣ Q ⊳ P.
+    ctx_weaken Γ Γ' -> forall Δ Q Q', Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' -> Γ' ⨟ Δ ⊢ᵣ Q ⊳ Q'.
 Proof.
-  induction 1; intros Δ Q P Hr; [ assumption | ].
+  induction 1; intros Δ Q Q' Hr; [ assumption | ].
   apply IHctx_weaken. apply d_refine_syn_weakening. exact Hr.
 Qed.
 

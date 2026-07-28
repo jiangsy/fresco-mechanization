@@ -75,11 +75,11 @@ Qed.
 (* ===================================================================== *)
 
 (* the collected constraints can only be [α ≐ ⟨⟩] (LE-UnivGhost + LE-Var) *)
-Lemma cex_lookeq_forced : forall α Ξc C,
-  (cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ C) ->
-  Ξc = nil /\ C = a_cstr_eq pskl_unit :: nil.
+Lemma cex_lookeq_forced : forall α Ξc 𝒞,
+  (cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) ->
+  Ξc = nil /\ 𝒞 = a_cstr_eq pskl_unit :: nil.
 Proof.
-  intros α Ξc C H.
+  intros α Ξc 𝒞 H.
   inversion H; subst;
     try solve [ simpl in *; exfalso; fsetdec
               | match goal with Hg : guarded_pskl _ |- _ => inversion Hg end ].
@@ -122,31 +122,31 @@ Qed.
 (* ===================================================================== *)
 
 Theorem p6cs_without_subject_wf_is_false :
-  ~ (forall n NM Θ0 Θ θ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi S α,
-       size_uskl S + size_pskl P0 <= n ->
+  ~ (forall n NM Θ0 Θ θ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R α,
+       size_uskl R + size_pskl P0 <= n ->
        a_wf_aenv Θ -> a_wf_aenv Θ0 ->
        Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
        θ ∷ Θ0 ⊑ Θ ->
        α `notin` dom Θ -> α `notin` dom Θ0 ->
-       ⌊ S ⌋ˢ = P ->
-       ftvar_in_uskl S [<=] add α (dom Θ0) ->
-       lc_uskl S ->
+       ⌊ R ⌋ˢ = P ->
+       ftvar_in_uskl R [<=] add α (dom Θ0) ->
+       lc_uskl R ->
        a_tags_sort NM Ψ' ψa ->
-       (ftag_in_uskl S) ∩ Ψ' [=] empty ->
+       (ftag_in_uskl R) ∩ Ψ' [=] empty ->
        Ψi `union` Ψa [<=] Ψ' ->
        delta_def_fresh Δ Θ ->
        Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
-       Ψsub [<=] ftag_in_uskl S `union` Ψa ->
+       Ψsub [<=] ftag_in_uskl R `union` Ψa ->
        Ψa [<=] Ψsub ->
-       Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S)) ∼ Q ->
+       Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ R)) ∼ Q ->
        (* NB: the subject-wf premise
             [Θ ⨟ empty ⊢ₚₛᵃ ⌊ (θS)[ψa/α] ⌋ˢ]
           is exactly what is MISSING here *)
        Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->
        (* conclusion, weakened to its three essential conjuncts *)
-       exists C Ξc Pa (ρc : list (atom * ptyp)),
-         (P ∼[ α ] P0 ⤳ Ξc ⨾ C) /\
-         (Ξc ++ Θ0) ⊩ C ⨾ Pi ⤳ Pa /\
+       exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
+         (P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
+         (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\
          Θ ⨟ Δ ⊢ (msubst_pskl (ρc ++ θ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
 Proof.
   intros Hthm.
@@ -154,7 +154,7 @@ Proof.
   (* every premise of P6-Cs except the subject wf, at the witness *)
   destruct (Hthm 10 a_sub_mode_sk nil nil nil empty empty empty empty empty
               cex_ψa cex_Q (cex_P α) cex_P0 cex_P0 (cex_S α) α)
-    as (C & Ξc & Pa & ρc & HLK & HSolve & Hprec).
+    as (𝒞 & Ξc & Pa & ρc & HLK & HSolve & Hprec).
   - (* measure *) cbn; lia.
   - (* a_wf_aenv Θ *) apply a_wf_aenv__nil.
   - (* a_wf_aenv Θ0 *) apply a_wf_aenv__nil.
@@ -167,20 +167,20 @@ Proof.
   - (* θ ∷ Θ0 ⊑ Θ *) apply a_inc__empty; apply a_suffix__nil.
   - (* α ∉ dom Θ *) simpl; clear; fsetdec.
   - (* α ∉ dom Θ0 *) simpl; clear; fsetdec.
-  - (* ⌊S⌋ = P *) reflexivity.
+  - (* ⌊R⌋ = P *) reflexivity.
   - (* scoping *) cbn; clear; fsetdec.
-  - (* lc S *) apply lc_uskl_tophole; apply lc_uskl_var_f.
+  - (* lc R *) apply lc_uskl_tophole; apply lc_uskl_var_f.
   - (* tags-sorted ψa *)
     apply a_tags_sort__sk;
       [ apply is_tskl__topholeg; apply is_tskl__unit
       | apply d_tags_skl__topholeg; apply d_tags_skl__unit; clear; fsetdec ].
-  - (* ftag S ⊥ Ψ' *) cbn; clear; fsetdec.
+  - (* ftag R ⊥ Ψ' *) cbn; clear; fsetdec.
   - (* Ψi, Ψa ⊆ Ψ' *) clear; fsetdec.
   - (* delta_def_fresh *) intros Y α0 τ0 HY Hb; inversion Hb.
   - (* precision of the INPUT: ⊤◇⟨⟩ ⊑ᵖ ⊤̇◇⟨⟩ *)
     cbn [msubst_pskl cex_P0]. unfold cex_ψa.
     apply ad_ppre__tophole_keep. apply ad_ppre__unit; clear; fsetdec.
-  - (* Ψsub ⊆ ftag S ∪ Ψa *) clear; fsetdec.
+  - (* Ψsub ⊆ ftag R ∪ Ψa *) clear; fsetdec.
   - (* Ψa ⊆ Ψsub *) clear; fsetdec.
   - (* consistency: ⊤◇(⊤̇◇⟨⟩) ∼ ⊤◇⟨⟩ — C-UnivGhost2 then C-UnivGhostG *)
     rewrite cex_subject. unfold cex_ψa, cex_Q.
@@ -192,7 +192,7 @@ Proof.
     apply ad_refine_syn__tophole_keep;
       [ apply guarded_bskl__unit | apply ad_refine_syn__unit ].
   - (* … and now the conclusion is refuted *)
-    destruct (@cex_lookeq_forced α Ξc C HLK) as [-> ->].
+    destruct (@cex_lookeq_forced α Ξc 𝒞 HLK) as [-> ->].
     simpl in HSolve.
     apply (@cex_solve_forced nil Pa) in HSolve; subst Pa.
     cbn [msubst_pskl] in Hprec.
@@ -211,9 +211,9 @@ Check cex_subject_not_wf.
 (* ===================================================================== *)
 
 Theorem p6cs_fires_when_the_subject_is_wf : forall α,
-  exists C Ξc Pa (ρc : list (atom * ptyp)),
-    (cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ C) /\
-    (Ξc ++ nil) ⊩ C ⨾ cex_P0 ⤳ Pa /\
+  exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
+    (cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) /\
+    (Ξc ++ nil) ⊩ 𝒞 ⨾ cex_P0 ⤳ Pa /\
     nil ⨟ empty ⊢ (msubst_pskl (ρc ++ nil) Pa)
       ⊑ᵖ[ union empty empty ] uskl_unit.
 Proof.
@@ -260,9 +260,9 @@ Proof.
                ltac:(cbn [msubst_pskl pskl_to_bskl_inh cex_P0];
                      apply ad_refine_syn__tophole_keep;
                        [ apply guarded_bskl__unit | apply ad_refine_syn__unit ]))
-    as (C & Ξc & Pa & ρc & HLK & HSolve & _ & _ & _ & _ & _ & _ & _ & _ & _
+    as (𝒞 & Ξc & Pa & ρc & HLK & HSolve & _ & _ & _ & _ & _ & _ & _ & _ & _
           & Hprec).
-  exists C, Ξc, Pa, ρc. repeat split; assumption.
+  exists 𝒞, Ξc, Pa, ρc. repeat split; assumption.
 Qed.
 
 Print Assumptions p6cs_without_subject_wf_is_false.

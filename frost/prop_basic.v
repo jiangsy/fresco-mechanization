@@ -7,23 +7,23 @@ Require Import src.frost.coercions.
 (** * Coercion / opening commutation lemmas. *)
 
 (** [bskl_to_pskl] commutes with (recursive) opening. *)
-Lemma bskl_to_pskl_open_rec : forall Q V k,
-    bskl_to_pskl (open_bskl_wrt_bskl_rec k V Q) =
-    open_pskl_wrt_pskl_rec k (bskl_to_pskl V) (bskl_to_pskl Q).
+Lemma bskl_to_pskl_open_rec : forall Q Q' k,
+    bskl_to_pskl (open_bskl_wrt_bskl_rec k Q' Q) =
+    open_pskl_wrt_pskl_rec k (bskl_to_pskl Q') (bskl_to_pskl Q).
 Proof.
-  induction Q; intros V k; simpl; try reflexivity;
+  induction Q; intros Q' k; simpl; try reflexivity;
     try (rewrite IHQ; reflexivity);
     try (rewrite IHQ1, IHQ2; reflexivity).
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
 Qed.
 
 (** [bskl_to_pskl] commutes with opening by a free variable. *)
-Lemma bskl_to_pskl_open : forall Q X,
-    bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f X)) =
-    open_pskl_wrt_pskl (bskl_to_pskl Q) (pskl_var_f X).
+Lemma bskl_to_pskl_open : forall Q α,
+    bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α)) =
+    open_pskl_wrt_pskl (bskl_to_pskl Q) (pskl_var_f α).
 Proof.
   intros. unfold open_bskl_wrt_bskl, open_pskl_wrt_pskl.
-  apply (bskl_to_pskl_open_rec Q (bskl_var_f X) 0).
+  apply (bskl_to_pskl_open_rec Q (bskl_var_f α) 0).
 Qed.
 
 (** [bskl_to_pskl] is a left inverse of the synthesised painting. *)
@@ -61,80 +61,80 @@ Proof.
 Qed.
 
 (** [ptyp_to_pskl] commutes with (recursive) opening. *)
-Lemma ptyp_to_pskl_open_rec : forall A V k,
-    ptyp_to_pskl (open_ptyp_wrt_ptyp_rec k V A) =
-    open_pskl_wrt_pskl_rec k (ptyp_to_pskl V) (ptyp_to_pskl A).
+Lemma ptyp_to_pskl_open_rec : forall A A' k,
+    ptyp_to_pskl (open_ptyp_wrt_ptyp_rec k A' A) =
+    open_pskl_wrt_pskl_rec k (ptyp_to_pskl A') (ptyp_to_pskl A).
 Proof.
-  induction A; intros V k; simpl; try reflexivity;
+  induction A; intros A' k; simpl; try reflexivity;
     try (rewrite IHA; reflexivity);
     try (rewrite IHA1, IHA2; reflexivity).
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
 Qed.
 
-Lemma ptyp_to_pskl_open : forall A X,
-    ptyp_to_pskl (open_ptyp_wrt_ptyp A (ptyp_var_f X)) =
-    open_pskl_wrt_pskl (ptyp_to_pskl A) (pskl_var_f X).
+Lemma ptyp_to_pskl_open : forall A α,
+    ptyp_to_pskl (open_ptyp_wrt_ptyp A (ptyp_var_f α)) =
+    open_pskl_wrt_pskl (ptyp_to_pskl A) (pskl_var_f α).
 Proof.
   intros. unfold open_ptyp_wrt_ptyp, open_pskl_wrt_pskl.
-  apply (ptyp_to_pskl_open_rec A (ptyp_var_f X) 0).
+  apply (ptyp_to_pskl_open_rec A (ptyp_var_f α) 0).
 Qed.
 
 (** [pskl_to_bskl_inh] commutes with (recursive) opening. *)
-Lemma pskl_to_bskl_inh_open_rec : forall P V k,
-    pskl_to_bskl_inh (open_pskl_wrt_pskl_rec k V P) =
-    open_bskl_wrt_bskl_rec k (pskl_to_bskl_inh V) (pskl_to_bskl_inh P).
+Lemma pskl_to_bskl_inh_open_rec : forall P P' k,
+    pskl_to_bskl_inh (open_pskl_wrt_pskl_rec k P' P) =
+    open_bskl_wrt_bskl_rec k (pskl_to_bskl_inh P') (pskl_to_bskl_inh P).
 Proof.
-  induction P; intros V k; simpl; try reflexivity;
+  induction P; intros P' k; simpl; try reflexivity;
     try (rewrite IHP; reflexivity);
     try (rewrite IHP1, IHP2; reflexivity).
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
 Qed.
 
-Lemma pskl_to_bskl_inh_open : forall P X,
-    pskl_to_bskl_inh (open_pskl_wrt_pskl P (pskl_var_f X)) =
-    open_bskl_wrt_bskl (pskl_to_bskl_inh P) (bskl_var_f X).
+Lemma pskl_to_bskl_inh_open : forall P α,
+    pskl_to_bskl_inh (open_pskl_wrt_pskl P (pskl_var_f α)) =
+    open_bskl_wrt_bskl (pskl_to_bskl_inh P) (bskl_var_f α).
 Proof.
   intros. unfold open_pskl_wrt_pskl, open_bskl_wrt_bskl.
-  apply (pskl_to_bskl_inh_open_rec P (pskl_var_f X) 0).
+  apply (pskl_to_bskl_inh_open_rec P (pskl_var_f α) 0).
 Qed.
 
 (** [pskl_to_bskl_syn] commutes with (recursive) opening. *)
-Lemma pskl_to_bskl_syn_open_rec : forall P V k,
-    pskl_to_bskl_syn (open_pskl_wrt_pskl_rec k V P) =
-    open_bskl_wrt_bskl_rec k (pskl_to_bskl_syn V) (pskl_to_bskl_syn P).
+Lemma pskl_to_bskl_syn_open_rec : forall P P' k,
+    pskl_to_bskl_syn (open_pskl_wrt_pskl_rec k P' P) =
+    open_bskl_wrt_bskl_rec k (pskl_to_bskl_syn P') (pskl_to_bskl_syn P).
 Proof.
-  induction P; intros V k; simpl; try reflexivity;
+  induction P; intros P' k; simpl; try reflexivity;
     try (rewrite IHP; reflexivity);
     try (rewrite IHP1, IHP2; reflexivity).
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
 Qed.
 
-Lemma pskl_to_bskl_syn_open : forall P X,
-    pskl_to_bskl_syn (open_pskl_wrt_pskl P (pskl_var_f X)) =
-    open_bskl_wrt_bskl (pskl_to_bskl_syn P) (bskl_var_f X).
+Lemma pskl_to_bskl_syn_open : forall P α,
+    pskl_to_bskl_syn (open_pskl_wrt_pskl P (pskl_var_f α)) =
+    open_bskl_wrt_bskl (pskl_to_bskl_syn P) (bskl_var_f α).
 Proof.
   intros. unfold open_pskl_wrt_pskl, open_bskl_wrt_bskl.
-  apply (pskl_to_bskl_syn_open_rec P (pskl_var_f X) 0).
+  apply (pskl_to_bskl_syn_open_rec P (pskl_var_f α) 0).
 Qed.
 
 (** [bskl_to_uskl] commutes with (recursive) opening (both ∀-colours
     collapse to [uskl_all_syn]). *)
-Lemma bskl_to_uskl_open_rec : forall Q V k,
-    bskl_to_uskl (open_bskl_wrt_bskl_rec k V Q) =
-    open_uskl_wrt_uskl_rec k (bskl_to_uskl V) (bskl_to_uskl Q).
+Lemma bskl_to_uskl_open_rec : forall Q Q' k,
+    bskl_to_uskl (open_bskl_wrt_bskl_rec k Q' Q) =
+    open_uskl_wrt_uskl_rec k (bskl_to_uskl Q') (bskl_to_uskl Q).
 Proof.
-  induction Q; intros V k; simpl; try reflexivity;
+  induction Q; intros Q' k; simpl; try reflexivity;
     try (rewrite IHQ; reflexivity);
     try (rewrite IHQ1, IHQ2; reflexivity).
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
 Qed.
 
-Lemma bskl_to_uskl_open : forall Q X,
-    bskl_to_uskl (open_bskl_wrt_bskl Q (bskl_var_f X)) =
-    open_uskl_wrt_uskl (bskl_to_uskl Q) (uskl_var_f X).
+Lemma bskl_to_uskl_open : forall Q α,
+    bskl_to_uskl (open_bskl_wrt_bskl Q (bskl_var_f α)) =
+    open_uskl_wrt_uskl (bskl_to_uskl Q) (uskl_var_f α).
 Proof.
   intros. unfold open_bskl_wrt_bskl, open_uskl_wrt_uskl.
-  apply (bskl_to_uskl_open_rec Q (bskl_var_f X) 0).
+  apply (bskl_to_uskl_open_rec Q (bskl_var_f α) 0).
 Qed.
 
 (** [bskl_to_pskl] preserves local closure (both ∀-colours collapse to

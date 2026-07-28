@@ -238,6 +238,37 @@ before changing any of them.
   for the legend (`Γ ⊢[ M ] e ⇒ A` for `d_typing`, `Δ ⨟ Γ ⊨ T ≈ A`
   for `d_consis`, etc.). Only relations with no paper counterpart may use
   application form.
+- **Atom sets never name a module.** `frost/notations.v` completes what
+  `Metalib.Metatheory` abbreviates only partly: it adds `inter` / `diff` /
+  `mem` and the `AtomSetImpl` lemma names we use (`union_1`, `inter_3`,
+  `singleton_1`, …), plus the infix `S1 ∪ S2` (65) / `S1 ∩ S2` (63) /
+  `S1 ∖ S2` (61) — all below `[=]`/`[<=]`, so the dominant disjointness side
+  condition reads `Δ ∩ ftvar_in_pskl P [=] empty`. `AtomSetFacts` is already
+  re-exported by metalib. Write **no** `AtomSetImpl.` / `AtomSetFacts.`
+  qualifier; if something is missing, add the abbreviation there.
+- **Metavariable convention — the `language.ott` grammar's own symbols.**
+
+  `A` for `ptyp`, `B` for `btyp`, `C` for `utyp`, `P` for `pskl`, `Q` for
+  `bskl`, `R` for `uskl`, and `𝒞` for constraint lists (`a_cstrs`, the paper's
+  `\mC`) — with numeric suffixes for extras (`A1`, `Q2`) and mnemonic lowercase
+  suffixes where they carry meaning (`Qb`, `Rg`, `Pi`, `Qsrc`). Type and
+  skeleton VARIABLES (i.e. `atom`s) are greek — `α`, `β`, `γ`, `δ`; the
+  generated `def_ott.v` / `prop_ln.v` already use `α` (Makefile sed on the
+  ott metavar stems). Paper greek keeps its meaning everywhere: `τ` monotype,
+  `ψ` ghost skeleton, `ρ`/`σ`/`θ`/`ζ` metasubstitutions, `Γ`/`Δ`/`Ψ`/`Θ`/`Ξ`
+  contexts. Term variables stay `x`/`y`/`z`, ε tags stay `ε`.
+  - **Disambiguate with ONE prime, then digits 0/3/4/… — never `Q1`/`Q2`.**
+    ott names the arrow-constructor arguments `A1 A2 / … / R1 R2` and the var
+    argument `α`, so those are exactly the names `induction` / `inversion`
+    manufacture; a later explicit `intros Q1` then fails with "Q1 is already
+    used". Coq never auto-generates a primed name. At most one prime.
+  - ⚠️ **The convention governs LEMMA BINDERS, not proof-local names.** After
+    `induction H` / `inversion H` the variables in scope are the RULE's own
+    binders (from `def_extra.v`, which this pass did not touch), so a proof
+    body legitimately says `X` or `P` there even though the statement says
+    `α` or `Q`. When a rename breaks with "variable … not found" or "… is
+    already used", that is almost always this: the name belongs to the rule,
+    not the lemma. Say so in a comment rather than forcing the rename.
 - Tactic style follows the reference repo — `eauto`-driven, with
   hammer-derived scripts simplified before commit.
 - Comments document **why** an encoding is the way it is, not what

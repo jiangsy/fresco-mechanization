@@ -43,24 +43,24 @@ Set Implicit Arguments.
     route the bound var into [Ψ].) *)
 Lemma d_wf_ptyp_ftvar : forall Γ A,
     d_wf_ptyp Γ A ->
-    forall X, X `in` ftvar_in_ptyp A -> binds X dbind_tvar Γ.
+    forall α, α `in` ftvar_in_ptyp A -> binds α dbind_tvar Γ.
 Proof.
   intros Γ A H. induction H; intros Y HY; simpl in HY.
   - fsetdec.
   - apply singleton_1 in HY. subst. assumption.
   - apply union_1 in HY. destruct HY as [HY | HY]; auto.
-  - pick fresh X for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f X))).
+  - pick fresh α for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f α))).
     { eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower. eassumption. }
-    specialize (H0 X ltac:(auto) Y HYo).
+    specialize (H0 α ltac:(auto) Y HYo).
     analyze_binds H0.
 Qed.
 
 (** Hence a well-formed type's skeleton is a well-formed [pskl] (any scope). *)
 Lemma d_wf_pskl_strengthen : forall Ψ Γ P,
     Γ ⨟ Ψ ⊢ₚₛ P ->
-    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
-    X `notin` ftvar_in_pskl P ->
+    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
+    α `notin` ftvar_in_pskl P ->
     (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
@@ -87,13 +87,13 @@ Qed.
     [Q] ([__var] matches [R'=Q'=var X']; [__hole]'s fill lives in [Q = inh P]), so
     conditioning on [X ∉ ftvar Q] suffices.  Forall cases grow [Γ]; recurse with
     [ftvar_in_bskl_open_bskl_wrt_bskl_upper]. *)
-Lemma d_refine_syn_strengthen : forall Γ Δi Q P,
-    Γ ⨟ Δi ⊢ᵣ Q ⊳ P ->
-    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
-    X `notin` ftvar_in_bskl P ->
-    (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣ Q ⊳ P.
+Lemma d_refine_syn_strengthen : forall Γ Δi Q Q',
+    Γ ⨟ Δi ⊢ᵣ Q ⊳ Q' ->
+    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
+    α `notin` ftvar_in_bskl Q' ->
+    (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣ Q ⊳ Q'.
 Proof.
-  intros Γ Δi Q P H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
+  intros Γ Δi Q Q' H. induction H; intros Γ1 X0 Γ2 Heq HX; subst.
   - apply d_refine_syn__unit.
   - simpl in HX. apply d_refine_syn__var. destruct H as [HI | Hb];
       [ left; assumption | right ].
@@ -102,6 +102,9 @@ Proof.
       [ eapply IHd_refine_syn1 | eapply IHd_refine_syn2 ]; eauto.
   - simpl in HX. apply d_refine_syn__all with (L := L `union` {{X0}}).
     intros Z HZ. eapply (H0 Z ltac:(auto) Γ1 X0 Γ2); [ reflexivity | ].
+    (* [P] is the rule's OWN target binder (d_refine_syn__all /
+       __tophole_fill, decl/def_extra.v), auto-bound by [induction H] —
+       not this lemma's Q'. *)
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f Z)) as Hup.
     simpl in Hup. fsetdec.
   - apply d_refine_syn__hole. eapply d_wf_pskl_strengthen; eauto.
@@ -110,6 +113,9 @@ Proof.
   - apply d_refine_syn__tophole_fill with (L := L `union` {{X0}}).
     intros Z HZ. eapply (H0 Z ltac:(auto) ((Z ~ dbind_tvar) ++ Γ1) X0 Γ2);
       [ simpl_env; reflexivity | ].
+    (* [P] is the rule's OWN target binder (d_refine_syn__all /
+       __tophole_fill, decl/def_extra.v), auto-bound by [induction H] —
+       not this lemma's Q'. *)
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f Z)) as Hup.
     simpl in Hup. fsetdec.
   - simpl in HX. apply d_refine_syn__tophole_keep; [ assumption | eapply IHd_refine_syn; eauto ].
@@ -119,19 +125,19 @@ Qed.
     RHS: every concrete tvar in [R] is matched (via [__var]) to the same tvar in
     [Q]; ghosts/holes in [R] are tvar-free.  Hence [X ∉ ftvar Q ⇒ X ∉ ftvar R],
     which is what makes [d_pat_sub]'s [forall_l] recursion strengthen. *)
-Lemma guarded_pskl_subst_unit : forall P X,
-    guarded_pskl P -> guarded_pskl (subst_pskl_in_pskl pskl_unit X P).
+Lemma guarded_pskl_subst_unit : forall P α,
+    guarded_pskl P -> guarded_pskl (subst_pskl_in_pskl pskl_unit α P).
 Proof.
-  intros P X H. induction H; simpl.
+  intros P α H. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; (assumption || apply lc_pskl_unit).
 Qed.
 
-Lemma guarded_uskl_subst_unit : forall R X,
-    guarded_uskl R -> guarded_uskl (subst_bskl_in_uskl uskl_unit X R).
+Lemma guarded_uskl_subst_unit : forall R α,
+    guarded_uskl R -> guarded_uskl (subst_bskl_in_uskl uskl_unit α R).
 Proof.
-  intros R X H. induction H; simpl.
+  intros R α H. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - apply guarded_uskl__arrow; apply subst_bskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_unit).
@@ -139,8 +145,8 @@ Qed.
 
 Lemma d_wf_pskl_subst_unit : forall Ψ Γ P,
     Γ ⨟ Ψ ⊢ₚₛ P ->
-    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
-    (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ (subst_pskl_in_pskl pskl_unit X P).
+    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
+    (Γ1 ++ Γ2) ⨟ Ψ ⊢ₚₛ (subst_pskl_in_pskl pskl_unit α P).
 Proof.
   intros Ψ Γ P H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_wf_pskl__unit.
@@ -160,8 +166,8 @@ Qed.
 
 Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
     Γ ⨟ Ψ ⊢ᵤₛ R ->
-    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
-    (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_bskl_in_uskl uskl_unit X R).
+    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
+    (Γ1 ++ Γ2) ⨟ Ψ ⊢ᵤₛ (subst_bskl_in_uskl uskl_unit α R).
 Proof.
   intros Ψ Γ R H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_wf_uskl__unit.
@@ -187,23 +193,23 @@ Proof.
 Qed.
 
 (** [pskl_to_bskl_inh] commutes with the tvar→unit substitution. *)
-Lemma pskl_to_bskl_inh_subst_unit : forall P X,
-    subst_bskl_in_bskl bskl_unit X (pskl_to_bskl_inh P)
-    = pskl_to_bskl_inh (subst_pskl_in_pskl pskl_unit X P).
+Lemma pskl_to_bskl_inh_subst_unit : forall P α',
+    subst_bskl_in_bskl bskl_unit α' (pskl_to_bskl_inh P)
+    = pskl_to_bskl_inh (subst_pskl_in_pskl pskl_unit α' P).
 Proof.
-  induction P; intros X; simpl; try reflexivity;
+  induction P; intros α'; simpl; try reflexivity;
     try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
   - destruct_if; reflexivity.
 Qed.
 
-Lemma is_sskl_subst_unit : forall Q X,
-    is_sskl Q -> is_sskl (subst_bskl_in_bskl bskl_unit X Q).
+Lemma is_sskl_subst_unit : forall Q α,
+    is_sskl Q -> is_sskl (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
-  intros Q X H. induction H; simpl.
+  intros Q α H. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - auto with frost.
-  - apply is_sskl__all with (L := L `union` {{X}}). intros Y HY.
+  - apply is_sskl__all with (L := L `union` {{α}}). intros Y HY.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
       try (apply lc_bskl_unit); try fsetdec. auto.
   - auto with frost.
@@ -212,48 +218,48 @@ Qed.
 
 (** [mod_comp_sk] is preserved under [unit]-substitution: [unit] is [is_sskl]
     and substitution respects the arrow spine. *)
-Lemma mod_comp_sk_subst_unit : forall S m X,
-    mod_comp_sk S m -> mod_comp_sk (subst_bskl_in_bskl bskl_unit X S) m.
+Lemma mod_comp_sk_subst_unit : forall Q m α,
+    mod_comp_sk Q m -> mod_comp_sk (subst_bskl_in_bskl bskl_unit α Q) m.
 Proof.
-  intros S m X H. induction H; simpl.
+  intros Q m α H. induction H; simpl.
   - auto using is_sskl_subst_unit with frost.
   - auto using is_sskl_subst_unit with frost.
   - auto with frost.
 Qed.
 
-Lemma is_tskl_subst_unit : forall R X,
-    is_tskl R -> is_tskl (subst_bskl_in_uskl uskl_unit X R).
+Lemma is_tskl_subst_unit : forall R α,
+    is_tskl R -> is_tskl (subst_bskl_in_uskl uskl_unit α R).
 Proof.
-  intros R X H. induction H; simpl.
+  intros R α H. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - auto with frost.
-  - apply is_tskl__all_etag with (L := L `union` {{X}}). intros Y HY.
+  - apply is_tskl__all_etag with (L := L `union` {{α}}). intros Y HY.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - auto with frost.
   - auto with frost.
 Qed.
 
-Lemma guarded_bskl_subst_unit : forall Q X,
-    guarded_bskl Q -> guarded_bskl (subst_bskl_in_bskl bskl_unit X Q).
+Lemma guarded_bskl_subst_unit : forall Q α,
+    guarded_bskl Q -> guarded_bskl (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
-  intros Q X H. induction H; simpl.
+  intros Q α H. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - apply guarded_bskl__arrow; apply subst_bskl_in_bskl_lc_bskl; (assumption || apply lc_bskl_unit).
 Qed.
 
-Lemma d_tags_skl_subst_unit : forall Δ R X,
-    d_tags_skl Δ R -> d_tags_skl Δ (subst_bskl_in_uskl uskl_unit X R).
+Lemma d_tags_skl_subst_unit : forall Δ R α,
+    d_tags_skl Δ R -> d_tags_skl Δ (subst_bskl_in_uskl uskl_unit α R).
 Proof.
-  intros Δ R X H. induction H; simpl.
+  intros Δ R α H. induction H; simpl.
   - apply d_tags_skl__unit; (assumption || fsetdec).
   - destruct_if;
       [ apply d_tags_skl__unit; (assumption || fsetdec)
       | apply d_tags_skl__var; (assumption || fsetdec) ].
   - apply d_tags_skl__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
-  - apply d_tags_skl__all_etag with (L := L `union` {{X}}) (Ψ0 := Ψ0); [ | assumption | assumption ]. intros Y HY.
+  - apply d_tags_skl__all_etag with (L := L `union` {{α}}) (Ψ0 := Ψ0); [ | assumption | assumption ]. intros Y HY.
     rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       try (apply lc_uskl_unit); try fsetdec. auto.
   - apply d_tags_skl__holeg; (assumption || fsetdec).
@@ -262,9 +268,9 @@ Qed.
 
 Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
     Δ ⨟ Γ ⊢ₛ R ∼ Q ->
-    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
     Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ
-      (subst_bskl_in_uskl uskl_unit X R) ∼ (subst_bskl_in_bskl bskl_unit X Q).
+      (subst_bskl_in_uskl uskl_unit α R) ∼ (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
   intros Δ Γ R Q H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_pat_consis__unit; (assumption || fsetdec).
@@ -307,9 +313,9 @@ Qed.
 
 Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
     Δ ⨟ Γ ⊢ₛ[ m ] R ⩽ Q ->
-    forall Γ1 X Γ2, Γ = Γ1 ++ (X ~ dbind_tvar) ++ Γ2 ->
+    forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
     Δ ⨟ (Γ1 ++ Γ2) ⊢ₛ[ m ]
-      (subst_bskl_in_uskl uskl_unit X R) ⩽ (subst_bskl_in_bskl bskl_unit X Q).
+      (subst_bskl_in_uskl uskl_unit α R) ⩽ (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
   intros Δ Γ m R Q H. induction H; intros Γ1 X0 Γ2 Heq; subst.
   - apply d_pat_sub__infer; [ (assumption || fsetdec) | eapply d_pat_consis_subst_unit; eauto | apply is_sskl_subst_unit; assumption ].
@@ -443,13 +449,13 @@ Qed.
     expression preserves [⦂] (same context, [x] and [y] same [typ]-binding). *)
 Lemma d_typing_subst_var : forall m Γ e B,
     Γ ⊢[ m ] e ⦂ B ->
-    forall x y T, uniq Γ -> binds x (dbind_typ T) Γ -> binds y (dbind_typ T) Γ ->
+    forall x y A', uniq Γ -> binds x (dbind_typ A') Γ -> binds y (dbind_typ A') Γ ->
     Γ ⊢[ m ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B.
 Proof.
-  intros m Γ e B H. induction H; intros x0 y0 T Huniq Hbx Hby; simpl.
+  intros m Γ e B H. induction H; intros x0 y0 A' Huniq Hbx Hby; simpl.
   - apply d_typing__unit.
   - (* var *) destruct_if as [Heq | Hne].
-    + subst x. assert (dbind_typ A = dbind_typ T) by (eapply binds_unique; eauto).
+    + subst x. assert (dbind_typ A = dbind_typ A') by (eapply binds_unique; eauto).
       match goal with He : dbind_typ _ = dbind_typ _ |- _ => inversion He; subst end.
       apply d_typing__var; exact Hby.
     + apply d_typing__var; exact H.

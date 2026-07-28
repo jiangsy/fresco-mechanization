@@ -63,9 +63,9 @@ Proof. intros. apply ad_refine_syn_refl_inh; auto. Qed.
 
 (** The synthesised painting commutes with closing (converse of the
     lngen-style [pskl_to_bskl_syn_open]). *)
-Lemma pskl_to_bskl_syn_close_rec : forall P X k,
-  pskl_to_bskl_syn (close_pskl_wrt_pskl_rec k X P)
-  = close_bskl_wrt_bskl_rec k X (pskl_to_bskl_syn P).
+Lemma pskl_to_bskl_syn_close_rec : forall P α' k,
+  pskl_to_bskl_syn (close_pskl_wrt_pskl_rec k α' P)
+  = close_bskl_wrt_bskl_rec k α' (pskl_to_bskl_syn P).
 Proof.
   induction P; intros; simpl; f_equal; auto;
     repeat match goal with
@@ -74,26 +74,26 @@ Proof.
     end; reflexivity.
 Qed.
 
-Lemma pskl_to_bskl_syn_close : forall P X,
-  pskl_to_bskl_syn (close_pskl_wrt_pskl X P)
-  = close_bskl_wrt_bskl X (pskl_to_bskl_syn P).
+Lemma pskl_to_bskl_syn_close : forall P α,
+  pskl_to_bskl_syn (close_pskl_wrt_pskl α P)
+  = close_bskl_wrt_bskl α (pskl_to_bskl_syn P).
 Proof.
   intros. unfold close_pskl_wrt_pskl, close_bskl_wrt_bskl.
   apply pskl_to_bskl_syn_close_rec.
 Qed.
 
 (** Colour erasure commutes with opening. *)
-Lemma bskl_to_pskl_open_rec : forall Q V k,
-  bskl_to_pskl (open_bskl_wrt_bskl_rec k V Q)
-  = open_pskl_wrt_pskl_rec k (bskl_to_pskl V) (bskl_to_pskl Q).
+Lemma bskl_to_pskl_open_rec : forall Q Q' k,
+  bskl_to_pskl (open_bskl_wrt_bskl_rec k Q' Q)
+  = open_pskl_wrt_pskl_rec k (bskl_to_pskl Q') (bskl_to_pskl Q).
 Proof.
   induction Q; intros; simpl; f_equal; auto.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
 Qed.
 
-Lemma bskl_to_pskl_open : forall Q X,
-  bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f X))
-  = open_pskl_wrt_pskl (bskl_to_pskl Q) (pskl_var_f X).
+Lemma bskl_to_pskl_open : forall Q α,
+  bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))
+  = open_pskl_wrt_pskl (bskl_to_pskl Q) (pskl_var_f α).
 Proof.
   intros. unfold open_bskl_wrt_bskl, open_pskl_wrt_pskl.
   apply bskl_to_pskl_open_rec.
@@ -180,12 +180,12 @@ Qed.
 (*  required well-formedness separately").                                  *)
 (* ===================================================================== *)
 
-Lemma ad_refine_syn_syn_l : forall Θ Δ Qb B,
-  Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ B ->
+Lemma ad_refine_syn_syn_l : forall Θ Δ Qb Q,
+  Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ Q ->
   forall P, Qb = pskl_to_bskl_syn P ->
-  exists P', B = pskl_to_bskl_syn P'.
+  exists P', Q = pskl_to_bskl_syn P'.
 Proof.
-  intros Θ Δ Qb B Href; induction Href; intros P0 Heq.
+  intros Θ Δ Qb Q Href; induction Href; intros P0 Heq.
   - (* unit *) exists pskl_unit. reflexivity.
   - (* var *) exists (pskl_var_f X). reflexivity.
   - (* arrow *)
@@ -278,15 +278,15 @@ Qed.
 (** With a SYNTHESISED painting on the left the [all] rule can never fire (a
     syn painting has no [bskl_all_inh]), so Δ never grows: Δ-freeness
     propagates across the refinement. *)
-Lemma ad_refine_syn_syn_delta_free : forall Θ Δ Qb B,
-  Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ B ->
+Lemma ad_refine_syn_syn_delta_free : forall Θ Δ Qb Q,
+  Θ ⨟ Δ ⊢ᵣᵃ Qb ⊳ Q ->
   a_wf_aenv Θ ->
   forall F, Qb = pskl_to_bskl_syn F ->
   (forall X, X `in` Δ -> X `notin` dom Θ) ->
   Δ ∩ ftvar_in_bskl Qb [=] empty ->
-  Δ ∩ ftvar_in_bskl B [=] empty.
+  Δ ∩ ftvar_in_bskl Q [=] empty.
 Proof.
-  intros Θ Δ Qb B Href; induction Href; intros Hwf F Heq Hdisj Hfree.
+  intros Θ Δ Qb Q Href; induction Href; intros Hwf F Heq Hdisj Hfree.
   - (* unit *) simpl. clear; fsetdec.
   - (* var *) exact Hfree.
   - (* arrow *)
@@ -368,23 +368,23 @@ Qed.
 (*  a syn-headed refinement never grows Δ, so the result stays Δ-free.      *)
 (* ===================================================================== *)
 
-Lemma ad_refine_syn_syn_l_wf : forall Θ Δ F B,
-  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_syn F) ⊳ B ->
+Lemma ad_refine_syn_syn_l_wf : forall Θ Δ P Q,
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_syn P) ⊳ Q ->
   a_wf_aenv Θ ->
   (forall X, X `in` Δ -> X `notin` dom Θ) ->
-  Θ ⨟ empty ⊢ₚₛᵃ F ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl B) ->
-  exists G, B = pskl_to_bskl_syn G /\ Θ ⨟ empty ⊢ₚₛᵃ G.
+  Θ ⨟ empty ⊢ₚₛᵃ P ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+  exists G, Q = pskl_to_bskl_syn G /\ Θ ⨟ empty ⊢ₚₛᵃ G.
 Proof.
-  intros Θ Δ F B Href Hwf Hdisj HwfF HwfB.
-  destruct (ad_refine_syn_syn_l Href F eq_refl) as [G HeqG].
+  intros Θ Δ P Q Href Hwf Hdisj HwfF HwfB.
+  destruct (ad_refine_syn_syn_l Href P eq_refl) as [G HeqG].
   exists G. split; [ exact HeqG | ].
-  assert (Hdf : Δ ∩ ftvar_in_bskl B [=] empty).
+  assert (Hdf : Δ ∩ ftvar_in_bskl Q [=] empty).
   { eapply ad_refine_syn_syn_delta_free;
       [ exact Href | exact Hwf | reflexivity | exact Hdisj | ].
     rewrite ftvar_pskl_to_bskl_syn.
     eapply a_wf_pskl_empty_delta_free; [ exact HwfF | exact Hdisj ]. }
-  subst B.
+  subst Q.
   rewrite bskl_to_pskl_pskl_to_bskl_syn in HwfB.
   rewrite ftvar_pskl_to_bskl_syn in Hdf.
   eapply a_wf_pskl_delta_shrink; [ exact HwfB | ].
@@ -407,15 +407,15 @@ Qed.
 
 (** The left-hand administrative rules, packaged: whatever a syn painting
     refines to, a ghost refines to as well (given the result is well-formed). *)
-Lemma ad_refine_syn_hole_l : forall Θ Δ F Qr,
-  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_syn F) ⊳ Qr ->
+Lemma ad_refine_syn_hole_l : forall Θ Δ P Qr,
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_syn P) ⊳ Qr ->
   a_wf_aenv Θ ->
   (forall X, X `in` Δ -> X `notin` dom Θ) ->
-  Θ ⨟ empty ⊢ₚₛᵃ F ->
+  Θ ⨟ empty ⊢ₚₛᵃ P ->
   Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Qr) ->
   Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Qr.
 Proof.
-  intros Θ Δ F Qr Href Hwf Hdisj HwfF HwfQr.
+  intros Θ Δ P Qr Href Hwf Hdisj HwfF HwfQr.
   destruct (ad_refine_syn_syn_l_wf Href Hwf Hdisj HwfF HwfQr) as [G [-> HwfG]].
   apply ad_refine_syn__hole. exact HwfG.
 Qed.
@@ -425,12 +425,12 @@ Lemma ad_refine_syn_trans : forall Θ Δ Qm Qr,
   a_wf_aenv Θ ->
   (forall X, X `in` Δ -> X `notin` dom Θ) ->
   Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Qr) ->
-  forall Sl,
-  Θ ⨟ Δ ⊢ᵣᵃ Sl ⊳ Qm ->
-  Θ ⨟ Δ ⊢ᵣᵃ Sl ⊳ Qr.
+  forall Ql,
+  Θ ⨟ Δ ⊢ᵣᵃ Ql ⊳ Qm ->
+  Θ ⨟ Δ ⊢ᵣᵃ Ql ⊳ Qr.
 Proof.
   intros Θ Δ Qm Qr Hr.
-  induction Hr; intros Hwf Hdisj HwfQr Sl Hp.
+  induction Hr; intros Hwf Hdisj HwfQr Ql Hp.
   - (* unit : Qm = Qr = unit *) exact Hp.
   - (* var *) exact Hp.
   - (* arrow *)
@@ -442,7 +442,7 @@ Proof.
     + inversion HM; subst. simpl in HwfQr.
       inversion HwfQr as [ | | Θw Δw Pw1 Pw2 Hw1 Hw2 | | | ]; subst.
       apply ad_refine_syn__arrow; [ apply IHHr1 | apply IHHr2 ]; auto.
-    + eapply ad_refine_syn_hole_l with (F := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hwf | exact Hdisj | eassumption
         | exact HwfQr ].
     + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
@@ -481,7 +481,7 @@ Proof.
       by (apply ad_refine_syn__tophole_remove; assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l with (F := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hwf | exact Hdisj | eassumption
         | exact HwfQr ].
     + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
@@ -495,7 +495,7 @@ Proof.
       by (eapply ad_refine_syn__tophole_fill with (L := L); assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l with (F := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hwf | exact Hdisj | eassumption
         | exact HwfQr ].
     + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
@@ -527,7 +527,7 @@ Proof.
       by (apply ad_refine_syn__tophole_keep; assumption).
     remember (bskl_tophole Qb) as M eqn:HM. revert HM.
     induction Hp; intros HM; try discriminate.
-    + eapply ad_refine_syn_hole_l with (F := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hwf | exact Hdisj | eassumption
         | exact HwfQr ].
     + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
@@ -546,7 +546,7 @@ Proof.
     + (* var ⊳ var : rebuild the lookup *)
       inversion HM; subst.
       eapply ad_refine_syn__flex_l; eassumption.
-    + eapply ad_refine_syn_hole_l with (F := P);
+    + eapply ad_refine_syn_hole_l with (P := P);
         [ exact Hrr | exact Hwf | exact Hdisj | eassumption
         | exact HwfQr ].
     + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
@@ -582,15 +582,15 @@ Qed.
 (*  requires of every refinement judgment anyway.                            *)
 (* ===================================================================== *)
 
-Corollary ad_precise_preserves_refine : forall Θ Δ P Q A,
-  Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ Q ->
-  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh Q) ⊳ A ->
+Corollary ad_precise_preserves_refine : forall Θ Δ P P' Q,
+  Θ ⨟ Δ ⊢ₚᵣᵃ P ⊑ P' ->
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P') ⊳ Q ->
   a_wf_aenv Θ ->
   (forall X, X `in` Δ -> X `notin` dom Θ) ->
-  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl A) ->
-  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ A.
+  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+  Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_inh P) ⊳ Q.
 Proof.
-  intros Θ Δ P Q A Hprec Href Hwf Hdisj HwfA.
+  intros Θ Δ P P' Q Hprec Href Hwf Hdisj HwfA.
   eapply ad_refine_syn_trans;
     [ exact Href | exact Hwf | exact Hdisj | exact HwfA | exact Hprec ].
 Qed.

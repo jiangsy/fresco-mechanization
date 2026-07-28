@@ -22,11 +22,11 @@ Set Implicit Arguments.
 
 (** Erasure commutes with opening (converse direction of
     [pskl_to_uskl_open_rec] in prop_decorate.v). *)
-Lemma uskl_to_pskl_open_rec : forall S Q k,
-  uskl_to_pskl (open_uskl_wrt_uskl_rec k Q S)
-  = open_pskl_wrt_pskl_rec k (uskl_to_pskl Q) (uskl_to_pskl S).
+Lemma uskl_to_pskl_open_rec : forall R0 R' k,
+  uskl_to_pskl (open_uskl_wrt_uskl_rec k R' R0)
+  = open_pskl_wrt_pskl_rec k (uskl_to_pskl R') (uskl_to_pskl R0).
 Proof.
-  induction S; intros; simpl; f_equal; auto.
+  induction R0; intros; simpl; f_equal; auto.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
 Qed.
 
@@ -67,13 +67,13 @@ Qed.
 (*  Binds-monotone weakening of the refinement judgments                   *)
 (* ===================================================================== *)
 
-Lemma ad_refine_syn_weaken : forall Θ Δ Q P,
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P ->
+Lemma ad_refine_syn_weaken : forall Θ Δ Q Q',
+  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ' ⨟ Δ ⊢ᵣᵃ Q ⊳ P.
+  Θ' ⨟ Δ ⊢ᵣᵃ Q ⊳ Q'.
 Proof.
-  intros Θ Δ Q P H; induction H; intros Θ' Hmon.
+  intros Θ Δ Q Q' H; induction H; intros Θ' Hmon.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
     destruct H as [HΔ | [Hb | [Hb | [τ Hb]]]];
@@ -95,13 +95,13 @@ Proof.
   - eapply ad_refine_syn__flex_r; eauto.
 Qed.
 
-Lemma ad_refine_pskl_weaken : forall Θ Δ P Q,
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+Lemma ad_refine_pskl_weaken : forall Θ Δ P P',
+  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P' ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+  Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ P'.
 Proof.
-  intros Θ Δ P Q H; induction H; intros Θ' Hmon.
+  intros Θ Δ P P' H; induction H; intros Θ' Hmon.
   - apply ad_refine_pskl__unit.
   - apply ad_refine_pskl__var.
     destruct H as [HΔ | [Hb | [Hb | [τ Hb]]]];
@@ -129,12 +129,12 @@ Qed.
 
 (** Helper: refinement from an empty Δ holds at any Δ (occurrences only
     test Δ-membership positively). *)
-Lemma ad_refine_syn_delta_mono : forall Θ Δ0 Q P,
-  Θ ⨟ Δ0 ⊢ᵣᵃ Q ⊳ P ->
+Lemma ad_refine_syn_delta_mono : forall Θ Δ0 Q Q',
+  Θ ⨟ Δ0 ⊢ᵣᵃ Q ⊳ Q' ->
   forall Δ, Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P.
+  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q'.
 Proof.
-  intros Θ Δ0 Q P H; induction H; intros Δ' Hsub;
+  intros Θ Δ0 Q Q' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_syn.
   - apply ad_refine_syn__var.
     destruct H as [HΔ | Htv]; [ left; fsetdec | auto ].
@@ -142,12 +142,12 @@ Proof.
     intros X HX. apply H0; auto. fsetdec.
 Qed.
 
-Lemma ad_refine_pskl_delta_mono : forall Θ Δ0 P Q,
-  Θ ⨟ Δ0 ⊢ᵣₚᵃ P ⊳ Q ->
+Lemma ad_refine_pskl_delta_mono : forall Θ Δ0 P P',
+  Θ ⨟ Δ0 ⊢ᵣₚᵃ P ⊳ P' ->
   forall Δ, Δ0 [<=] Δ ->
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P'.
 Proof.
-  intros Θ Δ0 P Q H; induction H; intros Δ' Hsub;
+  intros Θ Δ0 P P' H; induction H; intros Δ' Hsub;
     eauto using ad_refine_pskl.
   - apply ad_refine_pskl__var.
     destruct H as [HΔ | Htv]; [ left; fsetdec | auto ].
@@ -195,12 +195,12 @@ Qed.
 (*  own erasure.                                                          *)
 (* ===================================================================== *)
 
-Lemma ad_pat_consis_refl_erase : forall S Θ,
-  lc_uskl S ->
-  (forall X, X `in` ftvar_in_uskl S -> a_binds_tvar X Θ) ->
-  ad_pat_consis empty Θ S (pskl_to_bskl_syn ⌊ S ⌋ˢ).
+Lemma ad_pat_consis_refl_erase : forall R' Θ,
+  lc_uskl R' ->
+  (forall X, X `in` ftvar_in_uskl R' -> a_binds_tvar X Θ) ->
+  ad_pat_consis empty Θ R' (pskl_to_bskl_syn ⌊ R' ⌋ˢ).
 Proof.
-  intros S Θ Hlc; revert Θ; induction Hlc; intros Θ Hvis; simpl.
+  intros R' Θ Hlc; revert Θ; induction Hlc; intros Θ Hvis; simpl.
   - apply ad_pat_consis__unit. fsetdec.
   - apply ad_pat_consis__var; [ fsetdec | ].
     apply Hvis. simpl. fsetdec.

@@ -87,15 +87,15 @@ Set Implicit Arguments.
 (*  the consistency→refinement mono lemma [ad_pat_consis_refine_syn_f_mono].*)
 (* ===================================================================== *)
 
-Lemma tyequiv_mono_refine_syn : forall Θ Δ A B,
+Lemma tyequiv_mono_refine_syn : forall Θ Δ A A',
   a_wf_aenv Θ ->
-  mono_ptyp A -> mono_ptyp B ->
-  Θ ⊢ A ≡ᵗ B ->
+  mono_ptyp A -> mono_ptyp A' ->
+  Θ ⊢ A ≡ᵗ A' ->
   (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
-  Θ ⨟ Δ ⊢ᵣᵃ (ptyp_to_bskl_syn A) ⊳ (ptyp_to_bskl_syn B).
+  Θ ⨟ Δ ⊢ᵣᵃ (ptyp_to_bskl_syn A) ⊳ (ptyp_to_bskl_syn A').
 Proof.
-  intros Θ Δ A B Hwf HmA HmB Heq Hvis.
-  assert (Hc : empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn B))
+  intros Θ Δ A A' Hwf HmA HmB Heq Hvis.
+  assert (Hc : empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A'))
     by (apply tyequiv_mono_consis; auto).
   eapply (ad_refine_syn_f_forget (F := empty)).
   replace (ptyp_to_bskl_syn A)
@@ -112,16 +112,16 @@ Qed.
 (*  optimality nodes present it (subject [msubst_bskl ζ α̂], target [Qb]).  *)
 (* ===================================================================== *)
 
-Lemma consis_precise_core : forall Θ Δ ζ α Qb C,
+Lemma consis_precise_core : forall Θ Δ ζ α Qb A,
   a_wf_aenv Θ ->
   mono_ptyp (msubst_lookup ζ α) ->
   (forall X, X `in` ftvar_in_ptyp (msubst_lookup ζ α) -> a_binds_tvar X Θ) ->
-  mono_ptyp C ->
-  Qb = ptyp_to_bskl_syn C ->
-  Θ ⊢ (msubst_lookup ζ α) ≡ᵗ C ->
+  mono_ptyp A ->
+  Qb = ptyp_to_bskl_syn A ->
+  Θ ⊢ (msubst_lookup ζ α) ≡ᵗ A ->
   Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
-  intros Θ Δ ζ α Qb C Hwf HmA Hvis HmC HQb Heq.
+  intros Θ Δ ζ α Qb A Hwf HmA Hvis HmC HQb Heq.
   unfold ad_precise.
   (* left painting reduces to the syn painting of the monotype [ζα] *)
   replace (bskl_to_pskl (msubst_bskl ζ (bskl_var_f α)))
@@ -130,9 +130,9 @@ Proof.
         with (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup ζ α))).
       rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity. }
   rewrite (ptyp_to_bskl_inh_syn_eq HmA).
-  (* right painting reduces to [Qb = syn C] *)
+  (* right painting reduces to [Qb = syn A] *)
   subst Qb.
-  replace (bskl_to_pskl (ptyp_to_bskl_syn C)) with (ptyp_to_pskl C).
+  replace (bskl_to_pskl (ptyp_to_bskl_syn A)) with (ptyp_to_pskl A).
   2:{ unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity. }
   rewrite (ptyp_to_bskl_inh_syn_eq HmC).
   apply tyequiv_mono_refine_syn; auto.
@@ -228,7 +228,7 @@ Qed.
 
 (** Shared tail: given [θα̂ ≡ᵗ C], [Qb = syn C], and the factoring, close the
     precision goal. *)
-Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ θ θ1 ζ α Qb C,
+Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ θ θ1 ζ α Qb A,
   a_wf_aenv Θ ->
   a_flex_tvar Θ0 α ->
   a_binds_tvar α Θ1 ->
@@ -237,12 +237,12 @@ Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ θ θ1 ζ α Qb C,
   a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ ->
   α `in` dom θ1 ->
   msubst_lookup θ1 α = ptyp_var_f α ->
-  mono_ptyp C ->
-  Qb = ptyp_to_bskl_syn C ->
-  Θ ⊢ (msubst_lookup θ α) ≡ᵗ C ->
+  mono_ptyp A ->
+  Qb = ptyp_to_bskl_syn A ->
+  Θ ⊢ (msubst_lookup θ α) ≡ᵗ A ->
   Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
-  intros Θ0 Θ1 Θ Δ θ θ1 ζ α Qb C
+  intros Θ0 Θ1 Θ Δ θ θ1 ζ α Qb A
          Hwf Hflex HbΘ1 HζΘ Hwf1 Hie Hdom Hid HmC HQb HeqθαC.
   assert (Hζθ : Θ ⊢ (msubst_lookup θ α) ≡ᵗ (msubst_lookup ζ α))
     by (eapply a_inc_equiv_compose_id_at; eauto).
@@ -252,7 +252,7 @@ Proof.
              X `in` ftvar_in_ptyp (msubst_lookup ζ α) -> a_binds_tvar X Θ).
   { intros X HX. eapply a_wf_ptyp_ftv_tvarish;
       [ eapply a_inc_lookup_wf; eauto | exact HX ]. }
-  eapply consis_precise_core with (C := C); eauto.
+  eapply consis_precise_core with (A := A); eauto.
   eapply a_tyequiv__trans;
     [ apply a_tyequiv__sym; exact Hζθ | exact HeqθαC ].
 Qed.
@@ -307,7 +307,7 @@ Proof.
   replace (msubst_pskl θ (pskl_var_f α))
     with (ptyp_to_pskl (msubst_lookup θ α)) in Hrs by reflexivity.
   rewrite (ptyp_to_bskl_inh_syn_eq Hmθα) in Hrs.
-  destruct (refine_mono_join Hrs Hwf (B := msubst_lookup θ α) eq_refl Hmθα)
+  destruct (refine_mono_join Hrs Hwf (A := msubst_lookup θ α) eq_refl Hmθα)
     as [C [HmC [HQb HeqθαC]]].
   eapply consis_precise_close; eauto.
 Qed.

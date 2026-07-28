@@ -116,11 +116,11 @@ Qed.
    fires with a variable on the right, and a variable is itself a syn
    painting).  So anything □ refines to is a syn painting of a WELL-FORMED
    skeleton. *)
-Lemma hole_inv : forall Θ Δ B,
-  Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ B ->
-  exists P, B = pskl_to_bskl_syn P /\ Θ ⨟ empty ⊢ₚₛᵃ P.
+Lemma hole_inv : forall Θ Δ Q',
+  Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Q' ->
+  exists P, Q' = pskl_to_bskl_syn P /\ Θ ⨟ empty ⊢ₚₛᵃ P.
 Proof.
-  intros Θ Δ B H. remember bskl_hole as Q eqn:HQ.
+  intros Θ Δ Q' H. remember bskl_hole as Q eqn:HQ.
   induction H; try discriminate.
   - exists P. split; [ reflexivity | assumption ].
   - exists (pskl_var_f α). split; [ reflexivity | ].

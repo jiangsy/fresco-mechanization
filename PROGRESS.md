@@ -76,6 +76,61 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-28 — Naming/notation pass: atom-set notations, and the ott metavariable convention across all hand-written lemmas
+
+Two style passes, both `make coq` green and axiom-free (all 26
+`Print Assumptions` sites still report "Closed under the global context").
+
+**1. Atom sets no longer name a module** (commit `8e0d6ee`).
+`Metalib.Metatheory` abbreviates only part of the interface — `add` /
+`empty` / `remove` / `singleton` / `union`, plus a re-export of
+`AtomSetFacts` — and deliberately does not `Module Export AtomSetImpl`
+(that would shadow `In`, `eq`, `filter`, `fold`, … on top of `List`'s).
+`frost/notations.v` now finishes the job selectively, in metalib's own
+style: abbreviations for `inter` / `diff` / `mem` and the ten
+`AtomSetImpl` lemma names actually used, plus the infix forms the paper
+writes — `S1 ∪ S2` (level 65, mirroring metalib's `union`), `S1 ∩ S2`
+(63), `S1 ∖ S2` (61), all below `[=]` / `[<=]` so the dominant
+disjointness side condition reads `Δ ∩ ftvar_in_pskl P [=] empty`.
+All 348 qualified occurrences across 28 files are gone.
+
+**2. Metavariable convention.**  Hand-written lemma binders now follow
+`language.ott`'s own grammar symbols: `A` ptyp, `B` btyp, `C` utyp,
+`P` pskl, `Q` bskl, `R` uskl, `𝒞` constraint lists (the paper's `\mC`),
+and greek `α`/`β`/`γ`/`δ` for type/skeleton VARIABLES (Axis-4 part 2,
+deferred since 2026-07-27).  ~655 lemma blocks across 41 files.
+
+The rename is driven by Coq, not by guesswork: `About` is run on every
+declared object, and each binder is rewritten by the SORT Coq reports
+for it, per lemma block, simultaneously.  Two rules make it safe:
+
+  - **Disambiguate with ONE prime, then digits 0/3/4/… — never `L1`/`L2`.**
+    ott names the arrow-constructor arguments `A1 A2 / … / R1 R2` and the
+    var argument `α`, so those are exactly the names `induction` /
+    `inversion` manufacture; an explicit `intros Q1` after one then fails
+    with "Q1 is already used".  Coq never auto-generates a primed name.
+  - **A named argument spells the CALLEE's binder** (`foo with (A := e)`,
+    and `eapply H0 with (S := e)` for an instance of the enclosing lemma),
+    so its label follows the callee's map, not the caller's.
+
+**The convention stops at the first case analysis.**  `intros … A A' H;
+induction H` clears `A`/`A'` and re-binds each case from the RULE's own
+argument names (`def_extra.v`, untouched here), so every later `A` in
+that proof denotes a rule binder.  Those bodies keep the original names
+— that is correct, not an oversight, and the sites carry a comment
+saying so.  The same holds past `apply foo_mutind`.  Two smaller
+consequences: `induction S` names its hypotheses `IHS`/`IHS1`/`IHS2`,
+which had to be carried along with the binder; and `try rewrite IHS1`
+fails SILENTLY when stale, surfacing only as a later `fsetdec` failure.
+
+**Residual (deliberately out of scope, for a later pass):** ~5200
+`X`/`Y`/`Z`/`W`/`X0` tokens remain, essentially all of them (a) rule
+binders referenced inside proofs and (b) proof-local intro names —
+`intros Y HY`, `pick fresh Y for …` — which `About` cannot see because
+they never appear in a statement.  Finishing them means renaming the
+rule binders in the `def_*.v` inductives too, which moves every proof
+in the corpus at once.
+
 ## 2026-07-28 — P6-Cs CLOSED: `a_lookeq_solve_complete` axiom-free, 0 admits (+ a load-bearing wf side condition, machine-checked)
 
 `a_lookeq_solve_complete` (consistency-proofs.tex:920, "Completeness of

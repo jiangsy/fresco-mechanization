@@ -145,11 +145,11 @@ Qed.
     now needs is that [d_tags] is invariant under a type-variable
     renaming — tags are ε-atoms untouched by tvar substitution. *)
 
-Lemma d_tags_subst_tvar : forall Δ C X Y,
+Lemma d_tags_subst_tvar : forall Δ C α β,
     d_tags Δ C ->
-    d_tags Δ (subst_utyp_in_utyp (utyp_var_f Y) X C).
+    d_tags Δ (subst_utyp_in_utyp (utyp_var_f β) α C).
 Proof.
-  intros Δ C X Y H. induction H; simpl.
+  intros Δ C α β H. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - eauto with frost.
@@ -257,16 +257,16 @@ Qed.
 
 Lemma d_wf_ptyp_ftvar : forall Γ A,
     d_wf_ptyp Γ A ->
-    forall X, X `in` ftvar_in_ptyp A -> binds X dbind_tvar Γ.
+    forall α, α `in` ftvar_in_ptyp A -> binds α dbind_tvar Γ.
 Proof.
   intros Γ A H. induction H; intros Y HY; simpl in HY.
   - fsetdec.
   - apply singleton_1 in HY. subst. assumption.
   - apply union_1 in HY. destruct HY as [HY | HY]; auto.
-  - pick fresh X for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f X))).
+  - pick fresh α for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f α))).
     { eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower. eassumption. }
-    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
+    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
 Qed.
 
 (** * Well-formedness of bidirectional / unresolved types from lc + scoping.
@@ -337,20 +337,20 @@ Qed.
 
 Lemma d_wf_btyp_ftvar : forall Γ B,
     d_wf_btyp Γ B ->
-    forall X, X `in` ftvar_in_btyp B -> binds X dbind_tvar Γ.
+    forall α, α `in` ftvar_in_btyp B -> binds α dbind_tvar Γ.
 Proof.
   intros Γ B H. induction H; intros Y HY; simpl in HY.
   - fsetdec.
   - apply singleton_1 in HY. subst. assumption.
   - apply union_1 in HY. destruct HY as [HY | HY]; auto.
-  - pick fresh X for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f X))).
+  - pick fresh α for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f α))).
     { eapply ftvar_in_btyp_open_btyp_wrt_btyp_lower. eassumption. }
-    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
-  - pick fresh X for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f X))).
+    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
+  - pick fresh α for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f α))).
     { eapply ftvar_in_btyp_open_btyp_wrt_btyp_lower. eassumption. }
-    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
+    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
 Qed.
 
 Lemma d_wf_utyp_lc : forall Γ C, d_wf_utyp Γ C -> lc_utyp C.
@@ -376,20 +376,20 @@ Qed.
 
 Lemma d_wf_utyp_ftvar : forall Γ C,
     d_wf_utyp Γ C ->
-    forall X, X `in` ftvar_in_utyp C -> binds X dbind_tvar Γ.
+    forall α, α `in` ftvar_in_utyp C -> binds α dbind_tvar Γ.
 Proof.
   intros Γ C H. induction H; intros Y HY; simpl in HY.
   - fsetdec.
   - apply singleton_1 in HY. subst. assumption.
   - apply union_1 in HY. destruct HY as [HY | HY]; auto.
-  - pick fresh X for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X))).
+  - pick fresh α for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f α))).
     { eapply ftvar_in_utyp_open_utyp_wrt_utyp_lower. eassumption. }
-    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
-  - pick fresh X for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X))).
+    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
+  - pick fresh α for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
+    assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f α))).
     { eapply ftvar_in_utyp_open_utyp_wrt_utyp_lower. eassumption. }
-    specialize (H0 X ltac:(auto) Y HYo). analyze_binds H0.
+    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
 Qed.
 
 (** * Painting preserves well-formedness.
@@ -614,19 +614,19 @@ Proof.
 Qed.
 
 (** Substituting a well-formed [ph] for a head tvar preserves [d_wf_utyp]. *)
-Lemma d_wf_utyp_subst_tvar : forall X Γ D ph,
-    d_wf_utyp ((X ~ dbind_tvar) ++ Γ) D ->
-    d_wf_utyp Γ ph ->
-    d_wf_utyp Γ (subst_utyp_in_utyp ph X D).
+Lemma d_wf_utyp_subst_tvar : forall α Γ C' C,
+    d_wf_utyp ((α ~ dbind_tvar) ++ Γ) C' ->
+    d_wf_utyp Γ C ->
+    d_wf_utyp Γ (subst_utyp_in_utyp C α C').
 Proof.
-  intros X Γ D ph HD Hph.
+  intros α Γ C' C HD Hph.
   apply d_wf_utyp_of_lc_ftvar.
   - apply subst_utyp_in_utyp_lc_utyp; [ eapply d_wf_utyp_lc; eassumption
                                       | eapply d_wf_utyp_lc; eassumption ].
   - intros Y HY. apply ftvar_in_utyp_subst_utyp_in_utyp_upper in HY.
     apply union_1 in HY. destruct HY as [HY | HY].
     + eapply d_wf_utyp_ftvar; eassumption.
-    + assert (HYne : Y <> X).
+    + assert (HYne : Y <> α).
       { intro Heq. subst. eapply remove_1; [ reflexivity | eassumption ]. }
       apply remove_3 in HY.
       pose proof (d_wf_utyp_ftvar HD HY) as Hb. analyze_binds Hb.

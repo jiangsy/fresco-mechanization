@@ -23,38 +23,38 @@ Set Implicit Arguments.
 (** Coercions commute with type-variable substitution. *)
 
 
-Lemma is_ityp_rename_tvar : forall B Z W,
-    is_ityp B -> is_ityp (subst_btyp_in_btyp (btyp_var_f W) Z B).
+Lemma is_ityp_rename_tvar : forall B γ δ,
+    is_ityp B -> is_ityp (subst_btyp_in_btyp (btyp_var_f δ) γ B).
 Proof.
-  intros B Z W H. induction H; simpl.
+  intros B γ δ H. induction H; simpl.
   - constructor.
   - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
   - constructor; assumption.
-  - apply is_ityp__all with (L := L `union` singleton Z `union` singleton W).
+  - apply is_ityp__all with (L := L `union` singleton γ `union` singleton δ).
     intros X HX.
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
       by (solve [ fsetdec | apply lc_btyp_var_f ]).
     apply H0; fsetdec.
 Qed.
 
-Lemma is_ttyp_rename_tvar : forall C Z W,
-    is_ttyp C -> is_ttyp (subst_utyp_in_utyp (utyp_var_f W) Z C).
+Lemma is_ttyp_rename_tvar : forall C γ δ,
+    is_ttyp C -> is_ttyp (subst_utyp_in_utyp (utyp_var_f δ) γ C).
 Proof.
-  intros C Z W H. induction H; simpl.
+  intros C γ δ H. induction H; simpl.
   - constructor.
   - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
   - constructor; assumption.
-  - apply is_ttyp__all_etag with (L := L `union` singleton Z `union` singleton W).
+  - apply is_ttyp__all_etag with (L := L `union` singleton γ `union` singleton δ).
     intros X HX.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply lc_utyp_var_f ]).
     apply H0; fsetdec.
 Qed.
 
-Lemma guarded_utyp_rename_tvar : forall C Z W,
-    guarded_utyp C -> guarded_utyp (subst_utyp_in_utyp (utyp_var_f W) Z C).
+Lemma guarded_utyp_rename_tvar : forall C γ δ,
+    guarded_utyp C -> guarded_utyp (subst_utyp_in_utyp (utyp_var_f δ) γ C).
 Proof.
-  intros C Z W H. induction H; simpl.
+  intros C γ δ H. induction H; simpl.
   - constructor.
   - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
   - constructor; apply subst_utyp_in_utyp_lc_utyp; auto; apply lc_utyp_var_f.
@@ -63,14 +63,14 @@ Qed.
 (** [d_consis] is closed under tvar renaming (Δ is etag-only, untouched). *)
 Lemma d_consis_rename_tvar : forall Δ Γ C B,
     Δ ⨟ Γ ⊢ C ∼ B ->
-    forall Γ1 Γ2 X0 Y,
-      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
-      Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-      Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢
-         (subst_utyp_in_utyp (utyp_var_f Y) X0 C)
-         ∼ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
+    forall Γ1 Γ2 α0 β,
+      Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
+      β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
+      Δ ⨟ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢
+         (subst_utyp_in_utyp (utyp_var_f β) α0 C)
+         ∼ (subst_btyp_in_btyp (btyp_var_f β) α0 B).
 Proof.
-  intros Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
+  intros Δ Γ C B H. induction H; intros Γ1 Γ2 α0 β Heq Hfr; subst; simpl.
   - apply d_consis__unit. assumption.
   - destruct_if.
     + apply d_consis__var; [ auto | assumption ].
@@ -80,45 +80,45 @@ Proof.
     + eapply IHd_consis2; [ reflexivity | exact Hfr ].
     + assumption.
   - eapply d_consis__forall_inh_tagged with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     + intros Z HZ.
       erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
       erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-      rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+      rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
       eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
     + assumption.
   - apply d_consis__forall_inh_untagged with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     intros Z HZ.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - apply d_consis__forall_syn_tagged with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     intros Z HZ.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - apply d_consis__forall_syn with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     intros Z HZ.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
 Qed.
 
 (** [d_wf_utyp] is closed under tvar renaming (pure well-scopedness). *)
 Lemma d_wf_utyp_rename_tvar : forall Γ C,
     Γ ⊢ᵤ C ->
-    forall Γ1 Γ2 X0 Y,
-      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
-      Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-      (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp (utyp_var_f Y) X0 C).
+    forall Γ1 Γ2 α0 β,
+      Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
+      β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
+      (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp (utyp_var_f β) α0 C).
 Proof.
-  intros Γ C H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
+  intros Γ C H. induction H; intros Γ1 Γ2 α0 β Heq Hfr; subst; simpl.
   - apply d_wf_utyp__unit.
   - destruct_if.
     + apply d_wf_utyp__var. auto.
@@ -127,39 +127,39 @@ Proof.
     + eapply IHd_wf_utyp1; [ reflexivity | exact Hfr ].
     + eapply IHd_wf_utyp2; [ reflexivity | exact Hfr ].
   - apply d_wf_utyp__all_syn with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     intros Z HZ.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - apply d_wf_utyp__all_etag with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y).
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     intros Z HZ.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H0 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
 Qed.
 
 (** Shape predicates [is_styp]/[guarded_btyp] under tvar renaming (for
     [d_sub_rename_tvar]'s infer/check cases). *)
-Lemma is_styp_rename_tvar : forall B Z W,
-    is_styp B -> is_styp (subst_btyp_in_btyp (btyp_var_f W) Z B).
+Lemma is_styp_rename_tvar : forall B γ δ,
+    is_styp B -> is_styp (subst_btyp_in_btyp (btyp_var_f δ) γ B).
 Proof.
-  intros B Z W H. induction H; simpl.
+  intros B γ δ H. induction H; simpl.
   - constructor.
   - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
   - constructor; assumption.
-  - apply is_styp__all with (L := L `union` singleton Z `union` singleton W).
+  - apply is_styp__all with (L := L `union` singleton γ `union` singleton δ).
     intros X HX.
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
       by (solve [ fsetdec | apply lc_btyp_var_f ]).
     apply H0; fsetdec.
 Qed.
 
-Lemma guarded_btyp_rename_tvar : forall B Z W,
-    guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp (btyp_var_f W) Z B).
+Lemma guarded_btyp_rename_tvar : forall B γ δ,
+    guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp (btyp_var_f δ) γ B).
 Proof.
-  intros B Z W H. induction H; simpl.
+  intros B γ δ H. induction H; simpl.
   - constructor.
   - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
   - constructor; apply subst_btyp_in_btyp_lc_btyp; auto; apply lc_btyp_var_f.
@@ -169,14 +169,14 @@ Qed.
     closes the cofinite-uniform [forall_r] case of the transitivity lemmas. *)
 Lemma d_sub_rename_tvar : forall m Δ Γ C B,
     Δ ⨟ Γ ⊢[ m ] C ⩽ B ->
-    forall Γ1 Γ2 X0 Y,
-      Γ = Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2 ->
-      Y `notin` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) ->
-      Δ ⨟ (Γ1 ++ (Y ~ dbind_tvar) ++ Γ2) ⊢[ m ]
-         (subst_utyp_in_utyp (utyp_var_f Y) X0 C)
-         ⩽ (subst_btyp_in_btyp (btyp_var_f Y) X0 B).
+    forall Γ1 Γ2 α0 β,
+      Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
+      β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
+      Δ ⨟ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢[ m ]
+         (subst_utyp_in_utyp (utyp_var_f β) α0 C)
+         ⩽ (subst_btyp_in_btyp (btyp_var_f β) α0 B).
 Proof.
-  intros m Δ Γ C B H. induction H; intros Γ1 Γ2 X0 Y Heq Hfr; subst; simpl.
+  intros m Δ Γ C B H. induction H; intros Γ1 Γ2 α0 β Heq Hfr; subst; simpl.
   - (* infer *)
     apply d_sub__infer.
     + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
@@ -190,12 +190,12 @@ Proof.
     + apply is_ityp_rename_tvar. assumption.
   - (* forall_r *)
     apply d_sub__forall_r with
-      (L := L `union` dom (Γ1 ++ (X0 ~ dbind_tvar) ++ Γ2) `union` singleton X0 `union` singleton Y);
-      [ change (is_ityp (subst_btyp_in_btyp (btyp_var_f Y) X0 (btyp_all_inh B)));
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β);
+      [ change (is_ityp (subst_btyp_in_btyp (btyp_var_f β) α0 (btyp_all_inh B)));
         apply is_ityp_rename_tvar; assumption | ].
     intros Z HZ.
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (Y ~ dbind_tvar) ++ Γ2).
+    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
     eapply (H1 Z); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - (* arg *)
     eapply d_sub__arg.

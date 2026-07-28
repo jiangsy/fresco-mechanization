@@ -104,14 +104,14 @@ Qed.
     mirror of [ad_pat_sub_rename_tvar] (prop_pat_sub.v).  The fuel [n] rides
     along inertly; [to_n]'s binder cases use it to turn the cofinite family
     [∀α∉L, ∃n, …] into [∃n, ∀α∉L, …]. *)
-Lemma ad_pat_sub_n_rename_tvar : forall n NM M Ψ Θ1 α Θ0 S Q Y,
-  ad_pat_sub_n n NM M Ψ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) S Q ->
+Lemma ad_pat_sub_n_rename_tvar : forall n NM M Ψ Θ1 α Θ0 R Q β',
+  ad_pat_sub_n n NM M Ψ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) R Q ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  ad_pat_sub_n n NM M Ψ (Θ1 ++ (Y ~ abind_tvar) ++ Θ0)
-      (subst_bskl_in_uskl (uskl_var_f Y) α S)
-      (subst_bskl_in_bskl (bskl_var_f Y) α Q).
+  ad_pat_sub_n n NM M Ψ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0)
+      (subst_bskl_in_uskl (uskl_var_f β') α R)
+      (subst_bskl_in_bskl (bskl_var_f β') α Q).
 Proof.
   intros * H.
   remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
@@ -119,11 +119,11 @@ Proof.
   induction H; intros Θ1 ->; intros Hdom Hdefs; simpl.
   - apply ad_pat_sub_n__infer; auto.
     + apply ad_pat_consis_rename_tvar; auto.
-    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply is_sskl_subst_mono; auto using mono_ptyp.
   - rewrite subst_var_bskl_inh.
     apply ad_pat_sub_n__check.
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply guarded_uskl_subst_mono; auto using mono_ptyp.
     + apply guarded_pskl_subst; auto using guarded_pskl__var, lc_pskl_var_f.
     + rewrite <- subst_var_bskl_inh.
@@ -141,11 +141,11 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
         [ discriminate | eauto ] ].
   - apply ad_pat_sub_n__univ_ghost_r; auto.
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply guarded_uskl_subst_mono; auto using mono_ptyp.
-    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply guarded_bskl_subst_mono; auto using mono_ptyp.
-    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply is_sskl_subst_mono; auto using mono_ptyp.
     + apply ad_pat_consis_rename_tvar; auto.
   - specialize (IHad_pat_sub_n Θ1 ltac:(reflexivity) Hdom Hdefs).
@@ -160,10 +160,10 @@ Proof.
     5: exact IHad_pat_sub_n.
     + assumption.
     + eassumption.
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply a_tags_sort_subst_mono;
         [ assumption | apply mono_ptyp__var ].
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       rewrite uskl_to_pskl_subst_mono. simpl.
       apply a_wf_pskl_rename_tvar;
         first [ assumption | clear; fsetdec ].
@@ -174,10 +174,10 @@ Proof.
     5: exact IHad_pat_sub_n.
     + assumption.
     + eassumption.
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply a_tags_sort_subst_mono;
         [ assumption | apply mono_ptyp__var ].
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       rewrite uskl_to_pskl_subst_mono. simpl.
       apply a_wf_pskl_rename_tvar;
         first [ assumption | clear; fsetdec ].
@@ -185,7 +185,7 @@ Proof.
     apply ad_pat_sub_n__ghost; auto.
     + apply a_wf_pskl_rename_tvar; [ assumption | clear; fsetdec ].
     + rewrite <- subst_var_bskl_inh.
-      change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+      change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply mod_comp_sk_subst_mono; auto using mono_ptyp.
   - apply ad_pat_sub_n__ghostg; auto.
   - apply ad_pat_sub_n__univ_ghost_l; auto.
@@ -450,11 +450,11 @@ Qed.
 (* ===================================================================== *)
 
 (** Erase hygiene + fuel: a hygienic derivation is a plain one. *)
-Lemma ad_pat_sub_g_of : forall n NM M Ψ Θ S Q,
-  ad_pat_sub_g n NM M Ψ Θ S Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] S ⩽ Q.
+Lemma ad_pat_sub_g_of : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_g n NM M Ψ Θ R Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
 Proof.
-  intros n NM M Ψ Θ S Q H. induction H.
+  intros n NM M Ψ Θ R Q H. induction H.
   - eapply ad_pat_sub__infer; eauto.
   - eapply ad_pat_sub__check; eauto.
   - eapply ad_pat_sub__forall_r; eauto.
@@ -470,12 +470,12 @@ Proof.
 Qed.
 
 (** Re-tag under set equality. *)
-Lemma ad_pat_sub_g_psi_cong : forall n NM M Ψ Θ S Q,
-  ad_pat_sub_g n NM M Ψ Θ S Q ->
+Lemma ad_pat_sub_g_psi_cong : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_g n NM M Ψ Θ R Q ->
   forall Ψc, Ψ [=] Ψc ->
-  ad_pat_sub_g n NM M Ψc Θ S Q.
+  ad_pat_sub_g n NM M Ψc Θ R Q.
 Proof.
-  intros n NM M Ψ Θ S Q H; induction H; intros Ψc Heq.
+  intros n NM M Ψ Θ R Q H; induction H; intros Ψc Heq.
   - apply ad_pat_sub_g__infer;
       [ clear - H Heq; fsetdec | assumption | assumption ].
   - apply ad_pat_sub_g__check; [ assumption | assumption | ].
@@ -507,11 +507,11 @@ Proof.
 Qed.
 
 (** The tag context is contained in the subject's syntactic tags. *)
-Lemma ad_pat_sub_g_ftag_sub : forall n NM M Ψ Θ S Q,
-  ad_pat_sub_g n NM M Ψ Θ S Q ->
-  Ψ [<=] ftag_in_uskl S.
+Lemma ad_pat_sub_g_ftag_sub : forall n NM M Ψ Θ R' Q,
+  ad_pat_sub_g n NM M Ψ Θ R' Q ->
+  Ψ [<=] ftag_in_uskl R'.
 Proof.
-  intros n NM M Ψ Θ S Q H; induction H; simpl.
+  intros n NM M Ψ Θ R' Q H; induction H; simpl.
   - (* infer *) clear - H; fsetdec.
   - (* check *)
     pose proof (ad_pat_consis_ftag_sub H1) as Hcf.
@@ -577,15 +577,15 @@ Qed.
 (** Fold a flexible definition back into its variable on the subject side,
     at the SAME fuel ([FlexMono] is non-incrementing; non-fn modes re-route
     through their consistency premises with [flex_l]). *)
-Lemma ad_pat_sub_g_fold_flex : forall n NM M Ψ Θ Sτ Q,
-  ad_pat_sub_g n NM M Ψ Θ Sτ Q ->
+Lemma ad_pat_sub_g_fold_flex : forall n NM M Ψ Θ Rτ Q,
+  ad_pat_sub_g n NM M Ψ Θ Rτ Q ->
   forall α τ,
-  Sτ = ptyp_to_uskl_syn τ ->
+  Rτ = ptyp_to_uskl_syn τ ->
   binds α (abind_flex_mono_def τ) Θ ->
   a_wf_aenv Θ ->
   ad_pat_sub_g n NM M Ψ Θ (uskl_var_f α) Q.
 Proof.
-  intros n NM M Ψ Θ Sτ Q HD; induction HD; intros α0 τ0 HeqS Hb Hwf.
+  intros n NM M Ψ Θ Rτ Q HD; induction HD; intros α0 τ0 HeqS Hb Hwf.
   - (* infer *)
     apply ad_pat_sub_g__infer; [ assumption | | assumption ].
     eapply ad_pat_consis__flex_l; [ exact Hb | ].
@@ -649,14 +649,14 @@ Qed.
 (** For a ∀-free-erasure SK subject, the target is an inh-painting of its
     own erasure, the tag context is empty, and the target is
     mode-compatible — the data the [Ghost] reconstruction needs. *)
-Lemma ad_pat_sub_g_concrete_target : forall n NM M Ψ Θ S Q,
-  ad_pat_sub_g n NM M Ψ Θ S Q ->
+Lemma ad_pat_sub_g_concrete_target : forall n NM M Ψ Θ R' Q,
+  ad_pat_sub_g n NM M Ψ Θ R' Q ->
   NM = a_sub_mode_sk ->
   a_wf_aenv Θ ->
-  pskl_no_forall (uskl_to_pskl S) ->
+  pskl_no_forall (uskl_to_pskl R') ->
   Ψ [=] empty /\ pskl_to_bskl_inh (bskl_to_pskl Q) = Q /\ mod_comp_sk Q M.
 Proof.
-  intros n NM M Ψ Θ S Q HD; induction HD; intros HNM Hwf Hnf;
+  intros n NM M Ψ Θ R' Q HD; induction HD; intros HNM Hwf Hnf;
     try discriminate HNM.
   - (* infer *)
     pose proof (ad_pat_consis_strip_tags H0) as Hstr.
@@ -709,15 +709,15 @@ Qed.
 
 (** Uniform refl-transport: shrink the tag context of a derivation whose
     subject's tags are Ψsup-free (the ⊑ᵤ-refl case of every rule). *)
-Lemma ad_pat_sub_g_refl_transport : forall n NM M Ψfull Θ' S Q,
-  ad_pat_sub_g n NM M Ψfull Θ' S Q ->
+Lemma ad_pat_sub_g_refl_transport : forall n NM M Ψfull Θ' R Q,
+  ad_pat_sub_g n NM M Ψfull Θ' R Q ->
   forall Ψsup Ψn Ψna,
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  Ψsup ∩ ftag_in_uskl S [=] empty ->
-  ad_pat_sub_g n NM M Ψn Θ' S Q.
+  Ψsup ∩ ftag_in_uskl R [=] empty ->
+  ad_pat_sub_g n NM M Ψn Θ' R Q.
 Proof.
-  intros n NM M Ψfull Θ' S Q HD Ψsup Ψn Ψna HΨf HΨa Hftag.
+  intros n NM M Ψfull Θ' R Q HD Ψsup Ψn Ψna HΨf HΨa Hftag.
   pose proof (ad_pat_sub_g_ftag_sub HD) as Hfs.
   eapply ad_pat_sub_g_psi_cong;
     [ exact HD | clear - HΨf HΨa Hftag Hfs; fsetdec ].
@@ -725,16 +725,16 @@ Qed.
 
 (** Uniform hole-introduction: replace a ∀-free-erasure SK subject by [□]
     at ANY fuel (the ⊑ᵤ-hole case of every rule), via [Ghost]. *)
-Lemma ad_pat_sub_g_hole_intro : forall n n' NM M Ψfull Θ' S Q,
-  ad_pat_sub_g n NM M Ψfull Θ' S Q ->
+Lemma ad_pat_sub_g_hole_intro : forall n n' NM M Ψfull Θ' R Q,
+  ad_pat_sub_g n NM M Ψfull Θ' R Q ->
   NM = a_sub_mode_sk ->
   a_wf_aenv Θ' ->
-  pskl_no_forall (uskl_to_pskl S) ->
+  pskl_no_forall (uskl_to_pskl R) ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
   forall Ψn, Ψn [<=] Ψfull ->
   ad_pat_sub_g n' NM M Ψn Θ' uskl_hole Q.
 Proof.
-  intros n n' NM M Ψfull Θ' S Q HD HNM Hwf Hnf Hwfq Ψn HΨn.
+  intros n n' NM M Ψfull Θ' R Q HD HNM Hwf Hnf Hwfq Ψn HΨn.
   destruct (ad_pat_sub_g_concrete_target HD HNM Hwf Hnf)
     as [HΨe [Heq Hmc]].
   rewrite <- Heq. subst NM.
@@ -745,13 +745,13 @@ Proof.
 Qed.
 
 (** Ghost-freeness is closed under substituting a ghost-free skeleton. *)
-Lemma uskl_ghost_free_subst : forall S ψ X,
-  uskl_ghost_free S ->
+Lemma uskl_ghost_free_subst : forall R ψ α,
+  uskl_ghost_free R ->
   uskl_ghost_free ψ ->
   lc_uskl ψ ->
-  uskl_ghost_free (subst_bskl_in_uskl ψ X S).
+  uskl_ghost_free (subst_bskl_in_uskl ψ α R).
 Proof.
-  intros S ψ X HS; revert X; induction HS; intros X0 Hψ Hlc; simpl.
+  intros R ψ α HS; revert α; induction HS; intros X0 Hψ Hlc; simpl.
   - apply uskl_ghost_free__unit.
   - destruct_if as [-> | Hne]; [ exact Hψ | apply uskl_ghost_free__var ].
   - apply uskl_ghost_free__arrow; [ apply IHHS1 | apply IHHS2 ]; assumption.
@@ -1048,7 +1048,7 @@ Proof.
     + exfalso. specialize (Hgf eq_refl). inversion Hgf.
     + subst R.
       eapply ad_pat_sub_g_hole_intro with
-        (n := S n) (Ψfull := Ψfull) (S := uskl_arrow Rg1 Rg2);
+        (n := S n) (Ψfull := Ψfull) (R := uskl_arrow Rg1 Rg2);
         [ eapply ad_pat_sub_g__arrow; [ exact Hcl | exact HDr | exact HΨsplit ]
         | reflexivity | exact Hwf | exact H0 | exact Hwfq
         | clear - HΨf; fsetdec ].
@@ -1077,17 +1077,17 @@ Proof.
 Qed.
 
 (** Cofinite inversions of ghost-freeness at the two quantifier heads. *)
-Lemma uskl_ghost_free_all_etag_inv : forall ε S,
-  uskl_ghost_free (uskl_all_etag ε S) ->
+Lemma uskl_ghost_free_all_etag_inv : forall ε R,
+  uskl_ghost_free (uskl_all_etag ε R) ->
   exists L0, forall X, X `notin` L0 ->
-    uskl_ghost_free (open_uskl_wrt_uskl S (uskl_var_f X)).
-Proof. intros ε S Hg. inversion Hg; subst. eauto. Qed.
+    uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f X)).
+Proof. intros ε R Hg. inversion Hg; subst. eauto. Qed.
 
-Lemma uskl_ghost_free_all_syn_inv : forall S,
-  uskl_ghost_free (uskl_all_syn S) ->
+Lemma uskl_ghost_free_all_syn_inv : forall R,
+  uskl_ghost_free (uskl_all_syn R) ->
   exists L0, forall X, X `notin` L0 ->
-    uskl_ghost_free (open_uskl_wrt_uskl S (uskl_var_f X)).
-Proof. intros S Hg. inversion Hg; subst. eauto. Qed.
+    uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f X)).
+Proof. intros R Hg. inversion Hg; subst. eauto. Qed.
 
 (** [ForallL] (tagged): the precision-substitution crux.  The congruence /
     instantiation roots rebuild ForallL with the SAME instantiation [ψg],
@@ -1443,7 +1443,7 @@ Proof.
   - (* hole *)
     subst R.
     eapply ad_pat_sub_g_hole_intro with
-      (n := n) (Ψfull := Ψfull) (S := uskl_tophole Rg0);
+      (n := n) (Ψfull := Ψfull) (R := uskl_tophole Rg0);
       [ apply ad_pat_sub_g__univ_ghost_l; [ exact HMti | exact HDp ]
       | reflexivity | exact Hwf | exact H0 | exact Hwfq
       | clear - HΨf; fsetdec ].
@@ -1521,7 +1521,7 @@ Proof.
   - (* hole *)
     subst R.
     eapply ad_pat_sub_g_hole_intro with
-      (n := n) (Ψfull := Ψfull) (S := uskl_topholeg Rg0);
+      (n := n) (Ψfull := Ψfull) (R := uskl_topholeg Rg0);
       [ apply ad_pat_sub_g__univ_ghost_lg; [ exact HMti | exact HDp ]
       | reflexivity | exact Hwf | exact H0 | exact Hwfq
       | clear - HΨf; fsetdec ].
@@ -1589,7 +1589,7 @@ Proof.
     + exfalso. specialize (Hgf eq_refl). inversion Hgf.
     + subst R.
       eapply ad_pat_sub_g_hole_intro with
-        (n := n) (Ψfull := Ψfull) (S := uskl_var_f αg);
+        (n := n) (Ψfull := Ψfull) (R := uskl_var_f αg);
         [ eapply ad_pat_sub_g__flex_mono; [ exact Hbnd | exact HDp ]
         | reflexivity | exact Hwf | exact H0 | exact Hwfq
         | clear - HΨf; fsetdec ].

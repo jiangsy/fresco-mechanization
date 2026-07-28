@@ -138,11 +138,11 @@ Qed.
     [d_sub_refl_paint]; [forall_r] ↦ [SubForallR] ([is_ityp] from the IH via
     [d_sub_tc_is_ityp]); [forall_l] ↦ [SubForallL] (the monotype paint is a
     tag-free [is_ttyp]). *)
-Theorem d_shallow_sub_complete : forall Γ A B,
-    Γ ⊢ A ≤ B ->
-    empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh B).
+Theorem d_shallow_sub_complete : forall Γ A A',
+    Γ ⊢ A ≤ A' ->
+    empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A').
 Proof.
-  intros Γ A B Hsub. induction Hsub; simpl in *.
+  intros Γ A A' Hsub. induction Hsub; simpl in *.
   - (* refl *)
     apply d_sub_refl_paint. assumption.
   - (* forall_r *)

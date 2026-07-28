@@ -41,9 +41,9 @@ Lemma a_isub_binds_flex_def : forall Θ Θ' α τ,
 Proof. intros * [_ Hd] Hb. auto. Qed.
 
 (** ⊴ is preserved by pushing a rigid tvar on both sides. *)
-Lemma a_isub_cons_tvar : forall Θ Θ' X,
+Lemma a_isub_cons_tvar : forall Θ Θ' α',
   Θ ⊴ Θ' ->
-  ((X ~ abind_tvar) ++ Θ) ⊴ ((X ~ abind_tvar) ++ Θ').
+  ((α' ~ abind_tvar) ++ Θ) ⊴ ((α' ~ abind_tvar) ++ Θ').
 Proof.
   intros * [[θ [Hid Hinc]] Hd]. split.
   - exists θ. split; auto.
@@ -70,12 +70,12 @@ Proof.
     destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
 Qed.
 
-Lemma ad_pat_consis_isub : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
+Lemma ad_pat_consis_isub : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
   forall Θ', Θ ⊴ Θ' ->
-  Ψ ⨟ Θ' ⊢ₛᵃ S ∼ Q.
+  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ Q.
 Proof.
-  intros Ψ Θ S Q H; induction H; intros Θ' Hle.
+  intros Ψ Θ R Q H; induction H; intros Θ' Hle.
   - apply ad_pat_consis__unit; auto.
   - apply ad_pat_consis__var; eauto using a_isub_binds_tvarish.
   - eapply ad_pat_consis__arrow; eauto.
@@ -98,12 +98,12 @@ Proof.
   - eapply ad_pat_consis__flex_r; eauto using a_isub_binds_flex_def.
 Qed.
 
-Lemma ad_refine_syn_isub : forall Θ Δ Q P,
-  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ P ->
+Lemma ad_refine_syn_isub : forall Θ Δ Q Q',
+  Θ ⨟ Δ ⊢ᵣᵃ Q ⊳ Q' ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⨟ Δ ⊢ᵣᵃ Q ⊳ P.
+  Θ' ⨟ Δ ⊢ᵣᵃ Q ⊳ Q'.
 Proof.
-  intros Θ Δ Q P H; induction H; intros Θ' Hle.
+  intros Θ Δ Q Q' H; induction H; intros Θ' Hle.
   - apply ad_refine_syn__unit.
   - apply ad_refine_syn__var.
     destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.
@@ -118,12 +118,12 @@ Proof.
   - eapply ad_refine_syn__flex_r; eauto using a_isub_binds_flex_def.
 Qed.
 
-Lemma ad_refine_pskl_isub : forall Θ Δ P Q,
-  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+Lemma ad_refine_pskl_isub : forall Θ Δ P P',
+  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ P' ->
   forall Θ', Θ ⊴ Θ' ->
-  Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+  Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ P'.
 Proof.
-  intros Θ Δ P Q H; induction H; intros Θ' Hle.
+  intros Θ Δ P P' H; induction H; intros Θ' Hle.
   - apply ad_refine_pskl__unit.
   - apply ad_refine_pskl__var.
     destruct H as [HΔ | Htv]; eauto using a_isub_binds_tvarish.

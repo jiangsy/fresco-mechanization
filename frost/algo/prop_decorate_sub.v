@@ -77,29 +77,29 @@ Combined Scheme a_solvetag_sub_eq_mutind
   from a_solvetag_sub_mut, a_solvetag_eq_mut.
 
 Lemma a_solvetag_sub_eq_psi_cong :
-  (forall ψ M Q Ψ, ψ ≼ᵗ[ M ] Q ⤳ Ψ ->
-     forall Ψ', Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] Q ⤳ Ψ') /\
-  (forall ψ Q Ψ, ψ ∼ᵗ Q ⤳ Ψ ->
-     forall Ψ', Ψ [=] Ψ' -> ψ ∼ᵗ Q ⤳ Ψ').
+  (forall ψ M P Ψ, ψ ≼ᵗ[ M ] P ⤳ Ψ ->
+     forall Ψ', Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] P ⤳ Ψ') /\
+  (forall ψ P Ψ, ψ ∼ᵗ P ⤳ Ψ ->
+     forall Ψ', Ψ [=] Ψ' -> ψ ∼ᵗ P ⤳ Ψ').
 Proof.
   apply (a_solvetag_sub_eq_mutind
-           (fun ψ M Q Ψ _ => forall Ψ', Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] Q ⤳ Ψ')
-           (fun ψ Q Ψ _ => forall Ψ', Ψ [=] Ψ' -> ψ ∼ᵗ Q ⤳ Ψ'));
+           (fun ψ M P Ψ _ => forall Ψ', Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] P ⤳ Ψ')
+           (fun ψ P Ψ _ => forall Ψ', Ψ [=] Ψ' -> ψ ∼ᵗ P ⤳ Ψ'));
     intros; try (econstructor; eauto; fsetdec).
 Qed.
 
-Lemma a_solvetag_sub_psi_cong : forall ψ M Q Ψ Ψ',
-  ψ ≼ᵗ[ M ] Q ⤳ Ψ -> Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] Q ⤳ Ψ'.
+Lemma a_solvetag_sub_psi_cong : forall ψ M P Ψ Ψ',
+  ψ ≼ᵗ[ M ] P ⤳ Ψ -> Ψ [=] Ψ' -> ψ ≼ᵗ[ M ] P ⤳ Ψ'.
 Proof. intros; eapply (proj1 a_solvetag_sub_eq_psi_cong); eauto. Qed.
 
-Lemma a_solvetag_eq_psi_cong : forall ψ Q Ψ Ψ',
-  ψ ∼ᵗ Q ⤳ Ψ -> Ψ [=] Ψ' -> ψ ∼ᵗ Q ⤳ Ψ'.
+Lemma a_solvetag_eq_psi_cong : forall ψ P Ψ Ψ',
+  ψ ∼ᵗ P ⤳ Ψ -> Ψ [=] Ψ' -> ψ ∼ᵗ P ⤳ Ψ'.
 Proof. intros; eapply (proj2 a_solvetag_sub_eq_psi_cong); eauto. Qed.
 
-Lemma a_solvetag_psi_cong : forall C ψ Ψ Ψ',
-  C ⊩ᵗ ψ ⤳ Ψ -> Ψ [=] Ψ' -> C ⊩ᵗ ψ ⤳ Ψ'.
+Lemma a_solvetag_psi_cong : forall 𝒞 ψ Ψ Ψ',
+  𝒞 ⊩ᵗ ψ ⤳ Ψ -> Ψ [=] Ψ' -> 𝒞 ⊩ᵗ ψ ⤳ Ψ'.
 Proof.
-  intros C ψ Ψ Ψ' Hs; revert Ψ'; induction Hs; intros Ψ' Heq.
+  intros 𝒞 ψ Ψ Ψ' Hs; revert Ψ'; induction Hs; intros Ψ' Heq.
   - apply a_solvetag__empty. fsetdec.
   - apply a_solvetag__sub. eapply a_solvetag_sub_psi_cong; eauto.
   - eapply a_solvetag__eq; [ exact H | exact Hs | clear - Heq H0; fsetdec ].
@@ -149,10 +149,10 @@ Definition erase_msubst (ρ : list (atom * uskl)) : list (atom * pskl) :=
   map (fun ψg => uskl_to_pskl ψg) ρ.
 
 (** Erasure commutes with the metasubstitution. *)
-Lemma uskl_to_pskl_msubst : forall ρ T,
-  ⌊ msubst_uskl ρ T ⌋ˢ = msubst_pskl_named (erase_msubst ρ) ⌊ T ⌋ˢ.
+Lemma uskl_to_pskl_msubst : forall ρ R,
+  ⌊ msubst_uskl ρ R ⌋ˢ = msubst_pskl_named (erase_msubst ρ) ⌊ R ⌋ˢ.
 Proof.
-  induction ρ as [ | [β ψg] ρ' IH ]; intros T; simpl; [ reflexivity | ].
+  induction ρ as [ | [β ψg] ρ' IH ]; intros R; simpl; [ reflexivity | ].
   rewrite uskl_to_pskl_subst. rewrite IH. reflexivity.
 Qed.
 
@@ -172,28 +172,28 @@ Qed.
 Definition msubst_lc (ρ : list (atom * uskl)) : Prop :=
   forall β ψg, binds β ψg ρ -> lc_uskl ψg.
 
-Lemma msubst_uskl_open_comm : forall ρ T X,
+Lemma msubst_uskl_open_comm : forall ρ R α,
   msubst_lc ρ ->
-  X `notin` dom ρ ->
-  (forall β ψg, binds β ψg ρ -> X `notin` ftvar_in_uskl ψg) ->
-  msubst_uskl ρ (open_uskl_wrt_uskl T (uskl_var_f X))
-  = open_uskl_wrt_uskl (msubst_uskl ρ T) (uskl_var_f X).
+  α `notin` dom ρ ->
+  (forall β ψg, binds β ψg ρ -> α `notin` ftvar_in_uskl ψg) ->
+  msubst_uskl ρ (open_uskl_wrt_uskl R (uskl_var_f α))
+  = open_uskl_wrt_uskl (msubst_uskl ρ R) (uskl_var_f α).
 Proof.
-  induction ρ as [ | [γ ψg] ρ' IH ]; intros T X Hlc Hdom Hftv;
+  induction ρ as [ | [γ ψg] ρ' IH ]; intros R α Hlc Hdom Hftv;
     simpl; [ reflexivity | ].
   assert (Hlcγ : lc_uskl ψg)
     by (eapply Hlc; unfold binds; simpl; left; reflexivity).
   assert (Hlc' : msubst_lc ρ')
     by (intros b p Hb; eapply Hlc; unfold binds; simpl; right; exact Hb).
-  assert (Hdom' : X `notin` dom ρ')
+  assert (Hdom' : α `notin` dom ρ')
     by (simpl in Hdom; clear - Hdom; fsetdec).
-  assert (Hftv' : forall b p, binds b p ρ' -> X `notin` ftvar_in_uskl p)
+  assert (Hftv' : forall b p, binds b p ρ' -> α `notin` ftvar_in_uskl p)
     by (intros b p Hb; eapply Hftv; unfold binds; simpl; right; exact Hb).
-  rewrite (IH T X Hlc' Hdom' Hftv').
+  rewrite (IH R α Hlc' Hdom' Hftv').
   rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcγ ].
   f_equal.
-  assert (HXγ : X <> γ) by (simpl in Hdom; clear - Hdom; fsetdec).
-  assert (HXf : X `notin` ftvar_in_uskl ψg)
+  assert (HXγ : α <> γ) by (simpl in Hdom; clear - Hdom; fsetdec).
+  assert (HXf : α `notin` ftvar_in_uskl ψg)
     by (eapply Hftv; unfold binds; simpl; left; reflexivity).
   simpl.
   destruct_if as [-> | _];
@@ -218,28 +218,28 @@ Qed.
 (*  ρ-threaded statement, since both sides erase equally.                 *)
 (* ===================================================================== *)
 
-Lemma a_subtag_vacuous_erasure : forall NM M P0 Ψ Θ0 T1 Q Θ1,
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T1 ⩽˙ Q ⊣ Θ1 ->
+Lemma a_subtag_vacuous_erasure : forall NM M P0 Ψ Θ0 R1' P Θ1,
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] R1' ⩽˙ P ⊣ Θ1 ->
   P0 = pskl_hole ->
-  forall T2, lc_uskl T2 -> ⌊ T2 ⌋ˢ = ⌊ T1 ⌋ˢ ->
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T2 ⩽˙ Q ⊣ Θ1.
+  forall R2', lc_uskl R2' -> ⌊ R2' ⌋ˢ = ⌊ R1' ⌋ˢ ->
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] R2' ⩽˙ P ⊣ Θ1.
 Proof.
-  intros NM M P0 Ψ Θ0 T1 Q Θ1 H.
-  induction H; intros HP0 T2 HlcT2 Herase; subst; try discriminate HP0.
-  - (* Infer : output is ⌊S⌋ = ⌊T2⌋ *)
+  intros NM M P0 Ψ Θ0 R1' P Θ1 H.
+  induction H; intros HP0 R2' HlcT2 Herase; subst; try discriminate HP0.
+  - (* Infer : output is ⌊S⌋ = ⌊R2'⌋ *)
     rewrite <- Herase. apply a_subtag__infer; assumption.
   - (* Check : P0 = B = ◇, but guarded_pskl ◇ is absurd *)
     inv_guarded_hole.
   - (* UnivGhostR : source guarded, output tophole ⌊S⌋ *)
-    (* ⌊T2⌋ = ⌊S⌋ guarded ⇒ T2 top ∈ {unit,var,arrow} ⇒ T2 guarded *)
-    assert (HgT2 : guarded_uskl T2).
+    (* ⌊R2'⌋ = ⌊S⌋ guarded ⇒ R2' top ∈ {unit,var,arrow} ⇒ R2' guarded *)
+    assert (HgT2 : guarded_uskl R2').
     { inversion H; subst; simpl in Herase;
-        destruct T2; simpl in Herase; inversion Herase; subst;
+        destruct R2'; simpl in Herase; inversion Herase; subst;
         inversion HlcT2; subst; constructor; assumption. }
     rewrite <- Herase. apply a_subtag__univ_ghost_r; assumption.
-  - (* ForallL tagged : reconstruct on T2 (shape decides tagged/untagged);
+  - (* ForallL tagged : reconstruct on R2' (shape decides tagged/untagged);
        the cofinite tag family maps through the family IH pointwise. *)
-    destruct T2; simpl in Herase; inversion Herase; subst;
+    destruct R2'; simpl in Herase; inversion Herase; subst;
       match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
     + eapply a_subtag__forall_l_untagged with (L := L) (Ξ := Ξ) (P1 := P1);
         [ exact H | right; reflexivity | | exact H2 | exact H3 | ].
@@ -286,7 +286,7 @@ Proof.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
            reflexivity.
   - (* ForallL untagged : identical reconstruction *)
-    destruct T2; simpl in Herase; inversion Herase; subst;
+    destruct R2'; simpl in Herase; inversion Herase; subst;
       match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
     + eapply a_subtag__forall_l_untagged with (L := L) (Ξ := Ξ) (P1 := P1);
         [ exact H | right; reflexivity | | exact H2 | exact H3 | ].
@@ -333,29 +333,29 @@ Proof.
            match goal with Hb : ⌊ _ ⌋ˢ = ⌊ _ ⌋ˢ |- _ => rewrite Hb end.
            reflexivity.
   - (* Ghost : source hole, output P0=hole *)
-    destruct T2; simpl in Herase; inversion Herase; subst.
+    destruct R2'; simpl in Herase; inversion Herase; subst.
     + apply a_subtag__ghost; assumption.
     + apply a_subtag__ghostg; assumption.
   - (* GhostG : source holeg, output hole *)
-    destruct T2; simpl in Herase; inversion Herase; subst.
+    destruct R2'; simpl in Herase; inversion Herase; subst.
     + apply a_subtag__ghost; [ assumption ].
     + apply a_subtag__ghostg; assumption.
   - (* UnivGhostL : source tophole S *)
-    destruct T2; simpl in Herase; inversion Herase; subst;
+    destruct R2'; simpl in Herase; inversion Herase; subst;
       match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
     + apply a_subtag__univ_ghost_l; [ assumption | ].
       eapply IHa_subtag; [ reflexivity | assumption | assumption ].
     + apply a_subtag__univ_ghost_lg; [ assumption | ].
       eapply IHa_subtag; [ reflexivity | assumption | assumption ].
   - (* UnivGhostLG : source topholeg S *)
-    destruct T2; simpl in Herase; inversion Herase; subst;
+    destruct R2'; simpl in Herase; inversion Herase; subst;
       match goal with Hl : lc_uskl _ |- _ => inversion Hl; subst end.
     + apply a_subtag__univ_ghost_l; [ assumption | ].
       eapply IHa_subtag; [ reflexivity | assumption | assumption ].
     + apply a_subtag__univ_ghost_lg; [ assumption | ].
       eapply IHa_subtag; [ reflexivity | assumption | assumption ].
-  - (* FlexMono : source var α ⇒ T2 = var α *)
-    destruct T2; simpl in Herase; inversion Herase; subst.
+  - (* FlexMono : source var α ⇒ R2' = var α *)
+    destruct R2'; simpl in Herase; inversion Herase; subst.
     apply a_subtag__flex_mono; assumption.
 Qed.
 
@@ -367,12 +367,12 @@ Qed.
 (*  var/unit cases produce Ψ ∪ ∅).                                        *)
 (* ===================================================================== *)
 
-Lemma a_consistag_psi_cong : forall Δ1 Δ2 P0 Ψ Θ0 S Q Θ1,
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ1 ->
+Lemma a_consistag_psi_cong : forall Δ1 Δ2 P0 Ψ Θ0 R P Θ1,
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ P ⊣ Θ1 ->
   forall Ψ', Ψ [=] Ψ' ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ' ] S ∼˙ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ' ] R ∼˙ P ⊣ Θ1.
 Proof.
-  intros Δ1 Δ2 P0 Ψ Θ0 S Q Θ1 H; induction H; intros Ψ' Heq; econstructor;
+  intros Δ1 Δ2 P0 Ψ Θ0 R P Θ1 H; induction H; intros Ψ' Heq; econstructor;
     solve
       [ eassumption
       | (match goal with
@@ -425,25 +425,25 @@ Proof.
 Qed.
 
 (** ρ distributes over every skeleton constructor (iterated subst). *)
-Lemma msubst_uskl_arrow : forall ρ a b,
-  msubst_uskl ρ (uskl_arrow a b)
-  = uskl_arrow (msubst_uskl ρ a) (msubst_uskl ρ b).
+Lemma msubst_uskl_arrow : forall ρ R R',
+  msubst_uskl ρ (uskl_arrow R R')
+  = uskl_arrow (msubst_uskl ρ R) (msubst_uskl ρ R').
 Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_tophole : forall ρ a,
-  msubst_uskl ρ (uskl_tophole a) = uskl_tophole (msubst_uskl ρ a).
+Lemma msubst_uskl_tophole : forall ρ R,
+  msubst_uskl ρ (uskl_tophole R) = uskl_tophole (msubst_uskl ρ R).
 Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_topholeg : forall ρ a,
-  msubst_uskl ρ (uskl_topholeg a) = uskl_topholeg (msubst_uskl ρ a).
+Lemma msubst_uskl_topholeg : forall ρ R,
+  msubst_uskl ρ (uskl_topholeg R) = uskl_topholeg (msubst_uskl ρ R).
 Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_all_syn : forall ρ a,
-  msubst_uskl ρ (uskl_all_syn a) = uskl_all_syn (msubst_uskl ρ a).
+Lemma msubst_uskl_all_syn : forall ρ R,
+  msubst_uskl ρ (uskl_all_syn R) = uskl_all_syn (msubst_uskl ρ R).
 Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
-Lemma msubst_uskl_all_etag : forall ρ ε a,
-  msubst_uskl ρ (uskl_all_etag ε a) = uskl_all_etag ε (msubst_uskl ρ a).
+Lemma msubst_uskl_all_etag : forall ρ ε R,
+  msubst_uskl ρ (uskl_all_etag ε R) = uskl_all_etag ε (msubst_uskl ρ R).
 Proof. induction ρ as [|[γ g] ρ' IH]; intros; simpl; [reflexivity|]; rewrite IH; reflexivity. Qed.
 
 (** strip = pskl_to_uskl ∘ uskl_to_pskl commutes with opening. *)
@@ -454,18 +454,18 @@ Proof.
   intros. rewrite uskl_to_pskl_open. rewrite pskl_to_uskl_open_var. reflexivity.
 Qed.
 
-Lemma lc_uskl_to_pskl_local : forall S, lc_uskl S -> lc_pskl (uskl_to_pskl S).
+Lemma lc_uskl_to_pskl_local : forall R, lc_uskl R -> lc_pskl (uskl_to_pskl R).
 Proof.
-  intros S H; induction H; simpl;
+  intros R H; induction H; simpl;
     try (constructor; auto; fail);
     constructor; intros X; rewrite <- uskl_to_pskl_open; auto.
 Qed.
 
 (** Reflection of local closure / guardedness through the erasure. *)
-Lemma degree_uskl_of_pskl : forall T k,
-  degree_pskl_wrt_pskl k (uskl_to_pskl T) -> degree_uskl_wrt_uskl k T.
+Lemma degree_uskl_of_pskl : forall R' k,
+  degree_pskl_wrt_pskl k (uskl_to_pskl R') -> degree_uskl_wrt_uskl k R'.
 Proof.
-  induction T; intros k Hd; simpl in Hd; inversion Hd; subst;
+  induction R'; intros k Hd; simpl in Hd; inversion Hd; subst;
     constructor; auto.
 Qed.
 
@@ -476,10 +476,10 @@ Proof.
   apply degree_pskl_wrt_pskl_of_lc_pskl. exact H.
 Qed.
 
-Lemma guarded_uskl_to_pskl_fwd : forall T,
-  guarded_uskl T -> guarded_pskl (uskl_to_pskl T).
+Lemma guarded_uskl_to_pskl_fwd : forall R,
+  guarded_uskl R -> guarded_pskl (uskl_to_pskl R).
 Proof.
-  intros T H; inversion H; simpl; constructor;
+  intros R H; inversion H; simpl; constructor;
     apply lc_uskl_to_pskl_local; assumption.
 Qed.
 
@@ -491,10 +491,10 @@ Proof.
 Qed.
 
 (** ρ preserves local closure. *)
-Lemma msubst_uskl_lc : forall ρ T,
-  msubst_lc ρ -> lc_uskl T -> lc_uskl (msubst_uskl ρ T).
+Lemma msubst_uskl_lc : forall ρ R,
+  msubst_lc ρ -> lc_uskl R -> lc_uskl (msubst_uskl ρ R).
 Proof.
-  induction ρ as [ | [β ψg] ρ' IH ]; intros T Hlc HT; simpl; [ exact HT | ].
+  induction ρ as [ | [β ψg] ρ' IH ]; intros R Hlc HT; simpl; [ exact HT | ].
   apply subst_bskl_in_uskl_lc_uskl.
   - apply IH; [ | exact HT ].
     intros b p Hb; eapply Hlc; unfold binds; simpl; right; exact Hb.
@@ -516,22 +516,22 @@ Qed.
 
 (** With input ◇ the consistency run is determined by the source's erasure
     (analogue of a_subtag_vacuous_erasure). *)
-Lemma a_consistag_vacuous_erasure : forall Δ1 Δ2 P0 Ψ Θ0 T1 Q Θ1,
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T1 ∼˙ Q ⊣ Θ1 ->
+Lemma a_consistag_vacuous_erasure : forall Δ1 Δ2 P0 Ψ Θ0 R1 P Θ1,
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R1 ∼˙ P ⊣ Θ1 ->
   P0 = pskl_hole ->
-  forall T2, uskl_to_pskl T2 = uskl_to_pskl T1 ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T2 ∼˙ Q ⊣ Θ1.
+  forall T2, uskl_to_pskl T2 = uskl_to_pskl R1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] T2 ∼˙ P ⊣ Θ1.
 Proof.
-  intros Δ1 Δ2 P0 Ψ Θ0 T1 Q Θ1 H;
+  intros Δ1 Δ2 P0 Ψ Θ0 R1 P Θ1 H;
     induction H; intros HP0 T2 Herase; subst; try discriminate HP0.
-  - (* Ghost : T1 = ◇, output ◇ *)
+  - (* Ghost : R1 = ◇, output ◇ *)
     destruct T2; simpl in Herase; inversion Herase; subst;
       [ apply a_consistag__ghost; [ simpl; clear; fsetdec | assumption ]
       | apply a_consistag__ghostg; assumption ].
-  - (* FlexL : T1 = var α, so T2 = var α *)
+  - (* FlexL : R1 = var α, so T2 = var α *)
     destruct T2; simpl in Herase; inversion Herase; subst.
     eapply a_consistag__flex_l; eassumption.
-  - (* GhostG : T1 = holeg, output ◇ *)
+  - (* GhostG : R1 = holeg, output ◇ *)
     destruct T2; simpl in Herase; inversion Herase; subst;
       [ apply a_consistag__ghost; [ simpl; clear; fsetdec | assumption ]
       | apply a_consistag__ghostg; assumption ].
@@ -581,13 +581,13 @@ Proof. induction 1; simpl; constructor; auto. Qed.
 (** A pattern-consistency run against a monotype RHS reads a quantifier-free
     subject: erasure of a flex-var assignment can only remove tags that are
     not there.  Def-variable lookups use [a_wf_aenv_binds_def_mono]. *)
-Lemma ad_pat_consis_mono_no_all_syn : forall Ψ Θ S B,
-  Ψ ⨟ Θ ⊢ₛᵃ S ∼ B ->
+Lemma ad_pat_consis_mono_no_all_syn : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
   a_wf_aenv Θ ->
-  mono_bskl B ->
-  no_all_syn_uskl S.
+  mono_bskl Q ->
+  no_all_syn_uskl R.
 Proof.
-  intros Ψ Θ S B H; induction H; intros Hwf Hmono;
+  intros Ψ Θ R Q H; induction H; intros Hwf Hmono;
     try solve [ inversion Hmono ];
     try solve [ constructor ].
   - (* arrow *)
@@ -629,13 +629,13 @@ Qed.
     ghost) leave a variable or hole; FlexR assigns the subject's erasure to
     α̂, so [a_assign_sound] exposes it as pattern-consistent with the monotype
     α̂ — quantifier-free by the previous lemma. *)
-Lemma a_consistag_flexvar_subject_no_all_syn : forall Δ1 Δ2 α Ψ Θ0 S Q Θ1,
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] S ∼˙ Q ⊣ Θ1 ->
+Lemma a_consistag_flexvar_subject_no_all_syn : forall Δ1 Δ2 α Ψ Θ0 R P Θ1,
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] R ∼˙ P ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
-  Θ0 ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl S) ->
-  no_all_syn_uskl S.
+  Θ0 ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl R) ->
+  no_all_syn_uskl R.
 Proof.
-  intros Δ1 Δ2 α Ψ Θ0 S Q Θ1 H.
+  intros Δ1 Δ2 α Ψ Θ0 R P Θ1 H.
   remember (pskl_var_f α) as P0 eqn:HP0. revert HP0.
   induction H; intros HP0 Hwf HwfS;
     try discriminate HP0; try solve [ constructor ].
@@ -648,16 +648,16 @@ Proof.
           | eapply (a_assign_preserves_wf Hass ltac:(constructor) Hwf HwfS)
           | constructor ]
     end.
-  - (* univ_ghost2 : subject ⫯S; recurse on the inner S (same var input) *)
+  - (* univ_ghost2 : subject ⫯R; recurse on the inner R (same var input) *)
     constructor.
     simpl in HwfS. inversion HwfS; subst.
     eapply IHa_consistag;
       [ first [ eassumption | reflexivity ] | exact Hwf | eassumption ].
 Qed.
 
-Lemma lc_uskl_arrow_inv : forall A B,
-  lc_uskl (uskl_arrow A B) -> lc_uskl A /\ lc_uskl B.
-Proof. intros A B H; inversion H; auto. Qed.
+Lemma lc_uskl_arrow_inv : forall R R',
+  lc_uskl (uskl_arrow R R') -> lc_uskl R /\ lc_uskl R'.
+Proof. intros R R' H; inversion H; auto. Qed.
 
 Lemma a_wf_pskl_arrow_inv : forall Θ Δ P1 P2,
   Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2) -> Θ ⨟ Δ ⊢ₚₛᵃ P1 /\ Θ ⨟ Δ ⊢ₚₛᵃ P2.
@@ -667,20 +667,20 @@ Lemma a_wf_pskl_tophole_inv : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ (pskl_tophole P) -> Θ ⨟ empty ⊢ₚₛᵃ P.
 Proof. intros * H; inversion H; auto. Qed.
 
-Lemma lc_uskl_tophole_inv : forall A,
-  lc_uskl (uskl_tophole A) -> lc_uskl A.
-Proof. intros A H; inversion H; auto. Qed.
+Lemma lc_uskl_tophole_inv : forall R,
+  lc_uskl (uskl_tophole R) -> lc_uskl R.
+Proof. intros R H; inversion H; auto. Qed.
 
-Lemma lc_uskl_topholeg_inv : forall A,
-  lc_uskl (uskl_topholeg A) -> lc_uskl A.
-Proof. intros A H; inversion H; auto. Qed.
+Lemma lc_uskl_topholeg_inv : forall R,
+  lc_uskl (uskl_topholeg R) -> lc_uskl R.
+Proof. intros R H; inversion H; auto. Qed.
 
 Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
   ψ ∼ᵗ P0 ⤳ Ψa ->
-  forall Δ1 Δ2 Ψ Θ0 Q Θ1 ρ,
+  forall Δ1 Δ2 Ψ Θ0 P Θ1 ρ,
     msubst_lc ρ ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ]
-      (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ∼˙ Q ⊣ Θ1 ->
+      (msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ))) ∼˙ P ⊣ Θ1 ->
     (* external well-formedness (paper's prose side conditions): only the
        FlexR leaf consumes them, threaded through the induction — the arrow
        case gets its mid-context invariants from [a_consistag_sound_aux] and
@@ -694,7 +694,7 @@ Lemma a_consistag_decoration_var : forall ψ P0 Ψa,
     no_flex_dep (Δ1 `union` Δ2) Θ0 ->
     flex_above_free (Δ1 `union` Δ2) Θ0 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | (Ψ `union` Ψa) ]
-      (msubst_uskl ρ ψ) ∼˙ Q ⊣ Θ1.
+      (msubst_uskl ρ ψ) ∼˙ P ⊣ Θ1.
 Proof.
   intros ψ P0 Ψa H; induction H;
     intros Δ1 Δ2 Ψc Θ0 Qc Θ1 ρ Hlcρ Hcons Hwf HlcS HwfP0 HwfS Hrig Hnfd Hfaf.
@@ -940,12 +940,12 @@ Qed.
 (*  a_subtag suffices; the Check case defers to a_consistag_psi_cong.     *)
 (* ===================================================================== *)
 
-Lemma a_subtag_psi_cong : forall NM M P0 Ψ Θ0 S Q Θ1,
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ1 ->
+Lemma a_subtag_psi_cong : forall NM M P0 Ψ Θ0 R P Θ1,
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] R ⩽˙ P ⊣ Θ1 ->
   forall Ψ', Ψ [=] Ψ' ->
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ' ] S ⩽˙ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ' ] R ⩽˙ P ⊣ Θ1.
 Proof.
-  intros NM M P0 Ψ Θ0 S Q Θ1 H; induction H; intros Ψ' Heq.
+  intros NM M P0 Ψ Θ0 R P Θ1 H; induction H; intros Ψ' Heq.
   - (* Infer *) apply a_subtag__infer; clear - H Heq; fsetdec.
   - (* Check *) eapply a_subtag__check; try assumption.
     eapply a_consistag_psi_cong; [ eassumption | exact Heq ].
@@ -1009,26 +1009,26 @@ Fixpoint utags_uskl (S : uskl) : atoms :=
   | uskl_topholeg S0 => utags_uskl S0
   end.
 
-Lemma utags_open_rec : forall S β k,
-  utags_uskl (open_uskl_wrt_uskl_rec k (uskl_var_f β) S) [=] utags_uskl S.
+Lemma utags_open_rec : forall R' β k,
+  utags_uskl (open_uskl_wrt_uskl_rec k (uskl_var_f β) R') [=] utags_uskl R'.
 Proof.
-  induction S; intros β k; simpl;
+  induction R'; intros β k; simpl;
     try (destruct (lt_eq_lt_dec n k) as [[?|?]|?]); simpl;
-    try rewrite IHS1; try rewrite IHS2; try rewrite IHS; fsetdec.
+    try rewrite IHR'1; try rewrite IHR'2; try rewrite IHR'; fsetdec.
 Qed.
 
-Lemma utags_open_var : forall S β,
-  utags_uskl (open_uskl_wrt_uskl S (uskl_var_f β)) [=] utags_uskl S.
+Lemma utags_open_var : forall R β,
+  utags_uskl (open_uskl_wrt_uskl R (uskl_var_f β)) [=] utags_uskl R.
 Proof. intros. apply utags_open_rec. Qed.
 
 (** (a) Tags-origin bound. *)
 Lemma a_solvetag_sub_eq_tags_bound :
-  (forall ψ M Q Ψ, ψ ≼ᵗ[ M ] Q ⤳ Ψ -> Ψ [<=] utags_uskl ψ) /\
-  (forall ψ Q Ψ, ψ ∼ᵗ Q ⤳ Ψ -> Ψ [<=] utags_uskl ψ).
+  (forall ψ M P Ψ, ψ ≼ᵗ[ M ] P ⤳ Ψ -> Ψ [<=] utags_uskl ψ) /\
+  (forall ψ P Ψ, ψ ∼ᵗ P ⤳ Ψ -> Ψ [<=] utags_uskl ψ).
 Proof.
   apply (a_solvetag_sub_eq_mutind
-           (fun ψ M Q Ψ _ => Ψ [<=] utags_uskl ψ)
-           (fun ψ Q Ψ _ => Ψ [<=] utags_uskl ψ));
+           (fun ψ M P Ψ _ => Ψ [<=] utags_uskl ψ)
+           (fun ψ P Ψ _ => Ψ [<=] utags_uskl ψ));
     intros; simpl;
     try solve [ clear - e; fsetdec ];
     try solve [ assumption ];
@@ -1045,18 +1045,18 @@ Proof.
   match goal with HΨ : _ [=] add _ _ |- _ => clear - HΨ Hb; fsetdec end.
 Qed.
 
-Lemma a_solvetag_sub_tags_bound : forall ψ M Q Ψ,
-  ψ ≼ᵗ[ M ] Q ⤳ Ψ -> Ψ [<=] utags_uskl ψ.
+Lemma a_solvetag_sub_tags_bound : forall ψ M P Ψ,
+  ψ ≼ᵗ[ M ] P ⤳ Ψ -> Ψ [<=] utags_uskl ψ.
 Proof. intros; eapply (proj1 a_solvetag_sub_eq_tags_bound); eauto. Qed.
 
 (** (b) A hole-target run solves nothing. *)
 Lemma a_solvetag_sub_eq_hole_empty :
-  (forall ψ M Q Ψ, ψ ≼ᵗ[ M ] Q ⤳ Ψ -> Q = pskl_hole -> Ψ [=] empty) /\
-  (forall ψ Q Ψ, ψ ∼ᵗ Q ⤳ Ψ -> Q = pskl_hole -> Ψ [=] empty).
+  (forall ψ M P Ψ, ψ ≼ᵗ[ M ] P ⤳ Ψ -> P = pskl_hole -> Ψ [=] empty) /\
+  (forall ψ P Ψ, ψ ∼ᵗ P ⤳ Ψ -> P = pskl_hole -> Ψ [=] empty).
 Proof.
   apply (a_solvetag_sub_eq_mutind
-           (fun ψ M Q Ψ _ => Q = pskl_hole -> Ψ [=] empty)
-           (fun ψ Q Ψ _ => Q = pskl_hole -> Ψ [=] empty));
+           (fun ψ M P Ψ _ => P = pskl_hole -> Ψ [=] empty)
+           (fun ψ P Ψ _ => P = pskl_hole -> Ψ [=] empty));
     intros; subst; try discriminate;
     try solve [ assumption ];
     try solve [ auto ];
@@ -1073,11 +1073,11 @@ Proof. intros; eapply (proj1 a_solvetag_sub_eq_hole_empty); eauto. Qed.
 
 (** (c) Target-variable renaming: solvetag is insensitive to the names of
     rigid variables in the target (tags live on the subject). *)
-Lemma guarded_pskl_subst_var : forall B X Y,
-  guarded_pskl B ->
-  guarded_pskl (subst_pskl_in_pskl (pskl_var_f Y) X B).
+Lemma guarded_pskl_subst_var : forall P α β,
+  guarded_pskl P ->
+  guarded_pskl (subst_pskl_in_pskl (pskl_var_f β) α P).
 Proof.
-  intros B X Y Hg; inversion Hg; subst; simpl.
+  intros P α β Hg; inversion Hg; subst; simpl.
   - constructor.
   - destruct_if;
       constructor.
@@ -1085,16 +1085,16 @@ Proof.
 Qed.
 
 Lemma a_solvetag_sub_eq_target_rename :
-  (forall ψ M Q Ψ, ψ ≼ᵗ[ M ] Q ⤳ Ψ ->
-     forall X Y, ψ ≼ᵗ[ M ] (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ) /\
-  (forall ψ Q Ψ, ψ ∼ᵗ Q ⤳ Ψ ->
-     forall X Y, ψ ∼ᵗ (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ).
+  (forall ψ M P Ψ, ψ ≼ᵗ[ M ] P ⤳ Ψ ->
+     forall X Y, ψ ≼ᵗ[ M ] (subst_pskl_in_pskl (pskl_var_f Y) X P) ⤳ Ψ) /\
+  (forall ψ P Ψ, ψ ∼ᵗ P ⤳ Ψ ->
+     forall X Y, ψ ∼ᵗ (subst_pskl_in_pskl (pskl_var_f Y) X P) ⤳ Ψ).
 Proof.
   apply (a_solvetag_sub_eq_mutind
-           (fun ψ M Q Ψ _ =>
-              forall X Y, ψ ≼ᵗ[ M ] (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ)
-           (fun ψ Q Ψ _ =>
-              forall X Y, ψ ∼ᵗ (subst_pskl_in_pskl (pskl_var_f Y) X Q) ⤳ Ψ));
+           (fun ψ M P Ψ _ =>
+              forall X Y, ψ ≼ᵗ[ M ] (subst_pskl_in_pskl (pskl_var_f Y) X P) ⤳ Ψ)
+           (fun ψ P Ψ _ =>
+              forall X Y, ψ ∼ᵗ (subst_pskl_in_pskl (pskl_var_f Y) X P) ⤳ Ψ));
     intros; simpl;
     (* target-shape-preserving rules whose premises close by auto *)
     try solve [ constructor; auto ];
@@ -1144,14 +1144,14 @@ Qed.
 (** ∀-target opening: a run against [∀β.B] runs against any instance
     [B^β] with the same solved tags — pushing the subtyping side's
     ForallR under the solvetag derivation (the paper's WLOG). *)
-Lemma a_solvetag_sub_all_syn_open : forall ψ B Ψ,
-  ψ ≼ᵗ[ mode_tc ] (pskl_all_syn B) ⤳ Ψ ->
-  forall β, ψ ≼ᵗ[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ψ.
+Lemma a_solvetag_sub_all_syn_open : forall ψ P Ψ,
+  ψ ≼ᵗ[ mode_tc ] (pskl_all_syn P) ⤳ Ψ ->
+  forall β, ψ ≼ᵗ[ mode_tc ] (open_pskl_wrt_pskl P (pskl_var_f β)) ⤳ Ψ.
 Proof.
-  intros ψ B Ψ H.
-  remember (pskl_all_syn B) as Q0 eqn:HQ.
+  intros ψ P Ψ H.
+  remember (pskl_all_syn P) as Q0 eqn:HQ.
   remember mode_tc as M0 eqn:HM.
-  revert B HQ. induction H; intros B0 HQ β0; subst; try discriminate HQ.
+  revert P HQ. induction H; intros B0 HQ β0; subst; try discriminate HQ.
   - (* SSub-Var *)
     apply a_solvetag_sub__var; assumption.
   - (* SSub-ForallL *)
@@ -1159,7 +1159,7 @@ Proof.
     apply H0; auto.
   - (* SSub-UnivGhostLG *)
     apply a_solvetag_sub__univ_ghost_lg. apply IHa_solvetag_sub; auto.
-  - (* SSub-Check : guarded (all_syn B) is absurd *)
+  - (* SSub-Check : guarded (all_syn P) is absurd *)
     match goal with Hg : guarded_pskl (pskl_all_syn _) |- _ =>
       inversion Hg end.
   - (* SSub-ForallR : instantiate a fresh β', rename to β0 *)
@@ -1233,20 +1233,20 @@ Proof.
 Qed.
 
 (** Free-variable bound for the metasubstitution. *)
-Lemma msubst_uskl_ftv_upper : forall ρ T,
-  ftvar_in_uskl (msubst_uskl ρ T)
-  [<=] ftvar_in_uskl T `union` msubst_ftv ρ.
+Lemma msubst_uskl_ftv_upper : forall ρ R,
+  ftvar_in_uskl (msubst_uskl ρ R)
+  [<=] ftvar_in_uskl R `union` msubst_ftv ρ.
 Proof.
-  induction ρ as [ | [γ ψg] ρ' IH ]; intros T; simpl; [ fsetdec | ].
+  induction ρ as [ | [γ ψg] ρ' IH ]; intros R; simpl; [ fsetdec | ].
   pose proof (ftvar_in_uskl_subst_bskl_in_uskl_upper
-                (msubst_uskl ρ' T) ψg γ) as Hup.
-  pose proof (IH T) as Hr. clear - Hup Hr. fsetdec.
+                (msubst_uskl ρ' R) ψg γ) as Hup.
+  pose proof (IH R) as Hr. clear - Hup Hr. fsetdec.
 Qed.
 
 (** The trivial Δ-side conditions of consistency decoration at Δ = ∅. *)
 Lemma rig_empty : forall Θ : aenv,
-  forall X, X `in` (empty `union` empty) -> binds X abind_tvar Θ.
-Proof. intros Θ X HX. exfalso. clear - HX. fsetdec. Qed.
+  forall α, α `in` (empty `union` empty) -> binds α abind_tvar Θ.
+Proof. intros Θ α HX. exfalso. clear - HX. fsetdec. Qed.
 
 Lemma no_flex_dep_empty : forall Θ, no_flex_dep (empty `union` empty) Θ.
 Proof. intros Θ β τ Hb. clear. fsetdec. Qed.
@@ -1264,28 +1264,28 @@ Qed.
 
 (** The erasure-swap obligation of [a_subtag_vacuous_erasure]: the
     decorated ρ-image erases like anything erasure-equal to the strip's. *)
-Lemma erase_swap : forall ρ (ψ : uskl) T,
-  ⌊ T ⌋ˢ = ⌊ msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)) ⌋ˢ ->
-  ⌊ msubst_uskl ρ ψ ⌋ˢ = ⌊ T ⌋ˢ.
+Lemma erase_swap : forall ρ (ψ : uskl) R,
+  ⌊ R ⌋ˢ = ⌊ msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)) ⌋ˢ ->
+  ⌊ msubst_uskl ρ ψ ⌋ˢ = ⌊ R ⌋ˢ.
 Proof.
-  intros ρ ψ T H. rewrite H. symmetry. apply uskl_to_pskl_msubst_strip.
+  intros ρ ψ R H. rewrite H. symmetry. apply uskl_to_pskl_msubst_strip.
 Qed.
 
-Lemma a_subtag_decoration_var : forall NM M P0 Ψ Θ0 T Q Θ1,
-  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] T ⩽˙ Q ⊣ Θ1 ->
+Lemma a_subtag_decoration_var : forall NM M P0 Ψ Θ0 R P Θ1,
+  Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] R ⩽˙ P ⊣ Θ1 ->
   forall ψ Ψa ρ,
-    T = msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)) ->
+    R = msubst_uskl ρ (pskl_to_uskl (uskl_to_pskl ψ)) ->
     ψ ≼ᵗ[ M ] P0 ⤳ Ψa ->
     msubst_lc ρ ->
     lc_uskl ψ ->
     a_wf_aenv Θ0 ->
-    lc_uskl T ->
+    lc_uskl R ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
-    Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ T ⌋ˢ ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ R ⌋ˢ ->
     (NM = a_sub_mode_sk -> mod_comp_sk (pskl_to_bskl_inh P0) M) ->
-    Θ0 ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψa) ] (msubst_uskl ρ ψ) ⩽˙ Q ⊣ Θ1.
+    Θ0 ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψa) ] (msubst_uskl ρ ψ) ⩽˙ P ⊣ Θ1.
 Proof.
-  intros NM M P0 Ψ Θ0 T Q Θ1 Hsub.
+  intros NM M P0 Ψ Θ0 R P Θ1 Hsub.
   induction Hsub;
     intros ψf Ψa ρ HeqT Hst Hlcρ Hlcψ Hwf HlcT HwfP0 HwfT Hmod.
   - (* Infer : P0 = ◇ solves nothing; rebuild at the decorated subject *)
@@ -1791,12 +1791,12 @@ Qed.
 
 (** [no_all_syn] descends to a substituted-in subterm at an occurring
     variable. *)
-Lemma no_all_syn_subst_inv : forall S T β,
-  β `in` ftvar_in_uskl S ->
-  no_all_syn_uskl (subst_bskl_in_uskl T β S) ->
-  no_all_syn_uskl T.
+Lemma no_all_syn_subst_inv : forall R' R0 β,
+  β `in` ftvar_in_uskl R' ->
+  no_all_syn_uskl (subst_bskl_in_uskl R0 β R') ->
+  no_all_syn_uskl R0.
 Proof.
-  induction S; intros T β Hin Hnas; simpl in *;
+  induction R'; intros R0 β Hin Hnas; simpl in *;
     try solve [ exfalso; fsetdec ];
     try solve [ inversion Hnas ].
   - (* var_f *)
@@ -1805,29 +1805,29 @@ Proof.
   - (* arrow *)
     inversion Hnas; subst.
     destruct (union_1 Hin);
-      [ eapply IHS1 | eapply IHS2 ]; eauto.
+      [ eapply IHR'1 | eapply IHR'2 ]; eauto.
   - (* tophole *)
-    inversion Hnas; subst. eapply IHS; eauto.
+    inversion Hnas; subst. eapply IHR'; eauto.
   - (* topholeg *)
-    inversion Hnas; subst. eapply IHS; eauto.
+    inversion Hnas; subst. eapply IHR'; eauto.
 Qed.
 
 (** Constraints collected against a flexible-variable input solve nothing,
     and the decoration coincides with its strip on the substituted subject:
     the solvetag run pins ψa to a variable or a ghost-free skeleton, and
     the (monotype) assigned subject is quantifier-free. *)
-Lemma flexvar_decoration_swap : forall α P α0 Ξ C,
-  P ∼[ α ] (pskl_var_f α0) ⤳ Ξ ⨾ C ->
-  forall S ψa Ψa,
-    ⌊ S ⌋ˢ = P ->
-    C ⊩ᵗ ψa ⤳ Ψa ->
+Lemma flexvar_decoration_swap : forall α P α0 Ξ 𝒞,
+  P ∼[ α ] (pskl_var_f α0) ⤳ Ξ ⨾ 𝒞 ->
+  forall R ψa Ψa,
+    ⌊ R ⌋ˢ = P ->
+    𝒞 ⊩ᵗ ψa ⤳ Ψa ->
     no_all_syn_uskl
-      (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S) ->
+      (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R) ->
     Ψa [=] empty /\
-    subst_bskl_in_uskl ψa α S
-    = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S.
+    subst_bskl_in_uskl ψa α R
+    = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R.
 Proof.
-  intros α P α0 Ξ C Hlk.
+  intros α P α0 Ξ 𝒞 Hlk.
   remember (pskl_var_f α0) as Ptgt eqn:HPt.
   induction Hlk; intros S0 ψa Ψa HeS Hst Hnas; try discriminate HPt.
   - (* LE-Var : S0 = α; the single eq constraint pins ψa *)
@@ -1907,27 +1907,27 @@ Proof.
       split; [ exact HΨ | simpl; rewrite Heq; reflexivity ].
 Qed.
 
-Lemma a_consistag_decoration : forall α P P0 Ξc C,
-  P ∼[ α ] P0 ⤳ Ξc ⨾ C ->
-  forall S ψa Ψa Δ1 Δ2 Ψ Θ0 Q Θ1,
-    C ⊩ᵗ ψa ⤳ Ψa ->
-    ⌊ S ⌋ˢ = P ->
+Lemma a_consistag_decoration : forall α P P0 Ξc 𝒞,
+  P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞 ->
+  forall R' ψa Ψa Δ1 Δ2 Ψ Θ0 P' Θ1,
+    𝒞 ⊩ᵗ ψa ⤳ Ψa ->
+    ⌊ R' ⌋ˢ = P ->
     α `notin` ftvar_in_uskl ψa ->
     lc_uskl ψa ->
-    lc_uskl S ->
+    lc_uskl R' ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ]
-      (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S) ∼˙ Q ⊣ Θ1 ->
+      (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R') ∼˙ P' ⊣ Θ1 ->
     a_wf_aenv Θ0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
     Θ0 ⨟ empty
-      ⊢ₚₛᵃ ⌊ subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S ⌋ˢ ->
+      ⊢ₚₛᵃ ⌊ subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R' ⌋ˢ ->
     (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
     no_flex_dep (Δ1 `union` Δ2) Θ0 ->
     flex_above_free (Δ1 `union` Δ2) Θ0 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | (Ψ `union` Ψa) ]
-      (subst_bskl_in_uskl ψa α S) ∼˙ Q ⊣ Θ1.
+      (subst_bskl_in_uskl ψa α R') ∼˙ P' ⊣ Θ1.
 Proof.
-  intros α P P0 Ξc C Hlook; induction Hlook;
+  intros α P P0 Ξc 𝒞 Hlook; induction Hlook;
     intros S ψa Ψa Δ1 Δ2 Ψc Θ0 Qc Θ1
       Hst HeS Hαψ Hlcψ HlcS Hcons Hwf HwfP0 HwfSub Hrig Hnfd Hfaf.
   - (* LE-Var : S = α; the decoration-var lemma at ρ = nil *)
@@ -2544,18 +2544,18 @@ Qed.
 (*  recovered by source-side renaming (a_looksub_subst_stable).           *)
 (* ===================================================================== *)
 
-Lemma a_looksub_open_target : forall A B α Ξ C ψa Ψa,
-  A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C ->
-  C ⊩ᵗ ψa ⤳ Ψa ->
+Lemma a_looksub_open_target : forall P' P0 α Ξ 𝒞 ψa Ψa,
+  P' ≼[ α , mode_tc ] (pskl_all_syn P0) ⤳ Ξ ⨾ 𝒞 ->
+  𝒞 ⊩ᵗ ψa ⤳ Ψa ->
   exists L, forall β, β `notin` L ->
     exists C',
-      A ≼[ α , mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C' /\
+      P' ≼[ α , mode_tc ] (open_pskl_wrt_pskl P0 (pskl_var_f β)) ⤳ Ξ ⨾ C' /\
       C' ⊩ᵗ ψa ⤳ Ψa.
 Proof.
-  intros A B α Ξ C ψa Ψa Hlk.
-  remember (pskl_all_syn B) as T eqn:HT.
+  intros P' P0 α Ξ 𝒞 ψa Ψa Hlk.
+  remember (pskl_all_syn P0) as T eqn:HT.
   remember mode_tc as M eqn:HM.
-  revert B HT. induction Hlk; intros B0 HT Hst; subst; try discriminate HT.
+  revert P0 HT. induction Hlk; intros B0 HT Hst; subst; try discriminate HT.
   - (* LS-Var : the deposit opens with the target *)
     inversion Hst; subst.
     exists empty. intros β _.
@@ -2606,16 +2606,16 @@ Qed.
 (** Constraints collected against ◇ solve nothing: only [sub _ ◇] and
     empty lists can be collected, and a ◇-target solvetag run is empty. *)
 Lemma a_looksub_lookeq_hole_cstrs :
-  (forall α m P P' Ξ C, P ≼[ α , m ] P' ⤳ Ξ ⨾ C -> P' = pskl_hole ->
-     forall ψa Ψa, C ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty) /\
-  (forall α P P' Ξ C, P ∼[ α ] P' ⤳ Ξ ⨾ C -> P' = pskl_hole ->
-     forall ψa Ψa, C ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty).
+  (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 -> P' = pskl_hole ->
+     forall ψa Ψa, 𝒞 ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty) /\
+  (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 -> P' = pskl_hole ->
+     forall ψa Ψa, 𝒞 ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty).
 Proof.
   apply (a_looksub_lookeq_mutind
-           (fun α m P P' Ξ C _ => P' = pskl_hole ->
-              forall ψa Ψa, C ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty)
-           (fun α P P' Ξ C _ => P' = pskl_hole ->
-              forall ψa Ψa, C ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty));
+           (fun α m P P' Ξ 𝒞 _ => P' = pskl_hole ->
+              forall ψa Ψa, 𝒞 ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty)
+           (fun α P P' Ξ 𝒞 _ => P' = pskl_hole ->
+              forall ψa Ψa, 𝒞 ⊩ᵗ ψa ⤳ Ψa -> Ψa [=] empty));
     intros; subst; try discriminate;
     (* empty collections *)
     try solve [ match goal with
@@ -2658,18 +2658,18 @@ Proof.
                 end ].
 Qed.
 
-Lemma a_looksub_hole_solvetag_empty : forall α m P Ξ C ψa Ψa,
-  P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ C ->
-  C ⊩ᵗ ψa ⤳ Ψa ->
+Lemma a_looksub_hole_solvetag_empty : forall α m P Ξ 𝒞 ψa Ψa,
+  P ≼[ α , m ] pskl_hole ⤳ Ξ ⨾ 𝒞 ->
+  𝒞 ⊩ᵗ ψa ⤳ Ψa ->
   Ψa [=] empty.
 Proof.
   intros; eapply (proj1 a_looksub_lookeq_hole_cstrs); eauto.
 Qed.
 
 (** Single-substitution analogs of the §11 helpers. *)
-Lemma erase_swap_subst : forall ψa α S,
-  ⌊ subst_bskl_in_uskl ψa α S ⌋ˢ
-  = ⌊ subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S ⌋ˢ.
+Lemma erase_swap_subst : forall ψa α R,
+  ⌊ subst_bskl_in_uskl ψa α R ⌋ˢ
+  = ⌊ subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R ⌋ˢ.
 Proof.
   intros. rewrite ! uskl_to_pskl_subst.
   rewrite uskl_to_pskl_pskl_to_uskl. reflexivity.
@@ -2690,13 +2690,13 @@ Proof.
     constructor; apply pskl_to_uskl_lc_inv; assumption.
 Qed.
 
-Lemma guarded_subst_decorate : forall ψa α S,
+Lemma guarded_subst_decorate : forall ψa α R',
   lc_uskl ψa ->
-  lc_uskl S ->
-  guarded_uskl (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α S) ->
-  guarded_uskl (subst_bskl_in_uskl ψa α S).
+  lc_uskl R' ->
+  guarded_uskl (subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) α R') ->
+  guarded_uskl (subst_bskl_in_uskl ψa α R').
 Proof.
-  intros ψa α S Hlcψ HlcS Hg. destruct S; simpl in Hg |- *;
+  intros ψa α R' Hlcψ HlcS Hg. destruct R'; simpl in Hg |- *;
     try exact Hg; try solve [ inversion Hg ].
   - (* var *)
     revert Hg.

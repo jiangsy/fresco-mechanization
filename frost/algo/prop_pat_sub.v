@@ -203,13 +203,13 @@ Qed.
 
 (** Guardedness survives substitution by a guarded, lc substituend
     (unit and monotype paintings are both guarded). *)
-Lemma guarded_pskl_subst : forall P Q X,
+Lemma guarded_pskl_subst : forall P P' α,
   guarded_pskl P ->
-  guarded_pskl Q ->
-  lc_pskl Q ->
-  guarded_pskl (subst_pskl_in_pskl Q X P).
+  guarded_pskl P' ->
+  lc_pskl P' ->
+  guarded_pskl (subst_pskl_in_pskl P' α P).
 Proof.
-  intros P Q X H HgQ HlcQ. induction H; simpl.
+  intros P P' α H HgQ HlcQ. induction H; simpl.
   - auto with frost.
   - destruct_if; auto with frost.
   - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; auto.
@@ -221,13 +221,13 @@ Qed.
     stay guarded). *)
 Lemma a_wf_pskl_subst_ctx : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  forall Θ1 β b Θ2 Q,
+  forall Θ1 β b Θ2 P',
   Θ = Θ1 ++ (β ~ b) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
   β `notin` Δ ->
-  guarded_pskl Q ->
-  (Θ1 ++ Θ2) ⨟ empty ⊢ₚₛᵃ Q ->
-  (Θ1 ++ Θ2) ⨟ Δ ⊢ₚₛᵃ subst_pskl_in_pskl Q β P.
+  guarded_pskl P' ->
+  (Θ1 ++ Θ2) ⨟ empty ⊢ₚₛᵃ P' ->
+  (Θ1 ++ Θ2) ⨟ Δ ⊢ₚₛᵃ subst_pskl_in_pskl P' β P.
 Proof.
   intros Θ Δ P H; induction H;
     intros Θ1 β b0 Θ2 Q0 Heqc Hfr HfrΔ HgQ HwfQ; subst; simpl.
@@ -261,11 +261,11 @@ Proof.
 Qed.
 
 (** Erasure commutes with the unit substitution. *)
-Lemma uskl_to_pskl_subst_unit : forall S β,
-  ⌊ subst_bskl_in_uskl uskl_unit β S ⌋ˢ
-  = subst_pskl_in_pskl pskl_unit β ⌊ S ⌋ˢ.
+Lemma uskl_to_pskl_subst_unit : forall R' β,
+  ⌊ subst_bskl_in_uskl uskl_unit β R' ⌋ˢ
+  = subst_pskl_in_pskl pskl_unit β ⌊ R' ⌋ˢ.
 Proof.
-  induction S; intros; simpl; try (f_equal; auto; fail).
+  induction R'; intros; simpl; try (f_equal; auto; fail).
   repeat destruct_if; try reflexivity; try contradiction.
 Qed.
 
@@ -305,17 +305,17 @@ Qed.
 
 (** STRIP an undefined flexible mid entry from [ad_pat_consis] by
     substituting unit for it (witness-rewriting; see the §4 header). *)
-Lemma ad_pat_consis_subst_flex : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
+Lemma ad_pat_consis_subst_flex : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
   forall Θ1 β Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
   (forall γ τ, binds γ (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ (subst_bskl_in_uskl uskl_unit β S)
+  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ (subst_bskl_in_uskl uskl_unit β R)
                     ∼ (subst_bskl_in_bskl bskl_unit β Q).
 Proof.
-  intros Ψ Θ S Q H; induction H;
+  intros Ψ Θ R Q H; induction H;
     intros Θ1 β Θ2 Heqc Hfr Hdefs; subst; simpl.
   - apply ad_pat_consis__unit; assumption.
   - repeat destruct_if; try contradiction.
@@ -481,12 +481,12 @@ Qed.
 
 (** The inh painting commutes with substitution by a monotype: syn and
     inh paintings agree on monotypes ([ptyp_to_bskl_inh_syn_eq]). *)
-Lemma pskl_to_bskl_inh_subst_mono : forall P τ X,
+Lemma pskl_to_bskl_inh_subst_mono : forall P τ α',
   mono_ptyp τ ->
-  subst_bskl_in_bskl (ptyp_to_bskl_syn τ) X (pskl_to_bskl_inh P)
-  = pskl_to_bskl_inh (subst_pskl_in_pskl (ptyp_to_pskl τ) X P).
+  subst_bskl_in_bskl (ptyp_to_bskl_syn τ) α' (pskl_to_bskl_inh P)
+  = pskl_to_bskl_inh (subst_pskl_in_pskl (ptyp_to_pskl τ) α' P).
 Proof.
-  induction P; intros τ X Hm; simpl; try reflexivity;
+  induction P; intros τ α' Hm; simpl; try reflexivity;
     try (rewrite IHP1; auto; rewrite IHP2; auto; reflexivity);
     try (rewrite IHP; auto; reflexivity).
   repeat destruct_if;
@@ -512,8 +512,8 @@ Qed.
 (** STRIP a DEFINED flexible mid entry from [ad_pat_consis] by
     substituting its definition's paintings for it (msubst-style collapse;
     the lookup rules at the stripped variable dissolve into their premise). *)
-Lemma ad_pat_consis_subst_flex_def : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
+Lemma ad_pat_consis_subst_flex_def : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
   forall Θ1 β τ0 Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono_def τ0) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
@@ -522,10 +522,10 @@ Lemma ad_pat_consis_subst_flex_def : forall Ψ Θ S Q,
   (forall X, X `in` ftvar_in_ptyp τ0 -> a_binds_tvar X (Θ1 ++ Θ2)) ->
   (forall γ τ, binds γ (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ (subst_bskl_in_uskl (ptyp_to_uskl_syn τ0) β S)
+  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ (subst_bskl_in_uskl (ptyp_to_uskl_syn τ0) β R)
                     ∼ (subst_bskl_in_bskl (ptyp_to_bskl_syn τ0) β Q).
 Proof.
-  intros Ψ Θ S Q H; induction H;
+  intros Ψ Θ R Q H; induction H;
     intros Θ1 β τ0 Θ2 Heqc Hfr Hm Hfrτ Hvis Hdefs; subst; simpl.
   - apply ad_pat_consis__unit; assumption.
   - repeat destruct_if; try contradiction.
@@ -746,17 +746,17 @@ Qed.
 (** STRIP an undefined flexible mid entry from [ad_pat_sub] by
     substituting unit — the ForallL witnesses are rewritten too, which is
     exactly why this is provable where naive strengthening is not. *)
-Lemma ad_pat_sub_subst_flex : forall NM M Ψ Θ S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] S ⩽ Q ->
+Lemma ad_pat_sub_subst_flex : forall NM M Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
   forall Θ1 β Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
   (forall γ τ, binds γ (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ[ NM | M ] (subst_bskl_in_uskl uskl_unit β S)
+  Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ[ NM | M ] (subst_bskl_in_uskl uskl_unit β R)
                               ⩽ (subst_bskl_in_bskl bskl_unit β Q).
 Proof.
-  intros NM M Ψ Θ S Q H; induction H;
+  intros NM M Ψ Θ R Q H; induction H;
     intros Θ1 β Θ2 Heqc Hfr Hdefs; subst; simpl.
   - apply ad_pat_sub__infer;
       [ assumption
@@ -931,11 +931,11 @@ Proof.
   - auto with frost.
 Qed.
 
-Lemma mod_comp_sk_subst_mono : forall S m τ β,
-  mod_comp_sk S m -> mono_ptyp τ ->
-  mod_comp_sk (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β S) m.
+Lemma mod_comp_sk_subst_mono : forall Q m τ β,
+  mod_comp_sk Q m -> mono_ptyp τ ->
+  mod_comp_sk (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q) m.
 Proof.
-  intros S m τ β H Hm; induction H.
+  intros Q m τ β H Hm; induction H.
   - auto using is_sskl_subst_mono with frost.
   - auto using is_sskl_subst_mono with frost.
   - simpl; auto with frost.
@@ -1016,11 +1016,11 @@ Proof.
   apply uskl_to_pskl_pskl_to_uskl.
 Qed.
 
-Lemma uskl_to_pskl_subst_mono : forall S τ β,
-  ⌊ subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β S ⌋ˢ
-  = subst_pskl_in_pskl (ptyp_to_pskl τ) β ⌊ S ⌋ˢ.
+Lemma uskl_to_pskl_subst_mono : forall R' τ β,
+  ⌊ subst_bskl_in_uskl (ptyp_to_uskl_syn τ) β R' ⌋ˢ
+  = subst_pskl_in_pskl (ptyp_to_pskl τ) β ⌊ R' ⌋ˢ.
 Proof.
-  induction S; intros; simpl; try (f_equal; auto; fail).
+  induction R'; intros; simpl; try (f_equal; auto; fail).
   repeat destruct_if; try contradiction;
     [ apply uskl_to_pskl_ptyp_to_uskl_syn | reflexivity ].
 Qed.
@@ -1028,8 +1028,8 @@ Qed.
 (** STRIP a DEFINED flexible mid entry from [ad_pat_sub] by substituting
     its definition's paintings (the FlexMono lookup at the stripped
     variable dissolves into its premise). *)
-Lemma ad_pat_sub_subst_flex_def : forall NM M Ψ Θ S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] S ⩽ Q ->
+Lemma ad_pat_sub_subst_flex_def : forall NM M Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
   forall Θ1 β τ0 Θ2,
   Θ = Θ1 ++ (β ~ abind_flex_mono_def τ0) ++ Θ2 ->
   β `notin` dom (Θ1 ++ Θ2) ->
@@ -1039,10 +1039,10 @@ Lemma ad_pat_sub_subst_flex_def : forall NM M Ψ Θ S Q,
   (forall γ τ, binds γ (abind_flex_mono_def τ) (Θ1 ++ Θ2) ->
      β `notin` ftvar_in_ptyp τ) ->
   Ψ ⨟ (Θ1 ++ Θ2) ⊢ₛᵃ[ NM | M ]
-      (subst_bskl_in_uskl (ptyp_to_uskl_syn τ0) β S)
+      (subst_bskl_in_uskl (ptyp_to_uskl_syn τ0) β R)
     ⩽ (subst_bskl_in_bskl (ptyp_to_bskl_syn τ0) β Q).
 Proof.
-  intros NM M Ψ Θ S Q H; induction H;
+  intros NM M Ψ Θ R Q H; induction H;
     intros Θ1 β τ0 Θ2 Heqc Hfr Hm Hfrτ Hvis Hdefs; subst; simpl.
   - apply ad_pat_sub__infer;
       [ assumption
@@ -1155,23 +1155,23 @@ Qed.
     paper's "context strengthening for unused variables in Ξ", proved by
     iterating the substitution strips head-first (the head entry is never
     mentioned by any other entry, since definitions scope to tails). *)
-Lemma ad_pat_sub_strip_suffix : forall Ξ NM M Ψ Θ S Q,
+Lemma ad_pat_sub_strip_suffix : forall Ξ NM M Ψ Θ R Q,
   a_suffix Ξ ->
   a_wf_aenv (Ξ ++ Θ) ->
   (forall γ, γ `in` dom Ξ ->
-     γ `notin` (ftvar_in_uskl S `union` ftvar_in_bskl Q)) ->
-  Ψ ⨟ (Ξ ++ Θ) ⊢ₛᵃ[ NM | M ] S ⩽ Q ->
-  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] S ⩽ Q.
+     γ `notin` (ftvar_in_uskl R `union` ftvar_in_bskl Q)) ->
+  Ψ ⨟ (Ξ ++ Θ) ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q.
 Proof.
   induction Ξ as [ | [β b] Ξ' IH ]; intros * Hsuf Hwf Hfv H; [ exact H | ].
   inversion Hsuf as [ | ? ? ? Hsuf' Hbind ]; subst.
-  assert (Hβfv : β `notin` (ftvar_in_uskl S `union` ftvar_in_bskl Q))
+  assert (Hβfv : β `notin` (ftvar_in_uskl R `union` ftvar_in_bskl Q))
     by (apply Hfv; simpl; fsetdec).
   inversion Hbind; subst.
   - (* undefined head *)
     inversion Hwf as [ | ? ? Hβd Hwf' | | | | ]; subst.
     assert (Hstr : Ψ ⨟ (Ξ' ++ Θ) ⊢ₛᵃ[ NM | M ]
-                     (subst_bskl_in_uskl uskl_unit β S)
+                     (subst_bskl_in_uskl uskl_unit β R)
                    ⩽ (subst_bskl_in_bskl bskl_unit β Q)).
     { eapply ad_pat_sub_subst_flex with (Θ1 := nil);
         [ exact H | simpl_env; reflexivity | simpl; exact Hβd
@@ -1193,7 +1193,7 @@ Proof.
       destruct Ht as [Hb | [Hb | [τ1 Hb]]]; apply binds_In in Hb;
         clear - Hb Hβd; fsetdec. }
     assert (Hstr : Ψ ⨟ (Ξ' ++ Θ) ⊢ₛᵃ[ NM | M ]
-                     (subst_bskl_in_uskl (ptyp_to_uskl_syn A) β S)
+                     (subst_bskl_in_uskl (ptyp_to_uskl_syn A) β R)
                    ⩽ (subst_bskl_in_bskl (ptyp_to_bskl_syn A) β Q)).
     { eapply ad_pat_sub_subst_flex_def with (Θ1 := nil);
         [ exact H | simpl_env; reflexivity | simpl; exact Hβd
@@ -1214,14 +1214,14 @@ Qed.
 (** Renaming the opened rigid binder in [ad_pat_sub] (mirror of
     [ad_pat_consis_rename_tvar]; the tag/guardedness closures come from
     the [_mono] pack at [τ := ptyp_var_f Y]). *)
-Lemma ad_pat_sub_rename_tvar : forall NM M Ψ Θ1 α Θ0 S Q Y,
-  Ψ ⨟ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⊢ₛᵃ[ NM | M ] S ⩽ Q ->
+Lemma ad_pat_sub_rename_tvar : forall NM M Ψ Θ1 α Θ0 R Q β',
+  Ψ ⨟ (Θ1 ++ (α ~ abind_tvar) ++ Θ0) ⊢ₛᵃ[ NM | M ] R ⩽ Q ->
   α `notin` dom (Θ1 ++ Θ0) ->
   (forall β τ, binds β (abind_flex_mono_def τ) (Θ1 ++ Θ0) ->
      α `notin` ftvar_in_ptyp τ) ->
-  Ψ ⨟ (Θ1 ++ (Y ~ abind_tvar) ++ Θ0) ⊢ₛᵃ[ NM | M ]
-      (subst_bskl_in_uskl (uskl_var_f Y) α S)
-    ⩽ (subst_bskl_in_bskl (bskl_var_f Y) α Q).
+  Ψ ⨟ (Θ1 ++ (β' ~ abind_tvar) ++ Θ0) ⊢ₛᵃ[ NM | M ]
+      (subst_bskl_in_uskl (uskl_var_f β') α R)
+    ⩽ (subst_bskl_in_bskl (bskl_var_f β') α Q).
 Proof.
   intros * H.
   remember (Θ1 ++ (α ~ abind_tvar) ++ Θ0) as Θfull eqn:HeqΘ.
@@ -1229,11 +1229,11 @@ Proof.
   induction H; intros Θ1 ->; intros Hdom Hdefs; simpl.
   - apply ad_pat_sub__infer; auto.
     + apply ad_pat_consis_rename_tvar; auto.
-    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply is_sskl_subst_mono; auto using mono_ptyp.
   - rewrite subst_var_bskl_inh.
     apply ad_pat_sub__check.
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply guarded_uskl_subst_mono; auto using mono_ptyp.
     + apply guarded_pskl_subst; auto using guarded_pskl__var, lc_pskl_var_f.
     + rewrite <- subst_var_bskl_inh.
@@ -1251,11 +1251,11 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
         [ discriminate | eauto ] ].
   - apply ad_pat_sub__univ_ghost_r; auto.
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply guarded_uskl_subst_mono; auto using mono_ptyp.
-    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply guarded_bskl_subst_mono; auto using mono_ptyp.
-    + change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+    + change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply is_sskl_subst_mono; auto using mono_ptyp.
     + apply ad_pat_consis_rename_tvar; auto.
   - specialize (IHad_pat_sub Θ1 ltac:(reflexivity) Hdom Hdefs).
@@ -1270,10 +1270,10 @@ Proof.
     5: exact IHad_pat_sub.
     + assumption.
     + eassumption.
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply a_tags_sort_subst_mono;
         [ assumption | apply mono_ptyp__var ].
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       rewrite uskl_to_pskl_subst_mono. simpl.
       apply a_wf_pskl_rename_tvar;
         first [ assumption | clear; fsetdec ].
@@ -1284,10 +1284,10 @@ Proof.
     5: exact IHad_pat_sub.
     + assumption.
     + eassumption.
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply a_tags_sort_subst_mono;
         [ assumption | apply mono_ptyp__var ].
-    + change (uskl_var_f Y) with (ptyp_to_uskl_syn (ptyp_var_f Y)).
+    + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       rewrite uskl_to_pskl_subst_mono. simpl.
       apply a_wf_pskl_rename_tvar;
         first [ assumption | clear; fsetdec ].
@@ -1295,7 +1295,7 @@ Proof.
     apply ad_pat_sub__ghost; auto.
     + apply a_wf_pskl_rename_tvar; [ assumption | clear; fsetdec ].
     + rewrite <- subst_var_bskl_inh.
-      change (bskl_var_f Y) with (ptyp_to_bskl_syn (ptyp_var_f Y)).
+      change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply mod_comp_sk_subst_mono; auto using mono_ptyp.
   - apply ad_pat_sub__ghostg; auto.
   - apply ad_pat_sub__univ_ghost_l; auto.
@@ -1423,19 +1423,19 @@ Lemma pskl_to_bskl_inh_ghost_free : forall P,
   bskl_ghost_free (pskl_to_bskl_inh P).
 Proof. induction P; simpl; intuition. Qed.
 
-Lemma pskl_ghost_free_open_rec : forall P X k,
+Lemma pskl_ghost_free_open_rec : forall P α' k,
   pskl_ghost_free P ->
-  pskl_ghost_free (open_pskl_wrt_pskl_rec k (pskl_var_f X) P).
+  pskl_ghost_free (open_pskl_wrt_pskl_rec k (pskl_var_f α') P).
 Proof.
-  induction P; intros X k Hg; simpl in *; intuition.
+  induction P; intros α' k Hg; simpl in *; intuition.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
 Qed.
 
-Lemma bskl_ghost_free_open_rec : forall Q X k,
+Lemma bskl_ghost_free_open_rec : forall Q α' k,
   bskl_ghost_free Q ->
-  bskl_ghost_free (open_bskl_wrt_bskl_rec k (bskl_var_f X) Q).
+  bskl_ghost_free (open_bskl_wrt_bskl_rec k (bskl_var_f α') Q).
 Proof.
-  induction Q; intros X k Hg; simpl in *; intuition.
+  induction Q; intros α' k Hg; simpl in *; intuition.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
 Qed.
 
@@ -1457,20 +1457,20 @@ Qed.
     trailing suffix Ξ and rename the shared rigid binder into a Δ-slot
     (the two transports ForallR's fill re-attachment needs, fused so the
     induction runs once). *)
-Lemma ad_refine_syn_f_ghost_free_strip_rename : forall F Θfull Δ Q P,
-  ad_refine_syn_f F Θfull Δ Q P ->
-  forall Ξ α Θ1 Y,
+Lemma ad_refine_syn_f_ghost_free_strip_rename : forall F Θfull Δ Q Q',
+  ad_refine_syn_f F Θfull Δ Q Q' ->
+  forall Ξ α Θ1 β,
   Θfull = Ξ ++ (α ~ abind_tvar) ++ Θ1 ->
   bskl_ghost_free Q ->
   a_wf_aenv Θfull ->
   uniq Θfull ->
-  (forall X, X `in` (ftvar_in_bskl Q `union` ftvar_in_bskl P) ->
+  (forall X, X `in` (ftvar_in_bskl Q `union` ftvar_in_bskl Q') ->
      X `notin` dom Ξ) ->
-  ad_refine_syn_f F Θ1 (add Y (remove α Δ))
-    (subst_bskl_in_bskl (bskl_var_f Y) α Q)
-    (subst_bskl_in_bskl (bskl_var_f Y) α P).
+  ad_refine_syn_f F Θ1 (add β (remove α Δ))
+    (subst_bskl_in_bskl (bskl_var_f β) α Q)
+    (subst_bskl_in_bskl (bskl_var_f β) α Q').
 Proof.
-  intros F Θfull Δ Q P H; induction H;
+  intros F Θfull Δ Q Q' H; induction H;
     intros Ξ0 α0 Θt Y Heqc Hg Hwf Huq Hfv; subst; simpl in *.
   - apply ad_refine_syn_f__unit.
   - repeat destruct_if; try contradiction.
@@ -1633,16 +1633,16 @@ Qed.
     source is the inh painting itself — "the run lands on B" (the Check
     case of subtyping soundness).  The flex rules cannot escape: a
     variable's erasure pins the target variable node syntactically. *)
-Lemma ad_refine_syn_f_ghost_free_erasure_inv : forall F Θ Δ Qsrc Ptgt,
-  ad_refine_syn_f F Θ Δ Qsrc Ptgt ->
-  forall B,
-  Qsrc = pskl_to_bskl_inh B ->
-  pskl_ghost_free B ->
-  bskl_to_pskl Ptgt = B ->
-  Ptgt = pskl_to_bskl_inh B.
+Lemma ad_refine_syn_f_ghost_free_erasure_inv : forall F Θ Δ Qsrc Qtgt,
+  ad_refine_syn_f F Θ Δ Qsrc Qtgt ->
+  forall P',
+  Qsrc = pskl_to_bskl_inh P' ->
+  pskl_ghost_free P' ->
+  bskl_to_pskl Qtgt = P' ->
+  Qtgt = pskl_to_bskl_inh P'.
 Proof.
-  intros F Θ Δ Qsrc Ptgt H; induction H; intros B HeqQ Hg HeqP;
-    destruct B; simpl in HeqQ; inversion HeqQ; subst; simpl in *.
+  intros F Θ Δ Qsrc Qtgt H; induction H; intros P' HeqQ Hg HeqP;
+    destruct P'; simpl in HeqQ; inversion HeqQ; subst; simpl in *.
   - (* unit *) reflexivity.
   - (* var *) reflexivity.
   - (* arrow *)
@@ -1671,13 +1671,13 @@ Proof.
     + unfold open_pskl_wrt_pskl. apply pskl_ghost_free_open_rec.
       exact Hg.
     + rewrite bskl_to_pskl_open. reflexivity.
-  - (* hole : B would be a ghost *) destruct Hg.
+  - (* hole : P' would be a ghost *) destruct Hg.
   - (* tophole_remove *) destruct Hg.
   - (* tophole_fill *) destruct Hg.
   - (* tophole_keep *) destruct Hg.
   - (* flex_l : the source variable pins the target *)
     destruct Q; simpl in HeqP; inversion HeqP; subst; reflexivity.
-  - (* flex_r : Qsrc is a rule variable, so every B-shape survives the
+  - (* flex_r : Qsrc is a rule variable, so every P'-shape survives the
        top-level destruct; the erasure equation discriminates all but the
        variable one. *)
     inversion HeqP; subst; reflexivity.
@@ -1838,9 +1838,9 @@ Qed.
 (*  decorations when instantiating the cofinite ForallL premise.)         *)
 (* ===================================================================== *)
 
-Lemma uskl_to_pskl_close_rec : forall ψ X k,
-  uskl_to_pskl (close_uskl_wrt_uskl_rec k X ψ)
-  = close_pskl_wrt_pskl_rec k X (uskl_to_pskl ψ).
+Lemma uskl_to_pskl_close_rec : forall ψ α k,
+  uskl_to_pskl (close_uskl_wrt_uskl_rec k α ψ)
+  = close_pskl_wrt_pskl_rec k α (uskl_to_pskl ψ).
 Proof.
   induction ψ; intros X k; simpl; try (f_equal; auto; fail).
   - destruct (lt_ge_dec n k); reflexivity.
@@ -1848,8 +1848,8 @@ Proof.
       reflexivity.
 Qed.
 
-Lemma uskl_to_pskl_close : forall ψ X,
-  ⌊ close_uskl_wrt_uskl X ψ ⌋ˢ = close_pskl_wrt_pskl X ⌊ ψ ⌋ˢ.
+Lemma uskl_to_pskl_close : forall ψ α,
+  ⌊ close_uskl_wrt_uskl α ψ ⌋ˢ = close_pskl_wrt_pskl α ⌊ ψ ⌋ˢ.
 Proof.
   intros. unfold close_uskl_wrt_uskl, close_pskl_wrt_pskl.
   apply uskl_to_pskl_close_rec.
@@ -1862,16 +1862,16 @@ Proof.
   eapply lc_uskl_all_etag_exists; eauto.
 Qed.
 
-Lemma pskl_decorate_exists : forall Q,
-  lc_pskl Q ->
+Lemma pskl_decorate_exists : forall P,
+  lc_pskl P ->
   forall L, exists Ψ ψ,
     Ψ ∩ L [=] empty /\
     is_tskl ψ /\
     d_tags_skl Ψ ψ /\
-    ⌊ ψ ⌋ˢ = Q /\
-    (pskl_ghost_free Q -> uskl_ghost_free ψ).
+    ⌊ ψ ⌋ˢ = P /\
+    (pskl_ghost_free P -> uskl_ghost_free ψ).
 Proof.
-  intros Q Hlc; induction Hlc; intros L.
+  intros P Hlc; induction Hlc; intros L.
   - (* unit *)
     exists empty, uskl_unit. repeat apply conj;
       [ fsetdec | apply is_tskl__unit | apply d_tags_skl__unit; fsetdec

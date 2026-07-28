@@ -140,9 +140,9 @@ Lemma d_tags_skl_unit_inv : forall Ψ,
   d_tags_skl Ψ uskl_unit -> Ψ [=] empty.
 Proof. intros Ψ H. inversion H; subst; auto. Qed.
 
-Lemma d_tags_skl_var_inv : forall Ψ X,
-  d_tags_skl Ψ (uskl_var_f X) -> Ψ [=] empty.
-Proof. intros Ψ X H. inversion H; subst; auto. Qed.
+Lemma d_tags_skl_var_inv : forall Ψ α,
+  d_tags_skl Ψ (uskl_var_f α) -> Ψ [=] empty.
+Proof. intros Ψ α H. inversion H; subst; auto. Qed.
 
 Lemma d_tags_skl_arrow_inv : forall Ψ ψ1 ψ2,
   d_tags_skl Ψ (uskl_arrow ψ1 ψ2) ->
@@ -263,11 +263,11 @@ Proof. intros Θ Δ P H. inversion H; subst. auto. Qed.
 (* ===================================================================== *)
 
 (** [strip ψ := pskl_to_uskl ⌊ψ⌋ˢ] commutes with opening. *)
-Lemma strip_uskl_open : forall ψ X,
-  pskl_to_uskl (uskl_to_pskl (open_uskl_wrt_uskl ψ (uskl_var_f X)))
-  = open_uskl_wrt_uskl (pskl_to_uskl (uskl_to_pskl ψ)) (uskl_var_f X).
+Lemma strip_uskl_open : forall ψ α,
+  pskl_to_uskl (uskl_to_pskl (open_uskl_wrt_uskl ψ (uskl_var_f α)))
+  = open_uskl_wrt_uskl (pskl_to_uskl (uskl_to_pskl ψ)) (uskl_var_f α).
 Proof.
-  intros ψ X. rewrite uskl_to_pskl_open, pskl_to_uskl_open. reflexivity.
+  intros ψ α. rewrite uskl_to_pskl_open, pskl_to_uskl_open. reflexivity.
 Qed.
 
 (** (1a) Stripping the decorated subject to its plain skeleton preserves
@@ -313,18 +313,18 @@ Qed.
     [consis_concrete_target_inh] + [__hole]).  The wf-less transporters
     ([consis_forall/tophole_subject_transport], prop_consis_complete.v) cannot
     carry it, so these are genuine wf-variants, not duplicates. *)
-Lemma consis_subj_transport_arrow_wf : forall Ψ Θ' A1 A2 B1 B2 Q,
-  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_arrow A1 A2) ∼ Q ->
+Lemma consis_subj_transport_arrow_wf : forall Ψ Θ' R1 R2 R1' R2' Q,
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_arrow R1 R2) ∼ Q ->
   a_wf_aenv Θ' ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
-  (forall Ψ1 Q1, Ψ1 ⨟ Θ' ⊢ₛᵃ A1 ∼ Q1 -> Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q1) ->
-     Ψ1 ⨟ Θ' ⊢ₛᵃ B1 ∼ Q1) ->
-  (forall Ψ2 Q2, Ψ2 ⨟ Θ' ⊢ₛᵃ A2 ∼ Q2 -> Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q2) ->
-     Ψ2 ⨟ Θ' ⊢ₛᵃ B2 ∼ Q2) ->
-  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_arrow B1 B2) ∼ Q.
+  (forall Ψ1 Q1, Ψ1 ⨟ Θ' ⊢ₛᵃ R1 ∼ Q1 -> Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q1) ->
+     Ψ1 ⨟ Θ' ⊢ₛᵃ R1' ∼ Q1) ->
+  (forall Ψ2 Q2, Ψ2 ⨟ Θ' ⊢ₛᵃ R2 ∼ Q2 -> Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q2) ->
+     Ψ2 ⨟ Θ' ⊢ₛᵃ R2' ∼ Q2) ->
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_arrow R1' R2') ∼ Q.
 Proof.
-  intros Ψ Θ' A1 A2 B1 B2 Q Hc Hwfa Hwfq Ht1 Ht2.
-  remember (uskl_arrow A1 A2) as Ssub eqn:HS.
+  intros Ψ Θ' R1 R2 R1' R2' Q Hc Hwfa Hwfq Ht1 Ht2.
+  remember (uskl_arrow R1 R2) as Ssub eqn:HS.
   revert Hwfq; induction Hc; try discriminate HS; intros Hwfq.
   - (* arrow: Q = bskl_arrow Q1 Q2 *)
     inversion HS; subst.
@@ -349,32 +349,32 @@ Qed.
     a TVAR in [Θ] (which the consistency transport needs), from the opened
     body wf with the ∀-var in [Δ] (as [a_wf_pskl__all] gives it) via
     [a_wf_pskl_reassoc] + [a_wf_pskl_delta_narrow]. *)
-Lemma wf_open_of_all : forall Θ Δ Q0 X,
-  Θ ⨟ (add X Δ) ⊢ₚₛᵃ open_pskl_wrt_pskl (bskl_to_pskl Q0) (pskl_var_f X) ->
-  ((X ~ abind_tvar) ++ Θ) ⨟ Δ
-    ⊢ₚₛᵃ bskl_to_pskl (open_bskl_wrt_bskl Q0 (bskl_var_f X)).
+Lemma wf_open_of_all : forall Θ Δ Q0 α,
+  Θ ⨟ (add α Δ) ⊢ₚₛᵃ open_pskl_wrt_pskl (bskl_to_pskl Q0) (pskl_var_f α) ->
+  ((α ~ abind_tvar) ++ Θ) ⨟ Δ
+    ⊢ₚₛᵃ bskl_to_pskl (open_bskl_wrt_bskl Q0 (bskl_var_f α)).
 Proof.
-  intros Θ Δ Q0 X Hb.
+  intros Θ Δ Q0 α Hb.
   rewrite bskl_to_pskl_open.
-  eapply a_wf_pskl_delta_narrow with (Δ := remove X (add X Δ)).
-  - apply (a_wf_pskl_reassoc Hb X).
+  eapply a_wf_pskl_delta_narrow with (Δ := remove α (add α Δ)).
+  - apply (a_wf_pskl_reassoc Hb α).
   - intros W HW HWin. clear - HWin. fsetdec.
 Qed.
 
-Lemma consis_forall_subject_transport_wf : forall Ψ Θ' A0 B0 Q L0,
-  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_all_syn A0) ∼ Q ->
+Lemma consis_forall_subject_transport_wf : forall Ψ Θ' R0 R0' Q L0,
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_all_syn R0) ∼ Q ->
   a_wf_aenv Θ' ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
   (forall X, X `notin` L0 -> forall Ψ' Q',
      Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊢ₛᵃ
-       (open_uskl_wrt_uskl A0 (uskl_var_f X)) ∼ Q' ->
+       (open_uskl_wrt_uskl R0 (uskl_var_f X)) ∼ Q' ->
      ((X ~ abind_tvar) ++ Θ') ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q') ->
      Ψ' ⨟ ((X ~ abind_tvar) ++ Θ') ⊢ₛᵃ
-       (open_uskl_wrt_uskl B0 (uskl_var_f X)) ∼ Q') ->
-  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_all_syn B0) ∼ Q.
+       (open_uskl_wrt_uskl R0' (uskl_var_f X)) ∼ Q') ->
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_all_syn R0') ∼ Q.
 Proof.
-  intros Ψ Θ' A0 B0 Q L0 Hc Hwfa Hwfq Htr.
-  remember (uskl_all_syn A0) as Ssub eqn:HS.
+  intros Ψ Θ' R0 R0' Q L0 Hc Hwfa Hwfq Htr.
+  remember (uskl_all_syn R0) as Ssub eqn:HS.
   revert Hwfq; induction Hc; try discriminate HS; intros Hwfq.
   - (* forall_inh_untagged: Q = bskl_all_inh Q0 *)
     inversion HS; subst.
@@ -401,21 +401,21 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_tophole_subject_transport_wf : forall Ψ Θ' S Q,
-  Ψ ⨟ Θ' ⊢ₛᵃ S ∼ Q ->
+Lemma consis_tophole_subject_transport_wf : forall Ψ Θ' R Q,
+  Ψ ⨟ Θ' ⊢ₛᵃ R ∼ Q ->
   a_wf_aenv Θ' ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
-  forall S0 T0, S = uskl_tophole S0 ->
+  forall R0 R0', R = uskl_tophole R0 ->
   (forall Θ'' Ψ' Q',
      a_wf_aenv Θ'' ->
      (forall x b, binds x b Θ' -> binds x b Θ'') ->
-     Ψ' ⨟ Θ'' ⊢ₛᵃ S0 ∼ Q' ->
+     Ψ' ⨟ Θ'' ⊢ₛᵃ R0 ∼ Q' ->
      Θ'' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q') ->
-     Ψ' ⨟ Θ'' ⊢ₛᵃ T0 ∼ Q') ->
-  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_tophole T0) ∼ Q.
+     Ψ' ⨟ Θ'' ⊢ₛᵃ R0' ∼ Q') ->
+  Ψ ⨟ Θ' ⊢ₛᵃ (uskl_tophole R0') ∼ Q.
 Proof.
-  intros Ψ Θ' S Q Hc; induction Hc;
-    intros HwfΘ Hwfq S0 T0 HeqS Htr; try discriminate HeqS.
+  intros Ψ Θ' R Q Hc; induction Hc;
+    intros HwfΘ Hwfq R0 R0' HeqS Htr; try discriminate HeqS.
   - (* tophole: Q = bskl_tophole Q0 *)
     inversion HeqS; subst.
     simpl in Hwfq. destruct (a_wf_pskl_tophole_inv Hwfq) as [Hg Hwfb].
@@ -474,14 +474,14 @@ Qed.
     by [__hole] with [B := bskl_to_pskl Q].  Proving only the EQUATION avoids
     reconstructing the wf of a ∀-witness under the [Θ↔Δ] tension (which is not
     a general fact — a [⊤◇] body cannot reference a Δ-var). *)
-Lemma consis_concrete_target_inh : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
+Lemma consis_concrete_target_inh : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
   a_wf_aenv Θ ->
-  forall P, S = pskl_to_uskl P ->
+  forall P, R = pskl_to_uskl P ->
   pskl_no_forall P ->
   Ψ [=] empty /\ pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
 Proof.
-  intros Ψ Θ S Q Hc; induction Hc; intros Hwfa P0 HS Hnf.
+  intros Ψ Θ R Q Hc; induction Hc; intros Hwfa P0 HS Hnf.
   - (* unit *)  split; [ exact H | reflexivity ].
   - (* var *)   split; [ exact H | reflexivity ].
   - (* arrow *)
@@ -550,12 +550,12 @@ Qed.
 
 
 (** Monotonicity of [a_binds_tvar] under context extension. *)
-Lemma a_binds_tvar_mono : forall X Θ Θ',
-  a_binds_tvar X Θ ->
+Lemma a_binds_tvar_mono : forall α Θ Θ',
+  a_binds_tvar α Θ ->
   (forall x b, binds x b Θ -> binds x b Θ') ->
-  a_binds_tvar X Θ'.
+  a_binds_tvar α Θ'.
 Proof.
-  intros X Θ Θ' H Hmon. unfold a_binds_tvar in *.
+  intros α Θ Θ' H Hmon. unfold a_binds_tvar in *.
   destruct H as [Hb | [Hb | [τ Hb]]];
     [ left | right; left | right; right; exists τ ]; apply Hmon; exact Hb.
 Qed.
@@ -566,9 +566,9 @@ Qed.
     the (erased) target is THREADED as an input (the hole reconstruction needs
     it; see [consis_concrete_target_inh]).  Subject-side mirror of the target
     template [ad_pat_consis_refine_inh_gen] (prop_sub_sound.v). *)
-Lemma ad_pat_consis_subject_refine : forall Θ Δ Src Tgt,
-  ad_refine_syn Θ Δ Src Tgt ->
-  forall Psrc Ptgt, Src = pskl_to_bskl_inh Psrc -> Tgt = pskl_to_bskl_inh Ptgt ->
+Lemma ad_pat_consis_subject_refine : forall Θ Δ Qsrc Qtgt,
+  ad_refine_syn Θ Δ Qsrc Qtgt ->
+  forall Psrc Ptgt, Qsrc = pskl_to_bskl_inh Psrc -> Qtgt = pskl_to_bskl_inh Ptgt ->
   forall Θ',
   (forall x b, binds x b Θ -> binds x b Θ') ->
   (forall X, X `in` Δ -> a_binds_tvar X Θ') ->
@@ -578,7 +578,7 @@ Lemma ad_pat_consis_subject_refine : forall Θ Δ Src Tgt,
     Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     Ψ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl Psrc) ∼ Q.
 Proof.
-  intros Θ Δ Src Tgt Hr.
+  intros Θ Δ Qsrc Qtgt Hr.
   induction Hr; intros Psrc Ptgt HSrc HTgt Θ' Hmon Hrig Hwf' Ψ Qc Hc Hwfq.
   - (* unit *)
     destruct Psrc; simpl in HSrc; try discriminate HSrc.
@@ -602,13 +602,13 @@ Proof.
       eapply IHHr2;
         [ reflexivity | reflexivity | exact Hmon | exact Hrig | exact Hwf'
         | exact Hc2 | exact Hwfq2 ].
-  - (* all: Src = all_inh S0, Tgt = all_inh T0 (Δ grows under the binder) *)
+  - (* all: Qsrc = all_inh S0, Qtgt = all_inh T0 (Δ grows under the binder) *)
     destruct Psrc as [ | | | | Ps0 | | ]; simpl in HSrc; try discriminate HSrc.
     destruct Ptgt as [ | | | | Pt0 | | ]; simpl in HTgt; try discriminate HTgt.
     inversion HSrc; inversion HTgt; subst.
     simpl. simpl in Hc.
     eapply consis_forall_subject_transport_wf
-      with (A0 := pskl_to_uskl Pt0) (B0 := pskl_to_uskl Ps0)
+      with (R0 := pskl_to_uskl Pt0) (R0' := pskl_to_uskl Ps0)
            (L0 := L `union` dom Θ' `union` Δ);
       [ exact Hc | exact Hwf' | exact Hwfq | ].
     intros X HX Ψ' Q' Hc' Hwfq'.
@@ -627,29 +627,29 @@ Proof.
       | apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ]
       | exact Hc'
       | exact Hwfq' ].
-  - (* hole: Src = bskl_hole, Tgt = syn P (∀-free) *)
+  - (* hole: Qsrc = bskl_hole, Qtgt = syn P (∀-free) *)
     destruct Psrc; simpl in HSrc; try discriminate HSrc.
     assert (Hnf : pskl_no_forall Ptgt)
       by (eapply inh_eq_syn_no_forall; symmetry; exact HTgt).
     destruct (consis_concrete_target_inh Hc Hwf' Ptgt eq_refl Hnf) as [HΨ Heqinh].
     simpl. rewrite <- Heqinh.
     apply ad_pat_consis__hole; [ exact HΨ | exact Hwfq ].
-  - (* tophole_remove: Src = ⊤◇ S0, Tgt = P (same); drop the ⊤◇ *)
+  - (* tophole_remove: Qsrc = ⊤◇ S0, Qtgt = P (same); drop the ⊤◇ *)
     destruct Psrc as [ | | | | | | Ps0 ]; simpl in HSrc; try discriminate HSrc.
     inversion HSrc; subst.
     simpl. apply ad_pat_consis__tophole_drop.
     eapply IHHr;
       [ reflexivity | reflexivity | exact Hmon | exact Hrig | exact Hwf'
       | exact Hc | exact Hwfq ].
-  - (* tophole_fill: Tgt = all_syn P — impossible for an inh painting *)
+  - (* tophole_fill: Qtgt = all_syn P — impossible for an inh painting *)
     destruct Ptgt; simpl in HTgt; try discriminate HTgt.
-  - (* tophole_keep: Src = ⊤◇ S0, Tgt = ⊤◇ T0 *)
+  - (* tophole_keep: Qsrc = ⊤◇ S0, Qtgt = ⊤◇ T0 *)
     destruct Psrc as [ | | | | | | Ps0 ]; simpl in HSrc; try discriminate HSrc.
     destruct Ptgt as [ | | | | | | Pt0 ]; simpl in HTgt; try discriminate HTgt.
     inversion HSrc; inversion HTgt; subst.
     simpl. simpl in Hc.
     eapply consis_tophole_subject_transport_wf
-      with (S0 := pskl_to_uskl Pt0) (T0 := pskl_to_uskl Ps0);
+      with (R0 := pskl_to_uskl Pt0) (R0' := pskl_to_uskl Ps0);
       [ exact Hc | exact Hwf' | exact Hwfq | reflexivity | ].
     intros Θ'' Ψ' Q' Hwf'' Hincl'' Hc'' Hwfq''.
     eapply IHHr with (Ptgt := Pt0);
@@ -658,7 +658,7 @@ Proof.
       | intros Y HYΔ; eapply a_binds_tvar_mono;
           [ apply Hrig; exact HYΔ | exact Hincl'' ]
       | exact Hwf'' | exact Hc'' | exact Hwfq'' ].
-  - (* flex_l: Src = bskl_var α (α ≔ τ), premise syn τ ⊳ Tgt *)
+  - (* flex_l: Qsrc = bskl_var α (α ≔ τ), premise syn τ ⊳ Qtgt *)
     destruct Psrc as [ | | X | | | | ]; simpl in HSrc; try discriminate HSrc.
     inversion HSrc; subst.
     assert (Hmτ : mono_ptyp τ)
@@ -669,7 +669,7 @@ Proof.
     eapply IHHr with (Ptgt := Ptgt);
       [ symmetry; apply (mono_inh_eq_syn Hmτ) | reflexivity
       | exact Hmon | exact Hrig | exact Hwf' | exact Hc | exact Hwfq ].
-  - (* flex_r: Tgt = bskl_var α (α ≔ τ), premise Src ⊳ syn τ *)
+  - (* flex_r: Qtgt = bskl_var α (α ≔ τ), premise Qsrc ⊳ syn τ *)
     destruct Ptgt as [ | | X | | | | ]; simpl in HTgt; try discriminate HTgt.
     inversion HTgt; subst.
     assert (Hmτ : mono_ptyp τ)
@@ -715,10 +715,10 @@ Qed.
 (*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (def_tags.v). *)
 (* ===================================================================== *)
 
-Lemma ftag_in_uskl_open_rec_var : forall X R k,
-  ftag_in_uskl (open_uskl_wrt_uskl_rec k (uskl_var_f X) R) [=] ftag_in_uskl R.
+Lemma ftag_in_uskl_open_rec_var : forall α' R k,
+  ftag_in_uskl (open_uskl_wrt_uskl_rec k (uskl_var_f α') R) [=] ftag_in_uskl R.
 Proof.
-  intros X R; induction R; intros k; simpl; try fsetdec.
+  intros α' R; induction R; intros k; simpl; try fsetdec.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; fsetdec.
   - pose proof (IHR1 k); pose proof (IHR2 k); fsetdec.
   - pose proof (IHR (S k)); fsetdec.
@@ -727,8 +727,8 @@ Proof.
   - pose proof (IHR k); fsetdec.
 Qed.
 
-Lemma ftag_in_uskl_open_var : forall R X,
-  ftag_in_uskl (open_uskl_wrt_uskl R (uskl_var_f X)) [=] ftag_in_uskl R.
+Lemma ftag_in_uskl_open_var : forall R α,
+  ftag_in_uskl (open_uskl_wrt_uskl R (uskl_var_f α)) [=] ftag_in_uskl R.
 Proof.
   intros; unfold open_uskl_wrt_uskl; apply ftag_in_uskl_open_rec_var.
 Qed.
@@ -764,11 +764,11 @@ Qed.
     subject.  (Syntactic counterpart of [ad_partial_precise_tags_sub],
     prop_sub_complete.v; the precision-substitution crux uses it to pin
     the residual tag context of a wholly-[ψa] subject to ∅.) *)
-Lemma ad_pat_consis_ftag_sub : forall Ψ Θ S Q,
-  Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
-  Ψ [<=] ftag_in_uskl S.
+Lemma ad_pat_consis_ftag_sub : forall Ψ Θ R' Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Q ->
+  Ψ [<=] ftag_in_uskl R'.
 Proof.
-  intros Ψ Θ S Q H; induction H; simpl; try fsetdec.
+  intros Ψ Θ R' Q H; induction H; simpl; try fsetdec.
   - (* forall_inh_tagged *)
     match goal with |- _ [<=] add _ (ftag_in_uskl ?R) =>
       pick fresh X for L;
@@ -854,10 +854,10 @@ Lemma ad_pat_consis_precise_subst : forall Θb Δ α ψa Pa Ψ' NM,
   lc_pskl Pa ->
   a_tags_sort NM Ψ' ψa ->
   Θb ⨟ Δ ⊢ₚᵣᵃ Pa ⊑ (uskl_to_pskl ψa) ->
-  forall Ψfull Θ' Ssub Qc,
-  Ψfull ⨟ Θ' ⊢ₛᵃ Ssub ∼ Qc ->
-  forall S Ψ Ψa,
-  Ssub = subst_bskl_in_uskl ψa α S ->
+  forall Ψfull Θ' Rsub Qc,
+  Ψfull ⨟ Θ' ⊢ₛᵃ Rsub ∼ Qc ->
+  forall R Ψ Ψa,
+  Rsub = subst_bskl_in_uskl ψa α R ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   (forall X, X `in` Δ -> a_binds_tvar X Θ') ->
   a_wf_aenv Θ' ->
@@ -865,12 +865,12 @@ Lemma ad_pat_consis_precise_subst : forall Θb Δ α ψa Pa Ψ' NM,
   Ψfull [=] Ψ `union` Ψa ->
   Ψa [<=] Ψ' ->
   Ψ' ∩ Ψ [=] empty ->
-  Ψ' ∩ ftag_in_uskl S [=] empty ->
+  Ψ' ∩ ftag_in_uskl R [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qc) ->
-  Ψ ⨟ Θ' ⊢ₛᵃ (subst_bskl_in_uskl (pskl_to_uskl Pa) α S) ∼ Qc.
+  Ψ ⨟ Θ' ⊢ₛᵃ (subst_bskl_in_uskl (pskl_to_uskl Pa) α R) ∼ Qc.
 Proof.
   intros Θb Δ α ψa Pa Ψ' NM Hlcψa HlcPa Htags Hpre.
-  intros Ψfull Θ' Ssub Qc Hc.
+  intros Ψfull Θ' Rsub Qc Hc.
   induction Hc;
     intros S0 Ψn Ψna HeqS Hmon Hrig Hwf Hαd HΨfull HΨa Hdisj Hftag Hwfq.
   - (* unit *)
@@ -914,12 +914,12 @@ Proof.
       inversion Hwfq as [ | | Θz Δz Pw1 Pw2 Hwfq1 Hwfq2 | | | ]; subst.
       eapply ad_pat_consis__arrow with
         (Ψ1 := Ψ1 ∖ Ψ') (Ψ2 := Ψ2 ∖ Ψ').
-      * eapply IHHc1 with (S := S1) (Ψa := Ψ1 ∩ Ψ');
+      * eapply IHHc1 with (R := S1) (Ψa := Ψ1 ∩ Ψ');
           [ reflexivity | exact Hmon | exact Hrig | exact Hwf | exact Hαd
           | clear - Hdisj; fsetdec | clear - Hdisj; fsetdec
           | clear - Hdisj; fsetdec
           | clear - Hftag; fsetdec | exact Hwfq1 ].
-      * eapply IHHc2 with (S := S2) (Ψa := Ψ2 ∩ Ψ');
+      * eapply IHHc2 with (R := S2) (Ψa := Ψ2 ∩ Ψ');
           [ reflexivity | exact Hmon | exact Hrig | exact Hwf | exact Hαd
           | clear - Hdisj; fsetdec | clear - Hdisj; fsetdec
           | clear - Hdisj; fsetdec
@@ -951,7 +951,7 @@ Proof.
         rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
           [ | exact HXα | apply pskl_to_uskl_lc; exact HlcPa ].
         specialize (H0 X ltac:(clear - HX; fsetdec)).
-        eapply H0 with (S := open_uskl_wrt_uskl S9 (uskl_var_f X))
+        eapply H0 with (R := open_uskl_wrt_uskl S9 (uskl_var_f X))
                        (Ψa := Ψ0 ∩ Ψ');
           [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
               [ exact HXα | exact Hlcψa ]
@@ -986,7 +986,7 @@ Proof.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | exact HXα | apply pskl_to_uskl_lc; exact HlcPa ].
       specialize (H0 X ltac:(clear - HX; fsetdec)).
-      eapply H0 with (S := open_uskl_wrt_uskl S9 (uskl_var_f X)) (Ψa := Ψna);
+      eapply H0 with (R := open_uskl_wrt_uskl S9 (uskl_var_f X)) (Ψa := Ψna);
         [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
             [ exact HXα | exact Hlcψa ]
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
@@ -1018,7 +1018,7 @@ Proof.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | exact HXα | apply pskl_to_uskl_lc; exact HlcPa ].
       specialize (H0 X ltac:(clear - HX; fsetdec)).
-      eapply H0 with (S := open_uskl_wrt_uskl S9 (uskl_var_f X)) (Ψa := Ψna);
+      eapply H0 with (R := open_uskl_wrt_uskl S9 (uskl_var_f X)) (Ψa := Ψna);
         [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
             [ exact HXα | exact Hlcψa ]
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
@@ -1050,7 +1050,7 @@ Proof.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
         [ | exact HXα | apply pskl_to_uskl_lc; exact HlcPa ].
       specialize (H0 X ltac:(clear - HX; fsetdec)).
-      eapply H0 with (S := open_uskl_wrt_uskl S9 (uskl_var_f X)) (Ψa := Ψna);
+      eapply H0 with (R := open_uskl_wrt_uskl S9 (uskl_var_f X)) (Ψa := Ψna);
         [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
             [ exact HXα | exact Hlcψa ]
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
@@ -1086,7 +1086,7 @@ Proof.
       simpl in Hftag.
       simpl in Hwfq. destruct (a_wf_pskl_tophole_inv Hwfq) as [Hg Hwb].
       apply ad_pat_consis__topholeg.
-      eapply IHHc with (S := S9) (Ψa := Ψna);
+      eapply IHHc with (R := S9) (Ψa := Ψna);
         [ reflexivity | exact Hmon | exact Hrig | exact Hwf | exact Hαd
         | exact HΨfull | exact HΨa | exact Hdisj
         | clear - Hftag; fsetdec | exact Hwb ].
@@ -1116,7 +1116,7 @@ Proof.
       simpl in Hftag.
       simpl in Hwfq. destruct (a_wf_pskl_tophole_inv Hwfq) as [Hg Hwb].
       apply ad_pat_consis__tophole.
-      eapply IHHc with (S := S9) (Ψa := Ψna);
+      eapply IHHc with (R := S9) (Ψa := Ψna);
         [ reflexivity | exact Hmon | exact Hrig | exact Hwf | exact Hαd
         | exact HΨfull | exact HΨa | exact Hdisj
         | clear - Hftag; fsetdec | exact Hwb ].
@@ -1140,7 +1140,7 @@ Proof.
       specialize (H0 X ltac:(clear - HX; fsetdec)).
       change (uskl_tophole (subst_bskl_in_uskl (pskl_to_uskl Pa) α S9))
         with (subst_bskl_in_uskl (pskl_to_uskl Pa) α (uskl_tophole S9)).
-      eapply H0 with (S := uskl_tophole S9) (Ψa := Ψna);
+      eapply H0 with (R := uskl_tophole S9) (Ψa := Ψna);
         [ reflexivity
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
         | intros Y HY; apply a_binds_tvar_weaken_cons; apply Hrig; exact HY
@@ -1162,7 +1162,7 @@ Proof.
     + inversion HeqS; subst.
       simpl in Hftag.
       apply ad_pat_consis__tophole_drop.
-      eapply IHHc with (S := S9) (Ψa := Ψna);
+      eapply IHHc with (R := S9) (Ψa := Ψna);
         [ reflexivity | exact Hmon | exact Hrig | exact Hwf | exact Hαd
         | exact HΨfull | exact HΨa | exact Hdisj
         | clear - Hftag; fsetdec | exact Hwfq ].
@@ -1187,7 +1187,7 @@ Proof.
       replace (ptyp_to_uskl_syn τ)
          with (subst_bskl_in_uskl (pskl_to_uskl Pa) α (ptyp_to_uskl_syn τ))
            by (apply subst_bskl_in_uskl_fresh_eq; exact Hfr).
-      eapply IHHc with (S := ptyp_to_uskl_syn τ) (Ψa := Ψna);
+      eapply IHHc with (R := ptyp_to_uskl_syn τ) (Ψa := Ψna);
         [ symmetry; apply subst_bskl_in_uskl_fresh_eq; exact Hfr
         | exact Hmon | exact Hrig | exact Hwf | exact Hαd
         | exact HΨfull | exact HΨa | exact Hdisj
@@ -1195,7 +1195,7 @@ Proof.
         | exact Hwfq ].
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ exact H | ].
-    eapply IHHc with (S := S0) (Ψa := Ψna);
+    eapply IHHc with (R := S0) (Ψa := Ψna);
       [ exact HeqS | exact Hmon | exact Hrig | exact Hwf | exact Hαd
       | exact HΨfull | exact HΨa | exact Hdisj | exact Hftag
       | replace (bskl_to_pskl (ptyp_to_bskl_syn τ)) with (ptyp_to_pskl τ)
@@ -1358,12 +1358,12 @@ Qed.
     survives because its target is wf in the EMPTY Δ, hence [X]-free. *)
 Lemma uskl_precise_subst : forall Θ Ψrep R' R,
   uskl_precise Θ Ψrep R' R ->
-  forall X ψs,
+  forall α' ψs,
   lc_uskl ψs ->
   a_wf_aenv Θ ->
-  X `notin` dom Θ ->
+  α' `notin` dom Θ ->
   uskl_precise Θ Ψrep
-    (subst_bskl_in_uskl ψs X R') (subst_bskl_in_uskl ψs X R).
+    (subst_bskl_in_uskl ψs α' R') (subst_bskl_in_uskl ψs α' R).
 Proof.
   intros Θ Ψrep R' R Hup; induction Hup; intros X0 ψs Hlc Hwf HX; simpl.
   - (* refl *)
@@ -1443,17 +1443,17 @@ Qed.
     erasure structure against decorated structure ([all_syn]↔[all_etag],
     [tophole]↔[topholeg]); [tophole_fill] cannot occur (the ⊑-target is an
     inh-painting, never [all_syn]-headed). *)
-Lemma uskl_precise_of_precise : forall Θ Δ Src Tgt,
-  ad_refine_syn Θ Δ Src Tgt ->
+Lemma uskl_precise_of_precise : forall Θ Δ Qsrc Qtgt,
+  ad_refine_syn Θ Δ Qsrc Qtgt ->
   a_wf_aenv Θ ->
   forall Pa ψt Ψt,
-  Src = pskl_to_bskl_inh Pa ->
-  Tgt = pskl_to_bskl_inh (uskl_to_pskl ψt) ->
+  Qsrc = pskl_to_bskl_inh Pa ->
+  Qtgt = pskl_to_bskl_inh (uskl_to_pskl ψt) ->
   is_tskl ψt ->
   d_tags_skl Ψt ψt ->
   uskl_precise Θ Ψt (pskl_to_uskl Pa) ψt.
 Proof.
-  intros Θ Δ Src Tgt Hr; induction Hr;
+  intros Θ Δ Qsrc Qtgt Hr; induction Hr;
     intros Hwf Pa ψt Ψt HSrc HTgt Htsk Hdt.
   - (* unit *)
     destruct Pa; simpl in HSrc; try discriminate HSrc.
@@ -1588,14 +1588,14 @@ Definition consis_split_transport (Θb : aenv) (Ψsup : atoms) (A B : uskl) :=
     Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     Ψn ⨟ Θ' ⊢ₛᵃ B ∼ Q.
 
-Lemma consis_split_transport_arrow : forall Θb Ψsup A1 A2 B1 B2,
-  consis_split_transport Θb Ψsup A1 B1 ->
-  consis_split_transport Θb Ψsup A2 B2 ->
-  consis_split_transport Θb Ψsup (uskl_arrow A1 A2) (uskl_arrow B1 B2).
+Lemma consis_split_transport_arrow : forall Θb Ψsup R1 R2 R1' R2',
+  consis_split_transport Θb Ψsup R1 R1' ->
+  consis_split_transport Θb Ψsup R2 R2' ->
+  consis_split_transport Θb Ψsup (uskl_arrow R1 R2) (uskl_arrow R1' R2').
 Proof.
-  intros Θb Ψsup A1 A2 B1 B2 Ht1 Ht2.
+  intros Θb Ψsup R1 R2 R1' R2' Ht1 Ht2.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_arrow A1 A2) as Ssub eqn:HeqS.
+  remember (uskl_arrow R1 R2) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1625,16 +1625,16 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_split_transport_all_syn : forall Θb Ψsup A0 B0 L0,
+Lemma consis_split_transport_all_syn : forall Θb Ψsup R0 R0' L0,
   (forall X, X `notin` L0 ->
      consis_split_transport Θb Ψsup
-       (open_uskl_wrt_uskl A0 (uskl_var_f X))
-       (open_uskl_wrt_uskl B0 (uskl_var_f X))) ->
-  consis_split_transport Θb Ψsup (uskl_all_syn A0) (uskl_all_syn B0).
+       (open_uskl_wrt_uskl R0 (uskl_var_f X))
+       (open_uskl_wrt_uskl R0' (uskl_var_f X))) ->
+  consis_split_transport Θb Ψsup (uskl_all_syn R0) (uskl_all_syn R0').
 Proof.
-  intros Θb Ψsup A0 B0 L0 Ht.
+  intros Θb Ψsup R0 R0' L0 Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_all_syn A0) as Ssub eqn:HeqS.
+  remember (uskl_all_syn R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1673,17 +1673,17 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_split_transport_all_etag_cong : forall Θb Ψsup ε A0 B0 L0,
+Lemma consis_split_transport_all_etag_cong : forall Θb Ψsup ε R0 R0' L0,
   ε `notin` Ψsup ->
   (forall X, X `notin` L0 ->
      consis_split_transport Θb Ψsup
-       (open_uskl_wrt_uskl A0 (uskl_var_f X))
-       (open_uskl_wrt_uskl B0 (uskl_var_f X))) ->
-  consis_split_transport Θb Ψsup (uskl_all_etag ε A0) (uskl_all_etag ε B0).
+       (open_uskl_wrt_uskl R0 (uskl_var_f X))
+       (open_uskl_wrt_uskl R0' (uskl_var_f X))) ->
+  consis_split_transport Θb Ψsup (uskl_all_etag ε R0) (uskl_all_etag ε R0').
 Proof.
-  intros Θb Ψsup ε A0 B0 L0 Hεout Ht.
+  intros Θb Ψsup ε R0 R0' L0 Hεout Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_all_etag ε A0) as Ssub eqn:HeqS.
+  remember (uskl_all_etag ε R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1728,17 +1728,17 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_split_transport_all_inst : forall Θb Ψsup ε A0 B0 L0,
+Lemma consis_split_transport_all_inst : forall Θb Ψsup ε R0 R0' L0,
   ε `in` Ψsup ->
   (forall X, X `notin` L0 ->
      consis_split_transport Θb Ψsup
-       (open_uskl_wrt_uskl A0 (uskl_var_f X))
-       (open_uskl_wrt_uskl B0 (uskl_var_f X))) ->
-  consis_split_transport Θb Ψsup (uskl_all_etag ε A0) (uskl_all_syn B0).
+       (open_uskl_wrt_uskl R0 (uskl_var_f X))
+       (open_uskl_wrt_uskl R0' (uskl_var_f X))) ->
+  consis_split_transport Θb Ψsup (uskl_all_etag ε R0) (uskl_all_syn R0').
 Proof.
-  intros Θb Ψsup ε A0 B0 L0 Hεin Ht.
+  intros Θb Ψsup ε R0 R0' L0 Hεin Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_all_etag ε A0) as Ssub eqn:HeqS.
+  remember (uskl_all_etag ε R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1780,13 +1780,13 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_split_transport_tophole : forall Θb Ψsup A0 B0,
-  consis_split_transport Θb Ψsup A0 B0 ->
-  consis_split_transport Θb Ψsup (uskl_tophole A0) (uskl_tophole B0).
+Lemma consis_split_transport_tophole : forall Θb Ψsup R0 R0',
+  consis_split_transport Θb Ψsup R0 R0' ->
+  consis_split_transport Θb Ψsup (uskl_tophole R0) (uskl_tophole R0').
 Proof.
-  intros Θb Ψsup A0 B0 Ht.
+  intros Θb Ψsup R0 R0' Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_tophole A0) as Ssub eqn:HeqS.
+  remember (uskl_tophole R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1826,13 +1826,13 @@ Qed.
 
 (** Both dotted (topholeg-vs-topholeg) and mixed (tophole-vs-topholeg)
     ⊤◇-transporters; the DERIVATION's subject is the dotted one. *)
-Lemma consis_split_transport_topholeg : forall Θb Ψsup A0 B0,
-  consis_split_transport Θb Ψsup A0 B0 ->
-  consis_split_transport Θb Ψsup (uskl_topholeg A0) (uskl_topholeg B0).
+Lemma consis_split_transport_topholeg : forall Θb Ψsup R0 R0',
+  consis_split_transport Θb Ψsup R0 R0' ->
+  consis_split_transport Θb Ψsup (uskl_topholeg R0) (uskl_topholeg R0').
 Proof.
-  intros Θb Ψsup A0 B0 Ht.
+  intros Θb Ψsup R0 R0' Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_topholeg A0) as Ssub eqn:HeqS.
+  remember (uskl_topholeg R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1854,13 +1854,13 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_split_transport_keepg : forall Θb Ψsup A0 B0,
-  consis_split_transport Θb Ψsup A0 B0 ->
-  consis_split_transport Θb Ψsup (uskl_topholeg A0) (uskl_tophole B0).
+Lemma consis_split_transport_keepg : forall Θb Ψsup R0 R0',
+  consis_split_transport Θb Ψsup R0 R0' ->
+  consis_split_transport Θb Ψsup (uskl_topholeg R0) (uskl_tophole R0').
 Proof.
-  intros Θb Ψsup A0 B0 Ht.
+  intros Θb Ψsup R0 R0' Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
-  remember (uskl_topholeg A0) as Ssub eqn:HeqS.
+  remember (uskl_topholeg R0) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
@@ -1882,12 +1882,12 @@ Proof.
       | eapply a_wf_aenv_binds_def_wf; eauto ].
 Qed.
 
-Lemma consis_split_transport_flexvar : forall Θb Ψsup α τ B,
+Lemma consis_split_transport_flexvar : forall Θb Ψsup α τ R,
   binds α (abind_flex_mono_def τ) Θb ->
-  consis_split_transport Θb Ψsup (ptyp_to_uskl_syn τ) B ->
-  consis_split_transport Θb Ψsup (uskl_var_f α) B.
+  consis_split_transport Θb Ψsup (ptyp_to_uskl_syn τ) R ->
+  consis_split_transport Θb Ψsup (uskl_var_f α) R.
 Proof.
-  intros Θb Ψsup α τ B Hb Ht.
+  intros Θb Ψsup α τ R Hb Ht.
   intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
   remember (uskl_var_f α) as Ssub eqn:HeqS.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.

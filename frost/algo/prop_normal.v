@@ -101,11 +101,11 @@ Proof.
   destruct b; simpl; clear - IH; fsetdec.
 Qed.
 
-Lemma aenv_msubst_notin : forall Θ X,
-  X `notin` dom Θ ->
-  msubst_lookup (aenv_msubst Θ) X = ptyp_var_f X.
+Lemma aenv_msubst_notin : forall Θ α,
+  α `notin` dom Θ ->
+  msubst_lookup (aenv_msubst Θ) α = ptyp_var_f α.
 Proof.
-  intros Θ X HX. apply msubst_lookup_notin.
+  intros Θ α HX. apply msubst_lookup_notin.
   pose proof (dom_aenv_msubst Θ). clear - HX H. fsetdec.
 Qed.
 
@@ -113,23 +113,23 @@ Qed.
 (*  L2 (the workhorse) : entries ABOVE a suffix do not affect it           *)
 (* --------------------------------------------------------------------- *)
 
-Lemma aenv_msubst_lookup_app : forall Θp Θs X,
+Lemma aenv_msubst_lookup_app : forall Θp Θs α,
   uniq (Θp ++ Θs) ->
-  X `in` dom Θs ->
-  msubst_lookup (aenv_msubst (Θp ++ Θs)) X = msubst_lookup (aenv_msubst Θs) X.
+  α `in` dom Θs ->
+  msubst_lookup (aenv_msubst (Θp ++ Θs)) α = msubst_lookup (aenv_msubst Θs) α.
 Proof.
   intros Θp; induction Θp as [ | [Y b] Θp' IH ];
-    intros Θs X Huniq HX; simpl; [ reflexivity | ].
+    intros Θs α Huniq HX; simpl; [ reflexivity | ].
   simpl in Huniq.
   assert (HnotinY : Y `notin` dom (Θp' ++ Θs))
     by (inversion Huniq; subst; assumption).
   assert (Huniq' : uniq (Θp' ++ Θs)) by (inversion Huniq; subst; assumption).
-  assert (HYne : X <> Y).
+  assert (HYne : α <> Y).
   { intros Heq. subst Y. apply HnotinY.
     rewrite dom_app. clear - HX. fsetdec. }
   destruct b; simpl;
     try (apply IH; assumption);
-    (destruct (X == Y) as [Heq | Hne];
+    (destruct (α == Y) as [Heq | Hne];
      [ exfalso; apply HYne; exact Heq | apply IH; assumption ]).
 Qed.
 
@@ -145,11 +145,11 @@ Definition msubst_lc (θ : metasubst) : Prop :=
 
 Lemma msubst_ptyp_open_rec_lc : forall θ,
   msubst_lc θ ->
-  forall A V k,
-  msubst_ptyp θ (open_ptyp_wrt_ptyp_rec k V A)
-  = open_ptyp_wrt_ptyp_rec k (msubst_ptyp θ V) (msubst_ptyp θ A).
+  forall A A' k,
+  msubst_ptyp θ (open_ptyp_wrt_ptyp_rec k A' A)
+  = open_ptyp_wrt_ptyp_rec k (msubst_ptyp θ A') (msubst_ptyp θ A).
 Proof.
-  intros θ Hlc A; induction A; intros V k; simpl; f_equal; eauto.
+  intros θ Hlc A; induction A; intros A' k; simpl; f_equal; eauto.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
   - symmetry.
     apply open_ptyp_wrt_ptyp_rec_degree_ptyp_wrt_ptyp.
@@ -158,14 +158,14 @@ Proof.
     apply Hlc.
 Qed.
 
-Lemma msubst_ptyp_open_lc : forall θ A X,
+Lemma msubst_ptyp_open_lc : forall θ A α,
   msubst_lc θ ->
-  X `notin` dom θ ->
-  msubst_ptyp θ (open_ptyp_wrt_ptyp A (ptyp_var_f X))
-  = open_ptyp_wrt_ptyp (msubst_ptyp θ A) (ptyp_var_f X).
+  α `notin` dom θ ->
+  msubst_ptyp θ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+  = open_ptyp_wrt_ptyp (msubst_ptyp θ A) (ptyp_var_f α).
 Proof.
-  intros θ A X Hlc HX. unfold open_ptyp_wrt_ptyp.
-  rewrite (msubst_ptyp_open_rec_lc Hlc A (ptyp_var_f X) 0).
+  intros θ A α Hlc HX. unfold open_ptyp_wrt_ptyp.
+  rewrite (msubst_ptyp_open_rec_lc Hlc A (ptyp_var_f α) 0).
   simpl. rewrite msubst_lookup_notin by exact HX. reflexivity.
 Qed.
 
@@ -259,12 +259,12 @@ Qed.
 (** THE CRUX.  [≡ᵗ] is not size-preserving, but it IS [⇓]-preserving: every one
     of its rules is either a congruence, an equivalence closure step, or the
     definition lookup — and the lookup is exactly [aenv_msubst_lookup_def]. *)
-Lemma a_tyequiv_downarrow : forall Θ A B,
+Lemma a_tyequiv_downarrow : forall Θ A A',
   a_wf_aenv Θ ->
-  Θ ⊢ A ≡ᵗ B ->
-  ⇓ᵗ[Θ] A = ⇓ᵗ[Θ] B.
+  Θ ⊢ A ≡ᵗ A' ->
+  ⇓ᵗ[Θ] A = ⇓ᵗ[Θ] A'.
 Proof.
-  intros Θ A B Hwf Heq; induction Heq.
+  intros Θ A A' Hwf Heq; induction Heq.
   - reflexivity.
   - symmetry; auto.
   - transitivity (⇓ᵗ[Θ] B); auto.
@@ -283,12 +283,12 @@ Proof.
 Qed.
 
 (** The SIZE COROLLARY the measure consumes. *)
-Corollary a_tyequiv_downarrow_size : forall Θ A B,
+Corollary a_tyequiv_downarrow_size : forall Θ A A',
   a_wf_aenv Θ ->
-  Θ ⊢ A ≡ᵗ B ->
-  size_ptyp (⇓ᵗ[Θ] A) = size_ptyp (⇓ᵗ[Θ] B).
+  Θ ⊢ A ≡ᵗ A' ->
+  size_ptyp (⇓ᵗ[Θ] A) = size_ptyp (⇓ᵗ[Θ] A').
 Proof.
-  intros Θ A B Hwf Heq. rewrite (a_tyequiv_downarrow Hwf Heq). reflexivity.
+  intros Θ A A' Hwf Heq. rewrite (a_tyequiv_downarrow Hwf Heq). reflexivity.
 Qed.
 
 (* ===================================================================== *)
@@ -352,12 +352,12 @@ Proof.
   destruct (γ == γ) as [_ | Hc]; [ reflexivity | congruence ].
 Qed.
 
-Lemma msubst_lookup_cons_neq : forall (X γ : atom) τ0 θ,
-  X <> γ ->
-  msubst_lookup ((γ, τ0) :: θ) X = msubst_lookup θ X.
+Lemma msubst_lookup_cons_neq : forall (α γ : atom) τ0 θ,
+  α <> γ ->
+  msubst_lookup ((γ, τ0) :: θ) α = msubst_lookup θ α.
 Proof.
-  intros X γ τ0 θ Hne. simpl.
-  destruct (X == γ) as [Hc | _]; [ congruence | reflexivity ].
+  intros α γ τ0 θ Hne. simpl.
+  destruct (α == γ) as [Hc | _]; [ congruence | reflexivity ].
 Qed.
 
 (** Substituting a definition and then applying the tail metasubstitution is the
@@ -504,15 +504,15 @@ Qed.
 Lemma a_inc_equiv_lookup : forall Θ0 θ1 θ2 Θ,
   a_inc_equiv Θ0 θ1 θ2 Θ ->
   a_wf_aenv Θ0 ->
-  forall X, a_binds_tvar X Θ0 ->
-  Θ ⊢ (msubst_lookup θ1 X) ≡ᵗ (msubst_lookup θ2 X).
+  forall α', a_binds_tvar α' Θ0 ->
+  Θ ⊢ (msubst_lookup θ1 α') ≡ᵗ (msubst_lookup θ2 α').
 Proof.
-  intros Θ0 θ1 θ2 Θ Hie; induction Hie; intros Hwf X Hbt.
+  intros Θ0 θ1 θ2 Θ Hie; induction Hie; intros Hwf α' Hbt.
   - (* empty *)
     destruct Hbt as [Hb | [Hb | [τ Hb]]]; inversion Hb.
   - (* flex α *)
     assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
-    simpl. destruct (X == α) as [-> | Hne];
+    simpl. destruct (α' == α) as [-> | Hne];
       [ assumption | ].
     apply IHHie; [ exact Hwf' | ].
     destruct Hbt as [Hb | [Hb | [τ Hb]]];
@@ -521,7 +521,7 @@ Proof.
       [ left | right; left | right; right; exists τ ]; exact Hb'.
   - (* flex_def α := τ *)
     assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
-    simpl. destruct (X == α) as [-> | Hne];
+    simpl. destruct (α' == α) as [-> | Hne];
       [ assumption | ].
     apply IHHie; [ exact Hwf' | ].
     destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
@@ -530,7 +530,7 @@ Proof.
       [ left | right; left | right; right; exists τ0 ]; exact Hb'.
   - (* term variable, type binding : θ unchanged, target grows *)
     assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
-    assert (Hbt' : a_binds_tvar X Θ).
+    assert (Hbt' : a_binds_tvar α' Θ).
     { destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
         try discriminate;
@@ -541,7 +541,7 @@ Proof.
       | apply IHHie; assumption ].
   - (* term variable, skeleton binding *)
     assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
-    assert (Hbt' : a_binds_tvar X Θ).
+    assert (Hbt' : a_binds_tvar α' Θ).
     { destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
         try discriminate;
@@ -554,11 +554,11 @@ Proof.
     assert (Hnd : α `notin` dom Θ /\ a_wf_aenv Θ) by (inversion Hwf; auto).
     destruct Hnd as [Hnd Hwf'].
     destruct (a_inc_equiv_dom Hie) as [Hd1 Hd2].
-    destruct (X == α) as [-> | Hne].
+    destruct (α' == α) as [-> | Hne].
     + rewrite !msubst_lookup_notin
         by (first [ clear - Hnd Hd1; fsetdec | clear - Hnd Hd2; fsetdec ]).
       apply a_tyequiv__refl. constructor.
-    + assert (Hbt' : a_binds_tvar X Θ).
+    + assert (Hbt' : a_binds_tvar α' Θ).
       { destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
           destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq ?] | Hb'];
           try (exfalso; apply Hne; exact Heq);

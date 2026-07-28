@@ -25,9 +25,9 @@ Set Implicit Arguments.
 (*  Plain skeletons as (untagged) unresolved skeletons                    *)
 (* ===================================================================== *)
 
-Lemma pskl_to_uskl_open_rec : forall P Q k,
-  pskl_to_uskl (open_pskl_wrt_pskl_rec k Q P)
-  = open_uskl_wrt_uskl_rec k (pskl_to_uskl Q) (pskl_to_uskl P).
+Lemma pskl_to_uskl_open_rec : forall P P' k,
+  pskl_to_uskl (open_pskl_wrt_pskl_rec k P' P)
+  = open_uskl_wrt_uskl_rec k (pskl_to_uskl P') (pskl_to_uskl P).
 Proof.
   induction P; intros; simpl; f_equal; auto.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; reflexivity.
@@ -41,9 +41,9 @@ Proof.
     apply pskl_to_uskl_open_rec.
 Qed.
 
-Lemma pskl_to_uskl_open_var : forall P X,
-  pskl_to_uskl (open_pskl_wrt_pskl P (pskl_var_f X))
-  = open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f X).
+Lemma pskl_to_uskl_open_var : forall P α,
+  pskl_to_uskl (open_pskl_wrt_pskl P (pskl_var_f α))
+  = open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α).
 Proof. intros; apply pskl_to_uskl_open. Qed.
 
 (** Erasure is a retraction of the embedding. *)
@@ -76,10 +76,10 @@ Qed.
    goal's [Ψ = ∅] literal).  [a_consis]'s own premises all share the root's
    [F], and the decorated rules store the paper-shaped [F = ∅] premises, so
    Leibniz [F = empty] transports through every case. *)
-Lemma a_consis_decorate_gen : forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+Lemma a_consis_decorate_gen : forall F Δ1 Δ2 Θ0 P0 P P' Θ1,
+  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
   F = empty ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ Q ⊣ Θ1.
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ P' ⊣ Θ1.
 Proof.
   intros * Hc; induction Hc; intros HF; subst; simpl.
   - (* Ghost *)
@@ -121,9 +121,9 @@ Proof.
 Qed.
 
 (** The paper-shaped instance (no used names at the root). *)
-Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ Q ⊣ Θ1.
+Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
+  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ P' ⊣ Θ1.
 Proof.
   intros * Hc; eapply a_consis_decorate_gen; eauto.
 Qed.
