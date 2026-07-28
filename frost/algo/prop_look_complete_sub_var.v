@@ -1040,6 +1040,191 @@ Qed.
     themselves — with the same tag BOUND, since a binder the guess does not
     use contributes nothing. *)
 
+(** ρ preserves decoratedness: images are tags-sorted and the congruences
+    keep the shape. *)
+Lemma uskl_rho_is_tskl : forall NM Θ Δρ Ψρ R' R,
+  uskl_rho NM Θ Δρ Ψρ R' R ->
+  is_tskl R ->
+  is_tskl R'.
+Proof.
+  intros NM Θ Δρ Ψρ R' R H; induction H; intros Ht.
+  - exact Ht.
+  - (* leaf: the image is tags-sorted, hence decorated *)
+    inversion H0; assumption.
+  - inversion Ht; subst; apply is_tskl__arrow; auto.
+  - (* ∀ (untagged): not a decorated shape *) inversion Ht.
+  - (* ∀^ε *)
+    inversion Ht; subst.
+    match goal with Hb : forall α, α `notin` ?L1 -> is_tskl _ |- _ =>
+      apply is_tskl__all_etag with (L := L `union` L1); intros α Hα;
+      apply H0; [ clear - Hα; solve_notin | apply Hb; clear - Hα; solve_notin ]
+    end.
+  - (* ⊤◇ : not a decorated shape *) inversion Ht.
+  - inversion Ht; subst; apply is_tskl__topholeg; auto.
+Qed.
+
+(** THE ρ-EXTENSION.  Sub-ForallL's [ρ_b = ρ ∘ [ψ_b/β]] in full: recurse on
+    the ρ-derivation, use the [ρ = id] lemma at its reflexive nodes, keep
+    the leaves (their images are Θ-scoped, hence β-free) and the
+    congruences.  The binder rows go through the same way as there — one
+    fresh instance, renamed into the family. *)
+Lemma uskl_rho_subst : forall NM Θ Δρ Ψρ R' R,
+  uskl_rho NM Θ Δρ Ψρ R' R ->
+  forall β ψb Ψb,
+  a_tags_sort NM Ψb ψb ->
+  Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψb ⌋ˢ ->
+  lc_uskl ψb ->
+  β `notin` dom Θ ->
+  β `notin` Δρ ->
+  exists Ψρ',
+    Ψρ' [<=] Ψρ `union` Ψb /\
+    Ψρ [<=] Ψρ' /\
+    (β `in` ftvar_in_uskl R -> Ψb [<=] Ψρ') /\
+    uskl_rho NM Θ (add β Δρ) Ψρ' (subst_bskl_in_uskl ψb β R') R.
+Proof.
+  intros NM Θ Δρ Ψρ R' R H; induction H;
+    intros β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ.
+  - (* refl : the ρ = id lemma *)
+    destruct (@uskl_rho_subst_refl NM Θ Δρ R β ψb Ψb H Htags Hwfb Hlcb)
+      as (Ψ1 & Hs1 & Hocc1 & Hr1).
+    exists Ψ1; repeat split;
+      [ clear - Hs1; fsetdec | clear - H0; fsetdec | exact Hocc1 | exact Hr1 ].
+  - (* leaf : the image is Θ-scoped, so β does not occur in it *)
+    assert (Hfr : β `notin` ftvar_in_uskl ψ'').
+    { pose proof (a_wf_pskl_ftv_dom H1) as Hd.
+      rewrite uskl_to_pskl_ftv in Hd. clear - Hd HβΘ; fsetdec. }
+    rewrite (@subst_bskl_in_uskl_fresh_eq ψ'' ψb β Hfr).
+    exists Ψρ; repeat split;
+      [ clear; fsetdec | clear; fsetdec
+      | (* β is not a ρ-replaced variable, so it is not THIS one *)
+        intros Hin; exfalso; cbn [ftvar_in_uskl] in Hin;
+        assert (Heq : β = α) by (clear - Hin; fsetdec); subst;
+        contradiction
+      | eapply urho__leaf;
+          [ clear - H; fsetdec | exact H0 | exact H1 | exact H2 ] ].
+  - (* arrow *)
+    destruct (IHuskl_rho1 β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
+      as (Ψa1 & Hs1 & Hm1 & Hocc1 & Hr1).
+    destruct (IHuskl_rho2 β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
+      as (Ψa2 & Hs2 & Hm2 & Hocc2 & Hr2).
+    exists (Ψa1 `union` Ψa2); repeat split.
+    + clear - Hs1 Hs2 H1; fsetdec.
+    + clear - Hm1 Hm2 H1; fsetdec.
+    + intros Hin; cbn [ftvar_in_uskl] in Hin.
+      destruct (AtomSetProperties.In_dec β (ftvar_in_uskl R1)) as [Hi | Hi];
+        [ pose proof (Hocc1 Hi); clear - H2; fsetdec
+        | assert (Hi2 : β `in` ftvar_in_uskl R2) by (clear - Hin Hi; fsetdec);
+          pose proof (Hocc2 Hi2); clear - H2; fsetdec ].
+    + cbn [subst_bskl_in_uskl].
+      eapply urho__arrow; [ exact Hr1 | exact Hr2 | clear; fsetdec ].
+  - (* ∀ : one fresh instance, renamed into the family *)
+    pick fresh α0 for (L `union` dom Θ `union` Δρ `union` singleton β
+                         `union` ftvar_in_uskl R `union` ftvar_in_uskl R'
+                         `union` ftvar_in_uskl ψb).
+    destruct (H0 α0 ltac:(clear - Fr; solve_notin) β ψb Ψb
+                Htags Hwfb Hlcb HβΘ HβΔ) as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
+    exists Ψ1; repeat split.
+    + exact Hs1.
+    + exact Hm1.
+    + intros Hin. apply Hocc1.
+      pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                    (uskl_var_f α0)) as Hlo.
+      cbn [ftvar_in_uskl] in Hin. clear - Hin Hlo; fsetdec.
+    + cbn [subst_bskl_in_uskl].
+      apply urho__all_syn with (L := L `union` dom Θ `union` Δρ
+                                       `union` singleton α0
+                                       `union` singleton β
+                                       `union` ftvar_in_uskl R
+                                       `union` ftvar_in_uskl R'
+                                       `union` ftvar_in_uskl ψb);
+        intros α Hα.
+      assert (Hα0Θ : α0 `notin` dom Θ) by (clear - Fr; solve_notin).
+      assert (Hα0Δ : α0 `notin` add β Δρ)
+        by (assert (Hd : α0 `notin` Δρ) by (clear - Fr; solve_notin);
+            assert (Hb : α0 <> β)
+              by (apply notin_singleton_1; clear - Fr; solve_notin);
+            clear - Hd Hb; fsetdec).
+      pose proof (uskl_rho_rename Hr1 (α1 := α0) α Hα0Θ Hα0Δ) as Hren.
+      assert (Hα0ψb : α0 `notin` ftvar_in_uskl ψb)
+        by (clear - Fr; solve_notin).
+      assert (Hα0β : α0 <> β)
+        by (apply notin_singleton_1; clear - Fr; solve_notin).
+      assert (Hβα : β <> α)
+        by (apply not_eq_sym; apply notin_singleton_1;
+            clear - Hα; solve_notin).
+      rewrite (@subst_bskl_in_uskl_subst_bskl_in_uskl
+                 (open_uskl_wrt_uskl R' (uskl_var_f α0)) (uskl_var_f α) ψb
+                 β α0
+                 ltac:(cbn [ftvar_in_uskl]; clear - Hβα; fsetdec)
+                 ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
+      rewrite (@subst_bskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
+        in Hren.
+      rewrite <- (@subst_bskl_in_uskl_intro α0 R' (uskl_var_f α)
+                    ltac:(clear - Fr; solve_notin)) in Hren.
+      rewrite <- (@subst_bskl_in_uskl_intro α0 R (uskl_var_f α)
+                    ltac:(clear - Fr; solve_notin)) in Hren.
+      rewrite (@subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
+      exact Hren.
+  - (* ∀^ε : the same, with the tag carried through *)
+    pick fresh α0 for (L `union` dom Θ `union` Δρ `union` singleton β
+                         `union` ftvar_in_uskl R `union` ftvar_in_uskl R'
+                         `union` ftvar_in_uskl ψb).
+    destruct (H0 α0 ltac:(clear - Fr; solve_notin) β ψb Ψb
+                Htags Hwfb Hlcb HβΘ HβΔ) as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
+    exists Ψ1; repeat split.
+    + exact Hs1.
+    + exact Hm1.
+    + intros Hin. apply Hocc1.
+      pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                    (uskl_var_f α0)) as Hlo.
+      cbn [ftvar_in_uskl] in Hin. clear - Hin Hlo; fsetdec.
+    + cbn [subst_bskl_in_uskl].
+      apply urho__all_etag with (ε := ε)
+        (L := L `union` dom Θ `union` Δρ `union` singleton α0
+                `union` singleton β `union` ftvar_in_uskl R
+                `union` ftvar_in_uskl R' `union` ftvar_in_uskl ψb);
+        intros α Hα.
+      assert (Hα0Θ : α0 `notin` dom Θ) by (clear - Fr; solve_notin).
+      assert (Hα0Δ : α0 `notin` add β Δρ)
+        by (assert (Hd : α0 `notin` Δρ) by (clear - Fr; solve_notin);
+            assert (Hb : α0 <> β)
+              by (apply notin_singleton_1; clear - Fr; solve_notin);
+            clear - Hd Hb; fsetdec).
+      pose proof (uskl_rho_rename Hr1 (α1 := α0) α Hα0Θ Hα0Δ) as Hren.
+      assert (Hα0ψb : α0 `notin` ftvar_in_uskl ψb)
+        by (clear - Fr; solve_notin).
+      assert (Hα0β : α0 <> β)
+        by (apply notin_singleton_1; clear - Fr; solve_notin).
+      assert (Hβα : β <> α)
+        by (apply not_eq_sym; apply notin_singleton_1;
+            clear - Hα; solve_notin).
+      rewrite (@subst_bskl_in_uskl_subst_bskl_in_uskl
+                 (open_uskl_wrt_uskl R' (uskl_var_f α0)) (uskl_var_f α) ψb
+                 β α0
+                 ltac:(cbn [ftvar_in_uskl]; clear - Hβα; fsetdec)
+                 ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
+      rewrite (@subst_bskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
+        in Hren.
+      rewrite <- (@subst_bskl_in_uskl_intro α0 R' (uskl_var_f α)
+                    ltac:(clear - Fr; solve_notin)) in Hren.
+      rewrite <- (@subst_bskl_in_uskl_intro α0 R (uskl_var_f α)
+                    ltac:(clear - Fr; solve_notin)) in Hren.
+      rewrite (@subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
+      exact Hren.
+  - (* ⊤◇ *)
+    destruct (IHuskl_rho β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
+      as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
+    exists Ψ1; repeat split;
+      [ exact Hs1 | exact Hm1 | exact Hocc1
+      | cbn [subst_bskl_in_uskl]; apply urho__tophole; exact Hr1 ].
+  - (* ⊤̇◇ *)
+    destruct (IHuskl_rho β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
+      as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
+    exists Ψ1; repeat split;
+      [ exact Hs1 | exact Hm1 | exact Hocc1
+      | cbn [subst_bskl_in_uskl]; apply urho__topholeg; exact Hr1 ].
+Qed.
+
 (* ===================================================================== *)
 (*  [flex_apart] ALONG THE WALK                                           *)
 (* ===================================================================== *)
@@ -1403,13 +1588,32 @@ Proof.
           | ]
         end.
         (* the ⊤◇-body IS a flexible: SolEq-Var keeps IT instead, so the
-           output differs from P6-Cv's and the precision must come from the
-           INPUT premise — which needs Ψa = ∅, available by the
-           flexible-payload argument (θP0 mono ⇒ Q mono-ish ⇒ the
-           consistency solves no tag: [ad_refine_mono_paint_rhs_monoish] +
-           [ad_pat_consis_monoish_counterpart], exactly P6-Cv's own FLEX
-           row) together with [is_tskl]-preservation along [uskl_rho]. *)
-        admit.
+           output is [⊤◇Pi'] and its precision is the INPUT premise itself
+           — which needs Ψa = ∅.  That holds by the flexible-payload
+           argument, exactly as in P6-Cv's own FLEX row: θP0 is a MONOTYPE,
+           so the refinement makes Q mono-ish and the consistency then
+           solves no tag at all. *)
+        destruct Hf' as (α' & -> & Hflx').
+        assert (Hml : mono_ptyp (msubst_lookup θ α))
+          by (eapply a_inc_lookup_mono; exact Hθ).
+        assert (HΨe : Ψ [=] empty).
+        { cbn [msubst_pskl] in Hrefine.
+          rewrite (ptyp_to_bskl_inh_syn_eq Hml) in Hrefine.
+          assert (Hmi : bskl_monoish (pskl_to_bskl_inh B))
+            by (eapply ad_refine_mono_paint_rhs_monoish;
+                  [ exact HwfΘ | exact Hrefine | reflexivity | exact Hml ]).
+          assert (Hts : is_tskl T)
+            by (eapply uskl_rho_is_tskl;
+                  [ exact Hrho | inversion Htags; assumption ]).
+          destruct (ad_pat_consis_monoish_counterpart H1 HwfΘ Hts Hmi)
+            as (HΨ0 & _); exact HΨ0. }
+        assert (HΨae : Ψa [=] empty) by (clear - HΨs2 HΨe; fsetdec).
+        exists (pskl_tophole (pskl_var_f α')); split.
+        -- apply a_solve_sub__univ_ghost_l.
+           apply a_solve_sub__check;
+             [ apply guarded_pskl__var | exact HgP0 | apply a_solve_eq__var ].
+        -- eapply ad_partial_precise_psi_cong;
+             [ exact Hpre | clear - HΨae; fsetdec ].
       * (* SolEq-GhostGuarded : the body's equality solve lifts directly *)
         match goal with Hbody : Θ0 ⊢ₑ Pi' ∼ _ ⤳ ?Pb |- _ =>
           exists (pskl_tophole Pb); split;
@@ -1849,19 +2053,19 @@ Proof.
         solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
               | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hshield
               | exact Hpre ].
-Admitted.  (* TODO[P6-Sv]: 10 of 12 cases are CLOSED (Check up to ONE
-    sub-row); 2 remain — Arrow (delegates to P6-Cv, like Check) and
-    ForallL-tagged (the ρ-EXTENSION case: it needs a [uskl_rho] substitution
-    lemma, since the guess's binder becomes a ρ-replaced variable).
+Admitted.  (* TODO[P6-Sv]: 11 of 12 cases are CLOSED; only ARROW remains,
+    plus ForallL-tagged.  Both now have ALL their infrastructure:
 
-    Check is done except its Pi = ⊤◇Pi' / SolEq-FlexR / flexible-body
-    sub-row — the one the paper waves through with "by congruence of
-    constraint solving, we ASSUME refb is derived by SolEq-GhostGuarded"
-    (subtyping-proofs.tex:1810, hazard H3).  Mechanically P6-Cv returns
-    whichever derivation it built, so both must be handled; only the
-    sub-row where the ⊤◇-body is ITSELF a flexible is open, and the note
-    there records what closes it (Ψa = ∅ by the flexible-payload argument,
-    plus [is_tskl]-preservation along [uskl_rho]).
+    - Arrow delegates its LEFT premise to P6-Cv exactly as Check does and
+      its RIGHT one to the IH; what it adds is [flex_shield_arrow_inv], the
+      refinement/skmod inversion giving P0 = P01→P02, and the tag split
+      Ψa_i := Ψa ∩ Ψ'_i (with [ad_partial_precise_tags_sub] giving
+      Ψi_i ⊆ Ψ'_i and [d_tags_skl__arrow]'s ⊎ giving the converse).  Its Pi
+      grid is arrow / □ (SolS-GhostLF) / ∀ (impossible) / ⊤◇ / flexible.
+    - ForallL-tagged now has [uskl_rho_subst] — the ρ-extension the paper
+      writes as ρ_b = ρ ∘ [ψ_b/β] — plus [flex_shield_descend_r] and the
+      [fastep_all_r] prepend.  Its Pi grid is ∀ (the paper's only row) / ⊤◇
+      / □, the last two exactly as in UnivGhostLG.
 
     ForallR is closed and is the template for ForallL: [skmod{TY}] makes P0
     a TYPE, so the inherited-∀ target forces P0 = ∀.P0' (every other type
