@@ -9,7 +9,8 @@ counter-example) stops the work and is flagged to the user.
 Each entry: status ∈ {GAP (confirmed proof-step problem, repaired),
 PROSE-COMPLETION (figure rule completed from the paper's own prose),
 WATCH (tension spotted, not yet confirmed to matter), FALSE (statement
-refuted — one so far, see below)}.
+refuted by a machine-checked counterexample — see the entries below, most
+recently P6-Sv at the end of this file)}.
 
 > **See also [WF-SIDE-CONDITIONS.md](WF-SIDE-CONDITIONS.md).**  The paper
 > systematically states well-formedness (and sometimes a further judgment) as an
@@ -998,3 +999,254 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
   (3) a positional hole-apartness premise (flex_apart-style) — 
   dispreferred, since call sites cannot derive it across the binder
   descent from cleanliness alone.
+
+## FALSE (machine-checked, 2026-07-28) — `lemma:complete-constraint-collection-solving-var` (P6-Sv) is FALSE: its own ForallL case MANUFACTURES the configuration that the 2026-07-25 "unreachable" resolution excludes
+
+- Where: subtyping-proofs.tex:1696 (`lemma:complete-constraint-collection-
+  solving-var`, the SUBTYPING twin of the consistency lemma at
+  consistency-proofs.tex:1181).  Mech: the counterexample is
+  `frost/algo/cex/cex_p6sv_forall_flex.v`
+  (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free).
+- **Status: FALSE as an isolated statement, and — unlike the 2026-07-25
+  entry above — the standing reachability argument does NOT cover it.**
+  Work on P6-Sv is STOPPED pending a decision by the paper's authors.
+
+### The witness (ρ is the IDENTITY — this is not a ρ-encoding artefact)
+
+```
+Θ₀ = α̂            Θ = α̂ := ⟨⟩→⟨⟩        θ = [α̂ ↦ ⟨⟩→⟨⟩]
+N = TY  M = TC    Pi = ∀β. β→β          P₀ = α̂
+ψa = ψsub = ∀^ε β. β→β                  Q  = inh{⟨⟩→⟨⟩}
+Ψ' = Ψi = {ε}     Ψa = Ψsub = Ψρ = ∅    Δ = Δρ = ∅
+```
+
+Every premise of the paper's statement holds — and so does every premise of
+the mech's CLOSED consistency twin `a_solve_eq_complete_var`, including the
+mech-only `flex_apart` freshening invariant (vacuous at `Δρ = ∅`), the
+subject well-formedness premise that made P6-Cs true, and the subtyping-side
+tag EQUATION `Ψi , Ψa = Ψ'`.  The subtyping premise is `Sub-ForallL`
+instantiating `β := ⟨⟩`, then `Sub-Check`; the refinement is a mono paint
+refining itself; the precision is `P-Forall` over the identity.
+
+The algorithm is then FORCED: a `∀` is not `guarded`, so the only solve rule
+with a `∀` input skeleton is `SolS-ForallL`; its body `β→β ≼[TC] α̂` can only
+go `SolS-Check` + `SolE-FlexR`, giving `P_a = ∀β. α̂`.  The precision
+obligation `θ_a(∀β.α̂) ⊑ᵖ ∀^ε β.(β→β)` reduces to `⟨⟩ ⊑ᵖ β` — no rule.  The
+refutation holds for **every** output metasubstitution `θ_a : Θ₀ ⊑ Θ` (the
+file proves the general fact `mono_paint_ppre_target_ftv`: a mono-paint
+subject is never precise to a target mentioning a variable outside Θ), so it
+is not an artefact of the mech's `θ_a := θ` strengthening.
+
+### Why the 2026-07-25 resolution does not apply
+
+That resolution (entry above) rules the bad configuration — a raw Θ₀-flexible
+payload facing a ρ-substituted part of `ψa` — UNREACHABLE, because `LE-FlexR`
+freshens a flexible counterpart at a compound subject.  Two independent gaps
+at the subtyping level:
+
+1. **ρ is created by the lemma's own induction, not by constraint
+   collection.**  The paper's ForallL case sets `ρ_b = ρ ∘ [ψ_b/β]` starting
+   from `ρ = id`; so the recursive call sees `ψa = β→β` with `β` ρ-substituted
+   — i.e. the induction manufactures the "unreachable" premise set out of
+   innocent inputs.  Any `flex_apart`-style invariant stated at the CURRENT
+   `ψa` is destroyed by that descent (`Δρ := Δρ ∪ {β}` while `P₀` is not
+   decomposed), so it cannot be maintained.
+2. **The raw flexible payload does not come through `LE-FlexR` at all.**  It
+   comes from `LS-Var` — and `a_looksub` (fig:constraint-collection) has NO
+   FlexR rule, so nothing freshens `α̂` on the subtyping route.
+3. The paper's own side condition ("for every rigid variable in `ψa`
+   substituted by ρ, `P_i` has the same rigid variable in the same position",
+   :1730) is SATISFIED all the way down: at the recursive call `ψa = β→β`,
+   `ρ_b` substitutes `β`, and `P_i = β→β` does have `β` in exactly those
+   positions.
+
+### What a repair has to do (for the authors)
+
+The failing configuration is "the accumulated input skeleton is a `∀` while
+the constraint payload is a raw flexible whose θ-image is fixed before the
+`∀`'s binder exists".  Either
+
+- (a) exclude it by an invariant that is stable under the ForallL descent —
+  it must forbid a raw Θ₀-flexible payload facing ANY tagged `ψa` (not just a
+  Δρ-dirty one), since a tagged `ψa` will become Δρ-dirty one ForallL step
+  later — together with a reachability argument covering the `LS-Var` route;
+  or
+- (b) accept that the ALGORITHM is incomplete here and change it (e.g. freshen
+  the flexible payload when solving under a `∀` binder, mirroring what
+  `LE-FlexR` does at arrow nodes); or
+- (c) restrict the declarative guesses `ψa` that the completeness statement
+  quantifies over.
+
+Nothing in the mechanization is retracted by this entry: P5, P6-Cv and P6-Cs
+are unaffected (they have no ForallL, so ρ never grows there).
+
+### Addendum (2026-07-28, after re-reading paper + implementation): root cause is `SolE-FlexR`; proposed fix = keep the non-flexible side
+
+Verified against all three witnesses:
+
+* **Paper** (fig:constraint-solving, full-algo-spec.tex:1371): `SolE-FlexR`
+  is `nonflex{P} ⊢ solveeq{P}{α̂}{α̂}` — context-free, keeps the flexible,
+  discards `P`.  The consistency -var proof's Arrow case says "*We assume
+  P₀ = P₀,₁→P₀,₂*" (consistency-proofs.tex:1421) — the flexible-P₀ subcase
+  is silently absent, and the leaf cases dispatch it with one sentence
+  ("use SolEqFlexL or SolEqFlexR", :1272) with no precision argument.  The
+  missing subcase is exactly where the subtyping ForallL descent lands.
+* **Implementation** (type.ml): `solve_eq`'s `| _, (MFlex _ as alpha) ->
+  end_rule alpha` and `solve_sub`'s ForallL/Check chain reproduce the mech
+  behaviour line-for-line; `Pa = ∀β.α̂` on the witness.  The `(β,γ)` pairs
+  LE-FlexR puts into ξ are consumed by `look` only to propagate the KIND
+  (`BMFlex (γ, None, k)`) — no link constraint — so the mech's unlinked
+  fresh flexible is a faithful encoding.  `LS-Var` passes the raw payload;
+  the sub route has no freshening anywhere.
+* **Mech**: `cex_p6sv_forall_flex.v` (Qed).
+
+**Why the failure is forced.**  `SolE-FlexR` is the ONLY solve rule in
+which the payload REPLACES a structured subject (`SolE-Var`/`FlexL`/
+`VacuousR` all keep the subject; every other rule is a congruence or a
+ghost step).  Under a `SolS-ForallL` descent the subject's body mentions
+the locally-opened rigid `β`; replacing it by `α̂` commits the skeleton to
+"whatever monotype α̂ becomes", and no future solution of `α̂` can mention
+`β` (it is bound outside `α̂`'s scope) — the accumulated information
+`β→β`, which an earlier eq-constraint had established and which the
+declarative `ψa` retains, is unrecoverable.  Freshening the payload (the
+LE-FlexR treatment) does NOT help: a fresh `γ̂ ∈ Ξ` is equally bound
+outside the binder.  The eq route never hits this because CONSISTENCY (no
+ForallL) pins `ψa` mono against a flexible counterpart; only the sub
+route, where the declarative side may instantiate a `∀` down to the
+flexible's mono image, exposes it.
+
+**Proposed fix (one rule): flip `SolE-FlexR`'s output —**
+
+```
+nonflex{P}  ⊢  solveeq{P}{α̂}  ⤳  P        (was: ⤳ α̂)
+```
+
+(and correspondingly `end_rule p` in type.ml's `solve_eq`.)  Arguments:
+
+1. *Completeness*: in every flex-payload case of the -var lemmas the
+   refinement premise pins `θα̂` mono ⇒ `Q` mono-ish ⇒ no tag of `ψa` is
+   solved by this constraint (`Ψa = ∅`), so the required conclusion
+   `θ Pa ⊑ᵖ[Ψi ∪ Ψa] ψa` with `Pa := Pi` IS the precision premise.  On
+   the counterexample the fixed algorithm yields `Pa = ∀β.β→β` and the
+   needed precision is literally the cex's own `Hpre`.
+2. *Soundness*: keep-subject-discard-payload is the existing `SolE-Var`
+   pattern; the discarded `α̂`-constraint is re-established by the main
+   subtyping run on the committed skeleton (unchanged discipline).  On
+   the witness the recheck goes `∀β.β→β ⩽ α̂` → flex split
+   `α̂ := β̂₁→β̂₂` → instantiate `β := β̂₁` — accepts, matching the
+   declarative run.
+3. *Old behaviour never load-bearing*: the two mech sites that USED
+   keep-`α̂` (P6-Cv's flexible-P₀ chain, P6-Cs's LE-FlexR row) both have
+   `ψa` pinned mono there, and close via the premise under keep-`P` as
+   well — more simply.  In particular the mech-only `flex_apart` premise
+   of P6-Cv (and the whole 2026-07-25 "unreachable-configuration"
+   resolution, incl. `cex_p6_flex_counterpart`'s isolated falsity) exists
+   ONLY to protect keep-`α̂`; under the flip it can be dropped, making
+   P6-Cv premise-faithful to the paper.
+4. *No alternative*: a statement-side premise cannot exclude the
+   configuration (the top-level instance is reachable and declaratively
+   solvable — e.g. `(fun x y -> y x) (id0 ids) useMono` puts a raw
+   λ-bound flexible opposite `id0`'s result while `ids` forces the
+   ∀-instantiation); restricting the declarative side would reject
+   standard impredicative programs; freshening fails on scope as above.
+
+Mech impact if adopted: rule flip in algo/def_extra.v (full algo
+rebuild); ~13 construction sites (all in prop_look_complete*.v, get
+SIMPLER); one changed case in each induction over `a_solve_eq`
+(prop_solve_sub, prop_decorate_sub/key, prop_sub_sound,
+prop_look_complete utility lemmas, test_unify_regression); plus a small
+new "mono-ish target solves no tags" lemma for `ad_pat_sub_g`.
+
+### Correction (2026-07-28, after TESTING the implementation): the source-level reachability claims above were WRONG; the composed pipeline shields the SolE-FlexR site; statement-side fix is back on the table; NEW independent impl crash found
+
+Ran the built artifact (`met.exe`) on the constructed programs.  Three
+results, two of which refute my own earlier end-to-end claims:
+
+1. `(fun x y -> y x) (id0 ids) useMono` — **ACCEPTED** (rc=0).  The
+   claim above that this exhibits the failure is WRONG on two counts:
+   (i) `I-App` pre-shapes an applied λ's binder by
+   `guess_mono(skeleton-of-argument)` — the expected type is an arrow of
+   fresh flexibles, never a bare flexible; (ii) the skeleton pass
+   (`PI-*`) ERASES top-level ∀s of argument skeletons to `⊤◇(□→□)`
+   (SI-ForallL + SI-UnivGhostR), so the eq-payload never carries the
+   rigid `∀β.β→β` and a MONO instantiation suffices — which is exactly
+   what the run does.
+2. `h id0 3` with `h : ∀c.((∀b.b→b)→c)→c` — rejected, but CORRECTLY:
+   checking against a guarded type is `LS-Check` = pure CONSISTENCY
+   (shallow subtyping — no covariant descent under arrows in TC mode),
+   so it is declaratively rejected too.  My "FN-mode arrow" reading of
+   that shape was wrong.
+3. **NEW BUG** — `k : ∀a. list a → a`, `args : list (∀b.b→b)`,
+   `let g = fun f -> f (k args)` (f unannotated): the implementation
+   **CRASHES** with `Failure("broom_flex_poly: should not happen")`
+   (type.ml:1048 — `sub_flex` pops a `Marker`/`Lock` while brooming the
+   bare flexible `f` against a Fun-mode whose argument skeleton carries
+   the manifest rigid `∀b.b→b`, kept by the eq-solve under the `list`
+   constructor, which skeleton erasure does NOT strip).  The annotated
+   twin `fun (f : (int→int)→int) -> f (k args)` is ACCEPTED.  Whether
+   the unannotated program is declaratively typeable turns on whether
+   the declarative skeleton judgment may return a lazy/ghosted skeleton
+   for `k args` (if yes — which the ghost rules suggest — this is a real
+   completeness failure of the composed algorithm, through the
+   flex-broom/mono-assign wall, NOT through SolE-FlexR).  Either way the
+   assertion failure is an artifact bug to report.
+
+CONSEQUENCE FOR THE FIX.  The pipeline appears to maintain exactly the
+invariants that keep the SolE-FlexR configuration out of real runs:
+FN-mode eq-payloads are skeletons with ghost-erased top-level ∀s;
+TC-mode collapses to consistency (where a flexible payload pins
+everything mono — the closed P6-Cv/P6-Cs territory); bare-flexible
+expected types arise only from inference-mode λs, and routes combining
+them with manifest-∀ payloads hit the flex-mono wall earlier (finding
+3).  So the -Sv LEMMA as stated remains FALSE (the mech counterexample
+stands), but the repair should likely be STATEMENT-SIDE after all:
+strengthen P6-Sv's premises with the reachability invariant — a
+candidate formulation: "every tag in Ψi was solved by a GHOST (⊤◇/fill)
+step of the precision derivation, not by a rigid quantifier of Pi,
+whenever some constraint payload is a raw flexible" — equivalently,
+rigid top-level ∀-spines in Pi and raw-flexible payloads for the same
+look are mutually exclusive.  The exact form must be read off P6-Ss's
+call sites and proved supplied by the pipeline (P7).  The SolE-FlexR
+flip remains sound and uniformizing but is no longer forced; it would
+not fix finding 3 (different wall).  Decision deferred to the authors.
+
+## IMPLEMENTATION BUG (report to WT) — `broom_flex_poly: should not happen` assertion failure on a 5-line program (2026-07-28)
+
+- Where: `paper/artifact/implementation/lib/type.ml:1048` (`sub_flex`, the
+  flexible-variable broom walk: `| Marker | Lock _ -> failwith
+  "broom_flex_poly: should not happen"`).
+- Witness (benchmark vocabulary; crashes with
+  `Fatal error: exception Failure("broom_flex_poly: should not happen")`):
+
+  ```text
+  type list a = Nil | Cons of a, list a
+
+  val k    : forall a . list a -> a
+  val args : list (forall b . b -> b)
+
+  let g = fun f -> f (k args)
+  ```
+
+  The annotated twin `let g2 = fun (f : (int -> int) -> int) -> f (k args)`
+  is ACCEPTED (rc=0).
+- Mechanism: the skeleton pass keeps the manifest `∀b.b→b` when it sits
+  UNDER a constructor (`list`) — ghost erasure strips only top-level ∀s of
+  the argument type — so `k`'s eq-solve yields `a := ∀b.b→b` and the
+  skeleton of `k args` has a rigid top-level ∀.  `f` is an inference-mode
+  λ-binder, i.e. a BARE flexible; inferring `f` against the Fun-mode whose
+  payload is that poly skeleton enters `sub_flex` (SI-FlexMono), whose
+  context walk pops a `Marker`/`Lock` before resolving — a state the code
+  asserts unreachable.
+- Status — **ROBUSTNESS BUG ONLY (author decision 2026-07-28: the program
+  should be REJECTED; the impl must reject cleanly instead of crashing).**
+  The lazy-skeleton worry raised earlier is unfounded — the declarative
+  side rejects it too, and the mech rules show why: the skeleton of `args`
+  is derived from its type by SK-checking against □, whose Check case is
+  CONSISTENCY against the fill — and consistency has NO rule for a
+  ∀-subject against a hole or ⊤◇ TARGET (only `ad_pat_consis__hole` with
+  the hole as SUBJECT), so the inner `∀b.b→b` survives into every
+  derivable skeleton; `k`'s instantiation must be consistent with it, so
+  `k args`'s skeleton is forced poly; and the declarative app rule's
+  domain premise is consistency `τ_dom ∼ skel(arg)`, mono vs ∀ — no rule.
+  Hence rejection is forced declaratively; no completeness gap here, and
+  the flex-mono wall is the intended design.

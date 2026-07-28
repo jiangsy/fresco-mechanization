@@ -18,7 +18,9 @@ point to the same content.
   `a_assign_sound`; completeness/optimality `a_consis_complete_thm` /
   `complete_mu`), subtyping SOUNDNESS is closed (`a_sub_sound_thm`),
   and subtyping COMPLETENESS is in progress (P5 and the two
-  consistency-side P6 lemmas are closed; P6-Sv / P6-Ss are next).
+  consistency-side P6 lemmas are closed; **P6-Sv is BLOCKED — the paper's
+  statement is FALSE, machine-checked in
+  `frost/algo/cex/cex_p6sv_forall_flex.v`; see docs/PAPER-GAPS.md**).
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
@@ -45,7 +47,7 @@ point to the same content.
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
 | 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness underway (P5, P6-Cv, P6-Cs closed; P6-Sv / P6-Ss next). |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness underway (P5, P6-Cv, P6-Cs closed; P6-Sv BLOCKED — statement FALSE, counterexample `frost/algo/cex/cex_p6sv_forall_flex.v`). |
 
 ## Directory map
 

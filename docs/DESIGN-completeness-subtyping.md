@@ -560,6 +560,185 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-28 (z): **AUTHOR DECISIONS on (y): the `broom_flex_poly` program is
+  REJECT-by-design (robustness bug only — declarative rejection verified,
+  see the PAPER-GAPS entry), and the (y) premise is STRENGTHENED to the
+  Ψ'-form: `flex_tags_apart Θ0 Ψ' P0 ψa` — flexible payload parts face
+  TAG-FREE regions of ψa (Ψ' = `a_tags_sort`'s index = ALL of ψa's tags).**
+  Call-site analysis (the "is it satisfied at call sites?" question):
+  1. **Kills the cex, even more directly**: flex P0 admits only `fta_clean`
+     ⇒ `ftag(ψa) ∩ Ψ' = ∅`; but for a TAGGED ψa, `d_tags_skl_ftag` gives
+     `Ψ' ⊆ ftag(ψa)`, so Ψ' = ∅ — contradiction with ForallL's ε.  The
+     ForallL flex-P0 row is vacuous without touching Ψi/Ψa bookkeeping.
+  2. **No per-constraint rethreading**: unlike the Ψi-form, Ψ' is a
+     PER-LOOK constant, so P6-Ss's constraint chain passes the same
+     relation to every -Sv call; the a_solve_cstr threading does not
+     change it.  The descent kit is the same congruence + all_etag-open
+     lemmas as `flex_apart`'s.
+  3. **Supplied at P6-L/P7**: at each flexible position of the counterpart
+     P', the solution's own refinement premise pins the θ-image mono ⇒ the
+     facing ψa-region is consistent with a mono-ish fill ⇒ mono-paint ⇒
+     tag-free — the EXISTING monoish kit (`ad_refine_mono_paint_rhs_monoish`
+     + `ad_pat_consis_monoish_counterpart`, plus a small `ad_pat_sub_g`
+     analog) derives exactly this, positionally.  The backstop for the
+     remaining shapes (rigid-∀-spine skeleton facing a bare flexible) is
+     the flex-mono wall: by the author decision above, such programs are
+     REJECTED (declaratively and algorithmically), so solutions with a
+     tagged ψa-region facing a flexible payload simply do not exist at the
+     theorem's call sites.
+  4. Paper form of the side condition: "wherever P0 has a flexible
+     variable, the corresponding position of ψa carries NO TAG" —
+     mirroring the positional ρ side condition already on the lemma.
+
+- 2026-07-28 (y): **IMPL EXPERIMENTS RUN — the (x) flip proposal is WITHDRAWN;
+  the fix is STATEMENT-SIDE; P6-Sv restated with a `flex_tags_apart` premise
+  (draft below).**  Built the artifact (`opam switch 5.4.0` + bindlib/
+  multicont; `paper/artifact/implementation`) and tested the end-to-end
+  claims.  Outcomes (full record: PAPER-GAPS.md "Correction" +
+  "IMPLEMENTATION BUG" entries):
+  1. `(fun x y -> y x) (id0 ids) useMono` — ACCEPTED.  Two errors in the (x)
+     reachability story: I-App pre-shapes applied-λ binders via
+     `guess_mono(skel(arg))` (never a bare flexible), and the PI pass
+     ghost-erases top-level ∀s of argument skeletons to `⊤◇(□→□)` — so the
+     eq-payload never carries a rigid `∀β.β→β` and the mono route suffices.
+  2. `h id0 3` (`h : ∀c.((∀b.b→b)→c)→c`) — rejected CORRECTLY: a TC-check
+     against a guarded type is LS-Check = pure consistency (SHALLOW
+     subtyping); declaratively rejected too.
+  3. NEW impl crash (`broom_flex_poly`, separate PAPER-GAPS entry): a rigid
+     ∀ kept under a constructor meets an inference-mode bare-flex binder and
+     dies BEFORE any look — evidence the flex-mono wall guards the
+     rigid-∀-spine + flex-payload combination upstream.
+  **Conclusion:** the composed pipeline maintains invariants that keep the
+  cex configuration out of real runs; the -Sv lemma is repaired by a premise,
+  not by changing the algorithm.  **Draft statement** (mech shape; the NEW
+  premise is `flex_tags_apart`):
+
+  ```coq
+  (* Flexible payload positions of P0 face TAG-UNSOLVED regions of ψa.
+     Mirrors [flex_apart] (prop_look_complete.v:2603) with Ψi/ftag_in_uskl
+     in place of Δρ/ftvar_in_uskl: same congruence rows (unit / rigid-var /
+     hole / ⊤◇ source / ⊤̇◇ target / arrow / ∀-descents), and the ONLY rule
+     admitting a FLEXIBLE P0-leaf is the clean one: *)
+  Inductive flex_tags_apart (Θ0 : aenv) (Ψi : atoms) : pskl -> uskl -> Prop :=
+  | fta_clean : forall P0 ψa,
+      (ftag_in_uskl ψa) ∩ Ψi [=] empty ->
+      flex_tags_apart Θ0 Ψi P0 ψa
+  | fta_unit | fta_var_rigid (binds α abind_tvar Θ0) | fta_hole
+  | fta_tophole | fta_topholeg_t | fta_arrow | fta_all_etag | fta_all_syn
+    (* … verbatim the flex_apart congruence shapes … *).
+
+  Theorem a_solve_sub_complete_var :   (* P6-Sv, subtyping-proofs.tex:1696 *)
+    forall n NM M Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
+    a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+    (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[N]{P0}{M} *)
+    (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
+    θ ∷ Θ0 ⊑ Θ ->
+    uskl_rho NM Θ Δρ Ψρ ψsub ψa ->
+    a_tags_sort NM Ψ' ψa ->
+    Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψsub ⌋ˢ ->            (* subject wf — the P6-Cs lesson *)
+    Ψi `union` Ψa [=] Ψ' ->                (* the paper's Ψi,Ψa = Ψ' (EQUATION) *)
+    Ψρ ∩ Ψ' [=] empty ->
+    rho_fresh Δρ Θ θ -> Δρ [<=] Δ ->
+    (forall α, α `in` Δρ ->
+       α `notin` pskl_shielded_ftv (msubst_pskl θ Pi)) ->
+    delta_def_fresh Δ Θ ->
+    flex_apart Θ0 Δρ P0 ψa ->              (* P6-Cv's invariant, unchanged *)
+    flex_tags_apart Θ0 Ψ' P0 ψa ->         (* NEW: the reachability premise —
+       STRENGTHENED 2026-07-28 (z) to index by Ψ' (ALL of ψa's tags), not Ψi:
+       flexible payload parts face TAG-FREE regions of ψa.  See the (z)
+       call-site analysis below for why this form is both supplied and
+       simpler to thread. *)
+    Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
+    Ψsub [<=] Ψρ `union` Ψa -> Ψa [<=] Ψsub ->
+    ad_pat_sub_g n NM M Ψsub Θ ψsub Q ->
+    Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->
+    exists Pa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
+      Θ ⨟ Δ ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+  ```
+
+  Why this premise is exactly right:
+  - **Kills the cex** (`cex_p6sv_forall_flex.v`): there `P0 = α̂` (flexible)
+    and `ψa = ∀^ε β.β→β` with `Ψi = {ε}`; the only `flex_tags_apart` rule
+    matching a flexible P0 is `fta_clean`, which demands
+    `{ε} ∩ {ε} = ∅` — unsatisfiable.  The cex file becomes the regression
+    test that the premise excludes the configuration.
+  - **Makes the ForallL flex-P0 case VACUOUS**: `fta_clean` gives
+    `ε ∉ Ψi`; the paper's own argument (`ε ∉ Ψa` since ForallL discards
+    ε + the equation `Ψi,Ψa = Ψ'`) gives `ε ∈ Ψi` — contradiction.  The
+    non-flex-P0 rows proceed exactly per the paper (refinement inversion
+    forces P0's shape; the P6-Cs strip kit).  KEY mech fact backing the
+    vacuity: in `ad_partial_precise`, tags enter Ψ ONLY via `ad_ppre__forall`
+    (rigid-∀ match); `ad_ppre__tophole_fill` adds NO tag — so `Ψi ≠ ∅`
+    forces a rigid-∀ in θPi at a tagged position, which is what real runs
+    never pair with a flexible payload.
+  - **Positional, not global**: the arrow case splits it per component
+    (a flex P02 with tag-solved ψ1 on the OTHER side is fine), matching
+    how `flex_apart` splits; the ∀-descents need `fta` open-descent lemmas
+    mirroring `flex_apart_guarded_all_etag_descent`.
+  - **Paper form**: one more positional side condition on the -Sv lemma,
+    mirroring the existing ρ one: "wherever P0 has a flexible variable, the
+    corresponding position of ψa carries no tag of Ψi."
+  Obligations to discharge later (registered): (i) `fta` congruence +
+  descent + weakening kit; (ii) P6-Ss threads it per-constraint (whether
+  the CONCLUSION must return an `fta`-maintenance fact — decide when
+  drafting P6-Ss); (iii) **P7 must SUPPLY it** — the pipeline argument:
+  sub-payload flexibles sit on the result spine; pipeline Pi-spines are
+  ghost-erased (⊤◇), so spine tags never enter Ψi via `ad_ppre__forall`;
+  the rigid-∀-spine + flex-payload combination is stopped upstream by the
+  flex-mono wall (the `broom_flex_poly` shape) — the LAST part depends on
+  how WT resolves the impl crash, so P7's supply proof is the place this
+  gets tested.
+
+- 2026-07-28 (x): **⛔ P6-Sv IS BLOCKED — the paper's
+  `lemma:complete-constraint-collection-solving-var` (subtyping-proofs.tex
+  :1696) is FALSE as an isolated statement, machine-checked in
+  `frost/algo/cex/cex_p6sv_forall_flex.v`
+  (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free).**  Work on P6-Sv is
+  STOPPED pending an authors' decision; P5 / P6-Cv / P6-Cs are unaffected
+  (no ForallL ⇒ ρ never grows there).
+  - Witness (ρ = IDENTITY, `Δρ = ∅`): `Θ0 = α̂`, `Θ = α̂ := ⟨⟩→⟨⟩`,
+    `θ = [α̂ ↦ ⟨⟩→⟨⟩]`, `N = TY`, `M = TC`, `Pi = ∀β.β→β`, `P0 = α̂`,
+    `ψa = ψsub = ∀^ε β.β→β`, `Q = inh{⟨⟩→⟨⟩}`, `Ψ' = Ψi = {ε}`,
+    `Ψa = Ψsub = Ψρ = ∅`, `Δ = ∅`.  All premises hold — including every
+    premise of the CLOSED consistency twin (`flex_apart`, the subject-wf
+    premise, and the tag EQUATION `Ψi,Ψa = Ψ'`).  The algorithm is forced to
+    `Pa = ∀β.α̂` (a `∀` is not `guarded`, so only SolS-ForallL applies; the
+    body goes SolS-Check + SolE-FlexR), whose precision obligation reduces to
+    `⟨⟩ ⊑ᵖ β`.  Refuted for EVERY `θa : Θ0 ⊑ Θ` via the file's general lemma
+    `mono_paint_ppre_target_ftv` (a mono-paint subject is never precise to a
+    target mentioning a variable outside Θ).
+  - **Why §7's plan cannot be patched:** `flex_apart` (and any invariant
+    stated at the CURRENT `ψa`) is destroyed by the ForallL descent — it adds
+    `β` to `Δρ` while `P0` is NOT decomposed, so a raw-flex `P0` that was
+    legitimately `fa_clean` before the descent faces a Δρ-dirty `ψa` after
+    it.  A stable invariant would have to forbid a raw Θ0-flex `P0` facing
+    ANY *tagged* `ψa` (a tagged `ψa` becomes dirty one ForallL step later),
+    and that is not derivable at the P6-Ss call sites.
+  - **Why the 2026-07-25 "unreachable" resolution
+    (`cex_p6_flex_freshened.v`) does not cover it:** (i) here ρ is created by
+    the completeness proof's OWN ForallL (`ρb = ρ ∘ [ψb/β]`), not by
+    constraint collection; (ii) the raw flexible payload arrives from
+    **LS-Var**, and `a_looksub` has no FlexR rule at all, so nothing
+    freshens it on the subtyping route; (iii) the paper's positional side
+    condition ("Pi has the same rigid variable in the same position") HOLDS
+    all the way down (`Pi = β→β` vs `ψa = β→β`).
+  - Registered in docs/PAPER-GAPS.md (final entry).  **RESOLUTION PROPOSED
+    (2026-07-28, same day, after re-reading the paper's fig:constraint-solving,
+    the consistency -var Arrow case, and type.ml): flip `SolE-FlexR`'s output
+    to keep the NON-flexible side** — `nonflex{P} ⊢ solveeq{P}{α̂} ⤳ P`.  It
+    is the only solve rule where the payload replaces a structured subject;
+    under a SolS-ForallL descent that discards binder-local rigid info no
+    α̂-solution can express.  With the flip every flex-payload completeness
+    case closes from the PRECISION PREMISE (`Ψa = ∅` is forced since a mono
+    payload solves no tags), P6-Cv's mech-only `flex_apart` premise becomes
+    droppable, and the earlier "unreachable-configuration" machinery
+    (cex_p6_flex_counterpart / cex_p6_flex_freshened) is retired.  Freshening
+    the payload instead does NOT work (a fresh γ̂ ∈ Ξ is equally out of the
+    binder's scope); a statement-side premise cannot exclude the reachable,
+    declaratively-solvable top-level instance.  Full argument + impact plan in
+    PAPER-GAPS.md.  AWAITING coauthor sign-off (algorithm change).
+
 - 2026-07-27 (v): **TASK A DONE — accumulated-skeleton invariant PROVED,
   axiom-free, in `algo/prop_accum_no_hole.v`.**  *(SUPERSEDED: the
   `pskl_no_hole P0` premise was removed later the same day, so the

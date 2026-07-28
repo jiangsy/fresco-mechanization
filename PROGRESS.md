@@ -58,7 +58,8 @@ excluded from the build); mine them when re-proving.
 - ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_decorate_key.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
 - ✅ **Theorem: Soundness of subtyping** (`a_sub_sound_thm`, `algo/prop_decorate_key.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
-- 🟡 Completeness of constraint collection & solving (+ for variables) (subtyping-proofs:1696/:2202); Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); these SUBTYPING versions (P6-Sv / P6-Ss) are the next targets and should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
+- ⛔ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — **FALSE as stated**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  Work STOPPED pending an authors' decision; see docs/PAPER-GAPS.md (final entry) and DESIGN-completeness-subtyping.md §6 (2026-07-28 x)
+- 🟡 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss); Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are BLOCKED behind P6-Sv (P6-Ss's crux delegates to it).  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
 
@@ -75,6 +76,73 @@ excluded from the build); mine them when re-proving.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-07-28 — ⛔ P6-Sv (subtyping constraint solving for variables) is FALSE as stated — machine-checked counterexample; work STOPPED
+
+Starting P6-Sv (`lemma:complete-constraint-collection-solving-var`,
+subtyping-proofs.tex:1696 — the subtyping twin of the closed P6-Cv) turned up
+a genuine falsity rather than a proof-step gap, so per CLAUDE.md the work is
+stopped and flagged instead of repaired.
+
+**New file `frost/algo/cex/cex_p6sv_forall_flex.v`**
+(`p6sv_with_p6cv_premises_is_false`, `Qed`, "Closed under the global
+context").  It states P6-Sv with EXACTLY the premise set that closes P6-Cv
+(`a_solve_eq_complete_var`) — including the mech-only `flex_apart`
+invariant, the subject-wf premise that made P6-Cs true, and the
+subtyping-side tag EQUATION `Ψi , Ψa = Ψ'` — and derives `False`.  The
+conclusion refuted is the PAPER's (`∃ Pa θa`, with `θa : Θ0 ⊑ Θ`), not the
+mech's `θa := θ` strengthening.
+
+Witness — note **ρ is the IDENTITY** (`Δρ = ∅`), so this is not an artefact
+of the ρ-relation encoding:
+
+```text
+Θ0 = α̂          Θ = α̂ := ⟨⟩→⟨⟩       θ = [α̂ ↦ ⟨⟩→⟨⟩]
+N = TY  M = TC  Pi = ∀β. β→β         P0 = α̂
+ψa = ψsub = ∀^ε β. β→β               Q  = inh{⟨⟩→⟨⟩}
+Ψ' = Ψi = {ε}   Ψa = Ψsub = Ψρ = ∅   Δ = ∅
+```
+
+The subtyping premise is Sub-ForallL (`β := ⟨⟩`) then Sub-Check; the
+algorithm is forced to `Pa = ∀β.α̂` (a `∀` is not `guarded`, so only
+SolS-ForallL applies; its body goes SolS-Check + SolE-FlexR), and the
+precision obligation reduces to `⟨⟩ ⊑ᵖ β`.  The file also proves the general
+fact behind the refutation, `mono_paint_ppre_target_ftv`: a mono-paint
+subject is never precise to a target mentioning a variable outside `Θ`.
+
+Why the standing "unreachable" resolution (`cex_p6_flex_freshened.v`,
+2026-07-25) does not cover this: (i) ρ here is created by the completeness
+proof's OWN ForallL case (`ρb = ρ ∘ [ψb/β]`), so the induction manufactures
+the bad premise set from innocent inputs, and any `flex_apart`-style
+invariant stated at the current `ψa` is destroyed by that descent (`Δρ` gains
+`β` while `P0` is not decomposed); (ii) the raw flexible payload arrives from
+**LS-Var**, and `a_looksub` has no FlexR rule, so nothing freshens it on the
+subtyping route; (iii) the paper's positional side condition on ρ is
+satisfied all the way down.
+
+Registered in `docs/PAPER-GAPS.md` (final entry, with three repair
+directions for the authors) and `docs/DESIGN-completeness-subtyping.md`
+§6 (2026-07-28 x).  Nothing already closed is retracted: P5, P6-Cv and P6-Cs
+have no ForallL, so ρ never grows there.  P6-Ss / P6-L are blocked behind
+this decision (P6-Ss's crux delegates to P6-Sv).
+
+**Same-day UPDATE (impl experiments; see DESIGN §6 (y) + the PAPER-GAPS
+"Correction" and "IMPLEMENTATION BUG" entries).**  Built and ran the
+artifact.  (a) My two end-to-end reachability claims were WRONG — the
+pipeline pre-shapes applied-λ binders from argument skeletons and
+ghost-erases top-level ∀s of eq-payloads, and TC-checks against guarded
+types collapse to consistency (shallow subtyping) — so the cex premise set
+appears UNREACHABLE from real runs and the earlier SolE-FlexR-flip
+proposal is WITHDRAWN.  (b) The fix is STATEMENT-SIDE: P6-Sv restated
+with a NEW positional premise `flex_tags_apart Θ0 Ψi P0 ψa` (flexible
+payload positions face tag-unsolved regions of ψa; full draft in DESIGN
+§6 (y)); the mech cex becomes the regression test that the premise
+excludes the configuration, and its ForallL flex-P0 case becomes vacuous
+(`ad_ppre__tophole_fill` adds no tag — only rigid `ad_ppre__forall` does).
+(c) NEW artifact bug found while probing reachability: a 5-line program
+(`k : ∀a. list a → a`, `args : list (∀b.b→b)`, `let g = fun f -> f (k
+args)`) CRASHES the implementation with `Failure("broom_flex_poly: should
+not happen")` (type.ml:1048); the annotated twin passes.  Report to WT.
 
 ## 2026-07-28 — Naming/notation pass: atom-set notations, and the ott metavariable convention across all hand-written lemmas
 
