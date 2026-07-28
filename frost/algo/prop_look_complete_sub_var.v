@@ -1114,7 +1114,36 @@ Proof.
               | exact Hpre ].
 Admitted.  (* TODO[P6-Sv]: 8 of 12 cases are CLOSED; 4 remain (Check,
     ForallR, Arrow, ForallL-tagged), each needing its own P0 × Pi grid.
-    UnivGhostLG is the TEMPLATE they follow: a KEY assertion shared
+
+    NEXT STEP for the two ∀ cases (found 2026-07-28 by starting ForallR).
+    They must hand [flex_apart] — P6-Cv's premise, which this lemma only
+    THREADS — to the recursive call after a ONE-SIDED descent:
+      - Sub-ForallR opens P0 and keeps the guess;
+      - Sub-ForallL instantiates the guess and keeps P0.
+    [flex_apart]'s ∀ rows are TWO-SIDED (fa_all_etag / fa_all_syn open both
+    at once), and its clean row is destroyed by the ForallL descent exactly
+    as [fsh_clean] would be — so neither descent can push it through.
+
+    FIX (mechanical, not a redesign): give [flex_apart] the same one-sided
+    rows [flex_shield] has — [fa_flexfree], [fa_all_l], [fa_all_r] — and
+    prove the two-sided descent P6-Cv uses
+    ([flex_apart_all_etag_forall_inv]) by INDUCTION rather than inversion,
+    exactly as [flex_shield_descend_l] / [_descend_r] are proved here.  The
+    [fa_all_l] row is where the two families have to be crossed, and the
+    crossing is a RENAMING, not a diamond: instantiate the ψ-side family at
+    a FRESH α' (so the nesting of cofinite sets is harmless), then rename
+    α' back to the P0-side binder α.  The rename is sound because α' does
+    not occur in [open P0 α] — it touches only the guess — which is the
+    same argument [flex_shield_rename_r] already makes.
+    Kit needed: [flex_apart_rename_l] / [flex_apart_rename_r] mirroring
+    [flex_shield_rename_l] / [flex_shield_rename_r], plus the three new
+    rows absorbed by the existing inversions ([flex_apart_topholeg_target_inv],
+    [_tophole_p0_inv], [_arrow_inv] take them by shape; [flex_apart_weaken]
+    needs "no new flexibles", free at the tvar extensions it is used at,
+    with a [flex_apart_weaken_tvar] wrapper).  Then ForallR/ForallL follow
+    the UnivGhostLG template.
+
+    UnivGhostLG is the TEMPLATE the remaining cases follow: a KEY assertion shared
     by the refl/congruence rows, the ρ-leaf dispatched to
     [a_solve_sub_complete_rho_var], a [destruct Pi] whose guarded rows are
     refuted by [ad_ppre_guarded_topholeg_absurd], the ⊤◇ row running

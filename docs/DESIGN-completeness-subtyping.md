@@ -560,6 +560,68 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-28 (z5): **METHOD RULE — "cofinite quantification prevents X" is
+  never a valid argument in this development; the answer is always a
+  RENAMING lemma.**  Recorded after (z4) stated one such claim and it was
+  wrong.  Whenever two cofinite families must be crossed — a one-sided
+  binder descent meeting a two-sided one, an existential-L conclusion whose
+  inner set depends on an outer binder, a rule family offering a binder
+  different from the one the induction picked — instantiate the family at a
+  FRESH binder (making the nesting harmless) and rename it to the binder you
+  need.  The rename is sound exactly when the fresh name does not occur in
+  the parts you are not renaming, which is what freshness gives.  Instances
+  already in the tree: `flex_shield_rename_l` / `_rename_r` (this is how
+  `flex_shield_descend_l` / `_descend_r` cross the one-sided ∀ rows),
+  `a_looksub_lookeq_rename_tvar` (P6-Cs's LE-ForallInh family from one
+  instance), `ad_partial_precise_rename_tvar` (P6-Cv's tophole_fill
+  family).  If a case looks blocked by binder bookkeeping, write the rename.
+
+- 2026-07-28 (z4): **P6-Sv induction at 8/12; the last 4 are blocked on ONE
+  structural question — the apartness invariant must be indexed by the WALK,
+  not by syntax.**  Closed since (z3): Infer, UnivGhostR, GhostG (skmod
+  forces P0 = □ ⇒ SolS-Vacuous), Ghost, UnivGhostL, ForallL-untagged (subject
+  shape not `is_tskl` ⇒ vacuous), **UnivGhostLG** (full, incl. the `Pi = □`
+  row the paper omits — see PAPER-GAPS) and **FlexMono** (unfold the
+  definition on both sides, rebuild with P-FlexR).  New reusable kit, all
+  Qed: `a_solve_sub_complete_rho_var` (the ρ-leaf closer used by EVERY
+  case), `ad_ppre_guarded_topholeg_absurd`, `ad_ppre_hole_subject_tags`,
+  `ad_ppre_tophole_strip`, `ad_ppre_lift_topholeg`,
+  `a_solve_sub_hole_output`, `uskl_rho_guarded_erase`.
+  **THE BLOCKER (found by starting ForallR; the experiment was made and
+  REVERTED).**  The two ∀ cases must hand `flex_apart` — P6-Cv's premise,
+  which P6-Sv only threads — to the recursive call across a ONE-SIDED
+  descent (ForallR opens P0 and keeps the guess; ForallL instantiates the
+  guess and keeps P0).  `flex_apart`'s ∀ rows are TWO-SIDED, and its clean
+  row dies on the ForallL descent exactly as `fsh_clean` does.  Adding the
+  one-sided rows + a `fa_flexfree` base to `flex_apart` was tried: the three
+  new rows are absorbed by `flex_apart_topholeg_target_inv`,
+  `flex_apart_tophole_p0_inv`, `flex_apart_arrow_inv` and
+  `flex_apart_weaken` (the last needs "no new flexibles", free at the tvar
+  extensions it is used at, plus a `flex_apart_weaken_tvar` wrapper) — but
+  it leaves `flex_apart_all_etag_forall_inv` — P6-Cv's own TWO-sided descent
+  — unprovable BY INVERSION, since its `fa_all_l` row offers a one-sided
+  family where a two-sided one is wanted.  Experiment reverted (the tree is
+  green); `prop_look_complete.v` is untouched pending the fix below.
+  **THE FIX (next task) — mechanical, NOT a redesign.**  ⚠️ The first
+  reading of this ("cofinite quantification cannot cross the two families")
+  was WRONG: cofinite sets are never the obstacle, because RENAMING makes
+  the choice of binder irrelevant — which is exactly how
+  `flex_shield_descend_l` / `_descend_r` already get through here.  So:
+  give `flex_apart` the same one-sided rows `flex_shield` has
+  (`fa_flexfree`, `fa_all_l`, `fa_all_r`) and re-prove
+  `flex_apart_all_etag_forall_inv` by INDUCTION; in the `fa_all_l` row,
+  instantiate the ψ-side family at a FRESH α' (so the nested cofinite sets
+  are harmless) and rename α' to the P0-side binder α — sound because α'
+  does not occur in `open P0 α`, so the rename touches only the guess, the
+  same argument `flex_shield_rename_r` makes.  Kit: `flex_apart_rename_l` /
+  `_rename_r`; the three new rows are absorbed by
+  `flex_apart_topholeg_target_inv`, `_tophole_p0_inv` and `_arrow_inv` by
+  shape, and `flex_apart_weaken` needs a "no new flexibles" side condition
+  (free at the tvar extensions it is used at) plus a
+  `flex_apart_weaken_tvar` wrapper.  Budget: rename kit ≈ 120 lines, the
+  rows + inversion repairs ≈ 80, then ForallR/ForallL on the UnivGhostLG
+  template.
+
 - 2026-07-28 (z3): **PREMISE WEAKENED — `flex_shield` as first built was TOO
   STRONG; new row `fsh_rho_var` added (all Qed, still axiom-free).**  Prompted
   by the "is the restriction too strong?" check.  Concrete instance the old
