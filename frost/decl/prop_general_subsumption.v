@@ -45,7 +45,7 @@ Ltac nbauto := try sauto limit:30.
     used to open a quantifier body, so the cofinite case has a uniform Δc.
 
     The only rule that *grows* the context is the tagged→inh composition
-    (paper [ForallInh] with δ=ε): a tagged-∀ that was dropped on the
+    (paper [ForallInh] with β1=ε): a tagged-∀ that was dropped on the
     synthesised side ([ForallSyn], no tag) must be re-recorded when it meets
     an inherited ∀.  Hence the result is a strict superset of [Δa ∪ Δb]. *)
 Fixpoint compose_tags (C : utyp) (B : btyp) {struct C} : atoms :=
@@ -107,28 +107,28 @@ Proof.
   - destruct C0; simpl; reflexivity.
   - destruct C0; simpl; try reflexivity. rewrite IHHsyn1, IHHsyn2. fsetdec.
   - destruct C0; simpl; try reflexivity;
-      (pick fresh X for L;
-       rewrite <- (compose_tags_open _ B X X);
-       apply (H0 X); fsetdec).
+      (pick fresh α for L;
+       rewrite <- (compose_tags_open _ B α α);
+       apply (H0 α); fsetdec).
 Qed.
 
 (* [incl_app4] (list inclusion) is no longer needed: the set-subset analogue
    is discharged inline by [fsetdec]. *)
 
-(** Instantiate both opened sub-derivations at a variable [X], reshape their
+(** Instantiate both opened sub-derivations at a variable [α], reshape their
     middle types back through the coercions, fire the size-induction IH, and
-    fold [compose_tags] over the opening (it is invariant under [X]).  Leaves
+    fold [compose_tags] over the opening (it is invariant under [α]).  Leaves
     [Hincl] and [Hcons] for the body. *)
-Ltac binder_ih IHn HszA HH HH0 AA X :=
+Ltac binder_ih IHn HszA HH HH0 AA α :=
   let HcX := fresh "HcX" in
   let HdX := fresh "HdX" in
-  pose proof (HH X ltac:(fsetdec)) as HcX;
-  pose proof (HH0 X ltac:(fsetdec)) as HdX;
-  change (btyp_var_f X) with (ptyp_to_btyp_syn (ptyp_var_f X)) in HcX;
+  pose proof (HH α ltac:(fsetdec)) as HcX;
+  pose proof (HH0 α ltac:(fsetdec)) as HdX;
+  change (btyp_var_f α) with (ptyp_to_btyp_syn (ptyp_var_f α)) in HcX;
   rewrite <- ptyp_to_btyp_syn_open in HcX;
-  change (utyp_var_f X) with (ptyp_to_utyp_syn (ptyp_var_f X)) in HdX;
+  change (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) in HdX;
   rewrite <- ptyp_to_utyp_syn_open in HdX;
-  edestruct (IHn (open_ptyp_wrt_ptyp AA (ptyp_var_f X))
+  edestruct (IHn (open_ptyp_wrt_ptyp AA (ptyp_var_f α))
                  ltac:(rewrite size_ptyp_open_ptyp_wrt_ptyp_var; exact HszA)
                  _ _ _ _ _ HcX HdX) as [Hincl Hcons];
   rewrite compose_tags_open in Hincl;
@@ -170,29 +170,29 @@ Proof.
       dependent destruction H1; dependent destruction H2.
       { (* tagged → syn → inh : the only context-growing composition *)
         split.
-        { destruct (atom_fresh (L `union` L0)) as [X0 HX0].
-          binder_ih IHn HszA H H0 A X0. simpl. fsetdec. }
+        { destruct (atom_fresh (L `union` L0)) as [α0 HX0].
+          binder_ih IHn HszA H H0 A α0. simpl. fsetdec. }
         { simpl. eapply d_consis__forall_inh_tagged with (L := L `union` L0);
             [ | reflexivity ].
-          intros X HX. binder_ih IHn HszA H H0 A X. exact Hcons. } }
+          intros α Hα. binder_ih IHn HszA H H0 A α. exact Hcons. } }
       { (* tagged → syn → syn *)
         split.
-        { destruct (atom_fresh (L `union` L0)) as [X0 HX0].
-          binder_ih IHn HszA H H0 A X0. simpl. fsetdec. }
+        { destruct (atom_fresh (L `union` L0)) as [α0 HX0].
+          binder_ih IHn HszA H H0 A α0. simpl. fsetdec. }
         { simpl. apply d_consis__forall_syn_tagged with (L := L `union` L0).
-          intros X HX. binder_ih IHn HszA H H0 A X. exact Hcons. } }
+          intros α Hα. binder_ih IHn HszA H H0 A α. exact Hcons. } }
       { (* syn → syn → inh *)
         split.
-        { destruct (atom_fresh (L `union` L0)) as [X0 HX0].
-          binder_ih IHn HszA H H0 A X0. simpl. fsetdec. }
+        { destruct (atom_fresh (L `union` L0)) as [α0 HX0].
+          binder_ih IHn HszA H H0 A α0. simpl. fsetdec. }
         { simpl. apply d_consis__forall_inh_untagged with (L := L `union` L0).
-          intros X HX. binder_ih IHn HszA H H0 A X. exact Hcons. } }
+          intros α Hα. binder_ih IHn HszA H H0 A α. exact Hcons. } }
       { (* syn → syn → syn *)
         split.
-        { destruct (atom_fresh (L `union` L0)) as [X0 HX0].
-          binder_ih IHn HszA H H0 A X0. simpl. fsetdec. }
+        { destruct (atom_fresh (L `union` L0)) as [α0 HX0].
+          binder_ih IHn HszA H H0 A α0. simpl. fsetdec. }
         { simpl. apply d_consis__forall_syn with (L := L `union` L0).
-          intros X HX. binder_ih IHn HszA H H0 A X. exact Hcons. } }
+          intros α Hα. binder_ih IHn HszA H H0 A α. exact Hcons. } }
 Qed.
 
 Lemma d_consis_compose : forall Δa Δb Γ C A B,
@@ -255,12 +255,12 @@ Proof.
   intros B Hsyn. induction Hsyn; simpl; try reflexivity.
   - rewrite IHHsyn1, IHHsyn2; reflexivity.
   - f_equal.
-    pick fresh X for (L `union` ftvar_in_btyp B).
-    apply open_btyp_wrt_btyp_inj with (α1 := X).
+    pick fresh α for (L `union` ftvar_in_btyp B).
+    apply open_btyp_wrt_btyp_inj with (α1 := α).
     + pose proof (ftvar_ptyp_to_btyp_syn (btyp_to_ptyp B)).
       pose proof (ftvar_btyp_to_ptyp B). fsetdec.
     + fsetdec.
-    + specialize (H0 X ltac:(fsetdec)).
+    + specialize (H0 α ltac:(fsetdec)).
       rewrite btyp_to_ptyp_open in H0.
       rewrite ptyp_to_btyp_syn_open in H0.
       exact H0.
@@ -298,14 +298,14 @@ Proof.
   - apply is_syn__unit.
   - apply is_syn__var.
   - apply is_syn__arrow; assumption.
-  - apply is_syn__all with (L := empty). intros X HX.
-    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f X))
-      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f X)))
+  - apply is_syn__all with (L := empty). intros α Hα.
+    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f α))
+      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f α)))
       by (rewrite utyp_to_btyp_open; reflexivity).
     apply H0.
-  - apply is_syn__all with (L := empty). intros X HX.
-    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f X))
-      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f X)))
+  - apply is_syn__all with (L := empty). intros α Hα.
+    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f α))
+      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f α)))
       by (rewrite utyp_to_btyp_open; reflexivity).
     apply H0.
 Qed.
@@ -335,10 +335,10 @@ Proof.
   - apply lc_utyp_unit.
   - apply lc_utyp_var_f.
   - apply lc_utyp_arrow; assumption.
-  - pick fresh X. apply lc_utyp_all_etag_exists with (α1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_utyp_all_syn_exists with (α1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_utyp_all_etag_exists with (α1 := X). apply H0. fsetdec.
-  - pick fresh X. apply lc_utyp_all_syn_exists with (α1 := X). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_etag_exists with (α1 := α). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_etag_exists with (α1 := α). apply H0. fsetdec.
+  - pick fresh α. apply lc_utyp_all_syn_exists with (α1 := α). apply H0. fsetdec.
 Qed.
 
 
@@ -447,8 +447,8 @@ Proof.
   intros m Δ Γ C B H. induction H.
   - eapply d_consis_lc_utyp; eassumption.
   - eapply d_consis_lc_utyp; eassumption.
-  - pick fresh X.
-    match goal with H : forall _ : atom, _ -> lc_utyp _ |- _ => apply (H X); fsetdec end.
+  - pick fresh α.
+    match goal with H : forall _ : atom, _ -> lc_utyp _ |- _ => apply (H α); fsetdec end.
   - apply lc_utyp_arrow; [ eapply d_consis_lc_utyp; eassumption | assumption ].
   - apply lc_utyp_of_degree. constructor.
     eapply degree_utyp_wrt_utyp_open_utyp_wrt_utyp_inv.
@@ -466,8 +466,8 @@ Proof.
   intros A Hlc. remember (ptyp_to_utyp_syn A) as C eqn:HC. revert A HC.
   induction Hlc; intros A0 HC; destruct A0; simpl in HC; inversion HC; subst;
     try (constructor; eauto; fail).
-  - pick fresh X. apply (lc_ptyp_all_exists X).
-    eapply (H0 X (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))).
+  - pick fresh α. apply (lc_ptyp_all_exists α).
+    eapply (H0 α (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
     rewrite ptyp_to_utyp_syn_open. reflexivity.
 Qed.
 
@@ -495,15 +495,15 @@ Proof.
   all: f_equal;
     match goal with
     | |- btyp_to_ptyp (utyp_to_btyp ?c) = btyp_to_ptyp ?b =>
-        pick fresh X for (L `union` ftvar_in_ptyp (btyp_to_ptyp (utyp_to_btyp c))
+        pick fresh α for (L `union` ftvar_in_ptyp (btyp_to_ptyp (utyp_to_btyp c))
                           `union` ftvar_in_ptyp (btyp_to_ptyp b))
     end;
-    apply open_ptyp_wrt_ptyp_inj with (α1 := X);
+    apply open_ptyp_wrt_ptyp_inj with (α1 := α);
       [ fsetdec
       | fsetdec
       | match goal with
         | H0 : forall _ : atom, _ -> _ = _ |- _ =>
-            specialize (H0 X ltac:(fsetdec));
+            specialize (H0 α ltac:(fsetdec));
             rewrite utyp_to_btyp_open, !btyp_to_ptyp_open in H0; simpl in H0; exact H0
         end ].
 Qed.
@@ -545,8 +545,8 @@ Proof.
   - inversion Htt.                          (* utyp_all_syn is not is_ttyp *)
   - inversion Htt; subst.
     apply d_consis__forall_syn_tagged with (L := L `union` L0).
-    intros X HX.
-    change (btyp_var_f X) with (utyp_to_btyp (utyp_var_f X)).
+    intros α Hα.
+    change (btyp_var_f α) with (utyp_to_btyp (utyp_var_f α)).
     rewrite <- utyp_to_btyp_open.
     apply H0; [ fsetdec | ].
     match goal with
@@ -563,11 +563,11 @@ Proof.
   - apply lc_btyp_unit.
   - apply lc_btyp_var_f.
   - apply lc_btyp_arrow; assumption.
-  - apply lc_btyp_all_syn. intros X.
-    change (btyp_var_f X) with (utyp_to_btyp (utyp_var_f X)).
+  - apply lc_btyp_all_syn. intros α.
+    change (btyp_var_f α) with (utyp_to_btyp (utyp_var_f α)).
     rewrite <- utyp_to_btyp_open. apply H0.
-  - apply lc_btyp_all_syn. intros X.
-    change (btyp_var_f X) with (utyp_to_btyp (utyp_var_f X)).
+  - apply lc_btyp_all_syn. intros α.
+    change (btyp_var_f α) with (utyp_to_btyp (utyp_var_f α)).
     rewrite <- utyp_to_btyp_open. apply H0.
 Qed.
 
@@ -587,7 +587,7 @@ Qed.
     structural; each forall case replaces the tagged rule by its untagged
     counterpart ([ForallInhTagged → ForallInhUntagged], [ForallSynTagged →
     ForallSyn]) and recovers the cofinite-uniform witness by picking one
-    fresh [X0] and renaming via [d_consis_rename_tvar].  Needs small commute/ftvar
+    fresh [α0] and renaming via [d_consis_rename_tvar].  Needs small commute/ftvar
     helpers ([btyp_to_utyp_syn_open], [utyp_to_btyp_open], an
     [ftvar_utyp_to_btyp] bound).  This is the last genuinely-new lemma the
     CST reformulation rests on. *)
@@ -617,61 +617,61 @@ Proof.
     exists (Ψ1' `union` Ψ2'). simpl.
     eapply d_consis__arrow; [ eassumption | eassumption | reflexivity ].
   - (* forall_inh_tagged: ε-tag erased, ForallInhTagged → ForallInhUntagged *)
-    pick fresh X0 for (L `union` dom Γ
+    pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
        `union` ftvar_in_btyp B).
-    destruct (H0 X0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
+    destruct (H0 α0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
     rewrite erase_open in HΨ'0.
     exists Ψ'0. simpl.
     apply d_consis__forall_inh_untagged with
       (L := dom Γ `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
-            `union` ftvar_in_btyp B `union` singleton X0).
-    intros X HX.
-    rewrite (subst_utyp_in_utyp_intro X0) by fsetdec.
-    rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+            `union` ftvar_in_btyp B `union` singleton α0).
+    intros α Hα.
+    rewrite (subst_utyp_in_utyp_intro α0) by fsetdec.
+    rewrite (subst_btyp_in_btyp_intro α0) by fsetdec.
+    apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ α0 α); [ reflexivity | simpl; fsetdec ].
   - (* forall_inh_untagged: ForallInhUntagged → ForallInhUntagged *)
-    pick fresh X0 for (L `union` dom Γ
+    pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
        `union` ftvar_in_btyp B).
-    destruct (H0 X0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
+    destruct (H0 α0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
     rewrite erase_open in HΨ'0.
     exists Ψ'0. simpl.
     apply d_consis__forall_inh_untagged with
       (L := dom Γ `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
-            `union` ftvar_in_btyp B `union` singleton X0).
-    intros X HX.
-    rewrite (subst_utyp_in_utyp_intro X0) by fsetdec.
-    rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+            `union` ftvar_in_btyp B `union` singleton α0).
+    intros α Hα.
+    rewrite (subst_utyp_in_utyp_intro α0) by fsetdec.
+    rewrite (subst_btyp_in_btyp_intro α0) by fsetdec.
+    apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ α0 α); [ reflexivity | simpl; fsetdec ].
   - (* forall_syn_tagged: ε-tag erased, ForallSynTagged → ForallSyn *)
-    pick fresh X0 for (L `union` dom Γ
+    pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
        `union` ftvar_in_btyp B).
-    destruct (H0 X0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
+    destruct (H0 α0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
     rewrite erase_open in HΨ'0.
     exists Ψ'0. simpl.
     apply d_consis__forall_syn with
       (L := dom Γ `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
-            `union` ftvar_in_btyp B `union` singleton X0).
-    intros X HX.
-    rewrite (subst_utyp_in_utyp_intro X0) by fsetdec.
-    rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+            `union` ftvar_in_btyp B `union` singleton α0).
+    intros α Hα.
+    rewrite (subst_utyp_in_utyp_intro α0) by fsetdec.
+    rewrite (subst_btyp_in_btyp_intro α0) by fsetdec.
+    apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ α0 α); [ reflexivity | simpl; fsetdec ].
   - (* forall_syn: ForallSyn → ForallSyn *)
-    pick fresh X0 for (L `union` dom Γ
+    pick fresh α0 for (L `union` dom Γ
        `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
        `union` ftvar_in_btyp B).
-    destruct (H0 X0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
+    destruct (H0 α0 ltac:(fsetdec)) as [Ψ'0 HΨ'0].
     rewrite erase_open in HΨ'0.
     exists Ψ'0. simpl.
     apply d_consis__forall_syn with
       (L := dom Γ `union` ftvar_in_utyp (btyp_to_utyp_syn (utyp_to_btyp C))
-            `union` ftvar_in_btyp B `union` singleton X0).
-    intros X HX.
-    rewrite (subst_utyp_in_utyp_intro X0) by fsetdec.
-    rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+            `union` ftvar_in_btyp B `union` singleton α0).
+    intros α Hα.
+    rewrite (subst_utyp_in_utyp_intro α0) by fsetdec.
+    rewrite (subst_btyp_in_btyp_intro α0) by fsetdec.
+    apply (@d_consis_rename_tvar _ _ _ _ HΨ'0 nil Γ α0 α); [ reflexivity | simpl; fsetdec ].
 Qed.
 
 
@@ -696,12 +696,12 @@ Qed.
 
 (** The [d_consis] substitution lemma (the infrastructure the [forall_l]
     cases of both transitivity lemmas were blocked on).  Substituting a
-    tvar [X0] by a tagged type [ph] on the unresolved side, and by its
+    tvar [α0] by a tagged type [ph] on the unresolved side, and by its
     bidirectional image [utyp_to_btyp ph] on the bidirectional side,
     preserves consistency WITHOUT adding tags — the variable occurrences
     become [ph ∼ utyp_to_btyp ph], which is tag-free ([d_consis_ttyp_refl]).
     Structure mirrors [d_consis_rename_tvar] (var→var); the only changes are the
-    [X0]-case (use the base fact) and the [lc]/wf side-conditions for [ph]. *)
+    [α0]-case (use the base fact) and the [lc]/wf side-conditions for [ph]. *)
 Lemma d_consis_subst_tvar : forall Δ Γ C B,
     Δ ⨟ Γ ⊢ C ∼ B ->
     forall Γ1 Γ2 α0 C',
@@ -713,7 +713,7 @@ Lemma d_consis_subst_tvar : forall Δ Γ C B,
 Proof.
   intros Δ Γ C B H. induction H; intros Γ1 Γ2 α0 C' Heq Hwf Htt; subst; simpl.
   - apply d_consis__unit. assumption.
-  - (* var: [X = α0] uses the base fact; [X <> α0] stays a variable. *)
+  - (* var: [α = α0] uses the base fact; [α <> α0] stays a variable. *)
     destruct_if.
     + eapply d_consis_equiv; [ | apply d_consis_ttyp_refl; assumption ]. fsetdec.
     + apply d_consis__var; [ analyze_binds H; auto | assumption ].
@@ -721,55 +721,55 @@ Proof.
       [ eapply IHd_consis1; eauto | eapply IHd_consis2; eauto | assumption ].
   - eapply d_consis__forall_inh_tagged with
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    + intros Z HZ.
+    + intros α2 Hα2.
       erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
         by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
       erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
         by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
-      rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
-      eapply (H0 Z);
+      rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
+      eapply (H0 α2);
         [ fsetdec | simpl; reflexivity
-        | rewrite_env ((Z ~ dbind_tvar) ++ (Γ1 ++ Γ2));
+        | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
           apply d_wf_utyp_weakening_head; exact Hwf
         | assumption ].
     + assumption.
   - apply d_consis__forall_inh_untagged with
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    intros Z HZ.
+    intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
       by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    eapply (H0 Z);
+    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 α2);
       [ fsetdec | simpl; reflexivity
-      | rewrite_env ((Z ~ dbind_tvar) ++ (Γ1 ++ Γ2));
+      | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
         apply d_wf_utyp_weakening_head; exact Hwf
       | assumption ].
   - apply d_consis__forall_syn_tagged with
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    intros Z HZ.
+    intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
       by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    eapply (H0 Z);
+    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 α2);
       [ fsetdec | simpl; reflexivity
-      | rewrite_env ((Z ~ dbind_tvar) ++ (Γ1 ++ Γ2));
+      | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
         apply d_wf_utyp_weakening_head; exact Hwf
       | assumption ].
   - apply d_consis__forall_syn with
       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    intros Z HZ.
+    intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply is_ttyp_lc; assumption ]).
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
       by (solve [ fsetdec | apply utyp_to_btyp_lc; apply is_ttyp_lc; assumption ]).
-    rewrite_env (((Z ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    eapply (H0 Z);
+    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 α2);
       [ fsetdec | simpl; reflexivity
-      | rewrite_env ((Z ~ dbind_tvar) ++ (Γ1 ++ Γ2));
+      | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
         apply d_wf_utyp_weakening_head; exact Hwf
       | assumption ].
 Qed.
@@ -792,7 +792,7 @@ Qed.
 Inductive utyp_tag_refines : utyp -> utyp -> Prop :=
 | utr_unit  : utyp_tag_refines utyp_unit utyp_unit
 | utr_var_b : forall n, utyp_tag_refines (utyp_var_b n) (utyp_var_b n)
-| utr_var_f : forall X, utyp_tag_refines (utyp_var_f X) (utyp_var_f X)
+| utr_var_f : forall α, utyp_tag_refines (utyp_var_f α) (utyp_var_f α)
 | utr_arrow : forall T1 T2 C1 C2,
     utyp_tag_refines T1 C1 -> utyp_tag_refines T2 C2 ->
     utyp_tag_refines (utyp_arrow T1 T2) (utyp_arrow C1 C2)
@@ -877,21 +877,21 @@ Qed.
 (** ∀-body helper: recover structural refinement of [C] against [paint B]
     from the cofinite consistency body, via [close] + [paint]-opening. *)
 Lemma consis_refines_paint_body : forall L C B,
-    (forall X, X `notin` L ->
-       utyp_tag_refines (open_utyp_wrt_utyp C (utyp_var_f X))
-                        (btyp_to_utyp_syn (open_btyp_wrt_btyp B (btyp_var_f X)))) ->
+    (forall α, α `notin` L ->
+       utyp_tag_refines (open_utyp_wrt_utyp C (utyp_var_f α))
+                        (btyp_to_utyp_syn (open_btyp_wrt_btyp B (btyp_var_f α)))) ->
     utyp_tag_refines C (btyp_to_utyp_syn B).
 Proof.
   intros L C B H.
-  pick fresh X for (L `union` ftvar_in_utyp C `union` ftvar_in_btyp B).
-  apply (@utyp_tag_refines_close C (btyp_to_utyp_syn B) X 0).
+  pick fresh α for (L `union` ftvar_in_utyp C `union` ftvar_in_btyp B).
+  apply (@utyp_tag_refines_close C (btyp_to_utyp_syn B) α 0).
   - fsetdec.
   - rewrite ftvar_btyp_to_utyp_syn; fsetdec.
-  - change (open_utyp_wrt_utyp_rec 0 (utyp_var_f X) C)
-      with (open_utyp_wrt_utyp C (utyp_var_f X)).
-    change (open_utyp_wrt_utyp_rec 0 (utyp_var_f X) (btyp_to_utyp_syn B))
-      with (open_utyp_wrt_utyp (btyp_to_utyp_syn B) (utyp_var_f X)).
-    specialize (H X ltac:(fsetdec)).
+  - change (open_utyp_wrt_utyp_rec 0 (utyp_var_f α) C)
+      with (open_utyp_wrt_utyp C (utyp_var_f α)).
+    change (open_utyp_wrt_utyp_rec 0 (utyp_var_f α) (btyp_to_utyp_syn B))
+      with (open_utyp_wrt_utyp (btyp_to_utyp_syn B) (utyp_var_f α)).
+    specialize (H α ltac:(fsetdec)).
     rewrite btyp_to_utyp_syn_open in H. exact H.
 Qed.
 
@@ -934,24 +934,24 @@ Proof.
   - fsetdec.
   - fsetdec.
   - fsetdec.
-  - pick fresh X. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH X ltac:(fsetdec)) end.
+  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH α ltac:(fsetdec)) end.
     rewrite compose_tags_open in *. fsetdec.
-  - pick fresh X. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH X ltac:(fsetdec)) end.
+  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH α ltac:(fsetdec)) end.
     rewrite compose_tags_open in *. fsetdec.
-  - pick fresh X. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH X ltac:(fsetdec)) end.
+  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH α ltac:(fsetdec)) end.
     rewrite compose_tags_open in *. fsetdec.
-  - pick fresh X. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-      specialize (IH X ltac:(fsetdec)) end.
+  - pick fresh α. match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
+      specialize (IH α ltac:(fsetdec)) end.
     rewrite compose_tags_open in *. fsetdec.
 Qed.
 
 (** Source-swap with the [compose_tags] witness: if [T] refines [Cmid] (same
     shape, tags ⊇) and [Cmid ∼ B], then [T ∼ B] holds at the canonical
     context [compose_tags T B].  The witness is UNIFORM (opening-invariant via
-    [compose_tags_open]), so the ∀ cases avoid the cofinite per-X existential.
+    [compose_tags_open]), so the ∀ cases avoid the cofinite per-α existential.
     No [d_tags], no linearity. *)
 Lemma refines_consis_swap : forall Δ Γ Cmid B,
     Δ ⨟ Γ ⊢ Cmid ∼ B ->
@@ -967,45 +967,45 @@ Proof.
   - (* forall_inh_tagged: Cmid = utyp_all_etag ε C, B = btyp_all_inh; C = utyp_all_etag ε T0 *)
     inversion Href; subst. simpl.
     eapply d_consis__forall_inh_tagged with (L := L) (Ψ0 := compose_tags T0 B); [ | reflexivity ].
-    intros X HX.
+    intros α Hα.
     match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
-      rewrite <- (compose_tags_open Tb Bb X X) end.
-    apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+      rewrite <- (compose_tags_open Tb Bb α α) end.
+    apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
   - (* forall_inh_untagged: Cmid = utyp_all_syn C, B = btyp_all_inh; C tagged or syn *)
     inversion Href; subst; simpl.
     + (* C = utyp_all_etag ε T0 (extra tag) *)
       eapply d_consis__forall_inh_tagged with (L := L) (Ψ0 := compose_tags T0 B); [ | reflexivity ].
-      intros X HX.
+      intros α Hα.
       match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
-        rewrite <- (compose_tags_open Tb Bb X X) end.
-      apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+        rewrite <- (compose_tags_open Tb Bb α α) end.
+      apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
     + (* C = utyp_all_syn T0 *)
       apply d_consis__forall_inh_untagged with (L := L).
-      intros X HX.
+      intros α Hα.
       match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
-        rewrite <- (compose_tags_open Tb Bb X X) end.
-      apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+        rewrite <- (compose_tags_open Tb Bb α α) end.
+      apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
   - (* forall_syn_tagged: Cmid = utyp_all_etag ε C, B = btyp_all_syn; C = utyp_all_etag ε T0 *)
     inversion Href; subst. simpl.
     apply d_consis__forall_syn_tagged with (L := L).
-    intros X HX.
+    intros α Hα.
     match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
-      rewrite <- (compose_tags_open Tb Bb X X) end.
-    apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+      rewrite <- (compose_tags_open Tb Bb α α) end.
+    apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
   - (* forall_syn: Cmid = utyp_all_syn C, B = btyp_all_syn; C tagged or syn *)
     inversion Href; subst; simpl.
     + (* C = utyp_all_etag ε T0 *)
       apply d_consis__forall_syn_tagged with (L := L).
-      intros X HX.
+      intros α Hα.
       match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
-        rewrite <- (compose_tags_open Tb Bb X X) end.
-      apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+        rewrite <- (compose_tags_open Tb Bb α α) end.
+      apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
     + (* C = utyp_all_syn T0 *)
       apply d_consis__forall_syn with (L := L).
-      intros X HX.
+      intros α Hα.
       match goal with |- compose_tags ?Tb ?Bb ⨟ _ ⊢ _ ∼ _ =>
-        rewrite <- (compose_tags_open Tb Bb X X) end.
-      apply (H0 X HX). apply utyp_tag_refines_open. assumption.
+        rewrite <- (compose_tags_open Tb Bb α α) end.
+      apply (H0 α Hα). apply utyp_tag_refines_open. assumption.
 Qed.
 
 (** Reformulated CST over a GENERAL middle [Cmid] (paper-faithful: the syn
@@ -1046,19 +1046,19 @@ Proof.
     + apply d_sub__check;
         [ exact HgT | exact H0 | apply (refines_consis_swap H1 Href) | exact H2 ].
   - (* forall_r (tc): IH carries the bound; refinement unchanged. *)
-    pick fresh X0 for (L `union` dom Γ `union` ftvar_in_utyp C'
+    pick fresh α0 for (L `union` dom Γ `union` ftvar_in_utyp C'
                        `union` ftvar_in_btyp B).
-    destruct (H1 X0 ltac:(fsetdec) Ψ0 C'
+    destruct (H1 α0 ltac:(fsetdec) Ψ0 C'
                 ltac:(apply d_consis_weakening_head; exact Hcons) Href) as [Ψ' [Hbnd HΨ']].
     exists Ψ'. split; [ exact Hbnd | ].
     apply d_sub__forall_r with
       (L := L `union` dom Γ `union` ftvar_in_utyp C' `union` ftvar_in_btyp B
-            `union` singleton X0);
+            `union` singleton α0);
       [ assumption | ].
-    intros X HX.
-    rewrite (subst_btyp_in_btyp_intro X0) by fsetdec.
-    rewrite <- (subst_utyp_in_utyp_fresh_eq C' (utyp_var_f X) X0) by fsetdec.
-    apply (@d_sub_rename_tvar _ _ _ _ _ HΨ' nil Γ X0 X); [ reflexivity | simpl; fsetdec ].
+    intros α Hα.
+    rewrite (subst_btyp_in_btyp_intro α0) by fsetdec.
+    rewrite <- (subst_utyp_in_utyp_fresh_eq C' (utyp_var_f α) α0) by fsetdec.
+    apply (@d_sub_rename_tvar _ _ _ _ _ HΨ' nil Γ α0 α); [ reflexivity | simpl; fsetdec ].
   - (* arg (fn m): domain by source-swap, result by IH; bound by chain + IH. *)
     simpl in Hcons. dependent destruction Hcons.
     dependent destruction Href.
@@ -1077,13 +1077,13 @@ Proof.
        C' = utyp_all_etag ε C0 (utr_etag_etag); reconstruct via forall_l_tagged. *)
     dependent destruction Href.
     simpl in Hcons. dependent destruction Hcons.
-    pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp T0
+    pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp T0
                       `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                       `union` Ψ `union` Ψ').
-    pose proof (@d_consis_subst_tvar _ _ _ _ (H4 X ltac:(fsetdec)) nil Γ X ph
+    pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(fsetdec)) nil Γ α ph
                   eq_refl ltac:(simpl; exact H2) H3) as Hinst.
-    rewrite <- (subst_utyp_in_utyp_intro X T0 ph) in Hinst by fsetdec.
-    rewrite <- (subst_btyp_in_btyp_intro X (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
+    rewrite <- (subst_utyp_in_utyp_intro α T0 ph) in Hinst by fsetdec.
+    rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
       by (rewrite ftvar_utyp_to_btyp; fsetdec).
     rewrite <- utyp_to_btyp_open in Hinst.
     simpl in Hinst.
@@ -1105,13 +1105,13 @@ Proof.
     dependent destruction Hcons.
     + (* C' = utyp_all_etag ε C0 (matched syn): mirror, reconstruct via forall_l_tagged *)
       dependent destruction Href.
-      pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C0
+      pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C0
                         `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                         `union` Ψ0 `union` Ψ `union` Ψ').
-      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 X ltac:(fsetdec)) nil Γ X ph
+      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(fsetdec)) nil Γ α ph
                     eq_refl ltac:(simpl; exact H2) H3) as Hinst.
-      rewrite <- (subst_utyp_in_utyp_intro X C0 ph) in Hinst by fsetdec.
-      rewrite <- (subst_btyp_in_btyp_intro X (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
+      rewrite <- (subst_utyp_in_utyp_intro α C0 ph) in Hinst by fsetdec.
+      rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
         by (rewrite ftvar_utyp_to_btyp; fsetdec).
       rewrite <- utyp_to_btyp_open in Hinst.
       simpl in Hinst.
@@ -1129,13 +1129,13 @@ Proof.
         -- eapply d_sub_equiv; [ | exact HΔ_IH ]. clear - Hbnd H0; fsetdec.
     + (* C' = utyp_all_syn C0 *)
       dependent destruction Href.
-      pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C0
+      pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C0
                         `union` ftvar_in_utyp C `union` ftvar_in_btyp B
                         `union` Ψ0 `union` Ψ `union` Ψ').
-      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 X ltac:(fsetdec)) nil Γ X ph
+      pose proof (@d_consis_subst_tvar _ _ _ _ (H4 α ltac:(fsetdec)) nil Γ α ph
                     eq_refl ltac:(simpl; exact H2) H3) as Hinst.
-      rewrite <- (subst_utyp_in_utyp_intro X C0 ph) in Hinst by fsetdec.
-      rewrite <- (subst_btyp_in_btyp_intro X (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
+      rewrite <- (subst_utyp_in_utyp_intro α C0 ph) in Hinst by fsetdec.
+      rewrite <- (subst_btyp_in_btyp_intro α (utyp_to_btyp C) (utyp_to_btyp ph)) in Hinst
         by (rewrite ftvar_utyp_to_btyp; fsetdec).
       rewrite <- utyp_to_btyp_open in Hinst.
       simpl in Hinst.
@@ -1322,7 +1322,7 @@ Proof.
     apply d_sub__check;
       [ eapply consis_guarded_btyp_lhs; [ exact Hcons | apply guarded_btyp__unit ]
       | apply guarded_btyp__unit | exact Hcons | apply is_ityp__unit ].
-  - (* var X *)
+  - (* var α *)
     apply d_sub__check;
       [ eapply consis_guarded_btyp_lhs; [ exact Hcons | apply guarded_btyp__var ]
       | apply guarded_btyp__var | exact Hcons | apply is_ityp__var ].
@@ -1336,21 +1336,21 @@ Proof.
     destruct B'; simpl in Hcons; try solve [ inversion Hcons ];
       dependent destruction Hcons;
       match goal with
-      | Hc : forall X0, X0 `notin` ?L1 -> _ ⨟ _ ⊢ _ ∼ _ |- _ =>
+      | Hc : forall α0, α0 `notin` ?L1 -> _ ⨟ _ ⊢ _ ∼ _ |- _ =>
           apply d_sub__forall_r with (L := L `union` L1 `union` dom Γ);
           [ apply is_ityp__all with (L := L); assumption | ];
-          intros X HX;
-          apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f X);
+          intros α Hα;
+          apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f α);
           [ intro Hco; discriminate
           | fsetdec
           | apply d_tags__var; reflexivity
           | apply d_wf_utyp__var; simpl; auto
           | apply is_ttyp__var
-          | specialize (Hc X ltac:(clear -HX; fsetdec));
-            change (utyp_var_f X) with (btyp_to_utyp_syn (btyp_var_f X)) in Hc |- *;
+          | specialize (Hc α ltac:(clear -Hα; fsetdec));
+            change (utyp_var_f α) with (btyp_to_utyp_syn (btyp_var_f α)) in Hc |- *;
             rewrite <- btyp_to_utyp_syn_open in Hc |- *;
             apply d_sub_equiv with (Δ := Ψ); [ clear; fsetdec | ];
-            apply H0; [ clear -HX; fsetdec | exact Hc ] ]
+            apply H0; [ clear -Hα; fsetdec | exact Hc ] ]
       end.
 Qed.
 
@@ -1438,8 +1438,8 @@ Proof.
     subst.
     apply d_sd_typing__abs_check_step with (L := L `union` L0 `union` dom Γ).
     + assumption.
-    + intros X HX.
-      eapply (H1 X ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
+    + intros α Hα.
+      eapply (H1 α ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
       * apply d_wf_ptyp_ctx_weaken with (Γ := Γ);
           [ apply ctx_weaken_app_front | assumption ].
       * intros Γ'' xv M' B'' Hcw Hfr Hsb.
@@ -1527,8 +1527,8 @@ Proof.
     subst.
     apply d_sd_typing__abs_anno_check_step with (L := L `union` L0 `union` dom Γ).
     + assumption.
-    + intros X HX.
-      eapply (H1 X ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
+    + intros α Hα.
+      eapply (H1 α ltac:(fsetdec)); [ reflexivity | reflexivity | | ].
       * apply d_wf_ptyp_ctx_weaken with (Γ := Γ);
           [ apply ctx_weaken_app_front | assumption ].
       * intros Γ'' xv M' B'' Hcw Hfr Hsb.
@@ -1613,9 +1613,9 @@ Proof.
   - fsetdec.
   - fsetdec.
   - fsetdec.
-  - pick fresh X for (L `union` ftvar_in_utyp C).
+  - pick fresh α for (L `union` ftvar_in_utyp C).
     match goal with IH : forall _, _ -> _ [=] _ |- _ =>
-      specialize (IH X ltac:(fsetdec)) end.
+      specialize (IH α ltac:(fsetdec)) end.
     rewrite utyp_etags_open_var in *. fsetdec.
 Qed.
 
@@ -1624,9 +1624,9 @@ Lemma d_consis_ctx_subset_etags : forall Δ Γ C B,
     Δ ⨟ Γ ⊢ C ∼ B -> Δ [<=] utyp_etags C.
 Proof.
   intros Δ Γ C B H. induction H; simpl;
-    try (pick fresh X for (L `union` ftvar_in_utyp C);
+    try (pick fresh α for (L `union` ftvar_in_utyp C);
          match goal with IH : forall _, _ -> _ [<=] _ |- _ =>
-           specialize (IH X ltac:(fsetdec)) end;
+           specialize (IH α ltac:(fsetdec)) end;
          rewrite utyp_etags_open_var in *); fsetdec.
 Qed.
 
@@ -1641,9 +1641,9 @@ Proof.
   - (* infer *) fsetdec.
   - (* check *) eapply d_consis_ctx_subset_etags; eassumption.
   - (* forall_r: same LHS; IH is cofinite *)
-    pick fresh X for L.
+    pick fresh α for L.
     match goal with IH : forall _, _ `notin` _ -> _ [<=] _ |- _ =>
-      apply (IH X); fsetdec end.
+      apply (IH α); fsetdec end.
   - (* arg *)
     match goal with Hc : _ ⨟ _ ⊢ C1 ∼ _ |- _ =>
       pose proof (d_consis_ctx_subset_etags Hc) as Hetag end.

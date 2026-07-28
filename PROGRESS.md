@@ -123,13 +123,44 @@ consequences: `induction S` names its hypotheses `IHS`/`IHS1`/`IHS2`,
 which had to be carried along with the binder; and `try rewrite IHS1`
 fails SILENTLY when stale, surfacing only as a later `fsetdec` failure.
 
-**Residual (deliberately out of scope, for a later pass):** ~5200
-`X`/`Y`/`Z`/`W`/`X0` tokens remain, essentially all of them (a) rule
-binders referenced inside proofs and (b) proof-local intro names —
-`intros Y HY`, `pick fresh Y for …` — which `About` cannot see because
-they never appear in a statement.  Finishing them means renaming the
-rule binders in the `def_*.v` inductives too, which moves every proof
-in the corpus at once.
+**3. The residual slice is now done too** — the type/skeleton VARIABLES.
+`X`/`Y`/`Z`/`W` and `S` are gone from the hand-written corpus, definitions
+included, so the names `induction`/`inversion` auto-bind are greek as well:
+
+  | was | `X` | `Y` | `γ` | `δ` | `Z` | `W` | `S` |
+  |---|---|---|---|---|---|---|---|
+  | now | `α` | `β` | `α1` | `β1` | `α2` | `β2` | `R` |
+
+with `HX`→`Hα` and friends: ~10,900 tokens over 54 files.  Only `α`/`β` are
+bases (subscripts and at most ONE prime); `γ`/`δ` are retired, which also
+removes their old informal "flex variable" reading.  What legitimately keeps a
+latin name: generic Coq `Type` parameters (`forall (X Y : Type)`), notation
+placeholders (`X ∪ Y`), and the 51 nat successors `S n` / `S (size_ptyp A)`.
+
+An atom SET is never `R`: three lemmas quantified a set that is unioned into
+the tag context (`Θ ⨟ (Δ ∪ S) ⊢ …`, `delta_def_fresh S Θ`), so it is a Δ and
+takes `Δ'` — `inter_empty_pointwise`, `ad_partial_precise_delta_weaken_fresh`,
+`a_solve_eq_complete_var_gen`.  In the last of these, HEAD's `S` (142
+occurrences, the set) and HEAD's `R` (100, genuine skeletons) had BOTH
+collapsed onto `R`; separating them again was a real repair, not cosmetics.
+
+**Captures the sweep had to repair.**  A blanket rename can make an inner
+binder capture an outer variable of the same new name, silently changing a
+statement.  Scanning HEAD for statements binding two distinct tvars that
+collapse found them; each was redirected (`X→α0`):
+`consis_precise_core` and `rho_fresh` are the load-bearing ones — their inner
+`forall X` genuinely referenced the outer `α`.  The same hazard bit a
+`Local Ltac` whose formal parameter `Y` became `β` and captured a `β` bound in
+its own body (`ftv_rev_extend`, prop_consis_complete.v).
+
+**Method, for the next such pass.**  Re-derive the offending lemma from the
+previous commit under an adjusted map rather than patching in place, and keep
+the redirect *region-scoped*: in a long proof most `X`s are fine as `α`, and
+only the ones a `pick fresh α` or a rule binder shadows need to move.  Two
+traps: `induction S` names its hypotheses `IHS*`, which must move with the
+binder, and a stale `try rewrite IHS1` fails SILENTLY, surfacing only as a
+later `fsetdec` "goal beyond the scope of this tactic".
+
 
 ## 2026-07-28 — P6-Cs CLOSED: `a_lookeq_solve_complete` axiom-free, 0 admits (+ a load-bearing wf side condition, machine-checked)
 

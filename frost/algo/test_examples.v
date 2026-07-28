@@ -72,7 +72,7 @@ Ltac crush_binds :=
   unfold binds; simpl;
   first [ tauto | repeat (first [ left; reflexivity | right ]) ].
 
-(** [a_binds_tvar X Θ] (rigid / flex / defined flex). *)
+(** [a_binds_tvar α Θ] (rigid / flex / defined flex). *)
 Ltac crush_btvar :=
   unfold a_binds_tvar;
   first [ left; solve [ crush_binds ]
@@ -374,11 +374,11 @@ Proof.
     eapply a_typing__abs_check_step with (L := {}) (Ξ := nil)
       (A0 := ptyp_arrow b0 b0) (A := ptyp_arrow b0 b0) (Θ1 := Θlib).
     + constructor.
-    + intros X _. simpl_open.
+    + intros α _. simpl_open.
       eapply a_typing__abs_check_base with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
-        (A0 := ptyp_arrow (ptyp_var_f X) (ptyp_var_f X))
-        (A := ptyp_var_f X) (B := ptyp_var_f X)
-        (Θ2 := (X ~ abind_tvar) ++ Θlib).
+        (A0 := ptyp_arrow (ptyp_var_f α) (ptyp_var_f α))
+        (A := ptyp_var_f α) (B := ptyp_var_f α)
+        (Θ2 := (α ~ abind_tvar) ++ Θlib).
       * apply a_split__arrow.
       * constructor.
       * intros x Hx. simpl_open.
@@ -665,25 +665,25 @@ Proof.
       (A := ptyp_arrow b0 (ptyp_all (ptyp_arrow b0 b0)))
       (Θ1 := Θlib).
     + constructor.
-    + intros X _. simpl_open.
+    + intros α _. simpl_open.
       eapply a_typing__abs_check_base with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
-        (A0 := ptyp_arrow (ptyp_var_f X) (ptyp_all (ptyp_arrow b0 b0)))
-        (A := ptyp_var_f X) (B := ptyp_all (ptyp_arrow b0 b0))
-        (Θ2 := (X ~ abind_tvar) ++ Θlib).
+        (A0 := ptyp_arrow (ptyp_var_f α) (ptyp_all (ptyp_arrow b0 b0)))
+        (A := ptyp_var_f α) (B := ptyp_all (ptyp_arrow b0 b0))
+        (Θ2 := (α ~ abind_tvar) ++ Θlib).
       * apply a_split__arrow.
       * constructor.
       * intros x Hx. simpl_open.
         eapply a_typing__abs_check_step with (L := {}) (Ξ := nil)
           (A0 := ptyp_arrow b0 b0) (A := ptyp_arrow b0 b0)
-          (Θ1 := (x ~ abind_var_typ (ptyp_var_f X))
-                 ++ (X ~ abind_tvar) ++ Θlib).
+          (Θ1 := (x ~ abind_var_typ (ptyp_var_f α))
+                 ++ (α ~ abind_tvar) ++ Θlib).
         { constructor. }
-        { intros Y _. simpl_open.
+        { intros β _. simpl_open.
           eapply a_typing__abs_check_base with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
-            (A0 := ptyp_arrow (ptyp_var_f Y) (ptyp_var_f Y))
-            (A := ptyp_var_f Y) (B := ptyp_var_f Y)
-            (Θ2 := (Y ~ abind_tvar) ++ (x ~ abind_var_typ (ptyp_var_f X))
-                   ++ (X ~ abind_tvar) ++ Θlib).
+            (A0 := ptyp_arrow (ptyp_var_f β) (ptyp_var_f β))
+            (A := ptyp_var_f β) (B := ptyp_var_f β)
+            (Θ2 := (β ~ abind_tvar) ++ (x ~ abind_var_typ (ptyp_var_f α))
+                   ++ (α ~ abind_tvar) ++ Θlib).
           - apply a_split__arrow.
           - constructor.
           - intros y _. simpl_open.

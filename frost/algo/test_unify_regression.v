@@ -8,7 +8,7 @@
     [unit → unit], and the var-only rules had nowhere to go.
 
     THE FIX (docs/PAPER-GAPS.md, "the `unify` premise IS consistency"):
-    the paper's premise  Θ₀ ⊢ α̂[τ/γ̂] ∼ β̂[τ/γ̂] ⊣ Θ₁  is the CONSISTENCY
+    the paper's premise  Θ₀ ⊢ α̂[τ/α1̂] ∼ β̂[τ/α1̂] ⊣ Θ₁  is the CONSISTENCY
     judgment with the output dropped (full-algo-spec.tex:1440-1442), so
     [a_unify] and [a_consis] are now MUTUALLY inductive and
     [a_unify__flex_assign] recurses into consistency.
@@ -68,7 +68,7 @@ Proof.
           apply a_guess_mono__unit.
       * apply mono_ptyp__arrow; apply mono_ptyp__unit.
       * constructor.
-      * intros γ Hγ. simpl in Hγ. fsetdec.
+      * intros α1 Hα1. simpl in Hα1. fsetdec.
 Qed.
 
 (** Sanity: soundness applies — the output context is well-formed, an

@@ -96,8 +96,8 @@ Proof.
   - constructor.
   - constructor.
   - constructor; assumption.
-  - apply is_styp__all with (L := empty). intros X _.
-    change (btyp_var_f X) with (ptyp_to_btyp_syn (ptyp_var_f X)).
+  - apply is_styp__all with (L := empty). intros α _.
+    change (btyp_var_f α) with (ptyp_to_btyp_syn (ptyp_var_f α)).
     rewrite <- ptyp_to_btyp_syn_open.
     match goal with H : forall _, is_styp _ |- _ => apply H end.
 Qed.

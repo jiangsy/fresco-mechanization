@@ -44,12 +44,12 @@ Proof.
 Qed.
 
 (** A definition is a monotype (it is stored that way). *)
-Lemma a_wf_aenv_binds_def_mono : forall Θ γ τ,
+Lemma a_wf_aenv_binds_def_mono : forall Θ α1 τ,
   a_wf_aenv Θ ->
-  binds γ (abind_flex_mono_def τ) Θ ->
+  binds α1 (abind_flex_mono_def τ) Θ ->
   mono_ptyp τ.
 Proof.
-  intros Θ γ τ Hwf; induction Hwf; intros Hb;
+  intros Θ α1 τ Hwf; induction Hwf; intros Hb;
     try solve [ inversion Hb ];
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
     try discriminate; try (inversion Heqb; subst; assumption); auto.
@@ -59,12 +59,12 @@ Lemma a_wf_aenv_uniq_local : forall Θ, a_wf_aenv Θ -> uniq Θ.
 Proof. intros Θ H; induction H; solve_uniq. Qed.
 
 (** A definition is well-formed in its own (tail) context, hence in the whole. *)
-Lemma a_wf_aenv_binds_def_wf_local : forall Θ γ τ,
+Lemma a_wf_aenv_binds_def_wf_local : forall Θ α1 τ,
   a_wf_aenv Θ ->
-  binds γ (abind_flex_mono_def τ) Θ ->
+  binds α1 (abind_flex_mono_def τ) Θ ->
   a_wf_ptyp Θ τ.
 Proof.
-  intros Θ γ τ Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];
+  intros Θ α1 τ Hwf; induction Hwf; intros Hb; try solve [ inversion Hb ];
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx Heqb] | Hb'];
     try discriminate;
     try (eapply a_wf_ptyp_weaken;
@@ -90,7 +90,7 @@ Lemma ptyp_to_bskl_syn_inj : forall A A',
   A = A'.
 Proof.
   unfold ptyp_to_bskl_syn.
-  intros A A' HmA; revert A'; induction HmA as [ | X | A1 A2 Hm1 IH1 Hm2 IH2 ];
+  intros A A' HmA; revert A'; induction HmA as [ | α | A1 A2 Hm1 IH1 Hm2 IH2 ];
     intros A' HmB Heq; destruct HmB; simpl in Heq; try discriminate.
   - reflexivity.
   - inversion Heq; reflexivity.
@@ -126,15 +126,15 @@ Proof.
   intros Ψ Θ R Qt Hc Hwf; induction Hc; intros A0 HeqS HmA0;
     unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn in *.
   - (* unit *)
-    destruct HmA0 as [ | X0 | A1 A2 Hm1 Hm2 ]; simpl in HeqS; try discriminate.
+    destruct HmA0 as [ | α0 | A1 A2 Hm1 Hm2 ]; simpl in HeqS; try discriminate.
     exists ptyp_unit.
     split; [ apply mono_ptyp__unit | ].
     split; [ reflexivity | ].
     apply a_tyequiv__refl; apply lc_ptyp_unit.
   - (* var *)
-    destruct HmA0 as [ | X0 | ]; simpl in HeqS; try discriminate.
+    destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
-    exists (ptyp_var_f X0).
+    exists (ptyp_var_f α0).
     split; [ apply mono_ptyp__var | ].
     split; [ reflexivity | ].
     apply a_tyequiv__refl; apply lc_ptyp_var_f.
@@ -158,7 +158,7 @@ Proof.
   - (* tophole_inh *) destruct HmA0; simpl in HeqS; discriminate.
   - (* tophole_drop *) destruct HmA0; simpl in HeqS; discriminate.
   - (* flex_l : the SUBJECT is a defined flexible; unfold it *)
-    destruct HmA0 as [ | X0 | ]; simpl in HeqS; try discriminate.
+    destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     destruct (IHHc Hwf τ eq_refl Hmτ) as [C [HmC [HeqQ He]]].
@@ -197,20 +197,20 @@ Proof.
   intros Θ Δ Qb Qt Hr Hwf; induction Hr; intros B0 HeqB HmB0;
     unfold ptyp_to_bskl_syn in *.
   - (* unit *)
-    destruct HmB0 as [ | X0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
+    destruct HmB0 as [ | α0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
     exists ptyp_unit.
     split; [ apply mono_ptyp__unit | ].
     split; [ reflexivity | ].
     apply a_tyequiv__refl; apply lc_ptyp_unit.
   - (* var *)
-    destruct HmB0 as [ | X0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
+    destruct HmB0 as [ | α0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
     inversion HeqB; subst.
-    exists (ptyp_var_f X0).
+    exists (ptyp_var_f α0).
     split; [ apply mono_ptyp__var | ].
     split; [ reflexivity | ].
     apply a_tyequiv__refl; apply lc_ptyp_var_f.
   - (* arrow *)
-    destruct HmB0 as [ | X0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
+    destruct HmB0 as [ | α0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
     inversion HeqB; subst.
     destruct (IHHr1 Hwf B1 eq_refl Hm1) as [C1 [HmC1 [HeqQ1 He1]]].
     destruct (IHHr2 Hwf B2 eq_refl Hm2) as [C2 [HmC2 [HeqQ2 He2]]].
@@ -225,7 +225,7 @@ Proof.
   - (* tophole_fill *) destruct HmB0; simpl in HeqB; discriminate.
   - (* tophole_keep *) destruct HmB0; simpl in HeqB; discriminate.
   - (* flex_l : the LEFT side is a defined flexible; unfold it *)
-    destruct HmB0 as [ | X0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
+    destruct HmB0 as [ | α0 | B1 B2 Hm1 Hm2 ]; simpl in HeqB; try discriminate.
     inversion HeqB; subst.
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     destruct (IHHr Hwf τ eq_refl Hmτ) as [C [HmC [HeqQ He]]].
@@ -280,7 +280,7 @@ Qed.
 (** Consistency is REFLEXIVE on monotype paintings. *)
 Lemma consis_mono_refl : forall A Θ,
   mono_ptyp A ->
-  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A).
 Proof.
   intros A Θ Hm; unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
@@ -289,7 +289,7 @@ Proof.
   - apply ad_pat_consis__var; [ fsetdec | apply Hvis; simpl; fsetdec ].
   - apply ad_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ apply IHHm1 | apply IHHm2 | fsetdec ];
-      intros X HX; apply Hvis; simpl; fsetdec.
+      intros α Hα; apply Hvis; simpl; fsetdec.
 Qed.
 
 (** Consistency is SYMMETRIC on monotype paintings.  The lookup rules swap:
@@ -309,8 +309,8 @@ Proof.
     destruct HmB0; simpl in HeqQ; try discriminate.
     simpl. apply ad_pat_consis__unit. fsetdec.
   - (* var *)
-    destruct HmA0 as [ | X0 | ]; simpl in HeqS; try discriminate.
-    destruct HmB0 as [ | Y0 | ]; simpl in HeqQ; try discriminate.
+    destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
+    destruct HmB0 as [ | β0 | ]; simpl in HeqQ; try discriminate.
     inversion HeqS; inversion HeqQ; subst.
     simpl. apply ad_pat_consis__var; [ fsetdec | assumption ].
   - (* arrow *)
@@ -330,13 +330,13 @@ Proof.
   - (* tophole_inh *) destruct HmA0; simpl in HeqS; discriminate.
   - (* tophole_drop *) destruct HmA0; simpl in HeqS; discriminate.
   - (* flex_l : a definition unfolded on the LEFT becomes one on the RIGHT *)
-    destruct HmA0 as [ | X0 | ]; simpl in HeqS; try discriminate.
+    destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     eapply IHHc; eauto.
   - (* flex_r : ... and vice versa *)
-    destruct HmB0 as [ | Y0 | ]; simpl in HeqQ; try discriminate.
+    destruct HmB0 as [ | β0 | ]; simpl in HeqQ; try discriminate.
     inversion HeqQ; subst.
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     eapply ad_pat_consis__flex_l; [ eassumption | ].
@@ -373,7 +373,7 @@ Proof.
     assert (He2 : Ψ2 [=] empty) by (apply (IHHc2 Hwf A2 eq_refl Hm2)).
     clear - H He1 He2. fsetdec.
   - (* flex_l : the subject unfolds to its DEFINITION, itself a monotype *)
-    destruct HmA0 as [ | X0 | ]; simpl in HeqS; try discriminate.
+    destruct HmA0 as [ | α0 | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     apply (IHHc Hwf τ eq_refl Hmτ).
@@ -406,44 +406,44 @@ Qed.
 Lemma a_tyequiv_mono_vis : forall Θ A A',
   Θ ⊢ A ≡ᵗ A' ->
   a_wf_aenv Θ ->
-  ((mono_ptyp A /\ (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ)) ->
-   (mono_ptyp A' /\ (forall X, X `in` ftvar_in_ptyp A' -> a_binds_tvar X Θ))) /\
-  ((mono_ptyp A' /\ (forall X, X `in` ftvar_in_ptyp A' -> a_binds_tvar X Θ)) ->
-   (mono_ptyp A /\ (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ))).
+  ((mono_ptyp A /\ (forall α0, α0 `in` ftvar_in_ptyp A -> a_binds_tvar α0 Θ)) ->
+   (mono_ptyp A' /\ (forall α0, α0 `in` ftvar_in_ptyp A' -> a_binds_tvar α0 Θ))) /\
+  ((mono_ptyp A' /\ (forall α0, α0 `in` ftvar_in_ptyp A' -> a_binds_tvar α0 Θ)) ->
+   (mono_ptyp A /\ (forall α0, α0 `in` ftvar_in_ptyp A -> a_binds_tvar α0 Θ))).
 Proof.
   intros * Heq Hwf; induction Heq; split; intros [Hm Hv];
     try solve [ split; assumption ]; try tauto.
   - (* flex_def, forward : α ↦ τ *)
     split.
     + eapply a_wf_aenv_binds_def_mono; eauto.
-    + intros X HX.
+    + intros α0 Hα0.
       eapply a_wf_ptyp_ftv_tvarish;
-        [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact HX ].
+        [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact Hα0 ].
   - (* flex_def, backward : τ ↦ α *)
     split; [ apply mono_ptyp__var | ].
-    intros X HX. simpl in HX.
-    assert (X = α) by (clear - HX; fsetdec). subst.
+    intros α0 Hα0. simpl in Hα0.
+    assert (α0 = α) by (clear - Hα0; fsetdec). subst.
     right; right; exists τ; assumption.
   - (* arrow, forward *)
     inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
     destruct (IHHeq1 Hwf) as [IH1 _]. destruct (IHHeq2 Hwf) as [IH2 _].
     destruct (IH1 (conj Hm1
-        (fun X HX => Hv X (union_2 _ HX)))) as [HmB1 HvB1].
+        (fun α0 Hα0 => Hv α0 (union_2 _ Hα0)))) as [HmB1 HvB1].
     destruct (IH2 (conj Hm2
-        (fun X HX => Hv X (union_3 _ HX)))) as [HmB2 HvB2].
+        (fun α0 Hα0 => Hv α0 (union_3 _ Hα0)))) as [HmB2 HvB2].
     split; [ apply mono_ptyp__arrow; auto | ].
-    intros X HX; simpl in HX.
-    destruct (union_1 HX); auto.
+    intros α0 Hα0; simpl in Hα0.
+    destruct (union_1 Hα0); auto.
   - (* arrow, backward *)
     inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
     destruct (IHHeq1 Hwf) as [_ IH1]. destruct (IHHeq2 Hwf) as [_ IH2].
     destruct (IH1 (conj Hm1
-        (fun X HX => Hv X (union_2 _ HX)))) as [HmA1 HvA1].
+        (fun α0 Hα0 => Hv α0 (union_2 _ Hα0)))) as [HmA1 HvA1].
     destruct (IH2 (conj Hm2
-        (fun X HX => Hv X (union_3 _ HX)))) as [HmA2 HvA2].
+        (fun α0 Hα0 => Hv α0 (union_3 _ Hα0)))) as [HmA2 HvA2].
     split; [ apply mono_ptyp__arrow; auto | ].
-    intros X HX; simpl in HX.
-    destruct (union_1 HX); auto.
+    intros α0 Hα0; simpl in Hα0.
+    destruct (union_1 Hα0); auto.
   - (* all, forward : a monotype is never a ∀ *)
     inversion Hm.
   - (* all, backward *)
@@ -451,16 +451,16 @@ Proof.
 Qed.
 
 (** Unfold a DEFINED subject variable inside a consistency derivation:
-    only [var] / [flex_l] / [flex_r] can have subject [γ̂], and each is
+    only [var] / [flex_l] / [flex_r] can have subject [α1̂], and each is
     absorbed by a lookup rule on the other side. *)
 Lemma consis_unfold_def_subject : forall Ψ Θ R Qt,
   Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qt ->
   a_wf_aenv Θ ->
-  forall γ τ, R = uskl_var_f γ ->
-  binds γ (abind_flex_mono_def τ) Θ ->
+  forall α1 τ, R = uskl_var_f α1 ->
+  binds α1 (abind_flex_mono_def τ) Θ ->
   Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn τ) ∼ Qt.
 Proof.
-  intros * Hc Hwf; induction Hc; intros γ0 τ0 HeqS Hb;
+  intros * Hc Hwf; induction Hc; intros α10 τ0 HeqS Hb;
     try discriminate HeqS.
   - (* var : the join is the same variable; fold it with [flex_r] *)
     inversion HeqS; subst.
@@ -468,9 +468,9 @@ Proof.
     eapply consis_psi_cong_local;
       [ apply consis_mono_refl | clear - H; fsetdec ].
     + eapply a_wf_aenv_binds_def_mono; eauto.
-    + intros Y HY.
+    + intros β Hβ.
       eapply a_wf_ptyp_ftv_tvarish;
-        [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact HY ].
+        [ eapply a_wf_aenv_binds_def_wf_local; eauto | exact Hβ ].
   - (* flex_l : the same definition was already unfolded *)
     inversion HeqS; subst.
     assert (Huniq : uniq Θ) by (apply a_wf_aenv_uniq_local; auto).
@@ -512,7 +512,7 @@ Lemma tyequiv_mono_consis_transport : forall Θ A A',
   Θ ⊢ A ≡ᵗ A' ->
   a_wf_aenv Θ ->
   mono_ptyp A ->
-  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   (forall Ψ Qt, Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A') ∼ Qt ->
      Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt) /\
   (forall Ψ Qt, Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qt ->
@@ -543,10 +543,10 @@ Proof.
       unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn; simpl; reflexivity.
   - (* arrow : componentwise transport *)
     inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
-    assert (Hv1 : forall X, X `in` ftvar_in_ptyp A1 -> a_binds_tvar X Θ)
-      by (intros X HX; apply Hv; fsetdec).
-    assert (Hv2 : forall X, X `in` ftvar_in_ptyp A2 -> a_binds_tvar X Θ)
-      by (intros X HX; apply Hv; fsetdec).
+    assert (Hv1 : forall α, α `in` ftvar_in_ptyp A1 -> a_binds_tvar α Θ)
+      by (intros α Hα; apply Hv; fsetdec).
+    assert (Hv2 : forall α, α `in` ftvar_in_ptyp A2 -> a_binds_tvar α Θ)
+      by (intros α Hα; apply Hv; fsetdec).
     destruct (IHHeq1 Hwf Hm1 Hv1) as [H1l H1r].
     destruct (IHHeq2 Hwf Hm2 Hv2) as [H2l H2r].
     split; intros Ψ Qt Hc.
@@ -566,7 +566,7 @@ Theorem tyequiv_mono_consis : forall Θ A A',
   Θ ⊢ A ≡ᵗ A' ->
   a_wf_aenv Θ ->
   mono_ptyp A ->
-  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A').
 Proof.
   intros * Heq Hwf Hm Hv.
@@ -583,7 +583,7 @@ Qed.
 Corollary consis_mono_trans : forall Θ A A' A0,
   a_wf_aenv Θ ->
   mono_ptyp A -> mono_ptyp A' ->
-  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A') ->
   empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A') ∼ (ptyp_to_bskl_syn A0) ->
   empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ (ptyp_to_bskl_syn A0).

@@ -155,14 +155,14 @@ Lemma ptyp_to_pskl_ftv : forall A,
   ftvar_in_pskl (ptyp_to_pskl A) [<=] ftvar_in_ptyp A.
 Proof. induction A; simpl; fsetdec. Qed.
 
-Lemma a_extract_output_fresh : forall NM α M P P0 Ξ P1 γ,
+Lemma a_extract_output_fresh : forall NM α M P P0 Ξ P1 α1,
   P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
-  γ `notin` ftvar_in_pskl P0 ->
-  γ `notin` dom Ξ ->
-  γ `notin` ftvar_in_pskl P1.
+  α1 `notin` ftvar_in_pskl P0 ->
+  α1 `notin` dom Ξ ->
+  α1 `notin` ftvar_in_pskl P1.
 Proof.
-  intros * Hex Hγ0 HγΞ. inversion Hex; subst.
-  simpl_env in HγΞ.
+  intros * Hex Hγ0 Hα1Ξ. inversion Hex; subst.
+  simpl_env in Hα1Ξ.
   match goal with
   | Hlk : _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ , Hsc : _ ⊩ _ ⨾ _ ⤳ _ |- _ =>
       pose proof (a_looksub_ftv Hlk) as Hb1;
@@ -172,14 +172,14 @@ Proof.
   | Hg : a_guess _ _ _ _ |- _ => inversion Hg; subst
   end.
   - (* SK : output = solve output *)
-    simpl in Hb2. clear - Hb1 Hb2 Hγ0 HγΞ. fsetdec.
+    simpl in Hb2. clear - Hb1 Hb2 Hγ0 Hα1Ξ. fsetdec.
   - (* TY : output = guessed monotype *)
     match goal with
     | Hgm : a_guess_mono _ _ _ _ |- _ =>
         pose proof (a_guess_mono_ftv Hgm) as Hb3
     end.
     pose proof (ptyp_to_pskl_ftv A) as Hb4.
-    simpl in Hb2. clear - Hb1 Hb2 Hb3 Hb4 Hγ0 HγΞ. fsetdec.
+    simpl in Hb2. clear - Hb1 Hb2 Hb3 Hb4 Hγ0 Hα1Ξ. fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -276,9 +276,9 @@ Proof.
     + (* unit *)
       apply a_looksub__check;
         [ intro Hc; discriminate Hc | constructor | assumption | auto ].
-    + (* var X *)
+    + (* var α *)
       destruct_if as [-> | HneX].
-      * (* X = β : the source became α-free — switch to Absent *)
+      * (* α = β : the source became α-free — switch to Absent *)
         match goal with
         | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
             destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ Hl)
@@ -300,15 +300,15 @@ Proof.
               simpl in HI; exact HI
           end ].
   - (* LS-ForallR *)
-    apply a_looksub__forall_r with (L := L). intros γ Hγ. auto.
+    apply a_looksub__forall_r with (L := L). intros α1 Hα1. auto.
   - (* LS-Arrow *)
     apply a_looksub__arrow; auto.
   - (* LS-ForallL *)
     apply a_looksub__forall_l
       with (L := L `union` singleton β `union` ftvar_in_pskl P0).
-    intros γ Hγ.
+    intros α1 Hα1.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hγ; fsetdec | assumption ].
+      [ | clear - Hα1; fsetdec | assumption ].
     auto.
   - (* LS-UnivGhostL *)
     apply a_looksub__univ_ghost_l. auto.
@@ -325,7 +325,7 @@ Proof.
     + intro Hc. destruct P; simpl in Hc; try discriminate Hc.
       revert Hc.
       destruct_if as [-> | HneX]; intro Hc.
-      * (* X = β : then α ∈ ftv (var β) forces α = β, contradiction *)
+      * (* α = β : then α ∈ ftv (var β) forces α = β, contradiction *)
         simpl in *. fsetdec.
       * inversion Hc; subst. congruence.
     + match goal with
@@ -338,25 +338,25 @@ Proof.
   - (* LE-ForallInh *)
     apply a_lookeq__forall_inh
       with (L := L `union` singleton β `union` ftvar_in_pskl P0).
-    intros γ Hγ.
+    intros α1 Hα1.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hγ; fsetdec | assumption ].
+      [ | clear - Hα1; fsetdec | assumption ].
     auto.
   - (* LE-ForallSyn *)
     apply a_lookeq__forall_syn
       with (L := L `union` singleton β `union` ftvar_in_pskl P0).
-    intros γ Hγ.
+    intros α1 Hα1.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hγ; fsetdec | assumption ].
+      [ | clear - Hα1; fsetdec | assumption ].
     auto.
   - (* LE-UnivGhost *)
     apply a_lookeq__univ_ghost. auto.
   - (* LE-UnivGhost1 *)
-    apply a_lookeq__univ_ghost1 with (L := L). intros γ Hγ.
+    apply a_lookeq__univ_ghost1 with (L := L). intros α1 Hα1.
     match goal with
     | IH : forall b : atom, _ |- _ =>
         let HI := fresh "HI" in
-        pose proof (IH γ Hγ _ _ ltac:(eassumption) ltac:(eassumption)
+        pose proof (IH α1 Hα1 _ _ ltac:(eassumption) ltac:(eassumption)
                       ltac:(eassumption)) as HI;
         simpl in HI; exact HI
     end.
@@ -368,9 +368,9 @@ Proof.
     + (* unit *)
       apply a_lookeq__univ_ghost_r;
         [ intro Hc; discriminate Hc | constructor | auto ].
-    + (* var X *)
+    + (* var α *)
       destruct_if as [-> | HneX].
-      * (* X = β : the source became α-free — switch to Absent *)
+      * (* α = β : the source became α-free — switch to Absent *)
         match goal with
         | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
             destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ Hl)
@@ -411,7 +411,7 @@ Lemma ftv_subst_var_in : forall P α α',
   α `in` ftvar_in_pskl P ->
   α' `in` ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f α') α P).
 Proof.
-  induction P as [ | | γ | | | | ]; intros α α' Hin; simpl in *;
+  induction P as [ | | α1 | | | | ]; intros α α' Hin; simpl in *;
     try solve [ exfalso; fsetdec ].
   - destruct_if as [-> | Hne]; simpl; [ fsetdec | exfalso; fsetdec ].
   - destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P1)) as [Hi | Hni];
@@ -457,7 +457,7 @@ Proof.
     + assumption.
     + auto.
   - (* LS-ForallR *)
-    apply a_looksub__forall_r with (L := L). intros γ Hγ. auto.
+    apply a_looksub__forall_r with (L := L). intros α1 Hα1. auto.
   - (* LS-Arrow *)
     apply a_looksub__arrow;
       [ match goal with IH : forall a, a `notin` _ -> _ |- _ => idtac end | ];
@@ -471,14 +471,14 @@ Proof.
   - (* LS-ForallL *)
     apply a_looksub__forall_l
       with (L := L `union` singleton α `union` singleton α').
-    intros γ Hγ.
+    intros α1 Hα1.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hγ; fsetdec | constructor ].
+      [ | clear - Hα1; fsetdec | constructor ].
     match goal with
     | IH : forall β, β `notin` _ -> _ |- _ =>
-        apply IH; [ clear - Hγ; fsetdec | ]
+        apply IH; [ clear - Hα1; fsetdec | ]
     end.
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α1)).
     simpl in *. fsetdec.
   - (* LS-UnivGhostL *)
     apply a_looksub__univ_ghost_l. auto.
@@ -495,9 +495,9 @@ Proof.
     apply a_lookeq__flex_r.
     + intro Hc. destruct P; simpl in Hc; try discriminate Hc.
       match goal with
-      | Hin : α `in` ftvar_in_pskl (pskl_var_f ?X) |- _ =>
+      | Hin : α `in` ftvar_in_pskl (pskl_var_f ?α0) |- _ =>
           simpl in Hin;
-          assert (HXα : X = α) by (clear - Hin; fsetdec);
+          assert (Hα0α : α0 = α) by (clear - Hin; fsetdec);
           subst; congruence
       end.
     + apply ftv_subst_var_in. assumption.
@@ -521,34 +521,34 @@ Proof.
   - (* LE-ForallInh *)
     apply a_lookeq__forall_inh
       with (L := L `union` singleton α `union` singleton α').
-    intros γ Hγ.
+    intros α1 Hα1.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hγ; fsetdec | constructor ].
+      [ | clear - Hα1; fsetdec | constructor ].
     match goal with
     | IH : forall β, β `notin` _ -> _ |- _ =>
-        apply IH; [ clear - Hγ; fsetdec | ]
+        apply IH; [ clear - Hα1; fsetdec | ]
     end.
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α1)).
     simpl in *. fsetdec.
   - (* LE-ForallSyn *)
     apply a_lookeq__forall_syn
       with (L := L `union` singleton α `union` singleton α').
-    intros γ Hγ.
+    intros α1 Hα1.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hγ; fsetdec | constructor ].
+      [ | clear - Hα1; fsetdec | constructor ].
     match goal with
     | IH : forall β, β `notin` _ -> _ |- _ =>
-        apply IH; [ clear - Hγ; fsetdec | ]
+        apply IH; [ clear - Hα1; fsetdec | ]
     end.
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α1)).
     simpl in *. fsetdec.
   - (* LE-UnivGhost *)
     apply a_lookeq__univ_ghost. simpl in *. auto.
   - (* LE-UnivGhost1 *)
-    apply a_lookeq__univ_ghost1 with (L := L). intros γ Hγ.
+    apply a_lookeq__univ_ghost1 with (L := L). intros α1 Hα1.
     match goal with
     | IH : forall β, β `notin` _ -> forall a, _ |- _ =>
-        specialize (IH γ Hγ α' ltac:(assumption)); simpl in IH; exact IH
+        specialize (IH α1 Hα1 α' ltac:(assumption)); simpl in IH; exact IH
     end.
   - (* LE-UnivGhost2 *)
     apply a_lookeq__univ_ghost2; [ assumption | ]. simpl in *. auto.

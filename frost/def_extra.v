@@ -28,18 +28,18 @@ Definition decr_mode (m : mode) : mode :=
 (** Tagged types: only forall@ε; no other quantifiers, no holes. *)
 Inductive is_ttyp : utyp -> Prop :=
 | is_ttyp__unit  : is_ttyp utyp_unit
-| is_ttyp__var   : forall X, is_ttyp (utyp_var_f X)
+| is_ttyp__var   : forall α, is_ttyp (utyp_var_f α)
 | is_ttyp__arrow : forall C1 C2,
     is_ttyp C1 -> is_ttyp C2 -> is_ttyp (utyp_arrow C1 C2)
 | is_ttyp__all_etag   : forall L ε C,
-    (forall X, X `notin` L ->
-       is_ttyp (open_utyp_wrt_utyp C (utyp_var_f X))) ->
+    (forall α, α `notin` L ->
+       is_ttyp (open_utyp_wrt_utyp C (utyp_var_f α))) ->
     is_ttyp (utyp_all_etag ε C).
 
 (** Tagged skletons: is_ttyp + holes + topholes. *)
 Inductive is_tskl : uskl -> Prop :=
 | is_tskl__unit    : is_tskl uskl_unit
-| is_tskl__var     : forall X, is_tskl (uskl_var_f X)
+| is_tskl__var     : forall α, is_tskl (uskl_var_f α)
 | is_tskl__arrow   : forall R1 R2,
     is_tskl R1 -> is_tskl R2 -> is_tskl (uskl_arrow R1 R2)
 (* Paper decorated skeleton ψ (declarative.tex:1796): EVERY quantifier carries
@@ -48,12 +48,12 @@ Inductive is_tskl : uskl -> Prop :=
    with quantifiers no inherited information determines, breaking the paper's
    no-guessing invariant). *)
 | is_tskl__all_etag     : forall L ε R,
-    (forall X, X `notin` L ->
-       is_tskl (open_uskl_wrt_uskl R (uskl_var_f X))) ->
+    (forall α, α `notin` L ->
+       is_tskl (open_uskl_wrt_uskl R (uskl_var_f α))) ->
     is_tskl (uskl_all_etag ε R)
 (* Paper decorated skeleton ψ (declarative.tex, grammar fig) carries the
    DOTTED GHOSTS [HoleG] / [TopHoleG], NOT plain [Hole] / [TopHole] (those
-   live only in the unresolved skeleton S / the bid RHS).  So [is_tskl]
+   live only in the unresolved skeleton R / the bid RHS).  So [is_tskl]
    admits the dotted ghost holes; the dotted universal ghost is UNTAGGED. *)
 | is_tskl__holeg    : is_tskl uskl_holeg
 | is_tskl__topholeg : forall R, is_tskl R -> is_tskl (uskl_topholeg R).
@@ -65,46 +65,46 @@ Inductive is_tskl : uskl -> Prop :=
 (** Synthesised: every colour-tagged forall is colour_syn. Implies is_typ. *)
 Inductive is_styp : btyp -> Prop :=
 | is_styp__unit  : is_styp btyp_unit
-| is_styp__var   : forall X, is_styp (btyp_var_f X)
+| is_styp__var   : forall α, is_styp (btyp_var_f α)
 | is_styp__arrow : forall B1 B2,
     is_styp B1 -> is_styp B2 -> is_styp (btyp_arrow B1 B2)
 | is_styp__all   : forall L B,
-    (forall X, X `notin` L ->
-       is_styp (open_btyp_wrt_btyp B (btyp_var_f X))) ->
+    (forall α, α `notin` L ->
+       is_styp (open_btyp_wrt_btyp B (btyp_var_f α))) ->
     is_styp (btyp_all_syn B).
 
 (** Inherited: every colour-tagged forall is colour_inh. *)
 Inductive is_ityp : btyp -> Prop :=
 | is_ityp__unit  : is_ityp btyp_unit
-| is_ityp__var   : forall X, is_ityp (btyp_var_f X)
+| is_ityp__var   : forall α, is_ityp (btyp_var_f α)
 | is_ityp__arrow : forall B1 B2,
     is_ityp B1 -> is_ityp B2 -> is_ityp (btyp_arrow B1 B2)
 | is_ityp__all   : forall L A,
-    (forall X, X `notin` L ->
-       is_ityp (open_btyp_wrt_btyp A (btyp_var_f X))) ->
+    (forall α, α `notin` L ->
+       is_ityp (open_btyp_wrt_btyp A (btyp_var_f α))) ->
     is_ityp (btyp_all_inh A).
 
 (** Same patterns extended to skletons. *)
 Inductive is_sskl : bskl -> Prop :=
 | is_sskl__unit    : is_sskl bskl_unit
-| is_sskl__var     : forall X, is_sskl (bskl_var_f X)
+| is_sskl__var     : forall α, is_sskl (bskl_var_f α)
 | is_sskl__arrow   : forall A B,
     is_sskl A -> is_sskl B -> is_sskl (bskl_arrow A B)
 | is_sskl__all     : forall L A,
-    (forall X, X `notin` L ->
-       is_sskl (open_bskl_wrt_bskl A (bskl_var_f X))) ->
+    (forall α, α `notin` L ->
+       is_sskl (open_bskl_wrt_bskl A (bskl_var_f α))) ->
     is_sskl (bskl_all_syn A)
 | is_sskl__hole    : is_sskl bskl_hole
 | is_sskl__tophole : forall A, is_sskl A -> is_sskl (bskl_tophole A).
 
 Inductive is_iskl : bskl -> Prop :=
 | is_iskl__unit    : is_iskl bskl_unit
-| is_iskl__var     : forall X, is_iskl (bskl_var_f X)
+| is_iskl__var     : forall α, is_iskl (bskl_var_f α)
 | is_iskl__arrow   : forall A B,
     is_iskl A -> is_iskl B -> is_iskl (bskl_arrow A B)
 | is_iskl__all     : forall L A,
-    (forall X, X `notin` L ->
-       is_iskl (open_bskl_wrt_bskl A (bskl_var_f X))) ->
+    (forall α, α `notin` L ->
+       is_iskl (open_bskl_wrt_bskl A (bskl_var_f α))) ->
     is_iskl (bskl_all_inh A)
 | is_iskl__hole    : is_iskl bskl_hole
 | is_iskl__tophole : forall A, is_iskl A -> is_iskl (bskl_tophole A).
@@ -116,12 +116,12 @@ Inductive is_iskl : bskl -> Prop :=
 (** Guarded: no top-level forall (any flavour) or hole/tophole. *)
 Inductive guarded_ptyp : ptyp -> Prop :=
 | guarded_ptyp__unit  : guarded_ptyp ptyp_unit
-| guarded_ptyp__var   : forall X, guarded_ptyp (ptyp_var_f X)
+| guarded_ptyp__var   : forall α, guarded_ptyp (ptyp_var_f α)
 | guarded_ptyp__arrow : forall A1 A2, lc_ptyp A1 -> lc_ptyp A2 -> guarded_ptyp (ptyp_arrow A1 A2).
 
 Inductive guarded_pskl : pskl -> Prop :=
 | guarded_pskl__unit  : guarded_pskl pskl_unit
-| guarded_pskl__var   : forall X, guarded_pskl (pskl_var_f X)
+| guarded_pskl__var   : forall α, guarded_pskl (pskl_var_f α)
 | guarded_pskl__arrow : forall P1 P2, lc_pskl P1 -> lc_pskl P2 -> guarded_pskl (pskl_arrow P1 P2).
 
 (** Value restriction: terms that may be generalised in checking mode. *)

@@ -19,10 +19,10 @@ Set Implicit Arguments.
 
 Inductive d_wf_denv : list (atom * dbind) -> Prop :=
 | d_wf_denv__nil : d_wf_denv nil
-| d_wf_denv__tvar : forall Γ X,
+| d_wf_denv__tvar : forall Γ α,
     d_wf_denv Γ ->
-    X `notin` dom Γ ->
-    d_wf_denv ((X ~ dbind_tvar) ++ Γ)
+    α `notin` dom Γ ->
+    d_wf_denv ((α ~ dbind_tvar) ++ Γ)
 | d_wf_denv__typ : forall Γ x A,
     d_wf_denv Γ ->
     x `notin` dom Γ ->
@@ -48,8 +48,8 @@ Proof.
     + apply binds_app_iff. right. apply binds_app_iff; auto.
   - constructor; auto.
   - inst_cofinites_for d_wf_ptyp__all.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    intros α Hα.
+    rewrite_env (((α ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
 Qed.
 
@@ -65,12 +65,12 @@ Proof.
     + apply binds_app_iff. right. apply binds_app_iff; auto.
   - econstructor; eauto.
   - inst_cofinites_for d_wf_utyp__all_syn.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    intros α Hα.
+    rewrite_env (((α ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
   - inst_cofinites_for d_wf_utyp__all_etag; auto.
-    intros X HX.
-    rewrite_env (((X ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
+    intros α Hα.
+    rewrite_env (((α ~ dbind_tvar) ++ Γ1) ++ Γ2 ++ Γ3).
     apply H0; auto.
 Qed.
 
@@ -80,15 +80,15 @@ Qed.
     yields a [Ψ ⊆] the one the conclusion needs. *)
 Lemma d_wf_pskl_Psi_mono : forall Ψ Γ P,
     Γ ⨟ Ψ ⊢ₚₛ P ->
-    forall Ψ', (forall X, List.In X Ψ -> List.In X Ψ') ->
+    forall Ψ', (forall α, List.In α Ψ -> List.In α Ψ') ->
     Γ ⨟ Ψ' ⊢ₚₛ P.
 Proof.
   intros Ψ Γ P H. induction H; intros Ψ' Hmono.
   - constructor.
   - constructor. destruct H as [Hin | Hb]; [ left; auto | right; auto ].
   - constructor; auto.
-  - inst_cofinites_for d_wf_pskl__all. intros X HX. apply H0; auto.
-    intros Y HY. simpl in HY |- *. destruct HY as [HY | HY]; [ left; auto | right; auto ].
+  - inst_cofinites_for d_wf_pskl__all. intros α Hα. apply H0; auto.
+    intros β Hβ. simpl in Hβ |- *. destruct Hβ as [Hβ | Hβ]; [ left; auto | right; auto ].
   - constructor.
   - apply d_wf_pskl__tophole; auto.
 Qed.
@@ -106,7 +106,7 @@ Proof.
       * apply binds_app_iff. right. apply binds_app_iff; auto.
   - constructor; auto.
   - inst_cofinites_for d_wf_pskl__all.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
   - constructor.
   - constructor; auto.
 Qed.
@@ -124,9 +124,9 @@ Proof.
       * apply binds_app_iff. right. apply binds_app_iff; auto.
   - constructor; auto.
   - inst_cofinites_for d_wf_uskl__all_syn.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
   - inst_cofinites_for d_wf_uskl__all_etag.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
   - constructor.
   - constructor; auto.
   - constructor.         (* holeg, as hole *)
@@ -154,7 +154,7 @@ Proof.
   - destruct_if; auto with frost.
   - eauto with frost.
   - inst_cofinites_for d_tags__all_etag Ψ0 := Ψ0; [ | assumption | assumption ].
-    intros Z HZ.
+    intros α2 Hα2.
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
       by (solve [ fsetdec | apply lc_utyp_var_f ]).
     apply H0; auto.
@@ -176,11 +176,11 @@ Proof.
   - eapply d_consis__arrow; [ eassumption | eassumption | fsetdec ].
   - eapply d_consis__forall_inh_tagged; [ eassumption | fsetdec ].
   - apply d_consis__forall_inh_untagged with (L := L);
-      intros X HX; eauto.
+      intros α Hα; eauto.
   - apply d_consis__forall_syn_tagged with (L := L);
-      intros X HX; eauto.
+      intros α Hα; eauto.
   - apply d_consis__forall_syn with (L := L);
-      intros X HX; eauto.
+      intros α Hα; eauto.
 Qed.
 
 Lemma d_sub_equiv : forall m Δ Δo Γ C B,
@@ -191,7 +191,7 @@ Proof.
   - apply d_sub__check; [ assumption | assumption | | assumption ].
     eapply d_consis_equiv; [ exact Heq | eassumption ].
   - apply d_sub__forall_r with (L := L);
-      [ assumption | intros X HX; eauto ].
+      [ assumption | intros α Hα; eauto ].
   - eapply d_sub__arg; [ eassumption | eassumption | fsetdec ].
   - (* forall_l_tagged: outer context pass-through, premise via IH *)
     eapply d_sub__forall_l_tagged with (Ψ' := Ψ');
@@ -252,21 +252,21 @@ Proof.
   - constructor.
   - constructor.
   - constructor; assumption.
-  - pick fresh X. apply (lc_ptyp_all_exists X). apply H0. auto.
+  - pick fresh α. apply (lc_ptyp_all_exists α). apply H0. auto.
 Qed.
 
 Lemma d_wf_ptyp_ftvar : forall Γ A,
     d_wf_ptyp Γ A ->
     forall α, α `in` ftvar_in_ptyp A -> binds α dbind_tvar Γ.
 Proof.
-  intros Γ A H. induction H; intros Y HY; simpl in HY.
+  intros Γ A H. induction H; intros β Hβ; simpl in Hβ.
   - fsetdec.
-  - apply singleton_1 in HY. subst. assumption.
-  - apply union_1 in HY. destruct HY as [HY | HY]; auto.
-  - pick fresh α for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f α))).
+  - apply singleton_1 in Hβ. subst. assumption.
+  - apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ]; auto.
+  - pick fresh α for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton β).
+    assert (HYo : β `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f α))).
     { eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower. eassumption. }
-    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
+    specialize (H0 α ltac:(auto) β HYo). analyze_binds H0.
 Qed.
 
 (** * Well-formedness of bidirectional / unresolved types from lc + scoping.
@@ -277,48 +277,48 @@ Qed.
 
 Lemma d_wf_btyp_of_lc_ftvar : forall B Γ,
     lc_btyp B ->
-    (forall X, X `in` ftvar_in_btyp B -> binds X dbind_tvar Γ) ->
+    (forall α, α `in` ftvar_in_btyp B -> binds α dbind_tvar Γ) ->
     d_wf_btyp Γ B.
 Proof.
   intros B Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov; simpl in *.
   - apply d_wf_btyp__unit.
   - apply d_wf_btyp__var. apply Hcov. simpl. fsetdec.
   - apply d_wf_btyp__arrow;
-      [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; fsetdec.
-  - inst_cofinites_for d_wf_btyp__all_syn. intros X HX. apply H0.
-    intros Y HY. apply ftvar_in_btyp_open_btyp_wrt_btyp_upper in HY. simpl in HY.
-    apply union_1 in HY. destruct HY as [HY | HY].
-    + apply singleton_1 in HY. subst.
+      [ apply IHHlc1 | apply IHHlc2 ]; intros β Hβ; apply Hcov; fsetdec.
+  - inst_cofinites_for d_wf_btyp__all_syn. intros α Hα. apply H0.
+    intros β Hβ. apply ftvar_in_btyp_open_btyp_wrt_btyp_upper in Hβ. simpl in Hβ.
+    apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ].
+    + apply singleton_1 in Hβ. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
-  - inst_cofinites_for d_wf_btyp__all_inh. intros X HX. apply H0.
-    intros Y HY. apply ftvar_in_btyp_open_btyp_wrt_btyp_upper in HY. simpl in HY.
-    apply union_1 in HY. destruct HY as [HY | HY].
-    + apply singleton_1 in HY. subst.
+  - inst_cofinites_for d_wf_btyp__all_inh. intros α Hα. apply H0.
+    intros β Hβ. apply ftvar_in_btyp_open_btyp_wrt_btyp_upper in Hβ. simpl in Hβ.
+    apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ].
+    + apply singleton_1 in Hβ. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
 Qed.
 
 Lemma d_wf_utyp_of_lc_ftvar : forall C Γ,
     lc_utyp C ->
-    (forall X, X `in` ftvar_in_utyp C -> binds X dbind_tvar Γ) ->
+    (forall α, α `in` ftvar_in_utyp C -> binds α dbind_tvar Γ) ->
     d_wf_utyp Γ C.
 Proof.
   intros C Γ Hlc. revert Γ. induction Hlc; intros Γ Hcov; simpl in *.
   - apply d_wf_utyp__unit.
   - apply d_wf_utyp__var. apply Hcov. simpl. fsetdec.
   - apply d_wf_utyp__arrow;
-      [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; fsetdec.
-  - inst_cofinites_for d_wf_utyp__all_syn. intros X HX. apply H0.
-    intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY. simpl in HY.
-    apply union_1 in HY. destruct HY as [HY | HY].
-    + apply singleton_1 in HY. subst.
+      [ apply IHHlc1 | apply IHHlc2 ]; intros β Hβ; apply Hcov; fsetdec.
+  - inst_cofinites_for d_wf_utyp__all_syn. intros α Hα. apply H0.
+    intros β Hβ. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in Hβ. simpl in Hβ.
+    apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ].
+    + apply singleton_1 in Hβ. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
-  - inst_cofinites_for d_wf_utyp__all_etag. intros X HX. apply H0.
-    intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY. simpl in HY.
-    apply union_1 in HY. destruct HY as [HY | HY].
-    + apply singleton_1 in HY. subst.
+  - inst_cofinites_for d_wf_utyp__all_etag. intros α Hα. apply H0.
+    intros β Hβ. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in Hβ. simpl in Hβ.
+    apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ].
+    + apply singleton_1 in Hβ. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
 Qed.
@@ -331,26 +331,26 @@ Proof.
   - constructor.
   - constructor.
   - constructor; assumption.
-  - pick fresh X. apply (lc_btyp_all_syn_exists X). apply H0. auto.
-  - pick fresh X. apply (lc_btyp_all_inh_exists X). apply H0. auto.
+  - pick fresh α. apply (lc_btyp_all_syn_exists α). apply H0. auto.
+  - pick fresh α. apply (lc_btyp_all_inh_exists α). apply H0. auto.
 Qed.
 
 Lemma d_wf_btyp_ftvar : forall Γ B,
     d_wf_btyp Γ B ->
     forall α, α `in` ftvar_in_btyp B -> binds α dbind_tvar Γ.
 Proof.
-  intros Γ B H. induction H; intros Y HY; simpl in HY.
+  intros Γ B H. induction H; intros β Hβ; simpl in Hβ.
   - fsetdec.
-  - apply singleton_1 in HY. subst. assumption.
-  - apply union_1 in HY. destruct HY as [HY | HY]; auto.
-  - pick fresh α for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f α))).
+  - apply singleton_1 in Hβ. subst. assumption.
+  - apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ]; auto.
+  - pick fresh α for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton β).
+    assert (HYo : β `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f α))).
     { eapply ftvar_in_btyp_open_btyp_wrt_btyp_lower. eassumption. }
-    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
-  - pick fresh α for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f α))).
+    specialize (H0 α ltac:(auto) β HYo). analyze_binds H0.
+  - pick fresh α for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton β).
+    assert (HYo : β `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f α))).
     { eapply ftvar_in_btyp_open_btyp_wrt_btyp_lower. eassumption. }
-    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
+    specialize (H0 α ltac:(auto) β HYo). analyze_binds H0.
 Qed.
 
 Lemma d_wf_utyp_lc : forall Γ C, d_wf_utyp Γ C -> lc_utyp C.
@@ -359,8 +359,8 @@ Proof.
   - constructor.
   - constructor.
   - constructor; assumption.
-  - pick fresh X. apply (lc_utyp_all_syn_exists X). apply H0. auto.
-  - pick fresh X. apply (lc_utyp_all_etag_exists X). apply H0. auto.
+  - pick fresh α. apply (lc_utyp_all_syn_exists α). apply H0. auto.
+  - pick fresh α. apply (lc_utyp_all_etag_exists α). apply H0. auto.
 Qed.
 
 Lemma d_wf_pskl_lc : forall Γ Δ P, Γ ⨟ Δ ⊢ₚₛ P -> lc_pskl P.
@@ -369,7 +369,7 @@ Proof.
   - constructor.
   - constructor.
   - constructor; assumption.
-  - pick fresh X. apply (lc_pskl_all_syn_exists X). apply H0. auto.
+  - pick fresh α. apply (lc_pskl_all_syn_exists α). apply H0. auto.
   - constructor.
   - constructor; assumption.
 Qed.
@@ -378,18 +378,18 @@ Lemma d_wf_utyp_ftvar : forall Γ C,
     d_wf_utyp Γ C ->
     forall α, α `in` ftvar_in_utyp C -> binds α dbind_tvar Γ.
 Proof.
-  intros Γ C H. induction H; intros Y HY; simpl in HY.
+  intros Γ C H. induction H; intros β Hβ; simpl in Hβ.
   - fsetdec.
-  - apply singleton_1 in HY. subst. assumption.
-  - apply union_1 in HY. destruct HY as [HY | HY]; auto.
-  - pick fresh α for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f α))).
+  - apply singleton_1 in Hβ. subst. assumption.
+  - apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ]; auto.
+  - pick fresh α for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton β).
+    assert (HYo : β `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f α))).
     { eapply ftvar_in_utyp_open_utyp_wrt_utyp_lower. eassumption. }
-    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
-  - pick fresh α for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
-    assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f α))).
+    specialize (H0 α ltac:(auto) β HYo). analyze_binds H0.
+  - pick fresh α for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton β).
+    assert (HYo : β `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f α))).
     { eapply ftvar_in_utyp_open_utyp_wrt_utyp_lower. eassumption. }
-    specialize (H0 α ltac:(auto) Y HYo). analyze_binds H0.
+    specialize (H0 α ltac:(auto) β HYo). analyze_binds H0.
 Qed.
 
 (** * Painting preserves well-formedness.
@@ -404,8 +404,8 @@ Proof.
   - constructor.
   - constructor.
   - constructor; assumption.
-  - pick fresh X. apply (lc_btyp_all_syn_exists X).
-    specialize (H0 X). rewrite ptyp_to_btyp_syn_open in H0. simpl in H0. exact H0.
+  - pick fresh α. apply (lc_btyp_all_syn_exists α).
+    specialize (H0 α). rewrite ptyp_to_btyp_syn_open in H0. simpl in H0. exact H0.
 Qed.
 
 Lemma lc_ptyp_to_btyp_inh : forall A, lc_ptyp A -> lc_btyp (ptyp_to_btyp_inh A).
@@ -414,8 +414,8 @@ Proof.
   - constructor.
   - constructor.
   - constructor; assumption.
-  - pick fresh X. apply (lc_btyp_all_inh_exists X).
-    specialize (H0 X). unfold open_btyp_wrt_btyp.
+  - pick fresh α. apply (lc_btyp_all_inh_exists α).
+    specialize (H0 α). unfold open_btyp_wrt_btyp.
     unfold open_ptyp_wrt_ptyp in H0.
     rewrite ptyp_to_btyp_inh_open_rec in H0. simpl in H0. exact H0.
 Qed.
@@ -426,8 +426,8 @@ Proof.
   - constructor.
   - constructor.
   - constructor; assumption.
-  - pick fresh X. apply (lc_utyp_all_syn_exists X).
-    specialize (H0 X). rewrite ptyp_to_utyp_syn_open in H0. simpl in H0. exact H0.
+  - pick fresh α. apply (lc_utyp_all_syn_exists α).
+    specialize (H0 α). rewrite ptyp_to_utyp_syn_open in H0. simpl in H0. exact H0.
 Qed.
 
 Lemma ftvar_ptyp_to_btyp_syn : forall A,
@@ -447,7 +447,7 @@ Lemma d_wf_btyp_painting_syn : forall Γ A,
 Proof.
   intros Γ A H. apply d_wf_btyp_of_lc_ftvar.
   - apply lc_ptyp_to_btyp_syn. eapply d_wf_ptyp_lc_loc; eassumption.
-  - rewrite ftvar_ptyp_to_btyp_syn. intros X HX. eapply d_wf_ptyp_ftvar; eassumption.
+  - rewrite ftvar_ptyp_to_btyp_syn. intros α Hα. eapply d_wf_ptyp_ftvar; eassumption.
 Qed.
 
 Lemma d_wf_btyp_painting_inh : forall Γ A,
@@ -455,7 +455,7 @@ Lemma d_wf_btyp_painting_inh : forall Γ A,
 Proof.
   intros Γ A H. apply d_wf_btyp_of_lc_ftvar.
   - apply lc_ptyp_to_btyp_inh. eapply d_wf_ptyp_lc_loc; eassumption.
-  - rewrite ftvar_ptyp_to_btyp_inh. intros X HX. eapply d_wf_ptyp_ftvar; eassumption.
+  - rewrite ftvar_ptyp_to_btyp_inh. intros α Hα. eapply d_wf_ptyp_ftvar; eassumption.
 Qed.
 
 Lemma d_wf_utyp_painting_syn : forall Γ A,
@@ -463,7 +463,7 @@ Lemma d_wf_utyp_painting_syn : forall Γ A,
 Proof.
   intros Γ A H. apply d_wf_utyp_of_lc_ftvar.
   - apply lc_ptyp_to_utyp_syn. eapply d_wf_ptyp_lc_loc; eassumption.
-  - rewrite ftvar_ptyp_to_utyp_syn. intros X HX. eapply d_wf_ptyp_ftvar; eassumption.
+  - rewrite ftvar_ptyp_to_utyp_syn. intros α Hα. eapply d_wf_ptyp_ftvar; eassumption.
 Qed.
 
 (** A [ptyp] is lc whenever its inh painting is.  Route via [degree]:
@@ -506,7 +506,7 @@ Proof.
   intros A Γ H. apply d_wf_btyp_of_lc_ftvar.
   - apply lc_ptyp_to_btyp_syn. apply lc_ptyp_of_lc_btyp_inh.
     eapply d_wf_btyp_lc; eassumption.
-  - rewrite ftvar_ptyp_to_btyp_syn. intros X HX.
+  - rewrite ftvar_ptyp_to_btyp_syn. intros α Hα.
     eapply (d_wf_btyp_ftvar H). rewrite ftvar_ptyp_to_btyp_inh. assumption.
 Qed.
 
@@ -516,7 +516,7 @@ Proof.
   intros A Γ H. apply d_wf_btyp_of_lc_ftvar.
   - apply lc_ptyp_to_btyp_inh. apply lc_ptyp_of_lc_btyp_syn.
     eapply d_wf_btyp_lc; eassumption.
-  - rewrite ftvar_ptyp_to_btyp_inh. intros X HX.
+  - rewrite ftvar_ptyp_to_btyp_inh. intros α Hα.
     eapply (d_wf_btyp_ftvar H). rewrite ftvar_ptyp_to_btyp_syn. assumption.
 Qed.
 
@@ -538,11 +538,11 @@ Proof.
   induction 1; simpl; try reflexivity.
   - rewrite IHis_ityp1, IHis_ityp2. reflexivity.
   - f_equal.
-    pick fresh X for (L `union` ftvar_in_btyp A).
-    apply open_btyp_wrt_btyp_inj with (α1 := X).
+    pick fresh α for (L `union` ftvar_in_btyp A).
+    apply open_btyp_wrt_btyp_inj with (α1 := α).
     + rewrite ftvar_ptyp_to_btyp_inh, ftvar_btyp_to_ptyp. fsetdec.
     + fsetdec.
-    + specialize (H0 X ltac:(fsetdec)).
+    + specialize (H0 α ltac:(fsetdec)).
       unfold open_btyp_wrt_btyp in H0 |- *.
       rewrite btyp_to_ptyp_open_rec, ptyp_to_btyp_inh_open_rec in H0.
       simpl in H0. exact H0.
@@ -555,8 +555,8 @@ Proof.
   - apply is_ityp__unit.
   - apply is_ityp__var.
   - apply is_ityp__arrow; assumption.
-  - apply is_ityp__all with (L := empty). intros X _.
-    change (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)).
+  - apply is_ityp__all with (L := empty). intros α _.
+    change (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)).
     rewrite <- ptyp_to_btyp_inh_open.
     match goal with Hb : forall _, is_ityp _ |- _ => apply Hb end.
 Qed.
@@ -573,7 +573,7 @@ Proof.
   intros Γ B H. apply d_wf_btyp_of_lc_ftvar.
   - apply lc_btyp_of_degree. apply degree_btyp_of_degree_ptyp_erase.
     apply degree_ptyp_wrt_ptyp_of_lc_ptyp. eapply d_wf_ptyp_lc_loc; eassumption.
-  - intros X HX. eapply d_wf_ptyp_ftvar; [ eassumption | ].
+  - intros α Hα. eapply d_wf_ptyp_ftvar; [ eassumption | ].
     rewrite ftvar_btyp_to_ptyp. assumption.
 Qed.
 
@@ -586,7 +586,7 @@ Proof.
   intros x d Γ B H Hd.
   apply d_wf_btyp_of_lc_ftvar.
   - eapply d_wf_btyp_lc; eassumption.
-  - intros X HX. pose proof (d_wf_btyp_ftvar H HX) as Hb.
+  - intros α Hα. pose proof (d_wf_btyp_ftvar H Hα) as Hb.
     analyze_binds Hb; try (subst; contradiction).
 Qed.
 
@@ -601,16 +601,16 @@ Proof.
   - inversion Hwf; subst. apply d_wf_btyp__arrow; auto.
   - (* forall_inh_tagged: utyp_all_etag ε C ∼ btyp_all_inh B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
   - (* forall_inh_untagged: utyp_all_syn C ∼ btyp_all_inh B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
   - (* forall_syn_tagged: utyp_all_etag ε C ∼ btyp_all_syn B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
   - (* forall_syn: utyp_all_syn C ∼ btyp_all_syn B *)
     inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
 Qed.
 
 (** Substituting a well-formed [ph] for a head tvar preserves [d_wf_utyp]. *)
@@ -623,13 +623,13 @@ Proof.
   apply d_wf_utyp_of_lc_ftvar.
   - apply subst_utyp_in_utyp_lc_utyp; [ eapply d_wf_utyp_lc; eassumption
                                       | eapply d_wf_utyp_lc; eassumption ].
-  - intros Y HY. apply ftvar_in_utyp_subst_utyp_in_utyp_upper in HY.
-    apply union_1 in HY. destruct HY as [HY | HY].
+  - intros β Hβ. apply ftvar_in_utyp_subst_utyp_in_utyp_upper in Hβ.
+    apply union_1 in Hβ. destruct Hβ as [Hβ | Hβ].
     + eapply d_wf_utyp_ftvar; eassumption.
-    + assert (HYne : Y <> α).
+    + assert (HYne : β <> α).
       { intro Heq. subst. eapply remove_1; [ reflexivity | eassumption ]. }
-      apply remove_3 in HY.
-      pose proof (d_wf_utyp_ftvar HD HY) as Hb. analyze_binds Hb.
+      apply remove_3 in Hβ.
+      pose proof (d_wf_utyp_ftvar HD Hβ) as Hb. analyze_binds Hb.
 Qed.
 
 Lemma d_sub_wf : forall m Δ Γ C B,
@@ -639,7 +639,7 @@ Proof.
   - (* infer *) eapply d_consis_wf; eassumption.
   - (* check *) eapply d_consis_wf; eassumption.
   - (* forall_r: C ⩽ btyp_all_inh B *)
-    inst_cofinites_for d_wf_btyp__all_inh. intros X HX.
+    inst_cofinites_for d_wf_btyp__all_inh. intros α Hα.
     apply H1; auto. apply d_wf_utyp_weakening with (Γ1 := nil). simpl. assumption.
   - (* arg: utyp_arrow C1 C2 ⩽ btyp_arrow B1 B2 *)
     inversion Hwf; subst. apply d_wf_btyp__arrow.
@@ -647,13 +647,13 @@ Proof.
     + apply IHd_sub; assumption.
   - (* forall_l_tagged: utyp_all_etag ε C ⩽ B; recurse on opened body *)
     inversion Hwf; subst. apply IHd_sub.
-    pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C).
-    rewrite (subst_utyp_in_utyp_intro X) by auto.
+    pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C).
+    rewrite (subst_utyp_in_utyp_intro α) by auto.
     apply d_wf_utyp_subst_tvar; auto.
   - (* forall_l_untagged: utyp_all_syn C ⩽ B *)
     inversion Hwf; subst. apply IHd_sub.
-    pick fresh X for (L `union` dom Γ `union` ftvar_in_utyp C).
-    rewrite (subst_utyp_in_utyp_intro X) by auto.
+    pick fresh α for (L `union` dom Γ `union` ftvar_in_utyp C).
+    rewrite (subst_utyp_in_utyp_intro α) by auto.
     apply d_wf_utyp_subst_tvar; auto.
 Qed.
 
@@ -675,7 +675,7 @@ Proof.
   - apply lc_ptyp_to_utyp_syn. apply lc_ptyp_btyp_to_ptyp.
     eapply d_wf_btyp_lc; eassumption.
   - rewrite ftvar_ptyp_to_utyp_syn. rewrite ftvar_btyp_to_ptyp.
-    intros X HX. eapply d_wf_btyp_ftvar; eassumption.
+    intros α Hα. eapply d_wf_btyp_ftvar; eassumption.
 Qed.
 
 (** * Typing preserves well-formedness of the synthesised/checked btyp.
@@ -694,7 +694,7 @@ Proof.
     rewrite <- (btyp_to_ptyp_ptyp_to_btyp_syn A).
     apply d_wf_utyp_painting_syn_btyp. apply IHd_typing; assumption.
   - (* freeze *) apply d_wf_btyp_syn_to_inh. apply IHd_typing; assumption.
-  - (* forall *) apply d_wf_btyp__all_inh with (L := L `union` dom Γ). intros X HX.
+  - (* forall *) apply d_wf_btyp__all_inh with (L := L `union` dom Γ). intros α Hα.
     apply H1; auto. apply d_wf_denv__tvar; auto.
   - (* abs (general) *) apply d_wf_btyp__arrow.
     + apply d_wf_btyp_painting_inh. assumption.
@@ -751,8 +751,8 @@ Proof.
     inversion Hs; subst. assumption.
   - (* forall: result ∀-inherited — each instance is inherited (IH) *)
     apply mod_comp_ty__tc. apply is_ityp__all with (L := L `union` dom Γ).
-    intros X HX.
-    assert (Hsk : mod_comp_ty (open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f X)) mode_tc)
+    intros α Hα.
+    assert (Hsk : mod_comp_ty (open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f α)) mode_tc)
       by (apply H1; [ auto | apply d_wf_denv__tvar; auto ]).
     inversion Hsk; subst. assumption.
   - (* abs: skmod premise is embedded on the rule *) assumption.
@@ -787,7 +787,7 @@ Proof.
   intros Γ x A Hwf. induction Hwf; intros Hb.
   - inversion Hb.
   - analyze_binds Hb.
-    rewrite_env (nil ++ (X ~ dbind_tvar) ++ Γ).
+    rewrite_env (nil ++ (α ~ dbind_tvar) ++ Γ).
     apply d_wf_ptyp_weakening. simpl. apply IHHwf; assumption.
   - analyze_binds Hb.
     + assert (A = A0) by congruence. subst A0.
@@ -812,8 +812,8 @@ Proof.
   - apply d_consis__var; [ exact H | reflexivity ].
   - apply d_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ exact IHHwf1 | exact IHHwf2 | fsetdec ].
-  - apply d_consis__forall_syn with (L := L). intros X HX.
-    specialize (H0 X HX).
+  - apply d_consis__forall_syn with (L := L). intros α Hα.
+    specialize (H0 α Hα).
     rewrite ptyp_to_utyp_syn_open in H0.
     rewrite ptyp_to_btyp_syn_open in H0.
     simpl in H0. exact H0.
@@ -841,14 +841,14 @@ Proof.
   - (* all_syn *)
     destruct A; simpl in Hc; inversion Hc; subst.
     simpl. f_equal.
-    pick fresh X for (L `union` L0 `union` ftvar_in_btyp B `union` ftvar_in_ptyp A).
-    specialize (H5 X ltac:(auto)).
-    replace (utyp_var_f X) with (ptyp_to_utyp_syn (ptyp_var_f X)) in H5 by reflexivity.
+    pick fresh α for (L `union` L0 `union` ftvar_in_btyp B `union` ftvar_in_ptyp A).
+    specialize (H5 α ltac:(auto)).
+    replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) in H5 by reflexivity.
     rewrite <- ptyp_to_utyp_syn_open in H5.
-    specialize (H0 X ltac:(auto) Δ ((X ~ dbind_tvar) ++ Γ)
-                  (open_ptyp_wrt_ptyp A (ptyp_var_f X)) H5).
+    specialize (H0 α ltac:(auto) Δ ((α ~ dbind_tvar) ++ Γ)
+                  (open_ptyp_wrt_ptyp A (ptyp_var_f α)) H5).
     rewrite ptyp_to_btyp_syn_open in H0. simpl in H0.
-    apply open_btyp_wrt_btyp_inj with (α1 := X).
+    apply open_btyp_wrt_btyp_inj with (α1 := α).
     + fsetdec.
     + match goal with |- context [ ftvar_in_btyp (ptyp_to_btyp_syn ?A0) ] =>
         rewrite (ftvar_ptyp_to_btyp_syn A0) end. fsetdec.
@@ -862,5 +862,5 @@ Proof.
   - apply lc_ptyp_unit.
   - apply lc_ptyp_var_f.
   - apply lc_ptyp_arrow; assumption.
-  - pick fresh X. apply (lc_ptyp_all_exists X). auto.
+  - pick fresh α. apply (lc_ptyp_all_exists α). auto.
 Qed.

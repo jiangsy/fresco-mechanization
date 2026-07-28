@@ -4,7 +4,7 @@
     against (docs/DESIGN-subtyping.md §1.2, D1/D4):
 
     - [ad_pat_sub]: the paper's all-in-one declarative subtyping
-      [typsub^N_M[Ψ] Θ ⊢ syn S ⩽ bid Q] (fig:decl-subtyping-all,
+      [typsub^N_M[Ψ] Θ ⊢ syn R ⩽ bid Q] (fig:decl-subtyping-all,
       full-decl-spec.tex:33-121) transplanted to algorithmic contexts, with
       the single flexible-variable rule the paper adds there — [FlexMono]
       (fig:declarative-in-algo-context, full-algo-spec.tex:170-176; LHS
@@ -49,7 +49,7 @@ Set Implicit Arguments.
 
 (* ===================================================================== *)
 (*  All-in-one declarative subtyping over Θ                               *)
-(*  [Ψ ⨟ Θ ⊢ₛᵃ[ N | M ] S ⩽ Q]  (fig:decl-subtyping-all + FlexMono)       *)
+(*  [Ψ ⨟ Θ ⊢ₛᵃ[ N | M ] R ⩽ Q]  (fig:decl-subtyping-all + FlexMono)       *)
 (* ===================================================================== *)
 
 Reserved Notation "Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Q"
@@ -85,14 +85,14 @@ Inductive ad_pat_sub :
     Ψ2 ⨟ Θ ⊢ₛᵃ[ NM | M ] R2 ⩽ Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2)
-| ad_pat_sub__forall_l_tagged : forall NM Ψ Ψ' Θ M ε R ψ Q,   (* ForallL, δ=ε *)
+| ad_pat_sub__forall_l_tagged : forall NM Ψ Ψ' Θ M ε R ψ Q,   (* ForallL, β1=ε *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q ->
     Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] (uskl_all_etag ε R) ⩽ Q
-| ad_pat_sub__forall_l_untagged : forall NM Ψ Ψ' Θ M R ψ Q,   (* ForallL, δ=· *)
+| ad_pat_sub__forall_l_untagged : forall NM Ψ Ψ' Θ M R ψ Q,   (* ForallL, β1=· *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
@@ -173,14 +173,14 @@ Inductive ad_pat_sub_n :
     ad_pat_sub_n n NM M Ψ2 Θ R2 Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     ad_pat_sub_n (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
-| ad_pat_sub_n__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, δ=ε *)
+| ad_pat_sub_n__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, β1=ε *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     ad_pat_sub_n n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
     ad_pat_sub_n (S n) NM M Ψ Θ (uskl_all_etag ε R) Q
-| ad_pat_sub_n__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, δ=· *)
+| ad_pat_sub_n__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, β1=· *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
@@ -223,19 +223,19 @@ Inductive ad_partial_precise :
 | ad_ppre__unit : forall Θ Δ Ψ,
     Ψ [=] empty ->
     Θ ⨟ Δ ⊢ pskl_unit ⊑ᵖ[ Ψ ] uskl_unit
-| ad_ppre__var : forall Θ Δ Ψ X,
+| ad_ppre__var : forall Θ Δ Ψ α,
     Ψ [=] empty ->
-    X `in` Δ \/ a_binds_tvar X Θ ->
-    Θ ⨟ Δ ⊢ (pskl_var_f X) ⊑ᵖ[ Ψ ] (uskl_var_f X)
+    α `in` Δ \/ a_binds_tvar α Θ ->
+    Θ ⨟ Δ ⊢ (pskl_var_f α) ⊑ᵖ[ Ψ ] (uskl_var_f α)
 | ad_ppre__arrow : forall Θ Δ Ψ Ψ1 Ψ2 P1 P2 ψ1 ψ2,
     Θ ⨟ Δ ⊢ P1 ⊑ᵖ[ Ψ1 ] ψ1 ->
     Θ ⨟ Δ ⊢ P2 ⊑ᵖ[ Ψ2 ] ψ2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     Θ ⨟ Δ ⊢ (pskl_arrow P1 P2) ⊑ᵖ[ Ψ ] (uskl_arrow ψ1 ψ2)
 | ad_ppre__forall : forall L Θ Δ Ψ Ψ0 ε P ψ,
-    (forall X, X `notin` L ->
-       Θ ⨟ (add X Δ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f X))
-         ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f X))) ->
+    (forall α, α `notin` L ->
+       Θ ⨟ (add α Δ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f α))
+         ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
     Ψ [=] add ε Ψ0 ->
     Θ ⨟ Δ ⊢ (pskl_all_syn P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ)
 | ad_ppre__hole : forall Θ Δ Ψ ψ,
@@ -246,9 +246,9 @@ Inductive ad_partial_precise :
     Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
     Θ ⨟ Δ ⊢ (pskl_tophole P) ⊑ᵖ[ Ψ ] ψ
 | ad_ppre__tophole_fill : forall L Θ Δ Ψ P ψ,
-    (forall X, X `notin` L ->
-       ((X ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ (pskl_tophole P)
-         ⊑ᵖ[ Ψ ] (open_uskl_wrt_uskl ψ (uskl_var_f X))) ->
+    (forall α, α `notin` L ->
+       ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ (pskl_tophole P)
+         ⊑ᵖ[ Ψ ] (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
     forall ε,
     Θ ⨟ Δ ⊢ (pskl_tophole P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ)
 | ad_ppre__tophole_keep : forall Θ Δ Ψ P ψ,

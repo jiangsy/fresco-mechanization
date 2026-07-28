@@ -47,8 +47,8 @@ Lemma ptyp_wf_utyp_wf : forall Γ A,
     Γ ⊢ₚ A -> Γ ⊢ᵤ (ptyp_to_utyp_syn A).
 Proof.
   intros Γ A Hwf. induction Hwf; simpl; eauto using d_wf_utyp.
-  - eapply d_wf_utyp__all_syn with (L := L). intros X HX.
-    replace (utyp_var_f X) with (ptyp_to_utyp_syn (ptyp_var_f X)) by reflexivity.
+  - eapply d_wf_utyp__all_syn with (L := L). intros α Hα.
+    replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) by reflexivity.
     rewrite <- ptyp_to_utyp_syn_open. eauto.
 Qed.
 
@@ -56,8 +56,8 @@ Lemma inh_paint_is_ityp : forall Γ A,
     Γ ⊢ₚ A -> is_ityp (ptyp_to_btyp_inh A).
 Proof.
   intros Γ A Hwf. induction Hwf; simpl; eauto using is_ityp.
-  - eapply is_ityp__all with (L := L). intros X HX.
-    replace (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)) by reflexivity.
+  - eapply is_ityp__all with (L := L). intros α Hα.
+    replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
     rewrite <- ptyp_to_btyp_inh_open. eauto.
 Qed.
 
@@ -71,9 +71,9 @@ Proof.
   - apply d_consis__unit. fsetdec.
   - apply d_consis__var; [ assumption | fsetdec ].
   - eapply d_consis__arrow; [ eassumption | eassumption | fsetdec ].
-  - eapply d_consis__forall_inh_untagged with (L := L). intros X HX.
-    replace (utyp_var_f X) with (ptyp_to_utyp_syn (ptyp_var_f X)) by reflexivity.
-    replace (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)) by reflexivity.
+  - eapply d_consis__forall_inh_untagged with (L := L). intros α Hα.
+    replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) by reflexivity.
+    replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
     rewrite <- ptyp_to_utyp_syn_open. rewrite <- ptyp_to_btyp_inh_open. eauto.
 Qed.
 
@@ -84,7 +84,7 @@ Lemma d_sub_refl_paint : forall Γ A,
     Γ ⊢ₚ A -> empty ⨟ Γ ⊢[ mode_tc ] (ptyp_to_utyp_syn A) ⩽ (ptyp_to_btyp_inh A).
 Proof.
   intros Γ A Hwf.
-  induction Hwf as [ Γ | Γ X Hbnd | Γ A1 A2 Hwf1 IH1 Hwf2 IH2 | L Γ A0 Hwf0 IH0 ];
+  induction Hwf as [ Γ | Γ α Hbnd | Γ A1 A2 Hwf1 IH1 Hwf2 IH2 | L Γ A0 Hwf0 IH0 ];
     simpl.
   - (* unit *)
     apply d_sub__check;
@@ -102,25 +102,25 @@ Proof.
         [ apply d_consis_refl_paint; eassumption
         | apply d_consis_refl_paint; eassumption | fsetdec ].
     + apply is_ityp__arrow; eapply inh_paint_is_ityp; eassumption.
-  - (* ∀: SubForallR (intro X) then SubForallL (instantiate by X) *)
+  - (* ∀: SubForallR (intro α) then SubForallL (instantiate by α) *)
     apply d_sub__forall_r with (L := L `union` dom Γ).
-    + apply is_ityp__all with (L := L). intros X HX.
-      replace (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)) by reflexivity.
+    + apply is_ityp__all with (L := L). intros α Hα.
+      replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
       rewrite <- ptyp_to_btyp_inh_open.
-      eapply inh_paint_is_ityp. apply Hwf0. exact HX.
-    + intros X HX.
-      replace (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)) by reflexivity.
+      eapply inh_paint_is_ityp. apply Hwf0. exact Hα.
+    + intros α Hα.
+      replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
       rewrite <- ptyp_to_btyp_inh_open.
-      apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f X).
+      apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f α).
       * intro Hco; discriminate.
       * fsetdec.
       * apply d_tags__var; reflexivity.
       * apply d_wf_utyp__var; simpl; auto.
       * apply is_ttyp__var.
-      * replace (utyp_var_f X) with (ptyp_to_utyp_syn (ptyp_var_f X)) by reflexivity.
+      * replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) by reflexivity.
         rewrite <- ptyp_to_utyp_syn_open.
         apply d_sub_equiv with (Δ := (@empty : atoms)); [ fsetdec | ].
-        apply IH0. clear - HX. fsetdec.
+        apply IH0. clear - Hα. fsetdec.
 Qed.
 
 (* At [mode_tc] the RHS of [⩽] is always inherited (is_ityp). *)
@@ -147,12 +147,12 @@ Proof.
     apply d_sub_refl_paint. assumption.
   - (* forall_r *)
     apply d_sub__forall_r with (L := L `union` dom Γ).
-    + apply is_ityp__all with (L := L). intros X HX.
-      replace (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)) by reflexivity.
+    + apply is_ityp__all with (L := L). intros α Hα.
+      replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
       rewrite <- ptyp_to_btyp_inh_open.
       eapply d_sub_tc_is_ityp. apply H0. fsetdec.
-    + intros X HX.
-      replace (btyp_var_f X) with (ptyp_to_btyp_inh (ptyp_var_f X)) by reflexivity.
+    + intros α Hα.
+      replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
       rewrite <- ptyp_to_btyp_inh_open.
       apply H0. fsetdec.
   - (* forall_l: instantiate by the monotype paint *)
@@ -214,7 +214,7 @@ Proof.
   - (* __forall: the annotated lambda is a value; so is the bare one. *)
     subst e.
     apply d_typing__forall with (L := L); [ apply is_value__abs | ].
-    intros X HX. eapply H1; [ exact HX | reflexivity | exact Hmono ].
+    intros α Hα. eapply H1; [ exact Hα | reflexivity | exact Hmono ].
   - (* __abs_anno: the domain [B1] erases to the mono [A0], hence is [inh A0];
        the body premise is exactly [d_typing__abs]'s. *)
     injection Heq; intros; subst.

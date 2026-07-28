@@ -40,7 +40,7 @@ Proof. intros P H; inversion H; auto. Qed.
 
 Lemma lc_pskl_all_syn_inv : forall P,
   lc_pskl (pskl_all_syn P) ->
-  forall X, lc_pskl (open_pskl_wrt_pskl P (pskl_var_f X)).
+  forall α, lc_pskl (open_pskl_wrt_pskl P (pskl_var_f α)).
 Proof. intros P H; inversion H; auto. Qed.
 
 (** Solving preserves local closure. *)

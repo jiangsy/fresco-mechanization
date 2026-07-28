@@ -55,7 +55,7 @@ Lemma pskl_to_uskl_lc : forall P,
   lc_pskl P -> lc_uskl (pskl_to_uskl P).
 Proof.
   intros P H; induction H; simpl; auto.
-  apply lc_uskl_all_syn; intros X.
+  apply lc_uskl_all_syn; intros α.
   rewrite <- pskl_to_uskl_open_var; auto.
 Qed.
 

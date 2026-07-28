@@ -441,7 +441,7 @@ Lemma lc_ptyp_to_pskl : forall A,
   lc_ptyp A -> lc_pskl (ptyp_to_pskl A).
 Proof.
   intros A H; induction H; simpl; try solve [ constructor; auto ].
-  constructor. intros X.
+  constructor. intros α.
   rewrite <- ptyp_to_pskl_open. auto.
 Qed.
 
@@ -456,7 +456,7 @@ Proof.
   - eapply a_pskl_tyequiv__trans; eauto.
   - apply a_pskl_tyequiv__flex_def; auto.
   - apply a_pskl_tyequiv__arrow; auto.
-  - apply a_pskl_tyequiv__all with (L := L). intros X HX.
+  - apply a_pskl_tyequiv__all with (L := L). intros α Hα.
     repeat rewrite <- ptyp_to_pskl_open. auto.
 Qed.
 

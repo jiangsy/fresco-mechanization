@@ -80,19 +80,19 @@ Proof.
   - apply ad_pat_consis__var; eauto using a_isub_binds_tvarish.
   - eapply ad_pat_consis__arrow; eauto.
   - eapply ad_pat_consis__forall_inh_tagged with (L := L); eauto.
-    intros X HX. eauto using a_isub_cons_tvar.
+    intros α Hα. eauto using a_isub_cons_tvar.
   - eapply ad_pat_consis__forall_inh_untagged with (L := L); eauto.
-    intros X HX. eauto using a_isub_cons_tvar.
+    intros α Hα. eauto using a_isub_cons_tvar.
   - eapply ad_pat_consis__forall_syn_tagged with (L := L); eauto.
-    intros X HX. eauto using a_isub_cons_tvar.
+    intros α Hα. eauto using a_isub_cons_tvar.
   - eapply ad_pat_consis__forall_syn with (L := L); eauto.
-    intros X HX. eauto using a_isub_cons_tvar.
+    intros α Hα. eauto using a_isub_cons_tvar.
   - apply ad_pat_consis__ghostg; auto.
   - apply ad_pat_consis__topholeg; auto.
   - apply ad_pat_consis__hole; eauto using a_wf_pskl_isub.
   - apply ad_pat_consis__tophole; auto.
   - eapply ad_pat_consis__tophole_inh with (L := L); eauto.
-    intros X HX. eauto using a_isub_cons_tvar.
+    intros α Hα. eauto using a_isub_cons_tvar.
   - apply ad_pat_consis__tophole_drop; auto.
   - eapply ad_pat_consis__flex_l; eauto using a_isub_binds_flex_def.
   - eapply ad_pat_consis__flex_r; eauto using a_isub_binds_flex_def.
@@ -112,7 +112,7 @@ Proof.
   - apply ad_refine_syn__hole; eauto using a_wf_pskl_isub.
   - apply ad_refine_syn__tophole_remove; auto.
   - eapply ad_refine_syn__tophole_fill with (L := L).
-    intros X HX. eauto using a_isub_cons_tvar.
+    intros α Hα. eauto using a_isub_cons_tvar.
   - apply ad_refine_syn__tophole_keep; auto.
   - eapply ad_refine_syn__flex_l; eauto using a_isub_binds_flex_def.
   - eapply ad_refine_syn__flex_r; eauto using a_isub_binds_flex_def.
@@ -132,7 +132,7 @@ Proof.
   - apply ad_refine_pskl__hole; eauto using a_wf_pskl_isub.
   - apply ad_refine_pskl__tophole_remove; auto.
   - eapply ad_refine_pskl__tophole_fill with (L := L).
-    intros X HX. eauto using a_isub_cons_tvar.
+    intros α Hα. eauto using a_isub_cons_tvar.
   - apply ad_refine_pskl__tophole_keep; auto.
   - eapply ad_refine_pskl__flex_l; eauto using a_isub_binds_flex_def.
   - eapply ad_refine_pskl__flex_r; eauto using a_isub_binds_flex_def.

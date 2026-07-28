@@ -262,13 +262,21 @@ before changing any of them.
     argument `α`, so those are exactly the names `induction` / `inversion`
     manufacture; a later explicit `intros Q1` then fails with "Q1 is already
     used". Coq never auto-generates a primed name. At most one prime.
-  - ⚠️ **The convention governs LEMMA BINDERS, not proof-local names.** After
-    `induction H` / `inversion H` the variables in scope are the RULE's own
-    binders (from `def_extra.v`, which this pass did not touch), so a proof
-    body legitimately says `X` or `P` there even though the statement says
-    `α` or `Q`. When a rename breaks with "variable … not found" or "… is
-    already used", that is almost always this: the name belongs to the rule,
-    not the lemma. Say so in a comment rather than forcing the rename.
+  - **Only `α` and `β` are bases** (plus `α1`/`β1`, `α2`/`β2`, and at most ONE
+    prime). `γ`/`δ` are NOT used: keeping the alphabet small is deliberate, and
+    it leaves the other greek letters for their paper roles. An atom SET is
+    never `R` — a set unioned into the tag context (`Θ ⨟ (Δ ∪ S) ⊢ …`,
+    `delta_def_fresh S Θ`) is a Δ, so it takes `Δ'`.
+  - ⚠️ **After `induction H` / `inversion H` the names in scope are the RULE's
+    binders, not the lemma's.** The rules' *type variables* are greek now (the
+    `def_*.v` inductives were renamed too), but their *skeleton/type* binders
+    still read `P`/`Q`/`R`/`A`, so a proof body legitimately says `P` where the
+    statement said `Q'`. When a rename breaks with "variable … not found" or
+    "… is already used", that is almost always this: the name belongs to the
+    rule. Say so in a comment rather than forcing the rename — and when the
+    lemma's own variable really must move, prefer `α0` (that is how Coq itself
+    freshens a shadowed binder) and keep the redirect scoped to the region
+    that needs it, not the whole proof.
 - Tactic style follows the reference repo — `eauto`-driven, with
   hammer-derived scripts simplified before commit.
 - Comments document **why** an encoding is the way it is, not what

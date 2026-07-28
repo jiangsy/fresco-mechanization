@@ -1,14 +1,14 @@
 (** Decorated algorithmic judgments (paper appendices/decorated-algosub.tex).
 
     The decorated system re-runs the algorithmic subtyping/consistency over
-    UNRESOLVED skeletons [S : uskl] (tagged quantifiers + dotted ghosts,
+    UNRESOLVED skeletons [R : uskl] (tagged quantifiers + dotted ghosts,
     extended with flexible variables), threading the tag context [Ψ] exactly
     as the declarative judgments do.  It is the bridge for the soundness
     proofs: ordinary run ⇒ decorated run ⇒ declarative derivation.
 
     Notations (paper forms):
-      [Θ ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ']  decorated consistency
-      [Θ ⊢ᵗ[ NM | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ']   decorated subtyping
+      [Θ ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ Q ⊣ Θ']  decorated consistency
+      [Θ ⊢ᵗ[ NM | M | P0 | Ψ ] R ⩽˙ Q ⊣ Θ']   decorated subtyping
       [ψ ≼ᵗ[ M ] Q ⤳ Ψ] / [ψ ∼ᵗ Q ⤳ Ψ] / [C ⊩ᵗ ψ ⤳ Ψ]  tag solving *)
 
 Require Import Coq.Lists.List.
@@ -23,12 +23,12 @@ Require Import src.frost.algo.def_extra.
 
 Set Implicit Arguments.
 
-Reserved Notation "Θ ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ'"
+Reserved Notation "Θ ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ Q ⊣ Θ'"
   (at level 70, Δ1 at level 0, Δ2 at level 0, P0 at level 0, Ψ at level 0,
-   S at level 0, Q at level 0, Θ' at level 0, no associativity).
-Reserved Notation "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ'"
+   R at level 0, Q at level 0, Θ' at level 0, no associativity).
+Reserved Notation "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] R ⩽˙ Q ⊣ Θ'"
   (at level 70, NM at level 0, M at level 0, P0 at level 0, Ψ at level 0,
-   S at level 0, Q at level 0, Θ' at level 0, no associativity).
+   R at level 0, Q at level 0, Θ' at level 0, no associativity).
 Reserved Notation "ψ ≼ᵗ[ M ] Q ⤳ Ψ"
   (at level 75, M at level 0, Q at level 74, Ψ at level 74, no associativity).
 Reserved Notation "ψ ∼ᵗ Q ⤳ Ψ"
@@ -37,25 +37,25 @@ Reserved Notation "C ⊩ᵗ ψ ⤳ Ψ"
   (at level 75, ψ at level 74, Ψ at level 74, no associativity).
 
 (* ===================================================================== *)
-(*  Erasure  ⌊S⌋ : uskl → pskl  (decorated-algosub.tex:27-38)             *)
-(*  Homomorphic; non-trivial cases: ∀^δ ↦ ∀, HoleG ↦ □, TopHoleG ↦ ⊤.     *)
+(*  Erasure  ⌊R⌋ : uskl → pskl  (decorated-algosub.tex:27-38)             *)
+(*  Homomorphic; non-trivial cases: ∀^β1 ↦ ∀, HoleG ↦ □, TopHoleG ↦ ⊤.     *)
 (* ===================================================================== *)
 
-Fixpoint uskl_to_pskl (S : uskl) : pskl :=
-  match S with
+Fixpoint uskl_to_pskl (R : uskl) : pskl :=
+  match R with
   | uskl_unit => pskl_unit
   | uskl_var_b n => pskl_var_b n
-  | uskl_var_f X => pskl_var_f X
-  | uskl_arrow S1 S2 => pskl_arrow (uskl_to_pskl S1) (uskl_to_pskl S2)
-  | uskl_all_syn S0 => pskl_all_syn (uskl_to_pskl S0)
-  | uskl_all_etag _ S0 => pskl_all_syn (uskl_to_pskl S0)
+  | uskl_var_f α => pskl_var_f α
+  | uskl_arrow R1 R2 => pskl_arrow (uskl_to_pskl R1) (uskl_to_pskl R2)
+  | uskl_all_syn R0 => pskl_all_syn (uskl_to_pskl R0)
+  | uskl_all_etag _ R0 => pskl_all_syn (uskl_to_pskl R0)
   | uskl_hole => pskl_hole
-  | uskl_tophole S0 => pskl_tophole (uskl_to_pskl S0)
+  | uskl_tophole R0 => pskl_tophole (uskl_to_pskl R0)
   | uskl_holeg => pskl_hole
-  | uskl_topholeg S0 => pskl_tophole (uskl_to_pskl S0)
+  | uskl_topholeg R0 => pskl_tophole (uskl_to_pskl R0)
   end.
 
-Notation "⌊ S ⌋ˢ" := (uskl_to_pskl S) (at level 0, S at level 99).
+Notation "⌊ R ⌋ˢ" := (uskl_to_pskl R) (at level 0, R at level 99).
 
 (** Plain skeletons as (untagged) unresolved skeletons: the embedding used
     by the flexible-variable rules, which are inherited unchanged from the
@@ -64,7 +64,7 @@ Fixpoint pskl_to_uskl (P : pskl) : uskl :=
   match P with
   | pskl_unit => uskl_unit
   | pskl_var_b n => uskl_var_b n
-  | pskl_var_f X => uskl_var_f X
+  | pskl_var_f α => uskl_var_f α
   | pskl_arrow P1 P2 => uskl_arrow (pskl_to_uskl P1) (pskl_to_uskl P2)
   | pskl_all_syn P0 => uskl_all_syn (pskl_to_uskl P0)
   | pskl_hole => uskl_hole
@@ -77,18 +77,18 @@ Fixpoint pskl_to_uskl (P : pskl) : uskl :=
     tag-solving FlexR rule (on decorated ψ, ghost-free ≡ dotted-ghost-free). *)
 Inductive uskl_ghost_free : uskl -> Prop :=
 | uskl_ghost_free__unit : uskl_ghost_free uskl_unit
-| uskl_ghost_free__var : forall X, uskl_ghost_free (uskl_var_f X)
-| uskl_ghost_free__arrow : forall S1 S2,
-    uskl_ghost_free S1 -> uskl_ghost_free S2 ->
-    uskl_ghost_free (uskl_arrow S1 S2)
-| uskl_ghost_free__all_etag : forall L ε S,
-    (forall X, X `notin` L ->
-       uskl_ghost_free (open_uskl_wrt_uskl S (uskl_var_f X))) ->
-    uskl_ghost_free (uskl_all_etag ε S)
-| uskl_ghost_free__all_syn : forall L S,
-    (forall X, X `notin` L ->
-       uskl_ghost_free (open_uskl_wrt_uskl S (uskl_var_f X))) ->
-    uskl_ghost_free (uskl_all_syn S).
+| uskl_ghost_free__var : forall α, uskl_ghost_free (uskl_var_f α)
+| uskl_ghost_free__arrow : forall R1 R2,
+    uskl_ghost_free R1 -> uskl_ghost_free R2 ->
+    uskl_ghost_free (uskl_arrow R1 R2)
+| uskl_ghost_free__all_etag : forall L ε R,
+    (forall α, α `notin` L ->
+       uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f α))) ->
+    uskl_ghost_free (uskl_all_etag ε R)
+| uskl_ghost_free__all_syn : forall L R,
+    (forall α, α `notin` L ->
+       uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f α))) ->
+    uskl_ghost_free (uskl_all_syn R).
 
 (* Constructor hint (dedicated [frost] db): ghost-freeness is dispatched
    structurally in metatheory. *)
@@ -110,7 +110,7 @@ Inductive a_tags_sort : a_sub_mode -> atoms -> uskl -> Prop :=
 
 (* ===================================================================== *)
 (*  Decorated algorithmic consistency                                      *)
-(*  [Θ0 ⊢ᵗ[Δ1|Δ2|P0|Ψ] S ∼˙ Q ⊣ Θ1]  (fig:decorated-alg-consistency;        *)
+(*  [Θ0 ⊢ᵗ[Δ1|Δ2|P0|Ψ] R ∼˙ Q ⊣ Θ1]  (fig:decorated-alg-consistency;        *)
 (*  rules unchanged from the ordinary system carry the empty tag context)  *)
 (* ===================================================================== *)
 
@@ -146,95 +146,95 @@ Inductive a_consistag :
 | a_consistag__ghostg : forall Δ1 Δ2 Ψ Θ0,                    (* GhostG *)
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | pskl_hole | Ψ ] uskl_holeg ∼˙ pskl_hole ⊣ Θ0
-| a_consistag__arrow : forall Δ1 Δ2 Ψ Ψ1 Ψ2 Θ0 Θ1 Θ2 P0a P0b S1 S2 Q1 Q2,
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0a | Ψ1 ] S1 ∼˙ Q1 ⊣ Θ1 ->                (* Arrow *)
-    Θ1 ⊢ᵗ[ Δ1 | Δ2 | P0b | Ψ2 ] S2 ∼˙ Q2 ⊣ Θ2 ->
+| a_consistag__arrow : forall Δ1 Δ2 Ψ Ψ1 Ψ2 Θ0 Θ1 Θ2 P0a P0b R1 R2 Q1 Q2,
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0a | Ψ1 ] R1 ∼˙ Q1 ⊣ Θ1 ->                (* Arrow *)
+    Θ1 ⊢ᵗ[ Δ1 | Δ2 | P0b | Ψ2 ] R2 ∼˙ Q2 ⊣ Θ2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_arrow P0a P0b) | Ψ ]
-      (uskl_arrow S1 S2) ∼˙ (pskl_arrow Q1 Q2) ⊣ Θ2
-| a_consistag__forall_inh_tagged : forall L Δ1 Δ2 Ψ Ψ0 Θ0 Θ1 ε P0 S Q,
-    (forall α, α `notin` L ->                                 (* ForallInh, δ=ε *)
+      (uskl_arrow R1 R2) ∼˙ (pskl_arrow Q1 Q2) ⊣ Θ2
+| a_consistag__forall_inh_tagged : forall L Δ1 Δ2 Ψ Ψ0 Θ0 Θ1 ε P0 R Q,
+    (forall α, α `notin` L ->                                 (* ForallInh, β1=ε *)
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ᵗ[ (add α Δ1) | (add α Δ2)
            | (open_pskl_wrt_pskl P0 (pskl_var_f α)) | Ψ0 ]
-         (open_uskl_wrt_uskl S (uskl_var_f α)) ∼˙
+         (open_uskl_wrt_uskl R (uskl_var_f α)) ∼˙
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
     Ψ [=] add ε Ψ0 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_all_syn P0) | Ψ ]
-      (uskl_all_etag ε S) ∼˙ (pskl_all_syn Q) ⊣ Θ1
-| a_consistag__forall_inh_untagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 S Q,
-    (forall α, α `notin` L ->                                 (* ForallInh, δ=· *)
+      (uskl_all_etag ε R) ∼˙ (pskl_all_syn Q) ⊣ Θ1
+| a_consistag__forall_inh_untagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,
+    (forall α, α `notin` L ->                                 (* ForallInh, β1=· *)
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ᵗ[ (add α Δ1) | (add α Δ2)
            | (open_pskl_wrt_pskl P0 (pskl_var_f α)) | Ψ ]
-         (open_uskl_wrt_uskl S (uskl_var_f α)) ∼˙
+         (open_uskl_wrt_uskl R (uskl_var_f α)) ∼˙
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_all_syn P0) | Ψ ]
-      (uskl_all_syn S) ∼˙ (pskl_all_syn Q) ⊣ Θ1
-| a_consistag__forall_syn_tagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 ε P0 S Q,
-    (forall α, α `notin` L ->                                 (* ForallSyn, δ=ε *)
+      (uskl_all_syn R) ∼˙ (pskl_all_syn Q) ⊣ Θ1
+| a_consistag__forall_syn_tagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 ε P0 R Q,
+    (forall α, α `notin` L ->                                 (* ForallSyn, β1=ε *)
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ᵗ[ Δ1 | (add α Δ2) | (pskl_tophole P0) | Ψ ]
-         (open_uskl_wrt_uskl S (uskl_var_f α)) ∼˙
+         (open_uskl_wrt_uskl R (uskl_var_f α)) ∼˙
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
-      (uskl_all_etag ε S) ∼˙ (pskl_all_syn Q) ⊣ Θ1
-| a_consistag__forall_syn_untagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 S Q,
-    (forall α, α `notin` L ->                                 (* ForallSyn, δ=· *)
+      (uskl_all_etag ε R) ∼˙ (pskl_all_syn Q) ⊣ Θ1
+| a_consistag__forall_syn_untagged : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,
+    (forall α, α `notin` L ->                                 (* ForallSyn, β1=· *)
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ᵗ[ Δ1 | (add α Δ2) | (pskl_tophole P0) | Ψ ]
-         (open_uskl_wrt_uskl S (uskl_var_f α)) ∼˙
+         (open_uskl_wrt_uskl R (uskl_var_f α)) ∼˙
          (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
-      (uskl_all_syn S) ∼˙ (pskl_all_syn Q) ⊣ Θ1
-| a_consistag__univ_ghost : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 S Q,      (* UnivGhost *)
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ1 ->
+      (uskl_all_syn R) ∼˙ (pskl_all_syn Q) ⊣ Θ1
+| a_consistag__univ_ghost : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,      (* UnivGhost *)
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ Q ⊣ Θ1 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
-      (uskl_tophole S) ∼˙ (pskl_tophole Q) ⊣ Θ1
-| a_consistag__univ_ghostg : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 S Q,     (* UnivGhostG *)
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ1 ->
+      (uskl_tophole R) ∼˙ (pskl_tophole Q) ⊣ Θ1
+| a_consistag__univ_ghostg : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,     (* UnivGhostG *)
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ Q ⊣ Θ1 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ]
-      (uskl_topholeg S) ∼˙ (pskl_tophole Q) ⊣ Θ1
-| a_consistag__univ_ghost1 : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 S Q,   (* UnivGhost1 *)
+      (uskl_topholeg R) ∼˙ (pskl_tophole Q) ⊣ Θ1
+| a_consistag__univ_ghost1 : forall L Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,   (* UnivGhost1 *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ᵗ[ (add α Δ1) | Δ2
            | (open_pskl_wrt_pskl P0 (pskl_var_f α)) | Ψ ]
-         (uskl_tophole S) ∼˙ (open_pskl_wrt_pskl Q (pskl_var_f α))
+         (uskl_tophole R) ∼˙ (open_pskl_wrt_pskl Q (pskl_var_f α))
          ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_all_syn P0) | Ψ ]
-      (uskl_tophole S) ∼˙ (pskl_all_syn Q) ⊣ Θ1
-| a_consistag__univ_ghost2 : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 S Q,     (* UnivGhost2 *)
+      (uskl_tophole R) ∼˙ (pskl_all_syn Q) ⊣ Θ1
+| a_consistag__univ_ghost2 : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,     (* UnivGhost2 *)
     guarded_pskl P0 ->
     a_non_flex Θ0 P0 ->
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ1 ->
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] (uskl_tophole S) ∼˙ Q ⊣ Θ1
-| a_consistag__ghost_r : forall Δ1 Δ2 Ψ Θ0 S,                 (* GhostR *)
-    Δ1 ∩ (ftvar_in_pskl ⌊ S ⌋ˢ) [=] empty ->
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ Q ⊣ Θ1 ->
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] (uskl_tophole R) ∼˙ Q ⊣ Θ1
+| a_consistag__ghost_r : forall Δ1 Δ2 Ψ Θ0 R,                 (* GhostR *)
+    Δ1 ∩ (ftvar_in_pskl ⌊ R ⌋ˢ) [=] empty ->
     Ψ [=] empty ->
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | pskl_hole | Ψ ] S ∼˙ ⌊ S ⌋ˢ ⊣ Θ0
-| a_consistag__univ_ghost_r : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 S Q,    (* UnivGhostR *)
-    guarded_uskl S ->
-    a_non_flex Θ0 ⌊ S ⌋ˢ ->
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ1 ->
-    Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ] S ∼˙ Q ⊣ Θ1
-where "Θ ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ'" :=
-  (a_consistag Δ1 Δ2 P0 Ψ Θ S Q Θ') : type_scope.
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | pskl_hole | Ψ ] R ∼˙ ⌊ R ⌋ˢ ⊣ Θ0
+| a_consistag__univ_ghost_r : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 R Q,    (* UnivGhostR *)
+    guarded_uskl R ->
+    a_non_flex Θ0 ⌊ R ⌋ˢ ->
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ Q ⊣ Θ1 ->
+    Θ0 ⊢ᵗ[ Δ1 | Δ2 | (pskl_tophole P0) | Ψ ] R ∼˙ Q ⊣ Θ1
+where "Θ ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] R ∼˙ Q ⊣ Θ'" :=
+  (a_consistag Δ1 Δ2 P0 Ψ Θ R Q Θ') : type_scope.
 
 (* ===================================================================== *)
 (*  Decorated algorithmic subtyping                                        *)
-(*  [Θ0 ⊢ᵗ[N|M|P0|Ψ] S ⩽˙ Q ⊣ Θ1]  (fig:decorated-alg-subtyping)           *)
+(*  [Θ0 ⊢ᵗ[N|M|P0|Ψ] R ⩽˙ Q ⊣ Θ1]  (fig:decorated-alg-subtyping)           *)
 (* ===================================================================== *)
 
 Inductive a_subtag :
   a_sub_mode -> mode -> pskl -> atoms -> aenv -> uskl -> pskl -> aenv -> Prop :=
-| a_subtag__infer : forall NM Ψ Θ0 S,                         (* Infer *)
+| a_subtag__infer : forall NM Ψ Θ0 R,                         (* Infer *)
     Ψ [=] empty ->
-    Θ0 ⊢ᵗ[ NM | mode_ti | pskl_hole | Ψ ] S ⩽˙ ⌊ S ⌋ˢ ⊣ Θ0
+    Θ0 ⊢ᵗ[ NM | mode_ti | pskl_hole | Ψ ] R ⩽˙ ⌊ R ⌋ˢ ⊣ Θ0
 | a_subtag__check : forall Ψ Θ0 Θ1 T B Q,                     (* Check *)
     guarded_uskl T ->
     guarded_pskl B ->
@@ -245,28 +245,28 @@ Inductive a_subtag :
        is unsound for a flexible subject [α̂] (all three witnesses — paper
        [FlexL]:1655, [a_consis__flex_l], impl [U-FlexL]:182 — output [α̂]). *)
     Θ0 ⊢ᵗ[ a_sub_mode_ty | mode_tc | B | Ψ ] T ⩽˙ B ⊣ Θ1
-| a_subtag__forall_r : forall L Ψ Θ0 Θ1 Ξ S B,                (* ForallR *)
+| a_subtag__forall_r : forall L Ψ Θ0 Θ1 Ξ R B,                (* ForallR *)
     a_suffix Ξ ->
     uniq (Ξ ++ Θ0) ->                                          (* Barendregt (prose-completion) *)
     (forall α, α `notin` L ->
        ((α ~ abind_tvar) ++ Θ0)
          ⊢ᵗ[ a_sub_mode_ty | mode_tc
            | (open_pskl_wrt_pskl B (pskl_var_f α)) | Ψ ]
-         S ⩽˙ (open_pskl_wrt_pskl B (pskl_var_f α))
+         R ⩽˙ (open_pskl_wrt_pskl B (pskl_var_f α))
          ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ᵗ[ a_sub_mode_ty | mode_tc | (pskl_all_syn B) | Ψ ]
-      S ⩽˙ (pskl_all_syn B) ⊣ Θ1
-| a_subtag__univ_ghost_r : forall Ψ Θ0 S,                     (* UnivGhostR *)
-    guarded_uskl S ->
+      R ⩽˙ (pskl_all_syn B) ⊣ Θ1
+| a_subtag__univ_ghost_r : forall Ψ Θ0 R,                     (* UnivGhostR *)
+    guarded_uskl R ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ a_sub_mode_sk | mode_tc | pskl_hole | Ψ ]
-      S ⩽˙ (pskl_tophole ⌊ S ⌋ˢ) ⊣ Θ0
-| a_subtag__arrow : forall NM M Ψ Ψ1 Ψ2 Θ0 Θ1 Θ2 P0a P0b S1 S2 Q1 Q2,
-    Θ0 ⊢ᵗ[ empty | empty | P0a | Ψ1 ] S1 ∼˙ Q1 ⊣ Θ1 ->          (* Arrow *)
-    Θ1 ⊢ᵗ[ NM | M | P0b | Ψ2 ] S2 ⩽˙ Q2 ⊣ Θ2 ->
+      R ⩽˙ (pskl_tophole ⌊ R ⌋ˢ) ⊣ Θ0
+| a_subtag__arrow : forall NM M Ψ Ψ1 Ψ2 Θ0 Θ1 Θ2 P0a P0b R1 R2 Q1 Q2,
+    Θ0 ⊢ᵗ[ empty | empty | P0a | Ψ1 ] R1 ∼˙ Q1 ⊣ Θ1 ->          (* Arrow *)
+    Θ1 ⊢ᵗ[ NM | M | P0b | Ψ2 ] R2 ⩽˙ Q2 ⊣ Θ2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     Θ0 ⊢ᵗ[ NM | (mode_fn M) | (pskl_arrow P0a P0b) | Ψ ]
-      (uskl_arrow S1 S2) ⩽˙ (pskl_arrow Q1 Q2) ⊣ Θ2
+      (uskl_arrow R1 R2) ⩽˙ (pskl_arrow Q1 Q2) ⊣ Θ2
 (* The paper's [Ψg fresh] (decorated-algosub.tex:92) is prose-completed
    COFINITELY: the recursive premise holds for EVERY sufficiently fresh
    retagging (Ψg, ψg) of P1 — the tag analog of cofinite binder
@@ -278,11 +278,11 @@ Inductive a_subtag :
    docs/DESIGN-subtyping.md §4.2).  Consumers recover a specific pack by
    instantiating at a decoration of P1 avoiding L ∪ Ψ
    ([pskl_decorate_exists]). *)
-| a_subtag__forall_l_tagged : forall L NM M P0 Ψ Θ0 Θ1 ε S Q Ξ P1,
-    M <> mode_ti ->                                           (* ForallL, δ=ε *)
+| a_subtag__forall_l_tagged : forall L NM M P0 Ψ Θ0 Θ1 ε R Q Ξ P1,
+    M <> mode_ti ->                                           (* ForallL, β1=ε *)
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
-       a_extract NM α M ⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
+       a_extract NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->                              (* DISCIPLINED wf (paper) *)
     (forall Ψg ψg,                                            (* Ψg fresh (cofinite) *)
@@ -290,13 +290,13 @@ Inductive a_subtag :
        a_tags_sort NM Ψg ψg ->                                (* Θ,Ξ ⊢^N tags{Ψg}{ψg} *)
        ⌊ ψg ⌋ˢ = P1 ->                                        (* ⌊ψg⌋ = P1 *)
        (Ξ ++ Θ0) ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψg) ]
-         (open_uskl_wrt_uskl S ψg) ⩽˙ Q ⊣ Θ1) ->
-    Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] (uskl_all_etag ε S) ⩽˙ Q ⊣ Θ1
-| a_subtag__forall_l_untagged : forall L NM M P0 Ψ Θ0 Θ1 S Q Ξ P1,
-    M <> mode_ti ->                                           (* ForallL, δ=· *)
+         (open_uskl_wrt_uskl R ψg) ⩽˙ Q ⊣ Θ1) ->
+    Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] (uskl_all_etag ε R) ⩽˙ Q ⊣ Θ1
+| a_subtag__forall_l_untagged : forall L NM M P0 Ψ Θ0 Θ1 R Q Ξ P1,
+    M <> mode_ti ->                                           (* ForallL, β1=· *)
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
-       a_extract NM α M ⌊ open_uskl_wrt_uskl S (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
+       a_extract NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->                              (* DISCIPLINED wf (paper) *)
     (forall Ψg ψg,                                            (* Ψg fresh (cofinite) *)
@@ -304,22 +304,22 @@ Inductive a_subtag :
        a_tags_sort NM Ψg ψg ->
        ⌊ ψg ⌋ˢ = P1 ->
        (Ξ ++ Θ0) ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψg) ]
-         (open_uskl_wrt_uskl S ψg) ⩽˙ Q ⊣ Θ1) ->
-    Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] (uskl_all_syn S) ⩽˙ Q ⊣ Θ1
+         (open_uskl_wrt_uskl R ψg) ⩽˙ Q ⊣ Θ1) ->
+    Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] (uskl_all_syn R) ⩽˙ Q ⊣ Θ1
 | a_subtag__ghost : forall M Ψ Θ0 P0,                         (* Ghost (unchanged) *)
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] uskl_hole ⩽˙ P0 ⊣ Θ0
 | a_subtag__ghostg : forall M Ψ Θ0,                           (* GhostG *)
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ a_sub_mode_sk | M | pskl_hole | Ψ ] uskl_holeg ⩽˙ pskl_hole ⊣ Θ0
-| a_subtag__univ_ghost_l : forall M Ψ Θ0 Θ1 P0 S Q,           (* UnivGhostL *)
+| a_subtag__univ_ghost_l : forall M Ψ Θ0 Θ1 P0 R Q,           (* UnivGhostL *)
     M <> mode_ti ->
-    Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ1 ->
-    Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_tophole S) ⩽˙ Q ⊣ Θ1
-| a_subtag__univ_ghost_lg : forall M Ψ Θ0 Θ1 P0 S Q,          (* UnivGhostLG *)
+    Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] R ⩽˙ Q ⊣ Θ1 ->
+    Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_tophole R) ⩽˙ Q ⊣ Θ1
+| a_subtag__univ_ghost_lg : forall M Ψ Θ0 Θ1 P0 R Q,          (* UnivGhostLG *)
     M <> mode_ti ->
-    Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ1 ->
-    Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_topholeg S) ⩽˙ Q ⊣ Θ1
+    Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] R ⩽˙ Q ⊣ Θ1 ->
+    Θ0 ⊢ᵗ[ a_sub_mode_sk | M | P0 | Ψ ] (uskl_topholeg R) ⩽˙ Q ⊣ Θ1
 | a_subtag__flex_mono : forall NM M P0 Ψ Θ0 Θ1 α A,           (* FlexMono (unchanged) *)
     a_subtag_flex NM M P0 Θ0 nil α A Θ1 ->
     Ψ [=] empty ->
@@ -373,8 +373,8 @@ with a_subtag_flex :
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
     a_subtag_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1)
-where "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ'" :=
-  (a_subtag NM M P0 Ψ Θ S Q Θ') : type_scope.
+where "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] R ⩽˙ Q ⊣ Θ'" :=
+  (a_subtag NM M P0 Ψ Θ R Q Θ') : type_scope.
 
 (* ===================================================================== *)
 (*  Decorated tag solving  (fig:decorated-tag-solving)                    *)
@@ -384,9 +384,9 @@ where "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] S ⩽˙ Q ⊣ Θ'" :=
 (* ===================================================================== *)
 
 Inductive a_solvetag_sub : uskl -> mode -> pskl -> atoms -> Prop :=
-| a_solvetag_sub__var : forall X M Q Ψ,                       (* SSub-Var / Flex *)
+| a_solvetag_sub__var : forall α M Q Ψ,                       (* SSub-Var / Flex *)
     Ψ [=] empty ->
-    (uskl_var_f X) ≼ᵗ[ M ] Q ⤳ Ψ
+    (uskl_var_f α) ≼ᵗ[ M ] Q ⤳ Ψ
 | a_solvetag_sub__forall_l : forall L ε ψ M Q Ψ,              (* SSub-ForallL *)
     (forall β, β `notin` L ->
        (open_uskl_wrt_uskl ψ (uskl_var_f β)) ≼ᵗ[ M ] Q ⤳ Ψ) ->
@@ -416,9 +416,9 @@ with a_solvetag_eq : uskl -> pskl -> atoms -> Prop :=
 | a_solvetag_eq__unit : forall Ψ,                             (* SEq-Unit *)
     Ψ [=] empty ->
     uskl_unit ∼ᵗ pskl_unit ⤳ Ψ
-| a_solvetag_eq__var : forall X Q Ψ,                          (* SEq-Var / FlexL *)
+| a_solvetag_eq__var : forall α Q Ψ,                          (* SEq-Var / FlexL *)
     Ψ [=] empty ->
-    (uskl_var_f X) ∼ᵗ Q ⤳ Ψ
+    (uskl_var_f α) ∼ᵗ Q ⤳ Ψ
 | a_solvetag_eq__vacuous : forall ψ Ψ,                        (* SEq-Vacuous *)
     Ψ [=] empty ->
     ψ ∼ᵗ pskl_hole ⤳ Ψ

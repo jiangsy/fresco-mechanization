@@ -74,7 +74,7 @@ Inductive ad_pat_sub_g :
     ad_pat_sub_g n NM M Ψ2 Θ R2 Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     ad_pat_sub_g (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
-| ad_pat_sub_g__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, δ=ε *)
+| ad_pat_sub_g__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, β1=ε *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty ->
@@ -82,7 +82,7 @@ Inductive ad_pat_sub_g :
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     ad_pat_sub_g n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
     ad_pat_sub_g (S n) NM M Ψ Θ (uskl_all_etag ε R) Q
-| ad_pat_sub_g__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, δ=· *)
+| ad_pat_sub_g__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, β1=· *)
     M <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     Ψ' ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty ->

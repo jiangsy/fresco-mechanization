@@ -69,8 +69,8 @@ Lemma step1 : forall Θ Δ,
   Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ (pskl_to_bskl_syn Pfill).
 Proof. intros. apply ad_refine_syn__hole. apply Pfill_wf. Qed.
 
-(* Step 2: syn(⊤.(□→□)) ⊳ ∀X. ⊤.(X→X)   by tophole_fill, filling both
-   ghosts with the fresh CONTEXT rigid X introduced by the rule. *)
+(* Step 2: syn(⊤.(□→□)) ⊳ ∀α. ⊤.(α→α)   by tophole_fill, filling both
+   ghosts with the fresh CONTEXT rigid α introduced by the rule. *)
 Definition Bres : bskl :=
   bskl_all_syn (bskl_tophole (bskl_arrow (bskl_var_b 0) (bskl_var_b 0))).
 
@@ -78,11 +78,11 @@ Lemma step2 : forall Θ Δ,
   Θ ⨟ Δ ⊢ᵣᵃ (pskl_to_bskl_syn Pfill) ⊳ Bres.
 Proof.
   intros. simpl. apply ad_refine_syn__tophole_fill with (L := dom Θ).
-  intros X HX. simpl.
+  intros α Hα. simpl.
   apply ad_refine_syn__tophole_keep.
   - apply guarded_bskl__arrow; constructor.
   - apply ad_refine_syn__arrow;
-      (replace (bskl_var_f X) with (pskl_to_bskl_syn (pskl_var_f X)) by reflexivity;
+      (replace (bskl_var_f α) with (pskl_to_bskl_syn (pskl_var_f α)) by reflexivity;
        apply ad_refine_syn__hole;
        apply a_wf_pskl__var; right; left; unfold binds; left; reflexivity).
 Qed.
@@ -100,8 +100,8 @@ Lemma Pres_not_wf : forall Θ Δ, ~ (Θ ⨟ Δ ⊢ₚₛᵃ Pres).
 Proof.
   intros Θ Δ Hwf. unfold Pres in Hwf.
   inversion Hwf as [ | | | L Θa Δa Pa Hbody | | ]; subst.
-  pick fresh X for (L `union` dom Θ).
-  specialize (Hbody X ltac:(auto)). simpl in Hbody.
+  pick fresh α for (L `union` dom Θ).
+  specialize (Hbody α ltac:(auto)). simpl in Hbody.
   inversion Hbody as [ | | | | | Θb Δb Pb Hg Hwfb ]; subst.
   inversion Hwfb as [ | | Θc Δc P1 P2 Hw1 Hw2 | | | ]; subst.
   inversion Hw1 as [ | Θd Δd Xd Hin | | | | ]; subst.
@@ -143,14 +143,14 @@ Qed.
 
 (* CONSEQUENCE: [ad_refine_syn] is NOT transitive.
      □ ⊳ syn(⊤.(□→□))            (step1, the ghost rule)
-     syn(⊤.(□→□)) ⊳ ∀X.⊤.(X→X)   (step2, tophole_fill + two ghost fills
-                                   with the CONTEXT rigid X the rule binds)
+     syn(⊤.(□→□)) ⊳ ∀α.⊤.(α→α)   (step2, tophole_fill + two ghost fills
+                                   with the CONTEXT rigid α the rule binds)
    but NOT
-     □ ⊳ ∀X.⊤.(X→X)              (no_hole_to_Bres)
+     □ ⊳ ∀α.⊤.(α→α)              (no_hole_to_Bres)
    because the ghost rule can only produce a WELL-FORMED skeleton, and
-   ∀X.⊤.(X→X) is not one: [a_wf_pskl__all] binds X in Δ, whereas
+   ∀α.⊤.(α→α) is not one: [a_wf_pskl__all] binds α in Δ, whereas
    [a_wf_pskl__tophole] requires its body to be well-formed at the EMPTY Δ.
-   Refinement's [tophole_fill], by contrast, binds X in the CONTEXT. *)
+   Refinement's [tophole_fill], by contrast, binds α in the CONTEXT. *)
 Theorem ad_refine_syn_not_transitive :
   ~ (forall Θ Δ Q1 Q2 Q3,
        Θ ⨟ Δ ⊢ᵣᵃ Q1 ⊳ Q2 -> Θ ⨟ Δ ⊢ᵣᵃ Q2 ⊳ Q3 -> Θ ⨟ Δ ⊢ᵣᵃ Q1 ⊳ Q3).

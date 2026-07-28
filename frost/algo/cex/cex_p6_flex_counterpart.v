@@ -40,7 +40,7 @@
     appendices.  At the level of the non-var lemmas
     (consistency-proofs.tex:920 / subtyping-proofs.tex:2202) a flexible
     counterpart CAN be handled — LE-FlexR replaces the constraint payload by
-    a FRESH γ̂ ∈ Ξc, and θa (which extends θ to Ξc there) is free to map γ̂
+    a FRESH α1̂ ∈ Ξc, and θa (which extends θ to Ξc there) is free to map α1̂
     to a ψa-refining monotype (when one exists; when ψa is not
     mono-paintable the premises are vacuous).  But the -var lemmas have
     Ξc = · and θa ≡ θ on ALL of Θ0, so a flexible P_0 with a θ-image that
@@ -56,10 +56,10 @@
         ψa (used only for the final precision) still carries it.
       * A run never produces this: when a flexible counterpart faces a
         COMPOUND (arrow) subject, [a_lookeq__flex_r] (LE-FlexR) FRESHENS it
-        to a new [γ ∈ Ξ] — machine-checked in
+        to a new [α1 ∈ Ξ] — machine-checked in
         [a_lookeq_arrow_subject_flex_target_freshened].  The -var lemma
-        never sees a raw Θ0-flex P_0 at an arrow node; it sees the fresh γ,
-        handled by the NON-var lemma (θ extends over Ξ, assigns γ the rigid
+        never sees a raw Θ0-flex P_0 at an arrow node; it sees the fresh α1,
+        handled by the NON-var lemma (θ extends over Ξ, assigns α1 the rigid
         c).  A raw flex payload only ever sits opposite a LEAF
         ([a_lookeq_flex_target_raw_subject_not_arrow]).
       * Only the Arrow case is even reachable for a flexible P_0: θ maps
@@ -112,9 +112,9 @@ Proof.
   - exfalso; eapply Hdf; eassumption.
   - rewrite (IHa_tyequiv1 Hdf); rewrite (IHa_tyequiv2 Hdf); reflexivity.
   - f_equal.
-    pick fresh Y for
+    pick fresh β for
       (L `union` ftvar_in_ptyp A `union` ftvar_in_ptyp B).
-    apply (open_ptyp_wrt_ptyp_inj _ _ Y);
+    apply (open_ptyp_wrt_ptyp_inj _ _ β);
       [ clear - Fr; fsetdec | clear - Fr; fsetdec | ].
     apply H0; [ clear - Fr; fsetdec | exact Hdf ].
 Qed.
@@ -252,8 +252,8 @@ Qed.
     from ftv(P_0). *)
 Lemma cex_rho_fresh : rho_fresh (singleton c) cexΘ cexθ.
 Proof.
-  intros Y HY.
-  assert (HYX : Y = c) by (clear - HY; fsetdec); subst Y.
+  intros β Hβ.
+  assert (HYX : β = c) by (clear - Hβ; fsetdec); subst β.
   split; [ | split ].
   - unfold cexΘ, binds; simpl; left; reflexivity.
   - intros p Hp; simpl in Hp; destruct Hp as [Hp | []]; subst p.

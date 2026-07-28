@@ -31,7 +31,7 @@
 (*  algorithmic derivation TOGETHER WITH the factoring (ζ, a_inc_equiv)   *)
 (*  and — for consistency — the PRECISION of the output (⊑ against the    *)
 (*  competing solution's join target), on the AUGMENTED problem           *)
-(*  (Δ₁;Δ₂;Ψ;Θ₀;P₀;S) of :2230-2242.  COMPLETE — no admits; the whole      *)
+(*  (Δ₁;Δ₂;Ψ;Θ₀;P₀;R) of :2230-2242.  COMPLETE — no admits; the whole      *)
 (*  bundle (and [a_consis_complete_thm]) is axiom-free.                   *)
 (* ===================================================================== *)
 Require Import Coq.Lists.List.
@@ -111,7 +111,7 @@ Set Implicit Arguments.
 
     of docs/DESIGN-completeness-measure.md §4:
 
-      V = size of the SOLVED skeletons  size (⇓ˢ[Θ] (θ X)) + size (⇓ˢ[Θ] (θ Y))
+      V = size of the SOLVED skeletons  size (⇓ˢ[Θ] (θ α)) + size (⇓ˢ[Θ] (θ β))
       n = |Θ0|  (consis, unify) | |Ξ|+|Θ0| (assign)
       t = 1 (consis) | 0 (unify/assign)   — breaks the consis↔unify/assign tie
       k = |Θ0| (assign) | 0 (consis/unify) — breaks Assign-Depend
@@ -292,24 +292,24 @@ Proof.
   intros. unfold Vptyp. eapply a_inc_equiv_downarrow_ptyp_size; eauto.
 Qed.
 
-(** (M2) The BACK-EDGE move [X[τ/γ̂] ↦ X], with the outer metasubstitution
-    dropping its head [γ̂ ↦ τ'].  [V] is exactly preserved — the back-edge merely
+(** (M2) The BACK-EDGE move [α[τ/α1̂] ↦ α], with the outer metasubstitution
+    dropping its head [α1̂ ↦ τ'].  [V] is exactly preserved — the back-edge merely
     unfolds a definition the solution had already unfolded ([Flex-Flex-Assign],
     [Assign-Assign], design doc §5.4).  The [≡ᵗ] premise is [a_inc__flex_def]'s. *)
-Lemma Vpskl_backedge : forall Θ θ0 γ τ τ' P,
+Lemma Vpskl_backedge : forall Θ θ0 α1 τ τ' P,
   a_wf_aenv Θ ->
   Θ ⊢ τ' ≡ᵗ (msubst_ptyp θ0 τ) ->
-  Vpskl Θ θ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) γ P)
-  = Vpskl Θ ((γ, τ') :: θ0) P.
+  Vpskl Θ θ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P)
+  = Vpskl Θ ((α1, τ') :: θ0) P.
 Proof.
   intros. unfold Vpskl. eapply downarrow_subst_pskl_size; eauto.
 Qed.
 
-Lemma Vvar_backedge : forall Θ θ0 γ τ τ' α,
+Lemma Vvar_backedge : forall Θ θ0 α1 τ τ' α,
   a_wf_aenv Θ ->
   Θ ⊢ τ' ≡ᵗ (msubst_ptyp θ0 τ) ->
-  Vptyp Θ θ0 (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))
-  = Vptyp Θ ((γ, τ') :: θ0) (ptyp_var_f α).
+  Vptyp Θ θ0 (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))
+  = Vptyp Θ ((α1, τ') :: θ0) (ptyp_var_f α).
 Proof.
   intros. unfold Vptyp. eapply downarrow_subst_ptyp_size; eauto.
 Qed.
@@ -325,8 +325,8 @@ Proof.
   - constructor.
   - constructor.
   - constructor; auto.
-  - pick fresh X.
-    apply lc_pskl_all_syn_exists with (α1 := X).
+  - pick fresh α.
+    apply lc_pskl_all_syn_exists with (α1 := α).
     rewrite <- ptyp_to_pskl_open. auto.
 Qed.
 
@@ -339,7 +339,7 @@ Lemma msubst_pskl_open_rec_lc : forall θ,
   = open_pskl_wrt_pskl_rec k (msubst_pskl θ P') (msubst_pskl θ P).
 Proof.
   intros θ Hlc P;
-    induction P as [ | n | X | P1 IH1 P2 IH2 | P0 IH0 | | P0 IH0 ];
+    induction P as [ | n | α | P1 IH1 P2 IH2 | P0 IH0 | | P0 IH0 ];
     intros P' k; simpl; f_equal; eauto.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
   - symmetry.
@@ -355,9 +355,9 @@ Lemma msubst_pskl_open_lc : forall θ P α,
   msubst_pskl θ (open_pskl_wrt_pskl P (pskl_var_f α))
   = open_pskl_wrt_pskl (msubst_pskl θ P) (pskl_var_f α).
 Proof.
-  intros θ P α Hlc HX. unfold open_pskl_wrt_pskl.
+  intros θ P α Hlc Hα. unfold open_pskl_wrt_pskl.
   rewrite (msubst_pskl_open_rec_lc Hlc P (pskl_var_f α) 0).
-  cbn [msubst_pskl]. rewrite msubst_lookup_notin by exact HX.
+  cbn [msubst_pskl]. rewrite msubst_lookup_notin by exact Hα.
   reflexivity.
 Qed.
 
@@ -388,7 +388,7 @@ Qed.
 (* ===================================================================== *)
 
 (** A metasubstitution never ERASES a free variable outside its domain: if
-    [X ∉ dom θ] and [X ∈ ftv(P)] then [X ∈ ftv(θP)].  ([θ] can only REPLACE the
+    [α ∉ dom θ] and [α ∈ ftv(P)] then [α ∈ ftv(θP)].  ([θ] can only REPLACE the
     variables it is defined on; everything else survives verbatim.) *)
 Lemma msubst_pskl_ftv_notin_dom : forall θ P α',
   α' `notin` dom θ ->
@@ -396,13 +396,13 @@ Lemma msubst_pskl_ftv_notin_dom : forall θ P α',
   α' `in` ftvar_in_pskl (msubst_pskl θ P).
 Proof.
   intros θ P;
-    induction P as [ | n | Y | Pa IHa Pb IHb | Pall IHall | | Pt IHt ];
-    intros α' HX Hin; simpl in *.
+    induction P as [ | n | β | Pa IHa Pb IHb | Pall IHall | | Pt IHt ];
+    intros α' Hα Hin; simpl in *.
   - clear - Hin; fsetdec.
   - clear - Hin; fsetdec.
-  - (* pskl_var_f Y : Hin forces α' = Y, and Y ∉ dom θ so θ leaves it alone *)
-    assert (α' = Y) by (clear - Hin; fsetdec); subst Y.
-    rewrite msubst_lookup_notin by exact HX. simpl. clear; fsetdec.
+  - (* pskl_var_f β : Hin forces α' = β, and β ∉ dom θ so θ leaves it alone *)
+    assert (α' = β) by (clear - Hin; fsetdec); subst β.
+    rewrite msubst_lookup_notin by exact Hα. simpl. clear; fsetdec.
   - apply union_1 in Hin. destruct Hin as [Hin | Hin].
     + assert (Hs : α' `in` ftvar_in_pskl (msubst_pskl θ Pa)) by (apply IHa; auto).
       clear - Hs; fsetdec.
@@ -479,7 +479,7 @@ Qed.
 
 (* ---- downarrow SCOPING + the join-grounding crux (GMM Lemma 2.6, step 2) ---- *)
 (*  ⇓ᵗ[Θ] of a type stays inside any def-closed set containing its ftv; and    *)
-(*  (THE CRUX) a mono-join uskl(S) ∼ syn(mono C) forces ⇓ˢ[Θ]S scoped to any    *)
+(*  (THE CRUX) a mono-join uskl(R) ∼ syn(mono C) forces ⇓ˢ[Θ]R scoped to any    *)
 (*  def-closed D that scopes C — so the walked payload downarrows into the      *)
 (*  sub-target.  Holes contribute no ftv; the ∀/inh cases cannot fire (C mono). *)
 
@@ -507,23 +507,23 @@ Proof.
     inversion HeqC; subst.
     simpl. rewrite ftvar_in_ptyp_to_pskl.
     match goal with
-    | |- context[msubst_lookup ?r ?X] =>
-        replace (msubst_lookup r X) with (⇓ᵗ[ Θ ] (ptyp_var_f X)) by reflexivity
+    | |- context[msubst_lookup ?r ?α] =>
+        replace (msubst_lookup r α) with (⇓ᵗ[ Θ ] (ptyp_var_f α)) by reflexivity
     end.
     apply downarrow_ftv_closed;
       [ exact Hwf | simpl; clear - HCD; simpl in HCD; fsetdec | exact Hcl ].
   - (* arrow *)
-    destruct P0 as [ | n | X | S01 S02 | S0a | | S0b ]; simpl in HeqS; try discriminate.
+    destruct P0 as [ | n | α | S01 S02 | S0a | | S0b ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
     destruct C0 as [ | | | C1 C2 | ]; simpl in HeqC; try discriminate.
     inversion HeqC; subst.
     inversion HmC0 as [ | | ? ? HmC1 HmC2 ]; subst.
-    simpl. intros Z HZ.
-    apply union_1 in HZ. destruct HZ as [HZl | HZr].
+    simpl. intros α2 Hα2.
+    apply union_1 in Hα2. destruct Hα2 as [HZl | HZr].
     + apply (IHHc1 Hwf S01 C1 D eq_refl eq_refl HmC1 Hcl
-               ltac:(clear - HCD; simpl in HCD; fsetdec) Z HZl).
+               ltac:(clear - HCD; simpl in HCD; fsetdec) α2 HZl).
     + apply (IHHc2 Hwf S02 C2 D eq_refl eq_refl HmC2 Hcl
-               ltac:(clear - HCD; simpl in HCD; fsetdec) Z HZr).
+               ltac:(clear - HCD; simpl in HCD; fsetdec) α2 HZr).
   - (* forall_inh_tagged *) destruct HmC0; simpl in HeqC; discriminate.
   - (* forall_inh_untagged *) destruct HmC0; simpl in HeqC; discriminate.
   - (* forall_syn_tagged *) destruct HmC0; simpl in HeqC; discriminate.
@@ -540,10 +540,10 @@ Proof.
     inversion HeqS; subst.
     simpl. apply (IHHc Hwf S0t C0 D eq_refl eq_refl HmC0 Hcl HCD).
   - (* flex_l : subject is a defined flexible *)
-    destruct P0 as [ | | Xv | | | | ]; simpl in HeqS; try discriminate.
+    destruct P0 as [ | | αv | | | | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
     simpl.
-    assert (Hlk : msubst_lookup (aenv_msubst Θ) Xv = ⇓ᵗ[ Θ ] τ)
+    assert (Hlk : msubst_lookup (aenv_msubst Θ) αv = ⇓ᵗ[ Θ ] τ)
       by (apply aenv_msubst_lookup_def; assumption).
     rewrite Hlk.
     rewrite <- msubst_pskl_ptyp_to_pskl.
@@ -572,68 +572,68 @@ Lemma a_wf_pskl_strengthen : forall Θ Δ P,
   forall Θ', uniq Θ ->
   (forall x, x `in` Δ -> x `notin` dom Θ) ->
   (forall x b, binds x b Θ' -> binds x b Θ) ->
-  (forall X, X `in` ftvar_in_pskl P -> X `in` Δ \/ X `in` dom Θ') ->
+  (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ α `in` dom Θ') ->
   Θ' ⨟ Δ ⊢ₚₛᵃ P.
 Proof.
   intros Θ Δ P H; induction H; intros Θ' Hu Hdisj Hsub Hsc.
   - apply a_wf_pskl__unit.
   - apply a_wf_pskl__var.
-    assert (HXin : X `in` ftvar_in_pskl (pskl_var_f X)) by (simpl; fsetdec).
-    destruct (Hsc X HXin) as [HΔ | Hd]; [ left; exact HΔ | ].
+    assert (HXin : α `in` ftvar_in_pskl (pskl_var_f α)) by (simpl; fsetdec).
+    destruct (Hsc α HXin) as [HΔ | Hd]; [ left; exact HΔ | ].
     destruct H as [HΔ | Htv]; [ left; exact HΔ | ].
     right. eapply a_binds_tvar_strengthen; eauto.
   - apply a_wf_pskl__arrow.
-    + apply IHa_wf_pskl1; auto. intros X HX. apply Hsc. simpl. fsetdec.
-    + apply IHa_wf_pskl2; auto. intros X HX. apply Hsc. simpl. fsetdec.
+    + apply IHa_wf_pskl1; auto. intros α Hα. apply Hsc. simpl. fsetdec.
+    + apply IHa_wf_pskl2; auto. intros α Hα. apply Hsc. simpl. fsetdec.
   - apply a_wf_pskl__all with (L := L `union` dom Θ `union` dom Θ' `union` Δ).
-    intros X HX. apply H0.
-    + clear - HX; fsetdec.
+    intros α Hα. apply H0.
+    + clear - Hα; fsetdec.
     + exact Hu.
-    + assert (HxnΘ : X `notin` dom Θ) by (clear - HX; fsetdec).
-      intros y Hy. destruct (y == X) as [-> | Hyne];
+    + assert (HxnΘ : α `notin` dom Θ) by (clear - Hα; fsetdec).
+      intros y Hy. destruct (y == α) as [-> | Hyne];
         [ exact HxnΘ | apply Hdisj; clear - Hy Hyne; fsetdec ].
     + exact Hsub.
-    + intros Y HY.
-      destruct (Y == X) as [-> | Hne]; [ left; clear; fsetdec | ].
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f X)) as Hup.
-      assert (HYP : Y `in` ftvar_in_pskl P) by (simpl in Hup; clear - HY Hup Hne; fsetdec).
-      destruct (Hsc Y HYP) as [HΔ | Hd]; [ left; clear - HΔ; fsetdec | right; exact Hd ].
+    + intros β Hβ.
+      destruct (β == α) as [-> | Hne]; [ left; clear; fsetdec | ].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as Hup.
+      assert (HYP : β `in` ftvar_in_pskl P) by (simpl in Hup; clear - Hβ Hup Hne; fsetdec).
+      destruct (Hsc β HYP) as [HΔ | Hd]; [ left; clear - HΔ; fsetdec | right; exact Hd ].
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole; [ exact H | ].
     apply IHa_wf_pskl; auto.
     + intros y Hy; clear - Hy; fsetdec.
-    + intros X HX. right.
-      pose proof (a_wf_pskl_ftv_tvarish H0 HX) as Htv.
-      assert (HxΘ : X `in` dom Θ).
+    + intros α Hα. right.
+      pose proof (a_wf_pskl_ftv_tvarish H0 Hα) as Htv.
+      assert (HxΘ : α `in` dom Θ).
       { destruct Htv as [He | Ht]; [ clear - He; fsetdec | ].
         destruct Ht as [Hb|[Hb|[τ Hb]]]; apply binds_In in Hb; exact Hb. }
-      assert (HXtop : X `in` ftvar_in_pskl (pskl_tophole P)) by (simpl; exact HX).
-      destruct (Hsc X HXtop) as [HΔ | Hd]; [ | exact Hd ].
-      exfalso. apply (Hdisj X HΔ). exact HxΘ.
+      assert (HXtop : α `in` ftvar_in_pskl (pskl_tophole P)) by (simpl; exact Hα).
+      destruct (Hsc α HXtop) as [HΔ | Hd]; [ | exact Hd ].
+      exfalso. apply (Hdisj α HΔ). exact HxΘ.
 Qed.
 
 
-Ltac str_forall H0 Hu Hwf' Hsub HscS HscQ Rr Qq X HX openU openB :=
+Ltac str_forall H0 Hu Hwf' Hsub HscS HscQ Rr Qq α Hα openU openB :=
   apply H0;
-  [ clear - HX; fsetdec
-  | simpl_env; apply uniq_push; [ exact Hu | clear - HX; fsetdec ]
-  | apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ]
-  | apply binds_sub_cons with (e := (X ~ abind_tvar)); exact Hsub
-  | intros Y HY;
-    pose proof (openU Rr (uskl_var_f X)) as HupU; simpl in HupU;
-    destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ];
-    simpl; apply add_2; apply HscS; clear - HY HupU Hne; fsetdec
-  | intros Y HY;
-    pose proof (openB Qq (bskl_var_f X)) as HupB; simpl in HupB;
-    destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ];
-    simpl; apply add_2; apply HscQ; clear - HY HupB Hne; fsetdec ].
+  [ clear - Hα; fsetdec
+  | simpl_env; apply uniq_push; [ exact Hu | clear - Hα; fsetdec ]
+  | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf' ]
+  | apply binds_sub_cons with (e := (α ~ abind_tvar)); exact Hsub
+  | intros β Hβ;
+    pose proof (openU Rr (uskl_var_f α)) as HupU; simpl in HupU;
+    destruct (β == α) as [-> | Hne]; [ simpl; clear; fsetdec | ];
+    simpl; apply add_2; apply HscS; clear - Hβ HupU Hne; fsetdec
+  | intros β Hβ;
+    pose proof (openB Qq (bskl_var_f α)) as HupB; simpl in HupB;
+    destruct (β == α) as [-> | Hne]; [ simpl; clear; fsetdec | ];
+    simpl; apply add_2; apply HscQ; clear - Hβ HupB Hne; fsetdec ].
 
 Lemma ad_pat_consis_strengthen : forall Ψ Θ R' Q,
   Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Q ->
   forall Θ', uniq Θ -> a_wf_aenv Θ' ->
   (forall x b, binds x b Θ' -> binds x b Θ) ->
-  (forall X, X `in` ftvar_in_uskl R' -> X `in` dom Θ') ->
-  (forall X, X `in` ftvar_in_bskl Q -> X `in` dom Θ') ->
+  (forall α0, α0 `in` ftvar_in_uskl R' -> α0 `in` dom Θ') ->
+  (forall α0, α0 `in` ftvar_in_bskl Q -> α0 `in` dom Θ') ->
   Ψ ⨟ Θ' ⊢ₛᵃ R' ∼ Q.
 Proof.
   intros Ψ Θ R' Q H; induction H;
@@ -643,73 +643,73 @@ Proof.
     eapply a_binds_tvar_strengthen;
       [ eassumption | exact Hu | exact Hsub | apply HscS; fsetdec ].
   - eapply ad_pat_consis__arrow; [ | | exact H1 ].
-    + apply IHad_pat_consis1; auto; intros X HX;
+    + apply IHad_pat_consis1; auto; intros α0 Hα0;
         solve [ apply HscS; fsetdec | apply HscQ; fsetdec ].
-    + apply IHad_pat_consis2; auto; intros X HX;
+    + apply IHad_pat_consis2; auto; intros α0 Hα0;
         solve [ apply HscS; fsetdec | apply HscQ; fsetdec ].
   - eapply ad_pat_consis__forall_inh_tagged
       with (L := L `union` dom Θ `union` dom Θ'); [ | exact H1 ].
-    intros X HX.
-    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q X HX
+    intros α0 Hα0.
+    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q α0 Hα0
       ftvar_in_uskl_open_uskl_wrt_uskl_upper ftvar_in_bskl_open_bskl_wrt_bskl_upper.
   - eapply ad_pat_consis__forall_inh_untagged
       with (L := L `union` dom Θ `union` dom Θ').
-    intros X HX.
-    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q X HX
+    intros α0 Hα0.
+    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q α0 Hα0
       ftvar_in_uskl_open_uskl_wrt_uskl_upper ftvar_in_bskl_open_bskl_wrt_bskl_upper.
   - eapply ad_pat_consis__forall_syn_tagged
       with (L := L `union` dom Θ `union` dom Θ').
-    intros X HX.
-    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q X HX
+    intros α0 Hα0.
+    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q α0 Hα0
       ftvar_in_uskl_open_uskl_wrt_uskl_upper ftvar_in_bskl_open_bskl_wrt_bskl_upper.
   - eapply ad_pat_consis__forall_syn
       with (L := L `union` dom Θ `union` dom Θ').
-    intros X HX.
-    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q X HX
+    intros α0 Hα0.
+    str_forall H0 Hu Hwf' Hsub HscS HscQ R Q α0 Hα0
       ftvar_in_uskl_open_uskl_wrt_uskl_upper ftvar_in_bskl_open_bskl_wrt_bskl_upper.
   - apply ad_pat_consis__ghostg; auto.
   - apply ad_pat_consis__topholeg. apply IHad_pat_consis; auto.
   - apply ad_pat_consis__hole; auto.
     eapply a_wf_pskl_strengthen; [ exact H0 | exact Hu | intros y Hy; clear - Hy; fsetdec | exact Hsub | ].
-    intros X HX. right. apply HscQ.
-    pose proof (ftvar_in_bskl_inh P) as Hb. clear - HX Hb. fsetdec.
+    intros α0 Hα0. right. apply HscQ.
+    pose proof (ftvar_in_bskl_inh P) as Hb. clear - Hα0 Hb. fsetdec.
   - apply ad_pat_consis__tophole. apply IHad_pat_consis; auto.
   - eapply ad_pat_consis__tophole_inh
       with (L := L `union` dom Θ `union` dom Θ').
-    intros X HX.
+    intros α0 Hα0.
     apply H0.
-    + clear - HX; fsetdec.
-    + simpl_env; apply uniq_push; [ exact Hu | clear - HX; fsetdec ].
-    + apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ].
-    + apply binds_sub_cons with (e := (X ~ abind_tvar)); exact Hsub.
-    + intros Y HY. simpl in HY. simpl.
-      apply add_2. apply HscS; exact HY.
-    + intros Y HY.
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f X)) as HupB;
+    + clear - Hα0; fsetdec.
+    + simpl_env; apply uniq_push; [ exact Hu | clear - Hα0; fsetdec ].
+    + apply a_wf_aenv__tvar; [ clear - Hα0; fsetdec | exact Hwf' ].
+    + apply binds_sub_cons with (e := (α0 ~ abind_tvar)); exact Hsub.
+    + intros β Hβ. simpl in Hβ. simpl.
+      apply add_2. apply HscS; exact Hβ.
+    + intros β Hβ.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f α0)) as HupB;
         simpl in HupB.
-      destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ].
-      simpl. apply add_2. apply HscQ; clear - HY HupB Hne; fsetdec.
+      destruct (β == α0) as [-> | Hne]; [ simpl; clear; fsetdec | ].
+      simpl. apply add_2. apply HscQ; clear - Hβ HupB Hne; fsetdec.
   - apply ad_pat_consis__tophole_drop. apply IHad_pat_consis; auto.
   - eapply ad_pat_consis__flex_l.
     + eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscS; fsetdec ].
     + apply IHad_pat_consis; auto.
-      intros X HX.
+      intros α0 Hα0.
       assert (Hbd' : binds α (abind_flex_mono_def τ) Θ')
         by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscS; fsetdec ]).
       assert (Hwfτ : a_wf_ptyp Θ' τ) by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hbd' ]).
       pose proof (a_wf_ptyp_ftv_dom' Hwfτ) as Hftv.
       pose proof (ftvar_in_uskl_ptyp_syn τ) as Hco.
-      clear - HX Hftv Hco. fsetdec.
+      clear - Hα0 Hftv Hco. fsetdec.
   - eapply ad_pat_consis__flex_r.
     + eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscQ; fsetdec ].
     + apply IHad_pat_consis; auto.
-      intros X HX.
+      intros α0 Hα0.
       assert (Hbd' : binds α (abind_flex_mono_def τ) Θ')
         by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscQ; fsetdec ]).
       assert (Hwfτ : a_wf_ptyp Θ' τ) by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hbd' ]).
       pose proof (a_wf_ptyp_ftv_dom' Hwfτ) as Hftv.
       pose proof (ftvar_in_bskl_ptyp_syn τ) as Hco.
-      clear - HX Hftv Hco. fsetdec.
+      clear - Hα0 Hftv Hco. fsetdec.
 Qed.
 
 
@@ -724,7 +724,7 @@ Qed.
 Lemma consis_precise_mono_join : forall Θ Δ A Qb,
   a_wf_aenv Θ ->
   mono_ptyp A ->
-  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   empty ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn A) ∼ Qb ->
   Θ ⨟ Δ ⊢ₚᵣᵃ (ptyp_to_pskl A) ⊑ (bskl_to_pskl Qb).
 Proof.
@@ -761,8 +761,8 @@ Lemma consis_hole_target_inh : forall Ψ Θ Qb,
   pskl_to_bskl_inh (bskl_to_pskl Qb) = Qb.
 Proof.
   intros Ψ Θ Qb H.
-  remember uskl_hole as S eqn:HS.
-  induction H; try discriminate HS.
+  remember uskl_hole as R eqn:HR.
+  induction H; try discriminate HR.
   - rewrite bskl_to_pskl_pskl_to_bskl_inh. reflexivity.
   - reflexivity.
 Qed.
@@ -852,7 +852,7 @@ Lemma ad_pat_consis_tophole_guarded_inv : forall Ψ Θ P Q,
   Ψ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl P) ∼ Q.
 Proof.
   intros Ψ Θ P Q Hwf Hc.
-  remember (uskl_tophole (pskl_to_uskl P)) as S eqn:HeqS.
+  remember (uskl_tophole (pskl_to_uskl P)) as R eqn:HeqS.
   induction Hc; intros HgP HgQ; try discriminate HeqS.
   - inversion HgQ.
   - inversion HgQ.
@@ -917,29 +917,29 @@ Proof.
   - (* unit *)
     destruct P0; simpl in HeqS; try discriminate.
     simpl. apply ad_pat_consis__unit; assumption.
-  - (* var X : uniform ⇓(var X) ≡ var X route (covers tvar/flex_mono/flex_def) *)
-    destruct P0 as [ | | Xp | | | | ]; simpl in HeqS; try discriminate.
+  - (* var α : uniform ⇓(var α) ≡ var α route (covers tvar/flex_mono/flex_def) *)
+    destruct P0 as [ | | αp | | | | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
-    destruct C0 as [ | | Xc | | ]; simpl in HeqC; try discriminate.
+    destruct C0 as [ | | αc | | ]; simpl in HeqC; try discriminate.
     inversion HeqC; subst.
     simpl.
-    replace (ptyp_to_pskl (msubst_lookup (aenv_msubst Θ) Xc))
-       with (ptyp_to_pskl (⇓ᵗ[ Θ ] (ptyp_var_f Xc))) by reflexivity.
-    assert (Hwfx : a_wf_ptyp Θ (ptyp_var_f Xc)) by (apply a_wf_ptyp__var; exact H0).
-    assert (Hmono_x : mono_ptyp (⇓ᵗ[ Θ ] (ptyp_var_f Xc)))
+    replace (ptyp_to_pskl (msubst_lookup (aenv_msubst Θ) αc))
+       with (ptyp_to_pskl (⇓ᵗ[ Θ ] (ptyp_var_f αc))) by reflexivity.
+    assert (Hwfx : a_wf_ptyp Θ (ptyp_var_f αc)) by (apply a_wf_ptyp__var; exact H0).
+    assert (Hmono_x : mono_ptyp (⇓ᵗ[ Θ ] (ptyp_var_f αc)))
       by (apply mono_downarrow; [ exact Hwf | exact Hwfx | apply mono_ptyp__var ]).
-    assert (Hwf_x : a_wf_ptyp Θ (⇓ᵗ[ Θ ] (ptyp_var_f Xc)))
+    assert (Hwf_x : a_wf_ptyp Θ (⇓ᵗ[ Θ ] (ptyp_var_f αc)))
       by (apply a_wf_ptyp_downarrow_mono; [ exact Hwf | exact Hwfx | apply mono_ptyp__var ]).
-    assert (Hvis : forall Y, Y `in` ftvar_in_ptyp (⇓ᵗ[ Θ ] (ptyp_var_f Xc)) ->
-                   a_binds_tvar Y Θ)
-      by (intros Y HY; eapply a_wf_ptyp_ftv_tvarish; [ exact Hwf_x | exact HY ]).
-    assert (Heqd : Θ ⊢ (⇓ᵗ[ Θ ] (ptyp_var_f Xc)) ≡ᵗ (ptyp_var_f Xc)).
+    assert (Hvis : forall β, β `in` ftvar_in_ptyp (⇓ᵗ[ Θ ] (ptyp_var_f αc)) ->
+                   a_binds_tvar β Θ)
+      by (intros β Hβ; eapply a_wf_ptyp_ftv_tvarish; [ exact Hwf_x | exact Hβ ]).
+    assert (Heqd : Θ ⊢ (⇓ᵗ[ Θ ] (ptyp_var_f αc)) ≡ᵗ (ptyp_var_f αc)).
     { apply a_tyequiv__sym.
       apply a_tyequiv_to_downarrow_mono;
         [ exact Hwf | exact Hwfx | apply mono_ptyp__var ]. }
     destruct (tyequiv_mono_consis_transport_q Heqd Hwf Hmono_x Hvis) as [_ Hfwd].
     rewrite ptyp_to_uskl_syn_eq.
-    change (bskl_var_f Xc) with (ptyp_to_bskl_syn (ptyp_var_f Xc)).
+    change (bskl_var_f αc) with (ptyp_to_bskl_syn (ptyp_var_f αc)).
     apply Hfwd.
     eapply ad_pat_consis_psi_cong;
       [ apply consis_mono_refl; [ exact Hmono_x | exact Hvis ]
@@ -972,10 +972,10 @@ Proof.
     simpl. apply ad_pat_consis__tophole_drop.
     apply (IHHc Hwf S0t C0 eq_refl eq_refl HmC0).
   - (* flex_l : subject is a defined flexible *)
-    destruct P0 as [ | | Xv | | | | ]; simpl in HeqS; try discriminate.
+    destruct P0 as [ | | αv | | | | ]; simpl in HeqS; try discriminate.
     inversion HeqS; subst.
     simpl.
-    assert (Hlk : msubst_lookup (aenv_msubst Θ) Xv = ⇓ᵗ[ Θ ] τ)
+    assert (Hlk : msubst_lookup (aenv_msubst Θ) αv = ⇓ᵗ[ Θ ] τ)
       by (apply aenv_msubst_lookup_def; assumption).
     rewrite Hlk.
     rewrite <- msubst_pskl_ptyp_to_pskl.
@@ -1109,12 +1109,12 @@ Proof.
   - apply ad_refine_syn_f__unit.
   - apply ad_refine_syn_f__var; assumption.
   - destruct Hnh. apply ad_refine_syn_f__arrow; auto.
-  - apply ad_refine_syn_f__all with (L := L). intros X HX.
-    apply H0; [ exact HX | apply bskl_no_hole_open; assumption ].
+  - apply ad_refine_syn_f__all with (L := L). intros α Hα.
+    apply H0; [ exact Hα | apply bskl_no_hole_open; assumption ].
   - destruct Hnh.
   - apply ad_refine_syn_f__tophole_remove; auto.
-  - apply ad_refine_syn_f__tophole_fill with (L := L). intros X HX.
-    apply H0; [ exact HX | exact Hnh ].
+  - apply ad_refine_syn_f__tophole_fill with (L := L). intros α Hα.
+    apply H0; [ exact Hα | exact Hnh ].
   - apply ad_refine_syn_f__tophole_keep; auto.
   - eapply ad_refine_syn_f__flex_l; [ eassumption | ].
     apply IHad_refine_syn. apply ptyp_to_bskl_syn_no_hole.
@@ -1133,72 +1133,72 @@ Proof. induction Q; simpl; fsetdec. Qed.
 Lemma ad_refine_syn_f_fextend_ftv : forall F Θ Δ Q Q',
   ad_refine_syn_f F Θ Δ Q Q' ->
   forall F',
-  (forall γ, γ `in` F' -> γ `in` F \/
-     (γ `notin` ftvar_in_bskl Q' /\
+  (forall α1, α1 `in` F' -> α1 `in` F \/
+     (α1 `notin` ftvar_in_bskl Q' /\
       (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-         γ `notin` ftvar_in_ptyp τ))) ->
+         α1 `notin` ftvar_in_ptyp τ))) ->
   ad_refine_syn_f F' Θ Δ Q Q'.
 Proof.
   intros * H; induction H; intros F' Hcond; simpl in *.
   - apply ad_refine_syn_f__unit.
   - apply ad_refine_syn_f__var; assumption.
   - apply ad_refine_syn_f__arrow.
-    + apply IHad_refine_syn_f1. intros γ Hγ.
-      destruct (Hcond γ Hγ) as [HinF | [Hf Hd]];
+    + apply IHad_refine_syn_f1. intros α1 Hα1.
+      destruct (Hcond α1 Hα1) as [HinF | [Hf Hd]];
         [ left; exact HinF | right; split; [ | exact Hd ] ].
       clear - Hf. fsetdec.
-    + apply IHad_refine_syn_f2. intros γ Hγ.
-      destruct (Hcond γ Hγ) as [HinF | [Hf Hd]];
+    + apply IHad_refine_syn_f2. intros α1 Hα1.
+      destruct (Hcond α1 Hα1) as [HinF | [Hf Hd]];
         [ left; exact HinF | right; split; [ | exact Hd ] ].
       clear - Hf. fsetdec.
   - apply ad_refine_syn_f__all with (L := L `union` F').
-    intros X HX.
-    apply H0; [ clear - HX; fsetdec | ].
-    intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | [Hf Hd]];
+    intros α Hα.
+    apply H0; [ clear - Hα; fsetdec | ].
+    intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | [Hf Hd]];
       [ left; exact HinF | right; split; [ | exact Hd ] ].
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper
-                  P (bskl_var_f X)) as Hup.
+                  P (bskl_var_f α)) as Hup.
     simpl in Hup.
-    assert (γ <> X) by (clear - HX Hγ; fsetdec).
+    assert (α1 <> α) by (clear - Hα Hα1; fsetdec).
     clear - Hf Hup H1. fsetdec.
   - apply ad_refine_syn_f__hole; [ | assumption ].
-    apply inter_empty_pointwise. intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | [Hf Hd]].
+    apply inter_empty_pointwise. intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | [Hf Hd]].
     + intro Hc.
-      assert (Hin : γ `in` F ∩ ftvar_in_pskl P)
+      assert (Hin : α1 `in` F ∩ ftvar_in_pskl P)
         by (apply inter_3; assumption).
       rewrite H in Hin. clear - Hin. fsetdec.
     + rewrite ftvar_in_bskl_syn in Hf. exact Hf.
   - apply ad_refine_syn_f__tophole_remove. apply IHad_refine_syn_f.
     exact Hcond.
   - apply ad_refine_syn_f__tophole_fill with (L := L `union` F').
-    intros X HX.
-    apply H0; [ clear - HX; fsetdec | ].
-    intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | [Hf Hd]];
+    intros α Hα.
+    apply H0; [ clear - Hα; fsetdec | ].
+    intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | [Hf Hd]];
       [ left; exact HinF | right ].
     split.
     + pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper
-                    P (bskl_var_f X)) as Hup.
+                    P (bskl_var_f α)) as Hup.
       simpl in Hup.
-      assert (γ <> X) by (clear - HX Hγ; fsetdec).
+      assert (α1 <> α) by (clear - Hα Hα1; fsetdec).
       clear - Hf Hup H1. fsetdec.
     + intros β τ Hb.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
         [ discriminate | exact (Hd β τ Hb') ].
   - apply ad_refine_syn_f__tophole_keep; [ assumption | ].
     apply IHad_refine_syn_f.
-    intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | [Hf Hd]];
+    intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | [Hf Hd]];
       [ left; exact HinF | right; split; [ | exact Hd ] ].
     clear - Hf. fsetdec.
   - eapply ad_refine_syn_f__flex_l; [ eassumption | ].
     apply IHad_refine_syn_f. exact Hcond.
   - eapply ad_refine_syn_f__flex_r; [ eassumption | ].
     apply IHad_refine_syn_f.
-    intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | [Hf Hd]];
+    intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | [Hf Hd]];
       [ left; exact HinF | right; split; [ | exact Hd ] ].
     rewrite ftvar_in_bskl_ptyp_syn. exact (Hd _ _ H).
 Qed.
@@ -1210,20 +1210,20 @@ Qed.
 Lemma ad_refine_pskl_f_hole_src_target_ftv : forall F Θ Δ Pt,
   ad_refine_pskl_f F Θ Δ pskl_hole Pt ->
   a_wf_aenv Θ ->
-  forall γ, γ `in` F -> binds γ abind_tvar Θ ->
-  γ `notin` ftvar_in_pskl Pt.
+  forall α1, α1 `in` F -> binds α1 abind_tvar Θ ->
+  α1 `notin` ftvar_in_pskl Pt.
 Proof.
   intros * H.
-  remember pskl_hole as S eqn:HeqS.
-  induction H; intros Hwf γ HγF Hbγ; try discriminate HeqS.
+  remember pskl_hole as R eqn:HeqS.
+  induction H; intros Hwf α1 HγF Hbγ; try discriminate HeqS.
   - (* __hole : the fill is the target *)
     intro Hc.
-    assert (Hin : γ `in` F ∩ ftvar_in_pskl Q)
+    assert (Hin : α1 `in` F ∩ ftvar_in_pskl Q)
       by (apply inter_3; assumption).
     rewrite H in Hin. clear - Hin. fsetdec.
-  - (* __flex_r : target is a defined flexible, not the rigid γ *)
+  - (* __flex_r : target is a defined flexible, not the rigid α1 *)
     simpl. intro Hc.
-    assert (Heqγ : γ = α) by (clear - Hc; fsetdec). subst α.
+    assert (Heqγ : α1 = α) by (clear - Hc; fsetdec). subst α.
     pose proof (binds_unique _ _ _ _ _ H Hbγ (a_wf_aenv_uniq Hwf)) as Hcon.
     discriminate.
 Qed.
@@ -1233,21 +1233,21 @@ Qed.
 Lemma ad_refine_syn_f_hole_src_target_ftv : forall F Θ Δ Qt,
   ad_refine_syn_f F Θ Δ bskl_hole Qt ->
   a_wf_aenv Θ ->
-  forall γ, γ `in` F -> binds γ abind_tvar Θ ->
-  γ `notin` ftvar_in_bskl Qt.
+  forall α1, α1 `in` F -> binds α1 abind_tvar Θ ->
+  α1 `notin` ftvar_in_bskl Qt.
 Proof.
   intros * H.
-  remember bskl_hole as S eqn:HeqS.
-  induction H; intros Hwf γ HγF Hbγ; try discriminate HeqS.
+  remember bskl_hole as R eqn:HeqS.
+  induction H; intros Hwf α1 HγF Hbγ; try discriminate HeqS.
   - (* __hole : the fill is the target *)
     rewrite ftvar_in_bskl_syn.
     intro Hc.
-    assert (Hin : γ `in` F ∩ ftvar_in_pskl P)
+    assert (Hin : α1 `in` F ∩ ftvar_in_pskl P)
       by (apply inter_3; assumption).
     rewrite H in Hin. clear - Hin. fsetdec.
-  - (* __flex_r : target is a defined flexible, not the rigid γ *)
+  - (* __flex_r : target is a defined flexible, not the rigid α1 *)
     simpl. intro Hc.
-    assert (Heqγ : γ = α) by (clear - Hc; fsetdec). subst α.
+    assert (Heqγ : α1 = α) by (clear - Hc; fsetdec). subst α.
     pose proof (binds_unique _ _ _ _ _ H Hbγ (a_wf_aenv_uniq Hwf)) as Hcon.
     discriminate.
 Qed.
@@ -1268,16 +1268,16 @@ Proof.
       clear - Hb; fsetdec.
   - (* arrow *) clear - IHa_wf_pskl1 IHa_wf_pskl2. fsetdec.
   - (* all *)
-    pick fresh X for (L `union` ftvar_in_pskl P `union` Δ
+    pick fresh α for (L `union` ftvar_in_pskl P `union` Δ
                         `union` dom Θ).
-    assert (HXL : X `notin` L) by (clear - Fr; fsetdec).
-    pose proof (H0 X HXL) as Hsub.
-    intros Z HZ.
+    assert (HXL : α `notin` L) by (clear - Fr; fsetdec).
+    pose proof (H0 α HXL) as Hsub.
+    intros α2 Hα2.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
-                  P (pskl_var_f X)) as Hlo.
-    assert (HZ' : Z `in` (add X Δ `union` dom Θ))
-      by (apply Hsub; clear - HZ Hlo; fsetdec).
-    assert (Hne : Z <> X) by (clear - HZ Fr; fsetdec).
+                  P (pskl_var_f α)) as Hlo.
+    assert (HZ' : α2 `in` (add α Δ `union` dom Θ))
+      by (apply Hsub; clear - Hα2 Hlo; fsetdec).
+    assert (Hne : α2 <> α) by (clear - Hα2 Fr; fsetdec).
     clear - HZ' Hne. fsetdec.
   - (* tophole *) clear - IHa_wf_pskl. fsetdec.
 Qed.
@@ -1295,12 +1295,12 @@ Proof.
     destruct Hbt as [Hb | [Hb | [τ Hb]]];
       [ left | right; left | right; right; exists τ ]; apply Hmon; exact Hb.
   - apply ad_refine_syn_f__arrow; auto.
-  - apply ad_refine_syn_f__all with (L := L). intros X HX. auto.
+  - apply ad_refine_syn_f__all with (L := L). intros α Hα. auto.
   - apply ad_refine_syn_f__hole; [ exact H | ].
     eapply a_wf_pskl_weaken; eassumption.
   - apply ad_refine_syn_f__tophole_remove; auto.
-  - apply ad_refine_syn_f__tophole_fill with (L := L). intros X HX.
-    apply H0; [ exact HX | ].
+  - apply ad_refine_syn_f__tophole_fill with (L := L). intros α Hα.
+    apply H0; [ exact Hα | ].
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx Heqb] | Hb'];
       [ subst; unfold binds; left; reflexivity
@@ -1322,12 +1322,12 @@ Proof.
     destruct Hbt as [Hb | [Hb | [τ Hb]]];
       [ left | right; left | right; right; exists τ ]; apply Hmon; exact Hb.
   - apply ad_refine_pskl_f__arrow; auto.
-  - apply ad_refine_pskl_f__all with (L := L). intros X HX. auto.
+  - apply ad_refine_pskl_f__all with (L := L). intros α Hα. auto.
   - apply ad_refine_pskl_f__hole; [ exact H | ].
     eapply a_wf_pskl_weaken; eassumption.
   - apply ad_refine_pskl_f__tophole_remove; auto.
-  - apply ad_refine_pskl_f__tophole_fill with (L := L). intros X HX.
-    apply H0; [ exact HX | ].
+  - apply ad_refine_pskl_f__tophole_fill with (L := L). intros α Hα.
+    apply H0; [ exact Hα | ].
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx Heqb] | Hb'];
       [ subst; unfold binds; left; reflexivity
@@ -1342,31 +1342,31 @@ Qed.
     domain never collide with a fill. *)
 Lemma ad_refine_syn_f_fextend_dom : forall F Θ Δ Q Q',
   ad_refine_syn_f F Θ Δ Q Q' ->
-  forall F', (forall γ, γ `in` F' -> γ `in` F \/ γ `notin` dom Θ) ->
+  forall F', (forall α1, α1 `in` F' -> α1 `in` F \/ α1 `notin` dom Θ) ->
   ad_refine_syn_f F' Θ Δ Q Q'.
 Proof.
   intros * H; induction H; intros F' Hcond.
   - apply ad_refine_syn_f__unit.
   - apply ad_refine_syn_f__var; assumption.
   - apply ad_refine_syn_f__arrow; auto.
-  - apply ad_refine_syn_f__all with (L := L). intros X HX. auto.
+  - apply ad_refine_syn_f__all with (L := L). intros α Hα. auto.
   - apply ad_refine_syn_f__hole; [ | exact H0 ].
-    apply inter_empty_pointwise. intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | Hnd].
+    apply inter_empty_pointwise. intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | Hnd].
     + intro Hc.
-      assert (Hin : γ `in` F ∩ ftvar_in_pskl P)
+      assert (Hin : α1 `in` F ∩ ftvar_in_pskl P)
         by (apply inter_3; assumption).
       rewrite H in Hin. clear - Hin. fsetdec.
     + pose proof (a_wf_pskl_ftv_dom H0) as Hsc.
       clear - Hnd Hsc. fsetdec.
   - apply ad_refine_syn_f__tophole_remove; auto.
   - apply ad_refine_syn_f__tophole_fill with (L := L `union` F').
-    intros X HX.
-    apply H0; [ clear - HX; fsetdec | ].
-    intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | Hnd]; [ left; exact HinF | right ].
+    intros α Hα.
+    apply H0; [ clear - Hα; fsetdec | ].
+    intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | Hnd]; [ left; exact HinF | right ].
     simpl dom.
-    assert (γ <> X) by (clear - HX Hγ; fsetdec).
+    assert (α1 <> α) by (clear - Hα Hα1; fsetdec).
     clear - Hnd H1. fsetdec.
   - apply ad_refine_syn_f__tophole_keep; auto.
   - eapply ad_refine_syn_f__flex_l; [ eassumption | auto ].
@@ -1375,31 +1375,31 @@ Qed.
 
 Lemma ad_refine_pskl_f_fextend_dom : forall F Θ Δ P P',
   ad_refine_pskl_f F Θ Δ P P' ->
-  forall F', (forall γ, γ `in` F' -> γ `in` F \/ γ `notin` dom Θ) ->
+  forall F', (forall α1, α1 `in` F' -> α1 `in` F \/ α1 `notin` dom Θ) ->
   ad_refine_pskl_f F' Θ Δ P P'.
 Proof.
   intros * H; induction H; intros F' Hcond.
   - apply ad_refine_pskl_f__unit.
   - apply ad_refine_pskl_f__var; assumption.
   - apply ad_refine_pskl_f__arrow; auto.
-  - apply ad_refine_pskl_f__all with (L := L). intros X HX. auto.
+  - apply ad_refine_pskl_f__all with (L := L). intros α Hα. auto.
   - apply ad_refine_pskl_f__hole; [ | exact H0 ].
-    apply inter_empty_pointwise. intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | Hnd].
+    apply inter_empty_pointwise. intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | Hnd].
     + intro Hc.
-      assert (Hin : γ `in` F ∩ ftvar_in_pskl Q)
+      assert (Hin : α1 `in` F ∩ ftvar_in_pskl Q)
         by (apply inter_3; assumption).
       rewrite H in Hin. clear - Hin. fsetdec.
     + pose proof (a_wf_pskl_ftv_dom H0) as Hsc.
       clear - Hnd Hsc. fsetdec.
   - apply ad_refine_pskl_f__tophole_remove; auto.
   - apply ad_refine_pskl_f__tophole_fill with (L := L `union` F').
-    intros X HX.
-    apply H0; [ clear - HX; fsetdec | ].
-    intros γ Hγ.
-    destruct (Hcond γ Hγ) as [HinF | Hnd]; [ left; exact HinF | right ].
+    intros α Hα.
+    apply H0; [ clear - Hα; fsetdec | ].
+    intros α1 Hα1.
+    destruct (Hcond α1 Hα1) as [HinF | Hnd]; [ left; exact HinF | right ].
     simpl dom.
-    assert (γ <> X) by (clear - HX Hγ; fsetdec).
+    assert (α1 <> α) by (clear - Hα Hα1; fsetdec).
     clear - Hnd H1. fsetdec.
   - apply ad_refine_pskl_f__tophole_keep; auto.
   - eapply ad_refine_pskl_f__flex_l; [ eassumption | auto ].
@@ -1412,19 +1412,19 @@ Lemma a_wf_pskl_delta_to_tvar : forall Θ Δ0 P,
   forall α Δ, Δ0 [<=] add α Δ ->
   ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ₚₛᵃ P.
 Proof.
-  intros * H; induction H; intros Y Δ' Hsub.
+  intros * H; induction H; intros β Δ' Hsub.
   - apply a_wf_pskl__unit.
   - destruct H as [HΔ | Hbt].
-    + destruct (X == Y) as [-> | Hne].
+    + destruct (α == β) as [-> | Hne].
       * apply a_wf_pskl__var. right. left.
         unfold binds. left. reflexivity.
       * apply a_wf_pskl__var. left. clear - HΔ Hsub Hne. fsetdec.
     + apply a_wf_pskl__var. right.
       apply a_binds_tvar_weaken_cons. exact Hbt.
   - apply a_wf_pskl__arrow; auto.
-  - apply a_wf_pskl__all with (L := L `union` singleton Y).
-    intros Z HZ.
-    apply H0; [ clear - HZ; fsetdec | clear - Hsub HZ; fsetdec ].
+  - apply a_wf_pskl__all with (L := L `union` singleton β).
+    intros α2 Hα2.
+    apply H0; [ clear - Hα2; fsetdec | clear - Hsub Hα2; fsetdec ].
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole; [ exact H | ].
     apply IHa_wf_pskl. clear. fsetdec.
@@ -1503,7 +1503,7 @@ Proof.
   - apply ad_refine_syn_f__unit.
   - apply ad_refine_syn_f__var.
     destruct H as [HΔ | Hbt]; [ left; clear - HΔ; fsetdec | ].
-    destruct (X == α0) as [-> | Hne];
+    destruct (α == α0) as [-> | Hne];
       [ left; clear; fsetdec | right ].
     eapply a_binds_tvar_strip_mid;
       [ exact Hbt
@@ -1511,9 +1511,9 @@ Proof.
       | intro Hc; inversion Hc
       | intros τ0 Hc; inversion Hc ].
   - apply ad_refine_syn_f__arrow; auto.
-  - apply ad_refine_syn_f__all with (L := L). intros X HX.
+  - apply ad_refine_syn_f__all with (L := L). intros α Hα.
     eapply ad_refine_syn_f_delta_mono;
-      [ apply (H0 X HX Θ1 α0 Θt eq_refl HαF Hu) | clear; fsetdec ].
+      [ apply (H0 α Hα Θ1 α0 Θt eq_refl HαF Hu) | clear; fsetdec ].
   - apply ad_refine_syn_f__hole; [ exact H | ].
     assert (HαP : α0 `notin` ftvar_in_pskl P).
     { intro Hc.
@@ -1526,19 +1526,19 @@ Proof.
       | intros x Hx; exfalso; clear - Hx; fsetdec
       | intros x b Hb; apply binds_weaken; exact Hb
       | ].
-    intros X HX. right.
-    assert (Hd : X `in` dom (Θ1 ++ (α0 ~ abind_tvar) ++ Θt))
-      by (clear - Hsc HX; fsetdec).
-    assert (Hne : X <> α0) by (intro; subst; contradiction).
+    intros α Hα. right.
+    assert (Hd : α `in` dom (Θ1 ++ (α0 ~ abind_tvar) ++ Θt))
+      by (clear - Hsc Hα; fsetdec).
+    assert (Hne : α <> α0) by (intro; subst; contradiction).
     repeat rewrite dom_app in *. simpl dom in Hd.
     clear - Hd Hne. fsetdec.
   - apply ad_refine_syn_f__tophole_remove; auto.
   - apply ad_refine_syn_f__tophole_fill with
       (L := L `union` dom (Θ1 ++ (α0 ~ abind_tvar) ++ Θt)).
-    intros X HX.
-    apply (H0 X ltac:(clear - HX; fsetdec)
-             ((X ~ abind_tvar) ++ Θ1) α0 Θt eq_refl HαF).
-    apply uniq_push; [ exact Hu | clear - HX; fsetdec ].
+    intros α Hα.
+    apply (H0 α ltac:(clear - Hα; fsetdec)
+             ((α ~ abind_tvar) ++ Θ1) α0 Θt eq_refl HαF).
+    apply uniq_push; [ exact Hu | clear - Hα; fsetdec ].
   - apply ad_refine_syn_f__tophole_keep; auto.
   - assert (Hne : α <> α0).
     { intros ->.
@@ -1592,22 +1592,22 @@ Lemma msubst_lookup_in_or : forall (ζ : metasubst) (β : atom),
   In (β, msubst_lookup ζ β) ζ \/
   (β `notin` dom ζ /\ msubst_lookup ζ β = ptyp_var_f β).
 Proof.
-  induction ζ as [ | [γ τ] ζ' IH ]; intros β; simpl.
+  induction ζ as [ | [α1 τ] ζ' IH ]; intros β; simpl.
   - right. split; [ fsetdec | reflexivity ].
-  - destruct (β == γ) as [-> | Hne].
+  - destruct (β == α1) as [-> | Hne].
     + left. left. reflexivity.
     + destruct (IH β) as [Hin | [Hni Heq]];
         [ left; right; exact Hin
         | right; split; [ clear - Hni Hne; fsetdec | exact Heq ] ].
 Qed.
 
-(** Renaming a rigid [α ↦ X] commutes with a metasubstitution that does
+(** Renaming a rigid [α ↦ α] commutes with a metasubstitution that does
     not touch either name (its images avoid [α]; both are off its
     domain). *)
 Lemma msubst_pskl_subst_var : forall ζ α α' P,
   α `notin` dom ζ ->
   α' `notin` dom ζ ->
-  (forall γ τ, In (γ, τ) ζ -> α `notin` ftvar_in_ptyp τ) ->
+  (forall α1 τ, In (α1, τ) ζ -> α `notin` ftvar_in_ptyp τ) ->
   subst_pskl_in_pskl (pskl_var_f α') α (msubst_pskl ζ P)
   = msubst_pskl ζ (subst_pskl_in_pskl (pskl_var_f α') α P).
 Proof.
@@ -1638,9 +1638,9 @@ Qed.
 (** Images of an information increase are scoped by the target. *)
 Lemma a_inc_images_ftv_dom : forall Θ0 ζ Θ,
   ζ ∷ Θ0 ⊑ Θ ->
-  forall γ τ, In (γ, τ) ζ -> ftvar_in_ptyp τ [<=] dom Θ.
+  forall α1 τ, In (α1, τ) ζ -> ftvar_in_ptyp τ [<=] dom Θ.
 Proof.
-  intros Θ0 ζ Θ H; induction H; intros γ0 τ0 Hin.
+  intros Θ0 ζ Θ H; induction H; intros α10 τ0 Hin.
   - inversion Hin.
   - destruct Hin as [Heq | Hin];
       [ inversion Heq; subst; apply a_wf_ptyp_ftv_dom; assumption
@@ -1649,14 +1649,14 @@ Proof.
       [ inversion Heq; subst; apply a_wf_ptyp_ftv_dom; assumption
       | eapply IHa_inc; exact Hin ].
   - pose proof (IHa_inc _ _ Hin) as Hsub.
-    intros Z HZ. repeat rewrite dom_app. simpl dom.
-    pose proof (Hsub Z HZ). clear - H2. fsetdec.
+    intros α2 Hα2. repeat rewrite dom_app. simpl dom.
+    pose proof (Hsub α2 Hα2). clear - H2. fsetdec.
   - pose proof (IHa_inc _ _ Hin) as Hsub.
-    intros Z HZ. repeat rewrite dom_app. simpl dom.
-    pose proof (Hsub Z HZ). clear - H2. fsetdec.
+    intros α2 Hα2. repeat rewrite dom_app. simpl dom.
+    pose proof (Hsub α2 Hα2). clear - H2. fsetdec.
   - pose proof (IHa_inc _ _ Hin) as Hsub.
-    intros Z HZ. repeat rewrite dom_app. simpl dom.
-    pose proof (Hsub Z HZ). clear - H1. fsetdec.
+    intros α2 Hα2. repeat rewrite dom_app. simpl dom.
+    pose proof (Hsub α2 Hα2). clear - H1. fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -1667,25 +1667,25 @@ Qed.
 
 Lemma msubst_pskl_ftv_ex : forall ζ P α',
   α' `in` ftvar_in_pskl (msubst_pskl ζ P) ->
-  exists Y, Y `in` ftvar_in_pskl P /\
-            α' `in` ftvar_in_ptyp (msubst_lookup ζ Y).
+  exists β, β `in` ftvar_in_pskl P /\
+            α' `in` ftvar_in_ptyp (msubst_lookup ζ β).
 Proof.
-  intros ζ P; induction P as [ | n | Z | Pa IHa Pb IHb | Pb IHb | | Pt IHt ];
-    intros α' HX; simpl in *.
-  - clear - HX; fsetdec.
-  - clear - HX; fsetdec.
-  - exists Z. split; [ fsetdec | ].
-    rewrite ftvar_in_ptyp_to_pskl in HX. exact HX.
-  - apply union_1 in HX. destruct HX as [H1 | H2].
-    + destruct (IHa α' H1) as [Y [HY1 HY2]].
-      exists Y; split; [ fsetdec | exact HY2 ].
-    + destruct (IHb α' H2) as [Y [HY1 HY2]].
-      exists Y; split; [ fsetdec | exact HY2 ].
-  - destruct (IHb α' HX) as [Y [HY1 HY2]].
-    exists Y; split; [ fsetdec | exact HY2 ].
-  - clear - HX; fsetdec.
-  - destruct (IHt α' HX) as [Y [HY1 HY2]].
-    exists Y; split; [ fsetdec | exact HY2 ].
+  intros ζ P; induction P as [ | n | α2 | Pa IHa Pb IHb | Pb IHb | | Pt IHt ];
+    intros α' Hα; simpl in *.
+  - clear - Hα; fsetdec.
+  - clear - Hα; fsetdec.
+  - exists α2. split; [ fsetdec | ].
+    rewrite ftvar_in_ptyp_to_pskl in Hα. exact Hα.
+  - apply union_1 in Hα. destruct Hα as [H1 | H2].
+    + destruct (IHa α' H1) as [β [HY1 HY2]].
+      exists β; split; [ fsetdec | exact HY2 ].
+    + destruct (IHb α' H2) as [β [HY1 HY2]].
+      exists β; split; [ fsetdec | exact HY2 ].
+  - destruct (IHb α' Hα) as [β [HY1 HY2]].
+    exists β; split; [ fsetdec | exact HY2 ].
+  - clear - Hα; fsetdec.
+  - destruct (IHt α' Hα) as [β [HY1 HY2]].
+    exists β; split; [ fsetdec | exact HY2 ].
 Qed.
 
 Lemma aenv_msubst_cons_flex : forall α Θ,
@@ -1720,12 +1720,12 @@ Proof.
   - (* flex_mono_def *)
     destruct (β == α) as [-> | Hne].
     + rewrite msubst_lookup_cons_eq.
-      intros X HX.
-      destruct (msubst_ptyp_ftv _ _ HX) as [Z [HZ1 HZ2]].
-      assert (HZd : Z `in` dom Θ)
+      intros α0 Hα0.
+      destruct (msubst_ptyp_ftv _ _ Hα0) as [α2 [HZ1 HZ2]].
+      assert (HZd : α2 `in` dom Θ)
         by (pose proof (a_wf_ptyp_ftv_dom H0) as Hsc;
             clear - Hsc HZ1; fsetdec).
-      pose proof (IHHwf Z) as Him.
+      pose proof (IHHwf α2) as Him.
       simpl_env. clear - HZ2 Him HZd. fsetdec.
     + rewrite msubst_lookup_cons_neq by exact Hne. simpl_env.
       pose proof (IHHwf β) as Him. clear - Him. fsetdec.
@@ -1743,55 +1743,55 @@ Lemma aenv_msubst_image_no_def : forall Θ,
   forall β α', α' `in` ftvar_in_ptyp (msubst_lookup (aenv_msubst Θ) β) ->
   forall τ, ~ binds α' (abind_flex_mono_def τ) Θ.
 Proof.
-  intros Θ Hwf; induction Hwf; intros β α' HX τq Hb;
-    try rewrite aenv_msubst_cons_flex in HX;
-    try rewrite aenv_msubst_cons_def in HX;
-    try rewrite aenv_msubst_tvar in HX;
-    try rewrite aenv_msubst_var_typ in HX;
-    try rewrite aenv_msubst_var_skl in HX.
+  intros Θ Hwf; induction Hwf; intros β α' Hα τq Hb;
+    try rewrite aenv_msubst_cons_flex in Hα;
+    try rewrite aenv_msubst_cons_def in Hα;
+    try rewrite aenv_msubst_tvar in Hα;
+    try rewrite aenv_msubst_var_typ in Hα;
+    try rewrite aenv_msubst_var_skl in Hα.
   - (* nil *) inversion Hb.
   - (* flex_mono α *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'];
       [ discriminate | ].
     destruct (β == α) as [-> | Hne].
-    + rewrite msubst_lookup_cons_eq in HX. simpl in HX.
-      assert (α' = α) by (clear - HX; fsetdec). subst α'.
+    + rewrite msubst_lookup_cons_eq in Hα. simpl in Hα.
+      assert (α' = α) by (clear - Hα; fsetdec). subst α'.
       apply binds_In in Hb'. contradiction.
-    + rewrite msubst_lookup_cons_neq in HX by exact Hne.
-      exact (IHHwf β α' HX τq Hb').
+    + rewrite msubst_lookup_cons_neq in Hα by exact Hne.
+      exact (IHHwf β α' Hα τq Hb').
   - (* flex_mono_def α τ0 *)
     destruct (β == α) as [-> | Hne].
-    + rewrite msubst_lookup_cons_eq in HX.
-      destruct (msubst_ptyp_ftv _ _ HX) as [Z [HZ1 HZ2]].
+    + rewrite msubst_lookup_cons_eq in Hα.
+      destruct (msubst_ptyp_ftv _ _ Hα) as [α2 [HZ1 HZ2]].
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'].
       * subst α'. exfalso.
-        assert (HZd : Z `in` dom Θ)
+        assert (HZd : α2 `in` dom Θ)
           by (pose proof (a_wf_ptyp_ftv_dom H0) as Hsc;
               clear - Hsc HZ1; fsetdec).
-        pose proof (aenv_msubst_image_ftv Hwf Z) as Him.
-        assert (Hin1 : α `in` add Z (dom Θ))
+        pose proof (aenv_msubst_image_ftv Hwf α2) as Him.
+        assert (Hin1 : α `in` add α2 (dom Θ))
           by (clear - HZ2 Him; fsetdec).
-        assert (Hne1 : α <> Z) by (intro; subst; contradiction).
+        assert (Hne1 : α <> α2) by (intro; subst; contradiction).
         clear - Hin1 Hne1 H. fsetdec.
-      * exact (IHHwf Z α' HZ2 τq Hb').
-    + rewrite msubst_lookup_cons_neq in HX by exact Hne.
+      * exact (IHHwf α2 α' HZ2 τq Hb').
+    + rewrite msubst_lookup_cons_neq in Hα by exact Hne.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'].
       * subst α'. exfalso.
         pose proof (aenv_msubst_image_ftv Hwf β) as Him.
         assert (Hin1 : α `in` add β (dom Θ))
-          by (clear - HX Him; fsetdec).
+          by (clear - Hα Him; fsetdec).
         assert (Hne1 : α <> β) by (intro; subst; contradiction).
         clear - Hin1 Hne1 H. fsetdec.
-      * exact (IHHwf β α' HX τq Hb').
+      * exact (IHHwf β α' Hα τq Hb').
   - (* var_skl *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'];
-      [ discriminate | exact (IHHwf β α' HX τq Hb') ].
+      [ discriminate | exact (IHHwf β α' Hα τq Hb') ].
   - (* var_typ *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'];
-      [ discriminate | exact (IHHwf β α' HX τq Hb') ].
+      [ discriminate | exact (IHHwf β α' Hα τq Hb') ].
   - (* tvar *)
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq1 Heq2] | Hb'];
-      [ discriminate | exact (IHHwf β α' HX τq Hb') ].
+      [ discriminate | exact (IHHwf β α' Hα τq Hb') ].
 Qed.
 
 (** Look-up under a context none of whose definitions can be hit. *)
@@ -1799,55 +1799,55 @@ Lemma aenv_msubst_lookup_no_def : forall Θ α,
   (forall τ, ~ binds α (abind_flex_mono_def τ) Θ) ->
   msubst_lookup (aenv_msubst Θ) α = ptyp_var_f α.
 Proof.
-  induction Θ as [ | [γ b] Θ' IH ]; intros α Hnd.
+  induction Θ as [ | [α1 b] Θ' IH ]; intros α Hnd.
   - reflexivity.
   - destruct b as [ | A | Q | | τ0 ]; simpl aenv_msubst.
     + apply IH. intros τ Hb. apply (Hnd τ). unfold binds. right. exact Hb.
     + apply IH. intros τ Hb. apply (Hnd τ). unfold binds. right. exact Hb.
     + apply IH. intros τ Hb. apply (Hnd τ). unfold binds. right. exact Hb.
-    + destruct (α == γ) as [-> | Hne].
+    + destruct (α == α1) as [-> | Hne].
       * rewrite msubst_lookup_cons_eq. reflexivity.
       * rewrite msubst_lookup_cons_neq by exact Hne.
         apply IH. intros τ Hb. apply (Hnd τ). unfold binds. right. exact Hb.
-    + destruct (α == γ) as [-> | Hne].
+    + destruct (α == α1) as [-> | Hne].
       * exfalso. apply (Hnd τ0). unfold binds. left. reflexivity.
       * rewrite msubst_lookup_cons_neq by exact Hne.
         apply IH. intros τ Hb. apply (Hnd τ). unfold binds. right. exact Hb.
 Qed.
 
 Lemma msubst_ptyp_lookup_refl : forall θ A,
-  (forall X, X `in` ftvar_in_ptyp A -> msubst_lookup θ X = ptyp_var_f X) ->
+  (forall α, α `in` ftvar_in_ptyp A -> msubst_lookup θ α = ptyp_var_f α) ->
   msubst_ptyp θ A = A.
 Proof.
-  intros θ A; induction A as [ | n | Z | A1 IH1 A2 IH2 | A0 IH0 ];
+  intros θ A; induction A as [ | n | α2 | A1 IH1 A2 IH2 | A0 IH0 ];
     intros Hlk; simpl in *.
   - reflexivity.
   - reflexivity.
   - apply Hlk. fsetdec.
   - rewrite IH1, IH2;
       [ reflexivity
-      | intros X HX; apply Hlk; fsetdec
-      | intros X HX; apply Hlk; fsetdec ].
-  - rewrite IH0; [ reflexivity | intros X HX; apply Hlk; fsetdec ].
+      | intros α Hα; apply Hlk; fsetdec
+      | intros α Hα; apply Hlk; fsetdec ].
+  - rewrite IH0; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
 Qed.
 
 Lemma msubst_pskl_lookup_refl : forall θ P,
-  (forall X, X `in` ftvar_in_pskl P -> msubst_lookup θ X = ptyp_var_f X) ->
+  (forall α, α `in` ftvar_in_pskl P -> msubst_lookup θ α = ptyp_var_f α) ->
   msubst_pskl θ P = P.
 Proof.
   intros θ P;
-    induction P as [ | n | Z | Pa IHa Pb IHb | Pb IHb | | Pt IHt ];
+    induction P as [ | n | α2 | Pa IHa Pb IHb | Pb IHb | | Pt IHt ];
     intros Hlk; simpl in *.
   - reflexivity.
   - reflexivity.
   - rewrite Hlk; [ reflexivity | fsetdec ].
   - rewrite IHa, IHb;
       [ reflexivity
-      | intros X HX; apply Hlk; fsetdec
-      | intros X HX; apply Hlk; fsetdec ].
-  - rewrite IHb; [ reflexivity | intros X HX; apply Hlk; fsetdec ].
+      | intros α Hα; apply Hlk; fsetdec
+      | intros α Hα; apply Hlk; fsetdec ].
+  - rewrite IHb; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
   - reflexivity.
-  - rewrite IHt; [ reflexivity | intros X HX; apply Hlk; fsetdec ].
+  - rewrite IHt; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
 Qed.
 
 (** ⇓-idempotence along a context restriction. *)
@@ -1857,10 +1857,10 @@ Lemma downarrow_idem_sub_ptyp : forall Θ Θs A,
   ⇓ᵗ[ Θs ] (⇓ᵗ[ Θ ] A) = ⇓ᵗ[ Θ ] A.
 Proof.
   intros * Hwf Hsub.
-  apply msubst_ptyp_lookup_refl. intros X HX.
+  apply msubst_ptyp_lookup_refl. intros α Hα.
   apply aenv_msubst_lookup_no_def. intros τ Hb.
-  destruct (msubst_ptyp_ftv _ _ HX) as [Y [HY1 HY2]].
-  assert (Hno : forall τ0, ~ binds X (abind_flex_mono_def τ0) Θ)
+  destruct (msubst_ptyp_ftv _ _ Hα) as [β [HY1 HY2]].
+  assert (Hno : forall τ0, ~ binds α (abind_flex_mono_def τ0) Θ)
     by (intros τ0; eapply aenv_msubst_image_no_def;
         [ exact Hwf | exact HY2 ]).
   exact (Hno τ (Hsub _ _ Hb)).
@@ -1872,10 +1872,10 @@ Lemma downarrow_idem_sub_pskl : forall Θ Θs P,
   ⇓ˢ[ Θs ] (⇓ˢ[ Θ ] P) = ⇓ˢ[ Θ ] P.
 Proof.
   intros * Hwf Hsub.
-  apply msubst_pskl_lookup_refl. intros X HX.
+  apply msubst_pskl_lookup_refl. intros α Hα.
   apply aenv_msubst_lookup_no_def. intros τ Hb.
-  destruct (msubst_pskl_ftv_ex _ _ HX) as [Y [HY1 HY2]].
-  assert (Hno : forall τ0, ~ binds X (abind_flex_mono_def τ0) Θ)
+  destruct (msubst_pskl_ftv_ex _ _ Hα) as [β [HY1 HY2]].
+  assert (Hno : forall τ0, ~ binds α (abind_flex_mono_def τ0) Θ)
     by (intros τ0; eapply aenv_msubst_image_no_def;
         [ exact Hwf | exact HY2 ]).
   exact (Hno τ (Hsub _ _ Hb)).
@@ -1905,8 +1905,8 @@ Proof.
     destruct H as [Hb | [Hb | [τ Hb]]];
       [ left | right; left | right; right; exists τ ]; apply Hmon; exact Hb.
   - apply a_scope_pskl__arrow; auto.
-  - apply a_scope_pskl__all with (L := L). intros X HX.
-    apply H0; [ exact HX | ].
+  - apply a_scope_pskl__all with (L := L). intros α Hα.
+    apply H0; [ exact Hα | ].
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx Heqb] | Hb'];
       [ subst; unfold binds; left; reflexivity
@@ -1930,7 +1930,7 @@ Proof.
     + exfalso. simpl in Heqt. inversion Heqt; subst.
       inversion Hsuf as [ | z0 b0 Ξ0 Hsuf0 Hsb ]; subst.
       inversion Hsb.
-  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+  - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     simpl in Hinc.
     inversion Hinc as [ | Θs ρs Θts aa τ Hinc' Hwfτ Hmτ | | | | ]; subst.
     apply is_id_msubst_inv in Hid as [Heqτ Hid']; subst.
@@ -1966,7 +1966,7 @@ Proof.
       subst.
     simpl in Hie |- *.
     apply a_inc_equiv__var_skl; [ exact Hie | exact Heqm | exact Hsuf ].
-  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+  - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     assert (Huρ : uniq (ρ1 ++ ρ2))
       by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
     assert (Huσ : uniq (σ1 ++ σ2))
@@ -1990,7 +1990,7 @@ Proof.
     assert (Hasσ : asg `notin` dom σ1')
       by (clear - Huσ; simpl_env in Huσ; solve_uniq).
     simpl in Hie.
-    inversion Hie as [ | S q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
+    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
     simpl_env in Hdρ; simpl_env in Hdσ.
     simpl. apply a_inc_equiv__flex.
     2:{ apply a_tyequiv_weaken with (Θ := Θ');
@@ -2019,7 +2019,7 @@ Proof.
       subst.
     simpl in Hie |- *.
     apply a_inc_equiv__tvar; [ exact Hie | exact Hsuf ].
-  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+  - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     assert (Huρ : uniq (ρ1 ++ ρ2))
       by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
     assert (Huσ : uniq (σ1 ++ σ2))
@@ -2043,7 +2043,7 @@ Proof.
     assert (Hasσ : asg `notin` dom σ1')
       by (clear - Huσ; simpl_env in Huσ; solve_uniq).
     simpl in Hie.
-    inversion Hie as [ | S q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
+    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
     simpl_env in Hdρ; simpl_env in Hdσ.
     simpl. apply a_inc_equiv__flex.
     2:{ apply a_tyequiv_weaken with (Θ := Θ');
@@ -2080,7 +2080,7 @@ Proof.
     split; [ exact Hwfτ | ].
     split; [ exact Hmτ | exact Heqv ].
   - (* Ξ = (a ~ flex) ++ Ξ' : peel the head flex a, recurse *)
-    inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+    inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     simpl in Hinc.
     inversion Hinc as [ | Θs ρs Θt as' τ Hinc' Hwfτ Hmτ [Heqa Heqρ] Heqt
                       | | | | ]; subst.
@@ -2117,7 +2117,7 @@ Proof.
     simpl in Hie |- *.
     apply a_inc_equiv__flex_def;
       [ exact Hie | exact Heqτ | exact Heqd ].
-  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+  - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     assert (Huρ : uniq (ρ1 ++ ρ2))
       by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
     assert (Huσ : uniq (σ1 ++ σ2))
@@ -2141,7 +2141,7 @@ Proof.
     assert (Hasσ : asg `notin` dom σ1')
       by (clear - Huσ; simpl_env in Huσ; solve_uniq).
     simpl in Hie.
-    inversion Hie as [ | S q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
+    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
     simpl_env in Hdρ; simpl_env in Hdσ.
     simpl. apply a_inc_equiv__flex; [ | exact Hequ ].
     apply IH; auto.
@@ -2164,7 +2164,7 @@ Proof.
     + exfalso. simpl in Heqt. inversion Heqt; subst.
       inversion Hsuf as [ | z0 b0 Ξ0 Hsuf0 Hsb ]; subst.
       inversion Hsb.
-  - inversion Hdec as [ | γ Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
+  - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     assert (Hac : a <> c)
       by (clear - Huq; simpl_env in Huq; solve_uniq).
     assert (Huq' : uniq (Ξ' ++ (c ~ abind_tvar) ++ Θ0))
@@ -2200,7 +2200,7 @@ Definition consis_complete_at (m : mu_ty) : Prop :=
     a_wf_aenv Θ0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-    (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
+    (forall α, α `in` (Δ1 `union` Δ2) -> binds α abind_tvar Θ0) ->
     no_flex_dep (Δ1 `union` Δ2) Θ0 ->
     flex_above_free (Δ1 `union` Δ2) Θ0 ->
     ρ ∷ Θ0 ⊑ Θ ->
@@ -2279,12 +2279,12 @@ Proof.
 Qed.
 
 (** A hatted variable other than the head is hatted in the tail. *)
-Lemma a_flex_tvar_strip_head : forall (γ : atom) b Θ0 δ,
-  δ <> γ ->
-  a_flex_tvar ((γ ~ b) ++ Θ0) δ ->
-  a_flex_tvar Θ0 δ.
+Lemma a_flex_tvar_strip_head : forall (α1 : atom) b Θ0 β1,
+  β1 <> α1 ->
+  a_flex_tvar ((α1 ~ b) ++ Θ0) β1 ->
+  a_flex_tvar Θ0 β1.
 Proof.
-  intros γ b Θ0 δ Hne [Hb | [τ Hb]];
+  intros α1 b Θ0 β1 Hne [Hb | [τ Hb]];
     apply binds_cons_1 in Hb as [[Heq _] | Hb];
     solve [ exfalso; auto | left; exact Hb | right; exists τ; exact Hb ].
 Qed.
@@ -2329,20 +2329,22 @@ Qed.
 
 (** Extending Θ with a fresh rigid entry preserves the three fixed
     hypotheses of the ftv-survival inductions below. *)
-Local Ltac ftv_rev_extend X Fr Y Θ Hwf HbX Hdefs HwfY HbXY HdefsY :=
-  assert (HwfY : a_wf_aenv ((Y ~ abind_tvar) ++ Θ))
+Local Ltac ftv_rev_extend α Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY :=
+  assert (HwfY : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
     by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]);
-  assert (HbXY : binds X abind_tvar ((Y ~ abind_tvar) ++ Θ))
+  assert (HbXY : binds α abind_tvar ((β ~ abind_tvar) ++ Θ))
     by (apply binds_cons_3; exact HbX);
-  assert (HdefsY : forall β τ,
-            binds β (abind_flex_mono_def τ) ((Y ~ abind_tvar) ++ Θ) ->
-            X `notin` ftvar_in_ptyp τ)
-    by (intros β τ Hb;
+  (* β0, not β: β is this tactic's FORMAL PARAMETER (the caller's fresh
+     rigid), so a quantifier named β here would capture it. *)
+  assert (HdefsY : forall β0 τ,
+            binds β0 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+            α `notin` ftvar_in_ptyp τ)
+    by (intros β0 τ Hb;
         apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
         [ discriminate Heqb | exact (Hdefs _ _ Hb) ]).
 
 (** Rigid free variables survive fill-hygienic refinement RIGHT-TO-LEFT:
-    a rigid [X] (never mentioned by a Θ-definition) absent from the target
+    a rigid [α] (never mentioned by a Θ-definition) absent from the target
     is absent from the source.  This is the ftv-chase behind Ghost's
     [Δ2 ∩ ftv(P0) = ∅] side condition (and GhostR's mirror). *)
 Lemma ad_refine_syn_f_rigid_ftv_rev : forall F Θ Δ Qs Qt α',
@@ -2367,29 +2369,29 @@ Proof.
           [ assumption | assumption | assumption | clear - Hout; fsetdec ]).
     clear - Hn1 Hn2; fsetdec.
   - (* all (cofinite; Θ unchanged) *)
-    pick fresh Y for (L `union` singleton α' `union` ftvar_in_bskl P
+    pick fresh β for (L `union` singleton α' `union` ftvar_in_bskl P
                         `union` ftvar_in_bskl Q).
     assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f Y))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f Y))
+              ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f β))).
+    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 Y ltac:(clear - Fr; fsetdec) Hwf HbX Hdefs HnT) as HnS.
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower Q (bskl_var_f Y))
+    pose proof (H0 β ltac:(clear - Fr; fsetdec) Hwf HbX Hdefs HnT) as HnS.
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower Q (bskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* hole *) clear; fsetdec.
   - (* tophole_remove *) exact (IHHr Hwf HbX Hdefs Hout).
-  - (* tophole_fill (cofinite; Θ grows by the fresh rigid Y) *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α'
+  - (* tophole_fill (cofinite; Θ grows by the fresh rigid β) *)
+    pick fresh β for (L `union` dom Θ `union` singleton α'
                         `union` ftvar_in_bskl P `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr Y Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
+    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
     assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f Y))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f Y))
+              ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f β))).
+    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
+    pose proof (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
     simpl in HnS. clear - HnS. fsetdec.
   - (* tophole_keep *) exact (IHHr Hwf HbX Hdefs Hout).
   - (* flex_l : the source is a defined flexible, never the rigid α' *)
@@ -2404,7 +2406,7 @@ Proof.
     apply (Hdefs _ _ H).
 Qed.
 
-(** The mirror on the JOIN: a rigid [X] absent from the join target is
+(** The mirror on the JOIN: a rigid [α] absent from the join target is
     absent from the (painted) subject.  Drives GhostR's side condition. *)
 Lemma ad_pat_consis_rigid_ftv_rev : forall Ψ Θ R' Qt α',
   a_wf_aenv Θ ->
@@ -2428,55 +2430,55 @@ Proof.
           [ assumption | assumption | assumption | clear - Hout; fsetdec ]).
     clear - Hn1 Hn2; fsetdec.
   - (* forall_inh_tagged (cofinite; Θ grows) *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α'
+    pick fresh β for (L `union` dom Θ `union` singleton α'
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr Y Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
+    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
     assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f Y))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
+    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f Y))
+    pose proof (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* forall_inh_untagged (cofinite; Θ grows) *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α'
+    pick fresh β for (L `union` dom Θ `union` singleton α'
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr Y Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
+    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
     assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f Y))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
+    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f Y))
+    pose proof (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* forall_syn_tagged (cofinite; Θ grows) *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α'
+    pick fresh β for (L `union` dom Θ `union` singleton α'
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr Y Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
+    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
     assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f Y))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
+    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f Y))
+    pose proof (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* forall_syn (cofinite; Θ grows) *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α'
+    pick fresh β for (L `union` dom Θ `union` singleton α'
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr Y Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
+    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
     assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f Y))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
+    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f Y))
+    pose proof (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* ghostg *) clear; fsetdec.
@@ -2485,15 +2487,15 @@ Proof.
     clear; fsetdec.
   - (* tophole *) exact (IHHc Hwf HbX Hdefs Hout).
   - (* tophole_inh (cofinite target; Θ grows; subject fixed) *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α'
+    pick fresh β for (L `union` dom Θ `union` singleton α'
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr Y Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
+    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
     assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f Y))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
+    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
+    pose proof (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY HdefsY HnT) as HnS.
     simpl in HnS. clear - HnS. fsetdec.
   - (* tophole_drop *) exact (IHHc Hwf HbX Hdefs Hout).
   - (* flex_l : the subject is a defined flexible, never the rigid α' *)
@@ -2510,13 +2512,13 @@ Qed.
 
 (** SCOPED variant of the join ftv-survival: the definition side condition
     only holds for definitions REACHABLE from the target's scope [D] (the
-    truncated context of the SkipRigid stuck-check).  A rigid [X] outside
+    truncated context of the SkipRigid stuck-check).  A rigid [α] outside
     [D] absent from a [D]-scoped target is absent from the subject. *)
 Lemma ad_pat_consis_rigid_ftv_rev_scoped : forall Ψ Θ R' Qt α' D,
   a_wf_aenv Θ ->
   binds α' abind_tvar Θ ->
   α' `notin` D ->
-  (forall γ τ, binds γ (abind_flex_mono_def τ) Θ -> γ `in` D ->
+  (forall α1 τ, binds α1 (abind_flex_mono_def τ) Θ -> α1 `in` D ->
                ftvar_in_ptyp τ [<=] D) ->
   Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Qt ->
   ftvar_in_bskl Qt [<=] D ->
@@ -2533,116 +2535,116 @@ Proof.
     assert (Hn2 : α' `notin` ftvar_in_uskl R2)
       by (apply (IHHc2 Hwf HbX D HXD Hdefs); clear - Hout; fsetdec).
     clear - Hn1 Hn2; fsetdec.
-  - (* forall_inh_tagged (cofinite; Θ and D grow by the fresh Y) *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α' `union` D
+  - (* forall_inh_tagged (cofinite; Θ and D grow by the fresh β) *)
+    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : a_wf_aenv ((Y ~ abind_tvar) ++ Θ))
+    assert (HwfY : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((Y ~ abind_tvar) ++ Θ))
+    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall γ τ,
-              binds γ (abind_flex_mono_def τ) ((Y ~ abind_tvar) ++ Θ) ->
-              γ `in` (add Y D) -> ftvar_in_ptyp τ [<=] (add Y D)).
-    { intros γ τ Hb HγD.
+    assert (HdefsY' : forall α1 τ,
+              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
+    { intros α1 τ Hb HγD.
       apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
         [ discriminate Heqb | ].
-      assert (Hγne : γ <> Y).
-      { intro Heq; subst γ. apply binds_In in Hb.
+      assert (Hγne : α1 <> β).
+      { intro Heq; subst α1. apply binds_In in Hb.
         clear - Hb Fr. fsetdec. }
-      assert (HγD' : γ `in` D) by (clear - HγD Hγne; fsetdec).
+      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
       pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
     assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f Y))).
-    { apply (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY (add Y D)
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
+    { apply (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY (add β D)
                ltac:(clear - HXD Fr; fsetdec) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f Y))
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* forall_inh_untagged *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α' `union` D
+    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : a_wf_aenv ((Y ~ abind_tvar) ++ Θ))
+    assert (HwfY : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((Y ~ abind_tvar) ++ Θ))
+    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall γ τ,
-              binds γ (abind_flex_mono_def τ) ((Y ~ abind_tvar) ++ Θ) ->
-              γ `in` (add Y D) -> ftvar_in_ptyp τ [<=] (add Y D)).
-    { intros γ τ Hb HγD.
+    assert (HdefsY' : forall α1 τ,
+              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
+    { intros α1 τ Hb HγD.
       apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
         [ discriminate Heqb | ].
-      assert (Hγne : γ <> Y).
-      { intro Heq; subst γ. apply binds_In in Hb.
+      assert (Hγne : α1 <> β).
+      { intro Heq; subst α1. apply binds_In in Hb.
         clear - Hb Fr. fsetdec. }
-      assert (HγD' : γ `in` D) by (clear - HγD Hγne; fsetdec).
+      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
       pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
     assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f Y))).
-    { apply (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY (add Y D)
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
+    { apply (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY (add β D)
                ltac:(clear - HXD Fr; fsetdec) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f Y))
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* forall_syn_tagged *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α' `union` D
+    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : a_wf_aenv ((Y ~ abind_tvar) ++ Θ))
+    assert (HwfY : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((Y ~ abind_tvar) ++ Θ))
+    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall γ τ,
-              binds γ (abind_flex_mono_def τ) ((Y ~ abind_tvar) ++ Θ) ->
-              γ `in` (add Y D) -> ftvar_in_ptyp τ [<=] (add Y D)).
-    { intros γ τ Hb HγD.
+    assert (HdefsY' : forall α1 τ,
+              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
+    { intros α1 τ Hb HγD.
       apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
         [ discriminate Heqb | ].
-      assert (Hγne : γ <> Y).
-      { intro Heq; subst γ. apply binds_In in Hb.
+      assert (Hγne : α1 <> β).
+      { intro Heq; subst α1. apply binds_In in Hb.
         clear - Hb Fr. fsetdec. }
-      assert (HγD' : γ `in` D) by (clear - HγD Hγne; fsetdec).
+      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
       pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
     assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f Y))).
-    { apply (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY (add Y D)
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
+    { apply (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY (add β D)
                ltac:(clear - HXD Fr; fsetdec) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f Y))
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* forall_syn *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α' `union` D
+    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : a_wf_aenv ((Y ~ abind_tvar) ++ Θ))
+    assert (HwfY : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((Y ~ abind_tvar) ++ Θ))
+    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall γ τ,
-              binds γ (abind_flex_mono_def τ) ((Y ~ abind_tvar) ++ Θ) ->
-              γ `in` (add Y D) -> ftvar_in_ptyp τ [<=] (add Y D)).
-    { intros γ τ Hb HγD.
+    assert (HdefsY' : forall α1 τ,
+              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
+    { intros α1 τ Hb HγD.
       apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
         [ discriminate Heqb | ].
-      assert (Hγne : γ <> Y).
-      { intro Heq; subst γ. apply binds_In in Hb.
+      assert (Hγne : α1 <> β).
+      { intro Heq; subst α1. apply binds_In in Hb.
         clear - Hb Fr. fsetdec. }
-      assert (HγD' : γ `in` D) by (clear - HγD Hγne; fsetdec).
+      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
       pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
     assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f Y))).
-    { apply (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY (add Y D)
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
+    { apply (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY (add β D)
                ltac:(clear - HXD Fr; fsetdec) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f Y))
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
       as Hlo.
     clear - HnS Hlo. fsetdec.
   - (* ghostg *) clear; fsetdec.
@@ -2650,27 +2652,27 @@ Proof.
   - (* hole *) clear; fsetdec.
   - (* tophole *) apply (IHHc Hwf HbX D HXD Hdefs Hout).
   - (* tophole_inh *)
-    pick fresh Y for (L `union` dom Θ `union` singleton α' `union` D
+    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
                         `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : a_wf_aenv ((Y ~ abind_tvar) ++ Θ))
+    assert (HwfY : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
       by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((Y ~ abind_tvar) ++ Θ))
+    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
       by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall γ τ,
-              binds γ (abind_flex_mono_def τ) ((Y ~ abind_tvar) ++ Θ) ->
-              γ `in` (add Y D) -> ftvar_in_ptyp τ [<=] (add Y D)).
-    { intros γ τ Hb HγD.
+    assert (HdefsY' : forall α1 τ,
+              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
+    { intros α1 τ Hb HγD.
       apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
         [ discriminate Heqb | ].
-      assert (Hγne : γ <> Y).
-      { intro Heq; subst γ. apply binds_In in Hb.
+      assert (Hγne : α1 <> β).
+      { intro Heq; subst α1. apply binds_In in Hb.
         clear - Hb Fr. fsetdec. }
-      assert (HγD' : γ `in` D) by (clear - HγD Hγne; fsetdec).
+      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
       pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
     assert (HnS : α' `notin` ftvar_in_uskl (uskl_tophole R)).
-    { apply (H0 Y ltac:(clear - Fr; fsetdec) HwfY HbXY (add Y D)
+    { apply (H0 β ltac:(clear - Fr; fsetdec) HwfY HbXY (add β D)
                ltac:(clear - HXD Fr; fsetdec) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f Y))
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
         as Hup.
       simpl in Hup. clear - Hout Hup. fsetdec. }
     simpl in HnS. clear - HnS. fsetdec.
@@ -2694,15 +2696,15 @@ Lemma a_wf_pskl_msubst_inc : forall Θ0 ρ Θ Δ P,
   ρ ∷ Θ0 ⊑ Θ ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ Δ ⊢ₚₛᵃ P ->
-  (forall X, X `in` Δ -> X `notin` dom ρ) ->
+  (forall α, α `in` Δ -> α `notin` dom ρ) ->
   Θ ⨟ Δ ⊢ₚₛᵃ (msubst_pskl ρ P).
 Proof.
   intros Θ0 ρ Θ Δ P Hinc Hwf0 Hwf; induction Hwf; intros HΔ; simpl.
   - apply a_wf_pskl__unit.
   - (* var : rigid occurrences stay; flexibles map to wf target types *)
-    destruct H as [HXΔ | Hbt].
-    + rewrite (msubst_lookup_notin ρ (HΔ _ HXΔ)). simpl.
-      apply a_wf_pskl__var; left; exact HXΔ.
+    destruct H as [HαΔ | Hbt].
+    + rewrite (msubst_lookup_notin ρ (HΔ _ HαΔ)). simpl.
+      apply a_wf_pskl__var; left; exact HαΔ.
     + apply a_wf_ptyp_to_wf_pskl.
       eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0 | exact Hbt ].
   - apply a_wf_pskl__arrow;
@@ -2710,20 +2712,20 @@ Proof.
   - (* all : open with a binder fresh from the substitution *)
     assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; eauto).
     apply a_wf_pskl__all with (L := L `union` dom ρ).
-    intros X HX.
+    intros α Hα.
     rewrite <- msubst_pskl_open_lc_local;
-      [ | exact Hlcρ | clear - HX; fsetdec ].
-    apply H0; [ clear - HX; fsetdec | exact Hinc | exact Hwf0 | ].
-    intros Y HY.
-    destruct (Y == X) as [-> | Hne].
-    + clear - HX; fsetdec.
-    + apply HΔ. clear - HY Hne; fsetdec.
+      [ | exact Hlcρ | clear - Hα; fsetdec ].
+    apply H0; [ clear - Hα; fsetdec | exact Hinc | exact Hwf0 | ].
+    intros β Hβ.
+    destruct (β == α) as [-> | Hne].
+    + clear - Hα; fsetdec.
+    + apply HΔ. clear - Hβ Hne; fsetdec.
   - apply a_wf_pskl__hole.
   - (* tophole : the body is guarded and closed under Δ = ∅ *)
     apply a_wf_pskl__tophole.
     + eapply guarded_pskl_msubst_inc; eauto.
     + apply IHHwf; [ exact Hinc | exact Hwf0 | ].
-      intros Y HY. exfalso. clear - HY. fsetdec.
+      intros β Hβ. exfalso. clear - Hβ. fsetdec.
 Qed.
 
 (** The non-mono RE-INHERIT bridge (the OPT C-GhostR plan,
@@ -2773,14 +2775,14 @@ Proof.
                     `union` ftvar_in_pskl P `union` ftvar_in_pskl Q)
         end
     end.
-    intros X HX.
+    intros α Hα.
     rewrite <- pskl_to_bskl_inh_open, <- pskl_to_bskl_inh_open.
-    apply (H0 X ltac:(clear - HX; fsetdec) ((X ~ abind_tvar) ++ Θj) Hwfr).
-    + apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf ].
+    apply (H0 α ltac:(clear - Hα; fsetdec) ((α ~ abind_tvar) ++ Θj) Hwfr).
+    + apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
     + intros x b Hb. apply binds_cons_3. apply Hincl; exact Hb.
-    + apply Hwfb. clear - HX; fsetdec.
+    + apply Hwfb. clear - Hα; fsetdec.
     + rewrite pskl_to_uskl_open_var, pskl_to_bskl_syn_open.
-      apply Hsub. clear - HX; fsetdec.
+      apply Hsub. clear - Hα; fsetdec.
   - (* hole : the join forces the fill to be inh-invariant *)
     pose proof (consis_hole_target_inh Hj) as Hqi.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hqi.
@@ -2832,12 +2834,12 @@ Proof.
        ∀-syn target *)
     exfalso.
     assert (HgP : guarded_pskl P) by (inversion HwfA; assumption).
-    pick fresh X for (L `union` dom Θ).
-    assert (HlcQX : lc_pskl (open_pskl_wrt_pskl Q (pskl_var_f X)))
+    pick fresh α for (L `union` dom Θ).
+    assert (HlcQX : lc_pskl (open_pskl_wrt_pskl Q (pskl_var_f α)))
       by (eapply ad_refine_pskl_f_lc_r; apply H; clear - Fr; fsetdec).
     assert (HlcQ : lc_bskl (pskl_to_bskl_syn (pskl_all_syn Q))).
     { apply pskl_to_bskl_syn_lc.
-      apply (lc_pskl_all_syn_exists X). exact HlcQX. }
+      apply (lc_pskl_all_syn_exists α). exact HlcQX. }
     inversion Hj; subst.
     (* only __tophole_drop survives the target shape; its stripped subject
        is guarded against a ∀-syn target *)
@@ -2908,11 +2910,11 @@ Lemma consis_forall_subject_transport : forall Ψ Θ R Qt,
   Ψ ⨟ Θ ⊢ₛᵃ R ∼ Qt ->
   forall R0 R0' L0,
   R = uskl_all_syn R0 ->
-  (forall X, X `notin` L0 -> forall Ψ' Q',
-     Ψ' ⨟ ((X ~ abind_tvar) ++ Θ) ⊢ₛᵃ
-       (open_uskl_wrt_uskl R0 (uskl_var_f X)) ∼ Q' ->
-     Ψ' ⨟ ((X ~ abind_tvar) ++ Θ) ⊢ₛᵃ
-       (open_uskl_wrt_uskl R0' (uskl_var_f X)) ∼ Q') ->
+  (forall α, α `notin` L0 -> forall Ψ' Q',
+     Ψ' ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+       (open_uskl_wrt_uskl R0 (uskl_var_f α)) ∼ Q' ->
+     Ψ' ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ₛᵃ
+       (open_uskl_wrt_uskl R0' (uskl_var_f α)) ∼ Q') ->
   Ψ ⨟ Θ ⊢ₛᵃ (uskl_all_syn R0') ∼ Qt.
 Proof.
   intros Ψ Θ R Qt Hc; induction Hc; intros R0 R0' L0 HeqS Htr;
@@ -2920,15 +2922,15 @@ Proof.
   - (* forall_inh_untagged *)
     inversion HeqS; subst.
     apply ad_pat_consis__forall_inh_untagged with (L := L `union` L0).
-    intros X HX.
-    apply Htr; [ clear - HX; fsetdec | ].
-    apply H; clear - HX; fsetdec.
+    intros α Hα.
+    apply Htr; [ clear - Hα; fsetdec | ].
+    apply H; clear - Hα; fsetdec.
   - (* forall_syn *)
     inversion HeqS; subst.
     apply ad_pat_consis__forall_syn with (L := L `union` L0).
-    intros X HX.
-    apply Htr; [ clear - HX; fsetdec | ].
-    apply H; clear - HX; fsetdec.
+    intros α Hα.
+    apply Htr; [ clear - Hα; fsetdec | ].
+    apply H; clear - Hα; fsetdec.
   - (* flex_r *)
     eapply ad_pat_consis__flex_r; [ eassumption | ].
     eapply IHHc; eauto.
@@ -2957,10 +2959,10 @@ Proof.
   - (* tophole_inh : same subject, extended context *)
     inversion HeqS; subst.
     apply ad_pat_consis__tophole_inh with (L := L `union` dom Θ).
-    intros X HX.
-    assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ))
-      by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact HwfΘ ]).
-    apply (H0 X ltac:(clear - HX; fsetdec) HwfX R0 R0' eq_refl).
+    intros α Hα.
+    assert (HwfX : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact HwfΘ ]).
+    apply (H0 α ltac:(clear - Hα; fsetdec) HwfX R0 R0' eq_refl).
     intros Θ' Ψ' Q' Hwf' Hincl' Hc'.
     apply (Htr Θ' Ψ' Q' Hwf'); [ | exact Hc' ].
     intros x b Hb. apply Hincl'. apply binds_cons_3. exact Hb.
@@ -3017,27 +3019,27 @@ Proof.
     split; intros Ψ Qt Hc; simpl in Hc |- *.
     + eapply consis_forall_subject_transport with (L0 := L `union` dom Θ');
         [ exact Hc | reflexivity | ].
-      intros X HX Ψ' Q' Hc'.
-      assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ'))
-        by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ]).
+      intros α Hα Ψ' Q' Hc'.
+      assert (HwfX : a_wf_aenv ((α ~ abind_tvar) ++ Θ'))
+        by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf' ]).
       assert (HinclX : forall x b, binds x b Θ ->
-                binds x b ((X ~ abind_tvar) ++ Θ'))
+                binds x b ((α ~ abind_tvar) ++ Θ'))
         by (intros x b Hb; apply binds_cons_3; apply Hincl; exact Hb).
-      destruct (H0 X ltac:(clear - HX; fsetdec)
-                  ((X ~ abind_tvar) ++ Θ') HwfX HinclX) as [Hl _].
+      destruct (H0 α ltac:(clear - Hα; fsetdec)
+                  ((α ~ abind_tvar) ++ Θ') HwfX HinclX) as [Hl _].
       rewrite <- pskl_to_uskl_open_var in Hc'.
       rewrite <- pskl_to_uskl_open_var.
       apply Hl. exact Hc'.
     + eapply consis_forall_subject_transport with (L0 := L `union` dom Θ');
         [ exact Hc | reflexivity | ].
-      intros X HX Ψ' Q' Hc'.
-      assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ'))
-        by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ]).
+      intros α Hα Ψ' Q' Hc'.
+      assert (HwfX : a_wf_aenv ((α ~ abind_tvar) ++ Θ'))
+        by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf' ]).
       assert (HinclX : forall x b, binds x b Θ ->
-                binds x b ((X ~ abind_tvar) ++ Θ'))
+                binds x b ((α ~ abind_tvar) ++ Θ'))
         by (intros x b Hb; apply binds_cons_3; apply Hincl; exact Hb).
-      destruct (H0 X ltac:(clear - HX; fsetdec)
-                  ((X ~ abind_tvar) ++ Θ') HwfX HinclX) as [_ Hr].
+      destruct (H0 α ltac:(clear - Hα; fsetdec)
+                  ((α ~ abind_tvar) ++ Θ') HwfX HinclX) as [_ Hr].
       rewrite <- pskl_to_uskl_open_var in Hc'.
       rewrite <- pskl_to_uskl_open_var.
       apply Hr. exact Hc'.
@@ -3089,15 +3091,15 @@ Qed.
 (* --------------------------------------------------------------------- *)
 
 (** Unfold a DEFINED source variable inside a Δ1-refinement: only [var] /
-    [flex_l] / [flex_r] can have source [γ̂]. *)
+    [flex_l] / [flex_r] can have source [α1̂]. *)
 Lemma ad_refine_syn_f_unfold_def_source : forall F Θ Δ Q Qt,
   ad_refine_syn_f F Θ Δ Q Qt ->
   a_wf_aenv Θ ->
-  forall γ τ, Q = bskl_var_f γ ->
-  binds γ (abind_flex_mono_def τ) Θ ->
+  forall α1 τ, Q = bskl_var_f α1 ->
+  binds α1 (abind_flex_mono_def τ) Θ ->
   ad_refine_syn_f F Θ Δ (ptyp_to_bskl_syn τ) Qt.
 Proof.
-  intros F Θ Δ Q Qt Hr Hwf; induction Hr; intros γ0 τ0 HeqS Hb;
+  intros F Θ Δ Q Qt Hr Hwf; induction Hr; intros α10 τ0 HeqS Hb;
     try discriminate HeqS.
   - (* var : the target is the same variable; fold it with [flex_r] *)
     inversion HeqS; subst.
@@ -3142,11 +3144,11 @@ Lemma ad_refine_syn_f_forall_source_transport : forall F Θ Δ Q Qt,
   ad_refine_syn_f F Θ Δ Q Qt ->
   forall Q0 Q0' L0,
   Q = bskl_all_inh Q0 ->
-  (forall X, X `notin` L0 -> forall Δ' Qt',
+  (forall α, α `notin` L0 -> forall Δ' Qt',
      ad_refine_syn_f F Θ Δ'
-       (open_bskl_wrt_bskl Q0 (bskl_var_f X)) Qt' ->
+       (open_bskl_wrt_bskl Q0 (bskl_var_f α)) Qt' ->
      ad_refine_syn_f F Θ Δ'
-       (open_bskl_wrt_bskl Q0' (bskl_var_f X)) Qt') ->
+       (open_bskl_wrt_bskl Q0' (bskl_var_f α)) Qt') ->
   ad_refine_syn_f F Θ Δ (bskl_all_inh Q0') Qt.
 Proof.
   intros F Θ Δ Q Qt Hr; induction Hr; intros Q0 Q0' L0 HeqS Htr;
@@ -3154,9 +3156,9 @@ Proof.
   - (* all *)
     inversion HeqS; subst.
     apply ad_refine_syn_f__all with (L := L `union` L0).
-    intros X HX.
-    apply Htr; [ clear - HX; fsetdec | ].
-    apply H; clear - HX; fsetdec.
+    intros α Hα.
+    apply Htr; [ clear - Hα; fsetdec | ].
+    apply H; clear - Hα; fsetdec.
   - (* flex_r *)
     eapply ad_refine_syn_f__flex_r; [ eassumption | ].
     eapply IHHr; eauto.
@@ -3185,10 +3187,10 @@ Proof.
   - (* tophole_fill : same source, extended context *)
     inversion HeqS; subst.
     apply ad_refine_syn_f__tophole_fill with (L := L `union` dom Θ).
-    intros X HX.
-    assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ))
-      by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact HwfΘ ]).
-    apply (H0 X ltac:(clear - HX; fsetdec) HwfX Q0 Q0' eq_refl).
+    intros α Hα.
+    assert (HwfX : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact HwfΘ ]).
+    apply (H0 α ltac:(clear - Hα; fsetdec) HwfX Q0 Q0' eq_refl).
     intros Θ' Qt' Hwf' Hincl' Hr'.
     apply (Htr Θ' Qt' Hwf'); [ | exact Hr' ].
     intros x b Hb. apply Hincl'. apply binds_cons_3. exact Hb.
@@ -3252,15 +3254,15 @@ Proof.
     split; intros F Δ Qt Hr; simpl in Hr |- *.
     + eapply ad_refine_syn_f_forall_source_transport with (L0 := L);
         [ exact Hr | reflexivity | ].
-      intros X HX Δ' Qt' Hr'.
-      destruct (H0 X ltac:(clear - HX; fsetdec) Θ' Hwf' Hincl) as [Hl _].
+      intros α Hα Δ' Qt' Hr'.
+      destruct (H0 α ltac:(clear - Hα; fsetdec) Θ' Hwf' Hincl) as [Hl _].
       rewrite <- pskl_to_bskl_inh_open in Hr'.
       rewrite <- pskl_to_bskl_inh_open.
       apply Hl. exact Hr'.
     + eapply ad_refine_syn_f_forall_source_transport with (L0 := L);
         [ exact Hr | reflexivity | ].
-      intros X HX Δ' Qt' Hr'.
-      destruct (H0 X ltac:(clear - HX; fsetdec) Θ' Hwf' Hincl) as [_ Hrr].
+      intros α Hα Δ' Qt' Hr'.
+      destruct (H0 α ltac:(clear - Hα; fsetdec) Θ' Hwf' Hincl) as [_ Hrr].
       rewrite <- pskl_to_bskl_inh_open in Hr'.
       rewrite <- pskl_to_bskl_inh_open.
       apply Hrr. exact Hr'.
@@ -3284,11 +3286,11 @@ Qed.
 Lemma ad_refine_pskl_f_unfold_def_source : forall F Θ Δ P Pt,
   ad_refine_pskl_f F Θ Δ P Pt ->
   a_wf_aenv Θ ->
-  forall γ τ, P = pskl_var_f γ ->
-  binds γ (abind_flex_mono_def τ) Θ ->
+  forall α1 τ, P = pskl_var_f α1 ->
+  binds α1 (abind_flex_mono_def τ) Θ ->
   ad_refine_pskl_f F Θ Δ (ptyp_to_pskl τ) Pt.
 Proof.
-  intros F Θ Δ P Pt Hr Hwf; induction Hr; intros γ0 τ0 HeqS Hb;
+  intros F Θ Δ P Pt Hr Hwf; induction Hr; intros α10 τ0 HeqS Hb;
     try discriminate HeqS.
   - (* var *)
     inversion HeqS; subst.
@@ -3332,11 +3334,11 @@ Lemma ad_refine_pskl_f_forall_source_transport : forall F Θ Δ P Pt,
   ad_refine_pskl_f F Θ Δ P Pt ->
   forall P0 P0' L0,
   P = pskl_all_syn P0 ->
-  (forall X, X `notin` L0 -> forall Δ' Pt',
+  (forall α, α `notin` L0 -> forall Δ' Pt',
      ad_refine_pskl_f F Θ Δ'
-       (open_pskl_wrt_pskl P0 (pskl_var_f X)) Pt' ->
+       (open_pskl_wrt_pskl P0 (pskl_var_f α)) Pt' ->
      ad_refine_pskl_f F Θ Δ'
-       (open_pskl_wrt_pskl P0' (pskl_var_f X)) Pt') ->
+       (open_pskl_wrt_pskl P0' (pskl_var_f α)) Pt') ->
   ad_refine_pskl_f F Θ Δ (pskl_all_syn P0') Pt.
 Proof.
   intros F Θ Δ P Pt Hr; induction Hr; intros P0 P0' L0 HeqS Htr;
@@ -3344,9 +3346,9 @@ Proof.
   - (* all *)
     inversion HeqS; subst.
     apply ad_refine_pskl_f__all with (L := L `union` L0).
-    intros X HX.
-    apply Htr; [ clear - HX; fsetdec | ].
-    apply H; clear - HX; fsetdec.
+    intros α Hα.
+    apply Htr; [ clear - Hα; fsetdec | ].
+    apply H; clear - Hα; fsetdec.
   - (* flex_r *)
     eapply ad_refine_pskl_f__flex_r; [ eassumption | ].
     eapply IHHr; eauto.
@@ -3375,10 +3377,10 @@ Proof.
   - (* tophole_fill *)
     inversion HeqS; subst.
     apply ad_refine_pskl_f__tophole_fill with (L := L `union` dom Θ).
-    intros X HX.
-    assert (HwfX : a_wf_aenv ((X ~ abind_tvar) ++ Θ))
-      by (apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact HwfΘ ]).
-    apply (H0 X ltac:(clear - HX; fsetdec) HwfX P0 P0' eq_refl).
+    intros α Hα.
+    assert (HwfX : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact HwfΘ ]).
+    apply (H0 α ltac:(clear - Hα; fsetdec) HwfX P0 P0' eq_refl).
     intros Θ' Pt' Hwf' Hincl' Hr'.
     apply (Htr Θ' Pt' Hwf'); [ | exact Hr' ].
     intros x b Hb. apply Hincl'. apply binds_cons_3. exact Hb.
@@ -3434,13 +3436,13 @@ Proof.
     split; intros F Δ Pt Hr.
     + eapply ad_refine_pskl_f_forall_source_transport with (L0 := L);
         [ exact Hr | reflexivity | ].
-      intros X HX Δ' Qt' Hr'.
-      destruct (H0 X ltac:(clear - HX; fsetdec) Θ' Hwf' Hincl) as [Hl _].
+      intros α Hα Δ' Qt' Hr'.
+      destruct (H0 α ltac:(clear - Hα; fsetdec) Θ' Hwf' Hincl) as [Hl _].
       apply Hl. exact Hr'.
     + eapply ad_refine_pskl_f_forall_source_transport with (L0 := L);
         [ exact Hr | reflexivity | ].
-      intros X HX Δ' Qt' Hr'.
-      destruct (H0 X ltac:(clear - HX; fsetdec) Θ' Hwf' Hincl) as [_ Hrr].
+      intros α Hα Δ' Qt' Hr'.
+      destruct (H0 α ltac:(clear - Hα; fsetdec) Θ' Hwf' Hincl) as [_ Hrr].
       apply Hrr. exact Hr'.
   - (* tophole *)
     split; intros F Δ Pt Hr.
@@ -3464,32 +3466,32 @@ Lemma a_wf_pskl_to_a_scope_pskl : forall Θ Δ P,
   a_wf_pskl Θ Δ P ->
   forall Θa,
   (forall x b, binds x b Θ -> binds x b Θa) ->
-  (forall X, X `in` Δ -> a_binds_tvar X Θa) ->
+  (forall α, α `in` Δ -> a_binds_tvar α Θa) ->
   a_scope_pskl Θa P.
 Proof.
   intros Θ Δ P Hwfd; induction Hwfd; intros Θa Hincl HΔ.
   - apply a_scope_pskl__unit.
   - apply a_scope_pskl__var.
-    destruct H as [HXΔ | Hbt]; [ apply HΔ; exact HXΔ | ].
+    destruct H as [HαΔ | Hbt]; [ apply HΔ; exact HαΔ | ].
     destruct Hbt as [Hb | [Hb | [τ Hb]]];
       [ left | right; left | right; right; exists τ ];
       apply Hincl; exact Hb.
   - apply a_scope_pskl__arrow;
       [ apply IHHwfd1 | apply IHHwfd2 ]; assumption.
   - apply a_scope_pskl__all with (L := L).
-    intros X HX.
-    apply H0; [ exact HX | | ].
+    intros α Hα.
+    apply H0; [ exact Hα | | ].
     + intros x b Hb. apply binds_cons_3. apply Hincl; exact Hb.
-    + intros Y HY. destruct (Y == X) as [-> | Hne].
+    + intros β Hβ. destruct (β == α) as [-> | Hne].
       * left. unfold binds. left. reflexivity.
-      * destruct (HΔ Y ltac:(clear - HY Hne; fsetdec))
+      * destruct (HΔ β ltac:(clear - Hβ Hne; fsetdec))
           as [Hb | [Hb | [τ Hb]]];
           [ left | right; left | right; right; exists τ ];
           apply binds_cons_3; exact Hb.
   - apply a_scope_pskl__hole.
   - apply a_scope_pskl__tophole.
     apply IHHwfd; [ exact Hincl | ].
-    intros Y HY. exfalso. clear - HY. fsetdec.
+    intros β Hβ. exfalso. clear - Hβ. fsetdec.
 Qed.
 
 (** The join's target erases to a well-formed (Δ-free) skeleton — the
@@ -3504,27 +3506,27 @@ Proof.
   - apply a_scope_pskl__arrow; assumption.
   - (* forall_inh_tagged *)
     apply a_scope_pskl__all with (L := L).
-    intros X HX. rewrite <- bskl_to_pskl_open. apply H0; exact HX.
+    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
   - (* forall_inh_untagged *)
     apply a_scope_pskl__all with (L := L).
-    intros X HX. rewrite <- bskl_to_pskl_open. apply H0; exact HX.
+    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
   - (* forall_syn_tagged *)
     apply a_scope_pskl__all with (L := L).
-    intros X HX. rewrite <- bskl_to_pskl_open. apply H0; exact HX.
+    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
   - (* forall_syn *)
     apply a_scope_pskl__all with (L := L).
-    intros X HX. rewrite <- bskl_to_pskl_open. apply H0; exact HX.
+    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
   - apply a_scope_pskl__hole.
   - apply a_scope_pskl__tophole; assumption.
   - (* hole : the fill is wf by the rule's own premise *)
     rewrite bskl_to_pskl_pskl_to_bskl_inh.
     eapply a_wf_pskl_to_a_scope_pskl;
       [ exact H0 | intros x b Hb; exact Hb
-      | intros Y HY; exfalso; clear - HY; fsetdec ].
+      | intros β Hβ; exfalso; clear - Hβ; fsetdec ].
   - apply a_scope_pskl__tophole; assumption.
   - (* tophole_inh *)
     apply a_scope_pskl__all with (L := L).
-    intros X HX. rewrite <- bskl_to_pskl_open. apply H0; exact HX.
+    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
   - (* tophole_drop *) assumption.
   - (* flex_l *) assumption.
   - (* flex_r *)
@@ -3554,7 +3556,7 @@ Lemma ad_refine_syn_f_all_inh_guarded_absurd : forall F Θ Δ Q Q',
   False.
 Proof.
   intros F Θ Δ Q Q' Hwf Hr.
-  remember (bskl_all_inh Q) as S eqn:HeqS.
+  remember (bskl_all_inh Q) as R eqn:HeqS.
   induction Hr; intros Hg; try discriminate HeqS.
   - (* __all : target is an inherited quantifier, not guarded *)
     inversion Hg.
@@ -3572,7 +3574,7 @@ Qed.
 Lemma ad_refine_syn_f_flex_target_unfold : forall F Θ Δ Q α τ,
   a_wf_aenv Θ ->
   binds α (abind_flex_mono_def τ) Θ ->
-  (forall X, X `in` Δ -> binds X abind_tvar Θ) ->
+  (forall α0, α0 `in` Δ -> binds α0 abind_tvar Θ) ->
   F ∩ ftvar_in_ptyp τ [=] empty ->
   ad_refine_syn_f F Θ Δ Q (bskl_var_f α) ->
   ad_refine_syn_f F Θ Δ Q (ptyp_to_bskl_syn τ).
@@ -3583,7 +3585,7 @@ Proof.
   remember (bskl_var_f α) as T eqn:HeqT.
   induction Hr; try discriminate HeqT.
   - (* __var : the source IS the defined flexible; unfold it on the left *)
-    inversion HeqT; subst X.
+    inversion HeqT; subst α0.
     assert (Hbtα : binds α abind_tvar Θ \/ binds α abind_flex_mono Θ \/
                    (exists τ', binds α (abind_flex_mono_def τ') Θ)).
     { destruct H as [HinΔ | Hbt]; [ left; apply HΔ; exact HinΔ | exact Hbt ]. }
@@ -3593,8 +3595,8 @@ Proof.
     eapply ad_refine_syn_f__flex_l; [ exact Hbα | ].
     apply ad_refine_syn_f_mono_refl; assumption.
   - (* __hole : the fill is the defined flexible; refill with its definition *)
-    destruct P as [ | n | δ | | | | ]; simpl in HeqT; try discriminate.
-    inversion HeqT; subst δ.
+    destruct P as [ | n | β1 | | | | ]; simpl in HeqT; try discriminate.
+    inversion HeqT; subst β1.
     replace (ptyp_to_bskl_syn τ)
       with (pskl_to_bskl_syn (ptyp_to_pskl τ)) by reflexivity.
     apply ad_refine_syn_f__hole.
@@ -3617,7 +3619,7 @@ Qed.
 Lemma ad_refine_pskl_f_flex_target_unfold : forall F Θ Δ P α τ,
   a_wf_aenv Θ ->
   binds α (abind_flex_mono_def τ) Θ ->
-  (forall X, X `in` Δ -> binds X abind_tvar Θ) ->
+  (forall α0, α0 `in` Δ -> binds α0 abind_tvar Θ) ->
   F ∩ ftvar_in_ptyp τ [=] empty ->
   ad_refine_pskl_f F Θ Δ P (pskl_var_f α) ->
   ad_refine_pskl_f F Θ Δ P (ptyp_to_pskl τ).
@@ -3628,7 +3630,7 @@ Proof.
   remember (pskl_var_f α) as T eqn:HeqT.
   induction Hr; try discriminate HeqT.
   - (* __var *)
-    inversion HeqT; subst X.
+    inversion HeqT; subst α0.
     assert (Hbtα : binds α abind_tvar Θ \/ binds α abind_flex_mono Θ \/
                    (exists τ', binds α (abind_flex_mono_def τ') Θ)).
     { destruct H as [HinΔ | Hbt]; [ left; apply HΔ; exact HinΔ | exact Hbt ]. }
@@ -3675,23 +3677,23 @@ Proof.
     intros ρ1 Hid Hinc1. exists ρ.
     exact (opt_axiom_factor Hwf Hid Hinc1 Hinc). }
   assert (Hβα : β <> α) by auto.
-  destruct Θ0 as [ | [γ b] Θ0' ].
+  destruct Θ0 as [ | [α1 b] Θ0' ].
   { exfalso. destruct Hfα as [Hb | [τ Hb]]; inversion Hb. }
   destruct b as [ | A | Q | | τdef ].
-  - (* head [γ ~ tvar] : Flex-Flex-Skip' (rigid). *)
+  - (* head [α1 ~ tvar] : Flex-Flex-Skip' (rigid). *)
     inversion Hwf as [ | | | | | γh Θh Hnd Hwf0 ]; subst.
-    assert (Hγα : α <> γ)
+    assert (Hα1α : α <> α1)
       by (intros ->; destruct Hfα as [Hb | [τ Hb]];
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hγβ : β <> γ)
+    assert (Hα1β : β <> α1)
       by (intros ->; destruct Hfβ as [Hb | [τ Hb]];
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
     assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply a_flex_tvar_strip_head; [ exact Hγα | exact Hfα ]).
+      by (eapply a_flex_tvar_strip_head; [ exact Hα1α | exact Hfα ]).
     assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply a_flex_tvar_strip_head; [ exact Hγβ | exact Hfβ ]).
+      by (eapply a_flex_tvar_strip_head; [ exact Hα1β | exact Hfβ ]).
     assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
     assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
     apply a_inc_tvar_inv in Hinc as [Ξ [Θ2 [-> [HΞ Hinc']]]].
@@ -3709,21 +3711,21 @@ Proof.
         | exact Hwflβ
         | eapply a_inc_lookup_mono; exact Hinc'
         | exact Heq ]. }
-    assert (Huniq : uniq (Ξ ++ (γ ~ abind_tvar) ++ Θ2))
+    assert (Huniq : uniq (Ξ ++ (α1 ~ abind_tvar) ++ Θ2))
       by (apply a_wf_aenv_uniq; exact Hwfth).
     assert (Hlt : mu_lt (mu_unify Θ2 ρ α β Θ0')
-                        (mu_unify (Ξ ++ (γ ~ abind_tvar) ++ Θ2) ρ α β
-                                  ((γ ~ abind_tvar) ++ Θ0'))).
+                        (mu_unify (Ξ ++ (α1 ~ abind_tvar) ++ Θ2) ρ α β
+                                  ((α1 ~ abind_tvar) ++ Θ0'))).
     { unfold mu_unify. apply mu_lt_intro. right. split.
       - unfold V_unify.
-        rewrite (@Vvar_strengthen_mid Ξ γ abind_tvar Θ2 ρ α Huniq Hwflα).
-        rewrite (@Vvar_strengthen_mid Ξ γ abind_tvar Θ2 ρ β Huniq Hwflβ).
+        rewrite (@Vvar_strengthen_mid Ξ α1 abind_tvar Θ2 ρ α Huniq Hwflα).
+        rewrite (@Vvar_strengthen_mid Ξ α1 abind_tvar Θ2 ρ β Huniq Hwflβ).
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [HuIH _]].
-    destruct (HuIH (add γ F) Θ0' α β ρ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
+    destruct (HuIH (add α1 F) Θ0' α β ρ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
-    exists ((γ ~ abind_tvar) ++ Θ1'). split.
+    exists ((α1 ~ abind_tvar) ++ Θ1'). split.
     { apply a_unify__skip_other; [ left; reflexivity | exact Hu ]. }
     intros ρ1 Hid Hinc1.
     assert (Hinc1' : ρ1 ∷ Θ0' ⊑ Θ1')
@@ -3734,18 +3736,18 @@ Proof.
     + apply a_inc_equiv__tvar; [ exact Hie' | exact HΞ ].
   - (* head [x ~ var_typ A] : Flex-Flex-Skip' (semantic type middle). *)
     destruct (a_wf_aenv_var_typ_inv Hwf) as [Hnd [HwfA Hwf0]].
-    assert (Hγα : α <> γ)
+    assert (Hα1α : α <> α1)
       by (intros ->; destruct Hfα as [Hb | [τ Hb]];
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hγβ : β <> γ)
+    assert (Hα1β : β <> α1)
       by (intros ->; destruct Hfβ as [Hb | [τ Hb]];
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
     assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply a_flex_tvar_strip_head; [ exact Hγα | exact Hfα ]).
+      by (eapply a_flex_tvar_strip_head; [ exact Hα1α | exact Hfα ]).
     assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply a_flex_tvar_strip_head; [ exact Hγβ | exact Hfβ ]).
+      by (eapply a_flex_tvar_strip_head; [ exact Hα1β | exact Hfβ ]).
     assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
     assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
     apply a_inc_var_inv in Hinc as [Ξ [A' [Θ2 [-> [HA'eq [HΞ Hinc']]]]]].
@@ -3763,21 +3765,21 @@ Proof.
         | exact Hwflβ
         | eapply a_inc_lookup_mono; exact Hinc'
         | exact Heq ]. }
-    assert (Huniq : uniq (Ξ ++ (γ ~ abind_var_typ A') ++ Θ2))
+    assert (Huniq : uniq (Ξ ++ (α1 ~ abind_var_typ A') ++ Θ2))
       by (apply a_wf_aenv_uniq; exact Hwfth).
     assert (Hlt : mu_lt (mu_unify Θ2 ρ α β Θ0')
-                        (mu_unify (Ξ ++ (γ ~ abind_var_typ A') ++ Θ2) ρ α β
-                                  ((γ ~ abind_var_typ A) ++ Θ0'))).
+                        (mu_unify (Ξ ++ (α1 ~ abind_var_typ A') ++ Θ2) ρ α β
+                                  ((α1 ~ abind_var_typ A) ++ Θ0'))).
     { unfold mu_unify. apply mu_lt_intro. right. split.
       - unfold V_unify.
-        rewrite (@Vvar_strengthen_mid Ξ γ (abind_var_typ A') Θ2 ρ α Huniq Hwflα).
-        rewrite (@Vvar_strengthen_mid Ξ γ (abind_var_typ A') Θ2 ρ β Huniq Hwflβ).
+        rewrite (@Vvar_strengthen_mid Ξ α1 (abind_var_typ A') Θ2 ρ α Huniq Hwflα).
+        rewrite (@Vvar_strengthen_mid Ξ α1 (abind_var_typ A') Θ2 ρ β Huniq Hwflβ).
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [HuIH _]].
-    destruct (HuIH (add γ F) Θ0' α β ρ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
+    destruct (HuIH (add α1 F) Θ0' α β ρ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
-    exists ((γ ~ abind_var_typ A) ++ Θ1'). split.
+    exists ((α1 ~ abind_var_typ A) ++ Θ1'). split.
     { apply a_unify__skip_other;
         [ right; left; exists A; reflexivity | exact Hu ]. }
     intros ρ1 Hid Hinc1.
@@ -3801,18 +3803,18 @@ Proof.
     + apply a_inc_equiv__var; [ exact Hie' | exact HA'eq | exact HΞ ].
   - (* head [x ~ var_skl Q] : Flex-Flex-Skip' (semantic skeleton middle). *)
     destruct (a_wf_aenv_var_skl_inv Hwf) as [Hnd [HwfQ Hwf0]].
-    assert (Hγα : α <> γ)
+    assert (Hα1α : α <> α1)
       by (intros ->; destruct Hfα as [Hb | [τ Hb]];
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hγβ : β <> γ)
+    assert (Hα1β : β <> α1)
       by (intros ->; destruct Hfβ as [Hb | [τ Hb]];
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
     assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply a_flex_tvar_strip_head; [ exact Hγα | exact Hfα ]).
+      by (eapply a_flex_tvar_strip_head; [ exact Hα1α | exact Hfα ]).
     assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply a_flex_tvar_strip_head; [ exact Hγβ | exact Hfβ ]).
+      by (eapply a_flex_tvar_strip_head; [ exact Hα1β | exact Hfβ ]).
     assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
     assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
     apply a_inc_var_skl_inv in Hinc as [Ξ [P' [Θ2 [-> [HP'eq [HΞ Hinc']]]]]].
@@ -3830,21 +3832,21 @@ Proof.
         | exact Hwflβ
         | eapply a_inc_lookup_mono; exact Hinc'
         | exact Heq ]. }
-    assert (Huniq : uniq (Ξ ++ (γ ~ abind_var_skl P') ++ Θ2))
+    assert (Huniq : uniq (Ξ ++ (α1 ~ abind_var_skl P') ++ Θ2))
       by (apply a_wf_aenv_uniq; exact Hwfth).
     assert (Hlt : mu_lt (mu_unify Θ2 ρ α β Θ0')
-                        (mu_unify (Ξ ++ (γ ~ abind_var_skl P') ++ Θ2) ρ α β
-                                  ((γ ~ abind_var_skl Q) ++ Θ0'))).
+                        (mu_unify (Ξ ++ (α1 ~ abind_var_skl P') ++ Θ2) ρ α β
+                                  ((α1 ~ abind_var_skl Q) ++ Θ0'))).
     { unfold mu_unify. apply mu_lt_intro. right. split.
       - unfold V_unify.
-        rewrite (@Vvar_strengthen_mid Ξ γ (abind_var_skl P') Θ2 ρ α Huniq Hwflα).
-        rewrite (@Vvar_strengthen_mid Ξ γ (abind_var_skl P') Θ2 ρ β Huniq Hwflβ).
+        rewrite (@Vvar_strengthen_mid Ξ α1 (abind_var_skl P') Θ2 ρ α Huniq Hwflα).
+        rewrite (@Vvar_strengthen_mid Ξ α1 (abind_var_skl P') Θ2 ρ β Huniq Hwflβ).
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [HuIH _]].
-    destruct (HuIH (add γ F) Θ0' α β ρ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
+    destruct (HuIH (add α1 F) Θ0' α β ρ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
-    exists ((γ ~ abind_var_skl Q) ++ Θ1'). split.
+    exists ((α1 ~ abind_var_skl Q) ++ Θ1'). split.
     { apply a_unify__skip_other;
         [ right; right; exists Q; reflexivity | exact Hu ]. }
     intros ρ1 Hid Hinc1.
@@ -3866,9 +3868,9 @@ Proof.
     exists ζ'. split.
     + apply a_inc__var_skl; [ exact Hζ' | exact Hbridge | exact HΞ ].
     + apply a_inc_equiv__var_skl; [ exact Hie' | exact HP'eq | exact HΞ ].
-  - (* head [γ̂] undefined flexible : Flex-Flex-L / Flex-Flex-R / Skip. *)
+  - (* head [α1̂] undefined flexible : Flex-Flex-L / Flex-Flex-R / Skip. *)
     inversion Hwf as [ | γh Θh Hnd Hwf0 | | | | ]; subst.
-    destruct (γ == α) as [-> | Hγα].
+    destruct (α1 == α) as [-> | Hα1α].
     + (* Flex-Flex-L : α̂ ≔ β̂; axiom, ζ := ρ. *)
       inversion Hinc as [ | Θs ρs Θt αs τ Hinc' Hwfτ Hmτ [Heqα Heqρ] Heqt
                         | | | | ]; subst.
@@ -3883,11 +3885,11 @@ Proof.
         exact Heq.
       * rewrite (msubst_compose_is_id_r Hwf Hid Hinc1 Hinc).
         apply a_inc_equiv_refl; exact Hinc.
-    + destruct (γ == β) as [-> | Hγβ].
+    + destruct (α1 == β) as [-> | Hα1β].
       * (* Flex-Flex-R : β̂ ≔ α̂; axiom, ζ := ρ. *)
         inversion Hinc as [ | Θs ρs Θt βs τ Hinc' Hwfτ Hmτ [Heqβ Heqρ] Heqt
                           | | | | ]; subst.
-        assert (Hγα' : α <> β) by exact Hne.
+        assert (Hα1α' : α <> β) by exact Hne.
         assert (Hfα0 : a_flex_tvar Θ0' α)
           by (eapply a_flex_tvar_strip_head; [ exact Hne | exact Hfα ]).
         exists ((β ~ abind_flex_mono_def (ptyp_var_f α)) ++ Θ0'). split.
@@ -3895,38 +3897,38 @@ Proof.
         intros ρ1 Hid Hinc1. exists ((β, τ) :: ρs). split.
         -- apply a_inc__flex_def; auto.
            rewrite msubst_lookup_cons_eq in Heq.
-           rewrite (msubst_lookup_cons_neq τ ρs Hγα') in Heq.
+           rewrite (msubst_lookup_cons_neq τ ρs Hα1α') in Heq.
            apply a_tyequiv__sym; exact Heq.
         -- rewrite (msubst_compose_is_id_r Hwf Hid Hinc1 Hinc).
            apply a_inc_equiv_refl; exact Hinc.
-      * (* Flex-Flex-Skip : γ̂ ∉ {α̂, β̂} walked past. *)
-        inversion Hinc as [ | Θs ρs Θt γs τγ Hincs Hwfτ Hmτ [Heqγ Heqρ] Heqt
+      * (* Flex-Flex-Skip : α1̂ ∉ {α̂, β̂} walked past. *)
+        inversion Hinc as [ | Θs ρs Θt α1s τα1 Hincs Hwfτ Hmτ [Heqγ Heqρ] Heqt
                           | | | | ]; subst.
-        assert (Hαγ : α <> γ) by auto.
-        assert (Hβγ : β <> γ) by auto.
+        assert (Hαα1 : α <> α1) by auto.
+        assert (Hβα1 : β <> α1) by auto.
         assert (Hfα0 : a_flex_tvar Θ0' α)
-          by (eapply a_flex_tvar_strip_head; [ exact Hαγ | exact Hfα ]).
+          by (eapply a_flex_tvar_strip_head; [ exact Hαα1 | exact Hfα ]).
         assert (Hfβ0 : a_flex_tvar Θ0' β)
-          by (eapply a_flex_tvar_strip_head; [ exact Hβγ | exact Hfβ ]).
-        rewrite (msubst_lookup_cons_neq τγ ρs Hαγ) in Heq.
-        rewrite (msubst_lookup_cons_neq τγ ρs Hβγ) in Heq.
+          by (eapply a_flex_tvar_strip_head; [ exact Hβα1 | exact Hfβ ]).
+        rewrite (msubst_lookup_cons_neq τα1 ρs Hαα1) in Heq.
+        rewrite (msubst_lookup_cons_neq τα1 ρs Hβα1) in Heq.
         assert (Hlt : mu_lt (mu_unify Θ ρs α β Θ0')
-                            (mu_unify Θ ((γ, τγ) :: ρs) α β
-                                      ((γ ~ abind_flex_mono) ++ Θ0'))).
+                            (mu_unify Θ ((α1, τα1) :: ρs) α β
+                                      ((α1 ~ abind_flex_mono) ++ Θ0'))).
         { unfold mu_unify. apply mu_lt_intro. right. split.
           - unfold V_unify, Vvar.
-            rewrite (msubst_lookup_cons_neq τγ ρs Hαγ).
-            rewrite (msubst_lookup_cons_neq τγ ρs Hβγ).
+            rewrite (msubst_lookup_cons_neq τα1 ρs Hαα1).
+            rewrite (msubst_lookup_cons_neq τα1 ρs Hβα1).
             reflexivity.
           - left. simpl. lia. }
         destruct (IH _ Hlt) as [_ [HuIH _]].
-        destruct (HuIH (add γ F) Θ0' α β ρs Θ eq_refl Hwf0 Hfα0 Hfβ0
+        destruct (HuIH (add α1 F) Θ0' α β ρs Θ eq_refl Hwf0 Hfα0 Hfβ0
                        Hincs Hwfth Heq) as [Θ1' [Hu Hopt']].
-        exists ((γ ~ abind_flex_mono) ++ Θ1'). split.
+        exists ((α1 ~ abind_flex_mono) ++ Θ1'). split.
         { apply a_unify__flex_skip;
             [ auto | auto | exact Hu ]. }
         intros ρ1 Hid Hinc1.
-        inversion Hinc1 as [ | Θp ρp Θq γp τp Hincp Hwfp Hmp [Heqγ1 Heqρ1] Heqt1
+        inversion Hinc1 as [ | Θp ρp Θq α1p τp Hincp Hwfp Hmp [Heqγ1 Heqρ1] Heqt1
                            | | | | ]; subst.
         apply is_id_msubst_inv in Hid as [Heqτp Hid']; subst τp.
         destruct (a_unify_sound Hu Hwf0)
@@ -3934,54 +3936,54 @@ Proof.
         assert (Hw : ρp = w)
           by (eapply is_id_inc_unique; eauto).
         subst w.
-        assert (Hγw : γ `notin` dom ρp)
+        assert (Hγw : α1 `notin` dom ρp)
           by (pose proof (a_inc_dom_sub Hincw) as Hs; clear - Hs Hnd; fsetdec).
         destruct (Hopt' ρp Hid' Hincw) as [ζ' [Hζ' Hie']].
-        exists ((γ, τγ) :: ζ'). split.
+        exists ((α1, τα1) :: ζ'). split.
         -- apply a_inc__flex; auto.
-        -- assert (Heqc : msubst_compose ((γ, τγ) :: ζ') ((γ, ptyp_var_f γ) :: ρp)
-                         = (γ, τγ) :: msubst_compose ζ' ρp).
-           { change (msubst_compose ((γ, τγ) :: ζ') ((γ, ptyp_var_f γ) :: ρp))
-               with ((γ, msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
-                     :: msubst_compose ((γ, τγ) :: ζ') ρp).
-             rewrite (msubst_compose_cons_l_id τγ ζ' Hid' Hγw).
-             change (msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
-               with (msubst_lookup ((γ, τγ) :: ζ') γ).
+        -- assert (Heqc : msubst_compose ((α1, τα1) :: ζ') ((α1, ptyp_var_f α1) :: ρp)
+                         = (α1, τα1) :: msubst_compose ζ' ρp).
+           { change (msubst_compose ((α1, τα1) :: ζ') ((α1, ptyp_var_f α1) :: ρp))
+               with ((α1, msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
+                     :: msubst_compose ((α1, τα1) :: ζ') ρp).
+             rewrite (msubst_compose_cons_l_id τα1 ζ' Hid' Hγw).
+             change (msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
+               with (msubst_lookup ((α1, τα1) :: ζ') α1).
              rewrite msubst_lookup_cons_eq. reflexivity. }
            rewrite Heqc.
            apply a_inc_equiv__flex; [ exact Hie' | ].
            apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτ.
-  - (* head [γ̂ ≔ τdef] : Flex-Flex-Assign, the back-edge into part 1. *)
+  - (* head [α1̂ ≔ τdef] : Flex-Flex-Assign, the back-edge into part 1. *)
     inversion Hwf as [ | | γh τh Θh Hnd Hwfτd Hmτd Hwf0 | | | ]; subst.
-    inversion Hinc as [ | | Θs ρs Θt γs τd τγ Hinc' Hwfτγ Hmτγ Heqd
+    inversion Hinc as [ | | Θs ρs Θt α1s τd τα1 Hinc' Hwfτα1 Hmτα1 Heqd
                           [Heqγ Heqρ] Heqt | | | ]; subst.
     (* the substituted subjects and their facts, uniformly in the variable *)
-    assert (Hgen : forall δ,
-        a_flex_tvar ((γ ~ abind_flex_mono_def τdef) ++ Θ0') δ ->
-        a_wf_ptyp Θ0' (subst_ptyp_in_ptyp τdef γ (ptyp_var_f δ)) /\
-        mono_ptyp (subst_ptyp_in_ptyp τdef γ (ptyp_var_f δ)) /\
-        Θ ⊢ (msubst_ptyp ρs (subst_ptyp_in_ptyp τdef γ (ptyp_var_f δ)))
-          ≡ᵗ (msubst_lookup ((γ, τγ) :: ρs) δ)).
-    { intros δ Hfδ. cbn [subst_ptyp_in_ptyp].
-      destruct_if as [-> | Hδγ].
+    assert (Hgen : forall β1,
+        a_flex_tvar ((α1 ~ abind_flex_mono_def τdef) ++ Θ0') β1 ->
+        a_wf_ptyp Θ0' (subst_ptyp_in_ptyp τdef α1 (ptyp_var_f β1)) /\
+        mono_ptyp (subst_ptyp_in_ptyp τdef α1 (ptyp_var_f β1)) /\
+        Θ ⊢ (msubst_ptyp ρs (subst_ptyp_in_ptyp τdef α1 (ptyp_var_f β1)))
+          ≡ᵗ (msubst_lookup ((α1, τα1) :: ρs) β1)).
+    { intros β1 Hfδ. cbn [subst_ptyp_in_ptyp].
+      destruct_if as [-> | Hβ1α1].
       - repeat split;
           [ exact Hwfτd | exact Hmτd
           | rewrite msubst_lookup_cons_eq;
             apply a_tyequiv__sym; exact Heqd ].
-      - assert (Hfδ' : a_flex_tvar Θ0' δ)
-          by (eapply a_flex_tvar_strip_head; [ exact Hδγ | exact Hfδ ]).
+      - assert (Hfδ' : a_flex_tvar Θ0' β1)
+          by (eapply a_flex_tvar_strip_head; [ exact Hβ1α1 | exact Hfδ ]).
         repeat split.
         + apply a_wf_ptyp__var. right. exact Hfδ'.
         + apply mono_ptyp__var.
-        + rewrite (msubst_lookup_cons_neq τγ ρs Hδγ).
+        + rewrite (msubst_lookup_cons_neq τα1 ρs Hβ1α1).
           cbn [msubst_ptyp].
           apply a_tyequiv__refl. apply mono_ptyp_lc.
           eapply a_inc_lookup_mono; exact Hinc'. }
     destruct (Hgen α Hfα) as [HwfAσ [HmAσ HeqAρ]].
     destruct (Hgen β Hfβ) as [HwfBσ [HmBσ HeqBρ]].
     clear Hgen.
-    set (Aσ := subst_ptyp_in_ptyp τdef γ (ptyp_var_f α)) in *.
-    set (Bσ := subst_ptyp_in_ptyp τdef γ (ptyp_var_f β)) in *.
+    set (Aσ := subst_ptyp_in_ptyp τdef α1 (ptyp_var_f α)) in *.
+    set (Bσ := subst_ptyp_in_ptyp τdef α1 (ptyp_var_f β)) in *.
     (* the sub-node's solution facts *)
     assert (HmA' : mono_ptyp (msubst_ptyp ρs Aσ))
       by (eapply mono_ptyp_msubst; [ exact Hinc' | exact HmAσ ]).
@@ -3999,8 +4001,8 @@ Proof.
                        ∼ (ptyp_to_bskl_syn (msubst_ptyp ρs Bσ))).
     { apply tyequiv_mono_consis;
         [ exact HeqAB | exact Hwfth | exact HmA'
-        | intros X HX; eapply a_wf_ptyp_ftv_tvarish;
-            [ exact HwfA' | exact HX ] ]. }
+        | intros α0 Hα0; eapply a_wf_ptyp_ftv_tvarish;
+            [ exact HwfA' | exact Hα0 ] ]. }
     assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
               (pskl_to_uskl (msubst_pskl ρs (ptyp_to_pskl Aσ)))
               ∼ (ptyp_to_bskl_syn (msubst_ptyp ρs Bσ)))
@@ -4015,8 +4017,8 @@ Proof.
       eapply ad_pat_consis_refine_syn_f_mono;
         [ apply consis_mono_refl;
             [ exact HmB'
-            | intros X HX; eapply a_wf_ptyp_ftv_tvarish;
-                [ exact HwfB' | exact HX ] ]
+            | intros α0 Hα0; eapply a_wf_ptyp_ftv_tvarish;
+                [ exact HwfB' | exact Hα0 ] ]
         | exact Hwfth
         | apply mono_ptyp_to_bskl_syn; exact HmB'
         | clear; fsetdec
@@ -4042,50 +4044,50 @@ Proof.
        solution had already unfolded), n one smaller. *)
     assert (Hlt : mu_lt
         (mu_consis Θ ρs (ptyp_to_pskl Bσ) (ptyp_to_pskl Aσ) Θ0')
-        (mu_unify Θ ((γ, τγ) :: ρs) α β
-                  ((γ ~ abind_flex_mono_def τdef) ++ Θ0'))).
+        (mu_unify Θ ((α1, τα1) :: ρs) α β
+                  ((α1 ~ abind_flex_mono_def τdef) ++ Θ0'))).
     { unfold mu_consis, mu_unify. apply mu_lt_intro. right. split.
       - unfold V_consis, V_unify.
         rewrite (Vpskl_ptyp_to_pskl Θ ρs Aσ).
         rewrite (Vpskl_ptyp_to_pskl Θ ρs Bσ).
         unfold Aσ, Bσ.
-        rewrite (@Vvar_backedge Θ ρs γ τdef τγ α Hwfth Heqd).
-        rewrite (@Vvar_backedge Θ ρs γ τdef τγ β Hwfth Heqd).
+        rewrite (@Vvar_backedge Θ ρs α1 τdef τα1 α Hwfth Heqd).
+        rewrite (@Vvar_backedge Θ ρs α1 τdef τα1 β Hwfth Heqd).
         unfold Vvar, Vptyp; cbn [msubst_ptyp]; reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [HcIH _].
-    destruct (HcIH (add γ F) empty empty Θ0' (ptyp_to_pskl Bσ)
+    destruct (HcIH (add α1 F) empty empty Θ0' (ptyp_to_pskl Bσ)
                    (ptyp_to_pskl Aσ) ρs Θ empty
                    (ptyp_to_bskl_syn (msubst_ptyp ρs Bσ))
                    eq_refl Hwf0 HwfPB HwfPA
-                   ltac:(intros X HX; exfalso; clear - HX; fsetdec)
+                   ltac:(intros α0 Hα0; exfalso; clear - Hα0; fsetdec)
                    ltac:(repeat intro; fsetdec)
                    ltac:(repeat intro; fsetdec)
                    Hinc' Hwfth
                    ltac:(repeat intro; fsetdec)
                    Hpsi Hjoin' Hrs' Hrp')
       as [P1 [Θ1' [Hcons Hopt']]].
-    exists ((γ ~ abind_flex_mono_def τdef) ++ Θ1'). split.
+    exists ((α1 ~ abind_flex_mono_def τdef) ++ Θ1'). split.
     { eapply a_unify__flex_assign;
         [ exact Hfα | exact Hfβ | exact Hcons ]. }
     intros ρ1 Hid Hinc1.
-    inversion Hinc1 as [ | | Θp ρp Θq γp τd1 τ1 Hincp Hwf1p Hm1p Heq1p
+    inversion Hinc1 as [ | | Θp ρp Θq α1p τd1 τ1 Hincp Hwf1p Hm1p Heq1p
                            [Heqγ1 Heqρ1] Heqt1 | | | ]; subst.
     apply is_id_msubst_inv in Hid as [Heqτ1 Hid']; subst τ1.
     (* the sub-derivation's own soundness: id-witness + target wf *)
     destruct (proj2 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ _ _ _ Hcons
                 Hwf0 HwfPB HwfPA
-                ltac:(intros X HX; exfalso; clear - HX; fsetdec)
+                ltac:(intros α0 Hα0; exfalso; clear - Hα0; fsetdec)
                 ltac:(repeat intro; fsetdec)
                 ltac:(repeat intro; fsetdec))
       as [[[w [Hidw Hincw]] _] [Hwf1' _]].
     assert (Hw : ρp = w) by (eapply is_id_inc_unique; eauto).
     subst w.
-    assert (Hγw : γ `notin` dom ρp)
+    assert (Hγw : α1 `notin` dom ρp)
       by (pose proof (a_inc_dom_sub Hincw) as Hs; clear - Hs Hnd; fsetdec).
     destruct (Hopt' ρp Hid' Hincw) as [ζ' [Hζ' [Hie' _]]].
-    exists ((γ, τγ) :: ζ'). split.
-    + apply a_inc__flex_def; [ exact Hζ' | exact Hwfτγ | exact Hmτγ | ].
+    exists ((α1, τα1) :: ζ'). split.
+    + apply a_inc__flex_def; [ exact Hζ' | exact Hwfτα1 | exact Hmτα1 | ].
       (* the definition's image transports across the equivalent increments *)
       eapply a_tyequiv__trans; [ exact Heqd | ].
       rewrite <- (msubst_compose_id_ptyp Hwf0 Hwf1' Hid' Hincw Hζ' Hwfτd).
@@ -4095,19 +4097,19 @@ Proof.
         | eapply msubst_lc_compose;
             [ eapply a_inc_msubst_lc; exact Hζ'
             | eapply is_id_msubst_values_lc; exact Hidw ] ].
-    + assert (Heqc : msubst_compose ((γ, τγ) :: ζ') ((γ, ptyp_var_f γ) :: ρp)
-                     = (γ, τγ) :: msubst_compose ζ' ρp).
-      { change (msubst_compose ((γ, τγ) :: ζ') ((γ, ptyp_var_f γ) :: ρp))
-          with ((γ, msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
-                :: msubst_compose ((γ, τγ) :: ζ') ρp).
-        rewrite (msubst_compose_cons_l_id τγ ζ' Hid' Hγw).
-        change (msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
-          with (msubst_lookup ((γ, τγ) :: ζ') γ).
+    + assert (Heqc : msubst_compose ((α1, τα1) :: ζ') ((α1, ptyp_var_f α1) :: ρp)
+                     = (α1, τα1) :: msubst_compose ζ' ρp).
+      { change (msubst_compose ((α1, τα1) :: ζ') ((α1, ptyp_var_f α1) :: ρp))
+          with ((α1, msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
+                :: msubst_compose ((α1, τα1) :: ζ') ρp).
+        rewrite (msubst_compose_cons_l_id τα1 ζ' Hid' Hγw).
+        change (msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
+          with (msubst_lookup ((α1, τα1) :: ζ') α1).
         rewrite msubst_lookup_cons_eq. reflexivity. }
       rewrite Heqc.
       apply a_inc_equiv__flex_def;
         [ exact Hie'
-        | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτγ
+        | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτα1
         | exact Heqd ].
 Qed.
 
@@ -4127,7 +4129,7 @@ Qed.
 
 (** Deciding whether a skeleton is a free variable. *)
 Lemma pskl_var_dec : forall P,
-  (exists X, P = pskl_var_f X) \/ (forall X, P <> pskl_var_f X).
+  (exists α, P = pskl_var_f α) \/ (forall α, P <> pskl_var_f α).
 Proof.
   destruct P;
     first [ left; eexists; reflexivity
@@ -4150,7 +4152,7 @@ Qed.
     lookups on the identity's keys. *)
 Lemma msubst_compose_agree_id : forall ζ ζ' ρ1,
   is_id_msubst ρ1 ->
-  (forall X, X `in` dom ρ1 -> msubst_lookup ζ X = msubst_lookup ζ' X) ->
+  (forall α, α `in` dom ρ1 -> msubst_lookup ζ α = msubst_lookup ζ' α) ->
   msubst_compose ζ ρ1 = msubst_compose ζ' ρ1.
 Proof.
   intros ζ ζ' ρ1; induction ρ1 as [ | [a t] ρ1' IH ]; intros Hid Hag;
@@ -4159,7 +4161,7 @@ Proof.
   unfold msubst_compose in *; simpl.
   rewrite (Hag a) by (simpl; fsetdec).
   rewrite IH; [ reflexivity | exact Hid' | ].
-  intros X HX. apply Hag. simpl. fsetdec.
+  intros α Hα. apply Hag. simpl. fsetdec.
 Qed.
 
 (** [msubst_compose_is_id_r] with a source-disjoint prefix on the left
@@ -4169,18 +4171,18 @@ Lemma msubst_compose_is_id_r_ext : forall Θ0 ρ1 Θ1 ρ Θ ζpre,
   is_id_msubst ρ1 ->
   ρ1 ∷ Θ0 ⊑ Θ1 ->
   ρ ∷ Θ0 ⊑ Θ ->
-  (forall X, X `in` dom ζpre -> X `notin` dom Θ0) ->
+  (forall α, α `in` dom ζpre -> α `notin` dom Θ0) ->
   msubst_compose (ζpre ++ ρ) ρ1 = ρ.
 Proof.
   intros Θ0 ρ1 Θ1 ρ Θ ζpre Hwf Hid Hinc1 Hinc Hdisj.
-  assert (Hag : forall X, X `in` dom ρ1 ->
-            msubst_lookup (ζpre ++ ρ) X = msubst_lookup ρ X).
-  { intros X HX.
+  assert (Hag : forall α, α `in` dom ρ1 ->
+            msubst_lookup (ζpre ++ ρ) α = msubst_lookup ρ α).
+  { intros α Hα.
     pose proof (a_inc_dom_sub Hinc1) as Hsub.
     apply msubst_lookup_app_notin.
-    assert (HXΘ0 : X `in` dom Θ0) by (clear - HX Hsub; fsetdec).
-    destruct (AtomSetProperties.In_dec X (dom ζpre)) as [Hin | Hni];
-      [ exfalso; exact (Hdisj X Hin HXΘ0) | exact Hni ]. }
+    assert (HαΘ0 : α `in` dom Θ0) by (clear - Hα Hsub; fsetdec).
+    destruct (AtomSetProperties.In_dec α (dom ζpre)) as [Hin | Hni];
+      [ exfalso; exact (Hdisj α Hin HαΘ0) | exact Hni ]. }
   rewrite (@msubst_compose_agree_id (ζpre ++ ρ) ρ ρ1 Hid Hag).
   eapply msubst_compose_is_id_r; eauto.
 Qed.
@@ -4213,9 +4215,9 @@ Lemma occurs_join_size_aux : forall Ψ Θ R' Q,
   Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Q ->
   a_wf_aenv Θ ->
   forall θm,
-  (forall X, mono_ptyp (msubst_lookup θm X)) ->
+  (forall α', mono_ptyp (msubst_lookup θm α')) ->
   forall α P A Θw Δw,
-    (forall X, P <> pskl_var_f X) ->
+    (forall α', P <> pskl_var_f α') ->
     R' = pskl_to_uskl (msubst_pskl θm P) ->
     Q = ptyp_to_bskl_syn A ->
     mono_ptyp A ->
@@ -4235,7 +4237,7 @@ Proof.
     destruct P0; simpl in HeqS; try discriminate;
       solve [ exfalso; eapply Hnv; reflexivity ].
   - (* arrow *)
-    destruct P0 as [ | | X | P1 P2 | | | ]; simpl in HeqS; try discriminate;
+    destruct P0 as [ | | α' | P1 P2 | | | ]; simpl in HeqS; try discriminate;
       try solve [ exfalso; eapply Hnv; reflexivity ].
     inversion HeqS; subst R1 R2.
     destruct C0 as [ | | | C1 C2 | ]; simpl in HeqQ; try discriminate.
@@ -4251,9 +4253,9 @@ Proof.
     + (* α ∈ ftv P1 *)
       assert (Hle : size_ptyp (⇓ᵗ[Θ] (msubst_lookup θm α0))
                       <= size_ptyp (⇓ᵗ[Θ] C1)).
-      { destruct (pskl_var_dec P1) as [[X1 HeqP1] | Hnv1].
+      { destruct (pskl_var_dec P1) as [[α'1 HeqP1] | Hnv1].
         - subst P1. simpl in Hocc.
-          assert (HeqX : X1 = α0) by (clear - Hocc; fsetdec). subst X1.
+          assert (HeqX : α'1 = α0) by (clear - Hocc; fsetdec). subst α'1.
           simpl in Hc1.
           rewrite (a_tyequiv_downarrow Hwf
                      (join_var_tyequiv Hc1 Hwf (Hmlk α0) HmC1)).
@@ -4266,9 +4268,9 @@ Proof.
     + (* α ∈ ftv P2 *)
       assert (Hle : size_ptyp (⇓ᵗ[Θ] (msubst_lookup θm α0))
                       <= size_ptyp (⇓ᵗ[Θ] C2)).
-      { destruct (pskl_var_dec P2) as [[X2 HeqP2] | Hnv2].
+      { destruct (pskl_var_dec P2) as [[α'2 HeqP2] | Hnv2].
         - subst P2. simpl in Hocc.
-          assert (HeqX : X2 = α0) by (clear - Hocc; fsetdec). subst X2.
+          assert (HeqX : α'2 = α0) by (clear - Hocc; fsetdec). subst α'2.
           simpl in Hc2.
           rewrite (a_tyequiv_downarrow Hwf
                      (join_var_tyequiv Hc2 Hwf (Hmlk α0) HmC2)).
@@ -4310,10 +4312,10 @@ Proof.
     match goal with H : guarded_pskl P' |- _ => rename H into Hgu end.
     match goal with H : _ ⨟ empty ⊢ₚₛᵃ P' |- _ => rename H into HwfP' end.
     simpl in Hocc.
-    destruct (pskl_var_dec P') as [[X' HeqP'] | Hnv'].
-    + (* P = ⊤◇X' : the drop-to-var base *)
+    destruct (pskl_var_dec P') as [[α'' HeqP'] | Hnv'].
+    + (* P = ⊤◇α'' : the drop-to-var base *)
       subst P'. simpl in Hocc.
-      assert (HeqX : X' = α0) by (clear - Hocc; fsetdec). subst X'.
+      assert (HeqX : α'' = α0) by (clear - Hocc; fsetdec). subst α''.
       simpl in Hc.
       rewrite (a_tyequiv_downarrow Hwf
                  (join_var_tyequiv Hc Hwf (Hmlk α0) HmC0)).
@@ -4328,8 +4330,8 @@ Proof.
     destruct P0; simpl in HeqS; try discriminate;
       solve [ exfalso; eapply Hnv; reflexivity ].
   - (* flex_r : unfold the RHS definition, same P *)
-    destruct C0 as [ | | X0 | | ]; simpl in HeqQ; try discriminate.
-    inversion HeqQ; subst X0.
+    destruct C0 as [ | | α'0 | | ]; simpl in HeqQ; try discriminate.
+    inversion HeqQ; subst α'0.
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     destruct (IHHc Hwf α0 P0 τ Θw Δw Hnv HeqS eq_refl Hmτ HwfP0 Hocc)
       as [Hle Hdisj].
@@ -4343,7 +4345,7 @@ Qed.
 Lemma occurs_join_size : forall Ψ Θ θm α P A Θw Δw,
   Ψ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl θm P)) ∼ (ptyp_to_bskl_syn A) ->
   a_wf_aenv Θ ->
-  (forall X, mono_ptyp (msubst_lookup θm X)) ->
+  (forall α0, mono_ptyp (msubst_lookup θm α0)) ->
   mono_ptyp A ->
   Θw ⨟ Δw ⊢ₚₛᵃ P ->
   α `in` ftvar_in_pskl P ->
@@ -4352,10 +4354,10 @@ Lemma occurs_join_size : forall Ψ Θ θm α P A Θw Δw,
    size_ptyp (⇓ᵗ[Θ] (msubst_lookup θm α)) < size_ptyp (⇓ᵗ[Θ] A)).
 Proof.
   intros Ψ Θ θm α P A Θw Δw Hc Hwf Hmlk HmC HwfP Hocc.
-  destruct (pskl_var_dec P) as [[X HeqP] | Hnv].
-  - (* P = var X *)
+  destruct (pskl_var_dec P) as [[α0 HeqP] | Hnv].
+  - (* P = var α0 *)
     subst P. simpl in Hocc.
-    assert (HeqX : X = α) by (clear - Hocc; fsetdec). subst X.
+    assert (HeqX : α0 = α) by (clear - Hocc; fsetdec). subst α0.
     simpl in Hc.
     rewrite (a_tyequiv_downarrow Hwf
                (join_var_tyequiv Hc Hwf (Hmlk α) HmC)).
@@ -4377,7 +4379,7 @@ Lemma guess_witness_var_tuple : forall Θ θm α A L,
     (forall Θg, a_guess_mono Θg (pskl_var_f α) βs τg) /\
     mono_ptyp τg /\
     uniq βs /\
-    (forall γ0, γ0 `in` dom βs -> γ0 `notin` L) /\
+    (forall α10, α10 `in` dom βs -> α10 `notin` L) /\
     dom ζβ [=] dom βs /\
     (forall E ρE, ρE ∷ E ⊑ Θ -> ζβ ++ ρE ∷ (βs ++ E) ⊑ Θ) /\
     Θ ⊢ (msubst_ptyp (ζβ ++ θm) τg) ≡ᵗ A.
@@ -4387,7 +4389,7 @@ Proof.
   split; [ intros Θg; apply a_guess_mono__var | ].
   split; [ apply mono_ptyp__var | ].
   split; [ constructor | ].
-  split; [ intros γ0 Hγ0; simpl in Hγ0; exfalso; clear - Hγ0; fsetdec | ].
+  split; [ intros α10 Hγ0; simpl in Hγ0; exfalso; clear - Hγ0; fsetdec | ].
   split; [ simpl; reflexivity | ].
   split; [ intros E ρE HE; simpl; exact HE | ].
   simpl. exact Heqv.
@@ -4397,9 +4399,9 @@ Lemma guess_join_witness_aux : forall Ψ Θ R' Q,
   Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Q ->
   a_wf_aenv Θ ->
   forall θm,
-  (forall X, mono_ptyp (msubst_lookup θm X)) ->
+  (forall α, mono_ptyp (msubst_lookup θm α)) ->
   forall P A,
-    (forall X, P <> pskl_var_f X) ->
+    (forall α, P <> pskl_var_f α) ->
     R' = pskl_to_uskl (msubst_pskl θm P) ->
     Q = ptyp_to_bskl_syn A ->
     mono_ptyp A ->
@@ -4408,7 +4410,7 @@ Lemma guess_join_witness_aux : forall Ψ Θ R' Q,
       (forall Θg, a_guess_mono Θg P βs τg) /\
       mono_ptyp τg /\
       uniq βs /\
-      (forall γ0, γ0 `in` dom βs -> γ0 `notin` L) /\
+      (forall α10, α10 `in` dom βs -> α10 `notin` L) /\
       dom ζβ [=] dom βs /\
       (forall E ρE, ρE ∷ E ⊑ Θ -> ζβ ++ ρE ∷ (βs ++ E) ⊑ Θ) /\
       Θ ⊢ (msubst_ptyp (ζβ ++ θm) τg) ≡ᵗ A.
@@ -4423,7 +4425,7 @@ Proof.
     split; [ intros Θg; apply a_guess_mono__unit | ].
     split; [ apply mono_ptyp__unit | ].
     split; [ constructor | ].
-    split; [ intros γ0 Hγ0; simpl in Hγ0; exfalso; clear - Hγ0; fsetdec | ].
+    split; [ intros α10 Hγ0; simpl in Hγ0; exfalso; clear - Hγ0; fsetdec | ].
     split; [ simpl; reflexivity | ].
     split; [ intros E ρE HE; simpl; exact HE | ].
     simpl. apply a_tyequiv__refl. apply lc_ptyp_unit.
@@ -4431,7 +4433,7 @@ Proof.
     destruct P0; simpl in HeqS; try discriminate;
       solve [ exfalso; eapply Hnv; reflexivity ].
   - (* arrow *)
-    destruct P0 as [ | | X | P1 P2 | | | ]; simpl in HeqS; try discriminate;
+    destruct P0 as [ | | α | P1 P2 | | | ]; simpl in HeqS; try discriminate;
       try solve [ exfalso; eapply Hnv; reflexivity ].
     inversion HeqS; subst R1 R2.
     destruct C0 as [ | | | C1 C2 | ]; simpl in HeqQ; try discriminate.
@@ -4447,68 +4449,68 @@ Proof.
     assert (Hcomp1 : exists βs1 τ1 ζ1,
         (forall Θg, a_guess_mono Θg P1 βs1 τ1) /\
         mono_ptyp τ1 /\ uniq βs1 /\
-        (forall γ0, γ0 `in` dom βs1 -> γ0 `notin` L1) /\
+        (forall α10, α10 `in` dom βs1 -> α10 `notin` L1) /\
         dom ζ1 [=] dom βs1 /\
         (forall E ρE, ρE ∷ E ⊑ Θ -> ζ1 ++ ρE ∷ (βs1 ++ E) ⊑ Θ) /\
         Θ ⊢ (msubst_ptyp (ζ1 ++ θm) τ1) ≡ᵗ C1).
-    { destruct (pskl_var_dec P1) as [[X1 HeqP1] | Hnv1].
+    { destruct (pskl_var_dec P1) as [[α1 HeqP1] | Hnv1].
       - subst P1. simpl in Hc1.
         apply guess_witness_var_tuple.
-        apply (join_var_tyequiv Hc1 Hwf (Hmlk X1) HmC1).
+        apply (join_var_tyequiv Hc1 Hwf (Hmlk α1) HmC1).
       - apply (IHHc1 Hwf P1 C1 Hnv1 eq_refl eq_refl HmC1 HwfC1 L1). }
     destruct Hcomp1 as [βs1 [τ1 [ζ1 [Hg1 [Hm1 [Hu1 [Hf1 [Hd1 [Ht1 He1]]]]]]]]].
     set (L2 := L1 `union` dom βs1).
     assert (Hcomp2 : exists βs2 τ2 ζ2,
         (forall Θg, a_guess_mono Θg P2 βs2 τ2) /\
         mono_ptyp τ2 /\ uniq βs2 /\
-        (forall γ0, γ0 `in` dom βs2 -> γ0 `notin` L2) /\
+        (forall α10, α10 `in` dom βs2 -> α10 `notin` L2) /\
         dom ζ2 [=] dom βs2 /\
         (forall E ρE, ρE ∷ E ⊑ Θ -> ζ2 ++ ρE ∷ (βs2 ++ E) ⊑ Θ) /\
         Θ ⊢ (msubst_ptyp (ζ2 ++ θm) τ2) ≡ᵗ C2).
-    { destruct (pskl_var_dec P2) as [[X2 HeqP2] | Hnv2].
+    { destruct (pskl_var_dec P2) as [[α2 HeqP2] | Hnv2].
       - subst P2. simpl in Hc2.
         apply guess_witness_var_tuple.
-        apply (join_var_tyequiv Hc2 Hwf (Hmlk X2) HmC2).
+        apply (join_var_tyequiv Hc2 Hwf (Hmlk α2) HmC2).
       - apply (IHHc2 Hwf P2 C2 Hnv2 eq_refl eq_refl HmC2 HwfC2 L2). }
     destruct Hcomp2 as [βs2 [τ2 [ζ2 [Hg2 [Hm2 [Hu2 [Hf2 [Hd2 [Ht2 He2]]]]]]]]].
     exists (βs1 ++ βs2), (ptyp_arrow τ1 τ2), (ζ1 ++ ζ2).
-    assert (Hdisj12 : forall γ0, γ0 `in` dom βs2 -> γ0 `notin` dom βs1).
-    { intros γ0 Hγ0. specialize (Hf2 γ0 Hγ0).
+    assert (Hdisj12 : forall α10, α10 `in` dom βs2 -> α10 `notin` dom βs1).
+    { intros α10 Hγ0. specialize (Hf2 α10 Hγ0).
       clear - Hf2. unfold L2 in Hf2. fsetdec. }
     (* the two msubst-agree transports *)
     pose proof (a_guess_mono_ftv (Hg1 Θ)) as Hftv1.
     pose proof (a_guess_mono_ftv (Hg2 Θ)) as Hftv2.
     assert (Hag1 : msubst_ptyp ((ζ1 ++ ζ2) ++ θm) τ1
                  = msubst_ptyp (ζ1 ++ θm) τ1).
-    { apply msubst_ptyp_agree. intros X0 HX0.
-      assert (HX0' : X0 `in` ftvar_in_pskl P1 `union` dom βs1)
+    { apply msubst_ptyp_agree. intros α0 HX0.
+      assert (HX0' : α0 `in` ftvar_in_pskl P1 `union` dom βs1)
         by (clear - Hftv1 HX0; fsetdec).
       rewrite app_assoc.
-      destruct (AtomSetProperties.In_dec X0 (dom ζ1)) as [Hin | Hni].
+      destruct (AtomSetProperties.In_dec α0 (dom ζ1)) as [Hin | Hni].
       - rewrite (msubst_lookup_app_in ζ1 (ζ2 ++ θm) Hin).
         rewrite (msubst_lookup_app_in ζ1 θm Hin). reflexivity.
       - rewrite (msubst_lookup_app_notin _ _ Hni).
         rewrite (msubst_lookup_app_notin _ _ Hni).
-        assert (HX0P1 : X0 `in` ftvar_in_pskl P1)
+        assert (HX0P1 : α0 `in` ftvar_in_pskl P1)
           by (rewrite Hd1 in Hni; clear - HX0' Hni; fsetdec).
-        assert (Hniζ2 : X0 `notin` dom ζ2).
+        assert (Hniζ2 : α0 `notin` dom ζ2).
         { rewrite Hd2. intros Hin2.
-          specialize (Hf2 X0 Hin2). clear - Hf2 HX0P1.
+          specialize (Hf2 α0 Hin2). clear - Hf2 HX0P1.
           unfold L2, L1 in Hf2. simpl in Hf2. fsetdec. }
         rewrite (msubst_lookup_app_notin _ _ Hniζ2). reflexivity. }
     assert (Hag2 : msubst_ptyp ((ζ1 ++ ζ2) ++ θm) τ2
                  = msubst_ptyp (ζ2 ++ θm) τ2).
-    { apply msubst_ptyp_agree. intros X0 HX0.
-      assert (HX0' : X0 `in` ftvar_in_pskl P2 `union` dom βs2)
+    { apply msubst_ptyp_agree. intros α0 HX0.
+      assert (HX0' : α0 `in` ftvar_in_pskl P2 `union` dom βs2)
         by (clear - Hftv2 HX0; fsetdec).
       rewrite app_assoc.
-      assert (Hniζ1 : X0 `notin` dom ζ1).
+      assert (Hniζ1 : α0 `notin` dom ζ1).
       { rewrite Hd1.
-        destruct (AtomSetProperties.In_dec X0 (dom βs2)) as [Hin2 | Hni2].
-        - exact (Hdisj12 X0 Hin2).
-        - assert (HX0P2 : X0 `in` ftvar_in_pskl P2)
+        destruct (AtomSetProperties.In_dec α0 (dom βs2)) as [Hin2 | Hni2].
+        - exact (Hdisj12 α0 Hin2).
+        - assert (HX0P2 : α0 `in` ftvar_in_pskl P2)
             by (clear - HX0' Hni2; fsetdec).
-          intros Hin1. specialize (Hf1 X0 Hin1).
+          intros Hin1. specialize (Hf1 α0 Hin1).
           clear - Hf1 HX0P2. unfold L1 in Hf1. simpl in Hf1. fsetdec. }
       rewrite (msubst_lookup_app_notin _ _ Hniζ1). reflexivity. }
     split; [ intros Θg; apply a_guess_mono__arrow;
@@ -4521,10 +4523,10 @@ Proof.
       assert (Hx2 : x `in` dom βs2) by (clear - Hx; fsetdec).
       exfalso. exact (Hdisj12 x Hx2 Hx1). }
     split.
-    { intros γ0 Hγ0. rewrite dom_app in Hγ0.
+    { intros α10 Hγ0. rewrite dom_app in Hγ0.
       apply union_1 in Hγ0. destruct Hγ0 as [Hγ0 | Hγ0].
-      - specialize (Hf1 γ0 Hγ0). clear - Hf1. unfold L1 in Hf1. fsetdec.
-      - specialize (Hf2 γ0 Hγ0). clear - Hf2. unfold L2, L1 in Hf2. fsetdec. }
+      - specialize (Hf1 α10 Hγ0). clear - Hf1. unfold L1 in Hf1. fsetdec.
+      - specialize (Hf2 α10 Hγ0). clear - Hf2. unfold L2, L1 in Hf2. fsetdec. }
     split.
     { repeat rewrite dom_app. rewrite Hd1. rewrite Hd2. reflexivity. }
     split.
@@ -4558,9 +4560,9 @@ Proof.
     split; [ apply mono_ptyp__var | ].
     split; [ solve_uniq | ].
     split.
-    { intros γ0 Hγ0. simpl in Hγ0.
-      assert (Heqγ : γ0 = β) by (clear - Hγ0; fsetdec).
-      subst γ0. exact Hβ. }
+    { intros α10 Hγ0. simpl in Hγ0.
+      assert (Heqγ : α10 = β) by (clear - Hγ0; fsetdec).
+      subst α10. exact Hβ. }
     split; [ simpl; fsetdec | ].
     split.
     { intros E ρE HE. simpl.
@@ -4578,14 +4580,14 @@ Proof.
     assert (Hbody : exists βs τg ζβ,
         (forall Θg, a_guess_mono Θg P' βs τg) /\
         mono_ptyp τg /\ uniq βs /\
-        (forall γ0, γ0 `in` dom βs -> γ0 `notin` Lav) /\
+        (forall α10, α10 `in` dom βs -> α10 `notin` Lav) /\
         dom ζβ [=] dom βs /\
         (forall E ρE, ρE ∷ E ⊑ Θ -> ζβ ++ ρE ∷ (βs ++ E) ⊑ Θ) /\
         Θ ⊢ (msubst_ptyp (ζβ ++ θm) τg) ≡ᵗ C0).
-    { destruct (pskl_var_dec P') as [[X' HeqP'] | Hnv'].
+    { destruct (pskl_var_dec P') as [[α' HeqP'] | Hnv'].
       - subst P'. simpl in Hc. rewrite HeqQ in Hc.
         apply guess_witness_var_tuple.
-        apply (join_var_tyequiv Hc Hwf (Hmlk X') HmC0).
+        apply (join_var_tyequiv Hc Hwf (Hmlk α') HmC0).
       - apply (IHHc Hwf P' C0 Hnv' eq_refl HeqQ HmC0 HwfC0 Lav). }
     destruct Hbody as [βs [τg [ζβ [Hg [Hm [Hu [Hf [Hd [Ht He]]]]]]]]].
     exists βs, τg, ζβ.
@@ -4600,8 +4602,8 @@ Proof.
     destruct P0; simpl in HeqS; try discriminate;
       solve [ exfalso; eapply Hnv; reflexivity ].
   - (* flex_r : unfold the RHS definition *)
-    destruct C0 as [ | | X0 | | ]; simpl in HeqQ; try discriminate.
-    inversion HeqQ; subst X0.
+    destruct C0 as [ | | α0 | | ]; simpl in HeqQ; try discriminate.
+    inversion HeqQ; subst α0.
     assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eauto).
     assert (Hwτ : a_wf_ptyp Θ τ)
       by (eapply a_wf_aenv_binds_def_wf_local; eauto).
@@ -4622,23 +4624,23 @@ Qed.
 Lemma guess_join_witness : forall Ψ Θ θm P A,
   Ψ ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl θm P)) ∼ (ptyp_to_bskl_syn A) ->
   a_wf_aenv Θ ->
-  (forall X, mono_ptyp (msubst_lookup θm X)) ->
+  (forall α, mono_ptyp (msubst_lookup θm α)) ->
   mono_ptyp A ->
   a_wf_ptyp Θ A ->
   forall L, exists βs τg ζβ,
     (forall Θg, a_guess_mono Θg P βs τg) /\
     mono_ptyp τg /\
     uniq βs /\
-    (forall γ0, γ0 `in` dom βs -> γ0 `notin` L) /\
+    (forall α10, α10 `in` dom βs -> α10 `notin` L) /\
     dom ζβ [=] dom βs /\
     (forall E ρE, ρE ∷ E ⊑ Θ -> ζβ ++ ρE ∷ (βs ++ E) ⊑ Θ) /\
     Θ ⊢ (msubst_ptyp (ζβ ++ θm) τg) ≡ᵗ A.
 Proof.
   intros Ψ Θ θm P A Hc Hwf Hmlk HmC HwfC L.
-  destruct (pskl_var_dec P) as [[X HeqP] | Hnv].
+  destruct (pskl_var_dec P) as [[α HeqP] | Hnv].
   - subst P. simpl in Hc.
     apply guess_witness_var_tuple.
-    apply (join_var_tyequiv Hc Hwf (Hmlk X) HmC).
+    apply (join_var_tyequiv Hc Hwf (Hmlk α) HmC).
   - eapply (guess_join_witness_aux Hc Hwf θm Hmlk Hnv eq_refl eq_refl
               HmC HwfC).
 Qed.
@@ -4676,8 +4678,8 @@ Proof.
   assert (Hmτα : mono_ptyp τα) by (eapply a_inc_lookup_mono; exact Hinc).
   assert (Hwτα : a_wf_ptyp Θ τα)
     by (eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf | exact Hbtα ]).
-  assert (Hmlk : forall X, mono_ptyp (msubst_lookup ρ X))
-    by (intros X; eapply a_inc_lookup_mono; exact Hinc).
+  assert (Hmlk : forall α0, mono_ptyp (msubst_lookup ρ α0))
+    by (intros α0; eapply a_inc_lookup_mono; exact Hinc).
   (* ---- occurs check ---- *)
   assert (Hocc : α `notin` ftvar_in_pskl P).
   { destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P))
@@ -4702,7 +4704,7 @@ Proof.
     - apply Hg.
     - exact Hmτg.
     - exact Huβ.
-    - intros γ0 Hγ0. specialize (Hfβ γ0 Hγ0).
+    - intros α10 Hγ0. specialize (Hfβ α10 Hγ0).
       clear - Hfβ. unfold L in Hfβ. simpl_env in *. fsetdec. }
   (* ---- optimality ---- *)
   intros ρ1 Hid Hinc1.
@@ -4731,10 +4733,10 @@ Proof.
   { apply a_tyequiv__sym.
     assert (Hagd : msubst_ptyp (ζβ ++ ρa ++ ρ0) τg
                  = msubst_ptyp (ζβ ++ ρ) τg).
-    { apply msubst_ptyp_agree. intros X0 HX0.
+    { apply msubst_ptyp_agree. intros α00 HX0.
       rewrite Heqρ.
       rewrite <- app_assoc. rewrite <- (app_assoc _ ζβ ρa ((α, τα) :: ρ0)).
-      assert (HneX : X0 <> α)
+      assert (HneX : α00 <> α)
         by (intros ->; exact (Hαftvτg HX0)).
       rewrite (msubst_lookup_mid_drop _ _ _ HneX). reflexivity. }
     rewrite Hagd. exact Heqn. }
@@ -4773,12 +4775,12 @@ Proof.
       with (((α, τα) :: ζβ) ++ ρa ++ ρ0).
     rewrite (msubst_compose_is_id_r_ext ((α, τα) :: ζβ) Hwf' Hid' Hinc1s Hincs).
     + apply a_inc_equiv_refl. exact Hincs.
-    + intros X0 HX0. simpl in HX0.
-      destruct (AtomSetProperties.In_dec X0 (dom ζβ)) as [Hinζ | Hniζ].
-      * rewrite Hdζ in Hinζ. specialize (Hfβ X0 Hinζ).
+    + intros α00 HX0. simpl in HX0.
+      destruct (AtomSetProperties.In_dec α00 (dom ζβ)) as [Hinζ | Hniζ].
+      * rewrite Hdζ in Hinζ. specialize (Hfβ α00 Hinζ).
         clear - Hfβ. unfold L in Hfβ. simpl_env in *. fsetdec.
-      * assert (HeqX : X0 = α) by (clear - HX0 Hniζ; fsetdec).
-        subst X0. clear - Huq. simpl_env in Huq. solve_uniq.
+      * assert (HeqX : α00 = α) by (clear - HX0 Hniζ; fsetdec).
+        subst α00. clear - Huq. simpl_env in Huq. solve_uniq.
 Qed.
 
 Lemma assign_complete_step : forall m,
@@ -4788,36 +4790,36 @@ Proof.
   intros m IH. unfold assign_complete_at.
   intros F Θ0 Ξ α P ρ Θ Hm Hdecl Hwf Hfα HwfP Hnf Hdomξ Hinc Hwfth Hjoin.
   subst m.
-  destruct Θ0 as [ | [γ b] Θ0' ].
+  destruct Θ0 as [ | [α1 b] Θ0' ].
   { exfalso. destruct Hfα as [Hb | [τ Hb]]; inversion Hb. }
   destruct b as [ | A | Q | | τdef ].
-  - (* head [γ ~ tvar] RIGID. *)
-    destruct (AtomSetProperties.In_dec γ (ftvar_in_pskl P)) as [Hγin | Hγni].
-    + (* γ ∈ ftv(P) : NO RULE fires — the STUCK-CHECK (design doc §9.2,
+  - (* head [α1 ~ tvar] RIGID. *)
+    destruct (AtomSetProperties.In_dec α1 (ftvar_in_pskl P)) as [Hγin | Hγni].
+    + (* α1 ∈ ftv(P) : NO RULE fires — the STUCK-CHECK (design doc §9.2,
          [paper-gap]: the paper never proves the walk cannot reach this
-         head) refutes the solution.  [a_inc] peels γ before reaching α̂
-         ([a_inc_tvar_inv]), so θα̂ is wf BELOW γ; γ survives the solution
+         head) refutes the solution.  [a_inc] peels α1 before reaching α̂
+         ([a_inc_tvar_inv]), so θα̂ is wf BELOW α1; α1 survives the solution
          into θP ([rigid_survives_solution]) while the join confines the
          subject's rigid ftv to θα̂'s scope
          ([ad_pat_consis_rigid_ftv_rev_scoped]) — contradiction. *)
       exfalso.
       (* decompose the competing increment at the rigid head *)
-      destruct (@a_inc_strip_decls_prefix Ξ ((γ, abind_tvar) :: Θ0') ρ Θ
+      destruct (@a_inc_strip_decls_prefix Ξ ((α1, abind_tvar) :: Θ0') ρ Θ
                   Hdecl Hinc)
         as [ρa [ρb [Heqρ [Hdρa Hincb]]]].
       destruct (a_inc_tvar_inv Hincb)
         as [Ξv [Θt [HeqΘ [HsufΞv Hincb']]]].
-      assert (Huq : uniq (Ξ ++ (γ, abind_tvar) :: Θ0'))
+      assert (Huq : uniq (Ξ ++ (α1, abind_tvar) :: Θ0'))
         by (apply a_wf_aenv_uniq; exact Hwf).
       assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
-      assert (Hbγ : binds γ abind_tvar (Ξ ++ (γ, abind_tvar) :: Θ0')).
+      assert (Hbγ : binds α1 abind_tvar (Ξ ++ (α1, abind_tvar) :: Θ0')).
       { apply binds_app_3. left. reflexivity. }
-      assert (HbγΘ : binds γ abind_tvar Θ)
+      assert (HbγΘ : binds α1 abind_tvar Θ)
         by (eapply a_inc_binds_tvar; [ exact Hinc | exact Hbγ ]).
-      assert (HγΘt : γ `notin` dom Θt).
+      assert (Hα1Θt : α1 `notin` dom Θt).
       { rewrite HeqΘ in HuqΘ. clear - HuqΘ.
         simpl_env in HuqΘ. solve_uniq. }
-      (* θα̂ is well-formed in the truncated target Θt, below γ *)
+      (* θα̂ is well-formed in the truncated target Θt, below α1 *)
       assert (Hfα0 : a_flex_tvar Θ0' α).
       { destruct Hfα as [Hb | [τ0 Hb]].
         - apply binds_cons_1 in Hb as [[_ Heq2] | Hb];
@@ -4832,7 +4834,7 @@ Proof.
       assert (Hαρa : α `notin` dom ρa).
       { rewrite Hdρa. clear - Huq HαΘ0'.
         simpl_env in Huq. solve_uniq. }
-      assert (Hwf2 : a_wf_aenv ((Ξ ++ (γ ~ abind_tvar)) ++ Θ0'))
+      assert (Hwf2 : a_wf_aenv ((Ξ ++ (α1 ~ abind_tvar)) ++ Θ0'))
         by (simpl_env; exact Hwf).
       assert (Hwf0' : a_wf_aenv Θ0')
         by (eapply a_wf_aenv_app_r; exact Hwf2).
@@ -4845,49 +4847,49 @@ Proof.
       (* definitions visible in dom Θt are Θt's own, scoped to Θt *)
       assert (HwfΘt : a_wf_aenv Θt).
       { rewrite HeqΘ in Hwfth.
-        assert (Hwtmp : a_wf_aenv ((Ξv ++ (γ ~ abind_tvar)) ++ Θt))
+        assert (Hwtmp : a_wf_aenv ((Ξv ++ (α1 ~ abind_tvar)) ++ Θt))
           by (simpl_env; simpl_env in Hwfth; exact Hwfth).
         eapply a_wf_aenv_app_r; exact Hwtmp. }
-      assert (Hdefs : forall δ τ, binds δ (abind_flex_mono_def τ) Θ ->
-                δ `in` dom Θt -> ftvar_in_ptyp τ [<=] dom Θt).
-      { intros δ τ Hb HδD.
-        assert (Hbt : binds δ (abind_flex_mono_def τ) Θt).
+      assert (Hdefs : forall β1 τ, binds β1 (abind_flex_mono_def τ) Θ ->
+                β1 `in` dom Θt -> ftvar_in_ptyp τ [<=] dom Θt).
+      { intros β1 τ Hb HδD.
+        assert (Hbt : binds β1 (abind_flex_mono_def τ) Θt).
         { rewrite HeqΘ in Hb.
-          assert (Hb2 : binds δ (abind_flex_mono_def τ)
-                    ((Ξv ++ (γ ~ abind_tvar)) ++ Θt))
+          assert (Hb2 : binds β1 (abind_flex_mono_def τ)
+                    ((Ξv ++ (α1 ~ abind_tvar)) ++ Θt))
             by (simpl_env; simpl_env in Hb; exact Hb).
           apply binds_app_iff in Hb2.
           destruct Hb2 as [Hb2 | Hb2]; [ exfalso | exact Hb2 ].
           apply binds_In in Hb2.
           rewrite HeqΘ in HuqΘ.
-          assert (Hu2 : uniq ((Ξv ++ (γ ~ abind_tvar)) ++ Θt))
+          assert (Hu2 : uniq ((Ξv ++ (α1 ~ abind_tvar)) ++ Θt))
             by (simpl_env; simpl_env in HuqΘ; exact HuqΘ).
           apply uniq_app_iff in Hu2. destruct Hu2 as [_ [_ Hdisj]].
           clear - Hdisj Hb2 HδD. unfold disjoint in Hdisj. fsetdec. }
         apply a_wf_ptyp_ftv_dom.
         eapply a_wf_aenv_binds_def_wf_local; [ exact HwfΘt | exact Hbt ]. }
-      (* γ survives the solution into θP … *)
-      assert (HγθP : γ `in` ftvar_in_pskl (msubst_pskl ρ P))
+      (* α1 survives the solution into θP … *)
+      assert (Hα1θP : α1 `in` ftvar_in_pskl (msubst_pskl ρ P))
         by (eapply rigid_survives_solution;
             [ exact Hinc | exact Hwf | exact Hbγ | exact Hγin ]).
       (* … but the join confines the subject's rigid ftv to dom Θt *)
-      assert (HγnS : γ `notin`
+      assert (HγnS : α1 `notin`
                 ftvar_in_uskl (pskl_to_uskl (msubst_pskl ρ P))).
       { eapply ad_pat_consis_rigid_ftv_rev_scoped with (D := dom Θt);
-          [ exact Hwfth | exact HbγΘ | exact HγΘt | exact Hdefs
+          [ exact Hwfth | exact HbγΘ | exact Hα1Θt | exact Hdefs
           | exact Hjoin | ].
         pose proof (ftvar_in_bskl_syn
                       (ptyp_to_pskl (msubst_lookup ρ α))) as Hf1.
         pose proof (ftvar_in_ptyp_to_pskl (msubst_lookup ρ α)) as Hf2.
         clear - Hf1 Hf2 Hftvα. fsetdec. }
       pose proof (ftvar_in_uskl_pskl (msubst_pskl ρ P)) as Hf3.
-      clear - HγnS HγθP Hf3. fsetdec.
-    + (* Assign-SkipRigid proper (γ ∉ ftv P): the same ⇓-truncation as
+      clear - HγnS Hα1θP Hf3. fsetdec.
+    + (* Assign-SkipRigid proper (α1 ∉ ftv P): the same ⇓-truncation as
            SkipTmVar, with the rigid middle re-attached verbatim (no
            semantic-middle obligation). *)
-      assert (Huqf : uniq (Ξ ++ (γ ~ abind_tvar) ++ Θ0'))
+      assert (Huqf : uniq (Ξ ++ (α1 ~ abind_tvar) ++ Θ0'))
         by (apply a_wf_aenv_uniq; exact Hwf).
-      assert (HwfM : a_wf_aenv (Ξ ++ (γ ~ abind_tvar) ++ Θ0'))
+      assert (HwfM : a_wf_aenv (Ξ ++ (α1 ~ abind_tvar) ++ Θ0'))
         by (exact Hwf).
       assert (Hwf' : a_wf_aenv (Ξ ++ Θ0'))
         by (eapply a_wf_aenv_strip_mid; [ exact Hdecl | exact HwfM ]).
@@ -4903,54 +4905,54 @@ Proof.
             [ discriminate | left; exact Hb' ]
           | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
             [ discriminate | right; exists τ0; exact Hb' ] ]. }
-      assert (Hbw : forall (δ : atom) (bb : abind),
-                binds δ bb (Ξ ++ Θ0') ->
-                binds δ bb (Ξ ++ (γ ~ abind_tvar) ++ Θ0')).
-      { intros δ bb Hb. unfold binds in *.
+      assert (Hbw : forall (β1 : atom) (bb : abind),
+                binds β1 bb (Ξ ++ Θ0') ->
+                binds β1 bb (Ξ ++ (α1 ~ abind_tvar) ++ Θ0')).
+      { intros β1 bb Hb. unfold binds in *.
         apply in_app_or in Hb. apply in_or_app.
         destruct Hb as [Hb | Hb];
           [ left; exact Hb | right; simpl; right; exact Hb ]. }
       assert (Hnf' : a_non_flex (Ξ ++ Θ0') P).
       { destruct Hnf as [Hlc Hnfl]. split; [ exact Hlc | ].
         intro Hfl. apply Hnfl.
-        inversion Hfl as [Θf δ Hb | Θf δ τ0 Hb]; subst;
+        inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst;
           [ apply a_flex__var; apply Hbw; exact Hb
           | eapply a_flex__var_def; apply Hbw; exact Hb ]. }
-      (* competing: strip Ξ, invert the γ-var middle *)
-      destruct (@a_inc_strip_decls_prefix Ξ ((γ ~ abind_tvar) ++ Θ0')
+      (* competing: strip Ξ, invert the α1-var middle *)
+      destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_tvar) ++ Θ0')
                   ρ Θ Hdecl Hinc) as [ρa [ρb' [Heqρ [Hdρa Hincxb]]]].
       destruct (a_inc_tvar_inv Hincxb)
         as [Ξv [Θ' [HeqΘ [HsufΞv Hincb]]]].
       assert (HwfΘ' : a_wf_aenv Θ').
       { rewrite HeqΘ in Hwfth.
-        eapply a_wf_aenv_app_r with (Θp := Ξv ++ (γ ~ abind_tvar)).
+        eapply a_wf_aenv_app_r with (Θp := Ξv ++ (α1 ~ abind_tvar)).
         simpl_env. simpl_env in Hwfth. exact Hwfth. }
-      assert (HeqW : (Ξv ++ (γ ~ abind_tvar)) ++ Θ' = Θ)
+      assert (HeqW : (Ξv ++ (α1 ~ abind_tvar)) ++ Θ' = Θ)
         by (rewrite HeqΘ; simpl_env; reflexivity).
       assert (Hincb_n : msubst_compose (aenv_msubst Θ) ρb' ∷ Θ0' ⊑ Θ').
       { pose proof (a_inc_self_downarrow Hincb
-                      (Ξv ++ (γ ~ abind_tvar))) as Hs.
+                      (Ξv ++ (α1 ~ abind_tvar))) as Hs.
         rewrite HeqW in Hs. apply Hs; [ exact Hwfth | exact HuqΘ | exact Hwf0 ]. }
-      assert (Hside : forall Y, Y `in` ftvar_in_pskl P ->
-                Y `in` dom ρ \/ Y `notin` dom (aenv_msubst Θ)).
-      { intros Y HY.
-        destruct (AtomSetProperties.In_dec Y (dom ρ)) as [Hin | Hni];
+      assert (Hside : forall β, β `in` ftvar_in_pskl P ->
+                β `in` dom ρ \/ β `notin` dom (aenv_msubst Θ)).
+      { intros β Hβ.
+        destruct (AtomSetProperties.In_dec β (dom ρ)) as [Hin | Hni];
           [ left; exact Hin | right ].
         intro Hin2. apply aenv_msubst_dom_inv in Hin2.
-        destruct (a_wf_pskl_ftv_tvarish HwfP HY) as [Hemp | Hbt];
+        destruct (a_wf_pskl_ftv_tvarish HwfP Hβ) as [Hemp | Hbt];
           [ clear - Hemp; fsetdec | ].
         destruct Hbt as [Htv | [Hfm | [τ0 Hfd]]].
-        - assert (HtvΘ : binds Y abind_tvar Θ)
+        - assert (HtvΘ : binds β abind_tvar Θ)
             by (eapply a_inc_binds_tvar; [ exact Hinc | exact Htv ]).
           destruct Hin2 as [Hb | [τ1 Hb]];
             (pose proof (binds_unique _ _ _ _ _ HtvΘ Hb
                            (a_wf_aenv_uniq Hwfth)) as Heqb;
              discriminate Heqb).
-        - assert (Hyd : Y `in` dom ρ)
+        - assert (Hyd : β `in` dom ρ)
             by (eapply a_inc_flex_dom;
                 [ exact Hinc | exact Hwf | left; exact Hfm ]).
           contradiction.
-        - assert (Hyd : Y `in` dom ρ)
+        - assert (Hyd : β `in` dom ρ)
             by (eapply a_inc_flex_dom;
                 [ exact Hinc | exact Hwf | right; exists τ0; exact Hfd ]).
           contradiction. }
@@ -4961,7 +4963,7 @@ Proof.
           [ exact Hjoin | exact Hwfth | reflexivity | reflexivity
           | exact Hmona | | ].
         - intros β τ Hbβ Hβd.
-          assert (Hβpre : β `notin` dom (Ξv ++ (γ ~ abind_tvar))).
+          assert (Hβpre : β `notin` dom (Ξv ++ (α1 ~ abind_tvar))).
           { pose proof HuqΘ as Hu2. rewrite HeqΘ in Hu2.
             rewrite <- app_assoc in Hu2.
             apply uniq_app_iff in Hu2. destruct Hu2 as [_ [_ Hdisj]].
@@ -4984,18 +4986,18 @@ Proof.
             destruct Hfα0 as [Hb | [τ0 Hb]];
               [ right; left; exact Hb | right; right; exists τ0; exact Hb ]. }
           apply a_wf_ptyp_ftv_dom. exact Hwfα. }
-      assert (Hgr : forall X, X `in` dom ρa ->
-                 ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa X)) [<=] dom Θ').
-      { intros X HX.
-        assert (HXP : X `in` ftvar_in_pskl P)
-          by (apply Hdomξ; rewrite <- Hdρa; exact HX).
-        assert (HXρ : X `in` dom ρ)
-          by (rewrite Heqρ; rewrite dom_app; clear - HX; fsetdec).
-        assert (Heqlk : ⇓ᵗ[ Θ ] (msubst_lookup ρa X)
-                       = msubst_lookup (msubst_compose (aenv_msubst Θ) ρ) X).
-        { rewrite (msubst_lookup_compose (aenv_msubst Θ) ρ (or_introl HXρ)).
+      assert (Hgr : forall α0, α0 `in` dom ρa ->
+                 ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa α0)) [<=] dom Θ').
+      { intros α0 Hα0.
+        assert (HXP : α0 `in` ftvar_in_pskl P)
+          by (apply Hdomξ; rewrite <- Hdρa; exact Hα0).
+        assert (Hα0ρ : α0 `in` dom ρ)
+          by (rewrite Heqρ; rewrite dom_app; clear - Hα0; fsetdec).
+        assert (Heqlk : ⇓ᵗ[ Θ ] (msubst_lookup ρa α0)
+                       = msubst_lookup (msubst_compose (aenv_msubst Θ) ρ) α0).
+        { rewrite (msubst_lookup_compose (aenv_msubst Θ) ρ (or_introl Hα0ρ)).
           f_equal. rewrite Heqρ. symmetry.
-          apply msubst_lookup_app_in; exact HX. }
+          apply msubst_lookup_app_in; exact Hα0. }
         rewrite Heqlk.
         eapply AtomSetProperties.subset_trans;
           [ apply (msubst_pskl_ftv_lower
@@ -5006,7 +5008,7 @@ Proof.
         exact Hb. }
       assert (Hinc_sub0 : (msubst_compose (aenv_msubst Θ) ρa)
                               ++ (msubst_compose (aenv_msubst Θ) ρb') ∷ (Ξ ++ Θ0') ⊑ Θ').
-      { assert (HincR : ρa ++ ρb' ∷ (Ξ ++ (γ ~ abind_tvar) ++ Θ0') ⊑ Θ)
+      { assert (HincR : ρa ++ ρb' ∷ (Ξ ++ (α1 ~ abind_tvar) ++ Θ0') ⊑ Θ)
           by (rewrite <- Heqρ; exact Hinc).
         eapply a_inc_downarrow_prefix;
           [ exact Hdecl | exact HincR | exact Huqf | exact Hdρa
@@ -5026,11 +5028,11 @@ Proof.
         eapply a_inc_lookup_wf; [ exact Hincb | exact Hwf0 | exact Hbtα0 ]. }
       assert (Hftvα : ftvar_in_ptyp (msubst_lookup ρ α) [<=] dom Θ')
         by (apply a_wf_ptyp_ftv_dom; exact Hwfα').
-      assert (Hvisα : forall Y, Y `in` ftvar_in_ptyp (msubst_lookup ρ α) ->
-                a_binds_tvar Y Θ).
-      { intros Y HY.
-        assert (HbtY' : a_binds_tvar Y Θ')
-          by (eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfα' | exact HY ]).
+      assert (Hvisα : forall β, β `in` ftvar_in_ptyp (msubst_lookup ρ α) ->
+                a_binds_tvar β Θ).
+      { intros β Hβ.
+        assert (HbtY' : a_binds_tvar β Θ')
+          by (eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfα' | exact Hβ ]).
         destruct HbtY' as [Hb | [Hb | [τ0 Hb]]];
           [ left | right; left | right; right; exists τ0 ];
           apply Hsub'; exact Hb. }
@@ -5060,15 +5062,15 @@ Proof.
                    (⇓ᵗ[ Θ ] (msubst_lookup ρ α))))).
       { eapply ad_pat_consis_strengthen;
           [ exact Hj2 | exact HuqΘ | exact HwfΘ' | exact Hsub' | | ].
-        - intros Z HZ. rewrite ftvar_in_uskl_pskl in HZ.
-          clear - HO2 HZ. fsetdec.
-        - intros Z HZ. rewrite ftvar_in_bskl_syn in HZ.
-          rewrite ftvar_in_ptyp_to_pskl in HZ.
-          rewrite Hddα in HZ.
+        - intros α2 Hα2. rewrite ftvar_in_uskl_pskl in Hα2.
+          clear - HO2 Hα2. fsetdec.
+        - intros α2 Hα2. rewrite ftvar_in_bskl_syn in Hα2.
+          rewrite ftvar_in_ptyp_to_pskl in Hα2.
+          rewrite Hddα in Hα2.
           assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ' ] (msubst_lookup ρ α)))
             by (apply a_wf_ptyp_downarrow_mono;
                 [ exact HwfΘ' | exact Hwfα' | exact Hmona ]).
-          apply a_wf_ptyp_ftv_dom in Hwfd. clear - Hwfd HZ. fsetdec. }
+          apply a_wf_ptyp_ftv_dom in Hwfd. clear - Hwfd Hα2. fsetdec. }
       assert (Hαρdom : α `in` dom ρ).
       { rewrite Heqρ. rewrite dom_app.
         assert (Hαb : α `in` dom ρb')
@@ -5086,7 +5088,7 @@ Proof.
       (* ---- the μ-IH at the truncated problem : V is exactly constant ---- *)
       assert (Hlt : mu_lt
           (mu_assign Θ' (msubst_compose (aenv_msubst Θ) ρ) α P Ξ Θ0')
-          (mu_assign Θ ρ α P Ξ ((γ, abind_tvar) :: Θ0'))).
+          (mu_assign Θ ρ α P Ξ ((α1, abind_tvar) :: Θ0'))).
       { unfold mu_assign. apply mu_lt_intro. right. split.
         - unfold V_assign, Vpskl, Vvar.
           rewrite (msubst_pskl_compose (aenv_msubst Θ) ρ P Hside).
@@ -5099,12 +5101,12 @@ Proof.
           reflexivity.
         - left. simpl. lia. }
       destruct (IH _ Hlt) as [_ [_ HaIH]].
-      destruct (HaIH (add γ F) Θ0' Ξ α P
+      destruct (HaIH (add α1 F) Θ0' Ξ α P
                      (msubst_compose (aenv_msubst Θ) ρ) Θ' eq_refl
                      Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hinc_sub HwfΘ'
                      Hjoin_sub)
         as [Θ1 [Ha' Hopt'']].
-      exists ((γ ~ abind_tvar) ++ Θ1). split.
+      exists ((α1 ~ abind_tvar) ++ Θ1). split.
       { apply a_assign__skip_rigid; [ exact Hγni | exact Ha' ]. }
       (* ---- optimality : the OPT twin's two conjuncts ---- *)
       intros ρ1 Hid Hinc1.
@@ -5113,16 +5115,16 @@ Proof.
             [ exact Hdecl | exact Huqf | exact Hid | exact Hinc1 ]).
       destruct (Hopt'' ρ1 Hid Hinc1_s) as [ζ' [Hζ' Hie']].
       exists ζ'. split.
-      * (* ζ' ∷ ((γ~tvar)++Θ1) ⊑ Θ  via a_inc__tvar *)
+      * (* ζ' ∷ ((α1~tvar)++Θ1) ⊑ Θ  via a_inc__tvar *)
         rewrite HeqΘ. apply a_inc__tvar; [ exact Hζ' | exact HsufΞv ].
       * (* factoring: mid_insert_tvar over ⇓ρ, then ⇓ρ→ρ *)
-        destruct (@a_inc_strip_decls_prefix Ξ ((γ ~ abind_tvar) ++ Θ0')
-                    ρ1 ((γ ~ abind_tvar) ++ Θ1) Hdecl Hinc1)
+        destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_tvar) ++ Θ0')
+                    ρ1 ((α1 ~ abind_tvar) ++ Θ1) Hdecl Hinc1)
           as [ρ1a [ρ1b' [Heqρ1' [Hdρ1a Hinc1x]]]].
-        assert (Hmi : a_inc_equiv (Ξ ++ (γ ~ abind_tvar) ++ Θ0')
+        assert (Hmi : a_inc_equiv (Ξ ++ (α1 ~ abind_tvar) ++ Θ0')
                         (msubst_compose (aenv_msubst Θ) ρ)
                         (msubst_compose ζ' ρ1)
-                        (Ξv ++ (γ ~ abind_tvar) ++ Θ')).
+                        (Ξv ++ (α1 ~ abind_tvar) ++ Θ')).
         { rewrite Heqρ. rewrite (msubst_compose_app (aenv_msubst Θ) ρa ρb').
           rewrite Heqρ1'. rewrite (msubst_compose_app ζ' ρ1a ρ1b').
           apply a_inc_equiv_mid_insert_tvar;
@@ -5140,26 +5142,26 @@ Proof.
         pose proof (a_inc_equiv_self_downarrow Hinc (@nil (atom * abind)))
           as Hself.
         simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ].
-  - (* head [γ ~ var_typ A] : Assign-SkipTmVar — the EX+OPT fusion of the
+  - (* head [α1 ~ var_typ A] : Assign-SkipTmVar — the EX+OPT fusion of the
        CLOSED OPT twin [skip_tm_var_case] (prop_consis_complete.v:990):
        ⇓-normalize the competing increment below the middle, strengthen
        the join to the truncated target, recurse through the μ-IH (V is
        exactly constant by ⇓-idempotence, §1e), rebuild with the semantic
        middle. *)
-    assert (Huqf : uniq (Ξ ++ (γ ~ abind_var_typ A) ++ Θ0'))
+    assert (Huqf : uniq (Ξ ++ (α1 ~ abind_var_typ A) ++ Θ0'))
       by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (HwfM : a_wf_aenv (Ξ ++ (γ ~ abind_var_typ A) ++ Θ0'))
+    assert (HwfM : a_wf_aenv (Ξ ++ (α1 ~ abind_var_typ A) ++ Θ0'))
       by (exact Hwf).
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0'))
       by (eapply a_wf_aenv_strip_mid; [ exact Hdecl | exact HwfM ]).
     assert (Huq' : uniq (Ξ ++ Θ0')) by (apply a_wf_aenv_uniq; exact Hwf').
     assert (Hwf0 : a_wf_aenv Θ0') by (eapply a_wf_aenv_app_r; exact Hwf').
     assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
-    assert (Hγfr : γ `notin` ftvar_in_pskl P).
+    assert (Hγfr : α1 `notin` ftvar_in_pskl P).
     { intro Hx. destruct (a_wf_pskl_ftv_tvarish HwfP Hx) as [Hemp | Hbt].
       - clear - Hemp. fsetdec.
-      - assert (Hbx : binds γ (abind_var_typ A)
-                  (Ξ ++ (γ ~ abind_var_typ A) ++ Θ0'))
+      - assert (Hbx : binds α1 (abind_var_typ A)
+                  (Ξ ++ (α1 ~ abind_var_typ A) ++ Θ0'))
           by (apply binds_app_3; left; reflexivity).
         destruct Hbt as [Hb | [Hb | [τ Hb]]];
           (pose proof (binds_unique _ _ _ _ _ Hb Hbx
@@ -5173,54 +5175,54 @@ Proof.
           [ discriminate | left; exact Hb' ]
         | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
           [ discriminate | right; exists τ0; exact Hb' ] ]. }
-    assert (Hbw : forall (δ : atom) (bb : abind),
-              binds δ bb (Ξ ++ Θ0') ->
-              binds δ bb (Ξ ++ (γ ~ abind_var_typ A) ++ Θ0')).
-    { intros δ bb Hb. unfold binds in *.
+    assert (Hbw : forall (β1 : atom) (bb : abind),
+              binds β1 bb (Ξ ++ Θ0') ->
+              binds β1 bb (Ξ ++ (α1 ~ abind_var_typ A) ++ Θ0')).
+    { intros β1 bb Hb. unfold binds in *.
       apply in_app_or in Hb. apply in_or_app.
       destruct Hb as [Hb | Hb];
         [ left; exact Hb | right; simpl; right; exact Hb ]. }
     assert (Hnf' : a_non_flex (Ξ ++ Θ0') P).
     { destruct Hnf as [Hlc Hnfl]. split; [ exact Hlc | ].
       intro Hfl. apply Hnfl.
-      inversion Hfl as [Θf δ Hb | Θf δ τ0 Hb]; subst;
+      inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst;
         [ apply a_flex__var; apply Hbw; exact Hb
         | eapply a_flex__var_def; apply Hbw; exact Hb ]. }
-    (* competing: strip Ξ, invert the γ-var middle *)
-    destruct (@a_inc_strip_decls_prefix Ξ ((γ ~ abind_var_typ A) ++ Θ0')
+    (* competing: strip Ξ, invert the α1-var middle *)
+    destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_typ A) ++ Θ0')
                 ρ Θ Hdecl Hinc) as [ρa [ρb' [Heqρ [Hdρa Hincxb]]]].
     destruct (a_inc_var_inv Hincxb)
       as [Ξv [A' [Θ' [HeqΘ [HeqA' [HsufΞv Hincb]]]]]].
     assert (HwfΘ' : a_wf_aenv Θ').
     { rewrite HeqΘ in Hwfth.
-      eapply a_wf_aenv_app_r with (Θp := Ξv ++ (γ ~ abind_var_typ A')).
+      eapply a_wf_aenv_app_r with (Θp := Ξv ++ (α1 ~ abind_var_typ A')).
       simpl_env. simpl_env in Hwfth. exact Hwfth. }
-    assert (HeqW : (Ξv ++ (γ ~ abind_var_typ A')) ++ Θ' = Θ)
+    assert (HeqW : (Ξv ++ (α1 ~ abind_var_typ A')) ++ Θ' = Θ)
       by (rewrite HeqΘ; simpl_env; reflexivity).
     assert (Hincb_n : msubst_compose (aenv_msubst Θ) ρb' ∷ Θ0' ⊑ Θ').
     { pose proof (a_inc_self_downarrow Hincb
-                    (Ξv ++ (γ ~ abind_var_typ A'))) as Hs.
+                    (Ξv ++ (α1 ~ abind_var_typ A'))) as Hs.
       rewrite HeqW in Hs. apply Hs; [ exact Hwfth | exact HuqΘ | exact Hwf0 ]. }
-    assert (Hside : forall Y, Y `in` ftvar_in_pskl P ->
-              Y `in` dom ρ \/ Y `notin` dom (aenv_msubst Θ)).
-    { intros Y HY.
-      destruct (AtomSetProperties.In_dec Y (dom ρ)) as [Hin | Hni];
+    assert (Hside : forall β, β `in` ftvar_in_pskl P ->
+              β `in` dom ρ \/ β `notin` dom (aenv_msubst Θ)).
+    { intros β Hβ.
+      destruct (AtomSetProperties.In_dec β (dom ρ)) as [Hin | Hni];
         [ left; exact Hin | right ].
       intro Hin2. apply aenv_msubst_dom_inv in Hin2.
-      destruct (a_wf_pskl_ftv_tvarish HwfP HY) as [Hemp | Hbt];
+      destruct (a_wf_pskl_ftv_tvarish HwfP Hβ) as [Hemp | Hbt];
         [ clear - Hemp; fsetdec | ].
       destruct Hbt as [Htv | [Hfm | [τ0 Hfd]]].
-      - assert (HtvΘ : binds Y abind_tvar Θ)
+      - assert (HtvΘ : binds β abind_tvar Θ)
           by (eapply a_inc_binds_tvar; [ exact Hinc | exact Htv ]).
         destruct Hin2 as [Hb | [τ1 Hb]];
           (pose proof (binds_unique _ _ _ _ _ HtvΘ Hb
                          (a_wf_aenv_uniq Hwfth)) as Heqb;
            discriminate Heqb).
-      - assert (Hyd : Y `in` dom ρ)
+      - assert (Hyd : β `in` dom ρ)
           by (eapply a_inc_flex_dom;
               [ exact Hinc | exact Hwf | left; exact Hfm ]).
         contradiction.
-      - assert (Hyd : Y `in` dom ρ)
+      - assert (Hyd : β `in` dom ρ)
           by (eapply a_inc_flex_dom;
               [ exact Hinc | exact Hwf | right; exists τ0; exact Hfd ]).
         contradiction. }
@@ -5231,7 +5233,7 @@ Proof.
         [ exact Hjoin | exact Hwfth | reflexivity | reflexivity
         | exact Hmona | | ].
       - intros β τ Hbβ Hβd.
-        assert (Hβpre : β `notin` dom (Ξv ++ (γ ~ abind_var_typ A'))).
+        assert (Hβpre : β `notin` dom (Ξv ++ (α1 ~ abind_var_typ A'))).
         { pose proof HuqΘ as Hu2. rewrite HeqΘ in Hu2.
           rewrite <- app_assoc in Hu2.
           apply uniq_app_iff in Hu2. destruct Hu2 as [_ [_ Hdisj]].
@@ -5254,18 +5256,18 @@ Proof.
           destruct Hfα0 as [Hb | [τ0 Hb]];
             [ right; left; exact Hb | right; right; exists τ0; exact Hb ]. }
         apply a_wf_ptyp_ftv_dom. exact Hwfα. }
-    assert (Hgr : forall X, X `in` dom ρa ->
-               ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa X)) [<=] dom Θ').
-    { intros X HX.
-      assert (HXP : X `in` ftvar_in_pskl P)
-        by (apply Hdomξ; rewrite <- Hdρa; exact HX).
-      assert (HXρ : X `in` dom ρ)
-        by (rewrite Heqρ; rewrite dom_app; clear - HX; fsetdec).
-      assert (Heqlk : ⇓ᵗ[ Θ ] (msubst_lookup ρa X)
-                     = msubst_lookup (msubst_compose (aenv_msubst Θ) ρ) X).
-      { rewrite (msubst_lookup_compose (aenv_msubst Θ) ρ (or_introl HXρ)).
+    assert (Hgr : forall α0, α0 `in` dom ρa ->
+               ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa α0)) [<=] dom Θ').
+    { intros α0 Hα0.
+      assert (HXP : α0 `in` ftvar_in_pskl P)
+        by (apply Hdomξ; rewrite <- Hdρa; exact Hα0).
+      assert (Hα0ρ : α0 `in` dom ρ)
+        by (rewrite Heqρ; rewrite dom_app; clear - Hα0; fsetdec).
+      assert (Heqlk : ⇓ᵗ[ Θ ] (msubst_lookup ρa α0)
+                     = msubst_lookup (msubst_compose (aenv_msubst Θ) ρ) α0).
+      { rewrite (msubst_lookup_compose (aenv_msubst Θ) ρ (or_introl Hα0ρ)).
         f_equal. rewrite Heqρ. symmetry.
-        apply msubst_lookup_app_in; exact HX. }
+        apply msubst_lookup_app_in; exact Hα0. }
       rewrite Heqlk.
       eapply AtomSetProperties.subset_trans;
         [ apply (msubst_pskl_ftv_lower
@@ -5276,7 +5278,7 @@ Proof.
       exact Hb. }
     assert (Hinc_sub0 : (msubst_compose (aenv_msubst Θ) ρa)
                             ++ (msubst_compose (aenv_msubst Θ) ρb') ∷ (Ξ ++ Θ0') ⊑ Θ').
-    { assert (HincR : ρa ++ ρb' ∷ (Ξ ++ (γ ~ abind_var_typ A) ++ Θ0') ⊑ Θ)
+    { assert (HincR : ρa ++ ρb' ∷ (Ξ ++ (α1 ~ abind_var_typ A) ++ Θ0') ⊑ Θ)
         by (rewrite <- Heqρ; exact Hinc).
       eapply a_inc_downarrow_prefix;
         [ exact Hdecl | exact HincR | exact Huqf | exact Hdρa
@@ -5296,11 +5298,11 @@ Proof.
       eapply a_inc_lookup_wf; [ exact Hincb | exact Hwf0 | exact Hbtα0 ]. }
     assert (Hftvα : ftvar_in_ptyp (msubst_lookup ρ α) [<=] dom Θ')
       by (apply a_wf_ptyp_ftv_dom; exact Hwfα').
-    assert (Hvisα : forall Y, Y `in` ftvar_in_ptyp (msubst_lookup ρ α) ->
-              a_binds_tvar Y Θ).
-    { intros Y HY.
-      assert (HbtY' : a_binds_tvar Y Θ')
-        by (eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfα' | exact HY ]).
+    assert (Hvisα : forall β, β `in` ftvar_in_ptyp (msubst_lookup ρ α) ->
+              a_binds_tvar β Θ).
+    { intros β Hβ.
+      assert (HbtY' : a_binds_tvar β Θ')
+        by (eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfα' | exact Hβ ]).
       destruct HbtY' as [Hb | [Hb | [τ0 Hb]]];
         [ left | right; left | right; right; exists τ0 ];
         apply Hsub'; exact Hb. }
@@ -5330,15 +5332,15 @@ Proof.
                  (⇓ᵗ[ Θ ] (msubst_lookup ρ α))))).
     { eapply ad_pat_consis_strengthen;
         [ exact Hj2 | exact HuqΘ | exact HwfΘ' | exact Hsub' | | ].
-      - intros Z HZ. rewrite ftvar_in_uskl_pskl in HZ.
-        clear - HO2 HZ. fsetdec.
-      - intros Z HZ. rewrite ftvar_in_bskl_syn in HZ.
-        rewrite ftvar_in_ptyp_to_pskl in HZ.
-        rewrite Hddα in HZ.
+      - intros α2 Hα2. rewrite ftvar_in_uskl_pskl in Hα2.
+        clear - HO2 Hα2. fsetdec.
+      - intros α2 Hα2. rewrite ftvar_in_bskl_syn in Hα2.
+        rewrite ftvar_in_ptyp_to_pskl in Hα2.
+        rewrite Hddα in Hα2.
         assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ' ] (msubst_lookup ρ α)))
           by (apply a_wf_ptyp_downarrow_mono;
               [ exact HwfΘ' | exact Hwfα' | exact Hmona ]).
-        apply a_wf_ptyp_ftv_dom in Hwfd. clear - Hwfd HZ. fsetdec. }
+        apply a_wf_ptyp_ftv_dom in Hwfd. clear - Hwfd Hα2. fsetdec. }
     assert (Hαρdom : α `in` dom ρ).
     { rewrite Heqρ. rewrite dom_app.
       assert (Hαb : α `in` dom ρb')
@@ -5356,7 +5358,7 @@ Proof.
     (* ---- the μ-IH at the truncated problem : V is exactly constant ---- *)
     assert (Hlt : mu_lt
         (mu_assign Θ' (msubst_compose (aenv_msubst Θ) ρ) α P Ξ Θ0')
-        (mu_assign Θ ρ α P Ξ ((γ, abind_var_typ A) :: Θ0'))).
+        (mu_assign Θ ρ α P Ξ ((α1, abind_var_typ A) :: Θ0'))).
     { unfold mu_assign. apply mu_lt_intro. right. split.
       - unfold V_assign, Vpskl, Vvar.
         rewrite (msubst_pskl_compose (aenv_msubst Θ) ρ P Hside).
@@ -5369,12 +5371,12 @@ Proof.
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [_ HaIH]].
-    destruct (HaIH (add γ F) Θ0' Ξ α P
+    destruct (HaIH (add α1 F) Θ0' Ξ α P
                    (msubst_compose (aenv_msubst Θ) ρ) Θ' eq_refl
                    Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hinc_sub HwfΘ'
                    Hjoin_sub)
       as [Θ1 [Ha' Hopt'']].
-    exists ((γ ~ abind_var_typ A) ++ Θ1). split.
+    exists ((α1 ~ abind_var_typ A) ++ Θ1). split.
     { apply a_assign__skip_tm_var. exact Ha'. }
     (* ---- optimality : the OPT twin's two conjuncts ---- *)
     intros ρ1 Hid Hinc1.
@@ -5383,9 +5385,9 @@ Proof.
           [ exact Hdecl | exact Hid | exact Hinc1 ]).
     destruct (Hopt'' ρ1 Hid Hinc1_s) as [ζ' [Hζ' Hie']].
     exists ζ'. split.
-    + (* ζ' ∷ ((γ:A)++Θ1) ⊑ Θ  via a_inc__var *)
+    + (* ζ' ∷ ((α1:A)++Θ1) ⊑ Θ  via a_inc__var *)
       rewrite HeqΘ. apply a_inc__var; [ exact Hζ' | | exact HsufΞv ].
-      assert (HwfaΘ0x : a_wf_aenv ((γ ~ abind_var_typ A) ++ Θ0'))
+      assert (HwfaΘ0x : a_wf_aenv ((α1 ~ abind_var_typ A) ++ Θ0'))
         by (eapply a_wf_aenv_app_r; exact Hwf).
       destruct (a_wf_aenv_var_typ_inv HwfaΘ0x) as [_ [HwfQ0 _]].
       assert (HwfQ : a_wf_ptyp (Ξ ++ Θ0') A)
@@ -5407,52 +5409,52 @@ Proof.
         in Hmid.
       assert (Hag : msubst_ptyp (msubst_compose (aenv_msubst Θ) ρ) A
                   = msubst_ptyp (msubst_compose (aenv_msubst Θ) ρb') A).
-      { apply msubst_ptyp_agree. intros X HXQ.
+      { apply msubst_ptyp_agree. intros α0 HXQ.
         rewrite Heqρ. rewrite msubst_compose_app.
         apply msubst_lookup_app_notin.
         rewrite dom_msubst_compose. rewrite Hdρa.
-        assert (HXΘ0 : X `in` dom Θ0')
+        assert (Hα0Θ0 : α0 `in` dom Θ0')
           by (apply a_wf_ptyp_ftv_dom in HwfQ0;
               clear - HwfQ0 HXQ; fsetdec).
-        clear - Huqf HXΘ0. simpl_env in Huqf. solve_uniq. }
+        clear - Huqf Hα0Θ0. simpl_env in Huqf. solve_uniq. }
       rewrite Hag in Hmid.
       eapply a_tyequiv__trans; [ exact HeqA' | ].
       eapply a_tyequiv__trans; [ | exact Hmid ].
       apply a_tyequiv__sym.
       eapply msubst_compose_downarrow_tyequiv
-        with (Θpre := Ξv ++ (γ ~ abind_var_typ A'));
+        with (Θpre := Ξv ++ (α1 ~ abind_var_typ A'));
         [ exact (eq_sym HeqW) | exact HuqΘ | exact Hwfth
         | exact HwfΘ' | eapply a_inc_msubst_lc; exact Hincb
-        | intros X HXd;
+        | intros α0 HXd;
           destruct (a_inc_dom_flex Hincb HXd) as [Hb | [τ0 Hb]];
           (eapply a_inc_lookup_wf; [ exact Hincb | exact Hwf0 | ]);
           [ right; left; exact Hb | right; right; exists τ0; exact Hb ]
         | exact HlcQ ].
     + (* factoring: mid_insert_var over ⇓ρ, then ⇓ρ→ρ via self_downarrow *)
-      assert (HwfaΘ0x : a_wf_aenv ((γ ~ abind_var_typ A) ++ Θ0'))
+      assert (HwfaΘ0x : a_wf_aenv ((α1 ~ abind_var_typ A) ++ Θ0'))
         by (eapply a_wf_aenv_app_r; exact Hwf).
       destruct (a_wf_aenv_var_typ_inv HwfaΘ0x) as [_ [HwfQ0 _]].
       assert (HlcQ : lc_ptyp A) by (eapply a_wf_ptyp_lc; exact HwfQ0).
-      destruct (@a_inc_strip_decls_prefix Ξ ((γ ~ abind_var_typ A) ++ Θ0')
-                  ρ1 ((γ ~ abind_var_typ A) ++ Θ1) Hdecl Hinc1)
+      destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_typ A) ++ Θ0')
+                  ρ1 ((α1 ~ abind_var_typ A) ++ Θ1) Hdecl Hinc1)
         as [ρ1a [ρ1b' [Heqρ1' [Hdρ1a Hinc1x]]]].
       assert (Hmiddle : Θ' ⊢ A' ≡ᵗ
                 msubst_ptyp (msubst_compose (aenv_msubst Θ) ρb') A).
       { eapply a_tyequiv__trans; [ exact HeqA' | ].
         apply a_tyequiv__sym.
         eapply msubst_compose_downarrow_tyequiv
-          with (Θpre := Ξv ++ (γ ~ abind_var_typ A'));
+          with (Θpre := Ξv ++ (α1 ~ abind_var_typ A'));
           [ exact (eq_sym HeqW) | exact HuqΘ | exact Hwfth | exact HwfΘ'
           | eapply a_inc_msubst_lc; exact Hincb
-          | intros X HXd;
+          | intros α0 HXd;
             destruct (a_inc_dom_flex Hincb HXd) as [Hb | [τ0 Hb]];
             (eapply a_inc_lookup_wf; [ exact Hincb | exact Hwf0 | ]);
             [ right; left; exact Hb | right; right; exists τ0; exact Hb ]
           | exact HlcQ ]. }
-      assert (Hmi : a_inc_equiv (Ξ ++ (γ ~ abind_var_typ A) ++ Θ0')
+      assert (Hmi : a_inc_equiv (Ξ ++ (α1 ~ abind_var_typ A) ++ Θ0')
                       (msubst_compose (aenv_msubst Θ) ρ)
                       (msubst_compose ζ' ρ1)
-                      (Ξv ++ (γ ~ abind_var_typ A') ++ Θ')).
+                      (Ξv ++ (α1 ~ abind_var_typ A') ++ Θ')).
       { rewrite Heqρ. rewrite (msubst_compose_app (aenv_msubst Θ) ρa ρb').
         rewrite Heqρ1'. rewrite (msubst_compose_app ζ' ρ1a ρ1b').
         apply a_inc_equiv_mid_insert_var;
@@ -5470,22 +5472,22 @@ Proof.
       pose proof (a_inc_equiv_self_downarrow Hinc (@nil (atom * abind)))
         as Hself.
       simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ].
-  - (* head [γ ~ var_skl Q] : Assign-SkipTmSkl — as SkipTmVar with the
+  - (* head [α1 ~ var_skl Q] : Assign-SkipTmSkl — as SkipTmVar with the
        ≡ˢ semantic middle throughout. *)
-    assert (Huqf : uniq (Ξ ++ (γ ~ abind_var_skl Q) ++ Θ0'))
+    assert (Huqf : uniq (Ξ ++ (α1 ~ abind_var_skl Q) ++ Θ0'))
       by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (HwfM : a_wf_aenv (Ξ ++ (γ ~ abind_var_skl Q) ++ Θ0'))
+    assert (HwfM : a_wf_aenv (Ξ ++ (α1 ~ abind_var_skl Q) ++ Θ0'))
       by (exact Hwf).
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0'))
       by (eapply a_wf_aenv_strip_mid; [ exact Hdecl | exact HwfM ]).
     assert (Huq' : uniq (Ξ ++ Θ0')) by (apply a_wf_aenv_uniq; exact Hwf').
     assert (Hwf0 : a_wf_aenv Θ0') by (eapply a_wf_aenv_app_r; exact Hwf').
     assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
-    assert (Hγfr : γ `notin` ftvar_in_pskl P).
+    assert (Hγfr : α1 `notin` ftvar_in_pskl P).
     { intro Hx. destruct (a_wf_pskl_ftv_tvarish HwfP Hx) as [Hemp | Hbt].
       - clear - Hemp. fsetdec.
-      - assert (Hbx : binds γ (abind_var_skl Q)
-                  (Ξ ++ (γ ~ abind_var_skl Q) ++ Θ0'))
+      - assert (Hbx : binds α1 (abind_var_skl Q)
+                  (Ξ ++ (α1 ~ abind_var_skl Q) ++ Θ0'))
           by (apply binds_app_3; left; reflexivity).
         destruct Hbt as [Hb | [Hb | [τ Hb]]];
           (pose proof (binds_unique _ _ _ _ _ Hb Hbx
@@ -5499,54 +5501,54 @@ Proof.
           [ discriminate | left; exact Hb' ]
         | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
           [ discriminate | right; exists τ0; exact Hb' ] ]. }
-    assert (Hbw : forall (δ : atom) (bb : abind),
-              binds δ bb (Ξ ++ Θ0') ->
-              binds δ bb (Ξ ++ (γ ~ abind_var_skl Q) ++ Θ0')).
-    { intros δ bb Hb. unfold binds in *.
+    assert (Hbw : forall (β1 : atom) (bb : abind),
+              binds β1 bb (Ξ ++ Θ0') ->
+              binds β1 bb (Ξ ++ (α1 ~ abind_var_skl Q) ++ Θ0')).
+    { intros β1 bb Hb. unfold binds in *.
       apply in_app_or in Hb. apply in_or_app.
       destruct Hb as [Hb | Hb];
         [ left; exact Hb | right; simpl; right; exact Hb ]. }
     assert (Hnf' : a_non_flex (Ξ ++ Θ0') P).
     { destruct Hnf as [Hlc Hnfl]. split; [ exact Hlc | ].
       intro Hfl. apply Hnfl.
-      inversion Hfl as [Θf δ Hb | Θf δ τ0 Hb]; subst;
+      inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst;
         [ apply a_flex__var; apply Hbw; exact Hb
         | eapply a_flex__var_def; apply Hbw; exact Hb ]. }
-    (* competing: strip Ξ, invert the γ-var middle *)
-    destruct (@a_inc_strip_decls_prefix Ξ ((γ ~ abind_var_skl Q) ++ Θ0')
+    (* competing: strip Ξ, invert the α1-var middle *)
+    destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_skl Q) ++ Θ0')
                 ρ Θ Hdecl Hinc) as [ρa [ρb' [Heqρ [Hdρa Hincxb]]]].
     destruct (a_inc_var_skl_inv Hincxb)
       as [Ξv [Q' [Θ' [HeqΘ [HeqQ' [HsufΞv Hincb]]]]]].
     assert (HwfΘ' : a_wf_aenv Θ').
     { rewrite HeqΘ in Hwfth.
-      eapply a_wf_aenv_app_r with (Θp := Ξv ++ (γ ~ abind_var_skl Q')).
+      eapply a_wf_aenv_app_r with (Θp := Ξv ++ (α1 ~ abind_var_skl Q')).
       simpl_env. simpl_env in Hwfth. exact Hwfth. }
-    assert (HeqW : (Ξv ++ (γ ~ abind_var_skl Q')) ++ Θ' = Θ)
+    assert (HeqW : (Ξv ++ (α1 ~ abind_var_skl Q')) ++ Θ' = Θ)
       by (rewrite HeqΘ; simpl_env; reflexivity).
     assert (Hincb_n : msubst_compose (aenv_msubst Θ) ρb' ∷ Θ0' ⊑ Θ').
     { pose proof (a_inc_self_downarrow Hincb
-                    (Ξv ++ (γ ~ abind_var_skl Q'))) as Hs.
+                    (Ξv ++ (α1 ~ abind_var_skl Q'))) as Hs.
       rewrite HeqW in Hs. apply Hs; [ exact Hwfth | exact HuqΘ | exact Hwf0 ]. }
-    assert (Hside : forall Y, Y `in` ftvar_in_pskl P ->
-              Y `in` dom ρ \/ Y `notin` dom (aenv_msubst Θ)).
-    { intros Y HY.
-      destruct (AtomSetProperties.In_dec Y (dom ρ)) as [Hin | Hni];
+    assert (Hside : forall β, β `in` ftvar_in_pskl P ->
+              β `in` dom ρ \/ β `notin` dom (aenv_msubst Θ)).
+    { intros β Hβ.
+      destruct (AtomSetProperties.In_dec β (dom ρ)) as [Hin | Hni];
         [ left; exact Hin | right ].
       intro Hin2. apply aenv_msubst_dom_inv in Hin2.
-      destruct (a_wf_pskl_ftv_tvarish HwfP HY) as [Hemp | Hbt];
+      destruct (a_wf_pskl_ftv_tvarish HwfP Hβ) as [Hemp | Hbt];
         [ clear - Hemp; fsetdec | ].
       destruct Hbt as [Htv | [Hfm | [τ0 Hfd]]].
-      - assert (HtvΘ : binds Y abind_tvar Θ)
+      - assert (HtvΘ : binds β abind_tvar Θ)
           by (eapply a_inc_binds_tvar; [ exact Hinc | exact Htv ]).
         destruct Hin2 as [Hb | [τ1 Hb]];
           (pose proof (binds_unique _ _ _ _ _ HtvΘ Hb
                          (a_wf_aenv_uniq Hwfth)) as Heqb;
            discriminate Heqb).
-      - assert (Hyd : Y `in` dom ρ)
+      - assert (Hyd : β `in` dom ρ)
           by (eapply a_inc_flex_dom;
               [ exact Hinc | exact Hwf | left; exact Hfm ]).
         contradiction.
-      - assert (Hyd : Y `in` dom ρ)
+      - assert (Hyd : β `in` dom ρ)
           by (eapply a_inc_flex_dom;
               [ exact Hinc | exact Hwf | right; exists τ0; exact Hfd ]).
         contradiction. }
@@ -5557,7 +5559,7 @@ Proof.
         [ exact Hjoin | exact Hwfth | reflexivity | reflexivity
         | exact Hmona | | ].
       - intros β τ Hbβ Hβd.
-        assert (Hβpre : β `notin` dom (Ξv ++ (γ ~ abind_var_skl Q'))).
+        assert (Hβpre : β `notin` dom (Ξv ++ (α1 ~ abind_var_skl Q'))).
         { pose proof HuqΘ as Hu2. rewrite HeqΘ in Hu2.
           rewrite <- app_assoc in Hu2.
           apply uniq_app_iff in Hu2. destruct Hu2 as [_ [_ Hdisj]].
@@ -5580,18 +5582,18 @@ Proof.
           destruct Hfα0 as [Hb | [τ0 Hb]];
             [ right; left; exact Hb | right; right; exists τ0; exact Hb ]. }
         apply a_wf_ptyp_ftv_dom. exact Hwfα. }
-    assert (Hgr : forall X, X `in` dom ρa ->
-               ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa X)) [<=] dom Θ').
-    { intros X HX.
-      assert (HXP : X `in` ftvar_in_pskl P)
-        by (apply Hdomξ; rewrite <- Hdρa; exact HX).
-      assert (HXρ : X `in` dom ρ)
-        by (rewrite Heqρ; rewrite dom_app; clear - HX; fsetdec).
-      assert (Heqlk : ⇓ᵗ[ Θ ] (msubst_lookup ρa X)
-                     = msubst_lookup (msubst_compose (aenv_msubst Θ) ρ) X).
-      { rewrite (msubst_lookup_compose (aenv_msubst Θ) ρ (or_introl HXρ)).
+    assert (Hgr : forall α0, α0 `in` dom ρa ->
+               ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa α0)) [<=] dom Θ').
+    { intros α0 Hα0.
+      assert (HXP : α0 `in` ftvar_in_pskl P)
+        by (apply Hdomξ; rewrite <- Hdρa; exact Hα0).
+      assert (Hα0ρ : α0 `in` dom ρ)
+        by (rewrite Heqρ; rewrite dom_app; clear - Hα0; fsetdec).
+      assert (Heqlk : ⇓ᵗ[ Θ ] (msubst_lookup ρa α0)
+                     = msubst_lookup (msubst_compose (aenv_msubst Θ) ρ) α0).
+      { rewrite (msubst_lookup_compose (aenv_msubst Θ) ρ (or_introl Hα0ρ)).
         f_equal. rewrite Heqρ. symmetry.
-        apply msubst_lookup_app_in; exact HX. }
+        apply msubst_lookup_app_in; exact Hα0. }
       rewrite Heqlk.
       eapply AtomSetProperties.subset_trans;
         [ apply (msubst_pskl_ftv_lower
@@ -5602,7 +5604,7 @@ Proof.
       exact Hb. }
     assert (Hinc_sub0 : (msubst_compose (aenv_msubst Θ) ρa)
                             ++ (msubst_compose (aenv_msubst Θ) ρb') ∷ (Ξ ++ Θ0') ⊑ Θ').
-    { assert (HincR : ρa ++ ρb' ∷ (Ξ ++ (γ ~ abind_var_skl Q) ++ Θ0') ⊑ Θ)
+    { assert (HincR : ρa ++ ρb' ∷ (Ξ ++ (α1 ~ abind_var_skl Q) ++ Θ0') ⊑ Θ)
         by (rewrite <- Heqρ; exact Hinc).
       eapply a_inc_downarrow_prefix;
         [ exact Hdecl | exact HincR | exact Huqf | exact Hdρa
@@ -5622,11 +5624,11 @@ Proof.
       eapply a_inc_lookup_wf; [ exact Hincb | exact Hwf0 | exact Hbtα0 ]. }
     assert (Hftvα : ftvar_in_ptyp (msubst_lookup ρ α) [<=] dom Θ')
       by (apply a_wf_ptyp_ftv_dom; exact Hwfα').
-    assert (Hvisα : forall Y, Y `in` ftvar_in_ptyp (msubst_lookup ρ α) ->
-              a_binds_tvar Y Θ).
-    { intros Y HY.
-      assert (HbtY' : a_binds_tvar Y Θ')
-        by (eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfα' | exact HY ]).
+    assert (Hvisα : forall β, β `in` ftvar_in_ptyp (msubst_lookup ρ α) ->
+              a_binds_tvar β Θ).
+    { intros β Hβ.
+      assert (HbtY' : a_binds_tvar β Θ')
+        by (eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfα' | exact Hβ ]).
       destruct HbtY' as [Hb | [Hb | [τ0 Hb]]];
         [ left | right; left | right; right; exists τ0 ];
         apply Hsub'; exact Hb. }
@@ -5656,15 +5658,15 @@ Proof.
                  (⇓ᵗ[ Θ ] (msubst_lookup ρ α))))).
     { eapply ad_pat_consis_strengthen;
         [ exact Hj2 | exact HuqΘ | exact HwfΘ' | exact Hsub' | | ].
-      - intros Z HZ. rewrite ftvar_in_uskl_pskl in HZ.
-        clear - HO2 HZ. fsetdec.
-      - intros Z HZ. rewrite ftvar_in_bskl_syn in HZ.
-        rewrite ftvar_in_ptyp_to_pskl in HZ.
-        rewrite Hddα in HZ.
+      - intros α2 Hα2. rewrite ftvar_in_uskl_pskl in Hα2.
+        clear - HO2 Hα2. fsetdec.
+      - intros α2 Hα2. rewrite ftvar_in_bskl_syn in Hα2.
+        rewrite ftvar_in_ptyp_to_pskl in Hα2.
+        rewrite Hddα in Hα2.
         assert (Hwfd : a_wf_ptyp Θ' (⇓ᵗ[ Θ' ] (msubst_lookup ρ α)))
           by (apply a_wf_ptyp_downarrow_mono;
               [ exact HwfΘ' | exact Hwfα' | exact Hmona ]).
-        apply a_wf_ptyp_ftv_dom in Hwfd. clear - Hwfd HZ. fsetdec. }
+        apply a_wf_ptyp_ftv_dom in Hwfd. clear - Hwfd Hα2. fsetdec. }
     assert (Hαρdom : α `in` dom ρ).
     { rewrite Heqρ. rewrite dom_app.
       assert (Hαb : α `in` dom ρb')
@@ -5682,7 +5684,7 @@ Proof.
     (* ---- the μ-IH at the truncated problem : V is exactly constant ---- *)
     assert (Hlt : mu_lt
         (mu_assign Θ' (msubst_compose (aenv_msubst Θ) ρ) α P Ξ Θ0')
-        (mu_assign Θ ρ α P Ξ ((γ, abind_var_skl Q) :: Θ0'))).
+        (mu_assign Θ ρ α P Ξ ((α1, abind_var_skl Q) :: Θ0'))).
     { unfold mu_assign. apply mu_lt_intro. right. split.
       - unfold V_assign, Vpskl, Vvar.
         rewrite (msubst_pskl_compose (aenv_msubst Θ) ρ P Hside).
@@ -5695,12 +5697,12 @@ Proof.
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [_ HaIH]].
-    destruct (HaIH (add γ F) Θ0' Ξ α P
+    destruct (HaIH (add α1 F) Θ0' Ξ α P
                    (msubst_compose (aenv_msubst Θ) ρ) Θ' eq_refl
                    Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hinc_sub HwfΘ'
                    Hjoin_sub)
       as [Θ1 [Ha' Hopt'']].
-    exists ((γ ~ abind_var_skl Q) ++ Θ1). split.
+    exists ((α1 ~ abind_var_skl Q) ++ Θ1). split.
     { apply a_assign__skip_tm_skl. exact Ha'. }
     (* ---- optimality : the OPT twin's two conjuncts ---- *)
     intros ρ1 Hid Hinc1.
@@ -5709,9 +5711,9 @@ Proof.
           [ exact Hdecl | exact Hid | exact Hinc1 ]).
     destruct (Hopt'' ρ1 Hid Hinc1_s) as [ζ' [Hζ' Hie']].
     exists ζ'. split.
-    + (* ζ' ∷ ((γ:A)++Θ1) ⊑ Θ  via a_inc__var *)
+    + (* ζ' ∷ ((α1:A)++Θ1) ⊑ Θ  via a_inc__var *)
       rewrite HeqΘ. apply a_inc__var_skl; [ exact Hζ' | | exact HsufΞv ].
-      assert (HwfaΘ0x : a_wf_aenv ((γ ~ abind_var_skl Q) ++ Θ0'))
+      assert (HwfaΘ0x : a_wf_aenv ((α1 ~ abind_var_skl Q) ++ Θ0'))
         by (eapply a_wf_aenv_app_r; exact Hwf).
       destruct (a_wf_aenv_var_skl_inv HwfaΘ0x) as [_ [HwfQ0 _]].
       assert (HwfQ : a_scope_pskl (Ξ ++ Θ0') Q)
@@ -5733,52 +5735,52 @@ Proof.
         in Hmid.
       assert (Hag : msubst_pskl (msubst_compose (aenv_msubst Θ) ρ) Q
                   = msubst_pskl (msubst_compose (aenv_msubst Θ) ρb') Q).
-      { apply msubst_pskl_agree. intros X HXQ.
+      { apply msubst_pskl_agree. intros α0 HXQ.
         rewrite Heqρ. rewrite msubst_compose_app.
         apply msubst_lookup_app_notin.
         rewrite dom_msubst_compose. rewrite Hdρa.
-        assert (HXΘ0 : X `in` dom Θ0')
+        assert (Hα0Θ0 : α0 `in` dom Θ0')
           by (apply a_scope_pskl_ftv_dom' in HwfQ0;
               clear - HwfQ0 HXQ; fsetdec).
-        clear - Huqf HXΘ0. simpl_env in Huqf. solve_uniq. }
+        clear - Huqf Hα0Θ0. simpl_env in Huqf. solve_uniq. }
       rewrite Hag in Hmid.
       eapply a_pskl_tyequiv__trans; [ exact HeqQ' | ].
       eapply a_pskl_tyequiv__trans; [ | exact Hmid ].
       apply a_pskl_tyequiv__sym.
       eapply msubst_pskl_compose_downarrow_tyequiv
-        with (Θpre := Ξv ++ (γ ~ abind_var_skl Q'));
+        with (Θpre := Ξv ++ (α1 ~ abind_var_skl Q'));
         [ exact (eq_sym HeqW) | exact HuqΘ | exact Hwfth
         | exact HwfΘ' | eapply a_inc_msubst_lc; exact Hincb
-        | intros X HXd;
+        | intros α0 HXd;
           destruct (a_inc_dom_flex Hincb HXd) as [Hb | [τ0 Hb]];
           (eapply a_inc_lookup_wf; [ exact Hincb | exact Hwf0 | ]);
           [ right; left; exact Hb | right; right; exists τ0; exact Hb ]
         | exact HlcQ ].
     + (* factoring: mid_insert_var over ⇓ρ, then ⇓ρ→ρ via self_downarrow *)
-      assert (HwfaΘ0x : a_wf_aenv ((γ ~ abind_var_skl Q) ++ Θ0'))
+      assert (HwfaΘ0x : a_wf_aenv ((α1 ~ abind_var_skl Q) ++ Θ0'))
         by (eapply a_wf_aenv_app_r; exact Hwf).
       destruct (a_wf_aenv_var_skl_inv HwfaΘ0x) as [_ [HwfQ0 _]].
       assert (HlcQ : lc_pskl Q) by (eapply a_scope_pskl_lc; exact HwfQ0).
-      destruct (@a_inc_strip_decls_prefix Ξ ((γ ~ abind_var_skl Q) ++ Θ0')
-                  ρ1 ((γ ~ abind_var_skl Q) ++ Θ1) Hdecl Hinc1)
+      destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_skl Q) ++ Θ0')
+                  ρ1 ((α1 ~ abind_var_skl Q) ++ Θ1) Hdecl Hinc1)
         as [ρ1a [ρ1b' [Heqρ1' [Hdρ1a Hinc1x]]]].
       assert (Hmiddle : Θ' ⊢ Q' ≡ˢ
                 msubst_pskl (msubst_compose (aenv_msubst Θ) ρb') Q).
       { eapply a_pskl_tyequiv__trans; [ exact HeqQ' | ].
         apply a_pskl_tyequiv__sym.
         eapply msubst_pskl_compose_downarrow_tyequiv
-          with (Θpre := Ξv ++ (γ ~ abind_var_skl Q'));
+          with (Θpre := Ξv ++ (α1 ~ abind_var_skl Q'));
           [ exact (eq_sym HeqW) | exact HuqΘ | exact Hwfth | exact HwfΘ'
           | eapply a_inc_msubst_lc; exact Hincb
-          | intros X HXd;
+          | intros α0 HXd;
             destruct (a_inc_dom_flex Hincb HXd) as [Hb | [τ0 Hb]];
             (eapply a_inc_lookup_wf; [ exact Hincb | exact Hwf0 | ]);
             [ right; left; exact Hb | right; right; exists τ0; exact Hb ]
           | exact HlcQ ]. }
-      assert (Hmi : a_inc_equiv (Ξ ++ (γ ~ abind_var_skl Q) ++ Θ0')
+      assert (Hmi : a_inc_equiv (Ξ ++ (α1 ~ abind_var_skl Q) ++ Θ0')
                       (msubst_compose (aenv_msubst Θ) ρ)
                       (msubst_compose ζ' ρ1)
-                      (Ξv ++ (γ ~ abind_var_skl Q') ++ Θ')).
+                      (Ξv ++ (α1 ~ abind_var_skl Q') ++ Θ')).
       { rewrite Heqρ. rewrite (msubst_compose_app (aenv_msubst Θ) ρa ρb').
         rewrite Heqρ1'. rewrite (msubst_compose_app ζ' ρ1a ρ1b').
         apply a_inc_equiv_mid_insert_var_skl;
@@ -5796,8 +5798,8 @@ Proof.
       pose proof (a_inc_equiv_self_downarrow Hinc (@nil (atom * abind)))
         as Hself.
       simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ].
-  - (* head [γ̂] undefined flexible *)
-    destruct (γ == α) as [-> | Hγα].
+  - (* head [α1̂] undefined flexible *)
+    destruct (α1 == α) as [-> | Hα1α].
     + (* the head IS the subject α̂ *)
       destruct (pskl_eq_dec P (pskl_tophole (pskl_var_f α))) as [-> | HneP].
       * (* Assign-UnivGhost-Id : axiom, Θ1 = Θ0, Ξ forced nil. *)
@@ -5819,72 +5821,72 @@ Proof.
            occurs check and the mono guess witness — plus the ζ-factoring. *)
         apply (assign_solve_m_complete F Θ0' Hdecl Hwf HwfP Hnf HneP Hinc
                  Hwfth Hjoin).
-    + (* γ̂ ≠ α̂ : Assign-Depend (γ ∈ ftv P) / Assign-Skip (γ ∉ ftv P) *)
-      assert (Hαγ : α <> γ) by auto.
-      assert (Hwfmid : a_wf_aenv ((γ ~ abind_flex_mono) ++ Θ0'))
+    + (* α1̂ ≠ α̂ : Assign-Depend (α1 ∈ ftv P) / Assign-Skip (α1 ∉ ftv P) *)
+      assert (Hαα1 : α <> α1) by auto.
+      assert (Hwfmid : a_wf_aenv ((α1 ~ abind_flex_mono) ++ Θ0'))
         by (eapply a_wf_aenv_app_r; exact Hwf).
       inversion Hwfmid as [ | γh Θh Hnd Hwf0 | | | | ]; subst.
       assert (Hfα0 : a_flex_tvar Θ0' α)
-        by (eapply a_flex_tvar_strip_head; [ exact Hαγ | exact Hfα ]).
-      destruct (AtomSetProperties.In_dec γ (ftvar_in_pskl P)) as [Hγin | Hγni].
-      * (* Assign-Depend : γ̂ moves to the tail of Ξ; pure re-association. *)
-        assert (Hdecl' : a_decls (Ξ ++ (γ ~ abind_flex_mono)))
+        by (eapply a_flex_tvar_strip_head; [ exact Hαα1 | exact Hfα ]).
+      destruct (AtomSetProperties.In_dec α1 (ftvar_in_pskl P)) as [Hγin | Hγni].
+      * (* Assign-Depend : α1̂ moves to the tail of Ξ; pure re-association. *)
+        assert (Hdecl' : a_decls (Ξ ++ (α1 ~ abind_flex_mono)))
           by (apply a_decls_app;
-              [ exact Hdecl | apply (a_decls__cons γ); apply a_decls__nil ]).
-        assert (Hdomξ' : dom (Ξ ++ (γ ~ abind_flex_mono)) [<=] ftvar_in_pskl P)
+              [ exact Hdecl | apply (a_decls__cons α1); apply a_decls__nil ]).
+        assert (Hdomξ' : dom (Ξ ++ (α1 ~ abind_flex_mono)) [<=] ftvar_in_pskl P)
           by (rewrite dom_app; simpl; clear - Hdomξ Hγin; fsetdec).
-        assert (Hwf2 : a_wf_aenv ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0'))
+        assert (Hwf2 : a_wf_aenv ((Ξ ++ (α1 ~ abind_flex_mono)) ++ Θ0'))
           by (simpl_env; exact Hwf).
-        assert (HwfP2 : ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0') ⨟ empty ⊢ₚₛᵃ P)
+        assert (HwfP2 : ((Ξ ++ (α1 ~ abind_flex_mono)) ++ Θ0') ⨟ empty ⊢ₚₛᵃ P)
           by (simpl_env; exact HwfP).
-        assert (Hnf2 : a_non_flex ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0') P)
+        assert (Hnf2 : a_non_flex ((Ξ ++ (α1 ~ abind_flex_mono)) ++ Θ0') P)
           by (simpl_env; exact Hnf).
-        assert (Hinc2 : ρ ∷ ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0') ⊑ Θ)
+        assert (Hinc2 : ρ ∷ ((Ξ ++ (α1 ~ abind_flex_mono)) ++ Θ0') ⊑ Θ)
           by (simpl_env; exact Hinc).
-        assert (Hlt : mu_lt (mu_assign Θ ρ α P (Ξ ++ (γ ~ abind_flex_mono)) Θ0')
-                            (mu_assign Θ ρ α P Ξ ((γ ~ abind_flex_mono) ++ Θ0'))).
+        assert (Hlt : mu_lt (mu_assign Θ ρ α P (Ξ ++ (α1 ~ abind_flex_mono)) Θ0')
+                            (mu_assign Θ ρ α P Ξ ((α1 ~ abind_flex_mono) ++ Θ0'))).
         { unfold mu_assign. apply mu_lt_intro. right. split; [ reflexivity | ].
           right. split.
           - rewrite length_app. simpl. lia.
           - right. split; [ reflexivity | simpl; lia ]. }
         destruct (IH _ Hlt) as [_ [_ HaIH]].
-        destruct (HaIH F Θ0' (Ξ ++ (γ ~ abind_flex_mono)) α P ρ Θ eq_refl
+        destruct (HaIH F Θ0' (Ξ ++ (α1 ~ abind_flex_mono)) α P ρ Θ eq_refl
                        Hdecl' Hwf2 Hfα0 HwfP2 Hnf2 Hdomξ' Hinc2 Hwfth Hjoin)
           as [Θ1 [Ha' Hopt']].
         exists Θ1. split.
-        { apply a_assign__depend; [ exact Hαγ | exact Hγin | exact Ha' ]. }
+        { apply a_assign__depend; [ exact Hαα1 | exact Hγin | exact Ha' ]. }
         intros ρ1 Hid Hinc1.
-        assert (Hinc1' : ρ1 ∷ ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0') ⊑ Θ1)
+        assert (Hinc1' : ρ1 ∷ ((Ξ ++ (α1 ~ abind_flex_mono)) ++ Θ0') ⊑ Θ1)
           by (simpl_env; exact Hinc1).
         destruct (Hopt' ρ1 Hid Hinc1') as [ζ [Hζ Hie]].
         exists ζ. split; [ exact Hζ | ].
         simpl_env in Hie. exact Hie.
-      * (* Assign-Skip : γ̂ dropped from the walked context (mid-strip). *)
-        destruct (a_inc_mid_strip_flex γ Θ0' Hdecl Hinc)
-          as [ρa [τγ [ρb [Heqρ [Hdρa [Hincb Hincab]]]]]].
+      * (* Assign-Skip : α1̂ dropped from the walked context (mid-strip). *)
+        destruct (a_inc_mid_strip_flex α1 Θ0' Hdecl Hinc)
+          as [ρa [τα1 [ρb [Heqρ [Hdρa [Hincb Hincab]]]]]].
         assert (Hwf' : a_wf_aenv (Ξ ++ Θ0'))
           by (eapply a_wf_aenv_strip_mid; [ exact Hdecl | exact Hwf ]).
         assert (HwfP' : (Ξ ++ Θ0') ⨟ empty ⊢ₚₛᵃ P)
           by (eapply a_wf_pskl_strip_mid; [ exact HwfP | exact Hγni ]).
-        assert (Hbw : forall (δ : atom) (bb : abind),
-                  binds δ bb (Ξ ++ Θ0') ->
-                  binds δ bb (Ξ ++ (γ ~ abind_flex_mono) ++ Θ0')).
-        { intros δ bb Hb. unfold binds in *.
+        assert (Hbw : forall (β1 : atom) (bb : abind),
+                  binds β1 bb (Ξ ++ Θ0') ->
+                  binds β1 bb (Ξ ++ (α1 ~ abind_flex_mono) ++ Θ0')).
+        { intros β1 bb Hb. unfold binds in *.
           apply in_app_or in Hb. apply in_or_app.
           destruct Hb as [Hb | Hb];
             [ left; exact Hb | right; simpl; right; exact Hb ]. }
         assert (Hnf' : a_non_flex (Ξ ++ Θ0') P).
         { destruct Hnf as [Hlc Hnfl]. split; [ exact Hlc | ].
           intro Hfl. apply Hnfl.
-          inversion Hfl as [Θf δ Hb | Θf δ τ0 Hb]; subst;
+          inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst;
             [ apply a_flex__var; apply Hbw; exact Hb
             | eapply a_flex__var_def; apply Hbw; exact Hb ]. }
         assert (HeqP : msubst_pskl (ρa ++ ρb) P = msubst_pskl ρ P).
-        { rewrite Heqρ. apply msubst_pskl_agree. intros X HX.
+        { rewrite Heqρ. apply msubst_pskl_agree. intros α0 Hα0.
           symmetry. apply msubst_lookup_mid_drop.
-          clear - HX Hγni. intro; subst X; contradiction. }
+          clear - Hα0 Hγni. intro; subst α0; contradiction. }
         assert (Hlkα : msubst_lookup (ρa ++ ρb) α = msubst_lookup ρ α)
-          by (rewrite Heqρ; symmetry; apply msubst_lookup_mid_drop; exact Hαγ).
+          by (rewrite Heqρ; symmetry; apply msubst_lookup_mid_drop; exact Hαα1).
         assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
                   (pskl_to_uskl (msubst_pskl (ρa ++ ρb) P))
                 ∼ (pskl_to_bskl_syn (ptyp_to_pskl
@@ -5892,18 +5894,18 @@ Proof.
           by (rewrite HeqP, Hlkα; exact Hjoin).
         assert (Hlt : mu_lt (mu_assign Θ (ρa ++ ρb) α P Ξ Θ0')
                             (mu_assign Θ ρ α P Ξ
-                                       ((γ ~ abind_flex_mono) ++ Θ0'))).
+                                       ((α1 ~ abind_flex_mono) ++ Θ0'))).
         { unfold mu_assign. apply mu_lt_intro. right. split.
           - unfold V_assign, Vpskl, Vvar. rewrite HeqP, Hlkα. reflexivity.
           - left. simpl. lia. }
         destruct (IH _ Hlt) as [_ [_ HaIH]].
-        destruct (HaIH (add γ F) Θ0' Ξ α P (ρa ++ ρb) Θ eq_refl
+        destruct (HaIH (add α1 F) Θ0' Ξ α P (ρa ++ ρb) Θ eq_refl
                        Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hincab Hwfth Hjoin')
           as [Θ1' [Ha' Hopt']].
-        exists ((γ ~ abind_flex_mono) ++ Θ1'). split.
-        { apply a_assign__skip; [ exact Hαγ | exact Hγni | exact Ha' ]. }
+        exists ((α1 ~ abind_flex_mono) ++ Θ1'). split.
+        { apply a_assign__skip; [ exact Hαα1 | exact Hγni | exact Ha' ]. }
         intros ρ1 Hid Hinc1.
-        destruct (a_inc_mid_strip_flex γ Θ0' Hdecl Hinc1)
+        destruct (a_inc_mid_strip_flex α1 Θ0' Hdecl Hinc1)
           as [ρ1a [τ1 [ρ1b [Heqρ1 [Hdρ1a [Hinc1b Hinc1ab]]]]]].
         rewrite Heqρ1 in Hid.
         apply Forall_app in Hid as [Hida Hidtail].
@@ -5919,45 +5921,45 @@ Proof.
               [ exact Hincw | exact Hidw | exact Hinc1ab | exact Hidab ]).
         subst w.
         destruct (Hopt' (ρ1a ++ ρ1b) Hidab Hincw) as [ζ' [Hζ' Hie']].
-        (* facts about the dropped image τγ *)
-        assert (Huqf : uniq (Ξ ++ (γ ~ abind_flex_mono) ++ Θ0'))
+        (* facts about the dropped image τα1 *)
+        assert (Huqf : uniq (Ξ ++ (α1 ~ abind_flex_mono) ++ Θ0'))
           by (apply a_wf_aenv_uniq; exact Hwf).
-        assert (Hγρa : γ `notin` dom ρa)
+        assert (Hα1ρa : α1 `notin` dom ρa)
           by (rewrite Hdρa; clear - Huqf; simpl_env in Huqf; solve_uniq).
-        assert (Hlkγ : msubst_lookup ρ γ = τγ)
-          by (rewrite Heqρ; rewrite msubst_lookup_app_notin by exact Hγρa;
+        assert (Hlkγ : msubst_lookup ρ α1 = τα1)
+          by (rewrite Heqρ; rewrite msubst_lookup_app_notin by exact Hα1ρa;
               apply msubst_lookup_cons_eq).
-        assert (Hmτγ : mono_ptyp τγ)
+        assert (Hmτα1 : mono_ptyp τα1)
           by (rewrite <- Hlkγ; eapply a_inc_lookup_mono; exact Hinc).
-        assert (Hbtγ : a_binds_tvar γ (Ξ ++ (γ ~ abind_flex_mono) ++ Θ0'))
+        assert (Hbtγ : a_binds_tvar α1 (Ξ ++ (α1 ~ abind_flex_mono) ++ Θ0'))
           by (right; left; unfold binds; apply in_or_app; right; left;
               reflexivity).
-        assert (Hwfτγ : a_wf_ptyp Θ τγ)
+        assert (Hwfτα1 : a_wf_ptyp Θ τα1)
           by (rewrite <- Hlkγ;
               eapply a_inc_lookup_wf;
               [ exact Hinc | exact Hwf | exact Hbtγ ]).
-        assert (Hγρ1a : γ `notin` dom ρ1a)
+        assert (Hα1ρ1a : α1 `notin` dom ρ1a)
           by (rewrite Hdρ1a; clear - Huqf; simpl_env in Huqf; solve_uniq).
-        assert (Hγρ1b : γ `notin` dom ρ1b)
+        assert (Hα1ρ1b : α1 `notin` dom ρ1b)
           by (pose proof (a_inc_dom_sub Hinc1b) as Hs;
               clear - Hs Hnd; fsetdec).
-        exists ((γ, τγ) :: ζ'). split.
-        -- apply a_inc__flex; [ exact Hζ' | exact Hwfτγ | exact Hmτγ ].
-        -- (* compute ζ ∘ ρ1 = (ζ' ∘ ρ1a) ++ (γ,τγ) :: (ζ' ∘ ρ1b), then
+        exists ((α1, τα1) :: ζ'). split.
+        -- apply a_inc__flex; [ exact Hζ' | exact Hwfτα1 | exact Hmτα1 ].
+        -- (* compute ζ ∘ ρ1 = (ζ' ∘ ρ1a) ++ (α1,τα1) :: (ζ' ∘ ρ1b), then
               mid-insert the matching flex pair *)
-           assert (Heqc : msubst_compose ((γ, τγ) :: ζ')
-                            (ρ1a ++ (γ, ptyp_var_f γ) :: ρ1b)
+           assert (Heqc : msubst_compose ((α1, τα1) :: ζ')
+                            (ρ1a ++ (α1, ptyp_var_f α1) :: ρ1b)
                         = msubst_compose ζ' ρ1a
-                          ++ (γ, τγ) :: msubst_compose ζ' ρ1b).
+                          ++ (α1, τα1) :: msubst_compose ζ' ρ1b).
            { rewrite msubst_compose_app. f_equal.
-             - apply (msubst_compose_cons_l_id τγ ζ' Hida Hγρ1a).
-             - change (msubst_compose ((γ, τγ) :: ζ')
-                         ((γ, ptyp_var_f γ) :: ρ1b))
-                 with ((γ, msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
-                       :: msubst_compose ((γ, τγ) :: ζ') ρ1b).
-               rewrite (msubst_compose_cons_l_id τγ ζ' Hidb Hγρ1b).
-               change (msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
-                 with (msubst_lookup ((γ, τγ) :: ζ') γ).
+             - apply (msubst_compose_cons_l_id τα1 ζ' Hida Hα1ρ1a).
+             - change (msubst_compose ((α1, τα1) :: ζ')
+                         ((α1, ptyp_var_f α1) :: ρ1b))
+                 with ((α1, msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
+                       :: msubst_compose ((α1, τα1) :: ζ') ρ1b).
+               rewrite (msubst_compose_cons_l_id τα1 ζ' Hidb Hα1ρ1b).
+               change (msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
+                 with (msubst_lookup ((α1, τα1) :: ζ') α1).
                rewrite msubst_lookup_cons_eq. reflexivity. }
            rewrite Heqρ1, Heqρ, Heqc.
            apply a_inc_equiv_mid_insert_flex;
@@ -5965,47 +5967,47 @@ Proof.
              | apply a_wf_aenv_uniq; exact Hwf'
              | exact Hdρa
              | rewrite dom_msubst_compose; exact Hdρ1a
-             | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτγ
+             | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτα1
              | ].
            rewrite <- msubst_compose_app. exact Hie'.
-  - (* head [γ̂ ≔ τdef] DEFINED : Assign-Assign, the back-edge into part 1
+  - (* head [α1̂ ≔ τdef] DEFINED : Assign-Assign, the back-edge into part 1
        over the merged context Ξ ++ Θ0' with both sides substituted by
-       [τdef/γ̂].  The competing solution strips its (γ,τγ)-entry
+       [τdef/α1̂].  The competing solution strips its (α1,τα1)-entry
        ([a_inc_mid_strip_flex_def]); the substituted subject/input images
        are ≡ˢ to the node's ([msubst_pskl_subst] + the pointwise-≡ᵗ
        transport over an artificial source), so the sub-call's join is
        the REFLEXIVITY on the monotype θα̂ and both ∅-refinements follow
        by the mono bridges.  V is exactly constant ([Vpskl_backedge]);
        n drops by one (design doc §5.4, A3). *)
-    assert (Huqf : uniq (Ξ ++ (γ ~ abind_flex_mono_def τdef) ++ Θ0'))
+    assert (Huqf : uniq (Ξ ++ (α1 ~ abind_flex_mono_def τdef) ++ Θ0'))
       by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (HwfM : a_wf_aenv (Ξ ++ (γ ~ abind_flex_mono_def τdef) ++ Θ0'))
+    assert (HwfM : a_wf_aenv (Ξ ++ (α1 ~ abind_flex_mono_def τdef) ++ Θ0'))
       by exact Hwf.
     assert (Hwf' : a_wf_aenv (Ξ ++ Θ0'))
       by (eapply a_wf_aenv_strip_mid; [ exact Hdecl | exact HwfM ]).
     assert (Hwf0 : a_wf_aenv Θ0') by (eapply a_wf_aenv_app_r; exact Hwf').
-    assert (Hmidwf : a_wf_aenv ((γ ~ abind_flex_mono_def τdef) ++ Θ0'))
+    assert (Hmidwf : a_wf_aenv ((α1 ~ abind_flex_mono_def τdef) ++ Θ0'))
       by (eapply a_wf_aenv_app_r; exact HwfM).
     assert (Hwfτd : a_wf_ptyp Θ0' τdef) by (inversion Hmidwf; assumption).
     assert (Hmτd : mono_ptyp τdef) by (inversion Hmidwf; assumption).
-    assert (Hγd : γ `notin` dom Θ0') by (inversion Hmidwf; assumption).
+    assert (Hγd : α1 `notin` dom Θ0') by (inversion Hmidwf; assumption).
     (* strip the defined mid off the competing increment *)
-    destruct (a_inc_mid_strip_flex_def γ τdef Θ0' Hdecl Hinc)
-      as [ρa [τγ [ρb [Heqρ [Hdρa [Hincb [Hincab [Hwfτγ [Hmτγ Heqτγ]]]]]]]]].
-    assert (Hγρa : γ `notin` dom ρa)
+    destruct (a_inc_mid_strip_flex_def α1 τdef Θ0' Hdecl Hinc)
+      as [ρa [τα1 [ρb [Heqρ [Hdρa [Hincb [Hincab [Hwfτα1 [Hmτα1 Heqτα1]]]]]]]]].
+    assert (Hα1ρa : α1 `notin` dom ρa)
       by (rewrite Hdρa; clear - Huqf; simpl_env in Huqf; solve_uniq).
     assert (Hfτd : ftvar_in_ptyp τdef [<=] dom Θ0')
       by (apply a_wf_ptyp_ftv_dom; exact Hwfτd).
-    assert (Hγτd : γ `notin` ftvar_in_ptyp τdef)
+    assert (Hα1τd : α1 `notin` ftvar_in_ptyp τdef)
       by (clear - Hfτd Hγd; fsetdec).
     assert (Hagτd : msubst_ptyp (ρa ++ ρb) τdef = msubst_ptyp ρb τdef).
-    { apply msubst_ptyp_agree. intros X HX.
+    { apply msubst_ptyp_agree. intros α0 Hα0.
       apply msubst_lookup_app_notin.
       rewrite Hdρa.
-      assert (HXd : X `in` dom Θ0') by (clear - Hfτd HX; fsetdec).
+      assert (HXd : α0 `in` dom Θ0') by (clear - Hfτd Hα0; fsetdec).
       clear - Huqf HXd. simpl_env in Huqf. solve_uniq. }
-    assert (Heqτγ' : Θ ⊢ τγ ≡ᵗ (msubst_ptyp (ρa ++ ρb) τdef))
-      by (rewrite Hagτd; exact Heqτγ).
+    assert (Heqτα1' : Θ ⊢ τα1 ≡ᵗ (msubst_ptyp (ρa ++ ρb) τdef))
+      by (rewrite Hagτd; exact Heqτα1).
     assert (Hlcθ : msubst_lc (ρa ++ ρb))
       by (eapply a_inc_msubst_lc; exact Hincab).
     assert (Hlcm1 : lc_ptyp (msubst_ptyp (ρa ++ ρb) τdef))
@@ -6013,7 +6015,7 @@ Proof.
           [ exact Hlcθ | eapply a_wf_ptyp_lc; exact Hwfτd ]).
     (* the pointwise-≡ᵗ transport over the artificial source *)
     assert (HwfArt : a_wf_aenv
-              ((γ ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0')).
+              ((α1 ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0')).
     { apply a_wf_aenv__flex_def.
       - clear - Huqf. simpl_env in Huqf. rewrite dom_app. solve_uniq.
       - eapply a_wf_ptyp_weaken;
@@ -6021,75 +6023,75 @@ Proof.
       - exact Hmτd.
       - exact Hwf'. }
     assert (Hlcc1 : msubst_lc
-              ((γ, msubst_ptyp (ρa ++ ρb) τdef) :: ρa ++ ρb)).
-    { intros X. simpl.
+              ((α1, msubst_ptyp (ρa ++ ρb) τdef) :: ρa ++ ρb)).
+    { intros α0. simpl.
       destruct_if; [ exact Hlcm1 | apply Hlcθ ]. }
-    assert (Hlcc2 : msubst_lc ((γ, τγ) :: ρa ++ ρb)).
-    { intros X. simpl.
+    assert (Hlcc2 : msubst_lc ((α1, τα1) :: ρa ++ ρb)).
+    { intros α0. simpl.
       destruct_if;
-        [ apply mono_ptyp_lc; exact Hmτγ | apply Hlcθ ]. }
-    assert (Hartsub : forall W,
-              a_scope_pskl ((γ ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0') W ->
+        [ apply mono_ptyp_lc; exact Hmτα1 | apply Hlcθ ]. }
+    assert (Hartsub : forall β2,
+              a_scope_pskl ((α1 ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0') β2 ->
               Θ ⊢ (msubst_pskl
-                     ((γ, msubst_ptyp (ρa ++ ρb) τdef) :: ρa ++ ρb) W)
-                ≡ˢ (msubst_pskl ((γ, τγ) :: ρa ++ ρb) W)).
-    { intros W HwfW.
+                     ((α1, msubst_ptyp (ρa ++ ρb) τdef) :: ρa ++ ρb) β2)
+                ≡ˢ (msubst_pskl ((α1, τα1) :: ρa ++ ρb) β2)).
+    { intros β2 HwfW.
       eapply a_inc_equiv_msubst_pskl;
         [ exact HwfW | | exact HwfArt | exact Hlcc1 | exact Hlcc2 ].
       apply a_inc_equiv__flex_def.
       - apply a_inc_equiv_refl. exact Hincab.
-      - apply a_tyequiv__sym. exact Heqτγ'.
+      - apply a_tyequiv__sym. exact Heqτα1'.
       - apply a_tyequiv__refl. exact Hlcm1. }
-    (* the reorder agreement : ρ = (γ,τγ) :: (ρa ++ ρb) pointwise *)
-    assert (Hreo : forall (W : pskl),
-              msubst_pskl ρ W = msubst_pskl ((γ, τγ) :: ρa ++ ρb) W).
-    { intro W. apply msubst_pskl_agree. intros X HX.
-      rewrite Heqρ. destruct (X == γ) as [-> | Hne].
-      - rewrite msubst_lookup_app_notin by exact Hγρa.
+    (* the reorder agreement : ρ = (α1,τα1) :: (ρa ++ ρb) pointwise *)
+    assert (Hreo : forall (β2 : pskl),
+              msubst_pskl ρ β2 = msubst_pskl ((α1, τα1) :: ρa ++ ρb) β2).
+    { intro β2. apply msubst_pskl_agree. intros α0 Hα0.
+      rewrite Heqρ. destruct (α0 == α1) as [-> | Hne].
+      - rewrite msubst_lookup_app_notin by exact Hα1ρa.
         rewrite msubst_lookup_cons_eq.
         rewrite msubst_lookup_cons_eq. reflexivity.
       - rewrite msubst_lookup_mid_drop by exact Hne.
         rewrite msubst_lookup_cons_neq by exact Hne. reflexivity. }
     (* wf of the substituted pieces at the stripped context *)
-    assert (HbγM : binds γ (abind_flex_mono_def τdef)
-              (Ξ ++ (γ ~ abind_flex_mono_def τdef) ++ Θ0'))
+    assert (HbγM : binds α1 (abind_flex_mono_def τdef)
+              (Ξ ++ (α1 ~ abind_flex_mono_def τdef) ++ Θ0'))
       by (apply binds_app_3; left; reflexivity).
-    assert (Hsubup : forall (W : pskl),
+    assert (Hsubup : forall (β2 : pskl),
               ftvar_in_pskl
-                (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ W)
+                (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 β2)
               [<=] ftvar_in_ptyp τdef `union`
-                   remove γ (ftvar_in_pskl W)).
-    { intro W.
+                   remove α1 (ftvar_in_pskl β2)).
+    { intro β2.
       pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                    W (ptyp_to_pskl τdef) γ) as Hup.
+                    β2 (ptyp_to_pskl τdef) α1) as Hup.
       pose proof (ftvar_in_ptyp_to_pskl τdef) as Hfe.
       clear - Hup Hfe. fsetdec. }
     assert (HwfP0s : (Ξ ++ Θ0') ⨟ empty ⊢ₚₛᵃ
-              (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ P)).
+              (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 P)).
     { eapply a_wf_pskl_strip_mid.
       - eapply a_wf_pskl_mono_subst;
           [ exact HwfP | exact HwfM | exact HbγM | exact Hmτd ].
-      - pose proof (Hsubup P). clear - H Hγτd. fsetdec. }
-    assert (HwfSα : (Ξ ++ (γ ~ abind_flex_mono_def τdef) ++ Θ0')
+      - pose proof (Hsubup P). clear - H Hα1τd. fsetdec. }
+    assert (HwfSα : (Ξ ++ (α1 ~ abind_flex_mono_def τdef) ++ Θ0')
               ⨟ empty ⊢ₚₛᵃ (pskl_var_f α)).
     { apply a_wf_pskl__var. right.
       destruct Hfα as [Hb | [τ0 Hb]];
         [ right; left | right; right; exists τ0 ];
         unfold binds in *; apply in_or_app; right; exact Hb. }
     assert (HwfSs : (Ξ ++ Θ0') ⨟ empty ⊢ₚₛᵃ
-              (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ (pskl_var_f α))).
+              (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 (pskl_var_f α))).
     { eapply a_wf_pskl_strip_mid.
       - eapply a_wf_pskl_mono_subst;
           [ exact HwfSα | exact HwfM | exact HbγM | exact Hmτd ].
       - pose proof (Hsubup (pskl_var_f α)). simpl in H.
-        clear - H Hγτd. fsetdec. }
+        clear - H Hα1τd. fsetdec. }
     (* wf of the pieces as a_scope_pskl over the artificial source *)
     assert (HwfPart : a_scope_pskl
-              ((γ ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0') P).
+              ((α1 ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0') P).
     { eapply a_scope_pskl_weaken;
         [ | eapply a_wf_pskl_to_a_scope_pskl;
             [ exact HwfP | intros x b Hb; exact Hb
-            | intros Y HY; exfalso; clear - HY; fsetdec ] ].
+            | intros β Hβ; exfalso; clear - Hβ; fsetdec ] ].
       intros x b Hb. unfold binds in *.
       apply in_app_or in Hb. apply in_or_app.
       destruct Hb as [Hb | Hb];
@@ -6098,7 +6100,7 @@ Proof.
         [ left; left; exact Hb
         | right; apply in_or_app; right; exact Hb ]. }
     assert (HwfVart : a_scope_pskl
-              ((γ ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0')
+              ((α1 ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0')
               (pskl_var_f α)).
     { apply a_scope_pskl__var.
       destruct Hfα as [Hb | [τ0 Hb]].
@@ -6112,18 +6114,18 @@ Proof.
           apply binds_cons_3. apply binds_app_3. exact Hb'. }
     (* the two ≡ˢ facts (subject and input) *)
     assert (HeqP : Θ ⊢ (msubst_pskl (ρa ++ ρb)
-              (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ P))
+              (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 P))
               ≡ˢ (msubst_pskl ρ P)).
     { rewrite msubst_pskl_subst. rewrite (Hreo P).
       apply Hartsub. exact HwfPart. }
     assert (HeqS : Θ ⊢ (msubst_pskl (ρa ++ ρb)
-              (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ (pskl_var_f α)))
+              (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 (pskl_var_f α)))
               ≡ˢ (msubst_pskl ρ (pskl_var_f α))).
     { rewrite msubst_pskl_subst. rewrite (Hreo (pskl_var_f α)).
       apply Hartsub. exact HwfVart. }
     (* the sub-call's competing data : the monotype θα̂ *)
     assert (HbtαM : a_binds_tvar α
-              (Ξ ++ (γ ~ abind_flex_mono_def τdef) ++ Θ0')).
+              (Ξ ++ (α1 ~ abind_flex_mono_def τdef) ++ Θ0')).
     { destruct Hfα as [Hb | [τ0 Hb]];
         [ right; left | right; right; exists τ0 ];
         unfold binds in *; apply in_or_app; right; exact Hb. }
@@ -6131,10 +6133,10 @@ Proof.
       by (eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf | exact HbtαM ]).
     assert (HmC : mono_ptyp (msubst_lookup ρ α))
       by (eapply a_inc_lookup_mono; exact Hinc).
-    assert (HvisC : forall Y, Y `in` ftvar_in_ptyp (msubst_lookup ρ α) ->
-              a_binds_tvar Y Θ)
-      by (intros Y HY; eapply a_wf_ptyp_ftv_tvarish;
-          [ exact HwfC | exact HY ]).
+    assert (HvisC : forall β, β `in` ftvar_in_ptyp (msubst_lookup ρ α) ->
+              a_binds_tvar β Θ)
+      by (intros β Hβ; eapply a_wf_ptyp_ftv_tvarish;
+          [ exact HwfC | exact Hβ ]).
     (* sub-join : reflexivity on θα̂, transported to the subject image *)
     assert (Hjrefl : empty ⨟ Θ ⊢ₛᵃ
               (pskl_to_uskl (msubst_pskl ρ (pskl_var_f α)))
@@ -6150,7 +6152,7 @@ Proof.
     (* sub-refinements : both from the node's join via the mono bridges *)
     assert (Hrssub : ad_refine_syn_f empty Θ empty
               (pskl_to_bskl_inh (msubst_pskl (ρa ++ ρb)
-                 (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ P)))
+                 (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 P)))
               (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup ρ α)))).
     { destruct (skl_tyequiv_refine_syn_f_transport HeqP Hwfth
                   (fun x b Hb => Hb)) as [_ Hback].
@@ -6165,7 +6167,7 @@ Proof.
         | intros β τ Hb; clear; fsetdec ]. }
     assert (Hrpsub : ad_refine_pskl_f empty Θ empty
               (msubst_pskl (ρa ++ ρb)
-                 (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ (pskl_var_f α)))
+                 (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 (pskl_var_f α)))
               (bskl_to_pskl (pskl_to_bskl_syn
                  (ptyp_to_pskl (msubst_lookup ρ α))))).
     { destruct (skl_tyequiv_refine_pskl_f_transport HeqS Hwfth
@@ -6182,14 +6184,14 @@ Proof.
     (* the measure : V exactly constant, n drops by one *)
     assert (Hlt : mu_lt
         (mu_consis Θ (ρa ++ ρb)
-           (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ P)
-           (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ (pskl_var_f α))
+           (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 P)
+           (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 (pskl_var_f α))
            (Ξ ++ Θ0'))
-        (mu_assign Θ ρ α P Ξ ((γ, abind_flex_mono_def τdef) :: Θ0'))).
+        (mu_assign Θ ρ α P Ξ ((α1, abind_flex_mono_def τdef) :: Θ0'))).
     { unfold mu_consis, mu_assign. apply mu_lt_intro. right. split.
       - unfold V_consis, V_assign.
-        erewrite Vpskl_backedge; [ | exact Hwfth | exact Heqτγ' ].
-        erewrite Vpskl_backedge; [ | exact Hwfth | exact Heqτγ' ].
+        erewrite Vpskl_backedge; [ | exact Hwfth | exact Heqτα1' ].
+        erewrite Vpskl_backedge; [ | exact Hwfth | exact Heqτα1' ].
         unfold Vpskl, Vvar.
         rewrite <- !Hreo.
         cbn [msubst_pskl].
@@ -6197,13 +6199,13 @@ Proof.
         rewrite size_ptyp_to_pskl. lia.
       - left. rewrite length_app. simpl. lia. }
     destruct (IH _ Hlt) as [HcIH _].
-    destruct (HcIH (add γ F) empty empty (Ξ ++ Θ0')
-                (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ P)
-                (subst_pskl_in_pskl (ptyp_to_pskl τdef) γ (pskl_var_f α))
+    destruct (HcIH (add α1 F) empty empty (Ξ ++ Θ0')
+                (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 P)
+                (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 (pskl_var_f α))
                 (ρa ++ ρb) Θ empty
                 (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup ρ α)))
                 eq_refl Hwf' HwfP0s HwfSs
-                ltac:(intros X HX; exfalso; clear - HX; fsetdec)
+                ltac:(intros α0 Hα0; exfalso; clear - Hα0; fsetdec)
                 ltac:(intros β τ Hb; clear; fsetdec)
                 ltac:(intros Θa β b Θb Heqx Hne; clear; fsetdec)
                 Hincab Hwfth
@@ -6211,11 +6213,11 @@ Proof.
                 ltac:(reflexivity)
                 Hjsub Hrssub Hrpsub)
       as [Q' [Θ1' [Hc Hopt']]].
-    exists ((γ ~ abind_flex_mono_def τdef) ++ Θ1'). split.
+    exists ((α1 ~ abind_flex_mono_def τdef) ++ Θ1'). split.
     { eapply a_assign__assign; [ exact Hfα | exact Hc ]. }
     (* ---- optimality ---- *)
     intros ρ1 Hid Hinc1.
-    destruct (a_inc_mid_strip_flex_def γ τdef Θ0' Hdecl Hinc1)
+    destruct (a_inc_mid_strip_flex_def α1 τdef Θ0' Hdecl Hinc1)
       as [ρ1a [τ1γ [ρ1b [Heqρ1 [Hdρ1a [Hinc1b [Hinc1ab _]]]]]]].
     rewrite Heqρ1 in Hid.
     apply Forall_app in Hid as [Hida Hidtail].
@@ -6226,7 +6228,7 @@ Proof.
       by (apply Forall_app; split; assumption).
     destruct (proj2 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ _ _ _
                 Hc Hwf' HwfP0s HwfSs
-                ltac:(intros X HX; exfalso; clear - HX; fsetdec)
+                ltac:(intros α0 Hα0; exfalso; clear - Hα0; fsetdec)
                 ltac:(intros β τ Hb; clear; fsetdec)
                 ltac:(intros Θa β b Θb Heqx Hne; clear; fsetdec))
       as [Hle1 [HwfΘ1' _]].
@@ -6237,12 +6239,12 @@ Proof.
     subst w.
     destruct (Hopt' (ρ1a ++ ρ1b) Hidab Hincw)
       as [ζ' [Hζ' [Hie' Hprec']]].
-    (* the final ζ re-conses the dropped (γ, τγ) entry *)
-    assert (Hγρ1a : γ `notin` dom ρ1a)
+    (* the final ζ re-conses the dropped (α1, τα1) entry *)
+    assert (Hα1ρ1a : α1 `notin` dom ρ1a)
       by (rewrite Hdρ1a; clear - Huqf; simpl_env in Huqf; solve_uniq).
-    assert (Hγρ1b : γ `notin` dom ρ1b)
+    assert (Hα1ρ1b : α1 `notin` dom ρ1b)
       by (pose proof (a_inc_dom_sub Hinc1b) as Hs; clear - Hs Hγd; fsetdec).
-    (* τγ ≡ᵗ msubst ζ' τdef *)
+    (* τα1 ≡ᵗ msubst ζ' τdef *)
     assert (Hwfτd' : a_wf_ptyp (Ξ ++ Θ0') τdef)
       by (eapply a_wf_ptyp_weaken;
           [ intros x b Hb; apply binds_app_3; exact Hb | exact Hwfτd ]).
@@ -6257,24 +6259,24 @@ Proof.
       rewrite (msubst_compose_id_ptyp Hwf' HwfΘ1' Hidab Hincw Hζ'
                  Hwfτd') in Hmid.
       exact Hmid. }
-    exists ((γ, τγ) :: ζ'). split.
+    exists ((α1, τα1) :: ζ'). split.
     + apply a_inc__flex_def;
-        [ exact Hζ' | exact Hwfτγ | exact Hmτγ | ].
-      eapply a_tyequiv__trans; [ exact Heqτγ' | exact Heqζτd ].
+        [ exact Hζ' | exact Hwfτα1 | exact Hmτα1 | ].
+      eapply a_tyequiv__trans; [ exact Heqτα1' | exact Heqζτd ].
     + (* factoring : mid-insert the matching defined pair *)
-      assert (Heqc : msubst_compose ((γ, τγ) :: ζ')
-                       (ρ1a ++ (γ, ptyp_var_f γ) :: ρ1b)
+      assert (Heqc : msubst_compose ((α1, τα1) :: ζ')
+                       (ρ1a ++ (α1, ptyp_var_f α1) :: ρ1b)
                    = msubst_compose ζ' ρ1a
-                     ++ (γ, τγ) :: msubst_compose ζ' ρ1b).
+                     ++ (α1, τα1) :: msubst_compose ζ' ρ1b).
       { rewrite msubst_compose_app. f_equal.
-        - apply (msubst_compose_cons_l_id τγ ζ' Hida Hγρ1a).
-        - change (msubst_compose ((γ, τγ) :: ζ')
-                    ((γ, ptyp_var_f γ) :: ρ1b))
-            with ((γ, msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
-                  :: msubst_compose ((γ, τγ) :: ζ') ρ1b).
-          rewrite (msubst_compose_cons_l_id τγ ζ' Hidb Hγρ1b).
-          change (msubst_ptyp ((γ, τγ) :: ζ') (ptyp_var_f γ))
-            with (msubst_lookup ((γ, τγ) :: ζ') γ).
+        - apply (msubst_compose_cons_l_id τα1 ζ' Hida Hα1ρ1a).
+        - change (msubst_compose ((α1, τα1) :: ζ')
+                    ((α1, ptyp_var_f α1) :: ρ1b))
+            with ((α1, msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
+                  :: msubst_compose ((α1, τα1) :: ζ') ρ1b).
+          rewrite (msubst_compose_cons_l_id τα1 ζ' Hidb Hα1ρ1b).
+          change (msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
+            with (msubst_lookup ((α1, τα1) :: ζ') α1).
           rewrite msubst_lookup_cons_eq. reflexivity. }
       rewrite Heqρ1, Heqρ, Heqc.
       apply a_inc_equiv_mid_insert_flex_def;
@@ -6282,8 +6284,8 @@ Proof.
         | apply a_wf_aenv_uniq; exact Hwf'
         | exact Hdρa
         | rewrite dom_msubst_compose; exact Hdρ1a
-        | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτγ
-        | exact Heqτγ
+        | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmτα1
+        | exact Heqτα1
         | ].
       rewrite <- msubst_compose_app. exact Hie'.
 Qed.
@@ -6295,42 +6297,42 @@ Qed.
     dispatch is on the last rule of the declarative join derivation, each
     structural sub-node at strictly smaller [V]. *)
 (** Decidability of "is a hatted variable of Θ" (the layer-0 dispatch). *)
-Lemma a_flex_tvar_dec : forall Θ (δ : atom),
-  a_flex_tvar Θ δ \/ ~ a_flex_tvar Θ δ.
+Lemma a_flex_tvar_dec : forall Θ (β1 : atom),
+  a_flex_tvar Θ β1 \/ ~ a_flex_tvar Θ β1.
 Proof.
-  induction Θ as [ | [x b] Θ' IHΘ ]; intros δ.
+  induction Θ as [ | [x b] Θ' IHΘ ]; intros β1.
   - right. intros [Hb | [τ Hb]]; inversion Hb.
-  - destruct (IHΘ δ) as [Hyes | Hno].
+  - destruct (IHΘ β1) as [Hyes | Hno].
     { left. destruct Hyes as [Hb | [τ Hb]];
         [ left | right; exists τ ]; unfold binds in *; simpl; right; exact Hb. }
     destruct b as [ | A | Q | | τd ];
-      try (destruct (δ == x) as [-> | Hne];
+      try (destruct (β1 == x) as [-> | Hne];
            [ | right; intros [Hb | [τ Hb]];
                apply binds_cons_1 in Hb as [[Heq Hbe] | Hb];
                solve [ exfalso; auto | discriminate Hbe
                      | apply Hno; solve [ left; exact Hb
                                         | right; exists τ; exact Hb ] ] ]).
-    + (* x ~ tvar, δ = x *)
+    + (* x ~ tvar, β1 = x *)
       right. intros [Hb | [τ Hb]];
         apply binds_cons_1 in Hb as [[Heq Hbe] | Hb];
         solve [ discriminate Hbe
               | apply Hno; solve [ left; exact Hb
                                  | right; exists τ; exact Hb ] ].
-    + (* x ~ var_typ, δ = x *)
+    + (* x ~ var_typ, β1 = x *)
       right. intros [Hb | [τ Hb]];
         apply binds_cons_1 in Hb as [[Heq Hbe] | Hb];
         solve [ discriminate Hbe
               | apply Hno; solve [ left; exact Hb
                                  | right; exists τ; exact Hb ] ].
-    + (* x ~ var_skl, δ = x *)
+    + (* x ~ var_skl, β1 = x *)
       right. intros [Hb | [τ Hb]];
         apply binds_cons_1 in Hb as [[Heq Hbe] | Hb];
         solve [ discriminate Hbe
               | apply Hno; solve [ left; exact Hb
                                  | right; exists τ; exact Hb ] ].
-    + (* x ~ flex, δ = x *)
+    + (* x ~ flex, β1 = x *)
       left. left. left. reflexivity.
-    + (* x ~ flex_def τd, δ = x *)
+    + (* x ~ flex_def τd, β1 = x *)
       left. right. exists τd. left. reflexivity.
 Qed.
 
@@ -6342,10 +6344,10 @@ Lemma a_flex_shape_dec : forall Θ Δ P,
 Proof.
   intros Θ Δ P HwfP.
   pose proof (a_wf_pskl_lc HwfP) as Hlc.
-  destruct P as [ | n | δ | Pa Pb | Pb | | Pt ];
+  destruct P as [ | n | β1 | Pa Pb | Pb | | Pt ];
     try (right; split; [ exact Hlc | intro Hfl; solve [ inversion Hfl ] ]).
-  destruct (a_flex_tvar_dec Θ δ) as [Hf | Hnf'].
-  - left. exists δ. split; [ reflexivity | exact Hf ].
+  destruct (a_flex_tvar_dec Θ β1) as [Hf | Hnf'].
+  - left. exists β1. split; [ reflexivity | exact Hf ].
   - right. split; [ exact Hlc | ].
     intro Hfl. apply Hnf'.
     inversion Hfl; subst; [ left | right; eexists ]; eassumption.
@@ -6365,7 +6367,7 @@ Lemma consis_complete_core : forall Ψ Θ R' Qb,
     a_wf_aenv Θ0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-    (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
+    (forall α, α `in` (Δ1 `union` Δ2) -> binds α abind_tvar Θ0) ->
     no_flex_dep (Δ1 `union` Δ2) Θ0 ->
     flex_above_free (Δ1 `union` Δ2) Θ0 ->
     ρ ∷ Θ0 ⊑ Θ ->
@@ -6394,11 +6396,11 @@ Proof.
     HΨ HeqS HnfP HnfP0 HneP0hole Hnthg Hrs Hrp.
   (* ------------------------------------------------------------- unit *)
   - (* SUBJECT: PP = unit (var subjects are rigid, hence not unit). *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    2:{ (* var δ : rigid, its image is δ itself *)
+    2:{ (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds δ abind_tvar Θ0).
+      assert (Hbtδ : binds β1 abind_tvar Θ0).
       { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -6407,16 +6409,16 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ : δ `notin` dom ρ)
+      assert (Hβ1ρ : β1 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
       simpl in HeqS. discriminate. }
     (* INPUT: PP0 = unit. *)
-    destruct PP0 as [ | n0 | δ0 | Pa0 Pb0 | Pb0 | | Pt0 ]; simpl in Hrs.
+    destruct PP0 as [ | n0 | β10 | Pa0 Pb0 | Pb0 | | Pt0 ]; simpl in Hrs.
     2:{ inversion Hrs. }
-    2:{ (* var δ0 : rigid; a rigid variable does not refine to unit *)
+    2:{ (* var β10 : rigid; a rigid variable does not refine to unit *)
       exfalso.
-      assert (Hbtδ0 : binds δ0 abind_tvar Θ0).
+      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
       { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -6425,15 +6427,15 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ0 : δ0 `notin` dom ρ)
+      assert (Hβ1ρ0 : β10 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ0) in Hrs.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ0) in Hrs.
       simpl in Hrs.
-      assert (HbtΘ : binds δ0 abind_tvar Θ)
+      assert (HbtΘ : binds β10 abind_tvar Θ)
         by (eapply a_inc_binds_tvar; eauto).
       inversion Hrs; subst.
       match goal with
-      | Hbr : binds δ0 (abind_flex_mono_def _) Θ |- _ =>
+      | Hbr : binds β10 (abind_flex_mono_def _) Θ |- _ =>
           pose proof (binds_unique _ _ _ _ _ HbtΘ Hbr (a_wf_aenv_uniq Hwfth))
             as Hcon; discriminate
       end. }
@@ -6452,13 +6454,13 @@ Proof.
     apply ad_refine_syn_f_of_plain_no_hole; [ | simpl; exact I ].
     apply consis_precise_mono_join with (A := ptyp_unit) (Qb := bskl_unit);
       [ exact Hwfth | apply mono_ptyp__unit
-      | intros X HX; simpl in HX; clear - HX; fsetdec
+      | intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec
       | apply ad_pat_consis__unit; clear; fsetdec ].
   (* -------------------------------------------------------------- var *)
-  - (* SUBJECT: PP = var δ with δ RIGID; forces X = δ, PP0 = var δ. *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+  - (* SUBJECT: PP = var β1 with β1 RIGID; forces α = β1, PP0 = var β1. *)
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    assert (Hbtδ : binds δ abind_tvar Θ0).
+    assert (Hbtδ : binds β1 abind_tvar Θ0).
     { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
       destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
         [ exfalso; clear - HΔ; fsetdec
@@ -6467,43 +6469,43 @@ Proof.
           apply a_flex__var; exact Hb
         | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
           eapply a_flex__var_def; exact Hb ]. }
-    assert (Hδρ : δ `notin` dom ρ)
+    assert (Hβ1ρ : β1 `notin` dom ρ)
       by (eapply a_inc_tvar_notin_dom; eauto).
-    rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
-    simpl in HeqS. inversion HeqS; subst X. clear HeqS.
-    assert (HbtΘ : binds δ abind_tvar Θ)
+    rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
+    simpl in HeqS. inversion HeqS; subst α. clear HeqS.
+    assert (HbtΘ : binds β1 abind_tvar Θ)
       by (eapply a_inc_binds_tvar; eauto).
-    (* INPUT: PP0 = var δ. *)
-    destruct PP0 as [ | n0 | δ0 | Pa0 Pb0 | Pb0 | | Pt0 ]; simpl in Hrs.
+    (* INPUT: PP0 = var β1. *)
+    destruct PP0 as [ | n0 | β10 | Pa0 Pb0 | Pb0 | | Pt0 ]; simpl in Hrs.
     1:{ exfalso.
         inversion Hrs; subst.
         match goal with
-        | Hbr : binds δ (abind_flex_mono_def _) Θ |- _ =>
+        | Hbr : binds β1 (abind_flex_mono_def _) Θ |- _ =>
             pose proof (binds_unique _ _ _ _ _ HbtΘ Hbr (a_wf_aenv_uniq Hwfth))
               as Hcon; discriminate
         end. }
     1:{ exfalso. inversion Hrs; subst.
         match goal with
-        | Hbr : binds δ (abind_flex_mono_def _) Θ |- _ =>
+        | Hbr : binds β1 (abind_flex_mono_def _) Θ |- _ =>
             pose proof (binds_unique _ _ _ _ _ HbtΘ Hbr (a_wf_aenv_uniq Hwfth))
               as Hcon; discriminate
         end. }
     2:{ exfalso. inversion Hrs; subst.
         match goal with
-        | Hbr : binds δ (abind_flex_mono_def _) Θ |- _ =>
+        | Hbr : binds β1 (abind_flex_mono_def _) Θ |- _ =>
             pose proof (binds_unique _ _ _ _ _ HbtΘ Hbr (a_wf_aenv_uniq Hwfth))
               as Hcon; discriminate
         end. }
     2:{ exfalso. inversion Hrs; subst.
         match goal with
-        | Hbr : binds δ (abind_flex_mono_def _) Θ |- _ =>
+        | Hbr : binds β1 (abind_flex_mono_def _) Θ |- _ =>
             pose proof (binds_unique _ _ _ _ _ HbtΘ Hbr (a_wf_aenv_uniq Hwfth))
               as Hcon; discriminate
         end. }
     2:{ exfalso; apply HneP0hole; reflexivity. }
     2:{ exfalso; apply (Hnthg Pt0 eq_refl); apply guarded_pskl__var. }
-    (* var δ0 rigid; the refinement forces δ0 = δ *)
-    assert (Hbtδ0 : binds δ0 abind_tvar Θ0).
+    (* var β10 rigid; the refinement forces β10 = β1 *)
+    assert (Hbtδ0 : binds β10 abind_tvar Θ0).
     { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
       destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
         [ exfalso; clear - HΔ; fsetdec
@@ -6512,29 +6514,29 @@ Proof.
           apply a_flex__var; exact Hb
         | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
           eapply a_flex__var_def; exact Hb ]. }
-    assert (Hδρ0 : δ0 `notin` dom ρ)
+    assert (Hβ1ρ0 : β10 `notin` dom ρ)
       by (eapply a_inc_tvar_notin_dom; eauto).
-    rewrite (msubst_lookup_notin ρ Hδρ0) in Hrs.
+    rewrite (msubst_lookup_notin ρ Hβ1ρ0) in Hrs.
     simpl in Hrs.
-    assert (Heqδ : δ0 = δ).
+    assert (Heqδ : β10 = β1).
     { inversion Hrs; subst.
       - reflexivity.
       - exfalso.
         match goal with
-        | Hbr : binds δ0 (abind_flex_mono_def _) Θ |- _ =>
-            assert (HbtΘ0' : binds δ0 abind_tvar Θ)
+        | Hbr : binds β10 (abind_flex_mono_def _) Θ |- _ =>
+            assert (HbtΘ0' : binds β10 abind_tvar Θ)
               by (eapply a_inc_binds_tvar; eauto);
             pose proof (binds_unique _ _ _ _ _ HbtΘ0' Hbr
                           (a_wf_aenv_uniq Hwfth)) as Hcon; discriminate
         end.
       - exfalso.
         match goal with
-        | Hbr : binds δ (abind_flex_mono_def _) Θ |- _ =>
+        | Hbr : binds β1 (abind_flex_mono_def _) Θ |- _ =>
             pose proof (binds_unique _ _ _ _ _ HbtΘ Hbr
                           (a_wf_aenv_uniq Hwfth)) as Hcon; discriminate
         end. }
-    subst δ0.
-    exists (pskl_var_f δ), Θ0. split.
+    subst β10.
+    exists (pskl_var_f β1), Θ0. split.
     { apply a_consis__rigid. exact Hbtδ. }
     intros ρ1 Hid Hinc1. exists ρ.
     destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
@@ -6542,14 +6544,14 @@ Proof.
     unfold ad_precise_f.
     cbn [pskl_to_bskl_syn msubst_bskl].
     rewrite bskl_to_pskl_pskl_to_bskl_syn.
-    rewrite (msubst_lookup_notin ρ Hδρ).
+    rewrite (msubst_lookup_notin ρ Hβ1ρ).
     apply ad_refine_syn_f_of_plain_no_hole;
       [ | apply pskl_to_bskl_inh_no_hole, ptyp_to_pskl_no_hole ].
-    apply consis_precise_mono_join with (A := ptyp_var_f δ)
-                                        (Qb := bskl_var_f δ);
+    apply consis_precise_mono_join with (A := ptyp_var_f β1)
+                                        (Qb := bskl_var_f β1);
       [ exact Hwfth | apply mono_ptyp__var
-      | intros X HX; simpl in HX;
-        assert (HXδ : X = δ) by (clear - HX; fsetdec); subst X;
+      | intros α0 Hα0; simpl in Hα0;
+        assert (Hα0δ : α0 = β1) by (clear - Hα0; fsetdec); subst α0;
         left; exact HbtΘ
       | apply ad_pat_consis__var; [ clear; fsetdec | left; exact HbtΘ ] ].
   (* ------------------------------------------------------------ arrow *)
@@ -6571,11 +6573,11 @@ Proof.
     assert (HΨ1e : Ψ1 [=] empty) by (clear - HΨ HΨu; fsetdec).
     assert (HΨ2e : Ψ2 [=] empty) by (clear - HΨ HΨu; fsetdec).
     (* SUBJECT: PP = arrow PPa PPb. *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    { (* var δ : rigid, its image is δ itself *)
+    { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds δ abind_tvar Θ0).
+      assert (Hbtδ : binds β1 abind_tvar Θ0).
       { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -6584,9 +6586,9 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ : δ `notin` dom ρ)
+      assert (Hβ1ρ : β1 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
       simpl in HeqS. discriminate. }
     inversion HeqS; subst R1 R2. clear HeqS.
     assert (HwfPPa : Θ0 ⨟ empty ⊢ₚₛᵃ PPa) by (inversion HwfP; assumption).
@@ -6594,12 +6596,12 @@ Proof.
     assert (HlcP : lc_pskl (pskl_arrow PPa PPb))
       by (eapply a_wf_pskl_lc; exact HwfP).
     (* INPUT: PP0 = arrow P0a P0b. *)
-    destruct PP0 as [ | n0 | δ0 | P0a P0b | Pb0 | | Pt0 ]; simpl in Hrs.
+    destruct PP0 as [ | n0 | β10 | P0a P0b | Pb0 | | Pt0 ]; simpl in Hrs.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
-    1:{ (* var δ0 : rigid; a rigid variable does not refine to an arrow *)
+    1:{ (* var β10 : rigid; a rigid variable does not refine to an arrow *)
       exfalso.
-      assert (Hbtδ0 : binds δ0 abind_tvar Θ0).
+      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
       { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -6608,15 +6610,15 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ0 : δ0 `notin` dom ρ)
+      assert (Hβ1ρ0 : β10 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ0) in Hrs.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ0) in Hrs.
       simpl in Hrs.
-      assert (HbtΘ0' : binds δ0 abind_tvar Θ)
+      assert (HbtΘ0' : binds β10 abind_tvar Θ)
         by (eapply a_inc_binds_tvar; eauto).
       inversion Hrs; subst.
       match goal with
-      | Hbr : binds δ0 (abind_flex_mono_def _) Θ |- _ =>
+      | Hbr : binds β10 (abind_flex_mono_def _) Θ |- _ =>
           pose proof (binds_unique _ _ _ _ _ HbtΘ0' Hbr (a_wf_aenv_uniq Hwfth))
             as Hcon; discriminate
       end. }
@@ -6665,16 +6667,16 @@ Proof.
     destruct Hle1 as [[w1 [Hidw1 Hincw1]] Hdefs1].
     destruct (Hopt1 w1 Hidw1 Hincw1) as [ζ1 [Hζ1 [Hie1 Hprec1]]].
     assert (HΔdom : (Δ1 `union` Δ2) [<=] (F `union` dom Θ0)).
-    { intros X HX. pose proof (Hrig X HX) as Hb.
+    { intros α0 Hα0. pose proof (Hrig α0 Hα0) as Hb.
       apply binds_In in Hb. clear - Hb. fsetdec. }
     destruct (Hinv1 (Δ1 `union` Δ2) Hnfd0 Hfaf HΔdom
-                ltac:(intros X HX HnX; exfalso; pose proof (Hrig X HX) as Hb;
+                ltac:(intros α0 Hα0 HnX; exfalso; pose proof (Hrig α0 Hα0) as Hb;
                       apply binds_In in Hb; exact (HnX Hb)))
       as [Hnfd1 [Hfaf1 _]].
-    assert (HrigΘ1 : forall X, X `in` (Δ1 `union` Δ2) ->
-              binds X abind_tvar Θ1)
-      by (intros X HX; eapply a_inc_binds_tvar;
-          [ exact Hincw1 | apply Hrig; exact HX ]).
+    assert (HrigΘ1 : forall α0, α0 `in` (Δ1 `union` Δ2) ->
+              binds α0 abind_tvar Θ1)
+      by (intros α0 Hα0; eapply a_inc_binds_tvar;
+          [ exact Hincw1 | apply Hrig; exact Hα0 ]).
     assert (HwfP0b1 : Θ1 ⨟ empty ⊢ₚₛᵃ P0b).
     { eapply a_wf_pskl_isub; [ exact HwfP0b | ].
       split; [ exists w1; split; assumption | exact Hdefs1 ]. }
@@ -6685,11 +6687,11 @@ Proof.
     assert (HawfPPb : a_scope_pskl Θ0 PPb).
     { eapply a_wf_pskl_to_a_scope_pskl;
         [ exact HwfPPb | intros x b Hb; exact Hb
-        | intros Y HY; exfalso; clear - HY; fsetdec ]. }
+        | intros β Hβ; exfalso; clear - Hβ; fsetdec ]. }
     assert (HawfP0b : a_scope_pskl Θ0 P0b).
     { eapply a_wf_pskl_to_a_scope_pskl;
         [ exact HwfP0b | intros x b Hb; exact Hb
-        | intros Y HY; exfalso; clear - HY; fsetdec ]. }
+        | intros β Hβ; exfalso; clear - Hβ; fsetdec ]. }
     assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
     assert (Hlcζ1 : msubst_lc ζ1) by (eapply a_inc_msubst_lc; exact Hζ1).
     assert (Hlcc1 : msubst_lc (msubst_compose ζ1 w1))
@@ -6830,15 +6832,15 @@ Proof.
        as [(α~tvar) ++ Θ1] and L9 renames the single instance to the
        cofinite premise of [a_consis__forall_inh]. *)
     match goal with
-    | Hpm : forall X, X `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
+    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
         rename Hpm into Hjoin
     end.
     (* SUBJECT: PP = ∀ PPb. *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    { (* var δ : rigid, its image is δ itself *)
+    { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds δ abind_tvar Θ0).
+      assert (Hbtδ : binds β1 abind_tvar Θ0).
       { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -6847,18 +6849,18 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ : δ `notin` dom ρ)
+      assert (Hβ1ρ : β1 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
       simpl in HeqS. discriminate. }
     inversion HeqS. subst R. clear HeqS.
     (* INPUT: PP0 = ∀ P0b. *)
-    destruct PP0 as [ | n0 | δ0 | P0a P0b | P0b | | Pt0 ]; simpl in Hrs.
+    destruct PP0 as [ | n0 | β10 | P0a P0b | P0b | | Pt0 ]; simpl in Hrs.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
     1:{ (* rigid input var never refines to an inherited ∀ *)
       exfalso.
-      assert (Hbtδ0 : binds δ0 abind_tvar Θ0).
+      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
       { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -6867,15 +6869,15 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ0 : δ0 `notin` dom ρ)
+      assert (Hβ1ρ0 : β10 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ0) in Hrs.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ0) in Hrs.
       simpl in Hrs.
-      assert (HbtΘ0' : binds δ0 abind_tvar Θ)
+      assert (HbtΘ0' : binds β10 abind_tvar Θ)
         by (eapply a_inc_binds_tvar; eauto).
       inversion Hrs; subst.
       match goal with
-      | Hbr : binds δ0 (abind_flex_mono_def _) Θ |- _ =>
+      | Hbr : binds β10 (abind_flex_mono_def _) Θ |- _ =>
           pose proof (binds_unique _ _ _ _ _ HbtΘ0' Hbr
                         (a_wf_aenv_uniq Hwfth)) as Hcon; discriminate
       end. }
@@ -6893,7 +6895,7 @@ Proof.
     (* both ∀ : invert the two refinements and the wf of the bodies *)
     inversion Hrs; subst.
     match goal with
-    | Hn : forall X, X `notin` ?LA ->
+    | Hn : forall α, α `notin` ?LA ->
              ad_refine_syn_f _ _ _ _ _ |- _ => rename Hn into Hrs1
     end.
     change (ad_refine_pskl_f Δ2 Θ Δ2
@@ -6901,17 +6903,17 @@ Proof.
               (pskl_all_syn (bskl_to_pskl Q))) in Hrp.
     inversion Hrp; subst.
     match goal with
-    | Hn : forall X, X `notin` ?LB ->
+    | Hn : forall α, α `notin` ?LB ->
              ad_refine_pskl_f _ _ _ _ _ |- _ => rename Hn into Hrp1
     end.
-    assert (Hwfb0 : exists Lw0, forall X, X `notin` Lw0 ->
-              Θ0 ⨟ (add X empty) ⊢ₚₛᵃ
-                (open_pskl_wrt_pskl P0b (pskl_var_f X))).
+    assert (Hwfb0 : exists Lw0, forall α, α `notin` Lw0 ->
+              Θ0 ⨟ (add α empty) ⊢ₚₛᵃ
+                (open_pskl_wrt_pskl P0b (pskl_var_f α))).
     { inversion HwfP0; subst. eexists. eassumption. }
     destruct Hwfb0 as [Lw0 Hwfb0].
-    assert (Hwfb : exists Lw, forall X, X `notin` Lw ->
-              Θ0 ⨟ (add X empty) ⊢ₚₛᵃ
-                (open_pskl_wrt_pskl PPb (pskl_var_f X))).
+    assert (Hwfb : exists Lw, forall α, α `notin` Lw ->
+              Θ0 ⨟ (add α empty) ⊢ₚₛᵃ
+                (open_pskl_wrt_pskl PPb (pskl_var_f α))).
     { inversion HwfP; subst. eexists. eassumption. }
     destruct Hwfb as [Lw Hwfb].
     (* the fresh rigid α *)
@@ -6957,11 +6959,11 @@ Proof.
                       (open_pskl_wrt_pskl PPb (pskl_var_f α))).
     { eapply a_wf_pskl_delta_to_tvar;
         [ apply Hwfb; clear - Fr; fsetdec | clear; fsetdec ]. }
-    assert (Hrig' : forall Z, Z `in` (add α Δ1 `union` add α Δ2) ->
-              binds Z abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros Z HZ. destruct (Z == α) as [-> | Hne];
+    assert (Hrig' : forall α2, α2 `in` (add α Δ1 `union` add α Δ2) ->
+              binds α2 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
+    { intros α2 Hα2. destruct (α2 == α) as [-> | Hne];
         [ unfold binds; left; reflexivity
-        | apply binds_cons_3; apply Hrig; clear - HZ Hne; fsetdec ]. }
+        | apply binds_cons_3; apply Hrig; clear - Hα2 Hne; fsetdec ]. }
     assert (Hnfd0' : no_flex_dep (add α Δ1 `union` add α Δ2)
                        ((α ~ abind_tvar) ++ Θ0)).
     { eapply no_flex_dep_cong;
@@ -7004,8 +7006,8 @@ Proof.
         [ | intros x b Hb; apply binds_cons_3; exact Hb ].
       eapply ad_refine_syn_f_fextend_dom;
         [ apply Hrs1; clear - Fr; fsetdec | ].
-      intros γ Hγ. destruct (γ == α) as [-> | Hne];
-        [ right; exact HαΘ | left; clear - Hγ Hne; fsetdec ]. }
+      intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
+        [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
     assert (Hrpα : ad_refine_pskl_f (add α Δ2) ((α ~ abind_tvar) ++ Θ)
               (add α Δ2)
               (msubst_pskl ρ (open_pskl_wrt_pskl PPb (pskl_var_f α)))
@@ -7016,8 +7018,8 @@ Proof.
         [ | intros x b Hb; apply binds_cons_3; exact Hb ].
       eapply ad_refine_pskl_f_fextend_dom;
         [ apply Hrp1; clear - Fr; fsetdec | ].
-      intros γ Hγ. destruct (γ == α) as [-> | Hne];
-        [ right; exact HαΘ | left; clear - Hγ Hne; fsetdec ]. }
+      intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
+        [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
     destruct (HcIH F (add α Δ1) (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
                 (open_pskl_wrt_pskl P0b (pskl_var_f α))
                 (open_pskl_wrt_pskl PPb (pskl_var_f α)) ρ
@@ -7043,49 +7045,49 @@ Proof.
               `union` singleton α `union` F `union` Δ1 `union` Δ2
               `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPb
               `union` ftvar_in_pskl P1).
-      intros X HX.
-      assert (HXα : X <> α) by (clear - HX; fsetdec).
-      assert (HXΘ0 : X `notin` dom Θ0) by (clear - HX; fsetdec).
-      assert (HXΘ1 : X `notin` dom Θ1) by (clear - HX; fsetdec).
-      assert (HXΔ1 : X `notin` Δ1) by (clear - HX; fsetdec).
-      assert (HXΔ2 : X `notin` Δ2) by (clear - HX; fsetdec).
-      assert (HXP0b : X `notin` ftvar_in_pskl P0b)
-        by (clear - HX; fsetdec).
-      assert (HXPPb : X `notin` ftvar_in_pskl PPb)
-        by (clear - HX; fsetdec).
-      assert (HXP1 : X `notin` ftvar_in_pskl P1)
-        by (clear - HX; fsetdec).
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α X))
+      intros α0 Hα0.
+      assert (Hα0α : α0 <> α) by (clear - Hα0; fsetdec).
+      assert (Hα0Θ0 : α0 `notin` dom Θ0) by (clear - Hα0; fsetdec).
+      assert (Hα0Θ1 : α0 `notin` dom Θ1) by (clear - Hα0; fsetdec).
+      assert (Hα0Δ1 : α0 `notin` Δ1) by (clear - Hα0; fsetdec).
+      assert (Hα0Δ2 : α0 `notin` Δ2) by (clear - Hα0; fsetdec).
+      assert (HXP0b : α0 `notin` ftvar_in_pskl P0b)
+        by (clear - Hα0; fsetdec).
+      assert (HXPPb : α0 `notin` ftvar_in_pskl PPb)
+        by (clear - Hα0; fsetdec).
+      assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
+        by (clear - Hα0; fsetdec).
+      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α α0))
                   _ _ _ _ _ _ _ _ Hc nil Θ0 eq_refl tvar_prefix_nil
                   Huq0
-                  ltac:(simpl; clear - HXΘ0 HXα; fsetdec)
-                  ltac:(simpl; clear - HXΘ1 HXα; fsetdec)
+                  ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
+                  ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)
                   ltac:(pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                           P0b (pskl_var_f α)) as Hup;
                         simpl in Hup;
-                        clear - HXα HXP0b Hup; fsetdec)
+                        clear - Hα0α HXP0b Hup; fsetdec)
                   ltac:(pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                           PPb (pskl_var_f α)) as Hup;
                         simpl in Hup;
-                        clear - HXα HXPPb Hup; fsetdec)
+                        clear - Hα0α HXPPb Hup; fsetdec)
                   ltac:(clear - HXP1; fsetdec)
-                  ltac:(clear - HXα HXΔ1; fsetdec)
-                  ltac:(clear - HXα HXΔ2; fsetdec))
+                  ltac:(clear - Hα0α Hα0Δ1; fsetdec)
+                  ltac:(clear - Hα0α Hα0Δ2; fsetdec))
         as [Θt [HeqΘt Hren]].
       simpl in HeqΘt. inversion HeqΘt. subst Θt.
-      assert (Ho0 : open_pskl_wrt_pskl P0b (pskl_var_f X)
-                  = subst_pskl_in_pskl (pskl_var_f X) α
+      assert (Ho0 : open_pskl_wrt_pskl P0b (pskl_var_f α0)
+                  = subst_pskl_in_pskl (pskl_var_f α0) α
                       (open_pskl_wrt_pskl P0b (pskl_var_f α)))
         by (apply subst_pskl_in_pskl_intro; clear - Fr; fsetdec).
-      assert (Ho1 : open_pskl_wrt_pskl PPb (pskl_var_f X)
-                  = subst_pskl_in_pskl (pskl_var_f X) α
+      assert (Ho1 : open_pskl_wrt_pskl PPb (pskl_var_f α0)
+                  = subst_pskl_in_pskl (pskl_var_f α0) α
                       (open_pskl_wrt_pskl PPb (pskl_var_f α)))
         by (apply subst_pskl_in_pskl_intro; clear - Fr; fsetdec).
       rewrite <- Ho0, <- Ho1 in Hren.
-      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f X) α) in Hren.
+      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α) in Hren.
       eapply (proj2 (proj2 a_assign_unify_consis_compat));
         [ exact Hren
-        | intros γ Hγ; left; exact Hγ
+        | intros α1 Hα1; left; exact Hα1
         | apply rn_set_add_same; exact HαΔ1
         | apply rn_set_add_same; exact HαΔ2 ].
     }
@@ -7124,8 +7126,8 @@ Proof.
     { intro Hin.
       destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
         apply binds_In in Hb; clear - Hb HαΘ1; fsetdec. }
-    assert (Himg : forall γ τ, In (γ, τ) ζ -> α `notin` ftvar_in_ptyp τ).
-    { intros γ τ Hin.
+    assert (Himg : forall α1 τ, In (α1, τ) ζ -> α `notin` ftvar_in_ptyp τ).
+    { intros α1 τ Hin.
       pose proof (a_inc_images_ftv_dom Hζ' _ _ Hin) as Hsc.
       clear - Hsc HαΘ. fsetdec. }
     unfold ad_precise_f in Hprec |- *.
@@ -7139,16 +7141,16 @@ Proof.
       (L := singleton α `union` dom Θ `union` dom Θ1
             `union` Δ1 `union` Δ2
             `union` ftvar_in_bskl Q `union` ftvar_in_pskl P1).
-    intros X HX.
-    assert (HXζ : X `notin` dom ζ).
+    intros α0 Hα0.
+    assert (Hα0ζ : α0 `notin` dom ζ).
     { intro Hin.
       destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb HX; fsetdec. }
+        apply binds_In in Hb; clear - Hb Hα0; fsetdec. }
     rewrite <- !pskl_to_bskl_inh_open.
-    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ HXζ).
-    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f X) α).
+    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ Hα0ζ).
+    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α).
     rewrite <- bskl_to_pskl_open.
-    (* transport the α-instance: ctx-α to Δ, then rename α ↦ X *)
+    (* transport the α-instance: ctx-α to Δ, then rename α ↦ α0 *)
     pose proof (ad_refine_syn_f_ctx_to_delta Hprec nil Θ eq_refl
                   ltac:(clear; fsetdec)
                   (a_wf_aenv_uniq Hwfth')) as Hp1.
@@ -7162,19 +7164,19 @@ Proof.
       assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
         by (eapply a_wf_aenv_def_ftv_dom; eassumption).
       clear - Hsc HαΘ. fsetdec. }
-    pose proof (ad_refine_syn_f_rename X Hp1 HαF HαΘ Hdefsθ) as Hp2.
+    pose proof (ad_refine_syn_f_rename α0 Hp1 HαF HαΘ Hdefsθ) as Hp2.
     rewrite !pskl_to_bskl_inh_subst_var in Hp2.
-    rewrite (msubst_pskl_subst_var ζ P1 Hαζ HXζ Himg) in Hp2.
+    rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
     rewrite bskl_to_pskl_subst_var in Hp2.
-    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f X)
-                = subst_bskl_in_bskl (bskl_var_f X) α
+    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
+                = subst_bskl_in_bskl (bskl_var_f α0) α
                     (open_bskl_wrt_bskl Q (bskl_var_f α)))
       by (apply subst_bskl_in_bskl_intro; clear - Fr; fsetdec).
     rewrite <- HoQ in Hp2.
     eapply ad_refine_syn_f_fmono;
       [ | eapply ad_refine_syn_f_delta_mono; [ exact Hp2 | ] ].
     { clear - HαΔ1 HαΔ2. fsetdec. }
-    { clear - HαΔ1 HαΔ2 HX. fsetdec. }
+    { clear - HαΔ1 HαΔ2 Hα0. fsetdec. }
   (* ------------------------------------------- forall_syn (impossible) *)
   - destruct (msubst_pskl ρ PP); simpl in HeqS; discriminate.
   (* ------------------------------------------------------ forall_syn *)
@@ -7183,14 +7185,14 @@ Proof.
        Δ1-refinement's [tophole_fill] premise arrives ALREADY at the
        α-extended context). *)
     match goal with
-    | Hpm : forall X, X `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
+    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
         rename Hpm into Hjoin
     end.
     (* SUBJECT: PP = ∀ PPb. *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
     { exfalso.
-      assert (Hbtδ : binds δ abind_tvar Θ0).
+      assert (Hbtδ : binds β1 abind_tvar Θ0).
       { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -7199,17 +7201,17 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ : δ `notin` dom ρ)
+      assert (Hβ1ρ : β1 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
       simpl in HeqS. discriminate. }
     inversion HeqS. subst R. clear HeqS.
     (* INPUT: PP0 = ⊤◇ Pt0 (a ∀-syn target only arises by tophole_fill) *)
-    destruct PP0 as [ | n0 | δ0 | P0a P0b | P0b | | Pt0 ]; simpl in Hrs.
+    destruct PP0 as [ | n0 | β10 | P0a P0b | P0b | | Pt0 ]; simpl in Hrs.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso.
-      assert (Hbtδ0 : binds δ0 abind_tvar Θ0).
+      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
       { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -7218,15 +7220,15 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ0 : δ0 `notin` dom ρ)
+      assert (Hβ1ρ0 : β10 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ0) in Hrs.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ0) in Hrs.
       simpl in Hrs.
-      assert (HbtΘ0' : binds δ0 abind_tvar Θ)
+      assert (HbtΘ0' : binds β10 abind_tvar Θ)
         by (eapply a_inc_binds_tvar; eauto).
       inversion Hrs; subst.
       match goal with
-      | Hbr : binds δ0 (abind_flex_mono_def _) Θ |- _ =>
+      | Hbr : binds β10 (abind_flex_mono_def _) Θ |- _ =>
           pose proof (binds_unique _ _ _ _ _ HbtΘ0' Hbr
                         (a_wf_aenv_uniq Hwfth)) as Hcon; discriminate
       end. }
@@ -7245,7 +7247,7 @@ Proof.
         [ exact Hwfth | eassumption
         | apply guarded_pskl_to_bskl_inh; exact Hgρ0 ]. }
     match goal with
-    | Hn : forall X, X `notin` ?LA ->
+    | Hn : forall α, α `notin` ?LA ->
              ad_refine_syn_f _ _ _ _ _ |- _ => rename Hn into Hrs1
     end.
     change (ad_refine_pskl_f Δ2 Θ Δ2
@@ -7253,12 +7255,12 @@ Proof.
               (pskl_all_syn (bskl_to_pskl Q))) in Hrp.
     inversion Hrp; subst.
     match goal with
-    | Hn : forall X, X `notin` ?LB ->
+    | Hn : forall α, α `notin` ?LB ->
              ad_refine_pskl_f _ _ _ _ _ |- _ => rename Hn into Hrp1
     end.
-    assert (Hwfb : exists Lw, forall X, X `notin` Lw ->
-              Θ0 ⨟ (add X empty) ⊢ₚₛᵃ
-                (open_pskl_wrt_pskl PPb (pskl_var_f X))).
+    assert (Hwfb : exists Lw, forall α, α `notin` Lw ->
+              Θ0 ⨟ (add α empty) ⊢ₚₛᵃ
+                (open_pskl_wrt_pskl PPb (pskl_var_f α))).
     { inversion HwfP; subst. eexists. eassumption. }
     destruct Hwfb as [Lw Hwfb].
     (* the fresh rigid α *)
@@ -7300,11 +7302,11 @@ Proof.
                       (open_pskl_wrt_pskl PPb (pskl_var_f α))).
     { eapply a_wf_pskl_delta_to_tvar;
         [ apply Hwfb; clear - Fr; fsetdec | clear; fsetdec ]. }
-    assert (Hrig' : forall Z, Z `in` (Δ1 `union` add α Δ2) ->
-              binds Z abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros Z HZ. destruct (Z == α) as [-> | Hne];
+    assert (Hrig' : forall α2, α2 `in` (Δ1 `union` add α Δ2) ->
+              binds α2 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
+    { intros α2 Hα2. destruct (α2 == α) as [-> | Hne];
         [ unfold binds; left; reflexivity
-        | apply binds_cons_3; apply Hrig; clear - HZ Hne; fsetdec ]. }
+        | apply binds_cons_3; apply Hrig; clear - Hα2 Hne; fsetdec ]. }
     assert (Hnfd0' : no_flex_dep (Δ1 `union` add α Δ2)
                        ((α ~ abind_tvar) ++ Θ0)).
     { eapply no_flex_dep_cong;
@@ -7350,8 +7352,8 @@ Proof.
         [ | intros x b Hb; apply binds_cons_3; exact Hb ].
       eapply ad_refine_pskl_f_fextend_dom;
         [ apply Hrp1; clear - Fr; fsetdec | ].
-      intros γ Hγ. destruct (γ == α) as [-> | Hne];
-        [ right; exact HαΘ | left; clear - Hγ Hne; fsetdec ]. }
+      intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
+        [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
     destruct (HcIH F Δ1 (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
                 (pskl_tophole Pt0)
                 (open_pskl_wrt_pskl PPb (pskl_var_f α)) ρ
@@ -7376,46 +7378,46 @@ Proof.
               `union` singleton α `union` F `union` Δ1 `union` Δ2
               `union` ftvar_in_pskl Pt0 `union` ftvar_in_pskl PPb
               `union` ftvar_in_pskl P1).
-      intros X HX.
-      assert (HXα : X <> α) by (clear - HX; fsetdec).
-      assert (HXΘ0 : X `notin` dom Θ0) by (clear - HX; fsetdec).
-      assert (HXΘ1 : X `notin` dom Θ1) by (clear - HX; fsetdec).
-      assert (HXΔ1 : X `notin` Δ1) by (clear - HX; fsetdec).
-      assert (HXΔ2 : X `notin` Δ2) by (clear - HX; fsetdec).
-      assert (HXPt0 : X `notin` ftvar_in_pskl Pt0)
-        by (clear - HX; fsetdec).
-      assert (HXPPb : X `notin` ftvar_in_pskl PPb)
-        by (clear - HX; fsetdec).
-      assert (HXP1 : X `notin` ftvar_in_pskl P1)
-        by (clear - HX; fsetdec).
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α X))
+      intros α0 Hα0.
+      assert (Hα0α : α0 <> α) by (clear - Hα0; fsetdec).
+      assert (Hα0Θ0 : α0 `notin` dom Θ0) by (clear - Hα0; fsetdec).
+      assert (Hα0Θ1 : α0 `notin` dom Θ1) by (clear - Hα0; fsetdec).
+      assert (Hα0Δ1 : α0 `notin` Δ1) by (clear - Hα0; fsetdec).
+      assert (Hα0Δ2 : α0 `notin` Δ2) by (clear - Hα0; fsetdec).
+      assert (HXPt0 : α0 `notin` ftvar_in_pskl Pt0)
+        by (clear - Hα0; fsetdec).
+      assert (HXPPb : α0 `notin` ftvar_in_pskl PPb)
+        by (clear - Hα0; fsetdec).
+      assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
+        by (clear - Hα0; fsetdec).
+      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α α0))
                   _ _ _ _ _ _ _ _ Hc nil Θ0 eq_refl tvar_prefix_nil
                   Huq0
-                  ltac:(simpl; clear - HXΘ0 HXα; fsetdec)
-                  ltac:(simpl; clear - HXΘ1 HXα; fsetdec)
-                  ltac:(simpl; clear - HXα HXPt0; fsetdec)
+                  ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
+                  ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)
+                  ltac:(simpl; clear - Hα0α HXPt0; fsetdec)
                   ltac:(pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                           PPb (pskl_var_f α)) as Hup;
                         simpl in Hup;
-                        clear - HXα HXPPb Hup; fsetdec)
+                        clear - Hα0α HXPPb Hup; fsetdec)
                   ltac:(clear - HXP1; fsetdec)
-                  ltac:(clear - HXα HXΔ1; fsetdec)
-                  ltac:(clear - HXα HXΔ2; fsetdec))
+                  ltac:(clear - Hα0α Hα0Δ1; fsetdec)
+                  ltac:(clear - Hα0α Hα0Δ2; fsetdec))
         as [Θt [HeqΘt Hren]].
       simpl in HeqΘt. inversion HeqΘt. subst Θt.
-      assert (Ht0 : subst_pskl_in_pskl (pskl_var_f X) α
+      assert (Ht0 : subst_pskl_in_pskl (pskl_var_f α0) α
                       (pskl_tophole Pt0) = pskl_tophole Pt0)
         by (apply subst_pskl_in_pskl_fresh_eq; simpl;
             clear - Fr; fsetdec).
-      assert (Ho1 : open_pskl_wrt_pskl PPb (pskl_var_f X)
-                  = subst_pskl_in_pskl (pskl_var_f X) α
+      assert (Ho1 : open_pskl_wrt_pskl PPb (pskl_var_f α0)
+                  = subst_pskl_in_pskl (pskl_var_f α0) α
                       (open_pskl_wrt_pskl PPb (pskl_var_f α)))
         by (apply subst_pskl_in_pskl_intro; clear - Fr; fsetdec).
       rewrite Ht0 in Hren. rewrite <- Ho1 in Hren.
-      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f X) α) in Hren.
+      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α) in Hren.
       eapply (proj2 (proj2 a_assign_unify_consis_compat));
         [ exact Hren
-        | intros γ Hγ; left; exact Hγ
+        | intros α1 Hα1; left; exact Hα1
         | apply rn_set_notin; exact HαΔ1
         | apply rn_set_add_same; exact HαΔ2 ].
     }
@@ -7453,8 +7455,8 @@ Proof.
     { intro Hin.
       destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
         apply binds_In in Hb; clear - Hb HαΘ1; fsetdec. }
-    assert (Himg : forall γ τ, In (γ, τ) ζ -> α `notin` ftvar_in_ptyp τ).
-    { intros γ τ Hin.
+    assert (Himg : forall α1 τ, In (α1, τ) ζ -> α `notin` ftvar_in_ptyp τ).
+    { intros α1 τ Hin.
       pose proof (a_inc_images_ftv_dom Hζ' _ _ Hin) as Hsc.
       clear - Hsc HαΘ. fsetdec. }
     unfold ad_precise_f in Hprec |- *.
@@ -7468,14 +7470,14 @@ Proof.
       (L := singleton α `union` dom Θ `union` dom Θ1
             `union` Δ1 `union` Δ2
             `union` ftvar_in_bskl Q `union` ftvar_in_pskl P1).
-    intros X HX.
-    assert (HXζ : X `notin` dom ζ).
+    intros α0 Hα0.
+    assert (Hα0ζ : α0 `notin` dom ζ).
     { intro Hin.
       destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb HX; fsetdec. }
+        apply binds_In in Hb; clear - Hb Hα0; fsetdec. }
     rewrite <- !pskl_to_bskl_inh_open.
-    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ HXζ).
-    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f X) α).
+    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ Hα0ζ).
+    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α).
     rewrite <- bskl_to_pskl_open.
     pose proof (ad_refine_syn_f_ctx_to_delta Hprec nil Θ eq_refl
                   ltac:(clear; fsetdec)
@@ -7490,19 +7492,19 @@ Proof.
       assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
         by (eapply a_wf_aenv_def_ftv_dom; eassumption).
       clear - Hsc HαΘ. fsetdec. }
-    pose proof (ad_refine_syn_f_rename X Hp1 HαF HαΘ Hdefsθ) as Hp2.
+    pose proof (ad_refine_syn_f_rename α0 Hp1 HαF HαΘ Hdefsθ) as Hp2.
     rewrite !pskl_to_bskl_inh_subst_var in Hp2.
-    rewrite (msubst_pskl_subst_var ζ P1 Hαζ HXζ Himg) in Hp2.
+    rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
     rewrite bskl_to_pskl_subst_var in Hp2.
-    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f X)
-                = subst_bskl_in_bskl (bskl_var_f X) α
+    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
+                = subst_bskl_in_bskl (bskl_var_f α0) α
                     (open_bskl_wrt_bskl Q (bskl_var_f α)))
       by (apply subst_bskl_in_bskl_intro; clear - Fr; fsetdec).
     rewrite <- HoQ in Hp2.
     eapply ad_refine_syn_f_fmono;
       [ | eapply ad_refine_syn_f_delta_mono; [ exact Hp2 | ] ].
     { clear - HαΔ1 HαΔ2. fsetdec. }
-    { clear - HαΔ1 HαΔ2 HX. fsetdec. }
+    { clear - HαΔ1 HαΔ2 Hα0. fsetdec. }
   (* ---------------------------------------------- ghostg (impossible) *)
   - destruct (msubst_pskl ρ PP); simpl in HeqS; discriminate.
   (* -------------------------------------------- topholeg (impossible) *)
@@ -7517,11 +7519,11 @@ Proof.
        IS the competing Δ1-refinement. *)
     rename H into HΨfill. rename H0 into HwfFill.
     (* SUBJECT: PP = ◇ (var subjects are rigid, their image a var). *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    { (* var δ : rigid, its image is δ itself *)
+    { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds δ abind_tvar Θ0).
+      assert (Hbtδ : binds β1 abind_tvar Θ0).
       { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -7530,48 +7532,48 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ : δ `notin` dom ρ)
+      assert (Hβ1ρ : β1 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
       simpl in HeqS. discriminate. }
     (* the Δ2-refinement bounds the fill's free variables *)
     change (ad_refine_pskl_f Δ2 Θ Δ2 pskl_hole
               (bskl_to_pskl (pskl_to_bskl_inh P))) in Hrp.
     rewrite bskl_to_pskl_pskl_to_bskl_inh in Hrp.
     (* the ftv chase for the Ghost side condition *)
-    assert (Hside : forall X, X `in` Δ2 -> X `notin` ftvar_in_pskl PP0).
-    { intros X HinΔ2 HinP0.
-      assert (HbX0 : binds X abind_tvar Θ0)
+    assert (Hside : forall α, α `in` Δ2 -> α `notin` ftvar_in_pskl PP0).
+    { intros α HinΔ2 HinP0.
+      assert (HbX0 : binds α abind_tvar Θ0)
         by (apply Hrig; clear - HinΔ2; fsetdec).
-      assert (HbX : binds X abind_tvar Θ)
+      assert (HbX : binds α abind_tvar Θ)
         by (eapply a_inc_binds_tvar; eauto).
-      assert (HXnd : X `notin` dom ρ)
+      assert (HXnd : α `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       assert (Hdefs : forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-                                  X `notin` ftvar_in_ptyp τ).
+                                  α `notin` ftvar_in_ptyp τ).
       { intros β τ Hb. pose proof (Hnfdth _ _ Hb) as Hd.
         clear - Hd HinΔ2. fsetdec. }
-      assert (HninP : X `notin` ftvar_in_pskl P).
+      assert (HninP : α `notin` ftvar_in_pskl P).
       { inversion Hrp; subst.
         - (* hole : the Δ2-hygiene of the fill *)
           match goal with
           | Hint : Δ2 ∩ ftvar_in_pskl P [=] empty |- _ =>
               clear - Hint HinΔ2; fsetdec
           end.
-        - (* flex_r : the fill is a defined flexible, never the rigid X *)
+        - (* flex_r : the fill is a defined flexible, never the rigid α *)
           simpl.
           match goal with
           | Hbr : binds ?α0 (abind_flex_mono_def _) Θ |- _ =>
-              assert (Hne : X <> α0)
+              assert (Hne : α <> α0)
                 by (intro Heq; subst;
                     pose proof (binds_unique _ _ _ _ _ HbX Hbr
                                   (a_wf_aenv_uniq Hwfth)) as Hcon;
                     discriminate)
           end.
           clear - Hne; fsetdec. }
-      assert (HinθP0 : X `in` ftvar_in_pskl (msubst_pskl ρ PP0))
+      assert (HinθP0 : α `in` ftvar_in_pskl (msubst_pskl ρ PP0))
         by (apply msubst_pskl_ftv_keep; assumption).
-      assert (HninSrc : X `notin`
+      assert (HninSrc : α `notin`
                 ftvar_in_bskl (pskl_to_bskl_inh (msubst_pskl ρ PP0))).
       { eapply ad_refine_syn_f_rigid_ftv_rev;
           [ exact Hwfth | exact HbX | exact Hdefs | exact Hrs | ].
@@ -7594,23 +7596,23 @@ Proof.
     eapply ad_refine_syn_f_delta_mono with (Δ0 := Δ1);
       [ | clear; fsetdec ].
     eapply ad_refine_syn_f_fextend_ftv; [ exact Hrs | ].
-    intros γ Hγ.
-    destruct (AtomSetProperties.In_dec γ Δ1) as [HγΔ1 | HγΔ1];
-      [ left; exact HγΔ1 | right ].
-    assert (HγΔ2 : γ `in` Δ2) by (clear - Hγ HγΔ1; fsetdec).
-    assert (Hbγ : binds γ abind_tvar Θ)
+    intros α1 Hα1.
+    destruct (AtomSetProperties.In_dec α1 Δ1) as [Hα1Δ1 | Hα1Δ1];
+      [ left; exact Hα1Δ1 | right ].
+    assert (Hα1Δ2 : α1 `in` Δ2) by (clear - Hα1 Hα1Δ1; fsetdec).
+    assert (Hbγ : binds α1 abind_tvar Θ)
       by (eapply a_inc_binds_tvar; [ exact Hinc | ];
-          apply Hrig; clear - HγΔ2; fsetdec).
+          apply Hrig; clear - Hα1Δ2; fsetdec).
     split.
-    + assert (Hnq : γ `notin` ftvar_in_pskl P)
+    + assert (Hnq : α1 `notin` ftvar_in_pskl P)
         by (eapply ad_refine_pskl_f_hole_src_target_ftv;
             [ exact Hrp | exact Hwfth
-            | clear - HγΔ2; fsetdec | exact Hbγ ]).
+            | clear - Hα1Δ2; fsetdec | exact Hbγ ]).
       pose proof (ftvar_in_bskl_inh P) as Hfe.
       clear - Hnq Hfe. fsetdec.
     + intros β τ Hb.
       pose proof (Hnfdth β τ Hb) as Hi.
-      clear - Hi HγΔ2. fsetdec.
+      clear - Hi Hα1Δ2. fsetdec.
   (* ---------------------------------------------------------- tophole *)
   - (* C-UnivGhost (paper :2928-2993): both sides strip one ⊤◇; wf forces
        the input to be a ⊤◇ as well (a guarded input's refinement target is
@@ -7619,11 +7621,11 @@ Proof.
     | Hpm : _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ => rename Hpm into Hj
     end.
     (* SUBJECT: PP = ⊤◇PPt (var subjects are rigid, their image a var). *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    { (* var δ : rigid, its image is δ itself *)
+    { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds δ abind_tvar Θ0).
+      assert (Hbtδ : binds β1 abind_tvar Θ0).
       { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -7632,9 +7634,9 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ : δ `notin` dom ρ)
+      assert (Hβ1ρ : β1 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
       simpl in HeqS. discriminate. }
     inversion HeqS; subst R. clear HeqS.
     assert (HgPPt : guarded_pskl PPt) by (inversion HwfP; assumption).
@@ -7649,12 +7651,12 @@ Proof.
     { eapply ad_pat_consis_guarded_r;
         [ exact Hj | exact Hwfth | reflexivity | exact HgρP | exact HlcQ ]. }
     (* INPUT: PP0 = ⊤◇P0t (every other head's target is not a ⊤◇). *)
-    destruct PP0 as [ | n0 | δ0 | Pa0 Pb0 | Pb0 | | Pt0 ]; simpl in Hrs.
+    destruct PP0 as [ | n0 | β10 | Pa0 Pb0 | Pb0 | | Pt0 ]; simpl in Hrs.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
-    1:{ (* var δ0 : rigid; a rigid variable does not refine to a ⊤◇ *)
+    1:{ (* var β10 : rigid; a rigid variable does not refine to a ⊤◇ *)
       exfalso.
-      assert (Hbtδ0 : binds δ0 abind_tvar Θ0).
+      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
       { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -7663,15 +7665,15 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ0 : δ0 `notin` dom ρ)
+      assert (Hβ1ρ0 : β10 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ0) in Hrs.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ0) in Hrs.
       simpl in Hrs.
-      assert (HbtΘ0' : binds δ0 abind_tvar Θ)
+      assert (HbtΘ0' : binds β10 abind_tvar Θ)
         by (eapply a_inc_binds_tvar; eauto).
       inversion Hrs; subst.
       match goal with
-      | Hbr : binds δ0 (abind_flex_mono_def _) Θ |- _ =>
+      | Hbr : binds β10 (abind_flex_mono_def _) Θ |- _ =>
           pose proof (binds_unique _ _ _ _ _ HbtΘ0' Hbr (a_wf_aenv_uniq Hwfth))
             as Hcon; discriminate
       end. }
@@ -7718,14 +7720,14 @@ Proof.
        rigid α added to Θ0 and Δ1; the subject ⊤◇.PPt is carried
        unchanged through the μ-IH and the L9 rename. *)
     match goal with
-    | Hpm : forall X, X `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
+    | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
         rename Hpm into Hjoin
     end.
     (* SUBJECT: PP = ⊤◇ PPt. *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
     { exfalso.
-      assert (Hbtδ : binds δ abind_tvar Θ0).
+      assert (Hbtδ : binds β1 abind_tvar Θ0).
       { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -7734,17 +7736,17 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ : δ `notin` dom ρ)
+      assert (Hβ1ρ : β1 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
       simpl in HeqS. discriminate. }
     inversion HeqS. subst R. clear HeqS.
     (* INPUT: PP0 = ∀ P0b. *)
-    destruct PP0 as [ | n0 | δ0 | P0a P0b | P0b | | Pt0 ]; simpl in Hrs.
+    destruct PP0 as [ | n0 | β10 | P0a P0b | P0b | | Pt0 ]; simpl in Hrs.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso.
-      assert (Hbtδ0 : binds δ0 abind_tvar Θ0).
+      assert (Hbtδ0 : binds β10 abind_tvar Θ0).
       { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -7753,15 +7755,15 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP0 as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ0 : δ0 `notin` dom ρ)
+      assert (Hβ1ρ0 : β10 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ0) in Hrs.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ0) in Hrs.
       simpl in Hrs.
-      assert (HbtΘ0' : binds δ0 abind_tvar Θ)
+      assert (HbtΘ0' : binds β10 abind_tvar Θ)
         by (eapply a_inc_binds_tvar; eauto).
       inversion Hrs; subst.
       match goal with
-      | Hbr : binds δ0 (abind_flex_mono_def _) Θ |- _ =>
+      | Hbr : binds β10 (abind_flex_mono_def _) Θ |- _ =>
           pose proof (binds_unique _ _ _ _ _ HbtΘ0' Hbr
                         (a_wf_aenv_uniq Hwfth)) as Hcon; discriminate
       end. }
@@ -7780,7 +7782,7 @@ Proof.
     assert (HwfPt : Θ0 ⨟ empty ⊢ₚₛᵃ PPt) by (inversion HwfP; assumption).
     inversion Hrs; subst.
     match goal with
-    | Hn : forall X, X `notin` ?LA ->
+    | Hn : forall α, α `notin` ?LA ->
              ad_refine_syn_f _ _ _ _ _ |- _ => rename Hn into Hrs1
     end.
     change (ad_refine_pskl_f Δ2 Θ Δ2
@@ -7794,12 +7796,12 @@ Proof.
       eapply ad_refine_pskl_f_guarded_src_all_syn_absurd;
         [ exact Hwfth | eassumption | exact HgρP ]. }
     match goal with
-    | Hn : forall X, X `notin` ?LB ->
+    | Hn : forall α, α `notin` ?LB ->
              ad_refine_pskl_f _ _ _ _ _ |- _ => rename Hn into Hrp1
     end.
-    assert (Hwfb0 : exists Lw0, forall X, X `notin` Lw0 ->
-              Θ0 ⨟ (add X empty) ⊢ₚₛᵃ
-                (open_pskl_wrt_pskl P0b (pskl_var_f X))).
+    assert (Hwfb0 : exists Lw0, forall α, α `notin` Lw0 ->
+              Θ0 ⨟ (add α empty) ⊢ₚₛᵃ
+                (open_pskl_wrt_pskl P0b (pskl_var_f α))).
     { inversion HwfP0; subst. eexists. eassumption. }
     destruct Hwfb0 as [Lw0 Hwfb0].
     (* the fresh rigid α *)
@@ -7841,11 +7843,11 @@ Proof.
                       (pskl_tophole PPt)).
     { eapply a_wf_pskl_weaken; [ | exact HwfP ].
       intros x b Hb. apply binds_cons_3. exact Hb. }
-    assert (Hrig' : forall Z, Z `in` (add α Δ1 `union` Δ2) ->
-              binds Z abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros Z HZ. destruct (Z == α) as [-> | Hne];
+    assert (Hrig' : forall α2, α2 `in` (add α Δ1 `union` Δ2) ->
+              binds α2 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
+    { intros α2 Hα2. destruct (α2 == α) as [-> | Hne];
         [ unfold binds; left; reflexivity
-        | apply binds_cons_3; apply Hrig; clear - HZ Hne; fsetdec ]. }
+        | apply binds_cons_3; apply Hrig; clear - Hα2 Hne; fsetdec ]. }
     assert (Hnfd0' : no_flex_dep (add α Δ1 `union` Δ2)
                        ((α ~ abind_tvar) ++ Θ0)).
     { eapply no_flex_dep_cong;
@@ -7884,8 +7886,8 @@ Proof.
         [ | intros x b Hb; apply binds_cons_3; exact Hb ].
       eapply ad_refine_syn_f_fextend_dom;
         [ apply Hrs1; clear - Fr; fsetdec | ].
-      intros γ Hγ. destruct (γ == α) as [-> | Hne];
-        [ right; exact HαΘ | left; clear - Hγ Hne; fsetdec ]. }
+      intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
+        [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
     assert (Hrpα : ad_refine_pskl_f Δ2 ((α ~ abind_tvar) ++ Θ) Δ2
               (msubst_pskl ρ (pskl_tophole PPt))
               (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α)))).
@@ -7915,46 +7917,46 @@ Proof.
               `union` singleton α `union` F `union` Δ1 `union` Δ2
               `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPt
               `union` ftvar_in_pskl P1).
-      intros X HX.
-      assert (HXα : X <> α) by (clear - HX; fsetdec).
-      assert (HXΘ0 : X `notin` dom Θ0) by (clear - HX; fsetdec).
-      assert (HXΘ1 : X `notin` dom Θ1) by (clear - HX; fsetdec).
-      assert (HXΔ1 : X `notin` Δ1) by (clear - HX; fsetdec).
-      assert (HXΔ2 : X `notin` Δ2) by (clear - HX; fsetdec).
-      assert (HXP0b : X `notin` ftvar_in_pskl P0b)
-        by (clear - HX; fsetdec).
-      assert (HXPPt : X `notin` ftvar_in_pskl PPt)
-        by (clear - HX; fsetdec).
-      assert (HXP1 : X `notin` ftvar_in_pskl P1)
-        by (clear - HX; fsetdec).
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α X))
+      intros α0 Hα0.
+      assert (Hα0α : α0 <> α) by (clear - Hα0; fsetdec).
+      assert (Hα0Θ0 : α0 `notin` dom Θ0) by (clear - Hα0; fsetdec).
+      assert (Hα0Θ1 : α0 `notin` dom Θ1) by (clear - Hα0; fsetdec).
+      assert (Hα0Δ1 : α0 `notin` Δ1) by (clear - Hα0; fsetdec).
+      assert (Hα0Δ2 : α0 `notin` Δ2) by (clear - Hα0; fsetdec).
+      assert (HXP0b : α0 `notin` ftvar_in_pskl P0b)
+        by (clear - Hα0; fsetdec).
+      assert (HXPPt : α0 `notin` ftvar_in_pskl PPt)
+        by (clear - Hα0; fsetdec).
+      assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
+        by (clear - Hα0; fsetdec).
+      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α α0))
                   _ _ _ _ _ _ _ _ Hc nil Θ0 eq_refl tvar_prefix_nil
                   Huq0
-                  ltac:(simpl; clear - HXΘ0 HXα; fsetdec)
-                  ltac:(simpl; clear - HXΘ1 HXα; fsetdec)
+                  ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
+                  ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)
                   ltac:(pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                           P0b (pskl_var_f α)) as Hup;
                         simpl in Hup;
-                        clear - HXα HXP0b Hup; fsetdec)
-                  ltac:(simpl; clear - HXα HXPPt; fsetdec)
+                        clear - Hα0α HXP0b Hup; fsetdec)
+                  ltac:(simpl; clear - Hα0α HXPPt; fsetdec)
                   ltac:(clear - HXP1; fsetdec)
-                  ltac:(clear - HXα HXΔ1; fsetdec)
-                  ltac:(clear - HXα HXΔ2; fsetdec))
+                  ltac:(clear - Hα0α Hα0Δ1; fsetdec)
+                  ltac:(clear - Hα0α Hα0Δ2; fsetdec))
         as [Θt [HeqΘt Hren]].
       simpl in HeqΘt. inversion HeqΘt. subst Θt.
-      assert (Ho0 : open_pskl_wrt_pskl P0b (pskl_var_f X)
-                  = subst_pskl_in_pskl (pskl_var_f X) α
+      assert (Ho0 : open_pskl_wrt_pskl P0b (pskl_var_f α0)
+                  = subst_pskl_in_pskl (pskl_var_f α0) α
                       (open_pskl_wrt_pskl P0b (pskl_var_f α)))
         by (apply subst_pskl_in_pskl_intro; clear - Fr; fsetdec).
-      assert (Ht0 : subst_pskl_in_pskl (pskl_var_f X) α
+      assert (Ht0 : subst_pskl_in_pskl (pskl_var_f α0) α
                       (pskl_tophole PPt) = pskl_tophole PPt)
         by (apply subst_pskl_in_pskl_fresh_eq; simpl;
             clear - Fr; fsetdec).
       rewrite <- Ho0 in Hren. rewrite Ht0 in Hren.
-      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f X) α) in Hren.
+      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α) in Hren.
       eapply (proj2 (proj2 a_assign_unify_consis_compat));
         [ exact Hren
-        | intros γ Hγ; left; exact Hγ
+        | intros α1 Hα1; left; exact Hα1
         | apply rn_set_add_same; exact HαΔ1
         | apply rn_set_notin; exact HαΔ2 ].
     }
@@ -7991,8 +7993,8 @@ Proof.
     { intro Hin.
       destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
         apply binds_In in Hb; clear - Hb HαΘ1; fsetdec. }
-    assert (Himg : forall γ τ, In (γ, τ) ζ -> α `notin` ftvar_in_ptyp τ).
-    { intros γ τ Hin.
+    assert (Himg : forall α1 τ, In (α1, τ) ζ -> α `notin` ftvar_in_ptyp τ).
+    { intros α1 τ Hin.
       pose proof (a_inc_images_ftv_dom Hζ' _ _ Hin) as Hsc.
       clear - Hsc HαΘ. fsetdec. }
     unfold ad_precise_f in Hprec |- *.
@@ -8006,14 +8008,14 @@ Proof.
       (L := singleton α `union` dom Θ `union` dom Θ1
             `union` Δ1 `union` Δ2
             `union` ftvar_in_bskl Q `union` ftvar_in_pskl P1).
-    intros X HX.
-    assert (HXζ : X `notin` dom ζ).
+    intros α0 Hα0.
+    assert (Hα0ζ : α0 `notin` dom ζ).
     { intro Hin.
       destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb HX; fsetdec. }
+        apply binds_In in Hb; clear - Hb Hα0; fsetdec. }
     rewrite <- !pskl_to_bskl_inh_open.
-    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ HXζ).
-    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f X) α).
+    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ Hα0ζ).
+    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α).
     rewrite <- bskl_to_pskl_open.
     pose proof (ad_refine_syn_f_ctx_to_delta Hprec nil Θ eq_refl
                   ltac:(clear; fsetdec)
@@ -8028,19 +8030,19 @@ Proof.
       assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
         by (eapply a_wf_aenv_def_ftv_dom; eassumption).
       clear - Hsc HαΘ. fsetdec. }
-    pose proof (ad_refine_syn_f_rename X Hp1 HαF HαΘ Hdefsθ) as Hp2.
+    pose proof (ad_refine_syn_f_rename α0 Hp1 HαF HαΘ Hdefsθ) as Hp2.
     rewrite !pskl_to_bskl_inh_subst_var in Hp2.
-    rewrite (msubst_pskl_subst_var ζ P1 Hαζ HXζ Himg) in Hp2.
+    rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
     rewrite bskl_to_pskl_subst_var in Hp2.
-    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f X)
-                = subst_bskl_in_bskl (bskl_var_f X) α
+    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
+                = subst_bskl_in_bskl (bskl_var_f α0) α
                     (open_bskl_wrt_bskl Q (bskl_var_f α)))
       by (apply subst_bskl_in_bskl_intro; clear - Fr; fsetdec).
     rewrite <- HoQ in Hp2.
     eapply ad_refine_syn_f_fmono;
       [ | eapply ad_refine_syn_f_delta_mono; [ exact Hp2 | ] ].
     { clear - HαΔ1 HαΔ2. fsetdec. }
-    { clear - HαΔ1 HαΔ2 HX. fsetdec. }
+    { clear - HαΔ1 HαΔ2 Hα0. fsetdec. }
   (* ----------------------------------------------------- tophole_drop *)
   - (* C-UnivGhost2 (paper :3072-3164): the subject strips its ⊤◇; the
        guarded subject body makes the join target Q guarded, which drives
@@ -8050,11 +8052,11 @@ Proof.
     | Hpm : _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ => rename Hpm into Hj
     end.
     (* SUBJECT: PP = ⊤◇PPt. *)
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    { (* var δ : rigid, its image is δ itself *)
+    { (* var β1 : rigid, its image is β1 itself *)
       exfalso.
-      assert (Hbtδ : binds δ abind_tvar Θ0).
+      assert (Hbtδ : binds β1 abind_tvar Θ0).
       { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
         destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
           [ exfalso; clear - HΔ; fsetdec
@@ -8063,9 +8065,9 @@ Proof.
             apply a_flex__var; exact Hb
           | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
             eapply a_flex__var_def; exact Hb ]. }
-      assert (Hδρ : δ `notin` dom ρ)
+      assert (Hβ1ρ : β1 `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
-      rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+      rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
       simpl in HeqS. discriminate. }
     inversion HeqS; subst R. clear HeqS.
     assert (HgPPt : guarded_pskl PPt) by (inversion HwfP; assumption).
@@ -8118,7 +8120,7 @@ Proof.
       apply ad_refine_syn_f__tophole_remove. exact Hprec.
     + (* PP0 guarded : paper :3134-3163; subject-only strip, [univ_ghost2]. *)
       assert (Hg0 : guarded_pskl PP0).
-      { destruct PP0 as [ | n0 | δ0 | Pa0 Pb0 | Pb0 | | Pt0 ].
+      { destruct PP0 as [ | n0 | β10 | Pa0 Pb0 | Pb0 | | Pt0 ].
         - auto with frost.
         - inversion HwfP0.
         - auto with frost.
@@ -8147,9 +8149,9 @@ Proof.
        stays rigid in Θ — it cannot be the defined flexible the join's
        left lookup unfolds. *)
     exfalso.
-    destruct PP as [ | n | δ | PPa PPb | PPb | | PPt ];
+    destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
-    assert (Hbtδ : binds δ abind_tvar Θ0).
+    assert (Hbtδ : binds β1 abind_tvar Θ0).
     { inversion HwfP as [ | Θw Δw δw Hbt | | | | ]; subst.
       destruct Hbt as [HΔ | [Hb | [Hb | [τ0 Hb]]]];
         [ exfalso; clear - HΔ; fsetdec
@@ -8158,11 +8160,11 @@ Proof.
           apply a_flex__var; exact Hb
         | exfalso; destruct HnfP as [_ Hnfl]; apply Hnfl;
           eapply a_flex__var_def; exact Hb ]. }
-    assert (Hδρ : δ `notin` dom ρ)
+    assert (Hβ1ρ : β1 `notin` dom ρ)
       by (eapply a_inc_tvar_notin_dom; eauto).
-    rewrite (msubst_lookup_notin ρ Hδρ) in HeqS.
+    rewrite (msubst_lookup_notin ρ Hβ1ρ) in HeqS.
     simpl in HeqS. inversion HeqS; subst α.
-    assert (HbtΘ : binds δ abind_tvar Θ)
+    assert (HbtΘ : binds β1 abind_tvar Θ)
       by (eapply a_inc_binds_tvar; eauto).
     pose proof (binds_unique _ _ _ _ _ HbtΘ H (a_wf_aenv_uniq Hwfth))
       as Hcon; discriminate.
@@ -8182,16 +8184,16 @@ Proof.
     assert (Hdisj : (Δ1 `union` Δ2) ∩ ftvar_in_ptyp τ
                       [=] empty)
       by (apply (Hnfdth _ _ Hbα)).
-    assert (HΔbt : forall X, X `in` (Δ1 `union` Δ2) ->
-                             binds X abind_tvar Θ).
-    { intros X HX. eapply a_inc_binds_tvar; [ exact Hinc | ].
-      apply Hrig. exact HX. }
+    assert (HΔbt : forall α, α `in` (Δ1 `union` Δ2) ->
+                             binds α abind_tvar Θ).
+    { intros α0 Hα0. eapply a_inc_binds_tvar; [ exact Hinc | ].
+      apply Hrig. exact Hα0. }
     (* transport the two refinement witnesses through the unfold *)
     assert (Hrs' : ad_refine_syn_f Δ1 Θ Δ1
               (pskl_to_bskl_inh (msubst_pskl ρ PP0)) (ptyp_to_bskl_syn τ)).
     { eapply ad_refine_syn_f_flex_target_unfold;
         [ exact Hwfth | exact Hbα
-        | intros X HX; apply HΔbt; clear - HX; fsetdec
+        | intros α0 Hα0; apply HΔbt; clear - Hα0; fsetdec
         | clear - Hdisj; fsetdec
         | exact Hrs ]. }
     assert (Hrp' : ad_refine_pskl_f Δ2 Θ Δ2
@@ -8200,7 +8202,7 @@ Proof.
       rewrite bskl_to_pskl_pskl_to_bskl_syn.
       eapply ad_refine_pskl_f_flex_target_unfold;
         [ exact Hwfth | exact Hbα
-        | intros X HX; apply HΔbt; clear - HX; fsetdec
+        | intros α0 Hα0; apply HΔbt; clear - Hα0; fsetdec
         | clear - Hdisj; fsetdec
         | exact Hrp ]. }
     (* recurse on the premise at the SAME measure *)
@@ -8231,7 +8233,7 @@ Proof.
   subst m.
   (* ---- Layer 0a: flexible SUBJECT — parts 2/3 (t breaks the tie) ---- *)
   destruct (a_flex_shape_dec HwfP) as [[β [-> Hfβ]] | HnfP].
-  { destruct (a_flex_shape_dec HwfP0) as [[δ0 [-> Hfδ0]] | HnfP0].
+  { destruct (a_flex_shape_dec HwfP0) as [[β10 [-> Hfδ0]] | HnfP0].
     - (* C-Flex : both hatted — part 2 (unification). *)
       assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
                 (pskl_to_uskl (msubst_pskl ρ (pskl_var_f β))) ∼ Qb)
@@ -8243,13 +8245,13 @@ Proof.
         rewrite pskl_to_uskl_ptyp in Hjoin'. exact Hjoin'. }
       assert (Hmβ : mono_ptyp (msubst_lookup ρ β))
         by (eapply a_inc_lookup_mono; exact Hinc).
-      assert (Hmδ0 : mono_ptyp (msubst_lookup ρ δ0))
+      assert (Hmδ0 : mono_ptyp (msubst_lookup ρ β10))
         by (eapply a_inc_lookup_mono; exact Hinc).
       apply ad_refine_syn_f_forget in Hrs.
-      replace (msubst_pskl ρ (pskl_var_f δ0))
-        with (ptyp_to_pskl (msubst_lookup ρ δ0)) in Hrs by reflexivity.
+      replace (msubst_pskl ρ (pskl_var_f β10))
+        with (ptyp_to_pskl (msubst_lookup ρ β10)) in Hrs by reflexivity.
       rewrite (ptyp_to_bskl_inh_syn_eq Hmδ0) in Hrs.
-      destruct (refine_mono_join Hrs Hwfth (A := msubst_lookup ρ δ0)
+      destruct (refine_mono_join Hrs Hwfth (A := msubst_lookup ρ β10)
                   eq_refl Hmδ0) as [C [HmC [HeqQb HeqδC]]].
       subst Qb.
       destruct (consis_mono_join Hjoin'' Hwfth (A := msubst_lookup ρ β)
@@ -8257,16 +8259,16 @@ Proof.
       assert (HCC : C = C')
         by (apply ptyp_to_bskl_syn_inj; auto).
       subst C'.
-      assert (Heqβδ : Θ ⊢ (msubst_lookup ρ β) ≡ᵗ (msubst_lookup ρ δ0)).
+      assert (Heqββ1 : Θ ⊢ (msubst_lookup ρ β) ≡ᵗ (msubst_lookup ρ β10)).
       { eapply a_tyequiv__trans; [ exact HeqβC' | ].
         apply a_tyequiv__sym; exact HeqδC. }
-      assert (Hlt : mu_lt (mu_unify Θ ρ β δ0 Θ0)
-                          (mu_consis Θ ρ (pskl_var_f δ0) (pskl_var_f β) Θ0)).
+      assert (Hlt : mu_lt (mu_unify Θ ρ β β10 Θ0)
+                          (mu_consis Θ ρ (pskl_var_f β10) (pskl_var_f β) Θ0)).
       { unfold mu_unify, mu_consis. apply mu_lt_intro. right.
         split; [ symmetry; apply V_flex | ].
         right. split; [ reflexivity | left; lia ]. }
       destruct (IH _ Hlt) as [_ [HuIH _]].
-      destruct (HuIH F Θ0 β δ0 ρ Θ eq_refl Hwf0 Hfβ Hfδ0 Hinc Hwfth Heqβδ)
+      destruct (HuIH F Θ0 β β10 ρ Θ eq_refl Hwf0 Hfβ Hfδ0 Hinc Hwfth Heqββ1)
         as [Θ1 [Hu Hopt']].
       exists (pskl_var_f β), Θ1. split.
       { apply a_consis__flex. exact Hu. }
@@ -8317,12 +8319,12 @@ Proof.
           [ exact Hrs | exact Hwfth
           | apply mono_ptyp_to_bskl_syn; exact HmC
           | reflexivity
-          | intros X HX; left; eapply a_inc_binds_tvar;
-              [ exact Hinc | apply Hrig; clear - HX; fsetdec ] ]. }
+          | intros α Hα; left; eapply a_inc_binds_tvar;
+              [ exact Hinc | apply Hrig; clear - Hα; fsetdec ] ]. }
       (* transport the join target from C to θβ̂ along the equivalence *)
-      assert (Hvβ : forall X, X `in` ftvar_in_ptyp (msubst_lookup ρ β) ->
-                              a_binds_tvar X Θ).
-      { intros X HX. eapply a_wf_ptyp_ftv_tvarish; [ | exact HX ].
+      assert (Hvβ : forall α, α `in` ftvar_in_ptyp (msubst_lookup ρ β) ->
+                              a_binds_tvar α Θ).
+      { intros α Hα. eapply a_wf_ptyp_ftv_tvarish; [ | exact Hα ].
         eapply a_inc_lookup_wf;
           [ exact Hinc | exact Hwf0 | right; exact Hfβ ]. }
       destruct (tyequiv_mono_consis_transport_q HeqβC Hwfth Hmβ Hvβ)
@@ -8367,59 +8369,59 @@ Proof.
         | apply (msubst_lookup_id β Hid)
         | exact Hjoin' ]. }
   (* ---- Layer 0b: flexible INPUT, non-flex subject : C-FlexR --------- *)
-  destruct (a_flex_shape_dec HwfP0) as [[δ0 [-> Hfδ0]] | HnfP0].
-  { (* part 3 (assignment δ̂0 ≔ P): the input δ̂0's image is a monotype, so
+  destruct (a_flex_shape_dec HwfP0) as [[β10 [-> Hfδ0]] | HnfP0].
+  { (* part 3 (assignment β1̂0 ≔ P): the input β1̂0's image is a monotype, so
        [refine_mono_join] reads Qb = syn C off the Δ1-refinement and the
-       join's TARGET transports from C to θδ̂0 along the equivalence
+       join's TARGET transports from C to θβ1̂0 along the equivalence
        ([tyequiv_mono_consis_transport_q] — general subject); precision by
        [consis_precise_via_refine]. *)
     assert (Hjoin' : empty ⨟ Θ ⊢ₛᵃ
               (pskl_to_uskl (msubst_pskl ρ P)) ∼ Qb)
       by (eapply consis_psi_cong_local; [ exact Hjoin | exact HΨ ]).
-    assert (Hmδ0 : mono_ptyp (msubst_lookup ρ δ0))
+    assert (Hmδ0 : mono_ptyp (msubst_lookup ρ β10))
       by (eapply a_inc_lookup_mono; exact Hinc).
     (* the Δ1-refinement's source is a monotype painting: Qb = syn C *)
     pose proof Hrs as Hrs2.
     apply ad_refine_syn_f_forget in Hrs2.
-    replace (msubst_pskl ρ (pskl_var_f δ0))
-      with (ptyp_to_pskl (msubst_lookup ρ δ0)) in Hrs2 by reflexivity.
+    replace (msubst_pskl ρ (pskl_var_f β10))
+      with (ptyp_to_pskl (msubst_lookup ρ β10)) in Hrs2 by reflexivity.
     rewrite (ptyp_to_bskl_inh_syn_eq Hmδ0) in Hrs2.
-    destruct (refine_mono_join Hrs2 Hwfth (A := msubst_lookup ρ δ0)
+    destruct (refine_mono_join Hrs2 Hwfth (A := msubst_lookup ρ β10)
                 eq_refl Hmδ0) as [C [HmC [HeqQb HeqδC]]].
-    (* transport the join target from C to θδ̂0 along the equivalence *)
-    assert (Hvδ : forall X, X `in` ftvar_in_ptyp (msubst_lookup ρ δ0) ->
-                            a_binds_tvar X Θ).
-    { intros X HX. eapply a_wf_ptyp_ftv_tvarish; [ | exact HX ].
+    (* transport the join target from C to θβ1̂0 along the equivalence *)
+    assert (Hvδ : forall α, α `in` ftvar_in_ptyp (msubst_lookup ρ β10) ->
+                            a_binds_tvar α Θ).
+    { intros α Hα. eapply a_wf_ptyp_ftv_tvarish; [ | exact Hα ].
       eapply a_inc_lookup_wf;
         [ exact Hinc | exact Hwf0 | right; exact Hfδ0 ]. }
     destruct (tyequiv_mono_consis_transport_q HeqδC Hwfth Hmδ0 Hvδ)
       as [Htq _].
     assert (Hjoin3 : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl ρ P))
-                      ∼ (ptyp_to_bskl_syn (msubst_lookup ρ δ0))).
+                      ∼ (ptyp_to_bskl_syn (msubst_lookup ρ β10))).
     { apply Htq. rewrite <- HeqQb. exact Hjoin'. }
     (* the measure: V constant (pairing), n constant, t breaks the tie *)
-    assert (Hlt : mu_lt (mu_assign Θ ρ δ0 P nil Θ0)
-                        (mu_consis Θ ρ (pskl_var_f δ0) P Θ0)).
+    assert (Hlt : mu_lt (mu_assign Θ ρ β10 P nil Θ0)
+                        (mu_consis Θ ρ (pskl_var_f β10) P Θ0)).
     { unfold mu_assign, mu_consis. apply mu_lt_intro. right.
       split; [ symmetry; apply V_flexR | ].
       right. split; [ reflexivity | left; lia ]. }
     assert (Hdom : dom (nil : aenv) [<=] ftvar_in_pskl P)
       by (simpl; clear; fsetdec).
     destruct (IH _ Hlt) as [_ [_ HaIH]].
-    destruct (HaIH F Θ0 nil δ0 P ρ Θ eq_refl a_decls__nil Hwf0 Hfδ0
+    destruct (HaIH F Θ0 nil β10 P ρ Θ eq_refl a_decls__nil Hwf0 Hfδ0
                    HwfP HnfP Hdom Hinc Hwfth Hjoin3)
       as [Θ1 [Ha Hopt']].
-    exists (pskl_var_f δ0), Θ1. split.
+    exists (pskl_var_f β10), Θ1. split.
     { apply a_consis__flex_r; [ exact HnfP | exact Ha ]. }
     intros ρ1 Hid Hinc1.
     destruct (Hopt' ρ1 Hid Hinc1) as [ζ [Hζ Hie]].
     exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
     (* precision recovery for the hatted output, off the Δ1-refinement *)
-    assert (Hbtδ00 : a_binds_tvar δ0 Θ0) by (right; exact Hfδ0).
-    assert (Hwfvδ : a_wf_ptyp Θ1 (msubst_lookup ρ1 δ0))
+    assert (Hbtδ00 : a_binds_tvar β10 Θ0) by (right; exact Hfδ0).
+    assert (Hwfvδ : a_wf_ptyp Θ1 (msubst_lookup ρ1 β10))
       by (eapply a_inc_lookup_wf; [ exact Hinc1 | exact Hwf0 | exact Hbtδ00 ]).
-    rewrite (msubst_lookup_id δ0 Hid) in Hwfvδ.
-    assert (HbtδΘ1 : a_binds_tvar δ0 Θ1) by (inversion Hwfvδ; assumption).
+    rewrite (msubst_lookup_id β10 Hid) in Hwfvδ.
+    assert (HbtδΘ1 : a_binds_tvar β10 Θ1) by (inversion Hwfvδ; assumption).
     assert (Hwf1 : a_wf_aenv Θ1)
       by (eapply a_assign_preserves_wf;
             [ exact Ha | apply a_decls__nil | exact Hwf0 | exact HwfP ]).
@@ -8431,7 +8433,7 @@ Proof.
       [ exact Hwfth | exact Hfδ0 | exact Hinc | exact HbtδΘ1
       | exact Hζ | exact Hwf1 | exact Hie
       | eapply a_inc_flex_dom; [ exact Hinc1 | exact Hwf0 | exact Hfδ0 ]
-      | apply (msubst_lookup_id δ0 Hid)
+      | apply (msubst_lookup_id β10 Hid)
       | exact Hrs ]. }
   (* ---- Layer 0c: P0 = ◇ : C-GhostR ---------------------------------- *)
   destruct (pskl_eq_dec P0 pskl_hole) as [-> | HneP0hole].
@@ -8449,19 +8451,19 @@ Proof.
       - rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
       - simpl. reflexivity. }
     (* the ftv chase for the GhostR side condition *)
-    assert (Hside : forall X, X `in` Δ1 -> X `notin` ftvar_in_pskl P).
-    { intros X HinΔ1 HinP.
-      assert (HbX0 : binds X abind_tvar Θ0)
+    assert (Hside : forall α, α `in` Δ1 -> α `notin` ftvar_in_pskl P).
+    { intros α HinΔ1 HinP.
+      assert (HbX0 : binds α abind_tvar Θ0)
         by (apply Hrig; clear - HinΔ1; fsetdec).
-      assert (HbX : binds X abind_tvar Θ)
+      assert (HbX : binds α abind_tvar Θ)
         by (eapply a_inc_binds_tvar; eauto).
-      assert (HXnd : X `notin` dom ρ)
+      assert (HXnd : α `notin` dom ρ)
         by (eapply a_inc_tvar_notin_dom; eauto).
       assert (Hdefs : forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-                                  X `notin` ftvar_in_ptyp τ).
+                                  α `notin` ftvar_in_ptyp τ).
       { intros β τ Hb. pose proof (Hnfdth _ _ Hb) as Hd.
         clear - Hd HinΔ1. fsetdec. }
-      assert (HninQb : X `notin` ftvar_in_bskl Qb).
+      assert (HninQb : α `notin` ftvar_in_bskl Qb).
       { inversion Hrs; subst.
         - (* hole : the Δ1-hygiene of the fill *)
           match goal with
@@ -8469,20 +8471,20 @@ Proof.
               pose proof (ftvar_in_bskl_syn Pf) as Hfe;
               clear - Hint HinΔ1 Hfe; fsetdec
           end.
-        - (* flex_r : Qb is a defined flexible, never the rigid X *)
+        - (* flex_r : Qb is a defined flexible, never the rigid α *)
           simpl.
           match goal with
           | Hbr : binds ?α0 (abind_flex_mono_def _) Θ |- _ =>
-              assert (Hne : X <> α0)
+              assert (Hne : α <> α0)
                 by (intro Heq; subst;
                     pose proof (binds_unique _ _ _ _ _ HbX Hbr
                                   (a_wf_aenv_uniq Hwfth)) as Hcon;
                     discriminate)
           end.
           clear - Hne; fsetdec. }
-      assert (HinθP : X `in` ftvar_in_pskl (msubst_pskl ρ P))
+      assert (HinθP : α `in` ftvar_in_pskl (msubst_pskl ρ P))
         by (apply msubst_pskl_ftv_keep; assumption).
-      assert (HninS : X `notin`
+      assert (HninS : α `notin`
                 ftvar_in_uskl (pskl_to_uskl (msubst_pskl ρ P))).
       { eapply ad_pat_consis_rigid_ftv_rev;
           [ exact Hwfth | exact HbX | exact Hdefs | exact Hjoin'
@@ -8501,7 +8503,7 @@ Proof.
     { eapply a_wf_pskl_delta_mono;
         [ eapply a_wf_pskl_msubst_inc;
             [ exact Hinc | exact Hwf0 | exact HwfP
-            | intros X HX; exfalso; clear - HX; fsetdec ]
+            | intros α Hα; exfalso; clear - Hα; fsetdec ]
         | clear; fsetdec ]. }
     unfold ad_precise_f.
     rewrite bskl_to_pskl_msubst_bskl.
@@ -8515,24 +8517,24 @@ Proof.
           | exact HwfθP
           | rewrite HQb; exact Hjoin' ]
       | ].
-    intros γ Hγ.
-    destruct (AtomSetProperties.In_dec γ Δ2) as [HγΔ2 | HγΔ2];
-      [ left; exact HγΔ2 | right ].
-    assert (HγΔ1 : γ `in` Δ1) by (clear - Hγ HγΔ2; fsetdec).
-    assert (Hbγ : binds γ abind_tvar Θ)
+    intros α1 Hα1.
+    destruct (AtomSetProperties.In_dec α1 Δ2) as [Hα1Δ2 | Hα1Δ2];
+      [ left; exact Hα1Δ2 | right ].
+    assert (Hα1Δ1 : α1 `in` Δ1) by (clear - Hα1 Hα1Δ2; fsetdec).
+    assert (Hbγ : binds α1 abind_tvar Θ)
       by (eapply a_inc_binds_tvar; [ exact Hinc | ];
-          apply Hrig; clear - HγΔ1; fsetdec).
+          apply Hrig; clear - Hα1Δ1; fsetdec).
     split.
-    + assert (Hnq : γ `notin` ftvar_in_bskl Qb)
+    + assert (Hnq : α1 `notin` ftvar_in_bskl Qb)
         by (eapply ad_refine_syn_f_hole_src_target_ftv;
             [ exact Hrs | exact Hwfth
-            | clear - HγΔ1; fsetdec | exact Hbγ ]).
+            | clear - Hα1Δ1; fsetdec | exact Hbγ ]).
       pose proof (ftvar_in_bskl_inh (bskl_to_pskl Qb)) as Hfe.
       pose proof (ftvar_in_pskl_bskl_to_pskl Qb) as Hfe2.
       clear - Hnq Hfe Hfe2. fsetdec.
     + intros β τ Hb.
       pose proof (Hnfdth β τ Hb) as Hi.
-      clear - Hi HγΔ1. fsetdec. }
+      clear - Hi Hα1Δ1. fsetdec. }
   (* ---- Layer 0d: P0 = ⊤◇.P0', P guarded : C-UnivGhostR -------------- *)
   assert (Hthdec : (exists P0', P0 = pskl_tophole P0') \/
                    (forall P0', P0 <> pskl_tophole P0')).
@@ -8607,7 +8609,7 @@ Lemma consis_complete : forall Ψ Θ R Qb,
     a_wf_aenv Θ0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P ->
-    (forall X, X `in` (Δ1 `union` Δ2) -> binds X abind_tvar Θ0) ->
+    (forall α, α `in` (Δ1 `union` Δ2) -> binds α abind_tvar Θ0) ->
     no_flex_dep (Δ1 `union` Δ2) Θ0 ->
     flex_above_free (Δ1 `union` Δ2) Θ0 ->
     ρ ∷ Θ0 ⊑ Θ ->
@@ -8669,7 +8671,7 @@ Proof.
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) (bskl_to_pskl Qb))).
   { eapply consis_complete with (Δ1 := empty) (Δ2 := empty).
     all: try (first [ eassumption | reflexivity ]).
-    all: try (intros X HX; exfalso; clear - HX; fsetdec).  (* rigid: X ∈ ∅ *)
+    all: try (intros α Hα; exfalso; clear - Hα; fsetdec).  (* rigid: α ∈ ∅ *)
     all: repeat intro; fsetdec. }     (* no_flex_dep / flex_above_free / Ψ *)
   destruct Hcc as [P1 [Θ1 [Hc Hopt]]].
   exists P1, Θ1. split; [ exact Hc | ].

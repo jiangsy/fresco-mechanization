@@ -31,12 +31,12 @@ Set Implicit Arguments.
 Lemma mono_ptyp_lc : forall A, mono_ptyp A -> lc_ptyp A.
 Proof. intros A H; induction H; auto. Qed.
 
-Lemma mono_ptyp_subst : forall A τ γ,
+Lemma mono_ptyp_subst : forall A τ α1,
   mono_ptyp A -> mono_ptyp τ ->
-  mono_ptyp (subst_ptyp_in_ptyp τ γ A).
+  mono_ptyp (subst_ptyp_in_ptyp τ α1 A).
 Proof.
   intros * HA Hτ; induction HA; simpl; eauto using mono_ptyp.
-  destruct (eq_var X γ); eauto using mono_ptyp.
+  destruct (eq_var α α1); eauto using mono_ptyp.
 Qed.
 
 Lemma a_wf_ptyp_weaken : forall Θ Θ' A,
@@ -49,7 +49,7 @@ Proof.
   - apply a_wf_ptyp__var.
     destruct H as [Hb | [Hb | [τ Hb]]];
       [ left | right; left | right; right; exists τ ]; auto.
-  - apply a_wf_ptyp__all with (L := L). intros X HX.
+  - apply a_wf_ptyp__all with (L := L). intros α Hα.
     apply H0; auto. intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
@@ -64,16 +64,16 @@ Proof.
   intros x b Hb. unfold binds; apply in_or_app; auto.
 Qed.
 
-(** Unfolding a definition inside a monotype: [A ≡ A[τ/γ̂]] when [γ̂:=τ]. *)
-Lemma a_tyequiv_subst_def : forall Θ γ τ A,
-  binds γ (abind_flex_mono_def τ) Θ ->
+(** Unfolding a definition inside a monotype: [A ≡ A[τ/α1̂]] when [α1̂:=τ]. *)
+Lemma a_tyequiv_subst_def : forall Θ α1 τ A,
+  binds α1 (abind_flex_mono_def τ) Θ ->
   mono_ptyp A ->
   lc_ptyp τ ->
-  Θ ⊢ A ≡ᵗ (subst_ptyp_in_ptyp τ γ A).
+  Θ ⊢ A ≡ᵗ (subst_ptyp_in_ptyp τ α1 A).
 Proof.
   intros * Hb Hm Hlc; induction Hm; simpl.
   - apply a_tyequiv__refl; auto.
-  - destruct (eq_var X γ); subst.
+  - destruct (eq_var α α1); subst.
     + apply a_tyequiv__flex_def; auto.
     + apply a_tyequiv__refl; auto.
   - apply a_tyequiv__arrow; auto.
@@ -107,16 +107,16 @@ Qed.
 
 (** ⊴ is preserved by pushing the SAME flexible declaration / definition /
     term-var / rigid entry on both sides. *)
-Lemma a_isub_cons_flex : forall Θ Θ' γ,
+Lemma a_isub_cons_flex : forall Θ Θ' α1,
   Θ ⊴ Θ' ->
-  ((γ ~ abind_flex_mono) ++ Θ) ⊴ ((γ ~ abind_flex_mono) ++ Θ').
+  ((α1 ~ abind_flex_mono) ++ Θ) ⊴ ((α1 ~ abind_flex_mono) ++ Θ').
 Proof.
   intros * [[ρ [Hid Hinc]] Hd]. split.
-  - exists ((γ, ptyp_var_f γ) :: ρ). split.
+  - exists ((α1, ptyp_var_f α1) :: ρ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc__flex.
     + apply a_inc_target_weaken; auto.
-      apply (a_suffix__cons γ (b := abind_flex_mono)); constructor.
+      apply (a_suffix__cons α1 (b := abind_flex_mono)); constructor.
     + apply a_wf_ptyp__var. right; left. unfold binds; left; reflexivity.
     + constructor.
   - intros α τ0 Hb.
@@ -125,17 +125,17 @@ Proof.
     simpl. unfold binds. right. apply Hd; auto.
 Qed.
 
-Lemma a_isub_cons_flex_def : forall Θ Θ' γ τ,
+Lemma a_isub_cons_flex_def : forall Θ Θ' α1 τ,
   Θ ⊴ Θ' ->
   lc_ptyp τ ->
-  ((γ ~ abind_flex_mono_def τ) ++ Θ) ⊴ ((γ ~ abind_flex_mono_def τ) ++ Θ').
+  ((α1 ~ abind_flex_mono_def τ) ++ Θ) ⊴ ((α1 ~ abind_flex_mono_def τ) ++ Θ').
 Proof.
   intros * [[ρ [Hid Hinc]] Hd] Hlc. split.
-  - exists ((γ, ptyp_var_f γ) :: ρ). split.
+  - exists ((α1, ptyp_var_f α1) :: ρ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc__flex_def.
     + apply a_inc_target_weaken; auto.
-      apply (a_suffix__cons γ (b := abind_flex_mono_def τ)); constructor.
+      apply (a_suffix__cons α1 (b := abind_flex_mono_def τ)); constructor.
     + apply a_wf_ptyp__var. right; right. exists τ.
       unfold binds; left; reflexivity.
     + constructor.
@@ -230,20 +230,20 @@ Qed.
     of flexible variables"). *)
 Inductive a_decls : aenv -> Prop :=
 | a_decls__nil : a_decls nil
-| a_decls__cons : forall γ Ξ,
+| a_decls__cons : forall α1 Ξ,
     a_decls Ξ ->
-    a_decls ((γ ~ abind_flex_mono) ++ Ξ).
+    a_decls ((α1 ~ abind_flex_mono) ++ Ξ).
 
 Lemma a_decls_suffix : forall Ξ, a_decls Ξ -> a_suffix Ξ.
 Proof.
   intros Ξ H; induction H; [ constructor | ].
-  apply (a_suffix__cons γ (b := abind_flex_mono)); auto; constructor.
+  apply (a_suffix__cons α1 (b := abind_flex_mono)); auto; constructor.
 Qed.
 
-Lemma a_inc_prepend_flex_src : forall Θ ρ Θ' γ,
+Lemma a_inc_prepend_flex_src : forall Θ ρ Θ' α1,
   ρ ∷ Θ ⊑ Θ' ->
-  a_binds_tvar γ Θ' ->
-  (γ, ptyp_var_f γ) :: ρ ∷ ((γ ~ abind_flex_mono) ++ Θ) ⊑ Θ'.
+  a_binds_tvar α1 Θ' ->
+  (α1, ptyp_var_f α1) :: ρ ∷ ((α1 ~ abind_flex_mono) ++ Θ) ⊑ Θ'.
 Proof.
   intros * Hinc Hb.
   apply a_inc__flex; auto;
@@ -253,18 +253,18 @@ Qed.
 
 Lemma a_isub_prepend_decls_src : forall Ξ Θ Θ',
   a_decls Ξ ->
-  (forall γ, binds γ abind_flex_mono Ξ -> a_binds_tvar γ Θ') ->
+  (forall α1, binds α1 abind_flex_mono Ξ -> a_binds_tvar α1 Θ') ->
   Θ ⊴ Θ' ->
   (Ξ ++ Θ) ⊴ Θ'.
 Proof.
-  intros Ξ; induction Ξ as [ | [γ b] Ξ' IH ]; intros Θ Θ' Hdecl Hvis Hle; auto.
+  intros Ξ; induction Ξ as [ | [α1 b] Ξ' IH ]; intros Θ Θ' Hdecl Hvis Hle; auto.
   inversion Hdecl; subst.
   assert (Hle' : (Ξ' ++ Θ) ⊴ Θ').
   { apply IH; auto;
-      try (intros γ0 Hb0; apply Hvis; unfold binds; right; auto). }
+      try (intros α10 Hb0; apply Hvis; unfold binds; right; auto). }
   destruct Hle' as [[ρ [Hid Hinc]] Hd].
   split.
-  - exists ((γ, ptyp_var_f γ) :: ρ). split.
+  - exists ((α1, ptyp_var_f α1) :: ρ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc_prepend_flex_src; auto;
       try (apply Hvis; unfold binds; left; reflexivity).
@@ -275,10 +275,10 @@ Qed.
 
 (** Every declaration in the source of an identity increase is still
     tvar-ish in the target (specialization of the transport kit). *)
-Lemma a_isub_binds_flex : forall Θ Θ' γ,
+Lemma a_isub_binds_flex : forall Θ Θ' α1,
   Θ ⊴ Θ' ->
-  binds γ abind_flex_mono Θ ->
-  a_binds_tvar γ Θ'.
+  binds α1 abind_flex_mono Θ ->
+  a_binds_tvar α1 Θ'.
 Proof.
   intros * [[ρ [Hid Hinc]] _] Hb. eauto using a_inc_binds_flex.
 Qed.
@@ -288,7 +288,7 @@ Lemma a_decls_app : forall Ξ1 Ξ2,
   a_decls Ξ1 -> a_decls Ξ2 -> a_decls (Ξ1 ++ Ξ2).
 Proof.
   intros * H1 H2; induction H1; simpl; auto.
-  apply (a_decls__cons γ); auto.
+  apply (a_decls__cons α1); auto.
 Qed.
 
 Lemma a_guess_mono_decls : forall Θ P βs τ,
@@ -304,7 +304,7 @@ Proof.
   - constructor.
   - constructor.
   - apply a_decls_app; auto.
-  - pick fresh X. eauto.
+  - pick fresh α. eauto.
 Qed.
 
 
@@ -352,8 +352,8 @@ Qed.
 Lemma a_guess_mono_consis : forall Θ P βs τ,
   a_guess_mono Θ P βs τ ->
   forall Θ1,
-  (forall X, X `in` ftvar_in_pskl P -> a_binds_tvar X Θ1) ->
-  (forall γ, binds γ abind_flex_mono βs -> a_binds_tvar γ Θ1) ->
+  (forall α, α `in` ftvar_in_pskl P -> a_binds_tvar α Θ1) ->
+  (forall α1, binds α1 abind_flex_mono βs -> a_binds_tvar α1 Θ1) ->
   ad_pat_consis empty Θ1 (pskl_to_uskl P) (ptyp_to_bskl_syn τ).
 Proof.
   intros * H;
@@ -391,28 +391,28 @@ Proof.
       by reflexivity.
     apply ad_pat_consis__arrow with (Ψ1 := empty) (Ψ2 := empty);
       [ apply IH1 | apply IH2 | fsetdec ].
-    + intros X HX. apply Hvars. simpl. fsetdec.
-    + intros γ Hb. apply Hβs. unfold binds in *. apply in_or_app; auto.
-    + intros X HX. apply Hvars. simpl. fsetdec.
-    + intros γ Hb. apply Hβs. unfold binds in *. apply in_or_app; auto.
+    + intros α Hα. apply Hvars. simpl. fsetdec.
+    + intros α1 Hb. apply Hβs. unfold binds in *. apply in_or_app; auto.
+    + intros α Hα. apply Hvars. simpl. fsetdec.
+    + intros α1 Hb. apply Hβs. unfold binds in *. apply in_or_app; auto.
   - (* forall: synthesised quantifier on both sides *)
     replace (pskl_to_uskl (pskl_all_syn P))
       with (uskl_all_syn (pskl_to_uskl P)) by reflexivity.
     replace (ptyp_to_bskl_syn (ptyp_all A))
       with (bskl_all_syn (ptyp_to_bskl_syn A)) by reflexivity.
     apply ad_pat_consis__forall_syn with (L := L `union` dom Θ1).
-    intros X HX.
+    intros α Hα.
     rewrite <- pskl_to_uskl_open_var.
     rewrite <- ptyp_to_bskl_syn_open_var.
     apply IH; [ fsetdec | | ].
-    + intros Y HY.
-      apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
-      simpl in HY.
-      destruct (union_1 HY) as [HY' | HY'].
+    + intros β Hβ.
+      apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in Hβ.
+      simpl in Hβ.
+      destruct (union_1 Hβ) as [HY' | HY'].
       * apply singleton_1 in HY'; subst.
         left. unfold binds; left; reflexivity.
       * apply a_binds_tvar_weaken_cons; auto.
-    + intros γ Hb. apply a_binds_tvar_weaken_cons; auto.
+    + intros α1 Hb. apply a_binds_tvar_weaken_cons; auto.
 Qed.
 
 (* ===================================================================== *)
@@ -435,7 +435,7 @@ Proof.
   (* β̂-occurrence refolding and mono-embedding head contradictions *)
   induction H; intros S0x HeqS.
   - (* unit *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + apply ad_pat_consis__unit; auto.
     + destruct (eq_var X0x β) as [->|Hne].
@@ -443,14 +443,14 @@ Proof.
         rewrite <- HeqS. apply ad_pat_consis__unit; auto.
       * discriminate HeqS.
   - (* var *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     destruct (eq_var X0x β) as [->|Hne].
     + apply ad_pat_consis__flex_l with (τ := τ); [ exact Hb | ].
       rewrite <- HeqS. apply ad_pat_consis__var; auto.
     + inversion HeqS; subst. apply ad_pat_consis__var; auto.
   - (* arrow *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne].
       * apply ad_pat_consis__flex_l with (τ := τ); [ exact Hb | ].
@@ -458,7 +458,7 @@ Proof.
       * discriminate HeqS.
     + inversion HeqS; subst. eapply ad_pat_consis__arrow; eauto.
   - (* forall_inh_tagged *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
@@ -466,84 +466,84 @@ Proof.
     + inversion HeqS; subst.
       eapply ad_pat_consis__forall_inh_tagged with (L := L `union` {{β}});
         eauto.
-      intros X HX. eapply H0; auto.
+      intros α Hα. eapply H0; auto.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_inh_untagged *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + inversion HeqS; subst.
       eapply ad_pat_consis__forall_inh_untagged with (L := L `union` {{β}}).
-      intros X HX. eapply H0; auto.
+      intros α Hα. eapply H0; auto.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_syn_tagged *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + inversion HeqS; subst.
       eapply ad_pat_consis__forall_syn_tagged with (L := L `union` {{β}}).
-      intros X HX. eapply H0; auto.
+      intros α Hα. eapply H0; auto.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* forall_syn *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + inversion HeqS; subst.
       eapply ad_pat_consis__forall_syn with (L := L `union` {{β}}).
-      intros X HX. eapply H0; auto.
+      intros α Hα. eapply H0; auto.
       rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var; auto.
   - (* ghostg *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + apply ad_pat_consis__ghostg; auto.
   - (* topholeg *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + inversion HeqS; subst. apply ad_pat_consis__topholeg; auto.
   - (* hole *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + apply ad_pat_consis__hole; auto.
   - (* tophole *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + inversion HeqS; subst. apply ad_pat_consis__tophole; auto.
   - (* tophole_inh *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + inversion HeqS; subst.
       eapply ad_pat_consis__tophole_inh with (L := L);
-        try (intros X HX; eapply H0; auto; simpl; reflexivity).
+        try (intros α Hα; eapply H0; auto; simpl; reflexivity).
   - (* tophole_drop *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     + destruct (eq_var X0x β) as [->|Hne];
         [ unfold ptyp_to_uskl_syn in HeqS; destruct Hm; simpl in HeqS
         | ]; discriminate HeqS.
     + inversion HeqS; subst. apply ad_pat_consis__tophole_drop; auto.
   - (* flex_l *)
-    destruct S0x as [ | n0x | X0x | S1 S2 | S0 | ε0 S0 | | S0 | | S0 ];
+    destruct S0x as [ | n0x | X0x | R01 R02 | R00 | ε0 R00 | | R00 | | R00 ];
       simpl in HeqS; try discriminate HeqS.
     destruct (eq_var X0x β) as [->|Hne].
     + apply ad_pat_consis__flex_l with (τ := τ); [ exact Hb | ].
@@ -588,7 +588,7 @@ Lemma a_wf_aenv_strip_mid : forall Ξ (c : atom) (b : abind) Θ,
   a_wf_aenv (Ξ ++ (c ~ b) ++ Θ) ->
   a_wf_aenv (Ξ ++ Θ).
 Proof.
-  intros Ξ; induction Ξ as [ | [γ bγ] Ξ' IH ]; intros * Hdecl Hwf.
+  intros Ξ; induction Ξ as [ | [α1 bγ] Ξ' IH ]; intros * Hdecl Hwf.
   - simpl in Hwf. inversion Hwf; subst; auto.
   - inversion Hdecl; subst.
     inversion Hwf; subst.
@@ -616,7 +616,7 @@ Proof.
       match goal with H : a_wf_aenv _ |- _ => specialize (IHHdecl H) end.
       repeat rewrite dom_app in *; simpl in *.
       match goal with
-      | Hγ : ?g `notin` _ |- _ `notin` _ =>
+      | Hα1 : ?g `notin` _ |- _ `notin` _ =>
           clear Hdecl; repeat match goal with
                               | Hw : a_wf_aenv _ |- _ => clear Hw
                               end; fsetdec
@@ -676,22 +676,22 @@ Lemma a_wf_ptyp_ftv_tvarish : forall Θ A α,
   α `in` ftvar_in_ptyp A ->
   a_binds_tvar α Θ.
 Proof.
-  intros * Hwf; revert α; induction Hwf; intros Y HY; simpl in HY.
+  intros * Hwf; revert α; induction Hwf; intros β Hβ; simpl in Hβ.
   - fsetdec.
-  (* [X] is the var rule's OWN binder ([a_wf_ptyp__var], algo/def_extra.v),
+  (* [α] is the var rule's OWN binder ([a_wf_ptyp__var], algo/def_extra.v),
      auto-bound by [induction Hwf] — not this lemma's α, which [revert α]
      has just generalised away. *)
-  - assert (Y = X) by fsetdec. subst. auto.
-  - destruct (union_1 HY); auto.
-  - pick fresh Z for (L `union` ftvar_in_ptyp A `union` {{Y}}).
-    assert (HZL : Z `notin` L) by fsetdec.
-    assert (Hyz : Y <> Z) by fsetdec.
-    assert (HY' : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f Z))).
-    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f Z)).
+  - assert (β = α) by fsetdec. subst. auto.
+  - destruct (union_1 Hβ); auto.
+  - pick fresh α2 for (L `union` ftvar_in_ptyp A `union` {{β}}).
+    assert (HZL : α2 `notin` L) by fsetdec.
+    assert (Hyz : β <> α2) by fsetdec.
+    assert (HY' : β `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f α2))).
+    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f α2)).
       fsetdec. }
-    assert (Htv : a_binds_tvar Y ((Z ~ abind_tvar) ++ Θ)) by (apply H0; auto).
+    assert (Htv : a_binds_tvar β ((α2 ~ abind_tvar) ++ Θ)) by (apply H0; auto).
     rewrite_env (nil ++ Θ).
-    eapply a_binds_tvar_strip_mid with (c := Z) (b := abind_tvar);
+    eapply a_binds_tvar_strip_mid with (c := α2) (b := abind_tvar);
       [ exact Htv
       | intro Hc; inversion Hc; subst; congruence
       | intro Hc; inversion Hc
@@ -744,25 +744,25 @@ Proof.
       [ left | right; left | right; right; exists τ ]; auto.
   - eapply ad_pat_consis__arrow; eauto.
   - eapply ad_pat_consis__forall_inh_tagged with (L := L); eauto.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
   - eapply ad_pat_consis__forall_inh_untagged with (L := L); eauto.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
   - eapply ad_pat_consis__forall_syn_tagged with (L := L); eauto.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
       | unfold binds; right; apply Hmon; auto ].
   - eapply ad_pat_consis__forall_syn with (L := L); eauto.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
@@ -772,7 +772,7 @@ Proof.
   - apply ad_pat_consis__hole; eauto using a_wf_pskl_weaken.
   - apply ad_pat_consis__tophole; auto.
   - eapply ad_pat_consis__tophole_inh with (L := L); eauto.
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
     intros x b Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
       [ unfold binds; left; reflexivity
@@ -833,17 +833,17 @@ Proof.
   - apply a_wf_pskl__unit.
   - apply a_wf_pskl__var.
     destruct H as [HΔ | Htv]; [ left; auto | right ].
-    assert (Hne : X <> c) by (clear - Hfr; fsetdec).
+    assert (Hne : α <> c) by (clear - Hfr; fsetdec).
     eapply a_binds_tvar_strip_mid; eauto;
       try (intro Hc; inversion Hc; subst; congruence);
       try (intros τ0 Hc; inversion Hc; subst; congruence).
   - apply a_wf_pskl__arrow; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ];
       auto.
   - apply a_wf_pskl__all with (L := L `union` singleton c).
-    intros X HX. apply H0; auto.
+    intros α Hα. apply H0; auto.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                  P (pskl_var_f X)) as Hup.
-    simpl in Hup. clear - Hup Hfr HX. fsetdec.
+                  P (pskl_var_f α)) as Hup.
+    simpl in Hup. clear - Hup Hfr Hα. fsetdec.
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole; auto.
 Qed.
@@ -857,7 +857,7 @@ Proof. induction 1; simpl; auto using lc_pskl. Qed.
 Lemma mono_ptyp_to_pskl_guarded : forall τ,
   mono_ptyp τ -> guarded_pskl (ptyp_to_pskl τ).
 Proof.
-  destruct 1 as [ | X | A1 A2 ]; simpl;
+  destruct 1 as [ | α | A1 A2 ]; simpl;
     [ apply guarded_pskl__unit | apply guarded_pskl__var
     | apply guarded_pskl__arrow; apply mono_ptyp_to_pskl_lc; auto ].
 Qed.
@@ -872,7 +872,7 @@ Lemma guarded_pskl_mono_subst : forall P τ β,
 Proof.
   intros * HG Hm; destruct HG; simpl.
   - apply guarded_pskl__unit.
-  - destruct (eq_var X β);
+  - destruct (eq_var α β);
       [ apply mono_ptyp_to_pskl_guarded; auto | apply guarded_pskl__var ].
   - apply guarded_pskl__arrow;
       apply subst_pskl_in_pskl_lc_pskl; auto using mono_ptyp_to_pskl_lc.
@@ -929,15 +929,15 @@ Proof.
   - (* NB: the scrutinee of [subst_pskl_in_pskl] lives at [ptypvar], so the
        [eq_dec] instance must be given at that type for [destruct] to
        abstract the [if] in the goal. *)
-    destruct (@eq_dec ptypvar EqDec_eq_of_X X β) as [Heq | Hne].
+    destruct (@eq_dec ptypvar EqDec_eq_of_X α β) as [Heq | Hne].
     + subst. apply a_wf_pskl_mono_ptyp; auto.
       eapply a_wf_aenv_binds_def_wf; eauto.
     + apply a_wf_pskl__var; auto.
   - apply a_wf_pskl__arrow; auto.
   - apply a_wf_pskl__all with (L := L `union` singleton β).
-    intros X HX.
+    intros α Hα.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - HX; fsetdec | apply mono_ptyp_to_pskl_lc; auto ].
+      [ | clear - Hα; fsetdec | apply mono_ptyp_to_pskl_lc; auto ].
     apply H0; auto.
   - apply a_wf_pskl__hole.
   - apply a_wf_pskl__tophole;

@@ -91,7 +91,7 @@ Lemma tyequiv_mono_refine_syn : forall Θ Δ A A',
   a_wf_aenv Θ ->
   mono_ptyp A -> mono_ptyp A' ->
   Θ ⊢ A ≡ᵗ A' ->
-  (forall X, X `in` ftvar_in_ptyp A -> a_binds_tvar X Θ) ->
+  (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   Θ ⨟ Δ ⊢ᵣᵃ (ptyp_to_bskl_syn A) ⊳ (ptyp_to_bskl_syn A').
 Proof.
   intros Θ Δ A A' Hwf HmA HmB Heq Hvis.
@@ -115,7 +115,7 @@ Qed.
 Lemma consis_precise_core : forall Θ Δ ζ α Qb A,
   a_wf_aenv Θ ->
   mono_ptyp (msubst_lookup ζ α) ->
-  (forall X, X `in` ftvar_in_ptyp (msubst_lookup ζ α) -> a_binds_tvar X Θ) ->
+  (forall α0, α0 `in` ftvar_in_ptyp (msubst_lookup ζ α) -> a_binds_tvar α0 Θ) ->
   mono_ptyp A ->
   Qb = ptyp_to_bskl_syn A ->
   Θ ⊢ (msubst_lookup ζ α) ≡ᵗ A ->
@@ -248,10 +248,10 @@ Proof.
     by (eapply a_inc_equiv_compose_id_at; eauto).
   assert (HmζA : mono_ptyp (msubst_lookup ζ α))
     by (eapply a_inc_lookup_mono; exact HζΘ).
-  assert (HvisζA : forall X,
-             X `in` ftvar_in_ptyp (msubst_lookup ζ α) -> a_binds_tvar X Θ).
-  { intros X HX. eapply a_wf_ptyp_ftv_tvarish;
-      [ eapply a_inc_lookup_wf; eauto | exact HX ]. }
+  assert (HvisζA : forall α0,
+             α0 `in` ftvar_in_ptyp (msubst_lookup ζ α) -> a_binds_tvar α0 Θ).
+  { intros α0 Hα0. eapply a_wf_ptyp_ftv_tvarish;
+      [ eapply a_inc_lookup_wf; eauto | exact Hα0 ]. }
   eapply consis_precise_core with (A := A); eauto.
   eapply a_tyequiv__trans;
     [ apply a_tyequiv__sym; exact Hζθ | exact HeqθαC ].

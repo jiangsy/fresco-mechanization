@@ -36,17 +36,17 @@ Definition metasubst : Set := list (atom * ptyp).
     hence COMPLETENESS need general θ, and there the fold is simply the wrong
     function.  So: recurse on the TYPE and look each free variable up. *)
 
-Fixpoint msubst_lookup (ρ : metasubst) (X : atom) : ptyp :=
+Fixpoint msubst_lookup (ρ : metasubst) (α : atom) : ptyp :=
   match ρ with
-  | nil => ptyp_var_f X
-  | (Y, τ) :: ρ' => if X == Y then τ else msubst_lookup ρ' X
+  | nil => ptyp_var_f α
+  | (β, τ) :: ρ' => if α == β then τ else msubst_lookup ρ' α
   end.
 
 Fixpoint msubst_ptyp (ρ : metasubst) (A : ptyp) : ptyp :=
   match A with
   | ptyp_unit => ptyp_unit
   | ptyp_var_b n => ptyp_var_b n
-  | ptyp_var_f X => msubst_lookup ρ X
+  | ptyp_var_f α => msubst_lookup ρ α
   | ptyp_arrow A1 A2 => ptyp_arrow (msubst_ptyp ρ A1) (msubst_ptyp ρ A2)
   | ptyp_all A0 => ptyp_all (msubst_ptyp ρ A0)
   end.
@@ -55,40 +55,40 @@ Fixpoint msubst_pskl (ρ : metasubst) (P : pskl) : pskl :=
   match P with
   | pskl_unit => pskl_unit
   | pskl_var_b n => pskl_var_b n
-  | pskl_var_f X => ptyp_to_pskl (msubst_lookup ρ X)
+  | pskl_var_f α => ptyp_to_pskl (msubst_lookup ρ α)
   | pskl_arrow P1 P2 => pskl_arrow (msubst_pskl ρ P1) (msubst_pskl ρ P2)
   | pskl_all_syn P0 => pskl_all_syn (msubst_pskl ρ P0)
   | pskl_hole => pskl_hole
   | pskl_tophole P0 => pskl_tophole (msubst_pskl ρ P0)
   end.
 
-(** [θ S] on UNRESOLVED skeletons — the sort the decorated consistency's
+(** [θ R] on UNRESOLVED skeletons — the sort the decorated consistency's
     subject lives in.  NB distinct from [prop_decorate_sub.msubst_uskl], which
     is the PAPER's ρ (a map from rigid variables to decorated SKELETONS); this
     one applies a METASUBSTITUTION (flexibles ↦ monotypes), hence the [_syn]
     suffix: an image is embedded with the synthesised painting.  A flexible variable's image is a monotype, so it is
     embedded with the synthesised painting; every other constructor (including
     the plain and dotted ghosts) is structural.  This is what lets a subject be
-    written as the paper writes it, [(θS)[ψa/α]], instead of baking θ into it. *)
-Fixpoint msubst_uskl_syn (ρ : metasubst) (S : uskl) : uskl :=
-  match S with
+    written as the paper writes it, [(θR)[ψa/α]], instead of baking θ into it. *)
+Fixpoint msubst_uskl_syn (ρ : metasubst) (R : uskl) : uskl :=
+  match R with
   | uskl_unit => uskl_unit
   | uskl_var_b n => uskl_var_b n
-  | uskl_var_f X => ptyp_to_uskl_syn (msubst_lookup ρ X)
-  | uskl_arrow S1 S2 => uskl_arrow (msubst_uskl_syn ρ S1) (msubst_uskl_syn ρ S2)
-  | uskl_all_syn S0 => uskl_all_syn (msubst_uskl_syn ρ S0)
-  | uskl_all_etag ε S0 => uskl_all_etag ε (msubst_uskl_syn ρ S0)
+  | uskl_var_f α => ptyp_to_uskl_syn (msubst_lookup ρ α)
+  | uskl_arrow R1 R2 => uskl_arrow (msubst_uskl_syn ρ R1) (msubst_uskl_syn ρ R2)
+  | uskl_all_syn R0 => uskl_all_syn (msubst_uskl_syn ρ R0)
+  | uskl_all_etag ε R0 => uskl_all_etag ε (msubst_uskl_syn ρ R0)
   | uskl_hole => uskl_hole
-  | uskl_tophole S0 => uskl_tophole (msubst_uskl_syn ρ S0)
+  | uskl_tophole R0 => uskl_tophole (msubst_uskl_syn ρ R0)
   | uskl_holeg => uskl_holeg
-  | uskl_topholeg S0 => uskl_topholeg (msubst_uskl_syn ρ S0)
+  | uskl_topholeg R0 => uskl_topholeg (msubst_uskl_syn ρ R0)
   end.
 
 Fixpoint msubst_btyp (ρ : metasubst) (B : btyp) : btyp :=
   match B with
   | btyp_unit => btyp_unit
   | btyp_var_b n => btyp_var_b n
-  | btyp_var_f X => ptyp_to_btyp_syn (msubst_lookup ρ X)
+  | btyp_var_f α => ptyp_to_btyp_syn (msubst_lookup ρ α)
   | btyp_arrow B1 B2 => btyp_arrow (msubst_btyp ρ B1) (msubst_btyp ρ B2)
   | btyp_all_syn B0 => btyp_all_syn (msubst_btyp ρ B0)
   | btyp_all_inh B0 => btyp_all_inh (msubst_btyp ρ B0)
@@ -98,7 +98,7 @@ Fixpoint msubst_bskl (ρ : metasubst) (Q : bskl) : bskl :=
   match Q with
   | bskl_unit => bskl_unit
   | bskl_var_b n => bskl_var_b n
-  | bskl_var_f X => pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup ρ X))
+  | bskl_var_f α => pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup ρ α))
   | bskl_arrow Q1 Q2 => bskl_arrow (msubst_bskl ρ Q1) (msubst_bskl ρ Q2)
   | bskl_all_syn Q0 => bskl_all_syn (msubst_bskl ρ Q0)
   | bskl_all_inh Q0 => bskl_all_inh (msubst_bskl ρ Q0)
@@ -148,9 +148,9 @@ Inductive a_tyequiv : aenv -> ptyp -> ptyp -> Prop :=
     Θ ⊢ A2 ≡ᵗ B2 ->
     Θ ⊢ (ptyp_arrow A1 A2) ≡ᵗ (ptyp_arrow B1 B2)
 | a_tyequiv__all : forall L Θ A B,
-    (forall X, X `notin` L ->
-       Θ ⊢ (open_ptyp_wrt_ptyp A (ptyp_var_f X)) ≡ᵗ
-           (open_ptyp_wrt_ptyp B (ptyp_var_f X))) ->
+    (forall α, α `notin` L ->
+       Θ ⊢ (open_ptyp_wrt_ptyp A (ptyp_var_f α)) ≡ᵗ
+           (open_ptyp_wrt_ptyp B (ptyp_var_f α))) ->
     Θ ⊢ (ptyp_all A) ≡ᵗ (ptyp_all B)
 where "Θ ⊢ A ≡ᵗ B" := (a_tyequiv Θ A B) : type_scope.
 
@@ -161,7 +161,7 @@ where "Θ ⊢ A ≡ᵗ B" := (a_tyequiv Θ A B) : type_scope.
 (*                                                                        *)
 (*  Introduced for the GMM-STYLE SEMANTIC ENTRIES of information increase *)
 (*  (see [a_inc] below): GundryMM10 §3.1 preserve context entries UP TO    *)
-(*  the equational theory (Δ ⊩ δ⟦vD⟧, i.e. δα ≡ δτ for a definition),     *)
+(*  the equational theory (Δ ⊩ β1⟦vD⟧, i.e. β1α ≡ β1τ for a definition),     *)
 (*  never syntactically.  The previous SYNTACTIC middles [x : θP] made     *)
 (*  the optimality half of thm:complete-consistency FALSE                  *)
 (*  (machine-checked: algo/cex/cex_assign_optimal_syn_middle.v).               *)
@@ -189,9 +189,9 @@ Inductive a_pskl_tyequiv : aenv -> pskl -> pskl -> Prop :=
     Θ ⊢ P2 ≡ˢ Q2 ->
     Θ ⊢ (pskl_arrow P1 P2) ≡ˢ (pskl_arrow Q1 Q2)
 | a_pskl_tyequiv__all : forall L Θ P Q,
-    (forall X, X `notin` L ->
-       Θ ⊢ (open_pskl_wrt_pskl P (pskl_var_f X)) ≡ˢ
-           (open_pskl_wrt_pskl Q (pskl_var_f X))) ->
+    (forall α, α `notin` L ->
+       Θ ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ≡ˢ
+           (open_pskl_wrt_pskl Q (pskl_var_f α))) ->
     Θ ⊢ (pskl_all_syn P) ≡ˢ (pskl_all_syn Q)
 | a_pskl_tyequiv__tophole : forall Θ P Q,
     Θ ⊢ P ≡ˢ Q ->

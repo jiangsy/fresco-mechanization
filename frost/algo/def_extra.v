@@ -85,10 +85,10 @@ Inductive a_suffix : aenv -> Prop :=
 (** A type-variable occurrence in [Θ]: rigid, or a flexible declaration /
     definition (an occurrence of a defined [α̂] is still a variable; its
     definition is retrieved by lookup rules where needed). *)
-Definition a_binds_tvar (X : atom) (Θ : aenv) : Prop :=
-  binds X abind_tvar Θ \/
-  binds X abind_flex_mono Θ \/
-  (exists τ, binds X (abind_flex_mono_def τ) Θ).
+Definition a_binds_tvar (α : atom) (Θ : aenv) : Prop :=
+  binds α abind_tvar Θ \/
+  binds α abind_flex_mono Θ \/
+  (exists τ, binds α (abind_flex_mono_def τ) Θ).
 
 (* Well-scopedness of types / skeletons under [Θ].  This is what the paper's
    implicit "all inputs are well-formed" and the explicit [Θ0,Ξ ⊢ P1] premise
@@ -98,31 +98,31 @@ Definition a_binds_tvar (X : atom) (Θ : aenv) : Prop :=
 Inductive a_wf_ptyp : aenv -> ptyp -> Prop :=
 | a_wf_ptyp__unit : forall Θ,
     a_wf_ptyp Θ ptyp_unit
-| a_wf_ptyp__var : forall Θ X,
-    a_binds_tvar X Θ ->
-    a_wf_ptyp Θ (ptyp_var_f X)
+| a_wf_ptyp__var : forall Θ α,
+    a_binds_tvar α Θ ->
+    a_wf_ptyp Θ (ptyp_var_f α)
 | a_wf_ptyp__arrow : forall Θ A1 A2,
     a_wf_ptyp Θ A1 ->
     a_wf_ptyp Θ A2 ->
     a_wf_ptyp Θ (ptyp_arrow A1 A2)
 | a_wf_ptyp__all : forall L Θ A,
-    (forall X, X `notin` L ->
-       a_wf_ptyp ((X ~ abind_tvar) ++ Θ) (open_ptyp_wrt_ptyp A (ptyp_var_f X))) ->
+    (forall α, α `notin` L ->
+       a_wf_ptyp ((α ~ abind_tvar) ++ Θ) (open_ptyp_wrt_ptyp A (ptyp_var_f α))) ->
     a_wf_ptyp Θ (ptyp_all A).
 
 Inductive a_scope_pskl : aenv -> pskl -> Prop :=
 | a_scope_pskl__unit : forall Θ,
     a_scope_pskl Θ pskl_unit
-| a_scope_pskl__var : forall Θ X,
-    a_binds_tvar X Θ ->
-    a_scope_pskl Θ (pskl_var_f X)
+| a_scope_pskl__var : forall Θ α,
+    a_binds_tvar α Θ ->
+    a_scope_pskl Θ (pskl_var_f α)
 | a_scope_pskl__arrow : forall Θ P1 P2,
     a_scope_pskl Θ P1 ->
     a_scope_pskl Θ P2 ->
     a_scope_pskl Θ (pskl_arrow P1 P2)
 | a_scope_pskl__all : forall L Θ P,
-    (forall X, X `notin` L ->
-       a_scope_pskl ((X ~ abind_tvar) ++ Θ) (open_pskl_wrt_pskl P (pskl_var_f X))) ->
+    (forall α, α `notin` L ->
+       a_scope_pskl ((α ~ abind_tvar) ++ Θ) (open_pskl_wrt_pskl P (pskl_var_f α))) ->
     a_scope_pskl Θ (pskl_all_syn P)
 | a_scope_pskl__hole : forall Θ,
     a_scope_pskl Θ pskl_hole
@@ -214,16 +214,16 @@ Reserved Notation "Θ ⨟ Δ ⊢ₚₛᵃ P"
 Inductive a_wf_pskl : aenv -> atoms -> pskl -> Prop :=
 | a_wf_pskl__unit : forall Θ Δ,
     Θ ⨟ Δ ⊢ₚₛᵃ pskl_unit
-| a_wf_pskl__var : forall Θ Δ X,
-    X `in` Δ \/ a_binds_tvar X Θ ->
-    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f X)
+| a_wf_pskl__var : forall Θ Δ α,
+    α `in` Δ \/ a_binds_tvar α Θ ->
+    Θ ⨟ Δ ⊢ₚₛᵃ (pskl_var_f α)
 | a_wf_pskl__arrow : forall Θ Δ P1 P2,
     Θ ⨟ Δ ⊢ₚₛᵃ P1 ->
     Θ ⨟ Δ ⊢ₚₛᵃ P2 ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_arrow P1 P2)
 | a_wf_pskl__all : forall L Θ Δ P,
-    (forall X, X `notin` L ->
-       Θ ⨟ (add X Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f X))) ->
+    (forall α, α `notin` L ->
+       Θ ⨟ (add α Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f α))) ->
     Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P)
 | a_wf_pskl__hole : forall Θ Δ,
     Θ ⨟ Δ ⊢ₚₛᵃ pskl_hole
@@ -335,11 +335,11 @@ with a_lookeq : atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
     P ∼[ α ] P' ⤳ nil ⨾ nil
 | a_lookeq__vacuous : forall α P,                (* LE-Vacuous: RHS is □ *)
     P ∼[ α ] pskl_hole ⤳ nil ⨾ nil
-| a_lookeq__flex_r : forall α P β γ,             (* LE-FlexR (β̂ a flex var) *)
+| a_lookeq__flex_r : forall α P β α1,             (* LE-FlexR (β̂ a flex var) *)
     P <> pskl_var_f α ->
     α `in` ftvar_in_pskl P ->
-    P ∼[ α ] (pskl_var_f β) ⤳ ((γ ~ abind_flex_mono) ++ nil)
-        ⨾ (a_cstr_eq (pskl_var_f γ) :: nil)
+    P ∼[ α ] (pskl_var_f β) ⤳ ((α1 ~ abind_flex_mono) ++ nil)
+        ⨾ (a_cstr_eq (pskl_var_f α1) :: nil)
 | a_lookeq__arrow : forall α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,      (* LE-Arrow *)
     P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
     P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 ->
@@ -386,8 +386,8 @@ Reserved Notation "Θ ⊢ₑ P ∼ Q ⤳ P'"
   (at level 75, P at level 74, Q at level 74, P' at level 74, no associativity).
 
 Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> pskl -> Prop :=
-| a_solve_sub__var : forall Θ m X Q,             (* SS-Var + SS-Flex *)
-    Θ ⊢ₛ (pskl_var_f X) ≼[ m ] Q ⤳ (pskl_var_f X)
+| a_solve_sub__var : forall Θ m α Q,             (* SS-Var + SS-Flex *)
+    Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ (pskl_var_f α)
 | a_solve_sub__forall_l : forall L Θ m P Q P',   (* SS-ForallL *)
     (forall β, β `notin` L ->
        Θ ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ m ] Q
@@ -424,8 +424,8 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> pskl -> Prop :=
 with a_solve_eq : aenv -> pskl -> pskl -> pskl -> Prop :=
 | a_solve_eq__unit : forall Θ,                   (* SE-Unit *)
     Θ ⊢ₑ pskl_unit ∼ pskl_unit ⤳ pskl_unit
-| a_solve_eq__var : forall Θ X Q,                (* SE-Var + SE-FlexL *)
-    Θ ⊢ₑ (pskl_var_f X) ∼ Q ⤳ (pskl_var_f X)
+| a_solve_eq__var : forall Θ α Q,                (* SE-Var + SE-FlexL *)
+    Θ ⊢ₑ (pskl_var_f α) ∼ Q ⤳ (pskl_var_f α)
 | a_solve_eq__flex_r : forall Θ α P,             (* SE-FlexR *)
     (* the paper's FlexR (full-algo-spec.tex:1374) is context-free and fires
        on ANY hatted variable — defined or not; [α̂ ∈ Θ] here is only the
@@ -545,7 +545,7 @@ where "P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract NM α m P P' Ξ Q) : 
    node only sees its local tail; with the mutual cycle it can fire deep inside
    a consistency premise, BELOW entries that the skip rules have walked past —
    so those entries' names must reach the solve node through [F].  Without this,
-   a walked head [γ] could collide with a guessed name and re-attaching it would
+   a walked head [α1] could collide with a guessed name and re-attaching it would
    break context well-formedness.  The paper-shaped judgments are the [F = ∅]
    notations below. *)
 Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
@@ -562,8 +562,8 @@ Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
     mono_ptyp τ ->
     (* the paper's "fresh β̄" (prose-completion, cf. PAPER-GAPS) *)
     uniq βs ->
-    (forall γ, γ `in` dom βs ->
-       γ `notin` (F `union` add α (dom (Ξ ++ Θ0)))) ->
+    (forall α1, α1 `in` dom βs ->
+       α1 `notin` (F `union` add α (dom (Ξ ++ Θ0)))) ->
     ((α ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((α ~ abind_flex_mono_def τ) ++ βs ++ Ξ ++ Θ0)
 | a_assign__assign : forall F Θ0 Θ1 Ξ α β τ P Q,          (* Assign-Assign *)
@@ -664,11 +664,11 @@ with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
     a_flex_tvar Θ0 α ->
     ((β ~ abind_flex_mono) ++ Θ0) ⊲[ F ] α ≈ᵘ β
       ⊣ ((β ~ abind_flex_mono_def (ptyp_var_f α)) ++ Θ0)
-| a_unify__flex_assign : forall F Θ0 Θ1 γ τ α β Q,         (* Flex-Flex-Assign *)
+| a_unify__flex_assign : forall F Θ0 Θ1 α1 τ α β Q,         (* Flex-Flex-Assign *)
     (* [paper-gap] The premise's [∼] is CONSISTENCY, not [unifyvar].  The paper
        (full-algo-spec.tex:1440-1442) writes "we write Θ₀ ⊢ P ∼ P₀ ⊣ Θ₁ for
        Θ₀ ⊢[P₀] P ∼ Q ⊣ Θ₁ WHEN THE OUTPUT Q IS NOT USED" — so the two-slot form
-       is consistency with SUBJECT [α̂[τ/γ̂]], INPUT [β̂[τ/γ̂]] and the output
+       is consistency with SUBJECT [α̂[τ/α1̂]], INPUT [β̂[τ/α1̂]] and the output
        dropped.  [Δ₁∣Δ₂] are omitted there, which per :1472-1473 means BOTH
        EMPTY.  The rule drops out of [unifyvar] precisely because substituting
        the definition can turn a variable subject into an arbitrary MONOTYPE,
@@ -687,18 +687,18 @@ with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
        prose-completion already applied to Flex-Flex-L/R's payload).  The other
        rules derive this from their own shape or their IH; this one cannot, since
        its premise is a CONSISTENCY derivation. *)
-    a_flex_tvar ((γ ~ abind_flex_mono_def τ) ++ Θ0) α ->
-    a_flex_tvar ((γ ~ abind_flex_mono_def τ) ++ Θ0) β ->
-    Θ0 ⊢ₐ[ (add γ F) ][ empty | empty
-         | (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f β))) ]
-      (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))) ∼ Q ⊣ Θ1 ->
-    ((γ ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ F ] α ≈ᵘ β
-      ⊣ ((γ ~ abind_flex_mono_def τ) ++ Θ1)
-| a_unify__flex_skip : forall F Θ0 Θ1 γ α β,               (* Flex-Flex-Skip *)
-    γ <> α ->
-    γ <> β ->
-    Θ0 ⊲[ (add γ F) ] α ≈ᵘ β ⊣ Θ1 ->
-    ((γ ~ abind_flex_mono) ++ Θ0) ⊲[ F ] α ≈ᵘ β ⊣ ((γ ~ abind_flex_mono) ++ Θ1)
+    a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) α ->
+    a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) β ->
+    Θ0 ⊢ₐ[ (add α1 F) ][ empty | empty
+         | (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β))) ]
+      (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))) ∼ Q ⊣ Θ1 ->
+    ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ F ] α ≈ᵘ β
+      ⊣ ((α1 ~ abind_flex_mono_def τ) ++ Θ1)
+| a_unify__flex_skip : forall F Θ0 Θ1 α1 α β,               (* Flex-Flex-Skip *)
+    α1 <> α ->
+    α1 <> β ->
+    Θ0 ⊲[ (add α1 F) ] α ≈ᵘ β ⊣ Θ1 ->
+    ((α1 ~ abind_flex_mono) ++ Θ0) ⊲[ F ] α ≈ᵘ β ⊣ ((α1 ~ abind_flex_mono) ++ Θ1)
 | a_unify__skip_other : forall F Θ0 Θ1 c b α β,            (* Flex-Flex-Skip' *)
     (b = abind_tvar \/
      (exists Q, b = abind_var_typ Q) \/
@@ -921,18 +921,18 @@ Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
     Θ0 ⊲ (pskl_arrow P Q) ▹ P ⇢ Q ⊣ Θ0
 | a_split__hole : forall Θ0,
     Θ0 ⊲ pskl_hole ▹ pskl_hole ⇢ pskl_hole ⊣ Θ0
-| a_split__flex : forall Θ0 Θ1 α β γ Q,                 (* split[α̂] = β̂→γ̂ *)
-    (* [paper-gap] The paper writes this premise as [unify{α̂}{β̂ → γ̂}]
+| a_split__flex : forall Θ0 Θ1 α β α1 Q,                 (* split[α̂] = β̂→α1̂ *)
+    (* [paper-gap] The paper writes this premise as [unify{α̂}{β̂ → α1̂}]
        (full-algo-spec.tex:393 / algorithmic.tex:330), and that [∼] is
-       CONSISTENCY — subject [α̂], input [β̂ → γ̂], output dropped.  It CANNOT be
+       CONSISTENCY — subject [α̂], input [β̂ → α1̂], output dropped.  It CANNOT be
        [unifyvar], whose subjects are hatted variables: the input here is an
        ARROW.  (Encoding it as [a_unify] is what forced [a_unify] to take
        general monotypes rather than the paper's hatted variables.)
-       Consistency's FlexL then assigns [α̂ ≔ β̂ → γ̂]. *)
-    ((γ ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
-      ⊢ₐ[ empty | empty | (pskl_arrow (pskl_var_f β) (pskl_var_f γ)) ]
+       Consistency's FlexL then assigns [α̂ ≔ β̂ → α1̂]. *)
+    ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θ0)
+      ⊢ₐ[ empty | empty | (pskl_arrow (pskl_var_f β) (pskl_var_f α1)) ]
         (pskl_var_f α) ∼ Q ⊣ Θ1 ->
-    Θ0 ⊲ (pskl_var_f α) ▹ (pskl_var_f β) ⇢ (pskl_var_f γ) ⊣ Θ1
+    Θ0 ⊲ (pskl_var_f α) ▹ (pskl_var_f β) ⇢ (pskl_var_f α1) ⊣ Θ1
 where "Θ ⊲ P0 ▹ P ⇢ Q ⊣ Θ'" := (a_split Θ P0 P Q Θ') : type_scope
   and "Θ ⊢ₐ[ N | m | P0 ] P ⩽ Q ⊣ Θ'" := (a_sub N m P0 Θ P Q Θ').
 
@@ -1041,11 +1041,11 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
    the body.  Mirrors [d_sd_typing__abs_check_step]/[_base]. *)
 | a_typing__abs_check_step : forall L Θ0 Θ1 A0 e A Ξ,
     a_suffix Ξ ->
-    (forall X, X `notin` L ->
-       ((X ~ abind_tvar) ++ Θ0)
-         ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ]
-         (exp_abs e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f X))
-         ⊣ (Ξ ++ (X ~ abind_tvar) ++ Θ1)) ->
+    (forall α, α `notin` L ->
+       ((α ~ abind_tvar) ++ Θ0)
+         ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
+         (exp_abs e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+         ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs e) ⦂ (ptyp_all A) ⊣ Θ1
 | a_typing__abs_check_base : forall L Θ0 Θ1 Θ2 A0 A B e Ξ,
     Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A) ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->
@@ -1056,11 +1056,11 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl A0) ] (exp_abs e) ⦂ (ptyp_arrow A B) ⊣ Θ2
 | a_typing__abs_anno_check_step : forall L Θ0 Θ1 A0 Aan e A Ξ,
     a_suffix Ξ ->
-    (forall X, X `notin` L ->
-       ((X ~ abind_tvar) ++ Θ0)
-         ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f X))) ]
-         (exp_abs_anno Aan e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f X))
-         ⊣ (Ξ ++ (X ~ abind_tvar) ++ Θ1)) ->
+    (forall α, α `notin` L ->
+       ((α ~ abind_tvar) ++ Θ0)
+         ⊢ₐ[ mode_tc ; (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ]
+         (exp_abs_anno Aan e) ⦂ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+         ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
     Θ0 ⊢ₐ[ mode_tc ; (ptyp_to_pskl (ptyp_all A0)) ] (exp_abs_anno Aan e) ⦂ (ptyp_all A) ⊣ Θ1
 | a_typing__abs_anno_check_base : forall L Θ0 Θ1 Θ2 Θ3 A0 A' A B e Ξ,
     Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A') ⇢ (ptyp_to_pskl B) ⊣ Θ1 ->

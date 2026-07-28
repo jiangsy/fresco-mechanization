@@ -32,10 +32,10 @@
        pins the target's binder payload to the syntactic [θP], and flex
        images must be well-formed in the POSITIONAL REMAINDER.
 
-    A competing solution may solve [α̂] with a name [δ̂] it allocates ABOVE
+    A competing solution may solve [α̂] with a name [β1̂] it allocates ABOVE
     the walked binder [y] (legal at [α̂]'s ORIGINAL position); the factoring
-    must then reproduce a binder payload mentioning [δ̂] — [ζα̂ = δ̂]
-    SYNTACTICALLY — while [α̂] sits BELOW [y] in [Θ₁], out of [δ̂]'s scope.
+    must then reproduce a binder payload mentioning [β1̂] — [ζα̂ = β1̂]
+    SYNTACTICALLY — while [α̂] sits BELOW [y] in [Θ₁], out of [β1̂]'s scope.
 
     PROVENANCE.  The syntactic rules are faithful to Gundry's THESIS
     (Gundry13, Fig. 2.4 — term middles [x : θσ], positional remainder,
@@ -46,15 +46,15 @@
     App. D.1) does not treat those cases — the gap predates this paper.
     See the paper note (sections/appendices/optimality-cex.tex).
 
-    THE INSTANCE (five distinct atoms c, α, y, α, δ):
+    THE INSTANCE (five distinct atoms c, α, y, α, β1):
 
       Θ₀ = c : α̂→(),  α̂,  y : (),  α̂          P = α̂→()     (assign α̂ ≔ P)
       Θ₁ = c : α̂→(),  y : (),  α̂ ≔ α̂→(),  α̂             (α̂ moved below y)
-      θ  = [δ̂/α̂, ()→()/α̂]   into   Θ = c : δ̂→(),  δ̂ ≔ (),  y : ()
+      θ  = [β1̂/α̂, ()→()/α̂]   into   Θ = c : β1̂→(),  β1̂ ≔ (),  y : ()
 
     Under [a_inc_syn] no ζ exists ([cex_no_zeta_syn]); under the adopted
     semantic [a_inc], ζ = [()→()/α̂, ()/α̂] factors, using the depth-legal
-    representative [()] of [δ̂]'s ≡ᵗ-class ([cex_zeta_semantic]).
+    representative [()] of [β1̂]'s ≡ᵗ-class ([cex_zeta_semantic]).
 
     Everything below is Qed and axiom-free. *)
 
@@ -136,8 +136,8 @@ Definition Th1 : aenv :=
   (alpha ~ abind_flex_mono_def tauP) ++
   (α ~ abind_flex_mono) ++ nil.
 
-(* The competing solution:  θ = [δ̂/α̂, ()→()/α̂]  into
-   Θ = c : δ̂→(), δ̂ ≔ (), y : (). *)
+(* The competing solution:  θ = [β1̂/α̂, ()→()/α̂]  into
+   Θ = c : β1̂→(), β1̂ ≔ (), y : (). *)
 Definition th : metasubst :=
   (α, ptyp_var_f delta) :: (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: nil.
 Definition Th : aenv :=
@@ -168,7 +168,7 @@ Proof.
   - unfold tauP. apply mono_ptyp__arrow;
       [ apply mono_ptyp__var | apply mono_ptyp__unit ].
   - constructor.
-  - intros γ Hγ. simpl in Hγ. exfalso. clear - Hγ. fsetdec.
+  - intros α1 Hα1. simpl in Hα1. exfalso. clear - Hα1. fsetdec.
 Qed.
 
 (* ------------------------------------------------------------------ *)
@@ -237,7 +237,7 @@ Proof.
                (y ~ abind_var_typ ptyp_unit) ++ nil)).
   2:{ rewrite cex_msubst_th_tauP in D. exact D. }
   apply a_inc_syn__var; [ | constructor ].
-  (* α̂ ↦ δ̂ : in scope HERE (above y) *)
+  (* α̂ ↦ β1̂ : in scope HERE (above y) *)
   unfold th. apply a_inc_syn__flex.
   2:{ apply a_wf_ptyp__var. right. right. exists ptyp_unit.
       unfold binds; simpl. left. reflexivity. }
@@ -265,7 +265,7 @@ Lemma cex_no_zeta_syn : forall ζ, ~ a_inc_syn Th1 ζ Th.
 Proof.
   intros ζ Hζ. unfold Th1, Th in Hζ.
   inversion Hζ; subst.
-  (* c's middle : Ξ must be nil, and it forces ζα̂ = δ̂ *)
+  (* c's middle : Ξ must be nil, and it forces ζα̂ = β1̂ *)
   destruct Ξ as [ | [ac bc] Ξ' ].
   2:{ simpl in H4. inversion H4; subst.
       inversion H5 as [ | ? ? ? Hs' Hb ]; subst. inversion Hb. }
@@ -308,7 +308,7 @@ Qed.
 (* ------------------------------------------------------------------ *)
 (*  5. THE ADOPTED SEMANTIC RULE DISSOLVES IT: the same instance         *)
 (*     factors through  ζ = [()→()/α̂, ()/α̂]  — the binder middle is     *)
-(*     matched up to ≡ᵗ (δ̂→() ≡ᵗ ()→() since δ̂ ≔ ()).                   *)
+(*     matched up to ≡ᵗ (β1̂→() ≡ᵗ ()→() since β1̂ ≔ ()).                   *)
 (* ------------------------------------------------------------------ *)
 
 Definition zeta_sem : metasubst :=
@@ -317,7 +317,7 @@ Definition zeta_sem : metasubst :=
 Lemma cex_zeta_semantic : zeta_sem ∷ Th1 ⊑ Th.
 Proof.
   unfold Th1, Th, zeta_sem.
-  (* c : middle  δ̂→()  ≡ᵗ  ζ(α̂→()) = ()→()  over the remainder *)
+  (* c : middle  β1̂→()  ≡ᵗ  ζ(α̂→()) = ()→()  over the remainder *)
   eapply a_inc__var with (Ξ := nil)
            (A' := ptyp_arrow (ptyp_var_f delta) ptyp_unit);
     [ | | constructor ].
@@ -328,7 +328,7 @@ Proof.
         [ | apply a_tyequiv__refl; constructor ].
       apply a_tyequiv__flex_def.
       unfold binds; simpl. left. reflexivity. }
-  (* y : middle () ≡ᵗ () under the suffix δ̂≔() *)
+  (* y : middle () ≡ᵗ () under the suffix β1̂≔() *)
   eapply a_inc__var with (Ξ := (delta ~ abind_flex_mono_def ptyp_unit))
            (A' := ptyp_unit).
   2:{ simpl. apply a_tyequiv__refl. constructor. }

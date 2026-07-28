@@ -146,8 +146,8 @@ Proof.
   - apply lc_pskl_unit.
   - apply lc_pskl_var_f.
   - apply lc_pskl_arrow; auto.
-  - apply lc_pskl_all_syn. intro X. rewrite <- bskl_to_pskl_open. auto.
-  - apply lc_pskl_all_syn. intro X. rewrite <- bskl_to_pskl_open. auto.
+  - apply lc_pskl_all_syn. intro α. rewrite <- bskl_to_pskl_open. auto.
+  - apply lc_pskl_all_syn. intro α. rewrite <- bskl_to_pskl_open. auto.
   - apply lc_pskl_hole.
   - apply lc_pskl_tophole; auto.
 Qed.
@@ -160,7 +160,7 @@ Proof.
   - apply lc_bskl_unit.
   - apply lc_bskl_var_f.
   - apply lc_bskl_arrow; auto.
-  - apply lc_bskl_all_syn. intro X. rewrite <- pskl_to_bskl_syn_open. auto.
+  - apply lc_bskl_all_syn. intro α. rewrite <- pskl_to_bskl_syn_open. auto.
   - apply lc_bskl_hole.
   - apply lc_bskl_tophole; auto.
 Qed.
@@ -174,8 +174,8 @@ Proof.
   - apply lc_uskl_unit.
   - apply lc_uskl_var_f.
   - apply lc_uskl_arrow; auto.
-  - apply lc_uskl_all_syn. intro X. rewrite <- bskl_to_uskl_open. auto.
-  - apply lc_uskl_all_syn. intro X. rewrite <- bskl_to_uskl_open. auto.
+  - apply lc_uskl_all_syn. intro α. rewrite <- bskl_to_uskl_open. auto.
+  - apply lc_uskl_all_syn. intro α. rewrite <- bskl_to_uskl_open. auto.
   - apply lc_uskl_hole.
   - apply lc_uskl_tophole; auto.
 Qed.

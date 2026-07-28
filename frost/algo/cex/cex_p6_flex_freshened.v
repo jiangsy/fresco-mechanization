@@ -18,7 +18,7 @@
     [SolE-FlexR] ([a_solve_eq__flex_r]): [nonflex{P} ⊢ P ∼ α̂ ⤳ α̂].  There is
     NO flex-SPLIT rule in constraint solving (fig:selected-look): [SolE-Arrow]
     needs both sides to be arrows, and [SolE-FlexR] solves the flexible
-    counterpart directly to [β̂], kept whole.  (The [split[α̂][β̂→γ̂]] rule
+    counterpart directly to [β̂], kept whole.  (The [split[α̂][β̂→α1̂]] rule
     lives only in the inference/[⤳ᵐ] layer, which can introduce fresh
     flexibles via a context move; constraint solving cannot and need not.)
 
@@ -37,10 +37,10 @@
     away requires the constraint collection to have emitted a RAW Θ0-flex
     payload opposite a compound (arrow) subject.  It never does: when the
     counterpart of a compound comparison is a flexible variable,
-    [a_lookeq__flex_r] (LE-FlexR) FRESHENS it to a new [γ ∈ Ξ].  The -var
+    [a_lookeq__flex_r] (LE-FlexR) FRESHENS it to a new [α1 ∈ Ξ].  The -var
     lemma therefore never sees the raw [β̂] at an arrow node — it sees the
-    fresh [γ], which is the NON-var lemma's job (θ extends over Ξ and can
-    assign [γ] the rigid [c], so precision holds).
+    fresh [α1], which is the NON-var lemma's job (θ extends over Ξ and can
+    assign [α1] the rigid [c], so precision holds).
 
     ── Why only the arrow case matters ──
 
@@ -71,7 +71,7 @@ Require Import src.frost.def_tags.
 Set Implicit Arguments.
 
 (** THE ESTABLISHMENT.  A flexible-variable counterpart opposite a COMPOUND
-    (arrow) subject is always FRESHENED by [LE-FlexR] to a new [γ ∈ Ξ]: the
+    (arrow) subject is always FRESHENED by [LE-FlexR] to a new [α1 ∈ Ξ]: the
     constraint collection never emits a raw Θ0-flex payload at an arrow node.
     (Inversion leaves only [LE-Absent], excluded by [α ∈ ftv], and
     [LE-FlexR].) *)
@@ -79,8 +79,8 @@ Lemma a_lookeq_arrow_subject_flex_target_freshened :
   forall α P1 P2 β Ξ 𝒞,
   a_lookeq α (pskl_arrow P1 P2) (pskl_var_f β) Ξ 𝒞 ->
   α `in` ftvar_in_pskl (pskl_arrow P1 P2) ->
-  exists γ, Ξ = (γ ~ abind_flex_mono) ++ nil
-         /\ 𝒞 = a_cstr_eq (pskl_var_f γ) :: nil.
+  exists α1, Ξ = (α1 ~ abind_flex_mono) ++ nil
+         /\ 𝒞 = a_cstr_eq (pskl_var_f α1) :: nil.
 Proof.
   intros α P1 P2 β Ξ 𝒞 H Hin; inversion H; subst.
   - (* LE-Absent: α ∉ ftv, contradicts Hin *)
@@ -90,7 +90,7 @@ Proof.
 Qed.
 
 (** THE GENERAL DICHOTOMY.  For a flexible TARGET, either the payload is
-    FRESHENED ([γ ∈ Ξ]) or it is RAW — and a raw payload's subject is NEVER
+    FRESHENED ([α1 ∈ Ξ]) or it is RAW — and a raw payload's subject is NEVER
     an arrow (it is a variable or a ⊤◇-wrapped variable).  So a raw Θ0-flex
     payload can only sit opposite a LEAF, never a compound bearing a rigid
     ρ-substituted variable. *)
@@ -98,7 +98,7 @@ Lemma a_lookeq_flex_target_raw_subject_not_arrow :
   forall α P β Ξ 𝒞,
   a_lookeq α P (pskl_var_f β) Ξ 𝒞 ->
   α `in` ftvar_in_pskl P ->
-  (exists γ, γ `in` dom Ξ /\ 𝒞 = a_cstr_eq (pskl_var_f γ) :: nil)
+  (exists α1, α1 `in` dom Ξ /\ 𝒞 = a_cstr_eq (pskl_var_f α1) :: nil)
   \/
   (Ξ = nil /\ 𝒞 = a_cstr_eq (pskl_var_f β) :: nil
    /\ forall Q1 Q2, P <> pskl_arrow Q1 Q2).

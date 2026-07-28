@@ -1,6 +1,6 @@
 (** COUNTEREXAMPLE — P6-Cs ("Completeness of consistency constraint
     collection and solving", consistency-proofs.tex:920) is FALSE without a
-    well-formedness premise on the CONSISTENCY SUBJECT [(θS)[ψa/α]].
+    well-formedness premise on the CONSISTENCY SUBJECT [(θR)[ψa/α]].
 
     This file does not argue in prose: it states the lemma with EXACTLY the
     premises of [a_lookeq_solve_complete] MINUS the subject-wf one (and with
@@ -8,7 +8,7 @@
     the refuted statement stronger), and derives False.
 
     The witness is
-      Θ = Θ₀ = ·   θ = ·   S = ⊤◇α   ψa = ⊤̇◇⟨⟩   P₀ = Pi = ⊤◇⟨⟩   Q = ⊤◇⟨⟩
+      Θ = Θ₀ = ·   θ = ·   R = ⊤◇α   ψa = ⊤̇◇⟨⟩   P₀ = Pi = ⊤◇⟨⟩   Q = ⊤◇⟨⟩
     so the subject is [⊤◇(⊤̇◇⟨⟩)] — a universal ghost whose body is another
     ghost, which [a_wf_pskl__tophole] / [d_wf_uskl__tophole] forbid (a ghost
     body must be GUARDED).  Every other premise holds; the algorithm is then
@@ -46,7 +46,7 @@ Definition cex_P (α : atom) : pskl := pskl_tophole (pskl_var_f α).
 Definition cex_P0 : pskl := pskl_tophole pskl_unit.
 Definition cex_Q : bskl := bskl_tophole bskl_unit.
 
-(* the subject [(θS)[ψa/α]] at θ = · is [⊤◇(⊤̇◇⟨⟩)] *)
+(* the subject [(θR)[ψa/α]] at θ = · is [⊤◇(⊤̇◇⟨⟩)] *)
 Lemma cex_subject : forall α,
   subst_bskl_in_uskl cex_ψa α (msubst_uskl_syn nil (cex_S α))
   = uskl_tophole cex_ψa.
@@ -140,7 +140,7 @@ Theorem p6cs_without_subject_wf_is_false :
        Ψa [<=] Ψsub ->
        Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ R)) ∼ Q ->
        (* NB: the subject-wf premise
-            [Θ ⨟ empty ⊢ₚₛᵃ ⌊ (θS)[ψa/α] ⌋ˢ]
+            [Θ ⨟ empty ⊢ₚₛᵃ ⌊ (θR)[ψa/α] ⌋ˢ]
           is exactly what is MISSING here *)
        Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->
        (* conclusion, weakened to its three essential conjuncts *)
@@ -176,7 +176,7 @@ Proof.
       | apply d_tags_skl__topholeg; apply d_tags_skl__unit; clear; fsetdec ].
   - (* ftag R ⊥ Ψ' *) cbn; clear; fsetdec.
   - (* Ψi, Ψa ⊆ Ψ' *) clear; fsetdec.
-  - (* delta_def_fresh *) intros Y α0 τ0 HY Hb; inversion Hb.
+  - (* delta_def_fresh *) intros β α0 τ0 Hβ Hb; inversion Hb.
   - (* precision of the INPUT: ⊤◇⟨⟩ ⊑ᵖ ⊤̇◇⟨⟩ *)
     cbn [msubst_pskl cex_P0]. unfold cex_ψa.
     apply ad_ppre__tophole_keep. apply ad_ppre__unit; clear; fsetdec.
@@ -238,7 +238,7 @@ Proof.
                        | apply d_tags_skl__unit; clear; fsetdec ])
                ltac:(cbn; clear; fsetdec)
                ltac:(clear; fsetdec)
-               ltac:(intros Y α0 τ0 HY Hb; inversion Hb)
+               ltac:(intros β α0 τ0 Hβ Hb; inversion Hb)
                ltac:(cbn [msubst_pskl cex_P0];
                      apply ad_ppre__tophole_remove;
                      apply ad_ppre__unit; clear; fsetdec)
