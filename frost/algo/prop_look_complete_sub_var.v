@@ -81,6 +81,7 @@ Require Import src.frost.algo.prop_decorate_sub.    (* lc_uskl_to_pskl_local *)
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_looksub.
 Require Import src.frost.algo.prop_solve_sub.
+Require Import src.frost.algo.prop_consis_complete.  (* a_wf_pskl_ftv_dom *)
 Require Import src.frost.algo.prop_sub_complete.
 Require Import src.frost.algo.prop_look_complete.
 Require Import src.frost.algo.prop_look_complete_var.
@@ -719,6 +720,78 @@ Proof.
     eapply ad_ppre_tophole_strip; [ exact HwfΘ | exact Hpre | exact Hg ].
 Qed.
 
+(** The SUBJECT's free variables of a partial-precision derivation come from
+    the guess, from Δ, or from Θ's own definitions.  This is what the ∀
+    cases use to strip their binder from the OUTPUT — the paper's "by the
+    precision conclusion, β ∉ ftv(θa P_a), and thus β ∉ ftv(P_a)"
+    (subtyping-proofs.tex:1898). *)
+(** A variable the GUESS avoids, that is not a Δ-binder, not a DEFINED
+    flexible of Θ and not mentioned by any of Θ's definitions, is avoided by
+    the precision's SUBJECT too.  This is what the ∀ cases use to strip
+    their binder from the OUTPUT — the paper's "by the precision conclusion,
+    β ∉ ftv(θa P_a), and thus β ∉ ftv(P_a)" (subtyping-proofs.tex:1898).
+    NB the last two conditions are real: the [flex_l] row puts a defined
+    flexible of Θ into the subject, and [flex_r] unfolds a definition, so a
+    definition's own variables can surface there. *)
+Lemma ad_partial_precise_src_ftv_avoid : forall Θ Δ Ψ P ψ,
+  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  forall α, α `notin` ftvar_in_uskl ψ ->
+  α `notin` Δ ->
+  (forall τ, ~ binds α (abind_flex_mono_def τ) Θ) ->
+  α `notin` def_ftv Θ ->
+  α `notin` ftvar_in_pskl P.
+Proof.
+  intros Θ Δ Ψ P ψ H; induction H; intros α0 Hψ HΔ Hnf Hdf;
+    cbn [ftvar_in_pskl ftvar_in_uskl] in *.
+  - clear; fsetdec.
+  - (* var: the same variable on both sides *) clear - Hψ; fsetdec.
+  - (* arrow *)
+    pose proof (IHad_partial_precise1 α0 ltac:(clear - Hψ; fsetdec) HΔ Hnf Hdf).
+    pose proof (IHad_partial_precise2 α0 ltac:(clear - Hψ; fsetdec) HΔ Hnf Hdf).
+    clear - H2 H3; fsetdec.
+  - (* ∀ *)
+    pick fresh α for (L `union` ftvar_in_pskl P `union` ftvar_in_uskl ψ
+                        `union` singleton α0).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α)) as Hup.
+    cbn in Hup.
+    assert (Hαα0 : α <> α0)
+      by (apply not_eq_sym; apply notin_singleton_1; clear - Fr; solve_notin).
+    pose proof (H0 α ltac:(clear - Fr; solve_notin) α0
+                  ltac:(clear - Hup Hψ Hαα0; fsetdec)
+                  ltac:(clear - HΔ Hαα0; fsetdec) Hnf Hdf) as Hα.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α)) as Hlo.
+    clear - Hα Hlo; fsetdec.
+  - (* □ *) clear; fsetdec.
+  - apply IHad_partial_precise; assumption.
+  - (* fill: the binder joins Θ as a TVAR, adding no definition *)
+    pick fresh α for (L `union` ftvar_in_pskl P `union` ftvar_in_uskl ψ
+                        `union` singleton α0 `union` dom Θ).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α)) as Hup.
+    cbn in Hup.
+    assert (Hαα0 : α <> α0)
+      by (apply not_eq_sym; apply notin_singleton_1; clear - Fr; solve_notin).
+    pose proof (H0 α ltac:(clear - Fr; solve_notin) α0
+                  ltac:(clear - Hup Hψ Hαα0; fsetdec)
+                  HΔ
+                  ltac:(intros τ0 Hb;
+                        destruct (binds_cons_1 _ _ _ _ _ _ Hb)
+                          as [[_ Habs] | Hb']; [ discriminate Habs | ];
+                        exact (Hnf τ0 Hb'))
+                  ltac:(cbn [def_ftv]; exact Hdf)) as Hα.
+    cbn [ftvar_in_pskl] in Hα. clear - Hα; fsetdec.
+  - apply IHad_partial_precise; assumption.
+  - (* flex_l: the subject is a DEFINED flexible of Θ *)
+    intros Hin.
+    assert (Heq : α0 = α) by (clear - Hin; fsetdec); subst.
+    exact (Hnf τ H).
+  - (* flex_r: the guess unfolds to a definition, whose variables are
+       covered by [def_ftv] *)
+    apply IHad_partial_precise; try assumption.
+    rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
+    intros Hin. apply Hdf.
+    pose proof (@def_ftv_binds Θ α τ H) as Hsub. clear - Hsub Hin; fsetdec.
+Qed.
+
 (* ===================================================================== *)
 (*  [flex_apart] ALONG THE WALK                                           *)
 (* ===================================================================== *)
@@ -742,41 +815,41 @@ Qed.
     is untouched, so P6-Cv and P6-Cs stay exactly as they are — and unlike
     strengthening P6-Cv to [flex_shield], this keeps P6-Cs's call site
     (Δρ = ∅, a TAGGED guess, [fa_clean]) satisfiable. *)
-Inductive fa_step (Θ0 : aenv) :
+Inductive fa_step :
   atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
 | fastep_arrow_l : forall Δρ P1 P2 ψ1 ψ2,
-    fa_step Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
+    fa_step Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
 | fastep_arrow_r : forall Δρ P1 P2 ψ1 ψ2,
-    fa_step Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
+    fa_step Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
 | fastep_all_l : forall Δρ P0 ψa γ,            (* Sub-ForallR *)
-    fa_step Θ0 Δρ (pskl_all_syn P0) ψa
+    fa_step Δρ (pskl_all_syn P0) ψa
             Δρ (open_pskl_wrt_pskl P0 (pskl_var_f γ)) ψa
 | fastep_all_r : forall Δρ ε P0 ψ β,           (* Sub-ForallL *)
-    fa_step Θ0 Δρ P0 (uskl_all_etag ε ψ)
+    fa_step Δρ P0 (uskl_all_etag ε ψ)
             (add β Δρ) P0 (open_uskl_wrt_uskl ψ (uskl_var_f β))
 | fastep_tophole_l : forall Δρ P0 ψa,
-    fa_step Θ0 Δρ (pskl_tophole P0) ψa Δρ P0 ψa
+    fa_step Δρ (pskl_tophole P0) ψa Δρ P0 ψa
 | fastep_topholeg_r : forall Δρ P0 ψ,          (* Sub-UnivGhostLG *)
-    fa_step Θ0 Δρ P0 (uskl_topholeg ψ) Δρ P0 ψ
+    fa_step Δρ P0 (uskl_topholeg ψ) Δρ P0 ψ
 | fastep_flexdef_r : forall Δρ P0 α τ,         (* FlexMono *)
     (* the definition that justifies this step lives in the TARGET context
        Θ, not in Θ0, and Θ grows across ForallR; leaving τ unconstrained
        keeps the walk context-free (a slightly stronger premise, and one a
        call site discharges the same way — a painting is Δρ-clean whenever
        the definition-freshness holds) *)
-    fa_step Θ0 Δρ P0 (uskl_var_f α) Δρ P0 (ptyp_to_uskl_syn τ).
+    fa_step Δρ P0 (uskl_var_f α) Δρ P0 (ptyp_to_uskl_syn τ).
 
-Inductive fa_walk (Θ0 : aenv) :
+Inductive fa_walk :
   atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
-| fw_refl : forall Δρ P0 ψa, fa_walk Θ0 Δρ P0 ψa Δρ P0 ψa
+| fw_refl : forall Δρ P0 ψa, fa_walk Δρ P0 ψa Δρ P0 ψa
 | fw_step : forall Δρ P0 ψa Δρ1 P1 ψ1 Δρ2 P2 ψ2,
-    fa_step Θ0 Δρ P0 ψa Δρ1 P1 ψ1 ->
-    fa_walk Θ0 Δρ1 P1 ψ1 Δρ2 P2 ψ2 ->
-    fa_walk Θ0 Δρ P0 ψa Δρ2 P2 ψ2.
+    fa_step Δρ P0 ψa Δρ1 P1 ψ1 ->
+    fa_walk Δρ1 P1 ψ1 Δρ2 P2 ψ2 ->
+    fa_walk Δρ P0 ψa Δρ2 P2 ψ2.
 
 Definition flex_apart_walk (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
   : Prop :=
-  forall Δρ' P0' ψa', fa_walk Θ0 Δρ P0 ψa Δρ' P0' ψa' ->
+  forall Δρ' P0' ψa', fa_walk Δρ P0 ψa Δρ' P0' ψa' ->
     flex_apart Θ0 Δρ' P0' ψa'.
 
 (** What the delegation to P6-Cv reads off. *)
@@ -787,11 +860,22 @@ Proof. intros Θ0 Δρ P0 ψa H; apply H; apply fw_refl. Qed.
 (** …and what every descent needs: closure, by prepending the step. *)
 Lemma flex_apart_walk_step : forall Θ0 Δρ P0 ψa Δρ1 P1 ψ1,
   flex_apart_walk Θ0 Δρ P0 ψa ->
-  fa_step Θ0 Δρ P0 ψa Δρ1 P1 ψ1 ->
+  fa_step Δρ P0 ψa Δρ1 P1 ψ1 ->
   flex_apart_walk Θ0 Δρ1 P1 ψ1.
 Proof.
   intros Θ0 Δρ P0 ψa Δρ1 P1 ψ1 H Hstep Δρ' P0' ψa' Hw.
   apply H. eapply fw_step; [ exact Hstep | exact Hw ].
+Qed.
+
+(** …and the context weakening the ∀ cases need, which is just
+    [flex_apart_weaken] pointwise (the walk itself is context-free). *)
+Lemma flex_apart_walk_weaken_tvar : forall Θ0 Δρ P0 ψa β,
+  flex_apart_walk Θ0 Δρ P0 ψa ->
+  flex_apart_walk ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa β H Δρ' P0' ψa' Hw.
+  eapply flex_apart_weaken;
+    [ apply H; exact Hw | intros x b Hb; apply binds_app_3; exact Hb ].
 Qed.
 
 (* ===================================================================== *)
@@ -963,8 +1047,194 @@ Proof.
     clear - HΨae; fsetdec.
   - (* Check (TY/TC) : delegate to P6-Cv, then dispatch on Pi *)
     admit.
-  - (* ForallR (TY/TC) : refinement gives P0 = ∀.P0'; descend P0 *)
-    admit.
+  - (* ForallR (TY/TC).  [skmod{TY}] makes P0 a TYPE, so the refinement's
+       inherited-∀ target forces P0 = ∀.P0' (every other type shape is
+       GUARDED, and a guarded source refines only to a guarded target).
+       Then descend the payload — the guess is untouched — and strip the
+       binder from the outputs with P6-Cs's ∀-kit. *)
+    pose proof (HmodTY eq_refl) as Hmod.
+    inversion Hmod as [ | A HeqA | ]; subst.
+    destruct A as [ | nA | αA | A1 A2 | A0 ];
+      cbn [ptyp_to_pskl] in HwfP0, Hrefine, Hshield, Hpre, Hfsh, Hapart |- *.
+    + (* ⟨⟩ : guarded *)
+      exfalso;
+        assert (Hbad : guarded_bskl (bskl_all_inh B));
+        [ eapply ad_refine_syn_guarded_r;
+            [ exact HwfΘ | exact Hrefine
+            | apply guarded_pskl_to_bskl_inh;
+              eapply guarded_pskl_msubst_inc;
+                [ exact Hθ | apply guarded_pskl__unit ] ]
+        | inversion Hbad ].
+    + (* a bound variable is not well-formed *) inversion HwfP0.
+    + (* a variable : guarded *)
+      exfalso;
+        assert (Hbad : guarded_bskl (bskl_all_inh B));
+        [ eapply ad_refine_syn_guarded_r;
+            [ exact HwfΘ | exact Hrefine
+            | apply guarded_pskl_to_bskl_inh;
+              eapply guarded_pskl_msubst_inc;
+                [ exact Hθ | apply guarded_pskl__var ] ]
+        | inversion Hbad ].
+    + (* an arrow : guarded *)
+      exfalso.
+      assert (Hg : guarded_pskl (pskl_arrow (ptyp_to_pskl A1) (ptyp_to_pskl A2))).
+      { pose proof (a_wf_pskl_lc HwfP0) as Hlc; inversion Hlc; subst.
+        apply guarded_pskl__arrow; assumption. }
+      assert (Hbad : guarded_bskl (bskl_all_inh B));
+        [ eapply ad_refine_syn_guarded_r;
+            [ exact HwfΘ | exact Hrefine
+            | apply guarded_pskl_to_bskl_inh;
+              eapply guarded_pskl_msubst_inc; [ exact Hθ | exact Hg ] ]
+        | inversion Hbad ].
+    + (* P0 = ∀.P0' : the real row *)
+      cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
+      inversion Hrefine; subst.
+      match goal with Hr : forall α, α `notin` ?Lr -> _ ⨟ _ ⊢ᵣᵃ _ ⊳ _ |- _ =>
+        rename Hr into Hrbody; remember Lr as Lr0 eqn:HeqLr; clear HeqLr end.
+      inversion HwfP0; subst.
+      match goal with Hw : forall α, α `notin` ?Lw -> _ ⨟ _ ⊢ₚₛᵃ _ |- _ =>
+        rename Hw into Hw0body; remember Lw as Lw0 eqn:HeqLw; clear HeqLw end.
+      pick fresh β for
+        (L `union` Lr0 `union` Lw0 `union` dom Θ `union` dom Θ0
+           `union` dom θ `union` ftvar_in_uskl ψa `union` ftvar_in_pskl Pi
+           `union` ftvar_in_pskl (ptyp_to_pskl A0) `union` def_ftv Θ
+           `union` Δ).
+      assert (HβΘ : β `notin` dom Θ) by (clear - Fr; solve_notin).
+      assert (HβΘ0 : β `notin` dom Θ0) by (clear - Fr; solve_notin).
+      assert (Hβθ : β `notin` dom θ) by (clear - Fr; solve_notin).
+      assert (Hβψa : β `notin` ftvar_in_uskl ψa) by (clear - Fr; solve_notin).
+      assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+        by (apply a_wf_aenv__tvar; assumption).
+      assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+        by (apply a_wf_aenv__tvar; assumption).
+      assert (Hweak : forall (x : atom) (b : abind),
+                binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
+        by (intros x b Hb; apply binds_app_3; exact Hb).
+      assert (HwfP0β : ((β ~ abind_tvar) ++ Θ0) ⨟ empty
+                ⊢ₚₛᵃ (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β))).
+      { eapply a_wf_pskl_delta_to_tvar_mid
+          with (α1 := β) (Θ1 := nil) (Θ2 := Θ0) (Δ' := empty);
+          [ apply (Hw0body β ltac:(clear - Fr; solve_notin))
+          | reflexivity | clear; fsetdec ]. }
+      assert (HwfPiβ : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pi)
+        by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfPi ]).
+      assert (Hθβ : θ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
+        by (apply a_inc_cons_tvar; exact Hθ).
+      assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
+      { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+          [ discriminate Habs | exact Hb' ]. }
+      assert (Hrhofβ : rho_fresh Δρ ((β ~ abind_tvar) ++ Θ) θ).
+      { intros α0 Hα0. destruct (Hrhof α0 Hα0) as (Hb & Him & Hdf).
+        repeat split;
+          [ apply binds_app_3; exact Hb | exact Him | ].
+        intros α1 τ1 Hb1. eapply Hdf.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb1) as [[_ Habs] | Hb'];
+          [ discriminate Habs | exact Hb' ]. }
+      assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ Δ
+                ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa)
+        by (eapply ad_partial_precise_weaken;
+              [ exact Hpre | intros x b Hb; apply binds_app_3; exact Hb ]).
+      assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
+                (pskl_to_bskl_inh
+                   (msubst_pskl θ (open_pskl_wrt_pskl (ptyp_to_pskl A0)
+                                     (pskl_var_f β))))
+                ⊳ (open_bskl_wrt_bskl B (bskl_var_f β))).
+      { rewrite (@msubst_pskl_open Θ0 θ Θ (ptyp_to_pskl A0) β Hθ Hβθ).
+        rewrite pskl_to_bskl_inh_open.
+        eapply ad_refine_syn_delta_to_tvar_mid
+          with (α1 := β) (Θ1 := nil) (Θ2 := Θ) (Δ' := empty);
+          [ apply (Hrbody β ltac:(clear - Fr; solve_notin))
+          | reflexivity | clear; fsetdec ]. }
+      edestruct (H0 β ltac:(clear - Fr; solve_notin)
+                   ((β ~ abind_tvar) ++ Θ0) θ Δ Δρ Ψρ Ψt Ψi Ψa ψa Pi
+                   (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β))
+                   Hwfβ Hwfβ0 HwfPiβ HwfP0β
+                   ltac:(intro Hc; discriminate Hc)
+                   ltac:(intros _;
+                         rewrite <- ptyp_to_pskl_open;
+                         apply a_ty_mode_compat__tc)
+                   Hθβ
+                   ltac:(eapply uskl_rho_weaken;
+                         [ exact Hrho
+                         | intros x b Hb; apply binds_app_3; exact Hb ])
+                   Htags
+                   ltac:(eapply a_wf_pskl_weaken;
+                         [ intros x b Hb; apply binds_app_3; exact Hb
+                         | exact HwfSub ])
+                   Htageq Hinter Hrhofβ Hdelta Hshield Hdfreshβ
+                   ltac:(apply flex_apart_walk_weaken_tvar;
+                         eapply flex_apart_walk_step;
+                           [ exact Hapart | apply fastep_all_l ])
+                   ltac:(eapply flex_shield_descend_l;
+                         [ exact Hfsh | exact HβΘ0 ])
+                   Hpreβ HΨs1 HΨs2 Hrefβ)
+        as (Pa & Hs & Hp).
+      (* --- strip β from the two outputs --- *)
+      (* β is not free in the output: the solve's variables come from its two
+         inputs, and β is fresh for Pi — while for the opened payload the
+         PRECISION conclusion is what excludes it (see below), so we read
+         the bound off the precision instead of the solve. *)
+      (* β is not free in the output — read off the PRECISION conclusion, as
+         the paper does (subtyping-proofs.tex:1898): its subject's variables
+         come from the guess (β-free by choice), from Δ (β is fresh) or from
+         Θ (β is not there); and β is not in θ's domain, so it cannot have
+         been introduced by the metasubstitution either *)
+      assert (HβPa : β `notin` ftvar_in_pskl Pa).
+      { assert (HβΔ : β `notin` Δ) by (clear - Fr; solve_notin).
+        assert (Hβdef : β `notin` def_ftv Θ) by (clear - Fr; solve_notin).
+        assert (Hsrc : β `notin` ftvar_in_pskl (msubst_pskl θ Pa)).
+        { eapply ad_partial_precise_src_ftv_avoid;
+            [ exact Hp | exact Hβψa | exact HβΔ
+            | (* β is bound as a rigid tvar, never as a definition *)
+              intros τ0 Hb;
+              destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+                [ discriminate Habs
+                | apply HβΘ; eapply binds_In; exact Hb' ]
+            | cbn [def_ftv]; exact Hβdef ]. }
+        pose proof (msubst_pskl_ftv_dom_lower θ Pa) as Hlo.
+        clear - Hsrc Hlo Hβθ; fsetdec. }
+      assert (HsΘ0 : Θ0 ⊢ₛ Pi
+                ≼[ mode_tc ] (open_pskl_wrt_pskl (ptyp_to_pskl A0)
+                                (pskl_var_f β)) ⤳ Pa)
+        by (eapply a_solve_sub_strengthen_tvar; exact Hs).
+      exists Pa; split.
+      * (* rebuild SolS-ForallR: the single instance at β becomes the
+           cofinite family by RIGID RENAMING (β is free in neither Pi nor
+           the output, so only the payload moves) *)
+        apply a_solve_sub__forall_r
+          with (L := dom Θ0 `union` singleton β `union` ftvar_in_pskl Pi
+                       `union` ftvar_in_pskl Pa
+                       `union` ftvar_in_pskl (ptyp_to_pskl A0)).
+        intros α Hα.
+        assert (HβΘ0' : β `notin` dom Θ0) by exact HβΘ0.
+        assert (HαΘ0 : α `notin` dom Θ0) by (clear - Hα; fsetdec).
+        pose proof ((proj1 a_solve_sub_eq_rename) _ _ _ _ _ HsΘ0 β α
+                      HβΘ0' HαΘ0) as Hren.
+        rewrite (@subst_pskl_in_pskl_fresh_eq Pi (pskl_var_f α) β)
+          in Hren; [ | clear - Fr; solve_notin ].
+        rewrite (@subst_pskl_in_pskl_fresh_eq Pa (pskl_var_f α) β)
+          in Hren; [ | exact HβPa ].
+        rewrite <- (@subst_pskl_in_pskl_intro β (ptyp_to_pskl A0)
+                      (pskl_var_f α)) in Hren;
+          [ | clear - Fr; solve_notin ].
+        exact Hren.
+      * eapply ad_partial_precise_strip_tvar_mid
+          with (β := β) (Θ1 := nil) (Θ2 := Θ);
+          [ exact Hp | reflexivity
+          | intros α0 τ0 Hb;
+            assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
+              by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+                    [ discriminate Habs | exact Hb' ]);
+            pose proof (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb') as Hwfτ;
+            pose proof (a_wf_ptyp_ftv_dom Hwfτ) as Hftd;
+            clear - Hftd HβΘ; fsetdec
+          | apply msubst_pskl_ftv_avoid;
+              [ intros pp Hpp;
+                pose proof (a_inc_image_ftv_dom Hθ pp Hpp) as Hb;
+                clear - Hb HβΘ; fsetdec
+              | exact HβPa ]
+          | exact Hβψa ].
   - (* UnivGhostR (SK) : M = TC at sort SK, so [skmod] again forces P0 = □
        and the case closes exactly like Infer *)
     assert (HP0 : P0 = pskl_hole)
@@ -1208,8 +1478,19 @@ Proof.
         solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
               | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hshield
               | exact Hpre ].
-Admitted.  (* TODO[P6-Sv]: 8 of 12 cases are CLOSED; 4 remain (Check,
-    ForallR, Arrow, ForallL-tagged), each needing its own P0 × Pi grid.
+Admitted.  (* TODO[P6-Sv]: 9 of 12 cases are CLOSED; 3 remain — Check,
+    Arrow (both delegate to P6-Cv) and ForallL-tagged.
+
+    ForallR is closed and is the template for ForallL: [skmod{TY}] makes P0
+    a TYPE, so the inherited-∀ target forces P0 = ∀.P0' (every other type
+    shape is GUARDED, and a guarded source refines only to a guarded
+    target); descend the payload with [flex_shield_descend_l] and one
+    [fastep_all_l] prepend; run the IH at Θ0,β / Θ,β; then strip β — the
+    SOLVE by [a_solve_sub_strengthen_tvar] plus a rigid RENAMING that turns
+    the single instance back into SolS-ForallR's cofinite family
+    ([a_solve_sub_eq_rename]), and the PRECISION by
+    [ad_partial_precise_strip_tvar_mid], whose β-freshness side condition
+    comes from the new [ad_partial_precise_src_ftv_avoid].
 
     NEXT STEP for the two ∀ cases (found 2026-07-28 by starting ForallR).
     They must hand [flex_apart] — P6-Cv's premise, which this lemma only
