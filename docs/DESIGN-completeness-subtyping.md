@@ -602,29 +602,29 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   — unprovable BY INVERSION, since its `fa_all_l` row offers a one-sided
   family where a two-sided one is wanted.  Experiment reverted (the tree is
   green); `prop_look_complete.v` is untouched pending the fix below.
-  **THE FIX (settled 2026-07-28, and the third descent is now PROVED).**
-  Do NOT patch `flex_apart` — RETIRE it in favour of `flex_shield`, which
-  supports all three descents the two inductions need:
-  `flex_shield_descend_l` (Sub-ForallR, payload only), `_descend_r`
-  (Sub-ForallL, guess only, Δρ grows) and **`_descend_both`** (consistency's
-  ForallInh, both sides) — and the third is literally the first two
-  COMPOSED (Qed, ~6 lines), so the two-sided case costs nothing extra.
-  Why `flex_apart` cannot be repaired the same way: it HAS two-sided ∀ rows,
-  and a two-sided family ties both binders to ONE variable, so a one-sided
-  descent cannot be recovered from it — for a fixed payload binder γ one
-  needs the guess family at ALL binders, while the diagonal supplies only γ.
-  ⚠️ That is a STRUCTURE mismatch, NOT a naming one: renaming aligns a pair,
-  it does not manufacture a family.  (Distinguish this from (z5)'s rule —
-  binder NAMES never block anything; binder PAIRING can.)  `flex_shield`
-  escapes it by having only one-sided rows and DERIVING the two-sided
-  descent.
-  Plan: re-state P6-Cv over `flex_shield` (its FLEX row reads the condition
-  off with `flex_shield_flex_leaf`, strictly more informative than today's
-  `flex_apart` inversion; its ForallInh row takes `_descend_both`), then
-  P6-Sv drops the `flex_apart` premise and threads only `flex_shield`.
-  Re-threading P6-Cv is mechanical (~30 sites, same facts under a new
-  name); the two-sided descent hands the IH a Δρ grown by the opened binder
-  and a Θ0 extended by it, both already universally quantified there.
+  **THE FIX (settled 2026-07-28, after one false start).**  The two-sided
+  descent IS available for `flex_shield`: `flex_shield_descend_both` is
+  literally `_descend_r ; _descend_l` (Qed, six lines) — the guess's binder
+  joins Δρ (from the subtyping side it IS ρ-replaced) and the payload's is a
+  fresh rigid.  That suggested RETIRING `flex_apart` and re-stating P6-Cv
+  over `flex_shield`.  ⚠️ **That is wrong, and the reason matters: P6-Cv has
+  a SECOND caller.**  P6-Cs discharges P6-Cv's `flex_apart` with `fa_clean`
+  at Δρ = ∅ (prop_look_complete_cstr.v:1750) against an arbitrary, possibly
+  TAGGED guess; `fsh_clean` also demands tag-freeness, so the strengthening
+  would break the CLOSED P6-Cs.  Rightly so: the tag half is a
+  SUBTYPING-only concern — it exists because Sub-ForallL turns a tag into
+  ρ-dirt, and consistency has no ForallL.
+  **What was done instead** (in `prop_look_complete_sub_var.v`, no closed
+  file touched): P6-Cv keeps `flex_apart`, P6-Sv keeps `flex_shield` for the
+  tag half, and the Δρ half travels as **`flex_apart_walk`** — `flex_apart`
+  at every state reachable by `fa_step`, which has one constructor per
+  descent this induction performs (arrow-both, ForallR, ForallL with Δρ
+  growing, ⊤◇/⊤̇◇, flexible unfolding).  Closure under a descent is
+  `flex_apart_walk_step` (prepend), the P6-Cv delegation is
+  `flex_apart_walk_here` (reflexivity).  `flex_apart` still cannot be
+  DESCENDED — its two-sided ∀ rows tie both binders to one variable, and no
+  rename fixes that (renaming aligns a pair; it does not manufacture a
+  family) — but the walk-indexing never needs to descend it.
 
 - 2026-07-28 (z3): **PREMISE WEAKENED — `flex_shield` as first built was TOO
   STRONG; new row `fsh_rho_var` added (all Qed, still axiom-free).**  Prompted

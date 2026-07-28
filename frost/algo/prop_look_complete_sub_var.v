@@ -720,6 +720,81 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  [flex_apart] ALONG THE WALK                                           *)
+(* ===================================================================== *)
+
+(** P6-Cv's premise [flex_apart] is the Δρ-half of the invariant, and this
+    lemma only THREADS it — but it cannot descend it: [flex_apart] has
+    TWO-SIDED ∀ rows, and a two-sided family ties both binders to one
+    variable, so a one-sided descent (Sub-ForallR opens the payload;
+    Sub-ForallL instantiates the guess) cannot be recovered from it.  That
+    is a structure mismatch, not a naming one — renaming aligns a pair, it
+    does not manufacture a family — so no rename kit repairs it, and adding
+    one-sided rows to [flex_apart] would break the two-sided descent P6-Cv
+    itself performs.
+
+    The fix costs nothing and touches no closed file: index the premise by
+    the WALK.  [fa_step] has one constructor per descent THIS induction
+    performs; [flex_apart_walk] demands [flex_apart] at every state
+    reachable by them.  Closure under a descent is then a one-step prepend
+    ([flex_apart_walk_step]) and the delegation to P6-Cv reads the current
+    state off at reflexivity ([flex_apart_walk_here]).  [flex_apart] itself
+    is untouched, so P6-Cv and P6-Cs stay exactly as they are — and unlike
+    strengthening P6-Cv to [flex_shield], this keeps P6-Cs's call site
+    (Δρ = ∅, a TAGGED guess, [fa_clean]) satisfiable. *)
+Inductive fa_step (Θ0 : aenv) :
+  atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
+| fastep_arrow_l : forall Δρ P1 P2 ψ1 ψ2,
+    fa_step Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
+| fastep_arrow_r : forall Δρ P1 P2 ψ1 ψ2,
+    fa_step Θ0 Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
+| fastep_all_l : forall Δρ P0 ψa γ,            (* Sub-ForallR *)
+    fa_step Θ0 Δρ (pskl_all_syn P0) ψa
+            Δρ (open_pskl_wrt_pskl P0 (pskl_var_f γ)) ψa
+| fastep_all_r : forall Δρ ε P0 ψ β,           (* Sub-ForallL *)
+    fa_step Θ0 Δρ P0 (uskl_all_etag ε ψ)
+            (add β Δρ) P0 (open_uskl_wrt_uskl ψ (uskl_var_f β))
+| fastep_tophole_l : forall Δρ P0 ψa,
+    fa_step Θ0 Δρ (pskl_tophole P0) ψa Δρ P0 ψa
+| fastep_topholeg_r : forall Δρ P0 ψ,          (* Sub-UnivGhostLG *)
+    fa_step Θ0 Δρ P0 (uskl_topholeg ψ) Δρ P0 ψ
+| fastep_flexdef_r : forall Δρ P0 α τ,         (* FlexMono *)
+    (* the definition that justifies this step lives in the TARGET context
+       Θ, not in Θ0, and Θ grows across ForallR; leaving τ unconstrained
+       keeps the walk context-free (a slightly stronger premise, and one a
+       call site discharges the same way — a painting is Δρ-clean whenever
+       the definition-freshness holds) *)
+    fa_step Θ0 Δρ P0 (uskl_var_f α) Δρ P0 (ptyp_to_uskl_syn τ).
+
+Inductive fa_walk (Θ0 : aenv) :
+  atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
+| fw_refl : forall Δρ P0 ψa, fa_walk Θ0 Δρ P0 ψa Δρ P0 ψa
+| fw_step : forall Δρ P0 ψa Δρ1 P1 ψ1 Δρ2 P2 ψ2,
+    fa_step Θ0 Δρ P0 ψa Δρ1 P1 ψ1 ->
+    fa_walk Θ0 Δρ1 P1 ψ1 Δρ2 P2 ψ2 ->
+    fa_walk Θ0 Δρ P0 ψa Δρ2 P2 ψ2.
+
+Definition flex_apart_walk (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
+  : Prop :=
+  forall Δρ' P0' ψa', fa_walk Θ0 Δρ P0 ψa Δρ' P0' ψa' ->
+    flex_apart Θ0 Δρ' P0' ψa'.
+
+(** What the delegation to P6-Cv reads off. *)
+Lemma flex_apart_walk_here : forall Θ0 Δρ P0 ψa,
+  flex_apart_walk Θ0 Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
+Proof. intros Θ0 Δρ P0 ψa H; apply H; apply fw_refl. Qed.
+
+(** …and what every descent needs: closure, by prepending the step. *)
+Lemma flex_apart_walk_step : forall Θ0 Δρ P0 ψa Δρ1 P1 ψ1,
+  flex_apart_walk Θ0 Δρ P0 ψa ->
+  fa_step Θ0 Δρ P0 ψa Δρ1 P1 ψ1 ->
+  flex_apart_walk Θ0 Δρ1 P1 ψ1.
+Proof.
+  intros Θ0 Δρ P0 ψa Δρ1 P1 ψ1 H Hstep Δρ' P0' ψa' Hw.
+  apply H. eapply fw_step; [ exact Hstep | exact Hw ].
+Qed.
+
+(* ===================================================================== *)
 (*  The ρ-LEAF CLOSER — used by every case of the main induction           *)
 (* ===================================================================== *)
 
@@ -847,7 +922,7 @@ Theorem a_solve_sub_complete_var :
   (forall α, α `in` Δρ ->
      α `notin` pskl_shielded_ftv (msubst_pskl θ Pi)) ->
   delta_def_fresh Δ Θ ->
-  flex_apart Θ0 Δρ P0 ψa ->                         (* P6-Cv's invariant *)
+  flex_apart_walk Θ0 Δρ P0 ψa ->    (* P6-Cv's invariant, ALONG THE WALK *)
   flex_shield Θ0 Ψ' Δρ P0 ψa ->                     (* ⇐ THE REPAIR *)
   Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] Ψρ `union` Ψa ->
@@ -958,7 +1033,7 @@ Proof.
     assert (KEY : forall ψ0,
       uskl_rho a_sub_mode_sk Θ Δρ Ψρ R ψ0 ->
       a_tags_sort a_sub_mode_sk Ψt (uskl_topholeg ψ0) ->
-      flex_apart Θ0 Δρ P0 (uskl_topholeg ψ0) ->
+      flex_apart_walk Θ0 Δρ P0 (uskl_topholeg ψ0) ->
       flex_shield Θ0 Ψt Δρ P0 (uskl_topholeg ψ0) ->
       Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] (uskl_topholeg ψ0) ->
       exists Pa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
@@ -969,8 +1044,9 @@ Proof.
       assert (HwfSub' : Θ ⨟ empty ⊢ₚₛᵃ ⌊ R ⌋ˢ)
         by (cbn [uskl_to_pskl] in HwfSub;
             eapply a_wf_pskl_tophole_inv; exact HwfSub).
-      assert (Hapart0' : flex_apart Θ0 Δρ P0 ψ0)
-        by (eapply flex_apart_topholeg_target_inv; exact Hapart0).
+      assert (Hapart0' : flex_apart_walk Θ0 Δρ P0 ψ0)
+        by (eapply flex_apart_walk_step;
+              [ exact Hapart0 | apply fastep_topholeg_r ]).
       assert (Hfsh0' : flex_shield Θ0 Ψt Δρ P0 ψ0)
         by (eapply flex_shield_topholeg_r_inv; exact Hfsh0).
       (* Pi's shape is pinned by the precision premise: only a ⊤◇ or a □
@@ -1113,7 +1189,7 @@ Proof.
       * exact Hdelta.
       * exact Hshield.
       * exact Hdfresh.
-      * apply fa_clean; exact Hclean.
+      * eapply flex_apart_walk_step; [ exact Hapart | apply fastep_flexdef_r ].
       * apply fsh_clean;
           [ exact Hclean
           | rewrite ftag_in_uskl_ptyp_to_uskl_syn; clear; fsetdec ].
@@ -1144,30 +1220,30 @@ Admitted.  (* TODO[P6-Sv]: 8 of 12 cases are CLOSED; 4 remain (Check,
     at once), and its clean row is destroyed by the ForallL descent exactly
     as [fsh_clean] would be — so neither descent can push it through.
 
-    FIX — do NOT patch [flex_apart]; RETIRE it in favour of [flex_shield],
-    which already supports all THREE descents:
-      - [flex_shield_descend_l]     (Sub-ForallR: payload only),
-      - [flex_shield_descend_r]     (Sub-ForallL: guess only, Δρ grows),
-      - [flex_shield_descend_both]  (consistency's ForallInh: both sides) —
-        and the third is literally the first two COMPOSED, so the two-sided
-        row costs nothing extra.
-    [flex_apart] cannot be repaired the same way: it HAS two-sided ∀ rows,
-    and a two-sided family ties the two binders to ONE variable, so a
-    one-sided descent cannot be recovered from it — for a fixed payload
-    binder γ one would need the guess family at ALL binders, whereas the
-    diagonal gives only γ.  That is a STRUCTURE mismatch, not a naming one:
-    renaming aligns a pair, it does not manufacture a family.  ([flex_shield]
-    escapes it by having only one-sided rows and DERIVING the two-sided
-    descent.)
-    So: re-state P6-Cv over [flex_shield] (its FLEX row reads the condition
-    off with [flex_shield_flex_leaf], strictly more informative than the
-    [flex_apart] inversion it does today, and its ForallInh row takes
-    [flex_shield_descend_both]); then P6-Sv drops the [flex_apart] premise
-    entirely and threads only [flex_shield], and ForallR/ForallL follow the
-    UnivGhostLG template.  Re-threading P6-Cv is mechanical (~30 sites, same
-    facts under a new name); the two-sided descent hands the IH a Δρ grown
-    by the opened binder and a Θ0 extended by it, both of which the IH
-    already quantifies over.
+    FIX — [flex_apart_walk], defined above.  (An earlier note here proposed
+    RETIRING [flex_apart] and re-stating P6-Cv over [flex_shield], since
+    [flex_shield] supports all three descents — [flex_shield_descend_l],
+    [_descend_r] and [_descend_both], the last literally the first two
+    COMPOSED.  That is WRONG, and the reason is worth keeping: P6-Cv has a
+    SECOND caller.  P6-Cs discharges its [flex_apart] premise with
+    [fa_clean] at Δρ = ∅ (prop_look_complete_cstr.v:1750) against an
+    arbitrary, possibly TAGGED guess; [fsh_clean] additionally demands
+    tag-freeness, so strengthening P6-Cv's premise to [flex_shield] would
+    break the CLOSED P6-Cs.  And rightly so: the tag half of the invariant
+    is a SUBTYPING-only concern — it exists because Sub-ForallL turns a tag
+    into ρ-dirt, and consistency has no ForallL, so tags never become dirt
+    there.)
+
+    So P6-Cv keeps [flex_apart], P6-Sv keeps [flex_shield] for the tag half,
+    and the Δρ half travels as [flex_apart_walk]: [flex_apart] at every
+    state the descents can reach.  [flex_apart] itself still cannot be
+    DESCENDED — it has two-sided ∀ rows, and a two-sided family ties both
+    binders to one variable, so a one-sided descent cannot be recovered
+    from it (for a fixed payload binder one would need the guess family at
+    ALL binders, while the diagonal supplies one).  That is a STRUCTURE
+    mismatch, not a naming one: renaming aligns a pair, it does not
+    manufacture a family.  Quantifying over the walk sidesteps it entirely,
+    costs one prepend per descent, and touches no closed file.
 
     UnivGhostLG is the TEMPLATE the remaining cases follow: a KEY assertion shared
     by the refl/congruence rows, the ρ-leaf dispatched to
