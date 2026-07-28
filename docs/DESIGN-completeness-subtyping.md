@@ -560,6 +560,42 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-29 (a1): **P6-Sv induction at 10/12 — ForallR, Check (bar one
+  sub-row), FlexMono and UnivGhostLG all closed.**  Kit added since (z4),
+  all Qed: `a_solve_sub_complete_rho_var` (the ρ-leaf closer every case
+  uses), `ad_ppre_guarded_topholeg_absurd`, `ad_ppre_hole_subject_tags`,
+  `ad_ppre_tophole_strip`, `ad_ppre_lift_topholeg`,
+  `a_solve_sub_hole_output`, `uskl_rho_guarded_erase`,
+  **`ad_partial_precise_src_ftv_avoid`** (the ∀-cases' binder-stripping
+  bound — note it must avoid `def_ftv Θ` and Θ's DEFINED flexibles, not
+  merely `dom Θ`: P-FlexL puts a defined flexible into the subject and
+  P-FlexR unfolds a definition), `a_non_flex_guarded_dec`, and the
+  walk-indexed `flex_apart_walk` + `_here` / `_step` / `_weaken_tvar`.
+  REMAINING: **Arrow** (delegates to P6-Cv exactly like Check, plus
+  `flex_shield_arrow_inv` and the tag split Ψa_i := Ψa ∩ Ψ'_i, with
+  `ad_partial_precise_tags_sub` giving Ψi_i ⊆ Ψ'_i) and **ForallL-tagged**
+  (the ρ-EXTENSION case).  Plus one sub-row of Check — the WLOG hazard H3,
+  see below.
+  **ForallL needs the only piece of new infrastructure left**: a `uskl_rho`
+  SUBSTITUTION lemma, since Sub-ForallL turns the guess's binder into a
+  ρ-replaced variable and the instantiation into its image (the paper's
+  `ρ_b = ρ ∘ [ψ_b/β]`).  Its `ρ = id` component `uskl_rho_subst_refl` is in
+  the file with all non-binder rows proved; the two ∀ rows want a `uskl_rho`
+  rigid-renaming lemma (per (z5): instantiate at one fresh binder, rename to
+  build the family).  Tag bookkeeping is a BOUND, not an equation —
+  `Ψρ' ⊆ Ψρ ∪ Ψb`, with `Ψb ⊆ Ψρ'` only when β actually occurs; the missing
+  case is harmless because `ad_pat_sub_g_ftag_sub` plus ForallL's hygiene
+  premise force `Ψb = ∅` when β is unused.
+  **HAZARD H3 MATERIALISED (Check, Pi = ⊤◇Pi').**  The paper writes "by
+  congruence of constraint solving, we ASSUME refb is derived by
+  SolEq-GhostGuarded" (subtyping-proofs.tex:1810).  Mechanically P6-Cv
+  returns whichever derivation it built, so SolEq-FlexR must be handled too;
+  `a_non_flex_guarded_dec` splits it, and only the sub-row where the
+  ⊤◇-body is ITSELF a flexible is still open (SolEq-Var then keeps the
+  body's flexible, so the precision must come from the INPUT premise, which
+  needs Ψa = ∅ by the flexible-payload argument plus `is_tskl`-preservation
+  along `uskl_rho`).
+
 - 2026-07-28 (z5): **METHOD RULE — "cofinite quantification prevents X" is
   never a valid argument in this development; the answer is always a
   RENAMING lemma.**  Recorded after (z4) stated one such claim and it was

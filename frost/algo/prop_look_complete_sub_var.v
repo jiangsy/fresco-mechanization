@@ -811,6 +811,92 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  ρ-EXTENSION — what Sub-ForallL does to the ρ-relation                  *)
+(* ===================================================================== *)
+
+(** Sub-ForallL instantiates the guess's tagged quantifier, so the binder it
+    opens becomes a ρ-REPLACED variable and the instantiation becomes its
+    image: the paper's [ρ_b = ρ ∘ [ψ_b/β]] (subtyping-proofs.tex:1876).
+    Mechanically that is a SUBSTITUTION on the subject side of [uskl_rho],
+    which turns every β-position into a [urho__leaf].
+
+    The tag set can only be bounded, not computed: if β does NOT occur in
+    the guess, the instantiation contributes nothing, so the conclusion
+    carries [Ψρ' ⊆ Ψρ ∪ Ψb] plus the two facts callers need — that Ψρ' still
+    covers Ψρ, and that it covers Ψb whenever β really occurs.  (At the call
+    site the missing case is harmless: [ad_pat_sub_g_ftag_sub] and the
+    ForallL rule's hygiene premise force Ψb = ∅ when β is unused.) *)
+Lemma uskl_rho_subst_refl : forall NM Θ Δρ R β ψb Ψb,
+  lc_uskl R ->
+  a_tags_sort NM Ψb ψb ->
+  Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψb ⌋ˢ ->
+  exists Ψρ',
+    Ψρ' [<=] Ψb /\
+    (β `in` ftvar_in_uskl R -> Ψb [<=] Ψρ') /\
+    uskl_rho NM Θ (add β Δρ) Ψρ' (subst_bskl_in_uskl ψb β R) R.
+Proof.
+  intros NM Θ Δρ R β ψb Ψb Hlc Htags Hwf.
+  induction Hlc; cbn [subst_bskl_in_uskl ftvar_in_uskl].
+  - (* ⟨⟩ *)
+    exists empty; repeat split;
+      [ clear; fsetdec | intros Hin; clear - Hin; fsetdec
+      | apply urho__refl; [ apply lc_uskl_unit | clear; fsetdec ] ].
+  - (* a variable: the substituted one becomes a ρ-LEAF *)
+    match goal with |- context [if ?c then _ else _] =>
+      destruct c as [-> | Hne] end.
+    + exists Ψb; repeat split;
+        [ clear; fsetdec | intros _; clear; fsetdec
+        | eapply urho__leaf;
+            [ clear; fsetdec | exact Htags | exact Hwf | clear; fsetdec ] ].
+    + exists empty; repeat split;
+        [ clear; fsetdec
+        | intros Hin; exfalso; clear - Hin Hne; fsetdec
+        | apply urho__refl; [ apply lc_uskl_var_f | clear; fsetdec ] ].
+  - (* arrow *)
+    destruct IHHlc1 as (Ψ1 & Hs1 & Hocc1 & Hr1).
+    destruct IHHlc2 as (Ψ2 & Hs2 & Hocc2 & Hr2).
+    exists (Ψ1 `union` Ψ2); repeat split;
+      [ clear - Hs1 Hs2; fsetdec
+      | intros Hin;
+        destruct (AtomSetProperties.In_dec β (ftvar_in_uskl R1)) as [Hi | Hi];
+          [ pose proof (Hocc1 Hi); clear - H; fsetdec
+          | assert (Hi2 : β `in` ftvar_in_uskl R2) by (clear - Hin Hi; fsetdec);
+            pose proof (Hocc2 Hi2); clear - H; fsetdec ]
+      | eapply urho__arrow; [ exact Hr1 | exact Hr2 | clear; fsetdec ] ].
+  - (* ∀ (untagged) *) admit.
+  - (* ∀^ε *) admit.
+  - (* ⟨⟩ hole *)
+    exists empty; repeat split;
+      [ clear; fsetdec | intros Hin; clear - Hin; fsetdec
+      | apply urho__refl; [ apply lc_uskl_hole | clear; fsetdec ] ].
+  - (* ⊤◇ *)
+    destruct IHHlc as (Ψ1 & Hs1 & Hocc1 & Hr1).
+    exists Ψ1; repeat split;
+      [ exact Hs1 | exact Hocc1 | apply urho__tophole; exact Hr1 ].
+  - (* ⟨⟩̇ *)
+    exists empty; repeat split;
+      [ clear; fsetdec | intros Hin; clear - Hin; fsetdec
+      | apply urho__refl; [ apply lc_uskl_holeg | clear; fsetdec ] ].
+  - (* ⊤̇◇ *)
+    destruct IHHlc as (Ψ1 & Hs1 & Hocc1 & Hr1).
+    exists Ψ1; repeat split;
+      [ exact Hs1 | exact Hocc1 | apply urho__topholeg; exact Hr1 ].
+Admitted.  (* TODO[P6-Sv]: the two ∀ rows.  The substitution commutes with
+    the opening (β differs from the binder), so each is the IH at a fresh
+    binder plus [urho__all_syn] / [urho__all_etag], with the tag component
+    carried unchanged.  The one wrinkle is the usual one: the IH hands back
+    a tag set PER binder, while the cofinite rule wants one set for the
+    whole family — so instantiate at a single fresh binder and RENAME
+    (a [uskl_rho] rigid-renaming lemma, the analogue of
+    [flex_shield_rename_l] / [_rename_r], is the missing piece).
+
+    This lemma is the [ρ = id] component of the general ρ-extension the
+    ForallL case needs: that one recurses on the [uskl_rho] derivation and
+    calls THIS at its [urho__refl] nodes, mapping [urho__leaf] to itself
+    (the images are Θ-scoped, hence β-free) and the congruences to
+    themselves. *)
+
+(* ===================================================================== *)
 (*  [flex_apart] ALONG THE WALK                                           *)
 (* ===================================================================== *)
 
