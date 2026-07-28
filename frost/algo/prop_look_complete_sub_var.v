@@ -84,6 +84,8 @@ Require Import src.frost.algo.prop_solve_sub.
 Require Import src.frost.algo.prop_sub_complete.
 Require Import src.frost.algo.prop_look_complete.
 Require Import src.frost.algo.prop_look_complete_var.
+Require Import src.frost.algo.prop_look_complete_cstr.  (* the ∀-binder kit,
+    [mono_ptyp_to_uskl_syn_tskl], [ftag_in_uskl_ptyp_to_uskl_syn], … *)
 
 Set Implicit Arguments.
 
@@ -1047,16 +1049,82 @@ Proof.
     + (* congruence: ψa = ⊤̇◇ψ0 with R ρ-related to ψ0 *)
       destruct Hcong as (ψ0 & Heq & Hrho0); subst ψa.
       apply KEY; assumption.
-  - (* FlexMono : the subject is a defined flexible; unfold it *)
-    admit.
-Admitted.  (* TODO[P6-Sv]: 7 of 12 cases are CLOSED; 5 remain (Check,
-    ForallR, Arrow, ForallL-tagged, FlexMono), each needing its own P0 × Pi
-    grid.  UnivGhostLG is the TEMPLATE they follow: a KEY assertion shared
+  - (* FlexMono : the subject is a DEFINED flexible.  The guess is either
+       that same flexible — unfold it on BOTH sides and rebuild the
+       precision with P-FlexR — or a ρ-leaf. *)
+    destruct (uskl_rho_var_l_inv Hrho) as [[Heq HΨρe] | Hleaf].
+    + (* the guess is the same defined flexible *)
+      subst ψa.
+      assert (HΨte : Ψt [=] empty)
+        by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags))).
+      assert (Hmono : mono_ptyp τ)
+        by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | exact H ]).
+      assert (Hwfτ : a_wf_ptyp Θ τ)
+        by (eapply a_wf_aenv_binds_def_wf; [ exact HwfΘ | exact H ]).
+      (* the unfolded guess: a monotype painting, hence tag-free, and
+         Δ-clean because a definition never mentions a Δ-variable *)
+      assert (Hclean : (ftvar_in_uskl (ptyp_to_uskl_syn τ)) ∩ Δρ [=] empty).
+      { rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
+        intros α0; split; intros Hin; [ | clear - Hin; fsetdec ].
+        exfalso.
+        assert (Hα0Δ : α0 `in` Δ) by (clear - Hin Hdelta; fsetdec).
+        pose proof (Hdfresh α0 α τ Hα0Δ H) as Hbad.
+        clear - Hin Hbad; fsetdec. }
+      assert (Hrho' : uskl_rho NM Θ Δρ Ψρ
+                        (ptyp_to_uskl_syn τ) (ptyp_to_uskl_syn τ))
+        by (apply urho__refl;
+            [ apply is_tskl_lc; apply mono_ptyp_to_uskl_syn_tskl; exact Hmono
+            | exact HΨρe ]).
+      edestruct (IHHsub Θ0 θ Δ Δρ Ψρ Ψt Ψi Ψa (ptyp_to_uskl_syn τ) Pi P0
+                   HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hθ Hrho')
+        as (Pa & Hs & Hp).
+      * (* the painting is tags-sorted, with NO tags *)
+        eapply a_tags_sort_psi_cong;
+          [ apply a_tags_sort_mono_paint; exact Hmono | clear - HΨte; fsetdec ].
+      * (* its erasure is well-formed *)
+        match goal with |- _ ⨟ _ ⊢ₚₛᵃ ⌊ ptyp_to_uskl_syn ?τ0 ⌋ˢ =>
+          replace (uskl_to_pskl (ptyp_to_uskl_syn τ0)) with (ptyp_to_pskl τ0)
+            by (symmetry; apply uskl_to_pskl_ptyp)
+        end.
+        apply mono_ptyp_wf_to_pskl_wf; assumption.
+      * exact Htageq.
+      * exact Hinter.
+      * exact Hrhof.
+      * exact Hdelta.
+      * exact Hshield.
+      * exact Hdfresh.
+      * apply fa_clean; exact Hclean.
+      * apply fsh_clean;
+          [ exact Hclean
+          | rewrite ftag_in_uskl_ptyp_to_uskl_syn; clear; fsetdec ].
+      * (* precision: unfold the definition on the TARGET *)
+        eapply ad_ppre_flexdef_target_unfold;
+          [ exact HwfΘ | exact Hdfresh | exact Hpre | reflexivity | exact H ].
+      * exact HΨs1.
+      * exact HΨs2.
+      * exact Hrefine.
+      * (* rebuild: the guess is the flexible whose definition we unfolded *)
+        exists Pa; split; [ exact Hs | ].
+        eapply ad_ppre__flex_r; [ exact H | exact Hp ].
+    + (* ρ-leaf: the guess is a replaced rigid variable *)
+      destruct Hleaf as (α0 & Ψ'' & Heq & HαΔρ & _ & _ & _); subst ψa.
+      eapply a_solve_sub_complete_rho_var;
+        solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
+              | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hshield
+              | exact Hpre ].
+Admitted.  (* TODO[P6-Sv]: 8 of 12 cases are CLOSED; 4 remain (Check,
+    ForallR, Arrow, ForallL-tagged), each needing its own P0 × Pi grid.
+    UnivGhostLG is the TEMPLATE they follow: a KEY assertion shared
     by the refl/congruence rows, the ρ-leaf dispatched to
     [a_solve_sub_complete_rho_var], a [destruct Pi] whose guarded rows are
     refuted by [ad_ppre_guarded_topholeg_absurd], the ⊤◇ row running
     IH + SolS-UnivGhostL + P-UnivGhostKeep, and the □ row running the IH
     unchanged and lifting its precision back with [ad_ppre_lift_topholeg].
+
+    FlexMono is closed too: the guess is either the same defined flexible —
+    unfold the definition on BOTH sides ([ad_ppre_flexdef_target_unfold] on
+    the precision, [urho__refl] on the ρ-relation, the Δ-cleanliness of the
+    painting from [delta_def_fresh]) and rebuild with P-FlexR — or a ρ-leaf.
 
     Previously closed: Infer, UnivGhostR,
     UnivGhostLG is done except its Pi = □ row (see the note there): its
