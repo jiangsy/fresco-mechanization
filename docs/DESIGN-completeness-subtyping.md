@@ -560,6 +560,43 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 
 ## 6. Status log
 
+- 2026-07-28 (z2): **REPAIR BUILT — `frost/algo/prop_look_complete_sub_var.v`
+  (new): `flex_shield` + its full descent kit, ALL Qed and axiom-free (0
+  admits); the P6-Sv statement is restated with it and type-checks (main
+  induction `Admitted`, case map in the file).**  Two corrections to (z)
+  came out of building it:
+  1. **A SECOND failure shape** (hand-verified, not yet machine-checked):
+     `Pi = ∀β.((β→β)→⟨⟩)`, `P0 = α̂→⟨⟩`, `ψa = ∀^ε β.((β→β)→⟨⟩)`, `M = FN TC`,
+     `θα̂ = ⟨⟩→⟨⟩`.  SolS-ForallL, SolS-Arrow, then SolE-FlexR on the
+     ARROW-LEFT — a CONSISTENCY position — gives `Pa = ∀β.(α̂→⟨⟩)` and again
+     `⟨⟩ ⊑ᵖ β`.  Pi's left component is an arrow, so SolE-Var does not
+     shield it.  ⇒ the (z) "spine-only" reading is TOO WEAK (it guards only
+     the result spine of P0), and a global "P0 flex-free ∨ ψa tag-free" is
+     TOO STRONG (it rejects the legitimate `α̂→⟨⟩` vs `⟨⟩→∀^ε β.…`).
+  2. So the premise is POSITIONAL with a tag-aware non-aligned base case:
+     `flex_shield Θ0 Ψ' Δρ P0 ψa` — rules `fsh_clean` (ψa Δρ-clean AND
+     Ψ'-tag-free; the ONLY rule for a non-aligned pair), `fsh_flexfree`
+     (P0 has no raw Θ0-flexible), `fsh_arrow` (both sides), `fsh_all_l`
+     (Sub-ForallR: P0 only), `fsh_all_r` (Sub-ForallL: ψa only, and it
+     BAKES IN the ρ-growth `add α Δρ`), `fsh_tophole_l`, `fsh_topholeg_r`.
+     It subsumes both halves of the invariant, so it replaces the (z)
+     `flex_tags_apart` draft; `flex_apart` stays as-is for the P6-Cv
+     delegation.
+  **Proved (Qed, axiom-free):** `flex_shield_delta_anti/_cong`,
+  `_weaken_tvar`, `_rename_l`, `_rename_r(_gen)`, `_arrow_inv`,
+  `_topholeg_r_inv`, `_tophole_l_inv`, **`_descend_l`** (Sub-ForallR),
+  **`_descend_r`** (Sub-ForallL), `_flex_leaf`, and **`flex_shield_excludes_cex`
+  — the regression test that the premise rules the machine-checked
+  counterexample out**.  KEY structural point: the two one-sided ∀ rules do
+  NOT commute rule-by-rule, but each descent lemma's opposite-sided case
+  goes through because the IH re-derives the other rule — that is why
+  `flex_shield` is an inductive relation with both one-sided rows rather
+  than a definition.  Ltac notes: the descents need `eapply` (ε/ψ are not
+  determined by the conclusion), explicit `Δρ0 := add α Δρ0` instantiation
+  (evar-fsetdec otherwise), and pick-fresh unions must be split with
+  `solve_notin` FIRST — the 4-way-union `fsetdec` hangs (>600 s).
+  NEXT: the main induction, per the case map in the file header.
+
 - 2026-07-28 (z): **AUTHOR DECISIONS on (y): the `broom_flex_poly` program is
   REJECT-by-design (robustness bug only — declarative rejection verified,
   see the PAPER-GAPS entry), and the (y) premise is STRENGTHENED to the

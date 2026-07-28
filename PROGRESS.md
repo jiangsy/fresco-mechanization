@@ -58,7 +58,7 @@ excluded from the build); mine them when re-proving.
 - ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_decorate_key.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
 - ✅ **Theorem: Soundness of subtyping** (`a_sub_sound_thm`, `algo/prop_decorate_key.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
-- ⛔ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — **FALSE as stated**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  Work STOPPED pending an authors' decision; see docs/PAPER-GAPS.md (final entry) and DESIGN-completeness-subtyping.md §6 (2026-07-28 x)
+- 🟡 Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — the paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`, Qed, axiom-free): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  REPAIRED statement now in `frost/algo/prop_look_complete_sub_var.v` with the new positional premise `flex_shield` (kit + both descent lemmas + the cex-exclusion regression test are Qed and axiom-free; main induction still to do). See docs/PAPER-GAPS.md (final entries) and DESIGN-completeness-subtyping.md §6 (x)/(y)/(z)/(z2)
 - 🟡 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss); Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are BLOCKED behind P6-Sv (P6-Ss's crux delegates to it).  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
@@ -76,6 +76,35 @@ excluded from the build); mine them when re-proving.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-07-28 (later) — P6-Sv repair BUILT: `flex_shield` + descent kit, Qed and axiom-free; statement restated
+
+New file `frost/algo/prop_look_complete_sub_var.v` (0 admits except the main
+induction, which is `Admitted` with a case map).  It defines the repair
+premise `flex_shield Θ0 Ψ' Δρ P0 ψa` — *positionally*, every raw-Θ0-flexible
+position of the payload `P0` faces a part of the guess `ψa` that is both
+Δρ-clean and Ψ'-tag-free — and proves the whole kit the induction needs:
+`_delta_anti/_cong`, `_weaken_tvar`, `_rename_l`, `_rename_r(_gen)`,
+`_arrow_inv`, `_topholeg_r_inv`, `_tophole_l_inv`, `_descend_l`
+(Sub-ForallR), `_descend_r` (Sub-ForallL), `_flex_leaf`, and
+**`flex_shield_excludes_cex`**, the regression test that the premise rules
+the machine-checked counterexample out.  `Print Assumptions` on all three
+flagships: "Closed under the global context".
+
+Building it corrected the premise shape twice.  A SECOND failure shape
+(hand-verified) puts the flexible at an ARROW-LEFT — a consistency position
+— under the same ForallL: `Pi = ∀β.((β→β)→⟨⟩)`, `P0 = α̂→⟨⟩`,
+`ψa = ∀^ε β.((β→β)→⟨⟩)`, `M = FN TC`; SolS-Arrow then SolE-FlexR gives
+`Pa = ∀β.(α̂→⟨⟩)` and again `⟨⟩ ⊑ᵖ β` (Pi's left component is an arrow, so
+SolE-Var does not shield it).  So a premise guarding only P0's result spine
+is too weak, and a global "P0 flex-free ∨ ψa tag-free" is too strong (it
+rejects the legitimate `α̂→⟨⟩` against `⟨⟩→∀^ε β.…`).  The structural point
+that makes the relation work: its two one-sided ∀ rules do not commute
+rule-by-rule, but each descent lemma's opposite-sided case closes because
+the induction hypothesis re-derives the other rule.
+
+Details and the case map for the remaining induction:
+docs/DESIGN-completeness-subtyping.md §6 (z2).
 
 ## 2026-07-28 — ⛔ P6-Sv (subtyping constraint solving for variables) is FALSE as stated — machine-checked counterexample; work STOPPED
 
