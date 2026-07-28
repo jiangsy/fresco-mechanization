@@ -714,7 +714,7 @@ Lemma ad_pat_sub_g_refl_transport : forall n NM M Ψfull Θ' S Q,
   forall Ψsup Ψn Ψna,
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl S) [=] empty ->
+  Ψsup ∩ ftag_in_uskl S [=] empty ->
   ad_pat_sub_g n NM M Ψn Θ' S Q.
 Proof.
   intros n NM M Ψfull Θ' S Q HD Ψsup Ψn Ψna HΨf HΨa Hftag.
@@ -828,7 +828,7 @@ Lemma ad_pat_sub_g_ughost_r_transport : forall Θb Ψrep R' R,
   forall Ψsup n Θ' Ψn Q,
   a_wf_aenv Θb ->
   Ψrep [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl R') [=] empty ->
+  Ψsup ∩ ftag_in_uskl R' [=] empty ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   a_wf_aenv Θ' ->
   guarded_uskl R ->
@@ -996,15 +996,15 @@ Lemma ad_pat_sub_g_arrow_transport : forall Θb Ψr Rg' Rgarr,
      a_wf_aenv Θ' ->
      Ψc2 [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
-     AtomSetImpl.inter Ψsup0 Ψn0 [=] empty ->
-     AtomSetImpl.inter Ψsup0 (ftag_in_uskl Rg2') [=] empty ->
+     Ψsup0 ∩ Ψn0 [=] empty ->
+     Ψsup0 ∩ ftag_in_uskl Rg2' [=] empty ->
      Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg2) ->
      (NM = a_sub_mode_ty -> uskl_ghost_free Rg2') ->
      ad_pat_sub_g n NM Mg Ψn0 Θ' Rg2' Qg2) ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup Ψn [=] empty ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl Rg') [=] empty ->
+  Ψsup ∩ Ψn [=] empty ->
+  Ψsup ∩ ftag_in_uskl Rg' [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl (bskl_arrow Qg1 Qg2)) ->
   (NM = a_sub_mode_ty -> uskl_ghost_free Rg') ->
   ad_pat_sub_g (S n) NM (mode_fn Mg) Ψn Θ' Rg' (bskl_arrow Qg1 Qg2).
@@ -1025,17 +1025,17 @@ Proof.
     inversion Hwfq as [ | | Θz Δz Pw1 Pw2 Hwfq1 Hwfq2 | | | ]; subst.
     simpl in Hftag.
     eapply ad_pat_sub_g__arrow with
-      (Ψ1 := AtomSetImpl.diff Ψc1 Ψsup) (Ψ2 := AtomSetImpl.diff Ψc2 Ψsup).
+      (Ψ1 := Ψc1 ∖ Ψsup) (Ψ2 := Ψc2 ∖ Ψsup).
     + assert (Hs1 : Ψ1 [<=] Ψsup) by (clear - HΨsup H; fsetdec).
-      assert (Hf1 : AtomSetImpl.inter Ψsup (ftag_in_uskl R1') [=] empty)
+      assert (Hf1 : Ψsup ∩ ftag_in_uskl R1' [=] empty)
         by (clear - Hftag; fsetdec).
       eapply (ad_pat_consis_precise_upre Hup1 Hs1 Hf1)
-        with (Ψna := AtomSetImpl.inter Ψc1 Ψsup);
+        with (Ψna := Ψc1 ∩ Ψsup);
         [ exact Hcl | exact Hmon | exact Hwf
         | clear - Hdisj; fsetdec | clear - Hdisj; fsetdec
         | clear - Hdisj; fsetdec | exact Hwfq1 ].
     + eapply Hrec with (Ψr0 := Ψ2) (Ψsup0 := Ψsup)
-        (Ψna0 := AtomSetImpl.inter Ψc2 Ψsup);
+        (Ψna0 := Ψc2 ∩ Ψsup);
         [ exact Hup2 | exact Hwfb | clear - HΨsup H; fsetdec
         | exact Hmon | exact Hwf
         | clear - Hdisj; fsetdec | clear - Hdisj; fsetdec
@@ -1103,8 +1103,8 @@ Lemma ad_pat_sub_g_forall_l_tagged_transport : forall Θb Ψr Rg' Rgall,
   (forall x b, binds x b Θb -> binds x b Θ') ->
   a_wf_aenv Θ' ->
   Mg <> mode_ti ->
-  AtomSetImpl.inter Ψi' Ψfull [=] empty ->
-  AtomSetImpl.inter Ψi' (ftag_in_uskl (uskl_all_etag εg Rg0)) [=] empty ->
+  Ψi' ∩ Ψfull [=] empty ->
+  Ψi' ∩ (ftag_in_uskl (uskl_all_etag εg Rg0)) [=] empty ->
   a_tags_sort NM Ψi' ψg ->
   Θ' ⨟ empty ⊢ₚₛᵃ ⌊ ψg ⌋ˢ ->
   ad_pat_sub_g n NM Mg (Ψfull `union` Ψi') Θ' (open_uskl_wrt_uskl Rg0 ψg) Qg ->
@@ -1116,15 +1116,15 @@ Lemma ad_pat_sub_g_forall_l_tagged_transport : forall Θb Ψr Rg' Rgall,
      a_wf_aenv Θ' ->
      (Ψfull `union` Ψi') [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
-     AtomSetImpl.inter Ψsup0 Ψn0 [=] empty ->
-     AtomSetImpl.inter Ψsup0 (ftag_in_uskl Rg'') [=] empty ->
+     Ψsup0 ∩ Ψn0 [=] empty ->
+     Ψsup0 ∩ ftag_in_uskl Rg'' [=] empty ->
      Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
      (NM = a_sub_mode_ty -> uskl_ghost_free Rg'') ->
      ad_pat_sub_g n NM Mg Ψn0 Θ' Rg'' Qg) ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup Ψn [=] empty ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl Rg') [=] empty ->
+  Ψsup ∩ Ψn [=] empty ->
+  Ψsup ∩ ftag_in_uskl Rg' [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
   (NM = a_sub_mode_ty -> uskl_ghost_free Rg') ->
   ad_pat_sub_g (S n) NM Mg Ψn Θ' Rg' Qg.
@@ -1181,7 +1181,7 @@ Proof.
     + exact Htags.
     + exact Hwfψ.
     + eapply Hrec with (Ψr0 := Ψrep)
-        (Ψsup0 := AtomSetImpl.diff Ψsup Ψi') (Ψna0 := Ψna);
+        (Ψsup0 := Ψsup ∖ Ψi') (Ψna0 := Ψna);
         [ exact Hsub | exact Hwfb
         | simpl in Hihyg; clear - HΨsup Hfrb Hov2 Hihyg; fsetdec
         | exact Hmon | exact Hwf
@@ -1231,7 +1231,7 @@ Proof.
     + exact Htags.
     + exact Hwfψ.
     + eapply Hrec with (Ψr0 := Ψ0)
-        (Ψsup0 := AtomSetImpl.diff Ψsup Ψi') (Ψna0 := Ψna);
+        (Ψsup0 := Ψsup ∖ Ψi') (Ψna0 := Ψna);
         [ exact Hsub | exact Hwfb
         | simpl in Hihyg; clear - HΨsup H1 Hfrb Hov2 Hihyg; fsetdec
         | exact Hmon | exact Hwf
@@ -1278,8 +1278,8 @@ Lemma ad_pat_sub_g_forall_l_untagged_transport : forall Θb Ψr Rg' Rgall,
   (forall x b, binds x b Θb -> binds x b Θ') ->
   a_wf_aenv Θ' ->
   Mg <> mode_ti ->
-  AtomSetImpl.inter Ψi' Ψfull [=] empty ->
-  AtomSetImpl.inter Ψi' (ftag_in_uskl (uskl_all_syn Rg0)) [=] empty ->
+  Ψi' ∩ Ψfull [=] empty ->
+  Ψi' ∩ (ftag_in_uskl (uskl_all_syn Rg0)) [=] empty ->
   a_tags_sort NM Ψi' ψg ->
   Θ' ⨟ empty ⊢ₚₛᵃ ⌊ ψg ⌋ˢ ->
   ad_pat_sub_g n NM Mg (Ψfull `union` Ψi') Θ' (open_uskl_wrt_uskl Rg0 ψg) Qg ->
@@ -1291,15 +1291,15 @@ Lemma ad_pat_sub_g_forall_l_untagged_transport : forall Θb Ψr Rg' Rgall,
      a_wf_aenv Θ' ->
      (Ψfull `union` Ψi') [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
-     AtomSetImpl.inter Ψsup0 Ψn0 [=] empty ->
-     AtomSetImpl.inter Ψsup0 (ftag_in_uskl Rg'') [=] empty ->
+     Ψsup0 ∩ Ψn0 [=] empty ->
+     Ψsup0 ∩ ftag_in_uskl Rg'' [=] empty ->
      Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
      (NM = a_sub_mode_ty -> uskl_ghost_free Rg'') ->
      ad_pat_sub_g n NM Mg Ψn0 Θ' Rg'' Qg) ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup Ψn [=] empty ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl Rg') [=] empty ->
+  Ψsup ∩ Ψn [=] empty ->
+  Ψsup ∩ ftag_in_uskl Rg' [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
   (NM = a_sub_mode_ty -> uskl_ghost_free Rg') ->
   ad_pat_sub_g (S n) NM Mg Ψn Θ' Rg' Qg.
@@ -1356,7 +1356,7 @@ Proof.
     + exact Htags.
     + exact Hwfψ.
     + eapply Hrec with (Ψr0 := Ψrep)
-        (Ψsup0 := AtomSetImpl.diff Ψsup Ψi') (Ψna0 := Ψna);
+        (Ψsup0 := Ψsup ∖ Ψi') (Ψna0 := Ψna);
         [ exact Hsub | exact Hwfb
         | simpl in Hihyg; clear - HΨsup Hfrb Hov2 Hihyg; fsetdec
         | exact Hmon | exact Hwf
@@ -1412,14 +1412,14 @@ Lemma ad_pat_sub_g_ughost_l_transport : forall Θb Ψr Rg' Rgt,
      a_wf_aenv Θ' ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
-     AtomSetImpl.inter Ψsup0 Ψn0 [=] empty ->
-     AtomSetImpl.inter Ψsup0 (ftag_in_uskl Rg'') [=] empty ->
+     Ψsup0 ∩ Ψn0 [=] empty ->
+     Ψsup0 ∩ ftag_in_uskl Rg'' [=] empty ->
      Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
      ad_pat_sub_g n a_sub_mode_sk Mg Ψn0 Θ' Rg'' Qg) ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup Ψn [=] empty ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl Rg') [=] empty ->
+  Ψsup ∩ Ψn [=] empty ->
+  Ψsup ∩ ftag_in_uskl Rg' [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
   ad_pat_sub_g n a_sub_mode_sk Mg Ψn Θ' Rg' Qg.
 Proof.
@@ -1483,14 +1483,14 @@ Lemma ad_pat_sub_g_ughost_lg_transport : forall Θb Ψr Rg' Rgt,
      a_wf_aenv Θ' ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
-     AtomSetImpl.inter Ψsup0 Ψn0 [=] empty ->
-     AtomSetImpl.inter Ψsup0 (ftag_in_uskl Rg'') [=] empty ->
+     Ψsup0 ∩ Ψn0 [=] empty ->
+     Ψsup0 ∩ ftag_in_uskl Rg'' [=] empty ->
      Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
      ad_pat_sub_g n a_sub_mode_sk Mg Ψn0 Θ' Rg'' Qg) ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup Ψn [=] empty ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl Rg') [=] empty ->
+  Ψsup ∩ Ψn [=] empty ->
+  Ψsup ∩ ftag_in_uskl Rg' [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
   ad_pat_sub_g n a_sub_mode_sk Mg Ψn Θ' Rg' Qg.
 Proof.
@@ -1561,15 +1561,15 @@ Lemma ad_pat_sub_g_flex_mono_transport : forall Θb Ψr Rg' Rgv,
      a_wf_aenv Θ' ->
      Ψfull [=] Ψn0 `union` Ψna0 ->
      Ψna0 [<=] Ψsup0 ->
-     AtomSetImpl.inter Ψsup0 Ψn0 [=] empty ->
-     AtomSetImpl.inter Ψsup0 (ftag_in_uskl Rg'') [=] empty ->
+     Ψsup0 ∩ Ψn0 [=] empty ->
+     Ψsup0 ∩ ftag_in_uskl Rg'' [=] empty ->
      Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
      (NM = a_sub_mode_ty -> uskl_ghost_free Rg'') ->
      ad_pat_sub_g n NM (mode_fn Mg) Ψn0 Θ' Rg'' Qg) ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup Ψn [=] empty ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl Rg') [=] empty ->
+  Ψsup ∩ Ψn [=] empty ->
+  Ψsup ∩ ftag_in_uskl Rg' [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qg) ->
   (NM = a_sub_mode_ty -> uskl_ghost_free Rg') ->
   ad_pat_sub_g n NM (mode_fn Mg) Ψn Θ' Rg' Qg.
@@ -1644,8 +1644,8 @@ Lemma ad_pat_sub_precise_upre : forall n NM M Ψfull Θ' Rg Q,
   a_wf_aenv Θ' ->
   Ψfull [=] Ψn `union` Ψna ->
   Ψna [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup Ψn [=] empty ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl Rg') [=] empty ->
+  Ψsup ∩ Ψn [=] empty ->
+  Ψsup ∩ ftag_in_uskl Rg' [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
   (NM = a_sub_mode_ty -> uskl_ghost_free Rg') ->
   ad_pat_sub_g n NM M Ψn Θ' Rg' Q.

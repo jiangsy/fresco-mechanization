@@ -153,8 +153,8 @@ Proof.
     simpl in Hup.
     assert (HY' : Y `in` (singleton X `union` ftvar_in_ptyp A))
       by (clear - HY Hup; fsetdec).
-    destruct (AtomSetImpl.union_1 HY') as [HYX | HYA].
-    + apply AtomSetImpl.singleton_1 in HYX; subst.
+    destruct (union_1 HY') as [HYX | HYA].
+    + apply singleton_1 in HYX; subst.
       left. clear; fsetdec.
     + destruct (Hvis Y HYA) as [HD | Ht];
         [ left; clear - HD; fsetdec | right; exact Ht ].
@@ -264,7 +264,7 @@ Qed.
 Lemma a_wf_pskl_empty_delta_free : forall Θ Δ P,
   Θ ⨟ empty ⊢ₚₛᵃ P ->
   (forall X, X `in` Δ -> X `notin` dom Θ) ->
-  AtomSetImpl.inter Δ (ftvar_in_pskl P) [=] empty.
+  Δ ∩ ftvar_in_pskl P [=] empty.
 Proof.
   intros Θ Δ P Hwf Hdisj.
   apply inter_empty_pointwise. intros X HXΔ.
@@ -283,8 +283,8 @@ Lemma ad_refine_syn_syn_delta_free : forall Θ Δ Qb B,
   a_wf_aenv Θ ->
   forall F, Qb = pskl_to_bskl_syn F ->
   (forall X, X `in` Δ -> X `notin` dom Θ) ->
-  AtomSetImpl.inter Δ (ftvar_in_bskl Qb) [=] empty ->
-  AtomSetImpl.inter Δ (ftvar_in_bskl B) [=] empty.
+  Δ ∩ ftvar_in_bskl Qb [=] empty ->
+  Δ ∩ ftvar_in_bskl B [=] empty.
 Proof.
   intros Θ Δ Qb B Href; induction Href; intros Hwf F Heq Hdisj Hfree.
   - (* unit *) simpl. clear; fsetdec.
@@ -323,7 +323,7 @@ Proof.
       assert (HYX : Y <> X) by (clear - HY Fr; fsetdec).
       assert (HYΘ : Y `notin` dom Θ) by (apply Hdisj; exact HY).
       clear - HYX HYΘ. fsetdec. }
-    assert (Hsub : AtomSetImpl.inter Δ
+    assert (Hsub : Δ ∩
                      (ftvar_in_bskl (open_bskl_wrt_bskl P (bskl_var_f X)))
                    [=] empty).
     { eapply (H0 X ltac:(auto) ltac:(apply a_wf_aenv__tvar; auto)
@@ -379,7 +379,7 @@ Proof.
   intros Θ Δ F B Href Hwf Hdisj HwfF HwfB.
   destruct (ad_refine_syn_syn_l Href F eq_refl) as [G HeqG].
   exists G. split; [ exact HeqG | ].
-  assert (Hdf : AtomSetImpl.inter Δ (ftvar_in_bskl B) [=] empty).
+  assert (Hdf : Δ ∩ ftvar_in_bskl B [=] empty).
   { eapply ad_refine_syn_syn_delta_free;
       [ exact Href | exact Hwf | reflexivity | exact Hdisj | ].
     rewrite ftvar_pskl_to_bskl_syn.

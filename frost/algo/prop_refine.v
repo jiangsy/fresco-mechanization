@@ -222,8 +222,8 @@ Proof.
     simpl in Hup.
     assert (HY' : Y `in` (singleton X `union` ftvar_in_uskl R))
       by (clear - HY Hup; fsetdec).
-    destruct (AtomSetImpl.union_1 HY') as [HYX | HYR].
-    + apply AtomSetImpl.singleton_1 in HYX; subst.
+    destruct (union_1 HY') as [HYX | HYR].
+    + apply singleton_1 in HYX; subst.
       left. unfold binds; left; reflexivity.
     + apply a_binds_tvar_weaken_cons; auto.
   - (* all_etag ↦ ∀ syn (ForallSyn on a tagged head, tag unsolved) *)
@@ -241,8 +241,8 @@ Proof.
     simpl in Hup.
     assert (HY' : Y `in` (singleton X `union` ftvar_in_uskl R))
       by (clear - HY Hup; fsetdec).
-    destruct (AtomSetImpl.union_1 HY') as [HYX | HYR].
-    + apply AtomSetImpl.singleton_1 in HYX; subst.
+    destruct (union_1 HY') as [HYX | HYR].
+    + apply singleton_1 in HYX; subst.
       left. unfold binds; left; reflexivity.
     + apply a_binds_tvar_weaken_cons; auto.
   - (* hole ↦ □ : the RHS is the inherited painting of □ *)

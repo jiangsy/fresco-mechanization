@@ -403,7 +403,7 @@ Proof.
   - (* pskl_var_f Y : Hin forces X = Y, and Y ∉ dom θ so θ leaves it alone *)
     assert (X = Y) by (clear - Hin; fsetdec); subst Y.
     rewrite msubst_lookup_notin by exact HX. simpl. clear; fsetdec.
-  - apply AtomSetImpl.union_1 in Hin. destruct Hin as [Hin | Hin].
+  - apply union_1 in Hin. destruct Hin as [Hin | Hin].
     + assert (Hs : X `in` ftvar_in_pskl (msubst_pskl θ Pa)) by (apply IHa; auto).
       clear - Hs; fsetdec.
     + assert (Hs : X `in` ftvar_in_pskl (msubst_pskl θ Pb)) by (apply IHb; auto).
@@ -519,7 +519,7 @@ Proof.
     inversion HeqC; subst.
     inversion HmC0 as [ | | ? ? HmC1 HmC2 ]; subst.
     simpl. intros Z HZ.
-    apply AtomSetImpl.union_1 in HZ. destruct HZ as [HZl | HZr].
+    apply union_1 in HZ. destruct HZ as [HZl | HZr].
     + apply (IHHc1 Hwf S01 C1 D eq_refl eq_refl HmC1 Hcl
                ltac:(clear - HCD; simpl in HCD; fsetdec) Z HZl).
     + apply (IHHc2 Hwf S02 C2 D eq_refl eq_refl HmC2 Hcl
@@ -622,11 +622,11 @@ Ltac str_forall H0 Hu Hwf' Hsub HscS HscQ Rr Qq X HX openU openB :=
   | intros Y HY;
     pose proof (openU Rr (uskl_var_f X)) as HupU; simpl in HupU;
     destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ];
-    simpl; apply AtomSetImpl.add_2; apply HscS; clear - HY HupU Hne; fsetdec
+    simpl; apply add_2; apply HscS; clear - HY HupU Hne; fsetdec
   | intros Y HY;
     pose proof (openB Qq (bskl_var_f X)) as HupB; simpl in HupB;
     destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ];
-    simpl; apply AtomSetImpl.add_2; apply HscQ; clear - HY HupB Hne; fsetdec ].
+    simpl; apply add_2; apply HscQ; clear - HY HupB Hne; fsetdec ].
 
 Lemma ad_pat_consis_strengthen : forall Ψ Θ S Q,
   Ψ ⨟ Θ ⊢ₛᵃ S ∼ Q ->
@@ -683,12 +683,12 @@ Proof.
     + apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf' ].
     + apply binds_sub_cons with (e := (X ~ abind_tvar)); exact Hsub.
     + intros Y HY. simpl in HY. simpl.
-      apply AtomSetImpl.add_2. apply HscS; exact HY.
+      apply add_2. apply HscS; exact HY.
     + intros Y HY.
       pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f X)) as HupB;
         simpl in HupB.
       destruct (Y == X) as [-> | Hne]; [ simpl; clear; fsetdec | ].
-      simpl. apply AtomSetImpl.add_2. apply HscQ; clear - HY HupB Hne; fsetdec.
+      simpl. apply add_2. apply HscQ; clear - HY HupB Hne; fsetdec.
   - apply ad_pat_consis__tophole_drop. apply IHad_pat_consis; auto.
   - eapply ad_pat_consis__flex_l.
     + eapply binds_strengthen; [ exact H | exact Hu | exact Hsub | apply HscS; fsetdec ].
@@ -1166,8 +1166,8 @@ Proof.
     apply inter_empty_pointwise. intros γ Hγ.
     destruct (Hcond γ Hγ) as [HinF | [Hf Hd]].
     + intro Hc.
-      assert (Hin : γ `in` AtomSetImpl.inter F (ftvar_in_pskl P))
-        by (apply AtomSetImpl.inter_3; assumption).
+      assert (Hin : γ `in` F ∩ ftvar_in_pskl P)
+        by (apply inter_3; assumption).
       rewrite H in Hin. clear - Hin. fsetdec.
     + rewrite ftvar_in_bskl_syn in Hf. exact Hf.
   - apply ad_refine_syn_f__tophole_remove. apply IHad_refine_syn_f.
@@ -1218,8 +1218,8 @@ Proof.
   induction H; intros Hwf γ HγF Hbγ; try discriminate HeqS.
   - (* __hole : the fill is the target *)
     intro Hc.
-    assert (Hin : γ `in` AtomSetImpl.inter F (ftvar_in_pskl Q))
-      by (apply AtomSetImpl.inter_3; assumption).
+    assert (Hin : γ `in` F ∩ ftvar_in_pskl Q)
+      by (apply inter_3; assumption).
     rewrite H in Hin. clear - Hin. fsetdec.
   - (* __flex_r : target is a defined flexible, not the rigid γ *)
     simpl. intro Hc.
@@ -1242,8 +1242,8 @@ Proof.
   - (* __hole : the fill is the target *)
     rewrite ftvar_in_bskl_syn.
     intro Hc.
-    assert (Hin : γ `in` AtomSetImpl.inter F (ftvar_in_pskl P))
-      by (apply AtomSetImpl.inter_3; assumption).
+    assert (Hin : γ `in` F ∩ ftvar_in_pskl P)
+      by (apply inter_3; assumption).
     rewrite H in Hin. clear - Hin. fsetdec.
   - (* __flex_r : target is a defined flexible, not the rigid γ *)
     simpl. intro Hc.
@@ -1354,8 +1354,8 @@ Proof.
     apply inter_empty_pointwise. intros γ Hγ.
     destruct (Hcond γ Hγ) as [HinF | Hnd].
     + intro Hc.
-      assert (Hin : γ `in` AtomSetImpl.inter F (ftvar_in_pskl P))
-        by (apply AtomSetImpl.inter_3; assumption).
+      assert (Hin : γ `in` F ∩ ftvar_in_pskl P)
+        by (apply inter_3; assumption).
       rewrite H in Hin. clear - Hin. fsetdec.
     + pose proof (a_wf_pskl_ftv_dom H0) as Hsc.
       clear - Hnd Hsc. fsetdec.
@@ -1387,8 +1387,8 @@ Proof.
     apply inter_empty_pointwise. intros γ Hγ.
     destruct (Hcond γ Hγ) as [HinF | Hnd].
     + intro Hc.
-      assert (Hin : γ `in` AtomSetImpl.inter F (ftvar_in_pskl Q))
-        by (apply AtomSetImpl.inter_3; assumption).
+      assert (Hin : γ `in` F ∩ ftvar_in_pskl Q)
+        by (apply inter_3; assumption).
       rewrite H in Hin. clear - Hin. fsetdec.
     + pose proof (a_wf_pskl_ftv_dom H0) as Hsc.
       clear - Hnd Hsc. fsetdec.
@@ -1517,8 +1517,8 @@ Proof.
   - apply ad_refine_syn_f__hole; [ exact H | ].
     assert (HαP : α0 `notin` ftvar_in_pskl P).
     { intro Hc.
-      assert (Hin : α0 `in` AtomSetImpl.inter F (ftvar_in_pskl P))
-        by (apply AtomSetImpl.inter_3; assumption).
+      assert (Hin : α0 `in` F ∩ ftvar_in_pskl P)
+        by (apply inter_3; assumption).
       rewrite H in Hin. clear - Hin. fsetdec. }
     pose proof (a_wf_pskl_ftv_dom H0) as Hsc.
     eapply a_wf_pskl_strengthen;
@@ -1676,7 +1676,7 @@ Proof.
   - clear - HX; fsetdec.
   - exists Z. split; [ fsetdec | ].
     rewrite ftvar_in_ptyp_to_pskl in HX. exact HX.
-  - apply AtomSetImpl.union_1 in HX. destruct HX as [H1 | H2].
+  - apply union_1 in HX. destruct HX as [H1 | H2].
     + destruct (IHa X H1) as [Y [HY1 HY2]].
       exists Y; split; [ fsetdec | exact HY2 ].
     + destruct (IHb X H2) as [Y [HY1 HY2]].
@@ -3573,7 +3573,7 @@ Lemma ad_refine_syn_f_flex_target_unfold : forall F Θ Δ S α τ,
   a_wf_aenv Θ ->
   binds α (abind_flex_mono_def τ) Θ ->
   (forall X, X `in` Δ -> binds X abind_tvar Θ) ->
-  AtomSetImpl.inter F (ftvar_in_ptyp τ) [=] empty ->
+  F ∩ ftvar_in_ptyp τ [=] empty ->
   ad_refine_syn_f F Θ Δ S (bskl_var_f α) ->
   ad_refine_syn_f F Θ Δ S (ptyp_to_bskl_syn τ).
 Proof.
@@ -3618,7 +3618,7 @@ Lemma ad_refine_pskl_f_flex_target_unfold : forall F Θ Δ S α τ,
   a_wf_aenv Θ ->
   binds α (abind_flex_mono_def τ) Θ ->
   (forall X, X `in` Δ -> binds X abind_tvar Θ) ->
-  AtomSetImpl.inter F (ftvar_in_ptyp τ) [=] empty ->
+  F ∩ ftvar_in_ptyp τ [=] empty ->
   ad_refine_pskl_f F Θ Δ S (pskl_var_f α) ->
   ad_refine_pskl_f F Θ Δ S (ptyp_to_pskl τ).
 Proof.
@@ -4246,7 +4246,7 @@ Proof.
     inversion HwfP0; subst.
     match goal with H : Θw ⨟ Δw ⊢ₚₛᵃ P1 |- _ => rename H into HwfP1 end.
     match goal with H : Θw ⨟ Δw ⊢ₚₛᵃ P2 |- _ => rename H into HwfP2 end.
-    simpl in Hocc. apply AtomSetImpl.union_1 in Hocc.
+    simpl in Hocc. apply union_1 in Hocc.
     destruct Hocc as [Hocc | Hocc].
     + (* α ∈ ftv P1 *)
       assert (Hle : size_ptyp (⇓ᵗ[Θ] (msubst_lookup θm α0))
@@ -4522,7 +4522,7 @@ Proof.
       exfalso. exact (Hdisj12 x Hx2 Hx1). }
     split.
     { intros γ0 Hγ0. rewrite dom_app in Hγ0.
-      apply AtomSetImpl.union_1 in Hγ0. destruct Hγ0 as [Hγ0 | Hγ0].
+      apply union_1 in Hγ0. destruct Hγ0 as [Hγ0 | Hγ0].
       - specialize (Hf1 γ0 Hγ0). clear - Hf1. unfold L1 in Hf1. fsetdec.
       - specialize (Hf2 γ0 Hγ0). clear - Hf2. unfold L2, L1 in Hf2. fsetdec. }
     split.
@@ -4723,7 +4723,7 @@ Proof.
   assert (Hαftvτg : α `notin` ftvar_in_ptyp τg).
   { pose proof (a_guess_mono_ftv (Hg Θ)) as Hftv.
     intros Hinτ. apply Hftv in Hinτ.
-    apply AtomSetImpl.union_1 in Hinτ. destruct Hinτ as [HinP | Hinβ].
+    apply union_1 in Hinτ. destruct Hinτ as [HinP | Hinβ].
     - clear - HinP Hocc. fsetdec.
     - specialize (Hfβ α Hinβ). clear - Hfβ. unfold L in Hfβ. fsetdec. }
   (* the deposited definition is ζ-consistent *)
@@ -7555,7 +7555,7 @@ Proof.
       { inversion Hrp; subst.
         - (* hole : the Δ2-hygiene of the fill *)
           match goal with
-          | Hint : AtomSetImpl.inter Δ2 (ftvar_in_pskl P) [=] empty |- _ =>
+          | Hint : Δ2 ∩ ftvar_in_pskl P [=] empty |- _ =>
               clear - Hint HinΔ2; fsetdec
           end.
         - (* flex_r : the fill is a defined flexible, never the rigid X *)
@@ -8179,7 +8179,7 @@ Proof.
     end.
     assert (Hmτ : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; eauto).
-    assert (Hdisj : AtomSetImpl.inter (Δ1 `union` Δ2) (ftvar_in_ptyp τ)
+    assert (Hdisj : (Δ1 `union` Δ2) ∩ ftvar_in_ptyp τ
                       [=] empty)
       by (apply (Hnfdth _ _ Hbα)).
     assert (HΔbt : forall X, X `in` (Δ1 `union` Δ2) ->
@@ -8465,7 +8465,7 @@ Proof.
       { inversion Hrs; subst.
         - (* hole : the Δ1-hygiene of the fill *)
           match goal with
-          | Hint : AtomSetImpl.inter Δ1 (ftvar_in_pskl ?Pf) [=] empty |- _ =>
+          | Hint : Δ1 ∩ (ftvar_in_pskl ?Pf) [=] empty |- _ =>
               pose proof (ftvar_in_bskl_syn Pf) as Hfe;
               clear - Hint HinΔ1 Hfe; fsetdec
           end.

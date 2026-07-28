@@ -132,7 +132,7 @@ Theorem p6cs_without_subject_wf_is_false :
        ftvar_in_uskl S [<=] add α (dom Θ0) ->
        lc_uskl S ->
        a_tags_sort NM Ψ' ψa ->
-       AtomSetImpl.inter (ftag_in_uskl S) Ψ' [=] empty ->
+       (ftag_in_uskl S) ∩ Ψ' [=] empty ->
        Ψi `union` Ψa [<=] Ψ' ->
        delta_def_fresh Δ Θ ->
        Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->

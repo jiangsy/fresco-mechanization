@@ -152,7 +152,7 @@ Proof.
   - (* var *)
     inversion Hfa; subst.
     + apply fa_clean.
-      match goal with Hc : AtomSetImpl.inter _ _ [=] empty |- _ =>
+      match goal with Hc : _ ∩ _ [=] empty |- _ =>
         pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
                       (uskl_var_f X)) as Hup;
         simpl in *; clear - Hc Hup HX; fsetdec end.
@@ -160,7 +160,7 @@ Proof.
   - (* arrow *)
     inversion Hfa; subst.
     apply fa_clean.
-    match goal with Hc : AtomSetImpl.inter _ _ [=] empty |- _ =>
+    match goal with Hc : _ ∩ _ [=] empty |- _ =>
       pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
                     (uskl_var_f X)) as Hup;
       simpl in *; clear - Hc Hup HX; fsetdec end.
@@ -177,7 +177,7 @@ Proof.
   inversion Hfa; subst.
   - (* fa_clean *)
     apply fa_clean.
-    match goal with Hc : AtomSetImpl.inter _ _ [=] empty |- _ =>
+    match goal with Hc : _ ∩ _ [=] empty |- _ =>
       pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f X))
         as Hup;
       simpl in *; clear - Hc Hup HX; fsetdec end.
@@ -284,7 +284,7 @@ Proof.
     apply ad_ppre__hole; [ assumption | ].
     pose proof (ftvar_in_uskl_subst_bskl_in_uskl_upper ψ (uskl_var_f W) Z)
       as Hup. simpl in Hup.
-    match goal with Hint : AtomSetImpl.inter Δ _ [=] empty |- _ =>
+    match goal with Hint : Δ ∩ _ [=] empty |- _ =>
       clear - Hint HWΔ Hup; fsetdec end.
   - (* tophole_remove *)
     apply ad_ppre__tophole_remove.
@@ -374,7 +374,7 @@ Qed.
 Definition aenv_split (Θf Θtv Θr : aenv) : Prop :=
   (forall x (b : abind), binds x b Θf <-> binds x b Θtv \/ binds x b Θr) /\
   dom Θf [=] dom Θtv `union` dom Θr /\
-  AtomSetImpl.inter (dom Θtv) (dom Θr) [=] empty.
+  (dom Θtv) ∩ dom Θr [=] empty.
 
 Lemma aenv_split_nil : forall Θf, aenv_split Θf nil Θf.
 Proof.
@@ -512,7 +512,7 @@ Theorem a_solve_eq_complete_var_gen :
   a_wf_aenv Θr ->
   (forall x b, binds x b Θtv -> b = abind_tvar) ->
   Δr [=] dom Θtv ->
-  AtomSetImpl.inter Δρ (dom Θtv) [=] empty ->
+  Δρ ∩ dom Θtv [=] empty ->
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -520,7 +520,7 @@ Theorem a_solve_eq_complete_var_gen :
   uskl_rho NM Θ Δρ Ψρ ψsub ψa ->
   a_tags_sort NM Ψ' ψa ->
   Ψi `union` Ψa [<=] Ψ' ->
-  AtomSetImpl.inter Ψρ Ψ' [=] empty ->
+  Ψρ ∩ Ψ' [=] empty ->
   rho_fresh Δρ Θ θ ->
   Δρ [<=] Δ ->
   (forall X, X `in` Δρ -> X `notin` pskl_shielded_ftv (msubst_pskl θ Pi)) ->
@@ -533,8 +533,8 @@ Theorem a_solve_eq_complete_var_gen :
   Θr ⨟ Δr ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->
   exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
     forall S,
-      AtomSetImpl.inter S Δ [=] empty ->
-      AtomSetImpl.inter S (dom Θr) [=] empty ->
+      S ∩ Δ [=] empty ->
+      S ∩ dom Θr [=] empty ->
       delta_def_fresh S Θ ->
       Θ ⨟ (Δ `union` S) ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
@@ -632,8 +632,8 @@ Proof.
       Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] (uskl_arrow ψa1 ψa2) ->
       exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
         forall S,
-          AtomSetImpl.inter S Δ [=] empty ->
-          AtomSetImpl.inter S (dom Θr) [=] empty ->
+          S ∩ Δ [=] empty ->
+          S ∩ dom Θr [=] empty ->
           delta_def_fresh S Θ ->
           Θ ⨟ (Δ `union` S) ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ]
             (uskl_arrow ψa1 ψa2)).
@@ -652,18 +652,18 @@ Proof.
         pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags2)) as Hc.
         clear - Ha Hb Hc; fsetdec. }
       (* the branch solved-tag split Ψa_k := Ψ_k ∩ Ψ'_k *)
-      assert (Hbs1 : Ψ1 [<=] Ψρ1 `union` (AtomSetImpl.inter Ψ1 Ψ'1))
+      assert (Hbs1 : Ψ1 [<=] Ψρ1 `union` (Ψ1 ∩ Ψ'1))
         by (clear - Hft1; fsetdec).
-      assert (Hbs2 : Ψ2 [<=] Ψρ2 `union` (AtomSetImpl.inter Ψ2 Ψ'2))
+      assert (Hbs2 : Ψ2 [<=] Ψρ2 `union` (Ψ2 ∩ Ψ'2))
         by (clear - Hft2; fsetdec).
-      assert (Hba1 : AtomSetImpl.inter Ψ1 Ψ'1 [<=] Ψ1) by (clear; fsetdec).
-      assert (Hba2 : AtomSetImpl.inter Ψ2 Ψ'2 [<=] Ψ2) by (clear; fsetdec).
-      assert (Hint1 : AtomSetImpl.inter Ψρ1 Ψ'1 [=] empty)
+      assert (Hba1 : Ψ1 ∩ Ψ'1 [<=] Ψ1) by (clear; fsetdec).
+      assert (Hba2 : Ψ2 ∩ Ψ'2 [<=] Ψ2) by (clear; fsetdec).
+      assert (Hint1 : Ψρ1 ∩ Ψ'1 [=] empty)
         by (clear - Hinter HΨρs HΨ's; fsetdec).
-      assert (Hint2 : AtomSetImpl.inter Ψρ2 Ψ'2 [=] empty)
+      assert (Hint2 : Ψρ2 ∩ Ψ'2 [=] empty)
         by (clear - Hinter HΨρs HΨ's; fsetdec).
-      assert (HΨaeq : Ψa [=] (AtomSetImpl.inter Ψ1 Ψ'1)
-                        `union` (AtomSetImpl.inter Ψ2 Ψ'2)).
+      assert (HΨaeq : Ψa [=] (Ψ1 ∩ Ψ'1)
+                        `union` (Ψ2 ∩ Ψ'2)).
       { clear - Hsubeq1 Hsubeq2 H Hsub Hinter HΨρs HΨ's Hft1 Hft2; fsetdec. }
       (* the P0=□ rows' target bound *)
       assert (HψaB : ftvar_in_bskl (bskl_arrow Q1 Q2) [<=] dom Θr ->
@@ -708,8 +708,7 @@ Proof.
           Θ ⨟ Δx ⊢ (msubst_pskl θ (pskl_var_f β)) ⊑ᵖ[ empty ]
             (uskl_arrow ψa1 ψa2)).
       { intros β Hapβ Hflxβ Hrefβ.
-        assert (Hclean : AtomSetImpl.inter
-                  (ftvar_in_uskl (uskl_arrow ψa1 ψa2)) Δρ [=] empty).
+        assert (Hclean : (ftvar_in_uskl (uskl_arrow ψa1 ψa2)) ∩ Δρ [=] empty).
         { inversion Hapβ; subst.
           - assumption.
           - (* fa_var_rigid clashes with flexibility via wf-uniq *)
@@ -771,8 +770,8 @@ Proof.
               ⊳ (bskl_arrow Q1 Q2) ->
         exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
           forall S,
-            AtomSetImpl.inter S Δ [=] empty ->
-            AtomSetImpl.inter S (dom Θr) [=] empty ->
+            S ∩ Δ [=] empty ->
+            S ∩ dom Θr [=] empty ->
             delta_def_fresh S Θ ->
             Θ ⨟ (Δ `union` S) ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ]
               (uskl_arrow ψa1 ψa2)).
@@ -858,14 +857,14 @@ Proof.
             simpl in Hpre1.
             destruct (ad_ppre_arrow_arrow_inv Hpre1)
               as (Ψib1 & Ψib2 & Hpb1 & Hpb2 & HΨis).
-            assert (Hsubk1 : Ψib1 `union` (AtomSetImpl.inter Ψ1 Ψ'1)
+            assert (Hsubk1 : Ψib1 `union` (Ψ1 ∩ Ψ'1)
                                [<=] Ψ'1).
             { assert (Hts : Ψib1 [<=] Ψ'1)
                 by (eapply ad_partial_precise_tags_sub;
                       [ exact HwfΘ | exact Hpb1
                       | exact (a_tags_sort_d_tags Htags1) ]).
               clear - Hts; fsetdec. }
-            assert (Hsubk2 : Ψib2 `union` (AtomSetImpl.inter Ψ2 Ψ'2)
+            assert (Hsubk2 : Ψib2 `union` (Ψ2 ∩ Ψ'2)
                                [<=] Ψ'2).
             { assert (Hts : Ψib2 [<=] Ψ'2)
                 by (eapply ad_partial_precise_tags_sub;
@@ -944,7 +943,7 @@ Proof.
         - (* Pi = □ *)
           simpl in Hpre1.
           assert (HΨie : Ψi0 [=] empty) by (inversion Hpre1; assumption).
-          assert (Hhd : AtomSetImpl.inter Δ
+          assert (Hhd : Δ ∩
                     (ftvar_in_uskl (uskl_arrow ψa1 ψa2)) [=] empty)
             by (inversion Hpre1; assumption).
           simpl in Hhd.
@@ -991,9 +990,9 @@ Proof.
                              ⊑ᵖ[ empty ] ψa2).
             { simpl. apply ad_ppre__hole;
                 [ clear; fsetdec | clear - Hhd; fsetdec ]. }
-            assert (Hsubk01 : empty `union` (AtomSetImpl.inter Ψ1 Ψ'1)
+            assert (Hsubk01 : empty `union` (Ψ1 ∩ Ψ'1)
                                 [<=] Ψ'1) by (clear; fsetdec).
-            assert (Hsubk02 : empty `union` (AtomSetImpl.inter Ψ2 Ψ'2)
+            assert (Hsubk02 : empty `union` (Ψ2 ∩ Ψ'2)
                                 [<=] Ψ'2) by (clear; fsetdec).
             destruct (IHHconsis1 NM Θ0 Θtv Θr Θ0r θ Δ Δρ Δr Ψρ1 Ψ'1 _ _
                         ψa1 pskl_hole P01
@@ -1198,8 +1197,8 @@ Proof.
       Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψR) ->
       exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
         forall S,
-          AtomSetImpl.inter S Δ [=] empty ->
-          AtomSetImpl.inter S (dom Θr) [=] empty ->
+          S ∩ Δ [=] empty ->
+          S ∩ dom Θr [=] empty ->
           delta_def_fresh S Θ ->
           Θ ⨟ (Δ `union` S) ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ]
             (uskl_all_etag ε ψR)).
@@ -1224,7 +1223,7 @@ Proof.
         by (clear - H1 Hsubeq1 HbF Hεnin HΨ'eq Hinter; fsetdec).
       assert (Hsubeq2b : (remove ε Ψa) [<=] Ψ0)
         by (clear - H1 Hsubeq2; fsetdec).
-      assert (Hintb : AtomSetImpl.inter Ψρ Ψ0' [=] empty)
+      assert (Hintb : Ψρ ∩ Ψ0' [=] empty)
         by (clear - Hinter HΨ'eq; fsetdec).
       assert (Hdomsub : dom Θr [<=] dom Θ)
         by (eapply aenv_split_dom_r; exact HspΘ).
@@ -1307,8 +1306,8 @@ Proof.
           Ψi0 [<=] Ψ0' ->
           exists Pa0, ((X ~ abind_tvar) ++ Θ0) ⊢ₑ Pi0 ∼
                (open_pskl_wrt_pskl P0b (pskl_var_f X)) ⤳ Pa0 /\
-            forall S, AtomSetImpl.inter S Δx [=] empty ->
-              AtomSetImpl.inter S (dom Θr) [=] empty ->
+            forall S, S ∩ Δx [=] empty ->
+              S ∩ dom Θr [=] empty ->
               delta_def_fresh S ((X ~ abind_tvar) ++ Θ) ->
               ((X ~ abind_tvar) ++ Θ) ⨟ (Δx `union` S)
                 ⊢ (msubst_pskl θ Pa0)
@@ -1375,8 +1374,8 @@ Proof.
                `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0
                `union` dom θ `union` singleton ε `union` ftvar_in_uskl ψR
                `union` ftvar_in_pskl P0b) ->
-          AtomSetImpl.inter S Δ [=] empty ->
-          AtomSetImpl.inter S (dom Θr) [=] empty ->
+          S ∩ Δ [=] empty ->
+          S ∩ dom Θr [=] empty ->
           delta_def_fresh S Θ ->
           ((X ~ abind_tvar) ++ Θ)
             ⨟ (add X (Δ `union` (remove X S)))
@@ -1430,7 +1429,7 @@ Proof.
           rewrite (subst_pskl_in_pskl_spec PaR (pskl_var_f X') X) in Hrn.
           eapply ad_partial_precise_delta_cong;
             [ eapply ad_partial_precise_delta_weaken_fresh
-                with (S := AtomSetImpl.inter S (singleton X));
+                with (S := S ∩ singleton X);
                 [ exact Hrn
                 | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
                                 (uskl_var_f X')) as Hup;
@@ -1591,7 +1590,7 @@ Proof.
              single a_solve_eq__hole_l (Pa := ∀.P0b). *)
           assert (HΨie : Ψi [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
-          assert (Hhd : AtomSetImpl.inter Δ
+          assert (Hhd : Δ ∩
                     (ftvar_in_uskl (uskl_all_etag ε ψR)) [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
           simpl in Hhd.
@@ -1884,8 +1883,8 @@ Proof.
       Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψR) ->
       exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
         forall S,
-          AtomSetImpl.inter S Δ [=] empty ->
-          AtomSetImpl.inter S (dom Θr) [=] empty ->
+          S ∩ Δ [=] empty ->
+          S ∩ dom Θr [=] empty ->
           delta_def_fresh S Θ ->
           Θ ⨟ (Δ `union` S) ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ]
             (uskl_all_etag ε ψR)).
@@ -1908,7 +1907,7 @@ Proof.
       (* Ψa ⊆ Ψ0' (Ψa ⊆ Ψ ⊆ Ψρ∪Ψ0', and Ψa ⊆ Ψ' disjoint Ψρ) *)
       assert (HΨaΨ0' : Ψa [<=] Ψ0')
         by (clear - Hsubeq2 HbF Hinter HΨ'eq Hsub; fsetdec).
-      assert (Hintb : AtomSetImpl.inter Ψρ Ψ0' [=] empty)
+      assert (Hintb : Ψρ ∩ Ψ0' [=] empty)
         by (clear - Hinter HΨ'eq; fsetdec).
       (* target ftv bound: reconstruct the whole ρ and bound ftv ψR *)
       assert (Hrhow : uskl_rho NM Θ Δρ Ψρ (uskl_all_etag ε R)
@@ -2049,8 +2048,8 @@ Proof.
              (pskl_to_bskl_inh (msubst_pskl θ P0i))
              ⊳ open_bskl_wrt_bskl Q (bskl_var_f X) ->
           exists Pa0, ((X ~ abind_tvar) ++ Θ0) ⊢ₑ Pi0 ∼ P0i ⤳ Pa0 /\
-            forall S, AtomSetImpl.inter S Δx [=] empty ->
-              AtomSetImpl.inter S (dom ((X ~ abind_tvar) ++ Θr)) [=] empty ->
+            forall S, S ∩ Δx [=] empty ->
+              S ∩ (dom ((X ~ abind_tvar) ++ Θr)) [=] empty ->
               delta_def_fresh S ((X ~ abind_tvar) ++ Θ) ->
               ((X ~ abind_tvar) ++ Θ) ⨟ (Δx `union` S)
                 ⊢ (msubst_pskl θ Pa0)
@@ -2121,8 +2120,8 @@ Proof.
                `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0 `union` dom Θr
                `union` dom θ `union` singleton ε `union` ftvar_in_uskl ψR
                `union` ftvar_in_pskl P0') ->
-          AtomSetImpl.inter S Δ [=] empty ->
-          AtomSetImpl.inter S (dom Θr) [=] empty ->
+          S ∩ Δ [=] empty ->
+          S ∩ dom Θr [=] empty ->
           delta_def_fresh S Θ ->
           ((X ~ abind_tvar) ++ Θ)
             ⨟ (add X (Δ `union` (remove X S)))
@@ -2178,7 +2177,7 @@ Proof.
           rewrite (subst_pskl_in_pskl_spec PaR (pskl_var_f X') X) in Hrn.
           eapply ad_partial_precise_delta_cong;
             [ eapply ad_partial_precise_delta_weaken_fresh
-                with (S := AtomSetImpl.inter S (singleton X));
+                with (S := S ∩ singleton X);
                 [ exact Hrn
                 | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
                                 (uskl_var_f X')) as Hup;
@@ -2345,7 +2344,7 @@ Proof.
              Pi0:=□ (Hpre0x = ad_ppre__hole); refinement + closure as ⊤◇. *)
           assert (HΨie : Ψi [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
-          assert (Hhd : AtomSetImpl.inter Δ
+          assert (Hhd : Δ ∩
                     (ftvar_in_uskl (uskl_all_etag ε ψR)) [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
           simpl in Hhd.
@@ -2580,7 +2579,7 @@ Proof.
                           ltac:(clear - Fr; solve_notin)) in Hren.
             eapply ad_partial_precise_delta_cong;
               [ eapply ad_partial_precise_delta_weaken_fresh
-                  with (S := AtomSetImpl.inter S (singleton X));
+                  with (S := S ∩ singleton X);
                   [ exact Hren
                   | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
                                   (uskl_var_f X')) as Hup;
@@ -2663,8 +2662,8 @@ Proof.
       Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] (uskl_topholeg ψa0) ->
       exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
         forall S,
-          AtomSetImpl.inter S Δ [=] empty ->
-          AtomSetImpl.inter S (dom Θr) [=] empty ->
+          S ∩ Δ [=] empty ->
+          S ∩ dom Θr [=] empty ->
           delta_def_fresh S Θ ->
           Θ ⨟ (Δ `union` S) ⊢ (msubst_pskl θ Pa) ⊑ᵖ[ Ψi `union` Ψa ]
             (uskl_topholeg ψa0)).
@@ -2764,7 +2763,7 @@ Proof.
             { simpl. simpl in Hpre0. inversion Hpre0; subst.
               match goal with
               | HΨE : Ψi [=] empty,
-                Hint : AtomSetImpl.inter _ _ [=] empty |- _ =>
+                Hint : _ ∩ _ [=] empty |- _ =>
                 apply ad_ppre__hole; [ exact HΨE | ];
                 simpl in Hint; exact Hint
               end. }
@@ -3076,7 +3075,7 @@ Theorem a_solve_eq_complete_var :
   uskl_rho NM Θ Δρ Ψρ ψsub ψa ->      (* ρ: ψsub = ρ(ψa), Ψρ = its Ψ *)
   a_tags_sort NM Ψ' ψa ->             (* Θ ⊢^N Ψ'{syn ψa} *)
   Ψi `union` Ψa [<=] Ψ' ->            (* Ψi, Ψa ⊆ Ψ' *)
-  AtomSetImpl.inter Ψρ Ψ' [=] empty ->   (* the fresh{Ψ'} instance used *)
+  Ψρ ∩ Ψ' [=] empty ->   (* the fresh{Ψ'} instance used *)
   rho_fresh Δρ Θ θ -> Δρ [<=] Δ ->    (* MECH-ONLY (4): the ρ-freshness *)
   (forall X, X `in` Δρ -> X `notin` pskl_shielded_ftv (msubst_pskl θ Pi)) ->
   delta_def_fresh Δ Θ ->              (* MECH-ONLY (2) *)

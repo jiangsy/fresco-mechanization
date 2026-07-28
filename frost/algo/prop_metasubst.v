@@ -652,7 +652,7 @@ Proof.
   - clear - HX; fsetdec.
   - clear - HX; fsetdec.
   - exists Z. split; [ fsetdec | exact HX ].
-  - apply AtomSetImpl.union_1 in HX. destruct HX as [H1 | H2].
+  - apply union_1 in HX. destruct HX as [H1 | H2].
     + destruct (IHA1 X H1) as [Y [HY1 HY2]]. exists Y; split; [ fsetdec | exact HY2 ].
     + destruct (IHA2 X H2) as [Y [HY1 HY2]]. exists Y; split; [ fsetdec | exact HY2 ].
   - destruct (IHA0 X HX) as [Y [HY1 HY2]]. exists Y; split; [ fsetdec | exact HY2 ].
@@ -1598,7 +1598,7 @@ Proof.
   - clear - HX; fsetdec.
   - assert (X = Y) by (clear - HX; fsetdec); subst.
     rewrite ftvar_in_ptyp_to_pskl. clear; fsetdec.
-  - apply AtomSetImpl.union_1 in HX; destruct HX as [HXa | HXb];
+  - apply union_1 in HX; destruct HX as [HXa | HXb];
       [ pose proof (IHa X HXa) | pose proof (IHb X HXb) ]; clear - H; fsetdec.
   - pose proof (IHall X HX). clear - H; fsetdec.
   - clear - HX; fsetdec.

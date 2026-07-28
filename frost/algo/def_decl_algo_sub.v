@@ -87,14 +87,14 @@ Inductive ad_pat_sub :
     Ψ ⨟ Θ ⊢ₛᵃ[ NM | mode_fn M ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2)
 | ad_pat_sub__forall_l_tagged : forall NM Ψ Ψ' Θ M ε R ψ Q,   (* ForallL, δ=ε *)
     M <> mode_ti ->
-    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    Ψ' ∩ Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q ->
     Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] (uskl_all_etag ε R) ⩽ Q
 | ad_pat_sub__forall_l_untagged : forall NM Ψ Ψ' Θ M R ψ Q,   (* ForallL, δ=· *)
     M <> mode_ti ->
-    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    Ψ' ∩ Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     (Ψ `union` Ψ') ⨟ Θ ⊢ₛᵃ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q ->
@@ -175,14 +175,14 @@ Inductive ad_pat_sub_n :
     ad_pat_sub_n (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
 | ad_pat_sub_n__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, δ=ε *)
     M <> mode_ti ->
-    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    Ψ' ∩ Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     ad_pat_sub_n n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
     ad_pat_sub_n (S n) NM M Ψ Θ (uskl_all_etag ε R) Q
 | ad_pat_sub_n__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, δ=· *)
     M <> mode_ti ->
-    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    Ψ' ∩ Ψ [=] empty ->
     a_tags_sort NM Ψ' ψ ->
     Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
     ad_pat_sub_n n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
@@ -240,7 +240,7 @@ Inductive ad_partial_precise :
     Θ ⨟ Δ ⊢ (pskl_all_syn P) ⊑ᵖ[ Ψ ] (uskl_all_etag ε ψ)
 | ad_ppre__hole : forall Θ Δ Ψ ψ,
     Ψ [=] empty ->
-    AtomSetImpl.inter Δ (ftvar_in_uskl ψ) [=] empty ->
+    Δ ∩ ftvar_in_uskl ψ [=] empty ->
     Θ ⨟ Δ ⊢ pskl_hole ⊑ᵖ[ Ψ ] ψ
 | ad_ppre__tophole_remove : forall Θ Δ Ψ P ψ,
     Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->

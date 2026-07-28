@@ -708,7 +708,7 @@ with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
 
 with a_consis : atoms -> atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=
 | a_consis__ghost : forall F Δ1 Δ2 Θ0 P0,                     (* Ghost *)
-    AtomSetImpl.inter Δ2 (ftvar_in_pskl P0) [=] empty ->
+    Δ2 ∩ ftvar_in_pskl P0 [=] empty ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] pskl_hole ∼ P0 ⊣ Θ0
 | a_consis__unit : forall F Δ1 Δ2 Θ0,                         (* Unit *)
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | pskl_unit ] pskl_unit ∼ pskl_unit ⊣ Θ0
@@ -769,7 +769,7 @@ with a_consis : atoms -> atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv 
     Θ0 ⊲[ F ][ nil ] α ≔ P ⊣ Θ1 ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_var_f α) ] P ∼ (pskl_var_f α) ⊣ Θ1
 | a_consis__ghost_r : forall F Δ1 Δ2 Θ0 P,                    (* GhostR *)
-    AtomSetImpl.inter Δ1 (ftvar_in_pskl P) [=] empty ->
+    Δ1 ∩ ftvar_in_pskl P [=] empty ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | pskl_hole ] P ∼ P ⊣ Θ0
 | a_consis__univ_ghost_r : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q,       (* UnivGhostR *)
     guarded_pskl P ->

@@ -127,7 +127,7 @@ Qed.
 
 Lemma a_wf_pskl_delta_strip : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  AtomSetImpl.inter Δ (ftvar_in_pskl P) [=] empty ->
+  Δ ∩ ftvar_in_pskl P [=] empty ->
   Θ ⨟ empty ⊢ₚₛᵃ P.
 Proof.
   intros Θ Δ P H Hdis.
@@ -147,7 +147,7 @@ Proof. intros Ψ X H. inversion H; subst; auto. Qed.
 Lemma d_tags_skl_arrow_inv : forall Ψ ψ1 ψ2,
   d_tags_skl Ψ (uskl_arrow ψ1 ψ2) ->
   exists Ψ1 Ψ2, d_tags_skl Ψ1 ψ1 /\ d_tags_skl Ψ2 ψ2
-             /\ AtomSetImpl.inter Ψ1 Ψ2 [=] empty /\ Ψ [=] Ψ1 `union` Ψ2.
+             /\ Ψ1 ∩ Ψ2 [=] empty /\ Ψ [=] Ψ1 `union` Ψ2.
 Proof. intros Ψ ψ1 ψ2 H. inversion H; subst. eauto 10. Qed.
 
 Lemma d_tags_skl_all_etag_inv : forall Ψ ε ψ,
@@ -196,7 +196,7 @@ Qed.
 Lemma a_tags_sort_arrow_inv : forall NM Ψ ψ1 ψ2,
   a_tags_sort NM Ψ (uskl_arrow ψ1 ψ2) ->
   exists Ψ1 Ψ2, a_tags_sort NM Ψ1 ψ1 /\ a_tags_sort NM Ψ2 ψ2
-             /\ AtomSetImpl.inter Ψ1 Ψ2 [=] empty /\ Ψ [=] Ψ1 `union` Ψ2.
+             /\ Ψ1 ∩ Ψ2 [=] empty /\ Ψ [=] Ψ1 `union` Ψ2.
 Proof.
   intros NM Ψ ψ1 ψ2 H. inversion H; subst;
     match goal with Ht : is_tskl _ |- _ => inversion Ht; subst end;
@@ -815,7 +815,7 @@ Lemma ad_pat_consis_precise_var_case : forall NM Ψ' Θb Δ ψa Pa,
   (forall X, X `in` Δ -> a_binds_tvar X Θ') ->
   a_wf_aenv Θ' ->
   Ψfull [=] Ψ `union` Ψa ->
-  AtomSetImpl.inter Ψ' Ψ [=] empty ->
+  Ψ' ∩ Ψ [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qc) ->
   Ψ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl Pa) ∼ Qc.
 Proof.
@@ -864,8 +864,8 @@ Lemma ad_pat_consis_precise_subst : forall Θb Δ α ψa Pa Ψ' NM,
   α `notin` dom Θ' ->
   Ψfull [=] Ψ `union` Ψa ->
   Ψa [<=] Ψ' ->
-  AtomSetImpl.inter Ψ' Ψ [=] empty ->
-  AtomSetImpl.inter Ψ' (ftag_in_uskl S) [=] empty ->
+  Ψ' ∩ Ψ [=] empty ->
+  Ψ' ∩ ftag_in_uskl S [=] empty ->
   Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qc) ->
   Ψ ⨟ Θ' ⊢ₛᵃ (subst_bskl_in_uskl (pskl_to_uskl Pa) α S) ∼ Qc.
 Proof.
@@ -913,13 +913,13 @@ Proof.
       simpl in Hwfq.
       inversion Hwfq as [ | | Θz Δz Pw1 Pw2 Hwfq1 Hwfq2 | | | ]; subst.
       eapply ad_pat_consis__arrow with
-        (Ψ1 := AtomSetImpl.diff Ψ1 Ψ') (Ψ2 := AtomSetImpl.diff Ψ2 Ψ').
-      * eapply IHHc1 with (S := S1) (Ψa := AtomSetImpl.inter Ψ1 Ψ');
+        (Ψ1 := Ψ1 ∖ Ψ') (Ψ2 := Ψ2 ∖ Ψ').
+      * eapply IHHc1 with (S := S1) (Ψa := Ψ1 ∩ Ψ');
           [ reflexivity | exact Hmon | exact Hrig | exact Hwf | exact Hαd
           | clear - Hdisj; fsetdec | clear - Hdisj; fsetdec
           | clear - Hdisj; fsetdec
           | clear - Hftag; fsetdec | exact Hwfq1 ].
-      * eapply IHHc2 with (S := S2) (Ψa := AtomSetImpl.inter Ψ2 Ψ');
+      * eapply IHHc2 with (S := S2) (Ψa := Ψ2 ∩ Ψ');
           [ reflexivity | exact Hmon | exact Hrig | exact Hwf | exact Hαd
           | clear - Hdisj; fsetdec | clear - Hdisj; fsetdec
           | clear - Hdisj; fsetdec
@@ -945,14 +945,14 @@ Proof.
         by (clear - H1 HΨfull HΨa Hεout; fsetdec).
       eapply ad_pat_consis__forall_inh_tagged with
         (L := L `union` Lw `union` dom Θ `union` singleton α)
-        (Ψ0 := AtomSetImpl.diff Ψ0 Ψ').
+        (Ψ0 := Ψ0 ∖ Ψ').
       * intros X HX.
         assert (HXα : α <> X) by (clear - HX; fsetdec).
         rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
           [ | exact HXα | apply pskl_to_uskl_lc; exact HlcPa ].
         specialize (H0 X ltac:(clear - HX; fsetdec)).
         eapply H0 with (S := open_uskl_wrt_uskl S9 (uskl_var_f X))
-                       (Ψa := AtomSetImpl.inter Ψ0 Ψ');
+                       (Ψa := Ψ0 ∩ Ψ');
           [ apply subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
               [ exact HXα | exact Hlcψa ]
           | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
@@ -1584,7 +1584,7 @@ Definition consis_split_transport (Θb : aenv) (Ψsup : atoms) (A B : uskl) :=
     a_wf_aenv Θ' ->
     Ψfull [=] Ψn `union` Ψna ->
     Ψna [<=] Ψsup ->
-    AtomSetImpl.inter Ψsup Ψn [=] empty ->
+    Ψsup ∩ Ψn [=] empty ->
     Θ' ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
     Ψn ⨟ Θ' ⊢ₛᵃ B ∼ Q.
 
@@ -1604,12 +1604,12 @@ Proof.
     simpl in Hwfq.
     inversion Hwfq as [ | | Θz Δz Pw1 Pw2 Hwfq1 Hwfq2 | | | ]; subst.
     eapply ad_pat_consis__arrow with
-      (Ψ1 := AtomSetImpl.diff Ψ1 Ψsup) (Ψ2 := AtomSetImpl.diff Ψ2 Ψsup).
-    + eapply Ht1 with (Ψna := AtomSetImpl.inter Ψ1 Ψsup);
+      (Ψ1 := Ψ1 ∖ Ψsup) (Ψ2 := Ψ2 ∖ Ψsup).
+    + eapply Ht1 with (Ψna := Ψ1 ∩ Ψsup);
         [ exact Hc1 | exact Hmon | exact Hwf
         | clear - Hdisj; fsetdec | clear - Hdisj; fsetdec
         | clear - Hdisj; fsetdec | exact Hwfq1 ].
-    + eapply Ht2 with (Ψna := AtomSetImpl.inter Ψ2 Ψsup);
+    + eapply Ht2 with (Ψna := Ψ2 ∩ Ψsup);
         [ exact Hc2 | exact Hmon | exact Hwf
         | clear - Hdisj; fsetdec | clear - Hdisj; fsetdec
         | clear - Hdisj; fsetdec | exact Hwfq2 ].
@@ -1694,10 +1694,10 @@ Proof.
       by (clear - H1 HΨf HΨa Hεout; fsetdec).
     eapply ad_pat_consis__forall_inh_tagged with
       (L := L `union` L0 `union` Lw `union` dom Θ)
-      (Ψ0 := AtomSetImpl.diff Ψ0 Ψsup).
+      (Ψ0 := Ψ0 ∖ Ψsup).
     + intros X HX.
       eapply (Ht X ltac:(clear - HX; fsetdec))
-        with (Ψna := AtomSetImpl.inter Ψ0 Ψsup);
+        with (Ψna := Ψ0 ∩ Ψsup);
         [ apply H; clear - HX; fsetdec
         | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
         | apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf ]
@@ -1749,7 +1749,7 @@ Proof.
       (L := L `union` L0 `union` Lw `union` dom Θ).
     intros X HX.
     eapply (Ht X ltac:(clear - HX; fsetdec))
-      with (Ψna := AtomSetImpl.inter Ψ0 Ψsup);
+      with (Ψna := Ψ0 ∩ Ψsup);
       [ apply H; clear - HX; fsetdec
       | intros x b Hb; unfold binds; simpl; right; apply Hmon; exact Hb
       | apply a_wf_aenv__tvar; [ clear - HX; fsetdec | exact Hwf ]
@@ -1938,7 +1938,7 @@ Lemma ad_pat_consis_precise_upre : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
   forall Ψsup,
   Ψrep [<=] Ψsup ->
-  AtomSetImpl.inter Ψsup (ftag_in_uskl R') [=] empty ->
+  Ψsup ∩ ftag_in_uskl R' [=] empty ->
   consis_split_transport Θb Ψsup R R'.
 Proof.
   intros Θb Ψrep R' R Hup; induction Hup;
@@ -1960,7 +1960,7 @@ Proof.
     apply (H0 X HX);
       [ exact HΨsup
       | match goal with
-        | |- AtomSetImpl.inter _
+        | |- _ ∩
                (ftag_in_uskl (open_uskl_wrt_uskl ?B _)) [=] _ =>
             pose proof (ftag_in_uskl_open_var B X) as Hov
         end; clear - Hftag Hov; fsetdec ].
@@ -1972,7 +1972,7 @@ Proof.
     apply (H0 X HX);
       [ exact HΨsup
       | match goal with
-        | |- AtomSetImpl.inter _
+        | |- _ ∩
                (ftag_in_uskl (open_uskl_wrt_uskl ?B _)) [=] _ =>
             pose proof (ftag_in_uskl_open_var B X) as Hov
         end; clear - Hftag Hov; fsetdec ].
@@ -1984,7 +1984,7 @@ Proof.
     apply (H0 X HX);
       [ clear - HΨsup H1; fsetdec
       | match goal with
-        | |- AtomSetImpl.inter _
+        | |- _ ∩
                (ftag_in_uskl (open_uskl_wrt_uskl ?B _)) [=] _ =>
             pose proof (ftag_in_uskl_open_var B X) as Hov
         end; clear - Hftag Hov; fsetdec ].
@@ -2011,14 +2011,14 @@ Proof.
   - (* tophole_remove *)
     intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
     apply ad_pat_consis__tophole_drop.
-    assert (Hftag' : AtomSetImpl.inter Ψsup (ftag_in_uskl R') [=] empty)
+    assert (Hftag' : Ψsup ∩ ftag_in_uskl R' [=] empty)
       by (clear - Hftag; fsetdec).
     exact (IHHup Ψsup HΨsup Hftag' Θ' Ψfull Ψn Ψna Q
              Hc Hmon Hwf HΨf HΨa Hdisj Hwfq).
   - (* flex_l *)
     intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
     eapply ad_pat_consis__flex_l; [ apply Hmon; exact H | ].
-    assert (Hftag' : AtomSetImpl.inter Ψsup
+    assert (Hftag' : Ψsup ∩
                        (ftag_in_uskl (ptyp_to_uskl_syn τ)) [=] empty)
       by (pose proof (ftag_in_uskl_ptyp_syn τ) as Hpt; clear - Hpt; fsetdec).
     exact (IHHup Ψsup HΨsup Hftag' Θ' Ψfull Ψn Ψna Q

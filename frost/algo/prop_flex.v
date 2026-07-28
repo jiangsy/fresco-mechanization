@@ -408,8 +408,8 @@ Proof.
     + intros Y HY.
       apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in HY.
       simpl in HY.
-      destruct (AtomSetImpl.union_1 HY) as [HY' | HY'].
-      * apply AtomSetImpl.singleton_1 in HY'; subst.
+      destruct (union_1 HY) as [HY' | HY'].
+      * apply singleton_1 in HY'; subst.
         left. unfold binds; left; reflexivity.
       * apply a_binds_tvar_weaken_cons; auto.
     + intros γ Hb. apply a_binds_tvar_weaken_cons; auto.
@@ -679,7 +679,7 @@ Proof.
   intros * Hwf; revert X; induction Hwf; intros Y HY; simpl in HY.
   - fsetdec.
   - assert (Y = X) by fsetdec. subst. auto.
-  - destruct (AtomSetImpl.union_1 HY); auto.
+  - destruct (union_1 HY); auto.
   - pick fresh Z for (L `union` ftvar_in_ptyp A `union` {{Y}}).
     assert (HZL : Z `notin` L) by fsetdec.
     assert (Hyz : Y <> Z) by fsetdec.

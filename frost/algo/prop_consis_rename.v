@@ -284,7 +284,7 @@ Proof.
     intros F Θ0 Θ1 Ξ α β τ P Q Hfl Hc IH F' Hcond.
     eapply a_assign__assign; [ exact Hfl | ].
     apply (IH (add β F') empty empty); [ | reflexivity | reflexivity ].
-    intros γ Hγ. apply AtomSetFacts.add_iff in Hγ.
+    intros γ Hγ. apply add_iff in Hγ.
     destruct Hγ as [-> | HγF'].
     + left. clear; fsetdec.
     + destruct (Hcond γ HγF') as [HinF | Hnd];
@@ -298,7 +298,7 @@ Proof.
     intros F Θ0 Θ1 Ξ α β P Hne Hni Ha IH F' Hcond.
     apply a_assign__skip; try assumption.
     apply IH.
-    intros γ Hγ. apply AtomSetFacts.add_iff in Hγ.
+    intros γ Hγ. apply add_iff in Hγ.
     destruct Hγ as [-> | HγF'].
     + left. clear; fsetdec.
     + destruct (Hcond γ HγF') as [HinF | Hnd];
@@ -308,7 +308,7 @@ Proof.
     intros F Θ0 Θ1 Ξ α β P Hni Ha IH F' Hcond.
     apply a_assign__skip_rigid; try assumption.
     apply IH.
-    intros γ Hγ. apply AtomSetFacts.add_iff in Hγ.
+    intros γ Hγ. apply add_iff in Hγ.
     destruct Hγ as [-> | HγF'].
     + left. clear; fsetdec.
     + destruct (Hcond γ HγF') as [HinF | Hnd];
@@ -318,7 +318,7 @@ Proof.
     intros F Θ0 Θ1 Ξ α x Q P Ha IH F' Hcond.
     apply a_assign__skip_tm_var.
     apply IH.
-    intros γ Hγ. apply AtomSetFacts.add_iff in Hγ.
+    intros γ Hγ. apply add_iff in Hγ.
     destruct Hγ as [-> | HγF'].
     + left. clear; fsetdec.
     + destruct (Hcond γ HγF') as [HinF | Hnd];
@@ -328,7 +328,7 @@ Proof.
     intros F Θ0 Θ1 Ξ α x Q P Ha IH F' Hcond.
     apply a_assign__skip_tm_skl.
     apply IH.
-    intros γ Hγ. apply AtomSetFacts.add_iff in Hγ.
+    intros γ Hγ. apply add_iff in Hγ.
     destruct Hγ as [-> | HγF'].
     + left. clear; fsetdec.
     + destruct (Hcond γ HγF') as [HinF | Hnd];
@@ -344,7 +344,7 @@ Proof.
     intros F Θ0 Θ1 γ τ α β Q Hfα Hfβ Hc IH F' Hcond.
     eapply a_unify__flex_assign; try eassumption.
     apply (IH (add γ F') empty empty); [ | reflexivity | reflexivity ].
-    intros δ Hδ. apply AtomSetFacts.add_iff in Hδ.
+    intros δ Hδ. apply add_iff in Hδ.
     destruct Hδ as [-> | HδF'].
     + left. clear; fsetdec.
     + destruct (Hcond δ HδF') as [HinF | Hnd];
@@ -354,7 +354,7 @@ Proof.
     intros F Θ0 Θ1 γ α β Hne1 Hne2 Hu IH F' Hcond.
     apply a_unify__flex_skip; try assumption.
     apply IH.
-    intros δ Hδ. apply AtomSetFacts.add_iff in Hδ.
+    intros δ Hδ. apply add_iff in Hδ.
     destruct Hδ as [-> | HδF'].
     + left. clear; fsetdec.
     + destruct (Hcond δ HδF') as [HinF | Hnd];
@@ -364,7 +364,7 @@ Proof.
     intros F Θ0 Θ1 c b α β Hb Hu IH F' Hcond.
     apply a_unify__skip_other; try assumption.
     apply IH.
-    intros δ Hδ. apply AtomSetFacts.add_iff in Hδ.
+    intros δ Hδ. apply add_iff in Hδ.
     destruct Hδ as [-> | HδF'].
     + left. clear; fsetdec.
     + destruct (Hcond δ HδF') as [HinF | Hnd];
@@ -538,7 +538,7 @@ Lemma disjoint_from_pointwise : forall (E G : aenv),
 Proof.
   intros * H. unfold disjoint.
   intros x Hx.
-  apply AtomSetFacts.inter_iff in Hx. destruct Hx as [H1 H2].
+  apply inter_iff in Hx. destruct Hx as [H1 H2].
   exfalso. exact (H x H1 H2).
 Qed.
 
@@ -615,7 +615,7 @@ Proof.
       assert (Hd : γ `in` dom Θ1 -> γ `in` dom (Ξ ++ Θ0)).
       { intro Hg1. apply Hprot; [ clear - HγF; fsetdec | exact Hg1 ]. }
       rewrite dom_app in Hd. clear - Hγd Hd.
-      apply AtomSetFacts.add_iff in Hγd.
+      apply add_iff in Hγd.
       destruct Hγd as [-> | Hγd]; [ fsetdec | ].
       pose proof (Hd Hγd). fsetdec.
   - (* depend *)
@@ -639,7 +639,7 @@ Proof.
       clear - Hin Hβni. fsetdec.
     + intros γ HγF Hγd. simpl dom in Hγd.
       repeat rewrite dom_app in *. simpl dom in *.
-      apply AtomSetFacts.add_iff in Hγd.
+      apply add_iff in Hγd.
       destruct Hγd as [-> | Hγd]; [ fsetdec | ].
       pose proof (Hprot γ ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       rewrite dom_app in Hin'. clear - Hin'. fsetdec.
@@ -654,7 +654,7 @@ Proof.
       clear - Hin Hβni. fsetdec.
     + intros γ HγF Hγd. simpl dom in Hγd.
       repeat rewrite dom_app in *. simpl dom in *.
-      apply AtomSetFacts.add_iff in Hγd.
+      apply add_iff in Hγd.
       destruct Hγd as [-> | Hγd]; [ fsetdec | ].
       pose proof (Hprot γ ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       rewrite dom_app in Hin'. clear - Hin'. fsetdec.
@@ -669,7 +669,7 @@ Proof.
       clear - Hin Hxni. fsetdec.
     + intros γ HγF Hγd. simpl dom in Hγd.
       repeat rewrite dom_app in *. simpl dom in *.
-      apply AtomSetFacts.add_iff in Hγd.
+      apply add_iff in Hγd.
       destruct Hγd as [-> | Hγd]; [ fsetdec | ].
       pose proof (Hprot γ ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       rewrite dom_app in Hin'. clear - Hin'. fsetdec.
@@ -684,7 +684,7 @@ Proof.
       clear - Hin Hxni. fsetdec.
     + intros γ HγF Hγd. simpl dom in Hγd.
       repeat rewrite dom_app in *. simpl dom in *.
-      apply AtomSetFacts.add_iff in Hγd.
+      apply add_iff in Hγd.
       destruct Hγd as [-> | Hγd]; [ fsetdec | ].
       pose proof (Hprot γ ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       rewrite dom_app in Hin'. clear - Hin'. fsetdec.
@@ -708,7 +708,7 @@ Proof.
       intro Hγ1. pose proof (Hprot γ0 ltac:(clear; fsetdec) Hγ1) as Hin.
       clear - Hin Hγni. fsetdec.
     + intros γ HγF Hγd. simpl dom in *.
-      apply AtomSetFacts.add_iff in Hγd.
+      apply add_iff in Hγd.
       destruct Hγd as [-> | Hγd]; [ fsetdec | ].
       pose proof (Hprot γ ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       clear - Hin'. fsetdec.
@@ -722,7 +722,7 @@ Proof.
       intro Hγ1. pose proof (Hprot γ0 ltac:(clear; fsetdec) Hγ1) as Hin.
       clear - Hin Hγni. fsetdec.
     + intros γ HγF Hγd. simpl dom in *.
-      apply AtomSetFacts.add_iff in Hγd.
+      apply add_iff in Hγd.
       destruct Hγd as [-> | Hγd]; [ fsetdec | ].
       pose proof (Hprot γ ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       clear - Hin'. fsetdec.
@@ -736,7 +736,7 @@ Proof.
       intro Hc1. pose proof (Hprot c ltac:(clear; fsetdec) Hc1) as Hin.
       clear - Hin Hcni. fsetdec.
     + intros γ HγF Hγd. simpl dom in *.
-      apply AtomSetFacts.add_iff in Hγd.
+      apply add_iff in Hγd.
       destruct Hγd as [-> | Hγd]; [ fsetdec | ].
       pose proof (Hprot γ ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       clear - Hin'. fsetdec.
@@ -827,14 +827,14 @@ Qed.
 
 (** Renaming inside an atom set: [α ↦ Y], other atoms unchanged. *)
 Definition rn_set (Y α : atom) (s : atoms) : atoms :=
-  if AtomSetImpl.mem α s then add Y (remove α s) else s.
+  if mem α s then add Y (remove α s) else s.
 
 Lemma rn_set_notin : forall Y α s,
   α `notin` s -> rn_set Y α s [=] s.
 Proof.
   intros. unfold rn_set.
-  destruct (AtomSetImpl.mem α s) eqn:Hm.
-  - apply AtomSetFacts.mem_iff in Hm. contradiction.
+  destruct (mem α s) eqn:Hm.
+  - apply mem_iff in Hm. contradiction.
   - reflexivity.
 Qed.
 
@@ -842,23 +842,23 @@ Lemma rn_set_add_same : forall Y α s,
   α `notin` s -> rn_set Y α (add α s) [=] add Y s.
 Proof.
   intros. unfold rn_set.
-  destruct (AtomSetImpl.mem α (add α s)) eqn:Hm.
+  destruct (mem α (add α s)) eqn:Hm.
   - clear - H. fsetdec.
-  - apply AtomSetFacts.not_mem_iff in Hm. exfalso. apply Hm. fsetdec.
+  - apply not_mem_iff in Hm. exfalso. apply Hm. fsetdec.
 Qed.
 
 Lemma rn_set_add_other : forall Y α β s,
   β <> α -> rn_set Y α (add β s) [=] add β (rn_set Y α s).
 Proof.
   intros. unfold rn_set.
-  destruct (AtomSetImpl.mem α (add β s)) eqn:Hm1;
-    destruct (AtomSetImpl.mem α s) eqn:Hm2.
+  destruct (mem α (add β s)) eqn:Hm1;
+    destruct (mem α s) eqn:Hm2.
   - clear - H. fsetdec.
-  - apply AtomSetFacts.mem_iff in Hm1.
-    apply AtomSetFacts.not_mem_iff in Hm2.
+  - apply mem_iff in Hm1.
+    apply not_mem_iff in Hm2.
     exfalso. clear - Hm1 Hm2 H. fsetdec.
-  - apply AtomSetFacts.not_mem_iff in Hm1.
-    apply AtomSetFacts.mem_iff in Hm2.
+  - apply not_mem_iff in Hm1.
+    apply mem_iff in Hm2.
     exfalso. clear - Hm1 Hm2. fsetdec.
   - reflexivity.
 Qed.
@@ -866,10 +866,10 @@ Qed.
 (** The [Ghost]/[GhostR] side condition transports through the rename:
     if [Δ] avoids [ftv P] then the renamed [Δ] avoids the renamed [ftv]. *)
 Lemma rn_set_inter_subst_empty : forall Y α Δ P,
-  AtomSetImpl.inter Δ (ftvar_in_pskl P) [=] empty ->
+  Δ ∩ ftvar_in_pskl P [=] empty ->
   Y `notin` Δ ->
   Y `notin` ftvar_in_pskl P ->
-  AtomSetImpl.inter (rn_set Y α Δ)
+  (rn_set Y α Δ) ∩
     (ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f Y) α P)) [=] empty.
 Proof.
   intros * Hi HYΔ HYP.
@@ -884,8 +884,8 @@ Proof.
   - (* α does not occur: the substitution is the identity *)
     rewrite subst_pskl_in_pskl_fresh_eq; [ | exact HαP ].
     unfold rn_set.
-    destruct (AtomSetImpl.mem α Δ) eqn:Hm.
-    + apply AtomSetFacts.mem_iff in Hm.
+    destruct (mem α Δ) eqn:Hm.
+    + apply mem_iff in Hm.
       clear - Hi HYP. fsetdec.
     + exact Hi.
 Qed.
@@ -1184,7 +1184,7 @@ Proof.
       rewrite subst_pskl_in_pskl_fresh_eq; [ | exact Hni ].
       simpl. apply a_assign__skip_rigid; [ exact HYP | ].
       eapply (auc_compat_assign Ha).
-      intros γ Hγ. apply AtomSetFacts.add_iff in Hγ.
+      intros γ Hγ. apply add_iff in Hγ.
       destruct Hγ as [-> | HγF].
       * right. clear - HYo. simpl dom in HYo. fsetdec.
       * left. clear - HγF. fsetdec.
@@ -1242,7 +1242,7 @@ Proof.
       exists Θ1. split; [ reflexivity | ].
       apply a_unify__skip_other; [ left; reflexivity | ].
       eapply (auc_compat_unify Hun).
-      intros γ Hγ. apply AtomSetFacts.add_iff in Hγ.
+      intros γ Hγ. apply add_iff in Hγ.
       destruct Hγ as [-> | HγF].
       * right. clear - HYo. simpl dom in HYo. fsetdec.
       * left. clear - HγF. fsetdec.

@@ -360,7 +360,7 @@ Inductive ad_refine_syn_f (F : atoms) : aenv -> atoms -> bskl -> bskl -> Prop :=
          (open_bskl_wrt_bskl P (bskl_var_f X))) ->
     ad_refine_syn_f F Θ Δ (bskl_all_inh Q) (bskl_all_inh P)
 | ad_refine_syn_f__hole : forall Θ Δ P,
-    AtomSetImpl.inter F (ftvar_in_pskl P) [=] empty ->
+    F ∩ ftvar_in_pskl P [=] empty ->
     Θ ⨟ empty ⊢ₚₛᵃ P ->
     ad_refine_syn_f F Θ Δ bskl_hole (pskl_to_bskl_syn P)
 | ad_refine_syn_f__tophole_remove : forall Θ Δ Q P,
@@ -401,7 +401,7 @@ Inductive ad_refine_pskl_f (F : atoms) : aenv -> atoms -> pskl -> pskl -> Prop :
          (open_pskl_wrt_pskl Q (pskl_var_f X))) ->
     ad_refine_pskl_f F Θ Δ (pskl_all_syn P) (pskl_all_syn Q)
 | ad_refine_pskl_f__hole : forall Θ Δ Q,
-    AtomSetImpl.inter F (ftvar_in_pskl Q) [=] empty ->
+    F ∩ ftvar_in_pskl Q [=] empty ->
     Θ ⨟ empty ⊢ₚₛᵃ Q ->
     ad_refine_pskl_f F Θ Δ pskl_hole Q
 | ad_refine_pskl_f__tophole_remove : forall Θ Δ P Q,
@@ -1151,9 +1151,9 @@ Lemma ad_pat_consis_refine_syn_f_mono : forall Ψ Θ S Q,
   a_wf_aenv Θ ->
   mono_bskl Q ->
   forall F Δ,
-  AtomSetImpl.inter F (ftvar_in_bskl Q) [=] empty ->
+  F ∩ ftvar_in_bskl Q [=] empty ->
   (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-     AtomSetImpl.inter F (ftvar_in_ptyp τ) [=] empty) ->
+     F ∩ ftvar_in_ptyp τ [=] empty) ->
   ad_refine_syn_f F Θ Δ (pskl_to_bskl_inh (uskl_to_pskl S)) Q.
 Proof.
   intros Ψ Θ S Q H Hwf; induction H; intros HmQ F Δ HFQ HFdefs; simpl;
@@ -1193,9 +1193,9 @@ Lemma ad_pat_consis_refine_pskl_f_mono : forall Ψ Θ S Q,
   a_wf_aenv Θ ->
   mono_bskl Q ->
   forall F Δ,
-  AtomSetImpl.inter F (ftvar_in_bskl Q) [=] empty ->
+  F ∩ ftvar_in_bskl Q [=] empty ->
   (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-     AtomSetImpl.inter F (ftvar_in_ptyp τ) [=] empty) ->
+     F ∩ ftvar_in_ptyp τ [=] empty) ->
   ad_refine_pskl_f F Θ Δ (uskl_to_pskl S) (bskl_to_pskl Q).
 Proof.
   intros Ψ Θ S Q H Hwf; induction H; intros HmQ F Δ HFQ HFdefs; simpl;
@@ -1445,13 +1445,13 @@ Qed.
 (** No definition mentions a Δ-variable. *)
 Definition no_flex_dep (Δ : atoms) (Θ : aenv) : Prop :=
   forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-  AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty.
+  Δ ∩ ftvar_in_ptyp τ [=] empty.
 
 (** Δ-names sit above (and differ from) every non-rigid entry. *)
 Definition flex_above_free (Δ : atoms) (Θ : aenv) : Prop :=
   forall Θ1 β (b : abind) Θ2, Θ = Θ1 ++ (β, b) :: Θ2 ->
   b <> abind_tvar ->
-  AtomSetImpl.inter Δ (add β (dom Θ2)) [=] empty.
+  Δ ∩ (add β (dom Θ2)) [=] empty.
 
 Lemma no_flex_dep_cong : forall Δ Δ' Θ,
   Δ [=] Δ' -> no_flex_dep Δ Θ -> no_flex_dep Δ' Θ.
@@ -1485,13 +1485,13 @@ Qed.
 Lemma faf_head : forall Δ (c : atom) (b : abind) Θ,
   flex_above_free Δ ((c ~ b) ++ Θ) ->
   b <> abind_tvar ->
-  AtomSetImpl.inter Δ (add c (dom Θ)) [=] empty.
+  Δ ∩ (add c (dom Θ)) [=] empty.
 Proof.
   intros * H Hne. apply (H nil c b Θ); auto.
 Qed.
 
 Lemma faf_cons : forall Δ (c : atom) (b : abind) Θ,
-  (b <> abind_tvar -> AtomSetImpl.inter Δ (add c (dom Θ)) [=] empty) ->
+  (b <> abind_tvar -> Δ ∩ (add c (dom Θ)) [=] empty) ->
   flex_above_free Δ Θ ->
   flex_above_free Δ ((c ~ b) ++ Θ).
 Proof.
@@ -1503,8 +1503,8 @@ Qed.
 
 (** Prepending a block of Δ-free entries preserves the invariant. *)
 Lemma faf_app : forall Δ (E : aenv) Θ,
-  AtomSetImpl.inter Δ (dom E) [=] empty ->
-  AtomSetImpl.inter Δ (dom Θ) [=] empty ->
+  Δ ∩ dom E [=] empty ->
+  Δ ∩ dom Θ [=] empty ->
   flex_above_free Δ Θ ->
   flex_above_free Δ (E ++ Θ).
 Proof.
@@ -1524,7 +1524,7 @@ Proof.
   intros * Hin Hfr Θ1 β b Θ2 Heq Hne.
   destruct Θ1 as [ | [c1 b1] Θ1' ]; simpl in Heq; inversion Heq; subst.
   - congruence.
-  - assert (Hβ : AtomSetImpl.inter Δ (add β (dom Θ2)) [=] empty)
+  - assert (Hβ : Δ ∩ (add β (dom Θ2)) [=] empty)
       by (eapply Hin; eauto).
     rewrite dom_app in Hfr. simpl in Hfr.
     clear - Hβ Hfr. fsetdec.
@@ -1611,7 +1611,7 @@ Proof.
   intros * Hwf Hnd Hfr β τ Hb.
   destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
     [ discriminate | ].
-  assert (Hd : AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty)
+  assert (Hd : Δ ∩ ftvar_in_ptyp τ [=] empty)
     by (eapply Hnd; eauto).
   assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
     by (eapply a_wf_aenv_def_ftv_dom; eauto).
@@ -1651,11 +1651,11 @@ Qed.
 
 Lemma inter_empty_pointwise : forall Δ S,
   (forall X, X `in` Δ -> X `notin` S) ->
-  AtomSetImpl.inter Δ S [=] empty.
+  Δ ∩ S [=] empty.
 Proof.
   intros Δ S H X. split; intro HX.
-  - assert (H1 := AtomSetImpl.inter_1 HX).
-    assert (H2 := AtomSetImpl.inter_2 HX).
+  - assert (H1 := inter_1 HX).
+    assert (H2 := inter_2 HX).
     exfalso. apply (H X H1 H2).
   - exfalso. clear - HX. fsetdec.
 Qed.
@@ -1946,7 +1946,7 @@ Proof.
   intros Θ Δ P H; induction H; intros Y HY; simpl in HY.
   - fsetdec.
   - assert (Y = X) by fsetdec. subst. auto.
-  - destruct (AtomSetImpl.union_1 HY); auto.
+  - destruct (union_1 HY); auto.
   - pick fresh Z for (L `union` ftvar_in_pskl P `union` Δ `union` {{Y}}
                         `union` dom Θ).
     assert (HZL : Z `notin` L) by fsetdec.
@@ -2427,12 +2427,12 @@ Proof.
         [ exact Hc | exact Hwf | reflexivity | exact Hm1 | exact Hm2
         | | exact H1l | exact H2l ].
       intros X HX; simpl in HX.
-      destruct (AtomSetImpl.union_1 HX); [ apply Hv1 | apply Hv2 ]; auto.
+      destruct (union_1 HX); [ apply Hv1 | apply Hv2 ]; auto.
     + eapply consis_arrow_join_transport with (B1 := A1) (B2 := A2);
         [ exact Hc | exact Hwf | reflexivity | exact HmB1 | exact HmB2
         | | exact H1r | exact H2r ].
       intros X HX; simpl in HX.
-      destruct (AtomSetImpl.union_1 HX); [ apply HvB1 | apply HvB2 ]; auto.
+      destruct (union_1 HX); [ apply HvB1 | apply HvB2 ]; auto.
   - (* all : a monotype is never a ∀ *)
     inversion Hm.
 Qed.
@@ -2523,7 +2523,7 @@ Definition assign_sound_post (F : atoms) (Θ0 Ξ : aenv) (α : atom)
   (forall γ, γ `in` dom Θ1 -> γ `in` dom (Ξ ++ Θ0) \/ γ `notin` F) /\
   (forall Δ,
      no_flex_dep Δ (Ξ ++ Θ0) -> flex_above_free Δ Θ0 ->
-     AtomSetImpl.inter Δ (dom Ξ) [=] empty ->
+     Δ ∩ dom Ξ [=] empty ->
      Δ [<=] (F `union` dom Θ0 `union` dom Ξ) ->
      (forall X, X `in` Δ -> X `notin` dom Θ0 -> X `notin` ftvar_in_pskl P) ->
      no_flex_dep Δ Θ1 /\ flex_above_free Δ Θ1 /\
@@ -2624,7 +2624,7 @@ Proof.
       apply mono_ptyp_wf; auto.
       intros X HX.
       pose proof (a_guess_mono_ftv Hg HX) as Hin.
-      destruct (AtomSetImpl.union_1 Hin) as [HXP | HXβs].
+      destruct (union_1 Hin) as [HXP | HXβs].
       - assert (HXα : X <> α) by (intro; subst; auto).
         assert (Htv : a_binds_tvar X (Ξ ++ Θ0)).
         { eapply a_binds_tvar_strip_mid with
@@ -2646,14 +2646,14 @@ Proof.
     { clear. repeat rewrite dom_app. simpl. fsetdec. }
     split.
     { intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
-      destruct (AtomSetImpl.union_1 Hγ) as [Hα | Hrest];
+      destruct (union_1 Hγ) as [Hα | Hrest];
         [ left; clear - Hα; fsetdec | ].
-      destruct (AtomSetImpl.union_1 Hrest) as [Hβs | Hqt];
+      destruct (union_1 Hrest) as [Hβs | Hqt];
         [ | left; clear - Hqt; fsetdec ].
       right. pose proof (Hfr γ Hβs) as Hh. clear - Hh. fsetdec. }
     split.
     { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : AtomSetImpl.inter Δ (add α (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add α (dom Θ0)) [=] empty)
         by (apply (faf_head Hfaf); discriminate).
       assert (Hft : forall X, X `in` Δ -> X `notin` ftvar_in_pskl P).
       { intros X HXΔ. apply HP; auto. simpl.
@@ -2665,7 +2665,7 @@ Proof.
         assert (HXcov := Hcov X HXΔ).
         simpl in HXcov. repeat rewrite dom_app in *.
         clear - HXfr HXcov. fsetdec. }
-      assert (Hτ : AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty).
+      assert (Hτ : Δ ∩ ftvar_in_ptyp τ [=] empty).
       { apply inter_empty_pointwise. intros X HXΔ HXτ.
         pose proof (a_guess_mono_ftv Hg HXτ) as Hin.
         assert (HnP : X `notin` ftvar_in_pskl P) by (apply Hft; auto).
@@ -2754,7 +2754,7 @@ Proof.
       assert (HX' : X `in` (ftvar_in_ptyp τ `union`
                             remove β (ftvar_in_ptyp (ptyp_var_f α))))
         by (clear - HX Hup; fsetdec).
-      destruct (AtomSetImpl.union_1 HX') as [Hτ | Hα].
+      destruct (union_1 HX') as [Hτ | Hα].
       - assert (Htv : a_binds_tvar X Θ0)
           by (eapply a_wf_ptyp_ftv_tvarish; eauto).
         destruct Htv as [Hb | [Hb | [τ0 Hb]]];
@@ -2817,7 +2817,7 @@ Proof.
     split.
     { clear - Hnew.
       intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
-      destruct (AtomSetImpl.union_1 Hγ) as [Hβ' | Hrest];
+      destruct (union_1 Hγ) as [Hβ' | Hrest];
         [ left; clear - Hβ'; fsetdec | ].
       destruct (Hnew γ Hrest) as [Hin | Hout];
         [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
@@ -2825,9 +2825,9 @@ Proof.
     (* 5. the ∀Δ invariant *)
     split.
     { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add β (dom Θ0)) [=] empty)
         by (apply (faf_head Hfaf); discriminate).
-      assert (Hτ0 : AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty)
+      assert (Hτ0 : Δ ∩ ftvar_in_ptyp τ [=] empty)
         by (apply (Hnd β τ); exact Hbβ).
       destruct (Hinv Δ) as [IH1 [IH2 IH3]].
       { intros β' τ' Hb. apply (Hnd β' τ').
@@ -2961,7 +2961,7 @@ Proof.
         | right; exact Hout ]. }
     split.
     { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add β (dom Θ0)) [=] empty)
         by (apply (faf_head Hfaf); discriminate).
       destruct (Hinv Δ) as [IH1 [IH2 IH3]].
       { simpl_env. exact Hnd. }
@@ -3011,14 +3011,14 @@ Proof.
     split.
     { clear - Hnew.
       intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
-      destruct (AtomSetImpl.union_1 Hγ) as [Hβ' | Hrest];
+      destruct (union_1 Hγ) as [Hβ' | Hrest];
         [ left; clear - Hβ'; fsetdec | ].
       destruct (Hnew γ Hrest) as [Hin | Hout];
         [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
         | right; clear - Hout; fsetdec ]. }
     split.
     { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add β (dom Θ0)) [=] empty)
         by (apply (faf_head Hfaf); discriminate).
       destruct (Hinv Δ) as [IH1 [IH2 IH3]].
       { intros β' τ' Hb. apply (Hnd β' τ').
@@ -3082,7 +3082,7 @@ Proof.
     split.
     { clear - Hnew.
       intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
-      destruct (AtomSetImpl.union_1 Hγ) as [Hβ' | Hrest];
+      destruct (union_1 Hγ) as [Hβ' | Hrest];
         [ left; clear - Hβ'; fsetdec | ].
       destruct (Hnew γ Hrest) as [Hin | Hout];
         [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
@@ -3158,14 +3158,14 @@ Proof.
     split.
     { clear - Hnew.
       intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
-      destruct (AtomSetImpl.union_1 Hγ) as [Hx' | Hrest];
+      destruct (union_1 Hγ) as [Hx' | Hrest];
         [ left; clear - Hx'; fsetdec | ].
       destruct (Hnew γ Hrest) as [Hin | Hout];
         [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
         | right; clear - Hout; fsetdec ]. }
     split.
     { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : AtomSetImpl.inter Δ (add x (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add x (dom Θ0)) [=] empty)
         by (apply (faf_head Hfaf); discriminate).
       destruct (Hinv Δ) as [IH1 [IH2 IH3]].
       { intros β' τ' Hb. apply (Hnd β' τ').
@@ -3246,14 +3246,14 @@ Proof.
     split.
     { clear - Hnew.
       intros γ Hγ. repeat rewrite dom_app in *; simpl in *.
-      destruct (AtomSetImpl.union_1 Hγ) as [Hx' | Hrest];
+      destruct (union_1 Hγ) as [Hx' | Hrest];
         [ left; clear - Hx'; fsetdec | ].
       destruct (Hnew γ Hrest) as [Hin | Hout];
         [ left; rewrite dom_app in Hin; clear - Hin; fsetdec
         | right; clear - Hout; fsetdec ]. }
     split.
     { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : AtomSetImpl.inter Δ (add x (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add x (dom Θ0)) [=] empty)
         by (apply (faf_head Hfaf); discriminate).
       destruct (Hinv Δ) as [IH1 [IH2 IH3]].
       { intros β' τ' Hb. apply (Hnd β' τ').
@@ -3333,7 +3333,7 @@ Proof.
     split; [ intros x Hx; left; simpl in *; exact Hx | ].
     split.
     { intros Δ Hnd Hfa Hcov.
-      assert (Hhd : AtomSetImpl.inter Δ (add α (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add α (dom Θ0)) [=] empty)
         by (apply (faf_head Hfa); discriminate).
       split; [ | split ].
       - intros β' τ' Hb.
@@ -3382,7 +3382,7 @@ Proof.
     split; [ intros x Hx; left; simpl in *; exact Hx | ].
     split.
     { intros Δ Hnd Hfa Hcov.
-      assert (Hhd : AtomSetImpl.inter Δ (add β (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add β (dom Θ0)) [=] empty)
         by (apply (faf_head Hfa); discriminate).
       split; [ | split ].
       - intros β' τ' Hb.
@@ -3413,7 +3413,7 @@ Proof.
       assert (HX' : X `in` (ftvar_in_ptyp τ `union`
                             remove γ (ftvar_in_ptyp (ptyp_var_f δ))))
         by (clear - HX Hup; fsetdec).
-      destruct (AtomSetImpl.union_1 HX') as [Hτ | Hδ]; [ auto | ].
+      destruct (union_1 HX') as [Hτ | Hδ]; [ auto | ].
       simpl in Hδ.
       assert (HXδ : X = δ) by (clear - Hδ; fsetdec).
       assert (HXγ : X <> γ) by (clear - Hδ; fsetdec).
@@ -3452,9 +3452,9 @@ Proof.
         | right; clear - Hout; fsetdec ]. }
     split.
     { intros Δ Hnd Hfa Hcov.
-      assert (Hhd : AtomSetImpl.inter Δ (add γ (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add γ (dom Θ0)) [=] empty)
         by (apply (faf_head Hfa); discriminate).
-      assert (Hτfree : AtomSetImpl.inter Δ (ftvar_in_ptyp τ) [=] empty)
+      assert (Hτfree : Δ ∩ ftvar_in_ptyp τ [=] empty)
         by (apply (Hnd γ τ); unfold binds; left; reflexivity).
       assert (Hsubfree : forall δ,
           a_flex_tvar ((γ ~ abind_flex_mono_def τ) ++ Θ0) δ ->
@@ -3534,7 +3534,7 @@ Proof.
         | right; clear - Hout; fsetdec ]. }
     split.
     { intros Δ Hnd Hfa Hcov.
-      assert (Hhd : AtomSetImpl.inter Δ (add γ (dom Θ0)) [=] empty)
+      assert (Hhd : Δ ∩ (add γ (dom Θ0)) [=] empty)
         by (apply (faf_head Hfa); discriminate).
       destruct (Hinv Δ) as [Hnd1 [Hfa1 Hbk1]].
       { eapply no_flex_dep_tail; eauto. }
@@ -3609,7 +3609,7 @@ Proof.
         destruct Hb as [Hb2 | [[Qb Hb2] | [Qb Hb2]]]; subst; congruence.
       - apply faf_cons; [ | exact Hfa1 ].
         intros Hne.
-        assert (Hhd : AtomSetImpl.inter Δ (add c (dom Θ0)) [=] empty)
+        assert (Hhd : Δ ∩ (add c (dom Θ0)) [=] empty)
           by (apply (faf_head Hfa); exact Hne).
         apply inter_empty_pointwise. intros X HXΔ HXin.
         assert (HXc : X <> c) by (clear - Hhd HXΔ; fsetdec).
@@ -4536,7 +4536,7 @@ Lemma a_assign_preserves_inv : forall F Θ0 Ξ α P Θ1 Δ,
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
   no_flex_dep Δ (Ξ ++ Θ0) ->
   flex_above_free Δ Θ0 ->
-  AtomSetImpl.inter Δ (dom Ξ) [=] empty ->
+  Δ ∩ dom Ξ [=] empty ->
   Δ [<=] (F `union` dom Θ0 `union` dom Ξ) ->
   (forall X, X `in` Δ -> X `notin` dom Θ0 -> X `notin` ftvar_in_pskl P) ->
   no_flex_dep Δ Θ1 /\

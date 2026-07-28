@@ -47,8 +47,8 @@ Lemma d_wf_ptyp_ftvar : forall Γ A,
 Proof.
   intros Γ A H. induction H; intros Y HY; simpl in HY.
   - fsetdec.
-  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
-  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY]; auto.
+  - apply singleton_1 in HY. subst. assumption.
+  - apply union_1 in HY. destruct HY as [HY | HY]; auto.
   - pick fresh X for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
     assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f X))).
     { eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower. eassumption. }
@@ -358,8 +358,8 @@ Proof.
       intros Y HY; apply Hcov; simpl; fsetdec.
   - inst_cofinites_for d_wf_ptyp__all. intros X HX. apply H0. intros Y HY.
     apply ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper in HY. simpl in HY.
-    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
-    + apply AtomSetImpl.singleton_1 in HY. subst. simpl_env. auto.
+    apply union_1 in HY. destruct HY as [HY | HY].
+    + apply singleton_1 in HY. subst. simpl_env. auto.
     + apply binds_app_iff. right. apply Hcov. assumption.
 Qed.
 

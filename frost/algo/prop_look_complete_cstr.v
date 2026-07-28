@@ -713,7 +713,7 @@ Proof.
       injection HeqSubj as HeqR1 HeqR2.
       assert (HmiQ1 : bskl_monoish Q1) by (inversion Hmi; assumption).
       assert (HmiQ2 : bskl_monoish Q2) by (inversion Hmi; assumption).
-      simpl in Hα; apply AtomSetImpl.union_1 in Hα; destruct Hα as [Hα | Hα].
+      simpl in Hα; apply union_1 in Hα; destruct Hα as [Hα | Hα].
       * eapply IHad_pat_consis1;
           [ exact HwfΘ | exact HmiQ1 | exact HeqR1 | exact Htsk | exact Hα ].
       * eapply IHad_pat_consis2;
@@ -1631,7 +1631,7 @@ Theorem a_lookeq_solve_complete :
   ftvar_in_uskl S [<=] add α (dom Θ0) ->   (* S scoped at Θ0 + the lookup var α (wf) *)
   lc_uskl S ->                             (* S is a well-formed (locally-closed) skeleton *)
   a_tags_sort NM Ψ' ψa ->                  (* Θ ⊢^N Ψ'{syn ψa} *)
-  AtomSetImpl.inter (ftag_in_uskl S) Ψ' [=] empty ->  (* S's tags ⊥ ψa's tags Ψ' *)
+  (ftag_in_uskl S) ∩ Ψ' [=] empty ->  (* S's tags ⊥ ψa's tags Ψ' *)
   Ψi `union` Ψa [<=] Ψ' ->                 (* Ψi, Ψa ⊆ Ψ' *)
   delta_def_fresh Δ Θ ->                   (* paper's implicit Δ-wf (feeds P6-Cv) *)
   Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->      (* Δ|Θ ⊢ θPi ⊑ᵖ[Ψi] ψa *)
@@ -2010,7 +2010,7 @@ Proof.
         destruct (a_wf_pskl_arrow_inv HwfP0) as [HwfP01 HwfP02].
         pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
         (* --- tag algebra: Ψa = (Ψ1∩Ψ') ∪ (Ψ2∩Ψ') --- *)
-        assert (HΨa : Ψa [=] union (AtomSetImpl.inter Ψ1 Ψ') (AtomSetImpl.inter Ψ2 Ψ'))
+        assert (HΨa : Ψa [=] union (Ψ1 ∩ Ψ') (Ψ2 ∩ Ψ'))
           by (clear - HΨs1 HΨs2 Hsub H6 Hdisj; fsetdec).
         assert (HΨ1sub : Ψ1 [<=] union (ftag_in_uskl Sa) Ψ').
         { pose proof (ad_pat_consis_ftag_sub H1) as Hf1.
@@ -2026,19 +2026,19 @@ Proof.
           by (clear - HscopeS; simpl in HscopeS; fsetdec).
         assert (HscopeSb : ftvar_in_uskl Sb [<=] add α (dom Θ0))
           by (clear - HscopeS; simpl in HscopeS; fsetdec).
-        assert (HdisjSa : AtomSetImpl.inter (ftag_in_uskl Sa) Ψ' [=] empty)
+        assert (HdisjSa : (ftag_in_uskl Sa) ∩ Ψ' [=] empty)
           by (clear - Hdisj; simpl in Hdisj; fsetdec).
-        assert (HdisjSb : AtomSetImpl.inter (ftag_in_uskl Sb) Ψ' [=] empty)
+        assert (HdisjSb : (ftag_in_uskl Sb) ∩ Ψ' [=] empty)
           by (clear - Hdisj; simpl in Hdisj; fsetdec).
         assert (Hml : size_uskl Sa + size_pskl P01 <= n) by (cbn in Hn; lia).
         assert (Hmr : size_uskl Sb + size_pskl P02 <= n) by (cbn in Hn; lia).
-        assert (HsubL : union Ψi (AtomSetImpl.inter Ψ1 Ψ') [<=] Ψ')
+        assert (HsubL : union Ψi (Ψ1 ∩ Ψ') [<=] Ψ')
           by (clear - Hsub; fsetdec).
-        assert (HΨs1L : Ψ1 [<=] union (ftag_in_uskl Sa) (AtomSetImpl.inter Ψ1 Ψ'))
+        assert (HΨs1L : Ψ1 [<=] union (ftag_in_uskl Sa) (Ψ1 ∩ Ψ'))
           by (clear - HΨ1sub; fsetdec).
-        assert (HΨs2L : AtomSetImpl.inter Ψ1 Ψ' [<=] Ψ1) by (clear; fsetdec).
+        assert (HΨs2L : Ψ1 ∩ Ψ' [<=] Ψ1) by (clear; fsetdec).
         (* --- LEFT IH on Sa / P01 --- *)
-        edestruct (IHn NM Θ0 Θ θ Δ Ψ' Ψi (AtomSetImpl.inter Ψ1 Ψ') Ψ1 ψa Q1
+        edestruct (IHn NM Θ0 Θ θ Δ Ψ' Ψi (Ψ1 ∩ Ψ') Ψ1 ψa Q1
                      (uskl_to_pskl Sa) P01 Pi Sa α
                      Hml HwfΘ HwfΘ0 HwfP01 HwfPi Hθ HαΘ HαΘ0 eq_refl
                      HscopeSa HlcSa Htags HdisjSa HsubL Hdfresh Hpre HΨs1L HΨs2L H1 HwfSubA Href1)
@@ -2063,18 +2063,18 @@ Proof.
           by (rewrite dom_app; clear - HαΞ1 HαΘ0; fsetdec).
         assert (HscopeSbR : ftvar_in_uskl Sb [<=] add α (dom (Ξc1 ++ Θ0)))
           by (rewrite dom_app; clear - HscopeSb; fsetdec).
-        assert (HsubR : union (union Ψi (AtomSetImpl.inter Ψ1 Ψ'))
-                              (AtomSetImpl.inter Ψ2 Ψ') [<=] Ψ')
+        assert (HsubR : union (union Ψi (Ψ1 ∩ Ψ'))
+                              (Ψ2 ∩ Ψ') [<=] Ψ')
           by (clear - Hsub; fsetdec).
-        assert (HΨs1R : Ψ2 [<=] union (ftag_in_uskl Sb) (AtomSetImpl.inter Ψ2 Ψ'))
+        assert (HΨs1R : Ψ2 [<=] union (ftag_in_uskl Sb) (Ψ2 ∩ Ψ'))
           by (clear - HΨ2sub; fsetdec).
-        assert (HΨs2R : AtomSetImpl.inter Ψ2 Ψ' [<=] Ψ2) by (clear; fsetdec).
+        assert (HΨs2R : Ψ2 ∩ Ψ' [<=] Ψ2) by (clear; fsetdec).
         assert (HwfP02R : (Ξc1 ++ Θ0) ⨟ empty ⊢ₚₛᵃ P02)
           by (eapply a_wf_pskl_weaken; [ intros x b Hb; apply binds_app_3; exact Hb
                                        | exact HwfP02 ]).
         (* --- RIGHT IH on Sb / P02, at [Ξc1 ++ Θ0] with [ρc1 ++ θ] --- *)
         edestruct (IHn NM (Ξc1 ++ Θ0) Θ (ρc1 ++ θ) Δ Ψ'
-                     (union Ψi (AtomSetImpl.inter Ψ1 Ψ')) (AtomSetImpl.inter Ψ2 Ψ')
+                     (union Ψi (Ψ1 ∩ Ψ')) (Ψ2 ∩ Ψ')
                      Ψ2 ψa Q2 (uskl_to_pskl Sb) P02 Pa1 Sb α
                      Hmr HwfΘ HwfΞ1 HwfP02R HwfPa1 Hinc1 HαΘ Hαr eq_refl
                      HscopeSbR HlcSb Htags HdisjSb HsubR Hdfresh Hpre1 HΨs1R HΨs2R H4 HwfSubB' Href2)
@@ -2177,7 +2177,7 @@ Proof.
         -- (* a_inc_equiv Θ0 θ θ Θ *) apply a_inc_equiv_refl; exact Hθ.
         -- (* ρc fresh *)
            intros X HX. rewrite dom_app in HX.
-           apply AtomSetImpl.union_1 in HX; destruct HX as [HX | HX].
+           apply union_1 in HX; destruct HX as [HX | HX].
            ++ apply Hρf1; exact HX.
            ++ pose proof (Hρf2 X HX) as Hf. rewrite dom_app in Hf.
               clear - Hf; fsetdec.
@@ -2316,8 +2316,7 @@ Proof.
                   [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
         { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper S0 (uskl_var_f β)) as Hup.
           simpl in Hup, HscopeS |- *. clear - Hup HscopeS; fsetdec. }
-        assert (Hdisjβ : AtomSetImpl.inter
-                  (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) Ψ' [=] empty).
+        assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) ∩ Ψ' [=] empty).
         { rewrite ftag_in_uskl_open_var. simpl in Hdisj. exact Hdisj. }
         assert (HΨs1β : Ψsub [<=] union
                   (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) Ψa).
@@ -2532,8 +2531,7 @@ Proof.
                      [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
            { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper S0 (uskl_var_f β)) as Hup.
              simpl in Hup, HscopeS |- *. clear - Hup HscopeS; fsetdec. }
-           assert (Hdisjβ : AtomSetImpl.inter
-                     (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) Ψ' [=] empty).
+           assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) ∩ Ψ' [=] empty).
            { rewrite ftag_in_uskl_open_var. simpl in Hdisj. exact Hdisj. }
            assert (HΨs1β : Ψsub [<=] union
                      (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) Ψa).
@@ -2729,8 +2727,7 @@ Proof.
                   [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
         { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper S0 (uskl_var_f β)) as Hup.
           simpl in Hup, HscopeS |- *. clear - Hup HscopeS; fsetdec. }
-        assert (Hdisjβ : AtomSetImpl.inter
-                  (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) Ψ' [=] empty).
+        assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) ∩ Ψ' [=] empty).
         { rewrite ftag_in_uskl_open_var. simpl in Hdisj.
           clear - Hdisj; fsetdec. }
         assert (HΨs1β : Ψ0 [<=] union
@@ -2746,15 +2743,14 @@ Proof.
           rewrite <- Hψatag in Hsb.
           intros x Hx.
           pose proof (Hsb x (Hfb x Hx)) as Hx2.
-          apply AtomSetImpl.union_1 in Hx2; destruct Hx2 as [Hx2 | Hx2];
+          apply union_1 in Hx2; destruct Hx2 as [Hx2 | Hx2];
             [ clear - Hx2; fsetdec | ].
           assert (Hxs : x `in` Ψsub) by (clear - Hx HΨeq; fsetdec).
           pose proof (HΨs1 x Hxs) as Hx3.
-          apply AtomSetImpl.union_1 in Hx3; destruct Hx3 as [Hx3 | Hx3];
+          apply union_1 in Hx3; destruct Hx3 as [Hx3 | Hx3];
             [ exfalso;
-              assert (Hinx : x `in` AtomSetImpl.inter
-                               (add εr (ftag_in_uskl S0)) Ψ')
-                by (apply AtomSetImpl.inter_3; assumption);
+              assert (Hinx : x `in` (add εr (ftag_in_uskl S0)) ∩ Ψ')
+                by (apply inter_3; assumption);
               rewrite Hdisj in Hinx; clear - Hinx; fsetdec
             | clear - Hx3; fsetdec ]. }
         assert (HΨs2β : Ψa [<=] Ψ0).
@@ -2765,8 +2761,8 @@ Proof.
           rewrite HΨeq in Hxs.
           destruct (x == εr) as [-> | Hne]; [ | clear - Hxs Hne; fsetdec ].
           exfalso.
-          assert (Hinx : εr `in` AtomSetImpl.inter (add εr (ftag_in_uskl S0)) Ψ').
-          { apply AtomSetImpl.inter_3; [ clear; fsetdec | ].
+          assert (Hinx : εr `in` (add εr (ftag_in_uskl S0)) ∩ Ψ').
+          { apply inter_3; [ clear; fsetdec | ].
             clear - Hx Hsub HΨs2; fsetdec. }
           rewrite Hdisj in Hinx; clear - Hinx; fsetdec. }
         assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
@@ -2979,8 +2975,7 @@ Proof.
                      [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
            { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper S0 (uskl_var_f β)) as Hup.
              simpl in Hup, HscopeS |- *. clear - Hup HscopeS; fsetdec. }
-           assert (Hdisjβ : AtomSetImpl.inter
-                     (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) Ψ' [=] empty).
+           assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl S0 (uskl_var_f β))) ∩ Ψ' [=] empty).
            { rewrite ftag_in_uskl_open_var. simpl in Hdisj.
              clear - Hdisj; fsetdec. }
            assert (HΨs1β : Ψ0 [<=] union
@@ -3000,14 +2995,13 @@ Proof.
              rewrite <- Hψatag in Hsb.
              intros x Hx.
              pose proof (Hsb x (Hfb x Hx)) as Hx2.
-             apply AtomSetImpl.union_1 in Hx2; destruct Hx2 as [Hx2 | Hx2];
+             apply union_1 in Hx2; destruct Hx2 as [Hx2 | Hx2];
                [ clear - Hx2; fsetdec | ].
              pose proof (HΨs1 x Hx) as Hx3.
-             apply AtomSetImpl.union_1 in Hx3; destruct Hx3 as [Hx3 | Hx3];
+             apply union_1 in Hx3; destruct Hx3 as [Hx3 | Hx3];
                [ exfalso;
-                 assert (Hinx : x `in` AtomSetImpl.inter
-                                  (add εr (ftag_in_uskl S0)) Ψ')
-                   by (apply AtomSetImpl.inter_3; assumption);
+                 assert (Hinx : x `in` (add εr (ftag_in_uskl S0)) ∩ Ψ')
+                   by (apply inter_3; assumption);
                  rewrite Hdisj in Hinx; clear - Hinx; fsetdec
                | clear - Hx3; fsetdec ]. }
            assert (HΨs2β : Ψa [<=] Ψ0) by (clear - HΨs2 HΨeq; fsetdec).

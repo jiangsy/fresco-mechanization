@@ -132,7 +132,7 @@ Qed.
 Lemma a_wf_pskl_subst_tvar : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
   forall X Q Δ0,
-  Δ0 [=] AtomSetImpl.remove X Δ ->
+  Δ0 [=] remove X Δ ->
   X `notin` dom Θ ->
   Θ ⨟ Δ0 ⊢ₚₛᵃ Q ->
   Θ ⨟ Δ0 ⊢ₚₛᵃ subst_pskl_in_pskl Q X P.
@@ -769,7 +769,7 @@ Proof.
     assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
     destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1 (L `union` Ψ))
       as [Ψg [ψg [Hint0 [Hsort Herase]]]].
-    assert (Hint : AtomSetImpl.inter Ψg Ψ [=] empty)
+    assert (Hint : Ψg ∩ Ψ [=] empty)
       by (clear - Hint0; fsetdec).
     assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
     assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
@@ -821,7 +821,7 @@ Proof.
     assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
     destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1 (L `union` Ψ))
       as [Ψg [ψg [Hint0 [Hsort Herase]]]].
-    assert (Hint : AtomSetImpl.inter Ψg Ψ [=] empty)
+    assert (Hint : Ψg ∩ Ψ [=] empty)
       by (clear - Hint0; fsetdec).
     assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).
     assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; fsetdec) Hsort Herase).

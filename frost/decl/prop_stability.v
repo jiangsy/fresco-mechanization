@@ -391,7 +391,7 @@ Proof. destruct n; intros m H; [ lia | exists (mode_fn_n n m); reflexivity ]. Qe
 Lemma d_sub_fn_all_syn_inv : forall Δ Γ m C B,
     Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⩽ B ->
     exists Ψ' ph,
-      AtomSetImpl.inter Ψ' Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
+      Ψ' ∩ Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
       (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C ph) ⩽ B.
 Proof.
   intros Δ Γ m C B Hsub.
@@ -407,7 +407,7 @@ Lemma d_sub_fnn_all_syn_inv : forall n m Δ Γ C B,
     1 <= n ->
     Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⩽ B ->
     exists Ψ' ph,
-      AtomSetImpl.inter Ψ' Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
+      Ψ' ∩ Δ [=] empty /\ d_tags Ψ' ph /\ Γ ⊢ᵤ ph /\ is_ttyp ph /\
       (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C ph) ⩽ B.
 Proof.
   intros n m Δ Γ C B Hpos Hsub.

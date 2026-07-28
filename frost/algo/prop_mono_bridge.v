@@ -428,22 +428,22 @@ Proof.
     inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
     destruct (IHHeq1 Hwf) as [IH1 _]. destruct (IHHeq2 Hwf) as [IH2 _].
     destruct (IH1 (conj Hm1
-        (fun X HX => Hv X (AtomSetImpl.union_2 _ HX)))) as [HmB1 HvB1].
+        (fun X HX => Hv X (union_2 _ HX)))) as [HmB1 HvB1].
     destruct (IH2 (conj Hm2
-        (fun X HX => Hv X (AtomSetImpl.union_3 _ HX)))) as [HmB2 HvB2].
+        (fun X HX => Hv X (union_3 _ HX)))) as [HmB2 HvB2].
     split; [ apply mono_ptyp__arrow; auto | ].
     intros X HX; simpl in HX.
-    destruct (AtomSetImpl.union_1 HX); auto.
+    destruct (union_1 HX); auto.
   - (* arrow, backward *)
     inversion Hm as [ | | ? ? Hm1 Hm2 ]; subst; simpl in Hv.
     destruct (IHHeq1 Hwf) as [_ IH1]. destruct (IHHeq2 Hwf) as [_ IH2].
     destruct (IH1 (conj Hm1
-        (fun X HX => Hv X (AtomSetImpl.union_2 _ HX)))) as [HmA1 HvA1].
+        (fun X HX => Hv X (union_2 _ HX)))) as [HmA1 HvA1].
     destruct (IH2 (conj Hm2
-        (fun X HX => Hv X (AtomSetImpl.union_3 _ HX)))) as [HmA2 HvA2].
+        (fun X HX => Hv X (union_3 _ HX)))) as [HmA2 HvA2].
     split; [ apply mono_ptyp__arrow; auto | ].
     intros X HX; simpl in HX.
-    destruct (AtomSetImpl.union_1 HX); auto.
+    destruct (union_1 HX); auto.
   - (* all, forward : a monotype is never a ∀ *)
     inversion Hm.
   - (* all, backward *)

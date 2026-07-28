@@ -1804,7 +1804,7 @@ Proof.
     destruct_if as [-> | Hne]; intro Hnas; [ exact Hnas | exfalso; fsetdec ].
   - (* arrow *)
     inversion Hnas; subst.
-    destruct (AtomSetImpl.union_1 Hin);
+    destruct (union_1 Hin);
       [ eapply IHS1 | eapply IHS2 ]; eauto.
   - (* tophole *)
     inversion Hnas; subst. eapply IHS; eauto.

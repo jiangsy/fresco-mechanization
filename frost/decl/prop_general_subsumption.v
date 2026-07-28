@@ -1088,7 +1088,7 @@ Proof.
     destruct (IHHsub _ _ Hinst
                 (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
       as [Δ_IH [Hbnd HΔ_IH]].
-    exists (AtomSetImpl.diff Δ_IH Ψ'). split.
+    exists (Δ_IH ∖ Ψ'). split.
     + clear - Hbnd H0; fsetdec.
     + eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
       * exact H.
@@ -1116,7 +1116,7 @@ Proof.
       destruct (IHHsub _ _ Hinst
                   (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
         as [Δ_IH [Hbnd HΔ_IH]].
-      exists (AtomSetImpl.diff Δ_IH Ψ'). split.
+      exists (Δ_IH ∖ Ψ'). split.
       * clear - Hbnd H0; fsetdec.
       * eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
         -- exact H.
@@ -1140,7 +1140,7 @@ Proof.
       destruct (IHHsub _ _ Hinst
                   (@utyp_tag_refines_open_gen _ _ ph ltac:(eassumption)))
         as [Δ_IH [Hbnd HΔ_IH]].
-      exists (AtomSetImpl.diff Δ_IH Ψ'). split.
+      exists (Δ_IH ∖ Ψ'). split.
       * clear - Hbnd H0; fsetdec.
       * eapply d_sub__forall_l_untagged with (Ψ' := Ψ').
         -- exact H.
@@ -1258,7 +1258,7 @@ Proof.
   - (* d_sub__forall_l_tagged: subset invariant + set difference. *)
     edestruct IHHsub as [Δr [Hb Hr]];
       [ eassumption | eassumption | eassumption | ].
-    exists (AtomSetImpl.diff Δr Ψ'). split.
+    exists (Δr ∖ Ψ'). split.
     + fsetdec.
     + eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
       * destruct m as [ | | m']; simpl;
@@ -1271,7 +1271,7 @@ Proof.
   - (* d_sub__forall_l_untagged: as above. *)
     edestruct IHHsub as [Δr [Hb Hr]];
       [ eassumption | eassumption | eassumption | ].
-    exists (AtomSetImpl.diff Δr Ψ'). split.
+    exists (Δr ∖ Ψ'). split.
     + fsetdec.
     + eapply d_sub__forall_l_untagged with (Ψ' := Ψ').
       * destruct m as [ | | m']; simpl;

@@ -854,7 +854,7 @@ Proof.
       by (clear - HX Hp; fsetdec).
     apply msubst_lookup_ftv_avoid in HX'; [ subst | exact Hav ].
     clear - Hni; fsetdec.
-  - apply AtomSetImpl.union_1 in HX; destruct HX as [HX | HX];
+  - apply union_1 in HX; destruct HX as [HX | HX];
       [ apply IHa | apply IHb ];
       solve [ clear - Hni; fsetdec | exact HX ].
   - apply IHall; [ clear - Hni; fsetdec | exact HX ].
@@ -880,7 +880,7 @@ Proof.
   - (* var: the image is a painting — nothing shielded *)
     pose proof (pskl_shielded_ftv_ptyp_to_pskl (msubst_lookup θ Y)) as He.
     clear - He HX; fsetdec.
-  - apply AtomSetImpl.union_1 in HX; destruct HX as [HX | HX];
+  - apply union_1 in HX; destruct HX as [HX | HX];
       [ apply IHa | apply IHb ];
       solve [ clear - Hni; fsetdec | exact HX ].
   - apply IHall; [ exact Hni | exact HX ].
@@ -1542,12 +1542,12 @@ Qed.
 
 Lemma atoms_inter_empty_pointwise : forall s1 s2,
   (forall y, y `in` s1 -> y `notin` s2) ->
-  AtomSetImpl.inter s1 s2 [=] empty.
+  s1 ∩ s2 [=] empty.
 Proof.
   intros s1 s2 H y; split; intro Hy.
-  - apply AtomSetFacts.inter_iff in Hy as [H1 H2].
+  - apply inter_iff in Hy as [H1 H2].
     exfalso. exact (H y H1 H2).
-  - apply AtomSetFacts.empty_iff in Hy; contradiction.
+  - apply empty_iff in Hy; contradiction.
 Qed.
 
 (* ---- the Δ-vs-definitions freshness side condition (the paper's
@@ -2033,7 +2033,7 @@ Proof.
       | HΨe : Ψo [=] empty |- _ => rename HΨe into HPsiE
       end.
       match goal with
-      | Hint : AtomSetImpl.inter _ _ [=] empty |- _ => rename Hint into HInt
+      | Hint : _ ∩ _ [=] empty |- _ => rename Hint into HInt
       end.
       rewrite ftvar_in_uskl_ptyp_to_uskl_syn in HInt.
       simpl in HInt.
@@ -2602,7 +2602,7 @@ Qed.
 
 Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
 | fa_clean : forall P0 ψa,
-    AtomSetImpl.inter (ftvar_in_uskl ψa) Δρ [=] empty ->
+    (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
     flex_apart Θ0 Δρ P0 ψa
 | fa_unit : forall ψa, flex_apart Θ0 Δρ pskl_unit ψa
 | fa_var_rigid : forall X ψa,
@@ -2640,7 +2640,7 @@ Proof.
   revert ψ Heqt; induction H; intros ψ' Heqt;
     try discriminate Heqt; subst.
   - apply fa_clean.
-    match goal with Hc : AtomSetImpl.inter _ _ [=] empty |- _ =>
+    match goal with Hc : _ ∩ _ [=] empty |- _ =>
       simpl in Hc; exact Hc end.
   - apply fa_unit.
   - apply fa_var_rigid; assumption.
@@ -2671,7 +2671,7 @@ Qed.
 
 Lemma uskl_rho_clean_eq : forall NM Θ Δρ Ψρ S R,
   uskl_rho NM Θ Δρ Ψρ S R ->
-  AtomSetImpl.inter (ftvar_in_uskl R) Δρ [=] empty ->
+  (ftvar_in_uskl R) ∩ Δρ [=] empty ->
   S = R /\ Ψρ [=] empty.
 Proof.
   intros NM Θ Δρ Ψρ S R H; induction H; intros Hclean.
@@ -3126,7 +3126,7 @@ Proof.
   intros Θ0 Δρ P1 P2 ψ1 ψ2 H; inversion H; subst.
   - (* fa_clean *)
     match goal with
-    | Hc : AtomSetImpl.inter _ _ [=] empty |- _ => simpl in Hc;
+    | Hc : _ ∩ _ [=] empty |- _ => simpl in Hc;
         split; apply fa_clean; clear - Hc; fsetdec
     end.
   - (* fa_arrow *)
@@ -3153,7 +3153,7 @@ Proof.
   - eapply ad_ppre__forall with (L := L);
       [ intros X HX; apply (H0 X HX); clear - Heq; fsetdec | assumption ].
   - apply ad_ppre__hole; [ assumption | ].
-    match goal with Hint : AtomSetImpl.inter _ _ [=] empty |- _ =>
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
       clear - Hint Heq; fsetdec end.
   - apply ad_ppre__tophole_remove; auto.
   - eapply ad_ppre__tophole_fill with (L := L); eauto.
@@ -3169,7 +3169,7 @@ Qed.
 Lemma ad_partial_precise_delta_weaken_fresh : forall Θ Δ Ψ P ψ,
   Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
   forall S,
-  AtomSetImpl.inter S (ftvar_in_uskl ψ) [=] empty ->
+  S ∩ ftvar_in_uskl ψ [=] empty ->
   delta_def_fresh S Θ ->
   Θ ⨟ (Δ `union` S) ⊢ P ⊑ᵖ[ Ψ ] ψ.
 Proof.
@@ -3188,7 +3188,7 @@ Proof.
     simpl in HS.
     eapply ad_ppre__forall with (L := L `union` S); [ | eassumption ].
     intros X HX.
-    assert (HSX : AtomSetImpl.inter S
+    assert (HSX : S ∩
               (ftvar_in_uskl (open_uskl_wrt_uskl ψ (uskl_var_f X)))
               [=] empty).
     { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f X))
@@ -3199,13 +3199,13 @@ Proof.
       | clear; fsetdec ].
   - (* hole *)
     apply ad_ppre__hole; [ assumption | ].
-    match goal with Hint : AtomSetImpl.inter _ _ [=] empty |- _ =>
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
       clear - Hint HS; fsetdec end.
   - apply ad_ppre__tophole_remove; auto.
   - (* tophole_fill *)
     eapply ad_ppre__tophole_fill with (L := L `union` S).
     intros X HX.
-    assert (HSX : AtomSetImpl.inter S
+    assert (HSX : S ∩
               (ftvar_in_uskl (open_uskl_wrt_uskl ψ (uskl_var_f X)))
               [=] empty).
     { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f X))
@@ -3301,7 +3301,7 @@ Proof.
   - (* unit *) exfalso; clear - HX0; fsetdec.
   - (* var *) left; simpl; clear - HX0; fsetdec.
   - (* arrow *)
-    apply AtomSetFacts.union_iff in HX0; destruct HX0 as [HX0 | HX0];
+    apply union_iff in HX0; destruct HX0 as [HX0 | HX0];
       [ destruct (IHad_pat_consis1 X0 HX0) as [Hin | Hdef]
       | destruct (IHad_pat_consis2 X0 HX0) as [Hin | Hdef] ];
       solve [ left; simpl; clear - Hin; fsetdec | right; exact Hdef ].
@@ -3500,7 +3500,7 @@ Lemma flex_apart_all_etag_forall_inv : forall Θ0 Δρ ε P0 ψ,
 Proof.
   intros Θ0 Δρ ε P0 ψ H; inversion H; subst.
   - (* fa_clean: bodies stay clean at fresh openings *)
-    match goal with Hc : AtomSetImpl.inter _ _ [=] empty |- _ =>
+    match goal with Hc : _ ∩ _ [=] empty |- _ =>
       exists Δρ; intros X HX; apply fa_clean;
       pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
                     (uskl_var_f X)) as Hup;
@@ -3987,7 +3987,7 @@ Proof.
         | exact Hdefs ]
       | clear - HZ; fsetdec ].
   - (* hole: X is already out of the local target *)
-    match goal with Hint : AtomSetImpl.inter _ _ [=] empty |- _ =>
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
       assert (HXψ : Xr `notin` ftvar_in_uskl ψ)
         by (clear - Hint HXΔ; fsetdec);
       rewrite (subst_bskl_in_uskl_fresh_eq _ _ _ HXψ);

@@ -205,7 +205,7 @@ Inductive d_tags : atoms -> utyp -> Prop :=
 | d_tags__arrow : forall Ψ Ψ1 Ψ2 C1 C2,
     d_tags Ψ1 C1 ->
     d_tags Ψ2 C2 ->
-    AtomSetImpl.inter Ψ1 Ψ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
+    Ψ1 ∩ Ψ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
     Ψ [=] Ψ1 `union` Ψ2 ->
     d_tags Ψ (utyp_arrow C1 C2)
 | d_tags__all_etag : forall L Ψ Ψ0 ε C,
@@ -228,7 +228,7 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__arrow : forall Ψ Ψ1 Ψ2 R1 R2,
     d_tags_skl Ψ1 R1 ->
     d_tags_skl Ψ2 R2 ->
-    AtomSetImpl.inter Ψ1 Ψ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
+    Ψ1 ∩ Ψ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
     Ψ [=] Ψ1 `union` Ψ2 ->
     d_tags_skl Ψ (uskl_arrow R1 R2)
 | d_tags_skl__all_etag : forall L Ψ Ψ0 ε R,
@@ -329,7 +329,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     Ψ ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⩽ (btyp_arrow B1 B2)
 | d_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε C ph B,
     m <> mode_ti ->
-    AtomSetImpl.inter Ψ' Ψ [=] empty ->      (* Ψ' fresh w.r.t. the outer tags *)
+    Ψ' ∩ Ψ [=] empty ->      (* Ψ' fresh w.r.t. the outer tags *)
     d_tags Ψ' ph ->                  (* tags{Ψ'}{φ} : Ψ' is exactly φ's tags *)
     Γ ⊢ᵤ ph ->                       (* Γ ⊢ φ : well-scopedness half (WT: no Ψ') *)
     is_ttyp ph ->
@@ -337,7 +337,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     Ψ ⨟ Γ ⊢[ m ] (utyp_all_etag ε C) ⩽ B
 | d_sub__forall_l_untagged : forall Ψ Ψ' Γ m C ph B,
     m <> mode_ti ->
-    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    Ψ' ∩ Ψ [=] empty ->
     d_tags Ψ' ph ->
     Γ ⊢ᵤ ph ->
     is_ttyp ph ->
@@ -511,7 +511,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     (* Paper [ForallL] (tagged head).  [Ψ' fresh] = [list_disjoint];
        well-scopedness is [Γ ⨟ nil ⊢ᵤₛ ψ] (S1: scope, not tags). *)
     m <> mode_ti ->
-    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    Ψ' ∩ Ψ [=] empty ->
     d_tags_skl Ψ' psi ->             (* tags{Ψ'}{ψ} : skeleton-tag relation *)
     Γ ⨟ nil ⊢ᵤₛ psi ->
     is_tskl psi ->
@@ -519,7 +519,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ ⨟ Γ ⊢ₛ[ m ] (uskl_all_etag ε R) ⩽ Q
 | d_pat_sub__forall_l_untagged : forall Ψ Ψ' Γ m R psi Q,
     m <> mode_ti ->
-    AtomSetImpl.inter Ψ' Ψ [=] empty ->
+    Ψ' ∩ Ψ [=] empty ->
     d_tags_skl Ψ' psi ->
     Γ ⨟ nil ⊢ᵤₛ psi ->
     is_tskl psi ->

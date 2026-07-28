@@ -1865,7 +1865,7 @@ Qed.
 Lemma pskl_decorate_exists : forall Q,
   lc_pskl Q ->
   forall L, exists Ψ ψ,
-    AtomSetImpl.inter Ψ L [=] empty /\
+    Ψ ∩ L [=] empty /\
     is_tskl ψ /\
     d_tags_skl Ψ ψ /\
     ⌊ ψ ⌋ˢ = Q /\
@@ -1958,7 +1958,7 @@ Lemma a_tags_sort_decorate_exists : forall NM α M P P0 Ξ P1,
   a_extract NM α M P P0 Ξ P1 ->
   lc_pskl P1 ->
   forall L, exists Ψg ψg,
-    AtomSetImpl.inter Ψg L [=] empty /\
+    Ψg ∩ L [=] empty /\
     a_tags_sort NM Ψg ψg /\
     ⌊ ψg ⌋ˢ = P1.
 Proof.

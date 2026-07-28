@@ -106,7 +106,7 @@ Proof.
   intros Θ P X Hwf; revert X; induction Hwf; intros Y HY; simpl in HY.
   - exfalso. clear - HY. fsetdec.
   - assert (HeqY : Y = X) by (clear - HY; fsetdec). subst. exact H.
-  - destruct (AtomSetImpl.union_1 HY); auto.
+  - destruct (union_1 HY); auto.
   - (* ∀ : the bound variable is fresh, so it is not the one we are tracking *)
     pick fresh Z for (L `union` ftvar_in_pskl P `union` singleton Y).
     assert (HYo : Y `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f Z))).

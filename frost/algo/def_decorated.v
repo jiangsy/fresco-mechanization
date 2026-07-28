@@ -118,7 +118,7 @@ Inductive a_consistag :
   atoms -> atoms -> pskl -> atoms -> aenv -> uskl -> pskl -> aenv -> Prop :=
 (* — unchanged rules (empty tag context) — *)
 | a_consistag__ghost : forall Δ1 Δ2 Ψ Θ0 P0,                  (* Ghost *)
-    AtomSetImpl.inter Δ2 (ftvar_in_pskl P0) [=] empty ->
+    Δ2 ∩ ftvar_in_pskl P0 [=] empty ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] uskl_hole ∼˙ P0 ⊣ Θ0
 | a_consistag__unit : forall Δ1 Δ2 Ψ Θ0,                      (* Unit *)
@@ -214,7 +214,7 @@ Inductive a_consistag :
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] S ∼˙ Q ⊣ Θ1 ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | Ψ ] (uskl_tophole S) ∼˙ Q ⊣ Θ1
 | a_consistag__ghost_r : forall Δ1 Δ2 Ψ Θ0 S,                 (* GhostR *)
-    AtomSetImpl.inter Δ1 (ftvar_in_pskl ⌊ S ⌋ˢ) [=] empty ->
+    Δ1 ∩ (ftvar_in_pskl ⌊ S ⌋ˢ) [=] empty ->
     Ψ [=] empty ->
     Θ0 ⊢ᵗ[ Δ1 | Δ2 | pskl_hole | Ψ ] S ∼˙ ⌊ S ⌋ˢ ⊣ Θ0
 | a_consistag__univ_ghost_r : forall Δ1 Δ2 Ψ Θ0 Θ1 P0 S Q,    (* UnivGhostR *)
@@ -286,7 +286,7 @@ Inductive a_subtag :
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->                              (* DISCIPLINED wf (paper) *)
     (forall Ψg ψg,                                            (* Ψg fresh (cofinite) *)
-       AtomSetImpl.inter Ψg L [=] empty ->
+       Ψg ∩ L [=] empty ->
        a_tags_sort NM Ψg ψg ->                                (* Θ,Ξ ⊢^N tags{Ψg}{ψg} *)
        ⌊ ψg ⌋ˢ = P1 ->                                        (* ⌊ψg⌋ = P1 *)
        (Ξ ++ Θ0) ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψg) ]
@@ -300,7 +300,7 @@ Inductive a_subtag :
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->                              (* DISCIPLINED wf (paper) *)
     (forall Ψg ψg,                                            (* Ψg fresh (cofinite) *)
-       AtomSetImpl.inter Ψg L [=] empty ->
+       Ψg ∩ L [=] empty ->
        a_tags_sort NM Ψg ψg ->
        ⌊ ψg ⌋ˢ = P1 ->
        (Ξ ++ Θ0) ⊢ᵗ[ NM | M | P0 | (Ψ `union` Ψg) ]

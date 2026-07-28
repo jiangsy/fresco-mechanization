@@ -321,7 +321,7 @@ Proof.
     assert (HXY : X = α) by (clear - HX; fsetdec). subst. exact Heq.
   - (* arrow *)
     injection Heq as Heq1 Heq2.
-    apply AtomSetImpl.union_1 in HX; destruct HX; eauto.
+    apply union_1 in HX; destruct HX; eauto.
   - (* all *)
     injection Heq as Heq0. eauto.
 Qed.
@@ -346,7 +346,7 @@ Proof.
     apply ptyp_to_pskl_inj. exact Heq.
   - (* arrow *)
     injection Heq as Heq1 Heq2.
-    apply AtomSetImpl.union_1 in HX; destruct HX; eauto.
+    apply union_1 in HX; destruct HX; eauto.
   - (* all_syn *)
     injection Heq as Heq0. eauto.
   - (* tophole *)

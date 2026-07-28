@@ -261,8 +261,8 @@ Lemma d_wf_ptyp_ftvar : forall Γ A,
 Proof.
   intros Γ A H. induction H; intros Y HY; simpl in HY.
   - fsetdec.
-  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
-  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY]; auto.
+  - apply singleton_1 in HY. subst. assumption.
+  - apply union_1 in HY. destruct HY as [HY | HY]; auto.
   - pick fresh X for (L `union` ftvar_in_ptyp A `union` dom Γ `union` singleton Y).
     assert (HYo : Y `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f X))).
     { eapply ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower. eassumption. }
@@ -287,14 +287,14 @@ Proof.
       [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; fsetdec.
   - inst_cofinites_for d_wf_btyp__all_syn. intros X HX. apply H0.
     intros Y HY. apply ftvar_in_btyp_open_btyp_wrt_btyp_upper in HY. simpl in HY.
-    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
-    + apply AtomSetImpl.singleton_1 in HY. subst.
+    apply union_1 in HY. destruct HY as [HY | HY].
+    + apply singleton_1 in HY. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
   - inst_cofinites_for d_wf_btyp__all_inh. intros X HX. apply H0.
     intros Y HY. apply ftvar_in_btyp_open_btyp_wrt_btyp_upper in HY. simpl in HY.
-    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
-    + apply AtomSetImpl.singleton_1 in HY. subst.
+    apply union_1 in HY. destruct HY as [HY | HY].
+    + apply singleton_1 in HY. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
 Qed.
@@ -311,14 +311,14 @@ Proof.
       [ apply IHHlc1 | apply IHHlc2 ]; intros Y HY; apply Hcov; fsetdec.
   - inst_cofinites_for d_wf_utyp__all_syn. intros X HX. apply H0.
     intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY. simpl in HY.
-    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
-    + apply AtomSetImpl.singleton_1 in HY. subst.
+    apply union_1 in HY. destruct HY as [HY | HY].
+    + apply singleton_1 in HY. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
   - inst_cofinites_for d_wf_utyp__all_etag. intros X HX. apply H0.
     intros Y HY. apply ftvar_in_utyp_open_utyp_wrt_utyp_upper in HY. simpl in HY.
-    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
-    + apply AtomSetImpl.singleton_1 in HY. subst.
+    apply union_1 in HY. destruct HY as [HY | HY].
+    + apply singleton_1 in HY. subst.
       apply binds_app_2. apply binds_one_3; reflexivity.
     + apply binds_app_3. apply Hcov; assumption.
 Qed.
@@ -341,8 +341,8 @@ Lemma d_wf_btyp_ftvar : forall Γ B,
 Proof.
   intros Γ B H. induction H; intros Y HY; simpl in HY.
   - fsetdec.
-  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
-  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY]; auto.
+  - apply singleton_1 in HY. subst. assumption.
+  - apply union_1 in HY. destruct HY as [HY | HY]; auto.
   - pick fresh X for (L `union` ftvar_in_btyp B `union` dom Γ `union` singleton Y).
     assert (HYo : Y `in` ftvar_in_btyp (open_btyp_wrt_btyp B (btyp_var_f X))).
     { eapply ftvar_in_btyp_open_btyp_wrt_btyp_lower. eassumption. }
@@ -380,8 +380,8 @@ Lemma d_wf_utyp_ftvar : forall Γ C,
 Proof.
   intros Γ C H. induction H; intros Y HY; simpl in HY.
   - fsetdec.
-  - apply AtomSetImpl.singleton_1 in HY. subst. assumption.
-  - apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY]; auto.
+  - apply singleton_1 in HY. subst. assumption.
+  - apply union_1 in HY. destruct HY as [HY | HY]; auto.
   - pick fresh X for (L `union` ftvar_in_utyp C `union` dom Γ `union` singleton Y).
     assert (HYo : Y `in` ftvar_in_utyp (open_utyp_wrt_utyp C (utyp_var_f X))).
     { eapply ftvar_in_utyp_open_utyp_wrt_utyp_lower. eassumption. }
@@ -624,11 +624,11 @@ Proof.
   - apply subst_utyp_in_utyp_lc_utyp; [ eapply d_wf_utyp_lc; eassumption
                                       | eapply d_wf_utyp_lc; eassumption ].
   - intros Y HY. apply ftvar_in_utyp_subst_utyp_in_utyp_upper in HY.
-    apply AtomSetImpl.union_1 in HY. destruct HY as [HY | HY].
+    apply union_1 in HY. destruct HY as [HY | HY].
     + eapply d_wf_utyp_ftvar; eassumption.
     + assert (HYne : Y <> X).
-      { intro Heq. subst. eapply AtomSetImpl.remove_1; [ reflexivity | eassumption ]. }
-      apply AtomSetImpl.remove_3 in HY.
+      { intro Heq. subst. eapply remove_1; [ reflexivity | eassumption ]. }
+      apply remove_3 in HY.
       pose proof (d_wf_utyp_ftvar HD HY) as Hb. analyze_binds Hb.
 Qed.
 
