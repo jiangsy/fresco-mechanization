@@ -59,7 +59,7 @@ excluded from the build); mine them when re-proving.
 - ⬜ Decorating instantiation; Soundness of decorated algorithmic subtyping of flexible variables
 - ⬜ Theorem: Soundness of subtyping
 - ⬜ Complete partial precision; Stability of subtyping under more precise substitution
-- ⬜ Completeness of constraint collection & solving (+ for variables); Look completeness
+- 🟡 Completeness of constraint collection & solving (+ for variables); Look completeness — the CONSISTENCY half is done: `a_solve_eq_complete_var` (P6-Cv, `prop_look_complete_var.v`) and `a_lookeq_solve_complete` (P6-Cs, `prop_look_complete_cstr.v`), both `Qed` and axiom-free, 0 admits; the SUBTYPING half (P6-Sv / P6-Ss) is next
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
 
@@ -76,6 +76,69 @@ excluded from the build); mine them when re-proving.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-07-28 — P6-Cs CLOSED: `a_lookeq_solve_complete` axiom-free, 0 admits (+ a load-bearing wf side condition, machine-checked)
+
+`a_lookeq_solve_complete` (consistency-proofs.tex:920, "Completeness of
+consistency constraint collection and solving") is `Qed` and "Closed under the
+global context", in the new `frost/algo/prop_look_complete_cstr.v` (3537
+lines, ~12 s).  It is the general lemma whose α-leaf delegates to P6-Cv.
+Every paper case is covered: C-ForallInh / C-ForallSyn (tagged and untagged),
+C-Arrow, C-UnivGhost, C-UnivGhost1, C-UnivGhost2, C-UnivGhostG.
+
+**A wf side condition had to be restored, and it is not cosmetic.**  The
+statement carries one premise beyond the paper's list — well-formedness of the
+CONSISTENCY SUBJECT, `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊(θS)[ψa/α]⌋ˢ` (stated on the erasure so the
+existing `a_wf_pskl` expresses it; the only content used is the GUARDED ghost
+body of `a_wf_pskl__tophole`, matching the declarative `d_wf_uskl__tophole`).
+Without it the lemma is FALSE, and that is machine-checked in
+`frost/algo/cex/cex_p6cs_subject_wf.v`:
+
+  - `p6cs_without_subject_wf_is_false` — the lemma with EVERY premise except
+    this one (conclusion weakened to its three essential conjuncts, which only
+    strengthens the refutation) implies False.  Witness: `Θ = Θ0 = ·`, `θ = ·`,
+    `S = ⊤◇α`, `ψa = ⊤̇◇⟨⟩`, `P0 = Pi = ⊤◇⟨⟩`, `Q = ⊤◇⟨⟩`; the subject is
+    `⊤◇(⊤̇◇⟨⟩)`, a ghost over a ghost.  The algorithm is forced into
+    `𝒞 = [α ≐ ⟨⟩]` (LE-UnivGhost, LE-Var) and `Pa = ⟨⟩` (SE-GhostGuarded,
+    SE-Unit), and the precision goal `⟨⟩ ⊑ᵖ ⊤̇◇⟨⟩` has no rule.
+  - `p6cs_fires_when_the_subject_is_wf` — instantiates the CLOSED theorem on
+    the same shape with `ψa := ⟨⟩`, showing the premise set is satisfiable
+    (the theorem is not vacuous).
+
+Both are `Qed` and axiom-free; registered in `docs/WF-SIDE-CONDITIONS.md`.
+(An earlier closure also carried a wf premise on the SOURCE skeleton `P`, with
+the looked-up rigid α as a context entry — a Δ-reading is unsatisfiable, since
+`a_wf_pskl__tophole` resets Δ to ∅.  Once the subject wf is in, that premise is
+dead weight and was removed.)
+
+**Reusable machinery landed with it** (same file, §§1–3):
+  - the **∀-BINDER KIT** — run the IH under a fresh rigid β added to both Θ and
+    Θ0, then strip β from every output: `a_inc_strip_tvar_mid`,
+    `a_solve_cstr_strip_tvar_mid` (free — solving only inspects Θ for
+    flexibility), `ad_partial_precise_strip_tvar_mid` (ftv-based; the existing
+    `_strengthen_tvar` wants `Z ∈ Δ`, which never holds here),
+    `a_wf_ptyp_mono_strip_tvar`, plus `ad_refine_syn_delta_to_tvar_mid`, the
+    Δ→Θ transport that reconciles the consistency's Θ-binder with the
+    refinement's Δ-binder;
+  - `a_looksub_lookeq_rename_tvar` — simultaneous rigid renaming on BOTH sides
+    keeping Ξ and 𝒞, which turns one fresh-β instance into LE-ForallInh's /
+    LE-UnivGhost1's cofinite family;
+  - two extra conclusion conjuncts, both strengthenings: ρc's images are
+    ψa-scoped, and `ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom θ ∪ def_ftv Θ` — the
+    mechanized form of the paper's "Pi and 𝒞 cannot contain β", which is
+    semantic, proved from `ad_pat_consis_target_ftv` (an `is_tskl` subject's
+    counterpart mentions only its own variables plus the context's
+    definitions — the target-inventing `__hole` rule needs a PLAIN hole, which
+    `is_tskl` excludes) and `ad_refine_syn_src_ftv`;
+  - `ad_pat_consis_*_refine_unify` — walk the target's defined-flex chain
+    INSIDE the induction, unfolding both the consistency and the refinement
+    (`ad_refine_flexdef_target_unfold`), so `__flex_r` never becomes a separate
+    case;
+  - `msubst_uskl` (+ erasure/tag/open/prepend-fresh lemmas), which makes the
+    subject `subst_bskl_in_uskl ψa α (msubst_uskl θ S)` the paper's
+    `(θS)[ψa/α]` exactly.  TODO: promote the definition to `algo/def_meta.v`
+    when P6-Ss needs it (it forces a full algo rebuild, so it is deferred).
+
 
 ## 2026-07-27 (later) — P6-Cv PREMISE-FREE: `pskl_no_hole P0` removed (paper-faithful statement)
 

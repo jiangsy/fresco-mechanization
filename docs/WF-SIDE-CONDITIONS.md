@@ -342,3 +342,46 @@ side still derives it locally, via
 `ad_refine_inh_deltar_var_rhs_no_hole`) but not in general — a
 guarded-but-holey ForallSyn body satisfies every other premise; only the
 split rework, not a derivation, could remove it.
+
+## P6-Cs (`a_lookeq_solve_complete`) — the subject-wf premise
+
+Consistency constraint collection and solving
+(consistency-proofs.tex:920) needs ONE of the paper's prose
+well-formedness conditions restored as a premise, on an INPUT, so it
+threads through the induction without touching the rules:
+
+**`Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ (θS)[ψa/α] ⌋ˢ`** — well-formedness of the CONSISTENCY
+SUBJECT.  Stated on the erasure so the existing `a_wf_pskl` expresses it
+(⌊·⌋ˢ maps the dotted ghosts onto the plain ones); the only content the
+proof consumes is the GUARDED ghost body of `a_wf_pskl__tophole`, which
+matches the declarative `d_wf_uskl__tophole`.
+
+⚠️ **Without it the lemma is FALSE — machine-checked** in
+`frost/algo/cex/cex_p6cs_subject_wf.v`:
+`p6cs_without_subject_wf_is_false` refutes the lemma carrying EVERY premise
+except this one (with the conclusion weakened to its three essential
+conjuncts, which only strengthens the refutation), and
+`p6cs_fires_when_the_subject_is_wf` instantiates the CLOSED theorem on the
+same shape with `ψa := ⟨⟩` to show the premise set is satisfiable (the
+theorem is not vacuous).  Both are Qed and axiom-free.  Counterexample: `Θ = Θ0 = ·`,
+`θ = ·`, `S = ⊤◇α` (so `P = ⊤◇α`), `ψa = ⊤̇◇⟨⟩`, `P0 = Pi = ⊤◇⟨⟩`,
+`Q = ⊤◇⟨⟩`.  Every other premise holds — consistency by C-UnivGhost2
+then C-UnivGhostG, refinement by R-UnivGhostKeep, precision by
+P-UnivGhostKeep — but the algorithm is FORCED: LE-UnivGhost is the only
+applicable collection rule, so `𝒞 = [α ≐ ⟨⟩]`, and SE-GhostGuarded is
+the only solving rule, so `Pa = ⟨⟩`; the resulting precision goal
+`⟨⟩ ⊑ᵖ ⊤̇◇⟨⟩` has no rule.  The offending subject is `⊤◇(⊤̇◇⟨⟩)` — a
+ghost over a ghost — which both `a_wf_pskl__tophole` and
+`d_wf_uskl__tophole` forbid.  So this is not a convenience premise: it
+is what makes the paper's statement true.
+
+**A wf premise on the SOURCE skeleton P is NOT needed.**  An earlier
+closure carried `((α ~ abind_tvar) ++ Θ0) ⨟ ∅ ⊢ₚₛᵃ P` — the paper's
+explicit "by well-formedness of P … Q is guarded" in C-UnivGhost2, with
+the looked-up rigid α as a context entry because a Δ-reading is
+unsatisfiable (`a_wf_pskl__tophole` resets Δ to ∅, so an α under a ghost
+could never be justified).  Once the subject-wf premise is in, that one
+is dead weight: it was only ever fed back to its own IHs, and every
+guardedness fact the proof needs comes from the subject side (the
+subject's ghost bodies, not P's, are what the ghost rows inspect).  It
+was removed; the proof is unchanged otherwise.

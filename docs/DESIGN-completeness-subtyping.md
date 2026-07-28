@@ -1790,5 +1790,108 @@ pskl` and no separate `S` currently exist.  Two candidate encodings:
 - P6-Cs omits `Θ0 ⊢ Pa`-style solve-output wf that its own conclusion needs;
   add a solve-output wf-preservation lemma (`a_solve_cstr`/`a_solve_eq`
   preserve `Θ0,Ξc ⊢ₚₛᵃ`) when the conclusion requires it.
-- STATUS: statement NOT yet drafted in Coq; encoding decision (a)/(b) is the
-  gate.  Develop in a `cex/` scratch, migrate to prop_look_complete.v on Qed.
+- STATUS (2026-07-27, updated): encoding LOCKED to (a-lite) — see §7.2;
+  statement DRAFTED + type-checks in `frost/algo/cex/p6cs_dev_tmp.v`; the THREE
+  special cases (P0=□, P=α via the P6-Cv corollary, α∉ftv P) are PROVEN, plus
+  the reusable helpers `ad_partial_precise_psi_cong` (Qed, migrate to
+  prop_precise.v) and `pskl_hole_dec`/`pskl_var_dec`; `a_solve_eq_wf` (existing)
+  discharges the solve-output wf.  ONE admit left = the MAIN INDUCTION (P0≠□,
+  P≠α, α∈ftv P).  Reused: `a_solve_eq_complete_var` (P6-Cv corollary) at the
+  P=α leaf with `urho__refl`/Δρ:=∅/`fa_clean`; `ad_pat_consis_sskl_tags` +
+  `ad_refine_syn_hole_sskl` (P0=□); `ad_pat_consis_ftag_sub` +
+  `subst_bskl_in_uskl_fresh_eq` + `msubst_pskl_ftv_avoid` +
+  `a_inc_image_ftv_dom` (α∉ftv P).  **Main-induction plan:** `induction
+  Hconsis` on the GENERAL statement (do NOT dispatch special cases at top —
+  the IH must stay general; the current scratch's top-level dispatch is a
+  scaffold to be folded per-case).  In each consistency case: (i) invert
+  `subst_bskl_in_uskl ψa α R` on R's shape (R=`uskl_var α` → the P=α leaf,
+  delegate to P6-Cv; congruence → structural); (ii) dispatch P0=□ (LE-Vacuous)
+  and α∉ftv P (LE-Absent); (iii) structural: build `a_lookeq` via the matching
+  LE-rule + thread `a_solve_cstr` (Arrow = sequential `a_solve_cstr__eq`/
+  `__sub`, Ψ split like `consis_complete`), applying the IH to sub-derivations;
+  ForallInh/ForallSyn extend Θ,β with front-weakening (β∉ψa,β∉Pa so precision
+  conclusion drops β; ForallSyn's refinement is tophole_fill — align its
+  cofinite binder with the consistency binder X).  Tag bookkeeping mirrors
+  P6-Cv's arrow-split (`ftag_in_uskl R` in place of Ψρ).
+
+### 7.2 P6-Cs ENCODING DECISION — CORRECTED to (a-lite), locked 2026-07-27
+
+**⚠️ (b) as first drafted is WRONG — `uskl_rho` is TOO LOOSE.**  Its
+`urho__leaf` allows an ARBITRARY tags-sorted image `ψ''` at each α-position,
+but the P6-Cs subject `[ψa/α]` substitutes the SAME single `ψa` at every
+occurrence, and that `ψa` is also the single precision target
+(`θPi ⊑ᵖ ψa`) fed to P6-Cv at the leaf.  With per-leaf-arbitrary images the
+delegation to P6-Cv cannot type: P6-Cv's `ψa` would have to equal both the
+leaf image AND the global precision target.  So the images must be pinned to
+`ψa`, which `uskl_rho` does not express.
+
+**Decision: encoding (a-lite) — `subst_bskl_in_uskl ψa α R`.**  The
+uskl-for-var substitution `subst_bskl_in_uskl : uskl → usklvar → uskl → uskl`
+ALREADY EXISTS (def_ott.v:487, full lngen kit: open/subst commutation, spec,
+fresh_eq, lc, degree) — `S[ψa/α] = subst_bskl_in_uskl ψa α S` (the P5b-ii
+convention).  So:
+
+1. Carry `R : uskl` (playing `syn θS`) tied to P by
+   **`⌊ R ⌋ˢ = msubst_pskl θ P`** — erasure commutes with the monotype
+   substitution θ, so `erase(θS) = θ(erase S) = θP`.  `msubst_uskl` is NOT
+   needed: R is posited, not built.
+2. **The consistency subject is `subst_bskl_in_uskl ψa α R`** — this PINS
+   every α-image to the one `ψa`, exactly `(θS)[ψa/α]`.  Inverting it against
+   the consistency derivation is the same leaf/congruence split as `uskl_rho`
+   but via the Fixpoint's computation: `subst_bskl_in_uskl ψa α R = arrow …`
+   forces R = `uskl_var α` (leaf, subject = ψa, the P=α case) or R = arrow
+   (congruence).  At each node `⌊R⌋ˢ = msubst_pskl θ P` recovers P's shape
+   (msubst_pskl is structural on non-var P; the bare-var P cases are the
+   `P=α` / `α∉ftv P` special cases).
+3. **`uskl_rho` is used only at the P6-Cv DELEGATION** (P=α leaf): the P6-Cv
+   corollary takes a `uskl_rho` premise, discharged by `urho__refl` on ψa
+   (Δρ:=∅, ρ=id) — "the identity substitution, empty tag context" the paper
+   names.  So P6-Cv's own kit is reused wholesale at the leaf; P6-Cs's own
+   induction uses `subst_bskl_in_uskl`, not `uskl_rho`.
+
+3. **P6-Cs is SIMPLER than P6-Cv — NO `flex_apart`, NO freshness pack, NO
+   aenv-split `_gen`.**  P6-Cs's induction recurses via ITSELF (the paper's
+   Arrow case applies IH twice + LE-Arrow + sequential solving; ForallInh/Syn
+   apply IH under Θ,β), and reaches the α-leaf ONLY through the `P=α` special
+   case, which invokes the `a_solve_eq_complete_var` COROLLARY with the
+   identity ρ (`urho__refl` on ψa, `Δρ := ∅` ⇒ `flex_apart` discharged by
+   `fa_clean`, `rho_fresh`/shielded trivial).  The freshness pack and
+   flex_apart were needed in P6-Cv only for the rigid-var leaf inversion of
+   the PRECISION premise against ρ(ψa); in P6-Cs the precision premise is on
+   ψa directly (unchanged by the [ψa/α] substitution) and the leaf is
+   delegated, so none of that machinery threads into P6-Cs's own statement.
+   The ForallSyn tophole_fill aenv-extension (P6-Cv's old blocker) is benign
+   here: the consistency ForallSyn binder X and the refinement tophole_fill
+   binder align (instantiate the refinement's cofinite family at X), and the
+   precision conclusion `θa Pa ⊑ᵖ ψa` never sees X (X∉ψa, X∉Pa), so no
+   aenv→Δ transport is required — plain front-extension weakening suffices.
+
+4. **Tag bookkeeping.**  ψa's tags = Ψ' (`a_tags_sort NM Ψ' ψa`).  The
+   consistency index `Ψsub` decomposes as `Ψ ∪ Ψa`: Ψ = R's own decoration
+   tags (S's ∀^δ tags = `ftag R`, disjoint from Ψ' since S's binders are not
+   ψa's instantiation tags), Ψa ⊆ Ψ' = the ψa-leaves' contribution
+   (= `uskl_rho`'s Ψρ role).  This mirrors P6-Cv's arrow-split tag algebra
+   (`ad_pat_consis_ftag_sub` + `uskl_rho_ftag_sub` + d_tags uniqueness);
+   exact premise shapes to be finalized against the Arrow-case proof.
+
+5. **a_solve_cstr context = `Ξc ++ Θ0`** (Ξc = fresh flexibles from LE-FlexR,
+   at the front).  Degenerate at the P=α leaf: Ξc = [] ⇒ `Θ0 ⊩ eq(P0) :: · ⨾
+   Pi ⤳ Pa` unfolds to `a_solve_eq Θ0 Pi P0 Pa` = the P6-Cv corollary output.
+
+Scratch: `frost/algo/cex/p6cs_dev_tmp.v`.
+
+- **STATUS (2026-07-28): CLOSED.**  `a_lookeq_solve_complete` is `Qed` and
+  axiom-free in `frost/algo/prop_look_complete_cstr.v` (0 admits); the scratch
+  `cex/p6cs_dev_tmp.v` is gone.  Two deviations from the plan above are worth
+  recording:
+  1. the main induction is on `size_uskl S + size_pskl P0`, NOT on the
+     consistency derivation — a measure induction keeps the three special-case
+     proofs verbatim (they need the whole `Hconsis`, which `induction Hconsis`
+     would have destructed) and hands back a GENERAL `IHn`;
+  2. the statement carries one extra premise, well-formedness of the
+     CONSISTENCY SUBJECT.  It is load-bearing, not cosmetic: without it the
+     lemma is false (machine-checked counterexample in
+     `cex/cex_p6cs_subject_wf.v`, registered in docs/WF-SIDE-CONDITIONS.md).
+  The ∀-binder kit, the two ftv transports behind "Pi and 𝒞 cannot contain β",
+  and `a_looksub_lookeq_rename_tvar` are all in the same file and are what
+  P6-Ss should reuse.
