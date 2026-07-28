@@ -11,9 +11,15 @@ point to the same content.
   `paper/frost.pdf`).
 - Coq namespace: `src` (`-R . src` in `_CoqProject`).
 - Build: `make coq` (full kernel check) — the bar for committing.
-- **Status**: Phase 1 done (defs). Phase 2 mostly done: D1 and D12
-  are Qed and "Closed under the global context". Phase 3 has
-  scaffolding (3 HEADLINE admits each for soundness/completeness).
+- **Status** (audited 2026-07-28): Phases 1–2 done; Phase 3 (the
+  algorithmic system) is well past scaffolding — **the whole
+  mechanization is admit-free and axiom-free**.  Consistency is closed
+  in both directions (soundness `a_consis_sound` + `a_unify_sound` /
+  `a_assign_sound`; completeness/optimality `a_consis_complete_thm` /
+  `complete_mu`), subtyping SOUNDNESS is closed (`a_sub_sound_thm`),
+  and subtyping COMPLETENESS is in progress (P5 and the two
+  consistency-side P6 lemmas are closed; P6-Sv / P6-Ss are next).
+  See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
   `PROGRESS.md` (per-lemma status + daily progress log).
@@ -38,8 +44,8 @@ point to the same content.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
-| 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟡 in progress — D1 and D12 closed under the global context; 15 admits remain in `frost/decl/` (none reachable from D1 / D12). See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 scaffolding — defs Qed; 6 HEADLINE admits for soundness/completeness theorems. |
+| 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness underway (P5, P6-Cv, P6-Cs closed; P6-Sv / P6-Ss next). |
 
 ## Directory map
 
@@ -85,11 +91,28 @@ mechanization/
     │   └── prop_stability.v           (order irrelevance d_typing_order_irrel +
     │                                  structural/stability lemmas;
     │                                  formerly prop_structural.v)
-    └── algo/             (algorithmic system)
-        ├── def_extra.v   (Phase 3 definitions — ~140 ctors)
+    └── algo/             (algorithmic system — all admit-free)
+        ├── def_extra.v          (Phase 3 definitions — ~140 ctors)
+        ├── def_meta.v           (metasubstitutions θ, a_inc / a_inc_equiv /
+        │                         ⊴, msubst_{ptyp,btyp,pskl,uskl_syn})
+        ├── def_decl_algo*.v     (declarative judgments over algo contexts:
+        │                         consistency, refinement, subtyping, precision)
+        ├── def_decorated.v      (decorated (tagged) skeletons + judgments)
         ├── notations.v
-        ├── prop_soundness.v        (stability ×9 Qed; 3 HEADLINE admits)
-        └── prop_completeness.v     (3 HEADLINE admits)
+        ├── prop_inc*.v / prop_metasubst.v / prop_compose.v   (θ-algebra)
+        ├── prop_flex.v / prop_normal.v / prop_mono_bridge.v  (flex + monotypes)
+        ├── prop_consis_sound.v      (thm:sound-consistency, all 3 parts)
+        ├── prop_consis_complete.v   (thm:complete-consistency, all 3 parts)
+        ├── prop_decorate*.v         (decoration of consistency/subtyping;
+        │                             prop_decorate_key.v holds a_sub_sound_thm)
+        ├── prop_sub_sound.v         (soundness of DECORATED subtyping)
+        ├── prop_sub_complete.v      (subtyping completeness: P5)
+        ├── prop_look*.v / prop_solve_sub.v  (constraint collection + solving;
+        │                             prop_look_complete_var.v = P6-Cv,
+        │                             prop_look_complete_cstr.v = P6-Cs)
+        ├── test_*.v                 (benchmark / regression checks)
+        └── cex/                     (machine-checked counterexamples, incl.
+                                      cex_p6cs_subject_wf.v)
 ```
 
 (History: the old `decl/{subtyping,typing}/` subdirs and the

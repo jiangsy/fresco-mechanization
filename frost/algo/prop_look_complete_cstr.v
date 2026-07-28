@@ -9,7 +9,7 @@
     collected flexibles Ξc and solving them against the input Pi.
 
     Structure of the file:
-      §1  small transports reused throughout (retagging, [msubst_uskl] and its
+      §1  small transports reused throughout (retagging, [msubst_uskl_syn] and its
           kit, constraint/solve plumbing);
       §2  the ∀-BINDER KIT — run the induction hypothesis under a fresh rigid
           binder β added to BOTH Θ and Θ0, then strip β from every output
@@ -95,24 +95,9 @@ Qed.
 (*  msubst on DECORATED skeletons (uskl) — the θ of the paper's [θ S].     *)
 (*  S is θ-free (erase S = P); the subject is [(θS)[ψa/α]].               *)
 (*  (migrate to algo/def_meta.v alongside msubst_pskl.)                    *)
-(* ===================================================================== *)
-Fixpoint msubst_uskl (ρ : metasubst) (S : uskl) : uskl :=
-  match S with
-  | uskl_unit => uskl_unit
-  | uskl_var_b n => uskl_var_b n
-  | uskl_var_f X => ptyp_to_uskl_syn (msubst_lookup ρ X)
-  | uskl_arrow S1 S2 => uskl_arrow (msubst_uskl ρ S1) (msubst_uskl ρ S2)
-  | uskl_all_syn S0 => uskl_all_syn (msubst_uskl ρ S0)
-  | uskl_all_etag ε S0 => uskl_all_etag ε (msubst_uskl ρ S0)
-  | uskl_hole => uskl_hole
-  | uskl_tophole S0 => uskl_tophole (msubst_uskl ρ S0)
-  | uskl_holeg => uskl_holeg
-  | uskl_topholeg S0 => uskl_topholeg (msubst_uskl ρ S0)
-  end.
-
 (* Erasure commutes with msubst (⌊θ S⌋ = θ⌊S⌋). *)
-Lemma uskl_to_pskl_msubst_uskl : forall ρ S,
-  ⌊ msubst_uskl ρ S ⌋ˢ = msubst_pskl ρ (⌊ S ⌋ˢ).
+Lemma uskl_to_pskl_msubst_uskl_syn : forall ρ S,
+  ⌊ msubst_uskl_syn ρ S ⌋ˢ = msubst_pskl ρ (⌊ S ⌋ˢ).
 Proof.
   intros ρ S; induction S; simpl;
     try reflexivity;
@@ -135,9 +120,9 @@ Proof. reflexivity. Qed.
 (* Prepending fresh entries (dom ρ avoids S's ftvs) does not change msubst.
    This mechanizes the paper's "equivalence of metasubstitutions" step
    (θ₁ = ρ ++ θ) as a SYNTACTIC rewrite. *)
-Lemma msubst_uskl_prepend_fresh : forall ρ θ S,
+Lemma msubst_uskl_syn_prepend_fresh : forall ρ θ S,
   (forall X, X `in` dom ρ -> X `notin` ftvar_in_uskl S) ->
-  msubst_uskl (ρ ++ θ) S = msubst_uskl θ S.
+  msubst_uskl_syn (ρ ++ θ) S = msubst_uskl_syn θ S.
 Proof.
   intros ρ θ S; induction S as [ | n | X | S1 IHS1 S2 IHS2 | S0 IHS0
                                | ε S0 IHS0 | | S0 IHS0 | | S0 IHS0 ];
@@ -183,8 +168,8 @@ Proof.
     simpl; fsetdec.
 Qed.
 
-Lemma ftag_in_uskl_msubst_uskl : forall ρ S,
-  ftag_in_uskl (msubst_uskl ρ S) [=] ftag_in_uskl S.
+Lemma ftag_in_uskl_msubst_uskl_syn : forall ρ S,
+  ftag_in_uskl (msubst_uskl_syn ρ S) [=] ftag_in_uskl S.
 Proof.
   intros ρ S; induction S as [ | n | X | S1 IHS1 S2 IHS2 | S0 IHS0
                              | ε S0 IHS0 | | S0 IHS0 | | S0 IHS0 ];
@@ -608,15 +593,15 @@ Qed.
 (*  Flex-P0 support (the FLEX-P0 / __flex_r crux).                          *)
 (* ===================================================================== *)
 
-(* α positions in [S] survive [msubst_uskl θ] when [α ∉ dom θ]. *)
-Lemma ftvar_in_uskl_msubst_uskl_notin_dom : forall θ S α,
+(* α positions in [S] survive [msubst_uskl_syn θ] when [α ∉ dom θ]. *)
+Lemma ftvar_in_uskl_msubst_uskl_syn_notin_dom : forall θ S α,
   α `notin` dom θ ->
   α `in` ftvar_in_uskl S ->
-  α `in` ftvar_in_uskl (msubst_uskl θ S).
+  α `in` ftvar_in_uskl (msubst_uskl_syn θ S).
 Proof.
   intros θ S α Hdom Hin.
-  rewrite <- (ftvar_in_pskl_uskl_to_pskl (msubst_uskl θ S)).
-  rewrite uskl_to_pskl_msubst_uskl.
+  rewrite <- (ftvar_in_pskl_uskl_to_pskl (msubst_uskl_syn θ S)).
+  rewrite uskl_to_pskl_msubst_uskl_syn.
   apply msubst_pskl_ftv_notin_dom; [ exact Hdom | ].
   rewrite ftvar_in_pskl_uskl_to_pskl; exact Hin.
 Qed.
@@ -1150,12 +1135,12 @@ Proof.
   - eapply ad_refine_syn__flex_r; [ apply binds_weaken; eassumption | eauto ].
 Qed.
 
-(* (vi) [msubst_uskl] commutes with opening (mirror of [msubst_pskl_open]):
+(* (vi) [msubst_uskl_syn] commutes with opening (mirror of [msubst_pskl_open]):
    every image is a MONOTYPE painting, hence locally closed. *)
-Lemma msubst_uskl_open_rec : forall Θ1 ζ Θ S V k,
+Lemma msubst_uskl_syn_open_rec : forall Θ1 ζ Θ S V k,
   ζ ∷ Θ1 ⊑ Θ ->
-  msubst_uskl ζ (open_uskl_wrt_uskl_rec k V S)
-  = open_uskl_wrt_uskl_rec k (msubst_uskl ζ V) (msubst_uskl ζ S).
+  msubst_uskl_syn ζ (open_uskl_wrt_uskl_rec k V S)
+  = open_uskl_wrt_uskl_rec k (msubst_uskl_syn ζ V) (msubst_uskl_syn ζ S).
 Proof.
   intros Θ1 ζ Θ S; induction S; intros V k Hinc; simpl; f_equal; eauto.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
@@ -1167,15 +1152,15 @@ Proof.
     eapply a_inc_lookup_mono; exact Hinc.
 Qed.
 
-Lemma msubst_uskl_open : forall Θ1 ζ Θ S X,
+Lemma msubst_uskl_syn_open : forall Θ1 ζ Θ S X,
   ζ ∷ Θ1 ⊑ Θ ->
   X `notin` dom ζ ->
-  msubst_uskl ζ (open_uskl_wrt_uskl S (uskl_var_f X))
-  = open_uskl_wrt_uskl (msubst_uskl ζ S) (uskl_var_f X).
+  msubst_uskl_syn ζ (open_uskl_wrt_uskl S (uskl_var_f X))
+  = open_uskl_wrt_uskl (msubst_uskl_syn ζ S) (uskl_var_f X).
 Proof.
   intros Θ1 ζ Θ S X Hinc HX.
   unfold open_uskl_wrt_uskl.
-  rewrite (msubst_uskl_open_rec S (uskl_var_f X) 0 Hinc).
+  rewrite (msubst_uskl_syn_open_rec S (uskl_var_f X) 0 Hinc).
   simpl. rewrite msubst_lookup_notin by exact HX.
   reflexivity.
 Qed.
@@ -1187,12 +1172,12 @@ Lemma p6cs_subject_open : forall Θ1 θ Θ ψa α S0 β,
   β `notin` dom θ ->
   β <> α ->
   lc_uskl ψa ->
-  subst_bskl_in_uskl ψa α (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))
+  subst_bskl_in_uskl ψa α (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))
   = open_uskl_wrt_uskl
-      (subst_bskl_in_uskl ψa α (msubst_uskl θ S0)) (uskl_var_f β).
+      (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0)) (uskl_var_f β).
 Proof.
   intros Θ1 θ Θ ψa α S0 β Hinc Hα Hβ Hne Hlc.
-  rewrite (@msubst_uskl_open Θ1 θ Θ S0 β Hinc Hβ).
+  rewrite (@msubst_uskl_syn_open Θ1 θ Θ S0 β Hinc Hβ).
   rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
     [ reflexivity | auto | exact Hlc ].
 Qed.
@@ -1595,14 +1580,14 @@ Lemma p6cs_subject_guarded_head : forall Θ0 θ Θ ψa α S0,
   S0 <> uskl_var_f α ->
   α `notin` dom θ ->
   (forall p, In p θ -> α `notin` ftvar_in_ptyp (snd p)) ->
-  uskl_guarded_head (subst_bskl_in_uskl ψa α (msubst_uskl θ S0)).
+  uskl_guarded_head (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0)).
 Proof.
   intros Θ0 θ Θ ψa α S0 Hθ Hg Hne Hαθ Hθav.
   destruct S0; simpl in Hg; try solve [ inversion Hg ].
   - left; reflexivity.
   - (* var_f *)
     assert (Hαne : α0 <> α) by (intro Hc; subst; contradiction).
-    cbn [msubst_uskl].
+    cbn [msubst_uskl_syn].
     remember (msubst_lookup θ α0) as τ0 eqn:Heqτ0.
     assert (Hmτ : mono_ptyp τ0)
       by (subst τ0; eapply a_inc_lookup_mono; eauto).
@@ -1653,7 +1638,7 @@ Theorem a_lookeq_solve_complete :
   Ψsub [<=] ftag_in_uskl S `union` Ψa ->   (* consistency index ⊆ S-tags ∪ Ψa *)
   Ψa [<=] Ψsub ->                          (* ψa's subtree tags ⊆ index *)
   (* subject = (θS)[ψa/α], EXACTLY the paper's form *)
-  Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl θ S)) ∼ Q ->
+  Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S)) ∼ Q ->
   (* … and that subject is WELL-FORMED (the paper's prose "all inputs are
      well-formed"; erased to a pskl so the existing [a_wf_pskl] can state it —
      ⌊·⌋ˢ maps the dotted ghosts onto the plain ones, and the only content
@@ -1667,7 +1652,7 @@ Theorem a_lookeq_solve_complete :
      is ⊤◇(⊤̇◇⟨⟩) — a ghost over a ghost — which [a_wf_pskl__tophole] (and the
      declarative [d_wf_uskl__tophole]) forbid.
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
-  Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl θ S))) ->
+  Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S))) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->   (* Θ ⊢ inh(θP0) ⊳ Q *)
   (* θa := ρc ++ θ is a SYNTACTIC extension of θ over the fresh Ξc — a
      provable STRENGTHENING of the paper's [θ ≡ θa] (cf. P6-Cv's θa:=θ).
@@ -1742,7 +1727,7 @@ Proof.
       injection HeraseR as ->. reflexivity. }
     subst S.
     (* subject = (θ (var α))[ψa/α] = ψa *)
-    assert (Hms : msubst_uskl θ (uskl_var_f α) = uskl_var_f α)
+    assert (Hms : msubst_uskl_syn θ (uskl_var_f α) = uskl_var_f α)
       by (cbn; rewrite Hlk; apply ptyp_to_uskl_syn_var).
     rewrite Hms in Hconsis.
     assert (Hsubj : subst_bskl_in_uskl ψa α (uskl_var_f α) = ψa).
@@ -1798,13 +1783,13 @@ Proof.
     assert (Hθav : forall p, In p θ -> α `notin` ftvar_in_ptyp (snd p)).
     { intros p Hp. pose proof (a_inc_image_ftv_dom Hθ p Hp) as Hb.
       clear - HαΘ Hb; fsetdec. }
-    assert (HαMS : α `notin` ftvar_in_uskl (msubst_uskl θ S)).
-    { rewrite <- ftvar_in_pskl_uskl_to_pskl. rewrite uskl_to_pskl_msubst_uskl.
+    assert (HαMS : α `notin` ftvar_in_uskl (msubst_uskl_syn θ S)).
+    { rewrite <- ftvar_in_pskl_uskl_to_pskl. rewrite uskl_to_pskl_msubst_uskl_syn.
       rewrite HeraseR. apply msubst_pskl_ftv_avoid; [ exact Hθav | exact Hnin ]. }
-    rewrite (subst_bskl_in_uskl_fresh_eq (msubst_uskl θ S) ψa α HαMS) in Hconsis.
-    assert (HΨsR : Ψsub [<=] ftag_in_uskl (msubst_uskl θ S))
+    rewrite (subst_bskl_in_uskl_fresh_eq (msubst_uskl_syn θ S) ψa α HαMS) in Hconsis.
+    assert (HΨsR : Ψsub [<=] ftag_in_uskl (msubst_uskl_syn θ S))
       by (apply (ad_pat_consis_ftag_sub Hconsis)).
-    rewrite ftag_in_uskl_msubst_uskl in HΨsR.
+    rewrite ftag_in_uskl_msubst_uskl_syn in HΨsR.
     assert (HΨa0 : Ψa [=] empty) by (clear - HΨs2 HΨsR Hdisj Hsub; fsetdec).
     exists nil, nil, Pi, (@nil (atom * ptyp)).
     repeat split.
@@ -1840,13 +1825,13 @@ Proof.
     simpl in HeraseR. contradiction (HPnα (eq_sym HeraseR)).
   - (* S = arrow Sa Sb : LE-Arrow (P0-grid + sequential solve) *)
     pose proof Hconsis as Hcons0.  (* keep a FOLDED copy for the ⊤◇-P0 recursion *)
-    cbn [msubst_uskl subst_bskl_in_uskl] in Hconsis.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hconsis.
     assert (Hsza : size_uskl Sa <= n) by (cbn in Hn; lia).
     assert (Hszb : size_uskl Sb <= n) by (cbn in Hn; lia).
     destruct (lc_uskl_arrow_inv HlcS) as [HlcSa HlcSb].
     (* P is FORCED to the arrow shape by the erase-tie *)
     cbn [uskl_to_pskl] in HeraseR; subst P.
-    cbn [msubst_uskl subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
     destruct (a_wf_pskl_arrow_inv HwfSub) as [HwfSubA HwfSubB].
     (* Consistency inversion would give TWO branches — __arrow (Q = Q1→Q2) and
        __flex_r (Q a DEFINED flex var, whose definition chain ends at an arrow).
@@ -1858,9 +1843,9 @@ Proof.
     clear Hconsis Hrefine Hcons0.
     rename Href0 into Hrefine.
     assert (Hcons0 : Ψsub ⨟ Θ ⊢ₛᵃ
-              (subst_bskl_in_uskl ψa α (msubst_uskl θ (uskl_arrow Sa Sb)))
+              (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ (uskl_arrow Sa Sb)))
               ∼ (bskl_arrow Q1 Q2))
-      by (cbn [msubst_uskl subst_bskl_in_uskl]; exact Hcons0').
+      by (cbn [msubst_uskl_syn subst_bskl_in_uskl]; exact Hcons0').
     clear Hcons0'.
     + (* Q = bskl_arrow Q1 Q2.  Dispatch the P0-grid. *)
       destruct P0 as [ | n0 | β0 | P01 P02 | P0s | | P0s ].
@@ -1903,13 +1888,13 @@ Proof.
                 [ exact HwfΘ | exact Hrefine | reflexivity | exact Hτ0mono ]).
         (* ψa is a mono paint *)
         assert (Htskψa : is_tskl ψa) by (inversion Htags; subst; assumption).
-        assert (HαT : α `in` ftvar_in_uskl (msubst_uskl θ (uskl_arrow Sa Sb)))
-          by (apply ftvar_in_uskl_msubst_uskl_notin_dom;
+        assert (HαT : α `in` ftvar_in_uskl (msubst_uskl_syn θ (uskl_arrow Sa Sb)))
+          by (apply ftvar_in_uskl_msubst_uskl_syn_notin_dom;
                 [ exact Hαθdom | simpl; exact HαS ]).
         destruct (@ad_pat_consis_subst_psia_mono Ψsub Θ
-                    (subst_bskl_in_uskl ψa α (msubst_uskl θ (uskl_arrow Sa Sb)))
+                    (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ (uskl_arrow Sa Sb)))
                     (bskl_arrow Q1 Q2) Hcons0 HwfΘ Hmi
-                    (msubst_uskl θ (uskl_arrow Sa Sb)) ψa α eq_refl Htskψa HαT)
+                    (msubst_uskl_syn θ (uskl_arrow Sa Sb)) ψa α eq_refl Htskψa HαT)
           as (τψ & Hτψmono & Heqψ & Hτψwf).
         (* ψa mono ⇒ Ψ' = ∅ ⇒ Ψi = Ψa = ∅ *)
         assert (HΨ'e : Ψ' [=] empty).
@@ -2029,13 +2014,13 @@ Proof.
           by (clear - HΨs1 HΨs2 Hsub H6 Hdisj; fsetdec).
         assert (HΨ1sub : Ψ1 [<=] union (ftag_in_uskl Sa) Ψ').
         { pose proof (ad_pat_consis_ftag_sub H1) as Hf1.
-          pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α (msubst_uskl θ Sa)) as Hb1.
-          pose proof (ftag_in_uskl_msubst_uskl θ Sa) as Hm1.
+          pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α (msubst_uskl_syn θ Sa)) as Hb1.
+          pose proof (ftag_in_uskl_msubst_uskl_syn θ Sa) as Hm1.
           clear - Hf1 Hb1 Hm1 Hψatag; fsetdec. }
         assert (HΨ2sub : Ψ2 [<=] union (ftag_in_uskl Sb) Ψ').
         { pose proof (ad_pat_consis_ftag_sub H4) as Hf2.
-          pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α (msubst_uskl θ Sb)) as Hb2.
-          pose proof (ftag_in_uskl_msubst_uskl θ Sb) as Hm2.
+          pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α (msubst_uskl_syn θ Sb)) as Hb2.
+          pose proof (ftag_in_uskl_msubst_uskl_syn θ Sb) as Hm2.
           clear - Hf2 Hb2 Hm2 Hψatag; fsetdec. }
         assert (HscopeSa : ftvar_in_uskl Sa [<=] add α (dom Θ0))
           by (clear - HscopeS; simpl in HscopeS; fsetdec).
@@ -2060,8 +2045,8 @@ Proof.
           as (C1 & Ξc1 & Pa1 & ρc1 & HLK1 & HSolve1 & HwfPa1 & HwfΞ1 & HαΞ1
                 & Hmap1 & Himg1 & HftvC1 & Hinc1 & Hinceq1 & Hρf1 & Hpre1).
         (* --- transports for the RIGHT IH (θ → ρc1 ++ θ) --- *)
-        assert (Htr_c : msubst_uskl (ρc1 ++ θ) Sb = msubst_uskl θ Sb).
-        { apply msubst_uskl_prepend_fresh. intros X HX.
+        assert (Htr_c : msubst_uskl_syn (ρc1 ++ θ) Sb = msubst_uskl_syn θ Sb).
+        { apply msubst_uskl_syn_prepend_fresh. intros X HX.
           specialize (Hρf1 X HX). clear - Hρf1 HscopeSb; fsetdec. }
         assert (Htr_r : msubst_pskl (ρc1 ++ θ) P02 = msubst_pskl θ P02).
         { apply msubst_pskl_prepend_fresh. intros X HX.
@@ -2070,7 +2055,7 @@ Proof.
           clear - Hρf1 Hfd; fsetdec. }
         assert (HwfSubB' : Θ ⨟ empty ⊢ₚₛᵃ
                   (uskl_to_pskl (subst_bskl_in_uskl ψa α
-                                   (msubst_uskl (ρc1 ++ θ) Sb))))
+                                   (msubst_uskl_syn (ρc1 ++ θ) Sb))))
           by (rewrite Htr_c; exact HwfSubB).
         rewrite <- Htr_c in H4.
         rewrite <- Htr_r in Href2.
@@ -2248,9 +2233,9 @@ Proof.
   (* ---------------------------------------------------------------- *)
   - (* S = all_syn S0 : C-ForallInh (→ LE-ForallInh) / C-ForallSyn (→ LE-ForallSyn) *)
     cbn [uskl_to_pskl] in HeraseR; subst P.
-    cbn [msubst_uskl subst_bskl_in_uskl] in Hconsis.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hconsis.
     assert (Hlcψa : lc_uskl ψa) by (apply is_tskl_lc; inversion Htags; assumption).
-    cbn [msubst_uskl subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
     inversion HwfSub; subst.
     match goal with H : forall X, X `notin` ?Ls -> _ ⨟ _ ⊢ₚₛᵃ _ |- _ =>
       rename H into Hsbody; remember Ls as Ls0 eqn:HeqLs; clear HeqLs end.
@@ -2347,13 +2332,13 @@ Proof.
                 [ exact Hpre | intros x b Hb; apply binds_app_3; exact Hb ]).
         assert (Hconsβ : Ψsub ⨟ ((β ~ abind_tvar) ++ Θ) ⊢ₛᵃ
                   (subst_bskl_in_uskl ψa α
-                     (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β))))
+                     (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β))))
                   ∼ (open_bskl_wrt_bskl Q0 (bskl_var_f β))).
         { rewrite (@p6cs_subject_open Θ0 θ Θ ψa α S0 β Hθ Hαθdom Hβθ Hβα Hlcψa).
           apply Hcof; auto. }
         assert (HwfSubβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛᵃ
                   (uskl_to_pskl (subst_bskl_in_uskl ψa α
-                     (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))))).
+                     (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))))).
         { rewrite (@p6cs_subject_open Θ0 θ Θ ψa α S0 β Hθ Hαθdom Hβθ Hβα Hlcψa).
           rewrite uskl_to_pskl_open.
           eapply a_wf_pskl_delta_to_tvar_mid
@@ -2563,13 +2548,13 @@ Proof.
                    [ exact Hpre | intros x b Hb; apply binds_app_3; exact Hb ]).
            assert (Hconsβ : Ψsub ⨟ ((β ~ abind_tvar) ++ Θ) ⊢ₛᵃ
                      (subst_bskl_in_uskl ψa α
-                        (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β))))
+                        (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β))))
                      ∼ (open_bskl_wrt_bskl Q0 (bskl_var_f β))).
            { rewrite (@p6cs_subject_open Θ0 θ Θ ψa α S0 β Hθ Hαθdom Hβθ Hβα Hlcψa).
              apply Hcof; auto. }
            assert (HwfSubβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛᵃ
                      (uskl_to_pskl (subst_bskl_in_uskl ψa α
-                        (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))))).
+                        (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))))).
            { rewrite (@p6cs_subject_open Θ0 θ Θ ψa α S0 β Hθ Hαθdom Hβθ Hβα Hlcψa).
              rewrite uskl_to_pskl_open.
              eapply a_wf_pskl_delta_to_tvar_mid
@@ -2661,9 +2646,9 @@ Proof.
   - (* S = all_etag εr S0 : the ε-TAGGED mirror of the previous case
        (C-ForallInh's tagged row splits the index [Ψ = Ψ0, ε]). *)
     cbn [uskl_to_pskl] in HeraseR; subst P.
-    cbn [msubst_uskl subst_bskl_in_uskl] in Hconsis.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hconsis.
     assert (Hlcψa : lc_uskl ψa) by (apply is_tskl_lc; inversion Htags; assumption).
-    cbn [msubst_uskl subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
     inversion HwfSub; subst.
     match goal with H : forall X, X `notin` ?Ls -> _ ⨟ _ ⊢ₚₛᵃ _ |- _ =>
       rename H into Hsbody; remember Ls as Ls0 eqn:HeqLs; clear HeqLs end.
@@ -2754,8 +2739,8 @@ Proof.
           pose proof (ad_pat_consis_ftag_sub (Hcof β ltac:(auto))) as Hfb.
           rewrite ftag_in_uskl_open_var in Hfb.
           pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α
-                        (msubst_uskl θ S0)) as Hsb.
-          rewrite ftag_in_uskl_msubst_uskl in Hsb.
+                        (msubst_uskl_syn θ S0)) as Hsb.
+          rewrite ftag_in_uskl_msubst_uskl_syn in Hsb.
           pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
           simpl in HΨs1, Hdisj.
           rewrite <- Hψatag in Hsb.
@@ -2794,13 +2779,13 @@ Proof.
                 [ exact Hpre | intros x b Hb; apply binds_app_3; exact Hb ]).
         assert (Hconsβ : Ψ0 ⨟ ((β ~ abind_tvar) ++ Θ) ⊢ₛᵃ
                   (subst_bskl_in_uskl ψa α
-                     (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β))))
+                     (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β))))
                   ∼ (open_bskl_wrt_bskl Q0 (bskl_var_f β))).
         { rewrite (@p6cs_subject_open Θ0 θ Θ ψa α S0 β Hθ Hαθdom Hβθ Hβα Hlcψa).
           apply Hcof; auto. }
         assert (HwfSubβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛᵃ
                   (uskl_to_pskl (subst_bskl_in_uskl ψa α
-                     (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))))).
+                     (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))))).
         { rewrite (@p6cs_subject_open Θ0 θ Θ ψa α S0 β Hθ Hαθdom Hβθ Hβα Hlcψa).
           rewrite uskl_to_pskl_open.
           eapply a_wf_pskl_delta_to_tvar_mid
@@ -3007,8 +2992,8 @@ Proof.
              pose proof (ad_pat_consis_ftag_sub (Hcof β ltac:(auto))) as Hfb.
              rewrite ftag_in_uskl_open_var in Hfb.
              pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α
-                           (msubst_uskl θ S0)) as Hsb.
-             rewrite ftag_in_uskl_msubst_uskl in Hsb.
+                           (msubst_uskl_syn θ S0)) as Hsb.
+             rewrite ftag_in_uskl_msubst_uskl_syn in Hsb.
              pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
              simpl in HΨs1, Hdisj.
              rewrite HΨeq in HΨs1.
@@ -3036,13 +3021,13 @@ Proof.
                    [ exact Hpre | intros x b Hb; apply binds_app_3; exact Hb ]).
            assert (Hconsβ : Ψ0 ⨟ ((β ~ abind_tvar) ++ Θ) ⊢ₛᵃ
                      (subst_bskl_in_uskl ψa α
-                        (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β))))
+                        (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β))))
                      ∼ (open_bskl_wrt_bskl Q0 (bskl_var_f β))).
            { rewrite (@p6cs_subject_open Θ0 θ Θ ψa α S0 β Hθ Hαθdom Hβθ Hβα Hlcψa).
              apply Hcof; auto. }
            assert (HwfSubβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛᵃ
                      (uskl_to_pskl (subst_bskl_in_uskl ψa α
-                        (msubst_uskl θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))))).
+                        (msubst_uskl_syn θ (open_uskl_wrt_uskl S0 (uskl_var_f β)))))).
            { rewrite (@p6cs_subject_open Θ0 θ Θ ψa α S0 β Hθ Hαθdom Hβθ Hβα Hlcψa).
              rewrite uskl_to_pskl_open.
              eapply a_wf_pskl_delta_to_tvar_mid
@@ -3138,9 +3123,9 @@ Proof.
        "case analysis on P0" in Case C-UnivGhost2. *)
     cbn [uskl_to_pskl] in HeraseR; subst P.
     pose proof (lc_uskl_tophole_inv HlcS) as HlcS0.
-    cbn [msubst_uskl subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
     destruct (a_wf_pskl_tophole_inv HwfSub) as [HgSub0 HwfSub0].
-    cbn [msubst_uskl subst_bskl_in_uskl] in Hconsis.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hconsis.
     assert (Hmeas0 : forall P0', size_pskl P0' <= size_pskl P0 ->
                      size_uskl S0 + size_pskl P0' <= n)
       by (intros P0' HP0'; cbn in Hn; lia).
@@ -3269,7 +3254,7 @@ Proof.
                    [ exact Hpre | intros x b Hb; apply binds_app_3; exact Hb ]).
            assert (HwfSubβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛᵃ
                      (uskl_to_pskl (subst_bskl_in_uskl ψa α
-                        (msubst_uskl θ (uskl_tophole S0)))))
+                        (msubst_uskl_syn θ (uskl_tophole S0)))))
              by (eapply a_wf_pskl_weaken;
                    [ intros x b Hb; apply binds_app_3; exact Hb | exact HwfSub ]).
            assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
@@ -3368,10 +3353,10 @@ Proof.
            exfalso.
            pose proof (guarded_uskl_head
                          (@guarded_uskl_of_pskl
-                            (subst_bskl_in_uskl ψa α (msubst_uskl θ S0)) HgSub0))
+                            (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0)) HgSub0))
              as Hghsub.
            match goal with
-             H : _ ⨟ _ ⊢ₛᵃ subst_bskl_in_uskl ψa α (msubst_uskl θ S0)
+             H : _ ⨟ _ ⊢ₛᵃ subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0)
                    ∼ bskl_all_inh _ |- _ =>
                pose proof (ad_pat_consis_guarded_head_target H HwfΘ Hghsub) as Hgh
            end.
@@ -3419,10 +3404,10 @@ Proof.
         inversion Hconsis; subst.
         pose proof (guarded_uskl_head
                       (@guarded_uskl_of_pskl
-                         (subst_bskl_in_uskl ψa α (msubst_uskl θ S0)) HgSub0))
+                         (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0)) HgSub0))
           as Hghsub.
         match goal with
-          H : _ ⨟ _ ⊢ₛᵃ subst_bskl_in_uskl ψa α (msubst_uskl θ S0)
+          H : _ ⨟ _ ⊢ₛᵃ subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0)
                 ∼ bskl_all_syn _ |- _ =>
             pose proof (ad_pat_consis_guarded_head_target H HwfΘ Hghsub) as Hgh
         end.
@@ -3436,7 +3421,7 @@ Proof.
         inversion Hconsis; subst.
         -- (* C-UnivGhost : the ghost is kept on both sides *)
            match goal with
-             H : _ ⨟ _ ⊢ₛᵃ subst_bskl_in_uskl ψa α (msubst_uskl θ S0) ∼ _ |- _ =>
+             H : _ ⨟ _ ⊢ₛᵃ subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0) ∼ _ |- _ =>
                rename H into Hc0 end.
            edestruct (IHn NM Θ0 Θ θ Δ Ψ' Ψi Ψa Ψsub ψa _
                         (uskl_to_pskl S0) P0s Pi S0 α
@@ -3453,10 +3438,10 @@ Proof.
            exfalso.
            pose proof (guarded_uskl_head
                          (@guarded_uskl_of_pskl
-                            (subst_bskl_in_uskl ψa α (msubst_uskl θ S0)) HgSub0))
+                            (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0)) HgSub0))
              as Hghsub.
            match goal with
-             H : _ ⨟ _ ⊢ₛᵃ subst_bskl_in_uskl ψa α (msubst_uskl θ S0)
+             H : _ ⨟ _ ⊢ₛᵃ subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S0)
                    ∼ bskl_tophole _ |- _ =>
                pose proof (ad_pat_consis_guarded_head_target H HwfΘ Hghsub) as Hgh
            end.
@@ -3488,9 +3473,9 @@ Proof.
        defined-flex chain), and only [P0 = ⊤◇P0s] can refine to a [⊤◇]. *)
     cbn [uskl_to_pskl] in HeraseR; subst P.
     pose proof (lc_uskl_topholeg_inv HlcS) as HlcS0.
-    cbn [msubst_uskl subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl uskl_to_pskl] in HwfSub.
     destruct (a_wf_pskl_tophole_inv HwfSub) as [HgSub0 HwfSub0].
-    cbn [msubst_uskl subst_bskl_in_uskl] in Hconsis.
+    cbn [msubst_uskl_syn subst_bskl_in_uskl] in Hconsis.
     destruct (ad_pat_consis_topholeg_refine_unify HwfΘ Hconsis eq_refl Hrefine)
       as (Q0 & Hc0 & Href0).
     clear Hconsis Hrefine.

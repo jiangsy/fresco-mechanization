@@ -37,29 +37,28 @@ excluded from the build); mine them when re-proving.
 | Algorithmic skeleton inference (fig:alg-skeleton-inference) | `a_pat` | 🟢 |
 | Algorithmic type inference (fig:alg-type-inference) | `a_typing` | 🟢 ∀ᾱ.A₀ AbsCheck (step/base), typed Freeze |
 | Erasure ⌊·⌋, decorated subtyping/consistency, tag solving (app:decorated-algosub) | `algo/def_decorated.v` (`uskl_to_pskl`, `a_subtag`, `a_consistag`, `a_solvetag(_sub/_eq)`) | 🟢 |
-| Metasubstitutions θ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`) | 🟢 |
-| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo/def_decl_algo.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules) | 🟡 consistency/refinement layer done; subtyping/typing layer TODO |
+| Metasubstitutions θ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`, and the application family `msubst_{ptyp,btyp,pskl,uskl_syn}`) | 🟢 |
+| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo/def_decl_algo.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `algo/def_decl_algo_sub.v` (`ad_pat_sub`, its fuel-indexed `ad_pat_sub_n`, `ad_partial_precise`); `algo/def_decl_algo_sub_hyg.v` (`ad_pat_sub_g`, the hygienic mirror) | 🟡 consistency / refinement / skeleton-subtyping / partial-precision layers all DONE and used by closed proofs (audited 2026-07-28); only the TYPING layer (`ad_typing`-style, needed by section D) is still absent |
 
 ## Theorems / lemmas (bottom-up order; ⬜ = to prove, per paper appendix)
 
-**B. consistency-proofs.tex** (§Consistency)
-- ⬜ Soundness of decorated consistency
-- ✅ Decorating algorithmic consistency (`a_consis_decorate`, `algo/prop_decorate.v`); ⬜ Consistency decoration
-- ✅ Soundness of Consistency parts 2–3 (`a_unify_sound` / `a_assign_sound`, `algo/prop_flex.v` — the unifyvar/assignvar halves of thm:sound-consistency); ⬜ part 1 (the aconsis main induction)
-- ⬜ Consistency constraint decoration for variables
-- ⬜ Completeness of consistency constraint collection & solving (+ for variables)
-- ⬜ Soundness of Consistency (Lemma soundConsistency, 3 parts: consis / unifyvar / assignvar)
-- ⬜ Completeness and optimality of Consistency (3 parts)
+**B. consistency-proofs.tex** (§Consistency) — ALL PROVED (status audited 2026-07-28; every `algo/` file is admit-free)
+- ✅ Soundness of decorated consistency (`a_consistag_sound_aux`, `algo/prop_consis_sound.v`)
+- ✅ Decorating algorithmic consistency (`a_consis_decorate`, `algo/prop_decorate.v`); ✅ Consistency decoration (`algo/prop_decorate_sub.v`, consistency-proofs:88)
+- ✅ Soundness of Consistency, all three parts: part 1 `a_consis_sound` / `a_consis_sound_aux` (`algo/prop_consis_sound.v`, the aconsis main induction), parts 2–3 `a_unify_sound` / `a_assign_sound` (mutual bundle `a_assign_unify_consis_sound`)
+- ✅ Consistency constraint decoration for variables (`algo/prop_decorate_sub.v`, consistency-proofs:606)
+- ✅ Completeness of consistency constraint collection & solving: `a_lookeq_solve_complete` (P6-Cs, `algo/prop_look_complete_cstr.v`) and `a_solve_eq_complete_var` (P6-Cv, `algo/prop_look_complete_var.v`) — both axiom-free; P6-Cs carries one paper-external wf side condition whose necessity is machine-checked (`algo/cex/cex_p6cs_subject_wf.v`, docs/WF-SIDE-CONDITIONS.md)
+- ✅ Completeness and optimality of Consistency, all three parts (`a_consis_complete_thm` / `complete_mu` / `assign_complete_step`, `algo/prop_consis_complete.v`)
 
 **C. subtyping-proofs.tex** (§Subtyping)
-- ⬜ Decorating algorithmic subtyping; Soundness of decorated subtyping
-- ⬜ Look decoration; Decorating constraint solving; Constraint solving concatenation
-- ⬜ Subtyping decoration (variables → general); Vacuous subtyping decoration
-- ⬜ Stability of constraint collection; Look freshness
-- ⬜ Decorating instantiation; Soundness of decorated algorithmic subtyping of flexible variables
-- ⬜ Theorem: Soundness of subtyping
-- ⬜ Complete partial precision; Stability of subtyping under more precise substitution
-- 🟡 Completeness of constraint collection & solving (+ for variables); Look completeness — the CONSISTENCY half is done: `a_solve_eq_complete_var` (P6-Cv, `prop_look_complete_var.v`) and `a_lookeq_solve_complete` (P6-Cs, `prop_look_complete_cstr.v`), both `Qed` and axiom-free, 0 admits; the SUBTYPING half (P6-Sv / P6-Ss) is next
+- ✅ Decorating algorithmic subtyping (`a_sub_decorate` / `a_sub_decorate_bundle`, `algo/prop_decorate_sub.v` + `algo/prop_decorate_key.v`); Soundness of decorated subtyping (`a_subtag_sound_bundle`, `algo/prop_sub_sound.v`)
+- ✅ Look decoration (`algo/prop_pat_sub.v` §7); Decorating constraint solving (`algo/prop_decorate_key.v`); Constraint solving concatenation (`algo/prop_decorate_sub.v` §3, lemma:solvetag-concat)
+- ✅ Subtyping decoration (variables → general) (`algo/prop_decorate_sub.v`, subtyping-proofs:175/541); Vacuous subtyping decoration (same file, :483)
+- ✅ Stability of constraint collection (`a_looksub_lookeq_subst_stable`); Look freshness (`a_extract_output_fresh`) — both `algo/prop_looksub.v`
+- ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_decorate_key.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
+- ✅ **Theorem: Soundness of subtyping** (`a_sub_sound_thm`, `algo/prop_decorate_key.v`, axiom-free)
+- ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
+- 🟡 Completeness of constraint collection & solving (+ for variables) (subtyping-proofs:1696/:2202); Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); these SUBTYPING versions (P6-Sv / P6-Ss) are the next targets and should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
 

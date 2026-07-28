@@ -13,6 +13,7 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_decl_algo.   (* [ptyp_to_uskl_syn] *)
 
 Set Implicit Arguments.
 
@@ -59,6 +60,28 @@ Fixpoint msubst_pskl (ρ : metasubst) (P : pskl) : pskl :=
   | pskl_all_syn P0 => pskl_all_syn (msubst_pskl ρ P0)
   | pskl_hole => pskl_hole
   | pskl_tophole P0 => pskl_tophole (msubst_pskl ρ P0)
+  end.
+
+(** [θ S] on UNRESOLVED skeletons — the sort the decorated consistency's
+    subject lives in.  NB distinct from [prop_decorate_sub.msubst_uskl], which
+    is the PAPER's ρ (a map from rigid variables to decorated SKELETONS); this
+    one applies a METASUBSTITUTION (flexibles ↦ monotypes), hence the [_syn]
+    suffix: an image is embedded with the synthesised painting.  A flexible variable's image is a monotype, so it is
+    embedded with the synthesised painting; every other constructor (including
+    the plain and dotted ghosts) is structural.  This is what lets a subject be
+    written as the paper writes it, [(θS)[ψa/α]], instead of baking θ into it. *)
+Fixpoint msubst_uskl_syn (ρ : metasubst) (S : uskl) : uskl :=
+  match S with
+  | uskl_unit => uskl_unit
+  | uskl_var_b n => uskl_var_b n
+  | uskl_var_f X => ptyp_to_uskl_syn (msubst_lookup ρ X)
+  | uskl_arrow S1 S2 => uskl_arrow (msubst_uskl_syn ρ S1) (msubst_uskl_syn ρ S2)
+  | uskl_all_syn S0 => uskl_all_syn (msubst_uskl_syn ρ S0)
+  | uskl_all_etag ε S0 => uskl_all_etag ε (msubst_uskl_syn ρ S0)
+  | uskl_hole => uskl_hole
+  | uskl_tophole S0 => uskl_tophole (msubst_uskl_syn ρ S0)
+  | uskl_holeg => uskl_holeg
+  | uskl_topholeg S0 => uskl_topholeg (msubst_uskl_syn ρ S0)
   end.
 
 Fixpoint msubst_btyp (ρ : metasubst) (B : btyp) : btyp :=

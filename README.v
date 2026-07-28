@@ -18,6 +18,11 @@ Require Import src.frost.algo.prop_consis_sound.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.test_unify_regression.
 Require Import src.frost.algo.prop_precise.
+Require Import src.frost.algo.prop_consis_complete.
+Require Import src.frost.algo.prop_decorate_key.
+Require Import src.frost.algo.prop_sub_complete.
+Require Import src.frost.algo.prop_look_complete_var.
+Require Import src.frost.algo.prop_look_complete_cstr.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -89,6 +94,31 @@ Check a_isub_refl.
 Check a_isub_weaken_suffix.
 Check a_isub_trans.
 
+(* Theorem [Completeness and optimality of consistency]
+   (thm:complete-consistency, consistency-proofs.tex:2225-3167), all three
+   parts: the μ-indexed bundle [complete_mu] and the paper-shaped corollary. *)
+Check a_consis_complete_thm.
+Check complete_mu.
+
+(* Theorem [Soundness of subtyping] (thm:sound-subtyping): an algorithmic
+   subtyping run is an information increase whose output is a declarative
+   subtype of the subject and a valid fill of the input skeleton.  Assembled
+   from decoration ([a_sub_decorate]) + soundness of the DECORATED system
+   ([a_subtag_sound_bundle]). *)
+Check a_sub_sound_thm.
+
+(* Lemma [Stability of subtyping under more precise substitution]
+   (subtyping-proofs.tex:1664) — P5, the first half of thm:complete-subtyping. *)
+Check ad_pat_sub_precise_upre.
+
+(* Lemma [Completeness of consistency constraint collection and solving]
+   (consistency-proofs.tex:920) and its variable case (:1180) — P6-Cs / P6-Cv.
+   P6-Cs carries one paper-external wf side condition (well-formedness of the
+   consistency subject) whose NECESSITY is machine-checked in
+   algo/cex/cex_p6cs_subject_wf.v; see docs/WF-SIDE-CONDITIONS.md. *)
+Check a_lookeq_solve_complete.
+Check a_solve_eq_complete_var.
+
 (* ===================================================================== *)
 (*  Assumption audit — all must be "Closed under the global context"      *)
 (* ===================================================================== *)
@@ -108,3 +138,9 @@ Print Assumptions a_unify_succeeds_on_arrow_definition.
 Print Assumptions a_consistag_sound_aux.
 Print Assumptions ad_precise_preserves_refine.
 Print Assumptions a_consis_sound.
+Print Assumptions a_consis_complete_thm.
+Print Assumptions complete_mu.
+Print Assumptions a_sub_sound_thm.
+Print Assumptions ad_pat_sub_precise_upre.
+Print Assumptions a_solve_eq_complete_var.
+Print Assumptions a_lookeq_solve_complete.

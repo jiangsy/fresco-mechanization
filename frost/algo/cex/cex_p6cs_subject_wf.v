@@ -34,7 +34,7 @@ Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.def_tags.
 Require Import src.frost.algo.prop_look_complete.  (* [delta_def_fresh] *)
-Require Import src.frost.algo.prop_look_complete_cstr.  (* P6-Cs + [msubst_uskl] *)
+Require Import src.frost.algo.prop_look_complete_cstr.  (* P6-Cs + [msubst_uskl_syn] *)
 
 (* ===================================================================== *)
 (*  The witness                                                           *)
@@ -48,10 +48,10 @@ Definition cex_Q : bskl := bskl_tophole bskl_unit.
 
 (* the subject [(θS)[ψa/α]] at θ = · is [⊤◇(⊤̇◇⟨⟩)] *)
 Lemma cex_subject : forall α,
-  subst_bskl_in_uskl cex_ψa α (msubst_uskl nil (cex_S α))
+  subst_bskl_in_uskl cex_ψa α (msubst_uskl_syn nil (cex_S α))
   = uskl_tophole cex_ψa.
 Proof.
-  intros α. cbn [cex_S msubst_uskl msubst_lookup subst_bskl_in_uskl].
+  intros α. cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl].
   unfold ptyp_to_uskl_syn; cbn.
   destruct (eq_var α α); [ reflexivity | contradiction ].
 Qed.
@@ -62,7 +62,7 @@ Qed.
 
 Lemma cex_subject_not_wf : forall α,
   ~ (nil ⨟ empty ⊢ₚₛᵃ
-       (uskl_to_pskl (subst_bskl_in_uskl cex_ψa α (msubst_uskl nil (cex_S α))))).
+       (uskl_to_pskl (subst_bskl_in_uskl cex_ψa α (msubst_uskl_syn nil (cex_S α))))).
 Proof.
   intros α Hwf. rewrite cex_subject in Hwf.
   cbn [uskl_to_pskl cex_ψa] in Hwf.
@@ -138,7 +138,7 @@ Theorem p6cs_without_subject_wf_is_false :
        Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
        Ψsub [<=] ftag_in_uskl S `union` Ψa ->
        Ψa [<=] Ψsub ->
-       Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl θ S)) ∼ Q ->
+       Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ S)) ∼ Q ->
        (* NB: the subject-wf premise
             [Θ ⨟ empty ⊢ₚₛᵃ ⌊ (θS)[ψa/α] ⌋ˢ]
           is exactly what is MISSING here *)
@@ -244,13 +244,13 @@ Proof.
                      apply ad_ppre__unit; clear; fsetdec)
                ltac:(clear; fsetdec)
                ltac:(clear; fsetdec)
-               ltac:(cbn [cex_S msubst_uskl msubst_lookup subst_bskl_in_uskl];
+               ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl];
                      unfold ptyp_to_uskl_syn; cbn;
                      match goal with |- context [if ?c then _ else _] =>
                        destruct c end; [ | contradiction ];
                      apply ad_pat_consis__tophole;
                      apply ad_pat_consis__unit; clear; fsetdec)
-               ltac:(cbn [cex_S msubst_uskl msubst_lookup subst_bskl_in_uskl];
+               ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl];
                      unfold ptyp_to_uskl_syn; cbn;
                      match goal with |- context [if ?c then _ else _] =>
                        destruct c end; [ | contradiction ];
