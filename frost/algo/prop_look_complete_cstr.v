@@ -1817,7 +1817,7 @@ Qed.
         [Rsub]'s shape off the ideal's, and for a non-variable ideal that
         returns a SINGLE congruence (no disjunct to case on);
      3. ψa never moves, so ρ's action on the guess is fixed throughout.
-   ⚠️ The ρ premise is stated at a FIXED context [Θs] with a binds-monotonicity
+   The ρ premise is stated at a FIXED context [Θs] with a binds-monotonicity
    into [Θ] (P6-Sv's device).  It must NOT be stated at [Θ]: the ∀ rows run the
    IH at [Θ,β] and then strip β from 𝒞, and the ftv-𝒞 conclusion below names
    the ρ-images' scope — at [Θ] that bound would readmit the very binder being
@@ -1899,7 +1899,7 @@ Theorem a_lookeq_solve_complete_gen :
        (FIXED) scope Θs, the collected flexibles, κ's domain and the context's
        definitions — never a fresh ∀-binder.  This is what makes LE-ForallInh /
        LE-UnivGhost1 (which open the TARGET under the binder) applicable with a
-       single 𝒞.  ⚠️ [dom Θs], NOT [dom Θ]: see the header. *)
+       single 𝒞.  [dom Θs], NOT [dom Θ]: see the header. *)
     ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Θs
                           `union` dom Ξc `union` dom κ
                           `union` def_ftv Θ /\
@@ -1965,7 +1965,7 @@ Proof.
     (* subject = (κ (var α))[ψa/α] = ψa *)
     assert (Hms : msubst_uskl_syn κ (uskl_var_f α) = uskl_var_f α)
       by (cbn; rewrite Hlk; apply ptyp_to_uskl_syn_var).
-    (* ⚠️ under ρ the SUBJECT is [Rsub], so it is the IDEAL side of [Hrho] that
+    (* under ρ the SUBJECT is [Rsub], so it is the IDEAL side of [Hrho] that
        collapses to ψa — [Hconsis] is already in the shape P6-Cv wants. *)
     rewrite Hms in Hrho.
     assert (Hsubj : subst_bskl_in_uskl ψa α (uskl_var_f α) = ψa).
@@ -2140,7 +2140,7 @@ Proof.
         assert (HαT : α `in` ftvar_in_uskl (msubst_uskl_syn κ (uskl_arrow Ra Rb)))
           by (apply ftvar_in_uskl_msubst_uskl_syn_notin_dom;
                 [ exact Hακdom | simpl; exact HαR ]).
-        (* ⚠️ ρ makes the subject the IMAGE of [(κR)[ψa/α]], so the ρ-free
+        (* ρ makes the subject the IMAGE of [(κR)[ψa/α]], so the ρ-free
            extraction no longer applies syntactically — and no commutation
            repairs that ([uskl_rho] is a relation; see the header of
            [ad_pat_consis_rho_subst_psia_mono]).  What DOES apply is that a

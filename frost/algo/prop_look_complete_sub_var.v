@@ -289,7 +289,7 @@ Qed.
 (** Weakening by a FLEXIBLE prefix (P6-Ss's Sub-Arrow runs its right branch
     at [Ξc1,Θ0], where Ξc1 holds the flexibles the left branch collected).
 
-    ⚠️ This one needs a side condition, and [flex_shield_weaken_tvar] does
+    This one needs a side condition, and [flex_shield_weaken_tvar] does
     not: [fsh_flexfree] is ANTI-monotone in the context — it asserts that no
     variable of P0 is a Θ0-FLEXIBLE, and a prefix of flexibles could make one
     so.  Requiring the prefix to avoid [ftv P0] is exactly enough, and it is
@@ -1694,7 +1694,7 @@ Proof.
          HwfΘ HwfΘ0 HwfPi HwfP0 HmodSK HmodTY Hκ Hrho Htags HwfSub
          Htageq Hinter Hrhof Hdelta Hshield Hdfresh Hapart Hfsh Hpre
          HΨs1 HΨs2 Hext Hrefine.
-  (* ⚠️ the lemma's [Ψ'] is re-introduced as [Ψt]: [Ψ'] is a BINDER NAME of
+  (* the lemma's [Ψ'] is re-introduced as [Ψt]: [Ψ'] is a BINDER NAME of
      the ForallL rules, so [induction] has already claimed it *)
   induction Hsub; intros
     Θe Θ0 κ Δ Δρ Ψρ Ψt Ψi Ψa ψa Pi P0
@@ -1765,7 +1765,7 @@ Proof.
                     [ exact HwfΘ | eassumption | reflexivity | reflexivity
                     | eapply a_wf_aenv_binds_def_mono;
                         [ exact HwfΘ | eassumption ] ] ]. }
-    (* ⚠️ the subject is the RULE's [T] here, not the statement's ψsub *)
+    (* the subject is the RULE's [T] here, not the statement's ψsub *)
     destruct (@a_solve_eq_complete_var a_sub_mode_ty Θ0 Θ κ Δ Δρ Ψρ Ψt Ψi Ψa
                 Ψ T ψa (pskl_to_bskl_inh B) Pi P0
                 HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hrho Htags
