@@ -2750,3 +2750,60 @@ decision above, so start there):
    Δρ = ∅ is NOT free (a `fa_walk` can grow Δρ via `fastep_all_r`); see
    `cex_flex_apart_walk_unit` in `cex/cex_p6cs_subject_wf.v` for the shape
    of the induction a from-scratch construction needs.
+
+### (f) P6-Ss status 2026-07-29 (fourth session) — Arrow CLOSED, leaf ρ-ready, the rest SPLIT IN TWO
+
+`make coq` green; admits = P6-Ss's THREE (ForallR, ForallL×2).
+
+**Closed.**
+
+- **Arrow.**  LEFT premise (a consistency judgment) → the ρ-free P6-Cs
+  corollary; RIGHT → the derivation IH; LS-Arrow pairs the prefixes and
+  `a_solve_cstr_app` composes the solves — legal because `C1`, a LOOKEQ's
+  output, holds no subtyping constraint.  The assembly is line-for-line
+  P6-Cs's Arrow assembly minus its ftv-𝒞 conjunct.  Three prerequisites it
+  forced, all landed:
+  1. the induction now GENERALIZES `Θ0` and `κ` — the right branch runs at
+     `Ξc1 ++ Θ0` / `κc1 ++ κ` because the solves are SEQUENTIAL.  All eight
+     previously closed rows survived untouched.
+  2. `sub_shield` transports across a FLEXIBLE prefix.  `flex_shield` is NOT
+     context-monotone: `fsh_flexfree` says no variable of P0 is a
+     Θ0-FLEXIBLE, and a flex prefix can make one so, so the transport needs
+     `ftv P0 ∩ dom Ξ = ∅`.  The call site has that, but `sub_shield`
+     quantifies over every `ss_walk`-reachable `P0'` and `sss_all` opened
+     with an ARBITRARY γ — so `ss_step` / `ss_walk` now carry an AVOID SET
+     (`sss_all` needs `γ ∉ A`), instantiated at `dom Θ0`.  New:
+     `ss_walk_mono`, `ss_walk_ftv`, `flex_shield_weaken_flex_prefix`,
+     `sub_shield_weaken_flex_prefix`.
+  3. `a_looksub_all_flex_mono` — looksub collects flexibles only through
+     LS-Check and LS-Arrow's left premise, both of which are lookeq.
+- **The leaf is ρ-generalized.**  `a_looksub_solve_complete_leaf` carries the
+  ρ pack, `sub_shield` at Δρ, and its `P = α` case hands P6-Sv the REAL ρ.
+  `a_looksub_solve_complete_leaf_id` is the ρ = identity wrapper, so the
+  theorem's call sites are untouched for now.
+  NB P6-Sv's ρ interface was never idle — its OWN Sub-ForallL row grows ρ
+  (`uskl_rho_subst`, then the IH at `add β Δρ`), and `fsh_all_r` bakes the
+  growth into `flex_shield`.  Only the EXTERNAL entry point was
+  identity-instantiated; the leaf simply stops passing the identity.
+
+**Split the rest in two.**  ForallL needs only the ρ params; ForallR needs
+only the ψa-relative ftv-𝒞 conclusion.  So:
+
+- **Phase A** — ρ params + threading ⇒ ForallL×2.  Needs NO `Θs`: P6-Sv's
+  leaf call wants `uskl_rho` at plain `Θ`.  Delta mirrors P6-Cs's:
+  `+ Δρ Ψρ Rsub`, `uskl_rho … Rsub ((κR')[ψa/α])`, `Ψρ ∩ Ψ' = ∅`,
+  `rho_fresh`, `Δρ ⊆ Δ`, `Δρ ∩ dom Θ0 = ∅`, the Pi-shielded-ftv condition;
+  `sub_shield` at Δρ; subtyping + wf premises on `Rsub`; the `Ψsub` bound
+  gains Ψρ; the conclusion gains `Forall (images ⊥ Δρ)`.
+- **Phase B** — the ψa-relative ftv-𝒞 conclusion ⇒ ForallR.  This is the
+  part that needs `Θs` (same reason as P6-Cs: the ∀ rows strip β from 𝒞).
+
+**Phase A is NOT incremental — budget a fresh sitting.**  P6-Ss `remember`s
+its subject as `Sub0` with `HeqSub : Sub0 = (κR')[ψa/α]`, and every row reads
+R''s shape off that equation by `destruct R'` + `discriminate`.  Under ρ the
+derivation runs on the VARIABLE `Rsub`, which `induction` abstracts directly
+— so the `remember` / `HeqSub` device is DROPPED and each row inverts `Hrho`
+with the `uskl_rho_*_r_inv` family instead, exactly as P6-Cs does.  That
+rewrites all nine closed rows' shape-derivations at once; there is no
+compiling half-way state, and the `_id` leaf wrapper dies with it (the rows
+move to the general leaf).
