@@ -2637,6 +2637,51 @@ A WIP diff of everything verified above (statement + leaf + Absent + Arrow
 inversion) was produced and discarded with the revert; it is ~60 lines and
 re-derivable from this recipe in minutes.
 
+✅ **DONE 2026-07-29 (third session) — P6-Cs IS ρ-GENERALIZED AND `Qed`.**
+`a_lookeq_solve_complete` is axiom-free, `make coq` is green, and the ρ =
+identity instance is machine-checked to still FIRE (the non-vacuity witness
+`p6cs_fires_when_the_subject_is_wf` in `cex/cex_p6cs_subject_wf.v`).  What the
+recipe above got right, and the four places it did not:
+
+1. ⚠️ **The COMMUTATION is FALSE, and no repair of it is needed.**  `uskl_rho`
+   is a RELATION, not a substitution: `urho__leaf` may send two occurrences of
+   the SAME Δρ-variable to DIFFERENT images, so `ρ((κR)[ψa/α]) =
+   (ρψa)[ρ(κR)/α]` fails already at `R = α→α`, `ψa = β ∈ Δρ`.  The
+   "mono-paint reflection" step is likewise unnecessary.  What replaces both:
+   at a FLEXIBLE P0 the only `flex_apart` constructor that can hold is
+   `fa_clean` (`fa_var_rigid` wants that same variable RIGID; `fa_topholeg_t`
+   does not move free variables), so the guess is Δρ-CLEAN there and
+   `uskl_rho_clean_eq` collapses ρ on it.  Landed lemmas:
+   `flex_apart_flex_var_clean`, `psia_rho_leaf_step`,
+   `psia_rho_leaf_impossible`, `ad_pat_consis_rho_subst_psia_mono`.  The last
+   inducts on the CONSISTENCY (not on ρ), so `bskl_monoish Q` kills every
+   binder case and no cofinite bookkeeping arises; each live row inverts ρ by
+   the SUBJECT shape, delegates `urho__refl` to the ρ-free lemma verbatim, and
+   threads the sub-ρ into the recursive call.
+2. **Two premises beyond the recipe**, both forced by the Arrow row's RIGHT
+   recursion (its `Pi` becomes the LEFT branch's `Pa1` under `κc1 ++ κ`):
+   `Δρ ∩ dom Θ0 = ∅` and a new OUTPUT conjunct
+   `Forall (fun p => ftv (snd p) ∩ Δρ = ∅) κc`.  Together they re-derive the
+   shielded-ftv condition at `Pa1`: `Ξc1` is fresh for Θ ⊇ Δρ so `Pa1` avoids
+   Δρ, and κ's images avoid it by `rho_fresh` while κc1's do by the new
+   `Forall` (whose only witness source is the flexible-P0 row, where the guess
+   is Δρ-clean).
+3. ⚠️ **`flex_apart_walk` did NOT cover P6-Cs's Arrow row.**  `fastep_arrow_l`
+   / `_r` descend P0 and ψa TOGETHER, but P6-Cs keeps ψa FIXED (it is the
+   single guess for α and never splits).  `fa_step` therefore gains
+   `fastep_p0_arrow_l` / `_r`; `fastep_all_l` and `fastep_tophole_l` already
+   had the right shape.  Adding constructors only STRENGTHENS the premise, so
+   P6-Sv (which merely threads the walk via `_here` / `_step`) is unaffected.
+   Also added: `flex_apart_walk_weaken` (the tvar-only version does not cover
+   the Arrow row's `Ξc1 ++ Θ0` growth).
+4. **The ∀ and ⊤◇ rows got SIMPLER, not harder.**  Consistency and subject-wf
+   are now stated on the IMAGE, which opens directly, so `p6cs_subject_open`
+   survives only in the ρ premise — the one hypothesis still ideal-side.
+5. The Θs generalization and the relaxed ftv-𝒞 bound (first amendment) are
+   confirmed exactly as written; `HβC` survives, and the ∀ rows get
+   `β ∉ dom Θs` free from `dom Θs ⊆ dom Θ` (a two-line consequence of the
+   binds-monotone premise, hoisted once after `intros`).
+
 ⚠️ NAMING: the ρ-image subject is `Rsub`, not `Ssub` — a `uskl` is `R` in
 this corpus (`S` is not a metavariable here at all).  NB there is
 pre-existing drift to clean up separately: `prop_consis_precise.v` uses
@@ -2681,3 +2726,16 @@ decision above, so start there):
    P6-Sv's ForallL row (prop_look_complete_sub_var.v:2308) is the
    line-by-line template, simplified: P6-Ss's ∀ comes from the SUBJECT, so
    ψa/P0/Pi/Ψi/Ψa do not move and only Θ0/Θ/Δ/Δρ grow by β.
+   ✅ **The P6-Cs half is DONE (2026-07-29) — see the DONE block above.**
+   What P6-Ss must now supply at its Check/Arrow calls, on top of what
+   `sub_shield_here` already gives (`flex_apart_walk`): the ρ premise at a
+   FIXED `Θs` with binds-monotonicity into Θ, `Ψρ ∩ Ψ' = ∅`,
+   `rho_fresh Δρ Θ κ`, `Δρ ⊆ Δ`, `Δρ ∩ dom Θ0 = ∅`, and the Pi-shielded-ftv
+   condition; and it gains one output conjunct (`κc`'s images avoid Δρ).
+   ⚠️ `sub_shield` will have to carry the P0-ONLY arrow steps that P6-Cs
+   added to `fa_step` (`fastep_p0_arrow_l/_r`) — the Check row's call is
+   already discharged by `sub_shield_here`, but only because the walk is
+   threaded rather than constructed.  Constructing one from scratch at
+   Δρ = ∅ is NOT free (a `fa_walk` can grow Δρ via `fastep_all_r`); see
+   `cex_flex_apart_walk_unit` in `cex/cex_p6cs_subject_wf.v` for the shape
+   of the induction a from-scratch construction needs.
