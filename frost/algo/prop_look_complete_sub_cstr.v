@@ -717,7 +717,24 @@ Lemma a_looksub_solve_complete_leaf :
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
-    Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+    Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
+       above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
+       κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
+       subject is an α-STACK, the one shape whose 𝒞 is [a_cstr_sub M P0] at
+       whatever target it is handed — and that shape never needs LS-ForallR
+       at all ([alpha_stack_looksub]), so the binder is never introduced.
+       The [mode_tc] guard is what makes Sub-Arrow VACUOUS (its conclusion is
+       [mode_fn M]); that is the row which could not otherwise concatenate a
+       left disjunct with a right one.
+       ⚠️ The disjunct-free bound is UNREACHABLE: its leaf would need a
+       sub-side [ad_pat_consis_target_ftv], and that is FALSE at
+       [ad_pat_sub_g__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
+       docs/DESIGN-completeness-subtyping.md §8 (h). *)
+    (M = mode_tc ->
+       ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                             `union` dom κ `union` def_ftv Θ
+       \/ alpha_stack α P).
 Proof.
   intros n NM M Θ0 Θs Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
@@ -755,7 +772,9 @@ Proof.
       - simpl. apply a_inc_equiv_refl; exact Hκ.
       - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
       - simpl. eapply ad_partial_precise_psi_cong;
-          [ exact Hpre | clear - HΨa0; fsetdec ]. }
+          [ exact Hpre | clear - HΨa0; fsetdec ].
+      - (* ftv 𝒞 : LS-Absent collects nothing *)
+        intros _; left; simpl; clear; fsetdec. }
   - (* P = α : LS-Var, then P6-Sv at ρ = IDENTITY.  NB not [subst P]: the
        erase-tie [⌊R'⌋ˢ = P] is also an equation on P, and [subst] would
        orient it the wrong way and discard it. *)
@@ -809,7 +828,12 @@ Proof.
     - simpl. exact Hκ.
     - simpl. apply a_inc_equiv_refl; exact Hκ.
     - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
-    - simpl. exact Hprec. }
+    - simpl. exact Hprec.
+    - (* ftv 𝒞 : the RIGHT disjunct — [P = α] is the trivial α-stack, so this
+         run never descends the target and 𝒞 is [a_cstr_sub M P0] whatever P0
+         is.  (The LEFT bound genuinely fails here: the derivation's own
+         ForallL can guess a variable ψa does not mention.) *)
+      intros _; right; apply ast_var. }
 Qed.
 
 (* ===================================================================== *)
@@ -911,7 +935,24 @@ Theorem a_looksub_solve_complete_gen :
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
-    Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+    Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
+       above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
+       κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
+       subject is an α-STACK, the one shape whose 𝒞 is [a_cstr_sub M P0] at
+       whatever target it is handed — and that shape never needs LS-ForallR
+       at all ([alpha_stack_looksub]), so the binder is never introduced.
+       The [mode_tc] guard is what makes Sub-Arrow VACUOUS (its conclusion is
+       [mode_fn M]); that is the row which could not otherwise concatenate a
+       left disjunct with a right one.
+       ⚠️ The disjunct-free bound is UNREACHABLE: its leaf would need a
+       sub-side [ad_pat_consis_target_ftv], and that is FALSE at
+       [ad_pat_sub_g__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
+       docs/DESIGN-completeness-subtyping.md §8 (h). *)
+    (M = mode_tc ->
+       ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                             `union` dom κ `union` def_ftv Θ
+       \/ alpha_stack α P).
 Proof.
   intros n NM M Θ0 Θs Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
@@ -1013,6 +1054,7 @@ Proof.
         [ exact Hpre | assert (HΨae : Ψa [=] empty)
                          by (clear - HΨs2 H; fsetdec);
           clear - HΨae; fsetdec ].
+    + (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
   - (* Check : delegates WHOLE to P6-Cs ([a_lookeq_solve_complete]) on the
        consistency premise, then re-wraps with LS-Check.  LS-Check's side
        conditions: P ≠ α (HPnα) and P, P0 guarded. *)
@@ -1083,7 +1125,10 @@ Proof.
     split;
       [ apply a_looksub__check;
           [ exact HPnα | exact HgP | exact HgP0 | exact Hlook ] | ].
-    repeat split; assumption.
+    repeat split; try assumption.
+    (* ftv 𝒞 : P6-Cs's own ψa-relative output — the LEFT disjunct, and this is
+       why the Check row needed P6-Cs's bound to name no context *)
+    intros _; left; exact Hftv.
   - (* ForallR : the refinement premise forces P0 = ∀β.P0'; descend with
        [sss_all] + [sub_shield_step], run the IH at Θ,β, rebuild with
        LS-ForallR, then strip β.
@@ -1137,6 +1182,7 @@ Proof.
         [ exact Hpre | assert (HΨae : Ψa [=] empty)
                          by (clear - HΨs2 H; fsetdec);
           clear - HΨae; fsetdec ].
+    + (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
   - (* Arrow : [skmod] forces P0 = P01→P02 and the refinement splits.  The
        LEFT premise is a consistency judgment and goes to P6-Cs; the RIGHT
        one is the IH, with [sss_arrow_r] + [sub_shield_step].  The two
@@ -1336,7 +1382,11 @@ Proof.
       (forall α0, α0 `in` dom κc ->
          α0 `notin` add α (dom (Ξc1 ++ Θ0) `union` dom Θ)) /\
       Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ (κc1 ++ κ)) Pa)
-        ⊑ᵖ[ (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') ] ψa).
+        ⊑ᵖ[ (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') ] ψa /\
+      (M = mode_tc ->
+         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                               `union` dom (κc1 ++ κ) `union` def_ftv Θ
+         \/ alpha_stack α ⌊ Rb ⌋ˢ)).
     { destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ Rb ⌋ˢ))
         as [Hin0 | Hnin0].
       - destruct (pskl_var_dec ⌊ Rb ⌋ˢ α) as [Heq0 | Hne0].
@@ -1373,7 +1423,7 @@ Proof.
           [ left; exact Hnin0 | exact Hext ]. }
     destruct REC as (C2 & Ξc2 & Pa2 & κc2 & HLK2 & HSolve2 & HwfPa2 & HwfΞ2
                      & HαΞ2 & Hmap2 & Himg2 & HimgΔ2 & Hinc2 & Hinceq2
-                     & Hκf2 & Hpre2).
+                     & Hκf2 & Hpre2 & HftvC2).
     (* --- ASSEMBLY: LS-Arrow pairs [Ξc1,Ξc2] with [C1++C2], and the two
        solves compose because C1 (a LOOKEQ's output) holds no subtyping
        constraint.  Identical to P6-Cs's Arrow assembly. --- *)
@@ -1451,6 +1501,12 @@ Proof.
        rewrite (@msubst_pskl_app_swap κc1 κc2 κ Pa2 Hdisj12).
        eapply ad_partial_precise_psi_cong;
          [ exact Hpre2 | clear - HΨa; fsetdec ].
+    -- (* ftv 𝒞 : VACUOUS.  Sub-Arrow concludes at [mode_fn M], never at
+          [mode_tc] — which is exactly why the conjunct carries that guard:
+          the left branch (a lookeq, so P6-Cs) always gives the LEFT disjunct
+          while the right branch may give the RIGHT one, and no bound could
+          concatenate the two. *)
+       intros Habs; discriminate Habs.
   - (* ForallL, tagged : the subject's ∀ is instantiated, so the IH must run
        at [open R' ψb] — this is why the induction is on the DERIVATION and
        not on P6-Cs's measure.
@@ -1785,7 +1841,12 @@ Proof.
          α0 `notin` add α (dom ((β ~ abind_tvar) ++ Θ0)
                              `union` dom ((β ~ abind_tvar) ++ Θ))) /\
       ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-        ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+        ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      (M = mode_tc ->
+         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                               `union` dom κ
+                               `union` def_ftv ((β ~ abind_tvar) ++ Θ)
+         \/ alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ)).
     { destruct (AtomSetProperties.In_dec α
                   (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
         as [Hin0 | Hnin0].
@@ -1833,7 +1894,7 @@ Proof.
           [ left; exact Hnin0 | exact Hextβ ]. }
     destruct REC as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                      & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
-                     & Hprec).
+                     & Hprec & HftvC).
     (* --- β-freeness of every output, then STRIP it --- *)
     pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
     assert (HβΞc : β `notin` dom Ξc).
@@ -1916,6 +1977,17 @@ Proof.
            pose proof (a_wf_ptyp_ftv_dom
                          (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb)) as Hd;
            clear - Hd HβΘ; fsetdec ].
+    -- (* ftv 𝒞 : both disjuncts survive the binder.  LEFT — [def_ftv] ignores
+          a rigid entry, so Θ,β contributes nothing new.  RIGHT — an α-stack
+          under the opener lifts to one under the ∀ ([alpha_stack_all_of_one]
+          turns this SINGLE β-instance into [ast_all]'s cofinite family), and
+          ⌊∀^ε R0⌋ˢ IS [pskl_all_syn ⌊R0⌋ˢ]. *)
+       intros HMtc; destruct (HftvC HMtc) as [Hleft | Hstk].
+       ++ left. cbn [def_ftv] in Hleft. exact Hleft.
+       ++ right. rewrite <- HeraseR. cbn [uskl_to_pskl].
+          rewrite HeraseRβ in Hstk.
+          eapply alpha_stack_all_of_one;
+            [ exact Hstk | clear - Hβα; auto | clear - Fr; solve_notin ].
   - (* ForallL, untagged : identical to the tagged row; the mech splits the
        paper's single rule by the subject's POTENTIAL tag.  The only textual
        difference is the ρ-inversion ([uskl_rho_all_syn_r_inv]) and the
@@ -2149,7 +2221,12 @@ Proof.
          α0 `notin` add α (dom ((β ~ abind_tvar) ++ Θ0)
                              `union` dom ((β ~ abind_tvar) ++ Θ))) /\
       ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-        ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+        ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      (M = mode_tc ->
+         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                               `union` dom κ
+                               `union` def_ftv ((β ~ abind_tvar) ++ Θ)
+         \/ alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ)).
     { destruct (AtomSetProperties.In_dec α
                   (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
         as [Hin0 | Hnin0].
@@ -2197,7 +2274,7 @@ Proof.
           [ left; exact Hnin0 | exact Hextβ ]. }
     destruct REC as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                      & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
-                     & Hprec).
+                     & Hprec & HftvC).
     (* --- β-freeness of every output, then STRIP it --- *)
     pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
     assert (HβΞc : β `notin` dom Ξc).
@@ -2280,6 +2357,17 @@ Proof.
            pose proof (a_wf_ptyp_ftv_dom
                          (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb)) as Hd;
            clear - Hd HβΘ; fsetdec ].
+    -- (* ftv 𝒞 : both disjuncts survive the binder.  LEFT — [def_ftv] ignores
+          a rigid entry, so Θ,β contributes nothing new.  RIGHT — an α-stack
+          under the opener lifts to one under the ∀ ([alpha_stack_all_of_one]
+          turns this SINGLE β-instance into [ast_all]'s cofinite family), and
+          ⌊∀^ε R0⌋ˢ IS [pskl_all_syn ⌊R0⌋ˢ]. *)
+       intros HMtc; destruct (HftvC HMtc) as [Hleft | Hstk].
+       ++ left. cbn [def_ftv] in Hleft. exact Hleft.
+       ++ right. rewrite <- HeraseR. cbn [uskl_to_pskl].
+          rewrite HeraseRβ in Hstk.
+          eapply alpha_stack_all_of_one;
+            [ exact Hstk | clear - Hβα; auto | clear - Fr; solve_notin ].
 
   - (* Ghost : IMPOSSIBLE — the subject is [uskl_hole], so R' is □ and has
        no free variables, contradicting α ∈ ftv R'. *)
@@ -2341,7 +2429,11 @@ Proof.
       (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
       a_inc_equiv Θ0 κ κ Θ /\
       (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
-      Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+      Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      (M = mode_tc ->
+         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                               `union` dom κ `union` def_ftv Θ
+         \/ alpha_stack α ⌊ R0 ⌋ˢ)).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       (* the wf premise is on the IMAGE now, so it strips directly *)
       assert (HwfSubj0 : Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl R))
@@ -2382,10 +2474,19 @@ Proof.
                 | clear - HΨs1; cbn in HΨs1; fsetdec
                 | exact Hrho0 | exact HwfSubj0
                 | left; exact Hnin0 ]. }
-    destruct REC as (𝒞 & Ξc & Pa & κc & Hlook & Hrest).
+    destruct REC as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve0 & HwfPa0 & HwfΞ0
+                     & HαΞ0 & Hkeys0 & Himg0 & HimgΔ0 & Hinc0 & Hinceq0
+                     & Hκf0 & Hprec0 & HftvC0).
     exists 𝒞, Ξc, Pa, κc.
-    split; [ rewrite <- HeraseR; apply a_looksub__univ_ghost_l; exact Hlook
-           | exact Hrest ].
+    (* everything but the two ends passes through untouched; the ftv
+       conjunct's RIGHT disjunct gains the ghost wrapper ([ast_tophole]),
+       since ⌊∀◇R0⌋ˢ = ⌊∀◈R0⌋ˢ = [pskl_tophole ⌊R0⌋ˢ] *)
+    repeat split; try assumption;
+      [ rewrite <- HeraseR; apply a_looksub__univ_ghost_l; exact Hlook
+      | intros HMtc; destruct (HftvC0 HMtc) as [Hleft | Hstk];
+          [ left; exact Hleft
+          | right; rewrite <- HeraseR; cbn [uskl_to_pskl];
+            apply ast_tophole; exact Hstk ] ].
   - (* UnivGhostLG : identical, for the dotted ghost — both ∀◇ and ∀◈
        ERASE to [pskl_tophole], so the very same LS-UnivGhostL rebuild
        applies and only the surviving [destruct R'] branch differs. *)
@@ -2409,7 +2510,11 @@ Proof.
       (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
       a_inc_equiv Θ0 κ κ Θ /\
       (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
-      Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+      Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+      (M = mode_tc ->
+         ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                               `union` dom κ `union` def_ftv Θ
+         \/ alpha_stack α ⌊ R0 ⌋ˢ)).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       (* the wf premise is on the IMAGE now, so it strips directly *)
       assert (HwfSubj0 : Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl R))
@@ -2450,10 +2555,19 @@ Proof.
                 | clear - HΨs1; cbn in HΨs1; fsetdec
                 | exact Hrho0 | exact HwfSubj0
                 | left; exact Hnin0 ]. }
-    destruct REC as (𝒞 & Ξc & Pa & κc & Hlook & Hrest).
+    destruct REC as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve0 & HwfPa0 & HwfΞ0
+                     & HαΞ0 & Hkeys0 & Himg0 & HimgΔ0 & Hinc0 & Hinceq0
+                     & Hκf0 & Hprec0 & HftvC0).
     exists 𝒞, Ξc, Pa, κc.
-    split; [ rewrite <- HeraseR; apply a_looksub__univ_ghost_l; exact Hlook
-           | exact Hrest ].
+    (* everything but the two ends passes through untouched; the ftv
+       conjunct's RIGHT disjunct gains the ghost wrapper ([ast_tophole]),
+       since ⌊∀◇R0⌋ˢ = ⌊∀◈R0⌋ˢ = [pskl_tophole ⌊R0⌋ˢ] *)
+    repeat split; try assumption;
+      [ rewrite <- HeraseR; apply a_looksub__univ_ghost_l; exact Hlook
+      | intros HMtc; destruct (HftvC0 HMtc) as [Hleft | Hstk];
+          [ left; exact Hleft
+          | right; rewrite <- HeraseR; cbn [uskl_to_pskl];
+            apply ast_tophole; exact Hstk ] ].
   - (* FlexMono : IMPOSSIBLE — the subject is a bare flexible variable, so
        R' would have to be a variable, which [HRnv] excludes. *)
     exfalso.
@@ -2545,7 +2659,24 @@ Theorem a_looksub_solve_complete :
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
-    Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+    Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa /\
+    (* PHASE B.  The collected constraints are ψa-RELATIVE — so a Sub-ForallR
+       above can strip its fresh binder β from them (β is fresh for ψa, Ξc and
+       κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
+       subject is an α-STACK, the one shape whose 𝒞 is [a_cstr_sub M P0] at
+       whatever target it is handed — and that shape never needs LS-ForallR
+       at all ([alpha_stack_looksub]), so the binder is never introduced.
+       The [mode_tc] guard is what makes Sub-Arrow VACUOUS (its conclusion is
+       [mode_fn M]); that is the row which could not otherwise concatenate a
+       left disjunct with a right one.
+       ⚠️ The disjunct-free bound is UNREACHABLE: its leaf would need a
+       sub-side [ad_pat_consis_target_ftv], and that is FALSE at
+       [ad_pat_sub_g__forall_l_tagged] — cex/cex_p6ss_sub_target_ftv.v.
+       docs/DESIGN-completeness-subtyping.md §8 (h). *)
+    (M = mode_tc ->
+       ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                             `union` dom κ `union` def_ftv Θ
+       \/ alpha_stack α P).
 Proof.
   intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
@@ -2555,7 +2686,7 @@ Proof.
                Ψi Ψa Ψsub ψa Q P P0 Pi R'
                (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) α)
     as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve & HwfPa & HwfΞ & HαΞ & Hkeys
-        & HFor & _ & Hinc & Heqv & Hκcfresh & Hprec);
+        & HFor & _ & Hinc & Heqv & Hκcfresh & Hprec & HftvC);
     [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HwfPi
     | exact HmodSK | exact HmodTY | exact Hκ | exact HαΘ | exact HαΘ0
     | exact HeraseR | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
