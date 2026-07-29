@@ -762,6 +762,192 @@ Proof.
       | exact HeqSubj | exact Htsk | exact Hα ].
 Qed.
 
+(* ===================================================================== *)
+(*  The ρ-GENERALIZED ψa-mono extraction (P6-Cs's flexible-P0 row under ρ). *)
+(*                                                                         *)
+(*  Under the ρ-generalization the consistency subject is no longer         *)
+(*  [(κR)[ψa/α]] but its ρ-IMAGE, so [ad_pat_consis_subst_psia_mono] does   *)
+(*  not apply syntactically.  ⚠️ It does NOT apply after a "commutation"     *)
+(*  either: [uskl_rho] is a RELATION, not a substitution — [urho__leaf]     *)
+(*  may send two occurrences of the SAME Δρ-variable to DIFFERENT images —  *)
+(*  so [ρ((κR)[ψa/α]) = (ρψa)[ρ(κR)/α]] is FALSE in general (take           *)
+(*  R = α→α, ψa = β ∈ Δρ, and give the two βs different images).            *)
+(*                                                                         *)
+(*  What IS available at the call site is that the guess is Δρ-CLEAN: the   *)
+(*  row's P0 is a FLEXIBLE variable, and [flex_apart] at a flexible P0 has  *)
+(*  only [fa_clean] to offer ([fa_var_rigid] wants the same variable rigid, *)
+(*  [fa_topholeg_t] does not move free variables) — see                     *)
+(*  [flex_apart_flex_var_clean].  Cleanliness makes ρ the identity ON THE   *)
+(*  GUESS ([uskl_rho_clean_eq]), which is exactly what the αs-leaf needs;   *)
+(*  everywhere else ρ is threaded structurally, and the [urho__leaf]        *)
+(*  disjunct is impossible because the ideal there is a Δρ-variable while   *)
+(*  the ideal here is either ψa (clean) or an αs-carrying ρ-free position.  *)
+(* ===================================================================== *)
+
+(** The αs-LEAF step: [R' = αs], so the ideal IS the guess, ρ collapses to
+    equality, and the ρ-free [psia_leaf] argument applies verbatim. *)
+Lemma psia_rho_leaf_step : forall Ψs Θ Rsubj Q NM Δρ Ψρ ψa αs R',
+  Ψs ⨟ Θ ⊢ₛᵃ Rsubj ∼ Q ->
+  a_wf_aenv Θ ->
+  bskl_monoish Q ->
+  uskl_rho NM Θ Δρ Ψρ Rsubj (subst_bskl_in_uskl ψa αs R') ->
+  R' = uskl_var_f αs ->
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
+  is_tskl ψa ->
+  exists τψ, mono_ptyp τψ /\ ψa = ptyp_to_uskl_syn τψ /\ a_wf_ptyp Θ τψ.
+Proof.
+  intros Ψs Θ Rsubj Q NM Δρ Ψρ ψa αs R' Hcons HwfΘ Hmi Hrho HeqR Hclean Htsk.
+  subst R'.
+  assert (Hid : subst_bskl_in_uskl ψa αs (uskl_var_f αs) = ψa)
+    by (simpl; match goal with |- context [if ?c then _ else _] => destruct c end;
+        [ reflexivity | congruence ]).
+  rewrite Hid in Hrho.
+  destruct (uskl_rho_clean_eq Hrho Hclean) as [-> _].
+  destruct (ad_pat_consis_monoish_counterpart Hcons HwfΘ Htsk Hmi)
+    as (_ & τψ & Hmn & Heqψ).
+  exists τψ; repeat split;
+    [ exact Hmn | exact Heqψ
+    | eapply ad_pat_consis_mono_paint_subj_wf;
+        [ exact Hcons | exact HwfΘ | exact Hmn | exact Heqψ ] ].
+Qed.
+
+(** The [urho__leaf] disjunct never fires on an αs-carrying ideal. *)
+Lemma psia_rho_leaf_impossible : forall ψa αs R' βρ Δρ,
+  subst_bskl_in_uskl ψa αs R' = uskl_var_f βρ ->
+  βρ `in` Δρ ->
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
+  αs `notin` Δρ ->
+  αs `in` ftvar_in_uskl R' ->
+  False.
+Proof.
+  intros ψa αs R' βρ Δρ Heq Hβ Hclean Hαρ Hα.
+  destruct R' as [ | nb | γ | T1 T2 | T0 | εt T0 | | T0 | | T0 ];
+    simpl in Heq; try discriminate Heq.
+  destruct (eq_var γ αs) as [ -> | Hγ ]; simpl in Heq.
+  - (* the guess IS the Δρ-variable — contradicts cleanliness *)
+    subst ψa. simpl in Hclean. clear - Hclean Hβ; fsetdec.
+  - (* otherwise αs = γ = βρ ∈ Δρ, contradicting αs ∉ Δρ *)
+    injection Heq as Heq; subst γ.
+    simpl in Hα. clear - Hα Hαρ Hβ; fsetdec.
+Qed.
+
+Lemma ad_pat_consis_rho_subst_psia_mono : forall Ψs Θ Rsubj Q,
+  Ψs ⨟ Θ ⊢ₛᵃ Rsubj ∼ Q ->
+  a_wf_aenv Θ ->
+  bskl_monoish Q ->
+  forall NM Δρ Ψρ R' ψa αs,
+    uskl_rho NM Θ Δρ Ψρ Rsubj (subst_bskl_in_uskl ψa αs R') ->
+    (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
+    αs `notin` Δρ ->
+    is_tskl ψa ->
+    αs `in` ftvar_in_uskl R' ->
+    exists τψ, mono_ptyp τψ /\ ψa = ptyp_to_uskl_syn τψ /\ a_wf_ptyp Θ τψ.
+Proof.
+  intros Ψs Θ Rsubj Q H. induction H;
+    intros HwfΘ Hmi NM Δρ Ψρ R' ψa αs Hrho Hclean Hαρ Htsk Hα.
+  - (* unit *)
+    assert (Hrec : Ψ ⨟ Θ ⊢ₛᵃ uskl_unit ∼ bskl_unit)
+      by (apply ad_pat_consis__unit; assumption).
+    destruct (uskl_rho_unit_l_inv Hrho) as [ [Heq _] | Hleaf ].
+    + eapply ad_pat_consis_subst_psia_mono;
+        [ exact Hrec | exact HwfΘ | exact Hmi | symmetry; exact Heq
+        | exact Htsk | exact Hα ].
+    + exfalso. destruct Hleaf as (βρ & Ψρ0 & Heqv & Hβρ & _ & _ & _).
+      eapply psia_rho_leaf_impossible; eassumption.
+  - (* var α *)
+    assert (Hrec : Ψ ⨟ Θ ⊢ₛᵃ (uskl_var_f α) ∼ (bskl_var_f α))
+      by (apply ad_pat_consis__var; assumption).
+    destruct (uskl_rho_var_l_inv Hrho) as [ [Heq _] | Hleaf ].
+    + eapply ad_pat_consis_subst_psia_mono;
+        [ exact Hrec | exact HwfΘ | exact Hmi | symmetry; exact Heq
+        | exact Htsk | exact Hα ].
+    + exfalso. destruct Hleaf as (βρ & Ψρ0 & Heqv & Hβρ & _ & _ & _).
+      eapply psia_rho_leaf_impossible; eassumption.
+  - (* arrow *)
+    assert (Hrec : Ψ ⨟ Θ ⊢ₛᵃ (uskl_arrow R1 R2) ∼ (bskl_arrow Q1 Q2))
+      by (eapply ad_pat_consis__arrow; [ exact H | exact H0 | exact H1 ]).
+    destruct (uskl_rho_arrow_l_inv Hrho) as [ [Heq _] | [ Hleaf | Hcong ] ].
+    + eapply ad_pat_consis_subst_psia_mono;
+        [ exact Hrec | exact HwfΘ | exact Hmi | symmetry; exact Heq
+        | exact Htsk | exact Hα ].
+    + exfalso. destruct Hleaf as (βρ & Ψρ0 & Heqv & Hβρ & _ & _ & _).
+      eapply psia_rho_leaf_impossible; eassumption.
+    + destruct Hcong as (Ia & Ib & Ψr1 & Ψr2 & Heq & Hra & Hrb & _).
+      destruct R' as [ | nb | γ | T1 T2 | T0 | εt T0 | | T0 | | T0 ];
+        simpl in Heq; try discriminate Heq.
+      * (* R' = var γ : either the αs-leaf, or shape-absurd *)
+        destruct (eq_var γ αs) as [ -> | Hγ ]; simpl in Heq;
+          [ | discriminate Heq ].
+        eapply psia_rho_leaf_step;
+          [ exact Hrec | exact HwfΘ | exact Hmi | exact Hrho | reflexivity
+          | exact Hclean | exact Htsk ].
+      * (* R' = arrow T1 T2 : recurse into the side carrying αs *)
+        injection Heq as HeqA HeqB; subst Ia Ib.
+        assert (HmiQ1 : bskl_monoish Q1) by (inversion Hmi; assumption).
+        assert (HmiQ2 : bskl_monoish Q2) by (inversion Hmi; assumption).
+        simpl in Hα; apply union_1 in Hα; destruct Hα as [Hα | Hα].
+        -- eapply IHad_pat_consis1;
+             [ exact HwfΘ | exact HmiQ1 | exact Hra | exact Hclean
+             | exact Hαρ | exact Htsk | exact Hα ].
+        -- eapply IHad_pat_consis2;
+             [ exact HwfΘ | exact HmiQ2 | exact Hrb | exact Hclean
+             | exact Hαρ | exact Htsk | exact Hα ].
+  - (* forall_inh_tagged *) inversion Hmi.
+  - (* forall_inh_untagged *) inversion Hmi.
+  - (* forall_syn_tagged *) inversion Hmi.
+  - (* forall_syn *) inversion Hmi.
+  - (* ghostg *) inversion Hmi.
+  - (* topholeg *) inversion Hmi.
+  - (* hole *)
+    assert (Hrec : Ψ ⨟ Θ ⊢ₛᵃ uskl_hole ∼ (pskl_to_bskl_inh P))
+      by (apply ad_pat_consis__hole; assumption).
+    destruct (uskl_rho_hole_l_inv Hrho) as [ [Heq _] | Hleaf ].
+    + eapply ad_pat_consis_subst_psia_mono;
+        [ exact Hrec | exact HwfΘ | exact Hmi | symmetry; exact Heq
+        | exact Htsk | exact Hα ].
+    + exfalso. destruct Hleaf as (βρ & Ψρ0 & Heqv & Hβρ & _ & _ & _).
+      eapply psia_rho_leaf_impossible; eassumption.
+  - (* tophole *) inversion Hmi.
+  - (* tophole_inh *) inversion Hmi.
+  - (* tophole_drop *)
+    assert (Hrec : Ψ ⨟ Θ ⊢ₛᵃ (uskl_tophole R) ∼ Q)
+      by (apply ad_pat_consis__tophole_drop; exact H).
+    destruct (uskl_rho_tophole_l_inv Hrho) as [ [Heq _] | [ Hleaf | Hcong ] ].
+    + eapply ad_pat_consis_subst_psia_mono;
+        [ exact Hrec | exact HwfΘ | exact Hmi | symmetry; exact Heq
+        | exact Htsk | exact Hα ].
+    + exfalso. destruct Hleaf as (βρ & Ψρ0 & Heqv & Hβρ & _ & _ & _).
+      eapply psia_rho_leaf_impossible; eassumption.
+    + destruct Hcong as (I0 & Heq & Hr0).
+      destruct R' as [ | nb | γ | T1 T2 | T0 | εt T0 | | T0 | | T0 ];
+        simpl in Heq; try discriminate Heq.
+      * destruct (eq_var γ αs) as [ -> | Hγ ]; simpl in Heq;
+          [ | discriminate Heq ].
+        eapply psia_rho_leaf_step;
+          [ exact Hrec | exact HwfΘ | exact Hmi | exact Hrho | reflexivity
+          | exact Hclean | exact Htsk ].
+      * injection Heq as Heq; subst I0.
+        simpl in Hα.
+        eapply IHad_pat_consis;
+          [ exact HwfΘ | exact Hmi | exact Hr0 | exact Hclean
+          | exact Hαρ | exact Htsk | exact Hα ].
+  - (* flex_l *)
+    assert (Hrec : Ψ ⨟ Θ ⊢ₛᵃ (uskl_var_f α) ∼ Q)
+      by (eapply ad_pat_consis__flex_l; [ exact H | exact H0 ]).
+    destruct (uskl_rho_var_l_inv Hrho) as [ [Heq _] | Hleaf ].
+    + eapply ad_pat_consis_subst_psia_mono;
+        [ exact Hrec | exact HwfΘ | exact Hmi | symmetry; exact Heq
+        | exact Htsk | exact Hα ].
+    + exfalso. destruct Hleaf as (βρ & Ψρ0 & Heqv & Hβρ & _ & _ & _).
+      eapply psia_rho_leaf_impossible; eassumption.
+  - (* flex_r : unfold the definition; the premise faces a mono paint *)
+    assert (Hmd : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | eassumption ]).
+    eapply IHad_pat_consis;
+      [ exact HwfΘ | apply bskl_monoish_paint; exact Hmd
+      | exact Hrho | exact Hclean | exact Hαρ | exact Htsk | exact Hα ].
+Qed.
+
 (* An ARROW-subject consistency whose counterpart [Q] is a DEFINED-FLEX var
    (rule [ad_pat_consis__flex_r]) is NOT an independent case: [Q]'s definition
    chain unfolds to a [bskl_arrow] endpoint, and the REFINEMENT side unfolds the

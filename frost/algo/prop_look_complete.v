@@ -338,6 +338,22 @@ Definition rho_fresh (Δρ : atoms) (Θ : aenv) (κ : metasubst) : Prop :=
     (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
        α0 `notin` ftvar_in_ptyp τ).
 
+(** ρ-freshness survives a RIGID context extension: the ∀ rows of P6-Cs /
+    P6-Ss run their IH at [Θ,β], and a rigid entry adds neither a κ-image
+    nor a definition, so the only conjunct that moves is the [binds]
+    one — monotonically. *)
+Lemma rho_fresh_weaken_tvar : forall Δρ Θ κ β,
+  rho_fresh Δρ Θ κ ->
+  rho_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ.
+Proof.
+  intros Δρ Θ κ β Hrf α0 Hα0.
+  destruct (Hrf α0 Hα0) as (Hb & Hκ & Hdef).
+  repeat split.
+  - apply binds_app_3; exact Hb.
+  - exact Hκ.
+  - intros α τ Hbd. analyze_binds Hbd. eapply Hdef; eassumption.
+Qed.
+
 (* ===================================================================== *)
 (*  Leaf inversion: partial precision at a rigid replaced-variable target  *)
 (*  forces the subject to be EXACTLY that variable.                        *)
@@ -2833,6 +2849,28 @@ Proof.
   - apply fa_clean; assumption.
   - inversion Heqt; subst; assumption.
   - apply fa_topholeg_t; auto.
+Qed.
+
+(** THE FLEX-P0 READ-OFF.  A [flex_apart] whose P0 is a FLEXIBLE variable
+    has only one non-⊤̇◇ way to hold — [fa_clean] — since [fa_var_rigid]
+    needs the very same variable to be RIGID.  [fa_topholeg_t] only peels
+    ⊤̇◇s off the target, which does not change its free variables.  So the
+    guess is Δρ-CLEAN there, i.e. ρ acts as the identity on it
+    ([uskl_rho_clean_eq]).  This is exactly what the flexible-P0 row of
+    P6-Cs needs to keep using the ρ-free ψa-mono extraction. *)
+Lemma flex_apart_flex_var_clean : forall Θ0 Δρ β ψa,
+  flex_apart Θ0 Δρ (pskl_var_f β) ψa ->
+  ~ binds β abind_tvar Θ0 ->
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty.
+Proof.
+  intros Θ0 Δρ β ψa H.
+  remember (pskl_var_f β) as t eqn:Heqt.
+  revert β Heqt; induction H; intros β' Heqt Hnr;
+    try discriminate Heqt; subst.
+  - assumption.
+  - inversion Heqt; subst; contradiction.
+  - (* fa_topholeg_t: ⊤̇◇ does not change the target's free variables *)
+    simpl. exact (IHflex_apart β' eq_refl Hnr).
 Qed.
 
 (* ===================================================================== *)
