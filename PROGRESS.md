@@ -95,18 +95,24 @@ NOT moved yet — everything below is additive.
   precision premise at `add β Δ` (β joins Δρ, and `Δρ ⊆ Δ`) and has to
   return the conclusion at plain Δ.
 
-**ForallR: gap RESOLVED by the authors — reclassified to a mech-encoding
-question.**  WT: constraint collection is deliberately scoping-AGNOSTIC;
+**ForallR: gap RESOLVED by the authors — reclassified, and the mech side
+DECIDED (keep the cofinite rule; ForallL and ForallR are fixed by the SAME
+change).**  WT: constraint collection is deliberately scoping-AGNOSTIC;
 the scope check is the SEPARATE `Θ0,Ξ ⊢ P1` premise at the extract use
 site.  So \lslab{ForallR} carries no `β ∉ ftv 𝒞` side condition and the
 paper's proof owes nothing.  What remains is ours: the locally nameless
 `a_looksub__forall_r` is COFINITE with one `Ξ ⨾ 𝒞`, which IS the side
-condition, so the mech rule is strictly narrower.  Either prove the
-encodings equivalent (needs `β ∈ ftv 𝒞 ⟹ β ∈ ftv P1` — non-trivial, since
-`SolE-FlexR` replaces a structured subject by its payload and can discard a
-constraint's variables) or relax the rule to exists-fresh (rule change,
-full rebuild, every induction over `a_looksub`).  Decide before executing
-the row.
+condition, so the mech rule is strictly narrower — KEEP IT, since
+completeness of a narrower algorithm is a stronger theorem.  ⚠️ It must NOT
+be justified by "the wf check catches a β-mentioning 𝒞 anyway": checked,
+and false — `a_solve_sub__var` is `α̂ ≼[m] Q ⤳ α̂`, it DISCARDS the target,
+so a β-mentioning 𝒞 can solve to a β-free `P1` that `Θ0,Ξ ⊢ P1` accepts.
+What the row actually needs is to re-acquire the ψa-relative bound
+`ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ` that P6-Cs carries and this
+statement dropped.  That route was thought closed ("Sub-ForallL
+instantiates with a GUESS"); the ρ-generalization dissolves the objection,
+because under ρ the lookup side never sees a guess.  **So ForallL and
+ForallR are fixed by the SAME change.**
 
 **ForallL: the ρ-repair's scope measured.**  The Check row hands its WHOLE
 subject to P6-Cs and a ForallL can sit above a Check, so **P6-Cs must be

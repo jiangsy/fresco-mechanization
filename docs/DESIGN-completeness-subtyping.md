@@ -2480,14 +2480,19 @@ decision above, so start there):
    `sss_arrow_r` + `sub_shield_step`, then the same `a_solve_cstr_app` /
    `a_wf_pskl_swap_app` / `a_inc_flex_prefix_split` kit.  New relative to
    P6-Cs: `skmod` forcing `P0 = P01→P02`, and the `Ψa1`/`Ψa2` split.
-2. ForallR — the `β ∉ ftv 𝒞` obligation is now known to be a MECH-ENCODING
-   artefact, not a paper gap (WT, 2026-07-29: `look` is scoping-agnostic;
-   the extract use site's separate `Θ0,Ξ ⊢ P1` premise does the scope
-   check).  So decide first: prove the cofinite and exists-fresh encodings
-   of `a_looksub__forall_r` equivalent (needs "β ∈ ftv 𝒞 ⟹ β ∈ ftv P1",
-   which SolE-FlexR's payload-replacement makes non-trivial), or relax the
-   rule to exists-fresh (rule change + full rebuild + every induction over
-   `a_looksub`).
+2. ForallR — the `β ∉ ftv 𝒞` obligation is a MECH-ENCODING artefact, not a
+   paper gap (WT, 2026-07-29: `look` is scoping-agnostic; the extract use
+   site's separate `Θ0,Ξ ⊢ P1` premise does the scope check).  DECIDED:
+   KEEP the cofinite rule — completeness of a narrower algorithm is a
+   stronger theorem.  ⚠️ but do NOT justify it by "the wf check catches a
+   β-mentioning 𝒞 anyway": `a_solve_sub__var` is `α̂ ≼[m] Q ⤳ α̂` and
+   DISCARDS the target, so a β-mentioning 𝒞 can solve to a β-free `P1` that
+   passes `Θ0,Ξ ⊢ P1`; the encodings are not literally equivalent.  What
+   the row needs is to re-acquire the ψa-relative bound
+   `ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ` that P6-Cs carries and this
+   statement dropped — available once the ρ-generalization lands, since
+   under ρ the lookup side never sees a guess.  **ForallL and ForallR are
+   fixed by the SAME change**, so do (3) first and this row falls out.
 3. ForallL — the ρ-generalized aux lemma above.  ⚠️ SCOPE MEASURED
    (2026-07-29): the Check row hands its whole subject to P6-Cs and a
    ForallL can sit above a Check, so **P6-Cs must be ρ-generalized too**.

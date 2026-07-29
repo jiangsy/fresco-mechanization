@@ -734,22 +734,30 @@ Proof.
        ⚠️ THE β ∉ ftv 𝒞 OBLIGATION IS A MECH-ENCODING ARTEFACT, NOT A PAPER
        GAP (author resolution, 2026-07-29).  Constraint collection is
        deliberately scoping-AGNOSTIC; the scope check is the SEPARATE
-       [Θ0,Ξ ⊢ P1] premise at the EXTRACT use site, which rejects an
-       instantiation candidate that escaped its binder.  So \lslab{ForallR}
-       carries no side condition and the paper's proof owes nothing.  But
-       the locally nameless [a_looksub__forall_r] is COFINITE in β with one
-       [Ξ ⨾ 𝒞], which IS that side condition — so the mech rule is strictly
-       narrower.  Before executing this row, pick one:
-         (a) prove the two encodings equivalent — a β-mentioning 𝒞 yields a
-             β-mentioning P1, killed downstream by [Θ0,Ξ ⊢ P1].  ⚠️ needs a
-             real argument: SolE-FlexR replaces a structured subject by its
-             payload, so a constraint's variables can be DISCARDED by
-             solving; or
-         (b) relax the rule to EXISTS-fresh (pick one β, let Ξ ⨾ 𝒞 mention
-             it), the faithful rendering of the paper's named rule — a rule
-             change in algo/def_extra.v (full rebuild) plus every induction
-             over [a_looksub].
-       docs/PAPER-GAPS.md carries the record. *)
+       [Θ0,Ξ ⊢ P1] premise at the EXTRACT use site.  So \lslab{ForallR}
+       carries no side condition and the paper's proof owes nothing.  The
+       locally nameless [a_looksub__forall_r] is COFINITE in β with one
+       [Ξ ⨾ 𝒞], which IS that side condition, so the mech rule is strictly
+       narrower — KEEP IT: completeness of a NARROWER algorithm is a
+       STRONGER theorem, and soundness is unaffected.
+
+       ⚠️ Do NOT justify the cofinite rule by "the wf check catches a
+       β-mentioning 𝒞 anyway" — the two encodings are NOT literally
+       equivalent.  [a_solve_sub__var] is [α̂ ≼[m] Q ⤳ α̂]: it DISCARDS the
+       target, so a 𝒞 mentioning β can solve to a β-FREE P1 that
+       [Θ0,Ξ ⊢ P1] happily accepts.  The lax rule admits strictly more.
+
+       WHAT THE ROW ACTUALLY NEEDS: re-acquire the ψa-RELATIVE bound P6-Cs
+       carries as a conclusion,
+         ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ,
+       which this statement dropped; β is fresh for all four.  That route
+       was thought closed ("Sub-ForallL instantiates with a GUESS bounded
+       only by ftv ψb ⊆ dom Θ") — the ρ-GENERALIZED INDUCTION dissolves the
+       objection: under ρ the lookup side never sees a guess, every ForallL
+       opens with a fresh RIGID, and the constraints stay ψa-bounded exactly
+       as on the consistency side.  ρ's binders live in Δρ; ForallR's β is a
+       genuine context rigid, never a Δρ entry.  ⇒ ForallL and ForallR are
+       fixed by the SAME change.  docs/PAPER-GAPS.md carries the record. *)
     admit.
   - (* UnivGhostR : NM = SK at M = TC, so [skmod] forces P0 = □ again and
        the case closes exactly like Infer. *)

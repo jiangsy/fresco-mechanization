@@ -1372,20 +1372,34 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   \lslab{ForallR} carries NO `β ∉ ftv 𝒞` obligation and the completeness
   proof owes nothing: this is NOT a paper gap.  The entry stays for the
   record and because it leaves a MECH question behind.
-- **What remains is a MECHANIZATION-ENCODING question.**  The locally
-  nameless `a_looksub__forall_r` is COFINITE in β with one `Ξ ⨾ 𝒞`, which
-  *is* the side condition — i.e. the mech rule is STRICTLY narrower than the
-  paper's.  Two ways out, to decide when the ForallR row is executed:
-  1. **Prove the encodings equivalent** (the authors' expectation): a `𝒞`
-     mentioning β yields a `P_1` mentioning β, which `\Theta_0,\Xi \vdash P_1`
-     then rejects — so the extra derivations the lax rule admits are all
-     killed downstream.  ⚠️ Not immediate: constraint SOLVING may discard a
-     constraint's variables (`SolE-FlexR` replaces a structured subject by a
-     payload), so "β ∈ ftv 𝒞 ⟹ β ∈ ftv P_1" needs an actual argument.
-  2. **Relax the rule to exists-fresh** — pick one β, let `Ξ ⨾ 𝒞` mention
-     it — which is the faithful rendering of the paper's named rule.  Costs
-     a rule change in `algo/def_extra.v` (full rebuild) plus every induction
-     over `a_looksub` (soundness, decoration, the completeness rows).
+- **What remains is a MECHANIZATION-ENCODING question — and it is settled:
+  KEEP the cofinite rule.**  The locally nameless `a_looksub__forall_r` is
+  cofinite in β with one `Ξ ⨾ 𝒞`, which *is* the side condition, so the mech
+  rule is strictly narrower than the paper's.  That is not a defect:
+  completeness of a NARROWER algorithm is a STRONGER theorem, and soundness
+  is unaffected.  The only real question is whether the completeness proof
+  can still discharge `β ∉ ftv 𝒞` — and it can, by re-acquiring the
+  ψa-RELATIVE bound P6-Cs already carries as a conclusion,
+  `ftv 𝒞 ⊆ ftv ψ_a ∪ dom Ξ_c ∪ dom θ ∪ def_ftv Θ` (β is fresh for all four).
+  P6-Ss's statement dropped that conjunct; the ForallR row must put it back.
+- **Why that route is available NOW but was not before.**  The bullet three
+  up says P6-Cs's bound "does not transport, because \sublab{ForallL}
+  instantiates with a GUESS bounded only by `ftv ψ_b ⊆ dom Θ`".  The
+  ρ-generalized induction (next entry) DISSOLVES that objection: under ρ the
+  lookup side never sees a guess at all — every \sublab{ForallL} opens with
+  a fresh RIGID and the guess rides in ρ — so the collected constraints stay
+  bounded by ψ_a exactly as on the consistency side.  ρ's own binders live
+  in Δρ, and ForallR's β is a genuine context rigid, never a Δρ entry, so
+  the bound still excludes it.  ⇒ ForallL and ForallR are fixed by the SAME
+  change.
+- ⚠️ **For the record: the two rule ENCODINGS are NOT literally equivalent**
+  (checked, not assumed).  `SS-Var` is `Θ ⊢ₛ α̂ ≼[m] Q ⤳ α̂` — it DISCARDS
+  the target — so a `𝒞` that mentions β can solve to a `P_1` that does not,
+  and `\Theta_0,\Xi \vdash P_1` then lets it through.  The lax rule therefore
+  admits derivations the cofinite one refuses.  This costs nothing here
+  (narrower algorithm ⇒ stronger completeness claim), but it means "the wf
+  check catches it anyway" is not by itself a proof of equivalence, and the
+  exists-fresh relaxation should NOT be adopted on that basis.
 - Mech status: P6-Ss is stated and its machinery is in
   `frost/algo/prop_look_complete_sub_cstr.v`; 8 of the 12 induction cases
   are closed.  The ForallR row is the one this entry concerns; P6-Ss's
