@@ -56,6 +56,7 @@ Require Import src.frost.algo.prop_decorate_sub.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_consis_precise.
 Require Import src.frost.algo.prop_looksub.
+Require Import src.frost.algo.prop_sub_sound.    (* a_wf_pskl_open *)
 Require Import src.frost.algo.prop_solve_sub.
 Require Import src.frost.algo.prop_sub_complete.
 Require Import src.frost.algo.prop_normal.
@@ -461,6 +462,59 @@ Proof.
       | eapply a_wf_pskl_delta_shrink;
           [ exact HwfQ
           | intros α0 Hα0 Hin; clear - Hdisj Hα0 Hin; fsetdec ] ].
+Qed.
+
+(* ===================================================================== *)
+(*  ψa SURVIVES INTO THE SUBJECT — the ForallL rows' tag bookkeeping       *)
+(* ===================================================================== *)
+
+(** [ad_pat_sub_g] renders the paper's GLOBAL freshness of an instantiation's
+    tags as TWO conjuncts — freshness from the tag index and from the
+    SUBJECT's syntactic tags (def_decl_algo_sub_hyg.v).  Sub-ForallL needs a
+    third, freshness from ψa's tags Ψ', to keep the ρ-dirt bound
+    [Ψρ ∩ Ψ' = ∅] as it absorbs the guess.  That is NOT a new side condition:
+    the main induction runs under [α ∈ ftv R'], so ψa sits inside the ideal
+    [(κR')[ψa/α]] — κ leaves α alone and substitution keeps the tags it
+    inserts — and [uskl_rho] only ever ADDS tags going to the image
+    ([uskl_rho_ftag_target_sub]).  Hence Ψ' ⊆ ftag Rsub, and the rule's own
+    subject-freshness delivers the third conjunct. *)
+Lemma ftag_in_uskl_subst_lower : forall ψ α R,
+  α `in` ftvar_in_uskl R ->
+  ftag_in_uskl ψ [<=] ftag_in_uskl (subst_bskl_in_uskl ψ α R).
+Proof.
+  intros ψ α R; induction R;
+    cbn [ftvar_in_uskl subst_bskl_in_uskl ftag_in_uskl]; intros Hin;
+    try solve [ clear - Hin; exfalso; fsetdec
+              | specialize (IHR Hin); clear - IHR; fsetdec ].
+  - (* var_f *)
+    match goal with |- context [if ?c then _ else _] => destruct c end;
+      [ clear; fsetdec | exfalso; clear - Hin n; fsetdec ].
+  - (* arrow *)
+    destruct (AtomSetProperties.In_dec α (ftvar_in_uskl R1)) as [H1 | H1];
+      [ specialize (IHR1 H1); clear - IHR1; fsetdec
+      | assert (H2 : α `in` ftvar_in_uskl R2) by (clear - Hin H1; fsetdec);
+        specialize (IHR2 H2); clear - IHR2; fsetdec ].
+Qed.
+
+(** …and a variable outside κ's domain survives the metasubstitution. *)
+Lemma msubst_uskl_syn_ftv_keep : forall κ α R,
+  α `notin` dom κ ->
+  α `in` ftvar_in_uskl R ->
+  α `in` ftvar_in_uskl (msubst_uskl_syn κ R).
+Proof.
+  intros κ α R Hκ; induction R;
+    cbn [ftvar_in_uskl msubst_uskl_syn]; intros Hin;
+    try solve [ clear - Hin; exfalso; fsetdec
+              | specialize (IHR Hin); clear - IHR; fsetdec ].
+  - (* var_f : looks up to itself *)
+    assert (Heq : α0 = α) by (clear - Hin; fsetdec); subst α0.
+    rewrite (msubst_lookup_notin_dom _ Hκ). rewrite ptyp_to_uskl_syn_var.
+    cbn [ftvar_in_uskl]; clear; fsetdec.
+  - (* arrow *)
+    destruct (AtomSetProperties.In_dec α (ftvar_in_uskl R1)) as [H1 | H1];
+      [ specialize (IHR1 H1); clear - IHR1; fsetdec
+      | assert (H2 : α `in` ftvar_in_uskl R2) by (clear - Hin H1; fsetdec);
+        specialize (IHR2 H2); clear - IHR2; fsetdec ].
 Qed.
 
 (** NB the auxiliary fact behind the ForallL row below — an ABSENT subject
@@ -1384,10 +1438,728 @@ Proof.
        the line-by-line template for the rest — with one simplification:
        P6-Ss's ∀ comes from the SUBJECT, so ψa, P0, Pi, Ψi and Ψa do NOT
        move, and only Θ0/Θ/Δ/Δρ grow by β. *)
-    admit.
+    (* --- the ρ-inversion: the ideal is a ∀^ε too, and its body's ρ-family is
+       what Sub-ForallL extends --- *)
+    destruct R' as [ | rn | β | Ra Rb | R0 | εr R0 | | R0 | | R0 ];
+      cbn in Hrho, HαR, HeraseR;
+      try solve [ contradiction (HRnv _ eq_refl) | inversion Hrho
+                | clear - HαR; fsetdec ].
+    destruct (uskl_rho_all_etag_r_inv Hrho) as (Lρ & Rb0 & HRs & Hfam).
+    injection HRs as HRsE HRsB. rewrite <- HRsB in Hfam. clear HRsB HRsE.
+    (* --- THE THIRD COMPONENT OF THE PAPER'S GLOBAL FRESHNESS.  ψa sits inside
+       the ideal (α ∈ ftv R'), and ρ only ADDS tags, so ψa's tags Ψ' are among
+       the SUBJECT's — where the rule's own freshness premise already excludes
+       the instantiation's.  (See the two lemmas above.) --- *)
+    pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
+    assert (HΨ'sub : Ψ' [<=] ftag_in_uskl (uskl_all_etag ε R)).
+    { pose proof (uskl_rho_ftag_target_sub Hrho) as Ht.
+      pose proof (@ftag_in_uskl_subst_lower ψa α
+                    (msubst_uskl_syn κ (uskl_all_etag εr R0))
+                    (@msubst_uskl_syn_ftv_keep κ α (uskl_all_etag εr R0)
+                       Hακdom HαR)) as Hl.
+      cbn [ftag_in_uskl subst_bskl_in_uskl msubst_uskl_syn] in Ht, Hl |- *.
+      clear - Ht Hl Hψatag; fsetdec. }
+    assert (HΨgfresh : Ψ'0 ∩ Ψ' [=] empty) by (clear - H1 HΨ'sub; fsetdec).
+    (* --- the fresh RIGID β, and ρ_b = ρ ∘ [ψ/β] --- *)
+    (* the guess's wf comes at the DERIVATION's context; weaken it here *)
+    assert (Hwfψ : Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ)
+      by (eapply a_wf_pskl_weaken; [ exact Hext | exact H3 ]).
+    assert (Hlcψ : lc_uskl ψ)
+      by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact Hwfψ).
+    assert (Hlcψa : lc_uskl ψa)
+      by (apply is_tskl_lc; inversion Htags; assumption).
+    pick fresh β for
+      (Lρ `union` dom Θ `union` dom Θ0 `union` dom κ `union` Δ `union` Δρ
+         `union` def_ftv Θ `union` singleton α `union` ftvar_in_uskl R
+         `union` ftvar_in_uskl R0 `union` ftvar_in_uskl ψ
+         `union` ftvar_in_uskl ψa `union` ftvar_in_pskl P0
+         `union` ftvar_in_pskl Pi `union` ftvar_in_pskl (uskl_to_pskl R0)).
+    assert (HβΘ : β `notin` dom Θ) by (clear - Fr; solve_notin).
+    assert (HβΘ0 : β `notin` dom Θ0) by (clear - Fr; solve_notin).
+    assert (Hβκ : β `notin` dom κ) by (clear - Fr; solve_notin).
+    assert (HβΔ : β `notin` Δ) by (clear - Fr; solve_notin).
+    assert (HβΔρ : β `notin` Δρ) by (clear - Fr; solve_notin).
+    assert (HβR : β `notin` ftvar_in_uskl R) by (clear - Fr; solve_notin).
+    assert (Hβψa : β `notin` ftvar_in_uskl ψa) by (clear - Fr; solve_notin).
+    assert (Hβα : β <> α) by (clear - Fr; solve_notin).
+    destruct (@uskl_rho_subst NM Θ Δρ Ψρ
+                (open_uskl_wrt_uskl R (uskl_var_f β))
+                (open_uskl_wrt_uskl
+                   (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R0))
+                   (uskl_var_f β))
+                (Hfam β ltac:(clear - Fr; solve_notin))
+                β ψ Ψ'0 H2 Hwfψ Hlcψ HβΘ HβΔρ)
+      as (Ψρ' & HΨρ'sub & HΨρ'mono & _ & Hrho').
+    rewrite <- (@subst_bskl_in_uskl_intro β R ψ) in Hrho'; [ | exact HβR ].
+    rewrite <- (@p6cs_subject_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa)
+      in Hrho'.
+    (* --- the recursive call's premises at Θ0,β / Θ,β / add β Δ / add β Δρ --- *)
+    assert (Hweak0 : forall (x : atom) (b : abind),
+              binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
+      by (intros x b Hb; apply binds_app_3; exact Hb).
+    assert (Hweak : forall (x : atom) (b : abind),
+              binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
+      by (intros x b Hb; apply binds_app_3; exact Hb).
+    assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; assumption).
+    assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+      by (apply a_wf_aenv__tvar; assumption).
+    assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
+      by (simpl; clear - HαΘ Hβα; fsetdec).
+    assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
+      by (simpl; clear - HαΘ0 Hβα; fsetdec).
+    assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
+      by (apply a_inc_cons_tvar; exact Hκ).
+    assert (HeraseRβ : ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
+              = open_pskl_wrt_pskl (uskl_to_pskl R0) (pskl_var_f β))
+      by (apply uskl_to_pskl_open).
+    assert (HscopeRβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
+              [<=] add α (dom ((β ~ abind_tvar) ++ Θ0)
+                            `union` dom ((β ~ abind_tvar) ++ Θ))).
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β))
+        as Hup.
+      simpl in Hup, HscopeR |- *. clear - Hup HscopeR; fsetdec. }
+    assert (HlcR0β : lc_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))).
+    { inversion HlcR; subst.
+      match goal with Hb : forall α0, lc_uskl _ |- _ => apply Hb end. }
+    assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
+              ∩ Ψ' [=] empty).
+    { rewrite ftag_in_uskl_open_var.
+      cbn [ftag_in_uskl] in Hdisj. clear - Hdisj; fsetdec. }
+    assert (HwfP0β : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+      by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ]).
+    assert (HwfPiβ : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pi)
+      by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ]).
+    assert (HΨs1β : (Ψ `union` Ψ'0)
+              [<=] union (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
+                     (union Ψρ' Ψa)).
+    { (* the premise's index is bounded by its own subject [open R ψ], whose
+         tags ρ bounds by Ψρ' plus the IDEAL's — and the ideal's are ψa's
+         (⊆ Ψ') plus R0's.  Ψ' is then killed on both sides: the guess's tags
+         miss it ([HΨgfresh]) and Ψ's own bound [HΨs1] only offers εr there,
+         which [Hdisj] excludes. *)
+      rewrite ftag_in_uskl_open_var.
+      pose proof (ad_pat_sub_g_ftag_sub Hsubty) as Hs.
+      pose proof (uskl_rho_ftag_sub Hrho') as Hr.
+      pose proof (@ftag_in_uskl_subst_bskl_in_uskl ψa α
+                    (msubst_uskl_syn κ
+                       (open_uskl_wrt_uskl R0 (uskl_var_f β)))) as Hb.
+      pose proof (ftag_in_uskl_msubst_uskl_syn κ
+                    (open_uskl_wrt_uskl R0 (uskl_var_f β))) as Hm.
+      pose proof (ftag_in_uskl_open_var R0 β) as Hop.
+      cbn [ftag_in_uskl] in HΨs1, Hdisj.
+      clear - Hs Hr Hb Hm Hop HΨs1 Hdisj Hψatag HΨgfresh HΨρ'mono; fsetdec. }
+    assert (HΨs2β : Ψa [<=] Ψ `union` Ψ'0) by (clear - HΨs2; fsetdec).
+    assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ)).
+    { intros β0 α3 τ3 Hβ0 Hb.
+      assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
+        by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+              [ discriminate Habs | exact Hb' ]).
+      destruct (AtomSetProperties.In_dec β0 Δ) as [Hin1 | Hni1];
+        [ eapply Hdfresh; [ exact Hin1 | exact Hb' ] | ].
+      assert (Heqβ : β0 = β) by (clear - Hβ0 Hni1; fsetdec); subst β0.
+      pose proof (a_wf_ptyp_ftv_dom
+                    (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
+      clear - Hd HβΘ; fsetdec. }
+    assert (Hshieldβ : sub_shield ((β ~ abind_tvar) ++ Θ0) Ψ' (add β Δρ) P0 ψa)
+      by (apply sub_shield_weaken_tvar;
+          apply sub_shield_add_fresh; [ exact Hshield | exact Hβψa ]).
+    assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
+              ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+    { (* the Δ-congruence's set argument is PINNED by a named [assert] —
+         inline, its Δ is an evar when the [=] side goal runs and [fsetdec]
+         does not terminate *)
+      assert (Hp0 : ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
+                ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+      { eapply ad_partial_precise_delta_weaken_fresh;
+          [ eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]
+          | clear - Hβψa; fsetdec
+          | intros β0 α3 τ3 Hβ0 Hb;
+            assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
+              by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+                    [ discriminate Habs | exact Hb' ]);
+            assert (Heqβ : β0 = β) by (clear - Hβ0; fsetdec); subst β0;
+            pose proof (a_wf_ptyp_ftv_dom
+                          (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd;
+            clear - Hd HβΘ; fsetdec ]. }
+      eapply ad_partial_precise_delta_cong; [ exact Hp0 | clear; fsetdec ]. }
+    assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
+              (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q)
+      by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
+    assert (Hrhoβ : uskl_rho NM ((β ~ abind_tvar) ++ Θ) (add β Δρ) Ψρ'
+              (open_uskl_wrt_uskl R ψ)
+              (subst_bskl_in_uskl ψa α
+                 (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β)))))
+      by (eapply uskl_rho_weaken; [ exact Hrho' | exact Hweak ]).
+    assert (HΨρβ : Ψρ' ∩ Ψ' [=] empty)
+      by (clear - HΨρ'sub HΨρ HΨgfresh; fsetdec).
+    assert (Hrfrβ : rho_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ).
+    { intros α0 Hα0.
+      destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin1 | Hni1].
+      - destruct (Hrfr α0 Hin1) as (Hb & Him & Hdf).
+        repeat split; [ apply binds_app_3; exact Hb | exact Him | ].
+        intros α3 τ3 Hb3. eapply Hdf.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
+          [ discriminate Habs | exact Hb' ].
+      - assert (Heqβ : α0 = β) by (clear - Hα0 Hni1; fsetdec); subst α0.
+        repeat split.
+        + unfold binds; left; reflexivity.
+        + intros pp Hpp.
+          pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb.
+          clear - Hb HβΘ; fsetdec.
+        + intros α3 τ3 Hb3.
+          assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
+            by (destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
+                  [ discriminate Habs | exact Hb' ]).
+          pose proof (a_wf_ptyp_ftv_dom
+                        (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
+          clear - Hd HβΘ; fsetdec. }
+    assert (HΔρΔβ : add β Δρ [<=] add β Δ) by (clear - HΔρΔ; fsetdec).
+    assert (HΔρftvβ : forall α0, α0 `in` (add β Δρ) ->
+              α0 `notin` ftvar_in_pskl P0 `union` ftvar_in_pskl Pi).
+    { intros α0 Hα0.
+      destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin1 | Hni1];
+        [ exact (HΔρftv α0 Hin1) | ].
+      assert (Heqβ : α0 = β) by (clear - Hα0 Hni1; fsetdec); subst α0.
+      clear - Fr; solve_notin. }
+    assert (HΔρPiβ : forall α0, α0 `in` (add β Δρ) ->
+              α0 `notin` pskl_shielded_ftv (msubst_pskl κ Pi)).
+    { intros α0 Hα0.
+      destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin1 | Hni1];
+        [ exact (HΔρPi α0 Hin1) | ].
+      assert (Heqβ : α0 = β) by (clear - Hα0 Hni1; fsetdec); subst α0.
+      pose proof (pskl_shielded_ftv_sub_ftv (msubst_pskl κ Pi)) as Hsh.
+      enough (Hne : β `notin` ftvar_in_pskl (msubst_pskl κ Pi))
+        by (clear - Hsh Hne; fsetdec).
+      apply msubst_pskl_ftv_avoid;
+        [ intros pp Hpp;
+          pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb;
+          clear - Hb HβΘ; fsetdec
+        | clear - Fr; solve_notin ]. }
+    assert (Hextβ : forall (x : atom) (b : abind),
+              binds x b Θsm -> binds x b ((β ~ abind_tvar) ++ Θ))
+      by (intros x b Hb; apply binds_app_3; apply Hext; exact Hb).
+    (* the subject's wf opens with the GUESS (the ∀ is on the subject side) *)
+    assert (HwfSubjβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty
+              ⊢ₚₛᵃ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ).
+    { assert (Hexs : exists Lb, forall α0, α0 `notin` Lb ->
+                Θ ⨟ (add α0 empty)
+                  ⊢ₚₛᵃ (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α0))).
+      { cbn [uskl_to_pskl] in HwfSubj; inversion HwfSubj; subst;
+        eexists; eassumption. }
+      destruct Hexs as (Lb & Hbody).
+      rewrite uskl_to_pskl_open_gen.
+      eapply a_wf_pskl_weaken; [ exact Hweak | ].
+      eapply a_wf_pskl_open; [ exact Hbody | exact Hwfψ ]. }
+    (* the ρ-opened body may itself be a special case, so dispatch as usual *)
+    assert (REC : exists 𝒞 Ξc Pa κc,
+      (⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\
+      (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\
+      (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⨟ empty ⊢ₚₛᵃ Pa /\
+      a_wf_aenv (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) /\
+      α `notin` dom Ξc /\
+      keys κc = keys Ξc /\
+      Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
+      Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ (add β Δρ) [=] empty) κc /\
+      (κc ++ κ) ∷ (Ξc ++ ((β ~ abind_tvar) ++ Θ0))
+        ⊑ ((β ~ abind_tvar) ++ Θ) /\
+      a_inc_equiv ((β ~ abind_tvar) ++ Θ0) κ κ ((β ~ abind_tvar) ++ Θ) /\
+      (forall α0, α0 `in` dom κc ->
+         α0 `notin` add α (dom ((β ~ abind_tvar) ++ Θ0)
+                             `union` dom ((β ~ abind_tvar) ++ Θ))) /\
+      ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
+        ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+    { destruct (AtomSetProperties.In_dec α
+                  (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
+        as [Hin0 | Hnin0].
+      - destruct (pskl_var_dec
+                    ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ α)
+          as [Heq0 | Hne0].
+        + (* leaf, var *)
+          eapply (@a_looksub_solve_complete_leaf n NM M
+                    ((β ~ abind_tvar) ++ Θ0) Θsm ((β ~ abind_tvar) ++ Θ) κ
+                    (add β Δ) (add β Δρ) Ψρ' Ψ' Ψi Ψa (Ψ `union` Ψ'0) ψa Q
+                    ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ P0 Pi
+                    (open_uskl_wrt_uskl R0 (uskl_var_f β))
+                    (open_uskl_wrt_uskl R ψ) α
+                    Hwfβ Hwfβ0 HwfP0β HwfPiβ HmodSK HmodTY Hκβ HαΘβ HαΘ0β
+                    eq_refl HscopeRβ HlcR0β Htags Hdisjβ Hsub Hdfreshβ
+                    Hshieldβ Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
+                    Hrhoβ HΨρβ Hrfrβ HΔρΔβ HΔρPiβ);
+            [ right; exact Heq0 | exact Hextβ ].
+        + (* recurse *)
+          assert (HαRβ : α `in`
+                    ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
+            by (rewrite <- ftvar_in_pskl_uskl_to_pskl; exact Hin0).
+          eapply (IHHsubty Htags ((β ~ abind_tvar) ++ Θ)
+                    ((β ~ abind_tvar) ++ Θ0) κ (add β Δ) (add β Δρ) Ψρ'
+                    (open_uskl_wrt_uskl R0 (uskl_var_f β))
+                    ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ P0 Pi Ψi Ψa
+                    Hwfβ Hwfβ0 HαΘ0β Hκβ Hακdom Hκav eq_refl HscopeRβ
+                    HlcR0β Hdisjβ HwfP0β HwfPiβ HmodSK HmodTY HαΘβ Hsub
+                    HΨs1β HΨs2β Hdfreshβ Hshieldβ Hpreβ Hrefβ Hrhoβ HΨρβ
+                    Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
+                    HwfSubjβ).
+      - (* leaf, absent *)
+        eapply (@a_looksub_solve_complete_leaf n NM M
+                  ((β ~ abind_tvar) ++ Θ0) Θsm ((β ~ abind_tvar) ++ Θ) κ
+                  (add β Δ) (add β Δρ) Ψρ' Ψ' Ψi Ψa (Ψ `union` Ψ'0) ψa Q
+                  ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ P0 Pi
+                  (open_uskl_wrt_uskl R0 (uskl_var_f β))
+                  (open_uskl_wrt_uskl R ψ) α
+                  Hwfβ Hwfβ0 HwfP0β HwfPiβ HmodSK HmodTY Hκβ HαΘβ HαΘ0β
+                  eq_refl HscopeRβ HlcR0β Htags Hdisjβ Hsub Hdfreshβ
+                  Hshieldβ Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
+                  Hrhoβ HΨρβ Hrfrβ HΔρΔβ HΔρPiβ);
+          [ left; exact Hnin0 | exact Hextβ ]. }
+    destruct REC as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
+                     & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
+                     & Hprec).
+    (* --- β-freeness of every output, then STRIP it --- *)
+    pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
+    assert (HβΞc : β `notin` dom Ξc).
+    { intro Hc. rewrite <- Hdκ in Hc. specialize (Hκfresh β Hc).
+      apply Hκfresh. simpl; clear; fsetdec. }
+    assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+    { pose proof (a_looksub_ftv HLK) as Hcf.
+      pose proof (a_wf_pskl_ftv_dom HwfP0) as Hpf.
+      clear - Hcf Hpf HβΞc HβΘ0; fsetdec. }
+    assert (HβPa : β `notin` ftvar_in_pskl Pa).
+    { pose proof (a_solve_cstr_ftv HSolve) as Hpf.
+      pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfi.
+      clear - Hpf Hfi HβC HβΘ0; fsetdec. }
+    assert (Hβκc : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κc).
+    { rewrite Forall_forall in Himg |- *. intros p Hp.
+      specialize (Himg p Hp). clear - Himg Hβψa; fsetdec. }
+    assert (Hfmc : all_flex_mono Ξc)
+      by (eapply a_looksub_all_flex_mono; exact HLK).
+    exists 𝒞, Ξc, Pa, κc.
+    repeat split.
+    -- (* a_looksub : LS-ForallL, the single β-instance renamed into the
+          cofinite family — β ∉ ftv 𝒞 because the TARGET P0 does not move *)
+       rewrite <- HeraseR.
+       apply a_looksub__forall_l
+         with (L := singleton α `union` singleton β
+                      `union` ftvar_in_pskl (uskl_to_pskl R0)
+                      `union` ftvar_in_pskl P0).
+       intros α1 Hα1.
+       rewrite HeraseRβ in HLK.
+       rewrite (subst_pskl_in_pskl_intro β (uskl_to_pskl R0) (pskl_var_f α1));
+         [ | clear - Fr; solve_notin ].
+       rewrite <- (@subst_pskl_in_pskl_fresh_eq P0 (pskl_var_f α1) β);
+         [ | clear - Fr; solve_notin ].
+       eapply (proj1 a_looksub_lookeq_rename_tvar);
+         [ exact HLK | clear - Hβα; auto | clear - Hα1; fsetdec | exact HβC ].
+    -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
+    -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
+    -- (* a_wf_aenv *)
+       eapply a_wf_aenv_strip_mid;
+         [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+    -- (* α ∉ dom Ξc *) exact HαΞ.
+    -- (* keys *) exact Hmapfst.
+    -- (* κc images ⊆ ftv ψa *) exact Himg.
+    -- (* κc images ⊥ Δρ *)
+       rewrite Forall_forall in HimgΔ |- *. intros p Hp.
+       specialize (HimgΔ p Hp). clear - HimgΔ; fsetdec.
+    -- (* a_inc *)
+       eapply a_inc_strip_tvar_mid;
+         [ exact Hfmc | exact Hmapfst | exact Hβκc | exact HβΘ | exact Hinc ].
+    -- (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
+    -- (* κc fresh *)
+       intros α0 Hα0. specialize (Hκfresh α0 Hα0). simpl in Hκfresh.
+       clear - Hκfresh; fsetdec.
+    -- (* precision : strip β from the context, then from Δ *)
+       assert (HβPaκ : β `notin` ftvar_in_pskl (msubst_pskl (κc ++ κ) Pa)).
+       { apply msubst_pskl_ftv_avoid;
+           [ intros pp Hpp; apply in_app_or in Hpp; destruct Hpp as [Hpp | Hpp];
+               [ rewrite Forall_forall in Hβκc; apply Hβκc; exact Hpp
+               | pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb;
+                 clear - Hb HβΘ; fsetdec ]
+           | exact HβPa ]. }
+       eapply ad_partial_precise_delta_shrink_fresh
+         with (Δ := Δ) (Δ' := singleton β);
+         [ eapply ad_partial_precise_strip_tvar_mid
+             with (β := β) (Θ1 := nil) (Θ2 := Θ);
+             [ exact Hprec | reflexivity
+             | intros α0 τ0 Hb;
+               assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
+                 by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+                       [ discriminate Habs | exact Hb' ]);
+               pose proof (a_wf_ptyp_ftv_dom
+                             (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb')) as Hftd;
+               clear - Hftd HβΘ; fsetdec
+             | exact HβPaκ
+             | exact Hβψa ]
+         | clear; fsetdec
+         | clear - Hβψa; fsetdec
+         | intros β0 α3 τ3 Hβ0 Hb;
+           assert (Heqβ : β0 = β) by (clear - Hβ0; fsetdec); subst β0;
+           pose proof (a_wf_ptyp_ftv_dom
+                         (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb)) as Hd;
+           clear - Hd HβΘ; fsetdec ].
   - (* ForallL, untagged : identical to the tagged row; the mech splits the
-       paper's single rule by the subject's POTENTIAL tag. *)
-    admit.
+       paper's single rule by the subject's POTENTIAL tag.  The only textual
+       difference is the ρ-inversion ([uskl_rho_all_syn_r_inv]) and the
+       absence of a binder tag from the subject's tags. *)
+    (* --- the ρ-inversion: the ideal is an UNTAGGED ∀ too, and its body's ρ-family is
+       what Sub-ForallL extends --- *)
+    destruct R' as [ | rn | β | Ra Rb | R0 | εr R0 | | R0 | | R0 ];
+      cbn in Hrho, HαR, HeraseR;
+      try solve [ contradiction (HRnv _ eq_refl) | inversion Hrho
+                | clear - HαR; fsetdec ].
+    destruct (uskl_rho_all_syn_r_inv Hrho) as (Lρ & Rb0 & HRs & Hfam).
+    injection HRs as HRsB. rewrite <- HRsB in Hfam. clear HRsB.
+    (* --- THE THIRD COMPONENT OF THE PAPER'S GLOBAL FRESHNESS.  ψa sits inside
+       the ideal (α ∈ ftv R'), and ρ only ADDS tags, so ψa's tags Ψ' are among
+       the SUBJECT's — where the rule's own freshness premise already excludes
+       the instantiation's.  (See the two lemmas above.) --- *)
+    pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
+    assert (HΨ'sub : Ψ' [<=] ftag_in_uskl (uskl_all_syn R)).
+    { pose proof (uskl_rho_ftag_target_sub Hrho) as Ht.
+      pose proof (@ftag_in_uskl_subst_lower ψa α
+                    (msubst_uskl_syn κ (uskl_all_syn R0))
+                    (@msubst_uskl_syn_ftv_keep κ α (uskl_all_syn R0)
+                       Hακdom HαR)) as Hl.
+      cbn [ftag_in_uskl subst_bskl_in_uskl msubst_uskl_syn] in Ht, Hl |- *.
+      clear - Ht Hl Hψatag; fsetdec. }
+    assert (HΨgfresh : Ψ'0 ∩ Ψ' [=] empty) by (clear - H1 HΨ'sub; fsetdec).
+    (* --- the fresh RIGID β, and ρ_b = ρ ∘ [ψ/β] --- *)
+    (* the guess's wf comes at the DERIVATION's context; weaken it here *)
+    assert (Hwfψ : Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ)
+      by (eapply a_wf_pskl_weaken; [ exact Hext | exact H3 ]).
+    assert (Hlcψ : lc_uskl ψ)
+      by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact Hwfψ).
+    assert (Hlcψa : lc_uskl ψa)
+      by (apply is_tskl_lc; inversion Htags; assumption).
+    pick fresh β for
+      (Lρ `union` dom Θ `union` dom Θ0 `union` dom κ `union` Δ `union` Δρ
+         `union` def_ftv Θ `union` singleton α `union` ftvar_in_uskl R
+         `union` ftvar_in_uskl R0 `union` ftvar_in_uskl ψ
+         `union` ftvar_in_uskl ψa `union` ftvar_in_pskl P0
+         `union` ftvar_in_pskl Pi `union` ftvar_in_pskl (uskl_to_pskl R0)).
+    assert (HβΘ : β `notin` dom Θ) by (clear - Fr; solve_notin).
+    assert (HβΘ0 : β `notin` dom Θ0) by (clear - Fr; solve_notin).
+    assert (Hβκ : β `notin` dom κ) by (clear - Fr; solve_notin).
+    assert (HβΔ : β `notin` Δ) by (clear - Fr; solve_notin).
+    assert (HβΔρ : β `notin` Δρ) by (clear - Fr; solve_notin).
+    assert (HβR : β `notin` ftvar_in_uskl R) by (clear - Fr; solve_notin).
+    assert (Hβψa : β `notin` ftvar_in_uskl ψa) by (clear - Fr; solve_notin).
+    assert (Hβα : β <> α) by (clear - Fr; solve_notin).
+    destruct (@uskl_rho_subst NM Θ Δρ Ψρ
+                (open_uskl_wrt_uskl R (uskl_var_f β))
+                (open_uskl_wrt_uskl
+                   (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R0))
+                   (uskl_var_f β))
+                (Hfam β ltac:(clear - Fr; solve_notin))
+                β ψ Ψ'0 H2 Hwfψ Hlcψ HβΘ HβΔρ)
+      as (Ψρ' & HΨρ'sub & HΨρ'mono & _ & Hrho').
+    rewrite <- (@subst_bskl_in_uskl_intro β R ψ) in Hrho'; [ | exact HβR ].
+    rewrite <- (@p6cs_subject_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa)
+      in Hrho'.
+    (* --- the recursive call's premises at Θ0,β / Θ,β / add β Δ / add β Δρ --- *)
+    assert (Hweak0 : forall (x : atom) (b : abind),
+              binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
+      by (intros x b Hb; apply binds_app_3; exact Hb).
+    assert (Hweak : forall (x : atom) (b : abind),
+              binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
+      by (intros x b Hb; apply binds_app_3; exact Hb).
+    assert (Hwfβ : a_wf_aenv ((β ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; assumption).
+    assert (Hwfβ0 : a_wf_aenv ((β ~ abind_tvar) ++ Θ0))
+      by (apply a_wf_aenv__tvar; assumption).
+    assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
+      by (simpl; clear - HαΘ Hβα; fsetdec).
+    assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
+      by (simpl; clear - HαΘ0 Hβα; fsetdec).
+    assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
+      by (apply a_inc_cons_tvar; exact Hκ).
+    assert (HeraseRβ : ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
+              = open_pskl_wrt_pskl (uskl_to_pskl R0) (pskl_var_f β))
+      by (apply uskl_to_pskl_open).
+    assert (HscopeRβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
+              [<=] add α (dom ((β ~ abind_tvar) ++ Θ0)
+                            `union` dom ((β ~ abind_tvar) ++ Θ))).
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β))
+        as Hup.
+      simpl in Hup, HscopeR |- *. clear - Hup HscopeR; fsetdec. }
+    assert (HlcR0β : lc_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))).
+    { inversion HlcR; subst.
+      match goal with Hb : forall α0, lc_uskl _ |- _ => apply Hb end. }
+    assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
+              ∩ Ψ' [=] empty).
+    { rewrite ftag_in_uskl_open_var.
+      cbn [ftag_in_uskl] in Hdisj. clear - Hdisj; fsetdec. }
+    assert (HwfP0β : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+      by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ]).
+    assert (HwfPiβ : ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pi)
+      by (eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ]).
+    assert (HΨs1β : (Ψ `union` Ψ'0)
+              [<=] union (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
+                     (union Ψρ' Ψa)).
+    { (* the premise's index is bounded by its own subject [open R ψ], whose
+         tags ρ bounds by Ψρ' plus the IDEAL's — and the ideal's are ψa's
+         (⊆ Ψ') plus R0's.  Ψ' is then killed on both sides: the guess's tags
+         miss it ([HΨgfresh]) and Ψ's own bound [HΨs1] offers nothing there. *)
+      rewrite ftag_in_uskl_open_var.
+      pose proof (ad_pat_sub_g_ftag_sub Hsubty) as Hs.
+      pose proof (uskl_rho_ftag_sub Hrho') as Hr.
+      pose proof (@ftag_in_uskl_subst_bskl_in_uskl ψa α
+                    (msubst_uskl_syn κ
+                       (open_uskl_wrt_uskl R0 (uskl_var_f β)))) as Hb.
+      pose proof (ftag_in_uskl_msubst_uskl_syn κ
+                    (open_uskl_wrt_uskl R0 (uskl_var_f β))) as Hm.
+      pose proof (ftag_in_uskl_open_var R0 β) as Hop.
+      cbn [ftag_in_uskl] in HΨs1, Hdisj.
+      clear - Hs Hr Hb Hm Hop HΨs1 Hdisj Hψatag HΨgfresh HΨρ'mono; fsetdec. }
+    assert (HΨs2β : Ψa [<=] Ψ `union` Ψ'0) by (clear - HΨs2; fsetdec).
+    assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ)).
+    { intros β0 α3 τ3 Hβ0 Hb.
+      assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
+        by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+              [ discriminate Habs | exact Hb' ]).
+      destruct (AtomSetProperties.In_dec β0 Δ) as [Hin1 | Hni1];
+        [ eapply Hdfresh; [ exact Hin1 | exact Hb' ] | ].
+      assert (Heqβ : β0 = β) by (clear - Hβ0 Hni1; fsetdec); subst β0.
+      pose proof (a_wf_ptyp_ftv_dom
+                    (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
+      clear - Hd HβΘ; fsetdec. }
+    assert (Hshieldβ : sub_shield ((β ~ abind_tvar) ++ Θ0) Ψ' (add β Δρ) P0 ψa)
+      by (apply sub_shield_weaken_tvar;
+          apply sub_shield_add_fresh; [ exact Hshield | exact Hβψa ]).
+    assert (Hpreβ : ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
+              ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+    { (* the Δ-congruence's set argument is PINNED by a named [assert] —
+         inline, its Δ is an evar when the [=] side goal runs and [fsetdec]
+         does not terminate *)
+      assert (Hp0 : ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
+                ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa).
+      { eapply ad_partial_precise_delta_weaken_fresh;
+          [ eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]
+          | clear - Hβψa; fsetdec
+          | intros β0 α3 τ3 Hβ0 Hb;
+            assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
+              by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+                    [ discriminate Habs | exact Hb' ]);
+            assert (Heqβ : β0 = β) by (clear - Hβ0; fsetdec); subst β0;
+            pose proof (a_wf_ptyp_ftv_dom
+                          (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd;
+            clear - Hd HβΘ; fsetdec ]. }
+      eapply ad_partial_precise_delta_cong; [ exact Hp0 | clear; fsetdec ]. }
+    assert (Hrefβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣᵃ
+              (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q)
+      by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
+    assert (Hrhoβ : uskl_rho NM ((β ~ abind_tvar) ++ Θ) (add β Δρ) Ψρ'
+              (open_uskl_wrt_uskl R ψ)
+              (subst_bskl_in_uskl ψa α
+                 (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β)))))
+      by (eapply uskl_rho_weaken; [ exact Hrho' | exact Hweak ]).
+    assert (HΨρβ : Ψρ' ∩ Ψ' [=] empty)
+      by (clear - HΨρ'sub HΨρ HΨgfresh; fsetdec).
+    assert (Hrfrβ : rho_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ).
+    { intros α0 Hα0.
+      destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin1 | Hni1].
+      - destruct (Hrfr α0 Hin1) as (Hb & Him & Hdf).
+        repeat split; [ apply binds_app_3; exact Hb | exact Him | ].
+        intros α3 τ3 Hb3. eapply Hdf.
+        destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
+          [ discriminate Habs | exact Hb' ].
+      - assert (Heqβ : α0 = β) by (clear - Hα0 Hni1; fsetdec); subst α0.
+        repeat split.
+        + unfold binds; left; reflexivity.
+        + intros pp Hpp.
+          pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb.
+          clear - Hb HβΘ; fsetdec.
+        + intros α3 τ3 Hb3.
+          assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
+            by (destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
+                  [ discriminate Habs | exact Hb' ]).
+          pose proof (a_wf_ptyp_ftv_dom
+                        (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
+          clear - Hd HβΘ; fsetdec. }
+    assert (HΔρΔβ : add β Δρ [<=] add β Δ) by (clear - HΔρΔ; fsetdec).
+    assert (HΔρftvβ : forall α0, α0 `in` (add β Δρ) ->
+              α0 `notin` ftvar_in_pskl P0 `union` ftvar_in_pskl Pi).
+    { intros α0 Hα0.
+      destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin1 | Hni1];
+        [ exact (HΔρftv α0 Hin1) | ].
+      assert (Heqβ : α0 = β) by (clear - Hα0 Hni1; fsetdec); subst α0.
+      clear - Fr; solve_notin. }
+    assert (HΔρPiβ : forall α0, α0 `in` (add β Δρ) ->
+              α0 `notin` pskl_shielded_ftv (msubst_pskl κ Pi)).
+    { intros α0 Hα0.
+      destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin1 | Hni1];
+        [ exact (HΔρPi α0 Hin1) | ].
+      assert (Heqβ : α0 = β) by (clear - Hα0 Hni1; fsetdec); subst α0.
+      pose proof (pskl_shielded_ftv_sub_ftv (msubst_pskl κ Pi)) as Hsh.
+      enough (Hne : β `notin` ftvar_in_pskl (msubst_pskl κ Pi))
+        by (clear - Hsh Hne; fsetdec).
+      apply msubst_pskl_ftv_avoid;
+        [ intros pp Hpp;
+          pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb;
+          clear - Hb HβΘ; fsetdec
+        | clear - Fr; solve_notin ]. }
+    assert (Hextβ : forall (x : atom) (b : abind),
+              binds x b Θsm -> binds x b ((β ~ abind_tvar) ++ Θ))
+      by (intros x b Hb; apply binds_app_3; apply Hext; exact Hb).
+    (* the subject's wf opens with the GUESS (the ∀ is on the subject side) *)
+    assert (HwfSubjβ : ((β ~ abind_tvar) ++ Θ) ⨟ empty
+              ⊢ₚₛᵃ ⌊ open_uskl_wrt_uskl R ψ ⌋ˢ).
+    { assert (Hexs : exists Lb, forall α0, α0 `notin` Lb ->
+                Θ ⨟ (add α0 empty)
+                  ⊢ₚₛᵃ (open_pskl_wrt_pskl ⌊ R ⌋ˢ (pskl_var_f α0))).
+      { cbn [uskl_to_pskl] in HwfSubj; inversion HwfSubj; subst;
+        eexists; eassumption. }
+      destruct Hexs as (Lb & Hbody).
+      rewrite uskl_to_pskl_open_gen.
+      eapply a_wf_pskl_weaken; [ exact Hweak | ].
+      eapply a_wf_pskl_open; [ exact Hbody | exact Hwfψ ]. }
+    (* the ρ-opened body may itself be a special case, so dispatch as usual *)
+    assert (REC : exists 𝒞 Ξc Pa κc,
+      (⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\
+      (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\
+      (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) ⨟ empty ⊢ₚₛᵃ Pa /\
+      a_wf_aenv (Ξc ++ ((β ~ abind_tvar) ++ Θ0)) /\
+      α `notin` dom Ξc /\
+      keys κc = keys Ξc /\
+      Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
+      Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ (add β Δρ) [=] empty) κc /\
+      (κc ++ κ) ∷ (Ξc ++ ((β ~ abind_tvar) ++ Θ0))
+        ⊑ ((β ~ abind_tvar) ++ Θ) /\
+      a_inc_equiv ((β ~ abind_tvar) ++ Θ0) κ κ ((β ~ abind_tvar) ++ Θ) /\
+      (forall α0, α0 `in` dom κc ->
+         α0 `notin` add α (dom ((β ~ abind_tvar) ++ Θ0)
+                             `union` dom ((β ~ abind_tvar) ++ Θ))) /\
+      ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
+        ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+    { destruct (AtomSetProperties.In_dec α
+                  (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
+        as [Hin0 | Hnin0].
+      - destruct (pskl_var_dec
+                    ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ α)
+          as [Heq0 | Hne0].
+        + (* leaf, var *)
+          eapply (@a_looksub_solve_complete_leaf n NM M
+                    ((β ~ abind_tvar) ++ Θ0) Θsm ((β ~ abind_tvar) ++ Θ) κ
+                    (add β Δ) (add β Δρ) Ψρ' Ψ' Ψi Ψa (Ψ `union` Ψ'0) ψa Q
+                    ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ P0 Pi
+                    (open_uskl_wrt_uskl R0 (uskl_var_f β))
+                    (open_uskl_wrt_uskl R ψ) α
+                    Hwfβ Hwfβ0 HwfP0β HwfPiβ HmodSK HmodTY Hκβ HαΘβ HαΘ0β
+                    eq_refl HscopeRβ HlcR0β Htags Hdisjβ Hsub Hdfreshβ
+                    Hshieldβ Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
+                    Hrhoβ HΨρβ Hrfrβ HΔρΔβ HΔρPiβ);
+            [ right; exact Heq0 | exact Hextβ ].
+        + (* recurse *)
+          assert (HαRβ : α `in`
+                    ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β)))
+            by (rewrite <- ftvar_in_pskl_uskl_to_pskl; exact Hin0).
+          eapply (IHHsubty Htags ((β ~ abind_tvar) ++ Θ)
+                    ((β ~ abind_tvar) ++ Θ0) κ (add β Δ) (add β Δρ) Ψρ'
+                    (open_uskl_wrt_uskl R0 (uskl_var_f β))
+                    ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ P0 Pi Ψi Ψa
+                    Hwfβ Hwfβ0 HαΘ0β Hκβ Hακdom Hκav eq_refl HscopeRβ
+                    HlcR0β Hdisjβ HwfP0β HwfPiβ HmodSK HmodTY HαΘβ Hsub
+                    HΨs1β HΨs2β Hdfreshβ Hshieldβ Hpreβ Hrefβ Hrhoβ HΨρβ
+                    Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
+                    HwfSubjβ).
+      - (* leaf, absent *)
+        eapply (@a_looksub_solve_complete_leaf n NM M
+                  ((β ~ abind_tvar) ++ Θ0) Θsm ((β ~ abind_tvar) ++ Θ) κ
+                  (add β Δ) (add β Δρ) Ψρ' Ψ' Ψi Ψa (Ψ `union` Ψ'0) ψa Q
+                  ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ P0 Pi
+                  (open_uskl_wrt_uskl R0 (uskl_var_f β))
+                  (open_uskl_wrt_uskl R ψ) α
+                  Hwfβ Hwfβ0 HwfP0β HwfPiβ HmodSK HmodTY Hκβ HαΘβ HαΘ0β
+                  eq_refl HscopeRβ HlcR0β Htags Hdisjβ Hsub Hdfreshβ
+                  Hshieldβ Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
+                  Hrhoβ HΨρβ Hrfrβ HΔρΔβ HΔρPiβ);
+          [ left; exact Hnin0 | exact Hextβ ]. }
+    destruct REC as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
+                     & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
+                     & Hprec).
+    (* --- β-freeness of every output, then STRIP it --- *)
+    pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
+    assert (HβΞc : β `notin` dom Ξc).
+    { intro Hc. rewrite <- Hdκ in Hc. specialize (Hκfresh β Hc).
+      apply Hκfresh. simpl; clear; fsetdec. }
+    assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
+    { pose proof (a_looksub_ftv HLK) as Hcf.
+      pose proof (a_wf_pskl_ftv_dom HwfP0) as Hpf.
+      clear - Hcf Hpf HβΞc HβΘ0; fsetdec. }
+    assert (HβPa : β `notin` ftvar_in_pskl Pa).
+    { pose proof (a_solve_cstr_ftv HSolve) as Hpf.
+      pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfi.
+      clear - Hpf Hfi HβC HβΘ0; fsetdec. }
+    assert (Hβκc : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κc).
+    { rewrite Forall_forall in Himg |- *. intros p Hp.
+      specialize (Himg p Hp). clear - Himg Hβψa; fsetdec. }
+    assert (Hfmc : all_flex_mono Ξc)
+      by (eapply a_looksub_all_flex_mono; exact HLK).
+    exists 𝒞, Ξc, Pa, κc.
+    repeat split.
+    -- (* a_looksub : LS-ForallL, the single β-instance renamed into the
+          cofinite family — β ∉ ftv 𝒞 because the TARGET P0 does not move *)
+       rewrite <- HeraseR.
+       apply a_looksub__forall_l
+         with (L := singleton α `union` singleton β
+                      `union` ftvar_in_pskl (uskl_to_pskl R0)
+                      `union` ftvar_in_pskl P0).
+       intros α1 Hα1.
+       rewrite HeraseRβ in HLK.
+       rewrite (subst_pskl_in_pskl_intro β (uskl_to_pskl R0) (pskl_var_f α1));
+         [ | clear - Fr; solve_notin ].
+       rewrite <- (@subst_pskl_in_pskl_fresh_eq P0 (pskl_var_f α1) β);
+         [ | clear - Fr; solve_notin ].
+       eapply (proj1 a_looksub_lookeq_rename_tvar);
+         [ exact HLK | clear - Hβα; auto | clear - Hα1; fsetdec | exact HβC ].
+    -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
+    -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
+    -- (* a_wf_aenv *)
+       eapply a_wf_aenv_strip_mid;
+         [ apply all_flex_mono_a_decls; exact Hfmc | exact HwfΞ ].
+    -- (* α ∉ dom Ξc *) exact HαΞ.
+    -- (* keys *) exact Hmapfst.
+    -- (* κc images ⊆ ftv ψa *) exact Himg.
+    -- (* κc images ⊥ Δρ *)
+       rewrite Forall_forall in HimgΔ |- *. intros p Hp.
+       specialize (HimgΔ p Hp). clear - HimgΔ; fsetdec.
+    -- (* a_inc *)
+       eapply a_inc_strip_tvar_mid;
+         [ exact Hfmc | exact Hmapfst | exact Hβκc | exact HβΘ | exact Hinc ].
+    -- (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
+    -- (* κc fresh *)
+       intros α0 Hα0. specialize (Hκfresh α0 Hα0). simpl in Hκfresh.
+       clear - Hκfresh; fsetdec.
+    -- (* precision : strip β from the context, then from Δ *)
+       assert (HβPaκ : β `notin` ftvar_in_pskl (msubst_pskl (κc ++ κ) Pa)).
+       { apply msubst_pskl_ftv_avoid;
+           [ intros pp Hpp; apply in_app_or in Hpp; destruct Hpp as [Hpp | Hpp];
+               [ rewrite Forall_forall in Hβκc; apply Hβκc; exact Hpp
+               | pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb;
+                 clear - Hb HβΘ; fsetdec ]
+           | exact HβPa ]. }
+       eapply ad_partial_precise_delta_shrink_fresh
+         with (Δ := Δ) (Δ' := singleton β);
+         [ eapply ad_partial_precise_strip_tvar_mid
+             with (β := β) (Θ1 := nil) (Θ2 := Θ);
+             [ exact Hprec | reflexivity
+             | intros α0 τ0 Hb;
+               assert (Hb' : binds α0 (abind_flex_mono_def τ0) Θ)
+                 by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+                       [ discriminate Habs | exact Hb' ]);
+               pose proof (a_wf_ptyp_ftv_dom
+                             (@a_wf_aenv_binds_def_wf Θ α0 τ0 HwfΘ Hb')) as Hftd;
+               clear - Hftd HβΘ; fsetdec
+             | exact HβPaκ
+             | exact Hβψa ]
+         | clear; fsetdec
+         | clear - Hβψa; fsetdec
+         | intros β0 α3 τ3 Hβ0 Hb;
+           assert (Heqβ : β0 = β) by (clear - Hβ0; fsetdec); subst β0;
+           pose proof (a_wf_ptyp_ftv_dom
+                         (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb)) as Hd;
+           clear - Hd HβΘ; fsetdec ].
+
   - (* Ghost : IMPOSSIBLE — the subject is [uskl_hole], so R' is □ and has
        no free variables, contradicting α ∈ ftv R'. *)
     exfalso.
@@ -1569,65 +2341,99 @@ Proof.
       solve [ contradiction (HRnv _ eq_refl)
             | clear - HαR; fsetdec
             | inversion Hrho ].
-Admitted.  (* TODO[P6-Ss]: statement + [sub_shield] machinery are in place
-    and the plan is DESIGN-completeness-subtyping.md §8; the case analysis
-    is not started.  The statement is believed TRUE (it is P6-Cs's, with the
-    mode data and the same repair P6-Sv needed); what remains is the work.
+Admitted.  (* TODO[P6-Ss-rho]: ONE case left — Sub-ForallR (the [admit] above,
+    tagged in place).  Everything else is done: the two SPECIAL CASES and
+    ELEVEN of the twelve rows — Infer, Check, UnivGhostR, Arrow, ForallL
+    (tagged AND untagged), UnivGhostL, UnivGhostLG, Ghost, GhostG, FlexMono.
+    The statement is the ρ-GENERALIZED one (see the header); the paper's is
+    the ρ = identity corollary below.
 
-    Order to execute:
-      1. the two SPECIAL CASES before the induction — P = α (LS-Var, then
-         [a_solve_sub_complete_var] at ρ = identity, whose [flex_shield] /
-         [flex_apart_walk] come from [sub_shield_here]) and P = a flexible
-         (LS-Absent, Ψa = ∅);
-      2. Infer / UnivGhostR / Ghost / GhostG — [skmod] forces P0 = □, so
-         LS-Vacuous and the identity solve close them, as in P6-Cs;
-      3. Check — delegates WHOLE to P6-Cs ([a_lookeq_solve_complete]) and
-         re-wraps with LS-Check;
-      4. UnivGhostL / LG — IH at the body, LS-UnivGhostL;
-      5. ForallR — P0 = ∀.P0', descend with [sss_all] + [sub_shield_step],
-         IH at Θ,β, then strip β (P6-Cs's ∀-binder kit);
-      6. Arrow — P0 = P01→P02: LEFT to P6-Cs, RIGHT to the IH with
-         [sss_arrow_r] + [sub_shield_step]; the two constraint sets
-         concatenate (LS-Arrow) and the two solves compose;
-      7. ForallL — the subject's ∀ is instantiated, so the IH runs at
-         [open R' ψb]; the paper closes it with the REVERSE direction of
-         [lemma:constraint-collection-stable-substitution].
+    ForallR needs PHASE B — the ψa-RELATIVE ftv-𝒞 conclusion
+      ftv 𝒞 ⊆ ftv ψa ∪ dom Θs ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ
+    that P6-Cs carries and this statement drops, so that LS-ForallR's
+    cofinite family can be rebuilt from the single β-instance (its TARGET
+    gains β, so the structural [a_looksub_ftv] bound — which is what the
+    ForallL rows use — readmits it).  That needs P6-Cs's OTHER [Θs] device:
+    the ρ premise at a FIXED context, since the ∀ rows strip β from 𝒞.
+    The ρ-generalization landed here is exactly what unblocks it: under ρ the
+    lookup side never sees a guess (every ForallL opens with a fresh RIGID),
+    so the constraints stay ψa-bounded as on the consistency side. *)
 
-    DONE so far: [a_solve_sub_wf] (Qed — read its header before touching
-    it, the Δ-uniform statement is FALSE and its side condition is
-    load-bearing), BOTH special cases before the induction, i.e.
-    α ∉ ftv P (LS-Absent, Ψa = ∅) and P = α (LS-Var, then P6-Sv at
-    ρ = IDENTITY with [sub_shield_here] supplying its two repair premises),
-    and EIGHT of the twelve rows: Infer, Check, UnivGhostR, UnivGhostL,
-    UnivGhostLG, Ghost, GhostG, FlexMono.
+(* ===================================================================== *)
+(*  P6-Ss — the PAPER'S statement, as the ρ = IDENTITY corollary.          *)
+(*                                                                        *)
+(*  Every added premise is discharged here, with no residue: [uskl_rho]    *)
+(*  degenerates to [urho__refl] (local closure comes from the subject-wf   *)
+(*  premise the paper already owes), [Θs := Θ], and [rho_fresh] / [Δρ ⊆ Δ] *)
+(*  / the two ftv conditions are vacuous over an empty Δρ — which also     *)
+(*  collapses [sub_shield]'s Δρ to [empty], i.e. the pre-generalization     *)
+(*  premise.  Use THIS one unless you are threading a ρ down from a         *)
+(*  Sub-ForallL.                                                           *)
+(* ===================================================================== *)
 
-    2026-07-29 (this session): the ForallL PREREQUISITE is closed —
-    [a_looksub_subst_stable_rev] (prop_looksub.v §4b, Qed, axiom-free) — and
-    the SCOPE premise / κc-freshness conclusion were relaxed here and in
-    P6-Cs from [dom Θ0] to [dom Θ0 ∪ dom Θ].  The paper's ForallL step
-    needs [θψ_b = ψ_b], which fails even for legitimate θ (three
-    machine-checked facts in cex/cex_p6ss_inc_compat.v) — a PROOF-STEP
-    gap, and no premise on κ repairs it.  DECIDED REPAIR (not yet built):
-    the ρ-generalized induction, statement UNCHANGED — see the block at
-    the [ForallL, tagged] admit and docs/PAPER-GAPS.md.
-
-    OPEN DESIGN POINT for Sub-ForallR — and a [paper-gap].  Rebuilding
-    with LS-ForallR needs the SAME [Ξ ⨾ 𝒞] for every β, i.e. β ∉ ftv 𝒞.
-    P6-Cs gets that from the ψa-RELATIVE bound it carries as a conclusion
-    (β is fresh for ψa, dom κ and def_ftv Θ); the STRUCTURAL bound
-    [a_looksub_ftv] gives only ftv 𝒞 ⊆ ftv P0 ∪ dom Ξc, which still admits
-    β.  P6-Cs's route does not transport: it comes from
-    [ad_pat_consis_target_ftv], and consistency's ForallInh opens with a
-    fresh VARIABLE, whereas Sub-ForallL instantiates with a GUESS bounded
-    only by ftv ψ_b ⊆ dom Θ.  The paper (subtyping-proofs.tex:2412) applies
-    \lslab{ForallR} to a SINGLE IH instance and never establishes this —
-    see docs/PAPER-GAPS.md.  When the row is reached: do NOT chase the
-    target-ftv bound; the guess is UNDONE by the reverse direction of
-    [lemma:constraint-collection-stable-substitution], so ψ_b's variables
-    never enter 𝒞, and the bound to prove ties P0 to ψa through the
-    PRECISION and REFINEMENT premises, which Sub-ForallL leaves untouched.
-
-    MEASURE: NOT P6-Cs's [size_uskl R' + size_pskl P0].  Consistency's ∀
-    rules open with a VARIABLE (size-preserving), but Sub-ForallL opens with
-    the GUESS ψb, so the subject can GROW.  Induct on the [ad_pat_sub_g]
-    derivation instead, as P6-Sv does. *)
+Theorem a_looksub_solve_complete :
+  forall n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α,
+  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
+  κ ∷ Θ0 ⊑ Θ ->
+  α `notin` dom Θ -> α `notin` dom Θ0 ->
+  ⌊ R' ⌋ˢ = P ->                            (* erase R' = P (R' is κ-FREE) *)
+  ftvar_in_uskl R' [<=] add α (dom Θ0 `union` dom Θ) ->
+  lc_uskl R' ->
+  a_tags_sort NM Ψ' ψa ->
+  (ftag_in_uskl R') ∩ Ψ' [=] empty ->       (* the paper's "Ψ disjoint from Ψ'" *)
+  Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
+  delta_def_fresh Δ Θ ->
+  sub_shield Θ0 Ψ' empty P0 ψa ->           (* ⇐ THE REPAIR (see the header) *)
+  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
+  Ψa [<=] Ψsub ->
+  (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
+  ad_pat_sub_g n NM M Ψsub Θ
+    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
+  Θ ⨟ empty ⊢ₚₛᵃ
+    (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  exists 𝒞 Ξc Pa κc,
+    (P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\             (* looksub α P P0 𝒞 Ξc *)
+    (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\               (* solve 𝒞 Pi Pa *)
+    (Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+    a_wf_aenv (Ξc ++ Θ0) /\
+    α `notin` dom Ξc /\
+    keys κc = keys Ξc /\
+    Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
+    (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
+    a_inc_equiv Θ0 κ κ Θ /\
+    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
+    Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+Proof.
+  intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
+  intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
+         HscopeR HlcR Htags Hdisj Hsub Hdfresh Hshield Hpre HΨs1 HΨs2
+         Hsubty HwfSubj Hrefine.
+  edestruct (@a_looksub_solve_complete_gen n NM M Θ0 Θ Θ κ Δ empty empty Ψ'
+               Ψi Ψa Ψsub ψa Q P P0 Pi R'
+               (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) α)
+    as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve & HwfPa & HwfΞ & HαΞ & Hkeys
+        & HFor & _ & Hinc & Heqv & Hκcfresh & Hprec);
+    [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HwfPi
+    | exact HmodSK | exact HmodTY | exact Hκ | exact HαΘ | exact HαΘ0
+    | exact HeraseR | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
+    | exact Hsub | exact Hdfresh | exact Hshield | exact Hpre
+    | clear - HΨs1; fsetdec | exact HΨs2
+    | exact Hsubty | exact HwfSubj | exact Hrefine
+    | apply urho__refl;
+        [ apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfSubj
+        | clear; fsetdec ]
+    | clear; fsetdec
+    | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+    | clear; fsetdec
+    | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+    | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+    | intros x b Hb; exact Hb
+    | ].
+  exists 𝒞, Ξc, Pa, κc.
+  repeat split; assumption.
+Qed.
