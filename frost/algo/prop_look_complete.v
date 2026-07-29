@@ -1157,6 +1157,52 @@ Proof.
     cbn [ftvar_in_uskl] in *. clear - Hα H1 H2 Fr. fsetdec.
 Qed.
 
+(** …and the SHARP version, which drops the [dom Θ] slack entirely.  ρ only
+    ever acts at a [Δρ]-variable ([urho__leaf] is the only non-congruence
+    rule), so an ideal that mentions no [Δρ]-variable is its own image.
+
+    This is what P6-Ss Phase B needs: the ftv-𝒞 conclusion must survive a
+    Sub-ForallR, whose fresh binder β enters the DERIVATION's context — so a
+    bound naming [dom Θ] (or P6-Cs's [dom Θs], the ρ-images' scope, which a
+    nested Sub-ForallL's guess drags β into) readmits exactly the binder being
+    stripped.  Under the apartness premise no context appears at all.
+    P6-Cs keeps Δρ constant and never moves ψa, and P6-Ss's main induction
+    picks every Sub-ForallL binder fresh for ψa, so both preserve it.
+    See docs/DESIGN-completeness-subtyping.md §8 (h). *)
+Lemma uskl_rho_ftv_apart : forall NM Θ Δρ Ψρ R' R,
+  uskl_rho NM Θ Δρ Ψρ R' R ->
+  (ftvar_in_uskl R) ∩ Δρ [=] empty ->
+  ftvar_in_uskl R' [<=] ftvar_in_uskl R.
+Proof.
+  intros NM Θ Δρ Ψρ R' R H; induction H; intros Hap; cbn [ftvar_in_uskl] in *;
+    try solve [ clear; fsetdec
+              | apply IHuskl_rho; clear - Hap; fsetdec
+              | (* arrow *)
+                pose proof (IHuskl_rho1 ltac:(clear - Hap; fsetdec));
+                pose proof (IHuskl_rho2 ltac:(clear - Hap; fsetdec));
+                clear - H2 H3; fsetdec ].
+  - (* leaf : the ideal IS a Δρ-variable, which the premise forbids *)
+    exfalso. clear - H Hap; fsetdec.
+  - (* ∀ (untagged) — open with a binder that is itself Δρ-fresh *)
+    pick fresh α for (L `union` Δρ `union` ftvar_in_uskl R'
+                        `union` ftvar_in_uskl R).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R' (uskl_var_f α)) as Hlo.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)) as Hup.
+    cbn [ftvar_in_uskl] in Hup.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin)
+                  ltac:(clear - Hap Hup Fr; fsetdec)) as Hα.
+    clear - Hα Hlo Hup Fr; fsetdec.
+  - (* ∀^ε *)
+    pick fresh α for (L `union` Δρ `union` ftvar_in_uskl R'
+                        `union` ftvar_in_uskl R).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R' (uskl_var_f α)) as Hlo.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)) as Hup.
+    cbn [ftvar_in_uskl] in Hup.
+    pose proof (H0 α ltac:(clear - Fr; solve_notin)
+                  ltac:(clear - Hap Hup Fr; fsetdec)) as Hα.
+    clear - Hα Hlo Hup Fr; fsetdec.
+Qed.
+
 Lemma uskl_rho_weaken : forall NM Θ Δρ Ψρ R' R,
   uskl_rho NM Θ Δρ Ψρ R' R ->
   forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->

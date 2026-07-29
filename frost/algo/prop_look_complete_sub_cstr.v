@@ -2348,16 +2348,33 @@ Admitted.  (* TODO[P6-Ss-rho]: ONE case left — Sub-ForallR (the [admit] above,
     The statement is the ρ-GENERALIZED one (see the header); the paper's is
     the ρ = identity corollary below.
 
-    ForallR needs PHASE B — the ψa-RELATIVE ftv-𝒞 conclusion
-      ftv 𝒞 ⊆ ftv ψa ∪ dom Θs ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ
-    that P6-Cs carries and this statement drops, so that LS-ForallR's
-    cofinite family can be rebuilt from the single β-instance (its TARGET
-    gains β, so the structural [a_looksub_ftv] bound — which is what the
-    ForallL rows use — readmits it).  That needs P6-Cs's OTHER [Θs] device:
-    the ρ premise at a FIXED context, since the ∀ rows strip β from 𝒞.
-    The ρ-generalization landed here is exactly what unblocks it: under ρ the
-    lookup side never sees a guess (every ForallL opens with a fresh RIGID),
-    so the constraints stay ψa-bounded as on the consistency side. *)
+    ForallR needs PHASE B — a ψa-RELATIVE ftv-𝒞 conclusion, so that
+    LS-ForallR's cofinite family can be rebuilt from the single β-instance
+    (its TARGET gains β, so the structural [a_looksub_ftv] bound — which is
+    what the ForallL rows use — readmits it).
+
+    ⚠️ THE PLAIN [ftv 𝒞 ⊆ ftv ψa ∪ dom Θs ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ] FORM
+    IS UNREACHABLE.  Its leaf needs the sub-side analogue of
+    [ad_pat_consis_target_ftv], and that lemma is FALSE — machine-checked,
+    cex/cex_p6ss_sub_target_ftv.v.  [is_tskl] excludes the [__ghost] row but
+    NOT [__forall_l_tagged]: [uskl_all_etag] IS [is_tskl], and its guess is
+    bounded only by [dom Θ], the DERIVATION's context, which [__forall_r]
+    grows by the very β being stripped.
+
+    THE ROUTE THAT WORKS (docs/DESIGN-completeness-subtyping.md §8 (h)).
+    [__forall_r] forces [a_sub_mode_ty] + [mode_tc], where the only rows are
+    [__check], [__forall_r] and [__forall_l_*] — so under a Sub-ForallR this
+    LEAF ([P = α]) is reachable only when P is a ∀/⊤◇-STACK over α (every
+    other α-leaf sits under LS-Check, i.e. inside P6-Cs, already ψa-bounded),
+    and there every ∀-body is CONSTANT, so the guesses are discarded and
+    LS-ForallL applies at the UNDESCENDED P0.  Hence carry the conclusion as
+    a MODE-GUARDED DISJUNCTION,
+      M = mode_tc -> ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ
+                     \/ α_stack α P,
+    whose mode guard makes Sub-Arrow vacuous.  P6-Cs must drop its [dom Θs]
+    term in favour of the apartness premise [Δρ ∩ ftv ψa = ∅]; the transport
+    for that, [uskl_rho_ftv_apart], is already landed in prop_look_complete.v.
+    No third context parameter is needed after all. *)
 
 (* ===================================================================== *)
 (*  P6-Ss — the PAPER'S statement, as the ρ = IDENTITY corollary.          *)

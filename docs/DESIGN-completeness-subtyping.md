@@ -2879,3 +2879,130 @@ P0 → κP0 → Q (refinement) → subject (this lemma) → ψa ∪ dom Θρ
 (`uskl_rho_ftv_subject_bound`).  Budget it before starting Phase B.  NB the ρ
 premise's fixed context needs a THIRD context parameter here (`Θρ`), since
 `Θs` is already taken by the derivation's.
+
+### (h) P6-Ss Phase B — the planned route is REFUTED; the route that works (2026-07-29, sixth session)
+
+`make coq` green; the mechanization's ONLY admit is still P6-Ss's **Sub-ForallR**.
+
+⚠️ **Phase B's prerequisite is FALSE, and `is_tskl` does not repair it.**
+Machine-checked: `frost/algo/cex/cex_p6ss_sub_target_ftv.v`
+(`p6ss_sub_target_ftv_is_false`, axiom-free, plus a non-vacuity witness).
+The sub-side analogue of `ad_pat_consis_target_ftv`,
+
+    ad_pat_sub_g n NM M Ψ Θ R Q -> a_wf_aenv Θ -> is_tskl R ->
+      ftv Q ⊆ ftv R ∪ def_ftv Θ
+
+fails at **`ad_pat_sub_g__forall_l_tagged`**, not only at the `__ghost` row
+(g) anticipated.  `is_tskl` DOES exclude `__ghost` (it admits the dotted ◈
+`uskl_holeg` but not the plain ◇ `uskl_hole`), `__ghostg`, `__univ_ghost_l/lg`
+and `__forall_l_untagged` (whose subject is the tag-elided `uskl_all_syn`) —
+but `uskl_all_etag` IS `is_tskl`, and ForallL instantiates it with a guess
+bounded only by `Θ ⨟ empty ⊢ₚₛᵃ ⌊ψ⌋ˢ`, i.e. by **`dom Θ`, not `def_ftv Θ`**.
+Witness: Θ = β, subject `∀^ε α. α`, guess β, leaf `β ∼ β` ⇒ target `β`.
+
+`dom Θ` is therefore the strongest sound bound — and it is exactly the wrong
+one, because `ad_pat_sub_g__forall_r` runs its premise at `Θ,β`, so the bound
+readmits the very binder Sub-ForallR must strip.  There is no shape premise to
+add: ForallL is the essential subtyping rule, and consistency escapes the
+problem only because it HAS no ForallL.
+
+**The theorem is NOT refuted — only the route.**  In every configuration the
+lemma fails on, the algorithm still collects a β-free 𝒞, by taking
+LS-ForallL / LS-UnivGhostL *before* LS-ForallR: LS-Var then fires at the
+UNDESCENDED `∀β.P0`.  (E.g. `∀γ.α ≼[α,tc] ∀β.β ⤳ · ⨾ [α ≼ ∀β.β]`, where
+descending first gives the β-mentioning `[α ≼ β]`.)
+
+**THE MODE RESTRICTION IS WHAT MAKES THIS DECIDABLE-BY-CASES.**
+`ad_pat_sub_g__forall_r` forces `NM = a_sub_mode_ty` and `M = mode_tc`, and NM
+is invariant along a derivation.  At `(ty, tc)` the ONLY applicable rows are
+
+    __check      (leaf; its subtree is pure CONSISTENCY — no guesses)
+    __forall_r   (descends the target, subject fixed)
+    __forall_l_* (descends the subject; the only guess source)
+
+— `__infer` needs `mode_ti`; `__arrow` and `__flex_mono` need `mode_fn _`;
+`__ghost`, `__ghostg`, `__univ_ghost_l/lg/r` need `a_sub_mode_sk`.  Two
+consequences:
+
+1. On the lookup side the mirror rows are LS-Check (⇒ P6-Cs), LS-ForallR,
+   LS-ForallL and LS-UnivGhostL.  So under a Sub-ForallR the **P6-Ss leaf
+   (`P = α`) is reachable only when P is a ∀/⊤◇-STACK over α** — every other
+   α-leaf sits under LS-Check, i.e. inside P6-Cs, whose ftv-𝒞 bound is
+   already ψa-relative.
+2. In that stack case every ∀-body is CONSTANT, so every ForallL guess is
+   discarded and the derivation permutes: `__forall_l` can be pulled above
+   `__forall_r`.  (∀L/∀R do NOT permute in general — that is precisely why
+   the general route dies — but they do when the guess is dropped.)
+
+**The Phase B statement that works.**  Carry the ftv-𝒞 conclusion as a
+MODE-GUARDED DISJUNCTION:
+
+    M = mode_tc ->
+      ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ   \/   α_stack α P
+
+where `α_stack α P` is the inductive "P is α under ∀/⊤◇ binders".  Row by row:
+
+- **Sub-Arrow** — conclusion mode is `mode_fn M ≠ mode_tc`: VACUOUS.  This is
+  what kills the obvious objection (Arrow cannot concatenate a left disjunct
+  with a right one).
+- **Check** — P6-Cs's own ftv-𝒞 output, left disjunct.
+- **Sub-ForallL / UnivGhostL/LG** — target unmoved; IH's disjunct passes
+  through (a right disjunct lifts: `P''^β` an α-stack ⇒ `∀P''` is one).
+- **leaf, LS-Absent** — 𝒞 = nil, left.  **leaf, `P = α`** — right.
+- **Sub-ForallR** — left ⇒ `β ∉ ftv 𝒞` (β is fresh for ψa, Ξc, κ, and is a
+  rigid so not in `def_ftv Θ`) ⇒ rebuild LS-ForallR from the single instance.
+  right ⇒ P is an α-stack: build LS-ForallL*/LS-UnivGhostL* + LS-Var directly
+  at the UNDESCENDED P0, and get the leaf's other conjuncts by first
+  stripping the constant-body `__forall_l`s off the derivation.
+- Infer / UnivGhostR / Ghost / GhostG / FlexMono — 𝒞 = nil or mode ≠ tc.
+
+**One change to P6-Cs is required, and it is small.**  Its ftv-𝒞 conclusion
+must DROP the `dom Θs` term — under a Sub-ForallR a nested Sub-ForallL's guess
+mentions β, so ρ's images are scoped at `Θs,β` and `dom Θs` readmits β.  The
+replacement is an apartness premise
+
+    Δρ ∩ ftv ψa [=] empty
+
+plus a new `uskl_rho_ftv_apart : uskl_rho NM Θ Δρ Ψρ R' R -> ftv R ∩ Δρ [=]
+empty -> ftv R' [<=] ftv R` (routine induction; the `urho__leaf` row is
+vacuous under the premise, the binder rows pick α fresh for Δρ).  P6-Cs keeps
+Δρ CONSTANT and never moves ψa, so the premise is preserved by every descent;
+P6-Ss maintains it because ψa is fixed in the main induction and every
+Sub-ForallL binder is picked fresh.  Note this makes P6-Cs's `Θs` slot
+irrelevant to the ftv bound, so Phase B needs NO third context parameter —
+the `Θρ` of (g)'s plan is not needed.
+
+**Build order for the next session.**
+1. `uskl_rho_ftv_apart` (prop_look_complete.v) — self-contained.
+2. P6-Cs: add the apartness premise, drop `dom Θs` from the ftv-𝒞 conclusion,
+   re-`Qed`.  Consumers only get a STRONGER bound.
+3. `α_stack` + its two closure lemmas (prop_looksub.v or the P6-Ss file).
+4. `ad_pat_sub_g_strip_const_all` — pull a constant-body `__forall_l` above
+   `__forall_r`; induction has only the three `(ty,tc)` rows, and `__check` is
+   refuted by `guarded_uskl (uskl_all_etag …)` being false.
+5. Thread the mode-guarded disjunction through P6-Ss's twelve rows.
+6. Sub-ForallR: the two branches above.
+
+**On "𝒞 may mention β, but the later wf check makes it transparent."**
+Half true, and worth keeping in view for step 6.  It is NOT a licence to skip
+the obligation: `a_looksub__forall_r` is COFINITE in β with one `Ξ ⨾ 𝒞`, so it
+is the RULE that blocks, not the extract-site `Θ0,Ξ ⊢ P1` check — and that
+check is not a filter either, since `a_solve_sub__var` (`α̂ ≼[m] Q ⤳ α̂`)
+DISCARDS the target, so a β-mentioning 𝒞 can solve to a β-free P1 the check
+accepts (the 2026-07-29 author resolution recorded at the `admit`).  But the
+same fact is a genuine SIMPLIFICATION inside the α-stack branch: there Pi
+faces the undescended `∀β.P0`, and whenever Pi is a flexible variable
+SS-Var/SS-Flex returns Pi whatever the target is, so the descended and
+undescended solves agree.  `a_solve_sub__forall_r` is itself cofinite with a
+β-free output P', i.e. the solve side already made this same encoding choice.
+
+**The alternative the mode analysis rules IN but does not recommend:** adopt
+the paper-faithful LAX `a_looksub__forall_r` (exists-fresh; the paper's
+constraint collection is scoping-agnostic and defers scoping to the extract
+site).  Sub-ForallR then becomes trivial and Phase B disappears.  The cost is
+that `a_looksub_ftv` (`ftv 𝒞 ⊆ ftv P' ∪ dom Ξ`) becomes FALSE — and BOTH
+Sub-ForallL rows use it to strip their binder (prop_look_complete_sub_cstr.v:
+1724, 2086) — so it would have to be replaced by an avoid-set threaded through
+the theorem's conclusion, and subtyping SOUNDNESS re-checked against a rule
+that admits strictly more.  The α-stack route above touches no rule and no
+closed soundness proof.
