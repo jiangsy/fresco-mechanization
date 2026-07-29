@@ -2867,3 +2867,15 @@ instance) — use the congruence lemma, not `rewrite`.
 `ftv 𝒞 ⊆ ftv ψa ∪ dom Θs ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ` as an output conjunct,
 with P6-Cs's fixed-`Θs` ρ premise; the ρ-generalization landed here is exactly
 what makes it available (under ρ the lookup side never sees a guess).
+
+**Phase B — one prerequisite MEASURED (2026-07-29, after (g)).**  The ftv-𝒞
+conclusion's leaf case needs the SUB-SIDE analogue of
+`ad_pat_consis_target_ftv` (prop_look_complete_cstr.v:1481,
+`ftv Q ⊆ ftv ψ ∪ def_ftv Θ` from a consistency derivation) — call it
+`ad_pat_sub_g_target_ftv`.  It does NOT exist (only the TAG version
+`ad_pat_sub_g_ftag_sub` does), and the `P = α` leaf cannot establish
+`ftv 𝒞 = ftv P0 ⊆ ftv ψa ∪ dom Θρ ∪ …` without it: the chain is
+P0 → κP0 → Q (refinement) → subject (this lemma) → ψa ∪ dom Θρ
+(`uskl_rho_ftv_subject_bound`).  Budget it before starting Phase B.  NB the ρ
+premise's fixed context needs a THIRD context parameter here (`Θρ`), since
+`Θs` is already taken by the derivation's.
