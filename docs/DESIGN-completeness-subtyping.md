@@ -2338,3 +2338,80 @@ Scratch: `frost/algo/cex/p6cs_dev_tmp.v`.
   The ∀-binder kit, the two ftv transports behind "Pi and 𝒞 cannot contain β",
   and `a_looksub_lookeq_rename_tvar` are all in the same file and are what
   P6-Ss should reuse.
+
+## 8. P6-Ss plan (drafted 2026-07-29, after P6-Sv closed)
+
+`lemma:complete-constraint-collection-solving` (subtyping-proofs.tex:2202),
+the subtyping twin of the CLOSED P6-Cs (`a_lookeq_solve_complete`).  Target
+file `frost/algo/prop_look_complete_sub_cstr.v`.
+
+### (a) The paper's P6-Ss INHERITS P6-Sv's falsity — same witness
+
+Its first special case ("If `P = α`, then `S = α`") applies P6-Sv **with the
+identity substitution**, i.e. at `Δρ = ∅`, `Ψρ = ∅`.  That is EXACTLY the
+configuration of `cex/cex_p6sv_forall_flex.v`, and the witness transports:
+take the LOOKED-FOR variable `α'` — the one the lookup judgment
+`looksub α' P P0 ⤳ Ξ ⨾ 𝒞` searches for, which P6-Ss requires to satisfy
+`α' ∉ dom Θ` — and set `S = R' = α'`.  Since κ substitutes FLEXIBLES only
+and `α'` is fresh for Θ hence for `dom κ`, we get `κ S = κ α' = α'`, so the
+subject `(κ S)[ψa/α']` IS `ψa = ∀^ε β.β→β`.  κ does its work on the other
+side of the witness: `P0 = α̂` with `κ = [α̂ ↦ ⟨⟩→⟨⟩]`, so
+`κ P0 = ⟨⟩→⟨⟩`, which is what the refinement premise
+`Θ ⊢ inh(κ P0) ⊳ Q` uses to reach `Q = inh{⟨⟩→⟨⟩}`; and `Pi = ∀β.β→β`.  `a_looksub` has NO FlexR rule, so LS-Var is FORCED and
+`𝒞 = [ ≼[M] P0 ]`; solving it is the P6-Sv leaf, which the cex refutes.  So
+P6-Ss must carry the SAME repair, and the mechanized statement does.
+
+### (b) The repair premise — a P0-ONLY walk
+
+P6-Sv's `flex_shield Θ0 Ψ' Δρ P0 ψa` pairs P0 and ψa *positionally*, both
+descending together.  P6-Ss's recursion is different: **ψa is FIXED** (it is
+the single guess for α) while P0 descends, so the pairing at a leaf is
+(P0-subterm, the WHOLE ψa).  Only two of P6-Ss's cases move P0:
+
+- Sub-Arrow takes the RIGHT component (the left one goes to P6-Cs, which
+  needs no shield — consistency has no ForallL, so tags never become dirt);
+- Sub-ForallR opens the body.
+
+`flex_shield` supports the second (`fsh_all_l`) but NOT the first: `fsh_arrow`
+descends both sides at once.  So P6-Ss threads the walk-closure, exactly as
+P6-Sv threads `flex_apart_walk`:
+
+```
+Inductive ss_step : pskl -> pskl -> Prop :=      (* P0-only descents *)
+| sss_arrow_r : ss_step (P1 → P2) P2
+| sss_all     : ss_step (∀.P0)    (open P0 γ).
+
+Definition sub_shield Θ0 Ψ' P0 ψa : Prop :=
+  forall P0', ss_walk P0 P0' ->
+    flex_apart_walk Θ0 empty P0' ψa /\ flex_shield Θ0 Ψ' empty P0' ψa.
+```
+
+It descends for free (`ss_walk` is transitive) and hands P6-Sv both of its
+premises at the leaf, via the reflexive step.  NB `flex_apart_walk` must be
+carried too: P6-Cs discharges P6-Cv's `flex_apart` with `fa_clean` at
+Δρ = ∅, but `fsh_clean` additionally demands TAG-freeness, which a tagged ψa
+does not have — so the two cannot be merged (see §6 (a3) and the note at
+`flex_apart_walk`).
+
+### (c) The measure — NOT P6-Cs's
+
+P6-Cs induces on `size_uskl R' + size_pskl P0`, which works because
+consistency's ∀ rules open with a VARIABLE (size-preserving).  Subtyping's
+**Sub-ForallL opens with the GUESS** `ψ_b`, so `size (open R ψ_b)` can be
+arbitrarily larger — the P6-Cs measure is unusable.  Use the
+`ad_pat_sub_g` DERIVATION instead, as P6-Sv does; its fuel decreases on
+ForallL / Arrow / ForallR, and the fuel-preserving rows (UnivGhostL/LG,
+FlexMono) shrink the subject.  Since the subject is the compound
+`(κ R')[ψa/α]`, the derivation has to be `remember`ed and the shape equation
+inverted per rule — the same bookkeeping P6-Sv's Θs-generalization needed.
+
+### (d) Reuse from P6-Cs (`prop_look_complete_cstr.v`)
+
+The ∀-binder kit (β-strip lemmas, Δ→Θ refinement transport,
+`a_looksub_lookeq_rename_tvar`), the two ftv transports behind "Pi and 𝒞
+cannot contain β", the `*_refine_unify` chain-walkers, and the
+`κc ++ κ` syntactic-extension treatment of the paper's `κ ≡ κa`.  The
+conclusion shape (𝒞, Ξc, Pa, κc with the `keys`/`Forall`/`ftvar_in_cstrs`
+side conditions) carries over verbatim; only `a_lookeq` becomes `a_looksub`
+and the mode/`skmod` premises are added.
+
