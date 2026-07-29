@@ -2536,10 +2536,10 @@ No `flex_shield`: that is P6-Sv's premise, not P6-Cv's.
 
 STATEMENT DELTA (mirrors what P6-Cv already takes):
 ```
-  + params Δρ Ψρ Ssub
-  + uskl_rho NM Θ Δρ Ψρ Ssub (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))
-  ~ Ψsub ⨟ Θ ⊢ₛᵃ Ssub ∼ Q                         (was: on the ideal)
-  ~ Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Ssub)             (was: on the ideal)
+  + params Δρ Ψρ Rsub
+  + uskl_rho NM Θ Δρ Ψρ Rsub (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))
+  ~ Ψsub ⨟ Θ ⊢ₛᵃ Rsub ∼ Q                         (was: on the ideal)
+  ~ Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub)             (was: on the ideal)
   + Ψρ ∩ Ψ' [=] empty
   + rho_fresh Δρ Θ κ
   + Δρ [<=] Δ
@@ -2553,18 +2553,18 @@ ROWS.  The induction dispatches on `R'`, so use the `_r_inv` family (built
 `all_syn`, `all_etag`, `tophole`, `topholeg`; `unit` / `var_b` / `hole` /
 `holeg` are already dead by `α ∈ ∅`, and `var_f` by the special cases.  Each
 inversion returns a SINGLE congruence (no disjunct — see the audit above),
-so the row's existing text survives with `Ssub`'s components in place of the
+so the row's existing text survives with `Rsub`'s components in place of the
 ideal's and the sub-ρ threaded into the recursive call.
 
 The `P = α` leaf: STOP rewriting the subject to `ψa` (lines 1730-1737) and
-pass `Ssub` + `Hrho` straight through as P6-Cv's `ψsub` — the `urho__refl` /
+pass `Rsub` + `Hrho` straight through as P6-Cv's `ψsub` — the `urho__refl` /
 `fa_clean` / `Δρ := empty` arguments at 1744-1752 become the real ρ premises.
 `ftag_in_uskl R' = ∅` there, so `Ψsub ⊆ Ψρ ∪ Ψa` matches P6-Cv verbatim.
 
 TAG ALGEBRA is the one place to go slowly: rows currently read
 `Ψ1 ⊆ ftag <ideal component>` off `ad_pat_consis_ftag_sub`, which now yields
-`Ψ1 ⊆ ftag <Ssub component>`; convert with `uskl_rho_ftag_sub`
-(`ftag Ssub ⊆ Ψρ ∪ ftag ideal`), which is why `Ψρ` joins the `Ψsub` bound.
+`Ψ1 ⊆ ftag <Rsub component>`; convert with `uskl_rho_ftag_sub`
+(`ftag Rsub ⊆ Ψρ ∪ ftag ideal`), which is why `Ψρ` joins the `Ψsub` bound.
 
 ⚠️ **AMENDMENT (2026-07-29, found by executing the statement change): the
 recipe above is INCOMPLETE — P6-Cs also needs the Θs GENERALIZATION, and its
@@ -2573,8 +2573,8 @@ recipe above is INCOMPLETE — P6-Cs also needs the Θs GENERALIZATION, and its
 - The `P = α` leaf establishes the ψa-relative conclusion
   `ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ` through
   `ad_pat_consis_target_ftv Hconsis`, which bounds `ftv Q` by the
-  CONSISTENCY SUBJECT.  Under ρ that subject is `Ssub`, not ψa, so the leaf
-  now yields `ftv 𝒞 ⊆ ftv Ssub ∪ …` and `uskl_rho_ftv_subject_bound` only
+  CONSISTENCY SUBJECT.  Under ρ that subject is `Rsub`, not ψa, so the leaf
+  now yields `ftv 𝒞 ⊆ ftv Rsub ∪ …` and `uskl_rho_ftv_subject_bound` only
   gets from there to `ftv ψa ∪ dom Θ`.
 - `dom Θ` is FATAL as stated: P6-Cs's ∀ rows run the IH at `Θ,β` and must
   then strip β from 𝒞 (`HβC`, prop_look_complete_cstr.v:2395), and
@@ -2602,6 +2602,45 @@ DONE towards this (2026-07-29, `make coq` green, committed):
 prop_look_complete.v — P6-Cs needs all of them and was UPSTREAM of the file
 they lived in.  That circularity would have blocked the statement change
 outright; it is now cleared.
+
+⚠️ **SECOND AMENDMENT (2026-07-29, from a second execution attempt — the
+statement, the leaf and the Absent case are now VERIFIED to work; the
+flexible-P0 row is where it stops).**
+
+VERIFIED by compiling: the statement delta above type-checks as written
+(with `Θs` added), the `P = α` leaf goes through — rewrite the ideal side of
+`Hrho` instead of `Hconsis`, weaken a COPY out of Θs for P6-Cv
+(`uskl_rho_weaken`), and close the ftv-𝒞 conjunct with
+`uskl_rho_is_tskl` + `uskl_rho_ftv_subject_bound` — and the `α ∉ ftv P`
+Absent case goes through with `uskl_rho_ftag_sub` replacing the direct
+`ad_pat_consis_ftag_sub` bound (which is what makes Ψρ join the Ψsub
+premise).  The Arrow row's ρ-inversion (`uskl_rho_arrow_r_inv`, then
+`subst Rsub`) also works, and `Hcons0` simply restates on `uskl_arrow Ra' Rb'`.
+
+WHERE IT STOPS — the **flexible-P0 row** (`P0 = var β0`,
+prop_look_complete_cstr.v:~1948).  It applies
+`ad_pat_consis_subst_psia_mono` to a subject of the shape
+`subst_bskl_in_uskl ψa α X`, concluding that ψa is a MONO PAINT.  Under ρ
+the subject is `Rsub`, which is not syntactically of that shape.  It IS, up
+to a commutation: α ∉ dom Θs (α ∉ dom Θ and Θs ⊆ Θ) so α ∉ Δρ, hence
+
+    Rsub = ρ(subst ψa α (κR'))  =  subst (ρψa) α (ρ(κR')).
+
+So the row needs (a) a COMMUTATION lemma putting `Rsub` in that form, and
+(b) a small "reflect the mono paint back through ρ" step: the lemma then
+gives `ρψa` a mono paint, and since ρ replaces rigid VARIABLES by
+tags-sorted images, ψa is a mono paint too (a variable is itself a mono
+paint, so the ρ-leaf positions are unproblematic).  Neither is deep, but
+both are new lemmas — budget them before restarting the row.
+
+A WIP diff of everything verified above (statement + leaf + Absent + Arrow
+inversion) was produced and discarded with the revert; it is ~60 lines and
+re-derivable from this recipe in minutes.
+
+⚠️ NAMING: the ρ-image subject is `Rsub`, not `Ssub` — a `uskl` is `R` in
+this corpus (`S` is not a metavariable here at all).  NB there is
+pre-existing drift to clean up separately: `prop_consis_precise.v` uses
+`Ssub` as a local `remember` name in ~10 proof bodies.
 
 ⚠️ This is ONE atomic change — the file does not compile part-way through, so
 budget it as a single sitting.

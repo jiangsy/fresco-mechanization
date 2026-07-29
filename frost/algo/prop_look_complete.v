@@ -1116,6 +1116,31 @@ Proof.
   - inversion Ht; subst; apply is_tskl__topholeg; auto.
 Qed.
 
+Lemma uskl_rho_ftv_subject_bound : forall NM Θ Δρ Ψρ R' R,
+  uskl_rho NM Θ Δρ Ψρ R' R ->
+  ftvar_in_uskl R' [<=] ftvar_in_uskl R `union` dom Θ.
+Proof.
+  intros NM Θ Δρ Ψρ R' R H; induction H; cbn [ftvar_in_uskl];
+    try solve [ clear; fsetdec | clear - IHuskl_rho; fsetdec
+              | clear - IHuskl_rho1 IHuskl_rho2; fsetdec ].
+  - (* leaf : the image is well-formed in Θ *)
+    pose proof (a_wf_pskl_ftv_dom H1) as Hd.
+    (* [uskl_to_pskl_ftv] is a duplicate of this one and lives DOWNSTREAM *)
+    rewrite ftvar_in_pskl_uskl_to_pskl in Hd. clear - Hd; fsetdec.
+  - (* ∀ (untagged) *)
+    pick fresh α for (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
+    pose proof (H0 α ltac:(clear - Fr; solve_notin)) as Hα.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R' (uskl_var_f α)).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)).
+    cbn [ftvar_in_uskl] in *. clear - Hα H1 H2 Fr. fsetdec.
+  - (* ∀^ε *)
+    pick fresh α for (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
+    pose proof (H0 α ltac:(clear - Fr; solve_notin)) as Hα.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R' (uskl_var_f α)).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)).
+    cbn [ftvar_in_uskl] in *. clear - Hα H1 H2 Fr. fsetdec.
+Qed.
+
 Lemma uskl_rho_weaken : forall NM Θ Δρ Ψρ R' R,
   uskl_rho NM Θ Δρ Ψρ R' R ->
   forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->

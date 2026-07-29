@@ -1327,29 +1327,8 @@ Qed.
     the IMAGE's free variables are the source's plus the context's.  Sub-
     ForallL needs it to know that a source binder unused under ρ is unused
     in the image too. *)
-Lemma uskl_rho_ftv_subject_bound : forall NM Θ Δρ Ψρ R' R,
-  uskl_rho NM Θ Δρ Ψρ R' R ->
-  ftvar_in_uskl R' [<=] ftvar_in_uskl R `union` dom Θ.
-Proof.
-  intros NM Θ Δρ Ψρ R' R H; induction H; cbn [ftvar_in_uskl];
-    try solve [ clear; fsetdec | clear - IHuskl_rho; fsetdec
-              | clear - IHuskl_rho1 IHuskl_rho2; fsetdec ].
-  - (* leaf : the image is well-formed in Θ *)
-    pose proof (a_wf_pskl_ftv_dom H1) as Hd.
-    rewrite uskl_to_pskl_ftv in Hd. clear - Hd; fsetdec.
-  - (* ∀ (untagged) *)
-    pick fresh α for (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
-    pose proof (H0 α ltac:(clear - Fr; solve_notin)) as Hα.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R' (uskl_var_f α)).
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)).
-    cbn [ftvar_in_uskl] in *. clear - Hα H1 H2 Fr. fsetdec.
-  - (* ∀^ε *)
-    pick fresh α for (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
-    pose proof (H0 α ltac:(clear - Fr; solve_notin)) as Hα.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R' (uskl_var_f α)).
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)).
-    cbn [ftvar_in_uskl] in *. clear - Hα H1 H2 Fr. fsetdec.
-Qed.
+(* [uskl_rho_ftv_subject_bound] MOVED to prop_look_complete.v — P6-Cs needs
+   it under the ρ-generalization, and this file is downstream of P6-Cs. *)
 
 (** A ⊤◇ body is well-formed at the EMPTY Δ ([a_wf_pskl__tophole]), so no
     SHIELDED variable of a well-formed skeleton can be a locally bound one:
