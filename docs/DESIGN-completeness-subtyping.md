@@ -2513,6 +2513,62 @@ before starting, because the P6-Cs half is the expensive part:
   exactly right, since the variable target is the only place ρ does
   anything.
 
+**P6-Cs ρ-generalization — EXECUTABLE RECIPE (derived 2026-07-29; the
+structure was checked against the proof, not guessed).**
+
+Three facts make this much smaller than feared:
+
+1. **P6-Cs calls P6-Cv exactly ONCE** — at the `P = α` special case
+   (prop_look_complete_cstr.v:1741), before the induction.  Every other row
+   recurses into P6-Cs itself.
+2. **ψa NEVER moves in P6-Cs** (it is the fixed guess for α; the Arrow row
+   passes `ψa` unchanged to both recursive calls).  Only `P0` descends —
+   arrow components, `open P0'`, `⊤◇`-strip.
+3. **Δρ is CONSTANT in P6-Cs.**  Consistency has no ForallL, so nothing ever
+   extends ρ inside it; ρ only ARRIVES from a Sub-ForallL above.
+
+⇒ The only new *structural* premise is `flex_apart_walk Θ0 Δρ P0 ψa` (P6-Cv
+wants plain `flex_apart`; the walk is closed under exactly the P0-only steps
+P6-Cs makes — `fastep_arrow_l/_r`, `fastep_all_l`, `fastep_tophole_l` — via
+`flex_apart_walk_step`, read off at the leaf by `flex_apart_walk_here`, and
+carried across the ∀ rows' context growth by `flex_apart_walk_weaken_tvar`).
+No `flex_shield`: that is P6-Sv's premise, not P6-Cv's.
+
+STATEMENT DELTA (mirrors what P6-Cv already takes):
+```
+  + params Δρ Ψρ Ssub
+  + uskl_rho NM Θ Δρ Ψρ Ssub (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))
+  ~ Ψsub ⨟ Θ ⊢ₛᵃ Ssub ∼ Q                         (was: on the ideal)
+  ~ Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Ssub)             (was: on the ideal)
+  + Ψρ ∩ Ψ' [=] empty
+  + rho_fresh Δρ Θ κ
+  + Δρ [<=] Δ
+  + (forall α0, α0 `in` Δρ -> α0 `notin` pskl_shielded_ftv (msubst_pskl κ Pi))
+  + flex_apart_walk Θ0 Δρ P0 ψa
+  ~ Ψsub [<=] ftag_in_uskl R' `union` Ψρ `union` Ψa
+```
+
+ROWS.  The induction dispatches on `R'`, so use the `_r_inv` family (built
+2026-07-29).  Only FIVE rows are live and need an inversion — `arrow`,
+`all_syn`, `all_etag`, `tophole`, `topholeg`; `unit` / `var_b` / `hole` /
+`holeg` are already dead by `α ∈ ∅`, and `var_f` by the special cases.  Each
+inversion returns a SINGLE congruence (no disjunct — see the audit above),
+so the row's existing text survives with `Ssub`'s components in place of the
+ideal's and the sub-ρ threaded into the recursive call.
+
+The `P = α` leaf: STOP rewriting the subject to `ψa` (lines 1730-1737) and
+pass `Ssub` + `Hrho` straight through as P6-Cv's `ψsub` — the `urho__refl` /
+`fa_clean` / `Δρ := empty` arguments at 1744-1752 become the real ρ premises.
+`ftag_in_uskl R' = ∅` there, so `Ψsub ⊆ Ψρ ∪ Ψa` matches P6-Cv verbatim.
+
+TAG ALGEBRA is the one place to go slowly: rows currently read
+`Ψ1 ⊆ ftag <ideal component>` off `ad_pat_consis_ftag_sub`, which now yields
+`Ψ1 ⊆ ftag <Ssub component>`; convert with `uskl_rho_ftag_sub`
+(`ftag Ssub ⊆ Ψρ ∪ ftag ideal`), which is why `Ψρ` joins the `Ψsub` bound.
+
+⚠️ This is ONE atomic change — the file does not compile part-way through, so
+budget it as a single sitting.
+
 **Order for the next session** (Arrow and ForallR do NOT depend on the
 decision above, so start there):
 
