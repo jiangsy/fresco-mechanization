@@ -2480,9 +2480,25 @@ decision above, so start there):
    `sss_arrow_r` + `sub_shield_step`, then the same `a_solve_cstr_app` /
    `a_wf_pskl_swap_app` / `a_inc_flex_prefix_split` kit.  New relative to
    P6-Cs: `skmod` forcing `P0 = P01→P02`, and the `Ψa1`/`Ψa2` split.
-2. ForallR — still gated on the `β ∉ ftv 𝒞` invariant (reading (b): keep
-   the side condition, do not change the constraint grammar), which means
-   P6-Ss has to re-acquire a ψa-relative `ftvar_in_cstrs` conclusion that
-   the current statement deliberately dropped.
-3. ForallL — the ρ-generalized aux lemma above (the biggest chunk;
-   re-dispatches the eight closed rows).
+2. ForallR — the `β ∉ ftv 𝒞` obligation is now known to be a MECH-ENCODING
+   artefact, not a paper gap (WT, 2026-07-29: `look` is scoping-agnostic;
+   the extract use site's separate `Θ0,Ξ ⊢ P1` premise does the scope
+   check).  So decide first: prove the cofinite and exists-fresh encodings
+   of `a_looksub__forall_r` equivalent (needs "β ∈ ftv 𝒞 ⟹ β ∈ ftv P1",
+   which SolE-FlexR's payload-replacement makes non-trivial), or relax the
+   rule to exists-fresh (rule change + full rebuild + every induction over
+   `a_looksub`).
+3. ForallL — the ρ-generalized aux lemma above.  ⚠️ SCOPE MEASURED
+   (2026-07-29): the Check row hands its whole subject to P6-Cs and a
+   ForallL can sit above a Check, so **P6-Cs must be ρ-generalized too**.
+   Threading, not new theory — P6-Cv (`a_solve_eq_complete_var_gen`)
+   already takes `uskl_rho`, the `uskl_rho_*_l_inv` kit exists, P6-Cs's
+   measure is on the ρ-free ideal subject so it is unaffected, its ∀ rows
+   open with fresh VARIABLES so ρ never grows inside it, and its leaf
+   passes the real ρ down instead of `urho__refl`.  ALREADY LANDED for
+   this step (file compiles, statement unmoved): `sub_shield` carries Δρ
+   (instantiated at `empty` for now) with `sub_shield_add_fresh` /
+   `_weaken_tvar`, and `ad_partial_precise_delta_shrink_fresh` is `Qed`.
+   P6-Sv's ForallL row (prop_look_complete_sub_var.v:2308) is the
+   line-by-line template, simplified: P6-Ss's ∀ comes from the SUBJECT, so
+   ψa/P0/Pi/Ψi/Ψa do not move and only Θ0/Θ/Δ/Δρ grow by β.

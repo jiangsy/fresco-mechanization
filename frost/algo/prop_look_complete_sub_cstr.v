@@ -88,15 +88,28 @@ Inductive ss_walk : pskl -> pskl -> Prop :=
     ss_step P0 P1 -> ss_walk P1 P2 -> ss_walk P0 P2.
 
 (** The P6-Ss repair premise: at EVERY P0-subterm the recursion can reach,
-    P6-Sv's two premises hold against the fixed guess (at ρ = identity, so
-    Δρ = ∅ — the paper's own choice in the P = α case).  Both are needed:
+    P6-Sv's two premises hold against the fixed guess.  Both are needed:
     P6-Cs discharges P6-Cv's [flex_apart] with [fa_clean] at Δρ = ∅, but
     [fsh_clean] additionally demands TAG-freeness, which a tagged ψa does
-    not have, so the two cannot be merged. *)
-Definition sub_shield (Θ0 : aenv) (Ψ' : atoms) (P0 : pskl) (ψa : uskl)
-  : Prop :=
-  forall P0', ss_walk P0 P0' ->
-    flex_apart_walk Θ0 empty P0' ψa /\ flex_shield Θ0 Ψ' empty P0' ψa.
+    not have, so the two cannot be merged.
+
+    ⚠️ THE Δρ QUANTIFIER IS PART OF THE PREMISE, not a lemma.  Sub-ForallL
+    absorbs its guess into ρ and so runs the recursion at [add β Δρ] for a
+    FRESH β — but ψa itself does NOT move in that row (P6-Ss's ∀ comes from
+    the SUBJECT, and ψa is the fixed guess for α), so neither
+    [fastep_all_r] nor [fsh_all_r] applies and there is nothing to descend.
+    Growing Δρ by variables that ψa does not mention is harmless for both
+    predicates — [fa_clean] / [fsh_clean] only ever ask that ψa avoid Δρ —
+    but proving that as a lemma means simulating the [fa_walk] whose own
+    steps grow Δρ.  Quantifying here instead makes [sub_shield_add_fresh]
+    free, exactly as the [ss_walk] quantifier makes [sub_shield_step] free;
+    the obligation moves to the call site, which is the honest reading
+    ("the shield holds along everything the recursion does"). *)
+Definition sub_shield (Θ0 : aenv) (Ψ' : atoms) (Δρ : atoms) (P0 : pskl)
+  (ψa : uskl) : Prop :=
+  forall P0' Δρ', ss_walk P0 P0' ->
+    Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
+    flex_apart_walk Θ0 Δρ' P0' ψa /\ flex_shield Θ0 Ψ' Δρ' P0' ψa.
 
 Lemma ss_walk_trans : forall P0 P1 P2,
   ss_walk P0 P1 -> ss_walk P1 P2 -> ss_walk P0 P2.
@@ -105,20 +118,134 @@ Proof.
   eapply ssw_step; [ exact H | apply IHss_walk; exact Hw ].
 Qed.
 
-(** The leaf: P6-Sv's premises, read off by the reflexive walk. *)
-Lemma sub_shield_here : forall Θ0 Ψ' P0 ψa,
-  sub_shield Θ0 Ψ' P0 ψa ->
-  flex_apart_walk Θ0 empty P0 ψa /\ flex_shield Θ0 Ψ' empty P0 ψa.
-Proof. intros Θ0 Ψ' P0 ψa H; apply H; apply ssw_refl. Qed.
-
-(** …and the descent, which is free. *)
-Lemma sub_shield_step : forall Θ0 Ψ' P0 P0' ψa,
-  sub_shield Θ0 Ψ' P0 ψa ->
-  ss_step P0 P0' ->
-  sub_shield Θ0 Ψ' P0' ψa.
+(** The leaf: P6-Sv's premises, read off by the reflexive walk at Δρ. *)
+Lemma sub_shield_here : forall Θ0 Ψ' Δρ P0 ψa,
+  sub_shield Θ0 Ψ' Δρ P0 ψa ->
+  flex_apart_walk Θ0 Δρ P0 ψa /\ flex_shield Θ0 Ψ' Δρ P0 ψa.
 Proof.
-  intros Θ0 Ψ' P0 P0' ψa H Hs P0'' Hw.
-  apply H; eapply ssw_step; [ exact Hs | exact Hw ].
+  intros Θ0 Ψ' Δρ P0 ψa H;
+    apply H; [ apply ssw_refl | clear; fsetdec | clear; fsetdec ].
+Qed.
+
+(** …and the three closures, all free by construction. *)
+Lemma sub_shield_step : forall Θ0 Ψ' Δρ P0 P0' ψa,
+  sub_shield Θ0 Ψ' Δρ P0 ψa ->
+  ss_step P0 P0' ->
+  sub_shield Θ0 Ψ' Δρ P0' ψa.
+Proof.
+  intros Θ0 Ψ' Δρ P0 P0' ψa H Hs P0'' Δρ' Hw Hle Hcl.
+  apply H; [ eapply ssw_step; [ exact Hs | exact Hw ] | exact Hle | exact Hcl ].
+Qed.
+
+(** Sub-ForallL's Δρ growth: β is fresh for the whole context, hence for ψa. *)
+Lemma sub_shield_add_fresh : forall Θ0 Ψ' Δρ P0 ψa β,
+  sub_shield Θ0 Ψ' Δρ P0 ψa ->
+  β `notin` ftvar_in_uskl ψa ->
+  sub_shield Θ0 Ψ' (add β Δρ) P0 ψa.
+Proof.
+  intros Θ0 Ψ' Δρ P0 ψa β H Hβ P0' Δρ' Hw Hle Hcl.
+  apply H;
+    [ exact Hw | clear - Hle; fsetdec | clear - Hcl Hβ; fsetdec ].
+Qed.
+
+(** …and the context growth the same row needs ([rho_fresh] insists every
+    ρ-replaced variable be a rigid OF the context, so Θ0 gains β too). *)
+Lemma sub_shield_weaken_tvar : forall Θ0 Ψ' Δρ P0 ψa β,
+  sub_shield Θ0 Ψ' Δρ P0 ψa ->
+  sub_shield ((β ~ abind_tvar) ++ Θ0) Ψ' Δρ P0 ψa.
+Proof.
+  intros Θ0 Ψ' Δρ P0 ψa β H P0' Δρ' Hw Hle Hcl.
+  destruct (H P0' Δρ' Hw Hle Hcl) as [Hap Hfs].
+  split;
+    [ apply flex_apart_walk_weaken_tvar; exact Hap
+    | apply flex_shield_weaken_tvar; exact Hfs ].
+Qed.
+
+(* ===================================================================== *)
+(*  Δ-SHRINKING for partial precision                                     *)
+(* ===================================================================== *)
+
+(** The mirror of [ad_partial_precise_delta_weaken_fresh]
+    (prop_look_complete.v): a Δ-entry the TARGET does not mention can be
+    dropped again.  Sub-ForallL needs both directions — it hands the IH the
+    precision premise at [add β Δ] (β joins Δρ, and [Δρ ⊆ Δ]) and must
+    return the IH's conclusion at plain Δ.
+
+    Only two rows read Δ: [ad_ppre__var]'s disjunct, whose variable IS the
+    target, so a target-fresh Δ-entry is never the one used; and
+    [ad_ppre__hole]'s disjointness side condition, which is ANTITONE in Δ
+    and so only gets easier.  (Unrestricted Δ-shrinking is of course fine
+    for the □ row and false for the var row — hence the freshness.) *)
+Lemma ad_partial_precise_delta_shrink_fresh : forall Θ Δf Ψ P ψ,
+  Θ ⨟ Δf ⊢ P ⊑ᵖ[ Ψ ] ψ ->
+  forall Δ Δ', Δf [=] Δ `union` Δ' ->
+  Δ' ∩ ftvar_in_uskl ψ [=] empty ->
+  delta_def_fresh Δ' Θ ->
+  Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ.
+Proof.
+  intros Θ Δf Ψ P ψ H; induction H; intros Δ0 Δ' Heq HΔ' Hdf.
+  - apply ad_ppre__unit; assumption.
+  - apply ad_ppre__var; [ assumption | ].
+    match goal with Hor : _ \/ a_binds_tvar _ _ |- _ =>
+      destruct Hor as [HΔ | Hb];
+      [ left; cbn [ftvar_in_uskl] in HΔ'; clear - HΔ Heq HΔ'; fsetdec
+      | right; assumption ] end.
+  - cbn [ftvar_in_uskl] in HΔ'.
+    eapply ad_ppre__arrow;
+      [ eapply (IHad_partial_precise1 Δ0 Δ');
+          [ exact Heq | clear - HΔ'; fsetdec | exact Hdf ]
+      | eapply (IHad_partial_precise2 Δ0 Δ');
+          [ exact Heq | clear - HΔ'; fsetdec | exact Hdf ]
+      | assumption ].
+  - (* forall *)
+    cbn [ftvar_in_uskl] in HΔ'.
+    eapply ad_ppre__forall with (L := L `union` Δ'); [ | eassumption ].
+    intros α0 Hα0.
+    assert (HSX : Δ' ∩
+              (ftvar_in_uskl (open_uskl_wrt_uskl ψ (uskl_var_f α0)))
+              [=] empty).
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0))
+        as Hup.
+      cbn [ftvar_in_uskl] in Hup. clear - HΔ' Hα0 Hup. fsetdec. }
+    (* ⚠️ Δ and Δ' MUST be pinned: left as evars the [=] goal below is an
+       evar-fsetdec and does not terminate *)
+    eapply (H0 α0 ltac:(clear - Hα0; fsetdec) (add α0 Δ0) Δ');
+      [ clear - Heq; fsetdec | exact HSX | exact Hdf ].
+  - (* hole : the side condition is antitone in Δ *)
+    apply ad_ppre__hole; [ assumption | ].
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
+      clear - Hint Heq; fsetdec end.
+  - apply ad_ppre__tophole_remove.
+    eapply (IHad_partial_precise Δ0 Δ'); [ exact Heq | exact HΔ' | exact Hdf ].
+  - (* tophole_fill *)
+    eapply ad_ppre__tophole_fill with (L := L `union` Δ').
+    intros α0 Hα0.
+    assert (HSX : Δ' ∩
+              (ftvar_in_uskl (open_uskl_wrt_uskl ψ (uskl_var_f α0)))
+              [=] empty).
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0))
+        as Hup.
+      cbn [ftvar_in_uskl] in Hup. clear - HΔ' Hα0 Hup. fsetdec. }
+    assert (Hdf' : delta_def_fresh Δ' ((α0 ~ abind_tvar) ++ Θ)).
+    { intros β0 α3 τ3 Hβ0 Hb.
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | exact (Hdf β0 α3 τ3 Hβ0 Hb') ]. }
+    eapply (H0 α0 ltac:(clear - Hα0; fsetdec) Δ0 Δ');
+      [ exact Heq | exact HSX | exact Hdf' ].
+  - (* tophole_keep *)
+    cbn [ftvar_in_uskl] in HΔ'.
+    apply ad_ppre__tophole_keep.
+    eapply (IHad_partial_precise Δ0 Δ');
+      [ exact Heq | clear - HΔ'; fsetdec | exact Hdf ].
+  - eapply ad_ppre__flex_l; [ eassumption | ].
+    eapply (IHad_partial_precise Δ0 Δ'); [ exact Heq | exact HΔ' | exact Hdf ].
+  - (* flex_r : the target hops to the definition's paint — this is the row
+       [delta_def_fresh] is for, exactly as in the weakening twin *)
+    eapply ad_ppre__flex_r; [ eassumption | ].
+    eapply (IHad_partial_precise Δ0 Δ'); [ exact Heq | | exact Hdf ].
+    rewrite ftvar_in_uskl_ptyp_to_uskl_syn.
+    apply atoms_inter_empty_pointwise.
+    intros y Hy. eapply Hdf; [ exact Hy | eassumption ].
 Qed.
 
 (* ===================================================================== *)
@@ -298,7 +425,7 @@ Lemma a_looksub_solve_complete_leaf :
   (ftag_in_uskl R') ∩ Ψ' [=] empty ->       (* the paper's "Ψ disjoint from Ψ'" *)
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
-  sub_shield Θ0 Ψ' P0 ψa ->                 (* ⇐ THE REPAIR (see the header) *)
+  sub_shield Θ0 Ψ' empty P0 ψa ->           (* ⇐ THE REPAIR (see the header) *)
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
   Ψa [<=] Ψsub ->
@@ -440,7 +567,7 @@ Theorem a_looksub_solve_complete :
   (ftag_in_uskl R') ∩ Ψ' [=] empty ->       (* the paper's "Ψ disjoint from Ψ'" *)
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
-  sub_shield Θ0 Ψ' P0 ψa ->                 (* ⇐ THE REPAIR (see the header) *)
+  sub_shield Θ0 Ψ' empty P0 ψa ->           (* ⇐ THE REPAIR (see the header) *)
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
   Ψa [<=] Ψsub ->
@@ -602,9 +729,27 @@ Proof.
     repeat split; assumption.
   - (* ForallR : the refinement premise forces P0 = ∀β.P0'; descend with
        [sss_all] + [sub_shield_step], run the IH at Θ,β, rebuild with
-       LS-ForallR, then strip β.  ⚠️ THIS IS THE ROW WITH THE OPEN DESIGN
-       POINT: LS-ForallR is cofinite with the SAME [Ξ ⨾ 𝒞], so it needs
-       β ∉ ftv 𝒞 — see the note above and docs/PAPER-GAPS.md. *)
+       LS-ForallR, then strip β.
+
+       ⚠️ THE β ∉ ftv 𝒞 OBLIGATION IS A MECH-ENCODING ARTEFACT, NOT A PAPER
+       GAP (author resolution, 2026-07-29).  Constraint collection is
+       deliberately scoping-AGNOSTIC; the scope check is the SEPARATE
+       [Θ0,Ξ ⊢ P1] premise at the EXTRACT use site, which rejects an
+       instantiation candidate that escaped its binder.  So \lslab{ForallR}
+       carries no side condition and the paper's proof owes nothing.  But
+       the locally nameless [a_looksub__forall_r] is COFINITE in β with one
+       [Ξ ⨾ 𝒞], which IS that side condition — so the mech rule is strictly
+       narrower.  Before executing this row, pick one:
+         (a) prove the two encodings equivalent — a β-mentioning 𝒞 yields a
+             β-mentioning P1, killed downstream by [Θ0,Ξ ⊢ P1].  ⚠️ needs a
+             real argument: SolE-FlexR replaces a structured subject by its
+             payload, so a constraint's variables can be DISCARDED by
+             solving; or
+         (b) relax the rule to EXISTS-fresh (pick one β, let Ξ ⨾ 𝒞 mention
+             it), the faithful rendering of the paper's named rule — a rule
+             change in algo/def_extra.v (full rebuild) plus every induction
+             over [a_looksub].
+       docs/PAPER-GAPS.md carries the record. *)
     admit.
   - (* UnivGhostR : NM = SK at M = TC, so [skmod] forces P0 = □ again and
        the case closes exactly like Infer. *)
@@ -714,7 +859,29 @@ Proof.
        The SCOPE-premise relaxation ([ftv R' ⊆ add α (dom Θ0 ∪ dom Θ)],
        done here and in P6-Cs with the dual κc-freshness conclusion
        strengthened) predates this decision and is kept: it is harmless,
-       and the Arrow row wants the strengthened conclusion anyway. *)
+       and the Arrow row wants the strengthened conclusion anyway.  (It is
+       also all that is needed on the scope side: β enters Θ0 AND Θ as a
+       rigid — [rho_fresh] insists every ρ-replaced variable be a rigid of
+       the context — so [ftv (open R0 (var β))] stays inside the bound.)
+
+       ⚠️ SCOPE OF THE REPAIR, MEASURED.  The Check row hands its WHOLE
+       subject to P6-Cs, and a ForallL can sit above a Check, so **P6-Cs
+       must be ρ-generalized too**.  That is threading, not new theory:
+       P6-Cv ([a_solve_eq_complete_var_gen], prop_look_complete_var.v:505)
+       ALREADY takes [uskl_rho NM Θ Δρ Ψρ ψsub ψa]; the [uskl_rho_*_l_inv]
+       kit exists; P6-Cs's measure ([size R' + size P0], on the ρ-FREE
+       ideal subject) is unaffected; its ∀ rows open with fresh VARIABLES
+       so ρ never grows inside it; and its leaf passes the real ρ down
+       instead of [urho__refl].
+
+       READY HERE for that step: [sub_shield] already carries Δρ (the
+       statement below instantiates it at [empty], so nothing has moved
+       yet) with [sub_shield_add_fresh] / [_weaken_tvar], and
+       [ad_partial_precise_delta_shrink_fresh] is the Δ-return the row
+       needs.  P6-Sv's ForallL row (prop_look_complete_sub_var.v:2308) is
+       the line-by-line template for the rest — with one simplification:
+       P6-Ss's ∀ comes from the SUBJECT, so ψa, P0, Pi, Ψi and Ψa do NOT
+       move, and only Θ0/Θ/Δ/Δρ grow by β. *)
     admit.
   - (* ForallL, untagged : identical to the tagged row; the mech splits the
        paper's single rule by the subject's POTENTIAL tag. *)

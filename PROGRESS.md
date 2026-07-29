@@ -77,6 +77,49 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-29 (latest) — P6-Ss: ρ-repair infrastructure landed; ForallR gap RESOLVED by the authors; the repair's real scope measured
+
+`make coq` green; admits unchanged (P6-Ss's four).  The P6-Ss statement has
+NOT moved yet — everything below is additive.
+
+**Landed (both `Qed`, in `prop_look_complete_sub_cstr.v`).**
+- `sub_shield` now carries Δρ, with `sub_shield_add_fresh` and
+  `sub_shield_weaken_tvar`; the current statement instantiates it at
+  `empty`, so nothing else changed.  The Δρ quantifier is built INTO the
+  definition (as the `ss_walk` one already was) because Sub-ForallL grows
+  Δρ by a fresh β while ψa does NOT move — P6-Ss's ∀ comes from the
+  SUBJECT — so neither `fastep_all_r` nor `fsh_all_r` applies and proving
+  the growth as a lemma would mean simulating the `fa_walk`.
+- `ad_partial_precise_delta_shrink_fresh`, the mirror of
+  `ad_partial_precise_delta_weaken_fresh`: Sub-ForallL hands the IH the
+  precision premise at `add β Δ` (β joins Δρ, and `Δρ ⊆ Δ`) and has to
+  return the conclusion at plain Δ.
+
+**ForallR: gap RESOLVED by the authors — reclassified to a mech-encoding
+question.**  WT: constraint collection is deliberately scoping-AGNOSTIC;
+the scope check is the SEPARATE `Θ0,Ξ ⊢ P1` premise at the extract use
+site.  So \lslab{ForallR} carries no `β ∉ ftv 𝒞` side condition and the
+paper's proof owes nothing.  What remains is ours: the locally nameless
+`a_looksub__forall_r` is COFINITE with one `Ξ ⨾ 𝒞`, which IS the side
+condition, so the mech rule is strictly narrower.  Either prove the
+encodings equivalent (needs `β ∈ ftv 𝒞 ⟹ β ∈ ftv P1` — non-trivial, since
+`SolE-FlexR` replaces a structured subject by its payload and can discard a
+constraint's variables) or relax the rule to exists-fresh (rule change,
+full rebuild, every induction over `a_looksub`).  Decide before executing
+the row.
+
+**ForallL: the ρ-repair's scope measured.**  The Check row hands its WHOLE
+subject to P6-Cs and a ForallL can sit above a Check, so **P6-Cs must be
+ρ-generalized too**.  That is threading, not new theory: P6-Cv
+(`a_solve_eq_complete_var_gen`) ALREADY takes `uskl_rho NM Θ Δρ Ψρ ψsub
+ψa`, the `uskl_rho_*_l_inv` inversion kit exists, P6-Cs's measure
+(`size R' + size P0`, on the ρ-FREE ideal subject) is unaffected, its ∀
+rows open with fresh VARIABLES so ρ never grows inside it, and its leaf
+passes the real ρ down instead of `urho__refl`.  P6-Sv's ForallL row
+(prop_look_complete_sub_var.v:2308) is the line-by-line template for
+P6-Ss's, simplified: P6-Ss's ∀ comes from the SUBJECT, so ψa/P0/Pi/Ψi/Ψa
+do not move and only Θ0/Θ/Δ/Δρ grow by β.
+
 ## 2026-07-29 (latest) — P6-Ss: the ForallL PREREQUISITE is closed; the ForallL ROW is blocked on a statement change
 
 `make coq` green.  The mechanization is still admit-free except the four
