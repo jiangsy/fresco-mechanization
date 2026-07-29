@@ -774,6 +774,13 @@ Theorem a_looksub_solve_complete_gen :
   (forall α0, α0 `in` Δρ ->
      α0 `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   (forall x b, binds x b Θs -> binds x b Θ) ->
+  (* THE IDEAL GUESS-SKELETON IS ρ-APART.  ψa is FIXED across this induction
+     (only R' and P0 move), and every Sub-ForallL binder is picked fresh for
+     it, so this is maintained by the one row that grows Δρ.  It is what makes
+     P6-Cs's ftv-𝒞 output name no context — which Phase B's Sub-ForallR needs,
+     since a nested Sub-ForallL's guess drags the stripped binder into the
+     ρ-images' scope.  See docs/DESIGN-completeness-subtyping.md §8 (h). *)
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
   exists 𝒞 Ξc Pa κc,
     (P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\             (* looksub α P P0 𝒞 Ξc *)
     (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\               (* solve 𝒞 Pi Pa *)
@@ -801,7 +808,7 @@ Proof.
   intros n NM M Θ0 Θs Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
          HscopeR HlcR Htags Hdisj Hsub Hdfresh Hshield Hpre HΨs1 HΨs2
-         Hsubty HwfSubj Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext.
+         Hsubty HwfSubj Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext Hψaap.
   (* ---------------------------------------------------------------- *)
   (* The two special cases go through [a_looksub_solve_complete_leaf],   *)
   (* which every recursive row of the induction below also calls.        *)
@@ -840,7 +847,7 @@ Proof.
          HwfΘ HwfΘ0 HαΘ0 Hκ Hακdom Hκav HeraseR HscopeR HlcR Hdisj
          HwfP0 HwfPi HmodSK HmodTY HαΘ Hsub HΨs1 HΨs2 Hdfresh Hshield Hpre
          Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext
-         HPnα Hin HαR HwfSubj.
+         HPnα Hin HαR HwfSubj Hψaap.
   (* the lemma's [P] comes back as [P''] and its [Θ] as [Θe]: both are BINDER
      NAMES of the rules, so [induction] has already claimed them.  Renaming
      [Θe] back to [Θ] (and the rule's own context to [Θsm]) keeps every row
@@ -851,7 +858,7 @@ Proof.
     HwfΘ HwfΘ0 HαΘ0 Hκ Hακdom Hκav HeraseR HscopeR HlcR Hdisj
     HwfP0 HwfPi HmodSK HmodTY HαΘ Hsub HΨs1 HΨs2 Hdfresh Hshield Hpre
     Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext
-    HPnα Hin HαR HwfSubj;
+    HPnα Hin HαR HwfSubj Hψaap;
     rename Θ into Θsm; rename Θe into Θ.
   all: match goal with
        | Hx : forall x b, binds x b ?S -> binds x b _ |- _ =>
@@ -962,7 +969,8 @@ Proof.
       | exact HΨs2 | exact H1 | exact HwfSubj
       | exact Hrefine
       | exact Hrho | intros x b Hb; exact Hb | exact HΨρ | exact Hrfr
-      | exact HΔρΔ | exact HΔρftv | exact HΔρPi | exact Hfawp0 | ].
+      | exact HΔρΔ | exact HΔρftv | exact HΔρPi | exact Hfawp0
+      | exact Hψaap | ].
     exists 𝒞, Ξc, Pa, κc.
     split;
       [ apply a_looksub__check;
@@ -1111,7 +1119,8 @@ Proof.
       | exact HsubL | exact Hdfresh | exact Hpre | exact HΨs1L | exact HΨs2L
       | exact H | exact HwfSubjA | exact Href1
       | exact Hrhoa | intros x b Hb; exact Hb | exact HΨρ1e | exact Hrfr
-      | exact HΔρΔ | exact HΔρftvL | exact HΔρPi | exact Hfawa | ].
+      | exact HΔρΔ | exact HΔρftvL | exact HΔρPi | exact Hfawa
+      | exact Hψaap | ].
     (* --- transports for the RIGHT branch (Θ0 → Ξc1,Θ0 and κ → κc1,κ) --- *)
     pose proof (@keys_eq_dom _ _ κc1 Ξc1 Hmap1) as Hd1.
     assert (Hαr : α `notin` dom (Ξc1 ++ Θ0))
@@ -1243,7 +1252,7 @@ Proof.
                     eq_refl HscopeRb HlcRb HdisjRb HwfP02R HwfPa1
                     HmodSK2 HmodTY2 HαΘ HsubR HΨs1R HΨs2R Hdfresh HshieldR
                     Hpre1 Href2' Hrhob HΨρ2e HrfrR HΔρΔ HΔρftvR HΔρPa1 Hext
-                    Hne0 Hin0 HαRb HwfSubjB).
+                    Hne0 Hin0 HαRb HwfSubjB Hψaap).
       - (* leaf, absent *)
         eapply (@a_looksub_solve_complete_leaf n NM M (Ξc1 ++ Θ0) Θsm Θ
                   (κc1 ++ κ) Δ Δρ Ψρ2 Ψ' (Ψi `union` (Ψ1 ∩ Ψ')) (Ψ2 ∩ Ψ')
@@ -1699,7 +1708,9 @@ Proof.
                     HlcR0β Hdisjβ HwfP0β HwfPiβ HmodSK HmodTY HαΘβ Hsub
                     HΨs1β HΨs2β Hdfreshβ Hshieldβ Hpreβ Hrefβ Hrhoβ HΨρβ
                     Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
-                    HwfSubjβ).
+                    HwfSubjβ
+                    (* ρ-apartness survives the fresh binder: β ∉ ftv ψa *)
+                    ltac:(clear - Hψaap Hβψa; fsetdec)).
       - (* leaf, absent *)
         eapply (@a_looksub_solve_complete_leaf n NM M
                   ((β ~ abind_tvar) ++ Θ0) Θsm ((β ~ abind_tvar) ++ Θ) κ
@@ -2061,7 +2072,9 @@ Proof.
                     HlcR0β Hdisjβ HwfP0β HwfPiβ HmodSK HmodTY HαΘβ Hsub
                     HΨs1β HΨs2β Hdfreshβ Hshieldβ Hpreβ Hrefβ Hrhoβ HΨρβ
                     Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
-                    HwfSubjβ).
+                    HwfSubjβ
+                    (* ρ-apartness survives the fresh binder: β ∉ ftv ψa *)
+                    ltac:(clear - Hψaap Hβψa; fsetdec)).
       - (* leaf, absent *)
         eapply (@a_looksub_solve_complete_leaf n NM M
                   ((β ~ abind_tvar) ++ Θ0) Θsm ((β ~ abind_tvar) ++ Θ) κ
@@ -2450,6 +2463,7 @@ Proof.
     | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
     | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
     | intros x b Hb; exact Hb
+    | clear; fsetdec
     | ].
   exists 𝒞, Ξc, Pa, κc.
   repeat split; assumption.

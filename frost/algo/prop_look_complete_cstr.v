@@ -1900,6 +1900,17 @@ Theorem a_lookeq_solve_complete_gen :
      is what makes the ρ = identity corollary premise-free.  P6-Ss threads the
      full [flex_apart_walk] and converts with [flex_apart_walk_p0]. *)
   flex_apart_p0 Θ0 Δρ P0 ψa ->
+  (* THE IDEAL GUESS-SKELETON IS ρ-APART.  ψa never moves inside P6-Cs and Δρ
+     never grows here (consistency has no ForallL), so this is threaded
+     unchanged by every row; P6-Ss maintains it because its own ψa is fixed
+     across the main induction and every Sub-ForallL binder is picked fresh
+     for it, and the ρ = identity corollary gets it from Δρ = ∅.
+     It is what lets the ftv-𝒞 conclusion below name NO CONTEXT: without it
+     the bound needs [dom Θs], the ρ-images' scope, and P6-Ss's Sub-ForallR
+     then readmits the very binder it is stripping — a nested Sub-ForallL's
+     guess drags β into that scope.  See docs/DESIGN-completeness-subtyping.md
+     §8 (h) and [uskl_rho_ftv_apart]. *)
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
   (* κa := ρc ++ κ is a SYNTACTIC extension of κ over the fresh Ξc — a
      provable STRENGTHENING of the paper's [κ ≡ κa] (cf. P6-Cv's κa:=κ).
      It mechanizes the paper's "equivalence of metasubstitutions" step
@@ -1928,7 +1939,7 @@ Theorem a_lookeq_solve_complete_gen :
        definitions — never a fresh ∀-binder.  This is what makes LE-ForallInh /
        LE-UnivGhost1 (which open the TARGET under the binder) applicable with a
        single 𝒞.  [dom Θs], NOT [dom Θ]: see the header. *)
-    ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Θs
+    ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa
                           `union` dom Ξc `union` dom κ
                           `union` def_ftv Θ /\
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\               (* κa : Θ0,Ξc ⊑ Θ *)
@@ -1941,7 +1952,7 @@ Proof.
   { exfalso. pose proof (size_uskl_min R'). pose proof (size_pskl_min P0). lia. }
   intros HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 HeraseR HscopeS HlcS Htags Hdisj Hsub
          Hdfresh Hpre HΨs1 HΨs2 Hconsis HwfSub Hrefine
-         Hrho HΘs HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hfaw.
+         Hrho HΘs HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hfaw Hψaap.
   (* the two ρ-scope facts every row reuses: Θs is a sub-context of Θ, and the
      ρ-replaced variables are rigid tvars OF Θ *)
   assert (HΘsdom : dom Θs [<=] dom Θ).
@@ -2035,8 +2046,10 @@ Proof.
       rewrite ftvar_in_bskl_inh in Hrf.
       pose proof (ad_pat_consis_target_ftv Hconsis HwfΘ HtskRs) as Hcf.
       (* under ρ the consistency bounds ftv Q by the IMAGE [Rsub]; the ρ
-         relation carries that back to ψa at the FIXED scope [Θs] *)
-      pose proof (uskl_rho_ftv_subject_bound Hrho) as Hbnd.
+         relation carries that back to ψa with NO context slack, because the
+         ideal here IS ψa and ψa is Δρ-apart — ρ acts only at a Δρ-variable *)
+      pose proof (uskl_rho_ftv_apart Hrho ltac:(clear - Hψaap; fsetdec))
+        as Hbnd.
       pose proof (msubst_pskl_ftv_dom_lower κ P0) as Hlow.
       clear - Hrf Hcf Hbnd Hlow; fsetdec.
     - simpl. exact Hκ.
@@ -2357,7 +2370,7 @@ Proof.
                      HscopeSa HlcSa Htags HdisjSa HsubL Hdfresh Hpre HΨs1L HΨs2L H1 HwfSubA Href1
                      Hrhoa HΘs HΨρ1e Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawa)
+                          | cbn; clear; fsetdec ]) HΔρPi Hfawa Hψaap)
           as (C1 & Ξc1 & Pa1 & κc1 & HLK1 & HSolve1 & HwfPa1 & HwfΞ1 & HαΞ1
                 & Hmap1 & Himg1 & HimgΔ1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1 & Hpre1).
         (* --- transports for the RIGHT IH (κ → ρc1 ++ κ) --- *)
@@ -2440,7 +2453,7 @@ Proof.
                      Ψ2 ψa Q2 (uskl_to_pskl Rb) P02 Pa1 Rb α Θs Δρ Ψρ2 Rb'
                      Hmr HwfΘ HwfΞ1 HwfP02R HwfPa1 Hinc1 HαΘ Hαr eq_refl
                      HscopeSbR HlcSb Htags HdisjSb HsubR Hdfresh Hpre1 HΨs1R HΨs2R H4 HwfSubB Href2
-                     Hrhob HΘs HΨρ2e HrfrR HΔρΔ HΔρftvR HΔρPa1 HfawbR)
+                     Hrhob HΘs HΨρ2e HrfrR HΔρΔ HΔρftvR HΔρPa1 HfawbR Hψaap)
           as (C2 & Ξc2 & Pa2 & κc2 & HLK2 & HSolve2 & HwfPa2 & HwfΞ2 & HαΞ2
                 & Hmap2 & Himg2 & HimgΔ2 & HftvC2 & Hinc2 & Hinceq2 & Hκf2 & Hpre2).
         (* --- ASSEMBLY --- witnesses: 𝒞 := C1++C2, Ξc := Ξc1++Ξc2 (forced by
@@ -2573,7 +2586,7 @@ Proof.
                           [ exact HΔρftv | cbn; clear; fsetdec
                           | cbn; clear; fsetdec ]) HΔρPi
                      ltac:(eapply flex_apart_p0_step;
-                             [ exact Hfaw | apply p0step_tophole ]))
+                             [ exact Hfaw | apply p0step_tophole ]) Hψaap)
           as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                 & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
         exists 𝒞, Ξc, Pa, κc.
@@ -2761,7 +2774,7 @@ Proof.
                      Hmeas Hwfβ Hwfβ0 HwfP0β HwfPiβ Hκβ HαΘβ HαΘ0β eq_refl
                      HscopeSβ (Hlcbody β) Htags Hdisjβ Hsub Hdfreshβ Hpreβ
                      HΨs1β HΨs2 Hconsβ HwfSubβ Hrefβ
-                     Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftvβ HΔρPi Hfawβ)
+                     Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftvβ HΔρPi Hfawβ Hψaap)
           as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                 & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
         (* --- β-freeness of every output (this time 𝒞 comes from the bound) --- *)
@@ -2989,7 +3002,7 @@ Proof.
                         Hmeas Hwfβ Hwfβ0 HwfP0β HwfPiβ Hκβ HαΘβ HαΘ0β eq_refl
                         HscopeSβ (Hlcbody β) Htags Hdisjβ Hsub Hdfreshβ Hpreβ
                         HΨs1β HΨs2 Hconsβ HwfSubβ Hrefβ
-                        Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftv HΔρPi Hfawβ)
+                        Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftv HΔρPi Hfawβ Hψaap)
              as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                    & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
            (* --- β-freeness of every output --- *)
@@ -3259,7 +3272,7 @@ Proof.
                      Hmeas Hwfβ Hwfβ0 HwfP0β HwfPiβ Hκβ HαΘβ HαΘ0β eq_refl
                      HscopeSβ (Hlcbody β) Htags Hdisjβ Hsub Hdfreshβ Hpreβ
                      HΨs1β HΨs2β Hconsβ HwfSubβ Hrefβ
-                     Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftvβ HΔρPi Hfawβ)
+                     Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftvβ HΔρPi Hfawβ Hψaap)
           as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                 & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
         (* --- β-freeness of every output (this time 𝒞 comes from the bound) --- *)
@@ -3517,7 +3530,7 @@ Proof.
                         Hmeas Hwfβ Hwfβ0 HwfP0β HwfPiβ Hκβ HαΘβ HαΘ0β eq_refl
                         HscopeSβ (Hlcbody β) Htags Hdisjβ Hsub Hdfreshβ Hpreβ
                         HΨs1β HΨs2β Hconsβ HwfSubβ Hrefβ
-                        Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftv HΔρPi Hfawβ)
+                        Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftv HΔρPi Hfawβ Hψaap)
              as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                    & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
            (* --- β-freeness of every output --- *)
@@ -3620,7 +3633,7 @@ Proof.
                    HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfaw)
+                          | cbn; clear; fsetdec ]) HΔρPi Hfaw Hψaap)
         as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
               & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
       exists 𝒞, Ξc, Pa, κc.
@@ -3642,7 +3655,7 @@ Proof.
                    HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfaw)
+                          | cbn; clear; fsetdec ]) HΔρPi Hfaw Hψaap)
         as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
               & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
       exists 𝒞, Ξc, Pa, κc.
@@ -3665,7 +3678,7 @@ Proof.
                    HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfaw)
+                          | cbn; clear; fsetdec ]) HΔρPi Hfaw Hψaap)
         as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
               & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
       exists 𝒞, Ξc, Pa, κc.
@@ -3781,7 +3794,7 @@ Proof.
                         Hmeas Hwfβ Hwfβ0 HwfP0β HwfPiβ Hκβ HαΘβ HαΘ0β eq_refl
                         HscopeSβ HlcS Htags Hdisj Hsub Hdfreshβ Hpreβ
                         HΨs1 HΨs2 (Hcbody β ltac:(auto)) HwfSubβ Hrefβ
-                        Hrho0 HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftvβ HΔρPi Hfawβ)
+                        Hrho0 HΘsβ HΨρ Hrfrβ HΔρΔ HΔρftvβ HΔρPi Hfawβ Hψaap)
              as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                    & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
            pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
@@ -3901,7 +3914,7 @@ Proof.
                      HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href2
                      Hrhobody HΘs HΨρ Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawt)
+                          | cbn; clear; fsetdec ]) HΔρPi Hfawt Hψaap)
           as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                 & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
         exists 𝒞, Ξc, Pa, κc.
@@ -3941,7 +3954,7 @@ Proof.
                         Hc0 HwfSub0 Href1
                         Hrhobody HΘs HΨρ Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawt)
+                          | cbn; clear; fsetdec ]) HΔρPi Hfawt Hψaap)
              as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                    & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
            exists 𝒞, Ξc, Pa, κc.
@@ -3977,7 +3990,7 @@ Proof.
                      HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href2
                      Hrhobody HΘs HΨρ Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawt)
+                          | cbn; clear; fsetdec ]) HΔρPi Hfawt Hψaap)
           as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
                 & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
         exists 𝒞, Ξc, Pa, κc.
@@ -4035,7 +4048,7 @@ Proof.
                    HwfSub0 Href1
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ ltac:(eapply rho_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; fsetdec
-                          | cbn; clear; fsetdec ]) HΔρPi Hfawt)
+                          | cbn; clear; fsetdec ]) HΔρPi Hfawt Hψaap)
         as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ
               & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec).
       exists 𝒞, Ξc, Pa, κc.
@@ -4143,11 +4156,12 @@ Proof.
     | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
     | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
     | apply flex_apart_p0_clean; clear; fsetdec
+    | clear; fsetdec
     | ].
   exists 𝒞, Ξc, Pa, κc.
-  repeat split; try assumption.
-  (* the only conjunct that MOVED: [dom Θs] with Θs := · is empty *)
-  simpl in HftvC. clear - HftvC; fsetdec.
+  (* the ftv-𝒞 conjunct no longer needs its [dom Θs] slack collapsed: the
+     general statement names no context at all (docs §8 (h)) *)
+  repeat split; assumption.
 Qed.
 
 Print Assumptions a_lookeq_solve_complete.
