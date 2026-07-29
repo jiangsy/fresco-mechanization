@@ -968,6 +968,133 @@ Qed.
 
 (** Θ-weakening of the ρ relation (binds-monotone; the leaf's image wf
     weakens). *)
+(* ===================================================================== *)
+(*  Inversion of [uskl_rho] BY TARGET SHAPE — the mirror family            *)
+(*                                                                        *)
+(*  P6-Cs (and P6-Ss's Arrow / ∀ rows) dispatch on the IDEAL subject       *)
+(*  [R'], not on the derivation, so what they need is the opposite         *)
+(*  reading: the TARGET's shape is known and the ρ-IMAGE's has to be read  *)
+(*  off.  That direction is strictly simpler than [_l_inv] — for every     *)
+(*  NON-VARIABLE target only [urho__refl] and the matching congruence      *)
+(*  apply ([urho__leaf] demands a variable target) — and the two collapse: *)
+(*  [urho__refl] carries [lc_uskl], so its components are themselves       *)
+(*  reflexive ρ-images at [Ψρ = ∅].  Hence a SINGLE congruence conclusion, *)
+(*  with no [rho_leaf] disjunct to dispatch.                              *)
+(* ===================================================================== *)
+
+Lemma uskl_rho_unit_r_inv : forall NM Θ Δρ Ψρ R',
+  uskl_rho NM Θ Δρ Ψρ R' uskl_unit ->
+  R' = uskl_unit /\ Ψρ [=] empty.
+Proof.
+  intros NM Θ Δρ Ψρ R' H; inversion H; subst;
+    split; [ reflexivity | assumption ].
+Qed.
+
+Lemma uskl_rho_hole_r_inv : forall NM Θ Δρ Ψρ R',
+  uskl_rho NM Θ Δρ Ψρ R' uskl_hole ->
+  R' = uskl_hole /\ Ψρ [=] empty.
+Proof.
+  intros NM Θ Δρ Ψρ R' H; inversion H; subst;
+    split; [ reflexivity | assumption ].
+Qed.
+
+Lemma uskl_rho_holeg_r_inv : forall NM Θ Δρ Ψρ R',
+  uskl_rho NM Θ Δρ Ψρ R' uskl_holeg ->
+  R' = uskl_holeg /\ Ψρ [=] empty.
+Proof.
+  intros NM Θ Δρ Ψρ R' H; inversion H; subst;
+    split; [ reflexivity | assumption ].
+Qed.
+
+Lemma uskl_rho_arrow_r_inv : forall NM Θ Δρ Ψρ R' ψ1 ψ2,
+  uskl_rho NM Θ Δρ Ψρ R' (uskl_arrow ψ1 ψ2) ->
+  exists R1' R2' Ψ1 Ψ2,
+    R' = uskl_arrow R1' R2' /\
+    uskl_rho NM Θ Δρ Ψ1 R1' ψ1 /\ uskl_rho NM Θ Δρ Ψ2 R2' ψ2 /\
+    Ψρ [=] Ψ1 `union` Ψ2.
+Proof.
+  intros NM Θ Δρ Ψρ R' ψ1 ψ2 H; inversion H; subst.
+  - (* refl : lc splits, so each component is reflexive at ∅ *)
+    match goal with Hlc : lc_uskl (uskl_arrow _ _) |- _ =>
+      inversion Hlc; subst end.
+    exists ψ1, ψ2, empty, empty; rho_andsplit;
+      [ reflexivity
+      | apply urho__refl; [ assumption | clear; fsetdec ]
+      | apply urho__refl; [ assumption | clear; fsetdec ]
+      | clear - H1; fsetdec ].
+  - exists R1', R2', Ψ1, Ψ2; rho_andsplit;
+      try reflexivity; assumption.
+Qed.
+
+Lemma uskl_rho_tophole_r_inv : forall NM Θ Δρ Ψρ R' ψ,
+  uskl_rho NM Θ Δρ Ψρ R' (uskl_tophole ψ) ->
+  exists R0, R' = uskl_tophole R0 /\ uskl_rho NM Θ Δρ Ψρ R0 ψ.
+Proof.
+  intros NM Θ Δρ Ψρ R' ψ H; inversion H; subst.
+  - match goal with Hlc : lc_uskl (uskl_tophole _) |- _ =>
+      inversion Hlc; subst end.
+    exists ψ; split;
+      [ reflexivity | apply urho__refl; assumption ].
+  - exists R'0; split; [ reflexivity | assumption ].
+Qed.
+
+Lemma uskl_rho_topholeg_r_inv : forall NM Θ Δρ Ψρ R' ψ,
+  uskl_rho NM Θ Δρ Ψρ R' (uskl_topholeg ψ) ->
+  exists R0, R' = uskl_topholeg R0 /\ uskl_rho NM Θ Δρ Ψρ R0 ψ.
+Proof.
+  intros NM Θ Δρ Ψρ R' ψ H; inversion H; subst.
+  - match goal with Hlc : lc_uskl (uskl_topholeg _) |- _ =>
+      inversion Hlc; subst end.
+    exists ψ; split;
+      [ reflexivity | apply urho__refl; assumption ].
+  - exists R'0; split; [ reflexivity | assumption ].
+Qed.
+
+Lemma uskl_rho_all_syn_r_inv : forall NM Θ Δρ Ψρ R' ψ,
+  uskl_rho NM Θ Δρ Ψρ R' (uskl_all_syn ψ) ->
+  exists L R0, R' = uskl_all_syn R0 /\
+    forall α, α `notin` L ->
+      uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R0 (uskl_var_f α))
+                          (open_uskl_wrt_uskl ψ (uskl_var_f α)).
+Proof.
+  intros NM Θ Δρ Ψρ R' ψ H; inversion H; subst.
+  - match goal with Hlc : lc_uskl (uskl_all_syn _) |- _ =>
+      inversion Hlc; subst end.
+    exists empty, ψ; split; [ reflexivity | ].
+    intros α Hα; apply urho__refl; [ auto | assumption ].
+  - exists L, R'0; split; [ reflexivity | eassumption ].
+Qed.
+
+Lemma uskl_rho_all_etag_r_inv : forall NM Θ Δρ Ψρ R' ε ψ,
+  uskl_rho NM Θ Δρ Ψρ R' (uskl_all_etag ε ψ) ->
+  exists L R0, R' = uskl_all_etag ε R0 /\
+    forall α, α `notin` L ->
+      uskl_rho NM Θ Δρ Ψρ (open_uskl_wrt_uskl R0 (uskl_var_f α))
+                          (open_uskl_wrt_uskl ψ (uskl_var_f α)).
+Proof.
+  intros NM Θ Δρ Ψρ R' ε ψ H; inversion H; subst.
+  - match goal with Hlc : lc_uskl (uskl_all_etag _ _) |- _ =>
+      inversion Hlc; subst end.
+    exists empty, ψ; split; [ reflexivity | ].
+    intros α Hα; apply urho__refl; [ auto | assumption ].
+  - exists L, R'0; split; [ reflexivity | eassumption ].
+Qed.
+
+(** The VARIABLE target is the one shape that keeps the leaf disjunct — it
+    is the only place ρ actually does anything. *)
+Lemma uskl_rho_var_r_inv : forall NM Θ Δρ Ψρ R' β,
+  uskl_rho NM Θ Δρ Ψρ R' (uskl_var_f β) ->
+  (R' = uskl_var_f β /\ Ψρ [=] empty)
+  \/ (β `in` Δρ /\ a_tags_sort NM Ψρ R' /\ Θ ⨟ empty ⊢ₚₛᵃ ⌊ R' ⌋ˢ).
+Proof.
+  intros NM Θ Δρ Ψρ R' β H; inversion H; subst.
+  - left; split; [ reflexivity | assumption ].
+  - right; rho_andsplit;
+      [ assumption
+      | eapply a_tags_sort_psi_cong; [ eassumption | fsetdec ]
+      | assumption ].
+Qed.
+
 Lemma uskl_rho_weaken : forall NM Θ Δρ Ψρ R' R,
   uskl_rho NM Θ Δρ Ψρ R' R ->
   forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->

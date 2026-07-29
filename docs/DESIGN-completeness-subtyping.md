@@ -2498,6 +2498,20 @@ before starting, because the P6-Cs half is the expensive part:
 - P6-Cs's measure (`size_uskl R' + size_pskl P0`) is on the ρ-FREE ideal
   subject, so it is untouched; and P6-Cs's own ∀ rows open with fresh
   VARIABLES, so ρ never grows inside P6-Cs.
+- ⚠️ **One thing WAS missing, and is now built** (2026-07-29, `Qed`,
+  prop_look_complete.v, right before `uskl_rho_weaken`): the MIRROR family
+  `uskl_rho_*_r_inv`.  P6-Cs dispatches on `R'` — the IDEAL subject — not on
+  the derivation, so at each row the TARGET's shape is what is known and the
+  ρ-IMAGE's has to be read off; `_l_inv` reads the other way.  The mirror
+  direction is strictly simpler: for every NON-VARIABLE target only
+  `urho__refl` and the matching congruence apply (`urho__leaf` demands a
+  variable target), and the two COLLAPSE, because `urho__refl` carries
+  `lc_uskl` so its components are themselves reflexive ρ-images at `Ψρ = ∅`.
+  So `unit` / `hole` / `holeg` return an equation, `arrow` / `tophole` /
+  `topholeg` / `all_syn` / `all_etag` return a SINGLE congruence with no
+  disjunct to dispatch, and only `var` keeps the leaf disjunct — which is
+  exactly right, since the variable target is the only place ρ does
+  anything.
 
 **Order for the next session** (Arrow and ForallR do NOT depend on the
 decision above, so start there):
