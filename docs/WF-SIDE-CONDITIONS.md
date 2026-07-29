@@ -41,27 +41,27 @@ its variable in Γ but keeps Δ, while the Ghost rule's side condition only test
 — so a ghost nested under a GhostForall can be filled with the very variable
 GhostForall binds:
 
-    □ ⊳ syn(⊤.(□→□))            (Ghost — the fill is well-formed)
-    ⊤.(□→□) ⊳ ∀α. ⊤.(α→α)       (GhostForall, then two Ghost fills at α)
-    but NOT  □ ⊳ ∀α. ⊤.(α→α)
+    □ ⊳ syn(∀◇(□→□))            (Ghost — the fill is well-formed)
+    ∀◇(□→□) ⊳ ∀α. ∀◇(α→α)       (GhostForall, then two Ghost fills at α)
+    but NOT  □ ⊳ ∀α. ∀◇(α→α)
 
 Refinement is therefore **not transitive** — machine-checked in
 `algo/cex/cex_refine_not_transitive.v` (`ad_refine_syn_not_transitive`, Qed,
 axiom-free) — which kills `lemma:precision-preserves-refinement`
 (full-algo-spec.tex:716) and with it completeness.
 
-The external wf condition is exactly the escape: `∀α. ⊤.(α→α)` is well-formed in
+The external wf condition is exactly the escape: `∀α. ∀◇(α→α)` is well-formed in
 **no** context at all (`Pres_not_wf`) — skeleton wf binds a quantifier's variable
-in Δ, while a ⊤-ghost's body must be well-formed at the EMPTY Δ. So that
+in Δ, while a ∀◇-ghost's body must be well-formed at the EMPTY Δ. So that
 derivation was never in the judgment's domain.
 
 **(A) was tried and REJECTED.** Adding the output's wf as a premise of
 `*__tophole_fill` works through weakening / strengthening / Δ-monotonicity /
 ⊴-stability / subst / same_tvar (all five decl+algo files were fixed cleanly),
 but it **does not survive `ad_refine_*_f_strip`**: that lemma removes a context
-rigid `α` (with `α ∈ F`, `α ∈ Δ`), and a ⊤-ghost body inside the output may
+rigid `α` (with `α ∈ F`, `α ∈ Δ`), and a ∀◇-ghost body inside the output may
 legitimately mention `α` justified *by that very context binding* — `α ∈ Δ`
-cannot rescue it, because ⊤-ghost bodies are checked at the EMPTY Δ. So the
+cannot rescue it, because ∀◇-ghost bodies are checked at the EMPTY Δ. So the
 premise is not transportable and the soundness proof's ∀-cases break.
 
 **(B) is what we do.** Rules verbatim; wf carried in the statements. Mechanized in
@@ -204,14 +204,14 @@ The algo layer has TWO skeleton judgments, both in algo/def_extra.v:
 
 - **`a_wf_pskl` (`Θ ⨟ Δ ⊢ₚₛᵃ P`) — THE paper's skeleton wf** (ex-`ad_wf_pskl`,
   moved up from def_decl_algo.v).  Two contexts: ∀ binds its variable in Δ,
-  and a `⊤◇`-body must be guarded and well-formed at the EMPTY Δ.  This is the
-  ⊤◇-discipline that rescued the refine-non-transitivity counterexample (§1):
-  `∀α.⊤◇.(α→α)` is well-formed in NO context.  Whenever the paper writes
+  and a `∀◇`-body must be guarded and well-formed at the EMPTY Δ.  This is the
+  ∀◇-discipline that rescued the refine-non-transitivity counterexample (§1):
+  `∀α.∀◇.(α→α)` is well-formed in NO context.  Whenever the paper writes
   skeleton wf, it means this judgment — the paper has no weak variant.
 
 - **`a_scope_pskl` (algo/def_extra.v:113) — scoping only.**  Single context Θ,
   ∀ binds a plain `abind_tvar` into Θ, `pskl_tophole` merely recurses (no
-  guardedness, no Δ-clearing).  `∀α.⊤◇.(α→α)` PASSES it.  The reference
+  guardedness, no Δ-clearing).  `∀α.∀◇.(α→α)` PASSES it.  The reference
   implementation's `is_wf_` takes the same weak reading.
 
 **Where each sits.**
@@ -222,7 +222,7 @@ The algo layer has TWO skeleton judgments, both in algo/def_extra.v:
   is consumed locally by the rule, so the usual transport objection to
   rule-side placement does not apply; and soundness's ForallL case NEEDS it —
   `ad_pat_sub__forall_l`'s scope premise is disciplined, and the
-  weak→disciplined conversion is FALSE by the `∀α.⊤◇.(α→α)` example.
+  weak→disciplined conversion is FALSE by the `∀α.∀◇.(α→α)` example.
 
 - Statement-side hypotheses (soundness/completeness motives) all use the
   disciplined `a_wf_pskl` (route B), as prop_sub_sound.v's bundle does.
@@ -269,7 +269,7 @@ prop_decorate_key.v) all carry the external hypothesis
 
 (`Hmod`).  This is the paper's implicit "the inputs are mode-compatible"
 (skmod[SK], algorithmic.tex:239-244) restored in the STATEMENTS, not the
-rules: without it the lemmas are FALSE at the ◇̇-vs-∀X.◇ corner — an SK-mode
+rules: without it the lemmas are FALSE at the ◈-vs-∀X.◇ corner — an SK-mode
 ∀-target at TC would let a dotted ghost decorate against a universal the
 mode discipline forecloses at every real call site (`inh` paints `all_inh`,
 `is_sskl` rejects).  It threads through the walk (Flex-Assign transports it
@@ -364,13 +364,13 @@ conjuncts, which only strengthens the refutation), and
 `p6cs_fires_when_the_subject_is_wf` instantiates the CLOSED theorem on the
 same shape with `ψa := ⟨⟩` to show the premise set is satisfiable (the
 theorem is not vacuous).  Both are Qed and axiom-free.  Counterexample: `Θ = Θ0 = ·`,
-`κ = ·`, `S = ⊤◇α` (so `P = ⊤◇α`), `ψa = ⊤̇◇⟨⟩`, `P0 = Pi = ⊤◇⟨⟩`,
-`Q = ⊤◇⟨⟩`.  Every other premise holds — consistency by C-UnivGhost2
+`κ = ·`, `S = ∀◇α` (so `P = ∀◇α`), `ψa = ∀◈⟨⟩`, `P0 = Pi = ∀◇⟨⟩`,
+`Q = ∀◇⟨⟩`.  Every other premise holds — consistency by C-UnivGhost2
 then C-UnivGhostG, refinement by R-UnivGhostKeep, precision by
 P-UnivGhostKeep — but the algorithm is FORCED: LE-UnivGhost is the only
 applicable collection rule, so `𝒞 = [α ≐ ⟨⟩]`, and SE-GhostGuarded is
 the only solving rule, so `Pa = ⟨⟩`; the resulting precision goal
-`⟨⟩ ⊑ᵖ ⊤̇◇⟨⟩` has no rule.  The offending subject is `⊤◇(⊤̇◇⟨⟩)` — a
+`⟨⟩ ⊑ᵖ ∀◈⟨⟩` has no rule.  The offending subject is `∀◇(∀◈⟨⟩)` — a
 ghost over a ghost — which both `a_wf_pskl__tophole` and
 `d_wf_uskl__tophole` forbid.  So this is not a convenience premise: it
 is what makes the paper's statement true.

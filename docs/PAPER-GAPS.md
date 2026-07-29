@@ -351,13 +351,13 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   may be filled with the very `α` that GhostForall binds — `α` is in `Γ`,
   not in `Δ`, so the side condition does not forbid it.  Witness:
 
-      □ ⊳ syn(⊤.(□→□))              (Ghost; the fill is well-formed)
-      ⊤.(□→□) ⊳ ∀α. ⊤.(α→α)         (GhostForall, then two Ghost fills at α)
-      but NOT  □ ⊳ ∀α. ⊤.(α→α)
+      □ ⊳ syn(∀◇(□→□))              (Ghost; the fill is well-formed)
+      ∀◇(□→□) ⊳ ∀α. ∀◇(α→α)         (GhostForall, then two Ghost fills at α)
+      but NOT  □ ⊳ ∀α. ∀◇(α→α)
 
   The last step fails because the Ghost rule may only produce a WELL-FORMED
-  skeleton, and `∀α. ⊤.(α→α)` is not one: skeleton well-formedness binds a
-  quantifier's variable in `Δ`, while a `⊤`-ghost's body must be well-formed
+  skeleton, and `∀α. ∀◇(α→α)` is not one: skeleton well-formedness binds a
+  quantifier's variable in `Δ`, while a `∀◇`-ghost's body must be well-formed
   at the EMPTY `Δ`.  Hence transitivity — and precision-preserves-refinement
   — fail.
 - The MECH rule is FAITHFUL here (`ad_refine_syn__tophole_fill` puts `α` in
@@ -376,8 +376,8 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   are well-formed*, so the capturing derivation above is simply not a solution
   (its output is well-formed in NO context, `Pres_not_wf`).  Threading wf into
   the rules was tried and rejected: it does not survive `ad_refine_*_f_strip`
-  (a ⊤-ghost body may mention a context rigid α that the strip removes, and
-  α ∈ Δ does not rescue it because ⊤-ghost bodies are checked at the EMPTY Δ).
+  (a ∀◇-ghost body may mention a context rigid α that the strip removes, and
+  α ∈ Δ does not rescue it because ∀◇-ghost bodies are checked at the EMPTY Δ).
 - MECHANIZED (algo/prop_precise.v, all Qed + axiom-free): `ad_refine_syn_syn_l`
   (a syn-headed refinement lands in a syn painting — shape only, no wf),
   `ad_wf_pskl_delta_shrink`, `ad_wf_pskl_empty_delta_free`,
@@ -814,7 +814,7 @@ prop_consis_precise.v / prop_sub_complete.v, all Qed axiom-free):
 2. **Fuel/height preservation needs a rule-granularity accounting.**
    The main completeness induction applies its IH to the substituted
    premise, so precision-substitution must not increase the derivation
-   height — but the more-precise subject may carry `⊤◇`-wrappers or
+   height — but the more-precise subject may carry `∀◇`-wrappers or
    fold flexible definitions that the original derivation lacks, forcing
    extra UnivGhostL / FlexMono steps.  REPAIR: in the measure-carrying
    mirror, leaves take any fuel and UnivGhostL/UnivGhostLG/FlexMono are
@@ -861,7 +861,7 @@ syntactic at the definition-free Θ), whose argument obligation
 Root cause: every case analysis in the five completeness lemmas of the
 cluster recovers `P_0`'s shape by inversion on the refinement premise
 `Θ ⊢ inh{θP_0} ⊳ Q`, silently assuming the subject exposes a matching
-constructor (or ⊤◇/□).  But the inversion also admits `P_0` = flexible
+constructor (or ∀◇/□).  But the inversion also admits `P_0` = flexible
 variable, whose θ-IMAGE supplies the constructor.  The algorithm's own
 rule for flexible counterparts — LE-FlexR (fig:poly-info-extraction),
 which replaces the payload by a fresh `γ̂ ∈ Ξ_c` — is never invoked in
@@ -926,7 +926,7 @@ Three facts settle it (all machine-checked; new file
 
 1. **Only the Arrow case can even have a flexible `P0`.** θ maps flexibles to
    MONOTYPES (unit / mono-or-rigid var / arrow). Refinement `inh{θP0} ⊳ Q`
-   into a ∀ or ⊤◇ requires a ∀/⊤◇/defined-flex source (inversion on
+   into a ∀ or ∀◇ requires a ∀/∀◇/defined-flex source (inversion on
    `ad_refine_syn` into `bskl_all_inh`), which a monotype never is. So
    ForallInh/ForallSyn/ghost provably have non-flex `P0`; leaves are handled
    directly (SolE-Flex / the SolE-Var ρ-var special case).
@@ -945,12 +945,12 @@ Three facts settle it (all machine-checked; new file
    is never an arrow). The fresh `γ` is the NON-var lemma's job (θ extends
    over Ξ and can assign `γ` the rigid `c`, so precision holds).
 
-**P6-Cv/Sv plan:** ∀/⊤◇/ghost cases prove non-flex `P0` from the
+**P6-Cv/Sv plan:** ∀/∀◇/ghost cases prove non-flex `P0` from the
 monotype→refinement fact (no premise); leaf cases as the paper does; the
 Arrow case handles a flexible `P0` via SolE-FlexR like the leaf case, relying
 on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
 
-## GAP (REPAIRED 2026-07-27 — proof-step gap; statement TRUE) — `complete-consistency-cc-solving-var` ForallInh/ForallSyn Subcases `Pi=□` and `Pi=⊤◇.Pi'`: the Δ-bookkeeping of the IH output is broken
+## GAP (REPAIRED 2026-07-27 — proof-step gap; statement TRUE) — `complete-consistency-cc-solving-var` ForallInh/ForallSyn Subcases `Pi=□` and `Pi=∀◇.Pi'`: the Δ-bookkeeping of the IH output is broken
 
 > **Resolution.** Repair candidate (1) below was implemented, as the
 > generalized theorem `a_solve_eq_complete_var_gen`
@@ -971,7 +971,7 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
 - Where: consistency-proofs.tex, Lemma
   `lemma:complete-consistency-constraint-collection-solving-var`
   (:1181), cases ForallInh/ForallSyn, Subcases `P_i = □` and
-  `P_i = ⊤◇.P_i'`; mech `a_solve_eq_complete_var` (dev scratch
+  `P_i = ∀◇.P_i'`; mech `a_solve_eq_complete_var` (dev scratch
   `algo/cex/p6cv_dev_tmp.v`, cases forall_inh_tagged /
   forall_syn_tagged).  Status 2026-07-25: the mech is at 13/15 cases
   (all others Qed-threaded); these two rows are the only blockers.
@@ -983,7 +983,7 @@ on the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
   `Δ`, and its output precision is at `Δ`, not the `Δ,β` the ∀-rule
   needs.  The □-rule's side condition is not Δ-monotone, so the step
   "goal follows from GhostL" silently uses an inadmissible Δ-weakening.
-  The `⊤◇` subcase (precision inverted through the fill rule, concluded
+  The `∀◇` subcase (precision inverted through the fill rule, concluded
   by SolE-GhostForall) has the same mismatch: its body precision sits at
   `Δ | Θ,β` and must be moved to `Δ,β | Θ`.
 - The STATEMENT survives: the configurations that would break the
@@ -1185,7 +1185,7 @@ results, two of which refute my own earlier end-to-end claims:
    (i) `I-App` pre-shapes an applied λ's binder by
    `guess_mono(skeleton-of-argument)` — the expected type is an arrow of
    fresh flexibles, never a bare flexible; (ii) the skeleton pass
-   (`PI-*`) ERASES top-level ∀s of argument skeletons to `⊤◇(□→□)`
+   (`PI-*`) ERASES top-level ∀s of argument skeletons to `∀◇(□→□)`
    (SI-ForallL + SI-UnivGhostR), so the eq-payload never carries the
    rigid `∀β.β→β` and a MONO instantiation suffices — which is exactly
    what the run does.
@@ -1219,7 +1219,7 @@ them with manifest-∀ payloads hit the flex-mono wall earlier (finding
 3).  So the -Sv LEMMA as stated remains FALSE (the mech counterexample
 stands), but the repair should likely be STATEMENT-SIDE after all:
 strengthen P6-Sv's premises with the reachability invariant — a
-candidate formulation: "every tag in Ψi was solved by a GHOST (⊤◇/fill)
+candidate formulation: "every tag in Ψi was solved by a GHOST (∀◇/fill)
 step of the precision derivation, not by a rigid quantifier of Pi,
 whenever some constraint payload is a raw flexible" — equivalently,
 rigid top-level ∀-spines in Pi and raw-flexible payloads for the same
@@ -1261,7 +1261,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   side rejects it too, and the mech rules show why: the skeleton of `args`
   is derived from its type by SK-checking against □, whose Check case is
   CONSISTENCY against the fill — and consistency has NO rule for a
-  ∀-subject against a hole or ⊤◇ TARGET (only `ad_pat_consis__hole` with
+  ∀-subject against a hole or ∀◇ TARGET (only `ad_pat_consis__hole` with
   the hole as SUBJECT), so the inner `∀b.b→b` survives into every
   derivable skeleton; `k`'s instantiation must be consistent with it, so
   `k args`'s skeleton is forced poly; and the declarative app rule's
@@ -1276,18 +1276,18 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   `lemma:complete-constraint-collection-solving-var`.  Mech: the `□` row of
   the `univ_ghost_lg` case in `frost/algo/prop_look_complete_sub_var.v`
   (now proved).
-- The paper writes "We know that `P_i` must have a top-level `⊤◇`", reading
-  the precision premise `Δ|Θ ⊢ precise[Ψi]{θP_i}{⊤̇◇ψ'}` as if only
-  `P-UnivGhostKeep` — whose subject is `⊤◇P` — could target a `⊤̇◇`.  But
+- The paper writes "We know that `P_i` must have a top-level `∀◇`", reading
+  the precision premise `Δ|Θ ⊢ precise[Ψi]{θP_i}{∀◈ψ'}` as if only
+  `P-UnivGhostKeep` — whose subject is `∀◇P` — could target a `∀◈`.  But
   **`P-Ghost` is target-agnostic**: `□ ⊑ᵖ[·] ψ` holds for ANY `ψ` (given its
   Δ-disjointness side condition), so a hole input skeleton is precise to a
-  `⊤̇◇` as well, and the subcase is real.
+  `∀◈` as well, and the subcase is real.
 - Not a statement problem: the row goes through.  Nothing is decomposed (a
   `□` input stays `□`), so the induction hypothesis's own solve is the one
   needed; only its precision must be lifted back under the ghost.  In the
   mech that lift is `ad_ppre_lift_topholeg`, which needs (i) the shape of a
-  `□`-input solve output (`a_solve_sub_hole_output`: `□` or `⊤◇B`), (ii)
-  stripping a `⊤◇` from the subject against a guarded guess
+  `□`-input solve output (`a_solve_sub_hole_output`: `□` or `∀◇B`), (ii)
+  stripping a `∀◇` from the subject against a guarded guess
   (`ad_ppre_tophole_strip`, whose FILL/KEEP rows die on guardedness and
   whose flexible-target row recurses through the definition), and (iii)
   guardedness of the guess's erasure, transported along ρ by
@@ -1296,23 +1296,23 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   authors handle `P_i = □` FIRST in the IDENTICAL situation on the
   consistency side.**  `complete-consistency-cc-solving-var`'s case
   `UnivGhostG` (consistency-proofs.tex:1477-1516) has exactly this shape —
-  `ψ_a = ⊤̇◇ψ'`, a dotted universal ghost on the guess — and its subcase
+  `ψ_a = ∀◈ψ'`, a dotted universal ghost on the guess — and its subcase
   list is:
     1. `P_i = □` — "IH on refa and refb with input `□` … our goal follows
-       from SolEq-GhostL and choosing `P_a = ⊤◇P_0'`", i.e. precisely the
+       from SolEq-GhostL and choosing `P_a = ∀◇P_0'`", i.e. precisely the
        row the mech proves (nothing decomposed, the IH's own solve reused);
-    2. `P_i = ⊤◇P_i'`;
+    2. `P_i = ∀◇P_i'`;
     3. "the remaining non-flexible shapes are impossible by inversion on
        the precision premise; the flexible case follows from SolEq-FlexL".
-  Were there an invariant forcing a `⊤◇` input skeleton opposite a dotted
+  Were there an invariant forcing a `∀◇` input skeleton opposite a dotted
   ghost, subcase 1 would be dead and would have been listed as impossible
   (as the same proof does list `Ghost`, `UnivGhost`, `UnivGhost1` and
   `UnivGhost2`).  It is not; so the subtyping side's compressed write-up
   ("Similar to the previous case of ForallL … It is simpler …") simply
   dropped it.
 - To be fair to the paper's phrasing, its claim is ALMOST right: precision
-  does force the input skeleton to be GHOSTLY at a `⊤̇◇` guess — the only
-  live shapes are `□` and `⊤◇P_i'` (unit / var / arrow / ∀ are refuted, in
+  does force the input skeleton to be GHOSTLY at a `∀◈` guess — the only
+  live shapes are `□` and `∀◇P_i'` (unit / var / arrow / ∀ are refuted, in
   the mech by `ad_ppre_guarded_topholeg_absurd`).  It named one of the two
   ghost shapes.
 - Side note on the same case: the paper also provides for a FLEXIBLE `P_i`

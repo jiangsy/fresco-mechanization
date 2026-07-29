@@ -129,7 +129,7 @@ derivation.  Below, `S` is the decorated skeleton, `P = ⌊S⌋ˢ`.
 | # | algo rule fired | decl. rule / trigger | edge | decl. derivation | skeletons |
 |---|---|---|---|---|---|
 | C1 | `GhostR` | `P₀ = ◇` (`:2570`) | — (axiom) | — | — |
-| C2 | `UnivGhostR` | `P₀ = ⊤◇.P₀'`, `P` guarded (`:2571-2572`) | consis → consis `(Θ₀; P₀'; P)` | **SAME derivation** ⚠ | `|P₀|` `−1` |
+| C2 | `UnivGhostR` | `P₀ = ∀◇.P₀'`, `P` guarded (`:2571-2572`) | consis → consis `(Θ₀; P₀'; P)` | **SAME derivation** ⚠ | `|P₀|` `−1` |
 | C3 | `Ghost` | `≡Ghost` (`S=◇`) | — (axiom) | — | — |
 | C4 | `Ghost` | `≡GhostG` (`S=◇_g`, inversion gives `P₀=◇`) | — (axiom) | — | — |
 | C5 | `Unit` | `≡Unit` | — (axiom) | — | — |
@@ -137,10 +137,10 @@ derivation.  Below, `S` is the decorated skeleton, `P = ⌊S⌋ˢ`.
 | C7a | `Arrow` (1st) | `≡Arrow` (`:2693`) | consis → consis `(Θ₀; P₀a; P₁)` | subderivation `⟨a⟩` | both `<` |
 | C7b | `Arrow` (2nd) | `≡Arrow` | consis → consis `(Θ₁; P₀b; P₂)` at `κ₁` | subderivation `⟨b⟩`, rewritten by `κ ≡ κ₁` | both `<` |
 | C8 | `ForallInh` | `≡ForallInh` (`:2779`) | consis → consis `(α,Θ₀; P₀'^α; P'^α)` | subderivation | both `−1` |
-| C9 | `ForallSyn` | `≡ForallSyn` | consis → consis `(α,Θ₀; ⊤◇.P₀'` **unchanged**`; P'^α)` | subderivation | `|P|` `−1` |
+| C9 | `ForallSyn` | `≡ForallSyn` | consis → consis `(α,Θ₀; ∀◇.P₀'` **unchanged**`; P'^α)` | subderivation | `|P|` `−1` |
 | C10 | `UnivGhost` | `≡UnivGhost` / `≡UnivGhostG` | consis → consis `(Θ₀; P₀'; P')` | subderivation | both `−1` |
-| C11 | `UnivGhost1` | `≡UnivGhost1` | consis → consis `(α,Θ₀; P₀'^α; ⊤◇.P'` **unchanged**`)` | subderivation | `|P₀|` `−1` |
-| C12 | `UnivGhost` | `≡UnivGhost2` (`:3074`), sub-case `P₀=⊤◇.P₀'` | consis → consis `(Θ₀; P₀'; P')` | subderivation | both `−1` |
+| C11 | `UnivGhost1` | `≡UnivGhost1` | consis → consis `(α,Θ₀; P₀'^α; ∀◇.P'` **unchanged**`)` | subderivation | `|P₀|` `−1` |
+| C12 | `UnivGhost` | `≡UnivGhost2` (`:3074`), sub-case `P₀=∀◇.P₀'` | consis → consis `(Θ₀; P₀'; P')` | subderivation | both `−1` |
 | C13 | `UnivGhost2` | `≡UnivGhost2`, sub-case `P₀` guarded | consis → consis `(Θ₀; P₀` **unchanged**`; P')` | subderivation | `|P|` `−1` |
 | C14 | `Flex` | `P = α̂`, `P₀ = β̂` (both flexible) | **consis → unify(Θ₀; α̂; β̂)** | *must be constructed* ⚠ (§9.1) | — |
 | C15 | `FlexL` | `P = α̂`, `P₀` non-flex | **consis → assign(Θ₀; ·; α̂; P₀)** | *must be constructed* ⚠ | — |
@@ -313,15 +313,15 @@ by the second bullet of §4.1, and opening with a free variable preserves
 
 | edge | `V` before | `V` after | Δ |
 |---|---|---|---|
-| C2 `UnivGhostR` | `⟦P⟧ + ⟦⊤◇.P₀'⟧` | `⟦P⟧ + ⟦P₀'⟧` | **−1** |
+| C2 `UnivGhostR` | `⟦P⟧ + ⟦∀◇.P₀'⟧` | `⟦P⟧ + ⟦P₀'⟧` | **−1** |
 | C7a `Arrow` 1st | `⟦P₁→P₂⟧ + ⟦P₀a→P₀b⟧` | `⟦P₁⟧ + ⟦P₀a⟧` | **≤ −2** |
 | C7b `Arrow` 2nd | ditto (at `κ`) | `⟦P₂⟧ + ⟦P₀b⟧` (at `κ₁`) | **≤ −2** — *and this is exactly where (M1) is needed: `κ ≡ κ₁` on `Θ₀`, `P₂`/`P₀b` wf in `Θ₀`, so `⇓[Θ](κ₁P₂) = ⇓[Θ](κP₂)`.  The context growth of §3.1 is simply not measured.* |
 | C8 `ForallInh` | `⟦∀α.P⟧ + ⟦∀α.P₀⟧` | `⟦P^α⟧ + ⟦P₀^α⟧` | **−2** |
-| C9 `ForallSyn` | `⟦∀α.P⟧ + ⟦⊤◇.P₀⟧` | `⟦P^α⟧ + ⟦⊤◇.P₀⟧` | **−1** |
-| C10 `UnivGhost` | `⟦⊤◇.P⟧ + ⟦⊤◇.P₀⟧` | `⟦P⟧ + ⟦P₀⟧` | **−2** |
-| C11 `UnivGhost1` | `⟦⊤◇.P⟧ + ⟦∀α.P₀⟧` | `⟦⊤◇.P⟧ + ⟦P₀^α⟧` | **−1** |
-| C12 `≡UnivGhost2`, `P₀=⊤◇.P₀'` | `⟦⊤◇.P⟧ + ⟦⊤◇.P₀'⟧` | `⟦P⟧ + ⟦P₀'⟧` | **−2** |
-| C13 `≡UnivGhost2`, `P₀` guarded | `⟦⊤◇.P⟧ + ⟦P₀⟧` | `⟦P⟧ + ⟦P₀⟧` | **−1** |
+| C9 `ForallSyn` | `⟦∀α.P⟧ + ⟦∀◇.P₀⟧` | `⟦P^α⟧ + ⟦∀◇.P₀⟧` | **−1** |
+| C10 `UnivGhost` | `⟦∀◇.P⟧ + ⟦∀◇.P₀⟧` | `⟦P⟧ + ⟦P₀⟧` | **−2** |
+| C11 `UnivGhost1` | `⟦∀◇.P⟧ + ⟦∀α.P₀⟧` | `⟦∀◇.P⟧ + ⟦P₀^α⟧` | **−1** |
+| C12 `≡UnivGhost2`, `P₀=∀◇.P₀'` | `⟦∀◇.P⟧ + ⟦∀◇.P₀'⟧` | `⟦P⟧ + ⟦P₀'⟧` | **−2** |
+| C13 `≡UnivGhost2`, `P₀` guarded | `⟦∀◇.P⟧ + ⟦P₀⟧` | `⟦P⟧ + ⟦P₀⟧` | **−1** |
 
 Note C2/C9/C11/C13 are exactly the four edges where *one* skeleton stands still —
 they are why `V` must sum **both** skeletons, and why the paper's

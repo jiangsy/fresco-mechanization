@@ -6,7 +6,7 @@
 (*  The paper proceeds "by mutual induction for the three parts":         *)
 (*    part 1 (consistency)  — case analysis on the last rule of the       *)
 (*      declarative join derivation, with the special cases peeled first  *)
-(*      (:2566-2580): P₀ = ◇ → GhostR; P₀ = ⊤◇.P₀' with P guarded →       *)
+(*      (:2566-2580): P₀ = ◇ → GhostR; P₀ = ∀◇.P₀' with P guarded →       *)
 (*      UnivGhostR; P or P₀ flexible → parts 2/3.                          *)
 (*    part 2 (unification)  — walk of the context Θ₀.                      *)
 (*    part 3 (assignment)   — walk of the context pair Θ₀ ∣ Ξ.             *)
@@ -92,7 +92,7 @@ Set Implicit Arguments.
         that judgment; its witness must be SYNTHESIZED FROM THE SOLUTION
         (reflexivity at the solved κ(α̂[τ/β̂])).
       - UnivGhostR (consis → consis): the premise reuses the caller's
-        derivation IDENTICALLY (the ⊤◇ is peeled from the problem, not from
+        derivation IDENTICALLY (the ∀◇ is peeled from the problem, not from
         the derivation).
       - Flex-Flex-Assign (unify → assign): the witness is only transported
         across ≡ᵗ, i.e. rebuilt, not extracted.
@@ -1447,7 +1447,7 @@ Proof.
     inversion Hg.
   - (* __hole : a syn painting is never an inherited quantifier *)
     destruct P; simpl in HeqT; discriminate.
-  - (* __tophole_remove : a ⊤◇ source is not guarded *)
+  - (* __tophole_remove : a ∀◇ source is not guarded *)
     inversion Hg.
   - (* __flex_l : unfold to the (guarded) monotype *)
     apply IHHr; [ exact Hwf | exact HeqT | ].
@@ -1456,7 +1456,7 @@ Proof.
 Qed.
 
 (** Mirror: a guarded source never refines to a ∀-syn target either
-    (that target only arises by [tophole_fill], whose source is a ⊤◇). *)
+    (that target only arises by [tophole_fill], whose source is a ∀◇). *)
 Lemma ad_refine_syn_f_guarded_src_all_syn_absurd : forall F Θ Δ Q Q',
   a_wf_aenv Θ ->
   ad_refine_syn_f F Θ Δ Q (bskl_all_syn Q') ->
@@ -2733,7 +2733,7 @@ Qed.
     sides are JOINED at the syn painting re-inherits to the coloured
     refinement of the inh paintings.  [Θr] is the refinement context; [Θj]
     the join context, which extends [Θr] by rigid opens only (at the top
-    level Θj = Θr).  The wf of [A] supplies guardedness of ⊤◇-bodies, which
+    level Θj = Θr).  The wf of [A] supplies guardedness of ∀◇-bodies, which
     is what forces the join to strip/keep wrappers in lockstep with the
     refinement. *)
 Lemma refine_join_reinherit : forall F Θr Δ P' P0,
@@ -2787,16 +2787,16 @@ Proof.
     pose proof (consis_hole_target_inh Hj) as Hqi.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hqi.
     rewrite Hqi. apply ad_refine_syn_f__hole; [ exact H | exact H0 ].
-  - (* tophole_remove : the join strips its subject ⊤◇ in lockstep *)
+  - (* tophole_remove : the join strips its subject ∀◇ in lockstep *)
     assert (HgP : guarded_pskl P) by (inversion HwfA; assumption).
     assert (HwfP : Θ ⨟ empty ⊢ₚₛᵃ P) by (inversion HwfA; assumption).
     assert (HwfPΔ : Θ ⨟ Δ ⊢ₚₛᵃ P)
       by (eapply a_wf_pskl_delta_mono; [ exact HwfP | clear; fsetdec ]).
     apply ad_refine_syn_f__tophole_remove.
     apply (IHHr Θj Hwfr Hwf Hincl HwfPΔ).
-    (* the join: ⊤◇⌊P⌋ ∼ syn Q must strip the subject wrapper *)
+    (* the join: ∀◇⌊P⌋ ∼ syn Q must strip the subject wrapper *)
     inversion Hj; subst.
-    + (* __tophole : the target would be a ⊤◇ — but the guarded [P]
+    + (* __tophole : the target would be a ∀◇ — but the guarded [P]
          refines to it, contradiction *)
       exfalso.
       match goal with
@@ -2830,7 +2830,7 @@ Proof.
       eapply ad_pat_consis_tophole_guarded_inv;
         [ exact Hwf | | exact HgP | apply guarded_bskl__var ].
       eapply ad_pat_consis__flex_r; eassumption.
-  - (* tophole_fill : VACUOUS — no join matches a ⊤◇ subject against a
+  - (* tophole_fill : VACUOUS — no join matches a ∀◇ subject against a
        ∀-syn target *)
     exfalso.
     assert (HgP : guarded_pskl P) by (inversion HwfA; assumption).
@@ -2859,7 +2859,7 @@ Proof.
     apply (IHHr Θj Hwfr Hwf Hincl HwfPΔ).
     inversion Hj; subst.
     + (* __tophole : both wrappers strip *) assumption.
-    + (* __tophole_drop : the guarded stripped subject cannot join a ⊤◇ *)
+    + (* __tophole_drop : the guarded stripped subject cannot join a ∀◇ *)
       exfalso.
       assert (HlcQt : lc_bskl (bskl_tophole (pskl_to_bskl_syn Q))).
       { apply lc_bskl_tophole. apply pskl_to_bskl_syn_lc.
@@ -2936,7 +2936,7 @@ Proof.
     eapply IHHc; eauto.
 Qed.
 
-(** Transport a ⊤◇ subject componentwise.  The component transport is
+(** Transport a ∀◇ subject componentwise.  The component transport is
     context-generalized because [tophole_inh] keeps the SAME subject under
     an extended context. *)
 Lemma consis_tophole_subject_transport : forall Ψ Θ R Qt,
@@ -2977,7 +2977,7 @@ Qed.
 
 (** THE TRANSPORT: for [Θ ⊢ A ≡ˢ B], joins re-subject between [⌊A⌋] and
     [⌊B⌋] in BOTH directions, in any conservative extension [Θ'] of the
-    equivalence's context (the generality the ∀/⊤◇ congruences need). *)
+    equivalence's context (the generality the ∀/∀◇ congruences need). *)
 Lemma skl_tyequiv_consis_transport : forall Θ P P',
   Θ ⊢ P ≡ˢ P' ->
   forall Θ',
@@ -3164,7 +3164,7 @@ Proof.
     eapply IHHr; eauto.
 Qed.
 
-(** Transport a ⊤◇ source componentwise.  Context-generalized: the
+(** Transport a ∀◇ source componentwise.  Context-generalized: the
     [tophole_fill] premise keeps the SAME source under an extended Θ. *)
 Lemma ad_refine_syn_f_tophole_source_transport : forall F Θ Δ Q Qt,
   ad_refine_syn_f F Θ Δ Q Qt ->
@@ -3354,7 +3354,7 @@ Proof.
     eapply IHHr; eauto.
 Qed.
 
-(** Transport a ⊤◇ source componentwise (uncoloured; context-generalized
+(** Transport a ∀◇ source componentwise (uncoloured; context-generalized
     for [tophole_fill]). *)
 Lemma ad_refine_pskl_f_tophole_source_transport : forall F Θ Δ P Pt,
   ad_refine_pskl_f F Θ Δ P Pt ->
@@ -4304,7 +4304,7 @@ Proof.
     destruct C0; simpl in HeqQ; discriminate.
   - (* tophole_inh : Q = bskl_all_inh, never a mono syn painting *)
     destruct C0; simpl in HeqQ; discriminate.
-  - (* tophole_drop : P = ⊤◇P', same A *)
+  - (* tophole_drop : P = ∀◇P', same A *)
     destruct P0 as [ | | | | | | P' ]; simpl in HeqS; try discriminate;
       try solve [ exfalso; eapply Hnv; reflexivity ].
     inversion HeqS; subst R.
@@ -4313,14 +4313,14 @@ Proof.
     match goal with H : _ ⨟ empty ⊢ₚₛᵃ P' |- _ => rename H into HwfP' end.
     simpl in Hocc.
     destruct (pskl_var_dec P') as [[α'' HeqP'] | Hnv'].
-    + (* P = ⊤◇α'' : the drop-to-var base *)
+    + (* P = ∀◇α'' : the drop-to-var base *)
       subst P'. simpl in Hocc.
       assert (HeqX : α'' = α0) by (clear - Hocc; fsetdec). subst α''.
       simpl in Hc.
       rewrite (a_tyequiv_downarrow Hwf
                  (join_var_tyequiv Hc Hwf (Hmlk α0) HmC0)).
       split; [ lia | left; reflexivity ].
-    + (* body not a var : recurse; P' = ⊤◇α̂ is killed by guardedness *)
+    + (* body not a var : recurse; P' = ∀◇α̂ is killed by guardedness *)
       destruct (IHHc Hwf α0 P' C0 Θw empty Hnv' eq_refl eq_refl
                   HmC0 HwfP' Hocc) as [Hle Hdisj].
       split; [ exact Hle | right ].
@@ -4573,7 +4573,7 @@ Proof.
     destruct C0; simpl in HeqQ; discriminate.
   - (* tophole_inh : Q = bskl_all_inh, never a mono syn painting *)
     destruct C0; simpl in HeqQ; discriminate.
-  - (* tophole_drop : P = ⊤◇P', recurse on the body *)
+  - (* tophole_drop : P = ∀◇P', recurse on the body *)
     destruct P0 as [ | | | | | | P' ]; simpl in HeqS; try discriminate;
       try solve [ exfalso; eapply Hnv; reflexivity ].
     inversion HeqS; subst R.
@@ -6292,7 +6292,7 @@ Qed.
 
 (** Part 1 of the paper's proof (:2561-3167): consistency.  The special
     cases are peeled first (:2566-2580) — [P] or [P0] flexible → parts 2/3
-    ([t] breaks the tie); [P0 = ◇] → GhostR (axiom); [P0 = ⊤◇.P0'] with [P]
+    ([t] breaks the tie); [P0 = ◇] → GhostR (axiom); [P0 = ∀◇.P0'] with [P]
     guarded → UnivGhostR ([V] decreases on the input side) — and the main
     dispatch is on the last rule of the declarative join derivation, each
     structural sub-node at strictly smaller [V]. *)
@@ -6355,7 +6355,7 @@ Qed.
 
 (** Part 1's MAIN DISPATCH (paper :2582-3167), by induction on the last rule
     of the declarative join derivation, ASSUMING the layer-0 special cases
-    (flexible subject / flexible input / P0 = ◇ / P0 = ⊤◇ with P guarded)
+    (flexible subject / flexible input / P0 = ◇ / P0 = ∀◇ with P guarded)
     have been peeled by [consis_complete_step] below.  The induction (rather
     than a case analysis) is needed ONLY for the target-side definition
     unfolds [flex_r] — those keep the measure constant but shrink the join.
@@ -6624,7 +6624,7 @@ Proof.
       end. }
     2:{ exfalso; inversion Hrs. }
     2:{ exfalso; apply HneP0hole; reflexivity. }
-    2:{ (* ⊤◇ input against a GUARDED (arrow) subject was peeled in layer 0d *)
+    2:{ (* ∀◇ input against a GUARDED (arrow) subject was peeled in layer 0d *)
       exfalso. apply (Hnthg Pt0 eq_refl).
       inversion HlcP; subst.
       apply guarded_pskl__arrow; assumption. }
@@ -6883,7 +6883,7 @@ Proof.
       end. }
     1:{ exfalso; inversion Hrs. }
     2:{ exfalso; apply HneP0hole; reflexivity. }
-    2:{ (* ⊤◇ input: its guarded body never refines to an inherited ∀ *)
+    2:{ (* ∀◇ input: its guarded body never refines to an inherited ∀ *)
       exfalso.
       assert (Hg0 : guarded_pskl Pt0) by (inversion HwfP0; assumption).
       assert (Hgκ0 : guarded_pskl (msubst_pskl κ Pt0))
@@ -7181,7 +7181,7 @@ Proof.
   - destruct (msubst_pskl κ PP); simpl in HeqS; discriminate.
   (* ------------------------------------------------------ forall_syn *)
   - (* C-ForallSyn (paper :2853-2926): as C-ForallInh with the opened α
-       added to Δ2 only and the input ⊤◇.P0' carried unchanged (the
+       added to Δ2 only and the input ∀◇.P0' carried unchanged (the
        Δ1-refinement's [tophole_fill] premise arrives ALREADY at the
        α-extended context). *)
     match goal with
@@ -7206,7 +7206,7 @@ Proof.
       rewrite (msubst_lookup_notin κ Hβ1κ) in HeqS.
       simpl in HeqS. discriminate. }
     inversion HeqS. subst R. clear HeqS.
-    (* INPUT: PP0 = ⊤◇ Pt0 (a ∀-syn target only arises by tophole_fill) *)
+    (* INPUT: PP0 = ∀◇ Pt0 (a ∀-syn target only arises by tophole_fill) *)
     destruct PP0 as [ | n0 | β10 | P0a P0b | P0b | | Pt0 ]; simpl in Hrs.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
@@ -7614,13 +7614,13 @@ Proof.
       pose proof (Hnfdth β τ Hb) as Hi.
       clear - Hi Hα1Δ2. fsetdec.
   (* ---------------------------------------------------------- tophole *)
-  - (* C-UnivGhost (paper :2928-2993): both sides strip one ⊤◇; wf forces
-       the input to be a ⊤◇ as well (a guarded input's refinement target is
-       guarded, never a ⊤◇); V drops by 2, recurse through the μ-IH. *)
+  - (* C-UnivGhost (paper :2928-2993): both sides strip one ∀◇; wf forces
+       the input to be a ∀◇ as well (a guarded input's refinement target is
+       guarded, never a ∀◇); V drops by 2, recurse through the μ-IH. *)
     match goal with
     | Hpm : _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ => rename Hpm into Hj
     end.
-    (* SUBJECT: PP = ⊤◇PPt (var subjects are rigid, their image a var). *)
+    (* SUBJECT: PP = ∀◇PPt (var subjects are rigid, their image a var). *)
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
     { (* var β1 : rigid, its image is β1 itself *)
@@ -7650,11 +7650,11 @@ Proof.
     assert (HgQ : guarded_bskl Q).
     { eapply ad_pat_consis_guarded_r;
         [ exact Hj | exact Hwfth | reflexivity | exact HgκP | exact HlcQ ]. }
-    (* INPUT: PP0 = ⊤◇P0t (every other head's target is not a ⊤◇). *)
+    (* INPUT: PP0 = ∀◇P0t (every other head's target is not a ∀◇). *)
     destruct PP0 as [ | n0 | β10 | Pa0 Pb0 | Pb0 | | Pt0 ]; simpl in Hrs.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
-    1:{ (* var β10 : rigid; a rigid variable does not refine to a ⊤◇ *)
+    1:{ (* var β10 : rigid; a rigid variable does not refine to a ∀◇ *)
       exfalso.
       assert (Hbtδ0 : binds β10 abind_tvar Θ0).
       { inversion HwfP0 as [ | Θw Δw δw Hbt | | | | ]; subst.
@@ -7680,7 +7680,7 @@ Proof.
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; inversion Hrs. }
     1:{ exfalso; apply HneP0hole; reflexivity. }
-    (* PP0 = ⊤◇Pt0 : strip the ⊤◇ on all three judgments. *)
+    (* PP0 = ∀◇Pt0 : strip the ∀◇ on all three judgments. *)
     assert (Hg0t : guarded_pskl Pt0) by (inversion HwfP0; assumption).
     assert (HwfP0t : Θ0 ⨟ empty ⊢ₚₛᵃ Pt0) by (inversion HwfP0; assumption).
     assert (Hgκ0 : guarded_pskl (msubst_pskl κ Pt0))
@@ -7717,13 +7717,13 @@ Proof.
     apply guarded_pskl_to_bskl_inh, guarded_bskl_to_pskl. exact HgQ.
   (* ------------------------------------------------------ tophole_inh *)
   - (* C-UnivGhost1 (paper :2995-3070): the input's ∀ opens with a fresh
-       rigid α added to Θ0 and Δ1; the subject ⊤◇.PPt is carried
+       rigid α added to Θ0 and Δ1; the subject ∀◇.PPt is carried
        unchanged through the μ-IH and the L9 rename. *)
     match goal with
     | Hpm : forall α, α `notin` _ -> _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ =>
         rename Hpm into Hjoin
     end.
-    (* SUBJECT: PP = ⊤◇ PPt. *)
+    (* SUBJECT: PP = ∀◇ PPt. *)
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
     { exfalso.
@@ -7777,7 +7777,7 @@ Proof.
       eapply ad_refine_syn_f_guarded_src_all_inh_absurd;
         [ exact Hwfth | eassumption
         | apply guarded_pskl_to_bskl_inh; exact Hgκ0 ]. }
-    (* ∀ input, ⊤◇ subject : invert the refinements, wf pieces *)
+    (* ∀ input, ∀◇ subject : invert the refinements, wf pieces *)
     assert (HgP : guarded_pskl PPt) by (inversion HwfP; assumption).
     assert (HwfPt : Θ0 ⨟ empty ⊢ₚₛᵃ PPt) by (inversion HwfP; assumption).
     inversion Hrs; subst.
@@ -8044,14 +8044,14 @@ Proof.
     { clear - HαΔ1 HαΔ2. fsetdec. }
     { clear - HαΔ1 HαΔ2 Hα0. fsetdec. }
   (* ----------------------------------------------------- tophole_drop *)
-  - (* C-UnivGhost2 (paper :3072-3164): the subject strips its ⊤◇; the
+  - (* C-UnivGhost2 (paper :3072-3164): the subject strips its ∀◇; the
        guarded subject body makes the join target Q guarded, which drives
-       BOTH sub-cases: input ⊤◇P0t (strip on all three, [univ_ghost]) or
+       BOTH sub-cases: input ∀◇P0t (strip on all three, [univ_ghost]) or
        input guarded (subject-only strip, [univ_ghost2]). *)
     match goal with
     | Hpm : _ ⨟ _ ⊢ₛᵃ _ ∼ _ |- _ => rename Hpm into Hj
     end.
-    (* SUBJECT: PP = ⊤◇PPt. *)
+    (* SUBJECT: PP = ∀◇PPt. *)
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
     { (* var β1 : rigid, its image is β1 itself *)
@@ -8078,7 +8078,7 @@ Proof.
     assert (HgQ : guarded_bskl Q).
     { eapply ad_pat_consis_guarded_r;
         [ exact Hj | exact Hwfth | reflexivity | exact HgκP | exact HlcQ ]. }
-    (* the subject-side refinement drops its ⊤◇ against the guarded Q *)
+    (* the subject-side refinement drops its ∀◇ against the guarded Q *)
     change (ad_refine_pskl_f Δ2 Θ Δ2
               (pskl_tophole (msubst_pskl κ PPt)) (bskl_to_pskl Q)) in Hrp.
     assert (Hrp' : ad_refine_pskl_f Δ2 Θ Δ2
@@ -8086,13 +8086,13 @@ Proof.
     { eapply ad_refine_pskl_f_tophole_guarded_inv;
         [ exact Hwfth | exact Hrp | ].
       apply guarded_bskl_to_pskl. exact HgQ. }
-    (* INPUT: split on whether PP0 is a ⊤◇. *)
+    (* INPUT: split on whether PP0 is a ∀◇. *)
     assert (Hthdec : (exists P0t, PP0 = pskl_tophole P0t) \/
                      (forall P0t, PP0 <> pskl_tophole P0t)).
     { destruct PP0; try (right; intros ? Hc0; discriminate).
       left; eexists; reflexivity. }
     destruct Hthdec as [[P0t ->] | Hnth0].
-    + (* PP0 = ⊤◇P0t : paper :3098-3132; both inputs strip, [univ_ghost]. *)
+    + (* PP0 = ∀◇P0t : paper :3098-3132; both inputs strip, [univ_ghost]. *)
       assert (Hg0t : guarded_pskl P0t) by (inversion HwfP0; assumption).
       assert (HwfP0t : Θ0 ⨟ empty ⊢ₚₛᵃ P0t) by (inversion HwfP0; assumption).
       change (ad_refine_syn_f Δ1 Θ Δ1
@@ -8535,7 +8535,7 @@ Proof.
     + intros β τ Hb.
       pose proof (Hnfdth β τ Hb) as Hi.
       clear - Hi Hα1Δ1. fsetdec. }
-  (* ---- Layer 0d: P0 = ⊤◇.P0', P guarded : C-UnivGhostR -------------- *)
+  (* ---- Layer 0d: P0 = ∀◇.P0', P guarded : C-UnivGhostR -------------- *)
   assert (Hthdec : (exists P0', P0 = pskl_tophole P0') \/
                    (forall P0', P0 <> pskl_tophole P0')).
   { destruct P0; try (right; intros ? Hc; discriminate).
@@ -8548,7 +8548,7 @@ Proof.
       - left; apply guarded_pskl__var.
       - left; inversion HlcP; apply guarded_pskl__arrow; assumption. }
     destruct Hgdec as [HgP | HngP].
-    - (* C-UnivGhostR : strip the input's ⊤◇, V drops on the input side. *)
+    - (* C-UnivGhostR : strip the input's ∀◇, V drops on the input side. *)
       assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0') by (inversion HwfP0; assumption).
       assert (Hgκ : guarded_pskl (msubst_pskl κ P))
         by (eapply guarded_pskl_msubst_inc; eauto).

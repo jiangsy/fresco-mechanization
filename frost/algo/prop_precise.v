@@ -475,7 +475,7 @@ Proof.
       apply ad_refine_syn__hole. assumption.
     + apply ad_refine_syn__tophole_remove. apply IHHp; auto.
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
-  - (* tophole_remove : Qm = ⊤.Q, Qr from Q ⊳ Qr *)
+  - (* tophole_remove : Qm = ∀◇Q, Qr from Q ⊳ Qr *)
     rename Q into Qb. rename P into Pb.
     assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_tophole Qb) ⊳ Pb)
       by (apply ad_refine_syn__tophole_remove; assumption).
@@ -489,7 +489,7 @@ Proof.
       inversion HM; subst.
       apply ad_refine_syn__tophole_remove. apply IHHr; auto.
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
-  - (* tophole_fill : ⊤.Q ⊳ ∀^syn P *)
+  - (* tophole_fill : ∀◇Q ⊳ ∀^syn P *)
     rename Q into Qb. rename P into Pb.
     assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_tophole Qb) ⊳ (bskl_all_syn Pb))
       by (eapply ad_refine_syn__tophole_fill with (L := L); assumption).
@@ -521,7 +521,7 @@ Proof.
           [ apply ad_refine_syn__tophole_keep; eassumption
           | intros y b Hb; unfold binds; right; exact Hb ]. }
     + eapply ad_refine_syn__flex_l; [ eassumption | ]. apply IHHp; auto.
-  - (* tophole_keep : ⊤.Q ⊳ ⊤.P *)
+  - (* tophole_keep : ∀◇Q ⊳ ∀◇P *)
     rename Q into Qb. rename P into Pb.
     assert (Hrr : Θ ⨟ Δ ⊢ᵣᵃ (bskl_tophole Qb) ⊳ (bskl_tophole Pb))
       by (apply ad_refine_syn__tophole_keep; assumption).

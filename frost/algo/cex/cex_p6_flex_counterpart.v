@@ -14,7 +14,7 @@
     with Δ = Δρ = {c} and every tag set empty.  ALL premises of the -var
     lemma hold (machine-checked below): the wf premises, κ ∷ Θ0 ⊑ Θ, the
     tag-sort of ψa, the ρ-relation with its freshness pack (c rigid in Θ,
-    absent from κ's images, Θ's definition images, P_i's ⊤◇-bodies, and
+    absent from κ's images, Θ's definition images, P_i's ∀◇-bodies, and
     ftv(P_0)), the precision premise κP_i ⊑ᵖ[·] ψa, the consistency premise
     for ρ(ψa) against Q, the refinement premise inh{κP_0} ⊳ Q — and the
     paper's positional side condition (P_i has the rigid c exactly at the
@@ -64,7 +64,7 @@
         ([a_lookeq_flex_target_raw_subject_not_arrow]).
       * Only the Arrow case is even reachable for a flexible P_0: κ maps
         flexibles to MONOTYPES, so refinement can never expose a flexible
-        P_0 as a ∀/⊤◇ (ForallInh/ForallSyn/ghost cases), and leaves are
+        P_0 as a ∀/∀◇ (ForallInh/ForallSyn/ghost cases), and leaves are
         handled directly (SolE-Flex / the SolE-Var special case).
     There is no flex-SPLIT rule in constraint solving and none is needed:
     [SolE-FlexR] solves the flexible counterpart directly to β̂.
@@ -248,7 +248,7 @@ Proof.
 Qed.
 
 (** The freshness pack: c is rigid in Θ, absent from κ's images, from Θ's
-    (nonexistent) definition images, from P_i's ⊤◇-shielded variables, and
+    (nonexistent) definition images, from P_i's ∀◇-shielded variables, and
     from ftv(P_0). *)
 Lemma cex_rho_fresh : rho_fresh (singleton c) cexΘ cexκ.
 Proof.

@@ -248,10 +248,10 @@ Proof.
   - (* hole ↦ □ : the RHS is the inherited painting of □ *)
     replace bskl_hole with (pskl_to_bskl_inh pskl_hole) by reflexivity.
     apply ad_pat_consis__hole; [ fsetdec | apply a_wf_pskl__hole ].
-  - (* tophole ↦ ⊤ *)
+  - (* tophole ↦ ∀◇ *)
     apply ad_pat_consis__tophole. auto.
   - (* holeg ↦ □ *)
     apply ad_pat_consis__ghostg. fsetdec.
-  - (* topholeg ↦ ⊤ *)
+  - (* topholeg ↦ ∀◈ *)
     apply ad_pat_consis__topholeg. auto.
 Qed.

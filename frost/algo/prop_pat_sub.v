@@ -217,7 +217,7 @@ Qed.
 
 (** Substituting a context (flex) entry away preserves disciplined wf:
     the mid entry is dropped; the substituend must be well-formed at the
-    EMPTY Δ (so ⊤◇-bodies stay disciplined) and guarded (so ⊤◇-bodies
+    EMPTY Δ (so ∀◇-bodies stay disciplined) and guarded (so ∀◇-bodies
     stay guarded). *)
 Lemma a_wf_pskl_subst_ctx : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
@@ -1386,10 +1386,10 @@ Qed.
 (* ===================================================================== *)
 (*  §5  Ghost-free fills (the TY axis)                                    *)
 (*                                                                        *)
-(*  On the TY axis P0 is a TYPE — hole- and ⊤◇-free (the paper's          *)
+(*  On the TY axis P0 is a TYPE — hole- and ∀◇-free (the paper's          *)
 (*  implicit "P0 ranges over types"; registered as an external side       *)
 (*  condition).  A fill whose SOURCE is ghost-free never uses the hole /  *)
-(*  ⊤◇ rules, so it consults the context only through variable            *)
+(*  ∀◇ rules, so it consults the context only through variable            *)
 (*  visibility and definition lookups — so it can be strengthened (the   *)
 (*  trailing Ξ dropped) and its opened binder renamed into a Δ-slot,     *)
 (*  with no F-hygiene at all: what ForallR's fill re-attachment needs.   *)

@@ -152,11 +152,11 @@ well-formedness**, … are naturally extended to algorithmic contexts"
 (algorithmic.tex:155-160); "We omit well-formedness rules, where we simply
 look up the definition of a flexible variable and check the well-formedness
 of its definition" (full-algo-spec.tex:128-129).  I.e. the transplanted
-declarative skeleton wf — with the Δ slot, ⊤-ghost guardedness, and empty-Δ
+declarative skeleton wf — with the Δ slot, ∀◇-ghost guardedness, and empty-Δ
 body discipline — which the mech has as `ad_wf_pskl` (def_decl_algo.v:51-71).
 
 The mech instead uses the **scoping-only** `a_wf_pskl` (def_extra.v:113-131:
-no Δ, ∀-vars into Θ, no ghost discipline — `∀α.⊤.(α→α)` passes) at both
+no Δ, ∀-vars into Θ, no ghost discipline — `∀α.∀◇(α→α)` passes) at both
 premises (`a_wf_aenv__var`; `a_sub__forall_l` :814).  A different judgment at
 a stated premise, under the follow-paper-proofs rule, needs validation or a
 flag — currently it has neither.  What leans weak: the paper's own inline
@@ -164,7 +164,7 @@ comment on the premise ("% Needed because of rigid vars",
 algorithmic.tex:946 — scoping intent) and the impl's `is_wf_`
 (type.ml:50-63, scoping-only).  What leans strong: the paper's quoted text.
 Open question either way: whether solve/extract outputs can legitimately be
-strong-wf-violating (solve's GhostForall/ForallGhost rules move ⊤-ghosts
+strong-wf-violating (solve's GhostForall/ForallGhost rules move ∀◇-ghosts
 under quantifiers) — if yes, the STRONG premise would wrongly reject
 reachable ForallL instances (a paper gap); if no, the weak and strong rule
 versions coincide on reachable derivations.

@@ -184,8 +184,8 @@ Qed.
     - [fsh_all_r] BAKES IN the ρ-growth [add α Δρ]: the tagged quantifier
       that Sub-ForallL instantiates is exactly the one whose binder joins
       Δρ, so the descent is an instantiation rather than an argument.
-    - [ψa] is [is_tskl], whose shapes are unit / var / arrow / ∀^ε / ⟨⟩̇ /
-      ⊤̇◇ — hence no plain-[tophole] row on the right. *)
+    - [ψa] is [is_tskl], whose shapes are unit / var / arrow / ∀^ε / ◈ /
+      ∀◈ — hence no plain-[tophole] row on the right. *)
 Inductive flex_shield (Θ0 : aenv) (Ψ' : atoms) : atoms -> pskl -> uskl -> Prop :=
 | fsh_clean : forall Δρ P0 ψa,
     (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
@@ -428,7 +428,7 @@ Proof.
   - (* topholeg_r *) inversion Heqψ; subst; assumption.
 Qed.
 
-(** The [P0]-side ⊤◇ strip (SolS-UnivGhostL / SolE-GhostGuarded keep the
+(** The [P0]-side ∀◇ strip (SolS-UnivGhostL / SolE-GhostGuarded keep the
     target and strip the payload's ghost). *)
 Lemma flex_shield_tophole_l_inv : forall Θ0 Ψ' Δρ P0 ψa,
   flex_shield Θ0 Ψ' Δρ (pskl_tophole P0) ψa ->
@@ -617,7 +617,7 @@ Proof.
 Qed.
 
 (** A GUARDED payload skeleton is never precise to a dotted universal ghost:
-    its κ-image is unit / a mono paint / an arrow, and the ⊤̇◇ target has no
+    its κ-image is unit / a mono paint / an arrow, and the ∀◈ target has no
     matching rule (the mono-paint chain is [ad_ppre_mono_paint_topholeg_absurd]).
     This is what rules out [P-UnivGhostRemove] wherever well-formedness has
     already made the body guarded. *)
@@ -666,7 +666,7 @@ Proof.
   remember pskl_hole as Ph eqn:HeqP.
   (* surviving rows: SolS-Vacuous (output = the □ input), SolS-Check (□ is
      not guarded), SolS-ForallR (output = the body's), SolS-GhostLF and
-     SolS-GhostL (output = a ⊤◇) *)
+     SolS-GhostL (output = a ∀◇) *)
   induction H; try discriminate HeqP; subst;
     solve [ left; reflexivity
           | right; eexists; reflexivity
@@ -691,8 +691,8 @@ Proof.
     solve [ assumption | apply IHad_partial_precise; reflexivity ].
 Qed.
 
-(** Stripping a ⊤◇ from the SUBJECT against a GUARDED guess: only
-    [P-UnivGhostRemove] applies — [Fill] and [Keep] need a ∀^ε / ⊤̇◇ guess,
+(** Stripping a ∀◇ from the SUBJECT against a GUARDED guess: only
+    [P-UnivGhostRemove] applies — [Fill] and [Keep] need a ∀^ε / ∀◈ guess,
     whose erasure is not guarded — and the target-side flexible unfolding is
     rebuilt after recursing through the (monotype) definition. *)
 Lemma ad_ppre_tophole_strip : forall Θ Δ Ψ B ψ,
@@ -708,7 +708,7 @@ Proof.
   - (* remove *) assumption.
   - (* fill: the guess is a ∀^ε, whose erasure is a ∀ — not guarded *)
     cbn [uskl_to_pskl] in Hg; inversion Hg.
-  - (* keep: the guess is a ⊤̇◇ — likewise *)
+  - (* keep: the guess is a ∀◈ — likewise *)
     cbn [uskl_to_pskl] in Hg; inversion Hg.
   - (* flex_r: recurse through the definition, then rebuild *)
     eapply ad_ppre__flex_r; [ eassumption | ].
@@ -738,7 +738,7 @@ Proof.
     apply ad_ppre__hole;
       [ eapply ad_ppre_hole_subject_tags; exact Hpre
       | cbn [ftvar_in_uskl]; exact HΔ ].
-  - (* ⊤◇B : strip the subject's ghost, then keep it against the ⊤̇◇ *)
+  - (* ∀◇B : strip the subject's ghost, then keep it against the ∀◈ *)
     apply ad_ppre__tophole_keep.
     eapply ad_ppre_tophole_strip; [ exact HwfΘ | exact Hpre | exact Hg ].
 Qed.
@@ -904,8 +904,8 @@ Proof.
     repeat rewrite subst_bskl_in_uskl_open_uskl_wrt_uskl_var;
       solve [ apply H0; solve [ clear - Hα; solve_notin | assumption ]
             | exact Hne | apply lc_uskl_var_f ].
-  - (* ⊤◇ *) cbn [subst_bskl_in_uskl]; apply urho__tophole; auto.
-  - (* ⊤̇◇ *) cbn [subst_bskl_in_uskl]; apply urho__topholeg; auto.
+  - (* ∀◇ *) cbn [subst_bskl_in_uskl]; apply urho__tophole; auto.
+  - (* ∀◈ *) cbn [subst_bskl_in_uskl]; apply urho__topholeg; auto.
 Qed.
 
 Lemma uskl_rho_subst_refl : forall NM Θ Δρ R β ψb Ψb,
@@ -1042,15 +1042,15 @@ Proof.
     exists empty; repeat split;
       [ clear; fsetdec | intros Hin; clear - Hin; fsetdec
       | apply urho__refl; [ apply lc_uskl_hole | clear; fsetdec ] ].
-  - (* ⊤◇ *)
+  - (* ∀◇ *)
     destruct IHHlc as (Ψ1 & Hs1 & Hocc1 & Hr1).
     exists Ψ1; repeat split;
       [ exact Hs1 | exact Hocc1 | apply urho__tophole; exact Hr1 ].
-  - (* ⟨⟩̇ *)
+  - (* ◈ *)
     exists empty; repeat split;
       [ clear; fsetdec | intros Hin; clear - Hin; fsetdec
       | apply urho__refl; [ apply lc_uskl_holeg | clear; fsetdec ] ].
-  - (* ⊤̇◇ *)
+  - (* ∀◈ *)
     destruct IHHlc as (Ψ1 & Hs1 & Hocc1 & Hr1).
     exists Ψ1; repeat split;
       [ exact Hs1 | exact Hocc1 | apply urho__topholeg; exact Hr1 ].
@@ -1233,13 +1233,13 @@ Proof.
                     ltac:(clear - Fr; solve_notin)) in Hren.
       rewrite (@subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
       exact Hren.
-  - (* ⊤◇ *)
+  - (* ∀◇ *)
     destruct (IHuskl_rho β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
       as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
     exists Ψ1; repeat split;
       [ exact Hs1 | exact Hm1 | exact Hocc1
       | cbn [subst_bskl_in_uskl]; apply urho__tophole; exact Hr1 ].
-  - (* ⊤̇◇ *)
+  - (* ∀◈ *)
     destruct (IHuskl_rho β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
       as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
     exists Ψ1; repeat split;
@@ -1330,10 +1330,10 @@ Qed.
 (* [uskl_rho_ftv_subject_bound] MOVED to prop_look_complete.v — P6-Cs needs
    it under the ρ-generalization, and this file is downstream of P6-Cs. *)
 
-(** A ⊤◇ body is well-formed at the EMPTY Δ ([a_wf_pskl__tophole]), so no
+(** A ∀◇ body is well-formed at the EMPTY Δ ([a_wf_pskl__tophole]), so no
     SHIELDED variable of a well-formed skeleton can be a locally bound one:
     they are all in [dom Θ].  This is the discipline DESIGN §7 names when it
-    says the freshly opened binder "stays out of ⊤◇ bodies" — it is what
+    says the freshly opened binder "stays out of ∀◇ bodies" — it is what
     lets Sub-ForallL add its binder to Δρ. *)
 Lemma a_wf_pskl_shielded_dom : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
@@ -1346,7 +1346,7 @@ Proof.
     pose proof (H0 α ltac:(clear - Fr; solve_notin)) as Hα.
     pose proof (pskl_shielded_ftv_open_lower P (pskl_var_f α)) as Hlo.
     clear - Hα Hlo; fsetdec.
-  - (* ⊤◇ : the body is well-formed at Δ = ∅ *)
+  - (* ∀◇ : the body is well-formed at Δ = ∅ *)
     pose proof (a_wf_pskl_ftv_dom H0) as Hd. clear - Hd; fsetdec.
 Qed.
 
@@ -1454,8 +1454,8 @@ Qed.
 (** The Arrow case's Pi GRID.  Everything about the two branches is packed
     into the [KEY] hypothesis (the left premise's P6-Cv call and the right
     one's induction hypothesis), so this is purely the case analysis on the
-    input skeleton: arrow / □ / ⊤◇ / a variable, with unit and ∀ refuted by
-    the precision against an arrow guess.  The ⊤◇ row recurses STRUCTURALLY
+    input skeleton: arrow / □ / ∀◇ / a variable, with unit and ∀ refuted by
+    the precision against an arrow guess.  The ∀◇ row recurses STRUCTURALLY
     on Pi — no measure needed, since well-formedness makes the ghost's body
     guarded. *)
 Lemma arrow_grid : forall NM M Θ0 Θ κ Δ Δρ Ψt Ψi Ψa ψ1 ψ2 Pi P01 P02,
@@ -1545,7 +1545,7 @@ Proof.
     exists (pskl_tophole (pskl_arrow Pa1 Pa2)); split;
       [ apply a_solve_sub__ghost_l_fn; [ exact Hs1 | exact Hs2 ]
       | cbn [msubst_pskl] in Hp |- *; apply ad_ppre__tophole_remove; exact Hp ].
-  - (* ⊤◇Pi0 : strip the ghost (the FILL and KEEP rows need a ∀^ε / ⊤̇◇
+  - (* ∀◇Pi0 : strip the ghost (the FILL and KEEP rows need a ∀^ε / ∀◈
        guess), recurse, and wrap the output *)
     inversion Hpre; subst.
     match goal with Hbody : _ ⨟ _ ⊢ msubst_pskl κ Pi0 ⊑ᵖ[ Ψi ] _ |- _ =>
@@ -1596,7 +1596,7 @@ Qed.
                                    [a_solve_eq_complete_var] (flex_apart is
                                    passed straight through), then the four
                                    Pi-subcases guarded / □ / ∀ (impossible)
-                                   / ⊤◇ with SolS-Check / GhostL / UnivGhostL
+                                   / ∀◇ with SolS-Check / GhostL / UnivGhostL
       forall_r                   ↔ Case ForallR — refinement inversion gives
                                    P0 = ∀.P0', descend with
                                    [flex_shield_descend_l]; strip β from the
@@ -1776,7 +1776,7 @@ Proof.
       exists (pskl_tophole P0); split;
         [ apply a_solve_sub__ghost_l; exact HgP0
         | cbn [msubst_pskl]; apply ad_ppre__tophole_remove; exact Hp ].
-    + (* ⊤◇Pi' : strip the ghost, solve the body, wrap the output.  This is
+    + (* ∀◇Pi' : strip the ghost, solve the body, wrap the output.  This is
          where the paper says "by congruence of constraint solving, we
          ASSUME refb is derived by SolEq-GhostGuarded"
          (subtyping-proofs.tex:1810) — the WLOG that hazard H3 predicted.
@@ -1786,11 +1786,11 @@ Proof.
       assert (HwfPi' : Θ0 ⨟ empty ⊢ₚₛᵃ Pi')
         by (eapply a_wf_pskl_tophole_inv; exact HwfPi).
       cbn [msubst_pskl] in Hp.
-      (* the payload is GUARDED, which kills the □-, ⊤◇- and ∀-payload rows;
+      (* the payload is GUARDED, which kills the □-, ∀◇- and ∀-payload rows;
          [SolEq-FlexR] and [SolEq-GhostGuarded] remain, in that order *)
       inversion Hs; subst; try solve [ inversion HgP0 ].
       * (* SolEq-FlexR : the payload is a flexible and survives whole.  If
-           the ⊤◇-body is NOT itself a flexible variable, the same rule
+           the ∀◇-body is NOT itself a flexible variable, the same rule
            applies one level down and the output is unchanged. *)
         match goal with
           Hflx : a_flex_tvar Θ0 ?α0 |- _ =>
@@ -1803,8 +1803,8 @@ Proof.
               | cbn [msubst_pskl]; apply ad_ppre__tophole_remove; exact Hp ]
           | ]
         end.
-        (* the ⊤◇-body IS a flexible: SolEq-Var keeps IT instead, so the
-           output is [⊤◇Pi'] and its precision is the INPUT premise itself
+        (* the ∀◇-body IS a flexible: SolEq-Var keeps IT instead, so the
+           output is [∀◇Pi'] and its precision is the INPUT premise itself
            — which needs Ψa = ∅.  That holds by the flexible-payload
            argument, exactly as in P6-Cv's own FLEX row: κP0 is a MONOTYPE,
            so the refinement makes Q mono-ish and the consistency then
@@ -2402,7 +2402,7 @@ Proof.
             cbn [ftvar_in_pskl] in Hup.
             assert (Hne : α0 <> β) by (clear - Hin HβΔρ; fsetdec).
             clear - Hs Hup Hne; fsetdec.
-          - (* the ⊤◇-body discipline: a well-formed skeleton's SHIELDED
+          - (* the ∀◇-body discipline: a well-formed skeleton's SHIELDED
                variables all live in the aenv, never in Δ — so the freshly
                opened binder is not one of them (DESIGN §7) *)
             assert (Heqβ : α0 = β) by (clear - Hα0 Hni; fsetdec); subst α0.
@@ -2561,11 +2561,11 @@ Proof.
         exfalso.
         pose proof (ad_ppre_hole_subject_tags Hpre0) as HΨie.
         clear - HΨie HεΨi; fsetdec.
-      - (* ⊤◇Pi0 : both rules that could reach a ∀^ε are refuted *)
+      - (* ∀◇Pi0 : both rules that could reach a ∀^ε are refuted *)
         exfalso.
         assert (HgPi0 : guarded_pskl Pi0) by (inversion HwfPi; assumption).
         inversion Hpre0; subst.
-        + (* P-UnivGhostRemove: wf makes the ⊤◇-body guarded *)
+        + (* P-UnivGhostRemove: wf makes the ∀◇-body guarded *)
           eapply ad_ppre_guarded_all_etag_absurd;
             [ exact HwfΘ | exact Hκ | exact HgPi0
             | exact (a_tags_sort_d_tags Htags0) | eassumption ].
@@ -2626,7 +2626,7 @@ Proof.
     + destruct Hcong as (L0 & R0 & Heq & _); subst ψa; inversion Htsk.
   - (* Ghost (SK) : IMPOSSIBLE — ψa cannot contain a plain □.
        The subject is [uskl_hole]; [uskl_rho_hole_l_inv] leaves either
-       ψa = □ (refuted by [is_tskl], which admits only the DOTTED ⟨⟩̇) or a
+       ψa = □ (refuted by [is_tskl], which admits only the DOTTED ◈) or a
        ρ-leaf whose image □ would have to be tags-sorted (same refutation). *)
     exfalso.
     assert (Htsk : is_tskl ψa) by (inversion Htags; assumption).
@@ -2635,7 +2635,7 @@ Proof.
     + destruct Hleaf as (α0 & Ψ'' & _ & _ & Htagsub & _ & _).
       assert (Htsk' : is_tskl uskl_hole) by (inversion Htagsub; assumption).
       inversion Htsk'.
-  - (* GhostG (SK) : the dotted ⟨⟩̇ subject.  [mod_comp_sk ⟨⟩ M] rules out
+  - (* GhostG (SK) : the dotted ◈ subject.  [mod_comp_sk ⟨⟩ M] rules out
        [FN], so M ∈ {TI, TC} and [skmod{SK}] forces P0 = □ once more *)
     assert (HP0 : P0 = pskl_hole).
     { pose proof (HmodSK eq_refl) as Hm; inversion Hm; subst;
@@ -2646,7 +2646,7 @@ Proof.
     assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
     clear - HΨae; fsetdec.
   - (* UnivGhostL (SK) : IMPOSSIBLE for the same reason as Ghost — the
-       subject is a PLAIN ⊤◇, and [is_tskl] admits only the DOTTED ⊤̇◇, so
+       subject is a PLAIN ∀◇, and [is_tskl] admits only the DOTTED ∀◈, so
        neither ψa itself nor a ρ-image can have this shape *)
     exfalso.
     assert (Htsk : is_tskl ψa) by (inversion Htags; assumption).
@@ -2656,12 +2656,12 @@ Proof.
       assert (Htsk' : is_tskl (uskl_tophole R)) by (inversion Htagsub; assumption).
       inversion Htsk'.
     + destruct Hcong as (R0 & Heq & _); subst ψa; inversion Htsk.
-  - (* UnivGhostLG (SK) : the DOTTED ⊤̇◇ subject.  ψa is either a ρ-leaf
-       (closed by [a_solve_sub_complete_rho_var]) or itself a ⊤̇◇; in the
-       latter case the precision premise forces Pi = ⊤◇Pi' or Pi = □, and
-       the ⊤◇ row is IH + SolS-UnivGhostL + P-UnivGhostKeep. *)
+  - (* UnivGhostLG (SK) : the DOTTED ∀◈ subject.  ψa is either a ρ-leaf
+       (closed by [a_solve_sub_complete_rho_var]) or itself a ∀◈; in the
+       latter case the precision premise forces Pi = ∀◇Pi' or Pi = □, and
+       the ∀◇ row is IH + SolS-UnivGhostL + P-UnivGhostKeep. *)
     assert (Htsk : is_tskl ψa) by (inversion Htags; assumption).
-    (* the ⊤̇◇-shaped rows share a body; state it once, then dispatch *)
+    (* the ∀◈-shaped rows share a body; state it once, then dispatch *)
     assert (KEY : forall ψ0,
       uskl_rho a_sub_mode_sk Θ Δρ Ψρ R ψ0 ->
       a_tags_sort a_sub_mode_sk Ψt (uskl_topholeg ψ0) ->
@@ -2681,7 +2681,7 @@ Proof.
               [ exact Hapart0 | apply fastep_topholeg_r ]).
       assert (Hfsh0' : flex_shield Θ0 Ψt Δρ P0 ψ0)
         by (eapply flex_shield_topholeg_r_inv; exact Hfsh0).
-      (* Pi's shape is pinned by the precision premise: only a ⊤◇ or a □
+      (* Pi's shape is pinned by the precision premise: only a ∀◇ or a □
          can be precise to a dotted universal ghost *)
       destruct Pi as [ | nPi | β | Pi1 Pi2 | Pi' | | Pi' ].
       - exfalso; eapply ad_ppre_guarded_topholeg_absurd;
@@ -2695,13 +2695,13 @@ Proof.
           inversion Hlcarr; subst; apply guarded_pskl__arrow; assumption. }
         eapply ad_ppre_guarded_topholeg_absurd;
           [ exact HwfΘ | exact Hκ | exact Hg | exact Hpre0 ].
-      - (* ∀: no precision rule reaches a ⊤̇◇ from a quantifier *)
+      - (* ∀: no precision rule reaches a ∀◈ from a quantifier *)
         cbn [msubst_pskl] in Hpre0; inversion Hpre0.
       - (* □ : the ghost row.  [paper-gap] The paper's UnivGhostLG case says
-           "we know that P_i must have a top-level ⊤◇" (subtyping-proofs.tex
+           "we know that P_i must have a top-level ∀◇" (subtyping-proofs.tex
            :2196), reading the precision premise as if only P-UnivGhostKeep
-           could target a ⊤̇◇.  But P-Ghost is TARGET-AGNOSTIC — [□ ⊑ᵖ[∅] ψ]
-           for any ψ — so a hole input is precise to a ⊤̇◇ too, and this row
+           could target a ∀◈.  But P-Ghost is TARGET-AGNOSTIC — [□ ⊑ᵖ[∅] ψ]
+           for any ψ — so a hole input is precise to a ∀◈ too, and this row
            is real.  The consistency twin's proof DOES spell out its
            "Subcase P_i = □"; the subtyping write-up simply omits it.
            Nothing is decomposed here (a □ input stays □), so the IH's own
@@ -2710,10 +2710,10 @@ Proof.
         cbn [msubst_pskl] in Hpre0.
         pose proof (ad_ppre_hole_subject_tags Hpre0) as HΨie.
         (* the Δ-disjointness the IH needs, read off the SAME premise: the
-           ⊤̇◇ adds no free variable, so [P-Ghost]'s side condition at
-           [⊤̇◇ψ0] IS the one at ψ0 *)
+           ∀◈ adds no free variable, so [P-Ghost]'s side condition at
+           [∀◈ψ0] IS the one at ψ0 *)
         assert (HΔψ0 : Δ ∩ ftvar_in_uskl ψ0 [=] empty).
-        { (* only [P-Ghost] can conclude with a ⊤̇◇ target from a □ subject:
+        { (* only [P-Ghost] can conclude with a ∀◈ target from a □ subject:
              the target-side flexible unfolding needs a VARIABLE target *)
           inversion Hpre0; subst; cbn [ftvar_in_uskl] in *; assumption. }
         assert (Hpre0' : Θ ⨟ Δ ⊢ (msubst_pskl κ pskl_hole) ⊑ᵖ[ Ψi ] ψ0)
@@ -2727,7 +2727,7 @@ Proof.
         eapply ad_ppre_lift_topholeg;
           [ exact HwfΘ | exact Hp' | exact HΔψ0
           | (* the guess erases to a guarded skeleton: ρ transports it from
-               the subject, whose ⊤̇◇-body wf makes it guarded *)
+               the subject, whose ∀◈-body wf makes it guarded *)
             eapply uskl_rho_guarded_erase;
               [ exact Hrho0
               | apply is_tskl_lc; inversion Htags0'; assumption
@@ -2737,13 +2737,13 @@ Proof.
             destruct (a_solve_sub_hole_output Hs') as [-> | (B & ->)];
               [ left; reflexivity
               | right; eexists; cbn [msubst_pskl]; reflexivity ] ].
-      - (* ⊤◇Pi' : the main row — IH, then SolS-UnivGhostL *)
+      - (* ∀◇Pi' : the main row — IH, then SolS-UnivGhostL *)
         assert (HwfPi' : Θ0 ⨟ empty ⊢ₚₛᵃ Pi')
           by (eapply a_wf_pskl_tophole_inv; exact HwfPi).
         assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
         cbn [msubst_pskl] in Hpre0.
         inversion Hpre0; subst.
-        + (* P-UnivGhostRemove: EXCLUDED — wf makes the ⊤◇-body guarded *)
+        + (* P-UnivGhostRemove: EXCLUDED — wf makes the ∀◇-body guarded *)
           exfalso; eapply ad_ppre_guarded_topholeg_absurd;
             [ exact HwfΘ | exact Hκ | exact HgPi' | eassumption ].
         + (* P-UnivGhostKeep *)
@@ -2774,7 +2774,7 @@ Proof.
         solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
               | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hshield
               | exact Hpre ].
-    + (* congruence: ψa = ⊤̇◇ψ0 with R ρ-related to ψ0 *)
+    + (* congruence: ψa = ∀◈ψ0 with R ρ-related to ψ0 *)
       destruct Hcong as (ψ0 & Heq & Hrho0); subst ψa.
       apply KEY; assumption.
   - (* FlexMono : the subject is a DEFINED flexible.  The guess is either

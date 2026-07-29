@@ -267,11 +267,11 @@ Painting facts: `pskl_to_bskl_inh (pskl_all_syn P) = bskl_all_inh (inh P)`;
   (same ψ, same Ψ; wf/tags unchanged).
 - **tophole_fill** `pskl_tophole P ⊑ᵖ[Ψ] all_etag ε ψ0` → **VACUOUS**.
   `inh(all_etag ε ψ0)` erases to `bskl_all_inh(...)` but no `⊢ᵣᵃ`
-  rule gives `⊤◇· ⊳ all_INH ·` (tophole_fill of `ad_refine_syn` outputs
+  rule gives `∀◇· ⊳ all_INH ·` (tophole_fill of `ad_refine_syn` outputs
   `all_SYN`).  Exclude via NEW helper
   `ad_partial_precise_tags_sub : ad_partial_precise Θ Δ Ψ P ψ ->
    d_tags_skl Ψt ψ -> Ψ [<=] Ψt` applied to the RECURSIVE premise
-  `⊤◇P ⊑ᵖ[Ψ] open ψ0 X`: gives `Ψ ⊆ d_tags(open ψ0 X) = Ψt0`, but
+  `∀◇P ⊑ᵖ[Ψ] open ψ0 X`: gives `Ψ ⊆ d_tags(open ψ0 X) = Ψt0`, but
   `a_tags_sort` gives `Ψ = add ε Ψt0` with `ε ∉ Ψt0` ⇒ `ε ∈ Ψ ⊆ Ψt0`,
   contradiction.  (`tags_sub` = ~40-line induction; flex_r case needs
   `d_tags_skl ∅ (ptyp_to_uskl_syn τ)` — painted monotypes are tag-free.)
@@ -346,7 +346,7 @@ subject-precision lemma one level down:
    holes where `⌊ψa⌋` is concrete), and a ghostier subject is *more*
    consistent (holes ∼ anything).  Proof: induction on the consistency
    `ψa ∼ Q`, inverting the precision `inh Pa ⊳ inh ⌊ψa⌋` by its known RHS
-   shape per case.  REAL WORK: the ⊤◇ / hole / ∀ interplay (≈ the L-A
+   shape per case.  REAL WORK: the ∀◇ / hole / ∀ interplay (≈ the L-A
    soundness flavour); the hole sub-case needs `Q` to be an inh-painting,
    which `ψa ∼ Q` supplies.  NOT among existing lemmas
    (`ad_pat_consis_refine_syn_mono` etc. go consis→refinement with mono Q,
@@ -399,7 +399,7 @@ Decomposed crux (1) into two steps; (1a) DONE.
   (pskl_to_uskl Ptgt) ∼ Q` + `inh Psrc ⊳ inh Ptgt` (Psrc ghostier,
   i.e. `Pa ⊑ ⌊ψa⌋`) → `∅ ⨟ Θ' ⊢ₛᵃ (pskl_to_uskl Psrc) ∼ Q`.  KEY
   INSIGHT: ghost-free `Psrc` makes this trivial (`Psrc = Ptgt`), so the
-  REAL content is **holey `Psrc`** — the hole/⊤◇ cases are the point,
+  REAL content is **holey `Psrc`** — the hole/∀◇ cases are the point,
   not excludable.  Structure = outer induction on the refinement
   `inh Psrc ⊳ inh Ptgt` (destruct `Psrc`), with the Θ'/Hmon/Hrig binder
   carriage of `ad_pat_consis_refine_inh_gen`.  BUT the existing
@@ -555,7 +555,7 @@ Then:
 
 **Effort estimate:** ⊑ᵤ + kit ≈ 150 lines; (2') ≈ port of (2); `_g` def +
 `g_of_n` + `g_ftag_sub` ≈ 150; (3) ≈ 400+ (leaf sub-analysis: ∀ / arrow /
-hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
+hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 (deferred).  2–3 focused sessions.
 
 ## 6. Status log
@@ -566,8 +566,8 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `ρ_b = ρ ∘ [ψ_b/β]`) together with `uskl_rho_subst_refl`, `uskl_rho_rename`
   and `uskl_rho_is_tskl`; and the CHECK case in full, including the sub-row
   where hazard H3 materialised.
-  - The H3 sub-row (Pi = ⊤◇Pi' with a FLEXIBLE body): `SolEq-Var` keeps the
-    BODY's flexible rather than the payload's, so the output is ⊤◇Pi' and
+  - The H3 sub-row (Pi = ∀◇Pi' with a FLEXIBLE body): `SolEq-Var` keeps the
+    BODY's flexible rather than the payload's, so the output is ∀◇Pi' and
     its precision IS the input premise — modulo Ψa = ∅, which holds by the
     flexible-payload argument (κP0 mono ⇒ Q mono-ish ⇒ the consistency
     solves no tag), exactly P6-Cv's own FLEX row reused.
@@ -578,12 +578,12 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     `uskl_rho_rename` (the ρ-extension's ∀ rows).  See (z5).
   - **Arrow** (next): `arrow_tag_split` (Qed) does the tag algebra; the LEFT
     premise goes to P6-Cv as in Check, the RIGHT to the IH.  Pi grid: arrow
-    / □ (SolS-GhostLF) / ⊤◇ / flexible / unit and ∀ impossible.  NOTE: the
-    ⊤◇ row needs NO inner induction — wf makes the ⊤◇-body GUARDED, so it is
+    / □ (SolS-GhostLF) / ∀◇ / flexible / unit and ∀ impossible.  NOTE: the
+    ∀◇ row needs NO inner induction — wf makes the ∀◇-body GUARDED, so it is
     unit/var/arrow and reduces to the other rows.  (P6-Cv needed a size
     induction there for unrelated reasons.)
   - **ForallL-tagged**: `uskl_rho_subst` + `flex_shield_descend_r` + the
-    `fastep_all_r` prepend; Pi grid ∀ / ⊤◇ / □, the last two as in
+    `fastep_all_r` prepend; Pi grid ∀ / ∀◇ / □, the last two as in
     UnivGhostLG.
 
 - 2026-07-29 (a1): **P6-Sv induction at 10/12 — ForallR, Check (bar one
@@ -612,12 +612,12 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   `Ψρ' ⊆ Ψρ ∪ Ψb`, with `Ψb ⊆ Ψρ'` only when β actually occurs; the missing
   case is harmless because `ad_pat_sub_g_ftag_sub` plus ForallL's hygiene
   premise force `Ψb = ∅` when β is unused.
-  **HAZARD H3 MATERIALISED (Check, Pi = ⊤◇Pi').**  The paper writes "by
+  **HAZARD H3 MATERIALISED (Check, Pi = ∀◇Pi').**  The paper writes "by
   congruence of constraint solving, we ASSUME refb is derived by
   SolEq-GhostGuarded" (subtyping-proofs.tex:1810).  Mechanically P6-Cv
   returns whichever derivation it built, so SolEq-FlexR must be handled too;
   `a_non_flex_guarded_dec` splits it, and only the sub-row where the
-  ⊤◇-body is ITSELF a flexible is still open (SolEq-Var then keeps the
+  ∀◇-body is ITSELF a flexible is still open (SolEq-Var then keeps the
   body's flexible, so the precision must come from the INPUT premise, which
   needs Ψa = ∅ by the flexible-payload argument plus `is_tskl`-preservation
   along `uskl_rho`).
@@ -681,7 +681,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   tag half, and the Δρ half travels as **`flex_apart_walk`** — `flex_apart`
   at every state reachable by `fa_step`, which has one constructor per
   descent this induction performs (arrow-both, ForallR, ForallL with Δρ
-  growing, ⊤◇/⊤̇◇, flexible unfolding).  Closure under a descent is
+  growing, ∀◇/∀◈, flexible unfolding).  Closure under a descent is
   `flex_apart_walk_step` (prepend), the P6-Cv delegation is
   `flex_apart_walk_here` (reflexivity).  `flex_apart` still cannot be
   DESCENDED — its two-sided ∀ rows tie both binders to one variable, and no
@@ -714,7 +714,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 - 2026-07-28 (z2b): **the three "impossible" cases are PAPER-CONFIRMED.**
   The decorated subtyping judgment of the paper (`decorated-algosub.tex`,
   rules `Var / ForallL / UnivGhostLG / Vacuous / Check / ForallR / Arrow /
-  Flex`) has NO plain-□ row, NO plain-⊤◇ row and NO untagged-∀ row: its
+  Flex`) has NO plain-□ row, NO plain-∀◇ row and NO untagged-∀ row: its
   ForallL subject is `∀^ε α.ψ` (tagged) and its ghost row is the DOTTED
   `UnivGhostLG`.  The P6-Sv proof text says so for the first of them
   verbatim ("The Ghost case cannot occur because ψa cannot contain □",
@@ -799,7 +799,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   1. `(fun x y -> y x) (id0 ids) useMono` — ACCEPTED.  Two errors in the (x)
      reachability story: I-App pre-shapes applied-λ binders via
      `guess_mono(skel(arg))` (never a bare flexible), and the PI pass
-     ghost-erases top-level ∀s of argument skeletons to `⊤◇(□→□)` — so the
+     ghost-erases top-level ∀s of argument skeletons to `∀◇(□→□)` — so the
      eq-payload never carries a rigid `∀β.β→β` and the mono route suffices.
   2. `h id0 3` (`h : ∀c.((∀b.b→b)→c)→c`) — rejected CORRECTLY: a TC-check
      against a guarded type is LS-Check = pure consistency (SHALLOW
@@ -817,7 +817,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   (* Flexible payload positions of P0 face TAG-UNSOLVED regions of ψa.
      Mirrors [flex_apart] (prop_look_complete.v:2603) with Ψi/ftag_in_uskl
      in place of Δρ/ftvar_in_uskl: same congruence rows (unit / rigid-var /
-     hole / ⊤◇ source / ⊤̇◇ target / arrow / ∀-descents), and the ONLY rule
+     hole / ∀◇ source / ∀◈ target / arrow / ∀-descents), and the ONLY rule
      admitting a FLEXIBLE P0-leaf is the clean one: *)
   Inductive flex_tags_apart (Θ0 : aenv) (Ψi : atoms) : pskl -> uskl -> Prop :=
   | fta_clean : forall P0 ψa,
@@ -884,7 +884,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   the CONCLUSION must return an `fta`-maintenance fact — decide when
   drafting P6-Ss); (iii) **P7 must SUPPLY it** — the pipeline argument:
   sub-payload flexibles sit on the result spine; pipeline Pi-spines are
-  ghost-erased (⊤◇), so spine tags never enter Ψi via `ad_ppre__forall`;
+  ghost-erased (∀◇), so spine tags never enter Ψi via `ad_ppre__forall`;
   the rigid-∀-spine + flex-payload combination is stopped upstream by the
   flex-mono wall (the `broom_flex_poly` shape) — the LAST part depends on
   how WT resolves the impl crash, so P7's supply proof is the place this
@@ -973,15 +973,15 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     `ad_refine_syn_aenv_to_delta` transport (`inh(□)=bskl_hole`, so a
     guarded-but-holey P0' would otherwise block moving X into Δr).  Threaded
     through every recursive `IHHconsis`/`IHn`/`CORE`/IHX site.
-  - **⊤◇ row** (UnivGhost): wrapped IHX (Pi0:=⊤◇.Pi', P0i:=⊤◇.P0'); solve =
+  - **∀◇ row** (UnivGhost): wrapped IHX (Pi0:=∀◇.Pi', P0i:=∀◇.P0'); solve =
     IHX output via `tophole_both` (strengthen_tvar; 3-subgoal inversion, the
     2 extra guarded-tophole cases killed by `inversion Hg`); precision =
     `ad_ppre__tophole_fill` + rename_tvar family (X-freshness of the fixed
     subject via `a_solve_sub_eq_ftv` + `a_wf_pskl_ftv_dom` +
     `msubst_pskl_ftv_avoid`).
-  - **□ row** (GhostL): solve = `a_solve_eq__hole_l` (Pa:=⊤◇.P0'); IHX with
+  - **□ row** (GhostL): solve = `a_solve_eq__hole_l` (Pa:=∀◇.P0'); IHX with
     Pi0:=□ (Hpre0x = `ad_ppre__hole`); same tophole_fill + rename closure.
-  - **∀ row** (ForallGhost): solve = `a_solve_eq__all_l_tophole` (RHS ⊤◇.P0'
+  - **∀ row** (ForallGhost): solve = `a_solve_eq__all_l_tophole` (RHS ∀◇.P0'
     KEPT & X-free ⇒ `subst_fresh_eq` on the RHS in the rename); IHX at
     Δx:=add X Δ (X∈Δ ⇒ the Δ-var **FOLD** applies, NOT rename_tvar);
     precision conclusion = `ad_ppre__forall` (Pa = ∀.close).
@@ -1009,16 +1009,16 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   nil-approach did.  DECISIVE CONFIRMATION: the already-CLOSED
   `forall_inh_tagged` IHX uses split-A verbatim (`((X~tvar)++Θtv) Θr Θ0r`,
   `Δr:=add X Δr`, refinement `apply Hreff`) — ForallSyn now mirrors it.
-  The ONLY ForallSyn-specific twist is the refinement: P0=⊤◇.P0' makes
+  The ONLY ForallSyn-specific twist is the refinement: P0=∀◇.P0' makes
   `Hrefine` a `tophole_fill`, so `Hrefb` = its inverted body at
   `(X~tvar)++Θr ⨟ Δr ⊢ᵣᵃ bskl_tophole(paint P0') ⊳ open Q X`, and each row
   moves X into Δr by `ad_refine_syn_aenv_to_delta` — which WORKS on the
   tophole subject because `bskl_no_hole (bskl_tophole A) = bskl_no_hole A`
-  (guarded body ⇒ no hole).  Rows use the WRAPPED IHX (Pi0:=⊤◇.Pi',
-  P0i:=⊤◇.P0'): the IHX solve output IS the outer solve (strengthen_tvar,
+  (guarded body ⇒ no hole).  Rows use the WRAPPED IHX (Pi0:=∀◇.Pi',
+  P0i:=∀◇.P0'): the IHX solve output IS the outer solve (strengthen_tvar,
   no SE-rule), and the precision fill matches HF directly (no strip).
   **THE SOLE REMAINING BLOCKER (all 3 rows): the ForallSyn precision
-  conclusion is `⊤◇.PaX ⊑ᵖ uskl_all_etag ε ψR`, closed by
+  conclusion is `∀◇.PaX ⊑ᵖ uskl_all_etag ε ψR`, closed by
   `ad_ppre__tophole_fill` — whose cofinite premise binds X' in the AENV
   (`(X'~tvar)++Θ`), keeps Ψ, adds NO ε (so "ε is Ψ'-only" holds).  But IHX
   yields ONE instance at `(X~tvar)++Θ`; building the X'-family needs an
@@ -1031,8 +1031,8 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   tophole_fill/forall push the binder with `Θ1':=(X~tvar)++Θ1`).  Then a
   FOLD-tvar (strengthen-free: subject `msubst κ PaX` is X-free, so rename
   only re-points the aenv-tvar + opens the target) closes the tophole_fill
-  family — the SAME kit unblocks □ (hole_l, Pa:=⊤◇.P0') and ∀
-  (all_l_tophole, P0i:=⊤◇.P0' KEPT + FOLD).  Backups: p6cv_working8_
+  family — the SAME kit unblocks □ (hole_l, Pa:=∀◇.P0') and ∀
+  (all_l_tophole, P0i:=∀◇.P0' KEPT + FOLD).  Backups: p6cv_working8_
   splitA_rows_admit.v (clean 3-admit).
 
 - 2026-07-26 (s): **CORRECTION to §6(q)/(r): the `Θtv_ih := []` recipe is
@@ -1065,11 +1065,11 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 - 2026-07-26 (r): **`forall_syn_tagged` built DOWN TO its 3 Pi-rows; full
   scratch compiles (20s, 3 clean admits).**  Done + verified (backup
   `p6cv_working4.v`): the two `flex_apart` target-descent lemmas
-  (guarded ⊤◇-body excludes the all_syn source that blocks descent); the
+  (guarded ∀◇-body excludes the all_syn source that blocks descent); the
   KEYF preamble + tag algebra (simpler than ForallInh — `ε ∉ Ψ`, so
   `Ψa ⊆ Ψ0'` is direct, no ε-split); `HψaB` from the reconstructed ρ;
   the P0-grid absurd columns (`allsyn_rhs_absurd` + rigid K17) and the
-  `P0 = □` VacuousR column; and the `P0 = ⊤◇` column INFRASTRUCTURE — the
+  `P0 = □` VacuousR column; and the `P0 = ∀◇` column INFRASTRUCTURE — the
   refinement transport `Hreff` (tophole_fill inversion yields BOTH the
   `tophole_remove` goal [absurd — a guarded body cannot refine to
   `all_syn`, killed per-shape after `inversion HgP0'`] and the
@@ -1092,15 +1092,15 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   (`Θtv = [] ⇒ dom Θ = dom Θr`).  It is an 8-site coordinated edit
   (statement + every case's nested KEYF/IHX/FOLD family premise) + the
   `HS2`-use re-thread.  (NOT a `dom Θtv ⊆ Δ` premise — that FAILS for
-  ForallInh's □/⊤◇ rows, where the binder enters `Θtv` but not `Δ`.)
+  ForallInh's □/∀◇ rows, where the binder enters `Θtv` but not `Δ`.)
   Then the 3 Pi-rows: □ (GhostL, per-X' IHX rerun, `ad_ppre__tophole_fill`
   conclusion), ∀ (ForallGhost `a_solve_eq__all_l_tophole` +
-  `a_solve_sub_eq_rename`, Δ-grow `ad_ppre__forall`), ⊤◇ (UnivGhost
-  `a_solve_eq__tophole_both`, refinement ⊤◇-strip, `ad_ppre__tophole_keep`).
+  `a_solve_sub_eq_rename`, Δ-grow `ad_ppre__forall`), ∀◇ (UnivGhost
+  `a_solve_eq__tophole_both`, refinement ∀◇-strip, `ad_ppre__tophole_keep`).
 
 - 2026-07-26 (q): **`forall_syn_tagged` UNBLOCKED — the §6(o) open question
   resolved WITHOUT a statement change.**  The fear was that ForallSyn's
-  `P0 = ⊤◇.P0'` refinement uses `tophole_fill`, which grows the
+  `P0 = ∀◇.P0'` refinement uses `tophole_fill`, which grows the
   refinement's aenv to `(Z~tvar)++Θr`, breaking the split's "refinement
   at Θr" invariant.  RESOLUTION: **put the ForallSyn binder Z into the
   Θr side of the split, not Θtv.**  The split's real invariant is
@@ -1140,7 +1140,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   Remaining to implement: the case body (mirrors ForallInh's KEYF/IHX/
   FOLD but with ForallSyn's solve rules — SS-ForallGhost
   `a_solve_eq__all_l_tophole`, SS-GhostL, SS-UnivGhost — and P0 grid
-  `{⊤◇.P0' (tophole_fill), □ (□-fills-to-∀), flex-chain}`); the Z-into-Θr
+  `{∀◇.P0' (tophole_fill), □ (□-fills-to-∀), flex-chain}`); the Z-into-Θr
   permutation lemmas; the ForallSyn conclusion precision via
   `ad_ppre__tophole_fill` (grows the aenv, NOT Δ — so NO ∀S-family
   Δ-transfer issue here, unlike ForallInh).
@@ -1151,7 +1151,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   Ψ'-solved tag (`Ψa' := remove ε Ψa`), the P0-grid (only P0=∀.P0b
   survives), the shared IHX (body-IH wrapper) + FOLD (per-instance
   strengthen→rename→rewrite fold), and rows A (Pi=∀), B (Pi=□), C
-  (Pi=⊤◇-fill).  Two engineering findings worth keeping:
+  (Pi=∀◇-fill).  Two engineering findings worth keeping:
   - **Row B (Pi=□) cannot use FOLD.**  The □-rule's target
     `open ψR (var X)` contains X, so its precision premise is only
     derivable at Δ (not `add X Δ`); the body-IH therefore runs with X ∉
@@ -1173,7 +1173,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   the substituend before the freshness proof).  The profiling method:
   tight `timeout` + `coqc -time`, read the last-logged byte offset (the
   stuck sentence is the next one), fix, iterate.
-  REMAINING: **`forall_syn_tagged`** — its P0=⊤◇.P0' refinement is
+  REMAINING: **`forall_syn_tagged`** — its P0=∀◇.P0' refinement is
   `tophole_fill`, which grows the REFINEMENT's aenv to `(X~tvar)++Θr`; the
   (Θtv, Θr) split cannot absorb that binder into Δr, so it needs handling
   distinct from case 1 (candidates: let Θr grow there and relax the
@@ -1193,15 +1193,15 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     after `simpl` — destruct the goal's own scrutinee via
     `match goal with |- context [if ?c then _ else _] => destruct c end`.
   - **KEY DISCOVERY — the ∀-cases need NO CORE size-induction.**
-    `a_wf_pskl__tophole` demands GUARDED bodies, so `⊤◇.∀…` subjects are
+    `a_wf_pskl__tophole` demands GUARDED bodies, so `∀◇.∀…` subjects are
     not wf: the precision tophole_remove branch dies (guarded body vs
     all_etag target: unit/arrow by inversion, var by the
-    mono-subject-tags-empty ε-contradiction), and the P0 = ⊤◇.P0' rows
+    mono-subject-tags-empty ε-contradiction), and the P0 = ∀◇.P0' rows
     die the same way on the refinement side.  (Sanity check that forced
-    this: `⊤◇.∀Z.Z ∼ ∀β.β` has NO solve derivation — GhostForall's body
-    keeps the ⊤◇ and the inner `∀Z.Z ∼ β'` is stuck — so wf-exclusion is
+    this: `∀◇.∀Z.Z ∼ ∀β.β` has NO solve derivation — GhostForall's body
+    keeps the ∀◇ and the inner `∀Z.Z ∼ β'` is stuck — so wf-exclusion is
     load-bearing, not a convenience.)  Surviving grid per case:
-    Pi ∈ {∀ (A), □ (B), ⊤◇-FILL (C)} × P0 ∈ {∀ (case 1) / ⊤◇-fill, □
+    Pi ∈ {∀ (A), □ (B), ∀◇-FILL (C)} × P0 ∈ {∀ (case 1) / ∀◇-fill, □
     (case 3)}; everything else absurd with existing kit
     (mono-subject-tags-empty + ε ∈ Ψ'; K17 rigid-var;
     allinh/allsyn_rhs_absurd for flex P0; paint-shape discriminations).
@@ -1216,7 +1216,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
       to P0b^X', so no cross-run coherence is needed); each run's family
       at S' := {X'} ∪ S then `strengthen_tvar` (X' ∈ Δ∪S∪{X'}) +
       `delta_cong`.  NO rename.
-    * Rows A (Pi=∀) and C (Pi=⊤◇ via tophole_fill): ONE fresh-X IH run;
+    * Rows A (Pi=∀) and C (Pi=∀◇ via tophole_fill): ONE fresh-X IH run;
       solve reassembled with close_pskl + `a_solve_eq_strengthen_tvar` +
       `a_solve_sub_eq_rename` + `subst_pskl_in_pskl_spec/intro`;
       precision bodies per (X', S): take the X-run's family at
@@ -1228,7 +1228,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
       (aenv stays Θr) — enters the IH's (Θr, add X Δr) slot directly;
       body terms need `pskl_to_bskl_inh_open` + `msubst_pskl_open_lc_local`
       (msubst_lc via `a_inc_msubst_lc`).
-  - OPEN QUESTION for case 3 (forall_syn_tagged) ONLY: its P0=⊤◇ row is
+  - OPEN QUESTION for case 3 (forall_syn_tagged) ONLY: its P0=∀◇ row is
     REAL via the refinement's tophole_fill, which grows the REFINEMENT's
     aenv ((X~tvar)++Θr) — there the fills may legitimately mention the
     binder, so the (Θtv,Θr) split cannot absorb it into Δr.  Resolve
@@ -1259,7 +1259,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     `consis_subject_ftv_split_bound` + `uskl_rho_ftv_target_bound`,
     packaged per-case as `HψaB`); FLEX made Δ-UNIVERSAL (B2's conclusion
     is ∀Δ, so the flex rows instantiate the family at `Δ ∪ S` directly);
-    recursion rows pass families through the ⊤◇/arrow folds unchanged;
+    recursion rows pass families through the ∀◇/arrow folds unchanged;
     the rigid-var absurdity at the primary uses the new
     `ad_refine_syn_rigid_var_nonvar_absurd_sub` (binds-inclusion into Θ
     + uniq).
@@ -1306,7 +1306,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
      delta_def_fresh S Θ → Θ ⨟ (Δ∪S) ⊢ msubst κ Pa ⊑ᵖ[Ψi∪Ψa] ψa`.
      The premise `Hpre` STAYS single-Δ (a ∀S-premise breaks
      derivation-shape dispatch: different S-instances may invert by
-     different rules — verified dead end).  The □/⊤◇-fill rows fold
+     different rules — verified dead end).  The □/∀◇-fill rows fold
      their ad_ppre__forall bodies by taking the body-IH's family at
      `S := {X}` (X allowed: X ∉ Δ, X ∉ dom Θr) + `strengthen_tvar`
      (X ∈ (add-X-side) Δ) + `delta_cong`.
@@ -1326,10 +1326,10 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   - **var case, target `var X0` with `X0 ∈ dom Θtv` (the one NEW
     sub-proof, reachable from the folds when ψR uses its binder):**
     cv_var's output is opaque, so this branch must be proven directly:
-    the PRIMARY refinement forces P0's core to be `⊤◇ⁿ.(var X0)`
+    the PRIMARY refinement forces P0's core to be `∀◇ⁿ.(var X0)`
     (hole-fill `var X0` is not Θr-wf; flex-chases are Θr-scoped and
     X0-free — use rhs-bound), Hpre forces Pi's core ∈ {var X0, □}, and
-    every reachable output Pa is `⊤◇ⁿ.(var X0)`-shaped, hence
+    every reachable output Pa is `∀◇ⁿ.(var X0)`-shaped, hence
     `pskl_no_hole` ⇒ Δ-monotone.  Budget ~100-150 lines.
   **Remaining plumbing to write (all standard):**
   `ad_partial_precise_rename` (X→Y on subject+target+Δ-entry; model:
@@ -1344,7 +1344,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   (both exist); the `Ψa' := Ψa \ {ε}` tag algebra (body-Hsubeq1 needs
   `ε ∈ Ψ0sub ⇒ ε ∈ Ψρ`, from the ftag-flow fact + the target's
   `ε ∉ Ψ0'` d_tags disjointness); the ForallSyn-case analogue of
-  `flex_apart_all_etag_forall_inv` for ⊤◇-sources (the deleted
+  `flex_apart_all_etag_forall_inv` for ∀◇-sources (the deleted
   `..._target_clean_inv` draft had the wrong shape — its fa_tophole
   case meets diagonal families; re-derive from the actual grid).
   **Landed this session (Qed, axiom-free, committed in
@@ -1388,11 +1388,11 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     arrow target: Pi ∈ {unit, arrow-vs-∅-rules absurd, var (SE-Var +
     NEW `ad_ppre_mono_subject_target_tags_empty` ⇒ Ψ' = ∅ ⇒ Ψa = ∅),
     arrow (P0-grid: flex = FLEX + SE-FlexR; rigid var absurd; arrow =
-    branch main IHs with the tag split; □ = VACR + SE-VacuousR; ⊤◇ =
+    branch main IHs with the tag split; □ = VACR + SE-VacuousR; ∀◇ =
     `flex_apart_tophole_p0_inv` + SE-GuardedGhost + CORE), □ (P0-grid:
     flex = FLEX + SE-GhostL; arrow = □-precisions per branch + branch
-    main IHs + `a_solve_eq_hole_subject_inv` pins; ⊤◇ = CORE(□,P0') +
-    SE-GhostL), ⊤◇ (tophole_remove inversion only — target is an arrow —
+    main IHs + `a_solve_eq_hole_subject_inv` pins; ∀◇ = CORE(□,P0') +
+    SE-GhostL), ∀◇ (tophole_remove inversion only — target is an arrow —
     then the cv_mono-style P0 grid with SE-GhostGuarded/UnivGhost/
     VacuousR)}.  New kit (Qed, committed): `ad_ppre_arrow_arrow_inv`,
     `ad_refine_arrow_arrow_inv` (caller-named component inversions),
@@ -1405,12 +1405,12 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     ForallSyn cases; in the mech's tag-sorted reading only the TAGGED
     subjects survive.]
   - **BLOCKER (needs decision) — forall_inh_tagged / forall_syn_tagged:
-    the Pi = □ and Pi = ⊤◇(tophole_fill-branch) rows.**  The ∀-row
+    the Pi = □ and Pi = ∀◇(tophole_fill-branch) rows.**  The ∀-row
     (Pi = ∀.Pib) follows §6(h): precision-body from `ad_ppre__forall`
     inversion at `Θ ⨟ add X Δ`, aenv-weaken into the IH at
     Θx = (X~tvar)++Θ, `ad_partial_precise_strengthen_tvar` back out
     (legal: X ∈ add X Δ), solve out via `a_solve_eq_strengthen_tvar` +
-    `a_solve_sub_eq_rename` cofinite reassembly.  But in the □/⊤◇-fill
+    `a_solve_sub_eq_rename` cofinite reassembly.  But in the □/∀◇-fill
     rows the IH's precision PREMISE can only be built at Δ (the □-rule's
     side condition `Δx ∩ ftv(ψR^X) = ∅` fails at Δx = add X Δ since
     X ∈ ftv(ψR^X) in general), so the IH's OUTPUT lives at Δ (resp. at
@@ -1418,7 +1418,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     `ad_ppre__forall` body must sit at `Θ ⨟ (add X Δ)`.  The transfer is
     blocked precisely at `ad_ppre__hole`: its Δ-disjointness is NOT
     Δ-monotone.  **This is a PAPER-GAP, not a falsity**: the paper's own
-    Subcases Pi=□ / Pi=⊤◇.Pi' (consistency-proofs.tex ForallInh/
+    Subcases Pi=□ / Pi=∀◇.Pi' (consistency-proofs.tex ForallInh/
     ForallSyn) silently move the IH output from Δ to Δ,β.  The statement
     survives because the configurations that would break the transfer
     are premise-unreachable: a refinement □-fill is `Θ ⨟ ∅`-wf, hence
@@ -1442,7 +1442,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
        (`ad_pat_consis`: ftv(S) ⊆ ftv(Q) ∪ dom Θ; `uskl_rho`:
        ftv(ψa) ⊆ ftv(ψsub) ∪ Δρ) discharging each □-leaf's
        (add X Δ)-disjointness pointwise; the main induction's □-rows and
-       the ⊤◇-fill rows call it.  No statement change, but a second
+       the ∀◇-fill rows call it.  No statement change, but a second
        □-column copy of the induction.
     3. **hole_apart positional premise** (flex_apart-style statement
        change): dispreferred — the call sites would need to derive it
@@ -1464,7 +1464,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   real obligation is Sv-ForallL maintenance, to be discharged by the
   collection-time freshening lemmas.  Landed (Qed, axiom-free, migrated):
   - `flex_apart Θ0 Δρ P0 ψa` (leaf constructors for □/unit/rigid-var,
-    `fa_clean` for Δρ-clean targets, congruences incl. ⊤◇/⊤̇◇ strips and
+    `fa_clean` for Δρ-clean targets, congruences incl. ∀◇/∀◈ strips and
     cofinite ∀-pairs) + `flex_apart_{topholeg_target,tophole_p0}_inv`.
     The cex config now VIOLATES the premise (P0 = β̂ flexible, ψa carries
     the replaced rigid `c`); statement drafted accordingly.
@@ -1485,7 +1485,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     that subject — outer induction on the consistency, Bridge A at the
     leaves, the chases at arrow/flex_r.
   **Remaining for the Arrow case (next): the CORE inner size-induction**
-  (⊤◇-strip recursion on `size Pi + size P0` at a fixed arrow target, with
+  (∀◇-strip recursion on `size Pi + size P0` at a fixed arrow target, with
   the two branch main-IHs in scope), the branch TAG-SPLIT algebra
   (Ψa_k := Ψ_k ∩ Ψ'_k; needs `ad_partial_precise_tags_sub`,
   `ad_pat_consis_ftag_sub`, `d_tags_skl_ftag`, a new rho-tags-lower lemma),
@@ -1507,7 +1507,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   - `a_solve_eq_cv_ghostg` — the GhostG case as a standalone lemma with NO
     size induction: a `holeg` target admits only a `□` subject and a
     `bskl_hole` refinement RHS only a `□` source (mono paints and guarded
-    ⊤◇-bodies have no rule into them) — both sides forced to `□`, all other
+    ∀◇-bodies have no rule into them) — both sides forced to `□`, all other
     shapes premise-absurd.  Kit: `d_tags_skl_holeg_inv`,
     `ad_ppre_mono_paint_holeg_absurd`, `ad_refine_mono_paint_hole_rhs_absurd`.
     Uniformity trick: `msubst κ (var v)` is ALWAYS a mono paint
@@ -1533,12 +1533,12 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     IH, fold the conclusion back with `ad_ppre__flex_r`.
   - **flex_r** — one-liner: transport the refinement via
     `ad_refine_flexdef_target_unfold`, main IH at the unchanged ψa.
-  - **topholeg** — the ⊤̇◇ congruence via an inline KEY continuation shared
+  - **topholeg** — the ∀◈ congruence via an inline KEY continuation shared
     by the refl and congruence ρ-branches (refl recast with `urho__refl`,
-    lc from `is_tskl_lc`).  Grid: Pi ∈ {□, ⊤◇.Pi'} (paints/guarded die);
+    lc from `is_tskl_lc`).  Grid: Pi ∈ {□, ∀◇.Pi'} (paints/guarded die);
     P0 = □ ⇒ SE-VacuousR with Ψa=∅ from the `is_sskl` kit
     (`ad_refine_syn_hole_sskl` + `ad_pat_consis_sskl_tags` — the paper's
-    "P0 = □ ⇒ Q synthesized ⇒ Ψa = ·" special case); P0 = ⊤◇.P0' ⇒
+    "P0 = □ ⇒ Q synthesized ⇒ Ψa = ·" special case); P0 = ∀◇.P0' ⇒
     keep-inversion (remove-branch dies on guarded bodies) then main IH —
     at (Pi', P0') with SE-UnivGhost, or at (□, P0') with
     `a_solve_eq_hole_subject_inv` pinning the sub-output and SE-GhostL;
@@ -1624,7 +1624,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   NEXT: GhostG case (`a_solve_eq_cv_ghostg` — target `uskl_holeg`/
   `bskl_hole`; NB `bskl_hole` is NOT a mono paint, so it is a sibling of
   cv_unit, not a cv_mono instance), then Arrow (first case recursing into
-  the MAIN consistency IH), then flex/⊤◇/∀ cases per the build order.
+  the MAIN consistency IH), then flex/∀◇/∀ cases per the build order.
 
 - 2026-07-25 (h): **P6-Cv INDUCTION STARTED — reusable kit landed, Qed,
   axiom-free (commits 47947e3, a793581 on `remech`).**  The statement
@@ -1639,8 +1639,8 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     the `all_inh` one forces a `pskl_all_syn` source (excludes flexible
     `P0` in the ∀ cases — κ maps flexibles to monotypes).
   - `ad_refine_inh_unit_ppre` — refinement→precision bridge for the `unit`
-    target (follows `flex_l` def-chains, strips ⊤◇); discharges `Pi=□` and
-    ⊤◇-`P0` unit subcases.
+    target (follows `flex_l` def-chains, strips ∀◇); discharges `Pi=□` and
+    ∀◇-`P0` unit subcases.
   - `msubst_lookup_notin_dom`, `a_inc_dom_flex`, `msubst_pskl_tvar_id` —
     the metasubst-domain facts (dom ρ ⊆ source flexibles; a rigid source
     var is msubst-fixed), for the `P0 = var` FlexR/rigid split.
@@ -1648,13 +1648,13 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     unit; kills the rigid-`P0` unit subcase.
   Kept in dev (Qed): `ad_ppre_unit_tags_empty` (unit target ⇒ Ψi=∅).
   **STRUCTURE learned:** each of the 15 cases carries a 2-D Pi×P0 grid; the
-  ⊤◇-stripping (both Pi and P0 sides) recurses on skeleton SIZE, so each
+  ∀◇-stripping (both Pi and P0 sides) recurses on skeleton SIZE, so each
   leaf/structural case is cleanest as a STANDALONE size-induction lemma
   (`a_solve_eq_cv_<shape>`) that the main consistency-induction dispatches
   to — the main IH is on the consistency derivation and gives NO handle on
   a smaller Pi/P0.  **UNIT CASE CLOSED** (commit 68c48eb): `a_solve_eq_cv_unit` Qed,
   axiom-free — the full Pi×P0 grid as a standalone size-induction lemma
-  (strong induction on `size Pi + size P0` so ⊤◇-stripping on both sides
+  (strong induction on `size Pi + size P0` so ∀◇-stripping on both sides
   recurses).  This is the TEMPLATE for the other leaf cases (Var/GhostG:
   same shape, target `var X` / `holeg` instead of `unit`, needing the
   analog of `ad_refine_inh_unit_ppre` per target).  Validated: the empty-Δ
@@ -1689,11 +1689,11 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   rules (fig:selected-look) settled it:
   - **Only the Arrow case can even have a flexible P0.** κ maps flexibles to
     MONOTYPES (unit / mono-or-rigid var / arrow); refinement `inh{κP0} ⊳ Q`
-    into a ∀/⊤◇ needs a ∀/⊤◇/defined-flex source, which a monotype never is.
+    into a ∀/∀◇ needs a ∀/∀◇/defined-flex source, which a monotype never is.
     So ForallInh/ForallSyn/ghost provably have non-flex P0, and leaves are
     handled directly (SolE-Flex / the SolE-Var ρ-var special case).
     Machine-checked shape: `ad_refine_syn` into `bskl_all_inh` forces the
-    source to be ∀/⊤◇/defined-flex.
+    source to be ∀/∀◇/defined-flex.
   - **No flex-SPLIT rule exists in constraint solving, and none is needed.**
     SolE-Arrow needs both sides arrows; SolE-FlexR solves the flexible
     counterpart directly to `β̂` (kept whole). `split[α̂][β̂→γ̂]` lives only in
@@ -1713,7 +1713,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
     ForallL maintenance experiment (the maintenance-from-solve lemma was
     itself false — SolE-Check bridges into SolE-FlexR). `prop_look_complete.v`
     is back to its committed state.
-  - **P6-Cv/Sv plan (now):** ∀/⊤◇/ghost cases prove non-flex P0 from the
+  - **P6-Cv/Sv plan (now):** ∀/∀◇/ghost cases prove non-flex P0 from the
     monotype→refinement fact (no premise); leaf cases as the paper; Arrow
     case handles flexible P0 via SolE-FlexR like the leaf case, relying on
     the freshening so a raw Θ0-flex opposite a ρ-rigid-var cannot occur.
@@ -1807,7 +1807,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   CORRECTION discovered while drafting the leaf case:** the paper's
   positional side condition is LOAD-BEARING and not derivable from
   Δ-membership + precision (concrete counterexamples v4/v5 in §7:
-  ⊤◇-wrapped or definition-chained leaf positions force SE-GhostForall's
+  ∀◇-wrapped or definition-chained leaf positions force SE-GhostForall's
   `all_syn` output, which has no precision rule against a rigid var); it
   is instead RECOVERED as a lemma from FRESHNESS of the replaced
   variables (X ∈ Δ, `binds X abind_tvar Θ`, X ∉ κ-image-ftvs, X ∉
@@ -1862,7 +1862,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   mirror `ad_pat_sub_g` (`def_decl_algo_sub_hyg.v` — NB the REVISED fuel
   discipline: leaves at ANY fuel, UnivGhostL/LG/FlexMono NON-incrementing,
   only Arrow/ForallR/ForallL increment, so (3) is fuel-preserving even
-  when the ghostier subject adds ⊤◇-wraps or folds flex defs; P7b's
+  when the ghostier subject adds ∀◇-wraps or folds flex defs; P7b's
   measure is then lex(fuel, derivation-structure), which its
   non-incrementing cases support since they recurse structurally);
   `_g` helpers (g_of, g_psi_cong, g_ftag_sub, g_wrap_tophole,
@@ -1871,7 +1871,7 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   per-rule ⊑ᵤ-transports for **UnivGhostR / Ghost / GhostG**
   (`ad_pat_sub_g_{ughost_r,ghost,ghostg}_transport`) — these validate the
   whole inner-⊑ᵤ-induction pattern: congruence roots rebuild via (2') on
-  the reassembled pair, ⊤◇/flex peels recurse at the SAME fuel via
+  the reassembled pair, ∀◇/flex peels recurse at the SAME fuel via
   wrap_tophole/fold_flex, flex_r roots unfold the subject definition
   (consis_unfold_def_subject), hole roots go through
   hole_intro/concrete_target, refl roots through refl_transport.
@@ -1973,10 +1973,10 @@ hole / ⊤◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
 **1. Arrow — `arrow_grid`.**  The branch algebra (tag split, P6-Cv on the
 left premise, IH on the right) is packed into a `KEY` hypothesis, so the
 lemma itself is only the case analysis on the input skeleton `Pi`: arrow /
-□ (SolS-GhostLF) / ⊤◇ / variable, with unit and ∀ refuted by the precision
+□ (SolS-GhostLF) / ∀◇ / variable, with unit and ∀ refuted by the precision
 against an arrow guess.  The variable row needs no solving at all — the
 κ-image of a variable is a MONOTYPE, so `ad_ppre_mono_subject_target_tags_
-empty` makes the guess tag-free and `Ψa = ∅`.  The ⊤◇ row recurses
+empty` makes the guess tag-free and `Ψa = ∅`.  The ∀◇ row recurses
 STRUCTURALLY on `Pi`, no measure: well-formedness makes the ghost's body
 guarded, so the FILL/KEEP rows cannot fire.
 
@@ -1997,7 +1997,7 @@ generalize.**  The rule's instantiation becomes the paper's
   reading of the paper's "by weakening \refn[9] to Θ,β"
   (subtyping-proofs.tex:2153).
 - β joins Δρ, so `Hshield` must hold for it: `β ∉ pskl_shielded_ftv (κ Pi)`.
-  That is exactly the ⊤◇-body discipline DESIGN §7 names in prose, and it is
+  That is exactly the ∀◇-body discipline DESIGN §7 names in prose, and it is
   now a LEMMA — `a_wf_pskl_shielded_dom`: since `a_wf_pskl__tophole` types
   the ghost's body at the EMPTY Δ, a well-formed skeleton's shielded
   variables all live in `dom Θ`, never in Δ.
@@ -2008,7 +2008,7 @@ proved, not assumed: `ε ∉ ftag R` (ρ only ADDS tags,
 `uskl_rho_ftag_target_sub`, together with `Ψρ ∩ Ψ' = ∅` and sortedness of
 ψa) and `ε ∉ ftag ψ_b` (the rule's own freshness) bound the premise's solved
 tags via `ad_pat_sub_g_ftag_sub`, giving `ε ∉ Ψsub ⊇ Ψa`, hence `ε ∈ Ψi` by
-`Ψi,Ψa = Ψ'`.  So □ (`Ψi = ∅`), ⊤◇ (both its rules), the variable row and
+`Ψi,Ψa = Ψ'`.  So □ (`Ψi = ∅`), ∀◇ (both its rules), the variable row and
 the structural rows are all IMPOSSIBLE.
 
 **Rebuilding the ∀.**  The output is re-abstracted with
@@ -2039,7 +2039,7 @@ the context as `?S`.
 > this section did not yet account for is the flexible-`P0` subcase of the
 > Arrow case; per §6 (g) it needs NO P0-side condition. (a) ForallInh/
 > ForallSyn/ghost cases prove `P0` non-flexible for free (κ maps flexibles to
-> monotypes; refinement into a ∀/⊤◇ needs a ∀/⊤◇/defined-flex source). (b)
+> monotypes; refinement into a ∀/∀◇ needs a ∀/∀◇/defined-flex source). (b)
 > Leaf cases handle a flexible `P0` directly (SolE-Flex / SolE-Var). (c) The
 > Arrow case handles a flexible `P0` via SolE-FlexR like the leaf case,
 > relying on LE-FlexR FRESHENING (a raw Θ0-flex opposite a ρ-substituted rigid
@@ -2108,17 +2108,17 @@ subject), so the discriminators are elsewhere, and all favour (b):
    every ρ-position") is replaced by FRESHNESS facts about the replaced
    variables — NOT by mere Δ-membership.  **Counterexample analysis
    (2026-07-24, do not re-derive):** Δ-membership alone is INSUFFICIENT.
-   With X ∈ Δ ∩ dom Θ, precision still admits a ⊤◇-wrapped leaf position
-   via `tophole_remove` (v4: `Pi`-pos `⊤◇.ŵ`, ŵ ∈ Θ0 flex, κŵ = X — wf,
-   since the ⊤◇-body is ŵ, not X) or via def-chains (v5: κŵ = β̂,
+   With X ∈ Δ ∩ dom Θ, precision still admits a ∀◇-wrapped leaf position
+   via `tophole_remove` (v4: `Pi`-pos `∀◇.ŵ`, ŵ ∈ Θ0 flex, κŵ = X — wf,
+   since the ∀◇-body is ŵ, not X) or via def-chains (v5: κŵ = β̂,
    `β̂ := X ∈ Θ`); then target-pos `all_syn` (P0-pos `∀γ.γ`, image
    ψ'' = `∀^ε'γ.γ`, refinement satisfied through `all_inh`) forces
    SE-GhostForall, whose `all_syn`-output has NO precision rule against
    the rigid `var X` — conclusion underivable, all premises satisfied.
    What kills v4/v5 at the REAL call site (P6-Sv ForallL, X freshly
-   opened from `Pi = ∀β.P1`): (i) X cannot occur under any ⊤◇ of P1 —
+   opened from `Pi = ∀β.P1`): (i) X cannot occur under any ∀◇ of P1 —
    `a_wf_pskl__tophole` demands empty-Δ bodies (the "no binder under a
-   ⊤◇-body" discipline recorded on `a_sub__forall_l`); (ii) X postdates
+   ∀◇-body" discipline recorded on `a_sub__forall_l`); (ii) X postdates
    every flex-image of κ (κ ∷ Θ0 ⊑ Θ is fixed before X is picked); (iii)
    X postdates every definition in Θ (aenv order: `(X~tvar)++Θ`, wf
    scopes defs to their tails).  MECHANIZATION: carry a freshness pack
@@ -2126,7 +2126,7 @@ subject), so the discriminators are elsewhere, and all favour (b):
    (blocks flex_r, via wf-uniq), `X ∉ msubst-image-ftv of κ`,
    `X ∉ def-image-ftv of Θ`, `X ∉ shielded_ftv (msubst κ Pi)` — where
    `shielded_ftv : pskl → atoms` is a NEW syntactic collector of the
-   ftvars of all ⊤◇-bodies.  The LEAF INVERSION lemma then holds:
+   ftvars of all ∀◇-bodies.  The LEAF INVERSION lemma then holds:
    `⊑ᵖ (P, var X)` + the pack ⇒ `P = pskl_var_f v` (v = X or a flex) ∧
    `Ψ = ∅` — so `Pi`-pos is a var and SE-Var fires with κa := κ.
    For CHAINING (a_solve_cstr threads outputs into the next constraint's
@@ -2227,7 +2227,7 @@ pskl` and no separate `S` currently exist.  Two candidate encodings:
   with identity ρ (`urho__refl`, `Δρ:=∅` ⇒ `flex_apart` via `fa_clean`,
   `rho_fresh` trivial); `α∉ftv P` → LE-Absent, `C=·`.  Induction cases:
   ForallInh (LE-ForallInh, β-weakening + `β∉ftv Pa`), ForallSyn (LE-ForallSyn,
-  P0=⊤◇P0' by refinement inversion since P0≠□), Arrow (LE-Arrow + sequential
+  P0=∀◇P0' by refinement inversion since P0≠□), Arrow (LE-Arrow + sequential
   `a_solve_cstr`, mirror `consis_complete`'s `Ψ[=]Ψ1∪Ψ2` split), UnivGhost*
   (UnivGhost / UnivGhost1 / UnivGhost2-with-P0-case-analysis).
 - P6-Cs omits `Θ0 ⊢ Pa`-style solve-output wf that its own conclusion needs;
@@ -2523,7 +2523,7 @@ Three facts make this much smaller than feared:
    recurses into P6-Cs itself.
 2. **ψa NEVER moves in P6-Cs** (it is the fixed guess for α; the Arrow row
    passes `ψa` unchanged to both recursive calls).  Only `P0` descends —
-   arrow components, `open P0'`, `⊤◇`-strip.
+   arrow components, `open P0'`, `∀◇`-strip.
 3. **Δρ is CONSTANT in P6-Cs.**  Consistency has no ForallL, so nothing ever
    extends ρ inside it; ρ only ARRIVES from a Sub-ForallL above.
 
@@ -2674,13 +2674,24 @@ recipe above got right, and the four places it did not:
    P6-Sv (which merely threads the walk via `_here` / `_step`) is unaffected.
    Also added: `flex_apart_walk_weaken` (the tvar-only version does not cover
    the Arrow row's `Ξc1 ++ Θ0` growth).
-4. **The ∀ and ⊤◇ rows got SIMPLER, not harder.**  Consistency and subject-wf
+4. **The ∀ and ∀◇ rows got SIMPLER, not harder.**  Consistency and subject-wf
    are now stated on the IMAGE, which opens directly, so `p6cs_subject_open`
    survives only in the ρ premise — the one hypothesis still ideal-side.
 5. The Θs generalization and the relaxed ftv-𝒞 bound (first amendment) are
    confirmed exactly as written; `HβC` survives, and the ∀ rows get
    `β ∉ dom Θs` free from `dom Θs ⊆ dom Θ` (a two-line consequence of the
    binds-monotone premise, hoisted once after `intros`).
+6. **The paper's statement is back as a corollary.**  The generalized theorem
+   is `a_lookeq_solve_complete_gen`; `a_lookeq_solve_complete` is its
+   ρ = identity instance and is LITERALLY the pre-generalization statement,
+   with no residue.  Making it premise-free is why P6-Cs takes the P0-ONLY
+   walk `flex_apart_p0` (`p0_step` / `p0_walk`, prop_look_complete.v) instead
+   of `flex_apart_walk`: P6-Cs descends P0 alone at a CONSTANT Δρ, so at
+   Δρ = ∅ every reachable state is `fa_clean`, whereas `flex_apart_walk`'s
+   `fastep_all_r` can grow Δρ and would leave a real premise behind.  P6-Ss
+   threads the full walk and converts via `flex_apart_walk_p0` — which is
+   what `fastep_p0_arrow_l/_r` exist for.  Use the corollary unless you are
+   threading a ρ down from a Sub-ForallL.
 
 ⚠️ NAMING: the ρ-image subject is `Rsub`, not `Ssub` — a `uskl` is `R` in
 this corpus (`S` is not a metavariable here at all).  NB there is

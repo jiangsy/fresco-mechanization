@@ -473,7 +473,7 @@ Qed.
     [ad_pat_consis_refine_inh_gen]'s [Bsrc] premise), [uskl_hole ∼ Q] follows
     by [__hole] with [B := bskl_to_pskl Q].  Proving only the EQUATION avoids
     reconstructing the wf of a ∀-witness under the [Θ↔Δ] tension (which is not
-    a general fact — a [⊤◇] body cannot reference a Δ-var). *)
+    a general fact — a [∀◇] body cannot reference a Δ-var). *)
 Lemma consis_concrete_target_inh : forall Ψ Θ R Q,
   Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
   a_wf_aenv Θ ->
@@ -634,7 +634,7 @@ Proof.
     destruct (consis_concrete_target_inh Hc Hwf' Ptgt eq_refl Hnf) as [HΨ Heqinh].
     simpl. rewrite <- Heqinh.
     apply ad_pat_consis__hole; [ exact HΨ | exact Hwfq ].
-  - (* tophole_remove: Qsrc = ⊤◇ R0, Qtgt = P (same); drop the ⊤◇ *)
+  - (* tophole_remove: Qsrc = ∀◇ R0, Qtgt = P (same); drop the ∀◇ *)
     destruct Psrc as [ | | | | | | Ps0 ]; simpl in HSrc; try discriminate HSrc.
     inversion HSrc; subst.
     simpl. apply ad_pat_consis__tophole_drop.
@@ -643,7 +643,7 @@ Proof.
       | exact Hc | exact Hwfq ].
   - (* tophole_fill: Qtgt = all_syn P — impossible for an inh painting *)
     destruct Ptgt; simpl in HTgt; try discriminate HTgt.
-  - (* tophole_keep: Qsrc = ⊤◇ R0, Qtgt = ⊤◇ T0 *)
+  - (* tophole_keep: Qsrc = ∀◇ R0, Qtgt = ∀◇ T0 *)
     destruct Psrc as [ | | | | | | Ps0 ]; simpl in HSrc; try discriminate HSrc.
     destruct Ptgt as [ | | | | | | Pt0 ]; simpl in HTgt; try discriminate HTgt.
     inversion HSrc; inversion HTgt; subst.
@@ -1790,7 +1790,7 @@ Proof.
   revert Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
   induction Hc; try discriminate HeqS;
     intros Ψn Ψna HΨf HΨa Hdisj Hmon Hwf Hwfq.
-  - (* tophole: target ⊤◇ *)
+  - (* tophole: target ∀◇ *)
     inversion HeqS; subst.
     simpl in Hwfq. destruct (a_wf_pskl_tophole_inv Hwfq) as [Hg Hwb].
     apply ad_pat_consis__tophole.
@@ -1825,7 +1825,7 @@ Proof.
 Qed.
 
 (** Both dotted (topholeg-vs-topholeg) and mixed (tophole-vs-topholeg)
-    ⊤◇-transporters; the DERIVATION's subject is the dotted one. *)
+    ∀◇-transporters; the DERIVATION's subject is the dotted one. *)
 Lemma consis_split_transport_topholeg : forall Θb Ψsup R0 R0',
   consis_split_transport Θb Ψsup R0 R0' ->
   consis_split_transport Θb Ψsup (uskl_topholeg R0) (uskl_topholeg R0').

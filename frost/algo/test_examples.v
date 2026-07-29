@@ -155,7 +155,7 @@ Ltac crush_uniq :=
 (* ===================================================================== *)
 
 (** Skeleton inference of a [σ_id]-typed variable in checking mode with
-    no input skeleton: [Θ ⊢ₐ[TC;□] x ⇨ ⊤.(□→□) ⊣ Θ]
+    no input skeleton: [Θ ⊢ₐ[TC;□] x ⇨ ∀◇(□→□) ⊣ Θ]
     (ForallL instantiates [a := □], then UnivGhostR guards the result). *)
 Lemma pat_var_sigid : forall Θ x,
   uniq Θ ->
@@ -199,7 +199,7 @@ Proof.
   eapply a_consis__arrow; apply consis_sigid_refl.
 Qed.
 
-(** [σ_id] against the guessed input skeleton [⊤.(□→□)]
+(** [σ_id] against the guessed input skeleton [∀◇(□→□)]
     (ForallSyn, then the ghosts absorb the rigid binder). *)
 Lemma consis_sigid_tophole : forall F Δ2 Θ,
   a_consis F empty Δ2 Θ (pskl_tophole (pskl_arrow pskl_hole pskl_hole))
@@ -297,11 +297,11 @@ Example ex_A5 :
 Proof.
   eapply a_typing__app with (A := σ_auto)
     (P := pskl_tophole (ptyp_to_pskl σ_auto)) (Θ2 := Θlib).
-  - (* auto ⇨[TC;□] ⊤.(σ_auto's skeleton) *)
+  - (* auto ⇨[TC;□] ∀◇(σ_auto's skeleton) *)
     eapply a_pat__var; [ crush_binds | ].
     apply a_sub__univ_ghost_r.
     unfold σ_auto, σ_id; simpl. crush_lc.
-  - (* id ⦂[FN TI; ⊤.skel(σ_auto) → □]  σ_auto → σ_auto *)
+  - (* id ⦂[FN TI; ∀◇skel(σ_auto) → □]  σ_auto → σ_auto *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_id at 1; simpl ptyp_to_pskl.
     eapply a_sub__forall_l with (L := {}) (Ξ := nil)
@@ -333,7 +333,7 @@ Proof.
     + unfold σ_auto, σ_id; simpl. crush_wf.
     + simpl_open.
       apply a_sub__arrow with (Θ1 := Θlib).
-      * (* skel σ_auto against ⊤.skel σ_auto *)
+      * (* skel σ_auto against ∀◇skel σ_auto *)
         apply a_consis__univ_ghost_r;
           [ unfold σ_auto, σ_id; simpl; crush_lc
           | unfold σ_auto, σ_id; simpl; crush_non_flex
@@ -358,13 +358,13 @@ Example ex_A10b :
 Proof.
   eapply a_typing__app with (A := σ_id)
     (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
-  - (* λx.x ⇨[TC;□] ⊤.(□→□) *)
+  - (* λx.x ⇨[TC;□] ∀◇(□→□) *)
     eapply a_pat__abs_check with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil) (Θ1 := Θlib).
     + constructor.
     + intros x Hx. simpl_open.
       eapply a_pat__var_skl; [ crush_binds | ].
       apply a_sub__ghost.
-  - (* poly ⦂[FN TI; ⊤.(□→□) → □]  σ_id → σ_prodIB *)
+  - (* poly ⦂[FN TI; ∀◇(□→□) → □]  σ_id → σ_prodIB *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_poly at 1; simpl ptyp_to_pskl.
     apply a_sub__arrow with (Θ1 := Θlib).
@@ -407,9 +407,9 @@ Proof.
     with (A := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb))
          (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
          (Θ2 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono) ++ Θlib).
-  - (* id ⇨[TC;□] ⊤.(□→□) *)
+  - (* id ⇨[TC;□] ∀◇(□→□) *)
     apply pat_var_sigid; [ crush_uniq | crush_binds ].
-  - (* choose ⦂[FN TI; ⊤.(□→□) → □]  (α̂→β̂) → (α̂→β̂) → α̂→β̂ *)
+  - (* choose ⦂[FN TI; ∀◇(□→□) → □]  (α̂→β̂) → (α̂→β̂) → α̂→β̂ *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_choose; simpl ptyp_to_pskl.
     eapply a_sub__forall_l with (L := {})
@@ -513,9 +513,9 @@ Proof.
            (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
            (Θ2 := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono)
                   ++ (x ~ abind_var_typ σ_id) ++ Θlib).
-    + (* x ⇨[TC;□] ⊤.(□→□) *)
+    + (* x ⇨[TC;□] ∀◇(□→□) *)
       apply pat_var_sigid; [ crush_uniq | crush_binds ].
-    + (* x ⦂[FN TI; ⊤.(□→□) → □]  (α̂→β̂) → α̂→β̂ *)
+    + (* x ⦂[FN TI; ∀◇(□→□) → □]  (α̂→β̂) → α̂→β̂ *)
       eapply a_typing__var; [ crush_binds | ].
       unfold σ_id; simpl ptyp_to_pskl.
       eapply a_sub__forall_l with (L := {})
@@ -606,9 +606,9 @@ Example ex_A10a :
 Proof.
   eapply a_typing__app with (A := σ_id)
     (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole)) (Θ2 := Θlib).
-  - (* id ⇨[TC;□] ⊤.(□→□) *)
+  - (* id ⇨[TC;□] ∀◇(□→□) *)
     apply pat_var_sigid; [ crush_uniq | crush_binds ].
-  - (* poly ⦂[FN TI; ⊤.(□→□) → □]  σ_id → σ_prodIB *)
+  - (* poly ⦂[FN TI; ∀◇(□→□) → □]  σ_id → σ_prodIB *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_poly; simpl ptyp_to_pskl.
     apply a_sub__arrow with (Θ1 := Θlib).
@@ -634,7 +634,7 @@ Proof.
          (P := pskl_tophole (pskl_arrow pskl_hole
                  (pskl_tophole (pskl_arrow pskl_hole pskl_hole))))
          (Θ2 := Θlib).
-  - (* λx.λy.y ⇨[TC;□] ⊤.(□ → ⊤.(□→□)) *)
+  - (* λx.λy.y ⇨[TC;□] ∀◇(□ → ∀◇(□→□)) *)
     eapply a_pat__abs_check with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil) (Θ1 := Θlib).
     + constructor.
     + intros x Hx. simpl_open.
@@ -644,11 +644,11 @@ Proof.
       * intros y _. simpl_open.
         eapply a_pat__var_skl; [ crush_binds | ].
         apply a_sub__ghost.
-  - (* r ⦂[FN TI; ⊤.(□→⊤.(□→□)) → □]  (∀a.a→∀b.b→b) → Int *)
+  - (* r ⦂[FN TI; ∀◇(□→∀◇(□→□)) → □]  (∀a.a→∀b.b→b) → Int *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_r; simpl ptyp_to_pskl.
     apply a_sub__arrow with (Θ1 := Θlib).
-    + (* skel(∀a.a→∀b.b→b) against ⊤.(□→⊤.(□→□)) *)
+    + (* skel(∀a.a→∀b.b→b) against ∀◇(□→∀◇(□→□)) *)
       apply a_consis__forall_syn with (L := {}).
       intros α _. simpl_open.
       apply a_consis__univ_ghost_r; [ crush_lc | crush_non_flex | ].
@@ -715,9 +715,9 @@ Proof.
         with (A := σ_id)
              (P := pskl_tophole (pskl_arrow pskl_hole pskl_hole))
              (Θ2 := (x ~ abind_var_typ σ_id) ++ Θlib).
-      * (* x ⇨[TC;□] ⊤.(□→□) *)
+      * (* x ⇨[TC;□] ∀◇(□→□) *)
         apply pat_var_sigid; [ crush_uniq | crush_binds ].
-      * (* poly ⦂[FN TC; ⊤.(□→□) → skel σ_prodIB] *)
+      * (* poly ⦂[FN TC; ∀◇(□→□) → skel σ_prodIB] *)
         eapply a_typing__var; [ crush_binds | ].
         unfold σ_poly; simpl ptyp_to_pskl.
         apply a_sub__arrow with (Θ1 := (x ~ abind_var_typ σ_id) ++ Θlib).

@@ -46,7 +46,7 @@
 
     κ maps flexibles to MONOTYPES, whose only shapes are [unit], a
     (mono/rigid) variable, or an ARROW.  Refinement [inh{κP0} ⊳ Q] into a ∀
-    or a ghost/⊤◇ requires a ∀/⊤◇/defined-flex source, which a monotype never
+    or a ghost/∀◇ requires a ∀/∀◇/defined-flex source, which a monotype never
     is.  Hence P0 = flexible is IMPOSSIBLE in the ForallInh / ForallSyn /
     ghost cases; and at leaves ([unit] / rigid var) a flexible P0 is handled
     correctly ([SolE-Flex] / the [SolE-Var] special case).  The Arrow case is
@@ -91,7 +91,7 @@ Qed.
 
 (** THE GENERAL DICHOTOMY.  For a flexible TARGET, either the payload is
     FRESHENED ([α1 ∈ Ξ]) or it is RAW — and a raw payload's subject is NEVER
-    an arrow (it is a variable or a ⊤◇-wrapped variable).  So a raw Θ0-flex
+    an arrow (it is a variable or a ∀◇-wrapped variable).  So a raw Θ0-flex
     payload can only sit opposite a LEAF, never a compound bearing a rigid
     ρ-substituted variable. *)
 Lemma a_lookeq_flex_target_raw_subject_not_arrow :
@@ -114,7 +114,7 @@ Proof.
   - (* LE-FlexR: freshened *)
     left. inversion Htgt; subst. eexists; split; [ | reflexivity ].
     simpl. fsetdec.
-  - (* LE-UnivGhost2: subject = ⊤◇, recurse — stays non-arrow *)
+  - (* LE-UnivGhost2: subject = ∀◇, recurse — stays non-arrow *)
     simpl in Hin. specialize (IHa_lookeq Htgt Hin).
     destruct IHa_lookeq as [Hfresh | Hraw].
     + left; assumption.

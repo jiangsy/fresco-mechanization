@@ -34,14 +34,14 @@
     is RECOVERED as a lemma ([ad_ppre_delta_var_inv]) from FRESHNESS of
     the replaced variables — [α ∈ Δ] (blocks the precision hole rule),
     [binds α abind_tvar Θ] (blocks flex_r), α avoided by κ's images, by
-    Θ's definition images ([rho_fresh]), and by the subject's ⊤◇-shielded
+    Θ's definition images ([rho_fresh]), and by the subject's ∀◇-shielded
     variables ([pskl_shielded_ftv]).  Δ-membership ALONE is insufficient
     (counterexamples v4/v5, DESIGN §7): precision's tophole_remove/flex_l
-    admit ⊤◇-wrapped or definition-chained leaf positions whose
+    admit ∀◇-wrapped or definition-chained leaf positions whose
     SE-GhostForall output breaks the conclusion precision.  The freshness
     facts hold at the one leaf-creating call site (P6-Rv ForallL: the
     freshly opened binder postdates κ and Θ's definitions, and the
-    [a_wf_pskl__tophole] empty-Δ-body discipline keeps it out of ⊤◇
+    [a_wf_pskl__tophole] empty-Δ-body discipline keeps it out of ∀◇
     bodies), and are threaded through the conclusions for chaining. *)
 
 Require Import Coq.Lists.List.
@@ -305,7 +305,7 @@ Qed.
 (*  Shielded free variables + the ρ-freshness pack (DESIGN §7).            *)
 (*                                                                         *)
 (*  [pskl_shielded_ftv P] collects the free type variables occurring       *)
-(*  UNDER some ⊤◇ of [P].  The replaced variables of ρ must avoid them     *)
+(*  UNDER some ∀◇ of [P].  The replaced variables of ρ must avoid them     *)
 (*  (together with κ's and Θ's definition images): this is what recovers   *)
 (*  the paper's positional side condition as a LEMMA                       *)
 (*  ([ad_ppre_delta_var_inv]) instead of a positional predicate.           *)
@@ -397,7 +397,7 @@ Qed.
     "P_i has the same rigid variable in the same position", recovered from
     the freshness of the replaced variable): at target [var α] with
     [α ∈ Δ], [α] rigid in Θ, [α] avoided by Θ's definition images and by
-    the subject's ⊤◇-shielded variables, the subject IS [var α] and the
+    the subject's ∀◇-shielded variables, the subject IS [var α] and the
     solved tags are empty. *)
 Lemma ad_ppre_delta_var_inv : forall Θ Δ Ψ P ψ,
   Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
@@ -783,7 +783,7 @@ Lemma a_solve_sub_eq_shielded :
      pskl_shielded_ftv P `union` ftvar_in_pskl P3).
 Proof.
   apply a_solve_sub_eq_mutind; intros; simpl in *;
-    (* ⊤◇-bodied outputs: switch to the ftv bound *)
+    (* ∀◇-bodied outputs: switch to the ftv bound *)
     try solve
       [ fsetdec
       | match goal with
@@ -805,7 +805,7 @@ Proof.
     specialize (H β ltac:(fsetdec)).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f β)).
     simpl in *. fsetdec.
-  - (* SS-GhostLF: output ⊤◇(P1'→P2') *)
+  - (* SS-GhostLF: output ∀◇(P1'→P2') *)
     match goal with
       He1 : _ ⊢ₑ pskl_hole ∼ _ ⤳ _, Hs2 : _ ⊢ₛ pskl_hole ≼[ _ ] _ ⤳ _ |- _ =>
         pose proof ((proj2 a_solve_sub_eq_ftv) _ _ _ _ He1);
@@ -820,13 +820,13 @@ Proof.
     pose proof (pskl_shielded_ftv_open_upper P (pskl_var_f β)).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f β)).
     simpl in *. fsetdec.
-  - (* SE-GhostForall: subject stays ⊤◇P *)
+  - (* SE-GhostForall: subject stays ∀◇P *)
     pick fresh β for (L `union` pskl_shielded_ftv P').
     specialize (H β ltac:(fsetdec)).
     pose proof (pskl_shielded_ftv_open_lower P' (pskl_var_f β)).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f β)).
     simpl in *. fsetdec.
-  - (* SE-GhostGuarded: subject ⊤◇P peels *)
+  - (* SE-GhostGuarded: subject ∀◇P peels *)
     pose proof (pskl_shielded_ftv_sub_ftv P).
     simpl in *. fsetdec.
   - (* SE-ForallGhost *)
@@ -1128,7 +1128,7 @@ Proof.
       apply is_tskl__all_etag with (L := L `union` L1); intros α Hα;
       apply H0; [ clear - Hα; solve_notin | apply Hb; clear - Hα; solve_notin ]
     end.
-  - (* ⊤◇ : not a decorated shape *) inversion Ht.
+  - (* ∀◇ : not a decorated shape *) inversion Ht.
   - inversion Ht; subst; apply is_tskl__topholeg; auto.
 Qed.
 
@@ -1384,8 +1384,8 @@ Qed.
 
 (** Refinement→precision bridge for the [unit] target.  An inherited
     painting that refines to [bskl_unit] is precise to [uskl_unit]; the
-    induction follows [flex_l] definition chains and strips ⊤◇ via
-    [tophole_remove].  Discharges the [Pi = □] and ⊤◇-[P0] subcases of the
+    induction follows [flex_l] definition chains and strips ∀◇ via
+    [tophole_remove].  Discharges the [Pi = □] and ∀◇-[P0] subcases of the
     Unit consistency case (conclusion: [msubst κ P0 ⊑ᵖ[∅] unit]). *)
 Lemma ad_refine_inh_unit_ppre : forall Θ Δr Qlhs Qrhs,
   a_wf_aenv Θ ->
@@ -1502,7 +1502,7 @@ Qed.
 
 (* ==== the Unit consistency case, as a standalone lemma ==== *)
 (* P0 is well-formed at empty Δ (the paper's [Θ0 ⊢ P0]); Pi carries the
-   binder context Δ.  Strong induction on [size Pi + size P0] so the ⊤◇
+   binder context Δ.  Strong induction on [size Pi + size P0] so the ∀◇
    stripping (Pi and P0 sides) recurses. *)
 Lemma a_solve_eq_cv_unit : forall n Θ0 Θ κ Δ Ψi Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
@@ -2319,7 +2319,7 @@ Qed.
 (*  Phase 4: the mono-target case lemma.  Subsumes Unit (τ = 1) and Var    *)
 (*  (τ = α): the target is the painting of a MONO ptyp, the shape all      *)
 (*  defined-flex chains stay inside.  Strong induction on                  *)
-(*  size Pi + size P0 (⊤◇-stripping both sides); the target's def-chain    *)
+(*  size Pi + size P0 (∀◇-stripping both sides); the target's def-chain    *)
 (*  unfolding is handled by the Phase-2 chain inversions (which ride the   *)
 (*  premise derivations, not the size).                                    *)
 (* ===================================================================== *)
@@ -2463,7 +2463,7 @@ Proof.
     eapply ad_refine_inh_hole_ppre with (Δr := empty);
       [ exact HwfΘ | clear; fsetdec | exact Hrefine | reflexivity | reflexivity
       | exact Hmτ | exact Hdf | exact Hpre ].
-  - (* Pi = ⊤◇.Pi' *)
+  - (* Pi = ∀◇.Pi' *)
     assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
     assert (HwfPi' : Θ0 ⨟ empty ⊢ₚₛᵃ Pi') by (inversion HwfPi; assumption).
     simpl in Hpre.
@@ -2512,7 +2512,7 @@ Proof.
     + (* P0 = hole: SE-VacuousR *)
       exists (pskl_tophole Pi'); split;
         [ apply a_solve_eq__hole_r | exact Hpre ].
-    + (* P0 = ⊤◇.P0': SE-UnivGhost, second chain hop off the ⊤◇ counterpart *)
+    + (* P0 = ∀◇.P0': SE-UnivGhost, second chain hop off the ∀◇ counterpart *)
       assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0') by (inversion HwfP0; assumption).
       simpl in Href'.
       destruct (ad_refine_tophole_lhs_chain_inv HwfΘ Href' eq_refl eq_refl Hme)
@@ -2567,7 +2567,7 @@ Proof.
     try discriminate Heqψ.
   - (* hole: subject □ is never a paint *)
     destruct τb; simpl in HeqS; discriminate HeqS.
-  - (* tophole_remove: subject ⊤◇ is never a paint *)
+  - (* tophole_remove: subject ∀◇ is never a paint *)
     destruct τb; simpl in HeqS; discriminate HeqS.
   - (* flex_l: unfold the definition, still a mono paint *)
     destruct τb; simpl in HeqS; try discriminate HeqS.
@@ -2588,7 +2588,7 @@ Proof.
     try discriminate HeqQ.
   - (* hole: LHS □ is never a paint *)
     destruct τb; simpl in HeqL; discriminate HeqL.
-  - (* tophole_remove: LHS ⊤◇ is never a paint *)
+  - (* tophole_remove: LHS ∀◇ is never a paint *)
     destruct τb; simpl in HeqL; discriminate HeqL.
   - (* flex_l *)
     destruct τb; simpl in HeqL; try discriminate HeqL.
@@ -2600,7 +2600,7 @@ Qed.
 
 (* ==== the GhostG consistency case, as a standalone lemma ==== *)
 (* No size induction: both sides are forced to [□]; every other shape is
-   premise-absurd (a ⊤◇'s guarded body dies one level down). *)
+   premise-absurd (a ∀◇'s guarded body dies one level down). *)
 Lemma a_solve_eq_cv_ghostg : forall Θ0 Θ κ Δ Ψi Pi P0,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -2647,7 +2647,7 @@ Proof.
     + (* P0 = all_syn: absurd *) simpl in Hrefine. inversion Hrefine.
     + (* P0 = □: SE-GhostL, Pa := □ *)
       exists pskl_hole; split; [ apply a_solve_eq__hole_l | exact Hpre ].
-    + (* P0 = ⊤◇.P0': strip; the guarded body dies *)
+    + (* P0 = ∀◇.P0': strip; the guarded body dies *)
       simpl in Hrefine. inversion Hrefine; subst.
       exfalso.
       assert (HgP0' : guarded_pskl P0') by (inversion HwfP0; assumption).
@@ -2667,7 +2667,7 @@ Proof.
         | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ (pskl_arrow _ _)) ⊳ _
           |- _ => simpl in Hin; inversion Hin
         end.
-  - (* Pi = ⊤◇.Pi': strip; the guarded body dies *)
+  - (* Pi = ∀◇.Pi': strip; the guarded body dies *)
     simpl in Hpre. inversion Hpre; subst.
     exfalso.
     assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
@@ -2722,7 +2722,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  Topholeg case kit: component tags-sort, and the two mono-paint         *)
-(*  absurdities against dotted-⊤◇ targets / plain-⊤◇ refinement RHS.       *)
+(*  absurdities against dotted-∀◇ targets / plain-∀◇ refinement RHS.       *)
 (* ===================================================================== *)
 
 Lemma a_tags_sort_topholeg_inv : forall NM Ψ ψ,
@@ -2819,7 +2819,7 @@ Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
                         (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
     flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_syn ψ).
 
-(* Inversions used by the ⊤◇/⊤̇◇ congruence cases. *)
+(* Inversions used by the ∀◇/∀◈ congruence cases. *)
 Lemma flex_apart_topholeg_target_inv : forall Θ0 Δρ P ψ,
   flex_apart Θ0 Δρ P (uskl_topholeg ψ) ->
   flex_apart Θ0 Δρ P ψ.
@@ -2852,9 +2852,9 @@ Proof.
 Qed.
 
 (** THE FLEX-P0 READ-OFF.  A [flex_apart] whose P0 is a FLEXIBLE variable
-    has only one non-⊤̇◇ way to hold — [fa_clean] — since [fa_var_rigid]
+    has only one non-∀◈ way to hold — [fa_clean] — since [fa_var_rigid]
     needs the very same variable to be RIGID.  [fa_topholeg_t] only peels
-    ⊤̇◇s off the target, which does not change its free variables.  So the
+    ∀◈s off the target, which does not change its free variables.  So the
     guess is Δρ-CLEAN there, i.e. ρ acts as the identity on it
     ([uskl_rho_clean_eq]).  This is exactly what the flexible-P0 row of
     P6-Cs needs to keep using the ρ-free ψa-mono extraction. *)
@@ -2869,7 +2869,7 @@ Proof.
     try discriminate Heqt; subst.
   - assumption.
   - inversion Heqt; subst; contradiction.
-  - (* fa_topholeg_t: ⊤̇◇ does not change the target's free variables *)
+  - (* fa_topholeg_t: ∀◈ does not change the target's free variables *)
     simpl. exact (IHflex_apart β' eq_refl Hnr).
 Qed.
 
@@ -3803,6 +3803,84 @@ Proof.
   intros Θ0 Δρ P0 ψa β H.
   eapply flex_apart_walk_weaken;
     [ exact H | intros x b Hb; apply binds_app_3; exact Hb ].
+Qed.
+
+(* ===================================================================== *)
+(*  The P0-ONLY walk (P6-Cs).                                             *)
+(*                                                                        *)
+(*  P6-Cs descends P0 alone — ψa is the single guess for the looked-up α  *)
+(*  and NEVER moves — so it needs [flex_apart] only at the P0-subterms it  *)
+(*  actually reaches, at a CONSTANT Δρ.  That is strictly weaker than      *)
+(*  [flex_apart_walk], whose [fastep_all_r] can grow Δρ, and the           *)
+(*  difference is what makes the paper-faithful ρ = identity corollary of  *)
+(*  P6-Cs PREMISE-FREE: at Δρ = ∅ every reachable state is [fa_clean].     *)
+(*  P6-Ss still threads the full walk and hands it over via                *)
+(*  [flex_apart_walk_p0] — which is why [fa_step] carries the P0-only      *)
+(*  arrow steps.                                                           *)
+(* ===================================================================== *)
+
+Inductive p0_step : pskl -> pskl -> Prop :=
+| p0step_arrow_l : forall P1 P2, p0_step (pskl_arrow P1 P2) P1
+| p0step_arrow_r : forall P1 P2, p0_step (pskl_arrow P1 P2) P2
+| p0step_all     : forall P0 γ,
+    p0_step (pskl_all_syn P0) (open_pskl_wrt_pskl P0 (pskl_var_f γ))
+| p0step_tophole : forall P0, p0_step (pskl_tophole P0) P0.
+
+Inductive p0_walk : pskl -> pskl -> Prop :=
+| p0w_refl : forall P0, p0_walk P0 P0
+| p0w_step : forall P0 P1 P2, p0_step P0 P1 -> p0_walk P1 P2 -> p0_walk P0 P2.
+
+Definition flex_apart_p0 (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
+  : Prop :=
+  forall P0', p0_walk P0 P0' -> flex_apart Θ0 Δρ P0' ψa.
+
+Lemma flex_apart_p0_here : forall Θ0 Δρ P0 ψa,
+  flex_apart_p0 Θ0 Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
+Proof. intros Θ0 Δρ P0 ψa H; apply H; apply p0w_refl. Qed.
+
+Lemma flex_apart_p0_step : forall Θ0 Δρ P0 ψa P1,
+  flex_apart_p0 Θ0 Δρ P0 ψa -> p0_step P0 P1 -> flex_apart_p0 Θ0 Δρ P1 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa P1 H Hs P0' Hw.
+  apply H; eapply p0w_step; [ exact Hs | exact Hw ].
+Qed.
+
+Lemma flex_apart_p0_weaken : forall Θ0 Δρ P0 ψa,
+  flex_apart_p0 Θ0 Δρ P0 ψa ->
+  forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
+  flex_apart_p0 Θ0' Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa H Θ0' Hmon P0' Hw.
+  eapply flex_apart_weaken; [ apply H; exact Hw | exact Hmon ].
+Qed.
+
+Lemma flex_apart_p0_weaken_tvar : forall Θ0 Δρ P0 ψa β,
+  flex_apart_p0 Θ0 Δρ P0 ψa ->
+  flex_apart_p0 ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa β H.
+  eapply flex_apart_p0_weaken;
+    [ exact H | intros x b Hb; apply binds_app_3; exact Hb ].
+Qed.
+
+(** A Δρ-CLEAN guess shields every P0-subterm at once — in particular at
+    Δρ = ∅, which is what the ρ = identity corollary of P6-Cs uses. *)
+Lemma flex_apart_p0_clean : forall Θ0 Δρ P0 ψa,
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
+  flex_apart_p0 Θ0 Δρ P0 ψa.
+Proof. intros Θ0 Δρ P0 ψa Hc P0' _; apply fa_clean; exact Hc. Qed.
+
+(** …and P6-Ss's full walk implies it: every [p0_step] is an [fa_step] that
+    leaves Δρ and ψa alone. *)
+Lemma flex_apart_walk_p0 : forall Θ0 Δρ P0 ψa,
+  flex_apart_walk Θ0 Δρ P0 ψa -> flex_apart_p0 Θ0 Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa Hfw P0' Hw.
+  revert Hfw; induction Hw; intros Hfw;
+    [ apply flex_apart_walk_here; exact Hfw | ].
+  apply IHHw. eapply flex_apart_walk_step; [ exact Hfw | ].
+  destruct H; [ apply fastep_p0_arrow_l | apply fastep_p0_arrow_r
+              | apply fastep_all_l | apply fastep_tophole_l ].
 Qed.
 
 (** [flex_apart] binder descent at a tagged-∀ target with a ∀-source. *)

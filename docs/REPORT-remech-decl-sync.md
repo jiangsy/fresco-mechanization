@@ -55,9 +55,9 @@ SS-Vacuous are against `Hole` in the finalized paper; the old encoding matched
 `TopHole.P'`.  **Fixed.**
 
 **B4. Solve-subtyping ghost rules.**  The finalized figure has
-`GhostLF : solvesub(□, FN M, Q₁→Q₂) = ⊤.(P₁'→P₂')` (note the `⊤.` on the
-output) and `GhostL : guarded B ⊢ solvesub(□, TC, B) = ⊤.B`.  The old encoding
-lacked both; `mech-algo-props` had GhostLF without the `⊤.`.  **Fixed.**
+`GhostLF : solvesub(□, FN M, Q₁→Q₂) = ∀◇(P₁'→P₂')` (note the `∀◇` on the
+output) and `GhostL : guarded B ⊢ solvesub(□, TC, B) = ∀◇B`.  The old encoding
+lacked both; `mech-algo-props` had GhostLF without the `∀◇`.  **Fixed.**
 
 **B5. AT-AbsCheck / AT-AbsAnnoCheck input is `∀ᾱ.A₀`.**  The old rules took
 input `□` at TC with an unconstrained bound type — ill-moded (`skmod[TY]` at
@@ -80,12 +80,12 @@ in `a_consis` rejected *rigid* variables too (`∀β, P ≠ var β`); the paper'
 allowed).  **Fixed** using `a_non_flex` (also covers defined flex vars).
 
 **B9. SS-ForallR / SE binder handling** unified to cofinite quantification
-(the old code opened the RHS body with the ad-hoc filler `⊤.□`).
+(the old code opened the RHS body with the ad-hoc filler `∀◇□`).
 
 Also: `a_guess` (the paper's `guess[N]`) is now a first-class relation used by
 the look judgment (`a_extract`), matching fig:poly-info-extraction; the old
 `a_broom` was renamed `a_sub_flex` (paper: flexible-variable subtyping);
-`Assign-UnivGhost-Id` (paper `α̂ := ⊤.α̂` corner case) was added; `abind_marker`
+`Assign-UnivGhost-Id` (paper `α̂ := ∀◇α̂` corner case) was added; `abind_marker`
 and other unused machinery dropped.
 
 ## C. Equivalent-encoding deviations (kept, by design)

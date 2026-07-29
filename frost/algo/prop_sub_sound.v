@@ -126,8 +126,8 @@ Proof.
 Qed.
 
 (** Substituting a well-formed skeleton for a Δ-variable preserves
-    (disciplined) well-formedness.  The ⊤◇ case is where the freshness
-    hypothesis earns its keep: a ⊤◇-body is well-formed at the EMPTY Δ,
+    (disciplined) well-formedness.  The ∀◇ case is where the freshness
+    hypothesis earns its keep: a ∀◇-body is well-formed at the EMPTY Δ,
     so it cannot mention α and the substitution is the identity there. *)
 Lemma a_wf_pskl_subst_tvar : forall Θ Δ P,
   Θ ⨟ Δ ⊢ₚₛᵃ P ->
@@ -191,7 +191,7 @@ Qed.
 
 (** audit-F2 bridge helpers.  A consistency judgement whose output is an
     inh-painting-shaped skeleton transports its subject down to the exact
-    inh-painting, peeling the subject's leading [⊤◇]/flex nodes.  These handle
+    inh-painting, peeling the subject's leading [∀◇]/flex nodes.  These handle
     the ARROW and ∀ structural cases of [ad_pat_consis_refine_inh_gen]. *)
 
 Lemma consis_transport_arrow : forall Ψ Θ' R Q1 Q2 P1 P2,
@@ -689,7 +689,7 @@ Proof.
               specialize (HγΘ0 α2 Hα2Ξ); apply HγΘ0; apply HB; exact HZBd ]
         | clear - Hα0; fsetdec ].
 
-  - (* UnivGhostR (SK) : axis — output ⊤◇⌊R⌋, context unchanged *)
+  - (* UnivGhostR (SK) : axis — output ∀◇⌊R⌋, context unchanged *)
     intros Ψ Θ0 R HgS HΨ Hwf HlcS HwfP0 HwfS Hmod Hgf.
     split; [ apply a_isub_refl; exact Hwf | ].
     split; [ exact Hwf | ].
@@ -707,7 +707,7 @@ Proof.
         | apply guarded_pskl_to_bskl_syn; exact Hg
         | apply is_sskl_pskl_to_bskl_syn; eauto using a_wf_pskl_lc
         | apply ad_pat_consis_refl_erase; assumption ].
-    + (* P0 = ◇ : hole rule against the syn painting of ⊤◇⌊R⌋ *)
+    + (* P0 = ◇ : hole rule against the syn painting of ∀◇⌊R⌋ *)
       simpl.
       change (bskl_tophole (pskl_to_bskl_syn ⌊ R ⌋ˢ))
         with (pskl_to_bskl_syn (pskl_tophole ⌊ R ⌋ˢ)).
@@ -887,7 +887,7 @@ Proof.
       apply ad_refine_syn_f__hole;
         [ clear; fsetdec | apply a_wf_pskl__hole ].
 
-  - (* UnivGhostL (SK) : drop the subject's ⊤◇ *)
+  - (* UnivGhostL (SK) : drop the subject's ∀◇ *)
     intros M Ψ Θ0 Θ1 P0 R P' Hne Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
     inversion HlcS; subst.
     simpl in HwfS.
@@ -898,7 +898,7 @@ Proof.
     exists Qt. split; [ exact HeqQt | ].
     split; [ apply ad_pat_sub__univ_ghost_l; assumption | exact Hfill ].
 
-  - (* UnivGhostLG (SK) : drop the subject's dotted ⊤◇ *)
+  - (* UnivGhostLG (SK) : drop the subject's dotted ∀◇ *)
     intros M Ψ Θ0 Θ1 P0 R P' Hne Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
     inversion HlcS; subst.
     simpl in HwfS.

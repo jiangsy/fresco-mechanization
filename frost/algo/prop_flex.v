@@ -368,7 +368,7 @@ Proof.
     apply ad_pat_consis__hole; [ fsetdec | ].
     apply a_wf_pskl__var. right. apply Hβs.
     unfold binds; left; reflexivity.
-  - (* ⊤.P : the universal ghost is dropped *)
+  - (* ∀◇P : the universal ghost is dropped *)
     replace (pskl_to_uskl (pskl_tophole P))
       with (uskl_tophole (pskl_to_uskl P)) by reflexivity.
     apply ad_pat_consis__tophole_drop. auto.

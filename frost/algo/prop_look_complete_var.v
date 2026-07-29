@@ -52,7 +52,7 @@ Set Implicit Arguments.
 
 
 (** [MECH-ONLY kit] Moving a Δ-entry of skeleton well-formedness into the
-    aenv as a rigid tvar (mid-insertion general; the ⊤◇-body stays at
+    aenv as a rigid tvar (mid-insertion general; the ∀◇-body stays at
     empty Δ and only needs binds-weakening).  No paper counterpart: the
     paper writes every descent binder as "Θ,β" and never distinguishes
     the aenv from the skeleton-scope Δ, so these transports are implicit
@@ -130,11 +130,11 @@ Qed.
 (*  premise lives at (Θr, Δr) with Δr [=] dom Θtv, so □-fills stay wf     *)
 (*  away from the Θtv binders; the conclusion returns a fresh-extension   *)
 (*  FAMILY of precisions, which is what lets the ForallInh/ForallSyn □-   *)
-(*  and ⊤◇-fill-rows fold their bodies at (add α Δ).  The paper's         *)
+(*  and ∀◇-fill-rows fold their bodies at (add α Δ).  The paper's         *)
 (*  statement is the Θtv := [] / R := ∅ corollary.                        *)
 (* ===================================================================== *)
 (*  ForallSyn kit: flex_apart TARGET descent through an all_etag binder    *)
-(*  (the ⊤◇-body is guarded, which excludes the all_syn source that would  *)
+(*  (the ∀◇-body is guarded, which excludes the all_syn source that would  *)
 (*  otherwise block the descent).  [MECH-ONLY: maintenance lemmas for the  *)
 (*  mech-only flex_apart premise — the paper has no counterpart because    *)
 (*  its proof never states the FlexR-freshening reachability invariant.]   *)
@@ -166,7 +166,7 @@ Proof.
       simpl in *; clear - Hc Hup Hα; fsetdec end.
 Qed.
 
-(** ⊤◇ source (guarded body): descend the all_etag target one binder. *)
+(** ∀◇ source (guarded body): descend the all_etag target one binder. *)
 Lemma flex_apart_tophole_all_etag_descent : forall Θ0 Δρ P0' ε ψ,
   guarded_pskl P0' ->
   flex_apart Θ0 Δρ (pskl_tophole P0') (uskl_all_etag ε ψ) ->
@@ -917,7 +917,7 @@ Proof.
                     clear - Hbb HS1 HS2 Hdelta; fsetdec
                   | exact HS3 ]
               | clear - HΨae; fsetdec ].
-          + (* P0 = ⊤◇.P0': GuardedGhost-right + same-node recursion *)
+          + (* P0 = ∀◇.P0': GuardedGhost-right + same-node recursion *)
             assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0')
               by (inversion HwfP00; assumption).
             simpl in Hrefine1.
@@ -1039,7 +1039,7 @@ Proof.
                     clear - Hbb HS1 HS2 Hdelta; fsetdec
                   | exact HS3 ]
               | clear - HΨae; fsetdec ].
-          + (* P0 = ⊤◇.P0': SE-GhostL + same-node recursion at (□, P0') *)
+          + (* P0 = ∀◇.P0': SE-GhostL + same-node recursion at (□, P0') *)
             assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0')
               by (inversion HwfP00; assumption).
             simpl in Hrefine1.
@@ -1061,7 +1061,7 @@ Proof.
             intros Δ' HS1 HS2 HS3.
             simpl. apply ad_ppre__tophole_remove.
             exact (Hq' Δ' HS1 HS2 HS3).
-        - (* Pi = ⊤◇.Pi' *)
+        - (* Pi = ∀◇.Pi' *)
           assert (HgPi' : guarded_pskl Pi')
             by (inversion HwfPi0; assumption).
           assert (HwfPi' : Θ0 ⨟ empty ⊢ₚₛᵃ Pi')
@@ -1132,7 +1132,7 @@ Proof.
                     clear - Hbb HS1 HS2 Hdelta; fsetdec
                   | exact HS3 ]
               | clear - HΨae; fsetdec ].
-          + (* P0 = ⊤◇.P0': SE-UnivGhost *)
+          + (* P0 = ∀◇.P0': SE-UnivGhost *)
             assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0')
               by (inversion HwfP00; assumption).
             simpl in Hrefine1.
@@ -1181,7 +1181,7 @@ Proof.
       apply (KEY ψa1 ψa2 Ψρ1 Ψρ2);
         [ exact Hrho1 | exact Hrho2 | exact HΨρs
         | exact Htags | exact Hapart | exact Hpre ].
-  - (* forall_inh_tagged (case 1): rows A (Pi=∀) / B (Pi=□) / C (Pi=⊤◇
+  - (* forall_inh_tagged (case 1): rows A (Pi=∀) / B (Pi=□) / C (Pi=∀◇
        via the precision fill); everything else is absurd (guardedness /
        paint-shape / ε-tag contradictions).  DESIGN §6(o). *)
     assert (HwfΘr2 := HwfΘr).
@@ -1659,7 +1659,7 @@ Proof.
             [ eapply ad_partial_precise_strengthen_tvar;
                 [ exact HqS | clear; fsetdec ]
             | clear; fsetdec ].
-        + (* Pi = ⊤◇.Pi' — the remove-branch dies (guarded body);
+        + (* Pi = ∀◇.Pi' — the remove-branch dies (guarded body);
              the fill branch is ROW C (SE-GhostForall) *)
           assert (Hg : guarded_pskl Pi' /\ (Θ0 ⨟ empty ⊢ₚₛᵃ Pi'))
             by (inversion HwfPi; subst; split; assumption).
@@ -1788,7 +1788,7 @@ Proof.
         | Heq : bskl_all_inh _ = pskl_to_bskl_syn ?P |- _ =>
           destruct P; simpl in Heq; discriminate Heq
         end.
-      - (* P0 = ⊤◇.P0': the guarded body dies against all_inh *)
+      - (* P0 = ∀◇.P0': the guarded body dies against all_inh *)
         exfalso.
         assert (Hg : guarded_pskl P0' /\ (Θ0 ⨟ empty ⊢ₚₛᵃ P0')).
         { inversion HwfP0; subst; split; assumption. }
@@ -1866,7 +1866,7 @@ Proof.
     + pose proof (a_tags_sort_d_tags Htags) as Hd; inversion Hd.
   - (* forall_syn_tagged: subject ∀^ε.R ∼ bskl_all_syn Q.  ε is a Ψ'-only
        tag (the rule keeps Ψ, does NOT add ε), so NO ε-split.  P0 grid:
-       □ (VacuousR) and ⊤◇.P0' (the main tophole_fill column) are real;
+       □ (VacuousR) and ∀◇.P0' (the main tophole_fill column) are real;
        the rest are refinement-absurd.  Split-A (DESIGN §6(t)):
        Θtv_ih:=(α~tvar)++Θtv, Θr_ih:=Θr — valid split (α at front), tight
        family dom Θr; matches the CLOSED forall_inh_tagged IHX exactly. *)
@@ -1974,7 +1974,7 @@ Proof.
                 clear - Hbb HS1 HS2 Hdelta; fsetdec
               | exact HS3 ]
           | clear - HΨae; fsetdec ].
-      - (* P0 = ⊤◇.P0': the MAIN tophole_fill column.  IHX runs the body
+      - (* P0 = ∀◇.P0': the MAIN tophole_fill column.  IHX runs the body
            IH with the binder joining Θr (bag split: Θr_ih:=(α~tvar)++Θr);
            Hrefb = the inverted tophole_fill body at (α~tvar)++Θr ⨟ Δr,
            which is the IH's refinement premise VERBATIM. *)
@@ -2028,7 +2028,7 @@ Proof.
            Δr_ih:=Δr) — the family premise grows to dom((α0~tvar)++Θr), so
            rows whose α0 predates Δ' instantiate at Δ'∖{α0} and weaken the
            missing Δ'∩{α0} back; refinement per row = Hrefb verbatim.  Δx is
-           the IH's Δ (Δ for ⊤◇/□, add α0 Δ for the ∀ row). *)
+           the IH's Δ (Δ for ∀◇/□, add α0 Δ for the ∀ row). *)
         assert (IHX : forall α0 Pi0 Ψi0 P0i Δx,
           α0 `notin` (L `union` Lr `union` Lt `union` Lrb `union` La
                `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0
@@ -2211,7 +2211,7 @@ Proof.
           clear - HΨ'e HΨ'eq Hεnin; fsetdec.
         + (* arrow *) simpl in Hpre0. inversion Hpre0.
         + (* Pi = ∀.Pib — ForallGhost row: solve = a_solve_eq__all_l_tophole
-             (P0i:=⊤◇.P0' KEPT, α-free); IHX at Δx:=add α Δ (α∈Δ ⇒ FOLD);
+             (P0i:=∀◇.P0' KEPT, α-free); IHX at Δx:=add α Δ (α∈Δ ⇒ FOLD);
              precision conclusion = ad_ppre__forall (Pa = ∀.close). *)
           assert (HwfPif : exists Lwi, forall α, α `notin` Lwi ->
                     ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ
@@ -2339,9 +2339,9 @@ Proof.
           apply (FOLD α PaX (Ψi' `union` Ψa) Δ'
                    ltac:(clear - Fr; solve_notin) HS1 HS2 HS3 Hrun
                    α' ltac:(clear - HX'; solve_notin)).
-        + (* Pi = □ — GhostL row.  solve = a_solve_eq__hole_l (Pa:=⊤◇.P0');
+        + (* Pi = □ — GhostL row.  solve = a_solve_eq__hole_l (Pa:=∀◇.P0');
              precision = ad_ppre__tophole_fill, family via rename_tvar.
-             Pi0:=□ (Hpre0x = ad_ppre__hole); refinement + closure as ⊤◇. *)
+             Pi0:=□ (Hpre0x = ad_ppre__hole); refinement + closure as ∀◇. *)
           assert (HΨie : Ψi [=] empty)
             by (simpl in Hpre0; inversion Hpre0; assumption).
           assert (Hhd : Δ ∩
@@ -2379,7 +2379,7 @@ Proof.
                       ltac:(apply Hrefb; clear - Fr; solve_notin))
             as (PaX & HsX & HqX).
           pose proof (a_solve_eq_hole_subject_inv HsX) as HPaXe; subst PaX.
-          (* α ∉ ftv(msubst κ (⊤◇.P0')) *)
+          (* α ∉ ftv(msubst κ (∀◇.P0')) *)
           assert (HXPaX : α `notin` ftvar_in_pskl
                     (msubst_pskl κ (pskl_tophole P0'))).
           { apply msubst_pskl_ftv_avoid.
@@ -2434,10 +2434,10 @@ Proof.
           rewrite <- (subst_bskl_in_uskl_intro α ψR (uskl_var_f α')
                         ltac:(clear - Fr; solve_notin)) in Hren.
           exact Hren.
-        + (* Pi = ⊤◇.Pi' — UnivGhost row.  WRAPPED IHX (Pi0:=⊤◇.Pi',
-             P0i:=⊤◇.P0'); refinement = Hrefb verbatim; solve = IHX output
+        + (* Pi = ∀◇.Pi' — UnivGhost row.  WRAPPED IHX (Pi0:=∀◇.Pi',
+             P0i:=∀◇.P0'); refinement = Hrefb verbatim; solve = IHX output
              (tophole_both, strengthen_tvar); precision =
-             ad_ppre__tophole_fill (subject ⊤◇.P', keeps Ψ, no ε), family
+             ad_ppre__tophole_fill (subject ∀◇.P', keeps Ψ, no ε), family
              built by ad_partial_precise_rename_tvar (aenv-tvar rename). *)
           assert (HgPi'w : guarded_pskl Pi' /\ (Θ0 ⨟ empty ⊢ₚₛᵃ Pi'))
             by (inversion HwfPi; subst; split; assumption).
@@ -2513,7 +2513,7 @@ Proof.
                   by (pose proof (a_wf_pskl_ftv_dom HwfP0'0) as Hd;
                       clear - Hd Fr; destruct_notin; fsetdec);
                 clear - Hfsub HXPi' HXP0'; fsetdec. }
-            (* tophole_both ⇒ PaX = ⊤◇.Pbody (avoid global subst: HeqΘ would
+            (* tophole_both ⇒ PaX = ∀◇.Pbody (avoid global subst: HeqΘ would
                clear Θ) *)
             assert (Hpaform : exists Pbody, PaX = pskl_tophole Pbody).
             { inversion HsX;
@@ -2652,7 +2652,7 @@ Proof.
         as (Pa & Hs & Hq).
       exists Pa; split; [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
-  - (* topholeg: the ⊤̇◇ congruence — recurse through the main IH.  Both
+  - (* topholeg: the ∀◈ congruence — recurse through the main IH.  Both
        the refl and congruence branches of the ρ-inversion land in KEY. *)
     assert (HwfΘr2 := HwfΘr).
     assert (KEY : forall ψa0,
@@ -2682,7 +2682,7 @@ Proof.
         pose proof (uskl_rho_ftv_target_bound Hrho0) as HftA.
         clear - HQB HftR HftA; fsetdec. }
       destruct Pi as [ | nb | α | Pi1 Pi2 | Pib | | Pi' ].
-      - (* Pi = unit: no precision into ⊤̇◇ *)
+      - (* Pi = unit: no precision into ∀◈ *)
         simpl in Hpre0. inversion Hpre0.
       - (* Pi = var_b *) inversion HwfPi.
       - (* Pi = var: mono paint, absurd *)
@@ -2696,7 +2696,7 @@ Proof.
         destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
         + (* P0 = unit *) simpl in Hrefine. inversion Hrefine.
         + (* P0 = var_b *) inversion HwfP0.
-        + (* P0 = var: mono paint vs ⊤◇ RHS, absurd *)
+        + (* P0 = var: mono paint vs ∀◇ RHS, absurd *)
           exfalso. simpl in Hrefine.
           assert (Hml : mono_ptyp (msubst_lookup κ β))
             by (eapply a_inc_lookup_mono; eauto).
@@ -2724,14 +2724,14 @@ Proof.
                   clear - Hbb HS1 HS2 Hdelta; fsetdec
                 | exact HS3 ]
             | clear - HΨe Hsubeq2; fsetdec ].
-        + (* P0 = ⊤◇.P0': Pa := P0; body precision via the main IH at □ *)
+        + (* P0 = ∀◇.P0': Pa := P0; body precision via the main IH at □ *)
           assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0')
             by (inversion HwfP0; assumption).
           assert (HgP0' : guarded_pskl P0')
             by (inversion HwfP0; assumption).
           simpl in Hrefine.
           inversion Hrefine; subst.
-          * (* tophole_remove: the guarded body dies against a ⊤◇ RHS *)
+          * (* tophole_remove: the guarded body dies against a ∀◇ RHS *)
             exfalso. inversion HgP0'; subst.
             -- match goal with
                | Hin : _ ⨟ _ ⊢ᵣᵃ
@@ -2789,11 +2789,11 @@ Proof.
             intros Δ' HS1 HS2 HS3.
             simpl. apply ad_ppre__tophole_keep.
             exact (Hq' Δ' HS1 HS2 HS3).
-      - (* Pi = ⊤◇.Pi' *)
+      - (* Pi = ∀◇.Pi' *)
         assert (HgPi' : guarded_pskl Pi') by (inversion HwfPi; assumption).
         assert (HwfPi' : Θ0 ⨟ empty ⊢ₚₛᵃ Pi') by (inversion HwfPi; assumption).
         simpl in Hpre0. inversion Hpre0; subst.
-        + (* tophole_remove: the guarded body dies against ⊤̇◇ *)
+        + (* tophole_remove: the guarded body dies against ∀◈ *)
           exfalso. inversion HgPi'; subst.
           * match goal with
             | Hp' : _ ⨟ _ ⊢ msubst_pskl κ pskl_unit ⊑ᵖ[ _ ] _ |- _ =>
@@ -2824,7 +2824,7 @@ Proof.
           destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
           * (* P0 = unit *) simpl in Hrefine. inversion Hrefine.
           * (* P0 = var_b *) inversion HwfP0.
-          * (* P0 = var: mono paint vs ⊤◇ RHS *)
+          * (* P0 = var: mono paint vs ∀◇ RHS *)
             exfalso. simpl in Hrefine.
             assert (Hml : mono_ptyp (msubst_lookup κ β))
               by (eapply a_inc_lookup_mono; eauto).
@@ -2853,7 +2853,7 @@ Proof.
                     clear - Hbb HS1 HS2 Hdelta; fsetdec
                   | exact HS3 ]
               | clear - HΨe Hsubeq2; fsetdec ].
-          * (* P0 = ⊤◇.P0': SE-UnivGhost via the main IH *)
+          * (* P0 = ∀◇.P0': SE-UnivGhost via the main IH *)
             assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0')
               by (inversion HwfP0; assumption).
             assert (HgP0' : guarded_pskl P0')
@@ -3063,7 +3063,7 @@ Qed.
 (*  paper's upfront special case "ψa is a ρ-replaced rigid variable" is   *)
 (*  handled per-case via the uskl_rho_*_l_inv leaf disjunct +             *)
 (*  p6cv_close_leaf_mono; its "P0 = Hole" special case is the per-case    *)
-(*  SolE-VacuousR columns (P0-grids of the arrow/∀/⊤◇ cases and the       *)
+(*  SolE-VacuousR columns (P0-grids of the arrow/∀/∀◇ cases and the       *)
 (*  leaf-closer lemmas), re-dispatched inside every IH exactly as the     *)
 (*  paper's proof does.                                                   *)
 (* ===================================================================== *)

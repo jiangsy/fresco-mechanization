@@ -8,13 +8,13 @@
     the refuted statement stronger), and derives False.
 
     The witness is
-      Θ = Θ₀ = ·   κ = ·   R = ⊤◇α   ψa = ⊤̇◇⟨⟩   P₀ = Pi = ⊤◇⟨⟩   Q = ⊤◇⟨⟩
-    so the subject is [⊤◇(⊤̇◇⟨⟩)] — a universal ghost whose body is another
+      Θ = Θ₀ = ·   κ = ·   R = ∀◇α   ψa = ∀◈⟨⟩   P₀ = Pi = ∀◇⟨⟩   Q = ∀◇⟨⟩
+    so the subject is [∀◇(∀◈⟨⟩)] — a universal ghost whose body is another
     ghost, which [a_wf_pskl__tophole] / [d_wf_uskl__tophole] forbid (a ghost
     body must be GUARDED).  Every other premise holds; the algorithm is then
     forced into [𝒞 = [α ≐ ⟨⟩]] (LE-UnivGhost, then LE-Var) and [Pa = ⟨⟩]
     (SE-GhostGuarded, then SE-Unit), and the resulting precision obligation
-    [⟨⟩ ⊑ᵖ ⊤̇◇⟨⟩] has no rule.
+    [⟨⟩ ⊑ᵖ ∀◈⟨⟩] has no rule.
 
     Conclusion: the subject-wf premise is not a convenience — it is what makes
     the paper's statement true.  Registered in docs/WF-SIDE-CONDITIONS.md. *)
@@ -46,7 +46,7 @@ Definition cex_P (α : atom) : pskl := pskl_tophole (pskl_var_f α).
 Definition cex_P0 : pskl := pskl_tophole pskl_unit.
 Definition cex_Q : bskl := bskl_tophole bskl_unit.
 
-(* the subject [(κR)[ψa/α]] at κ = · is [⊤◇(⊤̇◇⟨⟩)] *)
+(* the subject [(κR)[ψa/α]] at κ = · is [∀◇(∀◈⟨⟩)] *)
 Lemma cex_subject : forall α,
   subst_bskl_in_uskl cex_ψa α (msubst_uskl_syn nil (cex_S α))
   = uskl_tophole cex_ψa.
@@ -92,7 +92,7 @@ Proof.
     split; reflexivity.
 Qed.
 
-(* solving [α ≐ ⟨⟩] against [Pi = ⊤◇⟨⟩] can only produce [⟨⟩] (SE-GhostGuarded) *)
+(* solving [α ≐ ⟨⟩] against [Pi = ∀◇⟨⟩] can only produce [⟨⟩] (SE-GhostGuarded) *)
 Lemma cex_solve_forced : forall Θ Pa,
   Θ ⊩ (a_cstr_eq pskl_unit :: nil) ⨾ cex_P0 ⤳ Pa ->
   Pa = pskl_unit.
@@ -110,7 +110,7 @@ Proof.
       reflexivity.
 Qed.
 
-(* and [⟨⟩] is not precise to [⊤̇◇⟨⟩] under ANY tag index *)
+(* and [⟨⟩] is not precise to [∀◈⟨⟩] under ANY tag index *)
 Lemma cex_precision_fails : forall Θ Δ Ψ,
   ~ (Θ ⨟ Δ ⊢ pskl_unit ⊑ᵖ[ Ψ ] cex_ψa).
 Proof.
@@ -177,17 +177,17 @@ Proof.
   - (* ftag R ⊥ Ψ' *) cbn; clear; fsetdec.
   - (* Ψi, Ψa ⊆ Ψ' *) clear; fsetdec.
   - (* delta_def_fresh *) intros β α0 τ0 Hβ Hb; inversion Hb.
-  - (* precision of the INPUT: ⊤◇⟨⟩ ⊑ᵖ ⊤̇◇⟨⟩ *)
+  - (* precision of the INPUT: ∀◇⟨⟩ ⊑ᵖ ∀◈⟨⟩ *)
     cbn [msubst_pskl cex_P0]. unfold cex_ψa.
     apply ad_ppre__tophole_keep. apply ad_ppre__unit; clear; fsetdec.
   - (* Ψsub ⊆ ftag R ∪ Ψa *) clear; fsetdec.
   - (* Ψa ⊆ Ψsub *) clear; fsetdec.
-  - (* consistency: ⊤◇(⊤̇◇⟨⟩) ∼ ⊤◇⟨⟩ — C-UnivGhost2 then C-UnivGhostG *)
+  - (* consistency: ∀◇(∀◈⟨⟩) ∼ ∀◇⟨⟩ — C-UnivGhost2 then C-UnivGhostG *)
     rewrite cex_subject. unfold cex_ψa, cex_Q.
     apply ad_pat_consis__tophole_drop.
     apply ad_pat_consis__topholeg.
     apply ad_pat_consis__unit; clear; fsetdec.
-  - (* refinement: ⊤◇⟨⟩ ⊳ ⊤◇⟨⟩ — R-UnivGhostKeep *)
+  - (* refinement: ∀◇⟨⟩ ⊳ ∀◇⟨⟩ — R-UnivGhostKeep *)
     cbn [msubst_pskl pskl_to_bskl_inh cex_P0]. unfold cex_Q.
     apply ad_refine_syn__tophole_keep;
       [ apply guarded_bskl__unit | apply ad_refine_syn__unit ].
@@ -206,26 +206,9 @@ Check cex_subject_not_wf.
 (* ===================================================================== *)
 (*  (4)  NON-VACUITY — the premise set of the CLOSED theorem is           *)
 (*  satisfiable on the very same shape: replacing the ill-formed          *)
-(*  [ψa = ⊤̇◇⟨⟩] by [ψa = ⟨⟩] makes the subject [⊤◇⟨⟩] well-formed, and    *)
+(*  [ψa = ∀◈⟨⟩] by [ψa = ⟨⟩] makes the subject [∀◇⟨⟩] well-formed, and    *)
 (*  [a_lookeq_solve_complete] then FIRES and returns a real answer.       *)
 (* ===================================================================== *)
-
-(* The ρ-generalized P6-Cs asks for [flex_apart] ALONG THE P0-WALK.  At a
-   ghost-free, ∀-free guess the walk cannot grow Δρ ([fastep_all_r] needs a
-   ∀^ε target), so ∅-cleanliness is preserved and [fa_clean] discharges every
-   reachable state. *)
-Lemma cex_flex_apart_walk_unit : forall Θ0 Δ0 P0 ψ0 Δρ' P0' ψa',
-  fa_walk Δ0 P0 ψ0 Δρ' P0' ψa' ->
-  Δ0 [=] empty -> ψ0 = uskl_unit ->
-  flex_apart Θ0 Δρ' P0' ψa'.
-Proof.
-  intros Θ0 Δ0 P0 ψ0 Δρ' P0' ψa' Hw; induction Hw; intros HΔ Hψ; subst.
-  - apply fa_clean; clear - HΔ; fsetdec.
-  - inversion H; subst; apply IHHw; [ exact HΔ | reflexivity
-                                    | exact HΔ | reflexivity
-                                    | exact HΔ | reflexivity
-                                    | exact HΔ | reflexivity ].
-Qed.
 
 Theorem p6cs_fires_when_the_subject_is_wf : forall α,
   exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
@@ -238,9 +221,6 @@ Proof.
   edestruct (@a_lookeq_solve_complete 10 a_sub_mode_sk nil nil nil empty empty
                empty empty empty uskl_unit (bskl_tophole bskl_unit)
                (cex_P α) cex_P0 cex_P0 (cex_S α) α
-               (* ρ = IDENTITY: Θs := ·, Δρ = Ψρ = ∅, and the ρ-image IS the
-                  paper's subject — this is the instance the paper states. *)
-               nil empty empty (uskl_tophole uskl_unit)
                ltac:(cbn; lia)
                (a_wf_aenv__nil) (a_wf_aenv__nil)
                ltac:(apply a_wf_pskl__tophole;
@@ -264,32 +244,23 @@ Proof.
                      apply ad_ppre__unit; clear; fsetdec)
                ltac:(clear; fsetdec)
                ltac:(clear; fsetdec)
-               ltac:(apply ad_pat_consis__tophole;
-                     apply ad_pat_consis__unit; clear; fsetdec)
-               ltac:(cbn [uskl_to_pskl];
-                     apply a_wf_pskl__tophole;
-                       [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
-               ltac:(cbn [msubst_pskl pskl_to_bskl_inh cex_P0];
-                     apply ad_refine_syn__tophole_keep;
-                       [ apply guarded_bskl__unit | apply ad_refine_syn__unit ])
-               (* --- the ρ pack, all trivial at ρ = identity --- *)
                ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl];
                      unfold ptyp_to_uskl_syn; cbn;
                      match goal with |- context [if ?c then _ else _] =>
                        destruct c end; [ | contradiction ];
-                     apply urho__refl;
-                       [ apply lc_uskl_tophole; apply lc_uskl_unit
-                       | clear; fsetdec ])
-               ltac:(intros x b Hb; exact Hb)
-               ltac:(clear; fsetdec)
-               ltac:(intros α0 Hα0; clear - Hα0; exfalso; fsetdec)
-               ltac:(clear; fsetdec)
-               ltac:(intros α0 Hα0; clear - Hα0; exfalso; fsetdec)
-               ltac:(intros α0 Hα0; clear - Hα0; exfalso; fsetdec)
-               ltac:(intros Δρ' P0' ψa' Hw;
-                     eapply cex_flex_apart_walk_unit;
-                       [ exact Hw | clear; fsetdec | reflexivity ]))
-    as (𝒞 & Ξc & Pa & ρc & HLK & HSolve & _ & _ & _ & _ & _ & _ & _ & _ & _ & _
+                     apply ad_pat_consis__tophole;
+                     apply ad_pat_consis__unit; clear; fsetdec)
+               ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl];
+                     unfold ptyp_to_uskl_syn; cbn;
+                     match goal with |- context [if ?c then _ else _] =>
+                       destruct c end; [ | contradiction ];
+                     cbn [uskl_to_pskl];
+                     apply a_wf_pskl__tophole;
+                       [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
+               ltac:(cbn [msubst_pskl pskl_to_bskl_inh cex_P0];
+                     apply ad_refine_syn__tophole_keep;
+                       [ apply guarded_bskl__unit | apply ad_refine_syn__unit ]))
+    as (𝒞 & Ξc & Pa & ρc & HLK & HSolve & _ & _ & _ & _ & _ & _ & _ & _ & _
           & Hprec).
   exists 𝒞, Ξc, Pa, ρc. repeat split; assumption.
 Qed.

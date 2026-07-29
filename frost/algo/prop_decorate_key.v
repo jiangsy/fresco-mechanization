@@ -163,7 +163,7 @@ Proof.
       match goal with
       | Hg : guarded_uskl _ |- _ => simpl in Hg; inversion Hg
       end.
-    + (* LS-UnivGhostL : the source is ⊤◇-headed, not guarded *)
+    + (* LS-UnivGhostL : the source is ∀◇-headed, not guarded *)
       match goal with
       | He : pskl_tophole _ = ⌊ ?R1 ⌋ˢ |- _ =>
           destruct R1; simpl in He; try discriminate He;
@@ -879,7 +879,7 @@ Proof.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ apply a_subtag__ghost; assumption
         | fsetdec_empty ].
-  - (* GhostG : source ◇̇ *)
+  - (* GhostG : source ◈ *)
     destruct R0; simpl in HeqT;
       try discriminate HeqT;
       try solve [ inversion HlcS0 ].
@@ -888,7 +888,7 @@ Proof.
       destruct_if as [-> | Hc]; intro HeqT;
       [ exfalso; eapply pskl_to_uskl_not_holeg; symmetry; exact HeqT
       | discriminate HeqT ].
-    + (* R0 = ◇̇ : P0 = ◇ is pinned by the rule *)
+    + (* R0 = ◈ : P0 = ◇ is pinned by the rule *)
       destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ HD
                   ltac:(simpl; clear; fsetdec)) as [-> ->].
       inversion Hst; subst.
@@ -896,7 +896,7 @@ Proof.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ apply a_subtag__ghostg; assumption
         | fsetdec_empty ].
-  - (* UnivGhostL : source ⊤◇.R̄ *)
+  - (* UnivGhostL : source ∀◇.R̄ *)
     destruct R0; simpl in HeqT;
       try discriminate HeqT;
       try solve [ inversion HlcS0 ].
@@ -950,7 +950,7 @@ Proof.
         match goal with
         | Hs : is_sskl (bskl_all_inh _) |- _ => inversion Hs
         end.
-    + (* R0 = ⊤◇.R0 *)
+    + (* R0 = ∀◇.R0 *)
       inversion HeqT; subst. clear HeqT.
       inversion HlcS0; subst.
       simpl in HD.
@@ -980,7 +980,7 @@ Proof.
           | reflexivity
           | apply subst_bskl_in_uskl_lc_uskl; assumption
           | apply erase_swap_subst ].
-      * (* LS-Check : a ⊤-headed source is not guarded *)
+      * (* LS-Check : a ∀◇-headed source is not guarded *)
         match goal with
         | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
         end.
@@ -1003,7 +1003,7 @@ Proof.
                 exact HwfT
               | exact Hmod ]
         end.
-  - (* UnivGhostLG : source ⊤◇̇.R̄ *)
+  - (* UnivGhostLG : source ∀◈.R̄ *)
     destruct R0; simpl in HeqT;
       try discriminate HeqT;
       try solve [ inversion HlcS0 ].
@@ -1012,7 +1012,7 @@ Proof.
       destruct_if as [-> | Hc]; intro HeqT;
       [ exfalso; eapply pskl_to_uskl_not_topholeg; symmetry; exact HeqT
       | discriminate HeqT ].
-    + (* R0 = ⊤◇̇.R0 *)
+    + (* R0 = ∀◈.R0 *)
       inversion HeqT; subst. clear HeqT.
       inversion HlcS0; subst.
       simpl in HD.
@@ -1042,7 +1042,7 @@ Proof.
           | reflexivity
           | apply subst_bskl_in_uskl_lc_uskl; assumption
           | apply erase_swap_subst ].
-      * (* LS-Check : a ⊤-headed source is not guarded *)
+      * (* LS-Check : a ∀◇-headed source is not guarded *)
         match goal with
         | Hg : guarded_pskl (pskl_tophole _) |- _ => inversion Hg
         end.
@@ -1130,8 +1130,8 @@ Qed.
 (*  constraint solving [solve C □ Ps], building [solvetag C ψa Ψa] by     *)
 (*  the tag/ghost PROVENANCE relation [dec_ext] — every tagged quantifier *)
 (*  of ψa comes from a quantifier of an intermediate skeleton (or is      *)
-(*  ABSORBED against a ⊤◇ by SE-GhostForall), every dotted ghost (SK)     *)
-(*  from a ghost, and every DROPPED ⊤◇ sits over a GUARDED erasure.       *)
+(*  ABSORBED against a ∀◇ by SE-GhostForall), every dotted ghost (SK)     *)
+(*  from a ghost, and every DROPPED ∀◇ sits over a GUARDED erasure.       *)
 (*  Coverage is SET MEMBERSHIP (Ψa = ⋃ per-constraint contributions, ⊆    *)
 (*  squeezed against solvetag soundness), NOT a per-step growth identity  *)
 (*  — so the idempotent re-collection of ∀-tags is harmless.  The only    *)
@@ -1370,7 +1370,7 @@ Proof.
                       (Hb β ltac:(clear - Hβ; fsetdec))) as Hs;
         clear - Hs Heq; fsetdec
     end.
-  - (* SEq-UnivGhostR : subject ψ, target ⊤◇P *)
+  - (* SEq-UnivGhostR : subject ψ, target ∀◇P *)
     intros ψ P Ψ Hg Hprem IH Ψtot Hdt; exact (IH Ψtot Hdt).
   - (* SEq-FlexR *) intros ψ α Ψ Hgf He Ψtot Hdt; clear - He; fsetdec.
 Qed.
@@ -1395,7 +1395,7 @@ Qed.
 (** SELF-SOLVETAG (paper coverage, base shape): a decorated skeleton solves
     against its OWN erasure, collecting EXACTLY its tags.  This is the SK
     guess (⌊ψ⌋=Q, identity) case and the set-membership coverage anchor —
-    no ⊤◇ frontier (topholeg aligns with ⊤◇ via SEq-UnivGhostG) and no ε
+    no ∀◇ frontier (topholeg aligns with ∀◇ via SEq-UnivGhostG) and no ε
     double-count (add ε handled by SEq-ForallInh). *)
 Lemma solvetag_eq_self : forall Ψ ψ,
   d_tags_skl Ψ ψ -> ψ ∼ᵗ ⌊ ψ ⌋ˢ ⤳ Ψ.
@@ -1413,7 +1413,7 @@ Proof.
         exact (IH β Hβ)
     end.
   - (* holeg : erasure is ◇ *) apply a_solvetag_eq__vacuous; assumption.
-  - (* topholeg R : erasure ⊤◇⌊R⌋ *)
+  - (* topholeg R : erasure ∀◇⌊R⌋ *)
     apply a_solvetag_eq__univ_ghostg; exact IHd_tags_skl.
 Qed.
 
@@ -1424,14 +1424,14 @@ Qed.
     intermediate solve skeleton P; Ψ = ψ's tags at positions the skeleton
     does not yet account for.  Coverage is SET-MEMBERSHIP (⊆), NOT a
     per-step growth identity, so the idempotent re-collection of ∀-tags
-    is harmless.  The ⊤◇ constructors are FAITHFUL (no side conditions on
+    is harmless.  The ∀◇ constructors are FAITHFUL (no side conditions on
     the against-skeleton P0 anywhere — the paper's lemma has none):
-      · topholeg     — SK: the ⊤◇ survives to the output, ψ dotted;
-      · skip_tophole — the ⊤◇ is dropped LATER (by a guarded-target solve
+      · topholeg     — SK: the ∀◇ survives to the output, ψ dotted;
+      · skip_tophole — the ∀◇ is dropped LATER (by a guarded-target solve
         step, or by the TY guess); in both droppings the subject erasure
         is GUARDED, which is exactly what SEq-UnivGhostR needs;
-      · absorb_all   — a ∀ of ψ CREATED against the ⊤◇ by SE-GhostForall
-        (the skeleton stays ⊤◇P0 under the binder, mirroring
+      · absorb_all   — a ∀ of ψ CREATED against the ∀◇ by SE-GhostForall
+        (the skeleton stays ∀◇P0 under the binder, mirroring
         SEq-ForallSyn); its tag ε stays REMAINING (the skeleton has no
         matching quantifier), and SEq-ForallSyn indeed does not collect it. *)
 (* --------------------------------------------------------------------- *)
@@ -1457,14 +1457,14 @@ Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
        dec_ext (open_pskl_wrt_pskl P0 (pskl_var_f α))
                (open_uskl_wrt_uskl ψ0 (uskl_var_f α)) Ψ) ->
     dec_ext (pskl_all_syn P0) (uskl_all_etag ε ψ0) Ψ
-| dec_ext__skip_tophole : forall P0 ψ Ψ,     (* P's ⊤◇ dropped later; ψ guarded *)
+| dec_ext__skip_tophole : forall P0 ψ Ψ,     (* P's ∀◇ dropped later; ψ guarded *)
     guarded_pskl ⌊ ψ ⌋ˢ ->
     dec_ext P0 ψ Ψ ->
     dec_ext (pskl_tophole P0) ψ Ψ
-| dec_ext__topholeg : forall P0 ψ0 Ψ,        (* SK keeps ⊤◇ ; ψ = ⊤◇̇.ψ0 *)
+| dec_ext__topholeg : forall P0 ψ0 Ψ,        (* SK keeps ∀◇ ; ψ = ∀◈.ψ0 *)
     dec_ext P0 ψ0 Ψ ->
     dec_ext (pskl_tophole P0) (uskl_topholeg ψ0) Ψ
-| dec_ext__absorb_all : forall L P0 ψ0 ε Ψ Ψ0,  (* ψ's ∀ created against the ⊤◇
+| dec_ext__absorb_all : forall L P0 ψ0 ε Ψ Ψ0,  (* ψ's ∀ created against the ∀◇
                                                    (SE-GhostForall); ε REMAINS *)
     (forall α, α `notin` L ->
        dec_ext (pskl_tophole P0)
@@ -1548,7 +1548,7 @@ Qed.
 Lemma guarded_pskl_head : forall P, guarded_pskl P -> pskl_guarded_head P.
 Proof. intros P H; inversion H; subst; simpl; exact I. Qed.
 
-(** The TY guess preserves guarded heads (◇ ↦ var, ⊤◇ stripped, ∀ kept —
+(** The TY guess preserves guarded heads (◇ ↦ var, ∀◇ stripped, ∀ kept —
     but a guarded-headed input has no ∀ head). *)
 Lemma a_guess_mono_head : forall Θ P Ξ A,
   a_guess_mono Θ P Ξ A -> pskl_guarded_head P ->
@@ -1558,9 +1558,9 @@ Proof.
     try contradiction; simpl; exact I.
 Qed.
 
-(** [pskl_top_guarded P]: every universal ghost ⊤◇ in P heads a guarded-headed
+(** [pskl_top_guarded P]: every universal ghost ∀◇ in P heads a guarded-headed
     body.  TY-mode solve outputs satisfy this (the eq-phase against ghost-free
-    targets keeps the skeleton ⊤◇-free; the terminal sub step only creates ⊤◇
+    targets keeps the skeleton ∀◇-free; the terminal sub step only creates ∀◇
     over guarded bodies, SS-GhostL / SS-GhostLF) — it is what lets the TY
     guess-drop anchor use the GUARDED [skip_tophole]. *)
 Fixpoint pskl_top_guarded (P : pskl) : Prop :=
@@ -1588,11 +1588,11 @@ Proof.
   - rewrite (IHP α' k), (pskl_guarded_head_open_rec P α' k); tauto.
 Qed.
 
-(** WELL-FORMEDNESS ⟹ [pskl_top_guarded]: [a_wf_pskl__tophole] admits a ⊤◇
-    ONLY over a [guarded_pskl] body, so every ⊤◇ in a wf skeleton heads a
+(** WELL-FORMEDNESS ⟹ [pskl_top_guarded]: [a_wf_pskl__tophole] admits a ∀◇
+    ONLY over a [guarded_pskl] body, so every ∀◇ in a wf skeleton heads a
     guarded body.  This is the paper's implicit source-skeleton discipline —
     it supplies exactly what the coverage needs (no [ghost_free]/[no_top]
-    hypothesis: a ⊤◇ in [P0] is fine, it just wraps a guarded type). *)
+    hypothesis: a ∀◇ in [P0] is fine, it just wraps a guarded type). *)
 Lemma a_wf_pskl_top_guarded : forall Θ Δ P,
   a_wf_pskl Θ Δ P -> pskl_top_guarded P.
 Proof.
@@ -1607,12 +1607,12 @@ Proof.
     auto using guarded_pskl_head.
 Qed.
 
-(** ghost-free (no ghosts at all) ⟹ top-guarded (no ⊤◇ to check). *)
+(** ghost-free (no ghosts at all) ⟹ top-guarded (no ∀◇ to check). *)
 Lemma pskl_ghost_free_top_guarded : forall P, pskl_ghost_free P -> pskl_top_guarded P.
 Proof. induction P; simpl; intuition. Qed.
 
-(** [pskl_top_guarded] survives monotype substitution (a mono has no ∀/⊤◇, so
-    it keeps guarded heads and creates no new ⊤◇) — for the Flex-Assign case. *)
+(** [pskl_top_guarded] survives monotype substitution (a mono has no ∀/∀◇, so
+    it keeps guarded heads and creates no new ∀◇) — for the Flex-Assign case. *)
 Lemma pskl_guarded_head_ptyp_mono : forall τ,
   mono_ptyp τ -> pskl_guarded_head (ptyp_to_pskl τ).
 Proof. intros τ Hm; induction Hm; simpl; exact I. Qed.
@@ -1639,7 +1639,7 @@ Proof.
 Qed.
 
 (** TY anchor: the [a_guess_mono] output painting's decoration extends the
-    pre-guess skeleton (◇ ↦ fresh var, ⊤◇ dropped onto a guarded remainder —
+    pre-guess skeleton (◇ ↦ fresh var, ∀◇ dropped onto a guarded remainder —
     supplied by [pskl_top_guarded] of the solve output). *)
 Lemma dec_ext_guess_mono_anchor : forall Θ P' Ξ' A ψa,
   a_guess_mono Θ P' Ξ' A ->
@@ -1653,7 +1653,7 @@ Proof.
   - (* hole ↦ fresh α̂ : A = var α *)
     destruct ψa; simpl in Hera; try discriminate Hera.
     apply dec_ext__hole; [ exact Histk | apply d_tags_skl__var; fsetdec ].
-  - (* tophole P ↦ guess P : drop the ⊤◇ ; the guess output is guarded *)
+  - (* tophole P ↦ guess P : drop the ∀◇ ; the guess output is guarded *)
     simpl in Htg; destruct Htg as [Hhd Htg0].
     apply dec_ext__skip_tophole;
       [ rewrite Hera; apply lc_head_guarded;
@@ -1786,7 +1786,7 @@ Proof.
 Qed.
 
 (** A solve_eq output against a GUARDED target has a guarded head (no rule
-    with a guarded target emits a ∀-, ⊤◇- or ◇-headed output). *)
+    with a guarded target emits a ∀-, ∀◇- or ◇-headed output). *)
 Lemma solve_eq_guarded_r_head : forall Θ P P0 P',
   Θ ⊢ₑ P ∼ P0 ⤳ P' -> guarded_pskl P0 -> pskl_guarded_head P'.
 Proof.
@@ -1808,7 +1808,7 @@ Qed.
 
 (** A decoration of a guarded-headed skeleton has a GUARDED erasure —
     exactly the [SEq-UnivGhostR] premise, supplied when a solve step drops
-    a ⊤◇ onto a guarded remainder. *)
+    a ∀◇ onto a guarded remainder. *)
 Lemma dec_ext_head_guarded_erase : forall P ψ Ψ,
   dec_ext P ψ Ψ -> pskl_guarded_head P -> guarded_pskl ⌊ ψ ⌋ˢ.
 Proof.
@@ -1823,9 +1823,9 @@ Qed.
 
 (** COVERAGE (unconditional — the paper's provenance, with NO side condition
     on the target Q): matching ψ against the skeleton it extends collects a
-    Ψi with ψ's full tags Ψtot ⊆ Ψ' ∪ Ψi.  A surviving ⊤◇ is matched by a
-    dotted ghost (SEq-UnivGhostG); a dropped ⊤◇ sits over a GUARDED erasure
-    (SEq-UnivGhostR); a ∀ created against a ⊤◇ recurses through
+    Ψi with ψ's full tags Ψtot ⊆ Ψ' ∪ Ψi.  A surviving ∀◇ is matched by a
+    dotted ghost (SEq-UnivGhostG); a dropped ∀◇ sits over a GUARDED erasure
+    (SEq-UnivGhostR); a ∀ created against a ∀◇ recurses through
     SEq-ForallSyn (whose un-collected ε is REMAINING in [absorb_all]). *)
 Lemma dec_ext_cover_eq : forall P ψ Ψ' Ψtot,
   dec_ext P ψ Ψ' -> d_tags_skl Ψtot ψ ->
@@ -1873,16 +1873,16 @@ Proof.
           exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β)
         | clear - Heq Hsub0; fsetdec ]
     end.
-  - (* skip_tophole : P=⊤◇P0, guarded ⌊ψ⌋ ; SEq-UnivGhostR *)
+  - (* skip_tophole : P=∀◇P0, guarded ⌊ψ⌋ ; SEq-UnivGhostR *)
     destruct (IHdec_ext Ψtot Hdt) as [Ψi [Hs Hsub]].
     exists Ψi. split;
       [ apply a_solvetag_eq__univ_ghost_r; [ assumption | exact Hs ] | exact Hsub ].
-  - (* topholeg : P=⊤◇P0, ψ=⊤◇̇ψ0 ; SEq-UnivGhostG *)
+  - (* topholeg : P=∀◇P0, ψ=∀◈ψ0 ; SEq-UnivGhostG *)
     inversion Hdt; subst.
     match goal with Hd0 : d_tags_skl Ψtot ?p0 |- _ =>
       destruct (IHdec_ext Ψtot Hd0) as [Ψi [Hs Hsub]] end.
     exists Ψi. split; [ apply a_solvetag_eq__univ_ghostg; exact Hs | exact Hsub ].
-  - (* absorb_all : P=⊤◇P0, ψ=all_etag ε ψ0 ; SEq-ForallSyn (ε stays remaining) *)
+  - (* absorb_all : P=∀◇P0, ψ=all_etag ε ψ0 ; SEq-ForallSyn (ε stays remaining) *)
     inversion Hdt; subst.
     match goal with
     | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
@@ -1915,7 +1915,7 @@ Qed.
     [solve_eq P ∼ Q ⤳ P'] — UNCONDITIONAL (no side condition on P or Q;
     the paper's lemma has none).  Produces the per-constraint solvetag
     [ψ ∼ᵗ Q ⤳ Ψi] and re-relates ψ to the pre-step P with COVERAGE
-    [Ψp ⊆ Ψ' ∪ Ψi] (⊆, set membership).  ⊤◇ solve steps decompose by the
+    [Ψp ⊆ Ψ' ∪ Ψi] (⊆, set membership).  ∀◇ solve steps decompose by the
     subject's relation to the output: dotted (topholeg ↦ SEq-UnivGhostG),
     guarded-skip (↦ SEq-UnivGhostR), absorbed-∀ (↦ SEq-ForallSyn), flex. *)
 Lemma dec_ext_solve_eq_step : forall Θ P P3 P' ψ Ψ' Ψtot,
@@ -2007,7 +2007,7 @@ Proof.
       exists empty, empty; split;
         [ apply a_solvetag_eq__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
-  - (* tophole_both : ⊤◇P ∼ ⊤◇Q ⤳ ⊤◇P' ; inner induction on the ψ↔⊤◇P'
+  - (* tophole_both : ∀◇P ∼ ∀◇Q ⤳ ∀◇P' ; inner induction on the ψ↔∀◇P'
        relation (the subject may keep absorbing ∀s against the ghost) *)
     remember (pskl_tophole P') as β2 eqn:HeqW.
     revert Ψtot Hdt HeqW; induction Hdec; intros Ψtot Hdt HeqW;
@@ -2068,7 +2068,7 @@ Proof.
       exists empty, empty; split;
         [ apply a_solvetag_eq__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
-  - (* tophole_l_all : ⊤◇P ∼ ∀Q ⤳ ∀P' (SE-GhostForall) ; the subject's ∀ is
+  - (* tophole_l_all : ∀◇P ∼ ∀Q ⤳ ∀P' (SE-GhostForall) ; the subject's ∀ is
        CREATED against the ghost — absorb_all backward, SEq-ForallInh forward *)
     inversion Hdec; subst.
     + (* ψ = all_etag ε ψ0 *)
@@ -2104,7 +2104,7 @@ Proof.
       exists empty, empty; split;
         [ apply a_solvetag_eq__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
-  - (* tophole_l_guarded : ⊤◇P ∼ Q (guarded) ⤳ P' ; the ⊤◇ is DROPPED onto a
+  - (* tophole_l_guarded : ∀◇P ∼ Q (guarded) ⤳ P' ; the ∀◇ is DROPPED onto a
        guarded output — guarded skip backward *)
     destruct (IHHs _ _ _ Hdec Hdt) as [Ψi [Ψp [Hsi [Hdp Hsub]]]].
     exists Ψi, Ψp; split;
@@ -2115,8 +2115,8 @@ Proof.
                 [ exact Hdec | eapply solve_eq_guarded_r_head; eassumption ]
             | exact Hdp ]
         | exact Hsub ] ].
-  - (* all_l_tophole : ∀P ∼ ⊤◇Q ⤳ ∀P' (SE-ForallGhost) ; SEq-ForallSyn keeps
-       the ⊤◇ target whole, the skeleton ∀ matches the subject ∀ *)
+  - (* all_l_tophole : ∀P ∼ ∀◇Q ⤳ ∀P' (SE-ForallGhost) ; SEq-ForallSyn keeps
+       the ∀◇ target whole, the skeleton ∀ matches the subject ∀ *)
     inversion Hdec; subst.
     + (* ψ = all_etag ε ψ0 *)
       inversion Hdt; subst.
@@ -2151,7 +2151,7 @@ Proof.
       exists empty, empty; split;
         [ apply a_solvetag_eq__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
-  - (* tophole_r_guarded : P (guarded) ∼ ⊤◇Q ⤳ P' ; SEq-UnivGhostR *)
+  - (* tophole_r_guarded : P (guarded) ∼ ∀◇Q ⤳ P' ; SEq-UnivGhostR *)
     destruct (IHHs _ _ _ Hdec Hdt) as [Ψi [Ψp [Hsi [Hdp Hsub]]]].
     exists Ψi, Ψp; split;
       [ apply a_solvetag_eq__univ_ghost_r;
@@ -2228,7 +2228,7 @@ Proof.
       exists empty, empty; split;
         [ apply a_solvetag_sub__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
-  - (* univ_ghost_l : ⊤◇P ≼[m] Q ⤳ ⊤◇P' ; inner induction on the ψ↔⊤◇P'
+  - (* univ_ghost_l : ∀◇P ≼[m] Q ⤳ ∀◇P' ; inner induction on the ψ↔∀◇P'
        relation — the target Q is untouched by the ghost *)
     remember (pskl_tophole P') as β2 eqn:HeqW.
     revert Ψtot Hdt HeqW; induction Hdec; intros Ψtot Hdt HeqW;
@@ -2334,8 +2334,8 @@ Proof.
       exists empty, empty; split;
         [ apply a_solvetag_sub__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
-  - (* ghost_l_fn : ◇ ≼[fn m] (arrow Q1 Q2) ⤳ ⊤◇(arrow P1' P2') ; the pre-step
-       skeleton is ◇ (any subject) — inner induction on the ψ↔⊤◇(arrow) relation
+  - (* ghost_l_fn : ◇ ≼[fn m] (arrow Q1 Q2) ⤳ ∀◇(arrow P1' P2') ; the pre-step
+       skeleton is ◇ (any subject) — inner induction on the ψ↔∀◇(arrow) relation
        for the solvetag, hole for the backward relation *)
     remember (pskl_tophole (pskl_arrow P1' P2')) as β2 eqn:HeqW.
     revert Ψtot Hdt HeqW; induction Hdec; intros Ψtot Hdt HeqW;
@@ -2367,7 +2367,7 @@ Proof.
                        [ eapply d_tags_skl_is_tskl; exact Hdt
                        | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
                    | inversion Hdt; subst; fsetdec ] ].
-    + (* topholeg : ψ = ⊤◇̇ψ0, dec_ext (arrow P1' P2') ψ0 *)
+    + (* topholeg : ψ = ∀◈ψ0, dec_ext (arrow P1' P2') ψ0 *)
       injection HeqW as HeqP; subst P0.
       inversion Hdt; subst.
       match goal with Hde : dec_ext (pskl_arrow P1' P2') ?p0 _,
@@ -2436,7 +2436,7 @@ Proof.
                      [ eapply d_tags_skl_is_tskl; exact Hdt
                      | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
                  | inversion Hdt; subst; fsetdec ] ].
-  - (* ghost_l : ◇ ≼[tc] B ⤳ ⊤◇B, guarded B = H ; inner induction, the target
+  - (* ghost_l : ◇ ≼[tc] B ⤳ ∀◇B, guarded B = H ; inner induction, the target
        B is matched by the coverage lemma (SSub-Check) *)
     remember (pskl_tophole B) as β2 eqn:HeqW.
     revert Ψtot Hdt HeqW; induction Hdec; intros Ψtot Hdt HeqW;
@@ -2454,7 +2454,7 @@ Proof.
                        [ eapply d_tags_skl_is_tskl; exact Hdt | exact Hdt ]
                    | exact Hsub ] ]
       end.
-    + (* topholeg : ψ = ⊤◇̇ψ0, dec_ext B ψ0 _ *)
+    + (* topholeg : ψ = ∀◈ψ0, dec_ext B ψ0 _ *)
       injection HeqW as HeqP; subst P0.
       inversion Hdt; subst.
       match goal with Hde : dec_ext B ?p0 _, Hd0 : d_tags_skl Ψtot ?p0 |- _ =>
@@ -2511,13 +2511,13 @@ Qed.
 (*  TY-mode prose-wf invariant (paper: in TY mode the against-side P0 is a
     TYPE, hence ghost-free — the mode discipline stated in prose; registry
     docs/WF-SIDE-CONDITIONS.md).  Consequence chain: the look targets are
-    ⊤◇-free ⟹ the eq-phase skeleton stays ⊤◇-free ⟹ every ⊤◇ of the final
+    ∀◇-free ⟹ the eq-phase skeleton stays ∀◇-free ⟹ every ∀◇ of the final
     solve output was created by SS-GhostL / SS-GhostLF over a GUARDED body
     ⟹ [pskl_top_guarded], which feeds the TY guess-drop anchor.  SK mode
     needs NONE of this.                                                     *)
 (* --------------------------------------------------------------------- *)
 
-(** [pskl_no_top P]: no universal ghost ⊤◇ anywhere (holes ◇ allowed). *)
+(** [pskl_no_top P]: no universal ghost ∀◇ anywhere (holes ◇ allowed). *)
 Fixpoint pskl_no_top (P : pskl) : Prop :=
   match P with
   | pskl_tophole _ => False
@@ -2541,7 +2541,7 @@ Qed.
 Lemma pskl_no_top_top_guarded : forall P, pskl_no_top P -> pskl_top_guarded P.
 Proof. induction P; simpl; intuition. Qed.
 
-(** No ⊤◇ is created solving (eq) against a ⊤◇-free target. *)
+(** No ∀◇ is created solving (eq) against a ∀◇-free target. *)
 Lemma solve_eq_no_top : forall Θ P P0 P',
   Θ ⊢ₑ P ∼ P0 ⤳ P' -> pskl_no_top P -> pskl_no_top P0 -> pskl_no_top P'.
 Proof.
@@ -2563,14 +2563,14 @@ Proof.
         [ apply (proj1 (pskl_no_top_open_rec P β 0)); exact Hnt
         | apply (proj1 (pskl_no_top_open_rec Q β 0)); exact Hgf ]
     end.
-  - (* tophole_both : P=⊤◇ *) contradiction.
-  - (* tophole_l_all : P=⊤◇ *) contradiction.
-  - (* tophole_l_guarded : P=⊤◇ *) contradiction.
-  - (* all_l_tophole : Q=⊤◇ *) contradiction.
-  - (* tophole_r_guarded : Q=⊤◇ *) contradiction.
+  - (* tophole_both : P=∀◇ *) contradiction.
+  - (* tophole_l_all : P=∀◇ *) contradiction.
+  - (* tophole_l_guarded : P=∀◇ *) contradiction.
+  - (* all_l_tophole : Q=∀◇ *) contradiction.
+  - (* tophole_r_guarded : Q=∀◇ *) contradiction.
 Qed.
 
-(** Every ⊤◇ a sub-solve creates over a ⊤◇-free skeleton/target heads a
+(** Every ∀◇ a sub-solve creates over a ∀◇-free skeleton/target heads a
     GUARDED body (SS-GhostL: guarded premise; SS-GhostLF: an arrow). *)
 Lemma solve_sub_top_guarded : forall Θ m P P0 P',
   Θ ⊢ₛ P ≼[ m ] P0 ⤳ P' -> pskl_no_top P -> pskl_no_top P0 ->
@@ -2584,7 +2584,7 @@ Proof.
     match goal with IH : forall α, α `notin` L -> _ |- _ =>
       apply (IH β ltac:(clear - Hβ; fsetdec));
         [ apply (proj1 (pskl_no_top_open_rec P β 0)); exact Hnt | exact Hgf ] end.
-  - (* univ_ghost_l : P=⊤◇ *) contradiction.
+  - (* univ_ghost_l : P=∀◇ *) contradiction.
   - (* vacuous : P'=P *) apply pskl_no_top_top_guarded; exact Hnt.
   - (* check : eq preserves no_top *)
     apply pskl_no_top_top_guarded;
@@ -2600,18 +2600,18 @@ Proof.
       [ apply pskl_no_top_top_guarded;
         eapply solve_eq_no_top; [ eassumption | exact Hnt1 | exact Hgf1 ]
       | apply IHHs; assumption ].
-  - (* ghost_l_fn : ⊤◇(arrow P1' P2') *)
+  - (* ghost_l_fn : ∀◇(arrow P1' P2') *)
     destruct Hgf as [Hgf1 Hgf2].
     split; [ exact I | split;
       [ apply pskl_no_top_top_guarded;
         eapply solve_eq_no_top; [ eassumption | exact I | exact Hgf1 ]
       | apply IHHs; [ exact I | exact Hgf2 ] ] ].
-  - (* ghost_l : ⊤◇B, B guarded *)
+  - (* ghost_l : ∀◇B, B guarded *)
     split; [ apply guarded_pskl_head; assumption
            | apply pskl_no_top_top_guarded; exact Hgf ].
 Qed.
 
-(** Every constraint target is ⊤◇-free. *)
+(** Every constraint target is ∀◇-free. *)
 Definition a_cstr_no_top (c : a_cstr) : Prop :=
   match c with
   | a_cstr_sub _ Q => pskl_no_top Q
@@ -2619,7 +2619,7 @@ Definition a_cstr_no_top (c : a_cstr) : Prop :=
   end.
 
 (** The look's targets are sub-skeletons of P0 (or fresh flex vars) — all
-    ⊤◇-free when P0 is. *)
+    ∀◇-free when P0 is. *)
 Lemma a_look_no_top :
   (forall α m P P0 Ξ 𝒞, P ≼[ α , m ] P0 ⤳ Ξ ⨾ 𝒞 ->
      pskl_no_top P0 -> List.Forall a_cstr_no_top 𝒞) /\
@@ -2627,7 +2627,7 @@ Lemma a_look_no_top :
      pskl_no_top P0 -> List.Forall a_cstr_no_top 𝒞).
 Proof.
   apply a_looksub_lookeq_mutind; intros; simpl in *;
-    try contradiction;                                       (* ⊤◇-target *)
+    try contradiction;                                       (* ∀◇-target *)
     try (apply List.Forall_nil; fail);                       (* nil constraints *)
     try (apply List.Forall_app; split; [ apply H | apply H0 ]; tauto);  (* arrow *)
     try (repeat apply List.Forall_cons;
@@ -2656,7 +2656,7 @@ Qed.
 
 (* ===================================================================== *)
 (*  [top_guarded]-INPUT propagation chain (replaces the [no_top] chain):   *)
-(*  a wf [P0] may carry ⊤◇ (over GUARDED bodies, a_wf_pskl__tophole), so   *)
+(*  a wf [P0] may carry ∀◇ (over GUARDED bodies, a_wf_pskl__tophole), so   *)
 (*  the coverage anchor's [pskl_top_guarded Q] must flow from              *)
 (*  [pskl_top_guarded P0] (⟸ wf), NOT from [ghost_free]/[no_top].          *)
 (* ===================================================================== *)
@@ -2684,7 +2684,7 @@ Proof.
     match goal with IH : forall α, α `notin` L -> _ |- _ => apply (IH β Hβ); exact Hg end.
 Qed.
 
-(** [top_guarded] is preserved by eq-solving (⊤◇ over guarded stays so). *)
+(** [top_guarded] is preserved by eq-solving (∀◇ over guarded stays so). *)
 Lemma solve_eq_top_guarded : forall Θ P P0 P',
   Θ ⊢ₑ P ∼ P0 ⤳ P' ->
   pskl_top_guarded P -> pskl_top_guarded P0 -> pskl_top_guarded P'.
@@ -2705,11 +2705,11 @@ Proof.
       apply (IH β ltac:(clear - Hβ; fsetdec));
       [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt
       | apply (proj1 (pskl_top_guarded_open_rec Q β 0)); exact Hgf ] end.
-  - (* tophole_both : ⊤◇P∼⊤◇Q⤳⊤◇P' *)
+  - (* tophole_both : ∀◇P∼∀◇Q⤳∀◇P' *)
     destruct Hnt as [HgP HtP]; destruct Hgf as [HgQ HtQ].
     split; [ eapply solve_eq_guarded_head_l; [ eassumption | exact HgP ]
            | apply IHa_solve_eq; assumption ].
-  - (* tophole_l_all : ⊤◇P∼∀Q⤳∀P' *)
+  - (* tophole_l_all : ∀◇P∼∀Q⤳∀P' *)
     destruct Hnt as [HgP HtP].
     destruct (atom_fresh (L `union` ftvar_in_pskl P' `union` ftvar_in_pskl Q)) as [β Hβ].
     apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
@@ -2717,9 +2717,9 @@ Proof.
       apply (IH β ltac:(clear - Hβ; fsetdec));
       [ simpl; split; assumption
       | apply (proj1 (pskl_top_guarded_open_rec Q β 0)); exact Hgf ] end.
-  - (* tophole_l_guarded : ⊤◇P∼(guarded Q)⤳P' *)
+  - (* tophole_l_guarded : ∀◇P∼(guarded Q)⤳P' *)
     destruct Hnt as [HgP HtP]; apply IHa_solve_eq; assumption.
-  - (* all_l_tophole : ∀P∼⊤◇Q⤳∀P' *)
+  - (* all_l_tophole : ∀P∼∀◇Q⤳∀P' *)
     destruct Hgf as [HgQ HtQ].
     destruct (atom_fresh (L `union` ftvar_in_pskl P' `union` ftvar_in_pskl P)) as [β Hβ].
     apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
@@ -2727,7 +2727,7 @@ Proof.
       apply (IH β ltac:(clear - Hβ; fsetdec));
       [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt
       | simpl; split; assumption ] end.
-  - (* tophole_r_guarded : (guarded P)∼⊤◇Q⤳P' *)
+  - (* tophole_r_guarded : (guarded P)∼∀◇Q⤳P' *)
     destruct Hgf as [HgQ HtQ]; apply IHa_solve_eq; assumption.
 Qed.
 
@@ -2744,7 +2744,7 @@ Proof.
     match goal with IH : forall α, α `notin` L -> _ |- _ =>
       apply (IH β ltac:(clear - Hβ; fsetdec));
         [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt | exact Hgf ] end.
-  - (* univ_ghost_l : ⊤◇P ≼ P0 ⤳ ⊤◇P' *)
+  - (* univ_ghost_l : ∀◇P ≼ P0 ⤳ ∀◇P' *)
     destruct Hnt as [HgP HtP].
     split; [ eapply solve_sub_guarded_head_l; [ eassumption | exact HgP ]
            | apply IHHs; assumption ].
@@ -2761,12 +2761,12 @@ Proof.
     split;
       [ eapply solve_eq_top_guarded; [ eassumption | exact Hnt1 | exact Hgf1 ]
       | apply IHHs; assumption ].
-  - (* ghost_l_fn : ⊤◇(arrow P1' P2') *)
+  - (* ghost_l_fn : ∀◇(arrow P1' P2') *)
     destruct Hgf as [Hgf1 Hgf2].
     split; [ exact I | split;
       [ eapply solve_eq_top_guarded; [ eassumption | exact I | exact Hgf1 ]
       | apply IHHs; [ exact I | exact Hgf2 ] ] ].
-  - (* ghost_l : ⊤◇B, B guarded *)
+  - (* ghost_l : ∀◇B, B guarded *)
     split; [ apply guarded_pskl_head; assumption | exact Hgf ].
 Qed.
 
@@ -2785,7 +2785,7 @@ Lemma a_look_top_guarded :
      pskl_top_guarded P0 -> List.Forall a_cstr_tg 𝒞).
 Proof.
   apply a_looksub_lookeq_mutind; intros; simpl in *;
-    (* [simpl] already unfolded top_guarded of ⊤◇/arrow into conjunctions;
+    (* [simpl] already unfolded top_guarded of ∀◇/arrow into conjunctions;
        split them (fresh names, don't clobber IHs) *)
     repeat match goal with
            | H : _ /\ _ |- _ =>
@@ -2795,17 +2795,17 @@ Proof.
     try (apply List.Forall_app; split; [ apply H | apply H0 ]; tauto);  (* arrow *)
     try (repeat apply List.Forall_cons;
          solve [ assumption | exact I | apply List.Forall_nil ]);  (* [sub/eq _] *)
-    try (apply H; assumption);                                (* same/⊤◇-strip recursion *)
+    try (apply H; assumption);                                (* same/∀◇-strip recursion *)
     try (match goal with IH : forall β, β `notin` ?LL -> _ |- _ =>  (* cofinite *)
            destruct (atom_fresh LL) as [β Hβ];
            apply (IH β Hβ);
            solve [ assumption
                  | apply (proj1 (pskl_top_guarded_open_rec _ _ _)); assumption
-                 | simpl; split; assumption ]  (* forall_syn: reconstruct ⊤◇ target *)
+                 | simpl; split; assumption ]  (* forall_syn: reconstruct ∀◇ target *)
          end).
 Qed.
 
-(** The TY solve output is top-guarded (walk the constraints; ⊤◇ targets OK). *)
+(** The TY solve output is top-guarded (walk the constraints; ∀◇ targets OK). *)
 Lemma solve_cstr_top_guarded_tg : forall Θ 𝒞 P P',
   Θ ⊩ 𝒞 ⨾ P ⤳ P' -> pskl_top_guarded P -> List.Forall a_cstr_tg 𝒞 ->
   pskl_top_guarded P'.
@@ -3295,7 +3295,7 @@ Proof.
 Qed.
 
 (** L-A corollary: NO TY side condition — [pskl_top_guarded P0] is DERIVED
-    from the wf hypothesis [HwfP0] ([a_wf_pskl__tophole] admits ⊤◇ only over a
+    from the wf hypothesis [HwfP0] ([a_wf_pskl__tophole] admits ∀◇ only over a
     guarded body), exactly as the paper's [thm:sound-subtyping] carries no P0
     condition beyond well-formedness.  SK uses the paper's [P0 :sk M]. *)
 Lemma a_sub_decorate : forall NM M P0 Θ0 P P' Θ1,

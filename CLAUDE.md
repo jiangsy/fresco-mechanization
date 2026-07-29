@@ -282,6 +282,18 @@ before changing any of them.
     it leaves the other greek letters for their paper roles. An atom SET is
     never `R` — a set unioned into the tag context (`Θ ⨟ (Δ ∪ S) ⊢ …`,
     `delta_def_fresh S Θ`) is a Δ, so it takes `Δ'`.
+  - **Ghost glyphs in COMMENTS — `◇` `◈` `∀◇` `∀◈`, and NEVER a combining
+    diacritic.** The paper draws these as a ghost outline (`\mathghost`),
+    optionally containing a small `∀` (`\forallghost`), with the *dotted*
+    variants as a dashed outline (`\DottedHole` / `\dottedforallghost`). The
+    comment stand-ins are: `◇` = `hole`, `◈` = `holeg`, `∀◇` = `tophole`,
+    `∀◈` = `topholeg` (`□` for `hole` also survives and is fine). ⚠️ The
+    older spellings `⊤◇` / `⊤̇◇` / `⊤◇̇` / `◇̇` / `⟨⟩̇` / `⊙̇` are RETIRED:
+    `⊤` reads as a top type it has nothing to do with, and the dot was
+    U+0307, a COMBINING diacritic that renders as a floating smudge in
+    monospace (the hazard `docs/PROPOSAL-notation-pass.md` already warned
+    about — that file keeps its combining dots deliberately, as specimens,
+    and `DESIGN.md` keeps one quoting the paper's own `□̇.P`).
   - ⚠️ **After `induction H` / `inversion H` the names in scope are the RULE's
     binders, not the lemma's.** The rules' *type variables* are greek now (the
     `def_*.v` inductives were renamed too), but their *skeleton/type* binders

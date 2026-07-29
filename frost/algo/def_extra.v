@@ -852,7 +852,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     (* the paper's [Θ₀,Ξ ⊢ P₁] is its DISCIPLINED skeleton wf (there is no
        weak judgment in the paper; [a_scope_pskl]'s scoping-only reading is the
        mech/impl liberalism, WF-SIDE-CONDITIONS.md) — the instantiation must
-       not smuggle a binder into a ⊤◇-body (∀α.⊤◇.(α→α) is wf nowhere). *)
+       not smuggle a binder into a ∀◇-body (∀α.∀◇.(α→α) is wf nowhere). *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->
     a_sub NM M P0 (Ξ ++ Θ0) (open_pskl_wrt_pskl P P1) Q Θ1 ->
     a_sub NM M P0 Θ0 (pskl_all_syn P) Q Θ1

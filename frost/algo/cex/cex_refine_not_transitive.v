@@ -7,9 +7,9 @@
 
     ROOT CAUSE (paper, declarative.tex:1505-1510).  The GhostForall rule
 
-        Δ ⨟ Γ,α ⊢ ⊤.inh{P} ⊳ Q
+        Δ ⨟ Γ,α ⊢ ∀◇inh{P} ⊳ Q
         ----------------------------------
-        Δ ⨟ Γ   ⊢ ⊤.inh{P} ⊳ syn{∀α.} Q
+        Δ ⨟ Γ   ⊢ ∀◇inh{P} ⊳ syn{∀α.} Q
 
     binds α in Γ but deliberately KEEPS Δ (the paper's own comment there
     reads "It's fine to keep Δ since we already required well-formedness
@@ -23,10 +23,10 @@
     the GhostForall binds — α is in Γ, not in Δ, so the side condition does
     not forbid it.  The result captures α:
 
-        ⊤.(□→□)  ⊳  ∀α. ⊤.(α→α)
+        ∀◇(□→□)  ⊳  ∀α. ∀◇(α→α)
 
     and the right-hand side is NOT a well-formed skeleton: skeleton
-    well-formedness binds a quantifier's variable in Δ, while a ⊤-ghost's
+    well-formedness binds a quantifier's variable in Δ, while a ∀◇-ghost's
     body must be well-formed at the EMPTY Δ.  Since the Ghost rule can only
     produce WELL-FORMED fills, □ cannot refine to it — transitivity fails.
 
@@ -53,7 +53,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decl_algo.
 
-(* The fill: ⊤.(□ → □).  Well-formed at the empty Δ: the tophole's body
+(* The fill: ∀◇(□ → □).  Well-formed at the empty Δ: the tophole's body
    is an arrow (hence guarded), and the arrow's components are holes. *)
 Definition Pfill : pskl := pskl_tophole (pskl_arrow pskl_hole pskl_hole).
 
@@ -64,12 +64,12 @@ Proof.
   - apply a_wf_pskl__arrow; apply a_wf_pskl__hole.
 Qed.
 
-(* Step 1: □ ⊳ syn(⊤.(□→□))   by the ghost rule. *)
+(* Step 1: □ ⊳ syn(∀◇(□→□))   by the ghost rule. *)
 Lemma step1 : forall Θ Δ,
   Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ (pskl_to_bskl_syn Pfill).
 Proof. intros. apply ad_refine_syn__hole. apply Pfill_wf. Qed.
 
-(* Step 2: syn(⊤.(□→□)) ⊳ ∀α. ⊤.(α→α)   by tophole_fill, filling both
+(* Step 2: syn(∀◇(□→□)) ⊳ ∀α. ∀◇(α→α)   by tophole_fill, filling both
    ghosts with the fresh CONTEXT rigid α introduced by the rule. *)
 Definition Bres : bskl :=
   bskl_all_syn (bskl_tophole (bskl_arrow (bskl_var_b 0) (bskl_var_b 0))).
@@ -142,13 +142,13 @@ Proof.
 Qed.
 
 (* CONSEQUENCE: [ad_refine_syn] is NOT transitive.
-     □ ⊳ syn(⊤.(□→□))            (step1, the ghost rule)
-     syn(⊤.(□→□)) ⊳ ∀α.⊤.(α→α)   (step2, tophole_fill + two ghost fills
+     □ ⊳ syn(∀◇(□→□))            (step1, the ghost rule)
+     syn(∀◇(□→□)) ⊳ ∀α.∀◇(α→α)   (step2, tophole_fill + two ghost fills
                                    with the CONTEXT rigid α the rule binds)
    but NOT
-     □ ⊳ ∀α.⊤.(α→α)              (no_hole_to_Bres)
+     □ ⊳ ∀α.∀◇(α→α)              (no_hole_to_Bres)
    because the ghost rule can only produce a WELL-FORMED skeleton, and
-   ∀α.⊤.(α→α) is not one: [a_wf_pskl__all] binds α in Δ, whereas
+   ∀α.∀◇(α→α) is not one: [a_wf_pskl__all] binds α in Δ, whereas
    [a_wf_pskl__tophole] requires its body to be well-formed at the EMPTY Δ.
    Refinement's [tophole_fill], by contrast, binds α in the CONTEXT. *)
 Theorem ad_refine_syn_not_transitive :

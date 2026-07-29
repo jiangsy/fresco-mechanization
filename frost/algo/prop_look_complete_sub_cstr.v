@@ -275,12 +275,12 @@ Qed.
     [a_solve_eq_wf], and NOT its mechanical mirror.
 
     ⚠️ THE Δ-UNIFORM STATEMENT IS FALSE.  With Δ = {β}:
-    [⊤◇(□→⟨⟩)] and [β→⟨⟩] are both well-formed, and SS-UnivGhostL,
+    [∀◇(□→⟨⟩)] and [β→⟨⟩] are both well-formed, and SS-UnivGhostL,
     SS-Check, SE-Arrow with SE-GhostL on the left derive
-    [⊤◇(□→⟨⟩) ≼[TC] β→⟨⟩ ⤳ ⊤◇(β→⟨⟩)] — whose output is NOT well-formed at
+    [∀◇(□→⟨⟩) ≼[TC] β→⟨⟩ ⤳ ∀◇(β→⟨⟩)] — whose output is NOT well-formed at
     Δ = {β}, since [a_wf_pskl__tophole] types a ghost body at the EMPTY Δ
     and this one mentions a Δ-variable.  The eq half has no such row (its
-    only ⊤◇ output, SE-UnivGhost, has ⊤◇ on BOTH sides, so the body stays
+    only ∀◇ output, SE-UnivGhost, has ∀◇ on BOTH sides, so the body stays
     Θ-scoped); SS-UnivGhostL strips the ghost on the LEFT only and wraps
     target material back up.  Hence the side condition [Δ ∩ ftv P0 = ∅].
 
@@ -405,7 +405,7 @@ Qed.
     standalone lemma, not just at the top of the theorem: the main proof
     inducts on the SUBTYPING DERIVATION (P6-Cs's measure is unusable — see
     the theorem's header), and a recursive row can land on a special case
-    (e.g. Sub-UnivGhostL at [R' = ⊤◇α], whose erasure ⊤◇α is not α, so the
+    (e.g. Sub-UnivGhostL at [R' = ∀◇α], whose erasure ∀◇α is not α, so the
     level above is NOT special while the level below is).  A measure
     induction would re-run the dispatch at every recursive use; a
     derivation induction cannot, because the derivation is consumed.  So
@@ -712,35 +712,19 @@ Proof.
        lemma's conclusion), and [fsetdec] on an evar goal does not
        terminate *)
     assert (Hsub' : Ψi `union` Ψa [<=] Ψ') by (clear - Hsub; fsetdec).
-    (* P6-Cs is ρ-GENERALIZED; P6-Ss is not (yet), so this call is its
-       ρ = IDENTITY instance: Θs := Θ, Δρ = Ψρ = ∅, Rsub := the subject T.
-       The one non-trivial argument is the P0-walk, which [sub_shield] already
-       carries — that is what [sub_shield_here]'s [flex_apart_walk] is for. *)
-    assert (HΨs1' : Ψ [<=] union (ftag_in_uskl R') (union empty Ψa))
-      by (clear - HΨs1; fsetdec).
-    assert (HlcT : lc_uskl T)
-      by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfSubj).
-    edestruct (@a_lookeq_solve_complete
-                 (size_uskl R' + size_pskl P0) a_sub_mode_ty Θ0 Θ κ Δ Ψ' Ψi Ψa Ψ
-                 ψa (pskl_to_bskl_inh B) P'' P0 Pi R' α Θ empty empty T)
+    (* P6-Cs is ρ-generalized, but P6-Ss is not (yet), so this call goes to the
+       PAPER-FAITHFUL corollary [a_lookeq_solve_complete] — the ρ = identity
+       instance, whose premises are exactly the ones below. *)
+    edestruct a_lookeq_solve_complete
       as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve & HwfPa & HwfΞ & HαΞ & Hkeys
-          & HFor & HForΔ & Hftv & Hinc & Heqv & Hκcfresh & Hprec);
+          & HFor & Hftv & Hinc & Heqv & Hκcfresh & Hprec);
       [ exact (le_n _) | exact HwfΘ | exact HwfΘ0 | exact HwfP0
       | exact HwfPi | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR
       | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
-      | exact Hsub' | exact Hdfresh | exact Hpre | exact HΨs1'
-      | exact HΨs2 | exact H1
-      | exact HwfSubj
-      | exact Hrefine
-      | rewrite <- HeqSub; apply urho__refl; [ exact HlcT | clear; fsetdec ]
-      | intros x b Hb; exact Hb
-      | clear; fsetdec
-      | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
-      | clear; fsetdec
-      | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
-      | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
-      | exact (proj1 (sub_shield_here Hshield))
-      | ].
+      | exact Hsub' | exact Hdfresh | exact Hpre | exact HΨs1
+      | exact HΨs2 | rewrite <- HeqSub; exact H1
+      | rewrite <- HeqSub; exact HwfSubj
+      | exact Hrefine | ].
     exists 𝒞, Ξc, Pa, κc.
     split;
       [ apply a_looksub__check;
@@ -928,13 +912,13 @@ Proof.
       solve [ discriminate HeqSub
             | contradiction (HRnv _ eq_refl)
             | clear - HαR; fsetdec ].
-  - (* UnivGhostL : R' = ⊤◇R0; the IH runs at the body with P0 UNCHANGED
+  - (* UnivGhostL : R' = ∀◇R0; the IH runs at the body with P0 UNCHANGED
        (so [sub_shield] is threaded as is), then LS-UnivGhostL rebuilds.
 
        RECIPE (the structural point that used to block this is SOLVED —
        [a_looksub_solve_complete_leaf] above).  A recursive row can land on
-       a special case: here R0 may be [var α], and then R' = ⊤◇α, whose
-       erasure is ⊤◇α ≠ α, so THIS level is not special while the level
+       a special case: here R0 may be [var α], and then R' = ∀◇α, whose
+       erasure is ∀◇α ≠ α, so THIS level is not special while the level
        below is.  The IH cannot serve it — it demands [HPnα] and [Hin],
        which were reverted into the induction — and a derivation induction
        cannot re-run the dispatch the way P6-Cs's measure induction does.
@@ -947,7 +931,7 @@ Proof.
            | (* leaf, absent *) eapply a_looksub_solve_complete_leaf … ].
 
        Then rebuild with LS-UnivGhostL: the conclusion at R0 is about
-       [⌊R0⌋ˢ], and [a_looksub__univ_ghost_l] lifts it to [⊤◇⌊R0⌋ˢ] = ⌊R'⌋ˢ
+       [⌊R0⌋ˢ], and [a_looksub__univ_ghost_l] lifts it to [∀◇⌊R0⌋ˢ] = ⌊R'⌋ˢ
        with 𝒞, Ξc, Pa, κc ALL UNCHANGED — P0 does not move, so [sub_shield]
        threads as is and every other conjunct of the conclusion is
        literally the recursive one.  R''s shape comes from [HeqSub] by
@@ -1019,7 +1003,7 @@ Proof.
     exists 𝒞, Ξc, Pa, κc.
     split; [ rewrite <- HeraseR; apply a_looksub__univ_ghost_l; exact Hlook
            | exact Hrest ].
-  - (* UnivGhostLG : identical, for the dotted ghost — both ⊤◇ and ⊤̇◇
+  - (* UnivGhostLG : identical, for the dotted ghost — both ∀◇ and ∀◈
        ERASE to [pskl_tophole], so the very same LS-UnivGhostL rebuild
        applies and only the surviving [destruct R'] branch differs. *)
     destruct R' as [ | rn | β | Ra Rb | R0 | εr R0 | | R0 | | R0 ];

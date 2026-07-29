@@ -485,7 +485,7 @@ Paper finalized (merge `8dfafca`); clean restart per the three-step plan:
 embedded-subtyping P-Unit/P-Var/P-Anno (no `d_pat__sub` / `is_base_term`).
 (2) `frost/algo/def_extra.v` REWRITTEN from `full-algo-spec.tex`: new
 `Δ₁∣Δ₂` tracking in `a_consis`, no `refresh`, `□`-RHS Vacuous rules,
-GhostLF/GhostL solve rules with `⊤.` outputs, `∀ᾱ.A₀`-input
+GhostLF/GhostL solve rules with `∀◇` outputs, `∀ᾱ.A₀`-input
 AbsCheck/AbsAnnoCheck (step/base), Freeze with type input, `a_guess` =
 paper's `guess[N]`, `a_sub_flex` (ex-`a_broom`), `Assign-UnivGhost-Id`.
 (3) proofs to be redone bottom-up following the paper's appendices

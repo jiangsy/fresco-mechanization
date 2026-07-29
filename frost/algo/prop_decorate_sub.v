@@ -823,7 +823,7 @@ Proof.
           [ exact Hlcρ | exact Hc | exact Hwf | exact HlcS | exact HwfP0
           | exact HwfS | exact Hrig | exact Hnfd | exact Hfaf ]
     end.
-  - (* SEq-ForallSyn : as ForallInh but input ⊤◇ (unchanged across opening,
+  - (* SEq-ForallSyn : as ForallInh but input ∀◇ (unchanged across opening,
        so its wf reassociates directly), tag pass-through. *)
     rewrite msubst_uskl_all_etag.
     simpl in Hcons. rewrite msubst_uskl_all_syn in Hcons.
@@ -860,7 +860,7 @@ Proof.
         rewrite (@msubst_uskl_open_comm ρ (pskl_to_uskl (uskl_to_pskl ψ)) β
                    Hlcρ Hβρ Hβf);
         apply HlcSbody
-      | (* input ⊤◇ is unchanged: reassociate its wf under the fresh rigid *)
+      | (* input ∀◇ is unchanged: reassociate its wf under the fresh rigid *)
         eapply a_wf_pskl_delta_mono;
           [ apply (a_wf_pskl_reassoc HwfP0 β) | clear; fsetdec ]
       | rewrite strip_open;
@@ -1203,7 +1203,7 @@ Proof. induction ρ as [|[α1 g] ρ' IH]; simpl; [reflexivity|]; rewrite IH; ref
 (*    ForallR case, and the subject-shape overlaps resolve by inversion.  *)
 (*  - the prose mode discipline [mod_comp_sk (inh P0) M] is threaded for  *)
 (*    NM = SK: without it the Ghost/UnivGhostL cases meet solvetag        *)
-(*    ForallR on a ∀-headed P0 (e.g. P0 = ∀α.◇, ψ = ◇̇) where the          *)
+(*    ForallR on a ∀-headed P0 (e.g. P0 = ∀α.◇, ψ = ◈) where the          *)
 (*    decorated subject has no rule — the paper's ssub-ForallR case       *)
 (*    silently assumes N = TY (tex:394).  The discipline forecloses SK    *)
 (*    ∀-targets at TC ([is_sskl] rejects the inherited painting of a ∀).  *)
@@ -1304,7 +1304,7 @@ Proof.
     + (* solvetag ForallL : the stripped subject is ∀-headed, not guarded *)
       match goal with Hg : guarded_uskl (msubst_uskl _ _) |- _ =>
         rewrite msubst_uskl_all_syn in Hg; inversion Hg end.
-    + (* solvetag UnivGhostLG : the stripped subject is ⊤◇-headed *)
+    + (* solvetag UnivGhostLG : the stripped subject is ∀◇-headed *)
       match goal with Hg : guarded_uskl (msubst_uskl _ _) |- _ =>
         rewrite msubst_uskl_tophole in Hg; inversion Hg end.
     + (* solvetag Vacuous : P0 = ◇, but the Check target is guarded *)
@@ -1603,7 +1603,7 @@ Proof.
         | Ho : guarded_pskl (pskl_all_syn _) \/ _ |- _ =>
             destruct Ho as [Hg | Hd]; [ inversion Hg | discriminate Hd ]
         end.
-  - (* Ghost : source ◇; the strip is ◇ or the source is a variable or ◇̇ *)
+  - (* Ghost : source ◇; the strip is ◇ or the source is a variable or ◈ *)
     destruct ψf; simpl in HeqT;
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
@@ -1626,7 +1626,7 @@ Proof.
       rewrite msubst_uskl_hole.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ apply a_subtag__ghost; assumption | clear - Hemp; fsetdec ].
-    + (* ψf = ◇̇ : the solvetag run pins P0 (Vacuous), or a ∀-target dies
+    + (* ψf = ◈ : the solvetag run pins P0 (Vacuous), or a ∀-target dies
          by the SK mode discipline *)
       inversion Hst; subst.
       * (* Vacuous : P0 = ◇ — GhostG replays the node *)
@@ -1634,7 +1634,7 @@ Proof.
         eapply a_subtag_psi_cong with (Ψ := Ψ);
           [ apply a_subtag__ghostg; assumption
           | fsetdec_empty ].
-      * (* solvetag Check : ◇̇ is not guarded *)
+      * (* solvetag Check : ◈ is not guarded *)
         match goal with Hg : guarded_uskl uskl_holeg |- _ =>
           inversion Hg end.
       * (* ForallR : SK ∀-target at TC contradicts the mode discipline *)
@@ -1642,7 +1642,7 @@ Proof.
         inversion Hmod; subst.
         match goal with Hs : is_sskl (bskl_all_inh _) |- _ =>
           inversion Hs end.
-  - (* GhostG : the strip never produces ◇̇ — the source is a variable *)
+  - (* GhostG : the strip never produces ◈ — the source is a variable *)
     destruct ψf; simpl in HeqT;
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
@@ -1657,7 +1657,7 @@ Proof.
     eapply a_subtag_psi_cong with (Ψ := Ψ);
       [ | clear - Hemp; fsetdec ].
     rewrite <- HeqT. apply a_subtag__ghostg; assumption.
-  - (* UnivGhostL : variable, ⊤◇ (vacuous input), or ⊤◇̇ (the mirror) *)
+  - (* UnivGhostL : variable, ∀◇ (vacuous input), or ∀◈ (the mirror) *)
     destruct ψf; simpl in HeqT;
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
@@ -1673,7 +1673,7 @@ Proof.
       eapply a_subtag_psi_cong with (Ψ := Ψ);
         [ | clear - Hemp; fsetdec ].
       rewrite <- HeqT. apply a_subtag__univ_ghost_l; assumption.
-    + (* ψf = ⊤◇.ψ' : Vacuous (P0 = ◇) or a ∀-target (mode discipline) *)
+    + (* ψf = ∀◇.ψ' : Vacuous (P0 = ◇) or a ∀-target (mode discipline) *)
       inversion HeqT; subst; clear HeqT.
       inversion Hlcψ; subst.
       inversion Hst; subst.
@@ -1689,7 +1689,7 @@ Proof.
           | apply msubst_uskl_lc; assumption
           | apply erase_swap; simpl;
             rewrite msubst_uskl_tophole; reflexivity ].
-      * (* solvetag Check : a ⊤-headed subject is not guarded *)
+      * (* solvetag Check : a ∀◇-headed subject is not guarded *)
         match goal with Hg : guarded_uskl (uskl_tophole _) |- _ =>
           inversion Hg end.
       * (* ForallR : SK ∀-target at TC contradicts the mode discipline *)
@@ -1697,7 +1697,7 @@ Proof.
         inversion Hmod; subst.
         match goal with Hs : is_sskl (bskl_all_inh _) |- _ =>
           inversion Hs end.
-    + (* ψf = ⊤◇̇.ψ' : the mirror (UnivGhostLG), Vacuous, or mode-killed ∀ *)
+    + (* ψf = ∀◈.ψ' : the mirror (UnivGhostLG), Vacuous, or mode-killed ∀ *)
       inversion HeqT; subst; clear HeqT.
       inversion Hlcψ; subst.
       inversion Hst; subst.
@@ -1727,7 +1727,7 @@ Proof.
           | apply msubst_uskl_lc; assumption
           | apply erase_swap; simpl;
             rewrite msubst_uskl_tophole; reflexivity ].
-      * (* solvetag Check : a ⊤-headed subject is not guarded *)
+      * (* solvetag Check : a ∀◇-headed subject is not guarded *)
         match goal with Hg : guarded_uskl (uskl_topholeg _) |- _ =>
           inversion Hg end.
       * (* ForallR : mode-killed *)
@@ -1735,7 +1735,7 @@ Proof.
         inversion Hmod; subst.
         match goal with Hs : is_sskl (bskl_all_inh _) |- _ =>
           inversion Hs end.
-  - (* UnivGhostLG : the strip never produces ⊤◇̇ — the source is a variable *)
+  - (* UnivGhostLG : the strip never produces ∀◈ — the source is a variable *)
     destruct ψf; simpl in HeqT;
       try rewrite msubst_uskl_unit in HeqT;
       try rewrite msubst_uskl_arrow in HeqT;
@@ -1886,7 +1886,7 @@ Proof.
              pose proof (strip_id_ghost_free_no_all_syn Hgf Hnas') as Hid
          end.
     all: rewrite Hid; reflexivity.
-  - (* LE-UnivGhost2 : peel the source ⊤◇/⊤◇̇ and recurse *)
+  - (* LE-UnivGhost2 : peel the source ∀◇/∀◈ and recurse *)
     destruct R0; simpl in HeS; try discriminate HeS;
       inversion HeS; subst.
     + (* tophole *)
@@ -2176,7 +2176,7 @@ Proof.
                   | apply faf_open_tvar;
                       [ exact Hfaf | clear - Hβ; fsetdec ] ] ] ]
       end.
-  - (* LE-ForallSyn : ∀-headed source, ⊤◇ input (unchanged across opening) *)
+  - (* LE-ForallSyn : ∀-headed source, ∀◇ input (unchanged across opening) *)
     assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
       by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
     destruct R; simpl in HeS; inversion HeS; subst;
@@ -2303,7 +2303,7 @@ Proof.
                   | apply faf_open_tvar;
                       [ exact Hfaf | clear - Hβ; fsetdec ] ] ] ]
       end.
-  - (* LE-UnivGhost : ⊤◇-headed source and input; peel both *)
+  - (* LE-UnivGhost : ∀◇-headed source and input; peel both *)
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ].
     + (* R = tophole R' *)
@@ -2343,7 +2343,7 @@ Proof.
             | eassumption | exact Hwf | exact HwfP0 | exact HwfSub
             | exact Hrig | exact Hnfd | exact Hfaf ]
       end.
-  - (* LE-UnivGhost1 : ⊤-headed source fixed, ∀-input opens *)
+  - (* LE-UnivGhost1 : ∀◇-headed source fixed, ∀-input opens *)
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ].
     + (* R = tophole R' *)
@@ -2396,12 +2396,12 @@ Proof.
           [ clear; fsetdec
           | apply faf_open_tvar;
               [ exact Hfaf | clear - Hβ; fsetdec ] ]. }
-    + (* R = topholeg R' : no rule pairs ⊤◇̇ with a ∀ input *)
+    + (* R = topholeg R' : no rule pairs ∀◈ with a ∀ input *)
       simpl in Hcons.
       inversion Hcons.
-  - (* LE-UnivGhost2 : peel the source ⊤◇ against a guarded input.  The
+  - (* LE-UnivGhost2 : peel the source ∀◇ against a guarded input.  The
        input P' may itself be a flexible variable, in which case the whole
-       ⊤-headed subject is assigned and the decoration swap applies. *)
+       ∀◇-headed subject is assigned and the decoration swap applies. *)
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ].
     + (* R = tophole R' *)
@@ -2424,7 +2424,7 @@ Proof.
         try (match goal with
              | Hg : guarded_uskl (uskl_tophole _) |- _ =>
                  solve [ inversion Hg ] end).
-      * (* FlexR assignment of the ⊤-headed subject to the flexible input *)
+      * (* FlexR assignment of the ∀◇-headed subject to the flexible input *)
         assert (Hnas : no_all_syn_uskl
                          (uskl_tophole
                             (subst_bskl_in_uskl
@@ -2449,7 +2449,7 @@ Proof.
               | eassumption | exact Hwf | exact HwfP0 | exact HwfSub
               | exact Hrig | exact Hnfd | exact Hfaf ]
         end.
-    + (* R = topholeg R' : UnivGhostG pins a ⊤◇ input (never guarded), and
+    + (* R = topholeg R' : UnivGhostG pins a ∀◇ input (never guarded), and
          a FlexR assignment cannot produce a dotted ghost *)
       simpl in Hcons.
       inversion Hcons; subst;
@@ -2465,7 +2465,7 @@ Proof.
         try (match goal with
              | He : pskl_to_uskl ?Px = uskl_topholeg _ |- _ =>
                  solve [ destruct Px; simpl in He; discriminate He ] end).
-  - (* LE-UnivGhostR : guarded source, ⊤◇ input peeled on the right *)
+  - (* LE-UnivGhostR : guarded source, ∀◇ input peeled on the right *)
     destruct R; simpl in HeS; inversion HeS; subst;
       try solve [ inversion HlcS ];
       try solve [ match goal with Hg : guarded_pskl _ |- _ =>
@@ -2596,7 +2596,7 @@ Proof.
     apply a_looksub_subst_stable;
       [ exact Hlk' | clear - Hβ0; fsetdec
       | simpl; clear - Hβ'; fsetdec | constructor ].
-  - (* LS-UnivGhostL : peel the source ⊤◇ *)
+  - (* LS-UnivGhostL : peel the source ∀◇ *)
     destruct (IHHlk eq_refl _ eq_refl Hst) as [L1 HL1].
     exists L1. intros β Hβ.
     destruct (HL1 β Hβ) as [C' [Hlk' Hst']].

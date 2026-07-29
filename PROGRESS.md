@@ -28,7 +28,7 @@ excluded from the build); mine them when re-proving.
 | `skmod[TY]/[SK]` on input skeletons | `a_ty_mode_compat`, `a_sk_mode_compat` | 🟢 |
 | guess^TY / guess^N (LaTeX `\guessMono`/`\guess`) | `a_guess_mono`, `a_guess` | 🟢 |
 | Constraint collection (fig:poly-info-extraction) | `a_looksub`, `a_lookeq` | 🟢 no-refresh, □-Vacuous |
-| Constraint solving (fig:constraint-solving) | `a_solve_sub`, `a_solve_eq`, `a_solve_cstr` | 🟢 GhostLF/GhostL with ⊤ outputs |
+| Constraint solving (fig:constraint-solving) | `a_solve_sub`, `a_solve_eq`, `a_solve_cstr` | 🟢 GhostLF/GhostL with ∀◇ outputs |
 | look | `a_extract` | 🟢 |
 | unifyvar / assignvar | `a_unify`, `a_assign` | 🟢 |
 | Algorithmic consistency (fig:alg-consistency) | `a_consis` | 🟢 NEW Δ₁∣Δ₂ tracking |
@@ -134,12 +134,32 @@ row's `Ξc1 ++ Θ0` growth needs.
 **Row by row it is threading, not rewriting.**  Every row dispatches on the
 ρ-free `R'`, so the `uskl_rho_*_r_inv` family reads `Rsub`'s shape off the
 ideal's, and for a non-variable ideal returns a SINGLE congruence with no
-disjunct.  The ∀ and ⊤◇ rows actually got SIMPLER: consistency and wf now open
+disjunct.  The ∀ and ∀◇ rows actually got SIMPLER: consistency and wf now open
 directly on the image, so `p6cs_subject_open` survives only in the ρ premise.
 
-**P6-Ss** calls the new P6-Cs at ρ = identity from its Check row; its
-`sub_shield` already carries the P0-walk, so `sub_shield_here` supplies the
-one non-trivial argument.  Its own statement is unchanged.
+**The paper's statement is back as a corollary.**  The generalized theorem is
+`a_lookeq_solve_complete_gen`; `a_lookeq_solve_complete` is its ρ = identity
+instance (`Θs := ·`, `Δρ = Ψρ = ∅`, subject = the ideal) and is LITERALLY the
+pre-generalization statement — same premises, same conclusion, no residue.
+Use it unless you are threading a ρ down from a Sub-ForallL; P6-Ss's Check row
+and the counterexample file both do.
+
+Making the corollary premise-free needed one more definition: P6-Cs takes the
+**P0-ONLY walk** `flex_apart_p0` (`p0_step` / `p0_walk`, prop_look_complete.v)
+rather than `flex_apart_walk`.  P6-Cs descends P0 alone at a CONSTANT Δρ, so
+at Δρ = ∅ every reachable state is `fa_clean` — whereas `flex_apart_walk`'s
+`fastep_all_r` can grow Δρ and would have left a real premise behind.  P6-Ss
+still threads the full walk and converts with `flex_apart_walk_p0`, which is
+what the new `fastep_p0_arrow_l/_r` steps are for.
+
+**Notation (comments only).**  The ghost family is now `◇` = `hole`,
+`◈` = `holeg`, `∀◇` = `tophole`, `∀◈` = `topholeg`, matching the paper's
+ghost-with-a-∀ glyphs.  Retired: `⊤◇` / `⊤̇◇` / `⊤◇̇` / `◇̇` / `⟨⟩̇` / `⊙̇`
+— `⊤` read as an unrelated top type, and the dot was U+0307, a COMBINING
+diacritic that renders as a floating smudge in monospace.  ~580 sites; the
+convention is recorded in CLAUDE.md.  (`docs/PROPOSAL-notation-pass.md` keeps
+its combining dots as specimens, and DESIGN.md keeps the one quoting the
+paper's `□̇.P`.)
 
 ## 2026-07-29 — P6-Ss: ρ-repair infrastructure landed; ForallR gap RESOLVED by the authors; the repair's real scope measured
 
@@ -281,9 +301,9 @@ mechanization still admit-free.
 
 - **Arrow** delegates its LEFT premise to P6-Cv and its RIGHT one to the IH,
   exactly as the Check case does; the new part is `arrow_grid`, the case
-  analysis on the input skeleton `Pi` (arrow / □ = SolS-GhostLF / ⊤◇ /
+  analysis on the input skeleton `Pi` (arrow / □ = SolS-GhostLF / ∀◇ /
   variable, with unit and ∀ refuted by the precision against an arrow
-  guess).  The ⊤◇ row recurses STRUCTURALLY on `Pi` — no measure needed,
+  guess).  The ∀◇ row recurses STRUCTURALLY on `Pi` — no measure needed,
   because well-formedness makes the ghost's body guarded.
 - **Sub-ForallL** absorbs the rule's instantiation into ρ, as the paper's
   `ρ_b = ρ ∘ [ψ_b/β]` (`uskl_rho_subst`), so the recursive call runs at
@@ -308,7 +328,7 @@ closed cases read unchanged.
 New reusable kit (all Qed, axiom-free):
 `arrow_grid`; `uskl_rho_ftag_target_sub` / `uskl_rho_ftv_subject_bound` (the
 two missing directions of ρ's tag/ftv transports);
-`a_wf_pskl_shielded_dom` — a well-formed skeleton's ⊤◇-SHIELDED variables
+`a_wf_pskl_shielded_dom` — a well-formed skeleton's ∀◇-SHIELDED variables
 all live in `dom Θ`, never in Δ, which is exactly what lets Sub-ForallL add
 its fresh binder to Δρ (the discipline DESIGN §7 names in prose);
 `ad_ppre_guarded_all_etag_absurd`; and
@@ -533,10 +553,10 @@ Without it the lemma is FALSE, and that is machine-checked in
   - `p6cs_without_subject_wf_is_false` — the lemma with EVERY premise except
     this one (conclusion weakened to its three essential conjuncts, which only
     strengthens the refutation) implies False.  Witness: `Θ = Θ0 = ·`, `κ = ·`,
-    `S = ⊤◇α`, `ψa = ⊤̇◇⟨⟩`, `P0 = Pi = ⊤◇⟨⟩`, `Q = ⊤◇⟨⟩`; the subject is
-    `⊤◇(⊤̇◇⟨⟩)`, a ghost over a ghost.  The algorithm is forced into
+    `S = ∀◇α`, `ψa = ∀◈⟨⟩`, `P0 = Pi = ∀◇⟨⟩`, `Q = ∀◇⟨⟩`; the subject is
+    `∀◇(∀◈⟨⟩)`, a ghost over a ghost.  The algorithm is forced into
     `𝒞 = [α ≐ ⟨⟩]` (LE-UnivGhost, LE-Var) and `Pa = ⟨⟩` (SE-GhostGuarded,
-    SE-Unit), and the precision goal `⟨⟩ ⊑ᵖ ⊤̇◇⟨⟩` has no rule.
+    SE-Unit), and the precision goal `⟨⟩ ⊑ᵖ ∀◈⟨⟩` has no rule.
   - `p6cs_fires_when_the_subject_is_wf` — instantiates the CLOSED theorem on
     the same shape with `ψa := ⟨⟩`, showing the premise set is satisfiable
     (the theorem is not vacuous).
@@ -617,7 +637,7 @@ Kit that closed it (see DESIGN-completeness-subtyping.md §6(u)):
   WF-SIDE-CONDITIONS.md): needed because `inh(□) = bskl_hole`, so the
   ForallSyn refinement transport `ad_refine_syn_aenv_to_delta` (moving the
   ∀-binder into Δr) needs `bskl_no_hole`.
-- the three rows: ⊤◇ (UnivGhost, `tophole_both` + tophole_fill/rename),
+- the three rows: ∀◇ (UnivGhost, `tophole_both` + tophole_fill/rename),
   □ (GhostL, `hole_l` + tophole_fill/rename), ∀ (ForallGhost,
   `all_l_tophole` + Δ-var FOLD + `ad_ppre__forall`).
 
@@ -717,10 +737,10 @@ New file `frost/algo/prop_look_complete.v` (all Qed, axiom-free;
 RELATION `uskl_rho` (refl + congruences + replace-leaf; DESIGN §7
 DECISION block).  DESIGN CORRECTION: the paper's positional side
 condition on P_i is load-bearing — counterexamples v4/v5 (DESIGN §7)
-show Δ-membership + precision alone admit ⊤◇-wrapped/def-chained leaf
+show Δ-membership + precision alone admit ∀◇-wrapped/def-chained leaf
 positions that break the conclusion — and is RECOVERED as the lemma
 `ad_ppre_delta_var_inv` from freshness of the replaced variables
-(Δ-membership, rigid binding, κ-image-/Θ-definition-/⊤◇-shielded-ftv
+(Δ-membership, rigid binding, κ-image-/Θ-definition-/∀◇-shielded-ftv
 avoidance via the new `pskl_shielded_ftv`).  Kit: solve-cluster
 ctx-change/strengthen/weaken/rename + shielded-output bound, msubst
 avoidance lemmas, `is_sskl` painting/refine-hole/consis-tags-empty
@@ -764,7 +784,7 @@ Qed axiom-free (commits b925723, 0eb95ff, a3da6b7):
   `ad_pat_sub_g` — ForallL instantiation tags fresh from the subject's
   syntactic tags; fuel: leaves any-n, UnivGhostL/LG/FlexMono
   non-incrementing, Arrow/ForallR/ForallL increment (makes
-  precision-substitution fuel-preserving under ⊤◇-wrapping/flex-folding).
+  precision-substitution fuel-preserving under ∀◇-wrapping/flex-folding).
 - `prop_sub_complete.v`: `_g` helper layer (erasure, psi_cong, ftag-sub
   invariant, wrap_tophole, fold_flex, concrete_target, refl_transport,
   hole_intro) + per-rule ⊑ᵤ-transports for UnivGhostR / Ghost / GhostG —
@@ -1054,7 +1074,7 @@ Paper finalized (merge `8dfafca`); clean restart per the three-step plan:
 embedded-subtyping P-Unit/P-Var/P-Anno (no `d_pat__sub` / `is_base_term`).
 (2) `frost/algo/def_extra.v` REWRITTEN from `full-algo-spec.tex`: new
 `Δ₁∣Δ₂` tracking in `a_consis`, no `refresh`, `□`-RHS Vacuous rules,
-GhostLF/GhostL solve rules with `⊤.` outputs, `∀ᾱ.A₀`-input
+GhostLF/GhostL solve rules with `∀◇` outputs, `∀ᾱ.A₀`-input
 AbsCheck/AbsAnnoCheck (step/base), Freeze with type input, `a_guess` =
 paper's `guess[N]`, `a_sub_flex` (ex-`a_broom`), `Assign-UnivGhost-Id`.
 (3) proofs to be redone bottom-up following the paper's appendices; the

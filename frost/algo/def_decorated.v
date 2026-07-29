@@ -38,7 +38,7 @@ Reserved Notation "C ⊩ᵗ ψ ⤳ Ψ"
 
 (* ===================================================================== *)
 (*  Erasure  ⌊R⌋ : uskl → pskl  (decorated-algosub.tex:27-38)             *)
-(*  Homomorphic; non-trivial cases: ∀^β1 ↦ ∀, HoleG ↦ □, TopHoleG ↦ ⊤.     *)
+(*  Homomorphic; non-trivial cases: ∀^β1 ↦ ∀, HoleG ↦ □, TopHoleG ↦ ∀◇     *)
 (* ===================================================================== *)
 
 Fixpoint uskl_to_pskl (R : uskl) : pskl :=

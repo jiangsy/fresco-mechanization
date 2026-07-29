@@ -543,7 +543,7 @@ Proof.
     clear - Hpt IHad_pat_sub_g; fsetdec.
 Qed.
 
-(** Wrap a ⊤◇ over an SK subject at the SAME fuel — [UnivGhostL] is
+(** Wrap a ∀◇ over an SK subject at the SAME fuel — [UnivGhostL] is
     non-incrementing; at TI, re-route through the [Infer] consistency
     premise ([tophole_drop]). *)
 Lemma ad_pat_sub_g_wrap_tophole : forall n M Ψ Θ R Q,
@@ -780,7 +780,7 @@ Proof.
 Qed.
 
 (** ⊑ᵤ preserves guardedness of the subject (used by the Check /
-    UnivGhostR reconstructions; the ghostier side must not grow a ⊤◇ or
+    UnivGhostR reconstructions; the ghostier side must not grow a ∀◇ or
     hole head, which [uskl_ghost_free]—TY—or the case analysis—SK refl /
     congruence roots—supplies). *)
 Lemma uskl_precise_guarded : forall Θb Ψrep R' R,
@@ -818,11 +818,11 @@ Qed.
 
 (* ===================================================================== *)
 (*  Step (3) per-rule ⊑ᵤ-transports.  Each runs the inner induction on ⊑ᵤ  *)
-(*  with the rule's data as named arguments (the ⊤◇/flex peels recurse on  *)
+(*  with the rule's data as named arguments (the ∀◇/flex peels recurse on  *)
 (*  the smaller ⊑ᵤ; congruence roots rebuild the rule).                    *)
 (* ===================================================================== *)
 
-(** [UnivGhostR]: guarded SK subject against a ⊤◇-target. *)
+(** [UnivGhostR]: guarded SK subject against a ∀◇-target. *)
 Lemma ad_pat_sub_g_ughost_r_transport : forall Θb Ψrep R' R,
   uskl_precise Θb Ψrep R' R ->
   forall Ψsup n Θ' Ψn Q,
@@ -862,7 +862,7 @@ Proof.
   - (* tophole cong *) inversion Hgd.
   - (* topholeg cong *) inversion Hgd.
   - (* tophole_keepg *) inversion Hgd.
-  - (* hole: replace by □ via Ghost against the ⊤◇-target *)
+  - (* hole: replace by □ via Ghost against the ∀◇-target *)
     assert (Hnode : ad_pat_sub_g n a_sub_mode_sk mode_tc Ψn Θ' R
                       (bskl_tophole Q0))
       by (apply ad_pat_sub_g__univ_ghost_r;
@@ -1393,7 +1393,7 @@ Proof.
         eapply a_wf_aenv_binds_def_mono; [ exact Hwf | apply Hmon; exact H ] ].
 Qed.
 
-(** [UnivGhostL]: ⊤◇-subject, SK, non-incrementing. *)
+(** [UnivGhostL]: ∀◇-subject, SK, non-incrementing. *)
 Lemma ad_pat_sub_g_ughost_l_transport : forall Θb Ψr Rg' Rgt,
   uskl_precise Θb Ψr Rg' Rgt ->
   forall n Mg Θ' Ψfull Rg0 Qg Ψsup Ψn Ψna,
@@ -1464,7 +1464,7 @@ Proof.
       | exact Hwfq ].
 Qed.
 
-(** [UnivGhostLG]: ⊤̇◇-subject, SK, non-incrementing. *)
+(** [UnivGhostLG]: ∀◈-subject, SK, non-incrementing. *)
 Lemma ad_pat_sub_g_ughost_lg_transport : forall Θb Ψr Rg' Rgt,
   uskl_precise Θb Ψr Rg' Rgt ->
   forall n Mg Θ' Ψfull Rg0 Qg Ψsup Ψn Ψna,
@@ -1511,7 +1511,7 @@ Proof.
       [ exact Hup | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
       | exact HΨf | exact HΨa | exact Hdisj
       | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq ].
-  - (* tophole_keepg: plain ⊤◇ on the ghostier side *)
+  - (* tophole_keepg: plain ∀◇ on the ghostier side *)
     inversion HeqR; subst.
     apply ad_pat_sub_g__univ_ghost_l; [ exact HMti | ].
     eapply Hrec with (Ψr0 := Ψrep) (Ψsup0 := Ψsup) (Ψna0 := Ψna);

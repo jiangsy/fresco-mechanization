@@ -3889,7 +3889,7 @@ Proof.
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
                ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
-  - (* C-ForallSyn : ∀α.P ∼ ∀α.P3 against input ⊤.P0 *)
+  - (* C-ForallSyn : ∀α.P ∼ ∀α.P3 against input ∀◇P0 *)
     intros L F Δ1 Δ2 Θ0 Θ1 P0 P P3 Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
@@ -4043,7 +4043,7 @@ Proof.
         [ | clear; fsetdec | exact Hα1 | exact Hdefsα ].
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
                ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
-  - (* C-UnivGhost : ⊤.P ∼ ⊤.P3 against input ⊤.P0 *)
+  - (* C-UnivGhost : ∀◇P ∼ ∀◇P3 against input ∀◇P0 *)
     intros F Δ1 Δ2 Θ0 Θ1 P0 P P3 Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' ]; subst.
@@ -4069,7 +4069,7 @@ Proof.
     + simpl. apply ad_refine_pskl_f__tophole_keep; [ | exact Hrp ].
       eapply ad_refine_pskl_f_guarded_r;
         [ exact Hwf1 | exact Hrp | exact Hg' ].
-  - (* C-UnivGhost1 : ⊤.P ∼ ∀α.P3 against input ∀α.P0 *)
+  - (* C-UnivGhost1 : ∀◇P ∼ ∀α.P3 against input ∀α.P0 *)
     intros L F Δ1 Δ2 Θ0 Θ1 P0 P P3 Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | L0 Θa Δa P0a Hbody0 Heqa | | ]; subst.

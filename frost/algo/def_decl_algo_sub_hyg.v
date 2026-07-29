@@ -16,7 +16,7 @@
     2. FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
        (the completeness ForallL case applies its induction hypothesis to
        the substituted premise, subtyping-proofs.tex:3416-3429), but the
-       ghostier subject may carry extra [⊤◇]-wrappers (UnivGhostL steps)
+       ghostier subject may carry extra [∀◇]-wrappers (UnivGhostL steps)
        or fold flexible definitions (FlexMono steps) that the original
        derivation does not have.  So: leaves conclude at ANY fuel,
        UnivGhostL/UnivGhostLG/FlexMono are NON-incrementing, and only
