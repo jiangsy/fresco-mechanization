@@ -3097,3 +3097,59 @@ lemma among them.
 
 **Estimate: a focused session, maybe two** — much smaller than P6-Ss, but not
 an add-on.  P7 opens only after it.
+
+### 7.4 ⚠️ P6-L IS BLOCKED ON AN ENCODING MISMATCH (found 2026-07-30, before writing any proof)
+
+`a_extract`'s solve premise runs at the WRONG CONTEXT for P6-Ss's output, and
+the gap is not a weakening.
+
+    a_extract__solve : P ≼[α,m] P' ⤳ Ξ ⨾ 𝒞  ->  Ξ ⊩ 𝒞 ⨾ □ ⤳ Q  -> …
+                                                 ^^^ Ξ ALONE
+
+but P6-Ss delivers `(Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa`.  Going from `Ξc ++ Θ0` down to
+`Ξc` DROPS Θ0's flexibles, and that is unsound for the one context-sensitive
+rule in the whole solve cluster:
+
+    a_solve_eq__flex_r :  a_flex_tvar Θ α -> a_non_flex Θ P ->
+                          Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ (pskl_var_f α)
+
+`a_flex_tvar Θ α` gets HARDER in the smaller context (while `a_non_flex Θ P`
+gets easier), so neither direction is monotone.  Every other rule of
+`a_solve_sub` / `a_solve_eq` / `a_solve_cstr` ignores Θ entirely — this one
+rule is the whole issue.  Existing lemmas only WEAKEN
+(`a_solve_eq_weaken_tvar` adds a rigid; `a_solve_cstr_weaken_mid_flex` inserts
+flexibles); there is no strengthening lemma, and there should not be.
+
+**The configuration is reachable.**  `skmod{TY}` at TC makes P0 a TYPE, and a
+type may be a FLEXIBLE variable of Θ0 (flexibility is a context property, not
+a syntactic one), so \lslab{Var} / \lelab{Var} can emit `eq α̂` with α̂ ∈ Θ0.
+The FIRST constraint is safe — `Pi = □` and `a_solve_eq__hole_l` (`□ ∼ Q ⤳ Q`)
+has no flex check — but with `𝒞 = [eq Q1, eq α̂]` the second constraint faces a
+non-hole subject and needs SE-FlexR, which `Ξc` alone cannot supply.
+
+**This is a MECH-ENCODING artefact, not a paper gap.**  The paper's solve
+judgment is CONTEXT-FREE — `\boxed{\solve{\mC}{P}{Q}}`, full-algo-spec.tex:1216
+— because there `α̂` is syntactically distinct.  The mech added Θ only to
+decide hattedness (def_extra.v:377), and `a_extract` then had no context to
+pass but `Ξ`.  So the mech is free to choose; the current choice is just the
+narrow one, and it is narrow in a way that breaks completeness rather than
+strengthening it.
+
+**Options (a DECISION is needed before P6-L can be assembled).**
+- (a) **Give `a_extract` a context parameter** and solve at `Ξ ++ Θ0`.  This is
+  what the paper's context-freeness licenses and what makes P6-L go through.
+  Cost: `a_extract`'s signature, its one use site `a_sub__forall_l`, and a
+  re-check of subtyping SOUNDNESS (`a_sub_sound_thm`, currently closed) — the
+  rule changes, so soundness is not automatic.
+- (b) Prove the strengthening under a reachability invariant ("no constraint
+  target is a Θ0-flexible").  Looks FALSE for the reason above; would need a
+  cex to settle.
+
+⚠️ Do NOT build the TY guess witness (§7.3) before this is settled: the
+witness is independent, but the top-level assembly it feeds is what breaks,
+and option (a) may move the statement.
+
+**NB this is the same SHAPE of question as P6-Ss's `a_looksub__forall_r`
+(§8 (h))** — a mech scoping choice made on a judgment the paper leaves
+scope-free.  There the narrow choice turned out to be provable (via the
+α-stack split) and was KEPT; here the narrow choice looks unprovable.
