@@ -4006,8 +4006,19 @@ Theorem a_lookeq_solve_complete :
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   κ ∷ Θ0 ⊑ Θ ->
+  (* α is the binder [a_sub__forall_l] opens (def_extra.v) — COFINITELY, and
+     only to run the lookup: it is never added to Θ0 or Θ, and the rule's own
+     recursive call is already at [open P P1] with α replaced by the solved
+     P1.  So it is FREE in R' and in NO context, which the scope premise below
+     records as [add α …].  The paper writes only [α ∉ Θ]; the second
+     conjunct is what actually does the work — with [dom κ ⊆ dom Θ0] it gives
+     [α ∉ dom κ], i.e. κ leaves α alone, without which [(κR)[ψa/α]] would not
+     mean anything.  (NB [α ∉ Θ] alone does NOT imply it: [a_inc__flex] SOLVES
+     a source flexible, so [dom Θ0 ⊆ dom Θ] is false.)  Non-vacuity, with α
+     genuinely occurring, is machine-checked in cex/cex_p6cs_subject_wf.v. *)
   α `notin` dom Θ -> α `notin` dom Θ0 ->
   ⌊ R' ⌋ˢ = P ->
+  (* …R' may mention the contexts' variables PLUS α *)
   ftvar_in_uskl R' [<=] add α (dom Θ0 `union` dom Θ) ->
   lc_uskl R' ->
   a_tags_sort NM Ψ' ψa ->
@@ -4017,7 +4028,9 @@ Theorem a_lookeq_solve_complete :
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
   Ψa [<=] Ψsub ->
-  (* subject = (κR)[ψa/α], EXACTLY the paper's form *)
+  (* subject = (κR)[ψa/α], EXACTLY the paper's form.  Note it is α-FREE — the
+     guess has replaced every α-occurrence — which is why a Θ-scoped judgment
+     is content never to have seen α. *)
   Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) ∼ Q ->
   (* … and that subject is WELL-FORMED — the paper's prose side condition;
      without it the statement is FALSE (frost/algo/cex/cex_p6cs_subject_wf.v).

@@ -156,13 +156,12 @@ what the new `fastep_p0_arrow_l/_r` steps are for.
 FUEL `n` is absorbed — it is an artefact of the strong induction, not part of
 the claim, so the corollary instantiates it at `size_uskl R' + size_pskl P0`
 and drops the measure premise.  And the `α ∉ dom Θ0` premise beside the
-paper's `α ∉ Θ` is now registered in docs/WF-SIDE-CONDITIONS.md: it is NOT
-redundant (`a_inc__flex` solves a source flexible away, so `dom Θ0 ⊆ dom Θ`
-is false), it is consumed only to get `α ∉ dom κ` via `dom κ ⊆ dom Θ0` — i.e.
-"κ leaves α alone", which is what makes `(κR)[ψa/α]` mean anything — and it is
-the paper's own intent, since α is the binder declarative Sub-ForallL opens
-and is fresh for everything by Barendregt.  A prose-completion, not a
-strengthening.
+paper's `α ∉ Θ` is now explained at the statement itself: it is NOT redundant
+(`a_inc__flex` solves a source flexible away, so `dom Θ0 ⊆ dom Θ` is false),
+it is consumed only to get `α ∉ dom κ` via `dom κ ⊆ dom Θ0` — "κ leaves α
+alone", without which `(κR)[ψa/α]` means nothing — and it is forced anyway by
+how `a_sub__forall_l` opens the binder (cofinitely, never into a context).
+Not a wf side condition, so NOT registered in docs/WF-SIDE-CONDITIONS.md.
 
 **Notation (comments only).**  The ghost family is now `◇` = `hole`,
 `◈` = `holeg`, `∀◇` = `tophole`, `∀◈` = `topholeg`, matching the paper's
