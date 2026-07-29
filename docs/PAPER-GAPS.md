@@ -1400,10 +1400,35 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   (narrower algorithm ⇒ stronger completeness claim), but it means "the wf
   check catches it anyway" is not by itself a proof of equivalence, and the
   exists-fresh relaxation should NOT be adopted on that basis.
-- Mech status: P6-Ss is stated and its machinery is in
-  `frost/algo/prop_look_complete_sub_cstr.v`; 8 of the 12 induction cases
-  are closed.  The ForallR row is the one this entry concerns; P6-Ss's
-  ForallL row is blocked on something else entirely (see the next entry).
+- ⚠️ **CORRECTION (2026-07-30): the ψa-relative bound above is NOT reachable
+  in that form, and the ForallR row does NOT use it as stated.**  Its leaf
+  would need the sub-side analogue of `ad_pat_consis_target_ftv`
+  (`ftv Q ⊆ ftv R ∪ def_ftv Θ` from a subtyping derivation with a decorated
+  subject), and that lemma is FALSE — machine-checked,
+  `frost/algo/cex/cex_p6ss_sub_target_ftv.v`.  `is_tskl` excludes the
+  \sublab{Ghost} row but NOT \sublab{ForallL}: a tagged `∀^ε` IS a decorated
+  skeleton, and its instantiation is bounded only by `dom Θ` — the
+  DERIVATION's context, which \sublab{ForallR} grows by the very β being
+  stripped.  So `dom Θ` is the strongest sound bound and it is exactly the
+  wrong one; the "ρ dissolves the objection" argument above is right about
+  the LOOKUP side but does not reach the derivation's own ForallL guesses.
+- **The row is nonetheless CLOSED (2026-07-30), by a case split the paper
+  does not make.**  \sublab{ForallR} forces mode `TY`/`TC`, where the only
+  applicable rules are \sublab{Check}, \sublab{ForallR} and
+  \sublab{ForallL} — so under a \sublab{ForallR} the `P = α` leaf is
+  reachable ONLY when `P` is a ∀/⊤◇-STACK over α, and such a `P` never
+  descends the target at all (\lslab{ForallL}/\lslab{UnivGhostL} peel the
+  stack and \lslab{Var} fires at the UNDESCENDED `∀β.P_0`).  Every other
+  α-leaf sits under \lslab{Check}, i.e. inside P6-Cs, whose bound IS
+  ψa-relative.  Mechanized as a mode-guarded disjunction; see
+  docs/DESIGN-completeness-subtyping.md §8 (h).  **Authors: the paper's
+  ForallR case should say which of the two it is in, or the step is
+  incomplete as written.**
+- Mech status: **P6-Ss is CLOSED** (2026-07-30) —
+  `a_looksub_solve_complete_gen` and the paper's premise-free
+  `a_looksub_solve_complete` are `Qed` and axiom-free in
+  `frost/algo/prop_look_complete_sub_cstr.v`; all twelve rows and both
+  special cases are proved.
 
 ## GAP (proof-step, 2026-07-29) — `lemma:complete-constraint-collection-solving` (P6-Ss), ForallL case: the IH instance needs `θψ_b = ψ_b`, which fails even for legitimate θ; no side condition on θ repairs the step — the statement is believed TRUE via a ρ-generalized induction
 

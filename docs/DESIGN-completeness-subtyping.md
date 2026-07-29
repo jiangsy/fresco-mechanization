@@ -3000,17 +3000,42 @@ the `Θρ` of (g)'s plan is not needed.
    `alpha_stack α P /\ Ξc = nil /\ κc = nil /\ 𝒞 = a_cstr_sub M P0 :: nil`,
    which is what removes 4(b): in the stack case the IH already yields the
    solve, at the descended target.
-6. ⬜ Sub-ForallR, the last admit.  LEFT branch: `β ∉ ftv 𝒞` (β is fresh for
-   ψa/Ξc/κ and is a rigid, so not in `def_ftv Θ`), strip β from every output
-   with P6-Cs's ∀-binder kit exactly as the Sub-ForallL rows do, rebuild with
-   `a_looksub__forall_r`.  RIGHT branch: take
-   `𝒞 := a_cstr_sub mode_tc P0 :: nil`, `Ξc := nil`, `κc := nil`; the
-   `a_looksub` conjunct is `alpha_stack_looksub`; invert the IH's solve to
-   `Θ0,β ⊢ₛ Pi ≼[tc] P0'^β ⤳ Pa` and lift it over the ∀ by
-   **`a_solve_sub_strengthen_tvar` then `a_solve_sub__forall_r` with
-   `a_solve_sub_eq_rename`** — the recipe P6-Sv already uses verbatim at
-   prop_look_complete_sub_var.v:2036-2056; the precision conjunct does not
-   mention P0 at all, so it only needs the usual β-strip.
+6. ✅ Sub-ForallR, executed as planned.  The refinement inversion block is
+   P6-Sv's verbatim (`skmod{TY}` makes P0 a TYPE, so the inherited-∀ target
+   forces P0 = ∀.P0' — every other type shape is guarded, and a guarded
+   source refines only to a guarded target).  Then ONE fresh rigid β, the
+   usual transports, the IH at Θ,β / Θ0,β, and **the IH's own ftv-𝒞 disjunct
+   decides the branch** — no decidability of `alpha_stack` is needed:
+   - LEFT: `β ∉ ftv 𝒞` (β fresh for ψa/Ξc/κ, and a rigid so not in
+     `def_ftv Θ`); strip β from every output with P6-Cs's ∀-binder kit and
+     rebuild with `a_looksub__forall_r` + `a_looksub_lookeq_rename_tvar`.
+     Same shape as the Sub-ForallL rows with the renamed side swapped: there
+     the SUBJECT moves and the target is fixed, here the reverse.  Δ does not
+     grow, so unlike Sub-ForallL there is no `delta_shrink` step.
+   - RIGHT: `alpha_stack_looksub` gives the whole `a_looksub` conjunct at the
+     UNDESCENDED P0; the IH's one-constraint solve inverts to
+     `Θ0,β ⊢ₛ Pi ≼[tc] P0'^β ⤳ Pa`, and
+     `a_solve_sub_strengthen_tvar` + `a_solve_sub__forall_r` +
+     `a_solve_sub_eq_rename` lift it over the ∀ (P6-Sv's recipe,
+     prop_look_complete_sub_var.v:2036).
+
+**P6-Ss IS CLOSED (2026-07-30).**  `a_looksub_solve_complete_gen` and the
+paper's premise-free `a_looksub_solve_complete` are both `Qed` and
+`Closed under the global context`; `make coq` is green from clean and the
+whole mechanization is admit-free again.
+
+**Two traps this row paid for, both worth remembering.**
+- `β ∉ ftv Pa` in the RIGHT branch does NOT come from `a_solve_sub_ftv`: the
+  target there legitimately mentions β (that is the branch's whole point), so
+  that bound is useless.  It comes from PRECISION —
+  `ad_partial_precise_src_ftv_avoid` bounds the source by
+  `ftv ψa ∪ Δ ∪ def_ftv Θ`, all β-free — then `msubst_pskl_ftv_dom_lower`.
+  P6-Sv's ForallR row does exactly this.
+- `repeat split` CLOSES `keys nil = keys nil` by itself: `split` on a
+  convertible equality is `eq_refl`, since `eq` is single-constructor.  So the
+  RIGHT branch's bullet list has no `keys` bullet, while the LEFT branch's
+  does (there `keys κc = keys Ξc` is not convertible).  A stray bullet shifts
+  the whole list and the error surfaces far away.
 
 **On "𝒞 may mention β, but the later wf check makes it transparent."**
 Half true, and worth keeping in view for step 6.  It is NOT a licence to skip

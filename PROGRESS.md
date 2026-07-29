@@ -59,7 +59,7 @@ excluded from the build); mine them when re-proving.
 - ✅ **Theorem: Soundness of subtyping** (`a_sub_sound_thm`, `algo/prop_decorate_key.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
-- 🟡 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, the ONE remaining `admit` is Sub-ForallR (Phase B).  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); the working route is the mode-guarded disjunction of DESIGN §8 (h).  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.  Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are now UNBLOCKED (P6-Ss's crux delegates to P6-Sv, which is closed) and are the next front.  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
+- 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.  Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are now UNBLOCKED (P6-Ss's crux delegates to P6-Sv, which is closed) and are the next front.  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
 
@@ -77,7 +77,62 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-29 (latest) — ⚠️ P6-Ss Phase B: the PLANNED ROUTE IS REFUTED; the route that works is identified and step 1 is landed
+## 2026-07-30 (latest) — ⭐⭐⭐ P6-Ss CLOSED: Sub-ForallR done, the mechanization is admit-free again
+
+`make coq` green from clean.  `a_looksub_solve_complete_gen` and the paper's
+premise-free `a_looksub_solve_complete` are both `Qed` and
+`Closed under the global context`.  **There is no `admit` or `Admitted`
+anywhere in `frost/`.**
+
+The route is NOT the one Phase B planned — that prerequisite is false (see the
+2026-07-29 entry below and `cex/cex_p6ss_sub_target_ftv.v`).  What the
+statement carries is a MODE-GUARDED DISJUNCTION,
+
+    M = mode_tc ->
+      ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ
+      \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil /\ 𝒞 = a_cstr_sub M P0 :: nil)
+
+and **Sub-ForallR lets the IH's own disjunct pick the branch** — no
+decidability of `alpha_stack` is needed:
+
+- **LEFT** — `β ∉ ftv 𝒞` (β is fresh for ψa, Ξc and κ, and is a RIGID so
+  `def_ftv` never sees it); strip β from every output with P6-Cs's ∀-binder
+  kit and rebuild with `a_looksub__forall_r` +
+  `a_looksub_lookeq_rename_tvar`.  This is the Sub-ForallL rows with the
+  renamed side swapped — there the SUBJECT moves and the target is fixed,
+  here the reverse — and Δ does not grow, so there is no `delta_shrink` step.
+- **RIGHT** — P is an α-STACK, and such a run never descends the target:
+  `alpha_stack_looksub` collects `a_cstr_sub tc P0` at the UNDESCENDED P0, so
+  the binder is never introduced.  The IH still supplies the solve, at the
+  descended target; lifting it over the ∀ is P6-Sv's recipe
+  (`a_solve_sub_strengthen_tvar`, then `a_solve_sub__forall_r` with
+  `a_solve_sub_eq_rename`).
+
+**Why the case split is exhaustive** is `ad_pat_sub_g_ty_tc_subject`:
+`__forall_r` forces `a_sub_mode_ty` + `mode_tc`, and NM is invariant along a
+derivation, so there only `__check`, `__forall_r` and `__forall_l_*` fire.
+The α-leaf is therefore reachable under a Sub-ForallR only for an α-stack;
+every other α-leaf sits under LS-Check, i.e. inside P6-Cs, whose bound is
+already ψa-relative.  The `mode_tc` guard is what makes Sub-Arrow VACUOUS —
+that row's left branch always yields the left disjunct while its right branch
+may yield the right one, and no single bound could concatenate the two.
+
+**Supporting changes that landed with it:** `uskl_rho_ftv_apart`; P6-Cs's
+ftv-𝒞 conclusion now names NO CONTEXT (new premise `ftv ψa ∩ Δρ = ∅` replaces
+the `dom Θs` slack — a Sub-ForallL nested under a Sub-ForallR drags β into the
+ρ-images' scope); `alpha_stack` with `alpha_stack_subst_var` /
+`alpha_stack_all_of_one` / `alpha_stack_looksub`; and
+`ad_pat_sub_g_ty_tc_subject`.
+
+**Two traps paid for.**  (1) `β ∉ ftv Pa` in the RIGHT branch does NOT come
+from `a_solve_sub_ftv` — the target there legitimately mentions β — it comes
+from PRECISION via `ad_partial_precise_src_ftv_avoid` (source bounded by
+`ftv ψa ∪ Δ ∪ def_ftv Θ`) plus `msubst_pskl_ftv_dom_lower`.  (2) `repeat
+split` CLOSES `keys nil = keys nil` by itself, because `split` on a
+convertible equality is `eq_refl`; a stray bullet then shifts the whole list
+and the error surfaces far away.
+
+## 2026-07-29 — ⚠️ P6-Ss Phase B: the PLANNED ROUTE IS REFUTED; the route that works is identified and step 1 is landed
 
 `make coq` green; the mechanization's ONLY admit is still P6-Ss's **Sub-ForallR**.
 
