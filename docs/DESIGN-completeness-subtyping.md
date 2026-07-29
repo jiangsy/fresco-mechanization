@@ -2471,6 +2471,34 @@ generalized motive (mechanical).  The ε-tag bookkeeping is expected to
 follow P6-Sv's Ψρ treatment (guesses' tags accumulate in Ψρ; `Ψρ ∩ Ψ' = ∅`
 from the rule's freshness premises); verify when executing.
 
+**ρ-generalization: KIT AUDIT (2026-07-29) — nothing is missing.**  Checked
+before starting, because the P6-Cs half is the expensive part:
+
+- The `uskl_rho_*_l_inv` family is COMPLETE — all nine subject shapes
+  (`unit`, `var`, `arrow`, `hole`, `holeg`, `tophole`, `topholeg`,
+  `all_syn`, `all_etag`), prop_look_complete.v:199-300 — and it inverts on
+  the LEFT (the ρ-IMAGE), which is the direction both generalizations need:
+  the derivation runs on the image, and the rule fixes the image's shape.
+  Each returns exactly three cases: `refl` (image = ideal, Ψρ = ∅),
+  `rho_leaf` (the ideal is a Δρ-variable and the image is its guess), and
+  the congruence.
+- ⚠️ **The `rho_leaf` case is IMPOSSIBLE in the main induction of both
+  P6-Cs and P6-Ss** — it needs the IDEAL subject to be a bare variable,
+  i.e. `(κR')[ψa/α] = uskl_var_f α0`, which forces `R'` to be a variable;
+  and the main induction runs under `P ≠ α` and `α ∈ ftv P`, so `R'` is
+  never a variable (that is exactly what `HRnv` records).  So every row
+  inverts to just two cases — refl and congruence — and the refl case is
+  the CURRENT proof text verbatim.  This is what makes the P6-Cs half
+  threading rather than a rewrite.
+- P6-Cv (`a_solve_eq_complete_var_gen`, prop_look_complete_var.v:505)
+  already takes `uskl_rho NM Θ Δρ Ψρ ψsub ψa`, so P6-Cs's leaf passes the
+  real ρ down instead of `urho__refl`; and `uskl_rho_subst`
+  (prop_look_complete_sub_var.v:1111) is the ρ-extension `ρ_b = ρ ∘ [ψ_b/β]`
+  that Sub-ForallL needs.
+- P6-Cs's measure (`size_uskl R' + size_pskl P0`) is on the ρ-FREE ideal
+  subject, so it is untouched; and P6-Cs's own ∀ rows open with fresh
+  VARIABLES, so ρ never grows inside P6-Cs.
+
 **Order for the next session** (Arrow and ForallR do NOT depend on the
 decision above, so start there):
 
