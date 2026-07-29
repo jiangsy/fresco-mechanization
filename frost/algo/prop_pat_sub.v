@@ -1940,8 +1940,8 @@ Qed.
 Lemma ptyp_to_pskl_ghost_free : forall A, pskl_ghost_free (ptyp_to_pskl A).
 Proof. induction A; simpl; auto. Qed.
 
-Lemma a_extract_ty_ghost_free : forall α M P P0 Ξ P1,
-  a_extract a_sub_mode_ty α M P P0 Ξ P1 ->
+Lemma a_extract_ty_ghost_free : forall Θ0 α M P P0 Ξ P1,
+  a_extract Θ0 a_sub_mode_ty α M P P0 Ξ P1 ->
   pskl_ghost_free P1.
 Proof.
   intros * Hex; inversion Hex; subst.
@@ -1954,15 +1954,15 @@ Qed.
 (** Existence of a fresh [a_tags_sort]-sorted decoration of an extract
     output — what consumers instantiate the cofinite ForallL premise with.
     The TY case needs the output ghost-free, which [guess^TY] guarantees. *)
-Lemma a_tags_sort_decorate_exists : forall NM α M P P0 Ξ P1,
-  a_extract NM α M P P0 Ξ P1 ->
+Lemma a_tags_sort_decorate_exists : forall Θ0 NM α M P P0 Ξ P1,
+  a_extract Θ0 NM α M P P0 Ξ P1 ->
   lc_pskl P1 ->
   forall L, exists Ψg ψg,
     Ψg ∩ L [=] empty /\
     a_tags_sort NM Ψg ψg /\
     ⌊ ψg ⌋ˢ = P1.
 Proof.
-  intros NM α M P P0 Ξ P1 Hex Hlc L.
+  intros Θ0 NM α M P P0 Ξ P1 Hex Hlc L.
   destruct (pskl_decorate_exists Hlc L)
     as [Ψg [ψg [Hint [Htskl [Hdtags [Herase Hgf]]]]]].
   exists Ψg, ψg. repeat apply conj; [ exact Hint | | exact Herase ].

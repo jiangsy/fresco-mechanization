@@ -491,19 +491,38 @@ Inductive a_solve_cstr : aenv -> a_cstrs -> pskl -> pskl -> Prop :=
     Θ ⊩ (a_cstr_eq Q :: C) ⨾ P ⤳ P'
 where "Θ ⊩ C ⨾ P ⤳ Q" := (a_solve_cstr Θ C P Q) : type_scope.
 
-Reserved Notation "P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
-  (at level 75, NM at level 0, α at level 0, m at level 0, P' at level 74,
-   Ξ at level 0, Q at level 74, no associativity).
+Reserved Notation "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
+  (at level 75, P at level 74, NM at level 0, α at level 0, m at level 0,
+   P' at level 74, Ξ at level 0, Q at level 74, no associativity).
 (* The look judgment [look[N][M]{α}{P}{P'}{Q}[Ξ]] (fig:poly-info-extraction,
    top box): collect constraints, solve them against the empty input [□],
    then apply [guess[N]]. *)
-Inductive a_extract : a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
-| a_extract__solve : forall NM α m P P' Ξ Ξ' C Q Q',
+(* ⚠️ THE SOLVE RUNS AT [Ξ ++ Θ0], NOT AT [Ξ] ALONE.  The paper's constraint
+   solving is CONTEXT-FREE — [solve C P Q], [solveeq P Q P'] and
+   [guess^N(Q)] carry no context at all (full-algo-spec.tex:1216-1375) —
+   because there [α̂] is a syntactically distinct metavariable class.  The
+   mech has ONE atom class, so [a_solve_eq__flex_r] must consult a context to
+   decide HATTEDNESS; that is the only context-sensitive rule in the whole
+   solve cluster.  Handing it [Ξ] alone therefore hides Θ0's flexibles and
+   makes the rule UNFAITHFULLY NARROW — the very error already corrected once
+   at [a_solve_eq__flex_r] itself (see its comment: the undefined-only
+   [binds α abind_flex_mono] reading, widened 2026-07-24).  It is not
+   harmless: a Θ0-flexible target is reachable ([skmod{TY}] at TC makes P0 a
+   TYPE, and a type may BE a flexible of Θ0), and then a non-first
+   [eq α̂] constraint needs SE-FlexR, which [Ξ] cannot supply — so P6-L
+   ([a_extract_complete]) is not provable against the narrow reading.
+   docs/DESIGN-completeness-subtyping.md §7.4.
+   Soundness is unaffected: its only consumers are [a_extract_decls] (which
+   reads Ξ, not the solve) and [a_extract_decorate], whose solve lemmas
+   [solve_cstr_top_guarded_tg] / [solve_cstr_decorate] quantify Θ universally
+   and never mention it in their conclusions. *)
+Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
+| a_extract__solve : forall Θ0 NM α m P P' Ξ Ξ' C Q Q',
     P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-    Ξ ⊩ C ⨾ pskl_hole ⤳ Q ->
+    (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Q ->
     a_guess NM Q Ξ' Q' ->
-    P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξ') ↪ Q'
-where "P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract NM α m P P' Ξ Q) : type_scope.
+    Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξ') ↪ Q'
+where "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract Θ0 NM α m P P' Ξ Q) : type_scope.
 
 (* ===================================================================== *)
 (*  Algorithmic consistency  [Θ0 ⊢[Δ1|Δ2][P0] P ~ Q ⊣ Θ1]                 *)
@@ -844,7 +863,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     M <> mode_ti ->
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
-       a_extract NM α M (open_pskl_wrt_pskl P (pskl_var_f α)) P0 Ξ P1) ->
+       a_extract Θ0 NM α M (open_pskl_wrt_pskl P (pskl_var_f α)) P0 Ξ P1) ->
     (* prose-completion (PAPER-GAPS): the paper's "fresh" Ξ — [a_lookeq]'s
        LE-FlexR and [a_guess_mono]'s hole rule pick arbitrary names, so
        re-attaching Ξ needs the freshness stated. *)

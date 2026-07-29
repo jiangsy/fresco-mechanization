@@ -246,7 +246,7 @@ Proof.
       * intros α Hα.
         match goal with
         | Hb : ⌊ ?T2b ⌋ˢ = ⌊ ?Rb ⌋ˢ
-          |- a_extract _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
+          |- a_extract _ _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
             replace (⌊ open_uskl_wrt_uskl T2b (uskl_var_f α) ⌋ˢ)
               with (⌊ open_uskl_wrt_uskl Rb (uskl_var_f α) ⌋ˢ)
               by (rewrite ! uskl_to_pskl_open; rewrite Hb; reflexivity)
@@ -268,7 +268,7 @@ Proof.
       * intros α Hα.
         match goal with
         | Hb : ⌊ ?T2b ⌋ˢ = ⌊ ?Rb ⌋ˢ
-          |- a_extract _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
+          |- a_extract _ _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
             replace (⌊ open_uskl_wrt_uskl T2b (uskl_var_f α) ⌋ˢ)
               with (⌊ open_uskl_wrt_uskl Rb (uskl_var_f α) ⌋ˢ)
               by (rewrite ! uskl_to_pskl_open; rewrite Hb; reflexivity)
@@ -293,7 +293,7 @@ Proof.
       * intros α Hα.
         match goal with
         | Hb : ⌊ ?T2b ⌋ˢ = ⌊ ?Rb ⌋ˢ
-          |- a_extract _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
+          |- a_extract _ _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
             replace (⌊ open_uskl_wrt_uskl T2b (uskl_var_f α) ⌋ˢ)
               with (⌊ open_uskl_wrt_uskl Rb (uskl_var_f α) ⌋ˢ)
               by (rewrite ! uskl_to_pskl_open; rewrite Hb; reflexivity)
@@ -315,7 +315,7 @@ Proof.
       * intros α Hα.
         match goal with
         | Hb : ⌊ ?T2b ⌋ˢ = ⌊ ?Rb ⌋ˢ
-          |- a_extract _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
+          |- a_extract _ _ _ _ ⌊ open_uskl_wrt_uskl ?T2b _ ⌋ˢ _ _ _ =>
             replace (⌊ open_uskl_wrt_uskl T2b (uskl_var_f α) ⌋ˢ)
               with (⌊ open_uskl_wrt_uskl Rb (uskl_var_f α) ⌋ˢ)
               by (rewrite ! uskl_to_pskl_open; rewrite Hb; reflexivity)

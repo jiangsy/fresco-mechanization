@@ -446,7 +446,7 @@ Proof.
               rewrite ! uskl_to_pskl_subst;
               rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
         match goal with
-        | Hex : forall a, a `notin` _ -> a_extract _ _ _ _ _ _ _ |- _ =>
+        | Hex : forall a, a `notin` _ -> a_extract _ _ _ _ _ _ _ _ |- _ =>
             apply Hex; clear - Hα1; fsetdec
         end. }
         intros Ψg' ψg' Hfr Hsort Hera.
@@ -721,7 +721,7 @@ Proof.
               rewrite ! uskl_to_pskl_subst;
               rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
         match goal with
-        | Hex : forall a, a `notin` _ -> a_extract _ _ _ _ _ _ _ |- _ =>
+        | Hex : forall a, a `notin` _ -> a_extract _ _ _ _ _ _ _ _ |- _ =>
             apply Hex; clear - Hα1; fsetdec
         end. }
         intros Ψg' ψg' Hfr Hsort Hera.
@@ -2850,8 +2850,8 @@ Qed.
     soundness.  Sole hypothesis beyond the paper's: the TY mode discipline
     "the against-side is a TYPE (ghost-free)" — prose-level wf in the paper
     (docs/WF-SIDE-CONDITIONS.md); it is vacuous in SK mode. *)
-Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
-  P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
+Lemma a_extract_decorate : forall Θ0 NM αv M P P0 Ξ P1,
+  Θ0 ⊢ P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
   (NM = a_sub_mode_ty -> pskl_top_guarded P0) ->
   forall Ψa ψa,
     a_tags_sort NM Ψa ψa ->
@@ -2860,7 +2860,7 @@ Lemma a_extract_decorate : forall NM αv M P P0 Ξ P1,
       P ≼[ αv , M ] P0 ⤳ Ξc ⨾ 𝒞 /\
       𝒞 ⊩ᵗ ψa ⤳ Ψa.
 Proof.
-  intros NM αv M P P0 Ξ P1 Hext Htg0 Ψa ψa Htags Hera.
+  intros Θ0 NM αv M P P0 Ξ P1 Hext Htg0 Ψa ψa Htags Hera.
   inversion Hext; subst.
   (* H : look ;  H0 : solve 𝒞 □ Q ;  H1 : guess (output ⌊ψa⌋ˢ) *)
   eexists; eexists; split; [ exact H | ].

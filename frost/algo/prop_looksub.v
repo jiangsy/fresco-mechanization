@@ -67,10 +67,10 @@ Proof.
     [ apply a_decls__nil | eapply a_guess_mono_decls; eauto ].
 Qed.
 
-Lemma a_extract_decls : forall NM α m P P' Ξ P0,
-  P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ P0 -> a_decls Ξ.
+Lemma a_extract_decls : forall Θ0 NM α m P P' Ξ P0,
+  Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ P0 -> a_decls Ξ.
 Proof.
-  intros NM α m P P' Ξ P0 H; destruct H.
+  intros Θ0 NM α m P P' Ξ P0 H; destruct H.
   apply a_decls_app;
     [ eapply a_looksub_decls; eauto | eapply a_guess_decls; eauto ].
 Qed.
@@ -155,8 +155,8 @@ Lemma ptyp_to_pskl_ftv : forall A,
   ftvar_in_pskl (ptyp_to_pskl A) [<=] ftvar_in_ptyp A.
 Proof. induction A; simpl; fsetdec. Qed.
 
-Lemma a_extract_output_fresh : forall NM α M P P0 Ξ P1 α1,
-  P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
+Lemma a_extract_output_fresh : forall Θ0 NM α M P P0 Ξ P1 α1,
+  Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
   α1 `notin` ftvar_in_pskl P0 ->
   α1 `notin` dom Ξ ->
   α1 `notin` ftvar_in_pskl P1.

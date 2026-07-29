@@ -282,7 +282,7 @@ Inductive a_subtag :
     M <> mode_ti ->                                           (* ForallL, β1=ε *)
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
-       a_extract NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
+       a_extract Θ0 NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->                              (* DISCIPLINED wf (paper) *)
     (forall Ψg ψg,                                            (* Ψg fresh (cofinite) *)
@@ -296,7 +296,7 @@ Inductive a_subtag :
     M <> mode_ti ->                                           (* ForallL, β1=· *)
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
     (forall α, α `notin` L ->
-       a_extract NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
+       a_extract Θ0 NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
     uniq (Ξ ++ Θ0) ->                                         (* fresh Ξ (prose-completion) *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1 ->                              (* DISCIPLINED wf (paper) *)
     (forall Ψg ψg,                                            (* Ψg fresh (cofinite) *)

@@ -3135,19 +3135,39 @@ pass but `Ξ`.  So the mech is free to choose; the current choice is just the
 narrow one, and it is narrow in a way that breaks completeness rather than
 strengthening it.
 
-**Options (a DECISION is needed before P6-L can be assembled).**
-- (a) **Give `a_extract` a context parameter** and solve at `Ξ ++ Θ0`.  This is
-  what the paper's context-freeness licenses and what makes P6-L go through.
-  Cost: `a_extract`'s signature, its one use site `a_sub__forall_l`, and a
-  re-check of subtyping SOUNDNESS (`a_sub_sound_thm`, currently closed) — the
-  rule changes, so soundness is not automatic.
-- (b) Prove the strengthening under a reachability invariant ("no constraint
-  target is a Θ0-flexible").  Looks FALSE for the reason above; would need a
-  cex to settle.
+**✅ FIXED (2026-07-30).**  `a_extract` now carries the context and solves at
+`Ξ ++ Θ0`:
 
-⚠️ Do NOT build the TY guess witness (§7.3) before this is settled: the
-witness is independent, but the top-level assembly it feeds is what breaks,
-and option (a) may move the statement.
+    Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl
+                          -> aenv -> pskl -> Prop
+    a_extract__solve : P ≼[α,m] P' ⤳ Ξ ⨾ 𝒞 -> (Ξ ++ Θ0) ⊩ 𝒞 ⨾ □ ⤳ Q
+                       -> a_guess NM Q Ξ' Q' -> Θ0 ⊢ P ⊳[NM,α,m] P' ⤳ (Ξ++Ξ') ↪ Q'
+
+with notation `Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q`.  Both use sites
+(`a_sub__forall_l`, and the two decorated `a_subtag__forall_l_*` rows) already
+had Θ0 in scope.
+
+**THE PAPER SETTLES IT — this is a faithfulness FIX, not a design change.**
+`\soleqlab{FlexR}` (full-algo-spec.tex:1370) is
+
+    nonflex(P)  ⟹  solveeq{P}{α̂}{α̂}
+
+with NO context and NO flexibility premise: hattedness is purely SYNTACTIC
+there, `α̂` being a distinct metavariable class.  The mech has one atom class,
+so it must consult a context — and handing the solve `Ξ` alone hid Θ0's
+flexibles.  That is the SAME unfaithful narrowing already corrected once at
+this very rule (see `a_solve_eq__flex_r`'s own comment: the undefined-only
+`binds α abind_flex_mono` reading, widened 2026-07-24).
+
+**Soundness was unaffected, as predicted.**  Its only two consumers are
+`a_extract_decls` (reads Ξ, never the solve) and `a_extract_decorate`, whose
+solve lemmas `solve_cstr_top_guarded_tg` / `solve_cstr_decorate` quantify Θ
+universally and never mention it in their conclusions.  Clean `make coq` is
+green with 0 admits and all 31 `Print Assumptions` closed; the whole diff is
+six files of arity threading and no proof-script changes beyond `intros`.
+
+(Option (b) — a reachability invariant making the narrow reading provable —
+is moot and was not pursued.)
 
 **NB this is the same SHAPE of question as P6-Ss's `a_looksub__forall_r`
 (§8 (h))** — a mech scoping choice made on a judgment the paper leaves
