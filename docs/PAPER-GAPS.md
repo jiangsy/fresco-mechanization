@@ -1368,3 +1368,69 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   are closed.  The ForallR row is the one this entry blocks; P6-Ss's
   ForallL row is blocked on something else entirely (the reverse direction
   of `lemma:constraint-collection-stable-substitution`, to undo the guess).
+
+## GAP (2026-07-29) — `lemma:complete-constraint-collection-solving` (P6-Ss), ForallL case: the IH instance needs `θψ_b = ψ_b`, which the paper never assumes and which is not derivable
+
+- Where: subtyping-proofs.tex:2600–2643 (the \sublab{ForallL} case of P6-Ss).
+- **The step.**  The rule's premise is
+  `⊢ ((θ S')[ψ_a/α])[ψ_b/β] ⩽ Q`, and the proof rewrites it (\refe) as
+  `⊢ ((θ S')[ψ_b/β])[ψ_a/α] ⩽ Q`, then applies the IH with
+  `S := S'[ψ_b/β]` and `P := P'[⌊ψ_b⌋/β]` (\reff).  For the IH's subject —
+  which by the lemma's own statement is `(θ S)[ψ_a/α]` — to BE \refe, one
+  needs
+
+  ```
+      θ (S'[ψ_b/β])  =  (θ S')[ψ_b/β] ,     i.e.     θ ψ_b = ψ_b .
+  ```
+
+  The paper justifies \refe by "capture-avoiding substitution and freshness
+  conditions", which covers the α/β commutation but NOT the θ/ψ_b one.
+- **It is not derivable.**  `ψ_b`'s only constraint is `Θ ⊢ ⌊ψ_b⌋`, so
+  `ftv ψ_b ⊆ dom Θ`; and `inc[θ]{Θ0}{Θ}` (mechanized `a_inc`) constrains the
+  TARGET not at all in its flexible rows (`a_inc__flex`, `a_inc__flex_def`
+  leave `Θ'` arbitrary).  So a Θ-scoped `ψ_b` may mention a `dom θ`
+  variable, and then `θψ_b ≠ ψ_b`.  Nor can the mechanization dodge by
+  naming `ψ_b` inside `Θ0`: a metasubstitution's images are MONOTYPES
+  (`metasubst = list (atom * ptyp)`, `mono_ptyp`), while `ψ_b` is a general
+  tagged skeleton — the impredicative instantiation is the whole point of
+  the rule — so `ψ_b` has no pre-image under θ in general.
+- **The intended reading, made explicit.**  `a_inc__flex` CONSUMES the
+  flexible (the target does not gain it), i.e. "θ solves Θ0's flexibles and
+  they are gone in Θ".  Under that reading the missing fact is exactly
+
+  ```
+      ∀ α̂ ∈ dom θ.  α̂ ∉ dom Θ                      (hygiene)
+  ```
+
+  which yields `θψ_b = ψ_b` from `ftv ψ_b ⊆ dom Θ`.  It is a Barendregt-style
+  side condition on `inc[θ]{Θ0}{Θ}`, in the same family as the ones
+  registered in docs/WF-SIDE-CONDITIONS.md — but unlike those it cannot be
+  put on a rule (`a_inc` is the rule set), so it has to be a premise of the
+  lemma.  **The authors should decide whether the paper adopts it.**
+- **A second, smaller consequence — the SCOPE premise.**  Even with the
+  hygiene condition, `S'[ψ_b/β]` is only Θ-scoped, never Θ0-scoped, so
+  P6-Ss's (and, through the Check/Arrow delegation, P6-Cs's) implicit
+  "the subject skeleton lives in Θ0" bookkeeping is unsatisfiable at this
+  row.  ALREADY REPAIRED in the mechanization (2026-07-29): the premise
+  `ftv S ⊆ {α} ∪ dom Θ0` is relaxed to `ftv S ⊆ {α} ∪ dom Θ0 ∪ dom Θ` and
+  the dual conclusion `α0 ∈ dom θ_c ⇒ α0 ∉ {α} ∪ dom Θ0` is strengthened to
+  `α0 ∉ {α} ∪ dom Θ0 ∪ dom Θ`, in both `prop_look_complete_cstr.v` (P6-Cs,
+  re-`Qed`ed) and `prop_look_complete_sub_cstr.v`.  This costs nothing: the
+  only flexible-generating row already picks its fresh name outside `dom Θ`.
+- **Prerequisite now closed.**  The reverse direction of
+  `lemma:constraint-collection-stable-substitution` that the case ends with
+  is mechanized as `a_looksub_subst_stable_rev` (prop_looksub.v §4b, `Qed`,
+  axiom-free), together with its `a_lookeq` twin.
+- **Alternative repair (larger, not chosen).**  Carry the paper's
+  rigid-variable substitution ρ through P6-Ss as P6-Sv already does, and
+  absorb each ForallL guess into it (`ρ_b = ρ ∘ [ψ_b/β]`, `uskl_rho_subst`).
+  The lookup side then never leaves `open ⌊R0⌋ (var β)`, the
+  reverse-substitution lemma is not needed at all, and the `P = α` leaf
+  calls P6-Sv at the ACCUMULATED ρ — which is what P6-Sv's ρ was built for.
+  Cost: P6-Ss's statement, its `sub_shield` Δρ argument, and all eight
+  closed rows change.
+- **Still open inside the row** (independent of the choice above): the tag
+  bookkeeping needs `ε ∉ Ψ` — the instantiated binder's own tag must not be
+  in the ambient solved-tag index.  `ad_pat_sub_g_ftag_sub` bounds `Ψ` by
+  the subject's tags, which INCLUDE `ε`, so either the rule's own freshness
+  premises exclude it or this is a further gap.  Not settled.

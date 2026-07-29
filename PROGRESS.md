@@ -77,6 +77,48 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-07-29 (latest) — P6-Ss: the ForallL PREREQUISITE is closed; the ForallL ROW is blocked on a statement change
+
+`make coq` green.  The mechanization is still admit-free except the four
+`admit`s of `a_looksub_solve_complete` (P6-Ss), which remain honestly marked.
+
+**Closed (Qed, axiom-free) — `prop_looksub.v` §4b.**
+`a_looksub_lookeq_subst_stable_rev` and its two one-sided corollaries, plus
+the helpers `a_looksub_subst_var` / `a_lookeq_subst_var`.  This is the
+REVERSE direction of `lemma:constraint-collection-stable-substitution`
+(subtyping-proofs.tex:2632), i.e. task 1 of the P6-Ss plan: a run collected
+on a subject in which an α-free guess has already replaced a rigid β ≠ α
+can be UNDONE, recovering the very same `Ξ ⨾ 𝒞`.  Mutual induction on the
+derivation with the substituted subject `remember`ed, then `destruct` on the
+un-substituted subject per row; the `= var β` branch is uniform (the run
+happened entirely inside the α-free guess, so `a_looksub_lookeq_absent_nil`
+empties it and LS/LE-Absent rebuilds).  The duplicate `a_looksub_lookeq_absent`
+in `prop_look_complete_sub_cstr.v` is deleted in favour of it.
+
+**Statement relaxation, both P6-Cs and P6-Ss.**  The scope premise
+`ftv R' ⊆ add α (dom Θ0)` becomes `add α (dom Θ0 ∪ dom Θ)`, and the dual
+conclusion `α0 ∈ dom κc ⇒ α0 ∉ add α (dom Θ0)` is strengthened the same way.
+`a_lookeq_solve_complete` re-`Qed`s with no other change (its
+flexible-generating row already picks its fresh name outside `dom Θ`).  The
+relaxation is forced by P6-Ss's ForallL row, whose IH subject `open R0 ψ_b`
+is Θ-scoped and never Θ0-scoped.
+
+**⛔ BLOCKED — P6-Ss ForallL needs a premise the paper does not state.**
+subtyping-proofs.tex:2600–2643 applies the IH with `S := S'[ψ_b/β]` and
+uses `θ(S'[ψ_b/β]) = (θS')[ψ_b/β]`, i.e. `θψ_b = ψ_b`.  Nothing gives it:
+`ψ_b`'s only constraint is `Θ ⊢ ⌊ψ_b⌋`, and `a_inc`'s flexible rows leave
+the target arbitrary, so a Θ-scoped guess may mention `dom θ`.  Nor can the
+guess be re-based into Θ0: a metasubstitution's images are MONOTYPES while
+`ψ_b` is a general tagged skeleton (impredicative instantiation is the point
+of the rule), so it has no pre-image under θ.  Recommended repair — the
+hygiene premise `∀ α̂ ∈ dom κ, α̂ ∉ dom Θ`, which is the reading
+`a_inc__flex` already encodes (the solved flexible is CONSUMED) and which is
+preserved by every recursive row.  A larger alternative — carry the paper's
+ρ through P6-Ss as P6-Sv does, absorbing each guess into `ρ_b = ρ ∘ [ψ_b/β]`
+— is recorded too.  Full analysis: docs/PAPER-GAPS.md (last entry) and
+DESIGN-completeness-subtyping.md §8 (e).  **Awaiting author sign-off.**
+Arrow and ForallR do not depend on the decision and are next.
+
 ## 2026-07-29 (later) — NOTATION: the metasubstitution is `κ`; `ρ` is reserved for the paper's ρ
 
 Corpus-wide rename, `make coq` green, all `Print Assumptions` still closed.

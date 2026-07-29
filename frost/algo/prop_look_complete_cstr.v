@@ -1628,7 +1628,7 @@ Theorem a_lookeq_solve_complete :
   κ ∷ Θ0 ⊑ Θ ->
   α `notin` dom Θ -> α `notin` dom Θ0 ->
   ⌊ R' ⌋ˢ = P ->                            (* erase R' = P (R' is κ-FREE, paper-faithful) *)
-  ftvar_in_uskl R' [<=] add α (dom Θ0) ->   (* R' scoped at Θ0 + the lookup var α (wf) *)
+  ftvar_in_uskl R' [<=] add α (dom Θ0 `union` dom Θ) ->   (* R' scoped at Θ0 + the lookup var α (wf) *)
   lc_uskl R' ->                             (* R' is a well-formed (locally-closed) skeleton *)
   a_tags_sort NM Ψ' ψa ->                  (* Θ ⊢^N Ψ'{syn ψa} *)
   (ftag_in_uskl R') ∩ Ψ' [=] empty ->  (* S's tags ⊥ ψa's tags Ψ' *)
@@ -1679,7 +1679,7 @@ Theorem a_lookeq_solve_complete :
                           `union` def_ftv Θ /\
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\               (* κa : Θ0,Ξc ⊑ Θ *)
     a_inc_equiv Θ0 κ κ Θ /\                      (* κ ≡ κa on Θ0: κa|Θ0 = κ (ρc fresh) *)
-    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0)) /\   (* ρc fresh w.r.t. Θ0, α *)
+    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\   (* ρc fresh w.r.t. Θ0, α *)
     Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   induction n as [ | n IHn ];
@@ -1905,7 +1905,7 @@ Proof.
         assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).
         (* fresh α1 for the LE-FlexR payload *)
         pick fresh α1 for
-          (add α (dom Θ0) `union` dom Θ `union` dom κ `union` ftvar_in_pskl Pi).
+          (add α (dom Θ0 `union` dom Θ) `union` dom Θ `union` dom κ `union` ftvar_in_pskl Pi).
         assert (Hγdom0 : α1 `notin` dom Θ0) by auto.
         (* Pa and the three Pa-dependent facts (solve / wf / precision) *)
         assert (Hbγ : binds α1 abind_flex_mono (((α1 ~ abind_flex_mono) ++ nil) ++ Θ0))
@@ -2022,9 +2022,9 @@ Proof.
           pose proof (ftag_in_uskl_subst_bskl_in_uskl ψa α (msubst_uskl_syn κ Rb)) as Hb2.
           pose proof (ftag_in_uskl_msubst_uskl_syn κ Rb) as Hm2.
           clear - Hf2 Hb2 Hm2 Hψatag; fsetdec. }
-        assert (HscopeSa : ftvar_in_uskl Ra [<=] add α (dom Θ0))
+        assert (HscopeSa : ftvar_in_uskl Ra [<=] add α (dom Θ0 `union` dom Θ))
           by (clear - HscopeS; simpl in HscopeS; fsetdec).
-        assert (HscopeSb : ftvar_in_uskl Rb [<=] add α (dom Θ0))
+        assert (HscopeSb : ftvar_in_uskl Rb [<=] add α (dom Θ0 `union` dom Θ))
           by (clear - HscopeS; simpl in HscopeS; fsetdec).
         assert (HdisjSa : (ftag_in_uskl Ra) ∩ Ψ' [=] empty)
           by (clear - Hdisj; simpl in Hdisj; fsetdec).
@@ -2061,7 +2061,7 @@ Proof.
         rewrite <- Htr_r in Href2.
         assert (Hαr : α `notin` dom (Ξc1 ++ Θ0))
           by (rewrite dom_app; clear - HαΞ1 HαΘ0; fsetdec).
-        assert (HscopeSbR : ftvar_in_uskl Rb [<=] add α (dom (Ξc1 ++ Θ0)))
+        assert (HscopeSbR : ftvar_in_uskl Rb [<=] add α (dom (Ξc1 ++ Θ0) `union` dom Θ))
           by (rewrite dom_app; clear - HscopeSb; fsetdec).
         assert (HsubR : union (union Ψi (Ψ1 ∩ Ψ'))
                               (Ψ2 ∩ Ψ') [<=] Ψ')
@@ -2313,7 +2313,7 @@ Proof.
         assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
           by (simpl; clear - HαΘ0 Hβα; fsetdec).
         assert (HscopeSβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
-                  [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
+                  [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
         { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β)) as Hup.
           simpl in Hup, HscopeS |- *. clear - Hup HscopeS; fsetdec. }
         assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))) ∩ Ψ' [=] empty).
@@ -2528,7 +2528,7 @@ Proof.
            assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
              by (simpl; clear - HαΘ0 Hβα; fsetdec).
            assert (HscopeSβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
-                     [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
+                     [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
            { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β)) as Hup.
              simpl in Hup, HscopeS |- *. clear - Hup HscopeS; fsetdec. }
            assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))) ∩ Ψ' [=] empty).
@@ -2724,7 +2724,7 @@ Proof.
         assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
           by (simpl; clear - HαΘ0 Hβα; fsetdec).
         assert (HscopeSβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
-                  [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
+                  [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
         { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β)) as Hup.
           simpl in Hup, HscopeS |- *. clear - Hup HscopeS; fsetdec. }
         assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))) ∩ Ψ' [=] empty).
@@ -2972,7 +2972,7 @@ Proof.
            assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
              by (simpl; clear - HαΘ0 Hβα; fsetdec).
            assert (HscopeSβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
-                     [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
+                     [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
            { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β)) as Hup.
              simpl in Hup, HscopeS |- *. clear - Hup HscopeS; fsetdec. }
            assert (Hdisjβ : (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))) ∩ Ψ' [=] empty).
@@ -3236,7 +3236,7 @@ Proof.
            assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
              by (simpl; clear - HαΘ0 Hβα; fsetdec).
            assert (HscopeSβ : ftvar_in_uskl (uskl_tophole R0)
-                     [<=] add α (dom ((β ~ abind_tvar) ++ Θ0))).
+                     [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
            { simpl in HscopeS |- *. clear - HscopeS; fsetdec. }
            assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
            { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].

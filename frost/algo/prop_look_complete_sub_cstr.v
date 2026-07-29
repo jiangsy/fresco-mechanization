@@ -269,62 +269,10 @@ Proof.
           | intros α0 Hα0 Hin; clear - Hdisj Hα0 Hin; fsetdec ] ].
 Qed.
 
-(** An ABSENT subject collects nothing at all.  Only LS-Var / LE-Var (whose
-    subject IS α) and LE-FlexR (which demands α ∈ ftv) ever produce a
-    constraint or a flexible; every other row produces nothing or
-    concatenates two empties.
-
-    This is the auxiliary fact behind the REVERSE of
-    [a_looksub_lookeq_subst_stable] (prop_looksub.v:249 has only the forward
-    direction) that P6-Ss's Sub-ForallL row needs: at a position where the
-    subject was the instantiated binder β, the guess ⌊ψ_b⌋ˢ is α-free — the
-    paper's \refd — so whatever fired there contributed nothing, which is
-    why undoing the instantiation leaves Ξ ⨾ 𝒞 untouched. *)
-Lemma a_looksub_lookeq_absent :
-  (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
-     α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil) /\
-  (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
-     α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil).
-Proof.
-  apply (a_looksub_lookeq_mutind
-           (fun α m P P' Ξ 𝒞 _ =>
-              α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil)
-           (fun α P P' Ξ 𝒞 _ =>
-              α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil));
-    intros; cbn [ftvar_in_pskl] in *;
-    try solve
-      [ (* the rows that collect nothing, and the two α-demanding rows *)
-        split; reflexivity
-      | exfalso; fsetdec
-        (* congruence rows, one or two premises *)
-      | match goal with
-        | IH1 : _ -> _ = nil /\ _ = nil, IH2 : _ -> _ = nil /\ _ = nil |- _ =>
-            destruct IH1 as [-> ->]; [ fsetdec | ];
-            destruct IH2 as [-> ->]; [ fsetdec | ]; split; reflexivity
-        end
-      | match goal with
-        | IH : _ -> _ = nil /\ _ = nil |- _ =>
-            destruct IH as [-> ->]; [ fsetdec | ]; split; reflexivity
-        end
-        (* binder rows whose SUBJECT is untouched by the opening *)
-      | match goal with
-        | IH : forall a : atom, a `notin` ?L -> _ |- _ =>
-            pick fresh γ for L;
-            destruct (IH γ ltac:(clear - Fr; solve_notin)) as [-> ->];
-              [ assumption | split; reflexivity ]
-        end
-        (* binder rows whose SUBJECT is OPENED: a fresh γ adds no α *)
-      | match goal with
-        | IH : forall a : atom, a `notin` ?L ->
-               _ `notin` ftvar_in_pskl (open_pskl_wrt_pskl ?X _) -> _ |- _ =>
-            pick fresh γ for (L `union` singleton α `union` ftvar_in_pskl X);
-            destruct (IH γ ltac:(clear - Fr; solve_notin)) as [-> ->];
-              [ pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper X
-                              (pskl_var_f γ)) as Hup;
-                cbn [ftvar_in_pskl] in Hup; fsetdec
-              | split; reflexivity ]
-        end ].
-Qed.
+(** NB the auxiliary fact behind the ForallL row below — an ABSENT subject
+    collects nothing — is [a_looksub_lookeq_absent_nil] (prop_looksub.v §4),
+    and the REVERSE of [lemma:constraint-collection-stable-substitution] it
+    feeds is [a_looksub_subst_stable_rev] (prop_looksub.v §4b, Qed). *)
 
 (** The two SPECIAL CASES of P6-Ss, factored out.  They are needed as a
     standalone lemma, not just at the top of the theorem: the main proof
@@ -344,7 +292,7 @@ Lemma a_looksub_solve_complete_leaf :
   κ ∷ Θ0 ⊑ Θ ->
   α `notin` dom Θ -> α `notin` dom Θ0 ->
   ⌊ R' ⌋ˢ = P ->                            (* erase R' = P (R' is κ-FREE) *)
-  ftvar_in_uskl R' [<=] add α (dom Θ0) ->
+  ftvar_in_uskl R' [<=] add α (dom Θ0 `union` dom Θ) ->
   lc_uskl R' ->
   a_tags_sort NM Ψ' ψa ->
   (ftag_in_uskl R') ∩ Ψ' [=] empty ->       (* the paper's "Ψ disjoint from Ψ'" *)
@@ -377,7 +325,7 @@ Lemma a_looksub_solve_complete_leaf :
        the open design point recorded at the [P = α] case below. *)
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
-    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0)) /\
+    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
     Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
@@ -486,7 +434,7 @@ Theorem a_looksub_solve_complete :
   κ ∷ Θ0 ⊑ Θ ->
   α `notin` dom Θ -> α `notin` dom Θ0 ->
   ⌊ R' ⌋ˢ = P ->                            (* erase R' = P (R' is κ-FREE) *)
-  ftvar_in_uskl R' [<=] add α (dom Θ0) ->
+  ftvar_in_uskl R' [<=] add α (dom Θ0 `union` dom Θ) ->
   lc_uskl R' ->
   a_tags_sort NM Ψ' ψa ->
   (ftag_in_uskl R') ∩ Ψ' [=] empty ->       (* the paper's "Ψ disjoint from Ψ'" *)
@@ -518,7 +466,7 @@ Theorem a_looksub_solve_complete :
        the open design point recorded at the [P = α] case below. *)
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
-    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0)) /\
+    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
     Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
@@ -685,34 +633,88 @@ Proof.
        note P6-Cs's 𝒞1 holds no SUBTYPING constraint, which is what lets
        [a_solve_cstr] run them in sequence. *)
     admit.
-  - (* ForallL, tagged : the subject's ∀ is instantiated, so the IH runs at
-       [open R' ψb] — this is why the induction is on the DERIVATION and
-       not on P6-Cs's measure.  Closing needs the REVERSE direction of
-       [lemma:constraint-collection-stable-substitution] to undo the guess
-       and recover the same 𝒞 at P'.
+  - (* ForallL, tagged : the subject's ∀ is instantiated, so the IH must run
+       at [open R' ψb] — this is why the induction is on the DERIVATION and
+       not on P6-Cs's measure.
 
-       PREREQUISITE STATUS.  prop_looksub.v:249 has only the FORWARD
-       direction ([a_looksub_lookeq_subst_stable]).  Half of the reverse is
-       now DONE: [a_looksub_lookeq_absent] above (Qed) is its auxiliary
-       fact.  What remains is the reverse lemma itself,
+       PREREQUISITE — DONE.  The REVERSE of
+       [lemma:constraint-collection-stable-substitution] is now
+       [a_looksub_subst_stable_rev] (prop_looksub.v §4b, Qed, axiom-free):
 
-         (subst P0 β P) ≼[α,m] P' ⤳ Ξ ⨾ 𝒞 ->
-         β <> α -> α ∉ ftv P0 -> lc P0 -> P ≼[α,m] P' ⤳ Ξ ⨾ 𝒞
+         (subst Pg βg Pu) ≼[α,m] P' ⤳ Ξ ⨾ 𝒞 ->
+         βg <> α -> α ∉ ftv Pg -> lc Pg -> lc Pu ->
+         Pu ≼[α,m] P' ⤳ Ξ ⨾ 𝒞.
 
-       proved by mutual induction with the SUBSTITUTED subject
-       [remember]ed, then [destruct P] per row.  Only two shapes of P
-       matter: P = [var β], where the substitution put the guess in place
-       of the binder and [a_looksub_lookeq_absent] gives Ξ = 𝒞 = nil so
-       LS-Absent rebuilds the goal (β ≠ α); and every other shape, where
-       the substitution is STRUCTURAL, so the rule that fired is pinned by
-       P's own top constructor and the row recurses.
+       ⚠️ BLOCKER — THE PAPER'S IH INSTANCE DOES NOT TYPE-CHECK IN THIS
+       ENCODING.  subtyping-proofs.tex:2600–2643 applies the IH with
+       [S := S'[ψ_b/β]] and, in passing from \refb to \refe, uses
 
-       This case then instantiates it at
-       [open X ψ_b = subst ⌊ψ_b⌋ˢ β (open X (var β))] (β ∉ ftv X), which is
-       the form the subject has here, and renames β into LS-ForallL's
-       cofinite family — free, since 𝒞 does not mention β (see the
-       ForallR note: constraints carry TARGET subterms, and ForallL binds
-       in the SUBJECT). *)
+           θ (S'[ψ_b/β])  =  (θ S')[ψ_b/β],
+
+       which holds ONLY IF [θ ψ_b = ψ_b].  Here the subject is written
+       EXACTLY as the paper writes it, [(κ R')[ψa/α]] with R' κ-FREE and
+       Θ0-scoped, so choosing [R'' := open R0 ψ] forces
+
+           msubst_uskl_syn κ (open R0 ψ) = open (msubst_uskl_syn κ R0) ψ,
+
+       i.e. [msubst_uskl_syn κ ψ = ψ] — and NOTHING in the premises gives
+       it.  ψ is the ForallL rule's guess, constrained only by
+       [Θ ⨟ empty ⊢ₚₛᵃ ⌊ψ⌋ˢ], so [ftv ψ ⊆ dom Θ]; and [a_inc]'s flexible
+       rows ([a_inc__flex], [a_inc__flex_def]) leave the TARGET arbitrary,
+       so a Θ-scoped ψ may perfectly well mention a [dom κ] variable.  Nor
+       can a pre-image be manufactured: κ's images are MONOTYPES
+       ([metasubst = list (atom * ptyp)] + [mono_ptyp]) while ψ is a
+       general tagged skeleton, so extending κ (or Θ0) to name ψ is not an
+       option either.
+
+       REPAIR (recommended; NOT yet applied — it changes the statement, so
+       it needs author sign-off, exactly like P6-Sv's [flex_shield]).  Two
+       independent pieces:
+
+       (1) A HYGIENE premise spelling out the paper's Barendregt reading of
+           "θ solves Θ0's flexibles":
+
+             forall α0, α0 `in` dom κ -> α0 `notin` dom Θ.
+
+           This is the reading [a_inc__flex] already encodes (the flexible
+           is CONSUMED — the target does not gain it), it gives
+           [msubst_uskl_syn κ ψ = ψ] from [ftv ψ ⊆ dom Θ], and it is
+           preserved by every recursive row: Arrow re-establishes it from
+           the strengthened κc-freshness conclusion, ForallR from the
+           binder's freshness, ForallL/UnivGhostL leave κ and Θ alone.
+
+       (2) The SCOPE premise had to be relaxed — DONE, in this file and in
+           P6-Cs — from [ftv R' ⊆ add α (dom Θ0)] to
+           [ftv R' ⊆ add α (dom Θ0 ∪ dom Θ)], with the dual conclusion
+           [α0 ∈ dom κc -> α0 ∉ add α (dom Θ0 ∪ dom Θ)] strengthened to
+           match.  [open R0 ψ] is only Θ-scoped, never Θ0-scoped, so the
+           old bound is unsatisfiable at this row; the strengthened
+           conclusion costs nothing because the flexible-generating row
+           already picks its fresh name outside [dom Θ].
+
+       THEN the row closes as the paper says: IH at [R'' := open R0 ψ] and
+       [P'' := open ⌊R0⌋ˢ ⌊ψ⌋ˢ = subst ⌊ψ⌋ˢ β (open ⌊R0⌋ˢ (var β))] (β ∉
+       ftv ⌊R0⌋ˢ), then [a_looksub_subst_stable_rev] strips the guess
+       ([α ∉ ftv ⌊ψ⌋ˢ] because [ftv ψ ⊆ dom Θ] and [α ∉ dom Θ] — the
+       paper's \refd), and the forward [a_looksub_subst_stable] turns the
+       single β into LS-ForallL's cofinite family.
+
+       ⚠️ ONE SUB-QUESTION STILL OPEN inside the row: the tag bookkeeping.
+       The IH wants [Ψsub'' = Ψ ∪ Ψb ⊆ ftag R'' ∪ Ψa]; [ftag R'' =
+       ftag R0 ∪ Ψb], so what must be ruled out is [ε ∈ Ψsub] — the tag of
+       the very binder being instantiated surviving in the solved-tag
+       index.  [ad_pat_sub_g_ftag_sub] bounds Ψsub by the subject's tags,
+       which INCLUDES ε; whether the rule's own freshness excludes it, or
+       whether this is a second gap, has not been settled.
+
+       ALTERNATIVE considered and rejected as larger: carry a ρ (the
+       paper's rigid-variable substitution, as P6-Sv does) through P6-Ss
+       and absorb each ForallL guess into it (ρ_b = ρ ∘ [ψ_b/β],
+       [uskl_rho_subst]).  Then the looksub side never leaves
+       [open ⌊R0⌋ˢ (var β)], no reverse-substitution is needed, and the
+       leaf calls P6-Sv at the ACCUMULATED ρ instead of the identity —
+       which is what P6-Sv's ρ was built for.  Cost: the statement, the
+       [sub_shield] Δρ argument, and all eight closed rows change. *)
     admit.
   - (* ForallL, untagged : identical to the tagged row; the mech splits the
        paper's single rule by the subject's POTENTIAL tag. *)
@@ -771,7 +773,7 @@ Proof.
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
       (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
       a_inc_equiv Θ0 κ κ Θ /\
-      (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0)) /\
+      (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
       Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       assert (HwfSubj0 : Θ ⨟ empty ⊢ₚₛᵃ
@@ -840,7 +842,7 @@ Proof.
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
       (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
       a_inc_equiv Θ0 κ κ Θ /\
-      (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0)) /\
+      (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
       Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       assert (HwfSubj0 : Θ ⨟ empty ⊢ₚₛᵃ
@@ -926,9 +928,19 @@ Admitted.  (* TODO[P6-Ss]: statement + [sub_shield] machinery are in place
 
     DONE so far: [a_solve_sub_wf] (Qed — read its header before touching
     it, the Δ-uniform statement is FALSE and its side condition is
-    load-bearing), and BOTH special cases before the induction, i.e.
+    load-bearing), BOTH special cases before the induction, i.e.
     α ∉ ftv P (LS-Absent, Ψa = ∅) and P = α (LS-Var, then P6-Sv at
-    ρ = IDENTITY with [sub_shield_here] supplying its two repair premises).
+    ρ = IDENTITY with [sub_shield_here] supplying its two repair premises),
+    and EIGHT of the twelve rows: Infer, Check, UnivGhostR, UnivGhostL,
+    UnivGhostLG, Ghost, GhostG, FlexMono.
+
+    2026-07-29 (this session): the ForallL PREREQUISITE is closed —
+    [a_looksub_subst_stable_rev] (prop_looksub.v §4b, Qed, axiom-free) — and
+    the SCOPE premise / κc-freshness conclusion were relaxed here and in
+    P6-Cs from [dom Θ0] to [dom Θ0 ∪ dom Θ], which is what the ForallL row
+    needs (the guess ψ_b is Θ-scoped, never Θ0-scoped).  The ForallL row
+    itself is still BLOCKED on a statement change: see the ⚠️ block at the
+    [ForallL, tagged] admit and docs/PAPER-GAPS.md.
 
     ⚠️ OPEN DESIGN POINT for Sub-ForallR — and a [paper-gap].  Rebuilding
     with LS-ForallR needs the SAME [Ξ ⨾ 𝒞] for every β, i.e. β ∉ ftv 𝒞.

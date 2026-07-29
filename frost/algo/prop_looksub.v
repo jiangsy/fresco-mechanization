@@ -399,6 +399,305 @@ Lemma a_looksub_subst_stable : forall α m P P' Ξ 𝒞 β P0,
 Proof. intros; eapply (proj1 a_looksub_lookeq_subst_stable); eauto. Qed.
 
 (* ===================================================================== *)
+(*  §4b  The REVERSE direction of                                         *)
+(*  lemma:constraint-collection-stable-substitution                       *)
+(*                                                                        *)
+(*  The subtyping-completeness ForallL case (P6-Ss) needs the converse of  *)
+(*  §4: a run collected on a subject in which an α-free guess has already  *)
+(*  been substituted for a rigid β ≠ α can be UNDONE, recovering the very  *)
+(*  same Ξ ⨾ 𝒞 at the un-substituted subject.  Only two shapes of the      *)
+(*  un-substituted subject matter: it IS the binder ([pskl_var_f βg]),     *)
+(*  where the run happened entirely inside the α-free guess, so §4's       *)
+(*  [a_looksub_lookeq_absent_nil] empties it and LS-Absent rebuilds; or it *)
+(*  is anything else, where the substitution is STRUCTURAL and the rule    *)
+(*  that fired is pinned by the subject's own top constructor.            *)
+(*  (subtyping-proofs.tex:2632 uses exactly this direction.)               *)
+(* ===================================================================== *)
+
+(** A subject that IS the substituted binder collects nothing: the guess is
+    α-free, so [a_looksub_lookeq_absent_nil] empties the run and LS-Absent
+    rebuilds it at the bare variable (βg ≠ α). *)
+Lemma a_looksub_subst_var : forall α m βg P' Ξ 𝒞 Pg,
+  Pg ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+  α `notin` ftvar_in_pskl Pg -> βg <> α ->
+  (pskl_var_f βg) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞.
+Proof.
+  intros α m βg P' Ξ 𝒞 Pg H Hα Hβ.
+  destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ H Hα) as [-> ->].
+  apply a_looksub__absent. simpl. clear - Hβ. fsetdec.
+Qed.
+
+Lemma a_lookeq_subst_var : forall α βg P' Ξ 𝒞 Pg,
+  Pg ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+  α `notin` ftvar_in_pskl Pg -> βg <> α ->
+  (pskl_var_f βg) ∼[ α ] P' ⤳ Ξ ⨾ 𝒞.
+Proof.
+  intros α βg P' Ξ 𝒞 Pg H Hα Hβ.
+  destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ H Hα) as [-> ->].
+  apply a_lookeq__absent. simpl. clear - Hβ. fsetdec.
+Qed.
+
+(** The REVERSE direction of
+    [lemma:constraint-collection-stable-substitution]. *)
+Lemma a_looksub_lookeq_subst_stable_rev :
+  (forall α m Ps P' Ξ 𝒞, Ps ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+     forall Pu βg Pg, Ps = subst_pskl_in_pskl Pg βg Pu ->
+     βg <> α -> α `notin` ftvar_in_pskl Pg -> lc_pskl Pg -> lc_pskl Pu ->
+     Pu ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞) /\
+  (forall α Ps P' Ξ 𝒞, Ps ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+     forall Pu βg Pg, Ps = subst_pskl_in_pskl Pg βg Pu ->
+     βg <> α -> α `notin` ftvar_in_pskl Pg -> lc_pskl Pg -> lc_pskl Pu ->
+     Pu ∼[ α ] P' ⤳ Ξ ⨾ 𝒞).
+Proof.
+  apply (a_looksub_lookeq_mutind
+           (fun α m Ps P' Ξ 𝒞 _ =>
+              forall Pu βg Pg, Ps = subst_pskl_in_pskl Pg βg Pu ->
+              βg <> α -> α `notin` ftvar_in_pskl Pg ->
+              lc_pskl Pg -> lc_pskl Pu ->
+              Pu ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞)
+           (fun α Ps P' Ξ 𝒞 _ =>
+              forall Pu βg Pg, Ps = subst_pskl_in_pskl Pg βg Pu ->
+              βg <> α -> α `notin` ftvar_in_pskl Pg ->
+              lc_pskl Pg -> lc_pskl Pu ->
+              Pu ∼[ α ] P' ⤳ Ξ ⨾ 𝒞)).
+  - (* LS-Var *)
+    intros α m P Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    destruct (β' == βg) as [-> | Hne'].
+    + subst Pg. exfalso. cbn in Hα. clear - Hα. fsetdec.
+    + injection Heq as Heq'. subst β'. apply a_looksub__var.
+  - (* LS-Absent *)
+    intros α m P P' Hnin Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    subst P. apply a_looksub__absent.
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Pu Pg βg) as Hlow.
+    clear - Hnin Hlow Hβ. fsetdec.
+  - (* LS-Vacuous *)
+    intros; apply a_looksub__vacuous.
+  - (* LS-Check *)
+    intros α A B Ξ C Hne Hg Hg0 Hlk IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq; subst A.
+    + apply a_looksub__check; assumption.
+    + inversion Hg.
+    + destruct (β' == βg) as [-> | Hne'].
+      * eapply a_looksub_subst_var;
+          [ apply a_looksub__check; eassumption | assumption | assumption ].
+      * apply a_looksub__check; assumption.
+    + inversion HlcPu as [ | | ? ? HlcPa HlcPb | | | ]; subst.
+      apply a_looksub__check;
+        [ discriminate
+        | apply guarded_pskl__arrow; assumption
+        | assumption
+        | apply (IH (pskl_arrow Pa Pb) βg Pg);
+            [ reflexivity | assumption | assumption | assumption
+            | assumption ] ].
+    + inversion Hg.
+    + inversion Hg.
+    + inversion Hg.
+  - (* LS-ForallR *)
+    intros L α A B Ξ C Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    apply a_looksub__forall_r with (L := L). intros β1 Hβ1.
+    apply (IH β1 Hβ1 Pu βg Pg); solve [ assumption | reflexivity ].
+  - (* LS-Arrow *)
+    intros α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hlk1 IH1 Hlk2 IH2
+           Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_looksub_subst_var;
+        [ apply a_looksub__arrow; eassumption | assumption | assumption ].
+    + inversion HlcPu as [ | | ? ? HlcPa HlcPb | | | ]; subst.
+      injection Heq as Heq1 Heq2. subst P1. subst P2.
+      apply a_looksub__arrow.
+      * apply (IH1 Pa βg Pg); solve [ assumption | reflexivity ].
+      * apply (IH2 Pb βg Pg); solve [ assumption | reflexivity ].
+  - (* LS-ForallL *)
+    intros L α m P P' Ξ C Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_looksub_subst_var;
+        [ apply a_looksub__forall_l with (L := L); exact Hpre
+        | assumption | assumption ].
+    + inversion HlcPu as [ | | | ? Hopen | | ]; subst.
+      injection Heq as Heq0. subst P.
+      apply a_looksub__forall_l
+        with (L := L `union` singleton βg `union` ftvar_in_pskl Pg
+                     `union` ftvar_in_pskl Pb).
+      intros β1 Hβ1.
+      assert (Hne1 : βg <> β1)
+        by (clear - Hβ1; intro Hc; subst; fsetdec).
+      apply (IH β1 ltac:(clear - Hβ1; solve_notin)
+                (open_pskl_wrt_pskl Pb (pskl_var_f β1)) βg Pg);
+        [ apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+            [ exact Hne1 | assumption ]
+        | assumption | assumption | assumption | apply Hopen ].
+  - (* LS-UnivGhostL *)
+    intros α m P P' Ξ C Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_looksub_subst_var;
+        [ apply a_looksub__univ_ghost_l; exact Hpre
+        | assumption | assumption ].
+    + inversion HlcPu as [ | | | | | ? HlcPb ]; subst.
+      injection Heq as Heq0. subst P.
+      apply a_looksub__univ_ghost_l.
+      apply (IH Pb βg Pg); solve [ assumption | reflexivity ].
+  - (* LE-Var *)
+    intros α P Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    destruct (β' == βg) as [-> | Hne'].
+    + subst Pg. exfalso. cbn in Hα. clear - Hα. fsetdec.
+    + injection Heq as Heq'. subst β'. apply a_lookeq__var.
+  - (* LE-Absent *)
+    intros α P P' Hnin Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    subst P. apply a_lookeq__absent.
+    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Pu Pg βg) as Hlow.
+    clear - Hnin Hlow Hβ. fsetdec.
+  - (* LE-Vacuous *)
+    intros; apply a_lookeq__vacuous.
+  - (* LE-FlexR *)
+    intros α P β α1 Hne Hin Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    subst P. apply a_lookeq__flex_r.
+    + intro Hc. subst Pu. cbn in Hne.
+      destruct (α == βg) as [-> | Hne'];
+        [ contradiction (Hβ eq_refl) | apply Hne; reflexivity ].
+    + pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Pu Pg βg) as Hup.
+      clear - Hin Hα Hup. fsetdec.
+  - (* LE-Arrow *)
+    intros α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hlk1 IH1 Hlk2 IH2
+           Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_lookeq_subst_var;
+        [ apply a_lookeq__arrow; eassumption | assumption | assumption ].
+    + inversion HlcPu as [ | | ? ? HlcPa HlcPb | | | ]; subst.
+      injection Heq as Heq1 Heq2. subst P1. subst P2.
+      apply a_lookeq__arrow.
+      * apply (IH1 Pa βg Pg); solve [ assumption | reflexivity ].
+      * apply (IH2 Pb βg Pg); solve [ assumption | reflexivity ].
+  - (* LE-ForallInh *)
+    intros L α P P' Ξ C Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_lookeq_subst_var;
+        [ apply a_lookeq__forall_inh with (L := L); exact Hpre
+        | assumption | assumption ].
+    + inversion HlcPu as [ | | | ? Hopen | | ]; subst.
+      injection Heq as Heq0. subst P.
+      apply a_lookeq__forall_inh
+        with (L := L `union` singleton βg `union` ftvar_in_pskl Pg
+                     `union` ftvar_in_pskl Pb).
+      intros β1 Hβ1.
+      assert (Hne1 : βg <> β1)
+        by (clear - Hβ1; intro Hc; subst; fsetdec).
+      apply (IH β1 ltac:(clear - Hβ1; solve_notin)
+                (open_pskl_wrt_pskl Pb (pskl_var_f β1)) βg Pg);
+        [ apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+            [ exact Hne1 | assumption ]
+        | assumption | assumption | assumption | apply Hopen ].
+  - (* LE-ForallSyn *)
+    intros L α P P' Ξ C Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_lookeq_subst_var;
+        [ apply a_lookeq__forall_syn with (L := L); exact Hpre
+        | assumption | assumption ].
+    + inversion HlcPu as [ | | | ? Hopen | | ]; subst.
+      injection Heq as Heq0. subst P.
+      apply a_lookeq__forall_syn
+        with (L := L `union` singleton βg `union` ftvar_in_pskl Pg
+                     `union` ftvar_in_pskl Pb).
+      intros β1 Hβ1.
+      assert (Hne1 : βg <> β1)
+        by (clear - Hβ1; intro Hc; subst; fsetdec).
+      apply (IH β1 ltac:(clear - Hβ1; solve_notin)
+                (open_pskl_wrt_pskl Pb (pskl_var_f β1)) βg Pg);
+        [ apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+            [ exact Hne1 | assumption ]
+        | assumption | assumption | assumption | apply Hopen ].
+  - (* LE-UnivGhost *)
+    intros α P P' Ξ C Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_lookeq_subst_var;
+        [ apply a_lookeq__univ_ghost; exact Hpre | assumption | assumption ].
+    + inversion HlcPu as [ | | | | | ? HlcPb ]; subst.
+      injection Heq as Heq0. subst P.
+      apply a_lookeq__univ_ghost.
+      apply (IH Pb βg Pg); solve [ assumption | reflexivity ].
+  - (* LE-UnivGhost1 *)
+    intros L α P P' Ξ C Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_lookeq_subst_var;
+        [ apply a_lookeq__univ_ghost1 with (L := L); exact Hpre
+        | assumption | assumption ].
+    + injection Heq as Heq0. subst P.
+      apply a_lookeq__univ_ghost1 with (L := L). intros β1 Hβ1.
+      apply (IH β1 Hβ1 (pskl_tophole Pb) βg Pg);
+        [ reflexivity
+        | assumption | assumption | assumption | assumption ].
+  - (* LE-UnivGhost2 *)
+    intros α P P' Ξ C Hg Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq;
+      try discriminate Heq.
+    + destruct (β' == βg) as [-> | Hne']; [ | discriminate Heq ].
+      subst Pg.
+      eapply a_lookeq_subst_var;
+        [ apply a_lookeq__univ_ghost2; eassumption
+        | assumption | assumption ].
+    + inversion HlcPu as [ | | | | | ? HlcPb ]; subst.
+      injection Heq as Heq0. subst P.
+      apply a_lookeq__univ_ghost2; [ assumption | ].
+      apply (IH Pb βg Pg); solve [ assumption | reflexivity ].
+  - (* LE-UnivGhostR *)
+    intros α P P' Ξ C Hne Hg Hpre IH Pu βg Pg Heq Hβ Hα HlcPg HlcPu.
+    destruct Pu as [ | n | β' | Pa Pb | Pb | | Pb ]; cbn in Heq; subst P.
+    + apply a_lookeq__univ_ghost_r; assumption.
+    + inversion Hg.
+    + destruct (β' == βg) as [-> | Hne'].
+      * eapply a_lookeq_subst_var;
+          [ apply a_lookeq__univ_ghost_r; eassumption
+          | assumption | assumption ].
+      * apply a_lookeq__univ_ghost_r; assumption.
+    + inversion HlcPu as [ | | ? ? HlcPa HlcPb | | | ]; subst.
+      apply a_lookeq__univ_ghost_r;
+        [ discriminate
+        | apply guarded_pskl__arrow; assumption
+        | apply (IH (pskl_arrow Pa Pb) βg Pg);
+            [ reflexivity | assumption | assumption | assumption
+            | assumption ] ].
+    + inversion Hg.
+    + inversion Hg.
+    + inversion Hg.
+Qed.
+
+Lemma a_looksub_subst_stable_rev : forall α m P' Ξ 𝒞 Pu βg Pg,
+  (subst_pskl_in_pskl Pg βg Pu) ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+  βg <> α -> α `notin` ftvar_in_pskl Pg -> lc_pskl Pg -> lc_pskl Pu ->
+  Pu ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞.
+Proof.
+  intros; eapply (proj1 a_looksub_lookeq_subst_stable_rev);
+    try eassumption; reflexivity.
+Qed.
+
+(* ===================================================================== *)
 (*  §5  Renaming the looked-for variable                                  *)
 (*                                                                        *)
 (*  Collected constraints mention only input residuals, never the looked  *)

@@ -2415,3 +2415,59 @@ conclusion shape (𝒞, Ξc, Pa, κc with the `keys`/`Forall`/`ftvar_in_cstrs`
 side conditions) carries over verbatim; only `a_lookeq` becomes `a_looksub`
 and the mode/`skmod` premises are added.
 
+
+### (e) P6-Ss status 2026-07-29 (second session) — ForallL prerequisite closed, ForallL row BLOCKED
+
+**Done.**
+
+- `a_looksub_subst_stable_rev` + `a_lookeq` twin + the two
+  `a_{looksub,lookeq}_subst_var` helpers, in `prop_looksub.v` §4b (`Qed`,
+  axiom-free).  This is the REVERSE of
+  `lemma:constraint-collection-stable-substitution`, the lemma the paper's
+  ForallL case ends with.  Proof shape: mutual induction on the derivation
+  with the SUBSTITUTED subject `remember`ed (stated as
+  `Ps = subst Pg βg Pu -> …` so the equation survives), then `destruct Pu`
+  per row.  The `Pu = var βg` branch is uniform — the derivation ran wholly
+  inside the α-free guess, so `a_looksub_lookeq_absent_nil` empties it and
+  LS/LE-Absent rebuilds — and needs the rule's own conclusion rebuilt from
+  its premises (`apply <ctor>; eassumption`) to feed the helper.
+  ⚠️ Two Coq traps paid for: `inversion HlcPu; subst` CONSUMES the
+  `injection` equation if `injection` runs first, so do the `inversion`
+  FIRST and then `injection … ; subst`; and `guarded_pskl` covers only
+  `unit`/`var_f`/`arrow`, which is what kills the `all_syn`/`hole`/`tophole`
+  branches of LS-Check and LE-UnivGhostR.
+- The SCOPE premise `ftv R' ⊆ add α (dom Θ0)` is relaxed to
+  `add α (dom Θ0 ∪ dom Θ)` and the dual κc-freshness conclusion
+  strengthened to match — in BOTH `prop_look_complete_cstr.v` (P6-Cs,
+  re-`Qed`ed unchanged otherwise) and `prop_look_complete_sub_cstr.v`.
+  Five textual sites in P6-Cs, six in P6-Ss.  Needed because ForallL's IH
+  subject `open R0 ψ_b` is Θ-scoped, never Θ0-scoped.
+- The duplicate `a_looksub_lookeq_absent` in `prop_look_complete_sub_cstr.v`
+  is deleted; `prop_looksub.v`'s `a_looksub_lookeq_absent_nil` is the one.
+
+**Blocked (see docs/PAPER-GAPS.md, last entry).**  The paper's ForallL IH
+instance needs `θψ_b = ψ_b`, which no premise gives and which no choice of
+`R''` can dodge (κ's images are monotypes, so a general tagged `ψ_b` has no
+pre-image).  Recommended repair = the hygiene premise
+`∀ α̂ ∈ dom κ, α̂ ∉ dom Θ` (the reading `a_inc__flex` already encodes: the
+solved flexible is CONSUMED).  It is preserved by every recursive row —
+Arrow from the strengthened κc-freshness conclusion, ForallR from the
+binder's freshness, ForallL/UnivGhostL because they touch neither κ nor Θ.
+**Awaiting author sign-off before the statement gains a premise.**  A
+larger alternative (carry ρ through P6-Ss, as P6-Sv does) is recorded in
+the same PAPER-GAPS entry.
+
+**Order for the next session** (Arrow and ForallR do NOT depend on the
+decision above, so start there):
+
+1. Arrow — the assembly is a near-copy of P6-Cs's Arrow row
+   (`prop_look_complete_cstr.v:2007-2160`): LEFT premise to
+   `a_lookeq_solve_complete`, RIGHT to the derivation IH with
+   `sss_arrow_r` + `sub_shield_step`, then the same `a_solve_cstr_app` /
+   `a_wf_pskl_swap_app` / `a_inc_flex_prefix_split` kit.  New relative to
+   P6-Cs: `skmod` forcing `P0 = P01→P02`, and the `Ψa1`/`Ψa2` split.
+2. ForallR — still gated on the `β ∉ ftv 𝒞` invariant (reading (b): keep
+   the side condition, do not change the constraint grammar), which means
+   P6-Ss has to re-acquire a ψa-relative `ftvar_in_cstrs` conclusion that
+   the current statement deliberately dropped.
+3. ForallL — once the decision above is taken.
