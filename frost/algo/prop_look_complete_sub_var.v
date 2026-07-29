@@ -286,6 +286,45 @@ Proof.
   - apply fsh_rho_var; exact H.
 Qed.
 
+(** Weakening by a FLEXIBLE prefix (P6-Ss's Sub-Arrow runs its right branch
+    at [Ξc1,Θ0], where Ξc1 holds the flexibles the left branch collected).
+
+    ⚠️ This one needs a side condition, and [flex_shield_weaken_tvar] does
+    not: [fsh_flexfree] is ANTI-monotone in the context — it asserts that no
+    variable of P0 is a Θ0-FLEXIBLE, and a prefix of flexibles could make one
+    so.  Requiring the prefix to avoid [ftv P0] is exactly enough, and it is
+    what the call site has (Ξc1's names are fresh for Θ0, while P0 is
+    Θ0-scoped).  The [fsh_all_l] descent opens a binder, so its cofinite set
+    grows by [dom Ξ] to keep the condition. *)
+Lemma flex_shield_weaken_flex_prefix : forall Θ0 Ψ' Δρ P0 ψa,
+  flex_shield Θ0 Ψ' Δρ P0 ψa ->
+  forall Ξ, (ftvar_in_pskl P0) ∩ (dom Ξ) [=] empty ->
+  flex_shield (Ξ ++ Θ0) Ψ' Δρ P0 ψa.
+Proof.
+  intros Θ0 Ψ' Δρ P0 ψa H; induction H; intros Ξ Hfr.
+  - apply fsh_clean; assumption.
+  - (* flexfree: a P0-variable is outside dom Ξ, so its binding is Θ0's *)
+    apply fsh_flexfree. intros α Hα Hflex.
+    assert (HαΞ : α `notin` dom Ξ) by (clear - Hfr Hα; fsetdec).
+    apply (H α Hα).
+    destruct Hflex as [Hb | [τ Hb]];
+      [ left | right; exists τ ];
+      (destruct (binds_app_1 _ _ _ _ _ Hb) as [Hb' | Hb'];
+        [ exfalso; apply HαΞ; eapply binds_In; exact Hb' | exact Hb' ]).
+  - simpl in Hfr. apply fsh_arrow;
+      [ apply IHflex_shield1 | apply IHflex_shield2 ];
+      clear - Hfr; fsetdec.
+  - (* the opened binder must miss dom Ξ too *)
+    apply fsh_all_l with (L := L `union` dom Ξ); intros α Hα.
+    apply H0; [ clear - Hα; solve_notin | ].
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as Hup.
+    simpl in Hup, Hfr. clear - Hup Hfr Hα; fsetdec.
+  - apply fsh_all_r with (L := L) (ε := ε); intros α Hα; apply H0; assumption.
+  - simpl in Hfr. apply fsh_tophole_l; apply IHflex_shield; exact Hfr.
+  - apply fsh_topholeg_r; apply IHflex_shield; exact Hfr.
+  - apply fsh_rho_var; exact H.
+Qed.
+
 (** Rigid renaming.  Needed by both binder descents: the derivation's
     cofinite set is existential, so the binder the INDUCTION picks is not
     the one the rule's family offers.  Renaming on the [P0] side leaves

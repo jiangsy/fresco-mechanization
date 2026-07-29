@@ -75,17 +75,51 @@ Require Import src.frost.algo.prop_look_complete_sub_var.
 (* ===================================================================== *)
 
 (** Sub-Arrow keeps the RIGHT component; Sub-ForallR opens the body.  Every
-    other case of P6-Ss leaves P0 alone. *)
-Inductive ss_step : pskl -> pskl -> Prop :=
-| sss_arrow_r : forall P1 P2,                     (* Sub-Arrow *)
-    ss_step (pskl_arrow P1 P2) P2
-| sss_all : forall P0 γ,                          (* Sub-ForallR *)
-    ss_step (pskl_all_syn P0) (open_pskl_wrt_pskl P0 (pskl_var_f γ)).
+    other case of P6-Ss leaves P0 alone.
 
-Inductive ss_walk : pskl -> pskl -> Prop :=
-| ssw_refl : forall P0, ss_walk P0 P0
+    ⚠️ The walk carries an AVOID SET [A], and Sub-ForallR's binder must miss
+    it.  Without that the walk reaches states mentioning an ARBITRARY γ, and
+    [sub_shield] could then not be transported across a flexible prefix at
+    all: [fsh_flexfree] is anti-monotone in the context, so its transport
+    needs [ftv P0' ∩ dom Ξ = ∅], which only holds if the opened binders miss
+    [dom Ξ].  [sub_shield] instantiates [A := dom Θ0], and every call site
+    picks its binder fresh for the context anyway — so the condition costs
+    nothing and buys [sub_shield_weaken_flex_prefix], which P6-Ss's Sub-Arrow
+    row needs for its right branch. *)
+Inductive ss_step (A : atoms) : pskl -> pskl -> Prop :=
+| sss_arrow_r : forall P1 P2,                     (* Sub-Arrow *)
+    ss_step A (pskl_arrow P1 P2) P2
+| sss_all : forall P0 γ,                          (* Sub-ForallR *)
+    γ `notin` A ->
+    ss_step A (pskl_all_syn P0) (open_pskl_wrt_pskl P0 (pskl_var_f γ)).
+
+Inductive ss_walk (A : atoms) : pskl -> pskl -> Prop :=
+| ssw_refl : forall P0, ss_walk A P0 P0
 | ssw_step : forall P0 P1 P2,
-    ss_step P0 P1 -> ss_walk P1 P2 -> ss_walk P0 P2.
+    ss_step A P0 P1 -> ss_walk A P1 P2 -> ss_walk A P0 P2.
+
+(** Shrinking the avoid set only admits MORE walks, so a walk at the larger
+    set is one at the smaller — the direction the transport needs. *)
+Lemma ss_walk_mono : forall A A' P0 P1,
+  ss_walk A P0 P1 -> A' [<=] A -> ss_walk A' P0 P1.
+Proof.
+  intros A A' P0 P1 H; induction H; intros Hsub; [ apply ssw_refl | ].
+  eapply ssw_step; [ | apply IHss_walk; exact Hsub ].
+  destruct H; [ apply sss_arrow_r | apply sss_all; clear - H Hsub; fsetdec ].
+Qed.
+
+(** …and the free variables a walk can introduce are bounded by the start's
+    plus the avoid set's complement — all we need is that they MISS [A]. *)
+Lemma ss_walk_ftv : forall A P0 P1,
+  ss_walk A P0 P1 -> (ftvar_in_pskl P0) ∩ A [=] empty ->
+  (ftvar_in_pskl P1) ∩ A [=] empty.
+Proof.
+  intros A P0 P1 H; induction H; intros Hfr; [ exact Hfr | ].
+  apply IHss_walk. destruct H.
+  - simpl in Hfr; clear - Hfr; fsetdec.
+  - pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ)) as Hup.
+    simpl in Hup, Hfr. clear - Hup Hfr H; fsetdec.
+Qed.
 
 (** The P6-Ss repair premise: at EVERY P0-subterm the recursion can reach,
     P6-Sv's two premises hold against the fixed guess.  Both are needed:
@@ -107,14 +141,14 @@ Inductive ss_walk : pskl -> pskl -> Prop :=
     ("the shield holds along everything the recursion does"). *)
 Definition sub_shield (Θ0 : aenv) (Ψ' : atoms) (Δρ : atoms) (P0 : pskl)
   (ψa : uskl) : Prop :=
-  forall P0' Δρ', ss_walk P0 P0' ->
+  forall P0' Δρ', ss_walk (dom Θ0) P0 P0' ->
     Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
     flex_apart_walk Θ0 Δρ' P0' ψa /\ flex_shield Θ0 Ψ' Δρ' P0' ψa.
 
-Lemma ss_walk_trans : forall P0 P1 P2,
-  ss_walk P0 P1 -> ss_walk P1 P2 -> ss_walk P0 P2.
+Lemma ss_walk_trans : forall A P0 P1 P2,
+  ss_walk A P0 P1 -> ss_walk A P1 P2 -> ss_walk A P0 P2.
 Proof.
-  intros P0 P1 P2 H; induction H; intros Hw; [ exact Hw | ].
+  intros A P0 P1 P2 H; induction H; intros Hw; [ exact Hw | ].
   eapply ssw_step; [ exact H | apply IHss_walk; exact Hw ].
 Qed.
 
@@ -130,7 +164,7 @@ Qed.
 (** …and the three closures, all free by construction. *)
 Lemma sub_shield_step : forall Θ0 Ψ' Δρ P0 P0' ψa,
   sub_shield Θ0 Ψ' Δρ P0 ψa ->
-  ss_step P0 P0' ->
+  ss_step (dom Θ0) P0 P0' ->
   sub_shield Θ0 Ψ' Δρ P0' ψa.
 Proof.
   intros Θ0 Ψ' Δρ P0 P0' ψa H Hs P0'' Δρ' Hw Hle Hcl.
@@ -155,10 +189,43 @@ Lemma sub_shield_weaken_tvar : forall Θ0 Ψ' Δρ P0 ψa β,
   sub_shield ((β ~ abind_tvar) ++ Θ0) Ψ' Δρ P0 ψa.
 Proof.
   intros Θ0 Ψ' Δρ P0 ψa β H P0' Δρ' Hw Hle Hcl.
-  destruct (H P0' Δρ' Hw Hle Hcl) as [Hap Hfs].
+  (* ⚠️ PIN the avoid set with a named [assert]: inline, [ss_walk_mono]'s
+     [A'] is still an evar when the [⊆] side goal runs, and an evar-[fsetdec]
+     does not terminate. *)
+  assert (Hw0 : ss_walk (dom Θ0) P0 P0')
+    by (eapply ss_walk_mono; [ exact Hw | simpl; clear; fsetdec ]).
+  destruct (H P0' Δρ' Hw0 Hle Hcl) as [Hap Hfs].
   split;
     [ apply flex_apart_walk_weaken_tvar; exact Hap
     | apply flex_shield_weaken_tvar; exact Hfs ].
+Qed.
+
+(** …and the FLEXIBLE-prefix growth Sub-Arrow's right branch needs: it runs
+    at [Ξ,Θ0] with the left branch's collected flexibles.  [flex_apart] is
+    plain binds-monotone; [flex_shield] is not (see
+    [flex_shield_weaken_flex_prefix]), so the prefix must miss the walk's
+    free variables — which the avoid set delivers, since the walk is taken at
+    [dom (Ξ ++ Θ0)] and P0 is Θ0-scoped. *)
+Lemma sub_shield_weaken_flex_prefix : forall Θ0 Ψ' Δρ P0 ψa Ξ,
+  sub_shield Θ0 Ψ' Δρ P0 ψa ->
+  (ftvar_in_pskl P0) ∩ (dom Ξ) [=] empty ->
+  sub_shield (Ξ ++ Θ0) Ψ' Δρ P0 ψa.
+Proof.
+  intros Θ0 Ψ' Δρ P0 ψa Ξ H HfrP0 P0' Δρ' Hw Hle Hcl.
+  (* ⚠️ every [ss_walk_mono] instance is PINNED by a named [assert] — inline,
+     its [A'] is an evar when the [⊆] side goal runs and [fsetdec] hangs. *)
+  assert (HwΞ : ss_walk (dom Ξ) P0 P0')
+    by (eapply ss_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
+  assert (Hw0 : ss_walk (dom Θ0) P0 P0')
+    by (eapply ss_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
+  (* the walk misses [dom Ξ] throughout, so its endpoint does too *)
+  assert (HfrP0' : (ftvar_in_pskl P0') ∩ (dom Ξ) [=] empty)
+    by (eapply ss_walk_ftv; [ exact HwΞ | exact HfrP0 ]).
+  destruct (H P0' Δρ' Hw0 Hle Hcl) as [Hap Hfs].
+  split;
+    [ eapply flex_apart_walk_weaken;
+        [ exact Hap | intros x b Hb; apply binds_app_3; exact Hb ]
+    | eapply flex_shield_weaken_flex_prefix; [ exact Hfs | exact HfrP0' ] ].
 Qed.
 
 (* ===================================================================== *)
