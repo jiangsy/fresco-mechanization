@@ -59,7 +59,7 @@ excluded from the build); mine them when re-proving.
 - ✅ **Theorem: Soundness of subtyping** (`a_sub_sound_thm`, `algo/prop_decorate_key.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
-- 🟡 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss); Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are now UNBLOCKED (P6-Ss's crux delegates to P6-Sv, which is closed) and are the next front.  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
+- 🟡 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, the ONE remaining `admit` is Sub-ForallR (Phase B).  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.  Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are now UNBLOCKED (P6-Ss's crux delegates to P6-Sv, which is closed) and are the next front.  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
 
@@ -77,7 +77,63 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-29 (latest) — ⭐ P6-Cs is ρ-GENERALIZED and re-`Qed`ed: the P6-Ss ForallL blocker is gone
+## 2026-07-29 (latest) — ⭐⭐⭐ P6-Ss Phase A: ρ-GENERALIZED, BOTH ForallL rows CLOSED (11/12); and P6-Cs's ρ premise was VACUOUS
+
+`make coq` green.  The mechanization's ONLY admit is now P6-Ss's **Sub-ForallR**
+(Phase B); everything else in the file, including both ForallL rows and the
+ρ = identity corollary, is closed.
+
+⚠️ **P6-Cs's ρ-generalization was VACUOUS as landed** — machine-checked in
+`frost/algo/cex/cex_p6cs_rho_delta_vacuous.v`.  Its premise
+`forall α0 ∈ Δρ, α0 ∉ dom Θ0`, beside `κ ∷ Θ0 ⊑ Θ` and `rho_fresh Δρ Θ κ`,
+forces `Δρ = ∅`: an INCREASE NEVER INVENTS A RIGID (`a_inc_binds_tvar_rev`, the
+converse of the existing `a_inc_binds_tvar` — `a_suffix` admits only flexible
+entries), so every ρ-replaced variable is already a rigid OF Θ0.  Remember this
+for any future ρ-style generalization over `a_inc`: a fresh ρ-binder introduced
+by a Sub-ForallL MUST enter Θ0 and Θ together (`a_inc_cons_tvar`).
+**Repair**: P6-Cs now takes the ftv-level premise
+`forall α0 ∈ Δρ, α0 ∉ ftv P0 ∪ ftv Pi`, which is all the old one was ever used
+for (via `a_wf_pskl_ftv_dom`) and is preserved by every descent
+(`rho_ftv_apart_mono`; the Arrow row's RIGHT recursion EARNS it for its new
+`Pi := Pa1` through `a_solve_cstr_ftv` + `a_looksub_lookeq_ftv`).  P6-Cs re-`Qed`,
+axiom-free, corollary unchanged.
+
+**P6-Ss is `a_looksub_solve_complete_gen`** (`frost/algo/prop_look_complete_sub_cstr.v`):
+`+ Δρ Ψρ Rsub` and the ρ pack, `sub_shield` at Δρ, subtyping/wf premises on
+`Rsub`, `Ψsub ⊆ ftag R' ∪ Ψρ ∪ Ψa`, and the output conjunct
+`Forall (images ⊥ Δρ) κc`; plus `Θs`, the **derivation's** context (P6-Sv's
+device, NOT P6-Cs's same-named one), because the ∀ rows must run the recursion
+at `Θ,β` while the derivation's context is an INDEX — rule premises are weakened
+on the spot right after `induction`.  The `remember`/`HeqSub` shape device is
+GONE: every row inverts `Hrho` with the `uskl_rho_*_r_inv` family instead, and
+`a_looksub_solve_complete_leaf_id` died with it.  The Check row and Sub-Arrow's
+LEFT branch call P6-Cs's GENERALIZED form at the real ρ.
+
+**Sub-ForallL** opens with a fresh RIGID β, absorbs the guess as `ρ ∘ [ψ/β]`
+(`uskl_rho_subst`), recurses at `Θ0,β / Θ,β / add β Δ / add β Δρ`, and strips β
+from every output with P6-Cs's ∀-binder kit; LS-ForallL's cofinite family comes
+from the single β-instance by `a_looksub_lookeq_rename_tvar` — legal because the
+TARGET P0 does not move, so the structural `a_looksub_ftv` already keeps β out
+of 𝒞 (this is exactly what ForallR does NOT get).  The paper's broken step
+(`κψ_b = ψ_b`) never arises.
+
+**Tag bookkeeping — the one observation it needed.**  `ad_pat_sub_g` records the
+paper's GLOBAL freshness of an instantiation's tags as only two conjuncts (fresh
+from the tag index and from the SUBJECT's syntactic tags,
+`def_decl_algo_sub_hyg.v`); Sub-ForallL also needs them fresh from ψa's tags Ψ'
+to keep `Ψρ ∩ Ψ' = ∅`.  That is NOT a new side condition: the induction runs
+under `α ∈ ftv R'`, so ψa sits INSIDE the ideal `(κR')[ψa/α]`, and `uskl_rho`
+only ADDS tags going to the image (`uskl_rho_ftag_target_sub`) — hence
+`Ψ' ⊆ ftag Rsub`, where the rule's own subject-freshness excludes them.  New,
+both `Qed`: `ftag_in_uskl_subst_lower`, `msubst_uskl_syn_ftv_keep`.
+
+**NEXT — Phase B (Sub-ForallR).**  Re-acquire the ψa-relative bound
+`ftv 𝒞 ⊆ ftv ψa ∪ dom Θs ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ` that P6-Cs carries and
+this statement drops; that needs P6-Cs's OTHER `Θs` (the ρ premise at a FIXED
+context, since the ∀ rows strip β from 𝒞).  The ρ-generalization landed here is
+what unblocks it: under ρ the lookup side never sees a guess.
+
+## 2026-07-29 — ⭐ P6-Cs is ρ-GENERALIZED and re-`Qed`ed: the P6-Ss ForallL blocker is gone
 
 `make coq` green; `a_lookeq_solve_complete` `Qed` and axiom-free; admits
 unchanged (P6-Ss's four `admit`s + its one honest `Admitted`).  This was the

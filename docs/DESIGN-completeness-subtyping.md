@@ -2807,3 +2807,63 @@ with the `uskl_rho_*_r_inv` family instead, exactly as P6-Cs does.  That
 rewrites all nine closed rows' shape-derivations at once; there is no
 compiling half-way state, and the `_id` leaf wrapper dies with it (the rows
 move to the general leaf).
+
+### (g) P6-Ss Phase A DONE (2026-07-29, fifth session) — ρ-generalized, BOTH ForallL rows CLOSED
+
+`make coq` green; the mechanization's ONLY admit is P6-Ss's **Sub-ForallR**.
+
+⚠️ **The plan in (f) had a hole, and it was in P6-Cs, not P6-Ss.**  P6-Cs's ρ
+premise `forall α0 ∈ Δρ, α0 ∉ dom Θ0` makes the ρ-generalization VACUOUS —
+machine-checked, `frost/algo/cex/cex_p6cs_rho_delta_vacuous.v`.  Beside
+`κ ∷ Θ0 ⊑ Θ` and `rho_fresh Δρ Θ κ` it forces `Δρ = ∅`, because **an increase
+never invents a rigid**: `a_suffix` admits only flexible entries, so every rigid
+of the target is a rigid of the source (`a_inc_binds_tvar_rev`, the converse of
+`a_inc_binds_tvar`).  Hence a fresh ρ-binder MUST enter Θ0 and Θ together
+(`a_inc_cons_tvar`), and the premise (f) told P6-Ss to adopt would have made
+P6-Ss vacuous too.  **Repair, landed:** the ftv-level premise
+`forall α0 ∈ Δρ, α0 ∉ ftv P0 ∪ ftv Pi`, which is all the old one was ever used
+for (via `a_wf_pskl_ftv_dom`) and is preserved by every descent
+(`rho_ftv_apart_mono`; the Arrow row's RIGHT recursion earns it for `Pi := Pa1`
+through `a_solve_cstr_ftv` + `a_looksub_lookeq_ftv`).  Both P6-Cs and P6-Ss now
+take it; keep this in mind for any future ρ-style generalization over `a_inc`.
+
+**Θs — TWO different devices with the same name.**  P6-Ss Phase A does need one,
+just not P6-Cs's: the DERIVATION's context (P6-Sv's device), because Sub-ForallL
+runs the recursion at `Θ,β` while the derivation's context is an INDEX.  Rule
+premises are weakened on the spot right after `induction`, exactly as P6-Sv does
+(the `all: match goal` block).  ⚠️ that block does NOT catch the ForallL rule's
+`Θ ⨟ empty ⊢ₚₛᵃ ⌊ψ⌋ˢ` premise (reason not chased) — weaken it by hand.
+P6-Cs's `Θs` (the ρ premise at a FIXED context, for the ftv-𝒞 bound) is still
+NOT taken here; that is Phase B.
+
+**Sub-ForallL, as executed.**  Fresh rigid β; guess absorbed by `uskl_rho_subst`;
+recursion at `Θ0,β / Θ,β / add β Δ / add β Δρ`; β stripped from every output by
+P6-Cs's ∀-binder kit (`a_solve_cstr_strip_tvar_mid`, `a_wf_pskl_strip_tvar`,
+`a_inc_strip_tvar_mid`, `ad_partial_precise_strip_tvar_mid`, then
+`ad_partial_precise_delta_shrink_fresh` for the Δ side); LS-ForallL's cofinite
+family from the single β-instance by `a_looksub_lookeq_rename_tvar`, legal
+because the TARGET P0 does not move so `a_looksub_ftv` keeps β out of 𝒞.
+
+**The tag bookkeeping (f) left to "verify when executing" — it works, with one
+observation.**  `ad_pat_sub_g` records the paper's GLOBAL freshness of an
+instantiation's tags as only two conjuncts (fresh from the tag index and from
+the SUBJECT's syntactic tags).  Sub-ForallL needs a third, freshness from ψa's
+tags Ψ', to keep `Ψρ ∩ Ψ' = ∅`.  It is not a new side condition: the induction
+runs under `α ∈ ftv R'`, so ψa sits INSIDE the ideal `(κR')[ψa/α]`, and
+`uskl_rho` only ADDS tags going to the image (`uskl_rho_ftag_target_sub`) —
+hence `Ψ' ⊆ ftag Rsub`, where the rule's own subject-freshness excludes them.
+New (both `Qed`): `ftag_in_uskl_subst_lower`, `msubst_uskl_syn_ftv_keep`.
+The IH's `Ψsub`-bound obligation also needs the binder's own ε ruled out of Ψ;
+`Hdisj` (`ftag R' ∩ Ψ' = ∅`) does it, since the only route by which ε could
+have to land in Ψ' is closed.
+
+**Traps paid for this session** (both are the evar-fsetdec one):
+`eapply ad_partial_precise_delta_cong; [ | fsetdec ]` HANGS — the Δ is an evar
+when the `[=]` goal runs; pin it with a named `assert` first.  And
+`rewrite <set equality>` in a judgment's Δ position fails outright (no `Proper`
+instance) — use the congruence lemma, not `rewrite`.
+
+**Phase B (Sub-ForallR), unchanged in shape:** re-acquire
+`ftv 𝒞 ⊆ ftv ψa ∪ dom Θs ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ` as an output conjunct,
+with P6-Cs's fixed-`Θs` ρ premise; the ρ-generalization landed here is exactly
+what makes it available (under ρ the lookup side never sees a guess).
