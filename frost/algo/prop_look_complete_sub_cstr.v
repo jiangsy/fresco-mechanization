@@ -734,7 +734,8 @@ Lemma a_looksub_solve_complete_leaf :
     (M = mode_tc ->
        ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
-       \/ alpha_stack α P).
+       \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
+           /\ 𝒞 = a_cstr_sub M P0 :: nil)).
 Proof.
   intros n NM M Θ0 Θs Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
@@ -833,7 +834,8 @@ Proof.
          run never descends the target and 𝒞 is [a_cstr_sub M P0] whatever P0
          is.  (The LEFT bound genuinely fails here: the derivation's own
          ForallL can guess a variable ψa does not mention.) *)
-      intros _; right; apply ast_var. }
+      intros _; right;
+        repeat split; try reflexivity; apply ast_var. }
 Qed.
 
 (* ===================================================================== *)
@@ -952,7 +954,8 @@ Theorem a_looksub_solve_complete_gen :
     (M = mode_tc ->
        ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
-       \/ alpha_stack α P).
+       \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
+           /\ 𝒞 = a_cstr_sub M P0 :: nil)).
 Proof.
   intros n NM M Θ0 Θs Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
@@ -1386,7 +1389,8 @@ Proof.
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom (κc1 ++ κ) `union` def_ftv Θ
-         \/ alpha_stack α ⌊ Rb ⌋ˢ)).
+         \/ (alpha_stack α ⌊ Rb ⌋ˢ /\ Ξc = nil /\ κc = nil
+             /\ 𝒞 = a_cstr_sub M P02 :: nil))).
     { destruct (AtomSetProperties.In_dec α (ftvar_in_pskl ⌊ Rb ⌋ˢ))
         as [Hin0 | Hnin0].
       - destruct (pskl_var_dec ⌊ Rb ⌋ˢ α) as [Heq0 | Hne0].
@@ -1846,7 +1850,8 @@ Proof.
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ
                                `union` def_ftv ((β ~ abind_tvar) ++ Θ)
-         \/ alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ)).
+         \/ (alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
+             /\ Ξc = nil /\ κc = nil /\ 𝒞 = a_cstr_sub M P0 :: nil))).
     { destruct (AtomSetProperties.In_dec α
                   (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
         as [Hin0 | Hnin0].
@@ -1982,9 +1987,10 @@ Proof.
           under the opener lifts to one under the ∀ ([alpha_stack_all_of_one]
           turns this SINGLE β-instance into [ast_all]'s cofinite family), and
           ⌊∀^ε R0⌋ˢ IS [pskl_all_syn ⌊R0⌋ˢ]. *)
-       intros HMtc; destruct (HftvC HMtc) as [Hleft | Hstk].
+       intros HMtc; destruct (HftvC HMtc) as [Hleft | (Hstk & -> & -> & ->)].
        ++ left. cbn [def_ftv] in Hleft. exact Hleft.
-       ++ right. rewrite <- HeraseR. cbn [uskl_to_pskl].
+       ++ right. repeat split; try reflexivity.
+          rewrite <- HeraseR. cbn [uskl_to_pskl].
           rewrite HeraseRβ in Hstk.
           eapply alpha_stack_all_of_one;
             [ exact Hstk | clear - Hβα; auto | clear - Fr; solve_notin ].
@@ -2226,7 +2232,8 @@ Proof.
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ
                                `union` def_ftv ((β ~ abind_tvar) ++ Θ)
-         \/ alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ)).
+         \/ (alpha_stack α ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ
+             /\ Ξc = nil /\ κc = nil /\ 𝒞 = a_cstr_sub M P0 :: nil))).
     { destruct (AtomSetProperties.In_dec α
                   (ftvar_in_pskl ⌊ open_uskl_wrt_uskl R0 (uskl_var_f β) ⌋ˢ))
         as [Hin0 | Hnin0].
@@ -2362,9 +2369,10 @@ Proof.
           under the opener lifts to one under the ∀ ([alpha_stack_all_of_one]
           turns this SINGLE β-instance into [ast_all]'s cofinite family), and
           ⌊∀^ε R0⌋ˢ IS [pskl_all_syn ⌊R0⌋ˢ]. *)
-       intros HMtc; destruct (HftvC HMtc) as [Hleft | Hstk].
+       intros HMtc; destruct (HftvC HMtc) as [Hleft | (Hstk & -> & -> & ->)].
        ++ left. cbn [def_ftv] in Hleft. exact Hleft.
-       ++ right. rewrite <- HeraseR. cbn [uskl_to_pskl].
+       ++ right. repeat split; try reflexivity.
+          rewrite <- HeraseR. cbn [uskl_to_pskl].
           rewrite HeraseRβ in Hstk.
           eapply alpha_stack_all_of_one;
             [ exact Hstk | clear - Hβα; auto | clear - Fr; solve_notin ].
@@ -2433,7 +2441,8 @@ Proof.
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
-         \/ alpha_stack α ⌊ R0 ⌋ˢ)).
+         \/ (alpha_stack α ⌊ R0 ⌋ˢ /\ Ξc = nil /\ κc = nil
+             /\ 𝒞 = a_cstr_sub M P0 :: nil))).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       (* the wf premise is on the IMAGE now, so it strips directly *)
       assert (HwfSubj0 : Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl R))
@@ -2483,9 +2492,11 @@ Proof.
        since ⌊∀◇R0⌋ˢ = ⌊∀◈R0⌋ˢ = [pskl_tophole ⌊R0⌋ˢ] *)
     repeat split; try assumption;
       [ rewrite <- HeraseR; apply a_looksub__univ_ghost_l; exact Hlook
-      | intros HMtc; destruct (HftvC0 HMtc) as [Hleft | Hstk];
+      | intros HMtc;
+        destruct (HftvC0 HMtc) as [Hleft | (Hstk & -> & -> & ->)];
           [ left; exact Hleft
-          | right; rewrite <- HeraseR; cbn [uskl_to_pskl];
+          | right; repeat split; try reflexivity;
+            rewrite <- HeraseR; cbn [uskl_to_pskl];
             apply ast_tophole; exact Hstk ] ].
   - (* UnivGhostLG : identical, for the dotted ghost — both ∀◇ and ∀◈
        ERASE to [pskl_tophole], so the very same LS-UnivGhostL rebuild
@@ -2514,7 +2525,8 @@ Proof.
       (M = mode_tc ->
          ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                                `union` dom κ `union` def_ftv Θ
-         \/ alpha_stack α ⌊ R0 ⌋ˢ)).
+         \/ (alpha_stack α ⌊ R0 ⌋ˢ /\ Ξc = nil /\ κc = nil
+             /\ 𝒞 = a_cstr_sub M P0 :: nil))).
     { assert (HlcR0 : lc_uskl R0) by (inversion HlcR; assumption).
       (* the wf premise is on the IMAGE now, so it strips directly *)
       assert (HwfSubj0 : Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl R))
@@ -2564,9 +2576,11 @@ Proof.
        since ⌊∀◇R0⌋ˢ = ⌊∀◈R0⌋ˢ = [pskl_tophole ⌊R0⌋ˢ] *)
     repeat split; try assumption;
       [ rewrite <- HeraseR; apply a_looksub__univ_ghost_l; exact Hlook
-      | intros HMtc; destruct (HftvC0 HMtc) as [Hleft | Hstk];
+      | intros HMtc;
+        destruct (HftvC0 HMtc) as [Hleft | (Hstk & -> & -> & ->)];
           [ left; exact Hleft
-          | right; rewrite <- HeraseR; cbn [uskl_to_pskl];
+          | right; repeat split; try reflexivity;
+            rewrite <- HeraseR; cbn [uskl_to_pskl];
             apply ast_tophole; exact Hstk ] ].
   - (* FlexMono : IMPOSSIBLE — the subject is a bare flexible variable, so
        R' would have to be a variable, which [HRnv] excludes. *)
@@ -2676,7 +2690,8 @@ Theorem a_looksub_solve_complete :
     (M = mode_tc ->
        ftvar_in_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
                              `union` dom κ `union` def_ftv Θ
-       \/ alpha_stack α P).
+       \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
+           /\ 𝒞 = a_cstr_sub M P0 :: nil)).
 Proof.
   intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR

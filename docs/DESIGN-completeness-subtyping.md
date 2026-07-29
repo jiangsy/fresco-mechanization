@@ -2988,16 +2988,29 @@ the `Θρ` of (g)'s plan is not needed.
    at `(ty, tc)` the subject is GUARDED or ∀-headed, so a ⊤◇/◇/◈ subject is
    impossible there (stripping those needs `a_sub_mode_sk`).  This is what
    lets the stack branch assume the stack is ∀s alone.
-   ⬜ (b) `ad_pat_sub_g_strip_const_all` — pull a constant-body `__forall_l`
-   above `__forall_r`, so the stack branch can hand P6-Sv a derivation for
-   `ρ(ψa)` against the UNDESCENDED target.  Induction has only the three
-   `(ty,tc)` rows, and `__check` is refuted by `guarded_uskl (uskl_all_etag …)`
-   being false — i.e. by 4(a).
-5. ⬜ Thread the mode-guarded disjunction through P6-Ss's twelve rows.
-6. ⬜ Sub-ForallR: the two branches above.  The left one is
-   IH + `a_looksub__forall_r`; the right one is `alpha_stack_looksub` for the
-   `a_looksub` conjunct, and P6-Sv (through the leaf lemma) at the
-   undescended P0 for the rest, fed by 4(b).
+   ❌ (b) `ad_pat_sub_g_strip_const_all` — **NOT NEEDED, dropped.**  It was to
+   let the stack branch hand P6-Sv a derivation against the UNDESCENDED target,
+   but STRENGTHENING the right disjunct (step 5) makes the IH hand back the
+   solve directly, so no derivation surgery is required.  It would also have
+   hit the cofinite-existential wall at `__forall_r` (one `n'`/`Ψ'` for
+   cofinitely many binders).
+5. ✅ The mode-guarded disjunction is threaded through all twelve rows, both
+   P6-Ss statements, the corollary and the five inner `REC` restatements.  The
+   right disjunct is STRENGTHENED to
+   `alpha_stack α P /\ Ξc = nil /\ κc = nil /\ 𝒞 = a_cstr_sub M P0 :: nil`,
+   which is what removes 4(b): in the stack case the IH already yields the
+   solve, at the descended target.
+6. ⬜ Sub-ForallR, the last admit.  LEFT branch: `β ∉ ftv 𝒞` (β is fresh for
+   ψa/Ξc/κ and is a rigid, so not in `def_ftv Θ`), strip β from every output
+   with P6-Cs's ∀-binder kit exactly as the Sub-ForallL rows do, rebuild with
+   `a_looksub__forall_r`.  RIGHT branch: take
+   `𝒞 := a_cstr_sub mode_tc P0 :: nil`, `Ξc := nil`, `κc := nil`; the
+   `a_looksub` conjunct is `alpha_stack_looksub`; invert the IH's solve to
+   `Θ0,β ⊢ₛ Pi ≼[tc] P0'^β ⤳ Pa` and lift it over the ∀ by
+   **`a_solve_sub_strengthen_tvar` then `a_solve_sub__forall_r` with
+   `a_solve_sub_eq_rename`** — the recipe P6-Sv already uses verbatim at
+   prop_look_complete_sub_var.v:2036-2056; the precision conjunct does not
+   mention P0 at all, so it only needs the usual β-strip.
 
 **On "𝒞 may mention β, but the later wf check makes it transparent."**
 Half true, and worth keeping in view for step 6.  It is NOT a licence to skip
