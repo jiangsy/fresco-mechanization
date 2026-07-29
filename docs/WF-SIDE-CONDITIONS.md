@@ -417,7 +417,46 @@ So: a **prose-completion**, in the sense of §5 ("all inputs are
 well-formed") — not a strengthening that changes what is proved.  A
 paper wishing to be literal should write `α ∉ Θ0, Θ`.
 
-**Not vacuous** — machine-checked.  `p6cs_fires_when_the_subject_is_wf`
+**Where α comes from — and why it is in NO context.**  α is opened by the
+algorithmic \sublab{ForallL} rule, `a_sub__forall_l`
+(`frost/algo/def_extra.v`), COFINITELY:
+
+```coq
+(forall α, α `notin` L ->
+   a_extract NM α M (open_pskl_wrt_pskl P (pskl_var_f α)) P0 Ξ P1) -> …
+a_sub NM M P0 Θ0 (pskl_all_syn P) Q Θ1
+```
+
+The binder is opened *only* to run the lookup; α is never added to Θ0 or
+Θ, and the recursive `a_sub` call is at `open P P1` — α already replaced
+by the solved `P1`.  So `α ∉ dom Θ0, dom Θ` is not an accident of the
+statement, it is how the rule works, and the cofinite `α ∉ L` makes it
+free to arrange.
+
+**How the statement reflects the opening.**  `α` is a genuine FREE
+variable of the opened `R'` (locally nameless: `open … (uskl_var_f α)`
+turns the bound index into `var_f α`).  The premise
+
+```coq
+ftvar_in_uskl R' [<=] add α (dom Θ0 `union` dom Θ)
+```
+
+is exactly that record: `R'` may mention the context's variables **plus
+α**.  The `add α` would be pointless if α were a context variable.
+
+**What CONSUMES α.**  The lookup judgment is INDEXED by it —
+`a_lookeq__var : (pskl_var_f α) ∼[ α ] P ⤳ · ⨾ (P ≐)` fires precisely at
+an α-occurrence and emits the constraint there; `a_lookeq__absent` is its
+"no occurrence" dual.  The consistency premise then puts the guess at
+those same positions, `(κR')[ψa/α]`.  Note the substituted subject is
+α-FREE, which is why a Θ-scoped judgment is content never to have seen α.
+
+**Not vacuous — machine-checked, in the strong form.**
+`p6cs_fires_when_the_subject_is_wf`
 (`frost/algo/cex/cex_p6cs_subject_wf.v`) instantiates the theorem at a
-fresh α with `Θ = Θ0 = ·` and gets a real answer back, so the premise
-set is satisfiable and the conclusion is inhabited.
+fresh α with `Θ = Θ0 = ·` **and α genuinely free in the subject**
+(`R' = ∀◇α`), and now concludes not merely that an answer exists but
+which one: `Ξc = ·`, `𝒞 = [≐ ⟨⟩]`, `Pa = ⟨⟩`.  That is the constraint
+LE-Var emits AT the α-occurrence — so the premise set is satisfiable,
+the conclusion inhabited, and the α-occurrence demonstrably did the
+work.
