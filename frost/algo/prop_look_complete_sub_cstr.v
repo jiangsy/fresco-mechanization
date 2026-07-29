@@ -712,16 +712,35 @@ Proof.
        lemma's conclusion), and [fsetdec] on an evar goal does not
        terminate *)
     assert (Hsub' : Ψi `union` Ψa [<=] Ψ') by (clear - Hsub; fsetdec).
-    edestruct a_lookeq_solve_complete
+    (* P6-Cs is ρ-GENERALIZED; P6-Ss is not (yet), so this call is its
+       ρ = IDENTITY instance: Θs := Θ, Δρ = Ψρ = ∅, Rsub := the subject T.
+       The one non-trivial argument is the P0-walk, which [sub_shield] already
+       carries — that is what [sub_shield_here]'s [flex_apart_walk] is for. *)
+    assert (HΨs1' : Ψ [<=] union (ftag_in_uskl R') (union empty Ψa))
+      by (clear - HΨs1; fsetdec).
+    assert (HlcT : lc_uskl T)
+      by (apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfSubj).
+    edestruct (@a_lookeq_solve_complete
+                 (size_uskl R' + size_pskl P0) a_sub_mode_ty Θ0 Θ κ Δ Ψ' Ψi Ψa Ψ
+                 ψa (pskl_to_bskl_inh B) P'' P0 Pi R' α Θ empty empty T)
       as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve & HwfPa & HwfΞ & HαΞ & Hkeys
-          & HFor & Hftv & Hinc & Heqv & Hκcfresh & Hprec);
+          & HFor & HForΔ & Hftv & Hinc & Heqv & Hκcfresh & Hprec);
       [ exact (le_n _) | exact HwfΘ | exact HwfΘ0 | exact HwfP0
       | exact HwfPi | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR
       | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
-      | exact Hsub' | exact Hdfresh | exact Hpre | exact HΨs1
-      | exact HΨs2 | rewrite <- HeqSub; exact H1
-      | rewrite <- HeqSub; exact HwfSubj
-      | exact Hrefine | ].
+      | exact Hsub' | exact Hdfresh | exact Hpre | exact HΨs1'
+      | exact HΨs2 | exact H1
+      | exact HwfSubj
+      | exact Hrefine
+      | rewrite <- HeqSub; apply urho__refl; [ exact HlcT | clear; fsetdec ]
+      | intros x b Hb; exact Hb
+      | clear; fsetdec
+      | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+      | clear; fsetdec
+      | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+      | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+      | exact (proj1 (sub_shield_here Hshield))
+      | ].
     exists 𝒞, Ξc, Pa, κc.
     split;
       [ apply a_looksub__check;

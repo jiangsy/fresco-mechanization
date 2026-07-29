@@ -3731,6 +3731,14 @@ Inductive fa_step :
     fa_step Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
 | fastep_arrow_r : forall Δρ P1 P2 ψ1 ψ2,
     fa_step Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
+(* P6-Cs descends P0 with the guess FIXED (ψa is the single guess for the
+   looked-up α and never splits), so the positional arrow steps above do not
+   cover its Arrow row — these two do.  [fastep_all_l] / [fastep_tophole_l]
+   already have that shape, which is why only the arrow needs a twin. *)
+| fastep_p0_arrow_l : forall Δρ P1 P2 ψa,
+    fa_step Δρ (pskl_arrow P1 P2) ψa Δρ P1 ψa
+| fastep_p0_arrow_r : forall Δρ P1 P2 ψa,
+    fa_step Δρ (pskl_arrow P1 P2) ψa Δρ P2 ψa
 | fastep_all_l : forall Δρ P0 ψa γ,            (* Sub-ForallR *)
     fa_step Δρ (pskl_all_syn P0) ψa
             Δρ (open_pskl_wrt_pskl P0 (pskl_var_f γ)) ψa
@@ -3779,13 +3787,22 @@ Qed.
 
 (** …and the context weakening the ∀ cases need, which is just
     [flex_apart_weaken] pointwise (the walk itself is context-free). *)
+Lemma flex_apart_walk_weaken : forall Θ0 Δρ P0 ψa,
+  flex_apart_walk Θ0 Δρ P0 ψa ->
+  forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
+  flex_apart_walk Θ0' Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa H Θ0' Hmon Δρ' P0' ψa' Hw.
+  eapply flex_apart_weaken; [ apply H; exact Hw | exact Hmon ].
+Qed.
+
 Lemma flex_apart_walk_weaken_tvar : forall Θ0 Δρ P0 ψa β,
   flex_apart_walk Θ0 Δρ P0 ψa ->
   flex_apart_walk ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
 Proof.
-  intros Θ0 Δρ P0 ψa β H Δρ' P0' ψa' Hw.
-  eapply flex_apart_weaken;
-    [ apply H; exact Hw | intros x b Hb; apply binds_app_3; exact Hb ].
+  intros Θ0 Δρ P0 ψa β H.
+  eapply flex_apart_walk_weaken;
+    [ exact H | intros x b Hb; apply binds_app_3; exact Hb ].
 Qed.
 
 (** [flex_apart] binder descent at a tagged-∀ target with a ∀-source. *)

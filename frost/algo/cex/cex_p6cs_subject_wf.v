@@ -210,6 +210,23 @@ Check cex_subject_not_wf.
 (*  [a_lookeq_solve_complete] then FIRES and returns a real answer.       *)
 (* ===================================================================== *)
 
+(* The ρ-generalized P6-Cs asks for [flex_apart] ALONG THE P0-WALK.  At a
+   ghost-free, ∀-free guess the walk cannot grow Δρ ([fastep_all_r] needs a
+   ∀^ε target), so ∅-cleanliness is preserved and [fa_clean] discharges every
+   reachable state. *)
+Lemma cex_flex_apart_walk_unit : forall Θ0 Δ0 P0 ψ0 Δρ' P0' ψa',
+  fa_walk Δ0 P0 ψ0 Δρ' P0' ψa' ->
+  Δ0 [=] empty -> ψ0 = uskl_unit ->
+  flex_apart Θ0 Δρ' P0' ψa'.
+Proof.
+  intros Θ0 Δ0 P0 ψ0 Δρ' P0' ψa' Hw; induction Hw; intros HΔ Hψ; subst.
+  - apply fa_clean; clear - HΔ; fsetdec.
+  - inversion H; subst; apply IHHw; [ exact HΔ | reflexivity
+                                    | exact HΔ | reflexivity
+                                    | exact HΔ | reflexivity
+                                    | exact HΔ | reflexivity ].
+Qed.
+
 Theorem p6cs_fires_when_the_subject_is_wf : forall α,
   exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
     (cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) /\
@@ -221,6 +238,9 @@ Proof.
   edestruct (@a_lookeq_solve_complete 10 a_sub_mode_sk nil nil nil empty empty
                empty empty empty uskl_unit (bskl_tophole bskl_unit)
                (cex_P α) cex_P0 cex_P0 (cex_S α) α
+               (* ρ = IDENTITY: Θs := ·, Δρ = Ψρ = ∅, and the ρ-image IS the
+                  paper's subject — this is the instance the paper states. *)
+               nil empty empty (uskl_tophole uskl_unit)
                ltac:(cbn; lia)
                (a_wf_aenv__nil) (a_wf_aenv__nil)
                ltac:(apply a_wf_pskl__tophole;
@@ -244,23 +264,32 @@ Proof.
                      apply ad_ppre__unit; clear; fsetdec)
                ltac:(clear; fsetdec)
                ltac:(clear; fsetdec)
-               ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl];
-                     unfold ptyp_to_uskl_syn; cbn;
-                     match goal with |- context [if ?c then _ else _] =>
-                       destruct c end; [ | contradiction ];
-                     apply ad_pat_consis__tophole;
+               ltac:(apply ad_pat_consis__tophole;
                      apply ad_pat_consis__unit; clear; fsetdec)
-               ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl];
-                     unfold ptyp_to_uskl_syn; cbn;
-                     match goal with |- context [if ?c then _ else _] =>
-                       destruct c end; [ | contradiction ];
-                     cbn [uskl_to_pskl];
+               ltac:(cbn [uskl_to_pskl];
                      apply a_wf_pskl__tophole;
                        [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
                ltac:(cbn [msubst_pskl pskl_to_bskl_inh cex_P0];
                      apply ad_refine_syn__tophole_keep;
-                       [ apply guarded_bskl__unit | apply ad_refine_syn__unit ]))
-    as (𝒞 & Ξc & Pa & ρc & HLK & HSolve & _ & _ & _ & _ & _ & _ & _ & _ & _
+                       [ apply guarded_bskl__unit | apply ad_refine_syn__unit ])
+               (* --- the ρ pack, all trivial at ρ = identity --- *)
+               ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_bskl_in_uskl];
+                     unfold ptyp_to_uskl_syn; cbn;
+                     match goal with |- context [if ?c then _ else _] =>
+                       destruct c end; [ | contradiction ];
+                     apply urho__refl;
+                       [ apply lc_uskl_tophole; apply lc_uskl_unit
+                       | clear; fsetdec ])
+               ltac:(intros x b Hb; exact Hb)
+               ltac:(clear; fsetdec)
+               ltac:(intros α0 Hα0; clear - Hα0; exfalso; fsetdec)
+               ltac:(clear; fsetdec)
+               ltac:(intros α0 Hα0; clear - Hα0; exfalso; fsetdec)
+               ltac:(intros α0 Hα0; clear - Hα0; exfalso; fsetdec)
+               ltac:(intros Δρ' P0' ψa' Hw;
+                     eapply cex_flex_apart_walk_unit;
+                       [ exact Hw | clear; fsetdec | reflexivity ]))
+    as (𝒞 & Ξc & Pa & ρc & HLK & HSolve & _ & _ & _ & _ & _ & _ & _ & _ & _ & _
           & Hprec).
   exists 𝒞, Ξc, Pa, ρc. repeat split; assumption.
 Qed.
