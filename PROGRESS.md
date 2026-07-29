@@ -84,6 +84,13 @@ premise-free `a_looksub_solve_complete` are both `Qed` and
 `Closed under the global context`.  **There is no `admit` or `Admitted`
 anywhere in `frost/`.**
 
+⚠️ **P6 is NOT finished.**  It has FIVE lemmas (§7's table), and this closes
+the fourth: `P6-Cv → P6-Cs → P6-Sv → P6-Ss → `**`P6-L`**.  `a_extract_complete`
+(subtyping-proofs.tex:2730) is not written yet — it is a WRAPPER, not a new
+induction: P6-Ss at `Pi = □` / `Ψi = ∅`, then `a_guess` (identity at SK,
+`guess_join_witness` at TY), then `ad_partial_precise_complete` to upgrade
+⊑ᵖ to ⊑ exactly as complete-look does at tex:2764.  P7 opens only after it.
+
 The route is NOT the one Phase B planned — that prerequisite is false (see the
 2026-07-29 entry below and `cex/cex_p6ss_sub_target_ftv.v`).  What the
 statement carries is a MODE-GUARDED DISJUNCTION,

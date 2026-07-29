@@ -17,14 +17,18 @@ point to the same content.
   in both directions (soundness `a_consis_sound` + `a_unify_sound` /
   `a_assign_sound`; completeness/optimality `a_consis_complete_thm` /
   `complete_mu`), subtyping SOUNDNESS is closed (`a_sub_sound_thm`),
-  and subtyping COMPLETENESS now has P5 and ALL FOUR P6 lemmas closed —
-  P6-Cv, P6-Cs, P6-Sv and **P6-Ss** (`a_looksub_solve_complete`).  P6-Sv
-  and P6-Ss are REPAIRED statements: the paper's P6-Sv is FALSE
+  and subtyping COMPLETENESS has P5 done and **four of P6's FIVE lemmas**
+  closed — P6-Cv, P6-Cs, P6-Sv and P6-Ss (`a_looksub_solve_complete`).
+  P6-Sv and P6-Ss are REPAIRED statements: the paper's P6-Sv is FALSE
   (`cex/cex_p6sv_forall_flex.v`), and P6-Ss's Sub-ForallR needed a
   mode-guarded ftv-𝒞 disjunction because the sub-side analogue of
   `ad_pat_consis_target_ftv` is FALSE
   (`cex/cex_p6ss_sub_target_ftv.v`) — see docs/PAPER-GAPS.md and
-  docs/DESIGN-completeness-subtyping.md §8 (h).  **P6-L is next.**
+  docs/DESIGN-completeness-subtyping.md §8 (h).  **P6 is NOT finished:
+  P6-L (`a_extract_complete`, subtyping-proofs.tex:2730) is not written
+  yet** — it wraps P6-Ss at `Pi = □`/`Ψi = ∅`, adds the `a_guess` step
+  (`guess_join_witness` for TY) and upgrades ⊑ᵖ to ⊑ via
+  `ad_partial_precise_complete`.  P7 opens only after it.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
@@ -51,7 +55,7 @@ point to the same content.
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
 | 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness has P5 and all four P6 lemmas closed (P6-Cv, P6-Cs, P6-Sv, **P6-Ss**), the last two as REPAIRED statements — `cex/cex_p6sv_forall_flex.v` and `cex/cex_p6ss_sub_target_ftv.v`.  **P6-L next.** |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness has P5 done and FOUR of P6's FIVE lemmas closed (P6-Cv, P6-Cs, P6-Sv, P6-Ss), the last two as REPAIRED statements — `cex/cex_p6sv_forall_flex.v` and `cex/cex_p6ss_sub_target_ftv.v`.  **P6-L (`a_extract_complete`) is still unwritten, so P6 is not finished; P7 follows it.** |
 
 ## Directory map
 
