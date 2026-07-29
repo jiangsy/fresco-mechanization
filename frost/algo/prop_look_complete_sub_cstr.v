@@ -671,17 +671,24 @@ Proof.
        it needs author sign-off, exactly like P6-Sv's [flex_shield]).  Two
        independent pieces:
 
-       (1) A HYGIENE premise spelling out the paper's Barendregt reading of
-           "θ solves Θ0's flexibles":
+       (1) A COMPATIBILITY premise — κ fixes the flexibles it SHARES with
+           the target (cex/cex_p6ss_inc_compat.v is the evidence file):
 
-             forall α0, α0 `in` dom κ -> α0 `notin` dom Θ.
+             forall α0, α0 `in` dom κ -> α0 `in` dom Θ ->
+               msubst_lookup κ α0 = ptyp_var_f α0.
 
-           This is the reading [a_inc__flex] already encodes (the flexible
-           is CONSUMED — the target does not gain it), it gives
-           [msubst_uskl_syn κ ψ = ψ] from [ftv ψ ⊆ dom Θ], and it is
-           preserved by every recursive row: Arrow re-establishes it from
-           the strengthened κc-freshness conclusion, ForallR from the
-           binder's freshness, ForallL/UnivGhostL leave κ and Θ alone.
+           ⚠️ NOT the Barendregt disjointness [dom κ ∩ dom Θ = ∅] — that
+           is UNSATISFIABLE at identity metasubstitutions, whose flexible
+           entries are all PRESERVED in the target (algorithmic.tex:135;
+           [id_inc_dom_overlap]), and identity is what the pipeline
+           supplies.  Compatibility holds at ι BY DEFINITION, gives
+           [msubst_uskl_syn κ ψ = ψ] from [ftv ψ ⊆ dom Θ] (each flexible
+           of ψ is outside dom κ, or a survivor and fixed), and is NOT
+           derivable from [κ ∷ Θ0 ⊑ Θ] ([inc_moves_survivor] — a_inc
+           admits a θ moving a survivor, which the paper never intends).
+           Preserved by every recursive row: Arrow's new κc entries avoid
+           dom Θ by the strengthened freshness conclusion, ForallR adds a
+           fresh RIGID, ForallL/UnivGhostL leave κ and Θ alone.
 
        (2) The SCOPE premise had to be relaxed — DONE, in this file and in
            P6-Cs — from [ftv R' ⊆ add α (dom Θ0)] to

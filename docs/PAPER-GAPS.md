@@ -1394,19 +1394,35 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   (`metasubst = list (atom * ptyp)`, `mono_ptyp`), while `ψ_b` is a general
   tagged skeleton — the impredicative instantiation is the whole point of
   the rule — so `ψ_b` has no pre-image under θ in general.
-- **The intended reading, made explicit.**  `a_inc__flex` CONSUMES the
-  flexible (the target does not gain it), i.e. "θ solves Θ0's flexibles and
-  they are gone in Θ".  Under that reading the missing fact is exactly
+- **The intended reading, made explicit (CORRECTED 2026-07-29, same day —
+  machine-checked in `frost/algo/cex/cex_p6ss_inc_compat.v`).**  The first
+  version of this entry proposed the Barendregt disjointness
+  `∀ α̂ ∈ dom θ, α̂ ∉ dom Θ`.  **That is refuted by the paper itself**:
+  "For an identity metasubstitution, all entries of flexible variables in
+  Θ are preserved in Θ'" and "Our algorithms always give identity
+  metasubstitutions" (algorithmic.tex:135–140) — at ι every α̂ ∈ dom θ needs
+  `Θ ⊢ α̂`, so `dom ι ⊆ dom Θ` and the disjointness premise is
+  UNSATISFIABLE at exactly the identity metasubstitutions the pipeline
+  supplies (`id_inc_dom_overlap`, Qed).  The correct missing fact is the
+  COMPATIBILITY-ON-SURVIVORS condition:
 
   ```
-      ∀ α̂ ∈ dom θ.  α̂ ∉ dom Θ                      (hygiene)
+      ∀ α̂ ∈ dom θ.  α̂ ∈ dom Θ  ⟹  θ α̂ = α̂           (compat)
   ```
 
-  which yields `θψ_b = ψ_b` from `ftv ψ_b ⊆ dom Θ`.  It is a Barendregt-style
-  side condition on `inc[θ]{Θ0}{Θ}`, in the same family as the ones
-  registered in docs/WF-SIDE-CONDITIONS.md — but unlike those it cannot be
-  put on a rule (`a_inc` is the rule set), so it has to be a premise of the
-  lemma.  **The authors should decide whether the paper adopts it.**
+  which yields `θψ_b = ψ_b` from `ftv ψ_b ⊆ dom Θ` (every flexible of ψ_b
+  is either outside dom θ, or a survivor and fixed), and which identity
+  metasubstitutions satisfy BY DEFINITION.  It is genuinely missing: the
+  formal `inc[θ]{Θ0}{Θ}` does not imply it —
+  `[(α̂, ⟨⟩)] ∷ [α̂] ⊑ [α̂]` is derivable (`inc_moves_survivor`, Qed), a θ
+  that "solves" α̂ to ⟨⟩ while Θ still declares the SAME α̂ unsolved.  Such
+  a θ is plainly outside the paper's intent (a preserved entry is the same
+  variable), so this is a prose-completion of the WF-SIDE-CONDITIONS
+  family; since `a_inc` is the rule set itself, it goes on the LEMMA as a
+  premise.  It is preserved by every recursive row of P6-Ss (Arrow's new
+  κc entries avoid `dom Θ` by the strengthened freshness conclusion below;
+  ForallR adds a fresh RIGID; ForallL/UnivGhostL touch neither θ nor Θ).
+  **The authors should decide whether the paper adopts it.**
 - **A second, smaller consequence — the SCOPE premise.**  Even with the
   hygiene condition, `S'[ψ_b/β]` is only Θ-scoped, never Θ0-scoped, so
   P6-Ss's (and, through the Check/Arrow delegation, P6-Cs's) implicit

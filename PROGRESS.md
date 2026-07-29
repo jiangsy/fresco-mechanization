@@ -110,12 +110,21 @@ uses `θ(S'[ψ_b/β]) = (θS')[ψ_b/β]`, i.e. `θψ_b = ψ_b`.  Nothing gives i
 the target arbitrary, so a Θ-scoped guess may mention `dom θ`.  Nor can the
 guess be re-based into Θ0: a metasubstitution's images are MONOTYPES while
 `ψ_b` is a general tagged skeleton (impredicative instantiation is the point
-of the rule), so it has no pre-image under θ.  Recommended repair — the
-hygiene premise `∀ α̂ ∈ dom κ, α̂ ∉ dom Θ`, which is the reading
-`a_inc__flex` already encodes (the solved flexible is CONSUMED) and which is
-preserved by every recursive row.  A larger alternative — carry the paper's
-ρ through P6-Ss as P6-Sv does, absorbing each guess into `ρ_b = ρ ∘ [ψ_b/β]`
-— is recorded too.  Full analysis: docs/PAPER-GAPS.md (last entry) and
+of the rule), so it has no pre-image under θ.  Recommended repair —
+**CORRECTED same day, machine-checked in
+`frost/algo/cex/cex_p6ss_inc_compat.v`** — the COMPATIBILITY premise
+`∀ α̂ ∈ dom κ ∩ dom Θ, κα̂ = α̂` ("κ fixes the flexibles it shares with Θ").
+NOT the Barendregt disjointness `dom κ ∩ dom Θ = ∅` first proposed: that
+one is refuted by the paper itself — identity metasubstitutions preserve
+all flexible entries in the target (algorithmic.tex:135–140), so `dom ι ⊆
+dom Θ` (`id_inc_dom_overlap`) and the disjointness premise is unsatisfiable
+at exactly the ι the pipeline supplies.  Compatibility holds at ι by
+definition, yields `θψ_b = ψ_b` from `ftv ψ_b ⊆ dom Θ`, is NOT derivable
+from `κ ∷ Θ0 ⊑ Θ` (`inc_moves_survivor`: `a_inc` formally admits a θ that
+moves a surviving flexible), and is preserved by every recursive row.  A
+larger alternative — carry the paper's ρ through P6-Ss as P6-Sv does,
+absorbing each guess into `ρ_b = ρ ∘ [ψ_b/β]` — is recorded too.  Full
+analysis: docs/PAPER-GAPS.md (last entry) and
 DESIGN-completeness-subtyping.md §8 (e).  **Awaiting author sign-off.**
 Arrow and ForallR do not depend on the decision and are next.
 

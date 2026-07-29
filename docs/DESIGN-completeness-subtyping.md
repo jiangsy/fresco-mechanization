@@ -2448,14 +2448,26 @@ and the mode/`skmod` premises are added.
 **Blocked (see docs/PAPER-GAPS.md, last entry).**  The paper's ForallL IH
 instance needs `θψ_b = ψ_b`, which no premise gives and which no choice of
 `R''` can dodge (κ's images are monotypes, so a general tagged `ψ_b` has no
-pre-image).  Recommended repair = the hygiene premise
-`∀ α̂ ∈ dom κ, α̂ ∉ dom Θ` (the reading `a_inc__flex` already encodes: the
-solved flexible is CONSUMED).  It is preserved by every recursive row —
-Arrow from the strengthened κc-freshness conclusion, ForallR from the
-binder's freshness, ForallL/UnivGhostL because they touch neither κ nor Θ.
-**Awaiting author sign-off before the statement gains a premise.**  A
-larger alternative (carry ρ through P6-Ss, as P6-Sv does) is recorded in
-the same PAPER-GAPS entry.
+pre-image).  Recommended repair — **CORRECTED same day, machine-checked in
+`frost/algo/cex/cex_p6ss_inc_compat.v`** — the COMPATIBILITY premise
+
+```
+∀ α̂ ∈ dom κ.  α̂ ∈ dom Θ  ⟹  msubst_lookup κ α̂ = α̂
+```
+
+NOT the Barendregt disjointness `dom κ ∩ dom Θ = ∅` first proposed: that
+one is UNSATISFIABLE at identity metasubstitutions (`id_inc_dom_overlap`),
+whose flexible entries are all preserved in the target
+(algorithmic.tex:135–140) — and identity is what the pipeline supplies.
+Compatibility holds at ι by definition, yields `θψ_b = ψ_b` from
+`ftv ψ_b ⊆ dom Θ`, and is not derivable from `κ ∷ Θ0 ⊑ Θ`
+(`inc_moves_survivor`: `a_inc` formally admits a θ that moves a surviving
+flexible, which the paper never intends).  It is preserved by every
+recursive row — Arrow's new κc entries avoid `dom Θ` by the strengthened
+freshness conclusion, ForallR adds a fresh rigid, ForallL/UnivGhostL touch
+neither κ nor Θ.  **Awaiting author sign-off before the statement gains a
+premise.**  A larger alternative (carry ρ through P6-Ss, as P6-Sv does) is
+recorded in the same PAPER-GAPS entry.
 
 **Order for the next session** (Arrow and ForallR do NOT depend on the
 decision above, so start there):
