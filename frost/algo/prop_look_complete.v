@@ -1095,6 +1095,27 @@ Proof.
       | assumption ].
 Qed.
 
+Lemma uskl_rho_is_tskl : forall NM Θ Δρ Ψρ R' R,
+  uskl_rho NM Θ Δρ Ψρ R' R ->
+  is_tskl R ->
+  is_tskl R'.
+Proof.
+  intros NM Θ Δρ Ψρ R' R H; induction H; intros Ht.
+  - exact Ht.
+  - (* leaf: the image is tags-sorted, hence decorated *)
+    inversion H0; assumption.
+  - inversion Ht; subst; apply is_tskl__arrow; auto.
+  - (* ∀ (untagged): not a decorated shape *) inversion Ht.
+  - (* ∀^ε *)
+    inversion Ht; subst.
+    match goal with Hb : forall α, α `notin` ?L1 -> is_tskl _ |- _ =>
+      apply is_tskl__all_etag with (L := L `union` L1); intros α Hα;
+      apply H0; [ clear - Hα; solve_notin | apply Hb; clear - Hα; solve_notin ]
+    end.
+  - (* ⊤◇ : not a decorated shape *) inversion Ht.
+  - inversion Ht; subst; apply is_tskl__topholeg; auto.
+Qed.
+
 Lemma uskl_rho_weaken : forall NM Θ Δρ Ψρ R' R,
   uskl_rho NM Θ Δρ Ψρ R' R ->
   forall Θ', (forall x b, binds x b Θ -> binds x b Θ') ->
@@ -3616,6 +3637,92 @@ Proof.
   - apply fa_arrow; auto.
   - eapply fa_all_etag with (L := L); eauto.
   - eapply fa_all_syn with (L := L); eauto.
+Qed.
+
+(* ===================================================================== *)
+(*  [flex_apart] ALONG THE WALK                                           *)
+(* ===================================================================== *)
+
+(** P6-Cv's premise [flex_apart] is the Δρ-half of the invariant, and this
+    lemma only THREADS it — but it cannot descend it: [flex_apart] has
+    TWO-SIDED ∀ rows, and a two-sided family ties both binders to one
+    variable, so a one-sided descent (Sub-ForallR opens the payload;
+    Sub-ForallL instantiates the guess) cannot be recovered from it.  That
+    is a structure mismatch, not a naming one — renaming aligns a pair, it
+    does not manufacture a family — so no rename kit repairs it, and adding
+    one-sided rows to [flex_apart] would break the two-sided descent P6-Cv
+    itself performs.
+
+    The fix costs nothing and touches no closed file: index the premise by
+    the WALK.  [fa_step] has one constructor per descent THIS induction
+    performs; [flex_apart_walk] demands [flex_apart] at every state
+    reachable by them.  Closure under a descent is then a one-step prepend
+    ([flex_apart_walk_step]) and the delegation to P6-Cv reads the current
+    state off at reflexivity ([flex_apart_walk_here]).  [flex_apart] itself
+    is untouched, so P6-Cv and P6-Cs stay exactly as they are — and unlike
+    strengthening P6-Cv to [flex_shield], this keeps P6-Cs's call site
+    (Δρ = ∅, a TAGGED guess, [fa_clean]) satisfiable. *)
+Inductive fa_step :
+  atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
+| fastep_arrow_l : forall Δρ P1 P2 ψ1 ψ2,
+    fa_step Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
+| fastep_arrow_r : forall Δρ P1 P2 ψ1 ψ2,
+    fa_step Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
+| fastep_all_l : forall Δρ P0 ψa γ,            (* Sub-ForallR *)
+    fa_step Δρ (pskl_all_syn P0) ψa
+            Δρ (open_pskl_wrt_pskl P0 (pskl_var_f γ)) ψa
+| fastep_all_r : forall Δρ ε P0 ψ β,           (* Sub-ForallL *)
+    fa_step Δρ P0 (uskl_all_etag ε ψ)
+            (add β Δρ) P0 (open_uskl_wrt_uskl ψ (uskl_var_f β))
+| fastep_tophole_l : forall Δρ P0 ψa,
+    fa_step Δρ (pskl_tophole P0) ψa Δρ P0 ψa
+| fastep_topholeg_r : forall Δρ P0 ψ,          (* Sub-UnivGhostLG *)
+    fa_step Δρ P0 (uskl_topholeg ψ) Δρ P0 ψ
+| fastep_flexdef_r : forall Δρ P0 α τ,         (* FlexMono *)
+    (* the definition that justifies this step lives in the TARGET context
+       Θ, not in Θ0, and Θ grows across ForallR; leaving τ unconstrained
+       keeps the walk context-free (a slightly stronger premise, and one a
+       call site discharges the same way — a painting is Δρ-clean whenever
+       the definition-freshness holds) *)
+    fa_step Δρ P0 (uskl_var_f α) Δρ P0 (ptyp_to_uskl_syn τ).
+
+Inductive fa_walk :
+  atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
+| fw_refl : forall Δρ P0 ψa, fa_walk Δρ P0 ψa Δρ P0 ψa
+| fw_step : forall Δρ P0 ψa Δρ1 P1 ψ1 Δρ2 P2 ψ2,
+    fa_step Δρ P0 ψa Δρ1 P1 ψ1 ->
+    fa_walk Δρ1 P1 ψ1 Δρ2 P2 ψ2 ->
+    fa_walk Δρ P0 ψa Δρ2 P2 ψ2.
+
+Definition flex_apart_walk (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
+  : Prop :=
+  forall Δρ' P0' ψa', fa_walk Δρ P0 ψa Δρ' P0' ψa' ->
+    flex_apart Θ0 Δρ' P0' ψa'.
+
+(** What the delegation to P6-Cv reads off. *)
+Lemma flex_apart_walk_here : forall Θ0 Δρ P0 ψa,
+  flex_apart_walk Θ0 Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
+Proof. intros Θ0 Δρ P0 ψa H; apply H; apply fw_refl. Qed.
+
+(** …and what every descent needs: closure, by prepending the step. *)
+Lemma flex_apart_walk_step : forall Θ0 Δρ P0 ψa Δρ1 P1 ψ1,
+  flex_apart_walk Θ0 Δρ P0 ψa ->
+  fa_step Δρ P0 ψa Δρ1 P1 ψ1 ->
+  flex_apart_walk Θ0 Δρ1 P1 ψ1.
+Proof.
+  intros Θ0 Δρ P0 ψa Δρ1 P1 ψ1 H Hstep Δρ' P0' ψa' Hw.
+  apply H. eapply fw_step; [ exact Hstep | exact Hw ].
+Qed.
+
+(** …and the context weakening the ∀ cases need, which is just
+    [flex_apart_weaken] pointwise (the walk itself is context-free). *)
+Lemma flex_apart_walk_weaken_tvar : forall Θ0 Δρ P0 ψa β,
+  flex_apart_walk Θ0 Δρ P0 ψa ->
+  flex_apart_walk ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa β H Δρ' P0' ψa' Hw.
+  eapply flex_apart_weaken;
+    [ apply H; exact Hw | intros x b Hb; apply binds_app_3; exact Hb ].
 Qed.
 
 (** [flex_apart] binder descent at a tagged-∀ target with a ∀-source. *)

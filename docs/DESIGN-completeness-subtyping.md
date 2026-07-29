@@ -2566,6 +2566,43 @@ TAG ALGEBRA is the one place to go slowly: rows currently read
 `Ψ1 ⊆ ftag <Ssub component>`; convert with `uskl_rho_ftag_sub`
 (`ftag Ssub ⊆ Ψρ ∪ ftag ideal`), which is why `Ψρ` joins the `Ψsub` bound.
 
+⚠️ **AMENDMENT (2026-07-29, found by executing the statement change): the
+recipe above is INCOMPLETE — P6-Cs also needs the Θs GENERALIZATION, and its
+`ftvar_in_cstrs` conclusion has to be relaxed.**  What breaks:
+
+- The `P = α` leaf establishes the ψa-relative conclusion
+  `ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ` through
+  `ad_pat_consis_target_ftv Hconsis`, which bounds `ftv Q` by the
+  CONSISTENCY SUBJECT.  Under ρ that subject is `Ssub`, not ψa, so the leaf
+  now yields `ftv 𝒞 ⊆ ftv Ssub ∪ …` and `uskl_rho_ftv_subject_bound` only
+  gets from there to `ftv ψa ∪ dom Θ`.
+- `dom Θ` is FATAL as stated: P6-Cs's ∀ rows run the IH at `Θ,β` and must
+  then strip β from 𝒞 (`HβC`, prop_look_complete_cstr.v:2395), and
+  `β ∈ dom (Θ,β)`.  So the relaxed conclusion must name the ρ-images' OWN
+  scope, not the current context.
+- FIX: ρ's images are fixed when ρ is built — by a Sub-ForallL OUTSIDE
+  P6-Cs — and P6-Cs never extends ρ.  So carry the ρ premise at a FIXED
+  context `Θs` with a binds-monotonicity `forall x b, binds x b Θs -> binds
+  x b Θ` (exactly P6-Sv's Θs device, prop_look_complete_sub_var.v:1756), and
+  relax the conclusion to
+  `ftv 𝒞 ⊆ ftv ψa ∪ dom Θs ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ`.
+  Then `uskl_rho_ftv_subject_bound` on the (unweakened) sub-ρ gives
+  `dom Θs` uniformly at every depth, the ∀ rows pick β fresh for `dom Θs`
+  (free: `Θs ⊆ Θ` by monotonicity and β is already fresh for `dom Θ`), and
+  `HβC` survives.  P6-Cv is called at the current Θ, so weaken a COPY of the
+  ρ premise there via `uskl_rho_weaken`.
+- NB the second ∀ row (line 2602) does NOT use the ψa-relative bound at all
+  — it re-derives `β ∉ ftv 𝒞` from the STRUCTURAL `a_looksub_lookeq_ftv`
+  plus `ftv P0 ⊆ dom Θ0` — so only the rows whose TARGET gains β depend on
+  the relaxed conclusion.
+
+DONE towards this (2026-07-29, `make coq` green, committed):
+`fa_step` / `fa_walk` / `flex_apart_walk` + its three lemmas, and
+`uskl_rho_is_tskl`, MOVED from prop_look_complete_sub_var.v into
+prop_look_complete.v — P6-Cs needs all of them and was UPSTREAM of the file
+they lived in.  That circularity would have blocked the statement change
+outright; it is now cleared.
+
 ⚠️ This is ONE atomic change — the file does not compile part-way through, so
 budget it as a single sitting.
 
