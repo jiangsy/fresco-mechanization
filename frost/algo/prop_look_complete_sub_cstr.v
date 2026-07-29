@@ -551,6 +551,114 @@ Proof.
   - assumption.                                        (* LS-UnivGhostL *)
 Qed.
 
+(* ===================================================================== *)
+(*  α-STACKS — Sub-ForallR's second branch                                *)
+(*                                                                        *)
+(*  [a_looksub__forall_r] is COFINITE in β with ONE [Ξ ⨾ 𝒞], so a          *)
+(*  β-mentioning 𝒞 cannot be rebuilt from a single instance — and 𝒞 CAN   *)
+(*  mention β: the sub-side analogue of [ad_pat_consis_target_ftv] is      *)
+(*  FALSE at [ad_pat_sub_g__forall_l_tagged] (cex/cex_p6ss_sub_target_ftv  *)
+(*  .v), because a ForallL guess is bounded only by [dom Θ] and            *)
+(*  [ad_pat_sub_g__forall_r] grows that Θ by the very binder being         *)
+(*  stripped.                                                             *)
+(*                                                                        *)
+(*  The escape: [ad_pat_sub_g__forall_r] forces [a_sub_mode_ty] +          *)
+(*  [mode_tc], and NM is invariant along a derivation, so at (ty, tc) the  *)
+(*  ONLY rows are [__check] (whose subtree is pure CONSISTENCY — no        *)
+(*  guesses), [__forall_r] and [__forall_l_*].  Mirroring that on the      *)
+(*  lookup side, the only descents that keep P are LS-ForallL and          *)
+(*  LS-UnivGhostL, so under a Sub-ForallR the P6-Ss LEAF ([P = α]) is      *)
+(*  reachable ONLY for a P of this shape — every other α-leaf sits under   *)
+(*  LS-Check, i.e. inside P6-Cs, whose ftv-𝒞 bound is already ψa-relative. *)
+(*  And such a P never needs to descend the target at all.                *)
+(*  docs/DESIGN-completeness-subtyping.md §8 (h).                          *)
+(* ===================================================================== *)
+
+Inductive alpha_stack (α : atom) : pskl -> Prop :=
+| ast_var : alpha_stack α (pskl_var_f α)
+| ast_all : forall L P,
+    (forall β, β `notin` L ->
+       alpha_stack α (open_pskl_wrt_pskl P (pskl_var_f β))) ->
+    alpha_stack α (pskl_all_syn P)
+| ast_tophole : forall P,
+    alpha_stack α P -> alpha_stack α (pskl_tophole P).
+
+(** The stack's leaf is α itself, so a binder ≠ α is never reached and the
+    shape is renaming-stable.  This is what lifts a SINGLE β-instance to
+    [ast_all]'s cofinite family (Sub-ForallL hands back one instance). *)
+Lemma alpha_stack_subst_var : forall α P β γ,
+  alpha_stack α P -> β <> α ->
+  alpha_stack α (subst_pskl_in_pskl (pskl_var_f γ) β P).
+Proof.
+  intros α P β γ H; induction H; intros Hne; cbn.
+  - destruct_if; [ exfalso; congruence | apply ast_var ].
+  - apply ast_all with (L := L `union` singleton β).
+    intros β1 Hβ1.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hβ1; fsetdec | apply lc_pskl_var_f ].
+    apply H0; [ clear - Hβ1; solve_notin | exact Hne ].
+  - apply ast_tophole; apply IHalpha_stack; exact Hne.
+Qed.
+
+Lemma alpha_stack_all_of_one : forall α P β,
+  alpha_stack α (open_pskl_wrt_pskl P (pskl_var_f β)) ->
+  β <> α -> β `notin` ftvar_in_pskl P ->
+  alpha_stack α (pskl_all_syn P).
+Proof.
+  intros α P β Hst Hne Hfr.
+  apply ast_all with (L := add β (add α (ftvar_in_pskl P))).
+  intros β1 Hβ1.
+  (* β ∉ ftv P, so opening at β1 IS the β-instance with β renamed *)
+  rewrite (subst_pskl_in_pskl_intro β P (pskl_var_f β1)) by exact Hfr.
+  apply alpha_stack_subst_var; assumption.
+Qed.
+
+(** THE POINT: an α-stack collects the WHOLE target, undescended, whatever
+    that target is — LS-ForallL / LS-UnivGhostL peel the stack (both cofinite
+    with a FIXED 𝒞, which is legal here because the target never moves) and
+    LS-Var fires at the leaf.  So Sub-ForallR's stack branch never invokes
+    LS-ForallR, and the β it would have had to strip is simply never
+    introduced. *)
+Lemma alpha_stack_looksub : forall α P,
+  alpha_stack α P ->
+  forall m P0, P ≼[ α , m ] P0 ⤳ nil ⨾ (a_cstr_sub m P0 :: nil).
+Proof.
+  intros α P H; induction H; intros m P0.
+  - apply a_looksub__var.
+  - apply a_looksub__forall_l with (L := L); intros β Hβ; apply H0; exact Hβ.
+  - apply a_looksub__univ_ghost_l; apply IHalpha_stack.
+Qed.
+
+(** THE MODE RESTRICTION, MACHINE-CHECKED.  [ad_pat_sub_g__forall_r] forces
+    [a_sub_mode_ty] + [mode_tc], and NM is invariant along a derivation, so
+    under a Sub-ForallR only three rows can fire: [__check], [__forall_r] and
+    [__forall_l_*].  Hence the subject there is either GUARDED (the next step
+    is [__check], whose subtree is pure CONSISTENCY — no guesses) or
+    ∀-HEADED (the next step is [__forall_l]).
+
+    In particular a ⊤◇ / ◇ / ◈ subject is IMPOSSIBLE at (ty, tc): stripping
+    those needs [a_sub_mode_sk].  That is what lets Sub-ForallR's α-stack
+    branch assume the stack is built from ∀s alone. *)
+Lemma ad_pat_sub_g_ty_tc_subject : forall n Ψ Θ R Q,
+  ad_pat_sub_g n a_sub_mode_ty mode_tc Ψ Θ R Q ->
+  guarded_uskl R
+  \/ (exists ε R0, R = uskl_all_etag ε R0)
+  \/ (exists R0, R = uskl_all_syn R0).
+Proof.
+  intros n Ψ Θ R Q H.
+  remember a_sub_mode_ty as NM eqn:HNM; remember mode_tc as M eqn:HM.
+  induction H; try discriminate HNM; try discriminate HM.
+  - (* Check : the rule's own premise *) left; assumption.
+  - (* ForallR : the subject does not move, so the cofinite premise's own IH
+       answers for it directly *)
+    match goal with
+    | IH : forall α, α `notin` ?L -> _ |- _ =>
+        pick fresh α for L; apply (IH α ltac:(auto) HNM HM)
+    end.
+  - (* ForallL, tagged *) right; left; do 2 eexists; reflexivity.
+  - (* ForallL, untagged *) right; right; eexists; reflexivity.
+Qed.
+
 Lemma a_looksub_solve_complete_leaf :
   forall n NM M Θ0 Θs Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->

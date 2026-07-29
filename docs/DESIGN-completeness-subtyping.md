@@ -2972,16 +2972,32 @@ Sub-ForallL binder is picked fresh.  Note this makes P6-Cs's `Θs` slot
 irrelevant to the ftv bound, so Phase B needs NO third context parameter —
 the `Θρ` of (g)'s plan is not needed.
 
-**Build order for the next session.**
-1. `uskl_rho_ftv_apart` (prop_look_complete.v) — self-contained.
-2. P6-Cs: add the apartness premise, drop `dom Θs` from the ftv-𝒞 conclusion,
-   re-`Qed`.  Consumers only get a STRONGER bound.
-3. `α_stack` + its two closure lemmas (prop_looksub.v or the P6-Ss file).
-4. `ad_pat_sub_g_strip_const_all` — pull a constant-body `__forall_l` above
-   `__forall_r`; induction has only the three `(ty,tc)` rows, and `__check` is
-   refuted by `guarded_uskl (uskl_all_etag …)` being false.
-5. Thread the mode-guarded disjunction through P6-Ss's twelve rows.
-6. Sub-ForallR: the two branches above.
+**Build order, with what is DONE.**
+1. ✅ `uskl_rho_ftv_apart` (prop_look_complete.v), `Qed`.
+2. ✅ P6-Cs takes the apartness premise and its ftv-𝒞 conclusion DROPS
+   `dom Θs`; both P6-Cs theorems re-`Qed`, axiom-free.  P6-Ss takes the same
+   premise and maintains it at both Sub-ForallL rows (β is already known
+   fresh for ψa as `Hβψa`); both `ρ = identity` corollaries discharge it at
+   `Δρ = ∅`.
+3. ✅ `alpha_stack` + `alpha_stack_subst_var` + `alpha_stack_all_of_one`
+   (lifts a SINGLE β-instance to the cofinite `ast_all`, via
+   `subst_pskl_in_pskl_intro`) + **`alpha_stack_looksub`**: an α-stack
+   collects `nil ⨾ [a_cstr_sub m P0]` at ANY undescended P0.  All `Qed`, in
+   the P6-Ss file just above the leaf lemma.
+4. ✅ (a) `ad_pat_sub_g_ty_tc_subject` — the mode restriction, machine-checked:
+   at `(ty, tc)` the subject is GUARDED or ∀-headed, so a ⊤◇/◇/◈ subject is
+   impossible there (stripping those needs `a_sub_mode_sk`).  This is what
+   lets the stack branch assume the stack is ∀s alone.
+   ⬜ (b) `ad_pat_sub_g_strip_const_all` — pull a constant-body `__forall_l`
+   above `__forall_r`, so the stack branch can hand P6-Sv a derivation for
+   `ρ(ψa)` against the UNDESCENDED target.  Induction has only the three
+   `(ty,tc)` rows, and `__check` is refuted by `guarded_uskl (uskl_all_etag …)`
+   being false — i.e. by 4(a).
+5. ⬜ Thread the mode-guarded disjunction through P6-Ss's twelve rows.
+6. ⬜ Sub-ForallR: the two branches above.  The left one is
+   IH + `a_looksub__forall_r`; the right one is `alpha_stack_looksub` for the
+   `a_looksub` conjunct, and P6-Sv (through the leaf lemma) at the
+   undescended P0 for the rest, fed by 4(b).
 
 **On "𝒞 may mention β, but the later wf check makes it transparent."**
 Half true, and worth keeping in view for step 6.  It is NOT a licence to skip
