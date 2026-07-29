@@ -83,10 +83,10 @@ Qed.
 (*  Target weakening of information increase, and ⊴ cons congruences      *)
 (* ===================================================================== *)
 
-Lemma a_inc_target_weaken : forall Θ ρ Θ' Ξ,
-  ρ ∷ Θ ⊑ Θ' ->
+Lemma a_inc_target_weaken : forall Θ κ Θ' Ξ,
+  κ ∷ Θ ⊑ Θ' ->
   a_suffix Ξ ->
-  ρ ∷ Θ ⊑ (Ξ ++ Θ').
+  κ ∷ Θ ⊑ (Ξ ++ Θ').
 Proof.
   intros * Hinc; revert Ξ; induction Hinc; intros Ξ0 HΞ0.
   - apply a_inc__empty. apply a_suffix_app; auto.
@@ -111,8 +111,8 @@ Lemma a_isub_cons_flex : forall Θ Θ' α1,
   Θ ⊴ Θ' ->
   ((α1 ~ abind_flex_mono) ++ Θ) ⊴ ((α1 ~ abind_flex_mono) ++ Θ').
 Proof.
-  intros * [[ρ [Hid Hinc]] Hd]. split.
-  - exists ((α1, ptyp_var_f α1) :: ρ). split.
+  intros * [[κ [Hid Hinc]] Hd]. split.
+  - exists ((α1, ptyp_var_f α1) :: κ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc__flex.
     + apply a_inc_target_weaken; auto.
@@ -130,8 +130,8 @@ Lemma a_isub_cons_flex_def : forall Θ Θ' α1 τ,
   lc_ptyp τ ->
   ((α1 ~ abind_flex_mono_def τ) ++ Θ) ⊴ ((α1 ~ abind_flex_mono_def τ) ++ Θ').
 Proof.
-  intros * [[ρ [Hid Hinc]] Hd] Hlc. split.
-  - exists ((α1, ptyp_var_f α1) :: ρ). split.
+  intros * [[κ [Hid Hinc]] Hd] Hlc. split.
+  - exists ((α1, ptyp_var_f α1) :: κ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc__flex_def.
     + apply a_inc_target_weaken; auto.
@@ -152,8 +152,8 @@ Lemma a_isub_cons_var_typ : forall Θ Θ' x A,
   lc_ptyp A ->
   ((x ~ abind_var_typ A) ++ Θ) ⊴ ((x ~ abind_var_typ A) ++ Θ').
 Proof.
-  intros * [[ρ [Hid Hinc]] Hd] Hlc. split.
-  - exists ρ. split; auto.
+  intros * [[κ [Hid Hinc]] Hd] Hlc. split.
+  - exists κ. split; auto.
     replace ((x ~ abind_var_typ A) ++ Θ')
       with (nil ++ (x ~ abind_var_typ A) ++ Θ') by reflexivity.
     apply a_inc__var; auto; [ | constructor ].
@@ -169,8 +169,8 @@ Lemma a_isub_cons_var_skl : forall Θ Θ' x P,
   lc_pskl P ->
   ((x ~ abind_var_skl P) ++ Θ) ⊴ ((x ~ abind_var_skl P) ++ Θ').
 Proof.
-  intros * [[ρ [Hid Hinc]] Hd] Hlc. split.
-  - exists ρ. split; auto.
+  intros * [[κ [Hid Hinc]] Hd] Hlc. split.
+  - exists κ. split; auto.
     replace ((x ~ abind_var_skl P) ++ Θ')
       with (nil ++ (x ~ abind_var_skl P) ++ Θ') by reflexivity.
     apply a_inc__var_skl; auto; [ | constructor ].
@@ -240,10 +240,10 @@ Proof.
   apply (a_suffix__cons α1 (b := abind_flex_mono)); auto; constructor.
 Qed.
 
-Lemma a_inc_prepend_flex_src : forall Θ ρ Θ' α1,
-  ρ ∷ Θ ⊑ Θ' ->
+Lemma a_inc_prepend_flex_src : forall Θ κ Θ' α1,
+  κ ∷ Θ ⊑ Θ' ->
   a_binds_tvar α1 Θ' ->
-  (α1, ptyp_var_f α1) :: ρ ∷ ((α1 ~ abind_flex_mono) ++ Θ) ⊑ Θ'.
+  (α1, ptyp_var_f α1) :: κ ∷ ((α1 ~ abind_flex_mono) ++ Θ) ⊑ Θ'.
 Proof.
   intros * Hinc Hb.
   apply a_inc__flex; auto;
@@ -262,9 +262,9 @@ Proof.
   assert (Hle' : (Ξ' ++ Θ) ⊴ Θ').
   { apply IH; auto;
       try (intros α10 Hb0; apply Hvis; unfold binds; right; auto). }
-  destruct Hle' as [[ρ [Hid Hinc]] Hd].
+  destruct Hle' as [[κ [Hid Hinc]] Hd].
   split.
-  - exists ((α1, ptyp_var_f α1) :: ρ). split.
+  - exists ((α1, ptyp_var_f α1) :: κ). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc_prepend_flex_src; auto;
       try (apply Hvis; unfold binds; left; reflexivity).
@@ -280,7 +280,7 @@ Lemma a_isub_binds_flex : forall Θ Θ' α1,
   binds α1 abind_flex_mono Θ ->
   a_binds_tvar α1 Θ'.
 Proof.
-  intros * [[ρ [Hid Hinc]] _] Hb. eauto using a_inc_binds_flex.
+  intros * [[κ [Hid Hinc]] _] Hb. eauto using a_inc_binds_flex.
 Qed.
 
 (** [guess^TY] emits a declaration-only fresh suffix. *)
@@ -563,8 +563,8 @@ Lemma a_isub_target_weaken : forall Θ Θ' Ξ,
   a_suffix Ξ ->
   Θ ⊴ (Ξ ++ Θ').
 Proof.
-  intros * [[ρ [Hid Hinc]] Hd] HΞ. split.
-  - exists ρ. eauto using a_inc_target_weaken.
+  intros * [[κ [Hid Hinc]] Hd] HΞ. split.
+  - exists κ. eauto using a_inc_target_weaken.
   - intros α τ0 Hb. unfold binds; apply in_or_app; right. apply Hd; auto.
 Qed.
 
@@ -573,10 +573,10 @@ Lemma a_isub_strengthen_decls_src : forall Ξ Θ Θ',
   (Ξ ++ Θ) ⊴ Θ' ->
   Θ ⊴ Θ'.
 Proof.
-  intros * Hdecl [[ρ [Hid Hinc]] Hd]. split.
-  - edestruct a_inc_strengthen_suffix_src as [ρ' [Hid' Hinc']];
+  intros * Hdecl [[κ [Hid Hinc]] Hd]. split.
+  - edestruct a_inc_strengthen_suffix_src as [κ' [Hid' Hinc']];
       [ eapply a_decls_suffix; eauto | exact Hinc | ].
-    exists ρ'. auto.
+    exists κ'. auto.
   - intros α τ0 Hb. apply Hd.
     unfold binds in *; apply in_or_app; auto.
 Qed.

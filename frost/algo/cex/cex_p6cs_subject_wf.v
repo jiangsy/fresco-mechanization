@@ -1,6 +1,6 @@
 (** COUNTEREXAMPLE — P6-Cs ("Completeness of consistency constraint
     collection and solving", consistency-proofs.tex:920) is FALSE without a
-    well-formedness premise on the CONSISTENCY SUBJECT [(θR)[ψa/α]].
+    well-formedness premise on the CONSISTENCY SUBJECT [(κR)[ψa/α]].
 
     This file does not argue in prose: it states the lemma with EXACTLY the
     premises of [a_lookeq_solve_complete] MINUS the subject-wf one (and with
@@ -8,7 +8,7 @@
     the refuted statement stronger), and derives False.
 
     The witness is
-      Θ = Θ₀ = ·   θ = ·   R = ⊤◇α   ψa = ⊤̇◇⟨⟩   P₀ = Pi = ⊤◇⟨⟩   Q = ⊤◇⟨⟩
+      Θ = Θ₀ = ·   κ = ·   R = ⊤◇α   ψa = ⊤̇◇⟨⟩   P₀ = Pi = ⊤◇⟨⟩   Q = ⊤◇⟨⟩
     so the subject is [⊤◇(⊤̇◇⟨⟩)] — a universal ghost whose body is another
     ghost, which [a_wf_pskl__tophole] / [d_wf_uskl__tophole] forbid (a ghost
     body must be GUARDED).  Every other premise holds; the algorithm is then
@@ -46,7 +46,7 @@ Definition cex_P (α : atom) : pskl := pskl_tophole (pskl_var_f α).
 Definition cex_P0 : pskl := pskl_tophole pskl_unit.
 Definition cex_Q : bskl := bskl_tophole bskl_unit.
 
-(* the subject [(θR)[ψa/α]] at θ = · is [⊤◇(⊤̇◇⟨⟩)] *)
+(* the subject [(κR)[ψa/α]] at κ = · is [⊤◇(⊤̇◇⟨⟩)] *)
 Lemma cex_subject : forall α,
   subst_bskl_in_uskl cex_ψa α (msubst_uskl_syn nil (cex_S α))
   = uskl_tophole cex_ψa.
@@ -122,11 +122,11 @@ Qed.
 (* ===================================================================== *)
 
 Theorem p6cs_without_subject_wf_is_false :
-  ~ (forall n NM Θ0 Θ θ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R α,
+  ~ (forall n NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R α,
        size_uskl R + size_pskl P0 <= n ->
        a_wf_aenv Θ -> a_wf_aenv Θ0 ->
        Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
-       θ ∷ Θ0 ⊑ Θ ->
+       κ ∷ Θ0 ⊑ Θ ->
        α `notin` dom Θ -> α `notin` dom Θ0 ->
        ⌊ R ⌋ˢ = P ->
        ftvar_in_uskl R [<=] add α (dom Θ0) ->
@@ -135,19 +135,19 @@ Theorem p6cs_without_subject_wf_is_false :
        (ftag_in_uskl R) ∩ Ψ' [=] empty ->
        Ψi `union` Ψa [<=] Ψ' ->
        delta_def_fresh Δ Θ ->
-       Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
+       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
        Ψsub [<=] ftag_in_uskl R `union` Ψa ->
        Ψa [<=] Ψsub ->
-       Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn θ R)) ∼ Q ->
+       Ψsub ⨟ Θ ⊢ₛᵃ (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R)) ∼ Q ->
        (* NB: the subject-wf premise
-            [Θ ⨟ empty ⊢ₚₛᵃ ⌊ (θR)[ψa/α] ⌋ˢ]
+            [Θ ⨟ empty ⊢ₚₛᵃ ⌊ (κR)[ψa/α] ⌋ˢ]
           is exactly what is MISSING here *)
-       Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->
+       Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
        (* conclusion, weakened to its three essential conjuncts *)
        exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
          (P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
          (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\
-         Θ ⨟ Δ ⊢ (msubst_pskl (ρc ++ θ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+         Θ ⨟ Δ ⊢ (msubst_pskl (ρc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
 Proof.
   intros Hthm.
   pick fresh α.
@@ -164,7 +164,7 @@ Proof.
   - (* Θ0 ⊢ Pi *)
     apply a_wf_pskl__tophole;
       [ apply guarded_pskl__unit | apply a_wf_pskl__unit ].
-  - (* θ ∷ Θ0 ⊑ Θ *) apply a_inc__empty; apply a_suffix__nil.
+  - (* κ ∷ Θ0 ⊑ Θ *) apply a_inc__empty; apply a_suffix__nil.
   - (* α ∉ dom Θ *) simpl; clear; fsetdec.
   - (* α ∉ dom Θ0 *) simpl; clear; fsetdec.
   - (* ⌊R⌋ = P *) reflexivity.

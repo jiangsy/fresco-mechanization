@@ -39,7 +39,7 @@ derivation.
 **But a measure does survive.**  It is neither of the two the paper suggests:
 
 > **V — the size of the *solved* skeletons**, i.e. the skeletons pushed through
-> the solution's metasubstitution `θ` and then through the target context `Θ`'s
+> the solution's metasubstitution `κ` and then through the target context `Θ`'s
 > own definitions.
 
 `V` strictly decreases on **all 11** consistency-internal edges and is **exactly
@@ -85,7 +85,7 @@ cross-edges (§5.3).
 `Θ` is the target of the *given* solution and is **fixed for the whole tree**
 (the only thing that ever happens to it is a rigid extension `Θ,α` in
 `ForallInh`/`ForallSyn`/`UnivGhost1` — see §4.3, it does not matter).
-`θ`, `θ₁`, `θ₂` are the metasubstitutions into `Θ`, related by `a_inc_equiv`.
+`κ`, `κ₁`, `κ₂` are the metasubstitutions into `Θ`, related by `a_inc_equiv`.
 
 ### 2.1 `a_unify` (6 rules) — `def_extra.v:602-670`, paper `:2260-2401`
 
@@ -94,7 +94,7 @@ cross-edges (§5.3).
 | U1 | `Flex-Flex-Id` | — (axiom) | — | — |
 | U2 | `Flex-Flex-L` | — (axiom) | `Θ₀ = Θ₀',α̂` | — |
 | U3 | `Flex-Flex-R` | — (axiom) | `Θ₀ = Θ₀',β̂` | — |
-| U4 | `Flex-Flex-Assign` | **unify(Θ₀',γ̂≔τ; α̂; β̂) → consis(Θ₀'; P₀ = β̂[τ/γ̂]; P = α̂[τ/γ̂])** | head `γ̂≔τ` dropped, `−1` | `⟨e⟩ Θ ⊢ θ(α̂[τ/γ̂]) ≈ θ(β̂[τ/γ̂])` — this is the node's *own* `⟨b⟩ Θ ⊢ θα̂ ≈ θβ̂` **transported along `≡ᵗ`** (`θγ̂ ≡ᵗ θτ`).  **Not a subderivation. Not smaller.** |
+| U4 | `Flex-Flex-Assign` | **unify(Θ₀',γ̂≔τ; α̂; β̂) → consis(Θ₀'; P₀ = β̂[τ/γ̂]; P = α̂[τ/γ̂])** | head `γ̂≔τ` dropped, `−1` | `⟨e⟩ Θ ⊢ κ(α̂[τ/γ̂]) ≈ κ(β̂[τ/γ̂])` — this is the node's *own* `⟨b⟩ Θ ⊢ κα̂ ≈ κβ̂` **transported along `≡ᵗ`** (`κγ̂ ≡ᵗ κτ`).  **Not a subderivation. Not smaller.** |
 | U5 | `Flex-Flex-Skip` | unify → unify | `−1` | unchanged |
 | U6 | `Flex-Flex-Skip'` | unify → unify | `−1` | unchanged |
 
@@ -109,7 +109,7 @@ variable.  (That is exactly why the rule drops into `a_consis`, not `a_unify` �
 |---|---|---|---|---|
 | A1 | `Assign-UnivGhost-Id` | — (axiom) | — | — |
 | A2 | `Assign-SolveM` | — (axiom) | `Θ₀ = Θ₀',α̂`; **output grows by `|β̄|`** | — |
-| A3 | `Assign-Assign` | **assign(Θ₀',β̂≔τ; Ξ; α̂; P) → consis(Ξ++Θ₀'; P₀ = P[τ/β̂]; P = α̂[τ/β̂])** | `|Ξ|+|Θ₀|` drops by 1 (head `β̂≔τ` dropped, `Ξ` absorbed) | `⟨g⟩ Θ ⊢ syn θ(α̂[τ/β̂]) ≈ bid θ(α̂[τ/β̂])` — **REFLEXIVITY on the monotype `θα̂`** (paper `:2510-2515`).  **Not a subderivation; can be strictly LARGER than the node's own `⟨b⟩ Θ ⊢ θP ≈ θα̂`** (§3.2). |
+| A3 | `Assign-Assign` | **assign(Θ₀',β̂≔τ; Ξ; α̂; P) → consis(Ξ++Θ₀'; P₀ = P[τ/β̂]; P = α̂[τ/β̂])** | `|Ξ|+|Θ₀|` drops by 1 (head `β̂≔τ` dropped, `Ξ` absorbed) | `⟨g⟩ Θ ⊢ syn κ(α̂[τ/β̂]) ≈ bid κ(α̂[τ/β̂])` — **REFLEXIVITY on the monotype `κα̂`** (paper `:2510-2515`).  **Not a subderivation; can be strictly LARGER than the node's own `⟨b⟩ Θ ⊢ κP ≈ κα̂`** (§3.2). |
 | A4 | `Assign-Depend` | assign → assign | `|Ξ|+|Θ₀|` **unchanged** (head moves `Θ₀ → Ξ`); `|Θ₀|` drops by 1 | unchanged |
 | A5 | `Assign-Skip` | assign → assign | `−1` | unchanged |
 | A6 | `Assign-SkipRigid` | assign → assign | `−1` | unchanged |
@@ -135,7 +135,7 @@ derivation.  Below, `S` is the decorated skeleton, `P = ⌊S⌋ˢ`.
 | C5 | `Unit` | `≡Unit` | — (axiom) | — | — |
 | C6 | `Rigid` | `≡Var` | — (axiom) | — | — |
 | C7a | `Arrow` (1st) | `≡Arrow` (`:2693`) | consis → consis `(Θ₀; P₀a; P₁)` | subderivation `⟨a⟩` | both `<` |
-| C7b | `Arrow` (2nd) | `≡Arrow` | consis → consis `(Θ₁; P₀b; P₂)` at `θ₁` | subderivation `⟨b⟩`, rewritten by `θ ≡ θ₁` | both `<` |
+| C7b | `Arrow` (2nd) | `≡Arrow` | consis → consis `(Θ₁; P₀b; P₂)` at `κ₁` | subderivation `⟨b⟩`, rewritten by `κ ≡ κ₁` | both `<` |
 | C8 | `ForallInh` | `≡ForallInh` (`:2779`) | consis → consis `(α,Θ₀; P₀'^α; P'^α)` | subderivation | both `−1` |
 | C9 | `ForallSyn` | `≡ForallSyn` | consis → consis `(α,Θ₀; ⊤◇.P₀'` **unchanged**`; P'^α)` | subderivation | `|P|` `−1` |
 | C10 | `UnivGhost` | `≡UnivGhost` / `≡UnivGhostG` | consis → consis `(Θ₀; P₀'; P')` | subderivation | both `−1` |
@@ -194,16 +194,16 @@ entries (`|Θ₀|`, ignoring definitions) it goes `1 → 2`.  Even counting only
 
     Θ₀ = (β̂ ≔ unit) , (α̂ : flex_mono)
     assignment problem: (Θ₀ ; Ξ = · ; α̂ ; P = ◇ → unit)
-    solution:  θ = { β̂ ↦ unit , α̂ ↦ (unit → unit) → unit }   into Θ = ·
+    solution:  κ = { β̂ ↦ unit , α̂ ↦ (unit → unit) → unit }   into Θ = ·
 
-The node's own declarative derivation `⟨b⟩ Θ ⊢ θP ≈ θα̂` is
+The node's own declarative derivation `⟨b⟩ Θ ⊢ κP ≈ κα̂` is
 
     Arrow( Ghost(◇ ≈ inh(unit→unit)) , Unit )              — 3 nodes
 
 The head of `Θ₀` is a **defined** flex var, so `Assign-Assign` **must** fire
 (there is no skip rule for a defined flex head).  The paper's `:2510-2515`
 supplies the consistency IH with `⟨g⟩` = **reflexivity** on
-`θ(α̂[unit/β̂]) = (unit→unit)→unit`:
+`κ(α̂[unit/β̂]) = (unit→unit)→unit`:
 
     Arrow( Arrow(Unit,Unit) , Unit )                        — 5 nodes
 
@@ -211,7 +211,7 @@ supplies the consistency IH with `⟨g⟩` = **reflexivity** on
 than the caller's.  The `Ghost` rule is the mechanism: it absorbs an arbitrarily
 large `Q` in **one** node, so the assignment node's derivation is bounded by the
 *ghost-ridden* `P`, while the spawned consistency node's derivation is bounded
-by the *fully-solved* `θα̂`.
+by the *fully-solved* `κα̂`.
 
 `Flex-Flex-Assign` (U4) is milder — the derivation is only `≡ᵗ`-transported, not
 grown — but `≡ᵗ` is **not size-preserving** either (see §4.1), so it is not
@@ -245,11 +245,11 @@ is needed.
 
 So `α ≡ᵗ τ` for *any* `τ` — sizes differ arbitrarily.  And `≡ᵗ` is exactly what
 `a_inc__flex_def` (`def_meta.v:148-155`) and `a_inc_equiv__flex/_def`
-(`def_meta.v:191-201`) use.  So `size(msubst_pskl θ P)` is **not** stable under
+(`def_meta.v:191-201`) use.  So `size(msubst_pskl κ P)` is **not** stable under
 the two moves the proof constantly makes:
 
-* **(M1)** `θ ≡ θ₁` on `Θ₀` (`a_inc_equiv`) — used at `Arrow`'s second premise;
-* **(M2)** `θγ̂ ≡ᵗ θτ` — used at both back-edges to rewrite `X[τ/γ̂]` into `X`.
+* **(M1)** `κ ≡ κ₁` on `Θ₀` (`a_inc_equiv`) — used at `Arrow`'s second premise;
+* **(M2)** `κγ̂ ≡ᵗ κτ` — used at both back-edges to rewrite `X[τ/γ̂]` into `X`.
 
 **Fix — the `⇓` normal form.**  A well-formed `Θ` is ordered and acyclic
 (definitions are well-formed in the tail), so it induces a *total unfolding*
@@ -260,7 +260,7 @@ Fixpoint aenv_msubst (Θ : aenv) : metasubst :=
   match Θ with
   | nil => nil
   | (α, abind_flex_mono_def τ) :: Θ' =>
-      let θ' := aenv_msubst Θ' in (α, msubst_ptyp θ' τ) :: θ'
+      let κ' := aenv_msubst Θ' in (α, msubst_ptyp κ' τ) :: κ'
   | (α, abind_flex_mono) :: Θ'     => (α, ptyp_var_f α) :: aenv_msubst Θ'
   | _ :: Θ'                        => aenv_msubst Θ'
   end.
@@ -276,10 +276,10 @@ Two properties carry the whole measure (§8, L1–L3):
 ### 4.2 Definition of the measure
 
 Fix the root solution's target `Θ`.  For a node with pair `(X, Y)` (§1) and
-metasubstitution `θ` into `Θ`:
+metasubstitution `κ` into `Θ`:
 
 ```
-    V  =  size (⇓[Θ] (θ X))  +  size (⇓[Θ] (θ Y))          -- SOLVED skeleton size
+    V  =  size (⇓[Θ] (κ X))  +  size (⇓[Θ] (κ Y))          -- SOLVED skeleton size
     n  =  length Θ₀                    (consis, unify)
           length Ξ + length Θ₀         (assign)
     t  =  1 (consis) | 0 (unify) | 0 (assign)
@@ -305,7 +305,7 @@ by the second bullet of §4.1, and opening with a free variable preserves
 
 ## 5. PER-EDGE VERIFICATION — every one of the 21 edges
 
-`⟦X⟧ := size (⇓[Θ] (θ X))`.  `⟦·⟧` is a homomorphism for `arrow`, `all_syn`,
+`⟦X⟧ := size (⇓[Θ] (κ X))`.  `⟦·⟧` is a homomorphism for `arrow`, `all_syn`,
 `tophole`, `hole` (it is a substitution followed by a substitution), and
 `⟦P^α⟧ = ⟦P⟧` for a rigid `α` (opening preserves size).
 
@@ -315,7 +315,7 @@ by the second bullet of §4.1, and opening with a free variable preserves
 |---|---|---|---|
 | C2 `UnivGhostR` | `⟦P⟧ + ⟦⊤◇.P₀'⟧` | `⟦P⟧ + ⟦P₀'⟧` | **−1** |
 | C7a `Arrow` 1st | `⟦P₁→P₂⟧ + ⟦P₀a→P₀b⟧` | `⟦P₁⟧ + ⟦P₀a⟧` | **≤ −2** |
-| C7b `Arrow` 2nd | ditto (at `θ`) | `⟦P₂⟧ + ⟦P₀b⟧` (at `θ₁`) | **≤ −2** — *and this is exactly where (M1) is needed: `θ ≡ θ₁` on `Θ₀`, `P₂`/`P₀b` wf in `Θ₀`, so `⇓[Θ](θ₁P₂) = ⇓[Θ](θP₂)`.  The context growth of §3.1 is simply not measured.* |
+| C7b `Arrow` 2nd | ditto (at `κ`) | `⟦P₂⟧ + ⟦P₀b⟧` (at `κ₁`) | **≤ −2** — *and this is exactly where (M1) is needed: `κ ≡ κ₁` on `Θ₀`, `P₂`/`P₀b` wf in `Θ₀`, so `⇓[Θ](κ₁P₂) = ⇓[Θ](κP₂)`.  The context growth of §3.1 is simply not measured.* |
 | C8 `ForallInh` | `⟦∀α.P⟧ + ⟦∀α.P₀⟧` | `⟦P^α⟧ + ⟦P₀^α⟧` | **−2** |
 | C9 `ForallSyn` | `⟦∀α.P⟧ + ⟦⊤◇.P₀⟧` | `⟦P^α⟧ + ⟦⊤◇.P₀⟧` | **−1** |
 | C10 `UnivGhost` | `⟦⊤◇.P⟧ + ⟦⊤◇.P₀⟧` | `⟦P⟧ + ⟦P₀⟧` | **−2** |
@@ -331,12 +331,12 @@ they are why `V` must sum **both** skeletons, and why the paper's
 
 | edge | `V` | `n` | `t` | `k` |
 |---|---|---|---|---|
-| U5 `Flex-Flex-Skip` | `=` (`γ ≠ α,β`; `θ` merely restricted) | **−1** | | |
+| U5 `Flex-Flex-Skip` | `=` (`γ ≠ α,β`; `κ` merely restricted) | **−1** | | |
 | U6 `Flex-Flex-Skip'` | `=` | **−1** | | |
 | A5 `Assign-Skip` | `=` (`β ∉ ftv P`, `β ≠ α`) | **−1** | | |
 | A6 `Assign-SkipRigid` | `=` (`β ∉ ftv P`) | **−1** | | |
 | A7/A8 `Assign-SkipTmVar/Skl` | `=` | **−1** | | |
-| A4 `Assign-Depend` | `=` (`P`, `α̂` unchanged; `θ` unchanged — `β̂` only *moves* `Θ₀ → Ξ`) | `=` | `=` | **−1** |
+| A4 `Assign-Depend` | `=` (`P`, `α̂` unchanged; `κ` unchanged — `β̂` only *moves* `Θ₀ → Ξ`) | `=` | `=` | **−1** |
 
 `A4` is the only edge that needs `k`.  `n = |Ξ| + |Θ₀|` is deliberately the
 *merged* length precisely so that A4 keeps it flat and A3 drops it.
@@ -354,19 +354,19 @@ All three keep `n` (`|Θ₀| + |·| = |Θ₀|`) — **`t` breaks the tie: `1 →
 ### 5.4 Back-edges — `V` exactly constant, `n` strictly decreases
 
 **U4 `Flex-Flex-Assign`.**  Node: `unify(Θ₀',γ̂≔τ; α̂; β̂)`, `V = ⟦α̂⟧ + ⟦β̂⟧`,
-`n = 1 + |Θ₀'|`.  Callee: `consis(Θ₀'; β̂[τ/γ̂]; α̂[τ/γ̂])` at `θ' = θ↾Θ₀'`,
+`n = 1 + |Θ₀'|`.  Callee: `consis(Θ₀'; β̂[τ/γ̂]; α̂[τ/γ̂])` at `κ' = κ↾Θ₀'`,
 `n' = |Θ₀'|` — **`n` drops by 1** ✓.  And
 
-  `⇓[Θ](θ'(α̂[τ/γ̂])) = ⇓[Θ](θα̂)` — by (M2): if `γ̂ ≠ α̂` this is *syntactic*
-  identity; if `γ̂ = α̂` it is `⇓[Θ](θ'τ) = ⇓[Θ](θα̂)`, which is exactly
-  `a_inc__flex_def`'s `Θ ⊢ θγ̂ ≡ᵗ msubst θ' τ` pushed through the `≡ᵗ`-soundness
+  `⇓[Θ](κ'(α̂[τ/γ̂])) = ⇓[Θ](κα̂)` — by (M2): if `γ̂ ≠ α̂` this is *syntactic*
+  identity; if `γ̂ = α̂` it is `⇓[Θ](κ'τ) = ⇓[Θ](κα̂)`, which is exactly
+  `a_inc__flex_def`'s `Θ ⊢ κγ̂ ≡ᵗ msubst κ' τ` pushed through the `≡ᵗ`-soundness
   of `⇓`.  Same for `β̂`.  So **`V' = V`** ✓.  (`t` rises `0 → 1`, harmless: `n`
   already dropped.)
 
 **A3 `Assign-Assign`.**  Node: `assign(Θ₀',β̂≔τ; Ξ; α̂; P)`, `V = ⟦P⟧ + ⟦α̂⟧`,
 `n = |Ξ| + 1 + |Θ₀'|`.  Callee: `consis(Ξ++Θ₀'; P[τ/β̂]; α̂[τ/β̂])`,
 `n' = |Ξ| + |Θ₀'|` — **`n` drops by exactly 1** ✓.  And
-`⇓[Θ](θ'(P[τ/β̂])) = ⇓[Θ](θP)`, `⇓[Θ](θ'(α̂[τ/β̂])) = ⇓[Θ](θα̂)` by (M2) again
+`⇓[Θ](κ'(P[τ/β̂])) = ⇓[Θ](κP)`, `⇓[Θ](κ'(α̂[τ/β̂])) = ⇓[Θ](κα̂)` by (M2) again
 (including the `β̂ = α̂` case, where the subject becomes the monotype `τ`).  So
 **`V' = V`** ✓.
 
@@ -393,8 +393,8 @@ exists, and so reuses the *existing* `Combined Scheme`.
 
 * **(OPT)** `a_assign_unify_consis_optimal` — by mutual induction on the
   algorithmic derivation (`a_assign_unify_consis_mutind`, `prop_consis_sound.v:2486`).
-  *Given* `Θ₀ ⊢ₐ[…] P ≈ Q₁ ⊣ Θ₁` and *any* solution `(θ, Θ, Q)`, produce
-  `ζ : Θ₁ ≤[ζ] Θ`, `a_inc_equiv Θ₀ θ ζ Θ`, and `Θ ⨟ Δ₁∪Δ₂ ⊢ₚᵣᵃ ζ Q₁ ⊑ Q`.
+  *Given* `Θ₀ ⊢ₐ[…] P ≈ Q₁ ⊣ Θ₁` and *any* solution `(κ, Θ, Q)`, produce
+  `ζ : Θ₁ ≤[ζ] Θ`, `a_inc_equiv Θ₀ κ ζ Θ`, and `Θ ⨟ Δ₁∪Δ₂ ⊢ₚᵣᵃ ζ Q₁ ⊑ Q`.
   Every back-edge premise (`Flex-Flex-Assign`, `Assign-Assign`) *is* an
   algorithmic consistency derivation, so the IH is right there.  **No measure.**
 * **(EX)** `a_assign_unify_consis_complete` — by well-founded induction on `μ`.
@@ -452,35 +452,35 @@ inductions and no `Program Fixpoint`.
 (* the paper's AUGMENTED consistency solution, :2230-2242 *)
 Definition consis_complete_post
     (F Δ1 Δ2 Ψ : atoms) (Θ0 : aenv) (P0 : pskl) (S : uskl)
-    (θ : metasubst) (Θ : aenv) (Q : bskl) : Prop :=
-  (* hypotheses: (θ;Θ;Q) is a solution to (Δ1;Δ2;Ψ;Θ0;P0;⌊S⌋ˢ) *)
-  Θ0 ≤[ θ ] Θ ->
-  Ψ ⨟ Θ ⊨ₛᵃ (msubst_uskl θ S) ≈ Q ->                       (* decl consistency *)
-  Θ ⨟ Δ1 ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->  (* Δ1 refinement   *)
-  Θ ⨟ Δ2 ⊢ᵣᵃ ... (msubst_pskl θ ⌊S⌋ˢ) ⊳ Q ->               (* Δ2 refinement   *)
+    (κ : metasubst) (Θ : aenv) (Q : bskl) : Prop :=
+  (* hypotheses: (κ;Θ;Q) is a solution to (Δ1;Δ2;Ψ;Θ0;P0;⌊S⌋ˢ) *)
+  Θ0 ≤[ κ ] Θ ->
+  Ψ ⨟ Θ ⊨ₛᵃ (msubst_uskl κ S) ≈ Q ->                       (* decl consistency *)
+  Θ ⨟ Δ1 ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->  (* Δ1 refinement   *)
+  Θ ⨟ Δ2 ⊢ᵣᵃ ... (msubst_pskl κ ⌊S⌋ˢ) ⊳ Q ->               (* Δ2 refinement   *)
   no_flex_dep (Δ1 ∪ Δ2) Θ -> flex_above_free (Δ1 ∪ Δ2) Θ ->
   (* conclusion, :2246-2255 *)
-  exists Θ1 P1 θ1,
+  exists Θ1 P1 κ1,
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] ⌊S⌋ˢ ≈ P1 ⊣ Θ1 /\
-    Θ1 ≤[ θ1 ] Θ /\
-    a_inc_equiv Θ0 θ θ1 Θ /\
-    Θ ⨟ (Δ1 ∪ Δ2) ⊢ₚᵣᵃ (msubst_pskl θ1 P1) ⊑ (bskl_to_pskl Q).
+    Θ1 ≤[ κ1 ] Θ /\
+    a_inc_equiv Θ0 κ κ1 Θ /\
+    Θ ⨟ (Δ1 ∪ Δ2) ⊢ₚᵣᵃ (msubst_pskl κ1 P1) ⊑ (bskl_to_pskl Q).
 
 Definition unify_complete_post (F : atoms) (Θ0 : aenv) (α β : atom)
-    (θ : metasubst) (Θ : aenv) : Prop :=
-  Θ0 ≤[ θ ] Θ ->
-  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl (msubst_lookup θ α))
-             ≈ (ptyp_to_bskl_syn (msubst_lookup θ β)) ->
-  exists Θ1 θ1, Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1
-             /\ Θ1 ≤[ θ1 ] Θ /\ a_inc_equiv Θ0 θ θ1 Θ.
+    (κ : metasubst) (Θ : aenv) : Prop :=
+  Θ0 ≤[ κ ] Θ ->
+  empty ⨟ Θ ⊨ₛᵃ (ptyp_to_uskl (msubst_lookup κ α))
+             ≈ (ptyp_to_bskl_syn (msubst_lookup κ β)) ->
+  exists Θ1 κ1, Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1
+             /\ Θ1 ≤[ κ1 ] Θ /\ a_inc_equiv Θ0 κ κ1 Θ.
 
 Definition assign_complete_post (F : atoms) (Θ0 Ξ : aenv) (α : atom) (P : pskl)
-    (θ : metasubst) (Θ : aenv) : Prop :=
-  (Ξ ++ Θ0) ≤[ θ ] Θ ->
-  empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl θ P))
-             ≈ (ptyp_to_bskl_syn (msubst_lookup θ α)) ->
-  exists Θ1 θ1, Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1
-             /\ Θ1 ≤[ θ1 ] Θ /\ a_inc_equiv (Ξ ++ Θ0) θ θ1 Θ.
+    (κ : metasubst) (Θ : aenv) : Prop :=
+  (Ξ ++ Θ0) ≤[ κ ] Θ ->
+  empty ⨟ Θ ⊨ₛᵃ (pskl_to_uskl (msubst_pskl κ P))
+             ≈ (ptyp_to_bskl_syn (msubst_lookup κ α)) ->
+  exists Θ1 κ1, Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1
+             /\ Θ1 ≤[ κ1 ] Θ /\ a_inc_equiv (Ξ ++ Θ0) κ κ1 Θ.
 ```
 
 `Ψ` and the *decorated* `S : uskl` (with `P = ⌊S⌋ˢ`, `algo/def_decorated.v:44`)
@@ -492,7 +492,7 @@ premise consumes a `δ` from `Ψ`.  The existing soundness motive
 *given* one and cannot.
 
 Split per §6: `unify/assign_complete_post` are the **(EX)** halves;
-the `Θ1 ≤[θ1] Θ ∧ a_inc_equiv ∧ ⊑` conjuncts move into **(OPT)**, which is stated
+the `Θ1 ≤[κ1] Θ ∧ a_inc_equiv ∧ ⊑` conjuncts move into **(OPT)**, which is stated
 over an *already-given* derivation.
 
 ### 7.3 Supporting lemmas that DO NOT EXIST YET
@@ -506,8 +506,8 @@ found no context-unfolding substitution anywhere.
 | L2 | `aenv_msubst_agree_tail : uniq Θ -> Θ = Θp ++ Θs -> forall X ∈ dom Θs, msubst_lookup (aenv_msubst Θ) X = msubst_lookup (aenv_msubst Θs) X` | the workhorse; uses `msubst_ptyp_agree` (`prop_compose.v:445`) |
 | L3 | **`a_tyequiv_downarrow : a_wf_aenv Θ -> Θ ⊢ A ≡ᵗ B -> ⇓[Θ]A = ⇓[Θ]B`** | the crux.  Induction on `a_tyequiv`; `flex_def` case = L2; `all` case needs `msubst_ptyp_open` (`prop_compose.v:307`) |
 | L4 | `aenv_msubst_tvar : aenv_msubst ((α~abind_tvar) :: Θ) = aenv_msubst Θ` (and `var_typ`/`var_skl`) | one line; makes `Θ → Θ,α` invisible |
-| L5 | `downarrow_msubst_subst : ⇓[Θ](msubst θ' (P[τ/γ̂])) = ⇓[Θ](msubst θ P)` given `((γ̂≔τ)::Θ₀') ≤[θ] Θ` and `θ' = tail θ` | (M2); L3 + a subst-commutation |
-| L6 | `a_inc_equiv_downarrow : a_inc_equiv Θ₀ θ θ₁ Θ -> a_wf_pskl Θ₀ P -> ⇓[Θ](msubst θ P) = ⇓[Θ](msubst θ₁ P)` | (M1) |
+| L5 | `downarrow_msubst_subst : ⇓[Θ](msubst κ' (P[τ/γ̂])) = ⇓[Θ](msubst κ P)` given `((γ̂≔τ)::Θ₀') ≤[κ] Θ` and `κ' = tail κ` | (M2); L3 + a subst-commutation |
+| L6 | `a_inc_equiv_downarrow : a_inc_equiv Θ₀ κ κ₁ Θ -> a_wf_pskl Θ₀ P -> ⇓[Θ](msubst κ P) = ⇓[Θ](msubst κ₁ P)` | (M1) |
 | L7 | `size_pskl` invariance under opening with a free var | LNgen already generates `size_pskl_open_pskl_wrt_pskl_var` (`prop_ln.v:227` neighbourhood) — **check it is there, else generate** |
 
 **(L-structure) — needed by (EX) to *build* the rules.**
@@ -516,7 +516,7 @@ found no context-unfolding substitution anywhere.
 |---|---|---|
 | L8 | **head-preservation:** `a_consis` from `(α~abind_tvar) ++ Θ₀` outputs `(α~abind_tvar) ++ Θ₁` | C8/C9/C11 must re-attach the rigid head to match `a_consis__forall_inh`'s shape.  `Assign-SolveM` inserts `β̄` *below* `α̂`, which is below the walked prefix, so this is true — but it needs proving |
 | L9 | cofinite renaming for the constructed derivation (`a_consis_rename_tvar`) | C8/C9/C11 need the derivation for *all* `α ∉ L` |
-| L10 | `msubst_compose ζ ι ≡ ζ` | to land `a_consis_optimal`'s `θ ≡ ζ ∘ θ₁` from the paper's `θ ≡ θ₁` (the algorithm's `θ₁` is the identity `ι`, `a_isub`) |
+| L10 | `msubst_compose ζ ι ≡ ζ` | to land `a_consis_optimal`'s `κ ≡ ζ ∘ κ₁` from the paper's `κ ≡ κ₁` (the algorithm's `κ₁` is the identity `ι`, `a_isub`) |
 
 **(L-bridge) — the missing content of C14/C15/C16.**  See §9.1.
 
@@ -555,14 +555,14 @@ incomplete after the refactor**:
 4. **`a_consis_solution` / `a_consis_optimal` are the *unaugmented* forms.**  They
    are correct as the *statement* of the theorem, but the **induction** must run on
    the augmented problem `(Δ₁; Δ₂; Ψ; Θ₀; P₀; S)` of `:2230-2242` — decorated `S`,
-   tag context `Ψ`, and the second refinement `Δ₂ ⊢ θ⌊S⌋ ⊳ Q`, plus the
+   tag context `Ψ`, and the second refinement `Δ₂ ⊢ κ⌊S⌋ ⊳ Q`, plus the
    `no_flex_dep` / `flex_above_free` side conditions that `consis_sound_post`
    already carries.  Keep the current definitions as the top-level corollaries and
    add augmented `*_post` motives next to them.
 
 `a_assign_solution` and `a_unify_solution` themselves are **fine**: `Assign-Assign`
 absorbing `Ξ` into its premise's *context* is a property of the rule, and the
-solution definition already quantifies over `(Ξ ++ Θ0) ≤[θ1] Θ1`, which is what
+solution definition already quantifies over `(Ξ ++ Θ0) ≤[κ1] Θ1`, which is what
 the paper says (`:1510-1512`).  The brief's worry there is unfounded.
 
 ---
@@ -576,17 +576,17 @@ variable are handled by the other two parts of the lemma."*  That is the entire
 treatment of `Flex`, `FlexL`, `FlexR` (C14–C16).  Two things are missing:
 
 * **Constructing the callee's solution.**  A consistency solution gives
-  `Θ ⊢ syn θS ≈ bid Q` **and** `Δ₁ ⊢ inh θP₀ ⊳ Q`.  The unification/assignment
-  problem needs `Θ ⊢ θα̂ ≈ θβ̂` / `Θ ⊢ θP₀ ≈ θα̂` — a *different* judgment
+  `Θ ⊢ syn κS ≈ bid Q` **and** `Δ₁ ⊢ inh κP₀ ⊳ Q`.  The unification/assignment
+  problem needs `Θ ⊢ κα̂ ≈ κβ̂` / `Θ ⊢ κP₀ ≈ κα̂` — a *different* judgment
   between the *two inputs*, with `Q` eliminated.  Getting it requires the
   **bridge** (consistency-into-`Q` + refinement-of-`Q` ⟹ relation between the
   two inputs) — the same bridge already built for the soundness converse
   (`prop_consis_sound.v`, "consistency's join + refinement ⟹ type equivalence").
   The paper never invokes it here.
 * **Recovering the consistency conclusion's PRECISION.**  `§1`'s conclusion
-  demands `Δ₁,Δ₂ ⊢ θ₁P₁ ⊑ Q`, and for `Flex`/`FlexL`/`FlexR` the algorithmic
+  demands `Δ₁,Δ₂ ⊢ κ₁P₁ ⊑ Q`, and for `Flex`/`FlexL`/`FlexR` the algorithmic
   output is `P₁ = α̂`.  The `§2`/`§3` IHs produce **no precision statement at
-  all** (`:2266-2270`, `:2412-2416`).  So `Θ ⊢ θ₁α̂ ⊑ Q` has to be proved
+  all** (`:2266-2270`, `:2412-2416`).  So `Θ ⊢ κ₁α̂ ⊑ Q` has to be proved
   separately — it is *not* "handled by the other two parts".
 
 ### 9.2 GAP — `§3` never proves the algorithm is not STUCK
@@ -597,9 +597,9 @@ condition `β̂ ∉ ftv(P)` and there is **no rule at all** for a **rigid** head
 `β ∈ ftv(P)`.  Completeness must therefore *prove the walk never reaches such a
 head* — the escape/scope check.  It is true (and provable): `a_inc`
 (`def_meta.v:143-171`) peels the rigid `β` via `a_inc__tvar` **before** it reaches
-`α̂`, so `θα̂` is well-formed in a target *below* `β`; whereas `β ∈ ftv(P)` forces
-`β ∈ ftv(θP)` (`β` is rigid, `θ` cannot erase it) and consistency against the
-**monotype** `θα̂` forces `β ∈ ftv(θα̂)` — contradiction.  But the paper does not
+`α̂`, so `κα̂` is well-formed in a target *below* `β`; whereas `β ∈ ftv(P)` forces
+`β ∈ ftv(κP)` (`β` is rigid, `κ` cannot erase it) and consistency against the
+**monotype** `κα̂` forces `β ∈ ftv(κα̂)` — contradiction.  But the paper does not
 do it, and it is the classic hard step in DK-style completeness.
 
 Similarly `Assign-SolveM` (`:2430-2461`) silently assumes both of its premises:

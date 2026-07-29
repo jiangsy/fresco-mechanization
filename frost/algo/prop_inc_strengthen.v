@@ -5,7 +5,7 @@
     (unlike Flex-Flex-Skip's clean head-flex).  [a_inc_peel_suffix] only peels
     an all-flex suffix; here we need to peel the suffix AND the mid flex binding
     together, then RE-INSERT the suffix over the smaller tail — producing the
-    sub-node's competing increment [ρ1 ++ ρ2 ∷ (Ξ ++ Θ0) ⊑ Θ].
+    sub-node's competing increment [κ1 ++ κ2 ∷ (Ξ ++ Θ0) ⊑ Θ].
 
     The suffix here is [a_decls Ξ] (every entry an UNDEFINED flexible), the
     algorithm's own invariant on the pending suffix (full-algo-spec.tex:1508).
@@ -14,7 +14,7 @@
     reconstructed increment's premises transport unchanged.  (With a general
     [a_suffix] Ξ a def entry [a ≔ τd] could have [β ∈ ftv τd], and dropping
     β's metasubst entry would change [msubst τd] — the flex_def premise
-    [τa' ≡ᵗ msubst (ρ1++ρ2) τd] would then be false.) *)
+    [τa' ≡ᵗ msubst (κ1++κ2) τd] would then be false.) *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -34,38 +34,38 @@ Set Implicit Arguments.
 
 (** MID-STRIP of a flexible binding sandwiched under an [a_decls] suffix.
     Peels the suffix Ξ and the mid flex [β] off a competing increment
-    [ρ ∷ (Ξ ++ β̂ ++ Θ0) ⊑ Θ], returning
-      - the split [ρ = ρ1 ++ (β,τ) :: ρ2] (ρ1 = the Ξ-part, dom ρ1 = dom Ξ),
-      - the tail increment [ρ2 ∷ Θ0 ⊑ Θ], and
-      - the RE-INSERTED increment [ρ1 ++ ρ2 ∷ (Ξ ++ Θ0) ⊑ Θ] with β dropped.
+    [κ ∷ (Ξ ++ β̂ ++ Θ0) ⊑ Θ], returning
+      - the split [κ = κ1 ++ (β,τ) :: κ2] (κ1 = the Ξ-part, dom κ1 = dom Ξ),
+      - the tail increment [κ2 ∷ Θ0 ⊑ Θ], and
+      - the RE-INSERTED increment [κ1 ++ κ2 ∷ (Ξ ++ Θ0) ⊑ Θ] with β dropped.
     The target [Θ] is UNCHANGED (flex/suffix entries do not extend it). *)
-Lemma a_inc_mid_strip_flex : forall Ξ β Θ0 ρ Θ,
+Lemma a_inc_mid_strip_flex : forall Ξ β Θ0 κ Θ,
   a_decls Ξ ->
-  ρ ∷ (Ξ ++ (β ~ abind_flex_mono) ++ Θ0) ⊑ Θ ->
-  exists ρ1 τ ρ2,
-    ρ = ρ1 ++ (β, τ) :: ρ2 /\
-    dom ρ1 [=] dom Ξ /\
-    ρ2 ∷ Θ0 ⊑ Θ /\
-    ρ1 ++ ρ2 ∷ (Ξ ++ Θ0) ⊑ Θ.
+  κ ∷ (Ξ ++ (β ~ abind_flex_mono) ++ Θ0) ⊑ Θ ->
+  exists κ1 τ κ2,
+    κ = κ1 ++ (β, τ) :: κ2 /\
+    dom κ1 [=] dom Ξ /\
+    κ2 ∷ Θ0 ⊑ Θ /\
+    κ1 ++ κ2 ∷ (Ξ ++ Θ0) ⊑ Θ.
 Proof.
-  induction Ξ as [ | [a b] Ξ' IH ]; intros β Θ0 ρ Θ Hdec Hinc.
+  induction Ξ as [ | [a b] Ξ' IH ]; intros β Θ0 κ Θ Hdec Hinc.
   - (* Ξ = nil : head is the mid flex β itself *)
     simpl in Hinc.
-    inversion Hinc as [ | Θs ρs Θt βs τ Hinc' Hwfτ Hmτ [Heqβ Heqρ] Heqt
+    inversion Hinc as [ | Θs κs Θt βs τ Hinc' Hwfτ Hmτ [Heqβ Heqκ] Heqt
                       | | | | ]; subst.
-    exists (@nil (atom * ptyp)), τ, ρs. simpl.
+    exists (@nil (atom * ptyp)), τ, κs. simpl.
     split; [ reflexivity | ].
     split; [ clear; fsetdec | ].
     split; [ exact Hinc' | exact Hinc' ].
   - (* Ξ = (a ~ flex) ++ Ξ' : peel the head flex a, recurse *)
     inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     simpl in Hinc.
-    inversion Hinc as [ | Θs ρs Θt as' τ Hinc' Hwfτ Hmτ [Heqa Heqρ] Heqt
+    inversion Hinc as [ | Θs κs Θt as' τ Hinc' Hwfτ Hmτ [Heqa Heqκ] Heqt
                       | | | | ]; subst.
     destruct (IH _ _ _ _ Hdec' Hinc')
-      as [ρ1 [τ2 [ρ2 [Heqρ [Hdom [Hinc2 Hrec]]]]]].
-    exists ((a, τ) :: ρ1), τ2, ρ2. simpl.
-    split; [ rewrite Heqρ; reflexivity | ].
+      as [κ1 [τ2 [κ2 [Heqκ [Hdom [Hinc2 Hrec]]]]]].
+    exists ((a, τ) :: κ1), τ2, κ2. simpl.
+    split; [ rewrite Heqκ; reflexivity | ].
     split; [ clear - Hdom; simpl_env; fsetdec | ].
     split; [ exact Hinc2 | ].
     apply a_inc__flex; auto.
@@ -310,12 +310,12 @@ Qed.
 (*  [msubst_ptyp_agree] / [msubst_pskl_agree]).                             *)
 (* ===================================================================== *)
 
-Lemma msubst_ptyp_agree_inv : forall θ ζ A,
-  msubst_ptyp θ A = msubst_ptyp ζ A ->
+Lemma msubst_ptyp_agree_inv : forall κ ζ A,
+  msubst_ptyp κ A = msubst_ptyp ζ A ->
   forall α', α' `in` ftvar_in_ptyp A ->
-  msubst_lookup θ α' = msubst_lookup ζ α'.
+  msubst_lookup κ α' = msubst_lookup ζ α'.
 Proof.
-  intros θ ζ A; induction A; intros Heq α' Hα; simpl in *;
+  intros κ ζ A; induction A; intros Heq α' Hα; simpl in *;
     try solve [ exfalso; clear - Hα; fsetdec ].
   - (* var_f *)
     assert (HXY : α' = α) by (clear - Hα; fsetdec). subst. exact Heq.
@@ -334,12 +334,12 @@ Proof.
     try reflexivity; injection Heq; intros; f_equal; auto.
 Qed.
 
-Lemma msubst_pskl_agree_inv : forall θ ζ P,
-  msubst_pskl θ P = msubst_pskl ζ P ->
+Lemma msubst_pskl_agree_inv : forall κ ζ P,
+  msubst_pskl κ P = msubst_pskl ζ P ->
   forall α', α' `in` ftvar_in_pskl P ->
-  msubst_lookup θ α' = msubst_lookup ζ α'.
+  msubst_lookup κ α' = msubst_lookup ζ α'.
 Proof.
-  intros θ ζ P; induction P; intros Heq α' Hα; simpl in *;
+  intros κ ζ P; induction P; intros Heq α' Hα; simpl in *;
     try solve [ exfalso; clear - Hα; fsetdec ].
   - (* var_f *)
     assert (HXY : α' = α) by (clear - Hα; fsetdec). subst.

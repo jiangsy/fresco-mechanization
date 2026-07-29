@@ -3,19 +3,19 @@
     The completeness proof for consistency (thm:complete-consistency) needs an
     induction measure
 
-        V  =  size (⇓[Θ] (θ α))  +  size (⇓[Θ] (θ β))
+        V  =  size (⇓[Θ] (κ α))  +  size (⇓[Θ] (κ β))
 
     — "the size of the skeletons AS THE SOLUTION SEES THEM".  For that to be a
     well-defined natural number, the size must be stable under the two moves the
     proof constantly makes:
 
-      (M1)  θ ≡ θ₁ on Θ₀   ([a_inc_equiv]; used at Arrow's second premise);
-      (M2)  θα1̂ ≡ᵗ θτ       (used at both back-edges, [Flex-Flex-Assign] and
+      (M1)  κ ≡ κ₁ on Θ₀   ([a_inc_equiv]; used at Arrow's second premise);
+      (M2)  κα1̂ ≡ᵗ κτ       (used at both back-edges, [Flex-Flex-Assign] and
                             [Assign-Assign], to rewrite [α[τ/α1̂]] into [α]).
 
     Both are stated up to [a_tyequiv] ([≡ᵗ]), which is NOT size-preserving: its
     rule [a_tyequiv__flex_def] equates a defined flexible variable [α̂] with an
-    ARBITRARY monotype [τ].  So [size (msubst_pskl θ P)] is not an invariant.
+    ARBITRARY monotype [τ].  So [size (msubst_pskl κ P)] is not an invariant.
 
     The fix is to normalize by the TARGET context's own definitions.  A
     well-formed [Θ] is ordered and acyclic ([a_wf_aenv__flex_def] carries
@@ -26,7 +26,7 @@
 
         L1   a_wf_aenv Θ -> Θ ⊢ A ≡ᵗ B -> ⇓[Θ]A = ⇓[Θ]B
 
-    which makes [size (⇓[Θ] (θ α))] invariant under (M1) and (M2) — proved below
+    which makes [size (⇓[Θ] (κ α))] invariant under (M1) and (M2) — proved below
     as [a_tyequiv_downarrow], with the two moves themselves as
     [a_inc_equiv_downarrow_*] (M1) and [downarrow_subst_*] (M2). *)
 
@@ -140,16 +140,16 @@ Qed.
 (** All of a metasubstitution's images are locally closed.  [prop_compose.v] gets
     this from an [a_inc] witness; [aenv_msubst Θ] has no such witness (its target
     is [Θ] itself, which is not a suffix), so we take the property directly. *)
-Definition msubst_lc (θ : metasubst) : Prop :=
-  forall α, lc_ptyp (msubst_lookup θ α).
+Definition msubst_lc (κ : metasubst) : Prop :=
+  forall α, lc_ptyp (msubst_lookup κ α).
 
-Lemma msubst_ptyp_open_rec_lc : forall θ,
-  msubst_lc θ ->
+Lemma msubst_ptyp_open_rec_lc : forall κ,
+  msubst_lc κ ->
   forall A A' k,
-  msubst_ptyp θ (open_ptyp_wrt_ptyp_rec k A' A)
-  = open_ptyp_wrt_ptyp_rec k (msubst_ptyp θ A') (msubst_ptyp θ A).
+  msubst_ptyp κ (open_ptyp_wrt_ptyp_rec k A' A)
+  = open_ptyp_wrt_ptyp_rec k (msubst_ptyp κ A') (msubst_ptyp κ A).
 Proof.
-  intros θ Hlc A; induction A; intros A' k; simpl; f_equal; eauto.
+  intros κ Hlc A; induction A; intros A' k; simpl; f_equal; eauto.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
   - symmetry.
     apply open_ptyp_wrt_ptyp_rec_degree_ptyp_wrt_ptyp.
@@ -158,27 +158,27 @@ Proof.
     apply Hlc.
 Qed.
 
-Lemma msubst_ptyp_open_lc : forall θ A α,
-  msubst_lc θ ->
-  α `notin` dom θ ->
-  msubst_ptyp θ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-  = open_ptyp_wrt_ptyp (msubst_ptyp θ A) (ptyp_var_f α).
+Lemma msubst_ptyp_open_lc : forall κ A α,
+  msubst_lc κ ->
+  α `notin` dom κ ->
+  msubst_ptyp κ (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+  = open_ptyp_wrt_ptyp (msubst_ptyp κ A) (ptyp_var_f α).
 Proof.
-  intros θ A α Hlc Hα. unfold open_ptyp_wrt_ptyp.
+  intros κ A α Hlc Hα. unfold open_ptyp_wrt_ptyp.
   rewrite (msubst_ptyp_open_rec_lc Hlc A (ptyp_var_f α) 0).
   simpl. rewrite msubst_lookup_notin by exact Hα. reflexivity.
 Qed.
 
-Lemma msubst_ptyp_lc_lc : forall θ A,
-  msubst_lc θ ->
+Lemma msubst_ptyp_lc_lc : forall κ A,
+  msubst_lc κ ->
   lc_ptyp A ->
-  lc_ptyp (msubst_ptyp θ A).
+  lc_ptyp (msubst_ptyp κ A).
 Proof.
-  intros θ A Hlc HA; induction HA; simpl.
+  intros κ A Hlc HA; induction HA; simpl.
   - constructor.
   - apply Hlc.
   - constructor; auto.
-  - pick fresh α for (dom θ).
+  - pick fresh α for (dom κ).
     apply lc_ptyp_all_exists with (α1 := α).
     erewrite <- msubst_ptyp_open_lc; [ apply H0 | exact Hlc | clear - Fr; fsetdec ].
 Qed.
@@ -296,22 +296,22 @@ Qed.
 (* ===================================================================== *)
 
 (** [msubst_pskl] commutes with the [ptyp → pskl] embedding. *)
-Lemma msubst_pskl_ptyp_to_pskl : forall θ A,
-  msubst_pskl θ (ptyp_to_pskl A) = ptyp_to_pskl (msubst_ptyp θ A).
+Lemma msubst_pskl_ptyp_to_pskl : forall κ A,
+  msubst_pskl κ (ptyp_to_pskl A) = ptyp_to_pskl (msubst_ptyp κ A).
 Proof.
-  intros θ A; induction A; simpl; f_equal; auto.
+  intros κ A; induction A; simpl; f_equal; auto.
 Qed.
 
 (** Two metasubstitutions whose images are [ζ]-equal on a type's free variables
     are indistinguishable after [ζ].  NB the [∀] case needs NO opening: [msubst]
     goes under the binder syntactically, and [ftvar_in_ptyp (ptyp_all A) =
     ftvar_in_ptyp A]. *)
-Lemma msubst_ptyp_outer_ext : forall ζ θ θ' A,
+Lemma msubst_ptyp_outer_ext : forall ζ κ κ' A,
   (forall α, α `in` ftvar_in_ptyp A ->
-     msubst_ptyp ζ (msubst_lookup θ α) = msubst_ptyp ζ (msubst_lookup θ' α)) ->
-  msubst_ptyp ζ (msubst_ptyp θ A) = msubst_ptyp ζ (msubst_ptyp θ' A).
+     msubst_ptyp ζ (msubst_lookup κ α) = msubst_ptyp ζ (msubst_lookup κ' α)) ->
+  msubst_ptyp ζ (msubst_ptyp κ A) = msubst_ptyp ζ (msubst_ptyp κ' A).
 Proof.
-  intros ζ θ θ' A; induction A; intros Hag; simpl.
+  intros ζ κ κ' A; induction A; intros Hag; simpl.
   - reflexivity.
   - reflexivity.
   - apply Hag. simpl. fsetdec.
@@ -320,12 +320,12 @@ Proof.
   - f_equal. apply IHA. intros α Hα; apply Hag; simpl; fsetdec.
 Qed.
 
-Lemma msubst_pskl_outer_ext : forall ζ θ θ' P,
+Lemma msubst_pskl_outer_ext : forall ζ κ κ' P,
   (forall α, α `in` ftvar_in_pskl P ->
-     msubst_ptyp ζ (msubst_lookup θ α) = msubst_ptyp ζ (msubst_lookup θ' α)) ->
-  msubst_pskl ζ (msubst_pskl θ P) = msubst_pskl ζ (msubst_pskl θ' P).
+     msubst_ptyp ζ (msubst_lookup κ α) = msubst_ptyp ζ (msubst_lookup κ' α)) ->
+  msubst_pskl ζ (msubst_pskl κ P) = msubst_pskl ζ (msubst_pskl κ' P).
 Proof.
-  intros ζ θ θ' P;
+  intros ζ κ κ' P;
     induction P as [ | n | β | Pa IHa Pb IHb | Pall IHall | | Pt IHt ];
     intros Hag; simpl.
   - reflexivity.
@@ -345,28 +345,28 @@ Qed.
 (** Lookup in an extended metasubstitution.  Stated as rewrite rules so that
     proofs never have to [destruct] an [if] that [simpl] has left inside another
     substitution's argument. *)
-Lemma msubst_lookup_cons_eq : forall (α1 : atom) τ0 θ,
-  msubst_lookup ((α1, τ0) :: θ) α1 = τ0.
+Lemma msubst_lookup_cons_eq : forall (α1 : atom) τ0 κ,
+  msubst_lookup ((α1, τ0) :: κ) α1 = τ0.
 Proof.
-  intros α1 τ0 θ. simpl.
+  intros α1 τ0 κ. simpl.
   destruct (α1 == α1) as [_ | Hc]; [ reflexivity | congruence ].
 Qed.
 
-Lemma msubst_lookup_cons_neq : forall (α α1 : atom) τ0 θ,
+Lemma msubst_lookup_cons_neq : forall (α α1 : atom) τ0 κ,
   α <> α1 ->
-  msubst_lookup ((α1, τ0) :: θ) α = msubst_lookup θ α.
+  msubst_lookup ((α1, τ0) :: κ) α = msubst_lookup κ α.
 Proof.
-  intros α α1 τ0 θ Hne. simpl.
+  intros α α1 τ0 κ Hne. simpl.
   destruct (α == α1) as [Hc | _]; [ congruence | reflexivity ].
 Qed.
 
 (** Substituting a definition and then applying the tail metasubstitution is the
     same as applying the full metasubstitution with [α1̂ ↦ ⟦τ⟧]. *)
-Lemma msubst_ptyp_subst : forall θ τ α1 A,
-  msubst_ptyp θ (subst_ptyp_in_ptyp τ α1 A)
-  = msubst_ptyp ((α1, msubst_ptyp θ τ) :: θ) A.
+Lemma msubst_ptyp_subst : forall κ τ α1 A,
+  msubst_ptyp κ (subst_ptyp_in_ptyp τ α1 A)
+  = msubst_ptyp ((α1, msubst_ptyp κ τ) :: κ) A.
 Proof.
-  intros θ τ α1 A;
+  intros κ τ α1 A;
     induction A as [ | n | β | A1 IH1 A2 IH2 | A0 IH0 ].
   - reflexivity.
   - reflexivity.
@@ -382,11 +382,11 @@ Proof.
   - cbn [subst_ptyp_in_ptyp msubst_ptyp]. f_equal; auto.
 Qed.
 
-Lemma msubst_pskl_subst : forall θ τ α1 P,
-  msubst_pskl θ (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P)
-  = msubst_pskl ((α1, msubst_ptyp θ τ) :: θ) P.
+Lemma msubst_pskl_subst : forall κ τ α1 P,
+  msubst_pskl κ (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P)
+  = msubst_pskl ((α1, msubst_ptyp κ τ) :: κ) P.
 Proof.
-  intros θ τ α1 P;
+  intros κ τ α1 P;
     induction P as [ | n | β | Pa IHa Pb IHb | Pall IHall | | Pt IHt ].
   - reflexivity.
   - reflexivity.
@@ -405,16 +405,16 @@ Proof.
   - cbn [subst_pskl_in_pskl msubst_pskl]. f_equal; auto.
 Qed.
 
-(** (M2), the type version.  [θ = (α1,τ') :: θ₀] is the metasubstitution at the
-    context [Θ₀,α1̂:=τ]; [θ₀] is the one the back-edge's premise runs at.  The
+(** (M2), the type version.  [κ = (α1,τ') :: κ₀] is the metasubstitution at the
+    context [Θ₀,α1̂:=τ]; [κ₀] is the one the back-edge's premise runs at.  The
     hypothesis is exactly [a_inc__flex_def]'s premise. *)
-Lemma downarrow_subst_ptyp : forall Θ θ0 α1 τ τ' A,
+Lemma downarrow_subst_ptyp : forall Θ κ0 α1 τ τ' A,
   a_wf_aenv Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp θ0 τ) ->
-  ⇓ᵗ[Θ] (msubst_ptyp θ0 (subst_ptyp_in_ptyp τ α1 A))
-  = ⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: θ0) A).
+  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) ->
+  ⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A))
+  = ⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A).
 Proof.
-  intros Θ θ0 α1 τ τ' A Hwf Heq.
+  intros Θ κ0 α1 τ τ' A Hwf Heq.
   rewrite msubst_ptyp_subst.
   apply msubst_ptyp_outer_ext.
   intros α Hα. simpl.
@@ -424,13 +424,13 @@ Qed.
 
 (** (M2), the skeleton version — this is the shape [a_unify__flex_assign] and
     [a_assign__assign] actually use. *)
-Lemma downarrow_subst_pskl : forall Θ θ0 α1 τ τ' P,
+Lemma downarrow_subst_pskl : forall Θ κ0 α1 τ τ' P,
   a_wf_aenv Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp θ0 τ) ->
-  ⇓ˢ[Θ] (msubst_pskl θ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P))
-  = ⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: θ0) P).
+  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) ->
+  ⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P))
+  = ⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P).
 Proof.
-  intros Θ θ0 α1 τ τ' P Hwf Heq.
+  intros Θ κ0 α1 τ τ' P Hwf Heq.
   rewrite msubst_pskl_subst.
   apply msubst_pskl_outer_ext.
   intros α Hα. simpl.
@@ -440,48 +440,48 @@ Qed.
 
 (** The [a_inc]-shaped packaging: the [≡ᵗ] premise comes straight out of the
     information increase at a DEFINED head. *)
-Lemma a_inc_flex_def_tyequiv : forall Θ0 Θ θ0 α1 τ τ',
-  (α1, τ') :: θ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp θ0 τ).
+Lemma a_inc_flex_def_tyequiv : forall Θ0 Θ κ0 α1 τ τ',
+  (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
+  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ).
 Proof.
-  intros Θ0 Θ θ0 α1 τ τ' Hinc. inversion Hinc; subst. assumption.
+  intros Θ0 Θ κ0 α1 τ τ' Hinc. inversion Hinc; subst. assumption.
 Qed.
 
-Corollary a_inc_downarrow_subst_ptyp : forall Θ0 Θ θ0 α1 τ τ' A,
+Corollary a_inc_downarrow_subst_ptyp : forall Θ0 Θ κ0 α1 τ τ' A,
   a_wf_aenv Θ ->
-  (α1, τ') :: θ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
-  ⇓ᵗ[Θ] (msubst_ptyp θ0 (subst_ptyp_in_ptyp τ α1 A))
-  = ⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: θ0) A).
+  (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
+  ⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A))
+  = ⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A).
 Proof.
   intros. eapply downarrow_subst_ptyp;
     [ assumption | eapply a_inc_flex_def_tyequiv; eauto ].
 Qed.
 
-Corollary a_inc_downarrow_subst_pskl : forall Θ0 Θ θ0 α1 τ τ' P,
+Corollary a_inc_downarrow_subst_pskl : forall Θ0 Θ κ0 α1 τ τ' P,
   a_wf_aenv Θ ->
-  (α1, τ') :: θ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
-  ⇓ˢ[Θ] (msubst_pskl θ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P))
-  = ⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: θ0) P).
+  (α1, τ') :: κ0 ∷ ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊑ Θ ->
+  ⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P))
+  = ⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P).
 Proof.
   intros. eapply downarrow_subst_pskl;
     [ assumption | eapply a_inc_flex_def_tyequiv; eauto ].
 Qed.
 
 (** The size corollaries (M2) hands to the measure. *)
-Corollary downarrow_subst_ptyp_size : forall Θ θ0 α1 τ τ' A,
+Corollary downarrow_subst_ptyp_size : forall Θ κ0 α1 τ τ' A,
   a_wf_aenv Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp θ0 τ) ->
-  size_ptyp (⇓ᵗ[Θ] (msubst_ptyp θ0 (subst_ptyp_in_ptyp τ α1 A)))
-  = size_ptyp (⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: θ0) A)).
+  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) ->
+  size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ0 (subst_ptyp_in_ptyp τ α1 A)))
+  = size_ptyp (⇓ᵗ[Θ] (msubst_ptyp ((α1, τ') :: κ0) A)).
 Proof.
   intros. erewrite downarrow_subst_ptyp by eauto. reflexivity.
 Qed.
 
-Corollary downarrow_subst_pskl_size : forall Θ θ0 α1 τ τ' P,
+Corollary downarrow_subst_pskl_size : forall Θ κ0 α1 τ τ' P,
   a_wf_aenv Θ ->
-  Θ ⊢ τ' ≡ᵗ (msubst_ptyp θ0 τ) ->
-  size_pskl (⇓ˢ[Θ] (msubst_pskl θ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P)))
-  = size_pskl (⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: θ0) P)).
+  Θ ⊢ τ' ≡ᵗ (msubst_ptyp κ0 τ) ->
+  size_pskl (⇓ˢ[Θ] (msubst_pskl κ0 (subst_pskl_in_pskl (ptyp_to_pskl τ) α1 P)))
+  = size_pskl (⇓ˢ[Θ] (msubst_pskl ((α1, τ') :: κ0) P)).
 Proof.
   intros. erewrite downarrow_subst_pskl by eauto. reflexivity.
 Qed.
@@ -490,24 +490,24 @@ Qed.
 (*  §5  (M1) — metasubstitution EQUIVALENCE is invisible to [⇓]            *)
 (* ===================================================================== *)
 
-Lemma a_inc_equiv_dom : forall Θ0 θ1 θ2 Θ,
-  a_inc_equiv Θ0 θ1 θ2 Θ ->
-  dom θ1 [<=] dom Θ0 /\ dom θ2 [<=] dom Θ0.
+Lemma a_inc_equiv_dom : forall Θ0 κ1 κ2 Θ,
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
+  dom κ1 [<=] dom Θ0 /\ dom κ2 [<=] dom Θ0.
 Proof.
-  intros Θ0 θ1 θ2 Θ Hie; induction Hie; simpl in *;
+  intros Θ0 κ1 κ2 Θ Hie; induction Hie; simpl in *;
     try (destruct IHHie as [H1 H2]);
     split; try fsetdec.
 Qed.
 
 (** Two equivalent metasubstitutions send every type-variable of the source to
     [≡ᵗ]-equivalent images. *)
-Lemma a_inc_equiv_lookup : forall Θ0 θ1 θ2 Θ,
-  a_inc_equiv Θ0 θ1 θ2 Θ ->
+Lemma a_inc_equiv_lookup : forall Θ0 κ1 κ2 Θ,
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
   forall α', a_binds_tvar α' Θ0 ->
-  Θ ⊢ (msubst_lookup θ1 α') ≡ᵗ (msubst_lookup θ2 α').
+  Θ ⊢ (msubst_lookup κ1 α') ≡ᵗ (msubst_lookup κ2 α').
 Proof.
-  intros Θ0 θ1 θ2 Θ Hie; induction Hie; intros Hwf α' Hbt.
+  intros Θ0 κ1 κ2 Θ Hie; induction Hie; intros Hwf α' Hbt.
   - (* empty *)
     destruct Hbt as [Hb | [Hb | [τ Hb]]]; inversion Hb.
   - (* flex α *)
@@ -528,7 +528,7 @@ Proof.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq ?] | Hb'];
       try (exfalso; apply Hne; exact Heq);
       [ left | right; left | right; right; exists τ0 ]; exact Hb'.
-  - (* term variable, type binding : θ unchanged, target grows *)
+  - (* term variable, type binding : κ unchanged, target grows *)
     assert (Hwf' : a_wf_aenv Θ) by (inversion Hwf; auto).
     assert (Hbt' : a_binds_tvar α' Θ).
     { destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
@@ -550,7 +550,7 @@ Proof.
       [ intros y b Hby; unfold binds in *;
         apply in_or_app; right; simpl; right; exact Hby
       | apply IHHie; assumption ].
-  - (* rigid α : θ does not touch it, so both lookups are α itself *)
+  - (* rigid α : κ does not touch it, so both lookups are α itself *)
     assert (Hnd : α `notin` dom Θ /\ a_wf_aenv Θ) by (inversion Hwf; auto).
     destruct Hnd as [Hnd Hwf'].
     destruct (a_inc_equiv_dom Hie) as [Hd1 Hd2].
@@ -570,14 +570,14 @@ Proof.
 Qed.
 
 (** (M1), the type version. *)
-Lemma a_inc_equiv_downarrow_ptyp : forall Θ0 θ1 θ2 Θ A,
-  a_inc_equiv Θ0 θ1 θ2 Θ ->
+Lemma a_inc_equiv_downarrow_ptyp : forall Θ0 κ1 κ2 Θ A,
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ ->
   a_wf_ptyp Θ0 A ->
-  ⇓ᵗ[Θ] (msubst_ptyp θ1 A) = ⇓ᵗ[Θ] (msubst_ptyp θ2 A).
+  ⇓ᵗ[Θ] (msubst_ptyp κ1 A) = ⇓ᵗ[Θ] (msubst_ptyp κ2 A).
 Proof.
-  intros Θ0 θ1 θ2 Θ A Hie Hwf0 Hwf HA.
+  intros Θ0 κ1 κ2 Θ A Hie Hwf0 Hwf HA.
   apply msubst_ptyp_outer_ext. intros α Hα.
   apply a_tyequiv_downarrow; [ exact Hwf | ].
   eapply a_inc_equiv_lookup;
@@ -585,14 +585,14 @@ Proof.
 Qed.
 
 (** (M1), the skeleton version — this is what Arrow's second premise needs. *)
-Lemma a_inc_equiv_downarrow_pskl : forall Θ0 θ1 θ2 Θ P,
-  a_inc_equiv Θ0 θ1 θ2 Θ ->
+Lemma a_inc_equiv_downarrow_pskl : forall Θ0 κ1 κ2 Θ P,
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ ->
   a_scope_pskl Θ0 P ->
-  ⇓ˢ[Θ] (msubst_pskl θ1 P) = ⇓ˢ[Θ] (msubst_pskl θ2 P).
+  ⇓ˢ[Θ] (msubst_pskl κ1 P) = ⇓ˢ[Θ] (msubst_pskl κ2 P).
 Proof.
-  intros Θ0 θ1 θ2 Θ P Hie Hwf0 Hwf HP.
+  intros Θ0 κ1 κ2 Θ P Hie Hwf0 Hwf HP.
   apply msubst_pskl_outer_ext. intros α Hα.
   apply a_tyequiv_downarrow; [ exact Hwf | ].
   eapply a_inc_equiv_lookup;
@@ -600,22 +600,22 @@ Proof.
 Qed.
 
 (** The size corollaries (M1) hands to the measure. *)
-Corollary a_inc_equiv_downarrow_ptyp_size : forall Θ0 θ1 θ2 Θ A,
-  a_inc_equiv Θ0 θ1 θ2 Θ ->
+Corollary a_inc_equiv_downarrow_ptyp_size : forall Θ0 κ1 κ2 Θ A,
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ ->
   a_wf_ptyp Θ0 A ->
-  size_ptyp (⇓ᵗ[Θ] (msubst_ptyp θ1 A)) = size_ptyp (⇓ᵗ[Θ] (msubst_ptyp θ2 A)).
+  size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ1 A)) = size_ptyp (⇓ᵗ[Θ] (msubst_ptyp κ2 A)).
 Proof.
   intros. erewrite a_inc_equiv_downarrow_ptyp by eauto. reflexivity.
 Qed.
 
-Corollary a_inc_equiv_downarrow_pskl_size : forall Θ0 θ1 θ2 Θ P,
-  a_inc_equiv Θ0 θ1 θ2 Θ ->
+Corollary a_inc_equiv_downarrow_pskl_size : forall Θ0 κ1 κ2 Θ P,
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
   a_wf_aenv Θ ->
   a_scope_pskl Θ0 P ->
-  size_pskl (⇓ˢ[Θ] (msubst_pskl θ1 P)) = size_pskl (⇓ˢ[Θ] (msubst_pskl θ2 P)).
+  size_pskl (⇓ˢ[Θ] (msubst_pskl κ1 P)) = size_pskl (⇓ˢ[Θ] (msubst_pskl κ2 P)).
 Proof.
   intros. erewrite a_inc_equiv_downarrow_pskl by eauto. reflexivity.
 Qed.

@@ -1,5 +1,11 @@
 # Paper gaps and paper-flagged notes (re-mech)
 
+> **Notation.** This file stays in the PAPER's notation.  In the Coq
+> development the information-increase metasubstitution the paper writes
+> `θ` is spelled **`κ`** (θ is unreadable next to the context Θ), and `ρ`
+> is reserved for the paper's rigid-variable substitution.  See the
+> metavariable convention in CLAUDE.md.
+
 Canonical registry for everything found while mechanizing that the paper's
 authors should see.  Ground rule (CLAUDE.md): paper definitions and lemma
 statements are never changed; a broken proof STEP gets a repair here + a

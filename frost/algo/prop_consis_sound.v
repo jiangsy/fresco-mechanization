@@ -1542,12 +1542,12 @@ Lemma a_isub_strip_tvar : forall α Θ0 Θ1,
   ((α ~ abind_tvar) ++ Θ0) ⊴ ((α ~ abind_tvar) ++ Θ1) ->
   Θ0 ⊴ Θ1.
 Proof.
-  intros α Θ0 Θ1 [[θ [Hid Hinc]] Hdef].
+  intros α Θ0 Θ1 [[κ [Hid Hinc]] Hdef].
   destruct (a_inc_tvar_inv Hinc) as [Ξ [Θ2 [Heq [Hsuf Hinc']]]].
   destruct Ξ as [ | [α1 b] Ξ' ]; simpl in Heq.
   - assert (HΘ : Θ2 = Θ1) by (injection Heq; auto). subst Θ2.
     split.
-    + exists θ. auto.
+    + exists κ. auto.
     + intros β τ Hb.
       assert (Hb1 : binds β (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ1))
         by (apply Hdef; unfold binds; right; exact Hb).
@@ -2118,7 +2118,7 @@ Qed.
 Lemma a_isub_binds_tvar : forall Θ Θ' α,
   Θ ⊴ Θ' -> binds α abind_tvar Θ -> binds α abind_tvar Θ'.
 Proof.
-  intros Θ Θ' α [[θ [Hid Hinc]] _] Hb.
+  intros Θ Θ' α [[κ [Hid Hinc]] _] Hb.
   eapply a_inc_binds_tvar; eauto.
 Qed.
 
@@ -3316,10 +3316,10 @@ Proof.
       - destruct (a_inc_refl_gen
           (Ξ0 := (α ~ abind_flex_mono_def (ptyp_var_f β)))
           (a_wf_aenv_lc_aenv Hwf0))
-          as [θ0 [Hid0 Hinc0]].
+          as [κ0 [Hid0 Hinc0]].
         { apply (a_suffix__cons α (b := abind_flex_mono_def (ptyp_var_f β)));
             constructor. }
-        exists ((α, ptyp_var_f α) :: θ0). split.
+        exists ((α, ptyp_var_f α) :: κ0). split.
         { constructor; auto. unfold is_id_entry; reflexivity. }
         apply a_inc__flex; auto;
           try (apply a_wf_ptyp__var; right; right;
@@ -3365,10 +3365,10 @@ Proof.
       - destruct (a_inc_refl_gen
           (Ξ0 := (β ~ abind_flex_mono_def (ptyp_var_f α)))
           (a_wf_aenv_lc_aenv Hwf0))
-          as [θ0 [Hid0 Hinc0]].
+          as [κ0 [Hid0 Hinc0]].
         { apply (a_suffix__cons β (b := abind_flex_mono_def (ptyp_var_f α)));
             constructor. }
-        exists ((β, ptyp_var_f β) :: θ0). split.
+        exists ((β, ptyp_var_f β) :: κ0). split.
         { constructor; auto. unfold is_id_entry; reflexivity. }
         apply a_inc__flex; auto;
           try (apply a_wf_ptyp__var; right; right;

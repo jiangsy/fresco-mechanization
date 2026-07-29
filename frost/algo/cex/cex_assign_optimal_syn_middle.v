@@ -25,11 +25,11 @@
 
     2. SYNTACTIC MIDDLES + POSITIONAL WF: the original var rule
 
-           Θ ⊑[θ] Θ'
+           Θ ⊑[κ] Θ'
            --------------------------------
-           Θ,x:P ⊑[θ] Θ',x:θP,Ξ
+           Θ,x:P ⊑[κ] Θ',x:κP,Ξ
 
-       pins the target's binder payload to the syntactic [θP], and flex
+       pins the target's binder payload to the syntactic [κP], and flex
        images must be well-formed in the POSITIONAL REMAINDER.
 
     A competing solution may solve [α̂] with a name [β1̂] it allocates ABOVE
@@ -38,7 +38,7 @@
     SYNTACTICALLY — while [α̂] sits BELOW [y] in [Θ₁], out of [β1̂]'s scope.
 
     PROVENANCE.  The syntactic rules are faithful to Gundry's THESIS
-    (Gundry13, Fig. 2.4 — term middles [x : θσ], positional remainder,
+    (Gundry13, Fig. 2.4 — term middles [x : κσ], positional remainder,
     term-variable localities), not to the MSFP paper's per-entry SEMANTIC
     ≼ (GundryMM10 §3.1).  The thesis's own unification moves metavariables
     past term entries (inst-depend/inst-skip-tm, Fig. 2.5), so the same
@@ -50,7 +50,7 @@
 
       Θ₀ = c : α̂→(),  α̂,  y : (),  α̂          P = α̂→()     (assign α̂ ≔ P)
       Θ₁ = c : α̂→(),  y : (),  α̂ ≔ α̂→(),  α̂             (α̂ moved below y)
-      θ  = [β1̂/α̂, ()→()/α̂]   into   Θ = c : β1̂→(),  β1̂ ≔ (),  y : ()
+      κ  = [β1̂/α̂, ()→()/α̂]   into   Θ = c : β1̂→(),  β1̂ ≔ (),  y : ()
 
     Under [a_inc_syn] no ζ exists ([cex_no_zeta_syn]); under the adopted
     semantic [a_inc], ζ = [()→()/α̂, ()/α̂] factors, using the depth-legal
@@ -82,31 +82,31 @@ Inductive a_inc_syn : aenv -> metasubst -> aenv -> Prop :=
 | a_inc_syn__empty : forall Ξ,
     a_suffix Ξ ->
     a_inc_syn nil nil Ξ
-| a_inc_syn__flex : forall Θ ρ Θ' α τ,
-    a_inc_syn Θ ρ Θ' ->
+| a_inc_syn__flex : forall Θ κ Θ' α τ,
+    a_inc_syn Θ κ Θ' ->
     a_wf_ptyp Θ' τ ->
     mono_ptyp τ ->
-    a_inc_syn ((α ~ abind_flex_mono) ++ Θ) ((α, τ) :: ρ) Θ'
-| a_inc_syn__flex_def : forall Θ ρ Θ' α τ τ',
-    a_inc_syn Θ ρ Θ' ->
+    a_inc_syn ((α ~ abind_flex_mono) ++ Θ) ((α, τ) :: κ) Θ'
+| a_inc_syn__flex_def : forall Θ κ Θ' α τ τ',
+    a_inc_syn Θ κ Θ' ->
     a_wf_ptyp Θ' τ' ->
     mono_ptyp τ' ->
-    Θ' ⊢ τ' ≡ᵗ (msubst_ptyp ρ τ) ->
-    a_inc_syn ((α ~ abind_flex_mono_def τ) ++ Θ) ((α, τ') :: ρ) Θ'
-| a_inc_syn__var : forall Θ ρ Θ' Ξ x A,
-    a_inc_syn Θ ρ Θ' ->
+    Θ' ⊢ τ' ≡ᵗ (msubst_ptyp κ τ) ->
+    a_inc_syn ((α ~ abind_flex_mono_def τ) ++ Θ) ((α, τ') :: κ) Θ'
+| a_inc_syn__var : forall Θ κ Θ' Ξ x A,
+    a_inc_syn Θ κ Θ' ->
     a_suffix Ξ ->
-    a_inc_syn ((x ~ abind_var_typ A) ++ Θ) ρ
-      (Ξ ++ (x ~ abind_var_typ (msubst_ptyp ρ A)) ++ Θ')
-| a_inc_syn__var_skl : forall Θ ρ Θ' Ξ x P,
-    a_inc_syn Θ ρ Θ' ->
+    a_inc_syn ((x ~ abind_var_typ A) ++ Θ) κ
+      (Ξ ++ (x ~ abind_var_typ (msubst_ptyp κ A)) ++ Θ')
+| a_inc_syn__var_skl : forall Θ κ Θ' Ξ x P,
+    a_inc_syn Θ κ Θ' ->
     a_suffix Ξ ->
-    a_inc_syn ((x ~ abind_var_skl P) ++ Θ) ρ
-      (Ξ ++ (x ~ abind_var_skl (msubst_pskl ρ P)) ++ Θ')
-| a_inc_syn__tvar : forall Θ ρ Θ' Ξ α,
-    a_inc_syn Θ ρ Θ' ->
+    a_inc_syn ((x ~ abind_var_skl P) ++ Θ) κ
+      (Ξ ++ (x ~ abind_var_skl (msubst_pskl κ P)) ++ Θ')
+| a_inc_syn__tvar : forall Θ κ Θ' Ξ α,
+    a_inc_syn Θ κ Θ' ->
     a_suffix Ξ ->
-    a_inc_syn ((α ~ abind_tvar) ++ Θ) ρ (Ξ ++ (α ~ abind_tvar) ++ Θ').
+    a_inc_syn ((α ~ abind_tvar) ++ Θ) κ (Ξ ++ (α ~ abind_tvar) ++ Θ').
 
 Section Cex.
 
@@ -136,7 +136,7 @@ Definition Th1 : aenv :=
   (alpha ~ abind_flex_mono_def tauP) ++
   (α ~ abind_flex_mono) ++ nil.
 
-(* The competing solution:  θ = [β1̂/α̂, ()→()/α̂]  into
+(* The competing solution:  κ = [β1̂/α̂, ()→()/α̂]  into
    Θ = c : β1̂→(), β1̂ ≔ (), y : (). *)
 Definition th : metasubst :=
   (α, ptyp_var_f delta) :: (alpha, ptyp_arrow ptyp_unit ptyp_unit) :: nil.
@@ -350,7 +350,7 @@ Qed.
 
 (* ------------------------------------------------------------------ *)
 (*  6. THE PACKAGED REFUTATION of syntactic-middle optimality: the      *)
-(*     algorithm runs, (θ; Θ) is a genuine competing solution (wf +      *)
+(*     algorithm runs, (κ; Θ) is a genuine competing solution (wf +      *)
 (*     join + syntactic increment), and no syntactic factoring exists.  *)
 (* ------------------------------------------------------------------ *)
 

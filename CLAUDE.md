@@ -96,7 +96,7 @@ mechanization/
     │                                  formerly prop_structural.v)
     └── algo/             (algorithmic system — all admit-free)
         ├── def_extra.v          (Phase 3 definitions — ~140 ctors)
-        ├── def_meta.v           (metasubstitutions θ, a_inc / a_inc_equiv /
+        ├── def_meta.v           (metasubstitutions κ, a_inc / a_inc_equiv /
         │                         ⊴, msubst_{ptyp,btyp,pskl,uskl_syn})
         ├── def_decl_algo*.v     (declarative judgments over algo contexts:
         │                         consistency, refinement, subtyping, precision)
@@ -258,8 +258,20 @@ before changing any of them.
   skeleton VARIABLES (i.e. `atom`s) are greek — `α`, `β`, `γ`, `δ`; the
   generated `def_ott.v` / `prop_ln.v` already use `α` (Makefile sed on the
   ott metavar stems). Paper greek keeps its meaning everywhere: `τ` monotype,
-  `ψ` ghost skeleton, `ρ`/`σ`/`θ`/`ζ` metasubstitutions, `Γ`/`Δ`/`Ψ`/`Θ`/`Ξ`
+  `ψ` ghost skeleton, `κ`/`σ`/`ζ` metasubstitutions, `Γ`/`Δ`/`Ψ`/`Θ`/`Ξ`
   contexts. Term variables stay `x`/`y`/`z`, ε tags stay `ε`.
+  - ⚠️ **The metasubstitution is `κ`, NOT the paper's `θ` — and `ρ` is
+    RESERVED for the paper's rigid-variable substitution.** Two renames are
+    baked in here. `θ` is unreadable next to the context `Θ` (they differ by
+    one stroke), and `ρ` cannot be reused for metasubstitutions because
+    subtyping completeness needs BOTH at once: P6-Sv states `κ ∷ Θ0 ⊑ Θ`
+    beside `uskl_rho NM Θ Δρ Ψρ ψsub ψa`, where `Δρ`/`Ψρ` are the
+    ρ-replaced variables and the tags ρ introduces. So: `κ` is the
+    information-increase metasubstitution (`msubst_*`, `a_inc`), `σ` the
+    second one (`a_inc_equiv`), `ζ` the composing one (`ζ ∘ κ`); a second
+    `κ` in one statement takes ONE prime (`κ'`), never `κ1`/`κ2` as fresh
+    bases. Anything spelled `ρ` denotes the paper's ρ (`uskl_rho`,
+    `rho_fresh`, `msubst_uskl` in prop_decorate_sub.v).
   - **Disambiguate with ONE prime, then digits 0/3/4/… — never `Q1`/`Q2`.**
     ott names the arrow-constructor arguments `A1 A2 / … / R1 R2` and the var
     argument `α`, so those are exactly the names `induction` / `inversion`

@@ -228,7 +228,7 @@ And the un-encoded N-sort syntax convention on `ad_pat_sub`
   match the finalized paper.
 - **Metasubstitution / increment**: `msubst_*` is the paper's simultaneous
   finite map (post-fix; PAPER-GAPS entry); compose direction correct for the
-  paper's `θ ≡ ζ∘θ₁` convention; `a_inc__flex_def`'s wf/mono side-condition and
+  paper's `κ ≡ ζ∘κ₁` convention; `a_inc__flex_def`'s wf/mono side-condition and
   `a_isub`'s entry-preservation conjunct = the two registered
   prose-completions; **the sole semantic deviation is exactly the documented
   one** — `a_inc__var`/`__var_skl` (and the `a_inc_equiv` mirrors) use

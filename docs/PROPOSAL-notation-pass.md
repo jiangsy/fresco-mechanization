@@ -140,15 +140,15 @@ overloads, and the three where-clause turnstiles that omit `: type_scope`) into
 
 These are high-traffic but *unnotated*; notating them is orthogonal to the big
 judgments. Proposed paper-faithful notations (paper uses `T[φ/α]` bracket-after
-for subst, juxtaposition `θP` for metasubst):
+for subst, juxtaposition `κP` for metasubst):
 
 | Op | Uses | Proposed notation | Paper |
 |---|---|---|---|
 | `open_ptyp_wrt_ptyp A B` | 202 | `A ^ᵗ B` or `A ⟦B⟧` | `A[B/…]` open |
 | `subst_ptyp_in_ptyp A' X A` | 198 | already `{A' ᵗ/ₜ X} A` (dead — adopt it) | `A[A'/X]` |
-| `msubst_ptyp ρ A` | 243 | `ρ • A` / `[ρ] A` | `θ A` (juxtaposition) |
-| `msubst_pskl ρ P` | 351 | `ρ • P` | `θ P` |
-| `msubst_compose ζ ρ` | 250 | `ζ ∘ₘ ρ` | `θ∘θ'` |
+| `msubst_ptyp ρ A` | 243 | `ρ • A` / `[ρ] A` | `κ A` (juxtaposition) |
+| `msubst_pskl ρ P` | 351 | `ρ • P` | `κ P` |
+| `msubst_compose ζ ρ` | 250 | `ζ ∘ₘ ρ` | `κ∘κ'` |
 | `ptyp_to_pskl A` | 275 | `⌊A⌋ᵖ` or a `Coercion` | `⌊·⌋` |
 | conversion fns (`ptyp_to_btyp_*`, `pskl_to_bskl_*`, …) | 80–260 each | `Coercion` where injective, else superscript-tagged `⌊⌋` | erasures |
 

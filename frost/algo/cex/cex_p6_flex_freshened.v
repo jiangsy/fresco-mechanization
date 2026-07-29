@@ -4,7 +4,7 @@
     The counterexample machine-checks that the -var completeness lemmas
     ([lemma:complete-consistency-constraint-collection-solving-var] and its
     subtyping twin) are FALSE **as isolated statements**: with
-      Θ0 = c~tvar, β̂~flex   θ = [β̂ ↦ unit→unit]   ψa = c → unit
+      Θ0 = c~tvar, β̂~flex   κ = [β̂ ↦ unit→unit]   ψa = c → unit
       ρ = [c ↦ unit]         P_i = c → unit         P_0 = β̂   Q = unit → unit
     every premise holds, yet the conclusion precision fails.
 
@@ -12,7 +12,7 @@
     — the bad configuration is not producible by a real algorithm run — and
     proves the load-bearing fact.
 
-    ── Why the isolated lemma is false only for an unreachable θ ──
+    ── Why the isolated lemma is false only for an unreachable κ ──
 
     The only solve rule that fires on [P_i = c→unit ∼ P_0 = β̂] is
     [SolE-FlexR] ([a_solve_eq__flex_r]): [nonflex{P} ⊢ P ∼ α̂ ⤳ α̂].  There is
@@ -22,13 +22,13 @@
     lives only in the inference/[⤳ᵐ] layer, which can introduce fresh
     flexibles via a context move; constraint solving cannot and need not.)
 
-    So [P_a = β̂] and the conclusion needs [θβ̂ ⊑ᵖ ψa].  The cex forces
-    [θβ̂ = unit→unit] while [ψa = c→unit].  But that θ is FORCED BY ρ, not
+    So [P_a = β̂] and the conclusion needs [κβ̂ ⊑ᵖ ψa].  The cex forces
+    [κβ̂ = unit→unit] while [ψa = c→unit].  But that κ is FORCED BY ρ, not
     free: the consistency premise is [ρ(ψa) = unit→unit ∼ Q] and the
-    refinement is [inh{θβ̂} ⊳ Q] against the SAME Q; since a rigid [c] is not
+    refinement is [inh{κβ̂} ⊳ Q] against the SAME Q; since a rigid [c] is not
     consistent with [unit], Q must be [unit→…] on the left, pinning
-    [θβ̂ = unit→unit].  ρ having substituted [c ↦ unit] is exactly what strips
-    the rigid [c] out of everything θ can see, while [ψa] (used only for the
+    [κβ̂ = unit→unit].  ρ having substituted [c ↦ unit] is exactly what strips
+    the rigid [c] out of everything κ can see, while [ψa] (used only for the
     final precision) still carries [c].
 
     ── Why the decoupled configuration is unreachable ──
@@ -39,13 +39,13 @@
     counterpart of a compound comparison is a flexible variable,
     [a_lookeq__flex_r] (LE-FlexR) FRESHENS it to a new [α1 ∈ Ξ].  The -var
     lemma therefore never sees the raw [β̂] at an arrow node — it sees the
-    fresh [α1], which is the NON-var lemma's job (θ extends over Ξ and can
+    fresh [α1], which is the NON-var lemma's job (κ extends over Ξ and can
     assign [α1] the rigid [c], so precision holds).
 
     ── Why only the arrow case matters ──
 
-    θ maps flexibles to MONOTYPES, whose only shapes are [unit], a
-    (mono/rigid) variable, or an ARROW.  Refinement [inh{θP0} ⊳ Q] into a ∀
+    κ maps flexibles to MONOTYPES, whose only shapes are [unit], a
+    (mono/rigid) variable, or an ARROW.  Refinement [inh{κP0} ⊳ Q] into a ∀
     or a ghost/⊤◇ requires a ∀/⊤◇/defined-flex source, which a monotype never
     is.  Hence P0 = flexible is IMPOSSIBLE in the ForallInh / ForallSyn /
     ghost cases; and at leaves ([unit] / rigid var) a flexible P0 is handled

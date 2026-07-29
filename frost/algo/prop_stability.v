@@ -31,7 +31,7 @@ Lemma a_isub_binds_tvarish : forall Θ Θ' α,
   a_binds_tvar α Θ ->
   a_binds_tvar α Θ'.
 Proof.
-  intros * [[θ [Hid Hinc]] _] Hb. eauto using a_inc_binds_tvarish.
+  intros * [[κ [Hid Hinc]] _] Hb. eauto using a_inc_binds_tvarish.
 Qed.
 
 Lemma a_isub_binds_flex_def : forall Θ Θ' α τ,
@@ -45,8 +45,8 @@ Lemma a_isub_cons_tvar : forall Θ Θ' α',
   Θ ⊴ Θ' ->
   ((α' ~ abind_tvar) ++ Θ) ⊴ ((α' ~ abind_tvar) ++ Θ').
 Proof.
-  intros * [[θ [Hid Hinc]] Hd]. split.
-  - exists θ. split; auto.
+  intros * [[κ [Hid Hinc]] Hd]. split.
+  - exists κ. split; auto.
     apply (a_inc__tvar (Ξ := nil)); auto. constructor.
   - intros α τ Hb.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];

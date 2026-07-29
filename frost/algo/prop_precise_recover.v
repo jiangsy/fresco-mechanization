@@ -31,10 +31,10 @@
 
       * the COMPETING solution's join / Δ-refinement, run through the mono
         bridge ([consis_mono_join] / [refine_mono_join], algo/prop_mono_bridge.v),
-        gives [Θ ⊢ θα̂ ≡ᵗ C] with [Qb = syn C];
-      * the factoring [a_inc_equiv Θ₀ θ (ζ∘θ₁) Θ] handed over by the §2/§3 IH,
-        together with the algorithm's [θ₁ = identity] (a_isub), gives
-        [Θ ⊢ θα̂ ≡ᵗ ζα̂];
+        gives [Θ ⊢ κα̂ ≡ᵗ C] with [Qb = syn C];
+      * the factoring [a_inc_equiv Θ₀ κ (ζ∘κ₁) Θ] handed over by the §2/§3 IH,
+        together with the algorithm's [κ₁ = identity] (a_isub), gives
+        [Θ ⊢ κα̂ ≡ᵗ ζα̂];
       * transitivity closes [Θ ⊢ ζα̂ ≡ᵗ C], and the mono→precision core
         ([tyequiv_mono_precise]) turns it back into the precision goal.
 
@@ -44,14 +44,14 @@
     composing the converse bridge [tyequiv_mono_consis] with the
     consistency→refinement mono lemma [ad_pat_consis_refine_syn_f_mono].
 
-    NOTE ON [θ₁].  [consis_optimal_post] quantifies the algorithmic solution
-    [θ₁] universally (only [θ₁ ∷ Θ₀ ⊑ Θ₁]).  The recovery genuinely needs
-    [θ₁] to act as the identity on [α̂] — [msubst_lookup θ₁ α = ptyp_var_f α]
+    NOTE ON [κ₁].  [consis_optimal_post] quantifies the algorithmic solution
+    [κ₁] universally (only [κ₁ ∷ Θ₀ ⊑ Θ₁]).  The recovery genuinely needs
+    [κ₁] to act as the identity on [α̂] — [msubst_lookup κ₁ α = ptyp_var_f α]
     — which is how the (OPT) proof instantiates it (the algorithm's own
     solution is the identity metasubstitution [a_isub]; DESIGN-completeness-
     measure.md §7.3 L10).  We take that as an explicit hypothesis of the
     per-node lemmas; it is discharged at the call site from [Θ₀ ⊴ Θ₁].
-    Without it the statement is FALSE (a non-identity [θ₁] can route [α̂]
+    Without it the statement is FALSE (a non-identity [κ₁] can route [α̂]
     through an unrelated fresh flex; see the report). *)
 
 Require Import Coq.Lists.List.
@@ -144,12 +144,12 @@ Qed.
 (*  (prop_compose.v:489).                                                  *)
 (* ===================================================================== *)
 
-Lemma a_inc_equiv_lookup : forall Θ0 θ1 θ2 Θ,
-  a_inc_equiv Θ0 θ1 θ2 Θ ->
+Lemma a_inc_equiv_lookup : forall Θ0 κ1 κ2 Θ,
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
   forall α, a_flex_tvar Θ0 α ->
-  Θ ⊢ (msubst_lookup θ1 α) ≡ᵗ (msubst_lookup θ2 α).
+  Θ ⊢ (msubst_lookup κ1 α) ≡ᵗ (msubst_lookup κ2 α).
 Proof.
-  intros Θ0 θ1 θ2 Θ H; induction H; intros α0 Hflex.
+  intros Θ0 κ1 κ2 Θ H; induction H; intros α0 Hflex.
   - (* empty : no flexible variable in the empty context *)
     destruct Hflex as [Hb | [τ Hb]]; inversion Hb.
   - (* flex head *)
@@ -168,7 +168,7 @@ Proof.
         [ discriminate | left; exact Hb' ].
     + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqα _] | Hb'];
         [ congruence | right; exists τ0; exact Hb' ].
-  - (* var_typ head : θ1/θ2 unchanged, target grows — weaken *)
+  - (* var_typ head : κ1/κ2 unchanged, target grows — weaken *)
     eapply a_tyequiv_weaken;
       [ intros y b Hby; unfold binds; apply in_or_app; right; simpl; right; exact Hby | ].
     apply IHa_inc_equiv.
@@ -197,20 +197,20 @@ Proof.
         [ discriminate | right; exists τ; exact Hb' ].
 Qed.
 
-(** The factoring [θ ≡ ζ∘θ₁], evaluated at the still-live flexible [α̂]:
-    when [θ₁] is the identity on [α̂] (the (OPT) instantiation), the
-    composite collapses to [ζ], so the competing [θα̂] and the algorithmic
+(** The factoring [κ ≡ ζ∘κ₁], evaluated at the still-live flexible [α̂]:
+    when [κ₁] is the identity on [α̂] (the (OPT) instantiation), the
+    composite collapses to [ζ], so the competing [κα̂] and the algorithmic
     [ζα̂] are equivalent. *)
-Lemma a_inc_equiv_compose_id_at : forall Θ0 θ θ1 ζ Θ α,
-  a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ ->
+Lemma a_inc_equiv_compose_id_at : forall Θ0 κ κ1 ζ Θ α,
+  a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
   a_flex_tvar Θ0 α ->
-  α `in` dom θ1 ->
-  msubst_lookup θ1 α = ptyp_var_f α ->
-  Θ ⊢ (msubst_lookup θ α) ≡ᵗ (msubst_lookup ζ α).
+  α `in` dom κ1 ->
+  msubst_lookup κ1 α = ptyp_var_f α ->
+  Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup ζ α).
 Proof.
-  intros Θ0 θ θ1 ζ Θ α Hie Hflex Hdom Hid.
+  intros Θ0 κ κ1 ζ Θ α Hie Hflex Hdom Hid.
   pose proof (a_inc_equiv_lookup Hie Hflex) as He.
-  rewrite (msubst_lookup_compose ζ θ1 (or_introl Hdom)) in He.
+  rewrite (msubst_lookup_compose ζ κ1 (or_introl Hdom)) in He.
   rewrite Hid in He. simpl in He.
   exact He.
 Qed.
@@ -220,31 +220,31 @@ Qed.
 (*                                                                         *)
 (*  Two shapes, by where the competing monotype [C] comes from:            *)
 (*    - [consis_precise_via_join]   : the SUBJECT is [α̂] (rules Flex, FlexL)*)
-(*      — read [C] off the competing consistency JOIN of [θα̂];             *)
+(*      — read [C] off the competing consistency JOIN of [κα̂];             *)
 (*    - [consis_precise_via_refine] : the INPUT is [α̂]   (rule FlexR)       *)
-(*      — read [C] off the competing Δ₁-REFINEMENT of [θα̂].                 *)
+(*      — read [C] off the competing Δ₁-REFINEMENT of [κα̂].                 *)
 (*  Both conclude the [consis_optimal_post] precision conjunct verbatim.    *)
 (* ===================================================================== *)
 
-(** Shared tail: given [θα̂ ≡ᵗ C], [Qb = syn C], and the factoring, close the
+(** Shared tail: given [κα̂ ≡ᵗ C], [Qb = syn C], and the factoring, close the
     precision goal. *)
-Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ θ θ1 ζ α Qb A,
+Lemma consis_precise_close : forall Θ0 Θ1 Θ Δ κ κ1 ζ α Qb A,
   a_wf_aenv Θ ->
   a_flex_tvar Θ0 α ->
   a_binds_tvar α Θ1 ->
   ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
-  a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ ->
-  α `in` dom θ1 ->
-  msubst_lookup θ1 α = ptyp_var_f α ->
+  a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
+  α `in` dom κ1 ->
+  msubst_lookup κ1 α = ptyp_var_f α ->
   mono_ptyp A ->
   Qb = ptyp_to_bskl_syn A ->
-  Θ ⊢ (msubst_lookup θ α) ≡ᵗ A ->
+  Θ ⊢ (msubst_lookup κ α) ≡ᵗ A ->
   Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
-  intros Θ0 Θ1 Θ Δ θ θ1 ζ α Qb A
-         Hwf Hflex HbΘ1 HζΘ Hwf1 Hie Hdom Hid HmC HQb HeqθαC.
-  assert (Hζθ : Θ ⊢ (msubst_lookup θ α) ≡ᵗ (msubst_lookup ζ α))
+  intros Θ0 Θ1 Θ Δ κ κ1 ζ α Qb A
+         Hwf Hflex HbΘ1 HζΘ Hwf1 Hie Hdom Hid HmC HQb HeqκαC.
+  assert (Hζκ : Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup ζ α))
     by (eapply a_inc_equiv_compose_id_at; eauto).
   assert (HmζA : mono_ptyp (msubst_lookup ζ α))
     by (eapply a_inc_lookup_mono; exact HζΘ).
@@ -254,60 +254,60 @@ Proof.
       [ eapply a_inc_lookup_wf; eauto | exact Hα0 ]. }
   eapply consis_precise_core with (A := A); eauto.
   eapply a_tyequiv__trans;
-    [ apply a_tyequiv__sym; exact Hζθ | exact HeqθαC ].
+    [ apply a_tyequiv__sym; exact Hζκ | exact HeqκαC ].
 Qed.
 
 (** Rules Flex / FlexL: the SUBJECT painting is [α̂], so the competing
-    consistency judgment's subject is [θα̂]; its join is the monotype [C]. *)
-Lemma consis_precise_via_join : forall Θ0 Θ1 Θ Δ θ θ1 ζ α Qb,
+    consistency judgment's subject is [κα̂]; its join is the monotype [C]. *)
+Lemma consis_precise_via_join : forall Θ0 Θ1 Θ Δ κ κ1 ζ α Qb,
   a_wf_aenv Θ ->
   a_flex_tvar Θ0 α ->
-  θ ∷ Θ0 ⊑ Θ ->
+  κ ∷ Θ0 ⊑ Θ ->
   a_binds_tvar α Θ1 ->
   ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
-  a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ ->
-  α `in` dom θ1 ->
-  msubst_lookup θ1 α = ptyp_var_f α ->
-  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl θ (pskl_var_f α))) ∼ Qb ->
+  a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
+  α `in` dom κ1 ->
+  msubst_lookup κ1 α = ptyp_var_f α ->
+  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ (pskl_var_f α))) ∼ Qb ->
   Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
-  intros Θ0 Θ1 Θ Δ θ θ1 ζ α Qb
-         Hwf Hflex HθΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hjoin.
-  assert (Hmθα : mono_ptyp (msubst_lookup θ α))
-    by (eapply a_inc_lookup_mono; exact HθΘ).
-  replace (msubst_pskl θ (pskl_var_f α))
-    with (ptyp_to_pskl (msubst_lookup θ α)) in Hjoin by reflexivity.
+  intros Θ0 Θ1 Θ Δ κ κ1 ζ α Qb
+         Hwf Hflex HκΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hjoin.
+  assert (Hmκα : mono_ptyp (msubst_lookup κ α))
+    by (eapply a_inc_lookup_mono; exact HκΘ).
+  replace (msubst_pskl κ (pskl_var_f α))
+    with (ptyp_to_pskl (msubst_lookup κ α)) in Hjoin by reflexivity.
   rewrite pskl_to_uskl_ptyp in Hjoin.
-  destruct (consis_mono_join Hjoin Hwf (A := msubst_lookup θ α) eq_refl Hmθα)
-    as [C [HmC [HQb HeqθαC]]].
+  destruct (consis_mono_join Hjoin Hwf (A := msubst_lookup κ α) eq_refl Hmκα)
+    as [C [HmC [HQb HeqκαC]]].
   eapply consis_precise_close; eauto.
 Qed.
 
 (** Rule FlexR: the INPUT painting is [α̂], so the competing Δ₁-refinement's
-    source is [inh(θα̂)]; refine_mono_join reads off the monotype [C]. *)
-Lemma consis_precise_via_refine : forall Θ0 Θ1 Θ Δ Δ1 θ θ1 ζ α Qb,
+    source is [inh(κα̂)]; refine_mono_join reads off the monotype [C]. *)
+Lemma consis_precise_via_refine : forall Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb,
   a_wf_aenv Θ ->
   a_flex_tvar Θ0 α ->
-  θ ∷ Θ0 ⊑ Θ ->
+  κ ∷ Θ0 ⊑ Θ ->
   a_binds_tvar α Θ1 ->
   ζ ∷ Θ1 ⊑ Θ ->
   a_wf_aenv Θ1 ->
-  a_inc_equiv Θ0 θ (msubst_compose ζ θ1) Θ ->
-  α `in` dom θ1 ->
-  msubst_lookup θ1 α = ptyp_var_f α ->
-  ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl θ (pskl_var_f α))) Qb ->
+  a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ ->
+  α `in` dom κ1 ->
+  msubst_lookup κ1 α = ptyp_var_f α ->
+  ad_refine_syn_f Δ1 Θ Δ1 (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f α))) Qb ->
   Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_bskl ζ (bskl_var_f α)) ⊑ (bskl_to_pskl Qb).
 Proof.
-  intros Θ0 Θ1 Θ Δ Δ1 θ θ1 ζ α Qb
-         Hwf Hflex HθΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hrs.
-  assert (Hmθα : mono_ptyp (msubst_lookup θ α))
-    by (eapply a_inc_lookup_mono; exact HθΘ).
+  intros Θ0 Θ1 Θ Δ Δ1 κ κ1 ζ α Qb
+         Hwf Hflex HκΘ HbΘ1 HζΘ Hwf1 Hie Hdom Hid Hrs.
+  assert (Hmκα : mono_ptyp (msubst_lookup κ α))
+    by (eapply a_inc_lookup_mono; exact HκΘ).
   apply ad_refine_syn_f_forget in Hrs.
-  replace (msubst_pskl θ (pskl_var_f α))
-    with (ptyp_to_pskl (msubst_lookup θ α)) in Hrs by reflexivity.
-  rewrite (ptyp_to_bskl_inh_syn_eq Hmθα) in Hrs.
-  destruct (refine_mono_join Hrs Hwf (A := msubst_lookup θ α) eq_refl Hmθα)
-    as [C [HmC [HQb HeqθαC]]].
+  replace (msubst_pskl κ (pskl_var_f α))
+    with (ptyp_to_pskl (msubst_lookup κ α)) in Hrs by reflexivity.
+  rewrite (ptyp_to_bskl_inh_syn_eq Hmκα) in Hrs.
+  destruct (refine_mono_join Hrs Hwf (A := msubst_lookup κ α) eq_refl Hmκα)
+    as [C [HmC [HQb HeqκαC]]].
   eapply consis_precise_close; eauto.
 Qed.

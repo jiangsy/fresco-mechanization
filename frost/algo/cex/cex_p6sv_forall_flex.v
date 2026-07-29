@@ -8,7 +8,7 @@
     ([Δρ = ∅], [urho__refl]) — so no reformulation of the ρ-machinery can
     repair it:
 
-      Θ₀ = α̂            Θ = α̂ := ⟨⟩→⟨⟩         θ = [α̂ ↦ ⟨⟩→⟨⟩]
+      Θ₀ = α̂            Θ = α̂ := ⟨⟩→⟨⟩         κ = [α̂ ↦ ⟨⟩→⟨⟩]
       N = TY   M = TC   Pi = ∀β. β→β           P₀ = α̂
       ψa = ψsub = ∀^ε β. β→β                   Q  = inh{⟨⟩→⟨⟩}
       Ψ' = Ψi = {ε}     Ψa = Ψsub = Ψρ = ∅     Δ = Δρ = ∅
@@ -73,7 +73,7 @@ Set Implicit Arguments.
 Definition cex_τ : ptyp := ptyp_arrow ptyp_unit ptyp_unit.
 Definition cex_Θ0 (f : atom) : aenv := (f ~ abind_flex_mono).
 Definition cex_Θ (f : atom) : aenv := (f ~ abind_flex_mono_def cex_τ).
-Definition cex_θ (f : atom) : metasubst := (f, cex_τ) :: nil.
+Definition cex_κ (f : atom) : metasubst := (f, cex_τ) :: nil.
 
 (* ψa = ψsub = ∀^ε β. β → β *)
 Definition cex_ψa (e : atom) : uskl :=
@@ -126,8 +126,8 @@ Qed.
     variable outside the context: the only rules that introduce a target
     variable are [P-Var] (same variable on both sides) and [P-FlexR] (the
     variable is a definition of Θ), and the definition chains stay inside
-    Θ's own images.  This is what refutes the conclusion for EVERY [θa],
-    not merely for [θa := θ]. *)
+    Θ's own images.  This is what refutes the conclusion for EVERY [κa],
+    not merely for [κa := κ]. *)
 Lemma mono_paint_ppre_target_ftv : forall Θ Δ Ψ P ψ,
   Θ ⨟ Δ ⊢ P ⊑ᵖ[ Ψ ] ψ ->
   a_wf_aenv Θ ->
@@ -183,13 +183,13 @@ Qed.
 (* ===================================================================== *)
 
 Theorem p6sv_with_p6cv_premises_is_false :
-  ~ (forall n NM M Θ0 Θ θ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
+  ~ (forall n NM M Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
        a_wf_aenv Θ -> a_wf_aenv Θ0 ->
        Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
        (* the paper's [skmod{N}{P0}{M}] *)
        (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
        (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
-       θ ∷ Θ0 ⊑ Θ ->
+       κ ∷ Θ0 ⊑ Θ ->
        (* ρ and its tags *)
        uskl_rho NM Θ Δρ Ψρ ψsub ψa ->
        a_tags_sort NM Ψ' ψa ->
@@ -199,30 +199,30 @@ Theorem p6sv_with_p6cv_premises_is_false :
        (* the paper's subtyping-side tag equation [Ψi, Ψa = Ψ'] *)
        Ψi `union` Ψa [=] Ψ' ->
        Ψρ ∩ Ψ' [=] empty ->                       (* the paper's fresh{Ψ'} *)
-       rho_fresh Δρ Θ θ -> Δρ [<=] Δ ->
+       rho_fresh Δρ Θ κ -> Δρ [<=] Δ ->
        (forall α, α `in` Δρ ->
-          α `notin` pskl_shielded_ftv (msubst_pskl θ Pi)) ->
+          α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
        delta_def_fresh Δ Θ ->
        flex_apart Θ0 Δρ P0 ψa ->                  (* the mech-only invariant *)
-       Θ ⨟ Δ ⊢ (msubst_pskl θ Pi) ⊑ᵖ[ Ψi ] ψa ->
+       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
        Ψsub [<=] Ψρ `union` Ψa ->
        Ψa [<=] Ψsub ->
        ad_pat_sub_g n NM M Ψsub Θ ψsub Q ->
-       Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl θ P0)) ⊳ Q ->
+       Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
        (* the conclusion is the PAPER's, with its own output metasubstitution
-          [θa] (only [θa : Θ0 ⊑ Θ] is kept — dropping the [θ ≡ θa] conjunct
+          [κa] (only [κa : Θ0 ⊑ Θ] is kept — dropping the [κ ≡ κa] conjunct
           only makes the refuted statement weaker, hence the refutation
           stronger) *)
-       exists Pa θa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
-                     θa ∷ Θ0 ⊑ Θ /\
-                     Θ ⨟ Δ ⊢ (msubst_pskl θa Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
+       exists Pa κa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
+                     κa ∷ Θ0 ⊑ Θ /\
+                     Θ ⨟ Δ ⊢ (msubst_pskl κa Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
 Proof.
   intros Hthm.
   pick fresh f. pick fresh e for (singleton f).
-  destruct (Hthm 1 a_sub_mode_ty mode_tc (cex_Θ0 f) (cex_Θ f) (cex_θ f)
+  destruct (Hthm 1 a_sub_mode_ty mode_tc (cex_Θ0 f) (cex_Θ f) (cex_κ f)
               empty empty empty (singleton e) (singleton e) empty empty
               (cex_ψa e) (cex_ψa e) cex_Q cex_Pi (cex_P0 f))
-    as (Pa & θa & Hsolve & Hinca & Hprec).
+    as (Pa & κa & Hsolve & Hinca & Hprec).
   - (* a_wf_aenv Θ *)
     unfold cex_Θ. apply a_wf_aenv__flex_def;
       [ simpl; clear; fsetdec
@@ -242,8 +242,8 @@ Proof.
   - (* skmod[SK] : vacuous *) intro Hc; discriminate Hc.
   - (* skmod[TY] : P0 is the type α̂ *)
     intros _. exact (a_ty_mode_compat__tc (ptyp_var_f f)).
-  - (* θ ∷ Θ0 ⊑ Θ *)
-    unfold cex_θ, cex_Θ0, cex_Θ.
+  - (* κ ∷ Θ0 ⊑ Θ *)
+    unfold cex_κ, cex_Θ0, cex_Θ.
     apply a_inc__flex;
       [ apply a_inc__empty; apply a_suffix__cons;
           [ apply a_suffix__nil | apply a_suffix_binding__flex_mono_def ]
@@ -320,28 +320,28 @@ Proof.
       | apply ad_pat_consis__unit; clear; fsetdec
       | clear; fsetdec ].
   - (* the REFINEMENT premise: a mono paint refines itself *)
-    unfold cex_P0, cex_θ, cex_Q; simpl.
+    unfold cex_P0, cex_κ, cex_Q; simpl.
     match goal with |- context [if ?c then _ else _] => destruct c end;
       [ | contradiction ].
     unfold cex_τ; simpl.
     apply ad_refine_syn__arrow; apply ad_refine_syn__unit.
-  - (* … and now the conclusion is refuted, for EVERY output θa *)
+  - (* … and now the conclusion is refuted, for EVERY output κa *)
     destruct (cex_solve_forall_shape Hsolve) as (L & P' & -> & Hfam).
     simpl in Hprec. unfold cex_ψa in Hprec.
     inversion Hprec as [ | | | L2 ? ? ? Ψ0 ? ? ? Hpfam Heq | | | | | | ]; subst.
     destruct (atom_fresh (L `union` L2 `union` singleton f
                             `union` singleton e `union` ftvar_in_pskl P'
-                            `union` dom (cex_Θ f) `union` dom θa))
+                            `union` dom (cex_Θ f) `union` dom κa))
       as [β Hβfr].
     (* the algorithm's body output is FORCED to the raw flexible α̂ *)
     assert (HP'β : open_pskl_wrt_pskl P' (pskl_var_f β) = pskl_var_f f).
     { eapply cex_body_solve_forced.
       pose proof (Hfam β ltac:(clear - Hβfr; fsetdec)) as Hβ.
       unfold open_pskl_wrt_pskl in Hβ; simpl in Hβ. exact Hβ. }
-    (* … so the precision obligation is [θa α̂ ⊑ᵖ β→β] — a mono paint against
+    (* … so the precision obligation is [κa α̂ ⊑ᵖ β→β] — a mono paint against
        a target mentioning the fresh rigid β *)
     pose proof (Hpfam β ltac:(clear - Hβfr; fsetdec)) as Hpβ.
-    rewrite <- (@msubst_pskl_open (cex_Θ0 f) θa (cex_Θ f) P' β Hinca
+    rewrite <- (@msubst_pskl_open (cex_Θ0 f) κa (cex_Θ f) P' β Hinca
                  ltac:(clear - Hβfr; fsetdec)) in Hpβ.
     rewrite HP'β in Hpβ.
     simpl in Hpβ.

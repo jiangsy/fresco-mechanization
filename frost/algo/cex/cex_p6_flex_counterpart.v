@@ -4,65 +4,65 @@
     (consistency-proofs.tex:1181) and its subtyping twin
     [lemma:complete-constraint-collection-solving-var]
     (subtyping-proofs.tex:1696) — are FALSE AS STATED when the solve
-    counterpart [P0] is a FLEXIBLE VARIABLE of [Θ0] (θ-pinned) whose image
+    counterpart [P0] is a FLEXIBLE VARIABLE of [Θ0] (κ-pinned) whose image
     collides with a ρ-substituted (leaf) position of [ψa].
 
     THE CONFIGURATION.  Take
-      Θ0 = c~tvar, β̂~flex        Θ = c~tvar        θ = [β̂ ↦ unit→unit]
+      Θ0 = c~tvar, β̂~flex        Θ = c~tvar        κ = [β̂ ↦ unit→unit]
       ψa = c → unit               ρ = [c ↦ unit]    (so ρ(ψa) = unit→unit)
       P_i = c → unit              P_0 = β̂           Q = unit → unit
     with Δ = Δρ = {c} and every tag set empty.  ALL premises of the -var
-    lemma hold (machine-checked below): the wf premises, θ ∷ Θ0 ⊑ Θ, the
+    lemma hold (machine-checked below): the wf premises, κ ∷ Θ0 ⊑ Θ, the
     tag-sort of ψa, the ρ-relation with its freshness pack (c rigid in Θ,
-    absent from θ's images, Θ's definition images, P_i's ⊤◇-bodies, and
-    ftv(P_0)), the precision premise θP_i ⊑ᵖ[·] ψa, the consistency premise
-    for ρ(ψa) against Q, the refinement premise inh{θP_0} ⊳ Q — and the
+    absent from κ's images, Θ's definition images, P_i's ⊤◇-bodies, and
+    ftv(P_0)), the precision premise κP_i ⊑ᵖ[·] ψa, the consistency premise
+    for ρ(ψa) against Q, the refinement premise inh{κP_0} ⊳ Q — and the
     paper's positional side condition (P_i has the rigid c exactly at the
     ρ-substituted position).
 
     THE REFUTATION.  The only solve rule applicable to
     [solveeq{c→unit}{β̂}{·}] is FlexR, forcing P_a = β̂.  The conclusion
-    demands  Θ ⨟ Δ ⊢ θa(β̂) ⊑ᵖ[Ψi,Ψa] ψa  with θ ≡ θa over Θ0, which pins
-    θa(β̂) ≡ᵗ unit→unit; at Θ = c~tvar (definition-free) the equivalence is
+    demands  Θ ⨟ Δ ⊢ κa(β̂) ⊑ᵖ[Ψi,Ψa] ψa  with κ ≡ κa over Θ0, which pins
+    κa(β̂) ≡ᵗ unit→unit; at Θ = c~tvar (definition-free) the equivalence is
     syntactic, so the required precision is
         (unit→unit) ⊑ᵖ (c → unit),
     underivable: its function-argument obligation is [unit ⊑ᵖ var c] with c
     RIGID, and no partial-precision rule matches (the var rule needs the
     occurrence, flex_r needs a defined flexible).  Machine-checked below for
-    ARBITRARY θa, Δ and tag set.
+    ARBITRARY κa, Δ and tag set.
 
     ROOT CAUSE.  The paper's case analyses recover P_0's shape by inversion
-    on the refinement premise [Θ ⊢ inh{θP_0} ⊳ Q] — but that inversion also
-    admits P_0 = flexible variable (whose θ-image supplies the matching
+    on the refinement premise [Θ ⊢ inh{κP_0} ⊳ Q] — but that inversion also
+    admits P_0 = flexible variable (whose κ-image supplies the matching
     constructor), a subcase no completeness proof case covers: the
     algorithm's own rule for flexible counterparts, LE-FlexR
     (fig:poly-info-extraction), is never invoked in the completeness
     appendices.  At the level of the non-var lemmas
     (consistency-proofs.tex:920 / subtyping-proofs.tex:2202) a flexible
     counterpart CAN be handled — LE-FlexR replaces the constraint payload by
-    a FRESH α1̂ ∈ Ξc, and θa (which extends θ to Ξc there) is free to map α1̂
+    a FRESH α1̂ ∈ Ξc, and κa (which extends κ to Ξc there) is free to map α1̂
     to a ψa-refining monotype (when one exists; when ψa is not
     mono-paintable the premises are vacuous).  But the -var lemmas have
-    Ξc = · and θa ≡ θ on ALL of Θ0, so a flexible P_0 with a θ-image that
+    Ξc = · and κa ≡ κ on ALL of Θ0, so a flexible P_0 with a κ-image that
     is "wrong" at a ρ-leaf position refutes the statement outright.
 
     STATUS (updated 2026-07-25): the isolated -var statement is false, but
     this is NOT a completeness problem — the configuration is UNREACHABLE.
     See [cex_p6_flex_freshened.v] for the resolution and its two Qed lemmas.
     In brief:
-      * The cex's θ is FORCED BY ρ, not free: ρ substitutes the rigid [c]
-        away, so [ρ(ψa) = unit→unit ∼ Q] and [inh{θβ̂} ⊳ Q] (same Q) pin
-        [θβ̂ = unit→unit] — c is stripped from everything θ can see, while
+      * The cex's κ is FORCED BY ρ, not free: ρ substitutes the rigid [c]
+        away, so [ρ(ψa) = unit→unit ∼ Q] and [inh{κβ̂} ⊳ Q] (same Q) pin
+        [κβ̂ = unit→unit] — c is stripped from everything κ can see, while
         ψa (used only for the final precision) still carries it.
       * A run never produces this: when a flexible counterpart faces a
         COMPOUND (arrow) subject, [a_lookeq__flex_r] (LE-FlexR) FRESHENS it
         to a new [α1 ∈ Ξ] — machine-checked in
         [a_lookeq_arrow_subject_flex_target_freshened].  The -var lemma
         never sees a raw Θ0-flex P_0 at an arrow node; it sees the fresh α1,
-        handled by the NON-var lemma (θ extends over Ξ, assigns α1 the rigid
+        handled by the NON-var lemma (κ extends over Ξ, assigns α1 the rigid
         c).  A raw flex payload only ever sits opposite a LEAF
         ([a_lookeq_flex_target_raw_subject_not_arrow]).
-      * Only the Arrow case is even reachable for a flexible P_0: θ maps
+      * Only the Arrow case is even reachable for a flexible P_0: κ maps
         flexibles to MONOTYPES, so refinement can never expose a flexible
         P_0 as a ∀/⊤◇ (ForallInh/ForallSyn/ghost cases), and leaves are
         handled directly (SolE-Flex / the SolE-Var special case).
@@ -169,7 +169,7 @@ Definition cexΘ0 : aenv :=
   (c ~ abind_tvar) ++ (beta ~ abind_flex_mono) ++ nil.
 Definition cexΘ : aenv := (c ~ abind_tvar) ++ nil.
 Definition cexτ : ptyp := ptyp_arrow ptyp_unit ptyp_unit.
-Definition cexθ : metasubst := (beta, cexτ) :: nil.
+Definition cexκ : metasubst := (beta, cexτ) :: nil.
 Definition cexψa : uskl := uskl_arrow (uskl_var_f c) uskl_unit.
 Definition cexψsub : uskl := uskl_arrow uskl_unit uskl_unit.
 Definition cexPi : pskl := pskl_arrow (pskl_var_f c) pskl_unit.
@@ -192,7 +192,7 @@ Proof.
   apply a_wf_aenv__tvar; simpl; [ fsetdec | apply a_wf_aenv__nil ].
 Qed.
 
-Lemma cex_inc : cexθ ∷ cexΘ0 ⊑ cexΘ.
+Lemma cex_inc : cexκ ∷ cexΘ0 ⊑ cexΘ.
 Proof.
   apply (a_inc__tvar (Ξ := nil)); [ | apply a_suffix__nil ].
   apply a_inc__flex.
@@ -247,10 +247,10 @@ Proof.
   - apply urho__refl; [ apply lc_uskl_unit | fsetdec ].
 Qed.
 
-(** The freshness pack: c is rigid in Θ, absent from θ's images, from Θ's
+(** The freshness pack: c is rigid in Θ, absent from κ's images, from Θ's
     (nonexistent) definition images, from P_i's ⊤◇-shielded variables, and
     from ftv(P_0). *)
-Lemma cex_rho_fresh : rho_fresh (singleton c) cexΘ cexθ.
+Lemma cex_rho_fresh : rho_fresh (singleton c) cexΘ cexκ.
 Proof.
   intros β Hβ.
   assert (HYX : β = c) by (clear - Hβ; fsetdec); subst β.
@@ -270,26 +270,26 @@ Lemma cex_pack_ftv_P0 : c `notin` ftvar_in_pskl cexP0.
 Proof. simpl. clear - Hne; fsetdec. Qed.
 
 (** msubst computations. *)
-Lemma cex_msubst_Pi : msubst_pskl cexθ cexPi = cexPi.
+Lemma cex_msubst_Pi : msubst_pskl cexκ cexPi = cexPi.
 Proof.
-  unfold cexPi, cexθ; simpl.
+  unfold cexPi, cexκ; simpl.
   destruct (c == beta) as [Heq | _]; [ exact (False_ind _ (Hne Heq)) | ].
   reflexivity.
 Qed.
 
 Lemma cex_msubst_P0 :
-  msubst_pskl cexθ cexP0 = pskl_arrow pskl_unit pskl_unit.
+  msubst_pskl cexκ cexP0 = pskl_arrow pskl_unit pskl_unit.
 Proof.
-  unfold cexP0, cexθ; simpl.
+  unfold cexP0, cexκ; simpl.
   destruct (beta == beta) as [_ | Habs];
     [ reflexivity | exact (False_ind _ (Habs eq_refl)) ].
 Qed.
 
-(** The precision premise  Θ ⨟ {c} ⊢ θP_i ⊑ᵖ[·] ψa  — note P_i has the
+(** The precision premise  Θ ⨟ {c} ⊢ κP_i ⊑ᵖ[·] ψa  — note P_i has the
     rigid c exactly at the ρ-substituted position (the paper's positional
     side condition holds). *)
 Lemma cex_precision :
-  cexΘ ⨟ (singleton c) ⊢ (msubst_pskl cexθ cexPi) ⊑ᵖ[ empty ] cexψa.
+  cexΘ ⨟ (singleton c) ⊢ (msubst_pskl cexκ cexPi) ⊑ᵖ[ empty ] cexψa.
 Proof.
   rewrite cex_msubst_Pi.
   apply (ad_ppre__arrow (Ψ1 := empty) (Ψ2 := empty));
@@ -297,9 +297,9 @@ Proof.
   apply ad_ppre__var; [ fsetdec | left; fsetdec ].
 Qed.
 
-(** The refinement premise  Θ ⊢ inh{θP_0} ⊳ Q. *)
+(** The refinement premise  Θ ⊢ inh{κP_0} ⊳ Q. *)
 Lemma cex_refinement :
-  cexΘ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl cexθ cexP0)) ⊳ cexQ.
+  cexΘ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl cexκ cexP0)) ⊳ cexQ.
 Proof.
   rewrite cex_msubst_P0. simpl.
   apply ad_refine_syn__arrow; apply ad_refine_syn__unit.
@@ -346,22 +346,22 @@ Proof.
   end.
 Qed.
 
-(** θa ≡ θ over Θ0 pins θa(β̂) to unit→unit (Θ is definition-free, so ≡ᵗ
+(** κa ≡ κ over Θ0 pins κa(β̂) to unit→unit (Θ is definition-free, so ≡ᵗ
     is syntactic identity). *)
-Lemma cex_equiv_pins_image : forall θa,
-  a_inc_equiv cexΘ0 cexθ θa cexΘ ->
-  msubst_pskl θa cexP0 = pskl_arrow pskl_unit pskl_unit.
+Lemma cex_equiv_pins_image : forall κa,
+  a_inc_equiv cexΘ0 cexκ κa cexΘ ->
+  msubst_pskl κa cexP0 = pskl_arrow pskl_unit pskl_unit.
 Proof.
-  intros θa Hequiv.
+  intros κa Hequiv.
   assert (Hb : binds beta abind_flex_mono cexΘ0)
     by (unfold cexΘ0, binds; simpl; right; left; reflexivity).
   pose proof (a_inc_equiv_flex_pin Hequiv beta Hb) as Hpin.
-  assert (Hlook1 : msubst_lookup cexθ beta = cexτ).
-  { unfold cexθ; simpl.
+  assert (Hlook1 : msubst_lookup cexκ beta = cexτ).
+  { unfold cexκ; simpl.
     destruct (beta == beta) as [_ | Habs];
       [ reflexivity | exact (False_ind _ (Habs eq_refl)) ]. }
   rewrite Hlook1 in Hpin.
-  assert (Heqt : cexτ = msubst_lookup θa beta).
+  assert (Heqt : cexτ = msubst_lookup κa beta).
   { apply (a_tyequiv_def_free_eq Hpin).
     intros a t Hb'.
     unfold cexΘ, binds in Hb'; simpl in Hb'.
@@ -372,27 +372,27 @@ Proof.
 Qed.
 
 (** MAIN THEOREM: the -var lemma's conclusion is unsatisfiable for this
-    premise-satisfying configuration — for EVERY choice of P_a and θa
-    (θa constrained exactly as the paper's conclusion does), and with the
+    premise-satisfying configuration — for EVERY choice of P_a and κa
+    (κa constrained exactly as the paper's conclusion does), and with the
     conclusion's precision refuted at EVERY Δ and tag set. *)
-Theorem cex_p6_var_conclusion_refuted : forall Pa θa Δ Ψ,
+Theorem cex_p6_var_conclusion_refuted : forall Pa κa Δ Ψ,
   cexΘ0 ⊢ₑ cexPi ∼ cexP0 ⤳ Pa ->
-  θa ∷ cexΘ0 ⊑ cexΘ ->
-  a_inc_equiv cexΘ0 cexθ θa cexΘ ->
-  cexΘ ⨟ Δ ⊢ (msubst_pskl θa Pa) ⊑ᵖ[ Ψ ] cexψa ->
+  κa ∷ cexΘ0 ⊑ cexΘ ->
+  a_inc_equiv cexΘ0 cexκ κa cexΘ ->
+  cexΘ ⨟ Δ ⊢ (msubst_pskl κa Pa) ⊑ᵖ[ Ψ ] cexψa ->
   False.
 Proof.
-  intros Pa θa Δ Ψ Hsolve Hinc Hequiv Hpre.
+  intros Pa κa Δ Ψ Hsolve Hinc Hequiv Hpre.
   rewrite (cex_solve_forces_flex Hsolve) in Hpre.
   pose proof (cex_equiv_pins_image Hequiv) as Himg.
   unfold cexP0 in Himg. rewrite Himg in Hpre.
   exact (cex_no_precision Hpre).
 Qed.
 
-(** Corollary for the strengthened (θa := θ) reading. *)
+(** Corollary for the strengthened (κa := κ) reading. *)
 Corollary cex_p6_var_conclusion_refuted_theta : forall Pa Δ Ψ,
   cexΘ0 ⊢ₑ cexPi ∼ cexP0 ⤳ Pa ->
-  cexΘ ⨟ Δ ⊢ (msubst_pskl cexθ Pa) ⊑ᵖ[ Ψ ] cexψa ->
+  cexΘ ⨟ Δ ⊢ (msubst_pskl cexκ Pa) ⊑ᵖ[ Ψ ] cexψa ->
   False.
 Proof.
   intros Pa Δ Ψ Hsolve Hpre.
@@ -474,7 +474,7 @@ Lemma cex2_pack_ftv_P0 : c `notin` ftvar_in_pskl cexP02.
 Proof. simpl. clear - Hne; fsetdec. Qed.
 
 Lemma cex2_precision :
-  cexΘ ⨟ (singleton c) ⊢ (msubst_pskl cexθ cexPi2) ⊑ᵖ[ empty ] cexψa2.
+  cexΘ ⨟ (singleton c) ⊢ (msubst_pskl cexκ cexPi2) ⊑ᵖ[ empty ] cexψa2.
 Proof.
   unfold cexPi2; cbn [msubst_pskl].
   rewrite cex_msubst_Pi.
@@ -485,7 +485,7 @@ Proof.
 Qed.
 
 Lemma cex2_refinement :
-  cexΘ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl cexθ cexP02)) ⊳ cexQ2.
+  cexΘ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl cexκ cexP02)) ⊳ cexQ2.
 Proof.
   unfold cexP02; cbn [msubst_pskl].
   rewrite cex_msubst_P0. simpl.
@@ -534,16 +534,16 @@ Proof.
 Qed.
 
 (** MAIN THEOREM (deep variant): with nonflex{P_0} satisfied, the -var
-    conclusion is still unsatisfiable — for every P_a, every θa pinned by
+    conclusion is still unsatisfiable — for every P_a, every κa pinned by
     the paper's equivalence, every Δ and tag set. *)
-Theorem cex_p6_var_nonflex_insufficient : forall Pa θa Δ Ψ,
+Theorem cex_p6_var_nonflex_insufficient : forall Pa κa Δ Ψ,
   cexΘ0 ⊢ₑ cexPi2 ∼ cexP02 ⤳ Pa ->
-  θa ∷ cexΘ0 ⊑ cexΘ ->
-  a_inc_equiv cexΘ0 cexθ θa cexΘ ->
-  cexΘ ⨟ Δ ⊢ (msubst_pskl θa Pa) ⊑ᵖ[ Ψ ] cexψa2 ->
+  κa ∷ cexΘ0 ⊑ cexΘ ->
+  a_inc_equiv cexΘ0 cexκ κa cexΘ ->
+  cexΘ ⨟ Δ ⊢ (msubst_pskl κa Pa) ⊑ᵖ[ Ψ ] cexψa2 ->
   False.
 Proof.
-  intros Pa θa Δ Ψ Hsolve Hinc Hequiv Hpre.
+  intros Pa κa Δ Ψ Hsolve Hinc Hequiv Hpre.
   rewrite (cex2_solve_forces_flex Hsolve) in Hpre.
   simpl in Hpre.
   pose proof (cex_equiv_pins_image Hequiv) as Himg.

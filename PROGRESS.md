@@ -37,7 +37,7 @@ excluded from the build); mine them when re-proving.
 | Algorithmic skeleton inference (fig:alg-skeleton-inference) | `a_pat` | 🟢 |
 | Algorithmic type inference (fig:alg-type-inference) | `a_typing` | 🟢 ∀ᾱ.A₀ AbsCheck (step/base), typed Freeze |
 | Erasure ⌊·⌋, decorated subtyping/consistency, tag solving (app:decorated-algosub) | `algo/def_decorated.v` (`uskl_to_pskl`, `a_subtag`, `a_consistag`, `a_solvetag(_sub/_eq)`) | 🟢 |
-| Metasubstitutions θ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`, and the application family `msubst_{ptyp,btyp,pskl,uskl_syn}`) | 🟢 |
+| Metasubstitutions κ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`, and the application family `msubst_{ptyp,btyp,pskl,uskl_syn}`) | 🟢 |
 | Decl judgments in algo contexts (app:decl-in-algo-context) | `algo/def_decl_algo.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`, `ad_wf_pskl` + flex-lookup rules); `algo/def_decl_algo_sub.v` (`ad_pat_sub`, its fuel-indexed `ad_pat_sub_n`, `ad_partial_precise`); `algo/def_decl_algo_sub_hyg.v` (`ad_pat_sub_g`, the hygienic mirror) | 🟡 consistency / refinement / skeleton-subtyping / partial-precision layers all DONE and used by closed proofs (audited 2026-07-28); only the TYPING layer (`ad_typing`-style, needed by section D) is still absent |
 
 ## Theorems / lemmas (bottom-up order; ⬜ = to prove, per paper appendix)
@@ -76,6 +76,39 @@ excluded from the build); mine them when re-proving.
 - Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_tskl_is_tskl`, a casualty of the `is_tskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
 
 # Part 2: Progress log (most recent first)
+
+## 2026-07-29 (later) — NOTATION: the metasubstitution is `κ`; `ρ` is reserved for the paper's ρ
+
+Corpus-wide rename, `make coq` green, all `Print Assumptions` still closed.
+Two symbols were doing badly-chosen work:
+
+- The paper's `θ` (information increase, `κ ∷ Θ0 ⊑ Θ`) is one stroke away
+  from the CONTEXT `Θ` it appears next to in every statement.
+- `ρ` was already the metasubstitution binder in `def_meta.v` (every
+  `msubst_*`, and the `∷` notation) — but `ρ` is ALSO the paper's
+  rigid-variable substitution, and subtyping completeness needs both at
+  once: P6-Sv states `κ ∷ Θ0 ⊑ Θ` beside
+  `uskl_rho NM Θ Δρ Ψρ ψsub ψa`.
+
+So the metasubstitution alphabet is now **`κ`** (the increase), `σ` (the
+second one, `a_inc_equiv`), `ζ` (the composing one, `ζ ∘ κ`), and **anything
+spelled `ρ` denotes the paper's ρ** (`uskl_rho`, `rho_fresh`, `Δρ`/`Ψρ`,
+and `msubst_uskl` in prop_decorate_sub.v).  Recorded in CLAUDE.md's
+metavariable convention.
+
+Mechanics worth remembering for the next such pass.  `θ → κ` is
+unconditional (θ never meant anything else).  `ρ → κ` is NOT: it was applied
+only in the metasubstitution-algebra files, and in `prop_look_complete*.v`
+only to CODE, since their comments legitimately discuss the paper's ρ.
+Two hazards actually fired: (1) replacing the CODEPOINT rather than the
+token silently rewrote `Δρ`/`Ψρ` to `Δκ`/`Ψκ` — caught by the build, since
+downstream files pass them as named arguments; (2) exactly two statements
+bind two metasubstitutions at once (`msubst_{uskl_syn,pskl}_prepend_fresh`,
+`msubst (ρ ++ θ) = msubst θ`), which would have COLLAPSED into one name —
+they were pre-renamed to `κ' ++ κ`.  Everything else that looked like a
+clash was a named argument (`(θ1 := ρ1)`), which renames consistently on
+both sides.  `docs/PAPER-GAPS.md` deliberately stays in the paper's
+notation and now carries a note mapping θ ↦ κ.
 
 ## 2026-07-29 — ⭐ P6-Sv CLOSED: `a_solve_sub_complete_var` Qed, axiom-free (repaired statement)
 
@@ -177,14 +210,14 @@ context").  It states P6-Sv with EXACTLY the premise set that closes P6-Cv
 (`a_solve_eq_complete_var`) — including the mech-only `flex_apart`
 invariant, the subject-wf premise that made P6-Cs true, and the
 subtyping-side tag EQUATION `Ψi , Ψa = Ψ'` — and derives `False`.  The
-conclusion refuted is the PAPER's (`∃ Pa θa`, with `θa : Θ0 ⊑ Θ`), not the
-mech's `θa := θ` strengthening.
+conclusion refuted is the PAPER's (`∃ Pa κa`, with `κa : Θ0 ⊑ Θ`), not the
+mech's `κa := κ` strengthening.
 
 Witness — note **ρ is the IDENTITY** (`Δρ = ∅`), so this is not an artefact
 of the ρ-relation encoding:
 
 ```text
-Θ0 = α̂          Θ = α̂ := ⟨⟩→⟨⟩       θ = [α̂ ↦ ⟨⟩→⟨⟩]
+Θ0 = α̂          Θ = α̂ := ⟨⟩→⟨⟩       κ = [α̂ ↦ ⟨⟩→⟨⟩]
 N = TY  M = TC  Pi = ∀β. β→β         P0 = α̂
 ψa = ψsub = ∀^ε β. β→β               Q  = inh{⟨⟩→⟨⟩}
 Ψ' = Ψi = {ε}   Ψa = Ψsub = Ψρ = ∅   Δ = ∅
@@ -328,7 +361,7 @@ C-Arrow, C-UnivGhost, C-UnivGhost1, C-UnivGhost2, C-UnivGhostG.
 
 **A wf side condition had to be restored, and it is not cosmetic.**  The
 statement carries one premise beyond the paper's list — well-formedness of the
-CONSISTENCY SUBJECT, `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊(θS)[ψa/α]⌋ˢ` (stated on the erasure so the
+CONSISTENCY SUBJECT, `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊(κS)[ψa/α]⌋ˢ` (stated on the erasure so the
 existing `a_wf_pskl` expresses it; the only content used is the GUARDED ghost
 body of `a_wf_pskl__tophole`, matching the declarative `d_wf_uskl__tophole`).
 Without it the lemma is FALSE, and that is machine-checked in
@@ -336,7 +369,7 @@ Without it the lemma is FALSE, and that is machine-checked in
 
   - `p6cs_without_subject_wf_is_false` — the lemma with EVERY premise except
     this one (conclusion weakened to its three essential conjuncts, which only
-    strengthens the refutation) implies False.  Witness: `Θ = Θ0 = ·`, `θ = ·`,
+    strengthens the refutation) implies False.  Witness: `Θ = Θ0 = ·`, `κ = ·`,
     `S = ⊤◇α`, `ψa = ⊤̇◇⟨⟩`, `P0 = Pi = ⊤◇⟨⟩`, `Q = ⊤◇⟨⟩`; the subject is
     `⊤◇(⊤̇◇⟨⟩)`, a ghost over a ghost.  The algorithm is forced into
     `𝒞 = [α ≐ ⟨⟩]` (LE-UnivGhost, LE-Var) and `Pa = ⟨⟩` (SE-GhostGuarded,
@@ -364,7 +397,7 @@ dead weight and was removed.)
     keeping Ξ and 𝒞, which turns one fresh-β instance into LE-ForallInh's /
     LE-UnivGhost1's cofinite family;
   - two extra conclusion conjuncts, both strengthenings: ρc's images are
-    ψa-scoped, and `ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom θ ∪ def_ftv Θ` — the
+    ψa-scoped, and `ftv 𝒞 ⊆ ftv ψa ∪ dom Ξc ∪ dom κ ∪ def_ftv Θ` — the
     mechanized form of the paper's "Pi and 𝒞 cannot contain β", which is
     semantic, proved from `ad_pat_consis_target_ftv` (an `is_tskl` subject's
     counterpart mentions only its own variables plus the context's
@@ -375,8 +408,8 @@ dead weight and was removed.)
     (`ad_refine_flexdef_target_unfold`), so `__flex_r` never becomes a separate
     case;
   - `msubst_uskl` (+ erasure/tag/open/prepend-fresh lemmas), which makes the
-    subject `subst_bskl_in_uskl ψa α (msubst_uskl θ S)` the paper's
-    `(θS)[ψa/α]` exactly.  TODO: promote the definition to `algo/def_meta.v`
+    subject `subst_bskl_in_uskl ψa α (msubst_uskl κ S)` the paper's
+    `(κS)[ψa/α]` exactly.  TODO: promote the definition to `algo/def_meta.v`
     when P6-Ss needs it (it forces a full algo rebuild, so it is deferred).
 
 
@@ -492,17 +525,17 @@ Closed under the global context.
 
 While drafting P6-Cv's statement, the Pi × P0 case grid exposed a subcase
 every paper case analysis skips: the solve counterpart `P0` can be a
-FLEXIBLE VARIABLE whose θ-image supplies the constructor that the
+FLEXIBLE VARIABLE whose κ-image supplies the constructor that the
 refinement-premise inversion "exposes".  Concrete configuration
-(`Θ0 = X,α̂`; `θ = [α̂ ↦ unit→unit]`; `ψa = X→unit`; `ρ = [X ↦ unit]`;
+(`Θ0 = X,α̂`; `κ = [α̂ ↦ unit→unit]`; `ψa = X→unit`; `ρ = [X ↦ unit]`;
 `Pi = X→unit`; `P0 = α̂`; `Q = unit→unit`) satisfies every premise of
 `lemma:complete-consistency-constraint-collection-solving-var`
 (consistency-proofs.tex:1181; same for the subtyping twin at
 subtyping-proofs.tex:1696) — including the positional side condition —
 while the conclusion is unsatisfiable: FlexR forces `Pa = α̂` and the
-precision `θa(α̂) ⊑ᵖ X→unit` fails for every `θa ≡ θ`.  Machine-checked
+precision `κa(α̂) ⊑ᵖ X→unit` fails for every `κa ≡ κ`.  Machine-checked
 Qed axiom-free: `frost/algo/cex/cex_p6_flex_counterpart.v` (refutes for
-arbitrary `Pa`, `θa`, Δ, tag set).  PAPER-GAPS entry added; DESIGN
+arbitrary `Pa`, `κa`, Δ, tag set).  PAPER-GAPS entry added; DESIGN
 §6 (d) has the candidate repairs (both change statements → need
 sign-off).  LE-FlexR is never used in either completeness appendix —
 the flexible-counterpart subcase is a systematic blind spot of the
@@ -524,12 +557,12 @@ condition on P_i is load-bearing — counterexamples v4/v5 (DESIGN §7)
 show Δ-membership + precision alone admit ⊤◇-wrapped/def-chained leaf
 positions that break the conclusion — and is RECOVERED as the lemma
 `ad_ppre_delta_var_inv` from freshness of the replaced variables
-(Δ-membership, rigid binding, θ-image-/Θ-definition-/⊤◇-shielded-ftv
+(Δ-membership, rigid binding, κ-image-/Θ-definition-/⊤◇-shielded-ftv
 avoidance via the new `pskl_shielded_ftv`).  Kit: solve-cluster
 ctx-change/strengthen/weaken/rename + shielded-output bound, msubst
 avoidance lemmas, `is_sskl` painting/refine-hole/consis-tags-empty
 helpers, and the packaged -var leaf case `p6_leaf_var`.  Statement
-decision: the -var lemmas conclude with θ itself (no θa existential).
+decision: the -var lemmas conclude with κ itself (no κa existential).
 NEXT: `uskl_rho` per-constructor inversions, then P6-Cv's main
 induction (DESIGN §6 2026-07-24 (c) has the full map).
 
@@ -827,7 +860,7 @@ Closed.
   ground rules 1–3 added to CLAUDE.md.
 - `a_wf_ptyp`/`a_wf_pskl` made REAL scoping judgments (`a_binds_tvar` moved
   to `algo/def_extra.v`); `a_inc__flex_def` gained the paper-PROSE side
-  condition (θ maps to well-formed monotypes in the target,
+  condition (κ maps to well-formed monotypes in the target,
   algorithmic.tex:123) — this is what makes identity increases keep
   flexible variables and defined-variable transport provable.
 - Transport + transitivity Qed (`prop_inc.v`): `a_inc_binds_tvar/_flex/

@@ -129,13 +129,13 @@ auxiliary contexts exist at all. Route **B**, already done.
 
 ## 6. Solution target — wf of the increment's TARGET context. **[optimality; via (B)]**
 
-> algorithmic.tex:89 — the increment is "a finite map θ from flexible variables
+> algorithmic.tex:89 — the increment is "a finite map κ from flexible variables
 > in Θ to **well-formed monotypes in Θ′**" — so the target context Θ′ of any
 > solution is **well-formed by construction**.
 
-The mechanized increment `Θ ≤[θ] Θ′` (`a_inc`) does **not** enforce this: its
+The mechanized increment `Θ ≤[κ] Θ′` (`a_inc`) does **not** enforce this: its
 `a_inc__empty` / `a_suffix` base cases can rest on ill-formed definitions, and
-`a_wf_aenv Θ′` is **not** derivable from `Θ ≤[θ] Θ′` alone. So the wf of a
+`a_wf_aenv Θ′` is **not** derivable from `Θ ≤[κ] Θ′` alone. So the wf of a
 solution's target is an external side condition, carried on the statements
 (route **B**), not a weakening.
 
@@ -156,7 +156,7 @@ which requires `a_wf_aenv Θ`. Without the side condition the case is stuck.
 
 ## 7. Completeness Δ (P6) — freshness w.r.t. Θ's definition images. **[P6-Cv; via (B)]**
 
-> The `-var` completeness lemmas' precision premise `Δ ⨟ Θ ⊢ θPi ⊑ᵖ[Ψi] ψa`
+> The `-var` completeness lemmas' precision premise `Δ ⨟ Θ ⊢ κPi ⊑ᵖ[Ψi] ψa`
 > carries a binder context Δ that the paper only ever populates with
 > instantiation binders — all introduced AFTER Θ's definitions exist. The
 > paper never states this; its rules and lemma statement leave Δ abstract.
@@ -350,7 +350,7 @@ Consistency constraint collection and solving
 well-formedness conditions restored as a premise, on an INPUT, so it
 threads through the induction without touching the rules:
 
-**`Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ (θS)[ψa/α] ⌋ˢ`** — well-formedness of the CONSISTENCY
+**`Θ ⨟ ∅ ⊢ₚₛᵃ ⌊ (κS)[ψa/α] ⌋ˢ`** — well-formedness of the CONSISTENCY
 SUBJECT.  Stated on the erasure so the existing `a_wf_pskl` expresses it
 (⌊·⌋ˢ maps the dotted ghosts onto the plain ones); the only content the
 proof consumes is the GUARDED ghost body of `a_wf_pskl__tophole`, which
@@ -364,7 +364,7 @@ conjuncts, which only strengthens the refutation), and
 `p6cs_fires_when_the_subject_is_wf` instantiates the CLOSED theorem on the
 same shape with `ψa := ⟨⟩` to show the premise set is satisfiable (the
 theorem is not vacuous).  Both are Qed and axiom-free.  Counterexample: `Θ = Θ0 = ·`,
-`θ = ·`, `S = ⊤◇α` (so `P = ⊤◇α`), `ψa = ⊤̇◇⟨⟩`, `P0 = Pi = ⊤◇⟨⟩`,
+`κ = ·`, `S = ⊤◇α` (so `P = ⊤◇α`), `ψa = ⊤̇◇⟨⟩`, `P0 = Pi = ⊤◇⟨⟩`,
 `Q = ⊤◇⟨⟩`.  Every other premise holds — consistency by C-UnivGhost2
 then C-UnivGhostG, refinement by R-UnivGhostKeep, precision by
 P-UnivGhostKeep — but the algorithm is FORCED: LE-UnivGhost is the only

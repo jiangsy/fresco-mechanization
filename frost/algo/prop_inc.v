@@ -39,29 +39,29 @@ Proof.
 Qed.
 
 (** The identity metasubstitution looks every variable up to itself. *)
-Lemma msubst_lookup_id : forall ρ α',
-  is_id_msubst ρ ->
-  msubst_lookup ρ α' = ptyp_var_f α'.
+Lemma msubst_lookup_id : forall κ α',
+  is_id_msubst κ ->
+  msubst_lookup κ α' = ptyp_var_f α'.
 Proof.
-  induction ρ as [ | [α τ] ρ' IH ]; intros α' Hid; simpl; auto.
+  induction κ as [ | [α τ] κ' IH ]; intros α' Hid; simpl; auto.
   inversion Hid as [ | ? ? He Hid' ]; subst.
   unfold is_id_entry in He; simpl in He; subst.
   destruct (α' == α) as [->|Hne]; [ reflexivity | apply IH; exact Hid' ].
 Qed.
 
-Lemma msubst_ptyp_id : forall ρ A,
-  is_id_msubst ρ ->
-  msubst_ptyp ρ A = A.
+Lemma msubst_ptyp_id : forall κ A,
+  is_id_msubst κ ->
+  msubst_ptyp κ A = A.
 Proof.
-  intros ρ A Hid; induction A; simpl; f_equal; auto.
+  intros κ A Hid; induction A; simpl; f_equal; auto.
   apply msubst_lookup_id; exact Hid.
 Qed.
 
-Lemma msubst_pskl_id : forall ρ P,
-  is_id_msubst ρ ->
-  msubst_pskl ρ P = P.
+Lemma msubst_pskl_id : forall κ P,
+  is_id_msubst κ ->
+  msubst_pskl κ P = P.
 Proof.
-  intros ρ P Hid; induction P; simpl; f_equal; auto.
+  intros κ P Hid; induction P; simpl; f_equal; auto.
   rewrite msubst_lookup_id by exact Hid. reflexivity.
 Qed.
 
@@ -121,7 +121,7 @@ Proof. intros; apply Forall_app; auto. Qed.
 Lemma a_inc_refl_gen : forall Θ Ξ0,
   lc_aenv Θ ->
   a_suffix Ξ0 ->
-  exists ρ, is_id_msubst ρ /\ ρ ∷ Θ ⊑ (Ξ0 ++ Θ).
+  exists κ, is_id_msubst κ /\ κ ∷ Θ ⊑ (Ξ0 ++ Θ).
 Proof.
   induction Θ as [ | [a b] Θ0 IH ]; intros Ξ0 Hlc HΞ.
   - exists nil. split; [ constructor | ].
@@ -129,23 +129,23 @@ Proof.
   - apply lc_aenv_inv in Hlc; destruct Hlc as [Hlcb Hlc0].
     destruct b.
     + (* abind_tvar : Θ,α ⊑ Ξ0,α,Θ — a_inc__tvar with Ξ := Ξ0 *)
-      destruct (IH nil) as [ρ0 [Hid Hinc]]; [ exact Hlc0 | constructor | ].
+      destruct (IH nil) as [κ0 [Hid Hinc]]; [ exact Hlc0 | constructor | ].
       simpl in Hinc.
-      exists ρ0. split; auto.
+      exists κ0. split; auto.
       apply (a_inc__tvar (Ξ := Ξ0)); auto.
     + (* abind_var_typ A : entry carried over, ≡ᵗ-reflexive middle *)
-      destruct (IH nil) as [ρ0 [Hid Hinc]]; [ exact Hlc0 | constructor | ].
+      destruct (IH nil) as [κ0 [Hid Hinc]]; [ exact Hlc0 | constructor | ].
       simpl in Hinc.
-      exists ρ0. split; auto.
+      exists κ0. split; auto.
       replace ((a, abind_var_typ p) :: Θ0)
         with ((a ~ abind_var_typ p) ++ Θ0) by reflexivity.
       apply a_inc__var; auto.
       rewrite msubst_ptyp_id; auto.
       apply a_tyequiv__refl. exact Hlcb.
     + (* abind_var_skl P : ≡ˢ-reflexive middle *)
-      destruct (IH nil) as [ρ0 [Hid Hinc]]; [ exact Hlc0 | constructor | ].
+      destruct (IH nil) as [κ0 [Hid Hinc]]; [ exact Hlc0 | constructor | ].
       simpl in Hinc.
-      exists ρ0. split; auto.
+      exists κ0. split; auto.
       replace ((a, abind_var_skl p) :: Θ0)
         with ((a ~ abind_var_skl p) ++ Θ0) by reflexivity.
       apply a_inc__var_skl; auto.
@@ -153,11 +153,11 @@ Proof.
       apply a_pskl_tyequiv__refl. exact Hlcb.
     + (* abind_flex_mono : solve α̂ with itself; α̂ sits inside the target *)
       destruct (IH (Ξ0 ++ (a ~ abind_flex_mono)) Hlc0)
-        as [ρ0 [Hid Hinc]].
+        as [κ0 [Hid Hinc]].
       { apply a_suffix_app; auto.
         apply (a_suffix__cons a (b := abind_flex_mono)); constructor. }
       first [ rewrite <- app_assoc in Hinc | rewrite app_assoc in Hinc ]; simpl in Hinc.
-      exists ((a, ptyp_var_f a) :: ρ0). split.
+      exists ((a, ptyp_var_f a) :: κ0). split.
       { constructor; auto. unfold is_id_entry; reflexivity. }
       replace ((a, abind_flex_mono) :: Θ0)
         with ((a ~ abind_flex_mono) ++ Θ0) by reflexivity.
@@ -167,11 +167,11 @@ Proof.
       * constructor.
     + (* abind_flex_mono_def τ : α̂:=τ, entry looked up in the target *)
       destruct (IH (Ξ0 ++ (a ~ abind_flex_mono_def p)) Hlc0)
-        as [ρ0 [Hid Hinc]].
+        as [κ0 [Hid Hinc]].
       { apply a_suffix_app; auto.
         apply (a_suffix__cons a (b := abind_flex_mono_def p)); constructor. }
       first [ rewrite <- app_assoc in Hinc | rewrite app_assoc in Hinc ]; simpl in Hinc.
-      exists ((a, ptyp_var_f a) :: ρ0). split.
+      exists ((a, ptyp_var_f a) :: κ0). split.
       { constructor; auto. unfold is_id_entry; reflexivity. }
       replace ((a, abind_flex_mono_def p) :: Θ0)
         with ((a ~ abind_flex_mono_def p) ++ Θ0) by reflexivity.
@@ -189,9 +189,9 @@ Qed.
 Lemma a_isub_refl_lc : forall Θ, lc_aenv Θ -> Θ ⊴ Θ.
 Proof.
   intros Θ Hlc. split.
-  - destruct (a_inc_refl_gen (Ξ0 := nil) Hlc) as [ρ [Hid Hinc]];
+  - destruct (a_inc_refl_gen (Ξ0 := nil) Hlc) as [κ [Hid Hinc]];
       [ constructor | ].
-    exists ρ. simpl in Hinc. auto.
+    exists κ. simpl in Hinc. auto.
   - auto.
 Qed.
 
@@ -202,8 +202,8 @@ Lemma a_isub_weaken_suffix : forall Θ Ξ,
   Θ ⊴ (Ξ ++ Θ).
 Proof.
   intros Θ Ξ Hlc HΞ. split.
-  - destruct (a_inc_refl_gen (Ξ0 := Ξ) Hlc) as [ρ [Hid Hinc]]; auto.
-    exists ρ. auto.
+  - destruct (a_inc_refl_gen (Ξ0 := Ξ) Hlc) as [κ [Hid Hinc]]; auto.
+    exists κ. auto.
   - intros α τ Hb. unfold binds; apply in_or_app; auto.
 Qed.
 
@@ -213,17 +213,17 @@ Qed.
 (*  (proofs.tex:19-26)                                                    *)
 (* ===================================================================== *)
 
-Lemma is_id_msubst_inv : forall α τ ρ,
-  is_id_msubst ((α, τ) :: ρ) ->
-  τ = ptyp_var_f α /\ is_id_msubst ρ.
+Lemma is_id_msubst_inv : forall α τ κ,
+  is_id_msubst ((α, τ) :: κ) ->
+  τ = ptyp_var_f α /\ is_id_msubst κ.
 Proof.
-  intros * H; inversion H as [ | ? ? He Hρ ]; subst.
+  intros * H; inversion H as [ | ? ? He Hκ ]; subst.
   unfold is_id_entry in He; simpl in He; subst; auto.
 Qed.
 
 (** The target of an increase from an all-flexible source is all-flexible. *)
-Lemma a_inc_suffix_target : forall Θ ρ Θ',
-  ρ ∷ Θ ⊑ Θ' ->
+Lemma a_inc_suffix_target : forall Θ κ Θ',
+  κ ∷ Θ ⊑ Θ' ->
   a_suffix Θ ->
   a_suffix Θ'.
 Proof.
@@ -233,44 +233,44 @@ Proof.
 Qed.
 
 (** Peeling an all-flexible prefix of the source keeps the target. *)
-Lemma a_inc_strengthen_suffix_src : forall Ξ Θ ρ Θ',
+Lemma a_inc_strengthen_suffix_src : forall Ξ Θ κ Θ',
   a_suffix Ξ ->
-  ρ ∷ (Ξ ++ Θ) ⊑ Θ' ->
-  exists ρ', (is_id_msubst ρ -> is_id_msubst ρ') /\ ρ' ∷ Θ ⊑ Θ'.
+  κ ∷ (Ξ ++ Θ) ⊑ Θ' ->
+  exists κ', (is_id_msubst κ -> is_id_msubst κ') /\ κ' ∷ Θ ⊑ Θ'.
 Proof.
-  intros Ξ; induction Ξ as [ | [a b] Ξ' IH ]; intros Θ ρ Θ' Hsuf Hinc.
-  - exists ρ. auto.
+  intros Ξ; induction Ξ as [ | [a b] Ξ' IH ]; intros Θ κ Θ' Hsuf Hinc.
+  - exists κ. auto.
   - inversion Hsuf as [ | ? ? ? Hsuf' Hb ]; subst.
     inversion Hb; subst; simpl in Hinc;
       inversion Hinc; subst;
       match goal with
       | H : _ ∷ (Ξ' ++ Θ) ⊑ Θ' |- _ =>
-          destruct (IH _ _ _ Hsuf' H) as [ρ' [Hid' Hinc']]
+          destruct (IH _ _ _ Hsuf' H) as [κ' [Hid' Hinc']]
       end;
-      exists ρ'; split; auto;
+      exists κ'; split; auto;
       intros Hid; apply Hid'; eapply proj2, is_id_msubst_inv; eauto.
 Qed.
 
 (** Head inversions: rigid and term-variable entries are carried over. *)
-Lemma a_inc_tvar_inv : forall α Θ ρ Θ',
-  ρ ∷ ((α ~ abind_tvar) ++ Θ) ⊑ Θ' ->
-  exists Ξ Θ2, Θ' = Ξ ++ (α ~ abind_tvar) ++ Θ2 /\ a_suffix Ξ /\ ρ ∷ Θ ⊑ Θ2.
+Lemma a_inc_tvar_inv : forall α Θ κ Θ',
+  κ ∷ ((α ~ abind_tvar) ++ Θ) ⊑ Θ' ->
+  exists Ξ Θ2, Θ' = Ξ ++ (α ~ abind_tvar) ++ Θ2 /\ a_suffix Ξ /\ κ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 6. Qed.
 
-Lemma a_inc_var_inv : forall x A Θ ρ Θ',
-  ρ ∷ ((x ~ abind_var_typ A) ++ Θ) ⊑ Θ' ->
+Lemma a_inc_var_inv : forall x A Θ κ Θ',
+  κ ∷ ((x ~ abind_var_typ A) ++ Θ) ⊑ Θ' ->
   exists Ξ A' Θ2,
     Θ' = Ξ ++ (x ~ abind_var_typ A') ++ Θ2 /\
-    (Θ2 ⊢ A' ≡ᵗ (msubst_ptyp ρ A)) /\
-    a_suffix Ξ /\ ρ ∷ Θ ⊑ Θ2.
+    (Θ2 ⊢ A' ≡ᵗ (msubst_ptyp κ A)) /\
+    a_suffix Ξ /\ κ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 8. Qed.
 
-Lemma a_inc_var_skl_inv : forall x P Θ ρ Θ',
-  ρ ∷ ((x ~ abind_var_skl P) ++ Θ) ⊑ Θ' ->
+Lemma a_inc_var_skl_inv : forall x P Θ κ Θ',
+  κ ∷ ((x ~ abind_var_skl P) ++ Θ) ⊑ Θ' ->
   exists Ξ P' Θ2,
     Θ' = Ξ ++ (x ~ abind_var_skl P') ++ Θ2 /\
-    (Θ2 ⊢ P' ≡ˢ (msubst_pskl ρ P)) /\
-    a_suffix Ξ /\ ρ ∷ Θ ⊑ Θ2.
+    (Θ2 ⊢ P' ≡ˢ (msubst_pskl κ P)) /\
+    a_suffix Ξ /\ κ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 8. Qed.
 
 Lemma binds_weaken_mid : forall (b : abind) x Ξ (e : list (atom * abind)) Θ,
@@ -312,8 +312,8 @@ Proof.
 Qed.
 
 (** Rigid variables survive any increase. *)
-Lemma a_inc_binds_tvar : forall Θ ρ Θ' α,
-  ρ ∷ Θ ⊑ Θ' ->
+Lemma a_inc_binds_tvar : forall Θ κ Θ' α,
+  κ ∷ Θ ⊑ Θ' ->
   binds α abind_tvar Θ ->
   binds α abind_tvar Θ'.
 Proof.
@@ -340,9 +340,9 @@ Qed.
 (** Declared flexible variables survive an identity increase (as SOME
     tvar-ish entry): the flex rule's well-formedness premise applied to the
     identity image [α̂]. *)
-Lemma a_inc_binds_flex : forall Θ ρ Θ' α,
-  ρ ∷ Θ ⊑ Θ' ->
-  is_id_msubst ρ ->
+Lemma a_inc_binds_flex : forall Θ κ Θ' α,
+  κ ∷ Θ ⊑ Θ' ->
+  is_id_msubst κ ->
   binds α abind_flex_mono Θ ->
   a_binds_tvar α Θ'.
 Proof.
@@ -367,9 +367,9 @@ Qed.
 
 (** Defined flexible variables survive an identity increase, and the target
     still equates them with their old definition. *)
-Lemma a_inc_binds_flex_def : forall Θ ρ Θ' α τ0,
-  ρ ∷ Θ ⊑ Θ' ->
-  is_id_msubst ρ ->
+Lemma a_inc_binds_flex_def : forall Θ κ Θ' α τ0,
+  κ ∷ Θ ⊑ Θ' ->
+  is_id_msubst κ ->
   binds α (abind_flex_mono_def τ0) Θ ->
   a_binds_tvar α Θ' /\ Θ' ⊢ (ptyp_var_f α) ≡ᵗ τ0.
 Proof.
@@ -408,9 +408,9 @@ Proof.
 Qed.
 
 (** A tvar-ish occurrence survives an identity increase. *)
-Lemma a_inc_binds_tvarish : forall Θ ρ Θ' α,
-  ρ ∷ Θ ⊑ Θ' ->
-  is_id_msubst ρ ->
+Lemma a_inc_binds_tvarish : forall Θ κ Θ' α,
+  κ ∷ Θ ⊑ Θ' ->
+  is_id_msubst κ ->
   a_binds_tvar α Θ ->
   a_binds_tvar α Θ'.
 Proof.
@@ -421,9 +421,9 @@ Proof.
 Qed.
 
 (** Stability of type equivalence under identity increases. *)
-Lemma a_tyequiv_isub : forall Θ ρ Θ' A A',
-  ρ ∷ Θ ⊑ Θ' ->
-  is_id_msubst ρ ->
+Lemma a_tyequiv_isub : forall Θ κ Θ' A A',
+  κ ∷ Θ ⊑ Θ' ->
+  is_id_msubst κ ->
   Θ ⊢ A ≡ᵗ A' ->
   Θ' ⊢ A ≡ᵗ A'.
 Proof.
@@ -461,9 +461,9 @@ Proof.
 Qed.
 
 (** Stability of skeleton equivalence under identity increases. *)
-Lemma a_pskl_tyequiv_isub : forall Θ ρ Θ' P P',
-  ρ ∷ Θ ⊑ Θ' ->
-  is_id_msubst ρ ->
+Lemma a_pskl_tyequiv_isub : forall Θ κ Θ' P P',
+  κ ∷ Θ ⊑ Θ' ->
+  is_id_msubst κ ->
   Θ ⊢ P ≡ˢ P' ->
   Θ' ⊢ P ≡ˢ P'.
 Proof.
@@ -483,56 +483,56 @@ Qed.
 (*  Transitivity of (identity) information increase                        *)
 (* ===================================================================== *)
 
-Lemma a_inc_trans : forall Θ0 ρ1 Θ1,
-  ρ1 ∷ Θ0 ⊑ Θ1 ->
-  is_id_msubst ρ1 ->
-  forall ρ2 Θ2,
-  ρ2 ∷ Θ1 ⊑ Θ2 ->
-  is_id_msubst ρ2 ->
-  exists ρ, is_id_msubst ρ /\ ρ ∷ Θ0 ⊑ Θ2.
+Lemma a_inc_trans : forall Θ0 κ1 Θ1,
+  κ1 ∷ Θ0 ⊑ Θ1 ->
+  is_id_msubst κ1 ->
+  forall κ2 Θ2,
+  κ2 ∷ Θ1 ⊑ Θ2 ->
+  is_id_msubst κ2 ->
+  exists κ, is_id_msubst κ /\ κ ∷ Θ0 ⊑ Θ2.
 Proof.
-  intros Θ0 ρ1 Θ1 Hinc1;
+  intros Θ0 κ1 Θ1 Hinc1;
     induction Hinc1 as
       [ Ξ HΞ
-      | Θ ρ Θ' α τ Hinc IH Hwf Hmono
-      | Θ ρ Θ' α τ τ' Hinc IH Hwf Hmono Hteq
-      | Θ ρ Θ' Ξ x A A' Hinc IH Heqm HΞ
-      | Θ ρ Θ' Ξ x P P' Hinc IH Heqm HΞ
-      | Θ ρ Θ' Ξ α Hinc IH HΞ ];
-    intros Hid1 ρ2 Θ2 Hinc2 Hid2.
+      | Θ κ Θ' α τ Hinc IH Hwf Hmono
+      | Θ κ Θ' α τ τ' Hinc IH Hwf Hmono Hteq
+      | Θ κ Θ' Ξ x A A' Hinc IH Heqm HΞ
+      | Θ κ Θ' Ξ x P P' Hinc IH Heqm HΞ
+      | Θ κ Θ' Ξ α Hinc IH HΞ ];
+    intros Hid1 κ2 Θ2 Hinc2 Hid2.
   - (* empty: Θ0 = nil, Θ1 = Ξ all-flexible ⇒ Θ2 all-flexible *)
     exists nil. split; [ constructor | ].
     apply a_inc__empty. eauto using a_inc_suffix_target.
   - (* flex head *)
     apply is_id_msubst_inv in Hid1 as [Heqτ Hid1]; subst.
-    destruct (IH Hid1 _ _ Hinc2 Hid2) as [ρ' [Hid' Hinc']].
+    destruct (IH Hid1 _ _ Hinc2 Hid2) as [κ' [Hid' Hinc']].
     assert (Htv2 : a_binds_tvar α Θ2).
     { inversion Hwf; subst. eauto using a_inc_binds_tvarish. }
-    exists ((α, ptyp_var_f α) :: ρ'). split.
+    exists ((α, ptyp_var_f α) :: κ'). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc__flex;
       [ exact Hinc' | apply a_wf_ptyp__var; exact Htv2 | constructor ].
   - (* flex_def head *)
     apply is_id_msubst_inv in Hid1 as [Heqτ Hid1]; subst.
-    destruct (IH Hid1 _ _ Hinc2 Hid2) as [ρ' [Hid' Hinc']].
+    destruct (IH Hid1 _ _ Hinc2 Hid2) as [κ' [Hid' Hinc']].
     assert (Htv2 : a_binds_tvar α Θ2).
     { inversion Hwf; subst. eauto using a_inc_binds_tvarish. }
-    assert (Heqv : Θ2 ⊢ (ptyp_var_f α) ≡ᵗ (msubst_ptyp ρ' τ)).
+    assert (Heqv : Θ2 ⊢ (ptyp_var_f α) ≡ᵗ (msubst_ptyp κ' τ)).
     { rewrite msubst_ptyp_id; [ | exact Hid' ].
       rewrite msubst_ptyp_id in Hteq; [ | exact Hid1 ].
       exact (a_tyequiv_isub Hinc2 Hid2 Hteq). }
-    exists ((α, ptyp_var_f α) :: ρ'). split.
+    exists ((α, ptyp_var_f α) :: κ'). split.
     { constructor; auto. unfold is_id_entry; reflexivity. }
     apply a_inc__flex_def;
       [ exact Hinc' | apply a_wf_ptyp__var; exact Htv2 | constructor
       | exact Heqv ].
   - (* var head: peel the suffix, invert the carried entry *)
-    edestruct a_inc_strengthen_suffix_src as [ρ2' [Hid2' Hinc2']];
+    edestruct a_inc_strengthen_suffix_src as [κ2' [Hid2' Hinc2']];
       [ exact HΞ | exact Hinc2 | ].
     apply a_inc_var_inv in Hinc2'
       as [Ξ2 [A2' [Θ2' [Heq [Heqv2 [HΞ2 Hinc2'']]]]]]; subst.
-    destruct (IH Hid1 _ _ Hinc2'' (Hid2' Hid2)) as [ρ' [Hid' Hinc']].
-    exists ρ'. split; auto.
+    destruct (IH Hid1 _ _ Hinc2'' (Hid2' Hid2)) as [κ' [Hid' Hinc']].
+    exists κ'. split; auto.
     apply a_inc__var; auto.
     (* compose the two semantic middles across the identity increase *)
     rewrite msubst_ptyp_id by exact Hid'.
@@ -541,12 +541,12 @@ Proof.
     eapply a_tyequiv__trans; [ exact Heqv2 | ].
     eapply a_tyequiv_isub; [ exact Hinc2'' | exact (Hid2' Hid2) | exact Heqm ].
   - (* var_skl head *)
-    edestruct a_inc_strengthen_suffix_src as [ρ2' [Hid2' Hinc2']];
+    edestruct a_inc_strengthen_suffix_src as [κ2' [Hid2' Hinc2']];
       [ exact HΞ | exact Hinc2 | ].
     apply a_inc_var_skl_inv in Hinc2'
       as [Ξ2 [P2' [Θ2' [Heq [Heqv2 [HΞ2 Hinc2'']]]]]]; subst.
-    destruct (IH Hid1 _ _ Hinc2'' (Hid2' Hid2)) as [ρ' [Hid' Hinc']].
-    exists ρ'. split; auto.
+    destruct (IH Hid1 _ _ Hinc2'' (Hid2' Hid2)) as [κ' [Hid' Hinc']].
+    exists κ'. split; auto.
     apply a_inc__var_skl; auto.
     rewrite msubst_pskl_id by exact Hid'.
     rewrite msubst_pskl_id in Heqv2 by exact (Hid2' Hid2).
@@ -554,11 +554,11 @@ Proof.
     eapply a_pskl_tyequiv__trans; [ exact Heqv2 | ].
     eapply a_pskl_tyequiv_isub; [ exact Hinc2'' | exact (Hid2' Hid2) | exact Heqm ].
   - (* tvar head *)
-    edestruct a_inc_strengthen_suffix_src as [ρ2' [Hid2' Hinc2']];
+    edestruct a_inc_strengthen_suffix_src as [κ2' [Hid2' Hinc2']];
       [ exact HΞ | exact Hinc2 | ].
     apply a_inc_tvar_inv in Hinc2' as [Ξ2 [Θ2' [Heq [HΞ2 Hinc2'']]]]; subst.
-    destruct (IH Hid1 _ _ Hinc2'' (Hid2' Hid2)) as [ρ' [Hid' Hinc']].
-    exists ρ'. split; auto.
+    destruct (IH Hid1 _ _ Hinc2'' (Hid2' Hid2)) as [κ' [Hid' Hinc']].
+    exists κ'. split; auto.
     apply a_inc__tvar; auto.
 Qed.
 
@@ -566,10 +566,10 @@ Qed.
 Lemma a_isub_trans : forall Θ0 Θ1 Θ2,
   Θ0 ⊴ Θ1 -> Θ1 ⊴ Θ2 -> Θ0 ⊴ Θ2.
 Proof.
-  intros * [[ρ1 [Hid1 H1]] Hd1] [[ρ2 [Hid2 H2]] Hd2].
+  intros * [[κ1 [Hid1 H1]] Hd1] [[κ2 [Hid2 H2]] Hd2].
   split.
-  - destruct (a_inc_trans H1 Hid1 H2 Hid2) as [ρ [Hid Hinc]].
-    exists ρ; auto.
+  - destruct (a_inc_trans H1 Hid1 H2 Hid2) as [κ [Hid Hinc]].
+    exists κ; auto.
   - auto.
 Qed.
 

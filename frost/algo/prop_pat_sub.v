@@ -1362,11 +1362,11 @@ Lemma a_isub_strip_tvar_mid : forall α Ξ Θ0 Θ1,
   ((α ~ abind_tvar) ++ Θ0) ⊴ (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
   Θ0 ⊴ Θ1.
 Proof.
-  intros α Ξ Θ0 Θ1 Huq HuqΞ Hα [[ρ [Hid Hinc]] Hdef].
+  intros α Ξ Θ0 Θ1 Huq HuqΞ Hα [[κ [Hid Hinc]] Hdef].
   destruct (a_inc_tvar_inv Hinc) as [Ξ' [Θ2 [Heq [Hsuf Hinc']]]].
   destruct (app_mid_uniq_split _ _ _ _ _ _ _ Huq Heq) as [<- [_ <-]].
   split.
-  - exists ρ. split; [ exact Hid | exact Hinc' ].
+  - exists κ. split; [ exact Hid | exact Hinc' ].
   - intros β τ Hb.
     assert (HβΘ0 : β `in` dom Θ0) by (eapply binds_In; eauto).
     assert (Hbw : binds β (abind_flex_mono_def τ)

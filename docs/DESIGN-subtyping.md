@@ -14,8 +14,8 @@ metatheory:
   succeeds and its solution is optimal (algorithmic.tex:1446).
 
 A subtyping problem is `(Θ0; N; M; P0; P)` with `Θ0 ⊢ P0`, `Θ0 ⊢ P`,
-`skmod^N(P0, M)`; a solution is `(Θ0 ≤[θ1] Θ1; P1)` with
-`typsub^N_M[·] Θ1 ⊢ syn(θ1 P) ⊑ bid(P1)` and `Θ1 ⊢ inh(θ1 P0) ⋈syn bid(P1)`;
+`skmod^N(P0, M)`; a solution is `(Θ0 ≤[κ1] Θ1; P1)` with
+`typsub^N_M[·] Θ1 ⊢ syn(κ1 P) ⊑ bid(P1)` and `Θ1 ⊢ inh(κ1 P0) ⋈syn bid(P1)`;
 optimality is the usual ζ-factoring + `Θ ⊢ ζP1 ⊑ Q` precision
 (algorithmic.tex:1423-1437).
 
@@ -92,7 +92,7 @@ the flexible-variable *lookup* rules.  Notes:
 theorem statements, as `a_consis_complete_thm` does (the old standalone
 problem/solution definitions were deleted with the OPT-bundle file — inline
 conditions are what the proofs actually consume).  The fill condition
-`Θ1 ⊢ inh(θ1 P0) ⋈syn bid(P1)` is `ad_refine_syn` with an inherited-painted
+`Θ1 ⊢ inh(κ1 P0) ⋈syn bid(P1)` is `ad_refine_syn` with an inherited-painted
 source — the same shape as consistency's solution, so `ad_refine_syn_f_of_plain`
 (join file) converts to the hygienic `_f` form where needed.
 
@@ -184,15 +184,15 @@ type used for instantiation are solved."
 ### 2.2 Completeness (subtyping-proofs.tex §"Completeness of Subtyping")
 
 Generalized statement (tex:3050-3074): given the problem, a tag context Ψ, an
-unresolved `S` with `⌊S⌋ = P`, and a solution `(Θ0 ≤[θ] Θ; Q)`:
+unresolved `S` with `⌊S⌋ = P`, and a solution `(Θ0 ≤[κ] Θ; Q)`:
 
 ```
-⌊S⌋ = P    ad_pat_sub^N_M[Ψ] Θ ⊢ syn(θS) ⊑ bid Q    Θ ⊢ inh(θP0) ⋈syn bid Q
-⇒ ∃ P1 Θ1 θ1,  a_sub^N_M[P0] Θ0 ⊢ P ⊑ P1 ⊣ Θ1  ∧  Θ1 ≤[θ1] Θ
-               ∧  Θ ⊢ θ1P1 ⊑ Q (precision)  ∧  a_inc_equiv Θ0 θ (θ1) Θ
+⌊S⌋ = P    ad_pat_sub^N_M[Ψ] Θ ⊢ syn(κS) ⊑ bid Q    Θ ⊢ inh(κP0) ⋈syn bid Q
+⇒ ∃ P1 Θ1 κ1,  a_sub^N_M[P0] Θ0 ⊢ P ⊑ P1 ⊣ Θ1  ∧  Θ1 ≤[κ1] Θ
+               ∧  Θ ⊢ κ1P1 ⊑ Q (precision)  ∧  a_inc_equiv Θ0 κ (κ1) Θ
 ```
 
-(Note the mech statement will phrase `θ ≡ ζ∘ρ1`-style factoring through the
+(Note the mech statement will phrase `κ ≡ ζ∘ρ1`-style factoring through the
 id-witness exactly as `a_consis_complete_thm` does — reuse that statement
 shape verbatim, replacing the `ad_precise_f` conjunct with plain precision.)
 
@@ -213,19 +213,19 @@ thm:complete-subtyping (generalized)
 ```
 
 - **complete-constraint-collection-solving** (tex:2203): induction on the
-  declarative derivation of `(syn θS)[syn ψa/α] ⊑ bid Q`, producing the
-  `a_looksub` run, the `a_solve_cstr` result `Pa`, `θa`, and *partial
-  precision* `Θ ⨟ Δ ⊢ θaPa ⊑[Ψi,Ψa] ψa`.  Its `-var` variant (tex:1697)
+  declarative derivation of `(syn κS)[syn ψa/α] ⊑ bid Q`, producing the
+  `a_looksub` run, the `a_solve_cstr` result `Pa`, `κa`, and *partial
+  precision* `Θ ⨟ Δ ⊢ κaPa ⊑[Ψi,Ψa] ψa`.  Its `-var` variant (tex:1697)
   additionally threads a rigid-variable substitution ρ.  These are the
   subtyping analog of the assign walk — sized like `assign_complete_step`.
 - **complete-look** (tex:2730): assembles look = collect ∘ solve ∘ guess.  The
-  `guess^TY` sub-induction ("construct θa by extending θs to map each flexible
+  `guess^TY` sub-induction ("construct κa by extending κs to map each flexible
   in Ξ' to the corresponding type in ⌊ψa⌋ based on its position") is
   *exactly* the `guess_join_witness` pattern already Qed in the join file —
   same increment-transformer trick, same freshness bookkeeping.
 - **complete-flex-subtyping** (tex:2835): the `a_sub_flex` walk.  Flex-Solve
   deposits `α̂0 := α̂→β̂` — the analog of consistency's Flex-Solve, closed via
-  the mono bridge (`consis_mono_join`-style inversion gives `θα̂0 ≡ᵗ τ1→τ2`);
+  the mono bridge (`consis_mono_join`-style inversion gives `κα̂0 ≡ᵗ τ1→τ2`);
   Flex-Assign is the `[τ/β̂]`-substitution back-edge (analog of Assign-Assign,
   closed recipe: `a_inc_mid_strip_flex_def` + `msubst_pskl_subst` +
   `a_inc_equiv_msubst_pskl` transport); Depend/Skip/SkipRigid are the
@@ -246,11 +246,11 @@ thm:complete-subtyping (generalized)
 
 **Interface friction — RESOLVED (2026-07-18): the third premise is the
 PAPER'S OWN, and the subtyping solution notion needs the same repair.**
-The mech consistency-completeness demands `ad_refine_pskl_f ∅ Θ ∅ (θP) Qb`
+The mech consistency-completeness demands `ad_refine_pskl_f ∅ Θ ∅ (κP) Qb`
 (subject-side refinement).  This is *not* a mech artifact: the paper's proof
 opens by **augmenting the definition of a solution** to require three
 conditions — the join, the `P0`-fill at Δ₁, **and**
-`skctx[Δ2]{Θ} θ⌊S⌋ ⋈ Q` (consistency-proofs.tex:2230-2242) — and the
+`skctx[Δ2]{Θ} κ⌊S⌋ ⋈ Q` (consistency-proofs.tex:2230-2242) — and the
 standalone 2-condition Definition of consistency solutions is *commented
 out* in algorithmic.tex.  So `a_consis_complete_thm` is faithful to the
 paper's proof-level statement.
@@ -268,12 +268,12 @@ so completeness against the 2-condition notion is genuinely false.
 WT):** the ACTIVE subtyping-solution Definition (algorithmic.tex:1423-1437)
 has only two conditions, and the same capture transplants to it: at `TI`,
 `(P0=◇, P=∀X.◇, Q=syn ∀X.X)` passes `typsub`-Infer + the `P0`-fill, yet the
-required optimality conclusion `θ(∀X.◇) ⊑ ∀X.X` is underivable (⊑'s hole
+required optimality conclusion `κ(∀X.◇) ⊑ ∀X.X` is underivable (⊑'s hole
 rule forbids capture) — thm:complete-subtyping as literally stated is
 false on it (hand-derivation in docs/PAPER-GAPS.md — no cex file needed:
 the mech follows the paper's proof-level statements here, so nothing rests
 on the refutation being formal).  Repair: state the subtyping theorems against
-refinement-valid solutions (add `Θ ⊢ θ⌊S⌋ ⋈ Q`-style subject data to the
+refinement-valid solutions (add `Θ ⊢ κ⌊S⌋ ⋈ Q`-style subject data to the
 solution/motive, threading it through the induction exactly as
 consistency's augmented statement does); soundness already yields the
 condition for every algorithmic output (`a_consis_sound`'s
@@ -305,7 +305,7 @@ threading at Check.
 - **mono bridge** (prop_mono_bridge): `consis_mono_join`, `refine_mono_join`,
   `tyequiv_mono_consis(_transport)`, `ptyp_to_bskl_syn_inj`,
   `ptyp_to_{uskl,bskl_inh}_syn_eq`, `join_var_tyequiv` (join file) — the
-  Flex-Solve arrow-inversion and every "θα̂ is a mono" step.
+  Flex-Solve arrow-inversion and every "κα̂ is a mono" step.
 - **refinement/precision transports** (prop_consis_sound + join file):
   `ad_refine_{syn,pskl}_f_{forget,strip,rename,rename_ctx,isub,delta_mono,
   fmono,weaken_ctx,ctx_to_delta,of_plain,…}`, `ad_precise_f_forget`,

@@ -30,11 +30,11 @@ Set Implicit Arguments.
 
 (** Reflexivity of metasubstitution equivalence: every increment is
     equivalent to itself (each flexible image is [≡ᵗ]-reflexive). *)
-Lemma a_inc_equiv_refl : forall Θ0 ρ Θ,
-  ρ ∷ Θ0 ⊑ Θ ->
-  a_inc_equiv Θ0 ρ ρ Θ.
+Lemma a_inc_equiv_refl : forall Θ0 κ Θ,
+  κ ∷ Θ0 ⊑ Θ ->
+  a_inc_equiv Θ0 κ κ Θ.
 Proof.
-  intros Θ0 ρ Θ H; induction H.
+  intros Θ0 κ Θ H; induction H.
   - apply a_inc_equiv__empty; auto.
   - apply a_inc_equiv__flex; auto.
     apply a_tyequiv__refl. apply mono_ptyp_lc; auto.
@@ -45,72 +45,72 @@ Proof.
   - apply a_inc_equiv__tvar; auto.
 Qed.
 
-(** [dom ρ ⊆ dom Θ0] for any increment [ρ ∷ Θ0 ⊑ Θ]. *)
-Lemma a_inc_dom_sub : forall Θ0 ρ Θ,
-  ρ ∷ Θ0 ⊑ Θ ->
-  dom ρ [<=] dom Θ0.
+(** [dom κ ⊆ dom Θ0] for any increment [κ ∷ Θ0 ⊑ Θ]. *)
+Lemma a_inc_dom_sub : forall Θ0 κ Θ,
+  κ ∷ Θ0 ⊑ Θ ->
+  dom κ [<=] dom Θ0.
 Proof.
-  intros Θ0 ρ Θ H α Hα.
+  intros Θ0 κ Θ H α Hα.
   destruct (a_inc_dom_flex H Hα) as [Hb | [τ Hb]]; apply binds_In in Hb; exact Hb.
 Qed.
 
 (** Prepending an entry outside the RIGHT (identity) multiplicand's domain
     does not change the composition. *)
-Lemma msubst_compose_cons_l_id : forall α τ ζ ρ1,
-  is_id_msubst ρ1 ->
-  α `notin` dom ρ1 ->
-  msubst_compose ((α, τ) :: ζ) ρ1 = msubst_compose ζ ρ1.
+Lemma msubst_compose_cons_l_id : forall α τ ζ κ1,
+  is_id_msubst κ1 ->
+  α `notin` dom κ1 ->
+  msubst_compose ((α, τ) :: ζ) κ1 = msubst_compose ζ κ1.
 Proof.
-  induction ρ1 as [ | [β b] ρ1' IH ]; intros Hid Hni; simpl; auto.
+  induction κ1 as [ | [β b] κ1' IH ]; intros Hid Hni; simpl; auto.
   apply is_id_msubst_inv in Hid as [Heq Hid']; subst.
   simpl in Hni. simpl.
   rewrite IH by (first [ exact Hid' | clear - Hni; fsetdec ]).
   destruct (β == α) as [->|Hne]; [ exfalso; clear - Hni; fsetdec | reflexivity ].
 Qed.
 
-(** When [ρ1] is an IDENTITY increment on the same source, composing any
-    increment [ρ] with it on the right is the identity: [ρ ∘ ρ1 = ρ] as
+(** When [κ1] is an IDENTITY increment on the same source, composing any
+    increment [κ] with it on the right is the identity: [κ ∘ κ1 = κ] as
     lists.  Both increments track [Θ0]'s flexibles in the same order. *)
-Lemma msubst_compose_is_id_r : forall Θ0 ρ1 Θ1 ρ Θ,
+Lemma msubst_compose_is_id_r : forall Θ0 κ1 Θ1 κ Θ,
   a_wf_aenv Θ0 ->
-  is_id_msubst ρ1 ->
-  ρ1 ∷ Θ0 ⊑ Θ1 ->
-  ρ ∷ Θ0 ⊑ Θ ->
-  msubst_compose ρ ρ1 = ρ.
+  is_id_msubst κ1 ->
+  κ1 ∷ Θ0 ⊑ Θ1 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  msubst_compose κ κ1 = κ.
 Proof.
-  intros Θ0 ρ1 Θ1 ρ Θ Hwf Hid Hinc1 Hinc; revert ρ1 Θ1 Hid Hinc1.
-  induction Hinc; intros ρ1 Θ1 Hid Hinc1.
-  - (* source nil : ρ1 = nil *)
+  intros Θ0 κ1 Θ1 κ Θ Hwf Hid Hinc1 Hinc; revert κ1 Θ1 Hid Hinc1.
+  induction Hinc; intros κ1 Θ1 Hid Hinc1.
+  - (* source nil : κ1 = nil *)
     inversion Hinc1; subst. reflexivity.
   - (* flex α *)
     inversion Hwf as [ | αh Θh Hnd Hwa | | | | ]; subst.
-    inversion Hinc1 as [ | Θa ρa Θb αa τa Hi1 Hw1 Hm1 | | | | ]; subst.
+    inversion Hinc1 as [ | Θa κa Θb αa τa Hi1 Hw1 Hm1 | | | | ]; subst.
     apply is_id_msubst_inv in Hid as [Heqτ Hid']; subst.
     simpl. destruct (α == α) as [_ | Hne]; [ | contradiction ].
-    assert (Hnid : α `notin` dom ρa)
+    assert (Hnid : α `notin` dom κa)
       by (pose proof (a_inc_dom_sub Hi1) as Hs; clear - Hs Hnd; fsetdec).
     rewrite (msubst_compose_cons_l_id _ _ Hid' Hnid).
     rewrite (IHHinc Hwa _ _ Hid' Hi1). reflexivity.
   - (* flex_def α := τ *)
     inversion Hwf as [ | | αh τh Θh Hnd Hwp Hm Hwa | | | ]; subst.
-    inversion Hinc1 as [ | | Θa ρa Θb αa τd τa He1 Hw1 Hm1 Heq1 | | | ]; subst.
+    inversion Hinc1 as [ | | Θa κa Θb αa τd τa He1 Hw1 Hm1 Heq1 | | | ]; subst.
     apply is_id_msubst_inv in Hid as [Heqτ Hid']; subst.
     simpl. destruct (α == α) as [_ | Hne]; [ | contradiction ].
-    assert (Hnid : α `notin` dom ρa)
+    assert (Hnid : α `notin` dom κa)
       by (pose proof (a_inc_dom_sub He1) as Hs; clear - Hs Hnd; fsetdec).
     rewrite (msubst_compose_cons_l_id _ _ Hid' Hnid).
     rewrite (IHHinc Hwa _ _ Hid' He1). reflexivity.
   - (* var typ *)
     inversion Hwf as [ | | | | xh Ah Θh Hnd Hwp Hwa | ]; subst.
-    inversion Hinc1 as [ | | | Θa ρa Θb Ξa xa Aa Hi1 Hs1 | | ]; subst.
+    inversion Hinc1 as [ | | | Θa κa Θb Ξa xa Aa Hi1 Hs1 | | ]; subst.
     eapply IHHinc; eauto.
   - (* var skl *)
     inversion Hwf as [ | | | xh Ph Θh Hnd Hwp Hwa | | ]; subst.
-    inversion Hinc1 as [ | | | | Θa ρa Θb Ξa xa Pa Hi1 Hs1 | ]; subst.
+    inversion Hinc1 as [ | | | | Θa κa Θb Ξa xa Pa Hi1 Hs1 | ]; subst.
     eapply IHHinc; eauto.
   - (* tvar *)
     inversion Hwf as [ | | | | | αh Θh Hnd Hwa ]; subst.
-    inversion Hinc1 as [ | | | | | Θa ρa Θb Ξa αa Hi1 Hs1 ]; subst.
+    inversion Hinc1 as [ | | | | | Θa κa Θb Ξa αa Hi1 Hs1 ]; subst.
     eapply IHHinc; eauto.
 Qed.
 
@@ -119,41 +119,41 @@ Qed.
     image is the identity, and both track [Θ0]'s flexibles in the same order).
     This is what lets a sub-node's soundness [⊴]-witness stand in for the
     algorithm's own id-witness on the walk cases. *)
-Lemma is_id_inc_unique : forall Θ0 ρ1 Θ1,
-  ρ1 ∷ Θ0 ⊑ Θ1 -> is_id_msubst ρ1 ->
-  forall ρ2 Θ2, ρ2 ∷ Θ0 ⊑ Θ2 -> is_id_msubst ρ2 -> ρ1 = ρ2.
+Lemma is_id_inc_unique : forall Θ0 κ1 Θ1,
+  κ1 ∷ Θ0 ⊑ Θ1 -> is_id_msubst κ1 ->
+  forall κ2 Θ2, κ2 ∷ Θ0 ⊑ Θ2 -> is_id_msubst κ2 -> κ1 = κ2.
 Proof.
-  intros Θ0 ρ1 Θ1 Hinc1; induction Hinc1; intros Hid1 ρ2 Θ2 Hinc2 Hid2.
+  intros Θ0 κ1 Θ1 Hinc1; induction Hinc1; intros Hid1 κ2 Θ2 Hinc2 Hid2.
   - inversion Hinc2; subst; reflexivity.
   - apply is_id_msubst_inv in Hid1 as [Heq1 Hid1']; subst.
-    inversion Hinc2 as [ | Θa ρa Θb αa τa Hinca Hwfa Hma [Heqα Heqρ2] Heqt
+    inversion Hinc2 as [ | Θa κa Θb αa τa Hinca Hwfa Hma [Heqα Heqκ2] Heqt
                        | | | | ]; subst.
     apply is_id_msubst_inv in Hid2 as [Heq2 Hid2']; subst.
     f_equal. eapply IHHinc1; eauto.
   - apply is_id_msubst_inv in Hid1 as [Heq1 Hid1']; subst.
-    inversion Hinc2 as [ | | Θa ρa Θb αa τd τa Hinca Hwfa Hma Heqda [Heqα Heqρ2] Heqt
+    inversion Hinc2 as [ | | Θa κa Θb αa τd τa Hinca Hwfa Hma Heqda [Heqα Heqκ2] Heqt
                        | | | ]; subst.
     apply is_id_msubst_inv in Hid2 as [Heq2 Hid2']; subst.
     f_equal. eapply IHHinc1; eauto.
-  - inversion Hinc2 as [ | | | Θa ρa Θb Ξa xa Aa Hinca Hsa Heqsrc Heqt | | ]; subst.
+  - inversion Hinc2 as [ | | | Θa κa Θb Ξa xa Aa Hinca Hsa Heqsrc Heqt | | ]; subst.
     eapply IHHinc1; eauto.
-  - inversion Hinc2 as [ | | | | Θa ρa Θb Ξa xa Pa Hinca Hsa Heqsrc Heqt | ]; subst.
+  - inversion Hinc2 as [ | | | | Θa κa Θb Ξa xa Pa Hinca Hsa Heqsrc Heqt | ]; subst.
     eapply IHHinc1; eauto.
-  - inversion Hinc2 as [ | | | | | Θa ρa Θb Ξa αa Hinca Hsa Heqsrc Heqt ]; subst.
+  - inversion Hinc2 as [ | | | | | Θa κa Θb Ξa αa Hinca Hsa Heqsrc Heqt ]; subst.
     eapply IHHinc1; eauto.
 Qed.
 
 (** The complete AXIOM-node factoring: at a node that leaves the context
-    unchanged ([Θ1 = Θ0]) the competing solution's own substitution [ρ]
+    unchanged ([Θ1 = Θ0]) the competing solution's own substitution [κ]
     serves as the factoring [ζ]. *)
-Lemma opt_axiom_factor : forall Θ0 ρ1 ρ Θ,
+Lemma opt_axiom_factor : forall Θ0 κ1 κ Θ,
   a_wf_aenv Θ0 ->
-  is_id_msubst ρ1 ->
-  ρ1 ∷ Θ0 ⊑ Θ0 ->
-  ρ ∷ Θ0 ⊑ Θ ->
-  ρ ∷ Θ0 ⊑ Θ /\ a_inc_equiv Θ0 ρ (msubst_compose ρ ρ1) Θ.
+  is_id_msubst κ1 ->
+  κ1 ∷ Θ0 ⊑ Θ0 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  κ ∷ Θ0 ⊑ Θ /\ a_inc_equiv Θ0 κ (msubst_compose κ κ1) Θ.
 Proof.
-  intros Θ0 ρ1 ρ Θ Hwf Hid Hinc1 Hinc.
+  intros Θ0 κ1 κ Θ Hwf Hid Hinc1 Hinc.
   split; [ exact Hinc | ].
   rewrite (msubst_compose_is_id_r Hwf Hid Hinc1 Hinc).
   apply a_inc_equiv_refl; exact Hinc.
@@ -162,14 +162,14 @@ Qed.
 (** Two equivalent metasubstitutions act [≡ᵗ]-equivalently on a wf MONOtype.
     (Monotypes have no [∀], so no binder/opening obligation arises — this is
     why the congruence below can stay first-order.) *)
-Lemma a_inc_equiv_msubst_mono : forall Θmid ρ1 ρ2 Θ τ,
-  a_inc_equiv Θmid ρ1 ρ2 Θ ->
+Lemma a_inc_equiv_msubst_mono : forall Θmid κ1 κ2 Θ τ,
+  a_inc_equiv Θmid κ1 κ2 Θ ->
   a_wf_aenv Θmid ->
   a_wf_ptyp Θmid τ ->
   mono_ptyp τ ->
-  Θ ⊢ (msubst_ptyp ρ1 τ) ≡ᵗ (msubst_ptyp ρ2 τ).
+  Θ ⊢ (msubst_ptyp κ1 τ) ≡ᵗ (msubst_ptyp κ2 τ).
 Proof.
-  intros Θmid ρ1 ρ2 Θ τ Hie Hwf Hwt Hm; revert Hwt; induction Hm; intros Hwt.
+  intros Θmid κ1 κ2 Θ τ Hie Hwf Hwt Hm; revert Hwt; induction Hm; intros Hwt.
   - (* unit *) simpl. apply a_tyequiv__refl. constructor.
   - (* var α *) simpl. inversion Hwt; subst.
     eapply prop_normal.a_inc_equiv_lookup; [ exact Hie | exact Hwf | assumption ].
@@ -211,18 +211,18 @@ Proof.
 Qed.
 
 (** An [a_inc]'s images are locally closed (they are monotypes). *)
-Lemma a_inc_msubst_lc : forall Θ0 ρ Θ,
-  ρ ∷ Θ0 ⊑ Θ -> msubst_lc ρ.
+Lemma a_inc_msubst_lc : forall Θ0 κ Θ,
+  κ ∷ Θ0 ⊑ Θ -> msubst_lc κ.
 Proof.
-  intros Θ0 ρ Θ Hinc α. apply mono_ptyp_lc.
+  intros Θ0 κ Θ Hinc α. apply mono_ptyp_lc.
   eapply a_inc_lookup_mono; exact Hinc.
 Qed.
 
 (** Identity metasubstitutions have locally-closed (variable) images. *)
-Lemma is_id_msubst_values_lc : forall ρ,
-  is_id_msubst ρ -> forall α τ, In (α, τ) ρ -> lc_ptyp τ.
+Lemma is_id_msubst_values_lc : forall κ,
+  is_id_msubst κ -> forall α τ, In (α, τ) κ -> lc_ptyp τ.
 Proof.
-  induction ρ as [ | [β b] ρ' IH ]; intros Hid α τ Hin; [ inversion Hin | ].
+  induction κ as [ | [β b] κ' IH ]; intros Hid α τ Hin; [ inversion Hin | ].
   apply is_id_msubst_inv in Hid as [Heq Hid']; subst.
   destruct Hin as [Heqe | Hin'].
   - inversion Heqe; subst. apply lc_ptyp_var_f.
@@ -230,13 +230,13 @@ Proof.
 Qed.
 
 (** Composition under a locally-closed metasubst is locally closed. *)
-Lemma msubst_lc_compose : forall ζ ρ,
+Lemma msubst_lc_compose : forall ζ κ,
   msubst_lc ζ ->
-  (forall α τ, In (α, τ) ρ -> lc_ptyp τ) ->
-  msubst_lc (msubst_compose ζ ρ).
+  (forall α τ, In (α, τ) κ -> lc_ptyp τ) ->
+  msubst_lc (msubst_compose ζ κ).
 Proof.
-  intros ζ ρ Hζ. unfold msubst_compose.
-  induction ρ as [ | [α τ] ρ' IH ]; intros Hlc α0; simpl.
+  intros ζ κ Hζ. unfold msubst_compose.
+  induction κ as [ | [α τ] κ' IH ]; intros Hlc α0; simpl.
   - apply lc_ptyp_var_f.
   - destruct (α0 == α) as [-> | Hne].
     + apply msubst_ptyp_lc_lc; [ exact Hζ | apply (Hlc α τ); left; reflexivity ].
@@ -246,13 +246,13 @@ Qed.
 (** [msubst_pskl] commutes with opening under a locally-closed metasubst.
     (Local copies of [prop_consis_exist]'s lemmas, which cannot be imported
     here — that file imports this one.) *)
-Lemma msubst_pskl_open_rec_lc_local : forall θ,
-  msubst_lc θ ->
+Lemma msubst_pskl_open_rec_lc_local : forall κ,
+  msubst_lc κ ->
   forall P P' k,
-  msubst_pskl θ (open_pskl_wrt_pskl_rec k P' P)
-  = open_pskl_wrt_pskl_rec k (msubst_pskl θ P') (msubst_pskl θ P).
+  msubst_pskl κ (open_pskl_wrt_pskl_rec k P' P)
+  = open_pskl_wrt_pskl_rec k (msubst_pskl κ P') (msubst_pskl κ P).
 Proof.
-  intros θ Hlc P;
+  intros κ Hlc P;
     induction P as [ | n | α | P1 IH1 P2 IH2 | P0 IH0 | | P0 IH0 ];
     intros P' k; simpl; f_equal; eauto.
   - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
@@ -263,34 +263,34 @@ Proof.
     apply lc_ptyp_to_pskl. apply Hlc.
 Qed.
 
-Lemma msubst_pskl_open_lc_local : forall θ P α,
-  msubst_lc θ ->
-  α `notin` dom θ ->
-  msubst_pskl θ (open_pskl_wrt_pskl P (pskl_var_f α))
-  = open_pskl_wrt_pskl (msubst_pskl θ P) (pskl_var_f α).
+Lemma msubst_pskl_open_lc_local : forall κ P α,
+  msubst_lc κ ->
+  α `notin` dom κ ->
+  msubst_pskl κ (open_pskl_wrt_pskl P (pskl_var_f α))
+  = open_pskl_wrt_pskl (msubst_pskl κ P) (pskl_var_f α).
 Proof.
-  intros θ P α Hlc Hα. unfold open_pskl_wrt_pskl.
+  intros κ P α Hlc Hα. unfold open_pskl_wrt_pskl.
   rewrite (msubst_pskl_open_rec_lc_local Hlc P (pskl_var_f α) 0).
   cbn [msubst_pskl]. rewrite msubst_lookup_notin by exact Hα.
   reflexivity.
 Qed.
 
 (** The type lift of [a_inc_equiv_lookup] to arbitrary well-formed types. *)
-Lemma a_inc_equiv_msubst_ptyp : forall A Θ0 ρ1 ρ2 Θ,
+Lemma a_inc_equiv_msubst_ptyp : forall A Θ0 κ1 κ2 Θ,
   a_wf_ptyp Θ0 A ->
-  a_inc_equiv Θ0 ρ1 ρ2 Θ ->
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
-  msubst_lc ρ1 -> msubst_lc ρ2 ->
-  Θ ⊢ (msubst_ptyp ρ1 A) ≡ᵗ (msubst_ptyp ρ2 A).
+  msubst_lc κ1 -> msubst_lc κ2 ->
+  Θ ⊢ (msubst_ptyp κ1 A) ≡ᵗ (msubst_ptyp κ2 A).
 Proof.
-  intros A Θ0 ρ1 ρ2 Θ Hwf; revert ρ1 ρ2 Θ.
+  intros A Θ0 κ1 κ2 Θ Hwf; revert κ1 κ2 Θ.
   induction Hwf as [ Θ0 | Θ0 α Hbt | Θ0 A1 A2 Hwf1 IH1 Hwf2 IH2 | L Θ0 A0 Hwf0 IH0 ];
-    intros ρ1 ρ2 Θ Hie Hwf Hlc1 Hlc2; simpl.
+    intros κ1 κ2 Θ Hie Hwf Hlc1 Hlc2; simpl.
   - apply a_tyequiv__refl; apply lc_ptyp_unit.
   - eapply prop_normal.a_inc_equiv_lookup; eauto.
   - apply a_tyequiv__arrow; [ apply IH1 | apply IH2 ]; auto.
   - apply a_tyequiv__all
-      with (L := L `union` dom ρ1 `union` dom ρ2 `union` dom Θ0).
+      with (L := L `union` dom κ1 `union` dom κ2 `union` dom Θ0).
     intros α Hα.
     rewrite <- (msubst_ptyp_open_lc A0 Hlc1) by (clear - Hα; fsetdec).
     rewrite <- (msubst_ptyp_open_lc A0 Hlc2) by (clear - Hα; fsetdec).
@@ -302,22 +302,22 @@ Proof.
 Qed.
 
 (** The skeleton mirror. *)
-Lemma a_inc_equiv_msubst_pskl : forall P Θ0 ρ1 ρ2 Θ,
+Lemma a_inc_equiv_msubst_pskl : forall P Θ0 κ1 κ2 Θ,
   a_scope_pskl Θ0 P ->
-  a_inc_equiv Θ0 ρ1 ρ2 Θ ->
+  a_inc_equiv Θ0 κ1 κ2 Θ ->
   a_wf_aenv Θ0 ->
-  msubst_lc ρ1 -> msubst_lc ρ2 ->
-  Θ ⊢ (msubst_pskl ρ1 P) ≡ˢ (msubst_pskl ρ2 P).
+  msubst_lc κ1 -> msubst_lc κ2 ->
+  Θ ⊢ (msubst_pskl κ1 P) ≡ˢ (msubst_pskl κ2 P).
 Proof.
-  intros P Θ0 ρ1 ρ2 Θ Hwf; revert ρ1 ρ2 Θ.
+  intros P Θ0 κ1 κ2 Θ Hwf; revert κ1 κ2 Θ.
   induction Hwf as [ Θ0 | Θ0 α Hbt | Θ0 P1 P2 Hwf1 IH1 Hwf2 IH2
                    | L Θ0 P0 Hwf0 IH0 | Θ0 | Θ0 P0 Hwf0 IH0 ];
-    intros ρ1 ρ2 Θ Hie Hwf Hlc1 Hlc2; simpl.
+    intros κ1 κ2 Θ Hie Hwf Hlc1 Hlc2; simpl.
   - apply a_pskl_tyequiv__refl; apply lc_pskl_unit.
   - apply a_tyequiv_pskl. eapply prop_normal.a_inc_equiv_lookup; eauto.
   - apply a_pskl_tyequiv__arrow; [ apply IH1 | apply IH2 ]; auto.
   - apply a_pskl_tyequiv__all
-      with (L := L `union` dom ρ1 `union` dom ρ2 `union` dom Θ0).
+      with (L := L `union` dom κ1 `union` dom κ2 `union` dom Θ0).
     intros α Hα.
     rewrite <- (msubst_pskl_open_lc_local P0 Hlc1) by (clear - Hα; fsetdec).
     rewrite <- (msubst_pskl_open_lc_local P0 Hlc2) by (clear - Hα; fsetdec).
@@ -332,18 +332,18 @@ Qed.
 
 (** Composing with an IDENTITY increment on the right is invisible to
     [msubst] on a well-formed type/skeleton (every free variable is either
-    a source flexible in [dom ρ1] or a rigid untouched by [ζ]). *)
-Lemma msubst_compose_id_ptyp : forall Θ0 ρ1 Θ1 ζ Θ2 A,
+    a source flexible in [dom κ1] or a rigid untouched by [ζ]). *)
+Lemma msubst_compose_id_ptyp : forall Θ0 κ1 Θ1 ζ Θ2 A,
   a_wf_aenv Θ0 -> a_wf_aenv Θ1 ->
-  is_id_msubst ρ1 ->
-  ρ1 ∷ Θ0 ⊑ Θ1 ->
+  is_id_msubst κ1 ->
+  κ1 ∷ Θ0 ⊑ Θ1 ->
   ζ ∷ Θ1 ⊑ Θ2 ->
   a_wf_ptyp Θ0 A ->
-  msubst_ptyp (msubst_compose ζ ρ1) A = msubst_ptyp ζ A.
+  msubst_ptyp (msubst_compose ζ κ1) A = msubst_ptyp ζ A.
 Proof.
-  intros Θ0 ρ1 Θ1 ζ Θ2 A Hwf0 Hwf1 Hid Hinc1 Hζ HA.
+  intros Θ0 κ1 Θ1 ζ Θ2 A Hwf0 Hwf1 Hid Hinc1 Hζ HA.
   rewrite msubst_ptyp_compose;
-    [ rewrite (msubst_ptyp_id (ρ:=ρ1) A Hid); reflexivity | ].
+    [ rewrite (msubst_ptyp_id (κ:=κ1) A Hid); reflexivity | ].
   intros α Hα.
   destruct (a_wf_ptyp_ftv_tvarish HA Hα) as [Hrig | [Hflex | [τ Hdef]]].
   - right. intros Hin.
@@ -358,17 +358,17 @@ Proof.
       [ exact Hinc1 | exact Hwf0 | right; exists τ; exact Hdef ].
 Qed.
 
-Lemma msubst_compose_id_pskl : forall Θ0 ρ1 Θ1 ζ Θ2 P,
+Lemma msubst_compose_id_pskl : forall Θ0 κ1 Θ1 ζ Θ2 P,
   a_wf_aenv Θ0 -> a_wf_aenv Θ1 ->
-  is_id_msubst ρ1 ->
-  ρ1 ∷ Θ0 ⊑ Θ1 ->
+  is_id_msubst κ1 ->
+  κ1 ∷ Θ0 ⊑ Θ1 ->
   ζ ∷ Θ1 ⊑ Θ2 ->
   a_scope_pskl Θ0 P ->
-  msubst_pskl (msubst_compose ζ ρ1) P = msubst_pskl ζ P.
+  msubst_pskl (msubst_compose ζ κ1) P = msubst_pskl ζ P.
 Proof.
-  intros Θ0 ρ1 Θ1 ζ Θ2 P Hwf0 Hwf1 Hid Hinc1 Hζ HP.
+  intros Θ0 κ1 Θ1 ζ Θ2 P Hwf0 Hwf1 Hid Hinc1 Hζ HP.
   rewrite msubst_pskl_compose;
-    [ rewrite (msubst_pskl_id (ρ:=ρ1) P Hid); reflexivity | ].
+    [ rewrite (msubst_pskl_id (κ:=κ1) P Hid); reflexivity | ].
   intros α Hα.
   destruct (a_scope_pskl_ftv_tvarish HP Hα) as [Hrig | [Hflex | [τ Hdef]]].
   - right. intros Hin.
@@ -386,13 +386,13 @@ Qed.
 (** The identity-increment through a NON-flexible middle strengthens
     directly: the competing target's suffix is forced empty (a suffix is
     all-flexible, but the head [c ~ b] here is a rigid / term binding). *)
-Lemma a_inc_id_mid_strip : forall c b Θ0 ρ1 Θ1,
+Lemma a_inc_id_mid_strip : forall c b Θ0 κ1 Θ1,
   (b = abind_tvar \/
    (exists Q, b = abind_var_typ Q) \/ (exists Q, b = abind_var_skl Q)) ->
-  ρ1 ∷ ((c ~ b) ++ Θ0) ⊑ ((c ~ b) ++ Θ1) ->
-  ρ1 ∷ Θ0 ⊑ Θ1.
+  κ1 ∷ ((c ~ b) ++ Θ0) ⊑ ((c ~ b) ++ Θ1) ->
+  κ1 ∷ Θ0 ⊑ Θ1.
 Proof.
-  intros c b Θ0 ρ1 Θ1 Hb Hinc.
+  intros c b Θ0 κ1 Θ1 Hb Hinc.
   destruct Hb as [-> | [[Q ->] | [Q ->]]].
   - apply a_inc_tvar_inv in Hinc as [Ξ [Θ2 [Heq [HΞ Hinc']]]].
     destruct Ξ as [ | [α2 bz] Ξ' ]; simpl in Heq.
@@ -414,10 +414,10 @@ Qed.
 (** An [a_inc_equiv]'s metasubstitutions inherit the source's key
     distinctness (each flexible entry is source-fresh; the term/rigid
     entries leave the metasubstitution untouched). *)
-Lemma a_inc_equiv_uniq_l : forall E ρ σ Θ,
-  a_inc_equiv E ρ σ Θ -> uniq E -> uniq ρ.
+Lemma a_inc_equiv_uniq_l : forall E κ σ Θ,
+  a_inc_equiv E κ σ Θ -> uniq E -> uniq κ.
 Proof.
-  intros E ρ σ Θ Hie; induction Hie; intros Hu; simpl in *.
+  intros E κ σ Θ Hie; induction Hie; intros Hu; simpl in *.
   - constructor.
   - destruct_uniq. constructor; [ apply IHHie; solve_uniq | ].
     destruct (prop_normal.a_inc_equiv_dom Hie) as [Hd _]. fsetdec.
@@ -428,10 +428,10 @@ Proof.
   - apply IHHie. solve_uniq.
 Qed.
 
-Lemma a_inc_equiv_uniq_r : forall E ρ σ Θ,
-  a_inc_equiv E ρ σ Θ -> uniq E -> uniq σ.
+Lemma a_inc_equiv_uniq_r : forall E κ σ Θ,
+  a_inc_equiv E κ σ Θ -> uniq E -> uniq σ.
 Proof.
-  intros E ρ σ Θ Hie; induction Hie; intros Hu; simpl in *.
+  intros E κ σ Θ Hie; induction Hie; intros Hu; simpl in *.
   - constructor.
   - destruct_uniq. constructor; [ apply IHHie; solve_uniq | ].
     destruct (prop_normal.a_inc_equiv_dom Hie) as [_ Hd]. fsetdec.
@@ -453,86 +453,86 @@ Proof.
 Qed.
 
 Lemma a_inc_equiv_mid_insert_flex :
-  forall Ξ β Θ0 Θ ρ1 ρ2 σ1 σ2 τ1 τ2,
+  forall Ξ β Θ0 Θ κ1 κ2 σ1 σ2 τ1 τ2,
   a_decls Ξ ->
   uniq (Ξ ++ Θ0) ->
-  dom ρ1 [=] dom Ξ ->
+  dom κ1 [=] dom Ξ ->
   dom σ1 [=] dom Ξ ->
   Θ ⊢ τ1 ≡ᵗ τ2 ->
-  a_inc_equiv (Ξ ++ Θ0) (ρ1 ++ ρ2) (σ1 ++ σ2) Θ ->
+  a_inc_equiv (Ξ ++ Θ0) (κ1 ++ κ2) (σ1 ++ σ2) Θ ->
   a_inc_equiv (Ξ ++ (β ~ abind_flex_mono) ++ Θ0)
-              (ρ1 ++ (β, τ1) :: ρ2) (σ1 ++ (β, τ2) :: σ2) Θ.
+              (κ1 ++ (β, τ1) :: κ2) (σ1 ++ (β, τ2) :: σ2) Θ.
 Proof.
   induction Ξ as [ | [a bnd] Ξ' IH ];
-    intros β Θ0 Θ ρ1 ρ2 σ1 σ2 τ1 τ2 Hdec Huq Hdρ Hdσ Heqτ Hie.
-  - rewrite dom_nil in Hdρ, Hdσ.
-    apply metasubst_dom_empty in Hdρ; apply metasubst_dom_empty in Hdσ; subst.
+    intros β Θ0 Θ κ1 κ2 σ1 σ2 τ1 τ2 Hdec Huq Hdκ Hdσ Heqτ Hie.
+  - rewrite dom_nil in Hdκ, Hdσ.
+    apply metasubst_dom_empty in Hdκ; apply metasubst_dom_empty in Hdσ; subst.
     simpl in Hie |- *.
     apply a_inc_equiv__flex; [ exact Hie | exact Heqτ ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    assert (Huρ : uniq (ρ1 ++ ρ2))
+    assert (Huκ : uniq (κ1 ++ κ2))
       by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
     assert (Huσ : uniq (σ1 ++ σ2))
       by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
     assert (HaΞ : a `notin` dom Ξ') by (clear - Huq; simpl_env in Huq; solve_uniq).
     assert (Huq' : uniq (Ξ' ++ Θ0)) by (clear - Huq; simpl_env in Huq; solve_uniq).
-    destruct ρ1 as [ | [ar tr] ρ1' ];
-      [ exfalso; rewrite dom_nil in Hdρ;
+    destruct κ1 as [ | [ar tr] κ1' ];
+      [ exfalso; rewrite dom_nil in Hdκ;
         assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ')) by (simpl; fsetdec);
-        rewrite <- Hdρ in Hin; clear - Hin; fsetdec | ].
+        rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
     destruct σ1 as [ | [asg ts] σ1' ];
       [ exfalso; rewrite dom_nil in Hdσ;
         assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ')) by (simpl; fsetdec);
         rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
-    assert (Harρ : ar `notin` dom ρ1') by (clear - Huρ; simpl_env in Huρ; solve_uniq).
+    assert (Harκ : ar `notin` dom κ1') by (clear - Huκ; simpl_env in Huκ; solve_uniq).
     assert (Hasσ : asg `notin` dom σ1') by (clear - Huσ; simpl_env in Huσ; solve_uniq).
     simpl in Hie.
     inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
-    simpl_env in Hdρ; simpl_env in Hdσ.
+    simpl_env in Hdκ; simpl_env in Hdσ.
     simpl. apply a_inc_equiv__flex; [ | exact Hequ ].
     apply IH; auto.
-    + clear - Hdρ Harρ HaΞ. simpl_env in *. fsetdec.
+    + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
     + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
 (** Looking up a variable other than the mid-inserted key ignores that entry. *)
-Lemma msubst_lookup_mid_drop : forall ρa β τ ρb α,
+Lemma msubst_lookup_mid_drop : forall κa β τ κb α,
   α <> β ->
-  msubst_lookup (ρa ++ (β, τ) :: ρb) α = msubst_lookup (ρa ++ ρb) α.
+  msubst_lookup (κa ++ (β, τ) :: κb) α = msubst_lookup (κa ++ κb) α.
 Proof.
-  induction ρa as [ | [a t] ρa' IH ]; intros β τ ρb α Hne; simpl.
+  induction κa as [ | [a t] κa' IH ]; intros β τ κb α Hne; simpl.
   - destruct (α == β) as [-> | _]; [ contradiction | reflexivity ].
   - destruct (α == a) as [-> | _]; [ reflexivity | apply IH; exact Hne ].
 Qed.
 
 (** Composition distributes over an append of the RIGHT multiplicand. *)
-Lemma msubst_compose_app : forall ζ ρ1 ρ2,
-  msubst_compose ζ (ρ1 ++ ρ2) = msubst_compose ζ ρ1 ++ msubst_compose ζ ρ2.
+Lemma msubst_compose_app : forall ζ κ1 κ2,
+  msubst_compose ζ (κ1 ++ κ2) = msubst_compose ζ κ1 ++ msubst_compose ζ κ2.
 Proof.
-  intros ζ ρ1 ρ2. unfold msubst_compose.
-  induction ρ1 as [ | e ρ1' IH ]; simpl; [ reflexivity | rewrite IH; reflexivity ].
+  intros ζ κ1 κ2. unfold msubst_compose.
+  induction κ1 as [ | e κ1' IH ]; simpl; [ reflexivity | rewrite IH; reflexivity ].
 Qed.
 
 (** Peel a declaration-only (all-flexible) PREFIX off a competing increment:
-    the [Ξ]-part of [ρ] has domain [dom Ξ] and the tail increment survives.
+    the [Ξ]-part of [κ] has domain [dom Ξ] and the tail increment survives.
     (Mirror of [a_inc_mid_strip_flex] for a prefix rather than a mid.  This is
     the first step of the Assign-SkipRigid / SkipTmVar walk-case decomposition;
     the remaining wiring is blocked on the walked-past middle's competing
     suffix [Ξv] — see [remech-optimality-bundle-progress] memory.) *)
-Lemma a_inc_strip_decls_prefix : forall Ξ E ρ Θ,
+Lemma a_inc_strip_decls_prefix : forall Ξ E κ Θ,
   a_decls Ξ ->
-  ρ ∷ (Ξ ++ E) ⊑ Θ ->
-  exists ρ1 ρ2, ρ = ρ1 ++ ρ2 /\ dom ρ1 [=] dom Ξ /\ ρ2 ∷ E ⊑ Θ.
+  κ ∷ (Ξ ++ E) ⊑ Θ ->
+  exists κ1 κ2, κ = κ1 ++ κ2 /\ dom κ1 [=] dom Ξ /\ κ2 ∷ E ⊑ Θ.
 Proof.
-  induction Ξ as [ | [a b] Ξ' IH ]; intros E ρ Θ Hdec Hinc.
-  - exists (@nil (atom * ptyp)), ρ. simpl.
+  induction Ξ as [ | [a b] Ξ' IH ]; intros E κ Θ Hdec Hinc.
+  - exists (@nil (atom * ptyp)), κ. simpl.
     split; [ reflexivity | split; [ clear; fsetdec | exact Hinc ] ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heq HeqΞ] ]; subst.
     simpl in Hinc.
-    inversion Hinc as [ | Θs ρs Θt αs τ Hinc' Hwfτ Hmτ [Heqα Heqρ] Heqt | | | | ];
+    inversion Hinc as [ | Θs κs Θt αs τ Hinc' Hwfτ Hmτ [Heqα Heqκ] Heqt | | | | ];
       subst.
-    destruct (IH E ρs Θ Hdec' Hinc') as [ρ1 [ρ2 [Heqr [Hdom Hincr]]]].
-    exists ((a, τ) :: ρ1), ρ2. simpl.
+    destruct (IH E κs Θ Hdec' Hinc') as [κ1 [κ2 [Heqr [Hdom Hincr]]]].
+    exists ((a, τ) :: κ1), κ2. simpl.
     split; [ rewrite Heqr; reflexivity
            | split; [ rewrite Hdom; clear; fsetdec | exact Hincr ] ].
 Qed.
@@ -758,52 +758,52 @@ Proof.
 Qed.
 
 (** Head inversions for [a_inc_equiv] at the three binder entries: they carry
-    [ρ1]/[ρ2] over unchanged and split the target at a suffix. *)
-Lemma a_inc_equiv_tvar_inv : forall α Θ0 ρ1 ρ2 Θ,
-  a_inc_equiv ((α ~ abind_tvar) ++ Θ0) ρ1 ρ2 Θ ->
+    [κ1]/[κ2] over unchanged and split the target at a suffix. *)
+Lemma a_inc_equiv_tvar_inv : forall α Θ0 κ1 κ2 Θ,
+  a_inc_equiv ((α ~ abind_tvar) ++ Θ0) κ1 κ2 Θ ->
   exists Ξ Θ', Θ = Ξ ++ (α ~ abind_tvar) ++ Θ'
-             /\ a_suffix Ξ /\ a_inc_equiv Θ0 ρ1 ρ2 Θ'.
+             /\ a_suffix Ξ /\ a_inc_equiv Θ0 κ1 κ2 Θ'.
 Proof. intros * H; inversion H; subst; eauto 8. Qed.
 
-Lemma a_inc_equiv_var_typ_inv : forall x A Θ0 ρ1 ρ2 Θ,
-  a_inc_equiv ((x ~ abind_var_typ A) ++ Θ0) ρ1 ρ2 Θ ->
+Lemma a_inc_equiv_var_typ_inv : forall x A Θ0 κ1 κ2 Θ,
+  a_inc_equiv ((x ~ abind_var_typ A) ++ Θ0) κ1 κ2 Θ ->
   exists Ξ A' Θ', Θ = Ξ ++ (x ~ abind_var_typ A') ++ Θ'
-             /\ (Θ' ⊢ A' ≡ᵗ (msubst_ptyp ρ1 A))
-             /\ a_suffix Ξ /\ a_inc_equiv Θ0 ρ1 ρ2 Θ'.
+             /\ (Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ1 A))
+             /\ a_suffix Ξ /\ a_inc_equiv Θ0 κ1 κ2 Θ'.
 Proof. intros * H; inversion H; subst; eauto 10. Qed.
 
-Lemma a_inc_equiv_var_skl_inv : forall x P Θ0 ρ1 ρ2 Θ,
-  a_inc_equiv ((x ~ abind_var_skl P) ++ Θ0) ρ1 ρ2 Θ ->
+Lemma a_inc_equiv_var_skl_inv : forall x P Θ0 κ1 κ2 Θ,
+  a_inc_equiv ((x ~ abind_var_skl P) ++ Θ0) κ1 κ2 Θ ->
   exists Ξ P' Θ', Θ = Ξ ++ (x ~ abind_var_skl P') ++ Θ'
-             /\ (Θ' ⊢ P' ≡ˢ (msubst_pskl ρ1 P))
-             /\ a_suffix Ξ /\ a_inc_equiv Θ0 ρ1 ρ2 Θ'.
+             /\ (Θ' ⊢ P' ≡ˢ (msubst_pskl κ1 P))
+             /\ a_suffix Ξ /\ a_inc_equiv Θ0 κ1 κ2 Θ'.
 Proof. intros * H; inversion H; subst; eauto 10. Qed.
 
 (** An all-flexible source maps, under [a_inc_equiv], to an all-flexible target
     (mirror of [a_inc_suffix_target]). *)
-Lemma a_inc_equiv_suffix_target : forall Θ ρ1 ρ2 Θ',
-  a_inc_equiv Θ ρ1 ρ2 Θ' -> a_suffix Θ -> a_suffix Θ'.
+Lemma a_inc_equiv_suffix_target : forall Θ κ1 κ2 Θ',
+  a_inc_equiv Θ κ1 κ2 Θ' -> a_suffix Θ -> a_suffix Θ'.
 Proof.
-  intros Θ ρ1 ρ2 Θ' Hie; induction Hie; intros Hsuf; auto;
+  intros Θ κ1 κ2 Θ' Hie; induction Hie; intros Hsuf; auto;
     inversion Hsuf as [ | ? ? ? Hsuf' Hb ]; subst; auto; inversion Hb.
 Qed.
 
 (** Peel an all-flexible suffix [Ξ] off the source of an [a_inc_equiv] and its
     two witnessing increments simultaneously — the three list-heads coincide
-    (one shared [ρ1]/[ρ2]), so the splits stay consistent for free.  Mirrors
+    (one shared [κ1]/[κ2]), so the splits stay consistent for free.  Mirrors
     [a_inc_peel_suffix] (prop_compose.v:629) + [a_inc_strengthen_suffix_src]. *)
-Lemma a_inc_equiv_inc_peel_suffix : forall Ξ Θ ρ1 ρ2 Θ',
+Lemma a_inc_equiv_inc_peel_suffix : forall Ξ Θ κ1 κ2 Θ',
   a_suffix Ξ ->
-  a_inc_equiv (Ξ ++ Θ) ρ1 ρ2 Θ' ->
-  ρ1 ∷ (Ξ ++ Θ) ⊑ Θ' ->
-  ρ2 ∷ (Ξ ++ Θ) ⊑ Θ' ->
-  exists ρ1b ρ2b,
-    a_inc_equiv Θ ρ1b ρ2b Θ' /\ ρ1b ∷ Θ ⊑ Θ' /\ ρ2b ∷ Θ ⊑ Θ'
-    /\ (exists p1, ρ1 = p1 ++ ρ1b /\ dom p1 [=] dom Ξ)
-    /\ (exists p2, ρ2 = p2 ++ ρ2b /\ dom p2 [=] dom Ξ).
+  a_inc_equiv (Ξ ++ Θ) κ1 κ2 Θ' ->
+  κ1 ∷ (Ξ ++ Θ) ⊑ Θ' ->
+  κ2 ∷ (Ξ ++ Θ) ⊑ Θ' ->
+  exists κ1b κ2b,
+    a_inc_equiv Θ κ1b κ2b Θ' /\ κ1b ∷ Θ ⊑ Θ' /\ κ2b ∷ Θ ⊑ Θ'
+    /\ (exists p1, κ1 = p1 ++ κ1b /\ dom p1 [=] dom Ξ)
+    /\ (exists p2, κ2 = p2 ++ κ2b /\ dom p2 [=] dom Ξ).
 Proof.
-  induction Ξ as [ | [a bnd] Ξ' IH ]; intros Θ ρ1 ρ2 Θ' Hsuf Hie Hi1 Hi2.
-  - simpl in *. exists ρ1, ρ2.
+  induction Ξ as [ | [a bnd] Ξ' IH ]; intros Θ κ1 κ2 Θ' Hsuf Hie Hi1 Hi2.
+  - simpl in *. exists κ1, κ2.
     repeat split; auto;
       [ exists (@nil (atom * ptyp)) | exists (@nil (atom * ptyp)) ];
       simpl; split; solve [ reflexivity | clear; fsetdec ].
@@ -815,8 +815,8 @@ Proof.
       match goal with H : a_inc (Ξ' ++ Θ) t1 Θ' |- _ => rename H into Hi1' end.
       match goal with H : a_inc (Ξ' ++ Θ) t2 Θ' |- _ => rename H into Hi2' end.
       destruct (IH _ _ _ _ Hsuf' Hie' Hi1' Hi2')
-        as [ρ1b [ρ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hd1]] [p2 [Hp2 Hd2]]]]]]]].
-      exists ρ1b, ρ2b. repeat split; auto.
+        as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hd1]] [p2 [Hp2 Hd2]]]]]]]].
+      exists κ1b, κ2b. repeat split; auto.
       * exists ((a, u1) :: p1). rewrite Hp1. simpl.
         split; [ reflexivity | rewrite Hd1; clear; fsetdec ].
       * exists ((a, u2) :: p2). rewrite Hp2. simpl.
@@ -827,8 +827,8 @@ Proof.
       match goal with H : a_inc (Ξ' ++ Θ) t1 Θ' |- _ => rename H into Hi1' end.
       match goal with H : a_inc (Ξ' ++ Θ) t2 Θ' |- _ => rename H into Hi2' end.
       destruct (IH _ _ _ _ Hsuf' Hie' Hi1' Hi2')
-        as [ρ1b [ρ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hd1]] [p2 [Hp2 Hd2]]]]]]]].
-      exists ρ1b, ρ2b. repeat split; auto.
+        as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hd1]] [p2 [Hp2 Hd2]]]]]]]].
+      exists κ1b, κ2b. repeat split; auto.
       * exists ((a, u1) :: p1). rewrite Hp1. simpl.
         split; [ reflexivity | rewrite Hd1; clear; fsetdec ].
       * exists ((a, u2) :: p2). rewrite Hp2. simpl.
@@ -838,14 +838,14 @@ Qed.
 (** TRANSITIVITY of metasubstitution equivalence (through a fixed target).
     The [var]/[var_skl] cases use [aenv_mid_split] to realign the two
     target decompositions at the unique term-variable position. *)
-Lemma a_inc_equiv_trans : forall Θ0 ρa ρb Θ,
-  a_inc_equiv Θ0 ρa ρb Θ ->
-  forall ρc,
+Lemma a_inc_equiv_trans : forall Θ0 κa κb Θ,
+  a_inc_equiv Θ0 κa κb Θ ->
+  forall κc,
   a_wf_aenv Θ ->
-  a_inc_equiv Θ0 ρb ρc Θ ->
-  a_inc_equiv Θ0 ρa ρc Θ.
+  a_inc_equiv Θ0 κb κc Θ ->
+  a_inc_equiv Θ0 κa κc Θ.
 Proof.
-  intros Θ0 ρa ρb Θ Hab; induction Hab; intros ρc Hwf Hbc.
+  intros Θ0 κa κb Θ Hab; induction Hab; intros κc Hwf Hbc.
   - (* empty *)
     inversion Hbc; subst. apply a_inc_equiv__empty; auto.
   - (* flex α *)
@@ -903,37 +903,37 @@ Qed.
     suffix off the [a_inc_equiv] and its two witnessing increments together
     ([a_inc_equiv_inc_peel_suffix]) and realign the three target
     decompositions at the unique term-variable via [aenv_mid_split]. *)
-Lemma a_inc_equiv_compose : forall Θ0 ρ Θmid,
-  ρ ∷ Θ0 ⊑ Θmid ->
+Lemma a_inc_equiv_compose : forall Θ0 κ Θmid,
+  κ ∷ Θ0 ⊑ Θmid ->
   a_wf_aenv Θ0 -> a_wf_aenv Θmid ->
-  forall ρ1 ρ2 Θ,
+  forall κ1 κ2 Θ,
   a_wf_aenv Θ ->
-  a_inc_equiv Θmid ρ1 ρ2 Θ ->
-  ρ1 ∷ Θmid ⊑ Θ -> ρ2 ∷ Θmid ⊑ Θ ->
-  a_inc_equiv Θ0 (msubst_compose ρ1 ρ) (msubst_compose ρ2 ρ) Θ.
+  a_inc_equiv Θmid κ1 κ2 Θ ->
+  κ1 ∷ Θmid ⊑ Θ -> κ2 ∷ Θmid ⊑ Θ ->
+  a_inc_equiv Θ0 (msubst_compose κ1 κ) (msubst_compose κ2 κ) Θ.
 Proof.
-  intros Θ0 ρ Θmid Hρ; induction Hρ;
-    intros Hwf0 Hwf1 ρ1 ρ2 Θt HwfT Hie Hi1 Hi2.
+  intros Θ0 κ Θmid Hκ; induction Hκ;
+    intros Hwf0 Hwf1 κ1 κ2 Θt HwfT Hie Hi1 Hi2.
   - (* empty : source all-flexible, so target all-flexible *)
     simpl. apply a_inc_equiv__empty.
     eapply a_inc_equiv_suffix_target; [ exact Hie | assumption ].
   - (* flex α *)
     inversion Hwf0 as [ | αh Θh Hnd Hwa | | | | ]; subst.
     simpl. apply a_inc_equiv__flex.
-    + apply IHHρ; auto.
+    + apply IHHκ; auto.
     + eapply a_inc_equiv_msubst_mono;
         [ exact Hie | exact Hwf1 | eassumption | assumption ].
   - (* flex_def α := τ *)
     inversion Hwf0 as [ | | αh τh Θh Hnd Hwp Hm Hwa | | | ]; subst.
     simpl. apply a_inc_equiv__flex_def.
-    + apply IHHρ; auto.
+    + apply IHHκ; auto.
     + eapply a_inc_equiv_msubst_mono;
         [ exact Hie | exact Hwf1 | eassumption | assumption ].
     + rewrite msubst_ptyp_compose.
       * eapply a_tyequiv_msubst; [ eassumption | exact Hwf1 | exact Hi1 ].
       * intros α0 Hα0.
         eapply a_inc_compose_vis;
-          [ exact Hρ | exact Hi1 | exact Hwa | exact Hwf1
+          [ exact Hκ | exact Hi1 | exact Hwa | exact Hwf1
           | eapply a_wf_ptyp_ftv_tvarish; eauto ].
   - (* var_typ x *)
     inversion Hwf0 as [ | | | | xh Ah Θh Hnd Hwp Hwa | ]; subst.
@@ -944,7 +944,7 @@ Proof.
     { intros α0 Hα0. pose proof (a_wf_aenv_uniq_local Hwf1) as Hu1.
       clear - Hu1 Hα0. solve_uniq. }
     edestruct a_inc_equiv_inc_peel_suffix
-      as [ρ1b [ρ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
+      as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
       [ exact H0 | exact Hie | exact Hi1 | exact Hi2 | ].
     destruct (a_inc_equiv_var_typ_inv Hie2)
       as [Ξe [Ae' [Te [Heqe [Heqve [Hse Hie3]]]]]].
@@ -962,24 +962,24 @@ Proof.
       by (rewrite <- Heqe; exact Heq2).
     destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [HB2 HT2]].
     injection HB2 as HB2. subst A2' T2.
-    assert (Hc1 : msubst_compose ρ1 ρ = msubst_compose ρ1b ρ)
+    assert (Hc1 : msubst_compose κ1 κ = msubst_compose κ1b κ)
       by (rewrite Hp1; eapply msubst_compose_peel;
-          [ exact Hρ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp1; exact Hα0 ]).
-    assert (Hc2 : msubst_compose ρ2 ρ = msubst_compose ρ2b ρ)
+          [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp1; exact Hα0 ]).
+    assert (Hc2 : msubst_compose κ2 κ = msubst_compose κ2b κ)
       by (rewrite Hp2; eapply msubst_compose_peel;
-          [ exact Hρ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
+          [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
     rewrite Hc1, Hc2, Heqe.
     assert (HwfTe : a_wf_aenv Te).
     { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
       inversion HwfT; subst; assumption. }
     apply a_inc_equiv__var; [ | | exact Hse ].
-    { apply IHHρ; auto. }
+    { apply IHHκ; auto. }
     (* the composed semantic middle *)
-    assert (HA : msubst_ptyp (msubst_compose ρ1b ρ) A
-               = msubst_ptyp ρ1b (msubst_ptyp ρ A)).
+    assert (HA : msubst_ptyp (msubst_compose κ1b κ) A
+               = msubst_ptyp κ1b (msubst_ptyp κ A)).
     { apply msubst_ptyp_compose. intros α0 Hα0.
       eapply a_inc_compose_vis;
-        [ exact Hρ | exact Hib1' | exact Hwa | exact Hwf1t
+        [ exact Hκ | exact Hib1' | exact Hwa | exact Hwf1t
         | eapply a_wf_ptyp_ftv_tvarish; eauto ]. }
     rewrite HA.
     eapply a_tyequiv__trans; [ exact Heqve | ].
@@ -993,7 +993,7 @@ Proof.
     { intros α0 Hα0. pose proof (a_wf_aenv_uniq_local Hwf1) as Hu1.
       clear - Hu1 Hα0. solve_uniq. }
     edestruct a_inc_equiv_inc_peel_suffix
-      as [ρ1b [ρ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
+      as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
       [ exact H0 | exact Hie | exact Hi1 | exact Hi2 | ].
     destruct (a_inc_equiv_var_skl_inv Hie2)
       as [Ξe [Pe' [Te [Heqe [Heqve [Hse Hie3]]]]]].
@@ -1011,23 +1011,23 @@ Proof.
       by (rewrite <- Heqe; exact Heq2).
     destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [HB2 HT2]].
     injection HB2 as HB2. subst P2' T2.
-    assert (Hc1 : msubst_compose ρ1 ρ = msubst_compose ρ1b ρ)
+    assert (Hc1 : msubst_compose κ1 κ = msubst_compose κ1b κ)
       by (rewrite Hp1; eapply msubst_compose_peel;
-          [ exact Hρ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp1; exact Hα0 ]).
-    assert (Hc2 : msubst_compose ρ2 ρ = msubst_compose ρ2b ρ)
+          [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp1; exact Hα0 ]).
+    assert (Hc2 : msubst_compose κ2 κ = msubst_compose κ2b κ)
       by (rewrite Hp2; eapply msubst_compose_peel;
-          [ exact Hρ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
+          [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
     rewrite Hc1, Hc2, Heqe.
     assert (HwfTe : a_wf_aenv Te).
     { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
       inversion HwfT; subst; assumption. }
     apply a_inc_equiv__var_skl; [ | | exact Hse ].
-    { apply IHHρ; auto. }
-    assert (HP : msubst_pskl (msubst_compose ρ1b ρ) P
-               = msubst_pskl ρ1b (msubst_pskl ρ P)).
+    { apply IHHκ; auto. }
+    assert (HP : msubst_pskl (msubst_compose κ1b κ) P
+               = msubst_pskl κ1b (msubst_pskl κ P)).
     { apply msubst_pskl_compose. intros α0 Hα0.
       eapply a_inc_compose_vis;
-        [ exact Hρ | exact Hib1' | exact Hwa | exact Hwf1t
+        [ exact Hκ | exact Hib1' | exact Hwa | exact Hwf1t
         | eapply a_scope_pskl_ftv_tvarish; eauto ]. }
     rewrite HP.
     eapply a_pskl_tyequiv__trans; [ exact Heqve | ].
@@ -1038,7 +1038,7 @@ Proof.
       (apply a_wf_aenv_strip_prefix_local in Hwf1;
        inversion Hwf1; subst; assumption).
     edestruct a_inc_equiv_inc_peel_suffix
-      as [ρ1b [ρ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
+      as [κ1b [κ2b [Hie2 [Hib1 [Hib2 [[p1 [Hp1 Hdp1]] [p2 [Hp2 Hdp2]]]]]]]];
       [ exact H | exact Hie | exact Hi1 | exact Hi2 | ].
     assert (Hdisj : forall α0, α0 `in` dom Ξ -> α0 `notin` dom Θ').
     { intros α0 Hα0. pose proof (a_wf_aenv_uniq_local Hwf1) as Hu1.
@@ -1054,31 +1054,31 @@ Proof.
     assert (HeqE2 : Ξe ++ (α ~ abind_tvar) ++ Te = Ξ2 ++ (α ~ abind_tvar) ++ T2)
       by (rewrite <- Heqe; exact Heq2).
     destruct (aenv_mid_split _ _ _ _ _ _ _ HuT HeqE2) as [HE2 [_ HT2]]; subst T2.
-    assert (Hc1 : msubst_compose ρ1 ρ = msubst_compose ρ1b ρ)
+    assert (Hc1 : msubst_compose κ1 κ = msubst_compose κ1b κ)
       by (rewrite Hp1; eapply msubst_compose_peel;
-          [ exact Hρ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp1; exact Hα0 ]).
-    assert (Hc2 : msubst_compose ρ2 ρ = msubst_compose ρ2b ρ)
+          [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp1; exact Hα0 ]).
+    assert (Hc2 : msubst_compose κ2 κ = msubst_compose κ2b κ)
       by (rewrite Hp2; eapply msubst_compose_peel;
-          [ exact Hρ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
+          [ exact Hκ | intros α0 Hα0; apply Hdisj; rewrite <- Hdp2; exact Hα0 ]).
     rewrite Hc1, Hc2, Heqe.
     apply a_inc_equiv__tvar; [ | exact Hse ].
     assert (HwfTe : a_wf_aenv Te).
     { rewrite Heqe in HwfT. apply a_wf_aenv_strip_prefix_local in HwfT.
       inversion HwfT; subst; assumption. }
-    apply IHHρ; auto.
+    apply IHHκ; auto.
 Qed.
 
-(** With [ρ1a], [ρ1b] both identity metasubstitutions and every [ρ1a]-flexible
-    still [ρ1b]-flexible, an inner id-composition on the right collapses:
-    [(ζ∘ρ1b)∘ρ1a = ζ∘ρ1a].  (The domain side condition rules out a [ρ1a]-flex
-    that was rigidified by [ρ1b]'s source-extension; in the bundle it is the
+(** With [κ1a], [κ1b] both identity metasubstitutions and every [κ1a]-flexible
+    still [κ1b]-flexible, an inner id-composition on the right collapses:
+    [(ζ∘κ1b)∘κ1a = ζ∘κ1a].  (The domain side condition rules out a [κ1a]-flex
+    that was rigidified by [κ1b]'s source-extension; in the bundle it is the
     flex-preservation carried by [Θ0 ⊴ Θmid ⊴ Θfin].) *)
-Lemma msubst_compose_id_compose : forall ρ1a ρ1b ζ,
-  is_id_msubst ρ1a -> is_id_msubst ρ1b ->
-  (forall α, α `in` dom ρ1a -> α `in` dom ρ1b) ->
-  msubst_compose (msubst_compose ζ ρ1b) ρ1a = msubst_compose ζ ρ1a.
+Lemma msubst_compose_id_compose : forall κ1a κ1b ζ,
+  is_id_msubst κ1a -> is_id_msubst κ1b ->
+  (forall α, α `in` dom κ1a -> α `in` dom κ1b) ->
+  msubst_compose (msubst_compose ζ κ1b) κ1a = msubst_compose ζ κ1a.
 Proof.
-  intros ρ1a ρ1b ζ Hida Hidb Hdom.
+  intros κ1a κ1b ζ Hida Hidb Hdom.
   apply List.map_ext_in.
   intros [α τ] Hin. simpl. f_equal.
   assert (Hτ : τ = ptyp_var_f α).
@@ -1091,26 +1091,26 @@ Proof.
 Qed.
 
 (** THE GLUE.  Two adjacent sub-node factorings (a consistency Arrow, a Forall,
-    a UnivGhost split) compose into the whole node's factoring.  [ρ1a]/[ρ1b] are
+    a UnivGhost split) compose into the whole node's factoring.  [κ1a]/[κ1b] are
     the two sub-nodes' identity solution-witnesses. *)
-Lemma a_inc_equiv_glue : forall Θ0 Θmid Θfin Θ ρ ρ1a ρ1b ζ1 ζ2,
+Lemma a_inc_equiv_glue : forall Θ0 Θmid Θfin Θ κ κ1a κ1b ζ1 ζ2,
   a_wf_aenv Θ0 -> a_wf_aenv Θmid -> a_wf_aenv Θfin -> a_wf_aenv Θ ->
-  is_id_msubst ρ1a -> is_id_msubst ρ1b ->
-  (forall α, α `in` dom ρ1a -> α `in` dom ρ1b) ->
-  ρ1a ∷ Θ0 ⊑ Θmid ->
-  ρ1b ∷ Θmid ⊑ Θfin ->
+  is_id_msubst κ1a -> is_id_msubst κ1b ->
+  (forall α, α `in` dom κ1a -> α `in` dom κ1b) ->
+  κ1a ∷ Θ0 ⊑ Θmid ->
+  κ1b ∷ Θmid ⊑ Θfin ->
   ζ1 ∷ Θmid ⊑ Θ ->
   ζ2 ∷ Θfin ⊑ Θ ->
-  a_inc_equiv Θ0 ρ (msubst_compose ζ1 ρ1a) Θ ->
-  a_inc_equiv Θmid ζ1 (msubst_compose ζ2 ρ1b) Θ ->
-  a_inc_equiv Θ0 ρ (msubst_compose ζ2 ρ1a) Θ.
+  a_inc_equiv Θ0 κ (msubst_compose ζ1 κ1a) Θ ->
+  a_inc_equiv Θmid ζ1 (msubst_compose ζ2 κ1b) Θ ->
+  a_inc_equiv Θ0 κ (msubst_compose ζ2 κ1a) Θ.
 Proof.
-  intros Θ0 Θmid Θfin Θ ρ ρ1a ρ1b ζ1 ζ2
+  intros Θ0 Θmid Θfin Θ κ κ1a κ1b ζ1 ζ2
          Hwf0 Hwfm Hwff HwfT Hida Hidb Hdom Ha Hb Hζ1 Hζ2 Hsub1 Hsub2.
   (* the second increment through Θfin *)
-  assert (Hζ2b : msubst_compose ζ2 ρ1b ∷ Θmid ⊑ Θ)
+  assert (Hζ2b : msubst_compose ζ2 κ1b ∷ Θmid ⊑ Θ)
     by (eapply a_inc_compose; [ exact Hb | exact Hwfm | exact Hwff | exact Hζ2 ]).
-  (* congruence: push σ = ρ1a onto sub2 *)
+  (* congruence: push σ = κ1a onto sub2 *)
   pose proof (a_inc_equiv_compose Ha Hwf0 Hwfm HwfT Hsub2 Hζ1 Hζ2b) as Hcong.
   (* simplify the inner id-composition *)
   rewrite (msubst_compose_id_compose ζ2 Hida Hidb Hdom) in Hcong.
@@ -1268,8 +1268,8 @@ Proof.
     eapply a_tyequiv_strengthen_tvar_cons; [ exact H0 | reflexivity ].
 Qed.
 
-(* The middle-≡ adjustment for a_inc_self_downarrow: msubst ρ A ≡ its ⇓-composed
-   form, when msubst ρ A is wf in the (suffix) sub-target Θt of Θ. *)
+(* The middle-≡ adjustment for a_inc_self_downarrow: msubst κ A ≡ its ⇓-composed
+   form, when msubst κ A is wf in the (suffix) sub-target Θt of Θ. *)
 Lemma msubst_downarrow_tyequiv : forall Θ Θpre Θt A,
   Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θt ->
   a_wf_ptyp Θt A ->
@@ -1288,25 +1288,25 @@ Proof.
   - inversion Hwf; subst; apply IH; assumption.
 Qed.
 
-Lemma msubst_compose_downarrow_tyequiv : forall Θ Θpre Θt ρ A,
+Lemma msubst_compose_downarrow_tyequiv : forall Θ Θpre Θt κ A,
   Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θ -> a_wf_aenv Θt ->
-  msubst_lc ρ ->
-  (forall α, α `in` dom ρ -> a_wf_ptyp Θt (msubst_lookup ρ α)) ->
+  msubst_lc κ ->
+  (forall α, α `in` dom κ -> a_wf_ptyp Θt (msubst_lookup κ α)) ->
   lc_ptyp A ->
-  Θt ⊢ (msubst_ptyp (msubst_compose (aenv_msubst Θ) ρ) A) ≡ᵗ (msubst_ptyp ρ A).
+  Θt ⊢ (msubst_ptyp (msubst_compose (aenv_msubst Θ) κ) A) ≡ᵗ (msubst_ptyp κ A).
 Proof.
-  intros Θ Θpre Θt ρ A HeqΘ Huq HwfΘ Hwft Hlcρ Himg Hlc;
+  intros Θ Θpre Θt κ A HeqΘ Huq HwfΘ Hwft Hlcκ Himg Hlc;
     revert Θpre Θt HeqΘ Huq Hwft Himg.
   induction Hlc; intros Θpre Θt HeqΘ Huq Hwft Himg; simpl.
   - apply a_tyequiv__refl. constructor.
   - (* var α *)
-    destruct (AtomSetProperties.In_dec α (dom ρ)) as [Hin | Hni].
+    destruct (AtomSetProperties.In_dec α (dom κ)) as [Hin | Hni].
     + rewrite msubst_lookup_compose by (left; exact Hin).
       apply a_tyequiv__sym.
       eapply msubst_downarrow_tyequiv;
         [ exact HeqΘ | exact Huq | exact Hwft | apply Himg; exact Hin ].
-    + rewrite (msubst_lookup_notin ρ Hni).
-      assert (Hnic : α `notin` dom (msubst_compose (aenv_msubst Θ) ρ)).
+    + rewrite (msubst_lookup_notin κ Hni).
+      assert (Hnic : α `notin` dom (msubst_compose (aenv_msubst Θ) κ)).
       { rewrite dom_msubst_compose. exact Hni. }
       rewrite (msubst_lookup_notin _ Hnic).
       apply a_tyequiv__refl. constructor.
@@ -1314,40 +1314,40 @@ Proof.
       [ apply (IHHlc1 Θpre Θt HeqΘ Huq Hwft Himg)
       | apply (IHHlc2 Θpre Θt HeqΘ Huq Hwft Himg) ].
   - apply a_tyequiv__all
-      with (L := dom ρ `union` dom Θt `union` dom Θpre
-                 `union` dom (msubst_compose (aenv_msubst Θ) ρ)).
+      with (L := dom κ `union` dom Θt `union` dom Θpre
+                 `union` dom (msubst_compose (aenv_msubst Θ) κ)).
     intros α Hα.
-    rewrite <- (@msubst_ptyp_open_lc (msubst_compose (aenv_msubst Θ) ρ) A α);
-      [ | intros β; destruct (AtomSetProperties.In_dec β (dom ρ)) as [Hyi | Hyn];
+    rewrite <- (@msubst_ptyp_open_lc (msubst_compose (aenv_msubst Θ) κ) A α);
+      [ | intros β; destruct (AtomSetProperties.In_dec β (dom κ)) as [Hyi | Hyn];
           [ rewrite msubst_lookup_compose by (left; exact Hyi);
-            apply msubst_ptyp_lc_lc; [ apply aenv_msubst_lc; exact HwfΘ | apply Hlcρ ]
-          | assert (Hync : β `notin` dom (msubst_compose (aenv_msubst Θ) ρ))
+            apply msubst_ptyp_lc_lc; [ apply aenv_msubst_lc; exact HwfΘ | apply Hlcκ ]
+          | assert (Hync : β `notin` dom (msubst_compose (aenv_msubst Θ) κ))
               by (rewrite dom_msubst_compose; exact Hyn);
             rewrite (msubst_lookup_notin _ Hync); apply lc_ptyp_var_f ]
         | clear - Hα; fsetdec ].
-    rewrite <- (@msubst_ptyp_open_lc ρ A α); [ | exact Hlcρ | clear - Hα; fsetdec ].
+    rewrite <- (@msubst_ptyp_open_lc κ A α); [ | exact Hlcκ | clear - Hα; fsetdec ].
     apply (H0 α Θpre Θt HeqΘ Huq Hwft Himg).
 Qed.
 
 (* pskl mirror of msubst_compose_downarrow_tyequiv (var_skl middle adjustment). *)
-Lemma msubst_pskl_compose_downarrow_tyequiv : forall Θ Θpre Θt ρ P,
+Lemma msubst_pskl_compose_downarrow_tyequiv : forall Θ Θpre Θt κ P,
   Θ = Θpre ++ Θt -> uniq Θ -> a_wf_aenv Θ -> a_wf_aenv Θt ->
-  msubst_lc ρ ->
-  (forall α, α `in` dom ρ -> a_wf_ptyp Θt (msubst_lookup ρ α)) ->
+  msubst_lc κ ->
+  (forall α, α `in` dom κ -> a_wf_ptyp Θt (msubst_lookup κ α)) ->
   lc_pskl P ->
-  Θt ⊢ (msubst_pskl (msubst_compose (aenv_msubst Θ) ρ) P) ≡ˢ (msubst_pskl ρ P).
+  Θt ⊢ (msubst_pskl (msubst_compose (aenv_msubst Θ) κ) P) ≡ˢ (msubst_pskl κ P).
 Proof.
-  intros Θ Θpre Θt ρ P HeqΘ Huq HwfΘ Hwft Hlcρ Himg Hlc;
+  intros Θ Θpre Θt κ P HeqΘ Huq HwfΘ Hwft Hlcκ Himg Hlc;
     revert Θpre Θt HeqΘ Huq Hwft Himg.
   induction Hlc; intros Θpre Θt HeqΘ Huq Hwft Himg; simpl.
   - apply a_pskl_tyequiv__refl. constructor.
-  - destruct (AtomSetProperties.In_dec α (dom ρ)) as [Hin | Hni].
+  - destruct (AtomSetProperties.In_dec α (dom κ)) as [Hin | Hni].
     + rewrite msubst_lookup_compose by (left; exact Hin).
       apply a_tyequiv_pskl. apply a_tyequiv__sym.
       eapply msubst_downarrow_tyequiv;
         [ exact HeqΘ | exact Huq | exact Hwft | apply Himg; exact Hin ].
-    + rewrite (msubst_lookup_notin ρ Hni).
-      assert (Hnic : α `notin` dom (msubst_compose (aenv_msubst Θ) ρ))
+    + rewrite (msubst_lookup_notin κ Hni).
+      assert (Hnic : α `notin` dom (msubst_compose (aenv_msubst Θ) κ))
         by (rewrite dom_msubst_compose; exact Hni).
       rewrite (msubst_lookup_notin _ Hnic).
       apply a_pskl_tyequiv__refl. constructor.
@@ -1355,18 +1355,18 @@ Proof.
       [ apply (IHHlc1 Θpre Θt HeqΘ Huq Hwft Himg)
       | apply (IHHlc2 Θpre Θt HeqΘ Huq Hwft Himg) ].
   - apply a_pskl_tyequiv__all
-      with (L := dom ρ `union` dom Θt `union` dom Θpre
-                 `union` dom (msubst_compose (aenv_msubst Θ) ρ)).
+      with (L := dom κ `union` dom Θt `union` dom Θpre
+                 `union` dom (msubst_compose (aenv_msubst Θ) κ)).
     intros α Hα.
-    rewrite <- (@msubst_pskl_open_lc_local (msubst_compose (aenv_msubst Θ) ρ) P1 α);
-      [ | intros β; destruct (AtomSetProperties.In_dec β (dom ρ)) as [Hyi | Hyn];
+    rewrite <- (@msubst_pskl_open_lc_local (msubst_compose (aenv_msubst Θ) κ) P1 α);
+      [ | intros β; destruct (AtomSetProperties.In_dec β (dom κ)) as [Hyi | Hyn];
           [ rewrite msubst_lookup_compose by (left; exact Hyi);
-            apply msubst_ptyp_lc_lc; [ apply aenv_msubst_lc; exact HwfΘ | apply Hlcρ ]
-          | assert (Hync : β `notin` dom (msubst_compose (aenv_msubst Θ) ρ))
+            apply msubst_ptyp_lc_lc; [ apply aenv_msubst_lc; exact HwfΘ | apply Hlcκ ]
+          | assert (Hync : β `notin` dom (msubst_compose (aenv_msubst Θ) κ))
               by (rewrite dom_msubst_compose; exact Hyn);
             rewrite (msubst_lookup_notin _ Hync); apply lc_ptyp_var_f ]
         | clear - Hα; fsetdec ].
-    rewrite <- (@msubst_pskl_open_lc_local ρ P1 α); [ | exact Hlcρ | clear - Hα; fsetdec ].
+    rewrite <- (@msubst_pskl_open_lc_local κ P1 α); [ | exact Hlcκ | clear - Hα; fsetdec ].
     apply (H0 α Θpre Θt HeqΘ Huq Hwft Himg).
   - apply a_pskl_tyequiv__refl. constructor.
   - apply a_pskl_tyequiv__tophole. apply (IHHlc Θpre Θt HeqΘ Huq Hwft Himg).
@@ -1374,21 +1374,21 @@ Qed.
 
 (* Normalize an a_inc by its own (suffix-of-Θ) target's flex_defs: the metasubst
    images are ⇓ᵗ[Θ]-collapsed while the target Θt is kept.  Makes the metasubst
-   equal ⇓ρ = compose(aenv_msubst Θ)ρ, matching the ⇓-normalized join subject
-   (consis_downarrow_subject).  The ρb′-vs-⇓ρb′ reconciliation. *)
+   equal ⇓κ = compose(aenv_msubst Θ)κ, matching the ⇓-normalized join subject
+   (consis_downarrow_subject).  The κb′-vs-⇓κb′ reconciliation. *)
 (* Bundled self-downarrow.  One induction proves BOTH the a_inc reconstruction
    with the ⇓-composed metasubst AND its a_inc_equiv twin: they share the entire
    6-case skeleton (wf inversions, the ⇓-agrees-on-suffix rewrite [Hdd], and the
    Θpre-extension plumbing for the inert middles); only the per-case tails differ.
    [a_inc_self_downarrow] / [a_inc_equiv_self_downarrow] are its projections. *)
-Lemma a_inc_self_downarrow_bundle : forall Θ0 ρ Θt,
-  ρ ∷ Θ0 ⊑ Θt ->
+Lemma a_inc_self_downarrow_bundle : forall Θ0 κ Θt,
+  κ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
   a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
-  msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ∷ Θ0 ⊑ Θt
-  /\ a_inc_equiv Θ0 ρ (msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ) Θt.
+  msubst_compose (aenv_msubst (Θpre ++ Θt)) κ ∷ Θ0 ⊑ Θt
+  /\ a_inc_equiv Θ0 κ (msubst_compose (aenv_msubst (Θpre ++ Θt)) κ) Θt.
 Proof.
-  intros Θ0 ρ Θt Hinc; induction Hinc; intros Θpre HwfW Huq Hwf0.
+  intros Θ0 κ Θt Hinc; induction Hinc; intros Θpre HwfW Huq Hwf0.
   - (* empty *)
     split; [ apply a_inc__empty | apply a_inc_equiv__empty ]; assumption.
   - (* flex α τ : target Θ' unchanged, Θpre unchanged *)
@@ -1406,13 +1406,13 @@ Proof.
     + apply a_inc_equiv__flex.
       * exact IHe.
       * rewrite Hdd. apply a_tyequiv_to_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
-  - (* flex_def α ≔ τ : image τ', premise τ'≡msubst ρ τ *)
+  - (* flex_def α ≔ τ : image τ', premise τ'≡msubst κ τ *)
     simpl.
     inversion Hwf0 as [ | | α0 τ0 Θ0x Hnd0 Hwpτ0 Hmτ0 Hwf0' | | | ]; subst.
     assert (HwfΘ' : a_wf_aenv Θ') by (eapply a_wf_aenv_app_r; exact HwfW).
     assert (Hdd : ⇓ᵗ[ Θpre ++ Θ' ] τ' = ⇓ᵗ[ Θ' ] τ')
       by (apply downarrow_app_agree_ptyp; [ exact Huq | apply a_wf_ptyp_ftv_dom; exact H ]).
-    assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
+    assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
     destruct (IHHinc Θpre HwfW Huq Hwf0') as [IHa IHe].
     split.
     + apply a_inc__flex_def.
@@ -1426,7 +1426,7 @@ Proof.
         -- eapply a_tyequiv__trans; [ exact H1 | ].
            apply a_tyequiv__sym.
            eapply msubst_compose_downarrow_tyequiv;
-             [ reflexivity | exact Huq | exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+             [ reflexivity | exact Huq | exact HwfW | exact HwfΘ' | exact Hlcκ | | ].
            ++ intros α0 Hα0. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
               destruct (a_inc_dom_flex Hinc Hα0) as [Hb | [t0 Hb]];
                 [ right; left | right; right; exists t0 ]; exact Hb.
@@ -1435,12 +1435,12 @@ Proof.
       * exact IHe.
       * rewrite Hdd. apply a_tyequiv_to_downarrow_mono; [ exact HwfΘ' | exact H | exact H0 ].
       * exact H1.
-  - (* var A : ρ unchanged, target Ξ++(x~var A')++Θ' *)
+  - (* var A : κ unchanged, target Ξ++(x~var A')++Θ' *)
     inversion Hwf0 as [ | | | | x0 A0 Θ0x Hnd0 HwpA Hwf0' | ]; subst.
     assert (HwfΘ' : a_wf_aenv Θ').
     { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_typ A')).
       simpl_env. simpl_env in HwfW. exact HwfW. }
-    assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
+    assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
     assert (HW' : a_wf_aenv ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ'))
       by (simpl_env; simpl_env in HwfW; exact HwfW).
     assert (HU' : uniq ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ'))
@@ -1456,7 +1456,7 @@ Proof.
         eapply msubst_compose_downarrow_tyequiv with
           (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_typ A'));
           [ simpl_env; reflexivity | simpl_env; simpl_env in Huq; exact Huq
-          | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+          | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcκ | | ].
         -- intros α0 Hα0. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
            destruct (a_inc_dom_flex Hinc Hα0) as [Hb | [t0 Hb]];
              [ right; left | right; right; exists t0 ]; exact Hb.
@@ -1465,12 +1465,12 @@ Proof.
       replace (Θpre ++ Ξ ++ x ~ abind_var_typ A' ++ Θ')
          with ((Θpre ++ Ξ ++ x ~ abind_var_typ A') ++ Θ') by (simpl_env; reflexivity).
       exact IHe.
-  - (* var_skl P : ρ unchanged, target Ξ++(x~var_skl P')++Θ' *)
+  - (* var_skl P : κ unchanged, target Ξ++(x~var_skl P')++Θ' *)
     inversion Hwf0 as [ | | | x0 P0 Θ0x Hnd0 HwpP Hwf0' | | ]; subst.
     assert (HwfΘ' : a_wf_aenv Θ').
     { eapply a_wf_aenv_app_r with (Θp := Θpre ++ Ξ ++ (x ~ abind_var_skl P')).
       simpl_env. simpl_env in HwfW. exact HwfW. }
-    assert (Hlcρ : msubst_lc ρ) by (eapply a_inc_msubst_lc; exact Hinc).
+    assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
     assert (HW' : a_wf_aenv ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ'))
       by (simpl_env; simpl_env in HwfW; exact HwfW).
     assert (HU' : uniq ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ'))
@@ -1486,7 +1486,7 @@ Proof.
         eapply msubst_pskl_compose_downarrow_tyequiv with
           (Θpre := Θpre ++ Ξ ++ (x ~ abind_var_skl P'));
           [ simpl_env; reflexivity | simpl_env; simpl_env in Huq; exact Huq
-          | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcρ | | ].
+          | simpl_env; simpl_env in HwfW; exact HwfW | exact HwfΘ' | exact Hlcκ | | ].
         -- intros α0 Hα0. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
            destruct (a_inc_dom_flex Hinc Hα0) as [Hb | [t0 Hb]];
              [ right; left | right; right; exists t0 ]; exact Hb.
@@ -1513,38 +1513,38 @@ Proof.
       exact IHe.
 Qed.
 
-Lemma a_inc_self_downarrow : forall Θ0 ρ Θt,
-  ρ ∷ Θ0 ⊑ Θt ->
+Lemma a_inc_self_downarrow : forall Θ0 κ Θt,
+  κ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
   a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
-  msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ ∷ Θ0 ⊑ Θt.
+  msubst_compose (aenv_msubst (Θpre ++ Θt)) κ ∷ Θ0 ⊑ Θt.
 Proof.
-  intros Θ0 ρ Θt Hinc Θpre HwfW Huq Hwf0.
+  intros Θ0 κ Θt Hinc Θpre HwfW Huq Hwf0.
   exact (proj1 (a_inc_self_downarrow_bundle Hinc Θpre HwfW Huq Hwf0)).
 Qed.
 
 (* a_inc_equiv twin of a_inc_self_downarrow: an increment is ≡-equivalent to its
-   own downarrow.  Used to adjust the factoring's competing metasubst ⇓ρ→ρ. *)
-Lemma a_inc_equiv_self_downarrow : forall Θ0 ρ Θt,
-  ρ ∷ Θ0 ⊑ Θt ->
+   own downarrow.  Used to adjust the factoring's competing metasubst ⇓κ→κ. *)
+Lemma a_inc_equiv_self_downarrow : forall Θ0 κ Θt,
+  κ ∷ Θ0 ⊑ Θt ->
   forall Θpre,
   a_wf_aenv (Θpre ++ Θt) -> uniq (Θpre ++ Θt) -> a_wf_aenv Θ0 ->
-  a_inc_equiv Θ0 ρ (msubst_compose (aenv_msubst (Θpre ++ Θt)) ρ) Θt.
+  a_inc_equiv Θ0 κ (msubst_compose (aenv_msubst (Θpre ++ Θt)) κ) Θt.
 Proof.
-  intros Θ0 ρ Θt Hinc Θpre HwfW Huq Hwf0.
+  intros Θ0 κ Θt Hinc Θpre HwfW Huq Hwf0.
   exact (proj2 (a_inc_self_downarrow_bundle Hinc Θpre HwfW Huq Hwf0)).
 Qed.
 
 (* Strip a term-var middle (x:Q) from an ID increment, dropping it from both
    source and target (id ⟹ no suffix added, so Ξv=nil, A'=Q).  The id-side
    plumbing of the SkipTmVar walk case: recovers the (Ξ++Θ0) id-increment. *)
-Lemma a_inc_var_mid_strip_id : forall Ξ x A Θ0 ρ Θ1,
+Lemma a_inc_var_mid_strip_id : forall Ξ x A Θ0 κ Θ1,
   a_decls Ξ ->
-  is_id_msubst ρ ->
-  ρ ∷ (Ξ ++ (x ~ abind_var_typ A) ++ Θ0) ⊑ ((x ~ abind_var_typ A) ++ Θ1) ->
-  ρ ∷ (Ξ ++ Θ0) ⊑ Θ1.
+  is_id_msubst κ ->
+  κ ∷ (Ξ ++ (x ~ abind_var_typ A) ++ Θ0) ⊑ ((x ~ abind_var_typ A) ++ Θ1) ->
+  κ ∷ (Ξ ++ Θ0) ⊑ Θ1.
 Proof.
-  induction Ξ as [ | [a b] Ξ' IH ]; intros x A Θ0 ρ Θ1 Hdec Hid Hinc.
+  induction Ξ as [ | [a b] Ξ' IH ]; intros x A Θ0 κ Θ1 Hdec Hid Hinc.
   - simpl in Hinc.
     destruct (a_inc_var_inv Hinc) as [Ξv [A' [Θ2 [Heqt [Heqv [Hsuf Hinc']]]]]].
     destruct Ξv as [ | [z bz] Ξv' ].
@@ -1554,7 +1554,7 @@ Proof.
       inversion Hsb.
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
     simpl in Hinc.
-    inversion Hinc as [ | Θs ρs Θts aa τ Hinc' Hwfτ Hmτ | | | | ]; subst.
+    inversion Hinc as [ | Θs κs Θts aa τ Hinc' Hwfτ Hmτ | | | | ]; subst.
     apply is_id_msubst_inv in Hid as [Heqτ Hid']; subst.
     apply a_inc__flex; [ | | apply mono_ptyp__var ].
     2:{ apply a_wf_ptyp__var.
@@ -1588,9 +1588,9 @@ Proof.
       * apply Hstep. apply IH. clear - Hα Hne; fsetdec.
 Qed.
 
-Lemma msubst_pskl_ftv_lower : forall ρ P α',
+Lemma msubst_pskl_ftv_lower : forall κ P α',
   α' `in` ftvar_in_pskl P ->
-  ftvar_in_ptyp (msubst_lookup ρ α') [<=] ftvar_in_pskl (msubst_pskl ρ P).
+  ftvar_in_ptyp (msubst_lookup κ α') [<=] ftvar_in_pskl (msubst_pskl κ P).
 Proof.
   induction P as [ | n | β | Pa IHa Pb IHb | Pall IHall | | Pt IHt ];
     intros α' Hα; simpl in Hα |- *.
@@ -1660,12 +1660,12 @@ Qed.
 (** Metasubstitution preserves guarded skeleton shape.  The only interesting
     leaf is a flexible variable: every image of an information increase is a
     monotype, hence guarded. *)
-Lemma guarded_pskl_msubst_inc : forall Θ0 ρ Θ P,
-  ρ ∷ Θ0 ⊑ Θ ->
+Lemma guarded_pskl_msubst_inc : forall Θ0 κ Θ P,
+  κ ∷ Θ0 ⊑ Θ ->
   guarded_pskl P ->
-  guarded_pskl (msubst_pskl ρ P).
+  guarded_pskl (msubst_pskl κ P).
 Proof.
-  intros Θ0 ρ Θ P Hinc Hg. inversion Hg; subst; simpl.
+  intros Θ0 κ Θ P Hinc Hg. inversion Hg; subst; simpl.
   - apply guarded_pskl__unit.
   - apply mono_ptyp_to_pskl_guarded. eapply a_inc_lookup_mono; eauto.
   - apply guarded_pskl__arrow;
@@ -1689,41 +1689,41 @@ Qed.
 (* Normalize the decls-prefix images of a competing a_inc into a sub-target Θ'
    (below the walked binder): the Θ0-part increment is already into Θ' and the
    Ξ-prefix flex images ⇓-collapse into Θ' once they are join-grounded. *)
-Lemma a_inc_downarrow_prefix : forall Ξ ρa T Θ0 ρb σb Θ Θ',
+Lemma a_inc_downarrow_prefix : forall Ξ κa T Θ0 κb σb Θ Θ',
   a_decls Ξ ->
-  ρa ++ ρb ∷ (Ξ ++ T) ⊑ Θ ->
+  κa ++ κb ∷ (Ξ ++ T) ⊑ Θ ->
   uniq (Ξ ++ T) ->
-  dom ρa [=] dom Ξ ->
+  dom κa [=] dom Ξ ->
   σb ∷ Θ0 ⊑ Θ' ->
   a_wf_aenv Θ -> uniq Θ ->
   (forall x c, binds x c Θ' -> binds x c Θ) ->
-  (forall α, α `in` dom ρa ->
-     ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup ρa α)) [<=] dom Θ') ->
-  (msubst_compose (aenv_msubst Θ) ρa) ++ σb ∷ (Ξ ++ Θ0) ⊑ Θ'.
+  (forall α, α `in` dom κa ->
+     ftvar_in_ptyp (⇓ᵗ[ Θ ] (msubst_lookup κa α)) [<=] dom Θ') ->
+  (msubst_compose (aenv_msubst Θ) κa) ++ σb ∷ (Ξ ++ Θ0) ⊑ Θ'.
 Proof.
   induction Ξ as [ | [a b] Ξ' IH ];
-    intros ρa T Θ0 ρb σb Θ Θ' Hdec Hinc Huq Hdom Hincb Hwf Huqt Hsub Hgr.
+    intros κa T Θ0 κb σb Θ Θ' Hdec Hinc Huq Hdom Hincb Hwf Huqt Hsub Hgr.
   - rewrite dom_nil in Hdom.
-    destruct ρa as [ | [c t] ρa' ];
+    destruct κa as [ | [c t] κa' ];
       [ simpl; exact Hincb
       | exfalso; simpl in Hdom;
-        assert (c `in` dom ((c,t)::ρa')) by (simpl; fsetdec);
+        assert (c `in` dom ((c,t)::κa')) by (simpl; fsetdec);
         rewrite Hdom in H; clear - H; fsetdec ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    destruct ρa as [ | [c t] ρa' ];
+    destruct κa as [ | [c t] κa' ];
       [ exfalso; simpl in Hdom;
         assert (a `in` dom ((a~abind_flex_mono)++Ξ')) by (simpl; fsetdec);
         rewrite <- Hdom in H; clear - H; fsetdec | ].
     simpl in Hinc.
-    inversion Hinc as [ | R ρs Tt aa τ0 Hinc' Hwfτ Hmτ | | | | ]; subst.
+    inversion Hinc as [ | R κs Tt aa τ0 Hinc' Hwfτ Hmτ | | | | ]; subst.
     simpl.
     assert (Huq' : uniq (Ξ' ++ T)) by (clear - Huq; simpl_env in Huq; solve_uniq).
     assert (HanΞΘ : c `notin` dom (Ξ' ++ T))
       by (clear - Huq; simpl_env in Huq; solve_uniq).
-    assert (Hanρa : c `notin` dom ρa').
+    assert (Hanκa : c `notin` dom κa').
     { pose proof (a_inc_dom_sub Hinc') as Hs.
       clear - Hs HanΞΘ. repeat rewrite dom_app in *. fsetdec. }
-    assert (Hlkc : msubst_lookup ((c, t) :: ρa') c = t)
+    assert (Hlkc : msubst_lookup ((c, t) :: κa') c = t)
       by (simpl; destruct (c == c); [ reflexivity | contradiction ]).
     assert (Hgrc : ftvar_in_ptyp (⇓ᵗ[ Θ ] t) [<=] dom Θ').
     { pose proof (Hgr c ltac:(simpl; clear; fsetdec)) as Hg.
@@ -1739,60 +1739,60 @@ Proof.
     apply a_inc__flex; [ | exact Hwfd | apply mono_downarrow; auto ].
     eapply IH; [ exact Hdec' | exact Hinc' | exact Huq' | | exact Hincb
                | exact Hwf | exact Huqt | exact Hsub | ].
-    + clear - Hdom Hanρa HanΞΘ. simpl in Hdom.
+    + clear - Hdom Hanκa HanΞΘ. simpl in Hdom.
       repeat rewrite dom_app in *. fsetdec.
     + intros α Hα. destruct (α == c) as [-> | Hne].
-      * exfalso. clear - Hα Hanρa. fsetdec.
-      * assert (HXin : α `in` dom ((c, t) :: ρa'))
+      * exfalso. clear - Hα Hanκa. fsetdec.
+      * assert (HXin : α `in` dom ((c, t) :: κa'))
           by (simpl; clear - Hα; fsetdec).
         pose proof (Hgr α HXin) as Hg.
-        rewrite (msubst_lookup_cons_neq t ρa' Hne) in Hg.
+        rewrite (msubst_lookup_cons_neq t κa' Hne) in Hg.
         exact Hg.
 Qed.
 
 Lemma a_inc_equiv_mid_insert_var :
-  forall Ξ x Θ0 Θ' Ξv ρ1 ρ2 σ1 σ2 A A',
+  forall Ξ x Θ0 Θ' Ξv κ1 κ2 σ1 σ2 A A',
   a_decls Ξ ->
   uniq (Ξ ++ Θ0) ->
-  dom ρ1 [=] dom Ξ ->
+  dom κ1 [=] dom Ξ ->
   dom σ1 [=] dom Ξ ->
-  Θ' ⊢ A' ≡ᵗ (msubst_ptyp ρ2 A) ->
+  Θ' ⊢ A' ≡ᵗ (msubst_ptyp κ2 A) ->
   a_suffix Ξv ->
-  a_inc_equiv (Ξ ++ Θ0) (ρ1 ++ ρ2) (σ1 ++ σ2) Θ' ->
+  a_inc_equiv (Ξ ++ Θ0) (κ1 ++ κ2) (σ1 ++ σ2) Θ' ->
   a_inc_equiv (Ξ ++ (x ~ abind_var_typ A) ++ Θ0)
-              (ρ1 ++ ρ2) (σ1 ++ σ2)
+              (κ1 ++ κ2) (σ1 ++ σ2)
               (Ξv ++ (x ~ abind_var_typ A') ++ Θ').
 Proof.
   induction Ξ as [ | [a bnd] Ξ' IH ];
-    intros x Θ0 Θ' Ξv ρ1 ρ2 σ1 σ2 A A' Hdec Huq Hdρ Hdσ Heqm Hsuf Hie.
-  - rewrite dom_nil in Hdρ, Hdσ.
-    apply metasubst_dom_empty in Hdρ; apply metasubst_dom_empty in Hdσ; subst.
+    intros x Θ0 Θ' Ξv κ1 κ2 σ1 σ2 A A' Hdec Huq Hdκ Hdσ Heqm Hsuf Hie.
+  - rewrite dom_nil in Hdκ, Hdσ.
+    apply metasubst_dom_empty in Hdκ; apply metasubst_dom_empty in Hdσ; subst.
     simpl in Hie |- *.
     apply a_inc_equiv__var; [ exact Hie | exact Heqm | exact Hsuf ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    assert (Huρ : uniq (ρ1 ++ ρ2))
+    assert (Huκ : uniq (κ1 ++ κ2))
       by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
     assert (Huσ : uniq (σ1 ++ σ2))
       by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
     assert (HaΞ : a `notin` dom Ξ') by (clear - Huq; simpl_env in Huq; solve_uniq).
     assert (Huq' : uniq (Ξ' ++ Θ0)) by (clear - Huq; simpl_env in Huq; solve_uniq).
-    destruct ρ1 as [ | [ar tr] ρ1' ];
-      [ exfalso; rewrite dom_nil in Hdρ;
+    destruct κ1 as [ | [ar tr] κ1' ];
+      [ exfalso; rewrite dom_nil in Hdκ;
         assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ')) by (simpl; fsetdec);
-        rewrite <- Hdρ in Hin; clear - Hin; fsetdec | ].
+        rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
     destruct σ1 as [ | [asg ts] σ1' ];
       [ exfalso; rewrite dom_nil in Hdσ;
         assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ')) by (simpl; fsetdec);
         rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
-    assert (Harρ : ar `notin` dom ρ1') by (clear - Huρ; simpl_env in Huρ; solve_uniq).
+    assert (Harκ : ar `notin` dom κ1') by (clear - Huκ; simpl_env in Huκ; solve_uniq).
     assert (Hasσ : asg `notin` dom σ1') by (clear - Huσ; simpl_env in Huσ; solve_uniq).
     simpl in Hie.
     inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
-    simpl_env in Hdρ; simpl_env in Hdσ.
+    simpl_env in Hdκ; simpl_env in Hdσ.
     simpl. apply a_inc_equiv__flex.
     2:{ apply a_tyequiv_weaken with (Θ := Θ');
         [ intros y b Hb; simpl_env; auto | exact Hequ ]. }
     apply IH; auto.
-    + clear - Hdρ Harρ HaΞ. simpl_env in *. fsetdec.
+    + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
     + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
