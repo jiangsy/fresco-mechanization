@@ -385,3 +385,39 @@ is dead weight: it was only ever fed back to its own IHs, and every
 guardedness fact the proof needs comes from the subject side (the
 subject's ghost bodies, not P's, are what the ghost rows inspect).  It
 was removed; the proof is unchanged otherwise.
+
+## P6-Cs / P6-Ss — `α ∉ dom Θ0` beside the paper's `α ∉ Θ`
+
+Both completeness lemmas for constraint collection
+(consistency-proofs.tex:920, subtyping-proofs.tex:2203) state a single
+freshness condition on the looked-up variable:
+
+> `α ∉ Θ`
+
+The mechanization carries **two**: `α ∉ dom Θ` *and* `α ∉ dom Θ0`.
+
+**This is not redundancy.**  `κ ∷ Θ0 ⊑ Θ` does NOT give `dom Θ0 ⊆ dom Θ`
+— `a_inc__flex` SOLVES a flexible of the source and it need not survive
+in the target — so `α ∉ Θ` leaves open the case "α is a flexible of Θ0
+that κ has solved away".
+
+**What the second premise buys, and why it is the paper's own intent.**
+It is consumed in exactly one way: `dom κ ⊆ dom Θ0`
+(`a_inc_dom_sub`) turns it into **`α ∉ dom κ`**, i.e. *κ leaves α
+alone*.  That is what makes `(κR)[ψa/α]` meaningful at all — κ must not
+have already rewritten the very positions the guess is substituted into,
+and the lookup `P ∼[α] P0` must be searching for a variable that still
+exists.  In the paper α is the binder that declarative \sublab{ForallL}
+opens (`lemma:complete-look` says only "ψa is a valid instantiation for
+declarative ForallL" — it does not even repeat `α ∉ Θ`), so α is fresh
+for *everything in sight* by Barendregt, Θ0 included.  `α ∉ Θ` is the
+half of that the paper happened to write down.
+
+So: a **prose-completion**, in the sense of §5 ("all inputs are
+well-formed") — not a strengthening that changes what is proved.  A
+paper wishing to be literal should write `α ∉ Θ0, Θ`.
+
+**Not vacuous** — machine-checked.  `p6cs_fires_when_the_subject_is_wf`
+(`frost/algo/cex/cex_p6cs_subject_wf.v`) instantiates the theorem at a
+fresh α with `Θ = Θ0 = ·` and gets a real answer back, so the premise
+set is satisfiable and the conclusion is inhabited.

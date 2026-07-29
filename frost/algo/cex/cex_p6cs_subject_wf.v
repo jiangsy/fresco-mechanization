@@ -218,10 +218,9 @@ Theorem p6cs_fires_when_the_subject_is_wf : forall α,
       ⊑ᵖ[ union empty empty ] uskl_unit.
 Proof.
   intros α.
-  edestruct (@a_lookeq_solve_complete 10 a_sub_mode_sk nil nil nil empty empty
+  edestruct (@a_lookeq_solve_complete a_sub_mode_sk nil nil nil empty empty
                empty empty empty uskl_unit (bskl_tophole bskl_unit)
                (cex_P α) cex_P0 cex_P0 (cex_S α) α
-               ltac:(cbn; lia)
                (a_wf_aenv__nil) (a_wf_aenv__nil)
                ltac:(apply a_wf_pskl__tophole;
                        [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])

@@ -4002,8 +4002,7 @@ Print Assumptions a_lookeq_solve_complete_gen.
 (* ===================================================================== *)
 
 Theorem a_lookeq_solve_complete :
-  forall n NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α,
-  size_uskl R' + size_pskl P0 <= n ->
+  forall NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -4040,16 +4039,19 @@ Theorem a_lookeq_solve_complete :
     (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
     Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
-  intros n NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α Hn.
+  intros NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 HeraseR HscopeS HlcS Htags Hdisj
          Hsub Hdfresh Hpre HΨs1 HΨs2 Hconsis HwfSub Hrefine.
+  (* the FUEL is an artefact of the strong induction, not part of the claim:
+     instantiate it at the measure itself *)
   edestruct (@a_lookeq_solve_complete_gen
-               n NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α
+               (size_uskl R' + size_pskl P0)
+               NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α
                nil empty empty
                (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')))
     as (𝒞 & Ξc & Pa & κc & HLK & HSolve & HwfPa & HwfΞ & HαΞ & Hmapfst
         & Himg & _ & HftvC & Hinc & Hinceq & Hκfresh & Hprec);
-    [ exact Hn | exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HwfPi
+    [ exact (le_n _) | exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HwfPi
     | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeS
     | exact HlcS | exact Htags | exact Hdisj | exact Hsub | exact Hdfresh
     | exact Hpre | clear - HΨs1; fsetdec | exact HΨs2 | exact Hconsis

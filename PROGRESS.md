@@ -152,6 +152,18 @@ at Δρ = ∅ every reachable state is `fa_clean` — whereas `flex_apart_walk`'
 still threads the full walk and converts with `flex_apart_walk_p0`, which is
 what the new `fastep_p0_arrow_l/_r` steps are for.
 
+**Two statement cleanups on the corollary** (user review): the induction
+FUEL `n` is absorbed — it is an artefact of the strong induction, not part of
+the claim, so the corollary instantiates it at `size_uskl R' + size_pskl P0`
+and drops the measure premise.  And the `α ∉ dom Θ0` premise beside the
+paper's `α ∉ Θ` is now registered in docs/WF-SIDE-CONDITIONS.md: it is NOT
+redundant (`a_inc__flex` solves a source flexible away, so `dom Θ0 ⊆ dom Θ`
+is false), it is consumed only to get `α ∉ dom κ` via `dom κ ⊆ dom Θ0` — i.e.
+"κ leaves α alone", which is what makes `(κR)[ψa/α]` mean anything — and it is
+the paper's own intent, since α is the binder declarative Sub-ForallL opens
+and is fresh for everything by Barendregt.  A prose-completion, not a
+strengthening.
+
 **Notation (comments only).**  The ghost family is now `◇` = `hole`,
 `◈` = `holeg`, `∀◇` = `tophole`, `∀◈` = `topholeg`, matching the paper's
 ghost-with-a-∀ glyphs.  Retired: `⊤◇` / `⊤̇◇` / `⊤◇̇` / `◇̇` / `⟨⟩̇` / `⊙̇`

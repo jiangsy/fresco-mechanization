@@ -718,7 +718,7 @@ Proof.
     edestruct a_lookeq_solve_complete
       as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve & HwfPa & HwfΞ & HαΞ & Hkeys
           & HFor & Hftv & Hinc & Heqv & Hκcfresh & Hprec);
-      [ exact (le_n _) | exact HwfΘ | exact HwfΘ0 | exact HwfP0
+      [ exact HwfΘ | exact HwfΘ0 | exact HwfP0
       | exact HwfPi | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR
       | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
       | exact Hsub' | exact Hdfresh | exact Hpre | exact HΨs1
