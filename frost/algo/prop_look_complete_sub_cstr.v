@@ -498,7 +498,7 @@ Proof.
 Qed.
 
 Lemma a_looksub_solve_complete_leaf :
-  forall n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α,
+  forall n NM M Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
@@ -512,16 +512,22 @@ Lemma a_looksub_solve_complete_leaf :
   (ftag_in_uskl R') ∩ Ψ' [=] empty ->       (* the paper's "Ψ disjoint from Ψ'" *)
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
-  sub_shield Θ0 Ψ' empty P0 ψa ->           (* ⇐ THE REPAIR (see the header) *)
+  sub_shield Θ0 Ψ' Δρ P0 ψa ->              (* ⇐ THE REPAIR (see the header) *)
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
-  Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
+  Ψsub [<=] ftag_in_uskl R' `union` Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
-  (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
-  ad_pat_sub_g n NM M Ψsub Θ
-    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
-  Θ ⨟ empty ⊢ₚₛᵃ
-    (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
+  (* subject = the ρ-IMAGE of the paper's (κR')[ψa/α] (ρ = id ⇒ the paper's) *)
+  ad_pat_sub_g n NM M Ψsub Θ Rsub Q ->
+  Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl Rsub) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  (* --- the ρ pack (all vacuous at ρ = identity) --- *)
+  uskl_rho NM Θ Δρ Ψρ Rsub
+    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
+  Ψρ ∩ Ψ' [=] empty ->
+  rho_fresh Δρ Θ κ ->
+  Δρ [<=] Δ ->
+  (forall α0, α0 `in` Δρ ->
+     α0 `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
   (α `notin` ftvar_in_pskl P \/ P = pskl_var_f α) ->
   exists 𝒞 Ξc Pa κc,
     (P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\             (* looksub α P P0 𝒞 Ξc *)
@@ -542,10 +548,10 @@ Lemma a_looksub_solve_complete_leaf :
     (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
     Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
-  intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
+  intros n NM M Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
          HscopeR HlcR Htags Hdisj Hsub Hdfresh Hshield Hpre HΨs1 HΨs2
-         Hsubty HwfSubj Hrefine Hspecial.
+         Hsubty HwfSubj Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρPi Hspecial.
   destruct Hspecial as [Hnin | Heqα].
   - (* α ∉ ftv P : LS-Absent *)
   { assert (Hκav : forall p, In p κ -> α `notin` ftvar_in_ptyp (snd p)).
@@ -555,12 +561,16 @@ Proof.
       { rewrite <- ftvar_in_pskl_uskl_to_pskl.
         rewrite uskl_to_pskl_msubst_uskl_syn. rewrite HeraseR.
         apply msubst_pskl_ftv_avoid; [ exact Hκav | exact Hnin ]. }
+      (* under ρ the tag bound reads off the IMAGE, so ρ's own tags join it —
+         and they are ⊥ Ψ' by [HΨρ], as R'-tags are by [Hdisj] *)
       rewrite (subst_bskl_in_uskl_fresh_eq (msubst_uskl_syn κ R') ψa α HαMS)
-        in Hsubty.
-      assert (HΨsR : Ψsub [<=] ftag_in_uskl (msubst_uskl_syn κ R'))
+        in Hrho.
+      assert (HΨsR : Ψsub [<=] ftag_in_uskl Rsub)
         by (apply (ad_pat_sub_g_ftag_sub Hsubty)).
-      rewrite ftag_in_uskl_msubst_uskl_syn in HΨsR.
-      assert (HΨa0 : Ψa [=] empty) by (clear - HΨs2 HΨsR Hdisj Hsub; fsetdec).
+      pose proof (uskl_rho_ftag_sub Hrho) as Hftr.
+      rewrite ftag_in_uskl_msubst_uskl_syn in Hftr.
+      assert (HΨa0 : Ψa [=] empty)
+        by (clear - HΨs2 HΨsR Hftr Hdisj Hsub HΨρ; fsetdec).
       exists nil, nil, Pi, (@nil (atom * ptyp)).
       repeat split.
       - apply a_looksub__absent; exact Hnin.
@@ -587,11 +597,13 @@ Proof.
     subst R'.
     assert (Hms : msubst_uskl_syn κ (uskl_var_f α) = uskl_var_f α)
       by (cbn; rewrite Hlk; apply ptyp_to_uskl_syn_var).
-    rewrite Hms in Hsubty, HwfSubj.
+    (* under ρ it is the IDEAL side of [Hrho] that collapses to ψa —
+       [Hsubty] / [HwfSubj] are already in the shape P6-Sv wants *)
+    rewrite Hms in Hrho.
     assert (Hsubj : subst_bskl_in_uskl ψa α (uskl_var_f α) = ψa).
     { cbn. match goal with |- context [if ?c then _ else _] => destruct c end;
         [ reflexivity | contradiction ]. }
-    rewrite Hsubj in Hsubty, HwfSubj.
+    rewrite Hsubj in Hrho.
     cbn in HΨs1.        (* ftag_in_uskl (uskl_var_f α) = empty *)
     assert (Hlcψa : lc_uskl ψa)
       by (apply is_tskl_lc; inversion Htags; assumption).
@@ -599,15 +611,15 @@ Proof.
     assert (Hsv : exists Pa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
                     Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
     { eapply a_solve_sub_complete_var
-        with (Δρ := empty) (Ψρ := empty) (ψsub := ψa) (Ψsub := Ψsub)
+        with (Δρ := Δρ) (Ψρ := Ψρ) (ψsub := Rsub) (Ψsub := Ψsub)
              (Θs := Θ);
       [ exact HwfΘ | exact HwfΘ0 | exact HwfPi | exact HwfP0
       | exact HmodSK | exact HmodTY | exact Hκ
-      | apply urho__refl; [ exact Hlcψa | clear; fsetdec ]
-      | exact Htags | exact HwfSubj | exact Hsub | clear; fsetdec
-      | unfold rho_fresh; intros α0 Hα0; clear - Hα0; exfalso; fsetdec
-      | clear; fsetdec
-      | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+      | exact Hrho
+      | exact Htags | exact HwfSubj | exact Hsub | exact HΨρ
+      | exact Hrfr
+      | exact HΔρΔ
+      | exact HΔρPi
       | exact Hdfresh | exact Hapart | exact Hfsh | exact Hpre
       | clear - HΨs1; fsetdec | exact HΨs2
       | intros x b Hb; exact Hb | exact Hsubty | exact Hrefine ]. }
@@ -625,6 +637,71 @@ Proof.
     - simpl. apply a_inc_equiv_refl; exact Hκ.
     - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
     - simpl. exact Hprec. }
+Qed.
+
+(** The ρ = IDENTITY instance of the leaf, i.e. its interface BEFORE the
+    ρ-generalization.  The rows of P6-Ss call this one while the theorem
+    itself is still ρ-free; each will switch to the general lemma as the
+    ρ-generalization reaches it. *)
+Lemma a_looksub_solve_complete_leaf_id :
+  forall n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α,
+  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 -> Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
+  κ ∷ Θ0 ⊑ Θ ->
+  α `notin` dom Θ -> α `notin` dom Θ0 ->
+  ⌊ R' ⌋ˢ = P ->
+  ftvar_in_uskl R' [<=] add α (dom Θ0 `union` dom Θ) ->
+  lc_uskl R' ->
+  a_tags_sort NM Ψ' ψa ->
+  (ftag_in_uskl R') ∩ Ψ' [=] empty ->
+  Ψi `union` Ψa [=] Ψ' ->
+  delta_def_fresh Δ Θ ->
+  sub_shield Θ0 Ψ' empty P0 ψa ->
+  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
+  Ψa [<=] Ψsub ->
+  ad_pat_sub_g n NM M Ψsub Θ
+    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
+  Θ ⨟ empty ⊢ₚₛᵃ
+    (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  (α `notin` ftvar_in_pskl P \/ P = pskl_var_f α) ->
+  exists 𝒞 Ξc Pa κc,
+    (P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞) /\
+    (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\
+    (Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+    a_wf_aenv (Ξc ++ Θ0) /\
+    α `notin` dom Ξc /\
+    keys κc = keys Ξc /\
+    Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
+    (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
+    a_inc_equiv Θ0 κ κ Θ /\
+    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
+    Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+Proof.
+  intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
+  intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
+         HscopeR HlcR Htags Hdisj Hsub Hdfresh Hshield Hpre HΨs1 HΨs2
+         Hsubty HwfSubj Hrefine Hspecial.
+  eapply (@a_looksub_solve_complete_leaf n NM M Θ0 Θ κ Δ empty empty Ψ'
+            Ψi Ψa Ψsub ψa Q P P0 Pi R'
+            (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) α);
+    [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HwfPi
+    | exact HmodSK | exact HmodTY | exact Hκ | exact HαΘ | exact HαΘ0
+    | exact HeraseR | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
+    | exact Hsub | exact Hdfresh | exact Hshield | exact Hpre
+    | clear - HΨs1; fsetdec | exact HΨs2
+    | exact Hsubty | exact HwfSubj | exact Hrefine
+    | apply urho__refl;
+        [ apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfSubj
+        | clear; fsetdec ]
+    | clear; fsetdec
+    | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+    | clear; fsetdec
+    | intros α0 Hα0; clear - Hα0; exfalso; fsetdec
+    | exact Hspecial ].
 Qed.
 
 (* ===================================================================== *)
@@ -692,10 +769,10 @@ Proof.
   (* which every recursive row of the induction below also calls.        *)
   (* ---------------------------------------------------------------- *)
   destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P)) as [Hin | Hnin];
-    [ | eapply a_looksub_solve_complete_leaf;
+    [ | eapply a_looksub_solve_complete_leaf_id;
         solve [ eassumption | left; exact Hnin ] ].
   destruct (pskl_var_dec P α) as [Heqα | HPnα];
-    [ eapply a_looksub_solve_complete_leaf;
+    [ eapply a_looksub_solve_complete_leaf_id;
         solve [ eassumption | right; exact Heqα ] | ].
   (* ---------------------------------------------------------------- *)
   (* Main induction: P ≠ α, α ∈ ftv P, and P is not a flexible variable  *)
@@ -1020,7 +1097,7 @@ Proof.
         as [Hin0 | Hnin0].
       - destruct (pskl_var_dec ⌊ Rb ⌋ˢ α) as [Heq0 | Hne0].
         + (* leaf, var *)
-          eapply (@a_looksub_solve_complete_leaf n NM M (Ξc1 ++ Θ0) Θ
+          eapply (@a_looksub_solve_complete_leaf_id n NM M (Ξc1 ++ Θ0) Θ
                     (κc1 ++ κ) Δ Ψ' (Ψi `union` (Ψ1 ∩ Ψ')) (Ψ2 ∩ Ψ') Ψ2 ψa Q2
                     (uskl_to_pskl Rb) P02 Pa1 Rb α
                     HwfΘ HwfΞ1 HwfP02R HwfPa1 HmodSK2 HmodTY2 Hinc1
@@ -1041,7 +1118,7 @@ Proof.
                     HmodSK2 HmodTY2 HsubR HΨs1R HΨs2R HshieldR Hpre1 Href2'
                     HeqSubB' Hne0 Hin0 HαRb HwfSubjB).
       - (* leaf, absent *)
-        eapply (@a_looksub_solve_complete_leaf n NM M (Ξc1 ++ Θ0) Θ
+        eapply (@a_looksub_solve_complete_leaf_id n NM M (Ξc1 ++ Θ0) Θ
                   (κc1 ++ κ) Δ Ψ' (Ψi `union` (Ψ1 ∩ Ψ')) (Ψ2 ∩ Ψ') Ψ2 ψa Q2
                   (uskl_to_pskl Rb) P02 Pa1 Rb α
                   HwfΘ HwfΞ1 HwfP02R HwfPa1 HmodSK2 HmodTY2 Hinc1
@@ -1304,7 +1381,7 @@ Proof.
         as [Hin0 | Hnin0].
       - destruct (pskl_var_dec ⌊ R0 ⌋ˢ α) as [Heq0 | Hne0].
         + (* leaf, var *)
-          eapply a_looksub_solve_complete_leaf;
+          eapply a_looksub_solve_complete_leaf_id;
             solve [ eassumption | reflexivity | assumption
                 | cbn; eassumption | rewrite <- HeqSub0; eassumption | rewrite HeqSub0; eassumption | assumption
                   | cbn; eassumption | rewrite <- HeqSub0; eassumption | rewrite HeqSub0; eassumption
@@ -1329,7 +1406,7 @@ Proof.
                   | clear - HαR; cbn in HαR; fsetdec
                   | exact HwfSubj0 ].
       - (* leaf, absent *)
-        eapply a_looksub_solve_complete_leaf;
+        eapply a_looksub_solve_complete_leaf_id;
           solve [ eassumption | reflexivity | assumption
                 | cbn; eassumption | rewrite <- HeqSub0; eassumption | rewrite HeqSub0; eassumption
                 | clear - HscopeR; cbn in HscopeR; fsetdec
@@ -1373,7 +1450,7 @@ Proof.
         as [Hin0 | Hnin0].
       - destruct (pskl_var_dec ⌊ R0 ⌋ˢ α) as [Heq0 | Hne0].
         + (* leaf, var *)
-          eapply a_looksub_solve_complete_leaf;
+          eapply a_looksub_solve_complete_leaf_id;
             solve [ eassumption | reflexivity | assumption
                 | cbn; eassumption | rewrite <- HeqSub0; eassumption | rewrite HeqSub0; eassumption | assumption
                   | cbn; eassumption | rewrite <- HeqSub0; eassumption | rewrite HeqSub0; eassumption
@@ -1398,7 +1475,7 @@ Proof.
                   | clear - HαR; cbn in HαR; fsetdec
                   | exact HwfSubj0 ].
       - (* leaf, absent *)
-        eapply a_looksub_solve_complete_leaf;
+        eapply a_looksub_solve_complete_leaf_id;
           solve [ eassumption | reflexivity | assumption
                 | cbn; eassumption | rewrite <- HeqSub0; eassumption | rewrite HeqSub0; eassumption
                 | clear - HscopeR; cbn in HscopeR; fsetdec
