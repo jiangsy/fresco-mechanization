@@ -2061,7 +2061,7 @@ inductions.  P6 therefore has FIVE lemmas, in dependency order:
 | P6-Cs | `a_lookeq_solve_complete` | consistency-proofs 921 | `a_lookeq` + `a_solve_cstr`-per-constraint | ad_pat_consis of `(κS)[ψa/α]` |
 | P6-Sv | `a_solve_sub_complete_var` | subtyping-proofs 1697 | `a_solve_sub` | `ad_pat_sub_g` of ρ(ψa) (fuel rides) |
 | P6-Ss | `a_looksub_solve_complete` | subtyping-proofs 2203 | `a_looksub` + `a_solve_cstr` | `ad_pat_sub_g` of `(κS)[ψa/α]` |
-| P6-L | `a_extract_complete` | subtyping-proofs 2730 | `a_extract` + plain precision | wraps P6-Ss; `guess_join_witness` for TY; `ad_partial_precise_complete` upgrades ⊑ᵖ to ⊑ |
+| P6-L | `a_extract_complete` | subtyping-proofs 2730 | `a_extract` + plain precision | wraps P6-Ss; `ad_partial_precise_complete` upgrades ⊑ᵖ to ⊑; the TY guess needs a NEW sub-induction — see §7.3 |
 
 Existing support (audited, all Qed): prop_looksub.v has decls/ftv/
 absent-nil/subst-stable/rename-var for `a_looksub`/`a_lookeq` +
@@ -3060,3 +3060,40 @@ Sub-ForallL rows use it to strip their binder (prop_look_complete_sub_cstr.v:
 the theorem's conclusion, and subtyping SOUNDNESS re-checked against a rule
 that admits strictly more.  The α-stack route above touches no rule and no
 closed soundness proof.
+
+### 7.3 P6-L sizing (measured 2026-07-30, after P6-Ss closed)
+
+**P6-L is NOT a thin wrapper — it is a small half plus a real sub-induction.**
+`a_extract` has ONE rule, so the shape is fixed:
+
+    P ≼[α,m] P' ⤳ Ξ ⨾ 𝒞  →  Ξ ⊩ 𝒞 ⨾ □ ⤳ Q  →  a_guess NM Q Ξ' Q'
+      →  P ⊳[NM,α,m] P' ⤳ (Ξ ++ Ξ') ↪ Q'
+
+- Premises 1–2: **P6-Ss at `Pi := pskl_hole`, `Ψi := ∅`, `Ψ' := Ψa`** (the
+  ρ = identity corollary — nothing threads a ρ in from outside).  Its
+  precision premise `Θ ⨟ Δ ⊢ κ□ ⊑ᵖ[∅] ψa` is the precision hole rule.
+- Then `ad_partial_precise_complete` (P5b-i, Qed) upgrades `⊑ᵖ[Ψa]` to plain
+  `⊑ ⌊ψa⌋ˢ`, exactly as complete-look does at tex:2764.
+- **`N = SK`: trivial.**  `a_guess__sk` gives `Ξ' = nil`, `Q' = Q`, so
+  `θa := θs` and all four outputs are P6-Ss's verbatim.
+- **`N = TY`: the real work.**  The paper's "by induction on the definition
+  of `guess^N(P_s)`" is a sub-induction over `a_guess_mono`'s six
+  constructors producing FOUR conclusions at once — wf, `a_inc`,
+  `a_inc_equiv`, and precision — with `θa` built POSITIONALLY by extending
+  `θs` to map each flexible of `Ξ'` to the corresponding type in `⌊ψa⌋ˢ`.
+  It also needs the paper's own side observation that no quantifier of
+  `⌊ψa⌋ˢ` faces a universal ghost in `P_s` (because all tags are in `Ψa`).
+
+⚠️ **CORRECTION to §7's table: `guess_join_witness` does NOT "provide exactly
+the P6-L TY-witness".**  It is CONSISTENCY-driven — its premise is
+`Ψ ⨟ Θ ⊢ₛᵃ pskl_to_uskl (msubst κm P) ∼ ptyp_to_bskl_syn A` with `A` a
+monotype (prop_consis_complete.v:4624) — whereas P6-L has PRECISION against
+`⌊ψa⌋ˢ`, which at TY is a general ghost-free skeleton, not a monotype
+painting.  Either a precision-driven analogue must be built, or a bridge
+found; `a_guess_mono_consis` (prop_flex.v:352) goes the OTHER way (guess ⇒
+consistency).  The five existing `a_guess_mono` lemmas are all structural
+support (ftv / flex_binds / decls / consis / head) — there is no witness
+lemma among them.
+
+**Estimate: a focused session, maybe two** — much smaller than P6-Ss, but not
+an add-on.  P7 opens only after it.
