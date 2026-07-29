@@ -2445,29 +2445,31 @@ and the mode/`skmod` premises are added.
 - The duplicate `a_looksub_lookeq_absent` in `prop_look_complete_sub_cstr.v`
   is deleted; `prop_looksub.v`'s `a_looksub_lookeq_absent_nil` is the one.
 
-**Blocked (see docs/PAPER-GAPS.md, last entry).**  The paper's ForallL IH
-instance needs `θψ_b = ψ_b`, which no premise gives and which no choice of
-`R''` can dodge (κ's images are monotypes, so a general tagged `ψ_b` has no
-pre-image).  Recommended repair — **CORRECTED same day, machine-checked in
-`frost/algo/cex/cex_p6ss_inc_compat.v`** — the COMPATIBILITY premise
-
-```
-∀ α̂ ∈ dom κ.  α̂ ∈ dom Θ  ⟹  msubst_lookup κ α̂ = α̂
-```
-
-NOT the Barendregt disjointness `dom κ ∩ dom Θ = ∅` first proposed: that
-one is UNSATISFIABLE at identity metasubstitutions (`id_inc_dom_overlap`),
-whose flexible entries are all preserved in the target
-(algorithmic.tex:135–140) — and identity is what the pipeline supplies.
-Compatibility holds at ι by definition, yields `θψ_b = ψ_b` from
-`ftv ψ_b ⊆ dom Θ`, and is not derivable from `κ ∷ Θ0 ⊑ Θ`
-(`inc_moves_survivor`: `a_inc` formally admits a θ that moves a surviving
-flexible, which the paper never intends).  It is preserved by every
-recursive row — Arrow's new κc entries avoid `dom Θ` by the strengthened
-freshness conclusion, ForallR adds a fresh rigid, ForallL/UnivGhostL touch
-neither κ nor Θ.  **Awaiting author sign-off before the statement gains a
-premise.**  A larger alternative (carry ρ through P6-Ss, as P6-Sv does) is
-recorded in the same PAPER-GAPS entry.
+**ForallL repair DECIDED (see docs/PAPER-GAPS.md, last entry — reclassified
+as a PROOF-STEP gap; evidence `frost/algo/cex/cex_p6ss_inc_compat.v`).**
+The paper's ForallL IH instance needs `θψ_b = ψ_b`, and NO side condition
+on θ rescues that step: Barendregt disjointness is unsatisfiable at ι
+(`id_inc_dom_overlap`); syntactic survivor-compat excludes the legitimate
+definition-substituting θ, which is inc-equivalent to ι
+(`def_subst_theta_is_legit`); and the strongest defensible invariant — the
+SEMANTIC `α̂ ∈ dom Θ ⟹ Θ ⊢ θα̂ ≡ᵗ α̂`, which also kills the junk θ moving
+an UNDEFINED survivor (`inc_moves_survivor`) — still leaves `θψ_b ≠ ψ_b`
+on that legitimate θ.  So: NO premise.  The repair is the ρ-GENERALIZED
+INDUCTION, statement UNCHANGED — an aux lemma whose motive carries an
+accumulated rigid substitution ρ (each ForallL opens with a FRESH RIGID β,
+guess absorbed as `ρ ∘ [ψ_b/β]`; subject `ρ((κR'')[ψa/α])`; β ∉ dom κ ∪
+dom Θ0 and κ's images β-free, so the κ/ψ commutation never arises), with
+the theorem as the ρ = identity instance.  The looksub side stays on
+var-opened subjects (LS-ForallL rebuilds via its cofinite family +
+`a_looksub_lookeq_rename_tvar`; `a_looksub_subst_stable_rev` is NOT needed
+on this route), and the `P = α` leaf calls P6-Sv at the ACCUMULATED ρ —
+the general-ρ interface it was built with.  Cost: the aux lemma carries
+P6-Sv's ρ premise kit (`uskl_rho`, `rho_fresh` via the binds-monotone
+Θs-generalization, `flex_apart_walk`/`flex_shield` at Δρ — `sub_shield`
+generalizes to carry Δρ), and the eight closed rows re-dispatch under the
+generalized motive (mechanical).  The ε-tag bookkeeping is expected to
+follow P6-Sv's Ψρ treatment (guesses' tags accumulate in Ψρ; `Ψρ ∩ Ψ' = ∅`
+from the rule's freshness premises); verify when executing.
 
 **Order for the next session** (Arrow and ForallR do NOT depend on the
 decision above, so start there):
@@ -2482,4 +2484,5 @@ decision above, so start there):
    the side condition, do not change the constraint grammar), which means
    P6-Ss has to re-acquire a ψa-relative `ftvar_in_cstrs` conclusion that
    the current statement deliberately dropped.
-3. ForallL — once the decision above is taken.
+3. ForallL — the ρ-generalized aux lemma above (the biggest chunk;
+   re-dispatches the eight closed rows).

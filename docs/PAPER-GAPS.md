@@ -1369,9 +1369,10 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
   ForallL row is blocked on something else entirely (the reverse direction
   of `lemma:constraint-collection-stable-substitution`, to undo the guess).
 
-## GAP (2026-07-29) — `lemma:complete-constraint-collection-solving` (P6-Ss), ForallL case: the IH instance needs `θψ_b = ψ_b`, which the paper never assumes and which is not derivable
+## GAP (proof-step, 2026-07-29) — `lemma:complete-constraint-collection-solving` (P6-Ss), ForallL case: the IH instance needs `θψ_b = ψ_b`, which fails even for legitimate θ; no side condition on θ repairs the step — the statement is believed TRUE via a ρ-generalized induction
 
 - Where: subtyping-proofs.tex:2600–2643 (the \sublab{ForallL} case of P6-Ss).
+  Machine-checked evidence: `frost/algo/cex/cex_p6ss_inc_compat.v`.
 - **The step.**  The rule's premise is
   `⊢ ((θ S')[ψ_a/α])[ψ_b/β] ⩽ Q`, and the proof rewrites it (\refe) as
   `⊢ ((θ S')[ψ_b/β])[ψ_a/α] ⩽ Q`, then applies the IH with
@@ -1385,68 +1386,66 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
 
   The paper justifies \refe by "capture-avoiding substitution and freshness
   conditions", which covers the α/β commutation but NOT the θ/ψ_b one.
-- **It is not derivable.**  `ψ_b`'s only constraint is `Θ ⊢ ⌊ψ_b⌋`, so
-  `ftv ψ_b ⊆ dom Θ`; and `inc[θ]{Θ0}{Θ}` (mechanized `a_inc`) constrains the
-  TARGET not at all in its flexible rows (`a_inc__flex`, `a_inc__flex_def`
-  leave `Θ'` arbitrary).  So a Θ-scoped `ψ_b` may mention a `dom θ`
-  variable, and then `θψ_b ≠ ψ_b`.  Nor can the mechanization dodge by
-  naming `ψ_b` inside `Θ0`: a metasubstitution's images are MONOTYPES
-  (`metasubst = list (atom * ptyp)`, `mono_ptyp`), while `ψ_b` is a general
-  tagged skeleton — the impredicative instantiation is the whole point of
-  the rule — so `ψ_b` has no pre-image under θ in general.
-- **The intended reading, made explicit (CORRECTED 2026-07-29, same day —
-  machine-checked in `frost/algo/cex/cex_p6ss_inc_compat.v`).**  The first
-  version of this entry proposed the Barendregt disjointness
-  `∀ α̂ ∈ dom θ, α̂ ∉ dom Θ`.  **That is refuted by the paper itself**:
-  "For an identity metasubstitution, all entries of flexible variables in
-  Θ are preserved in Θ'" and "Our algorithms always give identity
-  metasubstitutions" (algorithmic.tex:135–140) — at ι every α̂ ∈ dom θ needs
-  `Θ ⊢ α̂`, so `dom ι ⊆ dom Θ` and the disjointness premise is
-  UNSATISFIABLE at exactly the identity metasubstitutions the pipeline
-  supplies (`id_inc_dom_overlap`, Qed).  The correct missing fact is the
-  COMPATIBILITY-ON-SURVIVORS condition:
-
-  ```
-      ∀ α̂ ∈ dom θ.  α̂ ∈ dom Θ  ⟹  θ α̂ = α̂           (compat)
-  ```
-
-  which yields `θψ_b = ψ_b` from `ftv ψ_b ⊆ dom Θ` (every flexible of ψ_b
-  is either outside dom θ, or a survivor and fixed), and which identity
-  metasubstitutions satisfy BY DEFINITION.  It is genuinely missing: the
-  formal `inc[θ]{Θ0}{Θ}` does not imply it —
-  `[(α̂, ⟨⟩)] ∷ [α̂] ⊑ [α̂]` is derivable (`inc_moves_survivor`, Qed), a θ
-  that "solves" α̂ to ⟨⟩ while Θ still declares the SAME α̂ unsolved.  Such
-  a θ is plainly outside the paper's intent (a preserved entry is the same
-  variable), so this is a prose-completion of the WF-SIDE-CONDITIONS
-  family; since `a_inc` is the rule set itself, it goes on the LEMMA as a
-  premise.  It is preserved by every recursive row of P6-Ss (Arrow's new
-  κc entries avoid `dom Θ` by the strengthened freshness conclusion below;
-  ForallR adds a fresh RIGID; ForallL/UnivGhostL touch neither θ nor Θ).
-  **The authors should decide whether the paper adopts it.**
-- **A second, smaller consequence — the SCOPE premise.**  Even with the
-  hygiene condition, `S'[ψ_b/β]` is only Θ-scoped, never Θ0-scoped, so
-  P6-Ss's (and, through the Check/Arrow delegation, P6-Cs's) implicit
-  "the subject skeleton lives in Θ0" bookkeeping is unsatisfiable at this
-  row.  ALREADY REPAIRED in the mechanization (2026-07-29): the premise
-  `ftv S ⊆ {α} ∪ dom Θ0` is relaxed to `ftv S ⊆ {α} ∪ dom Θ0 ∪ dom Θ` and
-  the dual conclusion `α0 ∈ dom θ_c ⇒ α0 ∉ {α} ∪ dom Θ0` is strengthened to
-  `α0 ∉ {α} ∪ dom Θ0 ∪ dom Θ`, in both `prop_look_complete_cstr.v` (P6-Cs,
-  re-`Qed`ed) and `prop_look_complete_sub_cstr.v`.  This costs nothing: the
-  only flexible-generating row already picks its fresh name outside `dom Θ`.
-- **Prerequisite now closed.**  The reverse direction of
-  `lemma:constraint-collection-stable-substitution` that the case ends with
-  is mechanized as `a_looksub_subst_stable_rev` (prop_looksub.v §4b, `Qed`,
-  axiom-free), together with its `a_lookeq` twin.
-- **Alternative repair (larger, not chosen).**  Carry the paper's
-  rigid-variable substitution ρ through P6-Ss as P6-Sv already does, and
-  absorb each ForallL guess into it (`ρ_b = ρ ∘ [ψ_b/β]`, `uskl_rho_subst`).
-  The lookup side then never leaves `open ⌊R0⌋ (var β)`, the
-  reverse-substitution lemma is not needed at all, and the `P = α` leaf
-  calls P6-Sv at the ACCUMULATED ρ — which is what P6-Sv's ρ was built for.
-  Cost: P6-Ss's statement, its `sub_shield` Δρ argument, and all eight
-  closed rows change.
-- **Still open inside the row** (independent of the choice above): the tag
-  bookkeeping needs `ε ∉ Ψ` — the instantiated binder's own tag must not be
-  in the ambient solved-tag index.  `ad_pat_sub_g_ftag_sub` bounds `Ψ` by
-  the subject's tags, which INCLUDE `ε`, so either the rule's own freshness
-  premises exclude it or this is a further gap.  Not settled.
+  Nothing gives `θψ_b = ψ_b`: `ψ_b`'s only constraint is `Θ ⊢ ⌊ψ_b⌋`, so
+  `ftv ψ_b ⊆ dom Θ`, and a Θ-scoped guess may mention `dom θ` variables.
+  Nor can `ψ_b` be re-based below θ: θ's images are MONOTYPES while `ψ_b`
+  is a general tagged skeleton (impredicative instantiation is the point of
+  the rule), so `ψ_b` has no θ-pre-image in general.
+- **No side condition on θ rescues the step** (this bullet went through two
+  corrections, both machine-checked, before converging):
+  1. Barendregt disjointness `dom θ ∩ dom Θ = ∅` is UNSATISFIABLE at
+     identity metasubstitutions — their flexible entries are all PRESERVED
+     in the target (algorithmic.tex:135–140, "our algorithms always give
+     identity metasubstitutions"), so `dom ι ⊆ dom Θ`
+     (`id_inc_dom_overlap`).
+  2. Syntactic compatibility `∀ α̂ ∈ dom θ ∩ dom Θ, θα̂ = α̂` EXCLUDES a
+     legitimate θ: at `Θ = [α̂ := ⟨⟩]` the θ with `θα̂ = ⟨⟩` substitutes a
+     DEFINED survivor's definition — exactly what "preserved … but possibly
+     with more monomorphic information (e.g., from α̂ to α̂ := ⟨⟩)"
+     licenses — and it is inc-EQUIVALENT to ι
+     (`def_subst_theta_is_legit`).
+  3. The strongest defensible invariant is therefore SEMANTIC:
+     `α̂ ∈ dom Θ ⟹ Θ ⊢ θα̂ ≡ α̂` (for an UNDEFINED survivor ≡ collapses to
+     `θα̂ = α̂`; for a defined one it licenses the definition).  It still
+     does NOT give the syntactic `θψ_b = ψ_b` the IH needs — the
+     definition-substituting θ of point 2 satisfies it and still moves a
+     `ψ_b` that mentions α̂.  The written step holds essentially only at
+     ι-like θ, while the lemma quantifies over general θ.
+- **Mech repair (decided; keeps the paper's statement UNCHANGED).**
+  Restructure the induction as P6-Sv's already is: generalize the motive
+  over an accumulated rigid substitution ρ.  Each ForallL opens with a
+  FRESH RIGID β and absorbs its guess into ρ (`ρ ∘ [ψ_b/β]`,
+  `uskl_rho_subst`), so the subject is `ρ((θS)[ψ_a/α])` with β ∉ dom θ and
+  θ's images β-free — the θ/ψ_b commutation never arises, for ANY θ.  The
+  theorem is the ρ = identity instance.  The `P = α` leaf then calls
+  `lemma:…-var` (P6-Sv) at the ACCUMULATED ρ — its general-ρ interface,
+  which the paper's own "with the identity substitution" leaf never
+  exercises.  The paper could adopt the same restructuring; alternatively
+  its authors may prefer to note the lemma is only ever instantiated at
+  ι-like θ (where the written step is sound) — but then the ForallL
+  recursion must be checked to preserve ι-likeness, which is the same
+  obligation in different clothes.
+- **Independent definitional observation** (for the authors; surfaced by
+  the same review).  The figure's flex rule for `inc[θ]{Θ,α̂}{Θ'}`
+  constrains the image by nothing but `Θ' ⊢ τ`, so it formally admits a θ
+  that "solves" α̂ to ⟨⟩ while Θ' keeps the SAME α̂ UNDEFINED —
+  `[(α̂,⟨⟩)] ∷ [α̂] ⊑ [α̂]` is derivable (`inc_moves_survivor`) — junk
+  under the information-increase reading (the target does not refine such
+  a θ's claim).  The invariant of point 3 above
+  (`α̂ ∈ dom Θ' ⟹ Θ' ⊢ θα̂ ≡ α̂`) is the side condition that excludes it
+  while keeping the legitimate definition-substituting θ.  The mech keeps
+  `a_inc` faithful to the figure (the ρ-repair needs no such condition);
+  whether the paper's definition should carry it is the authors' call.
+- **Bookkeeping done en route** (2026-07-29, committed):
+  - The scope premise `ftv S ⊆ {α} ∪ dom Θ0` was relaxed to
+    `ftv S ⊆ {α} ∪ dom Θ0 ∪ dom Θ` with the dual conclusion
+    `α0 ∈ dom θ_c ⇒ α0 ∉ {α} ∪ dom Θ0 ∪ dom Θ` strengthened to match, in
+    both `prop_look_complete_cstr.v` (P6-Cs, re-`Qed`ed) and
+    `prop_look_complete_sub_cstr.v`.  Kept: harmless, and the Arrow row
+    wants the strengthened conclusion.
+  - The reverse direction of
+    `lemma:constraint-collection-stable-substitution` is mechanized as
+    `a_looksub_subst_stable_rev` (prop_looksub.v §4b, `Qed`, axiom-free).
+    The ρ-route does not need it (the looksub side stays on var-opened
+    subjects), but it is the lemma the PAPER's own proof route ends with,
+    and it is true and kept.

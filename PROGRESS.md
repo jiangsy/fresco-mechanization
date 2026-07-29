@@ -103,30 +103,29 @@ flexible-generating row already picks its fresh name outside `dom Θ`).  The
 relaxation is forced by P6-Ss's ForallL row, whose IH subject `open R0 ψ_b`
 is Θ-scoped and never Θ0-scoped.
 
-**⛔ BLOCKED — P6-Ss ForallL needs a premise the paper does not state.**
-subtyping-proofs.tex:2600–2643 applies the IH with `S := S'[ψ_b/β]` and
-uses `θ(S'[ψ_b/β]) = (θS')[ψ_b/β]`, i.e. `θψ_b = ψ_b`.  Nothing gives it:
-`ψ_b`'s only constraint is `Θ ⊢ ⌊ψ_b⌋`, and `a_inc`'s flexible rows leave
-the target arbitrary, so a Θ-scoped guess may mention `dom θ`.  Nor can the
-guess be re-based into Θ0: a metasubstitution's images are MONOTYPES while
-`ψ_b` is a general tagged skeleton (impredicative instantiation is the point
-of the rule), so it has no pre-image under θ.  Recommended repair —
-**CORRECTED same day, machine-checked in
-`frost/algo/cex/cex_p6ss_inc_compat.v`** — the COMPATIBILITY premise
-`∀ α̂ ∈ dom κ ∩ dom Θ, κα̂ = α̂` ("κ fixes the flexibles it shares with Θ").
-NOT the Barendregt disjointness `dom κ ∩ dom Θ = ∅` first proposed: that
-one is refuted by the paper itself — identity metasubstitutions preserve
-all flexible entries in the target (algorithmic.tex:135–140), so `dom ι ⊆
-dom Θ` (`id_inc_dom_overlap`) and the disjointness premise is unsatisfiable
-at exactly the ι the pipeline supplies.  Compatibility holds at ι by
-definition, yields `θψ_b = ψ_b` from `ftv ψ_b ⊆ dom Θ`, is NOT derivable
-from `κ ∷ Θ0 ⊑ Θ` (`inc_moves_survivor`: `a_inc` formally admits a θ that
-moves a surviving flexible), and is preserved by every recursive row.  A
-larger alternative — carry the paper's ρ through P6-Ss as P6-Sv does,
-absorbing each guess into `ρ_b = ρ ∘ [ψ_b/β]` — is recorded too.  Full
-analysis: docs/PAPER-GAPS.md (last entry) and
-DESIGN-completeness-subtyping.md §8 (e).  **Awaiting author sign-off.**
-Arrow and ForallR do not depend on the decision and are next.
+**P6-Ss ForallL — reclassified to a PROOF-STEP gap; repair decided, no
+premise (two review rounds, all machine-checked in
+`frost/algo/cex/cex_p6ss_inc_compat.v`).**
+subtyping-proofs.tex:2600–2643 applies the IH with `S := S'[ψ_b/β]`, using
+`θ(S'[ψ_b/β]) = (θS')[ψ_b/β]`, i.e. `θψ_b = ψ_b` — and NO side condition
+on θ rescues that step: Barendregt disjointness `dom θ ∩ dom Θ = ∅` is
+unsatisfiable at identity metasubstitutions (`id_inc_dom_overlap`;
+algorithmic.tex:135–140 — ι's entries are all preserved in the target);
+syntactic survivor-compat `θα̂ = α̂` excludes the legitimate
+definition-substituting θ at `Θ = [α̂:=⟨⟩]`, which is inc-EQUIVALENT to ι
+(`def_subst_theta_is_legit`); and the strongest defensible invariant — the
+semantic `α̂ ∈ dom Θ ⟹ Θ ⊢ θα̂ ≡ᵗ α̂`, which kills the junk θ moving an
+UNDEFINED survivor (`inc_moves_survivor`) — still leaves `θψ_b ≠ ψ_b` on
+the legitimate θ.  The written step holds essentially only at ι-like θ.
+REPAIR (decided, not yet built): the ρ-GENERALIZED induction, statement
+UNCHANGED — guesses ride outside κ as `ρ ∘ [ψ_b/β]` on fresh rigids, and
+the `P = α` leaf calls P6-Sv at the accumulated ρ (its general-ρ
+interface, unused until now).  A separate definitional observation for
+the authors (the ⊑ figure admits the junk θ; the semantic invariant is
+the side condition that would exclude it) is registered in PAPER-GAPS.md.
+Full analysis: docs/PAPER-GAPS.md (last entry, rewritten) and
+DESIGN-completeness-subtyping.md §8 (e).
+Arrow and ForallR are unaffected and remain next.
 
 ## 2026-07-29 (later) — NOTATION: the metasubstitution is `κ`; `ρ` is reserved for the paper's ρ
 
