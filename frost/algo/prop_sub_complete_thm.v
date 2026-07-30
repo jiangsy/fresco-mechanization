@@ -64,6 +64,9 @@ Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.def_decl_algo_sub_hyg.
+Require Import src.frost.algo.prop_refine.        (* lc_pskl_to_bskl_inh *)
+Require Import src.frost.algo.prop_consis_complete. (* ad_precise_f *)
+Require Import src.frost.algo.prop_consis_precise. (* pskl_no_forall *)
 Require Import src.frost.algo.prop_metasubst.     (* opt_axiom_factor *)
 Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
 Require Import src.frost.algo.prop_flex.          (* a_decls *)
@@ -392,3 +395,5 @@ Print Assumptions a_sub_complete_ghostg.
 (*                                                                        *)
 (*  See DESIGN-completeness-subtyping.md §9.1.1.                           *)
 (* ===================================================================== *)
+
+

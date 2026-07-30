@@ -1645,3 +1645,42 @@ each side.  (Note also that algorithmic
 `aconsis{Θ_0}{P}{P_0}{Θ_1}` abbreviation suppresses the consistency output —
 so the syntactic reading is only ever needed for the OTHER rows, which are
 exactly the ones that refute it.)
+
+---
+
+## FALSE (machine-checked, 2026-07-30) — `thm:complete-subtyping`'s Sub-Infer / Sub-UnivGhostR step "the consistency premise gives `Θ ⊢ precise{θP}{Q}`" (:3181, :3288)
+
+Both cases finish by reading a PRECISION off the consistency premise:
+
+> The consistency premise, together with `⌊S⌋ = P` and \Cref{thm:complete-consistency},
+> gives `Θ ⊢ precise{θP}{Q}`.
+
+Isolated, that step is **false**.  Machine-checked witness:
+`frost/algo/cex/cex_p7_sskl_precise.v` (`p7_sskl_precise_is_false`, Qed,
+axiom-free).
+
+Take the subject `∀◇.` (a quantifier whose body is the ghost) against the
+counterpart `∀α. α`, over the EMPTY context.  Consistency relates them: its ∀
+rule opens both sides at a fresh `α` and puts `α` into **Θ**, after which the
+hole rule fills the ghost with `α` — legal, because `α` is in the context there.
+Precision cannot: refinement opens a ∀ into **Δ**, not Θ, and checks a ghost
+fill at `Θ ⊢ ·` — where a Δ-variable is out of scope.  So the body obligation
+`◇ ⊑ α` is underivable, and with it the whole precision.
+
+This is the same Θ-versus-Δ asymmetry that already forced the mechanization to
+carry a "forbidden in ghost fills" set through refinement.
+
+**It does not break the theorem**, and the reason is a premise the
+mechanization added and the paper does not state: the SUBJECT's own refinement
+`Θ ⊢ θ⌊S⌋ ⤳ ⌊Q⌋`, alongside the `P_0`-fill.  A second theorem in the same file
+(`cex_excluded_by_subject_refinement`, Qed) shows that premise is
+**unsatisfiable on the witness** — so the configuration never reaches either
+case.
+
+**Recommendation to the authors.**  State the subject-refinement condition as
+part of what it means to be a solution (it is exactly what the soundness
+theorems already produce for every algorithmic output, so it costs nothing and
+keeps the sound/complete pair characterising the algorithm exactly), and derive
+the precision step from IT rather than from the consistency premise alone.  On
+that reading the step becomes a colour bridge between two refinement judgments
+rather than a fact about consistency.

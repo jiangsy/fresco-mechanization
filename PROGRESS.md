@@ -169,18 +169,27 @@ needs.  They establish the leaf plumbing every axiom-node case reuses:
 are repainted (`msubst_bskl_pskl_to_bskl_syn` +
 `bskl_to_pskl_pskl_to_bskl_{syn,inh}` + `ad_refine_syn_f_forget`).
 
-Scoped but NOT started: Sub-Infer and Sub-UnivGhostR, which share one lemma —
-"consistency against an `is_sskl` counterpart gives precision of the erasures",
-the paper's `:3181` / `:3288` step.  ⚠️ An intermediate note in this session
-claimed that lemma is FALSE on a colour-mismatch argument; **that was wrong and
-is retracted** (DESIGN §9.1.1): a nested `∀◇` is not well-formed
-(`a_wf_pskl__tophole` carries `guarded_pskl`), and the inh-vs-syn painting
-difference is reconciled by `is_sskl`.  The one real technicality is that the ∀
-rows need the Θ→Δ binder move, whose PLAIN form is false (a hole's fill may
-mention the stripped binder), so the lemma must be stated over `ad_precise_f`
-and forgotten at the end — the shape `a_consis_complete_thm` already uses.
-Sub-Check is NOT in this group: its counterpart is `is_sskl` only when `B` is
-∀-free, and it takes the paper's own route (`a_consis_complete_thm` +
+**Sub-Infer / Sub-UnivGhostR: the lemma they share is FALSE, and the mech's own
+third premise is what rescues them.**  Both carry `is_sskl Q` on the rule and
+both algorithmic counterparts return the input skeleton at the input context, so
+all that is left of either row is "consistency against an `is_sskl` counterpart
+gives precision of the erasures" — the paper's `:3181` / `:3288` step.
+Machine-checked FALSE: `frost/algo/cex/cex_p7_sskl_precise.v`
+(`p7_sskl_precise_is_false`, Qed, axiom-free).  Witness `R = ∀◇.` against
+`Q = ∀α. α` over the EMPTY context: consistency's ∀ rule puts the fresh binder
+into **Θ**, so `__hole` may fill the ghost with it; refinement's ∀ rule puts it
+into **Δ** and checks a fill at `Θ ⨟ ∅`, where it is out of scope.  Same Θ-vs-Δ
+asymmetry that forces `ad_refine_syn_f`'s `F` to exist.  ✅ The second theorem in
+that file shows the mechanization's THIRD solution premise (the SUBJECT's own
+refinement, DESIGN §1's "lesson 1", not in the paper) is UNSATISFIABLE on the
+witness — so the configuration never reaches either row, and the lemma should be
+RESTATED with that premise, becoming a COLOUR BRIDGE
+`ad_refine_pskl_f → ad_precise_f` whose only non-identity rows are `__hole` and
+`__tophole_fill`.  ⚠️ Two earlier records in this session's DESIGN §9.1.1 (first
+"false on a colour mismatch at ∀◇", then "holds") were both reasoned ahead of the
+checker and are retracted there; the real break is the ∀-over-a-hole row.
+Sub-Check is in neither group — its counterpart is `is_sskl` only when `B` is
+∀-free, so it takes the paper's own route (`a_consis_complete_thm` +
 `a_consis_concrete_output_equiv`).
 
 ## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
