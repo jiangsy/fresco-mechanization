@@ -3518,9 +3518,10 @@ algo subtyping, when input `P_0` is a concrete type, RHS of subtyping is always
 
 ## 10. `flex_apart` and `flex_shield`, rethought as a whole (2026-07-30)
 
-⚠️ **§10.3's ORIGINAL CONCLUSION — "`flex_apart` is redundant, delete it in
-favour of `flex_shield`" — IS WRONG.  Corrected in §10.4, which is what to
-read.**  The intuition in §10.1-§10.2 stands; the merge does not.
+⚠️ **READ §10.5 FIRST — it is the settled version.**  §10.3 said "delete
+`flex_apart`"; §10.4 said "no, the descents must differ"; §10.5 VALIDATES §10.3
+against the existing `flex_shield` kit and RETRACTS §10.4.  The intuition in
+§10.1-§10.2 was stable throughout.
 
 Written after `cex_p7_shield_arrow.v` showed a `fa_rho_var`-shaped hole, and
 instead of patching it.
@@ -3639,3 +3640,62 @@ not a mono paint and there is no precision rule for `var ⊑ᵖ topholeg`.  So
 either that combination is unreachable at this call site — `a_tags_sort` at TY
 forces ghost-freeness, which excludes `topholeg`, but SK does not — or the
 read-off needs a different right arm.  **Settle that before continuing.**
+
+### 10.5 VALIDATED (2026-07-30) — §10.4 was an over-correction; the merge is on
+
+Two checks, both against code rather than reasoning.
+
+**(a) The `guarded(P0)` side condition on the instantiating ∀ row is free.**
+All EIGHT `fsh_all_r` producer sites (`prop_look_complete_sub_var.v` lines 246,
+266, 283, 322, 349, 384, 482, 521) sit inside inductions over `flex_shield` —
+`_delta_cong`, `_psi_anti`, `_weaken_tvar`, `_weaken_flex_prefix`, `_rename`,
+`_rename_r_gen`, `_tophole_l_inv`, `_topholeg_r_inv`.  Every one RE-APPLIES the
+rule while rebuilding a transported derivation, so a new side condition would
+ride along from the instance being transported.  **No site builds an
+`fsh_all_r` from scratch**, and the suppliers (P7's
+`prop_sub_shield_supply.v`) use only `fsh_clean` / `fsh_flexfree`.  So the
+condition would cost nothing.
+
+**(b) …but it is not needed, because §10.4's objection is FALSE.**
+§10.4 claimed the merge dies on `flex_apart_all_etag_forall_inv`, the LOCKSTEP
+∀/∀ descent at a FIXED Δρ.  `flex_shield` already has that descent:
+
+    flex_shield_descend_both   (prop_look_complete_sub_var.v:581, Qed)
+
+and its own comment settles the disagreement — *"the two-sided row is not a
+separate obligation: the guess's binder joins Δρ (it IS ρ-replaced from the
+subtyping side's point of view) and the payload's binder is a fresh rigid of
+the context"*.  It lands at `add α Δρ` and `(α ~ abind_tvar) ++ Θ0`, not at Δρ.
+So `flex_apart`'s `fa_all_etag` — which holds Δρ FIXED across a matched ∀ — is
+the rule that is out of step, and `flex_shield`'s reading is both stronger as a
+premise and compositional.  **§10.3's conclusion stands: one predicate,
+`flex_shield`.**
+
+**And the blocker recorded in §10.4 is already solved on the `flex_shield`
+side.**  `flex_shield_flex_leaf` (:603, Qed) IS the flexible-P0 read-off, and it
+resolves the ∀◈-stack arm the way P6-Sv does — by carrying SHAPE side conditions
+(`ψa` is neither a `uskl_all_etag` nor a `uskl_topholeg`) and handling those two
+targets in their own rows of the induction.  P6-Cs would do the same.
+
+**Coverage check — every `flex_apart` consumer already has its twin:**
+
+| `flex_apart` | `flex_shield` |
+|---|---|
+| `_topholeg_target_inv` | `_topholeg_r_inv` |
+| `_tophole_p0_inv` | `_tophole_l_inv` |
+| `_flex_var_clean` | `_flex_leaf` (shape side conditions) |
+| `_arrow_inv` | `_arrow_inv` |
+| `_weaken` | `_weaken_tvar` / `_weaken_flex_prefix` |
+| `_all_etag_forall_inv` | `_descend_both` (at `add α Δρ`) |
+| `_guarded_all_etag_descent` | `_descend_r` |
+| `_tophole_all_etag_descent` | `_descend_r` ∘ `_tophole_l_inv` |
+
+**Remaining work, in order:** (1) move `flex_shield` + `pskl_flex_free` + kit up
+to `prop_look_complete.v` (P6-Cv/P6-Cs are upstream of where they live);
+(2) rewire P6-Cv and P6-Cs to `flex_shield Θ0 ∅ Δρ P0 ψa` — ⚠️ **the one
+non-mechanical part is that their ∀ rows must now land at `add α Δρ` and a Θ0
+extended by the rigid**, which the ρ-machinery already tolerates elsewhere
+(`a_inc_cons_tvar`); (3) delete `flex_apart`, `fa_step`, `fa_walk`,
+`flex_apart_walk`, `flex_apart_p0`; (4) collapse `sub_shield` to one conjunct,
+which is what `cex_p7_shield_arrow.v` demands.  Branch `flexapart-baserules` is
+then superseded — its base-row patch is subsumed.
