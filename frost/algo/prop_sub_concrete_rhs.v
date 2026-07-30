@@ -47,7 +47,8 @@ Require Import src.frost.algo.def_meta.     (* ≡ˢ *)
 Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.prop_precise.   (* bskl_to_pskl_open *)
 Require Import src.frost.algo.prop_pat_sub.   (* {pskl,bskl}_ghost_free *)
-Require Import src.frost.algo.prop_consis_sound.  (* a_consis_sound *)
+Require Import src.frost.algo.prop_consis_sound.  (* a_consis_sound, ad_refine_syn_f_forget *)
+Require Import src.frost.algo.prop_decorate_key.   (* a_sub_sound_thm *)
 
 Set Implicit Arguments.
 
@@ -145,17 +146,18 @@ Qed.
 Print Assumptions a_consis_concrete_output_equiv.
 
 (* ===================================================================== *)
-(*  §4  THE TWO ≡ˢ TRANSPORTS THE [a_sub]-LEVEL STATEMENT WILL NEED       *)
+(*  §4  MOVING AN ≡ˢ AROUND — the transports P7b's own cases will need     *)
 (*                                                                        *)
 (*  ≡ˢ reads the context at ONE rule only ([__flex_def], a [binds] of a    *)
-(*  DEFINED flexible), so both transports are one induction with nothing   *)
-(*  in them but that lookup.                                              *)
+(*  DEFINED flexible), so each transport is one induction with nothing in  *)
+(*  it but that lookup.                                                   *)
 (* ===================================================================== *)
 
-(** (a) MONOTONICITY along [⊴].  This is what [a_sub__arrow] needs: the
-    domain's equivalence is read off at Θ1 (§3) but the conclusion lives at
-    Θ2.  [a_isub]'s second component — "a definition, once made, is never
-    rewritten" (def_meta.v:255) — is exactly and only what the proof uses. *)
+(** (a) MONOTONICITY along [⊴].  P7b's Sub-Arrow reads its domain equivalence
+    off at Θ1 (§3) and must state it at Θ2.  [a_isub]'s second component — "a
+    definition, once made, is never rewritten" (def_meta.v:255) — is exactly and
+    only what the proof uses; [a_consis_sound] / [a_sub_sound_thm] both export
+    the [⊴] it needs. *)
 Lemma a_pskl_tyequiv_isub_mono : forall Θ P Q,
   Θ ⊢ P ≡ˢ Q ->
   forall Θ', Θ ⊴ Θ' ->
@@ -172,8 +174,8 @@ Proof.
   - apply a_pskl_tyequiv__tophole; auto.
 Qed.
 
-(** …and the plain context extension, for the walk rules of [a_sub_flex]
-    ([__depend] / [__skip] / [__skip_rigid] all re-attach a head entry). *)
+(** …and the plain context extension, for anything that re-attaches a head
+    entry (every walk row of [a_sub_flex] does). *)
 Lemma a_pskl_tyequiv_weaken : forall Θ P Q,
   Θ ⊢ P ≡ˢ Q ->
   forall Θ', (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
@@ -190,10 +192,10 @@ Proof.
   - apply a_pskl_tyequiv__tophole; auto.
 Qed.
 
-(** (b) SUBSTITUTING A DEFINITION IS INVISIBLE TO ≡ˢ.  This is what
-    [a_sub_flex__assign] needs: its premise runs at [P0[τ/β̂]] while the
-    conclusion is about [P0], and the two are related by exactly the rule
-    that records the definition. *)
+(** (b) SUBSTITUTING A DEFINITION IS INVISIBLE TO ≡ˢ.  [a_sub_flex__assign]
+    runs its premise at [P0[τ/β̂]] while its conclusion is about [P0], and the
+    two are related by exactly the rule that records the definition — so any
+    statement threaded through that row crosses this gap. *)
 Lemma mono_ptyp_to_pskl_lc : forall τ, mono_ptyp τ -> lc_pskl (ptyp_to_pskl τ).
 Proof.
   intros τ H; induction H; cbn;
@@ -224,22 +226,48 @@ Qed.
 
 Print Assumptions a_pskl_tyequiv_subst_flex_def.
 
-(** ⚠️ STILL OPEN, and it is the OTHER half: the [a_sub]-level statement
-    Sub-ForallR needs (the paper's "P'_0 and P_1 are equivalent through Q",
-    :3238).  It is a MUTUAL induction with [a_sub_flex], and §4 supplies the two
-    transports that make it more than a transcription of §2:
+(* ===================================================================== *)
+(*  §5  WHAT P7b's Sub-ForallR WILL CITE — and it is the SAME corollary   *)
+(*                                                                        *)
+(*  The paper's "P'_0 and P_1 are equivalent through Q" (:3238).  §4 was   *)
+(*  written for a MUTUAL INDUCTION over [a_sub] / [a_sub_flex]; that       *)
+(*  induction is not needed.  [a_sub_sound_thm] (Qed,                     *)
+(*  prop_decorate_key.v:3326) already exports the refinement of the OUTPUT *)
+(*  FROM the input skeleton — the very same conjunct [a_consis_sound]      *)
+(*  exports, in the very same shape — so §2 applies verbatim and the whole *)
+(*  [a_sub] half collapses to one destruct.                               *)
+(*                                                                        *)
+(*  §4's transports are kept: they are what MOVES an equivalence once you  *)
+(*  have it (P7b's Sub-Arrow composes [Θ0 → Θ1 → Θ2] and will need         *)
+(*  [_isub_mono]; [a_sub_flex]'s walk rows re-attach a head entry).        *)
+(* ===================================================================== *)
 
-    - [a_sub__arrow] threads [Θ0 → Θ1 → Θ2], so the domain's equivalence — read
-      off at Θ1 by §3 — has to be transported to Θ2: [a_pskl_tyequiv_isub_mono],
-      whose [⊴] premise is [a_consis_sound]'s first conjunct.
-    - [a_sub_flex__assign] runs its premise at [P0[τ/β̂]], not at [P0], so the IH
-      returns an equivalence about the SUBSTITUTED skeleton; the gap closes by
-      [a_pskl_tyequiv_subst_flex_def], at the definition the rule walked past.
-      (Ghost-freeness survives the substitution: [ptyp_to_pskl τ] has no ghosts,
-      §1.)  The walk rows re-attach a head entry, which is
-      [a_pskl_tyequiv_weaken].
+Corollary a_sub_concrete_output_equiv : forall NM M P0 Θ0 P P' Θ1,
+  a_sub NM M P0 Θ0 P P' Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
+  pskl_ghost_free P0 ->                (* the paper's "P_0 is a concrete type" *)
+  Θ1 ⊢ P0 ≡ˢ P'.
+Proof.
+  intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP HmodSK HmodTY Hgf.
+  destruct (a_sub_sound_thm Hrun Hwf HwfP0 HwfP HmodSK HmodTY)
+    as (_ & _ & Qt & HeQt & _ & Hrs).
+  subst P'.
+  pose proof (ad_refine_syn_ghost_free_equiv
+                (ad_refine_syn_f_forget Hrs)
+                (pskl_to_bskl_inh_ghost_free P0 Hgf)) as Heq.
+  rewrite bskl_to_pskl_pskl_to_bskl_inh in Heq. exact Heq.
+Qed.
 
-    What is left to build is the induction itself and its wf threading: the
-    statement needs [Θ0 ⨟ ∅ ⊢ₚₛᵃ P0] and [⊢ₚₛᵃ P] at every step, i.e. the
-    [a_sub]-side preservation facts, plus [Θ1 ⊴ Θ2] out of the [a_sub] premise
-    of [__arrow] (the consistency side has it from [a_consis_sound]). *)
+Print Assumptions a_sub_concrete_output_equiv.
+
+(** ⚠️ NOTE FOR THE PAPER (docs/PAPER-GAPS.md).  Read together, §3 and §5 say
+    that BOTH cases the [:3243] TODO was meant to simplify get their step from
+    the SOUNDNESS theorems, not from a new induction — the output's refinement
+    from [P_0] is already exported, and a ghost-free [P_0] leaves refinement
+    nothing to do but unfold definitions.  That is the honest form of the
+    authors' intuition: not "the RHS is P_0" (false, cex_p7_concrete_rhs.v) but
+    "the RHS is P_0 up to the definitions the run recorded". *)

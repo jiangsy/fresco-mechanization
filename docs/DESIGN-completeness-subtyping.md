@@ -3613,16 +3613,24 @@ excluded), `__unit`/`__var` are identities, `__arrow`/`__all` congruences, and
 the only surviving rows are the two flexible lookups, which are
 `a_pskl_tyequiv__flex_def` verbatim, one on each side.
 
-**What remains is the `a_sub` half** (Sub-ForallR's ":3238"), a MUTUAL
-induction with `a_sub_flex`.  §4 of the same file supplies its three
-transports, all Qed: `a_pskl_tyequiv_isub_mono` (`__arrow` threads
-`Θ0 → Θ1 → Θ2`, so the domain's equivalence must move along `⊴` —
-`a_isub`'s "a definition, once made, is never rewritten" is exactly and only
-what the proof uses), `a_pskl_tyequiv_weaken` (the `a_sub_flex` walk rows
-re-attach a head entry), and `a_pskl_tyequiv_subst_flex_def`
-(`a_sub_flex__assign` runs its premise at `P0[τ/β̂]`).  What is left to build is
-the induction itself plus its wf threading, and `Θ1 ⊴ Θ2` out of `__arrow`'s
-`a_sub` premise (the consistency side already has it from `a_consis_sound`).
+✅ **AND THE `a_sub` HALF TOO** (Sub-ForallR's ":3238"), `a_sub_concrete_output_equiv`.
+It was planned as a MUTUAL induction with `a_sub_flex`; that induction is NOT
+needed.  `a_sub_sound_thm` (prop_decorate_key.v:3326) already exports the
+output's refinement FROM the input skeleton — the very same conjunct
+`a_consis_sound` exports, in the very same shape — so the same
+`ad_refine_syn_ghost_free_equiv` applies verbatim and the whole half collapses
+to one `destruct`.
+
+**So BOTH cases the `:3243` TODO was meant to simplify now get their step from
+the SOUNDNESS theorems**, not from any new induction.  That is the honest form
+of the authors' intuition: not "the RHS is `P_0`" (false) but "the RHS is `P_0`
+up to the definitions the run recorded".
+
+§4 of the same file additionally has the three ≡ˢ transports that MOVE an
+equivalence once you have it, all Qed — `a_pskl_tyequiv_isub_mono` (Sub-Arrow
+reads its domain equivalence off at Θ1 and must state it at Θ2; `a_isub`'s "a
+definition, once made, is never rewritten" is exactly and only what it uses),
+`a_pskl_tyequiv_weaken`, and `a_pskl_tyequiv_subst_flex_def`.
 
 ⚠️ Note `a_sub__check` itself already OUTPUTS `P0` (`a_consis_chk` hides the
 consistency output existentially), so the mech's Sub-Check does not need (†)
