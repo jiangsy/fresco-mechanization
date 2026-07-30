@@ -42,6 +42,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
+Require Import src.frost.algo.prop_precise.
 
 Set Implicit Arguments.
 
@@ -190,4 +191,57 @@ Proof.
   rewrite (subst_ptyp_in_ptyp_intro β A (ptyp_var_f α)) by exact HβA.
   apply a_guess_mono_rename_tvar;
     [ exact Hg | exact Hβ | clear - Hα; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  §3  THE HOLE CASE, WHICH IS WHAT MAKES THE θ-EXTENSION WELL-DEFINED   *)
+(*                                                                        *)
+(*  guess^TY sends a ◇ to a fresh flexible α̂, so κ' must send α̂ to the     *)
+(*  counterpart's skeleton at that position — and a metasubstitution's     *)
+(*  images are Θ-scoped MONOTYPES.  Both are delivered by inverting        *)
+(*  precision at a hole, and there are only two ways to derive it:         *)
+(*                                                                        *)
+(*   · [ad_refine_syn__hole] — its target is a SYNTHESISED painting while  *)
+(*     precision supplies an INHERITED one, so §1 forces ∀-freeness, and   *)
+(*     ghost-freeness (from [a_tags_sort] at TY) then forces a monotype.   *)
+(*     Its fill premise is [Θ ⨟ empty ⊢ₚₛᵃ P] — CLOSED, which is also why  *)
+(*     a hole under a ∀ can never be filled with the bound variable and    *)
+(*     the images stay Θ-well-formed.                                     *)
+(*   · [ad_refine_syn__flex_r] — the target IS a defined flexible, so the  *)
+(*     monotype is that variable itself.                                  *)
+(* ===================================================================== *)
+
+(** Inverting the refinement with the source pinned to ◇ and the TARGET still
+    a variable — [inversion] then produces clean equations we control.  Only
+    two rules have a ◇ source: [__hole] and [__flex_r]. *)
+Lemma ad_refine_syn_hole_l_inv : forall Θ Δ Y,
+  Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Y ->
+  (exists P, Θ ⨟ empty ⊢ₚₛᵃ P /\ Y = pskl_to_bskl_syn P)
+  \/ (exists α τ, binds α (abind_flex_mono_def τ) Θ /\ Y = bskl_var_f α).
+Proof.
+  intros Θ Δ Y H; inversion H; subst;
+    [ left; eexists; split; [ eassumption | reflexivity ]
+    | right; do 2 eexists; split; [ eassumption | reflexivity ] ].
+Qed.
+
+Lemma ad_precise_hole_inv_mono : forall Θ Δ X,
+  Θ ⨟ Δ ⊢ₚᵣᵃ pskl_hole ⊑ X ->
+  pskl_ghost_free X -> lc_pskl X ->
+  exists τ, ptyp_to_pskl τ = X /\ mono_ptyp τ /\ Θ ⨟ empty ⊢ₚₛᵃ X.
+Proof.
+  intros Θ Δ X Hp Hgf Hlc. unfold ad_precise in Hp. cbn in Hp.
+  destruct (ad_refine_syn_hole_l_inv Hp) as [[P [Hwf Heq]] | [α [τ0 [Hb Heq]]]].
+  - (* __hole : the SYN/INH painting clash pins X ∀-free, hence a monotype *)
+    destruct (@pskl_inh_eq_syn_inv _ _ Heq) as [-> Haf].
+    destruct (@pskl_all_ghost_free_mono _ Haf Hgf Hlc) as [τ [Heqτ Hmτ]].
+    exists τ; repeat split; [ exact Heqτ | exact Hmτ | exact Hwf ].
+  - (* __flex_r : the target is a defined flexible — the monotype is IT *)
+    destruct X as [ | n0 | α0 | X1 X2 | X0 | | X0 ]; cbn in Heq;
+      try discriminate Heq.
+    (* X = α0, and the equation pins α0 = α *)
+    assert (Hαe : α0 = α) by congruence; subst α0.
+    exists (ptyp_var_f α); split; [ reflexivity | split ];
+      [ apply mono_ptyp__var
+      | (* Δ-membership, then the three [a_binds_tvar] disjuncts *)
+        apply a_wf_pskl__var; right; right; right; exists τ0; exact Hb ].
 Qed.
