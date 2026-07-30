@@ -143,6 +143,18 @@ the half collapses to one `destruct`.  **Both cases the `:3243` TODO was meant t
 simplify therefore get their step from the SOUNDNESS theorems.**  DESIGN §9.1,
 PAPER-GAPS.md.
 
+**P7's MOTIVE is LOCKED** — `frost/algo/prop_sub_complete_thm.v`
+(`sub_complete_concl` / `sub_flex_complete_concl` / `p7_bundle`, typechecked).
+Writing it out corrected DESIGN §1 in two places: the fuel judgment is
+`ad_pat_sub_g`, not `ad_pat_sub_n` (precision-substitution is FALSE over `_n`,
+and P5 + all five P6 lemmas are stated over `_g`); and ⚠️ the factored
+`forall κ1 … exists ζ` conclusion is FORCED, not stylistic — `a_inc_equiv` is
+POSITIONAL, so the paper's flat `inc[θ≡θ1]{Θ0}{Θ}` as `a_inc_equiv Θ0 κ ζ Θ`
+with `ζ ∷ Θ1 ⊑ Θ` is not even the right SHAPE (ζ is keyed by Θ1, which has
+entries Θ0 does not, and at Flex-Solve in the MIDDLE).  Also fixed: P7a's
+context split — the FULL context is `Ξ ++ Θ0`, so its premises and `a_inc_equiv`
+are stated there and the measure is lex(n, |Θ0|).
+
 ## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.

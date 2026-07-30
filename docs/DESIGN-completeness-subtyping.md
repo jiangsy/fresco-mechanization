@@ -84,6 +84,32 @@ Lemma a_sub_complete_gen : forall n,          (* fuel; strong induction *)
                    Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q)).
 ```
 
+✅ **LOCKED 2026-07-30 — `frost/algo/prop_sub_complete_thm.v`** carries the two
+motives as `sub_complete_concl` / `sub_flex_complete_concl` (+ `p7_bundle`), and
+they typecheck.  Writing them out corrected the skeleton above in two places:
+
+- ⚠️ **The fuel judgment is `ad_pat_sub_g`, not `ad_pat_sub_n`.**  The
+  development settled on the TAG-HYGIENIC fuel mirror, because
+  precision-substitution — which ForallL applies to its premise to get the
+  derivation it hands the IH — is FALSE over `_n` (§5.4).  P5 and ALL FIVE P6
+  lemmas are stated over `_g`, so P7 must be.
+- ⚠️ **The factored conclusion is FORCED, not stylistic.**  `a_inc_equiv` is
+  POSITIONAL (def_meta.v:268 pairs the two metasubstitutions' entries key-by-key
+  against `Θ0`'s entries), so the paper's flat `inc[θ≡θ1]{Θ0}{Θ}` rendered as
+  `a_inc_equiv Θ0 κ ζ Θ` with `ζ ∷ Θ1 ⊑ Θ` is not even the right SHAPE: ζ is
+  keyed by `Θ1`, which has entries `Θ0` does not — and at Flex-Solve in the
+  MIDDLE rather than at the end.  Keeping `a_consis_complete_thm`'s
+  `forall κ1, is_id_msubst κ1 → … → exists ζ` wrapper says the same thing while
+  staying well-formed, and the four consistency cases then pass their conclusion
+  straight through.
+
+Also fixed while writing: P7a's context split.  `a_sub_flex NM M P0 Θ0 Ξ α P1 Θ1`
+keeps the walked-past entries in `Ξ` and the rest in `Θ0`; the FULL context is
+`Ξ ++ Θ0` (`a_sub_flex__depend`'s conclusion is at `(β~flex) ++ Θ0` with suffix
+`Ξ`, its premise at `Θ0` with suffix `Ξ ++ (β~flex)` — the same list), and
+`a_sub__flex_mono` enters at `Ξ = ·`.  So P7a's premises and its `a_inc_equiv`
+are stated at `Ξ ++ Θ0`, and the measure is lex(n, |Θ0|).
+
 Notes on shape (verify each against `a_consis_complete_thm` when writing):
 - `κ` is the mech's `ρ ∷ Θ0 ⊑ Θ` (an `a_inc` metasubstitution).
 - `bid Q` target: `ad_pat_sub`'s target sort is **`bskl`** (`Q : bskl`),
