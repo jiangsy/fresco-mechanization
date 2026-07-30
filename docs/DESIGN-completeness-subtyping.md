@@ -3513,3 +3513,79 @@ algo subtyping, when input `P_0` is a concrete type, RHS of subtyping is always
 - The `_f` fill-hygiene transports for renaming a Δ-bound variable — §7.5.
 - `a_consis_complete_thm` and `complete_mu` are Qed black boxes; four of P7b's
   seven cases are just their application.
+
+---
+
+## 10. `flex_apart` and `flex_shield`, rethought as a whole (2026-07-30)
+
+Written after `cex_p7_shield_arrow.v` showed a `fa_rho_var`-shaped hole, and
+instead of patching it.  **Conclusion: `flex_apart` is redundant.  `flex_shield`
+already IS the predicate both want to be, and the whole `flex_apart` development
+should be deleted in its favour.**
+
+### 10.1 The intuition — one hazard, one position, two ways to fail
+
+Both premises guard exactly one thing.  The solve's `SolEq-FlexR` / `SolS-Flex`
+rules **discard the accumulated skeleton `Pi` and output the bare flexible `α̂`**.
+Completeness must then show that output is precise to the guess — but `θ(α̂)` is a
+**monotype fixed by the SOLUTION, before the run starts**.  So it can only be
+precise to a guess-part that a pre-fixed Θ-monotype can reach, and exactly two
+things put a part out of reach:
+
+1. **a TAG** — a tagged ∀ is a polytype and no monotype is precise to one;
+2. **a RUN-INTRODUCED BINDER** — the algorithm's own ∀ binders (tracked by `Δρ`)
+   are local, while `θ(α̂)` is Θ-scoped and was chosen before they existed.
+
+`flex_shield` was built for (1), `flex_apart` for (2).  They are the same
+statement about the same object at the same position:
+
+> at every raw-Θ0-flexible position of `P0`, the facing guess must be within
+> reach of a pre-fixed Θ-monotype — no `Δρ` binder, no `Ψ'` tag.
+
+**And `fsh_clean` already says both** (prop_look_complete_sub_var.v:190): it
+carries `ftv ψa ∩ Δρ = ∅` AND `ftag ψa ∩ Ψ' = ∅`.  So `flex_shield` is not a
+sibling of `flex_apart` — it is a strictly more permissive REPLACEMENT.
+
+### 10.2 Why the asymmetries exist, once you say it that way
+
+| `flex_apart` | `flex_shield` | reading |
+|---|---|---|
+| `fa_unit`, `fa_var_rigid`, `fa_hole` | `fsh_flexfree` | three special cases of "no flexible here"; `flex_apart` never got the general rule |
+| — | `fsh_rho_var` | "a `Δρ`-variable is safe opposite anything" — added to `flex_shield` because "WITHOUT this rule the premise is TOO STRONG"; the hole `cex_p7_shield_arrow.v` falls through |
+| `fa_all_etag` / `fa_all_syn` (lockstep) | `fsh_all_l` / `fsh_all_r` (independent) | the algorithm descends the two sides SEPARATELY — Sub-ForallR moves `P0`, Sub-ForallL moves the guess and grows `Δρ` |
+| `Δρ` a PARAMETER | `Δρ` an INDEX | `flex_apart` predates the ForallL descent that grows `Δρ` |
+
+`flex_apart` is an earlier draft written for P6-Cv, where the ∀ descents happen
+in lockstep and `Δρ` never grows.  It was never revisited when P6-Sv taught the
+development that the two sides move independently.
+
+### 10.3 The refactor
+
+**Delete `flex_apart`, `fa_step`, `fa_walk`, `flex_apart_walk`,
+`flex_apart_p0` and their ~15 lemmas; use `flex_shield` everywhere, at
+`Ψ' = ∅` on the consistency side (where the tag conjunct is vacuous).**
+`sub_shield`'s two conjuncts collapse to one.
+
+- ⚠️ **Ordering constraint:** `flex_shield` currently lives in
+  `prop_look_complete_sub_var.v`, which is DOWNSTREAM of `prop_look_complete_cstr.v`
+  (P6-Cs) and `prop_look_complete_var.v` (P6-Cv).  It must move UP to
+  `prop_look_complete.v`, where `flex_apart` lives now.
+- Most consumers already have a `flex_shield_*` counterpart:
+  `flex_shield_{arrow,topholeg_r,tophole_l}_inv`, `_weaken_tvar`, `_descend_r`,
+  `_psi_anti`.
+- ⚠️ The one that needs care is the FLEXIBLE-P0 READ-OFF
+  (`flex_apart_flex_var_clean`, consumed by P6-Cs's Arrow row at
+  `prop_look_complete_cstr.v:2199`).  `flex_shield` has three more ways to hold
+  at a flexible `P0`: `fsh_flexfree` is IMPOSSIBLE there (a flexible variable is
+  not flex-free) and costs nothing; `fsh_rho_var` gives a `Δρ`-VARIABLE guess,
+  which is already a mono paint — exactly what the consumer wanted the
+  cleanliness FOR; and `fsh_all_r` can fire at a variable `P0`, so the read-off
+  gains a tagged-∀ arm that recurses at `add α Δρ`.  **Drafted and backed out:
+  the first two arms are easy, the `fsh_all_r` arm is what makes the read-off a
+  three-way disjunction rather than a two-way one.  Settle its statement before
+  starting the rewiring.**
+- Sanity check that must keep holding: `flex_shield Θ0 {ε} ∅ α̂ (∀^ε β. β→β)` is
+  still NOT derivable — `fsh_all_r` descends to `flex_shield Θ0 {ε} {α} α̂ (α→α)`
+  where `fsh_clean` fails on `α ∈ Δρ`, `fsh_rho_var` wants a bare variable and
+  `fsh_arrow` wants an arrow `P0`.  That is `cex_p6sv_forall_flex.v`, and the
+  merged predicate must keep excluding it.
