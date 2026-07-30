@@ -3425,7 +3425,7 @@ remains:
 | `□`, `unit`, rigid var | §5 `sub_shield_atomic` |
 | FLEXIBLE var | §4 — `κP0` IS that variable's monotype image, so `Q` is mono-ish |
 | *any* `P0` with a mono-ish `Q` | §4 |
-| **arrow, with a non-mono-ish `Q`** | ⚠️ **OPEN** |
+| **arrow, with a non-mono-ish `Q`** | ⚠️ **OPEN** — but see §9.0.1 / §9.0.2, which close all of it except a `P0` carrying a ∀ BELOW its head |
 
 ⚠️ **AND THAT LAST ROW IS NOT MERELY UNPROVED — THE PREMISE IS UNSATISFIABLE
 THERE.**  Machine-checked: `cex/cex_p7_shield_arrow.v` (two witnesses, Qed,
@@ -3469,6 +3469,80 @@ not thread `sub_shield` outward as a P7b premise without first checking it
 survives P7c (where `Ψ = ∅` but `Ψa` at a ForallL is NOT empty, so the
 threading does NOT become vacuous at the top).
 
+### 9.0.1 TASK 0 (a) LANDED (2026-07-30) — the FLEX-FREE branch
+
+`prop_sub_shield_supply.v` §6, all Qed and axiom-free.  §10.6 gave `flex_apart`
+the base row `flex_shield` already had (`fa_flexfree`), so the two guards now
+agree on "nothing to keep apart", and the shield follows for ANY flex-free `P0`
+— uniformly in ψa **and in Δρ** (§5's `sub_shield_atomic` is the Δρ = ∅
+special case, and it is subsumed: `unit` / `◇` have no free variable and a
+RIGID variable is not a flexible one).
+
+The only content is that flex-freedom SURVIVES both walks
+(`ss_walk_flex_free`, `fa_walk_flex_free`).  Every `P0`-moving step takes a
+SUBTERM or opens a ∀ at a binder the AVOID SET keeps out of `dom Θ0` — and a
+variable outside the context is bound nowhere, hence flexible nowhere
+(`pskl_flex_free_open_fresh`; contrast `pskl_flex_free_open_tvar`, which puts
+the binder INTO the context and is what the ForallR *descent* uses).  This is
+the second payoff of the avoid set §10.6 added to all three walks.
+
+### 9.0.2 TASK 0 (b) — the residual is MUCH smaller than "arrow with a non-mono-ish Q"
+
+⚠️ **The plan's positional route (decompose along `fsh_arrow` / `fsh_all_l` /
+`fsh_all_r` and apply the mono lemma at each flexible leaf) is NOT what the
+case needs, and reading the rules again shows why.**  `bskl_monoish` was never
+the load-bearing hypothesis.  A tag LEAVES the index at exactly ONE rule in
+the whole system — `ad_pat_consis__forall_inh_tagged` (`Ψ = ε ∪ Ψ0`) — whose
+counterpart is a `bskl_all_inh`.  Every other row of consistency AND of
+subtyping either forces `Ψ = ∅` on the rule or passes Ψ down unchanged (or, at
+`__arrow`, splits it into two branches that do the same).  In particular
+`__forall_l_tagged` DROPS its own ε rather than solving it, and
+`__forall_syn_tagged` — a tagged ∀ facing a SYNTHESISED ∀ — passes Ψ through
+untouched.
+
+So the real hypothesis is **the counterpart carries no INHERITED quantifier**,
+`bskl_inh_free`.  That is strictly weaker than `bskl_monoish`: it admits
+ghosts (`◇`, `∀◇`) and synthesised ∀s, all three of which a refinement really
+does produce (`ad_refine_syn__hole` paints its fill SYNTHESISED,
+`__tophole_fill` emits `bskl_all_syn`, `__tophole_keep` emits `bskl_tophole`).
+It also drops the `is_tskl` and `a_wf_aenv` premises §2/§4 needed — the
+flexible-lookup rows land on `ptyp_to_bskl_syn`, a SYN painting, which is
+inh-free whatever the monotype is.
+
+LANDED in `prop_sub_shield_supply.v` §7/§8, all Qed and axiom-free:
+
+    ad_pat_consis_inh_free_tag_free   Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q → inh_free Q → Ψ = ∅
+    ad_pat_sub_g_inh_free_tag_free    ad_pat_sub_g … Ψ … Q → inh_free Q → Ψ = ∅
+    ad_refine_syn_inh_free            refinement never CREATES an inherited ∀
+    sub_shield_supply_inh_free_counterpart
+    sub_shield_supply_all_free_p0     P0 has no ∀ ⟹ the shield, whatever ψa is
+
+The chain is `P0` has no ∀ ⟹ `κP0` has no ∀ (κ's images are MONOTYPES,
+`a_inc_lookup_mono`) ⟹ `inh{κP0}` is inh-free ⟹ `Q` is inh-free
+(`ad_refine_syn__all` is the only row that emits an inherited ∀ and it demands
+one on the left) ⟹ `Ψa = ∅` ⟹ `sub_shield_tag_free`.
+
+**The residual is therefore no longer "an ARROW `P0` with a non-mono-ish
+counterpart" but the much narrower "a `P0` carrying a ∀ BELOW its head"** —
+the head itself is `unit | var | arrow | □` by the WLOG, so the open shape is
+`P1' → P2'` with a `pskl_all_syn` strictly inside.  For that shape the
+positional argument really is needed, and the alignment it needs is NOT
+structural between `P0` and ψa (they are related only through the derivation:
+ψa sits at the α-positions of the subject `(κS)[ψa/α]`, and `P0` faces the
+subject through `Q`).  Sketch of where the work goes, for whoever picks it up:
+
+- Peel ψa: `fsh_all_r` takes tagged ∀s (growing Δρ), `fsh_topholeg_r` takes
+  ∀◈; `fsh_arrow` matches an arrow ψa against the arrow `P0`; `fsh_all_l` /
+  `fsh_tophole_l` descend `P0`.  `unit` / `◈` / any variable close by
+  `fsh_clean` or `fsh_rho_var`.
+- The ONLY stuck configuration left is a RAW FLEXIBLE `P0`-leaf facing an
+  ARROW payload that mentions a peeled binder — which is exactly the
+  `cex_p6sv_forall_flex.v` shape (`ψa = ∀^ε β. β→β` against `P0 = α̂`).
+- Ruling it out needs "the tag ε is SOLVED, hence faces an inherited ∀ of `Q`,
+  hence the aligned `Q`-part is not mono-ish — but a flexible `P0`-leaf forces
+  it mono-ish".  Making "aligned" precise is a POSITIONAL refinement of
+  `ad_pat_sub_g_inh_free_tag_free`, and that is a new lemma of P6 size.
+
 ### 9.1 Case map for P7b (paper :3050-3420 and on)
 
 Read the paper's cases in this order; the first four are cheap because their
@@ -3488,8 +3562,48 @@ content is already a Qed black box.
 its own TODO (`subtyping-proofs.tex:3243`: *"we may have the property that, in
 algo subtyping, when input `P_0` is a concrete type, RHS of subtyping is always
 `P_0`"*): Sub-Check needs it for `P'_0 ≡ P_0`, Sub-ForallR for `P_1 ≡ P_0'`.
-**Mechanize that as a standalone lemma before the two cases** — it is stated over
-`a_sub`, it is reusable, and if it is FALSE both cases need rewriting.
+The plan said: mechanize it as a standalone lemma before the two cases,
+because if it is FALSE both cases need rewriting.
+
+⚠️ **IT IS FALSE — machine-checked, `cex/cex_p7_concrete_rhs.v`
+(`p7_concrete_rhs_is_false`, Qed, axiom-free), and it is false for a reason
+that does not go away by strengthening the premises.**  At `N = TY` the mode
+constraint `skmod[TY]{P0}{TC}` forces `P0 = ptyp_to_pskl A` — that IS the
+paper's "concrete type", and it is the only place the concreteness comes
+from.  But consistency's `FlexL` row returns the SUBJECT:
+
+    Θ ⊢ₐ[ P0 ] α̂ ∼ α̂ ⊣ Θ'          (a_consis__flex_l, via a_assign)
+
+and algorithmic `Arrow` copies that output into its own.  So already at
+`P0 = unit → unit` (concrete, and entirely flexible-FREE), subject `α̂ → unit`,
+the RHS is `α̂ → unit`, not `P0`.  The witness carries `a_wf_aenv Θ0` and
+`skmod[TY]` as premises, so no missing side condition explains it away, and
+reading "concrete" as also excluding flexibles does not help — the flexible is
+on the SUBJECT side, which the property does not constrain.
+
+**What this does and does not settle.**  It refutes the SIMPLIFICATION the
+TODO proposes; it does NOT refute Sub-Check or Sub-ForallR, whose written
+arguments already go through the EQUIVALENCE ("`P'_0` is equivalent to `P_0`",
+:3181; "`P'_0` and `P_1` are equivalent through `Q`", :3238) — and the
+equivalence is exactly what the run's output context supplies (`α̂ ≔ unit`
+here).  So the mechanization must keep the equivalence route, and the real
+obligation for both cases is
+
+    msubst_pskl κ1 (output)  =  msubst_pskl κ1 P0                    (†)
+
+— equality only AFTER the metasubstitution, which absorbs the definition the
+witness exploits.  (†) is NOT a corollary of anything already proved.  Proving
+it means walking `a_consis` (for Sub-Check, whose output is
+`a_consis_complete_thm`'s `P1`) and `a_sub` (for Sub-ForallR) and showing the
+three output-moving rows are κ-invariant: `a_consis__flex` (α̂/β̂ unified in
+Θ1), `a_consis__flex_l` (α̂ assigned `P0`), and `a_sub_flex__assign` (which
+runs at `P0[τ/β̂]`).  Each is an `a_inc`-level fact about the output context,
+so `a_assign_sound` / `a_unify_sound` are the entry points.
+
+⚠️ Note `a_sub__check` itself already OUTPUTS `P0` (`a_consis_chk` hides the
+consistency output existentially), so the mech's Sub-Check does not need (†)
+to build the derivation — only to transport the PRECISION conclusion from
+`a_consis_complete_thm`'s output `P1` to `P0`.
 
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 

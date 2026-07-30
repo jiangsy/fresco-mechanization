@@ -1571,3 +1571,66 @@ mono paint" conclusion, since a Δρ-variable IS one — but only after peeling 
 
 **Held pending the authors' decision** because `flex_apart` is a side condition
 the paper must adopt; see docs/DESIGN-completeness-subtyping.md §9.0.
+
+### RESOLVED (2026-07-30) — the repair LANDED
+
+`fa_rho_var` **and** `fa_flexfree` were added to `flex_apart`, and
+`fa_topholeg_t` was deleted (with `fa_rho_var` present it was the only way a
+guard could hold at a ∀◈ that is neither clean nor flex-free, and it produced a
+"∀◈-stack over a Δρ-variable" that no consumer can use).  Both witnesses are
+now shielded; `cex/cex_p7_shield_arrow.v` became the regression test
+`cex/regr_p7_shield_arrow.v`.  The measured cost above is what it actually
+cost.  See docs/DESIGN-completeness-subtyping.md §10.6.
+
+⚠️ **The authors still have to adopt the reshaped `flex_apart`** — it is
+P6-Cv's repair premise, so the paper's side condition changes shape.  What
+changed for a reader: the two guard predicates now have IDENTICAL base rows
+(clean / flex-free / ρ-var) and differ ONLY in their descent, because
+consistency MATCHES quantifiers while subtyping INSTANTIATES them.
+
+---
+
+## FALSE (machine-checked, 2026-07-30) — the property `subtyping-proofs.tex:3243` marks with its own TODO: "when input `P_0` is a concrete type, the RHS of algo subtyping is always `P_0`"
+
+The paper records, inside P7b's Sub-ForallR case:
+
+> % WT: We may have the property that, in algo subtyping, when input P_0 is a
+> % concrete type, RHS of subtyping is always P_0. TODO: optional: check this.
+> % If yes, use this to simplify the proof.
+
+**Checked, and it is false.**  Machine-checked witness:
+`frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`, Qed,
+axiom-free).
+
+At `N = TY` the mode constraint `skmod[TY]{P_0}{TC}` forces `P_0` to be a TYPE
+embedded into the skeleton sort — that IS the paper's "concrete type", and it
+is the only place the concreteness comes from.  But consistency's `FlexL` row
+returns the **subject**, not the input skeleton:
+
+    Θ ⊢[P_0] α̂ ∼ α̂ ⊣ Θ'          (α̂ ≔ P_0 recorded in Θ')
+
+and algorithmic `Arrow` copies that output into its own.  So already at
+
+    P_0 = unit → unit        (concrete — and entirely flexible-FREE)
+    P   = α̂ → unit
+    RHS = α̂ → unit  ≠  P_0
+
+The witness carries `Θ_0` well-formed and `skmod[TY]{P_0}{FN TC}` as premises,
+so no missing side condition explains it away; and reading "concrete" as also
+excluding flexible variables does not help, because the flexible is on the
+SUBJECT side, which the property does not constrain.
+
+**This does NOT break either case that uses it.**  The paper's own text for
+both already argues via the EQUIVALENCE — "`P'_0` is equivalent to `P_0`"
+(:3181) and "`P'_0` and `P_1` are equivalent through `Q`" (:3238) — and the
+equivalence is exactly what the run's output context supplies (`α̂ ≔ unit`
+here).  What is refuted is only the proposed SIMPLIFICATION.  Recommendation
+to the authors: drop the TODO, or restate it as the equivalence
+
+    θ_1(RHS) = θ_1 P_0
+
+which is what the mechanization will prove.  (Note also that algorithmic
+`Check` already outputs `P_0` on the nose, since the paper's own
+`aconsis{Θ_0}{P}{P_0}{Θ_1}` abbreviation suppresses the consistency output —
+so the syntactic reading is only ever needed for the OTHER rows, which are
+exactly the ones that refute it.)

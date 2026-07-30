@@ -374,3 +374,369 @@ Proof.
 Qed.
 
 Print Assumptions sub_shield_atomic.
+
+(* ===================================================================== *)
+(*  §6  THE FLEX-FREE BRANCH — [sub_shield] FOR ANY FLEX-FREE P0          *)
+(*                                                                        *)
+(*  DESIGN §10.6 gave [flex_apart] the base row [flex_shield] already had  *)
+(*  ([fa_flexfree]), so the two guards now agree on the reading: nothing   *)
+(*  to keep apart.  That closes the shield for a flex-free P0 at once,     *)
+(*  UNIFORMLY in ψa and in Δρ — no tag reasoning, no shape analysis.       *)
+(*                                                                        *)
+(*  The only content is that flex-freedom SURVIVES both walks.  Every      *)
+(*  P0-moving step takes a SUBTERM (which inherits ftv) or opens a ∀ at a  *)
+(*  binder the avoid set keeps out of [dom Θ0] — and a variable outside    *)
+(*  the context is bound nowhere, hence flexible nowhere.  The ψ-side      *)
+(*  steps leave P0 alone.                                                 *)
+(*                                                                        *)
+(*  This SUBSUMES §5's [sub_shield_atomic] (unit / ◇ have no free          *)
+(*  variable, and a RIGID variable is not a flexible one) and it is        *)
+(*  strictly more general in Δρ; §5 is kept because it is the form stated  *)
+(*  in DESIGN §9.0's residual table.                                      *)
+(* ===================================================================== *)
+
+Lemma a_flex_tvar_in_dom : forall Θ α,
+  a_flex_tvar Θ α -> α `in` dom Θ.
+Proof.
+  intros Θ α [Hb | [τ Hb]]; eapply binds_In; eassumption.
+Qed.
+
+(** Opening at a binder OUTSIDE the context cannot create a flexible — which
+    is exactly what both walks' AVOID SET delivers.  Contrast
+    [pskl_flex_free_open_tvar], which puts the binder INTO the context (as a
+    rigid) and is what the ForallR DESCENT uses; here the context is fixed. *)
+Lemma pskl_flex_free_open_fresh : forall Θ0 P γ,
+  pskl_flex_free Θ0 (pskl_all_syn P) ->
+  γ `notin` dom Θ0 ->
+  pskl_flex_free Θ0 (open_pskl_wrt_pskl P (pskl_var_f γ)).
+Proof.
+  intros Θ0 P γ H Hγ α Hα Hflex.
+  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)) as Hup.
+  simpl in Hup.
+  destruct (α == γ) as [-> | Hne].
+  - apply Hγ; apply a_flex_tvar_in_dom; exact Hflex.
+  - apply (H α); [ simpl; clear - Hα Hup Hne; fsetdec | exact Hflex ].
+Qed.
+
+Lemma ss_walk_flex_free : forall Θ0 P0 P0',
+  ss_walk (dom Θ0) P0 P0' ->
+  pskl_flex_free Θ0 P0 ->
+  pskl_flex_free Θ0 P0'.
+Proof.
+  intros Θ0 P0 P0' H; induction H; intros Hff; [ exact Hff | ].
+  apply IHss_walk. destruct H.
+  - (* sss_arrow_r *)
+    destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
+  - (* sss_all : the binder misses [dom Θ0] *)
+    apply pskl_flex_free_open_fresh; assumption.
+Qed.
+
+Lemma fa_walk_flex_free : forall Θ0 Δρ P0 ψa Δρ' P0' ψa',
+  fa_walk (dom Θ0) Δρ P0 ψa Δρ' P0' ψa' ->
+  pskl_flex_free Θ0 P0 ->
+  pskl_flex_free Θ0 P0'.
+Proof.
+  intros Θ0 Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hff; [ exact Hff | ].
+  apply IHfa_walk. destruct H.
+  - (* fastep_arrow_l *)
+    destruct (pskl_flex_free_arrow_inv Hff) as [Hf _]; exact Hf.
+  - (* fastep_arrow_r *)
+    destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
+  - (* fastep_p0_arrow_l *)
+    destruct (pskl_flex_free_arrow_inv Hff) as [Hf _]; exact Hf.
+  - (* fastep_p0_arrow_r *)
+    destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
+  - (* fastep_all_l : the binder misses [dom Θ0] *)
+    apply pskl_flex_free_open_fresh; assumption.
+  - (* fastep_all_r : the ψ-side moves, P0 does not *) exact Hff.
+  - (* fastep_tophole_l *)
+    apply pskl_flex_free_tophole_inv; exact Hff.
+  - (* fastep_topholeg_r *) exact Hff.
+  - (* fastep_flexdef_r *) exact Hff.
+Qed.
+
+Lemma flex_apart_walk_flex_free : forall Θ0 Δρ P0 ψa,
+  pskl_flex_free Θ0 P0 ->
+  flex_apart_walk Θ0 Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa Hff Δρ' P0' ψa' Hw.
+  apply fa_flexfree; eapply fa_walk_flex_free; eassumption.
+Qed.
+
+(** The flex-free supply, uniformly in ψa AND in Δρ. *)
+Theorem sub_shield_flex_free : forall Θ0 Ψa Δρ P0 ψa,
+  pskl_flex_free Θ0 P0 ->
+  sub_shield Θ0 Ψa Δρ P0 ψa.
+Proof.
+  intros Θ0 Ψa Δρ P0 ψa Hff P0' Δρ' Hsw _ _.
+  assert (Hff' : pskl_flex_free Θ0 P0')
+    by (eapply ss_walk_flex_free; eassumption).
+  split;
+    [ apply flex_apart_walk_flex_free; exact Hff'
+    | apply fsh_flexfree; exact Hff' ].
+Qed.
+
+Print Assumptions sub_shield_flex_free.
+
+(* ===================================================================== *)
+(*  §7  THE ∀-FREE BRANCH — WHY §2's [bskl_monoish] WAS TOO STRONG         *)
+(*                                                                        *)
+(*  §2 collapses the tag set against a MONO-ISH counterpart.  Reading the  *)
+(*  rules again shows what actually does the work, and it is much less:    *)
+(*  a tag LEAVES the index at exactly ONE rule in the whole system,        *)
+(*  [ad_pat_consis__forall_inh_tagged] ([Ψ = ε ∪ Ψ0]), whose counterpart   *)
+(*  is a [bskl_all_inh].  Every other row of consistency AND of subtyping  *)
+(*  either forces [Ψ = ∅] on the rule or passes Ψ down unchanged (or, at   *)
+(*  [__arrow], splits it into two branches that each do the same).  In     *)
+(*  particular [__forall_l_tagged] DROPS its own ε rather than solving it, *)
+(*  and [__forall_syn_tagged] — a tagged ∀ facing a SYNTHESISED ∀ — passes *)
+(*  Ψ through untouched.                                                   *)
+(*                                                                        *)
+(*  So the real hypothesis is: the counterpart contains NO INHERITED       *)
+(*  QUANTIFIER.  That is [bskl_inh_free], and it is strictly weaker than   *)
+(*  [bskl_monoish] — it allows ghosts (◇, ∀◇) and synthesised ∀s, both of  *)
+(*  which a refinement really can produce ([ad_refine_syn__hole] paints a  *)
+(*  fill SYNTHESISED, [__tophole_fill] emits [bskl_all_syn],               *)
+(*  [__tophole_keep] emits [bskl_tophole]).  It also drops the [is_tskl]   *)
+(*  and [a_wf_aenv] premises §2 needed: the flexible-lookup rows land on   *)
+(*  [ptyp_to_bskl_syn], a SYN painting, which is inh-free whatever the     *)
+(*  monotype.                                                             *)
+(*                                                                        *)
+(*  And inh-freeness of the counterpart is READ OFF P0: refinement creates *)
+(*  an inherited ∀ only from an inherited ∀ of its input                   *)
+(*  ([ad_refine_syn__all]), and the input is [inh{κP0}], whose inherited   *)
+(*  ∀s are exactly P0's ∀s (κ's images are MONOTYPES).  Hence:             *)
+(*                                                                        *)
+(*      P0 has no ∀  ⟹  Q is inh-free  ⟹  Ψa = ∅  ⟹  the shield.        *)
+(*                                                                        *)
+(*  This is what shrinks DESIGN §9.0's residual row: the open case is no   *)
+(*  longer "an ARROW P0 with a non-mono-ish counterpart" but the much      *)
+(*  narrower "a P0 carrying a ∀ BELOW its head".                           *)
+(* ===================================================================== *)
+
+Fixpoint bskl_inh_free (Q : bskl) : Prop :=
+  match Q with
+  | bskl_unit => True
+  | bskl_var_b _ => True
+  | bskl_var_f _ => True
+  | bskl_arrow Q1 Q2 => bskl_inh_free Q1 /\ bskl_inh_free Q2
+  | bskl_all_syn Q0 => bskl_inh_free Q0
+  | bskl_all_inh _ => False
+  | bskl_hole => True
+  | bskl_tophole Q0 => bskl_inh_free Q0
+  end.
+
+(** Opening is invisible to it — the property is about CONSTRUCTORS, and a
+    variable carries none. *)
+Lemma bskl_inh_free_open_rec : forall Q Qa k,
+  bskl_inh_free Qa ->
+  (bskl_inh_free (open_bskl_wrt_bskl_rec k Qa Q) <-> bskl_inh_free Q).
+Proof.
+  intros Q; induction Q; intros Qa k HQa; cbn; try tauto.
+  - (* var_b *)
+    destruct (lt_eq_lt_dec n k) as [[? | ?] | ?]; cbn; tauto.
+  - (* arrow *)
+    specialize (IHQ1 Qa k HQa); specialize (IHQ2 Qa k HQa); tauto.
+  (* [unit] / [var_f] / [all_inh] / [hole] are convertible identities and
+     [try tauto] already closed them *)
+  - (* all_syn *) apply IHQ; exact HQa.
+  - (* tophole *) apply IHQ; exact HQa.
+Qed.
+
+Lemma bskl_inh_free_open : forall Q α,
+  bskl_inh_free (open_bskl_wrt_bskl Q (bskl_var_f α)) <-> bskl_inh_free Q.
+Proof.
+  intros Q α; unfold open_bskl_wrt_bskl;
+    apply bskl_inh_free_open_rec; cbn; exact I.
+Qed.
+
+(** A SYNTHESISED painting never carries an inherited ∀ — by definition of
+    [pskl_to_bskl_syn], which sends [pskl_all_syn] to [bskl_all_syn]. *)
+Lemma pskl_to_bskl_syn_inh_free : forall P, bskl_inh_free (pskl_to_bskl_syn P).
+Proof. intros P; induction P; cbn; tauto. Qed.
+
+Lemma ptyp_to_bskl_syn_inh_free : forall A, bskl_inh_free (ptyp_to_bskl_syn A).
+Proof.
+  intros A; unfold ptyp_to_bskl_syn; apply pskl_to_bskl_syn_inh_free.
+Qed.
+
+Lemma bskl_monoish_inh_free : forall Q, bskl_monoish Q -> bskl_inh_free Q.
+Proof. intros Q H; induction H; cbn; tauto. Qed.
+
+(** (A) CONSISTENCY.  [__forall_inh_tagged] is the sole tag-consuming row and
+    it needs an inherited ∀; every other row forces [Ψ = ∅] or passes it on. *)
+Lemma ad_pat_consis_inh_free_tag_free : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  bskl_inh_free Q ->
+  Ψ [=] empty.
+Proof.
+  intros Ψ Θ R Q H; induction H; intros Hif.
+  - (* unit *) assumption.
+  - (* var *) assumption.
+  - (* arrow *)
+    cbn in Hif; destruct Hif as [Hif1 Hif2].
+    assert (He1 : Ψ1 [=] empty) by (apply IHad_pat_consis1; exact Hif1).
+    assert (He2 : Ψ2 [=] empty) by (apply IHad_pat_consis2; exact Hif2).
+    clear - H1 He1 He2; fsetdec.
+  - (* forall_inh_tagged : THE row, and it is excluded *) cbn in Hif; tauto.
+  - (* forall_inh_untagged *) cbn in Hif; tauto.
+  - (* forall_syn_tagged : Ψ passes through a SYN ∀ *)
+    pick fresh α for L.
+    apply (H0 α ltac:(assumption)).
+    apply bskl_inh_free_open; cbn in Hif; exact Hif.
+  - (* forall_syn *)
+    pick fresh α for L.
+    apply (H0 α ltac:(assumption)).
+    apply bskl_inh_free_open; cbn in Hif; exact Hif.
+  - (* ghostg *) assumption.
+  - (* topholeg *) apply IHad_pat_consis; cbn in Hif; exact Hif.
+  - (* hole *) assumption.
+  - (* tophole *) apply IHad_pat_consis; cbn in Hif; exact Hif.
+  - (* tophole_inh : an inherited ∀ again *) cbn in Hif; tauto.
+  - (* tophole_drop *) apply IHad_pat_consis; exact Hif.
+  - (* flex_l : the counterpart does not move *) apply IHad_pat_consis; exact Hif.
+  - (* flex_r : the counterpart becomes a SYN painting *)
+    apply IHad_pat_consis; apply ptyp_to_bskl_syn_inh_free.
+Qed.
+
+(** (B) SUBTYPING.  Nothing here consumes a tag at all; the index only ever
+    reaches consistency (at [__check] and [__arrow]'s domain) or is forced
+    empty on the rule. *)
+Lemma ad_pat_sub_g_inh_free_tag_free : forall n NM M Ψ Θ ψ Q,
+  ad_pat_sub_g n NM M Ψ Θ ψ Q ->
+  bskl_inh_free Q ->
+  Ψ [=] empty.
+Proof.
+  intros n NM M Ψ Θ ψ Q H; induction H; intros Hif.
+  - (* __infer *) assumption.
+  - (* __check : hand it to consistency *)
+    eapply ad_pat_consis_inh_free_tag_free; eassumption.
+  - (* __forall_r : the counterpart IS an inherited ∀ *) cbn in Hif; tauto.
+  - (* __univ_ghost_r *) assumption.
+  - (* __arrow : the domain is consistency, the codomain the IH *)
+    cbn in Hif; destruct Hif as [Hif1 Hif2].
+    assert (He1 : Ψ1 [=] empty)
+      by (eapply ad_pat_consis_inh_free_tag_free; eassumption).
+    assert (He2 : Ψ2 [=] empty) by (apply IHad_pat_sub_g; exact Hif2).
+    clear - H1 He1 He2; fsetdec.
+  - (* __forall_l_tagged : ForallL DROPS ε and hands the IH [Ψ ∪ Ψ'] *)
+    assert (He : (Ψ `union` Ψ') [=] empty)
+      by (apply IHad_pat_sub_g; exact Hif).
+    clear - He; fsetdec.
+  - (* __forall_l_untagged *)
+    assert (He : (Ψ `union` Ψ') [=] empty)
+      by (apply IHad_pat_sub_g; exact Hif).
+    clear - He; fsetdec.
+  - (* __ghost *) assumption.
+  - (* __ghostg *) assumption.
+  - (* __univ_ghost_l *) apply IHad_pat_sub_g; exact Hif.
+  - (* __univ_ghost_lg *) apply IHad_pat_sub_g; exact Hif.
+  - (* __flex_mono *) apply IHad_pat_sub_g; exact Hif.
+Qed.
+
+Print Assumptions ad_pat_sub_g_inh_free_tag_free.
+
+(** (C) REFINEMENT never CREATES an inherited ∀: [__all] is the only row that
+    emits one and it demands one on the left.  The fills are painted
+    SYNTHESISED, and the flexible lookups land on monotype paintings. *)
+Lemma ad_refine_syn_inh_free : forall Θ Δ Q' Q,
+  Θ ⨟ Δ ⊢ᵣᵃ Q' ⊳ Q ->
+  bskl_inh_free Q' ->
+  bskl_inh_free Q.
+Proof.
+  intros Θ Δ Q' Q H; induction H; intros Hif.
+  - (* unit *) cbn; exact I.
+  - (* var *) cbn; exact I.
+  - (* arrow *)
+    cbn in Hif |- *; destruct Hif as [Hif1 Hif2];
+      split; [ apply IHad_refine_syn1 | apply IHad_refine_syn2 ]; assumption.
+  - (* all : the INPUT is an inherited ∀ *) cbn in Hif; tauto.
+  - (* hole : the fill is painted SYNTHESISED *)
+    apply pskl_to_bskl_syn_inh_free.
+  - (* tophole_remove *) apply IHad_refine_syn; cbn in Hif; exact Hif.
+  - (* tophole_fill : the output is a SYN ∀ *)
+    cbn. pick fresh α for L.
+    apply (bskl_inh_free_open P α).
+    apply (H0 α ltac:(assumption)); exact Hif.
+  - (* tophole_keep *) cbn; apply IHad_refine_syn; cbn in Hif; exact Hif.
+  - (* flex_l : a monotype PAINTING on the left *)
+    apply IHad_refine_syn; apply ptyp_to_bskl_syn_inh_free.
+  - (* flex_r : the output is a bare variable *) cbn; exact I.
+Qed.
+
+(* ---- reading inh-freeness of the counterpart off P0 ---- *)
+
+Fixpoint pskl_all_free (P : pskl) : Prop :=
+  match P with
+  | pskl_unit => True
+  | pskl_var_b _ => True
+  | pskl_var_f _ => True
+  | pskl_arrow P1 P2 => pskl_all_free P1 /\ pskl_all_free P2
+  | pskl_all_syn _ => False
+  | pskl_hole => True
+  | pskl_tophole P0 => pskl_all_free P0
+  end.
+
+Lemma pskl_all_free_to_bskl_inh : forall P,
+  pskl_all_free P -> bskl_inh_free (pskl_to_bskl_inh P).
+Proof. intros P; induction P; cbn; tauto. Qed.
+
+Lemma mono_ptyp_to_pskl_all_free : forall A,
+  mono_ptyp A -> pskl_all_free (ptyp_to_pskl A).
+Proof. intros A H; induction H; cbn; tauto. Qed.
+
+(** A metasubstitution's images are MONOTYPES, so it cannot introduce a ∀. *)
+Lemma msubst_pskl_all_free : forall Θ0 Θ κ P,
+  κ ∷ Θ0 ⊑ Θ ->
+  pskl_all_free P ->
+  pskl_all_free (msubst_pskl κ P).
+Proof.
+  intros Θ0 Θ κ P Hκ; induction P; intros Hff; cbn in Hff |- *; try tauto.
+  (* only [var_f] survives — the congruences are propositional *)
+  - (* var_f : the image is a monotype *)
+    apply mono_ptyp_to_pskl_all_free; eapply a_inc_lookup_mono; exact Hκ.
+Qed.
+
+(* ===================================================================== *)
+(*  §8  P7's SUPPLY, ∀-FREE FORM                                          *)
+(* ===================================================================== *)
+
+(** The counterpart-side statement: an inh-free counterpart shields ANY P0,
+    with no [is_tskl] and no wf.  §4's [sub_shield_supply_mono_counterpart]
+    is the [bskl_monoish] instance. *)
+Theorem sub_shield_supply_inh_free_counterpart :
+  forall n NM M Θ0 Θ Ψa ψa ψsubj Q P0,
+  a_tags_sort NM Ψa ψa ->
+  ad_pat_sub_g n NM M Ψa Θ ψsubj Q ->
+  bskl_inh_free Q ->
+  sub_shield Θ0 Ψa empty P0 ψa.
+Proof.
+  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0 Htags Hsub Hif.
+  assert (HΨ : Ψa [=] empty)
+    by (eapply ad_pat_sub_g_inh_free_tag_free; eassumption).
+  apply sub_shield_tag_free; [ exact HΨ | ].
+  assert (Hdt : d_tags_skl Ψa ψa) by (inversion Htags; assumption).
+  assert (Heq : Ψa [=] ftag_in_uskl ψa) by (apply d_tags_skl_ftag; exact Hdt).
+  clear - HΨ Heq; fsetdec.
+Qed.
+
+(** …and the P0-side form P7b's Sub-ForallL applies: a P0 with no ∀ shields
+    itself, whatever ψa is, whatever the flexibles and ghosts inside it. *)
+Theorem sub_shield_supply_all_free_p0 :
+  forall n NM M Θ0 Θ κ Ψa ψa ψsubj Q P0,
+  a_tags_sort NM Ψa ψa ->
+  κ ∷ Θ0 ⊑ Θ ->
+  pskl_all_free P0 ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  ad_pat_sub_g n NM M Ψa Θ ψsubj Q ->
+  sub_shield Θ0 Ψa empty P0 ψa.
+Proof.
+  intros n NM M Θ0 Θ κ Ψa ψa ψsubj Q P0 Htags Hκ Hff Href Hsub.
+  eapply sub_shield_supply_inh_free_counterpart;
+    [ exact Htags | exact Hsub | ].
+  eapply ad_refine_syn_inh_free; [ exact Href | ].
+  apply pskl_all_free_to_bskl_inh.
+  eapply msubst_pskl_all_free; [ exact Hκ | exact Hff ].
+Qed.
+
+Print Assumptions sub_shield_supply_all_free_p0.

@@ -61,8 +61,8 @@ excluded from the build); mine them when re-proving.
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
 - 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
 - ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete_gen` in `frost/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
-- ⬜ Completeness of flexible-variable subtyping
-- ⬜ Theorem: Completeness and optimality of subtyping
+- 🟡 Completeness of flexible-variable subtyping (subtyping-proofs:2836, P7a) — **IN PROGRESS**.  TASK 0 (supplying P6-L's `sub_shield` premise at P7b's Sub-ForallL) lives in `frost/algo/prop_sub_shield_supply.v`, all Qed + axiom-free: a mono-ish counterpart (§4, covers a raw FLEXIBLE `P0`), the non-composite shapes (§5), any **flex-free** `P0` (§6, uniformly in ψa and Δρ), and — the generalization that does the real work — any **inh-free counterpart** / any `P0` **with no ∀** (§7/§8: `ad_pat_consis_inh_free_tag_free`, `ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`, `sub_shield_supply_all_free_p0`).  Residual: a `P0` carrying a ∀ BELOW its head — DESIGN-completeness-subtyping.md §9.0.2
+- ⬜ Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c).  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, whose mech form is `κ1(output) = κ1 P0`.  See docs/PAPER-GAPS.md and DESIGN §9.1
 
 **D. proofs.tex** (§Proofs for Algorithms)
 - ⬜ Suffix moving; Suffix erasure; Splitting refines
@@ -78,7 +78,51 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-30 (latest) — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
+## 2026-07-30 (latest) — P7 TASK 0: the flex-free and ∀-FREE branches CLOSED; the paper's own TODO property REFUTED
+
+`make coq` green, all `Print Assumptions` closed, zero admits.
+
+**TASK 0 (a) — the FLEX-FREE branch** (`prop_sub_shield_supply.v` §6, Qed,
+axiom-free).  §10.6 gave `flex_apart` the base row `flex_shield` already had
+(`fa_flexfree`), so `sub_shield` follows for ANY flex-free `P0`, uniformly in
+ψa **and in Δρ** — subsuming §5's `sub_shield_atomic`.  The only content is
+that flex-freedom survives both walks (`ss_walk_flex_free`,
+`fa_walk_flex_free`): every `P0`-moving step takes a subterm or opens a ∀ at a
+binder the AVOID SET keeps out of `dom Θ0`, and a variable outside the context
+is bound nowhere, hence flexible nowhere.  Second payoff of the avoid set.
+
+**TASK 0 (b) — the residual is far smaller than the plan assumed**
+(`prop_sub_shield_supply.v` §7/§8, Qed, axiom-free).  ⚠️ The planned positional
+route (`fsh_arrow`/`fsh_all_l`/`fsh_all_r` + the mono lemma at each flexible
+leaf) is not what the case needs: **`bskl_monoish` was never the load-bearing
+hypothesis.**  A tag LEAVES the index at exactly ONE rule in the whole system,
+`ad_pat_consis__forall_inh_tagged`, whose counterpart is a `bskl_all_inh`;
+every other row of consistency AND of subtyping forces `Ψ = ∅` on the rule or
+passes Ψ down.  So the real hypothesis is `bskl_inh_free` — no INHERITED
+quantifier in the counterpart — which admits ghosts and synthesised ∀s (all of
+which refinement really produces) and needs neither `is_tskl` nor
+`a_wf_aenv`.  New: `ad_pat_consis_inh_free_tag_free`,
+`ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`,
+`sub_shield_supply_inh_free_counterpart`, `sub_shield_supply_all_free_p0`.
+The chain is `P0` has no ∀ ⟹ `κP0` has none (κ's images are monotypes) ⟹ the
+refinement's output is inh-free ⟹ `Ψa = ∅` ⟹ the shield.  **Residual: a `P0`
+carrying a ∀ BELOW its head** (the head is `unit | var | arrow | □` by the
+WLOG) — see DESIGN §9.0.2 for exactly where the remaining work sits.
+
+**⚠️ FALSE — the property the paper marks with its own TODO**
+(`subtyping-proofs.tex:3243`, "when input `P_0` is a concrete type, RHS of algo
+subtyping is always `P_0`").  Machine-checked:
+`frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`, Qed,
+axiom-free).  Consistency's `FlexL` returns the SUBJECT, and algorithmic
+`Arrow` copies it: at `P_0 = unit → unit` (concrete, and flexible-FREE) with
+subject `α̂ → unit`, the RHS is `α̂ → unit`.  The witness carries wf and
+`skmod[TY]`, so no side condition explains it away.  **This does not break
+Sub-Check or Sub-ForallR** — the paper's own text for both already argues via
+the EQUIVALENCE, which the output context (`α̂ ≔ unit`) supplies.  Only the
+proposed simplification is refuted; the mech keeps the equivalence route, whose
+obligation is `κ1(output) = κ1 P_0`.  DESIGN §9.1, PAPER-GAPS.md.
+
+## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.
 
