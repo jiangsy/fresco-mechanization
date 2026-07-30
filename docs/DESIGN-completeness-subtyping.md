@@ -85,8 +85,11 @@ Lemma a_sub_complete_gen : forall n,          (* fuel; strong induction *)
 ```
 
 ✅ **LOCKED 2026-07-30 — `frost/algo/prop_sub_complete_thm.v`** carries the two
-motives as `sub_complete_concl` / `sub_flex_complete_concl` (+ `p7_bundle`), and
-they typecheck.  Writing them out corrected the skeleton above in two places:
+motives as `sub_complete_concl` / `sub_flex_complete_concl` (+ the bundle
+statement `a_sub_complete_bundle`, named after `a_sub_decorate_bundle`), and
+they typecheck.  ⚠️ The unresolved subject is spelled `R`, not the paper's `S`:
+it is a `uskl`, and the metavariable convention spells that sort `R` (P6-L
+calls the same thing `R'`).  Writing them out corrected the skeleton above in two places:
 
 - ⚠️ **The fuel judgment is `ad_pat_sub_g`, not `ad_pat_sub_n`.**  The
   development settled on the TAG-HYGIENIC fuel mirror, because

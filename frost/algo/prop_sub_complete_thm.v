@@ -8,7 +8,7 @@
     |---|---|---|---|
     | P7a | [a_sub_flex_complete] | lemma:complete-flex-subtyping (:2836) | the contexts [Θ0 ∣ Ξ] |
     | P7b | [a_sub_complete_gen]  | generalised thm:complete-subtyping (:3050) | lex(fuel, ∣Ψ∣) |
-    | P7c | [a_sub_complete_thm]  | thm (algorithmic.tex:1446) | instantiate S := P, Ψ := ∅ |
+    | P7c | [a_sub_complete_thm]  | thm (algorithmic.tex:1446) | instantiate R := P, Ψ := ∅ |
 
     P7a's proof is "by induction on the contexts of the subtyping judgement,
     MUTUALLY with the generalised version of thm:complete-subtyping below", and
@@ -41,7 +41,7 @@
 
     (3) THE THIRD SOLUTION PREMISE STAYS (§1's "lesson 1"): besides the
         subtyping derivation and the P0-fill, the SUBJECT's own refinement
-        [⊢ᵣₚᵃ κ⌊S⌋ˢ ⊳ ⌊Q⌋].  It is exactly what [a_consis_sound] /
+        [⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋].  It is exactly what [a_consis_sound] /
         [a_sub_sound_thm] PRODUCE for every algorithmic output, so the
         sound/complete pair still characterises the algorithm exactly.
 
@@ -74,7 +74,7 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 (** Given a subtyping problem [(Θ0;N;M;P0;P)], a tag context Ψ, an unresolved
-    skeleton [S] with [⌊S⌋ˢ = P], and a solution [(κ ∷ Θ0 ⊑ Θ ; Q)], the
+    skeleton [R] with [⌊R⌋ˢ = P], and a solution [(κ ∷ Θ0 ⊑ Θ ; Q)], the
     algorithm succeeds and its output is ⊑-optimal.
 
     [n] is the fuel of the declarative derivation — the paper's "derivation
@@ -85,7 +85,7 @@ Set Implicit Arguments.
     preserves the fuel of exactly. *)
 Definition sub_complete_concl
   (n : nat) (NM : a_sub_mode) (M : mode)
-  (Θ0 : aenv) (P0 P : pskl) (S : uskl) (Ψ : atoms)
+  (Θ0 : aenv) (P0 P : pskl) (R : uskl) (Ψ : atoms)
   (Θ : aenv) (κ : metasubst) (Q : bskl) : Prop :=
   (* ---- inputs are well formed, and mode-compatible with P0 ---- *)
   a_wf_aenv Θ0 -> a_wf_aenv Θ ->
@@ -94,10 +94,10 @@ Definition sub_complete_concl
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
   (* ---- the unresolved subject erases to the algorithm's input ---- *)
-  ⌊ S ⌋ˢ = P ->
+  ⌊ R ⌋ˢ = P ->
   (* ---- the solution: an increase, and its three conditions ---- *)
   κ ∷ Θ0 ⊑ Θ ->
-  ad_pat_sub_g n NM M Ψ Θ (msubst_uskl_syn κ S) Q ->
+  ad_pat_sub_g n NM M Ψ Θ (msubst_uskl_syn κ R) Q ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
   ad_refine_pskl_f empty Θ empty (msubst_pskl κ P) (bskl_to_pskl Q) ->
   (* ---- the algorithm succeeds, and its solution is the least ---- *)
@@ -116,7 +116,7 @@ Definition sub_complete_concl
 
 (** The flexible-variable half.  The subject is the bare flexible [α̂], so the
     declarative premise is about its IMAGE [κα̂] — a MONOTYPE, painted into the
-    subject sort; there is no [S] and no erasure premise.
+    subject sort; there is no [R] and no erasure premise.
 
     ⚠️ THE CONTEXT IS SPLIT.  [a_sub_flex NM M P0 Θ0 Ξ α P1 Θ1] keeps the
     entries the flex walk has already passed in [Ξ] and the rest in [Θ0]; the
@@ -140,7 +140,7 @@ Definition sub_flex_complete_concl
   (NM = a_sub_mode_sk -> a_sk_mode_compat (mode_fn M) P0) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
   κ ∷ (Ξ ++ Θ0) ⊑ Θ ->
-  (* the subject is [syn{κα̂}] — a monotype painting, not an unresolved S *)
+  (* the subject is [syn{κα̂}] — a monotype painting, not an unresolved R *)
   ad_pat_sub_g n NM (mode_fn M) Ψ Θ
     (ptyp_to_uskl_syn (msubst_lookup κ α)) Q ->
   ad_refine_syn_f empty Θ empty
@@ -160,13 +160,19 @@ Definition sub_flex_complete_concl
 (*  The bundle's statement, for reference while the cases are written      *)
 (* ===================================================================== *)
 
-(** What the induction will establish.  Both halves are quantified over the
-    SAME fuel [n], and the lexicographic order is (n, |Θ0|) — see the note on
-    [sub_flex_complete_concl]. *)
-Definition p7_bundle : Prop :=
+(** What the induction will establish — named after
+    [a_sub_decorate_bundle] (prop_decorate_key.v), the house shape for a
+    two-half [a_sub] / [a_sub_flex] statement.  Both halves are quantified over
+    the SAME fuel [n], and the lexicographic order is (n, |Θ0|) — see the note
+    on [sub_flex_complete_concl].
+
+    ⚠️ The unresolved subject is [R], not the paper's [S]: it is a [uskl], and
+    the metavariable convention (CLAUDE.md) spells that sort [R].  P6-L calls
+    the same thing [R'] for the same reason. *)
+Definition a_sub_complete_bundle : Prop :=
   forall n,
-    (forall NM M Θ0 P0 P S Ψ Θ κ Q,
-       sub_complete_concl n NM M Θ0 P0 P S Ψ Θ κ Q) /\
+    (forall NM M Θ0 P0 P R Ψ Θ κ Q,
+       sub_complete_concl n NM M Θ0 P0 P R Ψ Θ κ Q) /\
     (forall NM M Θ0 Ξ α P0 Ψ Θ κ Q,
        sub_flex_complete_concl n NM M Θ0 Ξ α P0 Ψ Θ κ Q).
 
@@ -175,4 +181,4 @@ Definition p7_bundle : Prop :=
     this file is the locked motive; the cases live in the follow-up.) *)
 Check sub_complete_concl.
 Check sub_flex_complete_concl.
-Check p7_bundle.
+Check a_sub_complete_bundle.

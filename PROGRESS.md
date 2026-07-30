@@ -144,7 +144,9 @@ simplify therefore get their step from the SOUNDNESS theorems.**  DESIGN §9.1,
 PAPER-GAPS.md.
 
 **P7's MOTIVE is LOCKED** — `frost/algo/prop_sub_complete_thm.v`
-(`sub_complete_concl` / `sub_flex_complete_concl` / `p7_bundle`, typechecked).
+(`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`,
+typechecked; the unresolved subject is spelled `R`, the `uskl` metavariable,
+not the paper's `S`).
 Writing it out corrected DESIGN §1 in two places: the fuel judgment is
 `ad_pat_sub_g`, not `ad_pat_sub_n` (precision-substitution is FALSE over `_n`,
 and P5 + all five P6 lemmas are stated over `_g`); and ⚠️ the factored
