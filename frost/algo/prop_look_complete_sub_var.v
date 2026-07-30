@@ -98,73 +98,9 @@ Set Implicit Arguments.
 (*  Raw-flexible-freedom of a payload                                     *)
 (* ===================================================================== *)
 
-(** [pskl_flex_free Θ0 P]: no free variable of [P] is a FLEXIBLE of [Θ0]
-    (declared or defined).  Stated over [ftvar_in_pskl] rather than
-    structurally, so the opening / weakening facts below are set algebra
-    instead of inductions. *)
-Definition pskl_flex_free (Θ0 : aenv) (P : pskl) : Prop :=
-  forall α, α `in` ftvar_in_pskl P -> ~ a_flex_tvar Θ0 α.
-
-Lemma pskl_flex_free_arrow_inv : forall Θ0 P1 P2,
-  pskl_flex_free Θ0 (pskl_arrow P1 P2) ->
-  pskl_flex_free Θ0 P1 /\ pskl_flex_free Θ0 P2.
-Proof.
-  intros Θ0 P1 P2 H; split; intros α Hα; apply H; simpl; clear - Hα; fsetdec.
-Qed.
-
-Lemma pskl_flex_free_tophole_inv : forall Θ0 P,
-  pskl_flex_free Θ0 (pskl_tophole P) -> pskl_flex_free Θ0 P.
-Proof. intros Θ0 P H α Hα; apply H; simpl; exact Hα. Qed.
-
-(** Substituting a NON-flexible variable preserves flex-freedom. *)
-Lemma pskl_flex_free_subst : forall Θ0 P α1 α2,
-  pskl_flex_free Θ0 P ->
-  ~ a_flex_tvar Θ0 α2 ->
-  pskl_flex_free Θ0 (subst_pskl_in_pskl (pskl_var_f α2) α1 P).
-Proof.
-  intros Θ0 P α1 α2 H H2 α Hα.
-  pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f α2) α1)
-    as Hup.
-  simpl in Hup.
-  destruct (α == α2) as [-> | Hne]; [ exact H2 | ].
-  apply H. clear - Hα Hup Hne; fsetdec.
-Qed.
-
-(** Opening a ∀-body with a fresh RIGID binder, in the context extended by
-    that binder. *)
-Lemma pskl_flex_free_open_tvar : forall Θ0 P γ,
-  pskl_flex_free Θ0 (pskl_all_syn P) ->
-  γ `notin` dom Θ0 ->
-  pskl_flex_free ((γ ~ abind_tvar) ++ Θ0)
-    (open_pskl_wrt_pskl P (pskl_var_f γ)).
-Proof.
-  intros Θ0 P γ H Hγ α Hα Hflex.
-  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)) as Hup.
-  simpl in Hup.
-  destruct (α == γ) as [-> | Hne].
-  - (* the fresh binder is RIGID in the extended context *)
-    destruct Hflex as [Hb | [τ Hb]];
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-      solve [ discriminate Habs
-            | exfalso; apply Hγ; eapply binds_In; exact Hb' ].
-  - apply (H α); [ simpl; clear - Hα Hup Hne; fsetdec | ].
-    destruct Hflex as [Hb | [τ Hb]];
-      [ left | right; exists τ ];
-      (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq _] | Hb'];
-       [ contradiction | exact Hb' ]).
-Qed.
-
-Lemma pskl_flex_free_weaken_tvar : forall Θ0 P γ,
-  pskl_flex_free Θ0 P ->
-  pskl_flex_free ((γ ~ abind_tvar) ++ Θ0) P.
-Proof.
-  intros Θ0 P γ H α Hα Hflex.
-  apply (H α Hα).
-  destruct Hflex as [Hb | [τ Hb]];
-    [ left | right; exists τ ];
-    (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-     [ discriminate Habs | exact Hb' ]).
-Qed.
+(** [pskl_flex_free] and its kit MOVED UP to prop_look_complete.v — it is
+    now a base rule of [flex_apart] too ([fa_flexfree]), so it must be in
+    scope before P6-Cv.  See DESIGN §10. *)
 
 (* ===================================================================== *)
 (*  [flex_shield Θ0 Ψ' Δρ P0 ψa]  — THE REPAIR PREMISE                    *)

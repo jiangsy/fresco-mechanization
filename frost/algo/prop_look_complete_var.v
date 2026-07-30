@@ -157,8 +157,12 @@ Proof.
                       (uskl_var_f α)) as Hup;
         simpl in *; clear - Hc Hup Hα; fsetdec end.
     + apply fa_var_rigid; assumption.
+    + (* fa_flexfree : the payload is untouched *)
+      apply fa_flexfree; assumption.
   - (* arrow *)
-    inversion Hfa; subst.
+    inversion Hfa; subst;
+      [ | (* fa_flexfree : the payload is untouched *)
+          apply fa_flexfree; assumption ].
     apply fa_clean.
     match goal with Hc : _ ∩ _ [=] empty |- _ =>
       pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
@@ -185,6 +189,8 @@ Proof.
     apply fa_tophole.
     eapply flex_apart_guarded_all_etag_descent;
       [ exact Hg | eassumption | exact Hα ].
+  - (* fa_flexfree : the payload is untouched *)
+    apply fa_flexfree; assumption.
 Qed.
 
 (* RESTART NOTE (no-hole removal rework): the "ForallSyn kit (2)" that
@@ -718,7 +724,12 @@ Proof.
               pose proof (binds_unique _ _ _ _ _ Hb Hb'
                             (a_wf_aenv_uniq HwfΘ0)) as Hcc;
               discriminate Hcc
-            end. }
+            end.
+          - (* fa_flexfree clashes with flexibility directly.  NB [fa_rho_var]
+               is discriminated: this target is an ARROW, not a variable. *)
+            exfalso.
+            match goal with Hff : pskl_flex_free _ _ |- _ =>
+              apply (Hff β); [ simpl; clear; fsetdec | exact Hflxβ ] end. }
         simpl in Hclean.
         destruct (uskl_rho_clean_eq Hrho1 ltac:(clear - Hclean; fsetdec))
           as [HeqR1 HΨρ1e].
@@ -1363,7 +1374,8 @@ Proof.
               clear - HYx Hne; fsetdec.
           - eapply flex_apart_weaken;
               [ apply HapF; clear - HXf; solve_notin
-              | intros x b Hb; apply binds_cons_3; exact Hb ].
+              | intros x b Hb; apply binds_cons_3; exact Hb
+              | apply a_flex_tvar_strip_tvar ].
           - exact Hpre0x.
           - exact Hsubeq1b.
           - exact Hsubeq2b.
@@ -2107,8 +2119,10 @@ Proof.
               clear - Hd HXf; destruct_notin; fsetdec.
             + eapply Hdfresh; [ | exact Hbd' ].
               clear - HYx Hne; fsetdec.
-          - eapply flex_apart_weaken; [ exact HapX | ].
-            intros x b Hb; exact Hb.
+          - eapply flex_apart_weaken;
+              [ exact HapX
+              | intros x b Hb; exact Hb
+              | intros αf Hf; exact Hf ].
           - exact Hpre0x.
           - exact Hsubeq1.
           - exact Hsubeq2.
@@ -2279,7 +2293,8 @@ Proof.
                             clear - Hs0 Hup HneX0; fsetdec)
                       ltac:(eapply flex_apart_weaken;
                             [ apply HapF; clear - Fr; solve_notin
-                            | intros x b Hb; apply binds_cons_3; exact Hb ])
+                            | intros x b Hb; apply binds_cons_3; exact Hb
+                            | apply a_flex_tvar_strip_tvar ])
                       ltac:(eapply ad_partial_precise_weaken;
                               [ apply HpreF; clear - Fr; solve_notin
                               | intros x b Hb; apply binds_cons_3;
@@ -2367,7 +2382,8 @@ Proof.
                       ltac:(intros α0 HX0; simpl; auto)
                       ltac:(eapply flex_apart_weaken;
                             [ apply HapF; clear - Fr; solve_notin
-                            | intros x b Hb; apply binds_cons_3; exact Hb ])
+                            | intros x b Hb; apply binds_cons_3; exact Hb
+                            | apply a_flex_tvar_strip_tvar ])
                       ltac:(simpl; apply ad_ppre__hole;
                             [ exact HΨie
                             | pose proof
@@ -2491,7 +2507,8 @@ Proof.
                         Hshield
                         ltac:(eapply flex_apart_weaken;
                               [ apply HapF; clear - Fr; solve_notin
-                              | intros x b Hb; apply binds_cons_3; exact Hb ])
+                              | intros x b Hb; apply binds_cons_3; exact Hb
+                              | apply a_flex_tvar_strip_tvar ])
                         (HF α ltac:(clear - Fr; solve_notin))
                         HΨiS
                         ltac:(apply Hrefb; clear - Fr; solve_notin))

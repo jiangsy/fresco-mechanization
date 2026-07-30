@@ -2195,9 +2195,20 @@ Proof.
             | assert (Hc : abind_tvar = abind_flex_mono_def τx)
                 by (eapply binds_unique; [ exact Hb | exact Hb2 | exact Huq ]) ];
             discriminate Hc. }
-        assert (Hclean : (ftvar_in_uskl ψa) ∩ Δρ [=] empty)
-          by (eapply flex_apart_flex_var_clean;
-                [ apply flex_apart_p0_here; exact Hfaw | exact Hnrig ]).
+        (* TODO[merge-flex-guard]: the read-off is now THREE-way (DESIGN §10.5).
+           Arm 1 (clean) is the existing path below.  Arm 2 ([fa_rho_var],
+           ψa = uskl_var_f α0 with α0 ∈ Δρ) should bypass
+           [ad_pat_consis_rho_subst_psia_mono] entirely and build the 4-tuple
+           directly: τψ := ptyp_var_f α0, mono by [mono_ptyp__var], the paint
+           equation by [reflexivity], and [a_wf_ptyp Θ (ptyp_var_f α0)] from
+           [Hrfr]'s binds fact for Δρ-members.  Arm 3 (ψa = uskl_topholeg ψ0)
+           is the ∀◈ target, which on the shield side gets its own row of the
+           induction ([flex_shield_flex_leaf]'s shape side conditions) — decide
+           whether P6-Cs can exclude it here or needs the same treatment.
+           BOTH ARMS ARE REACHED (probed); neither is written. *)
+        destruct (flex_apart_flex_var_clean
+                    (flex_apart_p0_here Hfaw) Hnrig Hflx)
+          as [Hclean | [(α0 & Hψeq & Hα0) | (ψ0 & Hψeq)]].
         assert (Hαρ : α `notin` Δρ).
         { intro Hc. destruct (Hrfr α Hc) as (Hb & _ & _).
           apply binds_In in Hb. contradiction. }

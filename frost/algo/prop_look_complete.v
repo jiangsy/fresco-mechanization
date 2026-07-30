@@ -2835,6 +2835,89 @@ Qed.
 (*  maintained internally by the P6 lemma cluster only.                    *)
 (* ===================================================================== *)
 
+(** Adding a RIGID entry creates no flexible variable — the side condition the
+    [fa_flexfree] row makes every context weakening carry. *)
+Lemma a_flex_tvar_strip_tvar : forall Θ0 β α,
+  a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α -> a_flex_tvar Θ0 α.
+Proof.
+  intros Θ0 β α [Hb | [τ Hb]];
+    [ left | right; exists τ ];
+    (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+     [ discriminate Habs | exact Hb' ]).
+Qed.
+
+(* ===================================================================== *)
+(*  Raw-flexible-freedom of a payload                                     *)
+(* ===================================================================== *)
+
+(** [pskl_flex_free Θ0 P]: no free variable of [P] is a FLEXIBLE of [Θ0]
+    (declared or defined).  Stated over [ftvar_in_pskl] rather than
+    structurally, so the opening / weakening facts below are set algebra
+    instead of inductions. *)
+Definition pskl_flex_free (Θ0 : aenv) (P : pskl) : Prop :=
+  forall α, α `in` ftvar_in_pskl P -> ~ a_flex_tvar Θ0 α.
+
+Lemma pskl_flex_free_arrow_inv : forall Θ0 P1 P2,
+  pskl_flex_free Θ0 (pskl_arrow P1 P2) ->
+  pskl_flex_free Θ0 P1 /\ pskl_flex_free Θ0 P2.
+Proof.
+  intros Θ0 P1 P2 H; split; intros α Hα; apply H; simpl; clear - Hα; fsetdec.
+Qed.
+
+Lemma pskl_flex_free_tophole_inv : forall Θ0 P,
+  pskl_flex_free Θ0 (pskl_tophole P) -> pskl_flex_free Θ0 P.
+Proof. intros Θ0 P H α Hα; apply H; simpl; exact Hα. Qed.
+
+(** Substituting a NON-flexible variable preserves flex-freedom. *)
+Lemma pskl_flex_free_subst : forall Θ0 P α1 α2,
+  pskl_flex_free Θ0 P ->
+  ~ a_flex_tvar Θ0 α2 ->
+  pskl_flex_free Θ0 (subst_pskl_in_pskl (pskl_var_f α2) α1 P).
+Proof.
+  intros Θ0 P α1 α2 H H2 α Hα.
+  pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f α2) α1)
+    as Hup.
+  simpl in Hup.
+  destruct (α == α2) as [-> | Hne]; [ exact H2 | ].
+  apply H. clear - Hα Hup Hne; fsetdec.
+Qed.
+
+(** Opening a ∀-body with a fresh RIGID binder, in the context extended by
+    that binder. *)
+Lemma pskl_flex_free_open_tvar : forall Θ0 P γ,
+  pskl_flex_free Θ0 (pskl_all_syn P) ->
+  γ `notin` dom Θ0 ->
+  pskl_flex_free ((γ ~ abind_tvar) ++ Θ0)
+    (open_pskl_wrt_pskl P (pskl_var_f γ)).
+Proof.
+  intros Θ0 P γ H Hγ α Hα Hflex.
+  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f γ)) as Hup.
+  simpl in Hup.
+  destruct (α == γ) as [-> | Hne].
+  - (* the fresh binder is RIGID in the extended context *)
+    destruct Hflex as [Hb | [τ Hb]];
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+      solve [ discriminate Habs
+            | exfalso; apply Hγ; eapply binds_In; exact Hb' ].
+  - apply (H α); [ simpl; clear - Hα Hup Hne; fsetdec | ].
+    destruct Hflex as [Hb | [τ Hb]];
+      [ left | right; exists τ ];
+      (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq _] | Hb'];
+       [ contradiction | exact Hb' ]).
+Qed.
+
+Lemma pskl_flex_free_weaken_tvar : forall Θ0 P γ,
+  pskl_flex_free Θ0 P ->
+  pskl_flex_free ((γ ~ abind_tvar) ++ Θ0) P.
+Proof.
+  intros Θ0 P γ H α Hα Hflex.
+  apply (H α Hα).
+  destruct Hflex as [Hb | [τ Hb]];
+    [ left | right; exists τ ];
+    (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
+     [ discriminate Habs | exact Hb' ]).
+Qed.
+
 Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
 | fa_clean : forall P0 ψa,
     (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
@@ -2863,7 +2946,47 @@ Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
     (forall α, α `notin` L ->
        flex_apart Θ0 Δρ (open_pskl_wrt_pskl P0 (pskl_var_f α))
                         (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
-    flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_syn ψ).
+    flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_syn ψ)
+(* ===================================================================== *)
+(*  THE TWO BASE ROWS [flex_shield] HAS AND THIS ONE LACKED.              *)
+(*                                                                        *)
+(*  DESIGN §10: the two repair premises legitimately differ in their       *)
+(*  DESCENT discipline — P6-Cv descends consistency, which matches ∀s in   *)
+(*  LOCKSTEP ([fa_all_etag] / [fa_all_syn], Δρ fixed), while P6-Sv         *)
+(*  descends subtyping, which INSTANTIATES ([fsh_all_r], Δρ grows).  That  *)
+(*  difference is real and must stay.  Their BASE rows, on the other hand, *)
+(*  say the same thing about the same hazard and must agree — and these    *)
+(*  two were missing here:                                                 *)
+(*                                                                        *)
+(*   · [fa_flexfree] — nothing to keep apart when the payload has no raw   *)
+(*     Θ0-flexible at all.  [fa_unit] / [fa_var_rigid] / [fa_hole] were    *)
+(*     three special cases of it; the general rule was never written.      *)
+(*   · [fa_rho_var] — a ρ-REPLACED RIGID VARIABLE is safe opposite ANY     *)
+(*     payload.  This is P6-Cv's own leaf: the precision premise forces    *)
+(*     [Pi] to be that very variable, SolS-Var / SolE-Var keep it, and the *)
+(*     conclusion's precision is the var rule, so no dirt reaches the      *)
+(*     payload however dirty the position is.  [flex_shield] states it as  *)
+(*     [fsh_rho_var] for exactly this reason.                              *)
+(*                                                                        *)
+(*  ⚠️ WITHOUT them the premise is TOO STRONG — [sub_shield] is            *)
+(*  UNSATISFIABLE at an ARROW P0 against a tagged-identity guess, because  *)
+(*  Sub-ForallL's walk step makes the guess mention the very binder it put *)
+(*  into Δρ and nothing was left to apply.  Machine-checked in             *)
+(*  cex/cex_p7_shield_arrow.v (two witnesses: the first needs              *)
+(*  [fa_flexfree], the second needs [fa_rho_var]).                         *)
+(*                                                                        *)
+(*  NEITHER disturbs the lockstep inversions: [fa_flexfree]'s conclusion   *)
+(*  re-applies at any sub-payload (flex-freedom is inherited), and         *)
+(*  [fa_rho_var]'s target is a bare variable, which every ∀ / arrow        *)
+(*  inversion discriminates away.  An [fa_all_r] row WOULD have broken     *)
+(*  them, which is why it is deliberately absent.                          *)
+(* ===================================================================== *)
+| fa_flexfree : forall P0 ψa,
+    pskl_flex_free Θ0 P0 ->
+    flex_apart Θ0 Δρ P0 ψa
+| fa_rho_var : forall P0 α,
+    α `in` Δρ ->
+    flex_apart Θ0 Δρ P0 (uskl_var_f α).
 
 
 (* Inversions used by the ∀◇/∀◈ congruence cases. *)
@@ -2883,6 +3006,8 @@ Proof.
   - apply fa_hole.
   - apply fa_tophole; auto.
   - inversion Heqt; subst; assumption.
+  - (* fa_flexfree : flex-freedom does not look at the target *)
+    apply fa_flexfree; assumption.
 Qed.
 
 Lemma flex_apart_tophole_p0_inv : forall Θ0 Δρ P ψ,
@@ -2896,28 +3021,49 @@ Proof.
   - apply fa_clean; assumption.
   - inversion Heqt; subst; assumption.
   - apply fa_topholeg_t; auto.
+  - (* fa_flexfree : ∀◇'s body inherits flex-freedom *)
+    subst. apply fa_flexfree; eapply pskl_flex_free_tophole_inv; eassumption.
+  - (* fa_rho_var : the target is a bare Δρ-variable, unchanged *)
+    apply fa_rho_var; assumption.
 Qed.
 
-(** THE FLEX-P0 READ-OFF.  A [flex_apart] whose P0 is a FLEXIBLE variable
-    has only one non-∀◈ way to hold — [fa_clean] — since [fa_var_rigid]
-    needs the very same variable to be RIGID.  [fa_topholeg_t] only peels
-    ∀◈s off the target, which does not change its free variables.  So the
-    guess is Δρ-CLEAN there, i.e. ρ acts as the identity on it
-    ([uskl_rho_clean_eq]).  This is exactly what the flexible-P0 row of
-    P6-Cs needs to keep using the ρ-free ψa-mono extraction. *)
+(** THE FLEX-P0 READ-OFF.  A [flex_apart] whose P0 is a FLEXIBLE variable has
+    only two ways to hold.  [fa_var_rigid] wants that very variable RIGID and
+    [fa_flexfree] wants it non-flexible, so both are excluded by the caller's
+    own [a_flex_tvar]; the arrow / ∀ rows want another P0 shape; and
+    and the ∀◈ target has its own row of the consumer's induction, so it is
+    excluded here by a SHAPE side condition — exactly as [flex_shield_flex_leaf]
+    does it on the shield side.  That leaves [fa_clean] — the guess is Δρ-CLEAN,
+    i.e. ρ acts as the identity on it ([uskl_rho_clean_eq]) — and [fa_rho_var],
+    where the guess IS a Δρ-variable.
+
+    ⚠️ The second disjunct is NEW (DESIGN §10): before [fa_rho_var] existed
+    this read-off was an equation, and the premise was correspondingly TOO
+    STRONG.  It costs the consumer nothing, because a Δρ-VARIABLE is already a
+    mono paint — which is exactly what the cleanliness was being used to
+    establish (P6-Cs's Arrow row feeds it to
+    [ad_pat_consis_rho_subst_psia_mono] to get "ψa is mono, hence tag-free"). *)
 Lemma flex_apart_flex_var_clean : forall Θ0 Δρ β ψa,
   flex_apart Θ0 Δρ (pskl_var_f β) ψa ->
   ~ binds β abind_tvar Θ0 ->
-  (ftvar_in_uskl ψa) ∩ Δρ [=] empty.
+  a_flex_tvar Θ0 β ->
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty
+  \/ (exists α0, ψa = uskl_var_f α0 /\ α0 `in` Δρ)
+  \/ (exists ψ0, ψa = uskl_topholeg ψ0).
 Proof.
   intros Θ0 Δρ β ψa H.
   remember (pskl_var_f β) as t eqn:Heqt.
-  revert β Heqt; induction H; intros β' Heqt Hnr;
+  revert β Heqt; induction H; intros β' Heqt Hnr Hflex;
     try discriminate Heqt; subst.
-  - assumption.
-  - inversion Heqt; subst; contradiction.
-  - (* fa_topholeg_t: ∀◈ does not change the target's free variables *)
-    simpl. exact (IHflex_apart β' eq_refl Hnr).
+  - (* fa_clean *) left; assumption.
+  - (* fa_var_rigid : the caller's own [a_flex_tvar] excludes it *)
+    inversion Heqt; subst; contradiction.
+  - (* fa_topholeg_t : the ∀◈ target, reported as its own arm *)
+    right; right; eexists; reflexivity.
+  - (* fa_flexfree : IMPOSSIBLE — β is flexible, so P0 is not flex-free *)
+    exfalso. apply (H β'); [ simpl; clear; fsetdec | exact Hflex ].
+  - (* fa_rho_var : the guess IS a Δρ-variable — already a mono paint *)
+    right; left; exists α; split; [ reflexivity | exact H ].
 Qed.
 
 (* ===================================================================== *)
@@ -3389,6 +3535,10 @@ Proof.
     end.
   - (* fa_arrow *)
     split; assumption.
+  - (* fa_flexfree : both components inherit flex-freedom *)
+    match goal with Hff : pskl_flex_free _ _ |- _ =>
+      destruct (pskl_flex_free_arrow_inv Hff) as [Hff1 Hff2] end.
+    split; apply fa_flexfree; assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -3731,13 +3881,18 @@ Proof.
       | apply Hgf; clear - Hα; fsetdec ].
 Qed.
 
-(** [flex_apart] aenv weakening (binds-monotone). *)
+(** [flex_apart] aenv weakening (binds-monotone).  ⚠️ Since [fa_flexfree]
+    (DESIGN §10) reads the context NEGATIVELY, the map must also create no new
+    flexibles — true of every RIGID extension, which is what all the callers do.
+    A FLEXIBLE prefix needs the ftv-scoped twin below, exactly as on the
+    [flex_shield] side. *)
 Lemma flex_apart_weaken : forall Θ0 Δρ P ψ,
   flex_apart Θ0 Δρ P ψ ->
   forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
+  (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
   flex_apart Θ0' Δρ P ψ.
 Proof.
-  intros Θ0 Δρ P ψ H; induction H; intros Θ0' Hmon.
+  intros Θ0 Δρ P ψ H; induction H; intros Θ0' Hmon Hfx.
   - apply fa_clean; assumption.
   - apply fa_unit.
   - apply fa_var_rigid; auto.
@@ -3747,6 +3902,44 @@ Proof.
   - apply fa_arrow; auto.
   - eapply fa_all_etag with (L := L); eauto.
   - eapply fa_all_syn with (L := L); eauto.
+  - apply fa_flexfree; intros α Hα Hflex; apply (H α Hα); auto.
+  - apply fa_rho_var; assumption.
+Qed.
+
+(** …and the FLEXIBLE-prefix twin ([flex_shield_weaken_flex_prefix]'s mirror):
+    a payload variable outside [dom Ξ] keeps its Θ0 binding, so flex-freedom
+    survives.  The opened binder in the ∀ rows must miss [dom Ξ] too. *)
+Lemma flex_apart_weaken_flex_prefix : forall Θ0 Δρ P ψ,
+  flex_apart Θ0 Δρ P ψ ->
+  forall Ξ, (ftvar_in_pskl P) ∩ (dom Ξ) [=] empty ->
+  flex_apart (Ξ ++ Θ0) Δρ P ψ.
+Proof.
+  intros Θ0 Δρ P ψ H; induction H; intros Ξ Hfr.
+  - apply fa_clean; assumption.
+  - apply fa_unit.
+  - apply fa_var_rigid; apply binds_app_3; assumption.
+  - apply fa_hole.
+  - simpl in Hfr. apply fa_tophole; apply IHflex_apart; exact Hfr.
+  - apply fa_topholeg_t; apply IHflex_apart; exact Hfr.
+  - simpl in Hfr. apply fa_arrow;
+      [ apply IHflex_apart1 | apply IHflex_apart2 ]; clear - Hfr; fsetdec.
+  - apply fa_all_etag with (L := L `union` dom Ξ); intros α Hα.
+    apply H0; [ clear - Hα; solve_notin | ].
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as Hup.
+    simpl in Hup, Hfr. clear - Hup Hfr Hα; fsetdec.
+  - apply fa_all_syn with (L := L `union` dom Ξ); intros α Hα.
+    apply H0; [ clear - Hα; solve_notin | ].
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as Hup.
+    simpl in Hup, Hfr. clear - Hup Hfr Hα; fsetdec.
+  - (* flexfree: a payload variable outside [dom Ξ] keeps its Θ0 binding *)
+    apply fa_flexfree. intros α Hα Hflex.
+    assert (HαΞ : α `notin` dom Ξ) by (clear - Hfr Hα; fsetdec).
+    apply (H α Hα).
+    destruct Hflex as [Hb | [τ Hb]];
+      [ left | right; exists τ ];
+      (destruct (binds_app_1 _ _ _ _ _ Hb) as [Hb' | Hb'];
+        [ exfalso; apply HαΞ; eapply binds_In; exact Hb' | exact Hb' ]).
+  - apply fa_rho_var; assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -3843,19 +4036,22 @@ Qed.
 Lemma flex_apart_walk_weaken : forall Θ0 Δρ P0 ψa,
   flex_apart_walk Θ0 Δρ P0 ψa ->
   forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
+  (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
   flex_apart_walk Θ0' Δρ P0 ψa.
 Proof.
-  intros Θ0 Δρ P0 ψa H Θ0' Hmon Δρ' P0' ψa' Hw.
-  eapply flex_apart_weaken; [ apply H; exact Hw | exact Hmon ].
+  intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx Δρ' P0' ψa' Hw.
+  eapply flex_apart_weaken; [ apply H; exact Hw | exact Hmon | exact Hfx ].
 Qed.
 
+(** Adding a RIGID creates no flexible, so this one stays free. *)
 Lemma flex_apart_walk_weaken_tvar : forall Θ0 Δρ P0 ψa β,
   flex_apart_walk Θ0 Δρ P0 ψa ->
   flex_apart_walk ((β ~ abind_tvar) ++ Θ0) Δρ P0 ψa.
 Proof.
   intros Θ0 Δρ P0 ψa β H.
   eapply flex_apart_walk_weaken;
-    [ exact H | intros x b Hb; apply binds_app_3; exact Hb ].
+    [ exact H | intros x b Hb; apply binds_app_3; exact Hb
+    | apply a_flex_tvar_strip_tvar ].
 Qed.
 
 (* ===================================================================== *)
@@ -3901,10 +4097,11 @@ Qed.
 Lemma flex_apart_p0_weaken : forall Θ0 Δρ P0 ψa,
   flex_apart_p0 Θ0 Δρ P0 ψa ->
   forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
+  (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
   flex_apart_p0 Θ0' Δρ P0 ψa.
 Proof.
-  intros Θ0 Δρ P0 ψa H Θ0' Hmon P0' Hw.
-  eapply flex_apart_weaken; [ apply H; exact Hw | exact Hmon ].
+  intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx P0' Hw.
+  eapply flex_apart_weaken; [ apply H; exact Hw | exact Hmon | exact Hfx ].
 Qed.
 
 Lemma flex_apart_p0_weaken_tvar : forall Θ0 Δρ P0 ψa β,
@@ -3913,7 +4110,8 @@ Lemma flex_apart_p0_weaken_tvar : forall Θ0 Δρ P0 ψa β,
 Proof.
   intros Θ0 Δρ P0 ψa β H.
   eapply flex_apart_p0_weaken;
-    [ exact H | intros x b Hb; apply binds_app_3; exact Hb ].
+    [ exact H | intros x b Hb; apply binds_app_3; exact Hb
+    | apply a_flex_tvar_strip_tvar ].
 Qed.
 
 (** A Δρ-CLEAN guess shields every P0-subterm at once — in particular at
@@ -3955,6 +4153,19 @@ Proof.
     match goal with
     | Hf : forall α, α `notin` ?L0 -> flex_apart _ _ _ _ |- _ =>
       exists L0; exact Hf
+    end.
+  - (* fa_flexfree : the ∀-body inherits flex-freedom at any fresh opener *)
+    match goal with Hff : pskl_flex_free _ _ |- _ =>
+      exists (ftvar_in_pskl P0 `union` dom Θ0); intros α Hα;
+      apply fa_flexfree; intros α0 Hα0 Hflex;
+      apply (Hff α0); [ | exact Hflex ];
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0
+                    (pskl_var_f α)) as Hup;
+      simpl in Hup |- *;
+      assert (Hne : α0 <> α)
+        by (intro; subst; destruct Hflex as [Hb | [τ Hb]];
+            apply binds_In in Hb; clear - Hα Hb; fsetdec);
+      clear - Hup Hα0 Hne; fsetdec
     end.
 Qed.
 
