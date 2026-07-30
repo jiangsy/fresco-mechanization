@@ -132,22 +132,51 @@ PAPER's `B` (the inherited btyp of `syn A ⩽ inh B`, embedded) — a
 pre-existing rule binder of `ad_pat_sub_g__check` kept to avoid the
 inversion-auto-name hazard.
 
-**Sub-Arrow's remaining assembly** (next session, all enablers Qed): mirror
+**Sub-Arrow's remaining assembly** (next session).  The row mirrors
 prop_consis_complete.v's arrow case :6631-6790 — domain via
 `a_consis_complete_thm` (its three premises from the `__arrow` leaf data +
-fill inversion), run soundness for the id-witness w1 + wf Θ1, package at w1
-→ (ζ1, Hie1, Hprec1); codomain IH at `κ := ζ1∘w1`-composite with the slack
-relation from `a_inc_equiv_msubst_uskl` (fills transport by
-`skl_tyequiv_refine_syn_f_transport` after `a_inc_equiv_msubst_pskl`);
-assemble `a_sub__arrow`; glue the packages with `a_inc_equiv_glue` +
-`is_id_inc_unique`; move the domain precision from ζ1 to the final ζ2 via
+fill inversion), run soundness for the id-witness w1 + wf Θ1 + isub,
+package at w1 → (ζ1, Hie1, Hprec1); codomain IH at increase ζ1 with the
+slack; assemble `a_sub__arrow`; glue with `a_inc_equiv_glue` +
+`is_id_inc_unique`; move the domain precision ζ1 → ζ2 via
 `a_inc_equiv_precise_msubst(_flip)` + `msubst_compose_id_pskl` +
-`ad_refine_syn_trans` (external wf of `⌊Q1⌋` needed — WF-SIDE-CONDITIONS
-pattern; consider `ad_refine_syn` target-wf preservation or a row premise).
-The row lemma takes `R = uskl_arrow R1 R2` as a premise; the BUNDLE owes the
-disambiguation (flex-dispatch first; then relation + non-var `R` forces the
-arrow shape — the mono-row crossing needs `a_tyequiv_downarrow` normalization
-only if pursued shape-theoretically, else it is the assembly's case split).
+`ad_refine_syn_trans` (⚠️ external wf of `⌊Q1⌋` — WF-SIDE-CONDITIONS
+pattern).  The row takes `R = uskl_arrow Ra Rb` as a premise (bundle owes
+the disambiguation; flex-dispatch first).
+
+**The EXACT remaining ≡ᵘ obligations, scoped 2026-07-31** (the IH's slack is
+`R2' ≡ᵘ msubst ζ1 Rb`, built from the motive's component `R2' ≡ᵘ κRb` and
+generation's `κRb ≡ᵘ σRb` — which needs TRANSITIVITY, deliberately not a
+row; and the motive's arrow relation must split into components):
+
+1. `a_tyequiv_downarrow_refl : a_wf_aenv Θ → Θ ⊢ A ≡ᵗ ⇓ᵗ[Θ]A` — the ⇓
+   REFLECTION, the one genuinely new fact (prop_normal.v has only the
+   forward `a_tyequiv_downarrow`).  Θ-structure induction + inner
+   τ-induction; flex-def leaf via `aenv_msubst_lookup_def` + the
+   `__flex_def` row; needs ≡ᵗ cons-weakening.
+2. `a_tyequiv_arrow_inv` : `τa→τb ≡ᵗ τa'→τb'` → component ≡ᵗs — via (1) +
+   `a_tyequiv_downarrow` + cbn (⇓ is an msubst, homomorphic on arrows) +
+   injection.
+3. `ptyp_to_uskl_syn` injectivity (tiny).
+4. `a_uskl_tyequiv_mono_r_inv` : anything ≡ᵘ a MONO PAINTING is itself one
+   (with ≡ᵗ to it) — induction over the relation against τ's mono shape.
+5. `a_uskl_tyequiv_trans` — induction on the first derivation, inversion
+   on the second; the mixed mono/structural middles collapse via (4); the
+   mono∘mono case is ≡ᵗ-trans; binder rows take L-unions.
+6. `a_uskl_tyequiv_arrow_arrow_inv` — `__arrow` direct; `__mono` via (2)
+   after painting-arrow inversion (destruct τ).
+7. uskl compose-id collapse: `msubst_uskl_syn_agree` (lookup-agreement ⇒
+   equal images, mirroring `msubst_ptyp_agree`) + the pointwise fact from
+   `msubst_compose_id_pskl`'s underlying lemma — so
+   `msubst (ζ1∘w1) Rb = msubst ζ1 Rb` on Θ0-scoped `Rb`.
+8. The row assembly itself, per the recipe above.
+
+⚠️ Dead end to remember while proving (5)/(6): the relation CANNOT express
+`arrow ≡ᵘ defined-var` — that is fine, because (4) shows any side ≡ᵘ-related
+to a mono painting IS a mono painting syntactically (paintings are
+structural, so `arrow (painting τa) (painting τb) = painting (τa→τb)`
+definitionally); the apparent counterexamples dissolve into the `__mono`
+row.
 
 ## 2026-07-30 — ✅ THE MOTIVE REPAIR LANDED: leaf-valid join `ad_pat_sub_gv`, root third premise GONE, Sub-UnivGhostR proved FOR REAL
 
