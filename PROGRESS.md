@@ -78,7 +78,7 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-30 (latest) — P7 opened: the Δ = ∅ corollary, the P7 plan, and ⚠️ TASK 0's PLANNED ROUTE IS REFUTED
+## 2026-07-30 (latest) — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's LEAF PROVED (the wall is NOT a blocker)
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.
 
@@ -110,18 +110,35 @@ the subject is no mono paint at all.  It is `ad_pat_sub_g__forall_l_tagged`
 again — the same row, and literally the same witness derivation, as
 `cex/cex_p6ss_sub_target_ftv.v`.
 
-**What the leaf actually needs.**  Unfolding `sub_shield` at Δρ = ∅, the flexible-P0
-leaf admits only `fsh_clean`, whose `ftag ψa ∩ Ψa = ∅` plus `d_tags_skl`'s
-`Ψa ⊆ ftag ψa` forces **Ψa = ∅** — the ForallL guess must be TAG-FREE, i.e. (with
-`a_tags_sort`'s ghost-freeness at TY) a MONOTYPE.  So TASK 0 is restated as the
-flex-mono WALL itself: *a raw-Θ0-flexible position of P0 forces the ForallL guess
-facing it to be a monotype.*  Weakening the analogue to just `Ψ = ∅` survives the
-witness but is useless — `__forall_l_tagged` drops its own ε (conclusion `Ψ`,
-premise `Ψ ∪ Ψ'`), so a small conclusion-Ψ says nothing about `ftag ψa`.  ⚠️ The
-wall currently rests on an AUTHOR DECISION recorded against an IMPLEMENTATION
-CRASH (docs/PAPER-GAPS.md, "broom_flex_poly: should not happen"), not against a
-proof — so it is no longer a backstop for a leftover shape but the whole
-argument, and it must be settled before any of §9.1/§9.2 is written.
+✅ **BUT ONLY THE SHAPE HALF IS FALSE, AND THE HALF THE SHIELD NEEDS IS TRUE —
+`ad_pat_sub_g_monoish_tag_free` (`frost/algo/prop_sub_shield_supply.v`, Qed,
+axiom-free) closes TASK 0's leaf.**
+
+    ad_pat_sub_g n NM M Ψ Θ ψ Q → a_wf_aenv Θ → is_tskl ψ → bskl_monoish Q → Ψ = ∅
+
+Unfolding `sub_shield` at Δρ = ∅, the flexible-P0 leaf admits only `fsh_clean`,
+whose `ftag ψa ∩ Ψa = ∅` plus `d_tags_skl`'s `Ψa ⊆ ftag ψa` IS "Ψa = ∅" — so TAG
+ACCOUNTING, not a shape bound, is what the wall needs, and that is exactly the
+surviving conjunct.  One induction, through unchanged: a tag reaches the
+conclusion's Ψ only by being SOLVED, i.e. by a rule MATCHING a tagged quantifier
+of the subject against a quantifier of the counterpart; every other row carries
+`Ψ = ∅` on the rule, delegates to `ad_pat_consis_monoish_counterpart`, or is
+`is_tskl`-impossible.  ⚠️ `__forall_l_tagged` — the row that killed the shape
+half — is harmless here: it DROPS its own ε and hands the IH `Ψ ∪ Ψ'`, so a
+collapse below collapses Ψ too.  A `bskl_monoish` counterpart has no quantifier,
+so nothing can be solved; and the counterpart IS mono-ish exactly where P0 is
+flexible (metasubstitution images are monotypes +
+`ad_refine_mono_paint_rhs_monoish`).
+
+**So the flex-mono wall is NOT a blocker, and the earlier "P7 is blocked"
+reading was wrong.**  What remains of TASK 0 is bookkeeping: (1) make the leaf
+POSITIONAL (walk P0, apply it at each flexible position); (2) ⚠️
+`fastep_flexdef_r` replaces the guess by `ptyp_to_uskl_syn τ` for an
+UNCONSTRAINED τ, so `fa_clean` is not derivable at the arbitrary `Δρ'` that
+`sub_shield` quantifies over — trivial at `Δρ' = ∅`, and P6-L runs P6-Ss at
+Δρ = ∅ throughout (`urho__refl`), so that generality is SLACK the premise carries
+and the proof never uses.  The fix is statement-level: give P6-L the
+Δρ'-monomorphic `sub_shield`.  DESIGN §9.0.
 
 ## 2026-07-30 — ⭐⭐⭐ P6-L CLOSED — **P6 IS COMPLETE** (all five lemmas); P7 opens
 

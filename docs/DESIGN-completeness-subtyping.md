@@ -3346,9 +3346,51 @@ USELESS here: `__forall_l_tagged` drops its own ε (conclusion `Ψ`, premise
 `Ψ ∪ Ψ'`), so a small conclusion-Ψ says nothing about `ftag ψa`.
 
 **Restated TASK 0:** prove the wall, over `ad_pat_sub_g` + the refinement
-premise, positionally.  That makes the ⚠️ below not a backstop for a leftover
-shape but the WHOLE argument — which is why it must be settled before any of
-§9.1/§9.2 is written.
+premise, positionally.
+
+✅ **ITS LEAF IS PROVED (2026-07-30), so the wall is NOT a blocker after all —
+the earlier "P7 is blocked" reading was wrong.**  What the leaf needs is TAG
+ACCOUNTING, not a shape bound, and that is `ad_pat_sub_g_monoish_tag_free` in
+`frost/algo/prop_sub_shield_supply.v` (Qed, axiom-free):
+
+    ad_pat_sub_g n NM M Ψ Θ ψ Q  →  a_wf_aenv Θ  →  is_tskl ψ
+      →  bskl_monoish Q  →  Ψ [=] ∅
+
+i.e. it is exactly the conjunct of the refuted statement that SURVIVES
+`cex_p7_sub_monoish.v` — and it is the conjunct the shield wants, since
+`fsh_clean`'s `ftag ψa ∩ Ψa = ∅` plus `Ψa ⊆ ftag ψa` IS "Ψa = ∅".  The proof is
+one induction and it went through unchanged: a tag reaches the conclusion's Ψ
+only by being SOLVED, i.e. by a rule MATCHING a tagged quantifier of the subject
+against a quantifier of the counterpart; every other row either carries `Ψ = ∅`
+on the rule, delegates to `ad_pat_consis_monoish_counterpart`, or is
+`is_tskl`-impossible.  ⚠️ In particular `__forall_l_tagged` — the row that killed
+the shape half — is harmless here: it DROPS its own ε and hands the IH `Ψ ∪ Ψ'`,
+so a collapse below collapses Ψ too.  A `bskl_monoish` counterpart has no
+quantifier, so nothing can be solved.
+
+And the counterpart IS mono-ish exactly where `P0` is flexible: a
+metasubstitution's images are monotypes, so `κP0` is a mono PAINT there, and
+`ad_refine_mono_paint_rhs_monoish` (Qed) carries that through the refinement
+premise.
+
+**What is left of TASK 0** — bookkeeping, not a wall:
+
+1. Make it POSITIONAL.  The leaf above is stated at the whole subject; the
+   shield decomposes through `fsh_arrow` / `fsh_all_l` / `fsh_all_r`, so the
+   induction has to walk `P0` and apply the leaf at each flexible position.
+2. ⚠️ **`fastep_flexdef_r` (`prop_look_complete.v:3798`) is the one row that
+   does NOT follow from tag-freeness.**  It replaces the guess by
+   `ptyp_to_uskl_syn τ` for an UNCONSTRAINED τ, so `fa_clean`'s
+   `ftv (paint τ) ∩ Δρ' = ∅` is not derivable at the arbitrary `Δρ'` that
+   `sub_shield` quantifies over.  Its own comment already flags this ("a
+   slightly stronger premise, and one a call site discharges the same way — a
+   painting is Δρ-clean whenever the definition-freshness holds").  At
+   `Δρ' = ∅` it is trivial, and P6-L runs P6-Ss at `Δρ = ∅` throughout
+   (`urho__refl`), so the Δρ'-generality is SLACK the premise carries and the
+   proof never uses.  **The fix is a statement-level one: give P6-L the
+   Δρ'-monomorphic `sub_shield` (Δρ' := Δρ), which is what its own run needs
+   and which IS suppliable.**  Check that P6-Ss's proof only ever instantiates
+   the quantifier at `Δρ' = Δρ` before making the change.
 
 **The backstop, and the one genuinely open dependency.**  For the remaining
 shape — a rigid-∀-spine skeleton facing a bare flexible payload — the argument

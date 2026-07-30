@@ -166,10 +166,19 @@ Qed.
 
 Print Assumptions p7_sub_monoish_counterpart_is_false.
 
-(** NB the conclusion's OTHER conjunct ([Ψ = ∅]) happens to hold here — the
-    witness runs at Ψ = ∅ — so the falsity is squarely in the "the subject is
-    a mono paint" half.  Strengthening the statement to demand only [Ψ = ∅]
-    would survive this witness but is USELESS for the shield: [fsh_clean]
-    needs tag-freeness of ψa itself, and [__forall_l_tagged] drops its own ε
-    from the conclusion's Ψ (conclusion [Ψ], premise [Ψ ∪ Ψ']), so a small
-    conclusion-Ψ says nothing about [ftag ψa]. *)
+(** ⚠️ READ THIS BEFORE CONCLUDING ANYTHING FROM THE ABOVE.  Only the
+    MONO-PAINT half of the statement is false.  The OTHER conjunct — [Ψ = ∅],
+    i.e. "against a mono-ish counterpart NO TAG IS SOLVED" — is TRUE, and it
+    is proved: [ad_pat_sub_g_monoish_tag_free], prop_sub_shield_supply.v.
+    That is also the half the shield actually needs, because [fsh_clean]'s
+    [ftag ψa ∩ Ψa = ∅] plus [d_tags_skl]'s [Ψa ⊆ ftag ψa] is exactly
+    "Ψa = ∅".
+
+    The reason the tag half survives is the same reason the shape half dies.
+    [__forall_l_tagged] DROPS its own ε (conclusion [Ψ], premise [Ψ ∪ Ψ']) —
+    instantiating a quantifier never SOLVES its tag — so it cannot put a tag
+    into the conclusion either; it just hands the whole tag set down.  Tags
+    reach the conclusion only through rules that MATCH a quantifier of the
+    subject against a quantifier of the counterpart, and a [bskl_monoish]
+    counterpart has none.  So this witness bounds the shape of the subject and
+    nothing else. *)
