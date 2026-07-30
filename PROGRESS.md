@@ -78,7 +78,52 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-30 (latest) — ⭐⭐⭐ P6-L CLOSED — **P6 IS COMPLETE** (all five lemmas); P7 opens
+## 2026-07-30 (latest) — P7 opened: the Δ = ∅ corollary, the P7 plan, and ⚠️ TASK 0's PLANNED ROUTE IS REFUTED
+
+`make coq` green from clean, all `Print Assumptions` closed, zero admits.
+
+**`a_extract_complete_closed`** answers "can P6-L's extra premises be absorbed?".
+The two Δ-hygiene premises can, and now are: `delta_def_fresh Δ Θ` and
+`Δ ∩ ftv ψa = ∅` are vacuous at Δ = ∅, which is where every consumer enters (Δ
+tracks the counterpart's ∀-binders and grows only inside the precision
+derivation).  ⚠️ `sub_shield` cannot be — it is P6-Sv's repair, and the paper's
+statement without it is machine-checked FALSE (`cex/cex_p6sv_forall_flex.v`); it
+can only be DISCHARGED where derivable.  The rest are the paper's own EXTERNAL wf
+side conditions (docs/WF-SIDE-CONDITIONS.md) plus Barendregt freshness for α,
+both supplied by the caller.
+
+**DESIGN §9 is the P7 plan.**  P7 is a mutual bundle — P7a
+(`lemma:complete-flex-subtyping`, :2836) ⇄ P7b (generalised
+`thm:complete-subtyping`, :3050), then P7c — with a case map for P7b (§9.1) and
+P7a's two interesting rows (§9.2).  Four of P7b's seven cases are applications of
+the Qed `a_consis_complete_thm`.
+
+⚠️ **TASK 0 — supplying `sub_shield` at P7b's Sub-ForallL — is where P7 stands,
+and its planned route is now REFUTED.**  `cex/cex_p7_sub_monoish.v`
+(`p7_sub_monoish_counterpart_is_false`, Qed, axiom-free) shows the subtyping-side
+analogue of `ad_pat_consis_monoish_counterpart` is FALSE: consistency's ∀ rules
+require the counterpart to be a quantifier too — which is exactly why a mono-ish
+counterpart forces the subject mono there — whereas subtyping's ForallL
+INSTANTIATES.  So `∀^ε α. α` (`is_tskl`, ghost-free, legal at TY) instantiated
+with a rigid β lands on the target β, which is `bskl_monoish` by `bmi_var`, while
+the subject is no mono paint at all.  It is `ad_pat_sub_g__forall_l_tagged`
+again — the same row, and literally the same witness derivation, as
+`cex/cex_p6ss_sub_target_ftv.v`.
+
+**What the leaf actually needs.**  Unfolding `sub_shield` at Δρ = ∅, the flexible-P0
+leaf admits only `fsh_clean`, whose `ftag ψa ∩ Ψa = ∅` plus `d_tags_skl`'s
+`Ψa ⊆ ftag ψa` forces **Ψa = ∅** — the ForallL guess must be TAG-FREE, i.e. (with
+`a_tags_sort`'s ghost-freeness at TY) a MONOTYPE.  So TASK 0 is restated as the
+flex-mono WALL itself: *a raw-Θ0-flexible position of P0 forces the ForallL guess
+facing it to be a monotype.*  Weakening the analogue to just `Ψ = ∅` survives the
+witness but is useless — `__forall_l_tagged` drops its own ε (conclusion `Ψ`,
+premise `Ψ ∪ Ψ'`), so a small conclusion-Ψ says nothing about `ftag ψa`.  ⚠️ The
+wall currently rests on an AUTHOR DECISION recorded against an IMPLEMENTATION
+CRASH (docs/PAPER-GAPS.md, "broom_flex_poly: should not happen"), not against a
+proof — so it is no longer a backstop for a leftover shape but the whole
+argument, and it must be settled before any of §9.1/§9.2 is written.
+
+## 2026-07-30 — ⭐⭐⭐ P6-L CLOSED — **P6 IS COMPLETE** (all five lemmas); P7 opens
 
 `make coq` green from clean, 35 `Print Assumptions` all closed under the global
 context, zero `admit` / `Admitted` in `frost/`.  `a_extract_complete`

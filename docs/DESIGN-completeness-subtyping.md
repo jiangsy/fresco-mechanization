@@ -3314,10 +3314,41 @@ already Qed in `prop_look_complete.v:3022-3100`:
     ad_pat_consis_monoish_counterpart       (a tag-sorted subject against a mono-ish
                                              counterpart IS a mono paint, and Ψs = ∅)
 
-so **the missing piece is one `ad_pat_sub_g` analogue of
-`ad_pat_consis_monoish_counterpart`** — the subtyping-side statement of "against
-a mono-ish counterpart, a tag-sorted subject is a mono paint and solves no
-tags".  Build that first; it is self-contained and it is the whole risk.
+The plan therefore said **the missing piece is one `ad_pat_sub_g` analogue of
+`ad_pat_consis_monoish_counterpart`** — "against a mono-ish counterpart, a
+tag-sorted subject is a mono paint and solves no tags".
+
+⚠️ **THAT ANALOGUE IS FALSE — machine-checked, `cex/cex_p7_sub_monoish.v`
+(`p7_sub_monoish_counterpart_is_false`, Qed, axiom-free).  So this route does NOT
+work as sketched, and P7 TASK 0 must be restated.**  The culprit is
+`ad_pat_sub_g__forall_l_tagged` — the same row that already broke P6-Ss Phase B's
+planned bound (`cex/cex_p6ss_sub_target_ftv.v`), and it is literally the same
+witness derivation.  Consistency's ∀ rules all require the COUNTERPART to be a
+quantifier too, which is exactly why a mono-ish counterpart forces the subject
+mono there.  Subtyping's ForallL does not: it INSTANTIATES.  So `∀^ε α. α` —
+`is_tskl` and ghost-free, hence legal at TY — instantiated with a rigid `β` lands
+on the target `β`, which is `bskl_monoish` by `bmi_var`, while the subject is not
+a mono paint at all.
+
+**What the leaf actually needs, stated directly.**  Unfold `sub_shield` at
+Δρ = ∅ and look at the flexible-P0 leaf again: the only applicable rule is
+`fsh_clean`, and its `ftag ψa ∩ Ψa = ∅` together with `d_tags_skl`'s
+`Ψa ⊆ ftag ψa` forces **Ψa = ∅** — the ForallL guess must be TAG-FREE, i.e.
+(with `a_tags_sort`'s ghost-freeness at TY) a MONOTYPE.  So the obligation is the
+flex-mono WALL itself:
+
+> a raw-Θ0-flexible position of `P0` forces the ForallL guess facing it to be a
+> monotype
+
+and NOT any statement about the subject facing a mono-ish counterpart.  Note also
+that weakening the analogue to just `Ψ = ∅` would survive the witness but is
+USELESS here: `__forall_l_tagged` drops its own ε (conclusion `Ψ`, premise
+`Ψ ∪ Ψ'`), so a small conclusion-Ψ says nothing about `ftag ψa`.
+
+**Restated TASK 0:** prove the wall, over `ad_pat_sub_g` + the refinement
+premise, positionally.  That makes the ⚠️ below not a backstop for a leftover
+shape but the WHOLE argument — which is why it must be settled before any of
+§9.1/§9.2 is written.
 
 **The backstop, and the one genuinely open dependency.**  For the remaining
 shape — a rigid-∀-spine skeleton facing a bare flexible payload — the argument
