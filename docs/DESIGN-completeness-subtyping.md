@@ -3408,13 +3408,34 @@ first time.  ⚠️ The previously-recorded fix — "the Δρ' generality is sla
 `sub_shield` Δρ'-monomorphic" — was WRONG: `sub_shield_add_fresh` (Sub-ForallL's
 Δρ growth in P6-Ss) genuinely uses that quantifier.
 
-**What is left of TASK 0:** the branch where the counterpart is NOT mono-ish,
-i.e. `P0` has real polytype structure.  There `Ψa` need not collapse, so the
-shield must come from `fsh_flexfree` at flex-free positions plus the structural
-rows — and THAT is where the positional argument lives.  Note the asymmetry to
-exploit: `flex_shield` has a flex-free base rule (`fsh_flexfree`) but
+✅ **AND THE NON-COMPOSITE SHAPES OF `P0` ARE DONE TOO** — `sub_shield_atomic`
+(same file, Qed): at `unit` / `◇` / a RIGID variable NEITHER walk moves `P0`
+(`ss_step`'s two rows need an arrow or a ∀; of `fa_step`'s nine only the three
+ψ-side ones can fire, and they all leave `P0` alone), so the shield is one
+`flex_apart` constructor plus `fsh_flexfree`, uniformly in ψa and with no tag
+reasoning at all.
+
+**So TASK 0's RESIDUAL IS EXACTLY ONE SHAPE.**  P7b's Sub-ForallL comes with the
+paper's WLOG `guarded(P0) ∨ P0 = □`, and `guarded_pskl` is `unit | var | arrow`
+(def_extra.v:122) — so a ∀ or ∀◇ `P0` never reaches the call at all.  Of what
+remains:
+
+| `P0` | covered by |
+|---|---|
+| `□`, `unit`, rigid var | §5 `sub_shield_atomic` |
+| FLEXIBLE var | §4 — `κP0` IS that variable's monotype image, so `Q` is mono-ish |
+| *any* `P0` with a mono-ish `Q` | §4 |
+| **arrow, with a non-mono-ish `Q`** | ⚠️ **OPEN** |
+
+At an arrow node with a non-mono-ish counterpart, `Ψa` need not collapse and
+`P0` need not be flex-free, so neither `fsh_clean` nor `fsh_flexfree` fires and
+the shield must come from `fsh_arrow` — i.e. it needs ψa to be an ARROW there,
+genuine structural ALIGNMENT between `P0` and the guess.  That is the pipeline
+invariant, and it is the last thing task 0 owes.  Note the asymmetry to exploit
+when attacking it: `flex_shield` has a flex-free base rule (`fsh_flexfree`) but
 `flex_apart` does NOT, so the `flex_apart_walk` conjunct will still want
-`fa_clean`, i.e. Δρ-cleanliness of the walked guess.
+`fa_clean` — Δρ-cleanliness of the walked guess — or `fa_arrow`, i.e. the same
+alignment.
 
 **The backstop, and the one genuinely open dependency.**  For the remaining
 shape — a rigid-∀-spine skeleton facing a bare flexible payload — the argument

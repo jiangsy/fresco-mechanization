@@ -157,11 +157,22 @@ fix recorded in the previous entry — "the Δρ' generality is slack, make
 `sub_shield` Δρ'-monomorphic" — was WRONG: `sub_shield_add_fresh` genuinely uses
 that quantifier.
 
-**What is left of TASK 0:** the branch where the counterpart is NOT mono-ish
-(P0 with real polytype structure).  There Ψa need not collapse, so the shield
-must come from `fsh_flexfree` plus the structural rows, and that is where the
-positional argument lives.  Asymmetry to exploit: `flex_shield` has a flex-free
-base rule but `flex_apart` does NOT.  DESIGN §9.0.
+✅ **The non-composite shapes of P0 are done too** — `sub_shield_atomic`: at
+`unit` / `◇` / a RIGID variable NEITHER walk moves P0 (`ss_step`'s two rows need
+an arrow or a ∀; of `fa_step`'s nine only the three ψ-side ones fire, and they
+leave P0 alone), so the shield is one `flex_apart` constructor plus
+`fsh_flexfree`, with no tag reasoning at all.
+
+**TASK 0's RESIDUAL IS NOW EXACTLY ONE SHAPE.**  P7b's Sub-ForallL comes with the
+paper's WLOG `guarded(P0) ∨ P0 = □`, and `guarded_pskl` is `unit | var | arrow`,
+so a ∀ / ∀◇ P0 never reaches the call.  `□` / `unit` / rigid var → §5; FLEXIBLE
+var → §4 (κP0 IS that variable's monotype image, so Q is mono-ish); any P0 with a
+mono-ish Q → §4.  ⚠️ **What is left: P0 an ARROW with a non-mono-ish Q** — there
+Ψa need not collapse and P0 need not be flex-free, so neither `fsh_clean` nor
+`fsh_flexfree` fires and the shield must come from `fsh_arrow`, i.e. it needs ψa
+to be an ARROW there — genuine structural ALIGNMENT between P0 and the guess.
+That is the pipeline invariant, and it is the last thing task 0 owes.  DESIGN
+§9.0.
 
 ## 2026-07-30 — ⭐⭐⭐ P6-L CLOSED — **P6 IS COMPLETE** (all five lemmas); P7 opens
 

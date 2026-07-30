@@ -300,3 +300,77 @@ Proof.
 Qed.
 
 Print Assumptions sub_shield_supply_mono_p0.
+
+(* ===================================================================== *)
+(*  §5  THE NON-COMPOSITE SHAPES OF P0, SO THE RESIDUAL GAP IS EXACT      *)
+(*                                                                        *)
+(*  Neither walk moves an ATOMIC P0: [ss_step]'s two rows need an arrow or *)
+(*  a ∀, and of [fa_step]'s nine only the three ψ-SIDE ones can fire, all  *)
+(*  of which leave P0 alone.  So at unit / ◇ / a RIGID variable the shield *)
+(*  is one [flex_apart] constructor plus [fsh_flexfree], uniformly in ψa —  *)
+(*  no tag reasoning at all.  Together with §4 (which covers a FLEXIBLE    *)
+(*  variable, via [κP0] being that variable's monotype image) this leaves  *)
+(*  exactly the ARROW and ∀ spine of P0 open.                             *)
+(* ===================================================================== *)
+
+Inductive pskl_atomic : pskl -> Prop :=
+| pat_unit : pskl_atomic pskl_unit
+| pat_var  : forall α, pskl_atomic (pskl_var_f α)
+| pat_hole : pskl_atomic pskl_hole.
+
+Lemma ss_walk_atomic : forall A P0 P0',
+  ss_walk A P0 P0' -> pskl_atomic P0 -> P0' = P0.
+Proof.
+  intros A P0 P0' H; induction H; intros Hat; [ reflexivity | ].
+  exfalso. destruct H; inversion Hat.
+Qed.
+
+Lemma fa_walk_atomic_p0 : forall Δρ P0 ψa Δρ' P0' ψa',
+  fa_walk Δρ P0 ψa Δρ' P0' ψa' -> pskl_atomic P0 -> P0' = P0.
+Proof.
+  intros Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hat; [ reflexivity | ].
+  (* only the three ψ-side steps survive, and each keeps P0 *)
+  destruct H; try solve [ exfalso; inversion Hat ]; auto.
+Qed.
+
+(** [flex_apart] at an atomic P0 is one constructor, whatever the guess. *)
+Lemma flex_apart_atomic : forall Θ0 Δρ P0 ψa,
+  P0 = pskl_unit \/ P0 = pskl_hole \/
+  (exists α, P0 = pskl_var_f α /\ binds α abind_tvar Θ0) ->
+  flex_apart Θ0 Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa [-> | [-> | (α & -> & Hb)]];
+    [ apply fa_unit | apply fa_hole | apply fa_var_rigid; exact Hb ].
+Qed.
+
+Lemma sub_shield_atomic : forall Θ0 Ψa P0 ψa,
+  a_wf_aenv Θ0 ->
+  P0 = pskl_unit \/ P0 = pskl_hole \/
+  (exists α, P0 = pskl_var_f α /\ binds α abind_tvar Θ0) ->
+  sub_shield Θ0 Ψa empty P0 ψa.
+Proof.
+  intros Θ0 Ψa P0 ψa HwfΘ0 Hshape P0' Δρ' Hsw _ _.
+  assert (Hat : pskl_atomic P0)
+    by (destruct Hshape as [-> | [-> | (α & -> & _)]];
+        [ apply pat_unit | apply pat_hole | apply pat_var ]).
+  rewrite (ss_walk_atomic Hsw Hat).
+  split.
+  - (* the ρ-walk cannot move an atomic P0 either *)
+    intros Δρ'' P0'' ψa'' Hfw.
+    rewrite (fa_walk_atomic_p0 Hfw Hat).
+    apply flex_apart_atomic; exact Hshape.
+  - (* an atomic P0 has no flexible free variable *)
+    apply fsh_flexfree.
+    intros α0 Hα0 Hflex.
+    destruct Hshape as [-> | [-> | (α & -> & Hb)]];
+      cbn in Hα0; try solve [ clear - Hα0; fsetdec ].
+    assert (Hαe : α0 = α) by (clear - Hα0; fsetdec); subst α0.
+    (* a RIGID entry is not a flexible one, by uniqueness of the context *)
+    assert (Huq : uniq Θ0) by (apply a_wf_aenv_uniq; exact HwfΘ0).
+    destruct Hflex as [Hb' | [τ Hb']];
+      [ pose proof (binds_unique _ _ _ _ _ Hb Hb' Huq) as Hc
+      | pose proof (binds_unique _ _ _ _ _ Hb Hb' Huq) as Hc ];
+      discriminate Hc.
+Qed.
+
+Print Assumptions sub_shield_atomic.
