@@ -3592,13 +3592,37 @@ obligation for both cases is
     msubst_pskl κ1 (output)  =  msubst_pskl κ1 P0                    (†)
 
 — equality only AFTER the metasubstitution, which absorbs the definition the
-witness exploits.  (†) is NOT a corollary of anything already proved.  Proving
-it means walking `a_consis` (for Sub-Check, whose output is
-`a_consis_complete_thm`'s `P1`) and `a_sub` (for Sub-ForallR) and showing the
-three output-moving rows are κ-invariant: `a_consis__flex` (α̂/β̂ unified in
-Θ1), `a_consis__flex_l` (α̂ assigned `P0`), and `a_sub_flex__assign` (which
-runs at `P0[τ/β̂]`).  Each is an `a_inc`-level fact about the output context,
-so `a_assign_sound` / `a_unify_sound` are the entry points.
+witness exploits.
+
+✅ **AND THE CONSISTENCY HALF OF (†) IS NOW PROVED** —
+`frost/algo/prop_sub_concrete_rhs.v`, all Qed and axiom-free.  The right
+relation was already in the development: `a_pskl_tyequiv` (`≡ˢ`,
+def_meta.v:172) is "the `a_tyequiv` equational theory lifted to skeletons:
+definitions of flexible variables unfold, ghosts are inert", introduced for
+`a_inc`'s GMM-style SEMANTIC middles.  And the proof is NOT on consistency —
+`a_consis_sound` already exports `Θ1 ⨟ ∅ ⊢ᵣᵃ inh{P0} ⊳ Qt` with `⌊Qt⌋ = P'`,
+so all that is left is:
+
+    ad_refine_syn_ghost_free_equiv   refinement out of a GHOST-FREE source
+                                     only ever UNFOLDS DEFINITIONS
+    a_consis_concrete_output_equiv   Θ1 ⊢ P0 ≡ˢ P'          (the paper's :3181)
+
+One induction, no context threading — refinement keeps its context fixed (the
+one row that extends it, `__tophole_fill`, needs a ghost on the left and is
+excluded), `__unit`/`__var` are identities, `__arrow`/`__all` congruences, and
+the only surviving rows are the two flexible lookups, which are
+`a_pskl_tyequiv__flex_def` verbatim, one on each side.
+
+**What remains is the `a_sub` half** (Sub-ForallR's ":3238"), a MUTUAL
+induction with `a_sub_flex`.  §4 of the same file supplies its three
+transports, all Qed: `a_pskl_tyequiv_isub_mono` (`__arrow` threads
+`Θ0 → Θ1 → Θ2`, so the domain's equivalence must move along `⊴` —
+`a_isub`'s "a definition, once made, is never rewritten" is exactly and only
+what the proof uses), `a_pskl_tyequiv_weaken` (the `a_sub_flex` walk rows
+re-attach a head entry), and `a_pskl_tyequiv_subst_flex_def`
+(`a_sub_flex__assign` runs its premise at `P0[τ/β̂]`).  What is left to build is
+the induction itself plus its wf threading, and `Θ1 ⊴ Θ2` out of `__arrow`'s
+`a_sub` premise (the consistency side already has it from `a_consis_sound`).
 
 ⚠️ Note `a_sub__check` itself already OUTPUTS `P0` (`a_consis_chk` hides the
 consistency output existentially), so the mech's Sub-Check does not need (†)

@@ -1629,7 +1629,10 @@ to the authors: drop the TODO, or restate it as the equivalence
 
     θ_1(RHS) = θ_1 P_0
 
-which is what the mechanization will prove.  (Note also that algorithmic
+which is what the mechanization proves: `a_consis_concrete_output_equiv`
+(`frost/algo/prop_sub_concrete_rhs.v`, Qed + axiom-free) gives
+`Θ_1 ⊢ P_0 ≡ˢ P'_0` for a ghost-free (concrete) `P_0`, in the OUTPUT context —
+which is where the definition the equivalence uses was recorded.  (Note also that algorithmic
 `Check` already outputs `P_0` on the nose, since the paper's own
 `aconsis{Θ_0}{P}{P_0}{Θ_1}` abbreviation suppresses the consistency output —
 so the syntactic reading is only ever needed for the OTHER rows, which are
