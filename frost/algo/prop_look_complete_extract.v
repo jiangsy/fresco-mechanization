@@ -1275,3 +1275,65 @@ Proof.
 Qed.
 
 Print Assumptions a_extract_complete.
+
+(* ===================================================================== *)
+(*  §11  THE Δ-HYGIENE PREMISES ABSORB AT Δ = ∅                            *)
+(*                                                                        *)
+(*  Two of P6-L's premises are pure Δ-hygiene — [delta_def_fresh Δ Θ] (Δ's *)
+(*  members are fresh for Θ's flexible DEFINITIONS, inherited from P6-Ss)  *)
+(*  and [Δ ∩ ftv ψa = ∅] (the precision HOLE rule's own side condition).   *)
+(*  Both are VACUOUS at Δ = ∅, which is where every consumer enters: Δ     *)
+(*  tracks the counterpart's ∀-binders, so it is empty at the top of a run *)
+(*  and grows only inside the precision derivation.                       *)
+(*                                                                        *)
+(*  ⚠️ What does NOT absorb is [sub_shield] — that is P6-Sv's REPAIR, and  *)
+(*  the paper's statement WITHOUT it is machine-checked FALSE              *)
+(*  (cex/cex_p6sv_forall_flex.v).  It can only ever be DISCHARGED at a     *)
+(*  call site where it is derivable, never dropped.  The remaining         *)
+(*  premises are the paper's own EXTERNAL well-formedness side conditions  *)
+(*  (docs/WF-SIDE-CONDITIONS.md), and α's freshness is Barendregt.         *)
+(* ===================================================================== *)
+
+Corollary a_extract_complete_closed :
+  forall n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α,
+  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
+  κ ∷ Θ0 ⊑ Θ ->
+  α `notin` dom Θ -> α `notin` dom Θ0 ->
+  ⌊ R' ⌋ˢ = P ->
+  ftvar_in_uskl R' [<=] add α (dom Θ0 `union` dom Θ) ->
+  lc_uskl R' ->
+  a_tags_sort NM Ψa ψa ->
+  (ftag_in_uskl R') ∩ Ψa [=] empty ->
+  Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
+  sub_shield Θ0 Ψa empty P0 ψa ->
+  ad_pat_sub_g n NM M Ψa Θ
+    (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
+  Θ ⨟ empty ⊢ₚₛᵃ
+    (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  exists Ξ Pa κa,
+    (Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa) /\
+    (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
+    a_wf_aenv (Ξ ++ Θ0) /\
+    keys κa = keys Ξ /\
+    (κa ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ /\
+    a_inc_equiv Θ0 κ κ Θ /\
+    Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl (κa ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ.
+Proof.
+  intros n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α.
+  intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
+         Htags Hdisj Hwfψ Hshield Hsubty HwfSubj Hrefine.
+  eapply a_extract_complete;
+    [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HmodSK | exact HmodTY
+    | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeR
+    | exact HlcR | exact Htags | exact Hdisj
+    | clear; fsetdec                                 (* ∅ ∩ ftv ψa = ∅ *)
+    | exact Hwfψ
+    | intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec (* delta_def_fresh ∅ Θ *)
+    | exact Hshield | exact Hsubty | exact HwfSubj | exact Hrefine ].
+Qed.
+
+Print Assumptions a_extract_complete_closed.
