@@ -3738,19 +3738,27 @@ that keeps ghost fills off the binder.  The threading needs the other:
 
 the refinement analogue of `a_wf_pskl_reassoc`.  It needs NO hygiene condition —
 putting a Δ-binder into Θ only ADDS scope — and eight of its ten rows are one
-constructor each.  It was drafted and backed out, because one row makes it
-bigger than it looks: `__tophole_fill` extends Θ AT THE HEAD with its own
-binder, so the IH lands at `(α1,α0),Θ` while the goal wants `(α0,α1),Θ`.  The
-two have the same `binds` graph, but neither judgment has a congruence for that,
-so the honest fix is the MID-INSERTION form
+constructor each.  ✅ **LANDED** (`prop_sub_complete_thm.v`, Qed + axiom-free), together with the
+`a_wf_pskl` transport its `__hole` row consumes:
 
-    Θ = Θ1 ++ Θ2  →  ad_refine_pskl_f F (Θ1 ++ (α ~ tvar) ++ Θ2) (remove α Δ) P Q
+    a_wf_pskl_reassoc_mid          Θ = Θ1 ++ Θ2 → wf at Θ1,(α:tvar),Θ2 / remove α Δ
+    ad_refine_pskl_f_reassoc_mid   the same for refinement
+    ad_refine_pskl_f_reassoc       the head form, the Θ1 := · corollary
 
-whose `__hole` row then needs the matching mid-insertion for `a_wf_pskl` —
-which does not exist either (only the STRIP direction,
-`a_wf_pskl_strip_tvar`, prop_consis_sound.v:444).  **So the corrected path's
-next unit is those two transports, in that order**, and then the threaded
-induction.
+Both are in MID-INSERTION form, and that is FORCED rather than generality for
+its own sake: `ad_refine_pskl_f__tophole_fill` extends Θ AT THE HEAD with its
+own binder, so a head-only statement would need the IH at `(α1,α0),Θ` where the
+goal wants `(α0,α1),Θ` — same `binds` graph, but neither judgment carries a
+congruence for that.  The mid form absorbs the head into the LEFT block and goes
+through.  (The existing `a_wf_pskl_reassoc`, prop_consis_sound.v:1727, is
+head-only, and that suffices there only because wf's ∀ rule puts its binder in
+Δ, never in Θ.)
+
+**What remains on this path is the threaded induction itself**: induct on the
+consistency derivation, carry the subject-refinement premise, use
+`ad_refine_pskl_f_reassoc` at each ∀ row to bring the refinement's Δ-binder into
+Θ where the consistency IH lives, and `ad_refine_syn_f_strip` at the end to send
+the accumulated binders back into Δ.
 
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 

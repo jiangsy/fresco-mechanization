@@ -64,7 +64,8 @@ Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.def_decl_algo_sub_hyg.
-Require Import src.frost.algo.prop_refine.        (* lc_pskl_to_bskl_inh *)
+Require Import src.frost.algo.prop_inc.           (* a_binds_tvar_weaken_mid *)
+Require Import src.frost.algo.prop_refine.        (* lc_pskl_to_bskl_inh, a_wf_pskl_delta_mono *)
 Require Import src.frost.algo.prop_consis_complete. (* ad_precise_f *)
 Require Import src.frost.algo.prop_consis_precise. (* pskl_no_forall *)
 Require Import src.frost.algo.prop_metasubst.     (* opt_axiom_factor *)
@@ -399,33 +400,125 @@ Print Assumptions a_sub_complete_ghostg.
 
 
 (* ===================================================================== *)
-(*  THE NEXT PRIMITIVE ON THE CORRECTED PATH — moving a Δ-binder into Θ    *)
+(*  THE CORRECTED PATH'S FIRST UNIT — moving a Δ-binder into Θ             *)
 (*                                                                        *)
 (*  The corrected shape of the shared lemma (DESIGN §9.1.1) threads the    *)
 (*  SUBJECT's own refinement alongside the consistency derivation.  Those  *)
 (*  two disagree about where a ∀'s binder goes: consistency opens into Θ,  *)
-(*  refinement into Δ.  One direction of the reconciliation exists —       *)
-(*  [ad_refine_syn_f_strip] moves Θ→Δ under the [F]-hygiene that keeps     *)
-(*  ghost fills off the binder.  The threading needs the OTHER direction,  *)
+(*  refinement into Δ.  One direction of the reconciliation already        *)
+(*  existed — [ad_refine_syn_f_strip] moves Θ→Δ, under the [F]-hygiene     *)
+(*  that keeps ghost fills off the binder.  Here is the other, which the   *)
+(*  threading needs and which requires NO hygiene condition at all: adding *)
+(*  a Θ-binder only ADDS scope.                                           *)
 (*                                                                        *)
-(*      ad_refine_pskl_f F Θ Δ P Q                                        *)
-(*        →  ad_refine_pskl_f F ((α ~ tvar) ++ Θ) (remove α Δ) P Q         *)
+(*  Both are stated in MID-INSERTION form, and that is forced rather than  *)
+(*  general-for-its-own-sake: [ad_refine_pskl_f__tophole_fill] extends Θ   *)
+(*  AT THE HEAD with its own binder, so a head-only statement would need   *)
+(*  the IH at [(α1,α0),Θ] where the goal wants [(α0,α1),Θ].  The two have  *)
+(*  the same [binds] graph, but neither judgment carries a congruence for  *)
+(*  that — whereas the mid form simply absorbs the head into the LEFT      *)
+(*  block and goes through.  The head form is the [Θ1 := ·] corollary.     *)
 (*                                                                        *)
-(*  the refinement analogue of [a_wf_pskl_reassoc] (prop_consis_sound.v).  *)
-(*  It needs NO hygiene condition — putting a Δ-binder into Θ only ADDS    *)
-(*  scope — and eight of its ten rows are one constructor each.           *)
-(*                                                                        *)
-(*  It was drafted and BACKED OUT, because one row makes it bigger than it *)
-(*  looks.  [__tophole_fill] extends Θ AT THE HEAD with its own binder, so *)
-(*  the IH lands at [(α1 ~ tvar) ++ (α0 ~ tvar) ++ Θ] while the goal wants *)
-(*  [(α0 ~ tvar) ++ (α1 ~ tvar) ++ Θ].  The two have the same [binds]      *)
-(*  graph, but neither judgment has a congruence for that, so the honest   *)
-(*  fix is the MID-INSERTION form                                          *)
-(*                                                                        *)
-(*      Θ = Θ1 ++ Θ2  →  ad_refine_pskl_f F (Θ1 ++ (α ~ tvar) ++ Θ2) …     *)
-(*                                                                        *)
-(*  whose [__hole] row then needs the matching mid-insertion for           *)
-(*  [a_wf_pskl] — which does not exist either (only the STRIP direction,   *)
-(*  [a_wf_pskl_strip_tvar], prop_consis_sound.v:444).  So the corrected    *)
-(*  path's next unit is those two transports, in that order.               *)
+(*  [a_wf_pskl_reassoc_mid] is the same statement for well-formedness, and *)
+(*  is what the refinement's own [__hole] row consumes.  Note the existing *)
+(*  [a_wf_pskl_reassoc] (prop_consis_sound.v:1727) is the head-only form,  *)
+(*  which suffices there only because wf's ∀ rule puts its binder in Δ.    *)
 (* ===================================================================== *)
+
+Lemma binds_insert_mid : forall (x : atom) (b : abind) Θ1 e Θ2,
+  binds x b (Θ1 ++ Θ2) -> binds x b (Θ1 ++ e ++ Θ2).
+Proof.
+  intros x b Θ1 e Θ2 H; unfold binds in *;
+    apply in_or_app; destruct (in_app_or _ _ _ H) as [Hin | Hin];
+    [ left; exact Hin | right; apply in_or_app; right; exact Hin ].
+Qed.
+
+Lemma a_binds_tvar_insert_mid : forall α Θ1 e Θ2,
+  a_binds_tvar α (Θ1 ++ Θ2) -> a_binds_tvar α (Θ1 ++ e ++ Θ2).
+Proof.
+  intros α Θ1 e Θ2 [Hb | [Hb | [τ Hb]]];
+    [ left | right; left | right; right; exists τ ];
+    apply binds_insert_mid; exact Hb.
+Qed.
+
+Lemma a_wf_pskl_reassoc_mid : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall Θ1 Θ2 α, Θ = Θ1 ++ Θ2 ->
+  (Θ1 ++ (α ~ abind_tvar) ++ Θ2) ⨟ (remove α Δ) ⊢ₚₛᵃ P.
+Proof.
+  intros Θ Δ P H; induction H; intros Θ1 Θ2 α0 ->.
+  - (* unit *) apply a_wf_pskl__unit.
+  - (* var : a Δ-hit at α0 becomes the inserted Θ-entry *)
+    apply a_wf_pskl__var.
+    destruct H as [HΔ | Htv].
+    + destruct (α == α0) as [-> | Hne].
+      * right; left; unfold binds; apply in_or_app; right; simpl; left;
+          reflexivity.
+      * left; clear - HΔ Hne; fsetdec.
+    + right; apply a_binds_tvar_insert_mid; exact Htv.
+  - (* arrow *) apply a_wf_pskl__arrow; auto.
+  - (* all : the opened binder is picked apart from α0 *)
+    apply a_wf_pskl__all with (L := L `union` singleton α0); intros α Hα.
+    eapply a_wf_pskl_delta_mono;
+      [ apply (H0 α ltac:(clear - Hα; fsetdec) Θ1 Θ2 α0 eq_refl)
+      | clear; fsetdec ].
+  - (* hole *) apply a_wf_pskl__hole.
+  - (* tophole : its body is checked at [Δ = ∅] *)
+    apply a_wf_pskl__tophole; [ exact H | ].
+    eapply a_wf_pskl_delta_mono;
+      [ apply (IHa_wf_pskl Θ1 Θ2 α0 eq_refl) | clear; fsetdec ].
+Qed.
+
+Lemma ad_refine_pskl_f_reassoc_mid : forall F Θ Δ P Q,
+  ad_refine_pskl_f F Θ Δ P Q ->
+  forall Θ1 Θ2 α, Θ = Θ1 ++ Θ2 ->
+  ad_refine_pskl_f F (Θ1 ++ (α ~ abind_tvar) ++ Θ2) (remove α Δ) P Q.
+Proof.
+  intros F Θ Δ P Q H; induction H; intros Θ1 Θ2 α0 ->.
+  - (* unit *) apply ad_refine_pskl_f__unit.
+  - (* var : as in the wf transport *)
+    apply ad_refine_pskl_f__var.
+    destruct H as [HΔ | Htv].
+    + destruct (α == α0) as [-> | Hne].
+      * right; left; unfold binds; apply in_or_app; right; simpl; left;
+          reflexivity.
+      * left; clear - HΔ Hne; fsetdec.
+    + right; apply a_binds_tvar_insert_mid; exact Htv.
+  - (* arrow *) apply ad_refine_pskl_f__arrow; auto.
+  - (* all *)
+    apply ad_refine_pskl_f__all with (L := L `union` singleton α0);
+      intros α Hα.
+    eapply ad_refine_pskl_f_delta_mono;
+      [ apply (H0 α ltac:(clear - Hα; fsetdec) Θ1 Θ2 α0 eq_refl)
+      | clear; fsetdec ].
+  - (* hole : the fill's wf moves by the transport above *)
+    apply ad_refine_pskl_f__hole; [ exact H | ].
+    eapply a_wf_pskl_delta_mono;
+      [ apply (a_wf_pskl_reassoc_mid H0 Θ1 Θ2 α0 eq_refl) | clear; fsetdec ].
+  - (* tophole_remove *) apply ad_refine_pskl_f__tophole_remove; auto.
+  - (* tophole_fill : ITS binder joins Θ above the insertion point, so the
+       induction is run with the head absorbed into the LEFT block — which is
+       exactly why this transport has to be the mid-insertion form *)
+    apply ad_refine_pskl_f__tophole_fill with (L := L `union` singleton α0);
+      intros α Hα.
+    apply (H0 α ltac:(clear - Hα; fsetdec) ((α ~ abind_tvar) ++ Θ1) Θ2 α0);
+      simpl_env; reflexivity.
+  - (* tophole_keep *) apply ad_refine_pskl_f__tophole_keep; auto.
+  - (* flex_l *)
+    eapply ad_refine_pskl_f__flex_l; [ | auto ].
+    apply binds_insert_mid; exact H.
+  - (* flex_r *)
+    eapply ad_refine_pskl_f__flex_r; [ | auto ].
+    apply binds_insert_mid; exact H.
+Qed.
+
+(** The head form, which is what the threading actually applies. *)
+Corollary ad_refine_pskl_f_reassoc : forall F Θ Δ P Q,
+  ad_refine_pskl_f F Θ Δ P Q ->
+  forall α, ad_refine_pskl_f F ((α ~ abind_tvar) ++ Θ) (remove α Δ) P Q.
+Proof.
+  intros F Θ Δ P Q H α.
+  apply (ad_refine_pskl_f_reassoc_mid H nil Θ α); simpl_env; reflexivity.
+Qed.
+
+Print Assumptions ad_refine_pskl_f_reassoc.

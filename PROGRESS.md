@@ -197,12 +197,16 @@ premise through the consistency induction collides with the binder disciplines:
 consistency opens a ∀ into Θ, refinement into Δ.  The Θ→Δ direction exists
 (`ad_refine_syn_f_strip`, under `F`-hygiene); the Δ→Θ direction does not and is
 what the threading needs — the refinement analogue of `a_wf_pskl_reassoc`, with
-NO hygiene condition since adding a Θ-binder only adds scope.  Drafted and
-backed out: `__tophole_fill` extends Θ at the HEAD, so the IH lands at
-`(α1,α0),Θ` while the goal wants `(α0,α1),Θ`, and neither judgment has a
-`binds`-congruence.  The honest fix is the MID-INSERTION form, whose `__hole`
-row then needs the matching mid-insertion for `a_wf_pskl` (only the STRIP
-direction exists).  Those two transports are the next unit.
+NO hygiene condition since adding a Θ-binder only adds scope.  ✅ **Both transports LANDED** (Qed + axiom-free):
+`a_wf_pskl_reassoc_mid`, `ad_refine_pskl_f_reassoc_mid`, and the head corollary
+`ad_refine_pskl_f_reassoc`.  MID-INSERTION form is forced, not generality for
+its own sake: `ad_refine_pskl_f__tophole_fill` extends Θ at the HEAD with its
+own binder, so a head-only statement would need the IH at `(α1,α0),Θ` where the
+goal wants `(α0,α1),Θ` — same `binds` graph, no congruence for it in either
+judgment; the mid form absorbs the head into the left block.  (The existing
+`a_wf_pskl_reassoc` is head-only and suffices there only because wf's ∀ rule
+puts its binder in Δ, never in Θ.)  What remains is the threaded induction
+itself.
 
 ## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 
