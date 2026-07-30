@@ -3666,147 +3666,57 @@ consistency output existentially), so the mech's Sub-Check does not need (†)
 to build the derivation — only to transport the PRECISION conclusion from
 `a_consis_complete_thm`'s output `P1` to `P0`.
 
-### 9.1.1 The remaining IH-free rows — the shared lemma is FALSE, and the mech's own third premise is what rescues it
+### 9.1.1 The remaining IH-free rows — FOLLOW THE PAPER; a shortcut around it is false
 
-Sub-Infer and Sub-UnivGhostR both carry `is_sskl Q` ON THE RULE, and both
-algorithmic counterparts return the INPUT skeleton (or `∀◇.` of it) at the INPUT
-context, so `ζ := κ` + `opt_axiom_factor` discharge the two increase conjuncts
-exactly as in `a_sub_complete_ghost`, leaving only
+⚠️ **RETRACTION.**  Earlier versions of this section built an elaborate route for
+Sub-Infer / Sub-UnivGhostR — a shared lemma, then a threaded induction, then a
+transport kit for reconciling Θ- and Δ-binders.  That whole line came from
+MISREADING the paper.  It writes, at :3134,
 
-    Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚₛᵃ ⌊Q⌋
-      →  a_wf_aenv Θ  →  ⌊R⌋ˢ ⊑ ⌊Q⌋
+> The consistency premise, together with `⌊S⌋ = P` and
+> \Cref{thm:complete-consistency}, gives `Θ ⊢ precise{θP}{Q}`.
 
-the paper's step at :3181 / :3288.
+which is not "read a precision off the consistency premise" but "invoke
+**thm:complete-consistency**" — a theorem, already mechanized as
+`a_consis_complete_thm` — on the consistency problem `(Θ_0; □; P)`, and take the
+precision from its conclusion.  `skmod` forces `P_0 = □` in both rows, so the
+problem is exactly the one the theorem is about.
 
-⚠️ **It is FALSE — machine-checked, `cex/cex_p7_sskl_precise.v`
-(`p7_sskl_precise_is_false`, Qed, axiom-free).**  Witness: `R = ∀◇.` against
-`Q = ∀α. α`, over the EMPTY context.  Consistency relates them — its ∀ rule
-opens both sides at a fresh α and puts α into **Θ**, after which `__hole` fills
-the ghost with α, which is legal because α is in the context there.  Precision
-cannot: refinement opens a ∀ into **Δ** (`ad_refine_syn__all` descends at
-`add α Δ` with Θ FIXED) and its ghost-fill row checks the fill at `Θ ⨟ ∅`,
-where a Δ-variable is not in scope.  The ∀-body obligation `◇ ⊑ α` is
-underivable, and with it the whole precision.
+✅ **All the route needs beyond the black box is one small lemma, now proved**
+(`a_consis_hole_p0_output`, Qed): at `P_0 = □` the algorithmic consistency
+OUTPUT is the SUBJECT, so the theorem's precision — stated about the run's
+output — IS a precision about `P`.  Of the fifteen `a_consis` rows only three
+admit `P_0 = □` (`__ghost`, whose subject IS the ghost; `__ghost_r`; `__flex_l`)
+and each returns its own subject; `__univ_ghost2` is the only row that does not
+fix `P_0`'s shape and its `guarded_pskl P_0` premise excludes the ghost.
 
-That asymmetry is not an encoding artefact: it is the same Θ-vs-Δ asymmetry that
-forces the F-indexed mirror `ad_refine_syn_f` to exist at all
-(prop_consis_sound.v:346, "a set `F` forbidden in ghost fills").
-
-✅ **P7b is NOT affected, and the reason is the mechanization's own addition.**
-Second theorem in the same file (`cex_excluded_by_subject_refinement`, Qed): on
-this witness the THIRD solution premise — the SUBJECT's own refinement, which §1
-added as "lesson 1" and which the paper does not state — is UNSATISFIABLE, for
-exactly the same reason.  So the configuration never reaches either row.
-
-**So restate the lemma with that premise rather than drop it.**  It then stops
-being a fact about consistency at all and becomes a COLOUR BRIDGE
-
-    ad_refine_pskl_f F Θ Δ ⌊R⌋ˢ ⌊Q⌋  →  (what consistency supplies)
-      →  ad_precise_f F Θ Δ ⌊R⌋ˢ ⌊Q⌋
-
-`ad_refine_pskl_f` mirrors `ad_refine_syn_f` rule-for-rule on the colourless
-sort, so the bridge is an identity everywhere except the two rows where the
-paintings differ: `__hole` (needs the fill ∀-FREE, which `is_sskl` supplies) and
-`__tophole_fill` (emits `bskl_all_syn` where the inherited painting wants
-`bskl_all_inh` — settle this row before writing the induction).
-
-⚠️ **Two earlier records in this section were wrong and are retracted.**  The
-first said the lemma fails on a COLOUR mismatch at the ∀◇ row, because
-`ad_refine_syn__tophole_keep` wants a guarded target body which a nested `∀◇` is
-not — but a nested `∀◇` is not WELL-FORMED (`a_wf_pskl__tophole` carries
-`guarded_pskl`), so that objection is void; docs/WF-SIDE-CONDITIONS.md exists for
-exactly this.  The second then concluded the lemma holds.  Both were reasoned
-ahead of the checker.  The refutation above came from actually attempting the
-proof, and it is the ∀-over-a-hole row, not the ∀◇ row, that breaks.
-
-**Sub-Check is in neither group.**  Its counterpart is `pskl_to_bskl_inh B` for a
-merely GUARDED `B`, which is `is_sskl` only when `B` is ∀-free.  It takes the
-paper's own route: `a_consis_complete_thm` for the run and the precision, then
+**So write these two cases the paper's way.**  Sub-Check is the same shape one
+level up: `a_consis_complete_thm` for the run and the precision, then
 `a_consis_concrete_output_equiv` (§9.1) to move that precision from the
-consistency OUTPUT to `P0`.
+consistency output to `P_0`.
 
-#### The corrected path's next unit, measured
+#### What the detour did produce, and is worth keeping
 
-Threading the subject-refinement premise means carrying it through the
-consistency induction, and there the two judgments' binder disciplines collide:
-consistency opens a ∀ into **Θ**, refinement into **Δ**.  One direction of the
-reconciliation exists — `ad_refine_syn_f_strip` moves Θ→Δ under the `F`-hygiene
-that keeps ghost fills off the binder.  The threading needs the other:
+- `cex/cex_p7_sskl_precise.v` — the SHORTCUT (precision directly from the
+  consistency premise, without completeness) is FALSE, and structurally so:
+  consistency opens a ∀ into Θ while refinement opens it into Δ, so a
+  consistency derivation may fill a ghost with a binder precision cannot see.
+  Witness `∀◇.` against `∀α. α`.  A standing warning, since the shortcut looks
+  available.
+- The Θ↔Δ transport kit — `a_wf_pskl_reassoc_mid`,
+  `ad_refine_pskl_f_reassoc_mid` / `_reassoc`, `ad_refine_pskl_f_fgrow`,
+  `ad_refine_pskl_f_weaken_tvar`, `a_wf_pskl_weaken_tvar` — all Qed.  Not needed
+  for these two cases, but they are general facts about refinement's hygiene
+  index (`_fgrow` in particular: `_fmono` only SHRINKS `F`, and growing it is
+  sound for a binder the context does not know) and Sub-ForallR's Ξ-suffix strip
+  is the next likely consumer.
+- `ad_pat_consis_ghost_subject_no_forall`, `is_sskl_inh_no_forall` — context-free
+  facts about ghost subjects, cheap and reusable.
 
-    ad_refine_pskl_f F Θ Δ P Q
-      →  ad_refine_pskl_f F ((α ~ tvar) ++ Θ) (remove α Δ) P Q
-
-the refinement analogue of `a_wf_pskl_reassoc`.  It needs NO hygiene condition —
-putting a Δ-binder into Θ only ADDS scope — and eight of its ten rows are one
-constructor each.  ✅ **LANDED** (`prop_sub_complete_thm.v`, Qed + axiom-free), together with the
-`a_wf_pskl` transport its `__hole` row consumes:
-
-    a_wf_pskl_reassoc_mid          Θ = Θ1 ++ Θ2 → wf at Θ1,(α:tvar),Θ2 / remove α Δ
-    ad_refine_pskl_f_reassoc_mid   the same for refinement
-    ad_refine_pskl_f_reassoc       the head form, the Θ1 := · corollary
-
-Both are in MID-INSERTION form, and that is FORCED rather than generality for
-its own sake: `ad_refine_pskl_f__tophole_fill` extends Θ AT THE HEAD with its
-own binder, so a head-only statement would need the IH at `(α1,α0),Θ` where the
-goal wants `(α0,α1),Θ` — same `binds` graph, but neither judgment carries a
-congruence for that.  The mid form absorbs the head into the LEFT block and goes
-through.  (The existing `a_wf_pskl_reassoc`, prop_consis_sound.v:1727, is
-head-only, and that suffices there only because wf's ∀ rule puts its binder in
-Δ, never in Θ.)
-
-✅ **And the GHOST-ROW FACT**, which is what the threading needs where the two
-paintings can actually disagree (same file, Qed):
-
-    ad_pat_consis_ghost_subject_no_forall
-      Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q → is_sskl Q → ⌊R⌋ˢ = □ → pskl_no_forall ⌊Q⌋
-
-Only three consistency rows have a ghost subject, and each pins the counterpart
-to an INHERITED painting, a bare ghost, or a variable; `is_sskl` then leaves no ∀
-anywhere.  It is CONTEXT-FREE, which is the point — the threading can use it
-without moving the consistency derivation between Θ and Δ.
-
-#### The threaded induction — route settled, kit complete except ONE row
-
-The route, settled by BUILDING the transports rather than guessing: induct on the
-**consistency** derivation, carry the SUBJECT-refinement premise, and at each ∀
-row
-
-| step | lemma |
-|---|---|
-| invert the refinement's `__all` | → premise at `Θ ⨟ add α Δ` |
-| grow the hygiene set | `ad_refine_pskl_f_fgrow` → at `add α F` |
-| weaken the context | `ad_refine_pskl_f_weaken_tvar` → at `(α:tvar),Θ` |
-| run the IH | → precision at `(α:tvar),Θ` |
-| send the binder back to Δ | `ad_refine_syn_f_strip` (α ∈ `add α F` ∩ `add α Δ`) |
-| shrink the hygiene set | `ad_refine_syn_f_fmono` → back at `F` |
-
-✅ **All of these now exist** — `ad_refine_pskl_f_fgrow` and
-`ad_refine_pskl_f_weaken_tvar` / `a_wf_pskl_weaken_tvar` landed alongside the
-reassocs (Qed, axiom-free).  F-GROWTH is the piece that was missing and is the
-one worth understanding: `_fmono` only ever SHRINKS `F`, but every ∀ row opens a
-fresh binder and then wants to strip it, so it must first put that binder INTO
-`F`.  That is sound for a binder the context does not know, because a ghost fill
-is well formed at `Θ ⨟ ∅` and so its free variables live in `dom Θ`
-(`a_wf_pskl_ftv_tvarish`).
-
-The ghost rows take their fill's well-formedness from the REFINEMENT premise —
-Θ-scoped, so `fgrow` applies — rather than from consistency, whose ∀ rule puts
-the binder INTO Θ, after which a fill may legitimately mention it.  That is
-exactly what `cex/cex_p7_sskl_precise.v` exploits, so this is the premise doing
-the work.  ∀-freeness of the fill comes from
-`ad_pat_consis_ghost_subject_no_forall`.
-
-⚠️ **ONE ROW IS STILL OPEN**, and it is now small and exactly stated.  At
-consistency's `__tophole` / `__topholeg` the goal is `∀◇.⌊R0⌋ ⊑ ∀◇.⌊Q'⌋`, which
-`ad_refine_syn_f__tophole_keep` reduces to the IH at `(R0, Q')` with the guard
-supplied by the target's wf.  But the refinement premise need not decompose the
-same way: inverting it at `(∀◇.⌊R0⌋, ∀◇.⌊Q'⌋)` gives `__tophole_keep` (which IS
-the premise the IH wants) OR `__tophole_remove` (which gives `⌊R0⌋ ⊳ ∀◇.⌊Q'⌋`).
-In the second case neither judgment can re-wrap — consistency has no rule adding
-a `∀◇` to the COUNTERPART without a matching one on the subject.  So the
-threading needs either a NORMALISATION of the refinement premise at `∀◇` (prefer
-`__tophole_keep` wherever the target has one) or an IH tolerating the extra
-`∀◇`.
+**Lesson, and it is the expensive one from this session:** when the paper cites
+one of its own theorems, follow the citation before inventing a lemma.  Three
+successive "the step is false / holds / is false again" records here all came
+from arguing about a statement the paper never made.
 
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 

@@ -1,43 +1,44 @@
-(** ⚠️ "A SYNTHESISED COUNTERPART TURNS CONSISTENCY INTO A PRECISION" IS FALSE —
-    and what rescues P7b is the mechanization's OWN third solution premise.
+(** ⚠️ A TEMPTING SHORTCUT IS FALSE — but the PAPER does not take it.
 
-    DESIGN-completeness-subtyping.md §9.1.1 identified the lemma that P7b's
-    Sub-Infer and Sub-UnivGhostR rows share.  Both carry [is_sskl Q] on the rule
-    and both return the input skeleton at the input context, so all that is left
-    of either case is
+    RETRACTION FIRST.  An earlier version of this header said this refutes
+    `thm:complete-subtyping`'s Sub-Infer / Sub-UnivGhostR step.  It does not.
+    The paper (subtyping-proofs.tex:3134) says
+
+      "The consistency premise, together with ⌊S⌋ = P and
+       Cref{thm:complete-consistency}, gives Θ ⊢ precise{θP}{Q}."
+
+    — i.e. it invokes thm:complete-consistency, a THEOREM (mechanized as
+    [a_consis_complete_thm]), on the consistency problem (Θ0; □; P).  That route
+    is sound, and all it needs besides the theorem is
+    [a_consis_hole_p0_output] (prop_sub_complete_thm.v, Qed): at [P0 = □] the
+    algorithmic consistency OUTPUT is the SUBJECT, so the theorem's precision —
+    which is about the run's output — IS a precision about [P].
+
+    WHAT IS ACTUALLY REFUTED, then, is the SHORTCUT: proving that precision
+    directly from the consistency premise, without going through completeness.
 
         Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚₛᵃ ⌊Q⌋
           →  a_wf_aenv Θ  →  Θ ⨟ Δ ⊢ₚᵣᵃ ⌊R⌋ˢ ⊑ ⌊Q⌋
 
-    the paper's step at :3181 / :3288.  It does not hold.
-
-    THE WITNESS, and the one line of it that matters.  Take
-
-        R = ∀◇.  (a ∀ whose body is the GHOST)      Q = ∀α. α
-
+    THE WITNESS.  Take [R = ∀◇.] (a ∀ whose body is the GHOST) and [Q = ∀α. α].
     Consistency relates them: its ∀ rule opens BOTH sides at a fresh α and puts
     that α into Θ, after which the [__hole] row fills the ghost with α — legal,
-    because α IS in the context there.
+    because α IS in the context there.  Precision cannot: refinement opens a ∀
+    into Δ, not Θ ([ad_refine_syn__all] descends at [add α Δ] with Θ FIXED), and
+    its ghost-fill row requires the fill well formed at [Θ ⨟ ∅] — where a
+    Δ-variable is not in scope.  So [◇ ⊑ α] is underivable, and with it the
+    whole precision.
 
-    Precision cannot.  Refinement opens a ∀ into Δ, not Θ
-    ([ad_refine_syn__all] descends at [add α Δ] with Θ FIXED), and its ghost-fill
-    row [__hole] requires the fill to be well formed at [Θ ⨟ ∅] — where a
-    Δ-variable is not in scope.  So the ∀-body obligation [◇ ⊑ α] is
-    underivable, and with it the whole precision.
+    That asymmetry is not an encoding artefact: it is the same Θ-versus-Δ
+    asymmetry that forces the F-indexed mirror [ad_refine_syn_f] to exist at all
+    (prop_consis_sound.v:346, "a set F forbidden in ghost fills").
 
-    That asymmetry is not an accident of the encoding: it is the SAME
-    Θ-versus-Δ asymmetry that forces the F-indexed mirror [ad_refine_syn_f] to
-    exist at all (prop_consis_sound.v:346, "a set F forbidden in ghost fills").
-
-    ✅ WHAT RESCUES P7b.  The second theorem below: on this witness the
-    mechanization's THIRD solution premise — the SUBJECT's own refinement, which
-    DESIGN §1 added as "lesson 1" and which the paper does not state — is
-    UNSATISFIABLE, for exactly the same reason.  So the configuration never
-    reaches Sub-Infer or Sub-UnivGhostR, and the shared lemma should be restated
-    with that premise rather than dropped.  It then stops being a fact about
-    consistency at all and becomes a COLOUR bridge from [ad_refine_pskl_f] to
-    [ad_precise_f], with consistency supplying only what the bridge's own ghost
-    rows need. *)
+    The second theorem below shows the mechanization's THIRD solution premise —
+    the SUBJECT's own refinement, DESIGN §1's "lesson 1", which the paper does
+    not state — is UNSATISFIABLE on this witness.  So the shortcut could be
+    RESCUED by threading that premise; it is simply not needed, because
+    completeness of consistency already gets there.  Kept as a standing warning:
+    the shortcut looks available and is not. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.

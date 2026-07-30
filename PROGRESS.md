@@ -169,6 +169,58 @@ needs.  They establish the leaf plumbing every axiom-node case reuses:
 are repainted (`msubst_bskl_pskl_to_bskl_syn` +
 `bskl_to_pskl_pskl_to_bskl_{syn,inh}` + `ad_refine_syn_f_forget`).
 
+⚠️ **Sub-Infer / Sub-UnivGhostR: FOLLOW THE PAPER — an elaborate detour here was
+my own misreading, and is retracted.**  The paper (:3134) says "the consistency
+premise, together with `⌊S⌋ = P` and **thm:complete-consistency**, gives
+`Θ ⊢ precise{θP}{Q}`" — i.e. it invokes a THEOREM already mechanized as
+`a_consis_complete_thm`, on the consistency problem `(Θ0; □; P)` (`skmod` forces
+`P0 = □` in both rows).  I read it as "read a precision off the consistency
+premise", refuted THAT, and then built a threaded induction and a Θ↔Δ transport
+kit to repair something that was never broken.  ✅ All the paper's route needs
+beyond the black box is `a_consis_hole_p0_output` (Qed): at `P0 = □` the
+algorithmic consistency OUTPUT is the SUBJECT — only three of the fifteen rows
+admit `P0 = □` and each returns its own subject — so the theorem's precision,
+stated about the run's output, IS a precision about `P`.
+
+What the detour produced and is worth keeping: `cex/cex_p7_sskl_precise.v` (the
+SHORTCUT — precision from the consistency premise without completeness — is
+FALSE, and structurally so: consistency opens a ∀ into Θ while refinement opens
+it into Δ, so a consistency derivation may fill a ghost with a binder precision
+cannot see; witness `∀◇.` vs `∀α. α`); the Θ↔Δ transport kit
+(`a_wf_pskl_reassoc_mid`, `ad_refine_pskl_f_reassoc_mid` / `_reassoc`,
+`ad_refine_pskl_f_fgrow`, the two `_weaken_tvar`s), all general facts about
+refinement's hygiene index with Sub-ForallR's Ξ-strip the next likely consumer;
+and the context-free `ad_pat_consis_ghost_subject_no_forall` /
+`is_sskl_inh_no_forall`.  **Lesson: when the paper cites one of its own
+theorems, follow the citation before inventing a lemma.**  Sub-Check is the same
+shape one level up (`a_consis_complete_thm` + `a_consis_concrete_output_equiv`).
+
+**P7's MOTIVE is LOCKED** — `frost/algo/prop_sub_complete_thm.v`
+(`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`,
+typechecked; the unresolved subject is spelled `R`, the `uskl` metavariable,
+not the paper's `S`).
+Writing it out corrected DESIGN §1 in two places: the fuel judgment is
+`ad_pat_sub_g`, not `ad_pat_sub_n` (precision-substitution is FALSE over `_n`,
+and P5 + all five P6 lemmas are stated over `_g`); and ⚠️ the factored
+`forall κ1 … exists ζ` conclusion is FORCED, not stylistic — `a_inc_equiv` is
+POSITIONAL, so the paper's flat `inc[θ≡θ1]{Θ0}{Θ}` as `a_inc_equiv Θ0 κ ζ Θ`
+with `ζ ∷ Θ1 ⊑ Θ` is not even the right SHAPE (ζ is keyed by Θ1, which has
+entries Θ0 does not, and at Flex-Solve in the MIDDLE).  Also fixed: P7a's
+context split — the FULL context is `Ξ ++ Θ0`, so its premises and `a_inc_equiv`
+are stated there and the measure is lex(n, |Θ0|).
+
+**The first two cases of P7b are closed** (same file, Qed + axiom-free):
+`a_sub_complete_ghost` and `a_sub_complete_ghostg` — the ◇- and ◈-subject rows.
+Each is wider than one declarative rule (at `N = SK` a ◇ subject admits
+`__infer` as well as `__ghost`), but both algorithmic rules return the INPUT
+SKELETON at the INPUT CONTEXT, so one witness serves both and the derivation is
+inverted only to learn the counterpart's COLOUR, which the precision conclusion
+needs.  They establish the leaf plumbing every axiom-node case reuses:
+`opt_axiom_factor` (prop_metasubst.v) discharges the two increase conjuncts at
+`ζ := κ`, and the precision conclusion IS the P0-fill premise once both sides
+are repainted (`msubst_bskl_pskl_to_bskl_syn` +
+`bskl_to_pskl_pskl_to_bskl_{syn,inh}` + `ad_refine_syn_f_forget`).
+
 **Sub-Infer / Sub-UnivGhostR: the lemma they share is FALSE, and the mech's own
 third premise is what rescues them.**  Both carry `is_sskl Q` on the rule and
 both algorithmic counterparts return the input skeleton at the input context, so

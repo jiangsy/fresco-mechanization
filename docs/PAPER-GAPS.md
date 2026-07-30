@@ -1648,39 +1648,37 @@ exactly the ones that refute it.)
 
 ---
 
-## FALSE (machine-checked, 2026-07-30) — `thm:complete-subtyping`'s Sub-Infer / Sub-UnivGhostR step "the consistency premise gives `Θ ⊢ precise{θP}{Q}`" (:3181, :3288)
+## ~~FALSE~~ **NOT A GAP — RETRACTED (2026-07-30)** — `thm:complete-subtyping`'s Sub-Infer / Sub-UnivGhostR precision step (:3134, :3288)
 
-Both cases finish by reading a PRECISION off the consistency premise:
+⚠️ **This entry originally claimed the paper's step was false.  That was a
+MISREADING of the paper and is withdrawn.**  Kept because the reasoning under it
+is still worth having, and because the misreading is instructive.
 
-> The consistency premise, together with `⌊S⌋ = P` and \Cref{thm:complete-consistency},
-> gives `Θ ⊢ precise{θP}{Q}`.
+The paper writes, at Sub-Infer:
 
-Isolated, that step is **false**.  Machine-checked witness:
-`frost/algo/cex/cex_p7_sskl_precise.v` (`p7_sskl_precise_is_false`, Qed,
-axiom-free).
+> The consistency premise, together with `⌊S⌋ = P` and
+> \Cref{thm:complete-consistency}, gives `Θ ⊢ precise{θP}{Q}`.
 
-Take the subject `∀◇.` (a quantifier whose body is the ghost) against the
-counterpart `∀α. α`, over the EMPTY context.  Consistency relates them: its ∀
-rule opens both sides at a fresh `α` and puts `α` into **Θ**, after which the
-hole rule fills the ghost with `α` — legal, because `α` is in the context there.
-Precision cannot: refinement opens a ∀ into **Δ**, not Θ, and checks a ghost
-fill at `Θ ⊢ ·` — where a Δ-variable is out of scope.  So the body obligation
-`◇ ⊑ α` is underivable, and with it the whole precision.
+I read that as "read a precision off the consistency premise" and refuted THAT
+(`frost/algo/cex/cex_p7_sskl_precise.v`).  But the paper says what it means: it
+invokes **thm:complete-consistency** — a theorem, already mechanized as
+`a_consis_complete_thm` — on the consistency problem `(Θ_0; □; P)`, and takes
+the precision from its conclusion.  That route is sound.
 
-This is the same Θ-versus-Δ asymmetry that already forced the mechanization to
-carry a "forbidden in ghost fills" set through refinement.
+**The only thing it needs is small and now proved** (`a_consis_hole_p0_output`,
+Qed): at `P_0 = □` the algorithmic consistency OUTPUT is the SUBJECT.  Of the
+fifteen consistency rules only three admit `P_0 = □` — Ghost (whose subject is
+`□`), GhostR, and FlexL — and each returns its own subject.  UnivGhost2 is the
+only rule that does not fix `P_0`'s shape, and its `guarded{P_0}` premise
+excludes the ghost.  So thm:complete-consistency's precision, which is about the
+run's output, IS a precision about `P`.
 
-**It does not break the theorem**, and the reason is a premise the
-mechanization added and the paper does not state: the SUBJECT's own refinement
-`Θ ⊢ θ⌊S⌋ ⤳ ⌊Q⌋`, alongside the `P_0`-fill.  A second theorem in the same file
-(`cex_excluded_by_subject_refinement`, Qed) shows that premise is
-**unsatisfiable on the witness** — so the configuration never reaches either
-case.
-
-**Recommendation to the authors.**  State the subject-refinement condition as
-part of what it means to be a solution (it is exactly what the soundness
-theorems already produce for every algorithmic output, so it costs nothing and
-keeps the sound/complete pair characterising the algorithm exactly), and derive
-the precision step from IT rather than from the consistency premise alone.  On
-that reading the step becomes a colour bridge between two refinement judgments
-rather than a fact about consistency.
+**What survives, and is still worth the authors' attention.**  The refuted
+statement is a tempting SHORTCUT — proving the precision directly from the
+consistency premise, without going through completeness.  It fails, and the
+reason is structural rather than incidental: consistency opens a ∀ into the
+CONTEXT while refinement (hence precision) opens it into the ghost-fill scope
+`Δ`, so a consistency derivation may fill a ghost with a binder that precision
+cannot see.  Witness: `∀◇.` against `∀α. α` over the empty context.  Anyone
+tempted by the shortcut — in the paper or in a mechanization — should know it is
+closed off.

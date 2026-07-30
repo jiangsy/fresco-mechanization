@@ -678,3 +678,37 @@ Qed.
 (*  a normalisation of the refinement premise at ∀◇ (prefer [__tophole_    *)
 (*  keep] where the target has one) or an IH tolerating the extra [∀◇].    *)
 (* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  THE PAPER'S OWN ROUTE FOR Sub-Infer / Sub-UnivGhostR, AND THE ONE      *)
+(*  LEMMA IT NEEDS                                                        *)
+(*                                                                        *)
+(*  Re-reading :3134, the paper does NOT read a precision off the          *)
+(*  consistency premise.  It invokes thm:complete-consistency — which is   *)
+(*  mechanized, [a_consis_complete_thm] — on the consistency problem       *)
+(*  [(Θ0; □; P)], and takes the precision from THAT.  Since [skmod] forces *)
+(*  [P0 = □] in both rows, the only thing needed to line the two up is     *)
+(*  that the algorithmic consistency OUTPUT at [P0 = □] is the SUBJECT.    *)
+(*                                                                        *)
+(*  And it is, on the nose: of the fifteen [a_consis] rows only three      *)
+(*  admit [P0 = □] — [__ghost] (whose subject IS [□]), [__ghost_r], and    *)
+(*  [__flex_l] — and each returns its own subject.  [__univ_ghost2] is the *)
+(*  only row that does not fix [P0]'s shape, and its [guarded_pskl P0]     *)
+(*  premise excludes the ghost.                                           *)
+(* ===================================================================== *)
+
+Lemma a_consis_hole_p0_output : forall F Δ1 Δ2 Θ0 P0 P P' Θ1,
+  a_consis F Δ1 Δ2 Θ0 P0 P P' Θ1 ->
+  P0 = pskl_hole ->
+  P' = P.
+Proof.
+  intros F Δ1 Δ2 Θ0 P0 P P' Θ1 H; induction H; intros Heq;
+    try discriminate Heq.
+  - (* __ghost : the subject is the ghost, the output is [P0] *) exact Heq.
+  - (* __univ_ghost2 : [guarded_pskl □] is impossible *)
+    subst; match goal with Hg : guarded_pskl pskl_hole |- _ => inversion Hg end.
+  - (* __flex_l : the output is the subject variable *) reflexivity.
+  - (* __ghost_r : the output IS the subject *) reflexivity.
+Qed.
+
+Print Assumptions a_consis_hole_p0_output.
