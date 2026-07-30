@@ -3666,6 +3666,45 @@ consistency output existentially), so the mech's Sub-Check does not need (†)
 to build the derivation — only to transport the PRECISION conclusion from
 `a_consis_complete_thm`'s output `P1` to `P0`.
 
+### 9.1.1 The next three cases share ONE lemma, and it does not hold as stated
+
+Sub-Infer, Sub-Check and Sub-UnivGhostR are the remaining IH-FREE rows of P7b.
+All three reduce to one missing lemma.  Their algorithmic rule returns the INPUT
+skeleton (or `∀◇.` of it) at the INPUT context, so `ζ := κ` and
+`opt_axiom_factor` discharge the two increase conjuncts exactly as in
+`a_sub_complete_ghost` — leaving only
+
+    Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚᵣᵃ ⌊R⌋ˢ ⊑ ⌊Q⌋
+
+which is the paper's step at :3181 / :3288 ("the consistency premise, with
+erasure and thm:complete-consistency, gives `Θ ⊢ precise{θP}{Q}`").
+
+**It does not hold as stated, and the reason is a COLOUR mismatch rather than a
+missing side condition.**  Precision paints ∀s INHERITED on BOTH sides
+(`ad_precise` is `⊢ᵣᵃ inh{·} ⊳ inh{·}`), whereas refinement fills a ghost with a
+SYNTHESISED painting (`ad_refine_syn__hole` emits `pskl_to_bskl_syn`,
+`__tophole_fill` emits `bskl_all_syn`).  The two agree exactly where no ∀ sits
+under a ghost.  Concretely the induction breaks at consistency's `__topholeg`
+row: it gives `∀◈.R ∼ ∀◇.Q` from `R ∼ Q`, and the matching refinement step
+`ad_refine_syn__tophole_keep` demands `guarded_bskl` of the target's body — which
+a nested `∀◇` is not (`guarded_bskl` is unit / var / arrow).  `__tophole_remove`
+does not apply either: it would need the IH at an unwrapped source against a
+still-wrapped target.
+
+The same wall blocks the other obvious route — using the mech's THIRD solution
+premise (the subject's own refinement `⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋`) directly.
+`ad_refine_pskl` is a rule-for-rule mirror of `ad_refine_syn` on the colourless
+sort, so it differs from `ad_precise` in precisely the two ghost-fill rows.
+
+**Note the three call sites are not symmetric about this.**
+`ad_pat_sub_g__univ_ghost_r` carries `guarded_uskl R` AND `guarded_bskl Q` on
+the rule, so the offending shape cannot be its ROOT — but the induction still
+descends into subterms that lack the guard.  So the lemma has to be RESTATED (a
+∀◇-nesting-free side condition on the target, or a disjunctive conclusion), not
+merely re-premised.  Settle that before writing any of the three cases — it is
+the `bskl_monoish` lesson again (§9.0.2): find the hypothesis that is actually
+load-bearing before decomposing.
+
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 
 `Flex-Solve` and `Flex-Assign`; the paper omits the rest as "routine IH".

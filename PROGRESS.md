@@ -169,6 +169,16 @@ needs.  They establish the leaf plumbing every axiom-node case reuses:
 are repainted (`msubst_bskl_pskl_to_bskl_syn` +
 `bskl_to_pskl_pskl_to_bskl_{syn,inh}` + `ad_refine_syn_f_forget`).
 
+Scoped but NOT started: Sub-Infer / Sub-Check / Sub-UnivGhostR, the remaining
+IH-free rows, all three of which reduce to one lemma — "consistency against an
+`is_sskl` counterpart gives precision of the erasures", the paper's `:3181` /
+`:3288` step.  **That lemma does not hold as stated**, and for a COLOUR reason
+rather than a missing side condition: precision paints ∀s INHERITED on both
+sides while refinement fills a ghost SYNTHESISED, and the induction breaks at
+consistency's `__topholeg` row, where `ad_refine_syn__tophole_keep` demands
+`guarded_bskl` of a target body that a nested `∀◇` does not satisfy.  It must be
+restated, not re-premised — DESIGN §9.1.1.
+
 ## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.
