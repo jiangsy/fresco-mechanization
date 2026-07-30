@@ -42,6 +42,7 @@ Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
+Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_precise.
 
 Set Implicit Arguments.
@@ -244,4 +245,38 @@ Proof.
       [ apply mono_ptyp__var
       | (* Δ-membership, then the three [a_binds_tvar] disjuncts *)
         apply a_wf_pskl__var; right; right; right; exists τ0; exact Hb ].
+Qed.
+
+(* ===================================================================== *)
+(*  §4  A ∀-HEADED SOURCE NEVER REFINES TO A MONOTYPE                     *)
+(*                                                                        *)
+(*  The ∀ case of the witness induction must refute the [__flex_r] reading *)
+(*  of its precision premise: if the counterpart were a defined flexible   *)
+(*  α̂, precision would demand [∀… ⊳ syn τ] for α̂'s MONOTYPE definition τ,  *)
+(*  and no rule can do that — [__all] needs an inherited-∀ target, which a *)
+(*  monotype painting never is, and [__flex_r] only chains to another      *)
+(*  monotype definition.  The chain terminates because every definition in *)
+(*  a well-formed context is a monotype.                                  *)
+(* ===================================================================== *)
+
+Lemma ad_refine_syn_all_l_not_mono : forall Θ Δ Y τ,
+  Θ ⨟ Δ ⊢ᵣᵃ (bskl_all_inh Y) ⊳ (ptyp_to_bskl_syn τ) ->
+  a_wf_aenv Θ -> mono_ptyp τ -> False.
+Proof.
+  intros Θ Δ Y τ H. remember (bskl_all_inh Y) as Src eqn:HeqS.
+  remember (ptyp_to_bskl_syn τ) as Tgt eqn:HeqT.
+  revert Y τ HeqS HeqT.
+  induction H; intros Y0 τ0 HeqS HeqT HwfΘ Hmτ; subst;
+    try discriminate HeqS.
+  - (* __all : NO monotype painting is an inherited ∀ — and note [ptyp_all]
+       is discriminated too, since its painting is [bskl_all_SYN].  So every
+       shape of τ0 dies on [HeqT] and there is nothing left to do. *)
+    destruct τ0; cbn in HeqT; discriminate HeqT.
+  - (* __flex_r : only a VARIABLE painting survives [HeqT]; chain to its
+       definition, which a well-formed context keeps a monotype *)
+    destruct τ0; cbn in HeqT; try discriminate HeqT.
+    assert (Hαe : α = α0) by congruence; subst α0.
+    eapply IHad_refine_syn;
+      [ reflexivity | reflexivity | exact HwfΘ
+      | eapply a_wf_aenv_binds_def_mono; eassumption ].
 Qed.
