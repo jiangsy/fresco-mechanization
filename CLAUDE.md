@@ -32,10 +32,12 @@ point to the same content.
   front.**  Its TASK 0 (supplying P6-L's `sub_shield` premise) is
   closed for a flex-free `P0`, for a `P0` with no ∀, and for an
   inh-free counterpart (`prop_sub_shield_supply.v`), leaving only a
-  `P0` carrying a ∀ below its head.  P7b's motive is locked and FIVE
-  of its rows are closed (`prop_sub_complete_thm.v`): Sub-Ghost,
-  Sub-GhostG, Sub-Infer, Sub-Check and Sub-UnivGhostR — the last
-  VACUOUSLY.  The enabler is `a_inc_equiv_precise_msubst` (precision
+  `P0` carrying a ∀ below its head.  P7b's motive is locked (and
+  REPAIRED — see below) and SIX of its seven rows are closed
+  (`prop_sub_complete_thm.v`): Sub-Ghost, Sub-GhostG, Sub-Infer,
+  Sub-Check, Sub-UnivGhostR and **Sub-Arrow** (`a_sub_complete_arrow`,
+  2026-07-31; only Sub-ForallR / Sub-ForallL remain, then P7a and the
+  bundle).  The enabler is `a_inc_equiv_precise_msubst` (precision
   is stable under equivalent metasubstitutions).  ⚠️ Two things the
   authors must see: the property `subtyping-proofs.tex:3243` marks
   with its own TODO ("concrete `P_0` ⟹ RHS is `P_0`") is FALSE

@@ -78,7 +78,52 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — Sub-Arrow's enablers: the ≡ᵘ SLACK is in the motive, the Arrow leaf premise landed, all five rows re-closed
+## 2026-07-31 (latest) — ⭐ Sub-Arrow CLOSED: `a_sub_complete_arrow` Qed + axiom-free — SIX of P7b's seven rows done
+
+`make coq` green from clean, zero admits.  The row landed on essentially the
+first assembly pass because the blueprint — the consistency Arrow case at
+prop_consis_complete.v:6631-6790 — mapped over almost 1:1 once the ≡ᵘ slack
+and its kit were in place (the entry below).
+
+**The row** (`prop_sub_complete_thm.v`): takes the fuel-n IH (the full
+motive) + `R = uskl_arrow Ra Rb` via the conclusion's shape (the bundle owes
+the flex-dispatch-first disambiguation).  Structure: invert the join (only
+`__arrow` matches the arrow subject at `mode_fn M`); split the ≡ᵘ slack with
+`a_uskl_tyequiv_arrow_arrow_inv`; `skmod` inversion splits `P0 = P0a → P0b`
+keeping the codomain's mode-compat implications; fill inverts componentwise.
+DOMAIN: erase the slack component and transport the `__arrow` leaf data
+(consis via `skl_tyequiv_consis_transport`, refinement via the pskl
+transport) to `κ⌊Ra⌋`, then `a_consis_complete_thm`; its run's
+`a_consis_sound_aux` gives the id-witness w1 + wf Θ1 + the Θ1-join for the
+output's SCOPE.  CODOMAIN at (Θ1, ζ1): wf's weaken by `a_wf_pskl_isub`; the
+IH's slack = `a_uskl_tyequiv_trans` of the motive component with
+`a_inc_equiv_msubst_uskl` (at Hie1), collapsed by
+`msubst_uskl_syn_compose_id` (every Rb-variable is Θ0-bound —
+`a_wf_pskl_ftv_binds_tvar` + `ftvar_in_pskl_uskl_to_pskl`; rigids are
+outside both domains by `binds_unique` discrimination); the fill moves κ→ζ1
+by `msubst_compose_id_pskl` + `a_inc_equiv_msubst_pskl` + the syn transport.
+ASSEMBLE `a_sub__arrow`; package: `a_sub_sound_thm` gives w2; `is_id_inc_unique`
+identifies κf = w1; `a_inc_equiv_glue` (dom-mono via
+`a_assign_unify_consis_flex_preserve` over the domain run); precision is
+`ad_refine_syn__arrow` with the domain source moved ζ1→ζ2 along ≡ˢ
+(scope from `ad_pat_consis_target_wf` — NO wf-of-⌊Q1⌋ side condition, the
+lighter route the consistency case already used; my earlier
+`ad_refine_syn_trans` sketch was needlessly heavy).
+
+**New helpers**: `ad_refine_syn_f_empty_intro` (syn mirror of the pskl
+intro), `a_wf_pskl_ftv_binds_tvar` (Δ-closed wf ⟹ every variable Θ-bound),
+`msubst_compose_id_lookup` + `msubst_uskl_syn_compose_id` (obligation 7b).
+
+⚠️ Import gotcha: `prop_decorate_sub` SHADOWS the ptyp-level `msubst_lc`
+(its ρ machinery has a uskl-valued one) — Require it BEFORE `prop_normal`.
+
+**Remaining in P7b**: Sub-ForallR (Ξ-suffix strip; `_fgrow` transport kit
+waiting), Sub-ForallL (P6-L + P5c + Task 0's shield — and the P5
+precision-substitution still needs its `_gv` transport, whose one new fact
+is that it preserves the leaves' subject refinement).  Then P7a and the
+bundle assembly.
+
+## 2026-07-31 — Sub-Arrow's enablers: the ≡ᵘ SLACK is in the motive, the Arrow leaf premise landed, all five rows re-closed
 
 Continuation of the motive repair below, opening the Sub-Arrow campaign.
 All Qed + axiom-free; `make coq` green.
