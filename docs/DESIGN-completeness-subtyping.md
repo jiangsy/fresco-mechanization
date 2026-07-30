@@ -3518,10 +3518,12 @@ algo subtyping, when input `P_0` is a concrete type, RHS of subtyping is always
 
 ## 10. `flex_apart` and `flex_shield`, rethought as a whole (2026-07-30)
 
+⚠️ **§10.3's ORIGINAL CONCLUSION — "`flex_apart` is redundant, delete it in
+favour of `flex_shield`" — IS WRONG.  Corrected in §10.4, which is what to
+read.**  The intuition in §10.1-§10.2 stands; the merge does not.
+
 Written after `cex_p7_shield_arrow.v` showed a `fa_rho_var`-shaped hole, and
-instead of patching it.  **Conclusion: `flex_apart` is redundant.  `flex_shield`
-already IS the predicate both want to be, and the whole `flex_apart` development
-should be deleted in its favour.**
+instead of patching it.
 
 ### 10.1 The intuition — one hazard, one position, two ways to fail
 
@@ -3589,3 +3591,51 @@ development that the two sides move independently.
   where `fsh_clean` fails on `α ∈ Δρ`, `fsh_rho_var` wants a bare variable and
   `fsh_arrow` wants an arrow `P0`.  That is `cex_p6sv_forall_flex.v`, and the
   merged predicate must keep excluding it.
+
+### 10.4 CORRECTION — the merge is wrong; the BASE rows must agree, the DESCENTS must not
+
+Attempting §10.3 immediately hit the reason the two predicates differ, and it is
+a real one.  **P6-Cv descends CONSISTENCY, which matches ∀s in LOCKSTEP**
+(`fa_all_etag` / `fa_all_syn`, Δρ FIXED); **P6-Sv descends SUBTYPING, which
+INSTANTIATES** (`fsh_all_r`, Δρ GROWS).  `flex_apart_all_etag_forall_inv` reads
+the lockstep child off at the SAME Δρ, and only `fa_clean` and `fa_all_etag` can
+conclude at a ∀/∀ node — an `fsh_all_r`-style row would also conclude there, give
+the child at `add α Δρ` with `P0` UNOPENED, and the inversion would break.  That
+inversion is load-bearing for P6-Cv.  **So the descent disciplines genuinely
+differ, mirroring how the two judgments descend, and must stay different.**
+`Δρ` being a PARAMETER of one and an INDEX of the other is that same fact, not an
+oversight.
+
+**What must agree is the BASE rows** — they say the same thing about the same
+hazard (§10.1) — and `flex_apart` is missing two:
+
+- **`fa_flexfree`** — nothing to keep apart when the payload has no raw
+  Θ0-flexible.  `fa_unit` / `fa_var_rigid` / `fa_hole` are three special cases;
+  the general rule was never written.
+- **`fa_rho_var`** — a ρ-replaced rigid variable is safe opposite ANY payload.
+  This is P6-Cv's own leaf, and `flex_shield` states it as `fsh_rho_var`.
+
+Neither disturbs the lockstep inversions: `fa_flexfree` re-applies at any
+sub-payload (flex-freedom is inherited), and `fa_rho_var`'s target is a bare
+variable, which every ∀ / arrow inversion discriminates away.  Together they kill
+both witnesses of `cex_p7_shield_arrow.v`.
+
+**Status: branch `flexapart-baserules`, WIP, does not compile.**
+`prop_look_complete.v` and P6-Cv are green there: `pskl_flex_free` + kit moved up
+(the new row needs it in scope before P6-Cv), the two rows added, the ~6
+inversions extended, `flex_apart_weaken` split into a flex-preserving form (⚠️
+`fa_flexfree` reads the context NEGATIVELY, so a context weakening must also
+create no new flexibles — true of every RIGID extension, which is what all five
+callers do) plus a flex-prefix twin mirroring `flex_shield_weaken_flex_prefix`,
+and `a_flex_tvar_strip_tvar` added.
+
+⚠️ **BLOCKED ON** `flex_apart_flex_var_clean`, which now returns a DISJUNCTION
+whose right arm is "the guess is a Δρ-variable under a ∀◈ STACK".  P6-Cs's Arrow
+row (`prop_look_complete_cstr.v:2198`) consumes the old equation to obtain a MONO
+PAINT `τψ`, which it needs both to build the metasubstitution entry `(α1, τψ)`
+and to close precision via `ad_ppre_mono_paint_refl`.  The UN-STACKED arm is fine
+(`τψ := ptyp_var_f α0`, well-formed by `rho_fresh`), but under a ∀◈ stack `ψa` is
+not a mono paint and there is no precision rule for `var ⊑ᵖ topholeg`.  So
+either that combination is unreachable at this call site — `a_tags_sort` at TY
+forces ghost-freeness, which excludes `topholeg`, but SK does not — or the
+read-off needs a different right arm.  **Settle that before continuing.**
