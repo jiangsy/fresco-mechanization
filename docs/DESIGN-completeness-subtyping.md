@@ -3261,3 +3261,117 @@ reflexive `a_inc_equiv Θ0 κ κ Θ`: the mech's `a_inc_equiv` is POSITIONAL, so
 `prop_pat_sub.v`'s Fixpoint of the same name and is gone; the file uses the
 existing one (which also supplies `ptyp_to_pskl_ghost_free` and
 `pskl_ghost_free_open_rec`).
+
+---
+
+## 9. P7 plan (drafted 2026-07-30, right after P6-L closed)
+
+P7 is the LAST front of subtyping completeness, and unlike P6 it is a **mutual
+induction**, per §3's rows:
+
+| | mech name | paper | measure |
+|---|---|---|---|
+| **P7a** | `a_sub_flex_complete` | lemma:complete-flex-subtyping (:2836) | induction on the contexts `Θ0 ∣ Ξ` |
+| **P7b** | `a_sub_complete_gen` | generalised thm:complete-subtyping (:3050) | `lex(decl height, |Ψ|)`, after a case split on "P is a flexible in FN mode" |
+| **P7c** | `a_sub_complete_thm` | thm (algorithmic.tex:1446) | instantiate `S := P`, `Ψ := ∅` |
+
+P7a's proof says *"by induction on the contexts of the subtyping judgement,
+**mutually** with the generalised version of thm:complete-subtyping below"*, and
+P7b's `P = α̂ ∧ M = FN M'` case calls P7a at `Ξ = ·`.  So the two are one bundle;
+`a_consis_complete_thm`'s 3-way mutual block is the shape precedent.
+
+### 9.0 ⚠️ TASK 0 — SUPPLY `sub_shield` AT P7b's ForallL.  SETTLE THIS FIRST
+
+P7b's Sub-ForallL case is the sole consumer of **P6-L**, and P6-L's statement
+carries the P6-Sv/P6-Ss REPAIR premise `sub_shield Θ0 Ψa empty P0 ψa`.  That
+premise cannot be dropped — the paper's P6-Sv without it is machine-checked
+FALSE (`cex/cex_p6sv_forall_flex.v`) — so **P7 must SUPPLY it**, exactly as §6
+(z) item 3 and §6's obligation (iii) registered.  This is the P6-L §7.4 lesson
+again: settle the premise story before writing the induction.
+
+What has to be produced, unfolding `sub_shield` at Δρ = ∅: for every P0-subterm
+`P0'` reachable by `ss_walk (dom Θ0) P0` and every `Δρ'` with
+`Δρ' ∩ ftv ψa = ∅`, both `flex_apart_walk Θ0 Δρ' P0' ψa` and
+`flex_shield Θ0 Ψa Δρ' P0' ψa`.  The rules available for the hard leaf (P0' a
+RAW Θ0-FLEXIBLE) are only:
+
+- `fsh_clean` — needs `ftag ψa ∩ Ψa = ∅`, i.e. **ψa TAG-FREE**.  Note
+  `d_tags_skl_ftag` gives `Ψa ⊆ ftag ψa`, so at a tagged ψa this rule is
+  unavailable and forces Ψa = ∅.
+- `fsh_flexfree` — needs `pskl_flex_free Θ0 P0'`.  ⚠️ The paper's ForallL WLOG
+  (`guarded(P0) ∨ P0 = □`) does NOT give this: `guarded_pskl__var` holds for
+  EVERY variable, flexible included (def_extra.v:124).
+- `fsh_rho_var` — only when the facing ψa-part is a Δρ-member variable.
+
+**The intended route (§6 (z) item 3), and it is available:** at each flexible
+position of the counterpart the solution's own REFINEMENT premise pins the
+κ-image to a monotype, so the facing ψa-region is consistent with a mono-ish
+fill, hence a mono PAINT, hence tag-free — which is `fsh_clean`.  The kit is
+already Qed in `prop_look_complete.v:3022-3100`:
+
+    bskl_monoish  /  bskl_monoish_paint
+    ad_refine_mono_paint_rhs_monoish        (refining FROM a mono paint lands mono-ish)
+    ad_pat_consis_monoish_counterpart       (a tag-sorted subject against a mono-ish
+                                             counterpart IS a mono paint, and Ψs = ∅)
+
+so **the missing piece is one `ad_pat_sub_g` analogue of
+`ad_pat_consis_monoish_counterpart`** — the subtyping-side statement of "against
+a mono-ish counterpart, a tag-sorted subject is a mono paint and solves no
+tags".  Build that first; it is self-contained and it is the whole risk.
+
+**The backstop, and the one genuinely open dependency.**  For the remaining
+shape — a rigid-∀-spine skeleton facing a bare flexible payload — the argument
+is the flex-mono WALL: the authors decided (§6 (z)) that `broom_flex_poly`-shaped
+programs are REJECT-by-design, so such solutions do not exist at the theorem's
+call sites.  ⚠️ That decision was recorded against an IMPLEMENTATION CRASH
+(docs/PAPER-GAPS.md, "broom_flex_poly: should not happen"), not against a proof.
+**If Task 0 cannot discharge the flexible-P0 leaf, P7b is BLOCKED and the
+authors must be told** — do not weaken P6-L's statement to get past it, and do
+not thread `sub_shield` outward as a P7b premise without first checking it
+survives P7c (where `Ψ = ∅` but `Ψa` at a ForallL is NOT empty, so the
+threading does NOT become vacuous at the top).
+
+### 9.1 Case map for P7b (paper :3050-3420 and on)
+
+Read the paper's cases in this order; the first four are cheap because their
+content is already a Qed black box.
+
+| declarative rule | route | note |
+|---|---|---|
+| `P = α̂`, `M = FN M'` | **P7a at Ξ = ·**, then algorithmic `FlexMono` | the mutual edge |
+| Sub-Infer | `a_consis_complete_thm` | `M = TI ⇒ Ψ = ∅` and `skmod` forces `P0 = □` |
+| Sub-Check | `a_consis_complete_thm` | needs "`P0` concrete ⇒ the consistency output is equivalent to `P0`" |
+| Sub-UnivGhostR | `a_consis_complete_thm` | `N = SK`, `M = TC`, `P0 = □` |
+| Sub-Arrow | `a_consis_complete_thm` on the domain + IH on the codomain | ⚠️ threads `Θ0 → Θ1 → Θ2` and composes THREE `a_inc_equiv`s |
+| Sub-ForallR | IH at `Θ0,α` | ⚠️ output context is `Θ1,α,Ξ` — the Ξ-suffix strip is the work |
+| Sub-ForallL | **P6-L** then **P5c** (`ad_pat_sub_precise_subst`) | Task 0 lives here; also the WLOG-by-congruence hazard H3 |
+
+⚠️ Two of these lean on a property the paper asserts in passing and marks with
+its own TODO (`subtyping-proofs.tex:3243`: *"we may have the property that, in
+algo subtyping, when input `P_0` is a concrete type, RHS of subtyping is always
+`P_0`"*): Sub-Check needs it for `P'_0 ≡ P_0`, Sub-ForallR for `P_1 ≡ P_0'`.
+**Mechanize that as a standalone lemma before the two cases** — it is stated over
+`a_sub`, it is reusable, and if it is FALSE both cases need rewriting.
+
+### 9.2 P7a's two interesting cases (paper :2861-3040)
+
+`Flex-Solve` and `Flex-Assign`; the paper omits the rest as "routine IH".
+
+- **Flex-Solve** splits `θα̂0` into `τ1 → τ2` by inversion of declarative
+  Sub-Arrow on the equivalence `θα̂0 ≡ τ1→τ2`, then BUILDS `θs` mapping the two
+  fresh flexibles.  The construction is the assign/unify walk recipe
+  (mid-strip / mid-insert) from `remech-complete-mu-bundle`; `a_inc__flex_def`'s
+  `≡ᵗ` middle is what absorbs `α̂0 := α̂→β̂`.
+- **Flex-Assign** substitutes `τ/β̂` in BOTH the subject and `P0`, so it needs
+  `ad_pat_sub_{subst_flex,subst_flex_def}` (already Qed, `prop_pat_sub.v`) plus
+  `a_inc`'s "extend the source with `β̂ := τ`" step, which is `a_inc__flex_def`
+  read backwards — check `a_inc_mid_strip_flex_def` /
+  `a_inc_equiv_mid_insert_flex_def` (`prop_consis_complete.v:2059`, :2100) cover
+  it before writing anything new.
+
+### 9.3 What NOT to redo
+
+- The homogeneous-flex reorder kit (`prop_look_complete_cstr.v`) — see §7.5.
+- The `_f` fill-hygiene transports for renaming a Δ-bound variable — §7.5.
+- `a_consis_complete_thm` and `complete_mu` are Qed black boxes; four of P7b's
+  seven cases are just their application.
