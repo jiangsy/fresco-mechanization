@@ -28,8 +28,8 @@
 
     (2) THE CONCLUSION KEEPS [a_consis_complete_thm]'s FACTORED SHAPE — the
         [forall κ1, is_id_msubst κ1 → … → exists ζ] wrapper — rather than the
-        paper's flat [exists θ1].  ⚠️ This is NOT a stylistic choice and it is
-        NOT optional: [a_inc_equiv] is POSITIONAL (def_meta.v:268 pairs the two
+        paper's flat [exists θ1].  This is not a stylistic choice and it is
+        not optional: [a_inc_equiv] is POSITIONAL (def_meta.v:268 pairs the two
         metasubstitutions' entries key-by-key against Θ0's entries), so a flat
         [a_inc_equiv Θ0 κ ζ Θ] with [ζ ∷ Θ1 ⊑ Θ] is not even the right shape —
         ζ is keyed by Θ1, which has entries Θ0 does not, and (at Flex-Solve)
@@ -58,11 +58,13 @@ Require Import src.frost.predicates.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.decl.notations.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.prop_basic.              (* bskl_to_pskl_pskl_to_bskl_{syn,inh} *)
 Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.def_decl_algo_sub.
 Require Import src.frost.algo.def_decl_algo_sub_hyg.
+Require Import src.frost.algo.prop_metasubst.     (* opt_axiom_factor *)
 Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
 Require Import src.frost.algo.prop_flex.          (* a_decls *)
 Require Import src.frost.algo.prop_consis_sound.  (* ad_refine_{syn,pskl}_f *)
@@ -118,7 +120,7 @@ Definition sub_complete_concl
     declarative premise is about its IMAGE [κα̂] — a MONOTYPE, painted into the
     subject sort; there is no [R] and no erasure premise.
 
-    ⚠️ THE CONTEXT IS SPLIT.  [a_sub_flex NM M P0 Θ0 Ξ α P1 Θ1] keeps the
+    THE CONTEXT IS SPLIT.  [a_sub_flex NM M P0 Θ0 Ξ α P1 Θ1] keeps the
     entries the flex walk has already passed in [Ξ] and the rest in [Θ0]; the
     FULL context is [Ξ ++ Θ0] (check [a_sub_flex__depend]: its conclusion is at
     [(β~flex) ++ Θ0] with suffix [Ξ], its premise at [Θ0] with suffix
@@ -164,11 +166,7 @@ Definition sub_flex_complete_concl
     [a_sub_decorate_bundle] (prop_decorate_key.v), the house shape for a
     two-half [a_sub] / [a_sub_flex] statement.  Both halves are quantified over
     the SAME fuel [n], and the lexicographic order is (n, |Θ0|) — see the note
-    on [sub_flex_complete_concl].
-
-    ⚠️ The unresolved subject is [R], not the paper's [S]: it is a [uskl], and
-    the metavariable convention (CLAUDE.md) spells that sort [R].  P6-L calls
-    the same thing [R'] for the same reason. *)
+    on [sub_flex_complete_concl]. *)
 Definition a_sub_complete_bundle : Prop :=
   forall n,
     (forall NM M Θ0 P0 P R Ψ Θ κ Q,
@@ -182,3 +180,155 @@ Definition a_sub_complete_bundle : Prop :=
 Check sub_complete_concl.
 Check sub_flex_complete_concl.
 Check a_sub_complete_bundle.
+
+(* ===================================================================== *)
+(*  THE LEAF PLUMBING — three facts every axiom-node case reuses           *)
+(* ===================================================================== *)
+
+(** A syn painting commutes with the metasubstitution.  Both sides agree at
+    the only interesting node, a free variable, where each is the syn painting
+    of the image. *)
+Lemma msubst_bskl_pskl_to_bskl_syn : forall κ P,
+  msubst_bskl κ (pskl_to_bskl_syn P) = pskl_to_bskl_syn (msubst_pskl κ P).
+Proof. intros κ P; induction P; cbn; f_equal; auto. Qed.
+
+(** [κR = ◇] forces [R = ◇]: a variable's image is a monotype PAINTING, which
+    is unit / var / arrow, never a ghost. *)
+Lemma msubst_uskl_syn_hole_inv : forall κ R,
+  msubst_uskl_syn κ R = uskl_hole -> R = uskl_hole.
+Proof.
+  intros κ R; destruct R; cbn; try discriminate; [ | reflexivity ].
+  unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
+  destruct (msubst_lookup κ α); cbn; discriminate.
+Qed.
+
+(** Against a [◇] SUBJECT the counterpart is an INHERITED painting of its own
+    erasure.  Only two consistency rows have that subject: [__hole], whose
+    counterpart IS such a painting, and [__flex_r], whose counterpart is a bare
+    variable — and a variable is painted the same either way. *)
+Lemma ad_pat_consis_hole_target_inh : forall Ψ Θ Q,
+  Ψ ⨟ Θ ⊢ₛᵃ uskl_hole ∼ Q ->
+  pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
+Proof.
+  intros Ψ Θ Q H; inversion H; subst;
+    [ rewrite bskl_to_pskl_pskl_to_bskl_inh | ]; reflexivity.
+Qed.
+
+(** …and the same at the subtyping level.  With [N = SK] and a [◇] subject only
+    [__infer] (which hands it to consistency) and [__ghost] (whose counterpart
+    is an inherited painting on the rule) can fire: [__univ_ghost_r] wants
+    [guarded_uskl ◇], and every other row wants another subject shape or
+    [N = TY]. *)
+Lemma ad_pat_sub_g_hole_target_inh : forall n M Ψ Θ Q,
+  ad_pat_sub_g n a_sub_mode_sk M Ψ Θ uskl_hole Q ->
+  pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
+Proof.
+  intros n M Ψ Θ Q H; inversion H; subst.
+  - (* __infer *) eapply ad_pat_consis_hole_target_inh; eassumption.
+  - (* __univ_ghost_r : [guarded_uskl ◇] is impossible *)
+    match goal with Hg : guarded_uskl uskl_hole |- _ => inversion Hg end.
+  - (* __ghost *) rewrite bskl_to_pskl_pskl_to_bskl_inh; reflexivity.
+Qed.
+
+(* ===================================================================== *)
+(*  P7b, THE ◇-SUBJECT CASE (paper's Sub-Ghost, and Sub-Infer at [N = SK]) *)
+(*                                                                        *)
+(*  The paper (:3468) does Sub-Ghost as: [P = □]; algorithmic [Ghost] gives *)
+(*  [Θ0 ⊢[SK][M][P0] □ ⩽ P0 ⊣ Θ0]; and the refinement premise IS the       *)
+(*  precision conclusion "by definition".  Both hold here.                *)
+(*                                                                        *)
+(*  The case is WIDER THAN ONE RULE.  At [N = SK] a [◇] subject admits      *)
+(*  [__infer] as well as [__ghost] — but both algorithmic rules return the  *)
+(*  INPUT SKELETON at the INPUT CONTEXT ([a_sub__infer] is [a_sub__ghost]   *)
+(*  at [M = TI], since [skmod] forces [P0 = □] there), so one witness       *)
+(*  serves both and no inversion is needed for the RUN.  The derivation is  *)
+(*  inverted only to learn the counterpart's COLOUR, which the precision    *)
+(*  conclusion needs.                                                       *)
+(* ===================================================================== *)
+
+Lemma a_sub_complete_ghost : forall n M Θ0 P0 P R Ψ Θ κ Q,
+  msubst_uskl_syn κ R = uskl_hole ->
+  sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R Ψ Θ κ Q.
+Proof.
+  intros n M Θ0 P0 P R Ψ Θ κ Q Hsubj.
+  unfold sub_complete_concl.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  (* the subject is the hole, so the algorithm's input is [□] *)
+  pose proof (msubst_uskl_syn_hole_inv κ R Hsubj) as HR; subst R.
+  cbn in HeqP; subst P.
+  (* the counterpart is an inherited painting — read off the derivation *)
+  assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
+    by (rewrite Hsubj in Hsub;
+        eapply ad_pat_sub_g_hole_target_inh; exact Hsub).
+  (* the run: [Ghost], which returns the input skeleton unchanged *)
+  exists P0, Θ0. split; [ apply a_sub__ghost | ].
+  intros κ1 Hid Hinc1. exists κ.
+  destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
+  split; [ exact Hout | split; [ exact Hfact | ] ].
+  (* precision IS the P0-fill premise, once both sides are repainted *)
+  unfold ad_precise.
+  rewrite msubst_bskl_pskl_to_bskl_syn.
+  rewrite bskl_to_pskl_pskl_to_bskl_syn.
+  rewrite HQ.
+  eapply ad_refine_syn_f_forget; exact Hrs.
+Qed.
+
+Print Assumptions a_sub_complete_ghost.
+
+(* ===================================================================== *)
+(*  P7b, THE ◈-SUBJECT CASE (paper's Sub-GhostG)                          *)
+(*                                                                        *)
+(*  Same shape as the ◇ case and for the same three reasons; only the      *)
+(*  subject constructor and the admissible rows change.  ⌊◈⌋ˢ is again     *)
+(*  [□], so the algorithm's input is again [□] and [Ghost] again returns    *)
+(*  the input skeleton.                                                    *)
+(* ===================================================================== *)
+
+Lemma msubst_uskl_syn_holeg_inv : forall κ R,
+  msubst_uskl_syn κ R = uskl_holeg -> R = uskl_holeg.
+Proof.
+  intros κ R; destruct R; cbn; try discriminate; [ | reflexivity ].
+  unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
+  destruct (msubst_lookup κ α); cbn; discriminate.
+Qed.
+
+Lemma ad_pat_consis_holeg_target_inh : forall Ψ Θ Q,
+  Ψ ⨟ Θ ⊢ₛᵃ uskl_holeg ∼ Q ->
+  pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
+Proof. intros Ψ Θ Q H; inversion H; subst; reflexivity. Qed.
+
+Lemma ad_pat_sub_g_holeg_target_inh : forall n M Ψ Θ Q,
+  ad_pat_sub_g n a_sub_mode_sk M Ψ Θ uskl_holeg Q ->
+  pskl_to_bskl_inh (bskl_to_pskl Q) = Q.
+Proof.
+  intros n M Ψ Θ Q H; inversion H; subst.
+  - (* __infer *) eapply ad_pat_consis_holeg_target_inh; eassumption.
+  - (* __univ_ghost_r : [guarded_uskl ◈] is impossible *)
+    match goal with Hg : guarded_uskl uskl_holeg |- _ => inversion Hg end.
+  - (* __ghostg : the counterpart is [◇] on the rule *) reflexivity.
+Qed.
+
+Lemma a_sub_complete_ghostg : forall n M Θ0 P0 P R Ψ Θ κ Q,
+  msubst_uskl_syn κ R = uskl_holeg ->
+  sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R Ψ Θ κ Q.
+Proof.
+  intros n M Θ0 P0 P R Ψ Θ κ Q Hsubj.
+  unfold sub_complete_concl.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  pose proof (msubst_uskl_syn_holeg_inv κ R Hsubj) as HR; subst R.
+  cbn in HeqP; subst P.
+  assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
+    by (rewrite Hsubj in Hsub;
+        eapply ad_pat_sub_g_holeg_target_inh; exact Hsub).
+  exists P0, Θ0. split; [ apply a_sub__ghost | ].
+  intros κ1 Hid Hinc1. exists κ.
+  destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
+  split; [ exact Hout | split; [ exact Hfact | ] ].
+  unfold ad_precise.
+  rewrite msubst_bskl_pskl_to_bskl_syn.
+  rewrite bskl_to_pskl_pskl_to_bskl_syn.
+  rewrite HQ.
+  eapply ad_refine_syn_f_forget; exact Hrs.
+Qed.
+
+Print Assumptions a_sub_complete_ghostg.

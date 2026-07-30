@@ -264,7 +264,7 @@ Qed.
 
 Print Assumptions a_sub_concrete_output_equiv.
 
-(** ⚠️ NOTE FOR THE PAPER (docs/PAPER-GAPS.md).  Read together, §3 and §5 say
+(** NOTE FOR THE PAPER (docs/PAPER-GAPS.md).  Read together, §3 and §5 say
     that BOTH cases the [:3243] TODO was meant to simplify get their step from
     the SOUNDNESS theorems, not from a new induction — the output's refinement
     from [P_0] is already exported, and a ghost-free [P_0] leaves refinement

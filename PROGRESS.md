@@ -157,6 +157,18 @@ entries Θ0 does not, and at Flex-Solve in the MIDDLE).  Also fixed: P7a's
 context split — the FULL context is `Ξ ++ Θ0`, so its premises and `a_inc_equiv`
 are stated there and the measure is lex(n, |Θ0|).
 
+**The first two cases of P7b are closed** (same file, Qed + axiom-free):
+`a_sub_complete_ghost` and `a_sub_complete_ghostg` — the ◇- and ◈-subject rows.
+Each is wider than one declarative rule (at `N = SK` a ◇ subject admits
+`__infer` as well as `__ghost`), but both algorithmic rules return the INPUT
+SKELETON at the INPUT CONTEXT, so one witness serves both and the derivation is
+inverted only to learn the counterpart's COLOUR, which the precision conclusion
+needs.  They establish the leaf plumbing every axiom-node case reuses:
+`opt_axiom_factor` (prop_metasubst.v) discharges the two increase conjuncts at
+`ζ := κ`, and the precision conclusion IS the P0-fill premise once both sides
+are repainted (`msubst_bskl_pskl_to_bskl_syn` +
+`bskl_to_pskl_pskl_to_bskl_{syn,inh}` + `ad_refine_syn_f_forget`).
+
 ## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.
