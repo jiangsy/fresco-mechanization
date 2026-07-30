@@ -3695,6 +3695,36 @@ level up: `a_consis_complete_thm` for the run and the precision, then
 `a_consis_concrete_output_equiv` (§9.1) to move that precision from the
 consistency output to `P_0`.
 
+#### The assembled route, and the ONE piece still missing
+
+1. `skmod` forces `P_0 = □` (both mode-compat relations pin `TI` to the ghost).
+2. `a_sub__infer` gives the run, output `P` at context `Θ_0` — so the two
+   increase conjuncts are `ζ := κ` + `opt_axiom_factor`, as in
+   `a_sub_complete_ghost`.
+3. The DECORATED consistency premise undecorates: `ad_pat_consis_strip_tags`
+   (prop_consis_precise.v:275) turns `Ψ ⨟ Θ ⊢ₛᵃ κR ∼ Q` into
+   `∅ ⨟ Θ ⊢ₛᵃ pskl_to_uskl ⌊κR⌋ˢ ∼ Q`, and `⌊κR⌋ˢ = κ⌊R⌋ˢ = κP` by a one-line
+   commutation.
+4. `a_consis_complete_thm` on `(Θ_0; □; P)` — its other two premises ARE this
+   motive's refinement premises at `P_0 = □`.
+5. `a_consis_hole_p0_output` says the run's output is `P`, so the theorem's
+   precision IS a precision about `P`.
+
+⚠️ **Step 5 lands the precision under the theorem's own `ζ`, not under `κ`.**
+The package gives `a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ`;
+`msubst_compose_id_pskl` collapses the composite on a Θ0-scoped skeleton, and
+`a_inc_equiv_msubst_pskl` then yields `Θ ⊢ κP ≡ˢ ζP`.  What is missing is
+precision transporting along `≡ˢ` in its left argument:
+
+    Θ ⊢ P1 ≡ˢ P2  →  Θ ⨟ Δ ⊢ₚᵣᵃ P2 ⊑ X  →  Θ ⨟ Δ ⊢ₚᵣᵃ P1 ⊑ X
+
+True, and the right lemma — `≡ˢ` unfolds flexible definitions and refinement's
+`__flex_l` / `__flex_r` rows do exactly that — but not a one-liner: `≡ˢ` is an
+equivalence CLOSURE, so the induction must carry both directions at once (an
+`<->`), and its `__flex_def` row needs `a_wf_aenv Θ` for the definition's
+uniqueness and monotypeness.  **That single lemma stands between here and both
+rows**, and it is reusable well beyond them.
+
 #### What the detour did produce, and is worth keeping
 
 - `cex/cex_p7_sskl_precise.v` — the SHORTCUT (precision directly from the

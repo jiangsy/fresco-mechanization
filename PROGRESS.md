@@ -195,6 +195,21 @@ and the context-free `ad_pat_consis_ghost_subject_no_forall` /
 theorems, follow the citation before inventing a lemma.**  Sub-Check is the same
 shape one level up (`a_consis_complete_thm` + `a_consis_concrete_output_equiv`).
 
+**The two rows are now assembled down to ONE missing lemma.**  `skmod` gives
+`P0 = □`; `a_sub__infer` gives the run (output `P` at `Θ0`, so the increase
+conjuncts are `ζ := κ` + `opt_axiom_factor`); the DECORATED consistency premise
+undecorates by `ad_pat_consis_strip_tags` plus a one-line
+`⌊κR⌋ˢ = κ⌊R⌋ˢ` commutation; `a_consis_complete_thm` applies at `(Θ0; □; P)`
+because its other two premises ARE the motive's refinement premises at `P0 = □`;
+and `a_consis_hole_p0_output` makes its precision a precision about `P`.  ⚠️ That
+precision arrives under the theorem's own `ζ`, not under `κ` —
+`a_inc_equiv_msubst_pskl` + `msubst_compose_id_pskl` give `Θ ⊢ κP ≡ˢ ζP`, so
+what is missing is precision TRANSPORTING along `≡ˢ`:
+`Θ ⊢ P1 ≡ˢ P2 → Θ ⨟ Δ ⊢ₚᵣᵃ P2 ⊑ X → Θ ⨟ Δ ⊢ₚᵣᵃ P1 ⊑ X`.  True and reusable
+(`≡ˢ` unfolds definitions; refinement's `__flex_l`/`__flex_r` do exactly that),
+but `≡ˢ` is an equivalence CLOSURE so the induction must carry both directions
+at once, and its `__flex_def` row needs `a_wf_aenv Θ`.
+
 **P7's MOTIVE is LOCKED** — `frost/algo/prop_sub_complete_thm.v`
 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`,
 typechecked; the unresolved subject is spelled `R`, the `uskl` metavariable,
