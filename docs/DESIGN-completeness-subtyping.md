@@ -3098,6 +3098,10 @@ lemma among them.
 **Estimate: a focused session, maybe two** — much smaller than P6-Ss, but not
 an add-on.  P7 opens only after it.
 
+✅ **CLOSED 2026-07-30** — see §7.5.  The estimate held; the sizing above was
+accurate except that the ⚠️ on `guess_join_witness` (below) turned out to be the
+smaller of the two surprises: the bigger one was the `__flex_r` CHASE.
+
 ### 7.4 ⚠️ P6-L IS BLOCKED ON AN ENCODING MISMATCH (found 2026-07-30, before writing any proof)
 
 `a_extract`'s solve premise runs at the WRONG CONTEXT for P6-Ss's output, and
@@ -3173,3 +3177,87 @@ is moot and was not pursued.)
 (§8 (h))** — a mech scoping choice made on a judgment the paper leaves
 scope-free.  There the narrow choice turned out to be provable (via the
 α-stack split) and was KEPT; here the narrow choice looks unprovable.
+### 7.5 P6-L CLOSED (2026-07-30) — **P6 IS COMPLETE**
+
+`a_extract_complete` is `Qed` and axiom-free in
+`frost/algo/prop_look_complete_extract.v`; `make coq` green from clean, 35
+`Print Assumptions` all closed, zero admits.  All five P6 lemmas are done:
+`P6-Cv → P6-Cs → P6-Sv → P6-Ss → P6-L`.  **P7 is now the front.**
+
+**The file's shape**, §1–§10:
+
+| § | content |
+|---|---|
+| §1 | `pskl_all_free`, `pskl_inh_eq_syn_inv`, `pskl_all_ghost_free_mono` — the two paintings agree EXACTLY on ∀-free skeletons, and ∀-free + ghost-free + lc IS a monotype painting |
+| §2 | `a_guess_mono_rename_tvar`, `a_guess_mono_all_of_one` — one instance at a fresh β becomes `a_guess_mono__forall`'s cofinite family |
+| §3 | `ad_refine_syn_hole_l_inv`, `ad_precise_hole_inv_mono` — a ◇ facing the counterpart pins a Θ-scoped MONOTYPE there; this is what makes the θ-extension well-defined |
+| §4 | `ad_refine_syn_all_l_not_mono` — a ∀-headed source never refines to a monotype painting |
+| §5 | ghost-freeness is open-invariant; `uskl_ghost_free_to_pskl`; `a_wf_ptyp_of_wf_pskl_mono`; `ad_refine_syn_rename_delta` / `ad_precise_rename_delta` |
+| §6 | `ad_precise_{arrow,tophole,all}_l_inv` — inversion WITH A REPLAY (the `__flex_r` chase) |
+| §7 | `msubst_pskl_{lookup_congr_ftv,mid_skip}`, `ad_precise_delta_mono`, `a_wf_pskl_rename_delta` |
+| §8 | `a_inc_lookup_ftv`, `msubst_{lc,ftv}_app_wf`, `msubst_pskl_ftv_fresh`, `{a_wf_pskl,ad_precise}_all_of_one` |
+| §9 | `a_guess_ty_witness` — the witness induction |
+| §10 | `a_extract_complete` |
+
+**What the paper's one-line third premise actually costs.**  *"By induction on
+the definition of guess^N(P_s)"* is §9, and it is an induction the OTHER way
+round: P6-L's conclusion is existential in Ξ and the extract output, so nothing
+hands us a guess — `a_guess_ty_witness` BUILDS `a_guess_mono` and the
+metasubstitution extension κ′ at the same time, descending `P_s` on
+`size_pskl`, reading the counterpart's matching piece off the precision premise
+at each node.  Three things that are invisible in the paper:
+
+1. **The `__flex_r` CHASE.**  Precision at a composite source can be concluded
+   by the structural rule OR by `ad_refine_syn__flex_r`, which fires whenever
+   the counterpart is a DEFINED flexible: it swaps the target for that
+   definition's monotype painting and leaves the source untouched.  At the ∀
+   that refutes (§4).  ⚠️ At the ARROW and the ∀◇ **it does not** — κs can turn
+   a flexible into an arrow, so the source's shape does not clash with a
+   monotype painting.  So §6's arrow and ∀◇ lemmas chase the chain and return a
+   REPLAY function that re-applies the chased steps to whatever the caller
+   builds.  This is one-step re-application, NOT transitivity of refinement,
+   which is FALSE (`cex/cex_refine_not_transitive.v`).  The chase terminates on
+   the DERIVATION, so §6's lemmas are inductions on it, not on a size.
+2. **Why the extension is legal.**  `ad_refine_syn__hole`'s fill premise is
+   `Θ ⨟ empty ⊢ₚₛᵃ P` — CLOSED.  So a hole under a binder can never be filled
+   with the bound variable, and κ′'s images are Θ-well-formed monotypes however
+   deep the ∀-nesting goes.  That is the mechanical content of the paper's side
+   remark at tex:2812 ("no quantifier of `⌊ψa⌋ˢ` faces a universal ghost in
+   `P_s`, since all tags are in Ψa").
+3. **Both Δ's move, independently.**  `Δ0` carries `P_s`'s binders (wf), `Δ` the
+   counterpart's (precision).  `a_wf_pskl__all` and `ad_refine_syn__all` each
+   grow their own; the ∀◇ case RESETS `Δ0` to ∅ (`a_wf_pskl__tophole`'s body is
+   wf CLOSED).  Pin them as separate parameters, not one.
+
+**One-instance→cofinite-family, three times.**  The ∀ case runs the IH at ONE
+fresh β and owes cofinite families: guess (§2, with the payload CLOSED over β
+via `close_ptyp_wrt_ptyp`), wf (`a_wf_pskl_all_of_one` + `a_wf_pskl_rename_delta`)
+and precision (`ad_precise_all_of_one` + `ad_precise_rename_delta`).  The
+refinement rename routes through the fill-hygiene `_f` kit:
+`ad_refine_syn_f_rename` wants the renamed name in `F`, and
+`ad_refine_syn_f_fextend_dom` puts it there for free because it is outside
+`dom Θ`.  ⚠️ The ftv-keyed `ad_refine_syn_f_fextend_ftv` would NOT do: β occurs
+in the target `X0^β`, which is the whole point.  Keeping the rename honest also
+needs `β ∉ ftv (κ P)`, which is why the witness statement carries
+`a_inc_lookup_ftv`'s scoping property of the incoming κ as a premise.
+
+**Assembly reused the HOMOGENEOUS-FLEX REORDER KIT** of
+`prop_look_complete_cstr.v` and needed nothing new: `a_extract` emits `Ξc,Ξ'`
+where the natural build order is `Ξ',Ξc`, and both blocks are undefined
+flexibles, so `a_inc_flex_prefix_build`/`_split`, `msubst_pskl_app_swap` and
+`a_wf_pskl_swap_app` cover all four conclusions.  `a_extract`'s emission order
+was deliberately left alone (audit F4's "reversed Ξ orders" is immaterial here,
+and changing it would have churned `test_examples.v`).
+
+**Statement deltas vs the paper — both are the paper's own prose, restored:**
+`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ` (the "ψa is a valid instantiation" premise, which
+`ad_partial_precise_complete` needs) and `Δ ∩ ftv ψa = ∅` (the precision HOLE
+rule's side condition).  As in P6-Ss, the paper's `inc[θ≡θa]{Θ0}{Θ}` is the
+reflexive `a_inc_equiv Θ0 κ κ Θ`: the mech's `a_inc_equiv` is POSITIONAL, so
+"θa agrees with θ on Θ0" is carried instead by the a_inc conclusion exhibiting
+θa as the EXTENSION `κa ++ κ`.
+
+**Housekeeping.**  §1's locally-declared `pskl_ghost_free` Inductive duplicated
+`prop_pat_sub.v`'s Fixpoint of the same name and is gone; the file uses the
+existing one (which also supplies `ptyp_to_pskl_ghost_free` and
+`pskl_ghost_free_open_rec`).

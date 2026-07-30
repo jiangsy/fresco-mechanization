@@ -59,7 +59,8 @@ excluded from the build); mine them when re-proving.
 - ✅ **Theorem: Soundness of subtyping** (`a_sub_sound_thm`, `algo/prop_decorate_key.v`, axiom-free)
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
-- 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.  Look completeness (:2729) — the CONSISTENCY counterparts are done (see section B: P6-Cv, P6-Cs); both are now UNBLOCKED (P6-Ss's crux delegates to P6-Sv, which is closed) and are the next front.  When unblocked they should reuse P6-Cs's ∀-binder kit, ftv transports and `a_looksub_lookeq_rename_tvar`
+- 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
+- ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete` in `frost/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
 
@@ -77,7 +78,97 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-30 (latest) — ⭐⭐⭐ P6-Ss CLOSED: Sub-ForallR done, the mechanization is admit-free again
+## 2026-07-30 (latest) — ⭐⭐⭐ P6-L CLOSED — **P6 IS COMPLETE** (all five lemmas); P7 opens
+
+`make coq` green from clean, 35 `Print Assumptions` all closed under the global
+context, zero `admit` / `Admitted` in `frost/`.  `a_extract_complete`
+(subtyping-proofs.tex:2730, `frost/algo/prop_look_complete_extract.v`) is `Qed`
+and axiom-free, and with it **P6's five lemmas are all closed**:
+`P6-Cv → P6-Cs → P6-Sv → P6-Ss → P6-L`.
+
+**The encoding fix that had to come first.**  `a_extract` now carries a context
+and runs its solve at `Ξ ++ Θ0`:
+
+    a_extract__solve : P ≼[α,m] P' ⤳ Ξ ⨾ 𝒞 -> (Ξ ++ Θ0) ⊩ 𝒞 ⨾ □ ⤳ Q
+                       -> a_guess NM Q Ξ' Q' -> Θ0 ⊢ P ⊳[NM,α,m] P' ⤳ (Ξ++Ξ') ↪ Q'
+
+The old `Ξ`-only reading made P6-L UNPROVABLE.  `a_solve_eq__flex_r` is the only
+context-sensitive rule in the whole solve cluster, `Ξ` alone hides Θ0's
+flexibles, and P6-Ss delivers its solve at `(Ξc ++ Θ0)`.  The paper's solve and
+guess judgments are CONTEXT-FREE (`full-algo-spec.tex:1216-1375` — there `α̂` is
+a syntactically distinct metavariable class), so this is a faithfulness FIX, not
+a design change; it is the same unfaithful narrowing already corrected once at
+that very rule.  Soundness was unaffected — `a_extract_decls` reads Ξ, not the
+solve, and `a_extract_decorate`'s solve lemmas quantify Θ universally.
+
+**The proof, and where the paper's one-liner hides work.**  The paper's
+`(a)`–`(g)` are a direct assembly: P6-Ss at `Pi := □` / `Ψi := ∅` (whose
+precision premise IS the precision hole rule), then P5b-i
+(`ad_partial_precise_complete`) upgrading `⊑ᵖ[Ψa]` to plain `⊑ ⌊ψa⌋ˢ`.  The work
+is the third premise — the paper's *"by induction on the definition of
+guess^N(P_s)"*:
+
+- **We CHOOSE the guess.**  P6-L's conclusion is existential in Ξ and the
+  extract output, so `a_guess_ty_witness` BUILDS `a_guess_mono` and the
+  metasubstitution extension κ′ SIMULTANEOUSLY, descending `P_s` on
+  `size_pskl`, and reads the counterpart's matching piece off the precision
+  premise at each step.
+- ⚠️ **`guess_join_witness` does NOT serve P6-L**, contrary to what DESIGN §7's
+  table said: it is CONSISTENCY-driven and needs a MONOTYPE counterpart, while
+  guess^TY passes ∀ through and P6-L's counterpart `⌊ψa⌋ˢ` is a general
+  ghost-free skeleton.
+- **The `__flex_r` CHASE is the real hidden case.**  Three rules can conclude
+  precision at a composite source, and `ad_refine_syn__flex_r` fires whenever
+  the counterpart is a DEFINED flexible — replacing the target by that
+  definition's monotype painting and leaving the source alone.  At the ∀ that
+  chain REFUTES (`ad_refine_syn_all_l_not_mono`: a ∀-headed source never refines
+  to a monotype painting — its `__all` case dies on the target equation for
+  EVERY monotype shape, `ptyp_all` included, because that painting is
+  `bskl_all_SYN`).  At the ARROW and the ∀◇ it does NOT refute — κs can turn a
+  flexible into an arrow — so `ad_precise_arrow_l_inv` /
+  `ad_precise_tophole_l_inv` chase it and return a REPLAY function that
+  re-applies the chased steps.  (One-step re-application, NOT transitivity of
+  refinement, which is false: `cex/cex_refine_not_transitive.v`.)  The chase
+  terminates on the DERIVATION, so those are inductions on it, not on a size.
+- **Why the θ-extension is well-defined at all:** `ad_refine_syn__hole`'s fill
+  premise is `Θ ⨟ empty ⊢ₚₛᵃ P` — CLOSED — so a hole under a binder is never
+  filled with the bound variable, and κ′'s images stay Θ-well-formed however
+  deep the ∀-nesting goes.  That is what makes them legal metasubstitution
+  images, and it removes the obvious ∀-case worry.
+- **BOTH Δ's move.**  `Δ0` carries `P_s`'s binders (wf) and `Δ` the
+  counterpart's (precision); `a_wf_pskl__all` and `ad_refine_syn__all` each grow
+  their own, and the ∀◇ case RESETS `Δ0` to ∅ (`a_wf_pskl__tophole`'s body is wf
+  CLOSED).  They are independent parameters of the induction.
+- **One-instance→cofinite-family, three times.**  The ∀ case runs the IH at one
+  fresh β and must hand back cofinite families: for the guess (§2's
+  `a_guess_mono_all_of_one`, with the payload CLOSED over β), for wf
+  (`a_wf_pskl_all_of_one` + a new `a_wf_pskl_rename_delta`) and for precision
+  (`ad_precise_all_of_one` + `ad_precise_rename_delta`).  The refinement rename
+  routes through the fill-hygiene `_f` kit: `ad_refine_syn_f_rename` wants the
+  renamed name in `F`, and `ad_refine_syn_f_fextend_dom` puts it there for free
+  because it is outside `dom Θ`.  ⚠️ The ftv-keyed `ad_refine_syn_f_fextend_ftv`
+  would NOT do — β occurs in the target `X0^β`, which is the whole point.
+- **Assembly used the existing HOMOGENEOUS-FLEX REORDER KIT**
+  (`prop_look_complete_cstr.v`): `a_extract` emits `Ξc,Ξ'` where the natural
+  build order is `Ξ',Ξc`.  Both blocks are undefined flexibles, so the order is
+  immaterial — but not syntactically so, and
+  `a_inc_flex_prefix_build/_split` + `msubst_pskl_app_swap` +
+  `a_wf_pskl_swap_app` are exactly the four moves needed.  No new reorder
+  machinery, and `a_extract`'s emission order was left alone.
+
+**Statement deltas vs the paper** (both are the paper's own prose, restored):
+`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ` (the "ψa is a valid instantiation" premise, which P5b-i
+needs) and `Δ ∩ ftv ψa = ∅` (the precision hole rule's side condition).  As in
+P6-Ss, the paper's `inc[θ≡θa]{Θ0}{Θ}` is the reflexive `a_inc_equiv Θ0 κ κ Θ`,
+with the real content in the a_inc conclusion exhibiting θa as `κa ++ κ`.
+
+**Housekeeping.**  §1's locally-defined `pskl_ghost_free` Inductive was a
+DUPLICATE of `prop_pat_sub.v`'s Fixpoint and is gone; the file now uses the
+existing one (which also brings `ptyp_to_pskl_ghost_free` and
+`pskl_ghost_free_open_rec`).  `README.v` gained Check + `Print Assumptions` rows
+for P6-Sv, P6-Ss and P6-L.
+
+## 2026-07-30 — ⭐⭐⭐ P6-Ss CLOSED: Sub-ForallR done, the mechanization is admit-free again
 
 `make coq` green from clean.  `a_looksub_solve_complete_gen` and the paper's
 premise-free `a_looksub_solve_complete` are both `Qed` and

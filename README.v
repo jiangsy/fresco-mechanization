@@ -23,6 +23,9 @@ Require Import src.frost.algo.prop_decorate_key.
 Require Import src.frost.algo.prop_sub_complete.
 Require Import src.frost.algo.prop_look_complete_var.
 Require Import src.frost.algo.prop_look_complete_cstr.
+Require Import src.frost.algo.prop_look_complete_sub_var.
+Require Import src.frost.algo.prop_look_complete_sub_cstr.
+Require Import src.frost.algo.prop_look_complete_extract.
 
 (* ===================================================================== *)
 (*  full-decl-proofs.tex / app:syntax-directed                            *)
@@ -119,6 +122,23 @@ Check ad_pat_sub_precise_upre.
 Check a_lookeq_solve_complete.
 Check a_solve_eq_complete_var.
 
+(* Lemma [Completeness of subtyping constraint collection and solving]
+   (subtyping-proofs.tex:1696) and its variable case — P6-Ss / P6-Sv.  BOTH are
+   REPAIRED statements: the paper's P6-Sv is FALSE (machine-checked counter-
+   example algo/cex/cex_p6sv_forall_flex.v), and P6-Ss's Sub-ForallR needs a
+   mode-guarded ftv-𝒞 disjunction because the sub-side analogue of
+   [ad_pat_consis_target_ftv] is FALSE (algo/cex/cex_p6ss_sub_target_ftv.v).
+   See docs/PAPER-GAPS.md. *)
+Check a_looksub_solve_complete.
+Check a_solve_sub_complete_var.
+
+(* Lemma [Look completeness] (subtyping-proofs.tex:2730) — P6-L, the last of
+   P6's five lemmas.  Wraps P6-Ss at [Pi = □] / [Ψi = ∅], upgrades ⊑ᵖ to ⊑ via
+   [ad_partial_precise_complete] (P5b-i) and supplies the guess^N step — at TY
+   by building [a_guess_mono] and the metasubstitution extension at once
+   ([a_guess_ty_witness]). *)
+Check a_extract_complete.
+
 (* ===================================================================== *)
 (*  Assumption audit — all must be "Closed under the global context"      *)
 (* ===================================================================== *)
@@ -144,3 +164,6 @@ Print Assumptions a_sub_sound_thm.
 Print Assumptions ad_pat_sub_precise_upre.
 Print Assumptions a_solve_eq_complete_var.
 Print Assumptions a_lookeq_solve_complete.
+Print Assumptions a_solve_sub_complete_var.
+Print Assumptions a_looksub_solve_complete.
+Print Assumptions a_extract_complete.
