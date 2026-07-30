@@ -3765,24 +3765,48 @@ to an INHERITED painting, a bare ghost, or a variable; `is_sskl` then leaves no 
 anywhere.  It is CONTEXT-FREE, which is the point — the threading can use it
 without moving the consistency derivation between Θ and Δ.
 
-#### What the threaded induction still needs
+#### The threaded induction — route settled, kit complete except ONE row
 
-Two of the three original obstacles are gone.  Induct on the **refinement**, not
-on consistency: refinement's `__all` descends at `add α Δ` with Θ FIXED, which is
-exactly the goal's discipline, so no strip is needed there at all.  And the
-consistency derivation's context can be DECOUPLED (state it at an arbitrary Θc),
-because it is only ever read for syntactic facts — the erasure equations
-`⌊R⌋ˢ = P`, `⌊Q_b⌋ = Q` are what carry the correspondence.
+The route, settled by BUILDING the transports rather than guessing: induct on the
+**consistency** derivation, carry the SUBJECT-refinement premise, and at each ∀
+row
 
-One row still does not line up: **`__tophole_remove`**.  Refinement takes
-`∀◇.P0 ⊳ Q` from `P0 ⊳ Q`, keeping the target; consistency's matching rows
-`__tophole` / `__topholeg` strip a `∀◇` off the TARGET too, so their premise sits
-at `(R0, Q')` where the IH wants `(R0, ∀◇.Q')`.  Only `__tophole_drop` hands the
-target over unchanged.  So the threading needs either a consistency-side
-"re-wrap the target" step or a hypothesis that tolerates the extra `∀◇`.
-**Settle that before writing the induction** — three improvised attempts at this
-lemma have each turned up a new row, and the pattern is that guessing costs more
-than measuring.
+| step | lemma |
+|---|---|
+| invert the refinement's `__all` | → premise at `Θ ⨟ add α Δ` |
+| grow the hygiene set | `ad_refine_pskl_f_fgrow` → at `add α F` |
+| weaken the context | `ad_refine_pskl_f_weaken_tvar` → at `(α:tvar),Θ` |
+| run the IH | → precision at `(α:tvar),Θ` |
+| send the binder back to Δ | `ad_refine_syn_f_strip` (α ∈ `add α F` ∩ `add α Δ`) |
+| shrink the hygiene set | `ad_refine_syn_f_fmono` → back at `F` |
+
+✅ **All of these now exist** — `ad_refine_pskl_f_fgrow` and
+`ad_refine_pskl_f_weaken_tvar` / `a_wf_pskl_weaken_tvar` landed alongside the
+reassocs (Qed, axiom-free).  F-GROWTH is the piece that was missing and is the
+one worth understanding: `_fmono` only ever SHRINKS `F`, but every ∀ row opens a
+fresh binder and then wants to strip it, so it must first put that binder INTO
+`F`.  That is sound for a binder the context does not know, because a ghost fill
+is well formed at `Θ ⨟ ∅` and so its free variables live in `dom Θ`
+(`a_wf_pskl_ftv_tvarish`).
+
+The ghost rows take their fill's well-formedness from the REFINEMENT premise —
+Θ-scoped, so `fgrow` applies — rather than from consistency, whose ∀ rule puts
+the binder INTO Θ, after which a fill may legitimately mention it.  That is
+exactly what `cex/cex_p7_sskl_precise.v` exploits, so this is the premise doing
+the work.  ∀-freeness of the fill comes from
+`ad_pat_consis_ghost_subject_no_forall`.
+
+⚠️ **ONE ROW IS STILL OPEN**, and it is now small and exactly stated.  At
+consistency's `__tophole` / `__topholeg` the goal is `∀◇.⌊R0⌋ ⊑ ∀◇.⌊Q'⌋`, which
+`ad_refine_syn_f__tophole_keep` reduces to the IH at `(R0, Q')` with the guard
+supplied by the target's wf.  But the refinement premise need not decompose the
+same way: inverting it at `(∀◇.⌊R0⌋, ∀◇.⌊Q'⌋)` gives `__tophole_keep` (which IS
+the premise the IH wants) OR `__tophole_remove` (which gives `⌊R0⌋ ⊳ ∀◇.⌊Q'⌋`).
+In the second case neither judgment can re-wrap — consistency has no rule adding
+a `∀◇` to the COUNTERPART without a matching one on the subject.  So the
+threading needs either a NORMALISATION of the refinement premise at `∀◇` (prefer
+`__tophole_keep` wherever the target has one) or an IH tolerating the extra
+`∀◇`.
 
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 

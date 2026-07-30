@@ -209,14 +209,23 @@ puts its binder in Δ, never in Θ.)  ✅ Plus the CONTEXT-FREE ghost-row fact
 `ad_pat_consis_ghost_subject_no_forall` (`⌊R⌋ˢ = □` + `is_sskl Q` ⟹ `⌊Q⌋`
 ∀-free), which is what the threading needs where the two paintings can disagree.
 
-Two of the three obstacles to the threaded induction are now gone: induct on the
-REFINEMENT (its `__all` descends at `add α Δ` with Θ fixed — the goal's own
-discipline, no strip needed) and DECOUPLE the consistency derivation's context
-(it is only read for syntactic facts).  One row still does not line up,
-`__tophole_remove`: refinement keeps the target while consistency's
-`__tophole` / `__topholeg` strip a `∀◇` off it too, so their premise sits at
-`(R0, Q')` where the IH wants `(R0, ∀◇.Q')`.  That needs a design pass, not
-another improvised row.
+✅ **The threading's transport kit is COMPLETE** — `ad_refine_pskl_f_fgrow`
+plus `ad_refine_pskl_f_weaken_tvar` / `a_wf_pskl_weaken_tvar` (Qed).  F-GROWTH
+is the piece that was missing: `_fmono` only SHRINKS `F`, but every ∀ row opens a
+fresh binder and then wants to strip it, so it must first put that binder INTO
+`F` — sound for a binder the context does not know, since a ghost fill is wf at
+`Θ ⨟ ∅` and its free variables therefore live in `dom Θ`.  The route is settled
+(induct on CONSISTENCY, carry the subject-refinement premise, and at each ∀ row:
+invert `__all` → `fgrow` → `weaken_tvar` → IH → `ad_refine_syn_f_strip` →
+`fmono`), and the ghost rows take their fill's wf from the REFINEMENT premise,
+which is the premise doing the work.
+
+⚠️ **One row is still open**, now small and exactly stated: at consistency's
+`__tophole` / `__topholeg` the refinement premise need not decompose the same
+way — inverting it gives `__tophole_keep` (the premise the IH wants) OR
+`__tophole_remove` (`⌊R0⌋ ⊳ ∀◇.⌊Q'⌋`), and in the second case neither judgment
+can re-wrap.  Needs a normalisation of the refinement premise at `∀◇`, or an IH
+tolerating the extra `∀◇`.
 
 ## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 

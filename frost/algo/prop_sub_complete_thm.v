@@ -566,21 +566,115 @@ Qed.
 Print Assumptions ad_pat_consis_ghost_subject_no_forall.
 
 (* ===================================================================== *)
-(*  WHERE THE THREADED INDUCTION STILL NEEDS A DESIGN PASS                *)
+(*  F-GROWTH — the other half of what the strip needs                     *)
 (*                                                                        *)
-(*  With the transports above and this ghost-row fact, inducting on the    *)
-(*  REFINEMENT lines up better than inducting on consistency: refinement's *)
-(*  [__all] descends at [add α Δ] with Θ FIXED, which is exactly the       *)
-(*  goal's discipline, so no strip is needed there at all.  Decoupling the *)
-(*  consistency derivation's context (it is only ever read for SYNTACTIC   *)
-(*  facts) removes the second obstacle.                                    *)
+(*  [ad_refine_syn_f_strip] moves a Θ-binder into Δ only when that binder  *)
+(*  is in [F], i.e. forbidden in ghost fills.  Every ∀ row of the threaded *)
+(*  induction opens a FRESH binder and then wants to strip it, so it must  *)
+(*  first put that binder into [F] — and [_fmono] only ever SHRINKS F.     *)
 (*                                                                        *)
-(*  One row still does not line up: [__tophole_remove].  Refinement takes  *)
-(*  [∀◇.P0 ⊳ Q] from [P0 ⊳ Q], keeping the target; consistency's matching  *)
-(*  rows [__tophole] / [__topholeg] STRIP a [∀◇] off the target too, so    *)
-(*  their premise is at [(R0, Q')] where the IH wants [(R0, ∀◇.Q')].  Only *)
-(*  [__tophole_drop] hands over the target unchanged.  So the threading    *)
-(*  needs either a consistency-side "re-wrap the target" step or a         *)
-(*  strengthened hypothesis that tolerates the extra [∀◇] — settle that    *)
-(*  before writing the induction, and do not improvise it row by row.      *)
+(*  Growing F is sound for a binder the context does not know: a ghost     *)
+(*  fill is well formed at [Θ ⨟ ∅], so its free variables live in [dom Θ]  *)
+(*  ([a_wf_pskl_ftv_tvarish]) and a fresh α is not among them.  This is    *)
+(*  exactly the invariant the SUBJECT-refinement premise carries and the   *)
+(*  consistency derivation does not — consistency's own ∀ rule puts the    *)
+(*  binder INTO Θ, after which a fill may legitimately mention it, which   *)
+(*  is what [cex/cex_p7_sskl_precise.v] exploits.                          *)
+(* ===================================================================== *)
+
+Lemma a_wf_pskl_ftv_dom : forall Θ P,
+  Θ ⨟ empty ⊢ₚₛᵃ P ->
+  forall α, α `in` ftvar_in_pskl P -> α `in` dom Θ.
+Proof.
+  intros Θ P Hwf α Hα.
+  destruct (@a_wf_pskl_ftv_tvarish _ _ _ Hwf α Hα) as [HΔ | Htv];
+    [ clear - HΔ; fsetdec | ].
+  destruct Htv as [Hb | [Hb | [τ Hb]]]; eapply binds_In; exact Hb.
+Qed.
+
+Lemma ad_refine_pskl_f_fgrow : forall F Θ Δ P Q,
+  ad_refine_pskl_f F Θ Δ P Q ->
+  forall α, α `notin` dom Θ ->
+  ad_refine_pskl_f (add α F) Θ Δ P Q.
+Proof.
+  intros F Θ Δ P Q H; induction H; intros α0 Hα0.
+  - (* unit *) apply ad_refine_pskl_f__unit.
+  - (* var *) apply ad_refine_pskl_f__var; assumption.
+  - (* arrow *) apply ad_refine_pskl_f__arrow; auto.
+  - (* all : Θ does not move *)
+    apply ad_refine_pskl_f__all with (L := L); intros α Hα; auto.
+  - (* hole : the fill is Θ-scoped, and α0 is not in Θ *)
+    apply ad_refine_pskl_f__hole; [ | exact H0 ].
+    apply inter_empty_pointwise; intros β Hβ.
+    destruct (AtomSetProperties.In_dec β (ftvar_in_pskl Q)) as [Hin | Hni].
+    + assert (Hdom : β `in` dom Θ) by (eapply a_wf_pskl_ftv_dom; eassumption).
+      assert (Hne : β <> α0) by (intros ->; clear - Hdom Hα0; fsetdec).
+      clear - H Hin Hne Hβ; fsetdec.
+    + clear - Hni Hβ; fsetdec.
+  - (* tophole_remove *) apply ad_refine_pskl_f__tophole_remove; auto.
+  - (* tophole_fill : ITS binder is picked apart from α0 *)
+    apply ad_refine_pskl_f__tophole_fill
+      with (L := L `union` singleton α0 `union` dom Θ);
+      intros α Hα.
+    apply H0; [ clear - Hα; fsetdec | simpl; clear - Hα Hα0; fsetdec ].
+  - (* tophole_keep *) apply ad_refine_pskl_f__tophole_keep; auto.
+  - (* flex_l *) eapply ad_refine_pskl_f__flex_l; [ exact H | auto ].
+  - (* flex_r *) eapply ad_refine_pskl_f__flex_r; [ exact H | auto ].
+Qed.
+
+Print Assumptions ad_refine_pskl_f_fgrow.
+
+(** …and the plain Θ-weakening the same rows need, which falls out of the
+    reassoc above once the [remove] is absorbed by Δ-monotonicity. *)
+Corollary ad_refine_pskl_f_weaken_tvar : forall F Θ Δ P Q,
+  ad_refine_pskl_f F Θ Δ P Q ->
+  forall α, ad_refine_pskl_f F ((α ~ abind_tvar) ++ Θ) Δ P Q.
+Proof.
+  intros F Θ Δ P Q H α.
+  eapply ad_refine_pskl_f_delta_mono;
+    [ apply (ad_refine_pskl_f_reassoc H α) | clear; fsetdec ].
+Qed.
+
+Corollary a_wf_pskl_weaken_tvar : forall Θ Δ P,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  forall α, ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ₚₛᵃ P.
+Proof.
+  intros Θ Δ P H α.
+  eapply a_wf_pskl_delta_mono;
+    [ apply (a_wf_pskl_reassoc H α) | clear; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  THE THREADED INDUCTION — the kit is complete except ONE ROW           *)
+(*                                                                        *)
+(*  Route (settled by building the transports, not by guessing): induct on *)
+(*  the CONSISTENCY derivation, carry the SUBJECT-refinement premise, and  *)
+(*  at each ∀ row                                                         *)
+(*                                                                        *)
+(*    · invert the refinement's [__all]        → premise at [Θ ⨟ add α Δ]  *)
+(*    · [ad_refine_pskl_f_fgrow]               → at [add α F]              *)
+(*    · [ad_refine_pskl_f_weaken_tvar]         → at [(α:tvar),Θ]           *)
+(*    · run the IH                              → precision at [(α:tvar),Θ] *)
+(*    · [ad_refine_syn_f_strip]  (α ∈ add α F ∩ add α Δ)  → back at Θ      *)
+(*    · [ad_refine_syn_f_fmono]                → back at F                 *)
+(*                                                                        *)
+(*  The ghost rows take their fill's well-formedness from the REFINEMENT   *)
+(*  premise (Θ-scoped, so [fgrow] applies) rather than from consistency —  *)
+(*  consistency's ∀ rule puts the binder INTO Θ, after which a fill may    *)
+(*  legitimately mention it, and that is precisely what                    *)
+(*  [cex/cex_p7_sskl_precise.v] exploits.  ∀-freeness of the fill comes    *)
+(*  from [ad_pat_consis_ghost_subject_no_forall].                          *)
+(*                                                                        *)
+(*  ONE ROW IS STILL OPEN, and it is small and exactly stated.  At         *)
+(*  consistency's [__tophole] / [__topholeg] the goal is                   *)
+(*  [∀◇.⌊R0⌋ ⊑ ∀◇.⌊Q'⌋], which [ad_refine_syn_f__tophole_keep] reduces to  *)
+(*  the IH at [(R0, Q')] — with the guard supplied by the target's wf.     *)
+(*  The refinement premise, however, need not decompose the same way:      *)
+(*  inverting it at [(∀◇.⌊R0⌋, ∀◇.⌊Q'⌋)] gives [__tophole_keep] (which IS  *)
+(*  the premise the IH wants) OR [__tophole_remove] (which gives           *)
+(*  [⌊R0⌋ ⊳ ∀◇.⌊Q'⌋] instead).  In the second case neither judgment can    *)
+(*  re-wrap: consistency has no rule adding a [∀◇] to the COUNTERPART      *)
+(*  without a matching one on the subject.  So the threading needs either  *)
+(*  a normalisation of the refinement premise at ∀◇ (prefer [__tophole_    *)
+(*  keep] where the target has one) or an IH tolerating the extra [∀◇].    *)
 (* ===================================================================== *)
