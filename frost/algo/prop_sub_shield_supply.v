@@ -2,7 +2,7 @@
     [sub_shield] premise at P7b's Sub-ForallL
     (docs/DESIGN-completeness-subtyping.md §9.0).
 
-    P6-L ([a_extract_complete]) carries the P6-Sv/P6-Ss repair premise
+    P6-L ([a_extract_complete_gen]) carries the P6-Sv/P6-Ss repair premise
     [sub_shield Θ0 Ψa ∅ P0 ψa], which cannot be dropped — the paper's P6-Sv
     WITHOUT it is machine-checked FALSE (cex/cex_p6sv_forall_flex.v) — so P7
     must SUPPLY it.  Unfolding [sub_shield] at Δρ = ∅, the hard leaf is a RAW

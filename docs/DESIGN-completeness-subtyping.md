@@ -169,7 +169,7 @@ form against how ForallL builds `refi`.)
 | **P5c** | `ad_pat_sub_precise_subst` | precision-substitution (1664) | **fuel-preserving** | induction on `ad_pat_sub_n`; uses P5b's precision to rule out mismatch |
 | **P6a** | `a_solve_complete_var` | complete-cc-solving-var (1697) | height IH | induction on `ad_pat_sub_n` deriv; assign-walk / increment-transformer |
 | **P6b** | `a_looksolve_complete` | complete-cc-solving (2203) | via P6a | wraps P6a at `Pi=Hole`, `Ψi=∅` |
-| **P6c** | `a_extract_complete` | complete-look (2730) | — | P6b + P5b + guess^TY sub-induction = `guess_join_witness` pattern |
+| **P6c** | `a_extract_complete_gen` | complete-look (2730) | — | P6b + P5b + guess^TY sub-induction = `guess_join_witness` pattern |
 | **P7a** | `a_sub_flex_complete` | complete-flex (2835) | `lex(n,|Ξ|)` mutual | assign/unify walk recipes (mid-strip/insert) |
 | **P7b** | `a_sub_complete_gen` | thm generalized (3050) | `lex(n,|Ψ|)` | mutual w/ P7a; cases → `a_consis_complete_thm` [Qed], P6c, P7a |
 | **P7c** | `a_sub_complete_thm` | thm (algorithmic.tex:1446) | — | instantiate `S=P`, `Ψ=∅`, `n` via `_to_n` |
@@ -194,7 +194,7 @@ cleanest self-contained first Qed — start there to validate the
   Arrow cases.  Its 3-premise form (join + P0-fill + **subject
   refinement**) is why our motive has the third premise.
 - `guess_join_witness` increment-transformer (join file) — the
-  guess^TY construction in `a_extract_complete`.
+  guess^TY construction in `a_extract_complete_gen`.
 - assign/unify walk recipes (closed unify/assign cases,
   `remech-complete-mu-bundle`) — the Flex-Solve/Assign/Depend/Skip cases
   of `a_sub_flex_complete`.
@@ -1849,7 +1849,7 @@ hole / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   build when P7b's ForallL constructs its pair); (ii) the `_n → _g`
   tag-renaming freshening bridge (only P7c consumes it).  NEXT: **P6**
   (`a_solve_complete_var` / `a_looksolve_complete` /
-  `a_extract_complete`) — remember the Infer/Check cases must re-route
+  `a_extract_complete_gen`) — remember the Infer/Check cases must re-route
   through `consis_complete`/`a_consis_complete_thm` (the paper's
   consistency-side `-var` lemma was never mechanized; the μ-bundle
   route replaced it).
@@ -2061,7 +2061,7 @@ inductions.  P6 therefore has FIVE lemmas, in dependency order:
 | P6-Cs | `a_lookeq_solve_complete` | consistency-proofs 921 | `a_lookeq` + `a_solve_cstr`-per-constraint | ad_pat_consis of `(κS)[ψa/α]` |
 | P6-Sv | `a_solve_sub_complete_var` | subtyping-proofs 1697 | `a_solve_sub` | `ad_pat_sub_g` of ρ(ψa) (fuel rides) |
 | P6-Ss | `a_looksub_solve_complete` | subtyping-proofs 2203 | `a_looksub` + `a_solve_cstr` | `ad_pat_sub_g` of `(κS)[ψa/α]` |
-| P6-L | `a_extract_complete` | subtyping-proofs 2730 | `a_extract` + plain precision | wraps P6-Ss; `ad_partial_precise_complete` upgrades ⊑ᵖ to ⊑; the TY guess needs a NEW sub-induction — see §7.3 |
+| P6-L | `a_extract_complete_gen` | subtyping-proofs 2730 | `a_extract` + plain precision | wraps P6-Ss; `ad_partial_precise_complete` upgrades ⊑ᵖ to ⊑; the TY guess needs a NEW sub-induction — see §7.3 |
 
 Existing support (audited, all Qed): prop_looksub.v has decls/ftv/
 absent-nil/subst-stable/rename-var for `a_looksub`/`a_lookeq` +
@@ -3179,7 +3179,7 @@ scope-free.  There the narrow choice turned out to be provable (via the
 α-stack split) and was KEPT; here the narrow choice looks unprovable.
 ### 7.5 P6-L CLOSED (2026-07-30) — **P6 IS COMPLETE**
 
-`a_extract_complete` is `Qed` and axiom-free in
+`a_extract_complete_gen` is `Qed` and axiom-free in
 `frost/algo/prop_look_complete_extract.v`; `make coq` green from clean, 35
 `Print Assumptions` all closed, zero admits.  All five P6 lemmas are done:
 `P6-Cv → P6-Cs → P6-Sv → P6-Ss → P6-L`.  **P7 is now the front.**
@@ -3197,7 +3197,7 @@ scope-free.  There the narrow choice turned out to be provable (via the
 | §7 | `msubst_pskl_{lookup_congr_ftv,mid_skip}`, `ad_precise_delta_mono`, `a_wf_pskl_rename_delta` |
 | §8 | `a_inc_lookup_ftv`, `msubst_{lc,ftv}_app_wf`, `msubst_pskl_ftv_fresh`, `{a_wf_pskl,ad_precise}_all_of_one` |
 | §9 | `a_guess_ty_witness` — the witness induction |
-| §10 | `a_extract_complete` |
+| §10 | `a_extract_complete_gen` |
 
 **What the paper's one-line third premise actually costs.**  *"By induction on
 the definition of guess^N(P_s)"* is §9, and it is an induction the OTHER way

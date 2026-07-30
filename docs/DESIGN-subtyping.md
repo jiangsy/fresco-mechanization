@@ -438,7 +438,7 @@ assign-walk and guess-witness recipes).
 | precision-substitution | `ad_pat_sub_precise_subst` (height-indexed) | P5 |
 | complete-constraint-collection-solving-var | `a_solve_complete_var` | P6 |
 | complete-constraint-collection-solving | `a_looksolve_complete` | P6 |
-| complete-look | `a_extract_complete` | P6 |
+| complete-look | `a_extract_complete_gen` | P6 |
 | complete-flex-subtyping | `a_sub_flex_complete` | P7 |
 | thm:sound-subtyping | `a_sub_sound_thm` | P3+P4 |
 | thm:complete-subtyping | `a_sub_complete_thm` | P7 |

@@ -1,4 +1,4 @@
-(** P6-L — COMPLETENESS OF LOOK  [a_extract_complete]
+(** P6-L — COMPLETENESS OF LOOK  [a_extract_complete_gen]
     (paper [lemma:complete-look], subtyping-proofs.tex:2730).
 
     [a_extract] has ONE rule, so P6-L's shape is fixed:
@@ -1114,7 +1114,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §10  P6-L — [a_extract_complete]  (paper [lemma:complete-look])        *)
+(*  §10  P6-L — [a_extract_complete_gen]  (paper [lemma:complete-look])        *)
 (*                                                                        *)
 (*  The assembly the paper describes at tex:2755-2833, in its order:       *)
 (*                                                                        *)
@@ -1138,7 +1138,11 @@ Qed.
 (*  conclusion exhibiting θa as the EXTENSION [κa ++ κ].                   *)
 (* ===================================================================== *)
 
-Theorem a_extract_complete :
+(** P6-L, GENERALIZED in Δ.  The paper-facing statement is the Δ = ∅ corollary
+    [a_extract_complete] at the end of the file — same convention as
+    P6-Cs / P6-Ss ([a_lookeq_solve_complete_gen] / [a_lookeq_solve_complete],
+    [a_looksub_solve_complete_gen] / [a_looksub_solve_complete]). *)
+Theorem a_extract_complete_gen :
   forall n NM M Θ0 Θ κ Δ Ψa ψa Q P P0 R' α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -1274,7 +1278,7 @@ Proof.
     exact Hpre.
 Qed.
 
-Print Assumptions a_extract_complete.
+Print Assumptions a_extract_complete_gen.
 
 (* ===================================================================== *)
 (*  §11  THE Δ-HYGIENE PREMISES ABSORB AT Δ = ∅                            *)
@@ -1294,7 +1298,10 @@ Print Assumptions a_extract_complete.
 (*  (docs/WF-SIDE-CONDITIONS.md), and α's freshness is Barendregt.         *)
 (* ===================================================================== *)
 
-Corollary a_extract_complete_closed :
+(** P6-L — THE PAPER'S STATEMENT ([lemma:complete-look]).  Use THIS one unless
+    you are threading a non-empty Δ down from an enclosing precision
+    derivation. *)
+Corollary a_extract_complete :
   forall n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -1326,7 +1333,7 @@ Proof.
   intros n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
          Htags Hdisj Hwfψ Hshield Hsubty HwfSubj Hrefine.
-  eapply a_extract_complete;
+  eapply a_extract_complete_gen;
     [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HmodSK | exact HmodTY
     | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeR
     | exact HlcR | exact Htags | exact Hdisj
@@ -1336,4 +1343,4 @@ Proof.
     | exact Hshield | exact Hsubty | exact HwfSubj | exact Hrefine ].
 Qed.
 
-Print Assumptions a_extract_complete_closed.
+Print Assumptions a_extract_complete.

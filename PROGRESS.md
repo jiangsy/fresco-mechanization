@@ -60,7 +60,7 @@ excluded from the build); mine them when re-proving.
 - ✅ Complete partial precision (`algo/prop_sub_complete.v` P5b, lemma:partial-precision-complete); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre`, same file — P5)
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
 - 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
-- ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete` in `frost/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
+- ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete_gen` in `frost/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
 - ⬜ Completeness of flexible-variable subtyping
 - ⬜ Theorem: Completeness and optimality of subtyping
 
@@ -82,7 +82,7 @@ excluded from the build); mine them when re-proving.
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.
 
-**`a_extract_complete_closed`** answers "can P6-L's extra premises be absorbed?".
+**`a_extract_complete`** answers "can P6-L's extra premises be absorbed?".
 The two Δ-hygiene premises can, and now are: `delta_def_fresh Δ Θ` and
 `Δ ∩ ftv ψa = ∅` are vacuous at Δ = ∅, which is where every consumer enters (Δ
 tracks the counterpart's ∀-binders and grows only inside the precision
@@ -191,7 +191,7 @@ That is the pipeline invariant, and it is the last thing task 0 owes.  DESIGN
 ## 2026-07-30 — ⭐⭐⭐ P6-L CLOSED — **P6 IS COMPLETE** (all five lemmas); P7 opens
 
 `make coq` green from clean, 35 `Print Assumptions` all closed under the global
-context, zero `admit` / `Admitted` in `frost/`.  `a_extract_complete`
+context, zero `admit` / `Admitted` in `frost/`.  `a_extract_complete_gen`
 (subtyping-proofs.tex:2730, `frost/algo/prop_look_complete_extract.v`) is `Qed`
 and axiom-free, and with it **P6's five lemmas are all closed**:
 `P6-Cv → P6-Cs → P6-Sv → P6-Ss → P6-L`.
@@ -286,7 +286,7 @@ premise-free `a_looksub_solve_complete` are both `Qed` and
 anywhere in `frost/`.**
 
 ⚠️ **P6 is NOT finished.**  It has FIVE lemmas (§7's table), and this closes
-the fourth: `P6-Cv → P6-Cs → P6-Sv → P6-Ss → `**`P6-L`**.  `a_extract_complete`
+the fourth: `P6-Cv → P6-Cs → P6-Sv → P6-Ss → `**`P6-L`**.  `a_extract_complete_gen`
 (subtyping-proofs.tex:2730) is not written yet — it is a WRAPPER, not a new
 induction: P6-Ss at `Pi = □` / `Ψi = ∅`, then `a_guess` (identity at SK,
 `guess_join_witness` at TY), then `ad_partial_precise_complete` to upgrade

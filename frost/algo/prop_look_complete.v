@@ -7,7 +7,7 @@
       P6-Cs  [a_lookeq_solve_complete]   consistency-proofs.tex:920
       P6-Rv  [a_solve_sub_complete_var]  subtyping-proofs.tex:1696
       P6-Rs  [a_looksub_solve_complete]  subtyping-proofs.tex:2202
-      P6-L   [a_extract_complete]        subtyping-proofs.tex:2729
+      P6-L   [a_extract_complete_gen]        subtyping-proofs.tex:2729
 
     THE ρ REPRESENTATION (design locked in DESIGN §7, 2026-07-24): the
     paper's ρ — a substitution from rigid type variables to decorated

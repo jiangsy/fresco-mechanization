@@ -19,7 +19,7 @@ point to the same content.
   `complete_mu`), subtyping SOUNDNESS is closed (`a_sub_sound_thm`),
   and subtyping COMPLETENESS has P5 done and **ALL FIVE of P6's lemmas**
   closed — P6-Cv, P6-Cs, P6-Sv, P6-Ss (`a_looksub_solve_complete`) and
-  **P6-L (`a_extract_complete`, subtyping-proofs.tex:2730, closed
+  **P6-L (`a_extract_complete_gen`, subtyping-proofs.tex:2730, closed
   2026-07-30)**.  P6-Sv and P6-Ss are REPAIRED statements: the paper's
   P6-Sv is FALSE (`cex/cex_p6sv_forall_flex.v`), and P6-Ss's
   Sub-ForallR needed a mode-guarded ftv-𝒞 disjunction because the

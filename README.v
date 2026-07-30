@@ -137,6 +137,7 @@ Check a_solve_sub_complete_var.
    [ad_partial_precise_complete] (P5b-i) and supplies the guess^N step — at TY
    by building [a_guess_mono] and the metasubstitution extension at once
    ([a_guess_ty_witness]). *)
+Check a_extract_complete_gen.
 Check a_extract_complete.
 
 (* ===================================================================== *)
@@ -166,4 +167,5 @@ Print Assumptions a_solve_eq_complete_var.
 Print Assumptions a_lookeq_solve_complete.
 Print Assumptions a_solve_sub_complete_var.
 Print Assumptions a_looksub_solve_complete.
+Print Assumptions a_extract_complete_gen.
 Print Assumptions a_extract_complete.

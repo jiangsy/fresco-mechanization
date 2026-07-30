@@ -510,7 +510,7 @@ Reserved Notation "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
    harmless: a Θ0-flexible target is reachable ([skmod{TY}] at TC makes P0 a
    TYPE, and a type may BE a flexible of Θ0), and then a non-first
    [eq α̂] constraint needs SE-FlexR, which [Ξ] cannot supply — so P6-L
-   ([a_extract_complete]) is not provable against the narrow reading.
+   ([a_extract_complete_gen]) is not provable against the narrow reading.
    docs/DESIGN-completeness-subtyping.md §7.4.
    Soundness is unaffected: its only consumers are [a_extract_decls] (which
    reads Ξ, not the solve) and [a_extract_decorate], whose solve lemmas
