@@ -147,7 +147,19 @@ the disambiguation; flex-dispatch first).
 **The EXACT remaining ≡ᵘ obligations, scoped 2026-07-31** (the IH's slack is
 `R2' ≡ᵘ msubst ζ1 Rb`, built from the motive's component `R2' ≡ᵘ κRb` and
 generation's `κRb ≡ᵘ σRb` — which needs TRANSITIVITY, deliberately not a
-row; and the motive's arrow relation must split into components):
+row; and the motive's arrow relation must split into components).
+✅ **(1)–(7a) LANDED same day, all Qed + axiom-free** in
+prop_sub_msubst_equiv.v: `a_tyequiv_downarrow_refl` (with
+`msubst_ptyp_tyequiv_pointwise` + `a_tyequiv_weaken_cons1`),
+`a_tyequiv_arrow_inv`, `ptyp_to_uskl_syn_inj`, `a_uskl_tyequiv_mono_r_inv`,
+`a_uskl_tyequiv_trans`, `a_uskl_tyequiv_arrow_arrow_inv`,
+`msubst_uskl_syn_agree`.  Still open: (7b) the compose-id pointwise fact at
+the row's call site, and (8) the row assembly itself.  Coq gotchas hit:
+`congruence` closes a goal that IS a hypothesis; `injection ... as` with
+variable LHSs substitutes instead of naming; the `usklvar`-vs-`atom` alias
+makes hand-typed `(β == α)` scrutinees miss the goal's `if` (destruct via
+`lazymatch goal with |- context [if ?c then _ else _]`); the `__var_typ`
+rule binder `A` shadows a lemma-level `intros A`:
 
 1. `a_tyequiv_downarrow_refl : a_wf_aenv Θ → Θ ⊢ A ≡ᵗ ⇓ᵗ[Θ]A` — the ⇓
    REFLECTION, the one genuinely new fact (prop_normal.v has only the

@@ -37,6 +37,7 @@ Require Import src.frost.algo.def_meta.
 Require Import src.frost.algo.def_decl_algo.
 Require Import src.frost.algo.def_decorated.
 Require Import src.frost.algo.prop_inc.            (* a_tyequiv_pskl *)
+Require Import src.frost.algo.prop_flex.           (* a_tyequiv_weaken_cons *)
 Require Import src.frost.algo.prop_compose.        (* a_inc_lookup_{wf,mono}, msubst_lookup_notin *)
 Require Import src.frost.algo.prop_normal.         (* a_inc_equiv_lookup *)
 Require Import src.frost.algo.prop_pat_sub.        (* uskl_to_pskl_ptyp_to_uskl_syn *)
@@ -302,4 +303,356 @@ Proof.
   - inversion Hg.
   - inversion Hg.
   - inversion Hg.
+Qed.
+
+(* ===================================================================== *)
+(*  ⇓ REFLECTION — Θ ⊢ A ≡ᵗ ⇓ᵗ[Θ]A                                        *)
+(*                                                                        *)
+(*  Obligation (1) of the Sub-Arrow scoping (PROGRESS 2026-07-31):        *)
+(*  prop_normal.v proves the FORWARD direction (≡ᵗ sources collapse to    *)
+(*  equal normal forms); the ≡ᵘ inversions need the converse — a type is  *)
+(*  equivalent to its own total unfolding, because every unfolding step   *)
+(*  is a [__flex_def] step.  Natural home is prop_normal.v; parked here   *)
+(*  to keep the rebuild local (moving it forces the full algo chain).     *)
+(* ===================================================================== *)
+
+Lemma msubst_ptyp_nil : forall A, msubst_ptyp nil A = A.
+Proof. induction A; cbn; f_equal; auto. Qed.
+
+(** Pointwise congruence: a metasubstitution each of whose lookups is
+    ≡ᵗ-related to the variable itself relates every type to its image. *)
+Lemma msubst_ptyp_tyequiv_pointwise : forall Θ κ A,
+  lc_ptyp A ->
+  msubst_lc κ ->
+  (forall β, Θ ⊢ (ptyp_var_f β) ≡ᵗ (msubst_lookup κ β)) ->
+  Θ ⊢ A ≡ᵗ (msubst_ptyp κ A).
+Proof.
+  intros Θ κ A Hlc; revert Θ κ; induction Hlc; intros Θ κ Hκlc Hpt; cbn.
+  - apply a_tyequiv__refl; apply lc_ptyp_unit.
+  - apply Hpt.
+  - apply a_tyequiv__arrow; auto.
+  - apply a_tyequiv__all with (L := dom κ).
+    intros α Hα.
+    rewrite <- msubst_ptyp_open_lc
+      by (first [ exact Hκlc | clear - Hα; fsetdec ]).
+    apply H0; [ exact Hκlc | exact Hpt ].
+Qed.
+
+(** [a_tyequiv_weaken_cons] at a single cons entry (the [++]-form does not
+    unify against a cons). *)
+Lemma a_tyequiv_weaken_cons1 : forall Θ (x : atom) (b : abind) A A',
+  Θ ⊢ A ≡ᵗ A' ->
+  ((x, b) :: Θ) ⊢ A ≡ᵗ A'.
+Proof.
+  intros Θ x b A A' H.
+  change ((x, b) :: Θ) with ((x ~ b) ++ Θ).
+  apply a_tyequiv_weaken_cons; exact H.
+Qed.
+
+Lemma a_tyequiv_downarrow_refl : forall Θ,
+  a_wf_aenv Θ ->
+  forall A, lc_ptyp A ->
+  Θ ⊢ A ≡ᵗ ⇓ᵗ[Θ] A.
+Proof.
+  (* [A0]: the [__var_typ] case's rule binder is [A] *)
+  intros Θ Hwf; induction Hwf; intros A0 HlcA.
+  - (* nil : the empty metasubstitution is the identity *)
+    cbn. rewrite msubst_ptyp_nil.
+    apply a_tyequiv__refl; exact HlcA.
+  - (* flex α : the entry maps α to itself *)
+    apply msubst_ptyp_tyequiv_pointwise;
+      [ exact HlcA
+      | apply aenv_msubst_lc; apply a_wf_aenv__flex; assumption
+      | ].
+    intros β. cbn.
+    lazymatch goal with
+    | |- context [ if ?c then _ else _ ] => destruct c as [Heq | Hne]
+    end.
+    + subst β. apply a_tyequiv__refl; apply lc_ptyp_var_f.
+    + apply a_tyequiv_weaken_cons1.
+      pose proof (IHHwf (ptyp_var_f β) (lc_ptyp_var_f β)) as Hβ.
+      cbn in Hβ. exact Hβ.
+  - (* flex_def α ≔ τ : one [__flex_def] step, then the tail's reflection *)
+    apply msubst_ptyp_tyequiv_pointwise;
+      [ exact HlcA
+      | apply aenv_msubst_lc; apply a_wf_aenv__flex_def; assumption
+      | ].
+    intros β. cbn.
+    lazymatch goal with
+    | |- context [ if ?c then _ else _ ] => destruct c as [Heq | Hne]
+    end.
+    + subst β.
+      eapply a_tyequiv__trans.
+      * apply a_tyequiv__flex_def with (τ := τ).
+        unfold binds; left; reflexivity.
+      * apply a_tyequiv_weaken_cons1.
+        apply IHHwf. apply mono_ptyp_lc; assumption.
+    + apply a_tyequiv_weaken_cons1.
+      pose proof (IHHwf (ptyp_var_f β) (lc_ptyp_var_f β)) as Hβ.
+      cbn in Hβ. exact Hβ.
+  - (* var_skl : invisible to ⇓ *)
+    apply msubst_ptyp_tyequiv_pointwise;
+      [ exact HlcA
+      | apply aenv_msubst_lc; apply a_wf_aenv__var; assumption
+      | ].
+    intros β. cbn.
+    apply a_tyequiv_weaken_cons1.
+    pose proof (IHHwf (ptyp_var_f β) (lc_ptyp_var_f β)) as Hβ.
+    cbn in Hβ. exact Hβ.
+  - (* var_typ : invisible to ⇓ *)
+    apply msubst_ptyp_tyequiv_pointwise;
+      [ exact HlcA
+      | apply aenv_msubst_lc; apply a_wf_aenv__var_typ; assumption
+      | ].
+    intros β. cbn.
+    apply a_tyequiv_weaken_cons1.
+    pose proof (IHHwf (ptyp_var_f β) (lc_ptyp_var_f β)) as Hβ.
+    cbn in Hβ. exact Hβ.
+  - (* tvar : invisible to ⇓ *)
+    apply msubst_ptyp_tyequiv_pointwise;
+      [ exact HlcA
+      | apply aenv_msubst_lc; apply a_wf_aenv__tvar; assumption
+      | ].
+    intros β. cbn.
+    apply a_tyequiv_weaken_cons1.
+    pose proof (IHHwf (ptyp_var_f β) (lc_ptyp_var_f β)) as Hβ.
+    cbn in Hβ. exact Hβ.
+Qed.
+
+(** Obligation (2): ≡ᵗ between arrows decomposes — both normal forms are
+    the same arrow, and each side is equivalent to its own normal form. *)
+Lemma a_tyequiv_arrow_inv : forall Θ A1 A2 B1 B2,
+  a_wf_aenv Θ ->
+  lc_ptyp A1 -> lc_ptyp A2 -> lc_ptyp B1 -> lc_ptyp B2 ->
+  Θ ⊢ (ptyp_arrow A1 A2) ≡ᵗ (ptyp_arrow B1 B2) ->
+  (Θ ⊢ A1 ≡ᵗ B1) /\ (Θ ⊢ A2 ≡ᵗ B2).
+Proof.
+  intros Θ A1 A2 B1 B2 Hwf Hlc1 Hlc2 Hlc1' Hlc2' Heq.
+  pose proof (a_tyequiv_downarrow Hwf Heq) as Hdn.
+  cbn in Hdn. injection Hdn as Hd1 Hd2.
+  split.
+  - eapply a_tyequiv__trans;
+      [ apply a_tyequiv_downarrow_refl; assumption | ].
+    rewrite Hd1. apply a_tyequiv__sym.
+    apply a_tyequiv_downarrow_refl; assumption.
+  - eapply a_tyequiv__trans;
+      [ apply a_tyequiv_downarrow_refl; assumption | ].
+    rewrite Hd2. apply a_tyequiv__sym.
+    apply a_tyequiv_downarrow_refl; assumption.
+Qed.
+
+(* ===================================================================== *)
+(*  Obligations (3)+(4): painting injectivity, and the MONO-PAINTING       *)
+(*  inversion — anything ≡ᵘ-related to a monotype painting IS one          *)
+(*  (paintings are structural, so [arrow (painting τa) (painting τb)]      *)
+(*  IS [painting (τa→τb)]; the apparent arrow-vs-defined-var               *)
+(*  counterexamples dissolve into the [__mono] row).                       *)
+(* ===================================================================== *)
+
+Lemma ptyp_to_uskl_syn_inj : forall τ1 τ2,
+  ptyp_to_uskl_syn τ1 = ptyp_to_uskl_syn τ2 ->
+  τ1 = τ2.
+Proof.
+  induction τ1; destruct τ2; cbn; intros Heq;
+    try discriminate; try reflexivity;
+    injection Heq as Heq1; f_equal; auto.
+Qed.
+
+Lemma a_uskl_tyequiv_mono_r_inv : forall Θ X Y,
+  Θ ⊢ X ≡ᵘ Y ->
+  forall τ, Y = ptyp_to_uskl_syn τ ->
+  mono_ptyp τ ->
+  a_wf_ptyp Θ τ ->
+  exists τ', X = ptyp_to_uskl_syn τ' /\ mono_ptyp τ' /\
+             a_wf_ptyp Θ τ' /\ Θ ⊢ τ' ≡ᵗ τ.
+Proof.
+  intros Θ X Y H; induction H; intros τ0 HeqY Hm Hwf.
+  - (* __mono *)
+    apply ptyp_to_uskl_syn_inj in HeqY. subst τ0.
+    exists τ1; repeat split; assumption.
+  - (* __unit *)
+    destruct τ0; cbn in HeqY; try discriminate.
+    exists ptyp_unit; repeat split;
+      [ apply mono_ptyp__unit | apply a_wf_ptyp__unit
+      | apply a_tyequiv__refl; apply lc_ptyp_unit ].
+  - (* __var *)
+    destruct τ0; cbn in HeqY; try discriminate.
+    injection HeqY as <-.
+    exists (ptyp_var_f α); repeat split;
+      [ apply mono_ptyp__var | exact Hwf
+      | apply a_tyequiv__refl; apply lc_ptyp_var_f ].
+  - (* __arrow *)
+    destruct τ0; cbn in HeqY; try discriminate.
+    injection HeqY as Heq1 Heq2.   (* variable LHSs: substituted in place *)
+    inversion Hm; subst.
+    inversion Hwf; subst.
+    destruct (IHa_uskl_tyequiv1 τ0_1 eq_refl ltac:(assumption) ltac:(assumption))
+      as [τa [HXa [Hma [Hwfa Heqa]]]].
+    destruct (IHa_uskl_tyequiv2 τ0_2 eq_refl ltac:(assumption) ltac:(assumption))
+      as [τb [HXb [Hmb [Hwfb Heqb]]]].
+    exists (ptyp_arrow τa τb); repeat split;
+      [ cbn; rewrite HXa, HXb; reflexivity
+      | apply mono_ptyp__arrow; assumption
+      | apply a_wf_ptyp__arrow; assumption
+      | apply a_tyequiv__arrow; assumption ].
+  - (* __all_syn : painting of a MONO is never a ∀ *)
+    destruct τ0; cbn in HeqY; try discriminate.
+    inversion Hm.
+  - (* __all_etag *)
+    destruct τ0; cbn in HeqY; discriminate.
+  - (* __hole *)
+    destruct τ0; cbn in HeqY; discriminate.
+  - (* __holeg *)
+    destruct τ0; cbn in HeqY; discriminate.
+  - (* __tophole *)
+    destruct τ0; cbn in HeqY; discriminate.
+  - (* __topholeg *)
+    destruct τ0; cbn in HeqY; discriminate.
+Qed.
+
+(* ===================================================================== *)
+(*  Obligation (5): TRANSITIVITY.  Not a row (rows stay inversion-        *)
+(*  friendly); the only non-congruent composition is a structural arrow    *)
+(*  against a mono-painting middle, and (4) collapses it: the whole        *)
+(*  arrow-side IS a painting, so the composite is one [__mono] row.        *)
+(* ===================================================================== *)
+
+Lemma a_uskl_tyequiv_trans : forall Θ X Y,
+  Θ ⊢ X ≡ᵘ Y ->
+  forall Z, Θ ⊢ Y ≡ᵘ Z ->
+  Θ ⊢ X ≡ᵘ Z.
+Proof.
+  intros Θ X Y H1; induction H1; intros Z HYZ.
+  - (* __mono : both ends of the composite are paintings *)
+    destruct (a_uskl_tyequiv_mono_r_inv (a_uskl_tyequiv_sym HYZ) eq_refl
+                ltac:(assumption) ltac:(assumption))
+      as [τ3 [HZ [Hm3 [Hwf3 Heq3]]]].
+    subst Z.
+    apply a_uskl_tyequiv__mono; try assumption.
+    eapply a_tyequiv__trans; [ eassumption | ].
+    apply a_tyequiv__sym; exact Heq3.
+  - (* __unit *) exact HYZ.
+  - (* __var *) exact HYZ.
+  - (* __arrow *)
+    inversion HYZ; subst.
+    + (* the middle is a mono painting — so is the whole left arrow *)
+      lazymatch goal with
+      | He : ptyp_to_uskl_syn ?t = uskl_arrow _ _ |- _ =>
+          assert (Hfull : Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ (ptyp_to_uskl_syn t))
+            by (rewrite He; apply a_uskl_tyequiv__arrow; assumption)
+      end.
+      lazymatch goal with
+      | Hm1 : mono_ptyp ?t1, Hw1 : a_wf_ptyp _ ?t1,
+        Ht : Θ ⊢ ?t1 ≡ᵗ ?t2,
+        Hfull : Θ ⊢ (uskl_arrow R1 R2) ≡ᵘ (ptyp_to_uskl_syn ?t1) |- _ =>
+          destruct (a_uskl_tyequiv_mono_r_inv Hfull eq_refl Hm1 Hw1)
+            as [τx [HX [Hmx [Hwfx Heqx]]]]
+      end.
+      rewrite HX.
+      apply a_uskl_tyequiv__mono; try assumption.
+      eapply a_tyequiv__trans; eassumption.
+    + apply a_uskl_tyequiv__arrow; auto.
+  - (* __all_syn *)
+    inversion HYZ; subst.
+    + lazymatch goal with
+      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_all_syn _ |- _ =>
+          destruct Hm0; cbn in He; discriminate He
+      end.
+    + lazymatch goal with
+      | Hz : forall α : atom, α `notin` ?L2 -> Θ ⊢ _ ≡ᵘ _ |- _ =>
+          apply a_uskl_tyequiv__all_syn with (L := L `union` L2);
+          intros α Hα;
+          apply H0; [ clear - Hα; fsetdec | apply Hz; clear - Hα; fsetdec ]
+      end.
+  - (* __all_etag *)
+    inversion HYZ; subst.
+    + lazymatch goal with
+      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_all_etag _ _ |- _ =>
+          destruct Hm0; cbn in He; discriminate He
+      end.
+    + lazymatch goal with
+      | Hz : forall α : atom, α `notin` ?L2 -> Θ ⊢ _ ≡ᵘ _ |- _ =>
+          apply a_uskl_tyequiv__all_etag with (L := L `union` L2);
+          intros α Hα;
+          apply H0; [ clear - Hα; fsetdec | apply Hz; clear - Hα; fsetdec ]
+      end.
+  - (* __hole *) exact HYZ.
+  - (* __holeg *) exact HYZ.
+  - (* __tophole *)
+    inversion HYZ; subst.
+    + lazymatch goal with
+      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_tophole _ |- _ =>
+          destruct Hm0; cbn in He; discriminate He
+      end.
+    + apply a_uskl_tyequiv__tophole; auto.
+  - (* __topholeg *)
+    inversion HYZ; subst.
+    + lazymatch goal with
+      | Hm0 : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_topholeg _ |- _ =>
+          destruct Hm0; cbn in He; discriminate He
+      end.
+    + apply a_uskl_tyequiv__topholeg; auto.
+Qed.
+
+(* ===================================================================== *)
+(*  Obligation (6): ARROW-ARROW inversion — the motive's relation at an    *)
+(*  Arrow row splits into component relations.  [__arrow] is direct; a     *)
+(*  [__mono] instance decomposes by (2), since a mono painting of an       *)
+(*  arrow IS the arrow of the component paintings.                         *)
+(* ===================================================================== *)
+
+Lemma a_uskl_tyequiv_arrow_arrow_inv : forall Θ A B A' B',
+  a_wf_aenv Θ ->
+  Θ ⊢ (uskl_arrow A B) ≡ᵘ (uskl_arrow A' B') ->
+  (Θ ⊢ A ≡ᵘ A') /\ (Θ ⊢ B ≡ᵘ B').
+Proof.
+  intros Θ A B A' B' Hwf H; inversion H; subst.
+  - (* __mono *)
+    lazymatch goal with
+    | Hm1 : mono_ptyp ?t1, He1 : ptyp_to_uskl_syn ?t1 = uskl_arrow A B |- _ =>
+        destruct Hm1; cbn in He1; try discriminate He1
+    end.
+    lazymatch goal with
+    | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_arrow A' B' |- _ =>
+        destruct Hm2; cbn in He2; try discriminate He2
+    end.
+    lazymatch goal with
+    | He1 : uskl_arrow _ _ = uskl_arrow A B |- _ => injection He1 as <- <-
+    end.
+    lazymatch goal with
+    | He2 : uskl_arrow _ _ = uskl_arrow A' B' |- _ => injection He2 as <- <-
+    end.
+    inversion H4; subst. inversion H5; subst.
+    destruct (a_tyequiv_arrow_inv Hwf
+                (mono_ptyp_lc H2_) (mono_ptyp_lc H2_0)
+                (mono_ptyp_lc H3_) (mono_ptyp_lc H3_0) H6) as [Hta Htb].
+    split; apply a_uskl_tyequiv__mono; assumption.
+  - (* __arrow *)
+    split; assumption.
+Qed.
+
+(* ===================================================================== *)
+(*  Obligation (7), generic half: images agree when the lookups do.        *)
+(*  (The Arrow row instantiates this with [msubst_compose ζ w] vs [ζ] on   *)
+(*  an id [w] to collapse the composite on Θ0-scoped subjects.)            *)
+(* ===================================================================== *)
+
+Lemma msubst_uskl_syn_agree : forall R κ σ,
+  (forall α, α `in` ftvar_in_uskl R ->
+     msubst_lookup κ α = msubst_lookup σ α) ->
+  msubst_uskl_syn κ R = msubst_uskl_syn σ R.
+Proof.
+  induction R; intros κ σ Hag; cbn.
+  - reflexivity.
+  - reflexivity.
+  - f_equal. apply Hag. cbn. clear; fsetdec.
+  - f_equal;
+      [ apply IHR1 | apply IHR2 ]; intros α Hα; apply Hag; cbn;
+      clear - Hα; fsetdec.
+  - f_equal. apply IHR. intros α Hα; apply Hag; cbn; clear - Hα; fsetdec.
+  - f_equal. apply IHR. intros α Hα; apply Hag; cbn; clear - Hα; fsetdec.
+  - reflexivity.
+  - f_equal. apply IHR. intros α Hα; apply Hag; cbn; clear - Hα; fsetdec.
+  - reflexivity.
+  - f_equal. apply IHR. intros α Hα; apply Hag; cbn; clear - Hα; fsetdec.
 Qed.
