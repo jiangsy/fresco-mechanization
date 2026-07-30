@@ -3763,6 +3763,90 @@ one of its own theorems, follow the citation before inventing a lemma.  Three
 successive "the step is false / holds / is false again" records here all came
 from arguing about a statement the paper never made.
 
+### 9.1.2 CLOSED (2026-07-30) — the missing piece landed, and THREE cases with it
+
+✅ **`a_inc_equiv_precise_msubst` is Qed and axiom-free**
+(`prop_sub_complete_thm.v`), and it came out with ONE side condition instead of
+the two the plan guessed at.  The route §9.1.1 sketched was right: induct on the
+**wf of `P`**; `unit` / `hole` are constructors, `arrow` / `all` / `tophole` are
+congruences (the last by `__tophole_keep`, whose guard wf supplies and `msubst`
+preserves), and the flexible leaf is `tyequiv_mono_refine_syn` verbatim.
+
+Two things the writing-out corrected:
+
+- **`Δ`-freshness is NOT needed.**  The plan expected `Δ0 ⊆ Δ` plus "Δ-binders
+  fresh for the context".  Only `Δ0 ⊆ Δ` survives: the variable row splits on
+  whether the metasubstitutions SEE α (`α ∈ dom κ` / `α ∈ dom σ`) rather than on
+  where α is bound, and BOTH answers are usable — `a_inc_dom_flex` turns a hit
+  into `a_binds_tvar α Θ0` (the ≡ᵗ route), and a double miss makes both sides
+  the SAME variable, closed by `__var` from `α ∈ Δ0 ⊆ Δ`.
+- **The hypothesis is stated POINTWISE**, `∀α, a_binds_tvar α Θ0 → Θ ⊢ κα ≡ᵗ σα`
+  (`a_inc_equiv_precise_msubst_gen`), with `a_inc_equiv` supplying it via
+  `prop_normal.a_inc_equiv_lookup`.  That is what makes the FLIPPED direction
+  free (`a_inc_equiv_precise_msubst_flip`, one `a_tyequiv__sym`) — and Sub-Check
+  needs the flip, while Sub-Infer needs the forward one.  `a_inc_equiv` itself
+  is not obviously symmetric: `a_inc_equiv__flex_def`'s third premise mentions κ.
+
+✅ **Sub-Infer** (`a_sub_complete_infer`) and ✅ **Sub-Check**
+(`a_sub_complete_check`) are Qed, both by the paper's route.  The shared core is
+`a_sub_complete_hole_p0_precision`: at `P0 = □` the motive's three solution
+premises ARE `a_consis_complete_thm`'s, `a_consis_hole_p0_output` says the run
+returns the SUBJECT, and the stability lemma + `ad_refine_syn_trans` move the
+result from the theorem's ζ to κ.  Supporting facts, all Qed:
+`uskl_to_pskl_msubst_uskl_syn` (the one-line commutation), `ad_pat_sub_g_ti_consis`
+(at `M = TI` only `__infer` / `__ghost` / `__ghostg` fire, and all three carry a
+tag-free consistency), and `ad_refine_syn_hole_l_target_wf`.
+
+⚠️ **Sub-Check does NOT need `a_consis_concrete_output_equiv`.**  The plan routed
+its precision through the consistency OUTPUT, but the algorithm never returns
+that output: `a_sub__check` hides it existentially inside `a_consis_chk` and
+returns `P0`.  So the precision goal is `ζP0 ⊑ ⌊Q⌋`, and at `Q = inh{B}` the
+motive's **P0-fill premise IS `κP0 ⊑ B` by definition of `ad_precise`** — the
+goal closes outright, modulo the κ→ζ move.  What `a_consis_complete_thm`
+supplies at Sub-Check is the RUN and the two increase conjuncts, not the
+precision.  (§9.1's closing note already observed that `a_sub__check` outputs
+`P0`; what it did not observe is that the fill premise then finishes the job.)
+`a_consis_concrete_output_equiv` remains Qed and is presumably Sub-ForallR's.
+
+Sub-Check takes two hypotheses beyond the motive, both to be supplied by the
+bundle and both registered in docs/WF-SIDE-CONDITIONS.md: `guarded_pskl P0`
+(the algorithm's Check-vs-ForallR dispatch — the paper's own case split) and
+`Θ ⨟ ∅ ⊢ₚₛᵃ ⌊Q⌋` (external wf of the counterpart, which `ad_refine_syn_trans`
+needs and which the `P0 = □` rows get for free).
+
+### 9.1.3 ⚠️ Sub-UnivGhostR IS VACUOUS UNDER THE MOTIVE'S THIRD PREMISE
+
+Machine-checked: `cex/cex_p7_univ_ghost_r_vacuous.v` (Qed, axiom-free) plus
+`ad_refine_pskl_f_tophole_r_shape` in `prop_sub_complete_thm.v`.
+
+The row's subject is `guarded_uskl` and its counterpart is `∀◇.Q0`, so the
+motive's THIRD solution premise reads `κ⌊R⌋ˢ ⊳ ∀◇.⌊Q0⌋` with a guarded
+left-hand side — and refinement has no rule putting a `∀◇` on the RIGHT of a
+non-ghost left: `__tophole_keep` / `__tophole_remove` want a `∀◇` on the LEFT,
+`__hole` wants a `◇` there, and `__flex_l` only unfolds a definition into
+another `ptyp` painting, which is a ghost nowhere.  So the case closes by
+CONTRADICTION (`a_sub_complete_univ_ghost_r`, Qed) — the row is proved, and the
+theorem says nothing about the solutions it describes.
+
+⚠️ **The third premise is the MECH's, not the paper's**, and §1's justification
+for it does not survive contact.  §1 said it "is exactly what `a_consis_sound` /
+`a_sub_sound_thm` PRODUCE for every algorithmic output".  `a_consis_sound` does.
+**`a_sub_sound_thm` (prop_decorate_key.v:3326) does NOT** — its conclusion has
+`Θ0 ⊴ Θ1`, wf, the decorated subtyping judgment and the P0-fill, and no subject
+refinement.  It could not have one: algorithmic `UnivGhostR` outputs `∀◇.P` from
+the input `P`.  So for subtyping the third premise is not the sound/complete
+mirror it is for consistency.
+
+§2 of the cex file exhibits the smallest configuration where the paper's TWO
+conditions hold and the third fails (`Θ0 = Θ = ·`, `κ = ι`, subject `unit`,
+counterpart `∀◇.unit`), so this is a real loss of coverage, not a vacuity that
+was there anyway.  Registered in docs/PAPER-GAPS.md; the authors must choose
+between (a) dropping the third condition — NOT free, since it is literally
+`thm:complete-consistency`'s own third premise at the subproblem `(Θ0; □; P)`
+that Sub-Infer and Sub-Check invoke — (b) keeping it and stating the theorem as
+not covering `∀◇`-counterpart solutions, or (c) weakening it modulo the `∀◇`s
+that UnivGhostR / UnivGhostL insert.
+
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 
 `Flex-Solve` and `Flex-Assign`; the paper omits the rest as "routine IH".

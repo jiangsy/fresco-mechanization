@@ -72,6 +72,11 @@ Require Import src.frost.algo.prop_metasubst.     (* opt_axiom_factor *)
 Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
 Require Import src.frost.algo.prop_flex.          (* a_decls *)
 Require Import src.frost.algo.prop_consis_sound.  (* ad_refine_{syn,pskl}_f *)
+Require Import src.frost.algo.prop_compose.       (* a_inc_{dom_flex,lookup_wf,lookup_mono}, msubst_pskl_open *)
+Require Import src.frost.algo.prop_normal.        (* a_inc_equiv_lookup (the a_binds_tvar form) *)
+Require Import src.frost.algo.prop_mono_bridge.   (* ptyp_to_bskl_inh_syn_eq *)
+Require Import src.frost.algo.prop_precise_recover. (* tyequiv_mono_refine_syn *)
+Require Import src.frost.algo.prop_pat_sub.       (* uskl_to_pskl_ptyp_to_uskl_syn *)
 
 Set Implicit Arguments.
 
@@ -766,3 +771,485 @@ Print Assumptions a_consis_hole_p0_output.
 (*  call site: [Δ0 ⊆ Δ], and Δ-binders fresh for the context (the same     *)
 (*  condition [ad_refine_syn_trans] itself carries).                       *)
 (* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  PRECISION IS STABLE UNDER EQUIVALENT METASUBSTITUTIONS                *)
+(*                                                                        *)
+(*  The induction is on the WELL-FORMEDNESS OF [P], not on ≡ˢ: the        *)
+(*  equivalence actually in play is congruence over P's own structure with *)
+(*  ≡ᵗ-MONOTYPES at the leaves, because a metasubstitution's images are    *)
+(*  monotypes.  Inducting on ≡ˢ instead would have to carry both           *)
+(*  directions (it is an equivalence CLOSURE) and its transitivity row     *)
+(*  would need well-formedness of a middle skeleton nobody supplies.       *)
+(*                                                                        *)
+(*  Only ONE side condition survived writing it out — [Δ0 ⊆ Δ], which the  *)
+(*  Δ-bound-variable leaf needs.  The Δ-freshness the plan also guessed at *)
+(*  is NOT needed: the variable row splits on [α ∈ dom κ] / [α ∈ dom σ]    *)
+(*  rather than on where α is bound, and BOTH answers are usable —         *)
+(*  [a_inc_dom_flex] turns a hit into [a_binds_tvar α Θ0] (the ≡ᵗ route),  *)
+(*  and a double miss makes both sides the SAME variable.                  *)
+(* ===================================================================== *)
+
+(** The variable leaf, for a source-visible α — RIGID or FLEXIBLE alike.
+    [prop_normal.a_inc_equiv_lookup] is stated at [a_binds_tvar], so no case
+    split is needed here: at a rigid α both images are α itself and the ≡ᵗ is
+    reflexivity, which the same route absorbs. *)
+Lemma a_inc_equiv_precise_msubst_var : forall Θ0 κ σ Θ Δ α,
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  κ ∷ Θ0 ⊑ Θ -> σ ∷ Θ0 ⊑ Θ ->
+  (forall α0, a_binds_tvar α0 Θ0 ->
+     Θ ⊢ (msubst_lookup κ α0) ≡ᵗ (msubst_lookup σ α0)) ->
+  a_binds_tvar α Θ0 ->
+  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ (pskl_var_f α)) ⊑ (msubst_pskl σ (pskl_var_f α)).
+Proof.
+  intros Θ0 κ σ Θ Δ α Hwf0 Hwfth Hκ Hσ Hie Hbt.
+  assert (Hmκ : mono_ptyp (msubst_lookup κ α))
+    by (eapply a_inc_lookup_mono; exact Hκ).
+  assert (Hmσ : mono_ptyp (msubst_lookup σ α))
+    by (eapply a_inc_lookup_mono; exact Hσ).
+  unfold ad_precise; cbn [msubst_pskl].
+  rewrite (ptyp_to_bskl_inh_syn_eq Hmκ), (ptyp_to_bskl_inh_syn_eq Hmσ).
+  apply tyequiv_mono_refine_syn; try assumption.
+  - (* the two images are ≡ᵗ — this IS what [a_inc_equiv] says, per variable *)
+    apply Hie; exact Hbt.
+  - (* κ's image is well formed in the target, so its variables are visible *)
+    intros β Hβ.
+    eapply a_wf_ptyp_ftv_tvarish; [ | exact Hβ ].
+    eapply a_inc_lookup_wf; eassumption.
+Qed.
+
+Lemma a_inc_equiv_precise_msubst_gen : forall Θ0 Δ0 P,
+  Θ0 ⨟ Δ0 ⊢ₚₛᵃ P ->
+  forall κ σ Θ Δ,
+    a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+    κ ∷ Θ0 ⊑ Θ -> σ ∷ Θ0 ⊑ Θ ->
+    (forall α, a_binds_tvar α Θ0 ->
+       Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup σ α)) ->
+    Δ0 [<=] Δ ->
+    Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (msubst_pskl σ P).
+Proof.
+  intros Θ0 Δ0 P Hwf.
+  induction Hwf as [ Θ0 Δ0 | Θ0 Δ0 α Hbt
+                   | Θ0 Δ0 P1 P2 Hwf1 IH1 Hwf2 IH2
+                   | L Θ0 Δ0 P0 Hwf0 IH0
+                   | Θ0 Δ0
+                   | Θ0 Δ0 P0 Hg Hwf0 IH0 ];
+    intros κ σ Θ Δ Hwf0' Hwfth Hκ Hσ Hie Hsub.
+  - (* unit *) unfold ad_precise; cbn. apply ad_refine_syn__unit.
+  - (* var : [α ∈ Δ0] OR [a_binds_tvar α Θ0] — but the split that matters is
+       whether the metasubstitutions SEE α, and either answer is usable *)
+    destruct Hbt as [HΔ | Hbt];
+      [ | eapply a_inc_equiv_precise_msubst_var with (Θ0 := Θ0); eassumption ].
+    destruct (AtomSetProperties.In_dec α (dom κ)) as [Hκα | Hκα].
+    + (* κ hits α, so α is a source flexible *)
+      eapply a_inc_equiv_precise_msubst_var with (Θ0 := Θ0); try eassumption.
+      destruct (a_inc_dom_flex Hκ Hκα) as [Hb | [τ Hb]];
+        [ right; left | right; right; exists τ ]; exact Hb.
+    + destruct (AtomSetProperties.In_dec α (dom σ)) as [Hσα | Hσα].
+      * (* σ hits α : same conclusion, read off σ *)
+        eapply a_inc_equiv_precise_msubst_var with (Θ0 := Θ0); try eassumption.
+        destruct (a_inc_dom_flex Hσ Hσα) as [Hb | [τ Hb]];
+          [ right; left | right; right; exists τ ]; exact Hb.
+      * (* neither sees α : both sides are the SAME variable, and it is
+           Δ-bound in the target *)
+        unfold ad_precise; cbn [msubst_pskl].
+        rewrite (@msubst_lookup_notin κ α Hκα), (@msubst_lookup_notin σ α Hσα).
+        cbn. apply ad_refine_syn__var. left. clear - HΔ Hsub. fsetdec.
+  - (* arrow : a congruence *)
+    unfold ad_precise; cbn [msubst_pskl pskl_to_bskl_inh].
+    apply ad_refine_syn__arrow;
+      [ apply IH1 | apply IH2 ]; assumption.
+  - (* all : a congruence, under a binder fresh for both metasubstitutions *)
+    unfold ad_precise; cbn [msubst_pskl pskl_to_bskl_inh].
+    apply ad_refine_syn__all
+      with (L := L `union` dom κ `union` dom σ `union` dom Θ0 `union` dom Θ
+                   `union` Δ `union` Δ0).
+    intros α Hα.
+    (* the two freshness facts are PINNED in named asserts: passed inline as
+       [ltac:(fsetdec)] the goal still carries the binder as an evar, and
+       fsetdec on an evar goal wedges *)
+    assert (Hακ : α `notin` dom κ) by (clear - Hα; fsetdec).
+    assert (Hασ : α `notin` dom σ) by (clear - Hα; fsetdec).
+    rewrite <- (pskl_to_bskl_inh_open (msubst_pskl κ P0) α).
+    rewrite <- (pskl_to_bskl_inh_open (msubst_pskl σ P0) α).
+    rewrite <- (@msubst_pskl_open Θ0 κ Θ P0 α Hκ Hακ).
+    rewrite <- (@msubst_pskl_open Θ0 σ Θ P0 α Hσ Hασ).
+    apply IH0; try assumption; [ clear - Hα; fsetdec | ].
+    clear - Hsub; fsetdec.
+  - (* hole : [ad_refine_syn__hole] at the fill [□] *)
+    unfold ad_precise; cbn.
+    apply (@ad_refine_syn__hole Θ Δ pskl_hole). apply a_wf_pskl__hole.
+  - (* tophole : [__tophole_keep], whose guard the wf premise supplies and
+       the metasubstitution preserves *)
+    unfold ad_precise; cbn [msubst_pskl pskl_to_bskl_inh].
+    apply ad_refine_syn__tophole_keep.
+    + apply guarded_pskl_to_bskl_inh.
+      eapply guarded_pskl_msubst_inc; [ exact Hσ | exact Hg ].
+    + apply IH0; try assumption. clear; fsetdec.
+Qed.
+
+(** The two [a_inc_equiv] instances.  Both directions are needed — Sub-Infer
+    moves the precision FROM κ, Sub-Check moves it TO κ — and only the
+    pointwise ≡ᵗ hypothesis makes the second free ([a_inc_equiv] itself is not
+    obviously symmetric: [a_inc_equiv__flex_def]'s third premise mentions κ). *)
+Corollary a_inc_equiv_precise_msubst : forall Θ0 Δ0 P κ σ Θ Δ,
+  Θ0 ⨟ Δ0 ⊢ₚₛᵃ P ->
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  κ ∷ Θ0 ⊑ Θ -> σ ∷ Θ0 ⊑ Θ ->
+  a_inc_equiv Θ0 κ σ Θ ->
+  Δ0 [<=] Δ ->
+  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (msubst_pskl σ P).
+Proof.
+  intros Θ0 Δ0 P κ σ Θ Δ HwfP Hwf0 Hwfth Hκ Hσ Hie Hsub.
+  eapply a_inc_equiv_precise_msubst_gen; try eassumption.
+  intros α Hbt. eapply prop_normal.a_inc_equiv_lookup; eassumption.
+Qed.
+
+Corollary a_inc_equiv_precise_msubst_flip : forall Θ0 Δ0 P κ σ Θ Δ,
+  Θ0 ⨟ Δ0 ⊢ₚₛᵃ P ->
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  κ ∷ Θ0 ⊑ Θ -> σ ∷ Θ0 ⊑ Θ ->
+  a_inc_equiv Θ0 κ σ Θ ->
+  Δ0 [<=] Δ ->
+  Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl σ P) ⊑ (msubst_pskl κ P).
+Proof.
+  intros Θ0 Δ0 P κ σ Θ Δ HwfP Hwf0 Hwfth Hκ Hσ Hie Hsub.
+  eapply a_inc_equiv_precise_msubst_gen; try eassumption.
+  intros α Hbt. apply a_tyequiv__sym.
+  eapply prop_normal.a_inc_equiv_lookup; eassumption.
+Qed.
+
+Print Assumptions a_inc_equiv_precise_msubst.
+Print Assumptions a_inc_equiv_precise_msubst_flip.
+
+(* ===================================================================== *)
+(*  Sub-Infer AND Sub-UnivGhostR — THE PAPER'S OWN ROUTE (:3134)           *)
+(*                                                                        *)
+(*  Both rows have [skmod] forcing [P0 = □], both algorithmic counterparts *)
+(*  return the INPUT skeleton (or [∀◇] of it) at the INPUT context, and    *)
+(*  both take their precision from thm:complete-consistency —              *)
+(*  [a_consis_complete_thm] — on the consistency problem [(Θ0; □; P)].     *)
+(*  The two conjuncts about the increase are [ζ := κ] + [opt_axiom_factor] *)
+(*  exactly as in [a_sub_complete_ghost].                                  *)
+(* ===================================================================== *)
+
+(** A refinement OUT OF the ghost has a well-formed target.  Only two rows
+    have a [◇] source: [__hole], which carries the fill's well-formedness on
+    the rule, and [__flex_r], whose target is a DEFINED flexible and so is
+    [a_binds_tvar].  This is what supplies [ad_refine_syn_trans]'s external wf
+    side condition at [P0 = □] — the condition refinement does NOT prove in
+    general (cex_refine_not_transitive.v). *)
+Lemma ad_refine_syn_hole_l_target_wf : forall Θ Δ Q,
+  Θ ⨟ Δ ⊢ᵣᵃ bskl_hole ⊳ Q ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (bskl_to_pskl Q).
+Proof.
+  intros Θ Δ Q H.
+  remember bskl_hole as Qh eqn:HQh.
+  induction H; try discriminate HQh.
+  - (* __hole *)
+    rewrite bskl_to_pskl_pskl_to_bskl_syn.
+    eapply a_wf_pskl_delta_mono; [ exact H | clear; fsetdec ].
+  - (* __flex_r : the target is a defined flexible *)
+    cbn. apply a_wf_pskl__var. right; right; eauto.
+Qed.
+
+Print Assumptions ad_refine_syn_hole_l_target_wf.
+
+(** THE SHARED CORE.  At [P0 = □] the motive's three solution premises ARE
+    thm:complete-consistency's, so its precision applies — and
+    [a_consis_hole_p0_output] says the consistency run returns the SUBJECT, so
+    that precision is about [P].  It arrives under the theorem's own ζ; the
+    metasubstitution-stability lemma above moves it to κ, and
+    [ad_refine_syn_trans] composes. *)
+Lemma a_sub_complete_hole_p0_precision : forall Θ0 P Θ κ Q,
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  κ ∷ Θ0 ⊑ Θ ->
+  empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q ->
+  ad_refine_syn_f empty Θ empty bskl_hole Q ->
+  ad_refine_pskl_f empty Θ empty (msubst_pskl κ P) (bskl_to_pskl Q) ->
+  Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q).
+Proof.
+  intros Θ0 P Θ κ Q Hwf0 Hwfth HwfP Hinc Hconsis Hrs Hrp.
+  (* 1. thm:complete-consistency at [(Θ0; □; P)] *)
+  destruct (a_consis_complete_thm empty Hwf0 (a_wf_pskl__hole Θ0 empty)
+              HwfP Hinc Hwfth Hconsis Hrs Hrp)
+    as [P1 [Θ1 [Hrun Hopt]]].
+  (* 2. at [P0 = □] the run's output IS the subject *)
+  pose proof (a_consis_hole_p0_output Hrun eq_refl) as HP1; subst P1.
+  (* 3. the run is an identity increase into a well-formed Θ1 *)
+  destruct (a_consis_sound_aux Hrun Hwf0 (a_wf_pskl__hole Θ0 empty) HwfP
+              ltac:(intros α Hα; clear - Hα; fsetdec)
+              ltac:(intros β τ Hb; apply inter_empty_pointwise;
+                    intros α Hα; clear - Hα; fsetdec)
+              ltac:(intros Θa β b Θb Heq Hne;
+                    apply inter_empty_pointwise;
+                    intros α Hα; clear - Hα; fsetdec))
+    as [[[κ1 [Hid Hinc1]] _] [Hwf1 _]].
+  (* 4. the package, at that identity *)
+  destruct (Hopt κ1 Hid Hinc1) as [ζ [Hζ [Hie Hprec]]].
+  (* 5. the theorem's precision, restated at [σ := ζ ∘ κ1] *)
+  assert (Hσ : msubst_compose ζ κ1 ∷ Θ0 ⊑ Θ)
+    by (eapply a_inc_compose; eassumption).
+  assert (Hscope : a_scope_pskl Θ0 P)
+    by (eapply a_wf_pskl_to_a_scope_pskl;
+        [ exact HwfP | auto | intros α Hα; clear - Hα; fsetdec ]).
+  assert (Heqσ : msubst_pskl (msubst_compose ζ κ1) P = msubst_pskl ζ P)
+    by (exact (msubst_compose_id_pskl Hwf0 Hwf1 Hid Hinc1 Hζ Hscope)).
+  unfold ad_precise in Hprec.
+  rewrite msubst_bskl_pskl_to_bskl_syn, bskl_to_pskl_pskl_to_bskl_syn in Hprec.
+  rewrite <- Heqσ in Hprec.
+  (* 6. move it from σ to κ, and compose *)
+  pose proof (a_inc_equiv_precise_msubst HwfP Hwf0 Hwfth Hinc Hσ Hie
+                (Δ := empty) ltac:(clear; fsetdec)) as Hstab.
+  unfold ad_precise in Hstab |- *.
+  eapply ad_refine_syn_trans;
+    [ exact Hprec | exact Hwfth | clear; intros α Hα; fsetdec | | exact Hstab ].
+  rewrite bskl_to_pskl_pskl_to_bskl_inh.
+  apply ad_refine_syn_hole_l_target_wf.
+  eapply ad_refine_syn_f_forget; exact Hrs.
+Qed.
+
+Print Assumptions a_sub_complete_hole_p0_precision.
+
+(** The one-line commutation the undecoration needs: erasing a
+    metasubstituted subject is metasubstituting its erasure.  The only
+    interesting node is a variable, where both sides are the image's
+    [ptyp_to_pskl]. *)
+Lemma uskl_to_pskl_msubst_uskl_syn : forall κ R,
+  ⌊ msubst_uskl_syn κ R ⌋ˢ = msubst_pskl κ ⌊ R ⌋ˢ.
+Proof.
+  intros κ R; induction R; cbn; try reflexivity; try (f_equal; assumption).
+  apply uskl_to_pskl_ptyp_to_uskl_syn.
+Qed.
+
+(** At [M = TI] every admissible row of [ad_pat_sub_g] carries a TAG-FREE
+    consistency between the same two skeletons: [__infer] has it on the rule,
+    and [__ghost] / [__ghostg] rebuild it from theirs.  Every other row is
+    excluded by its mode ([M <> TI], [mode_tc], or [mode_fn M]). *)
+Lemma ad_pat_sub_g_ti_consis : forall n NM Ψ Θ R Q,
+  ad_pat_sub_g n NM mode_ti Ψ Θ R Q ->
+  empty ⨟ Θ ⊢ₛᵃ R ∼ Q.
+Proof.
+  intros n NM Ψ Θ R Q H; inversion H; subst; try congruence;
+    try assumption;                                       (* __infer *)
+    try (apply ad_pat_consis__hole; [ reflexivity | assumption ]);  (* __ghost *)
+    try (apply ad_pat_consis__ghostg; reflexivity).                 (* __ghostg *)
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  Sub-Infer                                                             *)
+(* --------------------------------------------------------------------- *)
+
+Lemma a_sub_complete_infer : forall n NM Θ0 P0 P R Ψ Θ κ Q,
+  sub_complete_concl n NM mode_ti Θ0 P0 P R Ψ Θ κ Q.
+Proof.
+  intros n NM Θ0 P0 P R Ψ Θ κ Q.
+  unfold sub_complete_concl.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  (* 1. [skmod] pins [P0 = □] — both mode-compatibility relations do *)
+  assert (HP0 : P0 = pskl_hole).
+  { destruct NM;
+      [ pose proof (HmodTY eq_refl) as Hm | pose proof (HmodSK eq_refl) as Hm ];
+      inversion Hm; reflexivity. }
+  subst P0. cbn in Hrs.
+  (* 2. the run: [Infer], which returns the input skeleton at the input ctx *)
+  exists P, Θ0. split; [ apply a_sub__infer | ].
+  intros κ1 Hid Hinc1. exists κ.
+  destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
+  split; [ exact Hout | split; [ exact Hfact | ] ].
+  (* 3. the precision, via thm:complete-consistency at [(Θ0; □; P)] *)
+  unfold ad_precise.
+  rewrite msubst_bskl_pskl_to_bskl_syn, bskl_to_pskl_pskl_to_bskl_syn.
+  change (Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q)).
+  (* the DECORATED premise undecorates *)
+  pose proof (ad_pat_consis_strip_tags (ad_pat_sub_g_ti_consis Hsub)) as Hc.
+  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Hc.
+  exact (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp).
+Qed.
+
+Print Assumptions a_sub_complete_infer.
+
+(* ===================================================================== *)
+(*  Sub-UnivGhostR — ⚠️ THE MOTIVE'S THIRD PREMISE MAKES THIS ROW VACUOUS  *)
+(*                                                                        *)
+(*  The row's counterpart is [∀◇.Q0] and its subject is GUARDED, but       *)
+(*  refinement has no rule putting a [∀◇] on the RIGHT of a guarded left:  *)
+(*  [__tophole_keep] / [__tophole_remove] want a [∀◇] on the LEFT, [__hole] *)
+(*  wants a [◇] there, and [__flex_l] only unfolds a definition into       *)
+(*  another [ptyp] painting, which is a ghost nowhere.  So the motive's    *)
+(*  SUBJECT-refinement premise                                            *)
+(*                                                                        *)
+(*      ⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋   at   Q = ∀◇.Q0                                 *)
+(*                                                                        *)
+(*  is UNSATISFIABLE here, and the case closes by contradiction.           *)
+(*                                                                        *)
+(*  ⚠️ That is a genuine WEAKENING of the theorem, and it is the mech's own *)
+(*  premise, not the paper's: subtyping-proofs.tex:3054-3074 states TWO    *)
+(*  solution conditions, and the third came from consistency (§1's lesson  *)
+(*  1), where it IS what [a_consis_sound] produces.  [a_sub_sound_thm]     *)
+(*  (prop_decorate_key.v:3326) produces NO such conjunct — and it could    *)
+(*  not, since algorithmic [UnivGhostR] outputs [∀◇.P] from the input [P]. *)
+(*  So for subtyping the third premise is NOT the sound/complete mirror it *)
+(*  is for consistency.  Registered in docs/PAPER-GAPS.md; the witness is  *)
+(*  [ad_refine_pskl_f_tophole_r_shape] below plus                          *)
+(*  [cex/cex_p7_univ_ghost_r_vacuous.v].                                   *)
+(* ===================================================================== *)
+
+(** Whatever refines into a [∀◇] is itself a [◇] or a [∀◇].  No
+    well-formedness is needed: the only recursive row, [__flex_l], unfolds a
+    definition to a [ptyp] painting, and [ptyp_to_pskl] emits no ghost. *)
+Lemma ad_refine_pskl_f_tophole_r_shape : forall F Θ Δ P Q,
+  ad_refine_pskl_f F Θ Δ P (pskl_tophole Q) ->
+  P = pskl_hole \/ exists P', P = pskl_tophole P'.
+Proof.
+  intros F Θ Δ P Q H.
+  remember (pskl_tophole Q) as Qt eqn:HQ. revert Q HQ.
+  induction H; intros Qx HQ; try discriminate HQ.
+  - (* __hole *) left; reflexivity.
+  - (* __tophole_remove *) right; eauto.
+  - (* __tophole_keep *) right; eauto.
+  - (* __flex_l : the unfolded definition is a painting, hence no ghost *)
+    exfalso.
+    destruct (IHad_refine_pskl_f Qx HQ) as [Hc | [P' Hc]];
+      destruct τ; cbn in Hc; discriminate Hc.
+Qed.
+
+Print Assumptions ad_refine_pskl_f_tophole_r_shape.
+
+(** A GUARDED unresolved skeleton erases to a guarded plain one, and in
+    particular to no ghost. *)
+Lemma guarded_uskl_erase_not_ghost : forall R,
+  guarded_uskl R ->
+  ⌊ R ⌋ˢ <> pskl_hole /\ (forall P, ⌊ R ⌋ˢ <> pskl_tophole P).
+Proof.
+  intros R H; inversion H; subst; cbn;
+    (split; [ discriminate | intros; discriminate ]).
+Qed.
+
+Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R Ψ Θ κ Q0,
+  guarded_uskl (msubst_uskl_syn κ R) ->        (* the row's own premise *)
+  sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R Ψ Θ κ (bskl_tophole Q0).
+Proof.
+  intros n Θ0 P0 P R Ψ Θ κ Q0 Hg.
+  unfold sub_complete_concl.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  exfalso. cbn in Hrp.
+  destruct (guarded_uskl_erase_not_ghost Hg) as [Hnh Hnt].
+  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Hnh, Hnt.
+  destruct (ad_refine_pskl_f_tophole_r_shape Hrp) as [Hc | [P' Hc]];
+    [ exact (Hnh Hc) | exact (Hnt P' Hc) ].
+Qed.
+
+Print Assumptions a_sub_complete_univ_ghost_r.
+
+(* ===================================================================== *)
+(*  Sub-Check — THE SAME SHAPE ONE LEVEL UP                               *)
+(*                                                                        *)
+(*  [a_consis_complete_thm] supplies BOTH the run (algorithmic [Check] is  *)
+(*  a consistency run under [a_consis_chk]) and the two increase           *)
+(*  conjuncts.  The PRECISION, on the other hand, is free: [a_sub__check]  *)
+(*  outputs [P0] itself, so the goal is [κ'P0 ⊑ ⌊Q⌋] — and at [Q =         *)
+(*  inh{B}] the motive's P0-FILL premise IS [κP0 ⊑ B] by definition of     *)
+(*  [ad_precise].  All that is left is to move it from κ to the package's  *)
+(*  ζ, which is the stability lemma again (in the FLIPPED direction) plus  *)
+(*  [ad_refine_syn_trans].                                                 *)
+(*                                                                        *)
+(*  So this case does NOT need [a_consis_concrete_output_equiv] after all: *)
+(*  the plan routed the precision through the consistency OUTPUT, but the  *)
+(*  algorithm never returns that output — [a_sub__check] hides it          *)
+(*  existentially inside [a_consis_chk] and returns [P0] (the note at      *)
+(*  DESIGN §9.1's end already observed this; what it did not observe is    *)
+(*  that the fill premise then closes the goal outright).                  *)
+(*                                                                        *)
+(*  TWO SIDE CONDITIONS THE MOTIVE DOES NOT CARRY, both external-wf in    *)
+(*  the sense of docs/WF-SIDE-CONDITIONS.md, both to be supplied by the    *)
+(*  bundle:                                                               *)
+(*                                                                        *)
+(*   · [guarded_pskl P0].  The DECLARATIVE [__check] row does not pin      *)
+(*     [P0]'s shape, but the ALGORITHM dispatches on it: a ∀ [P0] is       *)
+(*     [ForallR], not [Check].  This is the paper's own case split, not a  *)
+(*     new hypothesis.                                                    *)
+(*   · [Θ ⨟ ∅ ⊢ₚₛᵃ B], well-formedness of the COUNTERPART in the solution  *)
+(*     context.  [ad_refine_syn_trans] needs it (refinement is not         *)
+(*     transitive without it — cex_refine_not_transitive.v) and no         *)
+(*     judgment produces it; the paper requires it in prose.  At [P0 = □]  *)
+(*     it came for free ([ad_refine_syn_hole_l_target_wf]); here it does   *)
+(*     not.                                                                *)
+(* ===================================================================== *)
+
+(** A GUARDED metasubstituted subject has a guarded erasure.  Only the
+    subject's own head matters: κ is structural at every non-variable node,
+    and a variable's image is a monotype PAINTING, so a guarded [κR] forces
+    [R] itself to be [unit] / a variable / an arrow. *)
+Lemma guarded_uskl_msubst_erase : forall κ R,
+  guarded_uskl (msubst_uskl_syn κ R) ->
+  lc_pskl ⌊ R ⌋ˢ ->
+  guarded_pskl ⌊ R ⌋ˢ.
+Proof.
+  intros κ R Hg Hlc; destruct R; cbn in Hg |- *;
+    try (inversion Hg; fail);
+    try (inversion Hlc; fail);
+    [ apply guarded_pskl__unit
+    | apply guarded_pskl__var
+    | inversion Hlc; subst; apply guarded_pskl__arrow; assumption ].
+Qed.
+
+Lemma a_sub_complete_check : forall n Θ0 P0 P R Ψ Θ κ B,
+  guarded_uskl (msubst_uskl_syn κ R) ->                       (* row premise *)
+  guarded_pskl B ->                                           (* row premise *)
+  Ψ ⨟ Θ ⊢ₛᵃ (msubst_uskl_syn κ R) ∼ (pskl_to_bskl_inh B) ->   (* row premise *)
+  guarded_pskl P0 ->                    (* the algorithm's Check/ForallR split *)
+  Θ ⨟ empty ⊢ₚₛᵃ B ->                   (* external wf of the counterpart *)
+  sub_complete_concl n a_sub_mode_ty mode_tc Θ0 P0 P R Ψ Θ κ (pskl_to_bskl_inh B).
+Proof.
+  intros n Θ0 P0 P R Ψ Θ κ B HgR HgB Hrow HgP0 HwfB.
+  unfold sub_complete_concl.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  (* the algorithm's input skeleton is guarded *)
+  assert (HgP : guarded_pskl P).
+  { rewrite <- HeqP. eapply guarded_uskl_msubst_erase;
+      [ exact HgR | rewrite HeqP; eapply a_wf_pskl_lc; exact HwfP ]. }
+  (* the DECORATED premise undecorates, then thm:complete-consistency runs *)
+  assert (Hc : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P))
+                            ∼ (pskl_to_bskl_inh B)).
+  { pose proof (ad_pat_consis_strip_tags Hrow) as H.
+    rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in H. exact H. }
+  destruct (a_consis_complete_thm empty Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp)
+    as [P1 [Θ1 [Hrun Hopt]]].
+  destruct (a_consis_sound_aux Hrun Hwf0 HwfP0 HwfP
+              ltac:(intros α Hα; clear - Hα; fsetdec)
+              ltac:(intros β τ Hb; apply inter_empty_pointwise;
+                    intros α Hα; clear - Hα; fsetdec)
+              ltac:(intros Θa β b Θb Heq Hne;
+                    apply inter_empty_pointwise;
+                    intros α Hα; clear - Hα; fsetdec))
+    as [_ [Hwf1 _]].
+  (* the run: algorithmic [Check], whose output IS [P0] *)
+  exists P0, Θ1. split;
+    [ apply a_sub__check; [ exact HgP | exact HgP0 | exists P1; exact Hrun ] | ].
+  intros κ1 Hid Hinc1.
+  destruct (Hopt κ1 Hid Hinc1) as [ζ [Hζ [Hie Hprec]]].
+  exists ζ. split; [ exact Hζ | split; [ exact Hie | ] ].
+  (* the precision: the P0-FILL premise, moved from κ to ζ *)
+  assert (Hσ : msubst_compose ζ κ1 ∷ Θ0 ⊑ Θ)
+    by (eapply a_inc_compose; eassumption).
+  assert (Hscope : a_scope_pskl Θ0 P0)
+    by (eapply a_wf_pskl_to_a_scope_pskl;
+        [ exact HwfP0 | auto | intros α Hα; clear - Hα; fsetdec ]).
+  assert (Heqσ : msubst_pskl (msubst_compose ζ κ1) P0 = msubst_pskl ζ P0)
+    by (exact (msubst_compose_id_pskl Hwf0 Hwf1 Hid Hinc1 Hζ Hscope)).
+  pose proof (a_inc_equiv_precise_msubst_flip HwfP0 Hwf0 Hwfth Hinc Hσ Hie
+                (Δ := empty) ltac:(clear; fsetdec)) as Hstab.
+  rewrite Heqσ in Hstab.
+  unfold ad_precise in Hstab |- *.
+  rewrite msubst_bskl_pskl_to_bskl_syn, bskl_to_pskl_pskl_to_bskl_syn.
+  rewrite bskl_to_pskl_pskl_to_bskl_inh.
+  eapply ad_refine_syn_trans;
+    [ eapply ad_refine_syn_f_forget; exact Hrs
+    | exact Hwfth | clear; intros α Hα; fsetdec
+    | rewrite bskl_to_pskl_pskl_to_bskl_inh; exact HwfB
+    | exact Hstab ].
+Qed.
+
+Print Assumptions a_sub_complete_check.

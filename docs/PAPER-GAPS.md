@@ -1682,3 +1682,72 @@ CONTEXT while refinement (hence precision) opens it into the ghost-fill scope
 cannot see.  Witness: `∀◇.` against `∀α. α` over the empty context.  Anyone
 tempted by the shortcut — in the paper or in a mechanization — should know it is
 closed off.
+
+---
+
+## MECH-PREMISE (found 2026-07-30) — the mechanized `thm:complete-subtyping`'s **third** solution condition makes `Sub-UnivGhostR` VACUOUS
+
+**This is the MECHANIZATION's own premise, not the paper's** — but the authors
+need it, because it decides what the mechanized theorem covers.
+
+The paper's generalized `thm:complete-subtyping`
+(`subtyping-proofs.tex:3054-3074`) gives a solution TWO conditions:
+
+    (join)     typsub^N_M[Ψ] Θ ⊢ syn(θS) ⊑ bid Q
+    (P0-fill)  Θ ⊢ inh(θP_0) ⤳syn bid Q
+
+`DESIGN-completeness-subtyping.md` §1 added a THIRD — the SUBJECT's own
+refinement `Θ ⊢ᵣₚ θ⌊S⌋ ⊳ ⌊Q⌋` — on the ground that it is what SOUNDNESS
+produces for every algorithmic output, so that the sound/complete pair still
+characterizes the algorithm exactly.
+
+**That ground holds for consistency and fails for subtyping.**
+`a_consis_sound` really does export `Θ_1 ⊢ᵣₚ P ⊳ P'`.  `a_sub_sound_thm`
+exports NO such conjunct — and it cannot, because algorithmic `UnivGhostR`
+outputs `∀◇.P` from the input `P`, while refinement has no rule putting a `∀◇`
+on the RIGHT of a non-ghost left-hand side.
+
+**Consequence, machine-checked** (`frost/algo/cex/cex_p7_univ_ghost_r_vacuous.v`,
+Qed + axiom-free, and `ad_refine_pskl_f_tophole_r_shape` in
+`prop_sub_complete_thm.v`): declarative `Sub-UnivGhostR` has a GUARDED subject
+and the counterpart `∀◇.Q_0`, so the third condition reads
+`θ⌊S⌋ ⊳ ∀◇.⌊Q_0⌋` with a guarded left — underivable.  The row's case of P7b is
+therefore closed BY CONTRADICTION (`a_sub_complete_univ_ghost_r`, Qed), and the
+mechanized theorem says nothing about the solutions that row describes.  §2 of
+the cex file exhibits the smallest configuration where the paper's two
+conditions DO hold (`Θ = ·`, `θ = ι`, subject `unit`, counterpart `∀◇.unit`),
+so the exclusion is a real loss of coverage, not a vacuity that was there
+anyway.
+
+**The decision the authors must make.** Either
+
+- (a) drop the third condition for subtyping, and give `Sub-Infer` /
+  `Sub-Check` the subject refinement their `thm:complete-consistency` call
+  needs some other way; or
+- (b) keep it, and state the theorem as not covering `∀◇`-counterpart
+  solutions; or
+- (c) weaken it to hold modulo the `∀◇`s that `UnivGhostR` / `UnivGhostL`
+  insert.
+
+Note the third condition is genuinely LOAD-BEARING for the other rows: it is
+literally `thm:complete-consistency`'s own third premise at the consistency
+subproblem `(Θ_0; □; P)`, which is what `Sub-Infer` and `Sub-Check` invoke.  So
+(a) is not free.
+
+## WF-SIDE-CONDITION (found 2026-07-30) — P7b's `Sub-Check` needs the COUNTERPART well-formed in the solution context
+
+Registered also in [WF-SIDE-CONDITIONS.md](WF-SIDE-CONDITIONS.md).  The
+`Sub-Check` case moves its precision from `θ` to the package's `ζ`, and the
+composition step is `ad_refine_syn_trans` — which refinement only admits under
+the paper's external well-formedness of the RESULT (refinement is not
+transitive outright; `cex_refine_not_transitive.v`).  At `P_0 = □` that
+well-formedness is free (`ad_refine_syn_hole_l_target_wf`: only `__hole` and
+`__flex_r` have a ghost source, and both carry it).  At `Sub-Check` it is not,
+so `a_sub_complete_check` takes `Θ ⨟ ∅ ⊢ P_B` as a hypothesis.  It is the
+paper's usual "all inputs are well-formed", and the P7 bundle will have to
+carry it on the motive.
+
+`a_sub_complete_check` also takes `guarded{P_0}`: the DECLARATIVE `Check` row
+does not pin `P_0`'s shape, but the ALGORITHM dispatches on it — a `∀` `P_0` is
+`ForallR`, not `Check`.  That is the paper's own case split, not a new
+hypothesis.

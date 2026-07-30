@@ -385,3 +385,30 @@ is dead weight: it was only ever fed back to its own IHs, and every
 guardedness fact the proof needs comes from the subject side (the
 subject's ghost bodies, not P's, are what the ghost rows inspect).  It
 was removed; the proof is unchanged otherwise.
+
+---
+
+## P7b `Sub-Check` — well-formedness of the COUNTERPART in the solution context
+
+**`Θ ⨟ ∅ ⊢ₚₛᵃ ⌊Q⌋`**, i.e. the solution's counterpart is well formed where
+the solution lives.  Registered 2026-07-30 with `a_sub_complete_check`
+(`frost/algo/prop_sub_complete_thm.v`), which takes it as a hypothesis; the
+P7 bundle will have to carry it on the motive.
+
+**Why it is needed.** The case must move its precision from the solution's `κ`
+to the package's `ζ`, and the composition step is `ad_refine_syn_trans`.
+Refinement is NOT transitive outright (`cex/cex_refine_not_transitive.v`); it
+is transitive under exactly this external well-formedness, which
+`declarative.tex:1427` requires of every refinement judgment anyway.
+
+**Why the two `P0 = □` rows do not need it.** At `P0 = □` the motive's own
+P0-fill premise is a refinement OUT OF the ghost, and only two rows have a
+ghost source — `__hole`, which carries the fill's well-formedness on the rule,
+and `__flex_r`, whose target is a defined flexible and so is `a_binds_tvar`.
+That is `ad_refine_syn_hole_l_target_wf` (same file, Qed).  At `Sub-Check`
+the source is guarded and no such reading exists.
+
+**Not a well-formedness condition, but registered with it** —
+`a_sub_complete_check` also takes `guarded_pskl P0`.  The DECLARATIVE `Check`
+row does not pin `P0`'s shape, but the ALGORITHM dispatches on it: a `∀` `P0`
+is `ForallR`, not `Check`.  That is the paper's own case split.

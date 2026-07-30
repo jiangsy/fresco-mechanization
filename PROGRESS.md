@@ -62,7 +62,7 @@ excluded from the build); mine them when re-proving.
 - 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
 - ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete_gen` in `frost/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
 - 🟡 Completeness of flexible-variable subtyping (subtyping-proofs:2836, P7a) — **IN PROGRESS**.  TASK 0 (supplying P6-L's `sub_shield` premise at P7b's Sub-ForallL) lives in `frost/algo/prop_sub_shield_supply.v`, all Qed + axiom-free: a mono-ish counterpart (§4, covers a raw FLEXIBLE `P0`), the non-composite shapes (§5), any **flex-free** `P0` (§6, uniformly in ψa and Δρ), and — the generalization that does the real work — any **inh-free counterpart** / any `P0` **with no ∀** (§7/§8: `ad_pat_consis_inh_free_tag_free`, `ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`, `sub_shield_supply_all_free_p0`).  Residual: a `P0` carrying a ∀ BELOW its head — DESIGN-completeness-subtyping.md §9.0.2
-- ⬜ Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c).  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
+- 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `frost/algo/prop_sub_complete_thm.v`); FIVE of P7b's rows closed there, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** — the last VACUOUSLY (see below).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_hole_p0_precision`.  ⚠️ **Sub-UnivGhostR is vacuous under the motive's THIRD solution premise** — machine-checked `frost/algo/cex/cex_p7_univ_ghost_r_vacuous.v`; that premise is the mech's, not the paper's, and `a_sub_sound_thm` does not produce it.  See docs/PAPER-GAPS.md and DESIGN §9.1.3.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
 
 **D. proofs.tex** (§Proofs for Algorithms)
 - ⬜ Suffix moving; Suffix erasure; Splitting refines
@@ -78,7 +78,69 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-30 (latest) — P7 TASK 0: the flex-free and ∀-FREE branches CLOSED; the paper's own TODO property REFUTED
+## 2026-07-30 (latest) — P7b: metasubstitution-stability CLOSED, and with it Sub-Infer / Sub-Check; ⚠️ Sub-UnivGhostR is VACUOUS under the motive's third premise
+
+`make coq` green from clean, all `Print Assumptions` closed, zero admits.
+Everything below is in `frost/algo/prop_sub_complete_thm.v` unless said
+otherwise.
+
+**PRECISION IS STABLE UNDER EQUIVALENT METASUBSTITUTIONS** —
+`a_inc_equiv_precise_msubst` (+ `_gen`, `_flip`), Qed + axiom-free.  This was
+the one piece DESIGN §9.1.1 left open, and the induction is on the **wf of
+`P`**, not on `≡ˢ`: the equivalence in play is congruence over `P`'s own
+structure with `≡ᵗ`-MONOTYPES at the leaves, because a metasubstitution's
+images are monotypes.  `unit` / `hole` are constructors, `arrow` / `all` /
+`tophole` congruences (the last by `__tophole_keep`, whose guard wf supplies and
+`msubst` preserves), and the flexible leaf is `tyequiv_mono_refine_syn`
+verbatim.  Two corrections to the plan: the guessed Δ-freshness side condition
+is NOT needed (only `Δ0 ⊆ Δ` is — the variable row splits on `α ∈ dom κ` /
+`α ∈ dom σ`, and BOTH answers are usable: a hit gives `a_binds_tvar α Θ0` via
+`a_inc_dom_flex`, a double miss makes both sides the same variable); and the
+hypothesis is stated POINTWISE (`∀α, a_binds_tvar α Θ0 → Θ ⊢ κα ≡ᵗ σα`), which
+is what makes the FLIPPED direction free — Sub-Check needs it, and `a_inc_equiv`
+itself is not obviously symmetric.
+
+**Sub-Infer and Sub-Check CLOSED** (`a_sub_complete_infer`,
+`a_sub_complete_check`, Qed + axiom-free), both by the paper's own route
+(:3134): `skmod` forces `P0 = □` at Infer; `a_consis_complete_thm` on the
+consistency subproblem `(Θ0; □; P)`; `a_consis_hole_p0_output` says the run
+returns the SUBJECT; the stability lemma + `ad_refine_syn_trans` move the
+precision from the theorem's ζ to κ.  Shared core:
+`a_sub_complete_hole_p0_precision`.  Supporting, all Qed:
+`uskl_to_pskl_msubst_uskl_syn` (the one-line commutation),
+`ad_pat_sub_g_ti_consis` (at `M = TI` only `__infer` / `__ghost` / `__ghostg`
+fire, and all three carry a TAG-FREE consistency), and
+`ad_refine_syn_hole_l_target_wf`.
+
+⚠️ **Sub-Check does NOT need `a_consis_concrete_output_equiv`.**  The plan
+routed its precision through the consistency OUTPUT, but `a_sub__check` hides
+that output existentially inside `a_consis_chk` and returns `P0` — so the goal
+is `ζP0 ⊑ ⌊Q⌋`, and at `Q = inh{B}` the motive's P0-FILL premise IS `κP0 ⊑ B`
+by definition of `ad_precise`.  What `a_consis_complete_thm` supplies there is
+the RUN and the two increase conjuncts.  Sub-Check does take two hypotheses
+beyond the motive, both for the bundle to supply and both registered in
+docs/WF-SIDE-CONDITIONS.md: `guarded_pskl P0` (the algorithm's
+Check-vs-ForallR dispatch — the paper's own case split) and `Θ ⨟ ∅ ⊢ₚₛᵃ ⌊Q⌋`
+(external wf of the counterpart, which `ad_refine_syn_trans` needs; the
+`P0 = □` rows get it free from `ad_refine_syn_hole_l_target_wf`).
+
+⚠️ **Sub-UnivGhostR is VACUOUS under the motive's THIRD solution premise** —
+machine-checked, `frost/algo/cex/cex_p7_univ_ghost_r_vacuous.v` (Qed +
+axiom-free) plus `ad_refine_pskl_f_tophole_r_shape`.  The row's subject is
+`guarded_uskl` and its counterpart is `∀◇.Q0`, so the premise reads
+`κ⌊R⌋ˢ ⊳ ∀◇.⌊Q0⌋` with a guarded left — and refinement has no rule putting a
+`∀◇` on the RIGHT of a non-ghost left.  The case is therefore proved BY
+CONTRADICTION (`a_sub_complete_univ_ghost_r`, Qed) and the theorem says nothing
+about the solutions it describes.  The premise is the MECH's, not the paper's
+(`subtyping-proofs.tex:3054-3074` gives TWO conditions), and DESIGN §1's
+justification for it — "it is what `a_consis_sound` / `a_sub_sound_thm`
+produce" — is HALF WRONG: `a_sub_sound_thm` produces no subject-refinement
+conjunct, and could not, since algorithmic `UnivGhostR` outputs `∀◇.P` from the
+input `P`.  §2 of the cex file exhibits the smallest configuration where the
+paper's two conditions hold and the third fails, so this is a real loss of
+coverage.  The authors must decide; see docs/PAPER-GAPS.md and DESIGN §9.1.3.
+
+## 2026-07-30 — P7 TASK 0: the flex-free and ∀-FREE branches CLOSED; the paper's own TODO property REFUTED
 
 `make coq` green, all `Print Assumptions` closed, zero admits.
 

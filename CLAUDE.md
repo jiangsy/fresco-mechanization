@@ -28,15 +28,22 @@ point to the same content.
   docs/DESIGN-completeness-subtyping.md §8 (h).  P6-L needed one
   ENCODING FIX: `a_extract` now carries a context and solves at
   `Ξ ++ Θ0`, matching the paper's context-FREE solve/guess judgments
-  (DESIGN-completeness-subtyping.md §7.4 / §7.5).  **P7 (completeness
-  of flexible-variable subtyping) is the current front**: its TASK 0
-  (supplying P6-L's `sub_shield` premise) is closed for a flex-free
-  `P0`, for a `P0` with no ∀, and for an inh-free counterpart
-  (`prop_sub_shield_supply.v`), leaving only a `P0` carrying a ∀
-  below its head.  ⚠️ The property `subtyping-proofs.tex:3243` marks
+  (DESIGN-completeness-subtyping.md §7.4 / §7.5).  **P7 is the current
+  front.**  Its TASK 0 (supplying P6-L's `sub_shield` premise) is
+  closed for a flex-free `P0`, for a `P0` with no ∀, and for an
+  inh-free counterpart (`prop_sub_shield_supply.v`), leaving only a
+  `P0` carrying a ∀ below its head.  P7b's motive is locked and FIVE
+  of its rows are closed (`prop_sub_complete_thm.v`): Sub-Ghost,
+  Sub-GhostG, Sub-Infer, Sub-Check and Sub-UnivGhostR — the last
+  VACUOUSLY.  The enabler is `a_inc_equiv_precise_msubst` (precision
+  is stable under equivalent metasubstitutions).  ⚠️ Two things the
+  authors must see: the property `subtyping-proofs.tex:3243` marks
   with its own TODO ("concrete `P_0` ⟹ RHS is `P_0`") is FALSE
-  (`cex/cex_p7_concrete_rhs.v`); the paper's own cases are
-  unaffected, because they already argue via the equivalence.
+  (`cex/cex_p7_concrete_rhs.v`) though the paper's own cases are
+  unaffected (they argue via the equivalence); and the MECHANIZED
+  motive's THIRD solution premise makes `Sub-UnivGhostR` vacuous
+  (`cex/cex_p7_univ_ghost_r_vacuous.v`) — that premise is the mech's,
+  not the paper's, and `a_sub_sound_thm` does not produce it.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
@@ -63,7 +70,7 @@ point to the same content.
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
 | 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness has P5 done and **P6 COMPLETE** — all five lemmas closed (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L), P6-Sv/P6-Ss as REPAIRED statements (`cex/cex_p6sv_forall_flex.v`, `cex/cex_p6ss_sub_target_ftv.v`).  **P7 (completeness of flexible-variable subtyping) is the current front** — TASK 0's shield supply closed for a flex-free `P0`, a ∀-free `P0`, and an inh-free counterpart; the paper's `:3243` TODO property is FALSE (`cex/cex_p7_concrete_rhs.v`). |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness has P5 done and **P6 COMPLETE** — all five lemmas closed (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L), P6-Sv/P6-Ss as REPAIRED statements (`cex/cex_p6sv_forall_flex.v`, `cex/cex_p6ss_sub_target_ftv.v`).  **P7 is the current front** — TASK 0's shield supply closed for a flex-free `P0`, a ∀-free `P0`, and an inh-free counterpart; P7b's motive locked and FIVE rows closed (`prop_sub_complete_thm.v`), enabled by `a_inc_equiv_precise_msubst`.  ⚠️ For the authors: the paper's `:3243` TODO property is FALSE (`cex/cex_p7_concrete_rhs.v`), and the MECH motive's third solution premise makes `Sub-UnivGhostR` vacuous (`cex/cex_p7_univ_ghost_r_vacuous.v`). |
 
 ## Directory map
 
