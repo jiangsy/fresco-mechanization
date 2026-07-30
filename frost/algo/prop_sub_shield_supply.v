@@ -175,14 +175,14 @@ Print Assumptions ad_pat_sub_g_monoish_tag_free.
 (*  and every walked guess is Δρ-clean, which is [fa_clean].               *)
 (* ===================================================================== *)
 
-Lemma fa_walk_tag_free : forall Δρ P0 ψa Δρ' P0' ψa',
-  fa_walk Δρ P0 ψa Δρ' P0' ψa' ->
+Lemma fa_walk_tag_free : forall A Δρ P0 ψa Δρ' P0' ψa',
+  fa_walk A Δρ P0 ψa Δρ' P0' ψa' ->
   ftag_in_uskl ψa [=] empty ->
   (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
   Δρ' [=] Δρ /\ ftag_in_uskl ψa' [=] empty /\
   (ftvar_in_uskl ψa') ∩ Δρ' [=] empty.
 Proof.
-  intros Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Htf Hcl.
+  intros A Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Htf Hcl.
   - (* fw_refl *)
     split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
   - (* fw_step : one step preserves the invariant, then the IH *)
@@ -325,10 +325,10 @@ Proof.
   exfalso. destruct H; inversion Hat.
 Qed.
 
-Lemma fa_walk_atomic_p0 : forall Δρ P0 ψa Δρ' P0' ψa',
-  fa_walk Δρ P0 ψa Δρ' P0' ψa' -> pskl_atomic P0 -> P0' = P0.
+Lemma fa_walk_atomic_p0 : forall A Δρ P0 ψa Δρ' P0' ψa',
+  fa_walk A Δρ P0 ψa Δρ' P0' ψa' -> pskl_atomic P0 -> P0' = P0.
 Proof.
-  intros Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hat; [ reflexivity | ].
+  intros A Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hat; [ reflexivity | ].
   (* only the three ψ-side steps survive, and each keeps P0 *)
   destruct H; try solve [ exfalso; inversion Hat ]; auto.
 Qed.

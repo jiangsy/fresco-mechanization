@@ -2930,9 +2930,16 @@ Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
 | fa_tophole : forall P0 ψa,
     flex_apart Θ0 Δρ P0 ψa ->
     flex_apart Θ0 Δρ (pskl_tophole P0) ψa
-| fa_topholeg_t : forall P0 ψa,
-    flex_apart Θ0 Δρ P0 ψa ->
-    flex_apart Θ0 Δρ P0 (uskl_topholeg ψa)
+(* ⚠️ NO [fa_topholeg_t] ROW (DESIGN §10.5).  Letting a ∀◈ target inherit the
+   guard from its body is the ONLY way a guard can hold at a ∀◈ that is neither
+   [fa_clean] nor [fa_flexfree], and with [fa_rho_var] present that produces a
+   "∀◈-STACK over a Δρ-variable" — a shape the flexible-P0 read-off then has to
+   report and no consumer can use (it is not a mono paint, and there is no
+   [var ⊑ᵖ topholeg] precision rule).  Dropping the row costs NOTHING: every
+   producer was a transport re-applying it while rebuilding a derivation, never
+   a consumer building one, and [flex_apart_topholeg_target_inv] — the direction
+   that IS used, stripping a ∀◈ off the target — still holds, since [fa_clean]
+   and [fa_flexfree] both survive the strip. *)
 | fa_arrow : forall P1 P2 ψ1 ψ2,
     flex_apart Θ0 Δρ P1 ψ1 ->
     flex_apart Θ0 Δρ P2 ψ2 ->
@@ -3005,7 +3012,6 @@ Proof.
   - apply fa_var_rigid; assumption.
   - apply fa_hole.
   - apply fa_tophole; auto.
-  - inversion Heqt; subst; assumption.
   - (* fa_flexfree : flex-freedom does not look at the target *)
     apply fa_flexfree; assumption.
 Qed.
@@ -3020,7 +3026,6 @@ Proof.
     try discriminate Heqt; subst.
   - apply fa_clean; assumption.
   - inversion Heqt; subst; assumption.
-  - apply fa_topholeg_t; auto.
   - (* fa_flexfree : ∀◇'s body inherits flex-freedom *)
     subst. apply fa_flexfree; eapply pskl_flex_free_tophole_inv; eassumption.
   - (* fa_rho_var : the target is a bare Δρ-variable, unchanged *)
@@ -3048,8 +3053,7 @@ Lemma flex_apart_flex_var_clean : forall Θ0 Δρ β ψa,
   ~ binds β abind_tvar Θ0 ->
   a_flex_tvar Θ0 β ->
   (ftvar_in_uskl ψa) ∩ Δρ [=] empty
-  \/ (exists α0, ψa = uskl_var_f α0 /\ α0 `in` Δρ)
-  \/ (exists ψ0, ψa = uskl_topholeg ψ0).
+  \/ (exists α0, ψa = uskl_var_f α0 /\ α0 `in` Δρ).
 Proof.
   intros Θ0 Δρ β ψa H.
   remember (pskl_var_f β) as t eqn:Heqt.
@@ -3058,12 +3062,10 @@ Proof.
   - (* fa_clean *) left; assumption.
   - (* fa_var_rigid : the caller's own [a_flex_tvar] excludes it *)
     inversion Heqt; subst; contradiction.
-  - (* fa_topholeg_t : the ∀◈ target, reported as its own arm *)
-    right; right; eexists; reflexivity.
   - (* fa_flexfree : IMPOSSIBLE — β is flexible, so P0 is not flex-free *)
     exfalso. apply (H β'); [ simpl; clear; fsetdec | exact Hflex ].
   - (* fa_rho_var : the guess IS a Δρ-variable — already a mono paint *)
-    right; left; exists α; split; [ reflexivity | exact H ].
+    right; exists α; split; [ reflexivity | exact H ].
 Qed.
 
 (* ===================================================================== *)
@@ -3898,7 +3900,6 @@ Proof.
   - apply fa_var_rigid; auto.
   - apply fa_hole.
   - apply fa_tophole; auto.
-  - apply fa_topholeg_t; auto.
   - apply fa_arrow; auto.
   - eapply fa_all_etag with (L := L); eauto.
   - eapply fa_all_syn with (L := L); eauto.
@@ -3920,7 +3921,6 @@ Proof.
   - apply fa_var_rigid; apply binds_app_3; assumption.
   - apply fa_hole.
   - simpl in Hfr. apply fa_tophole; apply IHflex_apart; exact Hfr.
-  - apply fa_topholeg_t; apply IHflex_apart; exact Hfr.
   - simpl in Hfr. apply fa_arrow;
       [ apply IHflex_apart1 | apply IHflex_apart2 ]; clear - Hfr; fsetdec.
   - apply fa_all_etag with (L := L `union` dom Ξ); intros α Hα.
@@ -3965,30 +3965,37 @@ Qed.
     is untouched, so P6-Cv and P6-Cs stay exactly as they are — and unlike
     strengthening P6-Cv to [flex_shield], this keeps P6-Cs's call site
     (Δρ = ∅, a TAGGED guess, [fa_clean]) satisfiable. *)
-Inductive fa_step :
+(** ⚠️ Like [p0_step] and [ss_step], the walk carries an AVOID SET [A] that the
+    ∀-descent's binder must miss — [fastep_all_l] is the only step that moves
+    the PAYLOAD by opening a binder, and without the condition the walk reaches
+    payloads mentioning an arbitrary γ, which blocks the FLEXIBLE-prefix
+    transport ([fa_flexfree] is anti-monotone in the context, so it needs
+    [ftv P0' ∩ dom Ξ = ∅]).  [flex_apart_walk] instantiates [A := dom Θ0]. *)
+Inductive fa_step (A : atoms) :
   atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
 | fastep_arrow_l : forall Δρ P1 P2 ψ1 ψ2,
-    fa_step Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
+    fa_step A Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
 | fastep_arrow_r : forall Δρ P1 P2 ψ1 ψ2,
-    fa_step Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
+    fa_step A Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
 (* P6-Cs descends P0 with the guess FIXED (ψa is the single guess for the
    looked-up α and never splits), so the positional arrow steps above do not
    cover its Arrow row — these two do.  [fastep_all_l] / [fastep_tophole_l]
    already have that shape, which is why only the arrow needs a twin. *)
 | fastep_p0_arrow_l : forall Δρ P1 P2 ψa,
-    fa_step Δρ (pskl_arrow P1 P2) ψa Δρ P1 ψa
+    fa_step A Δρ (pskl_arrow P1 P2) ψa Δρ P1 ψa
 | fastep_p0_arrow_r : forall Δρ P1 P2 ψa,
-    fa_step Δρ (pskl_arrow P1 P2) ψa Δρ P2 ψa
+    fa_step A Δρ (pskl_arrow P1 P2) ψa Δρ P2 ψa
 | fastep_all_l : forall Δρ P0 ψa γ,            (* Sub-ForallR *)
-    fa_step Δρ (pskl_all_syn P0) ψa
+    γ `notin` A ->
+    fa_step A Δρ (pskl_all_syn P0) ψa
             Δρ (open_pskl_wrt_pskl P0 (pskl_var_f γ)) ψa
 | fastep_all_r : forall Δρ ε P0 ψ β,           (* Sub-ForallL *)
-    fa_step Δρ P0 (uskl_all_etag ε ψ)
+    fa_step A Δρ P0 (uskl_all_etag ε ψ)
             (add β Δρ) P0 (open_uskl_wrt_uskl ψ (uskl_var_f β))
 | fastep_tophole_l : forall Δρ P0 ψa,
-    fa_step Δρ (pskl_tophole P0) ψa Δρ P0 ψa
+    fa_step A Δρ (pskl_tophole P0) ψa Δρ P0 ψa
 | fastep_topholeg_r : forall Δρ P0 ψ,          (* Sub-UnivGhostLG *)
-    fa_step Δρ P0 (uskl_topholeg ψ) Δρ P0 ψ
+    fa_step A Δρ P0 (uskl_topholeg ψ) Δρ P0 ψ
 | fastep_flexdef_r : forall Δρ P0 α τ,         (* FlexMono *)
     (* the definition that justifies this step lives in the TARGET context Θ,
        not in Θ0, and Θ grows across ForallR — so the step stays CONTEXT-FREE
@@ -4001,19 +4008,46 @@ Inductive fa_step :
        which is exactly what blocks P7's [sub_shield] supply
        (docs/DESIGN-completeness-subtyping.md §9.0). *)
     (ftvar_in_uskl (ptyp_to_uskl_syn τ)) ∩ Δρ [=] empty ->
-    fa_step Δρ P0 (uskl_var_f α) Δρ P0 (ptyp_to_uskl_syn τ).
+    fa_step A Δρ P0 (uskl_var_f α) Δρ P0 (ptyp_to_uskl_syn τ).
 
-Inductive fa_walk :
+Inductive fa_walk (A : atoms) :
   atoms -> pskl -> uskl -> atoms -> pskl -> uskl -> Prop :=
-| fw_refl : forall Δρ P0 ψa, fa_walk Δρ P0 ψa Δρ P0 ψa
+| fw_refl : forall Δρ P0 ψa, fa_walk A Δρ P0 ψa Δρ P0 ψa
 | fw_step : forall Δρ P0 ψa Δρ1 P1 ψ1 Δρ2 P2 ψ2,
-    fa_step Δρ P0 ψa Δρ1 P1 ψ1 ->
-    fa_walk Δρ1 P1 ψ1 Δρ2 P2 ψ2 ->
-    fa_walk Δρ P0 ψa Δρ2 P2 ψ2.
+    fa_step A Δρ P0 ψa Δρ1 P1 ψ1 ->
+    fa_walk A Δρ1 P1 ψ1 Δρ2 P2 ψ2 ->
+    fa_walk A Δρ P0 ψa Δρ2 P2 ψ2.
+
+Lemma fa_walk_mono : forall A A' Δρ P0 ψa Δρ' P0' ψa',
+  fa_walk A Δρ P0 ψa Δρ' P0' ψa' -> A' [<=] A ->
+  fa_walk A' Δρ P0 ψa Δρ' P0' ψa'.
+Proof.
+  intros A A' Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hsub;
+    [ apply fw_refl | ].
+  eapply fw_step; [ | apply IHfa_walk; exact Hsub ].
+  destruct H;
+    solve [ constructor
+          | apply fastep_all_l; clear - H Hsub; fsetdec
+          | constructor; assumption ].
+Qed.
+
+(** The PAYLOAD's free variables still miss [A]: the ψ-side steps leave it
+    alone and the P0-side ones take subterms or open at a binder outside [A]. *)
+Lemma fa_walk_ftv : forall A Δρ P0 ψa Δρ' P0' ψa',
+  fa_walk A Δρ P0 ψa Δρ' P0' ψa' ->
+  (ftvar_in_pskl P0) ∩ A [=] empty ->
+  (ftvar_in_pskl P0') ∩ A [=] empty.
+Proof.
+  intros A Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Hfr; [ exact Hfr | ].
+  apply IHfa_walk. destruct H; simpl in Hfr;
+    try solve [ clear - Hfr; fsetdec ].
+  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ)) as Hup.
+  simpl in Hup. clear - Hup Hfr H; fsetdec.
+Qed.
 
 Definition flex_apart_walk (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
   : Prop :=
-  forall Δρ' P0' ψa', fa_walk Δρ P0 ψa Δρ' P0' ψa' ->
+  forall Δρ' P0' ψa', fa_walk (dom Θ0) Δρ P0 ψa Δρ' P0' ψa' ->
     flex_apart Θ0 Δρ' P0' ψa'.
 
 (** What the delegation to P6-Cv reads off. *)
@@ -4024,7 +4058,7 @@ Proof. intros Θ0 Δρ P0 ψa H; apply H; apply fw_refl. Qed.
 (** …and what every descent needs: closure, by prepending the step. *)
 Lemma flex_apart_walk_step : forall Θ0 Δρ P0 ψa Δρ1 P1 ψ1,
   flex_apart_walk Θ0 Δρ P0 ψa ->
-  fa_step Δρ P0 ψa Δρ1 P1 ψ1 ->
+  fa_step (dom Θ0) Δρ P0 ψa Δρ1 P1 ψ1 ->
   flex_apart_walk Θ0 Δρ1 P1 ψ1.
 Proof.
   intros Θ0 Δρ P0 ψa Δρ1 P1 ψ1 H Hstep Δρ' P0' ψa' Hw.
@@ -4037,10 +4071,29 @@ Lemma flex_apart_walk_weaken : forall Θ0 Δρ P0 ψa,
   flex_apart_walk Θ0 Δρ P0 ψa ->
   forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
   (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
+  (dom Θ0) [<=] (dom Θ0') ->
   flex_apart_walk Θ0' Δρ P0 ψa.
 Proof.
-  intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx Δρ' P0' ψa' Hw.
-  eapply flex_apart_weaken; [ apply H; exact Hw | exact Hmon | exact Hfx ].
+  intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx Hdom Δρ' P0' ψa' Hw.
+  eapply flex_apart_weaken;
+    [ apply H; eapply fa_walk_mono; [ exact Hw | exact Hdom ]
+    | exact Hmon | exact Hfx ].
+Qed.
+
+(** The FLEXIBLE-prefix transport — the [flex_apart_p0] / [sub_shield] mirror,
+    and what the avoid set on [fastep_all_l] was added for. *)
+Lemma flex_apart_walk_weaken_flex_prefix : forall Θ0 Δρ P0 ψa Ξ,
+  flex_apart_walk Θ0 Δρ P0 ψa ->
+  (ftvar_in_pskl P0) ∩ (dom Ξ) [=] empty ->
+  flex_apart_walk (Ξ ++ Θ0) Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa Ξ H Hfr Δρ' P0' ψa' Hw.
+  assert (HwΞ : fa_walk (dom Ξ) Δρ P0 ψa Δρ' P0' ψa')
+    by (eapply fa_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
+  assert (Hw0 : fa_walk (dom Θ0) Δρ P0 ψa Δρ' P0' ψa')
+    by (eapply fa_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
+  eapply flex_apart_weaken_flex_prefix;
+    [ apply H; exact Hw0 | eapply fa_walk_ftv; [ exact HwΞ | exact Hfr ] ].
 Qed.
 
 (** Adding a RIGID creates no flexible, so this one stays free. *)
@@ -4051,7 +4104,7 @@ Proof.
   intros Θ0 Δρ P0 ψa β H.
   eapply flex_apart_walk_weaken;
     [ exact H | intros x b Hb; apply binds_app_3; exact Hb
-    | apply a_flex_tvar_strip_tvar ].
+    | apply a_flex_tvar_strip_tvar | simpl; clear; fsetdec ].
 Qed.
 
 (* ===================================================================== *)
@@ -4068,27 +4121,63 @@ Qed.
 (*  arrow steps.                                                           *)
 (* ===================================================================== *)
 
-Inductive p0_step : pskl -> pskl -> Prop :=
-| p0step_arrow_l : forall P1 P2, p0_step (pskl_arrow P1 P2) P1
-| p0step_arrow_r : forall P1 P2, p0_step (pskl_arrow P1 P2) P2
+(** ⚠️ The walk carries an AVOID SET [A], and the ∀-descent's binder must miss
+    it — exactly as [ss_step] does (prop_look_complete_sub_cstr.v:90) and for
+    exactly the same reason.  Without it the walk reaches states mentioning an
+    ARBITRARY γ, and [flex_apart_p0] could then not be transported across a
+    FLEXIBLE PREFIX at all: [fa_flexfree] is anti-monotone in the context, so
+    its transport needs [ftv P0' ∩ dom Ξ = ∅], which only holds if the opened
+    binders miss [dom Ξ].  [flex_apart_p0] instantiates [A := dom Θ0], and
+    every call site picks its binder fresh for the context anyway — so the
+    condition costs nothing and buys [flex_apart_p0_weaken_flex_prefix]. *)
+Inductive p0_step (A : atoms) : pskl -> pskl -> Prop :=
+| p0step_arrow_l : forall P1 P2, p0_step A (pskl_arrow P1 P2) P1
+| p0step_arrow_r : forall P1 P2, p0_step A (pskl_arrow P1 P2) P2
 | p0step_all     : forall P0 γ,
-    p0_step (pskl_all_syn P0) (open_pskl_wrt_pskl P0 (pskl_var_f γ))
-| p0step_tophole : forall P0, p0_step (pskl_tophole P0) P0.
+    γ `notin` A ->
+    p0_step A (pskl_all_syn P0) (open_pskl_wrt_pskl P0 (pskl_var_f γ))
+| p0step_tophole : forall P0, p0_step A (pskl_tophole P0) P0.
 
-Inductive p0_walk : pskl -> pskl -> Prop :=
-| p0w_refl : forall P0, p0_walk P0 P0
-| p0w_step : forall P0 P1 P2, p0_step P0 P1 -> p0_walk P1 P2 -> p0_walk P0 P2.
+Inductive p0_walk (A : atoms) : pskl -> pskl -> Prop :=
+| p0w_refl : forall P0, p0_walk A P0 P0
+| p0w_step : forall P0 P1 P2,
+    p0_step A P0 P1 -> p0_walk A P1 P2 -> p0_walk A P0 P2.
+
+(** Shrinking the avoid set only admits MORE walks. *)
+Lemma p0_walk_mono : forall A A' P0 P1,
+  p0_walk A P0 P1 -> A' [<=] A -> p0_walk A' P0 P1.
+Proof.
+  intros A A' P0 P1 H; induction H; intros Hsub; [ apply p0w_refl | ].
+  eapply p0w_step; [ | apply IHp0_walk; exact Hsub ].
+  destruct H;
+    [ apply p0step_arrow_l | apply p0step_arrow_r
+    | apply p0step_all; clear - H Hsub; fsetdec
+    | apply p0step_tophole ].
+Qed.
+
+(** …and the endpoint's free variables still miss [A]. *)
+Lemma p0_walk_ftv : forall A P0 P1,
+  p0_walk A P0 P1 -> (ftvar_in_pskl P0) ∩ A [=] empty ->
+  (ftvar_in_pskl P1) ∩ A [=] empty.
+Proof.
+  intros A P0 P1 H; induction H; intros Hfr; [ exact Hfr | ].
+  apply IHp0_walk. destruct H; simpl in Hfr;
+    try solve [ clear - Hfr; fsetdec ].
+  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ)) as Hup.
+  simpl in Hup. clear - Hup Hfr H; fsetdec.
+Qed.
 
 Definition flex_apart_p0 (Θ0 : aenv) (Δρ : atoms) (P0 : pskl) (ψa : uskl)
   : Prop :=
-  forall P0', p0_walk P0 P0' -> flex_apart Θ0 Δρ P0' ψa.
+  forall P0', p0_walk (dom Θ0) P0 P0' -> flex_apart Θ0 Δρ P0' ψa.
 
 Lemma flex_apart_p0_here : forall Θ0 Δρ P0 ψa,
   flex_apart_p0 Θ0 Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
 Proof. intros Θ0 Δρ P0 ψa H; apply H; apply p0w_refl. Qed.
 
 Lemma flex_apart_p0_step : forall Θ0 Δρ P0 ψa P1,
-  flex_apart_p0 Θ0 Δρ P0 ψa -> p0_step P0 P1 -> flex_apart_p0 Θ0 Δρ P1 ψa.
+  flex_apart_p0 Θ0 Δρ P0 ψa -> p0_step (dom Θ0) P0 P1 ->
+  flex_apart_p0 Θ0 Δρ P1 ψa.
 Proof.
   intros Θ0 Δρ P0 ψa P1 H Hs P0' Hw.
   apply H; eapply p0w_step; [ exact Hs | exact Hw ].
@@ -4098,10 +4187,13 @@ Lemma flex_apart_p0_weaken : forall Θ0 Δρ P0 ψa,
   flex_apart_p0 Θ0 Δρ P0 ψa ->
   forall Θ0', (forall x b, binds x b Θ0 -> binds x b Θ0') ->
   (forall α, a_flex_tvar Θ0' α -> a_flex_tvar Θ0 α) ->
+  (dom Θ0) [<=] (dom Θ0') ->
   flex_apart_p0 Θ0' Δρ P0 ψa.
 Proof.
-  intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx P0' Hw.
-  eapply flex_apart_weaken; [ apply H; exact Hw | exact Hmon | exact Hfx ].
+  intros Θ0 Δρ P0 ψa H Θ0' Hmon Hfx Hdom P0' Hw.
+  eapply flex_apart_weaken;
+    [ apply H; eapply p0_walk_mono; [ exact Hw | exact Hdom ]
+    | exact Hmon | exact Hfx ].
 Qed.
 
 Lemma flex_apart_p0_weaken_tvar : forall Θ0 Δρ P0 ψa β,
@@ -4111,7 +4203,25 @@ Proof.
   intros Θ0 Δρ P0 ψa β H.
   eapply flex_apart_p0_weaken;
     [ exact H | intros x b Hb; apply binds_app_3; exact Hb
-    | apply a_flex_tvar_strip_tvar ].
+    | apply a_flex_tvar_strip_tvar | simpl; clear; fsetdec ].
+Qed.
+
+(** The FLEXIBLE-prefix transport (the [sub_shield_weaken_flex_prefix] mirror):
+    the walk misses [dom Ξ] throughout, so its endpoint does, and [fa_flexfree]
+    survives.  This is what the avoid set on [p0_step] was added for. *)
+Lemma flex_apart_p0_weaken_flex_prefix : forall Θ0 Δρ P0 ψa Ξ,
+  flex_apart_p0 Θ0 Δρ P0 ψa ->
+  (ftvar_in_pskl P0) ∩ (dom Ξ) [=] empty ->
+  flex_apart_p0 (Ξ ++ Θ0) Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa Ξ H HfrP0 P0' Hw.
+  assert (HwΞ : p0_walk (dom Ξ) P0 P0')
+    by (eapply p0_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
+  assert (Hw0 : p0_walk (dom Θ0) P0 P0')
+    by (eapply p0_walk_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
+  assert (HfrP0' : (ftvar_in_pskl P0') ∩ (dom Ξ) [=] empty)
+    by (eapply p0_walk_ftv; [ exact HwΞ | exact HfrP0 ]).
+  eapply flex_apart_weaken_flex_prefix; [ apply H; exact Hw0 | exact HfrP0' ].
 Qed.
 
 (** A Δρ-CLEAN guess shields every P0-subterm at once — in particular at
@@ -4131,7 +4241,7 @@ Proof.
     [ apply flex_apart_walk_here; exact Hfw | ].
   apply IHHw. eapply flex_apart_walk_step; [ exact Hfw | ].
   destruct H; [ apply fastep_p0_arrow_l | apply fastep_p0_arrow_r
-              | apply fastep_all_l | apply fastep_tophole_l ].
+              | apply fastep_all_l; assumption | apply fastep_tophole_l ].
 Qed.
 
 (** [flex_apart] binder descent at a tagged-∀ target with a ∀-source. *)

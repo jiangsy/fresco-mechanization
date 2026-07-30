@@ -224,8 +224,8 @@ Proof.
     by (eapply ss_walk_ftv; [ exact HwΞ | exact HfrP0 ]).
   destruct (H P0' Δρ' Hw0 Hle Hcl) as [Hap Hfs].
   split;
-    [ eapply flex_apart_walk_weaken;
-        [ exact Hap | intros x b Hb; apply binds_app_3; exact Hb ]
+    [ eapply flex_apart_walk_weaken_flex_prefix;
+        [ exact Hap | exact HfrP0' ]
     | eapply flex_shield_weaken_flex_prefix; [ exact Hfs | exact HfrP0' ] ].
 Qed.
 

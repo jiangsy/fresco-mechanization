@@ -3518,7 +3518,10 @@ algo subtyping, when input `P_0` is a concrete type, RHS of subtyping is always
 
 ## 10. `flex_apart` and `flex_shield`, rethought as a whole (2026-07-30)
 
-⚠️ **READ §10.5 FIRST — it is the settled version.**  §10.3 said "delete
+✅ **CLOSED — read §10.6 for the settled version and what landed.**  §10.5's
+"one predicate" reading is retracted in turn: see §10.6.
+
+⚠️ **§10.5 was the previous attempt at settling this.**  §10.3 said "delete
 `flex_apart`"; §10.4 said "no, the descents must differ"; §10.5 VALIDATES §10.3
 against the existing `flex_shield` kit and RETRACTS §10.4.  The intuition in
 §10.1-§10.2 was stable throughout.
@@ -3699,3 +3702,52 @@ extended by the rigid**, which the ρ-machinery already tolerates elsewhere
 `flex_apart_walk`, `flex_apart_p0`; (4) collapse `sub_shield` to one conjunct,
 which is what `cex_p7_shield_arrow.v` demands.  Branch `flexapart-baserules` is
 then superseded — its base-row patch is subsumed.
+
+### 10.6 CLOSED (2026-07-30) — the BASE rows merged, the DESCENTS kept apart
+
+The oscillation across §10.3-§10.5 came from conflating **same notion** (true)
+with **same inductive definition** (false).  Executing the merge settled it in
+one line of evidence: `flex_apart`'s `fa_all_etag` descends a matched ∀ at a
+**fixed** Δρ, while `flex_shield_descend_both` descends it at **`add α Δρ`**.
+Neither implies the other, so a merge means reproving P6-Cv's whole ∀/ρ
+threading.  They are two sound approximations of one condition, each closed
+under a different recursion — consistency MATCHES ∀s, subtyping INSTANTIATES
+them — and that difference is real.
+
+**What must agree is the BASE rows, and `flex_apart` was missing two.**  Landed:
+
+- **`fa_flexfree`** — nothing to keep apart when the payload has no raw
+  Θ0-flexible.  `fa_unit` / `fa_var_rigid` / `fa_hole` were three special cases.
+- **`fa_rho_var`** — a ρ-replaced rigid variable is safe opposite ANY payload;
+  P6-Cv's own leaf, which `flex_shield` had stated as `fsh_rho_var` all along.
+- **`fa_topholeg_t` DELETED.**  With `fa_rho_var` present it was the only way a
+  guard could hold at a ∀◈ that is neither clean nor flex-free, and it produced
+  a "∀◈-stack over a Δρ-variable" that no consumer can use.  Every producer was
+  a transport re-applying it, never a consumer building one, and the direction
+  that IS used (`flex_apart_topholeg_target_inv`, stripping a ∀◈ off the target)
+  still holds.
+
+**Three knock-ons, each with the same shape and the same fix.**
+
+1. `fa_flexfree` reads the context NEGATIVELY, so **context weakening must also
+   create no new flexibles** — true of every RIGID extension, which is what all
+   the callers do (`a_flex_tvar_strip_tvar`).  A FLEXIBLE prefix needs the
+   ftv-scoped twin instead.
+2. That twin needs the walk's endpoint to miss `dom Ξ`, so **`p0_walk` and
+   `fa_walk` both gained an AVOID SET**, exactly as `ss_walk` already had —
+   `ss_step`'s own comment had diagnosed this ("without that the walk reaches
+   states mentioning an ARBITRARY γ, and the transport could then not be done at
+   all").  New: `p0_walk_mono` / `p0_walk_ftv` / `fa_walk_mono` / `fa_walk_ftv`
+   and the two `*_weaken_flex_prefix` transports.
+3. `flex_apart_flex_var_clean` is now a **two-way read-off** (clean, or the
+   guess IS a Δρ-variable), mirroring `flex_shield_flex_leaf`.  P6-Cs's Arrow
+   row consumes the new arm by the route `fsh_rho_var`'s comment describes: the
+   precision premise **forces `Pi` to be that very variable**
+   (`ad_ppre_delta_var_inv` + `msubst_pskl_var_inv`), so SolE-Var keeps it, the
+   output is `Pa = α0` rather than the fresh `α1`, and `α1`'s image is then
+   unconstrained — `⟨⟩` serves, and `⟨⟩` IS Δρ-clean where `α0` would not have
+   been.
+
+**`cex/cex_p7_shield_arrow.v` is now REFUTED, as intended,** and has become
+`cex/regr_p7_shield_arrow.v`: both witnesses are shielded, one by each new row.
+`make coq` green from clean, 41 `Print Assumptions` closed, zero admits.

@@ -1932,7 +1932,7 @@ Proof.
                    Htageq Hinter Hrhofβ Hdelta Hshield Hdfreshβ
                    ltac:(apply flex_apart_walk_weaken_tvar;
                          eapply flex_apart_walk_step;
-                           [ exact Hapart | apply fastep_all_l ])
+                           [ exact Hapart | apply fastep_all_l; clear - Fr; solve_notin ])
                    ltac:(eapply flex_shield_descend_l;
                          [ exact Hfsh | exact HβΘ0 ])
                    Hpreβ HΨs1 HΨs2
@@ -2101,7 +2101,7 @@ Proof.
                   ltac:(clear - Hinter HΨρs Htun; fsetdec)
                   Hrhof Hdelta Hsh1 Hdfresh
                   (flex_apart_walk_here
-                     (flex_apart_walk_step Hap0 (fastep_arrow_l _ _ _ _ _)))
+                     (flex_apart_walk_step Hap0 (fastep_arrow_l _ _ _ _ _ _)))
                   Hpre1
                   ltac:(clear - Hft1 HΨs1 Hinter Htun Htdisj Hun HΨρs; fsetdec)
                   ltac:(clear - HΨs2 Hun Htun Hft2 Hinter HΨρs Htdisj; fsetdec)
@@ -2114,7 +2114,7 @@ Proof.
                   ltac:(clear - Hsp2; fsetdec)
                   ltac:(clear - Hinter HΨρs Htun; fsetdec)
                   Hrhof Hdelta Hsh2 Hdfresh
-                  (flex_apart_walk_step Hap0 (fastep_arrow_r _ _ _ _ _))
+                  (flex_apart_walk_step Hap0 (fastep_arrow_r _ _ _ _ _ _))
                   ltac:(eapply flex_shield_psi_anti;
                         [ eapply flex_shield_arrow_inv; exact Hfsh0
                         | clear - Htun; fsetdec ])
