@@ -3710,20 +3710,35 @@ consistency output to `P_0`.
 5. `a_consis_hole_p0_output` says the run's output is `P`, so the theorem's
    precision IS a precision about `P`.
 
-⚠️ **Step 5 lands the precision under the theorem's own `ζ`, not under `κ`.**
-The package gives `a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ`;
-`msubst_compose_id_pskl` collapses the composite on a Θ0-scoped skeleton, and
-`a_inc_equiv_msubst_pskl` then yields `Θ ⊢ κP ≡ˢ ζP`.  What is missing is
-precision transporting along `≡ˢ` in its left argument:
+⚠️ **Step 5 lands the precision under the theorem's own `ζ`, not under `κ`**, and
+that is the one piece still missing.  `msubst_compose_id_pskl` collapses the
+package's composite on a Θ0-scoped skeleton, so what is wanted is
 
-    Θ ⊢ P1 ≡ˢ P2  →  Θ ⨟ Δ ⊢ₚᵣᵃ P2 ⊑ X  →  Θ ⨟ Δ ⊢ₚᵣᵃ P1 ⊑ X
+    Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (msubst_pskl σ P)
+      given  a_inc_equiv Θ0 κ σ Θ  and  Θ0 ⨟ Δ0 ⊢ₚₛᵃ P
 
-True, and the right lemma — `≡ˢ` unfolds flexible definitions and refinement's
-`__flex_l` / `__flex_r` rows do exactly that — but not a one-liner: `≡ˢ` is an
-equivalence CLOSURE, so the induction must carry both directions at once (an
-`<->`), and its `__flex_def` row needs `a_wf_aenv Θ` for the definition's
-uniqueness and monotypeness.  **That single lemma stands between here and both
-rows**, and it is reusable well beyond them.
+— *precision is stable under equivalent metasubstitutions* — after which
+`ad_refine_syn_trans` composes it with the theorem's own precision.
+
+**This is NOT the general `≡ˢ` transport**, which an earlier reading of the gap
+called for.  That form is awkward: `≡ˢ` is an equivalence CLOSURE, so the
+induction has to carry both directions at once and its `trans` row needs wf of a
+MIDDLE skeleton nobody supplies.  The statement above sidesteps all of it by
+inducting on **the wf of `P`**, because the equivalence actually in play is not a
+general `≡ˢ` but congruence over `P`'s own structure with `≡ᵗ`-**monotypes** at
+the leaves — a metasubstitution's images are monotypes.
+
+Row by row: `unit` / `hole` are constructors; `arrow` / `all` / `tophole` are
+congruences (the last by `__tophole_keep`, whose guard wf supplies and `msubst`
+preserves); a Δ-bound or RIGID variable is missed by both metasubstitutions
+(`msubst_lookup_notin`), so both sides are the same variable; and a FLEXIBLE
+variable is the only real case — `a_inc_equiv_lookup` gives `Θ ⊢ κα ≡ᵗ σα`,
+`a_inc_lookup_mono` gives both monotypes, and **`tyequiv_mono_refine_syn`
+(prop_precise_recover.v:90) IS that case, already Qed**.
+
+Side conditions, both standard and both available at the call site: `Δ0 ⊆ Δ`, and
+Δ-binders fresh for the context (the same condition `ad_refine_syn_trans` itself
+carries).
 
 #### What the detour did produce, and is worth keeping
 

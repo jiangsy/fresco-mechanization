@@ -202,13 +202,17 @@ undecorates by `ad_pat_consis_strip_tags` plus a one-line
 `⌊κR⌋ˢ = κ⌊R⌋ˢ` commutation; `a_consis_complete_thm` applies at `(Θ0; □; P)`
 because its other two premises ARE the motive's refinement premises at `P0 = □`;
 and `a_consis_hole_p0_output` makes its precision a precision about `P`.  ⚠️ That
-precision arrives under the theorem's own `ζ`, not under `κ` —
-`a_inc_equiv_msubst_pskl` + `msubst_compose_id_pskl` give `Θ ⊢ κP ≡ˢ ζP`, so
-what is missing is precision TRANSPORTING along `≡ˢ`:
-`Θ ⊢ P1 ≡ˢ P2 → Θ ⨟ Δ ⊢ₚᵣᵃ P2 ⊑ X → Θ ⨟ Δ ⊢ₚᵣᵃ P1 ⊑ X`.  True and reusable
-(`≡ˢ` unfolds definitions; refinement's `__flex_l`/`__flex_r` do exactly that),
-but `≡ˢ` is an equivalence CLOSURE so the induction must carry both directions
-at once, and its `__flex_def` row needs `a_wf_aenv Θ`.
+precision arrives under the theorem's own `ζ`, not under `κ`.  The missing lemma
+is **precision is stable under equivalent metasubstitutions** —
+`Θ ⨟ Δ ⊢ₚᵣᵃ msubst_pskl κ P ⊑ msubst_pskl σ P` given `a_inc_equiv Θ0 κ σ Θ` and
+wf of `P` — after which `ad_refine_syn_trans` composes.  ⚠️ Not the general `≡ˢ`
+transport, which an earlier note here asked for and which is awkward (`≡ˢ` is an
+equivalence CLOSURE, so the induction carries both directions and its `trans` row
+wants wf of a middle skeleton nobody supplies).  Inducting on the WF OF `P`
+sidesteps that: the equivalence in play is congruence over `P`'s structure with
+`≡ᵗ`-MONOTYPES at the leaves, and that leaf case is already Qed —
+`tyequiv_mono_refine_syn` (prop_precise_recover.v:90), with
+`a_inc_equiv_lookup` + `a_inc_lookup_mono` supplying its premises.
 
 **P7's MOTIVE is LOCKED** — `frost/algo/prop_sub_complete_thm.v`
 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`,
