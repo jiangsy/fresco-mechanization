@@ -3666,44 +3666,56 @@ consistency output existentially), so the mech's Sub-Check does not need (†)
 to build the derivation — only to transport the PRECISION conclusion from
 `a_consis_complete_thm`'s output `P1` to `P0`.
 
-### 9.1.1 The next three cases share ONE lemma, and it does not hold as stated
+### 9.1.1 The remaining IH-free rows — and a RETRACTION
 
-Sub-Infer, Sub-Check and Sub-UnivGhostR are the remaining IH-FREE rows of P7b.
-All three reduce to one missing lemma.  Their algorithmic rule returns the INPUT
-skeleton (or `∀◇.` of it) at the INPUT context, so `ζ := κ` and
-`opt_axiom_factor` discharge the two increase conjuncts exactly as in
-`a_sub_complete_ghost` — leaving only
+⚠️ **An earlier version of this section said the lemma below "does not hold as
+stated", on a COLOUR-mismatch argument.  That was WRONG, twice, and both errors
+are ones this repo already warns about.**  Recording the retraction because a
+false "does not hold" is the most expensive kind of note to leave behind.
 
-    Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚᵣᵃ ⌊R⌋ˢ ⊑ ⌊Q⌋
+- The ∀◇ row was said to be stuck because `ad_refine_syn__tophole_keep` wants
+  `guarded_bskl` of the target's body, which a NESTED `∀◇` is not.  But a nested
+  `∀◇` is **not well-formed**: `a_wf_pskl__tophole` carries `guarded_pskl` on the
+  body (def_extra.v:230).  That is exactly docs/WF-SIDE-CONDITIONS.md's rule —
+  check the paper's EXTERNAL well-formedness before calling anything false.
+- The colour difference between precision (∀s painted INHERITED on both sides)
+  and refinement (a ghost filled SYNTHESISED) is real, but it is not a mismatch:
+  `is_sskl` forbids `bskl_all_inh`, which at the `__hole` row forces the fill
+  ∀-FREE — where the two paintings COINCIDE — and at the `__forall_syn` rows the
+  source is a ∀ too, so `ad_refine_syn__all` applies with both sides inherited.
+  No row disagrees.
 
-which is the paper's step at :3181 / :3288 ("the consistency premise, with
-erasure and thm:complete-consistency, gives `Θ ⊢ precise{θP}{Q}`").
+**Which rows actually share the lemma** is also narrower than first recorded.
+`__infer` and `__univ_ghost_r` both carry `is_sskl Q` ON THE RULE, and their
+algorithmic counterparts return the INPUT skeleton (or `∀◇.` of it) at the INPUT
+context, so `ζ := κ` + `opt_axiom_factor` discharge the two increase conjuncts
+exactly as in `a_sub_complete_ghost`, leaving
 
-**It does not hold as stated, and the reason is a COLOUR mismatch rather than a
-missing side condition.**  Precision paints ∀s INHERITED on BOTH sides
-(`ad_precise` is `⊢ᵣᵃ inh{·} ⊳ inh{·}`), whereas refinement fills a ghost with a
-SYNTHESISED painting (`ad_refine_syn__hole` emits `pskl_to_bskl_syn`,
-`__tophole_fill` emits `bskl_all_syn`).  The two agree exactly where no ∀ sits
-under a ghost.  Concretely the induction breaks at consistency's `__topholeg`
-row: it gives `∀◈.R ∼ ∀◇.Q` from `R ∼ Q`, and the matching refinement step
-`ad_refine_syn__tophole_keep` demands `guarded_bskl` of the target's body — which
-a nested `∀◇` is not (`guarded_bskl` is unit / var / arrow).  `__tophole_remove`
-does not apply either: it would need the IH at an unwrapped source against a
-still-wrapped target.
+    Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q  →  is_sskl Q  →  Θ ⨟ Δ ⊢ₚₛᵃ ⌊Q⌋
+      →  a_wf_aenv Θ  →  ⌊R⌋ˢ ⊑ ⌊Q⌋
 
-The same wall blocks the other obvious route — using the mech's THIRD solution
-premise (the subject's own refinement `⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋`) directly.
-`ad_refine_pskl` is a rule-for-rule mirror of `ad_refine_syn` on the colourless
-sort, so it differs from `ad_precise` in precisely the two ghost-fill rows.
+**Sub-Check is NOT one of them.**  Its counterpart is `pskl_to_bskl_inh B` for a
+merely GUARDED `B`, which is `is_sskl` only when `B` is ∀-free.  It takes the
+paper's own route instead: `a_consis_complete_thm` for the run and the
+precision, then `a_consis_concrete_output_equiv` (§9.1) to move that precision
+from the consistency OUTPUT to `P0`.
 
-**Note the three call sites are not symmetric about this.**
-`ad_pat_sub_g__univ_ghost_r` carries `guarded_uskl R` AND `guarded_bskl Q` on
-the rule, so the offending shape cannot be its ROOT — but the induction still
-descends into subterms that lack the guard.  So the lemma has to be RESTATED (a
-∀◇-nesting-free side condition on the target, or a disjunctive conclusion), not
-merely re-premised.  Settle that before writing any of the three cases — it is
-the `bskl_monoish` lesson again (§9.0.2): find the hypothesis that is actually
-load-bearing before decomposing.
+**The one real technicality, verified by inspection.**  Consistency puts a ∀'s
+fresh binder in Θ; refinement puts it in Δ (`ad_refine_syn__all` descends at
+`add α Δ` with Θ FIXED).  So the `__forall_syn` rows need the Θ→Δ move — and the
+PLAIN move is FALSE: `ad_refine_syn__hole`'s fill `P` may mention the stripped
+binder, and its wf premise is at `Δ = ∅`, so `α ∈ Δ` does not save it.  That is
+precisely why the F-indexed mirror exists: `ad_refine_syn_f_strip`
+(prop_consis_sound.v:750) does the move under `α ∈ F`.  So state the lemma over
+`ad_precise_f` and forget at the end — exactly how `a_consis_complete_thm` is
+structured.
+
+Everything else is mechanical: unit / var are reflexivity and `__var`; arrow is a
+congruence (`is_sskl` and wf both split); `forall_inh_*` are `is_sskl`-impossible;
+`ghostg` is `__hole` at `P := □`; `tophole` / `topholeg` are `__tophole_keep`
+with wf giving the guard; `tophole_drop` is `__tophole_remove`; and `flex_l` /
+`flex_r` are the matching `__flex_*`, where the definition is a MONOtype
+(`a_wf_aenv_binds_def_mono`) so the two paintings coincide again.
 
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 
