@@ -205,8 +205,18 @@ own binder, so a head-only statement would need the IH at `(α1,α0),Θ` where t
 goal wants `(α0,α1),Θ` — same `binds` graph, no congruence for it in either
 judgment; the mid form absorbs the head into the left block.  (The existing
 `a_wf_pskl_reassoc` is head-only and suffices there only because wf's ∀ rule
-puts its binder in Δ, never in Θ.)  What remains is the threaded induction
-itself.
+puts its binder in Δ, never in Θ.)  ✅ Plus the CONTEXT-FREE ghost-row fact
+`ad_pat_consis_ghost_subject_no_forall` (`⌊R⌋ˢ = □` + `is_sskl Q` ⟹ `⌊Q⌋`
+∀-free), which is what the threading needs where the two paintings can disagree.
+
+Two of the three obstacles to the threaded induction are now gone: induct on the
+REFINEMENT (its `__all` descends at `add α Δ` with Θ fixed — the goal's own
+discipline, no strip needed) and DECOUPLE the consistency derivation's context
+(it is only read for syntactic facts).  One row still does not line up,
+`__tophole_remove`: refinement keeps the target while consistency's
+`__tophole` / `__topholeg` strip a `∀◇` off it too, so their premise sits at
+`(R0, Q')` where the IH wants `(R0, ∀◇.Q')`.  That needs a design pass, not
+another improvised row.
 
 ## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 

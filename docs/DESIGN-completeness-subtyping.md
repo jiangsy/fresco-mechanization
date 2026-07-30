@@ -3754,11 +3754,35 @@ through.  (The existing `a_wf_pskl_reassoc`, prop_consis_sound.v:1727, is
 head-only, and that suffices there only because wf's ∀ rule puts its binder in
 Δ, never in Θ.)
 
-**What remains on this path is the threaded induction itself**: induct on the
-consistency derivation, carry the subject-refinement premise, use
-`ad_refine_pskl_f_reassoc` at each ∀ row to bring the refinement's Δ-binder into
-Θ where the consistency IH lives, and `ad_refine_syn_f_strip` at the end to send
-the accumulated binders back into Δ.
+✅ **And the GHOST-ROW FACT**, which is what the threading needs where the two
+paintings can actually disagree (same file, Qed):
+
+    ad_pat_consis_ghost_subject_no_forall
+      Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q → is_sskl Q → ⌊R⌋ˢ = □ → pskl_no_forall ⌊Q⌋
+
+Only three consistency rows have a ghost subject, and each pins the counterpart
+to an INHERITED painting, a bare ghost, or a variable; `is_sskl` then leaves no ∀
+anywhere.  It is CONTEXT-FREE, which is the point — the threading can use it
+without moving the consistency derivation between Θ and Δ.
+
+#### What the threaded induction still needs
+
+Two of the three original obstacles are gone.  Induct on the **refinement**, not
+on consistency: refinement's `__all` descends at `add α Δ` with Θ FIXED, which is
+exactly the goal's discipline, so no strip is needed there at all.  And the
+consistency derivation's context can be DECOUPLED (state it at an arbitrary Θc),
+because it is only ever read for syntactic facts — the erasure equations
+`⌊R⌋ˢ = P`, `⌊Q_b⌋ = Q` are what carry the correspondence.
+
+One row still does not line up: **`__tophole_remove`**.  Refinement takes
+`∀◇.P0 ⊳ Q` from `P0 ⊳ Q`, keeping the target; consistency's matching rows
+`__tophole` / `__topholeg` strip a `∀◇` off the TARGET too, so their premise sits
+at `(R0, Q')` where the IH wants `(R0, ∀◇.Q')`.  Only `__tophole_drop` hands the
+target over unchanged.  So the threading needs either a consistency-side
+"re-wrap the target" step or a hypothesis that tolerates the extra `∀◇`.
+**Settle that before writing the induction** — three improvised attempts at this
+lemma have each turned up a new row, and the pattern is that guessing costs more
+than measuring.
 
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 

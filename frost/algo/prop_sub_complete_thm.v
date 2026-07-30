@@ -522,3 +522,65 @@ Proof.
 Qed.
 
 Print Assumptions ad_refine_pskl_f_reassoc.
+
+(* ===================================================================== *)
+(*  THE GHOST-ROW FACT — what the threaded induction needs at [__hole]     *)
+(*                                                                        *)
+(*  Precision fills a ghost with a SYNTHESISED painting                    *)
+(*  ([ad_refine_syn_f__hole] emits [pskl_to_bskl_syn]), so at a ghost the  *)
+(*  two paintings agree only if the fill is ∀-FREE                         *)
+(*  ([pskl_no_forall_inh_eq_syn]).  Against a ghost SUBJECT that is        *)
+(*  exactly what consistency delivers: only three of its rows have such a  *)
+(*  subject, and each pins the counterpart to an INHERITED painting, a     *)
+(*  bare ghost, or a variable — after which [is_sskl], which forbids       *)
+(*  [bskl_all_inh], leaves no ∀ anywhere.                                  *)
+(*                                                                        *)
+(*  Context-FREE, which is the point: the threading can use it without     *)
+(*  having to move the consistency derivation between Θ and Δ.             *)
+(* ===================================================================== *)
+
+Lemma is_sskl_inh_no_forall : forall P,
+  is_sskl (pskl_to_bskl_inh P) -> pskl_no_forall P.
+Proof.
+  intros P; induction P; cbn; intros H; try exact I.
+  - (* arrow *) inversion H; subst; split; auto.
+  - (* all_syn : its inherited painting IS a [bskl_all_inh] *) inversion H.
+  - (* tophole *) inversion H; subst; auto.
+Qed.
+
+Lemma ad_pat_consis_ghost_subject_no_forall : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  is_sskl Q ->
+  uskl_to_pskl R = pskl_hole ->
+  pskl_no_forall (bskl_to_pskl Q).
+Proof.
+  intros Ψ Θ R Q H; induction H; intros Hsk Heq; cbn in Heq |- *;
+    try discriminate Heq.
+  - (* __ghostg : the counterpart is [◇] *) exact I.
+  - (* __hole : an INHERITED painting, and [is_sskl] makes it ∀-free *)
+    rewrite bskl_to_pskl_pskl_to_bskl_inh.
+    apply is_sskl_inh_no_forall; exact Hsk.
+  - (* __flex_r : a bare variable *) exact I.
+Qed.
+
+Print Assumptions ad_pat_consis_ghost_subject_no_forall.
+
+(* ===================================================================== *)
+(*  WHERE THE THREADED INDUCTION STILL NEEDS A DESIGN PASS                *)
+(*                                                                        *)
+(*  With the transports above and this ghost-row fact, inducting on the    *)
+(*  REFINEMENT lines up better than inducting on consistency: refinement's *)
+(*  [__all] descends at [add α Δ] with Θ FIXED, which is exactly the       *)
+(*  goal's discipline, so no strip is needed there at all.  Decoupling the *)
+(*  consistency derivation's context (it is only ever read for SYNTACTIC   *)
+(*  facts) removes the second obstacle.                                    *)
+(*                                                                        *)
+(*  One row still does not line up: [__tophole_remove].  Refinement takes  *)
+(*  [∀◇.P0 ⊳ Q] from [P0 ⊳ Q], keeping the target; consistency's matching  *)
+(*  rows [__tophole] / [__topholeg] STRIP a [∀◇] off the target too, so    *)
+(*  their premise is at [(R0, Q')] where the IH wants [(R0, ∀◇.Q')].  Only *)
+(*  [__tophole_drop] hands over the target unchanged.  So the threading    *)
+(*  needs either a consistency-side "re-wrap the target" step or a         *)
+(*  strengthened hypothesis that tolerates the extra [∀◇] — settle that    *)
+(*  before writing the induction, and do not improvise it row by row.      *)
+(* ===================================================================== *)
