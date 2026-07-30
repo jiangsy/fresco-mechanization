@@ -2865,6 +2865,7 @@ Inductive flex_apart (Θ0 : aenv) (Δρ : atoms) : pskl -> uskl -> Prop :=
                         (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
     flex_apart Θ0 Δρ (pskl_all_syn P0) (uskl_all_syn ψ).
 
+
 (* Inversions used by the ∀◇/∀◈ congruence cases. *)
 Lemma flex_apart_topholeg_target_inv : forall Θ0 Δρ P ψ,
   flex_apart Θ0 Δρ P (uskl_topholeg ψ) ->

@@ -1531,3 +1531,43 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
     `ad_partial_precise_delta_weaken_fresh`: Sub-ForallL hands the IH the
     precision premise at `add β Δ` (β joins Δρ, and `Δρ ⊆ Δ`) and must
     return the conclusion at plain Δ.
+
+## ⚠️ REPAIR-PREMISE GAP (authors' call) — `flex_apart` is missing `fsh_rho_var`'s mirror, and without it P6-L's side condition is UNSATISFIABLE at an arrow (2026-07-30)
+
+**Machine-checked:** `frost/algo/cex/cex_p7_shield_arrow.v`
+(`p7_shield_arrow_flexfree_is_unsatisfiable`,
+`p7_shield_arrow_poly_is_unsatisfiable`; both Qed, axiom-free).
+
+P6-Cv's repair premise `flex_apart` and P6-Sv's `flex_shield` are deliberate
+mirrors, and `flex_shield` carries
+
+    fsh_rho_var : α ∈ Δρ  →  flex_shield Θ0 Ψ' Δρ P0 (uskl_var_f α)
+
+whose own comment records why it had to be added: *"a ρ-REPLACED RIGID VARIABLE
+is safe opposite ANY payload, flexible or not — this is P6-Cv's leaf … WITHOUT
+this rule the premise is TOO STRONG."*  **`flex_apart` never got the mirror.**
+
+The consequence only shows up at P7.  `sub_shield` (P6-Ss/P6-L's premise) has a
+`flex_apart_walk` conjunct that quantifies over the ρ-walk, and Sub-ForallL's
+walk step `fastep_all_r` — which P6-Sv's own ForallL row builds — opens a tagged
+quantifier of the guess at a fresh β, adds β to Δρ, and leaves `P0` alone.  So
+from `(∅, P0, ∀^ε b. b)` the walk reaches `flex_apart Θ0 {β} P0 (var β)`, and at
+an **arrow** `P0` no rule applies: `fa_clean` wants `{β} ∩ {β} = ∅`, the
+congruence rows want another shape, and there is no `fa_rho_var`.
+
+So `sub_shield Θ0 Ψa ∅ (P1 → P2) (∀^ε b. b)` is **unsatisfiable** — P6-L is
+vacuous there, and P7b's Sub-ForallL cannot use it.  Two witnesses, because they
+say different things: `⟨⟩ → ⟨⟩` is FLEX-FREE (so `flex_apart` is also missing
+`fsh_flexfree`'s mirror), while `(∀γ. γ→γ) → α̂` is not flex-free and its
+counterpart is not mono-ish, so no existing route reaches it either.
+
+**Recommended repair:** add `fa_rho_var` to `flex_apart`, mirroring
+`fsh_rho_var` verbatim.  It kills both witnesses.  **Cost, measured:** the ~8
+`flex_apart` inversion lemmas each gain a case, all but one closing with
+`apply fa_rho_var; assumption`; and `flex_apart_flex_var_clean` must weaken to a
+disjunction (its single consumer, P6-Cs's Arrow row, still reaches its "ψa is a
+mono paint" conclusion, since a Δρ-variable IS one — but only after peeling a
+∀◈ stack, which at `SK` is not free).
+
+**Held pending the authors' decision** because `flex_apart` is a side condition
+the paper must adopt; see docs/DESIGN-completeness-subtyping.md §9.0.

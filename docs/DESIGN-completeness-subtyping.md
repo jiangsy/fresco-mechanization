@@ -3427,15 +3427,35 @@ remains:
 | *any* `P0` with a mono-ish `Q` | §4 |
 | **arrow, with a non-mono-ish `Q`** | ⚠️ **OPEN** |
 
-At an arrow node with a non-mono-ish counterpart, `Ψa` need not collapse and
-`P0` need not be flex-free, so neither `fsh_clean` nor `fsh_flexfree` fires and
-the shield must come from `fsh_arrow` — i.e. it needs ψa to be an ARROW there,
-genuine structural ALIGNMENT between `P0` and the guess.  That is the pipeline
-invariant, and it is the last thing task 0 owes.  Note the asymmetry to exploit
-when attacking it: `flex_shield` has a flex-free base rule (`fsh_flexfree`) but
-`flex_apart` does NOT, so the `flex_apart_walk` conjunct will still want
-`fa_clean` — Δρ-cleanliness of the walked guess — or `fa_arrow`, i.e. the same
-alignment.
+⚠️ **AND THAT LAST ROW IS NOT MERELY UNPROVED — THE PREMISE IS UNSATISFIABLE
+THERE.**  Machine-checked: `cex/cex_p7_shield_arrow.v` (two witnesses, Qed,
+axiom-free).  `sub_shield`'s `flex_apart_walk` conjunct quantifies over the
+ρ-walk, and Sub-ForallL's step `fastep_all_r` — which P6-Sv's own ForallL row
+builds (`prop_look_complete_sub_var.v:2470`) — opens a tagged quantifier of the
+guess at a fresh β, adds β to Δρ, and LEAVES `P0` ALONE.  So the walk reaches
+`flex_apart Θ0 {β} P0 (var β)`, and at an ARROW `P0` no rule applies:
+`fa_clean` wants `{β} ∩ {β} = ∅` and every congruence row wants another shape.
+Hence `sub_shield Θ0 Ψa ∅ (P1 → P2) (∀^ε b. b)` is **unsatisfiable**: P6-L is
+vacuous there and P7b's Sub-ForallL cannot use it.
+
+**The repair is identified and it is a MISSING MIRROR.**  `flex_shield` carries
+`fsh_rho_var` (`α ∈ Δρ ⟹ shield against `var α`, whatever the payload), added
+precisely because "WITHOUT this rule the premise is TOO STRONG" — see its own
+comment.  `flex_apart` never got it, and the stuck state is exactly its shape.
+Adding `fa_rho_var` kills both witnesses.
+
+⚠️ **HELD PENDING THE AUTHORS' DECISION**, because `flex_apart` is P6-Cv's
+REPAIR PREMISE — reshaping it changes a side condition the PAPER must adopt.
+Cost measured before backing the change out: the ~8 `flex_apart` inversion
+lemmas each gain a case, all but one closing with `apply fa_rho_var;
+assumption` (only `flex_apart_tophole_p0_inv` actually needed a bullet); and
+`flex_apart_flex_var_clean` (`prop_look_complete.v:2907`) genuinely BREAKS —
+"a flexible P0 forces the guess Δρ-CLEAN" gains a second way to hold, so it must
+weaken to a disjunction whose right arm is "the guess is a Δρ-variable under a
+∀◈ stack".  Its single consumer (P6-Cs's Arrow row,
+`prop_look_complete_cstr.v:2199`) still reaches its "ψa is a mono paint, hence
+tag-free" conclusion — a Δρ-variable IS one — but only after peeling that stack,
+which at `SK` is not free.  Registered in docs/PAPER-GAPS.md.
 
 **The backstop, and the one genuinely open dependency.**  For the remaining
 shape — a rigid-∀-spine skeleton facing a bare flexible payload — the argument

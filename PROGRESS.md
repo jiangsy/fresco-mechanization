@@ -163,7 +163,21 @@ an arrow or a ∀; of `fa_step`'s nine only the three ψ-side ones fire, and the
 leave P0 alone), so the shield is one `flex_apart` constructor plus
 `fsh_flexfree`, with no tag reasoning at all.
 
-**TASK 0's RESIDUAL IS NOW EXACTLY ONE SHAPE.**  P7b's Sub-ForallL comes with the
+⚠️ **AND THAT RESIDUAL IS UNSATISFIABLE, NOT MERELY UNPROVED** — machine-checked,
+`cex/cex_p7_shield_arrow.v` (two witnesses, Qed, axiom-free).  `sub_shield`'s
+`flex_apart_walk` conjunct quantifies over the ρ-walk, and Sub-ForallL's step
+`fastep_all_r` (built by P6-Sv's own ForallL row) opens a tagged quantifier of
+the guess at a fresh β, adds β to Δρ, and LEAVES P0 alone — so the walk reaches
+`flex_apart Θ0 {β} P0 (var β)`, and at an ARROW P0 no rule applies.  **The
+repair is a MISSING MIRROR:** `flex_shield` carries `fsh_rho_var` (added because
+"WITHOUT this rule the premise is TOO STRONG"), `flex_apart` never got it, and
+`fa_rho_var` kills both witnesses.  ⚠️ **HELD PENDING THE AUTHORS' DECISION** —
+`flex_apart` is P6-Cv's repair premise, so reshaping it changes a side condition
+the paper must adopt; cost measured in docs/PAPER-GAPS.md (the ~8 inversion
+lemmas are clerical, but `flex_apart_flex_var_clean` genuinely breaks and P6-Cs's
+Arrow row needs rework).
+
+**TASK 0's RESIDUAL IS EXACTLY ONE SHAPE.**  P7b's Sub-ForallL comes with the
 paper's WLOG `guarded(P0) ∨ P0 = □`, and `guarded_pskl` is `unit | var | arrow`,
 so a ∀ / ∀◇ P0 never reaches the call.  `□` / `unit` / rigid var → §5; FLEXIBLE
 var → §4 (κP0 IS that variable's monotype image, so Q is mono-ish); any P0 with a
