@@ -3725,6 +3725,33 @@ paper's own route: `a_consis_complete_thm` for the run and the precision, then
 `a_consis_concrete_output_equiv` (§9.1) to move that precision from the
 consistency OUTPUT to `P0`.
 
+#### The corrected path's next unit, measured
+
+Threading the subject-refinement premise means carrying it through the
+consistency induction, and there the two judgments' binder disciplines collide:
+consistency opens a ∀ into **Θ**, refinement into **Δ**.  One direction of the
+reconciliation exists — `ad_refine_syn_f_strip` moves Θ→Δ under the `F`-hygiene
+that keeps ghost fills off the binder.  The threading needs the other:
+
+    ad_refine_pskl_f F Θ Δ P Q
+      →  ad_refine_pskl_f F ((α ~ tvar) ++ Θ) (remove α Δ) P Q
+
+the refinement analogue of `a_wf_pskl_reassoc`.  It needs NO hygiene condition —
+putting a Δ-binder into Θ only ADDS scope — and eight of its ten rows are one
+constructor each.  It was drafted and backed out, because one row makes it
+bigger than it looks: `__tophole_fill` extends Θ AT THE HEAD with its own
+binder, so the IH lands at `(α1,α0),Θ` while the goal wants `(α0,α1),Θ`.  The
+two have the same `binds` graph, but neither judgment has a congruence for that,
+so the honest fix is the MID-INSERTION form
+
+    Θ = Θ1 ++ Θ2  →  ad_refine_pskl_f F (Θ1 ++ (α ~ tvar) ++ Θ2) (remove α Δ) P Q
+
+whose `__hole` row then needs the matching mid-insertion for `a_wf_pskl` —
+which does not exist either (only the STRIP direction,
+`a_wf_pskl_strip_tvar`, prop_consis_sound.v:444).  **So the corrected path's
+next unit is those two transports, in that order**, and then the threaded
+induction.
+
 ### 9.2 P7a's two interesting cases (paper :2861-3040)
 
 `Flex-Solve` and `Flex-Assign`; the paper omits the rest as "routine IH".

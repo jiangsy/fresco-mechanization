@@ -192,6 +192,18 @@ Sub-Check is in neither group — its counterpart is `is_sskl` only when `B` is
 ∀-free, so it takes the paper's own route (`a_consis_complete_thm` +
 `a_consis_concrete_output_equiv`).
 
+**Next unit on the corrected path, measured.**  Threading the subject-refinement
+premise through the consistency induction collides with the binder disciplines:
+consistency opens a ∀ into Θ, refinement into Δ.  The Θ→Δ direction exists
+(`ad_refine_syn_f_strip`, under `F`-hygiene); the Δ→Θ direction does not and is
+what the threading needs — the refinement analogue of `a_wf_pskl_reassoc`, with
+NO hygiene condition since adding a Θ-binder only adds scope.  Drafted and
+backed out: `__tophole_fill` extends Θ at the HEAD, so the IH lands at
+`(α1,α0),Θ` while the goal wants `(α0,α1),Θ`, and neither judgment has a
+`binds`-congruence.  The honest fix is the MID-INSERTION form, whose `__hole`
+row then needs the matching mid-insertion for `a_wf_pskl` (only the STRIP
+direction exists).  Those two transports are the next unit.
+
 ## 2026-07-30 — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.
