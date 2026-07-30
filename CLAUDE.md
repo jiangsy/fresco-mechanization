@@ -40,10 +40,23 @@ point to the same content.
   authors must see: the property `subtyping-proofs.tex:3243` marks
   with its own TODO ("concrete `P_0` ⟹ RHS is `P_0`") is FALSE
   (`cex/cex_p7_concrete_rhs.v`) though the paper's own cases are
-  unaffected (they argue via the equivalence); and the MECHANIZED
-  motive's THIRD solution premise makes `Sub-UnivGhostR` vacuous
-  (`cex/cex_p7_univ_ghost_r_vacuous.v`) — that premise is the mech's,
-  not the paper's, and `a_sub_sound_thm` does not produce it.
+  unaffected (they argue via the equivalence); and the first-cut
+  ROOT-level third solution premise was REFUTED — it was a lockstep
+  condition that made `Sub-UnivGhostR` vacuous AND excluded the
+  head-disagreeing solutions of `Sub-ForallL` / `Sub-ForallR`
+  (`∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`; machine-checked in
+  `cex/cex_p7_univ_ghost_r_vacuous.v` +
+  `cex/cex_p7_third_premise_forall.v`).  **REPAIRED same day**: the
+  motive's join is now the LEAF-VALID mirror `ad_pat_sub_gv`
+  (def_decl_algo_sub_hyg.v) carrying the subject refinement exactly
+  at the consistency leaves; the root premise is gone, all five rows
+  re-closed, and `Sub-UnivGhostR` is a REAL proof.  Remaining
+  obligation: transport the P5 precision-substitution + freshening
+  kits to `_gv` when ForallL/ForallR are written.  The paper's own
+  top-level 2-condition `thm:complete-consistency` is FALSE as
+  literally stated (only the augmented 3-condition form of
+  consistency-proofs.tex:2230 is true), so `thm:complete-subtyping`'s
+  Infer/Check invocations of it are a paper gap (PAPER-GAPS.md).
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
@@ -70,7 +83,7 @@ point to the same content.
 |---|---|---|
 | 1 | Syntactic / judgment **definitions** for the declarative system; algorithmic placeholder. | 🟢 **done** |
 | 2 | Declarative metatheory (subsumption, subtyping soundness, refinement preserves wf, skeleton validity/safety, stability lemmas). | 🟢 **admit-free** — D1 / D12 and the restored chain are all Qed; `frost/decl/` has no `admit`/`Admitted` left. See [PROGRESS.md Part 1](PROGRESS.md#part-1-paper--mechanization-mapping). |
-| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness has P5 done and **P6 COMPLETE** — all five lemmas closed (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L), P6-Sv/P6-Ss as REPAIRED statements (`cex/cex_p6sv_forall_flex.v`, `cex/cex_p6ss_sub_target_ftv.v`).  **P7 is the current front** — TASK 0's shield supply closed for a flex-free `P0`, a ∀-free `P0`, and an inh-free counterpart; P7b's motive locked and FIVE rows closed (`prop_sub_complete_thm.v`), enabled by `a_inc_equiv_precise_msubst`.  ⚠️ For the authors: the paper's `:3243` TODO property is FALSE (`cex/cex_p7_concrete_rhs.v`), and the MECH motive's third solution premise makes `Sub-UnivGhostR` vacuous (`cex/cex_p7_univ_ghost_r_vacuous.v`). |
+| 3 | Algorithmic system definitions and soundness/completeness vs. declarative. | 🟡 in progress, **admit-free** — consistency soundness AND completeness/optimality closed; subtyping soundness (`a_sub_sound_thm`) closed; subtyping completeness has P5 done and **P6 COMPLETE** — all five lemmas closed (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L), P6-Sv/P6-Ss as REPAIRED statements (`cex/cex_p6sv_forall_flex.v`, `cex/cex_p6ss_sub_target_ftv.v`).  **P7 is the current front** — TASK 0's shield supply closed for a flex-free `P0`, a ∀-free `P0`, and an inh-free counterpart; P7b's motive locked and FIVE rows closed (`prop_sub_complete_thm.v`), enabled by `a_inc_equiv_precise_msubst`.  ⚠️ For the authors: the paper's `:3243` TODO property is FALSE (`cex/cex_p7_concrete_rhs.v`); the first-cut ROOT-level third solution premise was REFUTED (lockstep — `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`) and REPAIRED via the leaf-valid join `ad_pat_sub_gv`; the paper's own 2-condition `thm:complete-consistency` is FALSE as literally stated (PAPER-GAPS.md). |
 
 ## Directory map
 

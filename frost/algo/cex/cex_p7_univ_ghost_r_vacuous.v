@@ -1,8 +1,16 @@
-(** ⚠️ THE MOTIVE'S THIRD SOLUTION PREMISE MAKES P7b's Sub-UnivGhostR ROW
-    VACUOUS.  The row is still PROVABLE (by contradiction, and it is Qed:
-    [a_sub_complete_hole_p0_precision]'s neighbour
-    [a_sub_complete_univ_ghost_r] in prop_sub_complete_thm.v), but the
-    mechanized completeness theorem therefore says NOTHING about the
+(** ⚠️ HISTORICAL WITNESS — the ROOT-level third solution premise made P7b's
+    Sub-UnivGhostR row VACUOUS.  RESOLVED 2026-07-30: the motive was repaired
+    the same day — the third premise was REMOVED from the root and moved to
+    the CONSISTENCY LEAVES of the join ([ad_pat_sub_gv],
+    def_decl_algo_sub_hyg.v), and [a_sub_complete_univ_ghost_r] is now a REAL
+    proof (algorithmic UnivGhostR + the shared [□]-P0 precision core + a
+    [∀◇]-wrap).  This file keeps the machine-checked record of WHY the
+    root-level formulation was wrong; the ForallL/ForallR halves of the same
+    finding are in cex_p7_third_premise_forall.v.  The text below describes
+    the PRE-repair state.
+
+    THE ORIGINAL FINDING.  The row was then provable only by contradiction,
+    so the mechanized completeness theorem said NOTHING about the
     solutions that row describes, whereas the paper's statement does.
 
     WHERE THE PREMISE COMES FROM.  The paper's generalised
@@ -37,7 +45,16 @@
     need for their [a_consis_complete_thm] call some other way, or (b) it is
     kept and the theorem is documented as not covering ∀◇-counterpart
     solutions, or (c) it is weakened to hold modulo the ∀◇s that UnivGhostR /
-    UnivGhostL insert.  Registered in docs/PAPER-GAPS.md. *)
+    UnivGhostL insert.  Registered in docs/PAPER-GAPS.md.
+
+    ⚠️ FOLLOW-UP (same day): the truncation is NOT confined to this row.
+    [cex_p7_third_premise_forall.v] machine-checks that the SAME third premise
+    also excludes the head-disagreeing solutions of Sub-ForallL and
+    Sub-ForallR — [∀a.a ⩽ unit] and [unit ⩽ ∀a.unit] — because refinement is
+    a LOCKSTEP relation while those rules exist to break lockstep.  So option
+    (c) must be the LEAF-level weakening (the condition at the derivation's
+    __infer / __check / __univ_ghost_r leaves), not merely "modulo ∀◇s";
+    see the extended PAPER-GAPS.md entry. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -138,3 +155,22 @@ Qed.
 Print Assumptions cex_join.
 Print Assumptions cex_p0_fill.
 Print Assumptions cex_third_fails.
+
+(** (e) REPAIR CHECK (2026-07-30): under the repaired motive the LEAF-VALID
+    join IS derivable here — the leaf's refinement is [unit ⊳ unit] at the
+    STRIPPED counterpart — so this configuration is now inside the theorem's
+    coverage. *)
+Lemma cex_join_gv :
+  ad_pat_sub_gv 0 a_sub_mode_sk mode_tc empty nil
+    (msubst_uskl_syn nil cex_R) cex_Q.
+Proof.
+  cbn. apply ad_pat_sub_gv__univ_ghost_r.
+  - reflexivity.
+  - apply guarded_uskl__unit.
+  - apply guarded_bskl__unit.
+  - apply is_sskl__unit.
+  - apply ad_pat_consis__unit; reflexivity.
+  - cbn. apply ad_refine_pskl__unit.
+Qed.
+
+Print Assumptions cex_join_gv.

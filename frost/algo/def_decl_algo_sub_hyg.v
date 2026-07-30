@@ -111,3 +111,109 @@ Inductive ad_pat_sub_g :
     binds α (abind_flex_mono_def τ) Θ ->
     ad_pat_sub_g n NM (mode_fn M) Ψ Θ (ptyp_to_uskl_syn τ) Q ->
     ad_pat_sub_g n NM (mode_fn M) Ψ Θ (uskl_var_f α) Q.
+
+(* ===================================================================== *)
+(*  LEAF-VALID variant [ad_pat_sub_gv] (completeness-only, P7's join).     *)
+(*                                                                        *)
+(*  Same rules as [ad_pat_sub_g], except the three CONSISTENCY-LEAF rows  *)
+(*  — [__infer], [__check], [__univ_ghost_r] — additionally carry the     *)
+(*  SUBJECT's refinement into the leaf's counterpart (for [UnivGhostR],   *)
+(*  into the STRIPPED counterpart [Q], not [∀◇.Q]).                       *)
+(*                                                                        *)
+(*  WHY.  thm:complete-subtyping needs, at each leaf, exactly the third   *)
+(*  solution condition of the AUGMENTED thm:complete-consistency          *)
+(*  (consistency-proofs.tex:2230-2242) for the consistency subproblem it  *)
+(*  invokes there — and that condition is NOT derivable from the paper's  *)
+(*  two subtyping-solution conditions (the capture configuration          *)
+(*  [(P0=◇, P=∀X.◇, Q=∀X.X)] passes both).  Stating it at the ROOT        *)
+(*  instead — as one [⊢ᵣₚᵃ κ⌊S⌋ˢ ⊳ ⌊Q⌋] premise on the theorem — is       *)
+(*  WRONG: refinement is a lockstep relation, so a root condition         *)
+(*  excludes every solution whose sides disagree at a head through       *)
+(*  ForallL / ForallR / UnivGhostR, i.e. instantiation and               *)
+(*  generalisation themselves (machine-checked:                          *)
+(*  cex/cex_p7_univ_ghost_r_vacuous.v, cex/cex_p7_third_premise_forall.v).*)
+(*  The ghost leaves [__ghost] / [__ghostg] need no condition: they do    *)
+(*  not invoke consistency completeness, and their subject's refinement   *)
+(*  is derivable from the rule's own wf premise.                          *)
+(*                                                                        *)
+(*  [ad_pat_sub_gv_forget] recovers the plain mirror wherever leaf data   *)
+(*  is not needed (in particular for every P5/P6 invocation).             *)
+(* ===================================================================== *)
+
+Inductive ad_pat_sub_gv :
+  nat -> a_sub_mode -> mode -> atoms -> aenv -> uskl -> bskl -> Prop :=
+| ad_pat_sub_gv__infer : forall n NM Ψ Θ R Q,                 (* Infer *)
+    Ψ [=] empty ->
+    empty ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    is_sskl Q ->
+    Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) ->
+    ad_pat_sub_gv n NM mode_ti Ψ Θ R Q
+| ad_pat_sub_gv__check : forall n Ψ Θ T B,                    (* Check (TY) *)
+    guarded_uskl T ->
+    guarded_pskl B ->
+    Ψ ⨟ Θ ⊢ₛᵃ T ∼ (pskl_to_bskl_inh B) ->
+    Θ ⨟ empty ⊢ᵣₚᵃ ⌊ T ⌋ˢ ⊳ B ->
+    ad_pat_sub_gv n a_sub_mode_ty mode_tc Ψ Θ T (pskl_to_bskl_inh B)
+| ad_pat_sub_gv__forall_r : forall n L Ψ Θ T B,              (* ForallR (TY) *)
+    (forall α, α `notin` L ->
+       ad_pat_sub_gv n a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ)
+         T (open_bskl_wrt_bskl B (bskl_var_f α))) ->
+    ad_pat_sub_gv (S n) a_sub_mode_ty mode_tc Ψ Θ T (bskl_all_inh B)
+| ad_pat_sub_gv__univ_ghost_r : forall n Ψ Θ R Q,            (* UnivGhostR (SK) *)
+    Ψ [=] empty ->
+    guarded_uskl R ->
+    guarded_bskl Q ->
+    is_sskl Q ->
+    empty ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+    Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q) ->
+    ad_pat_sub_gv n a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
+| ad_pat_sub_gv__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
+    Ψ1 ⨟ Θ ⊢ₛᵃ R1 ∼ Q1 ->
+    ad_pat_sub_gv n NM M Ψ2 Θ R2 Q2 ->
+    Ψ [=] Ψ1 `union` Ψ2 ->
+    ad_pat_sub_gv (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)
+| ad_pat_sub_gv__forall_l_tagged : forall n NM Ψ Ψ' Θ M ε R ψ Q, (* ForallL, β1=ε *)
+    M <> mode_ti ->
+    Ψ' ∩ Ψ [=] empty ->
+    Ψ' ∩ (ftag_in_uskl (uskl_all_etag ε R)) [=] empty ->
+    a_tags_sort NM Ψ' ψ ->
+    Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
+    ad_pat_sub_gv n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
+    ad_pat_sub_gv (S n) NM M Ψ Θ (uskl_all_etag ε R) Q
+| ad_pat_sub_gv__forall_l_untagged : forall n NM Ψ Ψ' Θ M R ψ Q, (* ForallL, β1=· *)
+    M <> mode_ti ->
+    Ψ' ∩ Ψ [=] empty ->
+    Ψ' ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty ->
+    a_tags_sort NM Ψ' ψ ->
+    Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψ ⌋ˢ ->
+    ad_pat_sub_gv n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
+    ad_pat_sub_gv (S n) NM M Ψ Θ (uskl_all_syn R) Q
+| ad_pat_sub_gv__ghost : forall n Ψ Θ M P,                    (* Ghost (SK) *)
+    Ψ [=] empty ->
+    Θ ⨟ empty ⊢ₚₛᵃ P ->
+    mod_comp_sk (pskl_to_bskl_inh P) M ->
+    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ uskl_hole (pskl_to_bskl_inh P)
+| ad_pat_sub_gv__ghostg : forall n Ψ Θ M,                     (* GhostG (SK) *)
+    Ψ [=] empty ->
+    mod_comp_sk bskl_hole M ->
+    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ uskl_holeg bskl_hole
+| ad_pat_sub_gv__univ_ghost_l : forall n Ψ Θ M R Q,          (* UnivGhostL (SK) *)
+    M <> mode_ti ->
+    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ R Q ->
+    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ (uskl_tophole R) Q
+| ad_pat_sub_gv__univ_ghost_lg : forall n Ψ Θ M R Q,         (* UnivGhostLG (SK) *)
+    M <> mode_ti ->
+    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ R Q ->
+    ad_pat_sub_gv n a_sub_mode_sk M Ψ Θ (uskl_topholeg R) Q
+| ad_pat_sub_gv__flex_mono : forall n NM Ψ Θ M α τ Q,         (* FlexMono *)
+    binds α (abind_flex_mono_def τ) Θ ->
+    ad_pat_sub_gv n NM (mode_fn M) Ψ Θ (ptyp_to_uskl_syn τ) Q ->
+    ad_pat_sub_gv n NM (mode_fn M) Ψ Θ (uskl_var_f α) Q.
+
+(** Forgetting the leaf data recovers the plain hygienic mirror. *)
+Lemma ad_pat_sub_gv_forget : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  ad_pat_sub_g n NM M Ψ Θ R Q.
+Proof.
+  intros * H; induction H; eauto using ad_pat_sub_g.
+Qed.

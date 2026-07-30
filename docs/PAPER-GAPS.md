@@ -1685,10 +1685,28 @@ closed off.
 
 ---
 
-## MECH-PREMISE (found 2026-07-30) — the mechanized `thm:complete-subtyping`'s **third** solution condition makes `Sub-UnivGhostR` VACUOUS
+## MECH-PREMISE ~~(found 2026-07-30)~~ **RESOLVED same day — option (c) IMPLEMENTED** — the root-level **third** solution condition made `Sub-UnivGhostR` vacuous (and truncated ForallL/ForallR)
 
-**This is the MECHANIZATION's own premise, not the paper's** — but the authors
-need it, because it decides what the mechanized theorem covers.
+**RESOLUTION (2026-07-30).**  Option (c) below — the leaf-level formulation —
+is now IMPLEMENTED: the motive's join is the LEAF-VALID mirror
+`ad_pat_sub_gv` (def_decl_algo_sub_hyg.v), which carries the subject
+refinement exactly on the three consistency-leaf rows (`__infer`, `__check`,
+`__univ_ghost_r` — the last at the STRIPPED counterpart), and the root-level
+third premise is GONE from `sub_complete_concl` / `sub_flex_complete_concl`.
+All previously closed rows re-closed, and `a_sub_complete_univ_ghost_r` is
+now a REAL proof (algorithmic `UnivGhostR` + the `□`-P0 precision core + a
+`∀◇`-wrap), Qed + axiom-free.  The two cex files remain as historical
+witnesses of why the root formulation was wrong.  What remains for the
+AUTHORS is the PAPER-side decision recorded at the end of this entry
+(the paper's own statements are still gapped as described).  Known future
+obligation on the mech side: the P5 precision-substitution and the `_n→_g`
+freshening kits must eventually be transported to `ad_pat_sub_gv` (needed by
+the ForallL / ForallR rows of P7b); at the leaves this adds one new fact —
+precision-substitution must preserve the leaf's subject refinement.
+
+**The original entry follows.**  This was the MECHANIZATION's own premise,
+not the paper's — but the authors need it, because it decided what the
+mechanized theorem covers.
 
 The paper's generalized `thm:complete-subtyping`
 (`subtyping-proofs.tex:3054-3074`) gives a solution TWO conditions:
@@ -1719,20 +1737,76 @@ conditions DO hold (`Θ = ·`, `θ = ι`, subject `unit`, counterpart `∀◇.un
 so the exclusion is a real loss of coverage, not a vacuity that was there
 anyway.
 
+**The truncation is NOT confined to the ghost row — machine-checked
+(2026-07-30, `frost/algo/cex/cex_p7_third_premise_forall.v`, Qed +
+axiom-free).**  The third condition is a LOCKSTEP relation —
+`ad_refine_pskl` descends both sides together, so it can hold only when
+subject and counterpart agree in shape (modulo ghosts on the LEFT and
+flexible definitions) — while `Sub-ForallL` strips a ∀ from the subject and
+`Sub-ForallR` adds one to the counterpart.  Both files' configurations
+satisfy the paper's two conditions, are well formed and mode-compatible, and
+fail the third:
+
+- `∀a.a ⩽ unit` (ForallL — the INSTANTIATION subtyping exists for): the
+  third condition reads `∀a.a ⊳ unit`, underivable;
+- `unit ⩽ ∀a.unit` (ForallR — checking a guarded subject against a ∀): it
+  reads `unit ⊳ ∀a.unit`, underivable.
+
+So the mechanized theorem is close to content-free on TY-mode subtyping: it
+covers only solutions whose two sides already agree at every head.  **Why
+consistency does not have this problem**: `ad_pat_consis` is itself lockstep
+(every ∀-inh-counterpart row — `__forall_inh_tagged` / `__forall_inh_untagged`
+/ `__tophole_inh` — requires a ∀ or a ghost subject), so on consistency the
+paper's own augmented third condition excludes nothing the join doesn't
+already exclude at the heads; its one contribution there is the no-capture
+discipline on hole fills, which is exactly what it was added for.  Subtyping's
+`ForallL` / `ForallR` / `UnivGhostR` break lockstep — that is their job — so
+importing consistency's condition verbatim cuts exactly the solutions those
+rules create.
+
 **The decision the authors must make.** Either
 
 - (a) drop the third condition for subtyping, and give `Sub-Infer` /
   `Sub-Check` the subject refinement their `thm:complete-consistency` call
   needs some other way; or
-- (b) keep it, and state the theorem as not covering `∀◇`-counterpart
-  solutions; or
-- (c) weaken it to hold modulo the `∀◇`s that `UnivGhostR` / `UnivGhostL`
-  insert.
+- (b) keep it, and state the theorem as not covering head-disagreeing
+  solutions (this now means: not covering ForallL instantiation and ForallR
+  generalisation — i.e. most of the relation); or
+- (c) RECOMMENDED — move the condition from the ROOT to the CONSISTENCY
+  LEAVES of the declarative derivation: require, for each `Sub-Infer` /
+  `Sub-Check` / `Sub-UnivGhostR` leaf of the join derivation, the subject
+  refinement `θ⌊S'⌋ ⊳ ⌊Q'⌋` at THAT leaf's subject/counterpart pair (for
+  `UnivGhostR`, at the STRIPPED counterpart `Q_0`).  This is precisely the
+  data the `thm:complete-consistency` invocations consume, it is satisfied
+  in all three counterexample configurations (each leaf there is
+  `unit ⊳ unit`), and it still excludes the capture configuration
+  (`(P_0=◇, P=∀X.◇, Q=∀X.X)`: its Infer leaf demands `∀X.◇ ⊳ ∀X.X`, which
+  refinement's binder discipline forbids).  Mechanically: either a
+  leaf-augmented variant of `ad_pat_sub_g` (subject-refinement premises on
+  `__infer` / `__check` / `__univ_ghost_r` only) or a mirror predicate over
+  the derivation; the cost is transporting it through the P5
+  precision-substitution and the renaming/freshening kits.
 
-Note the third condition is genuinely LOAD-BEARING for the other rows: it is
+Note the third condition is genuinely LOAD-BEARING for the leaf rows: it is
 literally `thm:complete-consistency`'s own third premise at the consistency
 subproblem `(Θ_0; □; P)`, which is what `Sub-Infer` and `Sub-Check` invoke.  So
-(a) is not free.
+(a) is not free — and (a) is in fact impossible as a plain derivation: the
+capture configuration passes join + fill, so no proof can conjure the leaf
+refinement from the two paper conditions.  A restricted derivation lemma
+(join ⇒ leaf refinement) IS plausible for HOLE-FREE subjects — the TY-mode
+call sites — which would let the paper keep its 2-condition statement for
+TY-mode subtyping and require leaf-validity only for SK.
+
+**Consequence for the paper's own statements.**  The paper's top-level
+`thm:complete-consistency` (2-condition, full-algo-spec.tex:1473-1546) is
+FALSE as literally stated — the augmented 3-condition version proved in
+consistency-proofs.tex:2230-2242 is the true theorem, and the 2-condition
+Definition is never rederivable from it (same capture configuration).  The
+`thm:complete-subtyping` cases that invoke `thm:complete-consistency`
+(`Sub-Infer` :3134, `Sub-Check` :3167, `Sub-UnivGhostR` :3282, `Sub-Arrow`
+:3334) therefore invoke a false statement; under the true (augmented) one
+they need the leaf refinement of (c) at each invocation, which the paper's
+2-condition solution notion does not supply.
 
 ## WF-SIDE-CONDITION (found 2026-07-30) — P7b's `Sub-Check` needs the COUNTERPART well-formed in the solution context
 

@@ -93,7 +93,25 @@ Set Implicit Arguments.
     is why it must be fuel and not structure: its IH is applied to the
     derivation PRODUCED by precision-substitution, which is no structural
     sub-derivation of the conclusion, but which precision-substitution
-    preserves the fuel of exactly. *)
+    preserves the fuel of exactly.
+
+    THE SOLUTION NOTION (repaired 2026-07-30).  The paper gives a solution
+    TWO conditions (join + P0-fill, subtyping-proofs.tex:3054-3074), which is
+    NOT enough: the capture configuration [(P0=◇, P=∀X.◇, Q=∀X.X)] passes
+    both, yet the optimality conclusion is underivable and the Sub-Infer /
+    Sub-Check cases genuinely need the AUGMENTED thm:complete-consistency's
+    third condition (the subject's refinement) at each consistency leaf.
+    The first repair attempt stated that condition ONCE, at the ROOT
+    ([⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋] as a third motive premise) — REFUTED: refinement is
+    a lockstep relation, so a root condition excludes every solution whose
+    sides disagree at a head through ForallL / ForallR / UnivGhostR, i.e.
+    instantiation and generalisation themselves (machine-checked,
+    cex/cex_p7_univ_ghost_r_vacuous.v + cex/cex_p7_third_premise_forall.v).
+    The repair moves the condition INTO THE JOIN, at the consistency leaves
+    where it is consumed: the join is now the LEAF-VALID mirror
+    [ad_pat_sub_gv] (def_decl_algo_sub_hyg.v), and there is no third root
+    premise.  [ad_pat_sub_gv_forget] recovers the plain [_g] mirror for
+    every P5/P6 invocation. *)
 Definition sub_complete_concl
   (n : nat) (NM : a_sub_mode) (M : mode)
   (Θ0 : aenv) (P0 P : pskl) (R : uskl) (Ψ : atoms)
@@ -106,11 +124,10 @@ Definition sub_complete_concl
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
   (* ---- the unresolved subject erases to the algorithm's input ---- *)
   ⌊ R ⌋ˢ = P ->
-  (* ---- the solution: an increase, and its three conditions ---- *)
+  (* ---- the solution: an increase, the LEAF-VALID join, the P0-fill ---- *)
   κ ∷ Θ0 ⊑ Θ ->
-  ad_pat_sub_g n NM M Ψ Θ (msubst_uskl_syn κ R) Q ->
+  ad_pat_sub_gv n NM M Ψ Θ (msubst_uskl_syn κ R) Q ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
-  ad_refine_pskl_f empty Θ empty (msubst_pskl κ P) (bskl_to_pskl Q) ->
   (* ---- the algorithm succeeds, and its solution is the least ---- *)
   exists P1 Θ1,
     a_sub NM M P0 Θ0 P P1 Θ1 /\
@@ -151,13 +168,12 @@ Definition sub_flex_complete_concl
   (NM = a_sub_mode_sk -> a_sk_mode_compat (mode_fn M) P0) ->
   (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
   κ ∷ (Ξ ++ Θ0) ⊑ Θ ->
-  (* the subject is [syn{κα̂}] — a monotype painting, not an unresolved R *)
-  ad_pat_sub_g n NM (mode_fn M) Ψ Θ
+  (* the subject is [syn{κα̂}] — a monotype painting, not an unresolved R;
+     the join is the LEAF-VALID mirror (see [sub_complete_concl]'s note) *)
+  ad_pat_sub_gv n NM (mode_fn M) Ψ Θ
     (ptyp_to_uskl_syn (msubst_lookup κ α)) Q ->
   ad_refine_syn_f empty Θ empty
     (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
-  ad_refine_pskl_f empty Θ empty
-    (ptyp_to_pskl (msubst_lookup κ α)) (bskl_to_pskl Q) ->
   exists P1 Θ1,
     a_sub_flex NM M P0 Θ0 Ξ α P1 Θ1 /\
     (forall κ1, is_id_msubst κ1 -> κ1 ∷ (Ξ ++ Θ0) ⊑ Θ1 ->
@@ -200,6 +216,45 @@ Check a_sub_complete_bundle.
 Lemma msubst_bskl_pskl_to_bskl_syn : forall κ P,
   msubst_bskl κ (pskl_to_bskl_syn P) = pskl_to_bskl_syn (msubst_pskl κ P).
 Proof. intros κ P; induction P; cbn; f_equal; auto. Qed.
+
+(** At the empty forbidden set the hygienic refinement IS the plain one; this
+    is the converse of [ad_refine_pskl_f_forget], used to hand the join's
+    leaf refinements to [a_consis_complete_thm] (whose premises are [_f]). *)
+Lemma ad_refine_pskl_f_empty_intro : forall Θ Δ P Q,
+  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+  ad_refine_pskl_f empty Θ Δ P Q.
+Proof.
+  intros Θ Δ P Q H; induction H.
+  - apply ad_refine_pskl_f__unit.
+  - apply ad_refine_pskl_f__var; assumption.
+  - apply ad_refine_pskl_f__arrow; assumption.
+  - eapply ad_refine_pskl_f__all; eauto.
+  - apply ad_refine_pskl_f__hole; [ clear; fsetdec | assumption ].
+  - apply ad_refine_pskl_f__tophole_remove; assumption.
+  - eapply ad_refine_pskl_f__tophole_fill; eauto.
+  - apply ad_refine_pskl_f__tophole_keep; assumption.
+  - eapply ad_refine_pskl_f__flex_l; eauto.
+  - eapply ad_refine_pskl_f__flex_r; eauto.
+Qed.
+
+(** At [M = TI] the leaf-valid join always yields the subject's refinement
+    into the counterpart: [__infer] carries it on the rule, and the two ghost
+    subjects rebuild it from their own rule premises ([◇]'s fill is the
+    counterpart's erasure, well-formed by the rule; [◈]'s counterpart is [◇]).
+    Every other row is excluded by its mode. *)
+Lemma ad_pat_sub_gv_ti_refine : forall n NM Ψ Θ R Q,
+  ad_pat_sub_gv n NM mode_ti Ψ Θ R Q ->
+  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R ⌋ˢ ⊳ (bskl_to_pskl Q).
+Proof.
+  intros n NM Ψ Θ R Q H; inversion H; subst; try congruence.
+  (* __infer is closed by [congruence] (the goal IS the rule's premise);
+     the two ghost subjects remain. *)
+  - (* __ghost *)
+    cbn. rewrite bskl_to_pskl_pskl_to_bskl_inh.
+    apply ad_refine_pskl__hole. assumption.
+  - (* __ghostg *)
+    cbn. apply ad_refine_pskl__hole. apply a_wf_pskl__hole.
+Qed.
 
 (** [κR = ◇] forces [R = ◇]: a variable's image is a monotype PAINTING, which
     is unit / var / arrow, never a ghost. *)
@@ -261,7 +316,8 @@ Lemma a_sub_complete_ghost : forall n M Θ0 P0 P R Ψ Θ κ Q,
 Proof.
   intros n M Θ0 P0 P R Ψ Θ κ Q Hsubj.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  apply ad_pat_sub_gv_forget in Hsub.
   (* the subject is the hole, so the algorithm's input is [□] *)
   pose proof (msubst_uskl_syn_hole_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
@@ -323,7 +379,8 @@ Lemma a_sub_complete_ghostg : forall n M Θ0 P0 P R Ψ Θ κ Q,
 Proof.
   intros n M Θ0 P0 P R Ψ Θ κ Q Hsubj.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  apply ad_pat_sub_gv_forget in Hsub.
   pose proof (msubst_uskl_syn_holeg_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
@@ -1046,7 +1103,11 @@ Lemma a_sub_complete_infer : forall n NM Θ0 P0 P R Ψ Θ κ Q,
 Proof.
   intros n NM Θ0 P0 P R Ψ Θ κ Q.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  (* 0. the leaf refinement — carried by the join's TI leaf *)
+  pose proof (ad_pat_sub_gv_ti_refine Hsub) as Hrp0.
+  apply ad_refine_pskl_f_empty_intro in Hrp0.
+  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Hrp0.
   (* 1. [skmod] pins [P0 = □] — both mode-compatibility relations do *)
   assert (HP0 : P0 = pskl_hole).
   { destruct NM;
@@ -1063,37 +1124,27 @@ Proof.
   rewrite msubst_bskl_pskl_to_bskl_syn, bskl_to_pskl_pskl_to_bskl_syn.
   change (Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q)).
   (* the DECORATED premise undecorates *)
-  pose proof (ad_pat_consis_strip_tags (ad_pat_sub_g_ti_consis Hsub)) as Hc.
+  pose proof (ad_pat_consis_strip_tags
+                (ad_pat_sub_g_ti_consis (ad_pat_sub_gv_forget Hsub))) as Hc.
   rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Hc.
-  exact (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp).
+  exact (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp0).
 Qed.
 
 Print Assumptions a_sub_complete_infer.
 
 (* ===================================================================== *)
-(*  Sub-UnivGhostR — ⚠️ THE MOTIVE'S THIRD PREMISE MAKES THIS ROW VACUOUS  *)
+(*  Sub-UnivGhostR — the row that FORCED the leaf-valid motive             *)
 (*                                                                        *)
-(*  The row's counterpart is [∀◇.Q0] and its subject is GUARDED, but       *)
-(*  refinement has no rule putting a [∀◇] on the RIGHT of a guarded left:  *)
-(*  [__tophole_keep] / [__tophole_remove] want a [∀◇] on the LEFT, [__hole] *)
-(*  wants a [◇] there, and [__flex_l] only unfolds a definition into       *)
-(*  another [ptyp] painting, which is a ghost nowhere.  So the motive's    *)
-(*  SUBJECT-refinement premise                                            *)
-(*                                                                        *)
-(*      ⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋   at   Q = ∀◇.Q0                                 *)
-(*                                                                        *)
-(*  is UNSATISFIABLE here, and the case closes by contradiction.           *)
-(*                                                                        *)
-(*  ⚠️ That is a genuine WEAKENING of the theorem, and it is the mech's own *)
-(*  premise, not the paper's: subtyping-proofs.tex:3054-3074 states TWO    *)
-(*  solution conditions, and the third came from consistency (§1's lesson  *)
-(*  1), where it IS what [a_consis_sound] produces.  [a_sub_sound_thm]     *)
-(*  (prop_decorate_key.v:3326) produces NO such conjunct — and it could    *)
-(*  not, since algorithmic [UnivGhostR] outputs [∀◇.P] from the input [P]. *)
-(*  So for subtyping the third premise is NOT the sound/complete mirror it *)
-(*  is for consistency.  Registered in docs/PAPER-GAPS.md; the witness is  *)
-(*  [ad_refine_pskl_f_tophole_r_shape] below plus                          *)
-(*  [cex/cex_p7_univ_ghost_r_vacuous.v].                                   *)
+(*  Under the earlier ROOT-level subject-refinement premise this row was   *)
+(*  VACUOUS: its counterpart is [∀◇.Q] and its subject GUARDED, and        *)
+(*  refinement has no rule putting a [∀◇] on the RIGHT of a guarded left   *)
+(*  ([ad_refine_pskl_f_tophole_r_shape] below; machine-checked coverage    *)
+(*  loss in cex/cex_p7_univ_ghost_r_vacuous.v and, for the ForallL/ForallR *)
+(*  analogues, cex/cex_p7_third_premise_forall.v).  The leaf-valid join    *)
+(*  carries the refinement at the STRIPPED counterpart [Q] instead — which *)
+(*  is exactly what the paper's own case does (:3282): invoke              *)
+(*  thm:complete-consistency at [(Θ0; □; P)] against [Q], then wrap both   *)
+(*  sides' [∀◇] around the resulting precision.                            *)
 (* ===================================================================== *)
 
 (** Whatever refines into a [∀◇] is itself a [◇] or a [∀◇].  No
@@ -1127,18 +1178,93 @@ Proof.
     (split; [ discriminate | intros; discriminate ]).
 Qed.
 
-Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R Ψ Θ κ Q0,
-  guarded_uskl (msubst_uskl_syn κ R) ->        (* the row's own premise *)
-  sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R Ψ Θ κ (bskl_tophole Q0).
+(** A GUARDED metasubstituted subject has a guarded erasure.  Only the
+    subject's own head matters: κ is structural at every non-variable node,
+    and a variable's image is a monotype PAINTING, so a guarded [κR] forces
+    [R] itself to be [unit] / a variable / an arrow. *)
+Lemma guarded_uskl_msubst_erase : forall κ R,
+  guarded_uskl (msubst_uskl_syn κ R) ->
+  lc_pskl ⌊ R ⌋ˢ ->
+  guarded_pskl ⌊ R ⌋ˢ.
 Proof.
-  intros n Θ0 P0 P R Ψ Θ κ Q0 Hg.
+  intros κ R Hg Hlc; destruct R; cbn in Hg |- *;
+    try (inversion Hg; fail);
+    try (inversion Hlc; fail);
+    [ apply guarded_pskl__unit
+    | apply guarded_pskl__var
+    | inversion Hlc; subst; apply guarded_pskl__arrow; assumption ].
+Qed.
+
+(** A [◇]-source fill into a [∀◇] strips to a fill into its body: the only
+    hole-source row is [__hole], whose target is a syn painting — of a
+    [pskl_tophole] here — and the painting's body inherits the wf and the
+    hygiene from the whole. *)
+Lemma ad_refine_syn_f_hole_tophole_inv : forall F Θ Δ Q,
+  ad_refine_syn_f F Θ Δ bskl_hole (bskl_tophole Q) ->
+  ad_refine_syn_f F Θ Δ bskl_hole Q.
+Proof.
+  intros F Θ Δ Q H; inversion H; subst.
+  destruct P; cbn in *; try discriminate.
+  match goal with HQ : bskl_tophole _ = bskl_tophole _ |- _ =>
+    inversion HQ; subst end.
+  match goal with Hwf : a_wf_pskl _ _ (pskl_tophole _) |- _ =>
+    inversion Hwf; subst end.
+  apply ad_refine_syn_f__hole; assumption.
+Qed.
+
+(** Guardedness survives the erase-and-repaint round trip (only the head
+    constructor matters, both maps are structural at guarded heads, and both
+    preserve local closure of the arrow's components). *)
+Lemma guarded_bskl_inh_repaint : forall Q,
+  guarded_bskl Q ->
+  guarded_bskl (pskl_to_bskl_inh (bskl_to_pskl Q)).
+Proof.
+  intros Q H; inversion H; subst; cbn; constructor;
+    apply lc_pskl_to_bskl_inh, lc_bskl_to_pskl; assumption.
+Qed.
+
+Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R Ψ Θ κ Q,
+  guarded_uskl (msubst_uskl_syn κ R) ->                        (* row premise *)
+  guarded_bskl Q ->                                            (* row premise *)
+  empty ⨟ Θ ⊢ₛᵃ (msubst_uskl_syn κ R) ∼ Q ->                   (* row premise *)
+  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ msubst_uskl_syn κ R ⌋ˢ ⊳ (bskl_to_pskl Q) -> (* leaf refinement *)
+  sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R Ψ Θ κ (bskl_tophole Q).
+Proof.
+  intros n Θ0 P0 P R Ψ Θ κ Q HgR HgQ Hrow Hrfn.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
-  exfalso. cbn in Hrp.
-  destruct (guarded_uskl_erase_not_ghost Hg) as [Hnh Hnt].
-  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Hnh, Hnt.
-  destruct (ad_refine_pskl_f_tophole_r_shape Hrp) as [Hc | [P' Hc]];
-    [ exact (Hnh Hc) | exact (Hnt P' Hc) ].
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  (* 1. [skmod[SK]] pins [P0 = □] *)
+  assert (HP0 : P0 = pskl_hole)
+    by (pose proof (HmodSK eq_refl) as Hm; inversion Hm; reflexivity).
+  subst P0. cbn in Hrs.
+  (* 2. the subject skeleton is guarded, so the run is [UnivGhostR] *)
+  assert (HgP : guarded_pskl P).
+  { rewrite <- HeqP. eapply guarded_uskl_msubst_erase;
+      [ exact HgR | rewrite HeqP; eapply a_wf_pskl_lc; exact HwfP ]. }
+  exists (pskl_tophole P), Θ0.
+  split; [ apply a_sub__univ_ghost_r; exact HgP | ].
+  intros κ1 Hid Hinc1. exists κ.
+  destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
+  split; [ exact Hout | split; [ exact Hfact | ] ].
+  (* 3. the precision at the STRIPPED counterpart, via the shared core *)
+  assert (Hc : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q).
+  { pose proof (ad_pat_consis_strip_tags Hrow) as H.
+    rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in H. exact H. }
+  assert (Hrs' : ad_refine_syn_f empty Θ empty bskl_hole Q)
+    by (apply ad_refine_syn_f_hole_tophole_inv; exact Hrs).
+  assert (Hrp : ad_refine_pskl_f empty Θ empty
+                  (msubst_pskl κ P) (bskl_to_pskl Q)).
+  { pose proof (ad_refine_pskl_f_empty_intro Hrfn) as H.
+    rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in H. exact H. }
+  pose proof (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs' Hrp)
+    as Hcore.
+  (* 4. wrap both sides' [∀◇] *)
+  unfold ad_precise in Hcore |- *.
+  rewrite msubst_bskl_pskl_to_bskl_syn.
+  cbn [msubst_pskl bskl_to_pskl pskl_to_bskl_inh].
+  rewrite bskl_to_pskl_pskl_to_bskl_syn.
+  apply ad_refine_syn__tophole_keep;
+    [ apply guarded_bskl_inh_repaint; exact HgQ | exact Hcore ].
 Qed.
 
 Print Assumptions a_sub_complete_univ_ghost_r.
@@ -1178,34 +1304,24 @@ Print Assumptions a_sub_complete_univ_ghost_r.
 (*     not.                                                                *)
 (* ===================================================================== *)
 
-(** A GUARDED metasubstituted subject has a guarded erasure.  Only the
-    subject's own head matters: κ is structural at every non-variable node,
-    and a variable's image is a monotype PAINTING, so a guarded [κR] forces
-    [R] itself to be [unit] / a variable / an arrow. *)
-Lemma guarded_uskl_msubst_erase : forall κ R,
-  guarded_uskl (msubst_uskl_syn κ R) ->
-  lc_pskl ⌊ R ⌋ˢ ->
-  guarded_pskl ⌊ R ⌋ˢ.
-Proof.
-  intros κ R Hg Hlc; destruct R; cbn in Hg |- *;
-    try (inversion Hg; fail);
-    try (inversion Hlc; fail);
-    [ apply guarded_pskl__unit
-    | apply guarded_pskl__var
-    | inversion Hlc; subst; apply guarded_pskl__arrow; assumption ].
-Qed.
-
 Lemma a_sub_complete_check : forall n Θ0 P0 P R Ψ Θ κ B,
   guarded_uskl (msubst_uskl_syn κ R) ->                       (* row premise *)
   guarded_pskl B ->                                           (* row premise *)
   Ψ ⨟ Θ ⊢ₛᵃ (msubst_uskl_syn κ R) ∼ (pskl_to_bskl_inh B) ->   (* row premise *)
+  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ msubst_uskl_syn κ R ⌋ˢ ⊳ B ->              (* leaf refinement *)
   guarded_pskl P0 ->                    (* the algorithm's Check/ForallR split *)
   Θ ⨟ empty ⊢ₚₛᵃ B ->                   (* external wf of the counterpart *)
   sub_complete_concl n a_sub_mode_ty mode_tc Θ0 P0 P R Ψ Θ κ (pskl_to_bskl_inh B).
 Proof.
-  intros n Θ0 P0 P R Ψ Θ κ B HgR HgB Hrow HgP0 HwfB.
+  intros n Θ0 P0 P R Ψ Θ κ B HgR HgB Hrow Hrfn HgP0 HwfB.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs Hrp.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  (* the leaf refinement, in the [_f] shape thm:complete-consistency takes *)
+  assert (Hrp : ad_refine_pskl_f empty Θ empty
+                  (msubst_pskl κ P) (bskl_to_pskl (pskl_to_bskl_inh B))).
+  { rewrite bskl_to_pskl_pskl_to_bskl_inh.
+    pose proof (ad_refine_pskl_f_empty_intro Hrfn) as H.
+    rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in H. exact H. }
   (* the algorithm's input skeleton is guarded *)
   assert (HgP : guarded_pskl P).
   { rewrite <- HeqP. eapply guarded_uskl_msubst_erase;

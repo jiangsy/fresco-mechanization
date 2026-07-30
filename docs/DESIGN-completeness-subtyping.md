@@ -126,6 +126,48 @@ Notes on shape (verify each against `a_consis_complete_thm` when writing):
   refinement-valid solution exists and is ⊑-optimal among them).  Thread
   it through every case just as consistency threads its subject
   refinement.
+
+  ⚠️ **REFUTED AS STATED (2026-07-30) — the root-level third premise is a
+  LOCKSTEP condition and truncates the theorem far beyond a ghost corner.**
+  Two machine-checked findings (`cex/cex_p7_univ_ghost_r_vacuous.v`,
+  `cex/cex_p7_third_premise_forall.v`, both Qed + axiom-free):
+  (i) the justification above is wrong for subtyping — `a_sub_sound_thm`
+  exports NO subject-refinement conjunct (algorithmic `UnivGhostR` outputs
+  `∀◇.P` from input `P`, which refinement cannot mirror), so the premise is
+  not the sound/complete mirror it is for consistency; (ii) because
+  `ad_refine_pskl` descends both sides together while `ForallL` / `ForallR`
+  / `UnivGhostR` break head correspondence, the premise excludes
+  `Sub-UnivGhostR` entirely AND every head-disagreeing solution of
+  `ForallL` / `ForallR` — including `∀a.a ⩽ unit` and `unit ⩽ ∀a.unit`.
+  Consistency's own third premise is harmless only because `ad_pat_consis`
+  is itself lockstep (its ∀-inh rows demand ∀-or-ghost subjects).  The
+  REPAIR is to move the condition to the CONSISTENCY LEAVES of the
+  declarative derivation (`__infer` / `__check` / `__univ_ghost_r`, the
+  latter at the STRIPPED counterpart) — exactly the data the
+  `a_consis_complete_thm` invocations consume; the closed rows survive
+  (Ghost / GhostG never use the premise; Infer / Check use it only to feed
+  consistency).  Full analysis + author options in `PAPER-GAPS.md`
+  ("MECH-PREMISE … third solution condition").
+
+  ✅ **REPAIR LANDED (2026-07-30, same day).**  The join is now the
+  LEAF-VALID mirror `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v; three
+  augmented leaf rows + `ad_pat_sub_gv_forget` back to `_g` for every
+  P5/P6 invocation), and `sub_complete_concl` / `sub_flex_complete_concl`
+  have NO root-level third premise.  All five closed rows re-closed, and
+  `a_sub_complete_univ_ghost_r` is now a REAL proof: algorithmic
+  `UnivGhostR`, the shared `□`-P0 precision core at the STRIPPED
+  counterpart (`ad_refine_syn_f_hole_tophole_inv` strips the fill), and an
+  `ad_refine_syn__tophole_keep` wrap (`guarded_bskl_inh_repaint` supplies
+  the guard).  New plumbing: `ad_refine_pskl_f_empty_intro` (plain ⊳ →
+  `_f` at `F = ∅`) and `ad_pat_sub_gv_ti_refine` (every TI row yields the
+  subject refinement — `__infer` on the rule, the ghost subjects from
+  their own wf premises).  ⚠️ REMAINING OBLIGATION for ForallL / ForallR:
+  the P5 precision-substitution (`ad_pat_sub_precise_upre`) and the
+  `_n→_g` freshening/renaming kits must be transported to `_gv`; the one
+  genuinely new fact is that precision-substitution preserves the leaves'
+  subject refinement (the substituted subject is GHOSTIER, so its erasure
+  refines further — but the new holes' fills must stay Δ-clean; state it
+  with the same care as the `uskl_precise` wf side conditions).
 - **Corollary** `a_sub_complete_thm` (paper-facing): `S:=` a decoration
   with `⌊S⌋=P` (any `is_tskl` witness, e.g. via `pskl_decorate_exists`,
   or just `S = pskl_to_uskl P` if the subject can be the plain skeleton),

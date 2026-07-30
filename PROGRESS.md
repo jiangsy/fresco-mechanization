@@ -62,7 +62,7 @@ excluded from the build); mine them when re-proving.
 - 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
 - ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete_gen` in `frost/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
 - 🟡 Completeness of flexible-variable subtyping (subtyping-proofs:2836, P7a) — **IN PROGRESS**.  TASK 0 (supplying P6-L's `sub_shield` premise at P7b's Sub-ForallL) lives in `frost/algo/prop_sub_shield_supply.v`, all Qed + axiom-free: a mono-ish counterpart (§4, covers a raw FLEXIBLE `P0`), the non-composite shapes (§5), any **flex-free** `P0` (§6, uniformly in ψa and Δρ), and — the generalization that does the real work — any **inh-free counterpart** / any `P0` **with no ∀** (§7/§8: `ad_pat_consis_inh_free_tag_free`, `ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`, `sub_shield_supply_all_free_p0`).  Residual: a `P0` carrying a ∀ BELOW its head — DESIGN-completeness-subtyping.md §9.0.2
-- 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `frost/algo/prop_sub_complete_thm.v`); FIVE of P7b's rows closed there, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** — the last VACUOUSLY (see below).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_hole_p0_precision`.  ⚠️ **Sub-UnivGhostR is vacuous under the motive's THIRD solution premise** — machine-checked `frost/algo/cex/cex_p7_univ_ghost_r_vacuous.v`; that premise is the mech's, not the paper's, and `a_sub_sound_thm` does not produce it.  See docs/PAPER-GAPS.md and DESIGN §9.1.3.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
+- 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked AND REPAIRED 2026-07-30 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `frost/algo/prop_sub_complete_thm.v`): the join is the LEAF-VALID mirror `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v) carrying the subject refinement at the consistency leaves, with NO root-level third premise — the first-cut root premise was REFUTED as a lockstep condition (machine-checked `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`: it lost Sub-UnivGhostR entirely and the head-disagreeing ForallL/ForallR solutions `∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`).  FIVE of P7b's rows closed, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** (a REAL proof: algorithmic UnivGhostR + the `□`-P0 precision core at the stripped counterpart + a `∀◇`-wrap).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_hole_p0_precision`.  ⚠️ Remaining obligation: transport P5's precision-substitution + the freshening kits to `_gv` for ForallL/ForallR.  See docs/PAPER-GAPS.md and DESIGN §9.1.3 / §1.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
 
 **D. proofs.tex** (§Proofs for Algorithms)
 - ⬜ Suffix moving; Suffix erasure; Splitting refines
@@ -78,7 +78,125 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-30 (latest) — P7b: metasubstitution-stability CLOSED, and with it Sub-Infer / Sub-Check; ⚠️ Sub-UnivGhostR is VACUOUS under the motive's third premise
+## 2026-07-30 (latest) — ✅ THE MOTIVE REPAIR LANDED: leaf-valid join `ad_pat_sub_gv`, root third premise GONE, Sub-UnivGhostR proved FOR REAL
+
+`make coq` green from clean (exit 0, 45 `Print Assumptions` all closed, zero
+admits).  Executes the repair the review below called for, same day.
+
+**The new relation** — `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v): a verbatim
+copy of the tag-hygienic fuel mirror `ad_pat_sub_g` whose three
+CONSISTENCY-LEAF rows additionally carry the subject's refinement into the
+leaf's counterpart: `__infer` and `__univ_ghost_r` at `bskl_to_pskl Q` (for
+UnivGhostR that IS the stripped counterpart — the rule's conclusion is
+`∀◇.Q`), `__check` at `B` directly.  The ghost leaves carry nothing (their
+refinement is derivable from their own wf premises).  `ad_pat_sub_gv_forget`
+recovers `_g` for every P5/P6 invocation.
+
+**The motives** (prop_sub_complete_thm.v): `sub_complete_concl` /
+`sub_flex_complete_concl` now take the `_gv` join and NO root-level subject
+refinement.  New plumbing: `ad_refine_pskl_f_empty_intro` (plain `⊳` → `_f`
+at `F = ∅`; converse of `_forget`), `ad_pat_sub_gv_ti_refine` (every TI row
+yields the subject refinement — note `congruence` closes the `__infer` case
+itself, the goal IS the rule's premise).
+
+**Row adaptations**: Ghost / GhostG — one `ad_pat_sub_gv_forget` line each
+(they never used the old premise).  Infer — takes the refinement from
+`ad_pat_sub_gv_ti_refine` instead of the motive.  Check — takes it as a row
+premise (the `__check` leaf's own field, which the bundle will supply by
+inversion).
+
+**Sub-UnivGhostR is now a REAL proof** (`a_sub_complete_univ_ghost_r`, Qed +
+axiom-free) instead of vacuous-by-contradiction, and it is exactly the
+paper's route (:3282): `skmod[SK]` pins `P0 = □`; the subject erasure is
+guarded (`guarded_uskl_msubst_erase`, moved up from the Check section), so
+the run is algorithmic `UnivGhostR` outputting `∀◇.P` at `Θ0`; the precision
+runs the shared `□`-P0 core (`a_sub_complete_hole_p0_precision`) at the
+STRIPPED counterpart — `ad_refine_syn_f_hole_tophole_inv` strips the motive's
+fill from `∀◇.Q` to `Q` (only `__hole` has a `◇` source; its painting target
+must be a `pskl_tophole`, whose body inherits wf and hygiene) — and wraps
+both sides with `ad_refine_syn__tophole_keep`, whose guard is
+`guarded_bskl_inh_repaint` (guardedness survives erase-and-repaint;
+`guarded_bskl__arrow` carries `lc`, so transport `lc_pskl_to_bskl_inh ∘
+lc_bskl_to_pskl`).
+
+**Coverage check**: the three cex configurations (`unit ⩽ ∀◇.unit`,
+`∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`) are now inside the theorem's coverage —
+their leaf refinements are `unit ⊳ unit`.  The capture configuration stays
+correctly excluded (its Infer leaf demands `∀X.◇ ⊳ ∀X.X`).  Both cex files
+kept as historical witnesses, headers updated.
+
+**⚠️ REMAINING OBLIGATION (registered in DESIGN §1 + PAPER-GAPS)**: the P5
+precision-substitution (`ad_pat_sub_precise_upre`) and the `_n→_g`
+freshening/renaming kits must be transported to `_gv` when the ForallL /
+ForallR rows are written.  The one genuinely NEW fact: precision-substitution
+must preserve the leaves' subject refinement (ghostier subject ⟹ erasure
+refines further, but new holes' fills must stay Δ-clean).  Also still open:
+the paper-facing corollary must either take leaf-validity as a premise (SK
+mode) or derive it from the join for hole-free subjects (TY mode — the
+restricted derivation lemma DESIGN-subtyping §3.1 sketched).
+
+## 2026-07-30 — ⚠️ REVIEW of the UnivGhostR vacuity: the third premise truncates FAR more than one row — P7b's motive must be repaired before further rows close
+
+Requested review of the vacuity finding below.  Verdict: the finding was
+correct but UNDERSTATED.  Everything here is machine-checked; `make coq`
+untouched (the new file compiles standalone, axiom-free).
+
+**The diagnosis.**  The motive's third solution premise
+`⊢ᵣₚᵃ κ⌊R⌋ˢ ⊳ ⌊Q⌋` is a **LOCKSTEP** condition — `ad_refine_pskl` descends
+subject and counterpart together, so it can only hold where the two sides
+agree in shape (modulo ghosts on the LEFT and flexible definitions).  It was
+imported verbatim from `a_consis_complete_thm`, where it is the PAPER'S OWN
+augmentation (consistency-proofs.tex:2230-2242) and harmless — because
+`ad_pat_consis` is itself lockstep (its ∀-inh-counterpart rows
+`__forall_inh_tagged` / `__forall_inh_untagged` / `__tophole_inh` all demand
+a ∀-or-ghost subject), so on consistency the condition adds only the
+no-capture discipline on hole fills it was designed for.  Subtyping's
+`ForallL` / `ForallR` / `UnivGhostR` exist precisely to BREAK lockstep, so
+the verbatim import cuts exactly the solutions those rules create.
+
+**New counterexample file** `frost/algo/cex/cex_p7_third_premise_forall.v`
+(Qed + axiom-free): two configurations satisfying the paper's two solution
+conditions, well formed and mode-compatible, that FAIL the third premise —
+
+- `∀a.a ⩽ unit` (Sub-ForallL): third premise `∀a.a ⊳ unit`, no rule;
+- `unit ⩽ ∀a.unit` (Sub-ForallR): third premise `unit ⊳ ∀a.unit`, no rule.
+
+So the mechanized theorem currently says nothing about ForallL
+instantiation or ForallR generalisation — i.e. about most of TY-mode
+subtyping — not just about the ∀◇ corner.
+
+**The repair (registered as option (c), RECOMMENDED, in PAPER-GAPS.md).**
+Move the condition from the ROOT to the CONSISTENCY LEAVES of the
+declarative derivation: subject-refinement data exactly at `__infer` /
+`__check` / `__univ_ghost_r` (the latter at the STRIPPED counterpart `Q0`),
+either as a leaf-augmented `ad_pat_sub_g` variant or as a mirror predicate
+over the derivation.  Why this is right: (i) it is precisely what the
+`a_consis_complete_thm` invocations consume — Infer/Check use the current
+premise ONLY for that (checked: Ghost/GhostG never touch it); (ii) it holds
+in all three cex configurations (each leaf is `unit ⊳ unit`); (iii) it still
+excludes the capture configuration `(P0=◇, P=∀X.◇, Q=∀X.X)` whose Infer leaf
+demands `∀X.◇ ⊳ ∀X.X`.  Cost: transporting leaf-validity through the P5
+precision-substitution and the freshening kits; the five closed rows'
+substantive content (`a_inc_equiv_precise_msubst`,
+`a_sub_complete_hole_p0_precision`) survives unchanged.
+
+**Paper-side fallout (also registered).**  The paper's TOP-LEVEL 2-condition
+`thm:complete-consistency` (full-algo-spec.tex:1473-1546) is FALSE as
+literally stated — only the augmented 3-condition proof statement is true,
+and the 2-condition form is not derivable from it (same capture
+configuration).  `thm:complete-subtyping`'s Infer / Check / UnivGhostR /
+Arrow cases invoke the false top-level form; under the true one they need
+the leaf refinement, which the paper's 2-condition subtyping-solution notion
+does not supply.  A restricted derivation lemma (join ⇒ leaf refinement for
+HOLE-FREE subjects) is plausibly true and would rescue the paper's statement
+for TY-mode; SK-mode needs the leaf-validity notion.
+
+**Docs updated**: PAPER-GAPS.md (MECH-PREMISE entry extended + paper-side
+consequence), DESIGN-completeness-subtyping.md §1 (third-premise bullet now
+carries the refutation + repair), cex_p7_univ_ghost_r_vacuous.v header
+(follow-up note), CLAUDE.md TL;DR.
+
+## 2026-07-30 — P7b: metasubstitution-stability CLOSED, and with it Sub-Infer / Sub-Check; ⚠️ Sub-UnivGhostR is VACUOUS under the motive's third premise
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.
 Everything below is in `frost/algo/prop_sub_complete_thm.v` unless said
