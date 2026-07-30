@@ -78,7 +78,78 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-30 (latest) — ✅ THE MOTIVE REPAIR LANDED: leaf-valid join `ad_pat_sub_gv`, root third premise GONE, Sub-UnivGhostR proved FOR REAL
+## 2026-07-31 (latest) — Sub-Arrow's enablers: the ≡ᵘ SLACK is in the motive, the Arrow leaf premise landed, all five rows re-closed
+
+Continuation of the motive repair below, opening the Sub-Arrow campaign.
+All Qed + axiom-free; `make coq` green.
+
+**⚠️ `ad_pat_sub_gv__arrow` gained the DOMAIN leaf premise** — the Arrow
+row's domain-consistency premise is ITSELF a consistency leaf (the paper's
+Sub-Arrow invokes thm:complete-consistency on it, :3334), so it now carries
+`Θ ⨟ ∅ ⊢ᵣₚᵃ ⌊R1⌋ˢ ⊳ ⌊Q1⌋` like `__infer` does.  Caught while planning the
+Arrow row; the leaf-valid design's rule of thumb is now explicit: EVERY
+rule field of sort "consistency judgment" is a leaf and carries the
+subject refinement.
+
+**⚠️ The κ→ζ1 REBASE ROUTE IS DEAD — remember why.**  The plan to build
+`κ2 ∷ Θ1 ⊑ Θ` agreeing with κ syntactically (so the codomain IH needs no
+transport) founders on `a_inc`'s POSITIONALITY: a run can move a flexible
+BELOW a binder (the optimality-cex fact), so ζ's row for that flexible
+needs image-wf at a SMALLER Θ-suffix than κ's derivation ever supplies.
+This is also why consistency's own Arrow case transports its second
+component's premises SEMANTICALLY at the fixed Θ (prop_consis_complete.v
+:6686-6727) rather than rebasing.  Follow that precedent.
+
+**The ≡ᵘ kit** (`frost/algo/prop_sub_msubst_equiv.v`, new file):
+`a_uskl_tyequiv` (`Θ ⊢ R ≡ᵘ R'`) — same tagged skeleton, ≡ᵗ-monotype
+paintings at the leaves; STRUCTURAL rows only (inversion at a known shape
+stays trivial; refl/sym are lemmas), the `__mono` row carries wf at the
+relation's own Θ, binder rows keep the same Θ.  Lemmas: refl (lc), sym,
+`a_uskl_tyequiv_erase` (≡ᵘ → ≡ˢ on erasures), the generation workhorse
+`a_inc_equiv_msubst_uskl` (pointwise-equivalent increases give ≡ᵘ images;
+each leaf fact reads off `a_inc_lookup_{wf,mono}` / `a_inc_equiv_lookup`),
+ghost inversions (`hole_l_inv` / `holeg_l_inv`: ghosts are ≡ᵘ-inert), lc,
+and `a_uskl_tyequiv_guarded` (guardedness transports — a mono painting is
+always guarded).
+
+**The motive carries the slack**: `sub_complete_concl` (and the flex half)
+now take the join at an arbitrary subject `R'` with
+`Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ R)` — so Sub-Arrow's codomain IH will take
+the ORIGINAL join derivation unchanged (relation premise built by
+`a_inc_equiv_msubst_uskl`), and only the consistency LEAVES transport, via
+`a_uskl_tyequiv_erase` + the EXISTING pskl-level transports
+(`skl_tyequiv_{consis,refine_syn_f,refine_pskl_f}_transport`,
+prop_consis_complete.v).  This mirrors how the paper does it "informally by
+type equivalence" (the author's own margin note at completeSubtyping).
+All five closed rows re-closed under the slack: Ghost/GhostG use the ghost
+inversions, Infer/Check/UnivGhostR erase the slack and transport their
+leaf facts from `R'` to `κP` before the `a_consis_complete_thm` call;
+Check/UnivGhostR get `guarded_pskl P` through `a_uskl_tyequiv_guarded`.
+
+**Naming**: the slack subject is `R'` (uskl ⇒ R-family; the first cut's `T`
+violated the metavariable convention).  The Check rows' pskl `B` is the
+PAPER's `B` (the inherited btyp of `syn A ⩽ inh B`, embedded) — a
+pre-existing rule binder of `ad_pat_sub_g__check` kept to avoid the
+inversion-auto-name hazard.
+
+**Sub-Arrow's remaining assembly** (next session, all enablers Qed): mirror
+prop_consis_complete.v's arrow case :6631-6790 — domain via
+`a_consis_complete_thm` (its three premises from the `__arrow` leaf data +
+fill inversion), run soundness for the id-witness w1 + wf Θ1, package at w1
+→ (ζ1, Hie1, Hprec1); codomain IH at `κ := ζ1∘w1`-composite with the slack
+relation from `a_inc_equiv_msubst_uskl` (fills transport by
+`skl_tyequiv_refine_syn_f_transport` after `a_inc_equiv_msubst_pskl`);
+assemble `a_sub__arrow`; glue the packages with `a_inc_equiv_glue` +
+`is_id_inc_unique`; move the domain precision from ζ1 to the final ζ2 via
+`a_inc_equiv_precise_msubst(_flip)` + `msubst_compose_id_pskl` +
+`ad_refine_syn_trans` (external wf of `⌊Q1⌋` needed — WF-SIDE-CONDITIONS
+pattern; consider `ad_refine_syn` target-wf preservation or a row premise).
+The row lemma takes `R = uskl_arrow R1 R2` as a premise; the BUNDLE owes the
+disambiguation (flex-dispatch first; then relation + non-var `R` forces the
+arrow shape — the mono-row crossing needs `a_tyequiv_downarrow` normalization
+only if pursued shape-theoretically, else it is the assembly's case split).
+
+## 2026-07-30 — ✅ THE MOTIVE REPAIR LANDED: leaf-valid join `ad_pat_sub_gv`, root third premise GONE, Sub-UnivGhostR proved FOR REAL
 
 `make coq` green from clean (exit 0, 45 `Print Assumptions` all closed, zero
 admits).  Executes the repair the review below called for, same day.

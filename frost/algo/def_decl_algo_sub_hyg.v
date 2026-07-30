@@ -169,6 +169,10 @@ Inductive ad_pat_sub_gv :
     ad_pat_sub_gv n a_sub_mode_sk mode_tc Ψ Θ R (bskl_tophole Q)
 | ad_pat_sub_gv__arrow : forall n NM Ψ Ψ1 Ψ2 Θ M R1 R2 Q1 Q2, (* Arrow *)
     Ψ1 ⨟ Θ ⊢ₛᵃ R1 ∼ Q1 ->
+    (* the DOMAIN premise is itself a consistency leaf — Sub-Arrow invokes
+       thm:complete-consistency on it (:3334), so it carries the same
+       subject-refinement data as [__infer] *)
+    Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R1 ⌋ˢ ⊳ (bskl_to_pskl Q1) ->
     ad_pat_sub_gv n NM M Ψ2 Θ R2 Q2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     ad_pat_sub_gv (S n) NM (mode_fn M) Ψ Θ (uskl_arrow R1 R2) (bskl_arrow Q1 Q2)

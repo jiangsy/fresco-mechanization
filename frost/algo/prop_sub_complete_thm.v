@@ -77,6 +77,7 @@ Require Import src.frost.algo.prop_normal.        (* a_inc_equiv_lookup (the a_b
 Require Import src.frost.algo.prop_mono_bridge.   (* ptyp_to_bskl_inh_syn_eq *)
 Require Import src.frost.algo.prop_precise_recover. (* tyequiv_mono_refine_syn *)
 Require Import src.frost.algo.prop_pat_sub.       (* uskl_to_pskl_ptyp_to_uskl_syn *)
+Require Import src.frost.algo.prop_sub_msubst_equiv. (* ≡ᵘ + erasure + generation *)
 
 Set Implicit Arguments.
 
@@ -111,10 +112,19 @@ Set Implicit Arguments.
     where it is consumed: the join is now the LEAF-VALID mirror
     [ad_pat_sub_gv] (def_decl_algo_sub_hyg.v), and there is no third root
     premise.  [ad_pat_sub_gv_forget] recovers the plain [_g] mirror for
-    every P5/P6 invocation. *)
+    every P5/P6 invocation.
+
+    THE ≡ᵘ SLACK (2026-07-31).  The join is carried at an arbitrary subject
+    [R'] with [Θ ⊢ R' ≡ᵘ κR] rather than at [κR] itself.  Sub-Arrow (and later
+    ForallR / P7a) re-enter the IH after the domain's run has advanced Θ0 to
+    Θ1 and swapped κ for the package's ζ1; the paper does this "informally by
+    type equivalence" (its author's own margin note).  With the slack the IH
+    takes the ORIGINAL join derivation and only the LEAVES transport, via
+    [a_uskl_tyequiv_erase] + the pskl-level skl_tyequiv transports
+    (prop_sub_msubst_equiv.v; prop_consis_complete.v). *)
 Definition sub_complete_concl
   (n : nat) (NM : a_sub_mode) (M : mode)
-  (Θ0 : aenv) (P0 P : pskl) (R : uskl) (Ψ : atoms)
+  (Θ0 : aenv) (P0 P : pskl) (R R' : uskl) (Ψ : atoms)
   (Θ : aenv) (κ : metasubst) (Q : bskl) : Prop :=
   (* ---- inputs are well formed, and mode-compatible with P0 ---- *)
   a_wf_aenv Θ0 -> a_wf_aenv Θ ->
@@ -124,9 +134,11 @@ Definition sub_complete_concl
   (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->   (* skmod[TY]{P0}{M} *)
   (* ---- the unresolved subject erases to the algorithm's input ---- *)
   ⌊ R ⌋ˢ = P ->
-  (* ---- the solution: an increase, the LEAF-VALID join, the P0-fill ---- *)
+  (* ---- the solution: an increase, the LEAF-VALID join (at a subject
+          ≡ᵘ-equivalent to the κ-image), and the P0-fill ---- *)
   κ ∷ Θ0 ⊑ Θ ->
-  ad_pat_sub_gv n NM M Ψ Θ (msubst_uskl_syn κ R) Q ->
+  Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ R) ->
+  ad_pat_sub_gv n NM M Ψ Θ R' Q ->
   ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
   (* ---- the algorithm succeeds, and its solution is the least ---- *)
   exists P1 Θ1,
@@ -159,7 +171,7 @@ Definition sub_complete_concl
     lex(n, |Θ0|). *)
 Definition sub_flex_complete_concl
   (n : nat) (NM : a_sub_mode) (M : mode)
-  (Θ0 Ξ : aenv) (α : atom) (P0 : pskl) (Ψ : atoms)
+  (Θ0 Ξ : aenv) (α : atom) (P0 : pskl) (R' : uskl) (Ψ : atoms)
   (Θ : aenv) (κ : metasubst) (Q : bskl) : Prop :=
   a_decls Ξ ->                                  (* Ξ holds only flexible decls *)
   a_wf_aenv (Ξ ++ Θ0) -> a_wf_aenv Θ ->
@@ -169,9 +181,10 @@ Definition sub_flex_complete_concl
   (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
   κ ∷ (Ξ ++ Θ0) ⊑ Θ ->
   (* the subject is [syn{κα̂}] — a monotype painting, not an unresolved R;
-     the join is the LEAF-VALID mirror (see [sub_complete_concl]'s note) *)
-  ad_pat_sub_gv n NM (mode_fn M) Ψ Θ
-    (ptyp_to_uskl_syn (msubst_lookup κ α)) Q ->
+     the join is the LEAF-VALID mirror at a ≡ᵘ-equivalent subject (see
+     [sub_complete_concl]'s note) *)
+  Θ ⊢ R' ≡ᵘ (ptyp_to_uskl_syn (msubst_lookup κ α)) ->
+  ad_pat_sub_gv n NM (mode_fn M) Ψ Θ R' Q ->
   ad_refine_syn_f empty Θ empty
     (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
   exists P1 Θ1,
@@ -194,10 +207,10 @@ Definition sub_flex_complete_concl
     on [sub_flex_complete_concl]. *)
 Definition a_sub_complete_bundle : Prop :=
   forall n,
-    (forall NM M Θ0 P0 P R Ψ Θ κ Q,
-       sub_complete_concl n NM M Θ0 P0 P R Ψ Θ κ Q) /\
-    (forall NM M Θ0 Ξ α P0 Ψ Θ κ Q,
-       sub_flex_complete_concl n NM M Θ0 Ξ α P0 Ψ Θ κ Q).
+    (forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
+       sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q) /\
+    (forall NM M Θ0 Ξ α P0 R' Ψ Θ κ Q,
+       sub_flex_complete_concl n NM M Θ0 Ξ α P0 R' Ψ Θ κ Q).
 
 (** Sanity: the motives are well formed at the sorts the judgments actually
     use, and the bundle statement elaborates.  (No proof is attempted here —
@@ -310,21 +323,23 @@ Qed.
 (*  conclusion needs.                                                       *)
 (* ===================================================================== *)
 
-Lemma a_sub_complete_ghost : forall n M Θ0 P0 P R Ψ Θ κ Q,
-  msubst_uskl_syn κ R = uskl_hole ->
-  sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R Ψ Θ κ Q.
+Lemma a_sub_complete_ghost : forall n M Θ0 P0 P R R' Ψ Θ κ Q,
+  R' = uskl_hole ->
+  sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R R' Ψ Θ κ Q.
 Proof.
-  intros n M Θ0 P0 P R Ψ Θ κ Q Hsubj.
+  intros n M Θ0 P0 P R R' Ψ Θ κ Q HT.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs.
+  subst R'.
+  (* a ghost is ≡ᵘ-inert, so the κ-image is the hole as well *)
+  pose proof (a_uskl_tyequiv_hole_l_inv Hrel) as Hsubj.
   apply ad_pat_sub_gv_forget in Hsub.
   (* the subject is the hole, so the algorithm's input is [□] *)
   pose proof (msubst_uskl_syn_hole_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
   (* the counterpart is an inherited painting — read off the derivation *)
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
-    by (rewrite Hsubj in Hsub;
-        eapply ad_pat_sub_g_hole_target_inh; exact Hsub).
+    by (eapply ad_pat_sub_g_hole_target_inh; exact Hsub).
   (* the run: [Ghost], which returns the input skeleton unchanged *)
   exists P0, Θ0. split; [ apply a_sub__ghost | ].
   intros κ1 Hid Hinc1. exists κ.
@@ -373,19 +388,20 @@ Proof.
   - (* __ghostg : the counterpart is [◇] on the rule *) reflexivity.
 Qed.
 
-Lemma a_sub_complete_ghostg : forall n M Θ0 P0 P R Ψ Θ κ Q,
-  msubst_uskl_syn κ R = uskl_holeg ->
-  sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R Ψ Θ κ Q.
+Lemma a_sub_complete_ghostg : forall n M Θ0 P0 P R R' Ψ Θ κ Q,
+  R' = uskl_holeg ->
+  sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R R' Ψ Θ κ Q.
 Proof.
-  intros n M Θ0 P0 P R Ψ Θ κ Q Hsubj.
+  intros n M Θ0 P0 P R R' Ψ Θ κ Q HT.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs.
+  subst R'.
+  pose proof (a_uskl_tyequiv_holeg_l_inv Hrel) as Hsubj.
   apply ad_pat_sub_gv_forget in Hsub.
   pose proof (msubst_uskl_syn_holeg_inv κ R Hsubj) as HR; subst R.
   cbn in HeqP; subst P.
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
-    by (rewrite Hsubj in Hsub;
-        eapply ad_pat_sub_g_holeg_target_inh; exact Hsub).
+    by (eapply ad_pat_sub_g_holeg_target_inh; exact Hsub).
   exists P0, Θ0. split; [ apply a_sub__ghost | ].
   intros κ1 Hid Hinc1. exists κ.
   destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
@@ -1098,16 +1114,21 @@ Qed.
 (*  Sub-Infer                                                             *)
 (* --------------------------------------------------------------------- *)
 
-Lemma a_sub_complete_infer : forall n NM Θ0 P0 P R Ψ Θ κ Q,
-  sub_complete_concl n NM mode_ti Θ0 P0 P R Ψ Θ κ Q.
+Lemma a_sub_complete_infer : forall n NM Θ0 P0 P R R' Ψ Θ κ Q,
+  sub_complete_concl n NM mode_ti Θ0 P0 P R R' Ψ Θ κ Q.
 Proof.
-  intros n NM Θ0 P0 P R Ψ Θ κ Q.
+  intros n NM Θ0 P0 P R R' Ψ Θ κ Q.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
-  (* 0. the leaf refinement — carried by the join's TI leaf *)
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs.
+  (* the ≡ᵘ slack, erased at the algorithm's input *)
+  pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
+  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
+  (* 0. the leaf refinement — carried by the join's TI leaf, moved to κP *)
   pose proof (ad_pat_sub_gv_ti_refine Hsub) as Hrp0.
   apply ad_refine_pskl_f_empty_intro in Hrp0.
-  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Hrp0.
+  destruct (skl_tyequiv_refine_pskl_f_transport Herase Hwfth
+              (fun x b Hb => Hb)) as [Hrpt _].
+  pose proof (Hrpt _ _ _ Hrp0) as Hrp1.
   (* 1. [skmod] pins [P0 = □] — both mode-compatibility relations do *)
   assert (HP0 : P0 = pskl_hole).
   { destruct NM;
@@ -1123,11 +1144,13 @@ Proof.
   unfold ad_precise.
   rewrite msubst_bskl_pskl_to_bskl_syn, bskl_to_pskl_pskl_to_bskl_syn.
   change (Θ ⨟ empty ⊢ₚᵣᵃ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q)).
-  (* the DECORATED premise undecorates *)
+  (* the DECORATED premise undecorates, then the slack moves it to κP *)
   pose proof (ad_pat_consis_strip_tags
-                (ad_pat_sub_g_ti_consis (ad_pat_sub_gv_forget Hsub))) as Hc.
-  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Hc.
-  exact (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp0).
+                (ad_pat_sub_g_ti_consis (ad_pat_sub_gv_forget Hsub))) as Hc0.
+  destruct (skl_tyequiv_consis_transport Herase Hwfth
+              (fun x b Hb => Hb)) as [Hct _].
+  pose proof (Hct _ _ Hc0) as Hc.
+  exact (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp1).
 Qed.
 
 Print Assumptions a_sub_complete_infer.
@@ -1223,16 +1246,19 @@ Proof.
     apply lc_pskl_to_bskl_inh, lc_bskl_to_pskl; assumption.
 Qed.
 
-Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R Ψ Θ κ Q,
-  guarded_uskl (msubst_uskl_syn κ R) ->                        (* row premise *)
+Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R R' Ψ Θ κ Q,
+  guarded_uskl R' ->                                            (* row premise *)
   guarded_bskl Q ->                                            (* row premise *)
-  empty ⨟ Θ ⊢ₛᵃ (msubst_uskl_syn κ R) ∼ Q ->                   (* row premise *)
-  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ msubst_uskl_syn κ R ⌋ˢ ⊳ (bskl_to_pskl Q) -> (* leaf refinement *)
-  sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R Ψ Θ κ (bskl_tophole Q).
+  empty ⨟ Θ ⊢ₛᵃ R' ∼ Q ->                                       (* row premise *)
+  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R' ⌋ˢ ⊳ (bskl_to_pskl Q) ->                  (* leaf refinement *)
+  sub_complete_concl n a_sub_mode_sk mode_tc Θ0 P0 P R R' Ψ Θ κ (bskl_tophole Q).
 Proof.
-  intros n Θ0 P0 P R Ψ Θ κ Q HgR HgQ Hrow Hrfn.
+  intros n Θ0 P0 P R R' Ψ Θ κ Q HgT HgQ Hrow Hrfn.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs.
+  (* the ≡ᵘ slack, erased at the algorithm's input *)
+  pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
+  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
   (* 1. [skmod[SK]] pins [P0 = □] *)
   assert (HP0 : P0 = pskl_hole)
     by (pose proof (HmodSK eq_refl) as Hm; inversion Hm; reflexivity).
@@ -1240,22 +1266,28 @@ Proof.
   (* 2. the subject skeleton is guarded, so the run is [UnivGhostR] *)
   assert (HgP : guarded_pskl P).
   { rewrite <- HeqP. eapply guarded_uskl_msubst_erase;
-      [ exact HgR | rewrite HeqP; eapply a_wf_pskl_lc; exact HwfP ]. }
+      [ eapply a_uskl_tyequiv_guarded; [ exact Hrel | exact HgT ]
+      | rewrite HeqP; eapply a_wf_pskl_lc; exact HwfP ]. }
   exists (pskl_tophole P), Θ0.
   split; [ apply a_sub__univ_ghost_r; exact HgP | ].
   intros κ1 Hid Hinc1. exists κ.
   destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
   split; [ exact Hout | split; [ exact Hfact | ] ].
-  (* 3. the precision at the STRIPPED counterpart, via the shared core *)
+  (* 3. the precision at the STRIPPED counterpart, via the shared core;
+        the slack moves both leaf facts from [R'] to [κP] *)
   assert (Hc : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q).
-  { pose proof (ad_pat_consis_strip_tags Hrow) as H.
-    rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in H. exact H. }
+  { pose proof (ad_pat_consis_strip_tags Hrow) as H0.
+    destruct (skl_tyequiv_consis_transport Herase Hwfth
+                (fun x b Hb => Hb)) as [Hct _].
+    exact (Hct _ _ H0). }
   assert (Hrs' : ad_refine_syn_f empty Θ empty bskl_hole Q)
     by (apply ad_refine_syn_f_hole_tophole_inv; exact Hrs).
   assert (Hrp : ad_refine_pskl_f empty Θ empty
                   (msubst_pskl κ P) (bskl_to_pskl Q)).
-  { pose proof (ad_refine_pskl_f_empty_intro Hrfn) as H.
-    rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in H. exact H. }
+  { pose proof (ad_refine_pskl_f_empty_intro Hrfn) as H0.
+    destruct (skl_tyequiv_refine_pskl_f_transport Herase Hwfth
+                (fun x b Hb => Hb)) as [Hrpt _].
+    exact (Hrpt _ _ _ H0). }
   pose proof (a_sub_complete_hole_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs' Hrp)
     as Hcore.
   (* 4. wrap both sides' [∀◇] *)
@@ -1304,33 +1336,41 @@ Print Assumptions a_sub_complete_univ_ghost_r.
 (*     not.                                                                *)
 (* ===================================================================== *)
 
-Lemma a_sub_complete_check : forall n Θ0 P0 P R Ψ Θ κ B,
-  guarded_uskl (msubst_uskl_syn κ R) ->                       (* row premise *)
+Lemma a_sub_complete_check : forall n Θ0 P0 P R R' Ψ Θ κ B,
+  guarded_uskl R' ->                                           (* row premise *)
   guarded_pskl B ->                                           (* row premise *)
-  Ψ ⨟ Θ ⊢ₛᵃ (msubst_uskl_syn κ R) ∼ (pskl_to_bskl_inh B) ->   (* row premise *)
-  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ msubst_uskl_syn κ R ⌋ˢ ⊳ B ->              (* leaf refinement *)
+  Ψ ⨟ Θ ⊢ₛᵃ R' ∼ (pskl_to_bskl_inh B) ->                       (* row premise *)
+  Θ ⨟ empty ⊢ᵣₚᵃ ⌊ R' ⌋ˢ ⊳ B ->                                (* leaf refinement *)
   guarded_pskl P0 ->                    (* the algorithm's Check/ForallR split *)
   Θ ⨟ empty ⊢ₚₛᵃ B ->                   (* external wf of the counterpart *)
-  sub_complete_concl n a_sub_mode_ty mode_tc Θ0 P0 P R Ψ Θ κ (pskl_to_bskl_inh B).
+  sub_complete_concl n a_sub_mode_ty mode_tc Θ0 P0 P R R' Ψ Θ κ (pskl_to_bskl_inh B).
 Proof.
-  intros n Θ0 P0 P R Ψ Θ κ B HgR HgB Hrow Hrfn HgP0 HwfB.
+  intros n Θ0 P0 P R R' Ψ Θ κ B HgT HgB Hrow Hrfn HgP0 HwfB.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hsub Hrs.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs.
+  (* the ≡ᵘ slack, erased at the algorithm's input *)
+  pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
+  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
   (* the leaf refinement, in the [_f] shape thm:complete-consistency takes *)
   assert (Hrp : ad_refine_pskl_f empty Θ empty
                   (msubst_pskl κ P) (bskl_to_pskl (pskl_to_bskl_inh B))).
   { rewrite bskl_to_pskl_pskl_to_bskl_inh.
-    pose proof (ad_refine_pskl_f_empty_intro Hrfn) as H.
-    rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in H. exact H. }
+    pose proof (ad_refine_pskl_f_empty_intro Hrfn) as H0.
+    destruct (skl_tyequiv_refine_pskl_f_transport Herase Hwfth
+                (fun x b Hb => Hb)) as [Hrpt _].
+    exact (Hrpt _ _ _ H0). }
   (* the algorithm's input skeleton is guarded *)
   assert (HgP : guarded_pskl P).
   { rewrite <- HeqP. eapply guarded_uskl_msubst_erase;
-      [ exact HgR | rewrite HeqP; eapply a_wf_pskl_lc; exact HwfP ]. }
-  (* the DECORATED premise undecorates, then thm:complete-consistency runs *)
+      [ eapply a_uskl_tyequiv_guarded; [ exact Hrel | exact HgT ]
+      | rewrite HeqP; eapply a_wf_pskl_lc; exact HwfP ]. }
+  (* the DECORATED premise undecorates, then the slack moves it to κP *)
   assert (Hc : empty ⨟ Θ ⊢ₛᵃ (pskl_to_uskl (msubst_pskl κ P))
                             ∼ (pskl_to_bskl_inh B)).
-  { pose proof (ad_pat_consis_strip_tags Hrow) as H.
-    rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in H. exact H. }
+  { pose proof (ad_pat_consis_strip_tags Hrow) as H0.
+    destruct (skl_tyequiv_consis_transport Herase Hwfth
+                (fun x b Hb => Hb)) as [Hct _].
+    exact (Hct _ _ H0). }
   destruct (a_consis_complete_thm empty Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp)
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_consis_sound_aux Hrun Hwf0 HwfP0 HwfP
