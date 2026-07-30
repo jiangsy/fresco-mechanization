@@ -3373,24 +3373,48 @@ metasubstitution's images are monotypes, so `κP0` is a mono PAINT there, and
 `ad_refine_mono_paint_rhs_monoish` (Qed) carries that through the refinement
 premise.
 
-**What is left of TASK 0** — bookkeeping, not a wall:
+✅ **AND THE SUPPLY ITSELF IS CLOSED ON THE BRANCH THAT WAS BLOCKING.**
+`sub_shield_supply_mono_counterpart` / `sub_shield_supply_mono_p0`
+(`prop_sub_shield_supply.v`, Qed, axiom-free):
 
-1. Make it POSITIONAL.  The leaf above is stated at the whole subject; the
-   shield decomposes through `fsh_arrow` / `fsh_all_l` / `fsh_all_r`, so the
-   induction has to walk `P0` and apply the leaf at each flexible position.
-2. ⚠️ **`fastep_flexdef_r` (`prop_look_complete.v:3798`) is the one row that
-   does NOT follow from tag-freeness.**  It replaces the guess by
-   `ptyp_to_uskl_syn τ` for an UNCONSTRAINED τ, so `fa_clean`'s
-   `ftv (paint τ) ∩ Δρ' = ∅` is not derivable at the arbitrary `Δρ'` that
-   `sub_shield` quantifies over.  Its own comment already flags this ("a
-   slightly stronger premise, and one a call site discharges the same way — a
-   painting is Δρ-clean whenever the definition-freshness holds").  At
-   `Δρ' = ∅` it is trivial, and P6-L runs P6-Ss at `Δρ = ∅` throughout
-   (`urho__refl`), so the Δρ'-generality is SLACK the premise carries and the
-   proof never uses.  **The fix is a statement-level one: give P6-L the
-   Δρ'-monomorphic `sub_shield` (Δρ' := Δρ), which is what its own run needs
-   and which IS suppliable.**  Check that P6-Ss's proof only ever instantiates
-   the quantifier at `Δρ' = Δρ` before making the change.
+    a_wf_aenv Θ  →  a_tags_sort NM Ψa ψa  →  is_tskl ψsubj
+      →  ad_pat_sub_g n NM M Ψa Θ ψsubj Q  →  bskl_monoish Q
+      →  sub_shield Θ0 Ψa ∅ P0 ψa                      (UNIFORMLY in P0)
+
+with the corollary taking the refinement premise directly, for `κP0` a mono
+PAINT — which is what a raw Θ0-flexible `P0` gives, since every image of a
+metasubstitution is a monotype.  **That is exactly the configuration
+`cex_p6sv_forall_flex.v` uses to refute the paper's P6-Sv, so the premise P6-L
+had to carry is discharged where P7b's Sub-ForallL needs it.**
+
+No positional decomposition is needed on this branch after all: once `Ψa = ∅`,
+`fsh_clean` does not look at the payload, so it shields every `ss_walk` residue
+of `P0` at once.  The work is all in the OTHER conjunct, `flex_apart_walk`,
+which quantifies over the ρ-walk — and there the invariant is that a TAG-FREE
+guess can never take `fastep_all_r` (the only step that grows Δρ), while every
+other step preserves tag-freeness (subterms, or a mono PAINTING).  So Δρ stays
+put and `fa_clean` closes every walked point (`fa_walk_tag_free`,
+`flex_apart_walk_tag_free`, `sub_shield_tag_free`).
+
+⚠️ **ONE RULE HAD TO BE NARROWED, and the earlier note here was wrong about
+why.**  `fastep_flexdef_r` (`prop_look_complete.v:3798`) installed
+`ptyp_to_uskl_syn τ` for an UNCONSTRAINED τ, which makes `flex_apart_walk`
+underivable from cleanliness of ψa — the walk admits garbage no context
+justifies.  It now carries `ftv (paint τ) ∩ Δρ = ∅`, exactly the fact its own
+comment said a call site would discharge.  Cost: ZERO — its single builder
+(P6-Sv's FlexMono row, `prop_look_complete_sub_var.v:2863`) already had it in
+scope as `Hclean` for its own `fsh_clean`, and the full rebuild was green
+first time.  ⚠️ The previously-recorded fix — "the Δρ' generality is slack, make
+`sub_shield` Δρ'-monomorphic" — was WRONG: `sub_shield_add_fresh` (Sub-ForallL's
+Δρ growth in P6-Ss) genuinely uses that quantifier.
+
+**What is left of TASK 0:** the branch where the counterpart is NOT mono-ish,
+i.e. `P0` has real polytype structure.  There `Ψa` need not collapse, so the
+shield must come from `fsh_flexfree` at flex-free positions plus the structural
+rows — and THAT is where the positional argument lives.  Note the asymmetry to
+exploit: `flex_shield` has a flex-free base rule (`fsh_flexfree`) but
+`flex_apart` does NOT, so the `flex_apart_walk` conjunct will still want
+`fa_clean`, i.e. Δρ-cleanliness of the walked guess.
 
 **The backstop, and the one genuinely open dependency.**  For the remaining
 shape — a rigid-∀-spine skeleton facing a bare flexible payload — the argument

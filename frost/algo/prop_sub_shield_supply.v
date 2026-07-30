@@ -53,6 +53,10 @@ Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_mono_bridge.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_look_complete.
+Require Import src.frost.algo.prop_look_complete_cstr.   (* ftag_in_uskl_ptyp_to_uskl_syn *)
+Require Import src.frost.algo.prop_consis_precise.   (* d_tags_skl_ftag *)
+Require Import src.frost.algo.prop_look_complete_sub_var.
+Require Import src.frost.algo.prop_look_complete_sub_cstr. (* sub_shield *)
 
 Set Implicit Arguments.
 
@@ -154,3 +158,145 @@ Proof.
 Qed.
 
 Print Assumptions ad_pat_sub_g_monoish_tag_free.
+
+(* ===================================================================== *)
+(*  §3  A TAG-FREE GUESS SHIELDS EVERYTHING                               *)
+(*                                                                        *)
+(*  With [Ψa = ∅] in hand, the shield is immediate — and, notably,         *)
+(*  UNIFORMLY in P0: [fsh_clean] does not look at the payload at all, so   *)
+(*  no positional decomposition is needed on this branch.  What has to be  *)
+(*  checked is the OTHER conjunct, [flex_apart_walk], because that one     *)
+(*  quantifies over the ρ-walk and the ρ-walk can move Δρ.                 *)
+(*                                                                        *)
+(*  It cannot here.  [fastep_all_r] — the ONLY step that grows Δρ — needs  *)
+(*  a TAGGED quantifier [∀^ε] in the guess, and tag-freeness is preserved  *)
+(*  by every other step: they take subterms, or (at [fastep_flexdef_r])    *)
+(*  install a mono PAINTING, which has no tags either.  So Δρ stays put    *)
+(*  and every walked guess is Δρ-clean, which is [fa_clean].               *)
+(* ===================================================================== *)
+
+Lemma fa_walk_tag_free : forall Δρ P0 ψa Δρ' P0' ψa',
+  fa_walk Δρ P0 ψa Δρ' P0' ψa' ->
+  ftag_in_uskl ψa [=] empty ->
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
+  Δρ' [=] Δρ /\ ftag_in_uskl ψa' [=] empty /\
+  (ftvar_in_uskl ψa') ∩ Δρ' [=] empty.
+Proof.
+  intros Δρ P0 ψa Δρ' P0' ψa' H; induction H; intros Htf Hcl.
+  - (* fw_refl *)
+    split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
+  - (* fw_step : one step preserves the invariant, then the IH *)
+    assert (Hstep : Δρ1 [=] Δρ /\ ftag_in_uskl ψ1 [=] empty /\
+                    (ftvar_in_uskl ψ1) ∩ Δρ1 [=] empty).
+    { destruct H; cbn in Htf, Hcl.
+      - (* arrow_l *)
+        split; [ reflexivity
+               | split; [ clear - Htf; fsetdec | clear - Hcl; fsetdec ] ].
+      - (* arrow_r *)
+        split; [ reflexivity
+               | split; [ clear - Htf; fsetdec | clear - Hcl; fsetdec ] ].
+      - (* p0_arrow_l : the guess is untouched *)
+        split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
+      - (* p0_arrow_r *)
+        split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
+      - (* all_l : Sub-ForallR descends P0 only *)
+        split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
+      - (* all_r : IMPOSSIBLE — a tagged ∀ inside a tag-free guess *)
+        exfalso.
+        assert (Hin : ε `in` add ε (ftag_in_uskl ψ)) by (clear; fsetdec).
+        rewrite Htf in Hin. clear - Hin; fsetdec.
+      - (* tophole_l : the guess is untouched *)
+        split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
+      - (* topholeg_r *)
+        split; [ reflexivity
+               | split; [ clear - Htf; fsetdec | clear - Hcl; fsetdec ] ].
+      - (* flexdef_r : a painting has no tags, and the step's OWN premise is
+           exactly its Δρ-cleanliness *)
+        split; [ reflexivity | split ];
+          [ rewrite ftag_in_uskl_ptyp_to_uskl_syn; clear; fsetdec
+          | assumption ]. }
+    destruct Hstep as (HΔ1 & Htf1 & Hcl1).
+    destruct (IHfa_walk Htf1 Hcl1) as (HΔ2 & Htf2 & Hcl2).
+    split; [ clear - HΔ1 HΔ2; fsetdec | split; [ exact Htf2 | exact Hcl2 ] ].
+Qed.
+
+Lemma flex_apart_walk_tag_free : forall Θ0 Δρ P0 ψa,
+  ftag_in_uskl ψa [=] empty ->
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
+  flex_apart_walk Θ0 Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa Htf Hcl Δρ' P0' ψa' Hw.
+  destruct (fa_walk_tag_free Hw Htf Hcl) as (_ & _ & Hcl').
+  apply fa_clean; exact Hcl'.
+Qed.
+
+(** The shield, from tag-freeness alone. *)
+Lemma sub_shield_tag_free : forall Θ0 Ψa P0 ψa,
+  Ψa [=] empty ->
+  ftag_in_uskl ψa [=] empty ->
+  sub_shield Θ0 Ψa empty P0 ψa.
+Proof.
+  intros Θ0 Ψa P0 ψa HΨ Htf P0' Δρ' _ _ Hcl.
+  assert (Hcl' : (ftvar_in_uskl ψa) ∩ Δρ' [=] empty)
+    by (clear - Hcl; fsetdec).
+  split;
+    [ apply flex_apart_walk_tag_free; assumption
+    | apply fsh_clean; [ exact Hcl' | clear - HΨ; fsetdec ] ].
+Qed.
+
+(* ===================================================================== *)
+(*  §4  P7's SUPPLY, ON THE BRANCH THAT WAS BLOCKING                      *)
+(*                                                                        *)
+(*  Assemble: the counterpart is mono-ish exactly where [κP0] is a mono    *)
+(*  PAINT (§2's [ad_refine_mono_paint_rhs_monoish]) — which is the case    *)
+(*  for a RAW Θ0-FLEXIBLE P0, since a metasubstitution's images ARE        *)
+(*  monotypes.  Then §2 collapses the tag set and §3 shields everything.   *)
+(*                                                                        *)
+(*  This is precisely the configuration [cex_p6sv_forall_flex.v] uses to   *)
+(*  refute the paper's P6-Sv — so the premise P6-L had to carry IS         *)
+(*  discharged where P7b's Sub-ForallL needs it.                          *)
+(* ===================================================================== *)
+
+Theorem sub_shield_supply_mono_counterpart :
+  forall n NM M Θ0 Θ Ψa ψa ψsubj Q P0,
+  a_wf_aenv Θ ->
+  a_tags_sort NM Ψa ψa ->
+  is_tskl ψsubj ->
+  ad_pat_sub_g n NM M Ψa Θ ψsubj Q ->
+  bskl_monoish Q ->
+  sub_shield Θ0 Ψa empty P0 ψa.
+Proof.
+  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0 HwfΘ Htags Htsk Hsub Hmi.
+  assert (HΨ : Ψa [=] empty)
+    by (eapply ad_pat_sub_g_monoish_tag_free; eassumption).
+  apply sub_shield_tag_free; [ exact HΨ | ].
+  (* tag-freeness of ψa itself: [d_tags_skl] indexes ψa by its OWN tags *)
+  assert (Hdt : d_tags_skl Ψa ψa) by (inversion Htags; assumption).
+  assert (Heq : Ψa [=] ftag_in_uskl ψa) by (apply d_tags_skl_ftag; exact Hdt).
+  clear - HΨ Heq; fsetdec.
+Qed.
+
+(** …and the form P7b's Sub-ForallL applies, with the refinement premise it
+    has on hand instead of [bskl_monoish] spelled out.  [κP0] being a mono
+    paint is what a RAW FLEXIBLE [P0] gives: [msubst_pskl κ (pskl_var_f α)]
+    IS [ptyp_to_pskl (κ α)], and every image of a metasubstitution is a
+    monotype ([a_inc_lookup_mono]). *)
+Corollary sub_shield_supply_mono_p0 :
+  forall n NM M Θ0 Θ Ψa ψa ψsubj Q P0s τ,
+  a_wf_aenv Θ ->
+  a_tags_sort NM Ψa ψa ->
+  is_tskl ψsubj ->
+  ad_pat_sub_g n NM M Ψa Θ ψsubj Q ->
+  P0s = ptyp_to_pskl τ -> mono_ptyp τ ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0s) ⊳ Q ->
+  forall P0, sub_shield Θ0 Ψa empty P0 ψa.
+Proof.
+  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0s τ HwfΘ Htags Htsk Hsub Heq Hm Href P0.
+  eapply sub_shield_supply_mono_counterpart;
+    [ exact HwfΘ | exact Htags | exact Htsk | exact Hsub | ].
+  eapply ad_refine_mono_paint_rhs_monoish;
+    [ exact HwfΘ | exact Href | | exact Hm ].
+  rewrite Heq. apply ptyp_to_bskl_inh_syn_eq; exact Hm.
+Qed.
+
+Print Assumptions sub_shield_supply_mono_p0.

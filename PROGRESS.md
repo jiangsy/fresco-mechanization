@@ -78,7 +78,7 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-30 (latest) — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's LEAF PROVED (the wall is NOT a blocker)
+## 2026-07-30 (latest) — P7 opened: the Δ = ∅ corollary, the P7 plan, and TASK 0's SUPPLY CLOSED on the branch that was blocking
 
 `make coq` green from clean, all `Print Assumptions` closed, zero admits.
 
@@ -131,14 +131,37 @@ flexible (metasubstitution images are monotypes +
 `ad_refine_mono_paint_rhs_monoish`).
 
 **So the flex-mono wall is NOT a blocker, and the earlier "P7 is blocked"
-reading was wrong.**  What remains of TASK 0 is bookkeeping: (1) make the leaf
-POSITIONAL (walk P0, apply it at each flexible position); (2) ⚠️
-`fastep_flexdef_r` replaces the guess by `ptyp_to_uskl_syn τ` for an
-UNCONSTRAINED τ, so `fa_clean` is not derivable at the arbitrary `Δρ'` that
-`sub_shield` quantifies over — trivial at `Δρ' = ∅`, and P6-L runs P6-Ss at
-Δρ = ∅ throughout (`urho__refl`), so that generality is SLACK the premise carries
-and the proof never uses.  The fix is statement-level: give P6-L the
-Δρ'-monomorphic `sub_shield`.  DESIGN §9.0.
+reading was wrong.**
+
+✅ **AND THE SUPPLY IS CLOSED on that branch** — `sub_shield_supply_mono_counterpart`
+/ `sub_shield_supply_mono_p0` (same file, Qed, axiom-free): a mono-ish
+counterpart gives `sub_shield Θ0 Ψa ∅ P0 ψa` UNIFORMLY in P0, with the corollary
+taking the refinement premise directly for `κP0` a mono PAINT — which is what a
+raw Θ0-flexible P0 gives, since metasubstitution images are monotypes.  That is
+exactly `cex_p6sv_forall_flex.v`'s configuration, so the premise P6-L had to
+carry is discharged where P7b's Sub-ForallL needs it.  No positional
+decomposition was needed here: once Ψa = ∅, `fsh_clean` ignores the payload and
+shields every `ss_walk` residue at once.  The work was in the OTHER conjunct,
+`flex_apart_walk` — where the invariant is that a TAG-FREE guess can never take
+`fastep_all_r` (the only Δρ-growing step) while every other step preserves
+tag-freeness, so Δρ stays put and `fa_clean` closes every walked point
+(`fa_walk_tag_free` / `flex_apart_walk_tag_free` / `sub_shield_tag_free`).
+
+⚠️ **ONE RULE NARROWED.**  `fastep_flexdef_r` installed `ptyp_to_uskl_syn τ` for
+an UNCONSTRAINED τ, which makes `flex_apart_walk` underivable from cleanliness of
+ψa (the walk admitted garbage no context justifies).  It now carries
+`ftv (paint τ) ∩ Δρ = ∅` — exactly the fact its own comment said a call site
+would discharge.  Cost zero: its single builder (P6-Sv's FlexMono row) already
+had it in scope as `Hclean`, and the full rebuild was green first time.  ⚠️ The
+fix recorded in the previous entry — "the Δρ' generality is slack, make
+`sub_shield` Δρ'-monomorphic" — was WRONG: `sub_shield_add_fresh` genuinely uses
+that quantifier.
+
+**What is left of TASK 0:** the branch where the counterpart is NOT mono-ish
+(P0 with real polytype structure).  There Ψa need not collapse, so the shield
+must come from `fsh_flexfree` plus the structural rows, and that is where the
+positional argument lives.  Asymmetry to exploit: `flex_shield` has a flex-free
+base rule but `flex_apart` does NOT.  DESIGN §9.0.
 
 ## 2026-07-30 — ⭐⭐⭐ P6-L CLOSED — **P6 IS COMPLETE** (all five lemmas); P7 opens
 

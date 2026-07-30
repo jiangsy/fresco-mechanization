@@ -2860,7 +2860,8 @@ Proof.
       * exact Hdelta.
       * exact Hshield.
       * exact Hdfresh.
-      * eapply flex_apart_walk_step; [ exact Hapart | apply fastep_flexdef_r ].
+      * eapply flex_apart_walk_step;
+          [ exact Hapart | apply fastep_flexdef_r; exact Hclean ].
       * apply fsh_clean;
           [ exact Hclean
           | rewrite ftag_in_uskl_ptyp_to_uskl_syn; clear; fsetdec ].

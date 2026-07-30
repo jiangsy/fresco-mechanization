@@ -3796,11 +3796,17 @@ Inductive fa_step :
 | fastep_topholeg_r : forall Δρ P0 ψ,          (* Sub-UnivGhostLG *)
     fa_step Δρ P0 (uskl_topholeg ψ) Δρ P0 ψ
 | fastep_flexdef_r : forall Δρ P0 α τ,         (* FlexMono *)
-    (* the definition that justifies this step lives in the TARGET context
-       Θ, not in Θ0, and Θ grows across ForallR; leaving τ unconstrained
-       keeps the walk context-free (a slightly stronger premise, and one a
-       call site discharges the same way — a painting is Δρ-clean whenever
-       the definition-freshness holds) *)
+    (* the definition that justifies this step lives in the TARGET context Θ,
+       not in Θ0, and Θ grows across ForallR — so the step stays CONTEXT-FREE
+       and carries the one consequence of Θ that matters instead: the
+       unfolded painting is Δρ-clean.  [delta_def_fresh] is what supplies it,
+       and P6-Sv's FlexMono row (the ONLY builder of this step) already has it
+       on hand as [Hclean] for its own [fsh_clean].
+       ⚠️ WITHOUT this premise the walk admits an ARBITRARY τ, and then
+       [flex_apart_walk] is not derivable from cleanliness of ψa at all —
+       which is exactly what blocks P7's [sub_shield] supply
+       (docs/DESIGN-completeness-subtyping.md §9.0). *)
+    (ftvar_in_uskl (ptyp_to_uskl_syn τ)) ∩ Δρ [=] empty ->
     fa_step Δρ P0 (uskl_var_f α) Δρ P0 (ptyp_to_uskl_syn τ).
 
 Inductive fa_walk :
