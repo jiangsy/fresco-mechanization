@@ -78,7 +78,57 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⭐ Sub-ForallL items 1–4 CLOSED — `uskl_precise_erase_refine`, `uskl_precise_subst_into`, `ad_pat_sub_precise_upre_gv`, `a_extract_family_of_instance` all Qed
+## 2026-07-31 (latest) — Sub-ForallL item 5 RE-SCOPED: "erase the ≡ᵘ slack" needs a WHOLE-JOIN transport (new work-list) + first ≡ᵘ enablers landed
+
+Reading the row against the Qed interfaces exposed TWO gaps the
+scoping entry's assembly sketch glossed over:
+
+1. **"Erase the ≡ᵘ slack" is a real lemma, and it does not exist.**
+   P6-L (`a_extract_complete_gen`) demands the join at the EXACT
+   subject `(κR')[ψa/α]` with `R'` κ-free — P6-Ss inducts on that
+   join, so no slack can ride along — while the motive supplies the
+   join only at some `T` with `Θ ⊢ T ≡ᵘ κR`.  The slack design's
+   "only the leaves transport" trick works for rows that consume
+   consistency LEAVES (Infer/Check/Arrow-domain); ForallL hands the
+   WHOLE join to P6.  Required new enablers, in dependency order:
+   (i) ftag-preservation of ≡ᵘ (`ftag S' [=] ftag S`; the `__mono`
+   row's paintings are tag-free on both sides); (ii) a decorated
+   `ad_pat_consis` ≡ᵘ-subject transport (flex rows may relate
+   DIFFERENT defined variables through `__mono`'s ≡ᵗ; a
+   monotype-painting subject reduces to the pskl-level
+   `skl_tyequiv_consis_transport` via `pskl_to_uskl_ptyp` after
+   `ftag_sub` forces Ψ [=] ∅); (iii) the fuel-preserving
+   `ad_pat_sub_gv` ≡ᵘ-subject transport (12 rows; consistency leaves
+   by (ii), the `_gv` refinement leaves along
+   `a_uskl_tyequiv_erase` + the pskl `skl_tyequiv_refine_*`
+   transports, ForallL rows by `a_uskl_tyequiv_open` below).
+2. **P6-L's join premise is pinned at tag context `Ψa`** while the
+   row's premise runs at `Ψ ∪ Ψa`.  NOT a real repair job: P6-Ss
+   (`a_looksub_solve_complete`) already carries the general range
+   parameter `Ψsub` (`Ψa ⊆ Ψsub ⊆ ftag R' ∪ Ψa` — the ambient Ψ fits
+   via `ftag_sub`); P6-L just instantiated `Ψsub := Ψa`.  Surface the
+   parameter on `a_extract_complete_gen` (pass-through diff; the
+   Δ = ∅ paper-facing corollary keeps `Ψa`).
+
+**Landed now** (prop_sub_msubst_equiv.v, end): the ≡ᵘ row-enabler kit —
+`a_uskl_tyequiv_all_syn_inv` / `a_uskl_tyequiv_all_etag_inv` (∀-heads
+are shape-rigid: `__mono` cannot produce one), `a_wf_ptyp_paint_notin`,
+`a_uskl_tyequiv_subst` (common substitution at a Θ-fresh variable; the
+`__mono` leaves are Θ-scoped hence untouched — exactly the consumer the
+rule's design note anticipated), and `a_uskl_tyequiv_open` (instantiate
+two ≡ᵘ ∀-bodies at a common lc argument).
+
+Row plan after the enablers (per the paper :3374-3453): erase the
+slack with (iii) at the ∀-subject; invert the join's ForallL row;
+P6-L (Ψsub-general) at the ψa-form; `uskl_precise_of_precise` + item
+2's `open_into` build the ⊑ᵤ pair; item 3 swaps the subject to the
+`(κa++κ)Pa`-form dropping Ψa; regenerate the IH slack from
+`a_uskl_tyequiv_open` on the body family + κ→κa++κ agreement (Rb is
+Θ0-scoped, κa's keys are Ξ's — fresh); IH at `(Ξ++Θ0, κa++κ)`;
+`a_sub__forall_l` via item 4's family; package glue mirrors
+Arrow's/ForallR's (`a_inc_equiv_glue`, junk-row peels).
+
+## 2026-07-31 — ⭐ Sub-ForallL items 1–4 CLOSED — `uskl_precise_erase_refine`, `uskl_precise_subst_into`, `ad_pat_sub_precise_upre_gv`, `a_extract_family_of_instance` all Qed
 
 **Item 4 (same session, fourth commit)** —
 `a_extract_family_of_instance` (end of prop_look_complete_extract.v):

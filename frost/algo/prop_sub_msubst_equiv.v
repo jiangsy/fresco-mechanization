@@ -687,3 +687,118 @@ Proof.
 Qed.
 
 Print Assumptions a_uskl_tyequiv_weaken_cons.
+
+(* ===================================================================== *)
+(*  Sub-ForallL row enablers: ∀-head inversions and the substitution      *)
+(*  congruence.  ≡ᵘ is shape-rigid at quantifier heads (the [__mono] row  *)
+(*  cannot produce one — monotypes have no ∀), so the inversions are      *)
+(*  clean; the [__mono] row's Θ-wf leaves make substitution at a          *)
+(*  Θ-fresh variable a no-op there (the design note anticipated exactly   *)
+(*  this consumer).                                                       *)
+(* ===================================================================== *)
+
+Lemma a_uskl_tyequiv_all_syn_inv : forall Θ R R',
+  Θ ⊢ (uskl_all_syn R) ≡ᵘ (uskl_all_syn R') ->
+  exists L, forall α, α `notin` L ->
+    Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+        (open_uskl_wrt_uskl R' (uskl_var_f α)).
+Proof.
+  intros Θ R R' H; inversion H; subst.
+  - (* __mono : a monotype painting is never ∀-headed *)
+    lazymatch goal with
+    | Hm1 : mono_ptyp ?t1, He1 : ptyp_to_uskl_syn ?t1 = uskl_all_syn R |- _ =>
+        destruct Hm1; cbn in He1; discriminate He1
+    end.
+  - (* __all_syn *) eauto.
+Qed.
+
+Lemma a_uskl_tyequiv_all_etag_inv : forall Θ ε R R',
+  Θ ⊢ (uskl_all_etag ε R) ≡ᵘ (uskl_all_etag ε R') ->
+  exists L, forall α, α `notin` L ->
+    Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+        (open_uskl_wrt_uskl R' (uskl_var_f α)).
+Proof.
+  intros Θ ε R R' H; inversion H; subst.
+  - lazymatch goal with
+    | Hm1 : mono_ptyp ?t1, He1 : ptyp_to_uskl_syn ?t1 = uskl_all_etag ε R |- _ =>
+        destruct Hm1; cbn in He1; discriminate He1
+    end.
+  - eauto.
+Qed.
+
+(** A Θ-wf monotype's painting avoids any Θ-fresh variable. *)
+Lemma a_wf_ptyp_paint_notin : forall Θ τ β,
+  a_wf_ptyp Θ τ ->
+  β `notin` dom Θ ->
+  β `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ).
+Proof.
+  intros Θ τ β Hwf Hβ.
+  rewrite ftvar_in_uskl_ptyp_syn.
+  intro Hc.
+  pose proof (a_wf_ptyp_ftv_tvarish Hwf Hc) as Hbt.
+  destruct Hbt as [Hb | [Hb | [τ0 Hb]]]; apply binds_In in Hb;
+    clear - Hb Hβ; fsetdec.
+Qed.
+
+(** ≡ᵘ is closed under substituting a common (locally closed) skeleton for
+    a Θ-fresh variable: the [__mono] leaves are Θ-scoped, hence untouched;
+    every other row is a congruence. *)
+Lemma a_uskl_tyequiv_subst : forall Θ X Y,
+  Θ ⊢ X ≡ᵘ Y ->
+  forall β ψ,
+  lc_uskl ψ ->
+  β `notin` dom Θ ->
+  Θ ⊢ (subst_bskl_in_uskl ψ β X) ≡ᵘ (subst_bskl_in_uskl ψ β Y).
+Proof.
+  intros Θ X Y H; induction H; intros β ψ Hlcψ HβΘ.
+  - (* __mono : both paintings are β-free *)
+    rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ1) ψ β
+               (a_wf_ptyp_paint_notin H1 HβΘ)).
+    rewrite (subst_bskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τ2) ψ β
+               (a_wf_ptyp_paint_notin H2 HβΘ)).
+    apply a_uskl_tyequiv__mono; assumption.
+  - (* __unit *) cbn. apply a_uskl_tyequiv__unit.
+  - (* __var *)
+    cbn. destruct (eq_var α β) as [-> | Hne].
+    + apply a_uskl_tyequiv_refl. exact Hlcψ.
+    + apply a_uskl_tyequiv__var.
+  - (* __arrow *)
+    cbn. apply a_uskl_tyequiv__arrow; auto.
+  - (* __all_syn *)
+    cbn. apply a_uskl_tyequiv__all_syn with (L := L `union` singleton β).
+    intros γ Hγ.
+    assert (Hne : β <> γ) by (clear - Hγ; fsetdec).
+    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
+    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψ β γ Hne Hlcψ).
+    apply H0; [ clear - Hγ; fsetdec | exact Hlcψ | exact HβΘ ].
+  - (* __all_etag *)
+    cbn. apply a_uskl_tyequiv__all_etag with (L := L `union` singleton β).
+    intros γ Hγ.
+    assert (Hne : β <> γ) by (clear - Hγ; fsetdec).
+    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ β γ Hne Hlcψ).
+    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R' ψ β γ Hne Hlcψ).
+    apply H0; [ clear - Hγ; fsetdec | exact Hlcψ | exact HβΘ ].
+  - (* __hole *) cbn. apply a_uskl_tyequiv__hole.
+  - (* __holeg *) cbn. apply a_uskl_tyequiv__holeg.
+  - (* __tophole *) cbn. apply a_uskl_tyequiv__tophole; auto.
+  - (* __topholeg *) cbn. apply a_uskl_tyequiv__topholeg; auto.
+Qed.
+
+(** The opening form: instantiate two ≡ᵘ ∀-bodies at a common (locally
+    closed) argument. *)
+Lemma a_uskl_tyequiv_open : forall Θ R R' ψ L,
+  (forall α, α `notin` L ->
+     Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+         (open_uskl_wrt_uskl R' (uskl_var_f α))) ->
+  lc_uskl ψ ->
+  Θ ⊢ (open_uskl_wrt_uskl R ψ) ≡ᵘ (open_uskl_wrt_uskl R' ψ).
+Proof.
+  intros Θ R R' ψ L Hfam Hlcψ.
+  destruct (atom_fresh
+    (L `union` dom Θ `union` ftvar_in_uskl R `union` ftvar_in_uskl R'))
+    as [β Fr].
+  rewrite (subst_bskl_in_uskl_intro β R ψ ltac:(clear - Fr; fsetdec)).
+  rewrite (subst_bskl_in_uskl_intro β R' ψ ltac:(clear - Fr; fsetdec)).
+  apply a_uskl_tyequiv_subst;
+    [ apply Hfam; clear - Fr; fsetdec | exact Hlcψ | clear - Fr; fsetdec ].
+Qed.
