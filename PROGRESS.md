@@ -78,7 +78,63 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⭐⭐⭐ Sub-ForallL CLOSED: `a_sub_complete_forall_l_tagged` / `_untagged` Qed — ALL SEVEN P7b ROWS DONE; only P7a + the bundle remain
+## 2026-07-31 (latest) — ⚠️ P7a BLOCKER FLAGGED: the walk's Barendregt output conditions (`β ∉ dom Θ1`) are undischargeable without new infrastructure — DECISION NEEDED
+
+Scoping item 6 (P7a + bundle) against the Qed interfaces hit a real
+gap.  The flex walk's three re-attaching rules —
+`a_sub_flex__assign` / `__skip` / `__skip_rigid` — carry the
+prose-completed Barendregt premise `β ∉ dom Θ1` (the audit's
+registered completion; SOUNDNESS consumes it for output wf).  In the
+COMPLETENESS direction this is an obligation about the sub-run's
+OUTPUT junk: the run `Θ1` returned by the IH (main-half or flex-half)
+may mention `β` as an incidentally-colliding fresh name, and nothing
+bounds it — `sub_complete_concl`'s conclusion has no dom-bound on
+`Θ1`, `a_consis_complete_thm`'s neither, and no a_sub run-renaming
+kit exists (`prop_consis_rename.v`'s
+`a_assign_unify_consis_rename_tvar` renames RIGID tvars through the
+consis layer only; the walk's junk is FLEX names in a_sub runs).
+The walk's OTHER freshness conditions are unproblematic: Flex-Solve's
+deposited `α̂,β̂` are input-fresh (completeness chooses them); Depend
+has none.
+
+Options, all needing a decision:
+(A) Build the flex-junk RENAMING for `a_sub`/`a_sub_flex` runs
+    (mutual over the full algorithmic layer — effectively a slice of
+    the standing de-cofinite campaign's rename infrastructure, pulled
+    forward).  Correct, large.
+(B) Thread an AVOID-SET through the completeness conclusions
+    (`dom Θ1`'s new names avoid a caller-supplied finite `V`) — but
+    the Infer/Check/Arrow-domain rows get their `Θ1` from
+    `a_consis_complete_thm`, so the closed consistency-completeness
+    bundle would re-open with the same parameterization.  Large.
+(C) Re-encode the three walk rules' prose-completion (e.g. re-attach
+    through a rename on the output, or thread `β` positionally so no
+    re-attachment freshness is needed) — touches the ALGORITHM's
+    encoding; soundness (prop_decorate_key) re-checks; needs sign-off
+    on paper-faithfulness.
+(D) Parameterize the ALGORITHM's fresh choices by an avoid-set
+    (algorithm-side) — also encoding-touching.
+
+Recommendation: (A) is the doctrinally clean one and its kit is
+wanted anyway by the de-cofinite campaign; (C) is the cheap one if a
+faithful re-encoding exists (e.g. `__skip` keeping `β` in place
+instead of walking it out — but that changes the walk's measure and
+the paper's rule shape).
+
+Also settled while scoping the bundle (recorded for the assembly):
+the joint measure is lex(fuel, |context|, |subject|): the third
+component covers the NON-incrementing subject-peeling join rows
+(`gv__univ_ghost_l`/`_lg`, same fuel, same context — the memory's
+plain "lex(fuel, |Θ0|)" note was incomplete); Flex-Assign re-enters
+the MAIN half at a context one entry smaller (second component);
+Flex-Solve's re-entry join at the arrow painting can only end with
+`__arrow` at mode `fn M` (every other row's mode or subject shape
+mismatches), so it drops fuel through the Arrow row lemma; the flex
+motive should carry `a_flex_tvar Θ0 α` (not `(Ξ++Θ0)`) so the
+Θ0 = nil walk case refutes — the walk preserves it (Assign with
+β̂ = α̂ exits to the main half before it could break).
+
+## 2026-07-31 — ⭐⭐⭐ Sub-ForallL CLOSED: `a_sub_complete_forall_l_tagged` / `_untagged` Qed — ALL SEVEN P7b ROWS DONE; only P7a + the bundle remain
 
 Both variants of P7b's last row landed (end of
 prop_sub_complete_thm.v), Qed + axiom-free, `make coq` green.  The
