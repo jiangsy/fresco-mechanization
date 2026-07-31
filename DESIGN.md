@@ -335,22 +335,58 @@ converts.
 
 #### The shape
 
+**Rule 1 — the freshness side condition may mention INPUTS ONLY.**  A
+rule fires by *choosing* its binder, so it can only avoid things that
+already exist at that moment.  A condition naming an OUTPUT ("pick β
+avoiding `P'`") is not implementable: the algorithm has not computed
+`P'` yet.  So the side condition ranges over `dom Θ` and the
+`ftvar_in_*` of the rule's *input* skeletons, and never over an output.
+
+**Rule 2 — where the algorithm re-binds its result, the rule CLOSES
+explicitly.**  Dropping an output condition would leave the relation
+ambiguous: from a premise output `P'` one could read back either the
+properly closed body or a body that still mentions β free (both satisfy
+`P'^β = <premise output>`).  The cofinite encoding accidentally forced
+the closed reading; exists-fresh must say it.  So:
+
 ```coq
-| a_<judgment>__<rule> : forall … β,
-    β `notin` <everything in the CONCLUSION that must stay clean> ->
-    <premise at β> ->
-    <conclusion>
+(* output re-bound by the algorithm — implementation does [bind_var α] *)
+| a_<judgment>__<rule> : forall … P' β,
+    β `notin` dom Θ `union` <ftv of the INPUTS> ->
+    <premise at β, producing P'> ->
+    <conclusion with output (pskl_all_syn (close_pskl_wrt_pskl β P'))>
+
+(* output passed through — implementation DISCARDS the binder name *)
+| a_<judgment>__<rule> : forall … P' β,
+    β `notin` dom Θ `union` <ftv of the INPUTS> ->
+    <premise at β, producing P'> ->
+    <conclusion with output P'>          (* β may legitimately ESCAPE *)
 ```
 
-The side condition lists the rule's own inputs (`dom Θ`, the input
-skeletons' `ftvar_in_*`) and those outputs the judgment's invariants
-require to stay well-scoped.  Outputs the paper treats as junk or as
-carriers of freshly-generated names — `a_sub__forall_r`'s discarded
-suffix `Ξ`, the look's `Ξ ⨾ 𝒞` — are deliberately NOT constrained; that
-permissiveness is what makes the encoding as wide as the paper's rule.
-Ill-scoped results are filtered downstream by the wf side conditions
-that already exist (`a_sub__forall_l`'s `(Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1`),
-not by narrowing the rule.
+The `pskl_all_syn` wrapper keeps the closed body's index 0 bound, so the
+output stays locally closed.
+
+**The reference implementation is the arbiter of which shape a rule
+takes** (`paper/artifact/implementation/lib/type.ml`), and it
+distinguishes the two cleanly:
+
+| rule | implementation | shape |
+|---|---|---|
+| `SolS-ForallL` (:499-505) | `unbind` → recurse → **`bind_var alpha`** | close |
+| `guess_mono`'s `TForA` (:88-91) | `unbind` → recurse → **`bind_var v`** | close |
+| `SolS-ForallR` (:517-520) | `let _, b = unbind b` → recurse, result **unclosed** | escape |
+
+So `SolS-ForallR` really does let its binder escape into the result —
+the paper's rule (full-algo-spec.tex:1271) is faithful, not sloppy, and
+the mechanization must not narrow it.  Ill-scoped results are filtered
+downstream by the wf side conditions that already exist
+(`a_sub__forall_l`'s `(Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1`), not by the rule.
+
+⚠️ **Known consequence**: `a_solve_sub_eq_ftv`'s SUB half ("solving
+introduces no new free variables", prop_solve_sub.v) is FALSE once
+`SolS-ForallR` is faithful, and so is the freshness chain built on it
+(`a_solve_cstr_ftv` → `a_extract_output_fresh`).  These must be
+restated, not worked around by narrowing the rule.
 
 **No function-valued rule arguments.**  A cofinite family whose output
 varies with the binder (`Ξf : atom -> aenv`) was built and rejected
