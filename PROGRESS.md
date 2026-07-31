@@ -78,7 +78,80 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — Sub-ForallL SCOPED end-to-end: six work items, one open gate (the shield residual)
+## 2026-07-31 (latest) — ⭐ Sub-ForallL item 1 CLOSED: `uskl_precise_erase_refine` Qed — in the PLAIN judgment, no `_f` mirror needed
+
+`make coq` green from clean; axiom-free (`Print Assumptions` closed).
+Item 1 of the Sub-ForallL plan (the entry below) landed at the end of
+`frost/algo/prop_consis_precise.v`:
+
+    Lemma uskl_precise_erase_refine :
+      Θ ⨟ Δ ⊢ᵣₚᵃ Qm ⊳ Qr → a_wf_aenv Θ → (∀ α ∈ Δ, α ∉ dom Θ) →
+      Θ ⨟ Δ ⊢ₚₛᵃ Qr →
+      ∀ Θb Ψr R' R, uskl_precise Θb Ψr R' R →
+      (∀ x b, binds x b Θb → binds x b Θ) → ⌊R⌋ˢ = Qm →
+      Θ ⨟ Δ ⊢ᵣₚᵃ ⌊R'⌋ˢ ⊳ Qr
+
+**DESIGN DEVIATION — the scoping entry's "candidate resolution" (state
+item 1 over the F-indexed mirror `ad_refine_pskl_f` + prove
+`ad_refine_pskl_f_wf0` in an F-clean form) was NOT taken.**  The wf∅
+crux dissolves the way `ad_refine_syn_trans` (prop_precise.v) already
+dissolved the same crux: the TARGET's wf is ASSUMED — the paper's
+external-wf side condition (declarative.tex:1427), which the use site
+already carries (P5's `Hwfq : Θ' ⨟ ∅ ⊢ₚₛᵃ ⌊Q⌋`) — and the □-node's
+empty-Δ form is recovered from the Δ-discipline.  Why this beats the
+F-form: (a) the `_gv` joins' leaf refinements are PLAIN `⊢ᵣₚᵃ` at
+Δ = ∅, so the plain statement slots into item 3 with zero conversion;
+(b) the conclusion derivation is rebuilt node-by-node at the SAME
+(possibly `__tophole_fill`-extended) context as the input — wf over
+the UNEXTENDED context, the thing `__tophole_fill` cannot transport
+(`cex_p7_sskl_precise.v`), never arises; (c) the F-clean `wf0` would
+need "the path's opened binders ∈ F", which a fixed F cannot express
+for cofinitely-quantified binders without a rename kit.
+
+**New kit** (all in prop_consis_precise.v, end of file):
+
+- `ad_refine_pskl_ftv_policed` — the Δ-discipline transport: a set S
+  fresh for Θ and absent from the source is absent from the target
+  (fills are wf∅ hence Θ-scoped; flex definitions Θ-scoped; fresh
+  binders re-bound by the target ∀).  Unlike the bskl-level
+  `ad_refine_syn_syn_delta_free` it needs NO syn-painting/shape
+  restriction: the policed set is decoupled from the judgment's Δ, so
+  `__all` / `__tophole_fill` just pick their binder outside S.
+- `ad_refine_pskl_hole_l` — the □-helper (mirror of
+  `ad_refine_syn_hole_l`): a ghost refines to anything a wf∅ source
+  refines to, given target wf at Δ; = policed transport +
+  `a_wf_pskl_delta_shrink`.
+- `uskl_precise_mono_refine` — ⊑ᵤ against a MONOTYPE syn painting
+  yields the erasure-refinement into the painting.  Discharges the
+  rows where the refinement side is exhausted (var ⊳ var on a defined
+  flexible) while the precision keeps unfolding definitions
+  (`upre__flex_r` under `__var`).
+
+**Main proof shape**: outer induction on the ⊳-derivation; per case,
+reconstitute the node (`Hrr`), then inner `revert Heq; induction Hp;
+intros Heq; simpl in Heq; try discriminate Heq` — the erasure equation
+kills all shape-mismatched ⊑ᵤ rows; three administrative rows are
+shared `Local Ltac`s (`erase_refine_hole` / `_remove` / `_flexl`);
+congruence rows re-enter the outer IHs; `__flex_l`'s inner
+`upre__flex_r` aligns definitions by `binds_unique` and re-enters the
+outer IH at `⌊ptyp_to_uskl_syn τ⌋ = ptyp_to_pskl τ`
+(`uskl_to_pskl_ptyp`).
+
+**Gotchas** (new, beyond the thm file's list): (i) `induction Hr`
+names each case's recursive premise `Hr` (the inducted hypothesis's
+own name), NOT `H` — non-recursive premises still go `H`, `H0`;
+(ii) the `change (pskl_tophole ⌊R⌋) with ⌊uskl_tophole R⌋`
+re-expression needed before consuming an IH must happen AFTER
+`intros`-ing the `__tophole_fill` cofinite premise — doing it before
+the constructor is useless, `apply`'s unification re-reduces it (and
+leaves a raw `fix`, unmatchable by `match goal`); (iii) an inner IH's
+Δ is not inferable from its arguments — instantiate positionally.
+
+**Remaining** (per the scoping entry below): items 2–6 — subst-into
+congruence, the `_gv` transport of P5 (item 3 consumes item 1 exactly
+at its `Hwfq`), the extract cofinite family, the row, P7a + bundle.
+
+## 2026-07-31 — Sub-ForallL SCOPED end-to-end: six work items, one open gate (the shield residual)
 
 Scoping session after ForallR's close; no code yet.  The row =
 paper :3374-3453: P6-L extracts the guess, P5's precision-substitution
