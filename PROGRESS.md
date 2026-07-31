@@ -121,6 +121,41 @@ faithful re-encoding exists (e.g. `__skip` keeping `β` in place
 instead of walking it out — but that changes the walk's measure and
 the paper's rule shape).
 
+**USER DECISION (same day): route (A).**  Kit map, scoped:
+
+- **K0** (small, first): the CONVERSE dom lemma for the consis mutual
+  — `dom Θ1 [<=] dom (Ξ ++ Θ0)`-shaped (`a_assign_unify_consis`
+  creates NO new names: assign attaches only the caller's Ξ, whose
+  names are subject-derived; the existing `_dom_mono` at
+  prop_consis_rename.v:91 is the growth direction, same 20-line
+  mutind shape).  Consequence: the ONLY junk sources in a_sub runs
+  are (i) ForallR's junk suffix Ξj, (ii) ForallL's extract-Ξ (the
+  look's LE-FlexR picks + guess-mono's fresh flexibles), (iii)
+  Flex-Solve's deposited α̂,β̂.  Each becomes CONTEXT for everything
+  downstream of its introduction, so the rename must still traverse
+  all judgments.
+- **K1**: `a_assign_unify_consis_rename_flex` — rename a FLEX context
+  entry β0→β1 (undefined at entry; may become DEFINED during the run —
+  the rename carries through the definition payload) through the
+  consis mutual.  Mirror the tvar version
+  (`a_assign_unify_consis_rename_tvar`, prop_consis_rename.v:1070,
+  ~570 lines); the positional discipline differs (flex entries move
+  under the reorder kit, unlike the rigid `tvar_prefix` discipline).
+- **K2**: the look/solve/extract layer — renaming β0 as a collected
+  or context name through `a_looksub`/`a_lookeq`/`a_solve_*`/
+  `a_guess(_mono)`/`a_extract` (the looked-var and rigid renames
+  exist; the flex-name congruences are subst-stability-shaped).
+- **K3**: the mutual `a_sub`/`a_sub_flex` junk rename built on K1+K2:
+  `run → β0 ∉ dom Θ0-input → β1 fresh → run with β0→β1 renamed
+  outputs` (output context, output skeleton P1/A both renamed).
+- **K4**: package transport under the rename — `a_inc`/`a_inc_equiv`
+  rename a source-flex KEY (positional: rename the metasubst key;
+  images unchanged), precision transports since the composed lookups
+  agree.
+- Consumption: in the walk rows, if the IH's Θ1 collides with β,
+  K3-rename the run at a fresh β1 and re-derive the package by K4;
+  then the re-attachment premises hold.
+
 Also settled while scoping the bundle (recorded for the assembly):
 the joint measure is lex(fuel, |context|, |subject|): the third
 component covers the NON-incrementing subject-peeling join rows
