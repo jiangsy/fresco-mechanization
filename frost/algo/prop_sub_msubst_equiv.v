@@ -46,6 +46,8 @@ Require Import src.frost.algo.prop_consis_sound.   (* uskl_to_pskl_open *)
 Require Import src.frost.algo.prop_look_complete_cstr. (* msubst_uskl_syn_open *)
 Require Import src.frost.algo.prop_consis_precise.  (* ftag_in_uskl_{open_var,ptyp_syn} *)
 Require Import src.frost.algo.prop_consis_complete. (* skl_tyequiv_consis_transport *)
+Require Import src.frost.algo.def_decl_algo_sub_hyg. (* ad_pat_sub_g / _gv *)
+Require Import src.frost.algo.prop_sub_complete.     (* fold_flex, mono_paint_guarded *)
 
 Set Implicit Arguments.
 
@@ -1074,4 +1076,113 @@ Proof.
   - (* __flex_r *)
     eapply ad_pat_consis__flex_r; [ exact H | ].
     apply IHHc; [ exact Hwf | exact Htyeq ].
+Qed.
+
+(* ===================================================================== *)
+(*  Sub-ForallL enabler (iii), part 1: ≡ᵗ shape preservation and the      *)
+(*  flex UNFOLD twin of [ad_pat_sub_g_fold_flex].                         *)
+(* ===================================================================== *)
+
+(** Under a wf context (definitions are monotypes), ≡ᵗ preserves
+    monotype-hood — the fact that makes the ≡ᵗ [__all] row vacuous in the
+    painting transports below. *)
+Lemma a_tyequiv_mono_iff : forall Θ A B,
+  Θ ⊢ A ≡ᵗ B ->
+  a_wf_aenv Θ ->
+  (mono_ptyp A <-> mono_ptyp B).
+Proof.
+  intros Θ A B H; induction H; intros Hwf.
+  - tauto.
+  - exact (iff_sym (IHa_tyequiv Hwf)).
+  - exact (iff_trans (IHa_tyequiv1 Hwf) (IHa_tyequiv2 Hwf)).
+  - (* flex_def *)
+    split; intro Hm;
+      [ eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]
+      | apply mono_ptyp__var ].
+  - (* arrow *)
+    split; intro Hm; inversion Hm; subst; apply mono_ptyp__arrow;
+      first [ apply (proj1 (IHa_tyequiv1 Hwf)); assumption
+            | apply (proj2 (IHa_tyequiv1 Hwf)); assumption
+            | apply (proj1 (IHa_tyequiv2 Hwf)); assumption
+            | apply (proj2 (IHa_tyequiv2 Hwf)); assumption ].
+  - (* all *)
+    split; intro Hm; inversion Hm.
+Qed.
+
+Lemma a_tyequiv_mono : forall Θ A B,
+  Θ ⊢ A ≡ᵗ B ->
+  a_wf_aenv Θ ->
+  mono_ptyp A ->
+  mono_ptyp B.
+Proof.
+  intros Θ A B H Hwf Hm. exact (proj1 (a_tyequiv_mono_iff H Hwf) Hm).
+Qed.
+
+(** A defined flexible variable is ≡ᵘ its definition's painting. *)
+Lemma flex_def_paint_tyequiv : forall Θ α τ,
+  binds α (abind_flex_mono_def τ) Θ ->
+  a_wf_aenv Θ ->
+  Θ ⊢ (ptyp_to_uskl_syn τ) ≡ᵘ (uskl_var_f α).
+Proof.
+  intros Θ α τ Hb Hwf.
+  change (uskl_var_f α) with (ptyp_to_uskl_syn (ptyp_var_f α)).
+  apply a_uskl_tyequiv__mono;
+    [ eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]
+    | apply mono_ptyp__var
+    | eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact Hb ]
+    | apply a_wf_ptyp__var; right; right; exists τ; exact Hb
+    | apply a_tyequiv__sym; apply a_tyequiv__flex_def; exact Hb ].
+Qed.
+
+(** Unfold a defined flexible variable on the SUBJECT side of the plain
+    hygienic join, at the SAME fuel — the twin of
+    [ad_pat_sub_g_fold_flex].  The consistency premises transport by the
+    ≡ᵘ-subject transport (enabler (ii)); [FlexMono] IS the unfolding. *)
+Lemma ad_pat_sub_g_unfold_flex : forall n NM M Ψ Θ Rα Q,
+  ad_pat_sub_g n NM M Ψ Θ Rα Q ->
+  forall α τ,
+  Rα = uskl_var_f α ->
+  binds α (abind_flex_mono_def τ) Θ ->
+  a_wf_aenv Θ ->
+  ad_pat_sub_g n NM M Ψ Θ (ptyp_to_uskl_syn τ) Q.
+Proof.
+  intros n NM M Ψ Θ Rα Q HD; induction HD; intros α0 τ0 HeqS Hb Hwf;
+    try discriminate HeqS.
+  - (* infer *)
+    subst R.
+    apply ad_pat_sub_g__infer; [ assumption | | assumption ].
+    eapply ad_pat_consis_tyequiv_subject;
+      [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+  - (* check *)
+    subst T.
+    assert (Hm : mono_ptyp τ0)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+    apply ad_pat_sub_g__check;
+      [ apply mono_paint_guarded;
+          [ exact Hm | apply mono_ptyp_to_uskl_syn_lc; exact Hm ]
+      | assumption | ].
+    eapply ad_pat_consis_tyequiv_subject;
+      [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+  - (* forall_r *)
+    eapply ad_pat_sub_g__forall_r with (L := L `union` dom Θ).
+    intros β Hβ.
+    eapply (H0 β ltac:(clear - Hβ; fsetdec) α0 τ0 HeqS);
+      [ unfold binds; simpl; right; exact Hb
+      | apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf ] ].
+  - (* univ_ghost_r *)
+    subst R.
+    assert (Hm : mono_ptyp τ0)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+    apply ad_pat_sub_g__univ_ghost_r;
+      [ assumption
+      | apply mono_paint_guarded;
+          [ exact Hm | apply mono_ptyp_to_uskl_syn_lc; exact Hm ]
+      | assumption | assumption | ].
+    eapply ad_pat_consis_tyequiv_subject;
+      [ eassumption | exact Hwf | apply flex_def_paint_tyequiv; assumption ].
+  - (* flex_mono: the premise IS the unfolding — align the definitions *)
+    inversion HeqS; subst.
+    assert (Hu : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwf).
+    pose proof (binds_unique _ _ _ _ _ H Hb Hu) as He; inversion He; subst.
+    exact HD.
 Qed.
