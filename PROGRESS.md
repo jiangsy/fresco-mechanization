@@ -78,7 +78,38 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⭐ Sub-ForallL items 1 AND 2 CLOSED: `uskl_precise_erase_refine` + `uskl_precise_subst_into` Qed — item 1 in the PLAIN judgment, no `_f` mirror needed
+## 2026-07-31 (latest) — ⭐ Sub-ForallL items 1, 2 AND 3 CLOSED — `uskl_precise_erase_refine`, `uskl_precise_subst_into`, `ad_pat_sub_precise_upre_gv` all Qed
+
+**Item 3 (same session, third commit)** — the LEAF-VALID transport of
+P5, `ad_pat_sub_precise_upre_gv` (end of prop_sub_complete.v): the
+precision-substitution over `ad_pat_sub_gv`, so the join's leaf
+refinements survive the subject swap.  Built as a systematic mirror of
+step (3):
+
+- The 12-row main + the nine per-rule transports (`_gv` twins of the
+  step-(3) `ad_pat_sub_g_*_transport` family) + the four uniform
+  helpers (`psi_cong` / `refl_transport` / `wrap_tophole` /
+  `fold_flex` / `hole_intro`).  The `_gv` analysis helpers reuse the
+  `_g` ones through `ad_pat_sub_gv_forget` (`ftag_sub`,
+  `concrete_target`) — only REBUILDING lemmas need real `_gv` twins.
+- The NEW leaf obligations sit exactly where scoped: `__infer`,
+  `__check`, `__univ_ghost_r`, and `__arrow`'s domain.  Each is
+  discharged by **item 1** (`uskl_precise_erase_refine`) at Δ = ∅,
+  whose assumed-target-wf premise is exactly the row's `Hwfq` (Check
+  first rewrites the `bskl_to_pskl ∘ pskl_to_bskl_inh` roundtrip).
+- Across the peels: `__tophole_remove`-on-the-ghostier-side wraps with
+  `__tophole_remove` on the leaf (TI re-route inside `wrap_tophole`);
+  `flex_l` re-folds the leaf with `ad_refine_pskl__flex_l`
+  (`fold_flex`); the `upre__flex_r` peel (subject IS a defined
+  flexible) unfolds the leaf with the NEW
+  `ad_refine_pskl_unfold_def_subject` (the ⊳-mirror of
+  `consis_unfold_def_subject`; ~25 lines, remember + explicit
+  `revert HeqS` before the induction per the fixed-hypothesis gotcha).
+
+Remaining: items 4–6 — the extract cofinite family, the row, P7a +
+bundle.
+
+## 2026-07-31 — ⭐ Sub-ForallL items 1 AND 2 CLOSED: `uskl_precise_erase_refine` + `uskl_precise_subst_into` Qed — item 1 in the PLAIN judgment, no `_f` mirror needed
 
 **Item 2 (same session, second commit)** — the subst-INTO congruence
 landed in the ⊑ᵤ-kit section of prop_consis_precise.v (right after
