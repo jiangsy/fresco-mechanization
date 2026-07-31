@@ -78,7 +78,39 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⭐ Sub-ForallL item 1 CLOSED: `uskl_precise_erase_refine` Qed — in the PLAIN judgment, no `_f` mirror needed
+## 2026-07-31 (latest) — ⭐ Sub-ForallL items 1 AND 2 CLOSED: `uskl_precise_erase_refine` + `uskl_precise_subst_into` Qed — item 1 in the PLAIN judgment, no `_f` mirror needed
+
+**Item 2 (same session, second commit)** — the subst-INTO congruence
+landed in the ⊑ᵤ-kit section of prop_consis_precise.v (right after
+`uskl_precise_lc_l`, which it uses for the left side's lc), three
+forms:
+
+- `uskl_precise_subst_into_in` — the occurring form (`α0 ∈ ftv R`):
+  induction over `lc_uskl R`; every occurrence replaces the SAME
+  `Ψrep` and sets absorb (the arrow case pins `upre__arrow`'s
+  `Ψ1`/`Ψ2` by explicit `with`-bindings — `Ψrep`/`Ψrep`, or
+  `Ψrep`/`∅` via `subst_bskl_in_uskl_fresh_eq` + `upre__refl` when a
+  component misses the variable; NB `apply IH; assumption` cannot
+  instantiate the Ψ-evars — `assumption` never instantiates evars, and
+  pinning also dodges the evar-fsetdec wedge on the union equality).
+- `uskl_precise_subst_into` — the packaged disjunction
+  `∃ Ψrep', (Ψrep' [=] Ψrep ∨ Ψrep' [=] ∅) ∧ …` (top-level
+  `In_dec`; absent case = `fresh_eq` both sides + `upre__refl`).  The
+  ∃ is fine here and NOT inside the binder rows — a per-β existential
+  under `upre__all_syn`'s cofinite family could not be assembled into
+  one `Ψrep`, which is why the occurring form is the primitive.
+- `uskl_precise_open_into` — the OPENING form the ForallL join rows
+  actually consume (their premise runs at subject
+  `open_uskl_wrt_uskl R ψ`): `subst_bskl_in_uskl_intro` at a fresh α +
+  the packaged form; body-lc premise stated as
+  `∀ α, lc_uskl (R ^ α)` so it inverts from either `lc_uskl
+  (uskl_all_syn R)` or `lc_uskl (uskl_all_etag ε R)`.
+
+Note `subst_bskl_in_uskl` IS the uskl-into-uskl substitution (ott
+sort-naming quirk — its payload argument is a `uskl`); there is no
+`subst_uskl_in_uskl`.
+
+## 2026-07-31 — ⭐ Sub-ForallL item 1 CLOSED: `uskl_precise_erase_refine` Qed — in the PLAIN judgment, no `_f` mirror needed
 
 `make coq` green from clean; axiom-free (`Print Assumptions` closed).
 Item 1 of the Sub-ForallL plan (the entry below) landed at the end of

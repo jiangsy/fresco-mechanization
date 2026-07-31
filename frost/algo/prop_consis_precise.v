@@ -1437,6 +1437,7 @@ Proof.
     exact Hrec.
 Qed.
 
+
 (** EMBEDDING: plain precision [Pa ⊑ ⌊ψ⌋] against a DECORATED [ψ] lifts to
     ⊑ᵤ, with [Ψrep] = ψ's tag reading (all of ψ's decorations are replaced
     by the painting).  Induction on the refinement derivation, re-matching
@@ -2094,6 +2095,122 @@ Proof.
   - apply lc_uskl_tophole; assumption.
   - apply lc_uskl_var_f.
   - assumption.
+Qed.
+
+(** ⊑ᵤ is closed under substituting a ⊑ᵤ-related pair INTO a common
+    skeleton (Sub-ForallL item 2, the subst-INTO companion of
+    [uskl_precise_subst]): replace a rigid variable of [R] by the
+    ghostier [ψ'] on the left and by [ψ] on the right.  Every occurrence
+    replaces the SAME tags [Ψrep], and sets absorb, so the result's tag
+    reading is [Ψrep] whenever the variable occurs — this occurring form
+    demands [α0 ∈ ftv R]; [uskl_precise_subst_into] below packages the
+    absent case (both sides collapse to [R], no tags replaced) as a
+    disjunction, and [uskl_precise_open_into] restates it in the
+    opening form the ForallL join rows consume. *)
+Lemma uskl_precise_subst_into_in : forall R,
+  lc_uskl R ->
+  forall Θ Ψrep ψ' ψ α0,
+  uskl_precise Θ Ψrep ψ' ψ ->
+  lc_uskl ψ ->
+  α0 `in` ftvar_in_uskl R ->
+  uskl_precise Θ Ψrep
+    (subst_bskl_in_uskl ψ' α0 R) (subst_bskl_in_uskl ψ α0 R).
+Proof.
+  intros R Hlc; induction Hlc; intros Θ Ψrep ψ' ψ α0 Hp Hlcψ Hin;
+    simpl in Hin |- *.
+  - (* unit *) exfalso; clear - Hin; fsetdec.
+  - (* var *)
+    destruct_if as [-> | Hne]; [ exact Hp | ].
+    exfalso; clear - Hin Hne; fsetdec.
+  - (* arrow : occurrence decides each component; sets absorb *)
+    destruct (AtomSetProperties.In_dec α0 (ftvar_in_uskl R1))
+      as [Hin1 | Hni1];
+      destruct (AtomSetProperties.In_dec α0 (ftvar_in_uskl R2))
+        as [Hin2 | Hni2].
+    + apply upre__arrow with (Ψ1 := Ψrep) (Ψ2 := Ψrep);
+        [ apply IHHlc1; assumption | apply IHHlc2; assumption
+        | clear; fsetdec ].
+    + apply upre__arrow with (Ψ1 := Ψrep) (Ψ2 := empty);
+        [ apply IHHlc1; assumption
+        | rewrite (subst_bskl_in_uskl_fresh_eq R2 ψ' α0 Hni2);
+          rewrite (subst_bskl_in_uskl_fresh_eq R2 ψ α0 Hni2);
+          apply upre__refl; [ assumption | reflexivity ]
+        | clear; fsetdec ].
+    + apply upre__arrow with (Ψ1 := empty) (Ψ2 := Ψrep);
+        [ rewrite (subst_bskl_in_uskl_fresh_eq R1 ψ' α0 Hni1);
+          rewrite (subst_bskl_in_uskl_fresh_eq R1 ψ α0 Hni1);
+          apply upre__refl; [ assumption | reflexivity ]
+        | apply IHHlc2; assumption
+        | clear; fsetdec ].
+    + exfalso; clear - Hin Hni1 Hni2; fsetdec.
+  - (* all_syn *)
+    assert (Hlcψ' : lc_uskl ψ') by (eapply uskl_precise_lc_l; exact Hp).
+    apply upre__all_syn with (L := singleton α0).
+    intros β Hβ.
+    assert (Hne : α0 <> β) by (clear - Hβ; fsetdec).
+    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ' α0 β Hne Hlcψ').
+    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β Hne Hlcψ).
+    apply H0; [ exact Hp | exact Hlcψ | ].
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
+      as Hlo.
+    clear - Hin Hlo; fsetdec.
+  - (* all_etag *)
+    assert (Hlcψ' : lc_uskl ψ') by (eapply uskl_precise_lc_l; exact Hp).
+    apply upre__all_etag with (L := singleton α0).
+    intros β Hβ.
+    assert (Hne : α0 <> β) by (clear - Hβ; fsetdec).
+    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ' α0 β Hne Hlcψ').
+    rewrite (subst_bskl_in_uskl_open_uskl_wrt_uskl_var R ψ α0 β Hne Hlcψ).
+    apply H0; [ exact Hp | exact Hlcψ | ].
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
+      as Hlo.
+    clear - Hin Hlo; fsetdec.
+  - (* hole *) exfalso; clear - Hin; fsetdec.
+  - (* tophole *)
+    apply upre__tophole. apply IHHlc; assumption.
+  - (* holeg *) exfalso; clear - Hin; fsetdec.
+  - (* topholeg *)
+    apply upre__topholeg. apply IHHlc; assumption.
+Qed.
+
+(** The packaged form: [Ψrep] if the variable occurs, [∅] if not. *)
+Lemma uskl_precise_subst_into : forall R Θ Ψrep ψ' ψ α0,
+  lc_uskl R ->
+  uskl_precise Θ Ψrep ψ' ψ ->
+  lc_uskl ψ ->
+  exists Ψrep',
+    (Ψrep' [=] Ψrep \/ Ψrep' [=] empty) /\
+    uskl_precise Θ Ψrep'
+      (subst_bskl_in_uskl ψ' α0 R) (subst_bskl_in_uskl ψ α0 R).
+Proof.
+  intros R Θ Ψrep ψ' ψ α0 Hlc Hp Hlcψ.
+  destruct (AtomSetProperties.In_dec α0 (ftvar_in_uskl R)) as [Hin | Hni].
+  - exists Ψrep. split; [ left; reflexivity | ].
+    eapply uskl_precise_subst_into_in; eauto.
+  - exists empty. split; [ right; reflexivity | ].
+    rewrite (subst_bskl_in_uskl_fresh_eq R ψ' α0 Hni).
+    rewrite (subst_bskl_in_uskl_fresh_eq R ψ α0 Hni).
+    apply upre__refl; [ exact Hlc | reflexivity ].
+Qed.
+
+(** The opening form the ForallL join rows consume: the row's premise
+    runs at subject [R^ψ], and the precision swap replaces the opened
+    instantiation wholesale. *)
+Lemma uskl_precise_open_into : forall R Θ Ψrep ψ' ψ,
+  (forall α, lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α))) ->
+  uskl_precise Θ Ψrep ψ' ψ ->
+  lc_uskl ψ ->
+  exists Ψrep',
+    (Ψrep' [=] Ψrep \/ Ψrep' [=] empty) /\
+    uskl_precise Θ Ψrep'
+      (open_uskl_wrt_uskl R ψ') (open_uskl_wrt_uskl R ψ).
+Proof.
+  intros R Θ Ψrep ψ' ψ Hbody Hp Hlcψ.
+  pick fresh α for (ftvar_in_uskl R).
+  rewrite (subst_bskl_in_uskl_intro α R ψ' ltac:(clear - Fr; fsetdec)).
+  rewrite (subst_bskl_in_uskl_intro α R ψ ltac:(clear - Fr; fsetdec)).
+  eapply uskl_precise_subst_into;
+    [ apply Hbody | exact Hp | exact Hlcψ ].
 Qed.
 
 (* ===================================================================== *)
