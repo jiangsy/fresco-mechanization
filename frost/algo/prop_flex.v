@@ -346,131 +346,396 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  RENAMING THE GUESS  (moved here from prop_look_complete_extract.v     *)
-(*  by the freshness campaign: [a_guess_mono_consis] below is the LOWEST   *)
-(*  consumer that needs to move the exists-fresh binder.)                 *)
+(*  THE GUESS FRESHNESS KIT (freshness campaign, DESIGN.md §4.3).          *)
 (*                                                                        *)
-(*  [a_guess_mono__forall] is EXISTS-FRESH (DESIGN.md §4.3): it carries ONE  *)
-(*  binder β avoiding the conclusion, so building a guess under a ∀ means    *)
-(*  building it at that β — and CONSUMING one means being able to MOVE the   *)
-(*  binder, which is what the rename below is for.  The guessed flexibles Ξ  *)
-(*  do NOT move — they are fresh names invented by the hole rule,            *)
-(*  independent of the binder — which is why the renaming must avoid         *)
-(*  [dom Ξ] on both sides.                                                   *)
-(*                                                                           *)
-(*  ⚠️ THE INDUCTION IS ON THE SUBJECT'S SIZE, NOT ON THE DERIVATION.  This   *)
-(*  is the standing recipe for every exists-fresh rename in this campaign.   *)
-(*  Derivation-induction fails in the ∀ case: when the target name γ IS the  *)
-(*  rule's binder, the goal needs a THIRD name, so the derivation must be    *)
-(*  renamed TWICE — and the second rename applies to the RESULT of the       *)
-(*  first, which is no sub-derivation.  [a_guess_mono] is syntax-directed on *)
-(*  its input [P] and opening with a variable preserves [size_pskl], so a    *)
-(*  size induction has an IH for both renames.  (Under the OLD cofinite rule *)
-(*  this did not arise: the family let the ∀ case pick its own binder.)      *)
+(*  [a_guess_mono] is exists-fresh with INPUT-only side conditions and an  *)
+(*  explicit CLOSE; its ∀ rule's witness enters the avoid-input.  This     *)
+(*  block derives the junk-freeness that makes the kit provable            *)
+(*  ([a_guess_mono_generated_fresh]), the renaming lemma, and the          *)
+(*  decl/algo boundary bridge ([a_guess_mono_open_at]).                    *)
+(*                                                                        *)
+(*  THE INDUCTIONS ARE ON THE SUBJECT'S SIZE, NOT THE DERIVATION.  In the  *)
+(*  rename's ∀ case, when the target name γ IS the recorded witness the    *)
+(*  derivation must be renamed TWICE — witness off to a fresh δ, then the  *)
+(*  requested rename — and the second rename applies to the RESULT of the  *)
+(*  first, which is no sub-derivation.  [a_guess_mono] is syntax-directed  *)
+(*  on its input [P] and opening with a variable preserves [size_pskl],   *)
+(*  so a size induction has an IH for both.                                *)
+(* ===================================================================== *)
+
+Lemma ftvar_in_aenv_app : forall Θ1 Θ2,
+  ftvar_in_aenv (Θ1 ++ Θ2) [=] ftvar_in_aenv Θ1 `union` ftvar_in_aenv Θ2.
+Proof.
+  induction Θ1 as [ | [x bd] Θ1' IH ]; intros; simpl; [ fsetdec | ].
+  rewrite IH. fsetdec.
+Qed.
+
+Lemma ftvar_in_aenv_cons : forall x bd Θ,
+  ftvar_in_aenv ((x, bd) :: Θ)
+  [=] add x (ftvar_in_abind bd `union` ftvar_in_aenv Θ).
+Proof. intros. simpl. fsetdec. Qed.
+
+Lemma ftvar_in_aenv_one : forall x bd,
+  ftvar_in_aenv (x ~ bd) [=] add x (ftvar_in_abind bd).
+Proof. intros. simpl. fsetdec. Qed.
+
+Lemma dom_subset_ftvar_in_aenv : forall Θ, dom Θ [<=] ftvar_in_aenv Θ.
+Proof. induction Θ as [ | [x bd] Θ' IH ]; simpl; fsetdec. Qed.
+
+(** ⭐ THE PROPERTY THAT MAKES THE KIT PROVABLE.  Every name guess^TY
+    GENERATES avoids everything the ambient context mentions — DERIVED,
+    not assumed: the hole rule picks fresh for [Θ] and the ∀ rule puts its
+    witness INTO [Θ], so in the ∀ case the premise's block avoids the
+    witness itself.  Exactly the fact a renaming lemma needs when its
+    target happens to BE that witness, and the fact the ∀-opening bridge
+    needs unconditionally. *)
+Lemma a_guess_mono_generated_fresh : forall Θ P Ξ A,
+  a_guess_mono Θ P Ξ A ->
+  forall α, α `in` dom Ξ -> α `notin` ftvar_in_aenv Θ.
+Proof.
+  intros Θ P Ξ A H; induction H; intros α0 Hα0; simpl in *.
+  - assert (α0 = α) by (clear - Hα0; fsetdec). subst. assumption.
+  - auto.
+  - clear - Hα0; fsetdec.
+  - clear - Hα0; fsetdec.
+  - rewrite dom_app in Hα0.
+    destruct (union_1 Hα0) as [H1 | H1]; auto.
+  - (* ∀ : the premise ran at (β~tvar) ++ Θ, so its block dodges β too *)
+    specialize (IHa_guess_mono α0 Hα0). simpl in IHa_guess_mono. fsetdec.
+Qed.
+
+Corollary a_guess_mono_generated_fresh_binder : forall Θ P Ξ A β,
+  a_guess_mono ((β ~ abind_tvar) ++ Θ) P Ξ A ->
+  β `notin` dom Ξ.
+Proof.
+  intros Θ P Ξ A β H Hin.
+  assert (Hfr : β `notin` ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
+    by (eapply a_guess_mono_generated_fresh; eauto).
+  simpl in Hfr. fsetdec.
+Qed.
+
+(** The generated block holds only bare flexibles, so it mentions exactly
+    its own domain. *)
+Lemma a_guess_mono_generated_ftvar : forall Θ P Ξ A,
+  a_guess_mono Θ P Ξ A -> ftvar_in_aenv Ξ [<=] dom Ξ.
+Proof.
+  intros Θ P Ξ A H; induction H; simpl; try fsetdec.
+  rewrite ftvar_in_aenv_app, dom_app. fsetdec.
+Qed.
+
+(** "Close after renaming": renaming [α] to a fresh [β] and closing at [β]
+    is closing at [α] — [subst = open ∘ close] plus the close/open round
+    trip, no induction needed. *)
+Lemma close_ptyp_subst_var : forall A α β,
+  β `notin` ftvar_in_ptyp A ->
+  close_ptyp_wrt_ptyp β (subst_ptyp_in_ptyp (ptyp_var_f β) α A)
+  = close_ptyp_wrt_ptyp α A.
+Proof.
+  intros A α β Hβ.
+  rewrite subst_ptyp_in_ptyp_spec.
+  apply close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp.
+  assert (Hcl : ftvar_in_ptyp (close_ptyp_wrt_ptyp α A)
+                  [=] AtomSetImpl.remove α (ftvar_in_ptyp A))
+    by (apply ftvar_in_ptyp_close_ptyp_wrt_ptyp).
+  clear - Hβ Hcl. fsetdec.
+Qed.
+
+(** [rename_aenv] basics. *)
+Lemma rename_aenv_fresh_eq : forall Ξ γ β,
+  β `notin` ftvar_in_aenv Ξ ->
+  rename_aenv γ β Ξ = Ξ.
+Proof.
+  induction Ξ as [ | [x bd] Ξ' IH ]; intros γ β Hβ; simpl in *; auto.
+  destruct (x == β); [ subst; clear - Hβ; fsetdec | ].
+  rewrite IH by (clear - Hβ; fsetdec).
+  f_equal. f_equal.
+  destruct bd; simpl in *; try reflexivity; f_equal;
+    first [ apply subst_ptyp_in_ptyp_fresh_eq; clear - Hβ; fsetdec
+          | apply subst_pskl_in_pskl_fresh_eq; clear - Hβ; fsetdec ].
+Qed.
+
+Lemma rename_aenv_app : forall Ξ1 Ξ2 γ β,
+  rename_aenv γ β (Ξ1 ++ Ξ2) = rename_aenv γ β Ξ1 ++ rename_aenv γ β Ξ2.
+Proof.
+  induction Ξ1 as [ | [x bd] Ξ1' IH ]; intros; simpl; [ reflexivity | ].
+  rewrite IH. reflexivity.
+Qed.
+
+Lemma rename_aenv_cons_tvar_eq : forall γ β Θ,
+  rename_aenv γ β ((β ~ abind_tvar) ++ Θ)
+  = (γ ~ abind_tvar) ++ rename_aenv γ β Θ.
+Proof.
+  intros. simpl. destruct (β == β); [ reflexivity | contradiction ].
+Qed.
+
+Lemma rename_aenv_cons_tvar_neq : forall γ β x Θ,
+  x <> β ->
+  rename_aenv γ β ((x ~ abind_tvar) ++ Θ)
+  = (x ~ abind_tvar) ++ rename_aenv γ β Θ.
+Proof.
+  intros. simpl. destruct (x == β); [ contradiction | reflexivity ].
+Qed.
+
+Lemma ftvar_in_aenv_rename_aenv : forall Θ γ β,
+  ftvar_in_aenv (rename_aenv γ β Θ) [<=] add γ (ftvar_in_aenv Θ).
+Proof.
+  induction Θ as [ | [x bd] Θ' IH ]; intros γ β; simpl; [ fsetdec | ].
+  assert (Hbd : ftvar_in_abind (rename_abind γ β bd)
+                  [<=] add γ (ftvar_in_abind bd)).
+  { destruct bd; simpl; try fsetdec;
+      (etransitivity;
+       [ first [ apply ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
+               | apply ftvar_in_pskl_subst_pskl_in_pskl_upper ]
+       | simpl; fsetdec ]). }
+  specialize (IH γ β).
+  destruct (x == β); subst; fsetdec.
+Qed.
+
+(** guess^TY scopes its result by the source and the generated names.
+    (Moved here from prop_consis_sound.v: the kit derives target-side
+    freshness from it instead of assuming output-side hypotheses.) *)
+Lemma a_guess_mono_ftv : forall Θ P Ξ A,
+  a_guess_mono Θ P Ξ A ->
+  ftvar_in_ptyp A [<=] (ftvar_in_pskl P `union` dom Ξ).
+Proof.
+  intros Θ P Ξ A H; induction H; simpl; try solve [ fsetdec ].
+  - (* arrow *)
+    repeat rewrite dom_app.
+    clear - IHa_guess_mono1 IHa_guess_mono2. fsetdec.
+  - (* ∀ : the payload is CLOSED at β, so β drops out of the bound *)
+    assert (Hcl : ftvar_in_ptyp (close_ptyp_wrt_ptyp β A)
+                    [=] AtomSetImpl.remove β (ftvar_in_ptyp A))
+      by (apply ftvar_in_ptyp_close_ptyp_wrt_ptyp).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β)) as Hup.
+    simpl in Hup.
+    clear - IHa_guess_mono Hcl Hup. fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  RENAMING THE GUESS — the asymmetric statement.                         *)
+(*                                                                        *)
+(*  A renaming lemma constrains its TARGET, never its SOURCE: β is the    *)
+(*  name being renamed AWAY, so it may occur anywhere (inside [Θ] and     *)
+(*  [Ξ] included); it is γ that must be fresh.  The context and the       *)
+(*  GENERATED block are renamed too.  [γ ∉ dom Ξ] is a LEMMA hypothesis   *)
+(*  — discharged by a prover holding the finished derivation — not a rule *)
+(*  side condition; without it the statement is false (rename β ⤳ α in    *)
+(*  Θ = β~tvar, P = □, Ξ = α~flex, A = α: the renamed context mentions α, *)
+(*  so the hole rule can no longer generate it).                          *)
 (* ===================================================================== *)
 
 Lemma a_guess_mono_rename_tvar_size : forall n Θ P Ξ A,
   size_pskl P <= n ->
   a_guess_mono Θ P Ξ A ->
-  forall β γ, β `notin` dom Ξ -> γ `notin` dom Ξ ->
-  a_guess_mono Θ (subst_pskl_in_pskl (pskl_var_f γ) β P) Ξ
-                 (subst_ptyp_in_ptyp (ptyp_var_f γ) β A).
+  forall β γ,
+  γ `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` dom Ξ ->
+  a_guess_mono (rename_aenv γ β Θ)
+               (subst_pskl_in_pskl (pskl_var_f γ) β P)
+               (rename_aenv γ β Ξ)
+               (subst_ptyp_in_ptyp (ptyp_var_f γ) β A).
 Proof.
-  induction n as [| n IHn]; intros Θ P Ξ A Hsz H β γ Hβ Hγ.
-  { destruct H; cbn in Hsz; lia. }
-  (* every case's binders are named explicitly: [destruct] substitutes the
-     statement's P/Ξ/A away, so re-using those names would shadow *)
-  destruct H as [ Θ' α | Θ' Pb Ξb Ab Hg | Θ' α | Θ'
+  induction n as [| n IHn]; intros Θ P Ξ A Hsz H;
+    [ destruct H; cbn in Hsz; lia | ].
+  destruct H as [ Θ' α Hα | Θ' Pb Ξb Ab Hg | Θ' α | Θ'
                 | Θ' Pa Pb Ξa Ξb Aa Ab Hga Hgb
                 | Θ' Pb Ξb Ab b0 Hfr Hg ];
-    cbn in Hsz |- *.
-  - (* □ ↦ a FRESH flexible: the invented name is not β (β ∉ dom Ξ), so the
-       image is untouched and the same rule re-applies *)
-    simpl_env in Hβ.
-    destruct (α == β) as [-> | Hne];
-      [ exfalso; clear - Hβ; fsetdec | ].
-    destruct_if; [ exfalso; congruence | apply a_guess_mono__hole ].
-  - (* ∀◇ is dropped *)
-    apply a_guess_mono__tophole; apply IHn with (A := Ab); auto; lia.
-  - (* a variable is renamed on BOTH sides, in lockstep *)
-    destruct_if; apply a_guess_mono__var.
-  - apply a_guess_mono__unit.
-  - (* the two branches split [Ξ1 ++ Ξ2]; freshness is inherited *)
-    rewrite dom_app in Hβ, Hγ.
+    cbn in Hsz; intros β γ Hγ.
+  - (* hole: the invented name moves with the rename, on both sides *)
+    cbn in Hγ |- *.
+    pose proof (@ftvar_in_aenv_rename_aenv Θ' γ β) as Hdom.
+    destruct (α == β) as [-> | Hne].
+    + (* the invented name WAS β, so it becomes γ; β ∉ ftvar Θ' (that is
+         [Hα]), hence the context itself is untouched *)
+      rewrite (@rename_aenv_fresh_eq Θ' γ β) by exact Hα.
+      try replace (if β == β then ptyp_var_f γ else ptyp_var_f β)
+        with (ptyp_var_f γ) by (destruct (β == β); congruence).
+      try replace (if β == β then γ else β) with γ
+        by (destruct (β == β); congruence).
+      apply a_guess_mono__hole. clear - Hγ. fsetdec.
+    + try replace (if α == β then ptyp_var_f γ else ptyp_var_f α)
+        with (ptyp_var_f α) by (destruct (α == β); congruence).
+      try replace (if α == β then γ else α) with α
+        by (destruct (α == β); congruence).
+      apply a_guess_mono__hole. clear - Hα Hγ Hdom Hne. fsetdec.
+  - (* ∀◇ dropped *)
+    cbn. apply a_guess_mono__tophole.
+    apply IHn with (A := Ab); [ lia | exact Hg | clear - Hγ; cbn in Hγ; fsetdec ].
+  - (* var, renamed in lockstep *) cbn. destruct_if; apply a_guess_mono__var.
+  - (* unit *) cbn. apply a_guess_mono__unit.
+  - (* arrow: the block splits; freshness is inherited *)
+    cbn in Hγ |- *. rewrite rename_aenv_app.
+    rewrite dom_app in Hγ.
     apply a_guess_mono__arrow;
       [ apply IHn with (A := Aa) | apply IHn with (A := Ab) ];
-      solve [ lia | eauto | clear - Hβ Hγ; fsetdec ].
-  - (* ∀ : the rule's own binder is b0.  Pick the goal's binder δ fresh for
-       EVERYTHING in sight (including β and γ), move the premise there with
-       the IH (opening preserves size), then commute the outer substitution
-       past the opener. *)
-    pick fresh δ for
-      (dom Ξb `union` ftvar_in_pskl Pb `union` ftvar_in_ptyp Ab
-         `union` singleton β `union` singleton γ `union` singleton b0).
-    apply a_guess_mono__forall with (β := δ).
-    { (* δ avoids the substituted conclusion: ftv (subst γ β X) ⊆ (ftv X ∖ β) ∪ γ *)
-      assert (Hp : ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f γ) β Pb)
-                     [<=] ftvar_in_pskl Pb `union` singleton γ)
-        by (etransitivity;
-            [ apply ftvar_in_pskl_subst_pskl_in_pskl_upper | cbn; fsetdec ]).
-      assert (Ha : ftvar_in_ptyp (subst_ptyp_in_ptyp (ptyp_var_f γ) β Ab)
-                     [<=] ftvar_in_ptyp Ab `union` singleton γ)
-        by (etransitivity;
-            [ apply ftvar_in_ptyp_subst_ptyp_in_ptyp_upper | cbn; fsetdec ]).
-      clear - Fr Hp Ha Hβ. fsetdec. }
-    (* the premise at δ, with the substitution pushed under the opener *)
-    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Fr; fsetdec | apply lc_pskl_var_f ].
-    rewrite subst_ptyp_in_ptyp_open_ptyp_wrt_ptyp_var;
-      [ | clear - Fr; fsetdec | apply lc_ptyp_var_f ].
-    apply IHn with (A := open_ptyp_wrt_ptyp Ab (ptyp_var_f δ));
-      [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia | | exact Hβ | exact Hγ ].
-    (* … and the δ-instance itself comes from the b0-instance, renamed.  This
-       is the SECOND rename the derivation induction could not supply. *)
-    rewrite (subst_pskl_in_pskl_intro b0 Pb (pskl_var_f δ)) by (clear - Hfr; fsetdec).
-    rewrite (subst_ptyp_in_ptyp_intro b0 Ab (ptyp_var_f δ)) by (clear - Hfr; fsetdec).
-    apply IHn with (A := open_ptyp_wrt_ptyp Ab (ptyp_var_f b0));
-      [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia
-      | exact Hg | clear - Hfr; fsetdec | clear - Fr; fsetdec ].
+      solve [ lia | eauto | clear - Hγ; fsetdec ].
+  - (* ∀ — the interesting case *)
+    cbn in Hγ.
+    pose proof (a_guess_mono_generated_ftvar Hg) as HΞftv.
+    assert (HclAb : ftvar_in_ptyp (close_ptyp_wrt_ptyp b0 Ab)
+                      [=] AtomSetImpl.remove b0 (ftvar_in_ptyp Ab))
+      by (apply ftvar_in_ptyp_close_ptyp_wrt_ptyp).
+    cbn in Hfr.
+    cbn [subst_pskl_in_pskl subst_ptyp_in_ptyp].
+    destruct (γ == b0) as [-> | Hγb0].
+    + (* γ IS the recorded witness.  The lemma's own target-freshness gives
+         [b0 ∉ dom Ξb] here (γ = b0), so the witness can be moved off to a
+         fresh δ with NO residue on Ξb, and the requested rename applied to
+         the result — the two IH calls this size induction exists for. *)
+      assert (Hb0Ξ : b0 `notin` dom Ξb) by (clear - Hγ; fsetdec).
+      assert (Hb0Ξf : b0 `notin` ftvar_in_aenv Ξb)
+        by (clear - Hb0Ξ HΞftv; fsetdec).
+      pick fresh δ for
+        (ftvar_in_aenv Θ' `union` ftvar_in_pskl Pb `union` ftvar_in_ptyp Ab
+           `union` dom Ξb `union` ftvar_in_aenv Ξb
+           `union` singleton β `union` singleton b0).
+      rewrite <- (@close_ptyp_subst_var Ab b0 δ) by (clear - Fr; fsetdec).
+      rewrite (subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp
+                 (subst_ptyp_in_ptyp (ptyp_var_f δ) b0 Ab) (ptyp_var_f b0) β δ)
+        by (solve [ constructor | clear - Fr; fsetdec
+                  | cbn; clear - Fr; fsetdec ]).
+      apply a_guess_mono__forall with (β := δ).
+      { pose proof (@ftvar_in_aenv_rename_aenv Θ' b0 β) as Hd.
+        pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Pb (pskl_var_f b0) β)
+          as Hp. cbn in Hp.
+        clear - Fr Hd Hp. fsetdec. }
+      (* rename #1: witness b0 ⤳ δ.  [rename_aenv δ b0] is the IDENTITY on
+         Θ' (rule side condition) and on Ξb (b0 ∉ dom Ξb above), so the
+         detour leaves no residue. *)
+      assert (H1 : a_guess_mono ((δ ~ abind_tvar) ++ Θ')
+                     (open_pskl_wrt_pskl Pb (pskl_var_f δ)) Ξb
+                     (subst_ptyp_in_ptyp (ptyp_var_f δ) b0 Ab)).
+      { assert (Hsz1 : size_pskl (open_pskl_wrt_pskl Pb (pskl_var_f b0)) <= n)
+          by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
+        pose proof (IHn _ _ _ _ Hsz1 Hg b0 δ) as Hr.
+        rewrite rename_aenv_cons_tvar_eq in Hr.
+        rewrite (@rename_aenv_fresh_eq Θ' δ b0) in Hr by (clear - Hfr; fsetdec).
+        rewrite (@rename_aenv_fresh_eq Ξb δ b0) in Hr by exact Hb0Ξf.
+        rewrite <- (subst_pskl_in_pskl_intro b0 Pb (pskl_var_f δ))
+          in Hr by (clear - Hfr; fsetdec).
+        apply Hr.
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Pb (pskl_var_f b0))
+          as Hup. cbn in Hup.
+        assert (Hc : ftvar_in_aenv ((b0 ~ abind_tvar) ++ Θ')
+                       [=] add b0 (ftvar_in_aenv Θ')) by (simpl; fsetdec).
+        clear - Fr Hup Hc. fsetdec. }
+      (* rename #2: the requested β ⤳ b0, applied to the RESULT of #1 *)
+      assert (Hsz2 : size_pskl (open_pskl_wrt_pskl Pb (pskl_var_f δ)) <= n)
+        by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
+      pose proof (IHn _ _ _ _ Hsz2 H1 β b0) as Hr2.
+      rewrite rename_aenv_cons_tvar_neq in Hr2 by (clear - Fr; fsetdec).
+      rewrite <- (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Pb (pskl_var_f b0))
+        in Hr2 by (solve [ clear - Fr; fsetdec | constructor ]).
+      apply Hr2.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Pb (pskl_var_f δ))
+        as Hup. cbn in Hup.
+      assert (Hc2 : ftvar_in_aenv ((δ ~ abind_tvar) ++ Θ')
+                      [=] add δ (ftvar_in_aenv Θ')) by (simpl; fsetdec).
+      clear - Hfr Hb0Ξ Hup Fr Hc2. fsetdec.
+    + destruct (β == b0) as [-> | Hβb0].
+      * (* renaming the WITNESS away: b0 occurs in neither the subject
+           (rule condition), the payload (closed at b0), the context (rule
+           condition), nor the generated block (DERIVED junk-freeness) —
+           every substitution is an identity. *)
+        pose proof (a_guess_mono_generated_fresh_binder Hg) as Hb0Ξ.
+        assert (Hb0Ξf : b0 `notin` ftvar_in_aenv Ξb)
+          by (clear - Hb0Ξ HΞftv; fsetdec).
+        rewrite (subst_pskl_in_pskl_fresh_eq Pb (pskl_var_f γ) b0)
+          by (clear - Hfr; fsetdec).
+        rewrite (subst_ptyp_in_ptyp_fresh_eq (close_ptyp_wrt_ptyp b0 Ab)
+                   (ptyp_var_f γ) b0) by (clear - HclAb; fsetdec).
+        rewrite (@rename_aenv_fresh_eq Θ' γ b0) by (clear - Hfr; fsetdec).
+        rewrite (@rename_aenv_fresh_eq Ξb γ b0) by exact Hb0Ξf.
+        apply a_guess_mono__forall with (β := b0); [ exact Hfr | exact Hg ].
+      * (* the ordinary case: keep the witness; the payload rewrite comes
+           BEFORE the rule so the goal exhibits the [close b0 _] the rule
+           produces *)
+        rewrite (subst_ptyp_in_ptyp_close_ptyp_wrt_ptyp Ab (ptyp_var_f γ) β b0)
+          by (solve [ constructor | clear - Hβb0; fsetdec
+                    | cbn; clear - Hγb0; fsetdec ]).
+        apply a_guess_mono__forall with (β := b0).
+        { pose proof (@ftvar_in_aenv_rename_aenv Θ' γ β) as Hd.
+          pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Pb (pskl_var_f γ) β)
+            as Hp. cbn in Hp.
+          clear - Hfr Hγb0 Hd Hp. fsetdec. }
+        rewrite (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Pb (pskl_var_f γ))
+          by (solve [ clear - Hβb0; fsetdec | constructor ]).
+        rewrite <- rename_aenv_cons_tvar_neq by (clear - Hβb0; fsetdec).
+        apply IHn with (A := Ab);
+          [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia | exact Hg | ].
+        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Pb (pskl_var_f b0))
+          as Hup. cbn in Hup.
+        assert (Hc3 : ftvar_in_aenv ((b0 ~ abind_tvar) ++ Θ')
+                        [=] add b0 (ftvar_in_aenv Θ')) by (simpl; fsetdec).
+        clear - Hγ Hγb0 Hup HclAb Hc3. fsetdec.
 Qed.
 
-Corollary a_guess_mono_rename_tvar : forall Θ P Ξ A,
+Corollary a_guess_mono_rename_tvar : forall Θ P Ξ A β γ,
   a_guess_mono Θ P Ξ A ->
-  forall β γ, β `notin` dom Ξ -> γ `notin` dom Ξ ->
-  a_guess_mono Θ (subst_pskl_in_pskl (pskl_var_f γ) β P) Ξ
-                 (subst_ptyp_in_ptyp (ptyp_var_f γ) β A).
+  γ `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` dom Ξ ->
+  a_guess_mono (rename_aenv γ β Θ)
+               (subst_pskl_in_pskl (pskl_var_f γ) β P)
+               (rename_aenv γ β Ξ)
+               (subst_ptyp_in_ptyp (ptyp_var_f γ) β A).
 Proof.
   intros. eapply a_guess_mono_rename_tvar_size; eauto.
 Qed.
 
-(** The ∀ introduction at a caller-chosen binder — now literally the rule.
-    Kept as a named lemma because the call sites read better with it. *)
+(** The ∀ introduction in OPENED form — the shape call sites have.  The
+    rule takes the payload unclosed and closes it; when the caller already
+    holds the [A] it means to re-bind, [β ∉ ftv A] makes the closure a
+    round trip. *)
 Lemma a_guess_mono_all_of_one : forall Θ P Ξ A β,
-  a_guess_mono Θ (open_pskl_wrt_pskl P (pskl_var_f β)) Ξ
-                 (open_ptyp_wrt_ptyp A (ptyp_var_f β)) ->
-  β `notin` dom Ξ ->
+  a_guess_mono ((β ~ abind_tvar) ++ Θ)
+    (open_pskl_wrt_pskl P (pskl_var_f β)) Ξ
+    (open_ptyp_wrt_ptyp A (ptyp_var_f β)) ->
+  β `notin` ftvar_in_aenv Θ ->
   β `notin` ftvar_in_pskl P -> β `notin` ftvar_in_ptyp A ->
   a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all A).
 Proof.
   intros Θ P Ξ A β Hg Hβ HβP HβA.
+  rewrite <- (close_ptyp_wrt_ptyp_open_ptyp_wrt_ptyp A β) at 1 by exact HβA.
   apply a_guess_mono__forall with (β := β); [ fsetdec | exact Hg ].
 Qed.
 
-(** …and the CONVERSE of the encoding change: the old cofinite family is
-    still derivable from the one instance, via the rename.  Consumers that
-    genuinely need binder freedom (rather than one witness) use this. *)
-Lemma a_guess_mono_all_cofinite : forall Θ P Ξ A,
+(** ⭐ THE decl/algo BOUNDARY BRIDGE.  Not cofinite quantification creeping
+    back into the algorithmic layer: the DECLARATIVE targets stay cofinite
+    (correctly — relations, no outputs to leak into), so wherever an
+    exists-fresh algorithmic premise feeds one, the single recorded
+    instance must become a family.  This is the packaged rename that does
+    it.  Junk-freeness makes it TRUE: without the witness entering the
+    premise's context, a hole below the ∀ could generate the witness
+    itself, and this statement is false on that derivation. *)
+Lemma a_guess_mono_open_at : forall Θ P Ξ A α,
   a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all A) ->
-  forall α, α `notin` dom Ξ ->
-  a_guess_mono Θ (open_pskl_wrt_pskl P (pskl_var_f α)) Ξ
-                 (open_ptyp_wrt_ptyp A (ptyp_var_f α)).
+  α `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` dom Ξ ->
+  a_guess_mono ((α ~ abind_tvar) ++ Θ)
+    (open_pskl_wrt_pskl P (pskl_var_f α)) Ξ
+    (open_ptyp_wrt_ptyp A (ptyp_var_f α)).
 Proof.
-  intros Θ P Ξ A H α Hα.
+  intros Θ P Ξ A α H Hα.
   inversion H as [ | | | | | Θ' P' Ξ' A' b0 Hfr Hg ]; subst.
-  rewrite (subst_pskl_in_pskl_intro b0 P (pskl_var_f α)) by (clear - Hfr; fsetdec).
-  rewrite (subst_ptyp_in_ptyp_intro b0 A (ptyp_var_f α)) by (clear - Hfr; fsetdec).
-  apply a_guess_mono_rename_tvar;
-    [ exact Hg | clear - Hfr; fsetdec | exact Hα ].
+  pose proof (a_guess_mono_generated_fresh_binder Hg) as Hb0Ξ.
+  pose proof (a_guess_mono_generated_ftvar Hg) as HΞftv.
+  assert (Hb0Ξf : b0 `notin` ftvar_in_aenv Ξ) by (clear - Hb0Ξ HΞftv; fsetdec).
+  destruct (α == b0) as [-> | Hne].
+  { (* α IS the recorded witness: the instance is literally the premise *)
+    rewrite open_ptyp_wrt_ptyp_close_ptyp_wrt_ptyp. exact Hg. }
+  (* the payload IS the closure at b0, so opening at α is the b0 ⤳ α rename *)
+  rewrite <- subst_ptyp_in_ptyp_spec.
+  pose proof (@a_guess_mono_rename_tvar _ _ _ _ b0 α Hg) as Hr.
+  rewrite rename_aenv_cons_tvar_eq in Hr.
+  rewrite (@rename_aenv_fresh_eq Θ α b0) in Hr by (clear - Hfr; fsetdec).
+  rewrite (@rename_aenv_fresh_eq Ξ α b0) in Hr by exact Hb0Ξf.
+  rewrite <- (subst_pskl_in_pskl_intro b0 P (pskl_var_f α))
+    in Hr by (clear - Hfr; fsetdec).
+  apply Hr.
+  pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f b0)) as Hup.
+  cbn in Hup.
+  assert (Hc : ftvar_in_aenv ((b0 ~ abind_tvar) ++ Θ)
+                 [=] add b0 (ftvar_in_aenv Θ)) by (simpl; fsetdec).
+  assert (Hαb0 : α `notin` singleton b0)
+    by (clear - Hne; apply notin_singleton_2; auto).
+  clear - Hα Hfr Hup Hc Hb0Ξ Hαb0. fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -478,13 +743,10 @@ Qed.
 (*  (the declarative content of Assign-SolveM's definition)               *)
 (* ===================================================================== *)
 
-(* ⚠️ SIZE INDUCTION, not derivation induction (freshness campaign).  The
-   TARGET [ad_pat_consis] is declarative, hence still COFINITE, while the
-   source [a_guess_mono] is now exists-fresh — so the ∀ case must turn ONE
-   guess instance into a whole family.  [a_guess_mono_all_cofinite] does
-   that, but its output is no sub-derivation of [H], so there would be no
-   IH for it.  Inducting on [size_pskl P] (the judgment is syntax-directed
-   on P, and opening with a variable preserves size) supplies one. *)
+(* SIZE INDUCTION, not derivation induction: the TARGET [ad_pat_consis] is
+   declarative, hence still COFINITE, while the source [a_guess_mono] is
+   exists-fresh — the ∀ case turns ONE guess instance into a family with
+   [a_guess_mono_open_at], whose output is no sub-derivation. *)
 Lemma a_guess_mono_consis_size : forall n Θ P βs τ,
   size_pskl P <= n ->
   a_guess_mono Θ P βs τ ->
@@ -495,7 +757,7 @@ Lemma a_guess_mono_consis_size : forall n Θ P βs τ,
 Proof.
   induction n as [| n IHn]; intros Θ P βs τ Hsz H;
     [ destruct H; cbn in Hsz; lia | ].
-  destruct H as [ Θ α | Θ P Ξ A Hg | Θ α | Θ
+  destruct H as [ Θ α Hα | Θ P Ξ A Hg | Θ α | Θ
                 | Θ P Q Ξ1 Ξ2 A B Hg1 Hg2
                 | Θ P Ξ A β Hfr Hg ];
     cbn in Hsz; intros Θ1 Hvars Hβs.
@@ -538,26 +800,26 @@ Proof.
     + exact Hg2.
     + intros α Hα. apply Hvars. simpl. fsetdec.
     + intros α1 Hb. apply Hβs. unfold binds in *. apply in_or_app; auto.
-  - (* forall: synthesised quantifier on both sides *)
+  - (* forall: synthesised quantifier on both sides.  EXISTS-FRESH source,
+       COFINITE target — the family comes from [a_guess_mono_open_at]. *)
     replace (pskl_to_uskl (pskl_all_syn P))
       with (uskl_all_syn (pskl_to_uskl P)) by reflexivity.
-    replace (ptyp_to_bskl_syn (ptyp_all A))
-      with (bskl_all_syn (ptyp_to_bskl_syn A)) by reflexivity.
-    (* exists-fresh source, cofinite target: re-open the ONE guess instance
-       at each α of the family with [a_guess_mono_all_cofinite] *)
+    replace (ptyp_to_bskl_syn (ptyp_all (close_ptyp_wrt_ptyp β A)))
+      with (bskl_all_syn (ptyp_to_bskl_syn (close_ptyp_wrt_ptyp β A)))
+      by reflexivity.
     apply ad_pat_consis__forall_syn
-      with (L := dom Ξ `union` dom Θ1 `union` ftvar_in_pskl P
-                   `union` ftvar_in_ptyp A `union` singleton β).
+      with (L := dom Ξ `union` dom Θ1 `union` ftvar_in_aenv Θ
+                   `union` ftvar_in_pskl P `union` singleton β).
     intros α Hα.
     rewrite <- pskl_to_uskl_open_var.
     rewrite <- ptyp_to_bskl_syn_open_var.
-    eapply IHn with (P := open_pskl_wrt_pskl P (pskl_var_f α));
+    eapply IHn with (P := open_pskl_wrt_pskl P (pskl_var_f α))
+                    (Θ := (α ~ abind_tvar) ++ Θ);
       [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia | | | ].
-    + apply a_guess_mono_all_cofinite;
+    + apply a_guess_mono_open_at;
         [ apply a_guess_mono__forall with (β := β); [ exact Hfr | exact Hg ]
         | clear - Hα; fsetdec ].
-    + intros β0 Hβ0. revert β0 Hβ0.
-      intros β0 Hβ0.
+    + intros β0 Hβ0.
       apply ftvar_in_pskl_open_pskl_wrt_pskl_upper in Hβ0.
       simpl in Hβ0.
       destruct (union_1 Hβ0) as [HY' | HY'].

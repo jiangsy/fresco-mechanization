@@ -4376,7 +4376,9 @@ Qed.
 Lemma guess_witness_var_tuple : forall Θ κm α A L,
   Θ ⊢ (msubst_lookup κm α) ≡ᵗ A ->
   exists βs τg ζβ,
-    (forall Θg, a_guess_mono Θg (pskl_var_f α) βs τg) /\
+    (forall Θg,
+       (forall α0, α0 `in` dom βs -> α0 `notin` ftvar_in_aenv Θg) ->
+       a_guess_mono Θg (pskl_var_f α) βs τg) /\
     mono_ptyp τg /\
     uniq βs /\
     (forall α10, α10 `in` dom βs -> α10 `notin` L) /\
@@ -4386,7 +4388,7 @@ Lemma guess_witness_var_tuple : forall Θ κm α A L,
 Proof.
   intros Θ κm α A L Heqv.
   exists nil, (ptyp_var_f α), (@nil (atom * ptyp)).
-  split; [ intros Θg; apply a_guess_mono__var | ].
+  split; [ intros Θg _; apply a_guess_mono__var | ].
   split; [ apply mono_ptyp__var | ].
   split; [ constructor | ].
   split; [ intros α10 Hγ0; simpl in Hγ0; exfalso; clear - Hγ0; fsetdec | ].
@@ -4407,7 +4409,9 @@ Lemma guess_join_witness_aux : forall Ψ Θ R' Q,
     mono_ptyp A ->
     a_wf_ptyp Θ A ->
     forall L, exists βs τg ζβ,
-      (forall Θg, a_guess_mono Θg P βs τg) /\
+      (forall Θg,
+       (forall α0, α0 `in` dom βs -> α0 `notin` ftvar_in_aenv Θg) ->
+       a_guess_mono Θg P βs τg) /\
       mono_ptyp τg /\
       uniq βs /\
       (forall α10, α10 `in` dom βs -> α10 `notin` L) /\
@@ -4422,7 +4426,7 @@ Proof.
       try solve [ exfalso; eapply Hnv; reflexivity ].
     destruct C0; simpl in HeqQ; try discriminate.
     exists nil, ptyp_unit, (@nil (atom * ptyp)).
-    split; [ intros Θg; apply a_guess_mono__unit | ].
+    split; [ intros Θg _; apply a_guess_mono__unit | ].
     split; [ apply mono_ptyp__unit | ].
     split; [ constructor | ].
     split; [ intros α10 Hγ0; simpl in Hγ0; exfalso; clear - Hγ0; fsetdec | ].
@@ -4447,7 +4451,9 @@ Proof.
     (* component 1, avoiding Lav ∪ ftv (P1→P2) *)
     set (L1 := Lav `union` ftvar_in_pskl (pskl_arrow P1 P2)).
     assert (Hcomp1 : exists βs1 τ1 ζ1,
-        (forall Θg, a_guess_mono Θg P1 βs1 τ1) /\
+        (forall Θg,
+       (forall α0, α0 `in` dom βs1 -> α0 `notin` ftvar_in_aenv Θg) ->
+       a_guess_mono Θg P1 βs1 τ1) /\
         mono_ptyp τ1 /\ uniq βs1 /\
         (forall α10, α10 `in` dom βs1 -> α10 `notin` L1) /\
         dom ζ1 [=] dom βs1 /\
@@ -4461,7 +4467,9 @@ Proof.
     destruct Hcomp1 as [βs1 [τ1 [ζ1 [Hg1 [Hm1 [Hu1 [Hf1 [Hd1 [Ht1 He1]]]]]]]]].
     set (L2 := L1 `union` dom βs1).
     assert (Hcomp2 : exists βs2 τ2 ζ2,
-        (forall Θg, a_guess_mono Θg P2 βs2 τ2) /\
+        (forall Θg,
+       (forall α0, α0 `in` dom βs2 -> α0 `notin` ftvar_in_aenv Θg) ->
+       a_guess_mono Θg P2 βs2 τ2) /\
         mono_ptyp τ2 /\ uniq βs2 /\
         (forall α10, α10 `in` dom βs2 -> α10 `notin` L2) /\
         dom ζ2 [=] dom βs2 /\
@@ -4478,8 +4486,12 @@ Proof.
     { intros α10 Hγ0. specialize (Hf2 α10 Hγ0).
       clear - Hf2. unfold L2 in Hf2. fsetdec. }
     (* the two msubst-agree transports *)
-    pose proof (a_guess_mono_ftv (Hg1 Θ)) as Hftv1.
-    pose proof (a_guess_mono_ftv (Hg2 Θ)) as Hftv2.
+    (* the ftv bound is context-free; read it off at [nil], where the
+       generated-name guard is vacuous *)
+    pose proof (a_guess_mono_ftv (Hg1 nil ltac:(intros; simpl; fsetdec)))
+      as Hftv1.
+    pose proof (a_guess_mono_ftv (Hg2 nil ltac:(intros; simpl; fsetdec)))
+      as Hftv2.
     assert (Hag1 : msubst_ptyp ((ζ1 ++ ζ2) ++ κm) τ1
                  = msubst_ptyp (ζ1 ++ κm) τ1).
     { apply msubst_ptyp_agree. intros α0 HX0.
@@ -4513,8 +4525,10 @@ Proof.
           intros Hin1. specialize (Hf1 α0 Hin1).
           clear - Hf1 HX0P2. unfold L1 in Hf1. simpl in Hf1. fsetdec. }
       rewrite (msubst_lookup_app_notin _ _ Hniζ1). reflexivity. }
-    split; [ intros Θg; apply a_guess_mono__arrow;
-             [ apply Hg1 | apply Hg2 ] | ].
+    split; [ intros Θg Hfrg; apply a_guess_mono__arrow;
+             [ apply Hg1 | apply Hg2 ];
+             intros α0 Hα0; apply Hfrg; rewrite dom_app;
+             clear - Hα0; fsetdec | ].
     split; [ apply mono_ptyp__arrow; assumption | ].
     split.
     { apply uniq_app_4; auto.
@@ -4556,7 +4570,8 @@ Proof.
       try solve [ exfalso; eapply Hnv; reflexivity ].
     destruct (atom_fresh Lav) as [β Hβ].
     exists (β ~ abind_flex_mono), (ptyp_var_f β), ((β, C0) :: nil).
-    split; [ intros Θg; apply a_guess_mono__hole | ].
+    split; [ intros Θg Hfrg; apply a_guess_mono__hole;
+               apply Hfrg; simpl; fsetdec | ].
     split; [ apply mono_ptyp__var | ].
     split; [ solve_uniq | ].
     split.
@@ -4578,7 +4593,9 @@ Proof.
       try solve [ exfalso; eapply Hnv; reflexivity ].
     inversion HeqS; subst R.
     assert (Hbody : exists βs τg ζβ,
-        (forall Θg, a_guess_mono Θg P' βs τg) /\
+        (forall Θg,
+       (forall α0, α0 `in` dom βs -> α0 `notin` ftvar_in_aenv Θg) ->
+       a_guess_mono Θg P' βs τg) /\
         mono_ptyp τg /\ uniq βs /\
         (forall α10, α10 `in` dom βs -> α10 `notin` Lav) /\
         dom ζβ [=] dom βs /\
@@ -4591,7 +4608,8 @@ Proof.
       - apply (IHHc Hwf P' C0 Hnv' eq_refl HeqQ HmC0 HwfC0 Lav). }
     destruct Hbody as [βs [τg [ζβ [Hg [Hm [Hu [Hf [Hd [Ht He]]]]]]]]].
     exists βs, τg, ζβ.
-    split; [ intros Θg; apply a_guess_mono__tophole; apply Hg | ].
+    split; [ intros Θg Hfrg; apply a_guess_mono__tophole;
+               apply Hg; exact Hfrg | ].
     split; [ exact Hm | ].
     split; [ exact Hu | ].
     split; [ exact Hf | ].
@@ -4628,7 +4646,9 @@ Lemma guess_join_witness : forall Ψ Θ κm P A,
   mono_ptyp A ->
   a_wf_ptyp Θ A ->
   forall L, exists βs τg ζβ,
-    (forall Θg, a_guess_mono Θg P βs τg) /\
+    (forall Θg,
+       (forall α0, α0 `in` dom βs -> α0 `notin` ftvar_in_aenv Θg) ->
+       a_guess_mono Θg P βs τg) /\
     mono_ptyp τg /\
     uniq βs /\
     (forall α10, α10 `in` dom βs -> α10 `notin` L) /\
@@ -4692,7 +4712,10 @@ Proof.
     - exact (HneP HeqP).
     - exact (Nat.lt_irrefl _ Hlt). }
   (* ---- the guess witness ---- *)
-  set (L := F `union` add α (dom (Ξ ++ (α ~ abind_flex_mono) ++ Θ0'))
+  (* [ftvar_in_aenv], not [dom]: since the freshness campaign the guessed
+     names must dodge everything the context MENTIONS (payloads included),
+     which is what [a_guess_mono__hole] now polices. *)
+  set (L := F `union` add α (ftvar_in_aenv (Ξ ++ (α ~ abind_flex_mono) ++ Θ0'))
               `union` ftvar_in_pskl P `union` dom Θ).
   destruct (guess_join_witness κ P Hjoin Hwfth Hmlk Hmτα Hwτα L)
     as [βs [τg [ζβ [Hg [Hmτg [Huβ [Hfβ [Hdζ [Htr Heqn]]]]]]]]].
@@ -4702,10 +4725,16 @@ Proof.
   { apply a_assign__solve_m.
     - exact Hocc.
     - apply Hg.
+      intros α10 Hγ0. specialize (Hfβ α10 Hγ0).
+      clear - Hfβ. unfold L in Hfβ.
+      rewrite ftvar_in_aenv_app in Hfβ. rewrite ftvar_in_aenv_app in Hfβ.
+      fsetdec.
     - exact Hmτg.
     - exact Huβ.
     - intros α10 Hγ0. specialize (Hfβ α10 Hγ0).
-      clear - Hfβ. unfold L in Hfβ. simpl_env in *. fsetdec. }
+      pose proof (dom_subset_ftvar_in_aenv (Ξ ++ (α ~ abind_flex_mono) ++ Θ0'))
+        as Hds.
+      clear - Hfβ Hds. unfold L in Hfβ. simpl_env in *. fsetdec. }
   (* ---- optimality ---- *)
   intros κ1 Hid Hinc1.
   (* strip the competing solution at the α entry *)
@@ -4723,7 +4752,8 @@ Proof.
   assert (Hwf' : a_wf_aenv (Ξ ++ Θ0'))
     by (eapply a_wf_aenv_strip_mid; [ exact Hdecl | exact Hwf ]).
   assert (Hαftvτg : α `notin` ftvar_in_ptyp τg).
-  { pose proof (a_guess_mono_ftv (Hg Θ)) as Hftv.
+  { pose proof (a_guess_mono_ftv (Hg nil ltac:(intros; simpl; fsetdec)))
+      as Hftv.
     intros Hinτ. apply Hftv in Hinτ.
     apply union_1 in Hinτ. destruct Hinτ as [HinP | Hinβ].
     - clear - HinP Hocc. fsetdec.
@@ -4778,7 +4808,9 @@ Proof.
     + intros α00 HX0. simpl in HX0.
       destruct (AtomSetProperties.In_dec α00 (dom ζβ)) as [Hinζ | Hniζ].
       * rewrite Hdζ in Hinζ. specialize (Hfβ α00 Hinζ).
-        clear - Hfβ. unfold L in Hfβ. simpl_env in *. fsetdec.
+        pose proof (dom_subset_ftvar_in_aenv
+                      (Ξ ++ (α ~ abind_flex_mono) ++ Θ0')) as Hds.
+        clear - Hfβ Hds. unfold L in Hfβ. simpl_env in *. fsetdec.
       * assert (HeqX : α00 = α) by (clear - HX0 Hniζ; fsetdec).
         subst α00. clear - Huq. simpl_env in Huq. solve_uniq.
 Qed.

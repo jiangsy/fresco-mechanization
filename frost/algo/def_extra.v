@@ -66,6 +66,54 @@ Inductive abind : Set :=
 
 Definition aenv : Set := list (atom * abind).
 
+(* ===================================================================== *)
+(*  Free variables of, and RENAMING through, an algorithmic context.      *)
+(*                                                                        *)
+(*  Freshness-campaign infrastructure (DESIGN.md §4.3): exists-fresh       *)
+(*  rules state their side conditions against what the context MENTIONS   *)
+(*  (domain + payload free variables), and renaming lemmas must move a    *)
+(*  name through the CONTEXT and the GENERATED block too, not just the    *)
+(*  skeletons.  NB a key-only rename would be WRONG — three of the five   *)
+(*  bindings carry a payload that can mention the renamed variable        *)
+(*  ([α̂ ≔ τ], [x : A], [x : P]).                                          *)
+(* ===================================================================== *)
+
+Definition ftvar_in_abind (bd : abind) : atoms :=
+  match bd with
+  | abind_tvar            => empty
+  | abind_var_typ A       => ftvar_in_ptyp A
+  | abind_var_skl P       => ftvar_in_pskl P
+  | abind_flex_mono       => empty
+  | abind_flex_mono_def A => ftvar_in_ptyp A
+  end.
+
+(** Every atom a context mentions: its domain PLUS the free variables of
+    every payload (a flexible definition [α̂ ≔ τ] may mention a rigid). *)
+Fixpoint ftvar_in_aenv (Θ : aenv) : atoms :=
+  match Θ with
+  | nil           => empty
+  | (x, bd) :: Θ' => add x (ftvar_in_abind bd `union` ftvar_in_aenv Θ')
+  end.
+
+Definition rename_abind (γ β : atom) (bd : abind) : abind :=
+  match bd with
+  | abind_tvar            => abind_tvar
+  | abind_var_typ A       => abind_var_typ (subst_ptyp_in_ptyp (ptyp_var_f γ) β A)
+  | abind_var_skl P       => abind_var_skl (subst_pskl_in_pskl (pskl_var_f γ) β P)
+  | abind_flex_mono       => abind_flex_mono
+  | abind_flex_mono_def A => abind_flex_mono_def (subst_ptyp_in_ptyp (ptyp_var_f γ) β A)
+  end.
+
+(** [rename_aenv γ β Θ] — rename β to γ throughout Θ: the KEY and the
+    PAYLOAD.  β may occur anywhere (it is the name being renamed away);
+    it is the TARGET γ that callers must keep fresh. *)
+Fixpoint rename_aenv (γ β : atom) (Θ : aenv) : aenv :=
+  match Θ with
+  | nil           => nil
+  | (x, bd) :: Θ' => ((if x == β then γ else x), rename_abind γ β bd)
+                       :: rename_aenv γ β Θ'
+  end.
+
 (** Suffixes  Ξ ::= · | Ξ,α̂ | Ξ,α̂:=τ  (paper alg-syntax). *)
 Inductive a_suffix_binding : abind -> Prop :=
 | a_suffix_binding__flex_mono :
@@ -250,6 +298,14 @@ Definition a_flex_tvar (Θ : aenv) (α : atom) : Prop :=
 
 Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
 | a_guess_mono__hole : forall Θ α,                            (* □ ↦ fresh α̂ *)
+    (* the invented flexible avoids everything the ambient context MENTIONS
+       (domain + payload ftv) — INPUT-only, and the mech's rendering of the
+       implementation's global counter ([incr counter; Bindlib.new_var],
+       type.ml:92-95).  Together with the ∀ rule's witness entering the
+       context, "generated names avoid enclosing witnesses" becomes a
+       DERIVABLE property ([a_guess_mono_generated_fresh], prop_flex.v)
+       instead of a hypothesis renaming lemmas cannot even state. *)
+    α `notin` ftvar_in_aenv Θ ->
     a_guess_mono Θ pskl_hole ((α ~ abind_flex_mono) ++ nil) (ptyp_var_f α)
 | a_guess_mono__tophole : forall Θ P Ξ A,                     (* ⫯.P ↦ guess P *)
     a_guess_mono Θ P Ξ A ->
@@ -262,17 +318,33 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
     a_guess_mono Θ P Ξ1 A ->
     a_guess_mono Θ Q Ξ2 B ->
     a_guess_mono Θ (pskl_arrow P Q) (Ξ1 ++ Ξ2) (ptyp_arrow A B)
-(* EXISTS-FRESH (canonical algorithmic freshness, DESIGN.md §4.3).  The
-   binder avoids the whole conclusion — the guessed block [Ξ] and both
-   ∀-bodies — which is what makes this rule inter-derivable with the old
-   cofinite family (the guessed flexibles are invented by the hole rule,
-   independently of the binder).  The family form is recovered by
-   [a_guess_mono_all_cofinite] (prop_look_complete_extract.v). *)
+(* EXISTS-FRESH, INPUT-only side condition, explicit CLOSE (DESIGN.md
+   §4.3).  The condition names only the INPUTS [Θ] and [P] — a rule chooses
+   its binder, so it cannot avoid outputs that do not exist yet — and the
+   result is re-bound by an explicit [close_ptyp_wrt_ptyp], mirroring the
+   implementation's [bind_var v] after the recursive call (type.ml:88-91);
+   the [ptyp_all] wrapper keeps index 0 bound, so the output stays lc.
+
+   THE WITNESS ENTERS THE AVOID-INPUT: under the ∀ the bound variable is a
+   rigid in scope, so the premise runs at [(β~tvar) ++ Θ].  This is what
+   the hole rule's freshness bites on — every name generated below a
+   binder avoids the binder — and it makes the junk-free discipline
+   DERIVABLE ([a_guess_mono_generated_fresh]) instead of assumed; the
+   renaming/opening kit is UNPROVABLE without it (a hole below a ∀ could
+   otherwise generate the witness itself, and the ∀-opening bridge
+   [a_guess_mono_open_at] is false on such derivations).  The paper's
+   guess is context-free; [Θ] here is the relational rendering of the
+   implementation's global fresh counter.  Consumer-visible cost:
+   context-GENERIC guess claims ([forall Θg, a_guess_mono Θg …]) are
+   retired — witness lemmas quantify the context together with an
+   avoid-set bound ([forall Θg, ftvar_in_aenv Θg [<=] L -> …]). *)
 | a_guess_mono__forall : forall Θ P Ξ A β,
-    β `notin` dom Ξ `union` ftvar_in_pskl P `union` ftvar_in_ptyp A ->
-    a_guess_mono Θ (open_pskl_wrt_pskl P (pskl_var_f β)) Ξ
-      (open_ptyp_wrt_ptyp A (ptyp_var_f β)) ->
-    a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all A).
+    (* [ftvar_in_aenv], not [dom]: a payload ([α̂ ≔ τ]) may mention the
+       witness, and it must not.  INPUT-only. *)
+    β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P ->
+    a_guess_mono ((β ~ abind_tvar) ++ Θ)
+      (open_pskl_wrt_pskl P (pskl_var_f β)) Ξ A ->
+    a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all (close_ptyp_wrt_ptyp β A)).
 
 (** [guess^N(Q) = (Ξ'; Q')] (full-algo-spec.tex:1000): [guess^SK] is the
     identity; [guess^TY] is [a_guess_mono] read back into [pskl]. *)

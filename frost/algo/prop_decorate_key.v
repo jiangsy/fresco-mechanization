@@ -1754,10 +1754,10 @@ Qed.
 (** TY anchor: the [a_guess_mono] output painting's decoration extends the
     pre-guess skeleton (◇ ↦ fresh var, ∀◇ dropped onto a guarded remainder —
     supplied by [pskl_top_guarded] of the solve output). *)
-(* ⚠️ SIZE INDUCTION (freshness campaign): [a_guess_mono] is exists-fresh
+(* SIZE INDUCTION (freshness campaign): [a_guess_mono] is exists-fresh
    while the target [dec_ext] is still cofinite, so the ∀ case must turn ONE
-   guess instance into a family via [a_guess_mono_all_cofinite] — whose
-   output is no sub-derivation, hence no derivation-IH.  See
+   guess instance into a family via [a_guess_mono_open_at] — whose output
+   is no sub-derivation, hence no derivation-IH.  See
    [a_guess_mono_rename_tvar_size] (prop_flex.v) for the recipe. *)
 Lemma dec_ext_guess_mono_anchor_size : forall n Θ P' Ξ' A ψa,
   size_pskl P' <= n ->
@@ -1770,7 +1770,7 @@ Lemma dec_ext_guess_mono_anchor_size : forall n Θ P' Ξ' A ψa,
 Proof.
   induction n as [| n IHn]; intros Θ P' Ξ' A ψa Hsz Hg;
     [ destruct Hg; cbn in Hsz; lia | ].
-  destruct Hg as [ Θ' α | Θ' Pb Ξb Ab Hgb | Θ' α | Θ'
+  destruct Hg as [ Θ' α Hα | Θ' Pb Ξb Ab Hgb | Θ' α | Θ'
                  | Θ' Pa Pb Ξa Ξb Aa Ab Hga Hgb
                  | Θ' Pb Ξb Ab b0 Hfr Hgb ];
     cbn in Hsz; intros Htg Histk Hgf Hera.
@@ -1814,12 +1814,14 @@ Proof.
       |- _ =>
         apply dec_ext__all
           with (L := Li `union` Lg `union` dom Ξb `union` ftvar_in_pskl Pb
-                       `union` ftvar_in_ptyp Ab);
+                       `union` ftvar_in_ptyp Ab
+                       `union` ftvar_in_aenv Θ');
         intros α Hα;
         eapply IHn with (P' := open_pskl_wrt_pskl Pb (pskl_var_f α))
-                        (A := open_ptyp_wrt_ptyp Ab (ptyp_var_f α));
+                        (A := open_ptyp_wrt_ptyp
+                                (close_ptyp_wrt_ptyp b0 Ab) (ptyp_var_f α));
           [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia
-          | apply a_guess_mono_all_cofinite;
+          | apply a_guess_mono_open_at;
               [ apply a_guess_mono__forall with (β := b0);
                   [ exact Hfr | exact Hgb ]
               | clear - Hα; fsetdec ]

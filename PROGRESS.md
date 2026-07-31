@@ -78,7 +78,74 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⚠️ P7a BLOCKER FLAGGED: the walk's Barendregt output conditions (`β ∉ dom Θ1`) are undischargeable without new infrastructure — DECISION NEEDED
+## 2026-08-01 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 1 (guess) CLOSED under the FINAL canon — avoid-input discipline, junk-freeness DERIVED, close-based ∀
+
+`make coq` green from clean, admit- and axiom-free.  The uniform-encoding
+campaign's first cluster ([a_guess_mono]) is converted, and — more
+importantly — the CANON is now settled by three user corrections plus one
+machine-found obstruction, each of which reshaped the design:
+
+1. **Input-only side conditions** (user): a rule CHOOSES its binder, so
+   its freshness condition may name only INPUTS — "pick β avoiding P'" is
+   not an algorithm when P' is an output.
+2. **Explicit close where the algorithm re-binds** (user): without an
+   output condition the relation is ambiguous (the premise output can be
+   read back closed or unclosed); the implementation arbitrates which
+   rules close ([bind_var] — SolS-ForallL type.ml:499-505, guess_mono/TForA
+   :88-91) and which leak (SolS-ForallR :517-520 discards the binder; the
+   leak is BY DESIGN, wf side conditions reject harmful outputs downstream).
+3. **Renaming lemmas constrain their TARGET, never their source** (user):
+   the inherited `β ∉ dom Ξ` hypothesis was the unprovable one; the correct
+   asymmetric statement renames the CONTEXT and the GENERATED block too
+   (payloads included — [rename_aenv]/[ftvar_in_aenv], def_extra.v).
+4. **The junk-derivation obstruction** (machine): with scope-insensitive
+   generators, a hole below a ∀ can generate the ∀'s own recorded witness
+   (Ξ ∋ b0), and the ∀-opening bridge is FALSE on such derivations — no
+   freshness demanded of the lemma's α can fix a collision between two
+   names INSIDE the derivation.  Resolution (user suggestion, mechanized):
+   the ∀ rule's witness ENTERS the premise's context ([(β~tvar) ++ Θ]) and
+   the hole rule avoids [ftvar_in_aenv Θ] — both INPUT-only — whence
+   `generated names avoid enclosing witnesses` is DERIVED
+   ([a_guess_mono_generated_fresh], prop_flex.v), not assumed.  This is
+   also the honest explanation of the F avoidance set: F exists precisely
+   to supply this discipline externally; with it internalized, F's
+   deprecation stays on the campaign plan.
+
+The kit (prop_flex.v): [ftvar_in_aenv]/[rename_aenv] algebra;
+[a_guess_mono_generated_fresh]/[_binder]; [close_ptyp_subst_var];
+[a_guess_mono_rename_tvar] (SIZE induction — when the target IS the
+recorded witness the derivation is renamed TWICE, and the second rename
+applies to the result of the first, no sub-derivation); the OPENED intro
+form [a_guess_mono_all_of_one]; and the decl/algo boundary bridge
+[a_guess_mono_open_at] (one instance → the family a cofinite declarative
+target needs — NOT cofiniteness creeping back; decl stays cofinite by
+design).
+
+**Context-generic guess claims are RETIRED.**  `forall Θg, a_guess_mono
+Θg P Ξ A` (an artifact of the previously-inert context slot) became:
+- the TRANSPORT form `forall Θg, (dom Ξ avoids ftvar_in_aenv Θg) → …`
+  where construction and consumption sites differ
+  (prop_consis_complete.v's witness lemmas; provable there because the
+  counterpart is a monotype — no ∀ case), and
+- the L-BOUNDED form `forall Θg, ftvar_in_aenv Θg [<=] L → …` where a ∀
+  case must pick its witness BEFORE the context is known
+  ([a_guess_ty_witness], prop_look_complete_extract.v — the bound is fixed
+  by the lemma's own avoid-parameter L, so the ∀ case instantiates the IH
+  at [(β~tvar) ++ Θg] and no weakening lemma is needed).
+
+Consumers reworked: [a_guess_mono_consis] and [dec_ext_guess_mono_anchor]
+(∀ cases via the bridge, size-inducted); Solve-M completeness's guess
+witness L widened to [ftvar_in_aenv]; test_examples discharges the new
+hole freshness with a targeted-rewrite tactic (a bare `simpl in *`
+unfolds Θlib's σ-types and diverges — keep the library opaque).
+
+Remaining clusters unchanged (solve, look, consis mutual, decorated
+mirrors, a_pat/a_typing, F-deprecation, the walk's output premises).  For
+each: the SAME questions — which outputs close vs leak (implementation
+arbitrates), and whether generated names can collide with enclosing
+witnesses (if yes, the avoid-input discipline extends there too).
+
+## 2026-07-31 — ⚠️ P7a BLOCKER FLAGGED: the walk's Barendregt output conditions (`β ∉ dom Θ1`) are undischargeable without new infrastructure — DECISION NEEDED
 
 Scoping item 6 (P7a + bundle) against the Qed interfaces hit a real
 gap.  The flex walk's three re-attaching rules —

@@ -772,7 +772,13 @@ Lemma a_guess_ty_witness : forall n Θ0 Θ κs Δ Δ0 Ps X,
   pskl_ghost_free X -> lc_pskl X ->
   Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl κs Ps) ⊑ X ->
   forall L, exists Ξ' A κ',
-    a_guess_mono nil Ps Ξ' A /\
+    (* L-BOUNDED CONTEXT QUANTIFICATION (freshness campaign): the guess is
+       valid at any context whose mentioned names stay inside [L] — the
+       bound is fixed BEFORE the ∀ case picks its witness, which is what
+       makes that case provable; the old context-generic
+       [a_guess_mono nil …] is an artifact of the pre-campaign inert
+       context parameter.  Consumers instantiate [Θg := nil]. *)
+    (forall Θg, ftvar_in_aenv Θg [<=] L -> a_guess_mono Θg Ps Ξ' A) /\
     all_flex_mono Ξ' /\
     uniq Ξ' /\
     keys κ' = keys Ξ' /\
@@ -790,7 +796,7 @@ Proof.
     destruct Ps as [ | m | α | Ps1 Ps2 | Ps0 | | Ps0 ].
     + (* ------------------------------ unit ------------------------------ *)
       exists nil, ptyp_unit, nil.
-      split; [ apply a_guess_mono__unit | ].
+      split; [ intros Θg _; apply a_guess_mono__unit | ].
       split; [ apply Forall_nil | ].
       split; [ apply uniq_nil | ].
       split; [ reflexivity | ].
@@ -804,7 +810,7 @@ Proof.
       (* guess^TY returns the variable itself, so BOTH remaining goals are
          the corresponding hypotheses verbatim *)
       exists nil, (ptyp_var_f α), nil.
-      split; [ apply a_guess_mono__var | ].
+      split; [ intros Θg _; apply a_guess_mono__var | ].
       split; [ apply Forall_nil | ].
       split; [ apply uniq_nil | ].
       split; [ reflexivity | ].
@@ -842,14 +848,14 @@ Proof.
       assert (HA1 : ftvar_in_pskl (ptyp_to_pskl A1)
                     [<=] ftvar_in_pskl Ps1 `union` dom Ξ1).
       { assert (Hb : ftvar_in_ptyp A1 [<=] ftvar_in_pskl Ps1 `union` dom Ξ1)
-          by (eapply a_guess_mono_ftv; exact Hgu1).
+          by (eapply a_guess_mono_ftv; apply (Hgu1 nil); simpl; fsetdec).
         assert (Hc : ftvar_in_pskl (ptyp_to_pskl A1) [<=] ftvar_in_ptyp A1)
           by (apply ptyp_to_pskl_ftv).
         clear - Hb Hc; fsetdec. }
       assert (HA2 : ftvar_in_pskl (ptyp_to_pskl A2)
                     [<=] ftvar_in_pskl Ps2 `union` dom Ξ2).
       { assert (Hb : ftvar_in_ptyp A2 [<=] ftvar_in_pskl Ps2 `union` dom Ξ2)
-          by (eapply a_guess_mono_ftv; exact Hgu2).
+          by (eapply a_guess_mono_ftv; apply (Hgu2 nil); simpl; fsetdec).
         assert (Hc : ftvar_in_pskl (ptyp_to_pskl A2) [<=] ftvar_in_ptyp A2)
           by (apply ptyp_to_pskl_ftv).
         clear - Hb Hc; fsetdec. }
@@ -872,7 +878,8 @@ Proof.
         clear - Hfr1 Hne HA2; fsetdec. }
       cbn [app] in Heq2.
       exists (Ξ1 ++ Ξ2), (ptyp_arrow A1 A2), (κa ++ κb).
-      split; [ apply a_guess_mono__arrow; assumption | ].
+      split; [ intros Θg Hsub; apply a_guess_mono__arrow;
+               [ apply Hgu1 | apply Hgu2 ]; clear - Hsub; fsetdec | ].
       split; [ apply all_flex_mono_app; assumption | ].
       split; [ clear - Hu1 Hu2 Hdisj; solve_uniq | ].
       split; [ rewrite ! keys_app; rewrite Hk1, Hk2; reflexivity | ].
@@ -934,8 +941,7 @@ Proof.
                              `union` ftvar_in_pskl Ps0
                              `union` ftvar_in_pskl X0)))
         as (Ξ' & A' & κ' & Hgu & Hfm & Hu & Hk & Hfr & HF & Hwf' & Hpr).
-      (* CLOSE the guessed payload over β: [a_guess_mono__forall] is cofinite
-         in the opener with a FIXED (Ξ;A), so the body must not mention β *)
+      (* CLOSE the guessed payload over β (the rule's own discipline) *)
       assert (HβΞ : β `notin` dom Ξ')
         by (intro Hc; specialize (Hfr β Hc); clear - Hfr; fsetdec).
       assert (HopenA : open_ptyp_wrt_ptyp (close_ptyp_wrt_ptyp β A')
@@ -955,9 +961,15 @@ Proof.
         by (rewrite <- ptyp_to_pskl_open; rewrite HopenA; reflexivity).
       exists Ξ', (ptyp_all (close_ptyp_wrt_ptyp β A')), κ'.
       split.
-      { eapply a_guess_mono_all_of_one with (β := β);
-          [ rewrite HopenA; exact Hgu
-          | exact HβΞ
+      { (* the L-bound is what makes this case go through: the IH's guess is
+           instantiated at [(β~tvar) ++ Θg], whose mentioned names sit inside
+           the IH's own (β-extended) bound *)
+        intros Θg Hsub.
+        eapply a_guess_mono_all_of_one with (β := β);
+          [ rewrite HopenA; apply Hgu;
+            rewrite ftvar_in_aenv_app; rewrite ftvar_in_aenv_one;
+            cbn [ftvar_in_abind]; clear - Hsub; fsetdec
+          | clear - Hsub Fr; fsetdec
           | clear - Fr; fsetdec
           | exact HβA ]. }
       split; [ exact Hfm | ].
@@ -1004,7 +1016,8 @@ Proof.
       pick fresh α1 for (L `union` dom Θ `union` dom Θ0 `union` dom κs).
       exists ((α1 ~ abind_flex_mono) ++ nil), (ptyp_var_f α1),
              ((α1, τ) :: nil).
-      split; [ apply a_guess_mono__hole | ].
+      split; [ intros Θg Hsub; apply a_guess_mono__hole;
+               clear - Hsub Fr; fsetdec | ].
       split; [ unfold all_flex_mono; repeat constructor | ].
       split; [ solve_uniq | ].
       split; [ reflexivity | ].
@@ -1036,7 +1049,8 @@ Proof.
                    HwfΘ HwfPs0 Hκlc Hκsc Hg' Hl' Hp' L)
         as (Ξ' & A & κ' & Hgu & Hfm & Hu & Hk & Hfr & HF & Hwf' & Hpr).
       exists Ξ', A, κ'.
-      split; [ apply a_guess_mono__tophole; exact Hgu | ].
+      split; [ intros Θg Hsub; apply a_guess_mono__tophole;
+               apply Hgu; exact Hsub | ].
       split; [ exact Hfm | ].
       split; [ exact Hu | ].
       split; [ exact Hk | ].
@@ -1171,7 +1185,8 @@ Proof.
     exists (Ξc ++ Ξ'), (ptyp_to_pskl A), (κc ++ κ').
     split.
     { eapply a_extract__solve;
-        [ exact Hlook | exact Hsolve | apply a_guess__ty; exact Hgu ]. }
+        [ exact Hlook | exact Hsolve
+        | apply a_guess__ty; apply Hgu; simpl; fsetdec ]. }
     split.
     { rewrite app_assoc. apply a_wf_pskl_swap_app. exact Hwf'. }
     split.

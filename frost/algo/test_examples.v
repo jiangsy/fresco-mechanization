@@ -43,6 +43,7 @@ Require Import src.frost.predicates.
 Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.prop_flex.   (* the guess freshness kit *)
 
 (* ===================================================================== *)
 (*  Tactic kit                                                            *)
@@ -135,10 +136,25 @@ Definition Θlib : aenv :=
   (aInt ~ abind_tvar) ++
   (aBool ~ abind_tvar) ++ nil.
 
-(* The freshness the relations now police (the ForallL prose-completion):
-   guessed names must avoid the ambient context. *)
+(* The freshness the relations now police: guessed names must avoid
+   everything the ambient context MENTIONS (freshness campaign,
+   DESIGN.md §4.3 — [a_guess_mono__hole] takes [∉ ftvar_in_aenv Θ]),
+   on top of the ForallL prose-completion's dom-avoidance. *)
 Hypothesis Hfa_lib : fa `notin` dom Θlib.
 Hypothesis Hfb_lib : fb `notin` dom Θlib.
+Hypothesis Hfa_libf : fa `notin` ftvar_in_aenv Θlib.
+Hypothesis Hfb_libf : fb `notin` ftvar_in_aenv Θlib.
+
+(* Discharge [α ∉ ftvar_in_aenv Θ] at whatever context the derivation has
+   reached.  Keep [Θlib] OPAQUE — a bare [simpl in *] unfolds the library
+   and its σ-types and does not terminate in reasonable time; rewrite only
+   the [ftvar_in_aenv] structure. *)
+Ltac crush_guess_fresh :=
+  repeat rewrite ftvar_in_aenv_app;
+  repeat rewrite ftvar_in_aenv_one;
+  repeat rewrite ftvar_in_aenv_cons;
+  cbn [ftvar_in_abind ftvar_in_ptyp];
+  solve [ assumption | fsetdec ].
 Hypothesis HΘlib_uniq : uniq Θlib.
 
 (* Discharge the ForallL freshness premise [uniq (Ξ ++ Θ0)]: peel the
@@ -271,7 +287,7 @@ Proof.
     (Θ2 := (fa ~ abind_flex_mono) ++ Θlib).
   - discriminate.
   - apply a_split__hole.
-  - apply a_guess_mono__hole.
+  - apply a_guess_mono__hole. crush_guess_fresh.
   - repeat constructor.
   - intros x Hx. simpl_open.
     eapply a_typing__abs with (L := dom Θlib `union` singleton fa `union` singleton fb) (Ξ := nil)
@@ -280,7 +296,7 @@ Proof.
              ++ (fa ~ abind_flex_mono) ++ Θlib).
     + discriminate.
     + apply a_split__hole.
-    + apply a_guess_mono__hole.
+    + apply a_guess_mono__hole. crush_guess_fresh.
     + constructor.
     + intros y _. simpl_open.
       eapply a_typing__var; [ crush_binds | ].
@@ -326,12 +342,13 @@ Proof.
       * apply (a_guess__ty (Ξ := nil) (A := σ_auto)).
         apply a_guess_mono__tophole.
         unfold σ_auto, σ_id; simpl.
-        (* exists-fresh: the ∀ rule now takes ONE binder; any atom does here,
-           the bodies are variable-only so nothing constrains the choice *)
+        (* exists-fresh + close: enter through the OPENED form
+           ([a_guess_mono_all_of_one]); the bodies are variable-only, so any
+           fresh atom serves *)
         apply a_guess_mono__arrow with (Ξ1 := nil) (Ξ2 := nil);
           (pick fresh β;
-           apply a_guess_mono__forall with (β := β);
-           [ simpl; fsetdec | ]);
+           apply a_guess_mono_all_of_one with (β := β);
+           [ | simpl; fsetdec | simpl; fsetdec | simpl; fsetdec ]);
           simpl_open;
           apply a_guess_mono__arrow with (Ξ1 := nil) (Ξ2 := nil);
           apply a_guess_mono__var.
@@ -442,7 +459,7 @@ Proof.
         apply a_guess_mono__arrow
           with (Ξ1 := (fa ~ abind_flex_mono) ++ nil)
                (Ξ2 := (fb ~ abind_flex_mono) ++ nil);
-          apply a_guess_mono__hole.
+          apply a_guess_mono__hole; crush_guess_fresh.
     + crush_uniq.
     + crush_wf.
     + simpl_open.
@@ -548,7 +565,7 @@ Proof.
           apply a_guess_mono__arrow
             with (Ξ1 := (fa ~ abind_flex_mono) ++ nil)
                  (Ξ2 := (fb ~ abind_flex_mono) ++ nil);
-            apply a_guess_mono__hole. }
+            apply a_guess_mono__hole; crush_guess_fresh. }
       * crush_uniq.
       * crush_wf.
       * simpl_open.

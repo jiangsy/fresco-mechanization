@@ -1622,34 +1622,10 @@ Proof.
   clear - Hd Hsc Hfr. fsetdec.
 Qed.
 
-(** guess^TY scopes its result by the source and the fresh names. *)
-Lemma a_guess_mono_ftv : forall Θ P βs τ,
-  a_guess_mono Θ P βs τ ->
-  ftvar_in_ptyp τ [<=] (ftvar_in_pskl P `union` dom βs).
-Proof.
-  intros * H; induction H; simpl; try solve [ fsetdec ].
-  - (* arrow *)
-    repeat rewrite dom_app. clear - IHa_guess_mono1 IHa_guess_mono2.
-    fsetdec.
-  - (* forall — exists-fresh: the rule's OWN binder β serves; there is no
-       family to instantiate, and [β ∉ ftv A] is now a rule premise (H)
-       rather than something the [pick fresh] had to arrange *)
-    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f β))
-      as Hlo.
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β))
-      as Hup.
-    simpl in Hup.
-    intros α0 Hα0.
-    assert (HX1 : α0 `in` ftvar_in_ptyp
-                    (open_ptyp_wrt_ptyp A (ptyp_var_f β)))
-      by (clear - Hα0 Hlo; fsetdec).
-    assert (HX2 : α0 `in` (ftvar_in_pskl
-                    (open_pskl_wrt_pskl P (pskl_var_f β))
-                    `union` dom Ξ)) by (clear - HX1 IHa_guess_mono; fsetdec).
-    assert (Hne : α0 <> β) by (clear - Hα0 H; fsetdec).
-    clear - HX2 Hup Hne. fsetdec.
-Qed.
-
+(* [a_guess_mono_ftv] MOVED to prop_flex.v by the freshness campaign: the
+   guess kit there derives target-side freshness from it instead of
+   assuming output-side hypotheses.  prop_flex sits below this file, so
+   the name is still in scope here. *)
 
 Lemma inter_empty_pointwise : forall Δ Δ',
   (forall α, α `in` Δ -> α `notin` Δ') ->
