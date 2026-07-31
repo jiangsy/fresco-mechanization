@@ -78,7 +78,122 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⭐ Sub-ForallR CLOSED: `a_sub_complete_forall_r` Qed + axiom-free — P7b has ONE row left (Sub-ForallL)
+## 2026-07-31 (latest) — Sub-ForallL SCOPED end-to-end: six work items, one open gate (the shield residual)
+
+Scoping session after ForallR's close; no code yet.  The row =
+paper :3374-3453: P6-L extracts the guess, P5's precision-substitution
+swaps the join's subject instantiation to the guess's semantic image
+(fuel-preserved), the IH runs at `(Ξ ++ Θ0, κa ++ κ)`, algorithmic
+`a_sub__forall_l` reassembles.  **Interfaces verified against the Qed
+statements**:
+
+- **P6-L** (`a_extract_complete_gen`, prop_look_complete_extract.v:1145)
+  consumes: the `_g` join at subject `(κR')[ψa/α]` (forget from `_gv`), the
+  fill, wf/mode/freshness data, `a_tags_sort NM Ψa ψa`, tag-disjointness,
+  `Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, `delta_def_fresh`, and **`sub_shield Θ0 Ψa ∅ P0 ψa`**.
+  Returns Ξ, Pa, κa with the extract run, wf(Pa), wf(Ξ++Θ0),
+  `keys κa = keys Ξ`, `(κa++κ) ∷ Ξ++Θ0 ⊑ Θ`, `a_inc_equiv Θ0 κ κ Θ`, and
+  `Θ ⨟ Δ ⊢ₚᵣᵃ msubst (κa++κ) Pa ⊑ ⌊ψa⌋ˢ`.
+- **The shield gate**: supplies exist for `pskl_flex_free Θ0 P0`
+  (`sub_shield_flex_free`), ∀-free P0 (`sub_shield_supply_all_free_p0`),
+  inh-free counterpart, mono-ish counterpart, atomic P0
+  (prop_sub_shield_supply.v §4-§8).  ⚠️ THE RESIDUAL — P0 an arrow with a
+  `pskl_all_syn` strictly BELOW its head, Θ0-flexibles inside, non-inh-free
+  counterpart — is OPEN and "a new lemma of P6 size"
+  (DESIGN-completeness-subtyping §9.0.2).  DECISION: the ForallL ROW takes
+  `sub_shield` as a ROW HYPOTHESIS (like Check's external wf); the bundle
+  supplies it from the closed cases and the residual stays the documented
+  gate on the headline theorem.
+- **P5** landed as `ad_pat_sub_precise_upre` (prop_sub_complete.v:1637,
+  ⊑ᵤ-form over `_g`, 12 rows, ~125 lines) with the kit in
+  prop_consis_precise.v: `uskl_precise` (:1231, LEFT = the substituted/
+  ghostier side), `uskl_precise_of_precise` (:1446 — builds the leaf ⊑ᵤ
+  from the P6-L precision), `uskl_precise_subst` (:1359 — subst-OF cong),
+  `ad_pat_consis_precise_subst` (:852 — the consis-level subject-subst
+  form).  ⚠️ NO subst-INTO congruence exists yet (item 2 below), and NO
+  `_gv` version exists (item 1).
+
+**The six work items** (in dependency order):
+
+1. **`uskl_precise_erase_refine`** — THE key new lemma, replacing both "1a
+   erasure-refinement" and "1b pskl-trans" of the first sketch with ONE
+   FUSED induction (general `ad_refine_pskl_trans` is NOT needed and its
+   all-vs-tophole_fill case is nasty — avoid):
+
+       Θ ⨟ Δ ⊢ᵣₚᵃ Qm ⊳ Qr → a_wf_aenv Θ → (Δ ∩ dom Θ = ∅-style disj) →
+       (wf sides as needed) →
+       ∀ Θb Ψr R' R, uskl_precise Θb Ψr R' R → (binds-mono Θb → Θ) →
+       ⌊R⌋ˢ = Qm → Θ ⨟ Δ ⊢ᵣₚᵃ ⌊R'⌋ˢ ⊳ Qr
+
+   Induct on the ⊳-derivation; invert `uskl_precise` at each erasure
+   shape.  The upre rows that are Qm-shape-INDEPENDENT (refl / hole /
+   tophole_remove / flex_l) are handled uniformly (`__hole` uses wf Qr;
+   upre__hole itself CARRIES `Θb ⨟ ∅ ⊢ₚₛᵃ ⌊R⌋`).  Congruence rows pair up
+   (arrow/all_syn/all_etag/all_inst ↦ __arrow/__all with
+   `strip_uskl_open` for the erasure-open commute; tophole-family ↦
+   __tophole_keep with the guard from wf, or __tophole_fill REBUILT from
+   Hr's own Θ-extended premise family — binds-mono composes into the
+   extension).  flex rows use `binds_unique` to align definitions.
+   Mirror ad_refine_syn_trans's remember/inner-induction skeleton
+   (prop_precise.v:423-572).
+   ⚠️ **THE CRUX FOUND WHILE DESIGNING IT** (stopped here, nothing
+   written): the upre__hole inner case must conclude `□ ⊳ Qr`, whose rule
+   demands `Θ ⨟ ∅ ⊢ₚₛᵃ Qr` — and refinement does NOT transport wf∅ from
+   source to target through `__tophole_fill` (the target's ∀-syn body may
+   mention the Θ-side binder via a FILL — the `cex_p7_sskl_precise.v`
+   phenomenon; `a_wf_pskl__tophole` checks ∀◇-bodies at Δ = ∅, so the
+   tvar→Δ wf move is false there).  This is the memory's "new holes' fills
+   must stay Δ-clean" caveat materializing.  Candidate resolution: state
+   item 1 (and hence item 3's leaf obligations) over the F-INDEXED mirror
+   `ad_refine_pskl_f` with the path's opened binders in F — `_f`'s __hole
+   row carries `F ∩ ftv(fill) = ∅`, which is exactly the Δ-cleanliness
+   that makes the □-node's target wf∅-able; the `_gv` leaves are consumed
+   through `ad_refine_pskl_f_empty_intro` + the `_f` transports anyway, so
+   the F-form is the natural home.  Verify against how
+   `a_consis_complete_thm` threads its own precision (`ad_precise_f` with
+   F = Δ1∪Δ2) — that is the shape to mirror.  Also note: wf∅-of-target at
+   a □-source node IS derivable from the node's own subderivation when the
+   source is wf∅ AND the derivation is F-clean along the path — prove
+   `ad_refine_pskl_f_wf0` in that form, not the plain one.
+2. **`uskl_precise_subst_into`**: `lc_uskl R → uskl_precise Θ Ψr ψ' ψ →
+   uskl_precise Θ Ψr' (R[ψ'/α]) (R[ψ/α])` with Ψr' = Ψr-or-∅ depending on
+   α's occurrence (upre's congruence rows take exact set equalities; state
+   the disjunction or demand α ∈ ftv).  ~60 lines over lc_uskl.
+3. **`ad_pat_sub_precise_upre` → `_gv`**: copy the 12-row proof; the NEW
+   obligations are the leaf refinements at `__infer` / `__check` /
+   `__univ_ghost_r` / `__arrow`'s domain: compose the row's own leaf
+   `⌊Rg⌋ ⊳ ⌊Q⌋` with item 1 to get `⌊Rg'⌋ ⊳ ⌊Q⌋` (wf(⌊Q⌋) is P5's
+   existing Hwfq premise; wf-plumbing per row).
+4. **Extract cofinite family from ONE instance**: `a_sub__forall_l`'s
+   premise is cofinite in the LOOKED var α'.  Cheap: `a_looksub_rename_var`
+   (prop_looksub.v, exists) renames the looked var KEEPING Ξ ⨾ 𝒞, and the
+   solve/guess components don't mention it (look-output-freshness), so the
+   family is the renamed look + same solve + same guess.  ~40 lines.
+   (This is also a de-cofinite-campaign candidate — converting
+   `a_sub__forall_l` to exists-fresh would delete this step; defer.)
+5. **The row** `a_sub_complete_forall_l` (shape: subject `uskl_all_etag ε
+   R` / `uskl_all_syn R` — TWO variants or one lemma over both rows'
+   common data; row hypotheses: the join row's fields incl. the tag
+   conditions + `sub_shield`).  Assembly: erase the ≡ᵘ slack; P6-L; move
+   the join's premise subject κ→(κa++κ) along the slack (the motive's ≡ᵘ
+   + `a_inc_equiv Θ0 κ κ Θ` reflexivity makes this the SAME slack — check
+   whether a new ≡ᵘ-generation step is even needed); build the ⊑ᵤ premise
+   by `uskl_precise_of_precise` on P6-L's precision + item 2; item 3
+   swaps the subject; IH at `(Ξ++Θ0, κa++κ)` (fuel PRESERVED — `_gv`'s
+   ForallL rows are the S n rows, the substituted derivation is at n);
+   algorithmic `a_sub__forall_l` with item 4's family + `uniq (Ξ++Θ0)`
+   (from P6-L's wf) + `(Ξ++Θ0) ⨟ ∅ ⊢ₚₛᵃ P1` (P6-L's wf(Pa) — note P1 :=
+   Pa's EMBEDDING?  check `a_sub__forall_l`'s P1 sort against Pa); package
+   glue mirrors Arrow's (`a_inc_equiv_glue` across Θ0 → Ξ++Θ0 → Θ1).
+   ⚠️ H3 hazard (DESIGN §9.1): the WLOG "guarded P0 ∨ P0 = ◇" — the row
+   receives it as a hypothesis; the BUNDLE dispatches ForallR first when
+   P0 is a ∀ (the join inversion order must reflect it).
+6. **Bundle + P7a** after the row: lex(fuel, |Θ0|) induction; P7a's flex
+   walk (measure |Θ0| at fixed fuel); the ForallL case is where the
+   shield-hypothesis surfaces as the headline's documented premise until
+   the residual closes.
+
+## 2026-07-31 — ⭐ Sub-ForallR CLOSED: `a_sub_complete_forall_r` Qed + axiom-free — P7b has ONE row left (Sub-ForallL)
 
 `make coq` green from clean.  The row landed the same day as the encoding
 fix below, and NEEDED it: with the exists-fresh `a_sub__forall_r`, the IH's
