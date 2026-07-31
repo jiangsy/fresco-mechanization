@@ -115,8 +115,15 @@ scoping entry's assembly sketch glossed over:
 are shape-rigid: `__mono` cannot produce one), `a_wf_ptyp_paint_notin`,
 `a_uskl_tyequiv_subst` (common substitution at a Θ-fresh variable; the
 `__mono` leaves are Θ-scoped hence untouched — exactly the consumer the
-rule's design note anticipated), and `a_uskl_tyequiv_open` (instantiate
-two ≡ᵘ ∀-bodies at a common lc argument).
+rule's design note anticipated), `a_uskl_tyequiv_open` (instantiate
+two ≡ᵘ ∀-bodies at a common lc argument), and — enabler (i) —
+`a_uskl_tyequiv_ftag` (≡ᵘ preserves the syntactic tag reading; every
+row is tag-homomorphic and `__mono`'s paintings are tag-free both
+sides).  ALSO landed: the P6-L Ψsub surfacing (gap 2 above) — with a
+fresh sighting of the evar-fsetdec wedge: the Δ = ∅ corollary's bare
+`eapply` left `?Ψsub` undetermined (the conclusion never mentions it)
+and the range obligations' `clear; fsetdec` WEDGED; pin `with
+(Ψsub := Ψa)`.
 
 Row plan after the enablers (per the paper :3374-3453): erase the
 slack with (iii) at the ∀-subject; invert the join's ForallL row;

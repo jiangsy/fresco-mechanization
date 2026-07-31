@@ -28,6 +28,7 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
+Require Import src.frost.def_tags.
 Require Import src.frost.def_extra.
 Require Import src.frost.coercions.
 Require Import src.frost.predicates.
@@ -43,6 +44,7 @@ Require Import src.frost.algo.prop_normal.         (* a_inc_equiv_lookup *)
 Require Import src.frost.algo.prop_pat_sub.        (* uskl_to_pskl_ptyp_to_uskl_syn *)
 Require Import src.frost.algo.prop_consis_sound.   (* uskl_to_pskl_open *)
 Require Import src.frost.algo.prop_look_complete_cstr. (* msubst_uskl_syn_open *)
+Require Import src.frost.algo.prop_consis_precise.  (* ftag_in_uskl_{open_var,ptyp_syn} *)
 
 Set Implicit Arguments.
 
@@ -801,4 +803,35 @@ Proof.
   rewrite (subst_bskl_in_uskl_intro β R' ψ ltac:(clear - Fr; fsetdec)).
   apply a_uskl_tyequiv_subst;
     [ apply Hfam; clear - Fr; fsetdec | exact Hlcψ | clear - Fr; fsetdec ].
+Qed.
+
+(** ≡ᵘ preserves the syntactic tag reading: every row is tag-homomorphic,
+    and the [__mono] row's paintings are tag-free on both sides.  (Lets
+    the ≡ᵘ-subject transports carry `ftag`-conditioned premises across.) *)
+Lemma a_uskl_tyequiv_ftag : forall Θ R R',
+  Θ ⊢ R ≡ᵘ R' ->
+  ftag_in_uskl R [=] ftag_in_uskl R'.
+Proof.
+  intros Θ R R' H; induction H; simpl; try (clear - IHa_uskl_tyequiv; fsetdec).
+  - (* __mono *)
+    rewrite (ftag_in_uskl_ptyp_syn τ1). rewrite (ftag_in_uskl_ptyp_syn τ2).
+    clear; fsetdec.
+  - (* __unit *) clear; fsetdec.
+  - (* __var *) clear; fsetdec.
+  - (* __arrow *)
+    clear - IHa_uskl_tyequiv1 IHa_uskl_tyequiv2; fsetdec.
+  - (* __all_syn *)
+    pick fresh α for L.
+    pose proof (H0 α ltac:(clear - Fr; fsetdec)) as Hb.
+    pose proof (ftag_in_uskl_open_var R α) as Ho1.
+    pose proof (ftag_in_uskl_open_var R' α) as Ho2.
+    clear - Hb Ho1 Ho2; fsetdec.
+  - (* __all_etag *)
+    pick fresh α for L.
+    pose proof (H0 α ltac:(clear - Fr; fsetdec)) as Hb.
+    pose proof (ftag_in_uskl_open_var R α) as Ho1.
+    pose proof (ftag_in_uskl_open_var R' α) as Ho2.
+    clear - Hb Ho1 Ho2; fsetdec.
+  - (* __hole *) clear; fsetdec.
+  - (* __holeg *) clear; fsetdec.
 Qed.
