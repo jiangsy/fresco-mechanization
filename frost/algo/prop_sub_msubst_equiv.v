@@ -656,3 +656,34 @@ Proof.
   - reflexivity.
   - f_equal. apply IHR. intros α Hα; apply Hag; cbn; clear - Hα; fsetdec.
 Qed.
+
+(* ===================================================================== *)
+(*  Weakening ≡ᵘ by a context extension (binds-monotone: only the [__mono] *)
+(*  row reads Θ — wf of the two paintings and their ≡ᵗ)                   *)
+(* ===================================================================== *)
+
+Lemma a_uskl_tyequiv_weaken_cons : forall Θ R R' (x : atom) (b : abind),
+  Θ ⊢ R ≡ᵘ R' ->
+  ((x ~ b) ++ Θ) ⊢ R ≡ᵘ R'.
+Proof.
+  intros Θ R R' x b H; induction H.
+  - apply a_uskl_tyequiv__mono; try assumption;
+      [ eapply a_wf_ptyp_weaken;
+          [ intros y c Hb; unfold binds in *; simpl; right; exact Hb
+          | assumption ]
+      | eapply a_wf_ptyp_weaken;
+          [ intros y c Hb; unfold binds in *; simpl; right; exact Hb
+          | assumption ]
+      | apply a_tyequiv_weaken_cons1; assumption ].
+  - apply a_uskl_tyequiv__unit.
+  - apply a_uskl_tyequiv__var.
+  - apply a_uskl_tyequiv__arrow; assumption.
+  - apply a_uskl_tyequiv__all_syn with (L := L); auto.
+  - apply a_uskl_tyequiv__all_etag with (L := L); auto.
+  - apply a_uskl_tyequiv__hole.
+  - apply a_uskl_tyequiv__holeg.
+  - apply a_uskl_tyequiv__tophole; assumption.
+  - apply a_uskl_tyequiv__topholeg; assumption.
+Qed.
+
+Print Assumptions a_uskl_tyequiv_weaken_cons.

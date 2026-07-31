@@ -78,7 +78,63 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⚠️ ENCODING FIX opening Sub-ForallR: `a_sub__forall_r` / `a_subtag__forall_r` are now EXISTS-FRESH (one Barendregt binder, junk suffix per run)
+## 2026-07-31 (latest) — ⭐ Sub-ForallR CLOSED: `a_sub_complete_forall_r` Qed + axiom-free — P7b has ONE row left (Sub-ForallL)
+
+`make coq` green from clean.  The row landed the same day as the encoding
+fix below, and NEEDED it: with the exists-fresh `a_sub__forall_r`, the IH's
+ONE run at one fresh binder IS the rule's premise — no renaming machinery,
+no cofinite family construction.
+
+**The row** (`prop_sub_complete_thm.v`, `a_sub_complete_forall_r`): takes
+the fuel-n IH + the join's `__forall_r` cofinite family as a row hypothesis
+(the bundle owes the inversion, as for Arrow).  Structure:
+
+- FILL pins the input: `ad_refine_syn_f_all_inh_r_shape` (only `__all` and
+  a ∀◇-headed `__tophole_remove` reach a ∀-inh counterpart; `__hole` fills
+  are SYN paintings, `__flex_l` chains bottom out in monotype paintings) +
+  the painting/msubst inversions give `P0 = ∀.(ptyp_to_pskl A0)` — the ∀◇
+  branch dies on `skmod[TY]` (an embedded TYPE has no ∀◇ head).
+- IH premises at (Θ0,α ⊑ Θ,α): wf-body via `a_wf_pskl_all_syn_open_tvar`,
+  κ extends by `a_inc__tvar (Ξ:=nil)`, the ≡ᵘ slack weakens by the new
+  `a_uskl_tyequiv_weaken_cons`, and the fill's opened body moves Δ→Θ by the
+  new SYN mirror `ad_refine_syn_f_reassoc(_mid)`.
+- OUTPUT: `a_sub_ty_tc_output` ((TY,TC) returns its input — Check/ForallR
+  by shape, ForallL passes through; the paper's :3243 equivalence detour is
+  unnecessary at this mode) and the context decomposition
+  `Θo = Ξ ++ (α~tvar) ++ Θ1` comes FREE from `a_inc_tvar_inv` on the run's
+  own identity increase — no rigid-spine surgery.  Barendregt payloads:
+  `is_id_inc_dom_mono` (an id-increase loses no names) gives
+  `dom Θ0 ⊆ dom Θ1`, whence `uniq (Ξ ++ Θ0)` and the rule's freshness.
+- PACKAGE: extend the caller's id along `a_inc__tvar (Ξ:=Ξjunk)`; peel ζ's
+  junk rows with the new `a_inc_suffix_prefix_inv` (a declaration-only
+  source prefix is consumed one κ-row each), strip the binder with
+  `a_inc_tvar_inv` / `a_inc_equiv_tvar_inv` (nil-suffix by uniq), and
+  collapse the composite with `msubst_compose_id_app_agree` (the junk rows'
+  domain is disjoint from Θ0's flexes).
+- PRECISION rebinds the quantifier from the α-instance via the GHOST-FREE
+  route: `ad_refine_syn_f_ghost_free_strip_rename` (the subject is an
+  embedded type — TY-mode has no ghosts to fill), with `msubst_pskl_agree`
+  moving the subject off the junk rows and `msubst_pskl_subst_var` +
+  `subst_pskl_in_pskl_intro` collapsing the rename; the ⚠️ evar-fsetdec
+  wedge (this file's own warning) bit twice — pin every freshness in a
+  NAMED assert before rewriting.
+
+**New reusable pieces**: `a_sub_ty_tc_output`, `is_id_inc_dom_mono`,
+`a_inc_suffix_prefix_inv`, `msubst_lookup_app_notin`,
+`msubst_compose_id_app_agree`, the fill-inversion kit
+(`ad_refine_syn_f_all_inh_r_shape`, `pskl_to_bskl_inh_{all_inh,tophole}_inv`,
+`msubst_pskl_{all_syn,tophole}_inv`, `ptyp_to_pskl_{not_tophole,all_syn_inv}`),
+`ad_refine_syn_f_reassoc(_mid)`, `ad_refine_syn_f_fgrow`,
+`a_uskl_tyequiv_weaken_cons` (prop_sub_msubst_equiv.v).
+
+**Remaining in P7b**: Sub-ForallL (P6-L + Task 0's shield + the P5
+precision-substitution's `_gv` transport), then P7a and the bundle.
+**Then the user-directed CAMPAIGN: drop cofinite encoding from the WHOLE
+algo layer** (exists-fresh + rename lemmas; decl stays cofinite; no mixed
+encodings within a layer) — a_consis's three ∀-rows, `a_sub__forall_l`'s
+extract family, the solve/look/guess clusters, and the decorated mirrors.
+
+## 2026-07-31 — ⚠️ ENCODING FIX opening Sub-ForallR: `a_sub__forall_r` / `a_subtag__forall_r` are now EXISTS-FRESH (one Barendregt binder, junk suffix per run)
 
 `make coq` green from clean, axiom-free.  Found while scoping P7b's
 Sub-ForallR: both ForallR rules quantified the discarded junk suffix `Ξ`
