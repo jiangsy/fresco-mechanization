@@ -45,6 +45,7 @@ Require Import src.frost.algo.prop_pat_sub.        (* uskl_to_pskl_ptyp_to_uskl_
 Require Import src.frost.algo.prop_consis_sound.   (* uskl_to_pskl_open *)
 Require Import src.frost.algo.prop_look_complete_cstr. (* msubst_uskl_syn_open *)
 Require Import src.frost.algo.prop_consis_precise.  (* ftag_in_uskl_{open_var,ptyp_syn} *)
+Require Import src.frost.algo.prop_consis_complete. (* skl_tyequiv_consis_transport *)
 
 Set Implicit Arguments.
 
@@ -834,4 +835,243 @@ Proof.
     clear - Hb Ho1 Ho2; fsetdec.
   - (* __hole *) clear; fsetdec.
   - (* __holeg *) clear; fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  Sub-ForallL enabler (ii): the DECORATED consistency ≡ᵘ-subject        *)
+(*  transport.  Induction on the consistency derivation, inverting ≡ᵘ at  *)
+(*  each subject shape; ≡ᵘ is structural, so only the matching congruence *)
+(*  row and — wherever the subject is (convertibly) a monotype painting — *)
+(*  the [__mono] row can fire.  The [__mono] catch drops to the           *)
+(*  pskl-level [skl_tyequiv_consis_transport] through the painting        *)
+(*  roundtrip; it works at ANY tag context (the pskl transport is ∀Ψ).    *)
+(* ===================================================================== *)
+
+(** The uniform [__mono]-row catch. *)
+Lemma ad_pat_consis_mono_row_subject : forall Θ τ1 τ2 Ψ Q,
+  mono_ptyp τ1 -> mono_ptyp τ2 ->
+  a_wf_ptyp Θ τ1 -> a_wf_ptyp Θ τ2 ->
+  Θ ⊢ τ1 ≡ᵗ τ2 ->
+  a_wf_aenv Θ ->
+  Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn τ2) ∼ Q ->
+  Ψ ⨟ Θ ⊢ₛᵃ (ptyp_to_uskl_syn τ1) ∼ Q.
+Proof.
+  intros Θ τ1 τ2 Ψ Q Hm1 Hm2 Hw1 Hw2 Ht Hwf Hc.
+  assert (Heq : Θ ⊢ (ptyp_to_uskl_syn τ2) ≡ᵘ (ptyp_to_uskl_syn τ1))
+    by (apply a_uskl_tyequiv_sym;
+        apply a_uskl_tyequiv__mono; assumption).
+  pose proof (a_uskl_tyequiv_erase Heq) as He.
+  rewrite !uskl_to_pskl_ptyp_to_uskl_syn in He.
+  destruct (skl_tyequiv_consis_transport He Hwf (fun x b Hb => Hb))
+    as [Hd _].
+  rewrite <- pskl_to_uskl_ptyp.
+  apply Hd.
+  rewrite pskl_to_uskl_ptyp. exact Hc.
+Qed.
+
+Lemma ad_pat_consis_tyequiv_subject : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  a_wf_aenv Θ ->
+  forall T, Θ ⊢ T ≡ᵘ R ->
+  Ψ ⨟ Θ ⊢ₛᵃ T ∼ Q.
+Proof.
+  intros Ψ Θ R Q Hc; induction Hc; intros Hwf T Htyeq.
+  - (* __unit *)
+    inversion Htyeq; subst.
+    + (* __mono *)
+      lazymatch goal with
+      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_unit |- _ =>
+          destruct Hm2; cbn in He2; try discriminate He2
+      end.
+      match goal with
+      | Ht : Θ ⊢ _ ≡ᵗ ?t2 |- _ =>
+          eapply ad_pat_consis_mono_row_subject with (τ2 := t2)
+      end;
+      [ assumption | apply mono_ptyp__unit | assumption | assumption
+      | assumption | exact Hwf
+      | apply ad_pat_consis__unit; exact H ].
+    + (* __unit *)
+      apply ad_pat_consis__unit; exact H.
+  - (* __var *)
+    inversion Htyeq; subst.
+    + (* __mono *)
+      lazymatch goal with
+      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_var_f α |- _ =>
+          destruct Hm2; cbn in He2; try discriminate He2
+      end.
+      lazymatch goal with
+      | He2 : uskl_var_f _ = uskl_var_f α |- _ => injection He2 as ->
+      end.
+      match goal with
+      | Ht : Θ ⊢ _ ≡ᵗ ?t2 |- _ =>
+          eapply ad_pat_consis_mono_row_subject with (τ2 := t2)
+      end;
+      [ assumption | apply mono_ptyp__var | assumption | assumption
+      | assumption | exact Hwf
+      | apply ad_pat_consis__var; assumption ].
+    + (* __var *)
+      apply ad_pat_consis__var; assumption.
+  - (* __arrow *)
+    inversion Htyeq; subst.
+    + (* __mono *)
+      lazymatch goal with
+      | Hm2 : mono_ptyp ?t2,
+        He2 : ptyp_to_uskl_syn ?t2 = uskl_arrow R1 R2 |- _ =>
+          destruct Hm2; cbn in He2; try discriminate He2
+      end.
+      lazymatch goal with
+      | He2 : uskl_arrow _ _ = uskl_arrow R1 R2 |- _ =>
+          injection He2 as <- <-
+      end.
+      match goal with
+      | Ht : Θ ⊢ _ ≡ᵗ ?t2 |- _ =>
+          eapply ad_pat_consis_mono_row_subject with (τ2 := t2)
+      end;
+      [ assumption | apply mono_ptyp__arrow; assumption
+      | assumption | assumption | assumption | exact Hwf
+      | eapply ad_pat_consis__arrow; eassumption ].
+    + (* __arrow *)
+      eapply ad_pat_consis__arrow;
+        [ apply IHHc1; [ exact Hwf | assumption ]
+        | apply IHHc2; [ exact Hwf | assumption ]
+        | exact H ].
+  - (* __forall_inh_tagged *)
+    inversion Htyeq; subst;
+      [ lazymatch goal with
+        | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
+            destruct Hm2; cbn in He2; discriminate He2
+        end | ].
+    lazymatch goal with
+    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+        eapply ad_pat_consis__forall_inh_tagged
+          with (L := L `union` LL `union` dom Θ) (Ψ0 := Ψ0);
+        [ intros α Hα | exact H1 ];
+        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
+        | apply a_uskl_tyequiv_weaken_cons;
+          apply Hfam; clear - Hα; fsetdec ]
+    end.
+  - (* __forall_inh_untagged *)
+    inversion Htyeq; subst;
+      [ lazymatch goal with
+        | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
+            destruct Hm2; cbn in He2; discriminate He2
+        end | ].
+    lazymatch goal with
+    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+        eapply ad_pat_consis__forall_inh_untagged
+          with (L := L `union` LL `union` dom Θ);
+        intros α Hα;
+        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
+        | apply a_uskl_tyequiv_weaken_cons;
+          apply Hfam; clear - Hα; fsetdec ]
+    end.
+  - (* __forall_syn_tagged *)
+    inversion Htyeq; subst;
+      [ lazymatch goal with
+        | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
+            destruct Hm2; cbn in He2; discriminate He2
+        end | ].
+    lazymatch goal with
+    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+        eapply ad_pat_consis__forall_syn_tagged
+          with (L := L `union` LL `union` dom Θ);
+        intros α Hα;
+        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
+        | apply a_uskl_tyequiv_weaken_cons;
+          apply Hfam; clear - Hα; fsetdec ]
+    end.
+  - (* __forall_syn *)
+    inversion Htyeq; subst;
+      [ lazymatch goal with
+        | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
+            destruct Hm2; cbn in He2; discriminate He2
+        end | ].
+    lazymatch goal with
+    | Hfam : forall α, α `notin` ?LL -> _ ⊢ _ ≡ᵘ _ |- _ =>
+        eapply ad_pat_consis__forall_syn
+          with (L := L `union` LL `union` dom Θ);
+        intros α Hα;
+        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
+        | apply a_uskl_tyequiv_weaken_cons;
+          apply Hfam; clear - Hα; fsetdec ]
+    end.
+  - (* __ghostg *)
+    inversion Htyeq; subst.
+    + lazymatch goal with
+      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_holeg |- _ =>
+          destruct Hm2; cbn in He2; discriminate He2
+      end.
+    + apply ad_pat_consis__ghostg; exact H.
+  - (* __topholeg *)
+    inversion Htyeq; subst;
+      [ lazymatch goal with
+        | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
+            destruct Hm2; cbn in He2; discriminate He2
+        end | ].
+    apply ad_pat_consis__topholeg.
+    apply IHHc; [ exact Hwf | assumption ].
+  - (* __hole *)
+    inversion Htyeq; subst.
+    + lazymatch goal with
+      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_hole |- _ =>
+          destruct Hm2; cbn in He2; discriminate He2
+      end.
+    + apply ad_pat_consis__hole; assumption.
+  - (* __tophole *)
+    inversion Htyeq; subst;
+      [ lazymatch goal with
+        | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
+            destruct Hm2; cbn in He2; discriminate He2
+        end | ].
+    apply ad_pat_consis__tophole.
+    apply IHHc; [ exact Hwf | assumption ].
+  - (* __tophole_inh *)
+    inversion Htyeq; subst;
+      [ lazymatch goal with
+        | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
+            destruct Hm2; cbn in He2; discriminate He2
+        end | ].
+    lazymatch goal with
+    | Ht0 : Θ ⊢ ?T0 ≡ᵘ R |- _ =>
+        eapply ad_pat_consis__tophole_inh with (L := L `union` dom Θ);
+        intros α Hα;
+        eapply (H0 α ltac:(clear - Hα; fsetdec));
+        [ apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
+        | apply a_uskl_tyequiv_weaken_cons;
+          apply a_uskl_tyequiv__tophole; exact Ht0 ]
+    end.
+  - (* __tophole_drop *)
+    inversion Htyeq; subst;
+      [ lazymatch goal with
+        | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
+            destruct Hm2; cbn in He2; discriminate He2
+        end | ].
+    apply ad_pat_consis__tophole_drop.
+    apply IHHc; [ exact Hwf | assumption ].
+  - (* __flex_l *)
+    inversion Htyeq; subst.
+    + (* __mono : the partner painting is the variable itself *)
+      lazymatch goal with
+      | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = uskl_var_f α |- _ =>
+          destruct Hm2; cbn in He2; try discriminate He2
+      end.
+      lazymatch goal with
+      | He2 : uskl_var_f _ = uskl_var_f α |- _ => injection He2 as ->
+      end.
+      match goal with
+      | Ht : Θ ⊢ _ ≡ᵗ ?t2 |- _ =>
+          eapply ad_pat_consis_mono_row_subject with (τ2 := t2)
+      end;
+      [ assumption | apply mono_ptyp__var | assumption | assumption
+      | assumption | exact Hwf
+      | eapply ad_pat_consis__flex_l; [ exact H | exact Hc ] ].
+    + (* __var *)
+      eapply ad_pat_consis__flex_l; [ exact H | exact Hc ].
+  - (* __flex_r *)
+    eapply ad_pat_consis__flex_r; [ exact H | ].
+    apply IHHc; [ exact Hwf | exact Htyeq ].
 Qed.
