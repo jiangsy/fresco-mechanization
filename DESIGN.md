@@ -393,6 +393,42 @@ varies with the binder (`Ξf : atom -> aenv`) was built and rejected
 during the ForallR fix: it admits exotic name-dependent outputs and is
 unusable in inversions.  Exists-fresh is the decided replacement.
 
+#### The avoid-input principle (settled by cluster 1, 2026-08-01)
+
+Input-only conditions alone admit **junk derivations**: with
+scope-insensitive generators, a hole below a `∀` can generate the `∀`'s
+own recorded witness (`Ξ ∋ b0`), and the opening/renaming kit is FALSE on
+such derivations — no freshness demanded of a lemma's own variables can
+fix a collision between two names *inside* a derivation.  The resolution,
+still input-only:
+
+- **name-generating rules avoid `ftvar_in_aenv Θ`** (domain *plus*
+  payloads — an `α̂ ≔ τ` may mention the offending name), and
+- **binder witnesses enter the premise's context** (`(β~tvar) ++ Θ`),
+
+whence *generated names avoid enclosing witnesses* is *derivable*
+(`a_guess_mono_generated_fresh`), not assumed.  `Θ` on the paper's
+context-free judgments (guess, look, solve) is the relational rendering
+of the implementation's global fresh counter.  This is also the honest
+account of the `F` avoidance set — `F` supplies exactly this discipline
+externally — so internalizing it is what lets `F` be deprecated.
+
+Two consumer-visible consequences:
+
+- **Renaming lemmas constrain their TARGET, never their source**, rename
+  the context and the generated block too (`rename_aenv` — keys *and*
+  payloads), and induct on the **subject's size** (when the target *is*
+  the recorded witness, the derivation is renamed twice, and the second
+  rename applies to the first's result — no sub-derivation).
+- **Context-generic claims (`forall Θg, a_guess_mono Θg …`) are
+  retired** — artifacts of the previously-inert context slot.  They
+  become either the *transport* form (`dom Ξ` avoids `ftvar_in_aenv Θg`
+  → …) where construction and consumption contexts differ, or the
+  *L-bounded* form (`ftvar_in_aenv Θg [<=] L` → …) where a `∀` case must
+  pick its witness before the context is known — fixing the bound first
+  is what makes that case provable with no weakening lemma
+  (`a_guess_ty_witness`, prop_look_complete_extract.v).
+
 #### The cost, and the staging rule that pays it
 
 Exists-fresh takes binder choice AWAY from consumers: a proof that needs
