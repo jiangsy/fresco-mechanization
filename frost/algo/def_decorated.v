@@ -245,15 +245,20 @@ Inductive a_subtag :
        is unsound for a flexible subject [α̂] (all three witnesses — paper
        [FlexL]:1655, [a_consis__flex_l], impl [U-FlexL]:182 — output [α̂]). *)
     Θ0 ⊢ᵗ[ a_sub_mode_ty | mode_tc | B | Ψ ] T ⩽˙ B ⊣ Θ1
-| a_subtag__forall_r : forall L Ψ Θ0 Θ1 Ξ R B,                (* ForallR *)
+| a_subtag__forall_r : forall α Ψ Θ0 Θ1 Ξ R B,                (* ForallR *)
     a_suffix Ξ ->
     uniq (Ξ ++ Θ0) ->                                          (* Barendregt (prose-completion) *)
-    (forall α, α `notin` L ->
-       ((α ~ abind_tvar) ++ Θ0)
-         ⊢ᵗ[ a_sub_mode_ty | mode_tc
-           | (open_pskl_wrt_pskl B (pskl_var_f α)) | Ψ ]
-         R ⩽˙ (open_pskl_wrt_pskl B (pskl_var_f α))
-         ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
+    (* EXISTS-FRESH, mirroring [a_sub__forall_r]'s 2026-07-31 encoding fix:
+       the junk suffix Ξ may lawfully mention the binder, so it cannot be
+       one list shared by a cofinite family.  One sufficiently fresh α,
+       Barendregt-conditioned; consumers re-freshen via renaming. *)
+    α `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union`
+      ftvar_in_uskl R `union` ftvar_in_pskl B ->
+    ((α ~ abind_tvar) ++ Θ0)
+      ⊢ᵗ[ a_sub_mode_ty | mode_tc
+        | (open_pskl_wrt_pskl B (pskl_var_f α)) | Ψ ]
+      R ⩽˙ (open_pskl_wrt_pskl B (pskl_var_f α))
+      ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
     Θ0 ⊢ᵗ[ a_sub_mode_ty | mode_tc | (pskl_all_syn B) | Ψ ]
       R ⩽˙ (pskl_all_syn B) ⊣ Θ1
 | a_subtag__univ_ghost_r : forall Ψ Θ0 R,                     (* UnivGhostR *)

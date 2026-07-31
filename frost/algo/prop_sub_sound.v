@@ -532,24 +532,18 @@ Proof.
   - (* ForallR (TY) : open the binder, run the body, strip the trailing
        suffix, and re-attach the rigid head (crib: a_consistag_sound_aux's
        ForallInh; the fill re-attaches via the ghost-free strip+rename). *)
-    intros L Ψ Θ0 Θ1 Ξ R B Hsuf Huq Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
+    intros α Ψ Θ0 Θ1 Ξ R B Hsuf Huq Hfr Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
     assert (HgfB : pskl_ghost_free B)
       by (specialize (Hgf eq_refl);
           apply a_ty_mode_compat_tc_ghost_free in Hgf; simpl in Hgf; exact Hgf).
     simpl in HwfP0.
-    inversion HwfP0 as [ | | | L0 Θz Δz Pz Hbody Heqz | | ]; subst.
-    destruct (atom_fresh
-                (L `union` L0 `union` dom Θ0 `union` dom Θ1 `union` dom Ξ
-                   `union` ftvar_in_pskl B `union` ftvar_in_uskl R))
-      as [α Fr].
-    destruct (IH α ltac:(clear - Fr; fsetdec)
-                (ltac:(apply a_wf_aenv__tvar;
-                         [ clear - Fr; fsetdec | exact Hwf ]))
+    rewrite dom_app in Hfr.
+    (* the rule's own Barendregt-fresh binder replaces the old atom_fresh *)
+    destruct (IH (ltac:(apply a_wf_aenv__tvar;
+                          [ clear - Hfr; fsetdec | exact Hwf ]))
                 HlcS
-                (ltac:(eapply a_wf_pskl_delta_mono;
-                         [ apply (a_wf_pskl_reassoc
-                                    (Hbody α ltac:(clear - Fr; fsetdec)) α)
-                         | clear; fsetdec ]))
+                (ltac:(eapply a_wf_pskl_all_syn_open_tvar;
+                         [ exact HwfP0 | clear - Hfr; fsetdec ]))
                 (ltac:(eapply a_wf_pskl_weaken;
                          [ intros x b Hb; unfold binds in *;
                            simpl; right; exact Hb
@@ -612,13 +606,13 @@ Proof.
       clear - Hsc HαΘ1. fsetdec. }
     split.
     { eapply a_isub_strip_tvar_mid with (Ξ := Ξ);
-        [ exact HuqT | exact Huq | clear - Fr; fsetdec | exact Hle ]. }
+        [ exact HuqT | exact Huq | clear - Hfr; fsetdec | exact Hle ]. }
     split; [ exact Hwf1' | ].
     exists (bskl_all_inh (close_bskl_wrt_bskl α Qt)).
     split.
     { simpl. rewrite bskl_to_pskl_close. rewrite HeQt.
       rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-        [ reflexivity | clear - Fr; fsetdec ]. }
+        [ reflexivity | clear - Hfr; fsetdec ]. }
     split.
     + apply ad_pat_sub__forall_r
         with (L := dom Θ1 `union` singleton α `union` ftvar_in_pskl B
@@ -630,7 +624,7 @@ Proof.
       rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
       rewrite <- (subst_bskl_in_uskl_fresh_eq R (uskl_var_f α0) α)
         at 1;
-        [ | clear - Fr; fsetdec ].
+        [ | clear - Hfr; fsetdec ].
       change ((α0 ~ abind_tvar) ++ Θ1)
         with (nil ++ (α0 ~ abind_tvar) ++ Θ1).
       apply ad_pat_sub_rename_tvar;
@@ -648,7 +642,7 @@ Proof.
                  (bskl_var_f α0));
         [ | rewrite ftvar_in_bskl_close_bskl_wrt_bskl; clear; fsetdec ].
       rewrite open_bskl_wrt_bskl_close_bskl_wrt_bskl.
-      assert (Hfr0 : α `notin` ftvar_in_pskl B) by (clear - Fr; fsetdec).
+      assert (Hfr0 : α `notin` ftvar_in_pskl B) by (clear - Hfr; fsetdec).
       rewrite (subst_pskl_in_pskl_intro α B (pskl_var_f α0) Hfr0).
       rewrite <- subst_var_bskl_inh.
       eapply ad_refine_syn_f_delta_mono;

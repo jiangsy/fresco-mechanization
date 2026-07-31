@@ -840,13 +840,25 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     guarded_pskl A -> guarded_pskl B ->
     a_consis_chk Θ0 A B Θ1 ->
     a_sub a_sub_mode_ty mode_tc B Θ0 A B Θ1
-| a_sub__forall_r : forall L Θ0 Θ1 Ξ A B,                     (* ForallR *)
+| a_sub__forall_r : forall α Θ0 Θ1 Ξ A B,                     (* ForallR *)
     a_suffix Ξ ->
     uniq (Ξ ++ Θ0) ->                                          (* Barendregt: the run's new names avoid the input (prose-completion) *)
-    (forall α, α `notin` L ->
-       a_sub a_sub_mode_ty mode_tc (open_pskl_wrt_pskl B (pskl_var_f α))
-         ((α ~ abind_tvar) ++ Θ0) A (open_pskl_wrt_pskl B (pskl_var_f α))
-         (Ξ ++ (α ~ abind_tvar) ++ Θ1)) ->
+    (* ⚠️ EXISTS-FRESH, deliberately (encoding fix 2026-07-31).  The paper's
+       rule (full-algo-spec.tex:806) runs ONE fresh α and discards the junk
+       suffix Ξ ("anything in Ξ is not mentioned in the result") — and that
+       junk may legitimately MENTION α (an extraction guess eq-constrained
+       against the binder can be solved above it), so a COFINITE premise
+       sharing Ξ across the whole family is unsatisfiable in reachable
+       configurations and breaks completeness.  The freshness side condition
+       is the paper's Barendregt convention, prose-completed — the same
+       style as [a_sub_flex__solve]'s deposited names.  Consumers that need
+       the binder away from ambient data re-freshen via renaming lemmas
+       (cf. prop_decorate_key's [a_subtag_decoration] ForallR case). *)
+    α `notin` dom (Ξ ++ Θ0) `union` dom Θ1 `union`
+      ftvar_in_pskl A `union` ftvar_in_pskl B ->
+    a_sub a_sub_mode_ty mode_tc (open_pskl_wrt_pskl B (pskl_var_f α))
+      ((α ~ abind_tvar) ++ Θ0) A (open_pskl_wrt_pskl B (pskl_var_f α))
+      (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
     a_sub a_sub_mode_ty mode_tc (pskl_all_syn B) Θ0 A (pskl_all_syn B) Θ1
 | a_sub__univ_ghost_r : forall Θ0 P,                          (* UnivGhostR *)
     guarded_pskl P ->

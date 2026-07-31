@@ -74,6 +74,25 @@ Lemma pskl_to_uskl_not_topholeg : forall P ψ,
   pskl_to_uskl P <> uskl_topholeg ψ.
 Proof. destruct P; simpl; discriminate. Qed.
 
+(** Rename-composition for the decorated substitution: substituting at a
+    RE-FRESHENED variable composes back — [αv' ∉ ftv R0] and the value's
+    [αv]-freshness make the detour invisible.  (The exists-fresh ForallR
+    case below re-freshens its substitution variable away from the rule's
+    Barendregt binder.) *)
+Lemma subst_bskl_in_uskl_rename_compose : forall ψ αv αv' R0,
+  αv `notin` ftvar_in_uskl ψ ->
+  αv' `notin` ftvar_in_uskl R0 ->
+  αv <> αv' ->
+  subst_bskl_in_uskl ψ αv' (subst_bskl_in_uskl (uskl_var_f αv') αv R0)
+  = subst_bskl_in_uskl ψ αv R0.
+Proof.
+  intros ψ αv αv' R0 Hψ HR Hne.
+  rewrite subst_bskl_in_uskl_subst_bskl_in_uskl;
+    [ | exact Hψ | exact Hne ].
+  simpl. destruct_if; [ | congruence ].
+  rewrite (subst_bskl_in_uskl_fresh_eq R0); [ reflexivity | exact HR ].
+Qed.
+
 Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
   Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] R' ⩽˙ P ⊣ Θ1 ->
   forall R0 ψa Ψa αv Ξc 𝒞,
@@ -172,34 +191,127 @@ Proof.
       match goal with
       | Hg : guarded_uskl _ |- _ => simpl in Hg; inversion Hg
       end.
-  - (* ForallR : transport the look run under the opened target *)
-    destruct (a_looksub_open_target HD Hst) as [Lo HLo].
-    inversion HwfP0 as [ | | | LP ΘP ΔP BP HbodyP HeqP | | ]; subst.
-    eapply a_subtag__forall_r
-      with (L := L `union` Lo `union` LP `union` dom Θ0
-                 `union` singleton αv `union` ftvar_in_pskl B);
-      [ eassumption | eassumption | ].
-    intros β Hβ.
-    destruct (HLo β ltac:(clear - Hβ; fsetdec)) as [C' [HD' Hst']].
-    eapply (H2 β ltac:(clear - Hβ; fsetdec)).
-    { reflexivity. }
-    { exact HD'. }
-    { exact Hst'. }
-    { exact Hαψ. }
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                    B (pskl_var_f β)) as Hup.
-      simpl in HαP0, Hup. clear - HαP0 Hβ Hup. fsetdec. }
-    { exact Hlcψ. }
-    { exact HlcS0. }
-    { apply a_wf_aenv__tvar; [ clear - Hβ; fsetdec | exact Hwf ]. }
-    { eapply a_wf_pskl_delta_mono;
-        [ apply (a_wf_pskl_reassoc
-                   (HbodyP β ltac:(clear - Hβ; fsetdec)) β)
-        | clear; fsetdec ]. }
-    { eapply a_wf_pskl_weaken;
-        [ intros x b Hb; unfold binds; simpl; right; exact Hb
-        | exact HwfT ]. }
-    { intros Hsk; discriminate Hsk. }
+  - (* ForallR : transport the look run under the opened target.
+       EXISTS-FRESH (2026-07-31): the substitution variable αv is first
+       RE-FRESHENED to αv' away from the rule's Barendregt binder α (which
+       is in scope here — this is exactly what the single-binder encoding
+       requires of consumers): [a_looksub_rename_var] moves the look run to
+       αv', [a_looksub_open_target_at] opens its ∀-target AT α, and the
+       rename-composition collapses the detour in the conclusion. *)
+    match goal with
+    | Hn : ?a `notin` union (dom (_ ++ _)) _ |- _ => rename Hn into Hfr
+    end.
+    match goal with
+    | Hn : a_suffix _ |- _ => rename Hn into Hsuf
+    end.
+    match goal with
+    | Hn : uniq _ |- _ => rename Hn into Huq
+    end.
+    match goal with
+    | Hn : forall _ : uskl, _ |- _ => rename Hn into IHprem
+    end.
+    rewrite dom_app in Hfr.
+    (* the subject's ftv, read through the erasure *)
+    assert (HeqE : ⌊ R ⌋ˢ = subst_pskl_in_pskl ⌊ ψa ⌋ˢ αv ⌊ R0 ⌋ˢ)
+      by (rewrite HeqT; rewrite uskl_to_pskl_subst;
+          rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
+    assert (HαR0 : forall γ, γ `notin` ftvar_in_uskl R -> γ <> αv ->
+              γ `notin` ftvar_in_uskl R0).
+    { intros γ Hγ Hγv Hc.
+      apply Hγ. rewrite HeqT.
+      pose proof (ftvar_in_uskl_subst_bskl_in_uskl_lower
+                    R0 (pskl_to_uskl (uskl_to_pskl ψa)) αv) as Hlo.
+      clear - Hlo Hγv Hc. fsetdec. }
+    (* the re-freshened substitution variable *)
+    destruct (atom_fresh (singleton α `union` singleton αv
+                `union` ftvar_in_uskl R0 `union` ftvar_in_uskl ψa
+                `union` ftvar_in_pskl B)) as [αv' Hαv'].
+    assert (HeqT' : R = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
+                          αv' (subst_bskl_in_uskl (uskl_var_f αv') αv R0)).
+    { rewrite subst_bskl_in_uskl_rename_compose;
+        [ exact HeqT
+        | pose proof Hαψ as Hαψ0;
+          rewrite <- (ftvar_in_pskl_uskl_to_pskl ψa) in Hαψ0;
+          rewrite <- (ftvar_in_pskl_uskl_to_pskl (pskl_to_uskl ⌊ ψa ⌋ˢ));
+          rewrite uskl_to_pskl_pskl_to_uskl;
+          exact Hαψ0
+        | clear - Hαv'; fsetdec
+        | intros ->; clear - Hαv'; fsetdec ]. }
+    (* the look run, moved to αv' *)
+    assert (HD1 : ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                    ≼[ αv' , mode_tc ] (pskl_all_syn B) ⤳ Ξc ⨾ C).
+    { rewrite uskl_to_pskl_subst. simpl.
+      apply a_looksub_rename_var;
+        [ exact HD
+        | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Hαv'; fsetdec ]. }
+    (* …and opened at the rule's binder α *)
+    assert (HαR0' : α `notin`
+              ftvar_in_uskl (subst_bskl_in_uskl (uskl_var_f αv') αv R0)).
+    { pose proof (ftvar_in_uskl_subst_bskl_in_uskl_upper
+                    R0 (uskl_var_f αv') αv) as Hup.
+      simpl in Hup.
+      assert (HαRR : α `notin` ftvar_in_uskl R)
+        by (clear - Hfr; fsetdec).
+      assert (Hααv' : α <> αv') by (intros ->; clear - Hαv'; fsetdec).
+      destruct (α == αv) as [-> | Hααv].
+      - clear - Hup Hααv'. fsetdec.
+      - intro Hc.
+        assert (HinR0 : α `in` ftvar_in_uskl R0)
+          by (clear - Hup Hc Hααv'; fsetdec).
+        exact (HαR0 α HαRR Hααv HinR0). }
+    destruct (a_looksub_open_target_at HD1 Hst (β := α)
+                ltac:(intros ->; clear - Hαv'; fsetdec)
+                ltac:(pose proof (ftvar_in_pskl_uskl_to_pskl
+                        (subst_bskl_in_uskl (uskl_var_f αv') αv R0)) as Hepq;
+                      clear - HαR0' Hfr Hepq; fsetdec))
+      as [C' [HD2 Hst2]].
+    (* the transported premise, via the IH at the re-freshened variable *)
+    assert (Htrans :
+        ((α ~ abind_tvar) ++ Θ0)
+          ⊢ᵗ[ a_sub_mode_ty | mode_tc
+            | (open_pskl_wrt_pskl B (pskl_var_f α)) | (Ψ `union` Ψa) ]
+          (subst_bskl_in_uskl ψa αv'
+             (subst_bskl_in_uskl (uskl_var_f αv') αv R0))
+          ⩽˙ (open_pskl_wrt_pskl B (pskl_var_f α))
+          ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ1)).
+    { eapply IHprem.
+      { exact HeqT'. }
+      { exact HD2. }
+      { exact Hst2. }
+      { clear - Hαv'; fsetdec. }
+      { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                      B (pskl_var_f α)) as Hup.
+        simpl in Hup. clear - Hαv' Hup. fsetdec. }
+      { exact Hlcψ. }
+      { apply subst_bskl_in_uskl_lc_uskl;
+          [ exact HlcS0 | constructor ]. }
+      { apply a_wf_aenv__tvar; [ clear - Hfr; fsetdec | exact Hwf ]. }
+      { eapply a_wf_pskl_all_syn_open_tvar;
+          [ exact HwfP0 | clear - Hfr; fsetdec ]. }
+      { eapply a_wf_pskl_weaken;
+          [ intros x b Hb; unfold binds; simpl; right; exact Hb
+          | exact HwfT ]. }
+      { intros Hsk; discriminate Hsk. } }
+    (* collapse the detour in the transported subject *)
+    assert (Hcollapse : subst_bskl_in_uskl ψa αv'
+                          (subst_bskl_in_uskl (uskl_var_f αv') αv R0)
+                        = subst_bskl_in_uskl ψa αv R0).
+    { apply subst_bskl_in_uskl_rename_compose;
+        [ exact Hαψ
+        | clear - Hαv'; fsetdec
+        | intros ->; clear - Hαv'; fsetdec ]. }
+    rewrite Hcollapse in Htrans.
+    (* assemble the exists-fresh node at the same binder *)
+    eapply a_subtag__forall_r with (α := α) (Ξ := Ξ);
+      [ exact Hsuf | exact Huq | | exact Htrans ].
+    rewrite dom_app.
+    assert (Hfteq : ftvar_in_uskl (subst_bskl_in_uskl ψa αv R0)
+                    [=] ftvar_in_uskl R).
+    { rewrite <- (ftvar_in_pskl_uskl_to_pskl
+                    (subst_bskl_in_uskl ψa αv R0)).
+      rewrite <- (ftvar_in_pskl_uskl_to_pskl R).
+      rewrite uskl_to_pskl_subst. rewrite HeqE. reflexivity. }
+    clear - Hfr Hfteq. fsetdec.
   - (* UnivGhostR : P0 = ◇ solves nothing *)
     assert (Hemp : Ψa [=] empty)
       by (eapply a_looksub_hole_solvetag_empty; eauto).
@@ -2949,19 +3061,19 @@ Proof.
       [ apply pskl_to_uskl_guarded; exact HgA
       | exact HgB
       | exact (a_consis_decorate Hcns) ].
-  - (* ForallR *)
-    intros L Θ0 Θ1 Ξ A B Hsuf Huq Hfam IHfam Hwf HwfP0 HwfP Hmod Hgf0.
-    inversion HwfP0 as [ | | | LP ΘP ΔP BP HbodyP HeqP | | ]; subst.
-    eapply a_subtag__forall_r
-      with (L := L `union` LP `union` dom Θ0);
-      [ exact Hsuf | exact Huq | ].
-    intros α Hα.
-    eapply (IHfam α ltac:(clear - Hα; fsetdec)).
-    { apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]. }
-    { eapply a_wf_pskl_delta_mono;
-        [ apply (a_wf_pskl_reassoc
-                   (HbodyP α ltac:(clear - Hα; fsetdec)) α)
-        | clear; fsetdec ]. }
+  - (* ForallR (exists-fresh 2026-07-31: the rule's own binder serves) *)
+    intros α Θ0 Θ1 Ξ A B Hsuf Huq Hfr Hprem IHprem Hwf HwfP0 HwfP Hmod Hgf0.
+    rewrite dom_app in Hfr.
+    eapply a_subtag__forall_r with (α := α) (Ξ := Ξ);
+      [ exact Hsuf | exact Huq
+      | rewrite dom_app;
+        pose proof (ftvar_in_uskl_pskl A) as Hfa;
+        clear - Hfr Hfa; fsetdec
+      | ].
+    eapply IHprem.
+    { apply a_wf_aenv__tvar; [ clear - Hfr; fsetdec | exact Hwf ]. }
+    { eapply a_wf_pskl_all_syn_open_tvar;
+        [ exact HwfP0 | clear - Hfr; fsetdec ]. }
     { eapply a_wf_pskl_weaken;
         [ intros x b Hb; unfold binds; simpl; right; exact Hb
         | exact HwfP ]. }

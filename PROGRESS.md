@@ -78,7 +78,77 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⭐ Sub-Arrow CLOSED: `a_sub_complete_arrow` Qed + axiom-free — SIX of P7b's seven rows done
+## 2026-07-31 (latest) — ⚠️ ENCODING FIX opening Sub-ForallR: `a_sub__forall_r` / `a_subtag__forall_r` are now EXISTS-FRESH (one Barendregt binder, junk suffix per run)
+
+`make coq` green from clean, axiom-free.  Found while scoping P7b's
+Sub-ForallR: both ForallR rules quantified the discarded junk suffix `Ξ`
+OUTSIDE their cofinite family — demanding ONE list shared by every fresh
+binder α.  That is not the paper's rule and it BREAKS COMPLETENESS: the
+paper (full-algo-spec.tex:806) runs ONE fresh α and discards Ξ ("anything
+in Ξ is not mentioned in the result"), and the junk may lawfully MENTION
+α — an extraction guess created by `a_lookeq__flex_r` (RHS a flexible) can
+be eq-constrained against the binder and solved above it — so no shared Ξ
+exists.  Soundness never noticed (it only CONSUMES the rule).
+
+**The fix (user-directed)**: EXISTS-FRESH — the rule takes ONE binder α
+with the Barendregt freshness side condition
+`α ∉ dom (Ξ ++ Θ0) ∪ dom Θ1 ∪ ftv A ∪ ftv B` (prose-completion; the same
+style as `a_sub_flex__solve`'s deposited names) and a single premise run at
+`Ξ ++ (α~tvar) ++ Θ1`.  Completeness then needs NO renaming machinery: the
+IH's one run IS the premise.  (Two richer encodings were built and
+discarded on the way: a function-valued `Ξf : atom -> aenv` inside the
+cofinite family — rejected as exotic-name-dangerous — and a
+binder-opened template suffix; both survive only in this log entry.)
+
+**Consumers of the cofinite family, reworked** (the cost of exists-fresh is
+that consumers no longer choose the binder):
+
+- `prop_sub_sound`'s ForallR already worked from ONE fresh instance — its
+  `atom_fresh` is gone, the rule's α serves, and `α ∉ dom Ξ/dom Θ1` now
+  come from the output's `uniq`.
+- `a_subtag_psi_cong`, `a_subtag_decoration_var`, the decoration bundle's
+  ForallR: single-instance maps at the rule's own α; the ∀-body wf that was
+  read off the cofinite wf inversion now comes from the new helper
+  `a_wf_pskl_all_syn_open_tvar` (prop_consis_sound.v: cofinite instance +
+  reassoc + `a_wf_pskl_rename_tvar`).
+- **`a_subtag_decoration`'s ForallR is the instructive one**: it pushes a
+  substitution `[ψa/αv]` through the derivation and needs every binder ≠ αv
+  — binder freedom exists-fresh does NOT give.  Resolution: the case
+  RE-FRESHENS ITS OWN αv away from the now-in-scope α — the look run moves
+  by `a_looksub_rename_var` (already existed), its ∀-target opens AT α by
+  the NEW `a_looksub_open_target_at` (given-opener form of
+  `a_looksub_open_target`; its LS-ForallR case renames ONE representative
+  with `a_looksub_lookeq_rename_tvar`, which keeps the shared 𝒞 because
+  the representative avoids `ftv 𝒞`), and the detour collapses by the NEW
+  `subst_bskl_in_uskl_rename_compose`.  This per-case re-freshening is the
+  exists-fresh discipline's standing recipe for substitution transports.
+- `a_looksub_lookeq_rename_tvar` (+ `ftv_subst_var_keep`,
+  `subst_var_pskl_neq_var`) MOVED from prop_look_complete_cstr.v to
+  prop_looksub.v — the decoration layer now needs it below itself.
+- test_examples' three ForallR constructions pick a concrete `atom_fresh`.
+
+**Standing decision**: the user wants cofinite encodings dropped from the
+ALGORITHMIC layer wholesale (exists-fresh + rename lemmas everywhere);
+that big-bang is a SEPARATE campaign — this fix converts only the two
+ForallR rules, which is what P7b needs.
+
+**Remaining for Sub-ForallR** (scoped, in order): (i) output decomposition
+`Θo = Ξ ++ (α~tvar) ++ Θ1` via rigid-spine preservation + first-nonflex
+split; (ii) `(TY,TC) ⇒ output = P0` (syntactic — Check/ForallR return P0,
+ForallL passes through, Arrow/FlexMono are FN-mode); (iii) fill inversion
+at `bskl_all_inh` pinning `P0 = ∀α.P0'` (mirror
+`ad_refine_pskl_f_tophole_r_shape`'s flex_l-kill); (iv) IH transports (wf
+reassoc ✓ kit, κ cons-tvar via `a_inc__tvar (Ξ:=nil)`, NEW ≡ᵘ cons-tvar
+weakening, fill Δ→Θ move — syn mirror of `ad_refine_pskl_f_reassoc`);
+(v) the rule's freshness conditions (α picked fresh; dom-parts from the
+run's uniq, `α ∉ ftv Θ1-images` NOT needed — no family to share);
+(vi) package: peel ζ's Ξ-flex rows (new `a_inc` source-flex-prefix
+inversion), then `a_inc_tvar_inv` / `a_inc_equiv_tvar_inv` exactly as
+consistency's ForallInh (prop_consis_complete.v:7095-7118), and the
+precision re-binds the quantifier via the `ad_refine_syn_f_rename` route
+(same file :7140-7179).
+
+## 2026-07-31 — ⭐ Sub-Arrow CLOSED: `a_sub_complete_arrow` Qed + axiom-free — SIX of P7b's seven rows done
 
 `make coq` green from clean, zero admits.  The row landed on essentially the
 first assembly pass because the blueprint — the consistency Arrow case at

@@ -220,11 +220,13 @@ Lemma sub_sigid_check_sigid : forall Θ,
         (ptyp_to_pskl σ_id) (ptyp_to_pskl σ_id) Θ.
 Proof.
   intros Θ Hu. unfold σ_id; simpl ptyp_to_pskl.
-  apply a_sub__forall_r with (L := dom Θ) (Ξ := nil)
+  destruct (atom_fresh (dom Θ)) as [α Hα].
+  apply a_sub__forall_r with (α := α) (Ξ := nil)
     (B := pskl_arrow (pskl_var_b 0) (pskl_var_b 0)).
   { constructor. }
   { crush_uniq. }
-  intros α Hα. simpl_open.
+  { simpl. simpl in Hα. clear - Hα. fsetdec. }
+  simpl_open.
   eapply a_sub__forall_l with (L := {}) (Ξ := nil) (P1 := pskl_var_f α).
   - discriminate.
   - left. crush_lc.
@@ -723,12 +725,16 @@ Proof.
         apply a_sub__arrow with (Θ1 := (x ~ abind_var_typ σ_id) ++ Θlib).
         { apply consis_sigid_tophole. }
         (* codomain: skel σ_prodIB ⩽[TC; skel σ_prodIB] itself *)
-        apply a_sub__forall_r with (L := dom Θlib `union` singleton aInt `union` singleton fa `union` singleton fb `union` singleton x) (Ξ := nil)
+        destruct (atom_fresh (dom Θlib `union` singleton aInt
+                    `union` singleton aBool `union` singleton fa
+                    `union` singleton fb `union` singleton x)) as [α Hα].
+        apply a_sub__forall_r with (α := α) (Ξ := nil)
           (B := ptyp_to_pskl
                   (ptyp_arrow (ptyp_arrow tInt (ptyp_arrow tBool b0)) b0)).
         { constructor. }
         { crush_uniq. }
-        intros α Hα. simpl_open.
+        { simpl. simpl in Hα. clear - Hα. fsetdec. }
+        simpl_open.
         eapply a_sub__forall_l
           with (L := singleton aInt `union` singleton aBool
                      `union` singleton α)
@@ -774,14 +780,15 @@ Proof.
       * (* x ⦂[TC; skel σ_id]  σ_id *)
         eapply a_typing__var with (B := σ_id); [ crush_binds | ].
         unfold σ_id; simpl ptyp_to_pskl.
-        apply a_sub__forall_r with
-          (L := dom Θlib `union` singleton aInt `union` singleton aBool
-                `union` singleton fa `union` singleton fb
-                `union` singleton x) (Ξ := nil)
+        destruct (atom_fresh (dom Θlib `union` singleton aInt
+                    `union` singleton aBool `union` singleton fa
+                    `union` singleton fb `union` singleton x)) as [α Hα].
+        apply a_sub__forall_r with (α := α) (Ξ := nil)
           (B := pskl_arrow (pskl_var_b 0) (pskl_var_b 0)).
         { constructor. }
         { crush_uniq. }
-        intros α Hα. simpl_open.
+        { simpl. simpl in Hα. clear - Hα. fsetdec. }
+        simpl_open.
         eapply a_sub__forall_l with (L := {}) (Ξ := nil)
           (P1 := pskl_var_f α).
         { discriminate. }

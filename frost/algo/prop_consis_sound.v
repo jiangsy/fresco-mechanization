@@ -1749,6 +1749,30 @@ Proof.
     fsetdec.
 Qed.
 
+(** Opening a ∀-body at a GIVEN sufficiently fresh rigid α — the exists-fresh
+    form of the ∀-wf inversion (the cofinite rule delivers instances only off
+    its own [L], which an exists-fresh consumer does not control).  Pick a
+    cofinite instance, reassociate its binder into Θ, and rename it to α. *)
+Lemma a_wf_pskl_all_syn_open_tvar : forall Θ Δ B α,
+  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn B) ->
+  α `notin` dom Θ `union` ftvar_in_pskl B `union` Δ ->
+  ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ₚₛᵃ (open_pskl_wrt_pskl B (pskl_var_f α)).
+Proof.
+  intros Θ Δ B α Hwf Hα.
+  inversion Hwf as [ | | | L Θz Δz Bz Hbody Heq | | ]; subst.
+  destruct (atom_fresh (L `union` dom Θ `union` ftvar_in_pskl B
+                          `union` singleton α `union` Δ)) as [β Hβ].
+  assert (H1 : ((β ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ₚₛᵃ
+                 (open_pskl_wrt_pskl B (pskl_var_f β))).
+  { eapply a_wf_pskl_delta_mono;
+      [ apply (a_wf_pskl_reassoc (Hbody β ltac:(clear - Hβ; fsetdec)) β)
+      | clear - Hβ; fsetdec ]. }
+  rewrite (subst_pskl_in_pskl_intro β B (pskl_var_f α)
+             ltac:(clear - Hβ; fsetdec)).
+  apply (@a_wf_pskl_rename_tvar nil β Θ Δ _ α);
+    [ simpl; exact H1 | clear - Hβ; fsetdec ].
+Qed.
+
 (** Rigid membership of the two auxiliary contexts extends when a fresh
     binder is opened. *)
 Lemma delta_rigids_open : forall Δ Θ α,
