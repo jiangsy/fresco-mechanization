@@ -121,7 +121,30 @@ faithful re-encoding exists (e.g. `__skip` keeping `β` in place
 instead of walking it out — but that changes the walk's measure and
 the paper's rule shape).
 
-**USER DECISION (same day): route (A).**  Kit map, scoped:
+**USER DECISION SUPERSEDED (same day, second directive): DEFER P7a's
+freshness to a UNIFORM ENCODING CAMPAIGN.**  The observation: the
+codebase currently has FOUR freshness disciplines side by side —
+(i) the `F` avoidance-set parameter threaded through the consis
+mutual (`a_consis`/`a_unify`/`a_assign`'s first index; consumed in
+exactly ONE rule, `a_assign__solve_m`, where the guessed `βs` avoid
+`F ∪ {α} ∪ dom (Ξ ++ Θ0)`; pure pass-through everywhere else),
+(ii) prose-completed Barendregt `∉ dom Θ1` premises on the walk's
+re-attachments, (iii) exists-fresh with side conditions (ForallR
+after the encoding fix, Flex-Solve's deposits), (iv) cofinite
+quantification elsewhere.  That is non-canonical.  The directive:
+ONE canonical treatment of rule encoding, executed as a single
+deliberate pass together with the standing de-cofinite campaign —
+and the `F` avoidance set is to be DEPRECATED in that pass (its one
+real consumer, Solve-M's fresh `βs`, moves to the canonical
+discipline).  P7a (and hence the bundle's flex half) WAITS for that
+campaign; do not build the rename kit piecemeal now.
+
+**Still actionable before the campaign**: the bundle's MAIN half —
+the P7b dispatcher over the join's last rule (all row lemmas are
+Qed) — can be built with the flex half as an explicit hypothesis,
+plus K0 (the consis converse-dom lemma) as a standalone fact if
+useful.  The kit map below is RETAINED as the campaign's
+reference, not as current work:
 
 - **K0** (small, first): the CONVERSE dom lemma for the consis mutual
   — `dom Θ1 [<=] dom (Ξ ++ Θ0)`-shaped (`a_assign_unify_consis`
