@@ -78,7 +78,51 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — Sub-ForallL item 5 RE-SCOPED: "erase the ≡ᵘ slack" needs a WHOLE-JOIN transport (new work-list) + first ≡ᵘ enablers landed
+## 2026-07-31 (latest) — ⭐ Sub-ForallL enabler (iii) CLOSED: `ad_pat_sub_g_tyequiv_subject` Qed — ALL row enablers done, only the row + bundle remain
+
+The ≡ᵘ-slack eraser landed (end of prop_sub_msubst_equiv.v), in three
+parts, all Qed + axiom-free, `make coq` green:
+
+- **Part 1**: `a_tyequiv_mono_iff` / `a_tyequiv_mono` (under a wf
+  context ≡ᵗ preserves monotype-hood — proven as a BICONDITIONAL, the
+  only way the `sym` case closes), `flex_def_paint_tyequiv`, and
+  `ad_pat_sub_g_unfold_flex` (the flex UNFOLD twin of `fold_flex`,
+  same fuel; consistency premises ride enabler (ii); `FlexMono` IS the
+  unfolding).
+- **Part 2**: `ad_pat_consis_paint_skl_transport` (consistency at a
+  painting subject moves along ≡ᵗ for ANY types, via `a_tyequiv_pskl`
+  + `skl_tyequiv_consis_transport` — no monotype restriction) and
+  `ad_pat_sub_g_paint_tyequiv_subject` — the join at a MONOTYPE
+  painting subject moves both ways along ≡ᵗ.  Architecture as planned:
+  outer induction on ≡ᵗ (sym/trans structural, `flex_def` =
+  fold/unfold, `__all` VACUOUS by `a_tyequiv_mono`); the arrow case
+  runs one inner induction on the join per direction (generic-subject
+  rows `__infer`/`__check`/`__forall_r`/`__univ_ghost_r` survive the
+  subject-equation discriminate and rebuild via the paint-skl
+  transport; `__forall_r` recurses through the inner IH with the
+  context-monotone parameters reverted into the motive).
+- **Part 3**: `ad_pat_sub_g_tyequiv_subject` — the join transports to
+  ANY ≡ᵘ-related subject, fuel-preserving.  Leaf rows need NO ≡ᵘ
+  inversion (enabler (ii) takes any related subject; guardedness rides
+  `a_uskl_tyequiv_guarded` on the sym'd slack); congruence rows invert
+  structurally, `__mono` endings reconstitute the node and delegate to
+  part 2; the ForallL rows instantiate the inverted body family at the
+  row's own ψ (`a_uskl_tyequiv_open`) and carry the `Ψ'`-tag
+  conditions across by `a_uskl_tyequiv_ftag` (enabler (i)).
+
+Coq gotchas collected: base-Θ of the paint-skl transport is invisible
+to the conclusion — pin `with (Θ := Θ)` or `assumption` dies on the
+evar; the inner inductions' `try (cbn in HeqS; discriminate)` ALSO
+kills `__flex_mono` (its subject is a var, an arrow-painting is not) —
+count surviving branches, don't assume; the transported subject cannot
+be named `T` (the `__check` rule binder).
+
+**What remains for Sub-ForallL**: ONLY item 5's row assembly
+(`a_sub_complete_forall_l`, per the row plan in the re-scoping entry
+below — every interface it consumes is now Qed) and item 6 (P7a +
+bundle).
+
+## 2026-07-31 — Sub-ForallL item 5 RE-SCOPED: "erase the ≡ᵘ slack" needs a WHOLE-JOIN transport (new work-list) + first ≡ᵘ enablers landed
 
 Reading the row against the Qed interfaces exposed TWO gaps the
 scoping entry's assembly sketch glossed over:
