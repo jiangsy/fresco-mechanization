@@ -78,7 +78,61 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⭐ Sub-ForallL enabler (iii) CLOSED: `ad_pat_sub_g_tyequiv_subject` Qed — ALL row enablers done, only the row + bundle remain
+## 2026-07-31 (latest) — ⭐⭐⭐ Sub-ForallL CLOSED: `a_sub_complete_forall_l_tagged` / `_untagged` Qed — ALL SEVEN P7b ROWS DONE; only P7a + the bundle remain
+
+Both variants of P7b's last row landed (end of
+prop_sub_complete_thm.v), Qed + axiom-free, `make coq` green.  The
+assembly follows the paper :3374-3453 exactly as mapped, with these
+session discoveries folded in:
+
+- **The motive gained the external wf-Q premise**
+  (`Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q)`, in `sub_complete_concl` AND
+  `sub_flex_complete_concl`): P5-gv's `Hwfq` cannot be derived from
+  the fill (refinement does not transport wf — the standing doctrine),
+  so it is the paper's external-wf side condition surfaced on the
+  theorem.  Mechanical re-close of the 7 existing rows: Arrow inverts
+  the arrow's wf for its codomain IH; ForallR moves the ∀-body's wf
+  down with `a_wf_pskl_delta_to_tvar` (its freshness pick gains `Lw`).
+- **P6-L now returns `a_decls Ξ`** (the pieces were already in its
+  proof: `all_flex_mono_a_decls` on the look's and the guess's
+  blocks) — needed by the package's Ξ-flex-block peels.
+- **The package avoids upstream peel surgery**: the peel lemmas only
+  return `dom`-facts, but the tails are identified by LENGTH —
+  `a_inc_same_length` (two increases from the same source have
+  equally long metasubstitutions; the walk is positional) +
+  `app_inj_tail_length`, both local.  `wb = κf` by `is_id_inc_unique`
+  after `a_inc_peel_suffix`; `κ1b = κ` and `κ2b = ζ'∘κf` by the
+  length identification on `a_inc_equiv_inc_peel_suffix`'s splits.
+- **The TY ghost-freeness obligation** (P5-gv's `Hgf` at the swapped
+  subject): a new row hypothesis carries the SUBJECT's TY
+  ghost-freeness (`NM = TY → ghost_free (all-form Rj)` — the bundle
+  threads it; at the headline the TY subject is the decorated type,
+  ghost-free by sort); the INSTANTIATION's side comes from the
+  TY-guess being a TYPE (`a_guess__ty` outputs `ptyp_to_pskl A`) via
+  the new `pskl_to_uskl_paint_ghost_free` (induction on the
+  PAINTING's lc with the type generalized — the lc_ptyp-based twin
+  can't recurse through the binder).
+- New leaf plumbing: `msubst_uskl_syn_pskl_to_uskl`,
+  `ftag_in_uskl_pskl_to_uskl`, `a_wf_pskl_all_open`
+  (`subst_pskl_in_pskl_intro` + `a_wf_pskl_subst_tvar`).
+
+Coq gotchas (new): `a_wf_pskl_ftv_dom`'s `[<=]` lands UNFOLDED
+pointwise after `pose` — fsetdec cannot consume the ∀-form, use
+`apply (a_wf_pskl_ftv_dom H)`; `cbn` on erasures/paintings unfolds
+the fixpoints into raw `fix` terms that later `match goal`/`rewrite`
+patterns miss — prefer `change` with the constant forms;
+`map_app`/`map_length` need the `List.` qualifier here;
+`a_extract_family_of_instance` and both peels need `@`-application
+(the handover's Set-Implicit-Arguments gotcha).
+
+**Remaining for P7**: item 6 only — P7a (`sub_flex_complete_concl`'s
+rows) and the lex(fuel, |Θ0|) bundle, which dispatches the join's last
+rule to the row lemmas (ForallR before ForallL when `P0` is a ∀ — the
+H3 WLOG), supplies the shield from the closed TASK-0 cases, and
+threads the two new row hypotheses (shield, TY-subject
+ghost-freeness) plus the motive's new wf-Q premise to the headline.
+
+## 2026-07-31 — ⭐ Sub-ForallL enabler (iii) CLOSED: `ad_pat_sub_g_tyequiv_subject` Qed — ALL row enablers done, only the row + bundle remain
 
 The ≡ᵘ-slack eraser landed (end of prop_sub_msubst_equiv.v), in three
 parts, all Qed + axiom-free, `make coq` green:

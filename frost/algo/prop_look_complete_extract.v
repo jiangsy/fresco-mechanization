@@ -1174,6 +1174,7 @@ Theorem a_extract_complete_gen :
     (Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa) /\      (* look succeeds *)
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\                 (* Θ0,Ξ ⊢ Pa *)
     a_wf_aenv (Ξ ++ Θ0) /\
+    a_decls Ξ /\                                 (* Ξ is a flex-decl block *)
     keys κa = keys Ξ /\
     (κa ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ /\                 (* inc[θa]{Θ0,Ξ}{Θ} *)
     a_inc_equiv Θ0 κ κ Θ /\                      (* inc[θ≡θa]{Θ0}{Θ} *)
@@ -1246,6 +1247,8 @@ Proof.
         [ exact HfmΞc | exact HuqAll | ].
       apply (@a_wf_aenv_flex_prefix Ξ' Θ0);
         [ exact HfmΞ' | clear - HuqAll; solve_uniq | exact HwfΘ0 ]. }
+    split.
+    { apply all_flex_mono_a_decls. apply all_flex_mono_app; assumption. }
     split; [ rewrite ! keys_app; rewrite Hkeysc, Hkeys'; reflexivity | ].
     split.
     { (* the goal IS [(κa ++ κb) ∷ (Ξ ++ Θ0) ⊑ Θ] on the nose — do NOT
@@ -1278,6 +1281,7 @@ Proof.
     rewrite ! app_nil_r.
     split; [ exact HwfPa | ].
     split; [ exact HwfΞc | ].
+    split; [ apply all_flex_mono_a_decls; exact HfmΞc | ].
     split; [ exact Hkeysc | ].
     split; [ exact Hincc | ].
     split; [ exact Heqv | ].
@@ -1331,6 +1335,7 @@ Corollary a_extract_complete :
     (Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa) /\
     (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
     a_wf_aenv (Ξ ++ Θ0) /\
+    a_decls Ξ /\
     keys κa = keys Ξ /\
     (κa ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
