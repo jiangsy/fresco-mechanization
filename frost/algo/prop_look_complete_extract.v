@@ -1143,7 +1143,7 @@ Qed.
     P6-Cs / P6-Ss ([a_lookeq_solve_complete_gen] / [a_lookeq_solve_complete],
     [a_looksub_solve_complete_gen] / [a_looksub_solve_complete]). *)
 Theorem a_extract_complete_gen :
-  forall n NM M Θ0 Θ κ Δ Ψa ψa Q P P0 R' α,
+  forall n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α,
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
@@ -1159,8 +1159,13 @@ Theorem a_extract_complete_gen :
   Θ ⨟ Δ ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->                     (* the paper's wf premise for ψa *)
   delta_def_fresh Δ Θ ->
   sub_shield Θ0 Ψa empty P0 ψa ->
+  (* the join's AMBIENT tag context: the paper's [Ψ,Ψa] — P6-Ss's range
+     parameter, surfaced (2026-07-31) for P7b's Sub-ForallL, whose row
+     premise runs at [Ψ ∪ Ψa] with the ambient [Ψ ⊆ ftag R'] *)
+  Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
+  Ψa [<=] Ψsub ->
   (* subject = (κR')[ψa/α], EXACTLY the paper's form *)
-  ad_pat_sub_g n NM M Ψa Θ
+  ad_pat_sub_g n NM M Ψsub Θ
     (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   Θ ⨟ empty ⊢ₚₛᵃ
     (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
@@ -1174,18 +1179,19 @@ Theorem a_extract_complete_gen :
     a_inc_equiv Θ0 κ κ Θ /\                      (* inc[θ≡θa]{Θ0}{Θ} *)
     Θ ⨟ Δ ⊢ₚᵣᵃ (msubst_pskl (κa ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ.
 Proof.
-  intros n NM M Θ0 Θ κ Δ Ψa ψa Q P P0 R' α.
+  intros n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
-         Htags Hdisj HΔψ Hwfψ Hdfresh Hshield Hsubty HwfSubj Hrefine.
+         Htags Hdisj HΔψ Hwfψ Hdfresh Hshield HΨsubU HΨsubL Hsubty
+         HwfSubj Hrefine.
   (* ---- (a)-(f) : P6-Ss at [Pi := □], [Ψi := ∅] ---- *)
-  destruct (@a_looksub_solve_complete n NM M Θ0 Θ κ Δ Ψa empty Ψa Ψa ψa Q
+  destruct (@a_looksub_solve_complete n NM M Θ0 Θ κ Δ Ψa empty Ψa Ψsub ψa Q
               P P0 pskl_hole R' α
               HwfΘ HwfΘ0 HwfP0 ltac:(apply a_wf_pskl__hole)
               HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR Htags Hdisj
               ltac:(clear; fsetdec) Hdfresh Hshield
               ltac:(cbn [msubst_pskl];
                     apply ad_ppre__hole; [ clear; fsetdec | exact HΔψ ])
-              ltac:(clear; fsetdec) ltac:(clear; fsetdec)
+              HΨsubU HΨsubL
               Hsubty HwfSubj Hrefine)
     as (𝒞 & Ξc & Pa & κc & Hlook & Hsolve & HwfPa & HwfΞc & HαΞc & Hkeysc
         & HForc & Hincc & Heqv & Hκcfresh & Hprec & _).
@@ -1333,14 +1339,16 @@ Proof.
   intros n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
          Htags Hdisj Hwfψ Hshield Hsubty HwfSubj Hrefine.
-  eapply a_extract_complete_gen;
+  eapply a_extract_complete_gen with (Ψsub := Ψa);
     [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HmodSK | exact HmodTY
     | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeR
     | exact HlcR | exact Htags | exact Hdisj
     | clear; fsetdec                                 (* ∅ ∩ ftv ψa = ∅ *)
     | exact Hwfψ
     | intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec (* delta_def_fresh ∅ Θ *)
-    | exact Hshield | exact Hsubty | exact HwfSubj | exact Hrefine ].
+    | exact Hshield
+    | clear; fsetdec | clear; fsetdec                (* Ψsub := Ψa *)
+    | exact Hsubty | exact HwfSubj | exact Hrefine ].
 Qed.
 
 Print Assumptions a_extract_complete.
