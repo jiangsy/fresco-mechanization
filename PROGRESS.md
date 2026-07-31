@@ -125,6 +125,35 @@ fresh sighting of the evar-fsetdec wedge: the Δ = ∅ corollary's bare
 and the range obligations' `clear; fsetdec` WEDGED; pin `with
 (Ψsub := Ψa)`.
 
+**Enablers (i) and (ii) LANDED same session** (commits 7d4ecc4,
+f4463ea): `a_uskl_tyequiv_ftag` and `ad_pat_consis_tyequiv_subject`
+(+ its `__mono` catch `ad_pat_consis_mono_row_subject`), both in
+prop_sub_msubst_equiv.v.  Gotcha recorded in the (ii) commit:
+inversion does NOT discriminate the `__mono` branch by itself even at
+∀/∀◇-headed subjects — the painting equation only refutes after
+destructing `mono_ptyp` — so a uniform destruct-discriminate branch
+precedes every congruence case.
+
+**Enabler (iii) REFINED (scope cut found while starting it)**: the row
+does NOT need the `_gv` join transport.  P6-L's premise is the PLAIN
+`ad_pat_sub_g` (forget of the row's `_gv` join), and item 3's subject
+swap runs on the ORIGINAL `_gv` join at `open Rj ψa` — untouched by the
+slack; only P6-L sees the exact-κ-image subject.  So (iii) =
+`ad_pat_sub_g_tyequiv_subject` (12 rows, fuel-preserving, no
+refinement leaves — the consistency premises transport by (ii)).  Its
+one hard branch is `__mono` at a painting-shaped subject (reachable at
+`__arrow`/`__flex_mono`/`__infer`-with-painting nodes): delegate to a
+helper `ad_pat_sub_g_paint_tyequiv_subject`
+(`Θ ⊢ τ1 ≡ᵗ τ2 → _g at syn τ2 ∼ Q → _g at syn τ1 ∼ Q`) proven by
+OUTER induction on the ≡ᵗ derivation — the same architecture as
+`skl_tyequiv_consis_transport` (refl/sym/trans structural; arrow-cong
+inverts the join at an arrow painting, where `__flex_mono` cannot fire
+and the consis leaves use (ii)'s catch; the ≡ᵗ flex-unfold rows
+rebuild via `ad_pat_sub_g__flex_mono`, whose `mode_fn` guard matches
+the Arrow row's mode).  NB the top-level slack instance is ∀-headed,
+where `__mono` cannot conclude — the branch only matters inside the
+induction.
+
 Row plan after the enablers (per the paper :3374-3453): erase the
 slack with (iii) at the ∀-subject; invert the join's ForallL row;
 P6-L (Ψsub-general) at the ψa-form; `uskl_precise_of_precise` + item
