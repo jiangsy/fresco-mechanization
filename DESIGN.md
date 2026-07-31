@@ -296,12 +296,103 @@ to B.4 (`d_sub_gen_trans{,_ti_lhs}`); `d_sub_gen_trans_btyp_nil` recovers the
 nil output for the etag-free `btyp_to_gutyp` LHS that the gen-typing `__sub`
 consumes.
 
-### 4.3 Cofinite-quantification binders via lngen
+### 4.3 Binder freshness: cofinite in `decl/`, EXISTS-FRESH in `algo/`
 
 Standard locally-nameless mechanization. lngen generates `prop_ln.v`
 with the free-variable lemmas, opening / substitution operators, etc.
-Cofinite premises on binder rules (i.e. `forall X, X ∉ L → ...`) are
-the norm.
+
+**The canon (decided 2026-07-31, the uniform-encoding campaign).  There
+is ONE freshness discipline per layer:**
+
+| layer | discipline |
+|---|---|
+| `frost/decl/` (declarative judgments, incl. the `decl_algo` mirrors) | **cofinite** — `forall α, α ∉ L → …` |
+| `frost/algo/` (the ALGORITHM's own judgments, `a_*`) | **exists-fresh** — one binder α + explicit freshness side conditions |
+
+#### Why the algorithmic layer cannot be cofinite
+
+A cofinite premise demands that ONE choice of the rule's OUTPUTS work
+for EVERY fresh binder.  That is fine for a declarative rule, whose
+premise has no outputs, and fine for an algorithmic rule that re-binds
+the binder in its output (`SS-ForallL`: `∀α.P ⤳ ∀α.P'`, output opened
+at the same α).  It is WRONG for an algorithmic rule whose outputs
+ESCAPE the binder, because the paper's rule lets them mention it:
+
+```text
+\solsublab{ForallR}   solvesub A TC B P'  ⟹  solvesub A TC (∀β.B) P'
+\lelab{ForallInh}     lookeq α P P' 𝒞[Ξ] ⟹  lookeq α (∀β.P) (∀β.P') 𝒞[Ξ]
+```
+
+Here `P'` / `𝒞` / `Ξ` are produced UNDER the binder and are not re-bound,
+so they may carry β.  Rendered cofinitely, the shared output has to be
+β-free, and the rule silently degenerates to "fires only when the binder
+is vacuous".  This is the bug already found and fixed once at
+`a_sub__forall_r` / `a_subtag__forall_r` (PROGRESS 2026-07-31, the junk
+suffix Ξ): it broke COMPLETENESS while soundness never noticed, because
+soundness only ever CONSUMES the rule.  The same defect is present
+throughout the look / solve / guess clusters, which is what the campaign
+converts.
+
+#### The shape
+
+```coq
+| a_<judgment>__<rule> : forall … β,
+    β `notin` <everything in the CONCLUSION that must stay clean> ->
+    <premise at β> ->
+    <conclusion>
+```
+
+The side condition lists the rule's own inputs (`dom Θ`, the input
+skeletons' `ftvar_in_*`) and those outputs the judgment's invariants
+require to stay well-scoped.  Outputs the paper treats as junk or as
+carriers of freshly-generated names — `a_sub__forall_r`'s discarded
+suffix `Ξ`, the look's `Ξ ⨾ 𝒞` — are deliberately NOT constrained; that
+permissiveness is what makes the encoding as wide as the paper's rule.
+Ill-scoped results are filtered downstream by the wf side conditions
+that already exist (`a_sub__forall_l`'s `(Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1`),
+not by narrowing the rule.
+
+**No function-valued rule arguments.**  A cofinite family whose output
+varies with the binder (`Ξf : atom -> aenv`) was built and rejected
+during the ForallR fix: it admits exotic name-dependent outputs and is
+unusable in inversions.  Exists-fresh is the decided replacement.
+
+#### The cost, and the staging rule that pays it
+
+Exists-fresh takes binder choice AWAY from consumers: a proof that needs
+the binder somewhere specific must MOVE it.  So every cluster is
+converted **rename-lemma-first** — the rename must be Qed before the
+rule changes, and the tree stays green at every step.  The four assets
+that make the campaign executable already exist:
+
+| cluster | rename lemma |
+|---|---|
+| guess | `a_guess_mono_rename_tvar` (prop_look_complete_extract.v) |
+| look | `a_looksub_lookeq_rename_tvar` (prop_looksub.v) — needs `β ∉ ftv 𝒞` |
+| solve | `a_solve_sub_eq_rename` (prop_look_complete.v) — fully general, renames the escaping output too |
+| consis mutual | `a_assign_unify_consis_rename_tvar` (prop_consis_rename.v) |
+
+The standing recipe for a consumer that pushes a substitution through a
+derivation (it needs every binder ≠ the substituted variable, which
+exists-fresh does not give) is to RE-FRESHEN ITS OWN variable away from
+the rule's α — see `a_subtag_decoration`'s ForallR case, the worked
+precedent.
+
+#### What else the campaign folds in
+
+Two further disciplines are being retired into the canon:
+
+- **The `F` avoidance set** — an `atoms` index threaded through the
+  whole `a_assign` / `a_unify` / `a_consis` mutual and consumed in
+  exactly ONE rule (`a_assign__solve_m`, where the guessed `βs` avoid
+  `F ∪ {α} ∪ dom (Ξ ++ Θ0)`), pure pass-through everywhere else.  It is
+  deprecated; Solve-M's freshness moves to the canonical side-condition
+  form.
+- **The walk's prose-Barendregt OUTPUT premises** (`β ∉ dom Θ1` on
+  `a_sub_flex__assign` / `__skip` / `__skip_rigid`) — these stay as
+  genuine side conditions, and COMPLETENESS discharges them with the
+  `a_sub` / `a_sub_flex` run-renaming kit (K1–K4) rather than the rules
+  being weakened.  This is the P7a blocker.
 
 ### 4.4 Paintings and erasures between split categories
 

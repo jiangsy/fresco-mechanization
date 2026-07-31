@@ -1631,24 +1631,22 @@ Proof.
   - (* arrow *)
     repeat rewrite dom_app. clear - IHa_guess_mono1 IHa_guess_mono2.
     fsetdec.
-  - (* forall *)
-    pick fresh α for (L `union` ftvar_in_ptyp A `union` ftvar_in_pskl P
-                        `union` dom Ξ).
-    assert (HL : α `notin` L) by fsetdec.
-    specialize (H0 α HL).
-    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f α))
+  - (* forall — exists-fresh: the rule's OWN binder β serves; there is no
+       family to instantiate, and [β ∉ ftv A] is now a rule premise (H)
+       rather than something the [pick fresh] had to arrange *)
+    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f β))
       as Hlo.
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α))
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β))
       as Hup.
     simpl in Hup.
     intros α0 Hα0.
     assert (HX1 : α0 `in` ftvar_in_ptyp
-                    (open_ptyp_wrt_ptyp A (ptyp_var_f α)))
+                    (open_ptyp_wrt_ptyp A (ptyp_var_f β)))
       by (clear - Hα0 Hlo; fsetdec).
     assert (HX2 : α0 `in` (ftvar_in_pskl
-                    (open_pskl_wrt_pskl P (pskl_var_f α))
-                    `union` dom Ξ)) by (clear - HX1 H0; fsetdec).
-    assert (Hne : α0 <> α) by (clear - Hα0 Fr; fsetdec).
+                    (open_pskl_wrt_pskl P (pskl_var_f β))
+                    `union` dom Ξ)) by (clear - HX1 IHa_guess_mono; fsetdec).
+    assert (Hne : α0 <> β) by (clear - Hα0 H; fsetdec).
     clear - HX2 Hup Hne. fsetdec.
 Qed.
 
@@ -1879,9 +1877,8 @@ Proof.
     destruct Hb as [Hb | Hb];
       [ eapply IHa_guess_mono1 | eapply IHa_guess_mono2 ];
       unfold binds; eauto.
-  - (* forall *)
-    pick fresh α for L.
-    eapply H0; eauto.
+  - (* forall — exists-fresh: the single premise IS the instance *)
+    eauto.
 Qed.
 
 (** Prepending a fresh, uniform flexible-variable block preserves

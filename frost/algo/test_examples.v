@@ -326,9 +326,13 @@ Proof.
       * apply (a_guess__ty (Ξ := nil) (A := σ_auto)).
         apply a_guess_mono__tophole.
         unfold σ_auto, σ_id; simpl.
+        (* exists-fresh: the ∀ rule now takes ONE binder; any atom does here,
+           the bodies are variable-only so nothing constrains the choice *)
         apply a_guess_mono__arrow with (Ξ1 := nil) (Ξ2 := nil);
-          apply a_guess_mono__forall with (L := {});
-          intros β _; simpl_open;
+          (pick fresh β;
+           apply a_guess_mono__forall with (β := β);
+           [ simpl; fsetdec | ]);
+          simpl_open;
           apply a_guess_mono__arrow with (Ξ1 := nil) (Ξ2 := nil);
           apply a_guess_mono__var.
     + crush_uniq.

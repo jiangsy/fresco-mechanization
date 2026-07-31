@@ -3,6 +3,7 @@
     heavy earlier sections are not re-checked on every iteration. *)
 
 Require Import Coq.Lists.List.
+Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.frost.notations.
@@ -1753,7 +1754,13 @@ Qed.
 (** TY anchor: the [a_guess_mono] output painting's decoration extends the
     pre-guess skeleton (◇ ↦ fresh var, ∀◇ dropped onto a guarded remainder —
     supplied by [pskl_top_guarded] of the solve output). *)
-Lemma dec_ext_guess_mono_anchor : forall Θ P' Ξ' A ψa,
+(* ⚠️ SIZE INDUCTION (freshness campaign): [a_guess_mono] is exists-fresh
+   while the target [dec_ext] is still cofinite, so the ∀ case must turn ONE
+   guess instance into a family via [a_guess_mono_all_cofinite] — whose
+   output is no sub-derivation, hence no derivation-IH.  See
+   [a_guess_mono_rename_tvar_size] (prop_flex.v) for the recipe. *)
+Lemma dec_ext_guess_mono_anchor_size : forall n Θ P' Ξ' A ψa,
+  size_pskl P' <= n ->
   a_guess_mono Θ P' Ξ' A ->
   pskl_top_guarded P' ->
   is_tskl ψa ->
@@ -1761,7 +1768,12 @@ Lemma dec_ext_guess_mono_anchor : forall Θ P' Ξ' A ψa,
   ⌊ ψa ⌋ˢ = ptyp_to_pskl A ->
   dec_ext P' ψa empty.
 Proof.
-  intros Θ P' Ξ' A ψa Hg; revert ψa; induction Hg; intros ψa Htg Histk Hgf Hera.
+  induction n as [| n IHn]; intros Θ P' Ξ' A ψa Hsz Hg;
+    [ destruct Hg; cbn in Hsz; lia | ].
+  destruct Hg as [ Θ' α | Θ' Pb Ξb Ab Hgb | Θ' α | Θ'
+                 | Θ' Pa Pb Ξa Ξb Aa Ab Hga Hgb
+                 | Θ' Pb Ξb Ab b0 Hfr Hgb ];
+    cbn in Hsz; intros Htg Histk Hgf Hera.
   - (* hole ↦ fresh α̂ : A = var α *)
     destruct ψa; simpl in Hera; try discriminate Hera.
     apply dec_ext__hole; [ exact Histk | apply d_tags_skl__var; fsetdec ].
@@ -1772,7 +1784,8 @@ Proof.
           [ rewrite <- Hera; apply lc_uskl_to_pskl_local; apply is_tskl_lc;
             exact Histk
           | eapply a_guess_mono_head; eassumption ]
-      | apply IHHg; assumption ].
+      | eapply IHn; [ lia | exact Hgb | exact Htg0 | exact Histk | exact Hgf
+                    | exact Hera ] ].
   - (* var α ↦ var α *)
     destruct ψa; simpl in Hera; try discriminate Hera.
     inversion Hera; subst. apply dec_ext__var; fsetdec.
@@ -1784,8 +1797,12 @@ Proof.
     inversion Hera; subst.
     simpl in Htg; destruct Htg as [Htg1 Htg2].
     inversion Histk; subst. inversion Hgf; subst.
-    eapply dec_ext__arrow; [ apply IHHg1 | apply IHHg2 | fsetdec ]; assumption.
-  - (* forall P ↦ all A0 : the ghost-free [is_tskl] ∀-decoration is [all_etag] *)
+    eapply dec_ext__arrow;
+      [ eapply IHn with (P' := Pa); [ lia | exact Hga | .. ]
+      | eapply IHn with (P' := Pb); [ lia | exact Hgb | .. ]
+      | fsetdec ]; assumption.
+  - (* forall P ↦ all A0 : the ghost-free [is_tskl] ∀-decoration is [all_etag].
+       EXISTS-FRESH source, COFINITE target: re-open the guess at each α. *)
     destruct ψa; simpl in Hera; try discriminate Hera;
       try (inversion Histk; fail).          (* kill the non-[is_tskl] all_syn survivor *)
     injection Hera as Hera0.
@@ -1793,17 +1810,36 @@ Proof.
     inversion Histk; subst. inversion Hgf; subst.
     match goal with
     | Hib : forall α, α `notin` ?Li -> is_tskl (open_uskl_wrt_uskl ?bd _),
-      Hgb : forall α, α `notin` ?Lg -> uskl_ghost_free (open_uskl_wrt_uskl ?bd _)
+      Hgfb : forall α, α `notin` ?Lg -> uskl_ghost_free (open_uskl_wrt_uskl ?bd _)
       |- _ =>
-        apply dec_ext__all with (L := L `union` Li `union` Lg); intros α Hα;
-        apply (H0 α ltac:(clear - Hα; fsetdec)
-                 (open_uskl_wrt_uskl bd (uskl_var_f α)));
-          [ apply (proj1 (pskl_top_guarded_open_rec P α 0)); exact Htg
+        apply dec_ext__all
+          with (L := Li `union` Lg `union` dom Ξb `union` ftvar_in_pskl Pb
+                       `union` ftvar_in_ptyp Ab);
+        intros α Hα;
+        eapply IHn with (P' := open_pskl_wrt_pskl Pb (pskl_var_f α))
+                        (A := open_ptyp_wrt_ptyp Ab (ptyp_var_f α));
+          [ rewrite size_pskl_open_pskl_wrt_pskl_var; lia
+          | apply a_guess_mono_all_cofinite;
+              [ apply a_guess_mono__forall with (β := b0);
+                  [ exact Hfr | exact Hgb ]
+              | clear - Hα; fsetdec ]
+          | apply (proj1 (pskl_top_guarded_open_rec Pb α 0)); exact Htg
           | apply Hib; clear - Hα; fsetdec
-          | apply Hgb; clear - Hα; fsetdec
+          | apply Hgfb; clear - Hα; fsetdec
           | rewrite uskl_to_pskl_open; rewrite Hera0;
             rewrite <- ptyp_to_pskl_open; reflexivity ]
     end.
+Qed.
+
+Corollary dec_ext_guess_mono_anchor : forall Θ P' Ξ' A ψa,
+  a_guess_mono Θ P' Ξ' A ->
+  pskl_top_guarded P' ->
+  is_tskl ψa ->
+  uskl_ghost_free ψa ->
+  ⌊ ψa ⌋ˢ = ptyp_to_pskl A ->
+  dec_ext P' ψa empty.
+Proof.
+  intros. eapply dec_ext_guess_mono_anchor_size; eauto.
 Qed.
 
 (** ANCHOR: a decoration of the guess output extends the pre-guess skeleton,

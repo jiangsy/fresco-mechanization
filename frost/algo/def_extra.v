@@ -262,10 +262,16 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
     a_guess_mono Θ P Ξ1 A ->
     a_guess_mono Θ Q Ξ2 B ->
     a_guess_mono Θ (pskl_arrow P Q) (Ξ1 ++ Ξ2) (ptyp_arrow A B)
-| a_guess_mono__forall : forall L Θ P Ξ A,
-    (forall α, α `notin` L ->
-       a_guess_mono Θ (open_pskl_wrt_pskl P (pskl_var_f α)) Ξ
-         (open_ptyp_wrt_ptyp A (ptyp_var_f α))) ->
+(* EXISTS-FRESH (canonical algorithmic freshness, DESIGN.md §4.3).  The
+   binder avoids the whole conclusion — the guessed block [Ξ] and both
+   ∀-bodies — which is what makes this rule inter-derivable with the old
+   cofinite family (the guessed flexibles are invented by the hole rule,
+   independently of the binder).  The family form is recovered by
+   [a_guess_mono_all_cofinite] (prop_look_complete_extract.v). *)
+| a_guess_mono__forall : forall Θ P Ξ A β,
+    β `notin` dom Ξ `union` ftvar_in_pskl P `union` ftvar_in_ptyp A ->
+    a_guess_mono Θ (open_pskl_wrt_pskl P (pskl_var_f β)) Ξ
+      (open_ptyp_wrt_ptyp A (ptyp_var_f β)) ->
     a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all A).
 
 (** [guess^N(Q) = (Ξ'; Q')] (full-algo-spec.tex:1000): [guess^SK] is the
