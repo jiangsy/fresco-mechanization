@@ -1344,3 +1344,34 @@ Proof.
 Qed.
 
 Print Assumptions a_extract_complete.
+
+(* ===================================================================== *)
+(*  Sub-ForallL item 4 — [a_sub__forall_l]'s COFINITE extract family from *)
+(*  the ONE instance P6-L produces.  The look's outputs (Ξ ⨾ 𝒞) never     *)
+(*  mention the looked variable and the solve/guess components do not     *)
+(*  see it at all, so the family is the renamed look                      *)
+(*  ([a_looksub_rename_var]) + the SAME solve + the SAME guess.           *)
+(* ===================================================================== *)
+
+Lemma a_extract_family_of_instance : forall Θ0 NM M α P P0 Ξ P1,
+  Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
+  α `notin` ftvar_in_pskl P ->
+  forall α',
+  α' `notin` (singleton α `union` ftvar_in_pskl P) ->
+  Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α')) ⊳[ NM , α' , M ] P0 ⤳ Ξ ↪ P1.
+Proof.
+  intros Θ0 NM M α P P0 Ξ P1 Hex Hfr α' Hα'.
+  inversion Hex; subst.
+  eapply a_extract__solve; [ | eassumption | eassumption ].
+  assert (Hα'P : α' `notin`
+                   ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))).
+  { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                  P (pskl_var_f α)) as Hup.
+    simpl in Hup. clear - Hα' Hup; fsetdec. }
+  match goal with
+    Hlk : _ ≼[ α , _ ] _ ⤳ _ ⨾ _ |- _ =>
+    pose proof (a_looksub_rename_var Hlk Hα'P) as Hlk'
+  end.
+  rewrite <- (subst_pskl_in_pskl_intro α P (pskl_var_f α') Hfr) in Hlk'.
+  exact Hlk'.
+Qed.

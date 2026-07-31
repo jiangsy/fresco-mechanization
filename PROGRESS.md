@@ -78,7 +78,17 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-07-31 (latest) — ⭐ Sub-ForallL items 1, 2 AND 3 CLOSED — `uskl_precise_erase_refine`, `uskl_precise_subst_into`, `ad_pat_sub_precise_upre_gv` all Qed
+## 2026-07-31 (latest) — ⭐ Sub-ForallL items 1–4 CLOSED — `uskl_precise_erase_refine`, `uskl_precise_subst_into`, `ad_pat_sub_precise_upre_gv`, `a_extract_family_of_instance` all Qed
+
+**Item 4 (same session, fourth commit)** —
+`a_extract_family_of_instance` (end of prop_look_complete_extract.v):
+`a_sub__forall_l`'s cofinite extract family from the ONE instance
+P6-L produces.  Exactly as scoped: the look's outputs (Ξ ⨾ 𝒞) never
+mention the looked variable and solve/guess don't see it, so the
+family = `a_looksub_rename_var` on the look + the SAME solve + the
+SAME guess, with `subst_pskl_in_pskl_intro` folding the rename back
+into the opening.  25 lines.  (Still a de-cofinite-campaign deletion
+candidate once `a_sub__forall_l` goes exists-fresh.)
 
 **Item 3 (same session, third commit)** — the LEAF-VALID transport of
 P5, `ad_pat_sub_precise_upre_gv` (end of prop_sub_complete.v): the
