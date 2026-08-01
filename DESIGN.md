@@ -497,6 +497,37 @@ change them), so the target must differ from it; a binder that did not escape
 can be moved, and then the outputs stay fixed.  That case split is forced,
 and it is the cluster-2 pair of shapes (1) and (3) meeting in one lemma.
 
+Both renames are now closed under exactly that shape
+(`a_looksub_lookeq_rename_tvar_size`, `a_looksub_lookeq_rename_var_size`), and
+the cluster gained three enablers worth reusing elsewhere:
+
+- **`a_looksub_lookeq_ctx_ftv_mono`** — the judgment reads its context ONLY
+  through the avoid-inputs, so it is stable under any context whose
+  `ftvar_in_aenv` is no larger.  Its corollary is EXCHANGE
+  (`a_looksub_ctx_exchange`), which every consumer that opens two binders in
+  the other order needs, because contexts are LISTS.
+- **`a_looksub_lookeq_generated_fresh`** — cluster 1's derived junk-freeness,
+  in the look cluster: a generated flexible can never BE an enclosing ∀
+  binder.  This is what makes "move the binder, keep `Ξ`" a theorem rather
+  than a hypothesis.
+- **`a_solvetag_subst_cstrs`** — the collected constraints only ever appear as
+  a solvetag run's TARGETS, and target renaming is unconditional, so a
+  consumer may hand back the RENAMED constraint list.  That, plus an
+  existential 𝒞 in the conclusion, is how `a_looksub_open_target_at` copes
+  with a binder that leaks into 𝒞.
+
+⚙ **A performance rule the cluster forced.**  These side conditions are
+five-way unions, and ONE `fsetdec` against five overlapping such hypotheses
+does not terminate in reasonable time (measured: >100s for a single row);
+`clear -` scoping is not enough.  Binder rows must never hand a union to
+`fsetdec`.  Shatter a `pick fresh` into ATOMIC facts and `clear Fr`, and prove
+the union GOALS structurally with the one-line kit (`notin_union_both`,
+`notin_add_atom`, `notin_ftvar_in_aenv_cons_tvar`,
+`notin_ftvar_in_aenv_rename`, `notin_ftvar_open_var`, `notin_ftvar_subst_var`,
+`notin_ftvar_in_cstrs_subst`) driven by the **`look_fresh`** tactic, whose
+leaves are `assumption` / `congruence` / a single-hypothesis `fsetdec`.  Same
+row: >100s → ~2s; the whole 2000-line file: 11s.
+
 #### The cost, and the staging rule that pays it
 
 Exists-fresh takes binder choice AWAY from consumers: a proof that needs

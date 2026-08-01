@@ -78,7 +78,92 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-01 (latest) — 🚧 FRESHNESS CAMPAIGN cluster 3 (look) IN PROGRESS — canon question (ii) DECIDED (look gains a context), and the source-substitution lemma REFUTED in its unconditional form
+## 2026-08-01 (latest) — 🚧 FRESHNESS CAMPAIGN cluster 3 (look): BOTH RENAME LEMMAS CLOSED + the whole rename kit; `prop_looksub.v` is GREEN, the consumer pass has started
+
+Second stage of cluster 3, on `freshness-campaign-cluster3-wip`.  The two
+lemmas the campaign's staging rule demands before anything else are **Qed**,
+`prop_looksub.v` compiles clean **in 11s**, and the first genuine consumer
+(the one that has to MOVE a binder) is closed too.
+
+**Closed (all Qed, in prop_looksub.v):**
+
+1. **`a_looksub_lookeq_rename_tvar_size`** — the TARGET-only rigid rename, all
+   five ∀ rows written.  Each binder row takes the FORCED three-case split
+   (source = the rule's binder → re-fire at the target; target = the rule's
+   binder → it did NOT leak, so move it to a fresh δ and rename twice; else
+   the binder stays), plus the `α1 = β` identity dispatch up front
+   (`rename_aenv_same` / `subst_cstrs_same` / `subst_pskl_var_same`).  Size-free
+   wrappers `a_looksub_rename_tvar` / `a_lookeq_rename_tvar` and the derived
+   `*_rename_tvar_keep` corollaries (which now also need `β ∉ ftvar_in_aenv Θ`,
+   since the rename touches the CONTEXT) are on top.
+2. **`a_looksub_lookeq_rename_var_size`** — renaming the LOOKED-FOR variable,
+   restated with the same two campaign shapes: an OUTPUT-freshness premise
+   (`α' ∉ dom Ξ ∪ ftv 𝒞`) and SIZE induction.  Both are forced: LE-FlexR's
+   generated flexible and the ∀ rules' leaked binders avoid the looked-for
+   variable by their own side conditions, so they would have to avoid it after
+   the rename too; and a binder that IS the new name has to be moved, which
+   §5's rename does to a derivation that is no sub-derivation.  §5 and §6 were
+   SWAPPED in the file for this reason — the tvar rename is now the cluster's
+   primitive asset.
+
+**New enablers (all Qed):**
+
+- **`a_looksub_lookeq_ctx_ftv_mono`** + `a_looksub_ctx_exchange` /
+  `a_lookeq_ctx_exchange`: look reads its context only through the avoid-inputs,
+  so it is stable under any context with no LARGER `ftvar_in_aenv` — in
+  particular under EXCHANGE, which every consumer that opens two binders in the
+  other order needs.
+- **`a_looksub_lookeq_generated_fresh`** + `a_looksub_binder_not_generated` /
+  `a_lookeq_binder_not_generated`: cluster 1's DERIVED junk-freeness, in the
+  look cluster.  A generated flexible can never BE an enclosing ∀ binder, which
+  is exactly what lets a consumer move that binder with `Ξ` left FIXED.
+- **`a_solvetag_subst_cstrs`** (prop_decorate_sub.v): renaming a rigid in the
+  collected constraints leaves a solvetag run alone — the constraints only ever
+  appear as the run's TARGETS, and target renaming is unconditional
+  (`a_solvetag_sub_eq_target_rename`).  This is what lets a consumer hand back
+  the RENAMED constraint list.
+- **`a_looksub_open_target_at`** (prop_decorate_sub.v) — the cluster's one
+  genuine "move a binder" consumer, REWRITTEN as a size induction: LS-ForallR
+  renames the run's own binder to the requested opener (Ξ survives by junk-
+  freeness, 𝒞 genuinely changes — the binder leaks into it — which is why the
+  conclusion's constraint list is existential), and LS-ForallL re-freshens its
+  own binder when it collides.  The cofinite `a_looksub_open_target` it
+  supersedes was DELETED (it had no consumers, and its "one shared 𝒞 for a
+  whole family" shape is the encoding the campaign rejects).
+
+**⚙ The performance finding, and the kit it produced.**  The binder rows'
+side conditions are five-way unions; a single `fsetdec` against five
+OVERLAPPING such hypotheses did not finish in 100s for ONE row.  `clear -`
+scoping was NOT enough.  The fix is a small structural kit — `notin_union_both`,
+`notin_add_atom`, `notin_ftvar_in_aenv_cons_tvar`, `notin_ftvar_in_aenv_rename`,
+`notin_ftvar_open_var`, `notin_ftvar_subst_var`, `notin_ftvar_in_cstrs_subst`(`_away`)
+— driven by the `look_fresh` tactic, whose leaves are `assumption` /
+`congruence` / a SINGLE-hypothesis `fsetdec`; plus the discipline of shattering
+a `pick fresh` into atomic facts and `clear Fr`.  Row time went >100s → ~2s.
+`look_fresh` is the tactic every remaining consumer should use.
+
+**Still RED, and where:** `prop_decorate_sub.v` now fails only in
+`a_consistag_decoration`'s FOUR ∀ rows (LE-ForallInh / LE-ForallSyn /
+LE-UnivGhost1, from line 2063), which still read the deleted cofinite `L` of
+the look rules.  Each needs the SAME treatment `a_looksub_open_target_at` just
+got: the decl-side `a_consistag` rule is (rightly) still cofinite, so the row
+must rebuild a family from the look run's ONE binder — that means moving it
+with `a_looksub_rename_tvar` and therefore turning `a_consistag_decoration`
+into a SIZE induction.  `prop_decorate_key.v` has the same rows, larger
+(`a_subtag_decoration`'s LS-ForallL at :489, and the `HDf : forall b, b ∉ ?L1`
+match patterns at :489/:764).  Everything else in the tree is green: a full
+`make -k` leaves prop_decorate_sub.v as the ONLY failing target, and
+`cex/cex_p6_flex_freshened.v` was fixed (arity) along the way.
+
+**Remaining, in order:** (i) `a_consistag_decoration`'s four ∀ rows; (ii)
+`prop_decorate_key.v`; (iii) the ∀ rows of P6-Cs / P6-Ss
+(prop_look_complete_{cstr,sub_cstr}.v — these should SIMPLIFY, since
+exists-fresh lets them use the derivation's own binder instead of building a
+family by renaming a fresh representative); (iv) `test_examples.v` and the
+remaining `cex/` look runs; (v) then clusters 4–6, F-deprecation, the walk's
+`∉ dom Θ1` premises (P7a), and finally the P7b dispatcher.
+
+## 2026-08-01 — 🚧 FRESHNESS CAMPAIGN cluster 3 (look) STARTED — canon question (ii) DECIDED (look gains a context), and the source-substitution lemma REFUTED in its unconditional form
 
 `remech` is green: it carries the cluster's **first stage only** — the
 TARGET-only restatement of `a_looksub_lookeq_rename_tvar`.  The encoding

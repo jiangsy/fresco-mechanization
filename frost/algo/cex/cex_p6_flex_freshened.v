@@ -76,13 +76,13 @@ Set Implicit Arguments.
     (Inversion leaves only [LE-Absent], excluded by [α ∈ ftv], and
     [LE-FlexR].) *)
 Lemma a_lookeq_arrow_subject_flex_target_freshened :
-  forall α P1 P2 β Ξ 𝒞,
-  a_lookeq α (pskl_arrow P1 P2) (pskl_var_f β) Ξ 𝒞 ->
+  forall Θ α P1 P2 β Ξ 𝒞,
+  a_lookeq Θ α (pskl_arrow P1 P2) (pskl_var_f β) Ξ 𝒞 ->
   α `in` ftvar_in_pskl (pskl_arrow P1 P2) ->
   exists α1, Ξ = (α1 ~ abind_flex_mono) ++ nil
          /\ 𝒞 = a_cstr_eq (pskl_var_f α1) :: nil.
 Proof.
-  intros α P1 P2 β Ξ 𝒞 H Hin; inversion H; subst.
+  intros Θ α P1 P2 β Ξ 𝒞 H Hin; inversion H; subst.
   - (* LE-Absent: α ∉ ftv, contradicts Hin *)
     simpl in *. fsetdec.
   - (* LE-FlexR: the freshened payload *)
@@ -95,15 +95,15 @@ Qed.
     payload can only sit opposite a LEAF, never a compound bearing a rigid
     ρ-substituted variable. *)
 Lemma a_lookeq_flex_target_raw_subject_not_arrow :
-  forall α P β Ξ 𝒞,
-  a_lookeq α P (pskl_var_f β) Ξ 𝒞 ->
+  forall Θ α P β Ξ 𝒞,
+  a_lookeq Θ α P (pskl_var_f β) Ξ 𝒞 ->
   α `in` ftvar_in_pskl P ->
   (exists α1, α1 `in` dom Ξ /\ 𝒞 = a_cstr_eq (pskl_var_f α1) :: nil)
   \/
   (Ξ = nil /\ 𝒞 = a_cstr_eq (pskl_var_f β) :: nil
    /\ forall Q1 Q2, P <> pskl_arrow Q1 Q2).
 Proof.
-  intros α P β Ξ 𝒞 H.
+  intros Θ α P β Ξ 𝒞 H.
   remember (pskl_var_f β) as tgt eqn:Htgt.
   induction H; intros Hin; try discriminate Htgt.
   - (* LE-Var: subject = var α, raw payload P = var β *)
