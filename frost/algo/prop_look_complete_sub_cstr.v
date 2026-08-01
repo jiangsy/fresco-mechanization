@@ -1259,9 +1259,9 @@ Proof.
                       (pskl_var_f α1)); [ | clear - Fr; solve_notin ].
            rewrite <- (@subst_pskl_in_pskl_fresh_eq ⌊ R' ⌋ˢ
                          (pskl_var_f α1) β); [ | exact HβR ].
-           eapply (proj1 a_looksub_lookeq_rename_tvar);
+           eapply a_looksub_rename_tvar_keep;
              [ exact HLK | clear - Hβα; auto | clear - Hα1; fsetdec
-             | exact HβC ].
+             | exact HβΞc | exact HβC ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
         -- (* a_wf_aenv *)
@@ -2173,8 +2173,9 @@ Proof.
          [ | clear - Fr; solve_notin ].
        rewrite <- (@subst_pskl_in_pskl_fresh_eq P0 (pskl_var_f α1) β);
          [ | clear - Fr; solve_notin ].
-       eapply (proj1 a_looksub_lookeq_rename_tvar);
-         [ exact HLK | clear - Hβα; auto | clear - Hα1; fsetdec | exact HβC ].
+       eapply a_looksub_rename_tvar_keep;
+         [ exact HLK | clear - Hβα; auto | clear - Hα1; fsetdec
+         | exact HβΞc | exact HβC ].
     -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
     -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
     -- (* a_wf_aenv *)
@@ -2557,8 +2558,9 @@ Proof.
          [ | clear - Fr; solve_notin ].
        rewrite <- (@subst_pskl_in_pskl_fresh_eq P0 (pskl_var_f α1) β);
          [ | clear - Fr; solve_notin ].
-       eapply (proj1 a_looksub_lookeq_rename_tvar);
-         [ exact HLK | clear - Hβα; auto | clear - Hα1; fsetdec | exact HβC ].
+       eapply a_looksub_rename_tvar_keep;
+         [ exact HLK | clear - Hβα; auto | clear - Hα1; fsetdec
+         | exact HβΞc | exact HβC ].
     -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
     -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
     -- (* a_wf_aenv *)

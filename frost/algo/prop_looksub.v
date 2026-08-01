@@ -67,6 +67,31 @@ Proof.
     [ apply a_decls__nil | eapply a_guess_mono_decls; eauto ].
 Qed.
 
+(** The collected block holds only bare flexibles (LE-FlexR is the single
+    generative rule), so it mentions exactly its own domain — the look
+    counterpart of [a_guess_mono_generated_ftvar].  This is what lets the
+    consumers of the TARGET-only rename below phrase their premise as the
+    [dom Ξ] freshness they already have. *)
+Lemma a_looksub_lookeq_generated_ftvar :
+  (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 -> ftvar_in_aenv Ξ [<=] dom Ξ) /\
+  (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 -> ftvar_in_aenv Ξ [<=] dom Ξ).
+Proof.
+  apply (a_looksub_lookeq_mutind
+           (fun α m P P' Ξ 𝒞 _ => ftvar_in_aenv Ξ [<=] dom Ξ)
+           (fun α P P' Ξ 𝒞 _ => ftvar_in_aenv Ξ [<=] dom Ξ));
+    intros; simpl; try solve [ fsetdec ];
+    try solve [ destruct (atom_fresh L) as [β0 Hβ0]; eauto ];
+    rewrite ftvar_in_aenv_app, dom_app; fsetdec.
+Qed.
+
+Lemma a_looksub_generated_ftvar : forall α m P P' Ξ 𝒞,
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 -> ftvar_in_aenv Ξ [<=] dom Ξ.
+Proof. intros; eapply (proj1 a_looksub_lookeq_generated_ftvar); eauto. Qed.
+
+Lemma a_lookeq_generated_ftvar : forall α P P' Ξ 𝒞,
+  P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 -> ftvar_in_aenv Ξ [<=] dom Ξ.
+Proof. intros; eapply (proj2 a_looksub_lookeq_generated_ftvar); eauto. Qed.
+
 Lemma a_extract_decls : forall Θ0 NM α m P P' Ξ P0,
   Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ P0 -> a_decls Ξ.
 Proof.
@@ -98,6 +123,46 @@ Fixpoint ftvar_in_cstrs (C : a_cstrs) : atoms :=
 Lemma ftvar_in_cstrs_app : forall C1 C2,
   ftvar_in_cstrs (C1 ++ C2) [=] ftvar_in_cstrs C1 `union` ftvar_in_cstrs C2.
 Proof. induction C1; intros; simpl; [ fsetdec | rewrite IHC1; fsetdec ]. Qed.
+
+(** Renaming a variable throughout a collected constraint list.  Needed by
+    the TARGET-only rename below: the collected [𝒞] is an OUTPUT, so a
+    canonical renaming lemma must rename it rather than demand the source
+    be absent from it (DESIGN.md §4.3, canon rule 3). *)
+Definition subst_cstr (γ β : atom) (c : a_cstr) : a_cstr :=
+  match c with
+  | a_cstr_sub m P => a_cstr_sub m (subst_pskl_in_pskl (pskl_var_f γ) β P)
+  | a_cstr_eq P    => a_cstr_eq (subst_pskl_in_pskl (pskl_var_f γ) β P)
+  end.
+
+Fixpoint subst_cstrs (γ β : atom) (C : a_cstrs) : a_cstrs :=
+  match C with
+  | nil     => nil
+  | c :: C' => subst_cstr γ β c :: subst_cstrs γ β C'
+  end.
+
+Lemma subst_cstrs_app : forall γ β C1 C2,
+  subst_cstrs γ β (C1 ++ C2) = subst_cstrs γ β C1 ++ subst_cstrs γ β C2.
+Proof. induction C1; intros; simpl; [ reflexivity | rewrite IHC1; reflexivity ]. Qed.
+
+Lemma subst_cstrs_fresh_eq : forall γ β C,
+  β `notin` ftvar_in_cstrs C -> subst_cstrs γ β C = C.
+Proof.
+  induction C as [ | c C' IH ]; intros Hβ; simpl in *; [ reflexivity | ].
+  rewrite IH by (clear - Hβ; fsetdec).
+  destruct c; simpl; rewrite subst_pskl_in_pskl_fresh_eq
+    by (clear - Hβ; simpl in Hβ; fsetdec); reflexivity.
+Qed.
+
+Lemma ftvar_in_cstrs_subst_upper : forall γ β C,
+  ftvar_in_cstrs (subst_cstrs γ β C)
+    [<=] singleton γ `union` remove β (ftvar_in_cstrs C).
+Proof.
+  induction C as [ | c C' IH ]; simpl; [ fsetdec | ].
+  destruct c; simpl;
+    match goal with |- context[ftvar_in_pskl (subst_pskl_in_pskl _ _ ?P)] =>
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f γ) β) as Hup
+    end; simpl in Hup; clear - IH Hup; fsetdec.
+Qed.
 
 Lemma a_looksub_lookeq_ftv :
   (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
@@ -936,38 +1001,43 @@ Proof.
     [ inversion Hc; congruence | inversion Hc; subst; congruence ].
 Qed.
 
-(* (viii) SIMULTANEOUS renaming of a rigid variable on BOTH sides, keeping the
-   collected flexibles and constraints — the constraint set is preserved
-   exactly because β does not occur in it (see (vii)).  This turns the ONE
-   fresh-β instance the IH produces into LE-ForallInh's cofinite family. *)
+(* (viii) SIMULTANEOUS renaming of a rigid variable on BOTH sides.
+   TARGET-only (DESIGN.md §4.3, canon rule 3): it renames the GENERATED
+   block [Ξ] and the collected constraints [𝒞] too, instead of demanding
+   the source be absent from them.  The old form carried [β ∉ ftv 𝒞] — a
+   SOURCE condition on an OUTPUT, which the canon forbids and which no
+   call site can discharge once LE-ForallInh's binder LEAKS into 𝒞.
+   Call sites whose 𝒞 / Ξ genuinely do not mention β erase the renamings
+   with [subst_cstrs_fresh_eq] / [rename_aenv_fresh_eq].
+   This turns the ONE fresh-β instance the IH produces into
+   LE-ForallInh's cofinite family. *)
 Lemma a_looksub_lookeq_rename_tvar :
   (forall α m P P' Ξ 𝒞, P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
      forall β α1, β <> α -> α1 <> α ->
-     β `notin` ftvar_in_cstrs 𝒞 ->
      (subst_pskl_in_pskl (pskl_var_f α1) β P) ≼[ α , m ]
-       (subst_pskl_in_pskl (pskl_var_f α1) β P') ⤳ Ξ ⨾ 𝒞) /\
+       (subst_pskl_in_pskl (pskl_var_f α1) β P')
+       ⤳ (rename_aenv α1 β Ξ) ⨾ (subst_cstrs α1 β 𝒞)) /\
   (forall α P P' Ξ 𝒞, P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
      forall β α1, β <> α -> α1 <> α ->
-     β `notin` ftvar_in_cstrs 𝒞 ->
      (subst_pskl_in_pskl (pskl_var_f α1) β P) ∼[ α ]
-       (subst_pskl_in_pskl (pskl_var_f α1) β P') ⤳ Ξ ⨾ 𝒞).
+       (subst_pskl_in_pskl (pskl_var_f α1) β P')
+       ⤳ (rename_aenv α1 β Ξ) ⨾ (subst_cstrs α1 β 𝒞)).
 Proof.
   apply (a_looksub_lookeq_mutind
            (fun α m P P' Ξ 𝒞 _ =>
               forall β α1, β <> α -> α1 <> α ->
-              β `notin` ftvar_in_cstrs 𝒞 ->
               (subst_pskl_in_pskl (pskl_var_f α1) β P) ≼[ α , m ]
-                (subst_pskl_in_pskl (pskl_var_f α1) β P') ⤳ Ξ ⨾ 𝒞)
+                (subst_pskl_in_pskl (pskl_var_f α1) β P')
+                ⤳ (rename_aenv α1 β Ξ) ⨾ (subst_cstrs α1 β 𝒞))
            (fun α P P' Ξ 𝒞 _ =>
               forall β α1, β <> α -> α1 <> α ->
-              β `notin` ftvar_in_cstrs 𝒞 ->
               (subst_pskl_in_pskl (pskl_var_f α1) β P) ∼[ α ]
-                (subst_pskl_in_pskl (pskl_var_f α1) β P') ⤳ Ξ ⨾ 𝒞));
+                (subst_pskl_in_pskl (pskl_var_f α1) β P')
+                ⤳ (rename_aenv α1 β Ξ) ⨾ (subst_cstrs α1 β 𝒞)));
     intros; simpl in *.
   - (* LS-Var *)
     destruct_if; [ exfalso; congruence | ].
-    rewrite subst_pskl_in_pskl_fresh_eq;
-      [ apply a_looksub__var | clear - H1; simpl in H1; fsetdec ].
+    apply a_looksub__var.
   - (* LS-Absent *)
     apply a_looksub__absent.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f α1) β) as Hup.
@@ -988,11 +1058,8 @@ Proof.
       [ | clear - Hβ1; fsetdec | apply lc_pskl_var_f ].
     apply H; auto.
   - (* LS-Arrow *)
-    match goal with Hc : _ `notin` ftvar_in_cstrs (?Ca ++ ?Cb) |- _ =>
-      pose proof (ftvar_in_cstrs_app Ca Cb) as Happ; rename Hc into Hcs end.
-    apply a_looksub__arrow;
-      [ apply H; auto; clear - Hcs Happ; fsetdec
-      | apply H0; auto; clear - Hcs Happ; fsetdec ].
+    rewrite rename_aenv_app, subst_cstrs_app.
+    apply a_looksub__arrow; [ apply H; auto | apply H0; auto ].
   - (* LS-ForallL *)
     apply a_looksub__forall_l with (L := L `union` singleton β).
     intros β1 Hβ1.
@@ -1002,8 +1069,7 @@ Proof.
   - (* LS-UnivGhostL *) apply a_looksub__univ_ghost_l; apply H; auto.
   - (* LE-Var *)
     destruct_if; [ exfalso; congruence | ].
-    rewrite subst_pskl_in_pskl_fresh_eq;
-      [ apply a_lookeq__var | clear - H1; simpl in H1; fsetdec ].
+    apply a_lookeq__var.
   - (* LE-Absent *)
     apply a_lookeq__absent.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f α1) β) as Hup.
@@ -1011,20 +1077,15 @@ Proof.
     match goal with Hnf : _ `notin` ftvar_in_pskl _ |- _ =>
       clear - Hup Hnf H0; fsetdec end.
   - (* LE-Vacuous *) apply a_lookeq__vacuous.
-  - (* LE-FlexR *)
-    destruct_if.
-    + apply a_lookeq__flex_r;
-        [ apply subst_var_pskl_neq_var; auto
-        | apply ftv_subst_var_keep; auto ].
-    + apply a_lookeq__flex_r;
-        [ apply subst_var_pskl_neq_var; auto
-        | apply ftv_subst_var_keep; auto ].
+  - (* LE-FlexR — the GENERATED name is renamed along with everything else
+       (it may itself be β; the rule constrains it in no way) *)
+    repeat destruct_if; try solve [ exfalso; congruence ];
+      apply a_lookeq__flex_r;
+        solve [ apply subst_var_pskl_neq_var; auto
+              | apply ftv_subst_var_keep; auto ].
   - (* LE-Arrow *)
-    match goal with Hc : _ `notin` ftvar_in_cstrs (?Ca ++ ?Cb) |- _ =>
-      pose proof (ftvar_in_cstrs_app Ca Cb) as Happ; rename Hc into Hcs end.
-    apply a_lookeq__arrow;
-      [ apply H; auto; clear - Hcs Happ; fsetdec
-      | apply H0; auto; clear - Hcs Happ; fsetdec ].
+    rewrite rename_aenv_app, subst_cstrs_app.
+    apply a_lookeq__arrow; [ apply H; auto | apply H0; auto ].
   - (* LE-ForallInh *)
     apply a_lookeq__forall_inh with (L := L `union` singleton β).
     intros β1 Hβ1.
@@ -1052,4 +1113,40 @@ Proof.
       [ apply subst_var_pskl_neq_var; auto
       | apply guarded_pskl_subst_var; assumption
       | apply H; auto ].
+Qed.
+
+(** The CONSUMER form: a source that the run's own outputs do not mention is
+    renamed with [Ξ] and [𝒞] left fixed.  This is the shape every call site
+    wants (it is what turns one fresh instance into a cofinite family), and
+    it is DERIVED from the canonical target-only lemma rather than assumed —
+    the freshness is about the caller's own variable, not a condition the
+    rule must satisfy. *)
+Corollary a_looksub_rename_tvar_keep : forall α m P P' Ξ 𝒞 β α1,
+  P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+  β <> α -> α1 <> α ->
+  β `notin` dom Ξ -> β `notin` ftvar_in_cstrs 𝒞 ->
+  (subst_pskl_in_pskl (pskl_var_f α1) β P) ≼[ α , m ]
+    (subst_pskl_in_pskl (pskl_var_f α1) β P') ⤳ Ξ ⨾ 𝒞.
+Proof.
+  intros * Hlk Hβ Hα1 HβΞ Hβ𝒞.
+  pose proof (a_looksub_generated_ftvar Hlk) as Hftv.
+  pose proof ((proj1 a_looksub_lookeq_rename_tvar) _ _ _ _ _ _ Hlk _ α1 Hβ Hα1) as Hr.
+  rewrite (@rename_aenv_fresh_eq Ξ α1 β) in Hr by (clear - Hftv HβΞ; fsetdec).
+  rewrite (@subst_cstrs_fresh_eq α1 β 𝒞) in Hr by exact Hβ𝒞.
+  exact Hr.
+Qed.
+
+Corollary a_lookeq_rename_tvar_keep : forall α P P' Ξ 𝒞 β α1,
+  P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+  β <> α -> α1 <> α ->
+  β `notin` dom Ξ -> β `notin` ftvar_in_cstrs 𝒞 ->
+  (subst_pskl_in_pskl (pskl_var_f α1) β P) ∼[ α ]
+    (subst_pskl_in_pskl (pskl_var_f α1) β P') ⤳ Ξ ⨾ 𝒞.
+Proof.
+  intros * Hlk Hβ Hα1 HβΞ Hβ𝒞.
+  pose proof (a_lookeq_generated_ftvar Hlk) as Hftv.
+  pose proof ((proj2 a_looksub_lookeq_rename_tvar) _ _ _ _ _ Hlk _ α1 Hβ Hα1) as Hr.
+  rewrite (@rename_aenv_fresh_eq Ξ α1 β) in Hr by (clear - Hftv HβΞ; fsetdec).
+  rewrite (@subst_cstrs_fresh_eq α1 β 𝒞) in Hr by exact Hβ𝒞.
+  exact Hr.
 Qed.

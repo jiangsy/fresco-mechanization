@@ -2652,12 +2652,13 @@ Proof.
     simpl in Hβ.
     destruct (atom_fresh (L `union` singleton α `union` singleton β1
                 `union` ftvar_in_pskl A `union` ftvar_in_pskl B0
-                `union` ftvar_in_cstrs C)) as [β0 Hβ0].
+                `union` ftvar_in_cstrs C `union` dom Ξ)) as [β0 Hβ0].
     exists C. split; [ | exact Hst ].
-    pose proof ((proj1 a_looksub_lookeq_rename_tvar) _ _ _ _ _ _
-                  (H β0 ltac:(clear - Hβ0; fsetdec)) β0 β1
+    pose proof (@a_looksub_rename_tvar_keep _ _ _ _ _ _ β0 β1
+                  (H β0 ltac:(clear - Hβ0; fsetdec))
                   ltac:(clear - Hβ0; fsetdec)
                   Hβα
+                  ltac:(clear - Hβ0; fsetdec)
                   ltac:(clear - Hβ0; fsetdec)) as Hren.
     rewrite (subst_pskl_in_pskl_fresh_eq A) in Hren
       by (clear - Hβ0; fsetdec).

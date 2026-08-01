@@ -3030,8 +3030,9 @@ Proof.
              [ | auto ].
            rewrite (subst_pskl_in_pskl_intro β P0' (pskl_var_f α1));
              [ | auto ].
-           eapply (proj2 a_looksub_lookeq_rename_tvar);
-             [ exact HLK | auto | clear - Hα1; fsetdec | exact HβC ].
+           eapply a_lookeq_rename_tvar_keep;
+             [ exact HLK | auto | clear - Hα1; fsetdec
+             | exact HβΞc | exact HβC ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
         -- (* a_wf_aenv *)
@@ -3529,8 +3530,9 @@ Proof.
              [ | auto ].
            rewrite (subst_pskl_in_pskl_intro β P0' (pskl_var_f α1));
              [ | auto ].
-           eapply (proj2 a_looksub_lookeq_rename_tvar);
-             [ exact HLK | auto | clear - Hα1; fsetdec | exact HβC ].
+           eapply a_lookeq_rename_tvar_keep;
+             [ exact HLK | auto | clear - Hα1; fsetdec
+             | exact HβΞc | exact HβC ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
         -- (* a_wf_aenv *)
@@ -4049,8 +4051,9 @@ Proof.
               rewrite <- (subst_pskl_in_pskl_fresh_eq
                             (pskl_tophole (uskl_to_pskl R0)) (pskl_var_f α1) β)
                 by (simpl; auto).
-              eapply (proj2 a_looksub_lookeq_rename_tvar);
-                [ exact HLK | auto | clear - Hα1; fsetdec | exact HβC ].
+              eapply a_lookeq_rename_tvar_keep;
+                [ exact HLK | auto | clear - Hα1; fsetdec
+                | exact HβΞc | exact HβC ].
            ++ (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
            ++ (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
            ++ (* a_wf_aenv *)
