@@ -2989,3 +2989,595 @@ Proof.
     constructor; apply subst_bskl_in_uskl_lc_uskl; assumption.
 Qed.
 
+
+(* ===================================================================== *)
+(*  §8  SOURCE substitution with EXISTENTIAL outputs                      *)
+(*                                                                        *)
+(*  [a_looksub_lookeq_subst_stable] (prop_looksub.v §4) keeps [Ξ ⨾ 𝒞]     *)
+(*  FIXED, and pays for it with the Barendregt premise the leak           *)
+(*  counterexample forces, [ftv P0 ⊆ add α (ftvar_in_aenv Θ)].  The       *)
+(*  decoration consumer cannot supply that premise: its substituted       *)
+(*  skeleton is a ForallL node's GUESS, whose variables live in the       *)
+(*  extract's fresh block [Ξ] — generated AFTER the collection run, by an *)
+(*  independent generator at the same context, so the run's binders have  *)
+(*  no reason to avoid it.  (The implementation's global fresh counter    *)
+(*  keeps the two apart; "avoid [ftvar_in_aenv Θ]" cannot, because [Ξ]    *)
+(*  does not exist yet when the run picks its binders.)                   *)
+(*                                                                        *)
+(*  The repair is cluster 3's standard move applied one level up: let the *)
+(*  ∀ rows RE-PICK their binder away from [P0] and hand back RENAMED      *)
+(*  outputs.  No context premise is then needed at all.  [𝒞] changes by a *)
+(*  rigid renaming, which a solvetag run survives                         *)
+(*  ([a_solvetag_subst_cstrs]), so the consumer's tag obligation rides    *)
+(*  along — exactly as in [a_looksub_open_target_at], which is this       *)
+(*  proof's model.                                                        *)
+(*                                                                        *)
+(*  The leak counterexample does NOT touch this form: on its own witness  *)
+(*  [Θ ⊢ ∀.(α → β) ∼[α] ∀.(0 → 0) ⤳ · ⨾ [β₀ ≐]] the substituted run IS    *)
+(*  re-derivable, at any binder [δ ≠ β₀], returning [𝒞] rigidly renamed.  *)
+(*  Only the FIXED-output form is false.                                  *)
+(* ===================================================================== *)
+
+(** A substitution cannot manufacture the looked-for variable: the only way
+    [subst P0 β P] could BE [α] is [P = α] (excluded by the rule) or
+    [P = β] with [P0 = α] (excluded by [α ∉ ftv P0]). *)
+Lemma subst_pskl_in_pskl_neq_var : forall P P0 β α,
+  P <> pskl_var_f α ->
+  α `notin` ftvar_in_pskl P0 ->
+  subst_pskl_in_pskl P0 β P <> pskl_var_f α.
+Proof.
+  intros P P0 β α Hne HαP0 Hc.
+  destruct P; cbn in Hc; try discriminate Hc.
+  match type of Hc with context [if ?e then _ else _] => destruct e end.
+  - subst. cbn in HαP0. clear - HαP0; fsetdec.
+  - apply Hne; exact Hc.
+Qed.
+
+(** The converse of [a_solvetag_split], for the arrow rows.  It needs the
+    LEFT list to be all-eq — [a_solvetag__sub] fires only on a SINGLETON, so
+    a sub constraint may never be followed by anything.  Both arrow rows have
+    it: their left premise is an [a_lookeq] run ([a_lookeq_cstr_eq]). *)
+Lemma a_solvetag_join : forall C1 C2 ψ Ψ1 Ψ2,
+  Forall (fun c => exists Q, c = a_cstr_eq Q) C1 ->
+  C1 ⊩ᵗ ψ ⤳ Ψ1 ->
+  C2 ⊩ᵗ ψ ⤳ Ψ2 ->
+  (C1 ++ C2) ⊩ᵗ ψ ⤳ (Ψ1 `union` Ψ2).
+Proof.
+  induction C1 as [ | c C1' IH ]; intros C2 ψ Ψ1 Ψ2 Hall Hs1 Hs2; cbn.
+  - inversion Hs1; subst.
+    eapply a_solvetag_psi_cong; [ exact Hs2 | fsetdec ].
+  - inversion Hall as [ | c0 cs Hc Htl ]; subst.
+    destruct Hc as [Q ->].
+    inversion Hs1 as [ | | Q0 C0 ψ0 Ψall Ψa Ψb Heqp Hrest HΨ ]; subst.
+    eapply a_solvetag__eq;
+      [ exact Heqp | apply IH; [ exact Htl | exact Hrest | exact Hs2 ]
+      | clear - HΨ; fsetdec ].
+Qed.
+
+Lemma a_looksub_lookeq_subst_gen_size : forall n,
+  (forall Θ α m P P' Ξ 𝒞,
+     2 * (size_pskl P + size_pskl P') + 1 <= n ->
+     Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+     forall β P0 ψa Ψa, β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+     𝒞 ⊩ᵗ ψa ⤳ Ψa ->
+     exists Ξ' 𝒞',
+       Θ ⊢ (subst_pskl_in_pskl P0 β P) ≼[ α , m ] P' ⤳ Ξ' ⨾ 𝒞' /\
+       𝒞' ⊩ᵗ ψa ⤳ Ψa) /\
+  (forall Θ α P P' Ξ 𝒞,
+     2 * (size_pskl P + size_pskl P') <= n ->
+     Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+     forall β P0 ψa Ψa, β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+     𝒞 ⊩ᵗ ψa ⤳ Ψa ->
+     exists Ξ' 𝒞',
+       Θ ⊢ (subst_pskl_in_pskl P0 β P) ∼[ α ] P' ⤳ Ξ' ⨾ 𝒞' /\
+       𝒞' ⊩ᵗ ψa ⤳ Ψa).
+Proof.
+  induction n as [ | n IHn ].
+  { split;
+      [ intros Θ α m P P' Ξ 𝒞 Hn Hd | intros Θ α P P' Ξ 𝒞 Hn Hd ];
+      exfalso; pose proof (size_pskl_min P); pose proof (size_pskl_min P'); lia. }
+  destruct IHn as [IHs IHe].
+  split.
+  (* ==================== the [a_looksub] half ==================== *)
+  { intros Θ α m P P' Ξ 𝒞 Hn Hd β P0 ψa Ψa Hβα HαP0 HlcP0 Hst.
+    destruct Hd as
+      [ Θ α m Q                                   (* LS-Var *)
+      | Θ α m Q Q' Hnf                            (* LS-Absent *)
+      | Θ α m Q                                   (* LS-Vacuous *)
+      | Θ α A B Ξ0 C0 Hne Hg Hg0 Hp               (* LS-Check *)
+      | Θ α A B Ξ0 C0 b Hfr0 Hp                   (* LS-ForallR *)
+      | Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2   (* LS-Arrow *)
+      | Θ α m Q Q' Ξ0 C0 b Hfr0 Hp                (* LS-ForallL *)
+      | Θ α m Q Q' Ξ0 C0 Hp ];                    (* LS-UnivGhostL *)
+      cbn [size_pskl] in Hn.
+    - (* LS-Var : the looked-for variable is not the substituted one *)
+      exists nil, (a_cstr_sub m Q :: nil). cbn.
+      destruct_if; [ exfalso; congruence | ].
+      split; [ apply a_looksub__var | exact Hst ].
+    - (* LS-Absent *)
+      exists nil, nil. split; [ | exact Hst ].
+      apply a_looksub__absent.
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
+      clear - Hup Hnf HαP0; fsetdec.
+    - (* LS-Vacuous *)
+      exists nil, nil. split; [ apply a_looksub__vacuous | exact Hst ].
+    - (* LS-Check : the source is guarded, so the substitution can only
+         change it where the source IS the substituted variable — and there
+         the source was α-free, so the run collected nothing *)
+      assert (Hsz : 2 * (size_pskl A + size_pskl B) <= n) by lia.
+      inversion Hg; subst; cbn [subst_pskl_in_pskl].
+      + (* unit *)
+        exists Ξ0, C0. split; [ | exact Hst ].
+        apply a_looksub__check;
+          [ intro Hc; discriminate Hc | constructor | exact Hg0 | exact Hp ].
+      + (* var *)
+        destruct_if as [-> | Hne0].
+        * destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ Hp)
+            as [-> ->]; [ cbn; clear - Hβα; fsetdec | ].
+          exists nil, nil. split; [ | exact Hst ].
+          apply a_looksub__absent; exact HαP0.
+        * exists Ξ0, C0. split; [ | exact Hst ].
+          apply a_looksub__check;
+            [ exact Hne | constructor | exact Hg0 | exact Hp ].
+      + (* arrow *)
+        destruct (IHe _ _ _ _ _ _ Hsz Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
+          as (Ξ' & C' & Hlk' & Hst').
+        exists Ξ', C'. split; [ | exact Hst' ].
+        apply a_looksub__check;
+          [ intro Hc; discriminate Hc
+          | constructor; apply subst_pskl_in_pskl_lc_pskl; assumption
+          | exact Hg0
+          | cbn [subst_pskl_in_pskl] in Hlk'; exact Hlk' ].
+    - (* LS-ForallR : the TARGET opens.  The source is substituted, so the
+         rule's binder must be RE-PICKED away from [P0]; the run is moved
+         there by the rigid rename, and [𝒞] follows it. *)
+      assert (Hbα : b <> α) by (clear - Hfr0; fsetdec).
+      assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
+      assert (HbA : b `notin` ftvar_in_pskl A) by (clear - Hfr0; fsetdec).
+      assert (HbB : b `notin` ftvar_in_pskl B) by (clear - Hfr0; fsetdec).
+      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
+        by (eapply a_looksub_binder_not_generated; exact Hp).
+      clear Hfr0.
+      pick fresh δ for
+        (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl A
+           `union` ftvar_in_pskl B `union` ftvar_in_pskl P0
+           `union` dom Ξ0 `union` ftvar_in_cstrs C0)))).
+      assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
+      assert (Hδβ : δ <> β) by (clear - Fr; fsetdec).
+      assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
+      assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
+      assert (HδA : δ `notin` ftvar_in_pskl A) by (clear - Fr; fsetdec).
+      assert (HδB : δ `notin` ftvar_in_pskl B) by (clear - Fr; fsetdec).
+      assert (HδP0 : δ `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+      assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
+      assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+      clear Fr.
+      pose proof (a_looksub_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
+      rewrite rename_aenv_cons_tvar_eq in H1.
+      rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
+      rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+      rewrite (subst_pskl_in_pskl_fresh_eq A) in H1 by exact HbA.
+      rewrite <- (subst_pskl_in_pskl_intro b B (pskl_var_f δ)) in H1
+        by exact HbB.
+      assert (Hst1 : (subst_cstrs δ b C0) ⊩ᵗ ψa ⤳ Ψa)
+        by (apply a_solvetag_subst_cstrs; exact Hst).
+      assert (Hsz1 : 2 * (size_pskl A
+                          + size_pskl (open_pskl_wrt_pskl B (pskl_var_f δ)))
+                     + 1 <= n)
+        by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
+      destruct (IHs _ _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa Hβα HαP0 HlcP0 Hst1)
+        as (Ξ' & C' & Hlk' & Hst').
+      exists Ξ', C'. split; [ | exact Hst' ].
+      assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β A)).
+      { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper A P0 β) as Hup.
+        clear - Hup HδP0 HδA; fsetdec. }
+      cbn [subst_pskl_in_pskl].
+      apply a_looksub__forall_r with (β := δ);
+        [ clear - Hδα HδΘ Hδsub HδB; solve_notin | exact Hlk' ].
+    - (* LS-Arrow *)
+      assert (Hall1 : Forall (fun c => exists Q, c = a_cstr_eq Q) C1)
+        by (eapply a_lookeq_cstr_eq; exact Hp1).
+      destruct (a_solvetag_split _ _ Hst) as (Ψ1 & Ψ2 & Hst1 & Hst2 & HΨ).
+      assert (Hsz1 : 2 * (size_pskl P1 + size_pskl P1') <= n) by lia.
+      assert (Hsz2 : 2 * (size_pskl P2 + size_pskl P2') + 1 <= n) by lia.
+      destruct (IHe _ _ _ _ _ _ Hsz1 Hp1 β P0 ψa Ψ1 Hβα HαP0 HlcP0 Hst1)
+        as (Ξ1' & C1' & Hlk1 & Hstn1).
+      destruct (IHs _ _ _ _ _ _ _ Hsz2 Hp2 β P0 ψa Ψ2 Hβα HαP0 HlcP0 Hst2)
+        as (Ξ2' & C2' & Hlk2 & Hstn2).
+      exists (Ξ1' ++ Ξ2'), (C1' ++ C2').
+      cbn [subst_pskl_in_pskl]. split;
+        [ apply a_looksub__arrow; [ exact Hlk1 | exact Hlk2 ] | ].
+      eapply a_solvetag_psi_cong;
+        [ apply a_solvetag_join;
+            [ eapply a_lookeq_cstr_eq; exact Hlk1 | exact Hstn1 | exact Hstn2 ]
+        | clear - HΨ; fsetdec ].
+    - (* LS-ForallL : the SOURCE opens.  If the substituted variable IS this
+         rule's binder the substitution is vacuous; otherwise re-pick. *)
+      assert (Hbα : b <> α) by (clear - Hfr0; fsetdec).
+      assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
+      assert (HbQ : b `notin` ftvar_in_pskl Q) by (clear - Hfr0; fsetdec).
+      assert (HbQ' : b `notin` ftvar_in_pskl Q') by (clear - Hfr0; fsetdec).
+      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
+        by (eapply a_looksub_binder_not_generated; exact Hp).
+      clear Hfr0.
+      destruct (β == b) as [-> | Hβb].
+      + (* vacuous: the binder avoids the source's free variables *)
+        exists Ξ0, C0. cbn [subst_pskl_in_pskl].
+        rewrite (subst_pskl_in_pskl_fresh_eq Q) by exact HbQ.
+        split; [ apply a_looksub__forall_l with (β := b);
+                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin | exact Hp ]
+               | exact Hst ].
+      + pick fresh δ for
+          (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
+             `union` ftvar_in_pskl Q' `union` ftvar_in_pskl P0
+             `union` dom Ξ0 `union` ftvar_in_cstrs C0)))).
+        assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
+        assert (Hδβ : δ <> β) by (clear - Fr; fsetdec).
+        assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
+        assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
+        assert (HδQ : δ `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
+        assert (HδQ' : δ `notin` ftvar_in_pskl Q') by (clear - Fr; fsetdec).
+        assert (HδP0 : δ `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+        assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
+        assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+        clear Fr.
+        pose proof (a_looksub_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
+        rewrite rename_aenv_cons_tvar_eq in H1.
+        rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
+        rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+        rewrite (subst_pskl_in_pskl_fresh_eq Q') in H1 by exact HbQ'.
+        rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f δ)) in H1
+          by exact HbQ.
+        assert (Hst1 : (subst_cstrs δ b C0) ⊩ᵗ ψa ⤳ Ψa)
+          by (apply a_solvetag_subst_cstrs; exact Hst).
+        assert (Hsz1 : 2 * (size_pskl (open_pskl_wrt_pskl Q (pskl_var_f δ))
+                            + size_pskl Q') + 1 <= n)
+          by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
+        destruct (IHs _ _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa Hβα HαP0 HlcP0 Hst1)
+          as (Ξ' & C' & Hlk' & Hst').
+        rewrite <- (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q P0 β)
+          in Hlk' by (solve [ congruence | exact HlcP0 ]).
+        exists Ξ', C'. split; [ | exact Hst' ].
+        assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
+        { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
+          clear - Hup HδP0 HδQ; fsetdec. }
+        cbn [subst_pskl_in_pskl].
+        apply a_looksub__forall_l with (β := δ);
+          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin | exact Hlk' ].
+    - (* LS-UnivGhostL *)
+      assert (Hsz1 : 2 * (size_pskl Q + size_pskl Q') + 1 <= n) by lia.
+      destruct (IHs _ _ _ _ _ _ _ Hsz1 Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
+        as (Ξ' & C' & Hlk' & Hst').
+      exists Ξ', C'. cbn [subst_pskl_in_pskl]. split;
+        [ apply a_looksub__univ_ghost_l; exact Hlk' | exact Hst' ]. }
+  (* ==================== the [a_lookeq] half ==================== *)
+  { intros Θ α P P' Ξ 𝒞 Hn Hd β P0 ψa Ψa Hβα HαP0 HlcP0 Hst.
+    destruct Hd as
+      [ Θ α Q                                     (* LE-Var *)
+      | Θ α Q Q' Hnf                              (* LE-Absent *)
+      | Θ α Q                                     (* LE-Vacuous *)
+      | Θ α Q bt γ Hfrγ Hne Hin                   (* LE-FlexR *)
+      | Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2 Hp1 Hp2     (* LE-Arrow *)
+      | Θ α Q Q' Ξ0 C0 b Hfr0 Hp                  (* LE-ForallInh *)
+      | Θ α Q Q' Ξ0 C0 b Hfr0 Hp                  (* LE-ForallSyn *)
+      | Θ α Q Q' Ξ0 C0 Hp                         (* LE-UnivGhost *)
+      | Θ α Q Q' Ξ0 C0 b Hfr0 Hp                  (* LE-UnivGhost1 *)
+      | Θ α Q Q' Ξ0 C0 Hg Hp                      (* LE-UnivGhost2 *)
+      | Θ α Q Q' Ξ0 C0 Hne Hg Hp ];               (* LE-UnivGhostR *)
+      cbn [size_pskl] in Hn.
+    - (* LE-Var *)
+      exists nil, (a_cstr_eq Q :: nil). cbn.
+      destruct_if; [ exfalso; congruence | ].
+      split; [ apply a_lookeq__var | exact Hst ].
+    - (* LE-Absent *)
+      exists nil, nil. split; [ | exact Hst ].
+      apply a_lookeq__absent.
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
+      clear - Hup Hnf HαP0; fsetdec.
+    - (* LE-Vacuous *)
+      exists nil, nil. split; [ apply a_lookeq__vacuous | exact Hst ].
+    - (* LE-FlexR : the generated flexible must now avoid [P0] as well, so it
+         too is RE-PICKED — and the single constraint follows it. *)
+      pick fresh γ' for
+        (add α (add bt (add γ (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
+           `union` ftvar_in_pskl P0)))).
+      assert (Hγ'α : γ' <> α) by (clear - Fr; fsetdec).
+      assert (Hγ'bt : γ' <> bt) by (clear - Fr; fsetdec).
+      assert (Hγ'Θ : γ' `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
+      assert (Hγ'Q : γ' `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
+      assert (Hγ'P0 : γ' `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+      assert (Hγ'sub : γ' `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
+      { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
+        clear - Hup Hγ'Q Hγ'P0; fsetdec. }
+      clear Fr.
+      exists ((γ' ~ abind_flex_mono) ++ nil),
+             (a_cstr_eq (pskl_var_f γ') :: nil).
+      split.
+      + apply a_lookeq__flex_r.
+        * clear - Hγ'α Hγ'bt Hγ'Θ Hγ'sub; look_fresh.
+        * apply subst_pskl_in_pskl_neq_var; [ exact Hne | exact HαP0 ].
+        * pose proof (ftvar_in_pskl_subst_pskl_in_pskl_lower Q P0 β) as Hlo.
+          clear - Hlo Hin Hβα; fsetdec.
+      + pose proof (a_solvetag_subst_cstrs Hst γ γ') as Hst'.
+        cbn in Hst'.
+        match type of Hst' with context [if ?e then _ else _] => destruct e end;
+          [ exact Hst' | congruence ].
+    - (* LE-Arrow *)
+      assert (Hall1 : Forall (fun c => exists Q, c = a_cstr_eq Q) C1)
+        by (eapply a_lookeq_cstr_eq; exact Hp1).
+      destruct (a_solvetag_split _ _ Hst) as (Ψ1 & Ψ2 & Hst1 & Hst2 & HΨ).
+      assert (Hsz1 : 2 * (size_pskl P1 + size_pskl P1') <= n) by lia.
+      assert (Hsz2 : 2 * (size_pskl P2 + size_pskl P2') <= n) by lia.
+      destruct (IHe _ _ _ _ _ _ Hsz1 Hp1 β P0 ψa Ψ1 Hβα HαP0 HlcP0 Hst1)
+        as (Ξ1' & C1' & Hlk1 & Hstn1).
+      destruct (IHe _ _ _ _ _ _ Hsz2 Hp2 β P0 ψa Ψ2 Hβα HαP0 HlcP0 Hst2)
+        as (Ξ2' & C2' & Hlk2 & Hstn2).
+      exists (Ξ1' ++ Ξ2'), (C1' ++ C2').
+      cbn [subst_pskl_in_pskl]. split;
+        [ apply a_lookeq__arrow; [ exact Hlk1 | exact Hlk2 ] | ].
+      eapply a_solvetag_psi_cong;
+        [ apply a_solvetag_join;
+            [ eapply a_lookeq_cstr_eq; exact Hlk1 | exact Hstn1 | exact Hstn2 ]
+        | clear - HΨ; fsetdec ].
+    - (* LE-ForallInh : BOTH sides open *)
+      assert (Hbα : b <> α) by (clear - Hfr0; fsetdec).
+      assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
+      assert (HbQ : b `notin` ftvar_in_pskl Q) by (clear - Hfr0; fsetdec).
+      assert (HbQ' : b `notin` ftvar_in_pskl Q') by (clear - Hfr0; fsetdec).
+      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
+        by (eapply a_lookeq_binder_not_generated; exact Hp).
+      clear Hfr0.
+      destruct (β == b) as [-> | Hβb].
+      + exists Ξ0, C0. cbn [subst_pskl_in_pskl].
+        rewrite (subst_pskl_in_pskl_fresh_eq Q) by exact HbQ.
+        split; [ apply a_lookeq__forall_inh with (β := b);
+                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin | exact Hp ]
+               | exact Hst ].
+      + pick fresh δ for
+          (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
+             `union` ftvar_in_pskl Q' `union` ftvar_in_pskl P0
+             `union` dom Ξ0 `union` ftvar_in_cstrs C0)))).
+        assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
+        assert (Hδβ : δ <> β) by (clear - Fr; fsetdec).
+        assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
+        assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
+        assert (HδQ : δ `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
+        assert (HδQ' : δ `notin` ftvar_in_pskl Q') by (clear - Fr; fsetdec).
+        assert (HδP0 : δ `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+        assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
+        assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+        clear Fr.
+        pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
+        rewrite rename_aenv_cons_tvar_eq in H1.
+        rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
+        rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+        rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f δ)) in H1
+          by exact HbQ.
+        rewrite <- (subst_pskl_in_pskl_intro b Q' (pskl_var_f δ)) in H1
+          by exact HbQ'.
+        assert (Hst1 : (subst_cstrs δ b C0) ⊩ᵗ ψa ⤳ Ψa)
+          by (apply a_solvetag_subst_cstrs; exact Hst).
+        assert (Hsz1 : 2 * (size_pskl (open_pskl_wrt_pskl Q (pskl_var_f δ))
+                       + size_pskl (open_pskl_wrt_pskl Q' (pskl_var_f δ))) <= n)
+          by (rewrite ! size_pskl_open_pskl_wrt_pskl_var; lia).
+        destruct (IHe _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa Hβα HαP0 HlcP0 Hst1)
+          as (Ξ' & C' & Hlk' & Hst').
+        rewrite <- (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q P0 β)
+          in Hlk' by (solve [ congruence | exact HlcP0 ]).
+        exists Ξ', C'. split; [ | exact Hst' ].
+        assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
+        { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
+          clear - Hup HδP0 HδQ; fsetdec. }
+        cbn [subst_pskl_in_pskl].
+        apply a_lookeq__forall_inh with (β := δ);
+          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin | exact Hlk' ].
+    - (* LE-ForallSyn : only the SOURCE opens; the target is untouched *)
+      assert (Hbα : b <> α) by (clear - Hfr0; fsetdec).
+      assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
+      assert (HbQ : b `notin` ftvar_in_pskl Q) by (clear - Hfr0; fsetdec).
+      assert (HbQ' : b `notin` ftvar_in_pskl Q') by (clear - Hfr0; fsetdec).
+      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
+        by (eapply a_lookeq_binder_not_generated; exact Hp).
+      clear Hfr0.
+      destruct (β == b) as [-> | Hβb].
+      + exists Ξ0, C0. cbn [subst_pskl_in_pskl].
+        rewrite (subst_pskl_in_pskl_fresh_eq Q) by exact HbQ.
+        split; [ apply a_lookeq__forall_syn with (β := b);
+                   [ clear - Hbα HbΘ HbQ HbQ'; solve_notin | exact Hp ]
+               | exact Hst ].
+      + pick fresh δ for
+          (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
+             `union` ftvar_in_pskl Q' `union` ftvar_in_pskl P0
+             `union` dom Ξ0 `union` ftvar_in_cstrs C0)))).
+        assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
+        assert (Hδβ : δ <> β) by (clear - Fr; fsetdec).
+        assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
+        assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
+        assert (HδQ : δ `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
+        assert (HδQ' : δ `notin` ftvar_in_pskl Q') by (clear - Fr; fsetdec).
+        assert (HδP0 : δ `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+        assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
+        assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+        clear Fr.
+        pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
+        rewrite rename_aenv_cons_tvar_eq in H1.
+        rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
+        rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+        rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q')) in H1
+          by (cbn; exact HbQ').
+        rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f δ)) in H1
+          by exact HbQ.
+        assert (Hst1 : (subst_cstrs δ b C0) ⊩ᵗ ψa ⤳ Ψa)
+          by (apply a_solvetag_subst_cstrs; exact Hst).
+        assert (Hsz1 : 2 * (size_pskl (open_pskl_wrt_pskl Q (pskl_var_f δ))
+                       + size_pskl (pskl_tophole Q')) <= n)
+          by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
+        destruct (IHe _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa Hβα HαP0 HlcP0 Hst1)
+          as (Ξ' & C' & Hlk' & Hst').
+        rewrite <- (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q P0 β)
+          in Hlk' by (solve [ congruence | exact HlcP0 ]).
+        exists Ξ', C'. split; [ | exact Hst' ].
+        assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
+        { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
+          clear - Hup HδP0 HδQ; fsetdec. }
+        cbn [subst_pskl_in_pskl] in Hlk' |- *.
+        apply a_lookeq__forall_syn with (β := δ);
+          [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin | exact Hlk' ].
+    - (* LE-UnivGhost *)
+      assert (Hsz1 : 2 * (size_pskl Q + size_pskl Q') <= n) by lia.
+      destruct (IHe _ _ _ _ _ _ Hsz1 Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
+        as (Ξ' & C' & Hlk' & Hst').
+      exists Ξ', C'. cbn [subst_pskl_in_pskl]. split;
+        [ apply a_lookeq__univ_ghost; exact Hlk' | exact Hst' ].
+    - (* LE-UnivGhost1 : the TARGET opens; the source keeps its ∀◇ *)
+      assert (Hbα : b <> α) by (clear - Hfr0; fsetdec).
+      assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
+      assert (HbQ : b `notin` ftvar_in_pskl Q) by (clear - Hfr0; fsetdec).
+      assert (HbQ' : b `notin` ftvar_in_pskl Q') by (clear - Hfr0; fsetdec).
+      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
+        by (eapply a_lookeq_binder_not_generated; exact Hp).
+      clear Hfr0.
+      pick fresh δ for
+        (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
+           `union` ftvar_in_pskl Q' `union` ftvar_in_pskl P0
+           `union` dom Ξ0 `union` ftvar_in_cstrs C0)))).
+      assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
+      assert (Hδβ : δ <> β) by (clear - Fr; fsetdec).
+      assert (Hδb : δ <> b) by (clear - Fr; fsetdec).
+      assert (HδΘ : δ `notin` ftvar_in_aenv Θ) by (clear - Fr; fsetdec).
+      assert (HδQ : δ `notin` ftvar_in_pskl Q) by (clear - Fr; fsetdec).
+      assert (HδQ' : δ `notin` ftvar_in_pskl Q') by (clear - Fr; fsetdec).
+      assert (HδP0 : δ `notin` ftvar_in_pskl P0) by (clear - Fr; fsetdec).
+      assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; fsetdec).
+      assert (HδC : δ `notin` ftvar_in_cstrs C0) by (clear - Fr; fsetdec).
+      clear Fr.
+      pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
+      rewrite rename_aenv_cons_tvar_eq in H1.
+      rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
+      rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+      rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q)) in H1
+        by (cbn; exact HbQ).
+      rewrite <- (subst_pskl_in_pskl_intro b Q' (pskl_var_f δ)) in H1
+        by exact HbQ'.
+      assert (Hst1 : (subst_cstrs δ b C0) ⊩ᵗ ψa ⤳ Ψa)
+        by (apply a_solvetag_subst_cstrs; exact Hst).
+      assert (Hsz1 : 2 * (size_pskl (pskl_tophole Q)
+                     + size_pskl (open_pskl_wrt_pskl Q' (pskl_var_f δ))) <= n)
+        by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
+      destruct (IHe _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa Hβα HαP0 HlcP0 Hst1)
+        as (Ξ' & C' & Hlk' & Hst').
+      exists Ξ', C'. split; [ | exact Hst' ].
+      assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
+      { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
+        clear - Hup HδP0 HδQ; fsetdec. }
+      cbn [subst_pskl_in_pskl] in Hlk' |- *.
+      apply a_lookeq__univ_ghost1 with (β := δ);
+        [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin | exact Hlk' ].
+    - (* LE-UnivGhost2 : the guard is on the TARGET, untouched *)
+      assert (Hsz1 : 2 * (size_pskl Q + size_pskl Q') <= n) by lia.
+      destruct (IHe _ _ _ _ _ _ Hsz1 Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
+        as (Ξ' & C' & Hlk' & Hst').
+      exists Ξ', C'. cbn [subst_pskl_in_pskl]. split;
+        [ apply a_lookeq__univ_ghost2; [ exact Hg | exact Hlk' ] | exact Hst' ].
+    - (* LE-UnivGhostR : the guard is on the SOURCE — same three shapes as
+         LS-Check, and the [var] shape switches to LE-Absent *)
+      assert (Hsz1 : 2 * (size_pskl Q + size_pskl Q') <= n) by lia.
+      inversion Hg; subst; cbn [subst_pskl_in_pskl].
+      + (* unit *)
+        exists Ξ0, C0. split; [ | exact Hst ].
+        apply a_lookeq__univ_ghost_r;
+          [ intro Hc; discriminate Hc | constructor | exact Hp ].
+      + (* var *)
+        destruct_if as [-> | Hne0].
+        * destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ Hp)
+            as [-> ->]; [ cbn; clear - Hβα; fsetdec | ].
+          exists nil, nil. split; [ | exact Hst ].
+          apply a_lookeq__absent; exact HαP0.
+        * exists Ξ0, C0. split; [ | exact Hst ].
+          apply a_lookeq__univ_ghost_r;
+            [ exact Hne | constructor | exact Hp ].
+      + (* arrow *)
+        destruct (IHe _ _ _ _ _ _ Hsz1 Hp β P0 ψa Ψa Hβα HαP0 HlcP0 Hst)
+          as (Ξ' & C' & Hlk' & Hst').
+        exists Ξ', C'. split; [ | exact Hst' ].
+        apply a_lookeq__univ_ghost_r;
+          [ intro Hc; discriminate Hc
+          | constructor; apply subst_pskl_in_pskl_lc_pskl; assumption
+          | cbn [subst_pskl_in_pskl] in Hlk'; exact Hlk' ]. }
+Qed.
+
+(** The size-free wrappers.  These are what the decoration layer's ForallL
+    rows call: substitute the node's guess into the collected run, and take
+    the RENAMED outputs — the solvetag obligation crosses with them. *)
+Lemma a_looksub_subst_gen : forall Θ α m P P' Ξ 𝒞 β P0 ψa Ψa,
+  Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+  𝒞 ⊩ᵗ ψa ⤳ Ψa ->
+  β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+  exists Ξ' 𝒞',
+    Θ ⊢ (subst_pskl_in_pskl P0 β P) ≼[ α , m ] P' ⤳ Ξ' ⨾ 𝒞' /\
+    𝒞' ⊩ᵗ ψa ⤳ Ψa.
+Proof.
+  intros * Hlk Hst Hβα HαP0 HlcP0.
+  eapply (proj1 (a_looksub_lookeq_subst_gen_size
+                   (2 * (size_pskl P + size_pskl P') + 1)));
+    solve [ lia | eassumption ].
+Qed.
+
+Lemma a_lookeq_subst_gen : forall Θ α P P' Ξ 𝒞 β P0 ψa Ψa,
+  Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+  𝒞 ⊩ᵗ ψa ⤳ Ψa ->
+  β <> α -> α `notin` ftvar_in_pskl P0 -> lc_pskl P0 ->
+  exists Ξ' 𝒞',
+    Θ ⊢ (subst_pskl_in_pskl P0 β P) ∼[ α ] P' ⤳ Ξ' ⨾ 𝒞' /\
+    𝒞' ⊩ᵗ ψa ⤳ Ψa.
+Proof.
+  intros * Hlk Hst Hβα HαP0 HlcP0.
+  eapply (proj2 (a_looksub_lookeq_subst_gen_size
+                   (2 * (size_pskl P + size_pskl P'))));
+    solve [ lia | eassumption ].
+Qed.
+
+(** FRESHEN A RUN AWAY FROM ONE ATOM.  A consumer that must open the run's
+    target at a binder it does NOT control — the decoration layer's ForallR
+    row opens at the [a_subtag] rule's own Barendregt binder — needs that
+    binder to miss the run's OUTPUTS, and nothing relates the two: the run's
+    generated flexibles and leaked binders come from a different generator
+    (same "two independent fresh sources" gap as §8).  One rigid rename
+    settles it, because there is at most ONE offending name: rename [β]
+    itself to a fresh [δ].  The inputs are untouched ([β] misses them by
+    hypothesis) and the outputs move, so [𝒞] again rides across on
+    [a_solvetag_subst_cstrs]. *)
+Lemma dom_rename_aenv_notin : forall Ξ γ β,
+  γ <> β -> β `notin` dom (rename_aenv γ β Ξ).
+Proof.
+  induction Ξ as [ | [x bd] Ξ' IH ]; intros γ β Hne; cbn; [ fsetdec | ].
+  assert (H' := IH γ β Hne).
+  destruct (x == β) as [-> | Hx];
+    [ clear - H' Hne | clear - H' Hne Hx ]; fsetdec.
+Qed.
+
+Lemma a_looksub_avoid_atom : forall Θ α m P P' Ξ 𝒞 ψa Ψa β δ,
+  Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+  𝒞 ⊩ᵗ ψa ⤳ Ψa ->
+  β <> α -> δ <> α -> δ <> β ->
+  β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl P' ->
+  δ `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
+            `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+  exists Ξ' 𝒞',
+    Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ' ⨾ 𝒞' /\
+    𝒞' ⊩ᵗ ψa ⤳ Ψa /\
+    β `notin` dom Ξ' `union` ftvar_in_cstrs 𝒞'.
+Proof.
+  intros Θ α m P P' Ξ 𝒞 ψa Ψa β δ Hlk Hst Hβα Hδα Hδβ Hβ Hδ.
+  pose proof (a_looksub_rename_tvar Hlk Hβα Hδα ltac:(clear - Hδ; fsetdec))
+    as H1.
+  rewrite (@rename_aenv_fresh_eq Θ δ β) in H1 by (clear - Hβ; fsetdec).
+  rewrite (subst_pskl_in_pskl_fresh_eq P) in H1 by (clear - Hβ; fsetdec).
+  rewrite (subst_pskl_in_pskl_fresh_eq P') in H1 by (clear - Hβ; fsetdec).
+  exists (rename_aenv δ β Ξ), (subst_cstrs δ β 𝒞).
+  repeat apply conj;
+    [ exact H1 | apply a_solvetag_subst_cstrs; exact Hst | ].
+  pose proof (dom_rename_aenv_notin Ξ Hδβ) as Hd.
+  pose proof (ftvar_in_cstrs_subst_upper δ β 𝒞) as Hc.
+  clear - Hd Hc Hδβ; fsetdec.
+Qed.

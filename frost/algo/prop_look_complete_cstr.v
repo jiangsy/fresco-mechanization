@@ -177,26 +177,9 @@ Proof.
   pose proof (ftag_in_uskl_ptyp_to_uskl_syn (msubst_lookup κ α)) as Hgf.
   fsetdec.
 Qed.
-(* EXISTS-FRESH SIMPLIFICATION (cluster 3): the three ∀ rows used to hand back
-   a cofinite family, and each needed a representative picked off [L]; now the
-   IH is the premise's own, and the rows are plain [assumption]. *)
-Lemma a_lookeq_cstr_eq : forall Θ α P P' Ξ 𝒞,
-  Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
-  Forall (fun c => exists Q, c = a_cstr_eq Q) 𝒞.
-Proof.
-  intros Θ α P P' Ξ 𝒞 H; induction H.
-  - constructor; [ eexists; reflexivity | constructor ].  (* var *)
-  - constructor.                                          (* absent *)
-  - constructor.                                          (* vacuous *)
-  - constructor; [ eexists; reflexivity | constructor ].  (* flex_r *)
-  - apply Forall_app; split; assumption.                 (* arrow *)
-  - assumption.                                           (* forall_inh *)
-  - assumption.                                           (* forall_syn *)
-  - assumption.                                           (* univ_ghost *)
-  - assumption.                                           (* univ_ghost1 *)
-  - assumption.                                           (* univ_ghost2 *)
-  - assumption.                                           (* univ_ghost_r *)
-Qed.
+(* MOVED to prop_looksub.v §2 (2026-08-01): it is a basic property of the
+   judgment, and the SOURCE-substitution lemma in prop_decorate_sub.v — which
+   this file depends on — needs it for its arrow rows. *)
 
 (* Compose two constraint solves over an appended EQ-only list. *)
 Lemma a_solve_cstr_app : forall Θ C1 𝒞2 Pi Pmid Pa,

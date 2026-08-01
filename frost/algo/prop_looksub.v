@@ -228,6 +228,31 @@ Proof.
          [ right; clear - n; fsetdec | left; clear - Hl Hup Hne; fsetdec ].
 Qed.
 
+(* A CONSISTENCY collection only ever deposits eq constraints.  MOVED here
+   from prop_look_complete_cstr.v (2026-08-01): it is a basic property of the
+   judgment, and the source-substitution lemma of prop_decorate_sub.v needs it
+   for its arrow rows — that file is UPSTREAM of P6-Cs.
+   EXISTS-FRESH SIMPLIFICATION (cluster 3): the three ∀ rows used to hand back
+   a cofinite family, and each needed a representative picked off [L]; now the
+   IH is the premise's own, and the rows are plain [assumption]. *)
+Lemma a_lookeq_cstr_eq : forall Θ α P P' Ξ 𝒞,
+  Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+  Forall (fun c => exists Q, c = a_cstr_eq Q) 𝒞.
+Proof.
+  intros Θ α P P' Ξ 𝒞 H; induction H.
+  - constructor; [ eexists; reflexivity | constructor ].  (* var *)
+  - constructor.                                          (* absent *)
+  - constructor.                                          (* vacuous *)
+  - constructor; [ eexists; reflexivity | constructor ].  (* flex_r *)
+  - apply Forall_app; split; assumption.                 (* arrow *)
+  - assumption.                                           (* forall_inh *)
+  - assumption.                                           (* forall_syn *)
+  - assumption.                                           (* univ_ghost *)
+  - assumption.                                           (* univ_ghost1 *)
+  - assumption.                                           (* univ_ghost2 *)
+  - assumption.                                           (* univ_ghost_r *)
+Qed.
+
 Lemma a_looksub_ftv : forall Θ α m P P' Ξ 𝒞,
   Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
   forall α0, α0 `in` ftvar_in_cstrs 𝒞 ->
