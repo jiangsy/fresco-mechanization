@@ -2061,7 +2061,15 @@ Theorem a_lookeq_solve_complete_gen :
                           `union` def_ftv Θ /\
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\               (* κa : Θ0,Ξc ⊑ Θ *)
     a_inc_equiv Θ0 κ κ Θ /\                      (* κ ≡ κa on Θ0: κa|Θ0 = κ (ρc fresh) *)
-    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\   (* ρc fresh w.r.t. Θ0, α *)
+    (* ρc / Ξc's names are the ones the RUN INVENTED, so they avoid everything
+       that existed when it started: α, both contexts, and the ideal guess ψa.
+       ⚙ The ψa disjunct is cluster 3's addition, and it is load-bearing: since
+       [a_looksub_lookeq_ftv] became DISJUNCTIVE (the ∀ rules leak), the only
+       bound on 𝒞 is the ψa-based one below, so the Arrow row can no longer
+       show that the RIGHT branch's fresh flexibles miss the LEFT branch's
+       constraints without knowing they miss ψa. *)
+    (forall α0, α0 `in` dom κc ->
+       α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
     Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   induction n as [ | n IHn ];
@@ -2078,6 +2086,14 @@ Proof.
   assert (HΔρΘ : Δρ [<=] dom Θ).
   { intros α0 Hα0. destruct (Hrfr α0 Hα0) as (Hb & _ & _).
     apply binds_In in Hb; exact Hb. }
+  (* …and they are rigids of Θ0 too — an increase never INVENTS a rigid
+     ([a_inc_binds_tvar_rev], prop_inc.v).  This is what discharges the
+     "…or the run invented this name" arm of [a_lookeq_ftv_ctx] for a
+     ρ-replaced variable. *)
+  assert (HΔρΘ0 : Δρ [<=] dom Θ0).
+  { intros α0 Hα0. destruct (Hrfr α0 Hα0) as (Hb & _ & _).
+    apply binds_In with (a := abind_tvar).
+    eapply a_inc_binds_tvar_rev; [ exact Hκ | exact Hb ]. }
   (* ---------------------------------------------------------------- *)
   (* Special case P0 = □ (LE-Vacuous): refinement inversion gives Q   *)
   (* synthesised ⇒ Ψsub = ∅ ⇒ Ψa = ∅; take 𝒞=·, Ξc=·, Pa=Pi, κa=κ.    *)
@@ -2342,7 +2358,10 @@ Proof.
                 cbn [ftag_in_uskl] in Ht; clear - Hsub Ht HΨie; fsetdec).
           pick fresh α1 for
             (add α (dom Θ0 `union` dom Θ) `union` dom Θ `union` dom κ
-               `union` ftvar_in_pskl Pi
+               (* [ψa] is GONE here ([subst ψa] above turned it into [α0]),
+                  so the "invented names avoid the guess" conjunct reads as
+                  [α1 <> α0] *)
+               `union` ftvar_in_pskl Pi `union` singleton α0
                (* LE-FlexR's own [fresh γ̂] (cluster 3): the generated
                   flexible avoids the ambient context and both inputs *)
                `union` ftvar_in_aenv Θ0 `union` singleton β0
@@ -2374,7 +2393,7 @@ Proof.
           -- apply a_inc_equiv_refl; exact Hκ.
           -- intros α2 Hα2; simpl in Hα2.
              assert (α2 = α1) by (clear - Hα2; fsetdec); subst α2.
-             clear - Fr; fsetdec.
+             simpl; clear - Fr; fsetdec.
           -- (* precision: [SolE-Var] kept α0, and the fresh α1 entry is
                 invisible to it *)
              rewrite HPieq in Hpre.
@@ -2404,9 +2423,14 @@ Proof.
           exact HΨ't. }
         assert (HΨie : Ψi [=] empty) by (clear - Hsub HΨ'e; fsetdec).
         assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).
-        (* fresh α1 for the LE-FlexR payload *)
+        (* fresh α1 for the LE-FlexR payload.  The last four unions are
+           LE-FlexR's own [fresh γ̂] (cluster 3): the generated flexible avoids
+           the ambient context, the flexible on the right, and the subject. *)
         pick fresh α1 for
-          (add α (dom Θ0 `union` dom Θ) `union` dom Θ `union` dom κ `union` ftvar_in_pskl Pi).
+          (add α (dom Θ0 `union` dom Θ) `union` dom Θ `union` dom κ `union` ftvar_in_pskl Pi
+             `union` ftvar_in_uskl ψa
+             `union` ftvar_in_aenv Θ0 `union` singleton β0
+             `union` ftvar_in_pskl ⌊ Ra ⌋ˢ `union` ftvar_in_pskl ⌊ Rb ⌋ˢ).
         assert (Hγdom0 : α1 `notin` dom Θ0) by auto.
         (* Pa and the three Pa-dependent facts (solve / wf / precision) *)
         assert (Hbγ : binds α1 abind_flex_mono (((α1 ~ abind_flex_mono) ++ nil) ++ Θ0))
@@ -2483,7 +2507,8 @@ Proof.
                ((α1 ~ abind_flex_mono) ++ nil), Pa, ((α1, τψ) :: nil).
         repeat split.
         -- (* a_lookeq : LE-FlexR *)
-           apply a_lookeq__flex_r; [ exact HPnα | exact Hin ].
+           apply a_lookeq__flex_r;
+             [ cbn; clear - Fr; solve_notin | exact HPnα | exact Hin ].
         -- (* solve *)
            eapply a_solve_cstr__eq; [ exact Hsolve_eq | apply a_solve_cstr__empty ].
         -- (* wf Pa *) exact HwfPa.
@@ -2606,12 +2631,17 @@ Proof.
                   α0 `notin` ftvar_in_pskl Pa1).
         { intros α0 Hα0.
           (* EXACT bound (the consistency collection is all-eq, and the eq
-             half never leaks) — [a_solve_cstr_ftv] is disjunctive now *)
+             half never leaks) — [a_solve_cstr_ftv] is disjunctive now.  The
+             look's bound is disjunctive too, but α0 is a RIGID OF Θ0, so it
+             is not a name the run can have invented ([a_lookeq_ftv_ctx]). *)
           pose proof (a_solve_cstr_ftv_eq HSolve1 (a_lookeq_cstr_eq HLK1))
             as Hs1.
-          pose proof ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ _ HLK1) as Hc1.
           pose proof (HΔρftv α0 Hα0) as Hd0. cbn [ftvar_in_pskl] in Hd0.
           pose proof (HΔρΞc1 α0 Hα0) as HΞ.
+          assert (Hc1 : α0 `notin` ftvar_in_cstrs C1).
+          { eapply a_lookeq_ftv_ctx;
+              [ exact HLK1 | clear - HΔρΘ0 Hα0; fsetdec
+              | clear - Hd0; fsetdec | exact HΞ ]. }
           clear - Hs1 Hc1 Hd0 HΞ; fsetdec. }
         assert (HΔρftvR : forall α0, α0 `in` Δρ ->
                   α0 `notin` ftvar_in_pskl P02 `union` ftvar_in_pskl Pa1).
@@ -2706,7 +2736,16 @@ Proof.
           clear - Hf; fsetdec. }
         exists (C1 ++ C2), (Ξc1 ++ Ξc2), Pa2, (κc1 ++ κc2).
         repeat split.
-        -- (* a_lookeq *) apply a_lookeq__arrow; [ exact HLK1 | exact HLK2 ].
+        -- (* a_lookeq.  The RIGHT branch ran at the GROWN context [Ξc1 ++ Θ0]
+              (its own flexibles avoid the left branch's block); the rule
+              wants both halves at [Θ0], and dropping declarations only
+              SHRINKS the avoid-set, which is the direction
+              [a_lookeq_ctx_ftv_mono] goes. *)
+           apply a_lookeq__arrow;
+             [ exact HLK1
+             | eapply a_lookeq_ctx_ftv_mono;
+                 [ exact HLK2
+                 | rewrite ftvar_in_aenv_app; clear; fsetdec ] ].
         -- (* solve *)
            (* the three Ξc2-apartness facts, each proved from a SMALL set of
               inclusions — [fsetdec] on all of them at once does not scale *)
@@ -2717,11 +2756,19 @@ Proof.
              simpl in Hfd; clear - Hfd HΞ2disj; fsetdec. }
            assert (HΞ2C1 : forall x, x `in` dom Ξc2 ->
                      x `notin` ftvar_in_cstrs C1).
-           { intros x Hx;
-             pose proof ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ _ HLK1) as Hcf;
-             pose proof (a_wf_pskl_ftv_dom HwfP01) as Hpf;
-             specialize (HΞ2disj x Hx); rewrite dom_app in HΞ2disj;
-             simpl in Hpf; clear - Hcf Hpf HΞ2disj; fsetdec. }
+           { (* [a_looksub_lookeq_ftv]'s EXACT bound is gone (the ∀ rules
+                leak), and x is a name the RIGHT run invented, so the ctx
+                corollary does not apply either.  What does apply is the
+                IH's OWN ftv-𝒞 bound: the left run's constraints live in
+                ψa ∪ dom Ξc1 ∪ dom κ ∪ def_ftv Θ, and an invented name
+                avoids all four. *)
+             intros x Hx. rewrite <- Hd2 in Hx.
+             pose proof (Hκf2 x Hx) as Hf. rewrite dom_app in Hf.
+             assert (Hxκ : x `notin` dom κ).
+             { intro Hc. destruct (a_inc_dom_flex Hκ Hc) as [Hb | [τ0 Hb]];
+                 apply binds_In in Hb; clear - Hf Hb; fsetdec. }
+             pose proof (def_ftv_dom HwfΘ) as Hdf.
+             clear - HftvC1 Hf Hxκ Hdf; fsetdec. }
            (* OUTPUT freshness (new premise of the weakening): C1 is all-eq,
               so [a_solve_cstr_ftv_eq] bounds Pa1 EXACTLY by the two sets
               Ξc2 already avoids *)
@@ -2896,6 +2943,8 @@ Proof.
              `union` ftvar_in_uskl R0 `union` ftvar_in_pskl (uskl_to_pskl R0)
              `union` ftvar_in_pskl Pi `union` ftvar_in_pskl P0'
              `union` def_ftv Θ
+             (* the ∀ rule's own avoid-input (cluster 3) *)
+             `union` ftvar_in_aenv Θ0
                 `union` Ls0).
         assert (HβΘ : β `notin` dom Θ) by auto.
         assert (HβΘ0 : β `notin` dom Θ0) by auto.
@@ -3021,20 +3070,12 @@ Proof.
         assert (Hfmc : all_flex_mono Ξc) by (eapply a_lookeq_all_flex_mono; exact HLK).
         exists 𝒞, Ξc, Pa, κc.
         repeat split.
-        -- (* a_lookeq : LE-ForallInh (BOTH sides renamed) *)
-           apply a_lookeq__forall_inh
-             with (L := singleton α `union` singleton β
-                          `union` ftvar_in_pskl (uskl_to_pskl R0)
-                          `union` ftvar_in_pskl P0').
-           intros α1 Hα1.
+        -- (* a_lookeq : LE-ForallInh.  Exists-fresh: the rule fires at the very
+              β this row already picked, so there is no representative to rename
+              back — the payoff the campaign predicted. *)
            rewrite uskl_to_pskl_open in HLK.
-           rewrite (subst_pskl_in_pskl_intro β (uskl_to_pskl R0) (pskl_var_f α1));
-             [ | auto ].
-           rewrite (subst_pskl_in_pskl_intro β P0' (pskl_var_f α1));
-             [ | auto ].
-           eapply a_lookeq_rename_tvar_keep;
-             [ exact HLK | auto | clear - Hα1; fsetdec
-             | exact HβΞc | exact HβC ].
+           apply a_lookeq__forall_inh with (β := β);
+             [ clear - Fr; solve_notin | exact HLK ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
         -- (* a_wf_aenv *)
@@ -3146,6 +3187,8 @@ Proof.
                 `union` dom κ `union` singleton α `union` ftvar_in_uskl ψa
                 `union` ftvar_in_uskl R0 `union` ftvar_in_pskl (uskl_to_pskl R0)
                 `union` ftvar_in_pskl Pi `union` ftvar_in_pskl P0s
+                (* the ∀ rule's own avoid-input (cluster 3) *)
+                `union` ftvar_in_aenv Θ0
                 `union` Ls0).
            assert (HβΘ : β `notin` dom Θ) by auto.
            assert (HβΘ0 : β `notin` dom Θ0) by auto.
@@ -3236,9 +3279,13 @@ Proof.
            { intro Hc. rewrite <- Hdκ in Hc. specialize (Hκfresh β Hc).
              apply Hκfresh. simpl; clear; fsetdec. }
            assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
-           { pose proof ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ _ HLK) as Hcf.
-             pose proof (a_wf_pskl_ftv_dom HwfP0) as Hfd.
-             simpl in Hfd. clear - Hcf Hfd HβΞc HβΘ0; fsetdec. }
+           { (* β is a rigid of the PREMISE's context, hence not a name the
+                run can have invented — [a_lookeq_ftv_ctx] restores the exact
+                bound for exactly such variables *)
+             pose proof (a_wf_pskl_ftv_dom HwfP0) as Hfd. simpl in Hfd.
+             eapply a_lookeq_ftv_ctx;
+               [ exact HLK | simpl; clear; fsetdec
+               | simpl; clear - Hfd HβΘ0; fsetdec | exact HβΞc ]. }
            assert (HβPa : β `notin` ftvar_in_pskl Pa).
            { pose proof (a_solve_cstr_ftv_eq HSolve (a_lookeq_cstr_eq HLK)) as Hpf.
              pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfi.
@@ -3249,17 +3296,10 @@ Proof.
            assert (Hfmc : all_flex_mono Ξc) by (eapply a_lookeq_all_flex_mono; exact HLK).
            exists 𝒞, Ξc, Pa, κc.
            repeat split.
-           ++ (* a_lookeq : LE-ForallSyn (the source binder is renamed) *)
-              apply a_lookeq__forall_syn
-                with (L := singleton α `union` singleton β
-                             `union` ftvar_in_pskl (uskl_to_pskl R0)).
-              intros α1 Hα1.
+           ++ (* a_lookeq : LE-ForallSyn — exists-fresh, fire at the picked β *)
               rewrite uskl_to_pskl_open in HLK.
-              rewrite (subst_pskl_in_pskl_intro β (uskl_to_pskl R0) (pskl_var_f α1));
-                [ | clear - Fr; fsetdec ].
-              eapply (proj2 a_looksub_lookeq_subst_stable);
-                [ exact HLK | auto | simpl; clear - Hα1; fsetdec
-                | apply lc_pskl_var_f ].
+              apply a_lookeq__forall_syn with (β := β);
+                [ clear - Fr; solve_notin | exact HLK ].
            ++ (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
            ++ (* wf Pa *)
               eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
@@ -3357,6 +3397,8 @@ Proof.
              `union` ftvar_in_uskl R0 `union` ftvar_in_pskl (uskl_to_pskl R0)
              `union` ftvar_in_pskl Pi `union` ftvar_in_pskl P0'
              `union` def_ftv Θ
+             (* the ∀ rule's own avoid-input (cluster 3) *)
+             `union` ftvar_in_aenv Θ0
                 `union` Ls0).
         assert (HβΘ : β `notin` dom Θ) by auto.
         assert (HβΘ0 : β `notin` dom Θ0) by auto.
@@ -3521,20 +3563,12 @@ Proof.
         assert (Hfmc : all_flex_mono Ξc) by (eapply a_lookeq_all_flex_mono; exact HLK).
         exists 𝒞, Ξc, Pa, κc.
         repeat split.
-        -- (* a_lookeq : LE-ForallInh (BOTH sides renamed) *)
-           apply a_lookeq__forall_inh
-             with (L := singleton α `union` singleton β
-                          `union` ftvar_in_pskl (uskl_to_pskl R0)
-                          `union` ftvar_in_pskl P0').
-           intros α1 Hα1.
+        -- (* a_lookeq : LE-ForallInh.  Exists-fresh: the rule fires at the very
+              β this row already picked, so there is no representative to rename
+              back — the payoff the campaign predicted. *)
            rewrite uskl_to_pskl_open in HLK.
-           rewrite (subst_pskl_in_pskl_intro β (uskl_to_pskl R0) (pskl_var_f α1));
-             [ | auto ].
-           rewrite (subst_pskl_in_pskl_intro β P0' (pskl_var_f α1));
-             [ | auto ].
-           eapply a_lookeq_rename_tvar_keep;
-             [ exact HLK | auto | clear - Hα1; fsetdec
-             | exact HβΞc | exact HβC ].
+           apply a_lookeq__forall_inh with (β := β);
+             [ clear - Fr; solve_notin | exact HLK ].
         -- (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
         -- (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
         -- (* a_wf_aenv *)
@@ -3646,6 +3680,8 @@ Proof.
                 `union` dom κ `union` singleton α `union` ftvar_in_uskl ψa
                 `union` ftvar_in_uskl R0 `union` ftvar_in_pskl (uskl_to_pskl R0)
                 `union` ftvar_in_pskl Pi `union` ftvar_in_pskl P0s
+                (* the ∀ rule's own avoid-input (cluster 3) *)
+                `union` ftvar_in_aenv Θ0
                 `union` Ls0).
            assert (HβΘ : β `notin` dom Θ) by auto.
            assert (HβΘ0 : β `notin` dom Θ0) by auto.
@@ -3766,9 +3802,13 @@ Proof.
            { intro Hc. rewrite <- Hdκ in Hc. specialize (Hκfresh β Hc).
              apply Hκfresh. simpl; clear; fsetdec. }
            assert (HβC : β `notin` ftvar_in_cstrs 𝒞).
-           { pose proof ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ _ HLK) as Hcf.
-             pose proof (a_wf_pskl_ftv_dom HwfP0) as Hfd.
-             simpl in Hfd. clear - Hcf Hfd HβΞc HβΘ0; fsetdec. }
+           { (* β is a rigid of the PREMISE's context, hence not a name the
+                run can have invented — [a_lookeq_ftv_ctx] restores the exact
+                bound for exactly such variables *)
+             pose proof (a_wf_pskl_ftv_dom HwfP0) as Hfd. simpl in Hfd.
+             eapply a_lookeq_ftv_ctx;
+               [ exact HLK | simpl; clear; fsetdec
+               | simpl; clear - Hfd HβΘ0; fsetdec | exact HβΞc ]. }
            assert (HβPa : β `notin` ftvar_in_pskl Pa).
            { pose proof (a_solve_cstr_ftv_eq HSolve (a_lookeq_cstr_eq HLK)) as Hpf.
              pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfi.
@@ -3779,17 +3819,10 @@ Proof.
            assert (Hfmc : all_flex_mono Ξc) by (eapply a_lookeq_all_flex_mono; exact HLK).
            exists 𝒞, Ξc, Pa, κc.
            repeat split.
-           ++ (* a_lookeq : LE-ForallSyn (the source binder is renamed) *)
-              apply a_lookeq__forall_syn
-                with (L := singleton α `union` singleton β
-                             `union` ftvar_in_pskl (uskl_to_pskl R0)).
-              intros α1 Hα1.
+           ++ (* a_lookeq : LE-ForallSyn — exists-fresh, fire at the picked β *)
               rewrite uskl_to_pskl_open in HLK.
-              rewrite (subst_pskl_in_pskl_intro β (uskl_to_pskl R0) (pskl_var_f α1));
-                [ | clear - Fr; fsetdec ].
-              eapply (proj2 a_looksub_lookeq_subst_stable);
-                [ exact HLK | auto | simpl; clear - Hα1; fsetdec
-                | apply lc_pskl_var_f ].
+              apply a_lookeq__forall_syn with (β := β);
+                [ clear - Fr; solve_notin | exact HLK ].
            ++ (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
            ++ (* wf Pa *)
               eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
@@ -3938,6 +3971,8 @@ Proof.
                 `union` dom κ `union` singleton α `union` ftvar_in_uskl ψa
                 `union` ftvar_in_uskl R0 `union` ftvar_in_pskl (uskl_to_pskl R0)
                 `union` ftvar_in_pskl Pi `union` ftvar_in_pskl P0s
+                (* the ∀ rule's own avoid-input (cluster 3) *)
+                `union` ftvar_in_aenv Θ0
                 `union` def_ftv Θ).
            assert (HβΘ : β `notin` dom Θ) by auto.
            assert (HβΘ0 : β `notin` dom Θ0) by auto.
@@ -4043,19 +4078,9 @@ Proof.
              by (eapply a_lookeq_all_flex_mono; exact HLK).
            exists 𝒞, Ξc, Pa, κc.
            repeat split.
-           ++ (* a_lookeq : LE-UnivGhost1 (only the TARGET is renamed) *)
-              apply a_lookeq__univ_ghost1
-                with (L := singleton α `union` singleton β
-                             `union` ftvar_in_pskl (uskl_to_pskl R0)
-                             `union` ftvar_in_pskl P0s).
-              intros α1 Hα1.
-              rewrite (subst_pskl_in_pskl_intro β P0s (pskl_var_f α1)); [ | auto ].
-              rewrite <- (subst_pskl_in_pskl_fresh_eq
-                            (pskl_tophole (uskl_to_pskl R0)) (pskl_var_f α1) β)
-                by (simpl; auto).
-              eapply a_lookeq_rename_tvar_keep;
-                [ exact HLK | auto | clear - Hα1; fsetdec
-                | exact HβΞc | exact HβC ].
+           ++ (* a_lookeq : LE-UnivGhost1 — exists-fresh, fire at the picked β *)
+              apply a_lookeq__univ_ghost1 with (β := β);
+                [ clear - Fr; solve_notin | exact HLK ].
            ++ (* solve *) eapply a_solve_cstr_strip_tvar_mid; exact HSolve.
            ++ (* wf Pa *) eapply a_wf_pskl_strip_tvar; [ exact HwfPa | exact HβPa ].
            ++ (* a_wf_aenv *)
@@ -4355,7 +4380,8 @@ Theorem a_lookeq_solve_complete :
                           `union` def_ftv Θ /\
     (κc ++ κ) ∷ (Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
-    (forall α0, α0 `in` dom κc -> α0 `notin` add α (dom Θ0 `union` dom Θ)) /\
+    (forall α0, α0 `in` dom κc ->
+       α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
     Θ ⨟ Δ ⊢ (msubst_pskl (κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 Proof.
   intros NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.

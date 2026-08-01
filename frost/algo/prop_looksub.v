@@ -234,6 +234,39 @@ Lemma a_looksub_ftv : forall Θ α m P P' Ξ 𝒞,
     α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/ α0 `notin` ftvar_in_aenv Θ.
 Proof. intros * H; eapply (proj1 a_looksub_lookeq_ftv); eauto. Qed.
 
+(* The EXACT bound, restored for the names the ambient context already
+   holds.  The escape disjunct above says "the run INVENTED this name", and
+   a variable of [dom Θ] is precisely one it cannot have invented — every
+   generating rule avoids [ftvar_in_aenv Θ ⊇ dom Θ].  Consumers that carry a
+   variable known to live in the context (the ρ-replaced variables of P6-Cs /
+   P6-Ss, the extract's [α1 ∈ dom Θ0]) should use these rather than the raw
+   disjunction. *)
+Lemma a_looksub_ftv_ctx : forall Θ α m P P' Ξ 𝒞 α0,
+  Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 ->
+  α0 `in` dom Θ ->
+  α0 `notin` ftvar_in_pskl P' ->
+  α0 `notin` dom Ξ ->
+  α0 `notin` ftvar_in_cstrs 𝒞.
+Proof.
+  intros * H Hdom HP' HΞ Hin.
+  pose proof (dom_subset_ftvar_in_aenv Θ) as Hdf.
+  destruct (a_looksub_ftv H Hin) as [Hl | Hr];
+    [ clear - Hl HP' HΞ | clear - Hdom Hdf Hr ]; fsetdec.
+Qed.
+
+Lemma a_lookeq_ftv_ctx : forall Θ α P P' Ξ 𝒞 α0,
+  Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+  α0 `in` dom Θ ->
+  α0 `notin` ftvar_in_pskl P' ->
+  α0 `notin` dom Ξ ->
+  α0 `notin` ftvar_in_cstrs 𝒞.
+Proof.
+  intros * H Hdom HP' HΞ Hin.
+  pose proof (dom_subset_ftvar_in_aenv Θ) as Hdf.
+  destruct ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ _ H _ Hin) as [Hl | Hr];
+    [ clear - Hl HP' HΞ | clear - Hdom Hdf Hr ]; fsetdec.
+Qed.
+
 (* ===================================================================== *)
 (*  §3  Look freshness (lemma:look-output-fresh, subtyping-proofs:522)    *)
 (*                                                                        *)

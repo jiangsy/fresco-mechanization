@@ -76,7 +76,7 @@ Qed.
 
 (* the collected constraints can only be [α ≐ ⟨⟩] (LE-UnivGhost + LE-Var) *)
 Lemma cex_lookeq_forced : forall α Ξc 𝒞,
-  (cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) ->
+  (nil ⊢ cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) ->
   Ξc = nil /\ 𝒞 = a_cstr_eq pskl_unit :: nil.
 Proof.
   intros α Ξc 𝒞 H.
@@ -84,7 +84,7 @@ Proof.
     try solve [ simpl in *; exfalso; fsetdec
               | match goal with Hg : guarded_pskl _ |- _ => inversion Hg end ].
   - (* LE-UnivGhost : recurse on [α ∼[α] ⟨⟩] *)
-    match goal with Hsub : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
+    match goal with Hsub : _ ⊢ _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
       inversion Hsub; subst;
         try solve [ simpl in *; exfalso; fsetdec
                   | match goal with Hg : guarded_pskl _ |- _ => inversion Hg end ]
@@ -145,7 +145,7 @@ Theorem p6cs_without_subject_wf_is_false :
        Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
        (* conclusion, weakened to its three essential conjuncts *)
        exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
-         (P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
+         (Θ0 ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
          (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\
          Θ ⨟ Δ ⊢ (msubst_pskl (ρc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
 Proof.
@@ -212,7 +212,7 @@ Check cex_subject_not_wf.
 
 Theorem p6cs_fires_when_the_subject_is_wf : forall α,
   exists 𝒞 Ξc Pa (ρc : list (atom * ptyp)),
-    (cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) /\
+    (nil ⊢ cex_P α ∼[ α ] cex_P0 ⤳ Ξc ⨾ 𝒞) /\
     (Ξc ++ nil) ⊩ 𝒞 ⨾ cex_P0 ⤳ Pa /\
     nil ⨟ empty ⊢ (msubst_pskl (ρc ++ nil) Pa)
       ⊑ᵖ[ union empty empty ] uskl_unit.

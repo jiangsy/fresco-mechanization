@@ -40,30 +40,12 @@ Require Import src.frost.algo.prop_look_complete.
 
 Set Implicit Arguments.
 
-(** A suffix carries no rigid entry. *)
-Lemma a_suffix_no_tvar : forall Ξ α,
-  a_suffix Ξ -> binds α abind_tvar Ξ -> False.
-Proof.
-  intros Ξ α H; induction H; intros Hb; [ inversion Hb | ].
-  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-    [ subst; inversion H0 | auto ].
-Qed.
-
-(** THE STRUCTURAL FACT: an increase does not invent rigids.  (The converse
-    of [a_inc_binds_tvar], prop_inc.v.) *)
-Lemma a_inc_binds_tvar_rev : forall Θ0 κ Θ α,
-  κ ∷ Θ0 ⊑ Θ ->
-  binds α abind_tvar Θ ->
-  binds α abind_tvar Θ0.
-Proof.
-  intros Θ0 κ Θ α Hinc; induction Hinc; intros Hb;
-    try solve [ exfalso; eapply a_suffix_no_tvar; eassumption
-              | apply binds_cons_3; auto ];
-    analyze_binds Hb;
-    solve [ exfalso; eapply a_suffix_no_tvar; eassumption
-          | apply binds_cons_3; auto
-          | unfold binds; left; reflexivity ].
-Qed.
+(** THE STRUCTURAL FACT the refutation runs on — an increase does not invent
+    rigids — is [a_inc_binds_tvar_rev] (prop_inc.v, the converse of
+    [a_inc_binds_tvar]).  It was first proved here; cluster 3 of the
+    freshness campaign gave it a second consumer (discharging the escape arm
+    of the disjunctive ftv bounds for a ρ-replaced variable), so it moved
+    into prop_inc.v beside its converse. *)
 
 (** …hence the refuted premise set. *)
 Theorem p6cs_rho_delta_apart_dom_is_vacuous :

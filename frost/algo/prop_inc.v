@@ -337,6 +337,38 @@ Proof.
     + apply binds_weaken_mid; auto.
 Qed.
 
+(** A suffix carries no rigid entry. *)
+Lemma a_suffix_no_tvar : forall Ξ α,
+  a_suffix Ξ -> binds α abind_tvar Ξ -> False.
+Proof.
+  intros Ξ α H; induction H; intros Hb; [ inversion Hb | ].
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
+    [ subst; inversion H0 | auto ].
+Qed.
+
+(** …and the CONVERSE of [a_inc_binds_tvar]: an increase never INVENTS a
+    rigid, so a rigid of the target is already a rigid of the source.  It is
+    what lets a consumer discharge the "…or the run invented this name" arm
+    of the disjunctive ftv bounds ([a_looksub_lookeq_ftv],
+    [a_solve_cstr_ftv]) for a variable it only knows to be rigid in the
+    LARGER context — the ρ-replaced variables of P6-Cs / P6-Ss are exactly
+    that.  Promoted here from cex/cex_p6cs_rho_delta_vacuous.v, which is
+    where it was first needed (to show the old [Δρ ∩ dom Θ0 = ∅] premise
+    forced [Δρ = ∅]). *)
+Lemma a_inc_binds_tvar_rev : forall Θ κ Θ' α,
+  κ ∷ Θ ⊑ Θ' ->
+  binds α abind_tvar Θ' ->
+  binds α abind_tvar Θ.
+Proof.
+  intros Θ κ Θ' α Hinc; induction Hinc; intros Hb;
+    try solve [ exfalso; eapply a_suffix_no_tvar; eassumption
+              | apply binds_cons_3; auto ];
+    analyze_binds Hb;
+    solve [ exfalso; eapply a_suffix_no_tvar; eassumption
+          | apply binds_cons_3; auto
+          | unfold binds; left; reflexivity ].
+Qed.
+
 (** Declared flexible variables survive an identity increase (as SOME
     tvar-ish entry): the flex rule's well-formedness premise applied to the
     identity image [α̂]. *)
