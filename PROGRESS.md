@@ -78,7 +78,7 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-01 (latest) — 🚧 FRESHNESS CAMPAIGN cluster 3 (look): BOTH RENAME LEMMAS CLOSED + the whole rename kit; `prop_looksub.v` is GREEN, the consumer pass has started
+## 2026-08-01 (latest) — 🚧 FRESHNESS CAMPAIGN cluster 3 (look): BOTH RENAME LEMMAS CLOSED, the whole rename kit, and the decoration layer's consistency half — `prop_looksub.v` and `prop_decorate_sub.v` GREEN
 
 Second stage of cluster 3, on `freshness-campaign-cluster3-wip`.  The two
 lemmas the campaign's staging rule demands before anything else are **Qed**,
@@ -142,26 +142,50 @@ scoping was NOT enough.  The fix is a small structural kit — `notin_union_both
 a `pick fresh` into atomic facts and `clear Fr`.  Row time went >100s → ~2s.
 `look_fresh` is the tactic every remaining consumer should use.
 
-**Still RED, and where:** `prop_decorate_sub.v` now fails only in
-`a_consistag_decoration`'s FOUR ∀ rows (LE-ForallInh / LE-ForallSyn /
-LE-UnivGhost1, from line 2063), which still read the deleted cofinite `L` of
-the look rules.  Each needs the SAME treatment `a_looksub_open_target_at` just
-got: the decl-side `a_consistag` rule is (rightly) still cofinite, so the row
-must rebuild a family from the look run's ONE binder — that means moving it
-with `a_looksub_rename_tvar` and therefore turning `a_consistag_decoration`
-into a SIZE induction.  `prop_decorate_key.v` has the same rows, larger
-(`a_subtag_decoration`'s LS-ForallL at :489, and the `HDf : forall b, b ∉ ?L1`
-match patterns at :489/:764).  Everything else in the tree is green: a full
-`make -k` leaves prop_decorate_sub.v as the ONLY failing target, and
-`cex/cex_p6_flex_freshened.v` was fixed (arity) along the way.
+**`a_consistag_decoration` CONVERTED — `prop_decorate_sub.v` is GREEN (13s).**
+The decl-side `a_consistag` rules are (rightly) still COFINITE, so every ∀ row
+has to serve a whole FAMILY of openers from the look run's ONE binder.  That
+means MOVING the binder, and the moved premise is no sub-derivation, so
+`a_consistag_decoration` became a SIZE induction
+(`a_consistag_decoration_size`; measure = the two look skeletons' sizes, which
+strictly decrease in every row — including LE-UnivGhostR, where only the TARGET
+shrinks).  A size-free wrapper keeps the name its two call sites use.  The
+service the rows run on is three new lemmas in prop_looksub.v —
+**`a_lookeq_forall_move` / `_move_l` / `_move_r`**, one per ∀ shape — stated
+with the premise's skeletons ALREADY OPENED, because that is the shape a
+consumer holds after `inversion …; subst` has eaten the un-opened body's name
+(the same reason the rows read the opener's avoid-set off `match type of Hp`).
+`Ξ` survives such a move untouched (junk-freeness); 𝒞 does NOT — the binder
+legitimately leaks into it — so the lemmas hand back `subst_cstrs`, and
+`a_solvetag_subst_cstrs` carries the solvetag run across.
 
-**Remaining, in order:** (i) `a_consistag_decoration`'s four ∀ rows; (ii)
-`prop_decorate_key.v`; (iii) the ∀ rows of P6-Cs / P6-Ss
-(prop_look_complete_{cstr,sub_cstr}.v — these should SIMPLIFY, since
-exists-fresh lets them use the derivation's own binder instead of building a
-family by renaming a fresh representative); (iv) `test_examples.v` and the
-remaining `cex/` look runs; (v) then clusters 4–6, F-deprecation, the walk's
-`∉ dom Θ1` premises (P7a), and finally the P7b dispatcher.
+**Still RED, and where.**  Two files.  `prop_decorate_key.v`
+(`a_subtag_decoration` at :102 — the same ∀ rows, larger, plus the
+`HDf : forall b, b ∉ ?L1` cofinite-family reads at :489/:764).  And
+`prop_look_complete_cstr.v` (P6-Cs), which is PARTLY converted: the ∀ rows of
+`a_lookeq_cstr_eq` and `a_lookeq_all_flex_mono` SIMPLIFIED to plain
+`assumption` — the promised payoff, no more picking a representative off `L` —
+and the theorem's conclusion now reads `Θ0 ⊢ P ∼[α] P0 ⤳ Ξc ⨾ 𝒞` (the avoid-
+input is `Θ0`, the same context the conclusion's solve already runs at as
+`Ξc ++ Θ0`).  What remains there is a mechanical tail: every
+`apply a_lookeq__flex_r` gains LE-FlexR's own `fresh γ̂` premise (extend the
+site's `pick fresh α1 for …` with `ftvar_in_aenv Θ0`, the target variable and
+the subject's ftv, then discharge with `cbn; clear - Fr; solve_notin`), and the
+three ∀ rows (:3033 / :3533 / :4054) apply the rule at the binder they already
+picked.  `cex/cex_p6_flex_freshened.v` was fixed (arity) along the way.
+
+**Remaining, in order:** (i) `prop_look_complete_cstr.v`'s FlexR/∀ tail; (ii)
+`prop_decorate_key.v`; (iii) `prop_look_complete_sub_cstr.v` (P6-Ss, same
+shape); (iv) `test_examples.v` and the remaining `cex/` look runs; (v) then
+clusters 4–6, F-deprecation, the walk's `∉ dom Θ1` premises (P7a), and finally
+the P7b dispatcher.
+
+**Two performance rules re-confirmed the hard way.**  `clear - H; fsetdec`
+against a TWELVE-way union takes ~200s to FAIL — use metalib's `solve_notin`,
+which shatters the hypothesis instead of normalising it.  And an `ltac:(…)`
+argument inside a partially-applied IH is elaborated while the goal still holds
+EVARS ("Cannot find witness" from `lia`): `assert` the side condition first and
+pass it by name.
 
 ## 2026-08-01 — 🚧 FRESHNESS CAMPAIGN cluster 3 (look) STARTED — canon question (ii) DECIDED (look gains a context), and the source-substitution lemma REFUTED in its unconditional form
 
