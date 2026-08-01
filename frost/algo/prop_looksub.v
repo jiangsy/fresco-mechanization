@@ -1043,21 +1043,28 @@ Proof.
   pose proof (ftvar_in_cstrs_subst_upper δ β 𝒞) as H. fsetdec.
 Qed.
 
+Ltac look_fresh_leaf :=
+  first [ solve [ assumption ]
+        | solve [ congruence ]
+        | solve [ match goal with
+                  | H : _ `notin` _ |- _ => clear - H; fsetdec
+                  end ] ].
+
+(* NB the LEAF attempt comes before the structural descents: a caller often
+   holds the composite freshness ALREADY (e.g. [β ∉ ftv (open P b)] verbatim),
+   and descending through [open]/[subst] would replace it by the STRICTLY
+   STRONGER [β ∉ ftv P] the caller need not have. *)
 Ltac look_fresh :=
   repeat first
     [ apply notin_union_both
     | apply notin_add_atom
+    | look_fresh_leaf
     | apply notin_ftvar_in_aenv_cons_tvar
     | apply notin_ftvar_in_aenv_rename
     | apply notin_ftvar_open_var
     | apply notin_ftvar_in_cstrs_subst_away
     | apply notin_ftvar_in_cstrs_subst
-    | apply notin_ftvar_subst_var
-    | solve [ assumption ]
-    | solve [ congruence ]
-    | solve [ match goal with
-              | H : _ `notin` _ |- _ => clear - H; fsetdec
-              end ] ].
+    | apply notin_ftvar_subst_var ].
 
 (** The look judgment reads its context ONLY through the avoid-inputs of its
     generative rules, so it is stable under any context whose [ftvar_in_aenv]
@@ -1851,6 +1858,108 @@ Proof.
   rewrite (@rename_aenv_fresh_eq Θ α1 β) in Hr by exact HβΘ.
   rewrite (@rename_aenv_fresh_eq Ξ α1 β) in Hr by (clear - Hftv HβΞ; fsetdec).
   rewrite (@subst_cstrs_fresh_eq α1 β 𝒞) in Hr by exact Hβ𝒞.
+  exact Hr.
+Qed.
+
+(** ⭐ MOVE a look run's ∀ binder to a GIVEN opener.  The decl-side judgments
+    the decoration lemmas build (a_consistag / a_subtag) are COFINITE, so every
+    ∀ row has to serve a whole family of openers from the look run's ONE
+    binder.  These three lemmas are that service, in the three shapes the ∀
+    rules take (both sides open / only the source / only the target).
+
+    Two things make them work: the block [Ξ] survives untouched, because a
+    generated flexible can never BE an enclosing binder
+    ([a_lookeq_binder_not_generated]); and the constraints 𝒞 do NOT survive —
+    the binder legitimately leaks into them — so the conclusion hands back
+    [subst_cstrs β b 𝒞], which a solvetag run does not mind
+    ([a_solvetag_subst_cstrs], prop_decorate_sub.v).
+
+    They are stated with the premise's skeletons ALREADY OPENED, because that
+    is the shape a consumer holds after [inversion … ; subst] has eliminated
+    the un-opened body's name. *)
+Lemma a_lookeq_forall_move : forall Θ α P P' Ξ 𝒞 b β,
+  ((b ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f b)) ∼[ α ]
+    (open_pskl_wrt_pskl P' (pskl_var_f b)) ⤳ Ξ ⨾ 𝒞 ->
+  b `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
+                     `union` ftvar_in_pskl P') ->
+  β <> α ->
+  β `notin` ftvar_in_aenv Θ
+            `union` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f b))
+            `union` ftvar_in_pskl (open_pskl_wrt_pskl P' (pskl_var_f b))
+            `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+  ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
+    (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ (subst_cstrs β b 𝒞).
+Proof.
+  intros Θ α P P' Ξ 𝒞 b β Hp Hb Hβα Hβ.
+  destruct (β == b) as [-> | Hβb];
+    [ rewrite subst_cstrs_same; exact Hp | ].
+  assert (Hbα : b <> α) by (clear - Hb; fsetdec).
+  assert (HbΞ : b `notin` ftvar_in_aenv Ξ)
+    by (eapply a_lookeq_binder_not_generated; exact Hp).
+  pose proof (a_lookeq_rename_tvar Hp Hbα Hβα ltac:(look_fresh)) as Hr.
+  rewrite rename_aenv_cons_tvar_eq in Hr.
+  rewrite (@rename_aenv_fresh_eq Θ β b) in Hr by (clear - Hb; fsetdec).
+  rewrite (@rename_aenv_fresh_eq Ξ β b) in Hr by exact HbΞ.
+  rewrite <- (subst_pskl_in_pskl_intro b P (pskl_var_f β)) in Hr
+    by (clear - Hb; fsetdec).
+  rewrite <- (subst_pskl_in_pskl_intro b P' (pskl_var_f β)) in Hr
+    by (clear - Hb; fsetdec).
+  exact Hr.
+Qed.
+
+Lemma a_lookeq_forall_move_l : forall Θ α P Pt Ξ 𝒞 b β,
+  ((b ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f b)) ∼[ α ] Pt
+    ⤳ Ξ ⨾ 𝒞 ->
+  b `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
+                     `union` ftvar_in_pskl Pt) ->
+  β <> α ->
+  β `notin` ftvar_in_aenv Θ
+            `union` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f b))
+            `union` ftvar_in_pskl Pt `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+  ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ] Pt
+    ⤳ Ξ ⨾ (subst_cstrs β b 𝒞).
+Proof.
+  intros Θ α P Pt Ξ 𝒞 b β Hp Hb Hβα Hβ.
+  destruct (β == b) as [-> | Hβb];
+    [ rewrite subst_cstrs_same; exact Hp | ].
+  assert (Hbα : b <> α) by (clear - Hb; fsetdec).
+  assert (HbΞ : b `notin` ftvar_in_aenv Ξ)
+    by (eapply a_lookeq_binder_not_generated; exact Hp).
+  pose proof (a_lookeq_rename_tvar Hp Hbα Hβα ltac:(look_fresh)) as Hr.
+  rewrite rename_aenv_cons_tvar_eq in Hr.
+  rewrite (@rename_aenv_fresh_eq Θ β b) in Hr by (clear - Hb; fsetdec).
+  rewrite (@rename_aenv_fresh_eq Ξ β b) in Hr by exact HbΞ.
+  rewrite (subst_pskl_in_pskl_fresh_eq Pt) in Hr by (clear - Hb; fsetdec).
+  rewrite <- (subst_pskl_in_pskl_intro b P (pskl_var_f β)) in Hr
+    by (clear - Hb; fsetdec).
+  exact Hr.
+Qed.
+
+Lemma a_lookeq_forall_move_r : forall Θ α Ps P' Ξ 𝒞 b β,
+  ((b ~ abind_tvar) ++ Θ) ⊢ Ps ∼[ α ] (open_pskl_wrt_pskl P' (pskl_var_f b))
+    ⤳ Ξ ⨾ 𝒞 ->
+  b `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl Ps
+                     `union` ftvar_in_pskl P') ->
+  β <> α ->
+  β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl Ps
+            `union` ftvar_in_pskl (open_pskl_wrt_pskl P' (pskl_var_f b))
+            `union` dom Ξ `union` ftvar_in_cstrs 𝒞 ->
+  ((β ~ abind_tvar) ++ Θ) ⊢ Ps ∼[ α ] (open_pskl_wrt_pskl P' (pskl_var_f β))
+    ⤳ Ξ ⨾ (subst_cstrs β b 𝒞).
+Proof.
+  intros Θ α Ps P' Ξ 𝒞 b β Hp Hb Hβα Hβ.
+  destruct (β == b) as [-> | Hβb];
+    [ rewrite subst_cstrs_same; exact Hp | ].
+  assert (Hbα : b <> α) by (clear - Hb; fsetdec).
+  assert (HbΞ : b `notin` ftvar_in_aenv Ξ)
+    by (eapply a_lookeq_binder_not_generated; exact Hp).
+  pose proof (a_lookeq_rename_tvar Hp Hbα Hβα ltac:(look_fresh)) as Hr.
+  rewrite rename_aenv_cons_tvar_eq in Hr.
+  rewrite (@rename_aenv_fresh_eq Θ β b) in Hr by (clear - Hb; fsetdec).
+  rewrite (@rename_aenv_fresh_eq Ξ β b) in Hr by exact HbΞ.
+  rewrite (subst_pskl_in_pskl_fresh_eq Ps) in Hr by (clear - Hb; fsetdec).
+  rewrite <- (subst_pskl_in_pskl_intro b P' (pskl_var_f β)) in Hr
+    by (clear - Hb; fsetdec).
   exact Hr.
 Qed.
 
