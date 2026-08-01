@@ -97,9 +97,14 @@ Qed.
 
 Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
   Θ0 ⊢ᵗ[ NM | M | P0 | Ψ ] R' ⩽˙ P ⊣ Θ1 ->
-  forall R0 ψa Ψa αv Ξc 𝒞,
+  (* The look run carries its OWN context [Θl], universally quantified INSIDE
+     the induction: the lemma only ever CONSUMES the run, so there is no
+     alignment constraint with the subtag judgment's [Θ0], and the ForallL
+     rows genuinely need a different one (their recursive call hands on a run
+     that lives under the look rule's own binder).  Cluster 3. *)
+  forall Θl R0 ψa Ψa αv Ξc 𝒞,
     R' = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0 ->
-    ⌊ R0 ⌋ˢ ≼[ αv , M ] P0 ⤳ Ξc ⨾ 𝒞 ->
+    Θl ⊢ ⌊ R0 ⌋ˢ ≼[ αv , M ] P0 ⤳ Ξc ⨾ 𝒞 ->
     𝒞 ⊩ᵗ ψa ⤳ Ψa ->
     αv `notin` ftvar_in_uskl ψa ->
     αv `notin` ftvar_in_pskl P0 ->
@@ -114,7 +119,7 @@ Lemma a_subtag_decoration : forall NM M P0 Ψ Θ0 R' P Θ1,
 Proof.
   intros NM M P0 Ψ Θ0 R' P Θ1 Hsub.
   induction Hsub;
-    intros R0 ψa Ψa αv Ξc C HeqT HD Hst Hαψ HαP0 Hlcψ HlcS0 Hwf
+    intros Θl R0 ψa Ψa αv Ξc C HeqT HD Hst Hαψ HαP0 Hlcψ HlcS0 Hwf
       HwfP0 HwfT Hmod.
   - (* Infer : P0 = ◇ solves nothing; the run is erasure-determined *)
     assert (Hemp : Ψa [=] empty)
@@ -210,7 +215,8 @@ Proof.
     | Hn : uniq _ |- _ => rename Hn into Huq
     end.
     match goal with
-    | Hn : forall _ : uskl, _ |- _ => rename Hn into IHprem
+    (* the IH now leads with the look run's own context [Θl] *)
+    | Hn : forall _ : aenv, _ |- _ => rename Hn into IHprem
     end.
     rewrite dom_app in Hfr.
     (* the subject's ftv, read through the erasure *)
@@ -227,7 +233,12 @@ Proof.
     (* the re-freshened substitution variable *)
     destruct (atom_fresh (singleton α `union` singleton αv
                 `union` ftvar_in_uskl R0 `union` ftvar_in_uskl ψa
-                `union` ftvar_in_pskl B)) as [αv' Hαv'].
+                `union` ftvar_in_pskl B
+                (* cluster 3: the var rename now carries an OUTPUT-freshness
+                   premise — a binder that ESCAPED into [Ξc ⨾ 𝒞] cannot be
+                   renamed onto, so the new looked-for variable must differ
+                   from every name the run produced *)
+                `union` dom Ξc `union` ftvar_in_cstrs C)) as [αv' Hαv'].
     assert (HeqT' : R = subst_bskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa))
                           αv' (subst_bskl_in_uskl (uskl_var_f αv') αv R0)).
     { rewrite subst_bskl_in_uskl_rename_compose;
@@ -240,12 +251,14 @@ Proof.
         | clear - Hαv'; fsetdec
         | intros ->; clear - Hαv'; fsetdec ]. }
     (* the look run, moved to αv' *)
-    assert (HD1 : ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+    assert (HD1 : Θl ⊢ ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
                     ≼[ αv' , mode_tc ] (pskl_all_syn B) ⤳ Ξc ⨾ C).
     { rewrite uskl_to_pskl_subst. simpl.
       apply a_looksub_rename_var;
         [ exact HD
-        | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Hαv'; fsetdec ]. }
+        | rewrite ftvar_in_pskl_uskl_to_pskl; clear - Hαv'; fsetdec
+        | clear - Hαv'; fsetdec
+        | clear - Hαv'; fsetdec ]. }
     (* …and opened at the rule's binder α *)
     assert (HαR0' : α `notin`
               ftvar_in_uskl (subst_bskl_in_uskl (uskl_var_f αv') αv R0)).
@@ -261,11 +274,54 @@ Proof.
         assert (HinR0 : α `in` ftvar_in_uskl R0)
           by (clear - Hup Hc Hααv'; fsetdec).
         exact (HαR0 α HαRR Hααv HinR0). }
-    destruct (a_looksub_open_target_at HD1 Hst (β := α)
-                ltac:(intros ->; clear - Hαv'; fsetdec)
-                ltac:(pose proof (ftvar_in_pskl_uskl_to_pskl
-                        (subst_bskl_in_uskl (uskl_var_f αv') αv R0)) as Hepq;
-                      clear - HαR0' Hfr Hepq; fsetdec))
+    (* the run's own context is IRRELEVANT here — the lemma only consumes the
+       run — so shrink it away, which makes the opener's [ftvar_in_aenv]
+       condition vacuous ([a_looksub_ctx_ftv_mono] shrinks, which is the
+       direction available) *)
+    assert (Hmono0 : ftvar_in_aenv (nil : aenv) [<=] ftvar_in_aenv Θl)
+      by (cbn; clear; fsetdec).
+    pose proof (@a_looksub_ctx_ftv_mono _ _ _ _ _ _ _ nil HD1 Hmono0) as HD1n.
+    clear HD1 Hmono0; rename HD1n into HD1.
+    (* α is the [a_subtag] rule's OWN Barendregt binder; nothing relates it to
+       the run's generated names, so freshen the run away from it first
+       (cluster 3: the same two-independent-generators gap as §8) *)
+    assert (HαP : α `notin` ftvar_in_pskl
+                    ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ).
+    { pose proof (ftvar_in_pskl_uskl_to_pskl
+                    (subst_bskl_in_uskl (uskl_var_f αv') αv R0)) as Hepq.
+      clear - HαR0' Hepq; fsetdec. }
+    assert (HαB : α `notin` ftvar_in_pskl (pskl_all_syn B))
+      by (cbn; clear - Hfr; fsetdec).
+    assert (Hααv' : α <> αv') by (intros ->; clear - Hαv'; fsetdec).
+    destruct (atom_fresh (singleton α `union` singleton αv'
+                `union` ftvar_in_pskl
+                    ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                `union` ftvar_in_pskl B `union` dom Ξc
+                `union` ftvar_in_cstrs C)) as [δ Hδ].
+    (* every side condition is ASSERTED and passed BY NAME: an [ltac:] inside a
+       partially-applied lemma is elaborated while [β]/[δ] are still evars *)
+    assert (Hδαv' : δ <> αv') by (intros ->; clear - Hδ; fsetdec).
+    assert (Hδα : δ <> α) by (intros ->; clear - Hδ; fsetdec).
+    assert (Hβin : α `notin` ftvar_in_aenv (nil : aenv)
+                     `union` ftvar_in_pskl
+                         ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                     `union` ftvar_in_pskl (pskl_all_syn B))
+      by (cbn; clear - HαP HαB; cbn in HαB; fsetdec).
+    assert (Hδin : δ `notin` ftvar_in_aenv (nil : aenv)
+                     `union` ftvar_in_pskl
+                         ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                     `union` ftvar_in_pskl (pskl_all_syn B)
+                     `union` dom Ξc `union` ftvar_in_cstrs C)
+      by (cbn; clear - Hδ; fsetdec).
+    destruct (a_looksub_avoid_atom HD1 Hst Hααv' Hδαv' Hδα Hβin Hδin)
+      as (Ξf & Cf & HDf & Hstf & Hαf).
+    assert (Hopen : α `notin` ftvar_in_aenv (nil : aenv)
+                      `union` ftvar_in_pskl
+                          ⌊ subst_bskl_in_uskl (uskl_var_f αv') αv R0 ⌋ˢ
+                      `union` ftvar_in_pskl B
+                      `union` dom Ξf `union` ftvar_in_cstrs Cf)
+      by (cbn in HαB |- *; clear - HαP HαB Hαf; fsetdec).
+    destruct (a_looksub_open_target_at HDf Hstf Hααv' Hopen)
       as [C' [HD2 Hst2]].
     (* the transported premise, via the IH at the re-freshened variable *)
     assert (Htrans :
@@ -396,7 +452,8 @@ Proof.
             | exact HwfP0a | exact HwfT1
             | apply rig_empty | apply no_flex_dep_empty | apply faf_empty ]
           | match goal with
-            | IH : forall R1 : uskl, _ |- _ =>
+            (* the IH now leads with the look run's own context *)
+        | IH : forall R1 : aenv, _ |- _ =>
                 eapply IH;
                   [ reflexivity | eassumption | exact Hst2 | exact Hαψ
                   | clear - HαP0; fsetdec
@@ -485,37 +542,57 @@ Proof.
             destruct Hg as [Hg | Hg]; [ inversion Hg | discriminate Hg ]
         end.
       * (* LS-ForallL : the structural crux *)
+      (* EXISTS-FRESH (cluster 3).  LS-ForallL now fires at ONE binder [b], so
+         the row can no longer pick a representative fresh for the node's
+         guess [P1]: it must substitute [P1] for the binder it is GIVEN.  §8's
+         [a_looksub_subst_gen] is what makes that legal without a Barendregt
+         premise the caller cannot supply — it re-picks any binder that
+         collides with [P1] and hands back RENAMED outputs, so [Ξc ⨾ C] are
+         replaced by [Ξg ⨾ Cg] and the solvetag rides across with them. *)
       match goal with
-      | HDf : forall b : atom, b `notin` ?L1 -> _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ |- _ =>
-          rename HDf into HDbody; rename L1 into LD
+      | Hp : _ ⊢ (open_pskl_wrt_pskl _ _) ≼[ _ , _ ] _ ⤳ _ ⨾ _ |- _ =>
+          rename Hp into Dbody
+      end.
+      match goal with
+      | Hb : _ `notin` add αv _ |- _ => rename Hb into Hbfr
       end.
       assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
         by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
       assert (HlcP1 : lc_pskl P1)
         by (eapply a_wf_pskl_lc; eauto).
-      destruct (atom_fresh (singleton αv `union` ftvar_in_uskl ψa
-                  `union` ftvar_in_uskl R0
-                  `union` ftvar_in_pskl ⌊ R0 ⌋ˢ
-                  `union` ftvar_in_pskl P0
-                  `union` ftvar_in_pskl P1 `union` LD)) as [αt Hαt].
-      destruct (atom_fresh (LD `union` singleton αv `union` singleton αt
-                  `union` ftvar_in_pskl ⌊ R0 ⌋ˢ
-                  `union` ftvar_in_pskl P1)) as [β0 Hβ0].
-      pose proof (HDbody β0 ltac:(clear - Hβ0; fsetdec)) as Dβ0.
-      apply a_looksub_rename_var with (α' := αt) in Dβ0;
-        [ | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                          ⌊ R0 ⌋ˢ (pskl_var_f β0)) as Hup;
-            simpl in Hup; clear - Hαt Hβ0 Hup; fsetdec ].
-      rewrite <- subst_pskl_in_pskl_open_pskl_wrt_pskl_var in Dβ0;
-        [ | clear - Hβ0; fsetdec | constructor ].
-      apply a_looksub_subst_stable with (β := β0) (P0 := P1) in Dβ0;
-        [ | clear - Hβ0; fsetdec
-          | clear - Hαt; fsetdec
-          | exact HlcP1 ].
-      rewrite <- subst_pskl_in_pskl_intro in Dβ0;
-        [ | pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                          ⌊ R0 ⌋ˢ (pskl_var_f αt) αv) as Hup2;
-            simpl in Hup2; clear - Hβ0 Hup2; fsetdec ].
+      match type of Dbody with
+      | ((?b ~ abind_tvar) ++ _) ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ =>
+        destruct (atom_fresh (singleton αv `union` ftvar_in_uskl ψa
+                    `union` ftvar_in_uskl R0
+                    `union` ftvar_in_pskl ⌊ R0 ⌋ˢ
+                    `union` ftvar_in_pskl P0
+                    `union` ftvar_in_pskl P1
+                    `union` singleton b `union` dom Ξc
+                    `union` ftvar_in_cstrs C)) as [αt Hαt];
+        assert (Hbne : b <> αt) by (intros ->; clear - Hαt; fsetdec);
+        assert (Hαvb : αv <> b) by (intros ->; clear - Hbfr; fsetdec);
+        assert (HbR0 : b `notin` ftvar_in_pskl ⌊ R0 ⌋ˢ)
+          by (clear - Hbfr; fsetdec);
+        (* (1) move the looked-for variable off the guess's names *)
+        apply a_looksub_rename_var with (α' := αt) in Dbody;
+          [ | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                            ⌊ R0 ⌋ˢ (pskl_var_f b)) as Hup;
+              simpl in Hup; clear - Hαt Hup; fsetdec
+            | clear - Hαt; fsetdec
+            | clear - Hαt; fsetdec ];
+        rewrite <- subst_pskl_in_pskl_open_pskl_wrt_pskl_var in Dbody;
+          [ | clear - Hαvb; congruence | constructor ];
+        (* (2) substitute the node's guess for the binder we were GIVEN *)
+        assert (HαtP1 : αt `notin` ftvar_in_pskl P1)
+          by (clear - Hαt; fsetdec);
+        destruct (a_looksub_subst_gen Dbody Hst Hbne HαtP1 HlcP1)
+          as (Ξg & Cg & Dsub & Hstg);
+        rewrite <- subst_pskl_in_pskl_intro in Dsub;
+          [ | pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                            ⌊ R0 ⌋ˢ (pskl_var_f αt) αv) as Hup2;
+              simpl in Hup2; clear - Hbne HbR0 Hup2; fsetdec ]
+      end.
+      rename Dsub into Dβ0.
       (* freshness facts for the rebuilt family *)
       assert (Hαtψa : αt `notin` ftvar_in_uskl ψa)
         by (clear - Hαt; fsetdec).
@@ -545,7 +622,8 @@ Proof.
         by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
       simpl.
       eapply a_subtag__forall_l_tagged
-        with (L := L `union` LD `union` singleton αv `union` singleton αt
+        (* [LD] is gone with the cofinite look family (cluster 3) *)
+        with (L := L `union` singleton αv `union` singleton αt
                    `union` ftvar_in_pskl P1)
              (Ξ := Ξ) (P1 := P1);
         [ assumption | assumption | | assumption | assumption | ].
@@ -591,13 +669,19 @@ Proof.
             [ | exact Hαψ | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
           rewrite (subst_bskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
-        assert (HDg :
-            ⌊ open_uskl_wrt_uskl
-                (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg' ⌋ˢ
-            ≼[ αt , M ] P0 ⤳ Ξc ⨾ C).
-        { rewrite uskl_to_pskl_open_gen.
-          rewrite uskl_to_pskl_subst. simpl.
-          rewrite Hera. exact Dβ0. }
+        (* the run now lives under the look rule's OWN binder, and carries the
+           outputs §8 handed back — read the context off the derivation, since
+           the binder is the rule's and has no name of ours *)
+        match type of Dβ0 with
+        | ?Θb ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ =>
+            assert (HDg : Θb ⊢
+                ⌊ open_uskl_wrt_uskl
+                    (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg' ⌋ˢ
+                ≼[ αt , M ] P0 ⤳ Ξg ⨾ Cg)
+              by (rewrite uskl_to_pskl_open_gen;
+                  rewrite uskl_to_pskl_subst; simpl;
+                  rewrite Hera; exact Dβ0)
+        end.
         assert (HlcSg : lc_uskl
             (open_uskl_wrt_uskl
                (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')).
@@ -640,12 +724,13 @@ Proof.
           [ match goal with
             | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
                 eapply (IHfam Ψg' ψg' ltac:(clear - Hfr; fsetdec) Hsort Hera
+                          _
                           (open_uskl_wrt_uskl
                              (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
-                          ψa Ψa αt Ξc C);
+                          ψa Ψa αt Ξg Cg);
                 [ rewrite Hsubject; reflexivity
                 | exact HDg
-                | exact Hst
+                | exact Hstg
                 | exact Hαtψa
                 | clear - Hαt; fsetdec
                 | exact Hlcψ
@@ -760,37 +845,52 @@ Proof.
             destruct Hg as [Hg | Hg]; [ inversion Hg | discriminate Hg ]
         end.
       * (* LS-ForallL : the structural crux *)
+      (* EXISTS-FRESH (cluster 3) — the untagged twin of the row above; see
+         its comment.  [a_looksub_subst_gen] substitutes the node's guess for
+         the ONE binder LS-ForallL gives us, re-picking anything that collides
+         with [P1] and renaming the outputs. *)
       match goal with
-      | HDf : forall b : atom, b `notin` ?L1 -> _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ |- _ =>
-          rename HDf into HDbody; rename L1 into LD
+      | Hp : _ ⊢ (open_pskl_wrt_pskl _ _) ≼[ _ , _ ] _ ⤳ _ ⨾ _ |- _ =>
+          rename Hp into Dbody
+      end.
+      match goal with
+      | Hb : _ `notin` add αv _ |- _ => rename Hb into Hbfr
       end.
       assert (Hlcstrip : lc_uskl (pskl_to_uskl (uskl_to_pskl ψa)))
         by (apply pskl_to_uskl_lc; apply lc_uskl_to_pskl_local; exact Hlcψ).
       assert (HlcP1 : lc_pskl P1)
         by (eapply a_wf_pskl_lc; eauto).
-      destruct (atom_fresh (singleton αv `union` ftvar_in_uskl ψa
-                  `union` ftvar_in_uskl R0
-                  `union` ftvar_in_pskl ⌊ R0 ⌋ˢ
-                  `union` ftvar_in_pskl P0
-                  `union` ftvar_in_pskl P1 `union` LD)) as [αt Hαt].
-      destruct (atom_fresh (LD `union` singleton αv `union` singleton αt
-                  `union` ftvar_in_pskl ⌊ R0 ⌋ˢ
-                  `union` ftvar_in_pskl P1)) as [β0 Hβ0].
-      pose proof (HDbody β0 ltac:(clear - Hβ0; fsetdec)) as Dβ0.
-      apply a_looksub_rename_var with (α' := αt) in Dβ0;
-        [ | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                          ⌊ R0 ⌋ˢ (pskl_var_f β0)) as Hup;
-            simpl in Hup; clear - Hαt Hβ0 Hup; fsetdec ].
-      rewrite <- subst_pskl_in_pskl_open_pskl_wrt_pskl_var in Dβ0;
-        [ | clear - Hβ0; fsetdec | constructor ].
-      apply a_looksub_subst_stable with (β := β0) (P0 := P1) in Dβ0;
-        [ | clear - Hβ0; fsetdec
-          | clear - Hαt; fsetdec
-          | exact HlcP1 ].
-      rewrite <- subst_pskl_in_pskl_intro in Dβ0;
-        [ | pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                          ⌊ R0 ⌋ˢ (pskl_var_f αt) αv) as Hup2;
-            simpl in Hup2; clear - Hβ0 Hup2; fsetdec ].
+      match type of Dbody with
+      | ((?b ~ abind_tvar) ++ _) ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ =>
+        destruct (atom_fresh (singleton αv `union` ftvar_in_uskl ψa
+                    `union` ftvar_in_uskl R0
+                    `union` ftvar_in_pskl ⌊ R0 ⌋ˢ
+                    `union` ftvar_in_pskl P0
+                    `union` ftvar_in_pskl P1
+                    `union` singleton b `union` dom Ξc
+                    `union` ftvar_in_cstrs C)) as [αt Hαt];
+        assert (Hbne : b <> αt) by (intros ->; clear - Hαt; fsetdec);
+        assert (Hαvb : αv <> b) by (intros ->; clear - Hbfr; fsetdec);
+        assert (HbR0 : b `notin` ftvar_in_pskl ⌊ R0 ⌋ˢ)
+          by (clear - Hbfr; fsetdec);
+        apply a_looksub_rename_var with (α' := αt) in Dbody;
+          [ | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                            ⌊ R0 ⌋ˢ (pskl_var_f b)) as Hup;
+              simpl in Hup; clear - Hαt Hup; fsetdec
+            | clear - Hαt; fsetdec
+            | clear - Hαt; fsetdec ];
+        rewrite <- subst_pskl_in_pskl_open_pskl_wrt_pskl_var in Dbody;
+          [ | clear - Hαvb; congruence | constructor ];
+        assert (HαtP1 : αt `notin` ftvar_in_pskl P1)
+          by (clear - Hαt; fsetdec);
+        destruct (a_looksub_subst_gen Dbody Hst Hbne HαtP1 HlcP1)
+          as (Ξg & Cg & Dsub & Hstg);
+        rewrite <- subst_pskl_in_pskl_intro in Dsub;
+          [ | pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                            ⌊ R0 ⌋ˢ (pskl_var_f αt) αv) as Hup2;
+              simpl in Hup2; clear - Hbne HbR0 Hup2; fsetdec ]
+      end.
+      rename Dsub into Dβ0.
       (* freshness facts for the rebuilt family *)
       assert (Hαtψa : αt `notin` ftvar_in_uskl ψa)
         by (clear - Hαt; fsetdec).
@@ -820,7 +920,8 @@ Proof.
         by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
       simpl.
       eapply a_subtag__forall_l_untagged
-        with (L := L `union` LD `union` singleton αv `union` singleton αt
+        (* [LD] is gone with the cofinite look family (cluster 3) *)
+        with (L := L `union` singleton αv `union` singleton αt
                    `union` ftvar_in_pskl P1)
              (Ξ := Ξ) (P1 := P1);
         [ assumption | assumption | | assumption | assumption | ].
@@ -866,13 +967,16 @@ Proof.
             [ | exact Hαψ | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
           rewrite (subst_bskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
-        assert (HDg :
-            ⌊ open_uskl_wrt_uskl
-                (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg' ⌋ˢ
-            ≼[ αt , M ] P0 ⤳ Ξc ⨾ C).
-        { rewrite uskl_to_pskl_open_gen.
-          rewrite uskl_to_pskl_subst. simpl.
-          rewrite Hera. exact Dβ0. }
+        match type of Dβ0 with
+        | ?Θb ⊢ _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ =>
+            assert (HDg : Θb ⊢
+                ⌊ open_uskl_wrt_uskl
+                    (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg' ⌋ˢ
+                ≼[ αt , M ] P0 ⤳ Ξg ⨾ Cg)
+              by (rewrite uskl_to_pskl_open_gen;
+                  rewrite uskl_to_pskl_subst; simpl;
+                  rewrite Hera; exact Dβ0)
+        end.
         assert (HlcSg : lc_uskl
             (open_uskl_wrt_uskl
                (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')).
@@ -914,12 +1018,13 @@ Proof.
           [ match goal with
             | IHfam : forall (a : atoms) (b : uskl), _ |- _ =>
                 eapply (IHfam Ψg' ψg' ltac:(clear - Hfr; fsetdec) Hsort Hera
+                          _
                           (open_uskl_wrt_uskl
                              (subst_bskl_in_uskl (uskl_var_f αt) αv R0) ψg')
-                          ψa Ψa αt Ξc C);
+                          ψa Ψa αt Ξg Cg);
                 [ rewrite Hsubject; reflexivity
                 | exact HDg
-                | exact Hst
+                | exact Hstg
                 | exact Hαtψa
                 | clear - Hαt; fsetdec
                 | exact Hlcψ
@@ -1108,7 +1213,8 @@ Proof.
         simpl.
         apply a_subtag__univ_ghost_l; [ assumption | ].
         match goal with
-        | IH : forall R1 : uskl, _ |- _ =>
+        (* the IH now leads with the look run's own context *)
+        | IH : forall R1 : aenv, _ |- _ =>
             eapply IH;
               [ reflexivity | eassumption | exact Hst | exact Hαψ
               | exact HαP0 | exact Hlcψ | assumption
@@ -1170,7 +1276,8 @@ Proof.
         simpl.
         apply a_subtag__univ_ghost_lg; [ assumption | ].
         match goal with
-        | IH : forall R1 : uskl, _ |- _ =>
+        (* the IH now leads with the look run's own context *)
+        | IH : forall R1 : aenv, _ |- _ =>
             eapply IH;
               [ reflexivity | eassumption | exact Hst | exact Hαψ
               | exact HαP0 | exact Hlcψ | assumption
@@ -1937,14 +2044,14 @@ Qed.
 (** ANCHOR: a decoration of the guess output extends the pre-guess skeleton,
     with NO remaining tags — the guess places untagged fresh flex vars at
     every ◇, so all of ψa's tags sit in the structure of [Q]. *)
-Lemma dec_ext_guess_anchor : forall NM P Ξ' P' Ψa ψa,
-  a_guess NM P Ξ' P' ->
+Lemma dec_ext_guess_anchor : forall Θ NM P Ξ' P' Ψa ψa,
+  a_guess Θ NM P Ξ' P' ->
   (NM = a_sub_mode_ty -> pskl_top_guarded P) ->
   a_tags_sort NM Ψa ψa ->
   ⌊ ψa ⌋ˢ = P' ->
   dec_ext P ψa empty.
 Proof.
-  intros NM P Ξ' P' Ψa ψa Hg Htg Htags Hera; inversion Hg; subst.
+  intros Θ NM P Ξ' P' Ψa ψa Hg Htg Htags Hera; inversion Hg; subst.
   - (* SK : P' = P ; subst already rewrote P to ⌊ψa⌋ˢ *)
     inversion Htags; subst.
     apply dec_ext_erase_refl; assumption.
@@ -3029,9 +3136,9 @@ Definition a_cstr_no_top (c : a_cstr) : Prop :=
 (** The look's targets are sub-skeletons of P0 (or fresh flex vars) — all
     ∀◇-free when P0 is. *)
 Lemma a_look_no_top :
-  (forall α m P P0 Ξ 𝒞, P ≼[ α , m ] P0 ⤳ Ξ ⨾ 𝒞 ->
+  (forall Θ α m P P0 Ξ 𝒞, Θ ⊢ P ≼[ α , m ] P0 ⤳ Ξ ⨾ 𝒞 ->
      pskl_no_top P0 -> List.Forall a_cstr_no_top 𝒞) /\
-  (forall α P P0 Ξ 𝒞, P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 ->
+  (forall Θ α P P0 Ξ 𝒞, Θ ⊢ P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 ->
      pskl_no_top P0 -> List.Forall a_cstr_no_top 𝒞).
 Proof.
   apply a_looksub_lookeq_mutind; intros; simpl in *;
@@ -3041,11 +3148,12 @@ Proof.
     try (repeat apply List.Forall_cons;
          solve [ assumption | exact I | apply List.Forall_nil ]);  (* [sub/eq _] *)
     try (apply H; assumption);                               (* same-target recursion *)
-    try (match goal with IH : forall β, β `notin` ?LL -> _ |- _ =>  (* cofinite *)
-           destruct (atom_fresh LL) as [β Hβ];
-           apply (IH β Hβ);
-           solve [ assumption | apply (proj1 (pskl_no_top_open_rec _ _ _)); assumption ]
-         end).
+    (* EXISTS-FRESH (cluster 3): the ∀ rows' IH is the premise's own, so there
+       is no representative to pick off an [L] — only the OPENED target to
+       walk back through [pskl_no_top_open_rec]. *)
+    try (apply H;
+         solve [ assumption
+               | apply (proj1 (pskl_no_top_open_rec _ _ _)); assumption ]).
 Qed.
 
 (** The TY solve output is top-guarded (walk the constraint list). *)
@@ -3175,9 +3283,9 @@ Definition a_cstr_tg (c : a_cstr) : Prop :=
 
 (** The look's targets are sub-skeletons of P0 — all [top_guarded] when P0 is. *)
 Lemma a_look_top_guarded :
-  (forall α m P P0 Ξ 𝒞, P ≼[ α , m ] P0 ⤳ Ξ ⨾ 𝒞 ->
+  (forall Θ α m P P0 Ξ 𝒞, Θ ⊢ P ≼[ α , m ] P0 ⤳ Ξ ⨾ 𝒞 ->
      pskl_top_guarded P0 -> List.Forall a_cstr_tg 𝒞) /\
-  (forall α P P0 Ξ 𝒞, P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 ->
+  (forall Θ α P P0 Ξ 𝒞, Θ ⊢ P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 ->
      pskl_top_guarded P0 -> List.Forall a_cstr_tg 𝒞).
 Proof.
   apply a_looksub_lookeq_mutind; intros; simpl in *;
@@ -3192,13 +3300,11 @@ Proof.
     try (repeat apply List.Forall_cons;
          solve [ assumption | exact I | apply List.Forall_nil ]);  (* [sub/eq _] *)
     try (apply H; assumption);                                (* same/∀◇-strip recursion *)
-    try (match goal with IH : forall β, β `notin` ?LL -> _ |- _ =>  (* cofinite *)
-           destruct (atom_fresh LL) as [β Hβ];
-           apply (IH β Hβ);
-           solve [ assumption
-                 | apply (proj1 (pskl_top_guarded_open_rec _ _ _)); assumption
-                 | simpl; split; assumption ]  (* forall_syn: reconstruct ∀◇ target *)
-         end).
+    (* EXISTS-FRESH (cluster 3): the ∀ rows' IH is the premise's own *)
+    try (apply H;
+         solve [ assumption
+               | apply (proj1 (pskl_top_guarded_open_rec _ _ _)); assumption
+               | simpl; split; assumption ]).
 Qed.
 
 (** The TY solve output is top-guarded (walk the constraints; ∀◇ targets OK). *)
@@ -3253,7 +3359,7 @@ Lemma a_extract_decorate : forall Θ0 NM αv M P P0 Ξ P1,
     a_tags_sort NM Ψa ψa ->
     ⌊ ψa ⌋ˢ = P1 ->
     exists Ξc 𝒞,
-      P ≼[ αv , M ] P0 ⤳ Ξc ⨾ 𝒞 /\
+      Θ0 ⊢ P ≼[ αv , M ] P0 ⤳ Ξc ⨾ 𝒞 /\
       𝒞 ⊩ᵗ ψa ⤳ Ψa.
 Proof.
   intros Θ0 NM αv M P P0 Ξ P1 Hext Htg0 Ψa ψa Htags Hera.
@@ -3459,7 +3565,7 @@ Proof.
         [ | rewrite <- (ftvar_in_pskl_uskl_to_pskl (pskl_to_uskl P));
             rewrite uskl_to_pskl_pskl_to_uskl; clear - Hα; fsetdec ].
       rewrite Hera. reflexivity. }
-    assert (HDsrc :
+    assert (HDsrc : Θ0 ⊢
         ⌊ open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α) ⌋ˢ
         ≼[ α , M ] P0 ⤳ Ξc ⨾ C).
     { replace (⌊ open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α) ⌋ˢ)
