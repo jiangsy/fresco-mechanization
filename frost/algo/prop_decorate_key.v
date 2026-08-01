@@ -986,7 +986,7 @@ Proof.
         | Hs : is_sskl (bskl_all_inh _) |- _ => inversion Hs
         end.
     + (* R0 = ◇ : nothing to decorate *)
-      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ HD
+      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ _ HD
                   ltac:(simpl; clear; fsetdec)) as [-> ->].
       inversion Hst; subst.
       simpl.
@@ -1003,7 +1003,7 @@ Proof.
       [ exfalso; eapply pskl_to_uskl_not_holeg; symmetry; exact HeqT
       | discriminate HeqT ].
     + (* R0 = ◈ : P0 = ◇ is pinned by the rule *)
-      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ HD
+      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ _ HD
                   ltac:(simpl; clear; fsetdec)) as [-> ->].
       inversion Hst; subst.
       simpl.
@@ -1225,7 +1225,7 @@ Proof.
           | rewrite HeqT; rewrite uskl_to_pskl_pskl_to_uskl; reflexivity ].
     + (* neq : the subject is an untouched variable *)
       inversion HeqT; subst.
-      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ HD
+      destruct ((proj1 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ _ HD
                   ltac:(simpl; clear - Hc; fsetdec)) as [-> ->].
       inversion Hst; subst.
       simpl.

@@ -1946,7 +1946,7 @@ Lemma a_extract_ty_ghost_free : forall Θ0 α M P P0 Ξ P1,
 Proof.
   intros * Hex; inversion Hex; subst.
   match goal with
-  | Hg : a_guess a_sub_mode_ty _ _ _ |- _ => inversion Hg; subst
+  | Hg : a_guess _ a_sub_mode_ty _ _ _ |- _ => inversion Hg; subst
   end.
   apply ptyp_to_pskl_ghost_free.
 Qed.

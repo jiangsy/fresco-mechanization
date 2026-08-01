@@ -2487,7 +2487,7 @@ Proof.
     + (* R = unit : α-free, both substitutions are the identity *)
       match goal with
       | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
-          destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ Hl)
+          destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ Hl)
             as [-> ->]; [ simpl; clear; fsetdec | ]
       end.
       inversion Hst; subst.
@@ -2501,7 +2501,7 @@ Proof.
       end.
       match goal with
       | Hl : _ ∼[ _ ] _ ⤳ _ ⨾ _ |- _ =>
-          destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ Hl)
+          destruct ((proj2 a_looksub_lookeq_absent_nil) _ _ _ _ _ _ Hl)
             as [-> ->];
           [ simpl in Hαα0 |- *; clear - Hαα0; fsetdec | ]
       end.

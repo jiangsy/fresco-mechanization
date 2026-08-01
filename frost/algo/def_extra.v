@@ -347,13 +347,16 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
     a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all (close_ptyp_wrt_ptyp β A)).
 
 (** [guess^N(Q) = (Ξ'; Q')] (full-algo-spec.tex:1000): [guess^SK] is the
-    identity; [guess^TY] is [a_guess_mono] read back into [pskl]. *)
-Inductive a_guess : a_sub_mode -> pskl -> aenv -> pskl -> Prop :=
-| a_guess__sk : forall Q,
-    a_guess a_sub_mode_sk Q nil Q
-| a_guess__ty : forall Q Ξ A,
-    a_guess_mono nil Q Ξ A ->
-    a_guess a_sub_mode_ty Q Ξ (ptyp_to_pskl A).
+    identity; [guess^TY] is [a_guess_mono] read back into [pskl].
+    The avoid-input [Θ] is threaded on (cluster 1 gave [a_guess_mono] one;
+    running the inner guess at [nil] left that discipline INERT here, so the
+    generated block avoided nothing). *)
+Inductive a_guess : aenv -> a_sub_mode -> pskl -> aenv -> pskl -> Prop :=
+| a_guess__sk : forall Θ Q,
+    a_guess Θ a_sub_mode_sk Q nil Q
+| a_guess__ty : forall Θ Q Ξ A,
+    a_guess_mono Θ Q Ξ A ->
+    a_guess Θ a_sub_mode_ty Q Ξ (ptyp_to_pskl A).
 
 (* ===================================================================== *)
 (*  Constraint collection (paper fig:poly-info-extraction)                *)
@@ -367,88 +370,126 @@ Inductive a_cstr : Set :=
 | a_cstr_eq : pskl -> a_cstr.
 Definition a_cstrs : Set := list a_cstr.
 
-Reserved Notation "P ≼[ α , m ] P' ⤳ Ξ ⨾ C"
-  (at level 75, α at level 0, m at level 0, P' at level 74, Ξ at level 0,
+Reserved Notation "Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C"
+  (at level 75, P at level 74, α at level 0, m at level 0, P' at level 74,
+   Ξ at level 0, C at level 74, no associativity).
+Reserved Notation "Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C"
+  (at level 75, P at level 74, α at level 0, P' at level 74, Ξ at level 0,
    C at level 74, no associativity).
-Reserved Notation "P ∼[ α ] P' ⤳ Ξ ⨾ C"
-  (at level 75, α at level 0, P' at level 74, Ξ at level 0, C at level 74,
-   no associativity).
 
-Inductive a_looksub : atom -> mode -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
-| a_looksub__var : forall α m P,                 (* LS-Var *)
-    (pskl_var_f α) ≼[ α , m ] P ⤳ nil ⨾ (a_cstr_sub m P :: nil)
-| a_looksub__absent : forall α m P P',           (* LS-Absent *)
+(* EXISTS-FRESH with an AVOID-INPUT context (DESIGN.md §4.3, cluster 3 of
+   the freshness campaign).
+
+   [Θ] is an INPUT the paper's context-free look judgments do not carry: it
+   is the relational rendering of the implementation's global fresh counter
+   ([incr counter; Bindlib.new_var], type.ml:563-565), exactly as for
+   [a_guess_mono] and the solve judgments.  Without it LE-FlexR's paper-side
+   side condition "fresh γ̂" (algorithmic.tex:1204) has NO rendering at all,
+   and — decisively — [a_looksub_lookeq_ftv] cannot even be STATED once the
+   ∀ rules leak: its repaired disjunct is "or the variable is one the run
+   generated", i.e. "∉ ftvar_in_aenv Θ" (cf. [a_solve_cstr_ftv]).
+
+   ALL FIVE ∀ rules LEAK their binder — the reference implementation
+   unbinds and DISCARDS the name in every one of them
+   ([constr_collect_eq]: LE-ForallInh type.ml:579-583, LE-ForallSyn :595-598,
+   LE-UnivGhost1 :610-613; [constr_collect_sub]: LS-ForallR :668-672,
+   LS-ForallL :685-688), and neither function ever calls [bind_var].  So the
+   outputs [Ξ] and [𝒞] may mention the binder, which is precisely what the
+   old cofinite rendering forbade: sharing one 𝒞 across the whole family
+   silently restricted the rules to vacuous binders.
+
+   The witness ENTERS the premise's context, so names generated below a
+   binder avoid it (junk-freeness DERIVED, as in cluster 1); the side
+   conditions name INPUTS only — [Θ], the looked-for variable [α], and the
+   rule's input skeletons. *)
+Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
+| a_looksub__var : forall Θ α m P,               (* LS-Var *)
+    Θ ⊢ (pskl_var_f α) ≼[ α , m ] P ⤳ nil ⨾ (a_cstr_sub m P :: nil)
+| a_looksub__absent : forall Θ α m P P',         (* LS-Absent *)
     α `notin` ftvar_in_pskl P ->
-    P ≼[ α , m ] P' ⤳ nil ⨾ nil
-| a_looksub__vacuous : forall α m P,             (* LS-Vacuous: RHS is □ *)
-    P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil
-| a_looksub__check : forall α A B Ξ C,           (* LS-Check *)
+    Θ ⊢ P ≼[ α , m ] P' ⤳ nil ⨾ nil
+| a_looksub__vacuous : forall Θ α m P,           (* LS-Vacuous: RHS is □ *)
+    Θ ⊢ P ≼[ α , m ] pskl_hole ⤳ nil ⨾ nil
+| a_looksub__check : forall Θ α A B Ξ C,         (* LS-Check *)
     A <> pskl_var_f α ->
     guarded_pskl A ->
     guarded_pskl B ->
-    A ∼[ α ] B ⤳ Ξ ⨾ C ->
-    A ≼[ α , mode_tc ] B ⤳ Ξ ⨾ C
-| a_looksub__forall_r : forall L α A B Ξ C,      (* LS-ForallR *)
-    (forall β, β `notin` L ->
-       A ≼[ α , mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C) ->
-    A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C
-| a_looksub__arrow : forall α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,   (* LS-Arrow *)
-    P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
-    P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 ->
-    (pskl_arrow P1 P2) ≼[ α , (mode_fn m) ] (pskl_arrow P1' P2')
+    Θ ⊢ A ∼[ α ] B ⤳ Ξ ⨾ C ->
+    Θ ⊢ A ≼[ α , mode_tc ] B ⤳ Ξ ⨾ C
+| a_looksub__forall_r : forall Θ α A B Ξ C β,    (* LS-ForallR — LEAKS *)
+    β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl A
+                       `union` ftvar_in_pskl B) ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
+      (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C ->
+    Θ ⊢ A ≼[ α , mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ C
+| a_looksub__arrow : forall Θ α m P1 P2 P1' P2' Ξ1 Ξ2 C1 C2, (* LS-Arrow *)
+    Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
+    Θ ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 ->
+    Θ ⊢ (pskl_arrow P1 P2) ≼[ α , (mode_fn m) ] (pskl_arrow P1' P2')
         ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2)
-| a_looksub__forall_l : forall L α m P P' Ξ C,   (* LS-ForallL *)
-    (forall β, β `notin` L ->
-       (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ α , m ] P' ⤳ Ξ ⨾ C) ->
-    (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
-| a_looksub__univ_ghost_l : forall α m P P' Ξ C, (* LS-UnivGhostL *)
-    P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
-    (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
+| a_looksub__forall_l : forall Θ α m P P' Ξ C β, (* LS-ForallL — LEAKS *)
+    β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
+                       `union` ftvar_in_pskl P') ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β))
+      ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+    Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
+| a_looksub__univ_ghost_l : forall Θ α m P P' Ξ C, (* LS-UnivGhostL *)
+    Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+    Θ ⊢ (pskl_tophole P) ≼[ α , m ] P' ⤳ Ξ ⨾ C
 
-with a_lookeq : atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
-| a_lookeq__var : forall α P,                    (* LE-Var *)
-    (pskl_var_f α) ∼[ α ] P ⤳ nil ⨾ (a_cstr_eq P :: nil)
-| a_lookeq__absent : forall α P P',              (* LE-Absent *)
+with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
+| a_lookeq__var : forall Θ α P,                  (* LE-Var *)
+    Θ ⊢ (pskl_var_f α) ∼[ α ] P ⤳ nil ⨾ (a_cstr_eq P :: nil)
+| a_lookeq__absent : forall Θ α P P',            (* LE-Absent *)
     α `notin` ftvar_in_pskl P ->
-    P ∼[ α ] P' ⤳ nil ⨾ nil
-| a_lookeq__vacuous : forall α P,                (* LE-Vacuous: RHS is □ *)
-    P ∼[ α ] pskl_hole ⤳ nil ⨾ nil
-| a_lookeq__flex_r : forall α P β α1,             (* LE-FlexR (β̂ a flex var) *)
+    Θ ⊢ P ∼[ α ] P' ⤳ nil ⨾ nil
+| a_lookeq__vacuous : forall Θ α P,              (* LE-Vacuous: RHS is □ *)
+    Θ ⊢ P ∼[ α ] pskl_hole ⤳ nil ⨾ nil
+| a_lookeq__flex_r : forall Θ α P β α1,          (* LE-FlexR (β̂ a flex var) *)
+    (* the paper's [fresh γ̂] (algorithmic.tex:1204).  [ftvar_in_aenv], not
+       [dom]: a payload ([α̂ ≔ τ]) may mention the name, and it must not. *)
+    α1 `notin` add α (add β (ftvar_in_aenv Θ `union` ftvar_in_pskl P)) ->
     P <> pskl_var_f α ->
     α `in` ftvar_in_pskl P ->
-    P ∼[ α ] (pskl_var_f β) ⤳ ((α1 ~ abind_flex_mono) ++ nil)
+    Θ ⊢ P ∼[ α ] (pskl_var_f β) ⤳ ((α1 ~ abind_flex_mono) ++ nil)
         ⨾ (a_cstr_eq (pskl_var_f α1) :: nil)
-| a_lookeq__arrow : forall α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,      (* LE-Arrow *)
-    P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
-    P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 ->
-    (pskl_arrow P1 P2) ∼[ α ] (pskl_arrow P1' P2') ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2)
-| a_lookeq__forall_inh : forall L α P P' Ξ C,    (* LE-ForallInh *)
-    (forall β, β `notin` L ->
-       (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
-         (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C) ->
-    (pskl_all_syn P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C
-| a_lookeq__forall_syn : forall L α P P' Ξ C,    (* LE-ForallSyn *)
-    (forall β, β `notin` L ->
-       (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C) ->
-    (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
-| a_lookeq__univ_ghost : forall α P P' Ξ C,      (* LE-UnivGhost *)
-    P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-    (pskl_tophole P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
-| a_lookeq__univ_ghost1 : forall L α P P' Ξ C,   (* LE-UnivGhost1 *)
-    (forall β, β `notin` L ->
-       (pskl_tophole P) ∼[ α ] (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C) ->
-    (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C
-| a_lookeq__univ_ghost2 : forall α P P' Ξ C,     (* LE-UnivGhost2 *)
+| a_lookeq__arrow : forall Θ α P1 P2 P1' P2' Ξ1 Ξ2 C1 C2,    (* LE-Arrow *)
+    Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 ->
+    Θ ⊢ P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 ->
+    Θ ⊢ (pskl_arrow P1 P2) ∼[ α ] (pskl_arrow P1' P2')
+        ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2)
+| a_lookeq__forall_inh : forall Θ α P P' Ξ C β,  (* LE-ForallInh — LEAKS *)
+    β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
+                       `union` ftvar_in_pskl P') ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
+      (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C ->
+    Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C
+| a_lookeq__forall_syn : forall Θ α P P' Ξ C β,  (* LE-ForallSyn — LEAKS *)
+    β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
+                       `union` ftvar_in_pskl P') ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼[ α ]
+      (pskl_tophole P') ⤳ Ξ ⨾ C ->
+    Θ ⊢ (pskl_all_syn P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
+| a_lookeq__univ_ghost : forall Θ α P P' Ξ C,    (* LE-UnivGhost *)
+    Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+    Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
+| a_lookeq__univ_ghost1 : forall Θ α P P' Ξ C β, (* LE-UnivGhost1 — LEAKS *)
+    β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl P
+                       `union` ftvar_in_pskl P') ->
+    ((β ~ abind_tvar) ++ Θ) ⊢ (pskl_tophole P) ∼[ α ]
+      (open_pskl_wrt_pskl P' (pskl_var_f β)) ⤳ Ξ ⨾ C ->
+    Θ ⊢ (pskl_tophole P) ∼[ α ] (pskl_all_syn P') ⤳ Ξ ⨾ C
+| a_lookeq__univ_ghost2 : forall Θ α P P' Ξ C,   (* LE-UnivGhost2 *)
     guarded_pskl P' ->
-    P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-    (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C
-| a_lookeq__univ_ghost_r : forall α P P' Ξ C,    (* LE-UnivGhostR *)
+    Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+    Θ ⊢ (pskl_tophole P) ∼[ α ] P' ⤳ Ξ ⨾ C
+| a_lookeq__univ_ghost_r : forall Θ α P P' Ξ C,  (* LE-UnivGhostR *)
     P <> pskl_var_f α ->
     guarded_pskl P ->
-    P ∼[ α ] P' ⤳ Ξ ⨾ C ->
-    P ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
-where "P ≼[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub α m P P' Ξ C) : type_scope
-  and "P ∼[ α ] P' ⤳ Ξ ⨾ C" := (a_lookeq α P P' Ξ C) : type_scope.
+    Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C ->
+    Θ ⊢ P ∼[ α ] (pskl_tophole P') ⤳ Ξ ⨾ C
+where "Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub Θ α m P P' Ξ C) : type_scope
+  and "Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C" := (a_lookeq Θ α P P' Ξ C) : type_scope.
 
 (* ===================================================================== *)
 (*  Constraint solving (paper fig:constraint-solving)                     *)
@@ -613,9 +654,12 @@ Reserved Notation "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q"
    and never mention it in their conclusions. *)
 Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_extract__solve : forall Θ0 NM α m P P' Ξ Ξ' C Q Q',
-    P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
+    Θ0 ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C ->
     (Ξ ++ Θ0) ⊩ C ⨾ pskl_hole ⤳ Q ->
-    a_guess NM Q Ξ' Q' ->
+    (* the guess runs AFTER the collection, so its avoid-input is the whole
+       [Ξ ++ Θ0] the solve already runs at — this is what makes the two
+       halves of the output block [Ξ ++ Ξ'] disjoint *)
+    a_guess (Ξ ++ Θ0) NM Q Ξ' Q' ->
     Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ (Ξ ++ Ξ') ↪ Q'
 where "Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q" := (a_extract Θ0 NM α m P P' Ξ Q) : type_scope.
 

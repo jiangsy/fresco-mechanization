@@ -78,7 +78,74 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-01 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 2 (solve) CLOSED — and a mech-only lemma REFUTED, restoring the paper's own P6-Sv conclusion
+## 2026-08-01 (latest) — 🚧 FRESHNESS CAMPAIGN cluster 3 (look) IN PROGRESS — canon question (ii) DECIDED (look gains a context), and the source-substitution lemma REFUTED in its unconditional form
+
+`remech` is green: it carries the cluster's **first stage only** — the
+TARGET-only restatement of `a_looksub_lookeq_rename_tvar`.  The encoding
+conversion itself is parked on `freshness-campaign-cluster3-wip` (RED,
+deliberately) with the work below already done.
+
+**The implementation settled canon question (i) with no room for doubt**:
+all five look ∀ rules LEAK.  `constr_collect_eq` and `constr_collect_sub`
+never call `bind_var` — LE-ForallInh (type.ml:579-583), LE-ForallSyn
+(:595-598), LE-UnivGhost1 (:610-613), LS-ForallR (:668-672), LS-ForallL
+(:685-688) all `unbind` and discard the name.
+
+**Canon question (ii) — DECIDED (user): look gains a `Θ` avoid-input**,
+and `a_guess` gains one too (`a_extract` feeds it `Ξ ++ Θ0`; running the
+inner guess at `nil` had left cluster 1's discipline inert there).  What
+made it not a matter of taste: `a_looksub_lookeq_ftv` cannot be STATED
+without a context once the ∀ rules leak — its exact bound is FALSE
+(`Θ ⊢ ∀b.α ∼[α] ∀b.b ⤳ · ⨾ [b₀ ≐]`), its repair is cluster 2's disjunctive
+shape, and that disjunct *is* "∉ ftvar_in_aenv Θ".  The chain it feeds is
+the paper's own `lemma:look-output-fresh` (subtyping-proofs:522).  See
+DESIGN.md §4.3, "The look cluster".
+
+⚠️ **THE FINDING** — `cex/cex_look_subst_stable_leak.v` (Qed, axiom-free):
+the mech's UNCONDITIONAL `a_looksub_lookeq_subst_stable` (forward direction
+of the paper's `lemma:constraint-collection-stable-substitution`) is FALSE
+against the faithful rules.
+
+    Θ ⊢ ∀. (α → β)  ∼[α]  ∀. (0 → 0)  ⤳  ·  ⨾  [ β₀ ≐ ]
+
+substituting `β₀` for `β` puts the derivation's own leaked binder into the
+SOURCE, and every binder the rule may then pick avoids it — so the collected
+constraint changes.  **The paper is not wrong**: it argues under Barendregt.
+The mech now spells that out with the smallest premise the rule's own side
+condition supplies, `ftv P0 [<=] add α (ftvar_in_aenv Θ)` — the CONTEXT, not
+the input skeletons, because only the context is monotone under descent.
+
+Closed in this stage (all Qed): the target-only
+`a_looksub_lookeq_rename_tvar` + its derived KEEP corollaries and
+`a_looksub_lookeq_generated_ftvar`; the `subst_cstrs` kit; the disjunctive
+`a_looksub_lookeq_ftv` and the repaired `a_extract_output_fresh`; the
+repaired `a_looksub_lookeq_subst_stable` and `_rev` (the reverse needed
+`βg ∈ ftvar_in_aenv Θ`, for the same reason).
+
+**Remaining (in order), on the WIP branch:**
+
+1. `a_looksub_lookeq_rename_tvar_size` — stated in final form, rows not
+   written.  The three cases are FORCED and worked out in the ⛔ WIP comment
+   above it: `β = b` (source IS the binder ⇒ substitution is the identity,
+   re-fire at α1), `α1 = b` (target IS the binder ⇒ it must MOVE, and the
+   output-freshness premise is exactly what says it did not leak, so the
+   move preserves Ξ and 𝒞), otherwise (binder stays).  Model line-by-line:
+   `a_solve_sub_eq_rename_size`'s SS-ForallL row (prop_solve_sub.v).
+2. `a_looksub_lookeq_rename_var` (renaming the LOOKED-FOR variable) needs
+   the same treatment — machine-checked reason: renaming α to the run's own
+   leaked binder is refutable by the same witness.
+3. The ∀ rows of P6-Cs / P6-Ss (prop_look_complete_{cstr,sub_cstr}.v) —
+   these should SIMPLIFY: they currently build a cofinite family by renaming
+   a fresh representative, and exists-fresh lets them use the derivation's
+   own binder.
+4. `prop_decorate_key.v` / `prop_decorate_sub.v` (`a_looksub_open_target_at`
+   is the one genuine "move a binder" consumer), then `test_examples.v` and
+   the `cex/` files that build look runs.
+5. Then the rest of the campaign: cluster 4 (consis mutual), cluster 5
+   (`a_sub__forall_l` + decorated mirrors), cluster 6 (`a_pat`/`a_typing`),
+   F-deprecation, the walk's `∉ dom Θ1` premises (P7a).
+
+## 2026-08-01 — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 2 (solve) CLOSED — and a mech-only lemma REFUTED, restoring the paper's own P6-Sv conclusion
 
 `make coq` green from clean, admit- and axiom-free.  The five solve rules
 are exists-fresh now: `SolS-ForallL` and the four eq-∀ rules CLOSE their

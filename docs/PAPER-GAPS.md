@@ -1825,3 +1825,39 @@ carry it on the motive.
 does not pin `P_0`'s shape, but the ALGORITHM dispatches on it — a `∀` `P_0` is
 `ForallR`, not `Check`.  That is the paper's own case split, not a new
 hypothesis.
+
+## PROSE-COMPLETION — `lemma:constraint-collection-stable-substitution` needs its Barendregt condition stated (2026-08-01)
+
+The paper's constraint-collection stability lemma (algorithmic-proofs
+tex:504-520) says: substituting an `α`-free `Q` for `β ≠ α` into the SOURCE
+leaves the collected `Ξ ⨾ 𝒞` unchanged.  Under the Barendregt convention
+that is correct.  Stated without it, it is **false**, and the mechanization
+has the witness (`frost/algo/cex/cex_look_subst_stable_leak.v`, Qed,
+axiom-free):
+
+    Θ ⊢ ∀. (α → β)   ∼[α]   ∀. (0 → 0)   ⤳   ·   ⨾   [ β₀ ≐ ]
+
+by `LE-ForallInh` at `β₀` and then `LE-Arrow` (`LE-Var` left, `LE-Absent`
+right).  All five look ∀ rules let their binder ESCAPE into the outputs —
+the reference implementation `unbind`s and discards the name in every one
+(`constr_collect_eq` type.ml:579-583, :595-598, :610-613;
+`constr_collect_sub` :668-672, :685-688; neither function ever calls
+`bind_var`) — so `β₀` really does appear in `𝒞`.  Substituting `Q := β₀` for
+`β` puts that binder FREE in the source, and now every binder the rule may
+pick avoids it, so the collected constraint is `δ ≐` for some `δ ≠ β₀`.
+
+Nothing about the paper's rules or its proof needs changing; what a
+mechanization must add is the Barendregt condition as an explicit premise.
+The smallest one that the ∀ rules' own side conditions then supply is
+
+    ftv Q ⊆ {α} ∪ ftv(Θ)
+
+("the substituted skeleton introduces no name the judgment does not already
+mention").  It names the CONTEXT rather than the input skeletons because
+only the context is monotone as the induction descends: an arrow row shrinks
+the skeletons, a binder row grows the context.
+
+The same phenomenon makes the mech's renaming lemmas carry an OUTPUT
+freshness premise (`α1 ∉ dom Ξ ∪ ftv 𝒞`): a binder that escaped into the
+outputs cannot be moved without changing them, so a rename target must
+simply differ from it.  See DESIGN.md §4.3, "The look cluster".

@@ -2589,7 +2589,7 @@ Proof.
     assert (HgfPa : uskl_ghost_free
                       (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))).
     { inversion Hlook; subst.
-      match goal with Hg : a_guess a_sub_mode_ty _ _ _ |- _ =>
+      match goal with Hg : a_guess _ a_sub_mode_ty _ _ _ |- _ =>
         inversion Hg; subst end.
       rewrite msubst_pskl_ptyp_to_pskl in HwfPaΘ |- *.
       eapply pskl_to_uskl_paint_ghost_free;
@@ -2886,7 +2886,7 @@ Proof.
     assert (HgfPa : uskl_ghost_free
                       (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))).
     { inversion Hlook; subst.
-      match goal with Hg : a_guess a_sub_mode_ty _ _ _ |- _ =>
+      match goal with Hg : a_guess _ a_sub_mode_ty _ _ _ |- _ =>
         inversion Hg; subst end.
       rewrite msubst_pskl_ptyp_to_pskl in HwfPaΘ |- *.
       eapply pskl_to_uskl_paint_ghost_free;

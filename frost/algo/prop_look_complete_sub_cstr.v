@@ -1563,7 +1563,7 @@ Proof.
     { intros α0 Hα0.
       pose proof (a_solve_cstr_ftv_eq HSolve1 (a_lookeq_cstr_eq HLK1))
         as Hs1.
-      pose proof ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ HLK1) as Hc1.
+      pose proof ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ _ HLK1) as Hc1.
       pose proof (HΔρftv α0 Hα0) as Hd0. cbn [ftvar_in_pskl] in Hd0.
       pose proof (HΔρΞc1 α0 Hα0) as HΞ.
       clear - Hs1 Hc1 Hd0 HΞ; fsetdec. }
@@ -1682,7 +1682,7 @@ Proof.
        assert (HΞ2C1 : forall x, x `in` dom Ξc2 ->
                  x `notin` ftvar_in_cstrs C1).
        { intros x Hx;
-         pose proof ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ HLK1) as Hcf;
+         pose proof ((proj2 a_looksub_lookeq_ftv) _ _ _ _ _ _ HLK1) as Hcf;
          pose proof (a_wf_pskl_ftv_dom HwfP01) as Hpf;
          specialize (HΞ2disj x Hx); rewrite dom_app in HΞ2disj;
          simpl in Hpf; clear - Hcf Hpf HΞ2disj; fsetdec. }

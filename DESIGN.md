@@ -449,6 +449,54 @@ Two consumer-visible consequences:
   is what makes that case provable with no weakening lemma
   (`a_guess_ty_witness`, prop_look_complete_extract.v).
 
+#### The look cluster: why the judgment gained a context (cluster 3, 2026-08-01)
+
+`a_looksub` / `a_lookeq` now carry an `aenv` input, written
+`Θ ⊢ P ≼[α,M] P' ⤳ Ξ ⨾ 𝒞` / `Θ ⊢ P ∼[α] P' ⤳ Ξ ⨾ 𝒞`.  The paper's look
+judgments are context-free; `Θ` is the same relational rendering of the
+implementation's global fresh counter that guess and solve already carry
+(`incr counter; Bindlib.new_var`, type.ml:563-565).  Three things forced it,
+in increasing order of decisiveness:
+
+- the paper's `\lelab{FlexR}` carries `\fresh{\hat\gamma}`
+  (algorithmic.tex:1204), which the mech rendered as **no condition at all**;
+- without it a flexible generated below a ∀ may BE that ∀'s binder — cluster
+  1's junk derivations, in the look cluster;
+- **`a_looksub_lookeq_ftv` cannot be STATED without it.**  All five look ∀
+  rules LEAK (the implementation unbinds and discards the name in every one:
+  `constr_collect_eq` :579-583, :595-598, :610-613; `constr_collect_sub`
+  :668-672, :685-688, and neither function ever calls `bind_var`), so the
+  exact bound `ftv 𝒞 ⊆ ftv P' ∪ dom Ξ` is FALSE —
+  `Θ ⊢ ∀b.α ∼[α] ∀b.b ⤳ · ⨾ [b₀ ≐]` by LE-ForallInh + LE-Var.  Its repair is
+  cluster 2's disjunctive shape, and the second disjunct *is* "the run
+  invented this name", i.e. `∉ ftvar_in_aenv Θ`.  The chain it feeds is the
+  paper's own `lemma:look-output-fresh` (`a_extract_output_fresh`,
+  subtyping-proofs:522).
+
+`a_guess` gained the context at the same time, and `a_extract` feeds it
+`Ξ ++ Θ0` (the guess runs after the collection, so both halves of the output
+block `Ξ ++ Ξ'` avoid the ambient context).  Running the inner guess at `nil`
+had left cluster 1's discipline INERT inside `a_extract`.
+
+⚠️ **Consequence — source-side stability needs Barendregt spelled out.**
+`cex/cex_look_subst_stable_leak.v` (Qed, axiom-free) refutes the mech's
+unconditional `a_looksub_lookeq_subst_stable` (the forward direction of the
+paper's `lemma:constraint-collection-stable-substitution`): substituting a
+`P0` that happens to carry the derivation's own leaked binder cannot be
+re-derived, because every binder the rule may pick avoids
+`ftv (subst P0 β P)`.  The paper is fine — it argues under Barendregt.  The
+mech states the smallest premise that makes the rule's own side condition
+supply it, `ftv P0 [<=] add α (ftvar_in_aenv Θ)`: it names the CONTEXT, not
+the input skeletons, because only the context is MONOTONE under descent (an
+arrow row shrinks the skeletons, a binder row grows the context).
+
+The same phenomenon shapes the renaming lemmas, and there the honest premise
+is an **output**-freshness one (`α1 ∉ dom Ξ ∪ ftv 𝒞`) plus SIZE induction:
+a binder that ESCAPED into the outputs cannot be moved (moving it would
+change them), so the target must differ from it; a binder that did not escape
+can be moved, and then the outputs stay fixed.  That case split is forced,
+and it is the cluster-2 pair of shapes (1) and (3) meeting in one lemma.
+
 #### The cost, and the staging rule that pays it
 
 Exists-fresh takes binder choice AWAY from consumers: a proof that needs
