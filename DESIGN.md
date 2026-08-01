@@ -388,6 +388,26 @@ introduces no new free variables", prop_solve_sub.v) is FALSE once
 (`a_solve_cstr_ftv` → `a_extract_output_fresh`).  These must be
 restated, not worked around by narrowing the rule.
 
+⚠️ **Second known consequence — WELL-FORMEDNESS is not preserved
+either**, and this one is *load-bearing*: the escaped binder is a free
+variable of the output that the conclusion's context does not bind
+(`cex/cex_solve_sub_wf_leak.v`, `◇ ≼[TC] ∀a.a ⤳ ∀◇b` by SolS-ForallR
+then SolS-GhostL — the ghost copies the target, skolem and all).  So a
+general "sub-solving preserves wf" lemma cannot exist, and the one the
+mech had (`a_solve_sub_wf`) was deleted.  **The paper never needed one**:
+its P6-Sv states `Θ₀ ⊢ P_a` among its OWN conclusions
+(subtyping-proofs.tex:1737) and proves it inside the induction, carrying
+it as `Θ₀,β ⊢ P_a` through the SolS-ForallR row and discharging β there
+from `β ∉ ftv ψ_a` plus the PRECISION conclusion (:1897-1900).
+`a_solve_sub_complete_var` now does the same.  Two mech-only steps the
+paper's single-context `Θ ⊢ P` does not need, both in
+prop_look_complete_sub_var.v: the mech types a ∀◇ body at the EMPTY Δ,
+so moving a binder out of the context and into Δ (SolS-ForallL's row)
+is legal only for an UNSHIELDED variable — hence
+`a_wf_pskl_tvar_to_delta` and `a_solve_sub_eq_unshielded` ("solving does
+not shield a context variable the subject leaves unshielded"; the escape
+disjunct of `a_solve_sub_ftv` is closed off by `β ∈ dom Θ`).
+
 **No function-valued rule arguments.**  A cofinite family whose output
 varies with the binder (`Ξf : atom -> aenv`) was built and rejected
 during the ForallR fix: it admits exotic name-dependent outputs and is

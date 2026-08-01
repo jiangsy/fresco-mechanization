@@ -574,40 +574,10 @@ Proof.
     [ apply ad_refine_syn_f_of_plain; exact H | exact Hsub ].
 Qed.
 
-(** Renaming a Δ-BOUND variable of skeleton well-formedness — the wf twin of
-    §5's [ad_precise_rename_delta], and needed for the same reason.  The ∀◇
-    case is where freshness earns its keep: its premise is CLOSED
-    ([Θ ⨟ empty ⊢ₚₛᵃ P]), so β ∉ dom Θ makes β fresh for the body and the
-    substitution is a no-op there. *)
-Lemma a_wf_pskl_rename_delta : forall Θ Δ P β α0,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  β `notin` dom Θ ->
-  Θ ⨟ (add α0 (remove β Δ)) ⊢ₚₛᵃ (subst_pskl_in_pskl (pskl_var_f α0) β P).
-Proof.
-  intros Θ Δ P β α0 H; revert α0; induction H; intros α1 Hβ; cbn.
-  - apply a_wf_pskl__unit.
-  - destruct_if as [-> | Hne].
-    + apply a_wf_pskl__var. left. clear; fsetdec.
-    + apply a_wf_pskl__var.
-      destruct H as [HΔ | Hbt];
-        [ left; clear - HΔ Hne; fsetdec | right; exact Hbt ].
-  - apply a_wf_pskl__arrow; auto.
-  - apply a_wf_pskl__all with (L := L `union` singleton β `union` singleton α1).
-    intros α2 Hα2.
-    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hα2; fsetdec | apply lc_pskl_var_f ].
-    eapply a_wf_pskl_delta_mono;
-      [ apply H0; [ clear - Hα2; fsetdec | exact Hβ ]
-      | clear - Hα2; fsetdec ].
-  - apply a_wf_pskl__hole.
-  - (* ∀◇ : the body is wf at the CLOSED Δ, so β ∉ ftv it and subst is a no-op *)
-    assert (Hfr : β `notin` ftvar_in_pskl P).
-    { assert (Hsc : ftvar_in_pskl P [<=] (empty `union` dom Θ))
-        by (eapply a_wf_pskl_ftv_dom; exact H0).
-      clear - Hβ Hsc; fsetdec. }
-    rewrite (subst_pskl_in_pskl_fresh_eq P (pskl_var_f α1) β Hfr).
-    apply a_wf_pskl__tophole; [ exact H | exact H0 ].
-Qed.
+(* [a_wf_pskl_rename_delta] — the wf twin of §5's [ad_precise_rename_delta] —
+   MOVED to prop_consis_complete.v (beside [a_wf_pskl_ftv_dom], which its ∀◇
+   case needs): the freshness campaign's solve cluster needs it in
+   prop_look_complete.v too, and that file and this one are independent. *)
 
 (* ===================================================================== *)
 (*  §8  THE TWO PROPERTIES OF THE INCOMING κ THE INDUCTION NEEDS           *)

@@ -141,27 +141,60 @@ Proof. intros; eapply (proj1 a_looksub_lookeq_ftv); eauto. Qed.
 (*  does not survive into the instantiation candidate.                    *)
 (* ===================================================================== *)
 
+(* DISJUNCTIVE since the freshness campaign: [SS-ForallR] deliberately
+   leaks its binder into the result (see the constructor comment), so an
+   output variable is an input variable OR fresh for the solve context.
+   The EXACT bound survives for eq-only constraint lists
+   ([a_solve_cstr_ftv_eq]) — consistency's collections are all-eq, so the
+   P6-Cs paths keep the strong form. *)
 Lemma a_solve_cstr_ftv : forall Θ 𝒞 P P',
   Θ ⊩ 𝒞 ⨾ P ⤳ P' ->
+  forall α, α `in` ftvar_in_pskl P' ->
+    α `in` (ftvar_in_pskl P `union` ftvar_in_cstrs 𝒞) \/ α `notin` dom Θ.
+Proof.
+  intros Θ 𝒞 P P' H; induction H; simpl; intros α0 Hα0.
+  - left; fsetdec.
+  - destruct (a_solve_sub_ftv H Hα0) as [Hl | Hr];
+      [ left; clear - Hl; fsetdec | right; exact Hr ].
+  - pose proof ((proj2 a_solve_sub_eq_ftv) _ _ _ _ H) as He.
+    destruct (IHa_solve_cstr α0 Hα0) as [Hl | Hr];
+      [ left; clear - Hl He; fsetdec | right; exact Hr ].
+Qed.
+
+Lemma a_solve_cstr_ftv_eq : forall Θ 𝒞 P P',
+  Θ ⊩ 𝒞 ⨾ P ⤳ P' ->
+  Forall (fun c => exists Q, c = a_cstr_eq Q) 𝒞 ->
   ftvar_in_pskl P' [<=] ftvar_in_pskl P `union` ftvar_in_cstrs 𝒞.
 Proof.
-  intros Θ 𝒞 P P' H; induction H; simpl.
+  intros Θ 𝒞 P P' H; induction H; simpl; intros Hall.
   - fsetdec.
-  - pose proof (a_solve_sub_ftv H). simpl. fsetdec.
-  - pose proof ((proj2 a_solve_sub_eq_ftv) _ _ _ _ H). clear - H1 IHa_solve_cstr. fsetdec.
+  - (* a sub constraint contradicts the all-eq hypothesis *)
+    exfalso. inversion Hall as [ | c cs Hc _ ]; subst.
+    destruct Hc as [Q0 Hc]. discriminate Hc.
+  - inversion Hall as [ | c cs Hc Htl ]; subst.
+    pose proof ((proj2 a_solve_sub_eq_ftv) _ _ _ _ H) as He.
+    specialize (IHa_solve_cstr Htl).
+    clear - He IHa_solve_cstr. fsetdec.
 Qed.
 
 Lemma ptyp_to_pskl_ftv : forall A,
   ftvar_in_pskl (ptyp_to_pskl A) [<=] ftvar_in_ptyp A.
 Proof. induction A; simpl; fsetdec. Qed.
 
+(* The paper's lemma pins its variable only against [P0] and [Ξ]
+   (subtyping-proofs:522); the mech additionally pins it inside [dom Θ0] —
+   the Barendregt rendering that separates it from [SS-ForallR]'s leaked
+   binders, which avoid the whole solve context by their side condition.
+   Every name the consumers care about (the looked-for variable, context
+   binders) lives in [dom Θ0]. *)
 Lemma a_extract_output_fresh : forall Θ0 NM α M P P0 Ξ P1 α1,
   Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
+  α1 `in` dom Θ0 ->
   α1 `notin` ftvar_in_pskl P0 ->
   α1 `notin` dom Ξ ->
   α1 `notin` ftvar_in_pskl P1.
 Proof.
-  intros * Hex Hγ0 Hα1Ξ. inversion Hex; subst.
+  intros * Hex Hdom Hγ0 Hα1Ξ. inversion Hex; subst.
   simpl_env in Hα1Ξ.
   match goal with
   | Hlk : _ ≼[ _ , _ ] _ ⤳ _ ⨾ _ , Hsc : _ ⊩ _ ⨾ _ ⤳ _ |- _ =>
@@ -171,15 +204,26 @@ Proof.
   match goal with
   | Hg : a_guess _ _ _ _ |- _ => inversion Hg; subst
   end.
-  - (* SK : output = solve output *)
-    simpl in Hb2. clear - Hb1 Hb2 Hγ0 Hα1Ξ. fsetdec.
+  - (* SK : output = solve output; α1 ∈ dom(Ξ++Θ0) refutes the leak arm *)
+    intro Hin. destruct (Hb2 α1 Hin) as [Hl | Hr];
+      [ clear - Hb1 Hl Hγ0 Hα1Ξ; fsetdec
+      | apply Hr; rewrite dom_app; clear - Hdom; fsetdec ].
   - (* TY : output = guessed monotype *)
     match goal with
     | Hgm : a_guess_mono _ _ _ _ |- _ =>
         pose proof (a_guess_mono_ftv Hgm) as Hb3
     end.
     pose proof (ptyp_to_pskl_ftv A) as Hb4.
-    simpl in Hb2. clear - Hb1 Hb2 Hb3 Hb4 Hγ0 Hα1Ξ. fsetdec.
+    intro Hin.
+    match goal with
+    | Hgm : a_guess_mono _ ?q _ _ |- False =>
+        assert (HinQ : α1 `in` ftvar_in_pskl q)
+          by (pose proof (ptyp_to_pskl_ftv A) as Hb4';
+              clear - Hb3 Hb4' Hin Hα1Ξ; fsetdec)
+    end.
+    destruct (Hb2 α1 HinQ) as [Hl | Hr];
+      [ clear - Hb1 Hl Hγ0 Hα1Ξ; fsetdec
+      | apply Hr; rewrite dom_app; clear - Hdom; fsetdec ].
 Qed.
 
 (* ===================================================================== *)

@@ -466,11 +466,16 @@ Reserved Notation "Θ ⊢ₑ P ∼ Q ⤳ P'"
 Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> pskl -> Prop :=
 | a_solve_sub__var : forall Θ m α Q,             (* SS-Var + SS-Flex *)
     Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ (pskl_var_f α)
-| a_solve_sub__forall_l : forall L Θ m P Q P',   (* SS-ForallL *)
-    (forall β, β `notin` L ->
-       Θ ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ m ] Q
-            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
-    Θ ⊢ₛ (pskl_all_syn P) ≼[ m ] Q ⤳ (pskl_all_syn P')
+| a_solve_sub__forall_l : forall Θ m P Q P' β,   (* SS-ForallL *)
+    (* exists-fresh, INPUT-only freshness + explicit CLOSE (DESIGN.md §4.3):
+       the side condition names only the inputs; the result is re-bound by
+       [close_pskl_wrt_pskl], mirroring the implementation's [bind_var]
+       after the recursive call (type.ml:499-505).  The [pskl_all_syn]
+       wrapper keeps the closed body's index 0 bound, so the output is lc. *)
+    β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+    Θ ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β)) ≼[ m ] Q ⤳ P' ->
+    Θ ⊢ₛ (pskl_all_syn P) ≼[ m ] Q
+         ⤳ (pskl_all_syn (close_pskl_wrt_pskl β P'))
 | a_solve_sub__univ_ghost_l : forall Θ m P Q P', (* SS-UnivGhostL *)
     Θ ⊢ₛ P ≼[ m ] Q ⤳ P' ->
     Θ ⊢ₛ (pskl_tophole P) ≼[ m ] Q ⤳ (pskl_tophole P')
@@ -481,9 +486,21 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> pskl -> Prop :=
     guarded_pskl Q ->
     Θ ⊢ₑ P ∼ Q ⤳ P' ->
     Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ P'
-| a_solve_sub__forall_r : forall L Θ A B P',     (* SS-ForallR *)
-    (forall β, β `notin` L ->
-       Θ ⊢ₛ A ≼[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ P') ->
+| a_solve_sub__forall_r : forall Θ A B P' β,     (* SS-ForallR *)
+    (* exists-fresh, INPUT-only freshness, NO close: the result passes
+       through unchanged, so β may legitimately ESCAPE into [P'] — the
+       implementation opens the RHS and DISCARDS the binder name
+       ([let _, b = Bindlib.unbind b in end_rule (solve_sub (Check b) a)],
+       type.ml:517-520), and the paper's rule (full-algo-spec.tex:1271)
+       runs its premise at [B] with β still free.  The leak is BY DESIGN;
+       ill-scoped results are filtered downstream by wf side conditions
+       ([a_sub__forall_l]'s [(Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P1]), not by narrowing
+       this rule.  A cofinite rendering would demand ONE β-free [P'] for
+       the whole family, degenerating the rule to "fires only when the
+       binder is vacuous".  Consequence: [a_solve_sub_ftv] is DISJUNCTIVE
+       (an output variable is an input variable or avoids [dom Θ]). *)
+    β `notin` dom Θ `union` ftvar_in_pskl A `union` ftvar_in_pskl B ->
+    Θ ⊢ₛ A ≼[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ P' ->
     Θ ⊢ₛ A ≼[ mode_tc ] (pskl_all_syn B) ⤳ P'
 | a_solve_sub__arrow : forall Θ m P1 P2 Q1 Q2 P1' P2',       (* SS-Arrow *)
     Θ ⊢ₑ P1 ∼ Q1 ⤳ P1' ->
@@ -524,29 +541,29 @@ with a_solve_eq : aenv -> pskl -> pskl -> pskl -> Prop :=
     Θ ⊢ₑ P1 ∼ Q1 ⤳ P1' ->
     Θ ⊢ₑ P2 ∼ Q2 ⤳ P2' ->
     Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2) ⤳ (pskl_arrow P1' P2')
-| a_solve_eq__forall : forall L Θ P Q P',        (* SE-Forall *)
-    (forall β, β `notin` L ->
-       Θ ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
-            ∼ (open_pskl_wrt_pskl Q (pskl_var_f β))
-            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
-    Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q) ⤳ (pskl_all_syn P')
+| a_solve_eq__forall : forall Θ P Q P' β,        (* SE-Forall *)
+    β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+    Θ ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
+         ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ P' ->
+    Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q)
+         ⤳ (pskl_all_syn (close_pskl_wrt_pskl β P'))
 | a_solve_eq__tophole_both : forall Θ P Q P',    (* SE-UnivGhost *)
     Θ ⊢ₑ P ∼ Q ⤳ P' ->
     Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ (pskl_tophole P')
-| a_solve_eq__tophole_l_all : forall L Θ P Q P', (* SE-GhostForall *)
-    (forall β, β `notin` L ->
-       Θ ⊢ₑ (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f β))
-            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
-    Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q) ⤳ (pskl_all_syn P')
+| a_solve_eq__tophole_l_all : forall Θ P Q P' β, (* SE-GhostForall *)
+    β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+    Θ ⊢ₑ (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ P' ->
+    Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q)
+         ⤳ (pskl_all_syn (close_pskl_wrt_pskl β P'))
 | a_solve_eq__tophole_l_guarded : forall Θ P Q P',           (* SE-GhostGuarded *)
     guarded_pskl Q ->
     Θ ⊢ₑ P ∼ Q ⤳ P' ->
     Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ P'
-| a_solve_eq__all_l_tophole : forall L Θ P Q P', (* SE-ForallGhost *)
-    (forall β, β `notin` L ->
-       Θ ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼ (pskl_tophole Q)
-            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))) ->
-    Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q) ⤳ (pskl_all_syn P')
+| a_solve_eq__all_l_tophole : forall Θ P Q P' β, (* SE-ForallGhost *)
+    β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+    Θ ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β)) ∼ (pskl_tophole Q) ⤳ P' ->
+    Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q)
+         ⤳ (pskl_all_syn (close_pskl_wrt_pskl β P'))
 | a_solve_eq__tophole_r_guarded : forall Θ P Q P',           (* SE-GuardedGhost *)
     guarded_pskl P ->
     Θ ⊢ₑ P ∼ Q ⤳ P' ->

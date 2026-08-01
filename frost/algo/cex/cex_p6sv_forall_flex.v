@@ -103,21 +103,36 @@ Proof.
     inversion Heq; subst; try discriminate; reflexivity end.
 Qed.
 
-(** [Pi = ∀β.β→β] against [P0 = α̂] can only be [SS-ForallL]. *)
+(** [Pi = ∀β.β→β] against [P0 = α̂] can only be [SS-ForallL], and its body
+    output is FORCED to the raw flexible [α̂] ([cex_body_solve_forced]).
+    Under the exists-fresh + CLOSE encoding of SS-ForallL (DESIGN §4.3) the
+    rule's own binder is the only run there is, so the shape lemma folds the
+    body-forcing in and reports the ∀ body directly: it opens to [α̂] at
+    EVERY [β], the closed witness having been [α̂] all along (the rule's
+    binder cannot be [f], which is an input variable). *)
 Lemma cex_solve_forall_shape : forall Θ0 f Pa,
   Θ0 ⊢ₛ cex_Pi ≼[ mode_tc ] (cex_P0 f) ⤳ Pa ->
-  exists L P', Pa = pskl_all_syn P' /\
-    (forall β, β `notin` L ->
-       Θ0 ⊢ₛ (open_pskl_wrt_pskl (pskl_arrow (pskl_var_b 0) (pskl_var_b 0))
-                (pskl_var_f β))
-            ≼[ mode_tc ] (pskl_var_f f)
-            ⤳ (open_pskl_wrt_pskl P' (pskl_var_f β))).
+  exists P', Pa = pskl_all_syn P' /\
+    (forall β, open_pskl_wrt_pskl P' (pskl_var_f β) = pskl_var_f f).
 Proof.
   intros Θ0 f Pa H. unfold cex_Pi, cex_P0 in H.
   inversion H; subst; try discriminate.
-  - (* SS-ForallL *)
-    match goal with L : atoms, Hfam : forall β, β `notin` ?L0 -> _ |- _ =>
-      exists L0; eexists; split; [ reflexivity | exact Hfam ] end.
+  - (* SS-ForallL.  [inversion] names the rule's own binder [β], the
+       premise's output [P'], its freshness [H1] and the body run [H4]
+       (the RULE's binder names, per AGENTS.md). *)
+    assert (Hbf : β `notin` singleton f)
+      by (clear - H1; simpl in H1; fsetdec).
+    assert (HP' : P' = pskl_var_f f)
+      by (eapply cex_body_solve_forced;
+          unfold open_pskl_wrt_pskl in H4; simpl in H4; exact H4).
+    subst P'.
+    exists (close_pskl_wrt_pskl β (pskl_var_f f)); split; [ reflexivity | ].
+    intros β0.
+    unfold close_pskl_wrt_pskl, open_pskl_wrt_pskl.
+    cbn [close_pskl_wrt_pskl_rec].
+    match goal with |- context [ if ?e then _ else _ ] =>
+      destruct e as [Heq | Hne] end;
+      [ exfalso; clear - Hbf Heq; subst; fsetdec | cbn; reflexivity ].
   - (* SS-Check: a ∀ is not guarded *)
     match goal with Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg end.
 Qed.
@@ -326,18 +341,16 @@ Proof.
     unfold cex_τ; simpl.
     apply ad_refine_syn__arrow; apply ad_refine_syn__unit.
   - (* … and now the conclusion is refuted, for EVERY output κa *)
-    destruct (cex_solve_forall_shape Hsolve) as (L & P' & -> & Hfam).
+    destruct (cex_solve_forall_shape Hsolve) as (P' & -> & Hopen).
     simpl in Hprec. unfold cex_ψa in Hprec.
     inversion Hprec as [ | | | L2 ? ? ? Ψ0 ? ? ? Hpfam Heq | | | | | | ]; subst.
-    destruct (atom_fresh (L `union` L2 `union` singleton f
+    destruct (atom_fresh (L2 `union` singleton f
                             `union` singleton e `union` ftvar_in_pskl P'
                             `union` dom (cex_Θ f) `union` dom κa))
       as [β Hβfr].
     (* the algorithm's body output is FORCED to the raw flexible α̂ *)
-    assert (HP'β : open_pskl_wrt_pskl P' (pskl_var_f β) = pskl_var_f f).
-    { eapply cex_body_solve_forced.
-      pose proof (Hfam β ltac:(clear - Hβfr; fsetdec)) as Hβ.
-      unfold open_pskl_wrt_pskl in Hβ; simpl in Hβ. exact Hβ. }
+    assert (HP'β : open_pskl_wrt_pskl P' (pskl_var_f β) = pskl_var_f f)
+      by (apply Hopen).
     (* … so the precision obligation is [κa α̂ ⊑ᵖ β→β] — a mono paint against
        a target mentioning the fresh rigid β *)
     pose proof (Hpfam β ltac:(clear - Hβfr; fsetdec)) as Hpβ.

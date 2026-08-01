@@ -78,7 +78,72 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-01 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 1 (guess) CLOSED under the FINAL canon — avoid-input discipline, junk-freeness DERIVED, close-based ∀
+## 2026-08-01 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 2 (solve) CLOSED — and a mech-only lemma REFUTED, restoring the paper's own P6-Sv conclusion
+
+`make coq` green from clean, admit- and axiom-free.  The five solve rules
+are exists-fresh now: `SolS-ForallL` and the four eq-∀ rules CLOSE their
+output (the implementation's `bind_var`, type.ml:499-505), `SolS-ForallR`
+LEAKS its binder (type.ml:517-520 discards the name).
+
+Three recurring shapes did the work:
+
+1. **Size induction wherever a consumer must MOVE a binder.**  An
+   exists-fresh rule hands over ITS OWN binder, and a re-freshened premise
+   is no sub-derivation.  Converted: `a_solve_sub_eq_weaken_mid_flex`
+   (an inserted block can CAPTURE a pinned witness) and, in
+   prop_decorate_key.v, `dec_ext_solve_eq_step` / `dec_ext_solve_sub_step`
+   — there the decoration ψ is an INPUT that may itself mention the rule's
+   binder (a ◇ under the ∀ decorates to an arbitrary tagged skeleton), so
+   the cofinite `dec_ext` / `d_tags_skl` / `a_solvetag` families cannot be
+   rebuilt from it; the SOLVE derivation moves instead.
+2. **Target-only renaming** (`a_solvetag_sub_eq_rename_target`): the
+   solvetag judgments never inspect a target VARIABLE, only its SHAPE, so
+   `SSub-ForallR` — whose binder leaks and therefore cannot be moved — can
+   still build its cofinite family.
+3. **Output-freshness as an explicit premise** where a leaked binder
+   cannot be re-freshened (`a_solve_sub_eq_weaken_mid_flex`,
+   `a_solve_cstr_weaken_mid_flex`).  Both call sites discharge it from the
+   EXACT `a_solve_cstr_ftv_eq` — their constraint lists are all-eq, and the
+   eq half never leaks.  This is the paper's Barendregt convention spelled
+   out, not a weakening.
+
+⚠️ **THE FINDING.**  `a_solve_sub_wf` ("sub-solving preserves wf", a
+MECH-ONLY lemma) is FALSE against the faithful rule —
+`cex/cex_solve_sub_wf_leak.v`, Qed, axiom-free:
+
+    ◇ ≼[TC] ∀a. a ⤳ ∀◇ b        (SolS-ForallR at b, then SolS-GhostL)
+
+with `Δ = ∅` and `Ξ = ·`, the very configuration its single call site
+used.  Both inputs are wf at `Θ ⨟ ∅`, but the output carries the escaped
+`b`.  **The paper never had this lemma**: its P6-Sv states `Θ₀ ⊢ P_a`
+among its own conclusions (subtyping-proofs.tex:1737), carries it as
+`Θ₀,β ⊢ P_a` through the SolS-ForallR row, and discharges β from
+`β ∉ ftv ψ_a` plus PRECISION (:1897-1900).  So the repair moved the mech
+CLOSER to the paper: `a_solve_sub_complete_var` now returns
+`Θ0 ⨟ empty ⊢ₚₛᵃ Pa`, P6-Ss reads it off, and `a_solve_sub_wf` is gone
+(RESTART NOTE at prop_look_complete_sub_cstr.v:323).
+
+Two mech-only steps the paper's single-context `Θ ⊢ P` does not need
+(both new, prop_look_complete_sub_var.v): a ∀◇ body is typed at the EMPTY
+Δ, so SolS-ForallL's row may move its binder from the context into Δ only
+for an UNSHIELDED variable — `a_wf_pskl_tvar_to_delta` plus
+`a_solve_sub_eq_unshielded` ("solving does not shield a context variable
+the subject leaves unshielded"; `a_solve_sub_ftv`'s escape disjunct is
+closed off by `β ∈ dom Θ`).
+
+Other assets: `a_wf_pskl_all_of_one` / `a_wf_pskl_all_inv_at` (the
+exists-fresh idioms on wf, prop_consis_complete.v, beside the
+`a_wf_pskl_rename_delta` moved there); `pskl_no_hole_close`,
+`pskl_no_top_close`, `pskl_top_guarded_close`,
+`pskl_shielded_ftv_close_upper` (close-stability for the predicates whose
+consumers used to see an opened body); `a_solve_sub_eq_ctx_change` is
+SHRINK-only (growth can capture a witness) and `a_solve_cstr_ctx_change`
+inherits that premise.
+
+Remaining clusters unchanged: look, consis mutual, decorated mirrors,
+a_pat/a_typing, F-deprecation, the walk's output premises (P7a).
+
+## 2026-08-01 — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 1 (guess) CLOSED under the FINAL canon — avoid-input discipline, junk-freeness DERIVED, close-based ∀
 
 `make coq` green from clean, admit- and axiom-free.  The uniform-encoding
 campaign's first cluster ([a_guess_mono]) is converted, and — more

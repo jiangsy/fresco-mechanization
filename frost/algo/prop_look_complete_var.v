@@ -1549,23 +1549,12 @@ Proof.
                     ∼ (open_pskl_wrt_pskl P0b (pskl_var_f α)) ⤳ PaX)
             by (eapply a_solve_eq_strengthen_tvar; exact HsX).
           exists (pskl_all_syn (close_pskl_wrt_pskl α PaX)); split.
-          { apply a_solve_eq__forall with
-              (L := L `union` Lr `union` Lt `union` Lw0 `union` Lq `union` La
-               `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0
-               `union` dom κ `union` singleton ε `union` ftvar_in_uskl ψR
-               `union` ftvar_in_pskl P0b
-                 `union` Lwi `union` Lp `union` singleton α
-                 `union` ftvar_in_pskl Pib `union` ftvar_in_pskl PaX).
-            intros β Hβ.
-            pose proof ((proj2 a_solve_sub_eq_rename) _ _ _ _ HsX0 α β
-                          ltac:(clear - Fr; solve_notin)
-                          ltac:(clear - Hβ; fsetdec)) as Hrn.
-            rewrite <- (subst_pskl_in_pskl_intro α Pib (pskl_var_f β)
-                          ltac:(clear - Fr; solve_notin)) in Hrn.
-            rewrite <- (subst_pskl_in_pskl_intro α P0b (pskl_var_f β)
-                          ltac:(clear - Fr; solve_notin)) in Hrn.
-            rewrite (subst_pskl_in_pskl_spec PaX (pskl_var_f β) α) in Hrn.
-            exact Hrn. }
+          { (* SE-Forall is EXISTS-FRESH + CLOSE now (DESIGN §4.3): the
+               single fresh-α run IS the premise, and the rule closes the
+               output itself — no cofinite family to fold, and the old
+               rename-per-member step disappears. *)
+            apply a_solve_eq__forall with (β := α);
+              [ clear - Fr; solve_notin | exact HsX0 ]. }
           intros Δ' HS1 HS2 HS3.
           simpl.
           apply ad_ppre__forall with
@@ -1734,25 +1723,9 @@ Proof.
                       ∼ (open_pskl_wrt_pskl P0b (pskl_var_f α)) ⤳ PaX)
               by (eapply a_solve_eq_strengthen_tvar; exact HsX).
             exists (pskl_all_syn (close_pskl_wrt_pskl α PaX)); split.
-            { apply a_solve_eq__tophole_l_all with
-                (L := L `union` Lr `union` Lt `union` Lw0 `union` Lq `union` La
-               `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0
-               `union` dom κ `union` singleton ε `union` ftvar_in_uskl ψR
-               `union` ftvar_in_pskl P0b
-                   `union` Lf `union` singleton α
-                   `union` ftvar_in_pskl Pi' `union` ftvar_in_pskl PaX).
-              intros β Hβ.
-              pose proof ((proj2 a_solve_sub_eq_rename) _ _ _ _ HsX0 α β
-                            ltac:(clear - Fr; solve_notin)
-                            ltac:(clear - Hβ; fsetdec)) as Hrn.
-              rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole Pi')
-                         (pskl_var_f β) α
-                         ltac:(simpl; clear - Fr; solve_notin)) in Hrn.
-              rewrite <- (subst_pskl_in_pskl_intro α P0b (pskl_var_f β)
-                            ltac:(clear - Fr; solve_notin)) in Hrn.
-              rewrite (subst_pskl_in_pskl_spec PaX (pskl_var_f β) α)
-                in Hrn.
-              exact Hrn. }
+            { (* SE-GhostForall, exists-fresh + CLOSE (DESIGN §4.3). *)
+              apply a_solve_eq__tophole_l_all with (β := α);
+                [ clear - Fr; solve_notin | exact HsX0 ]. }
             intros Δ' HS1 HS2 HS3.
             simpl.
             apply ad_ppre__forall with
@@ -2306,24 +2279,9 @@ Proof.
                     ∼ (pskl_tophole P0') ⤳ PaX)
             by (eapply a_solve_eq_strengthen_tvar; exact HsX).
           exists (pskl_all_syn (close_pskl_wrt_pskl α PaX)); split.
-          { apply a_solve_eq__all_l_tophole with
-              (L := L `union` Lr `union` Lt `union` Lrb `union` La
-               `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0 `union` dom Θr
-               `union` dom κ `union` singleton ε `union` ftvar_in_uskl ψR
-               `union` ftvar_in_pskl P0'
-                 `union` Lwi `union` Lp `union` singleton α
-                 `union` ftvar_in_pskl Pib `union` ftvar_in_pskl PaX).
-            intros β Hβ.
-            pose proof ((proj2 a_solve_sub_eq_rename) _ _ _ _ HsX0 α β
-                          ltac:(clear - Fr; solve_notin)
-                          ltac:(clear - Hβ; fsetdec)) as Hrn.
-            rewrite <- (subst_pskl_in_pskl_intro α Pib (pskl_var_f β)
-                          ltac:(clear - Fr; solve_notin)) in Hrn.
-            rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole P0')
-                       (pskl_var_f β) α
-                       ltac:(simpl; clear - Fr; solve_notin)) in Hrn.
-            rewrite (subst_pskl_in_pskl_spec PaX (pskl_var_f β) α) in Hrn.
-            exact Hrn. }
+          { (* SE-ForallGhost, exists-fresh + CLOSE (DESIGN §4.3). *)
+            apply a_solve_eq__all_l_tophole with (β := α);
+              [ clear - Fr; solve_notin | exact HsX0 ]. }
           intros Δ' HS1 HS2 HS3.
           simpl.
           apply ad_ppre__forall with (ε := ε)

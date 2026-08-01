@@ -1282,6 +1282,86 @@ Proof.
   - (* tophole *) clear - IHa_wf_pskl. fsetdec.
 Qed.
 
+(** Renaming a Δ-BOUND variable of skeleton well-formedness — the wf twin of
+    [ad_precise_rename_delta].  The ∀◇ case is where freshness earns its
+    keep: its premise is CLOSED ([Θ ⨟ empty ⊢ₚₛᵃ P]), so β ∉ dom Θ makes β
+    fresh for the body and the substitution is a no-op there.
+
+    (Lives here, beside [a_wf_pskl_ftv_dom] which its ∀◇ case needs, so that
+    BOTH prop_look_complete.v and prop_look_complete_extract.v can see it —
+    the two files are independent of each other.) *)
+Lemma a_wf_pskl_rename_delta : forall Θ Δ P β α0,
+  Θ ⨟ Δ ⊢ₚₛᵃ P ->
+  β `notin` dom Θ ->
+  Θ ⨟ (add α0 (remove β Δ)) ⊢ₚₛᵃ (subst_pskl_in_pskl (pskl_var_f α0) β P).
+Proof.
+  intros Θ Δ P β α0 H; revert α0; induction H; intros α1 Hβ; cbn.
+  - apply a_wf_pskl__unit.
+  - destruct_if as [-> | Hne].
+    + apply a_wf_pskl__var. left. clear; fsetdec.
+    + apply a_wf_pskl__var.
+      destruct H as [HΔ | Hbt];
+        [ left; clear - HΔ Hne; fsetdec | right; exact Hbt ].
+  - apply a_wf_pskl__arrow; auto.
+  - apply a_wf_pskl__all with (L := L `union` singleton β `union` singleton α1).
+    intros α2 Hα2.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hα2; fsetdec | apply lc_pskl_var_f ].
+    eapply a_wf_pskl_delta_mono;
+      [ apply H0; [ clear - Hα2; fsetdec | exact Hβ ]
+      | clear - Hα2; fsetdec ].
+  - apply a_wf_pskl__hole.
+  - (* ∀◇ : the body is wf at the CLOSED Δ, so β ∉ ftv it and subst is a no-op *)
+    assert (Hfr : β `notin` ftvar_in_pskl P).
+    { assert (Hsc : ftvar_in_pskl P [<=] (empty `union` dom Θ))
+        by (eapply a_wf_pskl_ftv_dom; exact H0).
+      clear - Hβ Hsc; fsetdec. }
+    rewrite (subst_pskl_in_pskl_fresh_eq P (pskl_var_f α1) β Hfr).
+    apply a_wf_pskl__tophole; [ exact H | exact H0 ].
+Qed.
+
+(** ∀-INTRODUCTION FROM ONE INSTANCE — the exists-fresh idiom of DESIGN §4.3
+    on the wf judgment.  The algorithmic solve rules now hand their consumers
+    ONE instance at their own binder; [a_wf_pskl__all] wants the whole
+    cofinite family, and the rename above is what manufactures it. *)
+Lemma a_wf_pskl_all_of_one : forall Θ Δ P β,
+  Θ ⨟ (add β Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f β)) ->
+  β `notin` dom Θ ->
+  β `notin` ftvar_in_pskl P ->
+  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P).
+Proof.
+  intros Θ Δ P β H HβΘ HβP.
+  apply a_wf_pskl__all
+    with (L := add β (dom Θ `union` ftvar_in_pskl P `union` Δ)).
+  intros α Hα.
+  pose proof (@a_wf_pskl_rename_delta Θ (add β Δ)
+                (open_pskl_wrt_pskl P (pskl_var_f β)) β α H HβΘ) as Hr.
+  rewrite <- (subst_pskl_in_pskl_intro β P (pskl_var_f α) HβP) in Hr.
+  eapply a_wf_pskl_delta_mono; [ exact Hr | clear; fsetdec ].
+Qed.
+
+(** ∀-ELIMINATION AT A CHOSEN BINDER — the converse move: a consumer that
+    must open at ITS OWN β (an exists-fresh rule's binder) gets the instance
+    by renaming the family's witness onto β.  No condition on β beyond
+    body-freshness: a β already in Δ or in dom Θ is harmless because the
+    conclusion's Δ only grows. *)
+Lemma a_wf_pskl_all_inv_at : forall Θ Δ P β,
+  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P) ->
+  β `notin` ftvar_in_pskl P ->
+  Θ ⨟ (add β Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f β)).
+Proof.
+  intros Θ Δ P β H HβP.
+  inversion H as [ | | | L1 ? ? ? Hb | | ]; subst.
+  pick fresh α for (L1 `union` dom Θ `union` ftvar_in_pskl P `union` Δ).
+  pose proof (Hb α ltac:(clear - Fr; fsetdec)) as Hα.
+  pose proof (@a_wf_pskl_rename_delta Θ (add α Δ)
+                (open_pskl_wrt_pskl P (pskl_var_f α)) α β Hα
+                ltac:(clear - Fr; fsetdec)) as Hr.
+  rewrite <- (subst_pskl_in_pskl_intro α P (pskl_var_f β)
+                ltac:(clear - Fr; fsetdec)) in Hr.
+  eapply a_wf_pskl_delta_mono; [ exact Hr | clear; fsetdec ].
+Qed.
+
 (** Context weakening (binds-monotone) for the hygienic refinements. *)
 Lemma ad_refine_syn_f_weaken_ctx : forall F Θ Δ Q Q',
   ad_refine_syn_f F Θ Δ Q Q' ->

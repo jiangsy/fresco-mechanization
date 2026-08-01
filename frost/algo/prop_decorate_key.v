@@ -29,6 +29,7 @@ Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_decorate.
 Require Import src.frost.algo.prop_pat_sub.
 Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_solve_sub.
 Require Import src.frost.algo.prop_looksub.
 Require Import src.frost.algo.prop_sub_sound.
 Require Import src.frost.algo.prop_decorate_sub.
@@ -1410,6 +1411,66 @@ Proof.
       first [ apply uskl_ghost_free_subst_var; assumption | assumption ].
 Qed.
 
+(** Renaming the TARGET alone.  The solvetag judgments never inspect a target
+    VARIABLE — only the target's SHAPE (unit / arrow / ∀ / ∀◇ / guarded), and
+    the one rule with a variable target (SEq-FlexR) accepts any variable — so
+    a rename touching the target only is admissible.
+
+    Needed since the freshness campaign (DESIGN.md §4.3): SolS-ForallR hands
+    its consumer ITS OWN binder, and that binder LEAKS into the output, hence
+    may occur free in the output's decoration ψ.  The two-sided
+    [a_solvetag_sub_eq_rename_var] would move it inside ψ as well, so it
+    cannot manufacture SSub-ForallR's cofinite family from the one instance
+    the rule provides; this one can. *)
+Lemma a_solvetag_sub_eq_rename_target :
+  (forall ψ M P Ψ, ψ ≼ᵗ[ M ] P ⤳ Ψ ->
+     forall α β0, ψ ≼ᵗ[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ) /\
+  (forall ψ P Ψ, ψ ∼ᵗ P ⤳ Ψ ->
+     forall α β0, ψ ∼ᵗ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ).
+Proof.
+  apply (a_solvetag_sub_eq_mutind
+           (fun ψ M P Ψ _ => forall α β0,
+              ψ ≼ᵗ[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ)
+           (fun ψ P Ψ _ => forall α β0,
+              ψ ∼ᵗ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ));
+    intros; simpl.
+  - (* SSub-Var *) apply a_solvetag_sub__var; assumption.
+  - (* SSub-ForallL : only ψ opens, the target is untouched *)
+    apply a_solvetag_sub__forall_l with (L := L); intros β Hβ.
+    match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
+  - (* SSub-UnivGhostLG *) apply a_solvetag_sub__univ_ghost_lg; auto.
+  - (* SSub-Vacuous *) apply a_solvetag_sub__vacuous; assumption.
+  - (* SSub-Check *)
+    apply a_solvetag_sub__check;
+      [ assumption | apply guarded_pskl_subst_var; assumption | auto ].
+  - (* SSub-ForallR *)
+    apply a_solvetag_sub__forall_r with (L := L `union` singleton α); intros β Hβ.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ].
+    match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end.
+  - (* SSub-Arrow *) eapply a_solvetag_sub__arrow; [ auto | auto | eassumption ].
+  - (* SEq-Unit *) apply a_solvetag_eq__unit; assumption.
+  - (* SEq-Var *) apply a_solvetag_eq__var; assumption.
+  - (* SEq-Vacuous *) apply a_solvetag_eq__vacuous; assumption.
+  - (* SEq-Arrow *) eapply a_solvetag_eq__arrow; [ auto | auto | eassumption ].
+  - (* SEq-ForallInh *)
+    eapply a_solvetag_eq__forall_inh with (L := L `union` singleton α);
+      [ intros β Hβ;
+        rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+          [ | clear - Hβ; fsetdec | apply lc_pskl_var_f ];
+        match goal with IH : forall b, _ |- _ => apply IH; clear - Hβ; fsetdec end
+      | eassumption ].
+  - (* SEq-UnivGhostG *) apply a_solvetag_eq__univ_ghostg; auto.
+  - (* SEq-ForallSyn : only ψ opens *)
+    apply a_solvetag_eq__forall_syn with (L := L); intros β Hβ.
+    match goal with IH : forall b, _ |- _ =>
+      specialize (IH β ltac:(clear - Hβ; fsetdec) α β0); simpl in IH; exact IH end.
+  - (* SEq-UnivGhostR *)
+    apply a_solvetag_eq__univ_ghost_r; [ assumption | auto ].
+  - (* SEq-FlexR : the target IS a variable — either way it stays one *)
+    destruct_if; apply a_solvetag_eq__flex_r; assumption.
+Qed.
+
 (** A tag reading witnesses that its subject is a decorated skeleton. *)
 Lemma d_tags_skl_is_tskl : forall Ψ ψ, d_tags_skl Ψ ψ -> is_tskl ψ.
 Proof.
@@ -1691,6 +1752,17 @@ Proof.
   destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; tauto.
 Qed.
 
+(* CLOSE-stability of the same predicates — the solve ∀ rules re-bind their
+   output now (DESIGN.md §4.3), so the consumers see [close β P'] where they
+   used to see an opened body. *)
+Lemma pskl_guarded_head_close_rec : forall P β k,
+  pskl_guarded_head P -> pskl_guarded_head (close_pskl_wrt_pskl_rec k β P).
+Proof.
+  induction P; intros β k H; simpl in *; auto.
+  - destruct (lt_ge_dec n k); simpl; auto.
+  - destruct (β == α); simpl; auto.
+Qed.
+
 Lemma pskl_top_guarded_open_rec : forall P α' k,
   pskl_top_guarded P <-> pskl_top_guarded (open_pskl_wrt_pskl_rec k (pskl_var_f α') P).
 Proof.
@@ -1699,6 +1771,24 @@ Proof.
   - rewrite (IHP1 α' k), (IHP2 α' k); tauto.
   - rewrite (IHP α' (S k)); tauto.
   - rewrite (IHP α' k), (pskl_guarded_head_open_rec P α' k); tauto.
+Qed.
+
+Lemma pskl_top_guarded_close_rec : forall P β k,
+  pskl_top_guarded P -> pskl_top_guarded (close_pskl_wrt_pskl_rec k β P).
+Proof.
+  induction P; intros β k H; simpl in *; auto.
+  - destruct (lt_ge_dec n k); simpl; auto.
+  - destruct (β == α); simpl; auto.
+  - destruct H; split; auto.
+  - destruct H as [Hh Ht]; split;
+      [ apply pskl_guarded_head_close_rec; exact Hh | auto ].
+Qed.
+
+Lemma pskl_top_guarded_close : forall P β,
+  pskl_top_guarded P -> pskl_top_guarded (close_pskl_wrt_pskl β P).
+Proof.
+  intros P β H; unfold close_pskl_wrt_pskl;
+    apply pskl_top_guarded_close_rec; exact H.
 Qed.
 
 (** WELL-FORMEDNESS ⟹ [pskl_top_guarded]: [a_wf_pskl__tophole] admits a ∀◇
@@ -2068,13 +2158,38 @@ Qed.
     [Ψp ⊆ Ψ' ∪ Ψi] (⊆, set membership).  ∀◇ solve steps decompose by the
     subject's relation to the output: dotted (topholeg ↦ SEq-UnivGhostG),
     guarded-skip (↦ SEq-UnivGhostR), absorbed-∀ (↦ SEq-ForallSyn), flex. *)
-Lemma dec_ext_solve_eq_step : forall Θ P P3 P' ψ Ψ' Ψtot,
+(* SIZE induction (freshness campaign, DESIGN.md §4.3).  The solve ∀ rules
+   are exists-fresh, so each hands over ITS OWN binder — but the decoration
+   ψ is an input and may mention that binder (a ◇ under the ∀ decorates to
+   an arbitrary tagged skeleton), so the cofinite [dec_ext] / [d_tags_skl] /
+   [a_solvetag] families cannot be re-built by renaming from it.  The fix is
+   to move the SOLVE derivation instead: rename its binder to a genuinely
+   fresh α0 ([a_solve_eq_rename_var]) and read the families there.  A
+   renamed premise is no sub-derivation, whence the measure. *)
+Lemma dec_ext_solve_eq_step_size : forall n Θ P P3 P' ψ Ψ' Ψtot,
+  2 * (size_pskl P + size_pskl P3) <= n ->
   Θ ⊢ₑ P ∼ P3 ⤳ P' ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi Ψp, ψ ∼ᵗ P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
-  intros Θ P P3 P' ψ Ψ' Ψtot Hs; revert ψ Ψ' Ψtot;
-    induction Hs; intros ψ Ψ' Ψtot Hdec Hdt.
+  induction n as [| n IHn];
+    [ intros Θ P P3 P' ψ Ψ' Ψtot Hsz Hs;
+      pose proof (size_pskl_min P); pose proof (size_pskl_min P3); lia | ].
+  intros Θ P P3 P' ψ Ψ' Ψtot Hsz Hs; revert ψ Ψ' Ψtot.
+  destruct Hs as
+    [ Θ                                         (* SE-Unit *)
+    | Θ α Q                                     (* SE-Var *)
+    | Θ α P Hflex Hnf                           (* SE-FlexR *)
+    | Θ Q                                       (* SE-GhostL *)
+    | Θ P                                       (* SE-VacuousR *)
+    | Θ P1 P2 Q1 Q2 P1' P2' Hp1 Hp2             (* SE-Arrow *)
+    | Θ P Q P' b Hfr Hp                         (* SE-Forall *)
+    | Θ P Q P' Hp                               (* SE-UnivGhost *)
+    | Θ P Q P' b Hfr Hp                         (* SE-GhostForall *)
+    | Θ P Q P' Hg Hp                            (* SE-GhostGuarded *)
+    | Θ P Q P' b Hfr Hp                         (* SE-ForallGhost *)
+    | Θ P Q P' Hg Hp ];                         (* SE-GuardedGhost *)
+    intros ψ Ψ' Ψtot Hdec Hdt; cbn in Hsz.
   - (* unit *) inversion Hdec; subst.
     + exists empty, empty; split;
         [ apply a_solvetag_eq__unit; fsetdec
@@ -2106,10 +2221,12 @@ Proof.
     inversion Hdec; subst.
     + (* ψ = arrow ψ1 ψ2 *)
       inversion Hdt; subst.
-      edestruct IHHs1 as [Ψi1 [Ψp1 [Hsa [Hd1 Hu1]]]];
-        [ eassumption | eassumption | ].
-      edestruct IHHs2 as [Ψi2 [Ψp2 [Hsb [Hd2 Hu2]]]];
-        [ eassumption | eassumption | ].
+      assert (Hsz1 : 2 * (size_pskl P1 + size_pskl Q1) <= n) by lia.
+      assert (Hsz2 : 2 * (size_pskl P2 + size_pskl Q2) <= n) by lia.
+      edestruct IHn as [Ψi1 [Ψp1 [Hsa [Hd1 Hu1]]]];
+        [ exact Hsz1 | exact Hp1 | eassumption | eassumption | ].
+      edestruct IHn as [Ψi2 [Ψp2 [Hsb [Hd2 Hu2]]]];
+        [ exact Hsz2 | exact Hp2 | eassumption | eassumption | ].
       exists (Ψi1 `union` Ψi2), (Ψp1 `union` Ψp2); split;
         [ eapply a_solvetag_eq__arrow; [ exact Hsa | exact Hsb | fsetdec ]
         | split; [ eapply dec_ext__arrow; [ exact Hd1 | exact Hd2 | fsetdec ]
@@ -2121,19 +2238,42 @@ Proof.
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* forall : P=∀P0, Q=∀Q0, P'=∀P0' *)
     inversion Hdec; subst.
-    + (* ψ = all_etag ε ψ0 ; bodies P Q P', IH = H0, dec_ext cofin = H2,
-         d_tags cofin = H4 (tag set Ψ0) *)
+    + (* ψ = all_etag ε ψ0 ; dec_ext cofin = H2, d_tags cofin = H4 (tags Ψ0).
+         The rule's own binder b may occur in ψ0, so the SOLVE premise is
+         renamed b ⤳ α0 (fresh for everything) and the two families are
+         instantiated there. *)
       inversion Hdt; subst.
-      destruct (atom_fresh (L `union` L0 `union` L1 `union` ftvar_in_uskl ψ0
-                  `union` ftvar_in_pskl P `union` ftvar_in_pskl Q)) as [α0 HX0].
-      destruct (H0 α0 ltac:(clear - HX0; fsetdec) _ _ _
-                  (H2 α0 ltac:(clear - HX0; fsetdec))
-                  (H4 α0 ltac:(clear - HX0; fsetdec)))
+      destruct (atom_fresh (L `union` L0 `union` ftvar_in_uskl ψ0
+                  `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
+                  `union` ftvar_in_pskl P' `union` dom Θ `union` singleton b))
+        as [α0 HX0].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f b))
+        as HupP.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f b))
+        as HupQ.
+      pose proof (a_solve_eq_rename_var (α0 := b) (β0 := α0) Hp
+                    ltac:(clear - Hfr; fsetdec)
+                    ltac:(cbn in HupP, HupQ;
+                          clear - HX0 HupP HupQ; fsetdec)) as Hr.
+      rewrite <- (subst_pskl_in_pskl_intro b P (pskl_var_f α0))
+        in Hr by (clear - Hfr; fsetdec).
+      rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f α0))
+        in Hr by (clear - Hfr; fsetdec).
+      assert (Hszr : 2 * (size_pskl (open_pskl_wrt_pskl P (pskl_var_f α0))
+                          + size_pskl (open_pskl_wrt_pskl Q (pskl_var_f α0)))
+                     <= n)
+        by (rewrite ! size_pskl_open_pskl_wrt_pskl_var; lia).
+      assert (Hdecr : dec_ext (subst_pskl_in_pskl (pskl_var_f α0) b P')
+                        (open_uskl_wrt_uskl ψ0 (uskl_var_f α0)) Ψ').
+      { rewrite subst_pskl_in_pskl_spec.
+        apply H0; clear - HX0; fsetdec. }
+      destruct (IHn _ _ _ _ _ _ _ Hszr Hr Hdecr
+                  (H2 α0 ltac:(clear - HX0; fsetdec)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists (add ε Ψi0), Ψp0; split.
       * (* solvetag : SEq-ForallInh, rename α0 ⤳ β *)
         eapply a_solvetag_eq__forall_inh with
-          (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
+          (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
                 `union` singleton α0) (Ψ0 := Ψi0); [ | reflexivity ].
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
@@ -2144,7 +2284,7 @@ Proof.
       * split.
         -- (* dec_ext : dec_ext__all, rename α0 ⤳ α2 *)
            apply dec_ext__all with
-             (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
+             (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
                    `union` singleton α0).
            intros α2 Hα2.
            rewrite (subst_pskl_in_pskl_intro α0 P (pskl_var_f α2)
@@ -2159,13 +2299,15 @@ Proof.
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* tophole_both : ∀◇P ∼ ∀◇Q ⤳ ∀◇P' ; inner induction on the ψ↔∀◇P'
        relation (the subject may keep absorbing ∀s against the ghost) *)
+    assert (Hsz0 : 2 * (size_pskl P + size_pskl Q) <= n) by lia.
     remember (pskl_tophole P') as β2 eqn:HeqW.
     revert Ψtot Hdt HeqW; induction Hdec; intros Ψtot Hdt HeqW;
       try discriminate HeqW.
     + (* skip_tophole : guarded erasure ; SEq-UnivGhostR *)
       injection HeqW as HeqP; subst P0.
       match goal with Hin : dec_ext P' _ _ |- _ =>
-        destruct (IHHs _ _ _ Hin Hdt) as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
+        destruct (IHn _ _ _ _ _ _ _ Hsz0 Hp Hin Hdt)
+          as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
       exists Ψi, Ψp; split;
         [ apply a_solvetag_eq__univ_ghost_r; [ assumption | exact Hsi ]
         | split; [ apply dec_ext__skip_tophole; [ assumption | exact Hdp ]
@@ -2175,7 +2317,8 @@ Proof.
       inversion Hdt; subst.
       match goal with
       | Hin : dec_ext P' ?p0 _, Hd0 : d_tags_skl _ ?p0 |- _ =>
-        destruct (IHHs _ _ _ Hin Hd0) as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
+        destruct (IHn _ _ _ _ _ _ _ Hsz0 Hp Hin Hd0)
+          as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
       exists Ψi, Ψp; split;
         [ apply a_solvetag_eq__univ_ghostg; exact Hsi
         | split; [ apply dec_ext__topholeg; exact Hdp | exact Hsub ] ].
@@ -2221,17 +2364,37 @@ Proof.
   - (* tophole_l_all : ∀◇P ∼ ∀Q ⤳ ∀P' (SE-GhostForall) ; the subject's ∀ is
        CREATED against the ghost — absorb_all backward, SEq-ForallInh forward *)
     inversion Hdec; subst.
-    + (* ψ = all_etag ε ψ0 *)
+    + (* ψ = all_etag ε ψ0 — as SE-Forall: rename the solve premise b ⤳ α0
+         (the ∀◇ subject is b-free, so only the opened target moves) *)
       inversion Hdt; subst.
-      destruct (atom_fresh (L `union` L0 `union` L1 `union` ftvar_in_uskl ψ0
-                  `union` ftvar_in_pskl P `union` ftvar_in_pskl Q)) as [α0 HX0].
-      destruct (H0 α0 ltac:(clear - HX0; fsetdec) _ _ _
-                  (H2 α0 ltac:(clear - HX0; fsetdec))
-                  (H4 α0 ltac:(clear - HX0; fsetdec)))
+      destruct (atom_fresh (L `union` L0 `union` ftvar_in_uskl ψ0
+                  `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
+                  `union` ftvar_in_pskl P' `union` dom Θ `union` singleton b))
+        as [α0 HX0].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f b))
+        as HupQ.
+      pose proof (a_solve_eq_rename_var (α0 := b) (β0 := α0) Hp
+                    ltac:(clear - Hfr; fsetdec)
+                    ltac:(cbn in HupQ |- *;
+                          clear - HX0 HupQ; fsetdec)) as Hr.
+      rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole P))
+        in Hr by (cbn; clear - Hfr; fsetdec).
+      rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f α0))
+        in Hr by (clear - Hfr; fsetdec).
+      assert (Hszr : 2 * (size_pskl (pskl_tophole P)
+                          + size_pskl (open_pskl_wrt_pskl Q (pskl_var_f α0)))
+                     <= n)
+        by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
+      assert (Hdecr : dec_ext (subst_pskl_in_pskl (pskl_var_f α0) b P')
+                        (open_uskl_wrt_uskl ψ0 (uskl_var_f α0)) Ψ').
+      { rewrite subst_pskl_in_pskl_spec.
+        apply H0; clear - HX0; fsetdec. }
+      destruct (IHn _ _ _ _ _ _ _ Hszr Hr Hdecr
+                  (H2 α0 ltac:(clear - HX0; fsetdec)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists (add ε Ψi0), (add ε Ψp0); split.
       * eapply a_solvetag_eq__forall_inh with
-          (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
+          (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
                 `union` singleton α0) (Ψ0 := Ψi0); [ | reflexivity ].
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
@@ -2241,7 +2404,7 @@ Proof.
         exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β).
       * split.
         -- eapply dec_ext__absorb_all with
-             (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
+             (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
                    `union` singleton α0) (Ψ0 := Ψp0); [ | reflexivity ].
            intros α2 Hα2.
            rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f α2)
@@ -2256,7 +2419,9 @@ Proof.
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* tophole_l_guarded : ∀◇P ∼ Q (guarded) ⤳ P' ; the ∀◇ is DROPPED onto a
        guarded output — guarded skip backward *)
-    destruct (IHHs _ _ _ Hdec Hdt) as [Ψi [Ψp [Hsi [Hdp Hsub]]]].
+    assert (Hsz0 : 2 * (size_pskl P + size_pskl Q) <= n) by lia.
+    destruct (IHn _ _ _ _ _ _ _ Hsz0 Hp Hdec Hdt)
+      as [Ψi [Ψp [Hsi [Hdp Hsub]]]].
     exists Ψi, Ψp; split;
       [ exact Hsi
       | split;
@@ -2268,17 +2433,36 @@ Proof.
   - (* all_l_tophole : ∀P ∼ ∀◇Q ⤳ ∀P' (SE-ForallGhost) ; SEq-ForallSyn keeps
        the ∀◇ target whole, the skeleton ∀ matches the subject ∀ *)
     inversion Hdec; subst.
-    + (* ψ = all_etag ε ψ0 *)
+    + (* ψ = all_etag ε ψ0 — as SE-Forall: rename the solve premise b ⤳ α0
+         (the ∀◇ target is b-free, so only the opened subject moves) *)
       inversion Hdt; subst.
-      destruct (atom_fresh (L `union` L0 `union` L1 `union` ftvar_in_uskl ψ0
-                  `union` ftvar_in_pskl P `union` ftvar_in_pskl Q)) as [α0 HX0].
-      destruct (H0 α0 ltac:(clear - HX0; fsetdec) _ _ _
-                  (H2 α0 ltac:(clear - HX0; fsetdec))
-                  (H4 α0 ltac:(clear - HX0; fsetdec)))
+      destruct (atom_fresh (L `union` L0 `union` ftvar_in_uskl ψ0
+                  `union` ftvar_in_pskl P `union` ftvar_in_pskl Q
+                  `union` ftvar_in_pskl P' `union` dom Θ `union` singleton b))
+        as [α0 HX0].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f b))
+        as HupP.
+      pose proof (a_solve_eq_rename_var (α0 := b) (β0 := α0) Hp
+                    ltac:(clear - Hfr; fsetdec)
+                    ltac:(cbn in HupP |- *;
+                          clear - HX0 HupP; fsetdec)) as Hr.
+      rewrite <- (subst_pskl_in_pskl_intro b P (pskl_var_f α0))
+        in Hr by (clear - Hfr; fsetdec).
+      rewrite (subst_pskl_in_pskl_fresh_eq (pskl_tophole Q))
+        in Hr by (cbn; clear - Hfr; fsetdec).
+      assert (Hszr : 2 * (size_pskl (open_pskl_wrt_pskl P (pskl_var_f α0))
+                          + size_pskl (pskl_tophole Q)) <= n)
+        by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
+      assert (Hdecr : dec_ext (subst_pskl_in_pskl (pskl_var_f α0) b P')
+                        (open_uskl_wrt_uskl ψ0 (uskl_var_f α0)) Ψ').
+      { rewrite subst_pskl_in_pskl_spec.
+        apply H0; clear - HX0; fsetdec. }
+      destruct (IHn _ _ _ _ _ _ _ Hszr Hr Hdecr
+                  (H2 α0 ltac:(clear - HX0; fsetdec)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists Ψi0, Ψp0; split.
       * apply a_solvetag_eq__forall_syn with
-          (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
+          (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl Q
                 `union` singleton α0).
         intros β Hβ.
         rewrite (subst_bskl_in_uskl_intro α0 ψ0 (uskl_var_f β)
@@ -2288,7 +2472,7 @@ Proof.
         exact ((proj2 a_solvetag_sub_eq_rename_var) _ _ _ Hs0 α0 β).
       * split.
         -- apply dec_ext__all with
-             (L := L `union` ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
+             (L := ftvar_in_uskl ψ0 `union` ftvar_in_pskl P
                    `union` singleton α0).
            intros α2 Hα2.
            rewrite (subst_pskl_in_pskl_intro α0 P (pskl_var_f α2)
@@ -2302,13 +2486,26 @@ Proof.
         [ apply a_solvetag_eq__var; fsetdec
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* tophole_r_guarded : P (guarded) ∼ ∀◇Q ⤳ P' ; SEq-UnivGhostR *)
-    destruct (IHHs _ _ _ Hdec Hdt) as [Ψi [Ψp [Hsi [Hdp Hsub]]]].
+    assert (Hsz0 : 2 * (size_pskl P + size_pskl Q) <= n) by lia.
+    destruct (IHn _ _ _ _ _ _ _ Hsz0 Hp Hdec Hdt)
+      as [Ψi [Ψp [Hsi [Hdp Hsub]]]].
     exists Ψi, Ψp; split;
       [ apply a_solvetag_eq__univ_ghost_r;
           [ eapply dec_ext_head_guarded_erase;
               [ exact Hdec | eapply solve_eq_guarded_l_head; eassumption ]
           | exact Hsi ]
       | split; [ exact Hdp | exact Hsub ] ].
+Qed.
+
+Lemma dec_ext_solve_eq_step : forall Θ P P3 P' ψ Ψ' Ψtot,
+  Θ ⊢ₑ P ∼ P3 ⤳ P' ->
+  dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
+  exists Ψi Ψp, ψ ∼ᵗ P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
+Proof.
+  intros Θ P P3 P' ψ Ψ' Ψtot Hs Hdec Hdt.
+  exact (dec_ext_solve_eq_step_size
+           (n := 2 * (size_pskl P + size_pskl P3))
+           (le_n _) Hs Hdec Hdt).
 Qed.
 
 (** At a ◇-hole, dec_ext's remaining tags are exactly all of ψ's tags. *)
@@ -2331,30 +2528,64 @@ Proof.
   - auto with frost.
 Qed.
 
-(** FORWARD STEP (sub): the terminal [sub m Q] constraint — UNCONDITIONAL. *)
-Lemma dec_ext_solve_sub_step : forall Θ m P P3 P' ψ Ψ' Ψtot,
+(** FORWARD STEP (sub): the terminal [sub m Q] constraint — UNCONDITIONAL.
+    SIZE induction, for the same reason as the eq step (DESIGN.md §4.3). *)
+Lemma dec_ext_solve_sub_step_size : forall n Θ m P P3 P' ψ Ψ' Ψtot,
+  2 * (size_pskl P + size_pskl P3) <= n ->
   Θ ⊢ₛ P ≼[ m ] P3 ⤳ P' ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi Ψp, ψ ≼ᵗ[ m ] P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
-  intros Θ m P P3 P' ψ Ψ' Ψtot Hs; revert ψ Ψ' Ψtot;
-    induction Hs; intros ψ Ψ' Ψtot Hdec Hdt.
+  induction n as [| n IHn];
+    [ intros Θ m P P3 P' ψ Ψ' Ψtot Hsz Hs;
+      pose proof (size_pskl_min P); pose proof (size_pskl_min P3); lia | ].
+  intros Θ m P P3 P' ψ Ψ' Ψtot Hsz Hs; revert ψ Ψ' Ψtot.
+  destruct Hs as
+    [ Θ m α Q                                   (* SS-Var *)
+    | Θ m P Q P' b Hfr Hp                       (* SS-ForallL *)
+    | Θ m P Q P' Hp                             (* SS-UnivGhostL *)
+    | Θ m P                                     (* SS-Vacuous *)
+    | Θ P Q P' H H0 H1                          (* SS-Check *)
+    | Θ A B P' b Hfr Hp                         (* SS-ForallR *)
+    | Θ m P1 P2 Q1 Q2 P1' P2' H H0              (* SS-Arrow *)
+    | Θ m Q1 Q2 P1' P2' H H0                    (* SS-GhostLF *)
+    | Θ B H ];                                  (* SS-GhostL *)
+    intros ψ Ψ' Ψtot Hdec Hdt; cbn in Hsz.
   - (* var : P=P'=var α *)
     inversion Hdec; subst;
       (exists empty, empty; split;
         [ apply a_solvetag_sub__var; fsetdec
         | split; [ solve [ apply dec_ext__var; fsetdec
                          | apply dec_ext__flex_forget; fsetdec ] | fsetdec ] ]).
-  - (* forall_l : subject ∀P, output ∀P' *)
+  - (* forall_l : subject ∀P, output ∀(close b P').  The rule's own binder b
+       may occur in ψ0, so the SOLVE premise is renamed b ⤳ α0 (fresh) and
+       the cofinite dec_ext / d_tags families are instantiated there. *)
     inversion Hdec; subst.
     + (* all_etag ε ψ0 *)
       inversion Hdt; subst.
-      destruct (atom_fresh (L `union` L0 `union` L1 `union` ftvar_in_uskl ψ0
+      destruct (atom_fresh (L `union` L0 `union` ftvar_in_uskl ψ0
                   `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
-                  `union` ftvar_in_pskl Q)) as [α0 HX0].
-      destruct (H0 α0 ltac:(clear - HX0; fsetdec) _ _ _
-                  (H2 α0 ltac:(clear - HX0; fsetdec))
-                  (H4 α0 ltac:(clear - HX0; fsetdec)))
+                  `union` ftvar_in_pskl Q `union` dom Θ `union` singleton b))
+        as [α0 HX0].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f b))
+        as HupP.
+      pose proof (a_solve_sub_rename_var (α0 := b) (β0 := α0) Hp
+                    ltac:(clear - Hfr; fsetdec)
+                    ltac:(cbn in HupP |- *;
+                          clear - HX0 HupP; fsetdec)) as Hr.
+      rewrite <- (subst_pskl_in_pskl_intro b P (pskl_var_f α0))
+        in Hr by (clear - Hfr; fsetdec).
+      rewrite (subst_pskl_in_pskl_fresh_eq Q)
+        in Hr by (clear - Hfr; fsetdec).
+      assert (Hszr : 2 * (size_pskl (open_pskl_wrt_pskl P (pskl_var_f α0))
+                          + size_pskl Q) <= n)
+        by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
+      assert (Hdecr : dec_ext (subst_pskl_in_pskl (pskl_var_f α0) b P')
+                        (open_uskl_wrt_uskl ψ0 (uskl_var_f α0)) Ψ').
+      { rewrite subst_pskl_in_pskl_spec.
+        apply H0; clear - HX0; fsetdec. }
+      destruct (IHn _ _ _ _ _ _ _ _ Hszr Hr Hdecr
+                  (H2 α0 ltac:(clear - HX0; fsetdec)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists Ψi0, Ψp0; split.
       * apply a_solvetag_sub__forall_l with
@@ -2380,13 +2611,15 @@ Proof.
         | split; [ apply dec_ext__flex_forget; fsetdec | fsetdec ] ].
   - (* univ_ghost_l : ∀◇P ≼[m] Q ⤳ ∀◇P' ; inner induction on the ψ↔∀◇P'
        relation — the target Q is untouched by the ghost *)
+    assert (Hsz0 : 2 * (size_pskl P + size_pskl Q) <= n) by lia.
     remember (pskl_tophole P') as β2 eqn:HeqW.
     revert Ψtot Hdt HeqW; induction Hdec; intros Ψtot Hdt HeqW;
       try discriminate HeqW.
     + (* skip_tophole *)
       injection HeqW as HeqP; subst P0.
       match goal with Hin : dec_ext P' _ _ |- _ =>
-        destruct (IHHs _ _ _ Hin Hdt) as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
+        destruct (IHn _ _ _ _ _ _ _ _ Hsz0 Hp Hin Hdt)
+          as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
       exists Ψi, Ψp; split;
         [ exact Hsi
         | split; [ apply dec_ext__skip_tophole; [ assumption | exact Hdp ]
@@ -2396,7 +2629,8 @@ Proof.
       inversion Hdt; subst.
       match goal with
       | Hin : dec_ext P' ?p0 _, Hd0 : d_tags_skl _ ?p0 |- _ =>
-        destruct (IHHs _ _ _ Hin Hd0) as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
+        destruct (IHn _ _ _ _ _ _ _ _ Hsz0 Hp Hin Hd0)
+          as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
       exists Ψi, Ψp; split;
         [ apply a_solvetag_sub__univ_ghost_lg; exact Hsi
         | split; [ apply dec_ext__topholeg; exact Hdp | exact Hsub ] ].
@@ -2452,20 +2686,23 @@ Proof.
           | assumption
           | exact Hste ]
       | split; [ exact Hdp | exact Hup ] ].
-  - (* forall_r : Q=∀B ; subject A fixed, rename target β0 ⤳ β *)
-    destruct (atom_fresh (L `union` ftvar_in_pskl B `union` ftvar_in_uskl ψ))
-      as [β0 Hβ0].
-    destruct (H0 β0 ltac:(clear - Hβ0; fsetdec) _ _ _ Hdec Hdt)
+  - (* forall_r : Q=∀B ; the output passes through UNCHANGED, so the IH
+       applies at the rule's OWN binder b with [Hdec]/[Hdt] as they stand.
+       But b LEAKS, so it may occur free in ψ — the family is therefore
+       built with the TARGET-ONLY rename. *)
+    assert (Hsz0 : 2 * (size_pskl A
+                        + size_pskl (open_pskl_wrt_pskl B (pskl_var_f b)))
+                   <= n)
+      by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
+    destruct (IHn _ _ _ _ _ _ _ _ Hsz0 Hp Hdec Hdt)
               as [Ψi0 [Ψp0 [Hst0 [Hd0 Hu0]]]].
     exists Ψi0, Ψp0; split.
     + apply a_solvetag_sub__forall_r with
-        (L := ftvar_in_pskl B `union` ftvar_in_uskl ψ `union` singleton β0).
+        (L := ftvar_in_pskl B `union` singleton b).
       intros β Hβ.
-      rewrite <- (subst_bskl_in_uskl_fresh_eq ψ (uskl_var_f β) β0
-                   ltac:(clear - Hβ0; fsetdec)).
-      rewrite (subst_pskl_in_pskl_intro β0 B (pskl_var_f β)
-                 ltac:(clear - Hβ0; fsetdec)).
-      exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hst0 β0 β).
+      rewrite (subst_pskl_in_pskl_intro b B (pskl_var_f β)
+                 ltac:(clear - Hfr; fsetdec)).
+      exact ((proj1 a_solvetag_sub_eq_rename_target) _ _ _ _ Hst0 b β).
     + split; [ exact Hd0 | exact Hu0 ].
   - (* arrow : domain via eq_step, codomain via sub IH *)
     inversion Hdec; subst.
@@ -2473,8 +2710,9 @@ Proof.
       inversion Hdt; subst.
       edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
         [ exact H | eassumption | eassumption | ].
-      edestruct IHHs as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
-        [ eassumption | eassumption | ].
+      assert (Hsz2 : 2 * (size_pskl P2 + size_pskl Q2) <= n) by lia.
+      edestruct IHn as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
+        [ exact Hsz2 | exact H0 | eassumption | eassumption | ].
       exists (Ψi1 `union` Ψi2), (Ψp1 `union` Ψp2); split;
         [ eapply a_solvetag_sub__arrow; [ exact Hst1 | exact Hst2 | reflexivity ]
         | split; [ eapply dec_ext__arrow; [ exact Hd1 | exact Hd2 | reflexivity ]
@@ -2487,6 +2725,8 @@ Proof.
   - (* ghost_l_fn : ◇ ≼[fn m] (arrow Q1 Q2) ⤳ ∀◇(arrow P1' P2') ; the pre-step
        skeleton is ◇ (any subject) — inner induction on the ψ↔∀◇(arrow) relation
        for the solvetag, hole for the backward relation *)
+    assert (Hsz2 : 2 * (size_pskl pskl_hole + size_pskl Q2) <= n)
+      by (cbn; lia).
     remember (pskl_tophole (pskl_arrow P1' P2')) as β2 eqn:HeqW.
     revert Ψtot Hdt HeqW; induction Hdec; intros Ψtot Hdt HeqW;
       try discriminate HeqW.
@@ -2498,8 +2738,8 @@ Proof.
         inversion Hdt; subst.
         edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
           [ exact H | eassumption | eassumption | ].
-        edestruct IHHs as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
-          [ eassumption | eassumption | ].
+        edestruct IHn as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
+          [ exact Hsz2 | exact H0 | eassumption | eassumption | ].
         match goal with Ha : d_tags_skl _ ψ1, Hb : d_tags_skl _ ψ2 |- _ =>
           pose proof (dec_ext_hole_tags Hd1 Ha) as He1;
           pose proof (dec_ext_hole_tags Hd2 Hb) as He2 end.
@@ -2528,8 +2768,8 @@ Proof.
           inversion Hd0t; subst end.
         edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
           [ exact H | eassumption | eassumption | ].
-        edestruct IHHs as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
-          [ eassumption | eassumption | ].
+        edestruct IHn as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
+          [ exact Hsz2 | exact H0 | eassumption | eassumption | ].
         match goal with Ha : d_tags_skl _ ψ1, Hb : d_tags_skl _ ψ2 |- _ =>
           pose proof (dec_ext_hole_tags Hd1 Ha) as He1;
           pose proof (dec_ext_hole_tags Hd2 Hb) as He2 end.
@@ -2657,6 +2897,17 @@ Proof.
                  | inversion Hdt; subst; fsetdec ] ].
 Qed.
 
+Lemma dec_ext_solve_sub_step : forall Θ m P P3 P' ψ Ψ' Ψtot,
+  Θ ⊢ₛ P ≼[ m ] P3 ⤳ P' ->
+  dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
+  exists Ψi Ψp, ψ ≼ᵗ[ m ] P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
+Proof.
+  intros Θ m P P3 P' ψ Ψ' Ψtot Hs Hdec Hdt.
+  exact (dec_ext_solve_sub_step_size
+           (n := 2 * (size_pskl P + size_pskl P3))
+           (le_n _) Hs Hdec Hdt).
+Qed.
+
 (* --------------------------------------------------------------------- *)
 (*  TY-mode prose-wf invariant (paper: in TY mode the against-side P0 is a
     TYPE, hence ghost-free — the mode discipline stated in prose; registry
@@ -2688,6 +2939,22 @@ Proof.
   - rewrite (IHP α' (S k)); tauto.
 Qed.
 
+Lemma pskl_no_top_close_rec : forall P β k,
+  pskl_no_top P -> pskl_no_top (close_pskl_wrt_pskl_rec k β P).
+Proof.
+  induction P; intros β k H; simpl in *; auto.
+  - destruct (lt_ge_dec n k); simpl; auto.
+  - destruct (β == α); simpl; auto.
+  - destruct H; split; auto.
+Qed.
+
+Lemma pskl_no_top_close : forall P β,
+  pskl_no_top P -> pskl_no_top (close_pskl_wrt_pskl β P).
+Proof.
+  intros P β H; unfold close_pskl_wrt_pskl;
+    apply pskl_no_top_close_rec; exact H.
+Qed.
+
 Lemma pskl_no_top_top_guarded : forall P, pskl_no_top P -> pskl_top_guarded P.
 Proof. induction P; simpl; intuition. Qed.
 
@@ -2703,16 +2970,11 @@ Proof.
   - (* hole_r : Q=◇, P'=P *) exact Hnt.
   - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
       split; [ apply IHa_solve_eq1 | apply IHa_solve_eq2 ]; assumption.
-  - (* forall *)
-    destruct (atom_fresh (L `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
-                `union` ftvar_in_pskl Q)) as [β Hβ].
-    apply (proj2 (pskl_no_top_open_rec P' β 0)).
-    match goal with
-    | IH : forall α, α `notin` L -> _ -> _ -> pskl_no_top _ |- _ =>
-        apply (IH β ltac:(clear - Hβ; fsetdec));
-        [ apply (proj1 (pskl_no_top_open_rec P β 0)); exact Hnt
-        | apply (proj1 (pskl_no_top_open_rec Q β 0)); exact Hgf ]
-    end.
+  - (* forall : the rule closes its output *)
+    apply pskl_no_top_close.
+    apply IHa_solve_eq;
+      [ apply (proj1 (pskl_no_top_open_rec P _ 0)); exact Hnt
+      | apply (proj1 (pskl_no_top_open_rec Q _ 0)); exact Hgf ].
   - (* tophole_both : P=∀◇ *) contradiction.
   - (* tophole_l_all : P=∀◇ *) contradiction.
   - (* tophole_l_guarded : P=∀◇ *) contradiction.
@@ -2728,22 +2990,18 @@ Lemma solve_sub_top_guarded : forall Θ m P P0 P',
 Proof.
   intros Θ m P P0 P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
   - (* var *) exact I.
-  - (* forall_l : ∀P' *)
-    destruct (atom_fresh (L `union` ftvar_in_pskl P')) as [β Hβ].
-    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
-    match goal with IH : forall α, α `notin` L -> _ |- _ =>
-      apply (IH β ltac:(clear - Hβ; fsetdec));
-        [ apply (proj1 (pskl_no_top_open_rec P β 0)); exact Hnt | exact Hgf ] end.
+  - (* forall_l : ∀(close β P') — the rule closes its output *)
+    apply pskl_top_guarded_close.
+    apply IHHs;
+      [ apply (proj1 (pskl_no_top_open_rec P _ 0)); exact Hnt | exact Hgf ].
   - (* univ_ghost_l : P=∀◇ *) contradiction.
   - (* vacuous : P'=P *) apply pskl_no_top_top_guarded; exact Hnt.
   - (* check : eq preserves no_top *)
     apply pskl_no_top_top_guarded;
       eapply solve_eq_no_top; [ eassumption | exact Hnt | exact Hgf ].
-  - (* forall_r *)
-    destruct (atom_fresh (L `union` ftvar_in_pskl B)) as [β Hβ].
-    match goal with IH : forall α, α `notin` L -> _ |- _ =>
-      apply (IH β ltac:(clear - Hβ; fsetdec));
-        [ exact Hnt | apply (proj1 (pskl_no_top_open_rec B β 0)); exact Hgf ] end.
+  - (* forall_r : the output passes through *)
+    apply IHHs;
+      [ exact Hnt | apply (proj1 (pskl_no_top_open_rec B _ 0)); exact Hgf ].
   - (* arrow *)
     destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2].
     split;
@@ -2830,8 +3088,7 @@ Proof.
   - (* vacuous : P'=P *) exact Hg.
   - (* check : eq preserves *) eapply solve_eq_guarded_head_l; eassumption.
   - (* forall_r : same subject/result, recurse *)
-    destruct (atom_fresh L) as [β Hβ].
-    match goal with IH : forall α, α `notin` L -> _ |- _ => apply (IH β Hβ); exact Hg end.
+    apply IHHs; exact Hg.
 Qed.
 
 (** [top_guarded] is preserved by eq-solving (∀◇ over guarded stays so). *)
@@ -2847,36 +3104,29 @@ Proof.
   - (* hole_r : P'=P *) exact Hnt.
   - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
       split; [ apply IHa_solve_eq1 | apply IHa_solve_eq2 ]; assumption.
-  - (* forall *)
-    destruct (atom_fresh (L `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
-                `union` ftvar_in_pskl Q)) as [β Hβ].
-    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
-    match goal with IH : forall α, α `notin` L -> _ -> _ -> pskl_top_guarded _ |- _ =>
-      apply (IH β ltac:(clear - Hβ; fsetdec));
-      [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt
-      | apply (proj1 (pskl_top_guarded_open_rec Q β 0)); exact Hgf ] end.
+  - (* forall : the rule closes its output *)
+    apply pskl_top_guarded_close.
+    apply IHa_solve_eq;
+      [ apply (proj1 (pskl_top_guarded_open_rec P _ 0)); exact Hnt
+      | apply (proj1 (pskl_top_guarded_open_rec Q _ 0)); exact Hgf ].
   - (* tophole_both : ∀◇P∼∀◇Q⤳∀◇P' *)
     destruct Hnt as [HgP HtP]; destruct Hgf as [HgQ HtQ].
     split; [ eapply solve_eq_guarded_head_l; [ eassumption | exact HgP ]
            | apply IHa_solve_eq; assumption ].
-  - (* tophole_l_all : ∀◇P∼∀Q⤳∀P' *)
+  - (* tophole_l_all : ∀◇P∼∀Q⤳∀(close β P') *)
     destruct Hnt as [HgP HtP].
-    destruct (atom_fresh (L `union` ftvar_in_pskl P' `union` ftvar_in_pskl Q)) as [β Hβ].
-    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
-    match goal with IH : forall α, α `notin` L -> _ -> _ -> pskl_top_guarded _ |- _ =>
-      apply (IH β ltac:(clear - Hβ; fsetdec));
+    apply pskl_top_guarded_close.
+    apply IHa_solve_eq;
       [ simpl; split; assumption
-      | apply (proj1 (pskl_top_guarded_open_rec Q β 0)); exact Hgf ] end.
+      | apply (proj1 (pskl_top_guarded_open_rec Q _ 0)); exact Hgf ].
   - (* tophole_l_guarded : ∀◇P∼(guarded Q)⤳P' *)
     destruct Hnt as [HgP HtP]; apply IHa_solve_eq; assumption.
-  - (* all_l_tophole : ∀P∼∀◇Q⤳∀P' *)
+  - (* all_l_tophole : ∀P∼∀◇Q⤳∀(close β P') *)
     destruct Hgf as [HgQ HtQ].
-    destruct (atom_fresh (L `union` ftvar_in_pskl P' `union` ftvar_in_pskl P)) as [β Hβ].
-    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
-    match goal with IH : forall α, α `notin` L -> _ -> _ -> pskl_top_guarded _ |- _ =>
-      apply (IH β ltac:(clear - Hβ; fsetdec));
-      [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt
-      | simpl; split; assumption ] end.
+    apply pskl_top_guarded_close.
+    apply IHa_solve_eq;
+      [ apply (proj1 (pskl_top_guarded_open_rec P _ 0)); exact Hnt
+      | simpl; split; assumption ].
   - (* tophole_r_guarded : (guarded P)∼∀◇Q⤳P' *)
     destruct Hgf as [HgQ HtQ]; apply IHa_solve_eq; assumption.
 Qed.
@@ -2888,12 +3138,10 @@ Lemma solve_sub_top_guarded_tg : forall Θ m P P0 P',
 Proof.
   intros Θ m P P0 P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
   - (* var *) exact I.
-  - (* forall_l *)
-    destruct (atom_fresh (L `union` ftvar_in_pskl P')) as [β Hβ].
-    apply (proj2 (pskl_top_guarded_open_rec P' β 0)).
-    match goal with IH : forall α, α `notin` L -> _ |- _ =>
-      apply (IH β ltac:(clear - Hβ; fsetdec));
-        [ apply (proj1 (pskl_top_guarded_open_rec P β 0)); exact Hnt | exact Hgf ] end.
+  - (* forall_l : the rule closes its output *)
+    apply pskl_top_guarded_close.
+    apply IHHs;
+      [ apply (proj1 (pskl_top_guarded_open_rec P _ 0)); exact Hnt | exact Hgf ].
   - (* univ_ghost_l : ∀◇P ≼ P0 ⤳ ∀◇P' *)
     destruct Hnt as [HgP HtP].
     split; [ eapply solve_sub_guarded_head_l; [ eassumption | exact HgP ]
@@ -2901,11 +3149,9 @@ Proof.
   - (* vacuous : P'=P *) exact Hnt.
   - (* check : eq preserves top_guarded *)
     eapply solve_eq_top_guarded; [ eassumption | exact Hnt | exact Hgf ].
-  - (* forall_r *)
-    destruct (atom_fresh (L `union` ftvar_in_pskl B)) as [β Hβ].
-    match goal with IH : forall α, α `notin` L -> _ |- _ =>
-      apply (IH β ltac:(clear - Hβ; fsetdec));
-        [ exact Hnt | apply (proj1 (pskl_top_guarded_open_rec B β 0)); exact Hgf ] end.
+  - (* forall_r : the output passes through *)
+    apply IHHs;
+      [ exact Hnt | apply (proj1 (pskl_top_guarded_open_rec B _ 0)); exact Hgf ].
   - (* arrow *)
     destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2].
     split;
