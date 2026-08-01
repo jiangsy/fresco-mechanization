@@ -490,6 +490,24 @@ supply it, `ftv P0 [<=] add α (ftvar_in_aenv Θ)`: it names the CONTEXT, not
 the input skeletons, because only the context is MONOTONE under descent (an
 arrow row shrinks the skeletons, a binder row grows the context).
 
+⚠️ **…and the fixed-output form is not enough for the decoration layer.**
+`a_subtag_decoration`'s two ForallL rows substitute the node's GUESS `P1` into
+the look run, and `P1`'s variables include the extract's fresh block `dom Ξ`,
+which the run's binders have no reason to avoid: `Ξ` and those binders are
+produced by two INDEPENDENT runs at the same context, so the premise
+`ftv P1 ⊆ add α (ftvar_in_aenv Θ)` is unsuppliable.  (The reference
+implementation's global counter keeps them apart; the relational rendering of
+it — "avoid `ftvar_in_aenv Θ`" — cannot, because `Ξ` is generated *after*.)
+The repair is the campaign's own move applied one level up: let the ∀ rows
+RE-PICK their binder away from `P0` and hand back RENAMED outputs, so the
+lemma needs no context premise at all and its `Ξ ⨾ 𝒞` become existential,
+with the solvetag obligation riding along through `a_solvetag_subst_cstrs`.
+The leak counterexample does not touch that form — on its own witness the
+substituted run IS re-derivable, at any binder `δ ≠ β₀`, returning `𝒞` rigidly
+renamed.  Specified in full (measure, the six re-picking rows, and the free
+look context `a_subtag_decoration` must gain) in PROGRESS.md's 2026-08-01
+stage-4 entry; `a_looksub_open_target_at_size` is the working model.
+
 The same phenomenon shapes the renaming lemmas, and there the honest premise
 is an **output**-freshness one (`α1 ∉ dom Ξ ∪ ftv 𝒞`) plus SIZE induction:
 a binder that ESCAPED into the outputs cannot be moved (moving it would

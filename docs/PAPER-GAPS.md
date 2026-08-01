@@ -1861,3 +1861,17 @@ The same phenomenon makes the mech's renaming lemmas carry an OUTPUT
 freshness premise (`α1 ∉ dom Ξ ∪ ftv 𝒞`): a binder that escaped into the
 outputs cannot be moved without changing them, so a rename target must
 simply differ from it.  See DESIGN.md §4.3, "The look cluster".
+
+**Addendum (2026-08-01).** The Barendregt condition above cannot always be
+stated as the context bound `ftv Q ⊆ {α} ∪ ftv(Θ)`.  Where the substituted
+skeleton is a ForallL node's GUESS, its variables include the extract's
+freshly generated block `Ξ`, and `Ξ` is produced *after* the collection run,
+by an independent generator at the same context — so the run's binders have
+no reason to avoid it.  Two independent "fresh" generators at one context are
+kept apart by the implementation's global counter (`incr counter`,
+type.ml:563-565) and by the paper's Barendregt convention, but not by any
+side condition a relational rule can carry.  A mechanization therefore needs
+the stability lemma in a second, EXISTENTIAL-output form as well: the ∀ rows
+re-pick their binders away from the substituted skeleton and return `Ξ ⨾ 𝒞`
+up to a rigid renaming.  Nothing in the paper changes; this is a note about
+what "by Barendregt" costs to discharge.
