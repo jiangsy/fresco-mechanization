@@ -78,7 +78,79 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-01 (latest) — 🚧 FRESHNESS CAMPAIGN cluster 3 stage 4: **P6-Cs CONVERTED** (`prop_look_complete_cstr.v` GREEN, axiom-free) — and the decoration layer's subtyping half is BLOCKED on one missing enabler, now fully specified
+## 2026-08-02 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 3 (look) **CLOSED** — the whole tree is GREEN, admit-free and axiom-free
+
+Everything the stage-4 entry below specified is Qed, and the two files it left
+red are converted.  The campaign's staging rule held throughout: the enabler
+was proved before the rule change reached its consumers, and the tree is green
+at the end of every commit but the deliberately-red WIP ones.
+
+**The blocker's enabler — `a_looksub_lookeq_subst_gen_size` (prop_decorate_sub.v
+§8, Qed, axiom-free).**  Source substitution with EXISTENTIAL outputs: the ∀
+rows RE-PICK their binder away from `P0` and hand back RENAMED `Ξ ⨾ 𝒞`, so the
+lemma needs NO context premise and the solvetag obligation rides across on
+`a_solvetag_subst_cstrs`.  Every prediction in the spec held — the measure
+`2·(size P + size P')` (+1 on the looksub side), the six re-picking rows, the
+thirteen congruences.  Two shapes were NOT in the spec and are worth naming:
+
+- LS-Check and LE-UnivGhostR guard the SOURCE, and `guarded_pskl` includes
+  variables, so where the source IS the substituted variable the row switches
+  to Absent — the source was α-free, so the run collected nothing.  §4 already
+  had that move; it transfers verbatim.
+- both arrow rows need `a_solvetag_split` **and a new `a_solvetag_join`**,
+  which is conditional on the LEFT list being all-eq: `a_solvetag__sub` fires
+  only on a SINGLETON, so a sub constraint may never be followed by anything.
+  `a_lookeq_cstr_eq` moved down from prop_look_complete_cstr.v to
+  prop_looksub.v to serve it (that file is downstream).
+
+**The same two-generators gap surfaced twice more, and both times one rigid
+rename settled it — no further induction.**  `a_looksub_avoid_atom` freshens a
+run away from ONE atom: there is at most one offending name, so renaming that
+name to a fresh `δ` moves the outputs and leaves the inputs alone.  It is what
+`a_subtag_decoration`'s ForallR row needs (it opens the run's target at the
+`a_subtag` rule's own binder, which must miss the run's outputs), after
+shrinking the look context away with `a_looksub_ctx_ftv_mono` to make the
+opener's `ftvar_in_aenv` condition vacuous.
+
+**`prop_decorate_key.v`.**  `a_subtag_decoration`'s look hypothesis now carries
+its OWN context `Θl`, universally quantified INSIDE the induction — the ForallL
+rows hand the recursive call a run living under the look rule's binder while
+the subtag premise sits at `Ξ ++ Θ0`, and since the lemma only CONSUMES the run
+there is no alignment constraint.  Both ForallL rows substitute the node's
+guess for the ONE binder LS-ForallL gives them, via `a_looksub_subst_gen`.
+
+**`prop_look_complete_sub_cstr.v` (P6-Ss)** mirrors P6-Cs: three ∀ rows
+collapsed, the arrow row descends with `a_looksub_ctx_ftv_mono`, the ftv sites
+go through the `_ftv_ctx` corollaries, and its generated-names conjunct gained
+`ftvar_in_uskl ψa` for the same arrow-row reason.
+
+**Two downstream encoding fixes**, both real:
+
+- P6-L's guess runs at `Ξc ++ Θ0`, so the L-bound handed to
+  `a_guess_ty_witness` must cover that context's PAYLOADS — cluster 3's
+  avoid-input is `ftvar_in_aenv`, not `dom`.
+- `a_extract_family_of_instance` now HANDS BACK its own avoid-set
+  (`exists L, forall α' ∉ … ∪ L`).  Renaming the looked-for variable is an
+  OUTPUT-freshness lemma now, and a leaked binder is by definition a name no
+  input mentions, so no condition on `P`/`P0` can exclude it — only the
+  instance knows its own `Ξl ⨾ 𝒞l`.  Its two P7 consumers are cofinite and
+  just union `L` in.
+
+**Audit follow-through.**  `a_looksub_lookeq_subst_stable` (§4) and
+`a_looksub_lookeq_subst_stable_rev` (§4b) now have ZERO consumers, as do
+`a_lookeq_rename_tvar_keep`, `a_looksub_rename_tvar_keep` and
+`a_lookeq_rename_var`.  They are retirement candidates with a RESTART NOTE;
+left in place for now because the P7 layer has not yet been re-checked against
+the converted look cluster.  `cex/cex_look_subst_stable_leak.v` stays either
+way — it is a registered paper gap.
+
+**Remaining:** clusters 4 (consis mutual), 5 (`a_sub__forall_l` + the decorated
+mirrors — ⚠️ confirm with the user first: `a_solvetag`'s only output is a TAG
+SET, so type binders cannot enter it and it may legitimately STAY cofinite) and
+6 (a_pat/a_typing); F-deprecation; the walk's three `∉ dom Θ1` premises (P7a);
+THEN the P7b dispatcher.
+
+## 2026-08-01 — 🚧 FRESHNESS CAMPAIGN cluster 3 stage 4: **P6-Cs CONVERTED** (`prop_look_complete_cstr.v` GREEN, axiom-free) — and the decoration layer's subtyping half is BLOCKED on one missing enabler, now fully specified
 
 Third stage of cluster 3, on `freshness-campaign-cluster3-wip` @ `bf413fa`.
 

@@ -490,6 +490,15 @@ supply it, `ftv P0 [<=] add α (ftvar_in_aenv Θ)`: it names the CONTEXT, not
 the input skeletons, because only the context is MONOTONE under descent (an
 arrow row shrinks the skeletons, a binder row grows the context).
 
+**RESOLVED 2026-08-02 — the EXISTENTIAL-output form.**  What follows was the
+diagnosis; the repair is `a_looksub_lookeq_subst_gen_size` (prop_decorate_sub.v
+§8, Qed).  Reading it as a design rule: *where a consumer must substitute a
+skeleton it does not control into a run whose binders it does not control, the
+lemma drops the context premise and hands back RENAMED outputs.*  The same gap
+turns up twice more (the decoration ForallR row, and
+`a_extract_family_of_instance`); there only ONE name can offend, so a single
+rigid rename settles it (`a_looksub_avoid_atom`) — no second induction.
+
 ⚠️ **…and the fixed-output form is not enough for the decoration layer.**
 `a_subtag_decoration`'s two ForallL rows substitute the node's GUESS `P1` into
 the look run, and `P1`'s variables include the extract's fresh block `dom Ξ`,
