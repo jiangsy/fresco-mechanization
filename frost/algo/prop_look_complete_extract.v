@@ -1138,7 +1138,11 @@ Proof.
                       eapply a_inc_lookup_lc; exact Hincc)
                 ltac:(intros α0; eapply a_inc_lookup_ftv; exact Hincc)
                 Hgfψ Hlcψ Hpre
-                (add α (dom Θ `union` dom Θ0 `union` dom Ξc `union` dom κ)))
+                (* the guess runs at [Ξc ++ Θ0] ([a_extract__solve]), so the
+                   L-bound must cover that context's PAYLOADS too, not just
+                   its domain — cluster 3's avoid-input is [ftvar_in_aenv] *)
+                (add α (ftvar_in_aenv (Ξc ++ Θ0) `union` dom Θ
+                          `union` dom Θ0 `union` dom Ξc `union` dom κ)))
       as (Ξ' & A & κ' & Hgu & HfmΞ' & HuqΞ' & Hkeys' & Hfr' & HF' & Hwf'
           & Hpr').
     assert (HdomΞ' : dom κ' [=] dom Ξ') by (apply keys_eq_dom; exact Hkeys').
@@ -1156,7 +1160,7 @@ Proof.
     split.
     { eapply a_extract__solve;
         [ exact Hlook | exact Hsolve
-        | apply a_guess__ty; apply Hgu; simpl; fsetdec ]. }
+        | apply a_guess__ty; apply Hgu; clear; fsetdec ]. }
     split.
     { rewrite app_assoc. apply a_wf_pskl_swap_app. exact Hwf'. }
     split.
@@ -1284,25 +1288,34 @@ Print Assumptions a_extract_complete.
 (*  ([a_looksub_rename_var]) + the SAME solve + the SAME guess.           *)
 (* ===================================================================== *)
 
+(* ⚙ The family HANDS BACK its own avoid-set (cluster 3).  Renaming the
+   looked-for variable is an OUTPUT-freshness lemma now: the look's ∀ rules
+   may LEAK a binder into the collected constraints, and a leaked binder is
+   precisely a name no input mentions, so it cannot be excluded by any
+   condition on [P]/[P0].  The instance knows its own [Ξl ⨾ 𝒞l], so it is the
+   one that can name the set; consumers are cofinite anyway and simply union
+   it into their own [L]. *)
 Lemma a_extract_family_of_instance : forall Θ0 NM M α P P0 Ξ P1,
   Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
   α `notin` ftvar_in_pskl P ->
-  forall α',
-  α' `notin` (singleton α `union` ftvar_in_pskl P) ->
-  Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α')) ⊳[ NM , α' , M ] P0 ⤳ Ξ ↪ P1.
+  exists L, forall α',
+    α' `notin` (singleton α `union` ftvar_in_pskl P `union` L) ->
+    Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α')) ⊳[ NM , α' , M ] P0 ⤳ Ξ ↪ P1.
 Proof.
-  intros Θ0 NM M α P P0 Ξ P1 Hex Hfr α' Hα'.
-  inversion Hex; subst.
+  intros Θ0 NM M α P P0 Ξ P1 Hex Hfr.
+  inversion Hex as [ Θ0' NM' α'' m' Ps Ps' Ξl Ξg 𝒞l Q Q' Hlk Hsol Hgu
+                     HeqΘ HeqNM Heqα Heqm HeqP HeqP0 ]; subst.
+  exists (dom Ξl `union` ftvar_in_cstrs 𝒞l).
+  intros α' Hα'.
   eapply a_extract__solve; [ | eassumption | eassumption ].
   assert (Hα'P : α' `notin`
                    ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))).
   { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                   P (pskl_var_f α)) as Hup.
     simpl in Hup. clear - Hα' Hup; fsetdec. }
-  match goal with
-    Hlk : _ ≼[ α , _ ] _ ⤳ _ ⨾ _ |- _ =>
-    pose proof (a_looksub_rename_var Hlk Hα'P) as Hlk'
-  end.
+  pose proof (a_looksub_rename_var Hlk Hα'P
+                ltac:(clear - Hα'; fsetdec) ltac:(clear - Hα'; fsetdec))
+    as Hlk'.
   rewrite <- (subst_pskl_in_pskl_intro α P (pskl_var_f α') Hfr) in Hlk'.
   exact Hlk'.
 Qed.

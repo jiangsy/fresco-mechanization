@@ -2657,14 +2657,13 @@ Proof.
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 5. the run ---- *)
   exists P1, Θ1. split.
-  { eapply a_sub__forall_l with
-      (L := singleton α `union` ftvar_in_pskl ⌊ Rb ⌋ˢ)
+  { destruct (@a_extract_family_of_instance Θ0 NM M α ⌊ Rb ⌋ˢ P0 Ξ Pa
+                Hlook ltac:(clear - Fr; fsetdec)) as [Lx Hfam].
+    eapply a_sub__forall_l with
+      (L := singleton α `union` ftvar_in_pskl ⌊ Rb ⌋ˢ `union` Lx)
       (Ξ := Ξ) (P1 := Pa);
       [ exact HMti | exact HP0wlog
-      | intros α' Hα';
-        apply (@a_extract_family_of_instance Θ0 NM M α ⌊ Rb ⌋ˢ P0 Ξ Pa
-                 Hlook ltac:(clear - Fr; fsetdec) α');
-        clear - Hα'; fsetdec
+      | intros α' Hα'; apply Hfam; clear - Hα'; fsetdec
       | apply a_wf_aenv_uniq; exact HwfΞΘ0
       | exact HwfPa
       | exact Hrun ]. }
@@ -2954,14 +2953,13 @@ Proof.
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 5. the run ---- *)
   exists P1, Θ1. split.
-  { eapply a_sub__forall_l with
-      (L := singleton α `union` ftvar_in_pskl ⌊ Rb ⌋ˢ)
+  { destruct (@a_extract_family_of_instance Θ0 NM M α ⌊ Rb ⌋ˢ P0 Ξ Pa
+                Hlook ltac:(clear - Fr; fsetdec)) as [Lx Hfam].
+    eapply a_sub__forall_l with
+      (L := singleton α `union` ftvar_in_pskl ⌊ Rb ⌋ˢ `union` Lx)
       (Ξ := Ξ) (P1 := Pa);
       [ exact HMti | exact HP0wlog
-      | intros α' Hα';
-        apply (@a_extract_family_of_instance Θ0 NM M α ⌊ Rb ⌋ˢ P0 Ξ Pa
-                 Hlook ltac:(clear - Fr; fsetdec) α');
-        clear - Hα'; fsetdec
+      | intros α' Hα'; apply Hfam; clear - Hα'; fsetdec
       | apply a_wf_aenv_uniq; exact HwfΞΘ0
       | exact HwfPa
       | exact Hrun ]. }
