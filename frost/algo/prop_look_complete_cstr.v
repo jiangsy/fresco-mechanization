@@ -177,23 +177,23 @@ Proof.
   pose proof (ftag_in_uskl_ptyp_to_uskl_syn (msubst_lookup κ α)) as Hgf.
   fsetdec.
 Qed.
-Lemma a_lookeq_cstr_eq : forall α P P' Ξ 𝒞,
-  P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
+(* EXISTS-FRESH SIMPLIFICATION (cluster 3): the three ∀ rows used to hand back
+   a cofinite family, and each needed a representative picked off [L]; now the
+   IH is the premise's own, and the rows are plain [assumption]. *)
+Lemma a_lookeq_cstr_eq : forall Θ α P P' Ξ 𝒞,
+  Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 ->
   Forall (fun c => exists Q, c = a_cstr_eq Q) 𝒞.
 Proof.
-  intros α P P' Ξ 𝒞 H; induction H.
+  intros Θ α P P' Ξ 𝒞 H; induction H.
   - constructor; [ eexists; reflexivity | constructor ].  (* var *)
   - constructor.                                          (* absent *)
   - constructor.                                          (* vacuous *)
   - constructor; [ eexists; reflexivity | constructor ].  (* flex_r *)
   - apply Forall_app; split; assumption.                 (* arrow *)
-  - match goal with H : forall β, β `notin` ?L -> _ |- _ =>
-      pick fresh β for L; apply (H β ltac:(auto)) end.    (* forall_inh *)
-  - match goal with H : forall β, β `notin` ?L -> _ |- _ =>
-      pick fresh β for L; apply (H β ltac:(auto)) end.    (* forall_syn *)
+  - assumption.                                           (* forall_inh *)
+  - assumption.                                           (* forall_syn *)
   - assumption.                                           (* univ_ghost *)
-  - match goal with H : forall β, β `notin` ?L -> _ |- _ =>
-      pick fresh β for L; apply (H β ltac:(auto)) end.    (* univ_ghost1 *)
+  - assumption.                                           (* univ_ghost1 *)
   - assumption.                                           (* univ_ghost2 *)
   - assumption.                                           (* univ_ghost_r *)
 Qed.
@@ -258,22 +258,19 @@ Lemma all_flex_mono_app : forall A B,
   all_flex_mono A -> all_flex_mono B -> all_flex_mono (A ++ B).
 Proof. intros A B HA HB. apply Forall_app; split; assumption. Qed.
 
-Lemma a_lookeq_all_flex_mono : forall α P P0 Ξ 𝒞,
-  P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 -> all_flex_mono Ξ.
+Lemma a_lookeq_all_flex_mono : forall Θ α P P0 Ξ 𝒞,
+  Θ ⊢ P ∼[ α ] P0 ⤳ Ξ ⨾ 𝒞 -> all_flex_mono Ξ.
 Proof.
-  intros α P P0 Ξ 𝒞 H; unfold all_flex_mono; induction H.
+  intros Θ α P P0 Ξ 𝒞 H; unfold all_flex_mono; induction H.
   - constructor.                                          (* var *)
   - constructor.                                          (* absent *)
   - constructor.                                          (* vacuous *)
   - constructor; [ reflexivity | constructor ].          (* flex_r *)
   - apply Forall_app; split; assumption.                 (* arrow *)
-  - match goal with H : forall β, β `notin` ?L -> _ |- _ =>
-      pick fresh β for L; exact (H β ltac:(auto)) end.    (* forall_inh *)
-  - match goal with H : forall β, β `notin` ?L -> _ |- _ =>
-      pick fresh β for L; exact (H β ltac:(auto)) end.    (* forall_syn *)
+  - assumption.                                           (* forall_inh *)
+  - assumption.                                           (* forall_syn *)
   - assumption.                                           (* univ_ghost *)
-  - match goal with H : forall β, β `notin` ?L -> _ |- _ =>
-      pick fresh β for L; exact (H β ltac:(auto)) end.    (* univ_ghost1 *)
+  - assumption.                                           (* univ_ghost1 *)
   - assumption.                                           (* univ_ghost2 *)
   - assumption.                                           (* univ_ghost_r *)
 Qed.
@@ -2037,7 +2034,7 @@ Theorem a_lookeq_solve_complete_gen :
      (subtyping-proofs.tex refn[16]): msubst (ρc++κ) agrees with msubst κ
      on Θ0-scoped skeletons, so the erase-tie threads under recursion. *)
   exists 𝒞 Ξc Pa κc,
-    (P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\                   (* lookeq α P P0 𝒞 Ξc *)
+    (Θ0 ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\              (* lookeq α P P0 𝒞 Ξc *)
     (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\                 (* solve 𝒞 Pi Pa *)
     (Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\               (* Θ0,Ξc ⊢ Pa *)
     a_wf_aenv (Ξc ++ Θ0) /\                      (* Ξc collected ⇒ context wf *)
@@ -2345,7 +2342,11 @@ Proof.
                 cbn [ftag_in_uskl] in Ht; clear - Hsub Ht HΨie; fsetdec).
           pick fresh α1 for
             (add α (dom Θ0 `union` dom Θ) `union` dom Θ `union` dom κ
-               `union` ftvar_in_pskl Pi).
+               `union` ftvar_in_pskl Pi
+               (* LE-FlexR's own [fresh γ̂] (cluster 3): the generated
+                  flexible avoids the ambient context and both inputs *)
+               `union` ftvar_in_aenv Θ0 `union` singleton β0
+               `union` ftvar_in_pskl ⌊ Ra ⌋ˢ `union` ftvar_in_pskl ⌊ Rb ⌋ˢ).
           assert (Hγdom0 : α1 `notin` dom Θ0) by auto.
           assert (Hα0α1 : α0 <> α1)
             by (intro Hc; subst α1; clear - Fr HPieq;
@@ -2354,7 +2355,8 @@ Proof.
                  ((α1 ~ abind_flex_mono) ++ nil), (pskl_var_f α0),
                  ((α1, ptyp_unit) :: nil).
           repeat split.
-          -- apply a_lookeq__flex_r; [ exact HPnα | exact Hin ].
+          -- apply a_lookeq__flex_r;
+               [ cbn; clear - Fr; solve_notin | exact HPnα | exact Hin ].
           -- assert (Hsv : (((α1 ~ abind_flex_mono) ++ nil) ++ Θ0)
                              ⊢ₑ Pi ∼ (pskl_var_f α1) ⤳ (pskl_var_f α0))
                by (rewrite HPieq; apply a_solve_eq__var).
@@ -4342,7 +4344,7 @@ Theorem a_lookeq_solve_complete :
   Θ ⨟ empty ⊢ₚₛᵃ (uskl_to_pskl (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R'))) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   exists 𝒞 Ξc Pa κc,
-    (P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
+    (Θ0 ⊢ P ∼[ α ] P0 ⤳ Ξc ⨾ 𝒞) /\
     (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Pa /\
     (Ξc ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pa /\
     a_wf_aenv (Ξc ++ Θ0) /\
