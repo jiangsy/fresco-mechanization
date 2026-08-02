@@ -6965,7 +6965,8 @@ Proof.
     match type of Hrp1 with
     | forall _, _ `notin` ?LB -> _ =>
       pick fresh α for (L `union` LA `union` LB `union` Lw0 `union` Lw
-                        `union` dom Θ0 `union` dom Θ `union` dom κ
+                        `union` dom Θ0 `union` ftvar_in_aenv Θ0
+                        `union` dom Θ `union` dom κ
                         `union` F `union` Δ1 `union` Δ2
                         `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPb
                         `union` ftvar_in_bskl Q)
@@ -7076,67 +7077,18 @@ Proof.
                 _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
                 (tvar_prefix_cons tvar_prefix_nil)) as [Θ1 HeqΘ1'].
     simpl in HeqΘ1'. subst Θ1'.
-    (* assemble the cofinite node by renaming the α-instance (L9) *)
+    (* assemble the exists-fresh node at the run's OWN α *)
     assert (Huq0 : uniq ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf0').
     assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; fsetdec).
     assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
-    { (* the rename hands back its own avoid-set (cluster 4) *)
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α))
-                  _ _ _ _ _ _ _ _ Hc) as [Lrn Hrn].
-      apply a_consis_forall_inh_cofinite with
-        (L := Lrn `union` L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
-              `union` singleton α `union` F `union` Δ1 `union` Δ2
-              `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPb
-              `union` ftvar_in_pskl P1).
-      intros α0 Hα0.
-      assert (Hα0α : α0 <> α) by (clear - Hα0; fsetdec).
-      assert (Hα0Θ0 : α0 `notin` dom Θ0) by (clear - Hα0; fsetdec).
-      assert (Hα0Θ1 : α0 `notin` dom Θ1) by (clear - Hα0; fsetdec).
-      assert (Hα0Δ1 : α0 `notin` Δ1) by (clear - Hα0; fsetdec).
-      assert (Hα0Δ2 : α0 `notin` Δ2) by (clear - Hα0; fsetdec).
-      assert (HXP0b : α0 `notin` ftvar_in_pskl P0b)
-        by (clear - Hα0; fsetdec).
-      assert (HXPPb : α0 `notin` ftvar_in_pskl PPb)
-        by (clear - Hα0; fsetdec).
-      assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
-        by (clear - Hα0; fsetdec).
-      destruct (Hrn α0 ltac:(clear - Hα0; fsetdec)
-                  nil Θ0 eq_refl tvar_prefix_nil
-                  Huq0
-                  ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
-                  ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)
-                  ltac:(pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                          P0b (pskl_var_f α)) as Hup;
-                        simpl in Hup;
-                        clear - Hα0α HXP0b Hup; fsetdec)
-                  ltac:(pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                          PPb (pskl_var_f α)) as Hup;
-                        simpl in Hup;
-                        clear - Hα0α HXPPb Hup; fsetdec)
-                  ltac:(clear - HXP1; fsetdec)
-                  ltac:(clear - Hα0α Hα0Δ1; fsetdec)
-                  ltac:(clear - Hα0α Hα0Δ2; fsetdec))
-        as [Θt [HeqΘt Hren]].
-      simpl in HeqΘt. inversion HeqΘt. subst Θt.
-      assert (Ho0 : open_pskl_wrt_pskl P0b (pskl_var_f α0)
-                  = subst_pskl_in_pskl (pskl_var_f α0) α
-                      (open_pskl_wrt_pskl P0b (pskl_var_f α)))
-        by (apply subst_pskl_in_pskl_intro; clear - Fr; fsetdec).
-      assert (Ho1 : open_pskl_wrt_pskl PPb (pskl_var_f α0)
-                  = subst_pskl_in_pskl (pskl_var_f α0) α
-                      (open_pskl_wrt_pskl PPb (pskl_var_f α)))
-        by (apply subst_pskl_in_pskl_intro; clear - Fr; fsetdec).
-      rewrite <- Ho0, <- Ho1 in Hren.
-      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α) in Hren.
-      eapply (proj2 (proj2 a_assign_unify_consis_compat));
-        [ exact Hren
-        | intros α1 Hα1; left; exact Hα1
-        | apply rn_set_add_same; exact HαΔ1
-        | apply rn_set_add_same; exact HαΔ2 ].
-    }
+    { (* EXISTS-FRESH (campaign cluster 4): the run's OWN α is the
+         rule's binder, so the node is one constructor application —
+         no family to rebuild, hence no rename. *)
+      apply a_consis__forall_inh with (α := α);
+        [ clear - Fr; fsetdec | exact Hc ]. }
     (* optimality *)
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
@@ -7315,7 +7267,8 @@ Proof.
     match type of Hrp1 with
     | forall _, _ `notin` ?LB -> _ =>
       pick fresh α for (L `union` LA `union` LB `union` Lw
-                        `union` dom Θ0 `union` dom Θ `union` dom κ
+                        `union` dom Θ0 `union` ftvar_in_aenv Θ0
+                        `union` dom Θ `union` dom κ
                         `union` F `union` Δ1 `union` Δ2
                         `union` ftvar_in_pskl Pt0 `union` ftvar_in_pskl PPb
                         `union` ftvar_in_bskl Q)
@@ -7412,64 +7365,18 @@ Proof.
                 _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
                 (tvar_prefix_cons tvar_prefix_nil)) as [Θ1 HeqΘ1'].
     simpl in HeqΘ1'. subst Θ1'.
-    (* assemble the cofinite node by renaming the α-instance (L9) *)
+    (* assemble the exists-fresh node at the run's OWN α *)
     assert (Huq0 : uniq ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf0').
     assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; fsetdec).
     assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
-    { (* the rename hands back its own avoid-set (cluster 4) *)
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α))
-                  _ _ _ _ _ _ _ _ Hc) as [Lrn Hrn].
-      apply a_consis_forall_syn_cofinite with
-        (L := Lrn `union` L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
-              `union` singleton α `union` F `union` Δ1 `union` Δ2
-              `union` ftvar_in_pskl Pt0 `union` ftvar_in_pskl PPb
-              `union` ftvar_in_pskl P1).
-      intros α0 Hα0.
-      assert (Hα0α : α0 <> α) by (clear - Hα0; fsetdec).
-      assert (Hα0Θ0 : α0 `notin` dom Θ0) by (clear - Hα0; fsetdec).
-      assert (Hα0Θ1 : α0 `notin` dom Θ1) by (clear - Hα0; fsetdec).
-      assert (Hα0Δ1 : α0 `notin` Δ1) by (clear - Hα0; fsetdec).
-      assert (Hα0Δ2 : α0 `notin` Δ2) by (clear - Hα0; fsetdec).
-      assert (HXPt0 : α0 `notin` ftvar_in_pskl Pt0)
-        by (clear - Hα0; fsetdec).
-      assert (HXPPb : α0 `notin` ftvar_in_pskl PPb)
-        by (clear - Hα0; fsetdec).
-      assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
-        by (clear - Hα0; fsetdec).
-      destruct (Hrn α0 ltac:(clear - Hα0; fsetdec)
-                  nil Θ0 eq_refl tvar_prefix_nil
-                  Huq0
-                  ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
-                  ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)
-                  ltac:(simpl; clear - Hα0α HXPt0; fsetdec)
-                  ltac:(pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                          PPb (pskl_var_f α)) as Hup;
-                        simpl in Hup;
-                        clear - Hα0α HXPPb Hup; fsetdec)
-                  ltac:(clear - HXP1; fsetdec)
-                  ltac:(clear - Hα0α Hα0Δ1; fsetdec)
-                  ltac:(clear - Hα0α Hα0Δ2; fsetdec))
-        as [Θt [HeqΘt Hren]].
-      simpl in HeqΘt. inversion HeqΘt. subst Θt.
-      assert (Ht0 : subst_pskl_in_pskl (pskl_var_f α0) α
-                      (pskl_tophole Pt0) = pskl_tophole Pt0)
-        by (apply subst_pskl_in_pskl_fresh_eq; simpl;
-            clear - Fr; fsetdec).
-      assert (Ho1 : open_pskl_wrt_pskl PPb (pskl_var_f α0)
-                  = subst_pskl_in_pskl (pskl_var_f α0) α
-                      (open_pskl_wrt_pskl PPb (pskl_var_f α)))
-        by (apply subst_pskl_in_pskl_intro; clear - Fr; fsetdec).
-      rewrite Ht0 in Hren. rewrite <- Ho1 in Hren.
-      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α) in Hren.
-      eapply (proj2 (proj2 a_assign_unify_consis_compat));
-        [ exact Hren
-        | intros α1 Hα1; left; exact Hα1
-        | apply rn_set_notin; exact HαΔ1
-        | apply rn_set_add_same; exact HαΔ2 ].
-    }
+    { (* EXISTS-FRESH (campaign cluster 4): the run's OWN α is the
+         rule's binder, so the node is one constructor application —
+         no family to rebuild, hence no rename. *)
+      apply a_consis__forall_syn with (α := α);
+        [ clear - Fr; fsetdec | exact Hc ]. }
     (* optimality *)
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
@@ -7859,7 +7766,8 @@ Proof.
     match type of Hrp1 with
     | forall _, _ `notin` ?LB -> _ =>
       pick fresh α for (L `union` LA `union` LB `union` Lw0
-                        `union` dom Θ0 `union` dom Θ `union` dom κ
+                        `union` dom Θ0 `union` ftvar_in_aenv Θ0
+                        `union` dom Θ `union` dom κ
                         `union` F `union` Δ1 `union` Δ2
                         `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPt
                         `union` ftvar_in_bskl Q)
@@ -7954,64 +7862,18 @@ Proof.
                 _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
                 (tvar_prefix_cons tvar_prefix_nil)) as [Θ1 HeqΘ1'].
     simpl in HeqΘ1'. subst Θ1'.
-    (* assemble the cofinite node by renaming the α-instance (L9) *)
+    (* assemble the exists-fresh node at the run's OWN α *)
     assert (Huq0 : uniq ((α ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf0').
     assert (HαΔ1 : α `notin` Δ1) by (clear - Fr; fsetdec).
     assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
-    { (* the rename hands back its own avoid-set (cluster 4) *)
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α))
-                  _ _ _ _ _ _ _ _ Hc) as [Lrn Hrn].
-      apply a_consis_univ_ghost1_cofinite with
-        (L := Lrn `union` L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
-              `union` singleton α `union` F `union` Δ1 `union` Δ2
-              `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPt
-              `union` ftvar_in_pskl P1).
-      intros α0 Hα0.
-      assert (Hα0α : α0 <> α) by (clear - Hα0; fsetdec).
-      assert (Hα0Θ0 : α0 `notin` dom Θ0) by (clear - Hα0; fsetdec).
-      assert (Hα0Θ1 : α0 `notin` dom Θ1) by (clear - Hα0; fsetdec).
-      assert (Hα0Δ1 : α0 `notin` Δ1) by (clear - Hα0; fsetdec).
-      assert (Hα0Δ2 : α0 `notin` Δ2) by (clear - Hα0; fsetdec).
-      assert (HXP0b : α0 `notin` ftvar_in_pskl P0b)
-        by (clear - Hα0; fsetdec).
-      assert (HXPPt : α0 `notin` ftvar_in_pskl PPt)
-        by (clear - Hα0; fsetdec).
-      assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
-        by (clear - Hα0; fsetdec).
-      destruct (Hrn α0 ltac:(clear - Hα0; fsetdec)
-                  nil Θ0 eq_refl tvar_prefix_nil
-                  Huq0
-                  ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
-                  ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)
-                  ltac:(pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                          P0b (pskl_var_f α)) as Hup;
-                        simpl in Hup;
-                        clear - Hα0α HXP0b Hup; fsetdec)
-                  ltac:(simpl; clear - Hα0α HXPPt; fsetdec)
-                  ltac:(clear - HXP1; fsetdec)
-                  ltac:(clear - Hα0α Hα0Δ1; fsetdec)
-                  ltac:(clear - Hα0α Hα0Δ2; fsetdec))
-        as [Θt [HeqΘt Hren]].
-      simpl in HeqΘt. inversion HeqΘt. subst Θt.
-      assert (Ho0 : open_pskl_wrt_pskl P0b (pskl_var_f α0)
-                  = subst_pskl_in_pskl (pskl_var_f α0) α
-                      (open_pskl_wrt_pskl P0b (pskl_var_f α)))
-        by (apply subst_pskl_in_pskl_intro; clear - Fr; fsetdec).
-      assert (Ht0 : subst_pskl_in_pskl (pskl_var_f α0) α
-                      (pskl_tophole PPt) = pskl_tophole PPt)
-        by (apply subst_pskl_in_pskl_fresh_eq; simpl;
-            clear - Fr; fsetdec).
-      rewrite <- Ho0 in Hren. rewrite Ht0 in Hren.
-      rewrite (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α) in Hren.
-      eapply (proj2 (proj2 a_assign_unify_consis_compat));
-        [ exact Hren
-        | intros α1 Hα1; left; exact Hα1
-        | apply rn_set_add_same; exact HαΔ1
-        | apply rn_set_notin; exact HαΔ2 ].
-    }
+    { (* EXISTS-FRESH (campaign cluster 4): the run's OWN α is the
+         rule's binder, so the node is one constructor application —
+         no family to rebuild, hence no rename. *)
+      apply a_consis__univ_ghost1 with (α := α);
+        [ clear - Fr; fsetdec | exact Hc ]. }
     (* optimality *)
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
