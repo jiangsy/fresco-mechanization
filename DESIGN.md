@@ -307,7 +307,64 @@ is ONE freshness discipline per layer:**
 | layer | discipline |
 |---|---|
 | `frost/decl/` (declarative judgments, incl. the `decl_algo` mirrors) | **cofinite** — `forall α, α ∉ L → …` |
-| `frost/algo/` (the ALGORITHM's own judgments, `a_*`) | **exists-fresh** — one binder α + explicit freshness side conditions |
+| `frost/algo/def_decorated.v` (the DECORATED mirrors — a proof device) | **cofinite** — see "the line is *is it the algorithm?*" below |
+| the ALGORITHM's own judgments (`a_sub`, `a_sub_flex`, `a_consis`, `a_assign`, `a_unify`, `a_look*`, `a_solve*`, `a_guess*`, `a_extract`, `a_pat`, `a_typing`) | **exists-fresh** — one binder α + explicit freshness side conditions |
+
+#### The line is "is it the algorithm?", not the directory (decided 2026-08-02)
+
+The campaign's first cut drew the line at `decl/` vs `algo/`.  That is wrong at
+one place: `algo/def_decorated.v`'s `a_consistag` / `a_subtag` / `a_solvetag`
+live under `algo/` but are **not the algorithm** — the decorated system exists
+only to state and prove the decoration and soundness results, nothing ever runs
+it, and no implementation corresponds to it.  The reason exists-fresh is FORCED
+for the algorithm — a cofinite premise demands that one choice of the rule's
+OUTPUTS work for every fresh binder, which the algorithm cannot deliver because
+it picks one name from a counter — simply does not apply to a relation that is
+only ever inhabited by a proof.  So the decorated mirrors keep cofinite
+quantification, like `decl/` and the `decl_algo` mirrors.
+
+**The proviso is leakage**, and the right question is *what does each cofinite
+family SHARE?* — the output context `Θ1` above all, since a cofinite premise
+demands one `Θ1` for every fresh binder.  Audited rule by rule (cluster 5,
+2026-08-02):
+
+| rule | shared across the family | verdict |
+|---|---|---|
+| `a_consistag`'s five ∀ rows | `Θ1` (premise outputs `(α~tvar) ++ Θ1`, conclusion strips it), `Q` (re-bound), `Ψ` | **machine-checked faithful** — identical shape to `a_consis`'s ∀ rows, whose cofinite ⇄ exists-fresh equivalence cluster 4 proved in BOTH directions (prop_consis_rename.v §9), this output-context shape included |
+| `a_subtag__forall_l_*`, the TYPE binder α | `Ξ`, `P1` only — `Θ1` does **not** occur under this quantifier | **machine-checked faithful** — `a_extract_family_of_instance` (prop_looksub.v §11) proves one instance generates the whole family with the SAME `Ξ ↪ P1`, because the look cluster's generated names already avoid the looked-for variable |
+| `a_subtag__forall_l_*`, the TAG pack `(Ψg, ψg)` | `Θ1` and `Q` | **assumed, not proved** — see below |
+| `a_solvetag_sub/eq`'s four ∀ rows | the tag set `Ψ` only; no context output at all | faithful — a type binder cannot enter a set of ε tags |
+
+(NB `a_consistag` has **five** ∀ rows, not four: `__univ_ghost1` is the exact
+mirror of the `a_consis__univ_ghost1` that cluster 4 converted.)
+
+So exactly ONE family shares `Θ1` without a machine check: the tag pack.  Two
+things make that safe rather than merely convenient.  First, cofinite is the
+STRONGER premise, so it makes the decorated relation **smaller**, never larger —
+it can only ever block a PRODUCER, never weaken a consumer's hypothesis.
+Second, the decorated judgments are **purely internal**: they appear in no
+exported statement (`README.v` mentions neither), and are only ever produced
+from `a_sub` / `a_consis` by the decoration lemmas and consumed toward the
+declarative system by soundness.  A smaller intermediate therefore cannot weaken
+any end-to-end theorem — it can only fail to be constructible, and every
+construction is `Qed`.
+
+⚠️ **What the cofinite tag pack is actually buying, recorded for the record.**
+The paper's own decorated ForallL writes `\Psi_g \text{ fresh}`
+(appendices/decorated-algosub.tex:92) — ONE pack, i.e. exists-fresh.  So the
+cofinite rendering is a deliberate mech STRENGTHENING, and it is load-bearing:
+`a_subtag_decoration_var`'s ForallL crux inverts the node and rebuilds it at the
+ENLARGED tag context `Ψ ∪ Ψa`, which needs `Ψg # Ψa` — and `Ψg` and `Ψa` come
+from two independent runs, so no input-only side condition on the rule can
+separate them (the TWO-INDEPENDENT-GENERATORS gap, tag instance).  The cofinite
+quantifier supplies that by fiat; an exists-fresh pack would have to PROVE it,
+which needs either an avoid-set hand-back through both decoration inductions or
+a genuine RETAGGING lemma ("a derivation is generic in its inert tag names").
+Retagging does not exist and would have to be built from scratch — lngen
+generated only `subst_bskl_in_uskl`, no tag substitution on `uskl`.  This is
+fine as it stands: the decorated system is a proof device, and a proof device is
+allowed to assume more than the algorithm.  It is only worth revisiting if
+retagging gets built for another reason.
 
 #### Why the algorithmic layer cannot be cofinite
 

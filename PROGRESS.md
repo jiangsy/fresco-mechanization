@@ -78,7 +78,92 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-02 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 4 (consis mutual) **CLOSED** — a UNIFORMITY conversion, machine-checked as such; and `F` STAYS
+## 2026-08-02 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 5 **CLOSED**: `a_sub__forall_l` is EXISTS-FRESH, and the DECORATED layer stays COFINITE by design
+
+**QUESTION ZERO, machine-checked before anything was converted** (probe `Qed`,
+axiom-free, both directions).  `a_sub__forall_l` LOOKED defective — its shared
+outputs `Ξ` / `P1` are produced under the cofinite α and are never re-bound,
+which is exactly the shape that made the 2026-07-31 ForallR fix a real repair.
+It is NOT defective: the look cluster's generated names already avoid the
+looked-for variable, so ONE instance at an α meeting only the input-only
+condition `α ∉ ftv P` generates the WHOLE family with the SAME `Ξ ↪ P1`
+(`a_extract_family_of_instance`).  Proved both ways —
+
+- exists-fresh premise ⟹ cofinite premise (the rule does not under-generate),
+- cofinite premise ⟹ exists-fresh premise (nothing is lost),
+
+for `a_sub__forall_l` and for both `a_subtag__forall_l_{tagged,untagged}`.  So
+cluster 5, like cluster 4, is a conversion for ONE discipline per layer, not a
+repair.
+
+**THE RULE.**  One opener plus `α ∉ ftvar_in_aenv Θ0 ∪ ftv P ∪ ftv P0`, and the
+`a_extract` premise stated once.  `a_extract_family_of_instance` MOVED
+prop_look_complete_extract.v → prop_looksub.v §11, because prop_decorate_key.v
+needs it now and is a SIBLING of P6-L's file, not a consumer.
+
+**CONSUMERS.**  Construction got EASIER — prop_sub_complete_thm.v's two P7b
+sites used to build the family explicitly and now hand over P6-L's instance
+verbatim.  Inversion got harder in exactly one place, prop_decorate_key.v's
+`a_sub_sound_thm` ForallL row, which rebuilds the family from the run's ONE
+opener (the decorated layer is still cofinite) and then picks its own α for the
+decoration as before.
+
+**⚙ TWO PERFORMANCE TRAPS in test_examples.v**, both because the opener's
+freshness union now lives in the AMBIENT context rather than inside one bullet:
+`repeat rewrite ftvar_in_aenv_app in H` unfolds `Θlib` and its σ-types and never
+terminates (the same hazard the file already documents for a bare
+`simpl in *`), so cbn's delta list must not reach `ftvar_in_aenv`; and leaving a
+shattered copy of the 3-way union in context made two `crush_wf` calls take 34s
+each — `clear`-scoped they are 2.7s and the file totals 22s.  Kit:
+`pick_forall_l` / `forall_l_absent`.
+
+**⭐ THE SCOPE DECISION: `algo/def_decorated.v` STAYS COFINITE.**  The campaign's
+line was `decl/` vs `algo/`; that is wrong at one place.  `a_consistag` /
+`a_subtag` / `a_solvetag` live under `algo/` but are **not the algorithm** — the
+decorated system is a proof device, nothing runs it, no implementation
+corresponds to it — so the reason exists-fresh is FORCED (an algorithm picks one
+name from a counter and cannot deliver one output for every fresh binder) simply
+does not apply.  The line is *is it the algorithm?*, not the directory.
+
+The proviso is leakage, and the sharp form of the question is **what does each
+cofinite family SHARE — the output context `Θ1` above all?**  Audited rule by
+rule (table in DESIGN §4.3): `a_consistag`'s five ∀ rows share `Θ1` in the exact
+shape cluster 4 machine-checked for `a_consis` in BOTH directions;
+`a_subtag__forall_l_*`'s TYPE binder shares only `Ξ` / `P1` (machine-checked,
+`Θ1` does not occur under that quantifier); `a_solvetag`'s four ∀ rows have no
+context output at all.  Exactly ONE family shares `Θ1` unchecked — the TAG pack
+`(Ψg, ψg)` — and two things make that safe: cofinite is the STRONGER premise, so
+it makes the decorated relation **smaller**, never larger, and can only block a
+PRODUCER; and the decorated judgments are **purely internal**, appearing in no
+exported statement (`README.v` mentions neither), produced only from
+`a_sub`/`a_consis` and consumed only toward the declarative system.  A smaller
+intermediate cannot weaken an end-to-end theorem — it can only fail to be
+constructible, and every construction is `Qed`.
+
+⚠️ **Recorded for the authors / future cleanup.**  The paper's decorated ForallL
+writes `Ψ_g fresh` (appendices/decorated-algosub.tex:92) — ONE pack.  So the
+mech's cofinite tag pack is a deliberate STRENGTHENING, and it is load-bearing:
+`a_subtag_decoration_var`'s ForallL crux inverts the node and rebuilds it at the
+ENLARGED tag context `Ψ ∪ Ψa`, needing `Ψg # Ψa`, and those two come from
+INDEPENDENT runs, so no input-only side condition on the rule can separate them
+(the TWO-INDEPENDENT-GENERATORS gap, tag instance).  Going exists-fresh there
+would require either an avoid-set hand-back threaded through both decoration
+inductions or a genuine RETAGGING lemma — and retagging would have to be built
+from scratch, since lngen generated only `subst_bskl_in_uskl` and there is no
+tag substitution on `uskl`.  Worth revisiting only if retagging gets built
+anyway.
+
+**Files touched:** `algo/def_extra.v` (the rule), `prop_looksub.v` (§11, the
+relocated family lemma), `prop_look_complete_extract.v` (pointer),
+`prop_decorate_key.v`, `prop_sub_complete_thm.v`, `test_examples.v`, DESIGN §4.3.
+
+**Remaining:** cluster 6 (`a_pat`/`a_typing`, 8 cofinite rules at
+algo/def_extra.v:1160–1264 — these bind TERM variables, so audit first whether
+the same "is it the algorithm?" reasoning applies), the walk's three
+`∉ dom Θ1` premises (P7a), THEN the P7b dispatcher.  Deferred: the
+`a_tags_sort` → `a_tags_skl` rename (naming only, 244 occurrences).
+
+## 2026-08-02 — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 4 (consis mutual) **CLOSED** — a UNIFORMITY conversion, machine-checked as such; and `F` STAYS
 
 **QUESTION ZERO, settled with a machine check before anything was converted.**
 `a_consis`'s three ∀ rows (`__forall_inh`, `__forall_syn`, `__univ_ghost1`)
