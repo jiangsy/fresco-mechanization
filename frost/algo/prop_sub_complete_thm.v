@@ -5002,6 +5002,316 @@ Proof.
     exact (IHHr Hwf A0 HeqP HmA HwfA).
 Qed.
 
+(* --------------------------------------------------------------------- *)
+(*  Plumbing the JOIN's normalization needs on top of the two leaves       *)
+(* --------------------------------------------------------------------- *)
+
+(** ⇓ commutes with opening (the ForallR row opens its target under a fresh
+    rigid binder).  Mirrors [msubst_pskl_open_rec_lc]. *)
+Lemma msubst_bskl_open_rec_lc : forall κ,
+  msubst_lc κ ->
+  forall B B' k,
+  msubst_bskl κ (open_bskl_wrt_bskl_rec k B' B)
+  = open_bskl_wrt_bskl_rec k (msubst_bskl κ B') (msubst_bskl κ B).
+Proof.
+  intros κ Hlc B; induction B; intros B' k; simpl; f_equal; eauto.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+  - symmetry.
+    apply open_bskl_wrt_bskl_rec_degree_bskl_wrt_bskl.
+    apply degree_bskl_wrt_bskl_O.
+    apply degree_bskl_wrt_bskl_of_lc_bskl.
+    apply pskl_to_bskl_syn_lc. apply ptyp_to_pskl_lc. apply Hlc.
+Qed.
+
+Lemma msubst_bskl_open_lc : forall κ B (α : atom),
+  msubst_lc κ ->
+  α `notin` dom κ ->
+  msubst_bskl κ (open_bskl_wrt_bskl B (bskl_var_f α))
+  = open_bskl_wrt_bskl (msubst_bskl κ B) (bskl_var_f α).
+Proof.
+  intros κ B α Hlc Hα. unfold open_bskl_wrt_bskl.
+  rewrite (msubst_bskl_open_rec_lc Hlc B (bskl_var_f α) 0).
+  cbn [msubst_bskl]. rewrite msubst_lookup_notin by exact Hα.
+  reflexivity.
+Qed.
+
+(** A monotype painting is a synthesised skeleton. *)
+Lemma is_sskl_ptyp_to_bskl_syn : forall τ,
+  mono_ptyp τ -> is_sskl (ptyp_to_bskl_syn τ).
+Proof.
+  intros τ Hm; unfold ptyp_to_bskl_syn; induction Hm; simpl;
+    [ apply is_sskl__unit | apply is_sskl__var
+    | apply is_sskl__arrow; assumption ].
+Qed.
+
+(** ⇓ preserves "synthesised": every variable is replaced by a MONOTYPE
+    painting, which is synthesised, and no colour changes. *)
+Lemma is_sskl_msubst_bskl : forall κ Q,
+  msubst_lc κ ->
+  (forall α, mono_ptyp (msubst_lookup κ α)) ->
+  is_sskl Q -> is_sskl (msubst_bskl κ Q).
+Proof.
+  intros κ Q Hlc Hmono H; induction H; simpl.
+  - apply is_sskl__unit.
+  - change (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup κ α)))
+      with (ptyp_to_bskl_syn (msubst_lookup κ α)).
+    apply is_sskl_ptyp_to_bskl_syn. apply Hmono.
+  - apply is_sskl__arrow; assumption.
+  - apply is_sskl__all with (L := L `union` dom κ). intros α Hα.
+    assert (Heq : msubst_bskl κ (open_bskl_wrt_bskl A (bskl_var_f α))
+                  = open_bskl_wrt_bskl (msubst_bskl κ A) (bskl_var_f α))
+      by (apply msubst_bskl_open_lc;
+          [ exact Hlc | clear - Hα; fsetdec ]).
+    rewrite <- Heq. apply H0. clear - Hα; fsetdec.
+  - apply is_sskl__hole.
+  - apply is_sskl__tophole; assumption.
+Qed.
+
+(** At a MONO-image metasubstitution the two paintings agree on the images,
+    so ⇓ passes through the inh painting. *)
+Lemma msubst_bskl_pskl_to_bskl_inh : forall κ P,
+  (forall α, mono_ptyp (msubst_lookup κ α)) ->
+  msubst_bskl κ (pskl_to_bskl_inh P) = pskl_to_bskl_inh (msubst_pskl κ P).
+Proof.
+  intros κ P Hmono; induction P; simpl; try reflexivity.
+  - symmetry. apply mono_inh_eq_syn. apply Hmono.
+  - rewrite IHP1, IHP2. reflexivity.
+  - rewrite IHP. reflexivity.
+  - rewrite IHP. reflexivity.
+Qed.
+
+(** Local closure survives a locally-closed metasubstitution (the [a_inc]
+    form [msubst_pskl_lc] is not available at ⇓, which is not an increase). *)
+Lemma msubst_pskl_lc_of_msubst_lc : forall κ P,
+  msubst_lc κ -> lc_pskl P -> lc_pskl (msubst_pskl κ P).
+Proof.
+  intros κ P Hlc H; induction H; simpl; try solve [ constructor; auto ].
+  - apply ptyp_to_pskl_lc. apply Hlc.
+  - pick fresh α for (dom κ).
+    apply lc_pskl_all_syn_exists with (α1 := α).
+    match goal with
+    | |- lc_pskl (open_pskl_wrt_pskl (msubst_pskl _ ?B) _) =>
+        assert (Heq : msubst_pskl κ (open_pskl_wrt_pskl B (pskl_var_f α))
+                      = open_pskl_wrt_pskl (msubst_pskl κ B) (pskl_var_f α))
+          by (apply msubst_pskl_open_lc; [ exact Hlc | clear - Fr; fsetdec ])
+    end.
+    rewrite <- Heq. apply H0.
+Qed.
+
+(** Guardedness survives ⇓ (a monotype image is guarded). *)
+Lemma guarded_pskl_msubst_mono : forall κ P,
+  msubst_lc κ ->
+  (forall α, mono_ptyp (msubst_lookup κ α)) ->
+  guarded_pskl P -> guarded_pskl (msubst_pskl κ P).
+Proof.
+  intros κ P Hlc Hmono Hg; inversion Hg; subst; simpl.
+  - apply guarded_pskl__unit.
+  - apply mono_ptyp_to_pskl_guarded. apply Hmono.
+  - apply guarded_pskl__arrow;
+      apply msubst_pskl_lc_of_msubst_lc; assumption.
+Qed.
+
+(** Local closure and guardedness for the bskl side. *)
+Lemma msubst_bskl_lc_of_msubst_lc : forall κ Q,
+  msubst_lc κ -> lc_bskl Q -> lc_bskl (msubst_bskl κ Q).
+Proof.
+  intros κ Q Hlc H; induction H; simpl; try solve [ constructor; auto ].
+  - apply pskl_to_bskl_syn_lc. apply ptyp_to_pskl_lc. apply Hlc.
+  - pick fresh α for (dom κ).
+    apply lc_bskl_all_syn_exists with (α1 := α).
+    match goal with
+    | |- lc_bskl (open_bskl_wrt_bskl (msubst_bskl _ ?B) _) =>
+        assert (Heq : msubst_bskl κ (open_bskl_wrt_bskl B (bskl_var_f α))
+                      = open_bskl_wrt_bskl (msubst_bskl κ B) (bskl_var_f α))
+          by (apply msubst_bskl_open_lc; [ exact Hlc | clear - Fr; fsetdec ])
+    end.
+    rewrite <- Heq. apply H0.
+  - pick fresh α for (dom κ).
+    apply lc_bskl_all_inh_exists with (α1 := α).
+    match goal with
+    | |- lc_bskl (open_bskl_wrt_bskl (msubst_bskl _ ?B) _) =>
+        assert (Heq : msubst_bskl κ (open_bskl_wrt_bskl B (bskl_var_f α))
+                      = open_bskl_wrt_bskl (msubst_bskl κ B) (bskl_var_f α))
+          by (apply msubst_bskl_open_lc; [ exact Hlc | clear - Fr; fsetdec ])
+    end.
+    rewrite <- Heq. apply H0.
+Qed.
+
+Lemma guarded_bskl_msubst_mono : forall κ Q,
+  msubst_lc κ ->
+  (forall α, mono_ptyp (msubst_lookup κ α)) ->
+  guarded_bskl Q -> guarded_bskl (msubst_bskl κ Q).
+Proof.
+  intros κ Q Hlc Hmono Hg; inversion Hg; subst; simpl.
+  - apply guarded_bskl__unit.
+  - change (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup κ α)))
+      with (ptyp_to_bskl_syn (msubst_lookup κ α)).
+    pose proof (Hmono α) as Hm. destruct Hm; simpl;
+      [ apply guarded_bskl__unit | apply guarded_bskl__var
+      | apply guarded_bskl__arrow;
+        apply pskl_to_bskl_syn_lc; apply ptyp_to_pskl_lc;
+        apply mono_ptyp_lc; assumption ].
+  - apply guarded_bskl__arrow;
+      apply msubst_bskl_lc_of_msubst_lc; assumption.
+Qed.
+
+(** The syn painting of an arrow, kept FOLDED — [simpl] would unfold it and
+    the erasure rewrites below match only the folded form. *)
+Lemma ptyp_to_uskl_syn_arrow : forall A1 A2,
+  ptyp_to_uskl_syn (ptyp_arrow A1 A2)
+  = uskl_arrow (ptyp_to_uskl_syn A1) (ptyp_to_uskl_syn A2).
+Proof. reflexivity. Qed.
+
+(** ⇓-NORMALIZING THE WHOLE JOIN.  Assembles the two leaf normalizations: at
+    a MONOTYPE-painting subject the reachable rows are Infer / Check /
+    ForallR / UnivGhostR / Arrow / FlexMono, and each either delegates to a
+    leaf, recurses, or chases a definition ⇓ has already resolved. *)
+Lemma sub_gv_downarrow_mono : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  a_wf_aenv Θ ->
+  forall A, R = ptyp_to_uskl_syn A -> mono_ptyp A -> a_wf_ptyp Θ A ->
+  ad_pat_sub_gv n NM M Ψ Θ (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] A)) (⇓ᵇ[ Θ ] Q).
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros Hwf A0 HeqR HmA HwfA.
+  - (* infer *)
+    assert (Hmd : mono_ptyp (⇓ᵗ[ Θ ] A0))
+      by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
+    apply ad_pat_sub_gv__infer;
+      [ assumption
+      | eapply consis_downarrow_mono;
+          [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HwfA ]
+      | apply is_sskl_msubst_bskl;
+          [ apply aenv_msubst_lc; exact Hwf
+          | intros; apply aenv_msubst_image_mono; exact Hwf
+          | assumption ]
+      | ].
+    rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+    rewrite bskl_to_pskl_msubst_bskl.
+    rewrite <- msubst_pskl_ptyp_to_pskl.
+    eapply refine_pskl_downarrow_mono;
+      [ | exact Hwf | | exact HmA | exact HwfA ];
+      [ rewrite <- uskl_to_pskl_ptyp_to_uskl_syn; rewrite <- HeqR;
+        eassumption
+      | reflexivity ].
+  - (* check *)
+    assert (Hmd : mono_ptyp (⇓ᵗ[ Θ ] A0))
+      by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
+    rewrite (msubst_bskl_pskl_to_bskl_inh (aenv_msubst Θ) B
+               ltac:(intros; apply aenv_msubst_image_mono; exact Hwf)).
+    apply ad_pat_sub_gv__check;
+      [ apply guarded_ptyp_to_uskl_syn; exact Hmd
+      | apply guarded_pskl_msubst_mono;
+          [ apply aenv_msubst_lc; exact Hwf
+          | intros; apply aenv_msubst_image_mono; exact Hwf
+          | assumption ]
+      | | ].
+    + rewrite <- (msubst_bskl_pskl_to_bskl_inh (aenv_msubst Θ) B
+                    ltac:(intros; apply aenv_msubst_image_mono; exact Hwf)).
+      eapply consis_downarrow_mono;
+        [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HwfA ].
+    + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+      rewrite <- msubst_pskl_ptyp_to_pskl.
+      eapply refine_pskl_downarrow_mono;
+        [ | exact Hwf | | exact HmA | exact HwfA ];
+        [ rewrite <- uskl_to_pskl_ptyp_to_uskl_syn; rewrite <- HeqR;
+          eassumption
+        | reflexivity ].
+  - (* forall_r : the target's binder, under a fresh rigid entry *)
+    simpl.
+    apply ad_pat_sub_gv__forall_r
+      with (L := L `union` dom Θ `union` dom (aenv_msubst Θ)).
+    intros α Hα.
+    assert (Hwf' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
+    assert (HwfA' : a_wf_ptyp ((α ~ abind_tvar) ++ Θ) A0)
+      by (eapply a_wf_ptyp_weaken;
+          [ intros x b Hb; apply binds_cons_3; exact Hb | exact HwfA ]).
+    pose proof (H0 α ltac:(clear - Hα; fsetdec) Hwf' A0 HeqR HmA HwfA') as IH.
+    rewrite aenv_msubst_tvar_cons in IH.
+    assert (Heq : msubst_bskl (aenv_msubst Θ)
+                    (open_bskl_wrt_bskl B (bskl_var_f α))
+                  = open_bskl_wrt_bskl (msubst_bskl (aenv_msubst Θ) B)
+                      (bskl_var_f α))
+      by (apply msubst_bskl_open_lc;
+          [ apply aenv_msubst_lc; exact Hwf | clear - Hα; fsetdec ]).
+    rewrite Heq in IH. exact IH.
+  - (* univ_ghost_r *)
+    assert (Hmd : mono_ptyp (⇓ᵗ[ Θ ] A0))
+      by (apply mono_downarrow; [ exact Hwf | exact HwfA | exact HmA ]).
+    simpl. apply ad_pat_sub_gv__univ_ghost_r;
+      [ assumption
+      | apply guarded_ptyp_to_uskl_syn; exact Hmd
+      | apply guarded_bskl_msubst_mono;
+          [ apply aenv_msubst_lc; exact Hwf
+          | intros; apply aenv_msubst_image_mono; exact Hwf
+          | assumption ]
+      | apply is_sskl_msubst_bskl;
+          [ apply aenv_msubst_lc; exact Hwf
+          | intros; apply aenv_msubst_image_mono; exact Hwf
+          | assumption ]
+      | eapply consis_downarrow_mono;
+          [ eassumption | exact Hwf | exact HeqR | exact HmA | exact HwfA ]
+      | ].
+    rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+    rewrite bskl_to_pskl_msubst_bskl.
+    rewrite <- msubst_pskl_ptyp_to_pskl.
+    eapply refine_pskl_downarrow_mono;
+      [ | exact Hwf | | exact HmA | exact HwfA ];
+      [ rewrite <- uskl_to_pskl_ptyp_to_uskl_syn; rewrite <- HeqR;
+        eassumption
+      | reflexivity ].
+  - (* arrow.  The two components' equations are read off the FOLDED painting
+       ([ptyp_to_uskl_syn_arrow]); [cbn]/[simpl] would unfold it and the
+       erasure rewrites below would stop matching. *)
+    destruct A0 as [ | nb | γ0 | A1 A2 | A0' ];
+      try solve [ cbn in HeqR; discriminate HeqR ].
+    assert (HR : uskl_arrow R1 R2
+                 = uskl_arrow (ptyp_to_uskl_syn A1) (ptyp_to_uskl_syn A2))
+      by (rewrite HeqR; reflexivity).
+    injection HR as HR1 HR2. subst R1. subst R2.
+    inversion HmA; subst. inversion HwfA; subst.
+    replace (⇓ᵗ[ Θ ] (ptyp_arrow A1 A2))
+      with (ptyp_arrow (⇓ᵗ[ Θ ] A1) (⇓ᵗ[ Θ ] A2)) by reflexivity.
+    rewrite ptyp_to_uskl_syn_arrow.
+    change (⇓ᵇ[ Θ ] (bskl_arrow Q1 Q2))
+      with (bskl_arrow (⇓ᵇ[ Θ ] Q1) (⇓ᵇ[ Θ ] Q2)).
+    apply ad_pat_sub_gv__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+      [ | | | assumption ].
+    + eapply consis_downarrow_mono;
+        [ eassumption | exact Hwf | reflexivity | assumption | assumption ].
+    + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
+      rewrite bskl_to_pskl_msubst_bskl.
+      rewrite <- msubst_pskl_ptyp_to_pskl.
+      eapply refine_pskl_downarrow_mono;
+        [ | exact Hwf | reflexivity | assumption | assumption ].
+      rewrite <- uskl_to_pskl_ptyp_to_uskl_syn. eassumption.
+    + apply (IHad_pat_sub_gv Hwf A2 eq_refl ltac:(assumption)
+               ltac:(assumption)).
+  - (* forall_l_tagged : a mono painting is never a ∀ *)
+    destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
+  - (* forall_l_untagged *)
+    destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
+  - (* ghost *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* ghostg *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* univ_ghost_l *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* univ_ghost_lg *) destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* flex_mono : ⇓ has already chased the subject's definition *)
+    destruct A0 as [ | nb | γ0 | A1 A2 | A0' ];
+      cbn in HeqR; try discriminate HeqR.
+    inversion HeqR as [Heqv]. subst γ0.
+    assert (Hmτ : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; eauto).
+    assert (Hwfτ : a_wf_ptyp Θ τ)
+      by (eapply a_wf_aenv_binds_def_wf; eauto).
+    assert (Hlk : msubst_lookup (aenv_msubst Θ) α = ⇓ᵗ[ Θ ] τ)
+      by (apply aenv_msubst_lookup_def; assumption).
+    replace (⇓ᵗ[ Θ ] (ptyp_var_f α)) with (⇓ᵗ[ Θ ] τ)
+      by (symmetry; exact Hlk).
+    exact (IHad_pat_sub_gv Hwf τ eq_refl Hmτ Hwfτ).
+Qed.
+
+Print Assumptions sub_gv_downarrow_mono.
+
 (** THE JOIN's version.  Every row of [ad_pat_sub_gv] that a MONOTYPE-painting
     subject admits either ties [Q] to the subject through a consistency leaf
     (Infer / Check / UnivGhostR / Arrow's domain), recurses (Arrow's codomain,

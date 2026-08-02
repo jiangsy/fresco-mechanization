@@ -78,7 +78,7 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — 🚧 P7a `Flex-SkipRigid`: §(L0) — the ⇓-CONFINEMENT **and** the two ⇓-NORMALIZATIONS of the leaves
+## 2026-08-03 (latest) — 🚧 P7a `Flex-SkipRigid`: §(L0) is COMPLETE for the JOIN — confinement, both leaf normalizations, and `sub_gv_downarrow_mono`
 
 `make coq` green, admit-free, axiom-free.  This is the first increment on the
 last open row of P7a; the row itself is not closed.
@@ -143,14 +143,32 @@ three and exactly the chase on the last two:
 - plus `bskl_to_pskl_msubst_bskl` — the leaves state their refinement on
   `⌊·⌋ˢ` / `bskl_to_pskl`, so ⇓ has to pass through the erasure.
 
-**What remains for the row**, in order: (1) `sub_gv_downarrow_mono` — the
-`ad_pat_sub_gv` normalization, assembling the two leaf normalizations above;
-its six reachable rows need four more small preservation facts (`is_sskl` and
-`guarded_*` under ⇓, `msubst_bskl` past `pskl_to_bskl_inh` at a mono-image
-metasubstitution, and the ⇓/open commutation as an EQUALITY for ForallR —
-`aenv_msubst_lc` supplies the local closure); (2) the same for the fill
-`Hrs`, whose source `κP0` is NOT a monotype, so that induction covers all the
-rows; (3) §(L)'s strengthenings on the normalized data (they exist already);
+⭐ **`sub_gv_downarrow_mono`** (same day) closes §(L0) for the JOIN: the whole
+`ad_pat_sub_gv` derivation moves to `(syn{⇓ᵗA}, ⇓ᵇQ)`.  At a monotype-painting
+subject the reachable rows are Infer / Check / ForallR / UnivGhostR / Arrow /
+FlexMono, and each delegates to a leaf normalization, recurses, or chases a
+definition ⇓ has already resolved.  Its plumbing: `msubst_bskl_open_rec_lc` /
+`_open_lc` (ForallR opens the target under a fresh rigid binder — the
+commutation must be an EQUALITY here, not the ftv inclusion the confinement
+used), `is_sskl_ptyp_to_bskl_syn` / `is_sskl_msubst_bskl`,
+`msubst_bskl_pskl_to_bskl_inh` (the two paintings agree on MONOTYPE images —
+`mono_inh_eq_syn`), `msubst_{pskl,bskl}_lc_of_msubst_lc` and
+`guarded_{pskl,bskl}_msubst_mono`, and `ptyp_to_uskl_syn_arrow`.
+
+⚙ Two Ltac hazards, both paid for twice.  (i) `simpl`/`cbn` UNFOLD
+`ptyp_to_uskl_syn` as soon as its argument is a constructor application, after
+which the erasure rewrites (`uskl_to_pskl_ptyp_to_uskl_syn`) stop matching —
+the Arrow row reads its component equations off the FOLDED painting instead
+(`ptyp_to_uskl_syn_arrow` + `injection`).  (ii) `inversion H; subst` renames
+the RULE's own variable, so the definition-chasing rows pick their lookup fact
+out of the goal with `match goal` rather than naming it.
+
+**What remains for the row**, in order: (1) the same normalization for the
+fill `Hrs`, whose source `κP0` is NOT a monotype — that induction has to cover
+all the rows, including the `__hole` fill (wf under ⇓) and the ∀ rows;
+(2) scoping `⇓ˢ(κP0)` from `⇓ᵇQ`'s (refinement's source ftv sits below its
+target's, modulo the definition chases ⇓ has already performed);
+(3) §(L)'s strengthenings on the normalized data (they exist already);
 (4) the β-freeness of the Ξ-images, from the motive's `dom Ξ [<=] ftv P0` +
 `msubst_pskl_ftv_lower` + the confinement, exactly as `Hgr` does in the
 consistency walk (prop_consis_complete.v, Assign-SkipRigid); (5) the row
