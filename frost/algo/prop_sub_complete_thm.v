@@ -4925,6 +4925,123 @@ Proof.
     apply a_wf_ptyp_ftv_dom in hw. clear - hw Hγ. fsetdec.
 Qed.
 
+(** The FILL's counterpart of [ad_refine_pskl_strengthen] — same discipline,
+    same two provisos (the ∀ row's opener joins Δ; Δ apart from [dom Θ] so the
+    definition chases cannot be discharged by the Δ-disjunct).  [F] is inert. *)
+Lemma ad_refine_syn_f_strengthen : forall F Θ Δ Q P,
+  ad_refine_syn_f F Θ Δ Q P ->
+  forall Θ', uniq Θ -> a_wf_aenv Θ' ->
+  (forall x b, binds x b Θ' -> binds x b Θ) ->
+  (forall x, x `in` Δ -> x `notin` dom Θ) ->
+  (forall γ, γ `in` ftvar_in_bskl Q -> γ `in` Δ \/ γ `in` dom Θ') ->
+  (forall γ, γ `in` ftvar_in_bskl P -> γ `in` Δ \/ γ `in` dom Θ') ->
+  ad_refine_syn_f F Θ' Δ Q P.
+Proof.
+  intros F Θ Δ Q P H; induction H;
+    intros Θ' Hu Hwf' Hsub Hdisj HscQ HscP; simpl in *.
+  - apply ad_refine_syn_f__unit.
+  - apply ad_refine_syn_f__var.
+    destruct H as [HΔ | Ht]; [ left; exact HΔ | ].
+    destruct (HscQ α ltac:(clear; fsetdec)) as [hΔ | hd];
+      [ left; exact hΔ | right ].
+    eapply a_binds_tvar_strengthen;
+      [ exact Ht | exact Hu | exact Hsub | exact hd ].
+  - apply ad_refine_syn_f__arrow;
+      [ apply IHad_refine_syn_f1 | apply IHad_refine_syn_f2 ];
+      auto; intros γ Hγ;
+      solve [ apply HscQ; clear - Hγ; fsetdec
+            | apply HscP; clear - Hγ; fsetdec ].
+  - apply ad_refine_syn_f__all with (L := L `union` dom Θ `union` Δ).
+    intros α Hα.
+    apply H0;
+      [ clear - Hα; fsetdec | exact Hu | exact Hwf' | exact Hsub
+      | intros x Hx;
+        assert (h : x `in` Δ \/ x = α) by (clear - Hx; fsetdec);
+        destruct h as [h | ->];
+          [ exact (Hdisj x h) | clear - Hα; fsetdec ]
+      | | ];
+      intros γ Hγ;
+      [ pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f α))
+          as Hup
+      | pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f α))
+          as Hup ];
+      simpl in Hup;
+      (destruct (γ == α) as [-> | Hne]; [ left; clear; fsetdec | ]);
+      [ destruct (HscQ γ ltac:(clear - Hγ Hup Hne; fsetdec)) as [h | h]
+      | destruct (HscP γ ltac:(clear - Hγ Hup Hne; fsetdec)) as [h | h] ];
+      solve [ left; clear - h; fsetdec | right; exact h ].
+  - (* hole : the fill is Δ-free *)
+    assert (HftP : forall γ, γ `in` ftvar_in_pskl P -> γ `in` dom Θ').
+    { intros γ Hγ.
+      assert (hb : γ `in` ftvar_in_bskl (pskl_to_bskl_syn P))
+        by (rewrite ftvar_in_bskl_syn; exact Hγ).
+      destruct (HscP γ hb) as [h | h]; [ exfalso | exact h ].
+      assert (hd : γ `in` dom Θ) by (eapply a_wf_pskl_ftv_dom; eassumption).
+      exact (Hdisj γ h hd). }
+    apply ad_refine_syn_f__hole; [ exact H | ].
+    eapply a_wf_pskl_strengthen;
+      [ exact H0 | exact Hu | intros x Hx; exfalso; clear - Hx; fsetdec
+      | exact Hsub | ].
+    intros γ Hγ. right. apply HftP; exact Hγ.
+  - apply ad_refine_syn_f__tophole_remove. apply IHad_refine_syn_f; auto.
+  - (* tophole_fill : the opener joins the CONTEXT *)
+    apply ad_refine_syn_f__tophole_fill
+      with (L := L `union` dom Θ `union` dom Θ' `union` Δ).
+    intros α Hα.
+    apply H0; [ clear - Hα; fsetdec | | | | | | ].
+    + simpl_env. apply uniq_cons_3; [ exact Hu | clear - Hα; fsetdec ].
+    + apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf' ].
+    + intros x b0 Hb0. analyze_binds Hb0.
+    + intros x Hx. simpl_env.
+      assert (h : x `notin` dom Θ) by (exact (Hdisj x Hx)).
+      assert (h2 : x <> α) by (intro Hc; subst; clear - Hα Hx; fsetdec).
+      clear - h h2. fsetdec.
+    + intros γ Hγ.
+      destruct (HscQ γ ltac:(clear - Hγ; fsetdec)) as [h | h];
+        [ left; exact h | right; simpl_env; clear - h; fsetdec ].
+    + intros γ Hγ.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper P (bskl_var_f α))
+        as Hup. simpl in Hup.
+      destruct (γ == α) as [-> | Hne];
+        [ right; simpl_env; clear; fsetdec | ].
+      destruct (HscP γ ltac:(clear - Hγ Hup Hne; fsetdec)) as [h | h];
+        [ left; exact h | right; simpl_env; clear - h; fsetdec ].
+  - apply ad_refine_syn_f__tophole_keep; [ exact H | ].
+    apply IHad_refine_syn_f; auto.
+  - (* flex_l *)
+    assert (hd : α `in` dom Θ').
+    { destruct (HscQ α ltac:(clear; fsetdec)) as [h | h]; [ exfalso | exact h ].
+      assert (hdΘ : α `in` dom Θ) by (eapply binds_In; exact H).
+      exact (Hdisj α h hdΘ). }
+    assert (Hb' : binds α (abind_flex_mono_def τ) Θ')
+      by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub
+                                   | exact hd ]).
+    eapply ad_refine_syn_f__flex_l; [ exact Hb' | ].
+    apply IHad_refine_syn_f; auto.
+    intros γ Hγ. right.
+    assert (hw : a_wf_ptyp Θ' τ)
+      by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
+    apply a_wf_ptyp_ftv_dom in hw.
+    unfold ptyp_to_bskl_syn in Hγ. rewrite ftvar_in_bskl_syn in Hγ.
+    rewrite ftvar_in_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
+  - (* flex_r *)
+    assert (hd : α `in` dom Θ').
+    { destruct (HscP α ltac:(clear; fsetdec)) as [h | h]; [ exfalso | exact h ].
+      assert (hdΘ : α `in` dom Θ) by (eapply binds_In; exact H).
+      exact (Hdisj α h hdΘ). }
+    assert (Hb' : binds α (abind_flex_mono_def τ) Θ')
+      by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub
+                                   | exact hd ]).
+    eapply ad_refine_syn_f__flex_r; [ exact Hb' | ].
+    apply IHad_refine_syn_f; auto.
+    intros γ Hγ. right.
+    assert (hw : a_wf_ptyp Θ' τ)
+      by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
+    apply a_wf_ptyp_ftv_dom in hw.
+    unfold ptyp_to_bskl_syn in Hγ. rewrite ftvar_in_bskl_syn in Hγ.
+    rewrite ftvar_in_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
+Qed.
+
 (* ===================================================================== *)
 (*  RESTART NOTE — [Flex-SkipRigid] is BLOCKED, and not on the swap kit    *)
 (*                                                                        *)

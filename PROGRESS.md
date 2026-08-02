@@ -193,17 +193,27 @@ stay general (`__arrow`'s recursive premise runs at `M`, not `mode_fn M`, so an
 FN-only statement does not even induct), and the ftv bound must read
 `Δ ∪ dom Θ'` with Δ apart from `dom Θ`.
 
-⭐ **And this REPLACES the ⇓-normalization route** the consistency walk needs
-(`a_inc_downarrow_prefix` and friends): there the counterpart is a FREE `Q`, so
-the images must be normalized before they can be re-scoped; here it is PINNED to
-a monotype painting, so plain strengthening suffices.  `Flex-SkipRigid` is
-materially cheaper than the earlier estimate.
+`ad_refine_syn_f_strengthen` (the FILL's counterpart) followed, so all three
+solution-side judgments — refinement, fill, join — now move to a sub-context.
 
-**Next**: `ad_refine_syn_f_strengthen` (the FILL's counterpart), the β-freeness
-argument (the motive's `dom Ξ ⊆ ftv P0` + the fill + the join confinement), then
-`Flex-SkipRigid` itself and its stuck-check — the package lift is free
-(`a_inc__tvar` / `a_inc_equiv__tvar`).  Then the shield's realizability question;
-then the dispatcher (§12).
+⚠️ **CORRECTION, same day.**  I recorded that this REPLACES the consistency
+walk's ⇓-normalization route.  It does not.  All three strengthenings take
+`ftv Q [<=] dom Θ'` as a HYPOTHESIS, and that is **not derivable**: both
+`ad_pat_consis__flex_r` (def_decl_algo.v:116) and `ad_refine_syn_f__flex_r`
+(prop_consis_sound.v:384) let the COUNTERPART be an arbitrary DEFINED flexible
+of Θ, independent of the subject — so `Q` may name a flexible of the junk block
+`Ξv` that sits ABOVE β in the target.  `⇓[Θ]` unfolds exactly those, which is
+why the consistency walk normalizes before it truncates.  And keeping `Ξv`
+rather than dropping it does not rescue the argument: `a_inc__tvar` then demands
+ζ at Θ', not at `Ξv ++ Θ'`, so the package stops lifting.  The strengthenings
+are necessary, not sufficient.
+
+**Next**: ⇓-normalization of the solution data (`a_inc_downarrow_prefix`'s
+analogue), then §(L) on the normalized data; then the β-freeness argument for
+the Ξ-images (the motive's `dom Ξ ⊆ ftv P0` + the fill + the confinement of the
+NORMALIZED `Q`); then `Flex-SkipRigid` itself and its stuck-check — the package
+lift is free (`a_inc__tvar` / `a_inc_equiv__tvar`).  Then the shield's
+realizability question; then the dispatcher (§12).
 
 **TASK 0's residual, falsity half SETTLED the same day**
 (`cex/cex_p7_shield_forall_flex.v`, Qed, axiom-free).  For a Θ0-flexible `α̂` and
