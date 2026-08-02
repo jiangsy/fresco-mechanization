@@ -4107,6 +4107,73 @@ Proof.
   }
 Qed.
 
+
+(* ===================================================================== *)
+(*  (J)  Flex-Solve's CRUX — the join's ARROW GENERATION at a monotype     *)
+(*       subject (the paper's step ⓒ→ⓓ, subtyping-proofs.tex:2920)        *)
+(*                                                                        *)
+(*  The paper says "inversion on ⓒ with Sub-Arrow gives monotypes τ1 and   *)
+(*  τ2"; in the mech that inversion must also CHASE definitions, because   *)
+(*  a monotype subject may be a defined flexible of Θ and the join then    *)
+(*  fires [__flex_mono] instead of [__arrow].  That row preserves the      *)
+(*  FUEL, so the chase costs nothing and the regenerated join comes back   *)
+(*  at the same [n] — which is what the row lemma's IH needs.  Every other *)
+(*  row is excluded by the mode ([__infer] is TI, [__check] /              *)
+(*  [__univ_ghost_r] / [__forall_r] are TC) or by the subject's shape (a   *)
+(*  mono painting is [unit] / a variable / an arrow — never a ghost, and   *)
+(*  never a ∀, which is what kills the two ForallL rows).                  *)
+(*                                                                        *)
+(*  Reusable by P7c: its [__flex_mono] join case needs exactly this.       *)
+(* ===================================================================== *)
+
+(** THE ARROW GENERATION for a MONOTYPE subject at an FN mode: the join can
+    only be [__arrow] (already an arrow) or [__flex_mono] (chase the
+    definition — same fuel), every other row being excluded by the mode or by
+    the subject's shape (a mono painting is [unit] / a variable / an arrow,
+    never a ghost and never a ∀). *)
+Lemma ad_pat_sub_gv_mono_fn_arrow_inv : forall n NM Mf Ψ Θ R Q,
+  ad_pat_sub_gv n NM Mf Ψ Θ R Q ->
+  a_wf_aenv Θ ->
+  forall M τ, Mf = mode_fn M -> R = ptyp_to_uskl_syn τ ->
+  mono_ptyp τ -> a_wf_ptyp Θ τ ->
+  exists τ1 τ2,
+    Θ ⊢ τ ≡ᵗ (ptyp_arrow τ1 τ2) /\
+    mono_ptyp τ1 /\ mono_ptyp τ2 /\
+    a_wf_ptyp Θ τ1 /\ a_wf_ptyp Θ τ2 /\
+    ad_pat_sub_gv n NM (mode_fn M) Ψ Θ
+      (ptyp_to_uskl_syn (ptyp_arrow τ1 τ2)) Q.
+Proof.
+  intros n NM Mf Ψ Θ R Q H Hwfth; induction H;
+    intros M0 τ0 HeqM HeqR Hm Hwf;
+    try discriminate HeqM;
+    try (destruct τ0; cbn in HeqR; try discriminate HeqR;
+         try solve [ inversion Hm ]).
+  - (* arrow *)
+    inversion HeqM; subst. inversion HeqR; subst.
+    assert (Hrefl : Θ ⊢ (ptyp_arrow τ0_1 τ0_2) ≡ᵗ (ptyp_arrow τ0_1 τ0_2))
+      by (apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hm).
+    inversion Hm; subst. inversion Hwf; subst.
+    exists τ0_1, τ0_2.
+    split; [ exact Hrefl | ].
+    split; [ assumption | ]. split; [ assumption | ].
+    split; [ assumption | ]. split; [ assumption | ].
+    cbn. eapply ad_pat_sub_gv__arrow; eassumption.
+  - (* flex_mono : chase the definition, same fuel *)
+    injection HeqR; intros He; subst.
+    assert (Hmτ : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwfth | eassumption ]).
+    assert (Hwfτ : a_wf_ptyp Θ τ)
+      by (eapply a_wf_aenv_binds_def_wf; [ exact Hwfth | eassumption ]).
+    destruct (IHad_pat_sub_gv Hwfth M0 τ HeqM eq_refl Hmτ Hwfτ)
+      as [τ1 [τ2 [Heq [Hm1 [Hm2 [Hwf1 [Hwf2 Hjoin]]]]]]].
+    exists τ1, τ2.
+    split.
+    { eapply a_tyequiv__trans; [ | exact Heq ].
+      apply a_tyequiv__flex_def; eassumption. }
+    split; [ exact Hm1 | ]. split; [ exact Hm2 | ].
+    split; [ exact Hwf1 | ]. split; [ exact Hwf2 | ]. exact Hjoin.
+Qed.
+
 (* ===================================================================== *)
 (*  RESTART NOTE — [Flex-SkipRigid] is BLOCKED, and not on the swap kit    *)
 (*                                                                        *)
@@ -4149,6 +4216,16 @@ Qed.
 (*                                                                        *)
 (*  [Flex-Assign] and [Flex-Solve] are not blocked by any of this: they    *)
 (*  leave the walk (both re-enter the MAIN half, so their rows take the    *)
-(*  P7b motive as their IH, not this one).  [Flex-Assign] is CLOSED above; *)
-(*  [Flex-Solve] remains.                                                  *)
+(*  P7b motive as their IH, not this one).  [Flex-Assign] is CLOSED above. *)
+(*                                                                        *)
+(*  [Flex-Solve] has its CRUX closed — §(J)'s arrow generation, the        *)
+(*  paper's step ⓒ→ⓓ.  What it still owes, both routine but neither       *)
+(*  short: (a) BUILD the paper's θs, i.e. the increase                     *)
+(*  [(α,τ1) :: (β,τ2) :: …] into the rule's deposited block                *)
+(*  [Ξ, α̂0 ≔ α̂→β̂, β̂, α̂, Θ0] — every premise is in hand (§(J) supplies the *)
+(*  [τ ≡ᵗ τ1→τ2] that [a_inc__flex_def] wants for α̂0); and (b) COLLAPSE    *)
+(*  the resulting [a_inc_equiv] back across that block to the conclusion's *)
+(*  source [Ξ, α̂0, Θ0] — the paper's step ⓖ+⑫ ⇒ ⑭.  Note this row needs   *)
+(*  NO junk swap: [Flex-Solve] does not re-attach, so it carries no        *)
+(*  Barendregt output premise.                                            *)
 (* ===================================================================== *)
