@@ -78,7 +78,67 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-02 (latest) — ⭐⭐ P7a STARTED: the swap kit's discharge pattern is MACHINE-CHECKED (Flex-Depend + Flex-Skip `Qed`), and `Flex-SkipRigid` is BLOCKED on something else entirely
+## 2026-08-02 (latest) — ⭐⭐ TASK 4 (the `F`-deletion) — three stages landed, and the output-premise shape is PROVED LOSSLESS; the deletion itself is BLOCKED on soundness conjunct 5
+
+Tree green, admit-free, axiom-free at `134ed1d`.  Partial stage 4 preserved on
+branch `f-deletion-wip` (does not compile; see its commit message).
+
+**Landed.**
+
+1. `prop_swap.v` §13 gains `a_assign_swap_junk` / `a_unify_swap_junk` /
+   `a_consis_swap_junk`, derived from §11's equivariance exactly as §13 already
+   derived the `a_sub` pair, plus `eq_swap_atoms_fresh` for the set indexes.
+2. ⭐ **Three rename consumers in `prop_consis_complete.v` were STALE.**  Cluster
+   4 made `a_consis`'s ∀ rows exists-fresh but left the completeness proof
+   assembling its ∀ nodes the old way — rebuild the whole cofinite family from
+   the α-instance with `a_assign_unify_consis_rename_tvar`, then repair the set
+   indexes with `a_assign_unify_consis_compat`.  None of it is needed: the run
+   already produced its instance at α and the conclusion's
+   `close_pskl_wrt_pskl α P1` matches the constructor verbatim, so each site is
+   `apply a_consis__forall_inh with (α := α); [ clear - Fr; fsetdec | exact Hc ]`.
+   −138 lines, the file's rebuild drops to 27s, and three of the six consumers of
+   the bespoke rename plus two of the three `compat` uses evaporate.
+3. The eight re-attaching rules of the assign/unify walk gain
+   `β ∉ dom Θ1`, matching the three `a_sub_flex` already carried.  `F` is still
+   present in this commit, and completeness discharges the new premise for free
+   from soundness conjunct 4 (new `a_unify_notin` / `a_consis_notin` beside
+   `a_assign_notin`).  Mechanical fallout: 48 `intros` slots across the four
+   mutual inductions, the rename's two walk cases, the cex and the regression
+   test — no statement changed.
+4. ⭐⭐ **`prop_swap.v` §13b: the output-premise shape LOSES NOTHING.**
+   `a_sub_flex_{skip,skip_rigid,assign}_no_loss`, `Qed`, axiom-free.  A rule
+   constraining its own output can only REJECT, so the fair objection is that the
+   encoding might get stuck where `type.ml` succeeds.  It cannot — a derivation
+   is finitely supported, equivariance moves the run to a `γ` fresh for its whole
+   output while fixing every INPUT pointwise, and `swap_junk_dom_out` discharges
+   the premise.  The rule fires whenever a premise-free version would, with the
+   run's GENERATED names transposed and nothing else touched.  Flex-Assign's case
+   covers `α = β` (the subject reduces to `τ`, β-free by scope).
+
+**⚠️ The blocker is soundness conjunct 5, not conjunct 4.**  Conjunct 4 is
+genuinely dead (vacuous, no external consumers).  Conjunct 5's coverage
+hypothesis `Δ [<=] (F ∪ dom Θ0)` is what excludes Assign-SolveM's guessed `β̄`
+from the protected `Δ`, and BOTH halves of the Δ-invariant need it.  Repair (worked
+out, not executed): make it OUTPUT-relative — `Δ ∩ dom Θ1 [<=] dom Θ0` — which
+mirrors the change to the rules and goes through at Solve-M, the skip rows
+(via the new premise), Arrow, and the top-level consumers.  DESIGN §4.3.
+
+**⚠️ Cost the handover under-estimated.**  Once `F` is gone the completeness
+proof's eight discharge sites cannot use conjunct 4, so each must junk-swap its
+IH's run — and each carries an OPTIMALITY package over that same output context.
+That is `a_sub_flex_complete_skip` eight times over.  Do it as ONE transport
+lemma over §14/§15's `kswap_msubst` kit, applied eight times.
+
+**⚠️ Retiring the bespoke rename is NOT a swap corollary.**
+`a_assign_unify_consis_rename_tvar`'s three surviving consumers are
+`a_consis_decorate_size`'s ∀ rows, which genuinely need a family because
+`a_consistag` is (rightly) cofinite.  Equivariance is not a drop-in replacement:
+the rename is TARGET-ONLY — it moves the binder occurrence and leaves payload
+occurrences of `α` in the output tail alone — whereas a swap moves those too, so
+it needs `α ∉ ftvar_in_aenv Θ1`, a leak lemma that is FALSE without a wf
+hypothesis (`a_consis_decorate_size` has only `uniq Θ0`) and unproved with one.
+
+## 2026-08-02 — ⭐⭐ P7a STARTED: the swap kit's discharge pattern is MACHINE-CHECKED (Flex-Depend + Flex-Skip `Qed`), and `Flex-SkipRigid` is BLOCKED on something else entirely
 
 **What landed** (`prop_sub_complete_thm.v`, new P7a section, all `Qed`, tree green
 and axiom-free):

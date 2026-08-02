@@ -670,7 +670,71 @@ the small side judgments (`a_guess_mono`, `a_flex_tvar`, `a_non_flex`,
 P7a's K1–K4 all need renames, so this is the asset to build if the avoid-set
 starts leaking into consumer statements.
 
-#### The `F` avoidance set STAYS (decided 2026-08-02)
+#### The `F` avoidance set — RE-OPENED, and half retired (2026-08-02, later)
+
+⚠️ **Read this box before the subsection below it, which records the earlier
+decision and is superseded in one respect.**  The rejection of the
+output-premise alternative rested on a single ground — "that premise shape is
+exactly the P7a blocker … this multiplies one unsolved problem by eight" —
+and that ground has evaporated: `a_sub_flex_complete_skip` discharges the
+shape, machine-checked.  So the eight re-attaching rules of the assign/unify
+walk NOW CARRY `β ∉ dom Θ1`, exactly like `a_sub_flex`'s three, and `F`'s
+deletion is under way (WIP branch `f-deletion-wip`).
+
+Two things settled in the process:
+
+- **The output-premise shape LOSES NOTHING** — `prop_swap.v` §13b,
+  `a_sub_flex_{skip,skip_rigid,assign}_no_loss`, Qed and axiom-free.  A rule
+  that constrains its own output can only REJECT, so the fair objection is
+  that the encoded algorithm might fail where `type.ml` (whose global counter
+  makes the collision impossible) succeeds.  It cannot: a derivation is
+  finitely supported, so a `γ` fresh for its whole output exists,
+  equivariance moves the run to `γ` while fixing every INPUT pointwise, and
+  `swap_junk_dom_out` then discharges the premise.  The rule therefore fires
+  whenever a premise-free version would, with the run's GENERATED names
+  transposed and nothing else touched.  ⭐ This is the argument that makes the
+  encoding admissible; without it the premise is a strengthening, and it
+  should be re-run for any future rule of this shape.
+- **`F` and the output premise cannot coexist cleanly.**  The `_no_loss`
+  argument needs `β ∉ F`, which is false at a premise running at `add β F`.
+  While both are present, completeness discharges the new premise from
+  soundness conjunct 4 instead (`a_assign_notin` and the new
+  `a_unify_notin` / `a_consis_notin`) — that is what the intermediate,
+  committed state does.
+
+⚠️ **The blocker for finishing the deletion is soundness conjunct 5, NOT
+conjunct 4.**  Conjunct 4 (`x ∈ dom Θ1 → x ∈ dom Θ0 ∨ x ∉ F`) is genuinely
+dead: it becomes vacuous and its two projections have no consumers outside
+`prop_consis_sound.v`.  Conjunct 5's coverage hypothesis
+`Δ [<=] (F ∪ dom Θ0)` is the load-bearing one: at `Assign-SolveM` it is what
+excludes the guessed `β̄` from the protected `Δ`, which BOTH halves of the
+Δ-invariant (`no_flex_dep`, `flex_above_free`) need, and no input-only
+condition at that node can see a name walked past ten rules higher.  The
+repair that works — worked out but not yet executed — is to make the
+hypothesis OUTPUT-relative, mirroring the change to the rules themselves:
+
+```coq
+Δ ∩ dom Θ1 [<=] dom Θ0      (* replaces  Δ [<=] (F ∪ dom Θ0) *)
+```
+
+It goes through everywhere: at Solve-M a guessed `γ ∈ Δ ∩ dom β̄` would have
+to lie in `dom ((α ~ flex) ++ Θ0)`, which it avoids by the rule's own side
+condition; at the four skip rows the new `β ∉ dom Θ1` premise is exactly what
+pushes it into the premise; at Arrow it follows from `dom`-monotonicity; and
+at the top-level consumers `Δ [<=] dom Θ0` implies it outright.  Conjunct 5's
+THIRD component (`α ∈ Δ → α ∈ dom Θ1 → α ∈ dom Θ0`) then becomes immediate
+from the hypothesis and can leave the bundle.
+
+The remaining cost after that is the honest surprise of this pass: the
+completeness proof's eight discharge sites cannot reuse conjunct 4 once `F`
+is gone, so each must junk-swap its IH's run — and each carries an
+OPTIMALITY package over the same output context, so the swap has to be
+transported through `a_inc` / `a_inc_equiv` as well.  That is P7a's
+`a_sub_flex_complete_skip` eight times over.  Do it as ONE transport lemma
+("the completeness conclusion moves along a junk swap", built from §14/§15's
+`kswap_msubst` kit) applied eight times, not eight bespoke arguments.
+
+---
 
 `F` was listed above as something the campaign would retire; it is not, and the
 item is withdrawn.  `F` is the ONLY carrier of the names the assign/unify walk

@@ -475,6 +475,21 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   flex-above-free + domain bookkeeping are preserved for every protected
   Δ with `Δ ⊆ F ∪ dom Θ₀`, using Assign-SkipRigid's occurs condition and
   the positional fact that Δ-binders sit above all flexible entries.
+- ⭐ SUPERSEDED IN PART (2026-08-02).  `F` is a MECH-ONLY device: the paper
+  has no such index, it writes the walked entry back as `Θ₁,β̂` and relies on
+  the Barendregt convention.  The mechanization now states that convention
+  directly — each of the eight re-attaching rules of the walk carries
+  `β ∉ dom Θ₁`, of the entry it puts back — which is the same discipline
+  `a_sub_flex` already used, and `F`'s retirement is under way (DESIGN §4.3;
+  the residual blocker is soundness conjunct 5, not the freshness itself).
+  **Nothing here is a gap in the paper**: the premise is not a strengthening.
+  `prop_swap.v` §13b proves (Qed, axiom-free) that a rule of this shape fires
+  whenever a premise-free version would, with only the run's GENERATED names
+  transposed — a derivation is finitely supported, so a fresh `γ` exists and
+  equivariance moves the run to it while fixing every input.  So the entry
+  above should be read as: the paper's "fresh β̄" needs SOME formal
+  completion, and the mechanization's current one is the paper's own
+  convention rather than an extra index.
 
 ## FALSE — `thm:complete-consistency` optimality (parts 2/3): flex migration below term binders defeats the factoring
 
