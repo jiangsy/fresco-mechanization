@@ -2482,6 +2482,7 @@ Proof.
   destruct (atom_fresh
     (Le `union` dom Θ0 `union` dom Θ `union` dom κ
        `union` ftvar_in_uskl Rb `union` ftvar_in_pskl ⌊ Rb ⌋ˢ
+       `union` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
        `union` ftvar_in_uskl (msubst_uskl_syn κ Rb))) as [α Fr].
   assert (Hbody_eq : Θ ⊢ (open_uskl_wrt_uskl (msubst_uskl_syn κ Rb) ψa)
                        ≡ᵘ (open_uskl_wrt_uskl Rj ψa)).
@@ -2657,13 +2658,12 @@ Proof.
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 5. the run ---- *)
   exists P1, Θ1. split.
-  { destruct (@a_extract_family_of_instance Θ0 NM M α ⌊ Rb ⌋ˢ P0 Ξ Pa
-                Hlook ltac:(clear - Fr; fsetdec)) as [Lx Hfam].
-    eapply a_sub__forall_l with
-      (L := singleton α `union` ftvar_in_pskl ⌊ Rb ⌋ˢ `union` Lx)
-      (Ξ := Ξ) (P1 := Pa);
+  { (* [a_sub__forall_l] is EXISTS-FRESH (campaign cluster 5): P6-L's ONE
+       instance IS the premise now, no family to rebuild. *)
+    eapply a_sub__forall_l with (α := α) (Ξ := Ξ) (P1 := Pa);
       [ exact HMti | exact HP0wlog
-      | intros α' Hα'; apply Hfam; clear - Hα'; fsetdec
+      | clear - Fr; fsetdec
+      | exact Hlook
       | apply a_wf_aenv_uniq; exact HwfΞΘ0
       | exact HwfPa
       | exact Hrun ]. }
@@ -2778,6 +2778,7 @@ Proof.
   destruct (atom_fresh
     (Le `union` dom Θ0 `union` dom Θ `union` dom κ
        `union` ftvar_in_uskl Rb `union` ftvar_in_pskl ⌊ Rb ⌋ˢ
+       `union` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
        `union` ftvar_in_uskl (msubst_uskl_syn κ Rb))) as [α Fr].
   assert (Hbody_eq : Θ ⊢ (open_uskl_wrt_uskl (msubst_uskl_syn κ Rb) ψa)
                        ≡ᵘ (open_uskl_wrt_uskl Rj ψa)).
@@ -2953,13 +2954,12 @@ Proof.
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 5. the run ---- *)
   exists P1, Θ1. split.
-  { destruct (@a_extract_family_of_instance Θ0 NM M α ⌊ Rb ⌋ˢ P0 Ξ Pa
-                Hlook ltac:(clear - Fr; fsetdec)) as [Lx Hfam].
-    eapply a_sub__forall_l with
-      (L := singleton α `union` ftvar_in_pskl ⌊ Rb ⌋ˢ `union` Lx)
-      (Ξ := Ξ) (P1 := Pa);
+  { (* [a_sub__forall_l] is EXISTS-FRESH (campaign cluster 5): P6-L's ONE
+       instance IS the premise now, no family to rebuild. *)
+    eapply a_sub__forall_l with (α := α) (Ξ := Ξ) (P1 := Pa);
       [ exact HMti | exact HP0wlog
-      | intros α' Hα'; apply Hfam; clear - Hα'; fsetdec
+      | clear - Fr; fsetdec
+      | exact Hlook
       | apply a_wf_aenv_uniq; exact HwfΞΘ0
       | exact HwfPa
       | exact Hrun ]. }

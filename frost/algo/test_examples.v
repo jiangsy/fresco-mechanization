@@ -57,6 +57,23 @@ Ltac simpl_open :=
   unfold open_exp_wrt_exp, open_pskl_wrt_pskl, open_ptyp_wrt_ptyp;
   simpl.
 
+(** [a_sub__forall_l] is EXISTS-FRESH (campaign cluster 5): pick the
+    rule's opener away from the INPUTS, exactly as its side condition
+    demands.  Replaces the old cofinite [with (L := {})]. *)
+Ltac pick_forall_l a Ha :=
+  match goal with
+  | |- a_sub _ _ ?P0 ?Th0 (pskl_all_syn ?P) _ _ =>
+      destruct (atom_fresh (ftvar_in_aenv Th0 `union` ftvar_in_pskl P
+                              `union` ftvar_in_pskl P0)) as [a Ha]
+  end.
+
+(** Read an atomic [β <> γ] off [pick_forall_l]'s hypothesis.  ⚙ SCOPED
+    deliberately: the hypothesis is a 3-way union over an [ftvar_in_aenv],
+    and leaving a shattered copy in the ambient context makes every later
+    [fsetdec] (inside [crush_uniq] / [crush_wf]) blow up. *)
+Ltac forall_l_absent Ha :=
+  cbn [ftvar_in_pskl]; clear - Ha; cbn [ftvar_in_pskl] in Ha; fsetdec.
+
 (** Discharge [lc_*] / [guarded_pskl] side conditions on concrete
     (closed) syntax. *)
 Ltac crush_lc :=
@@ -185,11 +202,12 @@ Proof.
   intros Θ x Hu Hb.
   eapply a_pat__var; [ exact Hb | ].
   unfold σ_id; simpl.
-  eapply a_sub__forall_l with (L := {}) (Ξ := nil) (P1 := pskl_hole).
+  pick_forall_l α Hα.
+  eapply a_sub__forall_l with (α := α) (Ξ := nil) (P1 := pskl_hole).
   - discriminate.
   - right; reflexivity.
-  - intros α _.
-    eapply a_extract__solve with (Ξ := nil) (C := nil) (Q := pskl_hole).
+  - clear - Hα; fsetdec.
+  - eapply a_extract__solve with (Ξ := nil) (C := nil) (Q := pskl_hole).
     + simpl_open. apply a_looksub__vacuous.
     + apply a_solve_cstr__empty.
     + apply a_guess__sk.
@@ -246,11 +264,12 @@ Proof.
   { crush_uniq. }
   { simpl. simpl in Hα. clear - Hα. fsetdec. }
   simpl_open.
-  eapply a_sub__forall_l with (L := {}) (Ξ := nil) (P1 := pskl_var_f α).
+  pick_forall_l β Hβ.
+  eapply a_sub__forall_l with (α := β) (Ξ := nil) (P1 := pskl_var_f α).
   - discriminate.
   - left. crush_lc.
-  - intros β _.
-    eapply a_extract__solve with (Ξ := nil)
+  - clear - Hβ; fsetdec.
+  - eapply a_extract__solve with (Ξ := nil)
       (C := a_cstr_eq (pskl_var_f α) :: a_cstr_eq (pskl_var_f α) :: nil)
       (Q := pskl_var_f α).
     + simpl_open.
@@ -325,12 +344,13 @@ Proof.
   - (* id ⦂[FN TI; ∀◇skel(σ_auto) → □]  σ_auto → σ_auto *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_id at 1; simpl ptyp_to_pskl.
-    eapply a_sub__forall_l with (L := {}) (Ξ := nil)
+    pick_forall_l α Hα.
+    eapply a_sub__forall_l with (α := α) (Ξ := nil)
       (P1 := ptyp_to_pskl σ_auto).
     + discriminate.
     + left. crush_lc.
-    + intros α _.
-      eapply a_extract__solve with (Ξ := nil)
+    + clear - Hα; fsetdec.
+    + eapply a_extract__solve with (Ξ := nil)
         (C := (a_cstr_eq (pskl_tophole (ptyp_to_pskl σ_auto)) :: nil))
         (Q := pskl_tophole (ptyp_to_pskl σ_auto)).
       * simpl_open.
@@ -438,13 +458,14 @@ Proof.
   - (* choose ⦂[FN TI; ∀◇(□→□) → □]  (α̂→β̂) → (α̂→β̂) → α̂→β̂ *)
     eapply a_typing__var; [ crush_binds | ].
     unfold σ_choose; simpl ptyp_to_pskl.
-    eapply a_sub__forall_l with (L := {})
+    pick_forall_l α Hα.
+    eapply a_sub__forall_l with (α := α)
       (Ξ := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono))
       (P1 := pskl_arrow (pskl_var_f fa) (pskl_var_f fb)).
     + discriminate.
     + left. crush_lc.
-    + intros α _.
-      eapply a_extract__solve with (Ξ := nil)
+    + clear - Hα; fsetdec.
+    + eapply a_extract__solve with (Ξ := nil)
         (C := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
         (Q := pskl_tophole (pskl_arrow pskl_hole pskl_hole)).
       * simpl_open.
@@ -476,11 +497,12 @@ Proof.
       with (B := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb));
       [ crush_binds | ].
     unfold σ_id; simpl ptyp_to_pskl.
-    eapply a_sub__forall_l with (L := {}) (Ξ := nil) (P1 := pskl_var_f fa).
+    pick_forall_l β Hβ.
+    eapply a_sub__forall_l with (α := β) (Ξ := nil) (P1 := pskl_var_f fa).
     + discriminate.
     + left. crush_lc.
-    + intros β _.
-      eapply a_extract__solve with (Ξ := nil)
+    + clear - Hβ; fsetdec.
+    + eapply a_extract__solve with (Ξ := nil)
         (C := a_cstr_eq (pskl_var_f fa) :: a_cstr_eq (pskl_var_f fb) :: nil)
         (Q := pskl_var_f fa).
       * simpl_open.
@@ -544,13 +566,14 @@ Proof.
     + (* x ⦂[FN TI; ∀◇(□→□) → □]  (α̂→β̂) → α̂→β̂ *)
       eapply a_typing__var; [ crush_binds | ].
       unfold σ_id; simpl ptyp_to_pskl.
-      eapply a_sub__forall_l with (L := {})
+      pick_forall_l α Hα.
+      eapply a_sub__forall_l with (α := α)
         (Ξ := (fa ~ abind_flex_mono) ++ (fb ~ abind_flex_mono))
         (P1 := pskl_arrow (pskl_var_f fa) (pskl_var_f fb)).
       * discriminate.
       * left. crush_lc.
-      * intros α _.
-        eapply a_extract__solve with (Ξ := nil)
+      * clear - Hα; fsetdec.
+      * eapply a_extract__solve with (Ξ := nil)
           (C := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
           (Q := pskl_tophole (pskl_arrow pskl_hole pskl_hole)).
         { simpl_open.
@@ -583,11 +606,12 @@ Proof.
         with (B := ptyp_arrow (ptyp_var_f fa) (ptyp_var_f fb));
         [ crush_binds | ].
       unfold σ_id; simpl ptyp_to_pskl.
-      eapply a_sub__forall_l with (L := {}) (Ξ := nil) (P1 := pskl_var_f fa).
+      pick_forall_l β Hβ.
+      eapply a_sub__forall_l with (α := β) (Ξ := nil) (P1 := pskl_var_f fa).
       * discriminate.
       * left. crush_lc.
-      * intros β _.
-        eapply a_extract__solve with (Ξ := nil)
+      * clear - Hβ; fsetdec.
+      * eapply a_extract__solve with (Ξ := nil)
           (C := a_cstr_eq (pskl_var_f fa) :: a_cstr_eq (pskl_var_f fb) :: nil)
           (Q := pskl_var_f fa).
         { simpl_open.
@@ -759,14 +783,13 @@ Proof.
         { crush_uniq. }
         { simpl. simpl in Hα. clear - Hα. fsetdec. }
         simpl_open.
+        pick_forall_l β Hβ.
         eapply a_sub__forall_l
-          with (L := singleton aInt `union` singleton aBool
-                     `union` singleton α)
-               (Ξ := nil) (P1 := pskl_var_f α).
+          with (α := β) (Ξ := nil) (P1 := pskl_var_f α).
         { discriminate. }
         { left. crush_lc. }
-        { intros β Hβ.
-          eapply a_extract__solve with (Ξ := nil)
+        { clear - Hβ; fsetdec. }
+        { eapply a_extract__solve with (Ξ := nil)
             (C := a_cstr_eq (pskl_var_f α) :: a_cstr_eq (pskl_var_f α) :: nil)
             (Q := pskl_var_f α).
           - simpl_open.
@@ -777,10 +800,10 @@ Proof.
               (C2 := a_cstr_eq (pskl_var_f α) :: nil).
             + apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
                 (C1 := nil) (C2 := a_cstr_eq (pskl_var_f α) :: nil).
-              * apply a_lookeq__absent. simpl. fsetdec.
+              * apply a_lookeq__absent. forall_l_absent Hβ.
               * apply a_lookeq__arrow with (Ξ1 := nil) (Ξ2 := nil)
                   (C1 := nil) (C2 := a_cstr_eq (pskl_var_f α) :: nil).
-                { apply a_lookeq__absent. simpl. fsetdec. }
+                { apply a_lookeq__absent. forall_l_absent Hβ. }
                 { apply a_lookeq__var. }
             + apply a_lookeq__var.
           - eapply a_solve_cstr__eq.
@@ -791,7 +814,8 @@ Proof.
           - apply (a_guess__ty (A := ptyp_var_f α)).
             apply a_guess_mono__var. }
         { crush_uniq. }
-        { crush_wf. }
+        { clear Hβ; crush_wf. }   (* ⚙ the ForallL opener's 3-way
+                                     union makes [fsetdec] crawl *)
         { simpl_open.
           apply a_sub__check; [ crush_lc | crush_lc | ].
           eexists.
@@ -813,12 +837,13 @@ Proof.
         { crush_uniq. }
         { simpl. simpl in Hα. clear - Hα. fsetdec. }
         simpl_open.
-        eapply a_sub__forall_l with (L := {}) (Ξ := nil)
+        pick_forall_l β Hβ.
+        eapply a_sub__forall_l with (α := β) (Ξ := nil)
           (P1 := pskl_var_f α).
         { discriminate. }
         { left. crush_lc. }
-        { intros β _.
-          eapply a_extract__solve with (Ξ := nil)
+        { clear - Hβ; fsetdec. }
+        { eapply a_extract__solve with (Ξ := nil)
             (C := a_cstr_eq (pskl_var_f α) :: a_cstr_eq (pskl_var_f α) :: nil)
             (Q := pskl_var_f α).
           - simpl_open.
@@ -836,7 +861,8 @@ Proof.
           - apply (a_guess__ty (A := ptyp_var_f α)).
             apply a_guess_mono__var. }
         { crush_uniq. }
-        { crush_wf. }
+        { clear Hβ; crush_wf. }   (* ⚙ the ForallL opener's 3-way
+                                     union makes [fsetdec] crawl *)
         { simpl_open.
           apply a_sub__check; [ crush_lc | crush_lc | ].
           eexists.

@@ -3517,11 +3517,16 @@ Proof.
         | intros Hty; specialize (Hgf0 Hty); simpl in Hgf0; tauto ]
       | fsetdec ].
   - (* ForallL : look-decoration + decorate-constraint-solving + KEY *)
-    intros L NM M P0 Θ0 Θ1 P P' Ξ P1 Hne Hgor Hex Huq HwfP1 Hsub IHsub
+    (* [a_sub__forall_l] is EXISTS-FRESH (campaign cluster 5), while the
+       decorated [a_subtag__forall_l_*] is still cofinite, so this row
+       rebuilds the family from the run's ONE opener [α0]
+       ([a_extract_family_of_instance], prop_looksub.v §11) and then picks
+       its own [α] for the decoration exactly as before. *)
+    intros α0 NM M P0 Θ0 Θ1 P P' Ξ P1 Hne Hgor Hfr0 Hex Huq HwfP1 Hsub IHsub
       Hwf HwfP0 HwfP Hmod Hgf0.
-    assert (Hdecls : a_decls Ξ)
-      by (destruct (atom_fresh L) as [α0 Hα0];
-          eapply a_extract_decls; eauto).
+    destruct (@a_extract_family_of_instance Θ0 NM M α0 P P0 Ξ P1 Hex
+                ltac:(clear - Hfr0; fsetdec)) as [L Hfam].
+    assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
     assert (HwfΞΘ : a_wf_aenv (Ξ ++ Θ0)).
     { apply a_wf_aenv_prepend_decls; auto.
       - clear - Huq. solve_uniq.
@@ -3535,7 +3540,7 @@ Proof.
     assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
     simpl.
     eapply a_subtag__forall_l_untagged
-      with (L := L `union` dom Ξ `union` dom Θ0
+      with (L := L `union` singleton α0 `union` dom Ξ `union` dom Θ0
                  `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
                  `union` ftvar_in_pskl P1)
            (Ξ := Ξ) (P1 := P1);
@@ -3545,15 +3550,15 @@ Proof.
         with (open_pskl_wrt_pskl P (pskl_var_f α))
         by (rewrite uskl_to_pskl_open;
             rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
-      apply Hex. clear - Hα. fsetdec. }
+      apply Hfam. clear - Hα. fsetdec. }
     intros Ψg ψg Hfr Hsort Hera.
     assert (Hlcg : lc_uskl ψg)
       by (apply is_tskl_lc; inversion Hsort; assumption).
     destruct (atom_fresh
-                (L `union` dom Ξ `union` dom Θ0
+                (L `union` singleton α0 `union` dom Ξ `union` dom Θ0
                  `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
                  `union` ftvar_in_pskl P1)) as [α Hα].
-    destruct (a_extract_decorate (Hex α ltac:(clear - Hα; fsetdec))
+    destruct (a_extract_decorate (Hfam α ltac:(clear - Hα; fsetdec))
                 Hgf0 Hsort Hera) as [Ξc [C [HDlk Hst]]].
     assert (Hαg : α `notin` ftvar_in_uskl ψg).
     { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg). rewrite Hera.
@@ -3585,7 +3590,7 @@ Proof.
     assert (HwfOpen : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ open_pskl_wrt_pskl P P1).
     { inversion HwfP as [ | | | LP ΘP ΔP PP HbodyP HeqP | | ]; subst.
       eapply a_wf_pskl_open with (L := LP);
-        [ intros α0 Hα0; eapply a_wf_pskl_weaken;
+        [ intros α2 Hα2; eapply a_wf_pskl_weaken;
           [ exact Hmono | apply HbodyP; auto ]
         | exact HwfP1 ]. }
     rewrite <- Hresult.

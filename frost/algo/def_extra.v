@@ -1039,11 +1039,21 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
     a_sub NM M P0b Θ1 P2 Q2 Θ2 ->
     a_sub NM (mode_fn M) (pskl_arrow P0a P0b) Θ0 (pskl_arrow P1 P2)
       (pskl_arrow Q1 Q2) Θ2
-| a_sub__forall_l : forall L NM M P0 Θ0 Θ1 P Q Ξ P1,          (* ForallL *)
+| a_sub__forall_l : forall α NM M P0 Θ0 Θ1 P Q Ξ P1,          (* ForallL *)
     M <> mode_ti ->
     (guarded_pskl P0 \/ P0 = pskl_hole) ->
-    (forall α, α `notin` L ->
-       a_extract Θ0 NM α M (open_pskl_wrt_pskl P (pskl_var_f α)) P0 Ξ P1) ->
+    (* EXISTS-FRESH (campaign cluster 5, 2026-08-02), with the canon's
+       input-only side condition.  Unlike [a_sub__forall_r]'s 2026-07-31 fix
+       this is a UNIFORMITY conversion, not a repair: the cofinite rendering
+       was FAITHFUL here even though the shared outputs [Ξ]/[P1] are produced
+       under the binder and not re-bound, because the look cluster's generated
+       names already avoid the looked-for variable, so ONE instance generates
+       the whole family with the SAME [Ξ ↪ P1]
+       ([a_extract_family_of_instance], prop_look_complete_extract.v).
+       Consumers that want a family apply that lemma. *)
+    α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P
+      `union` ftvar_in_pskl P0 ->
+    Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
     (* prose-completion (PAPER-GAPS): the paper's "fresh" Ξ — [a_lookeq]'s
        LE-FlexR and [a_guess_mono]'s hole rule pick arbitrary names, so
        re-attaching Ξ needs the freshness stated. *)

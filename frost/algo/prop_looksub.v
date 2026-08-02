@@ -2392,3 +2392,47 @@ Proof.
   intros. eapply (proj2 (a_looksub_lookeq_rename_var_size
                            (2 * (size_pskl P + size_pskl P')))); eauto.
 Qed.
+
+(* ===================================================================== *)
+(*  §11. The [a_extract] FAMILY from one instance                         *)
+(*  (moved here from prop_look_complete_extract.v, campaign cluster 5:    *)
+(*   [prop_decorate_key.v] needs it too, and that file is a sibling of    *)
+(*   P6-L's, not a consumer.)                                            *)
+(* ===================================================================== *)
+
+(* ⚙ The family HANDS BACK its own avoid-set (cluster 3).  Renaming the
+   looked-for variable is an OUTPUT-freshness lemma: the look's ∀ rules may
+   LEAK a binder into the collected constraints, and a leaked binder is
+   precisely a name no input mentions, so it cannot be excluded by any
+   condition on [P]/[P0].  The instance knows its own [Ξl ⨾ 𝒞l], so it is the
+   one that can name the set; consumers union it into their own [L].
+
+   This is also the machine check behind cluster 5's QUESTION ZERO: it says
+   ONE instance generates the WHOLE cofinite family with the SAME [Ξ] and
+   [P1], i.e. the cofinite rendering of [a_sub__forall_l] /
+   [a_subtag__forall_l_*] was FAITHFUL and the exists-fresh conversion is a
+   uniformity change, not a repair.  (DESIGN §4.3.) *)
+Lemma a_extract_family_of_instance : forall Θ0 NM M α P P0 Ξ P1,
+  Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
+  α `notin` ftvar_in_pskl P ->
+  exists L, forall α',
+    α' `notin` (singleton α `union` ftvar_in_pskl P `union` L) ->
+    Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α')) ⊳[ NM , α' , M ] P0 ⤳ Ξ ↪ P1.
+Proof.
+  intros Θ0 NM M α P P0 Ξ P1 Hex Hfr.
+  inversion Hex as [ Θ0' NM' α'' m' Ps Ps' Ξl Ξg 𝒞l Q Q' Hlk Hsol Hgu
+                     HeqΘ HeqNM Heqα Heqm HeqP HeqP0 ]; subst.
+  exists (dom Ξl `union` ftvar_in_cstrs 𝒞l).
+  intros α' Hα'.
+  eapply a_extract__solve; [ | eassumption | eassumption ].
+  assert (Hα'P : α' `notin`
+                   ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))).
+  { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                  P (pskl_var_f α)) as Hup.
+    simpl in Hup. clear - Hα' Hup; fsetdec. }
+  pose proof (a_looksub_rename_var Hlk Hα'P
+                ltac:(clear - Hα'; fsetdec) ltac:(clear - Hα'; fsetdec))
+    as Hlk'.
+  rewrite <- (subst_pskl_in_pskl_intro α P (pskl_var_f α') Hfr) in Hlk'.
+  exact Hlk'.
+Qed.

@@ -1281,41 +1281,14 @@ Qed.
 Print Assumptions a_extract_complete.
 
 (* ===================================================================== *)
-(*  Sub-ForallL item 4 — [a_sub__forall_l]'s COFINITE extract family from *)
-(*  the ONE instance P6-L produces.  The look's outputs (Ξ ⨾ 𝒞) never     *)
-(*  mention the looked variable and the solve/guess components do not     *)
-(*  see it at all, so the family is the renamed look                      *)
-(*  ([a_looksub_rename_var]) + the SAME solve + the SAME guess.           *)
+(*  Sub-ForallL item 4 — [a_sub__forall_l]'s extract family from the ONE   *)
+(*  instance P6-L produces.  The look's outputs (Ξ ⨾ 𝒞) never mention the  *)
+(*  looked variable and the solve/guess components do not see it at all,   *)
+(*  so the family is the renamed look ([a_looksub_rename_var]) + the SAME  *)
+(*  solve + the SAME guess.                                               *)
+(*                                                                        *)
+(*  MOVED to prop_looksub.v §11 (campaign cluster 5, 2026-08-02):          *)
+(*  [prop_decorate_key.v] needs it once [a_sub__forall_l] is exists-fresh, *)
+(*  and that file is a SIBLING of this one, not a consumer.  See           *)
+(*  [a_extract_family_of_instance] there.                                  *)
 (* ===================================================================== *)
-
-(* ⚙ The family HANDS BACK its own avoid-set (cluster 3).  Renaming the
-   looked-for variable is an OUTPUT-freshness lemma now: the look's ∀ rules
-   may LEAK a binder into the collected constraints, and a leaked binder is
-   precisely a name no input mentions, so it cannot be excluded by any
-   condition on [P]/[P0].  The instance knows its own [Ξl ⨾ 𝒞l], so it is the
-   one that can name the set; consumers are cofinite anyway and simply union
-   it into their own [L]. *)
-Lemma a_extract_family_of_instance : forall Θ0 NM M α P P0 Ξ P1,
-  Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ P1 ->
-  α `notin` ftvar_in_pskl P ->
-  exists L, forall α',
-    α' `notin` (singleton α `union` ftvar_in_pskl P `union` L) ->
-    Θ0 ⊢ (open_pskl_wrt_pskl P (pskl_var_f α')) ⊳[ NM , α' , M ] P0 ⤳ Ξ ↪ P1.
-Proof.
-  intros Θ0 NM M α P P0 Ξ P1 Hex Hfr.
-  inversion Hex as [ Θ0' NM' α'' m' Ps Ps' Ξl Ξg 𝒞l Q Q' Hlk Hsol Hgu
-                     HeqΘ HeqNM Heqα Heqm HeqP HeqP0 ]; subst.
-  exists (dom Ξl `union` ftvar_in_cstrs 𝒞l).
-  intros α' Hα'.
-  eapply a_extract__solve; [ | eassumption | eassumption ].
-  assert (Hα'P : α' `notin`
-                   ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))).
-  { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                  P (pskl_var_f α)) as Hup.
-    simpl in Hup. clear - Hα' Hup; fsetdec. }
-  pose proof (a_looksub_rename_var Hlk Hα'P
-                ltac:(clear - Hα'; fsetdec) ltac:(clear - Hα'; fsetdec))
-    as Hlk'.
-  rewrite <- (subst_pskl_in_pskl_intro α P (pskl_var_f α') Hfr) in Hlk'.
-  exact Hlk'.
-Qed.
