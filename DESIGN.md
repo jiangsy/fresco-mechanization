@@ -670,7 +670,87 @@ the small side judgments (`a_guess_mono`, `a_flex_tvar`, `a_non_flex`,
 P7a's K1–K4 all need renames, so this is the asset to build if the avoid-set
 starts leaking into consumer statements.
 
-#### The `F` avoidance set STAYS (decided 2026-08-02)
+#### The `F` avoidance set — RE-OPENED, and half retired (2026-08-02, later)
+
+⚠️ **Read this box before the subsection below it, which records the earlier
+decision and is superseded in one respect.**  The rejection of the
+output-premise alternative rested on a single ground — "that premise shape is
+exactly the P7a blocker … this multiplies one unsolved problem by eight" —
+and that ground has evaporated: `a_sub_flex_complete_skip` discharges the
+shape, machine-checked.  So the eight re-attaching rules of the assign/unify
+walk NOW CARRY `β ∉ dom Θ1`, exactly like `a_sub_flex`'s three, and `F`'s
+deletion is under way (WIP branch `f-deletion-wip`).
+
+Two things settled in the process:
+
+- **The output-premise shape LOSES NOTHING** — `prop_swap.v` §13b,
+  `a_sub_flex_{skip,skip_rigid,assign}_no_loss`, Qed and axiom-free.  A rule
+  that constrains its own output can only REJECT, so the fair objection is
+  that the encoded algorithm might fail where `type.ml` (whose global counter
+  makes the collision impossible) succeeds.  It cannot: a derivation is
+  finitely supported, so a `γ` fresh for its whole output exists,
+  equivariance moves the run to `γ` while fixing every INPUT pointwise, and
+  `swap_junk_dom_out` then discharges the premise.  The rule therefore fires
+  whenever a premise-free version would, with the run's GENERATED names
+  transposed and nothing else touched.  ⭐ This is the argument that makes the
+  encoding admissible; without it the premise is a strengthening, and it
+  should be re-run for any future rule of this shape.
+- **`F` and the output premise cannot coexist cleanly.**  The `_no_loss`
+  argument needs `β ∉ F`, which is false at a premise running at `add β F`.
+  While both are present, completeness discharges the new premise from
+  soundness conjunct 4 instead (`a_assign_notin` and the new
+  `a_unify_notin` / `a_consis_notin`) — that is what the intermediate,
+  committed state does.
+
+⭐ **The soundness bundle is DONE** (branch `f-deletion-wip` @ `53155fd`,
+prop_consis_sound.v green): conjunct 4 deleted, conjunct 5 restated as below,
+28-case mutual induction through.  The diagnosis is kept because the same
+reasoning is what prop_consis_complete.v still needs.
+
+⚠️ **The blocker was soundness conjunct 5, NOT conjunct 4.**  Conjunct 4 (`x ∈ dom Θ1 → x ∈ dom Θ0 ∨ x ∉ F`) is genuinely
+dead: it becomes vacuous and its two projections have no consumers outside
+`prop_consis_sound.v`.  Conjunct 5's coverage hypothesis
+`Δ [<=] (F ∪ dom Θ0)` is the load-bearing one: at `Assign-SolveM` it is what
+excludes the guessed `β̄` from the protected `Δ`, which BOTH halves of the
+Δ-invariant (`no_flex_dep`, `flex_above_free`) need, and no input-only
+condition at that node can see a name walked past ten rules higher.  The
+repair that works — worked out but not yet executed — is to make the
+hypothesis OUTPUT-relative, mirroring the change to the rules themselves:
+
+```coq
+Δ ∩ dom Θ1 [<=] dom Θ0      (* replaces  Δ [<=] (F ∪ dom Θ0) *)
+```
+
+It goes through everywhere: at Solve-M a guessed `γ ∈ Δ ∩ dom β̄` would have
+to lie in `dom ((α ~ flex) ++ Θ0)`, which it avoids by the rule's own side
+condition; at the four skip rows the new `β ∉ dom Θ1` premise is exactly what
+pushes it into the premise; at Arrow it follows from `dom`-monotonicity; and
+at the top-level consumers `Δ [<=] dom Θ0` implies it outright.  Conjunct 5's
+THIRD component (`α ∈ Δ → α ∈ dom Θ1 → α ∈ dom Θ0`) then becomes immediate
+from the hypothesis and can leave the bundle.
+
+What REMAINS is prop_consis_complete.v: its eight discharge sites can no
+longer reuse conjunct 4.  Two routes, and the first is much the better one:
+
+- ⭐ **Put the avoid-set on the COMPLETENESS motive.**  Add a parameter `N`
+  to `consis_complete_at` / `unify_complete_at` / `assign_complete_at` with
+  the conjunct `forall γ, γ ∈ dom Θ1 -> γ ∈ dom (Ξ ++ Θ0) \/ γ ∉ N`.  This
+  is literally the old `F`, moved from the JUDGMENT to the completeness
+  statement — where it is FREE, because completeness is the direction that
+  CHOOSES the guessed names (`assign_solve_m_complete`'s `set (L := ...)`
+  simply gains `N`).  The walk rows then instantiate `N := add α1 N` exactly
+  as they used to instantiate `F`.  No new theory; ~30 cases gain one
+  component and ~15 IH destructurings gain a binder.
+  ⭐ The general lesson: an avoid-set is a CONSTRAINT on a judgment and a
+  FREEDOM on a completeness proof.  `F` was in the wrong place all along.
+- junk-swap each IH's run (prop_swap §13) and transport the OPTIMALITY
+  package with §14/§15's `kswap_msubst` kit — P7a's
+  `a_sub_flex_complete_skip` eight times over.  Fewer sites, but each needs
+  `a_wf_aenv Θ1` plus "a name of `dom Θ1 ∖ dom (Ξ ++ Θ0)` is FLEXIBLE",
+  which is `a_inc_binds_provenance`, currently downstream in
+  prop_sub_complete_thm.v and needing a move to prop_inc.v.
+
+---
 
 `F` was listed above as something the campaign would retire; it is not, and the
 item is withdrawn.  `F` is the ONLY carrier of the names the assign/unify walk
