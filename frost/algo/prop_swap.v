@@ -1573,6 +1573,240 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  §13c  The same argument for the assign/unify WALK's eight rules        *)
+(*                                                                        *)
+(*  §13b settled the three [a_sub_flex] rows; these are the eight rows     *)
+(*  the [F]-deletion put the premise on ([a_assign__assign] / [__skip] /   *)
+(*  [__skip_rigid] / [__skip_tm_var] / [__skip_tm_skl],                    *)
+(*  [a_unify__flex_assign] / [__flex_skip] / [__skip_other]).  Same six    *)
+(*  lines each, over §13's junk-swap corollaries: a fresh γ exists         *)
+(*  because a derivation is finitely supported, equivariance moves the     *)
+(*  run to it fixing every INPUT, and [swap_junk_dom_out] discharges the   *)
+(*  premise.  So none of the eight can reject where a premise-free         *)
+(*  version would fire.                                                    *)
+(* ===================================================================== *)
+
+Lemma ftvar_ptyp_to_pskl : forall A,
+  ftvar_in_pskl (ptyp_to_pskl A) [=] ftvar_in_ptyp A.
+Proof. induction A; simpl; fsetdec. Qed.
+
+(* ---------------------------------------------------------- a_assign --- *)
+
+Lemma a_assign_skip_no_loss : forall Θ0 Θ1 Ξ α β P,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  α <> β ->
+  β `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P ->
+  exists γ, γ `notin` dom Θ1 /\
+    ((β ~ abind_flex_mono) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((β ~ abind_flex_mono) ++ swap_aenv β γ Θ1).
+Proof.
+  intros * Hd Hne Hfr.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+                    `union` ftvar_in_pskl P `union` singleton α).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_assign__skip.
+  - exact Hne.
+  - clear - Hfr; fsetdec.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_assign_swap_junk;
+      [ exact Hd | clear - Hne; auto | clear - Fr; fsetdec
+      | exact Hfr | clear - Fr; fsetdec ].
+Qed.
+
+Lemma a_assign_skip_rigid_no_loss : forall Θ0 Θ1 Ξ α β P,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  α <> β ->
+  β `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P ->
+  exists γ, γ `notin` dom Θ1 /\
+    ((β ~ abind_tvar) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((β ~ abind_tvar) ++ swap_aenv β γ Θ1).
+Proof.
+  intros * Hd Hne Hfr.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+                    `union` ftvar_in_pskl P `union` singleton α).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_assign__skip_rigid.
+  - clear - Hfr; fsetdec.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_assign_swap_junk;
+      [ exact Hd | clear - Hne; auto | clear - Fr; fsetdec
+      | exact Hfr | clear - Fr; fsetdec ].
+Qed.
+
+Lemma a_assign_skip_tm_var_no_loss : forall Θ0 Θ1 Ξ α x Q P,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  α <> x ->
+  x `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P ->
+  exists γ, γ `notin` dom Θ1 /\
+    ((x ~ abind_var_typ Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((x ~ abind_var_typ Q) ++ swap_aenv x γ Θ1).
+Proof.
+  intros * Hd Hne Hfr.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+                    `union` ftvar_in_pskl P `union` singleton α).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_assign__skip_tm_var.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_assign_swap_junk;
+      [ exact Hd | clear - Hne; auto | clear - Fr; fsetdec
+      | exact Hfr | clear - Fr; fsetdec ].
+Qed.
+
+Lemma a_assign_skip_tm_skl_no_loss : forall Θ0 Θ1 Ξ α x Q P,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+  α <> x ->
+  x `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P ->
+  exists γ, γ `notin` dom Θ1 /\
+    ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((x ~ abind_var_skl Q) ++ swap_aenv x γ Θ1).
+Proof.
+  intros * Hd Hne Hfr.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+                    `union` ftvar_in_pskl P `union` singleton α).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_assign__skip_tm_skl.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_assign_swap_junk;
+      [ exact Hd | clear - Hne; auto | clear - Fr; fsetdec
+      | exact Hfr | clear - Fr; fsetdec ].
+Qed.
+
+(** Assign-Assign's premise is CONSISTENCY over the merged context; as in
+    §13b's [a_sub_flex_assign_no_loss], the substituted slots are β-free
+    because every [β] of [P] is replaced and the replacement [τ] is β-free.
+    [α = β] is allowed, exactly as in the rule. *)
+Lemma a_assign_assign_no_loss : forall Θ0 Θ1 Ξ α β τ P Q,
+  (Ξ ++ Θ0) ⊢ₐ[ empty | empty
+       | (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ]
+    (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ∼ Q ⊣ Θ1 ->
+  a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ0) α ->
+  β `notin` ftvar_in_aenv (Ξ ++ Θ0)
+     `union` ftvar_in_pskl (ptyp_to_pskl τ) ->
+  exists γ, γ `notin` dom Θ1 /\
+    ((β ~ abind_flex_mono_def τ) ++ Θ0) ⊲[ Ξ ] α ≔ P
+      ⊣ ((β ~ abind_flex_mono_def τ) ++ swap_aenv β γ Θ1).
+Proof.
+  intros * Hd Hfl Hfr.
+  assert (Hsub0 : β `notin` ftvar_in_pskl
+                    (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)).
+  { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                  P (ptyp_to_pskl τ) β) as Hup.
+    clear - Hup Hfr. fsetdec. }
+  assert (Hsubs : β `notin` ftvar_in_pskl
+                    (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))).
+  { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                  (pskl_var_f α) (ptyp_to_pskl τ) β) as Hup.
+    clear - Hup Hfr. simpl in Hup. fsetdec. }
+  assert (HΞΘ : β `notin` ftvar_in_aenv (Ξ ++ Θ0)) by (clear - Hfr; fsetdec).
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv (Ξ ++ Θ0)
+                    `union` ftvar_in_pskl
+                        (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
+                    `union` ftvar_in_pskl
+                        (subst_pskl_in_pskl (ptyp_to_pskl τ) β
+                           (pskl_var_f α))).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_assign__assign with (τ := τ) (Q := swap_pskl β γ Q).
+  - exact Hfl.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_consis_swap_junk;
+      [ exact Hd | clear; fsetdec | clear; fsetdec
+      | clear - HΞΘ Hsub0 Hsubs; fsetdec
+      | clear - Fr; fsetdec ].
+Qed.
+
+(* ----------------------------------------------------------- a_unify --- *)
+
+Lemma a_unify_flex_skip_no_loss : forall Θ0 Θ1 α1 α β,
+  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
+  α1 <> α -> α1 <> β ->
+  α1 `notin` ftvar_in_aenv Θ0 ->
+  exists γ, γ `notin` dom Θ1 /\
+    ((α1 ~ abind_flex_mono) ++ Θ0) ⊲ α ≈ᵘ β
+      ⊣ ((α1 ~ abind_flex_mono) ++ swap_aenv α1 γ Θ1).
+Proof.
+  intros * Hd Hnα Hnβ Hfr.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0
+                    `union` singleton α `union` singleton β).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_unify__flex_skip.
+  - exact Hnα.
+  - exact Hnβ.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_unify_swap_junk;
+      [ exact Hd | exact Hnα | clear - Fr; fsetdec | exact Hnβ
+      | clear - Fr; fsetdec | exact Hfr | clear - Fr; fsetdec ].
+Qed.
+
+Lemma a_unify_skip_other_no_loss : forall Θ0 Θ1 c b α β,
+  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
+  (b = abind_tvar \/
+   (exists Q, b = abind_var_typ Q) \/
+   (exists Q, b = abind_var_skl Q)) ->
+  c <> α -> c <> β ->
+  c `notin` ftvar_in_aenv Θ0 ->
+  exists γ, γ `notin` dom Θ1 /\
+    ((c ~ b) ++ Θ0) ⊲ α ≈ᵘ β ⊣ ((c ~ b) ++ swap_aenv c γ Θ1).
+Proof.
+  intros * Hd Hb Hnα Hnβ Hfr.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0
+                    `union` singleton α `union` singleton β).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_unify__skip_other.
+  - exact Hb.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_unify_swap_junk;
+      [ exact Hd | exact Hnα | clear - Fr; fsetdec | exact Hnβ
+      | clear - Fr; fsetdec | exact Hfr | clear - Fr; fsetdec ].
+Qed.
+
+(** Flex-Flex-Assign, the back-edge into consistency.  Both substituted
+    slots are α1-free: the substitution rewrites the two subjects, which the
+    rule's own [α1 ≠ α] / [α1 ≠ β] keep apart from [α1], and the walked
+    definition [τ] cannot mention its own [α1] (scope discipline) — the same
+    extra hypothesis §13b's [a_sub_flex_assign_no_loss] carries. *)
+Lemma a_unify_flex_assign_no_loss : forall Θ0 Θ1 α1 τ α β Q,
+  Θ0 ⊢ₐ[ empty | empty
+       | (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β))) ]
+    (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))) ∼ Q ⊣ Θ1 ->
+  a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) α ->
+  a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) β ->
+  α1 <> α -> α1 <> β ->
+  α1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_ptyp τ ->
+  exists γ, γ `notin` dom Θ1 /\
+    ((α1 ~ abind_flex_mono_def τ) ++ Θ0) ⊲ α ≈ᵘ β
+      ⊣ ((α1 ~ abind_flex_mono_def τ) ++ swap_aenv α1 γ Θ1).
+Proof.
+  intros * Hd Hflα Hflβ Hnα Hnβ Hfr.
+  assert (Hs : forall x, α1 <> x ->
+            α1 `notin` ftvar_in_pskl
+              (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f x)))).
+  { intros x Hx. rewrite ftvar_ptyp_to_pskl.
+    pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
+                  (ptyp_var_f x) τ α1) as Hup.
+    clear - Hup Hx Hfr. simpl in Hup. fsetdec. }
+  pose proof (Hs α Hnα) as Hsα. pose proof (Hs β Hnβ) as Hsβ.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0
+                    `union` ftvar_in_pskl
+                        (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β)))
+                    `union` ftvar_in_pskl
+                        (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1
+                                         (ptyp_var_f α)))).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_unify__flex_assign with (τ := τ) (Q := swap_pskl α1 γ Q).
+  - exact Hflα.
+  - exact Hflβ.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_consis_swap_junk;
+      [ exact Hd | clear; fsetdec | clear; fsetdec
+      | clear - Hfr Hsα Hsβ; fsetdec
+      | clear - Fr; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
 (*  §14  Equivariance: the θ-algebra (metasubstitutions, ≡ᵗ/≡ˢ, a_inc)     *)
 (* ===================================================================== *)
 

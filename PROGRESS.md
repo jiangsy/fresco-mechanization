@@ -136,6 +136,18 @@ optimality package through §14/§15's `kswap` kit) is `a_sub_flex_complete_skip
 eight times over and additionally needs `a_inc_binds_provenance` moved
 upstream.
 
+**Stage 5** (`prop_swap.v` §13c).  The eight `_no_loss` twins, now provable
+because `β ∉ F` is vacuous: `a_assign_{skip,skip_rigid,skip_tm_var,
+skip_tm_skl,assign}_no_loss` and `a_unify_{flex_skip,skip_other,
+flex_assign}_no_loss`, all `Qed`, all *Closed under the global context*, six
+lines each over §13's junk-swap corollaries.  This is what makes the
+assign/unify walk's encoding exactly as defensible as the subtyping walk's:
+none of the eight rules can reject where a premise-free version would fire.
+The two back-edge rows (whose premise is CONSISTENCY) need the walked
+definition `τ` to be free of its own head — the same extra hypothesis §13b's
+`a_sub_flex_assign_no_loss` carries.  One local helper,
+`ftvar_ptyp_to_pskl`.
+
 **Fallout, all mechanical.**  `a_consis_hole_p0_output` and three
 `a_consis_complete_thm` call sites in prop_sub_complete_thm.v lost their `F`
 argument; `prop_decorate_sub.v`'s `match goal` pattern for `a_assign` lost an

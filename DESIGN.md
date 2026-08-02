@@ -681,8 +681,11 @@ used-name index `F` is now gone from all three judgments; the eight
 re-attaching rules of the assign/unify walk carry `β ∉ dom Θ1`, exactly like
 `a_sub_flex`'s three.
 
-⭐ **The output-premise shape LOSES NOTHING** — `prop_swap.v` §13b,
-`a_sub_flex_{skip,skip_rigid,assign}_no_loss`, Qed and axiom-free.  A rule
+⭐ **The output-premise shape LOSES NOTHING** — `prop_swap.v` §13b for
+`a_sub_flex`'s three rows and §13c for the walk's eight
+(`a_assign_{skip,skip_rigid,skip_tm_var,skip_tm_skl,assign}_no_loss`,
+`a_unify_{flex_skip,skip_other,flex_assign}_no_loss`), Qed and axiom-free.
+A rule
 that constrains its own output can only REJECT, so the fair objection is that
 the encoded algorithm might fail where `type.ml` (whose global counter makes
 the collision impossible) succeeds.  It cannot: a derivation is finitely
@@ -693,7 +696,8 @@ version would, with the run's GENERATED names transposed and nothing else
 touched.  ⭐ This is the argument that makes the encoding admissible; without
 it the premise is a strengthening, and it should be re-run for any future rule
 of this shape.  (`F` and the output premise cannot coexist: the `_no_loss`
-argument needs `β ∉ F`, which is false at a premise running at `add β F`.)
+argument needs `β ∉ F`, which is false at a premise running at `add β F` —
+which is why §13c could only be written AFTER the deletion.)
 
 The paper has neither device.  `Assign-SolveM` (full-algo-spec.tex:1753) has
 NO side condition on `β̄`; the only freshness is `\fresh{}` inside
