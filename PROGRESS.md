@@ -78,7 +78,7 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — 🚧 P7a `Flex-SkipRigid`: the ⇓-CONFINEMENT lands (§(L0)) — the identified blocker's first half is machine-checked
+## 2026-08-03 (latest) — 🚧 P7a `Flex-SkipRigid`: §(L0) — the ⇓-CONFINEMENT **and** the two ⇓-NORMALIZATIONS of the leaves
 
 `make coq` green, admit-free, axiom-free.  This is the first increment on the
 last open row of P7a; the row itself is not closed.
@@ -119,18 +119,52 @@ target under a fresh rigid binder), `msubst_bskl_ftv_fresh` and
 prop_consis_complete.v; it is here because P7a is its only consumer and
 because editing that file forces a ~10-minute rebuild of the whole algo tree.
 
-**What remains for the row**, in order: (1) the ⇓-NORMALIZATION half — the
-join and the fill have to be re-derived at `⇓` of both sides, the consistency
-analogues being `consis_downarrow_subject` +
-`tyequiv_mono_consis_transport_q`; (2) §(L)'s strengthenings applied to the
-normalized data (they exist already); (3) the β-freeness of the Ξ-images, from
-the motive's `dom Ξ [<=] ftv P0` + `msubst_pskl_ftv_lower` + the confinement
-above, exactly as `Hgr` does in the consistency walk
-(prop_consis_complete.v, Assign-SkipRigid); (4) the row itself — junk swap
-(`a_sub_flex_skip_rigid_no_loss` already exists), rebuild with
+⚙ The confinement's hypothesis is stated on `⇓ᵗ[Θ] A`, not on `A`.  That is
+what the consumer actually has — the walk knows its subject only up to `≡ᵗ`
+(`a_uskl_tyequiv_mono_r_inv` hands back a monotype painting `syn{τ'}` with
+`Θ ⊢ κα̂ ≡ᵗ τ'`, and `≡ᵗ` does NOT preserve ftv-scoping, only ⇓
+(`a_tyequiv_downarrow`)).  It is also strictly more general (with a def-closed
+`D`, `ftv A ⊆ D` gives it via `downarrow_ftv_closed`) and it makes the
+def-closedness side condition unnecessary: the definition-chasing rows now
+discharge it by `aenv_msubst_lookup_def` alone.
+
+**The ⇓-NORMALIZATIONS** (same day).  The confinement scopes `⇓ᵇ Q`; to USE it
+the leaf has to hold at the normalized pair.  Both are the same shape and both
+are SMALL, because at a monotype subject only five rows are reachable — unit,
+var, arrow and the two definition chases — and ⇓ is the identity on the first
+three and exactly the chase on the last two:
+
+- `consis_downarrow_mono` : `Ψ ⨟ Θ ⊢ₛᵃ syn{A} ∼ Q` ⟹
+  `Ψ ⨟ Θ ⊢ₛᵃ syn{⇓ᵗA} ∼ ⇓ᵇQ`.  The `var` row is where both sides collapse to
+  the same monotype, so it is `consis_mono_refl`.
+- `refine_pskl_downarrow_mono` : the same for the refinement leaf
+  (`ad_refine_pskl` at a monotype source), via
+  `ad_refine_pskl_f_mono_refl` + `_forget`.
+- plus `bskl_to_pskl_msubst_bskl` — the leaves state their refinement on
+  `⌊·⌋ˢ` / `bskl_to_pskl`, so ⇓ has to pass through the erasure.
+
+**What remains for the row**, in order: (1) `sub_gv_downarrow_mono` — the
+`ad_pat_sub_gv` normalization, assembling the two leaf normalizations above;
+its six reachable rows need four more small preservation facts (`is_sskl` and
+`guarded_*` under ⇓, `msubst_bskl` past `pskl_to_bskl_inh` at a mono-image
+metasubstitution, and the ⇓/open commutation as an EQUALITY for ForallR —
+`aenv_msubst_lc` supplies the local closure); (2) the same for the fill
+`Hrs`, whose source `κP0` is NOT a monotype, so that induction covers all the
+rows; (3) §(L)'s strengthenings on the normalized data (they exist already);
+(4) the β-freeness of the Ξ-images, from the motive's `dom Ξ [<=] ftv P0` +
+`msubst_pskl_ftv_lower` + the confinement, exactly as `Hgr` does in the
+consistency walk (prop_consis_complete.v, Assign-SkipRigid); (5) the row
+itself — junk swap (`a_sub_flex_skip_rigid_no_loss` exists), rebuild with
 `a_inc__tvar` / `a_inc_equiv_mid_insert_tvar` / `a_inc_equiv_self_downarrow`,
 and — the one thing the consistency walk does NOT have to do — transport the
 PRECISION conjunct back from `(Θ', ⇓ᵇ Q)` to `(Θ, Q)`.
+
+⚠️ Two REJECTED shortcuts, recorded so they are not retried.  (a) Running the
+IH at `Ξv ++ Θ'` (the junk block kept, only `β` dropped) fails at the
+PACKAGE, not at the premises: `a_inc__tvar` demands `ζ ∷ Θ1 ⊑ Θ'` at the
+TRUNCATION, so the lift stops.  (b) Supplying `ftv Q [<=] dom Θ'` for the
+ORIGINAL `Q` is impossible — `ad_refine_syn_f__hole` fills with any
+Θ-scoped skeleton, junk block included.
 
 ## 2026-08-03 — ⭐⭐⭐ TASK 4 **CLOSED**: the `F` avoidance set is DELETED from the whole tree, and the avoid set now lives on the COMPLETENESS MOTIVE
 
