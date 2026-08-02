@@ -183,9 +183,27 @@ union.  152s → 0.09s.
 
 **P7a's only remaining row is `Flex-SkipRigid`.**
 
-**Next**: the ⇓-truncation lift to `ad_pat_sub_gv` and `Flex-SkipRigid` (plus its
-stuck-check); then the shield's realizability question; then the dispatcher
-(§12).
+**`Flex-SkipRigid`'s CONTEXT-MOVE half landed the same day** (`d486dcd`):
+`ad_refine_pskl_strengthen` and `ad_pat_sub_gv_mono_strengthen` move the
+solution-side premises from Θ to the truncation Θ'.  ⚠️ The join does NOT
+strengthen in general — the two ForallL rows introduce a guess whose scope no
+condition on the conclusion controls; at a MONOTYPE subject they cannot fire,
+which is exactly SkipRigid's configuration.  Two shape lessons: the MODE must
+stay general (`__arrow`'s recursive premise runs at `M`, not `mode_fn M`, so an
+FN-only statement does not even induct), and the ftv bound must read
+`Δ ∪ dom Θ'` with Δ apart from `dom Θ`.
+
+⭐ **And this REPLACES the ⇓-normalization route** the consistency walk needs
+(`a_inc_downarrow_prefix` and friends): there the counterpart is a FREE `Q`, so
+the images must be normalized before they can be re-scoped; here it is PINNED to
+a monotype painting, so plain strengthening suffices.  `Flex-SkipRigid` is
+materially cheaper than the earlier estimate.
+
+**Next**: `ad_refine_syn_f_strengthen` (the FILL's counterpart), the β-freeness
+argument (the motive's `dom Ξ ⊆ ftv P0` + the fill + the join confinement), then
+`Flex-SkipRigid` itself and its stuck-check — the package lift is free
+(`a_inc__tvar` / `a_inc_equiv__tvar`).  Then the shield's realizability question;
+then the dispatcher (§12).
 
 **TASK 0's residual, falsity half SETTLED the same day**
 (`cex/cex_p7_shield_forall_flex.v`, Qed, axiom-free).  For a Θ0-flexible `α̂` and
