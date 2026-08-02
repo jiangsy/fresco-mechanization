@@ -78,7 +78,61 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐⭐⭐ TASK 4 **CLOSED**: the `F` avoidance set is DELETED from the whole tree, and the avoid set now lives on the COMPLETENESS MOTIVE
+## 2026-08-03 (latest) — 🚧 P7a `Flex-SkipRigid`: the ⇓-CONFINEMENT lands (§(L0)) — the identified blocker's first half is machine-checked
+
+`make coq` green, admit-free, axiom-free.  This is the first increment on the
+last open row of P7a; the row itself is not closed.
+
+**What was blocking.**  `Flex-SkipRigid` must run its IH at the truncation
+`Θ'` that `a_inc_tvar_inv` hands back (`a_inc__tvar` shrinks the TARGET, so
+`κ' ∷ Θ0 ⊑ Θ` is FALSE), and §(L)'s three strengthenings all take
+`ftv Q [<=] dom Θ'` as a HYPOTHESIS.  That is not derivable of `Q` itself:
+`ad_pat_consis__flex_r` and `ad_refine_syn_f__flex_r` let the counterpart be
+an arbitrary DEFINED flexible of Θ, so `Q` may name one of the junk block
+above `β`.  It IS derivable of `⇓ᵇ[Θ] Q`, which unfolds exactly those — which
+is why the consistency walk normalizes before it truncates.
+
+**What landed** (`prop_sub_complete_thm.v` §(L0), all `Qed`,
+*Closed under the global context*).  The MIRROR of
+`join_pskl_downarrow_mono_scoped`.  In the consistency walk the monotype is
+the COUNTERPART (`syn{κα̂}`) and the lemma scopes the ⇓ of the SUBJECT; the
+flexible SUBTYPING walk has it the other way round — its subject IS the
+monotype — so the mirror scopes the ⇓ of the COUNTERPART:
+
+- `consis_bskl_downarrow_mono_scoped` — over `ad_pat_consis`.  Each row either
+  pins `Q` to the subject's variable (`__var`), recurses (`__arrow`), chases a
+  definition (`__flex_l` / `__flex_r`, which is exactly what ⇓ unfolds), or is
+  excluded because a monotype painting is never a ∀, a hole or a tophole.
+- `sub_gv_bskl_downarrow_mono_scoped` — over `ad_pat_sub_gv`.  Every row a
+  monotype-painting subject admits ties `Q` to the subject through a
+  consistency leaf (Infer / Check / UnivGhostR / Arrow's domain), recurses
+  (Arrow's codomain, ForallR, FlexMono), or is shape-excluded (both ForallL
+  rows, Ghost / GhostG, UnivGhostL / LG).
+
+Plus the plumbing: `⇓ᵇ[Θ]` (= `msubst_bskl (aenv_msubst Θ)`),
+`msubst_bskl_ptyp_to_bskl_syn`, `ftvar_in_bskl_ptyp_to_bskl_syn`,
+`aenv_msubst_tvar_cons`, `msubst_bskl_open_rec_ftv_lower` (ForallR opens the
+target under a fresh rigid binder), `msubst_bskl_ftv_fresh` and
+`aenv_msubst_image_dom`.
+
+⚙ The `ad_pat_consis` half would sit just as well beside its mirror in
+prop_consis_complete.v; it is here because P7a is its only consumer and
+because editing that file forces a ~10-minute rebuild of the whole algo tree.
+
+**What remains for the row**, in order: (1) the ⇓-NORMALIZATION half — the
+join and the fill have to be re-derived at `⇓` of both sides, the consistency
+analogues being `consis_downarrow_subject` +
+`tyequiv_mono_consis_transport_q`; (2) §(L)'s strengthenings applied to the
+normalized data (they exist already); (3) the β-freeness of the Ξ-images, from
+the motive's `dom Ξ [<=] ftv P0` + `msubst_pskl_ftv_lower` + the confinement
+above, exactly as `Hgr` does in the consistency walk
+(prop_consis_complete.v, Assign-SkipRigid); (4) the row itself — junk swap
+(`a_sub_flex_skip_rigid_no_loss` already exists), rebuild with
+`a_inc__tvar` / `a_inc_equiv_mid_insert_tvar` / `a_inc_equiv_self_downarrow`,
+and — the one thing the consistency walk does NOT have to do — transport the
+PRECISION conjunct back from `(Θ', ⇓ᵇ Q)` to `(Θ, Q)`.
+
+## 2026-08-03 — ⭐⭐⭐ TASK 4 **CLOSED**: the `F` avoidance set is DELETED from the whole tree, and the avoid set now lives on the COMPLETENESS MOTIVE
 
 `make coq` green, admit-free, all 25 `README.v` flagships *Closed under the
 global context*.

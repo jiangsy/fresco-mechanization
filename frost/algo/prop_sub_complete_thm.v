@@ -4640,6 +4640,293 @@ Qed.
 
 
 (* ===================================================================== *)
+(*  (L0)  THE ⇓-CONFINEMENT — a MONOTYPE subject scopes the counterpart    *)
+(*                                                                        *)
+(*  [Flex-SkipRigid] must run its IH at the truncation Θ' that             *)
+(*  [a_inc_tvar_inv] hands back, so every solution-side premise has to     *)
+(*  move to a sub-context — and §(L)'s three strengthenings all take       *)
+(*  [ftv Q ⊆ dom Θ'] as a HYPOTHESIS.  That is NOT derivable of [Q]        *)
+(*  itself: [ad_pat_consis__flex_r] and [ad_refine_syn_f__flex_r] let the  *)
+(*  counterpart be an arbitrary DEFINED flexible of Θ, so [Q] may name one *)
+(*  of the junk block sitting ABOVE β.  It IS derivable of [⇓ᵇ[Θ] Q],      *)
+(*  which unfolds exactly those — which is why the consistency walk        *)
+(*  normalizes before it truncates.                                       *)
+(*                                                                        *)
+(*  These two lemmas are the MIRROR of [join_pskl_downarrow_mono_scoped]   *)
+(*  (prop_consis_complete.v): there the monotype is the COUNTERPART and    *)
+(*  the ⇓ of the SUBJECT is scoped; here — the flexible subtyping walk's   *)
+(*  subject is [syn{κα̂}] — the monotype is the SUBJECT and the ⇓ of the    *)
+(*  COUNTERPART is scoped.  Same induction, same def-closed [D].           *)
+(*                                                                        *)
+(*  (The [ad_pat_consis] half would sit just as well next to its mirror in *)
+(*  prop_consis_complete.v; it lives here because P7a is its only          *)
+(*  consumer.)                                                            *)
+(* ===================================================================== *)
+
+Notation "⇓ᵇ[ Θ ] Q" := (msubst_bskl (aenv_msubst Θ) Q)
+  (at level 5, Θ at level 0) : type_scope.
+
+(** The syn painting commutes with a metasubstitution. *)
+Lemma msubst_bskl_ptyp_to_bskl_syn : forall κ A,
+  msubst_bskl κ (ptyp_to_bskl_syn A) = ptyp_to_bskl_syn (msubst_ptyp κ A).
+Proof.
+  intros κ A. unfold ptyp_to_bskl_syn.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1, IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
+Lemma ftvar_in_bskl_ptyp_to_bskl_syn : forall A,
+  ftvar_in_bskl (ptyp_to_bskl_syn A) [=] ftvar_in_ptyp A.
+Proof.
+  intros A. unfold ptyp_to_bskl_syn.
+  rewrite ftvar_in_bskl_syn. apply ftvar_in_ptyp_to_pskl.
+Qed.
+
+(** THE MIRROR.  [join_pskl_downarrow_mono_scoped] scopes the ⇓ of the
+    SUBJECT from a monotype COUNTERPART; the flexible SUBTYPING walk needs the
+    other side — its join carries the monotype on the SUBJECT (the subject is
+    [syn{κα̂}]) and the counterpart [Q] is free.  Same induction, same
+    def-closed [D]: every rule either pins [Q] to the subject's variables
+    ([__var]), recurses ([__arrow]), chases a definition ([__flex_l] /
+    [__flex_r] — which is what ⇓ unfolds), or is excluded because a monotype
+    painting is never a ∀, a hole, or a tophole. *)
+Lemma consis_bskl_downarrow_mono_scoped : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  a_wf_aenv Θ ->
+  forall A D,
+    R = ptyp_to_uskl_syn A -> mono_ptyp A ->
+    (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+       α `in` D -> ftvar_in_ptyp τ [<=] D) ->
+    ftvar_in_ptyp A [<=] D ->
+    ftvar_in_bskl (⇓ᵇ[ Θ ] Q) [<=] D.
+Proof.
+  intros Ψ Θ R Q Hc Hwf; induction Hc; intros A0 D HeqR HmA Hcl HAD.
+  - (* unit *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+    simpl. clear; fsetdec.
+  - (* var : the counterpart IS the subject's variable *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+    inversion HeqR; subst. simpl.
+    rewrite ftvar_in_bskl_syn. rewrite ftvar_in_ptyp_to_pskl.
+    match goal with
+    | |- context[msubst_lookup ?r ?a] =>
+        replace (msubst_lookup r a) with (⇓ᵗ[ Θ ] (ptyp_var_f a)) by reflexivity
+    end.
+    apply downarrow_ftv_closed;
+      [ exact Hwf | simpl; clear - HAD; simpl in HAD; fsetdec | exact Hcl ].
+  - (* arrow *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+    inversion HeqR; subst. inversion HmA; subst.
+    simpl. intros γ Hγ. apply union_1 in Hγ. destruct Hγ as [h | h].
+    + refine (IHHc1 Hwf _ D eq_refl _ Hcl _ γ h);
+        [ assumption | clear - HAD; simpl in HAD; fsetdec ].
+    + refine (IHHc2 Hwf _ D eq_refl _ Hcl _ γ h);
+        [ assumption | clear - HAD; simpl in HAD; fsetdec ].
+  - (* forall_inh_tagged : a mono painting is never a ∀ *)
+    destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
+  - (* forall_inh_untagged *)
+    destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
+  - (* forall_syn_tagged *)
+    destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
+  - (* forall_syn *)
+    destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
+  - (* ghostg : the subject is a ghost *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* topholeg *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* hole *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* tophole *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* tophole_inh *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* tophole_drop *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* flex_l : the SUBJECT is a defined flexible — chase it *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+    inversion HeqR; subst.
+    assert (Hmτ : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; eauto).
+    assert (HτD : ftvar_in_ptyp τ [<=] D)
+      by (eapply Hcl; [ eassumption | clear - HAD; simpl in HAD; fsetdec ]).
+    exact (IHHc Hwf τ D eq_refl Hmτ Hcl HτD).
+  - (* flex_r : the COUNTERPART is a defined flexible — ⇓ unfolds it.  The
+       subject is untouched, so [A0] must NOT be destructed here. *)
+    simpl.
+    assert (Hlk : msubst_lookup (aenv_msubst Θ) α = ⇓ᵗ[ Θ ] τ)
+      by (apply aenv_msubst_lookup_def; assumption).
+    rewrite Hlk.
+    pose proof (IHHc Hwf A0 D HeqR HmA Hcl HAD) as IH.
+    rewrite msubst_bskl_ptyp_to_bskl_syn in IH.
+    rewrite ftvar_in_bskl_ptyp_to_bskl_syn in IH.
+    rewrite ftvar_in_bskl_syn. rewrite ftvar_in_ptyp_to_pskl.
+    exact IH.
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  Plumbing the ∀R case of the mirror needs                              *)
+(* --------------------------------------------------------------------- *)
+
+(** A rigid entry contributes no definition, so ⇓ ignores it. *)
+Lemma aenv_msubst_tvar_cons : forall (α : atom) Θ,
+  aenv_msubst ((α ~ abind_tvar) ++ Θ) = aenv_msubst Θ.
+Proof. reflexivity. Qed.
+
+(** Opening only ADDS free variables, even under a metasubstitution. *)
+Lemma msubst_bskl_open_rec_ftv_lower : forall κ B B' k,
+  ftvar_in_bskl (msubst_bskl κ B)
+    [<=] ftvar_in_bskl (msubst_bskl κ (open_bskl_wrt_bskl_rec k B' B)).
+Proof.
+  intros κ B; induction B; intros B' k; simpl.
+  - (* unit *) clear; fsetdec.
+  - (* var_b *)
+    destruct (lt_eq_lt_dec n k) as [[? | ?] | ?]; simpl; clear; fsetdec.
+  - (* var_f *) clear; fsetdec.
+  - (* arrow *)
+    specialize (IHB1 B' k). specialize (IHB2 B' k).
+    clear - IHB1 IHB2; fsetdec.
+  - (* all_syn *) apply (IHB B' (S k)).
+  - (* all_inh *) apply (IHB B' (S k)).
+  - (* hole *) clear; fsetdec.
+  - (* tophole *) apply (IHB B' k).
+Qed.
+
+Corollary msubst_bskl_open_ftv_lower : forall κ B B',
+  ftvar_in_bskl (msubst_bskl κ B)
+    [<=] ftvar_in_bskl (msubst_bskl κ (open_bskl_wrt_bskl B B')).
+Proof. intros. apply msubst_bskl_open_rec_ftv_lower. Qed.
+
+(** The bskl twin of [msubst_pskl_ftv_fresh]. *)
+Lemma msubst_bskl_ftv_fresh : forall (Θ : aenv) κ Q β,
+  (forall α, ftvar_in_ptyp (msubst_lookup κ α) [<=] add α (dom Θ)) ->
+  β `notin` ftvar_in_bskl Q ->
+  β `notin` dom Θ ->
+  β `notin` ftvar_in_bskl (msubst_bskl κ Q).
+Proof.
+  intros Θ κ Q β Hsc; revert Q;
+    induction Q; intros HβQ HβΘ; cbn in *; try solve [ clear; fsetdec ].
+  - (* var_f *)
+    rewrite ftvar_in_bskl_syn. rewrite ftvar_in_ptyp_to_pskl.
+    specialize (Hsc α). clear - Hsc HβQ HβΘ; fsetdec.
+  - (* arrow *)
+    specialize (IHQ1 ltac:(clear - HβQ; fsetdec) HβΘ).
+    specialize (IHQ2 ltac:(clear - HβQ; fsetdec) HβΘ).
+    clear - IHQ1 IHQ2; fsetdec.
+  - apply IHQ; assumption.
+  - apply IHQ; assumption.
+  - apply IHQ; assumption.
+Qed.
+
+(** ⇓'s images stay inside the context (plus the variable itself, when it is
+    not in the map at all). *)
+Lemma aenv_msubst_image_dom : forall Θ,
+  a_wf_aenv Θ ->
+  forall α, ftvar_in_ptyp (msubst_lookup (aenv_msubst Θ) α) [<=] add α (dom Θ).
+Proof.
+  intros Θ Hwf α.
+  destruct (AtomSetProperties.In_dec α (dom (aenv_msubst Θ))) as [Hin | Hni].
+  - assert (Hbt : a_binds_tvar α Θ)
+      by (right; apply aenv_msubst_dom_inv; exact Hin).
+    pose proof (aenv_msubst_image_wf Hwf Hbt) as Hw.
+    apply a_wf_ptyp_ftv_dom in Hw. clear - Hw; fsetdec.
+  - rewrite (msubst_lookup_notin _ Hni). simpl. clear; fsetdec.
+Qed.
+
+(** THE JOIN's version.  Every row of [ad_pat_sub_gv] that a MONOTYPE-painting
+    subject admits either ties [Q] to the subject through a consistency leaf
+    (Infer / Check / UnivGhostR / Arrow's domain), recurses (Arrow's codomain,
+    ForallR, FlexMono), or is excluded by the subject's shape — a mono
+    painting is never a ∀, a ghost, or a tophole, which kills the two ForallL
+    rows, Ghost / GhostG and UnivGhostL / LG. *)
+Lemma sub_gv_bskl_downarrow_mono_scoped : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  a_wf_aenv Θ ->
+  forall A D,
+    R = ptyp_to_uskl_syn A -> mono_ptyp A ->
+    (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+       α `in` D -> ftvar_in_ptyp τ [<=] D) ->
+    ftvar_in_ptyp A [<=] D ->
+    ftvar_in_bskl (⇓ᵇ[ Θ ] Q) [<=] D.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros Hwf A0 D HeqR HmA Hcl HAD.
+  - (* infer : the consistency premise pins Q *)
+    eapply consis_bskl_downarrow_mono_scoped;
+      [ eassumption | exact Hwf | exact HeqR | exact HmA | exact Hcl | exact HAD ].
+  - (* check : same, at the inh painting *)
+    eapply consis_bskl_downarrow_mono_scoped;
+      [ eassumption | exact Hwf | exact HeqR | exact HmA | exact Hcl | exact HAD ].
+  - (* forall_r : the target gains a binder, the run moves to (α~tvar)++Θ *)
+    simpl.
+    pick fresh α for (L `union` D `union` dom Θ `union` ftvar_in_bskl B
+                      `union` ftvar_in_aenv Θ).
+    assert (Hwf' : a_wf_aenv ((α ~ abind_tvar) ++ Θ))
+      by (apply a_wf_aenv__tvar; [ clear - Fr; fsetdec | exact Hwf ]).
+    assert (Hcl' : forall γ τ,
+              binds γ (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ) ->
+              γ `in` (add α D) -> ftvar_in_ptyp τ [<=] add α D).
+    { intros γ τ Hb Hγ.
+      apply binds_cons_1 in Hb as [[He Hb] | Hb]; [ discriminate | ].
+      assert (Hγd : γ `in` D).
+      { destruct (γ == α) as [-> | Hne]; [ exfalso | clear - Hγ Hne; fsetdec ].
+        apply binds_In in Hb. clear - Hb Fr. fsetdec. }
+      pose proof (Hcl γ τ Hb Hγd) as h. clear - h; fsetdec. }
+    pose proof (H0 α ltac:(clear - Fr; fsetdec) Hwf' A0 (add α D) HeqR HmA
+                  Hcl' ltac:(clear - HAD; fsetdec)) as IH.
+    rewrite aenv_msubst_tvar_cons in IH.
+    pose proof (msubst_bskl_open_ftv_lower (aenv_msubst Θ) B (bskl_var_f α))
+      as Hlow.
+    assert (Hfr : α `notin` ftvar_in_bskl (msubst_bskl (aenv_msubst Θ) B)).
+    { eapply msubst_bskl_ftv_fresh with (Θ := Θ);
+        [ apply aenv_msubst_image_dom; exact Hwf
+        | clear - Fr; fsetdec | clear - Fr; fsetdec ]. }
+    clear - IH Hlow Hfr. fsetdec.
+  - (* univ_ghost_r : the tophole wrapper is ftv-transparent *)
+    simpl.
+    eapply consis_bskl_downarrow_mono_scoped;
+      [ eassumption | exact Hwf | exact HeqR | exact HmA | exact Hcl | exact HAD ].
+  - (* arrow : domain by the consistency leaf, codomain by the IH *)
+    destruct A0 as [ | nb | γ0 | A1 A2 | A0' ];
+      cbn in HeqR; try discriminate HeqR; try solve [ inversion HmA ].
+    inversion HeqR; subst. inversion HmA; subst.
+    simpl. intros γ Hγ. apply union_1 in Hγ. destruct Hγ as [h | h].
+    + assert (hA1 : ftvar_in_ptyp A1 [<=] D)
+        by (clear - HAD; simpl in HAD; fsetdec).
+      assert (h1 : ftvar_in_bskl (⇓ᵇ[ Θ ] Q1) [<=] D).
+      { eapply consis_bskl_downarrow_mono_scoped with (A := A1);
+          [ exact H | exact Hwf | reflexivity | assumption
+          | exact Hcl | exact hA1 ]. }
+      clear - h1 h; fsetdec.
+    + assert (hA2 : ftvar_in_ptyp A2 [<=] D)
+        by (clear - HAD; simpl in HAD; fsetdec).
+      pose proof (IHad_pat_sub_gv Hwf A2 D eq_refl ltac:(assumption) Hcl hA2)
+        as h2.
+      clear - h2 h; fsetdec.
+  - (* forall_l_tagged : a mono painting is never a ∀ *)
+    destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
+  - (* forall_l_untagged *)
+    destruct A0; cbn in HeqR; try discriminate HeqR; inversion HmA.
+  - (* ghost *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* ghostg *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* univ_ghost_l *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* univ_ghost_lg *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+  - (* flex_mono : the SUBJECT is a defined flexible — chase it *)
+    destruct A0; cbn in HeqR; try discriminate HeqR.
+    inversion HeqR; subst.
+    assert (Hmτ : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; eauto).
+    assert (HτD : ftvar_in_ptyp τ [<=] D)
+      by (eapply Hcl; [ eassumption | clear - HAD; simpl in HAD; fsetdec ]).
+    exact (IHad_pat_sub_gv Hwf τ D eq_refl Hmτ Hcl HτD).
+Qed.
+
+Print Assumptions sub_gv_bskl_downarrow_mono_scoped.
+
+(* ===================================================================== *)
 (*  (L)  Flex-SkipRigid's FIRST HALF — moving the solution-side data to    *)
 (*       the TRUNCATED context                                            *)
 (*                                                                        *)
