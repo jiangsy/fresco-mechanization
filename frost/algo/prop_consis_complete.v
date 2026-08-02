@@ -1257,30 +1257,6 @@ Qed.
 (* ===================================================================== *)
 
 (** Free variables of a wf skeleton are scoped by its Δ and context. *)
-Lemma a_wf_pskl_ftv_dom : forall Θ Δ P,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  ftvar_in_pskl P [<=] (Δ `union` dom Θ).
-Proof.
-  intros * H; induction H; simpl; try solve [ clear; fsetdec ].
-  - (* var *)
-    destruct H as [HΔ | Hbt]; [ clear - HΔ; fsetdec | ].
-    destruct Hbt as [Hb | [Hb | [τ Hb]]]; apply binds_In in Hb;
-      clear - Hb; fsetdec.
-  - (* arrow *) clear - IHa_wf_pskl1 IHa_wf_pskl2. fsetdec.
-  - (* all *)
-    pick fresh α for (L `union` ftvar_in_pskl P `union` Δ
-                        `union` dom Θ).
-    assert (HXL : α `notin` L) by (clear - Fr; fsetdec).
-    pose proof (H0 α HXL) as Hsub.
-    intros α2 Hα2.
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
-                  P (pskl_var_f α)) as Hlo.
-    assert (HZ' : α2 `in` (add α Δ `union` dom Θ))
-      by (apply Hsub; clear - Hα2 Hlo; fsetdec).
-    assert (Hne : α2 <> α) by (clear - Hα2 Fr; fsetdec).
-    clear - HZ' Hne. fsetdec.
-  - (* tophole *) clear - IHa_wf_pskl. fsetdec.
-Qed.
 
 (** Renaming a Δ-BOUND variable of skeleton well-formedness — the wf twin of
     [ad_precise_rename_delta].  The ∀◇ case is where freshness earns its
@@ -1290,35 +1266,6 @@ Qed.
     (Lives here, beside [a_wf_pskl_ftv_dom] which its ∀◇ case needs, so that
     BOTH prop_look_complete.v and prop_look_complete_extract.v can see it —
     the two files are independent of each other.) *)
-Lemma a_wf_pskl_rename_delta : forall Θ Δ P β α0,
-  Θ ⨟ Δ ⊢ₚₛᵃ P ->
-  β `notin` dom Θ ->
-  Θ ⨟ (add α0 (remove β Δ)) ⊢ₚₛᵃ (subst_pskl_in_pskl (pskl_var_f α0) β P).
-Proof.
-  intros Θ Δ P β α0 H; revert α0; induction H; intros α1 Hβ; cbn.
-  - apply a_wf_pskl__unit.
-  - destruct_if as [-> | Hne].
-    + apply a_wf_pskl__var. left. clear; fsetdec.
-    + apply a_wf_pskl__var.
-      destruct H as [HΔ | Hbt];
-        [ left; clear - HΔ Hne; fsetdec | right; exact Hbt ].
-  - apply a_wf_pskl__arrow; auto.
-  - apply a_wf_pskl__all with (L := L `union` singleton β `union` singleton α1).
-    intros α2 Hα2.
-    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hα2; fsetdec | apply lc_pskl_var_f ].
-    eapply a_wf_pskl_delta_mono;
-      [ apply H0; [ clear - Hα2; fsetdec | exact Hβ ]
-      | clear - Hα2; fsetdec ].
-  - apply a_wf_pskl__hole.
-  - (* ∀◇ : the body is wf at the CLOSED Δ, so β ∉ ftv it and subst is a no-op *)
-    assert (Hfr : β `notin` ftvar_in_pskl P).
-    { assert (Hsc : ftvar_in_pskl P [<=] (empty `union` dom Θ))
-        by (eapply a_wf_pskl_ftv_dom; exact H0).
-      clear - Hβ Hsc; fsetdec. }
-    rewrite (subst_pskl_in_pskl_fresh_eq P (pskl_var_f α1) β Hfr).
-    apply a_wf_pskl__tophole; [ exact H | exact H0 ].
-Qed.
 
 (** ∀-INTRODUCTION FROM ONE INSTANCE — the exists-fresh idiom of DESIGN §4.3
     on the wf judgment.  The algorithmic solve rules now hand their consumers
@@ -1345,22 +1292,6 @@ Qed.
     by renaming the family's witness onto β.  No condition on β beyond
     body-freshness: a β already in Δ or in dom Θ is harmless because the
     conclusion's Δ only grows. *)
-Lemma a_wf_pskl_all_inv_at : forall Θ Δ P β,
-  Θ ⨟ Δ ⊢ₚₛᵃ (pskl_all_syn P) ->
-  β `notin` ftvar_in_pskl P ->
-  Θ ⨟ (add β Δ) ⊢ₚₛᵃ (open_pskl_wrt_pskl P (pskl_var_f β)).
-Proof.
-  intros Θ Δ P β H HβP.
-  inversion H as [ | | | L1 ? ? ? Hb | | ]; subst.
-  pick fresh α for (L1 `union` dom Θ `union` ftvar_in_pskl P `union` Δ).
-  pose proof (Hb α ltac:(clear - Fr; fsetdec)) as Hα.
-  pose proof (@a_wf_pskl_rename_delta Θ (add α Δ)
-                (open_pskl_wrt_pskl P (pskl_var_f α)) α β Hα
-                ltac:(clear - Fr; fsetdec)) as Hr.
-  rewrite <- (subst_pskl_in_pskl_intro α P (pskl_var_f β)
-                ltac:(clear - Fr; fsetdec)) in Hr.
-  eapply a_wf_pskl_delta_mono; [ exact Hr | clear; fsetdec ].
-Qed.
 
 (** Context weakening (binds-monotone) for the hygienic refinements. *)
 Lemma ad_refine_syn_f_weaken_ctx : forall F Θ Δ Q Q',
@@ -7152,8 +7083,11 @@ Proof.
     assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
-    { apply a_consis__forall_inh with
-        (L := L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
+    { (* the rename hands back its own avoid-set (cluster 4) *)
+      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α))
+                  _ _ _ _ _ _ _ _ Hc) as [Lrn Hrn].
+      apply a_consis_forall_inh_cofinite with
+        (L := Lrn `union` L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
               `union` singleton α `union` F `union` Δ1 `union` Δ2
               `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPb
               `union` ftvar_in_pskl P1).
@@ -7169,8 +7103,8 @@ Proof.
         by (clear - Hα0; fsetdec).
       assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
         by (clear - Hα0; fsetdec).
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α α0))
-                  _ _ _ _ _ _ _ _ Hc nil Θ0 eq_refl tvar_prefix_nil
+      destruct (Hrn α0 ltac:(clear - Hα0; fsetdec)
+                  nil Θ0 eq_refl tvar_prefix_nil
                   Huq0
                   ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
                   ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)
@@ -7485,8 +7419,11 @@ Proof.
     assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
-    { apply a_consis__forall_syn with
-        (L := L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
+    { (* the rename hands back its own avoid-set (cluster 4) *)
+      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α))
+                  _ _ _ _ _ _ _ _ Hc) as [Lrn Hrn].
+      apply a_consis_forall_syn_cofinite with
+        (L := Lrn `union` L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
               `union` singleton α `union` F `union` Δ1 `union` Δ2
               `union` ftvar_in_pskl Pt0 `union` ftvar_in_pskl PPb
               `union` ftvar_in_pskl P1).
@@ -7502,8 +7439,8 @@ Proof.
         by (clear - Hα0; fsetdec).
       assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
         by (clear - Hα0; fsetdec).
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α α0))
-                  _ _ _ _ _ _ _ _ Hc nil Θ0 eq_refl tvar_prefix_nil
+      destruct (Hrn α0 ltac:(clear - Hα0; fsetdec)
+                  nil Θ0 eq_refl tvar_prefix_nil
                   Huq0
                   ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
                   ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)
@@ -8024,8 +7961,11 @@ Proof.
     assert (HαΔ2 : α `notin` Δ2) by (clear - Fr; fsetdec).
     exists (pskl_all_syn (close_pskl_wrt_pskl α P1)), Θ1.
     split.
-    { apply a_consis__univ_ghost1 with
-        (L := L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
+    { (* the rename hands back its own avoid-set (cluster 4) *)
+      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α))
+                  _ _ _ _ _ _ _ _ Hc) as [Lrn Hrn].
+      apply a_consis_univ_ghost1_cofinite with
+        (L := Lrn `union` L `union` dom Θ0 `union` dom Θ1 `union` dom Θ
               `union` singleton α `union` F `union` Δ1 `union` Δ2
               `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPt
               `union` ftvar_in_pskl P1).
@@ -8041,8 +7981,8 @@ Proof.
         by (clear - Hα0; fsetdec).
       assert (HXP1 : α0 `notin` ftvar_in_pskl P1)
         by (clear - Hα0; fsetdec).
-      destruct (proj2 (proj2 (a_assign_unify_consis_rename_tvar α α0))
-                  _ _ _ _ _ _ _ _ Hc nil Θ0 eq_refl tvar_prefix_nil
+      destruct (Hrn α0 ltac:(clear - Hα0; fsetdec)
+                  nil Θ0 eq_refl tvar_prefix_nil
                   Huq0
                   ltac:(simpl; clear - Hα0Θ0 Hα0α; fsetdec)
                   ltac:(simpl; clear - Hα0Θ1 Hα0α; fsetdec)

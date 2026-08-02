@@ -247,19 +247,21 @@ Proof.
     intros F Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2 α1 Hα1.
     apply IH2, IH1, Hα1.
   - (* forall_inh : cofinite, rigid head both sides *)
-    intros L F Δ1 Δ2 Θ0 Θ1 P0 P P' Hco IH α1 Hα1.
-    destruct (atom_fresh L) as [α Hα].
+    (* cluster 4: the premise is a single instance at the rule's own
+       binder, so there is no representative to pick *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
-    { apply (IH α Hα). apply a_flex_tvar_weaken_prefix. exact Hα1. }
+    { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'];
       [ subst; inversion Hs | ].
     apply a_flex_tvar_alt; eauto.
   - (* forall_syn : cofinite *)
-    intros L F Δ1 Δ2 Θ0 Θ1 P0 P P' Hco IH α1 Hα1.
-    destruct (atom_fresh L) as [α Hα].
+    (* cluster 4: the premise is a single instance at the rule's own
+       binder, so there is no representative to pick *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
-    { apply (IH α Hα). apply a_flex_tvar_weaken_prefix. exact Hα1. }
+    { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'];
       [ subst; inversion Hs | ].
@@ -267,10 +269,11 @@ Proof.
   - (* univ_ghost : direct IH *)
     intros F Δ1 Δ2 Θ0 Θ1 P0 P P' Hc IH α1 Hα1. apply IH, Hα1.
   - (* univ_ghost1 : cofinite *)
-    intros L F Δ1 Δ2 Θ0 Θ1 P0 P P' Hco IH α1 Hα1.
-    destruct (atom_fresh L) as [α Hα].
+    (* cluster 4: the premise is a single instance at the rule's own
+       binder, so there is no representative to pick *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
-    { apply (IH α Hα). apply a_flex_tvar_weaken_prefix. exact Hα1. }
+    { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'];
       [ subst; inversion Hs | ].

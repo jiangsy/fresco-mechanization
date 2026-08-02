@@ -66,64 +66,23 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Lemma [Decorating algorithmic consistency]                            *)
-(*  If  aconsis[Δ1|Δ2][P0]{Θ0}{P}{Q}{Θ1}                                  *)
-(*  then aconsistag[Δ1|Δ2][P0][·]{Θ0}{P}{Q}{Θ1}.                          *)
+(*  MOVED 2026-08-02 (freshness campaign, cluster 4)                      *)
 (* ===================================================================== *)
 
-(* Generalized over the used-name set [F] so the induction's indices stay
-   VARIABLES (a bare [induction] on the [F = ∅] instance would capture the
-   goal's [Ψ = ∅] literal).  [a_consis]'s own premises all share the root's
-   [F], and the decorated rules store the paper-shaped [F = ∅] premises, so
-   Leibniz [F = empty] transports through every case. *)
-Lemma a_consis_decorate_gen : forall F Δ1 Δ2 Θ0 P0 P P' Θ1,
-  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
-  F = empty ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ P' ⊣ Θ1.
-Proof.
-  intros * Hc; induction Hc; intros HF; subst; simpl.
-  - (* Ghost *)
-    apply a_consistag__ghost; auto. fsetdec.
-  - (* Unit *)
-    apply a_consistag__unit. fsetdec.
-  - (* Rigid *)
-    apply a_consistag__rigid; auto. fsetdec.
-  - (* Arrow *)
-    eapply a_consistag__arrow; eauto. fsetdec.
-  - (* ForallInh (untagged) *)
-    eapply a_consistag__forall_inh_untagged with (L := L).
-    intros α Hα. rewrite <- pskl_to_uskl_open_var. auto.
-  - (* ForallSyn (untagged) *)
-    eapply a_consistag__forall_syn_untagged with (L := L).
-    intros α Hα. rewrite <- pskl_to_uskl_open_var. auto.
-  - (* UnivGhost *)
-    apply a_consistag__univ_ghost; auto.
-  - (* UnivGhost1 *)
-    eapply a_consistag__univ_ghost1 with (L := L).
-    intros α Hα. auto.
-  - (* UnivGhost2 *)
-    apply a_consistag__univ_ghost2; auto.
-  - (* Flex *)
-    apply a_consistag__flex; auto. fsetdec.
-  - (* FlexL *)
-    eapply a_consistag__flex_l; eauto. fsetdec.
-  - (* FlexR *)
-    apply a_consistag__flex_r;
-      try rewrite uskl_to_pskl_pskl_to_uskl; auto; try fsetdec.
-  - (* GhostR *)
-    replace P with (uskl_to_pskl (pskl_to_uskl P)) at 2
-      by apply uskl_to_pskl_pskl_to_uskl.
-    apply a_consistag__ghost_r;
-      try rewrite uskl_to_pskl_pskl_to_uskl; auto; try fsetdec.
-  - (* UnivGhostR *)
-    apply a_consistag__univ_ghost_r; auto using pskl_to_uskl_guarded;
-      try rewrite uskl_to_pskl_pskl_to_uskl; auto.
-Qed.
+(* [a_consis_decorate_gen] / [a_consis_decorate] (Lemma [Decorating
+   algorithmic consistency], consistency-proofs.tex) USED to live here.
+   They moved to prop_consis_rename.v §10.
 
-(** The paper-shaped instance (no used names at the root). *)
-Lemma a_consis_decorate : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
-  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
-  Θ0 ⊢ᵗ[ Δ1 | Δ2 | P0 | empty ] (pskl_to_uskl P) ∼˙ P' ⊣ Θ1.
-Proof.
-  intros * Hc; eapply a_consis_decorate_gen; eauto.
-Qed.
+   Why: cluster 4 made [a_consis]'s three ∀ rows EXISTS-FRESH, while the
+   decorated [a_consistag] rows are (rightly) still cofinite — so a ∀ row of
+   this lemma must now rebuild a whole FAMILY from the algorithmic run's ONE
+   binder.  That means MOVING the binder with
+   [a_assign_unify_consis_rename_tvar], and the moved premise is no
+   sub-derivation, so the proof became a SIZE induction on
+   [size_pskl P + size_pskl P0] (cluster 3's shape (1); the worked precedent
+   is [a_consistag_decoration_size], prop_decorate_sub.v §7).  The rename
+   lemma lives downstream of this file — prop_flex.v imports this one — so
+   the lemma had to move rather than the asset.
+
+   Consumer-visible: the lemma gained a [uniq Θ0] premise (the rename needs
+   it), and consumers must now [Require] prop_consis_rename. *)

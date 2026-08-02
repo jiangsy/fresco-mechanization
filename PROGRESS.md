@@ -78,7 +78,102 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-02 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 3 (look) **CLOSED** — the whole tree is GREEN, admit-free and axiom-free
+## 2026-08-02 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 4 (consis mutual) **CLOSED** — a UNIFORMITY conversion, machine-checked as such; and `F` STAYS
+
+**QUESTION ZERO, settled with a machine check before anything was converted.**
+`a_consis`'s three ∀ rows (`__forall_inh`, `__forall_syn`, `__univ_ghost1`)
+were NOT defective.  They CLOSE — the skeleton output is re-bound, the context
+output strips the opener — so cofinite was faithful, and one fresh instance
+generates the whole cofinite family.  Proved in both directions for all three
+rows (axiom-free) and kept as prop_consis_rename.v §9's `_cofinite`
+admissibility lemmas, which are now also the tool for any consumer wanting a
+family (`test_examples.v` and `prop_consis_complete.v`'s three sites go through
+them).  The conversion was made anyway, per the standing directive of ONE
+freshness discipline per layer — recorded as such in the commit and in
+DESIGN §4.3, so it is not mistaken for a repair later.
+
+The general criterion, now written into DESIGN: **cofinite is faithful exactly
+where a rule re-binds its skeleton output AND strips the opener from its
+context output.**  That decides clusters 5 and 6 too.
+
+**Three costs, all of which generalize.**
+
+- **`a_assign_unify_consis_compat` WIDENED.**  Its condition
+  `α1 ∈ F' → α1 ∈ F ∨ α1 ∉ dom Θ1` transported into the premise only because
+  cofinite let the proof pick the opener outside `F'`.  With the opener fixed,
+  `α1 = α` satisfies neither disjunct.  Re-picking needs §8's rename, which is
+  proved USING compat — so the repair had to go into the statement: a third
+  disjunct `α1 ∈ dom (input context)`.  Sound at Solve-M for the same reason
+  the original was.
+- **⚙ The rename lemma now HANDS BACK its own avoid-set** —
+  `deriv -> exists L, forall β0 ∉ L, …`, each ∀ case contributing its opener.
+  This is the TWO-INDEPENDENT-GENERATORS gap, fourth instance, and it is
+  forced: the opener occurs in NO component of the conclusion, so no set
+  computable from the statement can name it, and `a_consis : Prop` rules out a
+  function from derivations to sets.  Cluster 3's size-induction escape is NOT
+  available — `a_consis` recurses on skeleton size, `a_assign`/`a_unify` on the
+  context, and `a_assign__assign` crosses between them, so no measure decreases
+  on every rule.  The three `_cofinite` lemmas need no rename (the
+  `close`/`open` round-trip does it), which is why they stayed clean.
+- **`a_consis_decorate_gen` MOVED** from prop_decorate.v to
+  prop_consis_rename.v §10 and became a SIZE induction on
+  `size_pskl P + size_pskl P0` (the subject alone fails: UnivGhost1 fixes it
+  and shrinks only the input, ForallSyn does the opposite).  `a_consistag` is
+  still cofinite, so each ∀ row rebuilds a family from the run's ONE opener;
+  the rename lives downstream of prop_decorate.v via prop_flex.v, so the lemma
+  moved rather than the asset.  It gained `uniq Θ0`, discharged at all three
+  consumers from `a_wf_aenv_uniq`.
+
+**Soundness needed one more move.**  `a_consis_sound_aux`'s three ∀ cases used
+to `pick fresh α` and instantiate a cofinite family; now they get the rule's
+opener, which the wf judgments' cofinite bounds have no reason to avoid.
+`a_wf_pskl_ftv_dom` / `a_wf_pskl_rename_delta` / `a_wf_pskl_all_inv_at` moved
+UP from prop_consis_complete.v to prop_consis_sound.v to instantiate the wf at
+that opener.  The invariant conjunct used to need a SECOND fresh atom (one
+missing the tag set `Δ`); the rule's opener cannot miss `Δ`, but it does not
+have to — the `α0 = α` branch is refuted by `α ∉ dom Θ1`, which the premise's
+own output well-formedness supplies and the freshly-picked atom never had.
+
+**⚠️ `F` must NOT enter the ∀ rules' avoid-sets.**  Tried, and it REFUTES
+`a_assign_unify_consis_compat` (that lemma swaps `F` for an `F'` that may
+contain the rule's own opener, which is fresh and hence outside the output).
+Reverted; the soundness case that motivated it is closed by `α ∉ dom Θ1`.
+
+**`F`-DEPRECATION WITHDRAWN from the campaign.**  It was listed as something
+that "should largely fall out"; it does not.  `F` is the only carrier of the
+names the walk has already passed — `a_assign__skip` recurses at the TAIL and
+re-attaches on the way out, and `Ξ` holds only Assign-Depend's dependency
+block.  Three replacements were evaluated (DESIGN §4.3 records all three):
+output-freshness premises (multiplies the P7a blocker by eight);
+walked-prefix-as-context (a retype, not a deletion — the prefix cannot join the
+working context without letting the consistency premise solve entries the walk
+has passed); and re-freshening the output before re-attaching, which is
+genuinely VIABLE and does delete `F`, but makes the output context
+non-syntactic and so breaks L8, the lemma that shapes the ∀ rules'
+`⊣ (α ~ tvar) ++ Θ1` premise.
+
+**⚙ The principled asset, if renames keep recurring: EQUIVARIANCE.**  The
+avoid-set exists only because substitution is not injective.  A *swap*
+`α ↔ β0` moves every atom of the derivation at once, openers included, so it
+needs no freshness condition at all — and the substitution-shaped rename falls
+out as a corollary, WITHOUT `L`, and without `tvar_prefix Ξr` or `uniq`.  Cost:
+`swap` over `ptyp` / `pskl` / `abind` / `aenv` plus equivariance for the small
+side judgments.  Clusters 5, 6 and P7a's K1–K4 all need renames; build it there
+if the avoid-set starts leaking into consumer statements.
+
+**Files touched:** `def_extra.v` (the three rules), `prop_decorate.v` (lemma
+moved out), `prop_consis_rename.v` (§8 restructured, §9 admissibility, §10 the
+relocated decoration lemma), `prop_consis_sound.v`, `prop_consis_complete.v`,
+`prop_inc_strengthen.v`, `prop_decorate_key.v`, `test_examples.v`, `README.v`.
+
+**Remaining:** cluster 5 (`a_sub__forall_l` + `a_subtag__forall_l_*`; the four
+`a_consistag` ∀ rows are the same CLOSE shape as cluster 4 — ⚠️ still worth
+confirming whether `a_sub__forall_l`'s `Ξ`/`P1` really escape, since the look
+rules' generated names already avoid the looked-for α), cluster 6
+(a_pat/a_typing), the walk's three `∉ dom Θ1` premises (P7a), THEN the P7b
+dispatcher.
+
+## 2026-08-02 — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 3 (look) **CLOSED** — the whole tree is GREEN, admit-free and axiom-free
 
 Everything the stage-4 entry below specified is Qed, and the two files it left
 red are converted.  The campaign's staging rule held throughout: the enabler

@@ -878,38 +878,67 @@ with a_consis : atoms -> atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv 
     Θ1 ⊢ₐ[ F ][ Δ1 | Δ2 | P0b ] P2 ∼ Q2 ⊣ Θ2 ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_arrow P0a P0b) ]
       (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2) ⊣ Θ2
-| a_consis__forall_inh : forall L F Δ1 Δ2 Θ0 Θ1 P0 P Q,       (* ForallInh: α to BOTH *)
-    (forall α, α `notin` L ->
-       ((α ~ abind_tvar) ++ Θ0)
-         ⊢ₐ[ F ][ (add α Δ1) | (add α Δ2)
-           | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
-         (open_pskl_wrt_pskl P (pskl_var_f α)) ∼
-         (open_pskl_wrt_pskl Q (pskl_var_f α))
-         ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
+(* EXISTS-FRESH, INPUT-only side condition, explicit CLOSE (DESIGN.md §4.3,
+   the freshness campaign's cluster 4).  ⚠️ NOT a repair: unlike the look /
+   solve / guess clusters, these three rows CLOSE — the skeleton output is
+   re-bound and the context output strips the binder — so the cofinite
+   rendering was NOT degenerate.  Its equivalence with this one is
+   MACHINE-CHECKED, in both directions, by the [_cofinite] admissibility
+   lemmas ([a_consis_forall_inh_cofinite] et al, prop_consis_rename.v §9),
+   which is also what consumers wanting a family should apply.  The
+   conversion is for ONE freshness discipline per layer.
+
+   The avoid-input is [ftvar_in_aenv] (domain PLUS payloads — an [α̂ ≔ τ]
+   may mention the witness), the inputs' [ftvar_in_pskl], and the two
+   bound-variable sets; the OUTPUTS [Q] and [Θ1] are not named, and must
+   not be (the algorithm has not computed them when it picks α).
+
+   ⚠️ [F] is deliberately NOT in the avoid-set, though it is the used-name
+   set and "fresh" would naturally mean "∉ F".  Adding it REFUTES
+   [a_assign_unify_consis_compat] (prop_consis_rename.v): that lemma swaps
+   [F] for any [F'] whose atoms are old or miss the output, and such an [F']
+   may well contain this rule's opener — which is fresh, hence outside the
+   output.  Soundness' invariant conjunct, the one place that looked like it
+   needed [α ∉ Δ], is discharged instead from [α ∉ dom Θ1], which the
+   premise's own output well-formedness supplies.  [Θ1] needs
+   no condition — an output payload can never mention the binder, because
+   the walk crosses it only through [Assign-SkipRigid], whose own side
+   condition demands [α ∉ ftv] of the assigned skeleton
+   ([a_assign_unify_consis_tvar_prefix], L8). *)
+| a_consis__forall_inh : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q α,       (* ForallInh: α to BOTH *)
+    α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+      `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
+    ((α ~ abind_tvar) ++ Θ0)
+      ⊢ₐ[ F ][ (add α Δ1) | (add α Δ2)
+        | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
+      (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Q
+      ⊣ ((α ~ abind_tvar) ++ Θ1) ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_all_syn P0) ]
-      (pskl_all_syn P) ∼ (pskl_all_syn Q) ⊣ Θ1
-| a_consis__forall_syn : forall L F Δ1 Δ2 Θ0 Θ1 P0 P Q,       (* ForallSyn: α to Δ2 *)
-    (forall α, α `notin` L ->
-       ((α ~ abind_tvar) ++ Θ0)
-         ⊢ₐ[ F ][ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
-         (open_pskl_wrt_pskl P (pskl_var_f α)) ∼
-         (open_pskl_wrt_pskl Q (pskl_var_f α))
-         ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
+      (pskl_all_syn P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1
+| a_consis__forall_syn : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q α,       (* ForallSyn: α to Δ2 *)
+    α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+      `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
+    ((α ~ abind_tvar) ++ Θ0)
+      ⊢ₐ[ F ][ Δ1 | (add α Δ2) | (pskl_tophole P0) ]
+      (open_pskl_wrt_pskl P (pskl_var_f α)) ∼ Q
+      ⊣ ((α ~ abind_tvar) ++ Θ1) ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_tophole P0) ]
-      (pskl_all_syn P) ∼ (pskl_all_syn Q) ⊣ Θ1
+      (pskl_all_syn P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1
 | a_consis__univ_ghost : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q,         (* UnivGhost *)
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_tophole P0) ]
       (pskl_tophole P) ∼ (pskl_tophole Q) ⊣ Θ1
-| a_consis__univ_ghost1 : forall L F Δ1 Δ2 Θ0 Θ1 P0 P Q,      (* UnivGhost1: α to Δ1 *)
-    (forall α, α `notin` L ->
-       ((α ~ abind_tvar) ++ Θ0)
-         ⊢ₐ[ F ][ (add α Δ1) | Δ2
-           | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
-         (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α))
-         ⊣ ((α ~ abind_tvar) ++ Θ1)) ->
+| a_consis__univ_ghost1 : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q α,      (* UnivGhost1: α to Δ1 *)
+    (* exists-fresh + close, as ForallInh/ForallSyn above *)
+    α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+      `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
+    ((α ~ abind_tvar) ++ Θ0)
+      ⊢ₐ[ F ][ (add α Δ1) | Δ2
+        | (open_pskl_wrt_pskl P0 (pskl_var_f α)) ]
+      (pskl_tophole P) ∼ Q
+      ⊣ ((α ~ abind_tvar) ++ Θ1) ->
     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | (pskl_all_syn P0) ]
-      (pskl_tophole P) ∼ (pskl_all_syn Q) ⊣ Θ1
+      (pskl_tophole P) ∼ (pskl_all_syn (close_pskl_wrt_pskl α Q)) ⊣ Θ1
 | a_consis__univ_ghost2 : forall F Δ1 Δ2 Θ0 Θ1 P0 P Q,        (* UnivGhost2 *)
     guarded_pskl P0 ->
     a_non_flex Θ0 P0 ->

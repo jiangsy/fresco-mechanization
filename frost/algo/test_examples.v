@@ -44,6 +44,9 @@ Require Import src.frost.ltac_utils.
 Require Import src.frost.decl.def_extra.
 Require Import src.frost.algo.def_extra.
 Require Import src.frost.algo.prop_flex.   (* the guess freshness kit *)
+(* cluster 4: the ∀ rows are exists-fresh + close now, so these concrete
+   examples go through the cofinite ADMISSIBILITY lemmas (§9) *)
+Require Import src.frost.algo.prop_consis_rename.
 
 (* ===================================================================== *)
 (*  Tactic kit                                                            *)
@@ -202,7 +205,7 @@ Lemma consis_sigid_refl : forall F Δ1 Δ2 Θ,
     (ptyp_to_pskl σ_id) (ptyp_to_pskl σ_id) Θ.
 Proof.
   intros. unfold σ_id; simpl.
-  apply a_consis__forall_inh with (L := {}).
+  apply a_consis_forall_inh_cofinite with (L := {}).
   intros α _. simpl_open.
   eapply a_consis__arrow; apply a_consis__rigid; crush_binds.
 Qed.
@@ -222,7 +225,7 @@ Lemma consis_sigid_tophole : forall F Δ2 Θ,
     (ptyp_to_pskl σ_id) (ptyp_to_pskl σ_id) Θ.
 Proof.
   intros. unfold σ_id; simpl.
-  apply a_consis__forall_syn with (L := {}).
+  apply a_consis_forall_syn_cofinite with (L := {}).
   intros α _. simpl_open.
   apply a_consis__univ_ghost_r; [ crush_lc | crush_non_flex | ].
   eapply a_consis__arrow; apply a_consis__ghost_r; fsetdec.
@@ -672,12 +675,12 @@ Proof.
     unfold σ_r; simpl ptyp_to_pskl.
     apply a_sub__arrow with (Θ1 := Θlib).
     + (* skel(∀a.a→∀b.b→b) against ∀◇(□→∀◇(□→□)) *)
-      apply a_consis__forall_syn with (L := {}).
+      apply a_consis_forall_syn_cofinite with (L := {}).
       intros α _. simpl_open.
       apply a_consis__univ_ghost_r; [ crush_lc | crush_non_flex | ].
       eapply a_consis__arrow with (Θ1 := (α ~ abind_tvar) ++ Θlib).
       * apply a_consis__ghost_r. fsetdec.
-      * apply a_consis__forall_syn with (L := {}).
+      * apply a_consis_forall_syn_cofinite with (L := {}).
         intros β _. simpl_open.
         apply a_consis__univ_ghost_r; [ crush_lc | crush_non_flex | ].
         eapply a_consis__arrow; apply a_consis__ghost_r; fsetdec.

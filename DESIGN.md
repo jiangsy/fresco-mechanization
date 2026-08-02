@@ -555,6 +555,111 @@ the union GOALS structurally with the one-line kit (`notin_union_both`,
 leaves are `assumption` / `congruence` / a single-hypothesis `fsetdec`.  Same
 row: >100s → ~2s; the whole 2000-line file: 11s.
 
+#### Cluster 4 (the consis mutual): a UNIFORMITY conversion, and what it cost
+
+⚠️ **Unlike clusters 1–3, cluster 4 fixed no defect.**  `a_consis`'s three ∀
+rows (`__forall_inh`, `__forall_syn`, `__univ_ghost1`) CLOSE: the skeleton
+output is re-bound and the context output strips the opener.  So the cofinite
+rendering was faithful, and the two encodings are equivalent — machine-checked
+in BOTH directions by prop_consis_rename.v §9's `_cofinite` admissibility
+lemmas, which are also what consumers wanting a family should apply.  The
+conversion was made anyway, for ONE freshness discipline per layer.
+
+The criterion is worth stating on its own, because it decides every remaining
+cluster: **cofinite is faithful exactly where a rule re-binds its skeleton
+output AND strips the opener from its context output.**  Where either escapes,
+cofinite silently degenerates to "fires only when the binder is vacuous".
+
+Three things the conversion cost, all of which generalize:
+
+- **`a_assign_unify_consis_compat` had to be WIDENED.**  Its condition was
+  `α1 ∈ F' → α1 ∈ F ∨ α1 ∉ dom Θ1`.  Under cofinite the opener could be chosen
+  outside `F'`, so the condition transported into the premise; with the opener
+  fixed, `α1 = α` satisfies neither disjunct (`α` IS in `dom ((α~tvar) ++ Θ1)`).
+  Re-picking would need §8's rename, which is proved USING compat, so the
+  repair went into the statement: a third disjunct `α1 ∈ dom (input context)`.
+- **The rename lemma HANDS BACK its own avoid-set** —
+  `deriv -> exists L, forall β0 ∉ L, …`, each ∀ case contributing its opener to
+  `L`.  This is the two-independent-generators gap again, and it is forced: the
+  opener occurs in NO component of the conclusion (the inputs carry `var_b 0`,
+  the output is `close α Q`, the context entry is stripped), so no set
+  computable from the statement can contain it, and `a_consis : Prop` rules out
+  a function from derivations to sets.  Cluster 3's other escape — size
+  induction, "rename twice" — is NOT available here: `a_consis` recurses on
+  skeleton size, `a_assign`/`a_unify` on the context, and `a_assign__assign`
+  crosses from context `(β̂ ≔ τ) ++ Θ0` to a premise at `Ξ ++ Θ0`, so no measure
+  decreases on every rule.
+- **`a_consis_decorate_gen` MOVED to prop_consis_rename.v §10** and became a
+  SIZE induction on `size_pskl P + size_pskl P0` (the subject alone fails —
+  UnivGhost1 fixes it and shrinks only the input, ForallSyn does the opposite).
+  The decorated `a_consistag` rows are still cofinite, so each ∀ row must
+  rebuild a family from the run's ONE opener; the rename lives downstream of
+  prop_decorate.v (via prop_flex.v), so the lemma moved rather than the asset.
+  It gained a `uniq Θ0` premise, discharged at its three consumers from
+  `a_wf_aenv_uniq`.
+
+⚙ **The principled alternative, if renames keep recurring: EQUIVARIANCE.**
+The avoid-set exists only because *substitution is not injective* — `subst β0 α`
+collapses two distinct free atoms when `β0` happens to be an internal opener.
+A **swap** `α ↔ β0` has no such failure mode: it moves every atom of the
+derivation at once, including the openers, so equivariance needs NO freshness
+side condition at all, and the substitution-shaped rename falls out as a
+corollary whenever `β0` is fresh for the STATEMENT's own data — no `L`, and
+`tvar_prefix Ξr` and `uniq` both drop out of the hypotheses.  The cost is
+building `swap` over `ptyp` / `pskl` / `abind` / `aenv` plus equivariance for
+the small side judgments (`a_guess_mono`, `a_flex_tvar`, `a_non_flex`,
+`guarded_pskl`); the mutual proof itself gets much SHORTER than the current one
+(no crossing case analysis, no freshness bookkeeping).  Clusters 5 and 6 and
+P7a's K1–K4 all need renames, so this is the asset to build if the avoid-set
+starts leaking into consumer statements.
+
+#### The `F` avoidance set STAYS (decided 2026-08-02)
+
+`F` was listed above as something the campaign would retire; it is not, and the
+item is withdrawn.  `F` is the ONLY carrier of the names the assign/unify walk
+has passed: `a_assign__skip` recurses at the TAIL (`Θ0`, not `(β~b) ++ Θ0`) and
+re-attaches `β` on the way out, and `Ξ` accumulates only Assign-Depend's
+dependency block — so during the descent no context slot holds them, and
+`a_assign__solve_m`'s guessed `β̄` genuinely need them.  `a_consis` carries `F`
+purely to relay it: it appears inside the walk via `a_assign__assign`'s
+consistency premise.
+
+Three alternatives were considered and rejected:
+
+- **Output-freshness premises** (`β ∉ dom Θ1` on the ~8 re-attaching rules,
+  deleting `F`).  Cleanest definition, but it moves the obligation onto
+  completeness — and that premise shape is exactly the P7a blocker
+  (`a_sub_flex__assign` / `__skip` / `__skip_rigid`, PROGRESS 2026-07-31).
+  `F`'s condition constrains the GUESSED names, which a completeness proof
+  picks and therefore controls; `β ∉ dom Θ1` constrains a sub-run's OUTPUT,
+  which it does not.  This multiplies one unsolved problem by eight.
+- **The walked prefix as a context** (`Θw : aenv` replacing `F : atoms`).  A
+  retype, not a deletion — `Θw` cannot be merged into the working context
+  (the consistency premise could then SOLVE entries the walk had passed), so
+  `a_consis` still carries a slot.  Its one real gain, payload coverage via
+  `ftvar_in_aenv`, is already sound transitively.
+- **Re-freshening the output before re-attaching** (`⊣ (β ~ b) ++ rename_aenv γ β Θ1`,
+  with `γ` fresh for `Θ1`).  This one is genuinely VIABLE and does delete `F`:
+  every occurrence of `β` in `Θ1` is necessarily invented by the sub-run (`β`
+  was stripped for the recursive call, no pre-existing payload can mention it
+  by the scope discipline, and `β ∉ ftv P`), so renaming it is
+  meaning-preserving.  It was rejected on cost: it makes the output context
+  non-syntactic.  L8 (`a_assign_unify_consis_tvar_prefix`) says an all-rigid
+  prefix survives VERBATIM, and that is exactly what shapes the ∀ rules'
+  `⊣ (α ~ tvar) ++ Θ1` premise; under the rename it survives only up to
+  renaming, and every `dom` / `binds` / `uniq` / soundness statement about the
+  output needs a `rename_aenv` commutation.  The output also stops being
+  determined, since `γ` is existential.
+
+⚠️ **`F` must NOT enter the ∀ rules' avoid-sets**, tempting though it is (`F`
+is the used-name set, so "fresh" would naturally mean `∉ F`).  Adding it
+REFUTES `a_assign_unify_consis_compat`: that lemma swaps `F` for any `F'` whose
+atoms are old or miss the output, and such an `F'` may well contain the rule's
+own opener — which is fresh, hence outside the output.  Soundness' invariant
+conjunct, the one place that looked like it needed `α ∉ Δ`, is discharged
+instead from `α ∉ dom Θ1`, which the premise's own output well-formedness
+supplies.
+
 #### The cost, and the staging rule that pays it
 
 Exists-fresh takes binder choice AWAY from consumers: a proof that needs
@@ -580,12 +685,10 @@ precedent.
 
 Two further disciplines are being retired into the canon:
 
-- **The `F` avoidance set** — an `atoms` index threaded through the
-  whole `a_assign` / `a_unify` / `a_consis` mutual and consumed in
-  exactly ONE rule (`a_assign__solve_m`, where the guessed `βs` avoid
-  `F ∪ {α} ∪ dom (Ξ ++ Θ0)`), pure pass-through everywhere else.  It is
-  deprecated; Solve-M's freshness moves to the canonical side-condition
-  form.
+- ~~**The `F` avoidance set**~~ — WITHDRAWN 2026-08-02, see "The `F`
+  avoidance set STAYS" above.  It is not the deprecable pass-through the
+  campaign assumed: it is the only carrier of the walk's already-passed
+  names, and every replacement costs more than it saves.
 - **The walk's prose-Barendregt OUTPUT premises** (`β ∉ dom Θ1` on
   `a_sub_flex__assign` / `__skip` / `__skip_rigid`) — these stay as
   genuine side conditions, and COMPLETENESS discharges them with the

@@ -24,6 +24,8 @@ Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_consis_sound.
+(* cluster 4: [a_consis_decorate] moved to prop_consis_rename.v §10 *)
+Require Import src.frost.algo.prop_consis_rename.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_decorate.
@@ -3450,7 +3452,7 @@ Proof.
     eapply a_subtag__check;
       [ apply pskl_to_uskl_guarded; exact HgA
       | exact HgB
-      | exact (a_consis_decorate Hcns) ].
+      | exact (a_consis_decorate Hcns (a_wf_aenv_uniq Hwf)) ].
   - (* ForallR (exists-fresh 2026-07-31: the rule's own binder serves) *)
     intros α Θ0 Θ1 Ξ A B Hsuf Huq Hfr Hprem IHprem Hwf HwfP0 HwfP Hmod Hgf0.
     rewrite dom_app in Hfr.
@@ -3496,7 +3498,7 @@ Proof.
     intros NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hs2 IH2 Hwf HwfP0 HwfP Hmod Hgf0.
     apply a_wf_pskl_arrow_inv in HwfP0 as [HwfP0a HwfP0b].
     apply a_wf_pskl_arrow_inv in HwfP as [HwfP1 HwfP2].
-    pose proof (a_consis_decorate Hc) as Hct.
+    pose proof (a_consis_decorate Hc (a_wf_aenv_uniq Hwf)) as Hct.
     destruct (a_consistag_sound_aux Hct Hwf
                 ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
                 HwfP0a
