@@ -1389,6 +1389,92 @@ Proof.
   rewrite swap_atom_l in h. contradiction.
 Qed.
 
+(** A set index is fixed by a swap of two atoms outside it.  Stated in the
+    [S' [=] swap_atoms a b S] orientation the set-indexed equivariance
+    lemmas consume (cf. [eq_swap_atoms_add]). *)
+Lemma eq_swap_atoms_fresh : forall a b (S : atoms),
+  a `notin` S -> b `notin` S -> S [=] swap_atoms a b S.
+Proof.
+  intros * Ha Hb y. split; intros Hy.
+  - apply swap_atoms_iff.
+    destruct (y == a); [ subst; contradiction | ].
+    destruct (y == b); [ subst; contradiction | ].
+    rewrite swap_atom_other; auto.
+  - apply swap_atoms_iff in Hy.
+    destruct (y == a); [ subst; rewrite swap_atom_l in Hy; contradiction | ].
+    destruct (y == b); [ subst; rewrite swap_atom_r in Hy; contradiction | ].
+    rewrite swap_atom_other in Hy; auto.
+Qed.
+
+(** The consis mutual's junk renames — the same consumption shape as the
+    [a_sub] pair above, for the eight re-attaching rules of the
+    assign/unify walk.  Every INPUT (context, pending suffix, subjects,
+    skeletons, set indexes) is fixed pointwise; only the OUTPUTS move. *)
+Lemma a_assign_swap_junk : forall β0 β1 F Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  β0 <> α -> β1 <> α ->
+  β0 `notin` F -> β1 `notin` F ->
+  β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P ->
+  β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P ->
+  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ (swap_aenv β0 β1 Θ1).
+Proof.
+  intros * Hd Hne0 Hne1 HF0 HF1 H0 H1.
+  apply notin_union_split in H0; destruct H0 as [h0 H0].
+  apply notin_union_split in H0; destruct H0 as [h0' h0''].
+  apply notin_union_split in H1; destruct H1 as [h1 H1].
+  apply notin_union_split in H1; destruct H1 as [h1' h1''].
+  pose proof (proj1 (a_assign_unify_consis_swap β0 β1) _ _ _ _ _ _ Hd F
+                (eq_swap_atoms_fresh β0 β1 F HF0 HF1)) as h.
+  rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
+  rewrite (swap_aenv_fresh_id β0 β1 Ξ) in h; auto.
+  rewrite (swap_atom_other β0 β1 α) in h; auto.
+  rewrite (swap_pskl_fresh_id β0 β1 P) in h; auto.
+Qed.
+
+Lemma a_unify_swap_junk : forall β0 β1 F Θ0 α β Θ1,
+  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+  β0 <> α -> β1 <> α -> β0 <> β -> β1 <> β ->
+  β0 `notin` F -> β1 `notin` F ->
+  β0 `notin` ftvar_in_aenv Θ0 -> β1 `notin` ftvar_in_aenv Θ0 ->
+  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ (swap_aenv β0 β1 Θ1).
+Proof.
+  intros * Hd Hnα0 Hnα1 Hnβ0 Hnβ1 HF0 HF1 H0 H1.
+  pose proof (proj1 (proj2 (a_assign_unify_consis_swap β0 β1))
+                _ _ _ _ _ Hd F (eq_swap_atoms_fresh β0 β1 F HF0 HF1)) as h.
+  rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
+  rewrite (swap_atom_other β0 β1 α) in h; auto.
+  rewrite (swap_atom_other β0 β1 β) in h; auto.
+Qed.
+
+Lemma a_consis_swap_junk : forall β0 β1 F Δ1 Δ2 Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  β0 `notin` F `union` Δ1 `union` Δ2 ->
+  β1 `notin` F `union` Δ1 `union` Δ2 ->
+  β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+     `union` ftvar_in_pskl P ->
+  β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+     `union` ftvar_in_pskl P ->
+  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ (swap_pskl β0 β1 Q)
+    ⊣ (swap_aenv β0 β1 Θ1).
+Proof.
+  intros * Hd HS0 HS1 H0 H1.
+  apply notin_union_split in H0; destruct H0 as [h0 H0].
+  apply notin_union_split in H0; destruct H0 as [h0' h0''].
+  apply notin_union_split in H1; destruct H1 as [h1 H1].
+  apply notin_union_split in H1; destruct H1 as [h1' h1''].
+  pose proof (proj2 (proj2 (a_assign_unify_consis_swap β0 β1))
+                _ _ _ _ _ _ _ _ Hd F Δ1 Δ2
+                (eq_swap_atoms_fresh β0 β1 F ltac:(fsetdec) ltac:(fsetdec))
+                (eq_swap_atoms_fresh β0 β1 Δ1 ltac:(fsetdec) ltac:(fsetdec))
+                (eq_swap_atoms_fresh β0 β1 Δ2 ltac:(fsetdec) ltac:(fsetdec)))
+    as h.
+  rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
+  rewrite (swap_pskl_fresh_id β0 β1 P0) in h; auto.
+  rewrite (swap_pskl_fresh_id β0 β1 P) in h; auto.
+Qed.
+
 (* ===================================================================== *)
 (*  §14  Equivariance: the θ-algebra (metasubstitutions, ≡ᵗ/≡ˢ, a_inc)     *)
 (* ===================================================================== *)
