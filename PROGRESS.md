@@ -78,7 +78,76 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-02 (latest) — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 5 **CLOSED**: `a_sub__forall_l` is EXISTS-FRESH, and the DECORATED layer stays COFINITE by design
+## 2026-08-02 (latest) — ⭐⭐⭐ THE SWAP KIT (equivariance) LANDS: `prop_swap.v`, the UNIFORM renaming primitive — P7a's K1–K3 subsumed in one pass
+
+**The user's uniformity directive** (2026-08-02): ONE treatment of freshness
+repair across the whole proof — no mixture of the `F` avoidance set, exists-`L`
+avoid-set hand-backs, size-induction renames, and ad-hoc devices.  That
+directive DECIDES the P7a route: only equivariance under an atom transposition
+serves every judgment with one statement shape — the exists-`L` shape is forced
+where no measure decreases (the consis mutual, `a_sub`), and the size shape is
+forced where it does (look), so no substitution-based discipline can be
+uniform.  The 30-minute option-(C) check settled faithfulness first: the
+reference implementation genuinely pops AND re-attaches the walked entry
+(`pop_binding` type.ml:1009; `add_binding bind` :1028/:1040/:1046), the paper's
+rules write the output `Θ1,β̂` (full-algo-spec.tex:883-909), and only the global
+counter (`incr counter`, :563) makes `β ∉ dom Θ1` true in the implementation —
+so the mech rules are faithful and the discharge obligation is real.
+
+**What landed (`frost/algo/prop_swap.v`, ~1450 lines, all `Qed`, compiles in
+under 3s, tree green)**:
+
+- §1–§4 the syntax layer: `swap_atom` (`simpl never` — destructs match it
+  syntactically) lifted through `ptyp`/`pskl`/`abind`/`aenv`; involutions,
+  fresh-identity (`swap_*_fresh_id`), ftv/dom/binds/uniq transport, and
+  commutation with open/close/subst and `ptyp_to_pskl`.  LN untouched: swap
+  acts on free atoms only.
+- §6 `swap_atoms` for the set indexes, with the MEMBERSHIP SPEC
+  (`swap_atoms_iff`) as its interface — set-indexed judgments take their
+  swapped indexes EXTENSIONALLY (`S' [=] swap_atoms a b S`), and the
+  `add`-extending rules step through `eq_swap_atoms_add`.
+- §5, §9–§12 equivariance for EVERY judgment `a_sub` reaches:
+  `a_guess_mono`/`a_guess`, the small predicates (incl. both cofinite wf
+  judgments — the binder case needs NO re-picking: `L' := swap_atoms a b L`),
+  `a_looksub`/`a_lookeq`, `a_solve_sub`/`a_solve_eq`/`a_solve_cstr`,
+  `a_extract`, the consis mutual (28 cases), and `a_sub`/`a_sub_flex`.
+  Every binder case is re-apply-the-same-constructor: the ONE fixed name
+  transports because a bijection cannot collapse it into anything.
+- §13 the K3 consumption shape: `a_sub_swap_junk` / `a_sub_flex_swap_junk`
+  (inputs β0-free and β1-fresh ⇒ same run with swapped OUTPUTS) and
+  `swap_junk_dom_out` (β1 ∉ dom Θ1 ⇒ β0 ∉ dom of the swapped output) — exactly
+  what the walk rows' Barendregt premises need.
+
+**Corrections to the 2026-07-31 kit map, verified against the tree**: K0 as
+imagined (`dom Θ1 ⊆ dom (Ξ ++ Θ0)`, "the consis layer invents no names") is
+FALSE — `a_assign__solve_m` deposits `a_guess_mono`'s fresh flexibles; the
+honest, F-relative form ALREADY EXISTS as soundness conjunct 4
+(`forall x, x ∈ dom Θ1 → x ∈ dom Θ0 ∨ x ∉ F`, prop_consis_sound.v:2556-2610).
+And because `a_sub` has no `F` slot (its consis leaves run at `F = ∅`), no
+input-side discipline can see the walked-out β — the after-the-fact rename is
+the only non-encoding-touching route, which is what the kit provides.
+
+**Standing consequence for uniformity (queued, NOT yet executed)**: with the
+kit landed, the sole recorded ground for withdrawing the F-deprecation
+("output-freshness premises multiply the P7a blocker ×8") evaporates — after
+P7a closes, `F` can be deleted and the consis walk re-encoded with the same
+Barendregt output premises the subtyping walk carries, discharged the same
+way; the exists-`L` rename (`a_assign_unify_consis_rename_tvar`) and the
+rename siblings of cluster 3 become derivable corollaries of equivariance and
+their bespoke proofs retirable.  Sequenced AFTER P7a proves the pattern
+end-to-end.
+
+⚙ Three tactic-level gotchas the kit's build recorded (in-file comments):
+`simpl` unfolds `List.map` into its `fix` (rewrite through `swap_aenv_cons`
+instead); `f_equal` is a no-op on 0-ary constructor equalities (`reflexivity`
+in the solve list); prop_ln's `==` tests carry THEIR elaboration's instance
+term, so destruct them by capturing `if ?t then _ else _` from the goal, never
+by re-elaborating the test.
+
+**Next**: K4 (the θ-algebra transport: `a_inc` source/target swaps, ζ
+key-swap, `msubst` key-swap equalities) — then the P7a rows themselves.
+
+## 2026-08-02 — ⭐⭐⭐ FRESHNESS CAMPAIGN cluster 5 **CLOSED**: `a_sub__forall_l` is EXISTS-FRESH, and the DECORATED layer stays COFINITE by design
 
 **QUESTION ZERO, machine-checked before anything was converted** (probe `Qed`,
 axiom-free, both directions).  `a_sub__forall_l` LOOKED defective — its shared

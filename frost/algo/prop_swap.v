@@ -1,0 +1,1389 @@
+(** EQUIVARIANCE — the swap kit (DESIGN.md §4.3 ⚙, P7a's K1–K4 replacement).
+
+    ONE uniform renaming primitive for the whole algorithmic layer: the atom
+    transposition [swap_atom a b] lifted through the syntax, and per-judgment
+    EQUIVARIANCE lemmas ([J args → J (swap args)]).
+
+    Why a transposition and not the substitution-shaped renames the tree
+    already has: a swap is a BIJECTION on atoms, so it cannot collapse two
+    names — the internal openers/generated names of a derivation (which no
+    statement can see, and which exists-fresh rules fix) transport with NO
+    side condition: distinctness, [uniq], [binds] and every input-only
+    freshness condition [γ ∉ ftvar_in_aenv Θ] are preserved verbatim.  The
+    substitution-shaped rename must either hand back an existential avoid-set
+    (cluster 4's [a_assign_unify_consis_rename_tvar]) or lean on a decreasing
+    measure (cluster 3) — neither of which exists for [a_sub]/[a_sub_flex],
+    and neither of which is UNIFORM.  The consumption-shaped renames (a junk
+    name renamed away from a delivered run's outputs, its inputs untouched)
+    fall out as corollaries: when both atoms avoid a component's free atoms,
+    [swap] is the identity on it ([swap_*_fresh_id]).
+
+    LN is untouched: bound variables stay de Bruijn indices; [swap] acts on
+    free atoms only and commutes with open/close/subst.
+
+    NB no [Set Implicit Arguments] here, deliberately: the kit's lemmas are
+    applied with explicit atom pairs at many call sites, and SIA would make
+    every argument of the transport lemmas implicit (they are all inferable
+    from the hypothesis), forcing [@]-applications everywhere.
+
+    PROBE SCOPE (2026-08-02): §1–§4 syntax layer + [a_guess_mono]/[a_guess]
+    equivariance (§5), as the viability probe for the full pass (look/solve/
+    extract, the consis mutual, [a_sub]/[a_sub_flex], then the θ-algebra
+    transports). *)
+
+Require Import Coq.Lists.List.
+Require Import Metalib.Metatheory.
+
+Require Import src.frost.notations.
+Require Import src.frost.def_extra.
+Require Import src.frost.predicates.
+Require Import src.frost.coercions.
+Require Import src.frost.algo.def_extra.
+
+(* ===================================================================== *)
+(*  §1  The atom transposition                                            *)
+(* ===================================================================== *)
+
+Definition swap_atom (a b x : atom) : atom :=
+  if x == a then b else if x == b then a else x.
+
+(** [simpl] must never unfold [swap_atom] into its if-form: destructs and
+    rewrites match [swap_atom _ _ _] syntactically. *)
+Global Arguments swap_atom : simpl never.
+
+Lemma swap_atom_l : forall a b, swap_atom a b a = b.
+Proof.
+  intros. unfold swap_atom.
+  destruct (a == a); [reflexivity | exfalso; apply n; reflexivity].
+Qed.
+
+Lemma swap_atom_r : forall a b, swap_atom a b b = a.
+Proof.
+  intros. unfold swap_atom.
+  destruct (b == a); [congruence |].
+  destruct (b == b); [reflexivity | exfalso; apply n0; reflexivity].
+Qed.
+
+Lemma swap_atom_other : forall a b x, x <> a -> x <> b -> swap_atom a b x = x.
+Proof.
+  intros. unfold swap_atom.
+  destruct (x == a); [contradiction |].
+  destruct (x == b); [contradiction | reflexivity].
+Qed.
+
+Lemma swap_atom_invol : forall a b x, swap_atom a b (swap_atom a b x) = x.
+Proof.
+  intros. unfold swap_atom.
+  repeat match goal with
+         | |- context [?u == ?v] =>
+             is_var u; is_var v; destruct (u == v); subst
+         end;
+    congruence.
+Qed.
+
+Lemma swap_atom_inj : forall a b x y,
+  swap_atom a b x = swap_atom a b y -> x = y.
+Proof.
+  intros * H.
+  rewrite <- (swap_atom_invol a b x), <- (swap_atom_invol a b y), H.
+  reflexivity.
+Qed.
+
+(** Local two-way union splitters (small unions only — the ⚙ rule about
+    [fsetdec] and big unions does not apply at width 2). *)
+Local Lemma notin_union_split : forall (x : atom) (s t : atoms),
+  x `notin` (s `union` t) -> x `notin` s /\ x `notin` t.
+Proof. intros; split; fsetdec. Qed.
+
+Local Lemma notin_union_join : forall (x : atom) (s t : atoms),
+  x `notin` s -> x `notin` t -> x `notin` (s `union` t).
+Proof. intros; fsetdec. Qed.
+
+(* ===================================================================== *)
+(*  §2  Swap over the syntax                                              *)
+(* ===================================================================== *)
+
+Fixpoint swap_ptyp (a b : atom) (A : ptyp) : ptyp :=
+  match A with
+  | ptyp_unit => ptyp_unit
+  | ptyp_var_b n => ptyp_var_b n
+  | ptyp_var_f α => ptyp_var_f (swap_atom a b α)
+  | ptyp_arrow A1 A2 => ptyp_arrow (swap_ptyp a b A1) (swap_ptyp a b A2)
+  | ptyp_all A0 => ptyp_all (swap_ptyp a b A0)
+  end.
+
+Fixpoint swap_pskl (a b : atom) (P : pskl) : pskl :=
+  match P with
+  | pskl_unit => pskl_unit
+  | pskl_var_b n => pskl_var_b n
+  | pskl_var_f α => pskl_var_f (swap_atom a b α)
+  | pskl_arrow P1 P2 => pskl_arrow (swap_pskl a b P1) (swap_pskl a b P2)
+  | pskl_all_syn P0 => pskl_all_syn (swap_pskl a b P0)
+  | pskl_hole => pskl_hole
+  | pskl_tophole P0 => pskl_tophole (swap_pskl a b P0)
+  end.
+
+Definition swap_abind (a b : atom) (bd : abind) : abind :=
+  match bd with
+  | abind_tvar => abind_tvar
+  | abind_var_typ A => abind_var_typ (swap_ptyp a b A)
+  | abind_var_skl P => abind_var_skl (swap_pskl a b P)
+  | abind_flex_mono => abind_flex_mono
+  | abind_flex_mono_def τ => abind_flex_mono_def (swap_ptyp a b τ)
+  end.
+
+Definition swap_aenv (a b : atom) (Θ : aenv) : aenv :=
+  List.map (fun e => (swap_atom a b (fst e), swap_abind a b (snd e))) Θ.
+
+(* ---- involutions ---- *)
+
+Lemma swap_ptyp_invol : forall a b A, swap_ptyp a b (swap_ptyp a b A) = A.
+Proof.
+  induction A; simpl; f_equal; auto using swap_atom_invol.
+Qed.
+
+Lemma swap_pskl_invol : forall a b P, swap_pskl a b (swap_pskl a b P) = P.
+Proof.
+  induction P; simpl; f_equal; auto using swap_atom_invol.
+Qed.
+
+Lemma swap_abind_invol : forall a b bd, swap_abind a b (swap_abind a b bd) = bd.
+Proof.
+  destruct bd; simpl; f_equal; auto using swap_ptyp_invol, swap_pskl_invol.
+Qed.
+
+(** The cons interface — rewrite with THIS, never [simpl], on a
+    [swap_aenv _ _ (_ :: _)] (or [(x ~ bd) ++ Θ]) term: [simpl] unfolds
+    [List.map] into its [fix] body and later rewrites stop matching. *)
+Lemma swap_aenv_cons : forall a b x bd (Θ : aenv),
+  swap_aenv a b ((x, bd) :: Θ)
+  = (swap_atom a b x, swap_abind a b bd) :: swap_aenv a b Θ.
+Proof. reflexivity. Qed.
+
+Lemma swap_aenv_invol : forall a b Θ, swap_aenv a b (swap_aenv a b Θ) = Θ.
+Proof.
+  induction Θ as [| [x bd] Θ']; [reflexivity |].
+  rewrite !swap_aenv_cons, swap_atom_invol, swap_abind_invol, IHΘ'.
+  reflexivity.
+Qed.
+
+(* ---- structural distribution ---- *)
+
+Lemma swap_aenv_app : forall a b (Θ1 Θ2 : aenv),
+  swap_aenv a b (Θ1 ++ Θ2) = swap_aenv a b Θ1 ++ swap_aenv a b Θ2.
+Proof. intros. unfold swap_aenv. apply List.map_app. Qed.
+
+(* ===================================================================== *)
+(*  §3  Free-atom transport                                               *)
+(* ===================================================================== *)
+
+Lemma swap_ptyp_ftv_in : forall a b A x,
+  x `in` ftvar_in_ptyp A ->
+  swap_atom a b x `in` ftvar_in_ptyp (swap_ptyp a b A).
+Proof.
+  intros a b A; induction A; simpl; intros x Hx; try solve [fsetdec | auto].
+  - (* var_f *) assert (x = α) by fsetdec. subst. fsetdec.
+  - (* arrow *)
+    assert (x `in` ftvar_in_ptyp A1 \/ x `in` ftvar_in_ptyp A2) as [h | h]
+      by fsetdec;
+      [ pose proof (IHA1 x h) | pose proof (IHA2 x h) ]; fsetdec.
+Qed.
+
+Lemma swap_pskl_ftv_in : forall a b P x,
+  x `in` ftvar_in_pskl P ->
+  swap_atom a b x `in` ftvar_in_pskl (swap_pskl a b P).
+Proof.
+  intros a b P; induction P; simpl; intros x Hx; try solve [fsetdec | auto].
+  - (* var_f *) assert (x = α) by fsetdec. subst. fsetdec.
+  - (* arrow *)
+    assert (x `in` ftvar_in_pskl P1 \/ x `in` ftvar_in_pskl P2) as [h | h]
+      by fsetdec;
+      [ pose proof (IHP1 x h) | pose proof (IHP2 x h) ]; fsetdec.
+Qed.
+
+Lemma swap_ptyp_ftv_notin : forall a b A x,
+  x `notin` ftvar_in_ptyp A ->
+  swap_atom a b x `notin` ftvar_in_ptyp (swap_ptyp a b A).
+Proof.
+  intros * Hn Hin. apply Hn.
+  pose proof (swap_ptyp_ftv_in a b (swap_ptyp a b A) (swap_atom a b x) Hin)
+    as h.
+  rewrite swap_ptyp_invol, swap_atom_invol in h. exact h.
+Qed.
+
+Lemma swap_pskl_ftv_notin : forall a b P x,
+  x `notin` ftvar_in_pskl P ->
+  swap_atom a b x `notin` ftvar_in_pskl (swap_pskl a b P).
+Proof.
+  intros * Hn Hin. apply Hn.
+  pose proof (swap_pskl_ftv_in a b (swap_pskl a b P) (swap_atom a b x) Hin)
+    as h.
+  rewrite swap_pskl_invol, swap_atom_invol in h. exact h.
+Qed.
+
+(* ---- fresh-identity: both atoms absent ⇒ swap is the identity ---- *)
+
+Lemma swap_ptyp_fresh_id : forall a b A,
+  a `notin` ftvar_in_ptyp A -> b `notin` ftvar_in_ptyp A ->
+  swap_ptyp a b A = A.
+Proof.
+  induction A; simpl; intros Ha Hb; f_equal;
+    try solve
+      [ reflexivity
+      | apply swap_atom_other; intro; subst; fsetdec
+      | apply IHA; fsetdec
+      | apply IHA1; fsetdec
+      | apply IHA2; fsetdec ].
+Qed.
+
+Lemma swap_pskl_fresh_id : forall a b P,
+  a `notin` ftvar_in_pskl P -> b `notin` ftvar_in_pskl P ->
+  swap_pskl a b P = P.
+Proof.
+  induction P; simpl; intros Ha Hb; f_equal;
+    try solve
+      [ reflexivity
+      | apply swap_atom_other; intro; subst; fsetdec
+      | apply IHP; fsetdec
+      | apply IHP1; fsetdec
+      | apply IHP2; fsetdec ].
+Qed.
+
+(* ---- aenv: dom / payload-ftv / binds / uniq transport ---- *)
+
+Lemma swap_aenv_dom_in : forall a b (Θ : aenv) x,
+  x `in` dom Θ -> swap_atom a b x `in` dom (swap_aenv a b Θ).
+Proof.
+  intros a b Θ; induction Θ as [| [y bd] Θ']; simpl; intros x Hx.
+  - fsetdec.
+  - assert (x = y \/ x `in` dom Θ') as [h | h] by fsetdec.
+    + subst. fsetdec.
+    + pose proof (IHΘ' x h). fsetdec.
+Qed.
+
+Lemma swap_aenv_dom_notin : forall a b (Θ : aenv) x,
+  x `notin` dom Θ -> swap_atom a b x `notin` dom (swap_aenv a b Θ).
+Proof.
+  intros * Hn Hin. apply Hn.
+  pose proof (swap_aenv_dom_in a b (swap_aenv a b Θ) (swap_atom a b x) Hin)
+    as h.
+  rewrite swap_aenv_invol, swap_atom_invol in h. exact h.
+Qed.
+
+Lemma swap_abind_ftv_in : forall a b bd x,
+  x `in` ftvar_in_abind bd ->
+  swap_atom a b x `in` ftvar_in_abind (swap_abind a b bd).
+Proof.
+  intros; destruct bd; simpl in *;
+    auto using swap_ptyp_ftv_in, swap_pskl_ftv_in; fsetdec.
+Qed.
+
+Lemma swap_aenv_ftvar_in : forall a b (Θ : aenv) x,
+  x `in` ftvar_in_aenv Θ ->
+  swap_atom a b x `in` ftvar_in_aenv (swap_aenv a b Θ).
+Proof.
+  intros a b Θ; induction Θ as [| [y bd] Θ']; simpl; intros x Hx.
+  - fsetdec.
+  - assert (x = y \/ x `in` ftvar_in_abind bd \/ x `in` ftvar_in_aenv Θ')
+      as [h | [h | h]] by fsetdec.
+    + subst. fsetdec.
+    + pose proof (swap_abind_ftv_in a b bd x h). fsetdec.
+    + pose proof (IHΘ' x h). fsetdec.
+Qed.
+
+Lemma swap_aenv_ftvar_notin : forall a b (Θ : aenv) x,
+  x `notin` ftvar_in_aenv Θ ->
+  swap_atom a b x `notin` ftvar_in_aenv (swap_aenv a b Θ).
+Proof.
+  intros * Hn Hin. apply Hn.
+  pose proof (swap_aenv_ftvar_in a b (swap_aenv a b Θ) (swap_atom a b x) Hin)
+    as h.
+  rewrite swap_aenv_invol, swap_atom_invol in h. exact h.
+Qed.
+
+Lemma swap_aenv_binds : forall a b x bd (Θ : aenv),
+  binds x bd Θ ->
+  binds (swap_atom a b x) (swap_abind a b bd) (swap_aenv a b Θ).
+Proof.
+  intros a b x bd Θ; unfold binds;
+    induction Θ as [| [y byd] Θ']; simpl; intros H.
+  - contradiction.
+  - destruct H as [Heq | Hin].
+    + inversion Heq; subst. left; reflexivity.
+    + right; auto.
+Qed.
+
+Lemma swap_aenv_uniq : forall a b (Θ : aenv),
+  uniq Θ -> uniq (swap_aenv a b Θ).
+Proof.
+  intros a b Θ H; induction H; simpl.
+  - constructor.
+  - constructor; auto using swap_aenv_dom_notin.
+Qed.
+
+(* ===================================================================== *)
+(*  §4  Commutation with open / close and the paintings                   *)
+(* ===================================================================== *)
+
+Lemma swap_ptyp_open_rec : forall a b A2 A1 k,
+  swap_ptyp a b (open_ptyp_wrt_ptyp_rec k A2 A1)
+  = open_ptyp_wrt_ptyp_rec k (swap_ptyp a b A2) (swap_ptyp a b A1).
+Proof.
+  intros a b A2; induction A1; intros k; simpl;
+    try solve [f_equal; auto].
+  (* var_b *)
+  destruct (lt_eq_lt_dec n k) as [[? | ?] | ?]; simpl; auto.
+Qed.
+
+Lemma swap_pskl_open_rec : forall a b P2 P1 k,
+  swap_pskl a b (open_pskl_wrt_pskl_rec k P2 P1)
+  = open_pskl_wrt_pskl_rec k (swap_pskl a b P2) (swap_pskl a b P1).
+Proof.
+  intros a b P2; induction P1; intros k; simpl;
+    try solve [f_equal; auto].
+  (* var_b *)
+  destruct (lt_eq_lt_dec n k) as [[? | ?] | ?]; simpl; auto.
+Qed.
+
+Lemma swap_ptyp_open : forall a b A1 A2,
+  swap_ptyp a b (open_ptyp_wrt_ptyp A1 A2)
+  = open_ptyp_wrt_ptyp (swap_ptyp a b A1) (swap_ptyp a b A2).
+Proof. intros. unfold open_ptyp_wrt_ptyp. apply swap_ptyp_open_rec. Qed.
+
+Lemma swap_pskl_open : forall a b P1 P2,
+  swap_pskl a b (open_pskl_wrt_pskl P1 P2)
+  = open_pskl_wrt_pskl (swap_pskl a b P1) (swap_pskl a b P2).
+Proof. intros. unfold open_pskl_wrt_pskl. apply swap_pskl_open_rec. Qed.
+
+Lemma swap_pskl_open_var : forall a b P β,
+  swap_pskl a b (open_pskl_wrt_pskl P (pskl_var_f β))
+  = open_pskl_wrt_pskl (swap_pskl a b P) (pskl_var_f (swap_atom a b β)).
+Proof. intros. apply swap_pskl_open. Qed.
+
+Lemma swap_ptyp_close_rec : forall a b x A k,
+  swap_ptyp a b (close_ptyp_wrt_ptyp_rec k x A)
+  = close_ptyp_wrt_ptyp_rec k (swap_atom a b x) (swap_ptyp a b A).
+Proof.
+  intros a b x; induction A; intros k; simpl.
+  - reflexivity.
+  - (* var_b *) destruct (lt_ge_dec n k); reflexivity.
+  - (* var_f — NB the goal's [==] tests carry prop_ln's own instance term,
+       so they are destructed by CAPTURE ([if ?t then _ else _]), never by
+       re-elaborating the test in this file. *)
+    destruct (x == α) as [e | n0].
+    + rewrite e. simpl.
+      match goal with
+      | |- context [if ?t then _ else _] => destruct t as [_ | n1]
+      end; [reflexivity | exfalso; apply n1; reflexivity].
+    + simpl.
+      match goal with
+      | |- context [if ?t then _ else _] => destruct t as [e1 | ?]
+      end; [exfalso; apply n0; exact (swap_atom_inj a b x α e1) | reflexivity].
+  - (* arrow *) f_equal; auto.
+  - (* all *) f_equal; auto.
+Qed.
+
+Lemma swap_ptyp_close : forall a b x A,
+  swap_ptyp a b (close_ptyp_wrt_ptyp x A)
+  = close_ptyp_wrt_ptyp (swap_atom a b x) (swap_ptyp a b A).
+Proof. intros. unfold close_ptyp_wrt_ptyp. apply swap_ptyp_close_rec. Qed.
+
+Lemma swap_pskl_close_rec : forall a b x P k,
+  swap_pskl a b (close_pskl_wrt_pskl_rec k x P)
+  = close_pskl_wrt_pskl_rec k (swap_atom a b x) (swap_pskl a b P).
+Proof.
+  intros a b x; induction P; intros k; simpl.
+  - reflexivity.
+  - (* var_b *) destruct (lt_ge_dec n k); reflexivity.
+  - (* var_f — capture the goal's own test, cf. the ptyp twin *)
+    destruct (x == α) as [e | n0].
+    + rewrite e. simpl.
+      match goal with
+      | |- context [if ?t then _ else _] => destruct t as [_ | n1]
+      end; [reflexivity | exfalso; apply n1; reflexivity].
+    + simpl.
+      match goal with
+      | |- context [if ?t then _ else _] => destruct t as [e1 | ?]
+      end; [exfalso; apply n0; exact (swap_atom_inj a b x α e1) | reflexivity].
+  - (* arrow *) f_equal; auto.
+  - (* all_syn *) f_equal; auto.
+  - (* hole *) reflexivity.
+  - (* tophole *) f_equal; auto.
+Qed.
+
+Lemma swap_pskl_close : forall a b x P,
+  swap_pskl a b (close_pskl_wrt_pskl x P)
+  = close_pskl_wrt_pskl (swap_atom a b x) (swap_pskl a b P).
+Proof. intros. unfold close_pskl_wrt_pskl. apply swap_pskl_close_rec. Qed.
+
+Lemma swap_pskl_ptyp_to_pskl : forall a b A,
+  swap_pskl a b (ptyp_to_pskl A) = ptyp_to_pskl (swap_ptyp a b A).
+Proof. induction A; simpl; f_equal; auto. Qed.
+
+(* ===================================================================== *)
+(*  §5  Equivariance: [a_guess_mono] / [a_guess] (the viability probe)     *)
+(* ===================================================================== *)
+
+Lemma a_guess_mono_swap : forall a b Θ P Ξ τ,
+  a_guess_mono Θ P Ξ τ ->
+  a_guess_mono (swap_aenv a b Θ) (swap_pskl a b P)
+               (swap_aenv a b Ξ) (swap_ptyp a b τ).
+Proof.
+  intros * H; induction H; simpl.
+  - (* hole: the generated flexible transports with its avoid-input *)
+    apply a_guess_mono__hole. auto using swap_aenv_ftvar_notin.
+  - (* tophole *) apply a_guess_mono__tophole; auto.
+  - (* var *) apply a_guess_mono__var.
+  - (* unit *) apply a_guess_mono__unit.
+  - (* arrow *)
+    rewrite swap_aenv_app. apply a_guess_mono__arrow; auto.
+  - (* forall: the ONE fixed binder transports — no re-picking, no L *)
+    rewrite swap_ptyp_close.
+    apply a_guess_mono__forall.
+    + apply notin_union_split in H as [h1 h2].
+      apply notin_union_join;
+        auto using swap_aenv_ftvar_notin, swap_pskl_ftv_notin.
+    + rewrite swap_pskl_open_var in IHa_guess_mono. exact IHa_guess_mono.
+Qed.
+
+Lemma a_guess_swap : forall a b Θ NM Q Ξ Q',
+  a_guess Θ NM Q Ξ Q' ->
+  a_guess (swap_aenv a b Θ) NM (swap_pskl a b Q)
+          (swap_aenv a b Ξ) (swap_pskl a b Q').
+Proof.
+  intros * H; destruct H; simpl.
+  - apply a_guess__sk.
+  - rewrite swap_pskl_ptyp_to_pskl. apply a_guess__ty.
+    apply a_guess_mono_swap; auto.
+Qed.
+
+(* ===================================================================== *)
+(*  §6  Swap over atom SETS (the F / Δ1 / Δ2 indexes)                      *)
+(*                                                                        *)
+(*  [atoms] is opaque, so [swap_atoms] cannot be a Leibniz homomorphism;   *)
+(*  its interface is the MEMBERSHIP SPEC [swap_atoms_iff], and judgments   *)
+(*  indexed by sets take the swapped set EXTENSIONALLY ([S' [=] swap_atoms  *)
+(*  a b S]) in their equivariance lemmas.                                  *)
+(* ===================================================================== *)
+
+Definition swap_atoms (a b : atom) (S : atoms) : atoms :=
+  (S ∖ singleton a ∖ singleton b)
+    `union` (if mem a S then singleton b else empty)
+    `union` (if mem b S then singleton a else empty).
+
+Lemma swap_atoms_iff : forall a b S x,
+  x `in` swap_atoms a b S <-> swap_atom a b x `in` S.
+Proof.
+  intros. unfold swap_atoms, swap_atom.
+  destruct (mem a S) eqn:Ea; destruct (mem b S) eqn:Eb;
+    [ apply mem_iff in Ea; apply mem_iff in Eb
+    | apply mem_iff in Ea; apply not_mem_iff in Eb
+    | apply not_mem_iff in Ea; apply mem_iff in Eb
+    | apply not_mem_iff in Ea; apply not_mem_iff in Eb ];
+    destruct (x == a); destruct (x == b); subst; split; intros; fsetdec.
+Qed.
+
+Lemma swap_atoms_in : forall a b (S : atoms) x,
+  x `in` S -> swap_atom a b x `in` swap_atoms a b S.
+Proof.
+  intros. apply swap_atoms_iff. rewrite swap_atom_invol. exact H.
+Qed.
+
+Lemma swap_atoms_notin : forall a b (S : atoms) x,
+  x `notin` S -> swap_atom a b x `notin` swap_atoms a b S.
+Proof.
+  intros * Hn Hin.
+  pose proof (proj1 (swap_atoms_iff a b S (swap_atom a b x)) Hin) as h.
+  rewrite swap_atom_invol in h. contradiction.
+Qed.
+
+Lemma swap_atoms_empty : forall a b, swap_atoms a b empty [=] empty.
+Proof.
+  intros a b y. split; intros Hy; [| fsetdec].
+  apply swap_atoms_iff in Hy. fsetdec.
+Qed.
+
+(** The [add] homomorphism, extensionally — the shape every [add]-indexed
+    rule case needs. *)
+Lemma eq_swap_atoms_add : forall a b x (S S' : atoms),
+  S' [=] swap_atoms a b S ->
+  add (swap_atom a b x) S' [=] swap_atoms a b (add x S).
+Proof.
+  intros * HS y. split; intros Hy.
+  - apply swap_atoms_iff.
+    assert (y = swap_atom a b x \/ y `in` S') as [h | h] by fsetdec.
+    + subst. rewrite swap_atom_invol. fsetdec.
+    + assert (y `in` swap_atoms a b S) by fsetdec.
+      apply swap_atoms_iff in H. fsetdec.
+  - apply swap_atoms_iff in Hy.
+    assert (swap_atom a b y = x \/ swap_atom a b y `in` S) as [h | h]
+      by fsetdec.
+    + assert (y = swap_atom a b x)
+        by (rewrite <- h, swap_atom_invol; reflexivity).
+      fsetdec.
+    + assert (y `in` swap_atoms a b S) by (apply swap_atoms_iff; exact h).
+      fsetdec.
+Qed.
+
+(** Transport of a [∉]-condition into an extensionally-given swapped set. *)
+Lemma swap_notin_eq : forall a b x (S S' : atoms),
+  S' [=] swap_atoms a b S ->
+  x `notin` S ->
+  swap_atom a b x `notin` S'.
+Proof.
+  intros * HS Hn Hin.
+  assert (h0 : swap_atom a b x `in` swap_atoms a b S) by fsetdec.
+  pose proof (proj1 (swap_atoms_iff a b S (swap_atom a b x)) h0) as h.
+  rewrite swap_atom_invol in h. contradiction.
+Qed.
+
+(* ===================================================================== *)
+(*  §7  Swap over constraint lists                                        *)
+(* ===================================================================== *)
+
+Definition swap_cstr (a b : atom) (c : a_cstr) : a_cstr :=
+  match c with
+  | a_cstr_sub m P => a_cstr_sub m (swap_pskl a b P)
+  | a_cstr_eq P => a_cstr_eq (swap_pskl a b P)
+  end.
+
+Definition swap_cstrs (a b : atom) (C : a_cstrs) : a_cstrs :=
+  List.map (swap_cstr a b) C.
+
+Lemma swap_cstrs_cons : forall a b c (C : a_cstrs),
+  swap_cstrs a b (c :: C) = swap_cstr a b c :: swap_cstrs a b C.
+Proof. reflexivity. Qed.
+
+Lemma swap_cstrs_app : forall a b (C1 C2 : a_cstrs),
+  swap_cstrs a b (C1 ++ C2) = swap_cstrs a b C1 ++ swap_cstrs a b C2.
+Proof. intros. unfold swap_cstrs. apply List.map_app. Qed.
+
+(* ===================================================================== *)
+(*  §8  Commutation with substitution                                     *)
+(* ===================================================================== *)
+
+Lemma swap_ptyp_subst : forall a b A x B,
+  swap_ptyp a b (subst_ptyp_in_ptyp A x B)
+  = subst_ptyp_in_ptyp (swap_ptyp a b A) (swap_atom a b x) (swap_ptyp a b B).
+Proof.
+  intros a b A x; induction B; simpl; try solve [reflexivity | f_equal; auto].
+  (* var_f — capture the goal's own tests, as in the close lemmas *)
+  match goal with
+  | |- context [if ?t then _ else _] => destruct t as [e | n0]
+  end.
+  - rewrite e. simpl.
+    match goal with
+    | |- context [if ?t then _ else _] => destruct t as [_ | n1]
+    end; [reflexivity | exfalso; apply n1; reflexivity].
+  - simpl.
+    match goal with
+    | |- context [if ?t then _ else _] => destruct t as [e1 | ?]
+    end; [exfalso; apply n0; exact (swap_atom_inj a b _ _ e1) | reflexivity].
+Qed.
+
+Lemma swap_pskl_subst : forall a b P x Q,
+  swap_pskl a b (subst_pskl_in_pskl P x Q)
+  = subst_pskl_in_pskl (swap_pskl a b P) (swap_atom a b x) (swap_pskl a b Q).
+Proof.
+  intros a b P x; induction Q; simpl; try solve [reflexivity | f_equal; auto].
+  (* var_f *)
+  match goal with
+  | |- context [if ?t then _ else _] => destruct t as [e | n0]
+  end.
+  - rewrite e. simpl.
+    match goal with
+    | |- context [if ?t then _ else _] => destruct t as [_ | n1]
+    end; [reflexivity | exfalso; apply n1; reflexivity].
+  - simpl.
+    match goal with
+    | |- context [if ?t then _ else _] => destruct t as [e1 | ?]
+    end; [exfalso; apply n0; exact (swap_atom_inj a b _ _ e1) | reflexivity].
+Qed.
+
+(* ===================================================================== *)
+(*  §9  Equivariance: the small predicates                                *)
+(* ===================================================================== *)
+
+Lemma lc_ptyp_swap : forall a b A, lc_ptyp A -> lc_ptyp (swap_ptyp a b A).
+Proof.
+  intros * H; induction H; simpl; try solve [constructor; auto].
+  (* all *)
+  constructor. intros α0.
+  specialize (H0 (swap_atom a b α0)).
+  rewrite swap_ptyp_open in H0. simpl in H0.
+  rewrite swap_atom_invol in H0. exact H0.
+Qed.
+
+Lemma lc_pskl_swap : forall a b P, lc_pskl P -> lc_pskl (swap_pskl a b P).
+Proof.
+  intros * H; induction H; simpl; try solve [constructor; auto].
+  (* all_syn *)
+  constructor. intros α0.
+  specialize (H0 (swap_atom a b α0)).
+  rewrite swap_pskl_open in H0. simpl in H0.
+  rewrite swap_atom_invol in H0. exact H0.
+Qed.
+
+Lemma mono_ptyp_swap : forall a b A, mono_ptyp A -> mono_ptyp (swap_ptyp a b A).
+Proof. intros * H; induction H; simpl; constructor; auto. Qed.
+
+Lemma guarded_pskl_swap : forall a b P,
+  guarded_pskl P -> guarded_pskl (swap_pskl a b P).
+Proof.
+  intros * H; destruct H; simpl; constructor; auto using lc_pskl_swap.
+Qed.
+
+Lemma a_binds_tvar_swap : forall a b α (Θ : aenv),
+  a_binds_tvar α Θ -> a_binds_tvar (swap_atom a b α) (swap_aenv a b Θ).
+Proof.
+  intros * [h | [h | [τ h]]];
+    [ left | right; left | right; right; exists (swap_ptyp a b τ) ];
+    apply (swap_aenv_binds a b) in h; exact h.
+Qed.
+
+Lemma a_flex_tvar_swap : forall a b (Θ : aenv) α,
+  a_flex_tvar Θ α -> a_flex_tvar (swap_aenv a b Θ) (swap_atom a b α).
+Proof.
+  intros * [h | [τ h]];
+    [ left | right; exists (swap_ptyp a b τ) ];
+    apply (swap_aenv_binds a b) in h; exact h.
+Qed.
+
+Lemma a_flex_swap : forall a b (Θ : aenv) P,
+  a_flex Θ P -> a_flex (swap_aenv a b Θ) (swap_pskl a b P).
+Proof.
+  intros * H; destruct H; simpl.
+  - apply a_flex__var. apply (swap_aenv_binds a b) in H. exact H.
+  - apply a_flex__var_def with (τ := swap_ptyp a b τ).
+    apply (swap_aenv_binds a b) in H. exact H.
+Qed.
+
+Lemma a_non_flex_swap : forall a b (Θ : aenv) P,
+  a_non_flex Θ P -> a_non_flex (swap_aenv a b Θ) (swap_pskl a b P).
+Proof.
+  intros * [Hlc Hnf]. split; [auto using lc_pskl_swap |].
+  intros Hf. apply Hnf.
+  apply (a_flex_swap a b) in Hf.
+  rewrite swap_aenv_invol, swap_pskl_invol in Hf. exact Hf.
+Qed.
+
+Lemma a_suffix_swap : forall a b (Ξ : aenv),
+  a_suffix Ξ -> a_suffix (swap_aenv a b Ξ).
+Proof.
+  intros * H; induction H; simpl; [constructor |].
+  constructor; [exact IHa_suffix |].
+  destruct H0; simpl; constructor.
+Qed.
+
+Lemma a_wf_ptyp_swap : forall a b (Θ : aenv) A,
+  a_wf_ptyp Θ A -> a_wf_ptyp (swap_aenv a b Θ) (swap_ptyp a b A).
+Proof.
+  intros * H; induction H; simpl.
+  - constructor.
+  - constructor. auto using a_binds_tvar_swap.
+  - constructor; auto.
+  - apply a_wf_ptyp__all with (L := swap_atoms a b L).
+    intros α0 Hα0.
+    assert (hin : swap_atom a b α0 `notin` L)
+      by (intro hc; apply Hα0; apply swap_atoms_iff; exact hc).
+    specialize (H0 _ hin).
+    rewrite swap_ptyp_open in H0. simpl in H0.
+    rewrite swap_atom_invol in H0. exact H0.
+Qed.
+
+Lemma a_wf_pskl_swap : forall a b (Θ : aenv) (Δ : atoms) P,
+  a_wf_pskl Θ Δ P ->
+  forall Δ', Δ' [=] swap_atoms a b Δ ->
+  a_wf_pskl (swap_aenv a b Θ) Δ' (swap_pskl a b P).
+Proof.
+  intros a b Θ Δ P H; induction H; intros Δ' HΔ; simpl.
+  - constructor.
+  - constructor.
+    destruct H as [h | h].
+    + left. pose proof (swap_atoms_in a b Δ α h). fsetdec.
+    + right. auto using a_binds_tvar_swap.
+  - constructor; auto.
+  - apply a_wf_pskl__all with (L := swap_atoms a b L).
+    intros α0 Hα0.
+    assert (hin : swap_atom a b α0 `notin` L)
+      by (intro hc; apply Hα0; apply swap_atoms_iff; exact hc).
+    pose proof (eq_swap_atoms_add a b (swap_atom a b α0) _ _ HΔ) as Hadd.
+    rewrite swap_atom_invol in Hadd.
+    specialize (H0 _ hin _ Hadd).
+    rewrite swap_pskl_open in H0. simpl in H0.
+    rewrite swap_atom_invol in H0. exact H0.
+  - constructor.
+  - constructor; [auto using guarded_pskl_swap |].
+    apply IHa_wf_pskl. rewrite swap_atoms_empty. fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  §10  Equivariance: the look / solve / extract cluster                  *)
+(* ===================================================================== *)
+
+Lemma swap_atom_neq : forall a b x y,
+  x <> y -> swap_atom a b x <> swap_atom a b y.
+Proof. intros * Hne He. apply Hne. exact (swap_atom_inj a b _ _ He). Qed.
+
+Lemma swap_pskl_neq_var : forall a b P α,
+  P <> pskl_var_f α ->
+  swap_pskl a b P <> pskl_var_f (swap_atom a b α).
+Proof.
+  intros * Hne He. apply Hne.
+  rewrite <- (swap_pskl_invol a b P), He. simpl.
+  rewrite swap_atom_invol. reflexivity.
+Qed.
+
+Local Lemma notin_add_split : forall (x y : atom) (S : atoms),
+  x `notin` add y S -> x <> y /\ x `notin` S.
+Proof. intros; split; fsetdec. Qed.
+
+Local Lemma notin_add_join : forall (x y : atom) (S : atoms),
+  x <> y -> x `notin` S -> x `notin` add y S.
+Proof. intros; fsetdec. Qed.
+
+(** Discharge a swapped freshness side condition: shatter the hypothesis
+    into atomic ∉/≠ facts, rebuild the goal structurally, close the leaves
+    with the atomic transports.  No [fsetdec] on unions (⚙ DESIGN §4.3). *)
+Ltac swap_freshness :=
+  repeat match goal with
+         | H : _ `notin` add _ _ |- _ =>
+             apply notin_add_split in H; destruct H
+         | H : _ `notin` (_ `union` _) |- _ =>
+             apply notin_union_split in H; destruct H
+         end;
+  repeat match goal with
+         | |- _ `notin` add _ _ => apply notin_add_join
+         | |- _ `notin` (_ `union` _) => apply notin_union_join
+         end;
+  auto using swap_aenv_ftvar_notin, swap_pskl_ftv_notin,
+             swap_ptyp_ftv_notin, swap_aenv_dom_notin, swap_atom_neq.
+
+Scheme a_looksub_sind := Induction for a_looksub Sort Prop
+  with a_lookeq_sind := Induction for a_lookeq Sort Prop.
+Combined Scheme a_looksub_lookeq_sind from a_looksub_sind, a_lookeq_sind.
+
+Lemma a_looksub_lookeq_swap : forall a b,
+  (forall Θ α m P P' Ξ C,
+     a_looksub Θ α m P P' Ξ C ->
+     a_looksub (swap_aenv a b Θ) (swap_atom a b α) m
+       (swap_pskl a b P) (swap_pskl a b P')
+       (swap_aenv a b Ξ) (swap_cstrs a b C)) /\
+  (forall Θ α P P' Ξ C,
+     a_lookeq Θ α P P' Ξ C ->
+     a_lookeq (swap_aenv a b Θ) (swap_atom a b α)
+       (swap_pskl a b P) (swap_pskl a b P')
+       (swap_aenv a b Ξ) (swap_cstrs a b C)).
+Proof.
+  intros a b.
+  apply (a_looksub_lookeq_sind
+           (fun Θ α m P P' Ξ C _ =>
+              a_looksub (swap_aenv a b Θ) (swap_atom a b α) m
+                (swap_pskl a b P) (swap_pskl a b P')
+                (swap_aenv a b Ξ) (swap_cstrs a b C))
+           (fun Θ α P P' Ξ C _ =>
+              a_lookeq (swap_aenv a b Θ) (swap_atom a b α)
+                (swap_pskl a b P) (swap_pskl a b P')
+                (swap_aenv a b Ξ) (swap_cstrs a b C)));
+    intros; simpl.
+  (* -------- a_looksub -------- *)
+  - (* var *) apply a_looksub__var.
+  - (* absent *) apply a_looksub__absent. auto using swap_pskl_ftv_notin.
+  - (* vacuous *) apply a_looksub__vacuous.
+  - (* check *)
+    apply a_looksub__check;
+      auto using swap_pskl_neq_var, guarded_pskl_swap.
+  - (* forall_r *)
+    apply a_looksub__forall_r with (β := swap_atom a b β);
+      [ swap_freshness |].
+    rewrite swap_pskl_open_var in H. exact H.
+  - (* arrow *)
+    rewrite swap_aenv_app, swap_cstrs_app.
+    apply a_looksub__arrow; auto.
+  - (* forall_l *)
+    apply a_looksub__forall_l with (β := swap_atom a b β);
+      [ swap_freshness |].
+    rewrite swap_pskl_open_var in H. exact H.
+  - (* univ_ghost_l *) apply a_looksub__univ_ghost_l; auto.
+  (* -------- a_lookeq -------- *)
+  - (* var *) apply a_lookeq__var.
+  - (* absent *) apply a_lookeq__absent. auto using swap_pskl_ftv_notin.
+  - (* vacuous *) apply a_lookeq__vacuous.
+  - (* flex_r *)
+    apply a_lookeq__flex_r;
+      [ swap_freshness
+      | auto using swap_pskl_neq_var
+      | auto using swap_pskl_ftv_in ].
+  - (* arrow *)
+    rewrite swap_aenv_app, swap_cstrs_app.
+    apply a_lookeq__arrow; auto.
+  - (* forall_inh *)
+    apply a_lookeq__forall_inh with (β := swap_atom a b β);
+      [ swap_freshness |].
+    rewrite !swap_pskl_open_var in H. exact H.
+  - (* forall_syn *)
+    apply a_lookeq__forall_syn with (β := swap_atom a b β);
+      [ swap_freshness |].
+    rewrite swap_pskl_open_var in H. exact H.
+  - (* univ_ghost *) apply a_lookeq__univ_ghost; auto.
+  - (* univ_ghost1 *)
+    apply a_lookeq__univ_ghost1 with (β := swap_atom a b β);
+      [ swap_freshness |].
+    rewrite swap_pskl_open_var in H. exact H.
+  - (* univ_ghost2 *)
+    apply a_lookeq__univ_ghost2; auto using guarded_pskl_swap.
+  - (* univ_ghost_r *)
+    apply a_lookeq__univ_ghost_r;
+      auto using swap_pskl_neq_var, guarded_pskl_swap.
+Qed.
+
+Scheme a_solve_sub_sind := Induction for a_solve_sub Sort Prop
+  with a_solve_eq_sind := Induction for a_solve_eq Sort Prop.
+Combined Scheme a_solve_sub_eq_sind from a_solve_sub_sind, a_solve_eq_sind.
+
+Lemma a_solve_sub_eq_swap : forall a b,
+  (forall Θ m P Q P',
+     a_solve_sub Θ m P Q P' ->
+     a_solve_sub (swap_aenv a b Θ) m (swap_pskl a b P) (swap_pskl a b Q)
+       (swap_pskl a b P')) /\
+  (forall Θ P Q P',
+     a_solve_eq Θ P Q P' ->
+     a_solve_eq (swap_aenv a b Θ) (swap_pskl a b P) (swap_pskl a b Q)
+       (swap_pskl a b P')).
+Proof.
+  intros a b.
+  apply (a_solve_sub_eq_sind
+           (fun Θ m P Q P' _ =>
+              a_solve_sub (swap_aenv a b Θ) m (swap_pskl a b P)
+                (swap_pskl a b Q) (swap_pskl a b P'))
+           (fun Θ P Q P' _ =>
+              a_solve_eq (swap_aenv a b Θ) (swap_pskl a b P)
+                (swap_pskl a b Q) (swap_pskl a b P')));
+    intros; simpl.
+  (* -------- a_solve_sub -------- *)
+  - (* var *) apply a_solve_sub__var.
+  - (* forall_l: close in the output *)
+    rewrite swap_pskl_close.
+    apply a_solve_sub__forall_l; [ swap_freshness |].
+    rewrite swap_pskl_open_var in H. exact H.
+  - (* univ_ghost_l *) apply a_solve_sub__univ_ghost_l; auto.
+  - (* vacuous *) apply a_solve_sub__vacuous.
+  - (* check *) apply a_solve_sub__check; auto using guarded_pskl_swap.
+  - (* forall_r: the binder LEAKS into the output — no close, no re-bind *)
+    apply a_solve_sub__forall_r with (β := swap_atom a b β);
+      [ swap_freshness |].
+    rewrite swap_pskl_open_var in H. exact H.
+  - (* arrow *) apply a_solve_sub__arrow; auto.
+  - (* ghost_l_fn *) apply a_solve_sub__ghost_l_fn; auto.
+  - (* ghost_l *) apply a_solve_sub__ghost_l; auto using guarded_pskl_swap.
+  (* -------- a_solve_eq -------- *)
+  - (* unit *) apply a_solve_eq__unit.
+  - (* var *) apply a_solve_eq__var.
+  - (* flex_r *)
+    apply a_solve_eq__flex_r;
+      auto using a_flex_tvar_swap, a_non_flex_swap.
+  - (* hole_l *) apply a_solve_eq__hole_l.
+  - (* hole_r *) apply a_solve_eq__hole_r.
+  - (* arrow *) apply a_solve_eq__arrow; auto.
+  - (* forall *)
+    rewrite swap_pskl_close.
+    apply a_solve_eq__forall; [ swap_freshness |].
+    rewrite !swap_pskl_open_var in H. exact H.
+  - (* tophole_both *) apply a_solve_eq__tophole_both; auto.
+  - (* tophole_l_all *)
+    rewrite swap_pskl_close.
+    apply a_solve_eq__tophole_l_all; [ swap_freshness |].
+    rewrite swap_pskl_open_var in H. exact H.
+  - (* tophole_l_guarded *)
+    apply a_solve_eq__tophole_l_guarded; auto using guarded_pskl_swap.
+  - (* all_l_tophole *)
+    rewrite swap_pskl_close.
+    apply a_solve_eq__all_l_tophole; [ swap_freshness |].
+    rewrite swap_pskl_open_var in H. exact H.
+  - (* tophole_r_guarded *)
+    apply a_solve_eq__tophole_r_guarded; auto using guarded_pskl_swap.
+Qed.
+
+Lemma a_solve_cstr_swap : forall a b Θ C P Q,
+  a_solve_cstr Θ C P Q ->
+  a_solve_cstr (swap_aenv a b Θ) (swap_cstrs a b C)
+    (swap_pskl a b P) (swap_pskl a b Q).
+Proof.
+  intros * H; induction H; simpl.
+  - apply a_solve_cstr__empty.
+  - apply a_solve_cstr__sub. apply (proj1 (a_solve_sub_eq_swap a b)); auto.
+  - apply a_solve_cstr__eq with (P'' := swap_pskl a b P'');
+      [ apply (proj2 (a_solve_sub_eq_swap a b)); auto | exact IHa_solve_cstr ].
+Qed.
+
+Lemma a_extract_swap : forall a b Θ NM α m P P' Ξ Q,
+  a_extract Θ NM α m P P' Ξ Q ->
+  a_extract (swap_aenv a b Θ) NM (swap_atom a b α) m
+    (swap_pskl a b P) (swap_pskl a b P')
+    (swap_aenv a b Ξ) (swap_pskl a b Q).
+Proof.
+  intros * H; destruct H.
+  rewrite swap_aenv_app.
+  apply a_extract__solve with (C := swap_cstrs a b C) (Q := swap_pskl a b Q).
+  - apply (proj1 (a_looksub_lookeq_swap a b)); auto.
+  - rewrite <- swap_aenv_app. 
+    pose proof (a_solve_cstr_swap a b _ _ _ _ H0) as h. exact h.
+  - rewrite <- swap_aenv_app. apply a_guess_swap; auto.
+Qed.
+
+(* ===================================================================== *)
+(*  §11  Equivariance: the consis mutual (assign / unify / consis)         *)
+(*                                                                        *)
+(*  The set indexes F / Δ1 / Δ2 are taken EXTENSIONALLY (see §6): each     *)
+(*  motive quantifies the swapped set together with a [=]-proof, and the   *)
+(*  [add]-extending rules instantiate it through [eq_swap_atoms_add].      *)
+(* ===================================================================== *)
+
+(** Reverse dom transport (via involution). *)
+Lemma swap_aenv_dom_in_rev : forall a b (Θ : aenv) x,
+  x `in` dom (swap_aenv a b Θ) -> swap_atom a b x `in` dom Θ.
+Proof.
+  intros * Hx.
+  pose proof (swap_aenv_dom_in a b (swap_aenv a b Θ) x Hx) as h.
+  rewrite swap_aenv_invol in h. exact h.
+Qed.
+
+(** Reverse ftv transport for [pskl] (via involution). *)
+Lemma swap_pskl_ftv_in_rev : forall a b P x,
+  x `in` ftvar_in_pskl (swap_pskl a b P) -> swap_atom a b x `in` ftvar_in_pskl P.
+Proof.
+  intros * Hx.
+  pose proof (swap_pskl_ftv_in a b (swap_pskl a b P) x Hx) as h.
+  rewrite swap_pskl_invol in h. exact h.
+Qed.
+
+(** The Ghost/GhostR side condition, transported extensionally. *)
+Lemma swap_inter_ftv_empty : forall a b (Δ Δ' : atoms) P,
+  Δ' [=] swap_atoms a b Δ ->
+  Δ ∩ ftvar_in_pskl P [=] empty ->
+  Δ' ∩ ftvar_in_pskl (swap_pskl a b P) [=] empty.
+Proof.
+  intros * HΔ Hemp y. split; intros Hy; [| fsetdec].
+  exfalso.
+  assert (h1 : y `in` Δ') by fsetdec.
+  assert (h2 : y `in` ftvar_in_pskl (swap_pskl a b P)) by fsetdec.
+  assert (h1' : y `in` swap_atoms a b Δ) by fsetdec.
+  pose proof (proj1 (swap_atoms_iff a b Δ y) h1') as h1''.
+  pose proof (swap_pskl_ftv_in_rev a b P y h2) as h2'.
+  assert (swap_atom a b y `in` (Δ ∩ ftvar_in_pskl P)) by (apply inter_3; auto).
+  fsetdec.
+Qed.
+
+Lemma a_assign_unify_consis_swap : forall a b,
+  (forall F Θ0 Ξ α P Θ1,
+     Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+     forall F', F' [=] swap_atoms a b F ->
+     (swap_aenv a b Θ0) ⊲[ F' ][ swap_aenv a b Ξ ]
+       (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1)) /\
+  (forall F Θ0 α β Θ1,
+     Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+     forall F', F' [=] swap_atoms a b F ->
+     (swap_aenv a b Θ0) ⊲[ F' ]
+       (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1)) /\
+  (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
+     a_consis F Δ1 Δ2 Θ0 P0 P Q Θ1 ->
+     forall F' Δ1' Δ2',
+       F' [=] swap_atoms a b F ->
+       Δ1' [=] swap_atoms a b Δ1 ->
+       Δ2' [=] swap_atoms a b Δ2 ->
+     a_consis F' Δ1' Δ2' (swap_aenv a b Θ0) (swap_pskl a b P0)
+       (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1)).
+Proof.
+  intros a b.
+  apply (a_assign_unify_consis_mutind
+           (fun F Θ0 Ξ α P Θ1 _ =>
+              forall F', F' [=] swap_atoms a b F ->
+              (swap_aenv a b Θ0) ⊲[ F' ][ swap_aenv a b Ξ ]
+                (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1))
+           (fun F Θ0 α β Θ1 _ =>
+              forall F', F' [=] swap_atoms a b F ->
+              (swap_aenv a b Θ0) ⊲[ F' ]
+                (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1))
+           (fun F Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
+              forall F' Δ1' Δ2',
+                F' [=] swap_atoms a b F ->
+                Δ1' [=] swap_atoms a b Δ1 ->
+                Δ2' [=] swap_atoms a b Δ2 ->
+              a_consis F' Δ1' Δ2' (swap_aenv a b Θ0) (swap_pskl a b P0)
+                (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1))).
+  (* ==================== a_assign ==================== *)
+  - (* univ_ghost_id *)
+    intros F Θ0 α F' HF. simpl.
+    apply a_assign__univ_ghost_id.
+  - (* solve_m *)
+    intros F Θ0 Ξ α P βs τ Hnα Hg Hmono Huniq Hfr F' HF. simpl.
+    rewrite !swap_aenv_app.
+    apply a_assign__solve_m;
+      auto using swap_pskl_ftv_notin, a_guess_mono_swap, mono_ptyp_swap,
+                 swap_aenv_uniq.
+    intros α1 Hα1.
+    pose proof (swap_aenv_dom_in_rev a b βs α1 Hα1) as hdom.
+    specialize (Hfr _ hdom).
+    apply notin_union_split in Hfr; destruct Hfr as [hF hrest].
+    apply notin_add_split in hrest; destruct hrest as [hne hdom0].
+    apply notin_union_join.
+    + (* ∉ F' *)
+      intros hc.
+      assert (hc' : α1 `in` swap_atoms a b F) by fsetdec.
+      pose proof (proj1 (swap_atoms_iff a b F α1) hc'). contradiction.
+    + apply notin_add_join.
+      * (* ≠ swap α *)
+        intros he. apply hne.
+        rewrite he, swap_atom_invol. reflexivity.
+      * (* ∉ dom (swap (Ξ ++ Θ0)) *)
+        rewrite <- swap_aenv_app.
+        intros hc.
+        pose proof (swap_aenv_dom_in_rev a b (Ξ ++ Θ0) α1 hc). contradiction.
+  - (* assign *)
+    intros F Θ0 Θ1 Ξ α β τ P Q Hflex Hd IH F' HF. simpl.
+    eapply a_assign__assign.
+    + exact (a_flex_tvar_swap a b _ _ Hflex).
+    + specialize (IH (add (swap_atom a b β) F')
+                     empty empty
+                     (eq_swap_atoms_add a b β _ _ HF)).
+      rewrite swap_aenv_app in IH.
+      rewrite !swap_pskl_subst in IH.
+      rewrite !swap_pskl_ptyp_to_pskl in IH.
+      change (swap_pskl a b (pskl_var_f α)) with
+        (pskl_var_f (swap_atom a b α)) in IH.
+      apply IH; rewrite swap_atoms_empty; fsetdec.
+  - (* depend *)
+    intros F Θ0 Θ1 Ξ α β P Hne Hin Hd IH F' HF. simpl.
+    apply a_assign__depend;
+      auto using swap_atom_neq, swap_pskl_ftv_in.
+    specialize (IH _ HF).
+    rewrite swap_aenv_app in IH. exact IH.
+  - (* skip *)
+    intros F Θ0 Θ1 Ξ α β P Hne Hnf Hd IH F' HF. simpl.
+    apply a_assign__skip;
+      auto using swap_atom_neq, swap_pskl_ftv_notin.
+    exact (IH (add (swap_atom a b β) F') (eq_swap_atoms_add a b β _ _ HF)).
+  - (* skip_rigid *)
+    intros F Θ0 Θ1 Ξ α β P Hnf Hd IH F' HF. simpl.
+    apply a_assign__skip_rigid; auto using swap_pskl_ftv_notin.
+    exact (IH (add (swap_atom a b β) F') (eq_swap_atoms_add a b β _ _ HF)).
+  - (* skip_tm_var *)
+    intros F Θ0 Θ1 Ξ α x Q P Hd IH F' HF. simpl.
+    apply a_assign__skip_tm_var.
+    exact (IH (add (swap_atom a b x) F') (eq_swap_atoms_add a b x _ _ HF)).
+  - (* skip_tm_skl *)
+    intros F Θ0 Θ1 Ξ α x Q P Hd IH F' HF. simpl.
+    apply a_assign__skip_tm_skl.
+    exact (IH (add (swap_atom a b x) F') (eq_swap_atoms_add a b x _ _ HF)).
+  (* ==================== a_unify ==================== *)
+  - (* flex_id *)
+    intros F Θ0 α Hflex F' HF.
+    apply a_unify__flex_id. auto using a_flex_tvar_swap.
+  - (* flex_l *)
+    intros F Θ0 α β Hne Hflex F' HF. simpl.
+    apply a_unify__flex_l; auto using swap_atom_neq, a_flex_tvar_swap.
+  - (* flex_r *)
+    intros F Θ0 α β Hne Hflex F' HF. simpl.
+    apply a_unify__flex_r; auto using swap_atom_neq, a_flex_tvar_swap.
+  - (* flex_assign *)
+    intros F Θ0 Θ1 α1 τ α β Q Hfα Hfβ Hd IH F' HF. simpl.
+    eapply a_unify__flex_assign.
+    + exact (a_flex_tvar_swap a b _ _ Hfα).
+    + exact (a_flex_tvar_swap a b _ _ Hfβ).
+    + specialize (IH (add (swap_atom a b α1) F')
+                     empty empty
+                     (eq_swap_atoms_add a b α1 _ _ HF)).
+      rewrite !swap_pskl_ptyp_to_pskl in IH.
+      rewrite !swap_ptyp_subst in IH.
+      change (swap_ptyp a b (ptyp_var_f α)) with
+        (ptyp_var_f (swap_atom a b α)) in IH.
+      change (swap_ptyp a b (ptyp_var_f β)) with
+        (ptyp_var_f (swap_atom a b β)) in IH.
+      apply IH; rewrite swap_atoms_empty; fsetdec.
+  - (* flex_skip *)
+    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hd IH F' HF. simpl.
+    apply a_unify__flex_skip; auto using swap_atom_neq.
+    exact (IH (add (swap_atom a b α1) F') (eq_swap_atoms_add a b α1 _ _ HF)).
+  - (* skip_other *)
+    intros F Θ0 Θ1 c bd α β Hb Hd IH F' HF. simpl.
+    apply a_unify__skip_other.
+    + destruct Hb as [-> | [[Q ->] | [Q ->]]]; simpl.
+      * left; reflexivity.
+      * right; left; eexists; reflexivity.
+      * right; right; eexists; reflexivity.
+    + exact (IH (add (swap_atom a b c) F') (eq_swap_atoms_add a b c _ _ HF)).
+  (* ==================== a_consis ==================== *)
+  - (* ghost *)
+    intros F Δ1 Δ2 Θ0 P0 Hemp F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__ghost. eauto using swap_inter_ftv_empty.
+  - (* unit *)
+    intros F Δ1 Δ2 Θ0 F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__unit.
+  - (* rigid *)
+    intros F Δ1 Δ2 Θ0 α Hb F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__rigid.
+    pose proof (swap_aenv_binds a b _ _ _ Hb) as h. exact h.
+  - (* arrow *)
+    intros F Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hd1 IH1 Hd2 IH2
+           F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    eapply a_consis__arrow;
+      [ exact (IH1 _ _ _ HF HΔ1 HΔ2) | exact (IH2 _ _ _ HF HΔ1 HΔ2) ].
+  - (* forall_inh *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    rewrite swap_pskl_close.
+    apply a_consis__forall_inh.
+    + swap_freshness; eauto using swap_notin_eq.
+    + specialize (IH F' (add (swap_atom a b α) Δ1') (add (swap_atom a b α) Δ2')
+                     HF (eq_swap_atoms_add a b α _ _ HΔ1)
+                        (eq_swap_atoms_add a b α _ _ HΔ2)).
+      rewrite !swap_pskl_open_var in IH. exact IH.
+  - (* forall_syn *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    rewrite swap_pskl_close.
+    apply a_consis__forall_syn.
+    + swap_freshness; eauto using swap_notin_eq.
+    + specialize (IH F' Δ1' (add (swap_atom a b α) Δ2')
+                     HF HΔ1 (eq_swap_atoms_add a b α _ _ HΔ2)).
+      rewrite !swap_pskl_open_var in IH. exact IH.
+  - (* univ_ghost *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__univ_ghost; auto.
+  - (* univ_ghost1 *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    rewrite swap_pskl_close.
+    apply a_consis__univ_ghost1.
+    + swap_freshness; eauto using swap_notin_eq.
+    + specialize (IH F' (add (swap_atom a b α) Δ1') Δ2'
+                     HF (eq_swap_atoms_add a b α _ _ HΔ1) HΔ2).
+      rewrite !swap_pskl_open_var in IH. exact IH.
+  - (* univ_ghost2 *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__univ_ghost2;
+      auto using guarded_pskl_swap, a_non_flex_swap.
+  - (* flex *)
+    intros F Δ1 Δ2 Θ0 Θ1 α β Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__flex; auto.
+  - (* flex_l *)
+    intros F Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__flex_l;
+      [ auto using a_non_flex_swap | exact (IH F' HF) ].
+  - (* flex_r *)
+    intros F Δ1 Δ2 Θ0 Θ1 α P Hnf Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__flex_r;
+      [ auto using a_non_flex_swap | exact (IH F' HF) ].
+  - (* ghost_r *)
+    intros F Δ1 Δ2 Θ0 P Hemp F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__ghost_r. eauto using swap_inter_ftv_empty.
+  - (* univ_ghost_r *)
+    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    apply a_consis__univ_ghost_r;
+      auto using guarded_pskl_swap, a_non_flex_swap.
+Qed.
+
+(* ===================================================================== *)
+(*  §12  Equivariance: [a_sub] / [a_sub_flex]                              *)
+(* ===================================================================== *)
+
+Lemma empty_eq_swap_atoms_empty : forall a b,
+  empty [=] swap_atoms a b empty.
+Proof. intros. symmetry. apply swap_atoms_empty. Qed.
+
+Lemma a_consis_empty_swap : forall a b Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ1 ->
+  (swap_aenv a b Θ0) ⊢ₐ[ swap_pskl a b P0 ]
+    (swap_pskl a b P) ∼ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1).
+Proof.
+  intros * H.
+  apply (proj2 (proj2 (a_assign_unify_consis_swap a b)) _ _ _ _ _ _ _ _ H);
+    apply empty_eq_swap_atoms_empty.
+Qed.
+
+Lemma a_consis_chk_swap : forall a b Θ0 A B Θ1,
+  a_consis_chk Θ0 A B Θ1 ->
+  a_consis_chk (swap_aenv a b Θ0) (swap_pskl a b A) (swap_pskl a b B)
+    (swap_aenv a b Θ1).
+Proof.
+  intros * [Q H]. exists (swap_pskl a b Q). apply a_consis_empty_swap; auto.
+Qed.
+
+Scheme a_sub_sind := Induction for a_sub Sort Prop
+  with a_sub_flex_sind := Induction for a_sub_flex Sort Prop.
+Combined Scheme a_sub_sub_flex_sind from a_sub_sind, a_sub_flex_sind.
+
+Lemma a_sub_sub_flex_swap : forall a b,
+  (forall NM M P0 Θ0 P Q Θ1,
+     a_sub NM M P0 Θ0 P Q Θ1 ->
+     a_sub NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
+       (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1)) /\
+  (forall NM M P0 Θ0 Ξ α A Θ1,
+     a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+     a_sub_flex NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
+       (swap_aenv a b Ξ) (swap_atom a b α) (swap_pskl a b A)
+       (swap_aenv a b Θ1)).
+Proof.
+  intros a b.
+  apply (a_sub_sub_flex_sind
+           (fun NM M P0 Θ0 P Q Θ1 _ =>
+              a_sub NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
+                (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1))
+           (fun NM M P0 Θ0 Ξ α A Θ1 _ =>
+              a_sub_flex NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
+                (swap_aenv a b Ξ) (swap_atom a b α) (swap_pskl a b A)
+                (swap_aenv a b Θ1))).
+  (* -------- a_sub -------- *)
+  - (* infer *)
+    intros NM P Θ0. simpl. apply a_sub__infer.
+  - (* check *)
+    intros Θ0 Θ1 A B Hga Hgb Hchk. simpl.
+    apply a_sub__check;
+      auto using guarded_pskl_swap, a_consis_chk_swap.
+  - (* forall_r *)
+    intros α Θ0 Θ1 Ξ A B Hsuf Huniq Hfr Hd IH. simpl.
+    apply a_sub__forall_r with (α := swap_atom a b α) (Ξ := swap_aenv a b Ξ).
+    + auto using a_suffix_swap.
+    + rewrite <- swap_aenv_app. auto using swap_aenv_uniq.
+    + swap_freshness.
+    + rewrite !swap_pskl_open_var in IH.
+      rewrite !swap_aenv_app in IH. exact IH.
+  - (* univ_ghost_r *)
+    intros Θ0 P Hg. simpl.
+    apply a_sub__univ_ghost_r; auto using guarded_pskl_swap.
+  - (* flex_mono *)
+    intros NM M P0 Θ0 Θ1 α A Hd IH. simpl.
+    apply a_sub__flex_mono. exact IH.
+  - (* arrow *)
+    intros NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hd IH. simpl.
+    eapply a_sub__arrow;
+      [ exact (a_consis_empty_swap a b _ _ _ _ _ Hc) | exact IH ].
+  - (* forall_l *)
+    intros α NM M P0 Θ0 Θ1 P Q Ξ P1 Hm Hg Hfr Hex Huniq Hwf Hd IH. simpl.
+    apply a_sub__forall_l with (α := swap_atom a b α)
+      (Ξ := swap_aenv a b Ξ) (P1 := swap_pskl a b P1); auto.
+    + destruct Hg as [hg | ->];
+        [ left; auto using guarded_pskl_swap | right; reflexivity ].
+    + swap_freshness.
+    + pose proof (a_extract_swap a b _ _ _ _ _ _ _ _ Hex) as h.
+      rewrite swap_pskl_open_var in h. exact h.
+    + rewrite <- swap_aenv_app. auto using swap_aenv_uniq.
+    + rewrite <- swap_aenv_app.
+      apply (a_wf_pskl_swap a b _ _ _ Hwf).
+      apply empty_eq_swap_atoms_empty.
+    + rewrite swap_pskl_open in IH.
+      rewrite swap_aenv_app in IH. exact IH.
+  - (* ghost *)
+    intros M Θ0 P0. simpl. apply a_sub__ghost.
+  - (* univ_ghost_l *)
+    intros M Θ0 Θ1 P0 P Q Hm Hd IH. simpl.
+    apply a_sub__univ_ghost_l; auto.
+  (* -------- a_sub_flex -------- *)
+  - (* solve *)
+    intros NM M P0 Θ0 Θ1 Ξ α0 α β A Hne Hfα Hfβ Hd IH. simpl.
+    apply a_sub_flex__solve
+      with (α := swap_atom a b α) (β := swap_atom a b β);
+      [ auto using swap_atom_neq | | |].
+    + rewrite <- swap_aenv_app. swap_freshness.
+    + rewrite <- swap_aenv_app. swap_freshness.
+    + rewrite !swap_aenv_app in IH. exact IH.
+  - (* assign *)
+    intros NM M P0 Θ0 Θ1 Ξ α β τ A Hout Hd IH. simpl.
+    apply a_sub_flex__assign; auto using swap_aenv_dom_notin.
+    rewrite !swap_pskl_subst in IH.
+    rewrite !swap_pskl_ptyp_to_pskl in IH.
+    change (swap_pskl a b (pskl_var_f α)) with
+      (pskl_var_f (swap_atom a b α)) in IH.
+    rewrite swap_aenv_app in IH. exact IH.
+  - (* depend *)
+    intros NM M P0 Θ0 Θ1 Ξ α β A Hne Hin Hd IH. simpl.
+    apply a_sub_flex__depend;
+      auto using swap_atom_neq, swap_pskl_ftv_in.
+    rewrite swap_aenv_app in IH. exact IH.
+  - (* skip *)
+    intros NM M P0 Θ0 Θ1 Ξ α β A Hne Hnf Hout Hd IH. simpl.
+    apply a_sub_flex__skip;
+      auto using swap_atom_neq, swap_pskl_ftv_notin, swap_aenv_dom_notin.
+  - (* skip_rigid *)
+    intros NM M P0 Θ0 Θ1 Ξ α β A Hne Hnf Hout Hd IH. simpl.
+    apply a_sub_flex__skip_rigid;
+      auto using swap_atom_neq, swap_pskl_ftv_notin, swap_aenv_dom_notin.
+Qed.
+
+(* ===================================================================== *)
+(*  §13  The junk rename (K3) — the consumption shape for P7a              *)
+(*                                                                        *)
+(*  A run delivered by an IH may mention the walked-out β as an           *)
+(*  incidentally-colliding junk name in its OUTPUTS; its INPUTS cannot     *)
+(*  mention it.  Swapping β with a β1 fresh for the statement's data      *)
+(*  fixes every input pointwise ([swap_*_fresh_id]) and renames the        *)
+(*  outputs, so the rule's Barendregt output premise [β ∉ dom Θ1] becomes  *)
+(*  provable.                                                             *)
+(* ===================================================================== *)
+
+Lemma swap_abind_fresh_id : forall a b bd,
+  a `notin` ftvar_in_abind bd -> b `notin` ftvar_in_abind bd ->
+  swap_abind a b bd = bd.
+Proof.
+  intros; destruct bd; simpl in *; f_equal;
+    auto using swap_ptyp_fresh_id, swap_pskl_fresh_id.
+Qed.
+
+Lemma swap_aenv_fresh_id : forall a b (Θ : aenv),
+  a `notin` ftvar_in_aenv Θ -> b `notin` ftvar_in_aenv Θ ->
+  swap_aenv a b Θ = Θ.
+Proof.
+  intros a b Θ; induction Θ as [| [x bd] Θ']; intros Ha Hb; [reflexivity |].
+  simpl in Ha, Hb. rewrite swap_aenv_cons.
+  rewrite swap_atom_other; [| fsetdec | fsetdec].
+  rewrite swap_abind_fresh_id; [| fsetdec | fsetdec].
+  rewrite IHΘ'; [reflexivity | fsetdec | fsetdec].
+Qed.
+
+Lemma a_sub_swap_junk : forall β0 β1 NM M P0 Θ0 P Q Θ1,
+  a_sub NM M P0 Θ0 P Q Θ1 ->
+  β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+     `union` ftvar_in_pskl P ->
+  β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+     `union` ftvar_in_pskl P ->
+  a_sub NM M P0 Θ0 P (swap_pskl β0 β1 Q) (swap_aenv β0 β1 Θ1).
+Proof.
+  intros * Hd H0 H1.
+  apply notin_union_split in H0; destruct H0 as [h0 H0].
+  apply notin_union_split in H0; destruct H0 as [h0' h0''].
+  apply notin_union_split in H1; destruct H1 as [h1 H1].
+  apply notin_union_split in H1; destruct H1 as [h1' h1''].
+  pose proof (proj1 (a_sub_sub_flex_swap β0 β1) _ _ _ _ _ _ _ Hd) as h.
+  rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
+  rewrite (swap_pskl_fresh_id β0 β1 P0) in h; auto.
+  rewrite (swap_pskl_fresh_id β0 β1 P) in h; auto.
+Qed.
+
+Lemma a_sub_flex_swap_junk : forall β0 β1 NM M P0 Θ0 Ξ α A Θ1,
+  a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+  β0 <> α -> β1 <> α ->
+  β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P0 ->
+  β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P0 ->
+  a_sub_flex NM M P0 Θ0 Ξ α (swap_pskl β0 β1 A) (swap_aenv β0 β1 Θ1).
+Proof.
+  intros * Hd Hne0 Hne1 H0 H1.
+  apply notin_union_split in H0; destruct H0 as [h0 H0].
+  apply notin_union_split in H0; destruct H0 as [h0' h0''].
+  apply notin_union_split in H1; destruct H1 as [h1 H1].
+  apply notin_union_split in H1; destruct H1 as [h1' h1''].
+  pose proof (proj2 (a_sub_sub_flex_swap β0 β1) _ _ _ _ _ _ _ _ Hd) as h.
+  rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
+  rewrite (swap_aenv_fresh_id β0 β1 Ξ) in h; auto.
+  rewrite (swap_pskl_fresh_id β0 β1 P0) in h; auto.
+  rewrite (swap_atom_other β0 β1 α) in h; auto.
+Qed.
+
+(** The consumer's Barendregt fact: after the junk swap, the walked-out β0
+    is out of the output's domain — provided β1 was picked fresh for it. *)
+Lemma swap_junk_dom_out : forall β0 β1 (Θ1 : aenv),
+  β1 `notin` dom Θ1 ->
+  β0 `notin` dom (swap_aenv β0 β1 Θ1).
+Proof.
+  intros * Hn Hc.
+  pose proof (swap_aenv_dom_in_rev β0 β1 Θ1 β0 Hc) as h.
+  rewrite swap_atom_l in h. contradiction.
+Qed.
