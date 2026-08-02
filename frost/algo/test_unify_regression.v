@@ -49,6 +49,8 @@ Proof.
     right. exists Tarr. unfold binds; left; reflexivity.
   - (* β̂ is hatted *)
     left. unfold binds; right; left; reflexivity.
+  - (* the walked definition re-attaches above the output (Barendregt) *)
+    simpl. clear - Hne. fsetdec.
   - (* the consistency premise: subject  unit → unit,  input  β̂ *)
     simpl.
     destruct (@eq_dec ptypvar EqDec_eq_of_X a a) as [_|Hcontra];
@@ -129,6 +131,8 @@ Proof.
        must be stated on the CONCLUSION's context.  On [Ξ ++ Θ0] it would be
        FALSE in exactly this case. *)
     unfold a_flex_tvar. right. exists Tarr. unfold binds. left. reflexivity.
+  - (* the walked definition re-attaches above the output (Barendregt) *)
+    simpl. clear. fsetdec.
   - simpl.
     replace (if a == a then pskl_arrow pskl_unit pskl_unit else pskl_var_f a)
       with (pskl_arrow pskl_unit pskl_unit)

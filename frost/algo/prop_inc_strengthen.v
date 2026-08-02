@@ -139,7 +139,7 @@ Proof.
       apply in_or_app; right. apply in_or_app. apply in_app_or in Hb. exact Hb.
     + subst. right; exists τ. unfold binds; left; reflexivity.
   - (* assign : Ξ ++ (β̂≔τ) ++ Θ0  →  (β̂≔τ) ++ Θ1, premise Ξ ++ Θ0 → Θ1 *)
-    intros F Θ0 Θ1 Ξ α β τ P P' Hfα Hc IH α1 Hα1.
+    intros F Θ0 Θ1 Ξ α β τ P P' Hfα Hβd Hc IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]].
     + assert (Hγ' : a_flex_tvar Θ1 α1)
@@ -152,7 +152,7 @@ Proof.
     intros F Θ0 Θ1 Ξ α β P Hne Hβ Ha IH α1 Hα1.
     apply IH. simpl_env in *. exact Hα1.
   - (* skip : Ξ ++ (β̂) ++ Θ0  →  (β̂) ++ Θ1 *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hβn Ha IH α1 Hα1.
+    intros F Θ0 Θ1 Ξ α β P Hne Hβn Hβd Ha IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]].
     + assert (Hγ' : a_flex_tvar Θ1 α1)
@@ -162,7 +162,7 @@ Proof.
       unfold binds in *; simpl; right; exact Hb'.
     + subst. left. unfold binds; left; reflexivity.
   - (* skip_rigid : mid is rigid, kind mismatch *)
-    intros F Θ0 Θ1 Ξ α β P Hβn Ha IH α1 Hα1.
+    intros F Θ0 Θ1 Ξ α β P Hβn Hβd Ha IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]];
       [ | subst; inversion Hs ].
@@ -172,7 +172,7 @@ Proof.
     apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
     unfold binds in *; simpl; right; exact Hb'.
   - (* skip_tm_var *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH α1 Hα1.
+    intros F Θ0 Θ1 Ξ α x P' P Hxd Ha IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]];
       [ | subst; inversion Hs ].
@@ -182,7 +182,7 @@ Proof.
     apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
     unfold binds in *; simpl; right; exact Hb'.
   - (* skip_tm_skl *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH α1 Hα1.
+    intros F Θ0 Θ1 Ξ α x P' P Hxd Ha IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]];
       [ | subst; inversion Hs ].
@@ -209,7 +209,7 @@ Proof.
     + apply a_flex_tvar_alt; exists b; split; [ exact Hs | ].
       unfold binds in *; simpl; right; exact Hb'.
   - (* flex_assign : (α1̂≔τ) ++ Θ0 → (α1̂≔τ) ++ Θ1, consis premise Θ0 → Θ1 *)
-    intros F Θ0 Θ1 α10 τ α β P' Hfα Hfβ Hc IH α1 Hα1.
+    intros F Θ0 Θ1 α10 τ α β P' Hfα Hfβ Hα1d Hc IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'].
     + subst. right; eexists. unfold binds; left; reflexivity.
@@ -219,7 +219,7 @@ Proof.
       apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
       unfold binds in *; simpl; right; exact Hb''.
   - (* flex_skip : (α1̂) ++ Θ0 → (α1̂) ++ Θ1 *)
-    intros F Θ0 Θ1 α10 α β Hα1α Hα1β Hu IH α1 Hα1.
+    intros F Θ0 Θ1 α10 α β Hα1α Hα1β Hα1d Hu IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'].
     + subst. left. unfold binds; left; reflexivity.
@@ -229,7 +229,7 @@ Proof.
       apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
       unfold binds in *; simpl; right; exact Hb''.
   - (* skip_other : (c~b) ++ Θ0 → (c~b) ++ Θ1, b non-flex *)
-    intros F Θ0 Θ1 c b α β Hbshape Hu IH α1 Hα1.
+    intros F Θ0 Θ1 c b α β Hbshape Hcd Hu IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b0 [Hs Hb0]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb0) as [[Heqγ Heqb] | Hb'].
     + subst. exfalso.

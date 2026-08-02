@@ -759,6 +759,7 @@ Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
        the CONCLUSION's context, which is what covers the [β̂ = α̂] case (there
        [α̂] IS the head binding, so it is not in [Θ0] at all). *)
     a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ0) α ->
+    β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     (Ξ ++ Θ0) ⊢ₐ[ (add β F) ][ empty | empty
          | (subst_pskl_in_pskl (ptyp_to_pskl τ) β P) ]
       (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) ∼ Q ⊣ Θ1 ->
@@ -778,18 +779,22 @@ Inductive a_assign : atoms -> aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_assign__skip : forall F Θ0 Θ1 Ξ α β P,                (* Assign-Skip *)
     α <> β ->
     β `notin` ftvar_in_pskl P ->
+    β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ (add β F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
     ((β ~ abind_flex_mono) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((β ~ abind_flex_mono) ++ Θ1)
 | a_assign__skip_rigid : forall F Θ0 Θ1 Ξ α β P,          (* Assign-SkipRigid *)
     β `notin` ftvar_in_pskl P ->
+    β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ (add β F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
     ((β ~ abind_tvar) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P ⊣ ((β ~ abind_tvar) ++ Θ1)
 | a_assign__skip_tm_var : forall F Θ0 Θ1 Ξ α x Q P,       (* Assign-SkipTmVar *)
+    x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ (add x F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
     ((x ~ abind_var_typ Q) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((x ~ abind_var_typ Q) ++ Θ1)
 | a_assign__skip_tm_skl : forall F Θ0 Θ1 Ξ α x Q P,       (* Assign-SkipTmVar (skl) *)
+    x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ (add x F) ][ Ξ ] α ≔ P ⊣ Θ1 ->
     ((x ~ abind_var_skl Q) ++ Θ0) ⊲[ F ][ Ξ ] α ≔ P
       ⊣ ((x ~ abind_var_skl Q) ++ Θ1)
@@ -847,6 +852,7 @@ with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
        its premise is a CONSISTENCY derivation. *)
     a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) α ->
     a_flex_tvar ((α1 ~ abind_flex_mono_def τ) ++ Θ0) β ->
+    α1 `notin` dom Θ1 ->                    (* prose-completion (Barendregt) *)
     Θ0 ⊢ₐ[ (add α1 F) ][ empty | empty
          | (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β))) ]
       (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))) ∼ Q ⊣ Θ1 ->
@@ -855,12 +861,14 @@ with a_unify : atoms -> aenv -> atom -> atom -> aenv -> Prop :=
 | a_unify__flex_skip : forall F Θ0 Θ1 α1 α β,               (* Flex-Flex-Skip *)
     α1 <> α ->
     α1 <> β ->
+    α1 `notin` dom Θ1 ->                    (* prose-completion (Barendregt) *)
     Θ0 ⊲[ (add α1 F) ] α ≈ᵘ β ⊣ Θ1 ->
     ((α1 ~ abind_flex_mono) ++ Θ0) ⊲[ F ] α ≈ᵘ β ⊣ ((α1 ~ abind_flex_mono) ++ Θ1)
 | a_unify__skip_other : forall F Θ0 Θ1 c b α β,            (* Flex-Flex-Skip' *)
     (b = abind_tvar \/
      (exists Q, b = abind_var_typ Q) \/
      (exists Q, b = abind_var_skl Q)) ->
+    c `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     Θ0 ⊲[ (add c F) ] α ≈ᵘ β ⊣ Θ1 ->
     ((c ~ b) ++ Θ0) ⊲[ F ] α ≈ᵘ β ⊣ ((c ~ b) ++ Θ1)
 

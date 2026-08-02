@@ -164,19 +164,19 @@ Proof.
   - (* solve_m : flex head *)
     intros F Θ0 Ξ α P βs τ Hnα Hg Hm Hu Hfr Ξr Θt Heq Htv. tvp_dispatch.
   - (* assign : defined-flex head *)
-    intros F Θ0 Θ1 Ξ α β τ P P' Hf Hc IH Ξr Θt Heq Htv. tvp_dispatch.
+    intros F Θ0 Θ1 Ξ α β τ P P' Hf Hbar Hc IH Ξr Θt Heq Htv. tvp_dispatch.
   - (* depend : flex head *)
     intros F Θ0 Θ1 Ξ α β P Hne Hin Ha IH Ξr Θt Heq Htv. tvp_dispatch.
   - (* skip : flex head *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hni Ha IH Ξr Θt Heq Htv. tvp_dispatch.
+    intros F Θ0 Θ1 Ξ α β P Hne Hni Hbar Ha IH Ξr Θt Heq Htv. tvp_dispatch.
   - (* skip_rigid : tvar head — the real walk case *)
-    intros F Θ0 Θ1 Ξ α β P Hni Ha IH Ξr Θt Heq Htv. tvp_dispatch.
+    intros F Θ0 Θ1 Ξ α β P Hni Hbar Ha IH Ξr Θt Heq Htv. tvp_dispatch.
     destruct (IH Ξr' Θt eq_refl (tvar_prefix_tail Htv)) as [Θt' ->].
     exists Θt'. reflexivity.
   - (* skip_tm_var : term head *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH Ξr Θt Heq Htv. tvp_dispatch.
+    intros F Θ0 Θ1 Ξ α x P' P Hbar Ha IH Ξr Θt Heq Htv. tvp_dispatch.
   - (* skip_tm_skl : term head *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH Ξr Θt Heq Htv. tvp_dispatch.
+    intros F Θ0 Θ1 Ξ α x P' P Hbar Ha IH Ξr Θt Heq Htv. tvp_dispatch.
   - (* flex_id : output = input *)
     intros F Θ0 α Hf Ξr Θt Heq Htv. exists Θt. assumption.
   - (* flex_l : flex head *)
@@ -184,11 +184,11 @@ Proof.
   - (* flex_r : flex head *)
     intros F Θ0 α β Hne Hf Ξr Θt Heq Htv. tvp_dispatch.
   - (* flex_assign : defined-flex head *)
-    intros F Θ0 Θ1 α1 τ α β P' Hfα Hfβ Hc IH Ξr Θt Heq Htv. tvp_dispatch.
+    intros F Θ0 Θ1 α1 τ α β P' Hfα Hfβ Hbar Hc IH Ξr Θt Heq Htv. tvp_dispatch.
   - (* flex_skip : flex head *)
-    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hu IH Ξr Θt Heq Htv. tvp_dispatch.
+    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hbar Hu IH Ξr Θt Heq Htv. tvp_dispatch.
   - (* skip_other : rigid/term head — the real walk case *)
-    intros F Θ0 Θ1 c b α β Hb Hu IH Ξr Θt Heq Htv. tvp_dispatch.
+    intros F Θ0 Θ1 c b α β Hb Hbar Hu IH Ξr Θt Heq Htv. tvp_dispatch.
     destruct (IH Ξr' Θt eq_refl (tvar_prefix_tail Htv)) as [Θt' ->].
     exists Θt'. reflexivity.
   - (* ghost : output = input *)
@@ -320,8 +320,8 @@ Proof.
         clear - Hα1. fsetdec. }
     clear - Hfr' HγF'. fsetdec.
   - (* assign *)
-    intros F Θ0 Θ1 Ξ α β τ P P' Hfl Hc IH F' Hcond.
-    eapply a_assign__assign; [ exact Hfl | ].
+    intros F Θ0 Θ1 Ξ α β τ P P' Hfl Hbar Hc IH F' Hcond.
+    eapply a_assign__assign; [ exact Hfl | exact Hbar | ].
     apply (IH (add β F') empty empty); [ | reflexivity | reflexivity ].
     intros α1 Hα1. apply add_iff in Hα1.
     destruct Hα1 as [-> | HγF'].
@@ -349,7 +349,7 @@ Proof.
     repeat (rewrite dom_app in Hin0 || simpl dom in Hin0).
     repeat (rewrite dom_app || simpl dom). clear - Hin0. fsetdec.
   - (* skip *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hni Ha IH F' Hcond.
+    intros F Θ0 Θ1 Ξ α β P Hne Hni Hbar Ha IH F' Hcond.
     apply a_assign__skip; try assumption.
     apply IH.
     intros α1 Hα1. apply add_iff in Hα1.
@@ -368,7 +368,7 @@ Proof.
         repeat (rewrite dom_app). clear - Hin0 Hne'. fsetdec.
       * right; right. simpl dom in Hnd. clear - Hnd. fsetdec.
   - (* skip_rigid *)
-    intros F Θ0 Θ1 Ξ α β P Hni Ha IH F' Hcond.
+    intros F Θ0 Θ1 Ξ α β P Hni Hbar Ha IH F' Hcond.
     apply a_assign__skip_rigid; try assumption.
     apply IH.
     intros α1 Hα1. apply add_iff in Hα1.
@@ -387,8 +387,8 @@ Proof.
         repeat (rewrite dom_app). clear - Hin0 Hne'. fsetdec.
       * right; right. simpl dom in Hnd. clear - Hnd. fsetdec.
   - (* skip_tm_var *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH F' Hcond.
-    apply a_assign__skip_tm_var.
+    intros F Θ0 Θ1 Ξ α x P' P Hbar Ha IH F' Hcond.
+    apply a_assign__skip_tm_var; [ exact Hbar | ].
     apply IH.
     intros α1 Hα1. apply add_iff in Hα1.
     destruct Hα1 as [-> | HγF'].
@@ -406,8 +406,8 @@ Proof.
         repeat (rewrite dom_app). clear - Hin0 Hne'. fsetdec.
       * right; right. simpl dom in Hnd. clear - Hnd. fsetdec.
   - (* skip_tm_skl *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH F' Hcond.
-    apply a_assign__skip_tm_skl.
+    intros F Θ0 Θ1 Ξ α x P' P Hbar Ha IH F' Hcond.
+    apply a_assign__skip_tm_skl; [ exact Hbar | ].
     apply IH.
     intros α1 Hα1. apply add_iff in Hα1.
     destruct Hα1 as [-> | HγF'].
@@ -431,7 +431,7 @@ Proof.
   - (* flex_r *)
     intros F Θ0 α β Hne Hf F' Hcond. apply a_unify__flex_r; assumption.
   - (* flex_assign *)
-    intros F Θ0 Θ1 α1 τ α β P' Hfα Hfβ Hc IH F' Hcond.
+    intros F Θ0 Θ1 α1 τ α β P' Hfα Hfβ Hbar Hc IH F' Hcond.
     eapply a_unify__flex_assign; try eassumption.
     apply (IH (add α1 F') empty empty); [ | reflexivity | reflexivity ].
     intros β1 Hβ1. apply add_iff in Hβ1.
@@ -447,7 +447,7 @@ Proof.
         repeat (rewrite dom_app). clear - Hin0 Hne'. fsetdec.
       * right; right. simpl dom in Hnd. clear - Hnd. fsetdec.
   - (* flex_skip *)
-    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hu IH F' Hcond.
+    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hbar Hu IH F' Hcond.
     apply a_unify__flex_skip; try assumption.
     apply IH.
     intros β1 Hβ1. apply add_iff in Hβ1.
@@ -463,7 +463,7 @@ Proof.
         repeat (rewrite dom_app). clear - Hin0 Hne'. fsetdec.
       * right; right. simpl dom in Hnd. clear - Hnd. fsetdec.
   - (* skip_other *)
-    intros F Θ0 Θ1 c b α β Hb Hu IH F' Hcond.
+    intros F Θ0 Θ1 c b α β Hb Hbar Hu IH F' Hcond.
     apply a_unify__skip_other; try assumption.
     apply IH.
     intros β1 Hβ1. apply add_iff in Hβ1.
@@ -623,22 +623,22 @@ Proof.
     intros F Θ0 Ξ α P βs τ Hnα Hg Hm Hu Hfr.
     left. unfold binds. apply in_or_app. right. left. reflexivity.
   - (* assign *)
-    intros F Θ0 Θ1 Ξ α β τ P P' Hfl Hc _.
+    intros F Θ0 Θ1 Ξ α β τ P P' Hfl Hbar Hc _.
     apply a_flex_tvar_weaken_app. exact Hfl.
   - (* depend *)
     intros F Θ0 Θ1 Ξ α β P Hne Hin Ha IH.
     simpl_env in IH. exact IH.
   - (* skip *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hni Ha IH.
+    intros F Θ0 Θ1 Ξ α β P Hne Hni Hbar Ha IH.
     apply (a_flex_tvar_insert_mid Ξ (β ~ abind_flex_mono) Θ0). exact IH.
   - (* skip_rigid *)
-    intros F Θ0 Θ1 Ξ α β P Hni Ha IH.
+    intros F Θ0 Θ1 Ξ α β P Hni Hbar Ha IH.
     apply (a_flex_tvar_insert_mid Ξ (β ~ abind_tvar) Θ0). exact IH.
   - (* skip_tm_var *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH.
+    intros F Θ0 Θ1 Ξ α x P' P Hbar Ha IH.
     apply (a_flex_tvar_insert_mid Ξ (x ~ abind_var_typ P') Θ0). exact IH.
   - (* skip_tm_skl *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH.
+    intros F Θ0 Θ1 Ξ α x P' P Hbar Ha IH.
     apply (a_flex_tvar_insert_mid Ξ (x ~ abind_var_skl P') Θ0). exact IH.
   - (* flex_id *)
     intros F Θ0 α Hf. split; assumption.
@@ -651,12 +651,12 @@ Proof.
     + apply (a_flex_tvar_weaken_app (β ~ abind_flex_mono)). exact Hf.
     + left. left. reflexivity.
   - (* flex_assign *)
-    intros F Θ0 Θ1 α1 τ α β P' Hfα Hfβ Hc _. split; assumption.
+    intros F Θ0 Θ1 α1 τ α β P' Hfα Hfβ Hbar Hc _. split; assumption.
   - (* flex_skip *)
-    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hu [IHα IHβ]. split;
+    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hbar Hu [IHα IHβ]. split;
       apply (a_flex_tvar_weaken_app (α1 ~ abind_flex_mono)); assumption.
   - (* skip_other *)
-    intros F Θ0 Θ1 c b α β Hb Hu [IHα IHβ]. split;
+    intros F Θ0 Θ1 c b α β Hb Hbar Hu [IHα IHβ]. split;
       apply (a_flex_tvar_weaken_app (c ~ b)); assumption.
 Qed.
 
@@ -733,7 +733,7 @@ Proof.
             fsetdec).
       simpl dom in *. clear - Hγd Hα1β. fsetdec.
   - (* assign *)
-    intros F Θ0 Θ1 Ξ α β τ P P' Hfl Hc IH Hu.
+    intros F Θ0 Θ1 Ξ α β τ P P' Hfl Hbar Hc IH Hu.
     assert (HuΞΘ : uniq (Ξ ++ Θ0)) by solve_uniq.
     assert (Hβni : β `notin` dom (Ξ ++ Θ0)) by solve_uniq.
     destruct (IH HuΞΘ) as [Hu1 Hprot].
@@ -760,7 +760,7 @@ Proof.
     repeat rewrite dom_app in *. simpl dom in *.
     clear - Hin'. fsetdec.
   - (* skip *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hni Ha IH Hu.
+    intros F Θ0 Θ1 Ξ α β P Hne Hni Hbar Ha IH Hu.
     assert (HuΞΘ : uniq (Ξ ++ Θ0)) by solve_uniq.
     assert (Hβni : β `notin` dom (Ξ ++ Θ0)) by solve_uniq.
     destruct (IH HuΞΘ) as [Hu1 Hprot].
@@ -775,7 +775,7 @@ Proof.
       pose proof (Hprot α1 ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       rewrite dom_app in Hin'. clear - Hin'. fsetdec.
   - (* skip_rigid *)
-    intros F Θ0 Θ1 Ξ α β P Hni Ha IH Hu.
+    intros F Θ0 Θ1 Ξ α β P Hni Hbar Ha IH Hu.
     assert (HuΞΘ : uniq (Ξ ++ Θ0)) by solve_uniq.
     assert (Hβni : β `notin` dom (Ξ ++ Θ0)) by solve_uniq.
     destruct (IH HuΞΘ) as [Hu1 Hprot].
@@ -790,7 +790,7 @@ Proof.
       pose proof (Hprot α1 ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       rewrite dom_app in Hin'. clear - Hin'. fsetdec.
   - (* skip_tm_var *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH Hu.
+    intros F Θ0 Θ1 Ξ α x P' P Hbar Ha IH Hu.
     assert (HuΞΘ : uniq (Ξ ++ Θ0)) by solve_uniq.
     assert (Hxni : x `notin` dom (Ξ ++ Θ0)) by solve_uniq.
     destruct (IH HuΞΘ) as [Hu1 Hprot].
@@ -805,7 +805,7 @@ Proof.
       pose proof (Hprot α1 ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       rewrite dom_app in Hin'. clear - Hin'. fsetdec.
   - (* skip_tm_skl *)
-    intros F Θ0 Θ1 Ξ α x P' P Ha IH Hu.
+    intros F Θ0 Θ1 Ξ α x P' P Hbar Ha IH Hu.
     assert (HuΞΘ : uniq (Ξ ++ Θ0)) by solve_uniq.
     assert (Hxni : x `notin` dom (Ξ ++ Θ0)) by solve_uniq.
     destruct (IH HuΞΘ) as [Hu1 Hprot].
@@ -830,7 +830,7 @@ Proof.
     split; [ solve_uniq | ].
     intros α1 _ Hα1. simpl dom in *. exact Hα1.
   - (* flex_assign *)
-    intros F Θ0 Θ1 α10 τ α β P' Hfα Hfβ Hc IH Hu.
+    intros F Θ0 Θ1 α10 τ α β P' Hfα Hfβ Hbar Hc IH Hu.
     assert (HuΘ : uniq Θ0) by solve_uniq.
     assert (Hγni : α10 `notin` dom Θ0) by solve_uniq.
     destruct (IH HuΘ) as [Hu1 Hprot].
@@ -844,7 +844,7 @@ Proof.
       pose proof (Hprot α1 ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       clear - Hin'. fsetdec.
   - (* flex_skip *)
-    intros F Θ0 Θ1 α10 α β Hne1 Hne2 Hun IH Hu.
+    intros F Θ0 Θ1 α10 α β Hne1 Hne2 Hbar Hun IH Hu.
     assert (HuΘ : uniq Θ0) by solve_uniq.
     assert (Hγni : α10 `notin` dom Θ0) by solve_uniq.
     destruct (IH HuΘ) as [Hu1 Hprot].
@@ -858,7 +858,7 @@ Proof.
       pose proof (Hprot α1 ltac:(clear - HγF; fsetdec) Hγd) as Hin'.
       clear - Hin'. fsetdec.
   - (* skip_other *)
-    intros F Θ0 Θ1 c b α β Hb Hun IH Hu.
+    intros F Θ0 Θ1 c b α β Hb Hbar Hun IH Hu.
     assert (HuΘ : uniq Θ0) by solve_uniq.
     assert (Hcni : c `notin` dom Θ0) by solve_uniq.
     destruct (IH HuΘ) as [Hu1 Hprot].
@@ -1326,16 +1326,16 @@ Proof.
     intros F Θ0 Ξ s P βs τ Hnα Hg Hm Huβ Hfr. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* assign : defined-flex head, vacuous *)
-    intros F Θ0 Θ1 Ξ s β τ P P' Hfl Hc IH. exists empty.
+    intros F Θ0 Θ1 Ξ s β τ P P' Hfl Hbar Hc IH. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* depend : flex head, vacuous *)
     intros F Θ0 Θ1 Ξ s β P Hne Hin Ha IH. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* skip : flex head, vacuous *)
-    intros F Θ0 Θ1 Ξ s β P Hne Hni Ha IH. exists empty.
+    intros F Θ0 Θ1 Ξ s β P Hne Hni Hbar Ha IH. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* skip_rigid : the walk case — crossing at Ξr = nil *)
-    intros F Θ0 Θ1 Ξ s β P Hni Ha IH.
+    intros F Θ0 Θ1 Ξ s β P Hni Hbar Ha IH.
     destruct IH as [Lih IH]. exists Lih.
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP Hsα HsY.
     destruct Ξr as [ | [x bx] Ξr' ]; simpl in Heq.
@@ -1343,7 +1343,10 @@ Proof.
       (* CROSSING : β = α; below is reused verbatim, F swaps α ↦ β0 *)
       exists Θ1. split; [ reflexivity | ].
       rewrite subst_pskl_in_pskl_fresh_eq; [ | exact Hni ].
-      simpl. apply a_assign__skip_rigid; [ exact HYP | ].
+      simpl. apply a_assign__skip_rigid;
+        [ exact HYP
+        | simpl dom in HYo; clear - HYo; fsetdec
+        | ].
       eapply (auc_compat_assign Ha).
       intros α1 Hα1. apply add_iff in Hα1.
       destruct Hα1 as [-> | HγF].
@@ -1362,19 +1365,23 @@ Proof.
       destruct (IH β0 HL Ξr' Θb eq_refl (tvar_prefix_tail Htv) Hu' HYi' HYo'
                   HYP Hsα HsY) as [Θt [-> Hren]].
       exists Θt. split; [ reflexivity | ].
-      apply a_assign__skip_rigid; [ | exact Hren ].
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                    P (pskl_var_f β0) α) as Hup.
-      simpl in Hup.
       assert (Hββ0 : β <> β0).
       { intros ->. repeat rewrite dom_app in HYi. simpl dom in HYi.
         clear - HYi. fsetdec. }
-      clear - Hni Hup Hββ0. fsetdec.
+      apply a_assign__skip_rigid; [ | | exact Hren ].
+      * pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                      P (pskl_var_f β0) α) as Hup.
+        simpl in Hup.
+        clear - Hni Hup Hββ0. fsetdec.
+      * (* the walked β misses the RENAMED output too: the rename moves
+           α ↦ β0 only, and β is neither *)
+        clear - Hbar Hββ0.
+        repeat rewrite dom_app in *. simpl dom in *. fsetdec.
   - (* skip_tm_var : term head, vacuous *)
-    intros F Θ0 Θ1 Ξ s x P' P Ha IH. exists empty.
+    intros F Θ0 Θ1 Ξ s x P' P Hbar Ha IH. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* skip_tm_skl : term head, vacuous *)
-    intros F Θ0 Θ1 Ξ s x P' P Ha IH. exists empty.
+    intros F Θ0 Θ1 Ξ s x P' P Hbar Ha IH. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* flex_id : identity node *)
     intros F Θ0 s Hf. exists empty.
@@ -1390,20 +1397,23 @@ Proof.
     intros F Θ0 s1 s2 Hne Hf. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* flex_assign : defined-flex head, vacuous *)
-    intros F Θ0 Θ1 α1 τ s1 s2 P' Hfα Hfβ Hc IH. exists empty.
+    intros F Θ0 Θ1 α1 τ s1 s2 P' Hfα Hfβ Hbar Hc IH. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* flex_skip : flex head, vacuous *)
-    intros F Θ0 Θ1 α1 s1 s2 Hne1 Hne2 Hun IH. exists empty.
+    intros F Θ0 Θ1 α1 s1 s2 Hne1 Hne2 Hbar Hun IH. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.
   - (* skip_other : the walk case — crossing at Ξr = nil *)
-    intros F Θ0 Θ1 c b s1 s2 Hb Hun IH.
+    intros F Θ0 Θ1 c b s1 s2 Hb Hbar Hun IH.
     destruct IH as [Lih IH]. exists Lih.
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo Hs1α Hs1Y Hs2α Hs2Y.
     destruct Ξr as [ | [x bx] Ξr' ]; simpl in Heq.
     + inversion Heq; subst.
       (* CROSSING : c = α, b = tvar *)
       exists Θ1. split; [ reflexivity | ].
-      apply a_unify__skip_other; [ left; reflexivity | ].
+      apply a_unify__skip_other;
+        [ left; reflexivity
+        | simpl dom in HYo; clear - HYo; fsetdec
+        | ].
       eapply (auc_compat_unify Hun).
       intros α1 Hα1. apply add_iff in Hα1.
       destruct Hα1 as [-> | HγF].
@@ -1420,7 +1430,13 @@ Proof.
       destruct (IH β0 HL Ξr' Θb eq_refl (tvar_prefix_tail Htv) Hu' HYi' HYo'
                   Hs1α Hs1Y Hs2α Hs2Y) as [Θt [-> Hren]].
       exists Θt. split; [ reflexivity | ].
-      apply a_unify__skip_other; [ exact Hb | exact Hren ].
+      assert (Hcβ0 : c <> β0).
+      { intros ->. simpl dom in HYi. clear - HYi. fsetdec. }
+      apply a_unify__skip_other;
+        [ exact Hb
+        | clear - Hbar Hcβ0;
+          repeat rewrite dom_app in *; simpl dom in *; fsetdec
+        | exact Hren ].
   - (* ghost : axiom node *)
     intros F Δ1 Δ2 Θ0 P0 Hi. exists empty.
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0 HYP HYQ Hβ0Δ1 Hβ0Δ2.

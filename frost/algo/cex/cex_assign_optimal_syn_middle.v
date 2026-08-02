@@ -152,10 +152,13 @@ Definition Th : aenv :=
 Lemma cex_run : Th0 ⊲[ empty ][ nil ] alpha ≔ Pc ⊣ Th1.
 Proof.
   unfold Th0, Th1.
-  apply a_assign__skip_tm_var.
+  (* each re-attaching row now carries the Barendregt output premise *)
+  apply a_assign__skip_tm_var;
+    [ simpl; clear - Hd1 Hd2 Hd3; fsetdec | ].
   apply a_assign__depend;
     [ auto | unfold Pc; simpl; clear; fsetdec | ].
-  simpl. apply a_assign__skip_tm_var.
+  simpl. apply a_assign__skip_tm_var;
+    [ simpl; clear - Hd5 Hd8; fsetdec | ].
   change (((alpha ~ abind_flex_mono) ++ nil)
             ⊲[ add y (add c empty) ][ (α ~ abind_flex_mono) ] alpha ≔ Pc
             ⊣ ((alpha ~ abind_flex_mono_def tauP) ++ nil ++ (α ~ abind_flex_mono) ++ nil)).

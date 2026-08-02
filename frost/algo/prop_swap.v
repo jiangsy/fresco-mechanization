@@ -1041,9 +1041,10 @@ Proof.
         intros hc.
         pose proof (swap_aenv_dom_in_rev a b (Ξ ++ Θ0) α1 hc). contradiction.
   - (* assign *)
-    intros F Θ0 Θ1 Ξ α β τ P Q Hflex Hd IH F' HF. simpl.
+    intros F Θ0 Θ1 Ξ α β τ P Q Hflex Hnd Hd IH F' HF. simpl.
     eapply a_assign__assign.
     + exact (a_flex_tvar_swap a b _ _ Hflex).
+    + apply swap_aenv_dom_notin; exact Hnd.
     + specialize (IH (add (swap_atom a b β) F')
                      empty empty
                      (eq_swap_atoms_add a b β _ _ HF)).
@@ -1060,21 +1061,24 @@ Proof.
     specialize (IH _ HF).
     rewrite swap_aenv_app in IH. exact IH.
   - (* skip *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hnf Hd IH F' HF. simpl.
+    intros F Θ0 Θ1 Ξ α β P Hne Hnf Hnd Hd IH F' HF. simpl.
     apply a_assign__skip;
-      auto using swap_atom_neq, swap_pskl_ftv_notin.
+      auto using swap_atom_neq, swap_pskl_ftv_notin, swap_aenv_dom_notin.
     exact (IH (add (swap_atom a b β) F') (eq_swap_atoms_add a b β _ _ HF)).
   - (* skip_rigid *)
-    intros F Θ0 Θ1 Ξ α β P Hnf Hd IH F' HF. simpl.
-    apply a_assign__skip_rigid; auto using swap_pskl_ftv_notin.
+    intros F Θ0 Θ1 Ξ α β P Hnf Hnd Hd IH F' HF. simpl.
+    apply a_assign__skip_rigid;
+      auto using swap_pskl_ftv_notin, swap_aenv_dom_notin.
     exact (IH (add (swap_atom a b β) F') (eq_swap_atoms_add a b β _ _ HF)).
   - (* skip_tm_var *)
-    intros F Θ0 Θ1 Ξ α x Q P Hd IH F' HF. simpl.
-    apply a_assign__skip_tm_var.
+    intros F Θ0 Θ1 Ξ α x Q P Hnd Hd IH F' HF. simpl.
+    apply a_assign__skip_tm_var;
+      [ apply swap_aenv_dom_notin; exact Hnd | ].
     exact (IH (add (swap_atom a b x) F') (eq_swap_atoms_add a b x _ _ HF)).
   - (* skip_tm_skl *)
-    intros F Θ0 Θ1 Ξ α x Q P Hd IH F' HF. simpl.
-    apply a_assign__skip_tm_skl.
+    intros F Θ0 Θ1 Ξ α x Q P Hnd Hd IH F' HF. simpl.
+    apply a_assign__skip_tm_skl;
+      [ apply swap_aenv_dom_notin; exact Hnd | ].
     exact (IH (add (swap_atom a b x) F') (eq_swap_atoms_add a b x _ _ HF)).
   (* ==================== a_unify ==================== *)
   - (* flex_id *)
@@ -1087,10 +1091,11 @@ Proof.
     intros F Θ0 α β Hne Hflex F' HF. simpl.
     apply a_unify__flex_r; auto using swap_atom_neq, a_flex_tvar_swap.
   - (* flex_assign *)
-    intros F Θ0 Θ1 α1 τ α β Q Hfα Hfβ Hd IH F' HF. simpl.
+    intros F Θ0 Θ1 α1 τ α β Q Hfα Hfβ Hnd Hd IH F' HF. simpl.
     eapply a_unify__flex_assign.
     + exact (a_flex_tvar_swap a b _ _ Hfα).
     + exact (a_flex_tvar_swap a b _ _ Hfβ).
+    + apply swap_aenv_dom_notin; exact Hnd.
     + specialize (IH (add (swap_atom a b α1) F')
                      empty empty
                      (eq_swap_atoms_add a b α1 _ _ HF)).
@@ -1102,16 +1107,18 @@ Proof.
         (ptyp_var_f (swap_atom a b β)) in IH.
       apply IH; rewrite swap_atoms_empty; fsetdec.
   - (* flex_skip *)
-    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hd IH F' HF. simpl.
-    apply a_unify__flex_skip; auto using swap_atom_neq.
+    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hnd Hd IH F' HF. simpl.
+    apply a_unify__flex_skip;
+      auto using swap_atom_neq, swap_aenv_dom_notin.
     exact (IH (add (swap_atom a b α1) F') (eq_swap_atoms_add a b α1 _ _ HF)).
   - (* skip_other *)
-    intros F Θ0 Θ1 c bd α β Hb Hd IH F' HF. simpl.
+    intros F Θ0 Θ1 c bd α β Hb Hnd Hd IH F' HF. simpl.
     apply a_unify__skip_other.
     + destruct Hb as [-> | [[Q ->] | [Q ->]]]; simpl.
       * left; reflexivity.
       * right; left; eexists; reflexivity.
       * right; right; eexists; reflexivity.
+    + apply swap_aenv_dom_notin; exact Hnd.
     + exact (IH (add (swap_atom a b c) F') (eq_swap_atoms_add a b c _ _ HF)).
   (* ==================== a_consis ==================== *)
   - (* ghost *)
@@ -1473,6 +1480,114 @@ Proof.
   rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
   rewrite (swap_pskl_fresh_id β0 β1 P0) in h; auto.
   rewrite (swap_pskl_fresh_id β0 β1 P) in h; auto.
+Qed.
+
+(* ===================================================================== *)
+(*  §13b  The Barendregt output premises LOSE NOTHING                     *)
+(*                                                                        *)
+(*  [a_sub_flex__assign] / [__skip] / [__skip_rigid] constrain their own   *)
+(*  OUTPUT ([β ∉ dom Θ1]), which a reader is right to be suspicious of:    *)
+(*  a rule that filters what its premise produced can, a priori, REJECT    *)
+(*  where the reference implementation succeeds (there a global counter    *)
+(*  makes the collision impossible, so no check is ever needed).           *)
+(*                                                                        *)
+(*  It cannot.  A derivation is finitely supported, so a γ fresh for its   *)
+(*  whole output always exists, and equivariance moves the run to that γ   *)
+(*  ([a_sub_swap_junk] / [a_sub_flex_swap_junk] fix every INPUT pointwise) *)
+(*  — whereupon [swap_junk_dom_out] discharges the premise.  So the rule   *)
+(*  fires whenever the premise-free version would, with the run's          *)
+(*  GENERATED names transposed and nothing else touched: the premise is    *)
+(*  an honest statement of the paper's Barendregt convention, not a        *)
+(*  strengthening of the algorithm.  (This is why the encoding is          *)
+(*  admissible at all; see DESIGN.md §4.3.)                                *)
+(* ===================================================================== *)
+
+Lemma a_sub_flex_skip_no_loss : forall NM M P0 Θ0 Θ1 Ξ α β A,
+  a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+  α <> β ->
+  β `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P0 ->
+  exists γ, γ `notin` dom Θ1 /\
+    a_sub_flex NM M P0 ((β ~ abind_flex_mono) ++ Θ0) Ξ α
+      (swap_pskl β γ A) ((β ~ abind_flex_mono) ++ swap_aenv β γ Θ1).
+Proof.
+  intros * Hd Hne Hfr.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+                    `union` ftvar_in_pskl P0 `union` singleton α).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_sub_flex__skip.
+  - exact Hne.
+  - clear - Hfr; fsetdec.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_sub_flex_swap_junk;
+      [ exact Hd | auto | clear - Fr; fsetdec | exact Hfr
+      | clear - Fr; fsetdec ].
+Qed.
+
+Lemma a_sub_flex_skip_rigid_no_loss : forall NM M P0 Θ0 Θ1 Ξ α β A,
+  a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+  α <> β ->
+  β `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+     `union` ftvar_in_pskl P0 ->
+  exists γ, γ `notin` dom Θ1 /\
+    a_sub_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α
+      (swap_pskl β γ A) ((β ~ abind_tvar) ++ swap_aenv β γ Θ1).
+Proof.
+  intros * Hd Hne Hfr.
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+                    `union` ftvar_in_pskl P0 `union` singleton α).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_sub_flex__skip_rigid.
+  - exact Hne.
+  - clear - Hfr; fsetdec.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_sub_flex_swap_junk;
+      [ exact Hd | auto | clear - Fr; fsetdec | exact Hfr
+      | clear - Fr; fsetdec ].
+Qed.
+
+(** Flex-Assign's premise is the MAIN judgment over the merged context; the
+    walked definition [τ] cannot mention its own [β̂] (scope discipline), and
+    that is the only extra hypothesis.  [α = β] is allowed, exactly as in the
+    rule — there the subject reduces to [τ], which is [β]-free too. *)
+Lemma a_sub_flex_assign_no_loss : forall NM M P0 Θ0 Θ1 Ξ α β τ A,
+  a_sub NM (mode_fn M) (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
+    (Ξ ++ Θ0) (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)) A Θ1 ->
+  (* stated on the premise's own MERGED context, since [ftvar_in_aenv]'s
+     app-distribution lives downstream of this file *)
+  β `notin` ftvar_in_aenv (Ξ ++ Θ0)
+     `union` ftvar_in_pskl (ptyp_to_pskl τ) ->
+  exists γ, γ `notin` dom Θ1 /\
+    a_sub_flex NM M P0 ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α
+      (swap_pskl β γ A) ((β ~ abind_flex_mono_def τ) ++ swap_aenv β γ Θ1).
+Proof.
+  intros * Hd Hfr.
+  (* the substituted slots are β-free: every β of [P0] is replaced, and the
+     replacement [τ] is β-free *)
+  assert (Hsub0 : β `notin` ftvar_in_pskl
+                    (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)).
+  { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                  P0 (ptyp_to_pskl τ) β) as Hup.
+    clear - Hup Hfr. fsetdec. }
+  assert (Hsubs : β `notin` ftvar_in_pskl
+                    (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))).
+  { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
+                  (pskl_var_f α) (ptyp_to_pskl τ) β) as Hup.
+    clear - Hup Hfr. simpl in Hup. fsetdec. }
+  assert (HΞΘ : β `notin` ftvar_in_aenv (Ξ ++ Θ0)) by (clear - Hfr; fsetdec).
+  pick fresh γ for (dom Θ1 `union` ftvar_in_aenv (Ξ ++ Θ0)
+                    `union` ftvar_in_pskl
+                        (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
+                    `union` ftvar_in_pskl
+                        (subst_pskl_in_pskl (ptyp_to_pskl τ) β
+                           (pskl_var_f α))).
+  exists γ. split; [ clear - Fr; fsetdec | ].
+  apply a_sub_flex__assign.
+  - apply swap_junk_dom_out. clear - Fr; fsetdec.
+  - apply a_sub_swap_junk;
+      [ exact Hd
+      | clear - HΞΘ Hsub0 Hsubs; fsetdec
+      | clear - Fr; fsetdec ].
 Qed.
 
 (* ===================================================================== *)

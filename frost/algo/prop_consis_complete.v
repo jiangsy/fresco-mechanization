@@ -3737,7 +3737,11 @@ Proof.
     destruct (HuIH (add α1 F) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
     exists ((α1 ~ abind_tvar) ++ Θ1'). split.
-    { apply a_unify__skip_other; [ left; reflexivity | exact Hu ]. }
+    { apply a_unify__skip_other;
+        [ left; reflexivity | (* the popped head misses the sub-run's output: it is in the
+             relayed used-name set and fresh for the input (conjunct 4) *)
+          eapply a_unify_notin;
+            [ exact Hu | exact Hwf0 | clear; fsetdec | exact Hnd ] | exact Hu ]. }
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ Θ0' ⊑ Θ1')
       by (eapply a_inc_id_mid_strip; [ left; reflexivity | exact Hinc1 ]).
@@ -3792,7 +3796,10 @@ Proof.
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
     exists ((α1 ~ abind_var_typ A) ++ Θ1'). split.
     { apply a_unify__skip_other;
-        [ right; left; exists A; reflexivity | exact Hu ]. }
+        [ right; left; exists A; reflexivity | (* the popped head misses the sub-run's output: it is in the
+             relayed used-name set and fresh for the input (conjunct 4) *)
+          eapply a_unify_notin;
+            [ exact Hu | exact Hwf0 | clear; fsetdec | exact Hnd ] | exact Hu ]. }
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ Θ0' ⊑ Θ1')
       by (eapply a_inc_id_mid_strip;
@@ -3859,7 +3866,10 @@ Proof.
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
     exists ((α1 ~ abind_var_skl Q) ++ Θ1'). split.
     { apply a_unify__skip_other;
-        [ right; right; exists Q; reflexivity | exact Hu ]. }
+        [ right; right; exists Q; reflexivity | (* the popped head misses the sub-run's output: it is in the
+             relayed used-name set and fresh for the input (conjunct 4) *)
+          eapply a_unify_notin;
+            [ exact Hu | exact Hwf0 | clear; fsetdec | exact Hnd ] | exact Hu ]. }
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ Θ0' ⊑ Θ1')
       by (eapply a_inc_id_mid_strip;
@@ -3937,7 +3947,10 @@ Proof.
                        Hincs Hwfth Heq) as [Θ1' [Hu Hopt']].
         exists ((α1 ~ abind_flex_mono) ++ Θ1'). split.
         { apply a_unify__flex_skip;
-            [ auto | auto | exact Hu ]. }
+            [ auto | auto | (* the popped head misses the sub-run's output: it is in the
+             relayed used-name set and fresh for the input (conjunct 4) *)
+          eapply a_unify_notin;
+            [ exact Hu | exact Hwf0 | clear; fsetdec | exact Hnd ] | exact Hu ]. }
         intros κ1 Hid Hinc1.
         inversion Hinc1 as [ | Θp κp Θq α1p τp Hincp Hwfp Hmp [Heqγ1 Heqκ1] Heqt1
                            | | | | ]; subst.
@@ -4080,7 +4093,16 @@ Proof.
       as [P1 [Θ1' [Hcons Hopt']]].
     exists ((α1 ~ abind_flex_mono_def τdef) ++ Θ1'). split.
     { eapply a_unify__flex_assign;
-        [ exact Hfα | exact Hfβ | exact Hcons ]. }
+        [ exact Hfα | exact Hfβ | | exact Hcons ].
+      (* conjunct 4: the walked definition is in the relayed used-name set
+         and fresh for the input, so it misses the output *)
+      eapply a_consis_notin;
+        [ exact Hcons | exact Hwf0 | exact HwfPB | exact HwfPA
+        | intros α0 Hα0; exfalso; clear - Hα0; fsetdec
+        | repeat intro; fsetdec
+        | repeat intro; fsetdec
+        | clear; fsetdec
+        | exact Hnd ]. }
     intros κ1 Hid Hinc1.
     inversion Hinc1 as [ | | Θp κp Θq α1p τd1 τ1 Hincp Hwf1p Hm1p Heq1p
                            [Heqγ1 Heqκ1] Heqt1 | | | ]; subst.
@@ -5150,7 +5172,14 @@ Proof.
                      Hjoin_sub)
         as [Θ1 [Ha' Hopt'']].
       exists ((α1 ~ abind_tvar) ++ Θ1). split.
-      { apply a_assign__skip_rigid; [ exact Hγni | exact Ha' ]. }
+      { apply a_assign__skip_rigid;
+          [ exact Hγni | (* conjunct 4: the popped head is in the relayed used-name
+             set and fresh for the input, so it misses the output *)
+          eapply a_assign_notin;
+            [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP'
+            | clear; fsetdec
+            | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
+              simpl_env in Huq0; solve_uniq ] | exact Ha' ]. }
       (* ---- optimality : the OPT twin's two conjuncts ---- *)
       intros κ1 Hid Hinc1.
       assert (Hinc1_s : κ1 ∷ (Ξ ++ Θ0') ⊑ Θ1)
@@ -5420,7 +5449,13 @@ Proof.
                    Hjoin_sub)
       as [Θ1 [Ha' Hopt'']].
     exists ((α1 ~ abind_var_typ A) ++ Θ1). split.
-    { apply a_assign__skip_tm_var. exact Ha'. }
+    { apply a_assign__skip_tm_var; [ (* conjunct 4: the popped head is in the relayed used-name
+             set and fresh for the input, so it misses the output *)
+          eapply a_assign_notin;
+            [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP'
+            | clear; fsetdec
+            | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
+              simpl_env in Huq0; solve_uniq ] | exact Ha' ]. }
     (* ---- optimality : the OPT twin's two conjuncts ---- *)
     intros κ1 Hid Hinc1.
     assert (Hinc1_s : κ1 ∷ (Ξ ++ Θ0') ⊑ Θ1)
@@ -5746,7 +5781,13 @@ Proof.
                    Hjoin_sub)
       as [Θ1 [Ha' Hopt'']].
     exists ((α1 ~ abind_var_skl Q) ++ Θ1). split.
-    { apply a_assign__skip_tm_skl. exact Ha'. }
+    { apply a_assign__skip_tm_skl; [ (* conjunct 4: the popped head is in the relayed used-name
+             set and fresh for the input, so it misses the output *)
+          eapply a_assign_notin;
+            [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP'
+            | clear; fsetdec
+            | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
+              simpl_env in Huq0; solve_uniq ] | exact Ha' ]. }
     (* ---- optimality : the OPT twin's two conjuncts ---- *)
     intros κ1 Hid Hinc1.
     assert (Hinc1_s : κ1 ∷ (Ξ ++ Θ0') ⊑ Θ1)
@@ -5946,7 +5987,14 @@ Proof.
                        Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hincab Hwfth Hjoin')
           as [Θ1' [Ha' Hopt']].
         exists ((α1 ~ abind_flex_mono) ++ Θ1'). split.
-        { apply a_assign__skip; [ exact Hαα1 | exact Hγni | exact Ha' ]. }
+        { apply a_assign__skip;
+            [ exact Hαα1 | exact Hγni | (* conjunct 4: the popped head is in the relayed used-name
+             set and fresh for the input, so it misses the output *)
+          eapply a_assign_notin;
+            [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP'
+            | clear; fsetdec
+            | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
+              simpl_env in Huq0; solve_uniq ] | exact Ha' ]. }
         intros κ1 Hid Hinc1.
         destruct (a_inc_mid_strip_flex α1 Θ0' Hdecl Hinc1)
           as [κ1a [τ1 [κ1b [Heqκ1 [Hdκ1a [Hinc1b Hinc1ab]]]]]].
@@ -6257,7 +6305,17 @@ Proof.
                 Hjsub Hrssub Hrpsub)
       as [Q' [Θ1' [Hc Hopt']]].
     exists ((α1 ~ abind_flex_mono_def τdef) ++ Θ1'). split.
-    { eapply a_assign__assign; [ exact Hfα | exact Hc ]. }
+    { eapply a_assign__assign; [ exact Hfα | | exact Hc ].
+      (* conjunct 4: the walked definition is in the relayed used-name set
+         and fresh for the merged input, so it misses the output *)
+      eapply a_consis_notin;
+        [ exact Hc | exact Hwf' | exact HwfP0s | exact HwfSs
+        | intros α0 Hα0; exfalso; clear - Hα0; fsetdec
+        | intros β τ Hb; clear; fsetdec
+        | intros Θa β b Θb Heqx Hne; clear; fsetdec
+        | clear; fsetdec
+        | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
+          simpl_env in Huq0; solve_uniq ]. }
     (* ---- optimality ---- *)
     intros κ1 Hid Hinc1.
     destruct (a_inc_mid_strip_flex_def α1 τdef Θ0' Hdecl Hinc1)

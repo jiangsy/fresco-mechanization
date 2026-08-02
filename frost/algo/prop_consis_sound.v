@@ -2804,7 +2804,7 @@ Proof.
 
   - (* Assign-Assign : the premise is a CONSISTENCY derivation, so the join
        [P3] must be eliminated — see the two subsidiary inductions above. *)
-    intros F Θ0 Θ1 Ξ α β τ P P3 Hfl Hc IHc Hdecl Hwf HwfP.
+    intros F Θ0 Θ1 Ξ α β τ P P3 Hfl Hbar Hc IHc Hdecl Hwf HwfP.
     assert (Hτ : a_wf_ptyp Θ0 τ /\ mono_ptyp τ)
       by (eapply a_wf_aenv_mid_def_inv; eauto).
     destruct Hτ as [Hτwf Hτm].
@@ -3069,7 +3069,7 @@ Proof.
     exact Hcons.
 
   - (* Assign-Skip *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hβn Ha IHa Hdecl Hwf HwfP.
+    intros F Θ0 Θ1 Ξ α β P Hne Hβn Hbar Ha IHa Hdecl Hwf HwfP.
     assert (Huniq : uniq (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hβd : β `notin` dom (Ξ ++ Θ0))
@@ -3140,7 +3140,7 @@ Proof.
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipRigid *)
-    intros F Θ0 Θ1 Ξ α β P Hβn Ha IHa Hdecl Hwf HwfP.
+    intros F Θ0 Θ1 Ξ α β P Hβn Hbar Ha IHa Hdecl Hwf HwfP.
     assert (Huniq : uniq (Ξ ++ (β ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hβd : β `notin` dom (Ξ ++ Θ0))
@@ -3198,7 +3198,7 @@ Proof.
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipTmVar (typ) *)
-    intros F Θ0 Θ1 Ξ α x P3 P Ha IHa Hdecl Hwf HwfP.
+    intros F Θ0 Θ1 Ξ α x P3 P Hbar Ha IHa Hdecl Hwf HwfP.
     assert (Huniq : uniq (Ξ ++ (x ~ abind_var_typ P3) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hxd : x `notin` dom (Ξ ++ Θ0))
@@ -3287,7 +3287,7 @@ Proof.
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipTmVar (skl) *)
-    intros F Θ0 Θ1 Ξ α x P3 P Ha IHa Hdecl Hwf HwfP.
+    intros F Θ0 Θ1 Ξ α x P3 P Hbar Ha IHa Hdecl Hwf HwfP.
     assert (Huniq : uniq (Ξ ++ (x ~ abind_var_skl P3) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hxd : x `notin` dom (Ξ ++ Θ0))
@@ -3484,7 +3484,7 @@ Proof.
     apply a_tyequiv__sym.
     apply a_tyequiv__flex_def. unfold binds; left; reflexivity.
   - (* U-Flex-Flex-Assign : the consistency premise, through the BRIDGE *)
-    intros F Θ0 Θ1 α1 τ α β P3 Hfα Hfβ Hcons IHcons Hwf.
+    intros F Θ0 Θ1 α1 τ α β P3 Hfα Hfβ Hbar Hcons IHcons Hwf.
     inversion Hwf as [ | | γx τx Θx Hγd Hwτ Hmτ Hwf0 | | | ]; subst.
     (* the substituted subjects are visible monotypes over Θ0 *)
     assert (Hτvis : forall α0, α0 `in` ftvar_in_ptyp τ -> a_binds_tvar α0 Θ0)
@@ -3602,7 +3602,7 @@ Proof.
     apply a_tyequiv__sym.
     eapply a_tyequiv_subst_def; eauto. constructor.
   - (* U-Flex-Flex-Skip *)
-    intros F Θ0 Θ1 α1 α β Hnα Hnβ Hu IHu Hwf.
+    intros F Θ0 Θ1 α1 α β Hnα Hnβ Hbar Hu IHu Hwf.
     inversion Hwf as [ | γx Θx Hγd Hwf0 | | | | ]; subst.
     destruct (IHu Hwf0) as [Hle [Hwf1 [Hdom [Hnew [Hinv Heq1]]]]].
     assert (Hγd1 : α1 `notin` dom Θ1).
@@ -3644,7 +3644,7 @@ Proof.
         simpl. clear - HX0. fsetdec. }
     apply a_tyequiv_weaken_cons. exact Heq1.
   - (* U-Flex-Flex-Skip' *)
-    intros F Θ0 Θ1 c b α β Hb Hu IHu Hwf.
+    intros F Θ0 Θ1 c b α β Hb Hbar Hu IHu Hwf.
     assert (Hwf0c : a_wf_aenv Θ0 /\ c `notin` dom Θ0).
     { destruct Hb as [-> | [[Qb ->] | [Qb ->]]].
       - apply a_wf_aenv_tvar_inv in Hwf; tauto.
@@ -4685,6 +4685,39 @@ Proof.
   intros * Hu Hwf.
   destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ Hu Hwf)
     as [Hle [Hwf1 [_ [_ [_ Heq]]]]]; auto.
+Qed.
+
+(** The walk's Barendregt output premise, for unification: a name that is
+    in the used-name set and fresh for the input cannot reappear in the
+    output.  Twin of [a_assign_notin]; conjunct 4 is what makes it true. *)
+Corollary a_unify_notin : forall F Θ0 α β Θ1,
+  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  forall γ, γ `in` F -> γ `notin` dom Θ0 -> γ `notin` dom Θ1.
+Proof.
+  intros * Hu Hwf γ HγF Hγd Hin.
+  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ Hu Hwf)
+    as [_ [_ [_ [Hnew _]]]].
+  destruct (Hnew γ Hin) as [Hd | HF]; auto.
+Qed.
+
+(** Same, for consistency — the shape [a_assign__assign] and
+    [a_unify__flex_assign] need, their premise being a consistency run. *)
+Corollary a_consis_notin : forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  a_wf_aenv Θ0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+  (forall α, α `in` (Δ1 `union` Δ2) -> binds α abind_tvar Θ0) ->
+  no_flex_dep (Δ1 `union` Δ2) Θ0 ->
+  flex_above_free (Δ1 `union` Δ2) Θ0 ->
+  forall γ, γ `in` F -> γ `notin` dom Θ0 -> γ `notin` dom Θ1.
+Proof.
+  intros * Hc Hwf HwfP0 HwfP Hrig Hnfd Hfaf γ HγF Hγd Hin.
+  destruct (proj2 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ _ _ _ Hc
+              Hwf HwfP0 HwfP Hrig Hnfd Hfaf)
+    as [_ [_ [_ [Hnew _]]]].
+  destruct (Hnew γ Hin) as [Hd | HF]; auto.
 Qed.
 
 (** Preservation of the part-1 problem invariants by unification, at any
