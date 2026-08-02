@@ -39,6 +39,7 @@ Require Import src.frost.def_extra.
 Require Import src.frost.predicates.
 Require Import src.frost.coercions.
 Require Import src.frost.algo.def_extra.
+Require Import src.frost.algo.def_meta.
 
 (* ===================================================================== *)
 (*  §1  The atom transposition                                            *)
@@ -1386,4 +1387,484 @@ Proof.
   intros * Hn Hc.
   pose proof (swap_aenv_dom_in_rev β0 β1 Θ1 β0 Hc) as h.
   rewrite swap_atom_l in h. contradiction.
+Qed.
+
+(* ===================================================================== *)
+(*  §14  Equivariance: the θ-algebra (metasubstitutions, ≡ᵗ/≡ˢ, a_inc)     *)
+(* ===================================================================== *)
+
+Definition swap_msubst (a b : atom) (κ : metasubst) : metasubst :=
+  List.map (fun e => (swap_atom a b (fst e), swap_ptyp a b (snd e))) κ.
+
+Lemma swap_msubst_cons : forall a b α τ (κ : metasubst),
+  swap_msubst a b ((α, τ) :: κ)
+  = (swap_atom a b α, swap_ptyp a b τ) :: swap_msubst a b κ.
+Proof. reflexivity. Qed.
+
+Lemma msubst_lookup_swap : forall a b (κ : metasubst) x,
+  swap_ptyp a b (msubst_lookup κ x)
+  = msubst_lookup (swap_msubst a b κ) (swap_atom a b x).
+Proof.
+  intros a b κ; induction κ as [| [y τ] κ']; intros x; simpl.
+  - reflexivity.
+  - destruct (x == y) as [e | n0].
+    + rewrite e.
+      match goal with
+      | |- context [if ?t then _ else _] => destruct t as [_ | n1]
+      end; [reflexivity | exfalso; apply n1; reflexivity].
+    + match goal with
+      | |- context [if ?t then _ else _] => destruct t as [e1 | ?]
+      end; [exfalso; apply n0; exact (swap_atom_inj a b _ _ e1) | auto].
+Qed.
+
+Lemma msubst_ptyp_swap : forall a b (κ : metasubst) A,
+  swap_ptyp a b (msubst_ptyp κ A)
+  = msubst_ptyp (swap_msubst a b κ) (swap_ptyp a b A).
+Proof.
+  intros a b κ; induction A; simpl; try solve [reflexivity | f_equal; auto].
+  apply msubst_lookup_swap.
+Qed.
+
+Lemma msubst_pskl_swap : forall a b (κ : metasubst) P,
+  swap_pskl a b (msubst_pskl κ P)
+  = msubst_pskl (swap_msubst a b κ) (swap_pskl a b P).
+Proof.
+  intros a b κ; induction P; simpl; try solve [reflexivity | f_equal; auto].
+  rewrite swap_pskl_ptyp_to_pskl, msubst_lookup_swap. reflexivity.
+Qed.
+
+Lemma a_tyequiv_swap : forall a b Θ A B,
+  Θ ⊢ A ≡ᵗ B ->
+  (swap_aenv a b Θ) ⊢ (swap_ptyp a b A) ≡ᵗ (swap_ptyp a b B).
+Proof.
+  intros * H; induction H; simpl.
+  - apply a_tyequiv__refl. auto using lc_ptyp_swap.
+  - apply a_tyequiv__sym; auto.
+  - eapply a_tyequiv__trans; eauto.
+  - apply a_tyequiv__flex_def.
+    exact (swap_aenv_binds a b _ _ _ H).
+  - apply a_tyequiv__arrow; auto.
+  - apply a_tyequiv__all with (L := swap_atoms a b L).
+    intros α0 Hα0.
+    assert (hin : swap_atom a b α0 `notin` L)
+      by (intro hc; apply Hα0; apply swap_atoms_iff; exact hc).
+    specialize (H0 _ hin).
+    rewrite !swap_ptyp_open in H0. simpl in H0.
+    rewrite swap_atom_invol in H0. exact H0.
+Qed.
+
+Lemma a_pskl_tyequiv_swap : forall a b Θ P Q,
+  Θ ⊢ P ≡ˢ Q ->
+  (swap_aenv a b Θ) ⊢ (swap_pskl a b P) ≡ˢ (swap_pskl a b Q).
+Proof.
+  intros * H; induction H; simpl.
+  - apply a_pskl_tyequiv__refl. auto using lc_pskl_swap.
+  - apply a_pskl_tyequiv__sym; auto.
+  - eapply a_pskl_tyequiv__trans; eauto.
+  - rewrite swap_pskl_ptyp_to_pskl.
+    apply a_pskl_tyequiv__flex_def.
+    exact (swap_aenv_binds a b _ _ _ H).
+  - apply a_pskl_tyequiv__arrow; auto.
+  - apply a_pskl_tyequiv__all with (L := swap_atoms a b L).
+    intros α0 Hα0.
+    assert (hin : swap_atom a b α0 `notin` L)
+      by (intro hc; apply Hα0; apply swap_atoms_iff; exact hc).
+    specialize (H0 _ hin).
+    rewrite !swap_pskl_open_var in H0.
+    rewrite swap_atom_invol in H0. exact H0.
+  - apply a_pskl_tyequiv__tophole; auto.
+Qed.
+
+Lemma a_inc_swap : forall a b Θs (κ : metasubst) Θt,
+  κ ∷ Θs ⊑ Θt ->
+  (swap_msubst a b κ) ∷ (swap_aenv a b Θs) ⊑ (swap_aenv a b Θt).
+Proof.
+  intros * H; induction H; simpl.
+  - apply a_inc__empty. auto using a_suffix_swap.
+  - apply a_inc__flex; auto using a_wf_ptyp_swap, mono_ptyp_swap.
+  - apply a_inc__flex_def; auto using a_wf_ptyp_swap, mono_ptyp_swap.
+    pose proof (a_tyequiv_swap a b _ _ _ H2) as h.
+    rewrite msubst_ptyp_swap in h. exact h.
+  - rewrite swap_aenv_app.
+    apply a_inc__var; auto using a_suffix_swap.
+    pose proof (a_tyequiv_swap a b _ _ _ H0) as h.
+    rewrite msubst_ptyp_swap in h. exact h.
+  - rewrite swap_aenv_app.
+    apply a_inc__var_skl; auto using a_suffix_swap.
+    pose proof (a_pskl_tyequiv_swap a b _ _ _ H0) as h.
+    rewrite msubst_pskl_swap in h. exact h.
+  - rewrite swap_aenv_app.
+    apply a_inc__tvar; auto using a_suffix_swap.
+Qed.
+
+(* ===================================================================== *)
+(*  §15  The KEY-swap (source-only) transport for ζ ∷ Θ1 ⊑ Θ               *)
+(*                                                                        *)
+(*  In the P7a rows the OUTPUT context Θ1 is junk-swapped but the SOLUTION *)
+(*  Θ is not — and for Flex-SkipRigid the walked β may legitimately occur  *)
+(*  in Θ (rigids pair by name), so ζ cannot be fully swapped.  The mixed   *)
+(*  transport swaps ζ's KEYS and the SOURCE only; its per-payload          *)
+(*  obligations reduce to POINTWISE lookup equalities, discharged from     *)
+(*  source well-formedness — an occurrence of the junk name in a payload   *)
+(*  is flex-bound in the tail, hence ζ-keyed.                              *)
+(* ===================================================================== *)
+
+Definition kswap_msubst (a b : atom) (ζ : metasubst) : metasubst :=
+  List.map (fun e => (swap_atom a b (fst e), snd e)) ζ.
+
+Lemma msubst_lookup_kswap_other : forall a b (ζ : metasubst) γ,
+  γ <> a -> γ <> b ->
+  msubst_lookup (kswap_msubst a b ζ) γ = msubst_lookup ζ γ.
+Proof.
+  intros a b ζ γ Ha Hb; induction ζ as [| [y τ] ζ']; simpl; [reflexivity |].
+  destruct (γ == y) as [e | n0].
+  - rewrite <- e. rewrite (swap_atom_other a b γ Ha Hb).
+    match goal with
+    | |- context [if ?t then _ else _] => destruct t as [_ | n1]
+    end; [reflexivity | exfalso; apply n1; reflexivity].
+  - match goal with
+    | |- (if ?t then _ else _) = _ => destruct t as [e1 | n1]
+    end.
+    + exfalso. apply n0.
+      rewrite <- (swap_atom_invol a b y), <- e1.
+      symmetry. apply swap_atom_other; auto.
+    + exact IHζ'.
+Qed.
+
+Lemma msubst_lookup_kswap_keyed : forall a b (ζ : metasubst),
+  a <> b ->
+  ~ List.In b (List.map fst ζ) ->
+  List.In a (List.map fst ζ) ->
+  msubst_lookup (kswap_msubst a b ζ) b = msubst_lookup ζ a.
+Proof.
+  intros a b ζ Hne; induction ζ as [| [y τ] ζ']; intros Hnb Hin;
+    simpl in *.
+  - contradiction.
+  - destruct (a == y) as [e | n0].
+    + rewrite <- e. rewrite swap_atom_l.
+      match goal with
+      | |- context [if ?t then _ else _] => destruct t as [_ | n1]
+      end; [reflexivity | exfalso; apply n1; reflexivity].
+    + destruct Hin as [e | Hin']; [exfalso; congruence |].
+      assert (hyb : y <> b) by (intro; apply Hnb; left; auto).
+      assert (hya : y <> a) by congruence.
+      match goal with
+      | |- (if ?t then _ else _) = _ => destruct t as [e1 | n1]
+      end.
+      * exfalso. rewrite (swap_atom_other a b y) in e1 by auto. congruence.
+      * apply IHζ'; auto.
+Qed.
+
+Lemma msubst_ptyp_kswap : forall a b (ζ : metasubst) A,
+  a <> b ->
+  ~ List.In b (List.map fst ζ) ->
+  b `notin` ftvar_in_ptyp A ->
+  (a `notin` ftvar_in_ptyp A \/ List.In a (List.map fst ζ)) ->
+  msubst_ptyp (kswap_msubst a b ζ) (swap_ptyp a b A) = msubst_ptyp ζ A.
+Proof.
+  intros a b ζ A Hne Hnb; induction A; simpl; intros HbA HaA;
+    try solve [reflexivity].
+  - (* var_f *)
+    destruct (α == a) as [e | n0].
+    + subst α. rewrite swap_atom_l.
+      apply msubst_lookup_kswap_keyed; auto.
+      destruct HaA as [h | h]; [exfalso; fsetdec | exact h].
+    + assert (α <> b) by fsetdec.
+      rewrite (swap_atom_other a b α) by auto.
+      apply msubst_lookup_kswap_other; auto.
+  - (* arrow *)
+    f_equal; [apply IHA1 | apply IHA2]; try fsetdec;
+      destruct HaA as [h | h]; auto; left; fsetdec.
+  - (* all *)
+    f_equal. apply IHA; [fsetdec |].
+    destruct HaA as [h | h]; [left; fsetdec | right; exact h].
+Qed.
+
+Lemma msubst_pskl_kswap : forall a b (ζ : metasubst) P,
+  a <> b ->
+  ~ List.In b (List.map fst ζ) ->
+  b `notin` ftvar_in_pskl P ->
+  (a `notin` ftvar_in_pskl P \/ List.In a (List.map fst ζ)) ->
+  msubst_pskl (kswap_msubst a b ζ) (swap_pskl a b P) = msubst_pskl ζ P.
+Proof.
+  intros a b ζ P Hne Hnb; induction P; simpl; intros HbP HaP;
+    try solve [reflexivity].
+  - (* var_f *)
+    destruct (α == a) as [e | n0].
+    + subst α. rewrite swap_atom_l. f_equal.
+      apply msubst_lookup_kswap_keyed; auto.
+      destruct HaP as [h | h]; [exfalso; fsetdec | exact h].
+    + assert (α <> b) by fsetdec.
+      rewrite (swap_atom_other a b α) by auto.
+      f_equal. apply msubst_lookup_kswap_other; auto.
+  - (* arrow *)
+    f_equal; [apply IHP1 | apply IHP2]; try fsetdec;
+      destruct HaP as [h | h]; auto; left; fsetdec.
+  - (* all_syn *)
+    f_equal. apply IHP; [fsetdec |].
+    destruct HaP as [h | h]; [left; fsetdec | right; exact h].
+  - (* tophole *)
+    f_equal. apply IHP; [fsetdec |].
+    destruct HaP as [h | h]; [left; fsetdec | right; exact h].
+Qed.
+
+(** ζ's keys are source names (both directions). *)
+Lemma a_inc_keys_dom : forall (κ : metasubst) (Θs Θt : aenv) γ,
+  κ ∷ Θs ⊑ Θt -> List.In γ (List.map fst κ) -> γ `in` dom Θs.
+Proof.
+  intros * H; induction H; simpl; intros Hin; try contradiction;
+    try solve [ destruct Hin as [e | Hin]; [subst; fsetdec |
+                pose proof (IHa_inc Hin); fsetdec ]
+              | pose proof (IHa_inc Hin); fsetdec ].
+Qed.
+
+Lemma a_inc_flex_in_keys : forall (κ : metasubst) (Θs Θt : aenv) γ,
+  κ ∷ Θs ⊑ Θt -> a_flex_tvar Θs γ -> List.In γ (List.map fst κ).
+Proof.
+  intros * H; induction H; simpl; intros Hf;
+    destruct Hf as [Hf | [τ0 Hf]];
+    try solve [ inversion Hf ];
+    destruct Hf as [Heq | Hf];
+    try solve [ inversion Heq; subst; left; reflexivity
+              | inversion Heq
+              | right; apply IHa_inc; left; assumption
+              | right; apply IHa_inc; right; eexists; eassumption
+              | apply IHa_inc; left; assumption
+              | apply IHa_inc; right; eexists; eassumption ].
+Qed.
+
+(** Free variables of a wf type / scoped skeleton are tvar-ish bound. *)
+Lemma a_wf_ptyp_ftv_binds : forall (Θ : aenv) A γ,
+  a_wf_ptyp Θ A -> γ `in` ftvar_in_ptyp A -> a_binds_tvar γ Θ.
+Proof.
+  intros * H; induction H; simpl; intros Hγ; try solve [fsetdec].
+  - (* var *) assert (γ = α) by fsetdec. subst. exact H.
+  - (* arrow *)
+    assert (γ `in` ftvar_in_ptyp A1 \/ γ `in` ftvar_in_ptyp A2) as [h | h]
+      by fsetdec; auto.
+  - (* all *)
+    destruct (atom_fresh (L `union` singleton γ)) as [α Hα].
+    assert (hγ : γ `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A (ptyp_var_f α))).
+    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f α)).
+      fsetdec. }
+    assert (hb : a_binds_tvar γ ((α ~ abind_tvar) ++ Θ))
+      by (apply H0; auto).
+    destruct hb as [hb | [hb | [τ hb]]];
+      (destruct hb as [heq | hb];
+       [ inversion heq; subst; exfalso; fsetdec
+       | unfold a_binds_tvar; auto; right; right; exists τ; exact hb ]).
+Qed.
+
+Lemma a_scope_pskl_ftv_binds : forall (Θ : aenv) P γ,
+  a_scope_pskl Θ P -> γ `in` ftvar_in_pskl P -> a_binds_tvar γ Θ.
+Proof.
+  intros * H; induction H; simpl; intros Hγ; try solve [fsetdec | auto].
+  - (* var *) assert (γ = α) by fsetdec. subst. exact H.
+  - (* arrow *)
+    assert (γ `in` ftvar_in_pskl P1 \/ γ `in` ftvar_in_pskl P2) as [h | h]
+      by fsetdec; auto.
+  - (* all *)
+    destruct (atom_fresh (L `union` singleton γ)) as [α Hα].
+    assert (hγ : γ `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α)).
+      fsetdec. }
+    assert (hb : a_binds_tvar γ ((α ~ abind_tvar) ++ Θ))
+      by (apply H0; auto).
+    destruct hb as [hb | [hb | [τ hb]]];
+      (destruct hb as [heq | hb];
+       [ inversion heq; subst; exfalso; fsetdec
+       | unfold a_binds_tvar; auto; right; right; exists τ; exact hb ]).
+Qed.
+
+(** The precision component's term equality: swapping the run's output
+    skeleton and ζ's keys leaves the ζ-image unchanged. *)
+Lemma msubst_bskl_kswap_paint : forall a b (ζ : metasubst) P,
+  a <> b ->
+  ~ List.In b (List.map fst ζ) ->
+  b `notin` ftvar_in_pskl P ->
+  (a `notin` ftvar_in_pskl P \/ List.In a (List.map fst ζ)) ->
+  msubst_bskl (kswap_msubst a b ζ) (pskl_to_bskl_syn (swap_pskl a b P))
+  = msubst_bskl ζ (pskl_to_bskl_syn P).
+Proof.
+  intros a b ζ P Hne Hnb; induction P; simpl; intros HbP HaP;
+    try solve [reflexivity].
+  - (* var_f *)
+    destruct (α == a) as [e | n0].
+    + subst α. rewrite swap_atom_l. f_equal. f_equal.
+      apply msubst_lookup_kswap_keyed; auto.
+      destruct HaP as [h | h]; [exfalso; fsetdec | exact h].
+    + assert (α <> b) by fsetdec.
+      rewrite (swap_atom_other a b α) by auto.
+      f_equal. f_equal. apply msubst_lookup_kswap_other; auto.
+  - (* arrow *)
+    f_equal; [apply IHP1 | apply IHP2]; try fsetdec;
+      destruct HaP as [h | h]; auto; left; fsetdec.
+  - (* all_syn *)
+    f_equal. apply IHP; [fsetdec |].
+    destruct HaP as [h | h]; [left; fsetdec | right; exact h].
+  - (* tophole *)
+    f_equal. apply IHP; [fsetdec |].
+    destruct HaP as [h | h]; [left; fsetdec | right; exact h].
+Qed.
+
+(** A head entry whose key avoids the target is inert. *)
+Lemma msubst_bskl_head_notin : forall β τβ (ζ : metasubst) Q,
+  β `notin` ftvar_in_bskl Q ->
+  msubst_bskl ((β, τβ) :: ζ) Q = msubst_bskl ζ Q.
+Proof.
+  intros β τβ ζ Q; induction Q; simpl; intros Hn; f_equal;
+    try solve [reflexivity | apply IHQ; fsetdec
+              | apply IHQ1; fsetdec | apply IHQ2; fsetdec].
+  (* var_f *)
+  match goal with
+  | |- context [if ?t then _ else _] => destruct t as [e | ?]
+  end; [exfalso; fsetdec | reflexivity].
+Qed.
+
+(** The equivalence component: composing with an id metasubstitution keyed
+    away from the swap pair erases the key-swap. *)
+Lemma msubst_compose_kswap_id : forall a b (ζ κ1 : metasubst),
+  is_id_msubst κ1 ->
+  (forall α, List.In α (List.map fst κ1) -> α <> a /\ α <> b) ->
+  msubst_compose (kswap_msubst a b ζ) κ1 = msubst_compose ζ κ1.
+Proof.
+  intros a b ζ κ1; induction κ1 as [| [α τ] κ1']; intros Hid Hk;
+    [reflexivity |].
+  inversion Hid as [| e κl he hl]; subst.
+  unfold is_id_entry in he; simpl in he. subst τ.
+  unfold msubst_compose; simpl.
+  destruct (Hk α (or_introl eq_refl)) as [ha hb].
+  f_equal.
+  - f_equal. apply msubst_lookup_kswap_other; auto.
+  - apply IHκ1'; auto.
+    intros α0 h0. apply Hk. right. exact h0.
+Qed.
+
+Local Lemma dom_ftvar_aenv : forall Θ : aenv, dom Θ [<=] ftvar_in_aenv Θ.
+Proof. induction Θ as [| [x bd] Θ']; simpl; fsetdec. Qed.
+
+(** §15's HEADLINE — the source-only transport.  Hypotheses:
+    the source is well formed; b avoids everything the source mentions;
+    a's bindings in the source (if any) are FLEXIBLE (in the P7a rows a is
+    the walked-out β: never rigid in the output — rigids of an output come
+    from the input, which excludes β — and never a term variable). *)
+Lemma a_inc_kswap : forall a b (ζ : metasubst) (Θ1 Θ : aenv),
+  ζ ∷ Θ1 ⊑ Θ ->
+  a <> b ->
+  a_wf_aenv Θ1 ->
+  b `notin` ftvar_in_aenv Θ1 ->
+  (forall bd, binds a bd Θ1 ->
+     bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ) ->
+  (kswap_msubst a b ζ) ∷ (swap_aenv a b Θ1) ⊑ Θ.
+Proof.
+  intros a b ζ Θ1 Θ Hinc; induction Hinc; intros Hne Hwf Hb Ha; simpl.
+  - (* empty *) apply a_inc__empty; auto.
+  - (* flex *)
+    apply a_inc__flex; auto.
+    apply IHHinc;
+      [ exact Hne
+      | inversion Hwf; auto
+      | simpl in Hb; fsetdec
+      | intros bd hbd; apply Ha; right; exact hbd ].
+  - (* flex_def: the payload equality via the pointwise kswap lemma *)
+    inversion Hwf; subst.
+    assert (hkeys : ~ List.In b (List.map fst κ)).
+    { intro hc. pose proof (a_inc_keys_dom _ _ _ _ Hinc hc) as hd.
+      simpl in Hb. pose proof (dom_ftvar_aenv Θ). fsetdec. }
+    apply a_inc__flex_def; auto.
+    + apply IHHinc;
+        [ exact Hne
+        | assumption
+        | simpl in Hb; fsetdec
+        | intros bd hbd; apply Ha; right; exact hbd ].
+    + rewrite msubst_ptyp_kswap; auto.
+      * simpl in Hb. fsetdec.
+      * destruct (AtomSetProperties.In_dec a (ftvar_in_ptyp τ)) as [hin | hout];
+          [right | left; exact hout].
+        match goal with
+        | h : a_wf_ptyp _ τ |- _ =>
+            pose proof (a_wf_ptyp_ftv_binds _ _ _ h hin) as hbt
+        end.
+        destruct hbt as [hbt | [hbt | [τ0 hbt]]].
+        -- exfalso.
+           destruct (Ha abind_tvar) as [hc | [τ1 hc]];
+             [right; exact hbt | discriminate | discriminate].
+        -- eapply a_inc_flex_in_keys; eauto. left; exact hbt.
+        -- eapply a_inc_flex_in_keys; eauto. right; eexists; exact hbt.
+  - (* var (type entry) *)
+    inversion Hwf; subst.
+    assert (hxa : x <> a).
+    { intro; subst x.
+      destruct (Ha (abind_var_typ A)) as [hc | [τ1 hc]];
+        [left; reflexivity | discriminate | discriminate]. }
+    assert (hxb : x <> b) by (simpl in Hb; fsetdec).
+    assert (hkeys : ~ List.In b (List.map fst κ)).
+    { intro hc. pose proof (a_inc_keys_dom _ _ _ _ Hinc hc) as hd.
+      simpl in Hb. pose proof (dom_ftvar_aenv Θ). fsetdec. }
+    rewrite (swap_atom_other a b x) by auto.
+    apply a_inc__var; auto.
+    + apply IHHinc;
+        [ exact Hne
+        | assumption
+        | simpl in Hb; fsetdec
+        | intros bd hbd; apply Ha; right; exact hbd ].
+    + rewrite msubst_ptyp_kswap; auto.
+      * simpl in Hb. fsetdec.
+      * destruct (AtomSetProperties.In_dec a (ftvar_in_ptyp A)) as [hin | hout];
+          [right | left; exact hout].
+        match goal with
+        | h : a_wf_ptyp _ A |- _ =>
+            pose proof (a_wf_ptyp_ftv_binds _ _ _ h hin) as hbt
+        end.
+        destruct hbt as [hbt | [hbt | [τ0 hbt]]].
+        -- exfalso.
+           destruct (Ha abind_tvar) as [hc | [τ1 hc]];
+             [right; exact hbt | discriminate | discriminate].
+        -- eapply a_inc_flex_in_keys; eauto. left; exact hbt.
+        -- eapply a_inc_flex_in_keys; eauto. right; eexists; exact hbt.
+  - (* var_skl (skeleton entry) *)
+    inversion Hwf; subst.
+    assert (hxa : x <> a).
+    { intro; subst x.
+      destruct (Ha (abind_var_skl P)) as [hc | [τ1 hc]];
+        [left; reflexivity | discriminate | discriminate]. }
+    assert (hxb : x <> b) by (simpl in Hb; fsetdec).
+    assert (hkeys : ~ List.In b (List.map fst κ)).
+    { intro hc. pose proof (a_inc_keys_dom _ _ _ _ Hinc hc) as hd.
+      simpl in Hb. pose proof (dom_ftvar_aenv Θ). fsetdec. }
+    rewrite (swap_atom_other a b x) by auto.
+    apply a_inc__var_skl; auto.
+    + apply IHHinc;
+        [ exact Hne
+        | assumption
+        | simpl in Hb; fsetdec
+        | intros bd hbd; apply Ha; right; exact hbd ].
+    + rewrite msubst_pskl_kswap; auto.
+      * simpl in Hb. fsetdec.
+      * destruct (AtomSetProperties.In_dec a (ftvar_in_pskl P)) as [hin | hout];
+          [right | left; exact hout].
+        match goal with
+        | h : a_scope_pskl _ P |- _ =>
+            pose proof (a_scope_pskl_ftv_binds _ _ _ h hin) as hbt
+        end.
+        destruct hbt as [hbt | [hbt | [τ0 hbt]]].
+        -- exfalso.
+           destruct (Ha abind_tvar) as [hc | [τ1 hc]];
+             [right; exact hbt | discriminate | discriminate].
+        -- eapply a_inc_flex_in_keys; eauto. left; exact hbt.
+        -- eapply a_inc_flex_in_keys; eauto. right; eexists; exact hbt.
+  - (* tvar *)
+    inversion Hwf; subst.
+    assert (hxa : α <> a).
+    { intro; subst α.
+      destruct (Ha abind_tvar) as [hc | [τ1 hc]];
+        [left; reflexivity | discriminate | discriminate]. }
+    assert (hxb : α <> b) by (simpl in Hb; fsetdec).
+    rewrite (swap_atom_other a b α) by auto.
+    apply a_inc__tvar; auto.
+    apply IHHinc;
+      [ exact Hne
+      | assumption
+      | simpl in Hb; fsetdec
+      | intros bd hbd; apply Ha; right; exact hbd ].
 Qed.
