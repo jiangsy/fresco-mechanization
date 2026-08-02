@@ -138,8 +138,34 @@ subject `α̂[τ/β̂]`, which for `β̂ = α̂` is the bare monotype τ), so th
 lemmas take the P7b motive `sub_complete_concl` as their IH, not
 `sub_flex_complete_concl`.  Only Depend / Skip / SkipRigid are walk-internal.
 
-**Next**: the motive's `dom Ξ ⊆ ftv P0` invariant + the ⇓-truncation lift, then
-SkipRigid; then the two cross-half rows; then the dispatcher (§12).
+**SAME DAY, three more closures** (`b6b7b2d`, `5fcd4ca`, `b7f8bde`):
+
+- the motive GAINED `dom Ξ [<=] ftvar_in_pskl P0`; **Flex-Depend re-establishes
+  it from its own `β ∈ ftv P0` premise**, which is a nice confirmation that it is
+  the right invariant;
+- **`Flex-Assign` CLOSED** — the paper's second interesting case and the first
+  CROSS-HALF row (its IH is the P7b motive).  New: `msubst_pskl_subst_mono` (a
+  monotype substitution pushed through a metasubstitution is absorbed as a head
+  entry — pure), `msubst_pskl_tyequiv_pointwise` /
+  `msubst_ptyp_tyequiv_two_msubst` (the ≡ˢ/≡ᵗ congruence for TWO
+  metasubstitutions agreeing pointwise — the dual of `a_pskl_tyequiv_msubst`),
+  `a_inc_equiv_insert_flex_def_mid`, `a_sk_mode_compat_subst_mono`.  ⭐ The fill
+  transports across the resulting ≡ˢ by the ALREADY-EXISTING
+  `skl_tyequiv_refine_syn_f_transport`: `a_inc__flex_def`'s middle is SEMANTIC,
+  so `msubst κih (P0[τ/β̂])` is only ≡ˢ-equal to `msubst κ P0`, and the motive's
+  ≡ᵘ slack covers the SUBJECT only.  The subject's own slack goes through
+  `a_uskl_tyequiv__mono`, which IS the ≡ᵗ → ≡ᵘ paint transport;
+- **`Flex-Solve`'s CRUX closed** — `ad_pat_sub_gv_mono_fn_arrow_inv`, the paper's
+  step ⓒ→ⓓ.  The mech must CHASE definitions the paper does not: a monotype
+  subject may be a defined flexible, so the join fires `__flex_mono` rather than
+  `__arrow` — and that row PRESERVES the fuel, so the chase is free and the
+  regenerated join returns at the same `n`.  P7c's `__flex_mono` join case wants
+  the same lemma.
+
+**Next**: finish Flex-Solve (build θs into the deposited block; collapse the
+`a_inc_equiv` back across it — the paper's ⓖ+⑫ ⇒ ⑭; NO junk swap, the row does
+not re-attach); then the ⇓-truncation lift and `Flex-SkipRigid`; then the
+shield's realizability question; then the dispatcher (§12).
 
 **TASK 0's residual, falsity half SETTLED the same day**
 (`cex/cex_p7_shield_forall_flex.v`, Qed, axiom-free).  For a Θ0-flexible `α̂` and
