@@ -2535,15 +2535,21 @@ Qed.
 (*                                                                          *)
 (*  Conjuncts, per judgment  Θ0 → Θ1:                                       *)
 (*   1. Θ0 ⊴ Θ1                    (information increase)                   *)
-(*   2. a_wf_aenv Θ1               (wf preservation; needs the F set)       *)
+(*   2. a_wf_aenv Θ1               (wf preservation)                        *)
 (*   3. dom Θ0 ⊆ dom Θ1            (no entry is dropped)                    *)
-(*   4. new names avoid F          (the prose-completed GLOBAL freshness)   *)
-(*   5. ∀Δ-invariant preservation  (no-flex-dep + flex-above-free +         *)
+(*   4. ∀Δ-invariant preservation  (no-flex-dep + flex-above-free +         *)
 (*      domain bookkeeping, GENERALIZED over Δ: the consistency premise     *)
 (*      of Flex-Flex-Assign runs at Δ1 = Δ2 = ∅, so the fixed-Δ variant     *)
-(*      would be useless there)                                             *)
-(*   6. the augmented solution     (consistency: join + both refinements;   *)
+(*      would be useless there.  Its COVERAGE hypothesis is                 *)
+(*      OUTPUT-relative, [Δ ∩ dom Θ1 ⊆ dom Θ0], mirroring the walk's own    *)
+(*      Barendregt output premises — DESIGN.md §4.3)                        *)
+(*   5. the augmented solution     (consistency: join + both refinements;   *)
 (*      unification: the type EQUIVALENCE Θ1 ⊢ α ≡ᵗ β)                      *)
+(*                                                                          *)
+(*  The used-name index [F] and its "new names avoid F" conjunct are GONE   *)
+(*  (2026-08-03): the walk's re-attaching rules state the obligation        *)
+(*  directly, and completeness carries the matching avoid set on its own    *)
+(*  motive (prop_consis_complete.v §2).                                     *)
 (* ===================================================================== *)
 
 (* [a_assign_unify_consis_mutind] (+ the per-judgment Induction schemes)
@@ -2893,7 +2899,7 @@ Proof.
     (* 3. domain *)
     split.
     { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
-    (* 4. new names avoid F *)
+    (* 4. the ∀Δ invariant *)
     split.
     { intros Δ Hnd Hfaf HΔΞ Hcov HP.
       assert (Hhd : Δ ∩ (add β (dom Θ0)) [=] empty)
@@ -2965,7 +2971,7 @@ Proof.
         assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
         specialize (IH3 α0 Hα0Δ HXd1).
         rewrite dom_app in IH3. simpl. clear - IH3. fsetdec. }
-    (* 6. the augmented solution: eliminate the join [P3] *)
+    (* 5. the augmented solution: eliminate the join [P3] *)
     (* (a) the join is a monotype painting, ≡ᵗ-equal to the subject *)
     rewrite subst_pskl_var_ptyp in HconsQ.
     rewrite ptyp_to_uskl_syn_eq in HconsQ.

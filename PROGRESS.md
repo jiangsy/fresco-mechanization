@@ -78,7 +78,77 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-02 (latest) — ⭐⭐ TASK 4 (the `F`-deletion) — three stages landed, and the output-premise shape is PROVED LOSSLESS; the deletion itself is BLOCKED on soundness conjunct 5
+## 2026-08-03 (latest) — ⭐⭐⭐ TASK 4 **CLOSED**: the `F` avoidance set is DELETED from the whole tree, and the avoid set now lives on the COMPLETENESS MOTIVE
+
+`make coq` green, admit-free, all 25 `README.v` flagships *Closed under the
+global context*.
+
+**The judgments.**  `a_assign` / `a_unify` / `a_consis` lost the used-name
+index `F`: signatures, 28 constructors, notations, `Assign-SolveM`'s side
+condition (now just `α1 ∉ add α (dom (Ξ ++ Θ0))`), and the derived
+`a_assign_unify_consis_compat` → `_delta_compat` (Δ-transport only) /
+`_uniq_fprotect` → `_uniq` (a third of its length — the walk's own output
+premise states directly what the `F`-protection conjunct used to supply).
+In its place the eight re-attaching rules of the walk carry the paper's
+Barendregt output premise `β ∉ dom Θ1`, exactly like `a_sub_flex`'s three —
+and ⭐ `prop_swap.v` §13b proves that shape LOSES NOTHING (finite support gives
+a fresh `γ`, equivariance moves the run to it fixing every INPUT,
+`swap_junk_dom_out` discharges the premise), which is what makes the encoding
+admissible rather than a strengthening.
+
+**Soundness** (prop_consis_sound.v).  Conjunct 4 (`x ∈ dom Θ1 → x ∈ dom Θ0 ∨
+x ∉ F`) deleted with its four projections; conjunct 5's coverage restated
+OUTPUT-relative as `Δ ∩ dom Θ1 [<=] dom Θ0` (assign: `[<=] dom (Ξ ++ Θ0)`).
+All 28 cases go through, and every `X ∉ dom Θ1` formerly read off conjunct 4
+is now the rule's own premise.
+
+**⭐ Completeness — the piece this entry closes** (prop_consis_complete.v §2).
+The eight discharge sites can no longer read conjunct 4, so the three
+completeness motives gain a parameter `N : atoms` and one conclusion conjunct,
+placed between the derivation and the optimality half:
+
+```coq
+forall γ, γ `in` dom Θ1 -> γ `in` dom (Ξ ++ Θ0) \/ γ `notin` N
+```
+
+That is literally the old `F`, moved from the JUDGMENT to the COMPLETENESS
+STATEMENT — where it is FREE, because completeness is the direction that
+CHOOSES the guessed names.  The walk rows relay `N := add α1 N` exactly where
+they used to relay `add α1 F`; `assign_solve_m_complete`'s `set (L := ...)`
+just keeps `N` as its first component, and the guessed `β̄` dodge `L ⊇ N` by
+construction.  `complete_mu` / `consis_complete` instantiate `N := ∅` and drop
+the conjunct, so no downstream statement changed.
+
+⭐ **The general lesson: an avoid set is a CONSTRAINT on a judgment and a
+FREEDOM on a completeness proof.**  `F` was in the wrong place all along.
+
+Everything the ~30 new conjunct obligations need is four atom-set facts, each
+two lines: `avoid_relay` (pop the head, recurse at `add α1 N`, re-attach),
+`avoid_head_miss` (the SAME hypothesis discharges the Barendregt premise —
+the head is in the relayed set and fresh for the sub-run's input),
+`avoid_compose` (Arrow's two runs in sequence), `avoid_truncate` (the ∀ rows
+run under their own rigid binder and hand back the truncation, so the binder
+must be shown absent from the tail — `auc_uniq_consis` supplies it).  Their
+at-the-shape wrappers are `avoid_relay_cons` / `_cons_mid` /
+`avoid_truncate_cons` / `avoid_same_dom` / `avoid_mono`.  No new theory, and
+no junk swap: the rejected alternative (swap each IH's run and transport the
+optimality package through §14/§15's `kswap` kit) is `a_sub_flex_complete_skip`
+eight times over and additionally needs `a_inc_binds_provenance` moved
+upstream.
+
+**Fallout, all mechanical.**  `a_consis_hole_p0_output` and three
+`a_consis_complete_thm` call sites in prop_sub_complete_thm.v lost their `F`
+argument; `prop_decorate_sub.v`'s `match goal` pattern for `a_assign` lost an
+underscore; `test_unify_regression.v`'s two explicit constructor applications
+lost theirs.  Stale doc comments in `def_extra.v` / `prop_consis_rename.v` /
+`prop_consis_sound.v` rewritten as history notes.
+
+**Out of scope, deliberately** (unchanged from the 2026-08-02 entry): retiring
+`a_assign_unify_consis_rename_tvar` is NOT a swap corollary — the rename is
+TARGET-ONLY and a swap would also move payload occurrences of `α`, needing
+`α ∉ ftvar_in_aenv Θ1`, which is false without a wf hypothesis.
+
+## 2026-08-02 — ⭐⭐ TASK 4 (the `F`-deletion) — three stages landed, and the output-premise shape is PROVED LOSSLESS; the deletion itself is BLOCKED on soundness conjunct 5
 
 Tree green, admit-free, axiom-free at `134ed1d`.  Partial stage 4 preserved on
 branch `f-deletion-wip` (does not compile; see its commit message).

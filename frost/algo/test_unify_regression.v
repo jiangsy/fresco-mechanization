@@ -63,7 +63,7 @@ Proof.
       split; [ repeat constructor | ].
       intros Hflex; inversion Hflex.
     + (* Assign-SolveM with guess^TY(unit → unit) = (·; unit → unit) *)
-      apply (@a_assign__solve_m (add a empty) nil nil b
+      apply (@a_assign__solve_m nil nil b
                (ptyp_to_pskl Tarr) nil Tarr).
       * simpl. fsetdec.
       * apply a_guess_mono__arrow with (Ξ1 := nil) (Ξ2 := nil);
@@ -125,7 +125,7 @@ Theorem a_assign_succeeds_on_own_definition : forall (a : atom),
   ⊣ ((a ~ abind_flex_mono_def Tarr) ++ nil).
 Proof.
   intros a.
-  apply (@a_assign__assign empty nil nil nil a a Tarr
+  apply (@a_assign__assign nil nil nil a a Tarr
            (pskl_arrow pskl_unit pskl_unit) (pskl_arrow pskl_unit pskl_unit)).
   - (* HATTED SUBJECT: α̂ IS the head binding here — which is why this premise
        must be stated on the CONCLUSION's context.  On [Ξ ++ Θ0] it would be

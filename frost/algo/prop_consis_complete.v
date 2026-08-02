@@ -2203,10 +2203,27 @@ Qed.
 (*  competing-solution shape of the green soundness bundle); the          *)
 (*  conclusion is the fused existence+optimality of :2246-2255, with the  *)
 (*  algorithm's own id-witness quantified as in [a_consis_optimal].       *)
+(*                                                                        *)
+(*  THE AVOID SET [N] (DESIGN.md §4.3).  The walk's re-attaching rules    *)
+(*  carry the paper's Barendregt output premise: the popped head does     *)
+(*  not reappear in the output.  Discharging it needs to know that a      *)
+(*  sub-run generates only FRESH names, which used to be the 4th conjunct *)
+(*  of the soundness bundle, indexed by the judgment's own used-name set  *)
+(*  [F].  [F] is gone; the obligation lives here instead, as the middle   *)
+(*  conjunct of each conclusion:                                          *)
+(*                                                                        *)
+(*      forall γ, γ ∈ dom Θ1 -> γ ∈ dom Θ0 \/ γ ∉ N                       *)
+(*                                                                        *)
+(*  This is the SAME statement, moved from the judgment to the            *)
+(*  completeness theorem — where it is free rather than a constraint,     *)
+(*  because completeness is the direction that CHOOSES the guessed        *)
+(*  names.  An avoid set restricts a judgment and liberates a             *)
+(*  completeness proof; [F] was on the wrong side.  The walk rows relay   *)
+(*  [N := add α1 N] exactly where they used to relay [add α1 F].          *)
 (* ===================================================================== *)
 
 Definition consis_complete_at (m : mu_ty) : Prop :=
-  forall Δ1 Δ2 Θ0 P0 P κ Θ Ψ Qb,
+  forall (N : atoms) Δ1 Δ2 Θ0 P0 P κ Θ Ψ Qb,
     m = mu_consis Θ κ P0 P Θ0 ->
     a_wf_aenv Θ0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -2223,6 +2240,7 @@ Definition consis_complete_at (m : mu_ty) : Prop :=
     ad_refine_pskl_f Δ2 Θ Δ2 (msubst_pskl κ P) (bskl_to_pskl Qb) ->
     exists P1 Θ1,
       a_consis Δ1 Δ2 Θ0 P0 P P1 Θ1 /\
+      (forall γ, γ `in` dom Θ1 -> γ `in` dom Θ0 \/ γ `notin` N) /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
@@ -2231,7 +2249,7 @@ Definition consis_complete_at (m : mu_ty) : Prop :=
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) (bskl_to_pskl Qb)).
 
 Definition unify_complete_at (m : mu_ty) : Prop :=
-  forall Θ0 α β κ Θ,
+  forall (N : atoms) Θ0 α β κ Θ,
     m = mu_unify Θ κ α β Θ0 ->
     a_wf_aenv Θ0 ->
     a_flex_tvar Θ0 α ->
@@ -2241,13 +2259,14 @@ Definition unify_complete_at (m : mu_ty) : Prop :=
     Θ ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup κ β) ->
     exists Θ1,
       Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 /\
+      (forall γ, γ `in` dom Θ1 -> γ `in` dom Θ0 \/ γ `notin` N) /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
            a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ).
 
 Definition assign_complete_at (m : mu_ty) : Prop :=
-  forall Θ0 Ξ α P κ Θ,
+  forall (N : atoms) Θ0 Ξ α P κ Θ,
     m = mu_assign Θ κ α P Ξ Θ0 ->
     a_decls Ξ ->
     a_wf_aenv (Ξ ++ Θ0) ->
@@ -2261,6 +2280,7 @@ Definition assign_complete_at (m : mu_ty) : Prop :=
                  ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup κ α))) ->
     exists Θ1,
       Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 /\
+      (forall γ, γ `in` dom Θ1 -> γ `in` dom (Ξ ++ Θ0) \/ γ `notin` N) /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ (Ξ ++ Θ0) ⊑ Θ1 ->
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
@@ -2288,6 +2308,118 @@ Proof.
   - right; split; [ reflexivity | right; split;
       [ reflexivity | right; split; [ reflexivity | exact Hk ] ] ].
 Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  The four moves of the avoid set [N] (see §2's header).  Every one is   *)
+(*  a fact about atom SETS: nothing about the judgments is involved, which *)
+(*  is the point — the obligation the used-name index used to carry is     *)
+(*  bookkeeping, and completeness is where the bookkeeping is free.        *)
+(* --------------------------------------------------------------------- *)
+
+(** RELAY.  A walk step pops the head [α1], recurses with [add α1 N], and
+    re-attaches [α1].  [D0']/[D1'] are the sub-run's input/output domains,
+    [D0]/[D1] the outer run's; [α1] is in the outer input. *)
+Lemma avoid_relay : forall (α1 : atom) N (D0' D1' D0 D1 : atoms),
+  (forall γ, γ `in` D1' -> γ `in` D0' \/ γ `notin` (add α1 N)) ->
+  D0' [<=] D0 ->
+  α1 `in` D0 ->
+  D1 [<=] (add α1 D1') ->
+  forall γ, γ `in` D1 -> γ `in` D0 \/ γ `notin` N.
+Proof.
+  intros α1 N D0' D1' D0 D1 Hnew Hsub Hα1 HD1 γ Hγ.
+  destruct (γ == α1) as [-> | Hne]; [ left; exact Hα1 | ].
+  assert (Hγ' : γ `in` D1') by (clear - Hγ HD1 Hne; fsetdec).
+  destruct (Hnew γ Hγ') as [Hin | Hni];
+    [ left; clear - Hin Hsub; fsetdec | right; clear - Hni; fsetdec ].
+Qed.
+
+(** DISCHARGE.  The relayed set is exactly what proves the walk's Barendregt
+    output premise: the popped head is in [add α1 N] and fresh for the
+    sub-run's input, so the sub-run cannot have produced it. *)
+Lemma avoid_head_miss : forall (α1 : atom) N (D0' D1' : atoms),
+  (forall γ, γ `in` D1' -> γ `in` D0' \/ γ `notin` (add α1 N)) ->
+  α1 `notin` D0' ->
+  α1 `notin` D1'.
+Proof.
+  intros α1 N D0' D1' Hnew Hnd Hin.
+  destruct (Hnew α1 Hin) as [Hd | HN]; [ auto | clear - HN; fsetdec ].
+Qed.
+
+(** COMPOSE.  Two runs in sequence (the Arrow node) share one [N]. *)
+Lemma avoid_compose : forall N (D0 D1 D2 : atoms),
+  (forall γ, γ `in` D1 -> γ `in` D0 \/ γ `notin` N) ->
+  (forall γ, γ `in` D2 -> γ `in` D1 \/ γ `notin` N) ->
+  forall γ, γ `in` D2 -> γ `in` D0 \/ γ `notin` N.
+Proof.
+  intros N D0 D1 D2 H1 H2 γ Hγ.
+  destruct (H2 γ Hγ) as [Hin | Hni]; [ apply H1; exact Hin | right; exact Hni ].
+Qed.
+
+(** TRUNCATE.  The ∀ rows run under their own rigid binder [α] and hand back
+    the truncated output; [α] is fresh, so it is not in the tail. *)
+Lemma avoid_truncate : forall (α : atom) N (D0 D1 : atoms),
+  (forall γ, γ `in` (add α D1) -> γ `in` (add α D0) \/ γ `notin` N) ->
+  α `notin` D1 ->
+  forall γ, γ `in` D1 -> γ `in` D0 \/ γ `notin` N.
+Proof.
+  intros α N D0 D1 Hnew HαD1 γ Hγ.
+  assert (Hne : γ <> α) by (intros ->; auto).
+  destruct (Hnew γ ltac:(clear - Hγ; fsetdec)) as [Hin | Hni];
+    [ left; clear - Hin Hne; fsetdec | right; exact Hni ].
+Qed.
+
+(** [avoid_relay] at the shape the UNIFICATION walk has: the head is consed
+    straight back onto the sub-run's output (possibly re-bound). *)
+Lemma avoid_relay_cons : forall (α1 : atom) (b1 b0 : abind) (N : atoms)
+    (Θ0' Θ1' : aenv),
+  (forall γ, γ `in` dom Θ1' -> γ `in` dom Θ0' \/ γ `notin` (add α1 N)) ->
+  forall γ, γ `in` dom ((α1 ~ b1) ++ Θ1') ->
+    γ `in` dom ((α1 ~ b0) ++ Θ0') \/ γ `notin` N.
+Proof.
+  intros α1 b1 b0 N Θ0' Θ1' Hnew.
+  eapply avoid_relay with (D0' := dom Θ0') (D1' := dom Θ1');
+    [ exact Hnew | simpl_env | simpl_env | simpl_env ]; fsetdec.
+Qed.
+
+(** [avoid_relay] at the shape the ASSIGNMENT walk has: the popped head sits
+    UNDER the declaration prefix [Ξ], which both runs carry. *)
+Lemma avoid_relay_cons_mid : forall (α1 : atom) (b1 b0 : abind) (N : atoms)
+    (Ξ Θ0' Θ1' : aenv),
+  (forall γ, γ `in` dom Θ1' -> γ `in` dom (Ξ ++ Θ0') \/ γ `notin` (add α1 N)) ->
+  forall γ, γ `in` dom ((α1 ~ b1) ++ Θ1') ->
+    γ `in` dom (Ξ ++ (α1 ~ b0) ++ Θ0') \/ γ `notin` N.
+Proof.
+  intros α1 b1 b0 N Ξ Θ0' Θ1' Hnew.
+  eapply avoid_relay with (D0' := dom (Ξ ++ Θ0')) (D1' := dom Θ1');
+    [ exact Hnew | simpl_env | simpl_env | simpl_env ]; fsetdec.
+Qed.
+
+(** [avoid_truncate] at the ∀ rows' shape. *)
+Lemma avoid_truncate_cons : forall (α : atom) (b : abind) (N : atoms)
+    (Θ0 Θ1 : aenv),
+  (forall γ, γ `in` dom ((α ~ b) ++ Θ1) ->
+     γ `in` dom ((α ~ b) ++ Θ0) \/ γ `notin` N) ->
+  α `notin` dom Θ1 ->
+  forall γ, γ `in` dom Θ1 -> γ `in` dom Θ0 \/ γ `notin` N.
+Proof.
+  intros α b N Θ0 Θ1 Hnew Hα.
+  eapply avoid_truncate with (α := α); [ | exact Hα ].
+  intros γ Hγ.
+  destruct (Hnew γ ltac:(simpl_env; clear - Hγ; fsetdec)) as [Hin | Hni];
+    [ left; simpl_env in Hin; clear - Hin; fsetdec | right; exact Hni ].
+Qed.
+
+(** The axiom rows re-bind the head without moving any other entry. *)
+Lemma avoid_same_dom : forall (α1 : atom) (b1 b0 : abind) (N : atoms)
+    (Θ0' : aenv),
+  forall γ, γ `in` dom ((α1 ~ b1) ++ Θ0') ->
+    γ `in` dom ((α1 ~ b0) ++ Θ0') \/ γ `notin` N.
+Proof. intros. left. simpl_env in *. fsetdec. Qed.
+
+(** The rows whose output domain merely contains the input's. *)
+Lemma avoid_mono : forall N (D0 D0' : atoms),
+  D0' [<=] D0 -> forall γ, γ `in` D0' -> γ `in` D0 \/ γ `notin` N.
+Proof. intros N D0 D0' Hs γ Hγ. left. clear - Hs Hγ. fsetdec. Qed.
 
 (** A hatted variable other than the head is hatted in the tail. *)
 Lemma a_flex_tvar_strip_head : forall (α1 : atom) b Θ0 β1,
@@ -3681,10 +3813,11 @@ Lemma unify_complete_step : forall m,
   unify_complete_at m.
 Proof.
   intros m IH. unfold unify_complete_at.
-  intros Θ0 α β κ Θ Hm Hwf Hfα Hfβ Hinc Hwfth Heq. subst m.
+  intros N Θ0 α β κ Θ Hm Hwf Hfα Hfβ Hinc Hwfth Heq. subst m.
   destruct (α == β) as [-> | Hne].
   { (* Flex-Flex-Id : axiom, Θ1 = Θ0; ζ := κ. *)
     exists Θ0. split; [ apply a_unify__flex_id; exact Hfα | ].
+    split; [ intros γ Hγ; left; exact Hγ | ].
     intros κ1 Hid Hinc1. exists κ.
     exact (opt_axiom_factor Hwf Hid Hinc1 Hinc). }
   assert (Hβα : β <> α) by auto.
@@ -3734,14 +3867,14 @@ Proof.
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [HuIH _]].
-    destruct (HuIH (add α1 F) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
-                   Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
+    destruct (HuIH (add α1 N) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
+                   Hinc' Hwfth2 Heq2) as [Θ1' [Hu [Hnew Hopt']]].
     exists ((α1 ~ abind_tvar) ++ Θ1'). split.
     { apply a_unify__skip_other;
-        [ left; reflexivity | (* the popped head misses the sub-run's output: it is in the
-             relayed used-name set and fresh for the input (conjunct 4) *)
-          eapply a_unify_notin;
-            [ exact Hu | exact Hwf0 | clear; fsetdec | exact Hnd ] | exact Hu ]. }
+        [ left; reflexivity | (* the popped head misses the sub-run's output: the
+             relayed avoid set [add α1 N] says so *)
+          eapply avoid_head_miss; [ exact Hnew | exact Hnd ] | exact Hu ]. }
+    split; [ eapply avoid_relay_cons; exact Hnew | ].
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ Θ0' ⊑ Θ1')
       by (eapply a_inc_id_mid_strip; [ left; reflexivity | exact Hinc1 ]).
@@ -3792,14 +3925,14 @@ Proof.
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [HuIH _]].
-    destruct (HuIH (add α1 F) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
-                   Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
+    destruct (HuIH (add α1 N) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
+                   Hinc' Hwfth2 Heq2) as [Θ1' [Hu [Hnew Hopt']]].
     exists ((α1 ~ abind_var_typ A) ++ Θ1'). split.
     { apply a_unify__skip_other;
-        [ right; left; exists A; reflexivity | (* the popped head misses the sub-run's output: it is in the
-             relayed used-name set and fresh for the input (conjunct 4) *)
-          eapply a_unify_notin;
-            [ exact Hu | exact Hwf0 | clear; fsetdec | exact Hnd ] | exact Hu ]. }
+        [ right; left; exists A; reflexivity | (* the popped head misses the sub-run's output: the
+             relayed avoid set [add α1 N] says so *)
+          eapply avoid_head_miss; [ exact Hnew | exact Hnd ] | exact Hu ]. }
+    split; [ eapply avoid_relay_cons; exact Hnew | ].
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ Θ0' ⊑ Θ1')
       by (eapply a_inc_id_mid_strip;
@@ -3862,14 +3995,14 @@ Proof.
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [HuIH _]].
-    destruct (HuIH (add α1 F) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
-                   Hinc' Hwfth2 Heq2) as [Θ1' [Hu Hopt']].
+    destruct (HuIH (add α1 N) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
+                   Hinc' Hwfth2 Heq2) as [Θ1' [Hu [Hnew Hopt']]].
     exists ((α1 ~ abind_var_skl Q) ++ Θ1'). split.
     { apply a_unify__skip_other;
-        [ right; right; exists Q; reflexivity | (* the popped head misses the sub-run's output: it is in the
-             relayed used-name set and fresh for the input (conjunct 4) *)
-          eapply a_unify_notin;
-            [ exact Hu | exact Hwf0 | clear; fsetdec | exact Hnd ] | exact Hu ]. }
+        [ right; right; exists Q; reflexivity | (* the popped head misses the sub-run's output: the
+             relayed avoid set [add α1 N] says so *)
+          eapply avoid_head_miss; [ exact Hnew | exact Hnd ] | exact Hu ]. }
+    split; [ eapply avoid_relay_cons; exact Hnew | ].
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ Θ0' ⊑ Θ1')
       by (eapply a_inc_id_mid_strip;
@@ -3899,6 +4032,7 @@ Proof.
         by (eapply a_flex_tvar_strip_head; [ exact Hβα | exact Hfβ ]).
       exists ((α ~ abind_flex_mono_def (ptyp_var_f β)) ++ Θ0'). split.
       { apply a_unify__flex_l; [ exact Hne | exact Hfβ0 ]. }
+      split; [ apply avoid_same_dom | ].
       intros κ1 Hid Hinc1. exists ((α, τ) :: κs). split.
       * apply a_inc__flex_def; auto.
         rewrite msubst_lookup_cons_eq in Heq.
@@ -3915,6 +4049,7 @@ Proof.
           by (eapply a_flex_tvar_strip_head; [ exact Hne | exact Hfα ]).
         exists ((β ~ abind_flex_mono_def (ptyp_var_f α)) ++ Θ0'). split.
         { apply a_unify__flex_r; [ exact Hne | exact Hfα0 ]. }
+        split; [ apply avoid_same_dom | ].
         intros κ1 Hid Hinc1. exists ((β, τ) :: κs). split.
         -- apply a_inc__flex_def; auto.
            rewrite msubst_lookup_cons_eq in Heq.
@@ -3943,14 +4078,14 @@ Proof.
             reflexivity.
           - left. simpl. lia. }
         destruct (IH _ Hlt) as [_ [HuIH _]].
-        destruct (HuIH (add α1 F) Θ0' α β κs Θ eq_refl Hwf0 Hfα0 Hfβ0
-                       Hincs Hwfth Heq) as [Θ1' [Hu Hopt']].
+        destruct (HuIH (add α1 N) Θ0' α β κs Θ eq_refl Hwf0 Hfα0 Hfβ0
+                       Hincs Hwfth Heq) as [Θ1' [Hu [Hnew Hopt']]].
         exists ((α1 ~ abind_flex_mono) ++ Θ1'). split.
         { apply a_unify__flex_skip;
-            [ auto | auto | (* the popped head misses the sub-run's output: it is in the
-             relayed used-name set and fresh for the input (conjunct 4) *)
-          eapply a_unify_notin;
-            [ exact Hu | exact Hwf0 | clear; fsetdec | exact Hnd ] | exact Hu ]. }
+            [ auto | auto | (* the popped head misses the sub-run's output: the
+             relayed avoid set [add α1 N] says so *)
+          eapply avoid_head_miss; [ exact Hnew | exact Hnd ] | exact Hu ]. }
+        split; [ eapply avoid_relay_cons; exact Hnew | ].
         intros κ1 Hid Hinc1.
         inversion Hinc1 as [ | Θp κp Θq α1p τp Hincp Hwfp Hmp [Heqγ1 Heqκ1] Heqt1
                            | | | | ]; subst.
@@ -4080,7 +4215,7 @@ Proof.
         unfold Vvar, Vptyp; cbn [msubst_ptyp]; reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [HcIH _].
-    destruct (HcIH (add α1 F) empty empty Θ0' (ptyp_to_pskl Bσ)
+    destruct (HcIH (add α1 N) empty empty Θ0' (ptyp_to_pskl Bσ)
                    (ptyp_to_pskl Aσ) κs Θ empty
                    (ptyp_to_bskl_syn (msubst_ptyp κs Bσ))
                    eq_refl Hwf0 HwfPB HwfPA
@@ -4090,19 +4225,14 @@ Proof.
                    Hinc' Hwfth
                    ltac:(repeat intro; fsetdec)
                    Hpsi Hjoin' Hrs' Hrp')
-      as [P1 [Θ1' [Hcons Hopt']]].
+      as [P1 [Θ1' [Hcons [Hnew Hopt']]]].
     exists ((α1 ~ abind_flex_mono_def τdef) ++ Θ1'). split.
     { eapply a_unify__flex_assign;
         [ exact Hfα | exact Hfβ | | exact Hcons ].
-      (* conjunct 4: the walked definition is in the relayed used-name set
-         and fresh for the input, so it misses the output *)
-      eapply a_consis_notin;
-        [ exact Hcons | exact Hwf0 | exact HwfPB | exact HwfPA
-        | intros α0 Hα0; exfalso; clear - Hα0; fsetdec
-        | repeat intro; fsetdec
-        | repeat intro; fsetdec
-        | clear; fsetdec
-        | exact Hnd ]. }
+      (* the walked definition is in the relayed avoid set [add α1 N] and
+         fresh for the input, so it misses the output *)
+      eapply avoid_head_miss; [ exact Hnew | exact Hnd ]. }
+    split; [ eapply avoid_relay_cons; exact Hnew | ].
     intros κ1 Hid Hinc1.
     inversion Hinc1 as [ | | Θp κp Θq α1p τd1 τ1 Hincp Hwf1p Hm1p Heq1p
                            [Heqγ1 Heqκ1] Heqt1 | | | ]; subst.
@@ -4702,7 +4832,7 @@ Qed.
 (*  §2j  The Assign-SolveM completeness case, assembled                   *)
 (* ===================================================================== *)
 
-Lemma assign_solve_m_complete : forall Θ0' Ξ α P κ Θ,
+Lemma assign_solve_m_complete : forall (N : atoms) Θ0' Ξ α P κ Θ,
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ (α ~ abind_flex_mono) ++ Θ0') ->
   (Ξ ++ (α ~ abind_flex_mono) ++ Θ0') ⨟ empty ⊢ₚₛᵃ P ->
@@ -4714,13 +4844,15 @@ Lemma assign_solve_m_complete : forall Θ0' Ξ α P κ Θ,
              ∼ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup κ α))) ->
   exists Θ1,
     ((α ~ abind_flex_mono) ++ Θ0') ⊲[ Ξ ] α ≔ P ⊣ Θ1 /\
+    (forall γ, γ `in` dom Θ1 ->
+       γ `in` dom (Ξ ++ (α ~ abind_flex_mono) ++ Θ0') \/ γ `notin` N) /\
     (forall κ1, is_id_msubst κ1 ->
        κ1 ∷ (Ξ ++ (α ~ abind_flex_mono) ++ Θ0') ⊑ Θ1 ->
        exists ζ, ζ ∷ Θ1 ⊑ Θ /\
          a_inc_equiv (Ξ ++ (α ~ abind_flex_mono) ++ Θ0') κ
                      (msubst_compose ζ κ1) Θ).
 Proof.
-  intros Θ0' Ξ α P κ Θ Hdecl Hwf HwfP Hnf HneP Hinc Hwfth Hjoin.
+  intros N Θ0' Ξ α P κ Θ Hdecl Hwf HwfP Hnf HneP Hinc Hwfth Hjoin.
   set (τα := msubst_lookup κ α) in *.
   assert (Huq : uniq (Ξ ++ (α ~ abind_flex_mono) ++ Θ0'))
     by (apply a_wf_aenv_uniq; exact Hwf).
@@ -4748,7 +4880,7 @@ Proof.
   (* [ftvar_in_aenv], not [dom]: since the freshness campaign the guessed
      names must dodge everything the context MENTIONS (payloads included),
      which is what [a_guess_mono__hole] now polices. *)
-  set (L := F `union` add α (ftvar_in_aenv (Ξ ++ (α ~ abind_flex_mono) ++ Θ0'))
+  set (L := N `union` add α (ftvar_in_aenv (Ξ ++ (α ~ abind_flex_mono) ++ Θ0'))
               `union` ftvar_in_pskl P `union` dom Θ).
   destruct (guess_join_witness κ P Hjoin Hwfth Hmlk Hmτα Hwτα L)
     as [βs [τg [ζβ [Hg [Hmτg [Huβ [Hfβ [Hdζ [Htr Heqn]]]]]]]]].
@@ -4768,6 +4900,13 @@ Proof.
       pose proof (dom_subset_ftvar_in_aenv (Ξ ++ (α ~ abind_flex_mono) ++ Θ0'))
         as Hds.
       clear - Hfβ Hds. unfold L in Hfβ. simpl_env in *. fsetdec. }
+  (* ---- the avoid set: everything the node deposits is a GUESSED name,
+         and the guess dodged [L], which contains [N] ---- *)
+  split.
+  { intros γ Hγ. simpl_env in Hγ.
+    destruct (AtomSetProperties.In_dec γ (dom βs)) as [Hin | Hni].
+    - right. specialize (Hfβ γ Hin). clear - Hfβ. unfold L in Hfβ. fsetdec.
+    - left. simpl_env. clear - Hγ Hni. fsetdec. }
   (* ---- optimality ---- *)
   intros κ1 Hid Hinc1.
   (* strip the competing solution at the α entry *)
@@ -4853,7 +4992,7 @@ Lemma assign_complete_step : forall m,
   assign_complete_at m.
 Proof.
   intros m IH. unfold assign_complete_at.
-  intros Θ0 Ξ α P κ Θ Hm Hdecl Hwf Hfα HwfP Hnf Hdomξ Hinc Hwfth Hjoin.
+  intros N Θ0 Ξ α P κ Θ Hm Hdecl Hwf Hfα HwfP Hnf Hdomξ Hinc Hwfth Hjoin.
   subst m.
   destruct Θ0 as [ | [α1 b] Θ0' ].
   { exfalso. destruct Hfα as [Hb | [τ Hb]]; inversion Hb. }
@@ -5166,20 +5305,20 @@ Proof.
           reflexivity.
         - left. simpl. lia. }
       destruct (IH _ Hlt) as [_ [_ HaIH]].
-      destruct (HaIH (add α1 F) Θ0' Ξ α P
+      destruct (HaIH (add α1 N) Θ0' Ξ α P
                      (msubst_compose (aenv_msubst Θ) κ) Θ' eq_refl
                      Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hinc_sub HwfΘ'
                      Hjoin_sub)
-        as [Θ1 [Ha' Hopt'']].
+        as [Θ1 [Ha' [Hnew Hopt'']]].
       exists ((α1 ~ abind_tvar) ++ Θ1). split.
       { apply a_assign__skip_rigid;
-          [ exact Hγni | (* conjunct 4: the popped head is in the relayed used-name
-             set and fresh for the input, so it misses the output *)
-          eapply a_assign_notin;
-            [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP'
-            | clear; fsetdec
+          [ exact Hγni | (* the popped head misses the sub-run's output: the
+             relayed avoid set [add α1 N] says so *)
+          eapply avoid_head_miss;
+            [ exact Hnew
             | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
               simpl_env in Huq0; solve_uniq ] | exact Ha' ]. }
+      split; [ eapply avoid_relay_cons_mid; exact Hnew | ].
       (* ---- optimality : the OPT twin's two conjuncts ---- *)
       intros κ1 Hid Hinc1.
       assert (Hinc1_s : κ1 ∷ (Ξ ++ Θ0') ⊑ Θ1)
@@ -5443,19 +5582,19 @@ Proof.
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [_ HaIH]].
-    destruct (HaIH (add α1 F) Θ0' Ξ α P
+    destruct (HaIH (add α1 N) Θ0' Ξ α P
                    (msubst_compose (aenv_msubst Θ) κ) Θ' eq_refl
                    Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hinc_sub HwfΘ'
                    Hjoin_sub)
-      as [Θ1 [Ha' Hopt'']].
+      as [Θ1 [Ha' [Hnew Hopt'']]].
     exists ((α1 ~ abind_var_typ A) ++ Θ1). split.
-    { apply a_assign__skip_tm_var; [ (* conjunct 4: the popped head is in the relayed used-name
-             set and fresh for the input, so it misses the output *)
-          eapply a_assign_notin;
-            [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP'
-            | clear; fsetdec
+    { apply a_assign__skip_tm_var; [ (* the popped head misses the sub-run's output: the
+             relayed avoid set [add α1 N] says so *)
+          eapply avoid_head_miss;
+            [ exact Hnew
             | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
               simpl_env in Huq0; solve_uniq ] | exact Ha' ]. }
+    split; [ eapply avoid_relay_cons_mid; exact Hnew | ].
     (* ---- optimality : the OPT twin's two conjuncts ---- *)
     intros κ1 Hid Hinc1.
     assert (Hinc1_s : κ1 ∷ (Ξ ++ Θ0') ⊑ Θ1)
@@ -5775,19 +5914,19 @@ Proof.
         reflexivity.
       - left. simpl. lia. }
     destruct (IH _ Hlt) as [_ [_ HaIH]].
-    destruct (HaIH (add α1 F) Θ0' Ξ α P
+    destruct (HaIH (add α1 N) Θ0' Ξ α P
                    (msubst_compose (aenv_msubst Θ) κ) Θ' eq_refl
                    Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hinc_sub HwfΘ'
                    Hjoin_sub)
-      as [Θ1 [Ha' Hopt'']].
+      as [Θ1 [Ha' [Hnew Hopt'']]].
     exists ((α1 ~ abind_var_skl Q) ++ Θ1). split.
-    { apply a_assign__skip_tm_skl; [ (* conjunct 4: the popped head is in the relayed used-name
-             set and fresh for the input, so it misses the output *)
-          eapply a_assign_notin;
-            [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP'
-            | clear; fsetdec
+    { apply a_assign__skip_tm_skl; [ (* the popped head misses the sub-run's output: the
+             relayed avoid set [add α1 N] says so *)
+          eapply avoid_head_miss;
+            [ exact Hnew
             | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
               simpl_env in Huq0; solve_uniq ] | exact Ha' ]. }
+    split; [ eapply avoid_relay_cons_mid; exact Hnew | ].
     (* ---- optimality : the OPT twin's two conjuncts ---- *)
     intros κ1 Hid Hinc1.
     assert (Hinc1_s : κ1 ∷ (Ξ ++ Θ0') ⊑ Θ1)
@@ -5898,12 +6037,13 @@ Proof.
         subst Ξ. simpl_env in *.
         exists ((α ~ abind_flex_mono) ++ Θ0'). split.
         { apply a_assign__univ_ghost_id. }
+        split; [ intros γ Hγ; left; simpl_env in *; exact Hγ | ].
         intros κ1 Hid Hinc1. exists κ.
         exact (opt_axiom_factor Hwf Hid Hinc1 Hinc).
       * (* Assign-SolveM : the standalone lemma above supplies the two
            premises the paper leaves implicit (design doc §9.2) — the
            occurs check and the mono guess witness — plus the ζ-factoring. *)
-        apply (assign_solve_m_complete F Θ0' Hdecl Hwf HwfP Hnf HneP Hinc
+        apply (assign_solve_m_complete N Θ0' Hdecl Hwf HwfP Hnf HneP Hinc
                  Hwfth Hjoin).
     + (* α1̂ ≠ α̂ : Assign-Depend (α1 ∈ ftv P) / Assign-Skip (α1 ∉ ftv P) *)
       assert (Hαα1 : α <> α1) by auto.
@@ -5934,11 +6074,14 @@ Proof.
           - rewrite length_app. simpl. lia.
           - right. split; [ reflexivity | simpl; lia ]. }
         destruct (IH _ Hlt) as [_ [_ HaIH]].
-        destruct (HaIH F Θ0' (Ξ ++ (α1 ~ abind_flex_mono)) α P κ Θ eq_refl
+        destruct (HaIH N Θ0' (Ξ ++ (α1 ~ abind_flex_mono)) α P κ Θ eq_refl
                        Hdecl' Hwf2 Hfα0 HwfP2 Hnf2 Hdomξ' Hinc2 Hwfth Hjoin)
-          as [Θ1 [Ha' Hopt']].
+          as [Θ1 [Ha' [Hnew Hopt']]].
         exists Θ1. split.
         { apply a_assign__depend; [ exact Hαα1 | exact Hγin | exact Ha' ]. }
+        split;
+          [ intros γ Hγ; destruct (Hnew γ Hγ) as [Hin | Hni];
+            [ left; simpl_env in *; exact Hin | right; exact Hni ] | ].
         intros κ1 Hid Hinc1.
         assert (Hinc1' : κ1 ∷ ((Ξ ++ (α1 ~ abind_flex_mono)) ++ Θ0') ⊑ Θ1)
           by (simpl_env; exact Hinc1).
@@ -5983,18 +6126,18 @@ Proof.
           - unfold V_assign, Vpskl, Vvar. rewrite HeqP, Hlkα. reflexivity.
           - left. simpl. lia. }
         destruct (IH _ Hlt) as [_ [_ HaIH]].
-        destruct (HaIH (add α1 F) Θ0' Ξ α P (κa ++ κb) Θ eq_refl
+        destruct (HaIH (add α1 N) Θ0' Ξ α P (κa ++ κb) Θ eq_refl
                        Hdecl Hwf' Hfα0 HwfP' Hnf' Hdomξ Hincab Hwfth Hjoin')
-          as [Θ1' [Ha' Hopt']].
+          as [Θ1' [Ha' [Hnew Hopt']]].
         exists ((α1 ~ abind_flex_mono) ++ Θ1'). split.
         { apply a_assign__skip;
-            [ exact Hαα1 | exact Hγni | (* conjunct 4: the popped head is in the relayed used-name
-             set and fresh for the input, so it misses the output *)
-          eapply a_assign_notin;
-            [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP'
-            | clear; fsetdec
+            [ exact Hαα1 | exact Hγni | (* the popped head misses the sub-run's output: the
+             relayed avoid set [add α1 N] says so *)
+          eapply avoid_head_miss;
+            [ exact Hnew
             | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
               simpl_env in Huq0; solve_uniq ] | exact Ha' ]. }
+        split; [ eapply avoid_relay_cons_mid; exact Hnew | ].
         intros κ1 Hid Hinc1.
         destruct (a_inc_mid_strip_flex α1 Θ0' Hdecl Hinc1)
           as [κ1a [τ1 [κ1b [Heqκ1 [Hdκ1a [Hinc1b Hinc1ab]]]]]].
@@ -6290,7 +6433,7 @@ Proof.
         rewrite size_ptyp_to_pskl. lia.
       - left. rewrite length_app. simpl. lia. }
     destruct (IH _ Hlt) as [HcIH _].
-    destruct (HcIH (add α1 F) empty empty (Ξ ++ Θ0')
+    destruct (HcIH (add α1 N) empty empty (Ξ ++ Θ0')
                 (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 P)
                 (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 (pskl_var_f α))
                 (κa ++ κb) Θ empty
@@ -6303,19 +6446,16 @@ Proof.
                 ltac:(intros β τ Hb; clear; fsetdec)
                 ltac:(reflexivity)
                 Hjsub Hrssub Hrpsub)
-      as [Q' [Θ1' [Hc Hopt']]].
+      as [Q' [Θ1' [Hc [Hnew Hopt']]]].
     exists ((α1 ~ abind_flex_mono_def τdef) ++ Θ1'). split.
     { eapply a_assign__assign; [ exact Hfα | | exact Hc ].
-      (* conjunct 4: the walked definition is in the relayed used-name set
-         and fresh for the merged input, so it misses the output *)
-      eapply a_consis_notin;
-        [ exact Hc | exact Hwf' | exact HwfP0s | exact HwfSs
-        | intros α0 Hα0; exfalso; clear - Hα0; fsetdec
-        | intros β τ Hb; clear; fsetdec
-        | intros Θa β b Θb Heqx Hne; clear; fsetdec
-        | clear; fsetdec
+      (* the walked definition is in the relayed avoid set [add α1 N] and
+         fresh for the merged input, so it misses the output *)
+      eapply avoid_head_miss;
+        [ exact Hnew
         | pose proof (a_wf_aenv_uniq Hwf) as Huq0; clear - Huq0;
           simpl_env in Huq0; solve_uniq ]. }
+    split; [ eapply avoid_relay_cons_mid; exact Hnew | ].
     (* ---- optimality ---- *)
     intros κ1 Hid Hinc1.
     destruct (a_inc_mid_strip_flex_def α1 τdef Θ0' Hdecl Hinc1)
@@ -6462,7 +6602,7 @@ Qed.
     All structural sub-nodes recurse through the measure hypothesis [IH]. *)
 Lemma consis_complete_core : forall Ψ Θ R' Qb,
   Ψ ⨟ Θ ⊢ₛᵃ R' ∼ Qb ->
-  forall Δ1 Δ2 Θ0 P0 P κ,
+  forall (N : atoms) Δ1 Δ2 Θ0 P0 P κ,
     (forall m', mu_lt m' (mu_consis Θ κ P0 P Θ0) -> complete_at m') ->
     a_wf_aenv Θ0 ->
     Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
@@ -6483,6 +6623,7 @@ Lemma consis_complete_core : forall Ψ Θ R' Qb,
     ad_refine_pskl_f Δ2 Θ Δ2 (msubst_pskl κ P) (bskl_to_pskl Qb) ->
     exists P1 Θ1,
       a_consis Δ1 Δ2 Θ0 P0 P P1 Θ1 /\
+      (forall γ, γ `in` dom Θ1 -> γ `in` dom Θ0 \/ γ `notin` N) /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
          exists ζ,
            ζ ∷ Θ1 ⊑ Θ /\
@@ -6491,7 +6632,7 @@ Lemma consis_complete_core : forall Ψ Θ R' Qb,
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) (bskl_to_pskl Qb)).
 Proof.
   intros Ψ Θ R' Qb Hj.
-  induction Hj; intros Δ1 Δ2 Θ0 PP0 PP κ
+  induction Hj; intros N Δ1 Δ2 Θ0 PP0 PP κ
     IH Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth
     HΨ HeqS HnfP HnfP0 HneP0hole Hnthg Hrs Hrp.
   (* ------------------------------------------------------------- unit *)
@@ -6546,6 +6687,7 @@ Proof.
     (* both unit: the axiom node *)
     exists pskl_unit, Θ0. split.
     { apply a_consis__unit. }
+    split; [ intros γ Hγ; left; exact Hγ | ].
     intros κ1 Hid Hinc1. exists κ.
     destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
     split; [ exact Hout | ]. split; [ exact Hfact | ].
@@ -6638,6 +6780,7 @@ Proof.
     subst β10.
     exists (pskl_var_f β1), Θ0. split.
     { apply a_consis__rigid. exact Hbtδ. }
+    split; [ intros γ Hγ; left; exact Hγ | ].
     intros κ1 Hid Hinc1. exists κ.
     destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
     split; [ exact Hout | ]. split; [ exact Hfact | ].
@@ -6757,18 +6900,21 @@ Proof.
       pose proof (Vpskl_arrow_lt1 Θ κ PPa PPb).
       pose proof (Vpskl_arrow_lt1 Θ κ P0a P0b). lia. }
     destruct (IH _ Hlt1) as [HcIH1 _].
-    destruct (HcIH1 F Δ1 Δ2 Θ0 P0a PPa κ Θ Ψ1 Q1 eq_refl Hwf0 HwfP0a HwfPPa
+    destruct (HcIH1 N Δ1 Δ2 Θ0 P0a PPa κ Θ Ψ1 Q1 eq_refl Hwf0 HwfP0a HwfPPa
                     Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ1e Hj1 Hrs1 Hrp1)
-      as [PA1 [Θ1 [Hc1 Hopt1]]].
+      as [PA1 [Θ1 [Hc1 [Hnew1 Hopt1]]]].
     (* the first node's soundness: id-witness, wf, Δ-invariants *)
     destruct (proj2 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ _ _ Hc1
                 Hwf0 HwfP0a HwfPPa Hrig Hnfd0 Hfaf)
-      as [Hle1 [Hwf1 [Hdom1 [Hfr1 [Hinv1 [Hsol1 _]]]]]].
+      as [Hle1 [Hwf1 [Hdom1 [Hinv1 [Hsol1 _]]]]].
     destruct Hle1 as [[w1 [Hidw1 Hincw1]] Hdefs1].
     destruct (Hopt1 w1 Hidw1 Hincw1) as [ζ1 [Hζ1 [Hie1 Hprec1]]].
-    assert (HΔdom : (Δ1 `union` Δ2) [<=] (F `union` dom Θ0)).
-    { intros α0 Hα0. pose proof (Hrig α0 Hα0) as Hb.
-      apply binds_In in Hb. clear - Hb. fsetdec. }
+    (* conjunct 5's coverage, in its OUTPUT-relative form: the protected
+       variables are RIGID in Θ0, so they are covered outright *)
+    assert (HΔdom : (Δ1 `union` Δ2) ∩ dom Θ1 [<=] dom Θ0).
+    { intros α0 Hα0.
+      assert (Hα0' : α0 `in` (Δ1 `union` Δ2)) by (clear - Hα0; fsetdec).
+      pose proof (Hrig α0 Hα0') as Hb. apply binds_In in Hb. exact Hb. }
     destruct (Hinv1 (Δ1 `union` Δ2) Hnfd0 Hfaf HΔdom
                 ltac:(intros α0 Hα0 HnX; exfalso; pose proof (Hrig α0 Hα0) as Hb;
                       apply binds_In in Hb; exact (HnX Hb)))
@@ -6852,18 +6998,19 @@ Proof.
       pose proof (Vpskl_arrow_lt2 Θ κ PPa PPb).
       pose proof (Vpskl_arrow_lt2 Θ κ P0a P0b). lia. }
     destruct (IH _ Hlt2) as [HcIH2 _].
-    destruct (HcIH2 F Δ1 Δ2 Θ1 P0b PPb ζ1 Θ Ψ2 Q2 eq_refl Hwf1 HwfP0b1
+    destruct (HcIH2 N Δ1 Δ2 Θ1 P0b PPb ζ1 Θ Ψ2 Q2 eq_refl Hwf1 HwfP0b1
                     HwfPPb1 HrigΘ1 Hnfd1 Hfaf1 Hζ1 Hwfth Hnfdth HΨ2e
                     Hj2' Hrs2' Hrp2')
-      as [PA2 [Θ2 [Hc2 Hopt2]]].
+      as [PA2 [Θ2 [Hc2 [Hnew2 Hopt2]]]].
     (* ---- assemble the node ---- *)
     exists (pskl_arrow PA1 PA2), Θ2. split.
     { eapply a_consis__arrow; [ exact Hc1 | exact Hc2 ]. }
+    split; [ eapply avoid_compose; [ exact Hnew1 | exact Hnew2 ] | ].
     intros κf Hidf Hincf.
     (* the second node's soundness id-witness *)
     destruct (proj2 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ _ _ Hc2
                 Hwf1 HwfP0b1 HwfPPb1 HrigΘ1 Hnfd1 Hfaf1)
-      as [Hle2 [Hwf2 [Hdom2 [Hfr2 [Hinv2 [Hsol2 _]]]]]].
+      as [Hle2 [Hwf2 [Hdom2 [Hinv2 [Hsol2 _]]]]].
     destruct Hle2 as [[w2 [Hidw2 Hincw2]] Hdefs2].
     destruct (Hopt2 w2 Hidw2 Hincw2) as [ζ2 [Hζ2 [Hie2 Hprec2]]].
     (* the algorithm's composite id-witness IS w1 (uniqueness) *)
@@ -7024,7 +7171,7 @@ Proof.
       pick fresh α for (L `union` LA `union` LB `union` Lw0 `union` Lw
                         `union` dom Θ0 `union` ftvar_in_aenv Θ0
                         `union` dom Θ `union` dom κ
-                        `union` F `union` Δ1 `union` Δ2
+                        `union` Δ1 `union` Δ2
                         `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPb
                         `union` ftvar_in_bskl Q)
     end end.
@@ -7121,14 +7268,14 @@ Proof.
         [ apply Hrp1; clear - Fr; fsetdec | ].
       intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
         [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
-    destruct (HcIH F (add α Δ1) (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
+    destruct (HcIH N (add α Δ1) (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
                 (open_pskl_wrt_pskl P0b (pskl_var_f α))
                 (open_pskl_wrt_pskl PPb (pskl_var_f α)) κ
                 ((α ~ abind_tvar) ++ Θ) Ψ
                 (open_bskl_wrt_bskl Q (bskl_var_f α))
                 eq_refl Hwf0' HwfP0α HwfPα Hrig' Hnfd0' Hfaf' Hinc'
                 Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα)
-      as [P1 [Θ1' [Hc Hopt']]].
+      as [P1 [Θ1' [Hc [Hnew Hopt']]]].
     (* L8 : the output re-attaches the rigid head *)
     destruct (proj2 (proj2 a_assign_unify_consis_tvar_prefix) _ _ _ _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
                 (tvar_prefix_cons tvar_prefix_nil)) as [Θ1 HeqΘ1'].
@@ -7145,6 +7292,11 @@ Proof.
          no family to rebuild, hence no rename. *)
       apply a_consis__forall_inh with (α := α);
         [ clear - Fr; fsetdec | exact Hc ]. }
+    (* the avoid set survives the truncation: [α] is the run's OWN binder,
+       so it cannot occur in the tail the node hands back *)
+    split.
+    { eapply avoid_truncate_cons; [ exact Hnew | ].
+      pose proof (auc_uniq_consis Hc Huq0) as Hu1. clear - Hu1. solve_uniq. }
     (* optimality *)
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
@@ -7174,7 +7326,7 @@ Proof.
     (* precision : rebind the quantifier *)
     assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
     assert (Huq1' : uniq ((α ~ abind_tvar) ++ Θ1))
-      by (destruct (auc_uniq_consis Hc Huq0) as [Hu1 _]; exact Hu1).
+      by (exact (auc_uniq_consis Hc Huq0)).
     assert (HαΘ1 : α `notin` dom Θ1) by solve_uniq.
     assert (Hαζ : α `notin` dom ζ).
     { intro Hin.
@@ -7325,7 +7477,7 @@ Proof.
       pick fresh α for (L `union` LA `union` LB `union` Lw
                         `union` dom Θ0 `union` ftvar_in_aenv Θ0
                         `union` dom Θ `union` dom κ
-                        `union` F `union` Δ1 `union` Δ2
+                        `union` Δ1 `union` Δ2
                         `union` ftvar_in_pskl Pt0 `union` ftvar_in_pskl PPb
                         `union` ftvar_in_bskl Q)
     end end.
@@ -7409,14 +7561,14 @@ Proof.
         [ apply Hrp1; clear - Fr; fsetdec | ].
       intros α1 Hα1. destruct (α1 == α) as [-> | Hne];
         [ right; exact HαΘ | left; clear - Hα1 Hne; fsetdec ]. }
-    destruct (HcIH F Δ1 (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
+    destruct (HcIH N Δ1 (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
                 (pskl_tophole Pt0)
                 (open_pskl_wrt_pskl PPb (pskl_var_f α)) κ
                 ((α ~ abind_tvar) ++ Θ) Ψ
                 (open_bskl_wrt_bskl Q (bskl_var_f α))
                 eq_refl Hwf0' HwfP0α HwfPα Hrig' Hnfd0' Hfaf' Hinc'
                 Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα)
-      as [P1 [Θ1' [Hc Hopt']]].
+      as [P1 [Θ1' [Hc [Hnew Hopt']]]].
     destruct (proj2 (proj2 a_assign_unify_consis_tvar_prefix) _ _ _ _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
                 (tvar_prefix_cons tvar_prefix_nil)) as [Θ1 HeqΘ1'].
     simpl in HeqΘ1'. subst Θ1'.
@@ -7432,6 +7584,11 @@ Proof.
          no family to rebuild, hence no rename. *)
       apply a_consis__forall_syn with (α := α);
         [ clear - Fr; fsetdec | exact Hc ]. }
+    (* the avoid set survives the truncation: [α] is the run's OWN binder,
+       so it cannot occur in the tail the node hands back *)
+    split.
+    { eapply avoid_truncate_cons; [ exact Hnew | ].
+      pose proof (auc_uniq_consis Hc Huq0) as Hu1. clear - Hu1. solve_uniq. }
     (* optimality *)
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
@@ -7460,7 +7617,7 @@ Proof.
     (* precision : rebind the quantifier *)
     assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
     assert (Huq1' : uniq ((α ~ abind_tvar) ++ Θ1))
-      by (destruct (auc_uniq_consis Hc Huq0) as [Hu1 _]; exact Hu1).
+      by (exact (auc_uniq_consis Hc Huq0)).
     assert (HαΘ1 : α `notin` dom Θ1) by solve_uniq.
     assert (Hαζ : α `notin` dom ζ).
     { intro Hin.
@@ -7595,6 +7752,7 @@ Proof.
     exists PP0, Θ0. split.
     { apply a_consis__ghost.
       apply inter_empty_pointwise. exact Hside. }
+    split; [ intros γ Hγ; left; exact Hγ | ].
     intros κ1 Hid Hinc1. exists κ.
     destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
     split; [ exact Hout | ]. split; [ exact Hfact | ].
@@ -7715,11 +7873,12 @@ Proof.
       pose proof (Vpskl_tophole_lt Θ κ Pt0).
       pose proof (Vpskl_tophole_lt Θ κ PPt). lia. }
     destruct (IH _ Hlt) as [HcIH _].
-    destruct (HcIH F Δ1 Δ2 Θ0 Pt0 PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0t HwfPPt
+    destruct (HcIH N Δ1 Δ2 Θ0 Pt0 PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0t HwfPPt
                    Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs' Hrp')
-      as [P1 [Θ1 [Hc Hopt']]].
+      as [P1 [Θ1 [Hc [Hnew Hopt']]]].
     exists (pskl_tophole P1), Θ1. split.
     { apply a_consis__univ_ghost. exact Hc. }
+    split; [ exact Hnew | ].
     intros κ1 Hid Hinc1.
     destruct (Hopt' κ1 Hid Hinc1) as [ζ [Hζ [Hie Hprec]]].
     exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
@@ -7823,7 +7982,7 @@ Proof.
       pick fresh α for (L `union` LA `union` LB `union` Lw0
                         `union` dom Θ0 `union` ftvar_in_aenv Θ0
                         `union` dom Θ `union` dom κ
-                        `union` F `union` Δ1 `union` Δ2
+                        `union` Δ1 `union` Δ2
                         `union` ftvar_in_pskl P0b `union` ftvar_in_pskl PPt
                         `union` ftvar_in_bskl Q)
     end end.
@@ -7905,14 +8064,14 @@ Proof.
               (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α)))).
     { simpl. rewrite bskl_to_pskl_open. apply Hrp1.
       clear - Fr. fsetdec. }
-    destruct (HcIH F (add α Δ1) Δ2 ((α ~ abind_tvar) ++ Θ0)
+    destruct (HcIH N (add α Δ1) Δ2 ((α ~ abind_tvar) ++ Θ0)
                 (open_pskl_wrt_pskl P0b (pskl_var_f α))
                 (pskl_tophole PPt) κ
                 ((α ~ abind_tvar) ++ Θ) Ψ
                 (open_bskl_wrt_bskl Q (bskl_var_f α))
                 eq_refl Hwf0' HwfP0α HwfPα Hrig' Hnfd0' Hfaf' Hinc'
                 Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα)
-      as [P1 [Θ1' [Hc Hopt']]].
+      as [P1 [Θ1' [Hc [Hnew Hopt']]]].
     destruct (proj2 (proj2 a_assign_unify_consis_tvar_prefix) _ _ _ _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
                 (tvar_prefix_cons tvar_prefix_nil)) as [Θ1 HeqΘ1'].
     simpl in HeqΘ1'. subst Θ1'.
@@ -7928,6 +8087,11 @@ Proof.
          no family to rebuild, hence no rename. *)
       apply a_consis__univ_ghost1 with (α := α);
         [ clear - Fr; fsetdec | exact Hc ]. }
+    (* the avoid set survives the truncation: [α] is the run's OWN binder,
+       so it cannot occur in the tail the node hands back *)
+    split.
+    { eapply avoid_truncate_cons; [ exact Hnew | ].
+      pose proof (auc_uniq_consis Hc Huq0) as Hu1. clear - Hu1. solve_uniq. }
     (* optimality *)
     intros κ1 Hid Hinc1.
     assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
@@ -7955,7 +8119,7 @@ Proof.
     split; [ exact Hζ' | ]. split; [ exact Hie' | ].
     assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
     assert (Huq1' : uniq ((α ~ abind_tvar) ++ Θ1))
-      by (destruct (auc_uniq_consis Hc Huq0) as [Hu1 _]; exact Hu1).
+      by (exact (auc_uniq_consis Hc Huq0)).
     assert (HαΘ1 : α `notin` dom Θ1) by solve_uniq.
     assert (Hαζ : α `notin` dom ζ).
     { intro Hin.
@@ -8076,11 +8240,12 @@ Proof.
         pose proof (Vpskl_tophole_lt Θ κ P0t).
         pose proof (Vpskl_tophole_lt Θ κ PPt). lia. }
       destruct (IH _ Hlt) as [HcIH _].
-      destruct (HcIH F Δ1 Δ2 Θ0 P0t PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0t HwfPPt
+      destruct (HcIH N Δ1 Δ2 Θ0 P0t PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0t HwfPPt
                      Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs' Hrp')
-        as [P1 [Θ1 [Hc Hopt']]].
+        as [P1 [Θ1 [Hc [Hnew Hopt']]]].
       exists (pskl_tophole P1), Θ1. split.
       { apply a_consis__univ_ghost. exact Hc. }
+      split; [ exact Hnew | ].
       intros κ1 Hid Hinc1.
       destruct (Hopt' κ1 Hid Hinc1) as [ζ [Hζ [Hie Hprec]]].
       exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
@@ -8105,13 +8270,13 @@ Proof.
       { unfold mu_consis. apply mu_lt_intro. left. unfold V_consis.
         pose proof (Vpskl_tophole_lt Θ κ PPt). lia. }
       destruct (IH _ Hlt) as [HcIH _].
-      destruct (HcIH F Δ1 Δ2 Θ0 PP0 PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0 HwfPPt
+      destruct (HcIH N Δ1 Δ2 Θ0 PP0 PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0 HwfPPt
                      Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs Hrp')
-        as [P1 [Θ1 [Hc Hopt']]].
+        as [P1 [Θ1 [Hc [Hnew Hopt']]]].
       exists P1, Θ1. split.
       { apply a_consis__univ_ghost2;
           [ exact Hg0 | exact HnfP0 | exact Hc ]. }
-      exact Hopt'.
+      split; [ exact Hnew | exact Hopt' ].
   (* ----------------------------------------------- flex_l (impossible) *)
   - (* The subject is non-flex, so a variable subject is RIGID in Θ0 and
        stays rigid in Θ — it cannot be the defined flexible the join's
@@ -8174,11 +8339,12 @@ Proof.
         | clear - Hdisj; fsetdec
         | exact Hrp ]. }
     (* recurse on the premise at the SAME measure *)
-    destruct (IHHj F Δ1 Δ2 Θ0 PP0 PP κ IH Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf
+    destruct (IHHj N Δ1 Δ2 Θ0 PP0 PP κ IH Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf
                    Hinc Hwfth Hnfdth HΨ HeqS HnfP HnfP0 HneP0hole Hnthg
                    Hrs' Hrp')
-      as [P1 [Θ1 [Hc Hopt']]].
+      as [P1 [Θ1 [Hc [Hnew Hopt']]]].
     exists P1, Θ1. split; [ exact Hc | ].
+    split; [ exact Hnew | ].
     intros κ1 Hid Hinc1.
     destruct (Hopt' κ1 Hid Hinc1) as [ζ [Hζ [Hie Hprec]]].
     exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
@@ -8196,7 +8362,7 @@ Lemma consis_complete_step : forall m,
   consis_complete_at m.
 Proof.
   intros m IH. unfold consis_complete_at.
-  intros Δ1 Δ2 Θ0 P0 P κ Θ Ψ Qb Hm Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf
+  intros N Δ1 Δ2 Θ0 P0 P κ Θ Ψ Qb Hm Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf
     Hinc Hwfth Hnfdth HΨ Hjoin Hrs Hrp.
   subst m.
   (* ---- Layer 0a: flexible SUBJECT — parts 2/3 (t breaks the tie) ---- *)
@@ -8236,10 +8402,11 @@ Proof.
         split; [ symmetry; apply V_flex | ].
         right. split; [ reflexivity | left; lia ]. }
       destruct (IH _ Hlt) as [_ [HuIH _]].
-      destruct (HuIH F Θ0 β β10 κ Θ eq_refl Hwf0 Hfβ Hfδ0 Hinc Hwfth Heqββ1)
-        as [Θ1 [Hu Hopt']].
+      destruct (HuIH N Θ0 β β10 κ Θ eq_refl Hwf0 Hfβ Hfδ0 Hinc Hwfth Heqββ1)
+        as [Θ1 [Hu [Hnew Hopt']]].
       exists (pskl_var_f β), Θ1. split.
       { apply a_consis__flex. exact Hu. }
+      split; [ exact Hnew | ].
       intros κ1 Hid Hinc1.
       destruct (Hopt' κ1 Hid Hinc1) as [ζ [Hζ Hie]].
       exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
@@ -8309,11 +8476,14 @@ Proof.
       assert (Hdom : dom (nil : aenv) [<=] ftvar_in_pskl P0)
         by (simpl; clear; fsetdec).
       destruct (IH _ Hlt) as [_ [_ HaIH]].
-      destruct (HaIH F Θ0 nil β P0 κ Θ eq_refl a_decls__nil Hwf0 Hfβ
+      destruct (HaIH N Θ0 nil β P0 κ Θ eq_refl a_decls__nil Hwf0 Hfβ
                      HwfP0 HnfP0 Hdom Hinc Hwfth Hjoin3)
-        as [Θ1 [Ha Hopt']].
+        as [Θ1 [Ha [Hnew Hopt']]].
       exists (pskl_var_f β), Θ1. split.
       { apply a_consis__flex_l; [ exact HnfP0 | exact Ha ]. }
+      split;
+        [ intros γ Hγ; destruct (Hnew γ Hγ) as [Hin | Hni];
+          [ left; simpl_env in Hin; exact Hin | right; exact Hni ] | ].
       intros κ1 Hid Hinc1.
       destruct (Hopt' κ1 Hid Hinc1) as [ζ [Hζ Hie]].
       exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
@@ -8376,11 +8546,14 @@ Proof.
     assert (Hdom : dom (nil : aenv) [<=] ftvar_in_pskl P)
       by (simpl; clear; fsetdec).
     destruct (IH _ Hlt) as [_ [_ HaIH]].
-    destruct (HaIH F Θ0 nil β10 P κ Θ eq_refl a_decls__nil Hwf0 Hfδ0
+    destruct (HaIH N Θ0 nil β10 P κ Θ eq_refl a_decls__nil Hwf0 Hfδ0
                    HwfP HnfP Hdom Hinc Hwfth Hjoin3)
-      as [Θ1 [Ha Hopt']].
+      as [Θ1 [Ha [Hnew Hopt']]].
     exists (pskl_var_f β10), Θ1. split.
     { apply a_consis__flex_r; [ exact HnfP | exact Ha ]. }
+    split;
+      [ intros γ Hγ; destruct (Hnew γ Hγ) as [Hin | Hni];
+        [ left; simpl_env in Hin; exact Hin | right; exact Hni ] | ].
     intros κ1 Hid Hinc1.
     destruct (Hopt' κ1 Hid Hinc1) as [ζ [Hζ Hie]].
     exists ζ. split; [ exact Hζ | ]. split; [ exact Hie | ].
@@ -8462,6 +8635,7 @@ Proof.
     exists P, Θ0. split.
     { apply a_consis__ghost_r.
       apply inter_empty_pointwise. exact Hside. }
+    split; [ intros γ Hγ; left; exact Hγ | ].
     intros κ1 Hid Hinc1. exists κ.
     destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
     split; [ exact Hout | ]. split; [ exact Hfact | ].
@@ -8535,13 +8709,13 @@ Proof.
         unfold V_consis.
         pose proof (Vpskl_tophole_lt Θ κ P0'). lia. }
       destruct (IH _ Hlt) as [HcIH _].
-      destruct (HcIH F Δ1 Δ2 Θ0 P0' P κ Θ Ψ Qb eq_refl Hwf0 HwfP0' HwfP
+      destruct (HcIH N Δ1 Δ2 Θ0 P0' P κ Θ Ψ Qb eq_refl Hwf0 HwfP0' HwfP
                      Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hjoin Hrs' Hrp)
-        as [P1 [Θ1 [Hc Hopt']]].
+        as [P1 [Θ1 [Hc [Hnew Hopt']]]].
       exists P1, Θ1. split.
       { apply a_consis__univ_ghost_r;
           [ exact HgP | exact HnfP | exact Hc ]. }
-      exact Hopt'.
+      split; [ exact Hnew | exact Hopt' ].
     - (* P unguarded: fall through to the main dispatch. *)
       eapply (consis_complete_core Hjoin);
         try eassumption; try reflexivity.
@@ -8596,11 +8770,15 @@ Lemma consis_complete : forall Ψ Θ R Qb,
            ad_precise_f (Δ1 `union` Δ2) Θ (Δ1 `union` Δ2)
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) (bskl_to_pskl Qb)).
 Proof.
-  intros Ψ Θ R Qb Hj F Δ1 Δ2 Θ0 P0 P κ
+  intros Ψ Θ R Qb Hj Δ1 Δ2 Θ0 P0 P κ
     Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ HeqS Hrs Hrp.
   subst R.
   destruct (complete_mu (mu_consis Θ κ P0 P Θ0)) as [Hc _].
-  eapply Hc; try eassumption; reflexivity.
+  (* the avoid set is vacuous at the top: [N := ∅] *)
+  destruct (Hc empty Δ1 Δ2 Θ0 P0 P κ Θ Ψ Qb eq_refl Hwf0 HwfP0 HwfP Hrig
+              Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs Hrp)
+    as [P1 [Θ1 [Hcons [_ Hopt]]]].
+  exists P1, Θ1. split; [ exact Hcons | exact Hopt ].
 Qed.
 
 (* ===================================================================== *)

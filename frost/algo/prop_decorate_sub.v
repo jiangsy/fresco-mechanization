@@ -643,7 +643,7 @@ Proof.
   - (* flex_r : subject is [pskl_to_uskl P], with P assigned to α̂ *)
     rewrite uskl_to_pskl_pskl_to_uskl in HwfS.
     match goal with
-    | Hass : a_assign _ _ _ _ _ _ |- _ =>
+    | Hass : a_assign _ _ _ _ _ |- _ =>
         eapply ad_pat_consis_mono_no_all_syn;
           [ eapply (proj2 (a_assign_sound Hass ltac:(constructor) Hwf HwfS))
           | eapply (a_assign_preserves_wf Hass ltac:(constructor) Hwf HwfS)

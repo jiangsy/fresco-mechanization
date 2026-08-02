@@ -98,8 +98,9 @@ recently P6-Sv at the end of this file)}.
         ((γ ~ abind_flex_mono_def τ) ++ Θ0) ⊲ A ≈ᵘ B
           ⊣ ((γ ~ abind_flex_mono_def τ) ++ Θ1)
 
-  (plus the used-name set `F` — see the PROSE-COMPLETION entry below: the
-  cycle forces `F` through `a_unify` and `a_consis` as well).  So `a_unify`
+  (until 2026-08-03 this also carried a used-name set `F`, threaded through
+  the whole cycle — see the PROSE-COMPLETION entry below, now superseded).
+  So `a_unify`
   and `a_consis` are MUTUALLY inductive — a 2-WAY mutual, not the paper's
   3-way: the mech reads `Assign-Assign` as CONTINUING the assignment (see the
   note at `a_assign` in algo/def_extra.v), so `a_assign` stays BELOW the
@@ -475,21 +476,26 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   flex-above-free + domain bookkeeping are preserved for every protected
   Δ with `Δ ⊆ F ∪ dom Θ₀`, using Assign-SkipRigid's occurs condition and
   the positional fact that Δ-binders sit above all flexible entries.
-- ⭐ SUPERSEDED IN PART (2026-08-02).  `F` is a MECH-ONLY device: the paper
-  has no such index, it writes the walked entry back as `Θ₁,β̂` and relies on
-  the Barendregt convention.  The mechanization now states that convention
-  directly — each of the eight re-attaching rules of the walk carries
-  `β ∉ dom Θ₁`, of the entry it puts back — which is the same discipline
-  `a_sub_flex` already used, and `F`'s retirement is under way (DESIGN §4.3;
-  the residual blocker is soundness conjunct 5, not the freshness itself).
+- ⭐ SUPERSEDED (2026-08-02, executed 2026-08-03).  `F` was a MECH-ONLY
+  device: the paper has no such index, it writes the walked entry back as
+  `Θ₁,β̂` and relies on the Barendregt convention.  **`F` is now DELETED from
+  all three judgments.**  The mechanization states the convention directly —
+  each of the eight re-attaching rules of the walk carries `β ∉ dom Θ₁`, of
+  the entry it puts back — which is the same discipline `a_sub_flex` already
+  used (DESIGN §4.3).
   **Nothing here is a gap in the paper**: the premise is not a strengthening.
   `prop_swap.v` §13b proves (Qed, axiom-free) that a rule of this shape fires
   whenever a premise-free version would, with only the run's GENERATED names
   transposed — a derivation is finitely supported, so a fresh `γ` exists and
-  equivariance moves the run to it while fixing every input.  So the entry
-  above should be read as: the paper's "fresh β̄" needs SOME formal
-  completion, and the mechanization's current one is the paper's own
-  convention rather than an extra index.
+  equivariance moves the run to it while fixing every input.  So the two
+  entries above should be read as: the paper's "fresh β̄" needs SOME formal
+  completion, and the mechanization's is the paper's own convention rather
+  than an extra index.  The freshness obligation the index used to discharge
+  now sits where it costs nothing — as an avoid-set parameter `N` on the
+  three COMPLETENESS motives, completeness being the direction that chooses
+  the guessed names.  Soundness' matching coverage hypothesis is likewise
+  OUTPUT-relative (`Δ ∩ dom Θ₁ ⊆ dom Θ₀`), replacing the old
+  `Δ ⊆ F ∪ dom Θ₀`.
 
 ## FALSE — `thm:complete-consistency` optimality (parts 2/3): flex migration below term binders defeats the factoring
 

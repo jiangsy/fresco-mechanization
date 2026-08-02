@@ -8,14 +8,11 @@
       call's output as [(α ~ tvar) ++ Θ1], as [a_consis__forall_inh] et al
       demand.
 
-    - [a_assign_unify_consis_compat]: the judgments only READ the
-      used-name set [F] through freshness side conditions, so [F] may be
-      replaced by any [F'] whose new names avoid the output's domain
-      (Solve-M's guesses are the only names checked against [F], and they
-      end up in the output).  [Δ1]/[Δ2] are only read through set
-      predicates, so they transport along [=].  Needed to re-route the
-      walked name [α ∈ F] to its rename [β] at the SkipRigid crossing,
-      and to normalize the [rn_set] images at binder reassembly.
+    - [a_assign_unify_consis_delta_compat]: [Δ1]/[Δ2] are only read
+      through set predicates, so they transport along [=].  Needed to
+      normalize the [rn_set] images at binder reassembly.  (Until the
+      [F]-deletion this lemma also swapped the used-name index; see
+      DESIGN.md §4.3.)
 
     - L9 [a_assign_unify_consis_rename_tvar]: renaming a rigid mid entry
       [α] to a fresh [β] across a whole algorithmic run.  The key
@@ -24,8 +21,7 @@
       rule is impossible above [α] — the walk can only skip rigid
       binders until it CROSSES [α], and below the crossing [α ∉ ftv]
       of everything in sight (SkipRigid's own side condition), so the
-      sub-derivation is reused VERBATIM modulo the [F]-compat swap
-      [add α F ↦ add β F]. *)
+      sub-derivation is reused VERBATIM. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.

@@ -905,12 +905,11 @@ with a_consis : atoms -> atoms -> aenv -> pskl -> pskl -> pskl -> aenv -> Prop :
    bound-variable sets; the OUTPUTS [Q] and [Θ1] are not named, and must
    not be (the algorithm has not computed them when it picks α).
 
-   ⚠️ [F] is deliberately NOT in the avoid-set, though it is the used-name
-   set and "fresh" would naturally mean "∉ F".  Adding it REFUTES
-   [a_assign_unify_consis_compat] (prop_consis_rename.v): that lemma swaps
-   [F] for any [F'] whose atoms are old or miss the output, and such an [F']
-   may well contain this rule's opener — which is fresh, hence outside the
-   output.  Soundness' invariant conjunct, the one place that looked like it
+   HISTORY: while the judgments carried a used-name index [F] this avoid-set
+   deliberately EXCLUDED it — adding [F] refuted the [F]-swap compatibility
+   lemma, since [F] may contain a name that is fresh here and hence misses
+   the output.  [F] is gone (DESIGN.md §4.3) and the question with it.
+   Soundness' invariant conjunct, the one place that looked like it
    needed [α ∉ Δ], is discharged instead from [α ∉ dom Θ1], which the
    premise's own output well-formedness supplies.  [Θ1] needs
    no condition — an output payload can never mention the binder, because

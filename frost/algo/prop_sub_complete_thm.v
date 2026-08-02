@@ -806,12 +806,12 @@ Qed.
 (*  premise excludes the ghost.                                           *)
 (* ===================================================================== *)
 
-Lemma a_consis_hole_p0_output : forall F Δ1 Δ2 Θ0 P0 P P' Θ1,
+Lemma a_consis_hole_p0_output : forall Δ1 Δ2 Θ0 P0 P P' Θ1,
   a_consis Δ1 Δ2 Θ0 P0 P P' Θ1 ->
   P0 = pskl_hole ->
   P' = P.
 Proof.
-  intros F Δ1 Δ2 Θ0 P0 P P' Θ1 H; induction H; intros Heq;
+  intros Δ1 Δ2 Θ0 P0 P P' Θ1 H; induction H; intros Heq;
     try discriminate Heq.
   - (* __ghost : the subject is the ghost, the output is [P0] *) exact Heq.
   - (* __univ_ghost2 : [guarded_pskl □] is impossible *)
@@ -1076,7 +1076,7 @@ Lemma a_sub_complete_hole_p0_precision : forall Θ0 P Θ κ Q,
 Proof.
   intros Θ0 P Θ κ Q Hwf0 Hwfth HwfP Hinc Hconsis Hrs Hrp.
   (* 1. thm:complete-consistency at [(Θ0; □; P)] *)
-  destruct (a_consis_complete_thm empty Hwf0 (a_wf_pskl__hole Θ0 empty)
+  destruct (a_consis_complete_thm Hwf0 (a_wf_pskl__hole Θ0 empty)
               HwfP Hinc Hwfth Hconsis Hrs Hrp)
     as [P1 [Θ1 [Hrun Hopt]]].
   (* 2. at [P0 = □] the run's output IS the subject *)
@@ -1402,7 +1402,7 @@ Proof.
     destruct (skl_tyequiv_consis_transport Herase Hwfth
                 (fun x b Hb => Hb)) as [Hct _].
     exact (Hct _ _ H0). }
-  destruct (a_consis_complete_thm empty Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp)
+  destruct (a_consis_complete_thm Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp)
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_consis_sound_aux Hrun Hwf0 HwfP0 HwfP
               ltac:(intros α Hα; clear - Hα; fsetdec)
@@ -1589,7 +1589,7 @@ Proof.
     destruct (skl_tyequiv_refine_pskl_f_transport Herase1 Hwfth
                 (fun x b Hb => Hb)) as [Hrpt _].
     exact (Hrpt _ _ _ H0). }
-  destruct (a_consis_complete_thm empty Hwf0 HwfP0a HwfPa Hinc Hwfth Hc1
+  destruct (a_consis_complete_thm Hwf0 HwfP0a HwfPa Hinc Hwfth Hc1
               Hrs1 Hrp1)
     as [Q1' [Θ1 [Hrun1 Hopt1]]].
   (* the domain run's soundness: id-witness, wf, join at Θ1 *)
