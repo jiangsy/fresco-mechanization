@@ -193,6 +193,17 @@ Definition sub_flex_complete_concl
   (Θ0 Ξ : aenv) (α : atom) (P0 : pskl) (R' : uskl) (Ψ : atoms)
   (Θ : aenv) (κ : metasubst) (Q : bskl) : Prop :=
   a_decls Ξ ->                                  (* Ξ holds only flexible decls *)
+  (* …and every one of them is a P0-DEPENDENCY.  The consistency walk's
+     motive carries the same invariant ([assign_complete_at],
+     prop_consis_complete.v:2249) and this one used to lack it.  It is
+     supplied at [a_sub__flex_mono] (Ξ = ·) and preserved by every walk row —
+     [Flex-Depend] adds exactly a [β ∈ ftv P0], the others leave Ξ alone, and
+     [Flex-Assign]'s [P0[τ/β̂]] keeps every OTHER variable of [P0].  It is
+     load-bearing at [Flex-SkipRigid] and nowhere else: Ξ sits ABOVE the
+     skipped rigid β in the source, so without it a solution may send a
+     Ξ-flexible to β — and the rule re-attaches β at the TOP of the output,
+     where Θ1's flexibles are scoped BELOW it, so no ζ could reproduce it. *)
+  dom Ξ [<=] ftvar_in_pskl P0 ->
   a_wf_aenv (Ξ ++ Θ0) -> a_wf_aenv Θ ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
   a_flex_tvar (Ξ ++ Θ0) α ->
@@ -3337,14 +3348,20 @@ Lemma a_sub_flex_complete_depend : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
 Proof.
   intros n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q IH Hne Hin.
   unfold sub_flex_complete_concl in *.
-  intros HdeclsΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD Hrs HwfQ.
+  intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD Hrs
+         HwfQ.
   assert (Hdecls' : a_decls (Ξ ++ (β ~ abind_flex_mono)))
     by (apply a_decls_app;
         [ exact HdeclsΞ | apply (a_decls__cons β); apply a_decls__nil ]).
+  (* the invariant is exactly what this row RE-ESTABLISHES: β joins Ξ, and
+     the rule's own premise says β is a P0-dependency *)
+  assert (Hdom' : dom (Ξ ++ (β ~ abind_flex_mono)) [<=] ftvar_in_pskl P0)
+    by (simpl_env; clear - HdomΞ Hin; fsetdec).
+  simpl_env in Hdom'.
   specialize (IH (Ξ ++ (β ~ abind_flex_mono)) α P0 R' Ψ Θ κ Q).
   unfold sub_flex_complete_concl in IH.
   simpl_env in IH.
-  destruct (IH Hdecls' Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
+  destruct (IH Hdecls' Hdom' Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
               Hrs HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
   exists P1, Θ1. split.
@@ -3383,7 +3400,8 @@ Lemma a_sub_flex_complete_skip : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
 Proof.
   intros n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q IH Hne Hnin.
   unfold sub_flex_complete_concl in *.
-  intros HdeclsΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD Hrs HwfQ.
+  intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD Hrs
+         HwfQ.
   (* ---- 0. the stripped context, and β's absence from it ---- *)
   assert (Huq : uniq (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
     by (apply a_wf_aenv_uniq; exact Hwf).
@@ -3412,7 +3430,7 @@ Proof.
     by (apply Hlk; exact Hne).
   rewrite Heqα in Hslack. rewrite HeqP0 in Hrs.
   (* ---- 2. the IH at the stripped context ---- *)
-  destruct (IH Ξ α P0 R' Ψ Θ (κ1 ++ κ2) Q HdeclsΞ Hwf' Hwfth HwfP0'
+  destruct (IH Ξ α P0 R' Ψ Θ (κ1 ++ κ2) Q HdeclsΞ HdomΞ Hwf' Hwfth HwfP0'
               Hfα' HmodSK HmodTY Hincih Hslack HD Hrs HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_sub_flex_sound_thm Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
