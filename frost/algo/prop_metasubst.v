@@ -1605,11 +1605,11 @@ Proof.
   - pose proof (IHt α' Hα). clear - H; fsetdec.
 Qed.
 
-Lemma a_assign_subject_flex_local : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_subject_flex_local : forall Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_flex_tvar Θ0 α.
 Proof.
-  intros F Θ0 Ξ α P Θ1 H; induction H.
+  intros Θ0 Ξ α P Θ1 H; induction H.
   - left. unfold binds; simpl; left; reflexivity.
   - left. unfold binds; simpl; left; reflexivity.
   - exact H.

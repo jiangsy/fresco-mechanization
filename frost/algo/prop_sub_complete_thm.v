@@ -807,7 +807,7 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_consis_hole_p0_output : forall F Δ1 Δ2 Θ0 P0 P P' Θ1,
-  a_consis F Δ1 Δ2 Θ0 P0 P P' Θ1 ->
+  a_consis Δ1 Δ2 Θ0 P0 P P' Θ1 ->
   P0 = pskl_hole ->
   P' = P.
 Proof.

@@ -218,8 +218,8 @@ Qed.
 
 (** Consistency reflexivity instances (any Δ1/Δ2 — only ForallInh /
     Arrow / Rigid are used, none of which tests the Δs). *)
-Lemma consis_sigid_refl : forall F Δ1 Δ2 Θ,
-  a_consis F Δ1 Δ2 Θ (ptyp_to_pskl σ_id)
+Lemma consis_sigid_refl : forall Δ1 Δ2 Θ,
+  a_consis Δ1 Δ2 Θ (ptyp_to_pskl σ_id)
     (ptyp_to_pskl σ_id) (ptyp_to_pskl σ_id) Θ.
 Proof.
   intros. unfold σ_id; simpl.
@@ -228,8 +228,8 @@ Proof.
   eapply a_consis__arrow; apply a_consis__rigid; crush_binds.
 Qed.
 
-Lemma consis_sigauto_refl : forall F Δ1 Δ2 Θ,
-  a_consis F Δ1 Δ2 Θ (ptyp_to_pskl σ_auto)
+Lemma consis_sigauto_refl : forall Δ1 Δ2 Θ,
+  a_consis Δ1 Δ2 Θ (ptyp_to_pskl σ_auto)
     (ptyp_to_pskl σ_auto) (ptyp_to_pskl σ_auto) Θ.
 Proof.
   intros. unfold σ_auto; simpl.
@@ -238,8 +238,8 @@ Qed.
 
 (** [σ_id] against the guessed input skeleton [∀◇(□→□)]
     (ForallSyn, then the ghosts absorb the rigid binder). *)
-Lemma consis_sigid_tophole : forall F Δ2 Θ,
-  a_consis F empty Δ2 Θ (pskl_tophole (pskl_arrow pskl_hole pskl_hole))
+Lemma consis_sigid_tophole : forall Δ2 Θ,
+  a_consis empty Δ2 Θ (pskl_tophole (pskl_arrow pskl_hole pskl_hole))
     (ptyp_to_pskl σ_id) (ptyp_to_pskl σ_id) Θ.
 Proof.
   intros. unfold σ_id; simpl.

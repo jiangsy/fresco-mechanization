@@ -2094,12 +2094,12 @@ Proof.
     unfold binds; apply in_or_app; right; exact Hb.
 Qed.
 
-Lemma a_unify_subjects_flex : forall F Θ0 α β Θ1,
+Lemma a_unify_subjects_flex : forall Θ0 α β Θ1,
   a_wf_aenv Θ0 ->
-  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
   a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β.
 Proof.
-  intros F Θ0 α β Θ1 Hwf Hu; induction Hu.
+  intros Θ0 α β Θ1 Hwf Hu; induction Hu.
   - (* flex_id : the rule's premise IS the flexibility (defined or not) *)
     split; assumption.
   - (* flex_l : (α~flex)++Θ0 *)
@@ -2173,8 +2173,8 @@ Qed.
     Assign-Depend gets SIMPLER: the suffix now grows at the tail, so the
     context is already associated the right way and [a_flex_tvar_permute_mid]
     is no longer needed — plain [app_assoc] does it. *)
-Lemma a_assign_subject_flex : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_subject_flex : forall Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_flex_tvar (Ξ ++ Θ0) α.
 Proof.
   intros * H; induction H.
@@ -2624,23 +2624,23 @@ Definition assign_sound_concl (F : atoms) (Θ0 Ξ : aenv) (α : atom)
   assign_sound_post F Θ0 Ξ α P Θ1.
 
 Theorem a_assign_unify_consis_sound :
-  (forall F Θ0 Ξ α P Θ1,
-     Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 -> assign_sound_concl F Θ0 Ξ α P Θ1) /\
-  (forall F Θ0 α β Θ1,
-     Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 -> unify_sound_concl F Θ0 α β Θ1) /\
-  (forall F Δ1 Δ2 Θ0 P0 P P3 Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ P3 ⊣ Θ1 ->
+  (forall Θ0 Ξ α P Θ1,
+     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 -> assign_sound_concl F Θ0 Ξ α P Θ1) /\
+  (forall Θ0 α β Θ1,
+     Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 -> unify_sound_concl F Θ0 α β Θ1) /\
+  (forall Δ1 Δ2 Θ0 P0 P P3 Θ1,
+     Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P3 ⊣ Θ1 ->
      consis_sound_concl F Δ1 Δ2 Θ0 P0 P P3 Θ1).
 Proof.
   apply (a_assign_unify_consis_mutind
-           (fun F Θ0 Ξ α P Θ1 _ => assign_sound_concl F Θ0 Ξ α P Θ1)
-           (fun F Θ0 α β Θ1 _ => unify_sound_concl F Θ0 α β Θ1)
-           (fun F Δ1 Δ2 Θ0 P0 P P3 Θ1 _ =>
+           (fun Θ0 Ξ α P Θ1 _ => assign_sound_concl F Θ0 Ξ α P Θ1)
+           (fun Θ0 α β Θ1 _ => unify_sound_concl F Θ0 α β Θ1)
+           (fun Δ1 Δ2 Θ0 P0 P P3 Θ1 _ =>
               consis_sound_concl F Δ1 Δ2 Θ0 P0 P P3 Θ1));
     unfold assign_sound_concl, unify_sound_concl, consis_sound_concl,
            assign_sound_post, unify_sound_post, consis_sound_post.
   - (* Assign-UnivGhost-Id *)
-    intros F Θ0 α Hdecl Hwf HwfP.
+    intros Θ0 α Hdecl Hwf HwfP.
     split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ simpl; clear; fsetdec | ].
@@ -2656,7 +2656,7 @@ Proof.
     right; left. unfold binds; left; reflexivity.
 
   - (* Assign-SolveM *)
-    intros F Θ0 Ξ α P βs τ Hαn Hg Hmτ Huβs Hfr Hdecl Hwf HwfP.
+    intros Θ0 Ξ α P βs τ Hαn Hg Hmτ Huβs Hfr Hdecl Hwf HwfP.
     assert (Hvis : forall α0, α0 `in` ftvar_in_pskl P ->
                    a_binds_tvar α0 (Ξ ++ (α ~ abind_flex_mono) ++ Θ0)).
     { intros α0 Hα0. destruct (a_wf_pskl_ftv_tvarish HwfP Hα0) as [HΔ | Ht];
@@ -2804,7 +2804,7 @@ Proof.
 
   - (* Assign-Assign : the premise is a CONSISTENCY derivation, so the join
        [P3] must be eliminated — see the two subsidiary inductions above. *)
-    intros F Θ0 Θ1 Ξ α β τ P P3 Hfl Hbar Hc IHc Hdecl Hwf HwfP.
+    intros Θ0 Θ1 Ξ α β τ P P3 Hfl Hbar Hc IHc Hdecl Hwf HwfP.
     assert (Hτ : a_wf_ptyp Θ0 τ /\ mono_ptyp τ)
       by (eapply a_wf_aenv_mid_def_inv; eauto).
     destruct Hτ as [Hτwf Hτm].
@@ -3026,7 +3026,7 @@ Proof.
 
   - (* Assign-Depend : the pending suffix grows at the TAIL, so the IH's
        context is LITERALLY the conclusion's, re-associated. *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hβin Ha IHa Hdecl Hwf HwfP.
+    intros Θ0 Θ1 Ξ α β P Hne Hβin Ha IHa Hdecl Hwf HwfP.
     assert (Hdecl' : a_decls (Ξ ++ (β ~ abind_flex_mono)))
       by (apply a_decls_app;
           [ exact Hdecl | apply (a_decls__cons β); apply a_decls__nil ]).
@@ -3069,7 +3069,7 @@ Proof.
     exact Hcons.
 
   - (* Assign-Skip *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hβn Hbar Ha IHa Hdecl Hwf HwfP.
+    intros Θ0 Θ1 Ξ α β P Hne Hβn Hbar Ha IHa Hdecl Hwf HwfP.
     assert (Huniq : uniq (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hβd : β `notin` dom (Ξ ++ Θ0))
@@ -3140,7 +3140,7 @@ Proof.
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipRigid *)
-    intros F Θ0 Θ1 Ξ α β P Hβn Hbar Ha IHa Hdecl Hwf HwfP.
+    intros Θ0 Θ1 Ξ α β P Hβn Hbar Ha IHa Hdecl Hwf HwfP.
     assert (Huniq : uniq (Ξ ++ (β ~ abind_tvar) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hβd : β `notin` dom (Ξ ++ Θ0))
@@ -3198,7 +3198,7 @@ Proof.
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipTmVar (typ) *)
-    intros F Θ0 Θ1 Ξ α x P3 P Hbar Ha IHa Hdecl Hwf HwfP.
+    intros Θ0 Θ1 Ξ α x P3 P Hbar Ha IHa Hdecl Hwf HwfP.
     assert (Huniq : uniq (Ξ ++ (x ~ abind_var_typ P3) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hxd : x `notin` dom (Ξ ++ Θ0))
@@ -3287,7 +3287,7 @@ Proof.
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipTmVar (skl) *)
-    intros F Θ0 Θ1 Ξ α x P3 P Hbar Ha IHa Hdecl Hwf HwfP.
+    intros Θ0 Θ1 Ξ α x P3 P Hbar Ha IHa Hdecl Hwf HwfP.
     assert (Huniq : uniq (Ξ ++ (x ~ abind_var_skl P3) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
     assert (Hxd : x `notin` dom (Ξ ++ Θ0))
@@ -3374,7 +3374,7 @@ Proof.
         clear - IH3. fsetdec. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
   - (* U-Flex-Flex-Id *)
-    intros F Θ0 α Hb Hwf.
+    intros Θ0 α Hb Hwf.
     split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
@@ -3385,7 +3385,7 @@ Proof.
       intros α0 _ Hα0; exact Hα0. }
     apply a_tyequiv__refl. constructor.
   - (* U-Flex-Flex-L : α̂ := β̂ *)
-    intros F Θ0 α β Hne Hfβ Hwf.
+    intros Θ0 α β Hne Hfβ Hwf.
     assert (Hαd : α `notin` dom Θ0) by (inversion Hwf; auto).
     assert (Hwf0 : a_wf_aenv Θ0) by (inversion Hwf; auto).
     assert (Hbβ : a_binds_tvar β Θ0)
@@ -3434,7 +3434,7 @@ Proof.
       - intros α0 Hα0Δ HXd. simpl in *. exact HXd. }
     apply a_tyequiv__flex_def. unfold binds; left; reflexivity.
   - (* U-Flex-Flex-R : β̂ := α̂ *)
-    intros F Θ0 α β Hne Hfα Hwf.
+    intros Θ0 α β Hne Hfα Hwf.
     assert (Hβd : β `notin` dom Θ0) by (inversion Hwf; auto).
     assert (Hwf0 : a_wf_aenv Θ0) by (inversion Hwf; auto).
     assert (Hbα : a_binds_tvar α Θ0)
@@ -3484,7 +3484,7 @@ Proof.
     apply a_tyequiv__sym.
     apply a_tyequiv__flex_def. unfold binds; left; reflexivity.
   - (* U-Flex-Flex-Assign : the consistency premise, through the BRIDGE *)
-    intros F Θ0 Θ1 α1 τ α β P3 Hfα Hfβ Hbar Hcons IHcons Hwf.
+    intros Θ0 Θ1 α1 τ α β P3 Hfα Hfβ Hbar Hcons IHcons Hwf.
     inversion Hwf as [ | | γx τx Θx Hγd Hwτ Hmτ Hwf0 | | | ]; subst.
     (* the substituted subjects are visible monotypes over Θ0 *)
     assert (Hτvis : forall α0, α0 `in` ftvar_in_ptyp τ -> a_binds_tvar α0 Θ0)
@@ -3602,7 +3602,7 @@ Proof.
     apply a_tyequiv__sym.
     eapply a_tyequiv_subst_def; eauto. constructor.
   - (* U-Flex-Flex-Skip *)
-    intros F Θ0 Θ1 α1 α β Hnα Hnβ Hbar Hu IHu Hwf.
+    intros Θ0 Θ1 α1 α β Hnα Hnβ Hbar Hu IHu Hwf.
     inversion Hwf as [ | γx Θx Hγd Hwf0 | | | | ]; subst.
     destruct (IHu Hwf0) as [Hle [Hwf1 [Hdom [Hnew [Hinv Heq1]]]]].
     assert (Hγd1 : α1 `notin` dom Θ1).
@@ -3644,7 +3644,7 @@ Proof.
         simpl. clear - HX0. fsetdec. }
     apply a_tyequiv_weaken_cons. exact Heq1.
   - (* U-Flex-Flex-Skip' *)
-    intros F Θ0 Θ1 c b α β Hb Hbar Hu IHu Hwf.
+    intros Θ0 Θ1 c b α β Hb Hbar Hu IHu Hwf.
     assert (Hwf0c : a_wf_aenv Θ0 /\ c `notin` dom Θ0).
     { destruct Hb as [-> | [[Qb ->] | [Qb ->]]].
       - apply a_wf_aenv_tvar_inv in Hwf; tauto.
@@ -3709,7 +3709,7 @@ Proof.
         simpl. clear - HX0. fsetdec. }
     apply a_tyequiv_weaken_cons. exact Heq1.
   - (* C-Ghost *)
-    intros F Δ1 Δ2 Θ0 P0 Hint Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 P0 Hint Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
@@ -3727,7 +3727,7 @@ Proof.
         eapply a_wf_pskl_delta_mono; [ exact HwfP0 | fsetdec ].
     + apply ad_refine_pskl_f__hole; [ exact Hint | exact HwfP0 ].
   - (* C-Unit *)
-    intros F Δ1 Δ2 Θ0 Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
@@ -3742,7 +3742,7 @@ Proof.
              | apply ad_refine_syn_f__unit ].
     + apply ad_refine_pskl_f__unit.
   - (* C-Rigid *)
-    intros F Δ1 Δ2 Θ0 α Hbind Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 α Hbind Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
@@ -3758,7 +3758,7 @@ Proof.
       * apply ad_refine_syn_f__var. right; left; exact Hbind.
     + apply ad_refine_pskl_f__var. right; left; exact Hbind.
   - (* C-Arrow *)
-    intros F Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2
+    intros Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2
            Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | Θa Δa P0a' P0b' HwfP0a HwfP0b | | | ]; subst.
@@ -3821,7 +3821,7 @@ Proof.
        the rule's own side condition, [α ∉ dom Θ1] from the premise's output
        well-formedness, and [α ∉ ftv P3] for free, since the conclusion's
        output is [close α Q]. *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfrα Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfrα Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - Hfrα; fsetdec).
     assert (HαP : α `notin` ftvar_in_pskl P) by (clear - Hfrα; fsetdec).
@@ -3985,7 +3985,7 @@ Proof.
                ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
   - (* C-ForallSyn : ∀α.P ∼ ∀α.P3 against input ∀◇P0 *)
     (* cluster 4: exists-fresh opener — see C-ForallInh for the pattern *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfrα Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfrα Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
     assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - Hfrα; fsetdec).
@@ -4145,7 +4145,7 @@ Proof.
       exact (ad_refine_pskl_f_strip nil Θ1 Hrpα
                ltac:(clear; fsetdec) ltac:(clear; fsetdec)).
   - (* C-UnivGhost : ∀◇P ∼ ∀◇P3 against input ∀◇P0 *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P3 Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P3 Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' ]; subst.
     inversion HwfP as [ | | | | | Θb Δb P' Hg' Hwf' ]; subst.
@@ -4172,7 +4172,7 @@ Proof.
         [ exact Hwf1 | exact Hrp | exact Hg' ].
   - (* C-UnivGhost1 : ∀◇P ∼ ∀α.P3 against input ∀α.P0 *)
     (* cluster 4: exists-fresh opener — see C-ForallInh for the pattern *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfrα Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfrα Hprem0 IH Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0, HwfP.
     inversion HwfP as [ | | | | | Θc Δc Pc Hg' Hwf' Heqc ]; subst.
     assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - Hfrα; fsetdec).
@@ -4334,7 +4334,7 @@ Proof.
         | simpl; exact Hα1 | clear - Fr; fsetdec | clear - Hα0; fsetdec
         | exact Hdefsα ].
   - (* C-UnivGhost2 *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P3 Hg Hnf Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P3 Hg Hnf Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP.
     inversion HwfP as [ | | | | | Θb Δb P' Hg' Hwf' ]; subst.
     destruct (IHc Hwf) as
@@ -4352,7 +4352,7 @@ Proof.
         [ simpl; apply ad_pat_consis__tophole_drop; exact Hcons | exact Hrs ].
     + simpl. apply ad_refine_pskl_f__tophole_remove. exact Hrp.
   - (* C-Flex : the mutual case — subjects equated by unification *)
-    intros F Δ1 Δ2 Θ0 Θ1 α β Hu IHu Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 α β Hu IHu Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     destruct (IHu Hwf) as [Hle [Hwf1 [Hdom [Hnew [Hinv Heq1]]]]].
     destruct (a_unify_subjects_flex Hwf Hu) as [Hfα Hfβ].
     assert (HαnΔ : α `notin` (Δ1 `union` Δ2)).
@@ -4403,7 +4403,7 @@ Proof.
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
   - (* C-FlexL : assign α̂ := P0 (the input skeleton).  MUTUAL case: the
        [a_assign] premise is handled by the bundle's ASSIGN motive. *)
-    intros F Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     destruct (IHassign a_decls__nil Hwf HwfP0)
       as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
     assert (Hfα : a_flex_tvar Θ0 α)
@@ -4458,7 +4458,7 @@ Proof.
     + apply ad_refine_pskl_f__var. right. exact Hbα1.
   - (* C-FlexR : assign α̂ := P (the subject skeleton), output var α̂.
        MUTUAL case: the [a_assign] premise is the bundle's ASSIGN motive. *)
-    intros F Δ1 Δ2 Θ0 Θ1 α P Hnf Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     destruct (IHassign a_decls__nil Hwf HwfP)
       as [Hle [Hwf1 [Hdom [Hnew [Hinv Hcons]]]]].
     assert (Hfα : a_flex_tvar Θ0 α)
@@ -4515,7 +4515,7 @@ Proof.
       { simpl. clear - HαnΔ. fsetdec. }
       { intros α1 τ Hb. eapply (Hnfd1 α1 τ) in Hb. clear - Hb. fsetdec. }
   - (* C-GhostR *)
-    intros F Δ1 Δ2 Θ0 P Hint Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 P Hint Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ].
     split; [ clear; fsetdec | ].
@@ -4541,7 +4541,7 @@ Proof.
     + apply ad_refine_pskl_f_refl.
       eapply a_wf_pskl_delta_mono; [ exact HwfP | fsetdec ].
   - (* C-UnivGhostR *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P3 Hg Hnf Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P3 Hg Hnf Hc IHc Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     simpl in HwfP0.
     inversion HwfP0 as [ | | | | | Θa Δa P0' Hg0 Hwf0' ]; subst.
     destruct (IHc Hwf) as
@@ -4571,8 +4571,8 @@ Qed.
 (** Soundness of assignment (thm:sound-consistency part 3):
     [Θ₀ | Ξ ⊲ α̂ ≔ P ⊣ Θ₁] gives [(Ξ ++ Θ₀) ⊴ Θ₁] and, declaratively, the
     assigned skeleton is consistent with the variable in [Θ₁]. *)
-Lemma a_assign_sound : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_sound : forall Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
@@ -4580,41 +4580,41 @@ Lemma a_assign_sound : forall F Θ0 Ξ α P Θ1,
   ad_pat_consis empty Θ1 (pskl_to_uskl P) (bskl_var_f α).
 Proof.
   intros * Ha Hdecl Hwf HwfP.
-  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ Ha Hdecl Hwf HwfP)
     as [Hle [_ [_ [_ [_ Hcons]]]]].
   split; assumption.
 Qed.
 
 (** [a_assign] preserves context well-formedness. *)
-Lemma a_assign_preserves_wf : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_preserves_wf : forall Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
   a_wf_aenv Θ1.
 Proof.
   intros * Ha Hdecl Hwf HwfP.
-  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ Ha Hdecl Hwf HwfP)
     as [_ [Hwf1 _]]. exact Hwf1.
 Qed.
 
 (** Assignment never drops an entry: the domain only grows. *)
-Lemma a_assign_dom_mono : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_dom_mono : forall Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
   dom (Ξ ++ Θ0) [<=] dom Θ1.
 Proof.
   intros * Ha Hdecl Hwf HwfP.
-  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ Ha Hdecl Hwf HwfP)
     as [_ [_ [Hdom _]]]. exact Hdom.
 Qed.
 
 (** Every variable in an assignment's output is either already present or
     freshly generated (hence outside the used-name set [F]). *)
-Lemma a_assign_new_avoids_F : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_new_avoids_F : forall Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
@@ -4622,13 +4622,13 @@ Lemma a_assign_new_avoids_F : forall F Θ0 Ξ α P Θ1,
   α1 `in` dom (Ξ ++ Θ0) \/ α1 `notin` F.
 Proof.
   intros * Ha Hdecl Hwf HwfP.
-  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ Ha Hdecl Hwf HwfP)
     as [_ [_ [_ [Hnew _]]]]. exact Hnew.
 Qed.
 
 (** Contrapositive: a name in [F] and fresh from the input stays fresh. *)
-Corollary a_assign_notin : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Corollary a_assign_notin : forall Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
@@ -4639,8 +4639,8 @@ Proof.
 Qed.
 
 (** Preservation of the problem invariants by assignment, at any protected Δ. *)
-Lemma a_assign_preserves_inv : forall F Θ0 Ξ α P Θ1 Δ,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_preserves_inv : forall Θ0 Ξ α P Θ1 Δ,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
@@ -4654,15 +4654,15 @@ Lemma a_assign_preserves_inv : forall F Θ0 Ξ α P Θ1 Δ,
   (forall α0, α0 `in` Δ -> α0 `in` dom Θ1 -> α0 `in` (dom Ξ `union` dom Θ0)).
 Proof.
   intros * Ha Hdecl Hwf HwfP.
-  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ _ Ha Hdecl Hwf HwfP)
+  destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ Ha Hdecl Hwf HwfP)
     as [_ [_ [_ [_ [Hinv _]]]]]. apply (Hinv Δ).
 Qed.
 
 (** The subject of an assignment is bound (as a flexible or defined variable)
     in the output context.  NO induction: the increase conjunct transports the
     input flexibility of the subject ([a_assign_subject_flex]) forward. *)
-Lemma a_assign_subject_binds : forall F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_subject_binds : forall Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_decls Ξ ->
   a_wf_aenv (Ξ ++ Θ0) ->
   (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P ->
@@ -4677,34 +4677,34 @@ Qed.
 
 
 (** Part 2, packaged (thm:sound-consistency part 2, paper reading). *)
-Corollary a_unify_sound : forall F Θ0 α β Θ1,
-  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+Corollary a_unify_sound : forall Θ0 α β Θ1,
+  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⊴ Θ1 /\ a_wf_aenv Θ1 /\ (Θ1 ⊢ (ptyp_var_f α) ≡ᵗ (ptyp_var_f β)).
 Proof.
   intros * Hu Hwf.
-  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ Hu Hwf)
+  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ Hu Hwf)
     as [Hle [Hwf1 [_ [_ [_ Heq]]]]]; auto.
 Qed.
 
 (** The walk's Barendregt output premise, for unification: a name that is
     in the used-name set and fresh for the input cannot reappear in the
     output.  Twin of [a_assign_notin]; conjunct 4 is what makes it true. *)
-Corollary a_unify_notin : forall F Θ0 α β Θ1,
-  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+Corollary a_unify_notin : forall Θ0 α β Θ1,
+  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   forall γ, γ `in` F -> γ `notin` dom Θ0 -> γ `notin` dom Θ1.
 Proof.
   intros * Hu Hwf γ HγF Hγd Hin.
-  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ Hu Hwf)
+  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ Hu Hwf)
     as [_ [_ [_ [Hnew _]]]].
   destruct (Hnew γ Hin) as [Hd | HF]; auto.
 Qed.
 
 (** Same, for consistency — the shape [a_assign__assign] and
     [a_unify__flex_assign] need, their premise being a consistency run. *)
-Corollary a_consis_notin : forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+Corollary a_consis_notin : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P ->
@@ -4714,7 +4714,7 @@ Corollary a_consis_notin : forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
   forall γ, γ `in` F -> γ `notin` dom Θ0 -> γ `notin` dom Θ1.
 Proof.
   intros * Hc Hwf HwfP0 HwfP Hrig Hnfd Hfaf γ HγF Hγd Hin.
-  destruct (proj2 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ _ _ _ Hc
+  destruct (proj2 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ _ _ Hc
               Hwf HwfP0 HwfP Hrig Hnfd Hfaf)
     as [_ [_ [_ [Hnew _]]]].
   destruct (Hnew γ Hin) as [Hd | HF]; auto.
@@ -4722,8 +4722,8 @@ Qed.
 
 (** Preservation of the part-1 problem invariants by unification, at any
     protected Δ (the shape [a_consistag_sound_aux]'s Flex case needs). *)
-Corollary a_unify_preserves_inv : forall F Θ0 α β Θ1 Δ,
-  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+Corollary a_unify_preserves_inv : forall Θ0 α β Θ1 Δ,
+  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
   a_wf_aenv Θ0 ->
   no_flex_dep Δ Θ0 ->
   flex_above_free Δ Θ0 ->
@@ -4731,7 +4731,7 @@ Corollary a_unify_preserves_inv : forall F Θ0 α β Θ1 Δ,
   no_flex_dep Δ Θ1 /\ flex_above_free Δ Θ1.
 Proof.
   intros * Hu Hwf Hnd Hfa Hcov.
-  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ Hu Hwf)
+  destruct (proj1 (proj2 a_assign_unify_consis_sound) _ _ _ _ Hu Hwf)
     as [_ [_ [_ [_ [Hinv _]]]]].
   destruct (Hinv Δ Hnd Hfa Hcov) as [Hnd1 [Hfa1 _]]; auto.
 Qed.

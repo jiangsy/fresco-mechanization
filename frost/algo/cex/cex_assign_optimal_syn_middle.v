@@ -146,10 +146,10 @@ Definition Th : aenv :=
   (y ~ abind_var_typ ptyp_unit) ++ nil.
 
 (* ------------------------------------------------------------------ *)
-(*  1. The algorithm's run:  Θ₀ ⊲[∅][·] α̂ ≔ P ⊣ Θ₁  (unchanged rules).  *)
+(*  1. The algorithm's run:  Θ₀ ⊲[·] α̂ ≔ P ⊣ Θ₁  (unchanged rules).  *)
 (* ------------------------------------------------------------------ *)
 
-Lemma cex_run : Th0 ⊲[ empty ][ nil ] alpha ≔ Pc ⊣ Th1.
+Lemma cex_run : Th0 ⊲[ nil ] alpha ≔ Pc ⊣ Th1.
 Proof.
   unfold Th0, Th1.
   (* each re-attaching row now carries the Barendregt output premise *)
@@ -160,7 +160,7 @@ Proof.
   simpl. apply a_assign__skip_tm_var;
     [ simpl; clear - Hd5 Hd8; fsetdec | ].
   change (((alpha ~ abind_flex_mono) ++ nil)
-            ⊲[ add y (add c empty) ][ (α ~ abind_flex_mono) ] alpha ≔ Pc
+            ⊲[ (α ~ abind_flex_mono) ] alpha ≔ Pc
             ⊣ ((alpha ~ abind_flex_mono_def tauP) ++ nil ++ (α ~ abind_flex_mono) ++ nil)).
   apply a_assign__solve_m.
   - unfold Pc; simpl. clear - Hd6. fsetdec.
@@ -358,7 +358,7 @@ Qed.
 (* ------------------------------------------------------------------ *)
 
 Theorem cex_syn_middle_optimality_false :
-  Th0 ⊲[ empty ][ nil ] alpha ≔ Pc ⊣ Th1 /\
+  Th0 ⊲[ nil ] alpha ≔ Pc ⊣ Th1 /\
   a_inc_syn (nil ++ Th0) th Th /\
   a_wf_aenv Th /\
   (empty ⨟ Th ⊢ₛᵃ (pskl_to_uskl (msubst_pskl th Pc))

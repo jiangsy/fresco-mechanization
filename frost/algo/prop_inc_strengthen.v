@@ -110,28 +110,28 @@ Proof.
 Qed.
 
 Lemma a_assign_unify_consis_flex_preserve :
-  (forall F Θ0 Ξ α P Θ1,
-     Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+  (forall Θ0 Ξ α P Θ1,
+     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
      forall α1, a_flex_tvar (Ξ ++ Θ0) α1 -> a_flex_tvar Θ1 α1) /\
-  (forall F Θ0 α β Θ1,
-     Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+  (forall Θ0 α β Θ1,
+     Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
      forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1) /\
-  (forall F Δ1 Δ2 Θ0 P0 P P' Θ1,
-     Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
+  (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
+     Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 ->
      forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1).
 Proof.
   apply (a_assign_unify_consis_mutind
-           (fun F Θ0 Ξ α P Θ1 _ =>
+           (fun Θ0 Ξ α P Θ1 _ =>
               forall α1, a_flex_tvar (Ξ ++ Θ0) α1 -> a_flex_tvar Θ1 α1)
-           (fun F Θ0 α β Θ1 _ =>
+           (fun Θ0 α β Θ1 _ =>
               forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1)
-           (fun F Δ1 Δ2 Θ0 P0 P P' Θ1 _ =>
+           (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ =>
               forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1)).
   (* ---------- a_assign ---------- *)
   - (* univ_ghost_id : identity *)
-    intros F Θ0 α α1 Hα1. simpl_env in Hα1. exact Hα1.
+    intros Θ0 α α1 Hα1. simpl_env in Hα1. exact Hα1.
   - (* solve_m : Ξ ++ (α̂) ++ Θ0  →  (α̂≔τ) ++ β̄ ++ Ξ ++ Θ0 *)
-    intros F Θ0 Ξ α P βs τ Hαn Hg Hm Hu Hfr α1 Hα1.
+    intros Θ0 Ξ α P βs τ Hαn Hg Hm Hu Hfr α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]].
     + apply a_flex_tvar_alt; exists b; split; [ exact Hs | ].
@@ -139,7 +139,7 @@ Proof.
       apply in_or_app; right. apply in_or_app. apply in_app_or in Hb. exact Hb.
     + subst. right; exists τ. unfold binds; left; reflexivity.
   - (* assign : Ξ ++ (β̂≔τ) ++ Θ0  →  (β̂≔τ) ++ Θ1, premise Ξ ++ Θ0 → Θ1 *)
-    intros F Θ0 Θ1 Ξ α β τ P P' Hfα Hβd Hc IH α1 Hα1.
+    intros Θ0 Θ1 Ξ α β τ P P' Hfα Hβd Hc IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]].
     + assert (Hγ' : a_flex_tvar Θ1 α1)
@@ -149,10 +149,10 @@ Proof.
       unfold binds in *; simpl; right; exact Hb'.
     + subst. right; exists τ. unfold binds; left; reflexivity.
   - (* depend : reassociate *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hβ Ha IH α1 Hα1.
+    intros Θ0 Θ1 Ξ α β P Hne Hβ Ha IH α1 Hα1.
     apply IH. simpl_env in *. exact Hα1.
   - (* skip : Ξ ++ (β̂) ++ Θ0  →  (β̂) ++ Θ1 *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hβn Hβd Ha IH α1 Hα1.
+    intros Θ0 Θ1 Ξ α β P Hne Hβn Hβd Ha IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]].
     + assert (Hγ' : a_flex_tvar Θ1 α1)
@@ -162,7 +162,7 @@ Proof.
       unfold binds in *; simpl; right; exact Hb'.
     + subst. left. unfold binds; left; reflexivity.
   - (* skip_rigid : mid is rigid, kind mismatch *)
-    intros F Θ0 Θ1 Ξ α β P Hβn Hβd Ha IH α1 Hα1.
+    intros Θ0 Θ1 Ξ α β P Hβn Hβd Ha IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]];
       [ | subst; inversion Hs ].
@@ -172,7 +172,7 @@ Proof.
     apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
     unfold binds in *; simpl; right; exact Hb'.
   - (* skip_tm_var *)
-    intros F Θ0 Θ1 Ξ α x P' P Hxd Ha IH α1 Hα1.
+    intros Θ0 Θ1 Ξ α x P' P Hxd Ha IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]];
       [ | subst; inversion Hs ].
@@ -182,7 +182,7 @@ Proof.
     apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
     unfold binds in *; simpl; right; exact Hb'.
   - (* skip_tm_skl *)
-    intros F Θ0 Θ1 Ξ α x P' P Hxd Ha IH α1 Hα1.
+    intros Θ0 Θ1 Ξ α x P' P Hxd Ha IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     apply binds_split_mid in Hb; destruct Hb as [Hb | [Heqγ Heqb]];
       [ | subst; inversion Hs ].
@@ -193,23 +193,23 @@ Proof.
     unfold binds in *; simpl; right; exact Hb'.
   (* ---------- a_unify ---------- *)
   - (* flex_id : identity *)
-    intros F Θ0 α Hfα α1 Hα1. exact Hα1.
+    intros Θ0 α Hfα α1 Hα1. exact Hα1.
   - (* flex_l : (α̂) ++ Θ0 → (α̂≔β) ++ Θ0 *)
-    intros F Θ0 α β Hne Hfβ α1 Hα1.
+    intros Θ0 α β Hne Hfβ α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'].
     + subst. right; eexists. unfold binds; left; reflexivity.
     + apply a_flex_tvar_alt; exists b; split; [ exact Hs | ].
       unfold binds in *; simpl; right; exact Hb'.
   - (* flex_r : symmetric *)
-    intros F Θ0 α β Hne Hfα α1 Hα1.
+    intros Θ0 α β Hne Hfα α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'].
     + subst. right; eexists. unfold binds; left; reflexivity.
     + apply a_flex_tvar_alt; exists b; split; [ exact Hs | ].
       unfold binds in *; simpl; right; exact Hb'.
   - (* flex_assign : (α1̂≔τ) ++ Θ0 → (α1̂≔τ) ++ Θ1, consis premise Θ0 → Θ1 *)
-    intros F Θ0 Θ1 α10 τ α β P' Hfα Hfβ Hα1d Hc IH α1 Hα1.
+    intros Θ0 Θ1 α10 τ α β P' Hfα Hfβ Hα1d Hc IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'].
     + subst. right; eexists. unfold binds; left; reflexivity.
@@ -219,7 +219,7 @@ Proof.
       apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
       unfold binds in *; simpl; right; exact Hb''.
   - (* flex_skip : (α1̂) ++ Θ0 → (α1̂) ++ Θ1 *)
-    intros F Θ0 Θ1 α10 α β Hα1α Hα1β Hα1d Hu IH α1 Hα1.
+    intros Θ0 Θ1 α10 α β Hα1α Hα1β Hα1d Hu IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b [Hs Hb]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqγ Heqb] | Hb'].
     + subst. left. unfold binds; left; reflexivity.
@@ -229,7 +229,7 @@ Proof.
       apply a_flex_tvar_alt; exists b'; split; [ exact Hs' | ].
       unfold binds in *; simpl; right; exact Hb''.
   - (* skip_other : (c~b) ++ Θ0 → (c~b) ++ Θ1, b non-flex *)
-    intros F Θ0 Θ1 c b α β Hbshape Hcd Hu IH α1 Hα1.
+    intros Θ0 Θ1 c b α β Hbshape Hcd Hu IH α1 Hα1.
     apply a_flex_tvar_alt in Hα1; destruct Hα1 as [b0 [Hs Hb0]].
     destruct (binds_cons_1 _ _ _ _ _ _ Hb0) as [[Heqγ Heqb] | Hb'].
     + subst. exfalso.
@@ -244,12 +244,12 @@ Proof.
   - (* unit : identity *) intros; auto.
   - (* rigid : identity *) intros; auto.
   - (* arrow : compose the two IHs *)
-    intros F Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2 α1 Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2 α1 Hα1.
     apply IH2, IH1, Hα1.
   - (* forall_inh : cofinite, rigid head both sides *)
     (* cluster 4: the premise is a single instance at the rule's own
        binder, so there is no representative to pick *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
     { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
@@ -259,7 +259,7 @@ Proof.
   - (* forall_syn : cofinite *)
     (* cluster 4: the premise is a single instance at the rule's own
        binder, so there is no representative to pick *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
     { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
@@ -267,11 +267,11 @@ Proof.
       [ subst; inversion Hs | ].
     apply a_flex_tvar_alt; eauto.
   - (* univ_ghost : direct IH *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' Hc IH α1 Hα1. apply IH, Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P' Hc IH α1 Hα1. apply IH, Hα1.
   - (* univ_ghost1 : cofinite *)
     (* cluster 4: the premise is a single instance at the rule's own
        binder, so there is no representative to pick *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P' α Hfr Hco IH α1 Hα1.
     assert (Hγ' : a_flex_tvar ((α ~ abind_tvar) ++ Θ1) α1).
     { apply IH. apply a_flex_tvar_weaken_prefix. exact Hα1. }
     apply a_flex_tvar_alt in Hγ'; destruct Hγ' as [b [Hs Hb]].
@@ -279,33 +279,33 @@ Proof.
       [ subst; inversion Hs | ].
     apply a_flex_tvar_alt; eauto.
   - (* univ_ghost2 : direct IH *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' Hg Hnf Hc IH α1 Hα1. apply IH, Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P' Hg Hnf Hc IH α1 Hα1. apply IH, Hα1.
   - (* flex : unify IH *)
-    intros F Δ1 Δ2 Θ0 Θ1 α β Hu IH α1 Hα1. apply IH, Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 α β Hu IH α1 Hα1. apply IH, Hα1.
   - (* flex_l : assign IH at Ξ = nil *)
-    intros F Δ1 Δ2 Θ0 Θ1 α P0 Hnf Ha IH α1 Hα1. apply IH. simpl_env. exact Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Ha IH α1 Hα1. apply IH. simpl_env. exact Hα1.
   - (* flex_r : assign IH at Ξ = nil *)
-    intros F Δ1 Δ2 Θ0 Θ1 α P Hnf Ha IH α1 Hα1. apply IH. simpl_env. exact Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Ha IH α1 Hα1. apply IH. simpl_env. exact Hα1.
   - (* ghost_r : identity *) intros; auto.
   - (* univ_ghost_r : direct IH *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P P' Hg Hnf Hc IH α1 Hα1. apply IH, Hα1.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P P' Hg Hnf Hc IH α1 Hα1. apply IH, Hα1.
 Qed.
 
 (** Packaged corollaries. *)
-Corollary a_unify_flex_preserve : forall F Θ0 α β Θ1 α1,
-  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+Corollary a_unify_flex_preserve : forall Θ0 α β Θ1 α1,
+  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
   a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1.
 Proof.
   intros * Hu Hα1.
-  exact (proj1 (proj2 a_assign_unify_consis_flex_preserve) _ _ _ _ _ Hu α1 Hα1).
+  exact (proj1 (proj2 a_assign_unify_consis_flex_preserve) _ _ _ _ Hu α1 Hα1).
 Qed.
 
-Corollary a_assign_flex_preserve : forall F Θ0 Ξ α P Θ1 α1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Corollary a_assign_flex_preserve : forall Θ0 Ξ α P Θ1 α1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   a_flex_tvar (Ξ ++ Θ0) α1 -> a_flex_tvar Θ1 α1.
 Proof.
   intros * Ha Hα1.
-  exact (proj1 a_assign_unify_consis_flex_preserve _ _ _ _ _ _ Ha α1 Hα1).
+  exact (proj1 a_assign_unify_consis_flex_preserve _ _ _ _ _ Ha α1 Hα1).
 Qed.
 
 (* ===================================================================== *)

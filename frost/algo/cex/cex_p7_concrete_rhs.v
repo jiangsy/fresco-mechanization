@@ -97,7 +97,7 @@ Proof.
 Qed.
 
 (** The domain step: [FlexL] assigns [α̂ ≔ unit] and RETURNS [α̂]. *)
-Lemma cex_assign : a_assign empty Θw nil α pskl_unit Θw'.
+Lemma cex_assign : a_assign Θw nil α pskl_unit Θw'.
 Proof.
   unfold Θw, Θw'.
   apply a_assign__solve_m with (βs := nil) (τ := ptyp_unit);

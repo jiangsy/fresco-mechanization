@@ -504,6 +504,10 @@ Proof.
   apply swap_atoms_iff in Hy. fsetdec.
 Qed.
 
+Lemma empty_eq_swap_atoms_empty : forall a b,
+  empty [=] swap_atoms a b empty.
+Proof. intros. symmetry. apply swap_atoms_empty. Qed.
+
 (** The [add] homomorphism, extensionally — the shape every [add]-indexed
     rule case needs. *)
 Lemma eq_swap_atoms_add : forall a b x (S S' : atoms),
@@ -976,48 +980,42 @@ Proof.
 Qed.
 
 Lemma a_assign_unify_consis_swap : forall a b,
-  (forall F Θ0 Ξ α P Θ1,
-     Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
-     forall F', F' [=] swap_atoms a b F ->
-     (swap_aenv a b Θ0) ⊲[ F' ][ swap_aenv a b Ξ ]
+  (forall Θ0 Ξ α P Θ1,
+     Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
+     (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
        (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1)) /\
-  (forall F Θ0 α β Θ1,
-     Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
-     forall F', F' [=] swap_atoms a b F ->
-     (swap_aenv a b Θ0) ⊲[ F' ]
+  (forall Θ0 α β Θ1,
+     Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
+     (swap_aenv a b Θ0) ⊲
        (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1)) /\
-  (forall F Δ1 Δ2 Θ0 P0 P Q Θ1,
-     a_consis F Δ1 Δ2 Θ0 P0 P Q Θ1 ->
-     forall F' Δ1' Δ2',
-       F' [=] swap_atoms a b F ->
+  (forall Δ1 Δ2 Θ0 P0 P Q Θ1,
+     a_consis Δ1 Δ2 Θ0 P0 P Q Θ1 ->
+     forall Δ1' Δ2',
        Δ1' [=] swap_atoms a b Δ1 ->
        Δ2' [=] swap_atoms a b Δ2 ->
-     a_consis F' Δ1' Δ2' (swap_aenv a b Θ0) (swap_pskl a b P0)
+     a_consis Δ1' Δ2' (swap_aenv a b Θ0) (swap_pskl a b P0)
        (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1)).
 Proof.
   intros a b.
   apply (a_assign_unify_consis_mutind
-           (fun F Θ0 Ξ α P Θ1 _ =>
-              forall F', F' [=] swap_atoms a b F ->
-              (swap_aenv a b Θ0) ⊲[ F' ][ swap_aenv a b Ξ ]
+           (fun Θ0 Ξ α P Θ1 _ =>
+              (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
                 (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1))
-           (fun F Θ0 α β Θ1 _ =>
-              forall F', F' [=] swap_atoms a b F ->
-              (swap_aenv a b Θ0) ⊲[ F' ]
+           (fun Θ0 α β Θ1 _ =>
+              (swap_aenv a b Θ0) ⊲
                 (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1))
-           (fun F Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
-              forall F' Δ1' Δ2',
-                F' [=] swap_atoms a b F ->
+           (fun Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
+              forall Δ1' Δ2',
                 Δ1' [=] swap_atoms a b Δ1 ->
                 Δ2' [=] swap_atoms a b Δ2 ->
-              a_consis F' Δ1' Δ2' (swap_aenv a b Θ0) (swap_pskl a b P0)
+              a_consis Δ1' Δ2' (swap_aenv a b Θ0) (swap_pskl a b P0)
                 (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1))).
   (* ==================== a_assign ==================== *)
   - (* univ_ghost_id *)
-    intros F Θ0 α F' HF. simpl.
+    intros Θ0 α. simpl.
     apply a_assign__univ_ghost_id.
   - (* solve_m *)
-    intros F Θ0 Ξ α P βs τ Hnα Hg Hmono Huniq Hfr F' HF. simpl.
+    intros Θ0 Ξ α P βs τ Hnα Hg Hmono Huniq Hfr. simpl.
     rewrite !swap_aenv_app.
     apply a_assign__solve_m;
       auto using swap_pskl_ftv_notin, a_guess_mono_swap, mono_ptyp_swap,
@@ -1025,165 +1023,156 @@ Proof.
     intros α1 Hα1.
     pose proof (swap_aenv_dom_in_rev a b βs α1 Hα1) as hdom.
     specialize (Hfr _ hdom).
-    apply notin_union_split in Hfr; destruct Hfr as [hF hrest].
-    apply notin_add_split in hrest; destruct hrest as [hne hdom0].
-    apply notin_union_join.
-    + (* ∉ F' *)
+    apply notin_add_split in Hfr; destruct Hfr as [hne hdom0].
+    apply notin_add_join.
+    + (* ≠ swap α *)
+      intros he. apply hne.
+      rewrite he, swap_atom_invol. reflexivity.
+    + (* ∉ dom (swap (Ξ ++ Θ0)) *)
+      rewrite <- swap_aenv_app.
       intros hc.
-      assert (hc' : α1 `in` swap_atoms a b F) by fsetdec.
-      pose proof (proj1 (swap_atoms_iff a b F α1) hc'). contradiction.
-    + apply notin_add_join.
-      * (* ≠ swap α *)
-        intros he. apply hne.
-        rewrite he, swap_atom_invol. reflexivity.
-      * (* ∉ dom (swap (Ξ ++ Θ0)) *)
-        rewrite <- swap_aenv_app.
-        intros hc.
-        pose proof (swap_aenv_dom_in_rev a b (Ξ ++ Θ0) α1 hc). contradiction.
+      pose proof (swap_aenv_dom_in_rev a b (Ξ ++ Θ0) α1 hc). contradiction.
   - (* assign *)
-    intros F Θ0 Θ1 Ξ α β τ P Q Hflex Hnd Hd IH F' HF. simpl.
+    intros Θ0 Θ1 Ξ α β τ P Q Hflex Hnd Hd IH. simpl.
     eapply a_assign__assign.
     + exact (a_flex_tvar_swap a b _ _ Hflex).
     + apply swap_aenv_dom_notin; exact Hnd.
-    + specialize (IH (add (swap_atom a b β) F')
-                     empty empty
-                     (eq_swap_atoms_add a b β _ _ HF)).
+    + specialize (IH empty empty
+                     (empty_eq_swap_atoms_empty a b)
+                     (empty_eq_swap_atoms_empty a b)).
       rewrite swap_aenv_app in IH.
       rewrite !swap_pskl_subst in IH.
       rewrite !swap_pskl_ptyp_to_pskl in IH.
       change (swap_pskl a b (pskl_var_f α)) with
         (pskl_var_f (swap_atom a b α)) in IH.
-      apply IH; rewrite swap_atoms_empty; fsetdec.
+      exact IH.
   - (* depend *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hin Hd IH F' HF. simpl.
+    intros Θ0 Θ1 Ξ α β P Hne Hin Hd IH. simpl.
+    rewrite swap_aenv_app in IH.
     apply a_assign__depend;
-      auto using swap_atom_neq, swap_pskl_ftv_in.
-    specialize (IH _ HF).
-    rewrite swap_aenv_app in IH. exact IH.
+      [ auto using swap_atom_neq | auto using swap_pskl_ftv_in | exact IH ].
   - (* skip *)
-    intros F Θ0 Θ1 Ξ α β P Hne Hnf Hnd Hd IH F' HF. simpl.
+    intros Θ0 Θ1 Ξ α β P Hne Hnf Hnd Hd IH. simpl.
     apply a_assign__skip;
-      auto using swap_atom_neq, swap_pskl_ftv_notin, swap_aenv_dom_notin.
-    exact (IH (add (swap_atom a b β) F') (eq_swap_atoms_add a b β _ _ HF)).
+      [ auto using swap_atom_neq | auto using swap_pskl_ftv_notin
+      | apply swap_aenv_dom_notin; exact Hnd | exact IH ].
   - (* skip_rigid *)
-    intros F Θ0 Θ1 Ξ α β P Hnf Hnd Hd IH F' HF. simpl.
+    intros Θ0 Θ1 Ξ α β P Hnf Hnd Hd IH. simpl.
     apply a_assign__skip_rigid;
-      auto using swap_pskl_ftv_notin, swap_aenv_dom_notin.
-    exact (IH (add (swap_atom a b β) F') (eq_swap_atoms_add a b β _ _ HF)).
+      [ auto using swap_pskl_ftv_notin
+      | apply swap_aenv_dom_notin; exact Hnd | exact IH ].
   - (* skip_tm_var *)
-    intros F Θ0 Θ1 Ξ α x Q P Hnd Hd IH F' HF. simpl.
+    intros Θ0 Θ1 Ξ α x Q P Hnd Hd IH. simpl.
     apply a_assign__skip_tm_var;
-      [ apply swap_aenv_dom_notin; exact Hnd | ].
-    exact (IH (add (swap_atom a b x) F') (eq_swap_atoms_add a b x _ _ HF)).
+      [ apply swap_aenv_dom_notin; exact Hnd | exact IH ].
   - (* skip_tm_skl *)
-    intros F Θ0 Θ1 Ξ α x Q P Hnd Hd IH F' HF. simpl.
+    intros Θ0 Θ1 Ξ α x Q P Hnd Hd IH. simpl.
     apply a_assign__skip_tm_skl;
-      [ apply swap_aenv_dom_notin; exact Hnd | ].
-    exact (IH (add (swap_atom a b x) F') (eq_swap_atoms_add a b x _ _ HF)).
+      [ apply swap_aenv_dom_notin; exact Hnd | exact IH ].
   (* ==================== a_unify ==================== *)
   - (* flex_id *)
-    intros F Θ0 α Hflex F' HF.
+    intros Θ0 α Hflex.
     apply a_unify__flex_id. auto using a_flex_tvar_swap.
   - (* flex_l *)
-    intros F Θ0 α β Hne Hflex F' HF. simpl.
+    intros Θ0 α β Hne Hflex. simpl.
     apply a_unify__flex_l; auto using swap_atom_neq, a_flex_tvar_swap.
   - (* flex_r *)
-    intros F Θ0 α β Hne Hflex F' HF. simpl.
+    intros Θ0 α β Hne Hflex. simpl.
     apply a_unify__flex_r; auto using swap_atom_neq, a_flex_tvar_swap.
   - (* flex_assign *)
-    intros F Θ0 Θ1 α1 τ α β Q Hfα Hfβ Hnd Hd IH F' HF. simpl.
+    intros Θ0 Θ1 α1 τ α β Q Hfα Hfβ Hnd Hd IH. simpl.
     eapply a_unify__flex_assign.
     + exact (a_flex_tvar_swap a b _ _ Hfα).
     + exact (a_flex_tvar_swap a b _ _ Hfβ).
     + apply swap_aenv_dom_notin; exact Hnd.
-    + specialize (IH (add (swap_atom a b α1) F')
-                     empty empty
-                     (eq_swap_atoms_add a b α1 _ _ HF)).
+    + specialize (IH empty empty
+                     (empty_eq_swap_atoms_empty a b)
+                     (empty_eq_swap_atoms_empty a b)).
       rewrite !swap_pskl_ptyp_to_pskl in IH.
       rewrite !swap_ptyp_subst in IH.
       change (swap_ptyp a b (ptyp_var_f α)) with
         (ptyp_var_f (swap_atom a b α)) in IH.
       change (swap_ptyp a b (ptyp_var_f β)) with
         (ptyp_var_f (swap_atom a b β)) in IH.
-      apply IH; rewrite swap_atoms_empty; fsetdec.
+      exact IH.
   - (* flex_skip *)
-    intros F Θ0 Θ1 α1 α β Hne1 Hne2 Hnd Hd IH F' HF. simpl.
+    intros Θ0 Θ1 α1 α β Hne1 Hne2 Hnd Hd IH. simpl.
     apply a_unify__flex_skip;
-      auto using swap_atom_neq, swap_aenv_dom_notin.
-    exact (IH (add (swap_atom a b α1) F') (eq_swap_atoms_add a b α1 _ _ HF)).
+      [ auto using swap_atom_neq | auto using swap_atom_neq
+      | apply swap_aenv_dom_notin; exact Hnd | exact IH ].
   - (* skip_other *)
-    intros F Θ0 Θ1 c bd α β Hb Hnd Hd IH F' HF. simpl.
+    intros Θ0 Θ1 c bd α β Hb Hnd Hd IH. simpl.
     apply a_unify__skip_other.
     + destruct Hb as [-> | [[Q ->] | [Q ->]]]; simpl.
       * left; reflexivity.
       * right; left; eexists; reflexivity.
       * right; right; eexists; reflexivity.
     + apply swap_aenv_dom_notin; exact Hnd.
-    + exact (IH (add (swap_atom a b c) F') (eq_swap_atoms_add a b c _ _ HF)).
+    + exact IH.
   (* ==================== a_consis ==================== *)
   - (* ghost *)
-    intros F Δ1 Δ2 Θ0 P0 Hemp F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 P0 Hemp Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__ghost. eauto using swap_inter_ftv_empty.
   - (* unit *)
-    intros F Δ1 Δ2 Θ0 F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__unit.
   - (* rigid *)
-    intros F Δ1 Δ2 Θ0 α Hb F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 α Hb Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__rigid.
     pose proof (swap_aenv_binds a b _ _ _ Hb) as h. exact h.
   - (* arrow *)
-    intros F Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hd1 IH1 Hd2 IH2
-           F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hd1 IH1 Hd2 IH2
+           Δ1' Δ2' HΔ1 HΔ2. simpl.
     eapply a_consis__arrow;
-      [ exact (IH1 _ _ _ HF HΔ1 HΔ2) | exact (IH2 _ _ _ HF HΔ1 HΔ2) ].
+      [ exact (IH1 _ _ HΔ1 HΔ2) | exact (IH2 _ _ HΔ1 HΔ2) ].
   - (* forall_inh *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     rewrite swap_pskl_close.
     apply a_consis__forall_inh.
     + swap_freshness; eauto using swap_notin_eq.
-    + specialize (IH F' (add (swap_atom a b α) Δ1') (add (swap_atom a b α) Δ2')
-                     HF (eq_swap_atoms_add a b α _ _ HΔ1)
+    + specialize (IH (add (swap_atom a b α) Δ1') (add (swap_atom a b α) Δ2')
+                     (eq_swap_atoms_add a b α _ _ HΔ1)
                         (eq_swap_atoms_add a b α _ _ HΔ2)).
       rewrite !swap_pskl_open_var in IH. exact IH.
   - (* forall_syn *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     rewrite swap_pskl_close.
     apply a_consis__forall_syn.
     + swap_freshness; eauto using swap_notin_eq.
-    + specialize (IH F' Δ1' (add (swap_atom a b α) Δ2')
-                     HF HΔ1 (eq_swap_atoms_add a b α _ _ HΔ2)).
+    + specialize (IH Δ1' (add (swap_atom a b α) Δ2')
+                     HΔ1 (eq_swap_atoms_add a b α _ _ HΔ2)).
       rewrite !swap_pskl_open_var in IH. exact IH.
   - (* univ_ghost *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__univ_ghost; auto.
   - (* univ_ghost1 *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     rewrite swap_pskl_close.
     apply a_consis__univ_ghost1.
     + swap_freshness; eauto using swap_notin_eq.
-    + specialize (IH F' (add (swap_atom a b α) Δ1') Δ2'
-                     HF (eq_swap_atoms_add a b α _ _ HΔ1) HΔ2).
+    + specialize (IH (add (swap_atom a b α) Δ1') Δ2'
+                     (eq_swap_atoms_add a b α _ _ HΔ1) HΔ2).
       rewrite !swap_pskl_open_var in IH. exact IH.
   - (* univ_ghost2 *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__univ_ghost2;
       auto using guarded_pskl_swap, a_non_flex_swap.
   - (* flex *)
-    intros F Δ1 Δ2 Θ0 Θ1 α β Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 α β Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__flex; auto.
   - (* flex_l *)
-    intros F Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__flex_l;
-      [ auto using a_non_flex_swap | exact (IH F' HF) ].
+      [ auto using a_non_flex_swap | exact IH ].
   - (* flex_r *)
-    intros F Δ1 Δ2 Θ0 Θ1 α P Hnf Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__flex_r;
-      [ auto using a_non_flex_swap | exact (IH F' HF) ].
+      [ auto using a_non_flex_swap | exact IH ].
   - (* ghost_r *)
-    intros F Δ1 Δ2 Θ0 P Hemp F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 P Hemp Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__ghost_r. eauto using swap_inter_ftv_empty.
   - (* univ_ghost_r *)
-    intros F Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hd IH F' Δ1' Δ2' HF HΔ1 HΔ2. simpl.
+    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__univ_ghost_r;
       auto using guarded_pskl_swap, a_non_flex_swap.
 Qed.
@@ -1192,9 +1181,6 @@ Qed.
 (*  §12  Equivariance: [a_sub] / [a_sub_flex]                              *)
 (* ===================================================================== *)
 
-Lemma empty_eq_swap_atoms_empty : forall a b,
-  empty [=] swap_atoms a b empty.
-Proof. intros. symmetry. apply swap_atoms_empty. Qed.
 
 Lemma a_consis_empty_swap : forall a b Θ0 P0 P Q Θ1,
   Θ0 ⊢ₐ[ P0 ] P ∼ Q ⊣ Θ1 ->
@@ -1202,7 +1188,7 @@ Lemma a_consis_empty_swap : forall a b Θ0 P0 P Q Θ1,
     (swap_pskl a b P) ∼ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1).
 Proof.
   intros * H.
-  apply (proj2 (proj2 (a_assign_unify_consis_swap a b)) _ _ _ _ _ _ _ _ H);
+  apply (proj2 (proj2 (a_assign_unify_consis_swap a b)) _ _ _ _ _ _ _ H);
     apply empty_eq_swap_atoms_empty.
 Qed.
 
@@ -1417,53 +1403,50 @@ Qed.
     [a_sub] pair above, for the eight re-attaching rules of the
     assign/unify walk.  Every INPUT (context, pending suffix, subjects,
     skeletons, set indexes) is fixed pointwise; only the OUTPUTS move. *)
-Lemma a_assign_swap_junk : forall β0 β1 F Θ0 Ξ α P Θ1,
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ Θ1 ->
+Lemma a_assign_swap_junk : forall β0 β1 Θ0 Ξ α P Θ1,
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 ->
   β0 <> α -> β1 <> α ->
-  β0 `notin` F -> β1 `notin` F ->
   β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
      `union` ftvar_in_pskl P ->
   β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
      `union` ftvar_in_pskl P ->
-  Θ0 ⊲[ F ][ Ξ ] α ≔ P ⊣ (swap_aenv β0 β1 Θ1).
+  Θ0 ⊲[ Ξ ] α ≔ P ⊣ (swap_aenv β0 β1 Θ1).
 Proof.
-  intros * Hd Hne0 Hne1 HF0 HF1 H0 H1.
+  intros * Hd Hne0 Hne1 H0 H1.
   apply notin_union_split in H0; destruct H0 as [h0 H0].
   apply notin_union_split in H0; destruct H0 as [h0' h0''].
   apply notin_union_split in H1; destruct H1 as [h1 H1].
   apply notin_union_split in H1; destruct H1 as [h1' h1''].
-  pose proof (proj1 (a_assign_unify_consis_swap β0 β1) _ _ _ _ _ _ Hd F
-                (eq_swap_atoms_fresh β0 β1 F HF0 HF1)) as h.
+  pose proof (proj1 (a_assign_unify_consis_swap β0 β1) _ _ _ _ _ Hd) as h.
   rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
   rewrite (swap_aenv_fresh_id β0 β1 Ξ) in h; auto.
   rewrite (swap_atom_other β0 β1 α) in h; auto.
   rewrite (swap_pskl_fresh_id β0 β1 P) in h; auto.
 Qed.
 
-Lemma a_unify_swap_junk : forall β0 β1 F Θ0 α β Θ1,
-  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ Θ1 ->
+Lemma a_unify_swap_junk : forall β0 β1 Θ0 α β Θ1,
+  Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 ->
   β0 <> α -> β1 <> α -> β0 <> β -> β1 <> β ->
-  β0 `notin` F -> β1 `notin` F ->
   β0 `notin` ftvar_in_aenv Θ0 -> β1 `notin` ftvar_in_aenv Θ0 ->
-  Θ0 ⊲[ F ] α ≈ᵘ β ⊣ (swap_aenv β0 β1 Θ1).
+  Θ0 ⊲ α ≈ᵘ β ⊣ (swap_aenv β0 β1 Θ1).
 Proof.
-  intros * Hd Hnα0 Hnα1 Hnβ0 Hnβ1 HF0 HF1 H0 H1.
+  intros * Hd Hnα0 Hnα1 Hnβ0 Hnβ1 H0 H1.
   pose proof (proj1 (proj2 (a_assign_unify_consis_swap β0 β1))
-                _ _ _ _ _ Hd F (eq_swap_atoms_fresh β0 β1 F HF0 HF1)) as h.
+                _ _ _ _ Hd) as h.
   rewrite (swap_aenv_fresh_id β0 β1 Θ0) in h; auto.
   rewrite (swap_atom_other β0 β1 α) in h; auto.
   rewrite (swap_atom_other β0 β1 β) in h; auto.
 Qed.
 
-Lemma a_consis_swap_junk : forall β0 β1 F Δ1 Δ2 Θ0 P0 P Q Θ1,
-  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
-  β0 `notin` F `union` Δ1 `union` Δ2 ->
-  β1 `notin` F `union` Δ1 `union` Δ2 ->
+Lemma a_consis_swap_junk : forall β0 β1 Δ1 Δ2 Θ0 P0 P Q Θ1,
+  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 ->
+  β0 `notin` Δ1 `union` Δ2 ->
+  β1 `notin` Δ1 `union` Δ2 ->
   β0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
      `union` ftvar_in_pskl P ->
   β1 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
      `union` ftvar_in_pskl P ->
-  Θ0 ⊢ₐ[ F ][ Δ1 | Δ2 | P0 ] P ∼ (swap_pskl β0 β1 Q)
+  Θ0 ⊢ₐ[ Δ1 | Δ2 | P0 ] P ∼ (swap_pskl β0 β1 Q)
     ⊣ (swap_aenv β0 β1 Θ1).
 Proof.
   intros * Hd HS0 HS1 H0 H1.
@@ -1472,8 +1455,7 @@ Proof.
   apply notin_union_split in H1; destruct H1 as [h1 H1].
   apply notin_union_split in H1; destruct H1 as [h1' h1''].
   pose proof (proj2 (proj2 (a_assign_unify_consis_swap β0 β1))
-                _ _ _ _ _ _ _ _ Hd F Δ1 Δ2
-                (eq_swap_atoms_fresh β0 β1 F ltac:(fsetdec) ltac:(fsetdec))
+                _ _ _ _ _ _ _ Hd Δ1 Δ2
                 (eq_swap_atoms_fresh β0 β1 Δ1 ltac:(fsetdec) ltac:(fsetdec))
                 (eq_swap_atoms_fresh β0 β1 Δ2 ltac:(fsetdec) ltac:(fsetdec)))
     as h.
