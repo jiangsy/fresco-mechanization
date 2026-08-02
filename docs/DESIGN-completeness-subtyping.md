@@ -4346,3 +4346,14 @@ tag is legitimately solved).  The repair is a positional re-indexing, replayed
 through P6-Ss and P7b's two ForallL rows, which consume the current shape.
 Nothing goes to PAPER-GAPS.md: `sub_shield` is a mech-invented repair premise,
 not a paper statement.
+
+⚠️ **There is no cheap escape by trimming the definition.**  The `ss_walk`
+closure is not gratuitous: P6-Ss's Sub-Arrow row consumes it directly —
+`prop_look_complete_sub_cstr.v:1546-1548` builds `sub_shield (Ξc1 ++ Θ0) Ψ' Δρ
+P02 ψa` for the codomain via `sub_shield_step … sss_arrow_r`, because P6-Ss
+solves ONE flexible against a FIXED guess while walking `P0`.  So weakening the
+definition breaks the Qed consumer, and the repair really is a re-indexing
+(pairing each walk position with the part of ψa the derivation aligns there),
+replayed through P6-Ss and P7b's two ForallL rows.  That is why settling
+REALIZABILITY first is worth it: it is one bounded instance, and it decides
+whether any of that work is needed at all.
