@@ -162,10 +162,30 @@ lemmas take the P7b motive `sub_complete_concl` as their IH, not
   regenerated join returns at the same `n`.  P7c's `__flex_mono` join case wants
   the same lemma.
 
-**Next**: finish Flex-Solve (build θs into the deposited block; collapse the
-`a_inc_equiv` back across it — the paper's ⓖ+⑫ ⇒ ⑭; NO junk swap, the row does
-not re-attach); then the ⇓-truncation lift and `Flex-SkipRigid`; then the
-shield's realizability question; then the dispatcher (§12).
+- **`Flex-Solve` CLOSED** (`012e066`) — the paper's FIRST interesting case.  θs
+  is built exactly as the paper's ⓕ; the package is its ⓖ+⑫ ⇒ ⑭ (peel the
+  deposited block out of BOTH identity witnesses, identify by
+  `is_id_inc_unique` + length, collapse with `a_inc_equiv_collapse_solve`).  Six
+  more reusable enablers, of which the one worth remembering is
+  **`a_wf_pskl_weaken_tvarish`**: `a_wf_pskl` reads Θ ONLY through
+  `a_binds_tvar` and its context never grows (the binder rule extends Δ), so it
+  weakens along a TVAR-ISH map — the `binds`-monotone `a_wf_pskl_weaken` is too
+  strong the moment a DECLARATION becomes a DEFINITION, which is exactly what
+  Flex-Solve does to `α̂0`.
+
+⚙ **A performance datum worth the standing rule** (measured with `coqc -time`,
+not by bisecting): ONE `fsetdec` against the row's three overlapping freshness
+unions cost **152s of the file's 153s**.  Two fixes, both now standing practice
+— keep each `atom_fresh` avoid set MINIMAL (audit what the binder is actually
+used for; two of the five components were never needed), and SHATTER it into
+atomic facts immediately, one single-hypothesis `fsetdec` each, then `clear` the
+union.  152s → 0.09s.
+
+**P7a's only remaining row is `Flex-SkipRigid`.**
+
+**Next**: the ⇓-truncation lift to `ad_pat_sub_gv` and `Flex-SkipRigid` (plus its
+stuck-check); then the shield's realizability question; then the dispatcher
+(§12).
 
 **TASK 0's residual, falsity half SETTLED the same day**
 (`cex/cex_p7_shield_forall_flex.v`, Qed, axiom-free).  For a Θ0-flexible `α̂` and
