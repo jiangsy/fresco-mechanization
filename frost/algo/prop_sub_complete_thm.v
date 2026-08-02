@@ -91,6 +91,7 @@ Require Import src.frost.algo.prop_sub_complete.     (* P5 + the _gv transports 
 Require Import src.frost.algo.prop_look_complete_cstr. (* ftag/msubst kit *)
 Require Import src.frost.algo.prop_look_complete_sub_cstr. (* sub_shield *)
 Require Import src.frost.algo.prop_look_complete_extract. (* P6-L + the extract family *)
+Require Import src.frost.algo.prop_swap.                  (* THE SWAP KIT — P7a's renaming primitive *)
 
 Set Implicit Arguments.
 
@@ -3011,3 +3012,591 @@ Proof.
 Qed.
 
 Print Assumptions a_sub_complete_forall_l_untagged.
+
+
+(* ===================================================================== *)
+(*  P7a — THE FLEXIBLE WALK.  Infrastructure, and the rows that stay      *)
+(*  INSIDE the walk (Flex-Depend, Flex-Skip).                             *)
+(*                                                                        *)
+(*  The discharge pattern for a RE-ATTACHING row (the walk's Barendregt   *)
+(*  output premise [β ∉ dom Θ1], algo/def_extra.v:1100/:1116/:1123) is:   *)
+(*                                                                        *)
+(*    (i)   PEEL the given [κ ∷ (Ξ ++ (β ~ ·) ++ Θ0) ⊑ Θ] around the mid  *)
+(*          β entry ([a_inc_strip_flex_mid]) — for a FLEXIBLE entry the   *)
+(*          TARGET is unchanged, which is what makes the row work;        *)
+(*    (ii)  feed the IH at the stripped context;                          *)
+(*    (iii) pick β1 fresh for everything in hand;                         *)
+(*    (iv)  junk-swap the IH's run ([a_sub_flex_swap_junk], prop_swap.v   *)
+(*          §13) and re-attach via [swap_junk_dom_out];                   *)
+(*    (v)   rebuild the package as [(β, κ's β-image) :: kswap_msubst β β1 *)
+(*          ζ], using [a_inc_kswap] for the increase,                     *)
+(*          [msubst_compose_kswap_id] + [msubst_compose_head_id] for the  *)
+(*          equivalence, and [msubst_bskl_head_notin] +                   *)
+(*          [msubst_bskl_kswap_paint] for the precision.                  *)
+(*                                                                        *)
+(*  ⚠️ [Flex-SkipRigid] is NOT this pattern — see the RESTART NOTE at the  *)
+(*  end of this section.                                                  *)
+(* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  (A)  The flexible walk's SOUNDNESS corollary                          *)
+(* ===================================================================== *)
+
+Lemma a_sub_flex_sound_thm : forall NM M P0 Θ0 Ξ α A Θ1,
+  a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_binds_tvar α (Ξ ++ Θ0) ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat (mode_fn M) P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
+  (Ξ ++ Θ0) ⊴ Θ1 /\ a_wf_aenv Θ1.
+Proof.
+  intros NM M P0 Θ0 Ξ α A Θ1 Hrun Hdecls Hwf HwfP0 Hαb Hmod Hgf.
+  assert (Htag : a_subtag_flex NM M P0 Θ0 Ξ α A Θ1).
+  { eapply (proj2 a_sub_decorate_bundle);
+      [ exact Hrun | exact Hdecls | exact Hwf | exact HwfP0 | exact Hαb
+      | intros HSK; apply a_sk_mode_compat_mod_comp_sk; apply Hmod; exact HSK
+      | intros _; eapply a_wf_pskl_top_guarded; exact HwfP0 ]. }
+  destruct ((proj2 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
+              Hwf Hdecls HwfP0 Hαb
+              ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk;
+                    apply Hmod; exact HSK)
+              Hgf)
+    as [Hisub [HwfΘ1 _]].
+  split; assumption.
+Qed.
+
+(* ===================================================================== *)
+(*  (B)  PROVENANCE — a target entry is either flexible or comes from     *)
+(*       the source by name.                                              *)
+(* ===================================================================== *)
+
+Lemma a_suffix_binds : forall Ξ γ bd,
+  a_suffix Ξ -> binds γ bd Ξ -> a_suffix_binding bd.
+Proof.
+  intros Ξ γ bd H; induction H; intros Hb; [ inversion Hb | ].
+  analyze_binds Hb; auto.
+Qed.
+
+Lemma a_inc_binds_provenance : forall Θs κ Θt γ bd,
+  κ ∷ Θs ⊑ Θt ->
+  binds γ bd Θt ->
+  a_suffix_binding bd \/ γ `in` dom Θs.
+Proof.
+  intros Θs κ Θt γ bd H; induction H; intros Hb.
+  - left; eapply a_suffix_binds; eassumption.
+  - destruct (IHa_inc Hb) as [h | h];
+      [ left; exact h | right; simpl_env; clear - h; fsetdec ].
+  - destruct (IHa_inc Hb) as [h | h];
+      [ left; exact h | right; simpl_env; clear - h; fsetdec ].
+  - analyze_binds Hb;
+      [ left; eapply a_suffix_binds; eassumption
+      | right; simpl_env; clear; fsetdec
+      | destruct (IHa_inc BindsTac0) as [h | h];
+          [ left; exact h | right; simpl_env; clear - h; fsetdec ] ].
+  - analyze_binds Hb;
+      [ left; eapply a_suffix_binds; eassumption
+      | right; simpl_env; clear; fsetdec
+      | destruct (IHa_inc BindsTac0) as [h | h];
+          [ left; exact h | right; simpl_env; clear - h; fsetdec ] ].
+  - analyze_binds Hb;
+      [ left; eapply a_suffix_binds; eassumption
+      | right; simpl_env; clear; fsetdec
+      | destruct (IHa_inc BindsTac0) as [h | h];
+          [ left; exact h | right; simpl_env; clear - h; fsetdec ] ].
+Qed.
+
+(** The shape [a_inc_kswap] wants, for a name the walk stripped from the
+    source: every binding it has in the run's OUTPUT is flexible. *)
+Lemma a_sub_flex_out_flex_only : forall NM M P0 Θ0 Ξ α A Θ1 β,
+  a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_binds_tvar α (Ξ ++ Θ0) ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat (mode_fn M) P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
+  β `notin` dom (Ξ ++ Θ0) ->
+  forall bd, binds β bd Θ1 ->
+    bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ.
+Proof.
+  intros * Hrun Hdecls Hwf HwfP0 Hαb Hmod Hgf Hβ bd Hb.
+  destruct (a_sub_flex_sound_thm Hrun Hdecls Hwf HwfP0 Hαb Hmod Hgf)
+    as [[[w [Hidw Hincw]] _] _].
+  assert (Hprov : a_suffix_binding bd \/ β `in` dom (Ξ ++ Θ0))
+    by (eapply a_inc_binds_provenance; eassumption).
+  destruct Hprov as [h | h];
+    [ inversion h; subst; [ left; reflexivity | right; eexists; reflexivity ]
+    | exfalso; clear - h Hβ; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  (C)  Stripping a MID flexible entry from an [a_inc] source            *)
+(* ===================================================================== *)
+
+Lemma msubst_lookup_mid_ne : forall κ1 β τ κ2 γ,
+  γ <> β ->
+  msubst_lookup (κ1 ++ (β, τ) :: κ2) γ = msubst_lookup (κ1 ++ κ2) γ.
+Proof.
+  intros κ1; induction κ1 as [| [x τx] κ1']; intros β τ κ2 γ Hne; simpl.
+  - destruct (γ == β) as [e | _]; [ exfalso; auto | reflexivity ].
+  - destruct (γ == x) as [_ | _]; [ reflexivity | apply IHκ1'; exact Hne ].
+Qed.
+
+(** ⚠️ the prefix must be [a_decls] (DECLARATIONS only), not [a_suffix]: a
+    DEFINED flexible in the prefix carries a payload that may mention the
+    stripped [β], and its [a_inc__flex_def] equivalence premise then does not
+    survive the strip.  The motive's Ξ is [a_decls] for exactly this reason. *)
+Lemma a_inc_strip_flex_mid : forall Ξ β Θ0 κ Θ,
+  a_decls Ξ ->
+  κ ∷ (Ξ ++ (β ~ abind_flex_mono) ++ Θ0) ⊑ Θ ->
+  exists κ1 τ κ2,
+    κ = κ1 ++ (β, τ) :: κ2 /\ length κ1 = length Ξ /\
+    (κ1 ++ κ2) ∷ (Ξ ++ Θ0) ⊑ Θ /\ a_wf_ptyp Θ τ /\ mono_ptyp τ.
+Proof.
+  intros Ξ; induction Ξ as [| [x b] Ξ' IH]; intros β Θ0 κ Θ Hsuf Hinc.
+  - simpl in Hinc.
+    inversion Hinc as [ | Θa κa Θb αa τa Hi Hw Hm | | | | ]; subst.
+    exists nil, τa, κa. simpl.
+    split; [ reflexivity | split; [ reflexivity | ] ].
+    split; [ exact Hi | split; assumption ].
+  - inversion Hsuf as [ | ? ? Hsuf' ]; subst; simpl in Hinc.
+    inversion Hinc as [ | Θa κa Θb αa τa Hi Hw Hm | | | | ]; subst.
+    destruct (IH _ _ _ _ Hsuf' Hi)
+      as [κ1 [τ [κ2 [-> [Hd [Hinc2 [Hwτ Hmτ]]]]]]].
+    exists ((x, τa) :: κ1), τ, κ2. simpl.
+    split; [ reflexivity | ].
+    split; [ rewrite Hd; reflexivity | ].
+    split; [ apply a_inc__flex; [ exact Hinc2 | exact Hw | exact Hm ] | ].
+    split; assumption.
+Qed.
+
+Lemma a_inc_strip_flex_def_mid : forall Ξ β τ0 Θ0 κ Θ,
+  a_decls Ξ ->
+  κ ∷ (Ξ ++ (β ~ abind_flex_mono_def τ0) ++ Θ0) ⊑ Θ ->
+  exists κ1 τ κ2,
+    κ = κ1 ++ (β, τ) :: κ2 /\ length κ1 = length Ξ /\
+    (κ1 ++ κ2) ∷ (Ξ ++ Θ0) ⊑ Θ /\
+    Θ ⊢ τ ≡ᵗ (msubst_ptyp κ2 τ0) /\ a_wf_ptyp Θ τ /\ mono_ptyp τ.
+Proof.
+  intros Ξ; induction Ξ as [| [x b] Ξ' IH]; intros β τ0 Θ0 κ Θ Hsuf Hinc.
+  - simpl in Hinc.
+    inversion Hinc as [ | | Θa κa Θb αa τa τb Hi Hw Hm He | | | ]; subst.
+    exists nil, τb, κa. simpl.
+    split; [ reflexivity | split; [ reflexivity | ] ].
+    split; [ exact Hi | ]. split; [ exact He | ]. split; assumption.
+  - inversion Hsuf as [ | ? ? Hsuf' ]; subst; simpl in Hinc.
+    inversion Hinc as [ | Θa κa Θb αa τa Hi Hw Hm | | | | ]; subst.
+    destruct (IH _ _ _ _ _ Hsuf' Hi)
+      as [κ1 [τ [κ2 [-> [Hd [Hinc2 [Heq [Hwτ Hmτ]]]]]]]].
+    exists ((x, τa) :: κ1), τ, κ2. simpl.
+    split; [ reflexivity | ].
+    split; [ rewrite Hd; reflexivity | ].
+    split; [ apply a_inc__flex; [ exact Hinc2 | exact Hw | exact Hm ] | ].
+    split; [ exact Heq | split; assumption ].
+Qed.
+
+(** The [a_inc_equiv] counterpart of the strip: INSERTING a flexible entry
+    in the middle, with the SAME image on both sides. *)
+Lemma a_inc_equiv_insert_flex_mid : forall Ξ κ1 κ2 σ1 σ2 β τ Θ0 Θ,
+  a_decls Ξ ->
+  length κ1 = length Ξ ->
+  a_inc_equiv (Ξ ++ Θ0) (κ1 ++ κ2) (σ1 ++ σ2) Θ ->
+  length σ1 = length Ξ ->
+  Θ ⊢ τ ≡ᵗ τ ->
+  a_inc_equiv (Ξ ++ (β ~ abind_flex_mono) ++ Θ0)
+              (κ1 ++ (β, τ) :: κ2) (σ1 ++ (β, τ) :: σ2) Θ.
+Proof.
+  intros Ξ; induction Ξ as [| [x b] Ξ' IH];
+    intros κ1 κ2 σ1 σ2 β τ Θ0 Θ Hd Hlk He Hls Hτ.
+  - destruct κ1; [ | discriminate ]. destruct σ1; [ | discriminate ].
+    simpl in *. apply a_inc_equiv__flex; [ exact He | exact Hτ ].
+  - inversion Hd as [ | ? ? Hd' ]; subst.
+    destruct κ1 as [| [k1a k1b] κ1']; [ discriminate | ].
+    destruct σ1 as [| [s1a s1b] σ1']; [ discriminate | ].
+    simpl in He.
+    inversion He as [ | Θa κa σa Θb αa τ1 τ2 Hie Heq | | | | ]; subst.
+    simpl. apply a_inc_equiv__flex; [ | exact Heq ].
+    apply IH; [ exact Hd' | simpl in Hlk; lia | exact Hie
+              | simpl in Hls; lia | exact Hτ ].
+Qed.
+
+(* ===================================================================== *)
+(*  (D)  The JOIN's target is scoped — [ad_pat_consis_target_wf]'s        *)
+(*       subtyping-level twin.                                            *)
+(* ===================================================================== *)
+
+Lemma ad_pat_sub_target_wf : forall NM M Ψ Θ R Qt,
+  Ψ ⨟ Θ ⊢ₛᵃ[ NM | M ] R ⩽ Qt ->
+  a_scope_pskl Θ (bskl_to_pskl Qt).
+Proof.
+  intros NM M Ψ Θ R Qt H; induction H.
+  - (* infer *) eapply ad_pat_consis_target_wf; eassumption.
+  - (* check *)
+    assert (Hc : a_scope_pskl Θ (bskl_to_pskl (pskl_to_bskl_inh B)))
+      by (eapply ad_pat_consis_target_wf; eassumption).
+    exact Hc.
+  - (* forall_r *)
+    simpl. apply a_scope_pskl__all with (L := L).
+    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
+  - (* univ_ghost_r *)
+    simpl. apply a_scope_pskl__tophole.
+    eapply ad_pat_consis_target_wf; eassumption.
+  - (* arrow *)
+    simpl. apply a_scope_pskl__arrow;
+      [ eapply ad_pat_consis_target_wf; eassumption | exact IHad_pat_sub ].
+  - (* forall_l_tagged *) exact IHad_pat_sub.
+  - (* forall_l_untagged *) exact IHad_pat_sub.
+  - (* ghost *)
+    rewrite bskl_to_pskl_pskl_to_bskl_inh.
+    eapply a_wf_pskl_to_a_scope_pskl;
+      [ eassumption | intros x b Hb; exact Hb | intros α Hα; clear - Hα; fsetdec ].
+  - (* ghostg *) simpl. apply a_scope_pskl__hole.
+  - (* univ_ghost_l *) exact IHad_pat_sub.
+  - (* univ_ghost_lg *) exact IHad_pat_sub.
+  - (* flex_mono *) exact IHad_pat_sub.
+Qed.
+
+(** The flexible walk's OUTPUT skeleton is scoped in the output context. *)
+Lemma a_sub_flex_out_scope : forall NM M P0 Θ0 Ξ α A Θ1,
+  a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+  a_decls Ξ ->
+  a_wf_aenv (Ξ ++ Θ0) ->
+  (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_binds_tvar α (Ξ ++ Θ0) ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat (mode_fn M) P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
+  a_scope_pskl Θ1 A.
+Proof.
+  intros NM M P0 Θ0 Ξ α A Θ1 Hrun Hdecls Hwf HwfP0 Hαb Hmod Hgf.
+  assert (Htag : a_subtag_flex NM M P0 Θ0 Ξ α A Θ1).
+  { eapply (proj2 a_sub_decorate_bundle);
+      [ exact Hrun | exact Hdecls | exact Hwf | exact HwfP0 | exact Hαb
+      | intros HSK; apply a_sk_mode_compat_mod_comp_sk; apply Hmod; exact HSK
+      | intros _; eapply a_wf_pskl_top_guarded; exact HwfP0 ]. }
+  destruct ((proj2 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
+              Hwf Hdecls HwfP0 Hαb
+              ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk;
+                    apply Hmod; exact HSK)
+              Hgf)
+    as [_ [_ [Qt [HeqQt [Hjoin _]]]]].
+  rewrite <- HeqQt. eapply ad_pat_sub_target_wf; exact Hjoin.
+Qed.
+
+(* ===================================================================== *)
+(*  (E)  A well-formed context mentions only its own domain               *)
+(* ===================================================================== *)
+
+Lemma a_scope_pskl_ftv_dom : forall Θ P,
+  a_scope_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
+Proof.
+  intros Θ P H α Hα.
+  assert (Hb : a_binds_tvar α Θ) by (eapply a_scope_pskl_ftv_binds; eassumption).
+  destruct Hb as [Hb | [Hb | [τ Hb]]]; eapply binds_In; exact Hb.
+Qed.
+
+Lemma a_wf_aenv_ftvar_dom : forall Θ,
+  a_wf_aenv Θ -> ftvar_in_aenv Θ [<=] dom Θ.
+Proof.
+  intros Θ H; induction H; simpl.
+  - clear; fsetdec.
+  - clear - IHa_wf_aenv; fsetdec.
+  - pose proof (a_wf_ptyp_ftv_dom H0); clear - IHa_wf_aenv H3; fsetdec.
+  - pose proof (a_scope_pskl_ftv_dom H0); clear - IHa_wf_aenv H2; fsetdec.
+  - pose proof (a_wf_ptyp_ftv_dom H0); clear - IHa_wf_aenv H2; fsetdec.
+  - clear - IHa_wf_aenv; fsetdec.
+Qed.
+
+Lemma a_decls_no_ftvar : forall Ξ,
+  a_decls Ξ -> ftvar_in_aenv Ξ [<=] dom Ξ.
+Proof.
+  intros Ξ H; induction H as [| α1 Ξ' Hd IH]; simpl;
+    [ clear; fsetdec | clear - IH; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  (F)  P7a ROW — Flex-Depend                                            *)
+(* ===================================================================== *)
+
+Lemma a_flex_tvar_strip_mid : forall α β b Ξ Θ0,
+  a_flex_tvar (Ξ ++ (β ~ b) ++ Θ0) α -> α <> β -> a_flex_tvar (Ξ ++ Θ0) α.
+Proof.
+  intros * Hf Hne; destruct Hf as [Hb | [τ Hb]];
+    [ left | right; exists τ ]; eapply binds_strip_mid;
+    solve [ eassumption | intro Hc; inversion Hc; subst; exact (Hne eq_refl) ].
+Qed.
+
+Lemma a_sub_flex_complete_depend : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
+  (forall Ξ' α' P0' R'' Ψ' Θ'' κ' Q',
+     sub_flex_complete_concl n NM M Θ0 Ξ' α' P0' R'' Ψ' Θ'' κ' Q') ->
+  α <> β ->
+  β `in` ftvar_in_pskl P0 ->
+  sub_flex_complete_concl n NM M ((β ~ abind_flex_mono) ++ Θ0) Ξ α P0
+    R' Ψ Θ κ Q.
+Proof.
+  intros n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q IH Hne Hin.
+  unfold sub_flex_complete_concl in *.
+  intros HdeclsΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD Hrs HwfQ.
+  assert (Hdecls' : a_decls (Ξ ++ (β ~ abind_flex_mono)))
+    by (apply a_decls_app;
+        [ exact HdeclsΞ | apply (a_decls__cons β); apply a_decls__nil ]).
+  specialize (IH (Ξ ++ (β ~ abind_flex_mono)) α P0 R' Ψ Θ κ Q).
+  unfold sub_flex_complete_concl in IH.
+  simpl_env in IH.
+  destruct (IH Hdecls' Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
+              Hrs HwfQ)
+    as [P1 [Θ1 [Hrun Hopt]]].
+  exists P1, Θ1. split.
+  - apply a_sub_flex__depend; [ exact Hne | exact Hin | exact Hrun ].
+  - intros κf Hidf Hincf.
+    destruct (Hopt κf Hidf Hincf) as [ζ [Hζ [Hie Hprec]]].
+    exists ζ. split; [ exact Hζ | split; [ exact Hie | exact Hprec ] ].
+Qed.
+
+(* ===================================================================== *)
+(*  (G)  P7a ROW — Flex-Skip                                              *)
+(* ===================================================================== *)
+
+Lemma msubst_compose_head_id : forall β τ ζ κ1,
+  is_id_msubst κ1 ->
+  (forall γ, List.In γ (List.map fst κ1) -> γ <> β) ->
+  msubst_compose ((β, τ) :: ζ) κ1 = msubst_compose ζ κ1.
+Proof.
+  intros β τ ζ κ1; induction κ1 as [| [γ τγ] κ1']; intros Hid Hk;
+    [ reflexivity | ].
+  inversion Hid as [| e κl he hl]; subst.
+  unfold is_id_entry in he; simpl in he. subst τγ.
+  unfold msubst_compose; simpl.
+  assert (hne : γ <> β) by (apply Hk; left; reflexivity).
+  destruct (γ == β) as [e | _]; [ exfalso; auto | ].
+  f_equal. apply IHκ1'; [ exact hl | intros γ0 h0; apply Hk; right; exact h0 ].
+Qed.
+
+Lemma a_sub_flex_complete_skip : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
+  (forall Ξ' α' P0' R'' Ψ' Θ'' κ' Q',
+     sub_flex_complete_concl n NM M Θ0 Ξ' α' P0' R'' Ψ' Θ'' κ' Q') ->
+  α <> β ->
+  β `notin` ftvar_in_pskl P0 ->
+  sub_flex_complete_concl n NM M ((β ~ abind_flex_mono) ++ Θ0) Ξ α P0
+    R' Ψ Θ κ Q.
+Proof.
+  intros n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q IH Hne Hnin.
+  unfold sub_flex_complete_concl in *.
+  intros HdeclsΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD Hrs HwfQ.
+  (* ---- 0. the stripped context, and β's absence from it ---- *)
+  assert (Huq : uniq (Ξ ++ (β ~ abind_flex_mono) ++ Θ0))
+    by (apply a_wf_aenv_uniq; exact Hwf).
+  assert (HβΞΘ0 : β `notin` dom (Ξ ++ Θ0)).
+  { clear - Huq. simpl_env in Huq. destruct_uniq.
+    unfold disjoint in *. simpl_env in *. fsetdec. }
+  assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+    by (eapply a_wf_aenv_strip_mid; [ exact HdeclsΞ | exact Hwf ]).
+  assert (HwfP0' : (Ξ ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0)
+    by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hnin ]).
+  assert (Hfα' : a_flex_tvar (Ξ ++ Θ0) α)
+    by (eapply a_flex_tvar_strip_mid; [ exact Hfα | exact Hne ]).
+  assert (Hαb' : a_binds_tvar α (Ξ ++ Θ0))
+    by (destruct Hfα' as [h | [τ h]];
+        [ right; left; exact h | right; right; exists τ; exact h ]).
+  (* ---- 1. strip the mid entry out of κ ---- *)
+  destruct (@a_inc_strip_flex_mid Ξ β Θ0 κ Θ HdeclsΞ Hinc)
+    as [κ1 [τβ [κ2 [Heqκ [Hlen [Hincih [Hwfτβ Hmonoτβ]]]]]]].
+  assert (Hlk : forall γ, γ <> β ->
+            msubst_lookup κ γ = msubst_lookup (κ1 ++ κ2) γ)
+    by (intros γ Hγ; rewrite Heqκ; apply msubst_lookup_mid_ne; exact Hγ).
+  assert (HeqP0 : msubst_pskl κ P0 = msubst_pskl (κ1 ++ κ2) P0).
+  { apply msubst_pskl_agree. intros γ Hγ. apply Hlk.
+    intro Hc; subst γ; contradiction. }
+  assert (Heqα : msubst_lookup κ α = msubst_lookup (κ1 ++ κ2) α)
+    by (apply Hlk; exact Hne).
+  rewrite Heqα in Hslack. rewrite HeqP0 in Hrs.
+  (* ---- 2. the IH at the stripped context ---- *)
+  destruct (IH Ξ α P0 R' Ψ Θ (κ1 ++ κ2) Q HdeclsΞ Hwf' Hwfth HwfP0'
+              Hfα' HmodSK HmodTY Hincih Hslack HD Hrs HwfQ)
+    as [P1 [Θ1 [Hrun Hopt]]].
+  destruct (a_sub_flex_sound_thm Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
+    as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
+  assert (HscP1 : a_scope_pskl Θ1 P1)
+    by (eapply a_sub_flex_out_scope;
+        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
+        | exact Hαb' | exact HmodSK | exact HmodTY ]).
+  assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
+            bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
+    by (eapply a_sub_flex_out_flex_only;
+        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
+        | exact Hαb' | exact HmodSK | exact HmodTY | exact HβΞΘ0 ]).
+  (* ---- 3. the junk rename ---- *)
+  assert (HβΞ : β `notin` ftvar_in_aenv Ξ).
+  { pose proof (a_decls_no_ftvar HdeclsΞ) as h.
+    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
+  assert (HwfΘ0 : a_wf_aenv Θ0) by (eapply a_wf_aenv_app_r; exact Hwf').
+  assert (HβΘ0 : β `notin` ftvar_in_aenv Θ0).
+  { pose proof (a_wf_aenv_ftvar_dom HwfΘ0) as h.
+    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
+  destruct (atom_fresh (dom Θ1 `union` ftvar_in_aenv Θ1
+                        `union` ftvar_in_pskl P1 `union` dom Ξ
+                        `union` dom Θ0 `union` ftvar_in_aenv Θ0
+                        `union` ftvar_in_aenv Ξ `union` ftvar_in_pskl P0
+                        `union` singleton α `union` singleton β))
+    as [β1 Fr].
+  assert (Hrunsw : a_sub_flex NM M P0 Θ0 Ξ α
+                     (swap_pskl β β1 P1) (swap_aenv β β1 Θ1)).
+  { apply (a_sub_flex_swap_junk β β1 NM M P0 Θ0 Ξ α P1 Θ1 Hrun);
+      [ intro Hc; subst; exact (Hne eq_refl)
+      | clear - Fr; fsetdec
+      | clear - HβΘ0 HβΞ Hnin; fsetdec
+      | clear - Fr; fsetdec ]. }
+  exists (swap_pskl β β1 P1), ((β ~ abind_flex_mono) ++ swap_aenv β β1 Θ1).
+  split.
+  { apply a_sub_flex__skip;
+      [ exact Hne | exact Hnin
+      | apply swap_junk_dom_out; clear - Fr; fsetdec
+      | exact Hrunsw ]. }
+  (* ---- 4. the package ---- *)
+  intros κf Hidf Hincf.
+  destruct (@a_inc_strip_flex_mid Ξ β Θ0 κf
+              ((β ~ abind_flex_mono) ++ swap_aenv β β1 Θ1) HdeclsΞ Hincf)
+    as [κf1 [τf [κf2 [Heqκf [Hlenf [Hincfih [_ _]]]]]]].
+  assert (Hidfih : is_id_msubst (κf1 ++ κf2)).
+  { unfold is_id_msubst in *. rewrite Heqκf in Hidf.
+    apply Forall_app in Hidf. destruct Hidf as [h1 h2].
+    inversion h2; subst. apply Forall_app; split; assumption. }
+  assert (Heqτf : τf = ptyp_var_f β).
+  { unfold is_id_msubst in Hidf. rewrite Heqκf in Hidf.
+    apply Forall_app in Hidf. destruct Hidf as [_ h2].
+    inversion h2 as [| e κl he hl]; subst.
+    unfold is_id_entry in he; simpl in he. exact he. }
+  assert (Heqw : w = κf1 ++ κf2)
+    by (eapply is_id_inc_unique;
+        [ exact Hincw | exact Hidw | exact Hincfih | exact Hidfih ]).
+  subst w.
+  destruct (Hopt (κf1 ++ κf2) Hidfih Hincw) as [ζ [Hζ [Hie Hprec]]].
+  (* the keys of ζ and of the identity live in known domains *)
+  assert (Hkeysζ : forall γ, List.In γ (List.map fst ζ) -> γ `in` dom Θ1)
+    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hζ | exact hγ ]).
+  assert (Hkeysf : forall γ, List.In γ (List.map fst (κf1 ++ κf2)) ->
+            γ `in` dom (Ξ ++ Θ0))
+    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hincfih | exact hγ ]).
+  exists ((β, τβ) :: kswap_msubst β β1 ζ).
+  split.
+  { (* the increase *)
+    apply a_inc__flex; [ | exact Hwfτβ | exact Hmonoτβ ].
+    apply (a_inc_kswap β β1 ζ Θ1 Θ Hζ);
+      [ clear - Fr; fsetdec | exact HwfΘ1 | clear - Fr; fsetdec
+      | exact HβflexΘ1 ]. }
+  split.
+  { (* the equivalence *)
+    rewrite Heqκ, Heqκf, Heqτf.
+    assert (Hsplit : msubst_compose ((β, τβ) :: kswap_msubst β β1 ζ)
+                       (κf1 ++ (β, ptyp_var_f β) :: κf2)
+                   = msubst_compose ((β, τβ) :: kswap_msubst β β1 ζ) κf1
+                     ++ (β, τβ)
+                     :: msubst_compose ((β, τβ) :: kswap_msubst β β1 ζ) κf2).
+    { unfold msubst_compose. rewrite List.map_app. simpl.
+      destruct (β == β) as [_ | n0]; [ reflexivity | exfalso; auto ]. }
+    rewrite Hsplit.
+    assert (Hid1 : is_id_msubst κf1 /\ is_id_msubst κf2).
+    { unfold is_id_msubst in Hidfih. apply Forall_app in Hidfih. exact Hidfih. }
+    destruct Hid1 as [Hidf1 Hidf2].
+    assert (Hkey1 : forall γ, List.In γ (List.map fst κf1) ->
+              γ <> β /\ γ <> β1).
+    { intros γ hγ.
+      assert (hd : γ `in` dom (Ξ ++ Θ0))
+        by (apply Hkeysf; rewrite List.map_app; apply in_or_app; left; exact hγ).
+      split; [ intro Hc; subst; clear - hd HβΞΘ0; fsetdec
+             | intro Hc; subst; clear - hd Fr; simpl_env in hd; fsetdec ]. }
+    assert (Hkey2 : forall γ, List.In γ (List.map fst κf2) ->
+              γ <> β /\ γ <> β1).
+    { intros γ hγ.
+      assert (hd : γ `in` dom (Ξ ++ Θ0))
+        by (apply Hkeysf; rewrite List.map_app; apply in_or_app; right; exact hγ).
+      split; [ intro Hc; subst; clear - hd HβΞΘ0; fsetdec
+             | intro Hc; subst; clear - hd Fr; simpl_env in hd; fsetdec ]. }
+    assert (Hk1b : forall γ, List.In γ (List.map fst κf1) -> γ <> β)
+      by (intros γ hγ; exact (proj1 (Hkey1 γ hγ))).
+    assert (Hk2b : forall γ, List.In γ (List.map fst κf2) -> γ <> β)
+      by (intros γ hγ; exact (proj1 (Hkey2 γ hγ))).
+    rewrite (@msubst_compose_head_id β τβ (kswap_msubst β β1 ζ) κf1 Hidf1 Hk1b).
+    rewrite (@msubst_compose_head_id β τβ (kswap_msubst β β1 ζ) κf2 Hidf2 Hk2b).
+    rewrite (msubst_compose_kswap_id β β1 ζ κf1 Hidf1 Hkey1).
+    rewrite (msubst_compose_kswap_id β β1 ζ κf2 Hidf2 Hkey2).
+    apply a_inc_equiv_insert_flex_mid;
+      [ exact HdeclsΞ | exact Hlen
+      | unfold msubst_compose in *; rewrite <- List.map_app; exact Hie
+      | unfold msubst_compose; rewrite List.map_length; exact Hlenf
+      | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmonoτβ ]. }
+  { (* the precision *)
+    assert (Hnbsw : β `notin` ftvar_in_pskl (swap_pskl β β1 P1)).
+    { intro Hc.
+      assert (h : β1 `in` ftvar_in_pskl P1).
+      { pose proof (swap_pskl_ftv_in_rev β β1 P1 β Hc) as h0.
+        rewrite swap_atom_l in h0. exact h0. }
+      clear - h Fr. fsetdec. }
+    assert (Hhead : msubst_bskl ((β, τβ) :: kswap_msubst β β1 ζ)
+                      (pskl_to_bskl_syn (swap_pskl β β1 P1))
+                  = msubst_bskl (kswap_msubst β β1 ζ)
+                      (pskl_to_bskl_syn (swap_pskl β β1 P1))).
+    { apply msubst_bskl_head_notin.
+      rewrite ftvar_in_bskl_syn. exact Hnbsw. }
+    rewrite Hhead.
+    rewrite (msubst_bskl_kswap_paint β β1 ζ P1);
+      [ exact Hprec
+      | clear - Fr; fsetdec
+      | intro hc; pose proof (Hkeysζ β1 hc) as h; clear - h Fr; fsetdec
+      | clear - Fr; fsetdec
+      | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
+          as [hin | hout]; [ right | left; exact hout ];
+        assert (hbt : a_binds_tvar β Θ1)
+          by (eapply a_scope_pskl_ftv_binds; [ exact HscP1 | exact hin ]);
+        destruct hbt as [hbt | [hbt | [τ0 hbt]]];
+        [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
+            discriminate
+        | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
+        | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ]. }
+Qed.
+
+(* ===================================================================== *)
+(*  RESTART NOTE — [Flex-SkipRigid] is BLOCKED, and not on the swap kit    *)
+(*                                                                        *)
+(*  The pattern above works for [Flex-Skip] / [Flex-Assign] because       *)
+(*  [a_inc__flex] / [a_inc__flex_def] keep the TARGET fixed: peeling a     *)
+(*  flexible source entry leaves [κ' ∷ (Ξ ++ Θ0) ⊑ Θ] at the SAME Θ, so   *)
+(*  the join / fill / wf premises transport verbatim.                     *)
+(*                                                                        *)
+(*  [a_inc__tvar] does NOT: [κ ∷ (Ξ ++ (β ~ tvar) ++ Θ0) ⊑ Θ] forces      *)
+(*  [Θ = Ξv ++ (β ~ tvar) ++ Θ'] with [a_suffix Ξv] and [κ' ∷ Θ0 ⊑ Θ']    *)
+(*  ([a_inc_tvar_inv], prop_inc.v:255).  So the IH's target must be the   *)
+(*  TRUNCATION Θ', not Θ — and [κ' ∷ Θ0 ⊑ Θ] is not merely unproved but   *)
+(*  FALSE as soon as Θ0 carries a rigid / term entry, since [a_inc__tvar] *)
+(*  demands only an [a_suffix] above the matching target entry and [Θ]    *)
+(*  has [β ~ tvar] there.                                                 *)
+(*                                                                        *)
+(*  Two further obligations the row therefore owes, BOTH of which the     *)
+(*  consistency walk's own [Assign-SkipRigid] already pays                *)
+(*  (prop_consis_complete.v:4930-5153, the model to crib):                *)
+(*                                                                        *)
+(*  1. THE MOTIVE IS MISSING AN INVARIANT.  [assign_complete_at]          *)
+(*     (prop_consis_complete.v:2249) carries [dom Ξ [<=] ftvar_in_pskl P] *)
+(*     and [sub_flex_complete_concl] does not.  Without it nothing        *)
+(*     confines the images of Ξ's flexibles, and Ξ sits ABOVE β in the    *)
+(*     source, so [κ γ̂] may legitimately mention β — after which no ζ     *)
+(*     over the output [(β ~ tvar) ++ Θ1] can reproduce it (in the output *)
+(*     β is at the TOP, so Θ1's flexibles are scoped below it).  The      *)
+(*     invariant is supplied at [a_sub__flex_mono] (Ξ = ·) and preserved  *)
+(*     by every walk row, exactly as in the consistency motive.           *)
+(*  2. A STUCK-CHECK.  With a RIGID head there is no rule at all when     *)
+(*     [β ∈ ftvar_in_pskl P0], so the row must REFUTE that configuration  *)
+(*     from the solution — the subtyping-level twin of                    *)
+(*     [rigid_survives_solution] + [ad_pat_consis_rigid_ftv_rev_scoped].  *)
+(*                                                                        *)
+(*  Neither is a swap-kit gap: the kit discharges the Barendregt premise  *)
+(*  (that half is [swap_junk_dom_out], and it is the same here), and what *)
+(*  is missing is the ⇓-truncation apparatus ([a_inc_self_downarrow],     *)
+(*  [join_pskl_downarrow_mono_scoped]) lifted from consistency's join to  *)
+(*  [ad_pat_sub_gv].                                                      *)
+(*                                                                        *)
+(*  [Flex-Assign] and [Flex-Solve] are not blocked by any of this, but    *)
+(*  they leave the walk: both re-enter the MAIN half at fuel ≤ n, so      *)
+(*  their row lemmas take the P7b motive as their IH, not this one.       *)
+(* ===================================================================== *)

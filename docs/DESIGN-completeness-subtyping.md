@@ -4232,3 +4232,80 @@ premises and the fill rather than read off the join.
 4. P7a itself, which needs the `a_sub` / `a_sub_flex` run-renaming kit (K1–K4)
    to discharge the walk's three `β ∉ dom Θ1` premises (algo/def_extra.v
    :1100/:1116/:1123).
+
+## §13 P7a — what the walk rows actually cost (measured 2026-08-02, against the tree)
+
+§12's item 4 ("P7a itself, which needs the run-renaming kit K1–K4") is now
+half-executed and half-corrected.  The swap kit was sufficient for the half it
+was built for; the other half is a different problem.
+
+### The rows split THREE ways, not two
+
+| row | where its IH lives | status |
+|---|---|---|
+| `Flex-Depend` | this motive, same context up to `++`-assoc | **Qed** |
+| `Flex-Skip` | this motive, at the stripped context, SAME target Θ | **Qed** |
+| `Flex-SkipRigid` | this motive, at the stripped context, TRUNCATED target Θ' | blocked, see below |
+| `Flex-Assign` | **the P7b motive** (`sub_complete_concl`) at fuel ≤ n | open |
+| `Flex-Solve` | **the P7b motive** at fuel ≤ n | open |
+
+`Flex-Assign` re-enters the MAIN judgment with the substituted subject
+`α̂[τ/β̂]` — for `β̂ = α̂` that is the bare monotype τ, not a variable — so it is a
+cross-half row exactly like `Flex-Solve`, and neither takes
+`sub_flex_complete_concl` as its IH.  Only the three walk-internal rows do.
+
+### Why `Flex-Skip` works and `Flex-SkipRigid` does not: `a_inc` is POSITIONAL
+
+`a_inc__flex` / `a_inc__flex_def` hold the target FIXED
+(`κ ∷ Θ ⊑ Θ'  ⟹  ((α,τ)::κ) ∷ ((α ~ flex) ++ Θ) ⊑ Θ'`), so stripping a flexible
+entry out of the middle of the source leaves `κ' ∷ (Ξ ++ Θ0) ⊑ Θ` at the SAME Θ
+— and every other premise of the motive (the join, the fill, wf of Θ, the ≡ᵘ
+slack) is stated at Θ and therefore transports verbatim.  That is the whole
+reason the discharge pattern is short:
+
+1. peel around the mid entry (`a_inc_strip_flex_mid`);
+2. feed the IH;
+3. pick β1 fresh;
+4. junk-swap the IH's run (`a_sub_flex_swap_junk`) and re-attach with
+   `swap_junk_dom_out` — this is the Barendregt premise, discharged;
+5. rebuild the package as `(β, κ's β-image) :: kswap_msubst β β1 ζ`, via
+   `a_inc_kswap` / `msubst_compose_kswap_id` + `msubst_compose_head_id` /
+   `msubst_bskl_head_notin` + `msubst_bskl_kswap_paint`.
+
+`a_inc__tvar` breaks step 1.  `κ ∷ (Ξ ++ (β ~ tvar) ++ Θ0) ⊑ Θ` forces
+`Θ = Ξv ++ (β ~ tvar) ++ Θ'` with `a_suffix Ξv` and `κ' ∷ Θ0 ⊑ Θ'`
+(`a_inc_tvar_inv`).  The IH's target is therefore Θ', and `κ' ∷ Θ0 ⊑ Θ` is
+FALSE — not merely unproved — as soon as Θ0 carries a rigid or a term entry,
+since `a_inc__tvar` / `a_inc__var` admit only an `a_suffix` above the matching
+target entry and Θ has `β ~ tvar` sitting there.  So the row needs the
+⇓-truncation apparatus, which is precisely what the consistency walk's own
+`Assign-SkipRigid` already pays (`a_inc_self_downarrow`,
+`join_pskl_downarrow_mono_scoped`, prop_consis_complete.v:4930-5153) — lifted
+from `ad_pat_consis` to `ad_pat_sub_gv`.
+
+### `sub_flex_complete_concl` is missing `dom Ξ [<=] ftvar_in_pskl P0`
+
+The consistency motive has it (`assign_complete_at`,
+prop_consis_complete.v:2249); the subtyping one does not.  It is load-bearing at
+`Flex-SkipRigid` and only there: Ξ sits ABOVE β in the source, so a solution may
+map a Ξ-flexible `γ̂` to the skipped rigid β, and the rule re-attaches β at the
+TOP of the output (`Θ1, β`), where Θ1's flexibles are scoped BELOW it — so no ζ
+over the output can reproduce `γ̂ ↦ β`.  With the invariant, `γ̂ ∈ ftv P0`, and
+the chain "β ∈ ftv (κ P0) ⟹ β ∈ ftv Q (fill) ⟹ β ∈ ftv (κ α̂) (join, monotype
+subject) ⟹ contradiction with `κ α̂` scoped below β" closes the hole — the last
+step being the subtyping twin of `ad_pat_consis_rigid_ftv_rev_scoped`.  The
+invariant is supplied at `a_sub__flex_mono` (Ξ = ·) and preserved by every walk
+row, so the dispatcher can pay for it.
+
+The same place owes a STUCK-CHECK: with a rigid head and `β ∈ ftvar_in_pskl P0`
+NO rule applies, so the row must refute that configuration from the solution
+(`rigid_survives_solution`'s twin).
+
+### Order for the rest of P7a
+
+1. add `dom Ξ [<=] ftvar_in_pskl P0` to `sub_flex_complete_concl` and re-close
+   the two Qed rows (they do not use it, so this is mechanical);
+2. lift `ad_pat_consis_rigid_ftv_rev_scoped` / `join_pskl_downarrow_mono_scoped`
+   to `ad_pat_sub_gv`; then `Flex-SkipRigid` and its stuck-check;
+3. the two cross-half rows, against the P7b motive;
+4. the dispatcher (§12).

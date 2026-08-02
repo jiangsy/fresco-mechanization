@@ -78,7 +78,70 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-02 (latest) — ⭐⭐⭐ THE SWAP KIT (equivariance) LANDS: `prop_swap.v`, the UNIFORM renaming primitive — P7a's K1–K3 subsumed in one pass
+## 2026-08-02 (latest) — ⭐⭐ P7a STARTED: the swap kit's discharge pattern is MACHINE-CHECKED (Flex-Depend + Flex-Skip `Qed`), and `Flex-SkipRigid` is BLOCKED on something else entirely
+
+**What landed** (`prop_sub_complete_thm.v`, new P7a section, all `Qed`, tree green
+and axiom-free):
+
+- **The pattern works end to end.**  `a_sub_flex_complete_skip` discharges the
+  walk's Barendregt output premise (`β ∉ dom Θ1`, algo/def_extra.v:1116) exactly
+  as the swap kit predicted: PEEL κ around the mid β entry
+  (`a_inc_strip_flex_mid`) → IH at the stripped context → junk-swap the IH's run
+  (`a_sub_flex_swap_junk`) → re-attach via `swap_junk_dom_out` → rebuild the
+  package as `(β, κ's β-image) :: kswap_msubst β β1 ζ`, with `a_inc_kswap` for
+  the increase, `msubst_compose_kswap_id` + `msubst_compose_head_id` for the
+  equivalence, and `msubst_bskl_head_notin` + `msubst_bskl_kswap_paint` for the
+  precision.  Every §14/§15 lemma the K4 commit built is consumed; none was
+  wrong or missing.
+- **`a_sub_flex_complete_depend`** — re-association only.
+- **The two en-route facts, both cheap after all**: `a_sub_flex_sound_thm`
+  (`(Ξ ++ Θ0) ⊴ Θ1 ∧ a_wf_aenv Θ1`, by composing `a_sub_decorate_bundle`'s and
+  `a_subtag_sound_bundle`'s SECOND halves — no new mutual), and RIGID
+  PROVENANCE, which is `a_inc_binds_provenance` (a target entry is flexible or
+  comes from the source by name) applied to that ⊴ witness.  Also new and
+  reusable: `ad_pat_sub_target_wf` (the subtyping twin of
+  `ad_pat_consis_target_wf`), `a_sub_flex_out_scope`, `a_wf_aenv_ftvar_dom`,
+  `a_inc_equiv_insert_flex_mid`.
+
+**⚠️ THE REAL P7a BLOCKER IS NOT THE SWAP KIT — it is `a_inc`'s POSITIONALITY.**
+The pattern works for `Flex-Skip` / `Flex-Assign` because `a_inc__flex` /
+`a_inc__flex_def` keep the TARGET fixed, so peeling a flexible source entry
+leaves `κ' ∷ (Ξ ++ Θ0) ⊑ Θ` at the SAME Θ and the join / fill / wf premises
+transport verbatim.  `a_inc__tvar` does not: `κ ∷ (Ξ ++ (β ~ tvar) ++ Θ0) ⊑ Θ`
+forces `Θ = Ξv ++ (β ~ tvar) ++ Θ'` with `κ' ∷ Θ0 ⊑ Θ'` (`a_inc_tvar_inv`), so
+the IH's target must be the TRUNCATION Θ'.  And `κ' ∷ Θ0 ⊑ Θ` is not merely
+unproved but FALSE as soon as Θ0 carries a rigid or term entry, because
+`a_inc__tvar` admits only an `a_suffix` above the matching target entry and Θ
+has `β ~ tvar` there.  So `Flex-SkipRigid` needs the ⇓-TRUNCATION apparatus the
+consistency walk already has (`a_inc_self_downarrow`,
+`join_pskl_downarrow_mono_scoped`), lifted from `ad_pat_consis` to
+`ad_pat_sub_gv`.  `prop_consis_complete.v:4930-5153` (`Assign-SkipRigid`) is the
+model to crib, line for line.
+
+**⚠️ AND THE P7a MOTIVE IS MISSING AN INVARIANT.**  The consistency walk's
+`assign_complete_at` (prop_consis_complete.v:2249) carries
+`dom Ξ [<=] ftvar_in_pskl P`; `sub_flex_complete_concl` does not.  Without it
+nothing confines the images of Ξ's flexibles — and Ξ sits ABOVE β in the source,
+so `κ γ̂` may legitimately mention the skipped rigid β, after which NO ζ over the
+output `(β ~ tvar) ++ Θ1` can reproduce it (the rule re-attaches β at the TOP, so
+Θ1's flexibles are scoped below it).  The invariant is supplied at
+`a_sub__flex_mono` (Ξ = ·) and preserved by every walk row, exactly as in the
+consistency motive; adding it is a motive change the dispatcher can pay for.
+A third obligation falls out of the same place: with a RIGID head and
+`β ∈ ftvar_in_pskl P0` there is no rule at all, so the row must REFUTE that
+configuration from the solution — the subtyping twin of
+`rigid_survives_solution` + `ad_pat_consis_rigid_ftv_rev_scoped`.
+
+**Also corrected against the tree**: `Flex-Assign` and `Flex-Solve` do NOT stay
+inside the walk — both re-enter the MAIN half (`Flex-Assign` at the substituted
+subject `α̂[τ/β̂]`, which for `β̂ = α̂` is the bare monotype τ), so their row
+lemmas take the P7b motive `sub_complete_concl` as their IH, not
+`sub_flex_complete_concl`.  Only Depend / Skip / SkipRigid are walk-internal.
+
+**Next**: the motive's `dom Ξ ⊆ ftv P0` invariant + the ⇓-truncation lift, then
+SkipRigid; then the two cross-half rows; then the dispatcher (§12).
+
+## 2026-08-02 — ⭐⭐⭐ THE SWAP KIT (equivariance) LANDS: `prop_swap.v`, the UNIFORM renaming primitive — P7a's K1–K3 subsumed in one pass
 
 **The user's uniformity directive** (2026-08-02): ONE treatment of freshness
 repair across the whole proof — no mixture of the `F` avoidance set, exists-`L`
