@@ -4638,6 +4638,293 @@ Proof.
     | exact Hie ].
 Qed.
 
+
+(* ===================================================================== *)
+(*  (L)  Flex-SkipRigid's FIRST HALF — moving the solution-side data to    *)
+(*       the TRUNCATED context                                            *)
+(*                                                                        *)
+(*  [Flex-SkipRigid] must run its IH at the truncation Θ' that             *)
+(*  [a_inc_tvar_inv] hands back (see the RESTART NOTE below), so every     *)
+(*  solution-side premise has to move from Θ to a SUB-context.  These two  *)
+(*  lemmas are that move for the REFINEMENT and for the JOIN; consistency  *)
+(*  already had it ([ad_pat_consis_strengthen]) and so did skeleton wf     *)
+(*  ([a_wf_pskl_strengthen]).                                             *)
+(*                                                                        *)
+(*  ⚠️ The JOIN does NOT strengthen in general: the two ForallL rows       *)
+(*  introduce a GUESS whose scope no condition on the conclusion controls. *)
+(*  At a MONOTYPE subject they cannot fire, which is exactly the           *)
+(*  configuration [Flex-SkipRigid] is in (the subject is [syn{κα̂}]).  Note *)
+(*  the mode must stay GENERAL in the statement: [__arrow]'s recursive     *)
+(*  premise runs at [M], not at [mode_fn M], so an FN-only version does    *)
+(*  not even induct.                                                      *)
+(*                                                                        *)
+(*  This replaces, for the subtyping walk, the heavier ⇓-NORMALIZATION     *)
+(*  route the consistency walk needs ([a_inc_downarrow_prefix] and         *)
+(*  friends): there the counterpart is a free [Q], here it is pinned to a  *)
+(*  monotype painting, so plain strengthening suffices.                    *)
+(* ===================================================================== *)
+
+(** Refinement strengthens along the same ftv discipline as consistency, with
+    two extra bits of care: the bound is [Δ ∪ dom Θ'] (the ∀ rows push their
+    opener into Δ, where [__var]'s left disjunct catches it), and the
+    definition chases need [Δ] apart from [dom Θ] so that a flexible's ftv
+    obligation cannot be discharged by the Δ-disjunct. *)
+Lemma ad_refine_pskl_strengthen : forall Θ Δ P Q,
+  Θ ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q ->
+  forall Θ', uniq Θ -> a_wf_aenv Θ' ->
+  (forall x b, binds x b Θ' -> binds x b Θ) ->
+  (forall x, x `in` Δ -> x `notin` dom Θ) ->
+  (forall γ, γ `in` ftvar_in_pskl P -> γ `in` Δ \/ γ `in` dom Θ') ->
+  (forall γ, γ `in` ftvar_in_pskl Q -> γ `in` Δ \/ γ `in` dom Θ') ->
+  Θ' ⨟ Δ ⊢ᵣₚᵃ P ⊳ Q.
+Proof.
+  intros Θ Δ P Q H; induction H;
+    intros Θ' Hu Hwf' Hsub Hdisj HscP HscQ; simpl in *.
+  - apply ad_refine_pskl__unit.
+  - (* var *)
+    apply ad_refine_pskl__var.
+    destruct H as [HΔ | Ht]; [ left; exact HΔ | ].
+    destruct (HscP α ltac:(clear; fsetdec)) as [hΔ | hd];
+      [ left; exact hΔ | right ].
+    eapply a_binds_tvar_strengthen;
+      [ exact Ht | exact Hu | exact Hsub | exact hd ].
+  - (* arrow *)
+    apply ad_refine_pskl__arrow;
+      [ apply IHad_refine_pskl1 | apply IHad_refine_pskl2 ];
+      auto; intros γ Hγ;
+      solve [ apply HscP; clear - Hγ; fsetdec
+            | apply HscQ; clear - Hγ; fsetdec ].
+  - (* all : the opener joins Δ *)
+    apply ad_refine_pskl__all with (L := L `union` dom Θ `union` Δ).
+    intros α Hα.
+    apply H0; [ clear - Hα; fsetdec | exact Hu | exact Hwf' | exact Hsub
+              | intros x Hx; assert (h : x `in` Δ \/ x = α)
+                  by (clear - Hx; fsetdec);
+                destruct h as [h | ->];
+                  [ exact (Hdisj x h) | clear - Hα; fsetdec ]
+              | | ].
+    + intros γ Hγ.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α))
+        as Hup. simpl in Hup.
+      destruct (γ == α) as [-> | Hne]; [ left; clear; fsetdec | ].
+      destruct (HscP γ ltac:(clear - Hγ Hup Hne; fsetdec)) as [h | h];
+        [ left; clear - h; fsetdec | right; exact h ].
+    + intros γ Hγ.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f α))
+        as Hup. simpl in Hup.
+      destruct (γ == α) as [-> | Hne]; [ left; clear; fsetdec | ].
+      destruct (HscQ γ ltac:(clear - Hγ Hup Hne; fsetdec)) as [h | h];
+        [ left; clear - h; fsetdec | right; exact h ].
+  - (* hole : the fill is Δ-free, so its ftv really is in dom Θ' *)
+    apply ad_refine_pskl__hole.
+    assert (HftQ : forall γ, γ `in` ftvar_in_pskl Q -> γ `in` dom Θ').
+    { intros γ Hγ.
+      destruct (HscQ γ Hγ) as [h | h]; [ exfalso | exact h ].
+      assert (hd : γ `in` dom Θ) by (eapply a_wf_pskl_ftv_dom; eassumption).
+      exact (Hdisj γ h hd). }
+    eapply a_wf_pskl_strengthen;
+      [ exact H | exact Hu | intros x Hx; exfalso; clear - Hx; fsetdec
+      | exact Hsub | ].
+    intros γ Hγ. right. apply HftQ; exact Hγ.
+  - (* tophole_remove *)
+    apply ad_refine_pskl__tophole_remove. apply IHad_refine_pskl; auto.
+  - (* tophole_fill : the opener joins the CONTEXT *)
+    apply ad_refine_pskl__tophole_fill
+      with (L := L `union` dom Θ `union` dom Θ' `union` Δ).
+    intros α Hα.
+    apply H0; [ clear - Hα; fsetdec | | | | | | ].
+    + simpl_env. apply uniq_cons_3; [ exact Hu | clear - Hα; fsetdec ].
+    + apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf' ].
+    + intros x b0 Hb0. analyze_binds Hb0.
+    + intros x Hx. simpl_env.
+      assert (h : x `notin` dom Θ) by (exact (Hdisj x Hx)).
+      assert (h2 : x <> α) by (intro Hc; subst; clear - Hα Hx; fsetdec).
+      clear - h h2. fsetdec.
+    + intros γ Hγ.
+      destruct (HscP γ ltac:(clear - Hγ; fsetdec)) as [h | h];
+        [ left; exact h | right; simpl_env; clear - h; fsetdec ].
+    + intros γ Hγ.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q (pskl_var_f α))
+        as Hup. simpl in Hup.
+      destruct (γ == α) as [-> | Hne];
+        [ right; simpl_env; clear; fsetdec | ].
+      destruct (HscQ γ ltac:(clear - Hγ Hup Hne; fsetdec)) as [h | h];
+        [ left; exact h | right; simpl_env; clear - h; fsetdec ].
+  - (* tophole_keep *)
+    apply ad_refine_pskl__tophole_keep; [ exact H | ].
+    apply IHad_refine_pskl; auto.
+  - (* flex_l *)
+    assert (hd : α `in` dom Θ').
+    { destruct (HscP α ltac:(clear; fsetdec)) as [h | h]; [ exfalso | exact h ].
+      assert (hdΘ : α `in` dom Θ) by (eapply binds_In; exact H).
+      exact (Hdisj α h hdΘ). }
+    assert (Hb' : binds α (abind_flex_mono_def τ) Θ')
+      by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub
+                                   | exact hd ]).
+    eapply ad_refine_pskl__flex_l; [ exact Hb' | ].
+    apply IHad_refine_pskl; auto.
+    intros γ Hγ. right.
+    assert (hw : a_wf_ptyp Θ' τ)
+      by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
+    apply a_wf_ptyp_ftv_dom in hw.
+    rewrite ftvar_in_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
+  - (* flex_r *)
+    assert (hd : α `in` dom Θ').
+    { destruct (HscQ α ltac:(clear; fsetdec)) as [h | h]; [ exfalso | exact h ].
+      assert (hdΘ : α `in` dom Θ) by (eapply binds_In; exact H).
+      exact (Hdisj α h hdΘ). }
+    assert (Hb' : binds α (abind_flex_mono_def τ) Θ')
+      by (eapply binds_strengthen; [ exact H | exact Hu | exact Hsub
+                                   | exact hd ]).
+    eapply ad_refine_pskl__flex_r; [ exact Hb' | ].
+    apply IHad_refine_pskl; auto.
+    intros γ Hγ. right.
+    assert (hw : a_wf_ptyp Θ' τ)
+      by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
+    apply a_wf_ptyp_ftv_dom in hw.
+    rewrite ftvar_in_ptyp_to_pskl in Hγ. clear - hw Hγ. fsetdec.
+Qed.
+
+(** THE JOIN STRENGTHENS AT A MONOTYPE SUBJECT.  In general it does NOT: the
+    two ForallL rows introduce a GUESS whose scope no condition on the
+    conclusion controls.  At a monotype subject they cannot fire (a mono
+    painting is [unit] / a variable / an arrow, never a ∀ and never a ghost),
+    and every surviving row keeps its new material inside the subject's or the
+    counterpart's free variables — with the definition chase [__flex_mono]
+    reading a binding the ftv condition already places in Θ'.  This is what
+    [Flex-SkipRigid] needs to move its join to the TRUNCATED solution.
+
+    ⚠️ The mode must stay GENERAL: [__arrow]'s recursive premise runs at [M],
+    not at [mode_fn M], so an FN-only statement does not even induct. *)
+Lemma ad_pat_sub_gv_mono_strengthen : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  forall τ, R = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
+  forall Θ', uniq Θ -> a_wf_aenv Θ' ->
+  (forall x b, binds x b Θ' -> binds x b Θ) ->
+  (forall γ, γ `in` ftvar_in_ptyp τ -> γ `in` dom Θ') ->
+  (forall γ, γ `in` ftvar_in_bskl Q -> γ `in` dom Θ') ->
+  ad_pat_sub_gv n NM M Ψ Θ' R Q.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H;
+    intros τ0 HeqR Hm Θ' Hu Hwf' Hsub HscR HscQ;
+    pose proof (ftvar_in_uskl_ptyp_syn τ0) as HftvR;
+    rewrite <- HeqR in HftvR.
+  - (* infer *)
+    apply ad_pat_sub_gv__infer; try assumption.
+    + eapply ad_pat_consis_strengthen; try eassumption;
+        intros γ Hγ;
+        solve [ apply HscR; clear - Hγ HftvR; fsetdec
+              | apply HscQ; clear - Hγ; fsetdec ].
+    + eapply ad_refine_pskl_strengthen;
+        [ eassumption | exact Hu | exact Hwf' | exact Hsub
+        | intros x Hx; exfalso; clear - Hx; fsetdec | | ];
+        intros γ Hγ; right;
+        solve [ apply HscR; rewrite ftvar_in_pskl_uskl_to_pskl in Hγ;
+                clear - Hγ HftvR; fsetdec
+              | apply HscQ; rewrite ftvar_in_pskl_bskl_to_pskl in Hγ;
+                clear - Hγ; fsetdec ].
+  - (* check *)
+    apply ad_pat_sub_gv__check; try assumption.
+    + eapply ad_pat_consis_strengthen; try eassumption;
+        intros γ Hγ;
+        solve [ apply HscR; clear - Hγ HftvR; fsetdec
+              | apply HscQ; rewrite ftvar_in_bskl_inh; clear - Hγ; fsetdec ].
+    + eapply ad_refine_pskl_strengthen;
+        [ eassumption | exact Hu | exact Hwf' | exact Hsub
+        | intros x Hx; exfalso; clear - Hx; fsetdec | | ];
+        intros γ Hγ; right;
+        solve [ apply HscR; rewrite ftvar_in_pskl_uskl_to_pskl in Hγ;
+                clear - Hγ HftvR; fsetdec
+              | apply HscQ; rewrite ftvar_in_bskl_inh; clear - Hγ; fsetdec ].
+  - (* forall_r : the opener joins the CONTEXT *)
+    apply ad_pat_sub_gv__forall_r with (L := L `union` dom Θ `union` dom Θ').
+    intros α Hα.
+    eapply H0;
+      [ clear - Hα; fsetdec | exact HeqR | exact Hm
+      | simpl_env; apply uniq_cons_3; [ exact Hu | clear - Hα; fsetdec ]
+      | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf' ]
+      | intros x b0 Hb0; analyze_binds Hb0
+      | intros γ Hγ; simpl_env; assert (h := HscR γ Hγ); clear - h; fsetdec
+      | ].
+    intros γ Hγ. simpl_env.
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper B (bskl_var_f α))
+      as Hup. simpl in Hup.
+    destruct (γ == α) as [-> | Hne]; [ clear; fsetdec | ].
+    assert (h : γ `in` dom Θ')
+      by (apply HscQ; simpl; clear - Hγ Hup Hne; fsetdec).
+    clear - h; fsetdec.
+  - (* univ_ghost_r *)
+    apply ad_pat_sub_gv__univ_ghost_r; try assumption.
+    + eapply ad_pat_consis_strengthen; try eassumption;
+        intros γ Hγ;
+        solve [ apply HscR; clear - Hγ HftvR; fsetdec
+              | apply HscQ; simpl; clear - Hγ; fsetdec ].
+    + eapply ad_refine_pskl_strengthen;
+        [ eassumption | exact Hu | exact Hwf' | exact Hsub
+        | intros x Hx; exfalso; clear - Hx; fsetdec | | ];
+        intros γ Hγ; right;
+        solve [ apply HscR; rewrite ftvar_in_pskl_uskl_to_pskl in Hγ;
+                clear - Hγ HftvR; fsetdec
+              | apply HscQ; simpl;
+                rewrite ftvar_in_pskl_bskl_to_pskl in Hγ;
+                clear - Hγ; fsetdec ].
+  - (* arrow *)
+    destruct τ0; cbn in HeqR; try discriminate HeqR.
+    inversion HeqR; subst. inversion Hm; subst.
+    eapply ad_pat_sub_gv__arrow; [ | | | eassumption ].
+    + eapply ad_pat_consis_strengthen; try eassumption.
+      * intros γ Hγ. apply HscR. simpl. simpl in HftvR.
+        clear - Hγ HftvR. fsetdec.
+      * intros γ Hγ. apply HscQ. simpl. clear - Hγ. fsetdec.
+    + eapply ad_refine_pskl_strengthen;
+        [ eassumption | exact Hu | exact Hwf' | exact Hsub
+        | intros x Hx; exfalso; clear - Hx; fsetdec | | ].
+      * intros γ Hγ. right. apply HscR. simpl.
+        rewrite ftvar_in_pskl_uskl_to_pskl in Hγ.
+        simpl in HftvR. clear - Hγ HftvR. fsetdec.
+      * intros γ Hγ. right. apply HscQ. simpl.
+        rewrite ftvar_in_pskl_bskl_to_pskl in Hγ. clear - Hγ. fsetdec.
+    + eapply IHad_pat_sub_gv;
+        [ reflexivity | assumption | exact Hu | exact Hwf' | exact Hsub | | ].
+      * intros γ Hγ. apply HscR. simpl. simpl in HftvR.
+        clear - Hγ HftvR. fsetdec.
+      * intros γ Hγ. apply HscQ. simpl. clear - Hγ. fsetdec.
+  - (* forall_l_tagged : a mono painting is never a ∀ *)
+    destruct τ0; cbn in HeqR; discriminate HeqR.
+  - (* forall_l_untagged : a mono painting's ∀ shape is [uskl_all_syn], so
+       the discriminate only kills the non-∀ shapes; [mono] kills the ∀ *)
+    destruct τ0; cbn in HeqR; try discriminate HeqR. inversion Hm.
+  - (* ghost *)
+    destruct τ0; cbn in HeqR; discriminate HeqR.
+  - (* ghostg *)
+    destruct τ0; cbn in HeqR; discriminate HeqR.
+  - (* univ_ghost_l *)
+    destruct τ0; cbn in HeqR; discriminate HeqR.
+  - (* univ_ghost_lg *)
+    destruct τ0; cbn in HeqR; discriminate HeqR.
+  - (* flex_mono : the definition chase *)
+    (* keep the RULE's α: do the shape analysis inside an [assert] so the
+       destruct's freshening stays local *)
+    assert (Hτ0 : τ0 = ptyp_var_f α)
+      by (destruct τ0; cbn in HeqR; try discriminate HeqR;
+          injection HeqR; intros ->; reflexivity).
+    subst τ0.
+    assert (HαΘ' : α `in` dom Θ')
+      by (apply HscR; simpl; clear; fsetdec).
+    assert (Hb' : binds α (abind_flex_mono_def τ) Θ')
+      by (eapply binds_strengthen; [ eassumption | exact Hu | exact Hsub
+                                   | exact HαΘ' ]).
+    eapply ad_pat_sub_gv__flex_mono; [ exact Hb' | ].
+    eapply IHad_pat_sub_gv;
+      [ reflexivity
+      | eapply a_wf_aenv_binds_def_mono; [ exact Hwf' | exact Hb' ]
+      | exact Hu | exact Hwf' | exact Hsub | | exact HscQ ].
+    intros γ Hγ.
+    assert (hw : a_wf_ptyp Θ' τ)
+      by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf' | exact Hb' ]).
+    apply a_wf_ptyp_ftv_dom in hw. clear - hw Hγ. fsetdec.
+Qed.
+
 (* ===================================================================== *)
 (*  RESTART NOTE — [Flex-SkipRigid] is BLOCKED, and not on the swap kit    *)
 (*                                                                        *)
