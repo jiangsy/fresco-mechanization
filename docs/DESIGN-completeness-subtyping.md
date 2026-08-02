@@ -4149,3 +4149,86 @@ them — and that difference is real.
 **`cex/cex_p7_shield_arrow.v` is now REFUTED, as intended,** and has become
 `cex/regr_p7_shield_arrow.v`: both witnesses are shielded, one by each new row.
 `make coq` green from clean, 41 `Print Assumptions` closed, zero admits.
+
+---
+
+## §12 P7c — the DISPATCHER, scoped (2026-08-02)
+
+P7b's seven row lemmas are all `Qed` and axiom-free; what is missing is the
+bundle that assembles them, `a_sub_complete_thm` (algorithmic.tex:1446),
+referenced in prop_sub_complete_thm.v's roadmap but never written — the file
+ends after the seventh row.  This is the scoping, done against the tree.
+
+### The dispatch is on the JOIN, and it has TWELVE cases, not seven
+
+Every row lemma has the same interface:
+
+```coq
+Lemma a_sub_complete_<row> : forall n <row args>,
+  (forall NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q',
+     sub_complete_concl n NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q') ->  (* IH at fuel n *)
+  <premises read off the join's last rule> ->
+  sub_complete_concl (S n) …
+```
+
+so the dispatcher inverts `ad_pat_sub_gv` and delegates.  `ad_pat_sub_gv`
+(def_decl_algo_sub_hyg.v:143) has **twelve** constructors:
+
+| join constructor | dispatch |
+|---|---|
+| `__infer`, `__check`, `__univ_ghost_r`, `__ghost`, `__ghostg` | leaf rows, `Qed` |
+| `__arrow`, `__forall_r`, `__forall_l_tagged`, `__forall_l_untagged` | recursive rows, `Qed` |
+| `__univ_ghost_l`, `__univ_ghost_lg` | **no row lemma exists** — short inline IH applications wrapping `a_sub__univ_ghost_l` / `_lg` |
+| `__flex_mono` | **P7a**, the flex half |
+
+### ⚠️ The induction cannot be a plain one on the fuel
+
+`__univ_ghost_l`, `__univ_ghost_lg` and `__flex_mono` conclude at fuel `n`, not
+`S n` — they do not consume fuel, and they do not shrink `Ψ` either, so
+lex(fuel, |Ψ|) does not decrease on them.  What does decrease is the JOIN
+DERIVATION.  So the dispatcher is two nested inductions:
+
+- outer: strong induction on the fuel `n` (`lt_wf_ind`), which is what feeds the
+  row lemmas their `sub_complete_concl n` argument at a conclusion of `S n`;
+- inner: structural induction on `ad_pat_sub_gv n …`, which handles the three
+  fuel-preserving rules.
+
+At fuel 0 only the leaves and the three fuel-preserving rules can fire, so the
+inner induction covers it with no separate base case.
+
+### What the dispatcher must RECOVER, and what it must be GIVEN
+
+The join fixes `R'` and `Q`; the row lemmas are stated at the *subject* `R` too,
+related only by the ≡ᵘ slack `Θ ⊢ R' ≡ᵘ msubst_uskl_syn κ R`.  So each case owes
+a shape transfer from `R'` to `R`.  The kit is partial
+(prop_sub_msubst_equiv.v): `a_uskl_tyequiv_arrow_arrow_inv`, `_all_syn_inv`,
+`_all_etag_inv`, `_hole_l_inv`, `_holeg_l_inv`, `_mono_r_inv` exist and are
+stated in the direction the rows already use; the dispatcher needs the
+complementary "`R'` has shape X ⟹ `κR` has shape X" direction, which is where
+the flexible case splits off (`κα̂` may be an arrow while `R` is a bare `α̂` —
+that is exactly `__flex_mono` ⇒ P7a).
+
+⛔ **THE BLOCKER, and it is pre-existing.**  Both ForallL rows demand
+`sub_shield Θ0 Ψa empty P0 ψa` as a premise, and the join does NOT supply it.
+`sub_shield` is TASK 0, and prop_sub_shield_supply.v closes it only for a
+RESTRICTED `P0` — `sub_shield_flex_free`, `sub_shield_atomic`,
+`sub_shield_supply_mono_counterpart`, and the inh-free counterpart — leaving
+open exactly the case of a `P0` carrying a `∀` below its head.  So P7c cannot
+be closed unconditionally today: the dispatcher can be written and every other
+case discharged, but the two ForallL cases must either take the shield as a
+hypothesis or wait for TASK 0's residual.  The two ForallL rows also need
+`(guarded_pskl P0 \/ P0 = pskl_hole)` and, at `NM = TY`, the subject's
+ghost-freeness — both of which have to be derived from the mode-compatibility
+premises and the fill rather than read off the join.
+
+### Recommended order
+
+1. the ten non-ForallL cases (nine delegations + the two inline univ-ghost-l
+   rows), with P7a taken as a hypothesis — this is self-contained and closes
+   most of the dispatcher;
+2. the ≡ᵘ shape-transfer lemmas each case needs, added to
+   prop_sub_msubst_equiv.v;
+3. the ForallL cases, gated on TASK 0's residual;
+4. P7a itself, which needs the `a_sub` / `a_sub_flex` run-renaming kit (K1–K4)
+   to discharge the walk's three `β ∉ dom Θ1` premises (algo/def_extra.v
+   :1100/:1116/:1123).
