@@ -115,19 +115,26 @@ branch `f-deletion-wip` (does not compile; see its commit message).
    run's GENERATED names transposed and nothing else touched.  Flex-Assign's case
    covers `α = β` (the subject reduces to `τ`, β-free by scope).
 
-**⚠️ The blocker is soundness conjunct 5, not conjunct 4.**  Conjunct 4 is
-genuinely dead (vacuous, no external consumers).  Conjunct 5's coverage
-hypothesis `Δ [<=] (F ∪ dom Θ0)` is what excludes Assign-SolveM's guessed `β̄`
-from the protected `Δ`, and BOTH halves of the Δ-invariant need it.  Repair (worked
-out, not executed): make it OUTPUT-relative — `Δ ∩ dom Θ1 [<=] dom Θ0` — which
-mirrors the change to the rules and goes through at Solve-M, the skip rows
-(via the new premise), Arrow, and the top-level consumers.  DESIGN §4.3.
+**⚠️ The blocker was soundness conjunct 5, not conjunct 4 — and it is now
+SOLVED** (`f-deletion-wip` @ `53155fd`, prop_consis_sound.v green).  Conjunct 4
+is genuinely dead (vacuous, no external consumers) and is deleted with its four
+projections.  Conjunct 5's coverage `Δ [<=] (F ∪ dom Θ0)` was the load-bearing
+one — at Assign-SolveM it is the only thing excluding the guessed `β̄` from the
+protected `Δ`, which BOTH halves of the Δ-invariant need.  The repair is to make
+it OUTPUT-relative, `Δ ∩ dom Θ1 [<=] dom Θ0`, mirroring the change to the rules;
+all 28 cases go through, and every `X ∉ dom Θ1` formerly derived from conjunct 4
+is now the rule's own premise (which also cut `a_assign_unify_consis_uniq` to a
+third of its length).
 
-**⚠️ Cost the handover under-estimated.**  Once `F` is gone the completeness
-proof's eight discharge sites cannot use conjunct 4, so each must junk-swap its
-IH's run — and each carries an OPTIMALITY package over that same output context.
-That is `a_sub_flex_complete_skip` eight times over.  Do it as ONE transport
-lemma over §14/§15's `kswap_msubst` kit, applied eight times.
+**⚠️ What remains, and the lesson.**  prop_consis_complete.v's eight discharge
+sites can no longer use conjunct 4.  The right fix is NOT the junk swap the
+handover imagined (that is `a_sub_flex_complete_skip` ×8, each with an
+optimality package): it is to put the avoid-set on the COMPLETENESS MOTIVE —
+`forall γ, γ ∈ dom Θ1 -> γ ∈ dom (Ξ ++ Θ0) \/ γ ∉ N`.  That is the old `F`
+moved from the judgment to the completeness statement, where it is FREE,
+because completeness is the direction that CHOOSES the guessed names.  ⭐ An
+avoid-set is a CONSTRAINT on a judgment and a FREEDOM on a completeness proof;
+`F` was in the wrong place all along.  DESIGN §4.3.
 
 **⚠️ Retiring the bespoke rename is NOT a swap corollary.**
 `a_assign_unify_consis_rename_tvar`'s three surviving consumers are

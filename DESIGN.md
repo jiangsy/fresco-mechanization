@@ -702,8 +702,12 @@ Two things settled in the process:
   `a_unify_notin` / `a_consis_notin`) — that is what the intermediate,
   committed state does.
 
-⚠️ **The blocker for finishing the deletion is soundness conjunct 5, NOT
-conjunct 4.**  Conjunct 4 (`x ∈ dom Θ1 → x ∈ dom Θ0 ∨ x ∉ F`) is genuinely
+⭐ **The soundness bundle is DONE** (branch `f-deletion-wip` @ `53155fd`,
+prop_consis_sound.v green): conjunct 4 deleted, conjunct 5 restated as below,
+28-case mutual induction through.  The diagnosis is kept because the same
+reasoning is what prop_consis_complete.v still needs.
+
+⚠️ **The blocker was soundness conjunct 5, NOT conjunct 4.**  Conjunct 4 (`x ∈ dom Θ1 → x ∈ dom Θ0 ∨ x ∉ F`) is genuinely
 dead: it becomes vacuous and its two projections have no consumers outside
 `prop_consis_sound.v`.  Conjunct 5's coverage hypothesis
 `Δ [<=] (F ∪ dom Θ0)` is the load-bearing one: at `Assign-SolveM` it is what
@@ -725,14 +729,26 @@ at the top-level consumers `Δ [<=] dom Θ0` implies it outright.  Conjunct 5's
 THIRD component (`α ∈ Δ → α ∈ dom Θ1 → α ∈ dom Θ0`) then becomes immediate
 from the hypothesis and can leave the bundle.
 
-The remaining cost after that is the honest surprise of this pass: the
-completeness proof's eight discharge sites cannot reuse conjunct 4 once `F`
-is gone, so each must junk-swap its IH's run — and each carries an
-OPTIMALITY package over the same output context, so the swap has to be
-transported through `a_inc` / `a_inc_equiv` as well.  That is P7a's
-`a_sub_flex_complete_skip` eight times over.  Do it as ONE transport lemma
-("the completeness conclusion moves along a junk swap", built from §14/§15's
-`kswap_msubst` kit) applied eight times, not eight bespoke arguments.
+What REMAINS is prop_consis_complete.v: its eight discharge sites can no
+longer reuse conjunct 4.  Two routes, and the first is much the better one:
+
+- ⭐ **Put the avoid-set on the COMPLETENESS motive.**  Add a parameter `N`
+  to `consis_complete_at` / `unify_complete_at` / `assign_complete_at` with
+  the conjunct `forall γ, γ ∈ dom Θ1 -> γ ∈ dom (Ξ ++ Θ0) \/ γ ∉ N`.  This
+  is literally the old `F`, moved from the JUDGMENT to the completeness
+  statement — where it is FREE, because completeness is the direction that
+  CHOOSES the guessed names (`assign_solve_m_complete`'s `set (L := ...)`
+  simply gains `N`).  The walk rows then instantiate `N := add α1 N` exactly
+  as they used to instantiate `F`.  No new theory; ~30 cases gain one
+  component and ~15 IH destructurings gain a binder.
+  ⭐ The general lesson: an avoid-set is a CONSTRAINT on a judgment and a
+  FREEDOM on a completeness proof.  `F` was in the wrong place all along.
+- junk-swap each IH's run (prop_swap §13) and transport the OPTIMALITY
+  package with §14/§15's `kswap_msubst` kit — P7a's
+  `a_sub_flex_complete_skip` eight times over.  Fewer sites, but each needs
+  `a_wf_aenv Θ1` plus "a name of `dom Θ1 ∖ dom (Ξ ++ Θ0)` is FLEXIBLE",
+  which is `a_inc_binds_provenance`, currently downstream in
+  prop_sub_complete_thm.v and needing a move to prop_inc.v.
 
 ---
 
