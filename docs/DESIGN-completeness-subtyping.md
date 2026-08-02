@@ -4309,3 +4309,40 @@ NO rule applies, so the row must refute that configuration from the solution
    to `ad_pat_sub_gv`; then `Flex-SkipRigid` and its stuck-check;
 3. the two cross-half rows, against the P7b motive;
 4. the dispatcher (§12).
+
+## §14 TASK 0's residual — the falsity half is SETTLED (2026-08-02)
+
+`cex/cex_p7_shield_forall_flex.v` (Qed, axiom-free) machine-checks the half of
+the probe that does not depend on realizability:
+
+    flex_shield Θ0 Ψ' Δρ α̂ (∀^ε β. β→β)             is UNDERIVABLE   (α̂ flexible, ε ∈ Ψ')
+    sub_shield  Θ0 Ψ' ∅ ((∀γ.γ) → α̂) (∀^ε β. β→β)   is UNDERIVABLE
+
+The leaf is stuck structurally: `fsh_clean` is blocked by the tag,
+`fsh_flexfree` by the flexible, and `fsh_all_r` only descends into `α → α` at
+`add α Δρ`, where `fsh_clean` is blocked by α itself and every congruence by a
+shape mismatch (P0 is a variable, ψa an arrow).  The second statement follows
+because `ss_walk` reaches the codomain in one `sss_arrow_r` step and
+`sub_shield` demands the shield at EVERY walk-reachable `P0`-part against the
+WHOLE fixed `ψa`.
+
+So the residual `P0` (a ∀ below the head) is not merely unproved — where it also
+carries a walk-reachable raw flexible, the shield is **false**, and the ∀-free
+supply route cannot be stretched to cover it: with a ∀ inside `P0`, `κP0` carries
+a ∀, the fill may emit a `bskl_all_inh`, `Q` stops being `bskl_inh_free`, and
+`ad_pat_sub_g_inh_free_tag_free` no longer collapses `Ψa` to ∅.
+
+**What is still open is REALIZABILITY**: whether P7b's Sub-ForallL rows can be
+reached with that `(P0, ψa)` pair and `ε ∈ Ψa` — i.e. whether the ambient join
+`ad_pat_sub_gv n NM M (Ψ ∪ Ψa) Θ (open Rj ψa) Q` and fill
+`Θ ⊢ᵣ inh{κP0} ⊳ Q` are jointly inhabited there.  That is the next step, and it
+is now a bounded question with a named witness rather than an open search.
+
+If it IS realizable, the conclusion is **not** that P6-Ss is false but that
+`sub_shield` is over-strong.  It is indexed NON-POSITIONALLY — every
+walk-reachable `P0`-part against the whole guess — while the derivation aligns
+`ψa` with ONE position (here the domain, facing the inherited ∀ of `Q`, where its
+tag is legitimately solved).  The repair is a positional re-indexing, replayed
+through P6-Ss and P7b's two ForallL rows, which consume the current shape.
+Nothing goes to PAPER-GAPS.md: `sub_shield` is a mech-invented repair premise,
+not a paper statement.

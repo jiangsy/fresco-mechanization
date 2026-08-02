@@ -141,6 +141,27 @@ lemmas take the P7b motive `sub_complete_concl` as their IH, not
 **Next**: the motive's `dom Ξ ⊆ ftv P0` invariant + the ⇓-truncation lift, then
 SkipRigid; then the two cross-half rows; then the dispatcher (§12).
 
+**TASK 0's residual, falsity half SETTLED the same day**
+(`cex/cex_p7_shield_forall_flex.v`, Qed, axiom-free).  For a Θ0-flexible `α̂` and
+`ε ∈ Ψ'`, `flex_shield Θ0 Ψ' Δρ α̂ (∀^ε β.β→β)` is UNDERIVABLE — `fsh_clean` is
+blocked by the tag, `fsh_flexfree` by the flexible, and `fsh_all_r` only descends
+into `α → α` at `add α Δρ`, where `fsh_clean` is blocked by α itself and every
+congruence by a shape mismatch.  Hence
+`sub_shield Θ0 Ψ' ∅ ((∀γ.γ) → α̂) (∀^ε β.β→β)` is underivable too, since
+`ss_walk` reaches the codomain in one step and `sub_shield` demands the shield at
+EVERY walk-reachable `P0`-part against the WHOLE fixed `ψa`.  So the documented
+residual (a `P0` with a ∀ below its head) is not merely unproved: where it also
+carries a walk-reachable raw flexible the shield is FALSE, and the ∀-free supply
+route cannot stretch to it (with a ∀ inside `P0`, `κP0` carries a ∀, the fill may
+emit a `bskl_all_inh`, `Q` stops being `bskl_inh_free`, and
+`ad_pat_sub_g_inh_free_tag_free` no longer collapses `Ψa`).  What remains open is
+REALIZABILITY — whether P7b's Sub-ForallL can be reached with that `(P0, ψa)` and
+`ε ∈ Ψa`.  If it can, the finding is that `sub_shield` (a MECH-INVENTED repair
+premise, not a paper statement — nothing for PAPER-GAPS.md) is over-strong
+because it is indexed NON-POSITIONALLY, and the repair is a positional
+re-indexing replayed through P6-Ss and P7b's two ForallL rows.  See
+DESIGN-completeness-subtyping.md §14.
+
 ## 2026-08-02 — ⭐⭐⭐ THE SWAP KIT (equivariance) LANDS: `prop_swap.v`, the UNIFORM renaming primitive — P7a's K1–K3 subsumed in one pass
 
 **The user's uniformity directive** (2026-08-02): ONE treatment of freshness
