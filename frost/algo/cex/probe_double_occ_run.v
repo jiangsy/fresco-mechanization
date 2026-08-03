@@ -61,9 +61,47 @@
             quantification over P0 (a wf/reachability side condition on
             payloads — WF-SIDE-CONDITIONS.md family).
 
-    STATUS: skeleton only — the looksub/solve/guess constructions are the
-    next session's work.  Nothing here is Required by the build yet beyond
-    the imports resolving. *)
+    ⭐⭐ STATUS (2026-08-03, end of session): the trace is RESOLVED to (B) at
+    the rule level, every step read off the definitions — the Coq
+    construction is what remains.
+
+      1. looksub: LS-Arrow = LE-Var + LS-Var ⟹ [nil ⨾ [eq (∀γ.γ→γ);
+         sub tc f̂]] — deterministic.
+      2. solve: the eq runs on the HOLE (SE-GhostL) ⟹ P'' = ∀γ.γ→γ; the
+         sub then runs ON P'': SS-ForallL is FORCED (a ∀ is not guarded,
+         no other SS rule matches a var payload), opening γ' fresh;
+         [γ'→γ' ≼[tc] f̂] goes SS-Check → SE-FlexR, whose output IS the
+         flexible ([a_solve_eq__flex_r] : P ∼ α̂ ⤳ α̂), so the close
+         re-binds a VACUOUS binder:  Q_solved = ∀_.f̂.  ⭐ The domain's
+         ∀γ.γ→γ is DESTROYED by the threading — the eq-constraint's yield
+         is overwritten because the sub-constraint solves on the
+         accumulated pattern.
+      3. guess (TY): P1 = paint(∀_.f̂) — forced up to names.
+      4. continuation: subject (∀_.f̂) → (∀_.f̂) vs (∀γ.γ→γ) → f̂: the
+         domain CONSISTENCY opens both ∀s at a common fresh γ'' and needs
+         [f̂ ∼ γ''→γ''] — every route is scope-refused (assign: γ'' is
+         newer than f̂; solve-deposit: the fresh flexibles sit below γ'';
+         SkipRigid: γ'' ∈ ftv).  STUCK.  No alternative choice point
+         exists upstream (ForallL is the only a_sub entry at a ∀ subject
+         with an arrow P0).
+
+    ⟹ NO [a_sub] run exists at this configuration, while the join + fill
+    are Qed-inhabited and met.exe ACCEPTS the corresponding SOURCE program
+    (whose typing builds a DIFFERENT payload).  I.e. thm:complete-subtyping
+    is refuted AT THE RULE LEVEL by a payload the TYPING NEVER PRODUCES —
+    the theorem's quantification over P0 is broader than the reachable
+    payloads.  ⭐⭐⭐ And the failing payload shape is EXACTLY the shield
+    saga's residual: a P0 with a ∀ below its head (at a consis-feeding
+    position).  prop_sub_shield_supply.v's covered shapes (∀-free /
+    mono-counterpart / inh-free / flex-free) are the REACHABLE ones.
+
+    THE REPAIR THIS POINTS TO: a PAYLOAD side condition on the theorem
+    (the typing's actual P0-invariant — ∀-freeness of consis-feeding
+    payload positions, or whatever the typing maintains), under which the
+    existing supply routes become TOTAL and [main_forall] discharges.
+    TO DO IN COQ: build steps 1–3 as derivations, prove step 4's ¬∃ by
+    inversion (bounded, cex-style), then state the reachability repair and
+    take it to PAPER-GAPS + the authors. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
