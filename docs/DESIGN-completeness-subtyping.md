@@ -4357,3 +4357,49 @@ definition breaks the Qed consumer, and the repair really is a re-indexing
 replayed through P6-Ss and P7b's two ForallL rows.  That is why settling
 REALIZABILITY first is worth it: it is one bounded instance, and it decides
 whether any of that work is needed at all.
+
+### §14.1 SETTLED (2026-08-03): the residual IS REALIZABLE — `sub_shield` is over-strong
+
+`cex/cex_p7_shield_realizable.v` (Qed, axiom-free) exhibits the configuration
+and machine-checks every part of it.  The witness is
+
+    Θ0 = α̂ ,  κ = α̂ ↦ unit ,  Θ = Θ0
+    P0 = (∀γ. γ→γ) → α̂        a ∀ BELOW the head AND a walk-reachable raw flexible
+    R  = ∀^t. (□₀ → unit)      the subject: one tagged ∀
+    ψa = ∀^e β. β→β            the guess — TAGGED, with a COMPOUND body
+    Q  = (∀ᵢ. β→β) → unit      the counterpart
+
+and the file proves, at that configuration: the whole completeness input
+(wf of `Θ0` / `P0` / `P` / `⌊Q⌋`, `skmod[TY]{P0}{FN TC}`, `guarded P0`,
+`ghost-free R`, `⌊R⌋ˢ = P`, `κ ∷ Θ0 ⊑ Θ`, the `≡ᵘ` slack), the JOIN
+(`ad_pat_sub_gv 2` ending at `__forall_l_tagged` with exactly this `ψa`, its
+`a_tags_sort` / disjointness / wf side conditions, and the sub-join), the FILL
+(`ad_refine_syn_f ∅ Θ ∅ inh{κP0} Q`) — and `~ sub_shield Θ0 {e} ∅ P0 ψa`.
+
+**Why it goes through, and why the obvious probe does not.**  The tag `e` has
+exactly ONE way to be discharged — `ad_pat_consis__forall_inh_tagged`, a
+tagged ∀ in the subject facing an INHERITED ∀ in the counterpart — and the
+counterpart is pinned by the FILL, so `Q`'s inherited ∀ can only come from a ∀
+in `P0` (κ's images are monotypes; `__hole` / `__tophole_fill` emit
+`bskl_all_syn`, not `_inh`).  Its BODY is therefore whatever `P0`'s ∀-body
+refines to.  With `P0 ⊇ ∀γ.γ` that body is a bare variable and a compound
+guess is stuck; with `P0 ⊇ ∀γ.γ→γ` it is an arrow and the guess goes through.
+So the residual is realized by the SAME shape that makes the shield false.
+
+**And the dispatcher has no way around it**: `join_at_Rw_is_forall_l` shows the
+join at that node can only have ended with `__forall_l_tagged` (`__infer` wants
+`mode_ti`; `__check` / `__univ_ghost_r` want a GUARDED subject and a ∀ is not;
+`__forall_r` / `__univ_ghost_r` want a ∀-inh / tophole counterpart and this one
+is an arrow; every other row wants another subject shape).  So P7c must apply
+the ForallL row there, and its `sub_shield` premise is false.
+
+**Conclusion.**  `sub_shield` is over-strong, exactly as §14 predicted: it is
+indexed NON-POSITIONALLY.  The repair is a positional re-indexing — pair each
+`ss_walk` position with the part of `ψa` the derivation aligns there — replayed
+through P6-Ss and P7b's two ForallL rows.  Nothing goes to PAPER-GAPS.md
+(`sub_shield` is a mech-invented repair premise, not a paper statement), and
+neither P6-Sv nor P6-Ss is refuted: both remain `Qed` at the current premise,
+which is merely stronger than it needs to be.
+
+⚠️ Trimming the `ss_walk` closure is still not an option (§14): P6-Ss's
+Sub-Arrow row consumes it directly (prop_look_complete_sub_cstr.v:1546-1548).

@@ -61,7 +61,7 @@ excluded from the build); mine them when re-proving.
 - ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `frost/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `frost/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
 - 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `frost/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_tskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rho_delta_vacuous.v` — and is now the ftv-level one.
 - ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete_gen` in `frost/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision hole rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
-- 🟢 Completeness of flexible-variable subtyping (subtyping-proofs:2836, P7a) — **ALL FIVE ROWS CLOSED 2026-08-03**, `Qed` + axiom-free, in `frost/algo/prop_sub_complete_thm.v`: §(F) `a_sub_flex_complete_depend`, §(G) `_skip`, §(I) `_assign`, §(K) `_solve`, §(M) `a_sub_flex_complete_skip_rigid`.  §(I)/§(K) are the CROSS-HALF rows (both re-enter the MAIN judgment, so their IH is the **P7b** motive).  §(M) needed the ⇓-apparatus of §(L0)/§(L1)/§(L) — `a_inc__tvar` shrinks the TARGET, so the IH runs at the truncation `Θ'` and every solution-side premise is ⇓-normalized before being strengthened there; its one obligation beyond the consistency walk's `Assign-SkipRigid` is `ad_precise_downarrow` (`⇓ˢP ⊑ P`), which brings the motive's PRECISION conjunct back from `⇓ᵇQ` to `Q`.  The motive's flexibility premise was STRENGTHENED to `a_flex_tvar Θ0 α` (the walk's own invariant, as in `assign_complete_at`); no downstream statement changed.  The remaining P7 work is the DISPATCHER (§12) plus its STUCK-CHECK.  What follows is the pre-closure record.  TASK 0 (supplying P6-L's `sub_shield` premise at P7b's Sub-ForallL) lives in `frost/algo/prop_sub_shield_supply.v`, all Qed + axiom-free: a mono-ish counterpart (§4, covers a raw FLEXIBLE `P0`), the non-composite shapes (§5), any **flex-free** `P0` (§6, uniformly in ψa and Δρ), and — the generalization that does the real work — any **inh-free counterpart** / any `P0` **with no ∀** (§7/§8: `ad_pat_consis_inh_free_tag_free`, `ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`, `sub_shield_supply_all_free_p0`).  Residual: a `P0` carrying a ∀ BELOW its head — DESIGN-completeness-subtyping.md §9.0.2
+- 🟢 Completeness of flexible-variable subtyping (subtyping-proofs:2836, P7a) — **ALL FIVE ROWS CLOSED 2026-08-03**, `Qed` + axiom-free, in `frost/algo/prop_sub_complete_thm.v`: §(F) `a_sub_flex_complete_depend`, §(G) `_skip`, §(I) `_assign`, §(K) `_solve`, §(M) `a_sub_flex_complete_skip_rigid`.  §(I)/§(K) are the CROSS-HALF rows (both re-enter the MAIN judgment, so their IH is the **P7b** motive).  §(M) needed the ⇓-apparatus of §(L0)/§(L1)/§(L) — `a_inc__tvar` shrinks the TARGET, so the IH runs at the truncation `Θ'` and every solution-side premise is ⇓-normalized before being strengthened there; its one obligation beyond the consistency walk's `Assign-SkipRigid` is `ad_precise_downarrow` (`⇓ˢP ⊑ P`), which brings the motive's PRECISION conjunct back from `⇓ᵇQ` to `Q`.  The motive's flexibility premise was STRENGTHENED to `a_flex_tvar Θ0 α` (the walk's own invariant, as in `assign_complete_at`); no downstream statement changed.  The remaining P7 work is the DISPATCHER (§12) plus its STUCK-CHECK.  What follows is the pre-closure record.  TASK 0 (supplying P6-L's `sub_shield` premise at P7b's Sub-ForallL) lives in `frost/algo/prop_sub_shield_supply.v`, all Qed + axiom-free: a mono-ish counterpart (§4, covers a raw FLEXIBLE `P0`), the non-composite shapes (§5), any **flex-free** `P0` (§6, uniformly in ψa and Δρ), and — the generalization that does the real work — any **inh-free counterpart** / any `P0` **with no ∀** (§7/§8: `ad_pat_consis_inh_free_tag_free`, `ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`, `sub_shield_supply_all_free_p0`).  ⚠️ Residual SETTLED 2026-08-03 and it is NEGATIVE: a `P0` carrying a ∀ below its head is not merely uncovered, it makes `sub_shield` FALSE at a REACHABLE configuration (`cex/cex_p7_shield_realizable.v`, Qed + axiom-free — the full completeness input, the ForallL join node, the fill, and `~ sub_shield` all machine-checked, plus `join_at_Rw_is_forall_l`: no other join rule applies there).  `sub_shield` is a MECH-INVENTED repair premise, so no paper statement is refuted and P6-Sv/P6-Ss stay `Qed`; what is refuted is its NON-POSITIONAL indexing, and the repair is a positional re-indexing replayed through P6-Ss and P7b's two ForallL rows.  Until then P7c's two ForallL cases are BLOCKED (the other ten are not).  DESIGN-completeness-subtyping.md §14.1 / §9.0.2
 - 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked AND REPAIRED 2026-07-30 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `frost/algo/prop_sub_complete_thm.v`): the join is the LEAF-VALID mirror `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v) carrying the subject refinement at the consistency leaves, with NO root-level third premise — the first-cut root premise was REFUTED as a lockstep condition (machine-checked `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`: it lost Sub-UnivGhostR entirely and the head-disagreeing ForallL/ForallR solutions `∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`).  FIVE of P7b's rows closed, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** (a REAL proof: algorithmic UnivGhostR + the `□`-P0 precision core at the stripped counterpart + a `∀◇`-wrap).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_hole_p0_precision`.  ⚠️ Remaining obligation: transport P5's precision-substitution + the freshening kits to `_gv` for ForallL/ForallR.  See docs/PAPER-GAPS.md and DESIGN §9.1.3 / §1.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `frost/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `frost/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
 
 **D. proofs.tex** (§Proofs for Algorithms)
@@ -78,7 +78,73 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐⭐⭐ **P7a IS COMPLETE**: `Flex-SkipRigid` CLOSED (`a_sub_flex_complete_skip_rigid`, `Qed` + axiom-free) — all FIVE rows done
+## 2026-08-03 (latest) — ⚠️⭐⭐⭐ TASK 0's residual is **REALIZABLE**: `sub_shield` is OVER-STRONG, and P7c's dispatcher is blocked on it
+
+`make coq` green, admit-free, axiom-free.  `frost/algo/cex/cex_p7_shield_realizable.v`
+(both theorems `Qed`, *Closed under the global context*).
+
+**The question.**  `cex_p7_shield_forall_flex.v` (2026-08-02) settled the
+FALSITY half — at a raw Θ0-flexible facing a TAGGED ∀ with a COMPOUND body,
+`flex_shield` and hence `sub_shield` are UNDERIVABLE — and left REALIZABILITY
+open: can P7b's Sub-ForallL rows actually be REACHED with such a `(P0, ψa)`
+pair and `ε ∈ Ψa`?  **They can.**
+
+**The witness** (`Θ0 = α̂`, `κ = α̂ ↦ unit`, `Θ = Θ0`):
+
+    P0 = (∀γ. γ→γ) → α̂        a ∀ BELOW the head AND a walk-reachable raw flexible
+    R  = ∀^t. (□₀ → unit)      the subject: one tagged ∀
+    ψa = ∀^e β. β→β            the guess — TAGGED, with a COMPOUND body
+    Q  = (∀ᵢ. β→β) → unit      the counterpart
+
+`p7_sub_shield_is_over_strong` machine-checks, at that configuration: the whole
+completeness input (wf of `Θ0`/`P0`/`P`/`⌊Q⌋`, `skmod[TY]{P0}{FN TC}`,
+`guarded P0`, `ghost-free R`, `⌊R⌋ˢ = P`, `κ ∷ Θ0 ⊑ Θ`, the `≡ᵘ` slack), the
+JOIN (`ad_pat_sub_gv 2` ending at `__forall_l_tagged` with exactly this `ψa`,
+plus its `a_tags_sort` / disjointness / wf side conditions and the sub-join),
+the FILL — and `~ sub_shield Θ0 {e} ∅ P0 ψa`.
+
+⭐ **Why it goes through, and why the obvious probe does not.**  The tag `e` has
+exactly ONE way to be discharged — `ad_pat_consis__forall_inh_tagged`, a tagged
+∀ in the subject facing an INHERITED ∀ in the counterpart — and the counterpart
+is pinned by the FILL, so `Q`'s inherited ∀ can only come from a ∀ in `P0` (κ's
+images are monotypes; `__hole` / `__tophole_fill` emit `bskl_all_syn`, not
+`_inh`).  Its BODY is therefore whatever `P0`'s ∀-body refines to.  With
+`P0 ⊇ ∀γ.γ` that body is a bare VARIABLE and a compound guess is stuck (which is
+why `fsh_rho_var` exists and why the first probe looked unreachable); with
+`P0 ⊇ ∀γ.γ→γ` it is an ARROW and the guess goes through.  The residual is
+realized by the SAME shape that makes the shield false.
+
+⭐ **And the dispatcher has no way around it.**  `join_at_Rw_is_forall_l` shows
+the join at that node can only have ended with `__forall_l_tagged`: `__infer`
+wants `mode_ti`; `__check` / `__univ_ghost_r` want a GUARDED subject and a ∀ is
+not; `__forall_r` / `__univ_ghost_r` want a ∀-inh / tophole counterpart and this
+one is an arrow; every other row wants another subject shape.  So P7c MUST
+apply the ForallL row there, and its `sub_shield` premise is false.
+
+**Consequences.**  ⚠️ Nothing is refuted in the paper and nothing goes to
+docs/PAPER-GAPS.md: `sub_shield` is a MECH-INVENTED repair premise (P6-Sv's),
+not a paper statement.  P6-Sv and P6-Ss stay `Qed` — their premise is merely
+stronger than it needs to be.  What must change is the INDEXING: `sub_shield`
+pairs EVERY walk-reachable `P0`-part with the WHOLE guess, while the derivation
+aligns `ψa` with ONE position (here the arrow's DOMAIN, where the tag is
+legitimately discharged) and the shield is demanded at the CODOMAIN, a raw
+flexible that guess never meets.  **The repair is a POSITIONAL re-indexing**,
+replayed through P6-Ss and P7b's two ForallL rows, which consume the current
+shape.  ⚠️ Trimming the `ss_walk` closure is NOT an alternative: P6-Ss's
+Sub-Arrow row consumes it directly (prop_look_complete_sub_cstr.v:1546-1548).
+
+So P7c is blocked until the re-indexing lands, and building the dispatcher's two
+ForallL cases before it would be wasted work.  The other ten cases are
+independent of the shield.  See docs/DESIGN-completeness-subtyping.md §14.1.
+
+⚙ Ltac hazard, paid for once: `eapply <lemma-with-implicit-args>; auto` HANGS
+when the lemma's implicit arguments are still evars — `auto` searches with
+unresolved metavariables.  Build the premises as named `assert`s and close with
+an evar-free `exact`/`apply … with (x := …)`.  Also: `repeat split` CLOSES a
+reflexive equality goal (`eq` is a single-constructor inductive), so a bullet
+list after it silently shifts.
+
+## 2026-08-03 — ⭐⭐⭐ **P7a IS COMPLETE**: `Flex-SkipRigid` CLOSED (`a_sub_flex_complete_skip_rigid`, `Qed` + axiom-free) — all FIVE rows done
 
 `make coq` green, admit-free, axiom-free; `prop_sub_complete_thm.v` reports 27
 `Print Assumptions` sites, all *Closed under the global context*.
