@@ -122,7 +122,8 @@ at all}.
 \section{The configuration}\label{sec:config}
 % =====================================================================
 
-$\Theta_0$ holds exactly one flexible variable, \emph{undefined}:
+$\Theta_0$ holds exactly one flexible variable, \emph{undefined}, and the
+ambient tag index is empty:
 \[
   \Theta_0 = \hat\beta
   \qquad
@@ -132,22 +133,23 @@ $\Theta_0$ holds exactly one flexible variable, \emph{undefined}:
   \qquad
   P_0 = (\forall \gamma.\gamma\to\gamma) \to \hat\beta
   \qquad
-  P   = \forall \alpha.\alpha\to\alpha .
+  \Psi = \cdot .
 \]
-The unresolved subject, the metasubstitution, the \sublab{ForallL}
-instantiation and the counterpart are
+The metasubstitution, the \sublab{ForallL} instantiation and the
+counterpart are
 \[
-  S = \foralltag{\delta}\alpha.\alpha\to\alpha
-  \quad
   \theta = [\hat\beta \mapsto \tunit\to\tunit]
-  \quad
+  \qquad
   \psi_a = \foralltag{\epsilon}\gamma.\gamma\to\gamma
-  \quad
+  \qquad
   \Psi_a = \epsilon
-  \quad
-  \bid{Q} = \inh{\forall\gamma.}(\gamma\to\gamma) \to (\tunit\to\tunit),
+  \qquad
+  \bid{Q} = \inh{\forall\gamma.}(\gamma\to\gamma) \to (\tunit\to\tunit).
 \]
-so that $\erase{S} = P$ and $\Psi = \cdot$ is disjoint from $\Psi_a$.
+$\Psi$ is trivially disjoint from $\Psi_a$.  The \emph{subject} differs
+between the two statements --- \Cref{lem:look} is about the \emph{body}
+of the quantifier, \Cref{thm:sub} about the whole skeleton --- so each
+section introduces its own.
 
 Two features of $P_0$ are what everything turns on.
 \begin{itemize}
@@ -234,12 +236,24 @@ $\Theta_0\vdash\inh{\theta P_0}\fillsyn\bid{Q}$ (\coq{fill\_d}).
 
 \begin{claimc}\label{cl:look}
   The lemma is false at the configuration of \Cref{sec:config}, with
-  $\Theta = \Theta_0$.
+  $\Theta = \Theta_0$ and
+  \[
+    S = \alpha\to\alpha
+    \qquad\text{hence}\qquad
+    P = \erase{S} = \alpha\to\alpha .
+  \]
 \end{claimc}
+
+\noindent
+$S$ is the \emph{body} of the quantifier, with $\alpha$ free --- that is
+what the lemma's $(\syn{\theta S})[\syn{\psi_a}/\alpha]$ substitutes
+into, and what the look then searches for $\alpha$ in.  No tag annotation
+occurs in the instance: the quantifier the subject's $\delta$ would sit on
+has already been opened.
 
 \paragraph{Every premise holds.}
 $\Theta_0\vdash P_0$ (\coq{P0d\_wf}); $\skmod[\TY]{P_0}{\FN\TC}$
-(\coq{P0d\_mode}); $\erase{S}=P$ by computation;
+(\coq{P0d\_mode}); $\erase{S}=P$ by construction;
 $\inc[\theta]{\Theta_0}{\Theta_0}$ (\coq{inc\_d}); the tag sorting
 $\Theta_0\vdash^{\TY}\tags{\Psi_a}{\syn{\psi_a}}$ (\coq{psid\_tags}), with
 $\Psi = \cdot$ trivially disjoint from $\Psi_a$; the fill
@@ -248,9 +262,10 @@ $\Psi = \cdot$ trivially disjoint from $\Psi_a$; the fill
   \typsub[\TY][\FN\TC][\cdot,\epsilon]{\Theta_0}{
     (\syn{\theta S})[\syn{\psi_a}/\alpha]}{\bid{Q}}
 \]
-is exactly \eqref{star}, because
-$(\syn{\theta S})[\syn{\psi_a}/\alpha] = \syn{\psi_a}\to\syn{\psi_a}$
-(\coq{look\_premise\_d}).
+is exactly \eqref{star}: $\theta$ does not touch $S$, so
+$(\syn{\theta S})[\syn{\psi_a}/\alpha] =
+ \syn{\psi_a}\to\syn{\psi_a}$, and $\Psi,\Psi_a = \cdot,\epsilon =
+ \epsilon$ (\coq{look\_premise\_d}).
 
 \paragraph{The conclusion fails, for every output.}
 The look is deterministic here (\coq{probe\_extract\_det}), uniformly in
@@ -304,7 +319,11 @@ further ingredient.
 \end{thmpaper}
 
 \begin{claimc}\label{cl:thm}
-  The theorem is false at the configuration of \Cref{sec:config}.
+  The theorem is false at the configuration of \Cref{sec:config}, with the
+  algorithm's input skeleton
+  \[
+    P = \forall\alpha.\alpha\to\alpha .
+  \]
 \end{claimc}
 
 \paragraph{(1) It is a subtyping problem.}
@@ -317,20 +336,21 @@ $\hat\beta$.
 
 \paragraph{(2) It has a solution.}
 Take $\theta_1 = \theta$, $\Theta_1 = \Theta_0$ and
-$\bid{P_1} = \bid{Q}$.  The fill holds (\coq{fill\_d}), and one
-\sublab{ForallL} step --- the \emph{untagged} one, since
-$\syn{\theta_1 P}$ is the plain painting of the algorithm's input and so
-carries no $\delta$ --- puts \eqref{star} underneath:
+$\bid{P_1} = \bid{Q}$.  The fill holds (\coq{fill\_d}), and one \sublab{ForallL} step puts
+\eqref{star} underneath.  It is the step at $\delta = \cdot$:
+$\syn{\theta_1 P}$ is the plain painting of the algorithm's input
+skeleton, so its quantifier carries no tag.
 \[
 \inferrule*[Lab=\sublab{ForallL}]
 {
   \Theta_0\vdash\tags{\Psi_a}{\syn{\psi_a}}
   \\
-  \typsub[\TY][\FN\TC][\cdot,\epsilon]{\Theta_0}
+  \typsub[\TY][\FN\TC][\Psi,\Psi_a]{\Theta_0}
     {\syn{\psi_a}\to\syn{\psi_a}}{\bid{Q}}
   \quad\text{\eqref{star}}
 }
-{ \typsub[\TY][\FN\TC][\cdot]{\Theta_0}{\syn{\theta P}}{\bid{Q}} }
+{ \typsub[\TY][\FN\TC][\Psi]{\Theta_0}
+    {\syn{\forall\alpha.\alpha\to\alpha}}{\bid{Q}} }
 \]
 (Coq: \coq{solution\_d}.  It is stated in the paper's judgement
 $\typsub[\N][\M][\Psi]{\Theta}{\cdot}{\cdot}$, not in any auxiliary
