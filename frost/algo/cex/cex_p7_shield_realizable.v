@@ -629,7 +629,7 @@ Proof.
   intros α P0' R' Δρ' Hw Hle Hcl.
   destruct (ss_walk_w_inv Hw) as [[-> ->] | [-> ->]].
   - split; [ apply apart_p0_w_root_holds | intros _ ].
-    split; [ apply apart_w_root_holds | apply shield_w_root_holds ].
+    apply apart_w_root_holds.
   - (* the CODOMAIN, where the OLD premise is false: the P0-only closure
        still holds (it never descends the guess), and the two that DO
        descend it are not demanded — the guard [α ∈ ftv unit] is unmet *)

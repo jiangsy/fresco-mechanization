@@ -380,8 +380,23 @@ Proof.
               ltac:(eapply ssw_step; [ apply sss_arrow_r | apply ssw_refl ])
               ltac:(clear; fsetdec) ltac:(clear; fsetdec))
     as [_ Hg].
-  destruct (Hg ltac:(simpl; clear; fsetdec)) as [_ Hfs].
-  exact (flex_shield_raw_flex_tagged_arrow_stuck binds_f_d e_in_d Hfs).
+  pose proof (Hg ltac:(simpl; clear; fsetdec)) as Hfaw.
+  (* since the (dead) [flex_shield] conjunct left [sub_shield] (2026-08-03),
+     the refutation runs through the [flex_apart_walk] half: one
+     [fastep_all_r] opens the tagged guess into [β→β] at [β ∈ Δρ], where the
+     boundary cex's [flex_apart] stuck shape fires. *)
+  pick fresh β for (empty : atoms).
+  assert (Hw : fa_walk (dom Θ0d) empty (pskl_var_f f) ψd
+                 (add β empty) (pskl_var_f f)
+                 (uskl_arrow (uskl_var_f β) (uskl_var_f β))).
+  { unfold ψd, cexψ.
+    eapply fw_step; [ apply fastep_all_r | ].
+    unfold open_uskl_wrt_uskl; simpl. apply fw_refl. }
+  pose proof (Hfaw _ _ _ Hw) as Hleaf.
+  assert (Hβin : β `in` add β empty) by (clear; fsetdec).
+  assert (Huq : uniq Θ0d)
+    by (unfold Θ0d; solve_uniq).
+  exact (flex_apart_raw_flex_open_arrow_stuck_gen Huq binds_f_d Hβin Hleaf).
 Qed.
 
 (* ===================================================================== *)

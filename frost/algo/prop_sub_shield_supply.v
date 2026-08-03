@@ -235,12 +235,10 @@ Proof.
   intros Θ0 Ψa α P0 R ψa HΨ Htf P0' R' Δρ' _ _ Hcl.
   assert (Hcl' : (ftvar_in_uskl ψa) ∩ Δρ' [=] empty)
     by (clear - Hcl; fsetdec).
-  (* the guess-FIXED conjunct is free from cleanliness alone; the two
-     guarded ones do not even need the guard on this branch *)
+  (* the guess-FIXED conjunct is free from cleanliness alone; the guarded
+     one does not even need the guard on this branch *)
   split; [ apply flex_apart_p0_clean; exact Hcl' | intros _ ].
-  split;
-    [ apply flex_apart_walk_tag_free; assumption
-    | apply fsh_clean; [ exact Hcl' | clear - HΨ; fsetdec ] ].
+  apply flex_apart_walk_tag_free; assumption.
 Qed.
 
 (* ===================================================================== *)
@@ -363,7 +361,7 @@ Proof.
     by (destruct Hshape as [-> | [-> | (α & -> & _)]];
         [ apply pat_unit | apply pat_hole | apply pat_var ]).
   rewrite (ss_walk_atomic Hsw Hat).
-  split; [ | intros _; split ].
+  split; [ | intros _ ].
   - (* the P0-only walk cannot move an atomic P0 *)
     intros P0'' Hp0w.
     rewrite (p0_walk_atomic Hp0w Hat).
@@ -372,18 +370,6 @@ Proof.
     intros Δρ'' P0'' ψa'' Hfw.
     rewrite (fa_walk_atomic_p0 Hfw Hat).
     apply flex_apart_atomic; exact Hshape.
-  - (* an atomic P0 has no flexible free variable *)
-    apply fsh_flexfree.
-    intros α0 Hα0 Hflex.
-    destruct Hshape as [-> | [-> | (α & -> & Hb)]];
-      cbn in Hα0; try solve [ clear - Hα0; fsetdec ].
-    assert (Hαe : α0 = α) by (clear - Hα0; fsetdec); subst α0.
-    (* a RIGID entry is not a flexible one, by uniqueness of the context *)
-    assert (Huq : uniq Θ0) by (apply a_wf_aenv_uniq; exact HwfΘ0).
-    destruct Hflex as [Hb' | [τ Hb']];
-      [ pose proof (binds_unique _ _ _ _ _ Hb Hb' Huq) as Hc
-      | pose proof (binds_unique _ _ _ _ _ Hb Hb' Huq) as Hc ];
-      discriminate Hc.
 Qed.
 
 Print Assumptions sub_shield_atomic.
@@ -505,9 +491,7 @@ Proof.
   assert (Hff' : pskl_flex_free Θ0 P0')
     by (eapply ss_walk_flex_free; eassumption).
   split; [ apply flex_apart_p0_flex_free; exact Hff' | intros _ ].
-  split;
-    [ apply flex_apart_walk_flex_free; exact Hff'
-    | apply fsh_flexfree; exact Hff' ].
+  apply flex_apart_walk_flex_free; exact Hff'.
 Qed.
 
 Print Assumptions sub_shield_flex_free.

@@ -194,13 +194,18 @@ Qed.
       demanded at the CODOMAIN, a raw flexible with [α ∉ ftv unit].  These two
       are therefore GUARDED by [α ∈ ftv R'] — free at the LS-Var row, the only
       place they are consumed ([R' = α] there). *)
+(** ⭐ The [flex_shield] conjunct is GONE (2026-08-03): P6-Sv no longer takes
+    the predicate at all — every use in its induction was a relay and the
+    leaf lemma fed only a regression test (memory: remech-flex-shield-dead).
+    The [Ψ'] index is now VESTIGIAL (it only ever fed [flex_shield]); it is
+    kept for arity stability until the next sweep. *)
 Definition sub_shield (Θ0 : aenv) (Ψ' : atoms) (Δρ : atoms) (α : atom)
   (P0 : pskl) (R : uskl) (ψa : uskl) : Prop :=
   forall P0' R' Δρ', ss_walk (dom Θ0) α P0 R P0' R' ->
     Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
     flex_apart_p0 Θ0 Δρ' P0' ψa
     /\ (α `in` ftvar_in_uskl R' ->            (* ⇐ THE POSITIONAL GUARD *)
-        flex_apart_walk Θ0 Δρ' P0' ψa /\ flex_shield Θ0 Ψ' Δρ' P0' ψa).
+        flex_apart_walk Θ0 Δρ' P0' ψa).
 
 Lemma ss_walk_trans : forall A α P0 R P1 R1 P2 R2,
   ss_walk A α P0 R P1 R1 -> ss_walk A α P1 R1 P2 R2 -> ss_walk A α P0 R P2 R2.
@@ -222,12 +227,12 @@ Proof.
     [ apply ssw_refl | clear; fsetdec | clear; fsetdec ].
 Qed.
 
-(** The leaf, guess-descending half: P6-Sv's two premises — available only
+(** The leaf, guess-descending half: P6-Sv's walk premise — available only
     where the looked-for [α] actually occurs in the subject. *)
 Lemma sub_shield_here : forall Θ0 Ψ' Δρ α P0 R ψa,
   sub_shield Θ0 Ψ' Δρ α P0 R ψa ->
   α `in` ftvar_in_uskl R ->
-  flex_apart_walk Θ0 Δρ P0 ψa /\ flex_shield Θ0 Ψ' Δρ P0 ψa.
+  flex_apart_walk Θ0 Δρ P0 ψa.
 Proof.
   intros Θ0 Ψ' Δρ α P0 R ψa H Hα.
   refine (proj2 (H P0 R Δρ _ _ _) Hα);
@@ -270,10 +275,7 @@ Proof.
     by (eapply ss_walk_mono; [ exact Hw | simpl; clear; fsetdec ]).
   destruct (H P1 R1 Δρ' Hw0 Hle Hcl) as [Hap0 Hg].
   split; [ apply flex_apart_p0_weaken_tvar; exact Hap0 | intros Hα ].
-  destruct (Hg Hα) as [Hap Hfs].
-  split;
-    [ apply flex_apart_walk_weaken_tvar; exact Hap
-    | apply flex_shield_weaken_tvar; exact Hfs ].
+  apply flex_apart_walk_weaken_tvar; exact (Hg Hα).
 Qed.
 
 (** …and the FLEXIBLE-prefix growth Sub-Arrow's right branch needs: it runs
@@ -301,11 +303,7 @@ Proof.
   split;
     [ eapply flex_apart_p0_weaken_flex_prefix; [ exact Hap0 | exact HfrP1 ]
     | intros Hα ].
-  destruct (Hg Hα) as [Hap Hfs].
-  split;
-    [ eapply flex_apart_walk_weaken_flex_prefix;
-        [ exact Hap | exact HfrP1 ]
-    | eapply flex_shield_weaken_flex_prefix; [ exact Hfs | exact HfrP1 ] ].
+  eapply flex_apart_walk_weaken_flex_prefix; [ exact (Hg Hα) | exact HfrP1 ].
 Qed.
 
 (* ===================================================================== *)
@@ -765,8 +763,8 @@ Proof.
        [uskl_var_f α], the very position the guess replaces.  (The
        [flex_shield] half is DEAD since 2026-08-03 — P6-Sv no longer takes
        it; only [flex_apart_walk] is consumed.) *)
-    destruct (sub_shield_here Hshield ltac:(simpl; clear; fsetdec))
-      as [Hapart _].
+    pose proof (sub_shield_here Hshield ltac:(simpl; clear; fsetdec))
+      as Hapart.
     assert (Hsv : exists Pa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
                     Θ0 ⨟ empty ⊢ₚₛᵃ Pa /\
                     Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).

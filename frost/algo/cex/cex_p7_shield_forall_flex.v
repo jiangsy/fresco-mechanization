@@ -116,20 +116,56 @@ Qed.
     of cex_p7_shield_realizable.v has subject [α → unit], not [unit → α], so
     the guard is unmet at its codomain and the repaired premise HOLDS there
     ([p7_sub_shield_repaired_holds]). *)
+(** The same stuck shape for [flex_apart] — needed since 2026-08-03, when
+    [sub_shield] lost its (dead) [flex_shield] conjunct and the refutation
+    below moved to the [flex_apart_walk] half: one [fastep_all_r] opens the
+    tagged guess into [β→β] at [β ∈ Δρ], where [fa_clean] is blocked by β,
+    [fa_var_rigid] by uniqueness, [fa_flexfree] by the flexible, and every
+    congruence and [fa_rho_var] by shape. *)
+Lemma flex_apart_raw_flex_open_arrow_stuck_gen : forall Θ0 Δρ f β,
+  uniq Θ0 ->
+  binds f abind_flex_mono Θ0 ->
+  β `in` Δρ ->
+  ~ flex_apart Θ0 Δρ (pskl_var_f f)
+      (uskl_arrow (uskl_var_f β) (uskl_var_f β)).
+Proof.
+  intros Θ0 Δρ f β Huq Hb Hβ Hfa.
+  inversion Hfa; subst.
+  - (* fa_clean *)
+    match goal with H : _ ∩ _ [=] empty |- _ =>
+      simpl in H; clear - H Hβ; fsetdec end.
+  - (* fa_var_rigid *)
+    match goal with H : binds _ abind_tvar _ |- _ =>
+      pose proof (binds_unique _ _ _ _ _ H Hb Huq) as Hc; discriminate Hc end.
+  - (* fa_flexfree *)
+    match goal with H : pskl_flex_free _ _ |- _ =>
+      apply (H f); [ simpl; clear; fsetdec | left; exact Hb ] end.
+Qed.
+
 Lemma sub_shield_forall_flex_p0_fails : forall Θ0 Ψ' f e α,
+  uniq Θ0 ->
   binds f abind_flex_mono Θ0 ->
   e `in` Ψ' ->
   ~ sub_shield Θ0 Ψ' empty α
       (pskl_arrow (pskl_all_syn (pskl_var_b 0)) (pskl_var_f f))
       (uskl_arrow uskl_unit (uskl_var_f α)) (cexψ e).
 Proof.
-  intros Θ0 Ψ' f e α Hb He Hsh.
+  intros Θ0 Ψ' f e α Huq Hb He Hsh.
   destruct (Hsh (pskl_var_f f) (uskl_var_f α) empty
               ltac:(eapply ssw_step; [ apply sss_arrow_r | apply ssw_refl ])
               ltac:(clear; fsetdec) ltac:(clear; fsetdec))
     as [_ Hg].
-  destruct (Hg ltac:(simpl; clear; fsetdec)) as [_ Hfs].
-  exact (flex_shield_raw_flex_tagged_arrow_stuck Hb He Hfs).
+  pose proof (Hg ltac:(simpl; clear; fsetdec)) as Hfaw.
+  pick fresh β for (empty : atoms).
+  assert (Hw : fa_walk (dom Θ0) empty (pskl_var_f f) (cexψ e)
+                 (add β empty) (pskl_var_f f)
+                 (uskl_arrow (uskl_var_f β) (uskl_var_f β))).
+  { unfold cexψ.
+    eapply fw_step; [ apply fastep_all_r | ].
+    unfold open_uskl_wrt_uskl; simpl. apply fw_refl. }
+  pose proof (Hfaw _ _ _ Hw) as Hleaf.
+  assert (Hβin : β `in` add β empty) by (clear; fsetdec).
+  exact (flex_apart_raw_flex_open_arrow_stuck_gen Huq Hb Hβin Hleaf).
 Qed.
 
 Print Assumptions sub_shield_forall_flex_p0_fails.
