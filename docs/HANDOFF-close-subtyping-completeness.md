@@ -55,7 +55,38 @@ REPAIR + DOCUMENT (CLAUDE.md's rule), not to transcribe.
 
 ================================================================
 TASK A — DECIDE REACHABILITY.  This gates everything else.
+⭕ PARTIALLY SETTLED 2026-08-04 — read this box first
 ================================================================
+`frost/algo/cex/probe_payload_reachability.v` (Qed, axiom-free; DESIGN
+§14.10) settles conjunct (2) below and PINS THE SEARCH:
+
+ · `a_sub_sk_no_spine_all` — at the SK sort, with a mode-compatible
+   payload, an `a_sub` output's MODE-SPINE never ends in a bare ∀.
+   `__infer` is the only verbatim row and it is TI-only; `__ghost`
+   returns the payload, whose spine `skmod[SK]` ends in ◇; everything
+   else wraps (`⫯`), splits (`__arrow`) or relays.
+ · `a_pat_spine_all_out_freeze` / `app_payload_domain_all_needs_freeze`
+   — ⭐ therefore a payload's bare-∀ DOMAIN forces a FREEZE in the
+   argument.  A refuting SOURCE program must freeze a polymorphic
+   argument.  (The hand-off's ⚠️ below stays right: do not try to prove
+   "domains are never ∀-headed"; prove "only `{|e|}` makes them so".)
+ · `a_guess_mono_all_free` — a monotype guess exists only for a ∀-free
+   skeleton, so `a_assign__solve_m` can NEVER absorb a ∀: a flexible
+   cannot take a polytype.  This is both the cex's collapse mechanism
+   and the obstruction to checking a frozen polymorphic argument at a
+   raw-flexible payload.
+
+⭕ STILL OPEN: conjunct (1), and it is ONE crisp statement.  The ambient
+payload is raw-flexible only where the enclosing COLLECTION is
+uninformative (`a_consis__ghost_r` — payload ◇, output = subject — is
+what leaves a ForallL guess raw); but that collection is computed by the
+SAME `a_sub` run, at the same subject and the same payload domain,
+differing only in the SORT.  So the ∀ that (2) demands at the marker's
+domain makes the marker's instantiation informative and the codomain
+output `⫯`-wrapped, not ◇.  CLOSING IT NEEDS: *the extract's output is
+ghost-ish only if the look collected nothing at the marker* (P6-level,
+NOT proved).  Prove that and TASK A is closed NEGATIVE ⟹ TASK B.
+
 The refuting configuration needs BOTH
   (1) a raw `Θ0`-flexible at the payload's CODOMAIN — the algorithm has NO
       inherited information there; and

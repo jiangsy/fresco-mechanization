@@ -132,7 +132,18 @@ point to the same content.
   forth once") document exactly that program.  ⭕ So whether the cex
   configuration is reachable is OPEN, the theorem may be merely
   OVER-QUANTIFIED, and the payload-side-condition repair
-  (`docs/HANDOFF-completeness-repair.md` TASKS 2–3) is back ON.  ⚠️ LESSON:
+  (`docs/HANDOFF-completeness-repair.md` TASKS 2–3) is back ON.
+  ⭕⭐⭐ **REACHABILITY, POSITIVE HALF MACHINE-CHECKED (2026-08-04)**:
+  `cex/probe_payload_reachability.v` (Qed, axiom-free) proves that at the
+  SK sort an `a_sub` output's MODE-SPINE never ends in a bare ∀
+  (`a_sub_sk_no_spine_all`), hence a payload's bare-∀ DOMAIN — the only
+  position that can pay a guess's tag — forces a FREEZE in the argument
+  (`app_payload_domain_all_needs_freeze`), and that a monotype guess exists
+  only for a ∀-free skeleton (`a_guess_mono_all_free`), so a flexible can
+  never absorb a ∀.  What is left open is the other conjunct — a raw
+  flexible at the payload's CODOMAIN — which the same run's collection
+  co-determines; closing it needs one EXTRACT-level fact (DESIGN §14.10 and
+  the TASK A box of the active hand-off state it).  ⚠️ LESSON:
   before any "decl accepts" claim, enumerate ALL the declarative side
   conditions (the TAG obligation, not just the monotype one) and check
   §2.9 — the same species of error as the earlier MODE confusion.

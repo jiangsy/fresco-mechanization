@@ -78,7 +78,52 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⚠️⚠️ RETRACTION (co-author caught it): the "incompleteness on programs" claim is WRONG — the declarative system rejects that program too; reachability is OPEN again
+## 2026-08-04 (latest) — ⭕⭐⭐ TASK A (reachability of the refuting payload): the POSITIVE half is MACHINE-CHECKED — a refuting program must FREEZE a polymorphic argument
+
+`frost/algo/cex/probe_payload_reachability.v` (all `Qed`, three
+`Print Assumptions` closed; compiles in under a second).  The refuting
+configuration of `probe_double_occ_run.v` needs BOTH (1) a raw `Θ0`-flexible
+at the payload's codomain and (2) a **bare** ∀ at its domain — bare, because
+the domain is the consistency-feeding position and a guess's tag is payable
+only against a `bskl_all_inh`, which `pskl_to_bskl_inh` produces exactly at a
+`pskl_all_syn` of `P0`.
+
+**Conjunct (2) is settled.**  A payload's arrow-LEFT is the argument's
+COLLECTION, an `a_pat` output at `(TC, ◇)` — the SK sort.  `a_sub_sk_no_spine_all`:
+at the SK sort with a mode-compatible payload, an `a_sub` output's MODE-SPINE
+never ends in a bare ∀ (`__infer` is the only verbatim row and it is TI-only;
+`__ghost` returns the payload, whose `skmod[SK]` spine ends in ◇;
+`__univ_ghost_r` wraps in `⫯`; `__arrow` hands the spine to its codomain;
+`__flex_mono` / `__forall_l` / `__univ_ghost_l` and the whole flexible walk
+relay — Flex-Assign's monotype substitution leaves the arrow spine alone).
+Lifted through `a_pat` (`a_pat_spine_all_out_freeze`,
+`app_payload_domain_all_needs_freeze`): **a bare-∀ payload domain forces a
+freeze in the argument.**  ⭐ So the hand-off's warning becomes a theorem in
+the positive direction — not "domains are never ∀-headed" (false: `{|e|}`
+collects at TI where `a_sub__infer` is verbatim) but "only `{|e|}` makes them
+so".
+
+**The other half of the tension, at the rule level.**  `a_guess_mono_all_free`:
+a monotype guess exists only for a ∀-free skeleton.  Since `a_assign__solve_m`
+is the only rule that solves a flexible against an inherited skeleton and it
+demands `mono_ptyp τ`, a flexible can NEVER absorb a ∀ — simultaneously the
+mechanism of the cex's collapse (SolE-FlexR overwrites the eq-constraint's
+polytype yield; SolveM cannot recover it) and the obstruction to checking a
+frozen polymorphic argument at a raw-flexible payload.
+
+⭕ **Still open — conjunct (1), now one crisp statement.**  A raw-flexible
+ambient arises only where the enclosing COLLECTION is uninformative
+(`a_consis__ghost_r`, payload ◇ / output = subject, is what leaves a ForallL
+guess raw).  But that collection is computed by the SAME `a_sub` run, at the
+same subject and the same payload domain, differing only in the SORT (SK
+guesses ghosts, TY flexibles) — so the ∀ that (2) demands makes the marker's
+instantiation informative and the codomain output `⫯`-wrapped, not ◇.  That
+co-determination is why (1) and (2) pull in opposite directions.  Closing it
+needs one EXTRACT-level fact — *the extract's output is ghost-ish only if the
+look collected nothing at the marker* — which is P6 machinery and is not
+proved.  DESIGN §14.10; HANDOFF-close-subtyping-completeness.md TASK A box.
+
+## 2026-08-03 — ⚠️⚠️ RETRACTION (co-author caught it): the "incompleteness on programs" claim is WRONG — the declarative system rejects that program too; reachability is OPEN again
 
 The entry below claimed a source-level separation.  **It is withdrawn.**
 `pipe (λg. g arg)` is ill-typed DECLARATIVELY as well, so met.exe's

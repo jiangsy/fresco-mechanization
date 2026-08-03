@@ -5246,3 +5246,89 @@ closed instance — and detecting it is what turned the shield saga into a
 statement about the THEOREM's quantifier.  The repair is a payload side
 condition on the motive (HANDOFF-completeness-repair.md TASKS 2–3), not a
 fourth shield re-indexing.
+
+### ⭕ §14.10 TASK A (reachability), the POSITIVE half machine-checked (2026-08-04): the refuting payload needs a FROZEN argument
+
+`frost/algo/cex/probe_payload_reachability.v`, all `Qed`, three
+`Print Assumptions` closed.  §14.9 left reachability open and sharply stated;
+this settles one of its two conjuncts at the RULE level and pins the search.
+
+**What the refuting payload needs.**  Re-read §14.7's configuration as a
+demand on `P0 = (∀γ.γ→γ) → f̂`:
+
+1. a raw `Θ0`-flexible at the CODOMAIN — the algorithm has no inherited
+   information there; and
+2. a **bare ∀** at the DOMAIN.  It must be BARE, not `⫯`-wrapped: the domain
+   is the position that feeds CONSISTENCY, and a guess's tag is payable only
+   against a `bskl_all_inh` of the counterpart, which `pskl_to_bskl_inh`
+   produces exactly at a `pskl_all_syn` of `P0`.
+
+**(2) IS SETTLED: freeze is the only producer.**  A payload's arrow-LEFT is
+the ARGUMENT'S COLLECTION — an `a_pat` output at `(TC, ◇)`, i.e. at the SK
+sort.  The theorem is
+
+    a_sub_sk_no_spine_all :
+      a_sub SK M P0 Θ0 P Q Θ1 -> skmod[SK]{P0}{M} -> ~ spine_all_out M Q
+
+where `spine_all_out M Q` says the output's MODE-SPINE (peel one arrow per
+`FN`) ends in a bare `pskl_all_syn`.  Reading the rows: `__infer` is the only
+one that returns the subject verbatim and it runs at **TI**, which
+`spine_all_out` has no row for; `__check`/`__forall_r` are TY-only;
+`__univ_ghost_r` wraps in `⫯`; `__arrow` hands the spine to its codomain
+premise; `__ghost` returns the PAYLOAD, which `skmod[SK]` forbids (its spine
+ends in ◇); and `__flex_mono`/`__forall_l`/`__univ_ghost_l` plus the whole
+flexible walk merely relay (Flex-Assign substitutes a monotype into `P0`,
+which leaves the arrow spine alone — `a_sk_mode_compat_subst`).
+
+Lifting it through `a_pat` gives
+
+    a_pat_spine_all_out_freeze :
+      a_pat m Θ0 P0 e Q Θ1 -> skmod[SK]{P0}{m} -> spine_all_out m Q
+      -> exp_freeze_inside e
+
+with `exp_freeze_inside` the spine of head positions a freeze can occupy
+(application function, lambda body, the expression itself).  The four
+`a_sub`-delegating rows die by the theorem, the two Check rows emit a `⫯`,
+and Abs/App relay.  The corollary
+`app_payload_domain_all_needs_freeze` is the form the question uses.
+
+⭐ So the hand-off's warning is now a THEOREM in the positive direction: do
+not try to prove "payload domains are never ∀-headed" (false — `{|e|}`
+collects at TI where `a_sub__infer` is verbatim), but DO use "only `{|e|}`
+makes them so".  **A refuting source program must freeze a polymorphic
+argument.**
+
+**The other half of the tension, also at the rule level.**
+`a_guess_mono_all_free : a_guess_mono Θ P Ξ A -> mono_ptyp A ->
+pskl_all_free P` — `a_guess_mono`'s ∀ row returns a `ptyp_all`, never a
+monotype.  Since `a_assign__solve_m` is the ONLY rule that solves a flexible
+against an inherited skeleton and it demands `mono_ptyp τ`, **a flexible can
+never absorb a ∀**.  That is simultaneously the mechanism of §14.7's collapse
+(SolE-FlexR overwrites the eq-constraint's polytype yield, and SolveM cannot
+recover it) and the obstruction to checking a frozen polymorphic argument at
+a raw-flexible payload.
+
+**⭕ WHAT REMAINS OPEN — conjunct (1), and it is one crisp statement.**  The
+ambient payload of an application is the OUTER function's domain, i.e. the
+output of a consistency guided by the collection of THAT SAME application
+(`a_consis__ghost_r` — payload ◇, output = subject — is what leaves a
+ForallL-guessed flexible RAW; `__flex_l`'s assignment otherwise defines it,
+and `a_typing__abs`'s `a_split__flex` only propagates one).  But that
+collection is computed by the SAME `a_sub` run, at the same subject and the
+same payload domain, differing only in the SORT — SK guesses ghosts, TY
+guesses flexibles.  So when the marker's domain position carries the ∀ that
+(2) demands, the marker's instantiation IS that ∀ and the run's codomain
+output is a `⫯`-wrapped skeleton rather than a plain ◇ — whereupon the
+enclosing look has information and the ambient is not raw.  **That
+co-determination is why (1) and (2) pull in opposite directions**, and
+closing it needs one further EXTRACT-level fact:
+
+> the extract's output is ghost-ish only if the look collected nothing at the
+> marker.
+
+That is P6-level machinery and is NOT proved here.  Until it is, TASK A's
+verdict is: **no reachable witness, and the obstruction is identified and
+half machine-checked** — every probe to date (`docs/repros/…`) lands on one
+horn or the other, and the two known near-misses (`_reject_pipe`, which gets
+(1) and loses (2); `_probe_frozen_arg`, which gets (2) via the freeze) are
+now explained by the same fact rather than by two separate accidents.
