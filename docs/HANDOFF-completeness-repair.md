@@ -1,3 +1,7 @@
+⛔ SUPERSEDED by docs/HANDOFF-close-subtyping-completeness.md (2026-08-03).
+Kept for the TASK 1 record and the producer facts; the tasks below are
+restated there with the reachability question sharpened.
+
 ⚠️ STATUS (2026-08-03, end).  **TASK 1 is DONE** — the probe is
 machine-checked (`probe_no_run`, `probe_motive_instance_false`,
 `probe_main_forall_false`, all Qed + axiom-free; docs updated; committed).
