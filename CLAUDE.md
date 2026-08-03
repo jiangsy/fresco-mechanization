@@ -59,6 +59,19 @@ point to the same content.
   literally stated (only the augmented 3-condition form of
   consistency-proofs.tex:2230 is true), so `thm:complete-subtyping`'s
   Infer/Check invocations of it are a paper gap (PAPER-GAPS.md).
+  **TASK 0 SETTLED + REPAIRED (2026-08-03).**  The residual is
+  REALIZABLE (`cex/cex_p7_shield_realizable.v`), which showed the
+  mech-invented `sub_shield` premise was indexed NON-POSITIONALLY and
+  therefore over-strong.  It has been re-indexed: `ss_walk` now steps
+  `P0` and the SUBJECT in lockstep and carries the looked-for `α`, and
+  the two GUESS-DESCENDING closures (`flex_apart_walk`, `flex_shield`)
+  are demanded only where `α ∈ ftv R'`; the guess-FIXED
+  `flex_apart_p0` is an independent, UNGUARDED conjunct.  `fa_step`
+  lost its two guess-fixed P0 arrow descents (and with them
+  `flex_apart_walk_p0`), which is what made the walk satisfiable at
+  all.  `p7_sub_shield_repaired_holds` machine-checks the repaired
+  premise at the very witness that refutes the old one.  Nothing goes
+  to PAPER-GAPS.md — `sub_shield` is not a paper statement.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),

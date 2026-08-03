@@ -195,10 +195,6 @@ Proof.
       - (* arrow_r *)
         split; [ reflexivity
                | split; [ clear - Htf; fsetdec | clear - Hcl; fsetdec ] ].
-      - (* p0_arrow_l : the guess is untouched *)
-        split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
-      - (* p0_arrow_r *)
-        split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
       - (* all_l : Sub-ForallR descends P0 only *)
         split; [ reflexivity | split; [ exact Htf | exact Hcl ] ].
       - (* all_r : IMPOSSIBLE — a tagged ∀ inside a tag-free guess *)
@@ -231,14 +227,17 @@ Proof.
 Qed.
 
 (** The shield, from tag-freeness alone. *)
-Lemma sub_shield_tag_free : forall Θ0 Ψa P0 ψa,
+Lemma sub_shield_tag_free : forall Θ0 Ψa α P0 R ψa,
   Ψa [=] empty ->
   ftag_in_uskl ψa [=] empty ->
-  sub_shield Θ0 Ψa empty P0 ψa.
+  sub_shield Θ0 Ψa empty α P0 R ψa.
 Proof.
-  intros Θ0 Ψa P0 ψa HΨ Htf P0' Δρ' _ _ Hcl.
+  intros Θ0 Ψa α P0 R ψa HΨ Htf P0' R' Δρ' _ _ Hcl.
   assert (Hcl' : (ftvar_in_uskl ψa) ∩ Δρ' [=] empty)
     by (clear - Hcl; fsetdec).
+  (* the guess-FIXED conjunct is free from cleanliness alone; the two
+     guarded ones do not even need the guard on this branch *)
+  split; [ apply flex_apart_p0_clean; exact Hcl' | intros _ ].
   split;
     [ apply flex_apart_walk_tag_free; assumption
     | apply fsh_clean; [ exact Hcl' | clear - HΨ; fsetdec ] ].
@@ -264,9 +263,9 @@ Theorem sub_shield_supply_mono_counterpart :
   is_tskl ψsubj ->
   ad_pat_sub_g n NM M Ψa Θ ψsubj Q ->
   bskl_monoish Q ->
-  sub_shield Θ0 Ψa empty P0 ψa.
+  forall α R, sub_shield Θ0 Ψa empty α P0 R ψa.
 Proof.
-  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0 HwfΘ Htags Htsk Hsub Hmi.
+  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0 HwfΘ Htags Htsk Hsub Hmi α R.
   assert (HΨ : Ψa [=] empty)
     by (eapply ad_pat_sub_g_monoish_tag_free; eassumption).
   apply sub_shield_tag_free; [ exact HΨ | ].
@@ -289,9 +288,10 @@ Corollary sub_shield_supply_mono_p0 :
   ad_pat_sub_g n NM M Ψa Θ ψsubj Q ->
   P0s = ptyp_to_pskl τ -> mono_ptyp τ ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh P0s) ⊳ Q ->
-  forall P0, sub_shield Θ0 Ψa empty P0 ψa.
+  forall P0 α R, sub_shield Θ0 Ψa empty α P0 R ψa.
 Proof.
-  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0s τ HwfΘ Htags Htsk Hsub Heq Hm Href P0.
+  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0s τ HwfΘ Htags Htsk Hsub Heq Hm Href
+    P0 α R.
   eapply sub_shield_supply_mono_counterpart;
     [ exact HwfΘ | exact Htags | exact Htsk | exact Hsub | ].
   eapply ad_refine_mono_paint_rhs_monoish;
@@ -318,8 +318,17 @@ Inductive pskl_atomic : pskl -> Prop :=
 | pat_var  : forall α, pskl_atomic (pskl_var_f α)
 | pat_hole : pskl_atomic pskl_hole.
 
-Lemma ss_walk_atomic : forall A P0 P0',
-  ss_walk A P0 P0' -> pskl_atomic P0 -> P0' = P0.
+Lemma ss_walk_atomic : forall A α P0 R P0' R',
+  ss_walk A α P0 R P0' R' -> pskl_atomic P0 -> P0' = P0.
+Proof.
+  intros A α P0 R P0' R' H; induction H; intros Hat; [ reflexivity | ].
+  (* only the SUBJECT-side steps survive, and each keeps P0 *)
+  destruct H; try solve [ exfalso; inversion Hat ]; auto.
+Qed.
+
+(** …and the P0-only walk cannot move it either. *)
+Lemma p0_walk_atomic : forall A P0 P0',
+  p0_walk A P0 P0' -> pskl_atomic P0 -> P0' = P0.
 Proof.
   intros A P0 P0' H; induction H; intros Hat; [ reflexivity | ].
   exfalso. destruct H; inversion Hat.
@@ -343,18 +352,22 @@ Proof.
     [ apply fa_unit | apply fa_hole | apply fa_var_rigid; exact Hb ].
 Qed.
 
-Lemma sub_shield_atomic : forall Θ0 Ψa P0 ψa,
+Lemma sub_shield_atomic : forall Θ0 Ψa α0 P0 R ψa,
   a_wf_aenv Θ0 ->
   P0 = pskl_unit \/ P0 = pskl_hole \/
   (exists α, P0 = pskl_var_f α /\ binds α abind_tvar Θ0) ->
-  sub_shield Θ0 Ψa empty P0 ψa.
+  sub_shield Θ0 Ψa empty α0 P0 R ψa.
 Proof.
-  intros Θ0 Ψa P0 ψa HwfΘ0 Hshape P0' Δρ' Hsw _ _.
+  intros Θ0 Ψa α1 P0 R ψa HwfΘ0 Hshape P0' R' Δρ' Hsw _ _.
   assert (Hat : pskl_atomic P0)
     by (destruct Hshape as [-> | [-> | (α & -> & _)]];
         [ apply pat_unit | apply pat_hole | apply pat_var ]).
   rewrite (ss_walk_atomic Hsw Hat).
-  split.
+  split; [ | intros _; split ].
+  - (* the P0-only walk cannot move an atomic P0 *)
+    intros P0'' Hp0w.
+    rewrite (p0_walk_atomic Hp0w Hat).
+    apply flex_apart_atomic; exact Hshape.
   - (* the ρ-walk cannot move an atomic P0 either *)
     intros Δρ'' P0'' ψa'' Hfw.
     rewrite (fa_walk_atomic_p0 Hfw Hat).
@@ -418,13 +431,13 @@ Proof.
   - apply (H α); [ simpl; clear - Hα Hup Hne; fsetdec | exact Hflex ].
 Qed.
 
-Lemma ss_walk_flex_free : forall Θ0 P0 P0',
-  ss_walk (dom Θ0) P0 P0' ->
+Lemma ss_walk_flex_free : forall Θ0 α P0 R P0' R',
+  ss_walk (dom Θ0) α P0 R P0' R' ->
   pskl_flex_free Θ0 P0 ->
   pskl_flex_free Θ0 P0'.
 Proof.
-  intros Θ0 P0 P0' H; induction H; intros Hff; [ exact Hff | ].
-  apply IHss_walk. destruct H.
+  intros Θ0 α P0 R P0' R' H; induction H; intros Hff; [ exact Hff | ].
+  apply IHss_walk. destruct H; try exact Hff.
   - (* sss_arrow_r *)
     destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
   - (* sss_all : the binder misses [dom Θ0] *)
@@ -441,10 +454,6 @@ Proof.
   - (* fastep_arrow_l *)
     destruct (pskl_flex_free_arrow_inv Hff) as [Hf _]; exact Hf.
   - (* fastep_arrow_r *)
-    destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
-  - (* fastep_p0_arrow_l *)
-    destruct (pskl_flex_free_arrow_inv Hff) as [Hf _]; exact Hf.
-  - (* fastep_p0_arrow_r *)
     destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
   - (* fastep_all_l : the binder misses [dom Θ0] *)
     apply pskl_flex_free_open_fresh; assumption.
@@ -463,14 +472,39 @@ Proof.
   apply fa_flexfree; eapply fa_walk_flex_free; eassumption.
 Qed.
 
-(** The flex-free supply, uniformly in ψa AND in Δρ. *)
-Theorem sub_shield_flex_free : forall Θ0 Ψa Δρ P0 ψa,
+(** …and the same for the Δρ-CONSTANT P0-only closure, which [sub_shield] now
+    carries as its own conjunct (DESIGN §14.3). *)
+Lemma p0_walk_flex_free : forall Θ0 P0 P0',
+  p0_walk (dom Θ0) P0 P0' ->
   pskl_flex_free Θ0 P0 ->
-  sub_shield Θ0 Ψa Δρ P0 ψa.
+  pskl_flex_free Θ0 P0'.
 Proof.
-  intros Θ0 Ψa Δρ P0 ψa Hff P0' Δρ' Hsw _ _.
+  intros Θ0 P0 P0' H; induction H; intros Hff; [ exact Hff | ].
+  apply IHp0_walk. destruct H.
+  - destruct (pskl_flex_free_arrow_inv Hff) as [Hf _]; exact Hf.
+  - destruct (pskl_flex_free_arrow_inv Hff) as [_ Hf]; exact Hf.
+  - (* the binder misses [dom Θ0] *)
+    apply pskl_flex_free_open_fresh; assumption.
+  - apply pskl_flex_free_tophole_inv; exact Hff.
+Qed.
+
+Lemma flex_apart_p0_flex_free : forall Θ0 Δρ P0 ψa,
+  pskl_flex_free Θ0 P0 ->
+  flex_apart_p0 Θ0 Δρ P0 ψa.
+Proof.
+  intros Θ0 Δρ P0 ψa Hff P0' Hw.
+  apply fa_flexfree; eapply p0_walk_flex_free; eassumption.
+Qed.
+
+(** The flex-free supply, uniformly in ψa AND in Δρ. *)
+Theorem sub_shield_flex_free : forall Θ0 Ψa Δρ α P0 R ψa,
+  pskl_flex_free Θ0 P0 ->
+  sub_shield Θ0 Ψa Δρ α P0 R ψa.
+Proof.
+  intros Θ0 Ψa Δρ α P0 R ψa Hff P0' R' Δρ' Hsw _ _.
   assert (Hff' : pskl_flex_free Θ0 P0')
     by (eapply ss_walk_flex_free; eassumption).
+  split; [ apply flex_apart_p0_flex_free; exact Hff' | intros _ ].
   split;
     [ apply flex_apart_walk_flex_free; exact Hff'
     | apply fsh_flexfree; exact Hff' ].
@@ -709,9 +743,9 @@ Theorem sub_shield_supply_inh_free_counterpart :
   a_tags_sort NM Ψa ψa ->
   ad_pat_sub_g n NM M Ψa Θ ψsubj Q ->
   bskl_inh_free Q ->
-  sub_shield Θ0 Ψa empty P0 ψa.
+  forall α R, sub_shield Θ0 Ψa empty α P0 R ψa.
 Proof.
-  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0 Htags Hsub Hif.
+  intros n NM M Θ0 Θ Ψa ψa ψsubj Q P0 Htags Hsub Hif α R.
   assert (HΨ : Ψa [=] empty)
     by (eapply ad_pat_sub_g_inh_free_tag_free; eassumption).
   apply sub_shield_tag_free; [ exact HΨ | ].
@@ -729,9 +763,9 @@ Theorem sub_shield_supply_all_free_p0 :
   pskl_all_free P0 ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   ad_pat_sub_g n NM M Ψa Θ ψsubj Q ->
-  sub_shield Θ0 Ψa empty P0 ψa.
+  forall α R, sub_shield Θ0 Ψa empty α P0 R ψa.
 Proof.
-  intros n NM M Θ0 Θ κ Ψa ψa ψsubj Q P0 Htags Hκ Hff Href Hsub.
+  intros n NM M Θ0 Θ κ Ψa ψa ψsubj Q P0 Htags Hκ Hff Href Hsub α R.
   eapply sub_shield_supply_inh_free_counterpart;
     [ exact Htags | exact Hsub | ].
   eapply ad_refine_syn_inh_free; [ exact Href | ].

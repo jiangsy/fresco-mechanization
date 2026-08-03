@@ -2457,7 +2457,14 @@ Lemma a_sub_complete_forall_l_tagged :
   a_tags_sort NM Ψa ψa ->
   Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
   ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
-  sub_shield Θ0 Ψa empty P0 ψa ->
+  (* ⭐ TASK 0's gate, POSITIONALLY indexed (DESIGN §14.3, 2026-08-03):
+     the marker [α] is picked inside the proof, and the shield is
+     demanded at the SUBJECT the row hands P6-L, [open Rb α].  ⚠️ The
+     [forall R] form is NOT available — it is over-strong at
+     cex/cex_p7_shield_realizable.v's witness (take [R = unit → α],
+     which walks the guess onto a raw flexible it never meets). *)
+  (forall α, sub_shield Θ0 Ψa empty α P0
+               (open_uskl_wrt_uskl Rb (uskl_var_f α)) ψa) ->
   (guarded_pskl P0 \/ P0 = pskl_hole) ->
   (NM = a_sub_mode_ty -> uskl_ghost_free (uskl_all_etag ε Rj)) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_etag ε Rb)
@@ -2556,7 +2563,7 @@ Proof.
               ltac:(clear; fsetdec)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec)
-              Hshield
+              (Hshield α)
               ltac:(pose proof (ad_pat_sub_g_ftag_sub
                                   (ad_pat_sub_gv_forget HD)) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;
@@ -2753,7 +2760,14 @@ Lemma a_sub_complete_forall_l_untagged :
   a_tags_sort NM Ψa ψa ->
   Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
   ad_pat_sub_gv n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
-  sub_shield Θ0 Ψa empty P0 ψa ->
+  (* ⭐ TASK 0's gate, POSITIONALLY indexed (DESIGN §14.3, 2026-08-03):
+     the marker [α] is picked inside the proof, and the shield is
+     demanded at the SUBJECT the row hands P6-L, [open Rb α].  ⚠️ The
+     [forall R] form is NOT available — it is over-strong at
+     cex/cex_p7_shield_realizable.v's witness (take [R = unit → α],
+     which walks the guess onto a raw flexible it never meets). *)
+  (forall α, sub_shield Θ0 Ψa empty α P0
+               (open_uskl_wrt_uskl Rb (uskl_var_f α)) ψa) ->
   (guarded_pskl P0 \/ P0 = pskl_hole) ->
   (NM = a_sub_mode_ty -> uskl_ghost_free (uskl_all_syn Rj)) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_syn Rb)
@@ -2852,7 +2866,7 @@ Proof.
               ltac:(clear; fsetdec)
               Hwfψa
               ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec)
-              Hshield
+              (Hshield α)
               ltac:(pose proof (ad_pat_sub_g_ftag_sub
                                   (ad_pat_sub_gv_forget HD)) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;

@@ -295,7 +295,16 @@ Proof.
 Qed.
 
 (* --------------------------------------------------------------------- *)
-(*  (4) …AND THE SHIELD IS FALSE THERE                                    *)
+(*  (4) …AND THE NON-POSITIONAL OBLIGATION IS FALSE THERE                 *)
+(*                                                                        *)
+(*  ⚠️ HISTORY.  Until 2026-08-03 [sub_shield] was indexed by [P0] ALONE   *)
+(*  and demanded BOTH its closures at every walk-reachable P0-part against *)
+(*  the WHOLE guess.  One [sss_arrow_r] step reaches [P0 = α̂] here, and    *)
+(*  BOTH obligations are false at that leaf — which is what this file was  *)
+(*  written to show.  The premise has since been re-indexed POSITIONALLY   *)
+(*  (DESIGN §14.3), so the old statement can no longer even be written;    *)
+(*  what survives verbatim, and is the whole of its content, is that the   *)
+(*  two guess-DESCENDING closures fail at the codomain.                   *)
 (* --------------------------------------------------------------------- *)
 
 Lemma binds_f_w : binds f abind_flex_mono Θ0w.
@@ -304,17 +313,56 @@ Proof. unfold binds; simpl; auto. Qed.
 Lemma e_in_w : e `in` (singleton e).
 Proof. clear; fsetdec. Qed.
 
-Lemma shield_w_fails : ~ sub_shield Θ0w (singleton e) empty P0w ψw.
+(** the [flex_shield] half, at the CODOMAIN the old indexing reached *)
+Lemma shield_w_codomain_fails : forall Δρ,
+  ~ flex_shield Θ0w (singleton e) Δρ (pskl_var_f f) ψw.
 Proof.
-  intros Hss.
-  assert (Hwalk : ss_walk (dom Θ0w) P0w (pskl_var_f f)).
-  { unfold P0w. eapply ssw_step; [ apply sss_arrow_r | apply ssw_refl ]. }
-  assert (Hs1 : empty [<=] empty) by (clear; fsetdec).
-  assert (Hs2 : empty ∩ ftvar_in_uskl ψw [<=] empty) by (clear; fsetdec).
-  destruct (Hss (pskl_var_f f) empty Hwalk Hs1 Hs2) as [_ Hfsh].
+  intros Δρ Hfsh.
   exact (flex_shield_raw_flex_tagged_arrow_stuck
-           (Θ0 := Θ0w) (Ψ' := singleton e) (Δρ := empty) (f := f) (e := e)
+           (Θ0 := Θ0w) (Ψ' := singleton e) (Δρ := Δρ) (f := f) (e := e)
            binds_f_w e_in_w Hfsh).
+Qed.
+
+(* the stuck [flex_apart] leaf: a raw flexible against an OPENED tagged
+   guess whose body is compound *)
+Lemma flex_apart_raw_flex_open_arrow_stuck : forall Δρ (β : atom),
+  β `in` Δρ ->
+  ~ flex_apart Θ0w Δρ (pskl_var_f f)
+      (uskl_arrow (uskl_var_f β) (uskl_var_f β)).
+Proof.
+  intros Δρ β Hβ Hfa.
+  assert (Hfl : a_flex_tvar Θ0w f) by (left; unfold binds; simpl; auto).
+  inversion Hfa; subst.
+  - (* fa_clean : β is in Δρ, and it is free in the guess *)
+    match goal with H : _ ∩ _ [=] empty |- _ =>
+      simpl in H; clear - H Hβ; fsetdec end.
+  - (* fa_var_rigid : [f] is FLEXIBLE in Θ0w, not rigid *)
+    match goal with H : binds _ abind_tvar _ |- _ =>
+      unfold binds in H; simpl in H;
+      destruct H as [Hc | Hc]; [ inversion Hc | contradiction ] end.
+  - (* fa_flexfree : [f] is a raw flexible of Θ0w *)
+    match goal with H : pskl_flex_free _ _ |- _ =>
+      apply (H f ltac:(simpl; clear; fsetdec)); exact Hfl end.
+Qed.
+
+(** …and the [flex_apart_walk] half, at the same leaf: one [fastep_all_r]
+    opens the guess into [β→β] at [β ∈ Δρ], where nothing applies. *)
+Lemma apart_w_codomain_fails : forall Δρ,
+  ~ flex_apart_walk Θ0w Δρ (pskl_var_f f) ψw.
+Proof.
+  intros Δρ Hfa.
+  pick fresh β for (empty : atoms).
+  assert (Hw : fa_walk (dom Θ0w) Δρ (pskl_var_f f) ψw
+                 (add β Δρ) (pskl_var_f f)
+                 (uskl_arrow (uskl_var_f β) (uskl_var_f β))).
+  { unfold ψw, cexψ.
+    eapply fw_step; [ apply fastep_all_r | ].
+    unfold open_uskl_wrt_uskl; simpl. apply fw_refl. }
+  pose proof (Hfa _ _ _ Hw) as Hleaf.
+  (* ⚙ evar-free on purpose: [eapply] here would leave [Δρ] and [β] open and
+     the [β ∈ Δρ] side goal would go to [fsetdec] WITH EVARS, which diverges *)
+  assert (Hβin : β `in` add β Δρ) by (clear; fsetdec).
+  exact (flex_apart_raw_flex_open_arrow_stuck Hβin Hleaf).
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -354,22 +402,24 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  THE HEADLINE — [sub_shield] IS OVER-STRONG                            *)
+(*  THE HEADLINE — THE NON-POSITIONAL INDEXING IS OVER-STRONG             *)
 (* ===================================================================== *)
 
 (** Every input of P7b's completeness motive is inhabited here, the join ends
-    at a ForallL node with this guess and no other rule can be taken there —
-    and the ForallL row's [sub_shield] premise is FALSE.  So the P7c
-    dispatcher cannot discharge [sub_shield] in general.
+    at a ForallL node with this guess, no other rule can be taken there — and
+    at the CODOMAIN the two guess-descending closures both fail.  The old,
+    P0-only [sub_shield] demanded exactly those, one [sss_arrow_r] step away,
+    so it could not be discharged by the P7c dispatcher.
 
     ⚠️ This does NOT refute P6-Ss or thm:complete-subtyping: [sub_shield] is a
     MECH-INVENTED repair premise (P6-Sv's), not a paper statement.  What it
-    shows is that the premise is indexed NON-POSITIONALLY — it pairs EVERY
+    shows is that the premise was indexed NON-POSITIONALLY — it paired EVERY
     walk-reachable [P0]-part with the WHOLE guess, and here the derivation
     aligns [ψa] with the arrow's DOMAIN (facing the inherited ∀ of [Q], where
     its tag is legitimately discharged by [ad_pat_consis__forall_inh_tagged])
-    while the shield is demanded at the CODOMAIN, a raw flexible that has
-    nothing to do with that guess. *)
+    while the shield was demanded at the CODOMAIN, a raw flexible that has
+    nothing to do with that guess.  ⭐ The repair holds AT THIS VERY
+    CONFIGURATION — [p7_sub_shield_repaired_holds] below. *)
 Theorem p7_sub_shield_is_over_strong :
   (* the completeness configuration … *)
   a_wf_aenv Θ0w /\
@@ -393,85 +443,204 @@ Theorem p7_sub_shield_is_over_strong :
   (* … the FILL … *)
   ad_refine_syn_f empty Θ0w empty
     (pskl_to_bskl_inh (msubst_pskl κw P0w)) Qw /\
-  (* … and the SHIELD IS FALSE. *)
-  ~ sub_shield Θ0w (singleton e) empty P0w ψw.
+  (* … and BOTH guess-descending closures fail at the CODOMAIN, which is
+     one [ss_walk] step from the root and which the OLD indexing paired
+     with this whole guess. *)
+  (forall Δρ, ~ flex_shield Θ0w (singleton e) Δρ (pskl_var_f f) ψw) /\
+  (forall Δρ, ~ flex_apart_walk Θ0w Δρ (pskl_var_f f) ψw).
 Proof.
   repeat split;
     first [ apply Θ0w_wf | apply P0w_wf | apply Pw_wf | apply P0w_mode
           | left; apply P0w_guarded | apply Rw_ghost_free | apply inc_w
           | apply slack_w | apply Qw_wf | apply join_w | apply ψw_tags
           | apply ψw_erase_wf | apply join_premise_w | apply fill_w
-          | apply shield_w_fails
+          | apply shield_w_codomain_fails
+          | apply apart_w_codomain_fails
           | unfold Rw, Rjw; simpl; clear - Het; fsetdec
           | clear; fsetdec ].
 Qed.
 
-(* --------------------------------------------------------------------- *)
-(*  (6) SCOPING: the OTHER conjunct is over-strong TOO, and already at the *)
-(*      ROOT — so the repair is NOT local to [flex_shield]                 *)
+(* ===================================================================== *)
+(*  ⭐⭐ THE REPAIR, AT THIS VERY CONFIGURATION                             *)
 (*                                                                        *)
-(*  [sub_shield] bundles [flex_apart_walk] with [flex_shield], and the     *)
-(*  apart half fails here as well — not at the codomain but at the ROOT,   *)
-(*  because [fa_walk] mixes a P0-ONLY descent ([fastep_p0_arrow_r], the    *)
-(*  step P6-Cs needs since it walks P0 with the guess FIXED) with a step   *)
-(*  that GROWS Δρ ([fastep_all_r], Sub-ForallL opening the guess).  Two    *)
-(*  such steps reach [(α̂, β→β)] at [β ∈ Δρ], where [fa_clean] is blocked   *)
-(*  by β, [fa_flexfree] by the flexible, [fa_var_rigid] by flexibility,    *)
-(*  and every congruence by a shape mismatch.                             *)
+(*  The POSITIONAL premise (DESIGN §14.3) holds where the old one fails.   *)
+(*  Two independent things do the work, and the file checks BOTH:          *)
 (*                                                                        *)
-(*  ⚠️ CONSEQUENCE FOR THE REPAIR.  A positional re-indexing of            *)
-(*  [flex_shield] alone does NOT unblock P7c: [flex_apart_walk] has to be  *)
-(*  re-indexed with it.  ⚙ NOTE the DIFFERENCE that keeps this from        *)
-(*  spreading further: what P6-Ss actually hands P6-Cs is                  *)
-(*  [flex_apart_p0] (the P0-only [p0_walk] closure, Δρ FIXED), and that    *)
-(*  one is TRUE here — at Δρ = ∅ with a CLOSED guess [fa_clean] discharges *)
-(*  every position.  So the defect is exactly the [fa_walk] closure's      *)
-(*  mixing of a Δρ-growing step with a guess-fixed P0 descent, and P6-Cv / *)
-(*  P6-Cs are not themselves implicated.                                   *)
-(* --------------------------------------------------------------------- *)
+(*   · Part A — the walk steps [P0] and the SUBJECT in lockstep and the    *)
+(*     guess-descending closures are demanded only where [α ∈ ftv R'].     *)
+(*     P7b's ForallL row hands P6-L the subject [open Rjw α = α → unit],   *)
+(*     so ONE [sss_arrow_r] step reaches the codomain — where the subject  *)
+(*     is [unit], the guard FAILS, and the false obligation above is never *)
+(*     raised.                                                            *)
+(*   · Part B — [fa_step] no longer carries the guess-fixed P0 arrow       *)
+(*     descents, so the ROOT obligation is satisfiable too.  With them the *)
+(*     root fails as well (compose [fastep_p0_arrow_r] with               *)
+(*     [fastep_all_r]), which is why the guard alone was not enough.       *)
+(* ===================================================================== *)
 
-(* the stuck [flex_apart] leaf: a raw flexible against an OPENED tagged
-   guess whose body is compound *)
-Lemma flex_apart_raw_flex_open_arrow_stuck : forall Δρ (β : atom),
-  β `in` Δρ ->
-  ~ flex_apart Θ0w Δρ (pskl_var_f f)
-      (uskl_arrow (uskl_var_f β) (uskl_var_f β)).
+(** Guesses reachable after the root's [fastep_all_r] carry no ε-tagged ∀:
+    the only [uskl_all_etag] in play is [ψw], and every later guess is a
+    SUBTERM of an opened one or a monotype PAINTING. *)
+Fixpoint etag_free_w (R : uskl) : Prop :=
+  match R with
+  | uskl_arrow R1 R2 => etag_free_w R1 /\ etag_free_w R2
+  | uskl_all_syn R0 => etag_free_w R0
+  | uskl_all_etag _ _ => False
+  | uskl_tophole R0 => etag_free_w R0
+  | uskl_topholeg R0 => etag_free_w R0
+  | _ => True
+  end.
+
+Lemma etag_free_w_painting : forall A, etag_free_w (ptyp_to_uskl_syn A).
 Proof.
-  intros Δρ β Hβ Hfa.
-  assert (Hfl : a_flex_tvar Θ0w f) by (left; unfold binds; simpl; auto).
-  inversion Hfa; subst.
-  - (* fa_clean : β is in Δρ, and it is free in the guess *)
-    match goal with H : _ ∩ _ [=] empty |- _ =>
-      simpl in H; clear - H Hβ; fsetdec end.
-  - (* fa_var_rigid : [f] is FLEXIBLE in Θ0w, not rigid *)
-    match goal with H : binds _ abind_tvar _ |- _ =>
-      unfold binds in H; simpl in H;
-      destruct H as [Hc | Hc]; [ inversion Hc | contradiction ] end.
-  - (* fa_flexfree : [f] is a raw flexible of Θ0w *)
-    match goal with H : pskl_flex_free _ _ |- _ =>
-      apply (H f ltac:(simpl; clear; fsetdec)); exact Hfl end.
+  intros A. unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
+  induction A; simpl in *; auto.
 Qed.
 
-Lemma apart_w_fails : ~ flex_apart_walk Θ0w empty P0w ψw.
+(** The [fa_arrow] / [fa_rho_var] skeleton: every leaf of the guess is a
+    Δρ-variable and its arrow spine matches P0's. *)
+Inductive rho_shape_w (Δρ : atoms) : pskl -> uskl -> Prop :=
+| rsw_var : forall P0 α, α `in` Δρ -> rho_shape_w Δρ P0 (uskl_var_f α)
+| rsw_arrow : forall P1 P2 ψ1 ψ2,
+    rho_shape_w Δρ P1 ψ1 -> rho_shape_w Δρ P2 ψ2 ->
+    rho_shape_w Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2).
+
+Definition INVw (Δρ : atoms) (P0 : pskl) (ψa : uskl) : Prop :=
+  etag_free_w ψa /\
+  ((ftvar_in_uskl ψa) ∩ Δρ [=] empty \/ rho_shape_w Δρ P0 ψa).
+
+Lemma INVw_flex_apart : forall Θ0 Δρ P0 ψa,
+  INVw Δρ P0 ψa -> flex_apart Θ0 Δρ P0 ψa.
 Proof.
-  intros Hfa.
-  pick fresh β for (empty : atoms).
-  assert (Hw : fa_walk (dom Θ0w) empty P0w ψw
-                 (add β empty) (pskl_var_f f)
-                 (uskl_arrow (uskl_var_f β) (uskl_var_f β))).
-  { unfold P0w, ψw, cexψ.
-    eapply fw_step; [ apply fastep_p0_arrow_r | ].
-    eapply fw_step; [ apply fastep_all_r | ].
-    unfold open_uskl_wrt_uskl; simpl. apply fw_refl. }
-  pose proof (Hfa _ _ _ Hw) as Hleaf.
-  (* ⚙ evar-free on purpose: [eapply] here would leave [Δρ] and [β] open and
-     the [β ∈ Δρ] side goal would go to [fsetdec] WITH EVARS, which diverges *)
-  assert (Hβin : β `in` add β (empty : atoms)) by (clear; fsetdec).
-  exact (flex_apart_raw_flex_open_arrow_stuck Hβin Hleaf).
+  intros Θ0 Δρ P0 ψa [_ [Hcl | Hrs]]; [ apply fa_clean; assumption | ].
+  induction Hrs; [ apply fa_rho_var; assumption | apply fa_arrow; assumption ].
+Qed.
+
+Lemma INVw_step : forall A Δρ P0 ψa Δρ1 P1 ψ1,
+  INVw Δρ P0 ψa -> fa_step A Δρ P0 ψa Δρ1 P1 ψ1 -> INVw Δρ1 P1 ψ1.
+Proof.
+  intros A Δρ P0 ψa Δρ1 P1 ψ1 [Hef Hd] Hs.
+  destruct Hs.
+  - (* arrow_l *)
+    simpl in Hef. split; [ tauto | ]. destruct Hd as [Hcl | Hrs].
+    + left. simpl in Hcl. clear - Hcl; fsetdec.
+    + right. inversion Hrs; subst; assumption.
+  - (* arrow_r *)
+    simpl in Hef. split; [ tauto | ]. destruct Hd as [Hcl | Hrs].
+    + left. simpl in Hcl. clear - Hcl; fsetdec.
+    + right. inversion Hrs; subst; assumption.
+  - (* all_l : the guess does not move *)
+    split; [ exact Hef | ]. destruct Hd as [Hcl | Hrs].
+    + left; exact Hcl.
+    + right. inversion Hrs; subst. apply rsw_var; assumption.
+  - (* all_r : VACUOUS — an ε-tagged ∀ is not [etag_free_w] *)
+    simpl in Hef; contradiction.
+  - (* tophole_l : the guess does not move *)
+    split; [ exact Hef | ]. destruct Hd as [Hcl | Hrs].
+    + left; exact Hcl.
+    + right. inversion Hrs; subst. apply rsw_var; assumption.
+  - (* topholeg_r *)
+    simpl in Hef. split; [ exact Hef | ]. destruct Hd as [Hcl | Hrs].
+    + left. simpl in Hcl. exact Hcl.
+    + inversion Hrs.
+  - (* flexdef_r : the new guess is a Δρ-clean PAINTING *)
+    split; [ apply etag_free_w_painting | left; assumption ].
+Qed.
+
+Lemma INVw_walk : forall A Δρ P0 ψa Δρ' P0' ψa',
+  fa_walk A Δρ P0 ψa Δρ' P0' ψa' -> INVw Δρ P0 ψa -> INVw Δρ' P0' ψa'.
+Proof.
+  intros A Δρ P0 ψa Δρ' P0' ψa' Hw; induction Hw; intros Hinv;
+    [ exact Hinv | ].
+  apply IHHw. eapply INVw_step; [ exact Hinv | exact H ].
+Qed.
+
+(** ⭐ PART B, machine-checked: the closure P6-Sv descends is SATISFIABLE at
+    the root — at an ARBITRARY Δρ, which is what [sub_shield]'s own Δρ'
+    quantifier hands it.  (With the guess-fixed P0 arrow descents this was
+    FALSE: [fastep_p0_arrow_r] then [fastep_all_r] reach [(α̂, β→β)].) *)
+Theorem apart_w_root_holds : forall Δρ, flex_apart_walk Θ0w Δρ P0w ψw.
+Proof.
+  intros Δρ Δρ' P0' ψa' Hw.
+  inversion Hw as [ | Δρa P0a ψaa Δρ1 P1 ψ1 Δρ2 P2 ψ2 Hstep Hrest ]; subst.
+  - (* the ROOT itself : the guess is CLOSED, so [fa_clean] at any Δρ *)
+    apply fa_clean. unfold ψw, cexψ; simpl. clear; fsetdec.
+  - (* the ONLY step from the root is [fastep_all_r] : [P0w] is an arrow and
+       [ψw] an ε-tagged ∀, so no other constructor matches *)
+    unfold P0w, ψw, cexψ in Hstep.
+    inversion Hstep; subst.
+    unfold open_uskl_wrt_uskl in Hrest; simpl in Hrest.
+    eapply INVw_flex_apart.
+    eapply INVw_walk; [ exact Hrest | ].
+    split; [ simpl; tauto | ].
+    right. apply rsw_arrow; apply rsw_var; clear; fsetdec.
+Qed.
+
+Theorem apart_p0_w_root_holds : forall Δρ, flex_apart_p0 Θ0w Δρ P0w ψw.
+Proof.
+  intros Δρ P0' _. apply fa_clean.
+  unfold ψw, cexψ; simpl. clear; fsetdec.
+Qed.
+
+(** …and the shield half at the root, which §14.2 predicted: [fsh_all_r]
+    opens the guess to [γ→γ] at [add γ Δρ], [fsh_arrow] splits it against
+    [(∀γ.γ→γ) → α̂], and both sides close by [fsh_rho_var]. *)
+Theorem shield_w_root_holds : forall Δρ,
+  flex_shield Θ0w (singleton e) Δρ P0w ψw.
+Proof.
+  intros Δρ. unfold P0w, ψw, cexψ.
+  apply fsh_all_r with (L := empty). intros γ _.
+  unfold open_uskl_wrt_uskl; simpl.
+  apply fsh_arrow; apply fsh_rho_var; clear; fsetdec.
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  …and PART A: the guard leaves EXACTLY the root.                        *)
+(* --------------------------------------------------------------------- *)
+
+Lemma ss_walk_w_stuck : forall α P0' R',
+  ss_walk (dom Θ0w) α (pskl_var_f f) uskl_unit P0' R' ->
+  P0' = pskl_var_f f /\ R' = uskl_unit.
+Proof.
+  intros α P0' R' Hw. inversion Hw; subst; [ auto | ].
+  match goal with H : ss_step _ _ _ _ _ _ |- _ => inversion H end.
+Qed.
+
+Lemma ss_walk_w_inv : forall α P0' R',
+  ss_walk (dom Θ0w) α P0w (open_uskl_wrt_uskl Rjw (uskl_var_f α)) P0' R' ->
+  (P0' = P0w /\ R' = open_uskl_wrt_uskl Rjw (uskl_var_f α))
+  \/ (P0' = pskl_var_f f /\ R' = uskl_unit).
+Proof.
+  intros α P0' R' Hw. unfold Rjw, open_uskl_wrt_uskl in Hw; simpl in Hw.
+  inversion Hw as [ | Pa Ra P1 R1 P2 R2 Hstep Hrest ]; subst;
+    [ left; unfold Rjw, open_uskl_wrt_uskl; simpl; auto | ].
+  unfold P0w in Hstep. inversion Hstep; subst.
+  right. eapply ss_walk_w_stuck; exact Hrest.
+Qed.
+
+(** ⭐⭐ THE DECISIVE CHECK.  With the positional index AND the split walk, the
+    WHOLE repaired premise — in exactly the form P7b's ForallL rows now take
+    ([a_sub_complete_forall_l_tagged]) — HOLDS at the configuration that
+    refutes the old one. *)
+Theorem p7_sub_shield_repaired_holds : forall α,
+  sub_shield Θ0w (singleton e) empty α P0w
+    (open_uskl_wrt_uskl Rjw (uskl_var_f α)) ψw.
+Proof.
+  intros α P0' R' Δρ' Hw Hle Hcl.
+  destruct (ss_walk_w_inv Hw) as [[-> ->] | [-> ->]].
+  - split; [ apply apart_p0_w_root_holds | intros _ ].
+    split; [ apply apart_w_root_holds | apply shield_w_root_holds ].
+  - (* the CODOMAIN, where the OLD premise is false: the P0-only closure
+       still holds (it never descends the guess), and the two that DO
+       descend it are not demanded — the guard [α ∈ ftv unit] is unmet *)
+    split.
+    + intros P0'' _. apply fa_clean.
+      unfold ψw, cexψ; simpl. clear; fsetdec.
+    + simpl. intros Hα. clear - Hα; fsetdec.
 Qed.
 
 End Realizable.
 
 Print Assumptions p7_sub_shield_is_over_strong.
 Print Assumptions join_at_Rw_is_forall_l.
-Print Assumptions apart_w_fails.
+Print Assumptions p7_sub_shield_repaired_holds.

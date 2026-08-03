@@ -4642,3 +4642,77 @@ Proof.
     | eapply flex_shield_weaken_flex_prefix; [ exact Hfs | exact HfrP1 ] ].
 Qed.
 ```
+
+### ⭐⭐ §14.5 LANDED (2026-08-03): Part B settled, and the repair is in the tree
+
+`make coq` green, admit-free, axiom-free.  §14.2's prototype and §14.3's
+hand-verified claim are now both machine-checked and committed; the two
+sections above are kept as the reasoning record, with the corrections below.
+
+**PART B HOLDS.**  With `fastep_p0_arrow_{l,r}` removed, `flex_apart_walk`
+holds at the §14.1 witness — and the proof is a *general* closure argument, not
+a witness-specific enumeration.  The invariant is
+
+    INV Δρ P0 ψa  :=  etag_free ψa
+                      ∧ ( ψa is Δρ-clean  ∨  rho_shape Δρ P0 ψa )
+
+where `rho_shape` is the `fa_arrow`/`fa_rho_var` skeleton (arrow spine matching
+P0's, every leaf a Δρ-variable).  It is closed under every surviving step:
+`fastep_all_r` is VACUOUS on it (an ε-tagged ∀ is not `etag_free`), and
+`fastep_flexdef_r` re-enters the clean branch because a monotype PAINTING
+carries no tag (`bskl` has no ε-∀ constructor, so `ptyp_to_uskl_syn` cannot
+produce one).  Only the ROOT is witness-specific: the sole step from
+`(∅, P0w, ψw)` is `fastep_all_r`, landing in `rho_shape`.
+
+**THE SPLIT.**  `fastep_p0_arrow_{l,r}` and `flex_apart_walk_p0` are deleted.
+`flex_apart_p0` is now an independent `sub_shield` conjunct.
+
+⚠️ **§14.2's guard sketch was too coarse — the guard applies to exactly TWO of
+the three closures.**  `flex_apart_p0` never descends the guess, so it is
+harmless at any position, and it **must stay unguarded**: P6-Ss's Check and
+Arrow-left rows hand it to P6-Cs at positions where `α` does not occur at all
+(P6-Ss's own premise is `α ∉ ftv P ∨ P = α`, so `α` occurs only at the LS-Var
+leaf, and a guarded `flex_apart_p0` would leave those two rows with nothing).
+The two closures that DO descend the guess are exactly the ones the witness
+refutes, and for them the guard is free where they are consumed.  The landed
+definition is
+
+    sub_shield Θ0 Ψ' Δρ α P0 R ψa :=
+      forall P0' R' Δρ', ss_walk (dom Θ0) α P0 R P0' R' ->
+        Δρ [<=] Δρ' -> Δρ' ∩ ftv ψa [<=] Δρ ->
+        flex_apart_p0 Θ0 Δρ' P0' ψa
+        /\ (α ∈ ftv R' -> flex_apart_walk Θ0 Δρ' P0' ψa
+                          /\ flex_shield Θ0 Ψ' Δρ' P0' ψa)
+
+with `ss_step` exactly §14.4's `ss_step'` (six rows, lockstep) and the five
+transports as prototyped, each threading the guard through the implication.
+
+**THE ROW MAP, as landed** (`prop_look_complete_sub_cstr.v`): LS-Var takes both
+guarded conjuncts, guard discharged by `simpl; fsetdec` (`R' = α` there);
+Check and Arrow-left take `flex_apart_p0` through the new `sub_shield_here_p0`;
+Sub-ForallR steps by `sss_all`; Sub-Arrow-right by `sss_arrow_r` +
+`_weaken_flex_prefix`; the two Sub-ForallL rows step the SUBJECT as well
+(`sss_forall_l_etag` / `sss_forall_l_syn`, whose `β <> α` premise is already on
+hand as `Hβα`) before `_add_fresh` + `_weaken_tvar`; the two UnivGhostL rows
+gained one `sub_shield_step` each.  P6-Ss compiled first try, in 16 s.
+
+**P7b's ForallL premise** is `forall α, sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa`
+— the subject the row hands P6-L, with the marker quantified because it is
+picked inside the proof.  ⚠️ The `forall R` form is NOT available: it is
+over-strong at the same witness (take `R = unit → α`, which walks the guess onto
+a raw flexible it never meets).  `sub_shield_forall_flex_p0_fails` is now stated
+in exactly that form and is the BOUNDARY the guard exists to respect.  Every
+route in `prop_sub_shield_supply.v` is uniform in `α` and `R`, so all of them
+still discharge it, with `flex_apart_p0` free from `flex_apart_p0_clean` at
+Δρ = ∅.
+
+**⭐⭐ THE DECISIVE CHECK** — `p7_sub_shield_repaired_holds`
+(cex/cex_p7_shield_realizable.v, Qed, axiom-free): the repaired premise, in
+exactly the form P7b's rows take, HOLDS at the configuration that refutes the
+old one.  Part A kills the codomain obligation (subject `unit`, guard unmet);
+Part B makes the root one true.  The same file keeps the negative evidence,
+restated in terms that survive the re-indexing: the configuration is inhabited
+AND both guess-descending closures fail at the CODOMAIN, one `ss_walk` step from
+the root, which is precisely what the old P0-only indexing demanded.
+
+⭕ **P7c's two ForallL cases are UNBLOCKED.**  The dispatcher (§12) is next.

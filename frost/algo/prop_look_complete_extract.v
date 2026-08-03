@@ -1075,7 +1075,7 @@ Theorem a_extract_complete_gen :
   Δ ∩ ftvar_in_uskl ψa [=] empty ->         (* ⌐ the precision HOLE rule's side condition *)
   Θ ⨟ Δ ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->                     (* the paper's wf premise for ψa *)
   delta_def_fresh Δ Θ ->
-  sub_shield Θ0 Ψa empty P0 ψa ->
+  sub_shield Θ0 Ψa empty α P0 R' ψa ->
   (* the join's AMBIENT tag context: the paper's [Ψ,Ψa] — P6-Ss's range
      parameter, surfaced (2026-07-31) for P7b's Sub-ForallL, whose row
      premise runs at [Ψ ∪ Ψa] with the ambient [Ψ ⊆ ftag R'] *)
@@ -1247,7 +1247,7 @@ Corollary a_extract_complete :
   a_tags_sort NM Ψa ψa ->
   (ftag_in_uskl R') ∩ Ψa [=] empty ->
   Θ ⨟ empty ⊢ₚₛᵃ ⌊ ψa ⌋ˢ ->
-  sub_shield Θ0 Ψa empty P0 ψa ->
+  sub_shield Θ0 Ψa empty α P0 R' ψa ->
   ad_pat_sub_g n NM M Ψa Θ
     (subst_bskl_in_uskl ψa α (msubst_uskl_syn κ R')) Q ->
   Θ ⨟ empty ⊢ₚₛᵃ

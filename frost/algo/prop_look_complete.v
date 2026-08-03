@@ -3968,14 +3968,20 @@ Inductive fa_step (A : atoms) :
     fa_step A Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P1 ψ1
 | fastep_arrow_r : forall Δρ P1 P2 ψ1 ψ2,
     fa_step A Δρ (pskl_arrow P1 P2) (uskl_arrow ψ1 ψ2) Δρ P2 ψ2
-(* P6-Cs descends P0 with the guess FIXED (ψa is the single guess for the
-   looked-up α and never splits), so the positional arrow steps above do not
-   cover its Arrow row — these two do.  [fastep_all_l] / [fastep_tophole_l]
-   already have that shape, which is why only the arrow needs a twin. *)
-| fastep_p0_arrow_l : forall Δρ P1 P2 ψa,
-    fa_step A Δρ (pskl_arrow P1 P2) ψa Δρ P1 ψa
-| fastep_p0_arrow_r : forall Δρ P1 P2 ψa,
-    fa_step A Δρ (pskl_arrow P1 P2) ψa Δρ P2 ψa
+(* ⚠️ NO GUESS-FIXED P0 ARROW DESCENT (DESIGN §14.3, settled 2026-08-03).
+   Two rows [fastep_p0_arrow_l] / [fastep_p0_arrow_r] used to live here —
+   [fa_step A Δρ (P1 → P2) ψa Δρ Pi ψa], descending P0 while the guess stood
+   still — so that [flex_apart_walk_p0] could hand P6-Cs its own P0-only
+   closure out of P6-Ss's walk.  They made this walk UNSATISFIABLE: composed
+   with [fastep_all_r] (Sub-ForallL, which OPENS the guess and grows Δρ) they
+   reach a raw Θ0-flexible facing the OPENED body, e.g. [(α̂, β→β)] at
+   [β ∈ Δρ], where [fa_clean] is blocked by β, [fa_flexfree] / [fa_var_rigid]
+   by the flexible and every congruence by shape.  Machine-checked at a
+   REACHABLE P7b node in cex/cex_p7_shield_realizable.v.
+   The two closures are now kept apart: this one is POSITIONAL (P0 moves only
+   in lockstep with the guess, or under a row where the guess cannot move at
+   all), and P6-Cs's Δρ-CONSTANT [flex_apart_p0] below is carried as its own
+   [sub_shield] conjunct instead of being derived from this one. *)
 | fastep_all_l : forall Δρ P0 ψa γ,            (* Sub-ForallR *)
     γ `notin` A ->
     fa_step A Δρ (pskl_all_syn P0) ψa
@@ -4107,9 +4113,10 @@ Qed.
 (*  [flex_apart_walk], whose [fastep_all_r] can grow Δρ, and the           *)
 (*  difference is what makes the paper-faithful ρ = identity corollary of  *)
 (*  P6-Cs PREMISE-FREE: at Δρ = ∅ every reachable state is [fa_clean].     *)
-(*  P6-Ss still threads the full walk and hands it over via                *)
-(*  [flex_apart_walk_p0] — which is why [fa_step] carries the P0-only      *)
-(*  arrow steps.                                                           *)
+(*  ⚠️ P6-Ss carries this closure as its OWN [sub_shield] conjunct — it is  *)
+(*  NOT derivable from [flex_apart_walk], and the two rows that once made   *)
+(*  it so are what sank that premise (DESIGN §14.3; see the ⚠️ note on      *)
+(*  [fa_step]).                                                            *)
 (* ===================================================================== *)
 
 (** ⚠️ The walk carries an AVOID SET [A], and the ∀-descent's binder must miss
@@ -4222,18 +4229,15 @@ Lemma flex_apart_p0_clean : forall Θ0 Δρ P0 ψa,
   flex_apart_p0 Θ0 Δρ P0 ψa.
 Proof. intros Θ0 Δρ P0 ψa Hc P0' _; apply fa_clean; exact Hc. Qed.
 
-(** …and P6-Ss's full walk implies it: every [p0_step] is an [fa_step] that
-    leaves Δρ and ψa alone. *)
-Lemma flex_apart_walk_p0 : forall Θ0 Δρ P0 ψa,
-  flex_apart_walk Θ0 Δρ P0 ψa -> flex_apart_p0 Θ0 Δρ P0 ψa.
-Proof.
-  intros Θ0 Δρ P0 ψa Hfw P0' Hw.
-  revert Hfw; induction Hw; intros Hfw;
-    [ apply flex_apart_walk_here; exact Hfw | ].
-  apply IHHw. eapply flex_apart_walk_step; [ exact Hfw | ].
-  destruct H; [ apply fastep_p0_arrow_l | apply fastep_p0_arrow_r
-              | apply fastep_all_l; assumption | apply fastep_tophole_l ].
-Qed.
+(** ⚠️ There is NO [flex_apart_walk_p0] (DESIGN §14.3, 2026-08-03).  P6-Ss's
+    walk used to imply this closure, via the two guess-fixed P0 arrow steps
+    [fa_step] carried for exactly that purpose — and those steps made
+    [flex_apart_walk] unsatisfiable at a reachable P7b node (see the ⚠️ note
+    on [fa_step]).  [flex_apart_p0] is now an INDEPENDENT [sub_shield]
+    conjunct: P6-Ss reads it off directly instead of deriving it.  The two
+    closures are compatible at a [sub_shield] position precisely because the
+    Δρ' quantifier there keeps the guess CLEAN for the grown part of Δρ',
+    which the guess-OPENING step [fastep_all_r] does not. *)
 
 (** [flex_apart] binder descent at a tagged-∀ target with a ∀-source. *)
 Lemma flex_apart_all_etag_forall_inv : forall Θ0 Δρ ε P0 ψ,

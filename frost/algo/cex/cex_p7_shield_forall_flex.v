@@ -101,20 +101,34 @@ Proof.
       end.
 Qed.
 
-(** …hence the shield FAILS for any [P0] whose [ss_walk] reaches such a
-    flexible — the smallest is [(∀γ.γ) → α̂], which is exactly a [P0] with a
-    ∀ AND a flexible, i.e. the documented residual. *)
-Lemma sub_shield_forall_flex_p0_fails : forall Θ0 Ψ' f e,
+(** …hence the shield FAILS for any [P0] whose walk reaches such a flexible
+    AT A GUARDED POSITION.  The smallest [P0] is [(∀γ.γ) → α̂] — a [P0] with a
+    ∀ AND a flexible, i.e. the documented residual — and since the 2026-08-03
+    re-indexing (DESIGN §14.3) the walk also carries the SUBJECT, so the
+    obligation is raised only where the looked-for [α] occurs.  Taking the
+    subject [unit → α] puts [α] exactly at the codomain, which is where the
+    guess meets the raw flexible.
+
+    ⭐ THIS IS THE BOUNDARY, AND IT IS WHY THE GUARD IS THE FIX: the shield is
+    genuinely unsatisfiable when the guess is aligned with a raw flexible, and
+    the positional index is what stops the premise from ASKING for that at a
+    position the derivation never puts the guess in.  The reachable P7b node
+    of cex_p7_shield_realizable.v has subject [α → unit], not [unit → α], so
+    the guard is unmet at its codomain and the repaired premise HOLDS there
+    ([p7_sub_shield_repaired_holds]). *)
+Lemma sub_shield_forall_flex_p0_fails : forall Θ0 Ψ' f e α,
   binds f abind_flex_mono Θ0 ->
   e `in` Ψ' ->
-  ~ sub_shield Θ0 Ψ' empty
-      (pskl_arrow (pskl_all_syn (pskl_var_b 0)) (pskl_var_f f)) (cexψ e).
+  ~ sub_shield Θ0 Ψ' empty α
+      (pskl_arrow (pskl_all_syn (pskl_var_b 0)) (pskl_var_f f))
+      (uskl_arrow uskl_unit (uskl_var_f α)) (cexψ e).
 Proof.
-  intros Θ0 Ψ' f e Hb He Hsh.
-  destruct (Hsh (pskl_var_f f) empty
+  intros Θ0 Ψ' f e α Hb He Hsh.
+  destruct (Hsh (pskl_var_f f) (uskl_var_f α) empty
               ltac:(eapply ssw_step; [ apply sss_arrow_r | apply ssw_refl ])
               ltac:(clear; fsetdec) ltac:(clear; fsetdec))
-    as [_ Hfs].
+    as [_ Hg].
+  destruct (Hg ltac:(simpl; clear; fsetdec)) as [_ Hfs].
   exact (flex_shield_raw_flex_tagged_arrow_stuck Hb He Hfs).
 Qed.
 

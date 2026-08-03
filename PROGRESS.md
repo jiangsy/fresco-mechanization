@@ -78,7 +78,83 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⚠️⭐⭐⭐ TASK 0's residual is **REALIZABLE**: `sub_shield` is OVER-STRONG, and P7c's dispatcher is blocked on it
+## 2026-08-03 (latest) — ⭐⭐⭐ `sub_shield` **RE-INDEXED POSITIONALLY** and `fa_walk` **SPLIT**: the over-strong premise is repaired, tree-wide
+
+`make coq` green, admit-free, axiom-free.  This lands the repair the entry
+below diagnosed, and machine-checks it AT THE VERY WITNESS that refuted the old
+premise (`cex/cex_p7_shield_realizable.v`, `p7_sub_shield_repaired_holds`).
+
+**PART B first, because it decides everything else** (DESIGN §14.3 had it only
+hand-verified).  `fa_step` carried two rows, `fastep_p0_arrow_{l,r}`, that
+descended `P0` with the GUESS FIXED — they existed solely so
+`flex_apart_walk_p0` could hand P6-Cs its own P0-only closure out of P6-Ss's
+walk.  Composed with `fastep_all_r` (Sub-ForallL, which OPENS the guess and
+grows Δρ) they reach `(α̂, β→β)` at `β ∈ Δρ`, where nothing applies — that was
+`apart_w_fails`.  ⭐ **Without them the root obligation is SATISFIABLE**, and
+the proof is a general closure argument, not a witness-specific one: the
+invariant is `etag_free ψa ∧ (ψa is Δρ-clean ∨ ψa is an arrow-spine of
+Δρ-variables matching P0's)`, closed under every remaining step — `fastep_all_r`
+is VACUOUS on it (an ε-tagged ∀ is not `etag_free`), and `fastep_flexdef_r`
+re-enters the clean branch because a monotype PAINTING carries no tag.
+
+**THE SPLIT.**  `fastep_p0_arrow_{l,r}` and `flex_apart_walk_p0` are DELETED.
+`flex_apart_p0` — P6-Cs's Δρ-CONSTANT closure — is now an independent
+`sub_shield` conjunct instead of a consequence of `flex_apart_walk`.  The two
+are compatible *at a `sub_shield` position* precisely because that definition's
+Δρ' quantifier keeps ψa clean for whatever Δρ' adds, which `fastep_all_r` does
+not.
+
+**THE POSITIONAL RE-INDEXING (Part A).**  `ss_step` / `ss_walk` now step `P0`
+and the SUBJECT in lockstep and carry the looked-for `α`: `sss_arrow_r` moves
+both, `sss_all` moves P0 (Sub-ForallR), `sss_forall_l_{syn,etag}` and
+`sss_univ_ghost_l{,g}` move the subject.  The premise reads
+
+    sub_shield Θ0 Ψ' Δρ α P0 R ψa :=
+      forall P0' R' Δρ', ss_walk (dom Θ0) α P0 R P0' R' ->
+        Δρ [<=] Δρ' -> Δρ' ∩ ftv ψa [<=] Δρ ->
+        flex_apart_p0 Θ0 Δρ' P0' ψa
+        /\ (α ∈ ftv R' -> flex_apart_walk Θ0 Δρ' P0' ψa
+                          /\ flex_shield Θ0 Ψ' Δρ' P0' ψa)
+
+⚠️ **The guard applies to EXACTLY TWO of the three closures**, and this is the
+one place §14.2's sketch was wrong.  `flex_apart_p0` never descends the guess,
+so it is harmless anywhere — and it MUST stay unguarded, because P6-Ss's Check
+and Arrow rows hand it to P6-Cs at positions where `α` does not occur at all
+(P6-Ss's own premise is `α ∉ ftv P ∨ P = α`, so `α` occurs only at the LS-Var
+leaf).  The two closures that DO descend the guess (`fastep_all_r` /
+`fsh_all_r` open ψa and grow Δρ) are the ones the witness refutes, and the guard
+is FREE exactly where they are consumed — the LS-Var row, where `R' = α`.
+
+**ROW MAP** (P6-Ss, `prop_look_complete_sub_cstr.v`): LS-Var takes both guarded
+conjuncts (guard free); Check and Arrow-left take `flex_apart_p0` via the new
+`sub_shield_here_p0`; Sub-ForallR steps by `sss_all`; Sub-Arrow-right by
+`sss_arrow_r` + `_weaken_flex_prefix`; the two Sub-ForallL rows now ALSO step
+the SUBJECT (`sss_forall_l_etag` / `sss_forall_l_syn`, premise `β <> α`, already
+on hand as `Hβα`) before `_add_fresh` + `_weaken_tvar`; the two UnivGhostL rows
+gained a `sub_shield_step` each (the subject moves, P0 stands still).
+
+**P7b's ForallL rows** now take the premise at the SUBJECT they hand P6-L:
+`forall α, sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa`.  ⚠️ The `forall R` form is
+NOT available — it is over-strong at the same witness (take `R = unit → α`,
+which walks the guess onto a raw flexible it never meets;
+`sub_shield_forall_flex_p0_fails` is now stated in exactly that form, and is the
+BOUNDARY the guard exists to respect).  Every supply route
+(`prop_sub_shield_supply.v`) is uniform in `α` and `R`, so it discharges it:
+tag-free / atomic / flex-free / inh-free / ∀-free all still apply, with
+`flex_apart_p0` free from `flex_apart_p0_clean` at Δρ = ∅.
+
+⭐⭐ **THE DECISIVE CHECK.**  `p7_sub_shield_repaired_holds` (Qed, axiom-free)
+proves the repaired premise, in exactly the form P7b's rows take, AT the §14.1
+witness — where `p7_sub_shield_is_over_strong` (restated: the configuration is
+inhabited AND both guess-descending closures fail at the CODOMAIN) refutes the
+old one.  Part A kills the codomain obligation (subject `unit`, guard unmet);
+Part B makes the root one true.
+
+⚠️ Nothing goes to docs/PAPER-GAPS.md — `sub_shield` is mech-invented — and
+neither P6-Sv nor P6-Ss changed statement beyond the premise's index.  ⭕ P7c's
+two ForallL cases are UNBLOCKED; the dispatcher (§12) is the remaining work.
+
+## 2026-08-03 — ⚠️⭐⭐⭐ TASK 0's residual is **REALIZABLE**: `sub_shield` is OVER-STRONG, and P7c's dispatcher is blocked on it
 
 `make coq` green, admit-free, axiom-free.  `frost/algo/cex/cex_p7_shield_realizable.v`
 (both theorems `Qed`, *Closed under the global context*).
