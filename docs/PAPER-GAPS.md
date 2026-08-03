@@ -2132,3 +2132,59 @@ carries only TASK 0's `sub_shield` supply — a MECH-INVENTED premise, not a
 paper statement (its residual case is logged in
 docs/DESIGN-completeness-subtyping.md, not here).  Nothing in this entry is a
 defect in the paper's statement or proof.
+
+## ⚠️⚠️ thm:complete-subtyping is REFUTED by a closed instance (2026-08-03) — one guess, two occurrences, match vs instantiate
+
+**The counterexample, in closed form.**
+
+    A = ∀b. b → b          B = (∀c. c → c) → (unit → unit)
+
+**The declarative system ACCEPTS `A ⩽ B`**: Sub-ForallL instantiates `b`
+with the IMPREDICATIVE guess `∀β. β→β`; the arrow's domain then MATCHES
+`∀c. c→c` (consistency of two equal ∀s), and the codomain INSTANTIATES
+`β := unit`, closing at `unit→unit ⩽ unit→unit`.  The same derivation
+shape — with `B = (∀c.c→c) → α̂` at `Θ0 = α̂`, `κ = α̂ ↦ unit→unit` — is
+MACHINE-CHECKED as the join + fill of
+`cex/cex_p7_shield_double_occ.v` (`join_d`, `fill_d`, all Qed, axiom-free):
+every premise of the generalized completeness motive is inhabited there.
+
+**The algorithm REJECTS it.**  The paper's own artifact
+(`paper/artifact/implementation`, met.exe) fails on both forms:
+
+  * closed pair — checking `id2 : ∀b.b→b` against `B` gives
+    `Error: cannot unify types unit → unit and ∀ c : Any . c → c`;
+  * flexible form — `h id2` with `h : ∀d. ((∀c.c→c) → d) → d` gives
+    `Error: … this expression has type (∀ c . c → c) → ˆx1 but expected an
+    expression of type ˆx1 → ˆx1` — the codomain's flexible REPLACED the
+    marker's pattern (the SolE-FlexR collapse machine-checked in
+    cex/cex_p6sv_forall_flex.v), and the run then dies on `ˆx1 ∼ ∀c.c→c`.
+
+**Why.**  The extraction funnels ALL occurrences of the instantiated binder
+into ONE accumulated pattern and solves them JOINTLY; the declarative
+derivation above treats the two occurrences DIFFERENTLY — the domain copy of
+the guess is matched (its ∀ face to face with `∀c.c→c`), the codomain copy
+is instantiated away.  No single monotype-or-matched pattern serves both, so
+the solver's unification of the two occurrence-constraints fails.  This is
+the semantic content behind the long `sub_shield` saga: the mech-invented
+premise kept shrinking (non-positional → positional → walk-only) until its
+last refutation (`p7_sub_shield_double_fails`) turned out to sit at a
+configuration where the THEOREM ITSELF fails, not merely the premise.
+
+**Status of the machine-checking.**  The DECLARATIVE half (join + fill, i.e.
+the theorem's hypotheses) is Qed in `cex/cex_p7_shield_double_occ.v`.  The
+ALGORITHMIC failure is witnessed by the artifact implementation on both
+source-level forms above (/tmp repros; to be committed as tests).  A Coq
+proof that NO `a_sub` run exists at the instance is not yet in the tree —
+the mech's algorithmic rules mirror type.ml, but that final formal step
+should be done before reporting to the authors as definitive.
+
+**Consequence for the mechanization.**  `main_forall n` — the assembled
+bundle's one hypothesis, described until today as KNOWN-TRUE "because it is
+an instance of the theorem being proved" — is now BELIEVED FALSE at this
+instance; the conditional flagships `a_sub_complete_bundle_holds` /
+`a_sub_complete_thm` remain sound as implications but their hypothesis is
+not dischargeable.  Closing subtyping completeness now requires either an
+ALGORITHM repair (e.g. solving ∀-demanding occurrence-constraints before
+flexible ones, or admitting polymorphic patterns at match positions) with
+the theorem re-proved, or a WEAKENED completeness claim.  Author input
+needed.

@@ -1,0 +1,13 @@
+type unit = Unit
+
+val id2 : forall b . [](b -> b)
+let id2 x = x
+
+val h : forall d . []( ((forall c . (c -> c)) -> d) -> d )
+let h k = k (fun x -> x)
+
+val force : forall a . [](a -> unit)
+let force x = Unit
+
+val test : unit
+let test = force (h id2)

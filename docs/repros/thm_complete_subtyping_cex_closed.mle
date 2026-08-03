@@ -1,0 +1,7 @@
+type unit = Unit
+
+val id2 : forall b . [](b -> b)
+let id2 x = x
+
+val g : []( (forall c . (c -> c)) -> (unit -> unit) )
+let g = id2
