@@ -378,6 +378,18 @@ with a_subtag_flex :
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
     a_subtag_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1)
+(* the decorated mirrors of [a_sub_flex__skip_tm_var] / [__skip_tm_skl]
+   ([paper-gap] Flex-SkipTmVar, algo/def_extra.v) *)
+| a_subtag_flex__skip_tm_var : forall NM M P0 Θ0 Θ1 Ξ α x Q A,
+    x `notin` dom Θ1 ->
+    a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
+    a_subtag_flex NM M P0 ((x ~ abind_var_typ Q) ++ Θ0) Ξ α A
+      ((x ~ abind_var_typ Q) ++ Θ1)
+| a_subtag_flex__skip_tm_skl : forall NM M P0 Θ0 Θ1 Ξ α x Q A,
+    x `notin` dom Θ1 ->
+    a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
+    a_subtag_flex NM M P0 ((x ~ abind_var_skl Q) ++ Θ0) Ξ α A
+      ((x ~ abind_var_skl Q) ++ Θ1)
 where "Θ ⊢ᵗ[ NM | M | P0 | Ψ ] R ⩽˙ Q ⊣ Θ'" :=
   (a_subtag NM M P0 Ψ Θ R Q Θ') : type_scope.
 

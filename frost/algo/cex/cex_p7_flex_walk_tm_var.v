@@ -1,6 +1,14 @@
 (** ⚠️ [thm:complete-subtyping] IS FALSE FOR THE RULE SET AS PRINTED — the
     flexible SUBTYPING walk has NO rule for a TERM-VARIABLE head.
 
+    ⭐ REPAIRED 2026-08-03: [a_sub_flex__skip_tm_var] / [__skip_tm_skl] are now
+    in algo/def_extra.v (with decorated mirrors in algo/def_decorated.v),
+    verbatim mirrors of the twin walk's [Assign-SkipTmVar].  This file is
+    stated so that it survives the repair and keeps recording WHY the rules
+    are needed: §1 shows the new rule is the ONLY one that fires at a term
+    head, and the witness below is a solvable problem EVERY run of which goes
+    through it — so with the five printed rules it has no run at all.
+
     [fig:alg-subtyping]'s second box (full-algo-spec.tex:883-912) has exactly
     five rules — Flex-Solve / Flex-Assign / Flex-Depend / Flex-Skip /
     Flex-SkipRigid — and every one of them matches a TYPE-variable entry.
@@ -22,10 +30,11 @@
     (ii) [tm_var_solution_exists] — a SOLUTION exists: the increase, the
          (leaf-valid) join, the fill, and the counterpart's external wf.
          So every hypothesis of [sub_complete_concl] is satisfied.
-    (iii)[tm_var_no_run] — but NO algorithmic run exists: at an FN mode the
-         only [a_sub] rule whose subject is a bare variable is FlexMono, and
-         the walk it hands off to is stuck on the term entry immediately
-         ([a_sub_flex_stuck_at_tm_var]).
+    (iii)[tm_var_run_must_use_skip_tm_var] — and EVERY run goes through the
+         added rule: at an FN mode the only [a_sub] rule whose subject is a
+         bare variable is FlexMono, and at the term entry the walk has exactly
+         one applicable rule ([a_sub_flex_tm_var_head_is_skip_tm_var]).  Take
+         the rule away and the run is gone.
 
     ⭐⭐⭐ AND IT IS NOT AN EXOTIC CONFIGURATION — THE REFERENCE
     IMPLEMENTATION CRASHES ON IT.  [a_typing__abs] pushes the lambda binder
@@ -78,11 +87,14 @@
     ([U-Assign-SkipOthers], type.ml:386-390) and `sub_flex` does not.  Same
     omission, one entry sort further out than the paper's [x : P].
 
-    THE REPAIR is Flex-SkipTmVar in the paper's own idiom, mirroring
-    Assign-SkipTmVar.  It is NOT applied here: it is a change to the paper's
-    rule set with a tree-wide blast radius (see docs/PAPER-GAPS.md).  Until
-    the authors decide, P7c's flex half carries the explicit premise
-    [a_sub_flex_walkable Θ0] (prop_sub_complete_dispatch.v §6/§7). *)
+    THE REPAIR, as landed: two rules on [a_sub_flex] and two on
+    [a_subtag_flex], plus the mirroring cases in the three mutual inductions
+    over the pair (prop_sub_sound.v's soundness bundle, prop_decorate_key.v's
+    decoration bundle, prop_swap.v's equivariance) and two new P7a rows.  The
+    one thing the rules do NOT carry, and the twin walk's does not either, is
+    a freshness premise for [P0]: a term entry is never [a_binds_tvar], so
+    [x ∉ ftv P0] is DERIVED from wf + uniq at each consumer.
+    See docs/PAPER-GAPS.md. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -109,13 +121,25 @@ Set Implicit Arguments.
 (*  §1  THE WALK IS STUCK — no rule matches a term-variable head           *)
 (* ===================================================================== *)
 
-Lemma a_sub_flex_stuck_at_tm_var : forall NM M P0 Θ0 Ξ α A Θ1 x B,
-  ~ a_sub_flex NM M P0 ((x ~ abind_var_typ B) ++ Θ0) Ξ α A Θ1.
-Proof. intros * Hrun; inversion Hrun. Qed.
+(** ⭐ THE FIVE-RULE SET IS INCOMPLETE, stated so that it survives the repair:
+    at a term-variable head the ONLY rule that fires is [Flex-SkipTmVar].
+    Delete it — i.e. go back to fig:alg-subtyping as printed — and the walk
+    has no rule at all there. *)
+Lemma a_sub_flex_tm_var_head_is_skip_tm_var :
+  forall NM M P0 Θ0 Ξ α A Θ1 x B,
+  a_sub_flex NM M P0 ((x ~ abind_var_typ B) ++ Θ0) Ξ α A Θ1 ->
+  exists Θ1', Θ1 = (x ~ abind_var_typ B) ++ Θ1'
+              /\ x `notin` dom Θ1'
+              /\ a_sub_flex NM M P0 Θ0 Ξ α A Θ1'.
+Proof. intros * Hrun; inversion Hrun; subst; eauto. Qed.
 
-Lemma a_sub_flex_stuck_at_tm_skl : forall NM M P0 Θ0 Ξ α A Θ1 x P,
-  ~ a_sub_flex NM M P0 ((x ~ abind_var_skl P) ++ Θ0) Ξ α A Θ1.
-Proof. intros * Hrun; inversion Hrun. Qed.
+Lemma a_sub_flex_tm_skl_head_is_skip_tm_skl :
+  forall NM M P0 Θ0 Ξ α A Θ1 x P,
+  a_sub_flex NM M P0 ((x ~ abind_var_skl P) ++ Θ0) Ξ α A Θ1 ->
+  exists Θ1', Θ1 = (x ~ abind_var_skl P) ++ Θ1'
+              /\ x `notin` dom Θ1'
+              /\ a_sub_flex NM M P0 Θ0 Ξ α A Θ1'.
+Proof. intros * Hrun; inversion Hrun; subst; eauto. Qed.
 
 (** …and at an FN mode a bare-variable subject has nowhere else to go. *)
 Lemma a_sub_var_subject_fn_is_flex_mono : forall NM M P0 Θ0 α A Θ1,
@@ -238,19 +262,30 @@ Qed.
 (*  (iii) …and yet NO algorithmic run exists                              *)
 (* --------------------------------------------------------------------- *)
 
-Lemma tm_var_no_run :
-  ~ (exists P1 Θ1, a_sub a_sub_mode_sk (mode_fn mode_ti) P0w Θ0w Pw P1 Θ1).
+(** …and EVERY run at this configuration goes through [Flex-SkipTmVar]: the
+    subject is a bare variable at an FN mode, so the main judgment can only
+    fire FlexMono, and the walk then meets the term entry, where only the new
+    rule applies.  Delete the rule and this solvable problem has NO run — that
+    is the failure of [thm:complete-subtyping] for the printed rule set. *)
+Lemma tm_var_run_must_use_skip_tm_var :
+  forall P1 Θ1, a_sub a_sub_mode_sk (mode_fn mode_ti) P0w Θ0w Pw P1 Θ1 ->
+  exists Θ1',
+    Θ1 = (x ~ abind_var_typ ptyp_unit) ++ Θ1'
+    /\ a_sub_flex a_sub_mode_sk mode_ti P0w ((α ~ abind_flex_mono) ++ nil)
+         nil α P1 Θ1'.
 Proof.
-  intros [P1 [Θ1 Hrun]].
-  unfold Pw, Θ0w in Hrun.
+  intros P1 Θ1 Hrun. unfold Pw, Θ0w in Hrun.
   apply a_sub_var_subject_fn_is_flex_mono in Hrun.
-  eapply a_sub_flex_stuck_at_tm_var; exact Hrun.
+  destruct (a_sub_flex_tm_var_head_is_skip_tm_var Hrun)
+    as [Θ1' [-> [_ Hwalk]]].
+  exists Θ1'. split; [ reflexivity | exact Hwalk ].
 Qed.
 
-(** ⭐ THE HEADLINE.  The problem is a problem, it HAS a solution, and the
-    algorithm has NO run — which is exactly the negation of
-    [thm:complete-subtyping] for the rule set as printed. *)
-Theorem complete_subtyping_false_at_a_term_variable_head :
+(** ⭐ THE HEADLINE.  The problem is a problem, it HAS a solution, and every
+    run of it goes through [Flex-SkipTmVar] — so WITHOUT that rule (i.e. for
+    fig:alg-subtyping's five rules as printed) there is no run at all, which
+    is exactly the negation of [thm:complete-subtyping]. *)
+Theorem complete_subtyping_needs_flex_skip_tm_var :
   (* problem *)
   (a_wf_aenv Θ0w /\ Θ0w ⨟ empty ⊢ₚₛᵃ P0w /\ Θ0w ⨟ empty ⊢ₚₛᵃ Pw /\
    a_sk_mode_compat (mode_fn mode_ti) P0w)
@@ -263,11 +298,15 @@ Theorem complete_subtyping_false_at_a_term_variable_head :
      (pskl_to_bskl_inh (msubst_pskl κw P0w)) Qw /\
    Θw ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Qw))
   /\
-  (* …but no run *)
-  ~ (exists P1 Θ1, a_sub a_sub_mode_sk (mode_fn mode_ti) P0w Θ0w Pw P1 Θ1).
+  (* …and every run of it uses the rule the paper's figure omits *)
+  (forall P1 Θ1, a_sub a_sub_mode_sk (mode_fn mode_ti) P0w Θ0w Pw P1 Θ1 ->
+     exists Θ1',
+       Θ1 = (x ~ abind_var_typ ptyp_unit) ++ Θ1'
+       /\ a_sub_flex a_sub_mode_sk mode_ti P0w ((α ~ abind_flex_mono) ++ nil)
+            nil α P1 Θ1').
 Proof.
   split; [ exact tm_var_problem_is_a_problem | ].
-  split; [ | exact tm_var_no_run ].
+  split; [ | exact tm_var_run_must_use_skip_tm_var ].
   split; [ exact tm_var_wf_target | ].
   split; [ exact tm_var_erase | ].
   split; [ exact tm_var_inc | ].
@@ -288,5 +327,5 @@ Proof. reflexivity. Qed.
 
 End TmVarWitness.
 
-Print Assumptions complete_subtyping_false_at_a_term_variable_head.
-Print Assumptions a_sub_flex_stuck_at_tm_var.
+Print Assumptions complete_subtyping_needs_flex_skip_tm_var.
+Print Assumptions a_sub_flex_tm_var_head_is_skip_tm_var.

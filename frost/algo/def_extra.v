@@ -1124,7 +1124,31 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
     β `notin` ftvar_in_pskl P0 ->
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
-    a_sub_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1).
+    a_sub_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1)
+(* ⛔ [paper-gap] Flex-SkipTmVar — MISSING from fig:alg-subtyping's second box
+   (full-algo-spec.tex:883-912), which has only the five rules above, ALL of
+   them matching a TYPE-variable entry.  The paper's TWIN walk has the rule
+   (Assign-SkipTmVar, full-algo-spec.tex:1791; [a_assign__skip_tm_var] /
+   [a_assign__skip_tm_skl] just above), and without it the subtyping walk is
+   STUCK the moment a term entry sits above the subject — which is where
+   `fun x -> x 1` puts it, since [a_typing__abs] pushes the binder ABOVE the
+   flexibles [a_guess_mono] just invented and [a_typing__var] then hands that
+   flexible to subtyping at an FN mode.  thm:complete-subtyping is FALSE for
+   the five-rule set (cex/cex_p7_flex_walk_tm_var.v, which also records that
+   the reference implementation CRASHES on that program), so these two rules
+   are added in the paper's own idiom, verbatim mirrors of the twin walk's.
+   The mech splits the paper's single [x : P] entry into a type binding and a
+   skeleton binding, hence two rules for the paper's one.  docs/PAPER-GAPS.md *)
+| a_sub_flex__skip_tm_var : forall NM M P0 Θ0 Θ1 Ξ α x Q A,   (* Flex-SkipTmVar *)
+    x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
+    a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+    a_sub_flex NM M P0 ((x ~ abind_var_typ Q) ++ Θ0) Ξ α A
+      ((x ~ abind_var_typ Q) ++ Θ1)
+| a_sub_flex__skip_tm_skl : forall NM M P0 Θ0 Θ1 Ξ α x Q A,   (* Flex-SkipTmVar (skl) *)
+    x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
+    a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
+    a_sub_flex NM M P0 ((x ~ abind_var_skl Q) ++ Θ0) Ξ α A
+      ((x ~ abind_var_skl Q) ++ Θ1).
 
 (* Skeleton splitting  [Θ0 ⊲ split P0 = P→Q ⊣ Θ1] (fig:alg-type-inference). *)
 Inductive a_split : aenv -> pskl -> pskl -> pskl -> aenv -> Prop :=

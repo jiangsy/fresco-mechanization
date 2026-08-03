@@ -1174,6 +1174,112 @@ Proof.
       intros x b0 Hb; unfold binds; right; exact Hb.
     + eapply ad_refine_syn_f_weaken_ctx; [ exact Hfill | ].
       intros x b0 Hb; unfold binds; right; exact Hb.
+  - (* Flex-SkipTmVar : as Flex-SkipRigid with a TERM entry.  A term entry is
+       never [a_binds_tvar], so [P0] cannot mention it (that is what supplies
+       [a_wf_pskl_strip_mid]'s freshness, which the rule does not carry — the
+       twin walk's [Assign-SkipTmVar] does not carry it either), and the two
+       outputs weaken by [a_isub_cons_var_typ] / [a_wf_ptyp_isub]. *)
+    intros NM M P0 Θ0 Θ1 Ξ α x Q P Hxout Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
+    assert (Huq : uniq (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Hbx : binds x (abind_var_typ Q)
+                    (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0))
+      by (apply binds_app_3; apply binds_app_2;
+          unfold binds; simpl; left; reflexivity).
+    assert (Hxfr : x `notin` ftvar_in_pskl P0).
+    { intro Hin.
+      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
+        [ clear - Hemp; fsetdec | ].
+      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
+        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc; discriminate Hc. }
+    assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (HwfT : a_wf_aenv ((x ~ abind_var_typ Q) ++ Θ0))
+      by (eapply a_wf_aenv_app_r; exact Hwf).
+    apply a_wf_aenv_var_typ_inv in HwfT.
+    destruct HwfT as [_ [HwfQ0 _]].
+    assert (HwfQ' : a_wf_ptyp (Ξ ++ Θ0) Q)
+      by (eapply a_wf_ptyp_weaken;
+          [ intros y b0 Hb; apply binds_app_3; exact Hb | exact HwfQ0 ]).
+    destruct (IH Hwf' Hdecl
+                ltac:(eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ])
+                ltac:(eapply a_binds_tvar_strip_mid;
+                        [ exact Hαb
+                        | intro He; discriminate He
+                        | intro He; discriminate He
+                        | intros τ1 He; discriminate He ])
+                Hmod Hgf)
+      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+    split.
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb.
+        apply a_binds_tvar_weaken_cons.
+        eapply a_isub_binds_flex; [ exact Hle | ].
+        unfold binds; apply in_or_app; left; exact Hb. }
+      apply a_isub_cons_var_typ;
+        [ eapply a_isub_strengthen_decls_src; eauto
+        | eapply a_wf_ptyp_lc; exact HwfQ0 ]. }
+    split.
+    { apply a_wf_aenv__var_typ; [ exact Hxout | | exact Hwf1 ].
+      eapply a_wf_ptyp_isub; [ exact HwfQ' | exact Hle ]. }
+    exists Qt. split; [ exact HeQt | ].
+    split.
+    + eapply ad_pat_sub_weaken; [ exact Hsub | ].
+      intros y b0 Hb; unfold binds; right; exact Hb.
+    + eapply ad_refine_syn_f_weaken_ctx; [ exact Hfill | ].
+      intros y b0 Hb; unfold binds; right; exact Hb.
+
+  - (* Flex-SkipTmVar (skeleton entry) — the same, at [a_scope_pskl]. *)
+    intros NM M P0 Θ0 Θ1 Ξ α x Q P Hxout Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
+    assert (Huq : uniq (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
+      by (apply a_wf_aenv_uniq; exact Hwf).
+    assert (Hbx : binds x (abind_var_skl Q)
+                    (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
+      by (apply binds_app_3; apply binds_app_2;
+          unfold binds; simpl; left; reflexivity).
+    assert (Hxfr : x `notin` ftvar_in_pskl P0).
+    { intro Hin.
+      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
+        [ clear - Hemp; fsetdec | ].
+      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
+        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc; discriminate Hc. }
+    assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+      by (eapply a_wf_aenv_strip_mid; eauto).
+    assert (HwfT : a_wf_aenv ((x ~ abind_var_skl Q) ++ Θ0))
+      by (eapply a_wf_aenv_app_r; exact Hwf).
+    apply a_wf_aenv_var_skl_inv in HwfT.
+    destruct HwfT as [_ [HscQ0 _]].
+    assert (HscQ' : a_scope_pskl (Ξ ++ Θ0) Q)
+      by (eapply a_scope_pskl_weaken;
+          [ intros y b0 Hb; apply binds_app_3; exact Hb | exact HscQ0 ]).
+    destruct (IH Hwf' Hdecl
+                ltac:(eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ])
+                ltac:(eapply a_binds_tvar_strip_mid;
+                        [ exact Hαb
+                        | intro He; discriminate He
+                        | intro He; discriminate He
+                        | intros τ1 He; discriminate He ])
+                Hmod Hgf)
+      as [Hle [Hwf1 [Qt [HeQt [Hsub Hfill]]]]].
+    split.
+    { apply a_isub_prepend_decls_src; auto.
+      { intros γ Hb.
+        apply a_binds_tvar_weaken_cons.
+        eapply a_isub_binds_flex; [ exact Hle | ].
+        unfold binds; apply in_or_app; left; exact Hb. }
+      apply a_isub_cons_var_skl;
+        [ eapply a_isub_strengthen_decls_src; eauto
+        | eapply a_scope_pskl_lc; exact HscQ0 ]. }
+    split.
+    { apply a_wf_aenv__var; [ exact Hxout | | exact Hwf1 ].
+      eapply a_scope_pskl_isub; [ exact HscQ' | exact Hle ]. }
+    exists Qt. split; [ exact HeQt | ].
+    split.
+    + eapply ad_pat_sub_weaken; [ exact Hsub | ].
+      intros y b0 Hb; unfold binds; right; exact Hb.
+    + eapply ad_refine_syn_f_weaken_ctx; [ exact Hfill | ].
+      intros y b0 Hb; unfold binds; right; exact Hb.
+
 Qed.
 
 (* The flagship check: no admits, no axioms. *)

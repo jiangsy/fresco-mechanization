@@ -3788,6 +3788,67 @@ Proof.
         | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]. }
     { exact Hmod. }
     { exact Hgf0. }
+  - (* Flex-SkipTmVar : the head is a TERM entry, so the strip lemmas'
+       disequalities are all [discriminate]. *)
+    intros NM M P0 Θ0 Θ1 Ξw α x Q A Hnin Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod Hgf0.
+    (* a TERM entry is never [a_binds_tvar], so [P0] cannot mention it — that
+       is what supplies [a_wf_pskl_strip_mid]'s freshness, which the rule does
+       not carry (nor does the twin walk's [Assign-SkipTmVar]). *)
+    assert (Hxfr : x `notin` ftvar_in_pskl P0).
+    { intro Hin.
+      assert (Huq : uniq (Ξw ++ (x ~ abind_var_typ Q) ++ Θ0))
+        by (apply a_wf_aenv_uniq; exact HwfΞ).
+      assert (Hbx : binds x (abind_var_typ Q) (Ξw ++ (x ~ abind_var_typ Q) ++ Θ0))
+        by (apply binds_app_3; apply binds_app_2;
+            unfold binds; simpl; left; reflexivity).
+      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
+        [ clear - Hemp; fsetdec | ].
+      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
+        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc;
+        discriminate Hc. }
+    apply a_subtag_flex__skip_tm_var.
+    { exact Hnin. }
+    apply IH.
+    { exact Hsuf. }
+    { eapply a_wf_aenv_strip_mid; eauto. }
+    { eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]. }
+    { eapply a_binds_tvar_strip_mid;
+        [ exact Hαb
+        | intro He; discriminate He
+        | intro He; discriminate He
+        | intros τ1 He; discriminate He ]. }
+    { exact Hmod. }
+    { exact Hgf0. }
+  - (* Flex-SkipTmVar (skl) *)
+    intros NM M P0 Θ0 Θ1 Ξw α x Q A Hnin Hs IH Hsuf HwfΞ HwfP0 Hαb Hmod Hgf0.
+    (* a TERM entry is never [a_binds_tvar], so [P0] cannot mention it — that
+       is what supplies [a_wf_pskl_strip_mid]'s freshness, which the rule does
+       not carry (nor does the twin walk's [Assign-SkipTmVar]). *)
+    assert (Hxfr : x `notin` ftvar_in_pskl P0).
+    { intro Hin.
+      assert (Huq : uniq (Ξw ++ (x ~ abind_var_skl Q) ++ Θ0))
+        by (apply a_wf_aenv_uniq; exact HwfΞ).
+      assert (Hbx : binds x (abind_var_skl Q) (Ξw ++ (x ~ abind_var_skl Q) ++ Θ0))
+        by (apply binds_app_3; apply binds_app_2;
+            unfold binds; simpl; left; reflexivity).
+      destruct (a_wf_pskl_ftv_tvarish HwfP0 Hin) as [Hemp | Hbt];
+        [ clear - Hemp; fsetdec | ].
+      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
+        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc;
+        discriminate Hc. }
+    apply a_subtag_flex__skip_tm_skl.
+    { exact Hnin. }
+    apply IH.
+    { exact Hsuf. }
+    { eapply a_wf_aenv_strip_mid; eauto. }
+    { eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]. }
+    { eapply a_binds_tvar_strip_mid;
+        [ exact Hαb
+        | intro He; discriminate He
+        | intro He; discriminate He
+        | intros τ1 He; discriminate He ]. }
+    { exact Hmod. }
+    { exact Hgf0. }
 Qed.
 
 (** The paper-shaped corollary. *)

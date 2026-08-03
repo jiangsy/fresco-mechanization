@@ -1299,6 +1299,14 @@ Proof.
     intros NM M P0 Θ0 Θ1 Ξ α β A Hne Hnf Hout Hd IH. simpl.
     apply a_sub_flex__skip_rigid;
       auto using swap_atom_neq, swap_pskl_ftv_notin, swap_aenv_dom_notin.
+  - (* skip_tm_var *)
+    intros NM M P0 Θ0 Θ1 Ξ α x Q A Hout Hd IH. simpl.
+    apply a_sub_flex__skip_tm_var;
+      [ apply swap_aenv_dom_notin; exact Hout | exact IH ].
+  - (* skip_tm_skl *)
+    intros NM M P0 Θ0 Θ1 Ξ α x Q A Hout Hd IH. simpl.
+    apply a_sub_flex__skip_tm_skl;
+      [ apply swap_aenv_dom_notin; exact Hout | exact IH ].
 Qed.
 
 (* ===================================================================== *)
