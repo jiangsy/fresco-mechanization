@@ -2159,6 +2159,52 @@ one arrow step leaves `1 ⊳ β`, and the only rule that could refine a unit
 to a variable (`ad_refine_syn__flex_r`) demands a DEFINED flexible, while
 `Θ0` carries an undefined one.
 
+### ⭐⭐⭐ THE CAUSE, LOCALIZED TO ONE SOLVE ROW (2026-08-04)
+
+`cex/probe_solve_flexr.v`, `run_exists_at_correct_instantiation`, Qed +
+axiom-free.  **The algorithm is not missing machinery — it discards an answer
+it has already computed.**  Hand ForallL the instantiation `∀β.β→β` (the
+declarative guess `ψa` with its tag erased) and the run goes through, at the
+very configuration where `probe_no_run` says none exists:
+
+* DOMAIN — `(∀β.β→β) ∼ (∀γ.γ→γ)` by ForallInh at a fresh rigid, then Arrow of
+  two Rigids;
+* CODOMAIN — `∀β.β→β ⩽[TC] f̂` by ForallL, whose look takes LS-Check and then
+  ⭐ **LE-FlexR**: facing a flexible payload it invents a FRESH flexible `α1̂`
+  and emits `eq(α1̂)` rather than letting `f̂` overwrite anything;
+* CONTINUATION — `α1̂→α1̂ ⩽[TC] f̂` by Check → FlexR → Assign-Depend →
+  Assign-SolveM, setting `f̂ ≔ α1̂→α1̂`, which is MORE GENERAL than the
+  declarative `κ f̂ = 1→1` (take `α1̂ ↦ 1`).
+
+So every rule the run needs exists and works.  What the algorithm cannot do is
+CHOOSE `∀β.β→β`, and the extract is deterministic there
+(`probe_extract_det`), forced through
+
+    SE-FlexR    (`a_solve_eq__flex_r`)    : P ∼ α̂ ⤳ α̂     -- DISCARDS P
+    SE-VacuousR (`a_solve_eq__hole_r`)    : P ∼ ◇  ⤳ P     -- KEEPS P
+    SS-Vacuous  (`a_solve_sub__vacuous`)  : P ≼[m] ◇ ⤳ P   -- KEEPS P
+
+The look collects `[eq(∀γ.γ→γ); sub_tc(f̂)]`; `a_solve_cstr__eq` threads the
+eq's yield into the sub-constraint; SS-ForallL opens β and SS-Check hands
+`β→β ∼ f̂` to SE-FlexR, which replaces the accumulated pattern by the
+flexible — and the close then re-binds a VACUOUS binder, `∀_.f̂`.
+
+⭐ A raw flexible and a ghost are the SAME epistemic situation (nothing known
+at that position), and the two rows treat the already-computed information
+oppositely.  The look itself takes the other side: on the EQ side `LE-FlexR`
+invents a fresh flexible instead of letting the payload's flexible win.  And
+the case that makes returning `α̂` useful — pattern `= ◇`, where it lets the
+guess SHARE the flexible instead of inventing a new one — is already covered
+by SE-GhostL (`◇ ∼ Q ⤳ Q`), so the two readings differ only where the pattern
+already carries information.
+
+**Suggested repair, for the authors:** SE-FlexR (full-algo-spec.tex:1374)
+should yield the accumulated pattern, the flexible being recorded in `Θ` by
+the assignment that follows rather than in the solve's output.  ⚠️ NOT applied
+in the mechanization — a paper rule is not changed silently.  What still needs
+checking before applying it: subtyping SOUNDNESS and the P6-Sv / P6-Ss
+statements under the changed row.  DESIGN §14.10a.
+
 **Why it matters.**  This locates the gap in the PAPER's proof chain rather
 than in the mech: `thm:complete-subtyping`'s ForallL case
 (subtyping-proofs.tex:3371) has NO shield-like side condition — it invokes
