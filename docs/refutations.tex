@@ -146,6 +146,28 @@ counterpart are
   \qquad
   \bid{Q} = \inh{\forall\gamma.}(\gamma\to\gamma) \to (\tunit\to\tunit).
 \]
+\paragraph{The counterpart is forced, not chosen.}
+$\theta$ replaces $\hat\beta$ by $\tunit\to\tunit$ and touches nothing
+else, so
+$\inh{\theta P_0} = \inh{(\forall\gamma.\gamma\to\gamma) \to
+(\tunit\to\tunit)}$.
+That carries no ghost --- neither $\Hole$ nor $\TopHole$ --- and no
+flexible, so the refinement has nothing to fill and nothing to unfold:
+only its congruence rules apply, and it is the identity.  Hence
+$\bid{Q}$ above \emph{is} $\inh{\theta P_0}$, and the refinement premise
+\[
+  \Theta_0\vdash\inh{\theta P_0}\fillsyn\bid{Q}
+\]
+holds by those congruences alone --- in Coq, \coq{fill\_d}, whose proof
+uses only the arrow, $\forall$, variable and unit rules of the refinement,
+after \coq{msubst\_P0d} rewrites $\inh{\theta P_0}$ to $\bid{Q}$
+syntactically.
+\emph{So the inherited $\forall$ at $\bid{Q}$'s domain is not a
+convenient choice}: $\inh{\cdot}$ paints $P_0$'s own bare $\forall$
+inherited, which is what makes that position --- and only that position ---
+one where a guess's tag can be paid.
+
+\medskip\noindent
 $\Psi$ is trivially disjoint from $\Psi_a$.  The \emph{subject} differs
 between the two statements --- Lemma E.17 is about the \emph{body} of the
 quantifier, Theorem 4.6 about the whole skeleton --- so each section
@@ -201,8 +223,9 @@ with the \emph{monotype} $\tunit$, whose tag set is empty, so nothing is
 owed there.  (Coq: \coq{consis\_d}, \coq{refine\_dom\_d},
 \coq{join\_cod\_d}.)
 
-Finally $\inc[\theta]{\Theta_0}{\Theta_0}$ (\coq{inc\_d}) and the fill
-$\Theta_0\vdash\inh{\theta P_0}\fillsyn\bid{Q}$ (\coq{fill\_d}).
+Finally $\inc[\theta]{\Theta_0}{\Theta_0}$ (\coq{inc\_d}): the base
+case of information increase takes any context and the flexible case asks
+only $\Theta_0\vdash\tunit\to\tunit$, which holds.
 
 % =====================================================================
 \section{Look completeness is false}\label{sec:look}
@@ -336,7 +359,8 @@ $\hat\beta$.
 
 \paragraph{(2) It has a solution.}
 Take $\theta_1 = \theta$, $\Theta_1 = \Theta_0$ and
-$\bid{P_1} = \bid{Q}$.  The fill holds (\coq{fill\_d}), and one \sublab{ForallL} step puts
+$\bid{P_1} = \bid{Q}$.  The refinement premise is the one discharged in
+\Cref{sec:config} (\coq{fill\_d}), and one \sublab{ForallL} step puts
 \eqref{star} underneath.  It is the step at $\delta = \cdot$:
 $\syn{\theta_1 P}$ is the plain painting of the algorithm's input
 skeleton, so its quantifier carries no tag.
