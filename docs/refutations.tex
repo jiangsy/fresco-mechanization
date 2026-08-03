@@ -147,9 +147,9 @@ counterpart are
   \bid{Q} = \inh{\forall\gamma.}(\gamma\to\gamma) \to (\tunit\to\tunit).
 \]
 $\Psi$ is trivially disjoint from $\Psi_a$.  The \emph{subject} differs
-between the two statements --- \Cref{lem:look} is about the \emph{body}
-of the quantifier, \Cref{thm:sub} about the whole skeleton --- so each
-section introduces its own.
+between the two statements --- Lemma E.17 is about the \emph{body} of the
+quantifier, Theorem 4.6 about the whole skeleton --- so each section
+introduces its own.
 
 Two features of $P_0$ are what everything turns on.
 \begin{itemize}
@@ -495,6 +495,34 @@ made: soundness of subtyping under the changed row, and the collection /
 solving completeness lemmas that the subtyping completeness proof rests
 on.  The mechanisation therefore does \emph{not} apply the change; it
 reports it.
+
+% =====================================================================
+\section*{A note on encoding fidelity}
+% =====================================================================
+
+The instance above was checked ingredient by ingredient against the
+paper's own definitions, not against the mechanisation's:
+$\skmod[\TY]{\cdot}{\cdot}$ (\texttt{algorithmic.tex:237--244}, and
+$\hat\alpha$ is in the type grammar at \texttt{:50}, so a spine ending
+in $\hat\beta$ is legal); $\inc[\cdot]{\cdot}{\cdot}$
+(\texttt{:91--101}, whose base case takes any $\Xi$ and whose flexible
+case asks only $\Theta'\vdash\tau$, licensing
+$\inc[\theta]{\Theta_0}{\Theta_0}$); \sublab{Check}, \sublab{Arrow},
+\sublab{ForallL} and \eqlab{ForallInh}
+(\texttt{declarative.tex:996--1049}, with $\delta$ split into the tagged
+and untagged rows); \silab{ForallL}
+(\texttt{full-algo-spec.tex:835}, guard and well-formedness premise
+included); and \soleqlab{FlexR} itself
+(\texttt{full-algo-spec.tex:1371}).
+
+Two places where the mechanisation and the paper differ, and which way
+each cuts.  The mechanised \sublab{ForallL} carries an \emph{extra}
+well-formedness premise on the instantiation --- that shrinks the
+judgement, so ``a solution exists'' becomes \emph{harder}, and the
+derivation above satisfies it anyway.  And it renders the paper's
+``$\Psi'$ fresh'' as $\Psi'\cap\Psi = \cdot$, which is \emph{weaker};
+that would be the unsafe direction in general, but the $\epsilon$ used
+here is globally fresh, so no gap is exploited.
 
 % =====================================================================
 \section*{Index of Coq names}
