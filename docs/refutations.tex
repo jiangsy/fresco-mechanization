@@ -1,0 +1,455 @@
+% =====================================================================
+%  Two machine-checked refutations in the Fresco metatheory.
+%
+%  BUILD (from mechanization/docs/):
+%      TEXINPUTS=../../paper: pdflatex refutations.tex
+%
+%  Standalone document: it has its own preamble and body, and reuses the
+%  paper's notation by \input-ing paper/macro.tex, so every judgement
+%  below is typeset by the paper's own macros.
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,mathtools,amsthm}
+\usepackage{graphicx}
+\usepackage{thmtools}
+\usepackage{mathpartir}
+\usepackage{stmaryrd}
+\usepackage{xspace}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{tikz}
+\usepackage[normalem]{ulem}
+\usepackage{enumerate}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{halloweenmath}
+\usepackage{trimclip}
+\usepackage{scalerel}[2016/12/29]
+\usepackage[old]{old-arrows}
+\usepackage[ruled, noend]{algorithm2e}
+\usepackage{listings}
+\usepackage{pifont}
+\usepackage{fontawesome}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\input{macro}
+
+\newtheorem*{thmpaper}{Theorem 4.6}
+\newtheorem*{lempaper}{Lemma E.17}
+\newtheorem*{defpaper}{Definition (Problems and solutions of subtyping)}
+\theoremstyle{definition}
+\newtheorem{claimc}{Claim}
+\crefname{claimc}{Claim}{Claims}
+\Crefname{claimc}{Claim}{Claims}
+
+\newcommand{\coq}[1]{\texttt{\small #1}}
+
+\title{Two machine-checked refutations in the \Calc{} metatheory\\
+  \large Lemma E.17 (Look completeness) and
+  Theorem 4.6 (Completeness and optimality of subtyping)
+  are false as stated}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+  \noindent
+  One subtyping configuration refutes both statements.  The declarative
+  side of the configuration --- the solution, including the tag obligation
+  it must discharge --- is a Coq term, not a prose argument; so is the
+  non-existence of an algorithmic run.  No source program and no typing
+  derivation is involved: the two statements are about subtyping and the
+  refutation stays there.
+
+  The defect is localised to \emph{one} rule of constraint solving,
+  \soleqlab{FlexR}, which discards information the algorithm has already
+  computed.  Handing the algorithm the instantiation that information
+  determines makes the run exist --- also machine-checked.  A repair is
+  suggested at the end, together with what still has to be checked before
+  it is applied.
+
+  All statements below are \texttt{Qed} and axiom-free
+  (\texttt{Print Assumptions}: \emph{closed under the global context}).
+\end{abstract}
+
+% =====================================================================
+\section{Summary}
+% =====================================================================
+
+\begin{center}\small
+\begin{tabular}{@{}p{4.4cm}p{4.3cm}p{5.6cm}@{}}
+  \toprule
+  Statement & Where & Coq witness (\texttt{Qed}, axiom-free) \\
+  \midrule
+  Look completeness --- \textbf{false as stated}
+    & \texttt{subtyping-proofs.tex:2730}
+    & \coq{p6l\_look\_completeness\_fails} \\[.6ex]
+  Completeness and optimality of subtyping --- \textbf{false as stated}
+    & \texttt{algorithmic.tex:1447}
+    & \coq{thm\_complete\_subtyping\_false} \\
+  \midrule
+  \emph{and the defect, localised}: the run \emph{does} exist at the
+  correct instantiation
+    & (a positive fact about the paper's own algorithm)
+    & \coq{run\_exists\_at\_correct\_instantiation}\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Files:
+\coq{frost/algo/cex/probe\_double\_occ\_run.v},
+\coq{frost/algo/cex/cex\_thm\_complete\_subtyping.v},
+\coq{frost/algo/cex/probe\_solve\_flexr.v}.
+
+% =====================================================================
+\section{The configuration}\label{sec:config}
+% =====================================================================
+
+Throughout, $\Theta_0$ holds exactly one \emph{undefined} flexible
+variable, and
+\[
+  \Theta_0 = \hat{f}
+  \qquad
+  \N = \TY
+  \qquad
+  \M = \FN\TC
+  \qquad
+  P_0 = (\forall \gamma.\gamma\to\gamma) \to \hat{f}
+  \qquad
+  P   = \forall \beta.\beta\to\beta .
+\]
+The metasubstitution, the \sublab{ForallL} instantiation and the
+counterpart of the declarative solution are
+\[
+  \theta = [\hat f \mapsto \tunit\to\tunit]
+  \qquad
+  \psi_a = \foralltag{\epsilon}\beta.\beta\to\beta
+  \qquad
+  \Psi_a = \{\epsilon\}
+  \qquad
+  Q = \inh{(\forall\beta.\beta\to\beta)} \to (\tunit\to\tunit).
+\]
+
+Two features of $P_0$ are what the refutation turns on, and it is worth
+naming them now.
+\begin{itemize}
+\item Its \emph{domain} is a bare $\forall$.  An arrow-left is a
+  \emph{consistency} position, and $\inh{\theta P_0}$ paints exactly the
+  $\forall$s of $P_0$ inherited --- so this is the only position at which
+  a guess's tag can be paid.
+\item Its \emph{codomain} is a raw $\Theta_0$-flexible.  The algorithm has
+  no inherited information there, while the declarative side reads
+  $\theta\hat f = \tunit\to\tunit$.
+\end{itemize}
+
+% =====================================================================
+\section{Completeness of subtyping is false}\label{sec:thm}
+% =====================================================================
+
+We recall the two statements as the paper gives them.
+
+\begin{defpaper}[\normalfont\texttt{algorithmic.tex:1423}]
+  A subtyping problem is a tuple $(\Theta_0;\N;\M;P_0;P)$ where $\Theta_0$
+  is well-formed, $P_0$ and $P$ are well-formed in $\Theta_0$, and
+  $\skmod[\N]{P_0}{\M}$.
+  %
+  A solution to it is a tuple $(\inc[\theta_1]{\Theta_0}{\Theta_1};P_1)$
+  such that $\typsub[\N][\M][]{\Theta_1}{\syn{\theta_1 P}}{\bid{P_1}}$
+  where $\Theta_1\vdash\inh{\theta_1 P_0}\fillsyn\bid{P_1}$.
+\end{defpaper}
+
+\begin{thmpaper}[\normalfont Completeness and optimality of subtyping,
+    \texttt{algorithmic.tex:1447}]
+  Given a subtyping problem $(\Theta_0;\N;\M;P_0;P)$, if there exists a
+  solution, $\atypsub[\N][\M][P_0]{\Theta_0}{P}{P_1}{\Theta_1}$ gives its
+  optimal solution $(\inc{\Theta_0}{\Theta_1};P_1)$.
+\end{thmpaper}
+
+\begin{claimc}\label{cl:thm}
+  Theorem 4.6 is false at the configuration of \Cref{sec:config}.
+\end{claimc}
+
+\paragraph{(1) It is a subtyping problem.}
+$\Theta_0$ is well-formed; $\Theta_0\vdash P_0$ and $\Theta_0\vdash P$;
+and $\skmod[\TY]{P_0}{\FN\TC}$ holds, because $\skmod[\TY]{\cdot}{\TC}$
+asks for a \emph{type} and the spine of $P_0$ ends in the type $\hat f$.
+(Coq: \coq{$\Theta$0d\_wf}, \coq{P0d\_wf}, \coq{Pd\_wf}, \coq{P0d\_mode}.)
+
+\paragraph{(2) It has a solution.}
+Take $\theta_1=\theta$, $\Theta_1=\Theta_0$ and $P_1=Q$.  The fill
+$\Theta_0\vdash\inh{\theta P_0}\fillsyn\bid{Q}$ holds
+(\coq{fill\_d}), and the declarative derivation is
+\[\small
+\inferrule*[Lab=\sublab{ForallL}]
+{
+  \Theta_0\vdash^{\TY}\tags{\Psi_a}{\syn{\psi_a}}
+  \\\\
+  \inferrule*[Lab=\sublab{Arrow}]
+  {
+    \inferrule*[Lab=\sublab{ForallInh}]
+    { \{\epsilon\}\mid\Theta_0 \vdash \beta\to\beta \consis
+      \inh{\beta\to\beta} }
+    { \{\epsilon\}\mid\Theta_0 \vdash \syn{\psi_a} \consis
+      \inh{(\forall\beta.\beta\to\beta)} }
+    \\
+    \inferrule*[Lab=\sublab{ForallL}]
+    { \typsub[\TY][\TC][\cdot]{\Theta_0}{\syn{\tunit\to\tunit}}
+        {\bid{\tunit\to\tunit}} }
+    { \typsub[\TY][\TC][\cdot]{\Theta_0}{\syn{\psi_a}}
+        {\bid{\tunit\to\tunit}} }
+  }
+  { \typsub[\TY][\FN\TC][\Psi_a]{\Theta_0}
+      {\syn{\psi_a}\to\syn{\psi_a}}
+      {\bid{\inh{(\forall\beta.\beta\to\beta)}\to(\tunit\to\tunit)}} }
+}
+{ \typsub[\TY][\FN\TC][\cdot]{\Theta_0}{\syn{\theta P}}{\bid{Q}} }
+\]
+The tag index splits at \sublab{Arrow} as $\Psi_a = \{\epsilon\}\uplus\cdot$.
+\emph{The guess's tag $\epsilon$ is paid} on the left, by the tagged
+\sublab{ForallInh} against an \emph{inherited} $\forall$ --- the ``never
+guess polymorphism out of thin air'' obligation, discharged rather than
+assumed.  On the right the same guess is instantiated with the
+\emph{monotype} $\tunit$, so no tag is owed there.
+(Coq: \coq{solution\_d}, built from \coq{consis\_d}, \coq{refine\_dom\_d},
+\coq{join\_cod\_d}; the statement quotes the paper's judgement
+$\typsub[\N][\M][\Psi]{\Theta}{\cdot}{\cdot}$, not any auxiliary
+mechanised variant.)
+
+\paragraph{(3) Yet no algorithmic run exists.}
+\[
+  \nexists\, P_1\ \Theta_1.\quad
+  \atypsub[\TY][\FN\TC][P_0]{\Theta_0}{P}{P_1}{\Theta_1}
+\]
+(Coq: \coq{probe\_no\_run}), so Theorem 4.6 fails --- a fortiori for
+optimality.  The trace is forced; \Cref{sec:why} gives it.
+\qed
+
+% =====================================================================
+\section{Look completeness is false}\label{sec:look}
+% =====================================================================
+
+Theorem 4.6's \sublab{ForallL} case (\texttt{subtyping-proofs.tex:3371})
+proves itself by invoking the following lemma, and the same configuration
+refutes it directly --- one lemma lower, and with no appeal to the
+theorem.
+
+\begin{lempaper}[\normalfont Look completeness,
+    \texttt{subtyping-proofs.tex:2730}]
+  Suppose
+  $\Theta_0\vdash P_0$, $\skmod[\N]{P_0}{\M}$, $\erase{S}=P$ and
+  $\inc[\theta]{\Theta_0}{\Theta}$.  If $\psi_a$ is a valid instantiation
+  for declarative \sublab{ForallL} with
+  \[
+    \Theta\vdash^\N\tags{\Psi_a}{\syn{\psi_a}}
+    \quad
+    \Psi \text{ disjoint from } \Psi_a
+    \quad
+    \typsub[\N][\M][\Psi,\Psi_a]{\Theta}{
+      (\syn{\theta S})[\syn{\psi_a}/\alpha]}{\bid{Q}}
+    \quad
+    \Theta\vdash\inh{\theta P_0}\fillsyn\bid{Q},
+  \]
+  then there exist $P_a$, $\Xi$ and $\theta_a$ such that
+  $\looksub[\N][\M]{\alpha}{P}{P_0}{P_a}[\Xi]$ and
+  $\Theta_0,\Xi\vdash P_a$, with
+  $\inc[\theta_a]{\Theta_0,\Xi}{\Theta}$,
+  $\inc[\theta\equiv\theta_a]{\Theta_0}{\Theta}$ and
+  \[
+    \Theta\vdash\precise{\theta_a P_a}{\erase{\psi_a}} .
+  \]
+\end{lempaper}
+
+\begin{claimc}
+  Lemma E.17 is false at the configuration of \Cref{sec:config},
+  with $S = \foralltag{t}\beta.\beta\to\beta$ and $\Psi=\cdot$.
+\end{claimc}
+
+\paragraph{Every premise holds.}
+$\Theta_0\vdash P_0$ (\coq{P0d\_wf}); $\skmod[\TY]{P_0}{\FN\TC}$
+(\coq{P0d\_mode}); $\erase{S}=P$ by computation;
+$\inc[\theta]{\Theta_0}{\Theta_0}$ (\coq{inc\_d}); the tag sorting
+$\Theta_0\vdash^{\TY}\tags{\Psi_a}{\syn{\psi_a}}$ (\coq{$\psi$d\_tags}) with
+$\Psi=\cdot$ trivially disjoint from $\Psi_a$; the declarative premise at
+$\Psi,\Psi_a$ (\coq{look\_premise\_d}, again in the paper's judgement);
+and the fill (\coq{fill\_d}).
+
+\paragraph{The conclusion fails, for \emph{every} output.}
+The look is deterministic here (\coq{probe\_extract\_det}), uniformly in
+the marker and in every generated name --- the binder it produces is
+vacuous, so it swallows them --- and its only output is
+\[
+  P_a \;=\; \forall\_.\,\hat f .
+\]
+The lemma then demands $\Theta_0\vdash\precise{\theta P_a}{\erase{\psi_a}}$,
+i.e.
+\[
+  \precise{\forall\_.\,(\tunit\to\tunit)}{\forall\beta.\beta\to\beta} ,
+\]
+which is refuted: one arrow step leaves $\tunit$ against the rigid
+$\beta$, and the only rule that could refine a unit to a variable requires
+a \emph{defined} flexible, whereas $\Theta_0$ carries an undefined one.
+(Coq: \coq{p6l\_look\_completeness\_fails}.)
+\qed
+
+% =====================================================================
+\section{Why the algorithm fails: the marker occurs twice}\label{sec:why}
+% =====================================================================
+
+Algorithmic \silab{ForallL} picks a fresh $\alpha$ --- the \emph{marker}
+--- opens the subject's binder with it, and calls the extraction judgement
+\emph{indexed by} $\alpha$, which emits one constraint per
+\emph{occurrence} of the marker.  Here the subject is
+$\forall\beta.\beta\to\beta$, so the opened body is $\alpha\to\alpha$ and
+the marker occurs \emph{twice}.  The two occurrences sit at different
+kinds of position, so they take different branches of the collection:
+\[
+  \looksub[\FN\TC]{\alpha}{\alpha\to\alpha}{P_0}
+    {\eqcons{\forall\gamma.\gamma\to\gamma},\;
+     \subcons{\TC}{\hat f}}[\cdot]
+\]
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+  \toprule
+  occurrence & faces in $P_0$ & position & rule and constraint\\
+  \midrule
+  domain   & $\forall\gamma.\gamma\to\gamma$ & arrow-left: consistency
+           & \lelab{Var}, $\eqcons{\forall\gamma.\gamma\to\gamma}$\\
+  codomain & $\hat f$ & arrow-right: subtyping
+           & \lslab{Var}, $\subcons{\TC}{\hat f}$\\
+  \bottomrule
+\end{tabular}
+\end{center}
+\noindent
+(\coq{probe\_look\_det}: that list, deterministically.)  One marker, two
+constraints --- so the solve has to \emph{combine} them, and that is where
+the information is lost.  With a single occurrence there would be one
+constraint and nothing to lose.
+
+\paragraph{The forced trace.}
+The solve threads the accumulated pattern through the constraint list,
+starting from $\Hole$:
+\[\bl
+  \solveeq{\Hole}{\forall\gamma.\gamma\to\gamma}
+          {\forall\gamma.\gamma\to\gamma}
+  \hfill \soleqlab{GhostL} \\[.4ex]
+  \solvesub{\forall\gamma.\gamma\to\gamma}{\TC}{\hat f}{\forall\_.\hat f}
+  \hfill \solsublab{ForallL},\ \solsublab{Check},\ \soleqlab{FlexR} \\[.4ex]
+  \guess[\TY]{\forall\_.\hat f} = \forall\_.\hat f
+\el\]
+The middle line is the defect.  \solsublab{ForallL} opens $\beta$ and
+\solsublab{Check} hands $\beta\to\beta \consis \hat f$ to
+\soleqlab{FlexR}, whose output \emph{is} the flexible $\hat f$; the close then
+re-binds a \emph{vacuous} binder.  Continuing with that instantiation,
+\silab{Arrow}'s domain consistency
+$\forall\_.\hat f \consis \forall\gamma.\gamma\to\gamma$ pushes a fresh
+rigid $\beta_1$, leaving the bare $\hat f$ against $\beta_1\to\beta_1$,
+where the assignment walk meets $\beta_1$ with $\beta_1$ occurring --- and
+is stuck (\coq{probe\_solve\_det}, \coq{probe\_continuation\_stuck}).
+
+\paragraph{One rule treats ``nothing is known here'' two different ways.}
+Put the three relevant rows side by side:
+\[
+\inferrule*[Lab=\soleqlab{FlexR}]
+{\nonflex{P}}
+{\solveeq{P}{\hat\alpha}{\hat\alpha}}
+\qquad
+\inferrule*[Lab=\soleqlab{VacuousR}]
+{~}
+{\solveeq{P}{\Hole}{P}}
+\qquad
+\inferrule*[Lab=\solsublab{Vacuous}]
+{~}
+{\solvesub{P}{\M}{\Hole}{P}}
+\]
+A raw flexible and a ghost are the same epistemic situation: nothing is
+known at that position.  The two ghost rows keep the pattern already
+accumulated; \soleqlab{FlexR} replaces it by the flexible.  The collection
+itself takes the other side --- on the equality branch, \lelab{FlexR}
+facing a flexible input invents a \emph{fresh} flexible and emits an
+equality against it, rather than letting the input's flexible win.
+
+\paragraph{And the loss is the whole defect.}
+Hand \silab{ForallL} the instantiation the discarded equality determines,
+$\forall\beta.\beta\to\beta$ (that is $\erase{\psi_a}$), and the run
+exists:
+\[
+  \exists\, Q\ \Theta_1.\quad
+  \atypsub[\TY][\FN\TC][P_0]{\Theta_0}
+    {(\forall\beta.\beta\to\beta)\to(\forall\beta.\beta\to\beta)}
+    {Q}{\Theta_1}
+\]
+(Coq: \coq{run\_exists\_at\_correct\_instantiation}).  The run it builds is
+the expected one: the domain by \sublab{ForallInh} at a fresh rigid, then
+\sublab{Arrow} of two rigids; the codomain
+$\forall\beta.\beta\to\beta \subtype_{\TC} \hat f$ by \silab{ForallL},
+whose collection takes \lslab{Check} and then \lelab{FlexR} --- inventing a
+fresh $\hat\alpha_1$ --- and whose continuation
+$\hat\alpha_1\to\hat\alpha_1 \subtype_{\TC} \hat f$ goes through
+\silab{Check}, \eqlab{FlexR} and the assignment, setting
+$\hat f \coloneqq \hat\alpha_1\to\hat\alpha_1$.  That solution is
+\emph{more general} than the declarative one: $\theta\hat f =
+\tunit\to\tunit$ factors through it by $\hat\alpha_1\mapsto\tunit$.
+
+So every rule the run needs already exists and already works.  What the
+algorithm cannot do is \emph{choose} $\forall\beta.\beta\to\beta$.
+
+% =====================================================================
+\section{Suggested repair}
+% =====================================================================
+
+\soleqlab{FlexR} should yield the accumulated pattern, as its ghost twin
+does; the flexible is recorded in $\Theta$ by the assignment that follows,
+not by the solve's output:
+\[
+\inferrule*[Lab=\soleqlab{FlexR}$'$]
+{\nonflex{P}}
+{\solveeq{P}{\hat\alpha}{P}}
+\]
+The case that makes the present reading useful --- $P = \Hole$, where
+returning $\hat\alpha$ lets the guess \emph{share} the flexible instead of
+inventing a fresh one --- is already covered by \soleqlab{GhostL}
+($\solveeq{\Hole}{Q}{Q}$), so the two readings differ only where the
+pattern already carries information, which is exactly where the present
+one destroys it.
+
+\medskip\noindent
+\textbf{What has not been checked}, and should be before the change is
+made: soundness of subtyping under the changed row, and the two collection
+/ solving completeness lemmas that the subtyping completeness proof rests
+on.  The mechanisation therefore does \emph{not} apply the change; it
+reports it.
+
+% =====================================================================
+\section*{Index of Coq names}
+% =====================================================================
+
+\noindent\small
+\begin{tabular}{@{}p{6.2cm}p{9.2cm}@{}}
+  \toprule
+  \coq{thm\_complete\_subtyping\_false}
+    & Theorem 4.6 refuted (\Cref{cl:thm})\\
+  \coq{solution\_d}, \coq{look\_premise\_d}
+    & the declarative solution / premise, in the paper's judgement\\
+  \coq{consis\_d}, \coq{join\_cod\_d}, \coq{refine\_dom\_d},
+    \coq{fill\_d} & its leaves; \coq{consis\_d} is where $\epsilon$ is paid\\
+  \coq{p6l\_look\_completeness\_fails}
+    & Lemma E.17 refuted\\
+  \coq{probe\_look\_det}, \coq{probe\_solve\_det},
+    \coq{probe\_extract\_det} & the collection / solve / guess are forced\\
+  \coq{probe\_continuation\_stuck}, \coq{probe\_no\_run}
+    & no algorithmic run exists\\
+  \coq{run\_exists\_at\_correct\_instantiation}
+    & \dots but one does at $\erase{\psi_a}$\\
+  \bottomrule
+\end{tabular}
+
+\end{document}

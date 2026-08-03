@@ -1,0 +1,8 @@
+# Build the standalone refutations note.  It reuses the paper's notation
+# macros, so pdflatex must see paper/ on its input path.
+refutations.pdf: refutations.tex ../../paper/macro.tex
+	TEXINPUTS=../../paper: pdflatex -interaction=nonstopmode refutations.tex
+	TEXINPUTS=../../paper: pdflatex -interaction=nonstopmode refutations.tex
+
+clean-refutations:
+	rm -f refutations.aux refutations.log refutations.out refutations.pdf
