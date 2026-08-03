@@ -78,7 +78,63 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐⭐⭐ P7c: **ALL THREE LAYERS LAND** (stuck-check, flex half, twelve-row join dispatch) — and a MACHINE-CHECKED PAPER GAP the implementation crashes on
+## 2026-08-03 (latest) — ⭐⭐⭐ **Flex-SkipTmVar LANDS**: the paper's missing subtyping-walk rule is added tree-wide, and the tree is green
+
+`make coq` green, admit-free, axiom-free.  The authors' call on the gap found
+earlier today (see the entry below) was to add the rule, so it is added — in
+the paper's own idiom, as verbatim mirrors of the twin walk's
+`Assign-SkipTmVar` (full-algo-spec.tex:1791):
+
+```
+                    Θ₀ ∣ Ξ  ⊢[N][FN M][P₀] α̂ ⩽ Q ⊣ Θ₁
+  ──────────────────────────────────────────────────────── Flex-SkipTmVar
+   Θ₀, x:Q' ∣ Ξ  ⊢[N][FN M][P₀] α̂ ⩽ Q ⊣ Θ₁, x:Q'
+```
+
+**DEFINITIONS.**  `a_sub_flex__skip_tm_var` / `__skip_tm_skl`
+(`algo/def_extra.v`) plus the decorated mirrors on `a_subtag_flex`
+(`algo/def_decorated.v`).  The mech splits the paper's single `x : P` entry
+into a type binding and a skeleton binding, hence two rules for the paper's
+one.
+
+**THE THREE MUTUAL INDUCTIONS OVER THE PAIR**, each +2 cases, each a mirror of
+Flex-SkipRigid: the soundness bundle (`prop_sub_sound.v`, with
+`a_isub_cons_var_typ` / `_var_skl` for the increase and `a_wf_ptyp_isub` /
+`a_scope_pskl_isub` for the re-attached entry's wf), the decoration bundle
+(`prop_decorate_key.v`), and equivariance (`prop_swap.v`).
+
+⭐ **THE ONE THING THE RULES DO NOT CARRY** — and the twin walk's does not
+either — is a freshness premise for `P0`.  Both `a_wf_pskl_strip_mid`
+consumers need `x ∉ ftv P0`, and it is DERIVED rather than premised: a term
+entry is never `a_binds_tvar`, so under `uniq` no free variable of a
+well-formed `P0` can be it.  Four lines at each consumer
+(`a_wf_pskl_ftv_tvarish` + `binds_unique`).  Do not add it to the rules.
+
+**THE COUNTEREXAMPLE, RESTATED SO IT SURVIVES THE REPAIR.**
+`cex/cex_p7_flex_walk_tm_var.v` now proves the new rule is the ONLY one that
+fires at a term head (`a_sub_flex_tm_var_head_is_skip_tm_var`), and its
+witness is a solvable problem EVERY run of which goes through it
+(`complete_subtyping_needs_flex_skip_tm_var`) — so with the five printed rules
+it has no run at all.  That is the permanent record of why the rules are
+needed.
+
+⭕ **STILL OWED: P7a's two COMPLETENESS rows.**  They are why `flex_step` still
+carries `a_sub_flex_walkable Θ0`.  Their shape is fully determined
+(DESIGN §12.3): `a_inc__var` / `a_inc__var_skl` shrink the `a_inc` TARGET
+exactly as `a_inc__tvar` does, so each row is
+`a_sub_flex_complete_skip_rigid`'s ⇓-truncation apparatus with the tvar pieces
+swapped (`a_inc_var_inv`, `a_inc_var_mid_strip_id`,
+`a_inc_equiv_mid_insert_var`, `a_wf_aenv__var_typ`) and both of SkipRigid's
+premises DERIVED.  ⚠️ The one genuinely new obligation is the **SEMANTIC
+MIDDLE** `Θ' ⊢ A' ≡ᵗ κ A`, which a rigid entry does not have; the consistency
+twin's `Assign-SkipTmVar` case proves exactly it
+(prop_consis_complete.v:5595-5690) and is the model.  ⚙ One extra step beyond
+the twin: the subtyping row re-attaches through the JUNK SWAP, so the
+increase's witness is `kswap_msubst β β1 ζ` — close the gap with
+`msubst_ptyp_kswap`, whose hypotheses are free because the payload is scoped
+in `Θ0`.
+
+## 2026-08-03 — ⭐⭐⭐ P7c: **ALL THREE LAYERS LAND** (stuck-check, flex half, twelve-row join dispatch) — and a MACHINE-CHECKED PAPER GAP the implementation crashes on
 
 `make coq` green, admit-free, axiom-free.  `frost/algo/prop_sub_complete_dispatch.v`
 is now 1093 lines, §1–§10, everything `Qed` and *Closed under the global

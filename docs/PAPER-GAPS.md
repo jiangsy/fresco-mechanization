@@ -2029,22 +2029,39 @@ reachable only by annotation — the observable difference is that a checked
 `ap` is usable at two result types while an inferred one is not
 (`let id = fun x -> x` then `id 1` and `id "s"` is rejected).
 
-**Status in the mechanization.**  The repair is NOT applied — the blast radius
-is a rule change: `a_sub_flex` and its decorated mirror `a_subtag_flex`
-(algo/def_decorated.v) both gain two constructors (the mech splits `x : P`
-into `abind_var_typ` / `abind_var_skl`), which reopens the three mutual
-inductions over the pair (`prop_sub_sound.v`'s
-`a_subtag_subtag_flex_mutind`, `prop_decorate_key.v`'s
-`a_sub_sub_flex_mutind`, `prop_swap.v`'s `a_sub_sub_flex_sind`), and P7a
-gains two rows carrying `Flex-SkipRigid`'s whole ⇓-truncation apparatus
-(`a_inc__var` / `a_inc__var_skl` shrink the `a_inc` TARGET exactly as
-`a_inc__tvar` does, so the consistency twin's `Assign-SkipTmVar` /
-`Assign-SkipTmSkl` cases — prop_consis_complete.v:5356-6024, ~670 lines — are
-the model).  Until the authors decide, P7c's flex half
-(`flex_step`, algo/prop_sub_complete_dispatch.v §7) carries the explicit
-premise `a_sub_flex_walkable Θ0` ("`Θ0` has no term entries"), and §6 of that
-file documents it.  **This is the one place the subtyping-completeness
-development departs from the paper's statement.**
+**⭐ STATUS: REPAIRED IN THE MECHANIZATION (2026-08-03).**  The rules are added,
+in the paper's own idiom, as verbatim mirrors of `Assign-SkipTmVar`:
+
+```
+                    Θ₀ ∣ Ξ  ⊢[N][FN M][P₀] α̂ ⩽ Q ⊣ Θ₁
+  ──────────────────────────────────────────────────────────────── Flex-SkipTmVar
+   Θ₀, x:Q' ∣ Ξ  ⊢[N][FN M][P₀] α̂ ⩽ Q ⊣ Θ₁, x:Q'
+```
+
+`a_sub_flex__skip_tm_var` / `__skip_tm_skl` (algo/def_extra.v) with decorated
+mirrors on `a_subtag_flex` (algo/def_decorated.v) — the mech splits the
+paper's single `x : P` entry into a type binding and a skeleton binding, hence
+two rules for the paper's one.  All three mutual inductions over the
+`a_sub` / `a_sub_flex` pair carry their two new cases: the soundness bundle
+(prop_sub_sound.v), the decoration bundle (prop_decorate_key.v), and
+equivariance (prop_swap.v).  `make coq` green, admit-free, axiom-free.
+
+⭐ **One thing worth telling the authors**: neither the new rules nor the twin
+walk's `Assign-SkipTmVar` carries a freshness premise for `P₀`, and none is
+needed — a term entry is never `a_binds_tvar`, so under `uniq` no free
+variable of a well-formed `P₀` can be it, and `x ∉ ftv P₀` is DERIVED at each
+consumer.
+
+⭕ **Still owed: P7a's two completeness rows.**  `a_inc__var` / `a_inc__var_skl`
+shrink the `a_inc` TARGET exactly as `a_inc__tvar` does, so each row is
+`a_sub_flex_complete_skip_rigid`'s ⇓-truncation apparatus with the tvar pieces
+swapped for the var ones (`a_inc_var_inv`, `a_inc_var_mid_strip_id`,
+`a_inc_equiv_mid_insert_var`) plus ONE genuinely new obligation the rigid
+entry does not have: the SEMANTIC MIDDLE `Θ' ⊢ A' ≡ᵗ κ A`.  The consistency
+twin's `Assign-SkipTmVar` case discharges exactly that
+(prop_consis_complete.v:5595-5690) and is the model.  Until they exist, P7c's
+`flex_step` carries `a_sub_flex_walkable Θ0`
+(algo/prop_sub_complete_dispatch.v §6/§7).
 
 ---
 

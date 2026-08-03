@@ -79,10 +79,13 @@ point to the same content.
   main half's TWELVE-ROW join dispatch (`main_join`) and the
   arrow-subject layer (`main_arrow_holds`).  ⚠️ **Two obstacles remain,
   and BOTH are for the authors** (docs/PAPER-GAPS.md): (i) the
-  flexible SUBTYPING walk has **no rule for a term-variable head**
+  flexible SUBTYPING walk had **no rule for a term-variable head**
   while the twin assignment walk has `Assign-SkipTmVar` — MACHINE-
   CHECKED (`cex/cex_p7_flex_walk_tm_var.v`) and the reference
-  implementation **crashes** on `fun x -> x 1`; and (ii) at ForallL
+  implementation **crashes** on `fun x -> x 1`.  ⭐ **The rules are now
+  ADDED** (`a_sub_flex__skip_tm_var` / `__skip_tm_skl`, with decorated
+  mirrors and all three mutual inductions updated); what remains is
+  P7a's two completeness rows, scoped in DESIGN §12.3.  And (ii) at ForallL
   the join's last rule does not determine the algorithm's rule
   (ForallL/ForallR commute), which the paper covers by a one-sentence
   WLOG whose mechanical content is a join-permutation lemma.  The residual is isolated as the single

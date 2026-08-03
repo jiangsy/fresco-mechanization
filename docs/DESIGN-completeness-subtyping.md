@@ -4888,3 +4888,48 @@ Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
    → flex_step         (main_arrow + main at shorter contexts)
    → main_join         (fuel IH + flex_step at Ξ = ·) *)
 ```
+
+### ⭐ §12.3 Flex-SkipTmVar LANDED (2026-08-03), and what the two P7a rows cost
+
+The authors' call was to add the missing rule, so `a_sub_flex__skip_tm_var` /
+`__skip_tm_skl` are in `algo/def_extra.v` with decorated mirrors, and the three
+mutual inductions over the `a_sub` / `a_sub_flex` pair carry their new cases
+(prop_sub_sound.v, prop_decorate_key.v, prop_swap.v).  `make coq` green,
+admit-free, axiom-free.  Each of those cases is Flex-SkipRigid's, with
+`a_isub_cons_var_typ` / `_var_skl` for the increase and `a_wf_ptyp_isub` /
+`a_scope_pskl_isub` for the re-attached entry's wf.
+
+⭐ **The one thing that is NOT a premise.**  Neither the new rules nor the twin
+walk's `Assign-SkipTmVar` carries `x ∉ ftv P0`, and none is needed: a term
+entry is never `a_binds_tvar`, so under `uniq` no free variable of a
+well-formed `P0` can be it.  Every consumer derives it in four lines
+(`a_wf_pskl_ftv_tvarish` + `binds_unique`).  Do not add it to the rules.
+
+⭕ **The two P7a completeness rows, scoped exactly.**  `a_inc__var` /
+`a_inc__var_skl` shrink the `a_inc` TARGET exactly as `a_inc__tvar` does, so
+each row is `a_sub_flex_complete_skip_rigid`'s ⇓-truncation apparatus
+(prop_sub_complete_thm.v:6211-6576) with the tvar pieces swapped:
+
+| SkipRigid | SkipTmVar |
+|---|---|
+| `a_inc_tvar_inv` | `a_inc_var_inv` (one more output, `A'`, and the `≡ᵗ`) |
+| `a_inc__tvar` | `a_inc__var` (one more premise) |
+| `a_inc_tvar_mid_strip_id` | `a_inc_var_mid_strip_id` |
+| `a_inc_equiv_mid_insert_tvar` | `a_inc_equiv_mid_insert_var` (one more premise) |
+| `a_wf_aenv__tvar` | `a_wf_aenv__var_typ` (one more premise) |
+| premises `α ≠ β`, `β ∉ ftv P0` | both DERIVED (see above) |
+
+⚠️ **The one genuinely new obligation is the SEMANTIC MIDDLE.**  A rigid entry
+has no payload; a term entry does, and both `a_inc__var` and
+`a_inc_equiv_mid_insert_var` demand `Θ' ⊢ A' ≡ᵗ κ A` at the re-attachment.
+The consistency twin's `Assign-SkipTmVar` case proves precisely that
+(prop_consis_complete.v:5595-5690, `Hmiddle`), through
+`a_inc_equiv_msubst_ptyp` + `msubst_compose_id_ptyp` + `msubst_ptyp_agree` +
+`msubst_compose_downarrow_tyequiv`.  ⚙ One extra step the consistency proof
+does not need: the subtyping row re-attaches through the JUNK SWAP, so the
+increase's witness is `kswap_msubst β β1 ζ` rather than `msubst_compose ζ κf` —
+close the gap with `msubst_ptyp_kswap` (prop_swap.v:1983), whose hypotheses are
+free because `β`/`β1` are fresh for the payload (it is scoped in `Θ0`).
+
+With both rows, `flex_step`'s `a_sub_flex_walkable Θ0` premise is deleted and
+its two `exfalso` branches become ordinary delegations.
