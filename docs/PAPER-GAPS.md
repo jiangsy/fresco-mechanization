@@ -1992,6 +1992,25 @@ rather than `Errors.type_mismatch` because its contexts also carry
 `sub_flex` does not — the same omission, one entry sort further out than the
 paper's `x : P`.)
 
+
+⭐ **THE GAP IS EXACTLY "CHECKING WORKS, INFERENCE DOES NOT".**  The spec DOES
+give these terms types — the same programs check fine against a signature,
+because then `x`'s type is CONCRETE and no flexible reaches the walk:
+
+| program | annotated (checking) | unannotated (inference) |
+|---|---|---|
+| `fun x -> x 1` at `(int -> int) -> int` | accepted | crash |
+| `fun x -> x 1` at `forall b . [] ((int -> b) -> b)` | accepted (and usable at two result types) | crash |
+| `fun g y -> g y` at `forall a b . [] ((a -> b) -> a -> b)` | accepted | crash |
+| `fun x -> x` (no application) | accepted | accepted |
+
+So the missing rule costs exactly the INFERENCE of any term that applies a
+lambda-bound variable.  Had the rule been there, `Flex-Solve` would deposit
+`α̂ ≔ β̂ → γ̂`, consistency would solve `β̂ ≔ int` against the argument, and the
+result would be `(int -> γ̂) -> γ̂` with `γ̂` residual — this system does not
+generalise unannotated `let` (`let id = fun x -> x` then `id 1` and `id "s"`
+is rejected), so the `forall` is reachable only by annotation.
+
 **Status in the mechanization.**  The repair is NOT applied — the blast radius
 is a rule change: `a_sub_flex` and its decorated mirror `a_subtag_flex`
 (algo/def_decorated.v) both gain two constructors (the mech splits `x : P`

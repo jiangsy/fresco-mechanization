@@ -53,6 +53,18 @@
     unsolved flexible".
     [tm_var_context_is_the_lambda_shape] records the shape correspondence.
 
+    ⭐ THE GAP IS EXACTLY "CHECKING WORKS, INFERENCE DOES NOT".  The spec DOES
+    type these terms: `fun x -> x 1` CHECKS against `(int -> int) -> int` and
+    against `forall b . [] ((int -> b) -> b)` (and is then usable at two
+    result types), and `fun g y -> g y` checks against
+    `forall a b . [] ((a -> b) -> a -> b)`.  Checking never reaches the walk,
+    because there `x`'s type is CONCRETE.  So the missing rule costs exactly
+    the INFERENCE of any term that applies a lambda-bound variable.  Had the
+    rule been there, Flex-Solve would deposit [α̂ ≔ β̂ → γ̂], consistency would
+    solve [β̂ ≔ int] against the argument, and the inferred type would be
+    [(int → γ̂) → γ̂] with [γ̂] residual — the system does not generalise
+    unannotated [let], so the [forall] is reachable only by annotation.
+
     ⚙ The impl reaches [failwith] rather than [Errors.type_mismatch] because
     its contexts also carry [Marker] / [Lock] entries, which `assign` skips
     ([U-Assign-SkipOthers], type.ml:386-390) and `sub_flex` does not.  Same
