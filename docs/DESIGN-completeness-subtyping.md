@@ -4221,6 +4221,74 @@ hypothesis or wait for TASK 0's residual.  The two ForallL rows also need
 ghost-freeness — both of which have to be derived from the mode-compatibility
 premises and the fill rather than read off the join.
 
+### ⚠️ §12.1 CORRECTION (2026-08-03): the induction above is WRONG, and the
+### case map, measured against the tree
+
+`prop_sub_complete_dispatch.v` §1 (Qed, axiom-free) is the SHAPE TRANSFER the
+dispatcher owes, and §2 records the scoping below.
+
+**The case map.**  What the join does not fix is the motive's unresolved
+subject `R` — only the ≡ᵘ slack `Θ ⊢ R' ≡ᵘ κR` ties them.  `msubst_uskl_syn` is
+structural except at a free variable, where it installs a MONOTYPE PAINTING,
+and a painting is `unit` / a variable / an arrow — never a ∀, never a ghost.
+So the transfer is TOTAL at every row except `__arrow`:
+
+| join row | subject `R` | dispatch |
+|---|---|---|
+| `__infer` `__check` `__univ_ghost_r` `__forall_r` | arbitrary | the row lemma does its own transfer |
+| `__ghost` `__ghostg` | `◇` / `◈` | the row lemma takes `R'` directly |
+| `__arrow` | an ARROW **or a VARIABLE** | arrow ⟹ `a_sub_complete_arrow`; variable ⟹ **the only entry into P7a** |
+| `__forall_l_{tagged,untagged}` | the same ∀ | the two ForallL rows (each owes `sub_shield`) |
+| `__univ_ghost_l` `__univ_ghost_lg` | the same ghost | **no row lemma** — strip with `a_sub__univ_ghost_l`, recurse |
+| `__flex_mono` | unchanged | a pure PEEL (chase the Θ-definition; re-establish the slack by `flex_def_paint_tyequiv` + trans) |
+
+The arrow row's variable escape needs `unit` excluded, and that is not
+syntactic: `Θ ⊢ arrow ≡ᵘ unit` dies only through ⇓ (`a_tyequiv_downarrow` is a
+congruence and `⇓(A→B)` is an arrow).  `a_uskl_tyequiv_arrow_l_inv` is that
+argument.
+
+**⚠️⚠️ THE TERMINATION IS NOT lex(fuel, |Θ0|).**  The two halves call each other
+at the SAME fuel: `a_sub__flex_mono` enters P7a at the same context, and P7a's
+`Flex-Solve` re-enters P7b at the same fuel with a context TWO ENTRIES LARGER —
+it deposits `α̂0 ≔ α̂→β̂` plus the two fresh flexibles
+(prop_sub_complete_thm.v:4586).  So on that cycle neither component decreases.
+(`Flex-Assign` is fine: it consumes the definition, so the context shrinks by
+one.)
+
+⭐ **What breaks the cycle is the SUBJECT.**  Flex-Solve re-enters at the
+subject `α̂ → β̂` — an ARROW — and a main call at an arrow subject can never come
+back into P7a: the escape needs a VARIABLE subject, and no join row shrinks an
+arrow to a variable (`__univ_ghost_l` needs a ∀◇ subject; `__flex_mono` leaves
+`R` alone).  The layering that works is
+
+1. `main_arrow_subject` — the main half at an ARROW subject, from the fuel IH
+   ALONE: no P7a, no context induction;
+2. the flex half at `|Ξ ++ Θ0| = k`, by an inner induction on `|Θ0|`
+   (Flex-Depend keeps the total and shrinks Θ0), using (1) for Flex-Solve and
+   the main half at `k-1` for Flex-Assign;
+3. the main half at `k`, using (2) for the R-variable escape and the fuel IH
+   for the fuel-consuming rows; its inner induction on the join handles the
+   three fuel-preserving ones;
+4. strong induction on `k`, then on the fuel.
+
+**⭕ THE STUCK-CHECK IS NOT CONSISTENCY'S, AND IT IS THE PIECE TO BUILD FIRST.**
+A rigid head `β` with `β ∈ ftv P0` matches no `a_sub_flex` rule (it cannot enter
+Ξ — `a_decls` holds only flexible declarations — and `Flex-SkipRigid` needs
+`β ∉ ftv P0`), so the dispatcher must refute it from the solution.
+Consistency's twin (`assign_complete_step`'s rigid-head case,
+prop_consis_complete.v:5000-5090) runs `rigid_survives_solution` then
+`ad_pat_consis_rigid_ftv_rev_scoped`, because THERE the pattern IS the join's
+subject.  ⚠️ Here `P0` sits on the FILL side (`Θ ⊢ᵣ inh{κP0} ⊳ Q`) and the
+join's subject is `κα̂`, so the chain is
+
+    β ∈ ftv P0 ⟹ β ∈ ftv (κP0) ⟹ β ∈ ftv Q ⟹ β ∈ ftv (κα̂)
+
+whose last step is "the SUBJECT confines the TARGET" — FALSE for the join in
+general (`ad_pat_sub_gv__ghost` gives a ◇ subject an arbitrary target).  It has
+to be re-derived for the MONOTYPE subject the walk actually has, where every
+row carries a refinement premise off the subject's HOLE-FREE erasure and the
+target therefore cannot invent free variables.
+
 ### Recommended order
 
 1. the ten non-ForallL cases (nine delegations + the two inline univ-ghost-l

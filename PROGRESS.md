@@ -78,7 +78,60 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐⭐⭐ `sub_shield` **RE-INDEXED POSITIONALLY** and `fa_walk` **SPLIT**: the over-strong premise is repaired, tree-wide
+## 2026-08-03 (latest) — 🚧 P7c SCOPED AGAINST THE TREE: the shape-transfer kit lands, and §12's INDUCTION IS REFUTED
+
+`make coq` green, admit-free, axiom-free.  New file
+`frost/algo/prop_sub_complete_dispatch.v`: §1 is proved (Qed, axiom-free), §2
+is the scoping, and docs/DESIGN-completeness-subtyping.md §12.1 carries it in
+prose.  **The dispatcher itself is NOT written** — see the two open obligations
+at the end.
+
+**§1, THE SHAPE TRANSFER (proved).**  What the join does not fix is the
+motive's unresolved subject `R`; only the ≡ᵘ slack `Θ ⊢ R' ≡ᵘ κR` ties them.
+`msubst_uskl_syn` is structural except at a free variable, where it installs a
+MONOTYPE PAINTING — and a painting is `unit` / a variable / an arrow, never a
+∀, never a ghost.  So a κ-image of any other shape PINS the pre-image, and the
+transfer is total at every join row except `__arrow`, where `R` may instead be
+a bare flexible whose IMAGE is the arrow.  ⭐ **That is the one and only entry
+into P7a.**  The `unit` case of the arrow row is not syntactic: `arrow ≡ᵘ unit`
+dies only through ⇓ (`a_tyequiv_downarrow` is a congruence and `⇓(A→B)` is an
+arrow), which is what `a_uskl_tyequiv_arrow_l_inv` does.
+
+**⚠️⚠️ §12's INDUCTION IS WRONG — lex(fuel, |Θ0|) does not work.**  The two
+halves call each other at the SAME fuel: `a_sub__flex_mono` enters P7a at the
+same context, and P7a's `Flex-Solve` re-enters P7b at the same fuel with a
+context TWO ENTRIES LARGER (it deposits `α̂0 ≔ α̂→β̂` plus the two fresh
+flexibles, prop_sub_complete_thm.v:4586).  Neither component decreases on that
+cycle.  ⭐ **What breaks it is the SUBJECT**: Flex-Solve re-enters at `α̂ → β̂`,
+an ARROW, and a main call at an arrow subject can never come back into P7a —
+the escape needs a VARIABLE subject and no join row shrinks an arrow to a
+variable.  The layering that works: (1) the main half at an ARROW subject from
+the fuel IH alone; (2) the flex half at `|Ξ ++ Θ0| = k` by an inner induction
+on `|Θ0|`, using (1) for Flex-Solve and the main half at `k-1` for Flex-Assign;
+(3) the main half at `k`, using (2) for the escape; (4) strong induction on `k`,
+then on the fuel.
+
+**⭕ TWO OPEN OBLIGATIONS, neither mechanical.**
+
+1. TASK 0's residual at the two ForallL rows.  The premise is now positionally
+   indexed and machine-checked SATISFIABLE at the node that used to refute it,
+   but `prop_sub_shield_supply.v` still discharges it only for a flex-free /
+   atomic / mono-counterpart / inh-free-counterpart / ∀-free `P0`.  A `P0` with
+   a ∀ below its head has no general route, so the dispatcher takes it as a
+   hypothesis (§12 item 3).
+
+2. **P7a's STUCK-CHECK, and it is NOT consistency's.**  A rigid head `β` with
+   `β ∈ ftv P0` matches no `a_sub_flex` rule, so the dispatcher must refute it
+   from the solution.  Consistency's twin works because THERE the pattern IS
+   the join's subject; here `P0` sits on the FILL side and the join's subject
+   is `κα̂`, so the chain is `β ∈ ftv P0 ⟹ β ∈ ftv (κP0) ⟹ β ∈ ftv Q ⟹
+   β ∈ ftv (κα̂)`, whose last step is "the SUBJECT confines the TARGET" — FALSE
+   for the join in general (`ad_pat_sub_gv__ghost` gives a ◇ subject an
+   arbitrary target).  It must be re-derived for the MONOTYPE subject the walk
+   actually has, where every row carries a refinement premise off the subject's
+   HOLE-FREE erasure.  **This is the piece to build first.**
+
+## 2026-08-03 — ⭐⭐⭐ `sub_shield` **RE-INDEXED POSITIONALLY** and `fa_walk` **SPLIT**: the over-strong premise is repaired, tree-wide
 
 `make coq` green, admit-free, axiom-free.  This lands the repair the entry
 below diagnosed, and machine-checks it AT THE VERY WITNESS that refuted the old
