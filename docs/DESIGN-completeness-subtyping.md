@@ -4715,4 +4715,14 @@ restated in terms that survive the re-indexing: the configuration is inhabited
 AND both guess-descending closures fail at the CODOMAIN, one `ss_walk` step from
 the root, which is precisely what the old P0-only indexing demanded.
 
-⭕ **P7c's two ForallL cases are UNBLOCKED.**  The dispatcher (§12) is next.
+⭕ **P7c's two ForallL cases are UNBLOCKED — but read this precisely.**  What
+is removed is the FALSITY: the premise is no longer refutable, and it is
+machine-checked TRUE at the node that refuted it.  What is NOT yet in the tree
+is a GENERAL supply route for §9.0.2's residual shape (a `P0` carrying a ∀ below
+its head).  `prop_sub_shield_supply.v` still covers only flex-free / atomic /
+mono-counterpart / inh-free-counterpart / ∀-free `P0`, all now uniform in `α`
+and `R`.  So the dispatcher can be written and its ForallL cases can take the
+shield as a hypothesis exactly as §12 item 3 planned — the difference is that
+the hypothesis is now known to be SATISFIABLE, and the positional index is the
+handle a general supply proof gets to use (it need only shield positions the
+guess actually reaches).  The dispatcher (§12) is next.
