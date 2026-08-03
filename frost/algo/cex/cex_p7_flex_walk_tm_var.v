@@ -34,22 +34,23 @@
     [a_typing__var] hands that very flexible to SUBTYPING as the subject
     ([a_typing__var]'s premise is at [ptyp_to_pskl A] for [x : A]), at an FN
     mode when the variable is applied ([a_typing__app]).  So this context is
-    what `λx. x ()` builds, and the walk's FIRST step is across the binder.
+    what `fun x -> x 1` builds, and the walk's FIRST step is across the binder.
     Run against paper/artifact/implementation (met.exe --debug):
 
-        let f = fun x -> x Unit
+        let f = fun x -> x 1                   (* OCaml's  fun x -> x 1 *)
         - I-Abs
         -- I-App
-        --- PI-Con  ---- PI-Var  ----- SI-ModFun-Sk  ------ SI-UnivGhostR
+        --- PI-Int  ---- SI-UnivGhostR
         --- I-Var
         ---- SI-FlexMono                       ← subtyping enters the walk
         Fatal error: exception Failure("broom_flex_poly: should not happen")
 
-    `fun g -> fun y -> g y` crashes identically.  `fun x -> x` is fine (no
-    application, so no FN-mode subtyping on the flexible), and so is any
-    version where the applied variable's type is CONCRETE (annotate it, or
-    apply a literal lambda instead) — the trigger is exactly "apply a
-    lambda-bound variable whose type is still an unsolved flexible".
+    `fun g -> fun y -> g y` and `fun g y -> g (g y)` crash identically, as does
+    every literal argument.  `fun x -> x` is fine (no application, so no
+    FN-mode subtyping on the flexible), and so is any version where the
+    applied variable's type is CONCRETE (give `f` a `val` signature) — the
+    trigger is exactly "apply a lambda-bound variable whose type is still an
+    unsolved flexible".
     [tm_var_context_is_the_lambda_shape] records the shape correspondence.
 
     ⚙ The impl reaches [failwith] rather than [Errors.type_mismatch] because

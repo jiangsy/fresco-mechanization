@@ -1972,21 +1972,20 @@ the reference implementation:
 
 ```
 $ cat t.mle
-type unit = Unit
-let f = fun x -> x Unit
+let f = fun x -> x 1
 $ met.exe --debug t.mle
 - I-Abs
 -- I-App
---- PI-Con  ---- PI-Var  ----- SI-ModFun-Sk  ------ SI-UnivGhostR
+--- PI-Int  ---- SI-UnivGhostR
 --- I-Var
 ---- SI-FlexMono                          <- subtyping enters the walk
 Fatal error: exception Failure("broom_flex_poly: should not happen")
 ```
 
-`fun g -> fun y -> g y` crashes identically.  `fun x -> x` is fine (no
-application, hence no FN-mode subtyping on the flexible), and so is any
-version where the applied variable's type is concrete (annotate it, or apply
-a literal lambda).  **The trigger is exactly "apply a lambda-bound variable
+`fun g -> fun y -> g y` and `fun g y -> g (g y)` crash identically.
+`fun x -> x` is fine (no application, hence no FN-mode subtyping on the
+flexible), and so is any version where the applied variable's type is
+concrete (give it a `val` signature).  **The trigger is exactly "apply a lambda-bound variable
 whose type is still an unsolved flexible".**  (The impl reaches `failwith`
 rather than `Errors.type_mismatch` because its contexts also carry
 `Marker` / `Lock` entries, which `assign` skips as `U-Assign-SkipOthers` and

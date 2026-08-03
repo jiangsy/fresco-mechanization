@@ -149,9 +149,9 @@ ORDINARY PROGRAM: the flexible SUBTYPING walk has NO rule for a TERM-VARIABLE
 head** (docs/PAPER-GAPS.md; `cex/cex_p7_flex_walk_tm_var.v`,
 `complete_subtyping_false_at_a_term_variable_head`, Qed + axiom-free — the
 problem side holds, a solution exists, and no run does).  `met.exe` on
-`let f = fun x -> x Unit` traces `I-Abs / I-App / I-Var / SI-FlexMono` and then
+`let f = fun x -> x 1` traces `I-Abs / I-App / I-Var / SI-FlexMono` and then
 dies with `Failure("broom_flex_poly: should not happen")`; `fun g -> fun y ->
-g y` is identical.  The trigger is exactly "apply a lambda-bound variable whose
+g y` and `fun g y -> g (g y)` are identical.  The trigger is exactly "apply a lambda-bound variable whose
 type is still an unsolved flexible".  `fig:alg-subtyping`'s
 second box has five rules and none matches an `x : P` entry, while the paper's
 TWIN walk has `Assign-SkipTmVar` (full-algo-spec.tex:1791).  Nothing in
