@@ -1,0 +1,10 @@
+type unit = Unit
+
+val id2 : forall b . [](b -> b)
+let id2 x = x
+
+val idc : forall c . [](c -> c)
+let idc x = x
+
+val test : [](unit -> unit)
+let test x = id2 idc x
