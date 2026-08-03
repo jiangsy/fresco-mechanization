@@ -762,9 +762,11 @@ Proof.
       by (apply is_tskl_lc; inversion Htags; assumption).
     (* ⭐ THE POSITIONAL GUARD IS FREE HERE — and this is the ONLY row that
        consumes the guess-descending half: [R'] has just been pinned to
-       [uskl_var_f α], the very position the guess replaces. *)
+       [uskl_var_f α], the very position the guess replaces.  (The
+       [flex_shield] half is DEAD since 2026-08-03 — P6-Sv no longer takes
+       it; only [flex_apart_walk] is consumed.) *)
     destruct (sub_shield_here Hshield ltac:(simpl; clear; fsetdec))
-      as [Hapart Hfsh].
+      as [Hapart _].
     assert (Hsv : exists Pa, Θ0 ⊢ₛ Pi ≼[ M ] P0 ⤳ Pa /\
                     Θ0 ⨟ empty ⊢ₚₛᵃ Pa /\
                     Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa).
@@ -778,7 +780,7 @@ Proof.
       | exact Hrfr
       | exact HΔρΔ
       | exact HΔρPi
-      | exact Hdfresh | exact Hapart | exact Hfsh | exact Hpre
+      | exact Hdfresh | exact Hapart | exact Hpre
       | clear - HΨs1; fsetdec | exact HΨs2
       | exact Hext | exact Hsubty | exact Hrefine ]. }
     destruct Hsv as (Pa & Hsolve & HwfPa & Hprec).

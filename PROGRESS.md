@@ -78,7 +78,39 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐ ghost-freeness ON THE MOTIVE (residual component 2 CLOSED) + ⚠️⚠️ the shield's positional index REFUTED AGAIN: the DOUBLE-OCCURRENCE witness
+## 2026-08-03 (latest) — ⭐⭐⭐ REVIEW FROM SCRATCH: `flex_shield` is DEAD — deleted from P6-Sv; the precision tag index Ψi identified as the REAL positional handle
+
+User directive: review `flex_apart`/`flex_shield` from the very beginning
+instead of patching a fourth time.  Outcome, all machine-checked:
+
+1. **`flex_shield` was pure relay.**  Every `Hfsh` site in
+   `a_solve_sub_complete_var`'s induction relays (descend_l/descend_r/
+   arrow_inv/topholeg_inv/fsh_clean-rebuild); the cash-out lemma
+   `flex_shield_flex_leaf` fed only the regression test.  The premise is
+   DELETED and P6-Sv compiles; P6-Ss's LS-Var row now uses
+   `sub_shield_here`'s first conjunct only.  What actually closes the
+   leaves (post ρ-generalization): `ad_ppre_mono_subject_target_tags_empty`
+   (precision at a mono κ-image), `a_solve_sub_complete_rho_var` (the
+   ρ-leaf), and P6-Cv's FLEX chain, whose only walk-supplied need is
+   Δρ-CLEANLINESS at a flexible (⟹ ρ = id there); tags/mono flow from the
+   FILL (`ad_refine_mono_paint_rhs_monoish` +
+   `ad_pat_consis_monoish_counterpart`).
+2. **No contradiction with cex_p6sv_forall_flex**: the original witness is
+   excluded by `flex_apart_walk` ALONE (`fastep_all_r` reaches the stuck
+   (α̂, β→β) leaf).  The shield was belt-and-braces from the repair day that
+   later refactors made unnecessary.
+3. **The Ψi insight.**  cex_p6sv (conclusion genuinely false) vs the
+   double-occ witness (premise over-strong) differ in exactly one thing at
+   the same local shape: whether the guess's tag is solved AT that position —
+   `ε ∈ Ψi` (precision P-Forall matches Pi's ∀) vs the position's index ∅
+   (the copy is only instantiated).  The precision judgment already splits
+   Ψi positionally, so the clean replacement for the mech-invented
+   (P0, ψa)-walks is a condition read off `⊑ᵖ[Ψi]` — see
+   memory `remech-flex-shield-dead` for the queued follow-ups (drop the
+   vestigial conjunct + Ψ' index, then attempt the Ψi-form; if it lands,
+   `sub_shield` dies entirely and `main_forall` discharges).
+
+## 2026-08-03 — ⭐ ghost-freeness ON THE MOTIVE (residual component 2 CLOSED) + ⚠️⚠️ the shield's positional index REFUTED AGAIN: the DOUBLE-OCCURRENCE witness
 
 `make coq` green, admit-free, axiom-free; every flagship
 `Print Assumptions`-clean.  The P7c hand-off's Step A is DONE and its Step B
