@@ -78,7 +78,61 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐⭐⭐ REVIEW FROM SCRATCH: `flex_shield` is DEAD — deleted from P6-Sv; the precision tag index Ψi identified as the REAL positional handle
+## 2026-08-03 (latest) — ⚠️⚠️⭐⭐⭐ THE PROBE IS MACHINE-CHECKED: no `a_sub` run exists at the double-occ payload — `main_forall` is FALSE, thm:complete-subtyping OVER-QUANTIFIES `P0`
+
+`cex/probe_double_occ_run.v` rewritten from scaffold to a full Qed
+development (three `Print Assumptions` closed; the tree stays green,
+admit-free, axiom-free).  The 2026-08-03 rule-level trace is now a lemma per
+step, each one FORCED by inversion and uniform in every fresh name:
+
+1. **Steps 1–3 constructed** (`probe_looksub` / `probe_solve` /
+   `probe_guess`, assembled in `probe_extract`): LS-Arrow = LE-Var + LS-Var
+   collects `[eq (∀γ.γ→γ); sub tc f̂]`; the solve runs the eq on the HOLE
+   (SE-GhostL), then the sub-constraint solves ON the accumulated pattern —
+   SS-ForallL / SS-Check / SE-FlexR, whose output IS the flexible — so the
+   close re-binds a VACUOUS binder: `∀_.f̂`; the TY guess passes it through.
+2. **Each step is DETERMINISTIC** (`probe_look_det` / `probe_solve_det` /
+   `probe_guess_det` / `probe_extract_det`): the only shape-surviving
+   inversion branches are refuted by their own side conditions (LS-Absent by
+   the marker's occurrence, LS-Check by the subject BEING the looked-for
+   variable, SS-Check by `guarded_pskl (pskl_all_syn _)` inversion).  ⭐ The
+   vacuous binder swallows the fresh names, so the extract's output
+   `(nil, ∀_.f̂)` is name-free — determinism needs NO renaming kit.
+3. **The continuation is stuck** (`probe_continuation_stuck`): Arrow forces
+   the domain consistency `∀_.f̂ ∼ ∀γ.γ→γ`, ForallInh forces the leaf
+   `f̂ ∼ β1→β1` at the freshly pushed rigid `β1`, FlexL's assignment walk
+   meets the context head `β1 ~ tvar` with `β1 ∈ ftv` — and the ONLY rule
+   matching a rigid head, Assign-SkipRigid, refuses
+   (`a_assign_rigid_head_occurs_stuck`, ONE inversion).  The two consis
+   stuck shapes are fully general (`a_consis_var_vs_head_rigid_arrow_stuck`,
+   `a_consis_forall_arrow_vs_vacuous_var_stuck`: any context, any variable,
+   any names).
+
+**The headline chain.**  `probe_no_run` (¬∃ run at the configuration) + the
+motive premises already Qed in `p7_sub_shield_positional_over_strong` ⟹
+`probe_motive_instance_false` (the P7b motive instance at
+`n=3, NM=TY, M=FN(TC)` is FALSE) ⟹ `probe_main_forall_false :
+~ main_forall 3` and `probe_main_forall_hyp_false :
+~ (forall n, main_forall n)`.  **The bundle's one hypothesis is REFUTED, so
+`a_sub_complete_bundle_holds` / `a_sub_complete_thm` are VACUOUS as
+stated.**  The "`main_forall` is KNOWN-TRUE (an instance of the theorem
+being proved)" line was CIRCULAR exactly at the paper theorem's
+over-quantification of `P0`; the language is retracted in dispatch.v §10,
+AGENTS/CLAUDE.md, and DESIGN §14.6–§14.7.
+
+**What it means, and what it does NOT.**  met.exe ACCEPTS the corresponding
+source program (`docs/repros/thm_complete_subtyping_fn_tc_passes.mle`) — the
+typing's spine collection builds payloads with GHOSTS, never a ∀ below the
+head at a consis-feeding position.  So the algorithm is fine ON PROGRAMS;
+it is thm:complete-subtyping's quantification over `P0` that is broader than
+the typing-reachable payloads, and the shield saga's residual shape is
+exactly the unreachable one (`prop_sub_shield_supply.v`'s covered shapes are
+the reachable ones).  PAPER-GAPS entry is owed WITH the repair: a payload
+side condition on the P7b motive, read off `a_typing`/`a_pat`'s `a_sub`
+call sites + type.ml's spine collection
+(docs/HANDOFF-completeness-repair.md TASKS 2–3).
+
+## 2026-08-03 — ⭐⭐⭐ REVIEW FROM SCRATCH: `flex_shield` is DEAD — deleted from P6-Sv; the precision tag index Ψi identified as the REAL positional handle
 
 User directive: review `flex_apart`/`flex_shield` from the very beginning
 instead of patching a fourth time.  Outcome, all machine-checked:
@@ -165,6 +219,9 @@ STAYS as the bundle's hypothesis (it is KNOWN-TRUE, so the conditional
 flagships remain honest), and the flagships stay out of README.v.  Closing
 subtyping completeness now goes through the shield's FOURTH re-indexing, a
 P6-tower campaign, not an assembly step.
+⚠️⚠️ *(Superseded later the same day: `main_forall` is REFUTED —
+`cex/probe_double_occ_run.v`, see the top entry.  The repair is a motive
+payload condition, not a re-indexing.)*
 
 ## 2026-08-03 — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS ASSEMBLED**: P7a's last two rows, the ForallL/ForallR join permutation, and `a_sub_complete_bundle_holds` — one hypothesis left
 
@@ -271,6 +328,9 @@ a wrong guess yields a vacuously true theorem.  `main_forall n` is
 KNOWN-TRUE (it is an instance of the theorem being proved), so the conditional
 bundle is honest.  Both flagship theorems are `Print Assumptions`-clean; they
 are NOT yet in README.v, which indexes UNCONDITIONAL paper claims.
+⚠️⚠️ *(Superseded 2026-08-03, later: the "KNOWN-TRUE" reasoning was circular
+at the paper theorem's over-quantification of `P0`, and `main_forall` is now
+REFUTED — `cex/probe_double_occ_run.v`, see the top entry.)*
 
 ## 2026-08-03 — ⭐⭐⭐ **Flex-SkipTmVar LANDS**: the paper's missing subtyping-walk rule is added tree-wide, and the tree is green
 

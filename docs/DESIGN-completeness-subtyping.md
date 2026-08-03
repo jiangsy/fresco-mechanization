@@ -4834,9 +4834,12 @@ guess copy the derivation instantiates.
 
 **Consequence for P7c.**  NO general supply of the CURRENT `sub_shield`
 exists: `main_forall n` cannot be discharged through
-`a_sub_complete_forall_l_tagged` as stated, so the bundle's hypothesis STAYS
-until the shield is re-indexed a fourth time.  The bundle and both flagships
-remain honest (conditional on the KNOWN-TRUE `main_forall`).
+`a_sub_complete_forall_l_tagged` as stated.  ⚠️⚠️ **Superseded by §14.7**:
+`main_forall` is not merely undischargeable — it is FALSE (machine-checked,
+`cex/probe_double_occ_run.v`), because at this very configuration the
+algorithm has NO run at all while the join + fill are Qed-inhabited.  The
+"KNOWN-TRUE `main_forall`" line below reflected the paper's claim and is
+RETRACTED there.
 
 **The repair direction the witness dictates.**  The next index must
 distinguish positions by what the join does at them — MATCH vs INSTANTIATE —
@@ -4852,6 +4855,56 @@ through P6-Sv → P6-Ss → P6-L → both P7b ForallL rows.  ⚠️ Note the cou
 index cannot be bolted onto `sub_shield` alone: `flex_shield` is CONSUMED by
 P6-Sv, whose statement has no fill in scope — threading the counterpart (or an
 inh-free bit) through the P6 tower is the actual cost to estimate first.
+
+### ⚠️⚠️ §14.7 THE PROBE, MACHINE-CHECKED (2026-08-03, end): `main_forall` is FALSE — the theorem over-quantifies `P0`
+
+`cex/probe_double_occ_run.v`, all Qed, axiom-free (three `Print Assumptions`
+closed).  §14.6 refuted the shield PREMISE at the double-occ node; this
+settles the stronger question the premise was standing in for: **does the
+algorithm run at all there?**  It does not.
+
+**The forced trace, now a Qed lemma per step.**  At the §14.6 configuration
+(`Θ0 = f̂`, `P0 = (∀γ.γ→γ) → f̂`, subject `∀.(□₀→□₀)`, `NM = TY`,
+`M = fn tc`; join + fill Qed-inhabited):
+
+1. ForallL is the only `a_sub` entry at a ∀ subject with an arrow `P0` at
+   `FN(TC)` (one inversion).
+2. The extract is DETERMINISTIC (`probe_extract_det`), uniformly in the
+   marker and every fresh name: looksub is LS-Arrow = LE-Var + LS-Var
+   (`probe_look_det`), the solve THREADS the accumulated pattern — the eq's
+   yield `∀γ.γ→γ` is fed into the sub-constraint, where SS-ForallL /
+   SS-Check / SE-FlexR OVERWRITE it with the flexible (`a_solve_eq__flex_r`'s
+   output IS `α̂`), so the close re-binds a VACUOUS binder
+   (`probe_solve_det`: output `∀_.f̂`), and the TY guess passes it through
+   (`probe_guess_det`).  The vacuous binder swallows every fresh name, which
+   is why determinism is name-free.
+3. The continuation `(∀_.f̂) → (∀_.f̂)` vs `(∀γ.γ→γ) → f̂` forces Arrow,
+   whose domain CONSISTENCY forces ForallInh; at the freshly pushed rigid
+   the subject's body is the bare `f̂` facing `β1→β1` — FlexL's assignment
+   walk meets the context head `β1 ~ tvar` with `β1 ∈ ftv`, where the only
+   matching rule Assign-SkipRigid refuses
+   (`a_assign_rigid_head_occurs_stuck`, one inversion).  Fully general:
+   `a_consis_forall_arrow_vs_vacuous_var_stuck` holds for ANY context, ANY
+   subject variable, ANY names.
+
+So `probe_no_run : forall Q Θ1, ~ a_sub TY (fn tc) P0d Θ0d (∀.(□₀→□₀)) Q Θ1`.
+Wiring in the motive premises (all Qed in
+`p7_sub_shield_positional_over_strong`) gives `probe_motive_instance_false`,
+hence `probe_main_forall_false : ~ main_forall 3` and
+`probe_main_forall_hyp_false : ~ (forall n, main_forall n)`.
+
+**What this means.**  thm:complete-subtyping (algorithmic.tex:1446)
+quantifies `P0` beyond the payloads the TYPING produces: met.exe ACCEPTS the
+corresponding source program (`docs/repros/thm_complete_subtyping_fn_tc_passes.mle`)
+because the spine collection builds its payload with GHOSTS, never with a ∀
+below the head at a consis-feeding position.  The shield saga's residual
+shape IS the unreachable shape; `prop_sub_shield_supply.v`'s covered shapes
+are the reachable ones.  The repair is NOT a fourth shield re-indexing but a
+payload side condition on the MOTIVE (the typing's `P0`-invariant, read off
+`a_typing`/`a_pat`'s `a_sub` call sites and type.ml's spine collection),
+under which the existing supply routes become total and the `main_forall`
+analog discharges — HANDOFF-completeness-repair.md TASKS 2–3, PAPER-GAPS
+entry owed when the repair lands.
 
 ### ⭐⭐ §12.2 LANDED (2026-08-03): all three layers, and the two obstacles that remain
 
@@ -5067,9 +5120,10 @@ of the two and the P7c hand-off listed only the other:
 1. **TASK 0's `sub_shield`** for a `P0` carrying a `∀` below its head.
    ⚠️⚠️ **Now known UNSUPPLIABLE as stated** — the double-occurrence witness
    (§14.6, cex/cex_p7_shield_double_occ.v) refutes the premise at a reachable
-   ForallL node, so the residual closes only after the shield's FOURTH
-   re-indexing (match-vs-instantiate; the fill pins which), replayed through
-   the P6 tower.
+   ForallL node.  ⚠️⚠️ **And §14.7 settles WHY: `main_forall` itself is FALSE
+   there (`cex/probe_double_occ_run.v`) — the residual does not close by any
+   shield re-indexing; the MOTIVE must gain the typing's payload side
+   condition (HANDOFF-completeness-repair.md TASKS 2–3).**
 2. ⭐ **CLOSED (2026-08-03): `NM = TY -> uskl_ghost_free R'`** is ON THE
    MOTIVE — `sub_complete_concl`'s last premise, on the JOIN-side subject,
    with `a_sub_complete_thm` carrying it as the external side condition
@@ -5089,6 +5143,15 @@ conditions.  Do NOT: the side conditions are precisely the open question,
 `sub_shield_forall_flex_p0_fails` (cex/cex_p7_shield_forall_flex.v) shows the
 unguarded form is FALSE, and §14.6 now shows the guarded form is false TOO at
 a reachable node.  A false hypothesis makes the conditional theorem
-vacuously true and worthless.  `main_forall n` is KNOWN-TRUE — it is an
-instance of the very theorem being proved — so the conditional bundle is
-honest and non-vacuous.  Keep it.
+vacuously true and worthless.  ⚠️⚠️ **UPDATE (2026-08-03, §14.7): the
+"`main_forall n` is KNOWN-TRUE — it is an instance of the very theorem being
+proved" reasoning is RETRACTED — it was CIRCULAR exactly at the paper
+theorem's over-quantification of `P0`, and `main_forall 3` is now REFUTED
+(`cex/probe_double_occ_run.v`, `probe_main_forall_false`).  So the bundle IS
+vacuous as stated.**  The discipline still paid off, in the opposite
+direction to the one intended: because the hypothesis was the paper-shaped
+`main_forall` and not a guessed supply, its falsity was DETECTABLE by one
+closed instance — and detecting it is what turned the shield saga into a
+statement about the THEOREM's quantifier.  The repair is a payload side
+condition on the motive (HANDOFF-completeness-repair.md TASKS 2–3), not a
+fourth shield re-indexing.

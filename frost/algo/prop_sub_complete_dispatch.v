@@ -1263,23 +1263,28 @@ Qed.
 (*     file's [__univ_ghost_l/lg] / [__flex_mono] cases discharge it by    *)
 (*     [discriminate] / [mono_ptyp_to_uskl_syn_ghost_free].               *)
 (*                                                                        *)
-(*     A1.  ⭕⚠️⚠️ TASK 0's [sub_shield].  Both row lemmas demand             *)
+(*     A1.  ⭕⚠️⚠️ TASK 0's [sub_shield] — and it is NOT SUPPLIABLE, because  *)
+(*          [main_forall] ITSELF IS FALSE (machine-checked 2026-08-03,     *)
+(*          cex/probe_double_occ_run.v).  Both row lemmas demand           *)
 (*          [forall α, sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] and the     *)
 (*          join does not supply it.  prop_sub_shield_supply.v discharges  *)
 (*          it for a flex-free / atomic / mono-counterpart /               *)
 (*          inh-free-counterpart / ∀-free [P0].  ⚠️⚠️ For a [P0] carrying a  *)
-(*          ∀ below its head NO GENERAL SUPPLY EXISTS: the positional      *)
-(*          index is REFUTED AT A REACHABLE ForallL NODE by the           *)
-(*          DOUBLE-OCCURRENCE witness (cex/cex_p7_shield_double_occ.v,     *)
-(*          2026-08-03) — subject [α → α], the tag discharged at the       *)
-(*          DOMAIN copy of the guess while the CODOMAIN copy is           *)
-(*          ForallL-INSTANTIATED against the raw flexible's mono-ish      *)
-(*          counterpart, and the guard [α ∈ ftv R'] is MET at the stuck   *)
-(*          leaf.  The guard localises WHERE the guess lands but cannot   *)
-(*          see WHAT the derivation does there (match vs instantiate).    *)
-(*          The repair is a FOURTH re-indexing driven by the FILL (an     *)
-(*          inh-free counterpart solves no tags), replayed through the    *)
-(*          P6 tower — DESIGN §14.6.                                      *)
+(*          ∀ below its head the failure is REAL, not an indexing artifact: *)
+(*          at the DOUBLE-OCCURRENCE configuration                         *)
+(*          (cex/cex_p7_shield_double_occ.v — join + fill Qed-inhabited)   *)
+(*          NO [a_sub] run exists ([probe_no_run]): the extract is         *)
+(*          DETERMINISTIC there, the solve THREADS the accumulated pattern *)
+(*          so SE-FlexR overwrites the eq-constraint's yield with the      *)
+(*          flexible, the guess collapses to the vacuous-binder [∀_.f̂],   *)
+(*          and the continuation's domain consistency is scope-stuck.      *)
+(*          Hence the motive instance is FALSE                             *)
+(*          ([probe_motive_instance_false]) and [main_forall 3] with it    *)
+(*          ([probe_main_forall_false]).  The failing [P0] is one the      *)
+(*          TYPING NEVER PRODUCES — thm:complete-subtyping over-quantifies *)
+(*          [P0]; the repair is a PAYLOAD side condition on the MOTIVE     *)
+(*          (the typing's P0-invariant), under which the supply routes     *)
+(*          become total — docs/HANDOFF-completeness-repair.md TASKS 2–3.  *)
 (*                                                                        *)
 (*     ⭐ A2 — CLOSED (2026-08-03), §8b, and DISCHARGED INSIDE §9's ForallL *)
 (*          rows, so it is no longer part of the residual at all.  The two  *)
@@ -1313,12 +1318,20 @@ Qed.
 (*     contexts it recurses at.                                           *)
 (*                                                                        *)
 (*  The assembly itself is §12, and it is done: [main_forall] is its ONE   *)
-(*  hypothesis.  ⚙ That hypothesis is KNOWN-TRUE (it is an instance of the *)
-(*  very theorem being proved), so the conditional bundle is not vacuous — *)
-(*  which is exactly why the residual is stated as [main_forall] and NOT   *)
-(*  as a bald "shield supply" hypothesis: the side conditions under which  *)
-(*  the shield holds are the open question, and guessing them would risk   *)
-(*  a FALSE hypothesis and a vacuously true theorem.                       *)
+(*  hypothesis.  ⚠️⚠️ That hypothesis is REFUTED (2026-08-03,                *)
+(*  cex/probe_double_occ_run.v, [probe_main_forall_false]): [main_forall]  *)
+(*  quantifies over payloads the TYPING never produces, and at the         *)
+(*  double-occ payload the algorithm has no run while the declarative      *)
+(*  solution is Qed-inhabited.  So [a_sub_complete_bundle_holds] and       *)
+(*  [a_sub_complete_thm] below are VACUOUS as stated.  (The earlier "the   *)
+(*  hypothesis is an instance of the very theorem being proved, hence      *)
+(*  known-true" reasoning was CIRCULAR precisely at the paper theorem's    *)
+(*  over-quantification of [P0]; stating the residual as [main_forall]     *)
+(*  rather than a guessed shield supply is what made the falsity           *)
+(*  DETECTABLE instead of silently assumed.)  The repair — a payload side  *)
+(*  condition on the MOTIVE, read off the typing's a_sub call sites — is   *)
+(*  docs/HANDOFF-completeness-repair.md TASKS 2–3; the two theorems stay   *)
+(*  out of README.v until it lands.                                        *)
 (* ===================================================================== *)
 
 
@@ -1378,8 +1391,11 @@ Qed.
     subject the motive carries; the paper's own form is the REFLEXIVE
     instance [R' := κ⌈P⌉ᵘ], so this statement is the weaker-premise one.
 
-    ⚙ It inherits [main_forall] and is therefore NOT yet added to README.v,
-    which indexes UNCONDITIONAL paper claims. *)
+    ⚠️⚠️ It inherits [main_forall], which is REFUTED
+    (cex/probe_double_occ_run.v, [probe_main_forall_false]) — so as stated
+    this theorem is VACUOUS, and it stays OUT of README.v (which indexes
+    unconditional paper claims) until the payload-side-condition repair
+    lands (docs/HANDOFF-completeness-repair.md TASKS 2–3). *)
 Theorem a_sub_complete_thm :
   (forall n, main_forall n) ->
   forall n NM M Θ0 P0 P R' Θ κ Q,

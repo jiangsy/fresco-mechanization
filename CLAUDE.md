@@ -103,22 +103,28 @@ point to the same content.
   (`sub_complete_concl`'s last premise, on the JOIN-side subject),
   `a_sub_complete_thm` carries it as the paper-facing EXTERNAL side
   condition (docs/WF-SIDE-CONDITIONS.md), and every supplier was cheap
-  because the four ghost-heading join rules are SK-only.  What remains
-  is TASK 0's `sub_shield` for a `P0` carrying a ∀ below its head —
-  and ⚠️⚠️ it is now known UNSUPPLIABLE AS STATED: the DOUBLE-OCCURRENCE
-  witness (`cex/cex_p7_shield_double_occ.v`) refutes the positionally
-  indexed premise at a REACHABLE ForallL node (marker at both arrow
-  positions; the tag discharged at the domain copy of the guess, the
-  codomain copy merely instantiated against the raw flexible's
-  mono-ish counterpart, the guard met at the stuck leaf).  The guard
-  localises WHERE the guess lands but cannot see WHAT the derivation
-  does there (match vs instantiate); the repair is a FOURTH
-  re-indexing driven by the FILL, replayed through the P6 tower —
-  DESIGN-completeness-subtyping.md §14.6.  ⚠️ The hypothesis is
-  deliberately `main_forall` — a KNOWN-TRUE statement — and not a
-  guessed "shield supply", which would risk a false hypothesis and a
-  vacuous theorem.  The two flagships are therefore NOT yet in
-  README.v, which indexes unconditional paper claims.
+  because the four ghost-heading join rules are SK-only.  What remained
+  was TASK 0's `sub_shield` for a `P0` carrying a ∀ below its head —
+  and ⚠️⚠️ the residual hypothesis `main_forall` is now REFUTED,
+  machine-checked (2026-08-03, `cex/probe_double_occ_run.v`): at the
+  DOUBLE-OCCURRENCE configuration (`cex/cex_p7_shield_double_occ.v`,
+  join + fill Qed-inhabited) NO `a_sub` run exists (`probe_no_run`) —
+  the extract is deterministic there, the solve THREADS its accumulated
+  pattern so SE-FlexR overwrites the eq-constraint's yield with the
+  flexible, the guess collapses to the vacuous-binder `∀_.f̂`, and the
+  continuation's domain consistency is scope-stuck — so the motive
+  instance is false (`probe_motive_instance_false`) and `main_forall`
+  with it (`probe_main_forall_false`).  The bundle and
+  `a_sub_complete_thm` are therefore VACUOUS as stated, and the two
+  flagships stay OUT of README.v (which indexes unconditional paper
+  claims).  ⭐ The failing payload is one the TYPING never produces:
+  thm:complete-subtyping OVER-QUANTIFIES `P0`, and the failing shape is
+  exactly the shield saga's residual (a ∀ below `P0`'s head at a
+  consis-feeding position) while `prop_sub_shield_supply.v`'s covered
+  shapes are the reachable ones.  The repair — a payload side condition
+  on the MOTIVE, read off the typing's `a_sub` call sites and the
+  implementation's spine collection — is
+  `docs/HANDOFF-completeness-repair.md` TASKS 2–3.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
