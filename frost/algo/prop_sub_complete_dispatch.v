@@ -61,10 +61,13 @@ Require Import src.frost.def_tags.
 Require Import src.frost.prop_basic.
 
 Require Import src.frost.algo.prop_inc.
+Require Import src.frost.algo.prop_compose.
+Require Import src.frost.algo.prop_flex.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_consis_sound.
+Require Import src.frost.algo.prop_consis_complete.
 Require Import src.frost.algo.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_sub_complete_thm.
 
@@ -348,3 +351,259 @@ Qed.
 (*     refinement premise off the subject's HOLE-FREE erasure.  That is    *)
 (*     the piece to build first.                                          *)
 (* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  §3  THE TRANSFER, COMPLETED — the two shapes §1 left open              *)
+(*                                                                        *)
+(*  §1 pins the pre-image at every shape a monotype PAINTING misses.  Two  *)
+(*  shapes it does NOT miss still have to be settled, because the join     *)
+(*  reaches them: a VARIABLE image (only a variable can have one) and an   *)
+(*  [uskl_all_syn] image (which a painting could have, were the image not  *)
+(*  a MONOTYPE — that is what [a_inc] supplies).                           *)
+(* ===================================================================== *)
+
+(** Only a variable's image is a variable: every other node of
+    [msubst_uskl_syn] is a congruence. *)
+Lemma msubst_uskl_syn_var_inv : forall κ R β,
+  msubst_uskl_syn κ R = uskl_var_f β ->
+  exists α, R = uskl_var_f α.
+Proof.
+  intros κ R β He; destruct R; cbn in He; try discriminate He.
+  eexists; reflexivity.
+Qed.
+
+(** …and the [uskl_all_syn] escape of [msubst_uskl_syn_all_syn_inv] is
+    CLOSED once the images are known to be monotypes: [ptyp_to_uskl_syn τ]
+    is a ∀ only for [τ = ptyp_all _], which is not [mono_ptyp]. *)
+Lemma msubst_uskl_syn_all_syn_inv_mono : forall Θ0 κ Θ R X,
+  κ ∷ Θ0 ⊑ Θ ->
+  msubst_uskl_syn κ R = uskl_all_syn X ->
+  exists R0, R = uskl_all_syn R0 /\ msubst_uskl_syn κ R0 = X.
+Proof.
+  intros Θ0 κ Θ R X Hinc He.
+  destruct (@msubst_uskl_syn_all_syn_inv κ R X He) as [Hall | [α ->]];
+    [ exact Hall | exfalso ].
+  cbn in He.
+  pose proof (@a_inc_lookup_mono Θ0 κ Θ α Hinc) as Hm.
+  destruct (msubst_lookup κ α); cbn in He; try discriminate He.
+  inversion Hm.
+Qed.
+
+(* ===================================================================== *)
+(*  §4  THE RIGID-SUBJECT REFUTATION                                       *)
+(*                                                                        *)
+(*  At the [__arrow] row the motive's subject [R] may be a bare VARIABLE   *)
+(*  (§1).  If that variable is FLEXIBLE in [Θ0] the dispatcher enters P7a  *)
+(*  through [a_sub__flex_mono]; if it is RIGID, NO [a_sub] rule fires at   *)
+(*  an FN mode, so the configuration must be refuted from the solution.    *)
+(*  It is: a rigid variable is untouched by [κ], and ⇓ separates it from   *)
+(*  an arrow ([a_tyequiv_downarrow] is a congruence and ⇓ of an arrow is    *)
+(*  an arrow).                                                            *)
+(* ===================================================================== *)
+
+(** ⇓ only ever rewrites FLEXIBLE variables. *)
+Lemma aenv_msubst_dom_flex : forall Θ α,
+  α `in` dom (aenv_msubst Θ) ->
+  a_flex_tvar Θ α.
+Proof.
+  induction Θ as [ | [β b] Θ' IH ]; intros α Hin; cbn in Hin;
+    [ exfalso; clear - Hin; fsetdec | ].
+  destruct b as [ | A | P | | τ ]; cbn in Hin;
+    try (destruct (IH α Hin) as [Hb | [τ0 Hb]];
+         [ left | right; exists τ0 ]; unfold binds; cbn; right; exact Hb).
+  - (* β ~ flex_mono *)
+    destruct (α == β) as [-> | Hne];
+      [ left; unfold binds; cbn; left; reflexivity | ].
+    assert (Hin' : α `in` dom (aenv_msubst Θ')) by (clear - Hin Hne; fsetdec).
+    destruct (IH α Hin') as [Hb | [τ0 Hb]];
+      [ left | right; exists τ0 ]; unfold binds; cbn; right; exact Hb.
+  - (* β ~ flex_mono_def τ *)
+    destruct (α == β) as [-> | Hne];
+      [ right; exists τ; unfold binds; cbn; left; reflexivity | ].
+    assert (Hin' : α `in` dom (aenv_msubst Θ')) by (clear - Hin Hne; fsetdec).
+    destruct (IH α Hin') as [Hb | [τ0 Hb]];
+      [ left | right; exists τ0 ]; unfold binds; cbn; right; exact Hb.
+Qed.
+
+(** …so a rigid variable is its own ⇓-normal form. *)
+Lemma downarrow_rigid : forall Θ α,
+  uniq Θ ->
+  binds α abind_tvar Θ ->
+  ⇓ᵗ[Θ] (ptyp_var_f α) = ptyp_var_f α.
+Proof.
+  intros Θ α Huq Hb. cbn.
+  apply msubst_lookup_notin.
+  intro Hin.
+  destruct (@aenv_msubst_dom_flex Θ α Hin) as [Hbf | [τ Hbf]];
+    pose proof (binds_unique _ _ _ _ _ Hb Hbf Huq) as Hc; discriminate Hc.
+Qed.
+
+(** THE REFUTATION.  A rigid [α] is never ≡ᵗ an arrow. *)
+Lemma tyequiv_arrow_rigid_absurd : forall Θ α τ1 τ2,
+  a_wf_aenv Θ ->
+  binds α abind_tvar Θ ->
+  Θ ⊢ (ptyp_arrow τ1 τ2) ≡ᵗ (ptyp_var_f α) ->
+  False.
+Proof.
+  intros Θ α τ1 τ2 Hwf Hb Heq.
+  pose proof (a_tyequiv_downarrow Hwf Heq) as Hdn.
+  rewrite (@downarrow_rigid Θ α (a_wf_aenv_uniq Hwf) Hb) in Hdn.
+  cbn in Hdn. discriminate Hdn.
+Qed.
+
+(** …and hence a rigid subject cannot meet the join's ARROW row.  This is
+    the sub-case of §1's arrow escape that does NOT go into P7a. *)
+Lemma slack_arrow_rigid_absurd : forall Θ0 κ Θ α R1' R2',
+  a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+  κ ∷ Θ0 ⊑ Θ ->
+  binds α abind_tvar Θ0 ->
+  Θ ⊢ (uskl_arrow R1' R2') ≡ᵘ (msubst_uskl_syn κ (uskl_var_f α)) ->
+  False.
+Proof.
+  intros Θ0 κ Θ α R1' R2' Hwf0 Hwf Hinc Hb Hslack.
+  assert (Hnd : α `notin` dom κ)
+    by (eapply a_inc_tvar_notin_dom; [ exact Hinc | exact Hwf0 | exact Hb ]).
+  assert (HbΘ : binds α abind_tvar Θ)
+    by (eapply a_inc_binds_tvar; [ exact Hinc | exact Hb ]).
+  cbn in Hslack. rewrite (msubst_lookup_notin κ Hnd) in Hslack.
+  destruct (@a_uskl_tyequiv_mono_r_inv Θ _ _ Hslack (ptyp_var_f α) eq_refl
+              (mono_ptyp__var α) (@a_wf_ptyp__var Θ α (or_introl HbΘ)))
+    as [τ' [Heqτ' [Hm' [Hwf' Heq']]]].
+  destruct τ'; cbn in Heqτ'; try discriminate Heqτ'.
+  eapply tyequiv_arrow_rigid_absurd; [ exact Hwf | exact HbΘ | exact Heq' ].
+Qed.
+
+(* ===================================================================== *)
+(*  §5  THE STUCK-CHECK — a RIGID head that [P0] depends on is REFUTED     *)
+(*                                                                        *)
+(*  A rigid head [β] with [β ∈ ftv P0] matches NO [a_sub_flex] rule: it    *)
+(*  cannot enter Ξ ([a_decls] holds only flexible declarations) and        *)
+(*  [Flex-SkipRigid] needs [β ∉ ftv P0].  So the dispatcher must refute    *)
+(*  that configuration from the SOLUTION.                                  *)
+(*                                                                        *)
+(*  ⚠️ THE CHAIN IS NOT CONSISTENCY'S.  There ([assign_complete_step]'s     *)
+(*  rigid-head case, prop_consis_complete.v:5000-5090) the pattern IS the  *)
+(*  join's subject, so [ad_pat_consis_rigid_ftv_rev_scoped] closes it in   *)
+(*  one step.  Here [P0] sits on the FILL side ([Θ ⊢ᵣ inh{κP0} ⊳ Q]) and   *)
+(*  the join's subject is [κα̂], so the chain must run                      *)
+(*                                                                        *)
+(*    β ∈ ftv P0  ⟹  β ∈ ftv (κP0)  ⟹  β ∈ ftv Q  ⟹  β ∈ ftv (κα̂)         *)
+(*                                                                        *)
+(*  whose last step is "the SUBJECT confines the TARGET" — FALSE for the   *)
+(*  join in general ([ad_pat_sub_gv__ghost] gives a ◇ subject an arbitrary *)
+(*  target).  ⭐ What makes it TRUE here is that the walk's subject is a    *)
+(*  MONOTYPE, and P7a's [Flex-SkipRigid] row already built exactly that    *)
+(*  confinement: [sub_gv_bskl_downarrow_mono_scoped] (the ⇓-form, which is *)
+(*  also what absorbs the motive's ≡ᵘ slack — ≡ᵗ does not preserve         *)
+(*  ftv-scoping but it does preserve ⇓) composed with the FILL's           *)
+(*  [refine_syn_f_downarrow_source_ftv].  So §5 is steps 0–4 of            *)
+(*  [a_sub_flex_complete_skip_rigid] read as a REFUTATION.                 *)
+(* ===================================================================== *)
+
+Lemma sub_flex_rigid_head_absurd :
+  forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
+  a_decls Ξ ->
+  dom Ξ [<=] ftvar_in_pskl P0 ->
+  a_wf_aenv (Ξ ++ (β ~ abind_tvar) ++ Θ0) ->
+  a_wf_aenv Θ ->
+  (Ξ ++ (β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_flex_tvar Θ0 α ->
+  β `in` ftvar_in_pskl P0 ->                       (* the STUCK configuration *)
+  κ ∷ (Ξ ++ (β ~ abind_tvar) ++ Θ0) ⊑ Θ ->
+  Θ ⊢ R' ≡ᵘ (ptyp_to_uskl_syn (msubst_lookup κ α)) ->
+  ad_pat_sub_gv n NM (mode_fn M) Ψ Θ R' Q ->
+  ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
+  False.
+Proof.
+  intros n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q
+         HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα Hβin Hinc Hslack HD Hrs.
+  (* ---- 0. the context, and the subject's binding ---- *)
+  assert (Huq : uniq (Ξ ++ (β ~ abind_tvar) ++ Θ0))
+    by (apply a_wf_aenv_uniq; exact Hwf).
+  assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
+  assert (Hwf' : a_wf_aenv (Ξ ++ Θ0))
+    by (eapply a_wf_aenv_strip_mid; [ exact HdeclsΞ | exact Hwf ]).
+  assert (HwfΘ0 : a_wf_aenv Θ0) by (eapply a_wf_aenv_app_r; exact Hwf').
+  assert (Hαb0 : a_binds_tvar α Θ0)
+    by (destruct Hfα as [h | [τ0 h]];
+        [ right; left; exact h | right; right; exists τ0; exact h ]).
+  assert (Hαbfull : a_binds_tvar α (Ξ ++ (β ~ abind_tvar) ++ Θ0)).
+  { destruct (a_flex_tvar_app_weaken (Ξ ++ (β ~ abind_tvar)) Hfα)
+      as [h | [τ0 h]];
+      [ right; left | right; right; exists τ0 ]; simpl_env in h; exact h. }
+  assert (Hbβ : binds β abind_tvar (Ξ ++ (β ~ abind_tvar) ++ Θ0))
+    by (simpl_env; apply binds_app_3; apply binds_app_2;
+        unfold binds; simpl; left; reflexivity).
+  (* ---- 1. peel Ξ off κ, then invert the RIGID middle ---- *)
+  destruct (@a_inc_strip_decls_prefix Ξ ((β ~ abind_tvar) ++ Θ0) κ Θ HdeclsΞ
+              Hinc)
+    as [κa [κb [Heqκ [Hdκa Hincxb]]]].
+  destruct (a_inc_tvar_inv Hincxb) as [Ξv [Θ' [HeqΘ [HsufΞv Hincb]]]].
+  assert (HwfΘ' : a_wf_aenv Θ').
+  { rewrite HeqΘ in Hwfth.
+    eapply a_wf_aenv_app_r with (Θp := Ξv ++ (β ~ abind_tvar)).
+    simpl_env. simpl_env in Hwfth. exact Hwfth. }
+  assert (HeqW : (Ξv ++ (β ~ abind_tvar)) ++ Θ' = Θ)
+    by (rewrite HeqΘ; simpl_env; reflexivity).
+  assert (HβΘ' : β `notin` dom Θ').
+  { rewrite HeqΘ in HuqΘ. clear - HuqΘ. simpl_env in HuqΘ. solve_uniq. }
+  (* ---- 2. the subject is a MONO painting, and ⇓ pins it to [κα̂] ---- *)
+  assert (Hmκα : mono_ptyp (msubst_lookup κ α))
+    by (eapply a_inc_lookup_mono; exact Hinc).
+  assert (Hwfκα : a_wf_ptyp Θ (msubst_lookup κ α))
+    by (eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf | exact Hαbfull ]).
+  destruct (a_uskl_tyequiv_mono_r_inv Hslack
+              (eq_refl (ptyp_to_uskl_syn (msubst_lookup κ α))) Hmκα Hwfκα)
+    as [τ' [HeqR' [Hmτ' [Hwfτ' Heqττ']]]].
+  subst R'.
+  assert (Hddτ' : ⇓ᵗ[ Θ ] τ' = ⇓ᵗ[ Θ ] (msubst_lookup κ α))
+    by (apply a_tyequiv_downarrow; [ exact Hwfth | exact Heqττ' ]).
+  (* ---- 3. the subject's image is scoped in the TRUNCATION ---- *)
+  assert (Hακa : α `notin` dom κa).
+  { rewrite Hdκa.
+    assert (hd : α `in` dom Θ0)
+      by (destruct Hfα as [Hb | [? Hb]]; apply binds_In in Hb; exact Hb).
+    clear - Huq hd. simpl_env in Huq. solve_uniq. }
+  assert (Hwfα' : a_wf_ptyp Θ' (msubst_lookup κ α)).
+  { rewrite Heqκ. rewrite (msubst_lookup_app_notin κa κb Hακa).
+    eapply a_inc_lookup_wf; [ exact Hincb | exact HwfΘ0 | exact Hαb0 ]. }
+  assert (Hftvα : ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θ')
+    by (apply a_wf_ptyp_ftv_dom; exact Hwfα').
+  assert (Hddα : ⇓ᵗ[ Θ ] (msubst_lookup κ α) = ⇓ᵗ[ Θ' ] (msubst_lookup κ α)).
+  { rewrite <- HeqW.
+    apply downarrow_app_agree_ptyp; [ rewrite HeqW; exact HuqΘ | exact Hftvα ]. }
+  assert (HO1 : ftvar_in_ptyp (⇓ᵗ[ Θ ] τ') [<=] dom Θ').
+  { rewrite Hddτ'. rewrite Hddα. apply a_wf_ptyp_ftv_dom.
+    apply a_wf_ptyp_downarrow_mono;
+      [ exact HwfΘ' | exact Hwfα' | exact Hmκα ]. }
+  (* ---- 4. the JOIN's ⇓-confinement, and the FILL's source below it ---- *)
+  assert (Hmono_img : forall γ, mono_ptyp (msubst_lookup (aenv_msubst Θ) γ))
+    by (intros; apply aenv_msubst_image_mono; exact Hwfth).
+  assert (HO2 : ftvar_in_bskl (⇓ᵇ[ Θ ] Q) [<=] dom Θ').
+  { eapply sub_gv_bskl_downarrow_mono_scoped;
+      [ exact HD | exact Hwfth | reflexivity | exact Hmτ' | exact HO1 ]. }
+  assert (Heqinh : ⇓ᵇ[ Θ ] (pskl_to_bskl_inh (msubst_pskl κ P0))
+                   = pskl_to_bskl_inh (⇓ˢ[ Θ ] (msubst_pskl κ P0)))
+    by (apply msubst_bskl_pskl_to_bskl_inh; exact Hmono_img).
+  assert (HO3 : ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P0)) [<=] dom Θ').
+  { pose proof (refine_syn_f_downarrow_source_ftv Hrs Hwfth
+                  ltac:(intros x Hx; exfalso; clear - Hx; fsetdec)) as h.
+    rewrite Heqinh in h. rewrite ftvar_in_bskl_inh in h.
+    clear - h HO2. fsetdec. }
+  (* ---- 5. …but β SURVIVES the solution, and it is NOT in the truncation ---- *)
+  assert (HβκP0 : β `in` ftvar_in_pskl (msubst_pskl κ P0))
+    by (eapply rigid_survives_solution;
+        [ exact Hinc | exact Hwf | exact Hbβ | exact Hβin ]).
+  assert (HβΘdn : β `notin` dom (aenv_msubst Θ)).
+  { intro Hin.
+    assert (HbβΘ : binds β abind_tvar Θ)
+      by (eapply a_inc_binds_tvar; [ exact Hinc | exact Hbβ ]).
+    destruct (@aenv_msubst_dom_flex Θ β Hin) as [Hbf | [τ0 Hbf]];
+      pose proof (binds_unique _ _ _ _ _ HbβΘ Hbf HuqΘ) as Hc; discriminate Hc. }
+  assert (Hβdn : β `in` ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P0)))
+    by (apply msubst_pskl_ftv_notin_dom; [ exact HβΘdn | exact HβκP0 ]).
+  clear - Hβdn HO3 HβΘ'. fsetdec.
+Qed.
+
+Print Assumptions sub_flex_rigid_head_absurd.
+Print Assumptions slack_arrow_rigid_absurd.
