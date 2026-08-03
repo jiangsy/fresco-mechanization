@@ -97,18 +97,28 @@ point to the same content.
   dispatch (`p0_wlog_trichotomy` + `main_all_inh_counterpart`), so
   `main_forall` now TAKES the WLOG as a hypothesis instead of owing
   it.  ⭕ **ONE residual: the bundle takes `forall n, main_forall n`
-  as a hypothesis**, and it has exactly TWO components — (1) TASK 0's
-  `sub_shield` supply for a `P0` carrying a ∀ below its head (boundary
-  machine-checked, `cex/cex_p7_shield_forall_flex.v`), and (2) ⚠️ the
-  ForallL rows' `NM = TY -> uskl_ghost_free …`, which is NOT derivable
-  from the join (the four ghost-heading rules are SK-only, but
-  `__arrow`'s domain leaf and `__infer` accept an arbitrary subject) —
-  an EXTERNAL side condition now registered in
-  docs/WF-SIDE-CONDITIONS.md, whose fix is a MOTIVE change.  ⚠️ The
-  hypothesis is deliberately `main_forall` — a KNOWN-TRUE statement —
-  and not a guessed "shield supply", which would risk a false
-  hypothesis and a vacuous theorem.  The two flagships are therefore
-  NOT yet in README.v, which indexes unconditional paper claims.
+  as a hypothesis**, and (2026-08-03, later) it is down to ONE
+  component.  ⭐ The former second component — the ForallL rows'
+  `NM = TY -> uskl_ghost_free …` — is CLOSED: it sits ON THE MOTIVE
+  (`sub_complete_concl`'s last premise, on the JOIN-side subject),
+  `a_sub_complete_thm` carries it as the paper-facing EXTERNAL side
+  condition (docs/WF-SIDE-CONDITIONS.md), and every supplier was cheap
+  because the four ghost-heading join rules are SK-only.  What remains
+  is TASK 0's `sub_shield` for a `P0` carrying a ∀ below its head —
+  and ⚠️⚠️ it is now known UNSUPPLIABLE AS STATED: the DOUBLE-OCCURRENCE
+  witness (`cex/cex_p7_shield_double_occ.v`) refutes the positionally
+  indexed premise at a REACHABLE ForallL node (marker at both arrow
+  positions; the tag discharged at the domain copy of the guess, the
+  codomain copy merely instantiated against the raw flexible's
+  mono-ish counterpart, the guard met at the stuck leaf).  The guard
+  localises WHERE the guess lands but cannot see WHAT the derivation
+  does there (match vs instantiate); the repair is a FOURTH
+  re-indexing driven by the FILL, replayed through the P6 tower —
+  DESIGN-completeness-subtyping.md §14.6.  ⚠️ The hypothesis is
+  deliberately `main_forall` — a KNOWN-TRUE statement — and not a
+  guessed "shield supply", which would risk a false hypothesis and a
+  vacuous theorem.  The two flagships are therefore NOT yet in
+  README.v, which indexes unconditional paper claims.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),

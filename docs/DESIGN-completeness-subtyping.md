@@ -4795,6 +4795,64 @@ the hypothesis is now known to be SATISFIABLE, and the positional index is the
 handle a general supply proof gets to use (it need only shield positions the
 guess actually reaches).  The dispatcher (§12) is next.
 
+### ⚠️⚠️ §14.6 REFUTED AGAIN (2026-08-03, later): the positional index is STILL over-strong — the DOUBLE-OCCURRENCE witness
+
+`cex/cex_p7_shield_double_occ.v`, all Qed, axiom-free.  §14.5's "known
+SATISFIABLE" claim was true but did not settle the general supply, and the
+supply question is now settled in the NEGATIVE.
+
+**The witness is §14.1's with the marker DUPLICATED.**  Take the SAME
+`Θ0 = α̂`, `P0 = (∀γ.γ→γ) → α̂`, `ψa = ∀^e β.β→β` (tagged, compound body), and
+change only
+
+    R = ∀^t.(□₀ → □₀)          the ∀-binder occurs at BOTH arrow positions
+    κ = α̂ ↦ unit→unit           (so the codomain counterpart is an arrow)
+    Q = (∀ᵢ.β→β) → (unit→unit)
+
+Every hypothesis of `a_sub_complete_forall_l_tagged` other than the shield is
+machine-checked inhabited (`p7_sub_shield_positional_over_strong`): the JOIN
+holds because the tag `e` is still discharged at the arrow's DOMAIN — exactly
+as in §14.1 — while the CODOMAIN copy of the guess is merely
+ForallL-INSTANTIATED (with `unit`) against the mono-ish counterpart the fill
+pins at the raw flexible, which costs NO tag (`join_cod_d`: an inner
+`__forall_l_tagged` with guess `unit`, then `__check`).  And the join can only
+have ended in ForallL there (`join_at_Rd_is_forall_l`).  But the shield's
+subject is now `open (□₀ → □₀) α = α → α`: one `sss_arrow_r` step reaches
+`(α̂, α)`, **the guard `α ∈ ftv α` is MET**, and the leaf is
+`cex_p7_shield_forall_flex.v`'s stuck shape — so the premise is FALSE at every
+marker (`p7_sub_shield_double_fails`), fresh ones included.
+
+**What the guard cannot see.**  The positional index localised the demand to
+the positions the guess REACHES; what it cannot express is WHAT THE DERIVATION
+DOES there.  With the marker at two positions the derivation treats the two
+copies of the guess DIFFERENTLY — the domain copy is MATCHED against the
+inherited ∀ of `Q` (its tag solved by `__forall_inh_tagged`), the codomain
+copy is INSTANTIATED against an inh-free counterpart (no tag solved) — while
+`flex_shield` demands, at every guarded position, protection of the WHOLE
+guess, tag included.  The failure is precisely a raw flexible paired with a
+guess copy the derivation instantiates.
+
+**Consequence for P7c.**  NO general supply of the CURRENT `sub_shield`
+exists: `main_forall n` cannot be discharged through
+`a_sub_complete_forall_l_tagged` as stated, so the bundle's hypothesis STAYS
+until the shield is re-indexed a fourth time.  The bundle and both flagships
+remain honest (conditional on the KNOWN-TRUE `main_forall`).
+
+**The repair direction the witness dictates.**  The next index must
+distinguish positions by what the join does at them — MATCH vs INSTANTIATE —
+and the FILL is the handle that pins it: at a raw Θ0-flexible of `P0` the
+counterpart is the refinement of a monotype painting, hence `bskl_inh_free`
+(`ad_refine_mono_paint_rhs_monoish` / `ad_refine_syn_inh_free`), and an
+inh-free counterpart solves NO tags (`ad_pat_sub_g_inh_free_tag_free`).  So at
+exactly the positions where `flex_shield`'s stuck leaf bites, the guess copy
+is provably instantiated.  The open research question is what P6-Sv's LS-Var
+leaf needs at an INSTANTIATED position — the current `fsh_clean`/`fsh_flexfree`
+dichotomy is what must be relaxed there, and the relaxation has to be replayed
+through P6-Sv → P6-Ss → P6-L → both P7b ForallL rows.  ⚠️ Note the counterpart
+index cannot be bolted onto `sub_shield` alone: `flex_shield` is CONSUMED by
+P6-Sv, whose statement has no fill in scope — threading the counterpart (or an
+inh-free bit) through the P6 tower is the actual cost to estimate first.
+
 ### ⭐⭐ §12.2 LANDED (2026-08-03): all three layers, and the two obstacles that remain
 
 `frost/algo/prop_sub_complete_dispatch.v` is now §1–§10, 1093 lines, every
@@ -5002,32 +5060,35 @@ closures are `exact I` and the third hands back `flex_here n Θ0`, i.e.
 `flex_step` at `Ξ = nil`.  `a_sub_complete_thm` (algorithmic.tex:1446) follows
 as the `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.
 
-⭕ **THE RESIDUAL is `main_forall n`, and it has exactly TWO components** — a
-count worth stating, because §12.2 listed only one of them and the P7c
-hand-off listed only the other:
+⭕ **THE RESIDUAL is `main_forall n`, and (2026-08-03, later) it is down to
+ONE component** — the count's history matters, because §12.2 listed only one
+of the two and the P7c hand-off listed only the other:
 
 1. **TASK 0's `sub_shield`** for a `P0` carrying a `∀` below its head.
-2. ⚠️ **`NM = TY -> uskl_ghost_free (uskl_all_etag ε Rj)`** — the ForallL rows'
-   third premise, which is the last premise of `ad_pat_sub_precise_upre_gv`
-   (P5's precision-substitution transport; P5 threads the same predicate
-   through every lemma of the pack).  **It is NOT derivable from the join**,
-   and the near-miss is the trap: all four rules that put a ghost AT THE HEAD
-   of the subject (`__ghost`, `__ghostg`, `__univ_ghost_l`, `__univ_ghost_lg`)
-   are SK-only, so ghost-freeness *looks* like a TY invariant — but
-   `__arrow`'s DOMAIN is an arbitrary consistency leaf with no sort
-   constraint, and `__infer` accepts an arbitrary subject, so a ghost can sit
-   inside a TY join's subject.  It is an EXTERNAL side condition, now
-   registered in docs/WF-SIDE-CONDITIONS.md.  Closing it means putting it ON
-   THE MOTIVE at `NM = TY`, which every recursing row then owes for its
-   recursive subject (Sub-Arrow at `R2`, Sub-ForallR, both Sub-ForallL rows,
-   and P7a's Flex-Assign / Flex-Solve).  **That is a motive change, not an
-   assembly step** — decide it deliberately.
-  ⚠️ **Why the hypothesis is `main_forall` and not a "shield
+   ⚠️⚠️ **Now known UNSUPPLIABLE as stated** — the double-occurrence witness
+   (§14.6, cex/cex_p7_shield_double_occ.v) refutes the premise at a reachable
+   ForallL node, so the residual closes only after the shield's FOURTH
+   re-indexing (match-vs-instantiate; the fill pins which), replayed through
+   the P6 tower.
+2. ⭐ **CLOSED (2026-08-03): `NM = TY -> uskl_ghost_free R'`** is ON THE
+   MOTIVE — `sub_complete_concl`'s last premise, on the JOIN-side subject,
+   with `a_sub_complete_thm` carrying it as the external side condition
+   (WF-SIDE-CONDITIONS.md).  The suppliers were exactly the predicted six and
+   all cheap: Sub-Arrow inverts, Sub-ForallR passes through, both ForallL
+   rows' construction became the shared `Hgfswap` assert (their own `Hgfj`
+   hypothesis DELETED — the motive supplies it), Flex-Assign derives it from
+   the walk's ≡ᵘ-to-a-painting slack (`tyequiv_mono_paint_ghost_free`),
+   Flex-Solve from the deposited painting, and the dispatcher's
+   `__univ_ghost_l/lg` / `__flex_mono` cases by `discriminate` /
+   `mono_ptyp_to_uskl_syn_ghost_free`.
+
+⚠️ **Why the hypothesis is `main_forall` and not a "shield
 supply".**  It is tempting to state the residual as the thing actually
 missing — some `forall α, sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa` under side
-conditions.  Do NOT: the side conditions are precisely the open question, and
+conditions.  Do NOT: the side conditions are precisely the open question,
 `sub_shield_forall_flex_p0_fails` (cex/cex_p7_shield_forall_flex.v) shows the
-unguarded form is FALSE.  A false hypothesis makes the conditional theorem
+unguarded form is FALSE, and §14.6 now shows the guarded form is false TOO at
+a reachable node.  A false hypothesis makes the conditional theorem
 vacuously true and worthless.  `main_forall n` is KNOWN-TRUE — it is an
 instance of the very theorem being proved — so the conditional bundle is
 honest and non-vacuous.  Keep it.

@@ -78,7 +78,63 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS ASSEMBLED**: P7a's last two rows, the ForallL/ForallR join permutation, and `a_sub_complete_bundle_holds` — one hypothesis left
+## 2026-08-03 (latest) — ⭐ ghost-freeness ON THE MOTIVE (residual component 2 CLOSED) + ⚠️⚠️ the shield's positional index REFUTED AGAIN: the DOUBLE-OCCURRENCE witness
+
+`make coq` green, admit-free, axiom-free; every flagship
+`Print Assumptions`-clean.  The P7c hand-off's Step A is DONE and its Step B
+is SETTLED — in the negative.
+
+**Step A — the TY ghost-freeness is ON THE MOTIVE.**  `sub_complete_concl`
+gained the guarded last premise `NM = a_sub_mode_ty -> uskl_ghost_free R'` on
+the JOIN-side subject; `a_sub_complete_thm` carries it as the paper-facing
+EXTERNAL side condition (WF-SIDE-CONDITIONS.md updated — at the reflexive
+instance `R' := κ⌈P⌉ᵘ` it is ghost-freeness of the input).  The two ForallL
+rows DROPPED their own `Hgfj` hypothesis (the motive supplies it; their
+construction is the shared `Hgfswap` assert, consumed by both the
+`ad_pat_sub_precise_upre_gv` swap and the IH).  Suppliers, all cheap and all
+landing FIRST TRY: Sub-Arrow inverts the arrow's; Sub-ForallR passes the same
+subject through; Flex-Assign derives it OUTRIGHT from the walk's own
+≡ᵘ-to-a-monotype-painting slack (new helper `tyequiv_mono_paint_ghost_free`);
+Flex-Solve from the deposited painting; the dispatcher's `__univ_ghost_l/lg`
+by `discriminate` (SK-only rows) and `__flex_mono` by
+`mono_ptyp_to_uskl_syn_ghost_free` + `a_wf_aenv_binds_def_mono`.  ⭐ The whole
+reason this was tractable: every ghost-heading join rule is SK-only, so all
+SK-side suppliers are vacuous.
+
+**Step B — ⚠️⚠️ the general shield supply DOES NOT EXIST: the positional
+index is still over-strong.**  `cex/cex_p7_shield_double_occ.v` (all Qed,
+axiom-free, first compile) takes the §14.1 realizable witness and DUPLICATES
+the marker: `R = ∀^t.(□₀ → □₀)`, `κ = α̂ ↦ unit→unit`,
+`Q = (∀ᵢ.β→β) → (unit→unit)`, with `P0 = (∀γ.γ→γ) → α̂` and the tagged guess
+`ψa = ∀^e β.β→β` unchanged.  Every hypothesis of
+`a_sub_complete_forall_l_tagged` except the shield is machine-checked
+inhabited (`p7_sub_shield_positional_over_strong`; the join can only end in
+ForallL there, `join_at_Rd_is_forall_l`) — the tag is still discharged at the
+arrow's DOMAIN while the CODOMAIN copy of the guess is ForallL-INSTANTIATED
+(with `unit`) against the raw flexible's mono-ish counterpart at NO tag cost —
+and the shield is FALSE at every marker (`p7_sub_shield_double_fails`): the
+subject is now `α → α`, one `sss_arrow_r` step reaches `(α̂, α)`, the guard is
+MET, and the leaf is the boundary cex's stuck shape.  ⭐ **What the guard
+cannot see is WHAT THE DERIVATION DOES at a position** — with two marker
+occurrences the two guess copies are treated DIFFERENTLY (domain: MATCHED,
+tag solved against the ∀ᵢ; codomain: INSTANTIATED, no tag solved) while
+`flex_shield` demands whole-guess protection at every guarded position.
+DESIGN §14.6 records the witness and the repair direction: index positions by
+match-vs-instantiate, which the FILL pins (a raw flexible's counterpart is
+`bskl_inh_free`, and an inh-free counterpart solves no tags —
+`ad_pat_sub_g_inh_free_tag_free`); the open question is what P6-Sv's LS-Var
+leaf needs at an INSTANTIATED position, and the relaxation must replay
+through P6-Sv → P6-Ss → P6-L → the P7b ForallL rows.  ⚠️ Nothing to
+PAPER-GAPS.md — `sub_shield` is mech-invented, and the ALGORITHM plainly
+succeeds at the witness.
+
+**Consequence.**  `main_forall n` — now carrying ONLY the shield component —
+STAYS as the bundle's hypothesis (it is KNOWN-TRUE, so the conditional
+flagships remain honest), and the flagships stay out of README.v.  Closing
+subtyping completeness now goes through the shield's FOURTH re-indexing, a
+P6-tower campaign, not an assembly step.
+
+## 2026-08-03 — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS ASSEMBLED**: P7a's last two rows, the ForallL/ForallR join permutation, and `a_sub_complete_bundle_holds` — one hypothesis left
 
 `make coq` green, admit-free, axiom-free.  Everything the P7c hand-off
 (docs/HANDOFF-p7c-finish.md) scoped is done except its TASK 2b, which is TASK
