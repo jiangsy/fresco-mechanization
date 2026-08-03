@@ -107,6 +107,7 @@ point to the same content.
 | [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `paper/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
+| [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: the three tasks that finish subtyping completeness (`a_sub_complete_bundle`) — the two term-variable P7a rows, `main_forall`, the assembly |
 | [`docs/HANDOFF-typ-all-plain-refactor.md`](docs/HANDOFF-typ-all-plain-refactor.md) | Historical hand-off doc from the 2026-05-15 typ_all_plain removal pass |
 | [`../paper/sections/`](../paper/sections/) | Authoritative paper source (mechanize against `declarative.tex`, `syntax-directed.tex`, `algorithmic.tex`, `proofs.tex` only — `*-old.tex` and `*-quantifier-rows.tex` are abandoned drafts) |
 
