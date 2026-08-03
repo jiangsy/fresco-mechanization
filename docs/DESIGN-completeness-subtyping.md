@@ -4446,8 +4446,41 @@ P6-Ss's LS-Var row, where `R' = uskl_var_f α` (prop_look_complete_sub_cstr.v
 :994 and :1482 take the apart half alone).  And it kills the witness exactly:
 after `sss_arrow_r` the subject is `unit`, so no obligation is raised at `α̂`.
 
-**Blast radius** (measured): `prop_look_complete_sub_cstr.v` (the definition, 6
-transports, P6-Ss's two statements, ~14 call sites), `prop_look_complete_extract.v`
-(P6-L ×2), `prop_sub_shield_supply.v`, `prop_sub_complete_thm.v` (P7b's two
-ForallL rows), and three cex files.  `prop_look_complete.v` is NOT touched —
-which is what keeps the rebuild to the P6-tail rather than the whole algo tree.
+The `sub_shield'` prototype (definition + `ss_step'` / `ss_walk'` +
+`ss_walk'_mono` / `_ftv` + all five transports `_here` / `_step` / `_add_fresh`
+/ `_weaken_tvar` / `_weaken_flex_prefix`) is written and compiles clean, so the
+re-indexing itself is mechanically routine.
+
+### ⚠️ §14.3 CORRECTION (same day): the guard alone is NOT enough — `fa_walk` is implicated
+
+§14.2's blast-radius claim above ("`prop_look_complete.v` is NOT touched") is
+**WRONG**, and `apart_w_fails` is what refutes it.  The positional guard is
+SATISFIED at the root (`α ∈ ftvar_in_uskl (α → unit)`), so the root obligation
+is still raised — and its `flex_apart_walk` conjunct is exactly what
+`apart_w_fails` shows to be FALSE.  Guarding `sub_shield` therefore fixes the
+`flex_shield` conjunct and leaves the `flex_apart_walk` one broken.
+
+The culprit is inside `fa_walk` itself: `fastep_p0_arrow_l` / `fastep_p0_arrow_r`
+descend `P0` with the guess FIXED — they exist for P6-Cs, which walks `P0`
+against a fixed guess — and composing one of them with `fastep_all_r` (Sub-ForallL
+opening the guess, which GROWS Δρ) reaches `(α̂, β→β)` at `β ∈ Δρ`, where nothing
+applies.  P6-Sv demands `flex_apart_walk Θ0 Δρ P0 ψa` in that full closure
+(prop_look_complete_sub_var.v, the premise marked "P6-Cv's invariant, ALONG THE
+WALK"), so the closure cannot simply be weakened at the `sub_shield` end.
+
+**Hand-verified (NOT yet machine-checked), and the next thing to settle:**
+without `fastep_p0_arrow_{l,r}` the witness IS satisfiable — with the guess a ∀,
+`fap_arrow_r` cannot fire at the root (it needs BOTH sides to be arrows), so
+`(Δρ, α̂, ψa)` is never reached and neither is `(Δρ, α̂, β→β)`; every reachable
+triple is discharged by `fa_clean` (closed guess) or `fa_rho_var` (the guess is a
+Δρ-variable).  If that holds, the repair splits `fa_walk` in two — the
+POSITIONAL closure P6-Sv demands (no guess-fixed P0 descent) and the P0-only
+`flex_apart_p0` P6-Cs already uses separately (and which is TRUE at the
+witness) — and `prop_look_complete.v` IS in the blast radius after all.
+
+**Corrected blast radius**: `prop_look_complete.v` (`fa_step` / `fa_walk` split
++ their transports — this is the deep one, it rebuilds the algo tail),
+`prop_look_complete_sub_var.v` (P6-Sv's premise), `prop_look_complete_sub_cstr.v`
+(`sub_shield` + 6 transports + P6-Ss's two statements + ~14 call sites),
+`prop_look_complete_extract.v` (P6-L ×2), `prop_sub_shield_supply.v`,
+`prop_sub_complete_thm.v` (P7b's two ForallL rows), and three cex files.
