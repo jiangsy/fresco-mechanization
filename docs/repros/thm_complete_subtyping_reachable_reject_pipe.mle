@@ -1,0 +1,11 @@
+type unit = Unit
+
+val f : forall b . [](b -> b)
+let f x = x
+
+val arg : []((forall c . [](c -> c)) -> unit)
+let arg g = Unit
+
+val pipe : forall r . []( ( (forall b . [](b -> b)) -> r ) -> r )
+
+let test = pipe (fun g -> g arg)

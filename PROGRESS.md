@@ -78,7 +78,53 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⚠️⚠️⭐⭐⭐ THE PROBE IS MACHINE-CHECKED: no `a_sub` run exists at the double-occ payload — `main_forall` is FALSE, thm:complete-subtyping OVER-QUANTIFIES `P0`
+## 2026-08-03 (latest) — ⚠️⚠️⚠️ TASK 2's VERDICT: the failing payload class is TYPING-REACHABLE — a 12-line SOURCE PROGRAM separates decl from algo; the algorithm is INCOMPLETE ON PROGRAMS
+
+Reading the payload invariant off the producers (HANDOFF TASK 2) refuted the
+planned repair's premise instead of supplying it.  Call-site map: every
+`a_sub` payload is the ambient `a_typing`/`a_pat` payload; FN payloads are
+`arrow(P_arg, Q_amb)` with `P_arg` the spine collection's output at TC/◇.
+Two producer facts compose into the cex shape:
+
+1. **The collection ghosts only HEAD quantifiers.**  `a_pat` on an argument
+   typed `(∀c.c→c) → unit` fires SK-ForallL only at a ∀ HEAD; the guarded
+   arrow then goes through `a_sub__univ_ghost_r` VERBATIM — output
+   `⫯((∀c.c→c) → unit)`, the raw ∀ surviving BELOW the head.  The
+   implementation's SI-UnivGhostR (type.ml:1002) is the same rule.
+2. **An undetermined result becomes a fresh flexible.**  When the body's
+   collected skeleton has ◇ at the result (a lambda-bound function applied
+   in the body — LE-Vacuous emits no constraint), the look's guess invents
+   `r̂` and the re-check runs the body at `[tc; r̂]`.
+
+So the typing builds `arrow(⫯((∀c.c→c)→unit), r̂)` — the probe's payload
+shape modulo the ⫯ — and there the FlexR collapse fires for real:
+**met.exe REJECTS**
+
+    val pipe : forall r . []( ( (forall b . [](b -> b)) -> r ) -> r )
+    let test = pipe (fun g -> g arg)        -- arg : []((∀c.[](c→c)) → unit)
+
+with `this expression has type ˆx1 but expected 👻.(∀c.[](c→c)) → unit` —
+the collapsed guess — while the DECLARATIVE side accepts
+(`r := (∀c.[](c→c)) → unit`, impredicatively).  CONTROL: the same program
+with `r` pre-instantiated concretely PASSES met.exe (by soundness that
+certifies the body's declarative check; decl ForallL supplies the
+instantiation).  ABLATION: `arg : [](unit→unit)` PASSES — the collapse
+still happens but the collapsed guess is MONO and Assign-SolveM succeeds.
+The ∀ below the argument type's head is the exact discriminator.  Repros:
+`docs/repros/thm_complete_subtyping_reachable_reject_pipe{,_control_concrete_r,_ablation_no_forall}.mle`.
+
+**Consequence.**  thm:complete-subtyping is false ON PROGRAMS, not merely
+over-quantified; NO payload side condition can make the completeness bundle
+cover all typing-reachable instances (the reachable set contains failing
+ones).  HANDOFF TASK 3 (motive side condition + discharge) is therefore
+INVALID AS SCOPED — what remains provable is completeness on the
+completable class (the supply routes' shapes), which excludes real
+programs.  Restrict the theorem or fix the solve's threading (e.g.
+SolE-FlexR depositing the accumulated pattern as the flexible's definition
+instead of discarding it): an AUTHOR-level decision.  P7c is BLOCKED on it.
+Full entry: docs/PAPER-GAPS.md (2026-08-03); DESIGN §14.8.
+
+## 2026-08-03 — ⚠️⚠️⭐⭐⭐ THE PROBE IS MACHINE-CHECKED: no `a_sub` run exists at the double-occ payload — `main_forall` is FALSE, thm:complete-subtyping OVER-QUANTIFIES `P0`
 
 `cex/probe_double_occ_run.v` rewritten from scaffold to a full Qed
 development (three `Print Assumptions` closed; the tree stays green,
@@ -131,6 +177,9 @@ the reachable ones).  PAPER-GAPS entry is owed WITH the repair: a payload
 side condition on the P7b motive, read off `a_typing`/`a_pat`'s `a_sub`
 call sites + type.ml's spine collection
 (docs/HANDOFF-completeness-repair.md TASKS 2–3).
+⚠️⚠️ *(Superseded later the same day: TASK 2 showed the failing class IS
+typing-reachable — see the top entry.  "Fine on programs" held only for
+collection-determined instantiations.)*
 
 ## 2026-08-03 — ⭐⭐⭐ REVIEW FROM SCRATCH: `flex_shield` is DEAD — deleted from P6-Sv; the precision tag index Ψi identified as the REAL positional handle
 

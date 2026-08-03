@@ -2133,35 +2133,102 @@ paper statement (its residual case is logged in
 docs/DESIGN-completeness-subtyping.md, not here).  Nothing in this entry is a
 defect in the paper's statement or proof.
 
-## RETRACTED same day: the suspected thm:complete-subtyping refutation was a MODE confusion (2026-08-03)
+## ⚠️⚠️ `thm:complete-subtyping` is FALSE — machine-checked at the rule level, AND separated by a SOURCE PROGRAM (2026-08-03)
 
-An earlier revision of this file claimed the closed pair
+**Status: REAL, for the authors.**  Two independent halves, found in this
+order.  (An earlier revision's refutation claim was retracted the same day
+as a mode confusion; the mode audit at the end of this entry survives and
+is part of the finding — the failure lives at FN(TC), where the
+declarative side is strong.)
 
-    A = ∀b. b → b          B = (∀c. c → c) → (unit → unit)
+### Half 1 — the rule-level refutation, machine-checked (`cex/probe_double_occ_run.v`)
 
-refutes thm:complete-subtyping (decl accepts / algorithm rejects).  **That
-claim is WITHDRAWN — the two probes ran the algorithm at the WRONG MODE, and
-at every mode probed the two systems AGREE.**  The audit, for the record:
+At the configuration of `cex_p7_shield_double_occ.v` —
 
-* At **M = TC** (what checking a variable against an annotation invokes —
-  `let g = id2` with `val g : B`): the DECLARATIVE side rejects too.  The
-  Sub-Arrow row concludes only at `fn M`, so at TC an arrow subject can only
-  go through Check → consistency, where the codomain copy of the ForallL
-  guess must MATCH `unit→unit` — and a ∀ does not.  met.exe rejects; correct
-  behaviour, not incompleteness.  (Same for the flexible variant `h id2`.)
-* At **M = FN(TC)** — the mode of the machine-checked join
-  `join_d` (cex/cex_p7_shield_double_occ.v), reachable only from a REAL
-  application — the implementation ACCEPTS: `let test x = id2 idc x` with
-  `val test : [](unit → unit)` and `idc : ∀c. c→c` typechecks
-  (docs/repros/thm_complete_subtyping_fn_tc_passes.mle).  So the algorithm
-  handles the double-occurrence instance (one guess, domain matched,
-  codomain instantiated) at its actual mode.
+    Θ0 = f̂ ~ flex    P0 = (∀γ.γ→γ) → f̂    subject ∀.(□₀→□₀)    NM=TY, M=FN(TC)
 
-Nothing goes to the authors from this episode.  What stands is MECH-side
-only: `cex_p7_shield_double_occ.v` still refutes the mech-invented
-`sub_shield` premise at this (reachable, algorithm-succeeding)
-configuration, so the completeness bundle's residual `main_forall`
-hypothesis — believed TRUE, per the paper's claim and the FN(TC) probe —
-remains undischargeable until the premise is repaired.  The implementation's
-SUCCESS route at `id2 idc` is now the reference for what the repaired
-premise/proof must mirror.
+— the declarative solution is Qed-inhabited (`join_d` + `fill_d`), and **no
+`a_sub` run exists** (`probe_no_run`, all `Print Assumptions` closed).  The
+forced trace: ForallL is the only entry; the extract is DETERMINISTIC
+(`probe_extract_det`) — looksub collects `[eq (∀γ.γ→γ); sub tc f̂]`, the
+solve THREADS its accumulated pattern so SolE-FlexR (whose output IS the
+flexible) overwrites the eq-constraint's yield, the guess collapses to the
+vacuous-binder `∀_.f̂` — and the continuation's domain consistency is
+scope-stuck (one Assign-SkipRigid inversion).  Consequently the P7b motive
+instance is false (`probe_motive_instance_false`) and `main_forall` — the
+completeness assembly's ONE hypothesis — is REFUTED
+(`probe_main_forall_false`).
+
+### Half 2 — the failing payload IS typing-reachable: a source program separates the two systems
+
+The `id2 idc` probe (below) had suggested the typing never builds such a
+payload.  **It does.**  The spine collection ghosts only the HEAD
+quantifiers of an argument type (SI-UnivGhostR keeps a guarded subject
+VERBATIM under 👻), so an argument typed `(∀c.c→c) → unit` enters the spine
+payload as `👻((∀c.c→c) → unit)` — a raw ∀ BELOW the head; and when the
+result position is undetermined (a lambda-bound function applied in a
+lambda body), the collection leaves ◇ there and the look invents a fresh
+flexible for it.  Those two together reproduce the cex payload shape
+`(… ∀ below head …) → r̂` inside a real run:
+
+    val f    : forall b . [](b -> b)
+    val arg  : []((forall c . [](c -> c)) -> unit)
+    val pipe : forall r . []( ( (forall b . [](b -> b)) -> r ) -> r )
+    let test = pipe (fun g -> g arg)
+
+**met.exe REJECTS this** (`docs/repros/thm_complete_subtyping_reachable_reject_pipe.mle`):
+
+    Error: this expression has type ˆx1 but expected an
+    expression of type 👻.(∀ c : Any . [] (c → c)) → unit
+
+`ˆx1` is exactly the FlexR-collapsed guess.  **The declarative side
+ACCEPTS** (instantiate `r := (∀c.[](c→c)) → unit`, impredicatively): the
+control with `r` pre-instantiated concretely —
+`.._control_concrete_r.mle`, identical lambda body — **PASSES** met.exe, so
+by soundness the declarative derivation of the body's check exists, and
+`pipe`'s decl Sub-ForallL supplies the instantiation.  The ablation
+`.._ablation_no_forall.mle` (same program, `arg : [](unit -> unit)`)
+**PASSES**: the collapse still happens there, but the collapsed guess is a
+MONOTYPE and the continuation's assign (Assign-SolveM) succeeds — pinning
+the discriminator to the ∀ BELOW the argument type's head, which makes the
+collapsed guess non-mono and kills the assign.
+
+### What this means
+
+* **The algorithm is INCOMPLETE ON PROGRAMS**, not merely the theorem
+  over-quantified: `thm:complete-subtyping` (algorithmic.tex:1446) is false
+  at payloads the typing itself builds, and a 12-line source program
+  separates the two systems.  The earlier `id2 idc` FN(TC) probe passed
+  only because the collection DETERMINED the instantiation (the eq
+  constraint pinned it before any flexible was involved); with the result
+  undetermined, the fresh flexible reaches the sub-constraint and the
+  threading destroys the eq-yield.
+* The mechanism is the SOLVE'S THREADING: `solve` runs each constraint on
+  the accumulated pattern, and `SolE-FlexR`'s output is the FLEXIBLE — so a
+  later `sub`-constraint at a flexible payload position OVERWRITES whatever
+  a ∀-carrying eq-constraint had established.  A repair must either make
+  FlexR-style steps not discard the accumulated structure (e.g. deposit the
+  pattern as the flexible's definition instead of replacing the pattern by
+  the flexible), or the theorem must carry a payload side condition that
+  EXCLUDES these programs — an author-level decision.
+* Mech-side status: the completeness assembly
+  (`a_sub_complete_bundle_holds` / `a_sub_complete_thm`) is VACUOUS as
+  stated (its `main_forall` hypothesis is refuted), and no payload side
+  condition can make it cover ALL typing-reachable instances, because the
+  reachable set contains failing ones.  The shield saga's residual shape (a
+  ∀ below `P0`'s head at a consis-feeding position) is exactly the failing
+  class; `prop_sub_shield_supply.v`'s covered shapes (∀-free / flex-free /
+  atomic / mono- or inh-free-counterpart) delimit the completable class.
+
+### The mode audit (survives from the retracted episode)
+
+* At **M = TC** (checking a variable against an annotation — `let g = id2`
+  with `val g : (∀c.c→c) → (unit→unit)`): the DECLARATIVE side rejects too
+  (Sub-Arrow concludes only at `fn M`; at TC an arrow subject drops to
+  Check → consistency, where ∀s only MATCH).  met.exe's rejections there
+  are CORRECT behaviour (`..mode_tc_rejected_by_both.mle`,
+  `..mode_tc_flexible_rejected_by_both.mle`).
+* At **M = FN(TC)** with the instantiation DETERMINED by the collection:
+  the implementation accepts (`..fn_tc_passes.mle`).  Any decl-vs-algo
+  claim must pin the mode first; the separation above lives at FN(TC) with
+  the instantiation UNDETERMINED.

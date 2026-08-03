@@ -4893,18 +4893,57 @@ Wiring in the motive premises (all Qed in
 hence `probe_main_forall_false : ~ main_forall 3` and
 `probe_main_forall_hyp_false : ~ (forall n, main_forall n)`.
 
-**What this means.**  thm:complete-subtyping (algorithmic.tex:1446)
-quantifies `P0` beyond the payloads the TYPING produces: met.exe ACCEPTS the
-corresponding source program (`docs/repros/thm_complete_subtyping_fn_tc_passes.mle`)
-because the spine collection builds its payload with GHOSTS, never with a ∀
-below the head at a consis-feeding position.  The shield saga's residual
-shape IS the unreachable shape; `prop_sub_shield_supply.v`'s covered shapes
-are the reachable ones.  The repair is NOT a fourth shield re-indexing but a
-payload side condition on the MOTIVE (the typing's `P0`-invariant, read off
-`a_typing`/`a_pat`'s `a_sub` call sites and type.ml's spine collection),
-under which the existing supply routes become total and the `main_forall`
-analog discharges — HANDOFF-completeness-repair.md TASKS 2–3, PAPER-GAPS
-entry owed when the repair lands.
+**What this means — SUPERSEDED SAME DAY by §14.8.**  The first reading was
+that thm:complete-subtyping merely quantifies `P0` beyond the payloads the
+TYPING produces (met.exe accepts `id2 idc`,
+`docs/repros/thm_complete_subtyping_fn_tc_passes.mle`, because there the
+collection DETERMINES the instantiation).  §14.8 shows the failing class is
+REACHABLE: a payload with a raw ∀ below the head of a spine-domain AND a
+fresh flexible at the codomain is built by the typing itself, and a source
+program separates the systems.  The repair is NOT a fourth shield
+re-indexing, and NOT a payload side condition either — see §14.8.
+
+### ⚠️⚠️ §14.8 TASK 2's VERDICT (2026-08-03, later): the failing payload class is TYPING-REACHABLE — the algorithm is INCOMPLETE ON PROGRAMS
+
+Reading the payload invariant off the producers (HANDOFF TASK 2) refuted
+the premise of the planned repair instead of supplying it.
+
+**The producers.**  Every `a_sub` payload is the ambient `a_typing`/`a_pat`
+payload.  FN payloads are `arrow(P_arg, Q_amb)` built by AT-App/AP-App,
+where `P_arg` is the SPINE COLLECTION's output on the argument at TC/◇ —
+and the collection ghosts only the HEAD quantifiers: `a_pat` on an argument
+typed `(∀c.c→c) → unit` goes SK-ForallL only at a ∀ HEAD, then
+`a_sub__univ_ghost_r` keeps the guarded arrow VERBATIM under ⫯ — output
+`⫯((∀c.c→c) → unit)`, the raw ∀ surviving BELOW the head (the
+implementation's SI-UnivGhostR is verbatim the same, type.ml:1002).
+`Q_amb` at TC can be a FRESH FLEXIBLE: when the body's collected skeleton
+has ◇ at the result (a lambda-bound function applied in the body —
+LE-Vacuous emits no constraint), the look's guess invents `r̂`, and the
+re-check runs the body at `[tc; r̂]`, so the inner application's FN payload
+is `arrow(⫯((∀c.c→c)→unit), r̂)` — the cex shape, typing-built.
+
+**The separation.**  `pipe (fun g -> g arg)` with
+`pipe : ∀r.(( ∀b.[](b→b)) → r) → r`, `arg : []((∀c.[](c→c)) → unit)`:
+met.exe REJECTS (`this expression has type ˆx1 but expected
+👻.(∀c.[](c→c)) → unit` — the FlexR-collapsed guess), while the
+declarative side accepts (`r := (∀c.[](c→c)) → unit`, impredicatively).
+CONTROL: the same program with `r` pre-instantiated concretely PASSES
+(so by soundness the body's declarative check exists; decl ForallL
+supplies the instantiation).  ABLATION: `arg : [](unit→unit)` PASSES —
+the collapse still happens but the collapsed guess is MONO and
+Assign-SolveM succeeds; the ∀ below the argument type's head is the exact
+discriminator.  Repros: `docs/repros/thm_complete_subtyping_reachable_*`.
+
+**Consequence for the roadmap.**  No payload side condition can make the
+completeness bundle cover all typing-reachable instances — the reachable
+set contains failing ones.  What remains provable is completeness on the
+COMPLETABLE payload class (roughly `prop_sub_shield_supply.v`'s routes:
+∀-free / flex-free / determined-instantiation configurations), which
+excludes real programs; whether to state that weaker theorem, or to FIX the
+solve's threading (e.g. SolE-FlexR depositing the accumulated pattern as
+the flexible's definition instead of discarding it) and re-prove, is an
+AUTHOR-level decision.  P7c is BLOCKED on it.  Full entry:
+docs/PAPER-GAPS.md (2026-08-03).
 
 ### ⭐⭐ §12.2 LANDED (2026-08-03): all three layers, and the two obstacles that remain
 

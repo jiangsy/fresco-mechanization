@@ -117,14 +117,22 @@ point to the same content.
   with it (`probe_main_forall_false`).  The bundle and
   `a_sub_complete_thm` are therefore VACUOUS as stated, and the two
   flagships stay OUT of README.v (which indexes unconditional paper
-  claims).  ⭐ The failing payload is one the TYPING never produces:
-  thm:complete-subtyping OVER-QUANTIFIES `P0`, and the failing shape is
-  exactly the shield saga's residual (a ∀ below `P0`'s head at a
-  consis-feeding position) while `prop_sub_shield_supply.v`'s covered
-  shapes are the reachable ones.  The repair — a payload side condition
-  on the MOTIVE, read off the typing's `a_sub` call sites and the
-  implementation's spine collection — is
-  `docs/HANDOFF-completeness-repair.md` TASKS 2–3.
+  claims).  ⚠️⚠️ **And (2026-08-03, later) the failing payload class IS
+  TYPING-REACHABLE — the algorithm is INCOMPLETE ON PROGRAMS**: the spine
+  collection ghosts only HEAD quantifiers (SI-UnivGhostR keeps a guarded
+  argument type verbatim under 👻, so a ∀ BELOW the head survives raw)
+  and an undetermined result position becomes a fresh flexible — and at
+  that payload met.exe REJECTS the 12-line `pipe (fun g -> g arg)`
+  program while the declarative side accepts it
+  (docs/repros/thm_complete_subtyping_reachable_reject_pipe.mle, with a
+  concrete-`r` control and a no-∀ ablation both PASSING; the ∀ below the
+  argument type's head is the discriminator — it makes the collapsed
+  guess non-mono, killing Assign-SolveM).  Full entry:
+  docs/PAPER-GAPS.md (2026-08-03).  Consequence: NO payload side
+  condition can make the completeness bundle cover all typing-reachable
+  instances; the repair direction (restrict the theorem vs fix the
+  solve's threading) is an AUTHOR-level decision, and P7c is BLOCKED on
+  it.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),

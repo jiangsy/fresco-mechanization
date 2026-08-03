@@ -69,25 +69,31 @@
          subject with an arrow [P0] at FN(TC)).
 
     ⟹ NO [a_sub] run exists ([probe_no_run]), while the join + fill are
-    Qed-inhabited and met.exe ACCEPTS the corresponding SOURCE program
-    (whose typing builds a DIFFERENT payload).  Wiring in the rest of the
-    completeness-motive premises (all Qed in
-    [p7_sub_shield_positional_over_strong]) refutes the motive instance
-    ([probe_motive_instance_false]) and hence [main_forall]
+    Qed-inhabited.  Wiring in the rest of the completeness-motive premises
+    (all Qed in [p7_sub_shield_positional_over_strong]) refutes the motive
+    instance ([probe_motive_instance_false]) and hence [main_forall]
     ([probe_main_forall_false]) and the bundle's hypothesis
-    ([probe_main_forall_hyp_false]).  I.e. thm:complete-subtyping is
-    refuted AT THE RULE LEVEL by a payload the TYPING NEVER PRODUCES —
-    the theorem's quantification over [P0] is broader than the reachable
-    payloads.  ⭐⭐⭐ And the failing payload shape is EXACTLY the shield
-    saga's residual: a [P0] with a ∀ below its head (at a consis-feeding
-    position).  prop_sub_shield_supply.v's covered shapes (∀-free /
-    mono-counterpart / inh-free / flex-free) are the REACHABLE ones.
+    ([probe_main_forall_hyp_false]).  ⭐⭐⭐ The failing payload shape is
+    EXACTLY the shield saga's residual: a [P0] with a ∀ below its head (at
+    a consis-feeding position); prop_sub_shield_supply.v's covered shapes
+    (∀-free / mono-counterpart / inh-free / flex-free) delimit the
+    COMPLETABLE class.
 
-    THE REPAIR THIS POINTS TO: a PAYLOAD side condition on the theorem
-    (the typing's actual P0-invariant — ∀-freeness of consis-feeding
-    payload positions, or whatever the typing maintains), under which the
-    existing supply routes become TOTAL and [main_forall] discharges.
-    docs/HANDOFF-completeness-repair.md TASKS 2–3. *)
+    ⚠️⚠️ REACHABILITY UPDATE (2026-08-03, later — HANDOFF TASK 2's verdict).
+    The first reading — "met.exe accepts the corresponding source program,
+    so the typing never produces such payloads and the theorem is merely
+    over-quantified" — is REFUTED: the id2-idc probe passed only because
+    the collection DETERMINED the instantiation.  The spine collection
+    ghosts only HEAD quantifiers ([a_sub__univ_ghost_r] keeps a guarded
+    argument type VERBATIM under ⫯, so a ∀ BELOW the head survives raw),
+    and an UNDETERMINED result position becomes a fresh flexible — so the
+    typing itself builds [arrow(⫯((∀c.c→c)→unit), r̂)], this file's payload
+    shape modulo the ⫯, and met.exe REJECTS the 12-line source program
+    [pipe (fun g -> g arg)] that the declarative side accepts
+    (docs/repros/thm_complete_subtyping_reachable_reject_pipe.mle, with a
+    concrete-r CONTROL and a no-∀ ABLATION both passing).  The algorithm
+    is INCOMPLETE ON PROGRAMS; no payload side condition restores the full
+    claim.  PAPER-GAPS.md (2026-08-03) + DESIGN §14.8. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.

@@ -1,3 +1,21 @@
+⚠️⚠️ STATUS (2026-08-03, end): TASK 1 is DONE (probe machine-checked;
+probe_no_run / probe_motive_instance_false / probe_main_forall_false all
+Qed, axiom-free; docs updated; committed).  TASK 2 is DONE with an
+INVERTED verdict: the failing payload class IS TYPING-REACHABLE — the
+spine collection ghosts only HEAD quantifiers and an undetermined result
+becomes a fresh flexible, so the typing builds arrow(⫯((∀c.c→c)→unit), r̂),
+and met.exe REJECTS the source program `pipe (fun g -> g arg)` that the
+declarative side accepts (repros
+docs/repros/thm_complete_subtyping_reachable_reject_pipe*.mle; control +
+ablation pin the ∀-below-head as the discriminator).  The algorithm is
+INCOMPLETE ON PROGRAMS; no payload side condition covers all reachable
+instances.  ⟹ TASK 3 IS INVALID AS SCOPED — do not execute it.  The
+repair direction (weaker theorem on the completable class vs fixing the
+solve's threading, e.g. SolE-FlexR depositing the pattern as the
+flexible's definition) is an AUTHOR-level decision; P7c is BLOCKED on it.
+See PAPER-GAPS.md (2026-08-03) + DESIGN §14.8 + PROGRESS (top entry).
+The text below is the ORIGINAL plan, kept for the record.
+
 Handover — Frost mechanization: REPAIR thm:complete-subtyping's payload
 over-quantification and CLOSE subtyping completeness.  Supersedes
 HANDOFF-p7c-finish.md (its Step A landed; its Step B resolved into the
