@@ -1,0 +1,40 @@
+-- ⭕ REACHABILITY PROBE for the cex payload (∀ below the head at a
+-- consis-feeding position + a raw flexible at the codomain).  BOTH systems
+-- reject: not a counterexample, but the closest approach found.
+--
+-- ⭐ met.exe's error reproduces the PROBE's collapse verbatim:
+--   this expression has type ∀ c : Any . [] ˆx1
+--          but expected  ∀ c : Any . [] (c → c)
+-- `∀c. [] ˆx1` IS cex/probe_double_occ_run.v's vacuous-binder guess ∀_.f̂ —
+-- the eq-constraint yielded ∀c.[](c→c) and the codomain sub-constraint
+-- against the flexible overwrote it (SolE-FlexR).
+--
+-- FREEZE is what puts a BARE ∀ in the payload's domain: {| e |} collects at
+-- TI (a_pat__freeze), where a_sub__infer returns the subject VERBATIM —
+-- every other argument route ghosts the head (⫯(◇→◇)).  That bare ∀ is
+-- painted INHERITED in the counterpart, so a guess's tag CAN be paid there,
+-- which the earlier _reject_pipe.mle probe could not do.
+--
+-- ⚠️ BUT THE DECLARATIVE SIDE STILL REJECTS, for the dual reason.  Freeze
+-- uses CONSISTENCY (a_typing__freeze), which MATCHES ∀s and never
+-- instantiates, so {| idc |} forces b := ∀c.[](c→c) — a polytype — and with
+-- the double-occurrence subject ∀b.b→b the RESULT is that same polytype,
+-- so r := ∀c.[](c→c) owes a tag at r's position, where the skeleton of
+-- (fun g -> g {| idc |}) is only ⫯(◇→◇) — a ghost.  Unpayable.
+--
+-- ⭐⭐ THE STRUCTURAL TENSION (evidence for UNREACHABILITY): the cex needs
+-- the guess to be a POLYTYPE paid at the domain AND the codomain's
+-- resolution to be a MONOTYPE (cex: κ f̂ = 1→1, so no tag is owed there).
+-- Freeze is the only way to get the first, and freeze simultaneously
+-- forbids the second (its consistency check cannot instantiate the
+-- argument down to a monotype).  Without freeze the domain has no real ∀
+-- and nothing can pay the tag at all (_reject_pipe.mle).
+
+type unit = Unit
+
+val idc : forall c . [](c -> c)
+val id2 : forall b . [](b -> b)
+
+val pipe : forall r . []( ( (forall b . [](b -> b)) -> r ) -> r )
+
+let test = pipe (fun g -> g {| idc |})

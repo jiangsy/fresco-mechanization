@@ -36,6 +36,43 @@ collection ghosts only HEAD quantifiers (`a_sub__univ_ghost_r` keeps a
 guarded argument type verbatim under ⫯, so a ∀ below the head survives
 raw), and an undetermined result position becomes a fresh flexible.
 
+⭐⭐ TASK 2, STATE OF PLAY (2026-08-03, end) — the tension is IDENTIFIED and
+every probe so far confirms UNREACHABILITY.  Work from here.
+
+1. **A naive invariant is FALSE — `freeze` is the loophole.**  "Payload
+   arrow domains are never ∀-headed" holds for every ordinary argument
+   (collected at TC, where a head ∀ is ForallL-instantiated away and a
+   guarded type is kept under ⫯), **but `{| e |}` collects at TI**
+   (`a_pat__freeze`), where `a_sub__infer` returns the subject VERBATIM —
+   so a frozen polymorphic argument DOES put a bare ∀ at a payload domain.
+   Do not try to prove the naive form.
+2. **That loophole is exactly what makes the tag payable** — a bare ∀ in
+   the payload domain is painted INHERITED by the fill, which is what pays
+   a polytype guess's tag (the cex's `consis_d`).  The earlier
+   `_reject_pipe.mle` probe failed *because* its domain was `⫯(◇→◇)`, with
+   no inherited ∀ to pay with.
+3. ⚠️ **But freeze also BLOCKS the other half.**  `a_typing__freeze` checks
+   by CONSISTENCY, which matches ∀s and never instantiates, so a frozen
+   `{| idc |}` forces the guess `b := ∀c.c→c` — a polytype — and with the
+   double-occurrence subject `∀b.b→b` the RESULT is that same polytype.
+   The cex instead needs the codomain's resolution to be a MONOTYPE
+   (`κ f̂ = 1→1`, so no tag is owed there; `join_cod_d` instantiates the
+   codomain copy down).  Getting that mono resolution requires
+   instantiating the argument down — which freeze forbids.
+4. ⟹ **THE TENSION, precisely**: the cex needs a POLYTYPE guess paid at the
+   domain (only freeze supplies the ∀) AND a MONOTYPE resolution at the
+   codomain (freeze forbids it).  Without freeze, no payment; with freeze,
+   no mono codomain.  ⭐ Turning this into the payload invariant — and thus
+   into `main_forall` restricted to reachable payloads — is TASK 2's
+   remaining work.
+5. Probes run, all consistent with unreachability (both systems reject the
+   near-misses): `docs/repros/thm_complete_subtyping_reachable_*` —
+   `_reject_pipe` (no ∀ in the domain ⟹ tag unpayable),
+   `_probe_frozen_arg` (∀ in the domain, tag payable, but the codomain
+   resolution is then a polytype ⟹ unpayable at a ghost) plus its control.
+   ⭐ `_probe_frozen_arg`'s met error prints `∀ c . [] ˆx1` — the probe's
+   vacuous-binder collapse, reproduced in a real run.
+
 The text below is the ORIGINAL plan, still current apart from the above.
 
 Handover — Frost mechanization: REPAIR thm:complete-subtyping's payload

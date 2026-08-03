@@ -1,0 +1,13 @@
+-- CONTROL for thm_complete_subtyping_reachable_probe_frozen_arg.mle:
+-- met.exe ACCEPTS this.  Same frozen argument; the extra application makes
+-- the spine determine the result, so the codomain payload is an ARROW
+-- rather than a raw flexible and the SolE-FlexR collapse never fires.
+
+type unit = Unit
+
+val idc : forall c . [](c -> c)
+val id2 : forall b . [](b -> b)
+
+val pipe : forall r . []( ( (forall b . [](b -> b)) -> r ) -> r )
+
+let test = pipe (fun g -> g {| idc |}) Unit
