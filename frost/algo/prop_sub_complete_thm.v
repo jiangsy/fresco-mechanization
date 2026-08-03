@@ -159,6 +159,15 @@ Definition sub_complete_concl
      Sub-ForallL's precision-substitution step (P5's [Hwfq]); refinement
      does not transport wf, so it cannot be derived from the fill *)
   Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+  (* the JOIN-side subject is ghost-free at the TY sort — an EXTERNAL side
+     condition of the same family as the wf ones (WF-SIDE-CONDITIONS.md,
+     2026-08-03).  P5's precision-substitution transport
+     ([ad_pat_sub_precise_upre_gv]) demands it at the ForallL rows and the
+     join cannot supply it ([__arrow]'s domain leaf and [__infer] take an
+     arbitrary subject).  Guarded by [NM = TY]: every ghost-heading join
+     rule is SK-only, so the SK-side suppliers are all vacuous — which is
+     what makes the premise cheap to thread. *)
+  (NM = a_sub_mode_ty -> uskl_ghost_free R') ->
   (* ---- the algorithm succeeds, and its solution is the least ---- *)
   exists P1 Θ1,
     a_sub NM M P0 Θ0 P P1 Θ1 /\
@@ -271,6 +280,21 @@ Lemma msubst_bskl_pskl_to_bskl_syn : forall κ P,
   msubst_bskl κ (pskl_to_bskl_syn P) = pskl_to_bskl_syn (msubst_pskl κ P).
 Proof. intros κ P; induction P; cbn; f_equal; auto. Qed.
 
+(** A subject ≡ᵘ-equivalent to a monotype PAINTING is itself one, hence
+    ghost-free — the supplier for the motive's TY ghost-freeness premise at
+    every flex-half re-entry into the main judgment (Flex-Assign keeps the
+    walk's subject, Flex-Solve deposits a painted arrow). *)
+Lemma tyequiv_mono_paint_ghost_free : forall Θ R' τ,
+  Θ ⊢ R' ≡ᵘ (ptyp_to_uskl_syn τ) ->
+  mono_ptyp τ -> a_wf_ptyp Θ τ ->
+  uskl_ghost_free R'.
+Proof.
+  intros Θ R' τ Hrel Hm Hwf.
+  destruct (a_uskl_tyequiv_mono_r_inv Hrel eq_refl Hm Hwf)
+    as [τ' [-> [Hm' _]]].
+  apply mono_ptyp_to_uskl_syn_ghost_free. exact Hm'.
+Qed.
+
 (** At the empty forbidden set the hygienic refinement IS the plain one; this
     is the converse of [ad_refine_pskl_f_forget], used to hand the join's
     leaf refinements to [a_consis_complete_thm] (whose premises are [_f]). *)
@@ -370,7 +394,7 @@ Lemma a_sub_complete_ghost : forall n M Θ0 P0 P R R' Ψ Θ κ Q,
 Proof.
   intros n M Θ0 P0 P R R' Ψ Θ κ Q HT.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   subst R'.
   (* a ghost is ≡ᵘ-inert, so the κ-image is the hole as well *)
   pose proof (a_uskl_tyequiv_hole_l_inv Hrel) as Hsubj.
@@ -435,7 +459,7 @@ Lemma a_sub_complete_ghostg : forall n M Θ0 P0 P R R' Ψ Θ κ Q,
 Proof.
   intros n M Θ0 P0 P R R' Ψ Θ κ Q HT.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   subst R'.
   pose proof (a_uskl_tyequiv_holeg_l_inv Hrel) as Hsubj.
   apply ad_pat_sub_gv_forget in Hsub.
@@ -1160,7 +1184,7 @@ Lemma a_sub_complete_infer : forall n NM Θ0 P0 P R R' Ψ Θ κ Q,
 Proof.
   intros n NM Θ0 P0 P R R' Ψ Θ κ Q.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   (* the ≡ᵘ slack, erased at the algorithm's input *)
   pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
   rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
@@ -1296,7 +1320,7 @@ Lemma a_sub_complete_univ_ghost_r : forall n Θ0 P0 P R R' Ψ Θ κ Q,
 Proof.
   intros n Θ0 P0 P R R' Ψ Θ κ Q HgT HgQ Hrow Hrfn.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   (* the ≡ᵘ slack, erased at the algorithm's input *)
   pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
   rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
@@ -1388,7 +1412,7 @@ Lemma a_sub_complete_check : forall n Θ0 P0 P R R' Ψ Θ κ B,
 Proof.
   intros n Θ0 P0 P R R' Ψ Θ κ B HgT HgB Hrow Hrfn HgP0 HwfB.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   (* the ≡ᵘ slack, erased at the algorithm's input *)
   pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
   rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
@@ -1546,7 +1570,7 @@ Lemma a_sub_complete_arrow : forall n NM M Θ0 P0 P Ra Rb R1' R2' Ψ Θ κ Q1 Q2
 Proof.
   intros n NM M Θ0 P0 P Ra Rb R1' R2' Ψ Θ κ Q1 Q2 IH.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   cbn in HeqP. subst P.
   cbn in Hrel.
   destruct (a_uskl_tyequiv_arrow_arrow_inv Hwfth Hrel) as [Hrel1 Hrel2].
@@ -1689,10 +1713,13 @@ Proof.
   (* the codomain's external target wf, off the arrow's *)
   assert (HwfQ2 : Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q2))
     by (cbn in HwfQ; inversion HwfQ; assumption).
+  (* the codomain's ghost-freeness, off the arrow's *)
+  assert (Hgf2 : NM = a_sub_mode_ty -> uskl_ghost_free R2')
+    by (intro HNM; pose proof (Hgf HNM) as Hga; inversion Hga; assumption).
   (* ---- the codomain IH ---- *)
   destruct (IH NM M Θ1 P0b (⌊ Rb ⌋ˢ) Rb R2' _ Θ ζ1 Q2
               Hwf1 Hwfth HwfP0b1 HwfPb1 HmodSKb HmodTYb eq_refl Hζ1
-              Hslack Hsub2 Hrs2' HwfQ2)
+              Hslack Hsub2 Hrs2' HwfQ2 Hgf2)
     as [Q2' [Θ2 [Hrun2 Hopt2]]].
   (* ---- assemble the run ---- *)
   exists (pskl_arrow Q1' Q2'), Θ2. split.
@@ -2085,7 +2112,7 @@ Lemma a_sub_complete_forall_r : forall n Θ0 P0 P R R' Ψ Θ κ B L,
 Proof.
   intros n Θ0 P0 P R R' Ψ Θ κ B L IH Hjoin.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   pose proof (HmodTY eq_refl) as Hmty.
   assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
   (* ---- 1. the fill pins [P0 = ∀.(ptyp_to_pskl A0)] ---- *)
@@ -2176,7 +2203,7 @@ Proof.
               (⌊ R ⌋ˢ) R R' Ψ ((α ~ abind_tvar) ++ Θ) κ
               (open_bskl_wrt_bskl B (bskl_var_f α))
               Hwf0' Hwfth' HwfP0α HwfPα HmodSKα HmodTYα eq_refl Hinc'
-              Hrel' Hjoinα Hrsα HwfQα)
+              Hrel' Hjoinα Hrsα HwfQα Hgf)
     as [P1 [Θo [Hrun Hopt]]].
   pose proof (a_sub_ty_tc_output Hrun) as ->.
   (* ---- 5. the run's id increase shapes the output ---- *)
@@ -2466,14 +2493,13 @@ Lemma a_sub_complete_forall_l_tagged :
   (forall α, sub_shield Θ0 Ψa empty α P0
                (open_uskl_wrt_uskl Rb (uskl_var_f α)) ψa) ->
   (guarded_pskl P0 \/ P0 = pskl_hole) ->
-  (NM = a_sub_mode_ty -> uskl_ghost_free (uskl_all_etag ε Rj)) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_etag ε Rb)
     (uskl_all_etag ε Rj) Ψ Θ κ Q.
 Proof.
   intros n NM M Θ0 P0 P Rb Rj Ψ Θ κ Q ε Ψa ψa
-    IH HMti HΨaΨ HΨaftag Htags Hwfψa HD Hshield HP0wlog Hgfj.
+    IH HMti HΨaΨ HΨaftag Htags Hwfψa HD Hshield HP0wlog.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   cbn in HeqP. subst P.
   (* ---- 0. ambient facts ---- *)
   assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
@@ -2594,6 +2620,30 @@ Proof.
       | exact Htskψa | exact Hdtags ]. }
   destruct (uskl_precise_open_into Rj Hlcj Hupair Hlcψa)
     as [Ψrep' [HΨrep' Hopen_pair]].
+  (* TY: the swapped subject is ghost-free — the body from the MOTIVE's
+     ghost-freeness premise ([Hgf]), the instantiation because a TY-guess
+     is a TYPE.  Named, because BOTH the subject swap below and the IH's
+     own motive premise consume it. *)
+  assert (Hgfswap : NM = a_sub_mode_ty ->
+            uskl_ghost_free
+              (open_uskl_wrt_uskl Rj
+                 (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa)))).
+  { intro HeqNM. subst NM.
+    assert (HgfPa : uskl_ghost_free
+                      (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))).
+    { inversion Hlook; subst.
+      match goal with Hg : a_guess _ a_sub_mode_ty _ _ _ |- _ =>
+        inversion Hg; subst end.
+      rewrite msubst_pskl_ptyp_to_pskl in HwfPaΘ |- *.
+      eapply pskl_to_uskl_paint_ghost_free;
+        [ eapply a_wf_pskl_lc; exact HwfPaΘ | reflexivity ]. }
+    destruct (uskl_ghost_free_all_etag_inv (Hgf eq_refl)) as [Lg Hgb].
+    destruct (atom_fresh (Lg `union` ftvar_in_uskl Rj)) as [γ Frγ].
+    rewrite (subst_bskl_in_uskl_intro γ Rj
+               (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))
+               ltac:(clear - Frγ; fsetdec)).
+    apply uskl_ghost_free_subst;
+      [ apply Hgb; clear - Frγ; fsetdec | exact HgfPa | exact HlcψPa ]. }
   assert (HDswap : ad_pat_sub_gv n NM M Ψ Θ
             (open_uskl_wrt_uskl Rj
                (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))) Q).
@@ -2612,25 +2662,7 @@ Proof.
                       (msubst_pskl (κa ++ κ) Pa)) as Hemb;
         cbn in HΨaftag; clear - Hou Hemb HΨaftag Hftjb; fsetdec
       | exact HwfQ
-      | ].
-    (* TY: the swapped subject is ghost-free — the body from the row's
-       hypothesis, the instantiation because a TY-guess is a TYPE *)
-    intro HeqNM. subst NM.
-    assert (HgfPa : uskl_ghost_free
-                      (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))).
-    { inversion Hlook; subst.
-      match goal with Hg : a_guess _ a_sub_mode_ty _ _ _ |- _ =>
-        inversion Hg; subst end.
-      rewrite msubst_pskl_ptyp_to_pskl in HwfPaΘ |- *.
-      eapply pskl_to_uskl_paint_ghost_free;
-        [ eapply a_wf_pskl_lc; exact HwfPaΘ | reflexivity ]. }
-    destruct (uskl_ghost_free_all_etag_inv (Hgfj eq_refl)) as [Lg Hgb].
-    destruct (atom_fresh (Lg `union` ftvar_in_uskl Rj)) as [γ Frγ].
-    rewrite (subst_bskl_in_uskl_intro γ Rj
-               (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))
-               ltac:(clear - Frγ; fsetdec)).
-    apply uskl_ghost_free_subst;
-      [ apply Hgb; clear - Frγ; fsetdec | exact HgfPa | exact HlcψPa ]. }
+      | exact Hgfswap ]. }
   (* ---- 4. the IH at (Ξ ++ Θ0, κa ++ κ) ---- *)
   assert (Hmon0 : forall x (b : abind), binds x b Θ0 -> binds x b (Ξ ++ Θ0))
     by (intros x b0 Hb0; unfold binds in *; apply in_or_app; right;
@@ -2683,7 +2715,7 @@ Proof.
                  (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa)))
               Ψ Θ (κa ++ κ) Q
               HwfΞΘ0 Hwfth HwfP0' HwfPnew HmodSK HmodTY HeqPnew Hinca
-              Hslack HDswap HrsΞ HwfQ)
+              Hslack HDswap HrsΞ HwfQ Hgfswap)
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 5. the run ---- *)
   exists P1, Θ1. split.
@@ -2769,14 +2801,13 @@ Lemma a_sub_complete_forall_l_untagged :
   (forall α, sub_shield Θ0 Ψa empty α P0
                (open_uskl_wrt_uskl Rb (uskl_var_f α)) ψa) ->
   (guarded_pskl P0 \/ P0 = pskl_hole) ->
-  (NM = a_sub_mode_ty -> uskl_ghost_free (uskl_all_syn Rj)) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_syn Rb)
     (uskl_all_syn Rj) Ψ Θ κ Q.
 Proof.
   intros n NM M Θ0 P0 P Rb Rj Ψ Θ κ Q Ψa ψa
-    IH HMti HΨaΨ HΨaftag Htags Hwfψa HD Hshield HP0wlog Hgfj.
+    IH HMti HΨaΨ HΨaftag Htags Hwfψa HD Hshield HP0wlog.
   unfold sub_complete_concl.
-  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
   cbn in HeqP. subst P.
   (* ---- 0. ambient facts ---- *)
   assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hinc).
@@ -2897,6 +2928,30 @@ Proof.
       | exact Htskψa | exact Hdtags ]. }
   destruct (uskl_precise_open_into Rj Hlcj Hupair Hlcψa)
     as [Ψrep' [HΨrep' Hopen_pair]].
+  (* TY: the swapped subject is ghost-free — the body from the MOTIVE's
+     ghost-freeness premise ([Hgf]), the instantiation because a TY-guess
+     is a TYPE.  Named, because BOTH the subject swap below and the IH's
+     own motive premise consume it. *)
+  assert (Hgfswap : NM = a_sub_mode_ty ->
+            uskl_ghost_free
+              (open_uskl_wrt_uskl Rj
+                 (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa)))).
+  { intro HeqNM. subst NM.
+    assert (HgfPa : uskl_ghost_free
+                      (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))).
+    { inversion Hlook; subst.
+      match goal with Hg : a_guess _ a_sub_mode_ty _ _ _ |- _ =>
+        inversion Hg; subst end.
+      rewrite msubst_pskl_ptyp_to_pskl in HwfPaΘ |- *.
+      eapply pskl_to_uskl_paint_ghost_free;
+        [ eapply a_wf_pskl_lc; exact HwfPaΘ | reflexivity ]. }
+    destruct (uskl_ghost_free_all_syn_inv (Hgf eq_refl)) as [Lg Hgb].
+    destruct (atom_fresh (Lg `union` ftvar_in_uskl Rj)) as [γ Frγ].
+    rewrite (subst_bskl_in_uskl_intro γ Rj
+               (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))
+               ltac:(clear - Frγ; fsetdec)).
+    apply uskl_ghost_free_subst;
+      [ apply Hgb; clear - Frγ; fsetdec | exact HgfPa | exact HlcψPa ]. }
   assert (HDswap : ad_pat_sub_gv n NM M Ψ Θ
             (open_uskl_wrt_uskl Rj
                (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))) Q).
@@ -2915,25 +2970,7 @@ Proof.
                       (msubst_pskl (κa ++ κ) Pa)) as Hemb;
         cbn in HΨaftag; clear - Hou Hemb HΨaftag Hftjb; fsetdec
       | exact HwfQ
-      | ].
-    (* TY: the swapped subject is ghost-free — the body from the row's
-       hypothesis, the instantiation because a TY-guess is a TYPE *)
-    intro HeqNM. subst NM.
-    assert (HgfPa : uskl_ghost_free
-                      (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))).
-    { inversion Hlook; subst.
-      match goal with Hg : a_guess _ a_sub_mode_ty _ _ _ |- _ =>
-        inversion Hg; subst end.
-      rewrite msubst_pskl_ptyp_to_pskl in HwfPaΘ |- *.
-      eapply pskl_to_uskl_paint_ghost_free;
-        [ eapply a_wf_pskl_lc; exact HwfPaΘ | reflexivity ]. }
-    destruct (uskl_ghost_free_all_syn_inv (Hgfj eq_refl)) as [Lg Hgb].
-    destruct (atom_fresh (Lg `union` ftvar_in_uskl Rj)) as [γ Frγ].
-    rewrite (subst_bskl_in_uskl_intro γ Rj
-               (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa))
-               ltac:(clear - Frγ; fsetdec)).
-    apply uskl_ghost_free_subst;
-      [ apply Hgb; clear - Frγ; fsetdec | exact HgfPa | exact HlcψPa ]. }
+      | exact Hgfswap ]. }
   (* ---- 4. the IH at (Ξ ++ Θ0, κa ++ κ) ---- *)
   assert (Hmon0 : forall x (b : abind), binds x b Θ0 -> binds x b (Ξ ++ Θ0))
     by (intros x b0 Hb0; unfold binds in *; apply in_or_app; right;
@@ -2986,7 +3023,7 @@ Proof.
                  (pskl_to_uskl (msubst_pskl (κa ++ κ) Pa)))
               Ψ Θ (κa ++ κ) Q
               HwfΞΘ0 Hwfth HwfP0' HwfPnew HmodSK HmodTY HeqPnew Hinca
-              Hslack HDswap HrsΞ HwfQ)
+              Hslack HDswap HrsΞ HwfQ Hgfswap)
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 5. the run ---- *)
   exists P1, Θ1. split.
@@ -3935,7 +3972,14 @@ Proof.
     - eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf | exact Hαb ].
     - eapply a_inc_lookup_wf; [ exact HincX | exact HwfXctx | exact HαbX ].
     - exact Heqlk. }
-  (* ---- 4. the P7b IH at the substituted problem ---- *)
+  (* ---- 4. the P7b IH at the substituted problem.  Its motive premise:
+     the subject R' is ≡ᵘ a monotype PAINTING (the walk's own slack), so it
+     is ghost-free outright — no NM analysis needed. ---- *)
+  assert (Hgf' : NM = a_sub_mode_ty -> uskl_ghost_free R').
+  { intros _. eapply tyequiv_mono_paint_ghost_free;
+      [ exact Hslack
+      | eapply a_inc_lookup_mono; exact Hinc
+      | eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf | exact Hαb ] ]. }
   destruct (IH NM (mode_fn M) (Ξ ++ Θ0)
               (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
               (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))
@@ -3948,7 +3992,7 @@ Proof.
                     [ apply HmodSK; exact HSK | exact Hmτ ])
               ltac:(intros HTY; apply a_ty_mode_compat_subst_mono;
                     [ apply HmodTY; exact HTY | exact Hmτ ])
-              HeqR Hincih Hslack' HD Hrs' HwfQ)
+              HeqR Hincih Hslack' HD Hrs' HwfQ Hgf')
     as [P1 [Θ1 [Hrun Hopt]]].
 
   (* ---- 5. soundness of the IH's run, and the junk rename ---- *)
@@ -4603,7 +4647,10 @@ Proof.
       apply msubst_lookup_insert2;
         [ intro Hc; subst; contradiction | intro Hc; subst; contradiction ]. }
     rewrite Heq. exact Hrs. }
-  (* ---- 8. the P7b IH on the deposited problem ---- *)
+  (* ---- 8. the P7b IH on the deposited problem.  Its motive premise: the
+     subject IS a monotype painting, ghost-free outright. ---- *)
+  assert (Hgf' : NM = a_sub_mode_ty -> uskl_ghost_free (ptyp_to_uskl_syn τ'))
+    by (intros _; apply mono_ptyp_to_uskl_syn_ghost_free; exact Hmτ').
   destruct (IH NM (mode_fn M)
               (Ξ ++ (α0 ~ abind_flex_mono_def
                             (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
@@ -4613,7 +4660,7 @@ Proof.
               (ptyp_to_uskl_syn τ') Ψ Θ
               (κ1 ++ (α0, τ) :: (β, τ2) :: (α, τ1) :: κ2) Q
               HwfΘsrc Hwfth HwfP0src HwfSsrc HmodSK HmodTY HeqR Hincθs
-              Hslack' HD Hrs' HwfQ)
+              Hslack' HD Hrs' HwfQ Hgf')
     as [P1 [Θ1 [Hrun Hopt]]].
   (* ---- 9. the run — NO junk swap: Flex-Solve does not re-attach ---- *)
   exists P1, Θ1. split.

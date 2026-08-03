@@ -71,6 +71,7 @@ Require Import src.frost.algo.prop_consis_complete.
 Require Import src.frost.algo.prop_sub_msubst_equiv.
 Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
 Require Import src.frost.algo.prop_decorate.      (* uskl_to_pskl_pskl_to_uskl *)
+Require Import src.frost.algo.prop_pat_sub.       (* mono_ptyp_to_uskl_syn_ghost_free *)
 Require Import src.frost.algo.prop_sub_complete_thm.
 
 Set Implicit Arguments.
@@ -907,13 +908,14 @@ Lemma main_all_inh_counterpart : forall n Θ0 P0 P R R' Ψ Θ κ B,
     (bskl_all_inh B).
 Proof.
   intros n Θ0 P0 P R R' Ψ Θ κ B IH.
-  intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+         Hgf.
   destruct (@sub_gv_all_inh_forall_r_family _ _ _ _ _ _ _ HDj B
               eq_refl eq_refl eq_refl)
     as [L [m [Hlt Hfam]]].
   refine (@a_sub_complete_forall_r n Θ0 P0 P R R' Ψ Θ κ B L IH _
             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-            HwfQ).
+            HwfQ Hgf).
   intros α Hα.
   eapply ad_pat_sub_gv_fuel_weaken; [ exact (Hfam α Hα) | lia ].
 Qed.
@@ -1026,7 +1028,8 @@ Proof.
   - (* __infer : the row lemma takes any [R] *)
     apply a_sub_complete_infer.
   - (* __check : the row lemma owes [guarded_pskl P0] and the wf of [B] *)
-    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf.
     assert (HwfB : Θa ⨟ empty ⊢ₚₛᵃ Ba)
       by (rewrite bskl_to_pskl_pskl_to_bskl_inh in HwfQ; exact HwfQ).
     assert (HgP0 : guarded_pskl P0)
@@ -1036,7 +1039,7 @@ Proof.
     exact (@a_sub_complete_check n0 Θ0 P0 P R Ta Ψ0 Θa κ Ba
              HgT HgB Hc Hr HgP0 HwfB
              Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-             HwfQ).
+             HwfQ Hgf).
   - (* __forall_r : the fuel IH plus the row's cofinite family *)
     exact (@a_sub_complete_forall_r n0 Θ0 P0 P R Ta Ψ0 Θa κ Ba La
              (Hfuel n0 ltac:(lia)) Hfam).
@@ -1045,7 +1048,8 @@ Proof.
              HgR HgQ Hc Hr).
   - (* __arrow : the ONE row where [R]'s shape is not forced — an arrow, or a
        bare variable whose IMAGE is the arrow (the entry into P7a) *)
-    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf.
     assert (Hsh : (exists Rx Ry, R = uskl_arrow Rx Ry)
                   \/ (exists γ, R = uskl_var_f γ)).
     { destruct (@a_uskl_tyequiv_arrow_l_inv Θa R1 R2 _ Hwfth Hslack)
@@ -1059,7 +1063,7 @@ Proof.
     + exact (@a_sub_complete_arrow n0 NM0 Ma Θ0 P0 P Rx Ry R1 R2 Ψ0 Θa κ
                Q1 Q2 (Hfuel n0 ltac:(lia))
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ).
+               HwfQ Hgf).
     + (* a bare variable: RIGID ⟹ refuted (§4); FLEXIBLE ⟹ into P7a *)
       cbn in HeqR. subst P.
       assert (Hbt : a_binds_tvar γ Θ0)
@@ -1083,7 +1087,8 @@ Proof.
           [ apply a_sub__flex_mono; exact Hrun | exact Hopt ].
   - (* __forall_l_tagged : [R] is the SAME ∀ — the residual (§10), but only
        after §8b has taken the WLOG's escaping shape off its hands *)
-    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf.
     assert (Hhd : uskl_forall_headed R).
     { destruct (@a_uskl_tyequiv_all_etag_l_inv Θa εa Rj _ Hslack) as [X0 HX].
       destruct (@msubst_uskl_syn_all_etag_inv κ R εa X0 HX) as [R0 [HR _]].
@@ -1093,11 +1098,11 @@ Proof.
     + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_etag εa Rj) Ψ0 Θa κ Qa Hhd
                (or_introl Hwlog)
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ).
+               HwfQ Hgf).
     + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_etag εa Rj) Ψ0 Θa κ Qa Hhd
                (or_intror Hwlog)
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ).
+               HwfQ Hgf).
     + (* ⭐ the WLOG's escaping shape: a ∀-headed [P0] forces a ∀-inh
          counterpart through the FILL, and §8b sends the row through ForallR *)
       subst NM0 Ma P0.
@@ -1106,9 +1111,10 @@ Proof.
       exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P R
                (uskl_all_etag εa Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ).
+               HwfQ Hgf).
   - (* __forall_l_untagged : as above *)
-    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf.
     assert (Hhd : uskl_forall_headed R).
     { destruct (@a_uskl_tyequiv_all_syn_l_inv Θa Rj _ Hslack) as [X0 HX].
       destruct (@msubst_uskl_syn_all_syn_inv_mono Θ0 κ Θa R X0 Hinc HX)
@@ -1119,18 +1125,18 @@ Proof.
     + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_syn Rj) Ψ0 Θa κ Qa Hhd
                (or_introl Hwlog)
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ).
+               HwfQ Hgf).
     + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_syn Rj) Ψ0 Θa κ Qa Hhd
                (or_intror Hwlog)
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ).
+               HwfQ Hgf).
     + subst NM0 Ma P0.
       cbn in Hrs.
       destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
       exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P R
                (uskl_all_syn Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
                Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ).
+               HwfQ Hgf).
   - (* __ghost : the row lemma takes [R'] directly *)
     exact (@a_sub_complete_ghost n0 Ma Θ0 P0 P R uskl_hole Ψ0 Θa κ
              (pskl_to_bskl_inh Pa) eq_refl).
@@ -1138,7 +1144,8 @@ Proof.
     exact (@a_sub_complete_ghostg n0 Ma Θ0 P0 P R uskl_holeg Ψ0 Θa κ
              bskl_hole eq_refl).
   - (* __univ_ghost_l : NO row lemma — strip [∀◇] and recurse (same fuel) *)
-    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf.
     destruct (@a_uskl_tyequiv_tophole_l_inv Θa Rg _ Hslack)
       as [X [HX Hslack0]].
     destruct (@msubst_uskl_syn_tophole_inv κ R X HX) as [R00 [HR HmX]].
@@ -1146,15 +1153,19 @@ Proof.
     rewrite <- HmX in Hslack0.
     assert (HwfP' : Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ R00 ⌋ˢ)
       by (inversion HwfP; subst; assumption).
+    (* the row is SK-only, so the motive's TY ghost-freeness is VACUOUS *)
+    assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
+      by (intro Habs; discriminate Habs).
     destruct (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
                 (He1 R00 HESC)
                 Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
-                Hsub Hrs HwfQ)
+                Hsub Hrs HwfQ Hgf0)
       as [P1 [Θ1 [Hrun Hopt]]].
     exists P1, Θ1. split;
       [ apply a_sub__univ_ghost_l; [ exact HM | exact Hrun ] | exact Hopt ].
   - (* __univ_ghost_lg : ⌊∀◈ R⌋ˢ IS ∀◇⌊R⌋ˢ, so the SAME rule applies *)
-    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf.
     destruct (@a_uskl_tyequiv_topholeg_l_inv Θa Rg _ Hslack)
       as [X [HX Hslack0]].
     destruct (@msubst_uskl_syn_topholeg_inv κ R X HX) as [R00 [HR HmX]].
@@ -1162,23 +1173,32 @@ Proof.
     rewrite <- HmX in Hslack0.
     assert (HwfP' : Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ R00 ⌋ˢ)
       by (inversion HwfP; subst; assumption).
+    (* SK-only, as above *)
+    assert (Hgf0 : a_sub_mode_sk = a_sub_mode_ty -> uskl_ghost_free Rg)
+      by (intro Habs; discriminate Habs).
     destruct (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
                 (He2 R00 HESC)
                 Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
-                Hsub Hrs HwfQ)
+                Hsub Hrs HwfQ Hgf0)
       as [P1 [Θ1 [Hrun Hopt]]].
     exists P1, Θ1. split;
       [ apply a_sub__univ_ghost_l; [ exact HM | exact Hrun ] | exact Hopt ].
   - (* __flex_mono : a pure PEEL — chase the Θ-definition on the JOIN's side
        and re-establish the ≡ᵘ slack; [R] is untouched *)
-    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf.
     assert (Hslack' : Θa ⊢ (ptyp_to_uskl_syn τd) ≡ᵘ (msubst_uskl_syn κ R)).
     { eapply a_uskl_tyequiv_trans;
         [ apply flex_def_paint_tyequiv; [ exact Hbd | exact Hwfth ]
         | exact Hslack ]. }
+    (* the peeled subject IS a monotype painting, ghost-free outright *)
+    assert (Hgfd : NM0 = a_sub_mode_ty ->
+              uskl_ghost_free (ptyp_to_uskl_syn τd))
+      by (intros _; apply mono_ptyp_to_uskl_syn_ghost_free;
+          eapply a_wf_aenv_binds_def_mono; [ exact Hwfth | exact Hbd ]).
     exact (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 P R κ HESC
              Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack'
-             Hsub Hrs HwfQ).
+             Hsub Hrs HwfQ Hgfd).
 Qed.
 
 (** ⭐ DESIGN §12.1's LAYER (a).  Instantiating [ESC] with "is an arrow" makes
@@ -1194,7 +1214,8 @@ Lemma main_arrow_holds : forall n,
   main_arrow n.
 Proof.
   intros n Hfuel Hforall NM M Θ0 P0 P Ra Rb R' Ψ Θ κ Q.
-  intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+  intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+         Hgf.
   exact (@main_join n NM M Ψ Θ R' Q HDj Hfuel Hforall Θ0
            (fun R0 => exists Rx Ry, R0 = uskl_arrow Rx Ry)
            ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
@@ -1202,7 +1223,8 @@ Proof.
            ltac:(intros γ [Rx [Ry HH]]; discriminate HH)
            P0 P (uskl_arrow Ra Rb) κ
            (ex_intro _ Ra (ex_intro _ Rb eq_refl))
-           Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ).
+           Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf).
 Qed.
 
 (* ===================================================================== *)
@@ -1333,11 +1355,12 @@ Proof.
   assert (Hbelow : forall k, main_below n k).
   { intro k. induction k as [k IHk] using lt_wf_ind.
     intros NM M Θ0 P0 P R R' Ψ Θ κ Q Hlen.
-    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
+           Hgf.
     refine (@main_join n NM M Ψ Θ R' Q HDj Hfuel (Hforall n) Θ0
               (fun _ => True) _ _ _ P0 P R κ I
               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-              HwfQ);
+              HwfQ Hgf);
       [ intros; exact I | intros; exact I | ].
     intros γ _ NM' M' α' P0' R'' Ψ' Θ' κ' Q'.
     apply (@flex_step n (length Θ0) Harrow
@@ -1373,6 +1396,10 @@ Theorem a_sub_complete_thm :
     ad_pat_sub_gv n NM M empty Θ R' Q ->
     ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
     Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+    (* the subject's TY ghost-freeness — the motive's EXTERNAL side
+       condition (WF-SIDE-CONDITIONS.md); at the paper's own reflexive
+       instance [R' := κ⌈P⌉ᵘ] it is the ghost-freeness of the input [P] *)
+    (NM = a_sub_mode_ty -> uskl_ghost_free R') ->
     exists P1 Θ1,
       a_sub NM M P0 Θ0 P P1 Θ1 /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
@@ -1383,11 +1410,11 @@ Theorem a_sub_complete_thm :
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q)).
 Proof.
   intros Hforall n NM M Θ0 P0 P R' Θ κ Q
-    Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty Hinc Hslack HDj Hrs HwfQ.
+    Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty Hinc Hslack HDj Hrs HwfQ Hgf.
   exact (proj1 (a_sub_complete_bundle_holds Hforall n)
            NM M Θ0 P0 P (pskl_to_uskl P) R' empty Θ κ Q
            Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty
-           (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj Hrs HwfQ).
+           (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj Hrs HwfQ Hgf).
 Qed.
 
 Print Assumptions main_join.
