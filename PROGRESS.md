@@ -78,7 +78,7 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐⭐⭐ P7c: **ALL THREE LAYERS LAND** (stuck-check, flex half, twelve-row join dispatch) — and TWO obstacles surface, both for the authors
+## 2026-08-03 (latest) — ⭐⭐⭐ P7c: **ALL THREE LAYERS LAND** (stuck-check, flex half, twelve-row join dispatch) — and a MACHINE-CHECKED PAPER GAP the implementation crashes on
 
 `make coq` green, admit-free, axiom-free.  `frost/algo/prop_sub_complete_dispatch.v`
 is now 1093 lines, §1–§10, everything `Qed` and *Closed under the global
@@ -144,8 +144,15 @@ guarded.  This is the SOURCE-side mirror of `ad_refine_syn_f_all_inh_r_shape`.
 
 ### ⭕ WHAT REMAINS — two obstacles, and NEITHER is mechanical
 
-**⛔ (B) A PAPER GAP: the flexible SUBTYPING walk has NO rule for a
-TERM-VARIABLE head** (docs/PAPER-GAPS.md, new entry).  `fig:alg-subtyping`'s
+**⛔ (B) A PAPER GAP — MACHINE-CHECKED, AND THE IMPLEMENTATION CRASHES ON AN
+ORDINARY PROGRAM: the flexible SUBTYPING walk has NO rule for a TERM-VARIABLE
+head** (docs/PAPER-GAPS.md; `cex/cex_p7_flex_walk_tm_var.v`,
+`complete_subtyping_false_at_a_term_variable_head`, Qed + axiom-free — the
+problem side holds, a solution exists, and no run does).  `met.exe` on
+`let f = fun x -> x Unit` traces `I-Abs / I-App / I-Var / SI-FlexMono` and then
+dies with `Failure("broom_flex_poly: should not happen")`; `fun g -> fun y ->
+g y` is identical.  The trigger is exactly "apply a lambda-bound variable whose
+type is still an unsolved flexible".  `fig:alg-subtyping`'s
 second box has five rules and none matches an `x : P` entry, while the paper's
 TWIN walk has `Assign-SkipTmVar` (full-algo-spec.tex:1791).  Nothing in
 `thm:complete-subtyping`'s problem definition excludes a term entry above the
@@ -172,17 +179,18 @@ residual hypothesis of `main_join`.  It bundles TWO independent problems:
     ∀-free `P0`; a `P0` with a ∀ below its head has no general route.  (The
     premise is machine-checked SATISFIABLE at the node that used to refute it,
     so this is a missing SUPPLY, not a falsity.)
-  * **A2** — ⚠️ **NEW, and neither DESIGN §12 nor §12.1 anticipated it.**  The
-    ForallL rows also demand `guarded_pskl P0 \/ P0 = ◇`, and at `NM = TY`
-    with `M = TC` that is NOT derivable: `a_ty_mode_compat mode_tc P0` admits
-    a ∀-headed `P0`, and §8's refutation does not transfer (it uses the Check
-    row's GUARDED counterpart; ForallL's counterpart is arbitrary).  The
-    configuration is real — **the join's last rule does not determine the
-    algorithm's rule**, because ForallL and ForallR commute: ForallL fires on a
-    ∀ SUBJECT, ForallR on a ∀ INPUT, and a ∀-headed `P0` blocks ForallL by its
-    own premise.  Closing it needs a JOIN-PERMUTATION lemma (extract the
-    ForallR family from a ForallL-rooted join with a `bskl_all_inh` target).
-    Logged as a proof-step gap in docs/PAPER-GAPS.md.
+  * **A2** — the ForallL rows also demand `guarded_pskl P0 \/ P0 = ◇`, and at
+    `NM = TY` with `M = TC` that is not derivable: `a_ty_mode_compat mode_tc
+    P0` admits a ∀-headed `P0`, and §8's refutation does not transfer (it uses
+    the Check row's GUARDED counterpart; ForallL's is arbitrary).  **The
+    join's last rule does not determine the algorithm's rule** — ForallL fires
+    on a ∀ SUBJECT, ForallR on a ∀ INPUT, and a ∀-headed `P0` blocks ForallL by
+    its own premise.  ⭐ **The paper HANDLES this**, in one sentence
+    (subtyping-proofs.tex:3385): *"Since declarative subtyping is congruent, we
+    assume WLOG that guarded(P0) ∨ P0 = □; otherwise we apply ForallR first."*
+    What that WLOG costs mechanically is a JOIN-PERMUTATION lemma — extract the
+    ForallR family from a ForallL-rooted join with a `bskl_all_inh` target.
+    Recorded as a proof-step note (not a defect) in docs/PAPER-GAPS.md.
 
 With A and B discharged the bundle is a three-line assembly: strong induction
 on the fuel, then on `length Θ0`; (a) from the fuel IH, (b) from (a) plus the

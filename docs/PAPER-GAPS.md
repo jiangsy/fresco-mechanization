@@ -1958,8 +1958,43 @@ The reference implementation's `assign` has the case —
 {\atypsub[\N][\FN\M][P_0]{\Theta_0,x:Q'\mid\Xi}{\hat\alpha}{Q}{\Theta_1,x:Q'}}
 ```
 
-**Status in the mechanization.**  NOT applied — the blast radius is a rule
-change: `a_sub_flex` and its decorated mirror `a_subtag_flex`
+**⭐⭐⭐ MACHINE-CHECKED, AND THE IMPLEMENTATION CRASHES ON AN ORDINARY
+PROGRAM.**  `frost/algo/cex/cex_p7_flex_walk_tm_var.v`
+(`complete_subtyping_false_at_a_term_variable_head`, Qed + axiom-free)
+exhibits the smallest witness — `Θ0 = x : (), α̂`, `P_0 = ◇ → ◇`, `P = α̂`,
+`N = SK`, `M = FN TI` — and checks all three halves: the PROBLEM side holds,
+a SOLUTION exists (increase, join, fill, external wf — every hypothesis of
+the completeness statement), and NO algorithmic run exists.  And the shape is
+the ordinary one: `a_typing__abs` pushes the lambda binder ABOVE the
+flexibles `a_guess_mono` just invented, and `a_typing__var` hands that very
+flexible to subtyping at an FN mode when the variable is applied.  Against
+the reference implementation:
+
+```
+$ cat t.mle
+type unit = Unit
+let f = fun x -> x Unit
+$ met.exe --debug t.mle
+- I-Abs
+-- I-App
+--- PI-Con  ---- PI-Var  ----- SI-ModFun-Sk  ------ SI-UnivGhostR
+--- I-Var
+---- SI-FlexMono                          <- subtyping enters the walk
+Fatal error: exception Failure("broom_flex_poly: should not happen")
+```
+
+`fun g -> fun y -> g y` crashes identically.  `fun x -> x` is fine (no
+application, hence no FN-mode subtyping on the flexible), and so is any
+version where the applied variable's type is concrete (annotate it, or apply
+a literal lambda).  **The trigger is exactly "apply a lambda-bound variable
+whose type is still an unsolved flexible".**  (The impl reaches `failwith`
+rather than `Errors.type_mismatch` because its contexts also carry
+`Marker` / `Lock` entries, which `assign` skips as `U-Assign-SkipOthers` and
+`sub_flex` does not — the same omission, one entry sort further out than the
+paper's `x : P`.)
+
+**Status in the mechanization.**  The repair is NOT applied — the blast radius
+is a rule change: `a_sub_flex` and its decorated mirror `a_subtag_flex`
 (algo/def_decorated.v) both gain two constructors (the mech splits `x : P`
 into `abind_var_typ` / `abind_var_skl`), which reopens the three mutual
 inductions over the pair (`prop_sub_sound.v`'s
@@ -1977,41 +2012,55 @@ development departs from the paper's statement.**
 
 ---
 
-## ⚠️ GAP (proof-step, 2026-08-03) — `thm:complete-subtyping`'s ForallL case: the declarative derivation's last rule does NOT determine the algorithm's rule
+## ⚠️ PROOF-STEP (2026-08-03) — `thm:complete-subtyping`'s ForallL case: the "WLOG guarded `P_0`" step is a JOIN PERMUTATION, and it is the whole obligation
 
-**Where.**  `thm:complete-subtyping` (algorithmic.tex:1446), ForallL case.
+**This is NOT an unaddressed hole — the paper handles it in one sentence.**
+`thm:complete-subtyping`'s ForallL case (subtyping-proofs.tex:3385-3387) opens
 
-The completeness proof dispatches on the last rule of the *declarative*
-subtyping derivation and, for each, exhibits the matching *algorithmic* rule.
-That correspondence fails at ForallL, because `ForallL` and `ForallR` commute:
+> Since declarative subtyping is congruent, we assume WLOG that
+> $\guarded{P_0}\gor P_0=\Hole$; otherwise we apply \sublab{ForallR} first.
 
-* `\silab{ForallL}` fires when the **subject** `P` is a `∀`;
+That sentence is exactly right, and it is exactly what a mechanization has to
+pay for.  Recording it here so the cost is visible.
+
+**Why the step is needed.**  The dispatcher is "invert the declarative
+derivation, apply the matching algorithmic rule".  That correspondence fails
+at ForallL:
+
+* `\silab{ForallL}` fires when the **subject** is a `∀`, and carries the
+  premise `\guarded{P_0} \gor P_0 = \Hole`;
 * `\silab{ForallR}` fires when the **input** `P_0` is a `∀`
   (`a_sub__forall_r`, algo/def_extra.v:1013);
-* and `\silab{ForallL}` additionally requires `\guarded{P_0} \lor P_0 = □`,
-  which a `∀`-headed `P_0` does **not** satisfy.
+* `skmod[TY]{P_0}{TC}` is `P_0 = A` for an arbitrary **type** `A`
+  (`a_ty_mode_compat__tc`), and a `∀`-type is a type.
 
-So at `N = TY`, `M = TC`, a `∀`-headed subject **and** a `∀`-headed `P_0`, the
-declarative derivation may end in ForallL while the algorithm has no choice
-but ForallR.  The mechanization's ForallL row lemmas
-(`a_sub_complete_forall_l_tagged` / `_untagged`) therefore cannot be applied
-there — they take `(guarded_pskl P0 \/ P0 = pskl_hole)` as a premise, exactly
-as the rule does.
+So at `N = TY`, `M = TC` with **both** a `∀` subject and a `∀`-headed `P_0`,
+the declarative derivation may end in ForallL while the algorithm has no
+choice but ForallR — the two rules commute, and ForallL is blocked by its own
+premise.
 
-Mode compatibility does not rule the configuration out: `skmod[TY]{P_0}{TC}`
-is `P_0 = A` for an arbitrary **type** `A` (`a_ty_mode_compat__tc`), and a
-`∀`-type is a type.  The Check row's refutation (a `bskl_all_inh` source
-refines only to a `bskl_all_inh` target, so a *guarded* counterpart forces a
-non-`∀` `P_0` — `ad_refine_syn_f_all_inh_l_shape`, algo/prop_sub_complete_dispatch.v §8)
-does **not** transfer, because ForallL's counterpart `Q` is arbitrary.
+**What "apply ForallR first" costs mechanically.**  The algorithmic ForallR
+premise runs at `open P_0 α` over `α, Θ_0`, so its IH needs the declarative
+side at the *extended* context and at `open B α` where the counterpart is
+`\inh{\forall\alpha.B}`.  The fill supplies that half (a `bskl_all_inh` source
+refines only to a `bskl_all_inh` target — `ad_refine_syn_f_all_inh_l_shape`,
+algo/prop_sub_complete_dispatch.v §8), but the JOIN does not: it is
+ForallL-rooted.  The missing step is therefore a **join permutation** — push
+the ForallL instantiation under the ForallR binder, i.e. from
 
-**What a repair needs.**  A JOIN-PERMUTATION step: from a ForallL-rooted
-derivation with a `∀`-inherited counterpart, extract the ForallR family that
-the ForallR case consumes (push the ForallL instantiation under the ForallR
-binder).  The paper's proof should say which rule it picks in that overlap and
-why the other is derivable.
+    ad_pat_sub_gv (S n) TY TC Ψ Θ (∀^ε.R) (bskl_all_inh B)
 
-**Status in the mechanization.**  Isolated as `main_forall n`
-(algo/prop_sub_complete_dispatch.v §9/§10), the single residual hypothesis of
-the otherwise-complete twelve-row dispatch `main_join`.  It bundles this gap
-with TASK 0's `sub_shield` supply, which the same two rows also owe.
+extract the cofinite family
+
+    ∀ α ∉ L, ad_pat_sub_gv n' TY TC Ψ (α, Θ) (∀^ε.R) (open B α)
+
+that `a_sub_complete_forall_r` consumes.  This is the mechanical content of
+"declarative subtyping is congruent"; the paper is entitled to it, but it is
+not free.
+
+**Status in the mechanization.**  The two ForallL rows are isolated as
+`main_forall n` (algo/prop_sub_complete_dispatch.v §9/§10), the single
+residual hypothesis of the otherwise-complete twelve-row dispatch
+`main_join`.  It bundles this permutation step with TASK 0's `sub_shield`
+supply, which the same two rows also owe.  Nothing here is a defect in the
+paper's statement or proof.

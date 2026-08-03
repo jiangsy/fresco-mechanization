@@ -80,12 +80,12 @@ point to the same content.
   arrow-subject layer (`main_arrow_holds`).  ⚠️ **Two obstacles remain,
   and BOTH are for the authors** (docs/PAPER-GAPS.md): (i) the
   flexible SUBTYPING walk has **no rule for a term-variable head**
-  while the twin assignment walk has `Assign-SkipTmVar` — the
-  reference implementation agrees with the paper and therefore shares
-  the gap; and (ii) at ForallL **the join's last rule does not
-  determine the algorithm's rule** (ForallL/ForallR commute, and a
-  ∀-headed `P0` blocks ForallL by its own premise), which needs a
-  join-permutation lemma.  The residual is isolated as the single
+  while the twin assignment walk has `Assign-SkipTmVar` — MACHINE-
+  CHECKED (`cex/cex_p7_flex_walk_tm_var.v`) and the reference
+  implementation **crashes** on `fun x -> x Unit`; and (ii) at ForallL
+  the join's last rule does not determine the algorithm's rule
+  (ForallL/ForallR commute), which the paper covers by a one-sentence
+  WLOG whose mechanical content is a join-permutation lemma.  The residual is isolated as the single
   hypothesis `main_forall n`.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
