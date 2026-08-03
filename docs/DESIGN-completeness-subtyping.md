@@ -4903,10 +4903,15 @@ fresh flexible at the codomain is built by the typing itself, and a source
 program separates the systems.  The repair is NOT a fourth shield
 re-indexing, and NOT a payload side condition either — see §14.8.
 
-### ⚠️⚠️ §14.8 TASK 2's VERDICT (2026-08-03, later): the failing payload class is TYPING-REACHABLE — the algorithm is INCOMPLETE ON PROGRAMS
+### ⚠️⚠️ §14.8 ~~TASK 2's VERDICT: the failing payload class is TYPING-REACHABLE~~ — **RETRACTED SAME DAY (see §14.9)**
 
-Reading the payload invariant off the producers (HANDOFF TASK 2) refuted
-the premise of the planned repair instead of supplying it.
+⚠️⚠️ **The conclusion of this subsection is WRONG and is retracted in §14.9:
+the declarative system REJECTS the program below too, so it is not a
+separation.**  The producer analysis (facts 1 and 2) is accurate and worth
+keeping; what fails is the inference from it.  Read §14.9 first.
+
+Reading the payload invariant off the producers (HANDOFF TASK 2) appeared to
+refute the premise of the planned repair instead of supplying it.
 
 **The producers.**  Every `a_sub` payload is the ambient `a_typing`/`a_pat`
 payload.  FN payloads are `arrow(P_arg, Q_amb)` built by AT-App/AP-App,
@@ -4934,16 +4939,63 @@ the collapse still happens but the collapsed guess is MONO and
 Assign-SolveM succeeds; the ∀ below the argument type's head is the exact
 discriminator.  Repros: `docs/repros/thm_complete_subtyping_reachable_*`.
 
-**Consequence for the roadmap.**  No payload side condition can make the
-completeness bundle cover all typing-reachable instances — the reachable
-set contains failing ones.  What remains provable is completeness on the
-COMPLETABLE payload class (roughly `prop_sub_shield_supply.v`'s routes:
-∀-free / flex-free / determined-instantiation configurations), which
-excludes real programs; whether to state that weaker theorem, or to FIX the
-solve's threading (e.g. SolE-FlexR depositing the accumulated pattern as
-the flexible's definition instead of discarding it) and re-prove, is an
-AUTHOR-level decision.  P7c is BLOCKED on it.  Full entry:
-docs/PAPER-GAPS.md (2026-08-03).
+**~~Consequence for the roadmap~~ — RETRACTED, see §14.9.**
+
+### ⚠️⚠️ §14.9 THE RETRACTION (2026-08-03, same day, co-author caught it): the declarative system REJECTS that program too — §14.8 is NOT a separation
+
+The §14.8 program is not a counterexample: **`pipe (λg. g arg)` is
+ill-typed DECLARATIVELY as well**, so met.exe's rejection is correct
+behaviour and nothing goes to the authors.
+
+**The error.**  I read `d_sub__forall_l_untagged` for a `mono_ptyp`
+restriction, found none, and concluded that impredicative instantiation is
+unconstrained.  The operative constraint is not monotype-ness but the TAG
+obligation — the paper's *"never guess polymorphism out of thin air"*:
+
+* `d_sub__forall_l_untagged` runs its premise at `Ψ ∪ Ψ'` with
+  `d_tags Ψ' ph`, so an instantiation containing a ∀ contributes a tag ε
+  the premise's derivation must PRODUCE;
+* `d_consis__forall_inh_tagged` is the ONLY `d_consis` rule that puts a tag
+  into Ψ, and its counterpart must be `btyp_all_inh` — an INHERITED ∀;
+* `d_sub__infer` demands `Ψ [=] empty` at TI.
+
+⟹ **a polytype instantiation must be PAID FOR by an inherited ∀ at that
+position of the counterpart**, and the counterpart is what the SKELETON
+supplies.  In §14.8's program the argument's skeleton is `⫯(◇ → ◇)` — no ∀
+at `r`'s position — so `r := (∀c. c → c) → 1` is unpayable.  (`is_ttyp`
+excludes ghosts, so no ghost-carrying instantiation evades this; and no
+MONOTYPE instantiation of `b` can accept `arg` either.)  `pipe`'s `r` and
+`g`'s `b` need each other's information — mutually dependent.
+
+**The paper documents exactly this, twice (§2.9).**  *"Only flowing back and
+forth once"* (third limitation) is the program structurally — `f`'s `c` is
+guided by `g`'s skeleton, but `b` needs the information to flow BACK, which
+\Calc allows only once; the co-author's remark is that the program becomes
+typeable if `pipe`'s skeleton first flows INTO `λg. g arg`, i.e. under that
+very extension.  *"Ghosts are nameless"* (second limitation) is the same
+defect in `⫯(◇ → ◇)`: the ghosts lose the argument/result connection, so
+the inherited information is "too coarse" to license the instantiation.
+
+**What survives, and what reopens.**  §14.7's rule-level result is
+untouched (`probe_no_run`, `probe_main_forall_false`), and that
+configuration's declarative side genuinely pays its tag — `consis_d`
+discharges ε against a `bskl_all_inh` counterpart at the DOMAIN — so
+`join_d` is a legitimate solution and `main_forall` is really false.  What
+reopens is REACHABILITY, now sharply stated: the cex needs BOTH (1) a raw
+`Θ0`-flexible at the payload's codomain (algorithm has NO inherited
+information there) and (2) a concrete counterpart at that codomain with the
+tag paid at the domain (declarative side HAS information).  These pull in
+opposite directions — the flexible arises exactly where information is
+absent — and §14.8's program is the instructive near-miss: it achieves (1)
+and loses (2), whereupon the declarative side rejects with the algorithm.
+If the conjunction is unreachable the theorem is merely OVER-QUANTIFIED and
+HANDOFF TASKS 2–3 (the payload side condition) are back ON.
+
+**Lesson.**  Before any "decl accepts" claim, enumerate ALL the declarative
+side conditions rather than the first plausible one, and consult §2.9's
+limitation list — it is the authoritative catalogue of what the declarative
+system deliberately rejects.  Same species as the MODE confusion of
+§14.6's episode.  Full entry: docs/PAPER-GAPS.md (2026-08-03).
 
 ### ⭐⭐ §12.2 LANDED (2026-08-03): all three layers, and the two obstacles that remain
 

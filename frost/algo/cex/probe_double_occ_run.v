@@ -79,21 +79,28 @@
     (∀-free / mono-counterpart / inh-free / flex-free) delimit the
     COMPLETABLE class.
 
-    ⚠️⚠️ REACHABILITY UPDATE (2026-08-03, later — HANDOFF TASK 2's verdict).
-    The first reading — "met.exe accepts the corresponding source program,
-    so the typing never produces such payloads and the theorem is merely
-    over-quantified" — is REFUTED: the id2-idc probe passed only because
-    the collection DETERMINED the instantiation.  The spine collection
-    ghosts only HEAD quantifiers ([a_sub__univ_ghost_r] keeps a guarded
-    argument type VERBATIM under ⫯, so a ∀ BELOW the head survives raw),
-    and an UNDETERMINED result position becomes a fresh flexible — so the
-    typing itself builds [arrow(⫯((∀c.c→c)→unit), r̂)], this file's payload
-    shape modulo the ⫯, and met.exe REJECTS the 12-line source program
-    [pipe (fun g -> g arg)] that the declarative side accepts
-    (docs/repros/thm_complete_subtyping_reachable_reject_pipe.mle, with a
-    concrete-r CONTROL and a no-∀ ABLATION both passing).  The algorithm
-    is INCOMPLETE ON PROGRAMS; no payload side condition restores the full
-    claim.  PAPER-GAPS.md (2026-08-03) + DESIGN §14.8. *)
+    ⭕ REACHABILITY IS OPEN.  A same-day claim that this payload class is
+    typing-reachable — a [pipe (fun g -> g arg)] program allegedly accepted
+    declaratively and rejected by met.exe — is ⚠️⚠️ RETRACTED: the
+    DECLARATIVE system rejects that program too, so it is no separation.  A
+    polytype instantiation must be PAID FOR by an inherited ∀ in the
+    counterpart ([d_sub__forall_l_untagged] runs at [Ψ ∪ Ψ'] with
+    [d_tags Ψ' ph]; only [d_consis__forall_inh_tagged] puts a tag INTO Ψ,
+    against a [btyp_all_inh]; and [d_sub__infer] demands [Ψ = ∅]) — the
+    paper's "never guess polymorphism out of thin air".  There the
+    skeleton [⫯(◇ → ◇)] supplies no ∀, which is the paper's own §2.9
+    limitations 2 and 3 ("ghosts are nameless", "only flowing back and
+    forth once").
+    ⭐ THE SHARPENED QUESTION.  This configuration needs BOTH (1) a raw
+    Θ0-flexible at the payload's codomain — the algorithm has NO inherited
+    information there — and (2) a concrete counterpart at that codomain
+    with the guess's tag paid at the DOMAIN, i.e. the declarative side HAS
+    information (here: [consis_d] discharges e against [bskl_all_inh]).
+    Those pull in opposite directions, so the conjunction may well be
+    UNREACHABLE — in which case thm:complete-subtyping is merely
+    OVER-QUANTIFIED and the payload side condition
+    (docs/HANDOFF-completeness-repair.md TASKS 2–3) is the repair.
+    PAPER-GAPS.md (2026-08-03) + DESIGN §14.9. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.

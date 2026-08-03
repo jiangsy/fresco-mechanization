@@ -1,14 +1,16 @@
 -- CONTROL for thm_complete_subtyping_reachable_reject_pipe.mle: met.exe
--- ACCEPTS this.  [pipe]'s type is the counterexample's with [r] ALREADY
--- instantiated to (∀c.[](c→c)) → unit — i.e. exactly the declarative
--- ForallL step the algorithm cannot take; the term is character-identical.
+-- ACCEPTS this.  [pipe]'s type is that file's with [r] ALREADY
+-- instantiated to (∀c.[](c→c)) → unit; the term is character-identical.
 --
--- Consequence: by soundness of the algorithm, the declarative check of
--- [fun g -> g arg] against (∀b.[](b→b)) → ((∀c.[](c→c)) → unit) EXISTS,
--- so the counterexample's declarative derivation is that one plus a single
--- d_sub__forall_l_untagged step for [pipe].  With [r] concrete no flexible
--- ever faces the ∀-carrying payload: the trace shows SolE-Arrow/SolE-Var
--- and U-ForallInh (the ∀ is MATCHED) instead of SolE-FlexR.
+-- What it shows: with [r] concrete the counterpart carries the ∀, so the
+-- inherited information licenses the instantiation and no flexible ever
+-- faces the ∀-carrying payload (the trace has SolE-Arrow/SolE-Var and
+-- U-ForallInh — the ∀ is MATCHED — instead of SolE-FlexR).
+--
+-- ⚠️ It does NOT show that the declarative system accepts the
+-- counterexample file: that step would need pipe's ∀r instantiated with a
+-- polytype whose TAG nothing can pay (no inherited ∀ in the counterpart).
+-- Concluding otherwise was the retracted error; docs/PAPER-GAPS.md.
 
 type unit = Unit
 

@@ -1,20 +1,42 @@
-⚠️⚠️ STATUS (2026-08-03, end): TASK 1 is DONE (probe machine-checked;
-probe_no_run / probe_motive_instance_false / probe_main_forall_false all
-Qed, axiom-free; docs updated; committed).  TASK 2 is DONE with an
-INVERTED verdict: the failing payload class IS TYPING-REACHABLE — the
-spine collection ghosts only HEAD quantifiers and an undetermined result
-becomes a fresh flexible, so the typing builds arrow(⫯((∀c.c→c)→unit), r̂),
-and met.exe REJECTS the source program `pipe (fun g -> g arg)` that the
-declarative side accepts (repros
-docs/repros/thm_complete_subtyping_reachable_reject_pipe*.mle; control +
-ablation pin the ∀-below-head as the discriminator).  The algorithm is
-INCOMPLETE ON PROGRAMS; no payload side condition covers all reachable
-instances.  ⟹ TASK 3 IS INVALID AS SCOPED — do not execute it.  The
-repair direction (weaker theorem on the completable class vs fixing the
-solve's threading, e.g. SolE-FlexR depositing the pattern as the
-flexible's definition) is an AUTHOR-level decision; P7c is BLOCKED on it.
-See PAPER-GAPS.md (2026-08-03) + DESIGN §14.8 + PROGRESS (top entry).
-The text below is the ORIGINAL plan, kept for the record.
+⚠️ STATUS (2026-08-03, end).  **TASK 1 is DONE** — the probe is
+machine-checked (`probe_no_run`, `probe_motive_instance_false`,
+`probe_main_forall_false`, all Qed + axiom-free; docs updated; committed).
+**TASKS 2–3 are still OPEN and the plan below stands**, with ONE correction
+and ONE sharpening:
+
+⚠️⚠️ CORRECTION.  A same-day TASK 2 verdict — "the failing payload class is
+TYPING-REACHABLE, the algorithm is incomplete on programs, TASK 3 is
+invalid" — is RETRACTED (co-author caught it).  The witness program
+`pipe (fun g -> g arg)` is rejected DECLARATIVELY too: a polytype
+instantiation must be PAID FOR by an inherited ∀ in the counterpart
+(`d_sub__forall_l_untagged` runs at `Ψ ∪ Ψ'` with `d_tags Ψ' ph`; only
+`d_consis__forall_inh_tagged` puts a tag into Ψ, against a `btyp_all_inh`;
+`d_sub__infer` demands `Ψ = ∅`) — the paper's "never guess polymorphism out
+of thin air" — and the skeleton `⫯(◇ → ◇)` supplies no ∀.  That program is
+the paper's own §2.9 limitations 2 and 3 ("ghosts are nameless"; "only
+flowing back and forth once").  ⚠️ Do NOT re-derive a separation without
+first enumerating ALL declarative side conditions (the TAG obligation, not
+just the monotype one) and checking §2.9.
+
+⭐ SHARPENING for TASK 2.  The refuting configuration needs BOTH
+  (1) a raw `Θ0`-flexible at the payload's codomain — the algorithm has NO
+      inherited information there — and
+  (2) a concrete counterpart at that codomain, with the guess's tag paid at
+      the DOMAIN by an inherited ∀ — the declarative side HAS information.
+These pull in OPPOSITE directions (the flexible arises exactly where
+inherited information is absent), so the conjunction is plausibly
+UNREACHABLE.  The retracted program is the instructive near-miss: it gets
+(1) and loses (2), and the declarative side then rejects with the
+algorithm.  Proving the conjunction unreachable IS the payload invariant
+TASK 2 asks for — and it would make the theorem merely over-quantified,
+with TASK 3's motive side condition as the repair.
+
+The producer facts found while looking (accurate, reusable): the spine
+collection ghosts only HEAD quantifiers (`a_sub__univ_ghost_r` keeps a
+guarded argument type verbatim under ⫯, so a ∀ below the head survives
+raw), and an undetermined result position becomes a fresh flexible.
+
+The text below is the ORIGINAL plan, still current apart from the above.
 
 Handover — Frost mechanization: REPAIR thm:complete-subtyping's payload
 over-quantification and CLOSE subtyping completeness.  Supersedes

@@ -78,7 +78,51 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⚠️⚠️⚠️ TASK 2's VERDICT: the failing payload class is TYPING-REACHABLE — a 12-line SOURCE PROGRAM separates decl from algo; the algorithm is INCOMPLETE ON PROGRAMS
+## 2026-08-03 (latest) — ⚠️⚠️ RETRACTION (co-author caught it): the "incompleteness on programs" claim is WRONG — the declarative system rejects that program too; reachability is OPEN again
+
+The entry below claimed a source-level separation.  **It is withdrawn.**
+`pipe (λg. g arg)` is ill-typed DECLARATIVELY as well, so met.exe's
+rejection is correct behaviour and nothing goes to the authors.
+
+**The error.**  I read `d_sub__forall_l_untagged` for a `mono_ptyp`
+restriction, found none, and concluded impredicative instantiation was
+unconstrained.  The operative constraint is the TAG obligation — the
+paper's *"never guess polymorphism out of thin air"*: the rule runs its
+premise at `Ψ ∪ Ψ'` with `d_tags Ψ' ph`; the ONLY `d_consis` rule that puts
+a tag into Ψ is `d_consis__forall_inh_tagged`, whose counterpart must be
+`btyp_all_inh` (an INHERITED ∀); and `d_sub__infer` demands `Ψ [=] empty`.
+So a polytype instantiation must be PAID FOR by an inherited ∀ in the
+counterpart, which is what the SKELETON supplies — and the skeleton
+`⫯(◇ → ◇)` of `λg. g arg` supplies none at `r`'s position.  `pipe`'s `r`
+and `g`'s `b` are mutually dependent.
+
+**The paper documents it twice (§2.9)**: *"Only flowing back and forth
+once"* (third limitation) is this program structurally — its own example
+`f : ∀c d.(c → c → List d) → Int` applied to `g : ∀b.(∀a.a→a) → b → List b`
+needs the information to flow BACK to instantiate `b`; and *"ghosts are
+nameless"* (second limitation) is the same defect in `⫯(◇ → ◇)`.  The
+co-author's remark — the program becomes typeable if `pipe`'s skeleton
+first flows INTO `λg. g arg` — is exactly that extension.
+
+**Survives**: the rule-level results (`probe_no_run`,
+`probe_motive_instance_false`, `probe_main_forall_false`).  That
+configuration's declarative side DOES pay its tag (`consis_d` discharges ε
+against a `bskl_all_inh` counterpart at the domain), so `main_forall` is
+genuinely false and the two flagships stay vacuous-as-stated.
+
+**Reopens**: reachability, now sharply stated — the cex needs BOTH a raw
+`Θ0`-flexible at the payload's codomain (no inherited information) AND a
+concrete counterpart there with the tag paid at the domain (information
+present).  These pull in opposite directions; the withdrawn program is the
+near-miss that gets the first and loses the second.  If the conjunction is
+unreachable, the theorem is merely OVER-QUANTIFIED and HANDOFF TASKS 2–3
+are back ON.
+
+**Lesson** (same species as the MODE confusion): before any "decl accepts"
+claim, enumerate ALL the declarative side conditions — the TAG obligation,
+not just the monotype one — and consult §2.9's limitation list.
+
+## 2026-08-03 — ~~⚠️⚠️⚠️ TASK 2's VERDICT: the failing payload class is TYPING-REACHABLE~~ — **RETRACTED, see the entry above**
 
 Reading the payload invariant off the producers (HANDOFF TASK 2) refuted the
 planned repair's premise instead of supplying it.  Call-site map: every

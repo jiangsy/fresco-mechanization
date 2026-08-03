@@ -117,22 +117,25 @@ point to the same content.
   with it (`probe_main_forall_false`).  The bundle and
   `a_sub_complete_thm` are therefore VACUOUS as stated, and the two
   flagships stay OUT of README.v (which indexes unconditional paper
-  claims).  ⚠️⚠️ **And (2026-08-03, later) the failing payload class IS
-  TYPING-REACHABLE — the algorithm is INCOMPLETE ON PROGRAMS**: the spine
-  collection ghosts only HEAD quantifiers (SI-UnivGhostR keeps a guarded
-  argument type verbatim under 👻, so a ∀ BELOW the head survives raw)
-  and an undetermined result position becomes a fresh flexible — and at
-  that payload met.exe REJECTS the 12-line `pipe (fun g -> g arg)`
-  program while the declarative side accepts it
-  (docs/repros/thm_complete_subtyping_reachable_reject_pipe.mle, with a
-  concrete-`r` control and a no-∀ ablation both PASSING; the ∀ below the
-  argument type's head is the discriminator — it makes the collapsed
-  guess non-mono, killing Assign-SolveM).  Full entry:
-  docs/PAPER-GAPS.md (2026-08-03).  Consequence: NO payload side
-  condition can make the completeness bundle cover all typing-reachable
-  instances; the repair direction (restrict the theorem vs fix the
-  solve's threading) is an AUTHOR-level decision, and P7c is BLOCKED on
-  it.
+  claims).  ⭐ The failing payload shape is exactly the shield saga's
+  residual (a ∀ below `P0`'s head at a consis-feeding position), and
+  `prop_sub_shield_supply.v`'s covered shapes delimit the COMPLETABLE
+  class.  ⚠️⚠️ A same-day claim that this payload class is
+  TYPING-REACHABLE (a `pipe (fun g -> g arg)` program allegedly accepted
+  declaratively and rejected by met.exe) is **RETRACTED** — the
+  declarative system rejects that program TOO.  A polytype instantiation
+  must be PAID FOR by an inherited ∀ in the counterpart (the tag
+  discipline: `d_sub__forall_l_untagged` runs at `Ψ ∪ Ψ'`, only
+  `d_consis__forall_inh_tagged` puts a tag in, and `d_sub__infer` demands
+  `Ψ = ∅`), and there the skeleton `⫯(◇ → ◇)` supplies no ∀ — the paper's
+  §2.9 limitations 2 and 3 ("ghosts are nameless", "only flowing back and
+  forth once") document exactly that program.  ⭕ So whether the cex
+  configuration is reachable is OPEN, the theorem may be merely
+  OVER-QUANTIFIED, and the payload-side-condition repair
+  (`docs/HANDOFF-completeness-repair.md` TASKS 2–3) is back ON.  ⚠️ LESSON:
+  before any "decl accepts" claim, enumerate ALL the declarative side
+  conditions (the TAG obligation, not just the monotype one) and check
+  §2.9 — the same species of error as the earlier MODE confusion.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),

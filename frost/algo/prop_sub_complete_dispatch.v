@@ -1280,17 +1280,16 @@ Qed.
 (*          and the continuation's domain consistency is scope-stuck.      *)
 (*          Hence the motive instance is FALSE                             *)
 (*          ([probe_motive_instance_false]) and [main_forall 3] with it    *)
-(*          ([probe_main_forall_false]).  ⚠️⚠️ And (2026-08-03, later) the   *)
-(*          failing payload CLASS is TYPING-REACHABLE: the spine           *)
-(*          collection keeps a ∀ BELOW an argument type's head raw (only   *)
-(*          HEAD quantifiers are ghosted), an undetermined result becomes  *)
-(*          a fresh flexible, and met.exe REJECTS the source program       *)
-(*          [pipe (fun g -> g arg)] that the declarative side accepts      *)
-(*          (docs/repros/thm_complete_subtyping_reachable_reject_pipe.mle  *)
-(*          + control + ablation; PAPER-GAPS 2026-08-03).  So NO payload   *)
-(*          side condition covers all reachable instances — the repair     *)
-(*          direction (weaker theorem vs fixing the solve's threading) is  *)
-(*          an AUTHOR-level decision; P7c is BLOCKED on it.                *)
+(*          ([probe_main_forall_false]).  ⭕ Whether that payload class is  *)
+(*          TYPING-REACHABLE is OPEN: a same-day "incomplete on programs"  *)
+(*          claim is RETRACTED (the declarative system rejects that        *)
+(*          program too — a polytype instantiation must be PAID FOR by an  *)
+(*          inherited ∀ in the counterpart, the paper's §2.9 limitations   *)
+(*          2 and 3; PAPER-GAPS 2026-08-03).  The cex needs a raw          *)
+(*          flexible at the payload's codomain AND a concrete counterpart  *)
+(*          there — opposite directions — so if that is unreachable the    *)
+(*          theorem is merely OVER-QUANTIFIED and the payload side         *)
+(*          condition is the repair (HANDOFF TASKS 2–3, back ON).          *)
 (*                                                                        *)
 (*     ⭐ A2 — CLOSED (2026-08-03), §8b, and DISCHARGED INSIDE §9's ForallL *)
 (*          rows, so it is no longer part of the residual at all.  The two  *)
@@ -1334,12 +1333,13 @@ Qed.
 (*  known-true" reasoning was CIRCULAR precisely at the paper theorem's    *)
 (*  over-quantification of [P0]; stating the residual as [main_forall]     *)
 (*  rather than a guessed shield supply is what made the falsity           *)
-(*  DETECTABLE instead of silently assumed.)  ⚠️⚠️ TASK 2's verdict          *)
-(*  (2026-08-03, later) killed the planned payload-side-condition repair:  *)
-(*  the failing class is TYPING-REACHABLE (the reachable-payload repros,   *)
-(*  PAPER-GAPS 2026-08-03), so no motive side condition covers all         *)
-(*  reachable instances.  The two theorems stay out of README.v; the       *)
-(*  repair direction is an AUTHOR-level decision (DESIGN §14.8).           *)
+(*  DETECTABLE instead of silently assumed.)  The two theorems stay out    *)
+(*  of README.v.  The planned repair — a payload side condition on the     *)
+(*  MOTIVE, read off the typing's a_sub call sites — is still the route    *)
+(*  (HANDOFF TASKS 2–3); a same-day claim that it was INVALID because the  *)
+(*  failing class is typing-reachable has been RETRACTED (DESIGN §14.9,    *)
+(*  PAPER-GAPS 2026-08-03: the declarative system rejects that program     *)
+(*  too, so reachability is simply OPEN).                                  *)
 (* ===================================================================== *)
 
 
@@ -1402,10 +1402,11 @@ Qed.
     ⚠️⚠️ It inherits [main_forall], which is REFUTED
     (cex/probe_double_occ_run.v, [probe_main_forall_false]) — so as stated
     this theorem is VACUOUS, and it stays OUT of README.v (which indexes
-    unconditional paper claims).  The failing payload class is
-    TYPING-REACHABLE (PAPER-GAPS 2026-08-03, the reachable-payload repros),
-    so no payload side condition restores the full claim; the repair
-    direction is an author-level decision (DESIGN §14.8). *)
+    unconditional paper claims).  ⭕ Whether the refuting configuration is
+    typing-reachable is OPEN (a same-day "reachable" claim is retracted —
+    DESIGN §14.9); if it is not, the paper statement is merely
+    OVER-QUANTIFIED and a payload side condition on the motive is the
+    repair (docs/HANDOFF-completeness-repair.md TASKS 2–3). *)
 Theorem a_sub_complete_thm :
   (forall n, main_forall n) ->
   forall n NM M Θ0 P0 P R' Θ κ Q,

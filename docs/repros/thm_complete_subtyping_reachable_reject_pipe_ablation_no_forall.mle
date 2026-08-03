@@ -6,9 +6,10 @@
 -- ⭐ The SolE-FlexR collapse STILL HAPPENS here (the trace is identical
 -- through SolS-Check / SolE-FlexR / U-FlexL / U-Assign-SolveM) — but the
 -- assignment it then demands is [unit → unit], a MONOTYPE, so
--- Assign-SolveM succeeds and the run continues.  This pins the
--- discriminator: not the collapse itself, but the collapse at a payload
--- whose eq-determined instantiation is a POLYTYPE.
+-- Assign-SolveM succeeds and the run continues.  So what the algorithm
+-- cannot do is recover a POLYTYPE it has discarded — and correspondingly
+-- the declarative system will not guess one without an inherited ∀ to pay
+-- for it, which is why the un-ablated file is rejected by BOTH systems.
 
 type unit = Unit
 
