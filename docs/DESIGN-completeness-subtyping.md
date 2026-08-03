@@ -4794,3 +4794,97 @@ shield as a hypothesis exactly as §12 item 3 planned — the difference is that
 the hypothesis is now known to be SATISFIABLE, and the positional index is the
 handle a general supply proof gets to use (it need only shield positions the
 guess actually reaches).  The dispatcher (§12) is next.
+
+### ⭐⭐ §12.2 LANDED (2026-08-03): all three layers, and the two obstacles that remain
+
+`frost/algo/prop_sub_complete_dispatch.v` is now §1–§10, 1093 lines, every
+lemma `Qed` and axiom-free, <1 s to compile.  §12.1's layering is in the tree:
+
+| layer | lemma | how it terminates |
+|---|---|---|
+| (a) | `main_arrow_holds` | the FUEL IH alone — no P7a, no context induction |
+| (b) | `flex_step` | structural on `Θ0`, `Ξ` generalized, total length bounded |
+| (c) | `main_join` | induction on the JOIN (twelve rows) |
+
+**THE ONE DESIGN IDEA THAT MADE (a) AND (c) ONE PROOF.**  §12.1 planned them
+as separate developments.  They are not: `main_join` carries the P7a escape as
+an ABSTRACT predicate `ESC : uskl -> Prop` on the *motive's* subject, with
+three closure conditions —
+
+```coq
+(forall R0, ESC (uskl_tophole R0) -> ESC R0) ->
+(forall R0, ESC (uskl_topholeg R0) -> ESC R0) ->
+(forall α, ESC (uskl_var_f α) -> flex_here n Θ0) ->
+```
+
+The two tophole conditions are needed because `__univ_ghost_l` / `_lg` STRIP
+the subject and can therefore EXPOSE a variable that the conclusion's subject
+hid; that is why the escape cannot be phrased as a bare `R = uskl_var_f α ->
+…`.  Instantiate `ESC` with a constant and you get the general dispatch;
+instantiate it with `fun R => exists Rx Ry, R = uskl_arrow Rx Ry` and all
+three conditions are closed by `discriminate` — an arrow is neither `∀◇` nor
+`∀◈` nor a variable — so P7a is unreachable and layer (a) falls out of layer
+(c) with the fuel IH alone.  **Reuse this whenever two layers of one induction
+differ only in which escapes are reachable.**
+
+**FIVE ROW-LEMMA HYPOTHESES MOVED** (prop_sub_complete_thm.v; the proofs are
+otherwise untouched — each used its IH exactly once, at the guarded instance):
+
+* `depend` / `skip` / `skip_rigid` — the walk IH gains `length Ξ' <= S (length Ξ)`.
+  An unguarded `forall Ξ'` is NOT derivable under a structural induction on
+  `Θ0` with `Ξ` generalized: the IH is available only at suffixes the walk can
+  reach, and Flex-Depend reaches exactly one, `Ξ,β̂`.
+* `assign` — the cross-half IH gains `length Θ0' <= length Ξ + length Θ0`.
+* `solve` — the cross-half IH is **restricted to an ARROW subject**.  This is
+  §12.1's whole point, made mechanical.
+
+**THE STUCK-CHECK COST NOTHING NEW.**  §12.1 called it "the one research
+step".  It is `a_sub_flex_complete_skip_rigid`'s steps 0–4 re-read as a
+refutation: `sub_gv_bskl_downarrow_mono_scoped` (the JOIN's ⇓-confinement at a
+monotype subject) composed with `refine_syn_f_downarrow_source_ftv` (the
+FILL's source below its target) bounds `ftv (⇓ˢ κP0)` by `dom Θ'`, while
+`rigid_survives_solution` puts `β` in it and `β ∉ dom Θ'`.  ⭐ The ⇓-FORM is
+also what absorbs the motive's ≡ᵘ slack — `≡ᵗ` does not preserve ftv-scoping,
+but it does preserve ⇓.  **Whenever a confinement has to survive the motive's
+slack, state it on `⇓` and not on the term.**
+
+**THE CHECK ROW's `guarded_pskl P0`** is the SOURCE-side mirror of
+`ad_refine_syn_f_all_inh_r_shape`: `ad_refine_syn_f_all_inh_l_shape` says a
+`bskl_all_inh` SOURCE refines only to a `bskl_all_inh` TARGET (only `__all`
+and `__flex_r` have such a source, and `__flex_r`'s chain cannot bottom out —
+a monotype painting is never ∀-inh).  With the Check row's guarded
+counterpart that refutes a ∀-headed `P0`.
+
+#### ⭕ The two obstacles, and why neither is mechanical
+
+**(A2) ⚠️ THE JOIN'S LAST RULE DOES NOT DETERMINE THE ALGORITHM'S RULE.**  The
+whole dispatcher is built on "invert the join, delegate to the matching row
+lemma".  That correspondence FAILS at ForallL.  `a_sub__forall_l` fires on a
+∀ SUBJECT and carries `(guarded_pskl P0 \/ P0 = ◇)`; `a_sub__forall_r` fires
+on a ∀ INPUT.  At `NM = TY`, `M = TC` with BOTH a ∀ subject and a ∀-headed
+`P0`, the join may end in ForallL while the algorithm has no choice but
+ForallR — and `a_ty_mode_compat mode_tc P0` does not exclude a ∀-headed `P0`.
+§8's refutation does not transfer, because it consumes the Check row's
+GUARDED counterpart and ForallL's counterpart is arbitrary.  A repair needs a
+JOIN-PERMUTATION lemma: from a ForallL-rooted join with a `bskl_all_inh`
+target, extract the ForallR family `a_sub_complete_forall_r` consumes.  Logged
+in docs/PAPER-GAPS.md.
+
+**(B) ⛔ THE TERM-VARIABLE GAP.**  See docs/PAPER-GAPS.md.  What matters for
+the DESIGN is the shape of the workaround and why it does not scale: the
+premise `a_sub_flex_walkable Θ0` sits on `flex_step` only.  It cannot be
+carried to the bundle, because the row lemmas' fuel IH is the UNRESTRICTED
+`sub_complete_concl` — the restriction would have to move INTO the motive, and
+then every row would owe walkability of the contexts it recurses at (Sub-Arrow
+at the domain run's output, Sub-ForallL at `Ξ ++ Θ0`, Flex-Solve at the
+deposited block).  Adding `Flex-SkipTmVar` is strictly the smaller change.
+
+#### The assembly, once A and B are discharged
+
+```coq
+Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
+(* strong induction on the fuel n; inside, strong induction on |Θ0|:
+     main_arrow_holds  (fuel IH)
+   → flex_step         (main_arrow + main at shorter contexts)
+   → main_join         (fuel IH + flex_step at Ξ = ·) *)
+```

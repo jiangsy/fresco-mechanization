@@ -72,6 +72,21 @@ point to the same content.
   all.  `p7_sub_shield_repaired_holds` machine-checks the repaired
   premise at the very witness that refutes the old one.  Nothing goes
   to PAPER-GAPS.md — `sub_shield` is not a paper statement.
+  **P7c: ALL THREE LAYERS LANDED (2026-08-03).**
+  `frost/algo/prop_sub_complete_dispatch.v` (§1–§10, all `Qed` +
+  axiom-free) now holds the stuck-check
+  (`sub_flex_rigid_head_absurd`), the flex half (`flex_step`), the
+  main half's TWELVE-ROW join dispatch (`main_join`) and the
+  arrow-subject layer (`main_arrow_holds`).  ⚠️ **Two obstacles remain,
+  and BOTH are for the authors** (docs/PAPER-GAPS.md): (i) the
+  flexible SUBTYPING walk has **no rule for a term-variable head**
+  while the twin assignment walk has `Assign-SkipTmVar` — the
+  reference implementation agrees with the paper and therefore shares
+  the gap; and (ii) at ForallL **the join's last rule does not
+  determine the algorithm's rule** (ForallL/ForallR commute, and a
+  ∀-headed `P0` blocks ForallL by its own premise), which needs a
+  join-permutation lemma.  The residual is isolated as the single
+  hypothesis `main_forall n`.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),

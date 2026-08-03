@@ -1896,3 +1896,122 @@ the stability lemma in a second, EXISTENTIAL-output form as well: the ∀ rows
 re-pick their binders away from the substituted skeleton and return `Ξ ⨾ 𝒞`
 up to a rigid renaming.  Nothing in the paper changes; this is a note about
 what "by Barendregt" costs to discharge.
+
+---
+
+## ⛔ INCOMPLETE RULE SET (2026-08-03) — the flexible SUBTYPING walk has NO rule for a TERM-VARIABLE head
+
+**Where.**  `fig:alg-subtyping`'s second box (the auxiliary judgment
+`\atypsub[\N][\FN\M][P_0]{\Theta_0\mid\Xi}{\hat\alpha}{Q}{\Theta_1}`,
+full-algo-spec.tex:883-912) has exactly five rules — `Flex-Solve`,
+`Flex-Assign`, `Flex-Depend`, `Flex-Skip`, `Flex-SkipRigid`.  Every one of
+them matches a *type*-variable entry (`\hat\beta`, `\hat\beta\assign\tau`,
+`\beta`).  None matches a **term** entry `x : P`.
+
+**Why that is a gap.**  The paper's algorithmic contexts *do* contain term
+entries — `e ::= \alpha \mid x : P \mid \hat\alpha \mid \hat\alpha \assign
+\tau` (algorithmic.tex:60-66) — and the paper's **twin** walk, the assignment
+walk of `fig:alg-consistency`, *does* have the corresponding rule:
+
+```
+\inferrule*[Lab=\ulab{Assign-SkipTmVar}]
+{ \mov{\Theta_0\mid\Xi}{\assignvar{\hat\alpha}{P}}{\Theta_1} }
+{\mov{\Theta_0,x:Q\mid\Xi}{\assignvar{\hat\alpha}{P}}{\Theta_1,x:Q}}
+```
+
+(full-algo-spec.tex:1791; mechanized as `a_assign__skip_tm_var` /
+`a_assign__skip_tm_skl`, algo/def_extra.v).  So the omission in the subtyping
+box is almost certainly a typo rather than a design decision — but as printed
+it makes the walk **stuck** whenever a term entry sits above the subject
+`\hat\alpha`, and `thm:complete-subtyping` demands a run there.
+
+Nothing in the theorem's problem definition (algorithmic.tex:1423-1436)
+excludes the configuration: it asks only that `\Theta_0` be well formed and
+`P_0`, `P` well formed in it, and well-formedness is perfectly happy to put a
+term entry above a flexible variable (`a_wf_aenv__var` / `__var_typ`,
+algo/def_extra.v:192-201).  The configuration is reachable in the real
+algorithm too: checking a lambda against a guessed `\hat\alpha` splits it,
+pushes `x : \hat\alpha_1`, and any later application-mode subtyping call whose
+subject is a flexible declared *before* the lambda must walk past `x`.
+
+**The third witness agrees with the paper, and therefore shares the gap.**
+The reference implementation's `assign` has the case —
+
+```ocaml
+(* U-Assign-SkipTmVar *)
+| ((BVar _ | Marker | Lock _) as hd) :: theta -> ...        (* type.ml:386-390 *)
+```
+
+— while `sub_flex` has no term-entry case at all and falls through to
+
+```ocaml
+| _ -> Errors.type_mismatch loc ~expected:(sk_of_mode m) ~got:(MFlex alpha0)
+                                                            (* type.ml:1047-1050 *)
+```
+
+**The repair** is to add `Flex-SkipTmVar` in the paper's own idiom, mirroring
+`Assign-SkipTmVar`:
+
+```
+\inferrule*[Lab=\silab{Flex-SkipTmVar}]
+{ \atypsub[\N][\FN\M][P_0]{\Theta_0\mid\Xi}{\hat\alpha}{Q}{\Theta_1} }
+{\atypsub[\N][\FN\M][P_0]{\Theta_0,x:Q'\mid\Xi}{\hat\alpha}{Q}{\Theta_1,x:Q'}}
+```
+
+**Status in the mechanization.**  NOT applied — the blast radius is a rule
+change: `a_sub_flex` and its decorated mirror `a_subtag_flex`
+(algo/def_decorated.v) both gain two constructors (the mech splits `x : P`
+into `abind_var_typ` / `abind_var_skl`), which reopens the three mutual
+inductions over the pair (`prop_sub_sound.v`'s
+`a_subtag_subtag_flex_mutind`, `prop_decorate_key.v`'s
+`a_sub_sub_flex_mutind`, `prop_swap.v`'s `a_sub_sub_flex_sind`), and P7a
+gains two rows carrying `Flex-SkipRigid`'s whole ⇓-truncation apparatus
+(`a_inc__var` / `a_inc__var_skl` shrink the `a_inc` TARGET exactly as
+`a_inc__tvar` does, so the consistency twin's `Assign-SkipTmVar` /
+`Assign-SkipTmSkl` cases — prop_consis_complete.v:5356-6024, ~670 lines — are
+the model).  Until the authors decide, P7c's flex half
+(`flex_step`, algo/prop_sub_complete_dispatch.v §7) carries the explicit
+premise `a_sub_flex_walkable Θ0` ("`Θ0` has no term entries"), and §6 of that
+file documents it.  **This is the one place the subtyping-completeness
+development departs from the paper's statement.**
+
+---
+
+## ⚠️ GAP (proof-step, 2026-08-03) — `thm:complete-subtyping`'s ForallL case: the declarative derivation's last rule does NOT determine the algorithm's rule
+
+**Where.**  `thm:complete-subtyping` (algorithmic.tex:1446), ForallL case.
+
+The completeness proof dispatches on the last rule of the *declarative*
+subtyping derivation and, for each, exhibits the matching *algorithmic* rule.
+That correspondence fails at ForallL, because `ForallL` and `ForallR` commute:
+
+* `\silab{ForallL}` fires when the **subject** `P` is a `∀`;
+* `\silab{ForallR}` fires when the **input** `P_0` is a `∀`
+  (`a_sub__forall_r`, algo/def_extra.v:1013);
+* and `\silab{ForallL}` additionally requires `\guarded{P_0} \lor P_0 = □`,
+  which a `∀`-headed `P_0` does **not** satisfy.
+
+So at `N = TY`, `M = TC`, a `∀`-headed subject **and** a `∀`-headed `P_0`, the
+declarative derivation may end in ForallL while the algorithm has no choice
+but ForallR.  The mechanization's ForallL row lemmas
+(`a_sub_complete_forall_l_tagged` / `_untagged`) therefore cannot be applied
+there — they take `(guarded_pskl P0 \/ P0 = pskl_hole)` as a premise, exactly
+as the rule does.
+
+Mode compatibility does not rule the configuration out: `skmod[TY]{P_0}{TC}`
+is `P_0 = A` for an arbitrary **type** `A` (`a_ty_mode_compat__tc`), and a
+`∀`-type is a type.  The Check row's refutation (a `bskl_all_inh` source
+refines only to a `bskl_all_inh` target, so a *guarded* counterpart forces a
+non-`∀` `P_0` — `ad_refine_syn_f_all_inh_l_shape`, algo/prop_sub_complete_dispatch.v §8)
+does **not** transfer, because ForallL's counterpart `Q` is arbitrary.
+
+**What a repair needs.**  A JOIN-PERMUTATION step: from a ForallL-rooted
+derivation with a `∀`-inherited counterpart, extract the ForallR family that
+the ForallR case consumes (push the ForallL instantiation under the ForallR
+binder).  The paper's proof should say which rule it picks in that overlap and
+why the other is derivable.
+
+**Status in the mechanization.**  Isolated as `main_forall n`
+(algo/prop_sub_complete_dispatch.v §9/§10), the single residual hypothesis of
+the otherwise-complete twelve-row dispatch `main_join`.  It bundles this gap
+with TASK 0's `sub_shield` supply, which the same two rows also owe.

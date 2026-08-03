@@ -78,7 +78,117 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — 🚧 P7c SCOPED AGAINST THE TREE: the shape-transfer kit lands, and §12's INDUCTION IS REFUTED
+## 2026-08-03 (latest) — ⭐⭐⭐ P7c: **ALL THREE LAYERS LAND** (stuck-check, flex half, twelve-row join dispatch) — and TWO obstacles surface, both for the authors
+
+`make coq` green, admit-free, axiom-free.  `frost/algo/prop_sub_complete_dispatch.v`
+is now 1093 lines, §1–§10, everything `Qed` and *Closed under the global
+context*; it still compiles in <1 s.  Five row-lemma HYPOTHESES in
+`prop_sub_complete_thm.v` were weakened to match what the assembly can supply
+(the lemmas are otherwise untouched, and the file still compiles in 65 s).
+
+**⭐ §5 — THE STUCK-CHECK IS CLOSED** (`sub_flex_rigid_head_absurd`), the piece
+DESIGN §12.1 marked "build this first".  A rigid head `β` with `β ∈ ftv P0`
+matches no `a_sub_flex` rule, so the dispatcher must refute it from the
+solution.  The chain is NOT consistency's — there the pattern IS the join's
+subject, here `P0` sits on the FILL side and the join's subject is `κα̂` — and
+its last step, "the SUBJECT confines the TARGET", is FALSE for the join in
+general.  ⭐ **What makes it true is that the walk's subject is a MONOTYPE, and
+P7a's `Flex-SkipRigid` row had already built exactly that confinement**:
+`sub_gv_bskl_downarrow_mono_scoped` composed with the fill's
+`refine_syn_f_downarrow_source_ftv`.  The ⇓-form is also what absorbs the
+motive's ≡ᵘ slack — `≡ᵗ` does not preserve ftv-scoping but it *does* preserve
+⇓ (`a_tyequiv_downarrow`).  So the refutation is steps 0–4 of
+`a_sub_flex_complete_skip_rigid` re-read as a refutation, plus
+`rigid_survives_solution` and `β ∉ dom Θ'`.  **No new induction was needed.**
+
+**§3/§4 — the transfer, completed, and the OTHER half of the arrow escape.**
+`msubst_uskl_syn_var_inv` (only a variable's image is a variable) and
+`msubst_uskl_syn_all_syn_inv_mono` (the ∀-escape closes once the images are
+known to be MONOTYPES, which `a_inc` supplies).  §4 refutes a RIGID variable
+subject at the `__arrow` row: `κ` never touches a rigid variable, a rigid
+variable is its own ⇓-normal form (`downarrow_rigid`, on the new
+`aenv_msubst_dom_flex`), and ⇓ of an arrow is an arrow.
+
+**§7 — THE FLEX HALF (`flex_step`), DESIGN §12.1's layer (b).**  Structural
+induction on `Θ0` with the suffix `Ξ` GENERALIZED and the total context length
+bounded: Flex-Depend keeps the total and shrinks `Θ0` (the structural IH),
+Skip/SkipRigid shrink both, Flex-Assign consumes the definition and re-enters
+the main half ONE ENTRY SHORTER, Flex-Solve re-enters it at an ARROW subject
+over a LARGER context.  That last edge is why the five hypotheses moved:
+depend/skip/skip_rigid's walk IH gains `length Ξ' <= S (length Ξ)`, assign's
+cross-half IH gains `length Θ0' <= length Ξ + length Θ0`, and **solve's
+cross-half IH is restricted to an ARROW subject** — the only thing that breaks
+§12.1's non-decreasing cycle.
+
+**§9 — THE MAIN HALF's TWELVE-ROW JOIN DISPATCH (`main_join`), layer (c).**
+Nine rows delegate to their `Qed` row lemma (fuel IH where the row consumes
+fuel); the two UnivGhostL rows and `__flex_mono` preserve the fuel and are the
+structural IH's work (`⌊∀◈R⌋ˢ` IS `∀◇⌊R⌋ˢ`, so both ghosts use the one
+`a_sub__univ_ghost_l`; `__flex_mono` is a pure peel closed by
+`flex_def_paint_tyequiv` + `a_uskl_tyequiv_trans`).  ⭐ **The P7a escape is
+carried by an ABSTRACT predicate `ESC` on the motive's subject, with three
+closure conditions** — that is what lets ONE dispatch serve both layers:
+instantiate `ESC` with "is an arrow" and all three become vacuous (an arrow is
+neither `∀◇` nor `∀◈` nor a variable), so the tophole-stripping rows can never
+expose a variable subject and P7a is unreachable.  That is `main_arrow_holds`,
+**layer (a), from the FUEL IH alone**, and it is exactly what
+`a_sub_flex_complete_solve` now takes.
+
+**§8 — the CHECK row's one obligation, `guarded_pskl P0`, discharged.**  Mode
+compatibility gives `P0 = ptyp_to_pskl A`; a ∀-headed `A` is refuted against
+the FILL by the new `ad_refine_syn_f_all_inh_l_shape` — a `bskl_all_inh`
+SOURCE refines only to a `bskl_all_inh` TARGET (only `__all` and `__flex_r`
+have such a source, and `__flex_r`'s chain cannot bottom out because a
+monotype painting is never ∀-inh) — while the Check row's counterpart is
+guarded.  This is the SOURCE-side mirror of `ad_refine_syn_f_all_inh_r_shape`.
+
+### ⭕ WHAT REMAINS — two obstacles, and NEITHER is mechanical
+
+**⛔ (B) A PAPER GAP: the flexible SUBTYPING walk has NO rule for a
+TERM-VARIABLE head** (docs/PAPER-GAPS.md, new entry).  `fig:alg-subtyping`'s
+second box has five rules and none matches an `x : P` entry, while the paper's
+TWIN walk has `Assign-SkipTmVar` (full-algo-spec.tex:1791).  Nothing in
+`thm:complete-subtyping`'s problem definition excludes a term entry above the
+subject, and the configuration is reachable (check a lambda against a guessed
+`α̂`: the split pushes `x : α̂1` above earlier flexibles).  **The reference
+implementation agrees with the paper and therefore shares the gap** — `assign`
+has `U-Assign-SkipTmVar` (type.ml:386-390), `sub_flex` falls through to
+`Errors.type_mismatch` (type.ml:1047-1050).  The repair is `Flex-SkipTmVar` in
+the paper's own idiom, but it is a RULE change: `a_sub_flex` + `a_subtag_flex`
+each gain two constructors, three mutual inductions reopen
+(`prop_sub_sound.v`, `prop_decorate_key.v`, `prop_swap.v`), and P7a gains two
+rows carrying `Flex-SkipRigid`'s whole ⇓-truncation apparatus (the consistency
+twin's two cases are ~670 lines).  So it is the authors' call, and `flex_step`
+carries the explicit premise `a_sub_flex_walkable Θ0` meanwhile.  ⚠️ It cannot
+simply be carried to the bundle: the row lemmas' fuel IH is the UNRESTRICTED
+motive, so the restriction would have to move INTO `sub_complete_concl` and
+every row would owe walkability of the contexts it recurses at.
+
+**⭕ (A) `main_forall n` — the two ForallL rows**, isolated as the single
+residual hypothesis of `main_join`.  It bundles TWO independent problems:
+
+  * **A1** — TASK 0's `sub_shield`.  Unchanged: `prop_sub_shield_supply.v`
+    covers flex-free / atomic / mono-counterpart / inh-free-counterpart /
+    ∀-free `P0`; a `P0` with a ∀ below its head has no general route.  (The
+    premise is machine-checked SATISFIABLE at the node that used to refute it,
+    so this is a missing SUPPLY, not a falsity.)
+  * **A2** — ⚠️ **NEW, and neither DESIGN §12 nor §12.1 anticipated it.**  The
+    ForallL rows also demand `guarded_pskl P0 \/ P0 = ◇`, and at `NM = TY`
+    with `M = TC` that is NOT derivable: `a_ty_mode_compat mode_tc P0` admits
+    a ∀-headed `P0`, and §8's refutation does not transfer (it uses the Check
+    row's GUARDED counterpart; ForallL's counterpart is arbitrary).  The
+    configuration is real — **the join's last rule does not determine the
+    algorithm's rule**, because ForallL and ForallR commute: ForallL fires on a
+    ∀ SUBJECT, ForallR on a ∀ INPUT, and a ∀-headed `P0` blocks ForallL by its
+    own premise.  Closing it needs a JOIN-PERMUTATION lemma (extract the
+    ForallR family from a ForallL-rooted join with a `bskl_all_inh` target).
+    Logged as a proof-step gap in docs/PAPER-GAPS.md.
+
+With A and B discharged the bundle is a three-line assembly: strong induction
+on the fuel, then on `length Θ0`; (a) from the fuel IH, (b) from (a) plus the
+main half at shorter contexts, (c) from the fuel IH plus (b) at `Ξ = ·`.
+
+## 2026-08-03 — 🚧 P7c SCOPED AGAINST THE TREE: the shape-transfer kit lands, and §12's INDUCTION IS REFUTED
 
 `make coq` green, admit-free, axiom-free.  New file
 `frost/algo/prop_sub_complete_dispatch.v`: §1 is proved (Qed, axiom-free), §2
