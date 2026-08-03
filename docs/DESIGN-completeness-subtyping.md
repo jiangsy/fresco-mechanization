@@ -4484,3 +4484,161 @@ witness) — and `prop_look_complete.v` IS in the blast radius after all.
 (`sub_shield` + 6 transports + P6-Ss's two statements + ~14 call sites),
 `prop_look_complete_extract.v` (P6-L ×2), `prop_sub_shield_supply.v`,
 `prop_sub_complete_thm.v` (P7b's two ForallL rows), and three cex files.
+
+### §14.4 The Part-A prototype, verbatim (compiles clean, 2026-08-03)
+
+Developed against the installed `.vo`s, so it needs no tree rebuild; NOT
+committed as Coq source because it is dead code until §14.3's Part B is
+settled.  Drop it into a scratch file with the header
+`Require Import`s of `prop_look_complete`, `prop_look_complete_sub_var`,
+`prop_look_complete_sub_cstr` (plus the usual `notations` / `def_extra` /
+`coercions` / `predicates` / `decl.def_extra` / `algo.def_extra` /
+`algo.def_meta` / `def_tags`) and `Set Implicit Arguments`.
+
+⚙ Two things the prototype had to get right, both recorded at their sites:
+`sub_shield'` is a `Definition`, so `apply H` does NOT unfold it — apply it to
+its three explicit arguments (`apply (H P1 R1 Δρ')`); and every `ss_walk'_mono`
+instance must be PINNED by a named `assert`, because inline its `A'` is still an
+evar when the `[<=]` side goal runs and an evar-`fsetdec` does not terminate.
+
+```coq
+(* ===================================================================== *)
+(*  THE POSITIONAL RE-INDEXING (DESIGN §14.2)                             *)
+(*                                                                        *)
+(*  The walk steps [P0] and the SUBJECT in lockstep, and the premise is    *)
+(*  demanded only where the looked-for [α] — hence the guess [ψa] that     *)
+(*  replaces it — actually reaches.                                       *)
+(* ===================================================================== *)
+
+Inductive ss_step' (A : atoms) (α : atom) : pskl -> uskl -> pskl -> uskl -> Prop :=
+| sss'_arrow_r : forall P1 P2 R1 R2,                (* Sub-Arrow : both move *)
+    ss_step' A α (pskl_arrow P1 P2) (uskl_arrow R1 R2) P2 R2
+| sss'_all : forall P0 R γ,                         (* Sub-ForallR : P0 only *)
+    γ `notin` A ->
+    ss_step' A α (pskl_all_syn P0) R (open_pskl_wrt_pskl P0 (pskl_var_f γ)) R
+| sss'_forall_l_syn : forall P0 R β,                (* Sub-ForallL : R only *)
+    β <> α ->
+    ss_step' A α P0 (uskl_all_syn R) P0 (open_uskl_wrt_uskl R (uskl_var_f β))
+| sss'_forall_l_etag : forall P0 ε R β,             (* Sub-ForallL, tagged *)
+    β <> α ->
+    ss_step' A α P0 (uskl_all_etag ε R) P0 (open_uskl_wrt_uskl R (uskl_var_f β))
+| sss'_univ_ghost_l : forall P0 R,                  (* Sub-UnivGhostL *)
+    ss_step' A α P0 (uskl_tophole R) P0 R
+| sss'_univ_ghost_lg : forall P0 R,                 (* Sub-UnivGhostLG *)
+    ss_step' A α P0 (uskl_topholeg R) P0 R.
+
+Inductive ss_walk' (A : atoms) (α : atom) : pskl -> uskl -> pskl -> uskl -> Prop :=
+| ssw'_refl : forall P0 R, ss_walk' A α P0 R P0 R
+| ssw'_step : forall P0 R P1 R1 P2 R2,
+    ss_step' A α P0 R P1 R1 -> ss_walk' A α P1 R1 P2 R2 ->
+    ss_walk' A α P0 R P2 R2.
+
+(** Shrinking the avoid set admits MORE walks (only [sss'_all] reads it). *)
+Lemma ss_walk'_mono : forall A A' α P0 R P1 R1,
+  ss_walk' A α P0 R P1 R1 -> A' [<=] A -> ss_walk' A' α P0 R P1 R1.
+Proof.
+  intros A A' α P0 R P1 R1 H; induction H; intros Hsub; [ apply ssw'_refl | ].
+  eapply ssw'_step; [ | apply IHss_walk'; exact Hsub ].
+  destruct H;
+    [ apply sss'_arrow_r
+    | apply sss'_all; clear - H Hsub; fsetdec
+    | apply sss'_forall_l_syn; assumption
+    | apply sss'_forall_l_etag; assumption
+    | apply sss'_univ_ghost_l
+    | apply sss'_univ_ghost_lg ].
+Qed.
+
+Definition sub_shield' (Θ0 : aenv) (Ψ' : atoms) (Δρ : atoms) (α : atom)
+  (P0 : pskl) (R : uskl) (ψa : uskl) : Prop :=
+  forall P0' R' Δρ',
+    ss_walk' (dom Θ0) α P0 R P0' R' ->
+    Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
+    α `in` ftvar_in_uskl R' ->            (* ⇐ THE POSITIONAL GUARD *)
+    flex_apart_walk Θ0 Δρ' P0' ψa /\ flex_shield Θ0 Ψ' Δρ' P0' ψa.
+
+(* --------------------------------------------------------------------- *)
+(*  The five transports, exactly the old ones plus the guard              *)
+(* --------------------------------------------------------------------- *)
+
+Lemma sub_shield'_here : forall Θ0 Ψ' Δρ α P0 R ψa,
+  sub_shield' Θ0 Ψ' Δρ α P0 R ψa ->
+  α `in` ftvar_in_uskl R ->
+  flex_apart_walk Θ0 Δρ P0 ψa /\ flex_shield Θ0 Ψ' Δρ P0 ψa.
+Proof.
+  intros Θ0 Ψ' Δρ α P0 R ψa H Hα.
+  apply (H P0 R Δρ);
+    [ apply ssw'_refl | clear; fsetdec | clear; fsetdec | exact Hα ].
+Qed.
+
+Lemma sub_shield'_step : forall Θ0 Ψ' Δρ α P0 R P0' R' ψa,
+  sub_shield' Θ0 Ψ' Δρ α P0 R ψa ->
+  ss_step' (dom Θ0) α P0 R P0' R' ->
+  sub_shield' Θ0 Ψ' Δρ α P0' R' ψa.
+Proof.
+  intros Θ0 Ψ' Δρ α P0 R P0' R' ψa H Hs P1 R1 Δρ' Hw Hle Hcl Hα.
+  apply (H P1 R1 Δρ');
+    [ eapply ssw'_step; [ exact Hs | exact Hw ] | exact Hle | exact Hcl
+    | exact Hα ].
+Qed.
+
+Lemma sub_shield'_add_fresh : forall Θ0 Ψ' Δρ α P0 R ψa β,
+  sub_shield' Θ0 Ψ' Δρ α P0 R ψa ->
+  β `notin` ftvar_in_uskl ψa ->
+  sub_shield' Θ0 Ψ' (add β Δρ) α P0 R ψa.
+Proof.
+  intros Θ0 Ψ' Δρ α P0 R ψa β H Hβ P1 R1 Δρ' Hw Hle Hcl Hα.
+  apply (H P1 R1 Δρ');
+    [ exact Hw | clear - Hle; fsetdec | clear - Hcl Hβ; fsetdec | exact Hα ].
+Qed.
+
+(** …and the P0-component's free variables still miss the avoid set: the
+    R-only steps leave P0 alone, and the two P0 steps are the old ones. *)
+Lemma ss_walk'_ftv : forall A α P0 R P1 R1,
+  ss_walk' A α P0 R P1 R1 -> (ftvar_in_pskl P0) ∩ A [=] empty ->
+  (ftvar_in_pskl P1) ∩ A [=] empty.
+Proof.
+  intros A α P0 R P1 R1 H; induction H; intros Hfr; [ exact Hfr | ].
+  apply IHss_walk'. destruct H.
+  - simpl in Hfr; clear - Hfr; fsetdec.
+  - pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f γ)) as Hup.
+    simpl in Hup, Hfr. clear - Hup Hfr H; fsetdec.
+  - exact Hfr.
+  - exact Hfr.
+  - exact Hfr.
+  - exact Hfr.
+Qed.
+
+Lemma sub_shield'_weaken_tvar : forall Θ0 Ψ' Δρ α P0 R ψa β,
+  sub_shield' Θ0 Ψ' Δρ α P0 R ψa ->
+  sub_shield' ((β ~ abind_tvar) ++ Θ0) Ψ' Δρ α P0 R ψa.
+Proof.
+  intros Θ0 Ψ' Δρ α P0 R ψa β H P1 R1 Δρ' Hw Hle Hcl Hα.
+  (* ⚙ PIN the avoid set with a named [assert]: inline, [ss_walk'_mono]'s [A']
+     is still an evar when the [⊆] side goal runs, and an evar-[fsetdec] does
+     not terminate. *)
+  assert (Hw0 : ss_walk' (dom Θ0) α P0 R P1 R1)
+    by (eapply ss_walk'_mono; [ exact Hw | simpl; clear; fsetdec ]).
+  destruct (H P1 R1 Δρ' Hw0 Hle Hcl Hα) as [Hap Hfs].
+  split;
+    [ apply flex_apart_walk_weaken_tvar; exact Hap
+    | apply flex_shield_weaken_tvar; exact Hfs ].
+Qed.
+
+Lemma sub_shield'_weaken_flex_prefix : forall Θ0 Ψ' Δρ α P0 R ψa Ξ,
+  sub_shield' Θ0 Ψ' Δρ α P0 R ψa ->
+  (ftvar_in_pskl P0) ∩ (dom Ξ) [=] empty ->
+  sub_shield' (Ξ ++ Θ0) Ψ' Δρ α P0 R ψa.
+Proof.
+  intros Θ0 Ψ' Δρ α P0 R ψa Ξ H HfrP0 P1 R1 Δρ' Hw Hle Hcl Hα.
+  assert (HwΞ : ss_walk' (dom Ξ) α P0 R P1 R1)
+    by (eapply ss_walk'_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
+  assert (Hw0 : ss_walk' (dom Θ0) α P0 R P1 R1)
+    by (eapply ss_walk'_mono; [ exact Hw | rewrite dom_app; clear; fsetdec ]).
+  assert (HfrP1 : (ftvar_in_pskl P1) ∩ (dom Ξ) [=] empty)
+    by (eapply ss_walk'_ftv; [ exact HwΞ | exact HfrP0 ]).
+  destruct (H P1 R1 Δρ' Hw0 Hle Hcl Hα) as [Hap Hfs].
+  split;
+    [ eapply flex_apart_walk_weaken_flex_prefix; [ exact Hap | exact HfrP1 ]
+    | eapply flex_shield_weaken_flex_prefix; [ exact Hfs | exact HfrP1 ] ].
+Qed.
+```
