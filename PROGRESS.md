@@ -78,7 +78,113 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-03 (latest) — ⭐⭐⭐ **Flex-SkipTmVar LANDS**: the paper's missing subtyping-walk rule is added tree-wide, and the tree is green
+## 2026-08-03 (latest) — ⭐⭐⭐ **SUBTYPING COMPLETENESS IS ASSEMBLED**: P7a's last two rows, the ForallL/ForallR join permutation, and `a_sub_complete_bundle_holds` — one hypothesis left
+
+`make coq` green, admit-free, axiom-free.  Everything the P7c hand-off
+(docs/HANDOFF-p7c-finish.md) scoped is done except its TASK 2b, which is TASK
+0's shield and is a design question, not an assembly one.
+
+**TASK 1 — P7a's two TERM-VARIABLE rows are `Qed`.**
+`a_sub_flex_complete_skip_tm_var` / `_skip_tm_skl`
+(`algo/prop_sub_complete_thm.v` §(N)/§(O), ~365 lines each, axiom-free).  They
+came straight out of DESIGN §12.3's substitution table against
+`a_sub_flex_complete_skip_rigid`, and the recipe held with no surprises:
+
+* `a_inc__var` / `a_inc__var_skl` shrink the `a_inc` TARGET exactly as
+  `a_inc__tvar` does, so the IH still runs at the truncation `Θ'`;
+* neither row carries `α ≠ β` or `β ∉ ftv P0` — both are DERIVED in four lines
+  (a term entry is never `a_binds_tvar`, so under `uniq` neither the flexible
+  subject nor a free variable of a well-formed `P0` can be it).  That is why
+  the RULES carry none either, matching the twin walk's `Assign-SkipTmVar`;
+* the ONE genuinely new obligation is the SEMANTIC MIDDLE `Θ' ⊢ A' ≡ᵗ κQv` —
+  a rigid entry has no payload, a term entry does.  The consistency twin's
+  `Assign-SkipTmVar` (prop_consis_complete.v:5595-5690) proves exactly it;
+* ⚙ ONE step beyond that twin: subtyping re-attaches through the JUNK SWAP, so
+  the witness is `kswap_msubst β β1 ζ` and the middle is read back with
+  `msubst_ptyp_kswap` — free, since `β`/`β1` are fresh for a payload scoped in
+  `Θ0`.
+
+⚠️ The transcription hazard worth recording: **watch the two sides of the
+entry.**  Occurrences inside `Ξv ++ …` are the `a_inc` TARGET and become
+`(β ~ abind_var_typ A')`; every other occurrence is the SOURCE and stays
+`(β ~ abind_var_typ Qv)`.
+
+Consequence: `a_sub_flex_walkable` and its two lemmas are **deleted**,
+`flex_step` takes no side condition on `Θ0`, and its two `exfalso` branches
+are ordinary delegations.  Obstacle (B) of DESIGN §12.2 is closed.
+
+**TASK 2a — the ForallL/ForallR overlap is closed, and the paper was right.**
+subtyping-proofs.tex:3385 already covers it with a one-sentence WLOG; ⚠️ it is
+NOT a defect and must not be reported as one.  Its mechanical content is
+`algo/prop_sub_complete_dispatch.v` §11:
+
+* `sub_gv_all_inh_forall_r_family` — from ANY TY/TC join onto a
+  `bskl_all_inh` target, extract the cofinite ForallR family
+  `a_sub_complete_forall_r` consumes.  Induction on the join; the ForallL
+  chain must bottom out in `__forall_r` because `__check` is the only other
+  TY/TC row that can carry that target and its `guarded_pskl` premise refutes
+  a ∀-inh counterpart (§8's step, read backwards).  Each ForallL step is
+  re-applied under the new binder, its `Θ ⊢ ⌊ψ⌋ˢ` premise weakened along the
+  added rigid.
+* `ad_pat_sub_gv_fuel_weaken` — the fuel arithmetic the hand-off warned about:
+  the extraction returns the family at whatever height it finds, while
+  `a_sub_complete_forall_r` wants it at exactly `n` for a conclusion at `S n`.
+  A 20-line induction; only the four rules whose conclusion fuel is `S n` need
+  `destruct m`.
+* `main_all_inh_counterpart` composes them — **whenever the counterpart is
+  ∀-inh the row goes through ForallR, whatever the join's last rule and
+  whatever `P0`**, so the ForallL rows' `guarded_pskl P0 ∨ P0 = ◇` premise
+  costs nothing (a ∀-headed `P0` forces a ∀-inh counterpart through the FILL).
+* ⭐ **and A2 is DISCHARGED INSIDE the dispatch**: `p0_wlog_trichotomy` reads
+  the WLOG off mode compatibility (at SK every compatible `P0` is a hole or an
+  arrow; at TY the only non-guarded, non-hole shape is a `∀`, and only at
+  `M = TC`), `main_join`'s two ForallL cases split on it, and the escaping
+  shape goes to `main_all_inh_counterpart`.  So **`main_forall` now TAKES
+  `guarded_pskl P0 ∨ P0 = ◇` as a hypothesis** — the bundle's residual is
+  strictly narrower.
+
+**TASK 3 — the assembly.**  `a_sub_complete_bundle_holds`
+(`prop_sub_complete_dispatch.v` §12) is exactly DESIGN §12.1's three layers
+glued by `lt_wf_ind` on the fuel and, inside it, `lt_wf_ind` on the CONTEXT
+LENGTH: `main_arrow_holds` (fuel IH) → `main_below n k` (length IH) →
+`flex_step` → `main_join` with `ESC := fun _ => True` (the two tophole
+closures are `exact I`; the third hands back `flex_here n Θ0`, which is
+`flex_step` at `Ξ = nil`).  `a_sub_complete_thm` (algorithmic.tex:1446) is the
+`Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.
+
+⭕ **The residual is `main_forall n`, and it has exactly TWO components** — a
+count worth stating, because DESIGN §12.2 listed only one and the P7c hand-off
+listed only the other:
+
+1. **TASK 0's `sub_shield`** for a `P0` carrying a ∀ below its head, whose
+   boundary is machine-checked (`sub_shield_forall_flex_p0_fails`,
+   cex/cex_p7_shield_forall_flex.v).
+2. ⚠️ **NEW FINDING — `NM = TY -> uskl_ghost_free (uskl_all_etag ε Rj)`**, the
+   ForallL rows' third premise.  It is the last premise of
+   `ad_pat_sub_precise_upre_gv` (P5's precision-substitution transport, which
+   threads the same predicate through every lemma of its pack), and it is **NOT
+   derivable from the join**.  The near-miss is the trap: all four rules that
+   put a ghost AT THE HEAD of the subject (`__ghost`, `__ghostg`,
+   `__univ_ghost_l`, `__univ_ghost_lg`) are SK-only, so ghost-freeness *looks*
+   like a TY invariant — but `__arrow`'s DOMAIN is an arbitrary consistency
+   leaf with no sort constraint and `__infer` accepts an arbitrary subject, so
+   a ghost can sit inside a TY join's subject.  It is an EXTERNAL side
+   condition, now registered in docs/WF-SIDE-CONDITIONS.md.  Closing it means
+   putting it ON THE MOTIVE at `NM = TY`, which every recursing row then owes
+   for its recursive subject (Sub-Arrow at `R2`, Sub-ForallR, both Sub-ForallL
+   rows, P7a's Flex-Assign / Flex-Solve).  **That is a motive change, not an
+   assembly step.**
+
+⚠️ **The hypothesis is deliberately `main_forall` and not a "shield supply".**
+Stating
+the residual as the thing actually missing would mean guessing the side
+conditions under which the shield holds — and the unguarded form is FALSE, so
+a wrong guess yields a vacuously true theorem.  `main_forall n` is
+KNOWN-TRUE (it is an instance of the theorem being proved), so the conditional
+bundle is honest.  Both flagship theorems are `Print Assumptions`-clean; they
+are NOT yet in README.v, which indexes UNCONDITIONAL paper claims.
+
+## 2026-08-03 — ⭐⭐⭐ **Flex-SkipTmVar LANDS**: the paper's missing subtyping-walk rule is added tree-wide, and the tree is green
 
 `make coq` green, admit-free, axiom-free.  The authors' call on the gap found
 earlier today (see the entry below) was to add the rule, so it is added — in

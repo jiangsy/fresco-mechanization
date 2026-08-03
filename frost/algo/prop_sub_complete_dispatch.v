@@ -69,6 +69,8 @@ Require Import src.frost.algo.prop_metasubst.
 Require Import src.frost.algo.prop_consis_sound.
 Require Import src.frost.algo.prop_consis_complete.
 Require Import src.frost.algo.prop_sub_msubst_equiv.
+Require Import src.frost.algo.prop_precise.       (* ad_precise, ⊢ₚᵣᵃ *)
+Require Import src.frost.algo.prop_decorate.      (* uskl_to_pskl_pskl_to_uskl *)
 Require Import src.frost.algo.prop_sub_complete_thm.
 
 Set Implicit Arguments.
@@ -607,8 +609,7 @@ Qed.
 
 (* ===================================================================== *)
 (* ===================================================================== *)
-(*  §6  ⚠️ THE PAPER GAP THIS ASSEMBLY EXPOSED — REPAIRED IN THE RULES,     *)
-(*      STILL OWED IN THE COMPLETENESS ROWS                                *)
+(*  §6  ⚠️ THE PAPER GAP THIS ASSEMBLY EXPOSED — NOW CLOSED, BOTH HALVES    *)
 (*                                                                        *)
 (*  [fig:alg-subtyping]'s second box (full-algo-spec.tex:883-912) has five *)
 (*  rules and NONE matches a term entry [x : P], while the paper's twin     *)
@@ -617,44 +618,27 @@ Qed.
 (*  configuration `fun x -> x 1` produces and the reference implementation *)
 (*  CRASHES on — cex/cex_p7_flex_walk_tm_var.v, docs/PAPER-GAPS.md.        *)
 (*                                                                        *)
-(*  ⭐ THE RULES ARE NOW IN THE TREE (2026-08-03): [a_sub_flex__skip_tm_var] *)
-(*  / [__skip_tm_skl] (algo/def_extra.v) with decorated mirrors, and the    *)
+(*  ⭐ THE RULES ARE IN THE TREE (2026-08-03): [a_sub_flex__skip_tm_var] /   *)
+(*  [__skip_tm_skl] (algo/def_extra.v) with decorated mirrors, and the      *)
 (*  three mutual inductions over the [a_sub] / [a_sub_flex] pair — the      *)
 (*  soundness bundle, the decoration bundle and equivariance — all carry    *)
 (*  their two new cases.                                                   *)
 (*                                                                        *)
-(*  ⭕ WHAT IS STILL OWED is P7a's two COMPLETENESS rows.  They are the      *)
-(*  reason [flex_step] below still takes [a_sub_flex_walkable Θ0]: with     *)
-(*  them the premise is deleted outright and the two [exfalso] branches of  *)
-(*  §7 become ordinary delegations.  Their shape is known exactly — see     *)
-(*  DESIGN-completeness-subtyping.md §12.3 — because [a_inc__var] /         *)
-(*  [a_inc__var_skl] shrink the [a_inc] TARGET exactly as [a_inc__tvar]     *)
-(*  does, so each row is [a_sub_flex_complete_skip_rigid]'s ⇓-truncation    *)
-(*  apparatus with the tvar pieces swapped for the var ones                *)
-(*  ([a_inc_var_inv], [a_inc_var_mid_strip_id],                            *)
-(*  [a_inc_equiv_mid_insert_var]) plus ONE genuinely new obligation: the    *)
-(*  SEMANTIC MIDDLE [Θ' ⊢ A' ≡ᵗ κ A], which the rigid entry does not have.  *)
-(*  The consistency twin's [Assign-SkipTmVar] case discharges exactly that  *)
-(*  obligation (prop_consis_complete.v:5595-5690) and is the model.         *)
+(*  ⭐ AND SO ARE THEIR COMPLETENESS ROWS (2026-08-03):                      *)
+(*  [a_sub_flex_complete_skip_tm_var] / [_skip_tm_skl]                      *)
+(*  (prop_sub_complete_thm.v §(N)/§(O)), so [flex_step] below dispatches a  *)
+(*  term-variable head like any other and needs no side condition on [Θ0].  *)
+(*  Each row is [a_sub_flex_complete_skip_rigid]'s ⇓-truncation apparatus   *)
+(*  with the tvar pieces swapped for the var ones ([a_inc_var_inv],         *)
+(*  [a_inc_var_mid_strip_id], [a_inc_equiv_mid_insert_var]) plus the        *)
+(*  SEMANTIC MIDDLE [Θ' ⊢ A' ≡ᵗ κ A] that a payload-free rigid entry does   *)
+(*  not have, cribbed from the consistency twin's [Assign-SkipTmVar]        *)
+(*  (prop_consis_complete.v:5595-5690) and read back through the junk swap  *)
+(*  with [msubst_ptyp_kswap].  ⭐ Neither row carries the rigid row's        *)
+(*  [α ≠ β] / [β ∉ ftv P0] premises: a term entry is never [a_binds_tvar],  *)
+(*  so under [uniq] both are DERIVED — which is why the RULES carry none    *)
+(*  either, exactly as the twin walk's [Assign-SkipTmVar] does not.         *)
 (* ===================================================================== *)
-
-Definition a_sub_flex_walkable (Θ0 : aenv) : Prop :=
-  forall x b, binds x b Θ0 ->
-    b = abind_tvar \/ b = abind_flex_mono \/
-    (exists τ, b = abind_flex_mono_def τ).
-
-Lemma a_sub_flex_walkable_tail : forall x b Θ0,
-  a_sub_flex_walkable ((x ~ b) ++ Θ0) -> a_sub_flex_walkable Θ0.
-Proof.
-  intros x b Θ0 H y c Hb. apply (H y c). unfold binds in *; simpl; right; exact Hb.
-Qed.
-
-Lemma a_sub_flex_walkable_head : forall x b Θ0,
-  a_sub_flex_walkable ((x ~ b) ++ Θ0) ->
-  b = abind_tvar \/ b = abind_flex_mono \/ (exists τ, b = abind_flex_mono_def τ).
-Proof.
-  intros x b Θ0 H. apply (H x b). unfold binds; simpl; left; reflexivity.
-Qed.
 
 (* ===================================================================== *)
 (*  §7  THE FLEX HALF (P7a's assembly) — DESIGN §12.1's layer (b)          *)
@@ -681,26 +665,23 @@ Lemma flex_step : forall n k,
   main_arrow n ->
   main_below n k ->
   forall NM M Θ0 Ξ α P0 R' Ψ Θ κ Q,
-    a_sub_flex_walkable Θ0 ->
     length Ξ + length Θ0 <= k ->
     sub_flex_complete_concl n NM M Θ0 Ξ α P0 R' Ψ Θ κ Q.
 Proof.
   intros n k Harrow Hmain NM M Θ0.
   induction Θ0 as [ | [β b] Θ0' IHΘ0 ];
-    intros Ξ α P0 R' Ψ Θ κ Q Hwalk Hlen.
+    intros Ξ α P0 R' Ψ Θ κ Q Hlen.
   - (* the empty context: the subject cannot be flexible there *)
     unfold sub_flex_complete_concl.
     intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD Hrs
            HwfQ.
     exfalso. destruct Hfα as [Hb | [τ Hb]]; inversion Hb.
   - (* the head decides the row *)
-    assert (Hwalk' : a_sub_flex_walkable Θ0')
-      by (eapply a_sub_flex_walkable_tail; exact Hwalk).
     assert (IH' : forall Ξ' α' P0' R'' Ψ' Θ'' κ' Q',
               length Ξ' <= S (length Ξ) ->
               sub_flex_complete_concl n NM M Θ0' Ξ' α' P0' R'' Ψ' Θ'' κ' Q').
     { intros Ξ' α' P0' R'' Ψ' Θ'' κ' Q' HlenΞ.
-      apply IHΘ0; [ exact Hwalk' | simpl in Hlen; lia ]. }
+      apply IHΘ0; simpl in Hlen; lia. }
     destruct b as [ | A | P | | τ ].
     + (* β RIGID: the STUCK configuration, or Flex-SkipRigid *)
       destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P0))
@@ -738,16 +719,12 @@ Proof.
            [ discriminate Hc
            | apply binds_In in Hb; simpl_env in Huq; solve_uniq ]).
       * apply (a_sub_flex_complete_skip_rigid IH' Hne Hβni).
-    + (* ⭕ β is a TERM variable.  [a_sub_flex__skip_tm_var] now EXISTS
-         (§6), but its completeness row does not yet, so the premise
-         excludes the head. *)
-      exfalso.
-      destruct (a_sub_flex_walkable_head Hwalk) as [Hc | [Hc | [τ Hc]]];
-        discriminate Hc.
-    + (* ⭕ β is a TERM variable (skeleton entry) — as above *)
-      exfalso.
-      destruct (a_sub_flex_walkable_head Hwalk) as [Hc | [Hc | [τ Hc]]];
-        discriminate Hc.
+    + (* β a TERM variable, type binding: Flex-SkipTmVar (§6).  Unlike the
+         rigid head there is no stuck configuration and no side condition —
+         the row derives [α ≠ β] and [β ∉ ftv P0] itself. *)
+      apply (a_sub_flex_complete_skip_tm_var IH').
+    + (* β a TERM variable, skeleton binding: Flex-SkipTmVar (skl) *)
+      apply (a_sub_flex_complete_skip_tm_skl IH').
     + (* β an UNDEFINED flexible: Flex-Solve (β = α) / Depend / Skip *)
       destruct (β == α) as [-> | Hne].
       * apply (a_sub_flex_complete_solve Harrow).
@@ -820,6 +797,160 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  §8b  A2 — THE JOIN PERMUTATION (the paper's WLOG, mechanized)         *)
+(* ===================================================================== *)
+
+(** Fuel monotonicity for the leaf-valid hygienic join.  The fuel is the
+    declarative derivation's HEIGHT, so a derivation of height [n] is also
+    one of every larger height.  Needed because the permutation below
+    returns the family at whatever height the extraction yields, while
+    [a_sub_complete_forall_r] wants it at exactly [n] for a conclusion at
+    [S n]. *)
+Lemma ad_pat_sub_gv_fuel_weaken : forall n NM M Ψ Θ R Q,
+  ad_pat_sub_gv n NM M Ψ Θ R Q ->
+  forall m, n <= m -> ad_pat_sub_gv m NM M Ψ Θ R Q.
+Proof.
+  intros n NM M Ψ Θ R Q H; induction H; intros m Hle;
+    try solve [ econstructor; eauto ].
+  - (* forall_r : the conclusion's fuel is [S n] *)
+    destruct m as [ | m' ]; [ lia | ].
+    apply ad_pat_sub_gv__forall_r with (L := L).
+    intros α Hα. apply H0; [ exact Hα | lia ].
+  - (* arrow *)
+    destruct m as [ | m' ]; [ lia | ].
+    eapply ad_pat_sub_gv__arrow;
+      [ exact H | exact H0 | apply IHad_pat_sub_gv; lia | assumption ].
+  - (* forall_l_tagged *)
+    destruct m as [ | m' ]; [ lia | ].
+    eapply ad_pat_sub_gv__forall_l_tagged;
+      [ eassumption | eassumption | eassumption | eassumption | eassumption
+      | apply IHad_pat_sub_gv; lia ].
+  - (* forall_l_untagged *)
+    destruct m as [ | m' ]; [ lia | ].
+    eapply ad_pat_sub_gv__forall_l_untagged;
+      [ eassumption | eassumption | eassumption | eassumption | eassumption
+      | apply IHad_pat_sub_gv; lia ].
+Qed.
+
+(** ⭐ THE JOIN PERMUTATION.  From ANY TY/TC join onto a [bskl_all_inh]
+    target — however many ForallL steps sit on top of it — recover the
+    cofinite ForallR family that [a_sub_complete_forall_r] consumes, with
+    the ForallL instantiations re-applied under the new binder.
+
+    The ForallL chain must bottom out in [__forall_r]: [__check] is the only
+    other TY/TC row that can carry this target, and its [guarded_pskl]
+    premise refutes a ∀-inh counterpart (the same step §8 makes, read the
+    other way round). *)
+Lemma sub_gv_all_inh_forall_r_family : forall n NM M Ψ Θ R Qt,
+  ad_pat_sub_gv n NM M Ψ Θ R Qt ->
+  forall B, NM = a_sub_mode_ty -> M = mode_tc -> Qt = bskl_all_inh B ->
+  exists L m, m < n /\
+    forall α, α `notin` L ->
+      ad_pat_sub_gv m a_sub_mode_ty mode_tc Ψ ((α ~ abind_tvar) ++ Θ) R
+        (open_bskl_wrt_bskl B (bskl_var_f α)).
+Proof.
+  intros n NM M Ψ Θ R Qt H; induction H; intros B0 HNM HM HQ;
+    try discriminate.
+  - (* check : a ∀-inh counterpart is not [guarded_pskl] *)
+    exfalso.
+    destruct (@pskl_to_bskl_inh_all_inh_inv _ _ HQ) as [X [HX _]].
+    subst B. match goal with Hg : guarded_pskl _ |- _ => inversion Hg end.
+  - (* forall_r : the family is the premise itself *)
+    inversion HQ; subst.
+    exists L, n. split; [ lia | ].
+    intros α Hα.
+    match goal with
+    | Hf : forall α, α `notin` L -> ad_pat_sub_gv _ _ _ _ _ _ _ |- _ =>
+        exact (Hf α Hα)
+    end.
+  - (* forall_l_tagged : PERMUTE — the IH's family, re-instantiated under
+       the new binder ([ψ]'s wf weakens along the added rigid) *)
+    subst.
+    match goal with
+    | IHx : forall B, _ -> _ -> _ -> _ |- _ =>
+        destruct (IHx B0 eq_refl eq_refl eq_refl) as [L [m [Hlt Hfam]]]
+    end.
+    exists L, (S m). split; [ lia | ].
+    intros α Hα.
+    eapply ad_pat_sub_gv__forall_l_tagged;
+      [ eassumption | eassumption | eassumption | eassumption
+      | eapply a_wf_pskl_weaken;
+          [ intros y c Hb; simpl_env; apply binds_app_3; exact Hb
+          | eassumption ]
+      | exact (Hfam α Hα) ].
+  - (* forall_l_untagged : as above *)
+    subst.
+    match goal with
+    | IHx : forall B, _ -> _ -> _ -> _ |- _ =>
+        destruct (IHx B0 eq_refl eq_refl eq_refl) as [L [m [Hlt Hfam]]]
+    end.
+    exists L, (S m). split; [ lia | ].
+    intros α Hα.
+    eapply ad_pat_sub_gv__forall_l_untagged;
+      [ eassumption | eassumption | eassumption | eassumption
+      | eapply a_wf_pskl_weaken;
+          [ intros y c Hb; simpl_env; apply binds_app_3; exact Hb
+          | eassumption ]
+      | exact (Hfam α Hα) ].
+Qed.
+
+(** ⭐ A2, DISCHARGED.  Whenever the counterpart is ∀-inh the row goes
+    through ForallR — WHATEVER the join's last rule and whatever [P0].  So
+    the ForallL rows' [guarded_pskl P0 \/ P0 = pskl_hole] premise costs
+    nothing: the configuration it excludes is exactly the one this lemma
+    covers, and a ∀-headed [P0] forces a ∀-inh counterpart through the FILL
+    ([ad_refine_syn_f_all_inh_l_shape], §8). *)
+Lemma main_all_inh_counterpart : forall n Θ0 P0 P R R' Ψ Θ κ B,
+  (forall NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q',
+     sub_complete_concl n NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q') ->
+  sub_complete_concl (S n) a_sub_mode_ty mode_tc Θ0 P0 P R R' Ψ Θ κ
+    (bskl_all_inh B).
+Proof.
+  intros n Θ0 P0 P R R' Ψ Θ κ B IH.
+  intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+  destruct (@sub_gv_all_inh_forall_r_family _ _ _ _ _ _ _ HDj B
+              eq_refl eq_refl eq_refl)
+    as [L [m [Hlt Hfam]]].
+  refine (@a_sub_complete_forall_r n Θ0 P0 P R R' Ψ Θ κ B L IH _
+            Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+            HwfQ).
+  intros α Hα.
+  eapply ad_pat_sub_gv_fuel_weaken; [ exact (Hfam α Hα) | lia ].
+Qed.
+
+(** The WLOG's TRICHOTOMY, straight off mode compatibility.  At [NM = SK]
+    every compatible [P0] is a hole or an arrow; at [NM = TY] the only
+    non-guarded, non-hole shape a compatible [P0] can take is a ∀ — and it can
+    take it only at [M = TC], because [__ti] forces the hole and [__fn] forces
+    an arrow.  That last case is exactly what §8b covers. *)
+Lemma p0_wlog_trichotomy : forall NM M P0,
+  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
+  lc_pskl P0 ->
+  guarded_pskl P0 \/ P0 = pskl_hole \/
+  (NM = a_sub_mode_ty /\ M = mode_tc /\ exists Pb, P0 = pskl_all_syn Pb).
+Proof.
+  intros NM M P0 Hsk Hty Hlc; destruct NM.
+  - (* TY *)
+    specialize (Hty eq_refl).
+    inversion Hty as [ HeqM HeqP | A HeqM HeqP | M0 Pd Pc Hc HeqM HeqP ]; subst.
+    + right; left; reflexivity.
+    + destruct A; cbn in *.
+      * left; apply guarded_pskl__unit.
+      * inversion Hlc.                       (* var_b : excluded by lc *)
+      * left; apply guarded_pskl__var.
+      * left; inversion Hlc; subst; apply guarded_pskl__arrow; assumption.
+      * right; right; repeat split; eexists; reflexivity.
+    + left; inversion Hlc; subst; apply guarded_pskl__arrow; assumption.
+  - (* SK *)
+    specialize (Hsk eq_refl).
+    inversion Hsk as [ HeqM HeqP | HeqM HeqP | M0 Pd Pc Hc HeqM HeqP ]; subst.
+    + right; left; reflexivity.
+    + right; left; reflexivity.
+    + left; inversion Hlc; subst; apply guarded_pskl__arrow; assumption.
+Qed.
+
+(* ===================================================================== *)
 (*  §9  THE MAIN HALF's JOIN DISPATCH — DESIGN §12.1's case map            *)
 (*                                                                        *)
 (*  Induction on the JOIN.  Nine rows delegate to their [Qed] row lemma    *)
@@ -847,14 +978,23 @@ Definition flex_here (n : nat) (Θ0 : aenv) : Prop :=
 Definition uskl_forall_headed (R : uskl) : Prop :=
   (exists R0, R = uskl_all_syn R0) \/ (exists ε R0, R = uskl_all_etag ε R0).
 
-(** ⭕ THE RESIDUAL, isolated.  The two ForallL rows are the ONLY ones the
-    dispatch below does not discharge: they owe TASK 0's [sub_shield] (no
-    general supply route exists for a [P0] carrying a ∀ below its head) and,
-    at [NM = TY] with [M = TC], a [guarded_pskl P0] that a ∀-headed [P0]
-    does not have — see §10. *)
+(** ⭕ THE RESIDUAL, isolated — and NARROWED by §8b.  The two ForallL rows are
+    the ONLY ones the dispatch below does not discharge.  ⭐ The WLOG premise
+    they carry ([guarded_pskl P0 \/ P0 = pskl_hole]) is now a HYPOTHESIS here,
+    not an obligation: [p0_wlog_trichotomy] leaves exactly one escaping shape
+    (a ∀-headed [P0], possible only at [NM = TY] with [M = TC]) and
+    [main_all_inh_counterpart] closes it outright, so the dispatch below hands
+    this residual only the configurations the row lemmas actually accept.
+
+    What is LEFT is TASK 0's [sub_shield] — no general supply route exists for
+    a [P0] carrying a ∀ below its head — together with the TY-only
+    ghost-freeness of the join's subject that P5's precision-substitution
+    transport demands ([ad_pat_sub_precise_upre_gv]'s last premise, threaded
+    as a side condition throughout prop_sub_complete.v).  See §10. *)
 Definition main_forall (n : nat) : Prop :=
   forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
     uskl_forall_headed R ->
+    (guarded_pskl P0 \/ P0 = pskl_hole) ->
     sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
 
 Lemma main_join : forall n NM M Ψ Θ R' Q,
@@ -941,25 +1081,56 @@ Proof.
           as [P1 [Θ1 [Hrun Hopt]]].
         exists P1, Θ1. split;
           [ apply a_sub__flex_mono; exact Hrun | exact Hopt ].
-  - (* __forall_l_tagged : [R] is the SAME ∀ — the residual (§10) *)
+  - (* __forall_l_tagged : [R] is the SAME ∀ — the residual (§10), but only
+       after §8b has taken the WLOG's escaping shape off its hands *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
     assert (Hhd : uskl_forall_headed R).
     { destruct (@a_uskl_tyequiv_all_etag_l_inv Θa εa Rj _ Hslack) as [X0 HX].
       destruct (@msubst_uskl_syn_all_etag_inv κ R εa X0 HX) as [R0 [HR _]].
       right; exists εa, R0; exact HR. }
-    exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_etag εa Rj) Ψ0 Θa κ Qa Hhd
-             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-             HwfQ).
-  - (* __forall_l_untagged : the residual (§10) *)
+    destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
+      as [Hwlog | [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]]].
+    + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_etag εa Rj) Ψ0 Θa κ Qa Hhd
+               (or_introl Hwlog)
+               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+               HwfQ).
+    + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_etag εa Rj) Ψ0 Θa κ Qa Hhd
+               (or_intror Hwlog)
+               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+               HwfQ).
+    + (* ⭐ the WLOG's escaping shape: a ∀-headed [P0] forces a ∀-inh
+         counterpart through the FILL, and §8b sends the row through ForallR *)
+      subst NM0 Ma P0.
+      cbn in Hrs.
+      destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
+      exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P R
+               (uskl_all_etag εa Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
+               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+               HwfQ).
+  - (* __forall_l_untagged : as above *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
     assert (Hhd : uskl_forall_headed R).
     { destruct (@a_uskl_tyequiv_all_syn_l_inv Θa Rj _ Hslack) as [X0 HX].
       destruct (@msubst_uskl_syn_all_syn_inv_mono Θ0 κ Θa R X0 Hinc HX)
         as [R0 [HR _]].
       left; exists R0; exact HR. }
-    exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_syn Rj) Ψ0 Θa κ Qa Hhd
-             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-             HwfQ).
+    destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
+      as [Hwlog | [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]]].
+    + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_syn Rj) Ψ0 Θa κ Qa Hhd
+               (or_introl Hwlog)
+               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+               HwfQ).
+    + exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_syn Rj) Ψ0 Θa κ Qa Hhd
+               (or_intror Hwlog)
+               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+               HwfQ).
+    + subst NM0 Ma P0.
+      cbn in Hrs.
+      destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B HB]. subst Qa.
+      exact (@main_all_inh_counterpart n0 Θ0 (pskl_all_syn Pb) P R
+               (uskl_all_syn Rj) Ψ0 Θa κ B (Hfuel n0 ltac:(lia))
+               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+               HwfQ).
   - (* __ghost : the row lemma takes [R'] directly *)
     exact (@a_sub_complete_ghost n0 Ma Θ0 P0 P R uskl_hole Ψ0 Θa κ
              (pskl_to_bskl_inh Pa) eq_refl).
@@ -1046,12 +1217,39 @@ Qed.
 (*        generalized and the total context length bounded.                *)
 (*    (c) [main_join]        — the main half's twelve-row join dispatch.   *)
 (*                                                                        *)
-(*  TWO obligations remain, and BOTH are outside the mechanical assembly.  *)
+(*  ONE obligation remains, and it is outside the mechanical assembly.    *)
 (*                                                                        *)
-(*  ⭕ RESIDUAL A — [main_forall n], the two ForallL rows.  It carries TWO  *)
-(*     independent problems.                                              *)
+(*  ⭕ RESIDUAL A — [main_forall n], the two ForallL rows.  It used to      *)
+(*     carry the WLOG premise too; that is now DISCHARGED INSIDE the       *)
+(*     dispatch (§8b + [p0_wlog_trichotomy]), so [main_forall] TAKES the   *)
+(*     WLOG as a hypothesis and the residual is narrower than it was.      *)
 (*                                                                        *)
-(*     A1.  TASK 0's [sub_shield].  Both row lemmas demand                 *)
+(*     ⚙ WHAT IS LEFT, exactly — the two premises of                       *)
+(*     [a_sub_complete_forall_l_tagged] / [_untagged] that the join does   *)
+(*     not supply:                                                        *)
+(*                                                                        *)
+(*       (1) TASK 0's [sub_shield]  (A1 below);                            *)
+(*       (2) [NM = a_sub_mode_ty -> uskl_ghost_free (uskl_all_etag ε Rj)]. *)
+(*                                                                        *)
+(*     ⚠️ (2) is NOT derivable from the join, and it is worth being         *)
+(*     explicit about why, because it is easy to assume otherwise: the     *)
+(*     four rules that put a ghost AT THE HEAD of the subject              *)
+(*     ([__ghost], [__ghostg], [__univ_ghost_l], [__univ_ghost_lg]) are    *)
+(*     all SK-only, so one might expect ghost-freeness to be a TY          *)
+(*     invariant.  It is not: [__arrow]'s DOMAIN is an arbitrary           *)
+(*     consistency leaf at any sort, and [__infer] accepts an arbitrary    *)
+(*     subject, so a ghost can sit inside a TY join's subject.  (2) is     *)
+(*     therefore an EXTERNAL side condition of the same family as the wf   *)
+(*     ones — P5 threads exactly this predicate through                    *)
+(*     prop_sub_complete.v as a statement hypothesis, and it is where      *)
+(*     [ad_pat_sub_precise_upre_gv]'s last premise comes from.  Closing it *)
+(*     means putting it ON THE MOTIVE at [NM = TY], which every recursing  *)
+(*     row would then owe for its recursive subject (Sub-Arrow at [R2],    *)
+(*     ForallR, both ForallL rows, and P7a's two cross-half rows).  That   *)
+(*     is a motive change, not an assembly step; registered in             *)
+(*     docs/WF-SIDE-CONDITIONS.md.                                        *)
+(*                                                                        *)
+(*     A1.  ⭕ TASK 0's [sub_shield].  Both row lemmas demand               *)
 (*          [forall α, sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] and the     *)
 (*          join does not supply it.  prop_sub_shield_supply.v discharges  *)
 (*          it for a flex-free / atomic / mono-counterpart /               *)
@@ -1059,41 +1257,145 @@ Qed.
 (*          its head has no general route.  (The premise is now known      *)
 (*          SATISFIABLE at the node that used to refute it —               *)
 (*          cex/cex_p7_shield_realizable.v — so this is a missing supply,  *)
-(*          not a falsity.)                                               *)
+(*          not a falsity.  ⚠️ And the BOUNDARY is machine-checked:         *)
+(*          [sub_shield_forall_flex_p0_fails], cex/cex_p7_shield_forall_   *)
+(*          flex.v, so a general supply cannot come from [P0] / [ψa]       *)
+(*          alone — it must use the POSITIONAL guard.)                     *)
 (*                                                                        *)
-(*     A2.  ⚠️ NEW (2026-08-03): the two ForallL rows also demand           *)
+(*     ⭐ A2 — CLOSED (2026-08-03), §8b, and DISCHARGED INSIDE §9's ForallL *)
+(*          rows, so it is no longer part of the residual at all.  The two  *)
+(*          ForallL row lemmas also demand                                  *)
 (*          [guarded_pskl P0 \/ P0 = pskl_hole], and at [NM = TY] with     *)
-(*          [M = TC] that is NOT derivable — [a_ty_mode_compat mode_tc P0] *)
-(*          allows a ∀-headed [P0], and §8's refutation does not apply     *)
-(*          because the ForallL row's counterpart [Q] is arbitrary (§8     *)
-(*          uses the Check row's [guarded_pskl B]).  The configuration is  *)
-(*          REAL: with a ∀-headed [P0] the ALGORITHM must fire ForallR     *)
-(*          ([a_sub__forall_r] is the rule whose INPUT is the ∀) while the *)
-(*          JOIN's last rule is ForallL — the two commute, so the join's   *)
-(*          last rule does NOT determine the algorithm's.  Closing it      *)
-(*          needs a JOIN-PERMUTATION lemma: from a ForallL-rooted join     *)
-(*          with a [bskl_all_inh] target, extract the ForallR family that  *)
-(*          [a_sub_complete_forall_r] takes.  Neither DESIGN §12 nor §12.1 *)
-(*          anticipated this; it is the next thing to scope.                *)
+(*          [M = TC] that is NOT derivable: [a_ty_mode_compat mode_tc P0]  *)
+(*          allows a ∀-headed [P0], and §8's refutation does not transfer  *)
+(*          (it consumes the Check row's [guarded_pskl B]; ForallL's       *)
+(*          counterpart is arbitrary).  The configuration is REAL — with a *)
+(*          ∀-headed [P0] the ALGORITHM fires ForallR ([a_sub__forall_r]   *)
+(*          is the rule whose INPUT is the ∀) while the JOIN's last rule   *)
+(*          is ForallL.  ⭐ THE PAPER HANDLES THIS, subtyping-proofs.tex:   *)
+(*          3385 — *Since declarative subtyping is congruent, we assume    *)
+(*          WLOG that guarded(P0) ∨ P0 = □; otherwise we apply ForallR     *)
+(*          first.*  It is a compressed proof step, NOT a defect.  Its     *)
+(*          mechanical content is the JOIN PERMUTATION of §8b:             *)
+(*          [p0_wlog_trichotomy] shows the ONLY escaping shape is a        *)
+(*          ∀-headed [P0] at [NM = TY], [M = TC]; there the FILL forces a  *)
+(*          ∀-inh counterpart and [main_all_inh_counterpart] sends the row *)
+(*          through ForallR.  §9's two ForallL cases now do exactly that.  *)
 (*                                                                        *)
-(*  ⭕ RESIDUAL B — the TERM-VARIABLE gap of §6, now HALF closed.  The       *)
-(*     RULES are in the tree and every judgment-level bundle carries them; *)
-(*     what is missing is P7a's two COMPLETENESS rows, which is why        *)
-(*     [flex_step] still takes [a_sub_flex_walkable Θ0].  ⚠️ That premise   *)
-(*     cannot be carried to the final bundle instead — the row lemmas'     *)
-(*     fuel IH is the UNRESTRICTED [sub_complete_concl], so the            *)
-(*     restriction would have to move INTO the motive and every row would  *)
-(*     then owe walkability of the contexts it recurses at.  The two rows  *)
-(*     are the only way out, and their shape is fully determined (§6).      *)
+(*  ⭐ FORMER RESIDUAL B — the TERM-VARIABLE gap of §6 — is CLOSED           *)
+(*     (2026-08-03).  Both the rules and P7a's two completeness rows are   *)
+(*     in the tree, so [flex_step] carries no side condition on [Θ0] and   *)
+(*     its two term-variable branches are ordinary delegations.  The       *)
+(*     rejected alternative is worth recording: carrying the old           *)
+(*     [a_sub_flex_walkable Θ0] premise to the final bundle instead does   *)
+(*     NOT work — the row lemmas' fuel IH is the UNRESTRICTED              *)
+(*     [sub_complete_concl], so the restriction would have to move INTO    *)
+(*     the motive and every row would then owe walkability of the          *)
+(*     contexts it recurses at.                                           *)
 (*                                                                        *)
-(*  With A and B discharged the bundle is a three-line assembly: strong    *)
-(*  induction on the fuel, then on [length Θ0]; (a) from the fuel IH; (b)  *)
-(*  from (a) and the main half at shorter contexts; (c) from the fuel IH   *)
-(*  and (b) at [Ξ = ·].                                                    *)
+(*  The assembly itself is §12, and it is done: [main_forall] is its ONE   *)
+(*  hypothesis.  ⚙ That hypothesis is KNOWN-TRUE (it is an instance of the *)
+(*  very theorem being proved), so the conditional bundle is not vacuous — *)
+(*  which is exactly why the residual is stated as [main_forall] and NOT   *)
+(*  as a bald "shield supply" hypothesis: the side conditions under which  *)
+(*  the shield holds are the open question, and guessing them would risk   *)
+(*  a FALSE hypothesis and a vacuously true theorem.                       *)
 (* ===================================================================== *)
+
+
+(* ===================================================================== *)
+(*  §12  THE ASSEMBLY — [a_sub_complete_bundle], modulo [main_forall]      *)
+(*                                                                        *)
+(*  DESIGN §12.1's three layers, glued: strong induction on the FUEL, and  *)
+(*  inside it strong induction on the CONTEXT LENGTH.                      *)
+(*                                                                        *)
+(*    · [main_arrow_holds]  from the fuel IH alone                         *)
+(*    · [main_below n k]    the main half at contexts SHORTER than k, by   *)
+(*                          the length IH                                  *)
+(*    · [flex_step]         from the two above                             *)
+(*    · [main_join]         from the fuel IH and [flex_step] at [Ξ = ·]    *)
+(*                                                                        *)
+(*  [main_join]'s [ESC] is instantiated with the constant [fun _ => True]: *)
+(*  its three closure conditions become trivial and the third hands back   *)
+(*  [flex_here n Θ0], which is [flex_step] at [Ξ = nil].                   *)
+(* ===================================================================== *)
+
+Theorem a_sub_complete_bundle_holds :
+  (forall n, main_forall n) -> a_sub_complete_bundle.
+Proof.
+  intros Hforall n.
+  induction n as [n IHfuel] using lt_wf_ind.
+  assert (Hfuel : forall n', n' < n -> main_all n')
+    by (intros n' Hn'; exact (proj1 (IHfuel n' Hn'))).
+  assert (Harrow : main_arrow n)
+    by (apply main_arrow_holds; [ exact Hfuel | exact (Hforall n) ]).
+  (* the main half at every context, by strong induction on the LENGTH *)
+  assert (Hbelow : forall k, main_below n k).
+  { intro k. induction k as [k IHk] using lt_wf_ind.
+    intros NM M Θ0 P0 P R R' Ψ Θ κ Q Hlen.
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    refine (@main_join n NM M Ψ Θ R' Q HDj Hfuel (Hforall n) Θ0
+              (fun _ => True) _ _ _ P0 P R κ I
+              Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+              HwfQ);
+      [ intros; exact I | intros; exact I | ].
+    intros γ _ NM' M' α' P0' R'' Ψ' Θ' κ' Q'.
+    apply (@flex_step n (length Θ0) Harrow
+             (IHk (length Θ0) Hlen) NM' M' Θ0 nil α' P0' R'' Ψ' Θ' κ' Q').
+    simpl. lia. }
+  split.
+  - intros NM M Θ0 P0 P R R' Ψ Θ κ Q.
+    apply (Hbelow (S (length Θ0)) NM M Θ0 P0 P R R' Ψ Θ κ Q). lia.
+  - intros NM M Θ0 Ξ α P0 R' Ψ Θ κ Q.
+    apply (@flex_step n (length Ξ + length Θ0) Harrow
+             (Hbelow (length Ξ + length Θ0))
+             NM M Θ0 Ξ α P0 R' Ψ Θ κ Q). lia.
+Qed.
+
+(** thm:complete-subtyping (algorithmic.tex:1446) — the P7c instance of the
+    bundle's main half: [Ψ := ∅] and [R := ⌈P⌉ᵘ], the unresolved skeleton
+    the top-level problem starts from.  The join is kept at the ≡ᵘ-slack
+    subject the motive carries; the paper's own form is the REFLEXIVE
+    instance [R' := κ⌈P⌉ᵘ], so this statement is the weaker-premise one.
+
+    ⚙ It inherits [main_forall] and is therefore NOT yet added to README.v,
+    which indexes UNCONDITIONAL paper claims. *)
+Theorem a_sub_complete_thm :
+  (forall n, main_forall n) ->
+  forall n NM M Θ0 P0 P R' Θ κ Q,
+    a_wf_aenv Θ0 -> a_wf_aenv Θ ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+    Θ0 ⨟ empty ⊢ₚₛᵃ P ->
+    (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
+    (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
+    κ ∷ Θ0 ⊑ Θ ->
+    Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ (pskl_to_uskl P)) ->
+    ad_pat_sub_gv n NM M empty Θ R' Q ->
+    ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0)) Q ->
+    Θ ⨟ empty ⊢ₚₛᵃ (bskl_to_pskl Q) ->
+    exists P1 Θ1,
+      a_sub NM M P0 Θ0 P P1 Θ1 /\
+      (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
+         exists ζ,
+           ζ ∷ Θ1 ⊑ Θ /\
+           a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
+           Θ ⨟ empty ⊢ₚᵣᵃ
+             (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q)).
+Proof.
+  intros Hforall n NM M Θ0 P0 P R' Θ κ Q
+    Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty Hinc Hslack HDj Hrs HwfQ.
+  exact (proj1 (a_sub_complete_bundle_holds Hforall n)
+           NM M Θ0 P0 P (pskl_to_uskl P) R' empty Θ κ Q
+           Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty
+           (uskl_to_pskl_pskl_to_uskl P) Hinc Hslack HDj Hrs HwfQ).
+Qed.
 
 Print Assumptions main_join.
 Print Assumptions main_arrow_holds.
 Print Assumptions flex_step.
 Print Assumptions check_row_guarded_p0.
 Print Assumptions sub_flex_rigid_head_absurd.
+Print Assumptions sub_gv_all_inh_forall_r_family.
+Print Assumptions main_all_inh_counterpart.
+Print Assumptions a_sub_complete_bundle_holds.
+Print Assumptions a_sub_complete_thm.

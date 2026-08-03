@@ -4867,10 +4867,12 @@ ForallR — and `a_ty_mode_compat mode_tc P0` does not exclude a ∀-headed `P0`
 §8's refutation does not transfer, because it consumes the Check row's
 GUARDED counterpart and ForallL's counterpart is arbitrary.  A repair needs a
 JOIN-PERMUTATION lemma: from a ForallL-rooted join with a `bskl_all_inh`
-target, extract the ForallR family `a_sub_complete_forall_r` consumes.  Logged
-in docs/PAPER-GAPS.md.
+target, extract the ForallR family `a_sub_complete_forall_r` consumes.
+**⭐ CLOSED 2026-08-03 — see §12.4.**  It is NOT a paper defect: the paper
+covers it with a one-sentence WLOG (subtyping-proofs.tex:3385).
 
-**(B) ⛔ THE TERM-VARIABLE GAP.**  See docs/PAPER-GAPS.md.  What matters for
+**(B) ⛔ THE TERM-VARIABLE GAP.**  See docs/PAPER-GAPS.md.  **⭐ CLOSED
+2026-08-03 — see §12.4.**  What matters for
 the DESIGN is the shape of the workaround and why it does not scale: the
 premise `a_sub_flex_walkable Θ0` sits on `flex_step` only.  It cannot be
 carried to the bundle, because the row lemmas' fuel IH is the UNRESTRICTED
@@ -4933,3 +4935,99 @@ free because `β`/`β1` are fresh for the payload (it is scoped in `Θ0`).
 
 With both rows, `flex_step`'s `a_sub_flex_walkable Θ0` premise is deleted and
 its two `exfalso` branches become ordinary delegations.
+
+### ⭐⭐⭐ §12.4 THE BUNDLE IS ASSEMBLED (2026-08-03) — one hypothesis left
+
+`make coq` green, admit-free, axiom-free.  Three things landed, in dependency
+order.
+
+**(1) The two P7a term-variable rows are `Qed`.**
+`a_sub_flex_complete_skip_tm_var` / `_skip_tm_skl`
+(prop_sub_complete_thm.v §(N)/§(O)) came out of §12.3's substitution table
+with no surprises — the recipe was right, including the two DERIVED premises
+and the semantic middle.  The one place to be careful when transcribing is the
+**two sides of the entry**: occurrences inside `Ξv ++ …` are the `a_inc`
+TARGET and become `(β ~ abind_var_typ A')`; every other occurrence is the
+SOURCE and stays `(β ~ abind_var_typ Qv)`.  `a_sub_flex_walkable` and its two
+lemmas are DELETED; `flex_step` takes no side condition on `Θ0`; obstacle (B)
+is closed.
+
+**(2) Obstacle (A2) is closed, and the paper was right all along.**
+subtyping-proofs.tex:3385 already covers it — *"Since declarative subtyping is
+congruent, we assume WLOG that guarded(P0) ∨ P0 = □; otherwise we apply
+ForallR first."*  ⚠️ **Do not report the ForallL/ForallR overlap as a paper
+defect.**  Its mechanical content is two lemmas in dispatch.v §11:
+
+- `sub_gv_all_inh_forall_r_family` — from ANY TY/TC join onto a
+  `bskl_all_inh` target, extract the cofinite ForallR family.  Induction on
+  the join; the ForallL chain must bottom out in `__forall_r` because
+  `__check` is the only other TY/TC row that can carry the target and its
+  `guarded_pskl` premise refutes a ∀-inh counterpart (§8's step, read
+  backwards).  Each ForallL step is re-applied under the new binder, its only
+  context-sensitive premise (`Θ ⊢ ⌊ψ⌋ˢ`) weakened along the added rigid.
+- `ad_pat_sub_gv_fuel_weaken` — needed because the extraction returns the
+  family at whatever height it finds, while `a_sub_complete_forall_r` wants it
+  at exactly `n` for a conclusion at `S n`.  A 20-line induction: only the four
+  rules whose conclusion fuel is `S n` need `destruct m`.
+
+`main_all_inh_counterpart` composes them: **whenever the counterpart is ∀-inh
+the row goes through ForallR, whatever the join's last rule and whatever
+`P0`** — so the ForallL rows' `guarded_pskl P0 ∨ P0 = ◇` premise costs
+nothing, because a ∀-headed `P0` forces a ∀-inh counterpart through the FILL.
+
+⭐ **And A2 is now DISCHARGED INSIDE the dispatch, not just closable.**
+`p0_wlog_trichotomy` reads the WLOG straight off mode compatibility: at
+`NM = SK` every compatible `P0` is a hole or an arrow; at `NM = TY` the only
+non-guarded, non-hole shape is a `∀`, and only at `M = TC` (`__ti` forces the
+hole, `__fn` forces an arrow).  `main_join`'s two ForallL cases now split on
+that trichotomy and send the escaping shape to `main_all_inh_counterpart`,
+so **`main_forall` TAKES `guarded_pskl P0 ∨ P0 = ◇` as a hypothesis** instead
+of owing it.  The bundle's residual is strictly narrower than before.
+
+**(3) `a_sub_complete_bundle_holds` (dispatch.v §12).**  Exactly the shape
+§12.2 predicted:
+
+```coq
+Theorem a_sub_complete_bundle_holds :
+  (forall n, main_forall n) -> a_sub_complete_bundle.
+(* lt_wf_ind on the fuel; inside, lt_wf_ind on the CONTEXT LENGTH:
+     main_arrow_holds (fuel IH)
+   → main_below n k   (length IH)
+   → flex_step        (main_arrow + main_below)
+   → main_join        (fuel IH + flex_step at Ξ = nil, via `flex_here`) *)
+```
+
+`main_join`'s `ESC` is instantiated with `fun _ => True`: the two tophole
+closures are `exact I` and the third hands back `flex_here n Θ0`, i.e.
+`flex_step` at `Ξ = nil`.  `a_sub_complete_thm` (algorithmic.tex:1446) follows
+as the `Ψ := ∅`, `R := ⌈P⌉ᵘ` instance.
+
+⭕ **THE RESIDUAL is `main_forall n`, and it has exactly TWO components** — a
+count worth stating, because §12.2 listed only one of them and the P7c
+hand-off listed only the other:
+
+1. **TASK 0's `sub_shield`** for a `P0` carrying a `∀` below its head.
+2. ⚠️ **`NM = TY -> uskl_ghost_free (uskl_all_etag ε Rj)`** — the ForallL rows'
+   third premise, which is the last premise of `ad_pat_sub_precise_upre_gv`
+   (P5's precision-substitution transport; P5 threads the same predicate
+   through every lemma of the pack).  **It is NOT derivable from the join**,
+   and the near-miss is the trap: all four rules that put a ghost AT THE HEAD
+   of the subject (`__ghost`, `__ghostg`, `__univ_ghost_l`, `__univ_ghost_lg`)
+   are SK-only, so ghost-freeness *looks* like a TY invariant — but
+   `__arrow`'s DOMAIN is an arbitrary consistency leaf with no sort
+   constraint, and `__infer` accepts an arbitrary subject, so a ghost can sit
+   inside a TY join's subject.  It is an EXTERNAL side condition, now
+   registered in docs/WF-SIDE-CONDITIONS.md.  Closing it means putting it ON
+   THE MOTIVE at `NM = TY`, which every recursing row then owes for its
+   recursive subject (Sub-Arrow at `R2`, Sub-ForallR, both Sub-ForallL rows,
+   and P7a's Flex-Assign / Flex-Solve).  **That is a motive change, not an
+   assembly step** — decide it deliberately.
+  ⚠️ **Why the hypothesis is `main_forall` and not a "shield
+supply".**  It is tempting to state the residual as the thing actually
+missing — some `forall α, sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa` under side
+conditions.  Do NOT: the side conditions are precisely the open question, and
+`sub_shield_forall_flex_p0_fails` (cex/cex_p7_shield_forall_flex.v) shows the
+unguarded form is FALSE.  A false hypothesis makes the conditional theorem
+vacuously true and worthless.  `main_forall n` is KNOWN-TRUE — it is an
+instance of the very theorem being proved — so the conditional bundle is
+honest and non-vacuous.  Keep it.

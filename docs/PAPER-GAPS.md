@@ -2052,16 +2052,19 @@ needed — a term entry is never `a_binds_tvar`, so under `uniq` no free
 variable of a well-formed `P₀` can be it, and `x ∉ ftv P₀` is DERIVED at each
 consumer.
 
-⭕ **Still owed: P7a's two completeness rows.**  `a_inc__var` / `a_inc__var_skl`
+⭐ **FULLY CLOSED (2026-08-03): P7a's two completeness rows are `Qed` too.**
+`a_sub_flex_complete_skip_tm_var` / `_skip_tm_skl`
+(algo/prop_sub_complete_thm.v §(N)/§(O)).  `a_inc__var` / `a_inc__var_skl`
 shrink the `a_inc` TARGET exactly as `a_inc__tvar` does, so each row is
 `a_sub_flex_complete_skip_rigid`'s ⇓-truncation apparatus with the tvar pieces
 swapped for the var ones (`a_inc_var_inv`, `a_inc_var_mid_strip_id`,
 `a_inc_equiv_mid_insert_var`) plus ONE genuinely new obligation the rigid
-entry does not have: the SEMANTIC MIDDLE `Θ' ⊢ A' ≡ᵗ κ A`.  The consistency
-twin's `Assign-SkipTmVar` case discharges exactly that
-(prop_consis_complete.v:5595-5690) and is the model.  Until they exist, P7c's
-`flex_step` carries `a_sub_flex_walkable Θ0`
-(algo/prop_sub_complete_dispatch.v §6/§7).
+entry does not have: the SEMANTIC MIDDLE `Θ' ⊢ A' ≡ᵗ κ A`, cribbed from the
+consistency twin's `Assign-SkipTmVar` case (prop_consis_complete.v:5595-5690)
+and read back through the junk swap with `msubst_ptyp_kswap`.  Both rows are
+axiom-free.  The stop-gap `a_sub_flex_walkable Θ0` premise on P7c's
+`flex_step` is DELETED; the walk now dispatches a term-variable head like any
+other head.
 
 ---
 
@@ -2111,9 +2114,21 @@ that `a_sub_complete_forall_r` consumes.  This is the mechanical content of
 "declarative subtyping is congruent"; the paper is entitled to it, but it is
 not free.
 
-**Status in the mechanization.**  The two ForallL rows are isolated as
-`main_forall n` (algo/prop_sub_complete_dispatch.v §9/§10), the single
-residual hypothesis of the otherwise-complete twelve-row dispatch
-`main_join`.  It bundles this permutation step with TASK 0's `sub_shield`
-supply, which the same two rows also owe.  Nothing here is a defect in the
-paper's statement or proof.
+**Status in the mechanization — ⭐ PAID (2026-08-03).**  The permutation is
+`sub_gv_all_inh_forall_r_family` (algo/prop_sub_complete_dispatch.v §11),
+proved by induction on the join: the ForallL chain must bottom out in
+`__forall_r`, because `__check` is the only other TY/TC row that can carry a
+`bskl_all_inh` target and its `guarded_pskl` premise refutes a `∀`-inh
+counterpart.  Each ForallL step is re-applied under the new binder.  It needs
+one companion, `ad_pat_sub_gv_fuel_weaken`, because the extraction returns the
+family at whatever height it finds while `a_sub_complete_forall_r` wants it at
+exactly `n`.  `main_all_inh_counterpart` then closes the excluded
+configuration outright: **whenever the counterpart is `∀`-inh the row goes
+through ForallR, whatever the join's last rule and whatever `P_0`.**
+
+The single residual hypothesis of the assembled bundle
+(`a_sub_complete_bundle_holds`, §12) is still `main_forall n`, but it now
+carries only TASK 0's `sub_shield` supply — a MECH-INVENTED premise, not a
+paper statement (its residual case is logged in
+docs/DESIGN-completeness-subtyping.md, not here).  Nothing in this entry is a
+defect in the paper's statement or proof.

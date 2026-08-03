@@ -412,3 +412,39 @@ the source is guarded and no such reading exists.
 `a_sub_complete_check` also takes `guarded_pskl P0`.  The DECLARATIVE `Check`
 row does not pin `P0`'s shape, but the ALGORITHM dispatches on it: a `∀` `P0`
 is `ForallR`, not `Check`.  That is the paper's own case split.
+
+## TY ghost-freeness of the SUBJECT (registered 2026-08-03; P7b's ForallL rows)
+
+`a_sub_complete_forall_l_tagged` / `_untagged`
+(`frost/algo/prop_sub_complete_thm.v`) each take
+
+    NM = a_sub_mode_ty  ->  uskl_ghost_free (uskl_all_etag ε Rj)     (resp. all_syn)
+
+as a statement hypothesis (`Hgfj`).  It is not decoration: it is the last
+premise of `ad_pat_sub_precise_upre_gv`, i.e. P5's precision-substitution
+transport, and P5 threads the very same predicate through
+`frost/algo/prop_sub_complete.v` as a hypothesis of every lemma in the pack.
+It is what makes the SWAPPED subject `open Rj ⌈κPa⌉ᵘ` ghost-free, given that a
+TY guess is a TYPE (`pskl_to_uskl_paint_ghost_free`).
+
+**⚠️ It is NOT derivable from the join, and the near-miss is worth recording.**
+All four rules that put a ghost AT THE HEAD of `ad_pat_sub_gv`'s subject —
+`__ghost`, `__ghostg`, `__univ_ghost_l`, `__univ_ghost_lg` — are SK-only, so
+ghost-freeness looks like a TY invariant.  It is not: `__arrow`'s DOMAIN is an
+arbitrary consistency leaf carrying no sort constraint, and `__infer` accepts
+an arbitrary subject, so a ghost can sit *inside* a TY join's subject.  The
+condition is genuinely external, in the same family as the `a_wf_pskl`
+statement hypotheses of §1.
+
+**Where it has to go.** On the P7b motive, guarded by `NM = a_sub_mode_ty` —
+which then makes it an obligation of every row that recurses into the main
+half (Sub-Arrow at `R2`, Sub-ForallR, both Sub-ForallL rows, and P7a's two
+cross-half rows Flex-Assign / Flex-Solve).  Until that motive change is made
+it is absorbed, together with TASK 0's `sub_shield`, into the single
+hypothesis `main_forall n` of `a_sub_complete_bundle_holds`
+(`frost/algo/prop_sub_complete_dispatch.v` §10 spells out both components).
+
+**Related:** the ForallL rows' third premise, the WLOG
+`guarded_pskl P0 \/ P0 = pskl_hole`, USED to be part of the same residual and
+is now discharged inside the dispatch (`p0_wlog_trichotomy` +
+`main_all_inh_counterpart`, §8b) — it is a case split, not a side condition.

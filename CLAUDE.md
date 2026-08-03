@@ -72,24 +72,43 @@ point to the same content.
   all.  `p7_sub_shield_repaired_holds` machine-checks the repaired
   premise at the very witness that refutes the old one.  Nothing goes
   to PAPER-GAPS.md — `sub_shield` is not a paper statement.
-  **P7c: ALL THREE LAYERS LANDED (2026-08-03).**
-  `frost/algo/prop_sub_complete_dispatch.v` (§1–§10, all `Qed` +
-  axiom-free) now holds the stuck-check
+  **P7c: THE BUNDLE IS ASSEMBLED (2026-08-03).**
+  `frost/algo/prop_sub_complete_dispatch.v` (§1–§12, all `Qed` +
+  axiom-free) holds the stuck-check
   (`sub_flex_rigid_head_absurd`), the flex half (`flex_step`), the
-  main half's TWELVE-ROW join dispatch (`main_join`) and the
-  arrow-subject layer (`main_arrow_holds`).  ⚠️ **Two obstacles remain,
-  and BOTH are for the authors** (docs/PAPER-GAPS.md): (i) the
-  flexible SUBTYPING walk had **no rule for a term-variable head**
-  while the twin assignment walk has `Assign-SkipTmVar` — MACHINE-
-  CHECKED (`cex/cex_p7_flex_walk_tm_var.v`) and the reference
-  implementation **crashes** on `fun x -> x 1`.  ⭐ **The rules are now
-  ADDED** (`a_sub_flex__skip_tm_var` / `__skip_tm_skl`, with decorated
-  mirrors and all three mutual inductions updated); what remains is
-  P7a's two completeness rows, scoped in DESIGN §12.3.  And (ii) at ForallL
-  the join's last rule does not determine the algorithm's rule
-  (ForallL/ForallR commute), which the paper covers by a one-sentence
-  WLOG whose mechanical content is a join-permutation lemma.  The residual is isolated as the single
-  hypothesis `main_forall n`.
+  main half's TWELVE-ROW join dispatch (`main_join`), the
+  arrow-subject layer (`main_arrow_holds`), the ForallL/ForallR JOIN
+  PERMUTATION (`sub_gv_all_inh_forall_r_family` +
+  `ad_pat_sub_gv_fuel_weaken` + `main_all_inh_counterpart`, §11) and
+  the assembly itself, `a_sub_complete_bundle_holds` (§12), with
+  `a_sub_complete_thm` as the `Ψ := ∅`, `R := ⌈P⌉ᵘ` corollary.  Two
+  obstacles that stood in the way are now CLOSED: (i) the flexible
+  SUBTYPING walk had **no rule for a term-variable head** while the
+  twin assignment walk has `Assign-SkipTmVar` — MACHINE-CHECKED
+  (`cex/cex_p7_flex_walk_tm_var.v`) and the reference implementation
+  **crashes** on `fun x -> x 1`; ⭐ the rules AND P7a's two
+  completeness rows (`a_sub_flex_complete_skip_tm_var` /
+  `_skip_tm_skl`) are now in the tree, so `flex_step`'s stop-gap
+  `a_sub_flex_walkable` premise is gone.  And (ii) at ForallL the
+  join's last rule does not determine the algorithm's rule
+  (ForallL/ForallR commute) — ⚠️ **not a defect**: the paper covers it
+  with a one-sentence WLOG (subtyping-proofs.tex:3385), §8b is that
+  sentence's mechanical content, and it is DISCHARGED INSIDE the
+  dispatch (`p0_wlog_trichotomy` + `main_all_inh_counterpart`), so
+  `main_forall` now TAKES the WLOG as a hypothesis instead of owing
+  it.  ⭕ **ONE residual: the bundle takes `forall n, main_forall n`
+  as a hypothesis**, and it has exactly TWO components — (1) TASK 0's
+  `sub_shield` supply for a `P0` carrying a ∀ below its head (boundary
+  machine-checked, `cex/cex_p7_shield_forall_flex.v`), and (2) ⚠️ the
+  ForallL rows' `NM = TY -> uskl_ghost_free …`, which is NOT derivable
+  from the join (the four ghost-heading rules are SK-only, but
+  `__arrow`'s domain leaf and `__infer` accept an arbitrary subject) —
+  an EXTERNAL side condition now registered in
+  docs/WF-SIDE-CONDITIONS.md, whose fix is a MOTIVE change.  ⚠️ The
+  hypothesis is deliberately `main_forall` — a KNOWN-TRUE statement —
+  and not a guessed "shield supply", which would risk a false
+  hypothesis and a vacuous theorem.  The two flagships are therefore
+  NOT yet in README.v, which indexes unconditional paper claims.
   See [`PROGRESS.md`](PROGRESS.md) Part 1 for the per-lemma map.
 - **Read these three docs before touching code**: `AGENTS.md` (this
   file, ground rules), `DESIGN.md` (calculus + encoding design),
@@ -107,7 +126,7 @@ point to the same content.
 | [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `paper/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
-| [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: the three tasks that finish subtyping completeness (`a_sub_complete_bundle`) — the two term-variable P7a rows, `main_forall`, the assembly |
+| [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: TASKS 1, 2a and 3 are DONE (2026-08-03); what is left is TASK 2b — TASK 0's `sub_shield` for a `P0` with a ∀ below its head, the bundle's one hypothesis |
 | [`docs/HANDOFF-typ-all-plain-refactor.md`](docs/HANDOFF-typ-all-plain-refactor.md) | Historical hand-off doc from the 2026-05-15 typ_all_plain removal pass |
 | [`../paper/sections/`](../paper/sections/) | Authoritative paper source (mechanize against `declarative.tex`, `syntax-directed.tex`, `algorithmic.tex`, `proofs.tex` only — `*-old.tex` and `*-quantifier-rows.tex` are abandoned drafts) |
 
