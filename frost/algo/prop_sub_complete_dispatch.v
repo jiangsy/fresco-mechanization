@@ -759,3 +759,335 @@ Qed.
 Print Assumptions sub_flex_rigid_head_absurd.
 Print Assumptions slack_arrow_rigid_absurd.
 Print Assumptions flex_step.
+
+(* ===================================================================== *)
+(*  §8  THE CHECK ROW's ONE OBLIGATION — [guarded_pskl P0]                 *)
+(*                                                                        *)
+(*  [a_sub_complete_check] demands it (the algorithm's Check/ForallR split *)
+(*  is on exactly this), and the JOIN does not supply it.  Mode            *)
+(*  compatibility gives [P0 = ptyp_to_pskl A], so the only unguarded shape *)
+(*  left is a ∀-headed [A]; that is refuted against the FILL.  A           *)
+(*  [bskl_all_inh] SOURCE refines only to a [bskl_all_inh] TARGET — the    *)
+(*  only rows with such a source are [__all] and [__flex_r], and           *)
+(*  [__flex_r]'s chain cannot bottom out because a monotype painting is    *)
+(*  never [bskl_all_inh] — while the Check row's counterpart is            *)
+(*  [pskl_to_bskl_inh B] with [guarded_pskl B].  This is the SOURCE-side   *)
+(*  mirror of [ad_refine_syn_f_all_inh_r_shape].                          *)
+(* ===================================================================== *)
+
+Lemma ad_refine_syn_f_all_inh_l_shape : forall F Θ Δ A Qt,
+  ad_refine_syn_f F Θ Δ (bskl_all_inh A) Qt ->
+  exists B, Qt = bskl_all_inh B.
+Proof.
+  intros F Θ Δ A Qt H.
+  remember (bskl_all_inh A) as S eqn:HS. revert A HS.
+  induction H; intros A0 HS; try discriminate HS.
+  - (* all *) eexists; reflexivity.
+  - (* flex_r : the target's definition is a MONOTYPE painting, never ∀-inh *)
+    exfalso.
+    destruct (IHad_refine_syn_f _ HS) as [B HB].
+    destruct τ; cbn in HB; discriminate HB.
+Qed.
+
+Lemma check_row_guarded_p0 : forall Θ0 κ Θ P0 B,
+  κ ∷ Θ0 ⊑ Θ ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  a_ty_mode_compat mode_tc P0 ->
+  guarded_pskl B ->
+  ad_refine_syn_f empty Θ empty (pskl_to_bskl_inh (msubst_pskl κ P0))
+    (pskl_to_bskl_inh B) ->
+  guarded_pskl P0.
+Proof.
+  intros Θ0 κ Θ P0 B Hinc HwfP0 Hmod HgB Hrs.
+  pose proof (a_wf_pskl_lc HwfP0) as Hlc.
+  inversion Hmod as [ | A HeqP0 | ]; subst.
+  destruct A; cbn in *.
+  - apply guarded_pskl__unit.
+  - (* var_b : excluded by local closure *) inversion Hlc.
+  - apply guarded_pskl__var.
+  - inversion Hlc; subst. apply guarded_pskl__arrow; assumption.
+  - (* ∀ : the fill forces a ∀-inh counterpart, which is not guarded *)
+    exfalso.
+    destruct (ad_refine_syn_f_all_inh_l_shape Hrs) as [B0 HB0].
+    destruct (@pskl_to_bskl_inh_all_inh_inv B B0 HB0) as [X [HX _]].
+    subst B. inversion HgB.
+Qed.
+
+(* ===================================================================== *)
+(*  §9  THE MAIN HALF's JOIN DISPATCH — DESIGN §12.1's case map            *)
+(*                                                                        *)
+(*  Induction on the JOIN.  Nine rows delegate to their [Qed] row lemma    *)
+(*  (using the FUEL IH where the row consumes fuel); the two UnivGhostL    *)
+(*  rows and [__flex_mono] preserve the fuel and are the structural IH's   *)
+(*  real work.                                                            *)
+(*                                                                        *)
+(*  [ESC] carries the P7a escape.  It is needed only where the motive's    *)
+(*  subject is a bare VARIABLE — the [__arrow] row — but the two           *)
+(*  tophole-stripping rows can EXPOSE such a subject, so the hypothesis    *)
+(*  must be closed under stripping.  Instantiating [ESC] with a constant   *)
+(*  gives the general dispatch; instantiating it with "is an arrow" makes  *)
+(*  all three side conditions vacuous and yields [main_arrow] — DESIGN     *)
+(*  §12.1's layer (a) — from the FUEL IH alone.                            *)
+(* ===================================================================== *)
+
+Definition main_all (n : nat) : Prop :=
+  forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
+    sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
+
+Definition flex_here (n : nat) (Θ0 : aenv) : Prop :=
+  forall NM M α P0 R' Ψ Θ κ Q,
+    sub_flex_complete_concl n NM M Θ0 nil α P0 R' Ψ Θ κ Q.
+
+Definition uskl_forall_headed (R : uskl) : Prop :=
+  (exists R0, R = uskl_all_syn R0) \/ (exists ε R0, R = uskl_all_etag ε R0).
+
+(** ⭕ THE RESIDUAL, isolated.  The two ForallL rows are the ONLY ones the
+    dispatch below does not discharge: they owe TASK 0's [sub_shield] (no
+    general supply route exists for a [P0] carrying a ∀ below its head) and,
+    at [NM = TY] with [M = TC], a [guarded_pskl P0] that a ∀-headed [P0]
+    does not have — see §10. *)
+Definition main_forall (n : nat) : Prop :=
+  forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
+    uskl_forall_headed R ->
+    sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
+
+Lemma main_join : forall n NM M Ψ Θ R' Q,
+  ad_pat_sub_gv n NM M Ψ Θ R' Q ->
+  (forall n', n' < n -> main_all n') ->
+  main_forall n ->
+  forall Θ0 (ESC : uskl -> Prop),
+    (forall R0, ESC (uskl_tophole R0) -> ESC R0) ->
+    (forall R0, ESC (uskl_topholeg R0) -> ESC R0) ->
+    (forall α, ESC (uskl_var_f α) -> flex_here n Θ0) ->
+    forall P0 P R κ, ESC R ->
+      sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
+Proof.
+  intros n NM M Ψ Θ R' Q HD.
+  induction HD as
+    [ n0 NM0 Ψ0 Θa Ra Qa HΨ Hc Hss Hr
+    | n0 Ψ0 Θa Ta Ba HgT HgB Hc Hr
+    | n0 La Ψ0 Θa Ta Ba Hfam IHfam
+    | n0 Ψ0 Θa Ra Qa HΨ HgR HgQ Hss Hc Hr
+    | n0 NM0 Ψ0 Ψ1 Ψ2 Θa Ma R1 R2 Q1 Q2 Hc1 Hr1 Hsub2 IH2 HΨ
+    | n0 NM0 Ψ0 Ψ' Θa Ma εa Rj ψj Qa HM HΨ1 HΨ2 Htg Hwfψ Hsub IHsub
+    | n0 NM0 Ψ0 Ψ' Θa Ma Rj ψj Qa HM HΨ1 HΨ2 Htg Hwfψ Hsub IHsub
+    | n0 Ψ0 Θa Ma Pa HΨ HwfPa Hmodg
+    | n0 Ψ0 Θa Ma HΨ Hmodg
+    | n0 Ψ0 Θa Ma Rg Qg HM Hsub IHsub
+    | n0 Ψ0 Θa Ma Rg Qg HM Hsub IHsub
+    | n0 NM0 Ψ0 Θa Ma αd τd Qa Hbd Hsub IHsub ];
+    intros Hfuel Hforall Θ0 ESC He1 He2 He3 P0 P R κ HESC.
+  - (* __infer : the row lemma takes any [R] *)
+    apply a_sub_complete_infer.
+  - (* __check : the row lemma owes [guarded_pskl P0] and the wf of [B] *)
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    assert (HwfB : Θa ⨟ empty ⊢ₚₛᵃ Ba)
+      by (rewrite bskl_to_pskl_pskl_to_bskl_inh in HwfQ; exact HwfQ).
+    assert (HgP0 : guarded_pskl P0)
+      by (eapply check_row_guarded_p0;
+          [ exact Hinc | exact HwfP0 | apply Hmodty; reflexivity
+          | exact HgB | exact Hrs ]).
+    exact (@a_sub_complete_check n0 Θ0 P0 P R Ta Ψ0 Θa κ Ba
+             HgT HgB Hc Hr HgP0 HwfB
+             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+             HwfQ).
+  - (* __forall_r : the fuel IH plus the row's cofinite family *)
+    exact (@a_sub_complete_forall_r n0 Θ0 P0 P R Ta Ψ0 Θa κ Ba La
+             (Hfuel n0 ltac:(lia)) Hfam).
+  - (* __univ_ghost_r *)
+    exact (@a_sub_complete_univ_ghost_r n0 Θ0 P0 P R Ra Ψ0 Θa κ Qa
+             HgR HgQ Hc Hr).
+  - (* __arrow : the ONE row where [R]'s shape is not forced — an arrow, or a
+       bare variable whose IMAGE is the arrow (the entry into P7a) *)
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    assert (Hsh : (exists Rx Ry, R = uskl_arrow Rx Ry)
+                  \/ (exists γ, R = uskl_var_f γ)).
+    { destruct (@a_uskl_tyequiv_arrow_l_inv Θa R1 R2 _ Hwfth Hslack)
+        as [[X1 [X2 HX]] | [γ HX]].
+      - destruct (@msubst_uskl_syn_arrow_inv κ R X1 X2 HX)
+          as [[Rx [Ry [HR _]]] | [γ HR]];
+          [ left; exists Rx, Ry; exact HR | right; exists γ; exact HR ].
+      - destruct (@msubst_uskl_syn_var_inv κ R γ HX) as [γ0 HR].
+        right; exists γ0; exact HR. }
+    destruct Hsh as [[Rx [Ry HR]] | [γ HR]]; subst R.
+    + exact (@a_sub_complete_arrow n0 NM0 Ma Θ0 P0 P Rx Ry R1 R2 Ψ0 Θa κ
+               Q1 Q2 (Hfuel n0 ltac:(lia))
+               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+               HwfQ).
+    + (* a bare variable: RIGID ⟹ refuted (§4); FLEXIBLE ⟹ into P7a *)
+      cbn in HeqR. subst P.
+      assert (Hbt : a_binds_tvar γ Θ0)
+        by (inversion HwfP as [ | ? ? ? Hor | | | | ]; subst;
+            destruct Hor as [Hemp | Hb];
+            [ exfalso; clear - Hemp; fsetdec | exact Hb ]).
+      destruct Hbt as [Hrig | Hfl].
+      * exfalso.
+        eapply slack_arrow_rigid_absurd;
+          [ exact Hwf0 | exact Hwfth | exact Hinc | exact Hrig | exact Hslack ].
+      * assert (Hfγ : a_flex_tvar Θ0 γ)
+          by (destruct Hfl as [Hb | [τ0 Hb]];
+              [ left; exact Hb | right; exists τ0; exact Hb ]).
+        destruct (He3 γ HESC NM0 Ma γ P0 (uskl_arrow R1 R2) Ψ0 Θa κ
+                    (bskl_arrow Q1 Q2)
+                    a_decls__nil ltac:(simpl; clear; fsetdec)
+                    Hwf0 Hwfth HwfP0 Hfγ Hmodsk Hmodty Hinc Hslack HDj Hrs
+                    HwfQ)
+          as [P1 [Θ1 [Hrun Hopt]]].
+        exists P1, Θ1. split;
+          [ apply a_sub__flex_mono; exact Hrun | exact Hopt ].
+  - (* __forall_l_tagged : [R] is the SAME ∀ — the residual (§10) *)
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    assert (Hhd : uskl_forall_headed R).
+    { destruct (@a_uskl_tyequiv_all_etag_l_inv Θa εa Rj _ Hslack) as [X0 HX].
+      destruct (@msubst_uskl_syn_all_etag_inv κ R εa X0 HX) as [R0 [HR _]].
+      right; exists εa, R0; exact HR. }
+    exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_etag εa Rj) Ψ0 Θa κ Qa Hhd
+             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+             HwfQ).
+  - (* __forall_l_untagged : the residual (§10) *)
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    assert (Hhd : uskl_forall_headed R).
+    { destruct (@a_uskl_tyequiv_all_syn_l_inv Θa Rj _ Hslack) as [X0 HX].
+      destruct (@msubst_uskl_syn_all_syn_inv_mono Θ0 κ Θa R X0 Hinc HX)
+        as [R0 [HR _]].
+      left; exists R0; exact HR. }
+    exact (Hforall NM0 Ma Θ0 P0 P R (uskl_all_syn Rj) Ψ0 Θa κ Qa Hhd
+             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
+             HwfQ).
+  - (* __ghost : the row lemma takes [R'] directly *)
+    exact (@a_sub_complete_ghost n0 Ma Θ0 P0 P R uskl_hole Ψ0 Θa κ
+             (pskl_to_bskl_inh Pa) eq_refl).
+  - (* __ghostg *)
+    exact (@a_sub_complete_ghostg n0 Ma Θ0 P0 P R uskl_holeg Ψ0 Θa κ
+             bskl_hole eq_refl).
+  - (* __univ_ghost_l : NO row lemma — strip [∀◇] and recurse (same fuel) *)
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    destruct (@a_uskl_tyequiv_tophole_l_inv Θa Rg _ Hslack)
+      as [X [HX Hslack0]].
+    destruct (@msubst_uskl_syn_tophole_inv κ R X HX) as [R00 [HR HmX]].
+    subst R. cbn in HeqR. subst P.
+    rewrite <- HmX in Hslack0.
+    assert (HwfP' : Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ R00 ⌋ˢ)
+      by (inversion HwfP; subst; assumption).
+    destruct (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
+                (He1 R00 HESC)
+                Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
+                Hsub Hrs HwfQ)
+      as [P1 [Θ1 [Hrun Hopt]]].
+    exists P1, Θ1. split;
+      [ apply a_sub__univ_ghost_l; [ exact HM | exact Hrun ] | exact Hopt ].
+  - (* __univ_ghost_lg : ⌊∀◈ R⌋ˢ IS ∀◇⌊R⌋ˢ, so the SAME rule applies *)
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    destruct (@a_uskl_tyequiv_topholeg_l_inv Θa Rg _ Hslack)
+      as [X [HX Hslack0]].
+    destruct (@msubst_uskl_syn_topholeg_inv κ R X HX) as [R00 [HR HmX]].
+    subst R. cbn in HeqR. subst P.
+    rewrite <- HmX in Hslack0.
+    assert (HwfP' : Θ0 ⨟ empty ⊢ₚₛᵃ ⌊ R00 ⌋ˢ)
+      by (inversion HwfP; subst; assumption).
+    destruct (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 (⌊ R00 ⌋ˢ) R00 κ
+                (He2 R00 HESC)
+                Hwf0 Hwfth HwfP0 HwfP' Hmodsk Hmodty eq_refl Hinc Hslack0
+                Hsub Hrs HwfQ)
+      as [P1 [Θ1 [Hrun Hopt]]].
+    exists P1, Θ1. split;
+      [ apply a_sub__univ_ghost_l; [ exact HM | exact Hrun ] | exact Hopt ].
+  - (* __flex_mono : a pure PEEL — chase the Θ-definition on the JOIN's side
+       and re-establish the ≡ᵘ slack; [R] is untouched *)
+    intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+    assert (Hslack' : Θa ⊢ (ptyp_to_uskl_syn τd) ≡ᵘ (msubst_uskl_syn κ R)).
+    { eapply a_uskl_tyequiv_trans;
+        [ apply flex_def_paint_tyequiv; [ exact Hbd | exact Hwfth ]
+        | exact Hslack ]. }
+    exact (IHsub Hfuel Hforall Θ0 ESC He1 He2 He3 P0 P R κ HESC
+             Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack'
+             Hsub Hrs HwfQ).
+Qed.
+
+(** ⭐ DESIGN §12.1's LAYER (a).  Instantiating [ESC] with "is an arrow" makes
+    all three escape side conditions VACUOUS: an arrow is neither a [∀◇] nor a
+    [∀◈] nor a variable, so the two tophole-stripping rows can never expose a
+    variable subject and the P7a entry is unreachable.  So the main half at an
+    ARROW subject follows from the FUEL IH alone — no P7a, no induction on the
+    context.  That is exactly what [a_sub_flex_complete_solve] needs, and it
+    is what breaks §12's non-decreasing main ⇄ flex cycle. *)
+Lemma main_arrow_holds : forall n,
+  (forall n', n' < n -> main_all n') ->
+  main_forall n ->
+  main_arrow n.
+Proof.
+  intros n Hfuel Hforall NM M Θ0 P0 P Ra Rb R' Ψ Θ κ Q.
+  intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ.
+  exact (@main_join n NM M Ψ Θ R' Q HDj Hfuel Hforall Θ0
+           (fun R0 => exists Rx Ry, R0 = uskl_arrow Rx Ry)
+           ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
+           ltac:(intros R0 [Rx [Ry HH]]; discriminate HH)
+           ltac:(intros γ [Rx [Ry HH]]; discriminate HH)
+           P0 P (uskl_arrow Ra Rb) κ
+           (ex_intro _ Ra (ex_intro _ Rb eq_refl))
+           Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ).
+Qed.
+
+(* ===================================================================== *)
+(*  §10  WHAT THE ASSEMBLY STILL OWES — measured, not guessed              *)
+(*                                                                        *)
+(*  The three layers of DESIGN §12.1 are now in the tree and all [Qed]:    *)
+(*                                                                        *)
+(*    (a) [main_arrow_holds] — the main half at an ARROW subject, from the *)
+(*        FUEL IH alone.  This is what breaks §12's non-decreasing cycle,  *)
+(*        and it is exactly what [a_sub_flex_complete_solve] now takes.    *)
+(*    (b) [flex_step]        — the flex half, structural on [Θ0] with [Ξ]  *)
+(*        generalized and the total context length bounded.                *)
+(*    (c) [main_join]        — the main half's twelve-row join dispatch.   *)
+(*                                                                        *)
+(*  TWO obligations remain, and BOTH are outside the mechanical assembly.  *)
+(*                                                                        *)
+(*  ⭕ RESIDUAL A — [main_forall n], the two ForallL rows.  It carries TWO  *)
+(*     independent problems.                                              *)
+(*                                                                        *)
+(*     A1.  TASK 0's [sub_shield].  Both row lemmas demand                 *)
+(*          [forall α, sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] and the     *)
+(*          join does not supply it.  prop_sub_shield_supply.v discharges  *)
+(*          it for a flex-free / atomic / mono-counterpart /               *)
+(*          inh-free-counterpart / ∀-free [P0]; a [P0] carrying a ∀ below  *)
+(*          its head has no general route.  (The premise is now known      *)
+(*          SATISFIABLE at the node that used to refute it —               *)
+(*          cex/cex_p7_shield_realizable.v — so this is a missing supply,  *)
+(*          not a falsity.)                                               *)
+(*                                                                        *)
+(*     A2.  ⚠️ NEW (2026-08-03): the two ForallL rows also demand           *)
+(*          [guarded_pskl P0 \/ P0 = pskl_hole], and at [NM = TY] with     *)
+(*          [M = TC] that is NOT derivable — [a_ty_mode_compat mode_tc P0] *)
+(*          allows a ∀-headed [P0], and §8's refutation does not apply     *)
+(*          because the ForallL row's counterpart [Q] is arbitrary (§8     *)
+(*          uses the Check row's [guarded_pskl B]).  The configuration is  *)
+(*          REAL: with a ∀-headed [P0] the ALGORITHM must fire ForallR     *)
+(*          ([a_sub__forall_r] is the rule whose INPUT is the ∀) while the *)
+(*          JOIN's last rule is ForallL — the two commute, so the join's   *)
+(*          last rule does NOT determine the algorithm's.  Closing it      *)
+(*          needs a JOIN-PERMUTATION lemma: from a ForallL-rooted join     *)
+(*          with a [bskl_all_inh] target, extract the ForallR family that  *)
+(*          [a_sub_complete_forall_r] takes.  Neither DESIGN §12 nor §12.1 *)
+(*          anticipated this; it is the next thing to scope.                *)
+(*                                                                        *)
+(*  ⭕ RESIDUAL B — the TERM-VARIABLE gap of §6.  [flex_step] takes         *)
+(*     [a_sub_flex_walkable Θ0] as a premise, and the final bundle cannot  *)
+(*     simply carry it alongside: the row lemmas' fuel IH is the           *)
+(*     UNRESTRICTED [sub_complete_concl], so the restriction would have to *)
+(*     move INTO the motive and every row would owe walkability of the     *)
+(*     contexts it recurses at.  Adding [Flex-SkipTmVar] to [a_sub_flex]   *)
+(*     (and [a_subtag_flex]) removes the premise entirely and is the       *)
+(*     smaller change — but it is a change to the PAPER's rule set, so it  *)
+(*     is the authors' call.  See §6.                                      *)
+(*                                                                        *)
+(*  With A and B discharged the bundle is a three-line assembly: strong    *)
+(*  induction on the fuel, then on [length Θ0]; (a) from the fuel IH; (b)  *)
+(*  from (a) and the main half at shorter contexts; (c) from the fuel IH   *)
+(*  and (b) at [Ξ = ·].                                                    *)
+(* ===================================================================== *)
+
+Print Assumptions main_join.
+Print Assumptions main_arrow_holds.
+Print Assumptions flex_step.
+Print Assumptions check_row_guarded_p0.
+Print Assumptions sub_flex_rigid_head_absurd.
