@@ -59,11 +59,19 @@
     result types), and `fun g y -> g y` checks against
     `forall a b . [] ((a -> b) -> a -> b)`.  Checking never reaches the walk,
     because there `x`'s type is CONCRETE.  So the missing rule costs exactly
-    the INFERENCE of any term that applies a lambda-bound variable.  Had the
-    rule been there, Flex-Solve would deposit [α̂ ≔ β̂ → γ̂], consistency would
-    solve [β̂ ≔ int] against the argument, and the inferred type would be
-    [(int → γ̂) → γ̂] with [γ̂] residual — the system does not generalise
-    unannotated [let], so the [forall] is reachable only by annotation.
+    the INFERENCE of any term that applies a lambda-bound variable.
+
+    ⚠️ But inference is NOT checking-minus-the-annotation.  Declarative [Abs]
+    (full-decl-spec.tex:210) guesses the argument type in an INHERITED
+    position, [inh{A} → bid{B}], and the paper says why (declarative.tex:577):
+    "We require the argument type to be inherited to avoid guessing
+    quantifiers without restricting it to monotypes".  So inference derives
+    [(unit → τ) → τ] for each MONOTYPE τ — an open family, no quantifier
+    (there is no Gen rule; the [∀ᾱ] prefix comes only from [AbsCheck], in
+    CHECKING mode).  The algorithm represents the family by the unsolved
+    flexible, [(unit → γ̂) → γ̂], and every solution instantiates γ̂ with a
+    MONOTYPE ([a_inc__flex]'s [mono_ptyp] premise).  [∀b. (unit → b) → b] is a
+    different, stronger statement, reachable only by annotation.
 
     ⚙ The impl reaches [failwith] rather than [Errors.type_mismatch] because
     its contexts also carry [Marker] / [Lock] entries, which `assign` skips

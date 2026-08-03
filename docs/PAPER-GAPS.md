@@ -2005,11 +2005,29 @@ because then `x`'s type is CONCRETE and no flexible reaches the walk:
 | `fun x -> x` (no application) | accepted | accepted |
 
 So the missing rule costs exactly the INFERENCE of any term that applies a
-lambda-bound variable.  Had the rule been there, `Flex-Solve` would deposit
-`α̂ ≔ β̂ → γ̂`, consistency would solve `β̂ ≔ int` against the argument, and the
-result would be `(int -> γ̂) -> γ̂` with `γ̂` residual — this system does not
-generalise unannotated `let` (`let id = fun x -> x` then `id 1` and `id "s"`
-is rejected), so the `forall` is reachable only by annotation.
+lambda-bound variable.
+
+⚠️ **The right column is NOT the left one minus an annotation.**  The
+declarative spec does not derive the `forall` in inference mode at all.
+`\dtylab{Abs}` (full-decl-spec.tex:210) guesses the argument type in an
+INHERITED position, `inh{A} -> bid{B}`, and the paper's own gloss says why
+(declarative.tex:577-580): *"We require the argument type to be inherited to
+avoid guessing quantifiers without restricting it to monotypes"*, and
+(:621) *"our rule Abs allows monotypes to be guessed for arguments of lambda
+abstractions"*.  So for `fun x -> x ()` inference derives
+
+    (unit -> τ) -> τ        for each MONOTYPE τ
+
+— an open family, no quantifier; there is no `Gen` rule anywhere in the
+syntax-directed figure, and the `forall ᾱ` prefix is introduced ONLY by
+`\dtylab{AbsCheck}`, in CHECKING mode.  The algorithm represents that family
+by the unsolved flexible: `(unit -> γ̂) -> γ̂`, and optimality says every
+solution is a MONOTYPE instantiation of it (`a_inc__flex` carries
+`mono_ptyp τ`, algo/def_meta.v:211-215), so `γ̂` cannot be instantiated with a
+polytype.  `forall b . (unit -> b) -> b` is a *different, stronger* statement
+reachable only by annotation — the observable difference is that a checked
+`ap` is usable at two result types while an inferred one is not
+(`let id = fun x -> x` then `id 1` and `id "s"` is rejected).
 
 **Status in the mechanization.**  The repair is NOT applied — the blast radius
 is a rule change: `a_sub_flex` and its decorated mirror `a_subtag_flex`
