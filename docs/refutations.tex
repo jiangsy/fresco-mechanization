@@ -50,6 +50,10 @@
 \Crefname{claimc}{Claim}{Claims}
 
 \newcommand{\coq}[1]{\texttt{\small #1}}
+% The counterpart, written once: the inherited forall is the arrow's DOMAIN
+% and scopes over the body only -- exactly as in P_0.
+\newcommand{\Qcex}{(\inh{\forall\gamma.}(\gamma\to\gamma))
+                    \to (\tunit\to\tunit)}
 
 \title{Two machine-checked refutations in the \Calc{} metatheory\\
   \large Lemma E.17 (Look completeness) and
@@ -144,17 +148,22 @@ counterpart are
   \qquad
   \Psi_a = \epsilon
   \qquad
-  \bid{Q} = \inh{\forall\gamma.}(\gamma\to\gamma) \to (\tunit\to\tunit).
+  \bid{Q} = \Qcex .
 \]
 \paragraph{The counterpart is forced, not chosen.}
 $\theta$ replaces $\hat\beta$ by $\tunit\to\tunit$ and touches nothing
 else, so
-$\inh{\theta P_0} = \inh{(\forall\gamma.\gamma\to\gamma) \to
-(\tunit\to\tunit)}$.
-That carries no ghost --- neither $\Hole$ nor $\TopHole$ --- and no
+\[
+  \theta P_0 = (\forall\gamma.\gamma\to\gamma) \to (\tunit\to\tunit) .
+\]
+Painting that inherited turns each of its quantifiers inherited, and it has
+exactly one --- the domain's, scoping over $\gamma\to\gamma$ --- so
+$\inh{\theta P_0}$ \emph{is} the $\bid{Q}$ displayed above,
+$\Qcex$.
+It carries no ghost --- neither $\Hole$ nor $\TopHole$ --- and no
 flexible, so the refinement has nothing to fill and nothing to unfold:
-only its congruence rules apply, and it is the identity.  Hence
-$\bid{Q}$ above \emph{is} $\inh{\theta P_0}$, and the refinement premise
+only its congruence rules apply, and it is the identity.  Hence the
+refinement premise
 \[
   \Theta_0\vdash\inh{\theta P_0}\fillsyn\bid{Q}
 \]
