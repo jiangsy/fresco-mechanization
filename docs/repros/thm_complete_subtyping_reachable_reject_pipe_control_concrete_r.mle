@@ -1,11 +1,20 @@
-type unit = Unit
+-- CONTROL for thm_complete_subtyping_reachable_reject_pipe.mle: met.exe
+-- ACCEPTS this.  [pipe]'s type is the counterexample's with [r] ALREADY
+-- instantiated to (∀c.[](c→c)) → unit — i.e. exactly the declarative
+-- ForallL step the algorithm cannot take; the term is character-identical.
+--
+-- Consequence: by soundness of the algorithm, the declarative check of
+-- [fun g -> g arg] against (∀b.[](b→b)) → ((∀c.[](c→c)) → unit) EXISTS,
+-- so the counterexample's declarative derivation is that one plus a single
+-- d_sub__forall_l_untagged step for [pipe].  With [r] concrete no flexible
+-- ever faces the ∀-carrying payload: the trace shows SolE-Arrow/SolE-Var
+-- and U-ForallInh (the ∀ is MATCHED) instead of SolE-FlexR.
 
-val f : forall b . [](b -> b)
-let f x = x
+type unit = Unit
 
 val arg : []((forall c . [](c -> c)) -> unit)
 let arg g = Unit
 
-val pipe2 : []( ( (forall b . [](b -> b)) -> ((forall c . [](c -> c)) -> unit) ) -> ((forall c . [](c -> c)) -> unit) )
+val pipe : []( ( (forall b . [](b -> b)) -> ((forall c . [](c -> c)) -> unit) ) -> ((forall c . [](c -> c)) -> unit) )
 
-let test2 = pipe2 (fun g -> g arg)
+let test = pipe (fun g -> g arg)

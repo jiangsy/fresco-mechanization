@@ -1,7 +1,28 @@
-type unit = Unit
+-- ⚠️⚠️ COUNTEREXAMPLE to thm:complete-subtyping, at the SOURCE level.
+-- met.exe REJECTS this program; the declarative system ACCEPTS it.
+--
+--   Error: this expression has type ˆx1 but expected an expression
+--          of type 👻.(∀ c : Any . [] (c → c)) → unit
+--
+-- The declarative typing needs TWO impredicative instantiations, both at
+-- FN modes (d_sub__forall_l_untagged, whose instantiation is any is_ttyp
+-- — NOT restricted to monotypes):
+--   pipe's r := (∀c.[](c→c)) → unit      at FN(TI)
+--   g's    b := (∀c.[](c→c)) → unit      at FN(TC)
+--
+-- The algorithm COMPUTES g's instantiation correctly and then DISCARDS it:
+-- the look collects [eq(👻((∀c.[](c→c))→unit)); sub_tc(x̂1)] (domain eq,
+-- codomain sub), the solve THREADS its accumulated pattern, and SolE-FlexR
+-- — whose output IS the flexible — overwrites the eq-constraint's yield
+-- with x̂1.  The domain consistency then needs x̂1 := 👻((∀c.[](c→c))→unit),
+-- which Assign-SolveM refuses because it is not a MONOTYPE.
+--
+-- See the _control_concrete_r (removes the flexible) and
+-- _ablation_no_forall (removes the ∀) variants: each restores acceptance,
+-- so the two ingredients are jointly necessary and individually harmless.
+-- Rule-level Coq counterpart: cex/probe_double_occ_run.v (probe_no_run).
 
-val f : forall b . [](b -> b)
-let f x = x
+type unit = Unit
 
 val arg : []((forall c . [](c -> c)) -> unit)
 let arg g = Unit

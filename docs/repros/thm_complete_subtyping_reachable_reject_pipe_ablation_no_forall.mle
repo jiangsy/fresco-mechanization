@@ -1,7 +1,16 @@
-type unit = Unit
+-- ABLATION for thm_complete_subtyping_reachable_reject_pipe.mle: met.exe
+-- ACCEPTS this.  Only [arg]'s type changes — the ∀ below the head is gone
+-- ((∀c.[](c→c)) → unit  becomes  unit → unit); the term is
+-- character-identical and [pipe] still has the polymorphic [r].
+--
+-- ⭐ The SolE-FlexR collapse STILL HAPPENS here (the trace is identical
+-- through SolS-Check / SolE-FlexR / U-FlexL / U-Assign-SolveM) — but the
+-- assignment it then demands is [unit → unit], a MONOTYPE, so
+-- Assign-SolveM succeeds and the run continues.  This pins the
+-- discriminator: not the collapse itself, but the collapse at a payload
+-- whose eq-determined instantiation is a POLYTYPE.
 
-val f : forall b . [](b -> b)
-let f x = x
+type unit = Unit
 
 val arg : [](unit -> unit)
 let arg x = Unit

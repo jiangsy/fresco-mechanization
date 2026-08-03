@@ -2176,22 +2176,63 @@ flexible for it.  Those two together reproduce the cex payload shape
     val pipe : forall r . []( ( (forall b . [](b -> b)) -> r ) -> r )
     let test = pipe (fun g -> g arg)
 
-**met.exe REJECTS this** (`docs/repros/thm_complete_subtyping_reachable_reject_pipe.mle`):
+**met.exe REJECTS this** (`docs/repros/thm_complete_subtyping_reachable_reject_pipe.mle`),
+pointing at `g`:
 
     Error: this expression has type ˆx1 but expected an
     expression of type 👻.(∀ c : Any . [] (c → c)) → unit
 
-`ˆx1` is exactly the FlexR-collapsed guess.  **The declarative side
-ACCEPTS** (instantiate `r := (∀c.[](c→c)) → unit`, impredicatively): the
-control with `r` pre-instantiated concretely —
-`.._control_concrete_r.mle`, identical lambda body — **PASSES** met.exe, so
-by soundness the declarative derivation of the body's check exists, and
-`pipe`'s decl Sub-ForallL supplies the instantiation.  The ablation
-`.._ablation_no_forall.mle` (same program, `arg : [](unit -> unit)`)
-**PASSES**: the collapse still happens there, but the collapsed guess is a
-MONOTYPE and the continuation's assign (Assign-SolveM) succeeds — pinning
-the discriminator to the ∀ BELOW the argument type's head, which makes the
-collapsed guess non-mono and kills the assign.
+**The declarative derivation** needs TWO impredicative instantiations,
+both at FN modes — and `d_sub__forall_l_untagged` permits them, since its
+instantiation `ph` is required only to be `is_ttyp` + well-scoped, with NO
+`mono_ptyp` restriction (contrast `d_shallow_sub__forall_l`, which does
+demand a monotype):
+
+| step | mode | instantiation |
+|---|---|---|
+| `pipe`'s `∀r` | FN(TI) — `pipe` is the head of the outer application | `r := (∀c.[](c→c)) → unit` |
+| `g`'s `∀b`    | FN(TC) — `g` is the head of the body's application | `b := (∀c.[](c→c)) → unit` |
+
+**The algorithmic trace** (`--debug`) shows the algorithm COMPUTES `g`'s
+instantiation correctly and then THROWS IT AWAY:
+
+    SI-ForallL                       -- g : ∀b.[](b→b), payload 👻((∀c.c→c)→unit) → ˆx1
+      LS-Arrow / LS-Var / LE-Var     -- collects [eq(👻((∀c.c→c)→unit)); sub_tc(ˆx1)]
+      SolE-GhostL                    -- the eq yields the RIGHT instantiation
+      SolS-UnivGhostL / SolS-Check
+        SolE-FlexR                   -- ⭐ output IS the flexible: the eq-yield is DISCARDED
+    SI-Arrow
+      U-FlexL / U-Assign-SkipOthers×2
+        U-Assign-SolveM              -- ⛔ needs ˆx1 := 👻((∀c.c→c)→unit): NOT a monotype
+
+`ˆx1` is the flexible the guess collapsed to; the payload's codomain is
+`ˆx1` because `pipe`'s `r` was itself guessed from a `◇` (the trace's
+`PI-Var / SI-Ghost`), and `∀b.[](b→b)` puts that guess at BOTH arrow
+positions — the DOUBLE OCCURRENCE of `cex_p7_shield_double_occ.v`,
+reproduced by a source program.
+
+**Two orthogonal one-type ablations, each restoring acceptance** (terms
+character-identical in all three):
+
+* `.._control_concrete_r.mle` — `pipe`'s type with `r` ALREADY instantiated
+  to `(∀c.[](c→c)) → unit`, i.e. exactly the declarative ForallL step the
+  algorithm cannot take.  **PASSES.**  So by soundness the declarative
+  check of the body against `(∀b.[](b→b)) → ((∀c.[](c→c)) → unit)` exists,
+  and the counterexample's declarative derivation is that one plus a single
+  ForallL for `pipe`.  With `r` concrete no flexible faces the ∀-carrying
+  payload: `SolE-Arrow`/`SolE-Var` and `U-ForallInh` (the ∀ is MATCHED)
+  replace `SolE-FlexR`.
+* `.._ablation_no_forall.mle` — only `arg : [](unit -> unit)`.  **PASSES**,
+  and decisively: the trace is IDENTICAL through
+  `SolS-Check / SolE-FlexR / U-FlexL / U-Assign-SolveM`, but there
+  `SolveM`'s assignment is `unit → unit`, a MONOTYPE, so it succeeds and
+  the run continues.
+
+So the discriminator is not the collapse per se but **the collapse at a
+payload whose eq-determined instantiation is a POLYTYPE**: the flexible is
+monomorphic by construction (Assign-SolveM's `mono_ptyp τ`, the
+implementation's `if not (is_mono tau) then raise`), so discarding the
+skeleton-supplied polytype is irrecoverable.
 
 ### What this means
 
