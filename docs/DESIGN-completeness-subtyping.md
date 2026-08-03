@@ -4403,3 +4403,51 @@ which is merely stronger than it needs to be.
 
 ⚠️ Trimming the `ss_walk` closure is still not an option (§14): P6-Ss's
 Sub-Arrow row consumes it directly (prop_look_complete_sub_cstr.v:1546-1548).
+
+### §14.2 SCOPING THE REPAIR (2026-08-03): it is NOT local to `flex_shield`
+
+`sub_shield` bundles TWO closures, and the same witness kills BOTH — so a
+positional re-indexing of `flex_shield` alone does not unblock P7c.
+
+- **the `flex_shield` half** fails at the CODOMAIN (`sss_arrow_r` pairs the raw
+  flexible `α̂` with the WHOLE guess).  ⭐ At the ROOT it is DERIVABLE —
+  `fsh_all_r` opens the guess into `α→α` at `add α Δρ`, `fsh_arrow` splits it
+  against `P0 = (∀γ.γ→γ) → α̂`, and both sides close by `fsh_rho_var`.  So the
+  defect really is the pairing, not the shape.
+- **the `flex_apart_walk` half** (`apart_w_fails`, Qed) fails already at the
+  ROOT, because `fa_walk` MIXES a P0-only descent (`fastep_p0_arrow_r` — the
+  step P6-Cs needs, since it walks `P0` with the guess FIXED) with a step that
+  GROWS Δρ (`fastep_all_r`, Sub-ForallL opening the guess).  Two steps reach
+  `(α̂, β→β)` at `β ∈ Δρ`, where `fa_clean` is blocked by β, `fa_flexfree` and
+  `fa_var_rigid` by the flexible, and every congruence by a shape mismatch.
+
+⚙ **What keeps this from spreading further.**  What P6-Ss actually hands P6-Cs
+is `flex_apart_p0` — the P0-only `p0_walk` closure at a FIXED Δρ — and that one
+is TRUE here (at Δρ = ∅ with a closed guess, `fa_clean` discharges every
+position).  So P6-Cv / P6-Cs are NOT themselves implicated; the defect is
+exactly `fa_walk`'s mixing of a Δρ-growing step with a guess-fixed P0 descent.
+
+**The shape of the repair.**  Index both closures by the SUBJECT and the
+looked-for variable — data P6-L and P6-Ss already carry (`R'`, `α`) — and demand
+the premise only at positions the guess can actually reach:
+
+    Definition sub_shield Θ0 Ψ' Δρ α P0 R ψa : Prop :=
+      forall P0' R' Δρ', ss_walk (dom Θ0) P0 R P0' R' ->
+        Δρ [<=] Δρ' -> Δρ' ∩ ftvar_in_uskl ψa [<=] Δρ ->
+        α `in` ftvar_in_uskl R' ->              (* ⇐ THE POSITIONAL GUARD *)
+        flex_apart_walk Θ0 Δρ' P0' ψa /\ flex_shield Θ0 Ψ' Δρ' P0' ψa
+
+with `ss_step` stepping `(P0, R)` in lockstep — six forms, one per P6-Ss row
+that moves either component: `sss_arrow_r` (both), `sss_all` (P0 only,
+Sub-ForallR), `sss_forall_l_{syn,etag}` (R only), `sss_univ_ghost_l{,g}` (R
+only).  ⭐ The guard is FREE at the only place the shield half is consumed:
+P6-Ss's LS-Var row, where `R' = uskl_var_f α` (prop_look_complete_sub_cstr.v
+:661-684 — the ONLY `sub_shield_here` that takes the `flex_shield` conjunct;
+:994 and :1482 take the apart half alone).  And it kills the witness exactly:
+after `sss_arrow_r` the subject is `unit`, so no obligation is raised at `α̂`.
+
+**Blast radius** (measured): `prop_look_complete_sub_cstr.v` (the definition, 6
+transports, P6-Ss's two statements, ~14 call sites), `prop_look_complete_extract.v`
+(P6-L ×2), `prop_sub_shield_supply.v`, `prop_sub_complete_thm.v` (P7b's two
+ForallL rows), and three cex files.  `prop_look_complete.v` is NOT touched —
+which is what keeps the rebuild to the P6-tail rather than the whole algo tree.

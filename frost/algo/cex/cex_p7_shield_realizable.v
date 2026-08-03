@@ -406,7 +406,72 @@ Proof.
           | clear; fsetdec ].
 Qed.
 
+(* --------------------------------------------------------------------- *)
+(*  (6) SCOPING: the OTHER conjunct is over-strong TOO, and already at the *)
+(*      ROOT — so the repair is NOT local to [flex_shield]                 *)
+(*                                                                        *)
+(*  [sub_shield] bundles [flex_apart_walk] with [flex_shield], and the     *)
+(*  apart half fails here as well — not at the codomain but at the ROOT,   *)
+(*  because [fa_walk] mixes a P0-ONLY descent ([fastep_p0_arrow_r], the    *)
+(*  step P6-Cs needs since it walks P0 with the guess FIXED) with a step   *)
+(*  that GROWS Δρ ([fastep_all_r], Sub-ForallL opening the guess).  Two    *)
+(*  such steps reach [(α̂, β→β)] at [β ∈ Δρ], where [fa_clean] is blocked   *)
+(*  by β, [fa_flexfree] by the flexible, [fa_var_rigid] by flexibility,    *)
+(*  and every congruence by a shape mismatch.                             *)
+(*                                                                        *)
+(*  ⚠️ CONSEQUENCE FOR THE REPAIR.  A positional re-indexing of            *)
+(*  [flex_shield] alone does NOT unblock P7c: [flex_apart_walk] has to be  *)
+(*  re-indexed with it.  ⚙ NOTE the DIFFERENCE that keeps this from        *)
+(*  spreading further: what P6-Ss actually hands P6-Cs is                  *)
+(*  [flex_apart_p0] (the P0-only [p0_walk] closure, Δρ FIXED), and that    *)
+(*  one is TRUE here — at Δρ = ∅ with a CLOSED guess [fa_clean] discharges *)
+(*  every position.  So the defect is exactly the [fa_walk] closure's      *)
+(*  mixing of a Δρ-growing step with a guess-fixed P0 descent, and P6-Cv / *)
+(*  P6-Cs are not themselves implicated.                                   *)
+(* --------------------------------------------------------------------- *)
+
+(* the stuck [flex_apart] leaf: a raw flexible against an OPENED tagged
+   guess whose body is compound *)
+Lemma flex_apart_raw_flex_open_arrow_stuck : forall Δρ (β : atom),
+  β `in` Δρ ->
+  ~ flex_apart Θ0w Δρ (pskl_var_f f)
+      (uskl_arrow (uskl_var_f β) (uskl_var_f β)).
+Proof.
+  intros Δρ β Hβ Hfa.
+  assert (Hfl : a_flex_tvar Θ0w f) by (left; unfold binds; simpl; auto).
+  inversion Hfa; subst.
+  - (* fa_clean : β is in Δρ, and it is free in the guess *)
+    match goal with H : _ ∩ _ [=] empty |- _ =>
+      simpl in H; clear - H Hβ; fsetdec end.
+  - (* fa_var_rigid : [f] is FLEXIBLE in Θ0w, not rigid *)
+    match goal with H : binds _ abind_tvar _ |- _ =>
+      unfold binds in H; simpl in H;
+      destruct H as [Hc | Hc]; [ inversion Hc | contradiction ] end.
+  - (* fa_flexfree : [f] is a raw flexible of Θ0w *)
+    match goal with H : pskl_flex_free _ _ |- _ =>
+      apply (H f ltac:(simpl; clear; fsetdec)); exact Hfl end.
+Qed.
+
+Lemma apart_w_fails : ~ flex_apart_walk Θ0w empty P0w ψw.
+Proof.
+  intros Hfa.
+  pick fresh β for (empty : atoms).
+  assert (Hw : fa_walk (dom Θ0w) empty P0w ψw
+                 (add β empty) (pskl_var_f f)
+                 (uskl_arrow (uskl_var_f β) (uskl_var_f β))).
+  { unfold P0w, ψw, cexψ.
+    eapply fw_step; [ apply fastep_p0_arrow_r | ].
+    eapply fw_step; [ apply fastep_all_r | ].
+    unfold open_uskl_wrt_uskl; simpl. apply fw_refl. }
+  pose proof (Hfa _ _ _ Hw) as Hleaf.
+  (* ⚙ evar-free on purpose: [eapply] here would leave [Δρ] and [β] open and
+     the [β ∈ Δρ] side goal would go to [fsetdec] WITH EVARS, which diverges *)
+  assert (Hβin : β `in` add β (empty : atoms)) by (clear; fsetdec).
+  exact (flex_apart_raw_flex_open_arrow_stuck Hβin Hleaf).
+Qed.
+
 End Realizable.
 
 Print Assumptions p7_sub_shield_is_over_strong.
 Print Assumptions join_at_Rw_is_forall_l.
+Print Assumptions apart_w_fails.
