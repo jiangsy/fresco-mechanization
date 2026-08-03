@@ -121,6 +121,7 @@ Require Import src.frost.def_tags.
 Require Import src.frost.prop_basic.
 Require Import src.frost.algo.cex.cex_p7_shield_forall_flex.
 Require Import src.frost.algo.cex.cex_p7_shield_double_occ.
+Require Import src.frost.algo.prop_precise.
 Require Import src.frost.algo.prop_sub_complete_thm.
 Require Import src.frost.algo.prop_sub_complete_dispatch.
 
@@ -494,6 +495,61 @@ Qed.
 Corollary probe_main_forall_hyp_false : ~ (forall n, main_forall n).
 Proof. intros Hmf. exact (probe_main_forall_false (Hmf 3)). Qed.
 
+(* ===================================================================== *)
+(*  ⚠️⚠️ THE PAPER'S OWN [lemma:complete-look] FAILS HERE                   *)
+(*                                                                        *)
+(*  subtyping-proofs.tex:2730.  Its ForallL consumer (:3371) has NO        *)
+(*  [sub_shield]-like premise: it invokes look completeness on the mode    *)
+(*  compatibility, the erasure, the guess's TAG SORTING, the freshness,    *)
+(*  the declarative premise at [Ψ,Ψa], and the FILL — all of which hold    *)
+(*  here ([p7_sub_shield_positional_over_strong] + [ψd_tags] +             *)
+(*  [join_premise_d] + [fill_d]) — and concludes that the look succeeds    *)
+(*  with an output that is PRECISE BELOW the guess's erasure:              *)
+(*                                                                        *)
+(*      Θ ⊢ precise{θa Pa}{erase ψa}.                                      *)
+(*                                                                        *)
+(*  That conclusion is FALSE at this configuration, for EVERY extract      *)
+(*  output: the extract is deterministic ([probe_extract_det]) and returns *)
+(*  the vacuous-binder guess [∀_.f̂], whose κ-image [∀_.(1→1)] cannot       *)
+(*  refine [∀β.β→β] — one arrow step leaves [1 ⊳ β], and the only rule     *)
+(*  that could refine a unit to a variable ([ad_refine_syn__flex_r])       *)
+(*  demands a DEFINED flexible, while [Θ0d] carries an undefined one.      *)
+(*                                                                        *)
+(*  ⭐ SO THE GAP IS IN THE PAPER'S LOOK-COMPLETENESS LEMMA, not only in    *)
+(*  the mech-invented [sub_shield] that stands in for it: [sub_shield] is  *)
+(*  the mech's repair OF THIS LEMMA (it is P6-L's premise), and the        *)
+(*  configuration refutes the paper's unrepaired statement directly.       *)
+(*  The repair must restrict [P0] (reachability) — DESIGN §14.9.           *)
+(* ===================================================================== *)
+
+Theorem p6l_look_completeness_fails : forall f e α Ξ Pa,
+  (Θ0d f) ⊢ (pskl_arrow (pskl_var_f α) (pskl_var_f α))
+      ⊳[ a_sub_mode_ty , α , (mode_fn mode_tc) ] (P0d f) ⤳ Ξ ↪ Pa ->
+  ~ (Θ0d f) ⨟ empty ⊢ₚᵣᵃ (msubst_pskl (κd f) Pa) ⊑ (⌊ ψd e ⌋ˢ).
+Proof.
+  intros f e α Ξ Pa Hext.
+  destruct (probe_extract_det Hext) as [_ ->].
+  unfold ad_precise, κd, ψd, cexψ; simpl.
+  match goal with |- context [if ?c then _ else _] => destruct c end;
+    [ | congruence ].
+  intros H. inversion H; subst.
+  pick fresh α0 for L.
+  match goal with Hf : forall a, a `notin` L -> _ |- _ =>
+    specialize (Hf α0 ltac:(auto)) end.
+  unfold open_bskl_wrt_bskl in *; simpl in *.
+  match goal with Ha : _ ⨟ _ ⊢ᵣᵃ (bskl_arrow _ _) ⊳ _ |- _ =>
+    inversion Ha; subst end.
+  match goal with
+  | Hu : _ ⨟ _ ⊢ᵣᵃ bskl_unit ⊳ (bskl_var_f _) |- _ => inversion Hu; subst
+  end.
+  match goal with
+  | Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
+      unfold Θ0d, binds in Hb; simpl in Hb;
+      destruct Hb as [Heq | Hnil]; [ inversion Heq | destruct Hnil ]
+  end.
+Qed.
+
+Print Assumptions p6l_look_completeness_fails.
 Print Assumptions probe_no_run.
 Print Assumptions probe_motive_instance_false.
 Print Assumptions probe_main_forall_false.

@@ -2133,6 +2133,45 @@ paper statement (its residual case is logged in
 docs/DESIGN-completeness-subtyping.md, not here).  Nothing in this entry is a
 defect in the paper's statement or proof.
 
+## ⚠️⚠️ FALSE AS STATED — `lemma:complete-look` (Look completeness, subtyping-proofs.tex:2730), machine-checked
+
+**Status: REAL, for the authors** (mech-side statement, but it is the
+PAPER's lemma, not a mech-invented premise).  Witness:
+`cex/probe_double_occ_run.v`, `p6l_look_completeness_fails`, Qed +
+axiom-free.
+
+At the double-occurrence configuration of `cex_p7_shield_double_occ.v` —
+
+    Θ0 = f̂ ~ flex    P0 = (∀γ.γ→γ) → f̂    S = ∀^t.(□₀→□₀)    N = TY, M = FN(TC)
+    guess ψa = ∀^e β.β→β     Ψa = {e}     κ = f̂ ↦ 1→1
+
+**every premise of the lemma holds**: `Θ0 ⊢ P0` (`P0d_wf`), `skmod[N]{P0}{M}`
+(`P0d_mode`), `erase S = P` , `inc[κ]{Θ0}{Θ}` (`inc_d`), the guess's tag
+sorting `Θ ⊢^N tags{Ψa}{ψa}` (`ψd_tags`) with `Ψ = ·` disjoint from `Ψa`,
+the declarative premise `typsub[N][M][Ψ,Ψa]{Θ}{(κS)[ψa/α]}{Q}`
+(`join_premise_d`), and the fill `Θ ⊢ inh{κP0} fillsyn Q` (`fill_d`).
+
+**The conclusion fails.**  The look/extract is DETERMINISTIC here
+(`probe_extract_det`, uniform in every fresh name — the collapsed binder is
+vacuous, so it swallows them): its only output is `Pa = ∀_.f̂`.  The lemma
+demands `Θ ⊢ precise{κ Pa}{erase ψa}`, i.e. `∀_.(1→1) ⊑ ∀β.β→β` — refuted:
+one arrow step leaves `1 ⊳ β`, and the only rule that could refine a unit
+to a variable (`ad_refine_syn__flex_r`) demands a DEFINED flexible, while
+`Θ0` carries an undefined one.
+
+**Why it matters.**  This locates the gap in the PAPER's proof chain rather
+than in the mech: `thm:complete-subtyping`'s ForallL case
+(subtyping-proofs.tex:3371) has NO shield-like side condition — it invokes
+exactly this lemma — so the mech's `sub_shield` is precisely the repair OF
+THIS LEMMA (it is P6-L's premise), and the configuration refutes the
+unrepaired statement directly.  Both this and `thm:complete-subtyping`
+therefore need the same restriction on `P0`; whether the configuration is
+typing-REACHABLE is open (DESIGN §14.9 states the question sharply), so the
+likely repair is a reachability/payload side condition rather than a change
+to the algorithm.  Cf. the already-registered falsity of P6-Sv
+(`cex/cex_p6sv_forall_flex.v`), which is the same phenomenon one lemma
+lower.
+
 ## RETRACTED (2026-08-03, same day): the source-level "incompleteness on programs" claim was WRONG — the declarative system rejects that program too
 
 An earlier revision of this file claimed that
