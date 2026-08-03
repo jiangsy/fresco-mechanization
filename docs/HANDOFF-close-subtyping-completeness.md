@@ -76,7 +76,31 @@ TASK A — DECIDE REACHABILITY.  This gates everything else.
    and the obstruction to checking a frozen polymorphic argument at a
    raw-flexible payload.
 
-⭕ STILL OPEN: conjunct (1), and it is ONE crisp statement.  The ambient
+⚠️⚠️ USER DIRECTIVE (2026-08-04) — TASK A's FRAMING IS SUPERSEDED.  For the
+SUBTYPING half, do NOT reason about what the typing can build: the paper's
+proof of thm:complete-subtyping never mentions typing, so decl subtyping and
+the algorithmic CONSTRAINT COLLECTION must match on their own terms.  The
+lemmas above stay valid (rule-level facts), but the live question is the
+divergence inside the look/solve layer, which is now located exactly
+(DESIGN §14.10a):
+
+  a_solve_eq__flex_r  (SE-FlexR)   : Θ ⊢ₑ P ∼ α̂ ⤳ α̂    -- DISCARDS P
+  a_solve_eq__hole_r  (SE-VacuousR): Θ ⊢ₑ P ∼ ◇  ⤳ P    -- KEEPS P
+
+A ghost and a raw flexible both carry NO information there, and the two rows
+disagree about the pattern already accumulated by the preceding eq
+constraint.  Declaratively the flexible's image is a MONOTYPE and ForallL
+instantiates the guess down into it; algorithmically the polytype yield is
+lost and unrecoverable (`a_assign__solve_m` demands `mono_ptyp`, and
+`a_guess_mono_all_free` says a monotype guess needs a ∀-free skeleton).
+⟹ Repair is either (a) SE-FlexR yields the pattern — ⚠️ a CHANGE to a paper
+rule, full-algo-spec.tex:1374, to be flagged not made silently — or (b) a
+side condition on the LOOK's constraint list where the paper invokes
+lemma:complete-look.  Decide by checking whether returning α̂ is load-bearing
+(the assignment already records the flexible in Θ) and whether the repaired
+rule keeps P6-Sv/P6-Ss sound.
+
+⭕ (SUPERSEDED, kept for the record) conjunct (1), the typing-side question.  The ambient
 payload is raw-flexible only where the enclosing COLLECTION is
 uninformative (`a_consis__ghost_r` — payload ◇, output = subject — is
 what leaves a ForallL guess raw); but that collection is computed by the

@@ -5332,3 +5332,51 @@ half machine-checked** — every probe to date (`docs/repros/…`) lands on one
 horn or the other, and the two known near-misses (`_reject_pipe`, which gets
 (1) and loses (2); `_probe_frozen_arg`, which gets (2) via the freeze) are
 now explained by the same fact rather than by two separate accidents.
+
+#### ⭐⭐⭐ §14.10a USER DIRECTIVE (2026-08-04): the SUBTYPING half must be settled WITHOUT typing
+
+The reachability framing above (and TASK A of the hand-off) appeals to what
+`a_typing`/`a_pat` can BUILD.  ⚠️ That is the wrong lens for
+`thm:complete-subtyping`: **the paper's proof never mentions typing**, so the
+obligation is that DECLARATIVE SUBTYPING and the ALGORITHMIC CONSTRAINT
+COLLECTION match on their own terms.  §14.10's lemmas stay valid and useful
+(they are rule-level facts about `a_sub` / `a_pat` / `a_guess_mono`), but the
+open question is NOT "can the typing reach this payload".
+
+**Where decl and algo actually diverge, at the subtyping layer.**  At the
+double-occ configuration the look collects `[eq(∀γ.γ→γ); sub_tc(f̂)]` and the
+solve THREADS them (`a_solve_cstr__eq` feeds the eq's yield into the rest).
+The eq yields `∀γ.γ→γ`; the sub-constraint then solves ON that pattern and
+reaches
+
+    a_solve_eq__flex_r  (SE-FlexR) :  Θ ⊢ₑ P ∼ α̂ ⤳ α̂
+
+which DISCARDS the accumulated pattern `P` and returns the flexible.  Compare
+its ghost twin
+
+    a_solve_eq__hole_r  (SE-VacuousR) :  Θ ⊢ₑ P ∼ ◇ ⤳ P
+
+which KEEPS it.  ⭐ Both a ghost and a raw flexible carry NO information at
+that position, and the two rules disagree about what to do with the
+information already accumulated — that asymmetry is the whole divergence.
+Declaratively the flexible's image is a MONOTYPE (`κ f̂ = 1→1`) and ForallL
+instantiates the guess down into it; algorithmically the eq's polytype yield
+is thrown away and cannot be recovered, because `a_assign__solve_m` demands
+`mono_ptyp τ` and `a_guess_mono_all_free` (§14.10) says a monotype guess
+exists only for a ∀-free skeleton — **a flexible can never absorb a ∀**.
+
+**So the repair is one of these two, and both are subtyping-level:**
+
+* SE-FlexR is too destructive — it should behave like SE-VacuousR (yield the
+  accumulated pattern) when the pattern is not ◇, the flexible being recorded
+  in the context rather than in the output.  ⚠️ This CHANGES a paper rule
+  (full-algo-spec.tex:1374); it must be flagged, not made silently.
+* or `lemma:complete-look` / `thm:complete-subtyping` need a side condition on
+  the LOOK's constraint list — e.g. no `eq` constraint with a ∀-carrying yield
+  may be followed by a `sub` constraint against a raw flexible — stated where
+  the paper's proof invokes look completeness.
+
+Next step is to decide between them by reading what the solve is FOR: whether
+returning `α̂` is load-bearing anywhere (the assignment that follows already
+records the flexible in Θ), and whether the repaired rule keeps P6-Sv/P6-Ss
+sound.  No `a_typing` argument is needed for either.
