@@ -605,5 +605,157 @@ Proof.
   clear - Hβdn HO3 HβΘ'. fsetdec.
 Qed.
 
+(* ===================================================================== *)
+(*  §6  ⚠️⚠️ A PAPER GAP THE ASSEMBLY EXPOSES — the flexible SUBTYPING     *)
+(*      walk has NO rule for a TERM-VARIABLE head                         *)
+(*                                                                        *)
+(*  The paper's algorithmic contexts contain term entries [x : P]          *)
+(*  (algorithmic.tex:60-66), and the ASSIGNMENT walk has a rule for them   *)
+(*  — [Assign-SkipTmVar], full-algo-spec.tex:1791, mechanized as           *)
+(*  [a_assign__skip_tm_var] / [a_assign__skip_tm_skl].  The SUBTYPING walk *)
+(*  (fig:alg-subtyping's second box, full-algo-spec.tex:883-912) has FIVE  *)
+(*  rules — Flex-Solve / Assign / Depend / Skip / SkipRigid — and NONE     *)
+(*  of them matches a term entry, so the walk is STUCK there.  The         *)
+(*  reference implementation agrees with the paper and therefore with the  *)
+(*  gap: [assign] has [U-Assign-SkipTmVar] for [BVar _ | Marker | Lock _]  *)
+(*  (type.ml:386-390) while [sub_flex] falls through to                    *)
+(*  [Errors.type_mismatch] (type.ml:1047-1050).                            *)
+(*                                                                        *)
+(*  Nothing in [thm:complete-subtyping]'s problem definition excludes the  *)
+(*  configuration: [a_wf_aenv] happily puts a term entry ABOVE a flexible  *)
+(*  variable.  So the theorem is not provable for the rule set as printed; *)
+(*  the repair is to add [Flex-SkipTmVar] in the paper's own idiom, exactly *)
+(*  mirroring the twin walk's.  That is a rule change with a tree-wide     *)
+(*  blast radius ([a_subtag_flex], the decoration and equivariance mutual  *)
+(*  inductions, and two new P7a rows carrying [Flex-SkipRigid]'s whole     *)
+(*  ⇓-truncation apparatus), so it is left to the authors' decision and    *)
+(*  the assembly below takes the configuration as an EXPLICIT premise.     *)
+(*  [a_sub_flex_walkable] is that premise, and it is the ONE place the     *)
+(*  development departs from the paper's statement.                        *)
+(* ===================================================================== *)
+
+Definition a_sub_flex_walkable (Θ0 : aenv) : Prop :=
+  forall x b, binds x b Θ0 ->
+    b = abind_tvar \/ b = abind_flex_mono \/
+    (exists τ, b = abind_flex_mono_def τ).
+
+Lemma a_sub_flex_walkable_tail : forall x b Θ0,
+  a_sub_flex_walkable ((x ~ b) ++ Θ0) -> a_sub_flex_walkable Θ0.
+Proof.
+  intros x b Θ0 H y c Hb. apply (H y c). unfold binds in *; simpl; right; exact Hb.
+Qed.
+
+Lemma a_sub_flex_walkable_head : forall x b Θ0,
+  a_sub_flex_walkable ((x ~ b) ++ Θ0) ->
+  b = abind_tvar \/ b = abind_flex_mono \/ (exists τ, b = abind_flex_mono_def τ).
+Proof.
+  intros x b Θ0 H. apply (H x b). unfold binds; simpl; left; reflexivity.
+Qed.
+
+(* ===================================================================== *)
+(*  §7  THE FLEX HALF (P7a's assembly) — DESIGN §12.1's layer (b)          *)
+(*                                                                        *)
+(*  Structural induction on [Θ0] with the suffix [Ξ] GENERALIZED and the   *)
+(*  TOTAL context length bounded by [k]: Flex-Depend keeps the total and   *)
+(*  shrinks [Θ0] (so it is the structural IH), Flex-Skip / Flex-SkipRigid  *)
+(*  shrink both, Flex-Assign CONSUMES the definition and re-enters the     *)
+(*  main half one entry SHORTER, and Flex-Solve re-enters it at an ARROW   *)
+(*  subject over a LARGER context — which is why [main_arrow] is a         *)
+(*  separate hypothesis, discharged from the FUEL IH alone.                *)
+(* ===================================================================== *)
+
+Definition main_arrow (n : nat) : Prop :=
+  forall NM M Θ0 P0 P Ra Rb R' Ψ Θ κ Q,
+    sub_complete_concl n NM M Θ0 P0 P (uskl_arrow Ra Rb) R' Ψ Θ κ Q.
+
+Definition main_below (n k : nat) : Prop :=
+  forall NM M Θ0 P0 P R R' Ψ Θ κ Q,
+    length Θ0 < k ->
+    sub_complete_concl n NM M Θ0 P0 P R R' Ψ Θ κ Q.
+
+Lemma flex_step : forall n k,
+  main_arrow n ->
+  main_below n k ->
+  forall NM M Θ0 Ξ α P0 R' Ψ Θ κ Q,
+    a_sub_flex_walkable Θ0 ->
+    length Ξ + length Θ0 <= k ->
+    sub_flex_complete_concl n NM M Θ0 Ξ α P0 R' Ψ Θ κ Q.
+Proof.
+  intros n k Harrow Hmain NM M Θ0.
+  induction Θ0 as [ | [β b] Θ0' IHΘ0 ];
+    intros Ξ α P0 R' Ψ Θ κ Q Hwalk Hlen.
+  - (* the empty context: the subject cannot be flexible there *)
+    unfold sub_flex_complete_concl.
+    intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD Hrs
+           HwfQ.
+    exfalso. destruct Hfα as [Hb | [τ Hb]]; inversion Hb.
+  - (* the head decides the row *)
+    assert (Hwalk' : a_sub_flex_walkable Θ0')
+      by (eapply a_sub_flex_walkable_tail; exact Hwalk).
+    assert (IH' : forall Ξ' α' P0' R'' Ψ' Θ'' κ' Q',
+              length Ξ' <= S (length Ξ) ->
+              sub_flex_complete_concl n NM M Θ0' Ξ' α' P0' R'' Ψ' Θ'' κ' Q').
+    { intros Ξ' α' P0' R'' Ψ' Θ'' κ' Q' HlenΞ.
+      apply IHΘ0; [ exact Hwalk' | simpl in Hlen; lia ]. }
+    destruct b as [ | A | P | | τ ].
+    + (* β RIGID: the STUCK configuration, or Flex-SkipRigid *)
+      destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P0))
+        as [Hβin | Hβni];
+        [ | destruct (α == β) as [Heqαβ | Hne] ].
+      * (* ⭕ β ∈ ftv P0 : NO RULE FIRES — refute the solution (§5) *)
+        unfold sub_flex_complete_concl.
+        intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
+               Hrs HwfQ.
+        exfalso.
+        assert (Hne : α <> β).
+        { intro Heq; subst β.
+          assert (Huq : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ0'))
+            by (apply a_wf_aenv_uniq; exact Hwf).
+          destruct Hfα as [Hb | [τ0 Hb]];
+            (apply binds_cons_1 in Hb as [[_ Hc] | Hb];
+             [ discriminate Hc
+             | apply binds_In in Hb; simpl_env in Huq; solve_uniq ]). }
+        assert (Hfα0 : a_flex_tvar Θ0' α)
+          by (eapply a_flex_tvar_strip_head; [ exact Hne | exact Hfα ]).
+        eapply sub_flex_rigid_head_absurd;
+          [ exact HdeclsΞ | exact HdomΞ | exact Hwf | exact Hwfth | exact HwfP0
+          | exact Hfα0 | exact Hβin | exact Hinc | exact Hslack | exact HD
+          | exact Hrs ].
+      * (* the subject cannot BE the rigid head *)
+        subst α.
+        unfold sub_flex_complete_concl.
+        intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
+               Hrs HwfQ.
+        exfalso.
+        assert (Huq : uniq (Ξ ++ (β ~ abind_tvar) ++ Θ0'))
+          by (apply a_wf_aenv_uniq; exact Hwf).
+        destruct Hfα as [Hb | [τ0 Hb]];
+          (apply binds_cons_1 in Hb as [[_ Hc] | Hb];
+           [ discriminate Hc
+           | apply binds_In in Hb; simpl_env in Huq; solve_uniq ]).
+      * apply (a_sub_flex_complete_skip_rigid IH' Hne Hβni).
+    + (* ⚠️ β is a TERM variable — see §6; NO [a_sub_flex] rule applies *)
+      exfalso.
+      destruct (a_sub_flex_walkable_head Hwalk) as [Hc | [Hc | [τ Hc]]];
+        discriminate Hc.
+    + (* ⚠️ β is a TERM variable (skeleton entry) — see §6 *)
+      exfalso.
+      destruct (a_sub_flex_walkable_head Hwalk) as [Hc | [Hc | [τ Hc]]];
+        discriminate Hc.
+    + (* β an UNDEFINED flexible: Flex-Solve (β = α) / Depend / Skip *)
+      destruct (β == α) as [-> | Hne].
+      * apply (a_sub_flex_complete_solve Harrow).
+      * destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P0))
+          as [Hβin | Hβni].
+        -- apply (a_sub_flex_complete_depend IH' (not_eq_sym Hne) Hβin).
+        -- apply (a_sub_flex_complete_skip IH' (not_eq_sym Hne) Hβni).
+    + (* β a DEFINED flexible: Flex-Assign (covers β = α, by design) *)
+      apply (a_sub_flex_complete_assign (n := n) (Ξ := Ξ) (Θ0 := Θ0')).
+      intros NM' M' Θ0'' P0' P' R'' T'' Ψ' Θ' κ' Q' Hle.
+      apply (Hmain NM' M' Θ0'' P0' P' R'' T'' Ψ' Θ' κ' Q').
+      simpl in Hlen. lia.
+Qed.
+
 Print Assumptions sub_flex_rigid_head_absurd.
 Print Assumptions slack_arrow_rigid_absurd.
+Print Assumptions flex_step.

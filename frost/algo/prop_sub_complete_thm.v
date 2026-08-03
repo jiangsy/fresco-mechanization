@@ -3379,7 +3379,14 @@ Proof.
 Qed.
 
 Lemma a_sub_flex_complete_depend : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
+  (* ⭐ THE IH IS LENGTH-GUARDED (P7c, 2026-08-03).  The dispatcher proves the
+     flex half by a STRUCTURAL induction on [Θ0] with [Ξ] generalized and the
+     TOTAL context length bounded (DESIGN §12.1's layer (b)); its IH is
+     therefore available only at suffixes the walk can actually reach, and
+     [Flex-Depend] reaches exactly one — [Ξ,β̂].  An unguarded [forall Ξ'] is
+     not derivable there, and this row needs no more. *)
   (forall Ξ' α' P0' R'' Ψ' Θ'' κ' Q',
+     length Ξ' <= S (length Ξ) ->
      sub_flex_complete_concl n NM M Θ0 Ξ' α' P0' R'' Ψ' Θ'' κ' Q') ->
   α <> β ->
   β `in` ftvar_in_pskl P0 ->
@@ -3403,7 +3410,9 @@ Proof.
   { destruct Hfα as [Hb | [τ0 Hb]]; [ left | right; exists τ0 ];
       (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He _] | Hb'];
        [ exfalso; apply Hne; exact He | exact Hb' ]). }
-  specialize (IH (Ξ ++ (β ~ abind_flex_mono)) α P0 R' Ψ Θ κ Q).
+  assert (Hlen : length (Ξ ++ (β ~ abind_flex_mono)) <= S (length Ξ))
+    by (rewrite app_length; simpl; lia).
+  specialize (IH (Ξ ++ (β ~ abind_flex_mono)) α P0 R' Ψ Θ κ Q Hlen).
   unfold sub_flex_complete_concl in IH.
   simpl_env in IH.
   destruct (IH Hdecls' Hdom' Hwf Hwfth HwfP0 Hfα' HmodSK HmodTY Hinc Hslack HD
@@ -3436,7 +3445,9 @@ Proof.
 Qed.
 
 Lemma a_sub_flex_complete_skip : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
+  (* length-guarded, as in [a_sub_flex_complete_depend] *)
   (forall Ξ' α' P0' R'' Ψ' Θ'' κ' Q',
+     length Ξ' <= S (length Ξ) ->
      sub_flex_complete_concl n NM M Θ0 Ξ' α' P0' R'' Ψ' Θ'' κ' Q') ->
   α <> β ->
   β `notin` ftvar_in_pskl P0 ->
@@ -3477,7 +3488,8 @@ Proof.
     by (apply Hlk; exact Hne).
   rewrite Heqα in Hslack. rewrite HeqP0 in Hrs.
   (* ---- 2. the IH at the stripped context ---- *)
-  destruct (IH Ξ α P0 R' Ψ Θ (κ1 ++ κ2) Q HdeclsΞ HdomΞ Hwf' Hwfth HwfP0'
+  destruct (IH Ξ α P0 R' Ψ Θ (κ1 ++ κ2) Q ltac:(lia)
+              HdeclsΞ HdomΞ Hwf' Hwfth HwfP0'
               Hfα' HmodSK HmodTY Hincih Hslack HD Hrs HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_sub_flex_sound_thm Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
@@ -3752,7 +3764,14 @@ Qed.
 
 Lemma a_sub_flex_complete_assign :
   forall n NM M Θ0 Ξ α β τ P0 R' Ψ Θ κ Q,
+  (* ⭐ THE CROSS-HALF IH IS LENGTH-GUARDED (P7c, 2026-08-03).  Flex-Assign
+     CONSUMES the definition, so its main call runs at [Ξ,Θ0] — one entry
+     shorter than the conclusion's [Ξ,β̂≔τ,Θ0].  That is what lets the
+     dispatcher's inner induction on the context length reach it; an
+     unguarded main IH at the same fuel is exactly what is NOT available
+     (DESIGN §12.1). *)
   (forall NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q',
+     length Θ0' <= length Ξ + length Θ0 ->
      sub_complete_concl n NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q') ->
   sub_flex_complete_concl n NM M
     ((β ~ abind_flex_mono_def τ) ++ Θ0) Ξ α P0 R' Ψ Θ κ Q.
@@ -3923,6 +3942,7 @@ Proof.
               (pskl_to_uskl
                  (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)))
               R' Ψ Θ (κ1 ++ κ2) Q
+              ltac:(rewrite length_app; lia)
               Hwf' Hwfth HwfP0' HwfS
               ltac:(intros HSK; apply a_sk_mode_compat_subst_mono;
                     [ apply HmodSK; exact HSK | exact Hmτ ])
@@ -4388,8 +4408,18 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_sub_flex_complete_solve : forall n NM M Θ0 Ξ α0 P0 R' Ψ Θ κ Q,
-  (forall NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q',
-     sub_complete_concl n NM' M' Θ0' P0' P' R'' T'' Ψ' Θ' κ' Q') ->
+  (* ⭐ THE CROSS-HALF IH IS ARROW-RESTRICTED (P7c, 2026-08-03).  Flex-Solve
+     re-enters the MAIN judgment at the deposited subject [α̂ → β̂] — an
+     ARROW — over a context TWO ENTRIES LARGER, so neither the fuel nor the
+     context decreases on this edge.  ⭐ What breaks the cycle is the
+     SUBJECT: a main call at an arrow subject can never come back into P7a
+     (the escape needs a VARIABLE subject and no join row shrinks an arrow to
+     a variable), so the arrow-subject half of the main motive is provable
+     from the FUEL IH alone (DESIGN §12.1's layer (a)).  This row needs no
+     more. *)
+  (forall NM' M' Θ0' P0' P' Ra Rb T'' Ψ' Θ' κ' Q',
+     sub_complete_concl n NM' M' Θ0' P0' P' (uskl_arrow Ra Rb) T''
+       Ψ' Θ' κ' Q') ->
   sub_flex_complete_concl n NM M ((α0 ~ abind_flex_mono) ++ Θ0) Ξ α0 P0
     R' Ψ Θ κ Q.
 Proof.
@@ -4579,7 +4609,7 @@ Proof.
                             (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
                  ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0)
               P0 (pskl_arrow (pskl_var_f α) (pskl_var_f β))
-              (uskl_arrow (uskl_var_f α) (uskl_var_f β))
+              (uskl_var_f α) (uskl_var_f β)
               (ptyp_to_uskl_syn τ') Ψ Θ
               (κ1 ++ (α0, τ) :: (β, τ2) :: (α, τ1) :: κ2) Q
               HwfΘsrc Hwfth HwfP0src HwfSsrc HmodSK HmodTY HeqR Hincθs
@@ -6209,7 +6239,9 @@ Qed.
 (* ===================================================================== *)
 
 Lemma a_sub_flex_complete_skip_rigid : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
+  (* length-guarded, as in [a_sub_flex_complete_depend] *)
   (forall Ξ' α' P0' R'' Ψ' Θ'' κ' Q',
+     length Ξ' <= S (length Ξ) ->
      sub_flex_complete_concl n NM M Θ0 Ξ' α' P0' R'' Ψ' Θ'' κ' Q') ->
   α <> β ->
   β `notin` ftvar_in_pskl P0 ->
@@ -6415,7 +6447,7 @@ Proof.
 
   (* ---- 10. the IH at the TRUNCATED problem ---- *)
   destruct (IH Ξ α P0 (ptyp_to_uskl_syn (⇓ᵗ[ Θ ] τ')) Ψ Θ'
-              (msubst_compose (aenv_msubst Θ) κ) (⇓ᵇ[ Θ ] Q)
+              (msubst_compose (aenv_msubst Θ) κ) (⇓ᵇ[ Θ ] Q) ltac:(lia)
               HdeclsΞ HdomΞ Hwf' HwfΘ' HwfP0' Hfα0 HmodSK HmodTY
               Hinc_sub Hslack' Hjoin' Hrs' HwfQ')
     as [P1 [Θ1 [Hrun Hopt]]].
