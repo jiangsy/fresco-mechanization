@@ -575,18 +575,9 @@ Proof.
 Qed.
 
 (** Both properties survive prefixing a block of wf monotype images — which
-    is what the ∀ / arrow cases hand back up. *)
-Lemma msubst_lc_app_wf : forall Θ κa κb,
-  Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κa ->
-  msubst_lc κb ->
-  msubst_lc (κa ++ κb).
-Proof.
-  intros Θ κa κb Hall Hlc; unfold msubst_lc in *; intros α.
-  induction κa as [ | [α1 τ1] κa' IH ]; cbn; [ apply Hlc | ].
-  inversion Hall as [ | ph pt [Hwf1 Hm1] Hall' ]; subst; cbn in Hwf1.
-  destruct (α == α1) as [-> | Hne];
-    [ eapply a_wf_ptyp_lc; exact Hwf1 | apply IH; exact Hall' ].
-Qed.
+    is what the ∀ / arrow cases hand back up.  [msubst_lc_app_wf] MOVED UP to
+    prop_look_complete.v (2026-08-04): under the SolE-FlexR repair every P6 ∀
+    row prefixes such a block, not only P6-L. *)
 
 Lemma msubst_ftv_app_wf : forall Θ κa κb,
   Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κa ->

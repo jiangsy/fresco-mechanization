@@ -65,6 +65,7 @@ Require Import src.frost.algo.def_decl_algo_sub_hyg.
 Require Import src.frost.def_tags.
 Require Import src.frost.algo.prop_inc.
 Require Import src.frost.algo.prop_flex.
+Require Import src.frost.algo.prop_normal.
 Require Import src.frost.algo.prop_stability.
 Require Import src.frost.algo.prop_refine.
 Require Import src.frost.algo.prop_consis_sound.
@@ -2182,6 +2183,59 @@ Proof.
   - auto with frost.
   - destruct (α' == α); subst; auto.
   - destruct (α' == α); subst; auto.
+Qed.
+
+(** Its companion: a FLEXIBLE's image is SCOPED BY THE TARGET.  ([a_inc]'s
+    two flex rows carry [a_wf_ptyp Θ' τ] as a premise; the flexibility is what
+    guarantees one of those rows is where the lookup lands.)  The
+    [a_binds_tvar] form is prop_compose.v's [a_inc_lookup_wf], which this file
+    does not import. *)
+Lemma a_inc_lookup_flex_ftv_dom : forall Θ0 κ Θ α,
+  κ ∷ Θ0 ⊑ Θ ->
+  a_flex_tvar Θ0 α ->
+  ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θ.
+Proof.
+  intros Θ0 κ Θ α Hinc; induction Hinc; intros Hf; simpl in *.
+  - destruct Hf as [Hb | (τx & Hb)]; inversion Hb.
+  - destruct (α == α0) as [-> | Hne];
+      [ eapply a_wf_ptyp_ftv_dom; eassumption | ].
+    apply IHHinc.
+    destruct Hf as [Hb | (τx & Hb)];
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq _] | Hb'];
+      solve [ exfalso; apply Hne; exact Heq
+            | left; exact Hb' | right; exists τx; exact Hb' ].
+  - destruct (α == α0) as [-> | Hne];
+      [ eapply a_wf_ptyp_ftv_dom; eassumption | ].
+    apply IHHinc.
+    destruct Hf as [Hb | (τx & Hb)];
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq _] | Hb'];
+      solve [ exfalso; apply Hne; exact Heq
+            | left; exact Hb' | right; exists τx; exact Hb' ].
+  - (* var / var_skl / tvar: the entry is not flexible, and the target grows *)
+    assert (Hf' : a_flex_tvar Θ α)
+      by (destruct Hf as [Hb | (τx & Hb)];
+          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+          solve [ discriminate Hc | left; exact Hb' | right; exists τx; exact Hb' ]).
+    pose proof (IHHinc Hf') as Hd.
+    assert (Hdom : dom Θ' [<=] dom (Ξ ++ (x ~ abind_var_typ A') ++ Θ'))
+      by (repeat rewrite dom_app; clear; simpl; fsetdec).
+    clear - Hd Hdom; fsetdec.
+  - assert (Hf' : a_flex_tvar Θ α)
+      by (destruct Hf as [Hb | (τx & Hb)];
+          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+          solve [ discriminate Hc | left; exact Hb' | right; exists τx; exact Hb' ]).
+    pose proof (IHHinc Hf') as Hd.
+    assert (Hdom : dom Θ' [<=] dom (Ξ ++ (x ~ abind_var_skl P') ++ Θ'))
+      by (repeat rewrite dom_app; clear; simpl; fsetdec).
+    clear - Hd Hdom; fsetdec.
+  - assert (Hf' : a_flex_tvar Θ α)
+      by (destruct Hf as [Hb | (τx & Hb)];
+          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+          solve [ discriminate Hc | left; exact Hb' | right; exists τx; exact Hb' ]).
+    pose proof (IHHinc Hf') as Hd.
+    assert (Hdom : dom Θ' [<=] dom (Ξ ++ (α0 ~ abind_tvar) ++ Θ'))
+      by (repeat rewrite dom_app; clear; simpl; fsetdec).
+    clear - Hd Hdom; fsetdec.
 Qed.
 
 (* ---- pointwise disjointness to set-level inter emptiness ---- *)
@@ -6628,4 +6682,178 @@ Proof.
                   (ptyp_to_uskl_syn τ) (uskl_var_f βr) αr Hfr).
     apply IHad_partial_precise; auto.
     rewrite ftvar_in_uskl_ptyp_to_uskl_syn. exact Hβτ.
+Qed.
+
+(* ===================================================================== *)
+(*  ⭐ THE [Θw] TRANSPORT AT AN SE-FlexR NODE (2026-08-04).                *)
+(*                                                                        *)
+(*  [a_guess_ty_witness_mono] reports the κ-extension's payloads           *)
+(*  well-formed in [Θw] — the context that stays FIXED as a P6 induction   *)
+(*  goes under ∀ binders — while a P6 row has the counterpart monotype's   *)
+(*  well-formedness only in [Θ], which under a ∀ row is [Θw] EXTENDED by   *)
+(*  the bound rigid.  The four lemmas below are the transport, and each    *)
+(*  P6 file's own FLEX block runs the same three steps:                    *)
+(*                                                                        *)
+(*    ftv (ψa1 → ψa2)  ⊆ ftv (Q1 → Q2) ∪ dom Θw   [consis_subject_ftv_defs_bound]
+      ftv (Q1 → Q2)    ⊆ dom Θw                   [ad_refine_mono_paint_ftv_bound]
+      a_wf_ptyp Θ τ + ftv τ ⊆ dom Θw ⟹ a_wf_ptyp Θw τ                            *)
+(*                                                                        *)
+(*  The point of the middle step is that BOTH bounds are stated over the   *)
+(*  DEFINITIONS of the context, never over its domain: a bound rigid       *)
+(*  carries no definition, so it can never enter either bound.  The naive  *)
+(*  route through [dom Θr] fails — the [forall_syn_tagged] row puts its    *)
+(*  binder on the Θr side.                                                 *)
+(* ===================================================================== *)
+
+(** A tvar-ish binding survives into a SUBCONTEXT that still has the
+    variable: the two contexts agree on the binding by uniqueness. *)
+Lemma a_binds_tvar_strengthen : forall Θ Θw α,
+  uniq Θ ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  a_binds_tvar α Θ ->
+  α `in` dom Θw ->
+  a_binds_tvar α Θw.
+Proof.
+  intros Θ Θw α Hu Hmon Hbt Hin.
+  apply binds_In_inv in Hin. destruct Hin as [b Hb].
+  assert (Hb' : binds α b Θ) by (apply Hmon; exact Hb).
+  destruct Hbt as [Hr | [Hf | (τ & Hd)]].
+  - pose proof (binds_unique _ _ _ _ _ Hb' Hr Hu) as ->.
+    left; exact Hb.
+  - pose proof (binds_unique _ _ _ _ _ Hb' Hf Hu) as ->.
+    right; left; exact Hb.
+  - pose proof (binds_unique _ _ _ _ _ Hb' Hd Hu) as ->.
+    right; right; exists τ; exact Hb.
+Qed.
+
+(** …hence a MONOTYPE well-formed in [Θ] and scoped inside [dom Θw] is
+    well-formed in [Θw]. *)
+Lemma a_wf_ptyp_mono_strengthen_dom : forall Θ Θw τ,
+  a_wf_aenv Θ ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  mono_ptyp τ ->
+  a_wf_ptyp Θ τ ->
+  ftvar_in_ptyp τ [<=] dom Θw ->
+  a_wf_ptyp Θw τ.
+Proof.
+  intros Θ Θw τ HwfΘ Hmon Hm Hwf Hsub.
+  apply mono_ptyp_wf; [ exact Hm | ].
+  intros α Hα.
+  eapply a_binds_tvar_strengthen;
+    [ apply a_wf_aenv_uniq; exact HwfΘ
+    | exact Hmon
+    | eapply a_wf_ptyp_ftv_binds; [ exact Hwf | exact Hα ]
+    | clear - Hsub Hα; fsetdec ].
+Qed.
+
+(** ⭐ Refining a MONO PAINT introduces no variable the source and the
+    context's DEFINITIONS do not already have.  The [dom Θ] of
+    [ad_refine_syn_ftv_rhs_bound] is over-generous by exactly the hole rule
+    — whose fill is only [Θ]-scoped — and a mono paint has no hole. *)
+Lemma ad_refine_mono_paint_ftv_bound : forall Θ Δr Q' Q,
+  a_wf_aenv Θ ->
+  Θ ⨟ Δr ⊢ᵣᵃ Q' ⊳ Q ->
+  forall τb S, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  ftvar_in_ptyp τb [<=] S ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     α `in` S /\ ftvar_in_ptyp τ0 [<=] S) ->
+  ftvar_in_bskl Q [<=] S.
+Proof.
+  intros Θ Δr Q' Q HwfΘ H; induction H; intros τb S HeqL Hmb Hsub Hdefs.
+  - (* unit *) simpl. clear; fsetdec.
+  - (* var: the paint IS that variable *)
+    symmetry in HeqL. apply ptyp_to_bskl_syn_var_inv in HeqL; subst τb.
+    simpl in *. clear - Hsub; fsetdec.
+  - (* arrow *)
+    symmetry in HeqL.
+    destruct (ptyp_to_bskl_syn_arrow_inv _ HeqL)
+      as (τ1 & τ2 & -> & Heq1 & Heq2).
+    simpl in Hsub.
+    assert (Hm1 : mono_ptyp τ1) by (inversion Hmb; assumption).
+    assert (Hm2 : mono_ptyp τ2) by (inversion Hmb; assumption).
+    assert (Hb1 : ftvar_in_bskl P1 [<=] S)
+      by (eapply IHad_refine_syn1;
+            [ exact HwfΘ | exact Heq1 | exact Hm1
+            | clear - Hsub; fsetdec | exact Hdefs ]).
+    assert (Hb2 : ftvar_in_bskl P2 [<=] S)
+      by (eapply IHad_refine_syn2;
+            [ exact HwfΘ | exact Heq2 | exact Hm2
+            | clear - Hsub; fsetdec | exact Hdefs ]).
+    simpl. clear - Hb1 Hb2; fsetdec.
+  - (* all: LHS all_inh, never a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* hole: LHS □, never a paint — THIS is the case the bound needs shut *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_remove *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_fill *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* tophole_keep *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l: the source variable's DEFINITION becomes the new paint *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    destruct (Hdefs _ _ H) as [_ Hτ].
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | exact H ]
+      | exact Hτ | exact Hdefs ].
+  - (* flex_r: the target IS a DEFINED variable *)
+    destruct (Hdefs _ _ H) as [Hα _]. simpl. clear - Hα; fsetdec.
+Qed.
+
+(** The [consis_subject_ftv_bag_bound] of P6-Cv, but over the DEFINITIONS
+    of [Θ] rather than over a domain — same reason as above. *)
+Lemma consis_subject_ftv_defs_bound : forall Ψ Θ R Q S,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     α `in` S /\ ftvar_in_ptyp τ0 [<=] S) ->
+  ftvar_in_uskl R [<=] ftvar_in_bskl Q `union` S.
+Proof.
+  intros Ψ Θ R Q S H Hdefs x Hx.
+  destruct (ad_pat_consis_ftv_bound H Hx) as [Hin | (α & τ & Hb & Hor)].
+  - clear - Hin; fsetdec.
+  - destruct (Hdefs _ _ Hb) as [Hα Hτ].
+    destruct Hor as [-> | Hxτ];
+      [ clear - Hα; fsetdec | clear - Hxτ Hτ; fsetdec ].
+Qed.
+
+(* ===================================================================== *)
+(*  ⭐ READING THE PACKAGE'S wf COMPONENT (2026-08-04).                    *)
+(*  A P6 ∀ row hands its body's extension [κ'] back out and then works     *)
+(*  under [κ' ++ κ]; both moves below are what that costs.                 *)
+(* ===================================================================== *)
+
+(** A binds-level inclusion is a domain inclusion. *)
+Lemma aenv_binds_dom_sub : forall (Θ Θ' : aenv),
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  dom Θ [<=] dom Θ'.
+Proof.
+  intros Θ Θ' Hmon x Hx.
+  apply binds_In_inv in Hx; destruct Hx as [b Hb].
+  eapply binds_In; apply Hmon; exact Hb.
+Qed.
+
+(** The package's payloads are context-SCOPED — the form
+    [msubst_pskl_subst_var] and the ∀-row renamings ask for. *)
+Lemma forall_wf_mono_images_dom : forall (Θ : aenv) (κ' : metasubst),
+  Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' ->
+  forall p, In p κ' -> ftvar_in_ptyp (snd p) [<=] dom Θ.
+Proof.
+  intros Θ κ' HF p Hp.
+  rewrite Forall_forall in HF.
+  destruct (HF p Hp) as [Hw _].
+  eapply a_wf_ptyp_ftv_dom; exact Hw.
+Qed.
+
+(* MOVED UP from prop_look_complete_extract.v §8 (2026-08-04): the P6 tower
+   now prefixes a block of wf monotype images at EVERY ∀ row, not only in
+   P6-L. *)
+Lemma msubst_lc_app_wf : forall Θ κa κb,
+  Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κa ->
+  msubst_lc κb ->
+  msubst_lc (κa ++ κb).
+Proof.
+  intros Θ κa κb Hall Hlc; unfold msubst_lc in *; intros α.
+  induction κa as [ | [α1 τ1] κa' IH ]; cbn; [ apply Hlc | ].
+  inversion Hall as [ | ph pt [Hwf1 Hm1] Hall' ]; subst; cbn in Hwf1.
+  destruct (α == α1) as [-> | Hne];
+    [ eapply a_wf_ptyp_lc; exact Hwf1 | apply IH; exact Hall' ].
 Qed.
