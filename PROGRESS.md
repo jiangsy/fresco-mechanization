@@ -78,7 +78,76 @@ excluded from the build); mine them when re-proving.
 
 # Part 2: Progress log (most recent first)
 
-## 2026-08-04 (latest) — ⭕⭐⭐ TASK A (reachability of the refuting payload): the POSITIVE half is MACHINE-CHECKED — a refuting program must FREEZE a polymorphic argument
+## 2026-08-04 (latest) — ⭐⭐ **P6-Cv IS GREEN UNDER THE `SolE-FlexR` REPAIR**: the ∀-row payload-scope obligation is CLOSED, and the hand-off's prescribed derivation was wrong twice
+
+Branch `solve-flexr-repair-wip`, commits `3e44c4d` + follow-up.
+`frost/algo/prop_look_complete_var.v` compiles, `Qed`,
+`Closed under the global context`; `a_solve_eq_complete_var` now carries the
+κ-extension package (`Ξ`, `κ'`, `keys κ' = keys Ξ`, the avoid-set parameter
+`L`, and the payload `Forall`).
+
+**The obligation.**  `a_guess_ty_witness_mono` reports the extension's
+payloads well-formed in `Θw` — the context that stays FIXED as the induction
+goes under ∀ binders, because the solve's ∀ rows pass the generated block
+through unchanged, so a payload naming a bound rigid would be ill-scoped.  A
+row has the counterpart monotype's well-formedness only at `Θ`, which under a
+∀ row is `Θw` plus the bound rigids.  The transport is three steps, and the
+content is that **both ftv bounds are over the context's DEFINITIONS, never
+over a domain** — a rigid binder carries no definition, so it can never enter
+either bound:
+
+```
+  ftv (ψa1 → ψa2) ⊆ ftv (Q1 → Q2) ∪ dom Θw   consis_subject_ftv_defs_bound
+  ftv (Q1 → Q2)   ⊆ dom Θw                   ad_refine_mono_paint_ftv_bound
+  a_wf_ptyp Θ τ + ftv τ ⊆ dom Θw ⟹ a_wf_ptyp Θw τ
+                                             a_wf_ptyp_mono_strengthen_dom
+```
+
+The middle lemma is the interesting one: `ad_refine_syn_ftv_rhs_bound`'s
+`dom Θ` is over-generous by exactly the refinement's HOLE rule, whose fill is
+only `Θ`-scoped — and a mono paint has no hole, so refining one introduces no
+variable the source and the context's definitions do not already have.
+
+⚠️ **Two corrections to the active hand-off, both recorded there.**  (i) Its
+prescribed route through `dom Θr` does not work: "a ∀ row's binder joins Θtv,
+never Θr" is false — the `forall_syn_tagged` row puts its binder on the Θr
+side (`aenv_split_cons_r`), so `dom Θr ⊆ dom Θw` is not invariant.  (ii) Its
+prescribed new premise `κ ∷ Θ0 ⊑ Θw` is not invariant either — a ∀ row's
+binder is rigid in the extended `Θ0` but absent from `Θw`, and `a_inc__tvar`
+cannot produce it.  What IS invariant, and is what the theorem now carries, is
+the strictly weaker IMAGE bound
+`forall α, a_flex_tvar Θ0 α -> ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θw`
+(preserved by `a_flex_tvar_strip_tvar`; at the top-level call it is just
+`a_inc_lookup_flex_ftv_dom` on `Hκ` with `Θ = Θw`, so the paper-facing
+statement pays nothing).
+
+**Also in this pass.**  The three ∀ blocks (`forall_inh_tagged`,
+`forall_syn_tagged`, `topholeg`) converted to the package; their body-IH
+avoid-set is `add α Lav`, not `Lav`, because the block is emitted outside the
+∀ and the fold renames α — it costs nothing, since the IH's own avoid-set
+premise needs `α ∈ L` anyway.  ⚙️ The three ∀ rows no longer call
+`a_solve_eq_strengthen_tvar`: SE-Forall / SE-GhostForall / SE-ForallGhost run
+their premise at `(β ~ tvar) ++ Θ` now (the repair's decision §2(1)), so the
+IH output IS the premise; SE-UnivGhost, having no binder, still needs it.
+Both `FOLD`s are generalised over the body's extension `κ0` and run under
+`κ0 ++ κ`.  Nine lemmas were added to or moved into
+`frost/algo/prop_look_complete.v` (the three above plus
+`a_binds_tvar_strengthen`, `aenv_binds_dom_sub`,
+`forall_wf_mono_images_dom`, `a_inc_lookup_flex_ftv_dom`, and
+`msubst_lc_app_wf` moved up from `prop_look_complete_extract.v` §8).
+
+**P6-Cs started.**  `frost/algo/prop_look_complete_cstr.v`'s pre-theorem half
+is done: the nine moved-up copies deleted, and `a_solve_cstr_app`,
+`a_solve_cstr_ctx_change` (with two new `a_flex_tvar_app_mono` /
+`a_flex_app_anti` lifts, since its eq row's tail runs at `Ξ1 ++ Θ`),
+`a_solve_cstr_weaken_mid_flex` (+ the new `dom Ξm ∩ dom Ξ = ∅` premise) and
+`a_solve_cstr_strip_tvar_mid` all threaded.  A `⛔⛔ RESUME HERE` block above
+`a_lookeq_solve_complete_gen` states the designed two-block conclusion — forced
+by `a_extract__solve`, which runs the solve at `Ξ ++ Θ0` and the guess at
+`Ξs ++ Ξ ++ Θ0` — together with row-by-row notes.  Nothing for
+`docs/PAPER-GAPS.md`: all of this is proof construction, not a paper finding.
+
+## 2026-08-04 — ⭕⭐⭐ TASK A (reachability of the refuting payload): the POSITIVE half is MACHINE-CHECKED — a refuting program must FREEZE a polymorphic argument
 
 `frost/algo/cex/probe_payload_reachability.v` (all `Qed`, three
 `Print Assumptions` closed; compiles in under a second).  The refuting

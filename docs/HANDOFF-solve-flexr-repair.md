@@ -16,7 +16,9 @@ fast-forwarded to `d5f9169`). Nothing pushed.
 | `ae3ae0b`/`9322ea5`/`a5fb27a` | ⭐ `a_guess_ty_witness_mono` and its first sites |
 | `f50154a` | ⭐⭐ **`prop_look_complete.v` IS GREEN** — the arrow-case κ-merge |
 | `3faccba` | ⭐⭐ `a_guess_mono_ctx_change` + the flex-block WEAKENING, both moved up |
-| *(latest)* | WIP P6-Cv: SE-FlexR and the arrow merge through; ∀ rows remain |
+| `486b668`…`d5a3e31` | WIP P6-Cv: SE-FlexR, the arrow merge, the Θw thread |
+| `3e44c4d` | ⭐⭐ **P6-Cv IS GREEN** — the ∀-row payload-scope obligation CLOSED |
+| *(latest)* | P6-Cs started: the moved-up kit deleted, four kit lemmas threaded |
 
 **Read `docs/refutations.tex` first** if you have not — it is the
 author-facing note, and it now ends with a §"Status" recording what the
@@ -258,19 +260,85 @@ target case has never been shown reachable.  Nothing goes to
 and indexing the three solve judgements by `N` is the ready fallback.  Until
 then, no action.
 
-### Step 1 — the P6 cluster — ⭐ `prop_look_complete.v` IS GREEN; P6-Cv half done
+### Step 1 — the P6 cluster — ⭐⭐ P6-Cv IS GREEN; P6-Cs is the front
 
-**RESUME AT `frost/algo/prop_look_complete_var.v`, the `forall_inh_tagged`
-row's `IHX` block (≈ line 1467) — the first of the THREE ∀ blocks.**
-Everything before it in that file is converted; `coqc` stops at the `IHX`
-statement, whose conclusion still has the old `exists Pa, … ⤳ Pa /\ …` shape.
+**RESUME AT `frost/algo/prop_look_complete_cstr.v`, the `⛔⛔ RESUME HERE`
+comment immediately above `a_lookeq_solve_complete_gen` (≈ line 1580).**
+Everything before it in that file is converted and compiles; `coqc` stops on
+the theorem's own conclusion, and the comment states the DESIGNED replacement
+in full, together with the row-by-row notes. Do not re-derive it — it is
+forced by `a_extract__solve` (`algo/def_extra.v:764`), P6-L's consumer.
 
 #### What is green and committed
 
-`prop_look_complete.v` compiles, `Qed`, `Closed under the global context` —
-including `a_solve_eq_cv_mono`'s arrow-case κ-merge, which was the resume
-point of the previous hand-off. Everything upstream of it is unchanged and
-still green.
+`prop_look_complete.v` and ⭐ **`prop_look_complete_var.v` (P6-Cv)** both
+compile, `Qed`, `Closed under the global context`. `a_sub_sound_thm` and the
+whole soundness chain are unchanged and still green
+(`make -j10 -f CoqMakefile frost/algo/prop_decorate_key.vo`, ~15 s warm).
+
+#### ⭐⭐ HOW THE ∀-ROW PAYLOAD-SCOPE OBLIGATION WAS CLOSED — read this first
+
+It is the one thing the previous hand-off got wrong, and the correction is
+reusable in every downstream file.
+
+The witness reports the extension's payloads well-formed in `Θw`; a row has
+the counterpart monotype only at `Θ`, which under a ∀ row is `Θw` plus bound
+rigids. The transport is three steps, and **the point is that both ftv bounds
+are over the context's DEFINITIONS, never over a domain** — a rigid binder
+carries no definition, so it can never enter either bound:
+
+```
+  ftv (ψa1 → ψa2) ⊆ ftv (Q1 → Q2) ∪ dom Θw   consis_subject_ftv_defs_bound
+  ftv (Q1 → Q2)   ⊆ dom Θw                   ad_refine_mono_paint_ftv_bound
+  a_wf_ptyp Θ τ + ftv τ ⊆ dom Θw ⟹ a_wf_ptyp Θw τ
+                                             a_wf_ptyp_mono_strengthen_dom
+```
+
+⚠️ **The route through `dom Θr` this hand-off used to prescribe does NOT
+work.** "A ∀ row's binder joins Θtv, never Θr" is false: `forall_syn_tagged`
+puts its binder on the Θr side (`aenv_split_cons_r`, `prop_look_complete_var.v`
+≈ 2250), so `dom Θr ⊆ dom Θw` is not invariant. `dom Θw` is what both bounds
+actually land in, and the middle lemma is what shuts the refinement's hole
+rule — whose fill is only `dom Θ`-scoped, and a mono paint has no hole.
+
+⚠️ **And the prescribed new premise `κ ∷ Θ0 ⊑ Θw` is NOT invariant either** —
+a ∀ row's binder is rigid in the extended `Θ0` but absent from `Θw`, and
+`a_inc__tvar` cannot produce it. What IS invariant, and is the premise the
+theorem now carries, is the weaker IMAGE bound
+
+```coq
+  (forall α, a_flex_tvar Θ0 α ->
+     ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θw)
+```
+
+preserved by `a_flex_tvar_strip_tvar`, and at the top-level call just
+`a_inc_lookup_flex_ftv_dom` on `Hκ` with `Θ = Θw` — so the paper-facing
+statement pays nothing. **Add this premise, in this form, to every downstream
+P6 statement that carries `Θw`.**
+
+#### ⚙️ Three things the ∀ rows cost, beyond the obligation
+
+1. **The IH's avoid-set is `add β L`, not `L`.** The block is emitted OUTSIDE
+   the ∀ and the fold renames the binder, so the row's own binder must be
+   dodged — otherwise `α ∉ dom Ξ` (needed by `FOLD`, and by
+   `msubst_pskl_subst_var`) is unavailable. It costs nothing: the IH's
+   avoid-set premise is `ftvar_in_aenv ((β ~ tvar) ++ Θ0) [<=] L`, which needs
+   `β ∈ L` anyway.
+2. **The ∀ rows no longer call `a_solve_eq_strengthen_tvar`.** SE-Forall,
+   SE-GhostForall and SE-ForallGhost run their premise at `(β ~ tvar) ++ Θ`
+   now (decision §2(1)), so the IH's output IS the rule's premise. SE-UnivGhost
+   has no binder of its own and still needs the strengthening.
+3. **Every binder row's avoid-set needs `ftvar_in_aenv Θ0`**, not just
+   `dom Θ0` — §2(3). Add it to each `pick fresh` union; the failure mode is a
+   bare `Not solvable by [solve_notin]` on the rule's freshness premise.
+
+#### The FOLD generalization (both ∀ blocks, and every downstream twin)
+
+`FOLD` takes the body's extension `κ0` as a parameter and runs under
+`κ0 ++ κ`. The two facts it needs of the prefix are read straight off the
+package's `Forall` component: local closure via `msubst_lc_app_wf`, and
+`dom Θ`-scoping via `forall_wf_mono_images_dom` + `aenv_binds_dom_sub`
+(`dom Θw ⊆ dom Θ`).
 
 #### ⭐ The five reusable pieces that now live in `prop_look_complete.v`
 
@@ -285,6 +353,8 @@ mechanical.
 | ⭐ `a_solve_sub_eq_weaken_mid_flex_size` (+ `a_solve_eq_weaken_flex_block`) | moved up from `prop_look_complete_cstr.v` and repaired: the block threads, there is a NEW premise `dom Ξm ∩ dom Ξ = ∅`, and the six ∀ rows re-freshen by `a_solve_*_move_binder*` instead of the double rename. |
 | `a_inc_flex_prefix_split` / `_build`, `all_flex_mono_decls`, `all_flex_mono_ftvar_in_aenv`, `a_wf_aenv_prepend_flex_block` | prepend an aligned wf-mono block to an `a_inc` and to its source context. |
 | ⭐ `ad_pat_consis_mono_subject_wf` | where the κ-extension's wf obligation comes from: a mono-paint consistency SUBJECT is wf in the context, because consistency's `var` row carries `a_binds_tvar` and its `flex_l` row carries the definition. **No new external side condition.** |
+| ⭐⭐ `consis_subject_ftv_defs_bound`, `ad_refine_mono_paint_ftv_bound`, `a_wf_ptyp_mono_strengthen_dom`, `a_binds_tvar_strengthen` | the Θw TRANSPORT (2026-08-04) — the three-step chain above. Write the same three lines inside each downstream file's own `FLEX` block. |
+| `aenv_binds_dom_sub`, `forall_wf_mono_images_dom`, `a_inc_lookup_flex_ftv_dom`, `msubst_lc_app_wf` | reading the package: domain inclusion from binds inclusion, the payloads' `dom Θ`-scoping, the top-level supply of the new image-bound premise, and local closure of `κ0 ++ κ`. `msubst_lc_app_wf` MOVED UP from `prop_look_complete_extract.v` §8 (the copy there is deleted). |
 
 #### ⭐ TWO IDIOMS THE ARROW CASE CAN USE — pick the cheaper one
 
@@ -317,58 +387,59 @@ the merged block is `Ξ2 ++ Ξ1`, the merged extension `κb ++ κa`, and the two
   therefore a `solve_ext_nil` row, and its extension is `nil` too — get that
   from `keys κ' = keys nil` by `destruct κ'; [ | discriminate ]`.
 
-#### ⭐ THE ∀ ROWS' PAYLOAD SCOPE — the design is settled, one step is left
+#### ⭐ THE ∀ ROWS' PAYLOAD SCOPE — ✅ SETTLED AND CLOSED
 
 A P6 ∀ row runs its body at `(α ~ tvar) ++ Θ`, but the block the body
 generates is emitted **outside** the ∀ — the solve's ∀ rows pass `Ξ` through
 unchanged — so a payload mentioning the bound rigid would be ill-scoped, and
-`a_inc_flex_prefix_build` could never rebuild the increase. (Do NOT weaken
+`a_inc_flex_prefix_build` could never rebuild the increase.  (Do NOT weaken
 the package's wf component to dodge this; P6-L needs it.)
 
-**Settled (committed, green):** `solve_ext`'s second context is the
+**Design (committed, green):** `solve_ext`'s second context is the
 WELL-FORMEDNESS context `Θw`, and it stays FIXED as the construction goes
-under binders. `a_guess_ty_witness_mono`, `cv_mono_concl`,
+under binders.  `a_guess_ty_witness_mono`, `cv_mono_concl`,
 `a_solve_eq_cv_mono` and `a_solve_eq_cv_var` all carry it, next to the two
 conditions that say `Θ` is `Θw` under a stack of rigids — binds-monotonicity
-one way, "adds only rigid binders" the other. Supporting: `a_def_chain_wf_at`,
+one way, "adds only rigid binders" the other.  Supporting: `a_def_chain_wf_at`,
 `forall_wf_mono_weaken`.
 
 ⭐ And the target's own wf premise is a DISJUNCTION —
 `a_wf_ptyp Θw τ ∨ (τ is a rigid variable of Θ)` — because at a ∀ row the
-target can be the BOUND rigid, which is in no `Θw`. It costs nothing: every
+target can be the BOUND rigid, which is in no `Θw`.  It costs nothing: every
 branch that consumes the premise first unfolds a definition chain out of `τ`,
-and a rigid has none (`a_def_chain_rigid_var_inv`). The disjunction
+and a rigid has none (`a_def_chain_rigid_var_inv`).  The disjunction
 PROPAGATES along a chain (`a_def_chain_wf_or_rigid`) and is DISCHARGED at the
-arrow rows. P6-Cv's var row supplies it straight from `ad_pat_consis__var`.
+arrow rows.  P6-Cv's var row supplies it straight from `ad_pat_consis__var`.
 
-⭕ **What is left is ONE derivation, and `coqc` stops exactly on it** —
-`prop_look_complete_var.v`, CORE's SE-FlexR row, where the file carries a
-`⛔ RESUME HERE` comment stating it in full. `FLEX` produces the counterpart
-monotype's well-formedness at `Θ`; the witness wants it at `Θw`. The fact is
-true:
-
-```
-  ftv (ψa1 → ψa2) ⊆ ftv (bskl_arrow Q1 Q2) ∪ dom Θr     (consis_subject_ftv_bag_bound)
-                  ⊆ ftv (msubst_lookup κ β) ∪ dom Θr    (ad_refine_syn_ftv_rhs_bound on Hrefβ')
-```
-
-and a ∀ row's binder joins `Θtv`, never `Θr`, while `κ ∷ Θ0 ⊑ Θw` keeps every
-κ-image inside `dom Θw`. So the counterpart monotype is apart from every bound
-rigid, and `mono_ptyp_wf` (prop_consis_sound.v) lifts that to `a_wf_ptyp Θw`.
-**Write that inside each file's `FLEX` block, and add the premise
-`κ ∷ Θ0 ⊑ Θw` to the theorem** (it is literally `Hκ` at the top-level call).
+✅ **The residual derivation is CLOSED (2026-08-04)** — but *not* by the route
+this section used to prescribe, which was wrong twice over: the `dom Θr` chain
+is not invariant (`forall_syn_tagged` puts its binder on the Θr side) and
+neither is the premise `κ ∷ Θ0 ⊑ Θw` (a ∀ row's binder is rigid in the extended
+`Θ0` but absent from `Θw`).  See **"HOW THE ∀-ROW PAYLOAD-SCOPE OBLIGATION WAS
+CLOSED"** at the top of this Step for the version that works, and copy that
+into each downstream file's `FLEX` block.
 
 #### The rest of the cluster
 
 `prop_look_complete_cstr.v` (P6-Cs) → `prop_look_complete_sub_var.v` (P6-Sv)
 → `prop_look_complete_sub_cstr.v` (P6-Ss) → `prop_look_complete_extract.v`
-(P6-L). ⚙️ `prop_look_complete_cstr.v` must DELETE its copies of
-`binds_weaken_mid`, `binds_strengthen_mid`, `a_flex_tvar_weaken_mid`,
-`a_non_flex_weaken_mid`, `a_solve_sub_eq_weaken_mid_flex_size`,
-`a_solve_sub_weaken_mid_flex`, `a_solve_eq_weaken_mid_flex`,
-`a_inc_flex_prefix_split` and `a_inc_flex_prefix_build` — they moved up and
-will collide. `a_solve_cstr_weaken_mid_flex` stays there and needs the `Ξ`
-thread plus the new `dom Ξm ∩ dom Ξ = ∅` premise.
+(P6-L).
+
+✅ **`prop_look_complete_cstr.v`'s PRE-THEOREM half is DONE** (this session):
+the nine moved-up copies are deleted (one `⚙️ MOVED UP` note in their place),
+and the four lemmas that stay there are threaded —
+
+| lemma | what changed |
+|---|---|
+| `a_solve_cstr_app` | threads: the second half runs at the first's block, outputs concatenate `Ξ2 ++ Ξ1` |
+| `a_solve_cstr_ctx_change` | threads; its condition is `ftvar_in_aenv`, not `dom`, and the eq row's tail needs the two new `a_flex_tvar_app_mono` / `a_flex_app_anti` lifts (the tail runs at `Ξ1 ++ Θ`) |
+| `a_solve_cstr_weaken_mid_flex` | threads + the new `dom Ξm ∩ dom Ξ = ∅` premise |
+| `a_solve_cstr_strip_tvar_mid` | threads |
+
+⚠️ `aenv_app_assoc` (= `list_app_assoc`) is `(X ++ Y) ++ Z = X ++ (Y ++ Z)`,
+the OPPOSITE orientation to the stdlib `app_assoc` metalib shadows here; a
+bare `rewrite app_assoc` fails with "found no subterm". Use the named one with
+explicit arguments.
 
 ### Step 1 (original notes; the plan above supersedes the status lines)
 
