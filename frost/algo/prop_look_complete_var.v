@@ -508,6 +508,31 @@ Proof.
       clear - Hτ Hd; fsetdec.
 Qed.
 
+(* ===================================================================== *)
+(*  ⭐ THE CONCLUSION CARRIES THE κ-EXTENSION (2026-08-04, the SolE-FlexR  *)
+(*  repair).  [solve_ext] (prop_look_complete.v) supplies the six          *)
+(*  components every P6 statement now shares — the solve, its generated    *)
+(*  block [Ξ], and the aligned extension [κ'] of the metasubstitution      *)
+(*  over that block; P6-Cv's own post-condition is the Δ'-FAMILY of        *)
+(*  precisions it always had, now read under [κ' ++ κ].                    *)
+(*                                                                        *)
+(*  The extension is REAL here and not bookkeeping: at [P0 = β̂] the        *)
+(*  repaired SE-FlexR returns [guess^TY(Pi)], which invents a flexible for *)
+(*  every ghost inside [Pi], and the output is only interpretable under a  *)
+(*  metasubstitution that knows what those flexibles stand for.            *)
+(* ===================================================================== *)
+Definition p6cv_post (Θ Θr : aenv) (κ : metasubst) (Δ Ψi Ψa : atoms)
+    (ψa : uskl) (κ' : metasubst) (Pa : pskl) : Prop :=
+  forall Δ',
+    Δ' ∩ Δ [=] empty ->
+    Δ' ∩ dom Θr [=] empty ->
+    delta_def_fresh Δ' Θ ->
+    Θ ⨟ (Δ `union` Δ') ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+
+Definition p6cv_concl (Θ0 Θ Θr : aenv) (κ : metasubst) (Δ Ψi Ψa : atoms)
+    (ψa : uskl) (Pi P0 : pskl) (L : atoms) : Prop :=
+  solve_ext Θ0 Θ Pi P0 L (p6cv_post Θ Θr κ Δ Ψi Ψa ψa).
+
 Theorem a_solve_eq_complete_var_gen :
   forall NM Θ Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
   (* the context split, as a BINDS-LEVEL bag (see the block above): the
@@ -537,12 +562,8 @@ Theorem a_solve_eq_complete_var_gen :
   Ψa [<=] Ψsub ->
   Ψsub ⨟ Θ ⊢ₛᵃ ψsub ∼ Q ->
   Θr ⨟ Δr ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
-  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
-    forall Δ',
-      Δ' ∩ Δ [=] empty ->
-      Δ' ∩ dom Θr [=] empty ->
-      delta_def_fresh Δ' Θ ->
-      Θ ⨟ (Δ `union` Δ') ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+  forall L, ftvar_in_aenv Θ0 [<=] L ->
+  p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi P0 L.
 Proof.
   intros NM Θ Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
   intros HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hrho Htags
@@ -556,7 +577,9 @@ Proof.
     NM Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa ψa Pi P0
     HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hrho Htags
     Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hapart Hpre
-    Hsubeq1 Hsubeq2 Hrefine.
+    (* ⚙️ [Lav], not [L]: the consistency rules' own cofinite binder is [L] in
+       several rows, and [intros] runs in all of them. *)
+    Hsubeq1 Hsubeq2 Hrefine Lav HLav.
   - (* unit *)
     assert (Hrefine' : Θ ⨟ empty ⊢ᵣᵃ
               (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ bskl_unit)
@@ -570,8 +593,8 @@ Proof.
       destruct (a_solve_eq_cv_unit (Θ := Θ) (Δ := Δ)
                   Hsz HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hpre Hrefine')
         as (Pa & Hsolve & Hprec).
-      exists Pa; split; [ exact Hsolve | ].
-      intros Δ' HS1 HS2 HS3.
+      eapply solve_ext_nil; [ exact Hsolve | ].
+      intros Δ' HS1 HS2 HS3. cbn [app].
       eapply ad_partial_precise_psi_cong;
         [ eapply ad_partial_precise_delta_weaken_fresh;
             [ exact Hprec | simpl; clear; fsetdec | exact HS3 ]
@@ -579,25 +602,31 @@ Proof.
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
                   HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
         as (Pa & Hs & Hq).
-      exists Pa; split; [ exact Hs | ].
-      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
+      eapply solve_ext_nil; [ exact Hs | ].
+      intros Δ' HS1 HS2 HS3. cbn [app]. apply Hq. clear; fsetdec.
   - (* var: the target is [var α]; the Δ'-extension splits on where α
        lives — Θr-side (Δ' avoids it) vs binder-side (the primary
        refinement forces a hole-free P0, and solve preserves it) *)
     assert (Hrefine' : Θ ⨟ empty ⊢ᵣᵃ
               (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (bskl_var_f α))
       by (eapply refine_primary_to_plain_split; eassumption).
+    (* ⭐ [a_binds_tvar α Θ] is [ad_pat_consis__var]'s OWN premise, and it is
+       exactly the new wf side condition [a_solve_eq_cv_var] asks for. *)
+    assert (Hbα : a_binds_tvar α Θ)
+      by (match goal with Hb : a_binds_tvar α Θ |- _ => exact Hb end).
     destruct (uskl_rho_var_l_inv Hrho) as [[-> HΨρ] | Hleaf].
     + assert (HΨ'e : Ψ' [=] empty)
         by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags))).
       assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).
       assert (Hsz : size_pskl Pi + size_pskl P0
                       <= size_pskl Pi + size_pskl P0) by lia.
-      destruct (a_solve_eq_cv_var (Θ := Θ) (Δ := Δ)
-                  Hsz HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hdfresh Hpre Hrefine')
-        as (Pa & Hsolve & Hprec).
-      exists Pa; split; [ exact Hsolve | ].
-      intros Δ' HS1 HS2 HS3.
+      eapply solve_ext_post_solve;
+        (* ⚙️ [L] is IMPLICIT ([Set Implicit Arguments] — it is inferable from
+           the avoid-set premise's type), so only [HLav] is passed. *)
+        [ | exact (a_solve_eq_cv_var (Θ := Θ) (Δ := Δ)
+                     Hsz HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hbα Hdfresh Hpre Hrefine'
+                     HLav) ].
+      intros Ξ0 κ' Pa Hsolve Hprec Δ' HS1 HS2 HS3.
       destruct (AtomSetProperties.In_dec α (dom Θr)) as [HinR | HninR].
       * (* Θr-side: Δ' avoids the target variable *)
         eapply ad_partial_precise_psi_cong;
@@ -623,8 +652,8 @@ Proof.
     + destruct (@p6cv_close_leaf_mono _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
                   HwfΘ Htags Hsub Hfresh Hdelta Hshield Hpre Hleaf)
         as (Pa & Hs & Hq).
-      exists Pa; split; [ exact Hs | ].
-      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
+      eapply solve_ext_nil; [ exact Hs | ].
+      intros Δ' HS1 HS2 HS3. cbn [app]. apply Hq. clear; fsetdec.
   - (* arrow: KEY continuation; CORE grid on size Pi + size P0 at the
        fixed arrow target, with the PRIMARY (Θr, Δr) refinement threaded
        through the recursion and ∀Δ' families out of every row. *)
