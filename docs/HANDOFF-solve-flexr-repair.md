@@ -289,7 +289,33 @@ Copy its shape for the solve's block; the homogeneous-flex REORDER KIT in
 undefined flexibles, so order is semantically immaterial but not
 syntactically so).
 
-#### ⭐ THE ONE LEMMA THAT UNBLOCKS THE REST — `a_guess_ty_witness_mono`
+#### ✅ `a_guess_ty_witness_mono` IS PROVED — what is left is plumbing it
+
+**Done** (commit `9322ea5`): the lemma below is `Qed`, together with
+`ad_ppre_mono_refl` (precision is reflexive at a monotype), `a_def_chain_wf`
+(wf transports along a definition chain) and `list_app_assoc`. The
+κ-extension kit (`keys`, `keys_eq_dom`, `all_flex_mono`, `all_flex_mono_app`,
+`msubst_pskl_mid_skip`, `msubst_lookup_mid_skip`,
+`msubst_pskl_lookup_congr_ftv`) was **moved upstream** to
+`frost/algo/prop_metasubst.v` — both its old homes sat *below* the file that
+now needs it.
+
+**In progress**: `a_solve_eq_cv_mono` is restated (`cv_mono_concl` names the
+new conclusion; `cv_mono_nil` / `cv_mono_wrap` are the packaging helpers) and
+three of its twelve sites are converted, including ⭐ the SE-FlexR one that
+motivated the whole lemma. It currently fails at the `P0 = arrow` case,
+whose two IHs must have their extensions MERGED — the merge is line-for-line
+the one already written in the witness's own arrow case (`Heq1`/`Heq2` via
+`msubst_pskl_mid_skip`, disjointness from the second IH's widened avoid-set);
+copy it. The remaining ~8 sites are `∀◇` pass-throughs, which is exactly what
+`cv_mono_wrap` was written for.
+
+⚠️ Two mechanical traps that cost time here: `Set Implicit Arguments` is on
+in this file, so partially-applied lemmas want `@name ...`; and `/\` at the
+END of a line inside a Python heredoc is a line-continuation — it silently
+eats the conjunction. Edit with a raw string or keep `/\` mid-line.
+
+#### The lemma, for reference — `a_guess_ty_witness_mono`
 
 Established by working the first three sites (2026-08-04).  The κ-extension
 is **not** needed uniformly; it is needed exactly where `SE-FlexR` fires with

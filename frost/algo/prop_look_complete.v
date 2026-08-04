@@ -2998,20 +2998,85 @@ Proof.
     eapply ad_ppre_chain_fold; [ exact Hc | exact Hpr ].
 Qed.
 
+(* ⭐ THE CONCLUSION CARRIES THE κ-EXTENSION (2026-08-04).  The repaired
+   SE-FlexR fires here — in the [P_i = P_i1 → P_i2], [P_0 = β̂] branch it is
+   the ONLY applicable row (SE-Var wants a variable subject, SE-Arrow an
+   arrow target) — and [guess^TY] of an arrow subject invents a flexible for
+   every ghost inside it.  So the solve emits a block [Ξ] and its output is
+   only interpretable under an EXTENDED metasubstitution, built by
+   [a_guess_ty_witness_mono].
+
+   ⚠️ UNLIKE the guess, the SOLVE IS NOT CONTEXT-GENERIC: SE-FlexR consults
+   [Θ0] to decide HATTEDNESS ([a_flex_tvar]).  So the conclusion pins [Θ0]
+   and takes the avoid-set [L] as a parameter with [ftvar_in_aenv Θ0 ⊆ L],
+   which is what licenses the guess underneath.
+
+   [a_wf_ptyp Θ τ] is a new premise; it is what the witness needs to close
+   its ◇ case (docs/WF-SIDE-CONDITIONS.md — the paper requires the
+   counterpart well-formed in prose). *)
+
+(** The conclusion, named — it recurs at every site below. *)
+Definition cv_mono_concl (Θ0 Θ : aenv) (κ : metasubst) (Δ Ψi : atoms)
+    (τ : ptyp) (Pi P0 : pskl) (L : atoms) : Prop :=
+  exists (Ξ : aenv) (Pa : pskl) (κ' : metasubst),
+    Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa /\
+    all_flex_mono Ξ /\
+    uniq Ξ /\
+    keys κ' = keys Ξ /\
+    (forall α, α `in` dom Ξ -> α `notin` L) /\
+    Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /\
+    Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ).
+
+(** A row that GENERATES NOTHING needs no extension. *)
+Lemma cv_mono_nil : forall Θ0 Θ κ Δ Ψi τ Pi P0 L Pa,
+  Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa ->
+  Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
+  cv_mono_concl Θ0 Θ κ Δ Ψi τ Pi P0 L.
+Proof.
+  intros Θ0 Θ κ Δ Ψi τ Pi P0 L Pa Hs Hq.
+  exists nil, Pa, nil.
+  split; [ exact Hs | ].
+  split; [ apply Forall_nil | ].
+  split; [ apply uniq_nil | ].
+  split; [ reflexivity | ].
+  split; [ intros α0 Hα0; cbn in Hα0; exfalso; clear - Hα0; fsetdec | ].
+  split; [ apply Forall_nil | ].
+  cbn [app]. exact Hq.
+Qed.
+
+(** A row that PASSES ITS PREMISE THROUGH keeps the whole package: the block,
+    the extension and the freshness are the premise's, and only the solve
+    step and (via the definition chain) the target change.  This is the
+    shape of every ∀◇ row. *)
+Lemma cv_mono_wrap : forall Θ0 Θ κ Δ Ψi τ τe Pi P0 Pi' P0' L,
+  a_def_chain Θ τ τe ->
+  (forall Ξ Pa, Θ0 ⊢ₑ Pi' ∼ P0' ⤳ Ξ ⨾ Pa -> Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa) ->
+  cv_mono_concl Θ0 Θ κ Δ Ψi τe Pi' P0' L ->
+  cv_mono_concl Θ0 Θ κ Δ Ψi τ Pi P0 L.
+Proof.
+  intros Θ0 Θ κ Δ Ψi τ τe Pi P0 Pi' P0' L Hc Hstep
+         (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
+  exists Ξ, Pa, κ'.
+  repeat (split; [ solve [ apply Hstep; exact Hs | exact Hfm | exact Hu
+                         | exact Hk | exact Hfr | exact HF ] | ]).
+  eapply ad_ppre_chain_fold; [ exact Hc | exact Hq ].
+Qed.
+
 Lemma a_solve_eq_cv_mono : forall n Θ0 Θ κ Δ Ψi τ Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   mono_ptyp τ ->
+  a_wf_ptyp Θ τ ->
   delta_def_fresh Δ Θ ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (ptyp_to_bskl_syn τ) ->
-  exists Pa, Θ0 ⊢ₑ Pi ∼ P0 ⤳ Pa /\
-             Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ).
+  forall L, ftvar_in_aenv Θ0 [<=] L ->
+  cv_mono_concl Θ0 Θ κ Δ Ψi τ Pi P0 L.
 Proof.
   induction n; intros Θ0 Θ κ Δ Ψi τ Pi P0 Hn
-    HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hmτ Hdf Hpre Hrefine.
+    HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hmτ Hwfτ Hdf Hpre Hrefine L HL.
   { pose proof (size_pskl_min Pi); pose proof (size_pskl_min P0); lia. }
   destruct Pi as [ | nb | α | Pi1 Pi2 | Pib | | Pi' ].
   - (* Pi = unit: resolve the chain to 1, delegate to the Unit case lemma *)
@@ -3025,11 +3090,11 @@ Proof.
     destruct (a_solve_eq_cv_unit (n := S n) (Θ := Θ) (Δ := Δ)
                 Hn HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hpre_u Href')
       as (Pa & Hsolve & Hprec).
-    exists Pa; split; [ exact Hsolve | ].
-    eapply ad_ppre_chain_fold; [ exact Hc | exact Hprec ].
+    eapply cv_mono_nil;
+      [ exact Hsolve | eapply ad_ppre_chain_fold; [ exact Hc | exact Hprec ] ].
   - (* Pi = var_b: not wf *) inversion HwfPi.
   - (* Pi = var_f α: SE-Var / SE-FlexL *)
-    exists (pskl_var_f α); split; [ apply a_solve_eq__var | exact Hpre ].
+    eapply cv_mono_nil; [ apply a_solve_eq__var | exact Hpre ].
   - (* Pi = arrow Pi1 Pi2 *)
     assert (HwfPi1 : Θ0 ⨟ empty ⊢ₚₛᵃ Pi1) by (inversion HwfPi; assumption).
     assert (HwfPi2 : Θ0 ⨟ empty ⊢ₚₛᵃ Pi2) by (inversion HwfPi; assumption).
@@ -3058,20 +3123,31 @@ Proof.
         assert (HΨi : Ψi [=] empty)
           by (eapply ad_ppre_mono_tags_empty;
                 [ exact HwfΘ | exact Hpre | reflexivity | exact Hmτ ]).
-        exists (pskl_var_f β); split.
-        -- apply a_solve_eq__flex_r;
-             [ exact Hflx
-             | split; [ eapply a_wf_pskl_lc; exact HwfPi
-                      | intros Hf; inversion Hf ] ].
-        -- assert (Hml : mono_ptyp (msubst_lookup κ β))
-             by (eapply a_inc_lookup_mono; eauto).
-           simpl in Hrefine.
-           eapply ad_partial_precise_psi_cong;
-             [ eapply ad_refine_mono_paint_lhs_ppre with (Δr := empty);
-                 [ exact HwfΘ | clear; fsetdec | exact Hrefine
-                 | apply ptyp_to_bskl_inh_syn_eq; exact Hml
-                 | reflexivity | exact Hml | exact Hmτ ]
-             | clear - HΨi; fsetdec ].
+        (* ⭐ SE-FlexR, REPAIRED.  The output is [guess^TY(P_i)] — the
+           accumulated pattern — not the flexible, so the witness is the
+           guess and the extension is the one [a_guess_ty_witness_mono]
+           builds alongside it.  The old proof went the other way: its
+           witness was [β̂] and the obligation needed the whole
+           [ad_refine_mono_paint_lhs_ppre] bridge through the refinement.
+           Here the precision obligation IS the witness's own output. *)
+        assert (Hszg : size_pskl (pskl_arrow Pi1 Pi2) <= S n)
+          by (cbn in Hn |- *; lia).
+        destruct (@a_guess_ty_witness_mono (S n) Θ0 Θ κ Δ Ψi τ
+                    (pskl_arrow Pi1 Pi2) Hszg HwfΘ HwfPi Hmτ Hwfτ Hpre L)
+          as (Ξg & Ag & κg & Hgu & Hfmg & Hug & Hkg & Hfrg & HFg & Hqg).
+        exists Ξg, (ptyp_to_pskl Ag), κg.
+        split; [ apply a_solve_eq__flex_r;
+                   [ exact Hflx
+                   | split; [ eapply a_wf_pskl_lc; exact HwfPi
+                            | intros Hf; inversion Hf ]
+                   | apply nonghost_pskl__arrow
+                   | apply Hgu; exact HL ] | ].
+        split; [ exact Hfmg | ].
+        split; [ exact Hug | ].
+        split; [ exact Hkg | ].
+        split; [ exact Hfrg | ].
+        split; [ exact HFg | ].
+        exact Hqg.
     + (* P0 = arrow P01 P02: SE-Arrow on two IHn calls *)
       assert (HwfP01 : Θ0 ⨟ empty ⊢ₚₛᵃ P01) by (inversion HwfP0; assumption).
       assert (HwfP02 : Θ0 ⨟ empty ⊢ₚₛᵃ P02) by (inversion HwfP0; assumption).
