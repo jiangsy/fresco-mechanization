@@ -262,12 +262,13 @@ then, no action.
 
 ### Step 1 — the P6 cluster — ⭐⭐ P6-Cv IS GREEN; P6-Cs is the front
 
-**RESUME AT `frost/algo/prop_look_complete_cstr.v`, the `⛔⛔ RESUME HERE`
-comment immediately above `a_lookeq_solve_complete_gen` (≈ line 1580).**
-Everything before it in that file is converted and compiles; `coqc` stops on
-the theorem's own conclusion, and the comment states the DESIGNED replacement
-in full, together with the row-by-row notes. Do not re-derive it — it is
-forced by `a_extract__solve` (`algo/def_extra.v:764`), P6-L's consumer.
+**RESUME AT `frost/algo/prop_look_complete_cstr.v`, the `⛔ RESUME HERE`
+comment at the ARROW row's RIGHT IH call (≈ line 2713).** Everything before it
+in that file compiles. The theorem's STATEMENT is final; four of its rows and
+the arrow row's LEFT branch are converted. Two comments carry the plan: the
+`⛔⛔` block above `a_lookeq_solve_complete_gen` (statement, converted rows,
+what is left) and the `⛔` block at the resume line (the arrow merge, six
+steps). Read those, not this summary — they are where the analysis lives.
 
 #### What is green and committed
 
@@ -425,8 +426,42 @@ into each downstream file's `FLEX` block.
 → `prop_look_complete_sub_cstr.v` (P6-Ss) → `prop_look_complete_extract.v`
 (P6-L).
 
-✅ **`prop_look_complete_cstr.v`'s PRE-THEOREM half is DONE** (this session):
-the nine moved-up copies are deleted (one `⚙️ MOVED UP` note in their place),
+✅ **`prop_look_complete_cstr.v` (P6-Cs): statement FINAL, five rows through.**
+
+The conclusion carries a SECOND block `Ξs` beside `Ξc`, at `Ξs ++ Ξc ++ Θ0`,
+with the extensions stacked the same way and an avoid-set parameter `L`. The
+order is forced by `a_extract__solve` (`def_extra.v:764`), P6-L's consumer.
+Three things had to be added beyond the first design, each from a concrete
+obstruction rather than a guess:
+
+| addition | forced by |
+|---|---|
+| the **`Θw` pack** (wf, the two binds conditions, the κ-image bound) | the ∀ rows strip β from the `a_inc` with `a_inc_strip_tvar_mid`, whose `Forall (β ∉ ftv)` premise `κc` gets from its `ftv ⊆ ftv ψa` conjunct and `κs` has no analogue for. Hence also ⭐ **`a_solve_eq_complete_var_at`** — the paper-facing `a_solve_eq_complete_var` pins `Θw := Θ` and is unusable under a binder |
+| `ftvar_in_uskl ψa [<=] dom Θw` | the flexible-P0 row: there `ψa` is the mono paint `syn τψ` and `τψ` IS the κs payload, so it must be wf at `Θw`, while `ad_pat_consis_rho_subst_psia_mono` reports it only at `Θ` |
+| `all_flex_mono Ξs` **and `uniq Ξs`** | the arrow row rebuilds `a_wf_aenv (Ξs ++ Ξc ++ Θ0)` for its right branch; `uniq Ξ` is not re-derivable (§4c) |
+
+⭐ **The flexible-P0 row — the only place `SE-FlexR` itself fires — is through**,
+and its shape is the template for the downstream files: `WIT` wraps
+`a_guess_ty_witness_mono` at `κ := (α1, τψ) :: κ` (the node is exactly P6-Cv's
+SE-FlexR node), and `msubst_pskl_prepend_fresh` is what lets the fresh `α1` be
+prefixed without moving `msubst κ Pi`. ⚠️ The `Pi` grid is **six** ways now, not
+two: unit / arrow / ∀ take SE-FlexR at the guess; a VARIABLE takes SE-Var; `◇`
+takes SE-GhostL and returns the TARGET — the sharing `nonghost_pskl` protects;
+and `∀◇P` peels by SE-GhostGuarded onto a body that wf forces GUARDED, hence
+nonghost, so one peel always lands on a SE-FlexR/SE-Var node. That peel needs
+the precision unfolded and re-folded along a DEFINITION CHAIN —
+`ad_ppre_tophole_subject_chain_inv` one way, the new `ad_ppre_def_chain_fold`
+the other.
+
+⚠️ **The arrow row's right IH does NOT run at `Ξc1 ++ Θ0`.** `Pa1` is the LEFT
+SOLVE's output and mentions the flexibles that solve invented, so the precision
+the right branch consumes is stated under `κs1 ++ κc1 ++ κ` — and the only
+context at which that is an `a_inc` is `Ξs1 ++ Ξc1 ++ Θ0`, which is `Hinc1`
+verbatim. Everything it returns is then permuted into `Ξs2 ++ Ξs1` /
+`Ξc1 ++ Ξc2`; the permutation is cheap because `binds` over an append is plain
+membership, so any reordering preserves it with no disjointness side condition.
+
+The nine moved-up copies are deleted (one `⚙️ MOVED UP` note in their place),
 and the four lemmas that stay there are threaded —
 
 | lemma | what changed |
@@ -435,6 +470,13 @@ and the four lemmas that stay there are threaded —
 | `a_solve_cstr_ctx_change` | threads; its condition is `ftvar_in_aenv`, not `dom`, and the eq row's tail needs the two new `a_flex_tvar_app_mono` / `a_flex_app_anti` lifts (the tail runs at `Ξ1 ++ Θ`) |
 | `a_solve_cstr_weaken_mid_flex` | threads + the new `dom Ξm ∩ dom Ξ = ∅` premise |
 | `a_solve_cstr_strip_tvar_mid` | threads |
+
+New upstream, for P6-Cs and everything below it: `a_solve_cstr_decls` /
+`a_solve_cstr_generated_fresh` (`prop_solve_sub.v` — §4(c)'s kit at the
+constraint-list level, which lifts by a two-line induction because the rules
+CONCATENATE the blocks) and `a_decls_all_flex_mono` (`prop_look_complete.v`,
+the converse of `all_flex_mono_decls`: the solve kit produces the `a_decls`
+spelling, the κ-extension package consumes the `all_flex_mono` one).
 
 ⚠️ `aenv_app_assoc` (= `list_app_assoc`) is `(X ++ Y) ++ Z = X ++ (Y ++ Z)`,
 the OPPOSITE orientation to the stdlib `app_assoc` metalib shadows here; a

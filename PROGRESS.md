@@ -136,16 +136,40 @@ Both `FOLD`s are generalised over the body's extension `κ0` and run under
 `forall_wf_mono_images_dom`, `a_inc_lookup_flex_ftv_dom`, and
 `msubst_lc_app_wf` moved up from `prop_look_complete_extract.v` §8).
 
-**P6-Cs started.**  `frost/algo/prop_look_complete_cstr.v`'s pre-theorem half
-is done: the nine moved-up copies deleted, and `a_solve_cstr_app`,
-`a_solve_cstr_ctx_change` (with two new `a_flex_tvar_app_mono` /
-`a_flex_app_anti` lifts, since its eq row's tail runs at `Ξ1 ++ Θ`),
-`a_solve_cstr_weaken_mid_flex` (+ the new `dom Ξm ∩ dom Ξ = ∅` premise) and
-`a_solve_cstr_strip_tvar_mid` all threaded.  A `⛔⛔ RESUME HERE` block above
-`a_lookeq_solve_complete_gen` states the designed two-block conclusion — forced
-by `a_extract__solve`, which runs the solve at `Ξ ++ Θ0` and the guess at
-`Ξs ++ Ξ ++ Θ0` — together with row-by-row notes.  Nothing for
-`docs/PAPER-GAPS.md`: all of this is proof construction, not a paper finding.
+**P6-Cs: STATEMENT FINAL, five rows through.**  `prop_look_complete_cstr.v`
+compiles up to the ARROW row's RIGHT IH call.  The pre-theorem half is done
+(the nine moved-up copies deleted; `a_solve_cstr_app`, `a_solve_cstr_ctx_change`
+— with two new `a_flex_tvar_app_mono` / `a_flex_app_anti` lifts, since its eq
+row's tail runs at `Ξ1 ++ Θ` — `a_solve_cstr_weaken_mid_flex` with the new
+`dom Ξm ∩ dom Ξ = ∅` premise, and `a_solve_cstr_strip_tvar_mid` all threaded),
+and the conclusion carries a second block `Ξs` at `Ξs ++ Ξc ++ Θ0`, the order
+forced by `a_extract__solve`.
+
+Three premises had to be added beyond the first design, each from a concrete
+obstruction: (i) the **Θw pack**, because the ∀ rows strip β from the `a_inc`
+with `a_inc_strip_tvar_mid`, whose `Forall (β ∉ ftv)` premise `κc` gets from
+its `ftv ⊆ ftv ψa` conjunct and `κs` has no analogue for — which also forced
+`a_solve_eq_complete_var_at`, since the paper-facing `a_solve_eq_complete_var`
+pins `Θw := Θ` and is unusable under a binder; (ii)
+`ftvar_in_uskl ψa [<=] dom Θw`, because in the flexible-P0 row `ψa` is the mono
+paint `syn τψ` and `τψ` IS the κs payload; (iii) `all_flex_mono Ξs` and
+`uniq Ξs`, which the arrow row needs to rebuild `a_wf_aenv (Ξs ++ Ξc ++ Θ0)`.
+
+⭐ The flexible-P0 row — the only place `SE-FlexR` itself fires — is through,
+and its `WIT`/`a_guess_ty_witness_mono` shape is the template downstream.
+⚠️ Its `Pi` grid is SIX ways now, not two: `nonghost_pskl` sends `◇` to
+SE-GhostL (returning the target — the sharing that side condition protects) and
+`∀◇P` to SE-GhostGuarded, whose peel lands on a body wf forces GUARDED, hence
+nonghost.  That peel needed a new `ad_ppre_def_chain_fold` to re-fold the
+precision along the definition chain `ad_ppre_tophole_subject_chain_inv`
+unfolds.  ⚠️ And the arrow row's right IH does NOT run at `Ξc1 ++ Θ0`: `Pa1`
+mentions the flexibles the LEFT SOLVE invented, so it runs at
+`Ξs1 ++ Ξc1 ++ Θ0` under `κs1 ++ κc1 ++ κ` (= `Hinc1` verbatim) and everything
+it returns is permuted afterwards — cheaply, since `binds` over an append is
+plain membership.
+
+Nothing for `docs/PAPER-GAPS.md`: all of this is proof construction, not a
+paper finding.
 
 ## 2026-08-04 — ⭕⭐⭐ TASK A (reachability of the refuting payload): the POSITIVE half is MACHINE-CHECKED — a refuting program must FREEZE a polymorphic argument
 
