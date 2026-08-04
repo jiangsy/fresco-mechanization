@@ -529,9 +529,15 @@ Definition p6cv_post (Θ Θr : aenv) (κ : metasubst) (Δ Ψi Ψa : atoms)
     delta_def_fresh Δ' Θ ->
     Θ ⨟ (Δ `union` Δ') ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
 
-Definition p6cv_concl (Θ0 Θ Θr : aenv) (κ : metasubst) (Δ Ψi Ψa : atoms)
+(* ⭐ [Θw] IS THE WELL-FORMEDNESS CONTEXT OF THE EXTENSION AND IT STAYS FIXED
+   AS THE INDUCTION GOES UNDER BINDERS (2026-08-04).  A ∀ row runs its body at
+   [(α ~ tvar) ++ Θ], but the block the body generates is emitted OUTSIDE the
+   ∀ — the solve's ∀ rows pass [Ξ] through unchanged — so a payload mentioning
+   the bound rigid would be ill-scoped.  Passing [Θw] down untouched is what
+   makes the construction compose; see [a_guess_ty_witness_mono]. *)
+Definition p6cv_concl (Θ0 Θ Θw Θr : aenv) (κ : metasubst) (Δ Ψi Ψa : atoms)
     (ψa : uskl) (Pi P0 : pskl) (L : atoms) : Prop :=
-  solve_ext Θ0 Θ Pi P0 L (p6cv_post Θ Θr κ Δ Ψi Ψa ψa).
+  solve_ext Θ0 Θw Pi P0 L (p6cv_post Θ Θr κ Δ Ψi Ψa ψa).
 
 (** The PASS-THROUGH rows (every ∀◇ peel): the solve strips a constructor
     and the whole package — block, extension, freshness, precision — rides
@@ -539,11 +545,11 @@ Definition p6cv_concl (Θ0 Θ Θr : aenv) (κ : metasubst) (Δ Ψi Ψa : atoms)
 (** SE-UnivGhost: the premise's output is RE-WRAPPED in a [∀◇], so the
     package is rebuilt by hand — but the block and the extension still pass
     through untouched. *)
-Lemma p6cv_tophole_both : forall Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi' P0' L,
-  p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi' P0' L ->
-  p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa ψa (pskl_tophole Pi') (pskl_tophole P0') L.
+Lemma p6cv_tophole_both : forall Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi' P0' L,
+  p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi' P0' L ->
+  p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa (pskl_tophole Pi') (pskl_tophole P0') L.
 Proof.
-  intros Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi' P0' L
+  intros Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi' P0' L
          (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
   exists Ξ, (pskl_tophole Pa), κ'.
   split; [ apply a_solve_eq__tophole_both; exact Hs | ].
@@ -553,18 +559,18 @@ Proof.
   apply ad_ppre__tophole_remove. exact (Hq Δ' HS1 HS2 HS3).
 Qed.
 
-Lemma p6cv_step : forall Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi P0 Pi' P0' L,
+Lemma p6cv_step : forall Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi P0 Pi' P0' L,
   (forall Ξ Pa, Θ0 ⊢ₑ Pi' ∼ P0' ⤳ Ξ ⨾ Pa -> Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa) ->
-  p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi' P0' L ->
-  p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi P0 L.
+  p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi' P0' L ->
+  p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi P0 L.
 Proof.
-  intros Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi P0 Pi' P0' L Hstep H.
+  intros Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi P0 Pi' P0' L Hstep H.
   eapply solve_ext_step;
     [ exact Hstep | intros κ0 Pa0 Hq; exact Hq | exact H ].
 Qed.
 
 Theorem a_solve_eq_complete_var_gen :
-  forall NM Θ Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
+  forall NM Θ Θ0 Θw Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
   (* the context split, as a BINDS-LEVEL bag (see the block above): the
      consistency induction keeps a variable aenv index, and the ForallSyn
      binder can join Θr (refinement-visible) instead of Θtv *)
@@ -575,6 +581,12 @@ Theorem a_solve_eq_complete_var_gen :
   Δr [=] dom Θtv ->
   Δρ ∩ dom Θtv [=] empty ->
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  (* ⭐ the FIXED wf context of the κ-extension: [Θ] is [Θw] under a stack of
+     rigid binders (identical at the top-level call) *)
+  a_wf_aenv Θw ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     binds α (abind_flex_mono_def τ0) Θw) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   κ ∷ Θ0 ⊑ Θ ->
@@ -593,19 +605,22 @@ Theorem a_solve_eq_complete_var_gen :
   Ψsub ⨟ Θ ⊢ₛᵃ ψsub ∼ Q ->
   Θr ⨟ Δr ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
   forall L, ftvar_in_aenv Θ0 [<=] L ->
-  p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa ψa Pi P0 L.
+  p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi P0 L.
 Proof.
-  intros NM Θ Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
-  intros HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hrho Htags
+  intros NM Θ Θ0 Θw Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
+  intros HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfΘw Hmon Hdefs
+         HwfPi HwfP0 Hκ Hrho Htags
          Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hapart Hpre
          Hsubeq1 Hsubeq2 Hconsis Hrefine.
   revert NM Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa ψa Pi P0
-         HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hrho Htags
+         HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 Hmon Hdefs
+         HwfPi HwfP0 Hκ Hrho Htags
          Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hapart Hpre
          Hsubeq1 Hsubeq2 Hrefine.
   induction Hconsis; intros
     NM Θ0 Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa ψa Pi P0
-    HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hrho Htags
+    HspΘ HspΘ0 HwfΘr Htvs HΔrd HΔρtv HwfΘ HwfΘ0 Hmon Hdefs
+    HwfPi HwfP0 Hκ Hrho Htags
     Hsub Hinter Hfresh Hdelta Hshield Hdfresh Hapart Hpre
     (* ⚙️ [Lav], not [L]: the consistency rules' own cofinite binder is [L] in
        several rows, and [intros] runs in all of them. *)
@@ -695,7 +710,7 @@ Proof.
       a_tags_sort NM Ψ' (uskl_arrow ψa1 ψa2) ->
       flex_apart Θ0 Δρ P0 (uskl_arrow ψa1 ψa2) ->
       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_arrow ψa1 ψa2) ->
-      p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa (uskl_arrow ψa1 ψa2) Pi P0 Lav).
+      p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_arrow ψa1 ψa2) Pi P0 Lav).
     { intros ψa1 ψa2 Ψρ1 Ψρ2 Hrho1 Hrho2 HΨρs Htags0 Hap0 Hpre0.
       destruct (a_tags_sort_arrow_inv Htags0)
         as (Ψ'1 & Ψ'2 & Htags1 & Htags2 & HΨ'disj & HΨ's).
@@ -845,7 +860,7 @@ Proof.
         Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_arrow ψa1 ψa2) ->
         Θr ⨟ Δr ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0))
               ⊳ (bskl_arrow Q1 Q2) ->
-        p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa (uskl_arrow ψa1 ψa2) Pi P0 Lav).
+        p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_arrow ψa1 ψa2) Pi P0 Lav).
       { intros n; induction n as [ | n IHn ];
           intros Pi0 P00 Ψi0 Hn HwfPi0 HwfP00 Hshield0 Hap1 Hpre1
             Hrefine1.
@@ -1373,7 +1388,7 @@ Proof.
       a_tags_sort NM Ψ' (uskl_all_etag ε ψR) ->
       flex_apart Θ0 Δρ P0 (uskl_all_etag ε ψR) ->
       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψR) ->
-      p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa (uskl_all_etag ε ψR) Pi P0 Lav).
+      p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_all_etag ε ψR) Pi P0 Lav).
     { intros ψR Lr Hrhof Htags0 Hap0 Hpre0.
       destruct (a_tags_sort_all_etag_inv Htags0)
         as (Lt & Ψ0' & Htagsf & Hεnin & HΨ'eq).
@@ -2027,7 +2042,7 @@ Proof.
       a_tags_sort NM Ψ' (uskl_all_etag ε ψR) ->
       flex_apart Θ0 Δρ P0 (uskl_all_etag ε ψR) ->
       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_etag ε ψR) ->
-      p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa (uskl_all_etag ε ψR) Pi P0 Lav).
+      p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_all_etag ε ψR) Pi P0 Lav).
     { intros ψR Lr Hrhof Htags0 Hap0 Hpre0.
       destruct (a_tags_sort_all_etag_inv Htags0)
         as (Lt & Ψ0' & Htagsf & Hεnin & HΨ'eq).
@@ -2790,7 +2805,7 @@ Proof.
       a_tags_sort NM Ψ' (uskl_topholeg ψa0) ->
       flex_apart Θ0 Δρ P0 (uskl_topholeg ψa0) ->
       Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_topholeg ψa0) ->
-      p6cv_concl Θ0 Θ Θr κ Δ Ψi Ψa (uskl_topholeg ψa0) Pi P0 Lav).
+      p6cv_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_topholeg ψa0) Pi P0 Lav).
     { intros ψa0 Hrho0 Htags0 Hap0 Hpre0.
       assert (Htags1 : a_tags_sort NM Ψ' ψa0)
         by (apply a_tags_sort_topholeg_inv; exact Htags0).

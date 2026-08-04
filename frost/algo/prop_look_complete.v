@@ -2837,12 +2837,87 @@ Proof.
   eapply a_wf_aenv_binds_def_wf; eauto.
 Qed.
 
-Lemma a_guess_ty_witness_mono : forall n Θ0 Θ κ Δ Ψi τ Pi,
+(** A RIGID variable has no definition, so every chain out of it is the
+    reflexive one.  This is what makes the [τ = rigid var] target harmless
+    below: each branch that would need [a_wf_ptyp Θw τ] first inverts a chain
+    from [τ] to a compound, and here there is none. *)
+Lemma a_def_chain_rigid_var_inv : forall Θ α τe,
+  a_def_chain Θ (ptyp_var_f α) τe ->
+  a_wf_aenv Θ ->
+  binds α abind_tvar Θ ->
+  τe = ptyp_var_f α.
+Proof.
+  intros Θ α τe Hc HwfΘ Hrig.
+  inversion Hc as [ | α0 τd τe0 Hb Hc0 ]; subst; [ reflexivity | ].
+  exfalso.
+  pose proof (binds_unique _ _ _ _ _ Hrig Hb (a_wf_aenv_uniq HwfΘ)) as Hcc.
+  discriminate Hcc.
+Qed.
+
+(** ⭐ The wf-or-rigid DISJUNCTION propagates along a definition chain, which
+    is what lets a P6 ∀ row carry a BOUND-RIGID target all the way down: the
+    chain either unfolds a definition (and then the target was wf at [Θw] to
+    begin with, so wf transports) or it is reflexive at the rigid. *)
+(** ⭐ The same, but reporting well-formedness in a DIFFERENT context [Θw] —
+    one that has all of [Θ]'s definitions.  This is what lets the κ-extension
+    stay interpretable UNDER A BINDER: a P6 ∀ row runs its body at
+    [(α ~ tvar) ++ Θ], and the payloads it invents there must still be wf
+    OUTSIDE the binder, because the solve's ∀ rows pass the generated block
+    through unchanged (the flexibles are declared outside).  A rigid entry
+    carries no definition, so [Hdefs] is immediate at every such row. *)
+Lemma a_def_chain_wf_at : forall Θ Θw τ τe,
+  a_def_chain Θ τ τe ->
+  a_wf_aenv Θw ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     binds α (abind_flex_mono_def τ0) Θw) ->
+  a_wf_ptyp Θw τ ->
+  a_wf_ptyp Θw τe.
+Proof.
+  intros Θ Θw τ τe Hc; induction Hc; intros Hwf Hdefs Hp; auto.
+  apply IHHc; [ exact Hwf | exact Hdefs | ].
+  eapply a_wf_aenv_binds_def_wf; [ exact Hwf | apply Hdefs; eassumption ].
+Qed.
+
+(* ⭐ [Θw] IS THE WELL-FORMEDNESS CONTEXT OF THE EXTENSION, AND IT IS NOT
+   [Θ] (2026-08-04).  [Θ] is where the PRECISION lives and where the
+   definition chains are read; [Θw] is where the invented flexibles' payloads
+   have to be well-formed.  They differ exactly under a binder: a P6 ∀ row
+   runs its body at [(α ~ tvar) ++ Θ], but the block the body generates is
+   emitted OUTSIDE the ∀ (the solve's ∀ rows pass [Ξ] through unchanged), so a
+   payload mentioning the bound rigid would be ill-scoped.  Keeping [Θw]
+   fixed all the way down is what makes the construction compose; the caller
+   supplies [a_wf_ptyp Θw τ], which it can because at an SE-FlexR node the
+   counterpart monotype is a κ-IMAGE, and [κ ∷ Θ0 ⊑ Θw] makes every image wf
+   at [Θw]. *)
+Lemma a_def_chain_wf_or_rigid : forall Θ Θw τ τe,
+  a_def_chain Θ τ τe ->
+  a_wf_aenv Θ ->
+  a_wf_aenv Θw ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     binds α (abind_flex_mono_def τ0) Θw) ->
+  (a_wf_ptyp Θw τ \/ (exists α0, τ = ptyp_var_f α0 /\ binds α0 abind_tvar Θ)) ->
+  (a_wf_ptyp Θw τe \/
+     (exists α0, τe = ptyp_var_f α0 /\ binds α0 abind_tvar Θ)).
+Proof.
+  intros Θ Θw τ τe Hc HwfΘ HwfΘw Hdefs [Hw | (α0 & Heq & Hrig)].
+  - left. eapply a_def_chain_wf_at;
+      [ exact Hc | exact HwfΘw | exact Hdefs | exact Hw ].
+  - subst τ. rewrite (a_def_chain_rigid_var_inv Hc HwfΘ Hrig).
+    right. exists α0. split; [ reflexivity | exact Hrig ].
+Qed.
+
+Lemma a_guess_ty_witness_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi,
   size_pskl Pi <= n ->
   a_wf_aenv Θ ->
+  a_wf_aenv Θw ->
+  (* [Θ] EXTENDS [Θw] and adds no definitions — at every call site [Θ] is
+     [Θw] itself or [Θw] under a stack of rigid binders. *)
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     binds α (abind_flex_mono_def τ0) Θw) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi ->
   mono_ptyp τ ->
-  a_wf_ptyp Θ τ ->
+  a_wf_ptyp Θw τ ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
   forall L, exists (Ξ : aenv) (A : ptyp) (κ' : metasubst),
     (forall Θg, ftvar_in_aenv Θg [<=] L -> a_guess_mono Θg Pi Ξ A) /\
@@ -2850,12 +2925,12 @@ Lemma a_guess_ty_witness_mono : forall n Θ0 Θ κ Δ Ψi τ Pi,
     uniq Ξ /\
     keys κ' = keys Ξ /\
     (forall α, α `in` dom Ξ -> α `notin` L) /\
-    Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /\
+    Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κ' /\
     Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) (ptyp_to_pskl A))
             ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ).
 Proof.
   induction n as [ | n IH ];
-    intros Θ0 Θ κ Δ Ψi τ Pi Hsz HwfΘ HwfPi Hmτ Hwfτ Hpre L.
+    intros Θ0 Θ Θw κ Δ Ψi τ Pi Hsz HwfΘ HwfΘw Hmon Hdefs HwfPi Hmτ Hwfτ Hpre L.
   { exfalso. pose proof (size_pskl_min Pi) as Hm. clear - Hsz Hm. lia. }
   destruct Pi as [ | nb | α | Pi1 Pi2 | Pib | | Pi' ].
   - (* unit : the guess is the identity *)
@@ -2884,17 +2959,20 @@ Proof.
     cbn [msubst_pskl] in Hpre.
     destruct (ad_ppre_arrow_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τ1 & τ2 & Ψ1 & Ψ2 & Hc & Hm1 & Hm2 & Hp1 & Hp2 & HΨ).
-    assert (Hwfar : a_wf_ptyp Θ (ptyp_arrow τ1 τ2))
-      by (eapply a_def_chain_wf; eassumption).
-    assert (Hwf1 : a_wf_ptyp Θ τ1) by (inversion Hwfar; assumption).
-    assert (Hwf2 : a_wf_ptyp Θ τ2) by (inversion Hwfar; assumption).
+    assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τ1 τ2))
+      by (eapply a_def_chain_wf_at;
+            [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ ]).
+    assert (Hwf1 : a_wf_ptyp Θw τ1) by (inversion Hwfar; assumption).
+    assert (Hwf2 : a_wf_ptyp Θw τ2) by (inversion Hwfar; assumption).
     (* ⚠️ BOTH IHs run at an avoid-set containing BOTH sources, and the
        second additionally avoids the first block.  That is what makes each
        branch's extension invisible to the other's result below. *)
-    destruct (IH Θ0 Θ κ Δ Ψ1 τ1 Pi1 ltac:(lia) HwfΘ HwfPi1 Hm1 Hwf1 Hp1
+    destruct (IH Θ0 Θ Θw κ Δ Ψ1 τ1 Pi1 ltac:(lia) HwfΘ HwfΘw Hmon Hdefs
+                HwfPi1 Hm1 Hwf1 Hp1
                 (L `union` ftvar_in_pskl Pi1 `union` ftvar_in_pskl Pi2))
       as (Ξ1 & A1 & κa & Hgu1 & Hfm1 & Hu1 & Hk1 & Hfr1 & HF1 & Hpr1).
-    destruct (IH Θ0 Θ κ Δ Ψ2 τ2 Pi2 ltac:(lia) HwfΘ HwfPi2 Hm2 Hwf2 Hp2
+    destruct (IH Θ0 Θ Θw κ Δ Ψ2 τ2 Pi2 ltac:(lia) HwfΘ HwfΘw Hmon Hdefs
+                HwfPi2 Hm2 Hwf2 Hp2
                 (L `union` ftvar_in_pskl Pi1 `union` ftvar_in_pskl Pi2
                    `union` dom Ξ1))
       as (Ξ2 & A2 & κb & Hgu2 & Hfm2 & Hu2 & Hk2 & Hfr2 & HF2 & Hpr2).
@@ -2976,7 +3054,9 @@ Proof.
     cbn [app ptyp_to_pskl msubst_pskl msubst_lookup].
     destruct (α1 == α1) as [_ | Hne]; [ | contradiction ].
     eapply ad_partial_precise_psi_cong;
-      [ apply ad_ppre_mono_refl; assumption | clear - HΨi; fsetdec ].
+      [ apply ad_ppre_mono_refl;
+          [ exact Hmτ | eapply a_wf_ptyp_weaken; [ exact Hmon | exact Hwfτ ] ]
+      | clear - HΨi; fsetdec ].
   - (* ---------------------------- ∀◇ ------------------------------- *)
     (* [guess^TY] DROPS the universal ghost; the precision premise peels
        through the chain to the body *)
@@ -2985,8 +3065,11 @@ Proof.
     cbn [msubst_pskl] in Hpre.
     destruct (ad_ppre_tophole_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τe & Hc & Hme & Hp').
-    assert (Hwfe : a_wf_ptyp Θ τe) by (eapply a_def_chain_wf; eassumption).
-    destruct (IH Θ0 Θ κ Δ Ψi τe Pi' ltac:(lia) HwfΘ HwfPi' Hme Hwfe Hp' L)
+    assert (Hwfe : a_wf_ptyp Θw τe)
+      by (eapply a_def_chain_wf_at;
+            [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ ]).
+    destruct (IH Θ0 Θ Θw κ Δ Ψi τe Pi' ltac:(lia) HwfΘ HwfΘw Hmon Hdefs
+                HwfPi' Hme Hwfe Hp' L)
       as (Ξ0 & A0 & κ0 & Hgu & Hfm & Hu & Hk & Hfr & HF & Hpr).
     exists Ξ0, A0, κ0.
     split; [ intros Θg Hsub; apply a_guess_mono__tophole;
@@ -3798,6 +3881,20 @@ Definition solve_ext (Θ0 Θ : aenv) (Pi P0 : pskl) (L : atoms)
     Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' /\
     Post κ' Pa.
 
+(** The package's wf component transports to any context that has all the
+    bindings — the direction a ∀ row needs when it hands its body's package
+    back out from [(α ~ tvar) ++ Θ]'s point of view to [Θ]'s. *)
+Lemma forall_wf_mono_weaken : forall (Θ Θ' : aenv) (κ' : metasubst),
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' ->
+  Forall (fun p => a_wf_ptyp Θ' (snd p) /\ mono_ptyp (snd p)) κ'.
+Proof.
+  intros Θ Θ' κ' Hmon H; induction H as [ | p l0 Hp Hl IH ]; [ constructor | ].
+  constructor; [ | exact IH ].
+  destruct Hp as [Hw Hm]; split;
+    [ eapply a_wf_ptyp_weaken; [ exact Hmon | exact Hw ] | exact Hm ].
+Qed.
+
 (** A row that GENERATES NOTHING needs no extension. *)
 Lemma solve_ext_nil : forall Θ0 Θ Pi P0 L Post Pa,
   Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa ->
@@ -3861,51 +3958,61 @@ Proof.
 Qed.
 
 (** The conclusion, named — it recurs at every site below. *)
-Definition cv_mono_concl (Θ0 Θ : aenv) (κ : metasubst) (Δ Ψi : atoms)
+Definition cv_mono_concl (Θ0 Θ Θw : aenv) (κ : metasubst) (Δ Ψi : atoms)
     (τ : ptyp) (Pi P0 : pskl) (L : atoms) : Prop :=
-  solve_ext Θ0 Θ Pi P0 L
+  solve_ext Θ0 Θw Pi P0 L
     (fun κ' Pa =>
        Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ)).
 
-Lemma cv_mono_nil : forall Θ0 Θ κ Δ Ψi τ Pi P0 L Pa,
+Lemma cv_mono_nil : forall Θ0 Θ Θw κ Δ Ψi τ Pi P0 L Pa,
   Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
-  cv_mono_concl Θ0 Θ κ Δ Ψi τ Pi P0 L.
+  cv_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
 Proof.
-  intros Θ0 Θ κ Δ Ψi τ Pi P0 L Pa Hs Hq.
+  intros Θ0 Θ Θw κ Δ Ψi τ Pi P0 L Pa Hs Hq.
   eapply solve_ext_nil; [ exact Hs | cbn [app]; exact Hq ].
 Qed.
 
 (** The ∀◇ rows: the solve peels a constructor and the target hops one
     definition chain. *)
-Lemma cv_mono_wrap : forall Θ0 Θ κ Δ Ψi τ τe Pi P0 Pi' P0' L,
+Lemma cv_mono_wrap : forall Θ0 Θ Θw κ Δ Ψi τ τe Pi P0 Pi' P0' L,
   a_def_chain Θ τ τe ->
   (forall Ξ Pa, Θ0 ⊢ₑ Pi' ∼ P0' ⤳ Ξ ⨾ Pa -> Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa) ->
-  cv_mono_concl Θ0 Θ κ Δ Ψi τe Pi' P0' L ->
-  cv_mono_concl Θ0 Θ κ Δ Ψi τ Pi P0 L.
+  cv_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' P0' L ->
+  cv_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
 Proof.
-  intros Θ0 Θ κ Δ Ψi τ τe Pi P0 Pi' P0' L Hc Hstep H.
+  intros Θ0 Θ Θw κ Δ Ψi τ τe Pi P0 Pi' P0' L Hc Hstep H.
   eapply solve_ext_step;
     [ exact Hstep
     | intros κ' Pa Hq; eapply ad_ppre_chain_fold; [ exact Hc | exact Hq ]
     | exact H ].
 Qed.
 
-Lemma a_solve_eq_cv_mono : forall n Θ0 Θ κ Δ Ψi τ Pi P0,
+Lemma a_solve_eq_cv_mono : forall n Θ0 Θ Θw κ Δ Ψi τ Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  a_wf_aenv Θw ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     binds α (abind_flex_mono_def τ0) Θw) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   κ ∷ Θ0 ⊑ Θ ->
   mono_ptyp τ ->
-  a_wf_ptyp Θ τ ->
+  (* ⭐ the target is wf in the EXTENSION's context, OR it is a rigid variable
+     of [Θ].  The second disjunct is what a P6 ∀ row supplies when the target
+     is the BOUND rigid itself, which is not in [Θw] at all — and it costs
+     nothing, because every branch that consumes this premise first unfolds a
+     definition chain out of [τ], and a rigid variable has none
+     ([a_def_chain_rigid_var_inv]). *)
+  (a_wf_ptyp Θw τ \/ (exists α0, τ = ptyp_var_f α0 /\ binds α0 abind_tvar Θ)) ->
   delta_def_fresh Δ Θ ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (ptyp_to_uskl_syn τ) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (ptyp_to_bskl_syn τ) ->
   forall L, ftvar_in_aenv Θ0 [<=] L ->
-  cv_mono_concl Θ0 Θ κ Δ Ψi τ Pi P0 L.
+  cv_mono_concl Θ0 Θ Θw κ Δ Ψi τ Pi P0 L.
 Proof.
-  induction n; intros Θ0 Θ κ Δ Ψi τ Pi P0 Hn
-    HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hmτ Hwfτ Hdf Hpre Hrefine L HL.
+  induction n; intros Θ0 Θ Θw κ Δ Ψi τ Pi P0 Hn
+    HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi HwfP0 Hκ Hmτ Hwfτ Hdf Hpre Hrefine L HL.
   { pose proof (size_pskl_min Pi); pose proof (size_pskl_min P0); lia. }
   destruct Pi as [ | nb | α | Pi1 Pi2 | Pib | | Pi' ].
   - (* Pi = unit: resolve the chain to 1, delegate to the Unit case lemma *)
@@ -3930,6 +4037,13 @@ Proof.
     simpl in Hpre.
     destruct (ad_ppre_arrow_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τ1 & τ2 & Ψ1 & Ψ2 & Hc & Hm1 & Hm2 & Hp1 & Hp2 & HΨ).
+    (* the target really is wf at [Θw] here: the chain out of [τ] REACHED an
+       arrow, so [τ] is not a rigid variable *)
+    assert (Hwfτ' : a_wf_ptyp Θw τ).
+    { destruct Hwfτ as [Hw | (α0 & Heqτ & Hrig0)]; [ exact Hw | ].
+      exfalso. subst τ.
+      pose proof (a_def_chain_rigid_var_inv Hc HwfΘ Hrig0) as Hcc.
+      discriminate Hcc. }
     pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine) as Href'.
     destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
     + (* P0 = unit: refinement absurd *)
@@ -3943,7 +4057,8 @@ Proof.
       * (* rigid: no refinement into an arrow *)
         exfalso.
         assert (Hmid : msubst_pskl κ (pskl_var_f β) = pskl_var_f β)
-          by (eapply msubst_pskl_tvar_id; eauto).
+          by (eapply msubst_pskl_tvar_id;
+                [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
         rewrite Hmid in Href'. simpl in Href'.
         eapply ad_refine_syn_rigid_var_nonvar_absurd;
           [ exact HwfΘ | eapply a_inc_binds_tvar; eauto | exact Href'
@@ -3961,8 +4076,9 @@ Proof.
            Here the precision obligation IS the witness's own output. *)
         assert (Hszg : size_pskl (pskl_arrow Pi1 Pi2) <= S n)
           by (cbn in Hn |- *; lia).
-        destruct (@a_guess_ty_witness_mono (S n) Θ0 Θ κ Δ Ψi τ
-                    (pskl_arrow Pi1 Pi2) Hszg HwfΘ HwfPi Hmτ Hwfτ Hpre L)
+        destruct (@a_guess_ty_witness_mono (S n) Θ0 Θ Θw κ Δ Ψi τ
+                    (pskl_arrow Pi1 Pi2) Hszg HwfΘ HwfΘw Hmon Hdefs
+                    HwfPi Hmτ Hwfτ' Hpre L)
           as (Ξg & Ag & κg & Hgu & Hfmg & Hug & Hkg & Hfrg & HFg & Hqg).
         exists Ξg, (ptyp_to_pskl Ag), κg.
         split; [ apply a_solve_eq__flex_r;
@@ -3996,10 +4112,11 @@ Proof.
          [Heqi2]/[Heqp2] for the second IH's own premises. *)
       assert (HwfP01 : Θ0 ⨟ empty ⊢ₚₛᵃ P01) by (inversion HwfP0; assumption).
       assert (HwfP02 : Θ0 ⨟ empty ⊢ₚₛᵃ P02) by (inversion HwfP0; assumption).
-      assert (Hwfar : a_wf_ptyp Θ (ptyp_arrow τ1 τ2))
-        by (eapply a_def_chain_wf; eassumption).
-      assert (Hwf1 : a_wf_ptyp Θ τ1) by (inversion Hwfar; assumption).
-      assert (Hwf2 : a_wf_ptyp Θ τ2) by (inversion Hwfar; assumption).
+      assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τ1 τ2))
+        by (eapply a_def_chain_wf_at;
+              [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ' ]).
+      assert (Hwf1 : a_wf_ptyp Θw τ1) by (inversion Hwfar; assumption).
+      assert (Hwf2 : a_wf_ptyp Θw τ2) by (inversion Hwfar; assumption).
       simpl in Href'.
       inversion Href'; subst.
       match goal with
@@ -4012,9 +4129,9 @@ Proof.
                     [<=] L `union` ftvar_in_pskl Pi1 `union` ftvar_in_pskl Pi2
                            `union` ftvar_in_pskl P01 `union` ftvar_in_pskl P02)
         by (clear - HL; fsetdec).
-      destruct (IHn Θ0 Θ κ Δ Ψ1 τ1 Pi1 P01
+      destruct (IHn Θ0 Θ Θw κ Δ Ψ1 τ1 Pi1 P01
                   ltac:(simpl in Hn; lia)
-                  HwfΘ HwfΘ0 HwfPi1 HwfP01 Hκ Hm1 Hwf1 Hdf Hp1 Href1
+                  HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi1 HwfP01 Hκ Hm1 (or_introl Hwf1) Hdf Hp1 Href1
                   (L `union` ftvar_in_pskl Pi1 `union` ftvar_in_pskl Pi2
                      `union` ftvar_in_pskl P01 `union` ftvar_in_pskl P02)
                   HL1)
@@ -4028,7 +4145,10 @@ Proof.
       assert (Hwfblk : a_wf_aenv (Ξ1 ++ Θ0))
         by (apply a_wf_aenv_prepend_flex_block; assumption).
       assert (Hκ1 : (κa ++ κ) ∷ (Ξ1 ++ Θ0) ⊑ Θ)
-        by (apply a_inc_flex_prefix_build; assumption).
+        by (apply a_inc_flex_prefix_build;
+              [ exact Hfm1 | exact Hk1
+              | eapply forall_wf_mono_weaken; [ exact Hmon | exact HF1 ]
+              | exact Hκ ]).
       assert (HwfPi2' : (Ξ1 ++ Θ0) ⨟ empty ⊢ₚₛᵃ Pi2)
         by (apply a_wf_pskl_app_weaken; exact HwfPi2).
       assert (HwfP02' : (Ξ1 ++ Θ0) ⨟ empty ⊢ₚₛᵃ P02)
@@ -4059,9 +4179,9 @@ Proof.
         pose proof (all_flex_mono_ftvar_in_aenv Hfm1) as Hf1.
         clear - HL Hf1; fsetdec. }
       (* ---- branch 2, at [Ξ1 ++ Θ0], additionally avoiding [dom Ξ1] ---- *)
-      destruct (IHn (Ξ1 ++ Θ0) Θ (κa ++ κ) Δ Ψ2 τ2 Pi2 P02
+      destruct (IHn (Ξ1 ++ Θ0) Θ Θw (κa ++ κ) Δ Ψ2 τ2 Pi2 P02
                   ltac:(simpl in Hn; lia)
-                  HwfΘ Hwfblk HwfPi2' HwfP02' Hκ1 Hm2 Hwf2 Hdf Hp2' Href2'
+                  HwfΘ Hwfblk HwfΘw Hmon Hdefs HwfPi2' HwfP02' Hκ1 Hm2 (or_introl Hwf2) Hdf Hp2' Href2'
                   (L `union` ftvar_in_pskl Pi1 `union` ftvar_in_pskl Pi2
                      `union` ftvar_in_pskl P01 `union` ftvar_in_pskl P02
                      `union` dom Ξ1)
@@ -4109,23 +4229,24 @@ Proof.
       eapply cv_mono_nil; [ apply a_solve_eq__hole_r | exact Hpre ].
     + (* P0 = tophole P0': GuardedGhost-right, recurse at the resolved arrow *)
       assert (HwfP0' : Θ0 ⨟ empty ⊢ₚₛᵃ P0') by (inversion HwfP0; assumption).
-      assert (Hwfar : a_wf_ptyp Θ (ptyp_arrow τ1 τ2))
-        by (eapply a_def_chain_wf; eassumption).
+      assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τ1 τ2))
+        by (eapply a_def_chain_wf_at;
+              [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ' ]).
       simpl in Href'.
       inversion Href'; subst.
       assert (Hpre' : Θ ⨟ Δ ⊢ msubst_pskl κ (pskl_arrow Pi1 Pi2) ⊑ᵖ[ Ψi ]
                         (ptyp_to_uskl_syn (ptyp_arrow τ1 τ2)))
         by (simpl; eapply ad_ppre__arrow;
               [ exact Hp1 | exact Hp2 | exact HΨ ]).
-      assert (Hcv : cv_mono_concl Θ0 Θ κ Δ Ψi (ptyp_arrow τ1 τ2)
+      assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_arrow τ1 τ2)
                       (pskl_arrow Pi1 Pi2) P0' L).
       { match goal with
         | Hin : _ ⨟ _ ⊢ᵣᵃ pskl_to_bskl_inh (msubst_pskl κ P0') ⊳ _ |- _ =>
-          apply (IHn Θ0 Θ κ Δ Ψi (ptyp_arrow τ1 τ2) (pskl_arrow Pi1 Pi2) P0'
+          apply (IHn Θ0 Θ Θw κ Δ Ψi (ptyp_arrow τ1 τ2) (pskl_arrow Pi1 Pi2) P0'
                    ltac:(simpl in Hn; simpl; lia)
-                   HwfΘ HwfΘ0 HwfPi HwfP0' Hκ
+                   HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi HwfP0' Hκ
                    ltac:(apply mono_ptyp__arrow; assumption)
-                   Hwfar Hdf Hpre' Hin L HL)
+                   (or_introl Hwfar) Hdf Hpre' Hin L HL)
         end. }
       eapply cv_mono_wrap; [ exact Hc | | exact Hcv ].
       intros Ξ0 Pa Hs. apply a_solve_eq__tophole_r_guarded;
@@ -4152,33 +4273,40 @@ Proof.
     simpl in Hpre.
     destruct (ad_ppre_tophole_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τe & Hc & Hme & Hp').
-    assert (Hwfe : a_wf_ptyp Θ τe) by (eapply a_def_chain_wf; eassumption).
+    (* the disjunction PROPAGATES along the chain — no need to resolve it *)
+    assert (Hwfe : a_wf_ptyp Θw τe \/
+                   (exists α0, τe = ptyp_var_f α0 /\ binds α0 abind_tvar Θ))
+      by (eapply a_def_chain_wf_or_rigid;
+            [ exact Hc | exact HwfΘ | exact HwfΘw | exact Hdefs | exact Hwfτ ]).
     pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine) as Href'.
     destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
     + (* P0 = unit: GhostGuarded *)
-      assert (Hcv : cv_mono_concl Θ0 Θ κ Δ Ψi τe Pi' pskl_unit L)
-        by (apply (IHn Θ0 Θ κ Δ Ψi τe Pi' pskl_unit
+      assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' pskl_unit L)
+        by (apply (IHn Θ0 Θ Θw κ Δ Ψi τe Pi' pskl_unit
                      ltac:(simpl in Hn; simpl; lia)
-                     HwfΘ HwfΘ0 HwfPi' HwfP0 Hκ Hme Hwfe Hdf Hp' Href' L HL)).
+                     HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi' HwfP0 Hκ Hme Hwfe
+                     Hdf Hp' Href' L HL)).
       eapply cv_mono_wrap; [ exact Hc | | exact Hcv ].
       intros Ξ0 Pa Hs. apply a_solve_eq__tophole_l_guarded;
         [ apply guarded_pskl__unit | exact Hs ].
     + (* P0 = var_b: not wf *) inversion HwfP0.
     + (* P0 = var β: GhostGuarded (var is guarded) *)
-      assert (Hcv : cv_mono_concl Θ0 Θ κ Δ Ψi τe Pi' (pskl_var_f β) L)
-        by (apply (IHn Θ0 Θ κ Δ Ψi τe Pi' (pskl_var_f β)
+      assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_var_f β) L)
+        by (apply (IHn Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_var_f β)
                      ltac:(simpl in Hn; simpl; lia)
-                     HwfΘ HwfΘ0 HwfPi' HwfP0 Hκ Hme Hwfe Hdf Hp' Href' L HL)).
+                     HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi' HwfP0 Hκ Hme Hwfe
+                     Hdf Hp' Href' L HL)).
       eapply cv_mono_wrap; [ exact Hc | | exact Hcv ].
       intros Ξ0 Pa Hs. apply a_solve_eq__tophole_l_guarded;
         [ apply guarded_pskl__var | exact Hs ].
     + (* P0 = arrow: GhostGuarded *)
       assert (HwfP01 : Θ0 ⨟ empty ⊢ₚₛᵃ P01) by (inversion HwfP0; assumption).
       assert (HwfP02 : Θ0 ⨟ empty ⊢ₚₛᵃ P02) by (inversion HwfP0; assumption).
-      assert (Hcv : cv_mono_concl Θ0 Θ κ Δ Ψi τe Pi' (pskl_arrow P01 P02) L)
-        by (apply (IHn Θ0 Θ κ Δ Ψi τe Pi' (pskl_arrow P01 P02)
+      assert (Hcv : cv_mono_concl Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_arrow P01 P02) L)
+        by (apply (IHn Θ0 Θ Θw κ Δ Ψi τe Pi' (pskl_arrow P01 P02)
                      ltac:(simpl in Hn; simpl; lia)
-                     HwfΘ HwfΘ0 HwfPi' HwfP0 Hκ Hme Hwfe Hdf Hp' Href' L HL)).
+                     HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi' HwfP0 Hκ Hme Hwfe
+                     Hdf Hp' Href' L HL)).
       eapply cv_mono_wrap; [ exact Hc | | exact Hcv ].
       intros Ξ0 Pa Hs. apply a_solve_eq__tophole_l_guarded;
         [ apply guarded_pskl__arrow;
@@ -4200,11 +4328,16 @@ Proof.
       simpl in Href'.
       destruct (ad_refine_tophole_lhs_chain_inv HwfΘ Href' eq_refl eq_refl Hme)
         as (τf & Hc2 & Hmf & Hin).
-      assert (Hwff : a_wf_ptyp Θ τf) by (eapply a_def_chain_wf; eassumption).
+      assert (Hwff : a_wf_ptyp Θw τf \/
+                     (exists α0, τf = ptyp_var_f α0 /\ binds α0 abind_tvar Θ))
+        by (eapply a_def_chain_wf_or_rigid;
+              [ exact Hc2 | exact HwfΘ | exact HwfΘw | exact Hdefs
+              | exact Hwfe ]).
       pose proof (ad_ppre_chain_unfold Hc2 HwfΘ Hdf Hp') as Hp''.
-      destruct (IHn Θ0 Θ κ Δ Ψi τf Pi' P0'
+      destruct (IHn Θ0 Θ Θw κ Δ Ψi τf Pi' P0'
                   ltac:(simpl in Hn; simpl; lia)
-                  HwfΘ HwfΘ0 HwfPi' HwfP0' Hκ Hmf Hwff Hdf Hp'' Hin L HL)
+                  HwfΘ HwfΘ0 HwfΘw Hmon Hdefs HwfPi' HwfP0' Hκ Hmf Hwff
+                  Hdf Hp'' Hin L HL)
         as (Ξ0 & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
       exists Ξ0, (pskl_tophole Pa), κ'.
       split; [ apply a_solve_eq__tophole_both; exact Hs | ].
@@ -4228,23 +4361,29 @@ Qed.
    external wf side condition (docs/WF-SIDE-CONDITIONS.md), not a weakening:
    the counterpart of a completeness statement is always assumed well-formed
    in prose. *)
-Lemma a_solve_eq_cv_var : forall n Θ0 Θ κ Δ Ψi α Pi P0,
+Lemma a_solve_eq_cv_var : forall n Θ0 Θ Θw κ Δ Ψi α Pi P0,
   size_pskl Pi + size_pskl P0 <= n ->
   a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  a_wf_aenv Θw ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  (forall α0 τ0, binds α0 (abind_flex_mono_def τ0) Θ ->
+     binds α0 (abind_flex_mono_def τ0) Θw) ->
   Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
   κ ∷ Θ0 ⊑ Θ ->
-  a_binds_tvar α Θ ->
+  (a_binds_tvar α Θw \/ binds α abind_tvar Θ) ->
   delta_def_fresh Δ Θ ->
   Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_var_f α) ->
   Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ (bskl_var_f α) ->
   forall L, ftvar_in_aenv Θ0 [<=] L ->
-  cv_mono_concl Θ0 Θ κ Δ Ψi (ptyp_var_f α) Pi P0 L.
+  cv_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_var_f α) Pi P0 L.
 Proof.
-  intros n Θ0 Θ κ Δ Ψi α Pi P0 Hn HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hbα Hdf Hpre
-         Hrefine L HL.
-  eapply a_solve_eq_cv_mono with (τ := ptyp_var_f α); eauto.
+  intros n Θ0 Θ Θw κ Δ Ψi α Pi P0 Hn HwfΘ HwfΘ0 HwfΘw Hmon Hdefs
+         HwfPi HwfP0 Hκ Hbα Hdf Hpre Hrefine L HL.
+  eapply a_solve_eq_cv_mono with (τ := ptyp_var_f α) (Θw := Θw); eauto.
   - auto with frost.
-  - apply a_wf_ptyp__var; exact Hbα.
+  - destruct Hbα as [Hb | Hb];
+      [ left; apply a_wf_ptyp__var; exact Hb
+      | right; exists α; split; [ reflexivity | exact Hb ] ].
 Qed.
 
 (* ===================================================================== *)
