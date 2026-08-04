@@ -3731,6 +3731,44 @@ Proof.
            H eq_refl Hfm Hd HP HP' Hblk).
 Qed.
 
+(* ⭐ WHERE THE κ-EXTENSION'S wf OBLIGATION COMES FROM (2026-08-04).
+   [a_guess_ty_witness_mono] sends the flexible it invents at a ◇ to the
+   monotype standing at that position, and [a_inc__flex] admits only a
+   monotype WELL-FORMED IN THE TARGET.  So every consumer owes
+   [a_wf_ptyp Θ τ] for the counterpart monotype — and every consumer has it,
+   because the counterpart is a CONSISTENCY SUBJECT, and consistency's own
+   [var] row carries [a_binds_tvar α Θ].  (The [flex_l] row does too, via the
+   definition it looks up: a defined flexible is tvar-ish.)  No new external
+   side condition — the fact was already in the derivation. *)
+Lemma ad_pat_consis_mono_subject_wf : forall Ψ Θ R Q,
+  Ψ ⨟ Θ ⊢ₛᵃ R ∼ Q ->
+  forall τ, R = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
+  a_wf_ptyp Θ τ.
+Proof.
+  (* every GHOST-headed and ∀-headed row dies: a ghost is never a paint, and
+     a ∀ paint is not a monotype (that is what [Hm] rules out) *)
+  intros Ψ Θ R Q H; induction H; intros τ0 Heq Hm;
+    try solve [ destruct τ0; simpl in Heq;
+                solve [ discriminate Heq | inversion Hm ] ].
+  - (* unit *) destruct τ0; simpl in Heq; try discriminate Heq.
+    apply a_wf_ptyp__unit.
+  - (* var: the rule's OWN premise *)
+    destruct τ0; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst. apply a_wf_ptyp__var; assumption.
+  - (* arrow *)
+    destruct τ0; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst. inversion Hm; subst.
+    apply a_wf_ptyp__arrow;
+      [ eapply IHad_pat_consis1 | eapply IHad_pat_consis2 ];
+      solve [ reflexivity | assumption ].
+  - (* flex_l: the subject IS a variable, and the definition it looks up
+       makes that variable tvar-ish *)
+    destruct τ0; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst. apply a_wf_ptyp__var. right; right; eauto.
+  - (* flex_r: the subject passes through *)
+    eapply IHad_pat_consis; [ exact Heq | exact Hm ].
+Qed.
+
 (* ===================================================================== *)
 (*  ⭐ THE κ-EXTENSION PACKAGE, ONCE.                                      *)
 (*                                                                        *)
