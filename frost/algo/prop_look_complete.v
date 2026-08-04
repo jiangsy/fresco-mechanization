@@ -3208,6 +3208,16 @@ Qed.
     never be ill-scoped, only mis-named (the [Ξ] scoping kit's (K3),
     prop_solve_sub.v).  Stated over [all_flex_mono] because that is the form
     the completeness packages carry. *)
+(** The converse of [all_flex_mono_decls]: the two spellings of "the block is
+    undefined flexibles only" agree.  The [a_decls] side is what the solve kit
+    produces ([a_solve_*_decls]); the [all_flex_mono] side is what the
+    κ-extension package and [a_inc_flex_prefix_build] consume. *)
+Lemma a_decls_all_flex_mono : forall Ξ, a_decls Ξ -> all_flex_mono Ξ.
+Proof.
+  intros Ξ H; induction H; [ apply Forall_nil | ].
+  constructor; [ reflexivity | exact IHa_decls ].
+Qed.
+
 Lemma all_flex_mono_decls : forall Ξ, all_flex_mono Ξ -> a_decls Ξ.
 Proof.
   intros Ξ H; induction H as [ | [α b] Ξ' Hb Hall IH ]; [ constructor | ].

@@ -888,3 +888,41 @@ Proof.
     by (clear - Hβ; fsetdec).
   exact Hsw.
 Qed.
+
+(* ===================================================================== *)
+(*  ⭐ THE Ξ KIT AT THE CONSTRAINT-LIST LEVEL (2026-08-04).                *)
+(*  [a_solve_cstr] folds the eq-solve over a list and CONCATENATES the     *)
+(*  blocks, so both invariants of §4(c) lift by a two-line induction.      *)
+(*  P6-Cs needs them to rebuild [a_wf_aenv (Ξs ++ Ξc ++ Θ0)] and to feed   *)
+(*  [a_inc_flex_prefix_build] a second time.                              *)
+(* ===================================================================== *)
+
+(** (K1) at the list level: the block is undefined flexibles only. *)
+Lemma a_solve_cstr_decls : forall Θ 𝒞 P Ξ P',
+  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' -> a_decls Ξ.
+Proof.
+  intros Θ 𝒞 P Ξ P' H; induction H.
+  - constructor.
+  - eapply a_solve_sub_decls; eassumption.
+  - apply a_decls_app; [ exact IHa_solve_cstr | ].
+    eapply a_solve_eq_decls; eassumption.
+Qed.
+
+(** (K2) at the list level.  The tail runs at [Ξ1 ++ Θ], whose [ftvar_in_aenv]
+    CONTAINS [Θ]'s, so the tail's block dodges [Θ] a fortiori — that is the
+    whole content, and it is why the rules thread rather than run both halves
+    at [Θ]. *)
+Lemma a_solve_cstr_generated_fresh : forall Θ 𝒞 P Ξ P',
+  Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
+  forall α, α `in` dom Ξ -> α `notin` ftvar_in_aenv Θ.
+Proof.
+  intros Θ 𝒞 P Ξ P' H; induction H; intros α Hin.
+  - simpl in Hin; exfalso; clear - Hin; fsetdec.
+  - eapply a_solve_sub_generated_fresh; eassumption.
+  - rewrite dom_app in Hin.
+    destruct (AtomSetProperties.In_dec α (dom Ξ2)) as [Hin2 | Hnin2].
+    + pose proof (IHa_solve_cstr α Hin2) as Hfr.
+      rewrite ftvar_in_aenv_app in Hfr. clear - Hfr; fsetdec.
+    + assert (Hin1 : α `in` dom Ξ1) by (clear - Hin Hnin2; fsetdec).
+      eapply a_solve_eq_generated_fresh; eassumption.
+Qed.

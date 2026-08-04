@@ -3527,3 +3527,68 @@ Proof.
 Qed.
 
 Print Assumptions a_solve_eq_complete_var.
+
+(* ⭐ THE Θw-CARRYING INTERFACE (2026-08-04).  [a_solve_eq_complete_var] above
+   is the PAPER statement and fixes [Θw := Θ]; P6-Cs cannot use it, because its
+   ∀ rows call the IH at [(β ~ tvar) ++ Θ] and must then STRIP β out of the
+   [a_inc] conclusion ([a_inc_strip_tvar_mid]) — which needs the extension's
+   payloads to be wf in a context that does NOT have β.  So the caller passes
+   its own fixed [Θw] down, exactly as [_gen] already threads it.  Same proof,
+   one line: [_gen] at [Θtv := nil]. *)
+Theorem a_solve_eq_complete_var_at :
+  forall NM Θ0 Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
+  a_wf_aenv Θ -> a_wf_aenv Θ0 ->
+  a_wf_aenv Θw ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) ->
+  Θ0 ⨟ empty ⊢ₚₛᵃ Pi -> Θ0 ⨟ empty ⊢ₚₛᵃ P0 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  (forall α, a_flex_tvar Θ0 α ->
+     ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θw) ->
+  uskl_rho NM Θ Δρ Ψρ ψsub ψa ->
+  a_tags_sort NM Ψ' ψa ->
+  Ψi `union` Ψa [<=] Ψ' ->
+  Ψρ ∩ Ψ' [=] empty ->
+  rho_fresh Δρ Θ κ -> Δρ [<=] Δ ->
+  (forall α, α `in` Δρ -> α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
+  delta_def_fresh Δ Θ ->
+  flex_apart Θ0 Δρ P0 ψa ->
+  Θ ⨟ Δ ⊢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa ->
+  Ψsub [<=] Ψρ `union` Ψa ->
+  Ψa [<=] Ψsub ->
+  Ψsub ⨟ Θ ⊢ₛᵃ ψsub ∼ Q ->
+  Θ ⨟ empty ⊢ᵣᵃ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q ->
+  forall L, ftvar_in_aenv Θ0 [<=] L ->
+  exists Ξ Pa κ',
+    Θ0 ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa /\
+    all_flex_mono Ξ /\ uniq Ξ /\
+    keys κ' = keys Ξ /\
+    (forall α, α `in` dom Ξ -> α `notin` L) /\
+    Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κ' /\
+    Θ ⨟ Δ ⊢ (msubst_pskl (κ' ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa.
+Proof.
+  intros NM Θ0 Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0.
+  intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfPi HwfP0 Hκ Hκw
+         Hrho Htags Hsub Hinter Hfresh Hdelta
+         Hshield Hdfresh Hapart Hpre Hsubeq1 Hsubeq2 Hconsis Hrefine L HL.
+  destruct (@a_solve_eq_complete_var_gen NM Θ Θ0 Θw nil Θ Θ0 κ Δ Δρ empty
+              Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0
+              (aenv_split_nil Θ) (aenv_split_nil Θ0) HwfΘ
+              ltac:(intros x b Hb; destruct Hb)
+              ltac:(simpl; clear; fsetdec)
+              ltac:(clear; fsetdec)
+              HwfΘ HwfΘ0 HwfΘw Hmon Hnr
+              HwfPi HwfP0 Hκ Hκw
+              Hrho Htags Hsub Hinter Hfresh
+              Hdelta Hshield Hdfresh Hapart Hpre Hsubeq1 Hsubeq2 Hconsis
+              Hrefine L HL)
+    as (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hfam).
+  exists Ξ, Pa, κ'.
+  repeat (split; [ solve [ exact Hs | exact Hfm | exact Hu | exact Hk
+                         | exact Hfr | exact HF ] | ]).
+  eapply ad_partial_precise_delta_cong;
+    [ apply (Hfam empty);
+      [ clear; fsetdec | clear; fsetdec
+      | intros β α τ Hβ Hb; exfalso; clear - Hβ; fsetdec ]
+    | clear; fsetdec ].
+Qed.
