@@ -511,6 +511,20 @@ where "Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C" := (a_looksub Θ α m P P' Ξ C) 
 (*  [a_guess_mono] and the look judgments already use (DESIGN.md §4.3):    *)
 (*  [ftvar_in_aenv ((β ~ tvar) ++ Θ)] contains β, so `generated names      *)
 (*  avoid enclosing witnesses' stays DERIVABLE rather than assumed.        *)
+(*                                                                        *)
+(*  ⭐ AND THE WITNESS AVOIDS [ftvar_in_aenv Θ], NOT MERELY [dom Θ]        *)
+(*  (2026-08-04).  All five binder rows were strengthened together, for    *)
+(*  the reason [a_guess_mono__forall] and every [a_looksub]/[a_lookeq]     *)
+(*  binder row already carry the same set: a flexible's PAYLOAD            *)
+(*  ([α̂ ≔ τ]) may mention an atom that is not in [dom Θ], so [dom] is the  *)
+(*  wrong avoid-set for anything that touches the guess — and SE-FlexR     *)
+(*  now does.  Concretely it is what makes the WITNESS-MOVE work: the      *)
+(*  swap [swap_aenv b δ Θ] collapses to [Θ] exactly when both atoms dodge  *)
+(*  [ftvar_in_aenv Θ] ([a_solve_eq_weaken_tvar], prop_look_complete.v),    *)
+(*  and the same set is what [a_solve_sub_eq_ctx_change] transports.       *)
+(*  The change only SHRINKS the judgment, so every consumer (soundness,    *)
+(*  decoration) is unaffected; the completeness proofs CONSTRUCT these     *)
+(*  derivations and simply pick their witness from the larger avoid-set.   *)
 (* ===================================================================== *)
 
 Reserved Notation "Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P'"
@@ -533,8 +547,10 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        GENERATE names (SE-FlexR's guess), and this row CLOSES over β, so a
        generated β would be captured.  [ftvar_in_aenv] of the extended
        context contains β, which is precisely what [a_guess_mono]'s hole
-       row avoids — so "the block is apart from β" is DERIVABLE. *)
-    β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+       row avoids — so "the block is apart from β" is DERIVABLE.
+       ⭐ [ftvar_in_aenv], NOT [dom] (2026-08-04, and see the box above the
+       judgment): a flexible's PAYLOAD may mention the witness. *)
+    β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
     ((β ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f β))
       ≼[ m ] Q ⤳ Ξ ⨾ P' ->
     Θ ⊢ₛ (pskl_all_syn P) ≼[ m ] Q
@@ -562,7 +578,7 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        the whole family, degenerating the rule to "fires only when the
        binder is vacuous".  Consequence: [a_solve_sub_ftv] is DISJUNCTIVE
        (an output variable is an input variable or avoids [dom Θ]). *)
-    β `notin` dom Θ `union` ftvar_in_pskl A `union` ftvar_in_pskl B ->
+    β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl A `union` ftvar_in_pskl B ->
     ((β ~ abind_tvar) ++ Θ) ⊢ₛ A ≼[ mode_tc ]
       (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
     Θ ⊢ₛ A ≼[ mode_tc ] (pskl_all_syn B) ⤳ Ξ ⨾ P'
@@ -623,9 +639,28 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
        move the collection's own LE-FlexR makes.  [Ξ] is that fresh block,
        and it is why all three solve judgments now carry an output suffix.
        (The [P = ◇] case — where returning [α̂] let the guess SHARE the
-       flexible — is already covered by SE-GhostL, [◇ ∼ Q ⤳ Q].) *)
+       flexible — is already covered by SE-GhostL, [◇ ∼ Q ⤳ Q].)
+
+       ⚠️ AND THAT IS WHY THE SUBJECT MUST BE NONGHOST (2026-08-04; a
+       FINDING on the authors' proposed rule — docs/PAPER-GAPS.md).  Under
+       the OLD row the ghost-subject overlap was harmless: [◇ ∼ α̂] gave [α̂]
+       by SE-GhostL and [α̂] by SE-FlexR, the SAME answer.  Under the repair
+       they DISAGREE — [guess^TY(◇)] invents a FRESH [α̂1], so FlexR returns
+       [α̂1] where GhostL returns the target [α̂], and the sharing that makes
+       the marker's solution land on [α̂] is lost.  The reference
+       implementation never takes that branch (its match puts SolE-GhostL
+       and SolE-GhostGuarded strictly before SolE-FlexR — see
+       [nonghost_pskl], frost/def_extra.v), and the paper's own
+       [nonflex{P}] side condition is prose that says nothing about ghosts
+       because on paper the two rows agreed.  Restoring the exclusion costs
+       completeness NOTHING: at [◇] SE-GhostL is strictly more informative,
+       and at [∀◇P0] SE-GhostGuarded peels to the same place.  It also keeps
+       [a_solve_eq_hole_subject_inv] (prop_look_complete.v) — "solving with
+       the ghost subject returns the target verbatim", which the paper uses
+       silently in every [P_i = □] subcase — TRUE. *)
     a_flex_tvar Θ α ->
     a_non_flex Θ P ->
+    nonghost_pskl P ->
     a_guess_mono Θ P Ξ A ->
     Θ ⊢ₑ P ∼ (pskl_var_f α) ⤳ Ξ ⨾ (ptyp_to_pskl A)
 | a_solve_eq__hole_l : forall Θ Q,               (* SE-GhostL *)
@@ -639,7 +674,7 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
     Θ ⊢ₑ (pskl_arrow P1 P2) ∼ (pskl_arrow Q1 Q2)
          ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_arrow P1' P2')
 | a_solve_eq__forall : forall Θ P Q Ξ P' β,      (* SE-Forall *)
-    β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+    β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
     ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
          ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
     Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_all_syn Q)
@@ -648,7 +683,7 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
     Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
     Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_tophole Q) ⤳ Ξ ⨾ (pskl_tophole P')
 | a_solve_eq__tophole_l_all : forall Θ P Q Ξ P' β, (* SE-GhostForall *)
-    β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+    β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
     ((β ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
       ∼ (open_pskl_wrt_pskl Q (pskl_var_f β)) ⤳ Ξ ⨾ P' ->
     Θ ⊢ₑ (pskl_tophole P) ∼ (pskl_all_syn Q)
@@ -658,7 +693,7 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
     Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' ->
     Θ ⊢ₑ (pskl_tophole P) ∼ Q ⤳ Ξ ⨾ P'
 | a_solve_eq__all_l_tophole : forall Θ P Q Ξ P' β, (* SE-ForallGhost *)
-    β `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+    β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
     ((β ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f β))
       ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' ->
     Θ ⊢ₑ (pskl_all_syn P) ∼ (pskl_tophole Q)

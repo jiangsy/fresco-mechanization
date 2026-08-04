@@ -665,6 +665,10 @@ Proof.
   intros * H; destruct H; simpl; constructor; auto using lc_pskl_swap.
 Qed.
 
+Lemma nonghost_pskl_swap : forall a b P,
+  nonghost_pskl P -> nonghost_pskl (swap_pskl a b P).
+Proof. intros * H; destruct H; simpl; constructor. Qed.
+
 Lemma a_binds_tvar_swap : forall a b α (Θ : aenv),
   a_binds_tvar α Θ -> a_binds_tvar (swap_atom a b α) (swap_aenv a b Θ).
 Proof.
@@ -923,7 +927,8 @@ Proof.
   - (* flex_r : the output is guess^TY's, read back through the coercion *)
     rewrite swap_pskl_ptyp_to_pskl.
     apply a_solve_eq__flex_r;
-      auto using a_flex_tvar_swap, a_non_flex_swap, a_guess_mono_swap.
+      auto using a_flex_tvar_swap, a_non_flex_swap, nonghost_pskl_swap,
+                 a_guess_mono_swap.
   - (* hole_l *) apply a_solve_eq__hole_l.
   - (* hole_r *) apply a_solve_eq__hole_r.
   - (* arrow *) apply a_solve_eq__arrow; auto.

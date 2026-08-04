@@ -70,10 +70,15 @@ Fixpoint all_tvar (Ξ : aenv) : Prop :=
 (*  The run:  ◇ ≼[TC] ∀a. a  ⤳  ∀◇ b                                     *)
 (* ===================================================================== *)
 
+(* ⚙️ [ftvar_in_aenv], not [dom] (2026-08-04): the solve's five binder rows
+   were strengthened to the avoid-set [a_guess_mono] and the look rules
+   already use, since SE-FlexR now calls [guess^TY].  The refutation is
+   untouched — it only has to CHOOSE its escaping binder, and a fresher
+   choice is still a choice. *)
 Lemma cex_leak_run : forall Θ b,
-  b `notin` dom Θ ->
+  b `notin` ftvar_in_aenv Θ ->
   Θ ⊢ₛ pskl_hole ≼[ mode_tc ] (pskl_all_syn (pskl_var_b 0))
-     ⤳ (pskl_tophole (pskl_var_f b)).
+     ⤳ nil ⨾ (pskl_tophole (pskl_var_f b)).
 Proof.
   intros Θ b Hb.
   apply a_solve_sub__forall_r with (β := b);
@@ -120,8 +125,8 @@ Qed.
     configuration the (former) single call site used
     (prop_look_complete_sub_cstr.v's α-stack row). *)
 Theorem solve_sub_preserves_wf_is_false :
-  ~ (forall Θ M P P0 P',
-       Θ ⊢ₛ P ≼[ M ] P0 ⤳ P' ->
+  ~ (forall Θ M P P0 Ξ0 P',
+       Θ ⊢ₛ P ≼[ M ] P0 ⤳ Ξ0 ⨾ P' ->
        forall Ξ Δ, all_tvar Ξ ->
        (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P ->
        (Ξ ++ Θ) ⨟ Δ ⊢ₚₛᵃ P0 ->
@@ -133,10 +138,12 @@ Proof.
   destruct (atom_fresh empty) as [α Hα].
   destruct (atom_fresh (singleton α)) as [b Hb].
   pose (Θ := (α ~ abind_tvar)).
-  assert (HbΘ : b `notin` dom Θ) by (subst Θ; cbn; clear - Hb; fsetdec).
-  apply (@cex_output_not_wf Θ b HbΘ).
+  assert (HbΘ : b `notin` ftvar_in_aenv Θ)
+    by (subst Θ; cbn; clear - Hb; fsetdec).
+  assert (HbΘd : b `notin` dom Θ) by (subst Θ; cbn; clear - Hb; fsetdec).
+  apply (@cex_output_not_wf Θ b HbΘd).
   change Θ with (nil ++ Θ) at 1.
-  apply (Hclaim Θ mode_tc pskl_hole (pskl_all_syn (pskl_var_b 0))
+  apply (Hclaim Θ mode_tc pskl_hole (pskl_all_syn (pskl_var_b 0)) nil
                 (pskl_tophole (pskl_var_f b))
                 (@cex_leak_run Θ b HbΘ) nil empty I);
     [ apply cex_wf_subject | apply cex_wf_target | clear; fsetdec ].

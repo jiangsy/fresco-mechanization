@@ -2334,3 +2334,182 @@ probed the two systems AGREE:
   (`..fn_tc_passes.mle`).
 
 Any decl-vs-algo claim must pin the MODE first.
+
+## ⭐⭐⭐ RESOLVED BY THE AUTHORS — `SolE-FlexR` repaired; and three findings ON the repair (2026-08-04)
+
+The two refutations recorded above — `lemma:complete-look` (Lemma E.17) and
+`thm:complete-subtyping` (Theorem 4.6) — were both traced to one row,
+
+```
+  SolE-FlexR    nonflex(P)  ⟹  solveeq P α̂ ⤳ α̂           (full-algo-spec.tex:1371)
+```
+
+which DISCARDS the pattern the collection has already accumulated
+(`docs/refutations.tex`).  The authors accepted the diagnosis and proposed
+
+```
+  nonflex(P)      guess^TY(P) = (Ξ; P')
+  ─────────────────────────────────────
+        solveeq P α̂ ⤳ Ξ ⨾ P'
+```
+
+with the note *"Thread the fresh suffix Ξ through all constraint-solving
+judgements, add it to Look's output suffix, and update the corresponding
+specification and proofs."*  The mechanization is propagating it.  **Three
+things the authors need to know about the repaired rule itself.**
+
+### FINDING 1 — soundness of subtyping survives, and its STATEMENT does not move
+
+`a_sub_sound_thm` (prop_decorate_key.v) is `Qed` and axiom-free under the
+repaired row, with the *same statement*.  Every new obligation is absorbed
+inside the proof out of well-formedness premises the theorem already had.
+The one real obligation the repair creates — *a decoration of the guess is a
+decoration of the source* (`dec_ext_guess_source`) — holds because `guess^TY`
+only ever LOSES information, and the decorated system already had the row to
+fire (`SEq-FlexR`), so no new decorated rule was needed.  **The repair costs
+nothing at the soundness interface.**
+
+### FINDING 2 — ⚠️ the repaired row OVERLAPS `SolE-GhostL`, and must exclude a GHOST subject
+
+Under the OLD row the overlap at a ghost subject was harmless: `◇ ∼ α̂` gave
+`α̂` by `SolE-GhostL` and `α̂` by `SolE-FlexR` — **the same answer**.  Under
+the repair they DISAGREE: `guess^TY(◇)` invents a FRESH `α̂₁`, so FlexR
+returns `α̂₁` where GhostL returns the target `α̂`, and the sharing that makes
+the marker's solution land on `α̂` is lost.  (`refutations.tex` §"Suggested
+repair" already observes that the useful `P = ◇` case "is already covered by
+`SolE-GhostL`" — this is the same observation, now load-bearing.)
+
+The reference implementation never takes that branch: `solve_eq` is an OCaml
+**match**, and both ghost-subject rows — `Ghost, q -> q` (`SolE-GhostL`,
+`type.ml:412`) and `UGhost p, q when is_guarded q` (`SolE-GhostGuarded`,
+`:457`; note `is_guarded (MFlex _) = true`, `:21-23`) — come **strictly
+before** `SolE-FlexR` (`:466`).  So there FlexR fires only on a
+`TCon`/`TArr`/`TForA`/`TMod` subject.  A relational rule set has no match
+order, so the exclusion has to be a premise:
+
+```
+  nonflex(P)     nonghost(P)     guess^TY(P) = (Ξ; P')
+  ────────────────────────────────────────────────────
+              solveeq P α̂ ⤳ Ξ ⨾ P'
+```
+
+`nonghost(P)` = P's head is neither `◇` nor `∀◇` (mech `nonghost_pskl`,
+frost/def_extra.v).  It costs completeness NOTHING — at `◇`, `SolE-GhostL`
+is strictly *more* informative, and at `∀◇P₀`, `SolE-GhostGuarded` peels to
+the same place — and it keeps TRUE the fact the paper uses silently in every
+`P_i = □` subcase of the -var lemmas: *solving with the ghost subject
+returns the target verbatim* (mech `a_solve_eq_hole_subject_inv`).
+**Suggested action: state `nonflex` as excluding ghosts, or add `nonghost`,
+in `fig:constraint-solving`.**
+
+### FINDING 3 — the binder rows' witness must avoid `ftvar(Θ)`, not just `dom(Θ)`
+
+Consequence of the repair, not of the paper: the solve used to generate NO
+names, so its five binder rows could merely *avoid* their witness.  Now a
+guess can fire below such a binder, and four of the five rows CLOSE over the
+witness, so a generated name equal to it would be captured.  Two changes
+follow, both forced:
+
+1. the witness **enters the premise's context** (`(β : *) , Θ`), which is
+   what makes "the generated block is apart from β" DERIVABLE rather than
+   assumed — the same avoid-input discipline `guess^TY` and the `Look` rules
+   already use;
+2. the witness avoids **`ftvar(Θ)`**, not `dom(Θ)` — a flexible's PAYLOAD
+   `α̂ ≔ τ` may mention an atom that is in no domain, and `dom` is therefore
+   the wrong avoid-set for anything that touches the guess.  This is again
+   exactly what `guess^TY`'s own ∀ row and every `Look` binder row already
+   require.
+
+Similarly the SIBLING-premise rows must **thread**: `SS-Arrow`, `SS-GhostLF`,
+`SE-Arrow` and the constraint-list `eq` row run their second premise at
+`Ξ₁, Θ` and output `Ξ₂, Ξ₁`.  Run both halves at `Θ` and the two blocks can
+pick the SAME atom, silently conflating two independently-invented
+flexibles.  (One global counter, never reused, is what the implementation
+does.)
+
+⚠️ NOT derivable, and inherited rather than new: `uniq Ξ`.  `guess^TY`'s own
+arrow rule runs both halves at the same `Θ`, exactly as `LS-Arrow` does;
+colliding blocks are filtered downstream by `Sub-ForallL`'s `uniq (Ξ, Θ₀)`.
+
+### Status of the two refutations
+
+Both are **retracted** — machine-checked, at the very configuration that
+refuted them (`cex/probe_flexr_repair.v`, `Qed` + axiom-free):
+`new_solve` (the solve yields `∀γ.γ→γ`, not the vacuous `∀_.f̂`),
+`new_extract`, and `new_run_exists` (a full algorithmic run EXISTS) are the
+direct negations of `probe_solve_det`, `probe_extract_det` and
+`probe_no_run`.  The old files are retained as history with retraction
+headers; their Coq text is at commit `d5f9169`.
+
+⭕ **`main_forall` is OPEN again.** It was refuted BY the retracted probe, so
+the hypothesis of `a_sub_complete_bundle_holds` is no longer known-false.
+Re-deciding it is the pay-off the campaign is aiming at, since the mech's
+`sub_shield` premise was invented as a repair of exactly the lemma that
+configuration refuted.
+
+## ⭕ OPEN DESIGN QUESTION on the repaired `SolE-FlexR` — should the guess be `guess^TY`, or `guess^N`? (2026-08-04)
+
+The authors' proposed row fixes the sort:
+
+```
+  nonflex(P)      guess^TY(P) = (Ξ; P')
+  ─────────────────────────────────────
+        solveeq P α̂ ⤳ Ξ ⨾ P'
+```
+
+**That is the first place a sort enters constraint solving.**  The paper's
+three solving judgements are sort-FREE — `solve C P Q`, `solvesub P M Q P'`,
+`solveeq P Q P'` (`full-algo-spec.tex:1216-1375`, and the macros take 3/4
+arguments with no `N` slot).  `N` enters only at `Look`, whose last step is
+`guess^N(Q)`.  Writing `guess^TY` inside `SolE-FlexR` therefore does two
+things at once: it normalises the pattern, and it silently commits the solve
+to the `TY` sort.
+
+### Why this may be wrong at `N = SK`
+
+`guess^SK` is the IDENTITY (`full-algo-spec.tex:1000`; mech `a_guess__sk`) —
+that is the whole point of the `SK` sort: *do not monomorphise, keep the
+skeleton*.  But `Look`'s final guess runs on the solve's output, so at
+`N = SK` the solve's output IS the instantiation.  If `SolE-FlexR` has
+already applied `guess^TY` to a sub-pattern, then at `SK`:
+
+* a ghost `◇` in that sub-pattern has been replaced by a fresh flexible,
+  and the universal ghost `∀◇` has been DROPPED (`guess^TY`'s tophole row),
+* so the `SK` extract returns a partly-monomorphised skeleton, and the
+  identity `guess^SK` no longer means what it says.
+
+The sort-uniform reading would be
+
+```
+  nonflex(P)   nonghost(P)   guess^N(P) = (Ξ; P')
+  ───────────────────────────────────────────────
+             solveeq_N P α̂ ⤳ Ξ ⨾ P'
+```
+
+which at `SK` degenerates to the pattern verbatim — i.e. exactly the repair
+`refutations.tex` §"Suggested repair" originally proposed (`solveeq P α̂ ⤳ P`)
+— and at `TY` is the authors' row.  It costs an `N` index on all three
+solving judgements.
+
+### What is not yet known
+
+Whether the `SK` case is REACHABLE with a flexible target at a solve
+position.  `SolE-FlexR` fires when the *counterpart* has a bare flexible
+there; the reachability argument recorded at `a_extract`
+(`algo/def_extra.v`, "a Θ0-flexible target is reachable") is made for `TY`
+— `skmod{TY}` at `TC` makes `P0` a TYPE, and a type may BE a flexible of
+`Θ0`.  The corresponding `SK` argument has not been made either way.  If the
+`SK` case is unreachable the two readings agree on every derivable
+judgement and the choice is presentational; if it is reachable, `guess^TY`
+is unsound *as a specification of the `SK` sort*.
+
+### Status in the mechanization
+
+The mech currently follows the authors' literal proposal (`guess^TY`,
+sort-free judgements).  **Nothing downstream depends on the choice yet** —
+subtyping soundness holds either way, because it consumes the solve rather
+than constructing it, and the completeness cluster (where the choice would
+bite, since it CONSTRUCTS these derivations) has not been re-proved.  This
+is therefore the cheapest moment to change it.  **Authors' call.**  The
+decision should be made before the P6 cluster is re-proved, since indexing
+the solve by `N` afterwards would mean redoing that work.

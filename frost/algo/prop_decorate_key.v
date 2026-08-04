@@ -2464,7 +2464,7 @@ Proof.
   destruct Hs as
     [ Θ                                         (* SE-Unit *)
     | Θ α Q                                     (* SE-Var *)
-    | Θ α P Ξ A Hflex Hnf Hgu                   (* SE-FlexR *)
+    | Θ α P Ξ A Hflex Hnf Hng Hgu               (* SE-FlexR *)
     | Θ Q                                       (* SE-GhostL *)
     | Θ P                                       (* SE-VacuousR *)
     | Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' Hp1 Hp2       (* SE-Arrow *)

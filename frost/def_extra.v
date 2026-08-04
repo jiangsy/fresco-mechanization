@@ -124,6 +124,24 @@ Inductive guarded_pskl : pskl -> Prop :=
 | guarded_pskl__var   : forall α, guarded_pskl (pskl_var_f α)
 | guarded_pskl__arrow : forall P1 P2, lc_pskl P1 -> lc_pskl P2 -> guarded_pskl (pskl_arrow P1 P2).
 
+(** [nonghost_pskl P]: P's HEAD is not a ghost — it is neither [◇] nor
+    [∀◇P0].  Weaker than [guarded_pskl], which also rules out a top-level ∀.
+
+    Its one use is SE-FlexR (algo/def_extra.v), and it is there to render the
+    reference implementation's DISPATCH ORDER: [solve_eq] is an OCaml match,
+    and both ghost-subject rows — [SolE-GhostL] ([Ghost, q -> q],
+    type.ml:412) and [SolE-GhostGuarded] ([UGhost p, q when is_guarded q],
+    :457, and a flexible target IS guarded, [is_guarded]:21-23) — come
+    STRICTLY BEFORE [SolE-FlexR] (:466).  So FlexR fires only on a
+    [TCon]/[TArr]/[TForA]/[TMod] subject there, never on a ghost.  A
+    relational encoding has no match order, so the exclusion must be a
+    premise. *)
+Inductive nonghost_pskl : pskl -> Prop :=
+| nonghost_pskl__unit  : nonghost_pskl pskl_unit
+| nonghost_pskl__var   : forall α, nonghost_pskl (pskl_var_f α)
+| nonghost_pskl__arrow : forall P1 P2, nonghost_pskl (pskl_arrow P1 P2)
+| nonghost_pskl__all   : forall P, nonghost_pskl (pskl_all_syn P).
+
 (** Value restriction: terms that may be generalised in checking mode. *)
 Inductive is_value : exp -> Prop :=
 | is_value__unit     : is_value exp_unit

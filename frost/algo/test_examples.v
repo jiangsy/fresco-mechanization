@@ -207,7 +207,8 @@ Proof.
   - discriminate.
   - right; reflexivity.
   - clear - Hα; fsetdec.
-  - eapply a_extract__solve with (Ξ := nil) (C := nil) (Q := pskl_hole).
+  - eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
+                                 (C := nil) (Q := pskl_hole).
     + simpl_open. apply a_looksub__vacuous.
     + apply a_solve_cstr__empty.
     + apply a_guess__sk.
@@ -269,7 +270,7 @@ Proof.
   - discriminate.
   - left. crush_lc.
   - clear - Hβ; fsetdec.
-  - eapply a_extract__solve with (Ξ := nil)
+  - eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
       (C := a_cstr_eq (pskl_var_f α) :: a_cstr_eq (pskl_var_f α) :: nil)
       (Q := pskl_var_f α).
     + simpl_open.
@@ -279,9 +280,9 @@ Proof.
         (C1 := a_cstr_eq (pskl_var_f α) :: nil)
         (C2 := a_cstr_eq (pskl_var_f α) :: nil);
         apply a_lookeq__var.
-    + eapply a_solve_cstr__eq.
+    + eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
       { apply a_solve_eq__hole_l. }
-      eapply a_solve_cstr__eq.
+      eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
       { apply a_solve_eq__var. }
       apply a_solve_cstr__empty.
     + apply (a_guess__ty (A := ptyp_var_f α)).
@@ -350,7 +351,7 @@ Proof.
     + discriminate.
     + left. crush_lc.
     + clear - Hα; fsetdec.
-    + eapply a_extract__solve with (Ξ := nil)
+    + eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
         (C := (a_cstr_eq (pskl_tophole (ptyp_to_pskl σ_auto)) :: nil))
         (Q := pskl_tophole (ptyp_to_pskl σ_auto)).
       * simpl_open.
@@ -359,7 +360,7 @@ Proof.
           (C2 := nil).
         { apply a_lookeq__var. }
         { apply a_looksub__vacuous. }
-      * eapply a_solve_cstr__eq.
+      * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
         { apply a_solve_eq__hole_l. }
         { apply a_solve_cstr__empty. }
       * apply (a_guess__ty (Ξ := nil) (A := σ_auto)).
@@ -465,7 +466,7 @@ Proof.
     + discriminate.
     + left. crush_lc.
     + clear - Hα; fsetdec.
-    + eapply a_extract__solve with (Ξ := nil)
+    + eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
         (C := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
         (Q := pskl_tophole (pskl_arrow pskl_hole pskl_hole)).
       * simpl_open.
@@ -474,7 +475,7 @@ Proof.
           (C2 := nil).
         { apply a_lookeq__var. }
         { apply a_looksub__vacuous. }
-      * eapply a_solve_cstr__eq.
+      * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
         { apply a_solve_eq__hole_l. }
         { apply a_solve_cstr__empty. }
       * apply (a_guess__ty
@@ -502,7 +503,7 @@ Proof.
     + discriminate.
     + left. crush_lc.
     + clear - Hβ; fsetdec.
-    + eapply a_extract__solve with (Ξ := nil)
+    + eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
         (C := a_cstr_eq (pskl_var_f fa) :: a_cstr_eq (pskl_var_f fb) :: nil)
         (Q := pskl_var_f fa).
       * simpl_open.
@@ -514,9 +515,9 @@ Proof.
             (C1 := a_cstr_eq (pskl_var_f fa) :: nil)
             (C2 := a_cstr_eq (pskl_var_f fb) :: nil);
             apply a_lookeq__var. }
-      * eapply a_solve_cstr__eq.
+      * eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
         { apply a_solve_eq__hole_l. }
-        { eapply a_solve_cstr__eq.
+        { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
           { apply a_solve_eq__var. }
           { apply a_solve_cstr__empty. } }
       * apply (a_guess__ty (A := ptyp_var_f fa)).
@@ -573,7 +574,7 @@ Proof.
       * discriminate.
       * left. crush_lc.
       * clear - Hα; fsetdec.
-      * eapply a_extract__solve with (Ξ := nil)
+      * eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
           (C := a_cstr_eq (pskl_tophole (pskl_arrow pskl_hole pskl_hole)) :: nil)
           (Q := pskl_tophole (pskl_arrow pskl_hole pskl_hole)).
         { simpl_open.
@@ -582,7 +583,7 @@ Proof.
             (C2 := nil).
           - apply a_lookeq__var.
           - apply a_looksub__vacuous. }
-        { eapply a_solve_cstr__eq.
+        { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
           - apply a_solve_eq__hole_l.
           - apply a_solve_cstr__empty. }
         { apply (a_guess__ty
@@ -611,7 +612,7 @@ Proof.
       * discriminate.
       * left. crush_lc.
       * clear - Hβ; fsetdec.
-      * eapply a_extract__solve with (Ξ := nil)
+      * eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
           (C := a_cstr_eq (pskl_var_f fa) :: a_cstr_eq (pskl_var_f fb) :: nil)
           (Q := pskl_var_f fa).
         { simpl_open.
@@ -623,9 +624,9 @@ Proof.
               (C1 := a_cstr_eq (pskl_var_f fa) :: nil)
               (C2 := a_cstr_eq (pskl_var_f fb) :: nil);
               apply a_lookeq__var. }
-        { eapply a_solve_cstr__eq.
+        { eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
           - apply a_solve_eq__hole_l.
-          - eapply a_solve_cstr__eq.
+          - eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             + apply a_solve_eq__var.
             + apply a_solve_cstr__empty. }
         { apply (a_guess__ty (A := ptyp_var_f fa)).
@@ -789,7 +790,7 @@ Proof.
         { discriminate. }
         { left. crush_lc. }
         { clear - Hβ; fsetdec. }
-        { eapply a_extract__solve with (Ξ := nil)
+        { eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
             (C := a_cstr_eq (pskl_var_f α) :: a_cstr_eq (pskl_var_f α) :: nil)
             (Q := pskl_var_f α).
           - simpl_open.
@@ -806,9 +807,9 @@ Proof.
                 { apply a_lookeq__absent. forall_l_absent Hβ. }
                 { apply a_lookeq__var. }
             + apply a_lookeq__var.
-          - eapply a_solve_cstr__eq.
+          - eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             { apply a_solve_eq__hole_l. }
-            eapply a_solve_cstr__eq.
+            eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             { apply a_solve_eq__var. }
             apply a_solve_cstr__empty.
           - apply (a_guess__ty (A := ptyp_var_f α)).
@@ -843,7 +844,7 @@ Proof.
         { discriminate. }
         { left. crush_lc. }
         { clear - Hβ; fsetdec. }
-        { eapply a_extract__solve with (Ξ := nil)
+        { eapply a_extract__solve with (Ξ := nil) (Ξs := nil)
             (C := a_cstr_eq (pskl_var_f α) :: a_cstr_eq (pskl_var_f α) :: nil)
             (Q := pskl_var_f α).
           - simpl_open.
@@ -853,9 +854,9 @@ Proof.
               (C1 := a_cstr_eq (pskl_var_f α) :: nil)
               (C2 := a_cstr_eq (pskl_var_f α) :: nil);
               apply a_lookeq__var.
-          - eapply a_solve_cstr__eq.
+          - eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             { apply a_solve_eq__hole_l. }
-            eapply a_solve_cstr__eq.
+            eapply a_solve_cstr__eq with (Ξ1 := nil) (Ξ2 := nil).
             { apply a_solve_eq__var. }
             apply a_solve_cstr__empty.
           - apply (a_guess__ty (A := ptyp_var_f α)).

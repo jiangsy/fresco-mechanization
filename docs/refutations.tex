@@ -50,6 +50,16 @@
 \Crefname{claimc}{Claim}{Claims}
 
 \newcommand{\coq}[1]{\texttt{\small #1}}
+
+% --- vocabulary for the "Status" section (local to this note) ------------
+% the repaired solve gains an output suffix Xi, which \solveeq has no slot for
+\DeclareDocumentCommand{\solveeqx}{m m m m}{
+  #1 \consis #2 \rightsquigarrow #3 \fatsemi #4
+}
+\newcommand{\nonghost}[1]{#1\text{ non-ghost}}
+\newcommand{\uniq}[1]{\meta{uniq}(#1)}
+\newcommand{\Qed}{\coq{Qed}}
+\newcommand{\defeq}{\mathrel{{:}{=}}}
 % The counterpart, written once: the inherited forall is the arrow's DOMAIN
 % and scopes over the body only -- exactly as in P_0.
 \newcommand{\Qcex}{(\inh{\forall\gamma.}(\gamma\to\gamma))
@@ -85,6 +95,19 @@
   (\texttt{Print Assumptions}: \emph{closed under the global context}).
 \end{abstract}
 
+\begin{center}\fbox{\parbox{0.93\textwidth}{\small
+\textbf{Status (2026-08-04).}  The repair suggested in
+\Cref{sec:repair} has been \textbf{accepted and applied}.  Everything in
+\Cref{sec:look,sec:thm} describes the algorithm \emph{as published}, and
+under that rule it stands; under the repaired rule both refutations are
+\textbf{retracted}, machine-checked at the very configuration that refuted
+them (\coq{cex/probe\_flexr\_repair.v}).  Soundness of subtyping survives
+the change with its statement unchanged.  Read
+\S\ref{sec:status} for what the repair costs --- including two side
+conditions the repaired rule needs and the published one did not.  The Coq
+files cited below for the refutations themselves now carry retraction
+headers; their proof text is at commit \coq{d5f9169}.}}\end{center}
+
 % =====================================================================
 \section{Summary}
 % =====================================================================
@@ -105,6 +128,12 @@
   correct instantiation
     & (a positive fact about the paper's own algorithm)
     & \coq{run\_exists\_at\_correct\_instantiation}\\
+  \midrule
+  \emph{and, after the repair}: the algorithm now \emph{computes} that
+  instantiation, so a run exists outright --- both statements
+  \textbf{retracted} (\S\ref{sec:status})
+    & (the repaired \soleqlab{FlexR})
+    & \coq{new\_solve}, \coq{new\_extract}, \coq{new\_run\_exists}\\
   \bottomrule
 \end{tabular}
 \end{center}
@@ -112,7 +141,9 @@
 \noindent
 Files: \coq{frost/algo/cex/probe\_double\_occ\_run.v},
 \coq{frost/algo/cex/cex\_thm\_complete\_subtyping.v},
-\coq{frost/algo/cex/probe\_solve\_flexr.v}.
+\coq{frost/algo/cex/probe\_solve\_flexr.v} (all three now retraction
+headers --- proof text at commit \coq{d5f9169}); and, for the repair,
+\coq{frost/algo/cex/probe\_flexr\_repair.v}.
 
 \medskip\noindent
 The two refutations come in that order because that is the order of
@@ -504,7 +535,7 @@ So every rule the run needs already exists and already works.  What the
 algorithm cannot do is \emph{choose} $\forall\gamma.\gamma\to\gamma$.
 
 % =====================================================================
-\section{Suggested repair}
+\section{Suggested repair}\label{sec:repair}
 % =====================================================================
 
 \soleqlab{FlexR} should yield the accumulated pattern, as its ghost twin
@@ -522,12 +553,91 @@ inventing a fresh one --- is already covered by \soleqlab{GhostL}
 pattern already carries information, which is exactly where the present
 one destroys it.
 
+% =====================================================================
+\section{Status: the repair is adopted, and what it costs}\label{sec:status}
+% =====================================================================
+
+\emph{Added after the authors accepted the diagnosis.}  The rule they
+proposed hands the pattern through $\guess[\TY]{\cdot}$ rather than
+verbatim --- what lands at a flexible will be \emph{assigned} to it, and a
+flexible can only receive a ghost-free skeleton, so each ghost becomes a
+\emph{fresh} flexible, exactly the move \lelab{FlexR} already makes on the
+collection side.  Those fresh names must reach the caller, so a suffix
+$\Xi$ is threaded through all three solving judgements and into
+\textsc{Look}'s output:
+\[
+\inferrule*[Lab=\soleqlab{FlexR}$''$]
+{\nonflex{P} \quad \nonghost{P} \quad \guess[\TY]{P} = (\Xi; P')}
+{\solveeqx{P}{\hat\alpha}{\Xi}{P'}}
+\]
+The mechanisation now applies this change.  Four things it found.
+
+\paragraph{1. It works, at the refuting configuration.}
+Machine-checked, \Qed{} and axiom-free, in \coq{cex/probe\_flexr\_repair.v}:
+$\guess[\TY]{\gamma\to\gamma} = (\cdot;\gamma\to\gamma)$ carries no ghost,
+so nothing is invented and nothing is lost, the close re-binds a
+\emph{real} occurrence, and the solve yields $\forall\gamma.\gamma\to\gamma$
+in place of the vacuous $\forall\_.\hat\beta$
+(\coq{new\_solve}).  Hence the extract computes it (\coq{new\_extract}) and
+a full run \emph{exists} (\coq{new\_run\_exists}) --- the direct negations
+of \coq{probe\_solve\_det}, \coq{probe\_extract\_det} and
+\coq{probe\_no\_run}.  Both refutations of \Cref{cl:look,cl:thm} are
+accordingly \textbf{retracted}; their files are kept as history.
+
+\paragraph{2. Soundness of subtyping survives, with its statement
+unchanged.}  This was the first thing \S\ref{sec:repair} asked to check.
+\coq{a\_sub\_sound\_thm} is \Qed{} and axiom-free under the new row, and its
+statement did not move: every new obligation is absorbed inside the proof
+out of well-formedness premises the theorem already had.  The one genuine
+obligation the repair creates --- \emph{a decoration of the guess is a
+decoration of the source} --- holds because $\guess[\TY]{\cdot}$ only ever
+loses information, and the decorated system already had the row to fire
+(\eqlab{FlexR}), so no new decorated rule was needed.
+
+\paragraph{3. $\nonflex{P}$ must also exclude a \emph{ghost} subject.}
+Under the old row the overlap with \soleqlab{GhostL} was harmless:
+$\solveeq{\Hole}{\hat\alpha}{}$ gave $\hat\alpha$ either way.  Under the
+repair they disagree --- $\guess[\TY]{\Hole}$ invents a \emph{fresh}
+$\hat\alpha_1$, so \soleqlab{FlexR} returns $\hat\alpha_1$ where
+\soleqlab{GhostL} returns the target, and the sharing that puts the
+marker's solution on $\hat\alpha$ is lost.  The implementation never takes
+that branch: \texttt{solve\_eq} is a \emph{match}, and both ghost rows
+(\texttt{Ghost,\,q} at \texttt{type.ml:412}, and \texttt{UGhost\,p,\,q when
+is\_guarded\,q} at \texttt{:457} --- a flexible \emph{is} guarded,
+\texttt{:21--23}) precede \soleqlab{FlexR} at \texttt{:466}.  A rule set has
+no match order, so the exclusion must be written down.  It costs
+completeness nothing (at $\Hole$, \soleqlab{GhostL} is strictly more
+informative; at $\TopHole P_0$, \soleqlab{GhostGuarded} peels to the same
+place) and it keeps true the fact the proofs use silently in every
+$P_i = \Hole$ subcase: \emph{solving with the ghost subject returns the
+target verbatim}.
+
+\paragraph{4. The binder rows need a stronger freshness, and the sibling
+rows must thread.}  The solve used to generate no names at all, so its five
+binder rows could merely \emph{avoid} their witness.  Now a guess can fire
+below such a binder, and four of the five \emph{close} over the witness, so
+a generated name equal to it would be captured.  Two consequences, both
+forced: the witness \textbf{enters the premise's context}, which makes
+``the generated block is apart from $\beta$'' derivable rather than assumed;
+and it must avoid $\ftv{\Theta}$, \textbf{not} $\dom{\Theta}$, since a
+flexible's payload $\hat\alpha \defeq \tau$ may name an atom that is in no
+domain.  Both are the discipline $\guess[\TY]{\cdot}$ and the \textsc{Look}
+rules already use.  Likewise \solsublab{Arrow}, \solsublab{GhostLF},
+\soleqlab{Arrow} and the constraint-list \texttt{eq} row must run their
+second premise at $\Xi_1,\Theta$ and output $\Xi_2,\Xi_1$: run both halves
+at $\Theta$ and the two blocks can pick the \emph{same} atom, silently
+conflating two independently-invented flexibles.  (One global counter,
+never reused, is what the implementation does.)  What does \emph{not}
+follow is $\uniq{\Xi}$, and that obstruction is inherited rather than new
+--- $\guess[\TY]{\cdot}$'s own arrow rule runs both halves at the same
+$\Theta$, exactly as \lslab{Arrow} does, and colliding blocks are filtered
+downstream by \silab{ForallL}'s $\uniq{\Xi,\Theta_0}$.
+
 \medskip\noindent
-\textbf{What has not been checked}, and should be before the change is
-made: soundness of subtyping under the changed row, and the collection /
-solving completeness lemmas that the subtyping completeness proof rests
-on.  The mechanisation therefore does \emph{not} apply the change; it
-reports it.
+\textbf{Still outstanding}: the collection / solving completeness lemmas
+that the subtyping completeness proof rests on.  Each produces a
+metasubstitution, and it must now be \emph{extended} over the solve's new
+block; that work is in progress.
 
 % =====================================================================
 \section*{A note on encoding fidelity}

@@ -481,17 +481,18 @@ Proof.
           | left; cbn [ftvar_in_pskl] in *; clear - Hm He Hd; fsetdec ]
     end.
   - (* SS-ForallR : the leak — the output variable is an input variable,
-       the escaped binder (fresh for dom Θ by the rule's own condition),
-       or already fresh *)
+       the escaped binder (fresh for [ftvar_in_aenv Θ] ⊇ [dom Θ] by the
+       rule's own condition), or already fresh *)
     match goal with
     | Hfr : ?b `notin` _ ,
       IH : forall α, α `in` ftvar_in_pskl ?p' -> _ ,
       Hm : ?a `in` ftvar_in_pskl ?p' |- _ =>
+        pose proof (dom_subset_ftvar_in_aenv Θ) as Hdf;
         destruct (IH a Hm) as [Hl | Hr];
           [ pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f b))
               as Hup; cbn [ftvar_in_pskl] in *;
             destruct (a == b) as [-> | Hne];
-              [ right; clear - Hfr; fsetdec
+              [ right; clear - Hfr Hdf; fsetdec
               | left;
                 assert (Hne' : a `notin` singleton b)
                   by (apply notin_singleton_2; auto);
