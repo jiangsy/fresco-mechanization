@@ -2826,25 +2826,28 @@ Qed.
 
 (** FORWARD STEP (sub): the terminal [sub m Q] constraint — UNCONDITIONAL.
     SIZE induction, for the same reason as the eq step (DESIGN.md §4.3). *)
-Lemma dec_ext_solve_sub_step_size : forall n Θ m P P3 P' ψ Ψ' Ψtot,
+Lemma dec_ext_solve_sub_step_size : forall n Θ m P P3 Ξ P' ψ Ψ' Ψtot,
   2 * (size_pskl P + size_pskl P3) <= n ->
   Θ ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' ->
+  (* the same premise the EQ step gained, and for the same reason: SS-Check
+     hands the subject straight to the eq step *)
+  pskl_top_guarded P ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi Ψp, ψ ≼ᵗ[ m ] P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
   induction n as [| n IHn];
-    [ intros Θ m P P3 P' ψ Ψ' Ψtot Hsz Hs;
+    [ intros Θ m P P3 Ξ P' ψ Ψ' Ψtot Hsz Hs;
       pose proof (size_pskl_min P); pose proof (size_pskl_min P3); lia | ].
-  intros Θ m P P3 P' ψ Ψ' Ψtot Hsz Hs; revert ψ Ψ' Ψtot.
+  intros Θ m P P3 Ξ P' ψ Ψ' Ψtot Hsz Hs Htg; revert ψ Ψ' Ψtot.
   destruct Hs as
     [ Θ m α Q                                   (* SS-Var *)
-    | Θ m P Q P' b Hfr Hp                       (* SS-ForallL *)
-    | Θ m P Q P' Hp                             (* SS-UnivGhostL *)
+    | Θ m P Q Ξ P' b Hfr Hp                     (* SS-ForallL *)
+    | Θ m P Q Ξ P' Hp                           (* SS-UnivGhostL *)
     | Θ m P                                     (* SS-Vacuous *)
-    | Θ P Q P' H H0 H1                          (* SS-Check *)
-    | Θ A B P' b Hfr Hp                         (* SS-ForallR *)
-    | Θ m P1 P2 Q1 Q2 P1' P2' H H0              (* SS-Arrow *)
-    | Θ m Q1 Q2 P1' P2' H H0                    (* SS-GhostLF *)
+    | Θ P Q Ξ P' H H0 H1                        (* SS-Check *)
+    | Θ A B Ξ P' b Hfr Hp                       (* SS-ForallR *)
+    | Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' H H0        (* SS-Arrow *)
+    | Θ m Q1 Q2 Ξ1 Ξ2 P1' P2' H H0              (* SS-GhostLF *)
     | Θ B H ];                                  (* SS-GhostL *)
     intros ψ Ψ' Ψtot Hdec Hdt; cbn in Hsz; cbn in Htg.
   - (* var : P=P'=var α *)
@@ -2863,16 +2866,15 @@ Proof.
                   `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
                   `union` ftvar_in_pskl Q `union` dom Θ `union` singleton b))
         as [α0 HX0].
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f b))
-        as HupP.
-      pose proof (a_solve_sub_rename_var (α0 := b) (β0 := α0) Hp
-                    ltac:(clear - Hfr; fsetdec)
-                    ltac:(cbn in HupP |- *;
-                          clear - HX0 HupP; fsetdec)) as Hr.
-      rewrite <- (subst_pskl_in_pskl_intro b P (pskl_var_f α0))
-        in Hr by (clear - Hfr; fsetdec).
-      rewrite (subst_pskl_in_pskl_fresh_eq Q)
-        in Hr by (clear - Hfr; fsetdec).
+      (* witness-move by SWAP: b sits in the premise's context now *)
+      assert (HbPQ : b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q)
+        by (clear - Hfr; fsetdec).
+      assert (Hα0PQ : α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
+                         `union` ftvar_in_pskl P') by (clear - HX0; fsetdec).
+      pose proof (@a_solve_sub_move_binder_l _ _ _ _ _ _ _ α0 Hp HbPQ Hα0PQ)
+        as Hr.
+      assert (Htgα : pskl_top_guarded (open_pskl_wrt_pskl P (pskl_var_f α0)))
+        by (apply (proj1 (pskl_top_guarded_open_rec P α0 0)); exact Htg).
       assert (Hszr : 2 * (size_pskl (open_pskl_wrt_pskl P (pskl_var_f α0))
                           + size_pskl Q) <= n)
         by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
@@ -2880,7 +2882,7 @@ Proof.
                         (open_uskl_wrt_uskl ψ0 (uskl_var_f α0)) Ψ').
       { rewrite subst_pskl_in_pskl_spec.
         apply H0; clear - HX0; fsetdec. }
-      destruct (IHn _ _ _ _ _ _ _ _ Hszr Hr Hdecr
+      destruct (IHn _ _ _ _ _ _ _ _ _ Hszr Hr Htgα Hdecr
                   (H2 α0 ltac:(clear - HX0; fsetdec)))
                 as [Ψi0 [Ψp0 [Hs0 [Hd0 Hu0]]]].
       exists Ψi0, Ψp0; split.
@@ -2914,7 +2916,7 @@ Proof.
     + (* skip_tophole *)
       injection HeqW as HeqP; subst P0.
       match goal with Hin : dec_ext P' _ _ |- _ =>
-        destruct (IHn _ _ _ _ _ _ _ _ Hsz0 Hp Hin Hdt)
+        destruct (IHn _ _ _ _ _ _ _ _ _ Hsz0 Hp (proj2 Htg) Hin Hdt)
           as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
       exists Ψi, Ψp; split;
         [ exact Hsi
@@ -2925,7 +2927,7 @@ Proof.
       inversion Hdt; subst.
       match goal with
       | Hin : dec_ext P' ?p0 _, Hd0 : d_tags_skl _ ?p0 |- _ =>
-        destruct (IHn _ _ _ _ _ _ _ _ Hsz0 Hp Hin Hd0)
+        destruct (IHn _ _ _ _ _ _ _ _ _ Hsz0 Hp (proj2 Htg) Hin Hd0)
           as [Ψi [Ψp [Hsi [Hdp Hsub]]]] end.
       exists Ψi, Ψp; split;
         [ apply a_solvetag_sub__univ_ghost_lg; exact Hsi
@@ -2974,7 +2976,7 @@ Proof.
       | split; [ exact Hdec | fsetdec ] ].
   - (* check : guarded P (H), guarded Q (H0), solve_eq (H1) → eq_step + SSub-Check *)
     edestruct dec_ext_solve_eq_step as [Ψi [Ψp [Hste [Hdp Hup]]]];
-      [ exact H1 | exact Hdec | exact Hdt | ].
+      [ exact H1 | exact Htg | exact Hdec | exact Hdt | ].
     exists Ψi, Ψp; split;
       [ apply a_solvetag_sub__check;
           [ eapply dec_ext_guarded_uskl;
@@ -2990,7 +2992,7 @@ Proof.
                         + size_pskl (open_pskl_wrt_pskl B (pskl_var_f b)))
                    <= n)
       by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
-    destruct (IHn _ _ _ _ _ _ _ _ Hsz0 Hp Hdec Hdt)
+    destruct (IHn _ _ _ _ _ _ _ _ _ Hsz0 Hp Htg Hdec Hdt)
               as [Ψi0 [Ψp0 [Hst0 [Hd0 Hu0]]]].
     exists Ψi0, Ψp0; split.
     + apply a_solvetag_sub__forall_r with
@@ -3004,11 +3006,12 @@ Proof.
     inversion Hdec; subst.
     + (* arrow ψ1 ψ2 *)
       inversion Hdt; subst.
+      destruct Htg as [Htg1 Htg2].
       edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
-        [ exact H | eassumption | eassumption | ].
+        [ exact H | exact Htg1 | eassumption | eassumption | ].
       assert (Hsz2 : 2 * (size_pskl P2 + size_pskl Q2) <= n) by lia.
       edestruct IHn as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
-        [ exact Hsz2 | exact H0 | eassumption | eassumption | ].
+        [ exact Hsz2 | exact H0 | exact Htg2 | eassumption | eassumption | ].
       exists (Ψi1 `union` Ψi2), (Ψp1 `union` Ψp2); split;
         [ eapply a_solvetag_sub__arrow; [ exact Hst1 | exact Hst2 | reflexivity ]
         | split; [ eapply dec_ext__arrow; [ exact Hd1 | exact Hd2 | reflexivity ]
@@ -3032,10 +3035,11 @@ Proof.
         inversion Hde; subst end.
       * (* ψ = arrow ψ1 ψ2 *)
         inversion Hdt; subst.
+        (* SS-GhostLF: the subject is ◇, whose [pskl_top_guarded] is [I] *)
         edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
-          [ exact H | eassumption | eassumption | ].
+          [ exact H | exact I | eassumption | eassumption | ].
         edestruct IHn as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
-          [ exact Hsz2 | exact H0 | eassumption | eassumption | ].
+          [ exact Hsz2 | exact H0 | exact I | eassumption | eassumption | ].
         match goal with Ha : d_tags_skl _ ψ1, Hb : d_tags_skl _ ψ2 |- _ =>
           pose proof (dec_ext_hole_tags Hd1 Ha) as He1;
           pose proof (dec_ext_hole_tags Hd2 Hb) as He2 end.
@@ -3062,10 +3066,11 @@ Proof.
       * (* ψ0 = arrow ψ1 ψ2 *)
         match goal with Hd0t : d_tags_skl Ψtot (uskl_arrow _ _) |- _ =>
           inversion Hd0t; subst end.
+        (* SS-GhostLF: the subject is ◇, whose [pskl_top_guarded] is [I] *)
         edestruct dec_ext_solve_eq_step as [Ψi1 [Ψp1 [Hst1 [Hd1 Hu1]]]];
-          [ exact H | eassumption | eassumption | ].
+          [ exact H | exact I | eassumption | eassumption | ].
         edestruct IHn as [Ψi2 [Ψp2 [Hst2 [Hd2 Hu2]]]];
-          [ exact Hsz2 | exact H0 | eassumption | eassumption | ].
+          [ exact Hsz2 | exact H0 | exact I | eassumption | eassumption | ].
         match goal with Ha : d_tags_skl _ ψ1, Hb : d_tags_skl _ ψ2 |- _ =>
           pose proof (dec_ext_hole_tags Hd1 Ha) as He1;
           pose proof (dec_ext_hole_tags Hd2 Hb) as He2 end.
@@ -3193,15 +3198,16 @@ Proof.
                  | inversion Hdt; subst; fsetdec ] ].
 Qed.
 
-Lemma dec_ext_solve_sub_step : forall Θ m P P3 P' ψ Ψ' Ψtot,
+Lemma dec_ext_solve_sub_step : forall Θ m P P3 Ξ P' ψ Ψ' Ψtot,
   Θ ⊢ₛ P ≼[ m ] P3 ⤳ Ξ ⨾ P' ->
+  pskl_top_guarded P ->
   dec_ext P' ψ Ψ' -> d_tags_skl Ψtot ψ ->
   exists Ψi Ψp, ψ ≼ᵗ[ m ] P3 ⤳ Ψi /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψ' `union` Ψi.
 Proof.
-  intros Θ m P P3 P' ψ Ψ' Ψtot Hs Hdec Hdt.
+  intros Θ m P P3 Ξ P' ψ Ψ' Ψtot Hs Htg Hdec Hdt.
   exact (dec_ext_solve_sub_step_size
            (n := 2 * (size_pskl P + size_pskl P3))
-           (le_n _) Hs Hdec Hdt).
+           (le_n _) Hs Htg Hdec Hdt).
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -3254,14 +3260,21 @@ Qed.
 Lemma pskl_no_top_top_guarded : forall P, pskl_no_top P -> pskl_top_guarded P.
 Proof. induction P; simpl; intuition. Qed.
 
+(** [guess^TY]'s result, read back into [pskl], has NO universal ghost at all
+    — [ptyp] has no ghost constructor.  This is what keeps the ∀◇-tracking
+    invariants true at the repaired SE-FlexR row, whose output is that
+    result rather than the bare flexible. *)
+Lemma ptyp_to_pskl_no_top : forall A, pskl_no_top (ptyp_to_pskl A).
+Proof. induction A; simpl; intuition. Qed.
+
 (** No ∀◇ is created solving (eq) against a ∀◇-free target. *)
 Lemma solve_eq_no_top : forall Θ P P0 Ξ P',
   Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> pskl_no_top P -> pskl_no_top P0 -> pskl_no_top P'.
 Proof.
-  intros Θ P P0 P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
+  intros Θ P P0 Ξ P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
   - (* unit *) exact I.
   - (* var *) exact I.
-  - (* flex_r *) exact I.
+  - (* flex_r : guess^TY emits no ∀◇ *) apply ptyp_to_pskl_no_top.
   - (* hole_l : P'=Q *) exact Hgf.
   - (* hole_r : Q=◇, P'=P *) exact Hnt.
   - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
@@ -3280,11 +3293,11 @@ Qed.
 
 (** Every ∀◇ a sub-solve creates over a ∀◇-free skeleton/target heads a
     GUARDED body (SS-GhostL: guarded premise; SS-GhostLF: an arrow). *)
-Lemma solve_sub_top_guarded : forall Θ m P P0 P',
+Lemma solve_sub_top_guarded : forall Θ m P P0 Ξ P',
   Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> pskl_no_top P -> pskl_no_top P0 ->
   pskl_top_guarded P'.
 Proof.
-  intros Θ m P P0 P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
+  intros Θ m P P0 Ξ P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
   - (* var *) exact I.
   - (* forall_l : ∀(close β P') — the rule closes its output *)
     apply pskl_top_guarded_close.
@@ -3346,11 +3359,11 @@ Proof.
 Qed.
 
 (** The TY solve output is top-guarded (walk the constraint list). *)
-Lemma solve_cstr_top_guarded : forall Θ 𝒞 P P',
+Lemma solve_cstr_top_guarded : forall Θ 𝒞 P Ξ P',
   Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' -> pskl_no_top P -> List.Forall a_cstr_no_top 𝒞 ->
   pskl_top_guarded P'.
 Proof.
-  intros Θ 𝒞 P P' Hs; induction Hs; intros Hnt Hntc.
+  intros Θ 𝒞 P Ξ P' Hs; induction Hs; intros Hnt Hntc.
   - apply pskl_no_top_top_guarded; exact Hnt.
   - inversion Hntc as [ | ? ? Hnt0 ]; subst; simpl in Hnt0.
     eapply solve_sub_top_guarded; [ exact H | exact Hnt | exact Hnt0 ].
@@ -3370,8 +3383,10 @@ Qed.
 Lemma solve_eq_guarded_head_l : forall Θ P P0 Ξ P',
   Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' -> pskl_guarded_head P -> pskl_guarded_head P'.
 Proof.
-  intros Θ P P0 P' H; induction H; intros Hg; simpl in Hg;
-    try contradiction; simpl; try exact I.
+  intros Θ P P0 Ξ P' H; induction H; intros Hg; simpl in Hg;
+    try contradiction; simpl; try exact I;
+    (* flex_r : guess^TY is structural on the guarded shapes *)
+    try solve [ eapply a_guess_mono_head; eassumption ].
   - (* hole_r : P'=P *) exact Hg.
   - (* tophole_r_guarded : P guarded, P∼P0⤳P' *) apply IHa_solve_eq; exact Hg.
 Qed.
@@ -3380,7 +3395,7 @@ Qed.
 Lemma solve_sub_guarded_head_l : forall Θ m P P0 Ξ P',
   Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' -> pskl_guarded_head P -> pskl_guarded_head P'.
 Proof.
-  intros Θ m P P0 P' Hs; induction Hs; intros Hg; simpl in Hg;
+  intros Θ m P P0 Ξ P' Hs; induction Hs; intros Hg; simpl in Hg;
     try contradiction; simpl; try exact I.
   - (* vacuous : P'=P *) exact Hg.
   - (* check : eq preserves *) eapply solve_eq_guarded_head_l; eassumption.
@@ -3393,10 +3408,11 @@ Lemma solve_eq_top_guarded : forall Θ P P0 Ξ P',
   Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' ->
   pskl_top_guarded P -> pskl_top_guarded P0 -> pskl_top_guarded P'.
 Proof.
-  intros Θ P P0 P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
+  intros Θ P P0 Ξ P' H; induction H; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
   - (* unit *) exact I.
   - (* var *) exact I.
-  - (* flex_r *) exact I.
+  - (* flex_r : guess^TY emits no ∀◇, a fortiori all of them are guarded *)
+    apply pskl_no_top_top_guarded; apply ptyp_to_pskl_no_top.
   - (* hole_l : P'=Q *) exact Hgf.
   - (* hole_r : P'=P *) exact Hnt.
   - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
@@ -3433,7 +3449,7 @@ Lemma solve_sub_top_guarded_tg : forall Θ m P P0 Ξ P',
   Θ ⊢ₛ P ≼[ m ] P0 ⤳ Ξ ⨾ P' ->
   pskl_top_guarded P -> pskl_top_guarded P0 -> pskl_top_guarded P'.
 Proof.
-  intros Θ m P P0 P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
+  intros Θ m P P0 Ξ P' Hs; induction Hs; intros Hnt Hgf; simpl in Hnt, Hgf; simpl.
   - (* var *) exact I.
   - (* forall_l : the rule closes its output *)
     apply pskl_top_guarded_close.
@@ -3497,11 +3513,11 @@ Proof.
 Qed.
 
 (** The TY solve output is top-guarded (walk the constraints; ∀◇ targets OK). *)
-Lemma solve_cstr_top_guarded_tg : forall Θ 𝒞 P P',
+Lemma solve_cstr_top_guarded_tg : forall Θ 𝒞 P Ξ P',
   Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' -> pskl_top_guarded P -> List.Forall a_cstr_tg 𝒞 ->
   pskl_top_guarded P'.
 Proof.
-  intros Θ 𝒞 P P' Hs; induction Hs; intros Hnt Hntc.
+  intros Θ 𝒞 P Ξ P' Hs; induction Hs; intros Hnt Hntc.
   - exact Hnt.
   - inversion Hntc as [ | ? ? Hnt0 ]; subst; simpl in Hnt0.
     eapply solve_sub_top_guarded_tg; [ exact H | exact Hnt | exact Hnt0 ].
@@ -3512,23 +3528,35 @@ Qed.
 
 (** ASSEMBLY: walk the constraint list — UNCONDITIONAL; [dec_ext] re-grows
     toward P with COVERAGE Ψp ⊆ Ψpost ∪ Ψc. *)
+(* ⚠️ TWO PREMISES BEYOND THE PAPER (2026-08-04), both inherited from the
+   per-constraint steps: the SUBJECT is top-guarded, and so is every
+   constraint TARGET.  Both are wf consequences ([a_wf_pskl_top_guarded]),
+   and the target one is needed only to re-establish the subject condition
+   for the TAIL — the eq row folds its yield into the pattern the rest of
+   the list solves on ([solve_eq_top_guarded]). *)
 Lemma solve_cstr_decorate : forall Θ 𝒞 P Ξ P' ψ Ψpost Ψtot,
   Θ ⊩ 𝒞 ⨾ P ⤳ Ξ ⨾ P' ->
+  pskl_top_guarded P -> List.Forall a_cstr_tg 𝒞 ->
   dec_ext P' ψ Ψpost -> d_tags_skl Ψtot ψ ->
   exists Ψc Ψp, 𝒞 ⊩ᵗ ψ ⤳ Ψc /\ dec_ext P ψ Ψp /\ Ψp [<=] Ψpost `union` Ψc.
 Proof.
-  intros Θ 𝒞 P P' ψ Ψpost Ψtot Hsolve Hdec Hdt; revert Ψpost Hdec;
-    induction Hsolve; intros Ψpost Hdec.
+  intros Θ 𝒞 P Ξ P' ψ Ψpost Ψtot Hsolve Htg Htgc Hdec Hdt;
+    revert Ψpost Hdec; revert Htg Htgc;
+    induction Hsolve; intros Htg Htgc Ψpost Hdec.
   - (* empty *) exists empty, Ψpost; split;
       [ apply a_solvetag__empty; fsetdec | split; [ exact Hdec | fsetdec ] ].
   - (* sub *)
-    destruct (dec_ext_solve_sub_step H Hdec Hdt)
+    destruct (dec_ext_solve_sub_step H Htg Hdec Hdt)
       as [Ψi [Ψp [Hs [Hd Hu]]]].
     exists Ψi, Ψp; split;
       [ apply a_solvetag__sub; exact Hs | split; [ exact Hd | exact Hu ] ].
   - (* eq *)
-    destruct (IHHsolve Ψpost Hdec) as [Ψc' [Ψp'' [Hstc [Hd'' Hu'']]]].
-    destruct (dec_ext_solve_eq_step H Hd'' Hdt)
+    inversion Htgc as [ | ? ? Htg0 HtgC ]; subst; simpl in Htg0.
+    assert (Htg'' : pskl_top_guarded P'')
+      by (eapply solve_eq_top_guarded; [ exact H | exact Htg | exact Htg0 ]).
+    destruct (IHHsolve Htg'' HtgC Ψpost Hdec)
+      as [Ψc' [Ψp'' [Hstc [Hd'' Hu'']]]].
+    destruct (dec_ext_solve_eq_step H Htg Hd'' Hdt)
       as [Ψi [Ψp [Hste [Hd Hu]]]].
     exists (Ψi `union` Ψc'), Ψp; split;
       [ eapply a_solvetag__eq; [ exact Hste | exact Hstc | reflexivity ]
@@ -3543,7 +3571,12 @@ Qed.
     (docs/WF-SIDE-CONDITIONS.md); it is vacuous in SK mode. *)
 Lemma a_extract_decorate : forall Θ0 NM αv M P P0 Ξ P1,
   Θ0 ⊢ P ⊳[ NM , αv , M ] P0 ⤳ Ξ ↪ P1 ->
-  (NM = a_sub_mode_ty -> pskl_top_guarded P0) ->
+  (* ⚠️ UNGUARDED since 2026-08-04 (was [NM = TY -> …]).  The decoration of
+     the SOLVE now needs the constraint targets to be top-guarded in BOTH
+     modes, because [solve_cstr_decorate] must re-establish its subject
+     condition for the tail.  It is the same wf consequence
+     ([a_wf_pskl_top_guarded]) the TY branch already relied on. *)
+  pskl_top_guarded P0 ->
   forall Ψa ψa,
     a_tags_sort NM Ψa ψa ->
     ⌊ ψa ⌋ˢ = P1 ->
@@ -3556,16 +3589,17 @@ Proof.
   (* H : look ;  H0 : solve 𝒞 □ Q ;  H1 : guess (output ⌊ψa⌋ˢ) *)
   eexists; eexists; split; [ exact H | ].
   assert (Hda : d_tags_skl Ψa ψa) by (inversion Htags; assumption).
-  assert (Htg : NM = a_sub_mode_ty -> pskl_top_guarded Q).
-  { intros Hty. specialize (Htg0 Hty).
-    eapply solve_cstr_top_guarded_tg;
-      [ exact H0 | exact I
-      | eapply (proj1 a_look_top_guarded);
-          [ exact H | exact Htg0 ] ]. }
+  assert (Htgc : List.Forall a_cstr_tg C)
+    by (eapply (proj1 a_look_top_guarded); [ exact H | exact Htg0 ]).
+  assert (HtgQ : pskl_top_guarded Q)
+    by (eapply solve_cstr_top_guarded_tg;
+        [ exact H0 | exact I | exact Htgc ]).
+  assert (Htg : NM = a_sub_mode_ty -> pskl_top_guarded Q)
+    by (intros _; exact HtgQ).
   assert (Hanchor : dec_ext Q ψa empty)
     by (eapply dec_ext_guess_anchor;
         [ exact H1 | exact Htg | exact Htags | reflexivity ]).
-  destruct (solve_cstr_decorate H0 Hanchor Hda)
+  destruct (solve_cstr_decorate H0 I Htgc Hanchor Hda)
     as [Ψc [Ψp [Hstag [Hhole Hsub]]]].
   (* dec_ext □ ψa Ψp pins Ψp = d_tags = Ψa; soundness gives Ψc ⊆ Ψa; squeeze *)
   assert (Hsnd : Ψc [<=] Ψa) by (eapply a_solvetag_sound; [ exact Hstag | exact Hda ]).
@@ -3745,8 +3779,12 @@ Proof.
                 (L `union` singleton α0 `union` dom Ξ `union` dom Θ0
                  `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
                  `union` ftvar_in_pskl P1)) as [α Hα].
+    (* the premise is UNGUARDED now; it is a wf consequence, so it comes
+       straight from [HwfP0] rather than from the mode-guarded [Hgf0] *)
+    assert (HtgP0 : pskl_top_guarded P0)
+      by (eapply a_wf_pskl_top_guarded; exact HwfP0).
     destruct (a_extract_decorate (Hfam α ltac:(clear - Hα; fsetdec))
-                Hgf0 Hsort Hera) as [Ξc [C [HDlk Hst]]].
+                HtgP0 Hsort Hera) as [Ξc [C [HDlk Hst]]].
     assert (Hαg : α `notin` ftvar_in_uskl ψg).
     { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg). rewrite Hera.
       clear - Hα. fsetdec. }

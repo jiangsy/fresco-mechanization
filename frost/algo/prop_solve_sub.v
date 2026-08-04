@@ -733,6 +733,48 @@ Qed.
 
 (** The same for a subject that is NOT opened (the ∀◇ rows: [∀◇P] passes
     through the premise unchanged). *)
+(** The SUB-side witness-moves: SS-ForallL opens the SUBJECT (the target
+    rides along b-free), SS-ForallR opens the TARGET. *)
+Lemma a_solve_sub_move_binder_l : forall Θ b m P Q Ξ P' α0,
+  ((b ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f b))
+    ≼[ m ] Q ⤳ Ξ ⨾ P' ->
+  b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+  α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
+      `union` ftvar_in_pskl P' ->
+  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+    ⊢ₛ (open_pskl_wrt_pskl P (pskl_var_f α0)) ≼[ m ] Q
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+Proof.
+  intros Θ b m P Q Ξ P' α0 Hp Hb Hα0.
+  pose proof ((proj1 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ _ Hp) as Hr.
+  rewrite swap_aenv_app, swap_aenv_one_tvar in Hr.
+  rewrite swap_pskl_open_var, swap_atom_l in Hr.
+  rewrite (swap_pskl_fresh_id b α0 P) in Hr by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_fresh_id b α0 Q) in Hr by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_as_subst b α0 P') in Hr by (clear - Hα0; fsetdec).
+  exact Hr.
+Qed.
+
+Lemma a_solve_sub_move_binder_r : forall Θ b A B Ξ P' α0,
+  ((b ~ abind_tvar) ++ Θ) ⊢ₛ A ≼[ mode_tc ]
+    (open_pskl_wrt_pskl B (pskl_var_f b)) ⤳ Ξ ⨾ P' ->
+  b `notin` ftvar_in_pskl A `union` ftvar_in_pskl B ->
+  α0 `notin` ftvar_in_pskl A `union` ftvar_in_pskl B
+      `union` ftvar_in_pskl P' ->
+  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+    ⊢ₛ A ≼[ mode_tc ] (open_pskl_wrt_pskl B (pskl_var_f α0))
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+Proof.
+  intros Θ b A B Ξ P' α0 Hp Hb Hα0.
+  pose proof ((proj1 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ _ Hp) as Hr.
+  rewrite swap_aenv_app, swap_aenv_one_tvar in Hr.
+  rewrite swap_pskl_open_var, swap_atom_l in Hr.
+  rewrite (swap_pskl_fresh_id b α0 A) in Hr by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_fresh_id b α0 B) in Hr by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_as_subst b α0 P') in Hr by (clear - Hα0; fsetdec).
+  exact Hr.
+Qed.
+
 Lemma a_solve_eq_move_binder_tophole_l : forall Θ b P Q Ξ P' α0,
   ((b ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
     ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' ->
