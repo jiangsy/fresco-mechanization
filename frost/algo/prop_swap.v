@@ -161,6 +161,14 @@ Lemma swap_aenv_cons : forall a b x bd (Θ : aenv),
   = (swap_atom a b x, swap_abind a b bd) :: swap_aenv a b Θ.
 Proof. reflexivity. Qed.
 
+(** The one-entry rigid block a binder rule pushes, swapped. *)
+Lemma swap_aenv_one_tvar : forall a b,
+  swap_aenv a b (a ~ abind_tvar) = b ~ abind_tvar.
+Proof.
+  intros a b. unfold swap_aenv, one. simpl.
+  rewrite swap_atom_l. reflexivity.
+Qed.
+
 Lemma swap_aenv_invol : forall a b Θ, swap_aenv a b (swap_aenv a b Θ) = Θ.
 Proof.
   induction Θ as [| [x bd] Θ']; [reflexivity |].

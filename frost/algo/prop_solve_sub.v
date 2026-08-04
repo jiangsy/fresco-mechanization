@@ -696,6 +696,91 @@ Proof.
   apply swap_aenv_fresh_id; [ clear - Hα Hf | clear - Hβ Hf ]; fsetdec.
 Qed.
 
+(** ⭐ THE WITNESS-MOVE, PACKAGED.  A solve premise recorded at the rule's
+    OWN binder [b] is transported to any [α0] fresh for the two input
+    skeletons and the output.
+
+    ⚠️ This is the operation the freshness-campaign proofs used to perform
+    with a double RENAME, and which the repair broke: [b] now sits IN the
+    premise's context, so "the source dodges the context" cannot hold.  A
+    SWAP has no such condition — it carries the context along — and that is
+    harmless here because every consumer quantifies the context universally
+    and never mentions it in its conclusion.  The moved premise therefore
+    runs at [(α0 ~ tvar) ++ swap_aenv b α0 Θ], and nobody has to care. *)
+Lemma a_solve_eq_move_binder : forall Θ b P Q Ξ P' α0,
+  ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
+    ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' ->
+  b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+  α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
+      `union` ftvar_in_pskl P' ->
+  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+    ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f α0))
+     ∼ (open_pskl_wrt_pskl Q (pskl_var_f α0))
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+Proof.
+  intros Θ b P Q Ξ P' α0 Hp Hb Hα0.
+  pose proof ((proj2 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ Hp) as Hr.
+  rewrite swap_aenv_app, swap_aenv_one_tvar in Hr.
+  rewrite ! swap_pskl_open_var, swap_atom_l in Hr.
+  rewrite (swap_pskl_fresh_id b α0 P) in Hr
+    by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_fresh_id b α0 Q) in Hr
+    by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_as_subst b α0 P') in Hr
+    by (clear - Hα0; fsetdec).
+  exact Hr.
+Qed.
+
+(** The same for a subject that is NOT opened (the ∀◇ rows: [∀◇P] passes
+    through the premise unchanged). *)
+Lemma a_solve_eq_move_binder_tophole_l : forall Θ b P Q Ξ P' α0,
+  ((b ~ abind_tvar) ++ Θ) ⊢ₑ (pskl_tophole P)
+    ∼ (open_pskl_wrt_pskl Q (pskl_var_f b)) ⤳ Ξ ⨾ P' ->
+  b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+  α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
+      `union` ftvar_in_pskl P' ->
+  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+    ⊢ₑ (pskl_tophole P) ∼ (open_pskl_wrt_pskl Q (pskl_var_f α0))
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+Proof.
+  intros Θ b P Q Ξ P' α0 Hp Hb Hα0.
+  pose proof ((proj2 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ Hp) as Hr.
+  rewrite swap_aenv_app, swap_aenv_one_tvar in Hr.
+  cbn [swap_pskl] in Hr.
+  rewrite swap_pskl_open_var, swap_atom_l in Hr.
+  rewrite (swap_pskl_fresh_id b α0 P) in Hr
+    by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_fresh_id b α0 Q) in Hr
+    by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_as_subst b α0 P') in Hr
+    by (clear - Hα0; fsetdec).
+  exact Hr.
+Qed.
+
+Lemma a_solve_eq_move_binder_tophole_r : forall Θ b P Q Ξ P' α0,
+  ((b ~ abind_tvar) ++ Θ) ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f b))
+    ∼ (pskl_tophole Q) ⤳ Ξ ⨾ P' ->
+  b `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+  α0 `notin` ftvar_in_pskl P `union` ftvar_in_pskl Q
+      `union` ftvar_in_pskl P' ->
+  ((α0 ~ abind_tvar) ++ swap_aenv b α0 Θ)
+    ⊢ₑ (open_pskl_wrt_pskl P (pskl_var_f α0)) ∼ (pskl_tophole Q)
+     ⤳ (swap_aenv b α0 Ξ) ⨾ (subst_pskl_in_pskl (pskl_var_f α0) b P').
+Proof.
+  intros Θ b P Q Ξ P' α0 Hp Hb Hα0.
+  pose proof ((proj2 (a_solve_sub_eq_swap b α0)) _ _ _ _ _ Hp) as Hr.
+  rewrite swap_aenv_app, swap_aenv_one_tvar in Hr.
+  cbn [swap_pskl] in Hr.
+  rewrite swap_pskl_open_var, swap_atom_l in Hr.
+  rewrite (swap_pskl_fresh_id b α0 P) in Hr
+    by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_fresh_id b α0 Q) in Hr
+    by (clear - Hb Hα0; fsetdec).
+  rewrite (swap_pskl_as_subst b α0 P') in Hr
+    by (clear - Hα0; fsetdec).
+  exact Hr.
+Qed.
+
 Lemma a_solve_sub_rename_var : forall Θ m P Q Ξ P' α0 β0,
   Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' ->
   α0 `notin` ftvar_in_aenv Θ `union` dom Ξ ->
