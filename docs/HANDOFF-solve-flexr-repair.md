@@ -317,31 +317,46 @@ the merged block is `Ξ2 ++ Ξ1`, the merged extension `κb ++ κa`, and the two
   therefore a `solve_ext_nil` row, and its extension is `nil` too — get that
   from `keys κ' = keys nil` by `destruct κ'; [ | discriminate ]`.
 
-#### ⭕ THE ONE OPEN OBLIGATION — the ∀ rows' payload scope
+#### ⭐ THE ∀ ROWS' PAYLOAD SCOPE — the design is settled, one step is left
 
-This is what the resume point runs into, and it is worth thinking about
-BEFORE writing the block.
+A P6 ∀ row runs its body at `(α ~ tvar) ++ Θ`, but the block the body
+generates is emitted **outside** the ∀ — the solve's ∀ rows pass `Ξ` through
+unchanged — so a payload mentioning the bound rigid would be ill-scoped, and
+`a_inc_flex_prefix_build` could never rebuild the increase. (Do NOT weaken
+the package's wf component to dodge this; P6-L needs it.)
 
-A P6 ∀ row runs its body IH at `(α ~ tvar) ++ Θ0` against the target
-`(α ~ tvar) ++ Θ`. So the body's package delivers
-`Forall (fun p => a_wf_ptyp ((α ~ tvar) ++ Θ) (snd p) ∧ …) κ'`, while the
-enclosing conclusion needs `a_wf_ptyp Θ`. The solve's ∀ rows pass `Ξ`
-through UNCHANGED, so the generated flexibles are declared OUTSIDE the
-binder — a payload mentioning `α` would be a scope violation.
+**Settled (committed, green):** `solve_ext`'s second context is the
+WELL-FORMEDNESS context `Θw`, and it stays FIXED as the construction goes
+under binders. `a_guess_ty_witness_mono`, `cv_mono_concl`,
+`a_solve_eq_cv_mono` and `a_solve_eq_cv_var` all carry it, next to the two
+conditions that say `Θ` is `Θw` under a stack of rigids — binds-monotonicity
+one way, "adds only rigid binders" the other. Supporting: `a_def_chain_wf_at`,
+`forall_wf_mono_weaken`.
 
-**It is dischargeable, and here is the argument.** A payload is only ever
-invented at an SE-FlexR node, where the COUNTERPART is a raw flexible `β̂` of
-`Θ0`; the monotype the extension reads off that position is (up to the
-refinement/consistency bridge that `FLEX` already builds) `msubst_lookup κ β̂`
-— and `κ ∷ Θ0 ⊑ Θ` makes every image **wf at `Θ`**, hence `α`-free. So the
-fix is to derive the wf from the κ-IMAGE rather than from the consistency at
-the extended context: i.e. inside each file's `FLEX` block, replace the
-`ad_pat_consis_mono_subject_wf` call by one going through `Hml`/`Hrefβ'`
-(`mono_ptyp (msubst_lookup κ β)` plus `a_inc`'s own wf component).
+⭐ And the target's own wf premise is a DISJUNCTION —
+`a_wf_ptyp Θw τ ∨ (τ is a rigid variable of Θ)` — because at a ∀ row the
+target can be the BOUND rigid, which is in no `Θw`. It costs nothing: every
+branch that consumes the premise first unfolds a definition chain out of `τ`,
+and a rigid has none (`a_def_chain_rigid_var_inv`). The disjunction
+PROPAGATES along a chain (`a_def_chain_wf_or_rigid`) and is DISCHARGED at the
+arrow rows. P6-Cv's var row supplies it straight from `ad_pat_consis__var`.
 
-⚠️ Do NOT weaken the package's wf component to dodge this — it is exactly
-what `a_inc_flex_prefix_build` needs downstream, and without it P6-L cannot
-rebuild `(κ' ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ`.
+⭕ **What is left is ONE derivation, and `coqc` stops exactly on it** —
+`prop_look_complete_var.v`, CORE's SE-FlexR row, where the file carries a
+`⛔ RESUME HERE` comment stating it in full. `FLEX` produces the counterpart
+monotype's well-formedness at `Θ`; the witness wants it at `Θw`. The fact is
+true:
+
+```
+  ftv (ψa1 → ψa2) ⊆ ftv (bskl_arrow Q1 Q2) ∪ dom Θr     (consis_subject_ftv_bag_bound)
+                  ⊆ ftv (msubst_lookup κ β) ∪ dom Θr    (ad_refine_syn_ftv_rhs_bound on Hrefβ')
+```
+
+and a ∀ row's binder joins `Θtv`, never `Θr`, while `κ ∷ Θ0 ⊑ Θw` keeps every
+κ-image inside `dom Θw`. So the counterpart monotype is apart from every bound
+rigid, and `mono_ptyp_wf` (prop_consis_sound.v) lifts that to `a_wf_ptyp Θw`.
+**Write that inside each file's `FLEX` block, and add the premise
+`κ ∷ Θ0 ⊑ Θw` to the theorem** (it is literally `Hκ` at the top-level call).
 
 #### The rest of the cluster
 
